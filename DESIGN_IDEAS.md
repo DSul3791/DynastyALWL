@@ -62,7 +62,7 @@ A persistent, rough-medieval, multiplayer online world: a survival, exploration 
 
 ### 4.1 Tiles and islands
 
-- **[Decided]** One island should feel as big as the original ARK island: many climates and hours of travel. By raw area the current tile already holds a comparable island. The feeling of size must come from varied, winding terrain and travel time.
+- **[Decided]** One island should feel as big as the original ARK island: many climates and hours of travel. An official ARK size figure was not confirmed, but from the preview image the current tile holds an island of very roughly 60 to 70 square kilometers, so area alone is likely already comparable. The feeling of size must come from varied, winding terrain and travel time.
 - **[Decided]** A generator **island properties panel** controls, per tile: how many islands, how big each is, and where each is placed in the tile.
 - **[Decided]** Tiles are baked and added to the map one at a time over the life of the project.
 - **[Decided]** Island size and the distance between islands should be varied across the world, from small islets up to ARK-scale.
@@ -169,7 +169,8 @@ These already exist in the repository and match the vision:
 - **[Open]** How permanent offline loss should be (can family members die, can buildings be destroyed).
 - **[Open]** Who can raid whom: only NPC bandits, monsters and sickness, or other players as well.
 - **[Open]** Whether dropped items expire, and whether items in hard-to-reach places last longer.
-- **[Open]** Whether the downed timer pauses or runs while offline for rescuers' purposes, and how looting a downed player is treated (the legal system is the intended answer).
+- **[Decided]** Because offline characters stay vulnerable, the downed timer keeps running while the player is offline.
+- **[Open]** Whether other players and NPCs can rob or finish a downed character. The intended answer is that it is a crime handled by the legal system (Section 9), not a blocked action.
 
 ---
 
