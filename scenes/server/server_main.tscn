@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://dbka0g4i4i0d5"]
+
+[ext_resource type="Script" uid="uid://dfsd21it2bqaj" path="res://scenes/server/server_main.gd" id="1_s6x63"]
+[ext_resource type="Script" uid="uid://chosmqab5mr7r" path="res://src/shared/network_bridge.gd" id="2_yjhxu"]
+
+[node name="Main" type="Node" unique_id=1274289028]
+script = ExtResource("1_s6x63")
+
+[node name="NetworkBridge" type="Node" parent="." unique_id=1448913774]
+script = ExtResource("2_yjhxu")

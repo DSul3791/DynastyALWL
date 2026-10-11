@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="WorldDefinition" format=3 uid="uid://c4djsth4lnkop"]
+
+[ext_resource type="Script" uid="uid://b0o60jair702v" path="res://src/shared/world_definition.gd" id="1_h8okr"]
+
+[resource]
+script = ExtResource("1_h8okr")
+metadata/_custom_type_script = "uid://b0o60jair702v"
