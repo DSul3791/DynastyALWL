@@ -9,6 +9,7 @@ Record of the design brainstorming sessions of 2026-10-11 and 2026-10-12. This i
 - **Version 3 (2026-10-12, later):** lifespan targets (start at about 15, die at about 80, in about 700 hours of play); families age with the player; the rescue-first philosophy and party composition; heirs arriving partly trained; the tension between server-owned towns and "no towns at the start"; and the clock arithmetic showing that one clock for aging and seasons is probably not workable. Open questions were updated.
 - **Version 4 (2026-10-12, latest):** two clocks decided (a world calendar for seasons and crops, and an aging clock); a one-to-two-week seasonal cycle; NPC aging at the average player's speed (70 years per real year); the weekly farming rhythm and a note on avoiding calendar years of exactly 7 or 14 days; Farming Simulator as an inspiration; no starting towns; and the civil engineer town-planning idea. The lifespan pacing figure changed from 65 to 70 years (15 to 85).
 - **Version 5 (2026-10-12, evening):** the "play what you like" and "no micromanagement" goals; server-clock aging for everyone as an idea; children, twins, wills and choosing an heir; 60-minute game days, seasonal day length and night; the weekend farming rhythm, crop tiers, farm labor and work buildings; stock levels, the order chain and building maintenance; the budget for language model use and self-hosting; town roles, land and property; quests and pastimes; real-money ideas, with gambling flagged for later; and the plan for growing the tile map one side at a time.
+- **Version 6 (2026-10-12, night):** minimum hardware target (older quad-core, 8 GB RAM, SATA SSD); the 15 to 16 hour tile bake and a proposal to bake 2D maps and generate voxels at runtime, with a table of what is baked, what the server works out and what the client does; language service hosting and scaling; NPC backgrounds, memory, honesty and conversation traits.
 
 ## How to read this document
 
@@ -83,6 +84,8 @@ A persistent, rough-medieval, multiplayer online world: a survival, exploration 
 - **[Decided] Language model budget.** Rules drive routine NPC work (a smith making nails, a farmhand harvesting, builders repairing). The model handles conversation with players and occasional judgment calls, such as a warehouse manager reviewing stock about once per game season. Its output is bounded and structured, game rules validate it, and a simple formula or rule takes over when no model is available. Each decision is logged with its reason.
 - **[Proposed] Reward checking in, never punish a weekly rhythm.** Frequent visits earn more, but a player who logs in once a week still gets a complete, productive loop.
 - **[Proposed] Management rights are hard locks; physical actions stay soft.** Nobody can open a town panel without the right role, but anyone can physically steal, with consequences.
+- **[Decided] Older machines must be able to play.** The client has to run on an older quad-core such as an Intel i5-4690 (4 cores, 4 threads) or older, ideally with 8 GB of RAM and a SATA SSD. Nobody should be excluded because of an older machine.
+- **[Proposed] Design to the minimum machine from the start.** With 8 GB of RAM the game has perhaps 3 to 4 GB once the operating system takes its share, and four cores shared by the game loop, voxel meshing and networking. Meshing is likely the largest client cost, so view distance, active LODs and mesh style are the main knobs. Flora, grass and buildings get count caps and quality settings (low, medium, high). The client never runs heavy generation or language model work. A target frame rate on the minimum machine (Section 15) gives every system a budget to design against.
 
 ---
 
@@ -131,7 +134,7 @@ Note: climate depends only on position, so each tile can compute it without look
 ### 4.4 Natural structures and lair sites
 
 - **[Decided]** Caves, abandoned mineshafts, labyrinths and similar discoveries, as in Minecraft.
-- **[Proposed]** Underground structures are baked as real voxels, since players can dig into and through them. They become destinations for NPC quests and bandit camps.
+- **[Proposed]** Underground structures are baked as real voxels, since players can dig into and through them. They become destinations for NPC quests and bandit camps. If the layering in Section 4.8 is adopted, only each structure's site (position, type, seed) is baked, and the server carves the voxels from it with the same deterministic generator as the rest of the terrain.
 - **[Decided]** Towns are **not** baked. Players found towns (Section 8).
 - **[Decided]** Eventually a threats system will pinpoint areas that make natural bandit camp places. Premade goblin camps can also be dropped in like a blueprint, creating a small cave system filled with goblins (Section 12).
 - **[Proposed]** At bake time the generator scores natural hiding spots (caves, ruins, ridgelines, forest edges: defensible and out of sight) and places **dormant lair sites**: empty caves and camps that nobody lives in yet. At runtime the server only changes a site's state ("site 14 is held by a goblin horde"). That needs no terrain editing and no client download.
@@ -176,6 +179,27 @@ These already exist in the repository and match the vision:
 - **[Decided]** The world grows one side at a time by adding a full row or column. For example, a 4 by 4 map grows by picking a side and adding 4 tiles, making it 5 by 4. The next expansion picks a side and adds 4 or 5 tiles depending on which side is chosen.
 - **[Proposed]** Alternate opposite sides as the world grows (north then south, east then west), so the origin tile stays near the middle. That keeps the equator central and makes the north-south wrap seam join two equally cold edges.
 - **[Proposed]** A new row or column is baked into a staging folder and only goes live, at a server restart, once the whole row or column is complete. The existing builder and server already work this way (GENERATION_GUIDE.md).
+- **[Proposed]** Because growth is rare, new rows and columns can be baked on a separate machine and copied into the staging folder, so baking never competes with the running server.
+
+### 4.8 Bake time and where work happens
+
+- **[Decided]** Baking one tile with the current generator takes about 15 to 16 hours (measured by the project owner). An efficiency review was started elsewhere but nothing was changed.
+- **[Proposed]** That cost does not fit a world that grows by adding unique tiles, especially since any generator change forces a rebake. The likely cause, from reading the code (not yet profiled): the bake fills a complete 3D volume from +2,048 m down to -4,000 m at all 7 LODs, using simulated geology (tectonic deformation, faults, folds, igneous intrusions, strata, caves and minerals) evaluated voxel by voxel in GDScript. The output is probably also many gigabytes per tile, which conflicts with the minimum hardware target (Section 3) if clients must hold it.
+- **[Proposed]** Keep the foundation, change what the bake produces. Keep: the region format, catalog and mapper, wrapping, tile seeds, the complete-rectangle check, the resumable atomic bake, the shared deep-ocean tile edge, the coast model and the 2D hydrology (ocean mask, flow, lakes, channels on the 8 m grid). Change: the bake writes compact 2D maps per tile, and voxels come from a fast, deterministic generator at runtime. Volumetric folds and faults are dropped or simplified, since players will not notice them. Mining to about 3 km needs rock layers by depth, caves and ore, which can be simple functions of the maps and seed.
+- **[Proposed]** Voxel Tools appears to offer native generators (a graph generator, or one driven by a heightmap) that should be far faster than per-voxel GDScript, and to store only edited blocks. Both claims need checking against the Godot 4.7 build in use.
+- **[Proposed]** Each generated block is saved once on the server (an SQLite-style store), so it is never generated twice.
+- **[Proposed]** Each tile records the generator version it was created with, and that version is frozen once players have built there, so a later generator change cannot alter terrain under existing buildings. New tiles can use newer versions. This replaces the current rule that rejects mixed generator versions.
+
+**[Proposed] What lives where**
+
+| Layer | Contents | Why |
+|---|---|---|
+| Baked once per tile, permanent | Tile seed and generator version; height, coast, rivers and lakes; climate zone; soil and biome class; flora placement lists; sites for caves, mineshafts, labyrinths and dormant lairs; possibly deposit identities and land-suitability layers | Defines the place. Changing it later moves coastlines and landmarks under players. Small: about 1,280 by 1,280 cells per map at 8 m. |
+| Server, deterministic from the baked maps | Voxel fill, rock layers by depth, caves, ore, structure carving, fauna spawning, plant growth, weather | Cheap to produce on demand. Frozen per tile once players build there. |
+| Server, living layer | Voxel edits, removed trees, buildings, NPCs, crops, economy | Changes constantly. Saved as deltas on top of the baked and generated base. |
+| Client | Meshing, LOD display, fog and horizon impostors, grass and foliage shaders, animation, sound, weather visuals | Keeps the minimum machine light. |
+
+**[Open] How terrain reaches the client.** Either the server streams compressed blocks and clients cache them on disk (simplest, server authoritative), or clients download a tile's small 2D maps, generate unedited terrain themselves and receive only edits (far less bandwidth, but different CPUs might produce slightly different results, causing seams or desyncs). Measure before choosing the second.
 
 ---
 
@@ -442,6 +466,35 @@ Assumptions: 70 game years of aging (15 to 85) over one real year with about 700
 - **[Proposed]** The quest itself (goal, reward, deadline) is structured data. The language model tells the story.
 - **[Proposed]** A plain rules engine plays the board games and the model supplies the banter. Medieval games such as nine men's morris, hnefatafl and dice games add flavor. Wagering is part of the gambling topic flagged in Section 13.8.
 
+### 8.8 NPC character, memory and conversation
+
+To be fleshed out when the first NPC is designed.
+
+- **[Decided]** NPCs are created with a randomly rolled background. The language model fills in the small details in between, and those details are saved for that character.
+- **[Decided]** Memory works in a limited way, much like real people. Recent memories (who visited, what deals were made) are more detailed but not perfect, because people make mistakes. As memories age, say after a day or two, they get thinner and are often lost.
+- **[Idea]** Some old memories stay, for example traumatic ones.
+- **[Decided]** Memory quality is a score, so some NPCs remember a lot and others very little.
+- **[Decided]** Honesty is a score. An honest NPC tries to tell the truth and admits uncertainty ("I am not sure about the date"). An NPC with low honesty flourishes and exaggerates.
+- **[Decided]** Conversation traits are scores too, such as talkative, charismatic and social. Some NPCs talk your ear off, others constantly try to escape the conversation or are short with you.
+- **[Proposed]** The rolled background (birthplace, family, trade, a few traits, one formative event) comes from data tables and is game-owned fact. The model's filled-in details are generated once, can be done in batches, and become the character's canon, so the NPC never contradicts itself.
+- **[Proposed]** Each memory records what happened, who was involved, when, and how much it mattered. Strength fades with age (computed when the memory is read, per the lazy resolution principle). The memory score sets how fast memories fade, how often details are distorted, and how many the NPC keeps. Weak memories drop out or shrink to a one-line summary. Memories with a very high weight (trauma) fade very slowly or never, and can shape personality, so someone robbed on the north road stays wary of it.
+- **[Proposed]** The model only sees the few strongest memories relevant to the conversation, which also bounds token use.
+- **[Proposed]** Before the model speaks, the game builds a **statement plan** from memory strength and honesty: state plainly (honest, strong memory), hedge (honest, weak memory, so the doubt is real), embellish (low honesty; the game picks which detail grows: the amount, the danger, their own role), or lie (very low honesty). Distorted recall is also rolled by the game. The roll decides what is said and the model only phrases it.
+- **[Proposed]** Real records stay exact. Money, debts and deals live in the ledger and obligations list, and only an NPC's recollection is fuzzy, so the record can contradict what a merchant remembers. Players can catch a liar by checking the ledger, a witness or a guard's memory. This ties into law, forgery and delayed discovery (Sections 9 and 13.5).
+- **[Proposed]** What an NPC tells another becomes **hearsay** in the listener's memory, tagged with its source and that source's reliability, so rumors drift and grow as they spread through the news system (Section 13.6).
+- **[Proposed]** Score effects: **memory** sets fading, distortion and capacity; **talkative** sets reply length, how much is volunteered and how long they stay in a conversation; **social** sets how many relationships they keep and how fast news passes through them (a chatty innkeeper is a gossip hub, making taverns good for rumors); **charisma** affects persuasion, prices, loans and how others feel about them. Vanity, fear, loyalty and the NPC's opinion of the player can feed the statement plan too.
+- **[Proposed]** These traits fit the language model budget: quiet NPCs are cheap, and talkers get longer replies under a hard cap. Escaping a conversation is a game action with a cooldown (the NPC walks off or says they are busy), and the model only voices it.
+- **[Proposed]** Roll mostly average people with a few standouts at the extremes, which feels more real than everyone being slightly random. Players learn who to ask: the gossip knows a lot but exaggerates, and the quiet clerk says little but remembers exactly.
+
+### 8.9 Language service hosting
+
+- **[Decided]** At first the game server and the language model host can be the same machine. Later the language host moves to its own machine.
+- **[Idea]** Eventually a farm of language machines balances the load, deciding which machines handle which NPCs.
+- **[Proposed]** Treat the language service as a separate component from the start, behind a simple request interface: the game server sends a job (this NPC, this situation, these facts, this priority) and gets text or a structured decision back later. Moving it to another machine is then a configuration change.
+- **[Proposed]** The game server never waits on the language service. The game tick wins any contention for CPU while they share a machine. If the model runs on a GPU, the contention is much smaller.
+- **[Proposed]** Workers hold no NPC state. The game server owns memory, traits, obligations and relationships, and each job carries the context it needs, so any worker can answer any job. A shared job queue balances the farm without assigning NPCs to machines. Inference servers such as vLLM already batch concurrent requests.
+- **[Proposed]** Every job has a priority and an expiry. A player talking to an NPC outranks a background decision, and a job whose moment has passed is dropped or answered by rules.
+
 ---
 
 ## 9. Law, crime and recognition
@@ -703,7 +756,14 @@ From a read-through of the repository on 2026-10-11 (Godot 4.7, GDScript, about 
 - Lair sites, or any structure placement.
 - Players, NPCs, towns, building, law, economy, machinery, or any gameplay systems.
 
+**Measured**
+
+- Baking one tile takes about 15 to 16 hours (reported by the project owner). Where the time goes has not been profiled. Section 4.8 proposes changing what the bake produces.
+
 **Not checked**
+
+- Total disk size of one baked tile.
+- How the current client performs on the minimum machine (Section 3).
 
 - Whether individual mineral deposits have stable identities, which NPC miners drawing down a deposit would need (Section 11.4).
 - Whether river flow data could be queried at runtime to power water wheels.
@@ -785,19 +845,28 @@ Map growth
 39. What size is the first live world (one tile for testing, or several before players arrive), and which side grows first? (Section 4.7)
 40. How far apart are the climate bands in tiles? This sets what surface materials get baked into every tile, so it must be settled before baking tiles to keep (Section 4.2).
 
+Generator, hardware and hosting
+
+41. Is realistic volumetric geology (faults, folds, intrusions) wanted for its own sake, or are rock layers by depth, caves and ore enough for gameplay? (Section 4.8)
+42. Is runtime voxel generation on the server acceptable instead of reading everything from baked files? (Section 4.8)
+43. Does terrain reach the client as streamed blocks, or as small maps the client generates from? (Section 4.8)
+44. Can players host a world on their own machine? If so, one minimum-spec machine runs both server and client. (Section 3)
+45. What frame rate and view distance should the minimum machine reach? (Section 3)
+
 ---
 
 ## 16. Candidate work, in dependency order
 
 Nothing here is committed. It is a suggested ordering based on what affects baked data first, since baked changes force rebakes.
 
-1. Settle the open questions that change baked data: climate scale, seasons, world bottom, what the bake stores about soil and flora, whether deposits get stable IDs, how dormant lair sites are scored and placed, and whether to bake coarse land-suitability layers for the town planner (Section 8.4).
-2. Generate the first playable island tile, then the island properties panel, irregular coasts, small islets and open-ocean tiles, then grow the rectangle one side at a time (Section 4.7).
-3. Climate layer and soil or surface materials.
-4. Flora placement lists written at bake time.
-5. Natural structures: caves, mineshafts, labyrinths, ruins, dormant lair sites. Slate and any new rock types.
-6. A planner that takes a target rectangle and bakes only the missing tiles.
-7. Server-to-client region streaming and a layer for player changes.
-8. Runtime systems on top of that foundation: harvesting, building and blueprints, characters and aging, NPCs, law and recognition, fire, towns, then production, threats, trade and banking.
+1. Decide the bake layering (Section 4.8, questions 41 to 43), measure where the current bake spends its time, and test the current client on the minimum machine.
+2. Settle the open questions that change baked data: climate scale, seasons, world bottom, what the bake stores about soil and flora, whether deposits get stable IDs, how dormant lair sites are scored and placed, and whether to bake coarse land-suitability layers for the town planner (Section 8.4).
+3. Generate the first playable island tile, then the island properties panel, irregular coasts, small islets and open-ocean tiles, then grow the rectangle one side at a time (Section 4.7).
+4. Climate layer and soil or surface materials.
+5. Flora placement lists written at bake time.
+6. Natural structures: caves, mineshafts, labyrinths, ruins, dormant lair sites. Slate and any new rock types.
+7. A planner that takes a target rectangle and bakes only the missing tiles.
+8. Server-to-client region streaming and a layer for player changes.
+9. Runtime systems on top of that foundation: harvesting, building and blueprints, characters and aging, NPCs, law and recognition, fire, towns, then production, threats, trade and banking.
 
 Growing the generator first keeps the foundation solid. Most gameplay systems in Sections 5 to 13 live in the server layer and can be added later without rebaking terrain. They are also numerous enough that a small first playable slice will need to be chosen before building them.
