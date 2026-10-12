@@ -6,6 +6,7 @@ Record of the design brainstorming sessions of 2026-10-11 and 2026-10-12. This i
 
 - **Version 1 (2026-10-11):** vision, world generation and bake, harvesting and farming, characters and heirs, NPCs and towns, soft law, building and fire.
 - **Version 2 (2026-10-12):** added Satisfactory as an inspiration; production and logistics; road threats and pacing; town finances, markets, warehouses, trade routes, businesses, banking, letters of credit and forgery; crime memory, delayed discovery and disguises; inheritance of money and debt; the shared principles those systems rely on. Open questions and the work ordering were rewritten.
+- **Version 3 (2026-10-12, later):** lifespan targets (start at about 15, die at about 80, in about 700 hours of play); families age with the player; the rescue-first philosophy and party composition; heirs arriving partly trained; the tension between server-owned towns and "no towns at the start"; and the clock arithmetic showing that one clock for aging and seasons is probably not workable. Open questions were updated.
 
 ## How to read this document
 
@@ -42,6 +43,7 @@ A persistent, rough-medieval, multiplayer online world: a survival, exploration 
 - **[Decided]** The world can grow over time without breaking what already exists.
 - **[Decided]** Players are encouraged to build ships and sail, because islands are separated by real ocean.
 - **[Decided]** The world should feel alive: carts, wagons and NPCs moving through it.
+- **[Decided]** The game is designed to keep players alive even though the whole world is trying to kill them. Layers of rescue (party mates, helpful NPCs) catch a fallen character before they die (Section 6.5).
 
 ---
 
@@ -70,6 +72,7 @@ A persistent, rough-medieval, multiplayer online world: a survival, exploration 
 - **[Proposed] News travels with people.** Warrants, reputation, threat warnings and price news are facts with a place and time of origin that spread slowly through travelers, wagons and ships (Section 13.6).
 - **[Proposed] Legibility.** Hidden rules feel unfair. Show the ledger, risk overlays, estimated effects and the reason an action is blocked or risky.
 - **[Proposed] Money is stored as whole numbers of the smallest coin,** never decimals, so balances never drift.
+- **[Decided] Build the generator first, with the whole design in mind.** The immediate work is the generator that produces the giant adventuring world, but every system in this document should be considered while it is built, so nothing baked now blocks something wanted later.
 
 ---
 
@@ -171,10 +174,17 @@ These already exist in the repository and match the vision:
 ### 6.1 Aging and death
 
 - **[Decided]** Players age. They can woo a partner and have children.
+- **[Decided]** Characters start at about age 15.
+- **[Decided]** Lifespan is variable. The average person lives between 72 and 90 years, so a typical character dies at about 80 unless cut down early.
+- **[Decided]** The target is to live from about 15 to about 80 in about 700 hours of play (Section 7 works out what that implies for the clocks).
+- **[Idea]** In their early 20s, players will hopefully settle down, establish a home and a spouse, and make that their base of operations.
+- **[Idea]** The base can be in a town that belongs to someone else, to the server, or to the player (see Section 8.1 for the tension this creates).
+- **[Decided]** Children age too.
 - **[Decided]** A character who is killed with no way to recover, or who is too old or wounded to recover, dies. The player restarts as a new character.
 - **[Decided]** If the player restarts as their child, the child inherits everything that remains. The child's first quest may be to find the fallen parent, or hire local adventurers or services to retrieve the parent's gear.
 - **[Decided]** ARK-style unconsciousness before death. A downed character can be revived, carried or dragged to safety by party members.
 - **[Decided]** Characters age **slower** while their player is offline, but they stay in the world and remain vulnerable. Their body can fall unconscious, be burned or be killed while offline. Friends can pick them up, put them on a wagon, or drag them to cover.
+- **[Decided]** Characters and their families age slower while the player is offline, so the household ages together. The mismatch is between the household and the rest of the world, not within the family.
 - **[Decided]** Spouses and children stay in the world while the player is away. Events such as bandit raids, dragons and sickness can affect them, which gives players a reason to return.
 - **[Decided]** Co-op: friends can tend animals and harvest crops for an absent owner, with permission.
 - **[Decided]** Because offline characters stay vulnerable, the downed timer keeps running while the player is offline.
@@ -198,7 +208,8 @@ These already exist in the repository and match the vision:
 - **[Proposed]** The dead character's assets pay creditors first, so dying cannot be used to dodge debt. If the estate is worth less than its debts, creditors take what is there and nothing more.
 - **[Proposed]** A business's own record carries over, but the heir's personal reputation starts blank. A **family name** could carry some standing, good or bad, from the dynasty.
 - **[Proposed]** Early on an heir leans on NPC employees and managers for skills they lack, and must learn the trade or hire for it.
-- **[Open]** Whether an heir gets a small head start in the skills the parent practiced, consistent with NPC children growing up with skills similar to their parents.
+- **[Idea]** Children learn some skills from their parents as they grow, so when a parent dies the heir is a partially trained character already waiting. The project owner described this as a theory for now.
+- **[Open]** How large that head start is, and how it works for player heirs compared with NPC children.
 
 ### 6.3 Personal finances
 
@@ -213,14 +224,46 @@ These already exist in the repository and match the vision:
 - **[Proposed]** At each periodic settlement the server pays what is due from the account, whether or not the player is online. A payment that cannot be made is a missed payment, with a reputation hit and eventually penalties or seizure of collateral.
 - **[Proposed]** Missed payments while away appear in the "while you were away" report.
 
+### 6.5 Staying alive
+
+- **[Decided]** Design intent: the game tries to keep you from dying, even though the whole world is trying to kill you.
+- **[Decided]** Systems let good NPCs rescue a character who has fallen, and let friends save them.
+- **[Idea]** In the future, a normal adventuring party is two or three real players plus perhaps one or two NPCs.
+- **[Proposed]** The downed state (Section 6.1) is the rescue window. Its length depends on age and condition.
+- **[Proposed]** NPC companions use the same traits, skills and memory systems as other NPCs. Their ability to help (carry, drag, heal) depends on their skill and on being nearby.
+- **[Proposed]** Rescue comes in layers: party mates and companions first, then nearby well-meaning NPCs or travelers, then town guards and patrols. Death should come from several layers failing, not from one bad moment. After death, the heir's retrieval quest (Section 6.1) is the final layer.
+- **[Open]** How NPC rescue works in practice: companions only, passersby, or patrols dispatched to a call, and how to stop it from making death meaningless or being farmed.
+- **[Open]** Whether NPC companions count toward party size, and what they cost (wages, upkeep).
+
 ---
 
 ## 7. World time
 
-Aging, marriage, children growing up, crop growth, regrowth, decay, taxes, loan payments, work hours, patrol and trade schedules, memory fading and seasons all depend on one world clock.
+Aging, marriage, children growing up, crop growth, regrowth, decay, taxes, loan payments, work hours, patrol and trade schedules, memory fading and seasons all depend on time.
 
-- **[Proposed]** One server world clock with a fixed ratio to real time.
-- **[Open]** The ratio (for example, how many real days make a game year). It affects everything above, so it should be decided early.
+### 7.1 Lifespan targets
+
+- **[Decided]** A typical character lives from about 15 to about 80 in about 700 hours of play. Lifespan varies, averaging 72 to 90 years (Section 6.1).
+- **[Decided]** The expected player plays 12 to 16 hours a week (for example four hours on three nights, or eight hours on each of two nights), about a year of real time per character, allowing for two missed weeks. That is 50 weeks, so 600 to 800 hours, about 700 in the middle.
+- **[Proposed]** Skills should feel competent in tens of hours and mastered in a few hundred, so a character gets time at the peak before aging slows them. That much play time needs enough depth to stay interesting.
+
+### 7.2 Clock arithmetic
+
+Assumptions: 65 game years of aging (15 to 80) over one real year with about 700 online hours and about 8,060 offline hours. If "about 700 hours" was meant some other way, the figures scale. Aging runs at full speed online and at a reduced "offline speed" while logged out, and the household ages with the player.
+
+| Offline aging speed | One game year lasts (real time) | One season lasts | One online hour is worth |
+|---|---|---|---|
+| None (ages only online) | 10.8 online hours | 2.7 online hours | about 34 game days |
+| One tenth | 0.97 days | about 6 hours | about 16 game days |
+| One quarter | 1.7 days | about 10 hours | about 9 game days |
+| One half | 3.0 days | about 18 hours | about 5 game days |
+| Same as online | 5.6 days | about 34 hours | about 2.7 game days |
+
+- Because a casual player is offline for more than 90 percent of the week, the offline aging speed matters as much as the online speed.
+- If aging, seasons, crop growth and taxes all ran on one clock, a game year would last under a week in every row, and a season would be about a day or less. A crop cycle would be shorter than a play session.
+- **[Proposed]** Two clocks instead of one. A **world calendar** (seasons, crop growth, taxes, loan terms) runs at a pace that feels natural, and **character aging** runs on its own pace, set by life stage and play time. This revises the earlier suggestion of a single world clock.
+- With two clocks, NPCs who are not part of a player's household would age on the calendar, so they would live much longer in real time than players do and their children would grow up slowly. Household members age with the player. Which rule NPCs follow is undecided.
+- **[Open]** The offline aging speed, whether there is one clock or two, how fast the calendar runs, and which clock non-household NPCs follow. Everything in the list at the top of this section depends on these, so they should be decided early.
 
 ---
 
@@ -229,6 +272,7 @@ Aging, marriage, children growing up, crop growth, regrowth, decay, taxes, loan 
 ### 8.1 Towns
 
 - **[Decided]** The world starts with no towns. Players found them by placing a **town block** that they own. They can assign themselves as owner or leave governance to AI.
+- **[Idea]** Some towns belong to the server. The project owner mentioned players living in a town that belongs to someone else, to the server, or to themselves. That sits in tension with "the world starts with no towns" above. Either some server-run towns exist at the start, or towns become server-owned later (for example abandoned player towns), or both. If any exist at the start, the bake or the server has to place them.
 - **[Decided]** Players build roads and buildings, choosing from premade blueprints.
 - **[Decided]** The town block interface sets rules and settings: militia, elite guards, a town bank and town funds, tax rates and tax rules. Towns can build and improve defenses.
 - **[Decided]** Player-run towns can fall into ruin.
@@ -523,12 +567,12 @@ World and bake
 
 Time and persistence
 
-11. What is the real-time to game-time ratio?
+11. What is the offline aging speed, and does the game run one clock or two (a world calendar plus a separate aging clock)? How fast does the calendar run, and which clock do non-household NPCs follow? (Section 7)
 12. Do dropped items expire, and do hard-to-reach ones last longer?
 13. What happens when a character dies with no heir?
 14. Is there a grace period for accidental disconnects, and does the game warn about risky logout spots?
 15. How permanent is offline loss for family and buildings?
-16. Does an heir get a head start in the parent's skills?
+16. How large is the heir's head start in the parent's skills?
 
 Social, law and threats
 
@@ -554,13 +598,18 @@ Language model
 
 31. Who hosts the servers and pays for model calls: the developer, players hosting their own, or both? This decides which model options are practical.
 
+Rescue and starting conditions
+
+32. Do any server-owned towns exist at the start, or do towns only become server-owned later? If some exist at the start, does the bake or the server place them?
+33. How does NPC rescue work in practice, and how is it kept from trivializing death? Do NPC companions count toward party size and what do they cost?
+
 ---
 
 ## 16. Candidate work, in dependency order
 
 Nothing here is committed. It is a suggested ordering based on what affects baked data first, since baked changes force rebakes.
 
-1. Settle the open questions that change baked data: climate scale, seasons, world bottom, what the bake stores about soil and flora, whether deposits get stable IDs, and how dormant lair sites are scored and placed.
+1. Settle the open questions that change baked data: climate scale, seasons, world bottom, what the bake stores about soil and flora, whether deposits get stable IDs, how dormant lair sites are scored and placed, and whether any server-owned starting towns are placed.
 2. Island properties panel, irregular coasts, small islets and open-ocean tiles.
 3. Climate layer and soil or surface materials.
 4. Flora placement lists written at bake time.
