@@ -7,6 +7,7 @@ Record of the design brainstorming sessions of 2026-10-11 and 2026-10-12. This i
 - **Version 1 (2026-10-11):** vision, world generation and bake, harvesting and farming, characters and heirs, NPCs and towns, soft law, building and fire.
 - **Version 2 (2026-10-12):** added Satisfactory as an inspiration; production and logistics; road threats and pacing; town finances, markets, warehouses, trade routes, businesses, banking, letters of credit and forgery; crime memory, delayed discovery and disguises; inheritance of money and debt; the shared principles those systems rely on. Open questions and the work ordering were rewritten.
 - **Version 3 (2026-10-12, later):** lifespan targets (start at about 15, die at about 80, in about 700 hours of play); families age with the player; the rescue-first philosophy and party composition; heirs arriving partly trained; the tension between server-owned towns and "no towns at the start"; and the clock arithmetic showing that one clock for aging and seasons is probably not workable. Open questions were updated.
+- **Version 4 (2026-10-12, latest):** two clocks decided (a world calendar for seasons and crops, and an aging clock); a one-to-two-week seasonal cycle; NPC aging at the average player's speed (70 years per real year); the weekly farming rhythm and a note on avoiding calendar years of exactly 7 or 14 days; Farming Simulator as an inspiration; no starting towns; and the civil engineer town-planning idea. The lifespan pacing figure changed from 65 to 70 years (15 to 85).
 
 ## How to read this document
 
@@ -35,6 +36,8 @@ A persistent, rough-medieval, multiplayer online world: a survival, exploration 
 | Space Engineers and Minecraft | Digging and mining. Stumbling into natural caves, abandoned mineshafts and labyrinths. Sharing blueprints through Steam downloads. |
 | Medieval Dynasty | Founding villages, villagers with jobs, seasons, marriage, children and heirs. |
 | Satisfactory | Building components and tools from materials to help mine and climb. Railways, machinery and automated movement of materials out of mines and on to town. |
+| Farming Simulator (22 and the franchise) | Fields with rotating crops, and a relaxed farming loop where a player can log in once a week to harvest and plant. |
+| Warcraft-style strategy games | A town planner proposes buildings and roads, the player approves, and builders carry them out. |
 
 **Core goals**
 
@@ -160,6 +163,7 @@ These already exist in the repository and match the vision:
 - **[Proposed]** Grass can be handled as small patches if needed, with harvested cells hidden by clients.
 - **[Proposed]** Lazy regrowth: store when something was harvested and resolve regrowth when someone is near. Records for regrown plants disappear.
 - **[Decided]** Farming comes later. Seeds and grain are found or bought, then planted, grown and harvested.
+- **[Decided]** Farming should work on a relaxed rhythm: several fields with rotating crops, and a player who logs in once a week to harvest and plant new crops (Section 7.3). Seasons are driven by the world calendar.
 - **[Proposed]** Wild versions of crops exist in the right climates and drop seeds. Planted crops are server-owned objects with a planted-at time, and growth stage is computed on demand.
 - **[Proposed]** Crops respond to climate and soil, so climate must be queryable at runtime.
 - **[Open]** Prepared ground (tilling) as a terrain edit, or seeds on any suitable surface.
@@ -175,10 +179,10 @@ These already exist in the repository and match the vision:
 
 - **[Decided]** Players age. They can woo a partner and have children.
 - **[Decided]** Characters start at about age 15.
-- **[Decided]** Lifespan is variable. The average person lives between 72 and 90 years, so a typical character dies at about 80 unless cut down early.
-- **[Decided]** The target is to live from about 15 to about 80 in about 700 hours of play (Section 7 works out what that implies for the clocks).
+- **[Decided]** Lifespan is variable. The average person lives between 72 and 90 years, so a typical character dies at about 80 to 85 unless cut down early.
+- **[Decided]** For pacing, a typical character ages from 15 to 85 (70 years) over about one real year and about 700 hours of play (Section 7).
 - **[Idea]** In their early 20s, players will hopefully settle down, establish a home and a spouse, and make that their base of operations.
-- **[Idea]** The base can be in a town that belongs to someone else, to the server, or to the player (see Section 8.1 for the tension this creates).
+- **[Idea]** The base can be in a town that belongs to another player or to the player. A town belonging to the server was also mentioned, but there are no starting towns (Section 8.1), so that could only happen later.
 - **[Decided]** Children age too.
 - **[Decided]** A character who is killed with no way to recover, or who is too old or wounded to recover, dies. The player restarts as a new character.
 - **[Decided]** If the player restarts as their child, the child inherits everything that remains. The child's first quest may be to find the fallen parent, or hire local adventurers or services to retrieve the parent's gear.
@@ -243,27 +247,42 @@ Aging, marriage, children growing up, crop growth, regrowth, decay, taxes, loan 
 
 ### 7.1 Lifespan targets
 
-- **[Decided]** A typical character lives from about 15 to about 80 in about 700 hours of play. Lifespan varies, averaging 72 to 90 years (Section 6.1).
+- **[Decided]** For pacing, a typical 15-year-old character ages to 85, which is 70 years over about one real year and about 700 hours of play. Lifespan varies, averaging 72 to 90 years (Section 6.1). An earlier version of this document used 15 to about 80 (65 years).
 - **[Decided]** The expected player plays 12 to 16 hours a week (for example four hours on three nights, or eight hours on each of two nights), about a year of real time per character, allowing for two missed weeks. That is 50 weeks, so 600 to 800 hours, about 700 in the middle.
 - **[Proposed]** Skills should feel competent in tens of hours and mastered in a few hundred, so a character gets time at the peak before aging slows them. That much play time needs enough depth to stay interesting.
 
-### 7.2 Clock arithmetic
+### 7.2 Why one clock does not work
 
-Assumptions: 65 game years of aging (15 to 80) over one real year with about 700 online hours and about 8,060 offline hours. If "about 700 hours" was meant some other way, the figures scale. Aging runs at full speed online and at a reduced "offline speed" while logged out, and the household ages with the player.
+Assumptions: 70 game years of aging (15 to 85) over one real year with about 700 online hours and about 8,060 offline hours. Aging runs at full speed online and at a reduced "offline speed" while logged out, and the household ages with the player.
 
 | Offline aging speed | One game year lasts (real time) | One season lasts | One online hour is worth |
 |---|---|---|---|
-| None (ages only online) | 10.8 online hours | 2.7 online hours | about 34 game days |
-| One tenth | 0.97 days | about 6 hours | about 16 game days |
-| One quarter | 1.7 days | about 10 hours | about 9 game days |
-| One half | 3.0 days | about 18 hours | about 5 game days |
-| Same as online | 5.6 days | about 34 hours | about 2.7 game days |
+| None (ages only online) | 10.0 online hours | 2.5 online hours | about 36 game days |
+| One tenth | 0.90 days | about 5 hours | about 17 game days |
+| One quarter | 1.6 days | about 10 hours | about 9 game days |
+| One half | 2.8 days | about 17 hours | about 5 game days |
+| Same as online | 5.2 days | about 31 hours | about 3 game days |
 
 - Because a casual player is offline for more than 90 percent of the week, the offline aging speed matters as much as the online speed.
-- If aging, seasons, crop growth and taxes all ran on one clock, a game year would last under a week in every row, and a season would be about a day or less. A crop cycle would be shorter than a play session.
-- **[Proposed]** Two clocks instead of one. A **world calendar** (seasons, crop growth, taxes, loan terms) runs at a pace that feels natural, and **character aging** runs on its own pace, set by life stage and play time. This revises the earlier suggestion of a single world clock.
-- With two clocks, NPCs who are not part of a player's household would age on the calendar, so they would live much longer in real time than players do and their children would grow up slowly. Household members age with the player. Which rule NPCs follow is undecided.
-- **[Open]** The offline aging speed, whether there is one clock or two, how fast the calendar runs, and which clock non-household NPCs follow. Everything in the list at the top of this section depends on these, so they should be decided early.
+- If aging, seasons, crop growth and taxes all ran on one clock, a game year would last under a week in every row and a season would be about a day or less. A crop cycle would be shorter than a play session. That is why the game uses two clocks (Section 7.3).
+- **[Proposed]** The offline aging speed also decides how much heavy and light players differ. With the average player fixed at 70 years per real year, a player online 25 hours a week ages about 95 years in a real year at one-tenth offline speed, 82 at one quarter and 74 at one half. A player online 5 hours a week ages about 52, 62 and 67. A higher offline speed keeps players closer together, and a low one makes heavy play shorten a character's real-time life.
+
+### 7.3 Two clocks
+
+- **[Decided]** The world has its own calendar clock, running at its own reasonable pace. Seasons depend on it.
+- **[Decided]** Characters experience all four seasons (spring, summer, autumn, winter). A full seasonal cycle takes about one to two weeks of real time. The exact length does not matter as long as it feels reasonable, but it must let players put crops in the ground, watch them grow and harvest them.
+- **[Decided]** Farming supports a once-a-week rhythm. A farmer can build several fields with rotating crops, log in on a weekend to harvest and plant, and enjoy the game that way. Farming Simulator 22 and the rest of that franchise are the inspiration.
+- **[Proposed]** Avoid a calendar year of exactly 7 or 14 days. A player who logs in at the same time each week would see the same single point in the year (7 days) or only two opposite points (14 days), and might never see winter. A year of 9, 10 or 11 days steps a weekly player through the whole year over 9 to 11 logins.
+- **[Proposed]** Crops grow on the calendar clock, using the lazy timestamp approach. A ripe crop stays ripe for a window at least as long as the typical gap between visits before it spoils, so a weekly player is not punished.
+- **[Proposed]** Absent farmers can rely on friends (Section 6.1) or hired NPC farmhands to harvest and replant.
+- **[Proposed]** The seasonal swing grows with distance from the equator. Near the equator the year is closer to wet and dry seasons than to hot and cold.
+
+### 7.4 NPC aging
+
+- **[Decided]** NPCs age at about the same speed as a typical player: 70 years over one real year, from a random starting age to a random death age. Starting ages are roughly 20 to 30 and death comes roughly between 70 and 90. Their aging runs on the character aging clock, not on the calendar.
+- **[Proposed]** At that speed one year of age is about 5.2 real days. An NPC who starts at 25 and dies at 80 lives about 9.4 months of real time. One who starts at 30 and dies at 70 lives about 7 months. A child takes about 11 weeks to reach 15. A town's population therefore turns over in about a year, so births, marriage and migration matter.
+- **[Proposed]** An NPC's birthday comes every 5.2 days, not once per calendar year. With a 10-day calendar year an NPC ages about 1.9 years per calendar year. Showing age as a life stage (child, young adult, adult, elder) instead of an exact number could avoid that oddity.
+- **[Open]** The offline aging speed, the exact length of the calendar year, and whether age is shown as a number or a life stage.
 
 ---
 
@@ -272,7 +291,8 @@ Assumptions: 65 game years of aging (15 to 80) over one real year with about 700
 ### 8.1 Towns
 
 - **[Decided]** The world starts with no towns. Players found them by placing a **town block** that they own. They can assign themselves as owner or leave governance to AI.
-- **[Idea]** Some towns belong to the server. The project owner mentioned players living in a town that belongs to someone else, to the server, or to themselves. That sits in tension with "the world starts with no towns" above. Either some server-run towns exist at the start, or towns become server-owned later (for example abandoned player towns), or both. If any exist at the start, the bake or the server has to place them.
+- **[Decided]** There are no starting towns. In the first playthrough the players are the project owner's friends and family, and it is their job to build the first towns.
+- **[Idea]** Towns might become server-owned later (for example abandoned player towns), since a town belonging to the server was mentioned. Nothing is placed at the start, so this does not affect the bake.
 - **[Decided]** Players build roads and buildings, choosing from premade blueprints.
 - **[Decided]** The town block interface sets rules and settings: militia, elite guards, a town bank and town funds, tax rates and tax rules. Towns can build and improve defenses.
 - **[Decided]** Player-run towns can fall into ruin.
@@ -302,6 +322,17 @@ Assumptions: 65 game years of aging (15 to 80) over one real year with about 700
 - **[Proposed]** Choices are weighted random, with traits shifting the weights.
 - **[Proposed]** Travel is abstract when no player is near (departure time plus travel time), using wrap-aware distances.
 - **[Open]** Whether NPCs can cross the ocean on their own. If not, islands are separate populations unless ships connect them.
+
+### 8.4 Town planning and the civil engineer
+
+- **[Idea]** Eventually, both AI and player characters can build and work on towns. A town owner could hire a civil engineer.
+- **[Idea]** The engineer organizes town ideas and suggests routes for roads, areas for farmland, and how to lay out the town, with a little randomness.
+- **[Idea]** In the town control panel the owner reviews the plans and approves or denies them. The engineer's job is to keep improving the town. Once a plan is approved the engineer arranges builders to start on houses, buildings and roads, in the style of the old Warcraft-type games.
+- **[Proposed]** A plan is a data object (zones, road routes, field areas, building footprints) generated by an algorithm from terrain data (slope, water, soil, resources, existing buildings), with a seed for variety. The control panel shows it as an overlay, lets the owner approve or deny the whole plan or single items, and shows cost and time estimates.
+- **[Proposed]** Approved items become jobs for NPC builders and use the same blueprint placement, leveling checks and material delivery as player building (Section 10.1).
+- **[Proposed]** The engineer's skill and traits affect plan quality. The language model can explain a proposal in conversation, but placement and numbers come from the planner, following the rule that the game owns the facts.
+- **[Proposed]** The planner needs cheap terrain queries: slope, fertility, water access and resource proximity. Consider baking coarse land-suitability layers per region so the planner does not scan voxels at runtime. This has not been checked against the data the generator already produces.
+- **[Open]** Whether plans can run unattended (for example auto-approval within a budget), how often the engineer proposes, and how plans account for existing player buildings and claims.
 
 ---
 
@@ -567,7 +598,7 @@ World and bake
 
 Time and persistence
 
-11. What is the offline aging speed, and does the game run one clock or two (a world calendar plus a separate aging clock)? How fast does the calendar run, and which clock do non-household NPCs follow? (Section 7)
+11. What is the offline aging speed, how long is the calendar year exactly (avoiding 7 or 14 days), and is age shown as a number or a life stage? (Section 7)
 12. Do dropped items expire, and do hard-to-reach ones last longer?
 13. What happens when a character dies with no heir?
 14. Is there a grace period for accidental disconnects, and does the game warn about risky logout spots?
@@ -600,8 +631,9 @@ Language model
 
 Rescue and starting conditions
 
-32. Do any server-owned towns exist at the start, or do towns only become server-owned later? If some exist at the start, does the bake or the server place them?
+32. Do towns ever become server-owned later (for example abandoned player towns), or are all towns player-run? There are no starting towns.
 33. How does NPC rescue work in practice, and how is it kept from trivializing death? Do NPC companions count toward party size and what do they cost?
+34. Should the bake include coarse land-suitability layers (slope, fertility, water access) for the town planner, and can plans run unattended? (Section 8.4)
 
 ---
 
@@ -609,7 +641,7 @@ Rescue and starting conditions
 
 Nothing here is committed. It is a suggested ordering based on what affects baked data first, since baked changes force rebakes.
 
-1. Settle the open questions that change baked data: climate scale, seasons, world bottom, what the bake stores about soil and flora, whether deposits get stable IDs, how dormant lair sites are scored and placed, and whether any server-owned starting towns are placed.
+1. Settle the open questions that change baked data: climate scale, seasons, world bottom, what the bake stores about soil and flora, whether deposits get stable IDs, how dormant lair sites are scored and placed, and whether to bake coarse land-suitability layers for the town planner (Section 8.4).
 2. Island properties panel, irregular coasts, small islets and open-ocean tiles.
 3. Climate layer and soil or surface materials.
 4. Flora placement lists written at bake time.
