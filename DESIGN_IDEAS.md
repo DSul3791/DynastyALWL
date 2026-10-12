@@ -9,7 +9,7 @@ Record of the design brainstorming sessions of 2026-10-11 and 2026-10-12. This i
 - **Version 3 (2026-10-12, later):** lifespan targets (start at about 15, die at about 80, in about 700 hours of play); families age with the player; the rescue-first philosophy and party composition; heirs arriving partly trained; the tension between server-owned towns and "no towns at the start"; and the clock arithmetic showing that one clock for aging and seasons is probably not workable. Open questions were updated.
 - **Version 4 (2026-10-12, latest):** two clocks decided (a world calendar for seasons and crops, and an aging clock); a one-to-two-week seasonal cycle; NPC aging at the average player's speed (70 years per real year); the weekly farming rhythm and a note on avoiding calendar years of exactly 7 or 14 days; Farming Simulator as an inspiration; no starting towns; and the civil engineer town-planning idea. The lifespan pacing figure changed from 65 to 70 years (15 to 85).
 - **Version 5 (2026-10-12, evening):** the "play what you like" and "no micromanagement" goals; server-clock aging for everyone as an idea; children, twins, wills and choosing an heir; 60-minute game days, seasonal day length and night; the weekend farming rhythm, crop tiers, farm labor and work buildings; stock levels, the order chain and building maintenance; the budget for language model use and self-hosting; town roles, land and property; quests and pastimes; real-money ideas, with gambling flagged for later; and the plan for growing the tile map one side at a time.
-- **Version 6 (2026-10-12, night):** minimum hardware target (older quad-core, 8 GB RAM, SATA SSD); the 15 to 16 hour tile bake and a proposal to bake 2D maps and generate voxels at runtime, with a table of what is baked, what the server works out and what the client does; language service hosting and scaling; NPC backgrounds, memory, honesty and conversation traits.
+- **Version 6 (2026-10-12, night):** minimum hardware target (older quad-core, 8 GB RAM, SATA SSD); the 15 to 16 hour tile bake and a proposal to bake 2D maps and generate voxels at runtime, with a table of what is baked, what the server works out and what the client does; language service hosting and scaling; NPC backgrounds, memory, honesty and conversation traits; an islands-first tile pipeline; geology stored as a feature list with ore placed by how deposits really form; surveying skill and prospecting clues.
 
 ## How to read this document
 
@@ -199,7 +199,48 @@ These already exist in the repository and match the vision:
 | Server, living layer | Voxel edits, removed trees, buildings, NPCs, crops, economy | Changes constantly. Saved as deltas on top of the baked and generated base. |
 | Client | Meshing, LOD display, fog and horizon impostors, grass and foliage shaders, animation, sound, weather visuals | Keeps the minimum machine light. |
 
+**[Proposed] Islands first, rock derived.** The current pipeline takes surface height from the geology simulation, erodes it, and then the coast model forces everything outside a rounded square to ocean, which is why a tile holds one island. Reverse the order. Each tile is built in 2D on the 8 m grid (1,280 by 1,280 cells):
+
+1. Layout from the island properties panel: islands with position, size, shape seed and character (mountainous, rolling, volcanic, archipelago). A warped-noise land mask gives irregular coasts, and small islets appear where the noise breaks the surface near shore.
+2. Elevation: rising with distance from the coast, mountain spines and ridge noise, then shelf, beaches and cliffs down to the shared deep-ocean edge.
+3. Rivers and lakes, with the existing flow, lake and channel code.
+4. A simple erosion pass on the 2D grid for valleys and winding terrain.
+5. Climate from north-south position and altitude, moisture from distance to the sea and rain shadow, giving a biome map.
+6. Soil and surface from biome, slope and the existing surficial deposit map.
+7. Geology as a feature list (Section 4.9).
+8. Placement: flora lists, cave and mineshaft entrances, dormant lair sites.
+
+A tile should then take minutes, and `world_preview.gd` could show island panel changes almost live. The hardest part is the runtime generator that turns 8 m maps into convincing 1 m terrain (smooth interpolation, detail noise, rock layers, caves and ore) quickly. Voxel Tools' graph generator may do it natively. If not, a small native (C++) generator is the fallback.
+
 **[Open] How terrain reaches the client.** Either the server streams compressed blocks and clients cache them on disk (simplest, server authoritative), or clients download a tile's small 2D maps, generate unedited terrain themselves and receive only edits (far less bandwidth, but different CPUs might produce slightly different results, causing seams or desyncs). Measure before choosing the second.
+
+### 4.9 Geology, resources and surveying
+
+- **[Decided]** Rocks, minerals and valuable resources are placed by simulating where they would really form, not by fixed depth bands. There should be no "dig to this level and you find diamonds."
+- **[Decided]** A different system is fine if it reaches the same result faster and lighter. The project owner is happy to drop the full tectonic and fault simulation for whatever works best.
+- **[Decided]** Characters with a higher surveyor skill sense things more easily and get better visual clues, such as ore looking more colorful or obvious. With a very high skill they automatically mark the general areas where they notice things on their map.
+- **[Proposed]** The current mineral sampler already ties ore to geology (tin and copper around granite contacts, gold along dikes, faults). Those rules stay. What changes is that the geology itself is stored per tile as a short **feature list** (perhaps 20 to 200 entries) instead of being worked out again for every voxel: granite intrusions (position, size, depth), faults (a line with a dip angle), fold belts and sedimentary basins (areas, each with its own layer stack), and volcanic zones. Layers bend with folds through a cheap 2D warp map.
+- **[Proposed]** Ore bodies are derived from those features as objects with a shape (vein, lens, pipe, layer or halo), a grade, an amount and a stable ID. Stable IDs let NPC miners draw a specific deposit down (Section 11.4). At runtime the generator only checks the few bodies that touch the block it is building, through a spatial lookup.
+
+| Resource | Where it forms |
+|---|---|
+| Tin | Roofs and edges of granite intrusions |
+| Copper | Large, lower-grade halos around smaller intrusions |
+| Iron, copper, zinc | Where granite meets limestone |
+| Gold and silver | Thin, steep quartz veins along faults |
+| Placer gold and tin | River gravels downstream of eroding veins, using the river data |
+| Coal | Seams in sedimentary basins, bent with the folds |
+| Salt and gypsum | Layers in basins, sometimes pushed up as domes |
+| Lead and zinc | Hosted in limestone |
+| Gems | Granite edges and volcanic pipes |
+| Clay and peat | Wetlands and the surface deposit map |
+
+- **[Proposed]** Depth matters loosely but never predictably. A gold vein might outcrop on a hillside or start 800 m down along the same fault. Mountains stay the best places to mine, since erosion exposes deeper rock there.
+- **[Proposed]** Surface clues for prospecting: rusty, stained soil (gossan) above buried sulfide ore; indicator plants that grow only on certain mineral-rich soils; placer gold in a stream leading upstream to its vein; outcrops, mineral springs and the shape of the land. They are baked or derived from the ore bodies, so they are always truthful.
+- **[Proposed]** Surveyor skill scales how strongly ore and clues are highlighted, the distance at which they are noticed, and the threshold for automatic map marks. Marks are fuzzy areas whose size shrinks as skill rises, not exact points.
+- **[Proposed]** Survey marks are knowledge the character owns. They can be shared, sold as survey maps, or produced by NPC surveyors a town hires, which ties into the economy and the town planner.
+- **[Proposed]** The server sends survey clues and marks to each player based on their own skill, so a low-skill player's client never receives what a high-skill one sees.
+- **[Open]** Ore inside voxels a client has received can be revealed by a modified client (an "x-ray" cheat). Possible answers range from accepting it, to sending ore materials only for nearby or exposed blocks.
 
 ---
 
@@ -847,11 +888,12 @@ Map growth
 
 Generator, hardware and hosting
 
-41. Is realistic volumetric geology (faults, folds, intrusions) wanted for its own sake, or are rock layers by depth, caves and ore enough for gameplay? (Section 4.8)
+41. Settled: resources are placed by how they really form, and the full volumetric simulation can be replaced by anything faster that reaches the same result (Section 4.9). Still open: which geological features a tile stores, since that list becomes permanent.
 42. Is runtime voxel generation on the server acceptable instead of reading everything from baked files? (Section 4.8)
 43. Does terrain reach the client as streamed blocks, or as small maps the client generates from? (Section 4.8)
 44. Can players host a world on their own machine? If so, one minimum-spec machine runs both server and client. (Section 3)
 45. What frame rate and view distance should the minimum machine reach? (Section 3)
+46. How much protection against "x-ray" clients that read ore from received voxels is worth its cost? (Section 4.9)
 
 ---
 
