@@ -421,8 +421,9 @@ Aging, marriage, children growing up, crop growth, regrowth, decay, taxes, loan 
 - **[Decided]** At first players seek out resources by hand. Once a town block and a warehouse exist, the player can command the NPC merchant who runs the warehouse to import goods from other towns.
 - **[Decided]** If a town has a warehouse, anything it exports shows up in other warehouses as for sale. This can trigger a wagon to be sent to gather or trade supplies.
 - **[Idea]** In the future, two players with towns can establish trade routes and trade via roads and carriages.
-- **[Decided]** The merchant is responsible for the wagon and its contents. If it is lost they lose reputation, the wholesale value of the goods has to be paid, and they lose their own wagon and potentially the driver.
-- **[Decided]** The warehouse has to keep enough money to cover wagons, guards or escorts, and problems. Losses are paid from the warehouse's own funds.
+- **[Decided]** The merchant is responsible for the wagon and its contents. If it is lost they lose reputation, probably have to pay the wholesale value of the goods, and lose their own wagon and potentially the driver.
+- **[Decided]** More than likely, the warehouse has to maintain its finances and keep enough money to cover wagons, guards or escorts, and problems.
+- **[Proposed]** Reading those two together, the wholesale payment for a lost wagon comes out of the warehouse's treasury and not the merchant's personal funds, so the financial risk sits where the decisions are made.
 - **[Proposed]** A trade route is a server-owned agreement: goods, quantity, frequency, price, wagons and drivers, and the road path. Routes are rate-based flows that keep working while owners are offline.
 - **[Proposed]** Warehouse listings are visible only in connected towns (reachable by road or sea route), which keeps lists short.
 - **[Proposed]** An import order and a standing contract create the same kind of wagon job.
