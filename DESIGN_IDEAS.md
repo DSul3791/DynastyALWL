@@ -8,6 +8,7 @@ Record of the design brainstorming sessions of 2026-10-11 and 2026-10-12. This i
 - **Version 2 (2026-10-12):** added Satisfactory as an inspiration; production and logistics; road threats and pacing; town finances, markets, warehouses, trade routes, businesses, banking, letters of credit and forgery; crime memory, delayed discovery and disguises; inheritance of money and debt; the shared principles those systems rely on. Open questions and the work ordering were rewritten.
 - **Version 3 (2026-10-12, later):** lifespan targets (start at about 15, die at about 80, in about 700 hours of play); families age with the player; the rescue-first philosophy and party composition; heirs arriving partly trained; the tension between server-owned towns and "no towns at the start"; and the clock arithmetic showing that one clock for aging and seasons is probably not workable. Open questions were updated.
 - **Version 4 (2026-10-12, latest):** two clocks decided (a world calendar for seasons and crops, and an aging clock); a one-to-two-week seasonal cycle; NPC aging at the average player's speed (70 years per real year); the weekly farming rhythm and a note on avoiding calendar years of exactly 7 or 14 days; Farming Simulator as an inspiration; no starting towns; and the civil engineer town-planning idea. The lifespan pacing figure changed from 65 to 70 years (15 to 85).
+- **Version 5 (2026-10-12, evening):** the "play what you like" and "no micromanagement" goals; server-clock aging for everyone as an idea; children, twins, wills and choosing an heir; 60-minute game days, seasonal day length and night; the weekend farming rhythm, crop tiers, farm labor and work buildings; stock levels, the order chain and building maintenance; the budget for language model use and self-hosting; town roles, land and property; quests and pastimes; real-money ideas, with gambling flagged for later; and the plan for growing the tile map one side at a time.
 
 ## How to read this document
 
@@ -34,7 +35,8 @@ A persistent, rough-medieval, multiplayer online world: a survival, exploration 
 | ARK: Survival Evolved | Exploring a huge-feeling island with many climates. Fantasy (Dungeons and Dragons style) flora and fauna. The unconscious-before-death state. |
 | Atlas | Building ships and sailing between islands. |
 | Space Engineers and Minecraft | Digging and mining. Stumbling into natural caves, abandoned mineshafts and labyrinths. Sharing blueprints through Steam downloads. |
-| Medieval Dynasty | Founding villages, villagers with jobs, seasons, marriage, children and heirs. |
+| Medieval Dynasty | Founding villages, villagers with jobs, seasons, marriage, children and heirs. Farming huts and barns with worker slots, field preparation and crop rotation schedules. |
+| Aska | Work buildings that villagers staff and run on schedules. |
 | Satisfactory | Building components and tools from materials to help mine and climb. Railways, machinery and automated movement of materials out of mines and on to town. |
 | Farming Simulator (22 and the franchise) | Fields with rotating crops, and a relaxed farming loop where a player can log in once a week to harvest and plant. |
 | Warcraft-style strategy games | A town planner proposes buildings and roads, the player approves, and builders carry them out. |
@@ -47,6 +49,8 @@ A persistent, rough-medieval, multiplayer online world: a survival, exploration 
 - **[Decided]** Players are encouraged to build ships and sail, because islands are separated by real ocean.
 - **[Decided]** The world should feel alive: carts, wagons and NPCs moving through it.
 - **[Decided]** The game is designed to keep players alive even though the whole world is trying to kill them. Layers of rescue (party mates, helpful NPCs) catch a fallen character before they die (Section 6.5).
+- **[Decided] Play what you like.** Players should never have to switch games to change style. Farmer, miner, trader, town manager, hunter or trapper selling to the butcher and furrier, caravan sword for hire, adventurer, someone who plays board games or roleplays conversations in the pub, or someone who wanders the rivers and fields enjoying nature. Each style needs a complete loop of its own.
+- **[Decided] No micromanagement.** Every avenue can be done by hand for fun, or handed off to NPCs, whether family or hirelings. Doing it yourself pays more. Delegating costs a cut but keeps things running.
 
 ---
 
@@ -76,6 +80,9 @@ A persistent, rough-medieval, multiplayer online world: a survival, exploration 
 - **[Proposed] Legibility.** Hidden rules feel unfair. Show the ledger, risk overlays, estimated effects and the reason an action is blocked or risky.
 - **[Proposed] Money is stored as whole numbers of the smallest coin,** never decimals, so balances never drift.
 - **[Decided] Build the generator first, with the whole design in mind.** The immediate work is the generator that produces the giant adventuring world, but every system in this document should be considered while it is built, so nothing baked now blocks something wanted later.
+- **[Decided] Language model budget.** Rules drive routine NPC work (a smith making nails, a farmhand harvesting, builders repairing). The model handles conversation with players and occasional judgment calls, such as a warehouse manager reviewing stock about once per game season. Its output is bounded and structured, game rules validate it, and a simple formula or rule takes over when no model is available. Each decision is logged with its reason.
+- **[Proposed] Reward checking in, never punish a weekly rhythm.** Frequent visits earn more, but a player who logs in once a week still gets a complete, productive loop.
+- **[Proposed] Management rights are hard locks; physical actions stay soft.** Nobody can open a town panel without the right role, but anyone can physically steal, with consequences.
 
 ---
 
@@ -103,7 +110,10 @@ Constraints inherited from the current generator:
 - **[Proposed]** Climate varies smoothly across a tile, so there are no seams at tile borders.
 - **[Proposed]** Altitude lowers temperature too, so tall equatorial mountains can have snowcaps.
 - **[Proposed]** Bake the average climate. Apply seasons at runtime (shader and rule changes), so one baked world can have winter and summer. Seasonal swing could grow with distance from the equator.
-- **[Open]** Whether seasons are wanted at all. Medieval Dynasty suggests yes.
+- **[Decided]** Seasons exist. Characters experience spring, summer, autumn and winter (Section 7.3).
+- **[Idea]** Weather affects how things grow and what work can be done. Soil that is too dry or too wet cannot be worked.
+- **[Idea]** Regions specialize naturally. Too far north and the soil is too cold for some crops. Too close to the equator and it is too dry. Hot regions suit camels and desert plants. Temperate regions suit horses, sheep, pigs and cows. In the extreme cold, people survive by fishing, hunting seals and other creatures, and mining.
+- **[Proposed]** Weather is calculated from the world seed and the server clock, so every client works it out itself with no network traffic, and everyone sees the same rain.
 
 Note: climate depends only on position, so each tile can compute it without looking at neighbors, which matches how tiles already work. Anything baked into a tile (surface materials) is permanent, so the climate curve should be settled before many tiles are baked.
 
@@ -125,6 +135,8 @@ Note: climate depends only on position, so each tile can compute it without look
 - **[Decided]** Towns are **not** baked. Players found towns (Section 8).
 - **[Decided]** Eventually a threats system will pinpoint areas that make natural bandit camp places. Premade goblin camps can also be dropped in like a blueprint, creating a small cave system filled with goblins (Section 12).
 - **[Proposed]** At bake time the generator scores natural hiding spots (caves, ruins, ridgelines, forest edges: defensible and out of sight) and places **dormant lair sites**: empty caves and camps that nobody lives in yet. At runtime the server only changes a site's state ("site 14 is held by a goblin horde"). That needs no terrain editing and no client download.
+- **[Idea]** People in extreme cold may build underground bases and grow things that need no light, such as mushrooms.
+- **[Proposed]** Cave generation should include some large, usable caverns and not only narrow tunnels, so underground bases and farms are possible.
 
 ### 4.5 Depth, heat and altitude
 
@@ -138,6 +150,8 @@ Note: climate depends only on position, so each tile can compute it without look
 - **[Proposed]** One shared "environmental resistance" idea for heat, cold and thin air, modified by gear, skill, cooling stations and magic.
 - **[Proposed]** Ventilation as a range effect (a station reduces heat within a distance), not a true airflow simulation.
 - **[Idea]** Volcanic areas run hotter at shallower depth.
+- **[Idea]** Underground is warmer than the surface in cold regions, which is one reason people there spend time in mining operations.
+- **[Proposed]** Underground temperature blends the surface climate (the year-round average just below ground, as in the real world) with the heat that rises with depth. Each region then has a comfortable underground band: a few hundred meters down in the far north, and shallow caves that are cooler than the scorching surface in hot regions.
 - **[Open]** How far altitude effects reach, given the current 2,048 m world ceiling.
 - **[Open]** What limits diving, and whether the deep ocean floor can be dug.
 
@@ -153,6 +167,15 @@ These already exist in the repository and match the vision:
 - Persistent objects are saved as source region plus local position, so they survive later expansion.
 
 **[Open]** Whether the world rectangle should stay centered on the origin so the north-south wrap joins arctic to arctic.
+
+### 4.7 Growing the map
+
+- **[Decided]** Work starts with the map. The first step is to generate a first island tile that lets people get started.
+- **[Decided]** After that, the generator keeps creating unique tiles over time, with different sizes and numbers of islands.
+- **[Decided]** Because the world wraps at its edges, the set of tiles must always stay a complete rectangle, and growth has to be planned with that in mind.
+- **[Decided]** The world grows one side at a time by adding a full row or column. For example, a 4 by 4 map grows by picking a side and adding 4 tiles, making it 5 by 4. The next expansion picks a side and adds 4 or 5 tiles depending on which side is chosen.
+- **[Proposed]** Alternate opposite sides as the world grows (north then south, east then west), so the origin tile stays near the middle. That keeps the equator central and makes the north-south wrap seam join two equally cold edges.
+- **[Proposed]** A new row or column is baked into a staging folder and only goes live, at a server restart, once the whole row or column is complete. The existing builder and server already work this way (GENERATION_GUIDE.md).
 
 ---
 
@@ -171,6 +194,31 @@ These already exist in the repository and match the vision:
 - **[Open]** Whether tool and item type changes what a harvest yields.
 - **[Open]** Whether mining the terrain itself (tunnels and veins) is in the first version or only surface rocks. Digging and leveling land are wanted overall.
 
+### 5.1 Farming rhythm
+
+- **[Decided]** Players who log on only Friday and Saturday nights can plant crops and harvest them the next week. With alternating crops they can plant one field on Friday and one on Saturday, then harvest one on each night the following week.
+- **[Decided]** Crops get reasonable leeway before and after becoming ripe, so a player who logs in a couple of hours later than usual still finds them ready.
+- **[Decided]** The goal is several crops and animals in rotation.
+- **[Proposed]** Crop tiers: quick crops of 2 to 3 real days (vegetables, herbs) for players who drop in often; standard crops of about a week (grains) for weekend players; long crops of weeks (orchards, vineyards) as long-term investments.
+- **[Proposed]** A ripeness window instead of a single ripe moment. With 60-minute days, a standard crop could be ripe about 6 real days after planting and harvestable until about day 8 or 9.
+- **[Proposed]** Overripe crops lose quality gradually instead of spoiling outright, so being late costs a little and never wipes out a field.
+- **[Open]** Whether crop growth times follow realistic fractions of the year (in the real world spring wheat takes roughly 100 to 130 days, and winter wheat is sown in autumn and harvested the next summer) or are tuned freely for gameplay.
+
+### 5.2 Farm work and labor
+
+- **[Idea]** Fields and soil work as a simplified version of Medieval Dynasty. A farming hut comes with 3 or 4 worker slots, filled by hired NPCs, the player's children or spouse.
+- **[Idea]** Specific buildings control specific jobs. Whoever is assigned to the farm shed handles the fields and crops. Whoever is assigned to the animal pens and barns tends the animals. A person can be assigned to several buildings.
+- **[Idea]** Workers, or the player, prepare the soil with manure and then plant. Crop rotation schedules are set on the farm building, as in Medieval Dynasty or Aska, and workers work all available fields until they are done.
+- **[Decided]** Children or hired hands work the farm while the player is offline, so it keeps earning and can pay taxes and bills.
+- **[Decided]** Hired hands take a cut when they harvest and sell, and the farm stays productive. Working it yourself or with your children earns the dynasty more.
+- **[Decided]** Work has priorities in three tiers: urgent (daily animal feeding, fires, rescues), deadline (harvest before rain or frost, planting within the season) and routine (woodcutting, repairs, hauling).
+- **[Proposed]** Each field keeps a small soil fertility value. Repeating one crop drains it. Rotation, legumes, fallow and manure restore it. That gives rotation a mechanical reason to exist.
+- **[Proposed]** Animals eat crops and hay, produce milk, eggs, wool and manure, and need daily feeding, which is the work hands and children cover while the player is away.
+- **[Proposed]** Market saturation: if every farm sells wheat, the price falls, so diversifying protects income.
+- **[Proposed]** A hand low in lawfulness might skim, using the theft and provenance systems.
+- **[Proposed]** Balance rule: the hands' cut must leave an absent player's modest farm earning more than its taxes and upkeep.
+- **[Open]** Whether hands are paid a share of the harvest (sharecropping), a fixed wage, or the employer's choice.
+
 ---
 
 ## 6. Characters, aging, death, heirs and personal finance
@@ -184,11 +232,15 @@ These already exist in the repository and match the vision:
 - **[Idea]** In their early 20s, players will hopefully settle down, establish a home and a spouse, and make that their base of operations.
 - **[Idea]** The base can be in a town that belongs to another player or to the player. A town belonging to the server was also mentioned, but there are no starting towns (Section 8.1), so that could only happen later.
 - **[Decided]** Children age too.
+- **[Idea]** Couples realistically keep having children, about one every year or two, and twins are possible. That is one every 5 to 10 real days, or about a dozen children between parent ages 22 and 40 over about three months of real time.
+- **[Idea]** Population control: if a family has many children, one might fall sick and die or have a farming accident.
+- **[Proposed]** Tie that risk to conditions the player can see and influence (poor food, a crowded house, no healer nearby, unsupervised dangerous work) plus a low baseline of childhood illness for every family, instead of a penalty for family size. Food, housing and land costs make a large family a real expense. Child death is emotionally heavy and can affect age ratings, so it may need gentle handling.
 - **[Decided]** A character who is killed with no way to recover, or who is too old or wounded to recover, dies. The player restarts as a new character.
 - **[Decided]** If the player restarts as their child, the child inherits everything that remains. The child's first quest may be to find the fallen parent, or hire local adventurers or services to retrieve the parent's gear.
 - **[Decided]** ARK-style unconsciousness before death. A downed character can be revived, carried or dragged to safety by party members.
 - **[Decided]** Characters age **slower** while their player is offline, but they stay in the world and remain vulnerable. Their body can fall unconscious, be burned or be killed while offline. Friends can pick them up, put them on a wagon, or drag them to cover.
 - **[Decided]** Characters and their families age slower while the player is offline, so the household ages together. The mismatch is between the household and the rest of the world, not within the family.
+- **[Idea]** Replace the rule above: since lifespans are averaged over about a year anyway, everyone (players, families and NPCs) simply ages on the server clock at the same rate, 70 years per real year. Claude recommended this because it removes the offline aging speed question and the household mismatch, and because the slower-offline rule only narrowed the gap in play hours per life a little (about 300 to 1,100 hours instead of 260 to 1,300 for 5 to 25 hours a week). It has not been confirmed. Its costs: time away ages a character (four weeks is about 5.4 years, two months about 12), and the clock must survive server downtime (Section 7.6).
 - **[Decided]** Spouses and children stay in the world while the player is away. Events such as bandit raids, dragons and sickness can affect them, which gives players a reason to return.
 - **[Decided]** Co-op: friends can tend animals and harvest crops for an absent owner, with permission.
 - **[Decided]** Because offline characters stay vulnerable, the downed timer keeps running while the player is offline.
@@ -199,6 +251,7 @@ These already exist in the repository and match the vision:
 - **[Proposed]** A "while you were away" report on login, with events resolved by game rules and optionally narrated by the language model.
 - **[Open]** Whether the game warns about the risk of a logout location.
 - **[Open]** A grace period for accidental disconnects.
+- **[Open]** Whether long absences get a special rule, or time simply passes.
 - **[Open]** What happens when a character dies with no heir.
 - **[Open]** How permanent offline loss should be (can family members die, can buildings be destroyed).
 - **[Open]** Who can raid whom: only NPC bandits, monsters and sickness, or other players as well.
@@ -214,6 +267,12 @@ These already exist in the repository and match the vision:
 - **[Proposed]** Early on an heir leans on NPC employees and managers for skills they lack, and must learn the trade or hire for it.
 - **[Idea]** Children learn some skills from their parents as they grow, so when a parent dies the heir is a partially trained character already waiting. The project owner described this as a theory for now.
 - **[Open]** How large that head start is, and how it works for player heirs compared with NPC children.
+- **[Idea]** When a character dies, the player chooses which heir to become. An older child has better skills but less time left to play.
+- **[Idea]** A will lists the children with their skills and attributes and leaves the farm or the town to a chosen child. It should be set long before death and can be updated at any time.
+- **[Proposed]** If a parent dies at 80, an heir aged 20 has about 11 months of real time left on average, one aged 35 about 8.6 months, and one aged 50 about 6 months.
+- **[Proposed]** Which character the player plays and who inherits the property could be separate choices. Playing one child while the will leaves the farm to another creates a sibling story.
+- **[Proposed]** A death without a will falls back on the town's inheritance law (eldest child, equal split, spouse first), set in the town control panel. NPC siblings with greed or resentment might contest a will, and a forged will would use the forgery system. Adult children who have moved away still appear on the list.
+- **[Open]** Whether the will decides who the player becomes, who owns the property, or both as separate choices.
 
 ### 6.3 Personal finances
 
@@ -273,6 +332,7 @@ Assumptions: 70 game years of aging (15 to 85) over one real year with about 700
 - **[Decided]** Characters experience all four seasons (spring, summer, autumn, winter). A full seasonal cycle takes about one to two weeks of real time. The exact length does not matter as long as it feels reasonable, but it must let players put crops in the ground, watch them grow and harvest them.
 - **[Decided]** Farming supports a once-a-week rhythm. A farmer can build several fields with rotating crops, log in on a weekend to harvest and plant, and enjoy the game that way. Farming Simulator 22 and the rest of that franchise are the inspiration.
 - **[Proposed]** Avoid a calendar year of exactly 7 or 14 days. A player who logs in at the same time each week would see the same single point in the year (7 days) or only two opposite points (14 days), and might never see winter. A year of 9, 10 or 11 days steps a weekly player through the whole year over 9 to 11 logins.
+- **[Proposed]** With 60-minute game days (Section 7.5), a 365-day year lasts about 15.2 real days, which is not a multiple of 7. About 168 game days (almost half a year) pass between weekly visits, so a weekend farmer plants in spring, harvests in late summer, and next visits in winter.
 - **[Proposed]** Crops grow on the calendar clock, using the lazy timestamp approach. A ripe crop stays ripe for a window at least as long as the typical gap between visits before it spoils, so a weekly player is not punished.
 - **[Proposed]** Absent farmers can rely on friends (Section 6.1) or hired NPC farmhands to harvest and replant.
 - **[Proposed]** The seasonal swing grows with distance from the equator. Near the equator the year is closer to wet and dry seasons than to hot and cold.
@@ -282,7 +342,23 @@ Assumptions: 70 game years of aging (15 to 85) over one real year with about 700
 - **[Decided]** NPCs age at about the same speed as a typical player: 70 years over one real year, from a random starting age to a random death age. Starting ages are roughly 20 to 30 and death comes roughly between 70 and 90. Their aging runs on the character aging clock, not on the calendar.
 - **[Proposed]** At that speed one year of age is about 5.2 real days. An NPC who starts at 25 and dies at 80 lives about 9.4 months of real time. One who starts at 30 and dies at 70 lives about 7 months. A child takes about 11 weeks to reach 15. A town's population therefore turns over in about a year, so births, marriage and migration matter.
 - **[Proposed]** An NPC's birthday comes every 5.2 days, not once per calendar year. With a 10-day calendar year an NPC ages about 1.9 years per calendar year. Showing age as a life stage (child, young adult, adult, elder) instead of an exact number could avoid that oddity.
-- **[Open]** The offline aging speed, the exact length of the calendar year, and whether age is shown as a number or a life stage.
+- **[Open]** The offline aging speed (or whether everyone simply ages on the server clock, Section 6.1), the exact length of the calendar year, and whether age is shown as a number or a life stage.
+
+### 7.5 Day and night
+
+- **[Idea]** One game day lasts one real hour (24 to 1). The project owner leans toward 60 minutes over 72: it gives more day and night cycles per session and encourages shorter weekday visits to keep up with farming, which spreads server load across the week instead of concentrating it on weekends.
+- **[Proposed]** Day length varies with the season and with latitude, calculated on each client from the server clock, the day of the year and the latitude, so it costs nothing on the network. Near the equator day and night stay about even all year. Toward the poles summers have long days and winters long nights, and far-north winter darkness becomes another soft limit.
+- **[Proposed]** Night is compressed compared with the real world, aiming for about two-thirds day and one-third night at mid-latitudes (around 40 minutes of day and 20 of night), with long, usable dusk and dawn.
+- **[Proposed]** Night is never pitch black. Moonlight and torches keep it playable. A persistent multiplayer world cannot let players sleep through the night, so night has to be content, not waiting: more danger, monsters, stealth for thieves, guards on watch.
+- **[Proposed]** For comparison, from memory: Minecraft's full cycle is about 20 minutes and Valheim's about 30. The slower 60-minute day suits a game about settling and farming.
+- **[Proposed]** Shops, work hours and schedules run on game hours. A 10-hour work day is about 25 real minutes.
+- **[Open]** 60 or 72 minutes per game day, and how much more dangerous night is than day.
+
+### 7.6 The server clock
+
+- **[Proposed]** The server keeps one stored time counter. Time of day, the calendar and age are all derived from it with different constants, so there is one source of truth.
+- **[Proposed]** The counter advances only while the server runs, instead of following the wall clock, so a server outage does not suddenly age everyone or ripen every crop.
+- **[Proposed]** Production in each town is settled once per game day, which is once per real hour with 60-minute days. That keeps the server load small.
 
 ---
 
@@ -311,7 +387,11 @@ Assumptions: 70 game years of aging (15 to 85) over one real year with about 700
 - **[Decided]** Players can converse with any NPC. Conversations are handled by a **language model**.
 - **[Proposed]** Keep personality (goodness, lawfulness) conceptually separate from abilities (physicalness, dexterity, wisdom, intelligence, charisma). Personality drives choices, abilities decide whether choices succeed.
 - **[Proposed]** Each memory stores a strength, an importance and a timestamp. Decay is computed only when the NPC recalls it, and recall reinforces it. Importance slows fading. Strongest relevant memories plus traits form the context for a conversation.
-- **[Proposed]** Language model calls are used for player-NPC conversation. NPC-to-NPC activity runs on rules.
+- **[Decided]** Language model use follows the budget in Section 3: conversation with players and occasional judgment calls use the model, and routine NPC work runs on rules.
+- **[Decided]** The project owner intends to run a language model on their own Ubuntu machine as the game's AI source, and to add hardware as the game grows.
+- **[Proposed]** Tools such as Ollama and llama.cpp run open-weight models on Ubuntu, and vLLM is built for serving many requests at once. Calls cost nothing per use, but hardware, power and capacity are real limits, and a small model is weaker than large hosted ones, so prompts should be tight and outputs structured and validated.
+- **[Proposed]** Check each model's license before building a paid game on it. Some open-weight licenses restrict commercial use.
+- **[Proposed]** If the model is busy or offline, NPCs fall back to rules or simple dialogue and the game keeps working.
 - **[Proposed]** NPC population caps per island or region.
 - **[Idea]** NPC merchants eventually appear on their own. They need somewhere to live and somewhere to work, so they only appear where a profitable opportunity (a price gap and a connecting road) coincides with available housing and workspace.
 
@@ -333,6 +413,34 @@ Assumptions: 70 game years of aging (15 to 85) over one real year with about 700
 - **[Proposed]** The engineer's skill and traits affect plan quality. The language model can explain a proposal in conversation, but placement and numbers come from the planner, following the rule that the game owns the facts.
 - **[Proposed]** The planner needs cheap terrain queries: slope, fertility, water access and resource proximity. Consider baking coarse land-suitability layers per region so the planner does not scan voxels at runtime. This has not been checked against the data the generator already produces.
 - **[Open]** Whether plans can run unattended (for example auto-approval within a budget), how often the engineer proposes, and how plans account for existing player buildings and claims.
+- **[Idea]** When the planner is told to build something, it orders workers to use supplies from the town warehouse. Wood can come from local mills or another town, stone from the town's own mines or elsewhere for fancy stone, and metal the same way.
+
+### 8.5 Town roles and management
+
+- **[Idea]** Players can party up with friends and give them rights in a town. A friend could be a town overseer with the right to hire, fire and manage NPCs.
+- **[Idea]** Access comes in roles. Some people have full access. Others only oversee land sales, handle the guards and militia, manage tradespeople, approve road building, approve buildings and construction, or control the warehouse.
+- **[Idea]** A town can have an NPC town manager with their own building. If there is no manager, the notices land on the owner's desk, because the owner is the town manager.
+- **[Idea]** Later, a town can hire an AI trade manager with their own little building, who works with the warehouse, shippers and merchant NPCs to move goods. The player can visit to see their settings and history. At first this is done by hand.
+- **[Proposed]** Rights are a list of named permissions, and roles are bundles of them. The owner has everything and can create custom roles.
+- **[Proposed]** An action log records who approved, hired or sold what, which prevents arguments between friends.
+
+### 8.6 Land and property
+
+- **[Idea]** Before building a home in a town, a player buys a plot of land or a building that is for sale: a house or a business. Someone might buy the smithy to be the blacksmith, or own it and have an NPC run it.
+- **[Idea]** Owners pay taxes on the lot or the business. If a player pays business taxes, it is in the town's interest to help them succeed.
+- **[Idea]** A player can buy a farm outside the walls and build a house, barns, sheds and fields on their own property as they like.
+- **[Idea]** A player can own several properties and build an empire over time: live on the farm, own the smithy and the bakery, with the spouse working one, a child or hireling running another, and children and hirelings working the farm.
+- **[Idea]** A player might live in a town run by the server (if those exist later), in another player's town, or in their own.
+- **[Proposed]** A dynasty owning several businesses is several entries in the shared business structure (Section 13.4). The town gains from successful businesses through taxes, so a manager NPC offering contracts or loans to struggling businesses follows naturally.
+
+### 8.7 Quests and pastimes
+
+- **[Idea]** Quests are received by roleplaying with NPCs or by reading notices from NPCs on a bulletin board. A player looking for work might be told of an adventure, and if they agree, the AI brings in what is needed: a goblin camp, a bandit camp, a traveling merchant. Others can help.
+- **[Idea]** Players can join a caravan as a sword for hire, hunt deer by pristine rivers, spend the day in their own mine or on their farm, or play the town manager handling rules and taxes like a Sims game.
+- **[Idea]** Players can play simple board games with an AI NPC in the pub, or roleplay conversations with people there.
+- **[Proposed]** Accepting a quest wakes one of the baked dormant lair sites (Section 4.4) instead of spawning a camp from nothing, so the world stays coherent, other players can find it, and the pacing director keeps it away from town gates.
+- **[Proposed]** The quest itself (goal, reward, deadline) is structured data. The language model tells the story.
+- **[Proposed]** A plain rules engine plays the board games and the model supplies the banter. Medieval games such as nine men's morris, hnefatafl and dice games add flavor. Wagering is part of the gambling topic flagged in Section 13.8.
 
 ---
 
@@ -539,6 +647,36 @@ Assumptions: 70 game years of aging (15 to 85) over one real year with about 700
 
 - **[Proposed]** One news system carries warrants, reputation changes, threat warnings, price news and bad-bank warnings. A fact with a place and time of origin spreads to other towns as travelers, wagons and ships carry it, so trade routes double as information routes.
 
+### 13.7 Work buildings, stock and maintenance
+
+- **[Idea]** Every job runs through a building with worker slots: farming huts, barns, mines, the smithy, the warehouse, the trade manager's and planner's offices. Slots are filled by the player, family or hired hands. Settings live on the building, and workers keep going until the work is done.
+- **[Idea]** A mining town employs most of its villagers in the mines excavating stone, coal, ores and other valuables, ships them across the map to other towns for currency, and buys what it lacks from other towns.
+- **[Idea]** Stock targets start at zero. When something is built, the largest amount needed becomes the stock target: a building needing 500 nails sets the nail target to 500. If 30 hinges are needed, the blacksmith makes the 30 and another 30 for the town warehouse. A larger requirement later becomes the new target.
+- **[Idea]** Builders always pull supplies from the warehouse first. If something is missing they order it through the town manager. If the town has the tradesperson who makes it, they start filling the order and topping up stock automatically. If not, the order goes to the nearest town that has it. If no town has it, a notice is raised with the town manager, who tells the owner something needs attention.
+- **[Idea]** All buildings degrade slowly and need maintenance. Builders do the repairs, and the cost comes from the individual shop or owner. This steadily uses up supplies.
+- **[Idea]** The warehouse manager, merchant or shipper takes stock now and then and decides where to set stock amounts.
+- **[Proposed]** Maintenance is the economy's steady sink for materials and money, which a long-running server needs to avoid surplus and collapsing prices.
+- **[Proposed]** Materials affect upkeep: stone decays slower than wood, treated wood slower than untreated, and wet or coastal climates rot wood faster. Neglect reduces function and shelter and eventually leads to ruin.
+- **[Proposed]** A business schedules repairs automatically when it has the funds, and the "while you were away" report lists what was repaired and what it cost.
+- **[Proposed]** The warehouse manager's review uses the language model budget in Section 3: about once per game season, given usage figures, replying with new targets within allowed limits, with the reason logged. Targets that go unused drift back down.
+- **[Proposed]** A short "what is blocked" list in the town panel ("waiting on iron") keeps the chain visible.
+
+### 13.8 Real money (future)
+
+- **[Idea]** People buy the game for a reasonable price and pay a monthly subscription, roughly the same as World of Warcraft's.
+- **[Idea]** Players can earn credits in game toward the subscription. A town earns credits for its owner and management team, more with more population and trade, encouraging people to run and grow towns.
+- **[Idea]** The subscription can be reduced to a minimum of about $5 a month. Whether players could earn the whole subscription was left undecided.
+- **[Idea]** NPC-run shops sell cosmetics with real money: skins, costumes, event items and other things that do not much affect play.
+- **[Idea]** Players can buy in-game currency with real money. The project owner considers this fair because it is their own disposable income, while players who play all day earn credits in game. During testing the admins may buy credits too.
+- **[Decided]** Gambling (including wagering at the pub) is flagged for a future discussion, to be revisited when that work starts.
+- **[Proposed]** Credits created by the game cost real subscription revenue and give cheaters a cash incentive (fake trade between their own towns, extra accounts, bots), so they need strong anti-cheat, such as counting only trade with real, distinct players, plus caps.
+- **[Proposed]** A token model avoids that: one player buys a token with real money and sells it for in-game currency, and another player uses currency to pay the subscription. EVE Online (PLEX) and World of Warcraft (WoW Token) work this way. The developer is paid either way and no new money enters the economy. Running a successful town would earn currency that buys tokens.
+- **[Proposed]** Keep a subscription minimum, since every player costs real money to host, including the language model.
+- **[Proposed]** Currency bought from the game buys real power in a player-driven economy (land, guards, armies) and adds inflation. Caps or the token model reduce both.
+- **[Proposed]** Selling currency, and especially combining it with gambling, can fall under gambling, consumer protection and payment processor rules that vary by country. Get legal advice before any real money is involved.
+- **[Proposed]** Until then, design the economy to work without real money. The whole-number ledger already makes a token model easy to add later.
+- **[Open]** Whether earned credits come from the game or from other players through tokens, and whether a player can earn the whole subscription.
+
 ---
 
 ## 14. Current code status
@@ -585,7 +723,7 @@ From a read-through of the repository on 2026-10-11 (Godot 4.7, GDScript, about 
 
 World and bake
 
-1. Is seasonal change wanted, and should its strength grow with distance from the equator?
+1. Seasons are decided. Should their strength grow with distance from the equator?
 2. Should the world rectangle stay centered on the origin so the north-south wrap seam joins matching climates?
 3. How much variety in island size is wanted, from tiny rocks to ARK-scale?
 4. Is the world bottom at -4,000 m confirmed, with the lethal depth near -3,000 m kept adjustable?
@@ -598,7 +736,7 @@ World and bake
 
 Time and persistence
 
-11. What is the offline aging speed, how long is the calendar year exactly (avoiding 7 or 14 days), and is age shown as a number or a life stage? (Section 7)
+11. Does everyone age on the server clock (Section 6.1), or keep the slower offline aging speed? How long is the calendar year exactly (avoiding 7 or 14 days), and is age shown as a number or a life stage? (Section 7)
 12. Do dropped items expire, and do hard-to-reach ones last longer?
 13. What happens when a character dies with no heir?
 14. Is there a grace period for accidental disconnects, and does the game warn about risky logout spots?
@@ -635,6 +773,18 @@ Rescue and starting conditions
 33. How does NPC rescue work in practice, and how is it kept from trivializing death? Do NPC companions count toward party size and what do they cost?
 34. Should the bake include coarse land-suitability layers (slope, fertility, water access) for the town planner, and can plans run unattended? (Section 8.4)
 
+Farming, families, time and money
+
+35. Do crop times follow realistic fractions of the year or get tuned for gameplay, and are hands paid by share, by wage, or the employer's choice? (Section 5)
+36. Does the will decide who the player becomes, who owns the property, or both? Do long absences get a special rule? (Section 6)
+37. 60 or 72 minutes per game day, and how dangerous is night? (Section 7.5)
+38. Do earned subscription credits come from the game or from other players through tokens, and can a player earn the whole subscription? (Section 13.8) Gambling is flagged for a later discussion.
+
+Map growth
+
+39. What size is the first live world (one tile for testing, or several before players arrive), and which side grows first? (Section 4.7)
+40. How far apart are the climate bands in tiles? This sets what surface materials get baked into every tile, so it must be settled before baking tiles to keep (Section 4.2).
+
 ---
 
 ## 16. Candidate work, in dependency order
@@ -642,7 +792,7 @@ Rescue and starting conditions
 Nothing here is committed. It is a suggested ordering based on what affects baked data first, since baked changes force rebakes.
 
 1. Settle the open questions that change baked data: climate scale, seasons, world bottom, what the bake stores about soil and flora, whether deposits get stable IDs, how dormant lair sites are scored and placed, and whether to bake coarse land-suitability layers for the town planner (Section 8.4).
-2. Island properties panel, irregular coasts, small islets and open-ocean tiles.
+2. Generate the first playable island tile, then the island properties panel, irregular coasts, small islets and open-ocean tiles, then grow the rectangle one side at a time (Section 4.7).
 3. Climate layer and soil or surface materials.
 4. Flora placement lists written at bake time.
 5. Natural structures: caves, mineshafts, labyrinths, ruins, dormant lair sites. Slate and any new rock types.
