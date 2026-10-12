@@ -239,6 +239,10 @@ A tile should then take minutes, and `world_preview.gd` could show island panel 
 - **[Proposed]** Surface clues for prospecting: rusty, stained soil (gossan) above buried sulfide ore; indicator plants that grow only on certain mineral-rich soils; placer gold in a stream leading upstream to its vein; outcrops, mineral springs and the shape of the land. They are baked or derived from the ore bodies, so they are always truthful.
 - **[Proposed]** Surveyor skill scales how strongly ore and clues are highlighted, the distance at which they are noticed, and the threshold for automatic map marks. Marks are fuzzy areas whose size shrinks as skill rises, not exact points.
 - **[Proposed]** Survey marks are knowledge the character owns. They can be shared, sold as survey maps, or produced by NPC surveyors a town hires, which ties into the economy and the town planner.
+- **[Idea]** A **surveyor's book** helps map resources. While it is out it changes how the character sees the world: hovering markers over things already discovered, and glowing marks or areas on the ground where something is probably present.
+- **[Proposed]** The book is the home of the character's survey knowledge (the marks above). The glow's strength and size show confidence, which grows with skill and with repeated observation. Having the book out has a cost, such as slower movement and no fighting, so it is a deliberate prospecting mode rather than a permanent overlay.
+- **[Proposed]** The book is an item. Pages can be copied and sold or given away, and the book can be dropped, lost or stolen like other belongings, so a rival who takes it gains its knowledge.
+- **[Proposed]** The overlay is drawn by the client from the marks the server has sent, so it costs almost nothing on the minimum machine.
 - **[Proposed]** The server sends survey clues and marks to each player based on their own skill, so a low-skill player's client never receives what a high-skill one sees.
 - **[Open]** Ore inside voxels a client has received can be revealed by a modified client (an "x-ray" cheat). Possible answers range from accepting it, to sending ore materials only for nearby or exposed blocks.
 
