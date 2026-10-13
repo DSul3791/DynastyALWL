@@ -865,6 +865,31 @@ func _test_sketch() -> void:
 
 		_check(best >= 15.0, "starter %s has an island (%.0f km2)" % [str(tile_position), best])
 
+	# Every starter tile has flat, low town ground (the coastal plain and
+	# harbor ground behind its beaches).
+	var cell_km2: float = pow(elevation.cell_m / 1000.0, 2.0)
+
+	for tile_position in settings.get_all_starters():
+		var flat_km2: float = 0.0
+		var first_column: int = int((float(tile_position.x) * tile - elevation.origin_x) / elevation.cell_m)
+		var first_row: int = int((float(tile_position.y) * tile - elevation.origin_z) / elevation.cell_m)
+		var tile_cells: int = int(tile / elevation.cell_m)
+
+		for row in range(first_row, first_row + tile_cells):
+			for column in range(first_column, first_column + tile_cells):
+				var h: float = elevation.heights[elevation.index_of(column, row)]
+
+				if h <= 0.0 or h > 40.0:
+					continue
+
+				var dx: float = (elevation.heights[elevation.index_of(column + 1, row)] - elevation.heights[elevation.index_of(column - 1, row)]) / (2.0 * elevation.cell_m)
+				var dz: float = (elevation.heights[elevation.index_of(column, row + 1)] - elevation.heights[elevation.index_of(column, row - 1)]) / (2.0 * elevation.cell_m)
+
+				if sqrt(dx * dx + dz * dz) < 0.08:
+					flat_km2 += cell_km2
+
+		_check(flat_km2 >= 2.0, "starter %s has flat town ground (%.1f km2)" % [str(tile_position), flat_km2])
+
 	var land: float = 0.0
 
 	for island in census["islands"]:

@@ -31,7 +31,14 @@
 		"peak_m": [220, 420],
 		"profile_exponent": 0.75,
 		"shore_shelf_m": 1500,
-		"max_offset_m": 1500
+		"max_offset_m": 1500,
+		"note": "Poleward shores are rocky and steep, equator-facing shores have long sandy beaches with a flat coastal plain for the town and a sheltered bay for the port.",
+		"beach_angle_jitter_deg": 25,
+		"plain_height_m": 28,
+		"plain_width": 0.5,
+		"rocky_cliff_m": 120,
+		"bay_radius": 0.32,
+		"bay_depth_m": -14
 	},
 
 	"trench_arc": {

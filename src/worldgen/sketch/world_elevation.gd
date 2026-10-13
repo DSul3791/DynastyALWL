@@ -85,6 +85,11 @@ func build(world_settings, sketch_rules: Dictionary, sketch: Dictionary, cell_ov
 
 		index += 1
 
+	for feature in sketch.get("features", []):
+		for mount in feature.get("mounts", []):
+			if str(mount["type"]) == "starter" and mount.has("beach_dir"):
+				_carve_bay(mount)
+
 	_raise_landmark_islands()
 	_clamp_heights()
 
@@ -320,10 +325,24 @@ func _raise_mount(mount: Dictionary, owner_index: int) -> void:
 	var rotation: float = deg_to_rad(float(mount["rot"]))
 	var cos_r: float = cos(rotation)
 	var sin_r: float = sin(rotation)
+	var beach_direction: Vector2 = Vector2.ZERO
+
+	if mount.has("beach_dir"):
+		beach_direction = Vector2(float(mount["beach_dir"][0]), float(mount["beach_dir"][1]))
 
 	for row_offset in range(-radius_cells, radius_cells + 1):
 		for column_offset in range(-radius_cells, radius_cells + 1):
 			var index: int = index_of(center_column + column_offset, center_row + row_offset)
+			var facing: float = 0.0
+
+			if beach_direction != Vector2.ZERO:
+				var plain_offset: Vector2 = Vector2(
+					float(column_offset) * cell_m - offset_x, float(row_offset) * cell_m - offset_z
+				)
+
+				if plain_offset.length() > 1.0:
+					facing = plain_offset.normalized().dot(beach_direction)
+
 			var dx: float = (
 				float(column_offset) * cell_m - offset_x
 				+ warp * _value(_warp_x, index) + fine * _value(_fine_x, index)
@@ -343,7 +362,7 @@ func _raise_mount(mount: Dictionary, owner_index: int) -> void:
 				"atoll":
 					raised = _atoll_height(mount, distance, b, index)
 				_:
-					raised = _island_height(mount, distance, b, shore, slope, index)
+					raised = _island_height(mount, distance, b, shore, slope, index, facing)
 
 			if raised <= heights[index] - 150.0:
 				continue
@@ -356,10 +375,19 @@ func _raise_mount(mount: Dictionary, owner_index: int) -> void:
 			heights[index] = combined
 
 
+# facing: how much this point lies on the island's beach side (+1) or
+# its rocky side (-1). Only starter islands use it.
 func _island_height(
-	mount: Dictionary, distance: float, b: float, shore: float, slope: float, index: int
+	mount: Dictionary, distance: float, b: float, shore: float, slope: float,
+	index: int, facing: float = 0.0
 ) -> float:
 	var peak: float = float(mount["peak"])
+	var beach: float = 0.0
+	var rocky: float = 0.0
+
+	if mount.has("beach_dir"):
+		beach = _smooth(clampf((facing - 0.05) / 0.55, 0.0, 1.0))
+		rocky = _smooth(clampf((-facing - 0.05) / 0.55, 0.0, 1.0))
 
 	if distance < 1.0:
 		var inland: float = 1.0 - distance
@@ -369,15 +397,37 @@ func _island_height(
 		height += cliff * _smooth(clampf(inland / 0.07, 0.0, 1.0))
 
 		# Gullies and ridges on the slopes, strongest on high ground.
-		height += 0.18 * peak * inland * _value(_ridged, index)
-		height += 6.0 * _value(_detail, index)
+		height += 0.18 * peak * inland * _value(_ridged, index) * (1.0 - beach)
+		height += 6.0 * _value(_detail, index) * (1.0 - 0.7 * beach)
+
+		if beach > 0.0:
+			# A long gentle coastal plain behind the beach, then the hills.
+			var plain: float = float(mount.get("plain_m", 28))
+			var width: float = float(mount.get("plain_width", 0.5))
+			var beach_height: float
+
+			if inland < width:
+				beach_height = 1.5 + plain * inland / width
+			else:
+				beach_height = plain + (peak - plain) * pow((inland - width) / (1.0 - width), exponent)
+
+			height = lerpf(height, beach_height, beach)
+
+		if rocky > 0.0:
+			# Steep rocky shore with sea cliffs facing the pole.
+			var rocky_cliff: float = float(mount.get("rocky_cliff_m", 120))
+			height += rocky * rocky_cliff * _smooth(clampf(inland / 0.05, 0.0, 1.0))
+			height += rocky * 0.15 * peak * inland * absf(_value(_ridged, index))
+
 		return maxf(height, 1.0)
 
 	var outside: float = (distance - 1.0) * b
 	var shelf_depth: float = 40.0
 
-	# Shallow fringes vary in width around the coast.
+	# Shallow fringes vary in width around the coast. Beaches get wide
+	# sandy shallows, rocky shores drop away fast.
 	shore *= 0.35 + 0.65 * (0.5 + 0.5 * _value(_hills, index))
+	shore = lerpf(lerpf(shore, shore * 2.0, beach), 100.0, rocky)
 
 	if outside < shore:
 		return -shelf_depth * (outside / maxf(shore, 1.0)) - 1.0
@@ -407,6 +457,60 @@ func _atoll_height(mount: Dictionary, distance: float, b: float, index: int) -> 
 
 	var t: float = clampf((from_ring - ring * 0.5) / 2600.0, 0.0, 1.0)
 	return -8.0 - 3992.0 * pow(t, 0.7)
+
+
+# A sheltered bay on the beach side of a starter island, for the port:
+# a rounded harbor just inside the beach, opening to the sea through a
+# narrower mouth, with flat ground around it for the harbor town.
+func _carve_bay(mount: Dictionary) -> void:
+	var b: float = float(mount["b"])
+	var direction: Vector2 = Vector2(float(mount["beach_dir"][0]), float(mount["beach_dir"][1]))
+	var radius: float = b * float(mount.get("bay_radius", 0.32))
+	var depth: float = float(mount.get("bay_depth_m", -14))
+	var island_center: Vector2 = Vector2(float(mount["x"]), float(mount["z"]))
+
+	# Walk out from the island's middle toward the beach to find the coast.
+	var coast: Vector2 = island_center + direction * b
+	var step: float = 0.0
+
+	while step < b * 3.0:
+		var probe: Vector2 = island_center + direction * step
+
+		if height_at_m(probe.x, probe.y) <= 0.0:
+			coast = probe
+			break
+
+		step += cell_m * 0.5
+
+	var center: Vector2 = coast - direction * radius * 0.6
+	var side: Vector2 = Vector2(-direction.y, direction.x)
+	var reach: float = radius * 2.2
+	var radius_cells: int = int(ceil(reach / cell_m)) + 1
+	var center_column: int = int(floor((center.x - origin_x) / cell_m))
+	var center_row: int = int(floor((center.y - origin_z) / cell_m))
+
+	for row_offset in range(-radius_cells, radius_cells + 1):
+		for column_offset in range(-radius_cells, radius_cells + 1):
+			var column: int = center_column + column_offset
+			var row: int = center_row + row_offset
+			var index: int = index_of(column, row)
+			var offset: Vector2 = cell_center_m(column, row) - center
+
+			# A ragged shoreline, not a perfect circle.
+			offset += Vector2(_value(_fine_x, index), _value(_fine_z, index)) * radius * 0.3
+			var along: float = offset.dot(direction)
+			var lateral: float = absf(offset.dot(side))
+			var distance: float = Vector2(along / 1.15, lateral / 0.9).length() / radius
+			var in_mouth: bool = along > 0.0 and along < radius * 2.0 and lateral < radius * 0.45
+
+			if distance < 1.0:
+				heights[index] = minf(heights[index], depth * (1.0 - 0.6 * distance * distance) - 1.0)
+			elif in_mouth:
+				heights[index] = minf(heights[index], depth * 0.6)
+			elif distance < 1.7:
+				# Flat harbor ground rising gently away from the water.
+				var rim: float = 2.0 + 16.0 * (distance - 1.0) / 0.7
+				heights[index] = minf(heights[index], maxf(rim, 2.0))
 
 
 # ==================================================

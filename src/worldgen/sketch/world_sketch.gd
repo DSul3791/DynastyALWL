@@ -229,6 +229,13 @@ func _starter_island(
 		rng.randf_range(-offset, offset), rng.randf_range(-offset, offset)
 	)
 
+	# Beaches face the equator: south in the northern hemisphere (north
+	# is -z), north in the southern hemisphere.
+	var row: int = tile.y - _settings.equator_tile_row
+	var toward_equator: Vector2 = Vector2(0.0, 1.0 if row < 0 else -1.0)
+	var jitter: float = deg_to_rad(float(rules["beach_angle_jitter_deg"]))
+	var beach_direction: Vector2 = toward_equator.rotated(rng.randf_range(-jitter, jitter))
+
 	return {
 		"type": "starter",
 		"x": int(round(position.x)),
@@ -241,6 +248,12 @@ func _starter_island(
 		"cliff": 0,
 		"shore": int(rules["shore_shelf_m"]),
 		"starter": [tile.x, tile.y],
+		"beach_dir": [snappedf(beach_direction.x, 0.001), snappedf(beach_direction.y, 0.001)],
+		"plain_m": int(rules["plain_height_m"]),
+		"plain_width": float(rules["plain_width"]),
+		"rocky_cliff_m": int(rules["rocky_cliff_m"]),
+		"bay_radius": float(rules["bay_radius"]),
+		"bay_depth_m": int(rules["bay_depth_m"]),
 	}
 
 
