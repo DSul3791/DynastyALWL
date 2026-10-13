@@ -125,6 +125,8 @@ A persistent, rough-medieval, multiplayer online world: a survival, exploration 
 - **[Decided]** Starter tiles sit in the middle of the temperate zone, so new players do not suffer extreme climates.
 - **[Decided]** Starter islands in the northern hemisphere have rocky, steep north shores and long sandy beaches along the south shore. Islands in the southern hemisphere are the opposite. Town areas sit on nice, flattish ground near the beaches, or on a river, with a large port.
 - **[Proposed]** Implemented in the world sketch: each starter island's poleward side gets sea cliffs and a narrow, fast-dropping shore; its equator-facing side gets wide sandy shallows, a long gentle coastal plain (rising about 28 m over half the way inland) and a sheltered bay with a narrow mouth for the port, ringed by flat harbor ground. Every starter tile now has at least 2 km² of flat town ground (checked by a test). Rivers come with the detailed tile maps; the tile bake should prefer to run a river into each starter bay, so the port also sits at a river mouth.
+- **[Decided]** Starters sit on a **large landmass**, not a small separate island. Most players spend their first few weeks adventuring and questing there, so it must hold the starter town, farmland, wilderness, quest sites and room for several player towns.
+- **[Proposed]** Every starter landmass gets a guaranteed minimum size so no starter is short-changed. The tile plan currently gives very uneven results (inner starters 39 to 90 km² for their largest island, outer 31 to 240 km²). Proposed targets: inner starter landmass 120 to 180 km², outer 150 to 250 km² (outer starters are more dangerous and reward it with more land). Nearby satellite islands across a strait are welcome on top of that.
 - **[Idea]** Because the map is so big, an inner set of 4 starter tiles and an outer set of 4, so people start in various areas and the center does not fill up too fast.
 - **[Decided]** Inner set at (-3,4), (3,4), (-3,-4), (3,-4); outer set at (-6,6), (6,6), (-6,-6), (6,-6). (The outer set was first proposed at columns ±8, row ±5, and moved inward so it sits in the medium danger zone, Section 4.13.) Each outer starter is about 3.6 tiles (55 km) from the nearest inner starter, and 4.5 tiles (69 km) from the deadly east-west edge. Row 6 is the last temperate row, so the outer starters are a little cooler. The desert center is left for players to expand into.
 - **[Proposed]** Open the inner set at launch and the outer set as the population grows. With placeholder ocean tiles, starter tiles can be baked first.
@@ -561,6 +563,8 @@ Assumptions: 70 game years of aging (15 to 85) over one real year with about 700
 - **[Decided]** Player-run towns can fall into ruin.
 - **[Proposed]** Ruins as landmarks that decay lazily over time.
 - **[Open]** Whether ruins last forever or fade.
+- **[Decided]** Players can found their own town on a starter landmass as long as it is far enough from the starter town center. Large islands can hold several towns, which can build tension between neighboring towns.
+- **[Proposed]** Minimum distance from a starter town center to a new town block about 4 km, and between any two town blocks about 3 km, both tunable in `world.json`.
 
 ### 8.2 NPC population
 
@@ -619,6 +623,9 @@ Assumptions: 70 game years of aging (15 to 85) over one real year with about 700
 - **[Idea]** A player can buy a farm outside the walls and build a house, barns, sheds and fields on their own property as they like.
 - **[Idea]** A player can own several properties and build an empire over time: live on the farm, own the smithy and the bakery, with the spouse working one, a child or hireling running another, and children and hirelings working the farm.
 - **[Idea]** A player might live in a town run by the server (if those exist later), in another player's town, or in their own.
+- **[Decided]** Starter towns have houses and farmland for sale. A player who buys one can work the land and live on the starter island.
+- **[Decided]** A home whose owner vacates is eventually deemed **abandoned** once enough time passes, and returns to the market.
+- **[Open]** How long before a home counts as abandoned, whether the owner gets warnings, and what happens to belongings and stored goods.
 - **[Proposed]** A dynasty owning several businesses is several entries in the shared business structure (Section 13.4). The town gains from successful businesses through taxes, so a manager NPC offering contracts or loans to struggling businesses follows naturally.
 
 ### 8.7 Quests and pastimes
@@ -672,6 +679,11 @@ To be fleshed out when the first NPC is designed.
 ---
 
 ## 9. Law, crime and recognition
+
+### 9.0 PvE and PvP
+
+- **[Decided]** The starter areas are definitely PvE (no player-versus-player combat).
+- **[Open]** How PvP is offered later for players who want it: flagged players, dangerous regions only, war between towns, or a mix (question 57).
 
 ### 9.1 Soft law
 
@@ -1036,6 +1048,9 @@ Generator, hardware and hosting
 53. How does the client handle positions far from the origin: floating origin or a double-precision build? (Section 4.10)
 54. Settled: the world-first sketch is approved (2026-10-13), replacing per-tile dice and the shared deep-ocean tile edge? (Section 4.12)
 55. Settled: inner starters easy, outer starters medium, edges deadly (Section 4.13). Still open: how many tiers players see, and whether the curves need tuning once creatures exist.
+56. Starter landmass sizes: inner 120 to 180 km², outer 150 to 250 km²? Town spacing 4 km from a starter town, 3 km between towns? (Sections 4.1, 8.1)
+57. How PvP works for players who want it, given the starter areas are PvE (Section 9.0).
+58. How long before a vacated home is abandoned, and what happens to its contents (Section 8.6).
 
 ---
 
