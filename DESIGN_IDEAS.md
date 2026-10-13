@@ -9,7 +9,7 @@ Record of the design brainstorming sessions of 2026-10-11 and 2026-10-12. This i
 - **Version 3 (2026-10-12, later):** lifespan targets (start at about 15, die at about 80, in about 700 hours of play); families age with the player; the rescue-first philosophy and party composition; heirs arriving partly trained; the tension between server-owned towns and "no towns at the start"; and the clock arithmetic showing that one clock for aging and seasons is probably not workable. Open questions were updated.
 - **Version 4 (2026-10-12, latest):** two clocks decided (a world calendar for seasons and crops, and an aging clock); a one-to-two-week seasonal cycle; NPC aging at the average player's speed (70 years per real year); the weekly farming rhythm and a note on avoiding calendar years of exactly 7 or 14 days; Farming Simulator as an inspiration; no starting towns; and the civil engineer town-planning idea. The lifespan pacing figure changed from 65 to 70 years (15 to 85).
 - **Version 5 (2026-10-12, evening):** the "play what you like" and "no micromanagement" goals; server-clock aging for everyone as an idea; children, twins, wills and choosing an heir; 60-minute game days, seasonal day length and night; the weekend farming rhythm, crop tiers, farm labor and work buildings; stock levels, the order chain and building maintenance; the budget for language model use and self-hosting; town roles, land and property; quests and pastimes; real-money ideas, with gambling flagged for later; and the plan for growing the tile map one side at a time.
-- **Version 6 (2026-10-12, night):** minimum hardware target (older quad-core, 8 GB RAM, SATA SSD); the 15 to 16 hour tile bake and a proposal to bake 2D maps and generate voxels at runtime, with a table of what is baked, what the server works out and what the client does; language service hosting and scaling; NPC backgrounds, memory, honesty and conversation traits; an islands-first tile pipeline; geology stored as a feature list with ore placed by how deposits really form; surveying skill and prospecting clues.
+- **Version 6 (2026-10-12, night):** minimum hardware target (older quad-core, 8 GB RAM, SATA SSD); the 15 to 16 hour tile bake and a proposal to bake 2D maps and generate voxels at runtime, with a table of what is baked, what the server works out and what the client does; language service hosting and scaling; NPC backgrounds, memory, honesty and conversation traits; an islands-first tile pipeline; geology stored as a feature list with ore placed by how deposits really form; surveying skill and prospecting clues; the surveyor's book; a massive pre-planned world, an arid equator on the origin row and three climate zones with transition rows; tile downloads and the client tile cache; a developer-built starter town (replacing "no starting towns"); natural animal behavior; rarer flotsam.
 
 ## How to read this document
 
@@ -49,6 +49,7 @@ A persistent, rough-medieval, multiplayer online world: a survival, exploration 
 - **[Decided]** The world can grow over time without breaking what already exists.
 - **[Decided]** Players are encouraged to build ships and sail, because islands are separated by real ocean.
 - **[Decided]** The world should feel alive: carts, wagons and NPCs moving through it.
+- **[Decided]** Eventually the world is massive, larger than most games available, and it feels alive mainly because of AI-driven NPCs.
 - **[Decided]** The game is designed to keep players alive even though the whole world is trying to kill them. Layers of rescue (party mates, helpful NPCs) catch a fallen character before they die (Section 6.5).
 - **[Decided] Play what you like.** Players should never have to switch games to change style. Farmer, miner, trader, town manager, hunter or trapper selling to the butcher and furrier, caravan sword for hire, adventurer, someone who plays board games or roleplays conversations in the pub, or someone who wanders the rivers and fields enjoying nature. Each style needs a complete loop of its own.
 - **[Decided] No micromanagement.** Every avenue can be done by hand for fun, or handed off to NPCs, whether family or hirelings. Doing it yourself pays more. Delegating costs a cut but keeps things running.
@@ -97,6 +98,10 @@ A persistent, rough-medieval, multiplayer online world: a survival, exploration 
 - **[Decided]** A generator **island properties panel** controls, per tile: how many islands, how big each is, and where each is placed in the tile.
 - **[Decided]** Tiles are baked and added to the map one at a time over the life of the project.
 - **[Decided]** Island size and the distance between islands should be varied across the world, from small islets up to ARK-scale.
+- **[Decided]** Sailing should feel adventurous and epic, as in Atlas. For scale: the project owner recalls the whole ARK map, ocean included, at about 48 km² and Atlas at about 12 by 12 grids. One tile here is about 105 km², so a 12 by 12 world (about 15,000 km²) would be larger than Atlas.
+- **[Idea]** Once tiles generate in reasonable time, the whole massive world can be planned ahead of time, tile by tile.
+- **[Proposed]** A **world plan** file lists every planned tile (islands, sizes, character) at its permanent coordinate. Tiles can all be baked up front and still be released gradually by growing the active rectangle (Section 4.7). Open-ocean tiles are nearly free to store and help a huge world feel huge without needing content everywhere.
+- **[Open]** How large a world can be designed and still managed and served (Section 15).
 - **[Proposed]** A tile with zero islands is simply an open-ocean tile. This gives ships real distances without any special system.
 - **[Proposed]** Irregular coastlines with small offshore islets, instead of the current rounded-square outline.
 
@@ -109,6 +114,11 @@ Constraints inherited from the current generator:
 
 - **[Decided]** Climate is driven by distance north or south from the origin tile. The origin is the equator (hottest). Climate cools gradually toward the poles.
 - **[Decided]** The 500 km arctic line mentioned in discussion was only an example. The real scale is undecided.
+- **[Decided]** Tile (0,0) and its whole east-west row are the most arid, desert zone.
+- **[Idea]** Three zones (desert, temperate, arctic), with a transition row between zones where one zone gradually changes into the next as you travel north or south. The world's height in tiles decides how wide each zone is.
+- **[Proposed]** Because the world wraps north to south, the zones run symmetrically from the desert row: desert, transition, temperate, transition, arctic at both the north and south edges, where the wrap seam joins arctic to arctic. For example, a world 13 tiles tall gives desert 3 rows (-1 to 1), transitions at ±2, temperate ±3 to ±4, transitions at ±5, and arctic ±6 (2 rows meeting across the seam).
+- **[Proposed]** Temperature is a smooth function of the tile row, so transitions happen naturally and there are no seams. Altitude still cools mountains, and moisture can vary per island so not every desert-row island is sand.
+- **[Proposed]** The climate function must be fixed in absolute tile rows for the planned **final** world height before the first tile is kept. If it were scaled to the current world size, growing the world would change the climate of tiles already baked. Growing north and south alternately keeps the wrap seam joining matching climates.
 - **[Decided]** Climate strongly affects soil type, flora and fauna.
 - **[Proposed]** Climate varies smoothly across a tile, so there are no seams at tile borders.
 - **[Proposed]** Altitude lowers temperature too, so tall equatorial mountains can have snowcaps.
@@ -126,6 +136,8 @@ Note: climate depends only on position, so each tile can compute it without look
 - **[Decided]** Trees and other plants are **objects, not voxels**. At bake time the generator writes a compact placement list per region (position, species, size, rotation). The client downloads it with the region. The server loads the same list.
 - **[Decided]** Grass is never stored or synced. The client draws it near the player only, driven by ground type and a quality setting.
 - **[Decided]** Fauna is server-controlled spawning, based on climate, biome and terrain. It is never baked.
+- **[Decided]** Animals run on simple, classic programmed AI (not the language model), improved gradually over time with AI help. Behavior must not be ridiculously predictable or unnatural: a deer jumps and runs away when spooked, and a troll does not stomp around turning its back on you because it needs to walk around a tree.
+- **[Proposed]** Animal behavior built from perception (sight cones, hearing, smell carried by the wind), a short list of weighted needs (graze, flee, hunt, guard, rest), and steering. Steering lets a creature move around obstacles while still facing its target, so a predator sidesteps a tree instead of turning away. Herds react together and some individuals startle first. A little randomness in timing keeps it unpredictable. All of this runs on the server with simulation level of detail; the client only animates and smooths movement.
 - **[Decided]** Fantasy (Dungeons and Dragons style) species.
 - **[Proposed]** A removed tree is recorded as "item N in region R is gone." Because the list is the truth, changing placement rules later only affects newly baked tiles.
 - **[Proposed]** Climate and soil should also be queryable at runtime from the same function the generator uses, so the server and generator never disagree. This matters for farming.
@@ -246,6 +258,19 @@ A tile should then take minutes, and `world_preview.gd` could show island panel 
 - **[Proposed]** The server sends survey clues and marks to each player based on their own skill, so a low-skill player's client never receives what a high-skill one sees.
 - **[Open]** Ore inside voxels a client has received can be revealed by a modified client (an "x-ray" cheat). Possible answers range from accepting it, to sending ore materials only for nearby or exposed blocks.
 
+### 4.10 Tile downloads and the client cache
+
+- **[Decided]** A client starts in one tile. It downloads that tile and the surrounding tiles, and as the player travels it downloads the tiles around the current tile ahead of time.
+- **[Decided]** Players choose how much hard drive space to use for tiles. Tiles they have visited stay recorded in their maps, but the tiles furthest away are removed when space runs out and downloaded again if needed.
+- **[Proposed]** This favors clients generating terrain from the small tile maps (Section 4.8): a ring of 3 by 3 tiles is perhaps tens of megabytes, where streamed voxel blocks for the same area would be far larger. Generation then runs on the client, so it must be fast on the minimum machine, and different CPUs must produce identical terrain. Test that before relying on it.
+- **[Proposed]** Edits travel separately as small deltas per region. The existing region manifest already has a revision number per region, which tells a client whether its cached edits are stale.
+- **[Proposed]** The player's map is kept separately from the tile cache, so removing a far tile does not erase what the player has explored.
+
+### 4.11 At sea
+
+- **[Decided]** Finding flotsam and jetsam and scooping it up with a grappling hook, as in Atlas, is a loved dynamic, but in Atlas it is far too abundant.
+- **[Proposed]** Flotsam comes from real events: a merchant ship lost in a storm or to pirates leaves its actual cargo drifting, following the same economy and same-odds rules as everything else. Some background flotsam keeps the sea interesting, at a rare rate. Items drift with currents and eventually sink or wash ashore.
+
 ---
 
 ## 5. Harvesting, tools and farming
@@ -299,7 +324,7 @@ A tile should then take minutes, and `world_preview.gd` could show island panel 
 - **[Decided]** Lifespan is variable. The average person lives between 72 and 90 years, so a typical character dies at about 80 to 85 unless cut down early.
 - **[Decided]** For pacing, a typical character ages from 15 to 85 (70 years) over about one real year and about 700 hours of play (Section 7).
 - **[Idea]** In their early 20s, players will hopefully settle down, establish a home and a spouse, and make that their base of operations.
-- **[Idea]** The base can be in a town that belongs to another player or to the player. A town belonging to the server was also mentioned, but there are no starting towns (Section 8.1), so that could only happen later.
+- **[Idea]** The base can be in a town that belongs to another player or to the player. A town belonging to the server was also mentioned. The developer-built starter town (Section 8.1) is the first such town.
 - **[Decided]** Children age too.
 - **[Idea]** Couples realistically keep having children, about one every year or two, and twins are possible. That is one every 5 to 10 real days, or about a dozen children between parent ages 22 and 40 over about three months of real time.
 - **[Idea]** Population control: if a family has many children, one might fall sick and die or have a farming accident.
@@ -435,8 +460,9 @@ Assumptions: 70 game years of aging (15 to 85) over one real year with about 700
 
 ### 8.1 Towns
 
-- **[Decided]** The world starts with no towns. Players found them by placing a **town block** that they own. They can assign themselves as owner or leave governance to AI.
-- **[Decided]** There are no starting towns. In the first playthrough the players are the project owner's friends and family, and it is their job to build the first towns.
+- **[Decided]** Players found towns by placing a **town block** that they own. They can assign themselves as owner or leave governance to AI.
+- **[Decided]** Players start at a **starter town**. For now it is just a spawn point, where the initial developers build the first town. That town becomes the starting town for future players. (This replaces the earlier "no starting towns" decision.)
+- **[Decided]** Apart from the starter town, the first players (the project owner's friends and family) build the towns.
 - **[Idea]** Towns might become server-owned later (for example abandoned player towns), since a town belonging to the server was mentioned. Nothing is placed at the start, so this does not affect the bake.
 - **[Decided]** Players build roads and buildings, choosing from premade blueprints.
 - **[Decided]** The town block interface sets rules and settings: militia, elite guards, a town bank and town funds, tax rates and tax rules. Towns can build and improve defenses.
@@ -829,7 +855,7 @@ From a read-through of the repository on 2026-10-11 (Godot 4.7, GDScript, about 
 World and bake
 
 1. Seasons are decided. Should their strength grow with distance from the equator?
-2. Should the world rectangle stay centered on the origin so the north-south wrap seam joins matching climates?
+2. Mostly settled: the desert row is the origin row and zones run symmetrically north and south (Section 4.2). Still open: the planned final height in tiles.
 3. How much variety in island size is wanted, from tiny rocks to ARK-scale?
 4. Is the world bottom at -4,000 m confirmed, with the lethal depth near -3,000 m kept adjustable?
 5. Should the bottom kilometer be detailed for possible future content or baked simply?
@@ -874,7 +900,7 @@ Language model
 
 Rescue and starting conditions
 
-32. Do towns ever become server-owned later (for example abandoned player towns), or are all towns player-run? There are no starting towns.
+32. Who runs the developer-built starter town over time, and do other towns become server-owned later (for example abandoned player towns)?
 33. How does NPC rescue work in practice, and how is it kept from trivializing death? Do NPC companions count toward party size and what do they cost?
 34. Should the bake include coarse land-suitability layers (slope, fertility, water access) for the town planner, and can plans run unattended? (Section 8.4)
 
@@ -888,7 +914,7 @@ Farming, families, time and money
 Map growth
 
 39. What size is the first live world (one tile for testing, or several before players arrive), and which side grows first? (Section 4.7)
-40. How far apart are the climate bands in tiles? This sets what surface materials get baked into every tile, so it must be settled before baking tiles to keep (Section 4.2).
+40. Partly settled: three zones with transition rows, desert on row 0 (Section 4.2). Still open: the planned final world height, which sets how many tiles wide each zone is. It decides what gets baked into every tile, so it must be settled before baking tiles to keep.
 
 Generator, hardware and hosting
 
@@ -898,6 +924,9 @@ Generator, hardware and hosting
 44. Can players host a world on their own machine? If so, one minimum-spec machine runs both server and client. (Section 3)
 45. What frame rate and view distance should the minimum machine reach? (Section 3)
 46. How much protection against "x-ray" clients that read ore from received voxels is worth its cost? (Section 4.9)
+47. How large a world can be designed, managed and served, and is it one server process or split across several later? (Section 4.1)
+48. Where is the starter town: on the desert origin tile, or on a temperate tile? (Sections 4.2 and 8.1)
+49. Is flora derived at runtime from the biome map and a placement seed (only removals stored), replacing the baked placement lists in Section 4.3? Is the 8 m map grid confirmed?
 
 ---
 
