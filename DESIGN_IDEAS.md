@@ -192,6 +192,8 @@ Note: climate depends only on position, so each tile can compute it without look
 - **[Proposed]** One shared "environmental resistance" idea for heat, cold and thin air, modified by gear, skill, cooling stations and magic.
 - **[Proposed]** Ventilation as a range effect (a station reduces heat within a distance), not a true airflow simulation.
 - **[Idea]** Volcanic areas run hotter at shallower depth.
+- **[Decided]** In the desert, people can dig down to make a cooler living area, as long as they do not dig so deep it starts getting hot again.
+- **[Proposed]** Follow real ground behavior: daily swings vanish within a few meters, and from about 10 to 15 m down the ground sits near the surface's year-round average, then warms with depth. A desert dugout is cooler than the day and warmer than the cold desert night. Real examples are Coober Pedy in Australia and the pit homes of Matmata in Tunisia.
 - **[Idea]** Underground is warmer than the surface in cold regions, which is one reason people there spend time in mining operations.
 - **[Proposed]** Underground temperature blends the surface climate (the year-round average just below ground, as in the real world) with the heat that rises with depth. Each region then has a comfortable underground band: a few hundred meters down in the far north, and shallow caves that are cooler than the scorching surface in hot regions.
 - **[Open]** How far altitude effects reach, given the current 2,048 m world ceiling.
