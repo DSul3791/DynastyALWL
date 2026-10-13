@@ -11,6 +11,7 @@ const RandomizerScript := preload("res://src/worldgen/matrix/matrix_randomizer.g
 const TileMatrixScript := preload("res://src/worldgen/matrix/tile_matrix.gd")
 const TilePlanScript := preload("res://src/worldgen/plan/tile_plan.gd")
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
+const TileWaterScript := preload("res://src/worldgen/tile/tile_water.gd")
 const IslandShapeScript := preload("res://src/worldgen/matrix/island_shape.gd")
 const SketchScript := preload("res://src/worldgen/sketch/world_sketch.gd")
 const ElevationScript := preload("res://src/worldgen/sketch/world_elevation.gd")
@@ -919,6 +920,7 @@ func _test_sketch() -> void:
 
 	_test_tile_plan(settings, sketch, elevation, census)
 	_test_tile_height(settings, elevation)
+	_test_tile_water(settings, elevation, sketch)
 
 
 func _test_tile_plan(settings, sketch: Dictionary, elevation, census: Dictionary) -> void:
@@ -1085,3 +1087,81 @@ func _test_tile_height(settings, elevation) -> void:
 	map_land *= pow(elevation.cell_m / 1000.0, 2.0)
 	print("tile land %.1f km2 vs world map %.1f km2" % [tile_land, map_land])
 	_check(absf(tile_land - map_land) < 0.06 * map_land, "tile land matches the world map")
+
+
+func _test_tile_water(settings, elevation, sketch: Dictionary) -> void:
+	var errors: Array = []
+	var tile_rules: Dictionary = TileHeightScript.load_rules("res://worlds/base_world/plan/tile_rules.json", errors)
+	var tile: Vector2i = Vector2i(3, 4)
+	var starter: Dictionary = {}
+
+	for feature in sketch["features"]:
+		for mount in feature.get("mounts", []):
+			if str(mount["type"]) == "starter" and int(mount["starter"][0]) == tile.x and int(mount["starter"][1]) == tile.y:
+				starter = {
+					"bay_center": Vector2(float(mount["bay_center"][0]), float(mount["bay_center"][1])),
+					"beach_dir": Vector2(float(mount["beach_dir"][0]), float(mount["beach_dir"][1])),
+					"bay_radius_m": float(mount["bay_radius_m"]),
+				}
+
+	_check(not starter.is_empty(), "the starter tile has bay details")
+
+	var height = TileHeightScript.new()
+	height.setup(settings, elevation, tile_rules)
+	height.build(tile)
+	var water = TileWaterScript.new()
+	water.setup(settings, tile_rules)
+	var started: int = Time.get_ticks_msec()
+	water.build(height, tile, starter)
+	print("tile water built in %d ms: %d river cells, %d lakes" % [
+		Time.get_ticks_msec() - started, water.river_cells, water.lakes.size()
+	])
+	_check(water.river_cells > 500, "the tile has rivers")
+
+	var low_lake: bool = false
+
+	for lake in water.lakes:
+		if float(lake["surface_m"]) < float(tile_rules["water"]["lake_min_surface_m"]):
+			low_lake = true
+
+	_check(not low_lake, "lakes only form above the minimum height")
+
+	# River water is never below its bed (waterfalls on steep cliffs may sit well above the carved ground); ocean water is at sea level.
+	var bad_surface: int = 0
+
+	for index in range(water.samples * water.samples):
+		var kind: int = water.water_class[index]
+
+		if kind == TileWaterScript.OCEAN and water.water_surface[index] != 0.0:
+			bad_surface += 1
+		elif kind == TileWaterScript.RIVER and (
+			water.water_surface[index] > water.heights[index] + 40.0
+			or water.water_surface[index] < water.heights[index] - 0.01
+		):
+			bad_surface += 1
+
+	_check(bad_surface == 0, "water surfaces are consistent with the ground")
+
+	# The starter river reaches the bay head.
+	var path: PackedVector2Array = water.starter_path
+	_check(path.size() > 50, "a starter river route was found (%d points)" % path.size())
+
+	if path.size() > 50:
+		var mouth: Vector2 = path[path.size() - 1]
+		var near_river: bool = false
+
+		for dz in range(-40, 41):
+			for dx in range(-40, 41):
+				var column: int = int(mouth.x) + dx
+				var row: int = int(mouth.y) + dz
+
+				if column >= 0 and row >= 0 and column < water.samples and row < water.samples \
+						and water.water_class[row * water.samples + column] == TileWaterScript.RIVER:
+					near_river = true
+
+		_check(near_river, "a river runs into the bay head")
+
+	var again = TileWaterScript.new()
+	again.setup(settings, tile_rules)
+	again.build(height, tile, starter)
+	_check(again.heights == water.heights and again.water_class == water.water_class, "the tile water is reproducible")

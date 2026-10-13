@@ -603,9 +603,9 @@
       "id": 24,
       "area_km2": 54.07,
       "size_class": "great",
-      "peak_m": 656,
-      "peak_x_m": -39120,
-      "peak_z_m": 68720,
+      "peak_m": 611,
+      "peak_x_m": -38000,
+      "peak_z_m": 69040,
       "peak_tile": [
         -3,
         4
@@ -2487,9 +2487,9 @@
       "id": 108,
       "area_km2": 6.58,
       "size_class": "medium",
-      "peak_m": 128,
+      "peak_m": 70,
       "peak_x_m": -85520,
-      "peak_z_m": -76080,
+      "peak_z_m": -75440,
       "peak_tile": [
         -6,
         -5

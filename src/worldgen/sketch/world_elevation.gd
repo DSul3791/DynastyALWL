@@ -501,7 +501,7 @@ func _carve_bay(mount: Dictionary) -> void:
 	mount["bay_center"] = [int(round(center.x)), int(round(center.y))]
 	mount["bay_radius_m"] = int(round(radius))
 	var side: Vector2 = Vector2(-direction.y, direction.x)
-	var reach: float = radius * 2.2
+	var reach: float = radius * 2.3
 	var radius_cells: int = int(ceil(reach / cell_m)) + 1
 	var center_column: int = int(floor((center.x - origin_x) / cell_m))
 	var center_row: int = int(floor((center.y - origin_z) / cell_m))
@@ -524,10 +524,13 @@ func _carve_bay(mount: Dictionary) -> void:
 				heights[index] = minf(heights[index], depth * (1.0 - 0.6 * distance * distance) - 1.0)
 			elif in_mouth:
 				heights[index] = minf(heights[index], depth * 0.6)
-			elif distance < 1.7:
-				# Flat harbor ground rising gently away from the water.
-				var rim: float = 2.0 + 16.0 * (distance - 1.0) / 0.7
-				heights[index] = minf(heights[index], maxf(rim, 2.0))
+			elif distance < 2.1:
+				# Flat harbor ground rising gently away from the water, up
+				# to the height of the land behind so it meets the hills
+				# without a cliff or a ditch.
+				var t: float = (distance - 1.0) / 1.1
+				var rim: float = 2.0 + 70.0 * pow(t, 1.6)
+				heights[index] = minf(heights[index], rim)
 
 
 # ==================================================

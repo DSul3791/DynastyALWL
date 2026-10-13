@@ -33,6 +33,8 @@ var river_cells: int = 0
 var lakes: Array = []            # {"cells", "area_m2", "surface_m", "depth_m"}
 var filled_cells: int = 0
 var longest_river_m: float = 0.0
+var _route_clock: int = 0
+var _source_surface_m: float = 0.0
 var starter_path: PackedVector2Array = PackedVector2Array()   # sample coordinates, source to mouth
 
 var _settings
@@ -65,20 +67,37 @@ func build(height_map, tile: Vector2i, starter: Dictionary = {}) -> void:
 	# Pass 1 finds the lakes; the starter river is then cut from the biggest
 	# highland lake to the bay head and the whole thing is run again.
 	var original: PackedFloat32Array = heights.duplicate()
+	var clock: int = Time.get_ticks_msec()
 	_hydrology(tile, {})
+	_log("pass 1 done (%d lakes)" % lakes.size(), clock)
 
 	if bool(river_rules.get("enabled", false)) and not starter.is_empty():
 		var source: int = _pick_source(starter, tile, float(river_rules["source_min_height_m"]))
+		_log("source picked: %d" % source, clock)
 
 		if source >= 0:
 			heights = original.duplicate()
 			extra = _cut_starter_river(source, starter, tile, river_rules)
+			_log("starter river cut (%d path points)" % starter_path.size(), clock)
 
 			if not extra.is_empty():
 				_hydrology(tile, extra)
+				_log("pass 2 done", clock)
+				var probes: PackedStringArray = PackedStringArray()
+
+				for k in [0, starter_path.size() / 4, starter_path.size() / 2, starter_path.size() * 3 / 4, starter_path.size() - 1]:
+					var point: Vector2 = starter_path[k]
+					var at: int = clampi(int(round(point.y)), 0, samples - 1) * samples + clampi(int(round(point.x)), 0, samples - 1)
+					probes.append("%d:flow %.0f cls %d h %.1f" % [k, flow[at], water_class[at], heights[at]])
+
+				print("  water: starter river probes ", ", ".join(probes))
 			else:
 				heights = original.duplicate()
 				_hydrology(tile, {})
+
+
+static func _log(message: String, since_ms: int) -> void:
+	print("  water: %s at +%d ms" % [message, Time.get_ticks_msec() - since_ms])
 
 
 func _hydrology(tile: Vector2i, extra: Dictionary) -> void:
@@ -337,7 +356,8 @@ func _resolve_pits(routed: PackedInt32Array, level: PackedInt32Array, ocean: Pac
 			and minf(box_w, box_h) >= float(_rules["lake_min_width_m"])
 		)
 
-		if area >= lake_area and float(deepest) / 10.0 >= lake_depth and compact:
+		if area >= lake_area and float(deepest) / 10.0 >= lake_depth and compact \
+				and surface_m >= float(_rules["lake_min_surface_m"]):
 			for index in members:
 				water_class[index] = LAKE
 				water_surface[index] = surface_m
@@ -450,28 +470,24 @@ func _stamp(
 				water_surface[target] = bed + 0.75 * depth
 
 
-# The surface point of the biggest highland lake nearest the bay.
+# The surface point of the highland lake nearest the bay head, so the river
+# starts on the bay side of the mountains.
 func _pick_source(starter: Dictionary, tile: Vector2i, min_height: float) -> int:
 	var head: Vector2 = _bay_head_samples(starter, tile)
 	var best: int = -1
-	var best_area: float = 0.0
+	var best_distance: float = INF
 
 	for lake in lakes:
-		if float(lake["surface_m"]) < min_height or float(lake["area_m2"]) < best_area:
+		if float(lake["surface_m"]) < min_height:
 			continue
-
-		best_area = float(lake["area_m2"])
-		var nearest: int = -1
-		var nearest_distance: float = INF
 
 		for member in lake["members"]:
 			var distance: float = Vector2(float(member % samples), float(member / samples)).distance_to(head)
 
-			if distance < nearest_distance:
-				nearest_distance = distance
-				nearest = member
-
-		best = nearest
+			if distance < best_distance:
+				best_distance = distance
+				best = member
+				_source_surface_m = float(lake["surface_m"])
 
 	return best
 
@@ -530,6 +546,7 @@ func _cut_starter_river(source: int, starter: Dictionary, tile: Vector2i, river_
 	var goal_node: int = goal.y * coarse + goal.x
 	cost[start_node] = 0.0
 	_heap_push(heap_keys, heap_nodes, 0.0, start_node)
+	_route_clock = Time.get_ticks_msec()
 
 	while not heap_nodes.is_empty():
 		var popped: Vector2 = _heap_pop(heap_keys, heap_nodes)
@@ -571,6 +588,8 @@ func _cut_starter_river(source: int, starter: Dictionary, tile: Vector2i, river_
 					came[next_node] = node
 					_heap_push(heap_keys, heap_nodes, next_cost, next_node)
 
+	_log("route search finished", _route_clock)
+
 	if came[goal_node] == -1 and goal_node != start_node:
 		return {}
 
@@ -583,6 +602,8 @@ func _cut_starter_river(source: int, starter: Dictionary, tile: Vector2i, river_
 
 	coarse_path.reverse()
 	var path: PackedVector2Array = _smooth_path(coarse_path, river_rules)
+	# Start exactly at the lake's edge cell so the lake has to spill into the channel.
+	path.insert(0, Vector2(float(source % samples), float(source / samples)))
 	starter_path = path
 
 	# Guide channel: the bed never rises downstream and stays under the ground.
@@ -590,7 +611,7 @@ func _cut_starter_river(source: int, starter: Dictionary, tile: Vector2i, river_
 	var guide_depth: float = float(river_rules["guide_depth_m"])
 	var slope: float = float(_rules["bank_slope"])
 	var mouth: float = float(river_rules["mouth_height_m"])
-	var bed: float = INF
+	var bed: float = _source_surface_m - guide_depth
 	var ocean: PackedByteArray = PackedByteArray()
 	ocean.resize(samples * samples)
 	var unused: PackedFloat32Array = PackedFloat32Array()
