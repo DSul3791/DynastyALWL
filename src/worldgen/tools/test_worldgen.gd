@@ -134,19 +134,21 @@ func _test_climate() -> void:
 		return
 
 	var tile: float = float(settings.tile_size_m)
+	var equator: float = tile * 0.5
+	var half_world: float = tile * 10.5
 
 	# Equator line is the middle of row 0.
-	_check(_approx(settings.get_equator_z_m(), 5120.0), "equator line z")
+	_check(_approx(settings.get_equator_z_m(), equator), "equator line z")
 	_check(
-		_approx(settings.latitude_for_z(5120.0), 0.0),
+		_approx(settings.latitude_for_z(equator), 0.0),
 		"latitude is zero at the equator"
 	)
 	_check(
-		_approx(settings.latitude_for_z(5120.0 - 107520.0 + 1.0), 1.0, 0.001),
+		_approx(settings.latitude_for_z(equator - half_world + 1.0), 1.0, 0.001),
 		"north pole is latitude +1"
 	)
 	_check(
-		_approx(settings.latitude_for_z(5120.0 + 107520.0 - 1.0), -1.0, 0.001),
+		_approx(settings.latitude_for_z(equator + half_world - 1.0), -1.0, 0.001),
 		"south pole is latitude -1"
 	)
 
@@ -195,8 +197,8 @@ func _test_climate() -> void:
 	)
 	_check(
 		_approx(
-			settings.temperature_c(5120.0, 1000.0),
-			settings.temperature_c(5120.0, 0.0) - 6.5,
+			settings.temperature_c(equator, 1000.0),
+			settings.temperature_c(equator, 0.0) - 6.5,
 			0.001
 		),
 		"altitude cools by the lapse rate"

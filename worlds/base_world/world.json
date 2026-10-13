@@ -4,7 +4,7 @@
 	"seed_text": "This1is2the3greatest4game5of6all7time",
 
 	"geometry": {
-		"tile_size_m": 10240,
+		"tile_size_m": 15360,
 		"region_size_m": 1024,
 		"map_spacing_m": 8,
 		"min_tile": -10,

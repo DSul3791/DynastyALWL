@@ -1,27 +1,27 @@
 TILE MATRIX SUMMARY
 World: Modular Island World   seed phrase: This1is2the3greatest4game5of6all7time   master seed: 574716103
 
-Tiles: 441   world area: 46242 km2   land: 5015 km2 (10.8%)
-Islands: 671
+Tiles: 441   world area: 104045 km2   land: 5895 km2 (5.7%)
+Islands: 728
 Tile layouts: main 118, ocean 141, peers 174, starter 8
-Island sizes: islet 139, small 276, medium 116, large 126, great 14
-Island characters: archipelago 69, flat 90, mountainous 195, rolling 219, volcanic 98
+Island sizes: islet 140, small 265, medium 197, large 103, great 23
+Island characters: archipelago 69, flat 103, mountainous 204, rolling 241, volcanic 111
 
 BY CLIMATE ZONE
 zone               tiles   ocean  islands land km2  km2/tile  sizes (islet/small/medium/large/great)
-desert                63     40%       77      660      10.5  18/20/21/17/1
-transition_desert     42     17%       90      636      15.1  15/45/15/12/3
-temperate            168     21%      290     2345      14.0  59/116/43/65/7
-transition_arctic     42     19%       79      561      13.4  12/34/22/9/2
-arctic               126     52%      135      813       6.5  35/61/15/23/1
+desert                63     40%       88      786      12.5  17/22/33/14/2
+transition_desert     42     17%       97      760      18.1  14/42/29/8/4
+temperate            168     21%      318     2808      16.7  61/110/83/52/12
+transition_arctic     42     19%       87      696      16.6  13/30/34/6/4
+arctic               126     52%      138      845       6.7  35/61/18/23/1
 
 GEOLOGY: ISLANDS WITH EACH KIND, BY ZONE
 zone                 granite     basin fold_belt  volcanic
-desert                    20        27        14        29
-transition_desert         27        19        29        23
-temperate                 87        95        89        64
-transition_arctic         19        24        19        23
-arctic                    50        38        29        32
+desert                    24        32        15        33
+transition_desert         31        20        32        25
+temperate                 97       107        98        72
+transition_arctic         21        25        20        28
+arctic                    50        40        31        33
 
 Planned resources by geology (coarse planning guide):
   granite    tin, copper, gemstone
@@ -34,7 +34,7 @@ STARTER TILES
   inner  (  3,  4) temperate          22.9 km2 rolling island, 1 satellite(s)   geology: granite, volcanic
   inner  ( -3, -4) temperate          29.9 km2 rolling island, 1 satellite(s)   geology: basin, fold_belt
   inner  (  3, -4) temperate          23.0 km2 rolling island, 0 satellite(s)   geology: basin
-  outer  ( -8,  5) temperate          29.9 km2 rolling island, 1 satellite(s)   geology: basin, volcanic
+  outer  ( -8,  5) temperate          29.9 km2 rolling island, 2 satellite(s)   geology: basin, fold_belt, volcanic
   outer  (  8,  5) temperate          22.5 km2 rolling island, 1 satellite(s)   geology: fold_belt, granite
   outer  ( -8, -5) temperate          23.5 km2 rolling island, 0 satellite(s)   geology: fold_belt, granite
   outer  (  8, -5) temperate          24.9 km2 rolling island, 2 satellite(s)   geology: basin, fold_belt, granite

@@ -574,6 +574,10 @@ func _generate_peers(
 				float(variation[0]), float(variation[1])
 			)
 
+			# Peers stay small or medium; the large classes belong to
+			# main islands.
+			area = minf(area, float(_rules["size_classes"]["medium"][1]) - 0.01)
+
 		areas.append(maxf(area * scale, 0.2))
 
 	var total: float = 0.0

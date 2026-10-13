@@ -9,7 +9,7 @@ Record of the design brainstorming sessions of 2026-10-11 and 2026-10-12. This i
 - **Version 3 (2026-10-12, later):** lifespan targets (start at about 15, die at about 80, in about 700 hours of play); families age with the player; the rescue-first philosophy and party composition; heirs arriving partly trained; the tension between server-owned towns and "no towns at the start"; and the clock arithmetic showing that one clock for aging and seasons is probably not workable. Open questions were updated.
 - **Version 4 (2026-10-12, latest):** two clocks decided (a world calendar for seasons and crops, and an aging clock); a one-to-two-week seasonal cycle; NPC aging at the average player's speed (70 years per real year); the weekly farming rhythm and a note on avoiding calendar years of exactly 7 or 14 days; Farming Simulator as an inspiration; no starting towns; and the civil engineer town-planning idea. The lifespan pacing figure changed from 65 to 70 years (15 to 85).
 - **Version 5 (2026-10-12, evening):** the "play what you like" and "no micromanagement" goals; server-clock aging for everyone as an idea; children, twins, wills and choosing an heir; 60-minute game days, seasonal day length and night; the weekend farming rhythm, crop tiers, farm labor and work buildings; stock levels, the order chain and building maintenance; the budget for language model use and self-hosting; town roles, land and property; quests and pastimes; real-money ideas, with gambling flagged for later; and the plan for growing the tile map one side at a time.
-- **Version 6 (2026-10-12, night):** minimum hardware target (older quad-core, 8 GB RAM, SATA SSD); the 15 to 16 hour tile bake and a proposal to bake 2D maps and generate voxels at runtime, with a table of what is baked, what the server works out and what the client does; language service hosting and scaling; NPC backgrounds, memory, honesty and conversation traits; an islands-first tile pipeline; geology stored as a feature list with ore placed by how deposits really form; surveying skill and prospecting clues; the surveyor's book; a massive pre-planned world, an arid equator on the origin row and three climate zones with transition rows; tile downloads and the client tile cache; a developer-built starter town (replacing "no starting towns"); natural animal behavior; rarer flotsam; several starter tiles; a full-size world filled with placeholder ocean tiles; a matrix of tile specifications; a recommendation to start with voxel streaming; a square final world (proposed 21 by 21); polar sea ice; years of travel; the admin town warehouse; the town founding sequence from town block to planner, builders, roads and buildings; admin warehouse access, NPC production limits and worthless starter items; the 21 by 21 world confirmed; eight temperate starter tiles in an inner and an outer set; cool desert dugouts; and a pointer to the draft world format specification.
+- **Version 6 (2026-10-12, night):** minimum hardware target (older quad-core, 8 GB RAM, SATA SSD); the 15 to 16 hour tile bake and a proposal to bake 2D maps and generate voxels at runtime, with a table of what is baked, what the server works out and what the client does; language service hosting and scaling; NPC backgrounds, memory, honesty and conversation traits; a tile size of 15 by 15 regions (15.36 km) and a comparison with Atlas; an islands-first tile pipeline; geology stored as a feature list with ore placed by how deposits really form; surveying skill and prospecting clues; the surveyor's book; a massive pre-planned world, an arid equator on the origin row and three climate zones with transition rows; tile downloads and the client tile cache; a developer-built starter town (replacing "no starting towns"); natural animal behavior; rarer flotsam; several starter tiles; a full-size world filled with placeholder ocean tiles; a matrix of tile specifications; a recommendation to start with voxel streaming; a square final world (proposed 21 by 21); polar sea ice; years of travel; the admin town warehouse; the town founding sequence from town block to planner, builders, roads and buildings; admin warehouse access, NPC production limits and worthless starter items; the 21 by 21 world confirmed; eight temperate starter tiles in an inner and an outer set; cool desert dugouts; and a pointer to the draft world format specification.
 
 ## How to read this document
 
@@ -59,7 +59,7 @@ A persistent, rough-medieval, multiplayer online world: a survival, exploration 
 ## 2. Terminology
 
 - **Region:** one 1,024 m by 1,024 m storage file holding all 7 LODs. It is the natural unit to stream from server to client.
-- **Island tile:** a block of 10 by 10 regions, 10,240 m (about 10.24 km) on a side. Each tile is baked on its own and addressed by a permanent integer coordinate.
+- **Island tile:** a block of 15 by 15 regions, 15,360 m (about 15.36 km) on a side. Each tile is baked on its own and addressed by a permanent integer coordinate. (It was 10 by 10 regions and 10.24 km until 2026-10-12. The old generator still builds 10 by 10 tiles until it is retired.)
 - The project owner sometimes says "chunk". Depending on context that means a region or an island tile.
 - **[Decided]** Sizes are multiples of 1,024 because voxel data aligns best that way.
 - **Baked** data is produced once by the generator and never changes. **Server layer** data is what players and NPCs change while the game runs.
@@ -98,8 +98,9 @@ A persistent, rough-medieval, multiplayer online world: a survival, exploration 
 - **[Decided]** A generator **island properties panel** controls, per tile: how many islands, how big each is, and where each is placed in the tile.
 - **[Decided]** Tiles are baked and added to the map one at a time over the life of the project.
 - **[Decided]** Island size and the distance between islands should be varied across the world, from small islets up to ARK-scale.
+- **[Decided]** Tile size is 15 by 15 regions, 15,360 m: the multiple of the 1,024 m region size nearest to 15 km. Every LOD stays aligned, 8 m map samples divide it exactly (1,920 intervals), and the next candidates were 14 regions (14.3 km) and 16 regions (16.4 km, a power of two).
 - **[Decided]** Tiles can hold several similar small or medium islands, or a large or great island with a random chance of a few islets or small islands just off it (`WORLD_FORMAT_SPEC.md`, Section 6).
-- **[Decided]** Sailing should feel adventurous and epic, as in Atlas. For scale: the project owner recalls the whole ARK map, ocean included, at about 48 km² and Atlas at about 12 by 12 grids. One tile here is about 105 km², so a 12 by 12 world (about 15,000 km²) would be larger than Atlas.
+- **[Decided]** Sailing should feel adventurous and epic, as in Atlas. For scale: the project owner recalls the whole ARK map, ocean included, at about 48 km². Atlas is 15 by 15 grids (225 cells, wrapping at the edges, per its wiki), and its developer says crossing the whole map takes about 30 hours nonstop. Atlas does not publish a grid size. One player estimated about 212 km across the whole map (about 14 km per grid). That estimate is unverified, but it fits Atlas's own grid editor warning against grids over 1,400,000 Unreal units (14 km). One tile here is about 236 km², so the 21 by 21 world (about 322 km across) is about 1.5 times Atlas's length on a side.
 - **[Idea]** Once tiles generate in reasonable time, the whole massive world can be planned ahead of time, tile by tile.
 - **[Proposed]** A **world plan** file lists every planned tile (islands, sizes, character) at its permanent coordinate. Tiles can all be baked up front and still be released gradually by growing the active rectangle (Section 4.7). Open-ocean tiles are nearly free to store and help a huge world feel huge without needing content everywhere.
 - **[Open]** How large a world can be designed and still managed and served (Section 15).
@@ -111,7 +112,7 @@ A persistent, rough-medieval, multiplayer online world: a survival, exploration 
 - **[Proposed]** The matrix is a file you can read and edit. Each cell holds the tile's kind (ocean, starter, islands), island count, sizes, characters and seeds. Rules shape the random picks: a size mix, minimum sailing distances, starter tiles hand-tuned to be town friendly (flat land, a river, a harbor, varied resources nearby), and each climate zone getting a fair share of key resources. A whole-world preview image shows the result before anything is baked.
 - **[Decided]** The final map is evenly square, around 18 by 18 or 20 by 20, or whatever number works.
 - **[Decided]** 21 by 21, provided it gives a world that takes years to traverse.
-- **[Proposed]** Use an odd number so the desert row sits exactly in the middle and the north and south edges have matching climates where they wrap. **21 by 21** is the suggestion: 441 tiles, about 215 km on a side, about 46,000 km² (most of it ocean). Rows and columns run from -10 to 10. 19 by 19 is the smaller alternative.
+- **[Proposed]** Use an odd number so the desert row sits exactly in the middle and the north and south edges have matching climates where they wrap. **21 by 21** is the suggestion: 441 tiles, about 322 km on a side, about 104,000 km² (most of it ocean; the first plan puts about 6% of it as land). Rows and columns run from -10 to 10. 19 by 19 is the smaller alternative.
 
 | Rows (21 tall) | Zone |
 |---|---|
@@ -123,9 +124,9 @@ A persistent, rough-medieval, multiplayer online world: a survival, exploration 
 
 - **[Decided]** Starter tiles sit in the middle of the temperate zone, so new players do not suffer extreme climates.
 - **[Idea]** Because the map is so big, an inner set of 4 starter tiles and an outer set of 4, so people start in various areas and the center does not fill up too fast.
-- **[Proposed]** Inner set at (-3,4), (3,4), (-3,-4), (3,-4); outer set at (-8,5), (8,5), (-8,-5), (8,-5). Columns -8, -3, 3 and 8 are spaced 5, 6, 5 and 5 tiles apart around the east-west wrap, so starters are spread nearly evenly. The nearest starters are about 60 km apart. The desert center is left for players to expand into.
+- **[Proposed]** Inner set at (-3,4), (3,4), (-3,-4), (3,-4); outer set at (-8,5), (8,5), (-8,-5), (8,-5). Columns -8, -3, 3 and 8 are spaced 5, 6, 5 and 5 tiles apart around the east-west wrap, so starters are spread nearly evenly. The nearest starters are about 77 km apart. The desert center is left for players to expand into.
 - **[Proposed]** Open the inner set at launch and the outer set as the population grows. With placeholder ocean tiles, starter tiles can be baked first.
-- **[Proposed]** Traversal: crossing 215 km is tens of hours on foot and perhaps half a day of sailing, depending on speeds not yet set. "Years" comes from exploring: a few hundred island tiles of up to ARK scale, at many hours each, is thousands of hours, several years for a player at 12 to 16 hours a week.
+- **[Proposed]** Traversal: crossing 322 km is tens of hours on foot and, at Atlas's roughly 7 km/h (derived from its 30 hours for about 212 km), about 46 hours of sailing. Ship speeds are not yet set. "Years" comes from exploring: a few hundred island tiles of up to ARK scale, at many hours each, is thousands of hours, several years for a player at 12 to 16 hours a week.
 - **[Proposed]** Starter tiles should give a choice of climate (desert and temperate, not arctic). With a world 13 tiles tall the rows run from -6 to 6, so starters at distance 8 north or south need a taller world, or sit east and west on existing rows.
 - **[Proposed]** A tile with zero islands is simply an open-ocean tile. This gives ships real distances without any special system.
 - **[Proposed]** Irregular coastlines with small offshore islets, instead of the current rounded-square outline.
@@ -239,12 +240,12 @@ The draft of the permanent formats (world settings, tile file, tile matrix) is i
 
 | Layer | Contents | Why |
 |---|---|---|
-| Baked once per tile, permanent | Tile seed and generator version; height, coast, rivers and lakes; climate zone; soil and biome class; flora placement lists; sites for caves, mineshafts, labyrinths and dormant lairs; possibly deposit identities and land-suitability layers | Defines the place. Changing it later moves coastlines and landmarks under players. Small: about 1,280 by 1,280 cells per map at 8 m. |
+| Baked once per tile, permanent | Tile seed and generator version; height, coast, rivers and lakes; climate zone; soil and biome class; flora placement lists; sites for caves, mineshafts, labyrinths and dormant lairs; possibly deposit identities and land-suitability layers | Defines the place. Changing it later moves coastlines and landmarks under players. Small: about 1,921 by 1,921 samples per map at 8 m. |
 | Server, deterministic from the baked maps | Voxel fill, rock layers by depth, caves, ore, structure carving, fauna spawning, plant growth, weather | Cheap to produce on demand. Frozen per tile once players build there. |
 | Server, living layer | Voxel edits, removed trees, buildings, NPCs, crops, economy | Changes constantly. Saved as deltas on top of the baked and generated base. |
 | Client | Meshing, LOD display, fog and horizon impostors, grass and foliage shaders, animation, sound, weather visuals | Keeps the minimum machine light. |
 
-**[Proposed] Islands first, rock derived.** The current pipeline takes surface height from the geology simulation, erodes it, and then the coast model forces everything outside a rounded square to ocean, which is why a tile holds one island. Reverse the order. Each tile is built in 2D on the 8 m grid (1,280 by 1,280 cells):
+**[Proposed] Islands first, rock derived.** The current pipeline takes surface height from the geology simulation, erodes it, and then the coast model forces everything outside a rounded square to ocean, which is why a tile holds one island. Reverse the order. Each tile is built in 2D on the 8 m grid (1,921 by 1,921 samples):
 
 1. Layout from the island properties panel: islands with position, size, shape seed and character (mountainous, rolling, volcanic, archipelago). A warped-noise land mask gives irregular coasts, and small islets appear where the noise breaks the surface near shore.
 2. Elevation: rising with distance from the coast, mountain spines and ridge noise, then shelf, beaches and cliffs down to the shared deep-ocean edge.
@@ -299,6 +300,7 @@ A tile should then take minutes, and `world_preview.gd` could show island panel 
 - **[Proposed]** Clients still download each tile's small 2D maps, at low resolution, for the world map and for drawing distant terrain cheaply, while nearby terrain arrives as streamed voxels.
 - **[Proposed]** If bandwidth becomes the problem later, switch to clients generating unedited terrain from the tile maps.
 - **[Proposed]** Generating on the client from the small tile maps (Section 4.8) is the alternative: a ring of 3 by 3 tiles is perhaps tens of megabytes, where streamed voxel blocks for the same area would be far larger. Generation then runs on the client, so it must be fast on the minimum machine, and different CPUs must produce identical terrain. Test that before relying on it.
+- **[Open]** The world is one coordinate space about 322 km across. Single-precision positions lose detail far from the origin (about 1.6 cm at 160 km), so the client needs a floating origin (shifting the world around the player) or an engine build with double precision. The wrap lets the client recentre whenever it crosses the seam. Test early in the terrain steps.
 - **[Proposed]** Edits travel separately as small deltas per region. The existing region manifest already has a revision number per region, which tells a client whether its cached edits are stale.
 - **[Proposed]** The player's map is kept separately from the tile cache, so removing a far tile does not erase what the player has explored.
 
@@ -890,7 +892,7 @@ From a read-through of the repository on 2026-10-11 (Godot 4.7, GDScript, about 
 **Current values**
 
 - World height: -4,000 m to +2,048 m, sea level 0.
-- 7 LODs, 16-voxel data blocks, 1,024 m regions, 10 by 10 regions per tile.
+- 7 LODs, 16-voxel data blocks, 1,024 m regions, 10 by 10 regions per tile (the new generator uses 15 by 15).
 - Rock types: sediment, shale, limestone, coal, granite. Resources: coal, iron, copper, tin, lead, zinc, nickel, silver, gold, salt, sulfur, clay, gypsum, graphite, gemstone, peat.
 - Default server capacity: 32 clients.
 
@@ -977,6 +979,8 @@ Generator, hardware and hosting
 49. Settled: flora is derived at runtime from the biome map and a placement seed, only removals are stored, and the map grid is 8 m (Sections 4.3 and 4.8).
 50. Settled: 21 by 21 (Section 4.1). Still open: travel speeds on foot, by horse and by ship, which decide how long the world takes to cross.
 51. How far does polar sea ice reach, and can ships cross the pole in summer? (Section 4.2)
+52. Should island size classes grow with the bigger tiles? Island areas stayed the same when tiles grew from 10.24 km to 15.36 km, so land fell from about 11% to about 6% of the world. (Section 4.1)
+53. How does the client handle positions far from the origin: floating origin or a double-precision build? (Section 4.10)
 
 ---
 

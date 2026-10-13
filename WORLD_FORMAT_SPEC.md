@@ -18,14 +18,14 @@ Builds on the current code (`world_definition.gd`, `region_mapper.gd`).
 
 | Item | Value | Status |
 |---|---|---|
-| Tile size | 10,240 m (10 by 10 regions of 1,024 m) | Permanent (existing) |
-| Tile (x, z) covers | x·10,240 to (x+1)·10,240 m, same for z | Permanent (existing) |
+| Tile size | 15,360 m (15 by 15 regions of 1,024 m) | Permanent (decided; was 10,240 m) |
+| Tile (x, z) covers | x·15,360 to (x+1)·15,360 m, same for z | Permanent |
 | World size | 21 by 21 tiles, x and z from -10 to 10 | Permanent (decided) |
-| Wrap | Both axes, period 215,040 m | Permanent |
+| Wrap | Both axes, period 322,560 m | Permanent |
 | North | The -Z direction | Permanent |
 | Voxel size | 1 m | Permanent (existing) |
 | Vertical range | -4,000 m to +2,048 m, sea level 0 | Permanent (existing) |
-| Equator line | z = 5,120 m (the middle of row 0) | Permanent |
+| Equator line | z = 7,680 m (the middle of row 0) | Permanent |
 
 The world is symmetric about the equator line: rows -10 and 10 are the same distance from it and meet across the wrap seam, which is the pole.
 
@@ -41,13 +41,13 @@ One file for the whole world, fixed before the first tile is kept.
 
 **Geometry (Permanent)**
 
-- Tile size, region size, map spacing (8 m) and map samples per side (1,281, see Section 4).
+- Tile size, region size, map spacing (8 m) and map samples per side (1,921, see Section 4).
 - World extent and wrap, vertical range, sea level.
 - **Ocean edge floor depth.** Every tile edge converges to this depth. The current code uses the world bottom plus 1 m (about -3,999 m), so the open sea is 4 km deep with almost no rock beneath it. **[Decided]** -2,000 m, which keeps 2 km of rock under the deep sea and leaves room for shelves, seamounts and wrecks within diving reach near islands. Players will dive on wrecks and fish with spears, as in Atlas.
 
 **Climate (Permanent, because biomes are baked from it)**
 
-- Latitude φ = (z − 5,120) / 107,520, from -1 (south pole) through 0 (equator) to 1 (north pole). The poles are the wrap seam.
+- Latitude φ = −(z − 7,680) / 161,280, from -1 (south pole) through 0 (equator) to 1 (north pole). The poles are the wrap seam.
 - Sea-level annual mean temperature as control points over |φ|, smoothly interpolated. Starting values to tune in the preview:
 
 | \|φ\| | Row (approx.) | Temperature | Zone |
@@ -94,10 +94,10 @@ One file per tile: `tiles/tile_<x>_<z>.tile`, written as `.partial` and renamed 
 | Revision | Starts at 1. Rises when the tile is replaced or re-encoded, so clients refresh cached copies |
 | Status | Placeholder or final |
 | Matrix entry | A copy of the tile's matrix cell (Section 5), so the tile can be previewed or rebaked exactly |
-| Map spacing and sample count | 8 m, 1,281 by 1,281 **[Decided]** |
+| Map spacing and sample count | 8 m, 1,921 by 1,921 **[Decided]** |
 | Flora seed | For runtime flora placement |
 
-**Maps (8 m grid, 1,281 by 1,281 samples)**
+**Maps (8 m grid, 1,921 by 1,921 samples)**
 
 Samples sit on grid points from the tile's west edge to its east edge inclusive, so a tile can be interpolated without reading its neighbors. The outer ring always holds the standard ocean edge values, so neighboring tiles agree automatically.
 
@@ -115,11 +115,11 @@ Samples sit on grid points from the tile's west edge to its east edge inclusive,
 | Cover depth | uint8 | raw × 0.25 m (0 to 63.75 m) | Loose material above bedrock |
 | Layer offset | int16 | raw × 0.1 m (±3,276 m) | Bends rock layers for folds |
 
-About 13 bytes per sample, about 21 MB per tile before compression. Mostly-ocean tiles compress to a small fraction of that.
+About 13 bytes per sample, about 48 MB per tile before compression. Mostly-ocean tiles compress to a small fraction of that.
 
 **Low-resolution maps**
 
-A 32 m version (321 by 321) of height, water class and biome for the world map and for drawing distant terrain on clients. About 0.5 MB before compression.
+A 32 m version (481 by 481) of height, water class and biome for the world map and for drawing distant terrain on clients. About 1 MB before compression.
 
 **Lists**
 
