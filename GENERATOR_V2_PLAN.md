@@ -16,7 +16,8 @@ Working plan for the new world generator described in `DESIGN_IDEAS.md` (Section
 - Fixed features: the central trench and the center island with its crater. Danger map in `world.json`.
 - Tile plan derived from the sketch (2026-10-13): `src/worldgen/plan/`, run `godot --headless --path . --script res://src/worldgen/tools/build_tile_plan.gd` (about 25 s). Writes `plan/tile_plan.json`, `island_list.json`, `tile_plan_summary.txt`. 312 islands, 227 tiles need a tile file. 741 checks pass.
 - Starter landmasses sized (2026-10-13): starter islands drawn at the target area with a strait that keeps shelf hills apart; test checks inner 50 to 100 km², outer 70 to 150 km². Tile plan no longer auto-locks starters (it is derived data). 749 checks pass.
-- Next: step 7 (one tile's detailed maps, read from the world elevation map).
+- Step 7 first pass (2026-10-13): `src/worldgen/tile/` builds a tile's 8 m height map from the world map (cubic upsample plus seam-safe detail noise, about 2 s). Run `godot --headless --path . --script res://src/worldgen/tools/build_tile.gd -- --tile=3,4` for `plan/tile_3_4_relief.png`. Neighboring tiles match exactly on shared edges. 754 checks pass. Known rough spots: cliff steps on the north shore, small ponds in the harbor flat, to be softened by erosion and water steps.
+- Next: step 8 water (rivers into the bay), then step 9 erosion; formerly: step 7 (one tile's detailed maps, read from the world elevation map).
 
 ## Steps
 

@@ -1,0 +1,20 @@
+{
+	"format_version": 1,
+	"note": "Rules for turning the 160 m world elevation map into one tile's 8 m height map: smooth cubic upsampling plus fine detail noise that is continuous across tile borders. Rerun tools/build_tile.gd after editing.",
+
+	"detail": {
+		"note": "Noise octaves added on land. amplitude_m is the full strength; it fades in with height so beaches and the coastal plain stay smooth and the sea floor stays calm.",
+		"octaves": [
+			{"wavelength_m": 900, "amplitude_m": 14},
+			{"wavelength_m": 300, "amplitude_m": 7},
+			{"wavelength_m": 100, "amplitude_m": 3.0},
+			{"wavelength_m": 35, "amplitude_m": 1.2},
+			{"wavelength_m": 12, "amplitude_m": 0.45}
+		],
+		"calm_below_m": 4,
+		"full_above_m": 120,
+		"calm_strength": 0.12,
+		"sea_strength": 0.05,
+		"coast_ragged_m": 1.6
+	}
+}

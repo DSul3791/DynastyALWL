@@ -10,6 +10,7 @@ const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const RandomizerScript := preload("res://src/worldgen/matrix/matrix_randomizer.gd")
 const TileMatrixScript := preload("res://src/worldgen/matrix/tile_matrix.gd")
 const TilePlanScript := preload("res://src/worldgen/plan/tile_plan.gd")
+const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 const IslandShapeScript := preload("res://src/worldgen/matrix/island_shape.gd")
 const SketchScript := preload("res://src/worldgen/sketch/world_sketch.gd")
 const ElevationScript := preload("res://src/worldgen/sketch/world_elevation.gd")
@@ -917,6 +918,7 @@ func _test_sketch() -> void:
 	_check(share > 0.02 and share < 0.12, "the land share is plausible")
 
 	_test_tile_plan(settings, sketch, elevation, census)
+	_test_tile_height(settings, elevation)
 
 
 func _test_tile_plan(settings, sketch: Dictionary, elevation, census: Dictionary) -> void:
@@ -1023,3 +1025,63 @@ func _test_tile_plan(settings, sketch: Dictionary, elevation, census: Dictionary
 	edited.cells[Vector2i(0, 0)]["locked"] = true
 	var rebuilt = plan.build(edited)
 	_check(str(rebuilt.get_cell(0, 0)["notes"]) == "hand edited", "a locked plan tile is kept on rebuild")
+
+
+func _test_tile_height(settings, elevation) -> void:
+	var errors: Array = []
+	var tile_rules: Dictionary = TileHeightScript.load_rules("res://worlds/base_world/plan/tile_rules.json", errors)
+	_check(not tile_rules.is_empty(), "tile rules load")
+
+	var west = TileHeightScript.new()
+	west.setup(settings, elevation, tile_rules)
+	var started: int = Time.get_ticks_msec()
+	west.build(Vector2i(3, 4))
+	print("tile height map built in %d ms" % (Time.get_ticks_msec() - started))
+	_check(west.samples == 1921 and west.heights.size() == 1921 * 1921, "the tile height map is 1,921 by 1,921")
+
+	var east = TileHeightScript.new()
+	east.setup(settings, elevation, tile_rules)
+	east.build(Vector2i(4, 4))
+	var south = TileHeightScript.new()
+	south.setup(settings, elevation, tile_rules)
+	south.build(Vector2i(3, 5))
+
+	# Neighboring tiles agree exactly on their shared edge.
+	var worst_x: float = 0.0
+	var worst_z: float = 0.0
+
+	for k in range(west.samples):
+		worst_x = maxf(worst_x, absf(west.height_at(west.samples - 1, k) - east.height_at(0, k)))
+		worst_z = maxf(worst_z, absf(west.height_at(k, west.samples - 1) - south.height_at(k, 0)))
+
+	print("tile edge mismatch east %.4f m, south %.4f m" % [worst_x, worst_z])
+	_check(worst_x < 0.001 and worst_z < 0.001, "tile edges match their neighbors")
+
+	var again = TileHeightScript.new()
+	again.setup(settings, elevation, tile_rules)
+	again.build(Vector2i(3, 4))
+	_check(again.heights == west.heights, "the tile height map is reproducible")
+
+	# Land area agrees with the coarse world map.
+	var tile_land: float = 0.0
+
+	for value in west.heights:
+		if value > 0.0:
+			tile_land += 1.0
+
+	tile_land *= pow(west.spacing_m / 1000.0, 2.0)
+	var map_land: float = 0.0
+	var tile_cells: int = int(round(float(settings.tile_size_m) / elevation.cell_m))
+
+	for row in range(tile_cells):
+		for column in range(tile_cells):
+			var h: float = elevation.heights[elevation.index_of(
+				(3 - settings.min_tile) * tile_cells + column, (4 - settings.min_tile) * tile_cells + row
+			)]
+
+			if h > 0.0:
+				map_land += 1.0
+
+	map_land *= pow(elevation.cell_m / 1000.0, 2.0)
+	print("tile land %.1f km2 vs world map %.1f km2" % [tile_land, map_land])
+	_check(absf(tile_land - map_land) < 0.06 * map_land, "tile land matches the world map")
