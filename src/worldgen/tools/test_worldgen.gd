@@ -244,7 +244,29 @@ func _test_danger() -> void:
 			"outer starter %s is medium (%.2f)" % [str(tile), value]
 		)
 
-	_check(settings.danger_at_tile(0, 0) >= 0.95, "tile (0,0) is the deadliest")
+	_check(settings.danger_at_tile(0, 0) >= 0.99, "tile (0,0) is the deadliest")
+
+	# The central trench covers rows -1 to 1 and columns -2 to 2.
+	var trench: Dictionary = settings.world_features[0]
+	var inside: int = 0
+
+	for row in range(-1, 2):
+		for column in range(-2, 3):
+			if settings.is_tile_in_feature(trench, column, row):
+				inside += 1
+
+			_check(
+				settings.danger_at_tile(column, row) >= 0.93,
+				"trench tile (%d,%d) is deadly" % [column, row]
+			)
+
+	_check(inside == 15, "all fifteen trench tiles are inside the oblong (%d)" % inside)
+	_check(not settings.is_tile_in_feature(trench, 3, 0), "column 3 is outside the trench")
+	_check(not settings.is_tile_in_feature(trench, 0, 2), "row 2 is outside the trench")
+	_check(
+		settings.danger_at_tile(0, 0) > settings.danger_at_tile(2, 1),
+		"the trench is deadliest at its center"
+	)
 	_check(settings.danger_at_tile(10, 4) >= 0.9, "the east edge is deadly")
 	_check(settings.danger_at_tile(-10, -4) >= 0.9, "the west edge is deadly")
 	_check(settings.danger_at_tile(0, 10) >= 0.9, "the south pole is deadly")
@@ -577,6 +599,17 @@ func _test_matrix_distribution(settings, rules: Dictionary, matrix) -> void:
 		"the arctic has more open ocean than the temperate zone"
 	)
 	_check(seas.size() >= 3, "open seas were placed (%d)" % seas.size())
+
+	var trench_islands: int = 0
+	var trench_tiles: int = 0
+
+	for cell in matrix.get_sorted_cells():
+		if str(cell["pattern"]) == "feature:central_trench":
+			trench_tiles += 1
+			trench_islands += cell["islands"].size()
+
+	_check(trench_tiles == 15, "the trench covers fifteen tiles (%d)" % trench_tiles)
+	_check(trench_islands == 0, "the trench holds no islands")
 	_check(chains.size() >= 3, "island chains were placed (%d)" % chains.size())
 
 

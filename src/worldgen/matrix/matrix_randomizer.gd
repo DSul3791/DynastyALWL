@@ -70,6 +70,7 @@ func generate(existing = null):
 				frozen[key] = existing.cells[key].duplicate(true)
 
 	_pass_base(matrix, frozen)
+	_pass_world_features(matrix)
 	_pass_open_seas(matrix)
 	_pass_chains(matrix)
 	_pass_starter_neighborhoods(matrix)
@@ -136,6 +137,28 @@ func _make_starter_cell(tile: Vector2i) -> Dictionary:
 		"Starter tile. Hand-tune: flat land for a town, a river, a natural harbor."
 	)
 	return cell
+
+
+# ==================================================
+# PASS 1B: FIXED WORLD FEATURES
+# ==================================================
+
+# Tiles inside an abyssal trench hold no islands.
+func _pass_world_features(matrix) -> void:
+	for feature in _settings.world_features:
+		if str(feature.get("kind", "")) != "abyssal_trench":
+			continue
+
+		for tile in _settings.get_all_tiles():
+			if not _settings.is_tile_in_feature(feature, tile.x, tile.y):
+				continue
+
+			if TileMatrixScript.is_frozen(matrix.get_cell(tile.x, tile.y)):
+				continue
+
+			var trench: Dictionary = _make_cell(tile, "ocean", [])
+			trench["pattern"] = "feature:%s" % str(feature["id"])
+			matrix.set_cell(trench)
 
 
 # ==================================================
@@ -258,7 +281,9 @@ func _pass_chains(matrix) -> void:
 			if TileMatrixScript.is_frozen(cell):
 				continue
 
-			if str(cell.get("pattern", "")).begins_with("open_sea"):
+			var pattern: String = str(cell.get("pattern", ""))
+
+			if pattern.begins_with("open_sea") or pattern.begins_with("feature:"):
 				continue
 
 			var tile_rng: RandomNumberGenerator = SeedUtil.rng_for(

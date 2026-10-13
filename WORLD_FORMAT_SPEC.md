@@ -63,6 +63,14 @@ One file for the whole world, fixed before the first tile is kept.
 - Temperature drops 6.5 °C per 1,000 m of altitude.
 - Zone thresholds that turn temperature and moisture into biomes.
 
+**Fixed world features (Permanent once tiles are kept)**
+
+- Hand-placed features the generator must honor, such as `central_trench`: an abyssal trench covering columns -2 to 2 and rows -1 to 1, floor about -2,800 m, kept free of islands.
+
+**Danger map (Tunable, except the terrain the world sketch derives from it)**
+
+- Curves by column and by row, plus peaks inside dangerous world features, combined into one value from 0 (easy) to 1 (deadly), with tiers easy, moderate, medium, hard and deadly.
+
 **Tunable (runtime, not baked)**
 
 - Seasonal swing by latitude (small at the equator, large at the poles).

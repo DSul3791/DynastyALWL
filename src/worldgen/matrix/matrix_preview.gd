@@ -86,7 +86,65 @@ static func render(settings, matrix, pixels_per_tile: int = 96) -> Image:
 
 			_draw_markers(image, cell, origin, pixels_per_tile)
 
+	_draw_trenches(image, settings, pixels_per_tile, STRIP_WIDTH)
 	return image
+
+
+# Darkens the sea over abyssal trenches, deepest in the middle.
+static func _draw_trenches(
+	image: Image, settings, pixels_per_tile: int, offset_x: int
+) -> void:
+	for feature in settings.world_features:
+		if str(feature.get("kind", "")) != "abyssal_trench":
+			continue
+
+		var center_tile: Array = feature["center_tile"]
+		var reach_tiles: float = (
+			float(feature["half_length_tiles"]) + float(feature["edge_falloff_tiles"])
+		)
+		var first_column: int = int(floor(float(center_tile[0]) - reach_tiles))
+		var last_column: int = int(ceil(float(center_tile[0]) + reach_tiles)) + 1
+		var first_row: int = int(floor(float(center_tile[1]) - reach_tiles))
+		var last_row: int = int(ceil(float(center_tile[1]) + reach_tiles)) + 1
+		var abyss: Color = Color(0.02, 0.06, 0.18)
+
+		for pixel_y in range(
+			(first_row - settings.min_tile) * pixels_per_tile,
+			(last_row - settings.min_tile) * pixels_per_tile
+		):
+			if pixel_y < 0 or pixel_y >= image.get_height():
+				continue
+
+			for pixel_x in range(
+				(first_column - settings.min_tile) * pixels_per_tile,
+				(last_column - settings.min_tile) * pixels_per_tile
+			):
+				var image_x: int = offset_x + pixel_x
+
+				if image_x < offset_x or image_x >= image.get_width():
+					continue
+
+				var position: Vector2 = Vector2(
+					float(pixel_x) / float(pixels_per_tile) + float(settings.min_tile) - 0.5,
+					float(pixel_y) / float(pixels_per_tile) + float(settings.min_tile) - 0.5
+				)
+				var reach: float = settings.feature_reach(feature, position)
+				var strength: float = 0.0
+
+				if reach <= 1.0:
+					strength = 0.75 + 0.25 * (1.0 - reach)
+				else:
+					var outside: float = (reach - 1.0) * float(feature["half_width_tiles"])
+					var t: float = clampf(
+						1.0 - outside / float(feature["edge_falloff_tiles"]), 0.0, 1.0
+					)
+					strength = 0.75 * t * t * (3.0 - 2.0 * t)
+
+				if strength <= 0.0:
+					continue
+
+				var current: Color = image.get_pixel(image_x, pixel_y)
+				image.set_pixel(image_x, pixel_y, current.lerp(abyss, strength))
 
 
 static func _sea_color(temperature_c: float) -> Color:

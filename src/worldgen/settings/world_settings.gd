@@ -38,6 +38,9 @@ var zones: Array = []                # [{id, group, max_abs_row}, ...]
 # Starter tiles: {"inner": [Vector2i], "outer": [Vector2i]}
 var starter_tiles: Dictionary = {}
 
+# Fixed world features placed by hand, such as the central trench.
+var world_features: Array = []
+
 # Danger map (runtime-tunable; the world sketch reads it once for terrain)
 var danger: Dictionary = {}
 
@@ -106,6 +109,7 @@ func _apply(data: Dictionary) -> void:
 
 		starter_tiles[str(set_name)] = list
 
+	world_features = data.get("world_features", [])
 	danger = data.get("danger", {})
 	tunable = data.get("tunable", {})
 	master_seed = SeedUtil.master_seed(seed_text)
@@ -405,8 +409,9 @@ func tiles_from_center(x_m: float, z_m: float) -> Vector2:
 
 # Danger from 0 (easy) to 1 (deadly). Lowest around the inner starter
 # tiles, rising toward the east-west edge, the equator row and the
-# poles, and peaking in the abyss around tile (0,0). The parts combine
-# so that any one of them alone can make a place dangerous.
+# poles, and peaking inside dangerous world features such as the central
+# trench. The parts combine so that any one of them alone can make a
+# place dangerous.
 func danger_at(x_m: float, z_m: float) -> float:
 	var position: Vector2 = tiles_from_center(x_m, z_m)
 	var east_west: float = sample_curve(
@@ -415,25 +420,50 @@ func danger_at(x_m: float, z_m: float) -> float:
 	var north_south: float = sample_curve(
 		danger["north_south_by_abs_row"], absf(position.y)
 	)
-	var abyss_part: float = 0.0
-	var abyss: Dictionary = danger.get("abyss", {})
+	var safety: float = (1.0 - east_west) * (1.0 - north_south)
 
-	if not abyss.is_empty():
-		var abyss_tile: Array = abyss["tile"]
-		var abyss_center: Vector2 = tiles_from_center(
-			(float(abyss_tile[0]) + 0.5) * float(tile_size_m),
-			(float(abyss_tile[1]) + 0.5) * float(tile_size_m)
-		)
-		var distance: float = tile_distance(position, abyss_center)
-		var radius: float = float(abyss["radius_tiles"])
-		var t: float = clampf(1.0 - distance / radius, 0.0, 1.0)
-		abyss_part = float(abyss["peak"]) * t * t * (3.0 - 2.0 * t)
+	for feature in world_features:
+		if feature.has("danger_peak"):
+			safety *= 1.0 - _feature_danger(feature, position)
 
-	return clampf(
-		1.0 - (1.0 - east_west) * (1.0 - north_south) * (1.0 - abyss_part),
-		0.0,
-		1.0
+	return clampf(1.0 - safety, 0.0, 1.0)
+
+
+# 1 inside the feature's oblong, deepest at its center, easing to 0 over
+# the falloff distance beyond its edge.
+func _feature_danger(feature: Dictionary, position: Vector2) -> float:
+	var reach: float = feature_reach(feature, position)
+	var peak: float = float(feature["danger_peak"])
+
+	if reach <= 1.0:
+		return peak * (0.94 + 0.06 * (1.0 - reach))
+
+	var half_width: float = float(feature["half_width_tiles"])
+	var outside_tiles: float = (reach - 1.0) * half_width
+	var t: float = clampf(
+		1.0 - outside_tiles / float(feature["edge_falloff_tiles"]), 0.0, 1.0
 	)
+	return peak * 0.94 * t * t * (3.0 - 2.0 * t)
+
+
+# How far a position is from a feature's center, measured so that its
+# oblong outline is 1. Positions are in tiles from the middle of (0,0).
+func feature_reach(feature: Dictionary, position: Vector2) -> float:
+	var center_tile: Array = feature["center_tile"]
+	var center: Vector2 = Vector2(float(center_tile[0]), float(center_tile[1]))
+	var offset: Vector2 = position - center
+	offset.x = fposmod(offset.x + float(tiles_x) * 0.5, float(tiles_x)) - float(tiles_x) * 0.5
+	offset.y = fposmod(offset.y + float(tiles_z) * 0.5, float(tiles_z)) - float(tiles_z) * 0.5
+	offset = offset.rotated(-deg_to_rad(float(feature.get("rotation_deg", 0.0))))
+	var along: float = offset.x / float(feature["half_length_tiles"])
+	var across: float = offset.y / float(feature["half_width_tiles"])
+	return sqrt(along * along + across * across)
+
+
+# True when the middle of a tile lies inside a feature's oblong.
+func is_tile_in_feature(feature: Dictionary, tile_x: int, tile_z: int) -> bool:
+	var position: Vector2 = Vector2(float(tile_x), float(tile_z) - float(equator_tile_row))
+	return feature_reach(feature, position) <= 1.0
 
 
 func danger_at_tile(tile_x: int, tile_z: int) -> float:

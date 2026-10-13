@@ -1,15 +1,15 @@
 TILE MATRIX SUMMARY
 World: Modular Island World   seed phrase: This1is2the3greatest4game5of6all7time   master seed: 574716103
 
-Tiles: 441   world area: 104045 km2   land: 6113 km2 (5.9%)
-Islands: 757
-Tile layouts: main 123, ocean 128, peers 182, starter 8
-Island sizes: islet 147, small 277, medium 202, large 107, great 24
-Island characters: archipelago 69, flat 106, mountainous 212, rolling 254, volcanic 116
+Tiles: 441   world area: 104045 km2   land: 5852 km2 (5.6%)
+Islands: 734
+Tile layouts: main 118, ocean 139, peers 176, starter 8
+Island sizes: islet 145, small 272, medium 191, large 104, great 22
+Island characters: archipelago 69, flat 94, mountainous 206, rolling 254, volcanic 111
 
 BY CLIMATE ZONE
 zone               tiles   ocean  islands land km2  km2/tile  sizes (islet/small/medium/large/great)
-desert                63     40%       88      786      12.5  17/22/33/14/2
+desert                63     57%       65      526       8.3  15/17/22/11/0
 transition_desert     42     17%       97      760      18.1  14/42/29/8/4
 temperate            168     19%      325     2903      17.3  65/109/85/53/13
 transition_arctic     42     19%       87      696      16.6  13/30/34/6/4
@@ -17,7 +17,7 @@ arctic               126     44%      160      968       7.7  38/74/21/26/1
 
 GEOLOGY: ISLANDS WITH EACH KIND, BY ZONE
 zone                 granite     basin fold_belt  volcanic
-desert                    24        32        15        33
+desert                    18        23         8        25
 transition_desert         31        20        32        25
 temperate                103       108        99        72
 transition_arctic         21        25        20        28

@@ -11003,223 +11003,64 @@
       "x": -2,
       "z": -1,
       "zone": "desert",
-      "kind": "islands",
-      "layout": "main",
-      "status": "planned",
+      "kind": "ocean",
+      "layout": "ocean",
+      "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "",
+      "pattern": "feature:central_trench",
       "starter_set": "",
       "required": [],
-      "islands": [
-        {
-          "id": 1,
-          "role": "main",
-          "center_x": 940,
-          "center_z": 1074,
-          "semi_axis_a_m": 3682,
-          "semi_axis_b_m": 1763,
-          "rotation_deg": 51,
-          "shape": "crescent",
-          "aspect": 2.09,
-          "area_km2": 17.34,
-          "size_class": "large",
-          "character": "flat",
-          "peak_height_m": 60,
-          "glaciated": false,
-          "geology": [
-            "basin"
-          ],
-          "seed": 793767485
-        }
-      ],
-      "geology_hints": [
-        "basin"
-      ],
+      "islands": [],
+      "geology_hints": [],
       "notes": ""
     },
     {
       "x": -1,
       "z": -1,
       "zone": "desert",
-      "kind": "islands",
-      "layout": "main",
-      "status": "planned",
+      "kind": "ocean",
+      "layout": "ocean",
+      "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "",
+      "pattern": "feature:central_trench",
       "starter_set": "",
       "required": [],
-      "islands": [
-        {
-          "id": 1,
-          "role": "main",
-          "center_x": -583,
-          "center_z": 1061,
-          "semi_axis_a_m": 5022,
-          "semi_axis_b_m": 3256,
-          "rotation_deg": 178,
-          "shape": "ragged",
-          "aspect": 1.54,
-          "area_km2": 43.67,
-          "size_class": "great",
-          "character": "flat",
-          "peak_height_m": 60,
-          "glaciated": false,
-          "geology": [
-            "volcanic"
-          ],
-          "seed": 17993786
-        }
-      ],
-      "geology_hints": [
-        "volcanic"
-      ],
+      "islands": [],
+      "geology_hints": [],
       "notes": ""
     },
     {
       "x": 0,
       "z": -1,
       "zone": "desert",
-      "kind": "islands",
-      "layout": "peers",
-      "status": "planned",
+      "kind": "ocean",
+      "layout": "ocean",
+      "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "",
+      "pattern": "feature:central_trench",
       "starter_set": "",
       "required": [],
-      "islands": [
-        {
-          "id": 1,
-          "role": "peer",
-          "center_x": -428,
-          "center_z": -2650,
-          "semi_axis_a_m": 1804,
-          "semi_axis_b_m": 1666,
-          "rotation_deg": 124,
-          "shape": "round",
-          "aspect": 1.08,
-          "area_km2": 8.03,
-          "size_class": "medium",
-          "character": "flat",
-          "peak_height_m": 40,
-          "glaciated": false,
-          "geology": [
-            "basin",
-            "fold_belt"
-          ],
-          "seed": 170071303
-        },
-        {
-          "id": 2,
-          "role": "peer",
-          "center_x": -2881,
-          "center_z": 3891,
-          "semi_axis_a_m": 1954,
-          "semi_axis_b_m": 1480,
-          "rotation_deg": 2,
-          "shape": "ragged",
-          "aspect": 1.32,
-          "area_km2": 7.72,
-          "size_class": "medium",
-          "character": "flat",
-          "peak_height_m": 50,
-          "glaciated": false,
-          "geology": [
-            "granite"
-          ],
-          "seed": 815492550
-        },
-        {
-          "id": 3,
-          "role": "peer",
-          "center_x": 3055,
-          "center_z": 3011,
-          "semi_axis_a_m": 2485,
-          "semi_axis_b_m": 999,
-          "rotation_deg": 32,
-          "shape": "crescent",
-          "aspect": 2.49,
-          "area_km2": 6.63,
-          "size_class": "medium",
-          "character": "flat",
-          "peak_height_m": 22,
-          "glaciated": false,
-          "geology": [
-            "fold_belt",
-            "basin"
-          ],
-          "seed": 574336007
-        }
-      ],
-      "geology_hints": [
-        "basin",
-        "fold_belt",
-        "granite"
-      ],
+      "islands": [],
+      "geology_hints": [],
       "notes": ""
     },
     {
       "x": 1,
       "z": -1,
       "zone": "desert",
-      "kind": "islands",
-      "layout": "peers",
-      "status": "planned",
+      "kind": "ocean",
+      "layout": "ocean",
+      "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "",
+      "pattern": "feature:central_trench",
       "starter_set": "",
       "required": [],
-      "islands": [
-        {
-          "id": 1,
-          "role": "peer",
-          "center_x": 1906,
-          "center_z": 385,
-          "semi_axis_a_m": 3457,
-          "semi_axis_b_m": 1624,
-          "rotation_deg": 161,
-          "shape": "crescent",
-          "aspect": 2.13,
-          "area_km2": 14.99,
-          "size_class": "medium",
-          "character": "mountainous",
-          "peak_height_m": 880,
-          "glaciated": false,
-          "geology": [
-            "fold_belt",
-            "volcanic"
-          ],
-          "seed": 309618176
-        },
-        {
-          "id": 2,
-          "role": "peer",
-          "center_x": -3956,
-          "center_z": -2816,
-          "semi_axis_a_m": 2431,
-          "semi_axis_b_m": 1458,
-          "rotation_deg": 82,
-          "shape": "elongated",
-          "aspect": 1.67,
-          "area_km2": 9.46,
-          "size_class": "medium",
-          "character": "mountainous",
-          "peak_height_m": 520,
-          "glaciated": false,
-          "geology": [
-            "granite"
-          ],
-          "seed": 770827970
-        }
-      ],
-      "geology_hints": [
-        "fold_belt",
-        "granite",
-        "volcanic"
-      ],
+      "islands": [],
+      "geology_hints": [],
       "notes": ""
     },
     {
@@ -11231,7 +11072,7 @@
       "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "",
+      "pattern": "feature:central_trench",
       "starter_set": "",
       "required": [],
       "islands": [],
@@ -11822,79 +11663,16 @@
       "x": -2,
       "z": 0,
       "zone": "desert",
-      "kind": "islands",
-      "layout": "main",
-      "status": "planned",
+      "kind": "ocean",
+      "layout": "ocean",
+      "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "",
+      "pattern": "feature:central_trench",
       "starter_set": "",
       "required": [],
-      "islands": [
-        {
-          "id": 1,
-          "role": "main",
-          "center_x": -376,
-          "center_z": -1703,
-          "semi_axis_a_m": 3764,
-          "semi_axis_b_m": 1695,
-          "rotation_deg": 0,
-          "shape": "elongated",
-          "aspect": 2.22,
-          "area_km2": 17.03,
-          "size_class": "large",
-          "character": "volcanic",
-          "peak_height_m": 1170,
-          "glaciated": false,
-          "geology": [
-            "volcanic"
-          ],
-          "seed": 338538880
-        },
-        {
-          "id": 2,
-          "role": "satellite",
-          "center_x": -1437,
-          "center_z": 1785,
-          "semi_axis_a_m": 1359,
-          "semi_axis_b_m": 746,
-          "rotation_deg": 26,
-          "shape": "crescent",
-          "aspect": 1.82,
-          "area_km2": 2.71,
-          "size_class": "small",
-          "character": "volcanic",
-          "peak_height_m": 240,
-          "glaciated": false,
-          "geology": [
-            "volcanic"
-          ],
-          "seed": 494891609
-        },
-        {
-          "id": 3,
-          "role": "satellite",
-          "center_x": 113,
-          "center_z": 3361,
-          "semi_axis_a_m": 890,
-          "semi_axis_b_m": 369,
-          "rotation_deg": 109,
-          "shape": "crescent",
-          "aspect": 2.41,
-          "area_km2": 0.88,
-          "size_class": "islet",
-          "character": "volcanic",
-          "peak_height_m": 80,
-          "glaciated": false,
-          "geology": [
-            "volcanic"
-          ],
-          "seed": 825668135
-        }
-      ],
-      "geology_hints": [
-        "volcanic"
-      ],
+      "islands": [],
+      "geology_hints": [],
       "notes": ""
     },
     {
@@ -11906,7 +11684,7 @@
       "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "",
+      "pattern": "feature:central_trench",
       "starter_set": "",
       "required": [],
       "islands": [],
@@ -11917,59 +11695,16 @@
       "x": 0,
       "z": 0,
       "zone": "desert",
-      "kind": "islands",
-      "layout": "peers",
-      "status": "planned",
+      "kind": "ocean",
+      "layout": "ocean",
+      "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "",
+      "pattern": "feature:central_trench",
       "starter_set": "",
       "required": [],
-      "islands": [
-        {
-          "id": 1,
-          "role": "peer",
-          "center_x": 4095,
-          "center_z": 2349,
-          "semi_axis_a_m": 1570,
-          "semi_axis_b_m": 1156,
-          "rotation_deg": 162,
-          "shape": "ragged",
-          "aspect": 1.36,
-          "area_km2": 4.85,
-          "size_class": "small",
-          "character": "flat",
-          "peak_height_m": 14,
-          "glaciated": false,
-          "geology": [
-            "basin"
-          ],
-          "seed": 772943753
-        },
-        {
-          "id": 2,
-          "role": "peer",
-          "center_x": 493,
-          "center_z": 2620,
-          "semi_axis_a_m": 1524,
-          "semi_axis_b_m": 834,
-          "rotation_deg": 55,
-          "shape": "elongated",
-          "aspect": 1.83,
-          "area_km2": 3.4,
-          "size_class": "small",
-          "character": "flat",
-          "peak_height_m": 6,
-          "glaciated": false,
-          "geology": [
-            "basin"
-          ],
-          "seed": 846265831
-        }
-      ],
-      "geology_hints": [
-        "basin"
-      ],
+      "islands": [],
+      "geology_hints": [],
       "notes": ""
     },
     {
@@ -11981,7 +11716,7 @@
       "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "",
+      "pattern": "feature:central_trench",
       "starter_set": "",
       "required": [],
       "islands": [],
@@ -11992,59 +11727,16 @@
       "x": 2,
       "z": 0,
       "zone": "desert",
-      "kind": "islands",
-      "layout": "peers",
-      "status": "planned",
+      "kind": "ocean",
+      "layout": "ocean",
+      "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "",
+      "pattern": "feature:central_trench",
       "starter_set": "",
       "required": [],
-      "islands": [
-        {
-          "id": 1,
-          "role": "peer",
-          "center_x": -2136,
-          "center_z": -2374,
-          "semi_axis_a_m": 2313,
-          "semi_axis_b_m": 2062,
-          "rotation_deg": 166,
-          "shape": "round",
-          "aspect": 1.12,
-          "area_km2": 12.73,
-          "size_class": "medium",
-          "character": "volcanic",
-          "peak_height_m": 620,
-          "glaciated": false,
-          "geology": [
-            "volcanic"
-          ],
-          "seed": 923606530
-        },
-        {
-          "id": 2,
-          "role": "peer",
-          "center_x": 2643,
-          "center_z": 1602,
-          "semi_axis_a_m": 2576,
-          "semi_axis_b_m": 1652,
-          "rotation_deg": 99,
-          "shape": "ragged",
-          "aspect": 1.56,
-          "area_km2": 11.36,
-          "size_class": "medium",
-          "character": "volcanic",
-          "peak_height_m": 710,
-          "glaciated": false,
-          "geology": [
-            "volcanic"
-          ],
-          "seed": 1070038456
-        }
-      ],
-      "geology_hints": [
-        "volcanic"
-      ],
+      "islands": [],
+      "geology_hints": [],
       "notes": ""
     },
     {
@@ -12808,226 +12500,48 @@
       "x": -2,
       "z": 1,
       "zone": "desert",
-      "kind": "islands",
-      "layout": "peers",
-      "status": "planned",
+      "kind": "ocean",
+      "layout": "ocean",
+      "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "",
+      "pattern": "feature:central_trench",
       "starter_set": "",
       "required": [],
-      "islands": [
-        {
-          "id": 1,
-          "role": "peer",
-          "center_x": 4083,
-          "center_z": -3985,
-          "semi_axis_a_m": 2271,
-          "semi_axis_b_m": 1050,
-          "rotation_deg": 180,
-          "shape": "crescent",
-          "aspect": 2.16,
-          "area_km2": 6.37,
-          "size_class": "medium",
-          "character": "mountainous",
-          "peak_height_m": 480,
-          "glaciated": false,
-          "geology": [
-            "granite",
-            "volcanic"
-          ],
-          "seed": 481551144
-        },
-        {
-          "id": 2,
-          "role": "peer",
-          "center_x": -4832,
-          "center_z": -1248,
-          "semi_axis_a_m": 1586,
-          "semi_axis_b_m": 1315,
-          "rotation_deg": 45,
-          "shape": "ragged",
-          "aspect": 1.21,
-          "area_km2": 5.57,
-          "size_class": "medium",
-          "character": "mountainous",
-          "peak_height_m": 500,
-          "glaciated": false,
-          "geology": [
-            "granite"
-          ],
-          "seed": 394181673
-        },
-        {
-          "id": 3,
-          "role": "peer",
-          "center_x": -2523,
-          "center_z": 2787,
-          "semi_axis_a_m": 1465,
-          "semi_axis_b_m": 1388,
-          "rotation_deg": 94,
-          "shape": "round",
-          "aspect": 1.06,
-          "area_km2": 5.43,
-          "size_class": "medium",
-          "character": "mountainous",
-          "peak_height_m": 970,
-          "glaciated": false,
-          "geology": [
-            "granite",
-            "fold_belt"
-          ],
-          "seed": 1000764894
-        },
-        {
-          "id": 4,
-          "role": "peer",
-          "center_x": -3185,
-          "center_z": -4814,
-          "semi_axis_a_m": 1215,
-          "semi_axis_b_m": 1202,
-          "rotation_deg": 162,
-          "shape": "round",
-          "aspect": 1.01,
-          "area_km2": 3.9,
-          "size_class": "small",
-          "character": "mountainous",
-          "peak_height_m": 380,
-          "glaciated": false,
-          "geology": [
-            "fold_belt"
-          ],
-          "seed": 293582774
-        }
-      ],
-      "geology_hints": [
-        "fold_belt",
-        "granite",
-        "volcanic"
-      ],
+      "islands": [],
+      "geology_hints": [],
       "notes": ""
     },
     {
       "x": -1,
       "z": 1,
       "zone": "desert",
-      "kind": "islands",
-      "layout": "main",
-      "status": "planned",
+      "kind": "ocean",
+      "layout": "ocean",
+      "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "",
+      "pattern": "feature:central_trench",
       "starter_set": "",
       "required": [],
-      "islands": [
-        {
-          "id": 1,
-          "role": "main",
-          "center_x": 170,
-          "center_z": 1712,
-          "semi_axis_a_m": 3269,
-          "semi_axis_b_m": 3183,
-          "rotation_deg": 113,
-          "shape": "round",
-          "aspect": 1.03,
-          "area_km2": 27.78,
-          "size_class": "large",
-          "character": "flat",
-          "peak_height_m": 30,
-          "glaciated": false,
-          "geology": [
-            "basin",
-            "fold_belt"
-          ],
-          "seed": 35102977
-        },
-        {
-          "id": 2,
-          "role": "satellite",
-          "center_x": -5688,
-          "center_z": 1630,
-          "semi_axis_a_m": 1544,
-          "semi_axis_b_m": 783,
-          "rotation_deg": 94,
-          "shape": "elongated",
-          "aspect": 1.97,
-          "area_km2": 3.23,
-          "size_class": "small",
-          "character": "flat",
-          "peak_height_m": 30,
-          "glaciated": false,
-          "geology": [
-            "granite"
-          ],
-          "seed": 849394137
-        }
-      ],
-      "geology_hints": [
-        "basin",
-        "fold_belt",
-        "granite"
-      ],
+      "islands": [],
+      "geology_hints": [],
       "notes": ""
     },
     {
       "x": 0,
       "z": 1,
       "zone": "desert",
-      "kind": "islands",
-      "layout": "main",
-      "status": "planned",
+      "kind": "ocean",
+      "layout": "ocean",
+      "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "",
+      "pattern": "feature:central_trench",
       "starter_set": "",
       "required": [],
-      "islands": [
-        {
-          "id": 1,
-          "role": "main",
-          "center_x": -731,
-          "center_z": -1130,
-          "semi_axis_a_m": 4413,
-          "semi_axis_b_m": 2929,
-          "rotation_deg": 166,
-          "shape": "ragged",
-          "aspect": 1.51,
-          "area_km2": 34.52,
-          "size_class": "great",
-          "character": "flat",
-          "peak_height_m": 80,
-          "glaciated": false,
-          "geology": [
-            "basin",
-            "fold_belt"
-          ],
-          "seed": 644545156
-        },
-        {
-          "id": 2,
-          "role": "satellite",
-          "center_x": 3258,
-          "center_z": -4236,
-          "semi_axis_a_m": 406,
-          "semi_axis_b_m": 276,
-          "rotation_deg": 43,
-          "shape": "ragged",
-          "aspect": 1.47,
-          "area_km2": 0.3,
-          "size_class": "islet",
-          "character": "flat",
-          "peak_height_m": 9,
-          "glaciated": false,
-          "geology": [
-            "basin"
-          ],
-          "seed": 356751403
-        }
-      ],
-      "geology_hints": [
-        "basin",
-        "fold_belt"
-      ],
+      "islands": [],
+      "geology_hints": [],
       "notes": ""
     },
     {
@@ -13039,7 +12553,7 @@
       "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "",
+      "pattern": "feature:central_trench",
       "starter_set": "",
       "required": [],
       "islands": [],
@@ -13050,39 +12564,16 @@
       "x": 2,
       "z": 1,
       "zone": "desert",
-      "kind": "islands",
-      "layout": "peers",
-      "status": "planned",
+      "kind": "ocean",
+      "layout": "ocean",
+      "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "",
+      "pattern": "feature:central_trench",
       "starter_set": "",
       "required": [],
-      "islands": [
-        {
-          "id": 1,
-          "role": "peer",
-          "center_x": 307,
-          "center_z": 3941,
-          "semi_axis_a_m": 2185,
-          "semi_axis_b_m": 2123,
-          "rotation_deg": 141,
-          "shape": "round",
-          "aspect": 1.03,
-          "area_km2": 12.38,
-          "size_class": "medium",
-          "character": "flat",
-          "peak_height_m": 15,
-          "glaciated": false,
-          "geology": [
-            "basin"
-          ],
-          "seed": 984917937
-        }
-      ],
-      "geology_hints": [
-        "basin"
-      ],
+      "islands": [],
+      "geology_hints": [],
       "notes": ""
     },
     {

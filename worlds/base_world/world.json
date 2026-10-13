@@ -43,6 +43,21 @@
 		"outer": [[-6, 6], [6, 6], [-6, -6], [6, -6]]
 	},
 
+	"world_features": [
+		{
+			"id": "central_trench",
+			"kind": "abyssal_trench",
+			"note": "Oblong abyssal trench along the equator, covering rows -1 to 1 and columns -2 to 2. Its floor sits just above the lethal heat depth, with caverns below. The world sketch must keep it free of islands.",
+			"center_tile": [0, 0],
+			"half_length_tiles": 2.6,
+			"half_width_tiles": 1.6,
+			"rotation_deg": 0,
+			"floor_m": -2800,
+			"edge_falloff_tiles": 1.2,
+			"danger_peak": 1.0
+		}
+	],
+
 	"danger": {
 		"note": "Danger from 0 (easy) to 1 (deadly). Distances are in tiles from the middle of tile (0,0). The server reads this at runtime, so it can be tuned at any time; only the world sketch's choice of terrain is baked from it.",
 		"east_west_by_abs_column": [
@@ -60,7 +75,6 @@
 			[7.5, 0.45],
 			[10.5, 1.0]
 		],
-		"abyss": {"tile": [0, 0], "peak": 1.0, "radius_tiles": 1.8},
 		"tiers": [
 			[0.2, "easy"],
 			[0.4, "moderate"],
