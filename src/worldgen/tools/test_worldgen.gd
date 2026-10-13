@@ -9,6 +9,7 @@ const SeedUtil := preload("res://src/worldgen/settings/worldgen_seed.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const RandomizerScript := preload("res://src/worldgen/matrix/matrix_randomizer.gd")
 const TileMatrixScript := preload("res://src/worldgen/matrix/tile_matrix.gd")
+const TilePlanScript := preload("res://src/worldgen/plan/tile_plan.gd")
 const IslandShapeScript := preload("res://src/worldgen/matrix/island_shape.gd")
 const SketchScript := preload("res://src/worldgen/sketch/world_sketch.gd")
 const ElevationScript := preload("res://src/worldgen/sketch/world_elevation.gd")
@@ -914,3 +915,88 @@ func _test_sketch() -> void:
 	var share: float = land / (float(settings.tiles_x * settings.tiles_z) * pow(tile / 1000.0, 2.0))
 	print("land share %.1f%% in %d islands" % [share * 100.0, census["islands"].size()])
 	_check(share > 0.02 and share < 0.12, "the land share is plausible")
+
+	_test_tile_plan(settings, sketch, elevation, census)
+
+
+func _test_tile_plan(settings, sketch: Dictionary, elevation, census: Dictionary) -> void:
+	var plan = TilePlanScript.new()
+	plan.setup(settings, sketch, elevation)
+	var matrix = plan.build()
+	_check(matrix.cells.size() == 441, "the tile plan has 441 tiles")
+	_check(plan.islands.size() == census["islands"].size(), "the plan lists every island")
+
+	var again = TilePlanScript.new()
+	again.setup(settings, sketch, elevation)
+	_check(
+		again.build().to_json_text() == matrix.to_json_text()
+		and again.islands_json() == plan.islands_json(),
+		"the tile plan is reproducible"
+	)
+
+	var temp_path: String = "user://test_tile_plan.json"
+	matrix.save(temp_path)
+	var errors: Array = []
+	var loaded = TileMatrixScript.load_file(temp_path, errors)
+	_check(
+		loaded != null and loaded.to_json_text() == matrix.to_json_text(),
+		"the tile plan saves and loads identically"
+	)
+
+	# Land in the plan adds up to the land in the map.
+	var plan_land: float = 0.0
+	var map_land: float = 0.0
+
+	for cell in matrix.get_sorted_cells():
+		plan_land += float(cell["land_km2"])
+
+	for island in plan.islands:
+		map_land += float(island["area_km2"])
+
+	_check(absf(plan_land - map_land) < 0.01 * maxf(map_land, 1.0) + 1.0, "tile land adds up to island land")
+
+	# Starters and the landmark are locked and hold land.
+	for tile in settings.get_all_starters():
+		var cell: Dictionary = matrix.get_cell(tile.x, tile.y)
+		_check(
+			str(cell["kind"]) == "starter" and bool(cell["locked"]) and float(cell["land_km2"]) > 25.0,
+			"starter tile (%d,%d) is locked and has land" % [tile.x, tile.y]
+		)
+
+	var center: Dictionary = matrix.get_cell(0, 0)
+	_check(
+		str(center["kind"]) == "landmark" and center["features"].has("center_island")
+		and center["geology_hints"].has("volcanic") and center["special"].has("lava"),
+		"the center tile is the landmark island"
+	)
+
+	# Trench tiles away from the island hold no land; planned tiles hold land or a starter.
+	for cell in matrix.get_sorted_cells():
+		if str(cell["kind"]) == "trench":
+			_check(float(cell["land_km2"]) == 0.0, "trench tile (%d,%d) has no land" % [cell["x"], cell["z"]])
+
+		_check(
+			(str(cell["status"]) == "planned") == (float(cell["land_km2"]) > 0.0 or str(cell["starter_set"]) != ""),
+			"tile (%d,%d) status matches its land" % [cell["x"], cell["z"]]
+		)
+
+	# Every island lists tiles that point back at it.
+	var consistent: bool = true
+
+	for island in plan.islands:
+		for tile in island["tiles"]:
+			if not matrix.get_cell(int(tile[0]), int(tile[1]))["island_ids"].has(int(island["id"])):
+				consistent = false
+
+	_check(consistent, "island tile lists match the tiles")
+
+	# A locked tile survives a rebuild unchanged even if edited.
+	var edited = TileMatrixScript.new()
+	edited.meta = matrix.meta.duplicate(true)
+
+	for key in matrix.cells.keys():
+		edited.cells[key] = matrix.cells[key].duplicate(true)
+
+	edited.cells[Vector2i(0, 0)]["notes"] = "hand edited"
+	var rebuilt = plan.build(edited)
+	_check(str(rebuilt.get_cell(0, 0)["notes"]) == "hand edited", "a locked plan tile is kept on rebuild")

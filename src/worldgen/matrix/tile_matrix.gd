@@ -12,7 +12,7 @@ const FORMAT_VERSION := 1
 # live = baked and in use by the server.
 const FROZEN_STATUSES := ["baked", "live"]
 
-const META_INT_KEYS := ["randomizer_version", "master_seed"]
+const META_INT_KEYS := ["randomizer_version", "master_seed", "plan_version"]
 const INT_KEYS := ["x", "z", "revision"]
 const ISLAND_INT_KEYS := [
 	"id", "center_x", "center_z", "semi_axis_a_m", "semi_axis_b_m",
@@ -116,6 +116,18 @@ static func load_file(path: String, errors: Array) -> TileMatrix:
 # JSON stores every number as a float. Turn the integer fields back.
 static func _normalize_cell(cell: Dictionary) -> Dictionary:
 	for key in INT_KEYS:
+		if cell.has(key):
+			cell[key] = int(cell[key])
+
+	if cell.has("island_ids"):
+		var ids: Array = []
+
+		for value in cell["island_ids"]:
+			ids.append(int(value))
+
+		cell["island_ids"] = ids
+
+	for key in ["peak_m", "deepest_m"]:
 		if cell.has(key):
 			cell[key] = int(cell[key])
 

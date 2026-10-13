@@ -1,0 +1,6578 @@
+{
+  "format_version": 1,
+  "note": "Islands found in the sketch elevation map, largest first. Derived data; rebuilt by tools/build_tile_plan.gd.",
+  "islands": [
+    {
+      "id": 1,
+      "area_km2": 239.8,
+      "size_class": "colossal",
+      "peak_m": 430,
+      "peak_x_m": 94320,
+      "peak_z_m": 83280,
+      "peak_tile": [
+        6,
+        5
+      ],
+      "feature": "shelf_p_p",
+      "tiles": [
+        [
+          5,
+          5
+        ],
+        [
+          6,
+          5
+        ],
+        [
+          5,
+          6
+        ],
+        [
+          6,
+          6
+        ],
+        [
+          7,
+          6
+        ],
+        [
+          7,
+          7
+        ]
+      ]
+    },
+    {
+      "id": 2,
+      "area_km2": 201.22,
+      "size_class": "colossal",
+      "peak_m": 1981,
+      "peak_x_m": 7760,
+      "peak_z_m": 6960,
+      "peak_tile": [
+        0,
+        0
+      ],
+      "feature": "center_island",
+      "tiles": [
+        [
+          -1,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ]
+    },
+    {
+      "id": 3,
+      "area_km2": 175.26,
+      "size_class": "colossal",
+      "peak_m": 401,
+      "peak_x_m": -75280,
+      "peak_z_m": -95920,
+      "peak_tile": [
+        -5,
+        -7
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -6,
+          -7
+        ],
+        [
+          -5,
+          -7
+        ],
+        [
+          -5,
+          -6
+        ],
+        [
+          -4,
+          -6
+        ],
+        [
+          -5,
+          -5
+        ]
+      ]
+    },
+    {
+      "id": 4,
+      "area_km2": 132.68,
+      "size_class": "colossal",
+      "peak_m": 533,
+      "peak_x_m": -92880,
+      "peak_z_m": -85520,
+      "peak_tile": [
+        -7,
+        -6
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -7,
+          -6
+        ],
+        [
+          -6,
+          -6
+        ],
+        [
+          -6,
+          -5
+        ]
+      ]
+    },
+    {
+      "id": 5,
+      "area_km2": 120.83,
+      "size_class": "colossal",
+      "peak_m": 465,
+      "peak_x_m": 63440,
+      "peak_z_m": -81520,
+      "peak_tile": [
+        4,
+        -6
+      ],
+      "feature": "shelf_p_n",
+      "tiles": [
+        [
+          3,
+          -6
+        ],
+        [
+          4,
+          -6
+        ],
+        [
+          3,
+          -5
+        ],
+        [
+          4,
+          -5
+        ]
+      ]
+    },
+    {
+      "id": 6,
+      "area_km2": 113.18,
+      "size_class": "colossal",
+      "peak_m": 1706,
+      "peak_x_m": 160720,
+      "peak_z_m": 139920,
+      "peak_tile": [
+        10,
+        9
+      ],
+      "feature": "arc_3",
+      "tiles": [
+        [
+          9,
+          8
+        ],
+        [
+          10,
+          8
+        ],
+        [
+          9,
+          9
+        ],
+        [
+          10,
+          9
+        ]
+      ]
+    },
+    {
+      "id": 7,
+      "area_km2": 89.75,
+      "size_class": "colossal",
+      "peak_m": 540,
+      "peak_x_m": 54000,
+      "peak_z_m": 70960,
+      "peak_tile": [
+        3,
+        4
+      ],
+      "feature": "shelf_p_p",
+      "tiles": [
+        [
+          3,
+          3
+        ],
+        [
+          4,
+          3
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          4,
+          4
+        ]
+      ]
+    },
+    {
+      "id": 8,
+      "area_km2": 88.55,
+      "size_class": "colossal",
+      "peak_m": 1610,
+      "peak_x_m": -144240,
+      "peak_z_m": 103440,
+      "peak_tile": [
+        -10,
+        6
+      ],
+      "feature": "hotspot_2",
+      "tiles": [
+        [
+          -10,
+          6
+        ],
+        [
+          10,
+          6
+        ]
+      ]
+    },
+    {
+      "id": 9,
+      "area_km2": 82.61,
+      "size_class": "colossal",
+      "peak_m": 439,
+      "peak_x_m": 67120,
+      "peak_z_m": 79280,
+      "peak_tile": [
+        4,
+        5
+      ],
+      "feature": "shelf_p_p",
+      "tiles": [
+        [
+          3,
+          4
+        ],
+        [
+          4,
+          4
+        ],
+        [
+          3,
+          5
+        ],
+        [
+          4,
+          5
+        ]
+      ]
+    },
+    {
+      "id": 10,
+      "area_km2": 80.77,
+      "size_class": "colossal",
+      "peak_m": 1678,
+      "peak_x_m": -151120,
+      "peak_z_m": -35280,
+      "peak_tile": [
+        -10,
+        -3
+      ],
+      "feature": "arc_5",
+      "tiles": [
+        [
+          -10,
+          -3
+        ],
+        [
+          10,
+          -3
+        ],
+        [
+          -10,
+          -2
+        ]
+      ]
+    },
+    {
+      "id": 11,
+      "area_km2": 71.19,
+      "size_class": "colossal",
+      "peak_m": 473,
+      "peak_x_m": 71120,
+      "peak_z_m": -50960,
+      "peak_tile": [
+        4,
+        -4
+      ],
+      "feature": "shelf_p_n",
+      "tiles": [
+        [
+          4,
+          -4
+        ],
+        [
+          4,
+          -3
+        ]
+      ]
+    },
+    {
+      "id": 12,
+      "area_km2": 70.27,
+      "size_class": "colossal",
+      "peak_m": 393,
+      "peak_x_m": -87440,
+      "peak_z_m": 129040,
+      "peak_tile": [
+        -6,
+        8
+      ],
+      "feature": "shelf_n_p",
+      "tiles": [
+        [
+          -6,
+          7
+        ],
+        [
+          -6,
+          8
+        ],
+        [
+          -6,
+          9
+        ]
+      ]
+    },
+    {
+      "id": 13,
+      "area_km2": 70.09,
+      "size_class": "colossal",
+      "peak_m": 498,
+      "peak_x_m": -76080,
+      "peak_z_m": -37040,
+      "peak_tile": [
+        -5,
+        -3
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -6,
+          -3
+        ],
+        [
+          -5,
+          -3
+        ]
+      ]
+    },
+    {
+      "id": 14,
+      "area_km2": 64.33,
+      "size_class": "colossal",
+      "peak_m": 395,
+      "peak_x_m": -74160,
+      "peak_z_m": 87600,
+      "peak_tile": [
+        -5,
+        5
+      ],
+      "feature": "shelf_n_p",
+      "tiles": [
+        [
+          -6,
+          5
+        ],
+        [
+          -5,
+          5
+        ],
+        [
+          -5,
+          6
+        ]
+      ]
+    },
+    {
+      "id": 15,
+      "area_km2": 63.72,
+      "size_class": "colossal",
+      "peak_m": 486,
+      "peak_x_m": -57520,
+      "peak_z_m": 58960,
+      "peak_tile": [
+        -4,
+        3
+      ],
+      "feature": "shelf_n_p",
+      "tiles": [
+        [
+          -4,
+          3
+        ],
+        [
+          -5,
+          4
+        ],
+        [
+          -4,
+          4
+        ]
+      ]
+    },
+    {
+      "id": 16,
+      "area_km2": 59.72,
+      "size_class": "great",
+      "peak_m": 401,
+      "peak_x_m": -63760,
+      "peak_z_m": 78800,
+      "peak_tile": [
+        -5,
+        5
+      ],
+      "feature": "shelf_n_p",
+      "tiles": [
+        [
+          -5,
+          4
+        ],
+        [
+          -4,
+          4
+        ],
+        [
+          -5,
+          5
+        ],
+        [
+          -4,
+          5
+        ]
+      ]
+    },
+    {
+      "id": 17,
+      "area_km2": 58.27,
+      "size_class": "great",
+      "peak_m": 376,
+      "peak_x_m": -51120,
+      "peak_z_m": -56880,
+      "peak_tile": [
+        -4,
+        -4
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -4,
+          -5
+        ],
+        [
+          -4,
+          -4
+        ],
+        [
+          -3,
+          -4
+        ]
+      ]
+    },
+    {
+      "id": 18,
+      "area_km2": 55.12,
+      "size_class": "great",
+      "peak_m": 1450,
+      "peak_x_m": 134000,
+      "peak_z_m": 136880,
+      "peak_tile": [
+        8,
+        8
+      ],
+      "feature": "arc_3",
+      "tiles": [
+        [
+          8,
+          8
+        ],
+        [
+          8,
+          9
+        ]
+      ]
+    },
+    {
+      "id": 19,
+      "area_km2": 53.86,
+      "size_class": "great",
+      "peak_m": 1106,
+      "peak_x_m": 46480,
+      "peak_z_m": 50800,
+      "peak_tile": [
+        3,
+        3
+      ],
+      "feature": "trench_arc",
+      "tiles": [
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          3
+        ]
+      ]
+    },
+    {
+      "id": 20,
+      "area_km2": 52.71,
+      "size_class": "great",
+      "peak_m": 1604,
+      "peak_x_m": -28400,
+      "peak_z_m": 149520,
+      "peak_tile": [
+        -2,
+        9
+      ],
+      "feature": "arc_2",
+      "tiles": [
+        [
+          -3,
+          9
+        ],
+        [
+          -2,
+          9
+        ],
+        [
+          -2,
+          10
+        ]
+      ]
+    },
+    {
+      "id": 21,
+      "area_km2": 50.84,
+      "size_class": "great",
+      "peak_m": 1345,
+      "peak_x_m": 133360,
+      "peak_z_m": 62800,
+      "peak_tile": [
+        8,
+        4
+      ],
+      "feature": "hotspot_3",
+      "tiles": [
+        [
+          8,
+          3
+        ],
+        [
+          8,
+          4
+        ]
+      ]
+    },
+    {
+      "id": 22,
+      "area_km2": 44.49,
+      "size_class": "great",
+      "peak_m": 274,
+      "peak_x_m": 43600,
+      "peak_z_m": -58320,
+      "peak_tile": [
+        2,
+        -4
+      ],
+      "feature": "shelf_p_n",
+      "tiles": [
+        [
+          2,
+          -5
+        ],
+        [
+          3,
+          -5
+        ],
+        [
+          2,
+          -4
+        ],
+        [
+          3,
+          -4
+        ]
+      ]
+    },
+    {
+      "id": 23,
+      "area_km2": 41.32,
+      "size_class": "great",
+      "peak_m": 1356,
+      "peak_x_m": 133360,
+      "peak_z_m": -137360,
+      "peak_tile": [
+        8,
+        -9
+      ],
+      "feature": "hotspot_4",
+      "tiles": [
+        [
+          8,
+          -10
+        ],
+        [
+          8,
+          -9
+        ]
+      ]
+    },
+    {
+      "id": 24,
+      "area_km2": 41.09,
+      "size_class": "great",
+      "peak_m": 1548,
+      "peak_x_m": -19440,
+      "peak_z_m": -145040,
+      "peak_tile": [
+        -2,
+        -10
+      ],
+      "feature": "arc_2",
+      "tiles": [
+        [
+          -2,
+          -10
+        ]
+      ]
+    },
+    {
+      "id": 25,
+      "area_km2": 40.96,
+      "size_class": "great",
+      "peak_m": 1411,
+      "peak_x_m": -4400,
+      "peak_z_m": -125840,
+      "peak_tile": [
+        -1,
+        -9
+      ],
+      "feature": "arc_2",
+      "tiles": [
+        [
+          -1,
+          -9
+        ],
+        [
+          0,
+          -9
+        ],
+        [
+          -1,
+          -8
+        ],
+        [
+          0,
+          -8
+        ]
+      ]
+    },
+    {
+      "id": 26,
+      "area_km2": 40.73,
+      "size_class": "great",
+      "peak_m": 502,
+      "peak_x_m": -37520,
+      "peak_z_m": -54640,
+      "peak_tile": [
+        -3,
+        -4
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -3,
+          -4
+        ]
+      ]
+    },
+    {
+      "id": 27,
+      "area_km2": 40.35,
+      "size_class": "great",
+      "peak_m": 1216,
+      "peak_x_m": -37200,
+      "peak_z_m": -10480,
+      "peak_tile": [
+        -3,
+        -1
+      ],
+      "feature": "hotspot_1",
+      "tiles": [
+        [
+          -3,
+          -1
+        ]
+      ]
+    },
+    {
+      "id": 28,
+      "area_km2": 39.42,
+      "size_class": "great",
+      "peak_m": 411,
+      "peak_x_m": 98320,
+      "peak_z_m": -74800,
+      "peak_tile": [
+        6,
+        -5
+      ],
+      "feature": "shelf_p_n",
+      "tiles": [
+        [
+          6,
+          -6
+        ],
+        [
+          6,
+          -5
+        ]
+      ]
+    },
+    {
+      "id": 29,
+      "area_km2": 39.3,
+      "size_class": "great",
+      "peak_m": 508,
+      "peak_x_m": -39120,
+      "peak_z_m": 68720,
+      "peak_tile": [
+        -3,
+        4
+      ],
+      "feature": "shelf_n_p",
+      "tiles": [
+        [
+          -3,
+          4
+        ]
+      ]
+    },
+    {
+      "id": 30,
+      "area_km2": 38.71,
+      "size_class": "great",
+      "peak_m": 329,
+      "peak_x_m": 85360,
+      "peak_z_m": -57360,
+      "peak_tile": [
+        5,
+        -4
+      ],
+      "feature": "shelf_p_n",
+      "tiles": [
+        [
+          5,
+          -5
+        ],
+        [
+          6,
+          -5
+        ],
+        [
+          5,
+          -4
+        ],
+        [
+          6,
+          -4
+        ]
+      ]
+    },
+    {
+      "id": 31,
+      "area_km2": 38.63,
+      "size_class": "great",
+      "peak_m": 511,
+      "peak_x_m": 54000,
+      "peak_z_m": -54960,
+      "peak_tile": [
+        3,
+        -4
+      ],
+      "feature": "shelf_p_n",
+      "tiles": [
+        [
+          3,
+          -4
+        ]
+      ]
+    },
+    {
+      "id": 32,
+      "area_km2": 36.89,
+      "size_class": "great",
+      "peak_m": 338,
+      "peak_x_m": -50640,
+      "peak_z_m": -63920,
+      "peak_tile": [
+        -4,
+        -5
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -4,
+          -5
+        ],
+        [
+          -4,
+          -4
+        ]
+      ]
+    },
+    {
+      "id": 33,
+      "area_km2": 35.71,
+      "size_class": "great",
+      "peak_m": 268,
+      "peak_x_m": 86160,
+      "peak_z_m": 70000,
+      "peak_tile": [
+        5,
+        4
+      ],
+      "feature": "shelf_p_p",
+      "tiles": [
+        [
+          5,
+          4
+        ],
+        [
+          6,
+          4
+        ]
+      ]
+    },
+    {
+      "id": 34,
+      "area_km2": 35.46,
+      "size_class": "great",
+      "peak_m": 382,
+      "peak_x_m": 85840,
+      "peak_z_m": -81360,
+      "peak_tile": [
+        5,
+        -6
+      ],
+      "feature": "shelf_p_n",
+      "tiles": [
+        [
+          5,
+          -6
+        ]
+      ]
+    },
+    {
+      "id": 35,
+      "area_km2": 34.48,
+      "size_class": "great",
+      "peak_m": 378,
+      "peak_x_m": 111760,
+      "peak_z_m": -77360,
+      "peak_tile": [
+        7,
+        -6
+      ],
+      "feature": "shelf_p_n",
+      "tiles": [
+        [
+          6,
+          -6
+        ],
+        [
+          7,
+          -6
+        ],
+        [
+          6,
+          -5
+        ],
+        [
+          7,
+          -5
+        ]
+      ]
+    },
+    {
+      "id": 36,
+      "area_km2": 33.97,
+      "size_class": "great",
+      "peak_m": 1539,
+      "peak_x_m": -26160,
+      "peak_z_m": 157840,
+      "peak_tile": [
+        -2,
+        10
+      ],
+      "feature": "arc_2",
+      "tiles": [
+        [
+          -2,
+          10
+        ]
+      ]
+    },
+    {
+      "id": 37,
+      "area_km2": 33.69,
+      "size_class": "great",
+      "peak_m": 1566,
+      "peak_x_m": -136880,
+      "peak_z_m": -145840,
+      "peak_tile": [
+        -9,
+        -10
+      ],
+      "feature": "arc_1",
+      "tiles": [
+        [
+          -10,
+          -10
+        ],
+        [
+          -9,
+          -10
+        ]
+      ]
+    },
+    {
+      "id": 38,
+      "area_km2": 33.0,
+      "size_class": "great",
+      "peak_m": 972,
+      "peak_x_m": 20880,
+      "peak_z_m": 43760,
+      "peak_tile": [
+        1,
+        2
+      ],
+      "feature": "trench_arc",
+      "tiles": [
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          3
+        ]
+      ]
+    },
+    {
+      "id": 39,
+      "area_km2": 31.28,
+      "size_class": "great",
+      "peak_m": 326,
+      "peak_x_m": -78000,
+      "peak_z_m": 112400,
+      "peak_tile": [
+        -6,
+        7
+      ],
+      "feature": "shelf_n_p",
+      "tiles": [
+        [
+          -6,
+          6
+        ],
+        [
+          -6,
+          7
+        ],
+        [
+          -5,
+          7
+        ]
+      ]
+    },
+    {
+      "id": 40,
+      "area_km2": 30.54,
+      "size_class": "great",
+      "peak_m": 1577,
+      "peak_x_m": 156720,
+      "peak_z_m": 12880,
+      "peak_tile": [
+        10,
+        0
+      ],
+      "feature": "arc_4",
+      "tiles": [
+        [
+          9,
+          0
+        ],
+        [
+          10,
+          0
+        ],
+        [
+          10,
+          1
+        ]
+      ]
+    },
+    {
+      "id": 41,
+      "area_km2": 29.8,
+      "size_class": "large",
+      "peak_m": 421,
+      "peak_x_m": -88880,
+      "peak_z_m": -44080,
+      "peak_tile": [
+        -6,
+        -3
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -6,
+          -4
+        ],
+        [
+          -7,
+          -3
+        ],
+        [
+          -6,
+          -3
+        ]
+      ]
+    },
+    {
+      "id": 42,
+      "area_km2": 29.75,
+      "size_class": "large",
+      "peak_m": 636,
+      "peak_x_m": -85200,
+      "peak_z_m": 99600,
+      "peak_tile": [
+        -6,
+        6
+      ],
+      "feature": "shelf_n_p",
+      "tiles": [
+        [
+          -6,
+          6
+        ]
+      ]
+    },
+    {
+      "id": 43,
+      "area_km2": 28.54,
+      "size_class": "large",
+      "peak_m": 1529,
+      "peak_x_m": -138960,
+      "peak_z_m": -102000,
+      "peak_tile": [
+        -10,
+        -7
+      ],
+      "feature": "arc_1",
+      "tiles": [
+        [
+          -10,
+          -7
+        ],
+        [
+          -9,
+          -7
+        ]
+      ]
+    },
+    {
+      "id": 44,
+      "area_km2": 28.21,
+      "size_class": "large",
+      "peak_m": 319,
+      "peak_x_m": -78000,
+      "peak_z_m": 86320,
+      "peak_tile": [
+        -6,
+        5
+      ],
+      "feature": "shelf_n_p",
+      "tiles": [
+        [
+          -6,
+          5
+        ],
+        [
+          -5,
+          5
+        ]
+      ]
+    },
+    {
+      "id": 45,
+      "area_km2": 27.08,
+      "size_class": "large",
+      "peak_m": 209,
+      "peak_x_m": -54640,
+      "peak_z_m": 91920,
+      "peak_tile": [
+        -4,
+        5
+      ],
+      "feature": "shelf_n_p",
+      "tiles": [
+        [
+          -4,
+          5
+        ],
+        [
+          -5,
+          6
+        ],
+        [
+          -4,
+          6
+        ]
+      ]
+    },
+    {
+      "id": 46,
+      "area_km2": 26.91,
+      "size_class": "large",
+      "peak_m": 338,
+      "peak_x_m": 78960,
+      "peak_z_m": -73680,
+      "peak_tile": [
+        5,
+        -5
+      ],
+      "feature": "shelf_p_n",
+      "tiles": [
+        [
+          4,
+          -5
+        ],
+        [
+          5,
+          -5
+        ]
+      ]
+    },
+    {
+      "id": 47,
+      "area_km2": 26.55,
+      "size_class": "large",
+      "peak_m": 385,
+      "peak_x_m": 100560,
+      "peak_z_m": -85680,
+      "peak_tile": [
+        6,
+        -6
+      ],
+      "feature": "shelf_p_n",
+      "tiles": [
+        [
+          6,
+          -6
+        ]
+      ]
+    },
+    {
+      "id": 48,
+      "area_km2": 25.75,
+      "size_class": "large",
+      "peak_m": 308,
+      "peak_x_m": -42480,
+      "peak_z_m": 79600,
+      "peak_tile": [
+        -3,
+        5
+      ],
+      "feature": "shelf_n_p",
+      "tiles": [
+        [
+          -4,
+          5
+        ],
+        [
+          -3,
+          5
+        ]
+      ]
+    },
+    {
+      "id": 49,
+      "area_km2": 24.47,
+      "size_class": "large",
+      "peak_m": 332,
+      "peak_x_m": -55280,
+      "peak_z_m": -38000,
+      "peak_tile": [
+        -4,
+        -3
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -4,
+          -3
+        ]
+      ]
+    },
+    {
+      "id": 50,
+      "area_km2": 22.66,
+      "size_class": "large",
+      "peak_m": 1530,
+      "peak_x_m": -44560,
+      "peak_z_m": -5200,
+      "peak_tile": [
+        -3,
+        -1
+      ],
+      "feature": "hotspot_1",
+      "tiles": [
+        [
+          -4,
+          -1
+        ],
+        [
+          -3,
+          -1
+        ]
+      ]
+    },
+    {
+      "id": 51,
+      "area_km2": 21.91,
+      "size_class": "large",
+      "peak_m": 279,
+      "peak_x_m": 62640,
+      "peak_z_m": 42320,
+      "peak_tile": [
+        4,
+        2
+      ],
+      "feature": "shelf_p_p",
+      "tiles": [
+        [
+          3,
+          2
+        ],
+        [
+          4,
+          2
+        ]
+      ]
+    },
+    {
+      "id": 52,
+      "area_km2": 21.76,
+      "size_class": "large",
+      "peak_m": 820,
+      "peak_x_m": 31760,
+      "peak_z_m": 45520,
+      "peak_tile": [
+        2,
+        2
+      ],
+      "feature": "trench_arc",
+      "tiles": [
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          1,
+          3
+        ],
+        [
+          2,
+          3
+        ]
+      ]
+    },
+    {
+      "id": 53,
+      "area_km2": 21.58,
+      "size_class": "large",
+      "peak_m": 401,
+      "peak_x_m": -68880,
+      "peak_z_m": 132240,
+      "peak_tile": [
+        -5,
+        8
+      ],
+      "feature": "shelf_n_p",
+      "tiles": [
+        [
+          -5,
+          8
+        ]
+      ]
+    },
+    {
+      "id": 54,
+      "area_km2": 20.84,
+      "size_class": "large",
+      "peak_m": 292,
+      "peak_x_m": 73200,
+      "peak_z_m": 58000,
+      "peak_tile": [
+        4,
+        3
+      ],
+      "feature": "shelf_p_p",
+      "tiles": [
+        [
+          4,
+          3
+        ],
+        [
+          4,
+          4
+        ]
+      ]
+    },
+    {
+      "id": 55,
+      "area_km2": 20.71,
+      "size_class": "large",
+      "peak_m": 1209,
+      "peak_x_m": 143120,
+      "peak_z_m": -32720,
+      "peak_tile": [
+        9,
+        -3
+      ],
+      "feature": "arc_4",
+      "tiles": [
+        [
+          9,
+          -3
+        ],
+        [
+          9,
+          -2
+        ]
+      ]
+    },
+    {
+      "id": 56,
+      "area_km2": 18.89,
+      "size_class": "large",
+      "peak_m": 1371,
+      "peak_x_m": -52880,
+      "peak_z_m": 1520,
+      "peak_tile": [
+        -4,
+        0
+      ],
+      "feature": "hotspot_1",
+      "tiles": [
+        [
+          -4,
+          -1
+        ],
+        [
+          -4,
+          0
+        ]
+      ]
+    },
+    {
+      "id": 57,
+      "area_km2": 18.56,
+      "size_class": "large",
+      "peak_m": 196,
+      "peak_x_m": -66160,
+      "peak_z_m": -66960,
+      "peak_tile": [
+        -5,
+        -5
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -5,
+          -5
+        ]
+      ]
+    },
+    {
+      "id": 58,
+      "area_km2": 18.15,
+      "size_class": "large",
+      "peak_m": 905,
+      "peak_x_m": 145840,
+      "peak_z_m": -14800,
+      "peak_tile": [
+        9,
+        -1
+      ],
+      "feature": "arc_4",
+      "tiles": [
+        [
+          9,
+          -2
+        ],
+        [
+          9,
+          -1
+        ]
+      ]
+    },
+    {
+      "id": 59,
+      "area_km2": 17.87,
+      "size_class": "large",
+      "peak_m": 348,
+      "peak_x_m": -89520,
+      "peak_z_m": -55600,
+      "peak_tile": [
+        -6,
+        -4
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -6,
+          -4
+        ]
+      ]
+    },
+    {
+      "id": 60,
+      "area_km2": 17.64,
+      "size_class": "large",
+      "peak_m": 290,
+      "peak_x_m": 46000,
+      "peak_z_m": -51600,
+      "peak_tile": [
+        2,
+        -4
+      ],
+      "feature": "shelf_p_n",
+      "tiles": [
+        [
+          2,
+          -4
+        ],
+        [
+          3,
+          -4
+        ]
+      ]
+    },
+    {
+      "id": 61,
+      "area_km2": 17.54,
+      "size_class": "large",
+      "peak_m": 146,
+      "peak_x_m": 82800,
+      "peak_z_m": -69840,
+      "peak_tile": [
+        5,
+        -5
+      ],
+      "feature": "shelf_p_n",
+      "tiles": [
+        [
+          5,
+          -5
+        ]
+      ]
+    },
+    {
+      "id": 62,
+      "area_km2": 17.41,
+      "size_class": "large",
+      "peak_m": 1263,
+      "peak_x_m": 125040,
+      "peak_z_m": 57360,
+      "peak_tile": [
+        8,
+        3
+      ],
+      "feature": "hotspot_3",
+      "tiles": [
+        [
+          8,
+          3
+        ]
+      ]
+    },
+    {
+      "id": 63,
+      "area_km2": 16.28,
+      "size_class": "large",
+      "peak_m": 1477,
+      "peak_x_m": 125840,
+      "peak_z_m": -139600,
+      "peak_tile": [
+        8,
+        -10
+      ],
+      "feature": "hotspot_4",
+      "tiles": [
+        [
+          8,
+          -10
+        ],
+        [
+          8,
+          -9
+        ]
+      ]
+    },
+    {
+      "id": 64,
+      "area_km2": 16.2,
+      "size_class": "large",
+      "peak_m": 301,
+      "peak_x_m": 87600,
+      "peak_z_m": -45680,
+      "peak_tile": [
+        5,
+        -3
+      ],
+      "feature": "shelf_p_n",
+      "tiles": [
+        [
+          5,
+          -4
+        ],
+        [
+          5,
+          -3
+        ]
+      ]
+    },
+    {
+      "id": 65,
+      "area_km2": 15.69,
+      "size_class": "large",
+      "peak_m": 178,
+      "peak_x_m": -88560,
+      "peak_z_m": 108720,
+      "peak_tile": [
+        -6,
+        7
+      ],
+      "feature": "shelf_n_p",
+      "tiles": [
+        [
+          -6,
+          6
+        ],
+        [
+          -6,
+          7
+        ]
+      ]
+    },
+    {
+      "id": 66,
+      "area_km2": 15.49,
+      "size_class": "large",
+      "peak_m": 1088,
+      "peak_x_m": -130640,
+      "peak_z_m": 16720,
+      "peak_tile": [
+        -9,
+        1
+      ],
+      "feature": "arc_5",
+      "tiles": [
+        [
+          -9,
+          0
+        ],
+        [
+          -9,
+          1
+        ]
+      ]
+    },
+    {
+      "id": 67,
+      "area_km2": 15.41,
+      "size_class": "large",
+      "peak_m": 184,
+      "peak_x_m": 57040,
+      "peak_z_m": -61520,
+      "peak_tile": [
+        3,
+        -5
+      ],
+      "feature": "shelf_p_n",
+      "tiles": [
+        [
+          3,
+          -5
+        ],
+        [
+          3,
+          -4
+        ]
+      ]
+    },
+    {
+      "id": 68,
+      "area_km2": 14.98,
+      "size_class": "medium",
+      "peak_m": 1225,
+      "peak_x_m": 115760,
+      "peak_z_m": -141360,
+      "peak_tile": [
+        7,
+        -10
+      ],
+      "feature": "hotspot_4",
+      "tiles": [
+        [
+          7,
+          -10
+        ]
+      ]
+    },
+    {
+      "id": 69,
+      "area_km2": 14.72,
+      "size_class": "medium",
+      "peak_m": 193,
+      "peak_x_m": 117680,
+      "peak_z_m": -68560,
+      "peak_tile": [
+        7,
+        -5
+      ],
+      "feature": "shelf_p_n",
+      "tiles": [
+        [
+          7,
+          -5
+        ]
+      ]
+    },
+    {
+      "id": 70,
+      "area_km2": 14.57,
+      "size_class": "medium",
+      "peak_m": 169,
+      "peak_x_m": 83280,
+      "peak_z_m": 83120,
+      "peak_tile": [
+        5,
+        5
+      ],
+      "feature": "shelf_p_p",
+      "tiles": [
+        [
+          5,
+          5
+        ]
+      ]
+    },
+    {
+      "id": 71,
+      "area_km2": 14.16,
+      "size_class": "medium",
+      "peak_m": 1002,
+      "peak_x_m": -60240,
+      "peak_z_m": 6960,
+      "peak_tile": [
+        -4,
+        0
+      ],
+      "feature": "hotspot_1",
+      "tiles": [
+        [
+          -5,
+          0
+        ],
+        [
+          -4,
+          0
+        ]
+      ]
+    },
+    {
+      "id": 72,
+      "area_km2": 14.11,
+      "size_class": "medium",
+      "peak_m": 1068,
+      "peak_x_m": 119120,
+      "peak_z_m": 52720,
+      "peak_tile": [
+        7,
+        3
+      ],
+      "feature": "hotspot_3",
+      "tiles": [
+        [
+          7,
+          3
+        ]
+      ]
+    },
+    {
+      "id": 73,
+      "area_km2": 13.54,
+      "size_class": "medium",
+      "peak_m": 185,
+      "peak_x_m": 64080,
+      "peak_z_m": -65520,
+      "peak_tile": [
+        4,
+        -5
+      ],
+      "feature": "shelf_p_n",
+      "tiles": [
+        [
+          3,
+          -5
+        ],
+        [
+          4,
+          -5
+        ]
+      ]
+    },
+    {
+      "id": 74,
+      "area_km2": 13.39,
+      "size_class": "medium",
+      "peak_m": 1026,
+      "peak_x_m": 144080,
+      "peak_z_m": -41520,
+      "peak_tile": [
+        9,
+        -3
+      ],
+      "feature": "arc_4",
+      "tiles": [
+        [
+          9,
+          -3
+        ]
+      ]
+    },
+    {
+      "id": 75,
+      "area_km2": 12.85,
+      "size_class": "medium",
+      "peak_m": 943,
+      "peak_x_m": 110320,
+      "peak_z_m": 140240,
+      "peak_tile": [
+        7,
+        9
+      ],
+      "feature": "arc_3",
+      "tiles": [
+        [
+          7,
+          9
+        ]
+      ]
+    },
+    {
+      "id": 76,
+      "area_km2": 12.7,
+      "size_class": "medium",
+      "peak_m": 123,
+      "peak_x_m": -81360,
+      "peak_z_m": 77840,
+      "peak_tile": [
+        -6,
+        5
+      ],
+      "feature": "shelf_n_p",
+      "tiles": [
+        [
+          -6,
+          4
+        ],
+        [
+          -6,
+          5
+        ]
+      ]
+    },
+    {
+      "id": 77,
+      "area_km2": 12.6,
+      "size_class": "medium",
+      "peak_m": 107,
+      "peak_x_m": 76080,
+      "peak_z_m": 93200,
+      "peak_tile": [
+        4,
+        6
+      ],
+      "feature": "shelf_p_p",
+      "tiles": [
+        [
+          4,
+          5
+        ],
+        [
+          4,
+          6
+        ],
+        [
+          5,
+          6
+        ]
+      ]
+    },
+    {
+      "id": 78,
+      "area_km2": 12.36,
+      "size_class": "medium",
+      "peak_m": 175,
+      "peak_x_m": 64720,
+      "peak_z_m": -95280,
+      "peak_tile": [
+        4,
+        -7
+      ],
+      "feature": "shelf_p_n",
+      "tiles": [
+        [
+          4,
+          -7
+        ],
+        [
+          4,
+          -6
+        ]
+      ]
+    },
+    {
+      "id": 79,
+      "area_km2": 12.36,
+      "size_class": "medium",
+      "peak_m": 664,
+      "peak_x_m": 162160,
+      "peak_z_m": 119280,
+      "peak_tile": [
+        10,
+        7
+      ],
+      "feature": "ridge_1",
+      "tiles": [
+        [
+          10,
+          7
+        ]
+      ]
+    },
+    {
+      "id": 80,
+      "area_km2": 11.93,
+      "size_class": "medium",
+      "peak_m": 155,
+      "peak_x_m": -47920,
+      "peak_z_m": -46000,
+      "peak_tile": [
+        -4,
+        -3
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -4,
+          -4
+        ],
+        [
+          -4,
+          -3
+        ]
+      ]
+    },
+    {
+      "id": 81,
+      "area_km2": 11.16,
+      "size_class": "medium",
+      "peak_m": 1091,
+      "peak_x_m": -137360,
+      "peak_z_m": -94480,
+      "peak_tile": [
+        -9,
+        -7
+      ],
+      "feature": "arc_1",
+      "tiles": [
+        [
+          -10,
+          -7
+        ],
+        [
+          -9,
+          -7
+        ]
+      ]
+    },
+    {
+      "id": 82,
+      "area_km2": 11.01,
+      "size_class": "medium",
+      "peak_m": 162,
+      "peak_x_m": -93840,
+      "peak_z_m": -38320,
+      "peak_tile": [
+        -7,
+        -3
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -7,
+          -3
+        ]
+      ]
+    },
+    {
+      "id": 83,
+      "area_km2": 10.68,
+      "size_class": "medium",
+      "peak_m": 240,
+      "peak_x_m": -86640,
+      "peak_z_m": -66800,
+      "peak_tile": [
+        -6,
+        -5
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -6,
+          -5
+        ]
+      ]
+    },
+    {
+      "id": 84,
+      "area_km2": 10.68,
+      "size_class": "medium",
+      "peak_m": 162,
+      "peak_x_m": -57040,
+      "peak_z_m": 122800,
+      "peak_tile": [
+        -4,
+        7
+      ],
+      "feature": "shelf_n_p",
+      "tiles": [
+        [
+          -4,
+          7
+        ],
+        [
+          -4,
+          8
+        ]
+      ]
+    },
+    {
+      "id": 85,
+      "area_km2": 9.98,
+      "size_class": "medium",
+      "peak_m": 1466,
+      "peak_x_m": -137040,
+      "peak_z_m": 111280,
+      "peak_tile": [
+        -9,
+        7
+      ],
+      "feature": "hotspot_2",
+      "tiles": [
+        [
+          -10,
+          7
+        ],
+        [
+          -9,
+          7
+        ]
+      ]
+    },
+    {
+      "id": 86,
+      "area_km2": 9.98,
+      "size_class": "medium",
+      "peak_m": 789,
+      "peak_x_m": 140560,
+      "peak_z_m": 137840,
+      "peak_tile": [
+        9,
+        8
+      ],
+      "feature": "arc_3",
+      "tiles": [
+        [
+          8,
+          8
+        ],
+        [
+          9,
+          8
+        ],
+        [
+          9,
+          9
+        ]
+      ]
+    },
+    {
+      "id": 87,
+      "area_km2": 9.96,
+      "size_class": "medium",
+      "peak_m": 124,
+      "peak_x_m": 116080,
+      "peak_z_m": -83440,
+      "peak_tile": [
+        7,
+        -6
+      ],
+      "feature": "shelf_p_n",
+      "tiles": [
+        [
+          7,
+          -6
+        ]
+      ]
+    },
+    {
+      "id": 88,
+      "area_km2": 9.42,
+      "size_class": "medium",
+      "peak_m": 918,
+      "peak_x_m": -139920,
+      "peak_z_m": -18480,
+      "peak_tile": [
+        -10,
+        -2
+      ],
+      "feature": "arc_5",
+      "tiles": [
+        [
+          -10,
+          -2
+        ]
+      ]
+    },
+    {
+      "id": 89,
+      "area_km2": 8.99,
+      "size_class": "medium",
+      "peak_m": 861,
+      "peak_x_m": 105360,
+      "peak_z_m": 141680,
+      "peak_tile": [
+        6,
+        9
+      ],
+      "feature": "arc_3",
+      "tiles": [
+        [
+          6,
+          9
+        ]
+      ]
+    },
+    {
+      "id": 90,
+      "area_km2": 8.93,
+      "size_class": "medium",
+      "peak_m": 170,
+      "peak_x_m": 96240,
+      "peak_z_m": 118800,
+      "peak_tile": [
+        6,
+        7
+      ],
+      "feature": "shelf_p_p",
+      "tiles": [
+        [
+          6,
+          7
+        ]
+      ]
+    },
+    {
+      "id": 91,
+      "area_km2": 8.42,
+      "size_class": "medium",
+      "peak_m": 879,
+      "peak_x_m": -142480,
+      "peak_z_m": -22800,
+      "peak_tile": [
+        -10,
+        -2
+      ],
+      "feature": "arc_5",
+      "tiles": [
+        [
+          -10,
+          -2
+        ]
+      ]
+    },
+    {
+      "id": 92,
+      "area_km2": 8.14,
+      "size_class": "medium",
+      "peak_m": 183,
+      "peak_x_m": 76240,
+      "peak_z_m": -64080,
+      "peak_tile": [
+        4,
+        -5
+      ],
+      "feature": "shelf_p_n",
+      "tiles": [
+        [
+          4,
+          -5
+        ],
+        [
+          5,
+          -5
+        ]
+      ]
+    },
+    {
+      "id": 93,
+      "area_km2": 8.09,
+      "size_class": "medium",
+      "peak_m": 457,
+      "peak_x_m": 163280,
+      "peak_z_m": 72720,
+      "peak_tile": [
+        10,
+        4
+      ],
+      "feature": "ridge_1",
+      "tiles": [
+        [
+          10,
+          4
+        ]
+      ]
+    },
+    {
+      "id": 94,
+      "area_km2": 7.86,
+      "size_class": "medium",
+      "peak_m": 83,
+      "peak_x_m": -86000,
+      "peak_z_m": -95600,
+      "peak_tile": [
+        -6,
+        -7
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -6,
+          -7
+        ]
+      ]
+    },
+    {
+      "id": 95,
+      "area_km2": 7.65,
+      "size_class": "medium",
+      "peak_m": 116,
+      "peak_x_m": 93520,
+      "peak_z_m": 113200,
+      "peak_tile": [
+        6,
+        7
+      ],
+      "feature": "shelf_p_p",
+      "tiles": [
+        [
+          6,
+          7
+        ]
+      ]
+    },
+    {
+      "id": 96,
+      "area_km2": 7.58,
+      "size_class": "medium",
+      "peak_m": 835,
+      "peak_x_m": -138960,
+      "peak_z_m": -108080,
+      "peak_tile": [
+        -10,
+        -8
+      ],
+      "feature": "arc_1",
+      "tiles": [
+        [
+          -10,
+          -8
+        ],
+        [
+          -9,
+          -8
+        ],
+        [
+          -10,
+          -7
+        ],
+        [
+          -9,
+          -7
+        ]
+      ]
+    },
+    {
+      "id": 97,
+      "area_km2": 7.5,
+      "size_class": "medium",
+      "peak_m": 966,
+      "peak_x_m": -67440,
+      "peak_z_m": 11920,
+      "peak_tile": [
+        -5,
+        0
+      ],
+      "feature": "hotspot_1",
+      "tiles": [
+        [
+          -5,
+          0
+        ]
+      ]
+    },
+    {
+      "id": 98,
+      "area_km2": 7.45,
+      "size_class": "medium",
+      "peak_m": 122,
+      "peak_x_m": 59280,
+      "peak_z_m": -32080,
+      "peak_tile": [
+        3,
+        -3
+      ],
+      "feature": "shelf_p_n",
+      "tiles": [
+        [
+          3,
+          -3
+        ],
+        [
+          3,
+          -2
+        ]
+      ]
+    },
+    {
+      "id": 99,
+      "area_km2": 7.32,
+      "size_class": "medium",
+      "peak_m": 766,
+      "peak_x_m": 143920,
+      "peak_z_m": -25200,
+      "peak_tile": [
+        9,
+        -2
+      ],
+      "feature": "arc_4",
+      "tiles": [
+        [
+          9,
+          -2
+        ]
+      ]
+    },
+    {
+      "id": 100,
+      "area_km2": 7.04,
+      "size_class": "medium",
+      "peak_m": 139,
+      "peak_x_m": 117840,
+      "peak_z_m": -80560,
+      "peak_tile": [
+        7,
+        -6
+      ],
+      "feature": "shelf_p_n",
+      "tiles": [
+        [
+          7,
+          -6
+        ]
+      ]
+    },
+    {
+      "id": 101,
+      "area_km2": 6.89,
+      "size_class": "medium",
+      "peak_m": 489,
+      "peak_x_m": 151920,
+      "peak_z_m": 99760,
+      "peak_tile": [
+        9,
+        6
+      ],
+      "feature": "ridge_1",
+      "tiles": [
+        [
+          9,
+          6
+        ]
+      ]
+    },
+    {
+      "id": 102,
+      "area_km2": 6.66,
+      "size_class": "medium",
+      "peak_m": 702,
+      "peak_x_m": 149840,
+      "peak_z_m": 80,
+      "peak_tile": [
+        9,
+        0
+      ],
+      "feature": "arc_4",
+      "tiles": [
+        [
+          9,
+          -1
+        ],
+        [
+          9,
+          0
+        ]
+      ]
+    },
+    {
+      "id": 103,
+      "area_km2": 6.63,
+      "size_class": "medium",
+      "peak_m": 814,
+      "peak_x_m": 91440,
+      "peak_z_m": 146480,
+      "peak_tile": [
+        5,
+        9
+      ],
+      "feature": "arc_3",
+      "tiles": [
+        [
+          5,
+          9
+        ],
+        [
+          6,
+          9
+        ]
+      ]
+    },
+    {
+      "id": 104,
+      "area_km2": 6.55,
+      "size_class": "medium",
+      "peak_m": 869,
+      "peak_x_m": -130320,
+      "peak_z_m": 118640,
+      "peak_tile": [
+        -9,
+        7
+      ],
+      "feature": "hotspot_2",
+      "tiles": [
+        [
+          -9,
+          7
+        ]
+      ]
+    },
+    {
+      "id": 105,
+      "area_km2": 6.53,
+      "size_class": "medium",
+      "peak_m": 104,
+      "peak_x_m": 72880,
+      "peak_z_m": 74960,
+      "peak_tile": [
+        4,
+        4
+      ],
+      "feature": "shelf_p_p",
+      "tiles": [
+        [
+          4,
+          4
+        ]
+      ]
+    },
+    {
+      "id": 106,
+      "area_km2": 6.5,
+      "size_class": "medium",
+      "peak_m": 829,
+      "peak_x_m": -75920,
+      "peak_z_m": 19120,
+      "peak_tile": [
+        -5,
+        1
+      ],
+      "feature": "hotspot_1",
+      "tiles": [
+        [
+          -6,
+          1
+        ],
+        [
+          -5,
+          1
+        ]
+      ]
+    },
+    {
+      "id": 107,
+      "area_km2": 6.45,
+      "size_class": "medium",
+      "peak_m": 615,
+      "peak_x_m": -137840,
+      "peak_z_m": -12240,
+      "peak_tile": [
+        -9,
+        -1
+      ],
+      "feature": "arc_5",
+      "tiles": [
+        [
+          -10,
+          -1
+        ],
+        [
+          -9,
+          -1
+        ]
+      ]
+    },
+    {
+      "id": 108,
+      "area_km2": 6.25,
+      "size_class": "medium",
+      "peak_m": 825,
+      "peak_x_m": 147440,
+      "peak_z_m": -6640,
+      "peak_tile": [
+        9,
+        -1
+      ],
+      "feature": "arc_4",
+      "tiles": [
+        [
+          9,
+          -1
+        ]
+      ]
+    },
+    {
+      "id": 109,
+      "area_km2": 6.09,
+      "size_class": "medium",
+      "peak_m": 307,
+      "peak_x_m": 38800,
+      "peak_z_m": 48080,
+      "peak_tile": [
+        2,
+        3
+      ],
+      "feature": "trench_arc",
+      "tiles": [
+        [
+          2,
+          3
+        ]
+      ]
+    },
+    {
+      "id": 110,
+      "area_km2": 5.99,
+      "size_class": "medium",
+      "peak_m": 604,
+      "peak_x_m": 110800,
+      "peak_z_m": 46000,
+      "peak_tile": [
+        7,
+        2
+      ],
+      "feature": "hotspot_3",
+      "tiles": [
+        [
+          7,
+          2
+        ],
+        [
+          7,
+          3
+        ]
+      ]
+    },
+    {
+      "id": 111,
+      "area_km2": 5.76,
+      "size_class": "medium",
+      "peak_m": 56,
+      "peak_x_m": 104080,
+      "peak_z_m": -52720,
+      "peak_tile": [
+        6,
+        -4
+      ],
+      "feature": "shelf_p_n",
+      "tiles": [
+        [
+          6,
+          -4
+        ]
+      ]
+    },
+    {
+      "id": 112,
+      "area_km2": 5.76,
+      "size_class": "medium",
+      "peak_m": 545,
+      "peak_x_m": 14000,
+      "peak_z_m": 43440,
+      "peak_tile": [
+        0,
+        2
+      ],
+      "feature": "trench_arc",
+      "tiles": [
+        [
+          0,
+          2
+        ],
+        [
+          1,
+          2
+        ]
+      ]
+    },
+    {
+      "id": 113,
+      "area_km2": 5.68,
+      "size_class": "medium",
+      "peak_m": 671,
+      "peak_x_m": -131440,
+      "peak_z_m": 159440,
+      "peak_tile": [
+        -9,
+        10
+      ],
+      "feature": "arc_1",
+      "tiles": [
+        [
+          -9,
+          10
+        ]
+      ]
+    },
+    {
+      "id": 114,
+      "area_km2": 5.5,
+      "size_class": "medium",
+      "peak_m": 569,
+      "peak_x_m": -130320,
+      "peak_z_m": 26000,
+      "peak_tile": [
+        -9,
+        1
+      ],
+      "feature": "arc_5",
+      "tiles": [
+        [
+          -9,
+          1
+        ]
+      ]
+    },
+    {
+      "id": 115,
+      "area_km2": 5.17,
+      "size_class": "medium",
+      "peak_m": 142,
+      "peak_x_m": 104560,
+      "peak_z_m": 68080,
+      "peak_tile": [
+        6,
+        4
+      ],
+      "feature": "shelf_p_p",
+      "tiles": [
+        [
+          6,
+          4
+        ]
+      ]
+    },
+    {
+      "id": 116,
+      "area_km2": 5.07,
+      "size_class": "medium",
+      "peak_m": 126,
+      "peak_x_m": -75280,
+      "peak_z_m": -46000,
+      "peak_tile": [
+        -5,
+        -3
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -5,
+          -4
+        ],
+        [
+          -5,
+          -3
+        ]
+      ]
+    },
+    {
+      "id": 117,
+      "area_km2": 4.89,
+      "size_class": "small",
+      "peak_m": 171,
+      "peak_x_m": 162800,
+      "peak_z_m": 76720,
+      "peak_tile": [
+        10,
+        4
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          10,
+          4
+        ],
+        [
+          10,
+          5
+        ]
+      ]
+    },
+    {
+      "id": 118,
+      "area_km2": 4.86,
+      "size_class": "small",
+      "peak_m": 678,
+      "peak_x_m": -138160,
+      "peak_z_m": -138640,
+      "peak_tile": [
+        -9,
+        -10
+      ],
+      "feature": "arc_1",
+      "tiles": [
+        [
+          -10,
+          -10
+        ],
+        [
+          -9,
+          -10
+        ],
+        [
+          -10,
+          -9
+        ],
+        [
+          -9,
+          -9
+        ]
+      ]
+    },
+    {
+      "id": 119,
+      "area_km2": 4.84,
+      "size_class": "small",
+      "peak_m": 106,
+      "peak_x_m": 71760,
+      "peak_z_m": -63600,
+      "peak_tile": [
+        4,
+        -5
+      ],
+      "feature": "shelf_p_n",
+      "tiles": [
+        [
+          4,
+          -5
+        ]
+      ]
+    },
+    {
+      "id": 120,
+      "area_km2": 4.74,
+      "size_class": "small",
+      "peak_m": 546,
+      "peak_x_m": -11120,
+      "peak_z_m": -132720,
+      "peak_tile": [
+        -1,
+        -9
+      ],
+      "feature": "arc_2",
+      "tiles": [
+        [
+          -1,
+          -9
+        ]
+      ]
+    },
+    {
+      "id": 121,
+      "area_km2": 4.63,
+      "size_class": "small",
+      "peak_m": 108,
+      "peak_x_m": -73680,
+      "peak_z_m": -52080,
+      "peak_tile": [
+        -5,
+        -4
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -5,
+          -4
+        ]
+      ]
+    },
+    {
+      "id": 122,
+      "area_km2": 4.58,
+      "size_class": "small",
+      "peak_m": 586,
+      "peak_x_m": 153360,
+      "peak_z_m": 7280,
+      "peak_tile": [
+        9,
+        0
+      ],
+      "feature": "arc_4",
+      "tiles": [
+        [
+          9,
+          0
+        ],
+        [
+          10,
+          0
+        ]
+      ]
+    },
+    {
+      "id": 123,
+      "area_km2": 4.48,
+      "size_class": "small",
+      "peak_m": 638,
+      "peak_x_m": 148560,
+      "peak_z_m": -62800,
+      "peak_tile": [
+        9,
+        -5
+      ],
+      "feature": "arc_4",
+      "tiles": [
+        [
+          9,
+          -5
+        ]
+      ]
+    },
+    {
+      "id": 124,
+      "area_km2": 4.48,
+      "size_class": "small",
+      "peak_m": 110,
+      "peak_x_m": -96880,
+      "peak_z_m": -53200,
+      "peak_tile": [
+        -7,
+        -4
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -7,
+          -4
+        ]
+      ]
+    },
+    {
+      "id": 125,
+      "area_km2": 4.48,
+      "size_class": "small",
+      "peak_m": 267,
+      "peak_x_m": -39760,
+      "peak_z_m": 147600,
+      "peak_tile": [
+        -3,
+        9
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          -3,
+          9
+        ]
+      ]
+    },
+    {
+      "id": 126,
+      "area_km2": 4.45,
+      "size_class": "small",
+      "peak_m": 243,
+      "peak_x_m": 89200,
+      "peak_z_m": 29680,
+      "peak_tile": [
+        5,
+        1
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          5,
+          1
+        ],
+        [
+          6,
+          1
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          6,
+          2
+        ]
+      ]
+    },
+    {
+      "id": 127,
+      "area_km2": 4.43,
+      "size_class": "small",
+      "peak_m": 356,
+      "peak_x_m": -44400,
+      "peak_z_m": 145040,
+      "peak_tile": [
+        -3,
+        9
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          -3,
+          9
+        ]
+      ]
+    },
+    {
+      "id": 128,
+      "area_km2": 4.4,
+      "size_class": "small",
+      "peak_m": 228,
+      "peak_x_m": 119280,
+      "peak_z_m": 110320,
+      "peak_tile": [
+        7,
+        7
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          7,
+          7
+        ]
+      ]
+    },
+    {
+      "id": 129,
+      "area_km2": 4.35,
+      "size_class": "small",
+      "peak_m": 162,
+      "peak_x_m": 161040,
+      "peak_z_m": -150480,
+      "peak_tile": [
+        10,
+        -10
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          10,
+          -10
+        ]
+      ]
+    },
+    {
+      "id": 130,
+      "area_km2": 4.3,
+      "size_class": "small",
+      "peak_m": 83,
+      "peak_x_m": -31600,
+      "peak_z_m": -59600,
+      "peak_tile": [
+        -3,
+        -4
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -3,
+          -4
+        ]
+      ]
+    },
+    {
+      "id": 131,
+      "area_km2": 4.28,
+      "size_class": "small",
+      "peak_m": 83,
+      "peak_x_m": -62480,
+      "peak_z_m": 107760,
+      "peak_tile": [
+        -5,
+        7
+      ],
+      "feature": "shelf_n_p",
+      "tiles": [
+        [
+          -5,
+          6
+        ],
+        [
+          -4,
+          6
+        ],
+        [
+          -5,
+          7
+        ],
+        [
+          -4,
+          7
+        ]
+      ]
+    },
+    {
+      "id": 132,
+      "area_km2": 4.22,
+      "size_class": "small",
+      "peak_m": 160,
+      "peak_x_m": 136080,
+      "peak_z_m": -150000,
+      "peak_tile": [
+        8,
+        -10
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          8,
+          -10
+        ]
+      ]
+    },
+    {
+      "id": 133,
+      "area_km2": 4.15,
+      "size_class": "small",
+      "peak_m": 109,
+      "peak_x_m": 79440,
+      "peak_z_m": 94960,
+      "peak_tile": [
+        5,
+        6
+      ],
+      "feature": "shelf_p_p",
+      "tiles": [
+        [
+          5,
+          6
+        ]
+      ]
+    },
+    {
+      "id": 134,
+      "area_km2": 4.1,
+      "size_class": "small",
+      "peak_m": 335,
+      "peak_x_m": 29200,
+      "peak_z_m": 150320,
+      "peak_tile": [
+        1,
+        9
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          1,
+          9
+        ]
+      ]
+    },
+    {
+      "id": 135,
+      "area_km2": 3.94,
+      "size_class": "small",
+      "peak_m": 127,
+      "peak_x_m": -90320,
+      "peak_z_m": -60400,
+      "peak_tile": [
+        -6,
+        -4
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -6,
+          -5
+        ],
+        [
+          -6,
+          -4
+        ]
+      ]
+    },
+    {
+      "id": 136,
+      "area_km2": 3.84,
+      "size_class": "small",
+      "peak_m": 727,
+      "peak_x_m": 104560,
+      "peak_z_m": -144240,
+      "peak_tile": [
+        6,
+        -10
+      ],
+      "feature": "hotspot_4",
+      "tiles": [
+        [
+          6,
+          -10
+        ]
+      ]
+    },
+    {
+      "id": 137,
+      "area_km2": 3.84,
+      "size_class": "small",
+      "peak_m": 76,
+      "peak_x_m": -71760,
+      "peak_z_m": -27600,
+      "peak_tile": [
+        -5,
+        -2
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          -5,
+          -2
+        ]
+      ]
+    },
+    {
+      "id": 138,
+      "area_km2": 3.79,
+      "size_class": "small",
+      "peak_m": 352,
+      "peak_x_m": 155280,
+      "peak_z_m": -92400,
+      "peak_tile": [
+        10,
+        -7
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          10,
+          -7
+        ],
+        [
+          10,
+          -6
+        ]
+      ]
+    },
+    {
+      "id": 139,
+      "area_km2": 3.76,
+      "size_class": "small",
+      "peak_m": 215,
+      "peak_x_m": -11920,
+      "peak_z_m": 45040,
+      "peak_tile": [
+        -1,
+        2
+      ],
+      "feature": "trench_arc",
+      "tiles": [
+        [
+          -1,
+          2
+        ]
+      ]
+    },
+    {
+      "id": 140,
+      "area_km2": 3.76,
+      "size_class": "small",
+      "peak_m": 188,
+      "peak_x_m": 139120,
+      "peak_z_m": 87920,
+      "peak_tile": [
+        9,
+        5
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          8,
+          5
+        ],
+        [
+          9,
+          5
+        ]
+      ]
+    },
+    {
+      "id": 141,
+      "area_km2": 3.74,
+      "size_class": "small",
+      "peak_m": 311,
+      "peak_x_m": 158480,
+      "peak_z_m": -65680,
+      "peak_tile": [
+        10,
+        -5
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          10,
+          -5
+        ]
+      ]
+    },
+    {
+      "id": 142,
+      "area_km2": 3.71,
+      "size_class": "small",
+      "peak_m": 61,
+      "peak_x_m": 61040,
+      "peak_z_m": -49200,
+      "peak_tile": [
+        3,
+        -4
+      ],
+      "feature": "shelf_p_n",
+      "tiles": [
+        [
+          3,
+          -4
+        ],
+        [
+          4,
+          -4
+        ]
+      ]
+    },
+    {
+      "id": 143,
+      "area_km2": 3.66,
+      "size_class": "small",
+      "peak_m": 439,
+      "peak_x_m": 15120,
+      "peak_z_m": -112240,
+      "peak_tile": [
+        0,
+        -8
+      ],
+      "feature": "arc_2",
+      "tiles": [
+        [
+          0,
+          -8
+        ],
+        [
+          1,
+          -8
+        ]
+      ]
+    },
+    {
+      "id": 144,
+      "area_km2": 3.64,
+      "size_class": "small",
+      "peak_m": 48,
+      "peak_x_m": 55120,
+      "peak_z_m": -73200,
+      "peak_tile": [
+        3,
+        -5
+      ],
+      "feature": "shelf_p_n",
+      "tiles": [
+        [
+          3,
+          -5
+        ]
+      ]
+    },
+    {
+      "id": 145,
+      "area_km2": 3.61,
+      "size_class": "small",
+      "peak_m": 596,
+      "peak_x_m": -138960,
+      "peak_z_m": -130480,
+      "peak_tile": [
+        -10,
+        -9
+      ],
+      "feature": "arc_1",
+      "tiles": [
+        [
+          -10,
+          -9
+        ],
+        [
+          -9,
+          -9
+        ]
+      ]
+    },
+    {
+      "id": 146,
+      "area_km2": 3.61,
+      "size_class": "small",
+      "peak_m": 86,
+      "peak_x_m": 110800,
+      "peak_z_m": -58960,
+      "peak_tile": [
+        7,
+        -4
+      ],
+      "feature": "shelf_p_n",
+      "tiles": [
+        [
+          7,
+          -4
+        ]
+      ]
+    },
+    {
+      "id": 147,
+      "area_km2": 3.61,
+      "size_class": "small",
+      "peak_m": 537,
+      "peak_x_m": -82960,
+      "peak_z_m": 24880,
+      "peak_tile": [
+        -6,
+        1
+      ],
+      "feature": "hotspot_1",
+      "tiles": [
+        [
+          -6,
+          1
+        ]
+      ]
+    },
+    {
+      "id": 148,
+      "area_km2": 3.58,
+      "size_class": "small",
+      "peak_m": 185,
+      "peak_x_m": 106000,
+      "peak_z_m": -55280,
+      "peak_tile": [
+        6,
+        -4
+      ],
+      "feature": "shelf_p_n",
+      "tiles": [
+        [
+          6,
+          -4
+        ]
+      ]
+    },
+    {
+      "id": 149,
+      "area_km2": 3.58,
+      "size_class": "small",
+      "peak_m": 119,
+      "peak_x_m": -92400,
+      "peak_z_m": 17360,
+      "peak_tile": [
+        -7,
+        1
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          -7,
+          1
+        ],
+        [
+          -6,
+          1
+        ]
+      ]
+    },
+    {
+      "id": 150,
+      "area_km2": 3.43,
+      "size_class": "small",
+      "peak_m": 337,
+      "peak_x_m": 155600,
+      "peak_z_m": 145200,
+      "peak_tile": [
+        10,
+        9
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          10,
+          9
+        ]
+      ]
+    },
+    {
+      "id": 151,
+      "area_km2": 3.4,
+      "size_class": "small",
+      "peak_m": 172,
+      "peak_x_m": 66640,
+      "peak_z_m": -880,
+      "peak_tile": [
+        4,
+        -1
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          4,
+          -1
+        ]
+      ]
+    },
+    {
+      "id": 152,
+      "area_km2": 3.38,
+      "size_class": "small",
+      "peak_m": 508,
+      "peak_x_m": -139760,
+      "peak_z_m": -117360,
+      "peak_tile": [
+        -10,
+        -8
+      ],
+      "feature": "arc_1",
+      "tiles": [
+        [
+          -10,
+          -8
+        ]
+      ]
+    },
+    {
+      "id": 153,
+      "area_km2": 3.35,
+      "size_class": "small",
+      "peak_m": 197,
+      "peak_x_m": 33840,
+      "peak_z_m": -147120,
+      "peak_tile": [
+        2,
+        -10
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          2,
+          -10
+        ]
+      ]
+    },
+    {
+      "id": 154,
+      "area_km2": 3.35,
+      "size_class": "small",
+      "peak_m": 220,
+      "peak_x_m": 130160,
+      "peak_z_m": -146000,
+      "peak_tile": [
+        8,
+        -10
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          8,
+          -10
+        ]
+      ]
+    },
+    {
+      "id": 155,
+      "area_km2": 3.33,
+      "size_class": "small",
+      "peak_m": 167,
+      "peak_x_m": 81520,
+      "peak_z_m": -146320,
+      "peak_tile": [
+        5,
+        -10
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          5,
+          -10
+        ]
+      ]
+    },
+    {
+      "id": 156,
+      "area_km2": 3.33,
+      "size_class": "small",
+      "peak_m": 241,
+      "peak_x_m": 35920,
+      "peak_z_m": 164400,
+      "peak_tile": [
+        2,
+        10
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          2,
+          10
+        ]
+      ]
+    },
+    {
+      "id": 157,
+      "area_km2": 3.3,
+      "size_class": "small",
+      "peak_m": 67,
+      "peak_x_m": -78480,
+      "peak_z_m": -56560,
+      "peak_tile": [
+        -6,
+        -4
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -6,
+          -4
+        ]
+      ]
+    },
+    {
+      "id": 158,
+      "area_km2": 3.2,
+      "size_class": "small",
+      "peak_m": 453,
+      "peak_x_m": -133360,
+      "peak_z_m": -80,
+      "peak_tile": [
+        -9,
+        -1
+      ],
+      "feature": "arc_5",
+      "tiles": [
+        [
+          -9,
+          -1
+        ],
+        [
+          -9,
+          0
+        ]
+      ]
+    },
+    {
+      "id": 159,
+      "area_km2": 3.2,
+      "size_class": "small",
+      "peak_m": 603,
+      "peak_x_m": -123760,
+      "peak_z_m": 125840,
+      "peak_tile": [
+        -9,
+        8
+      ],
+      "feature": "hotspot_2",
+      "tiles": [
+        [
+          -9,
+          8
+        ],
+        [
+          -8,
+          8
+        ]
+      ]
+    },
+    {
+      "id": 160,
+      "area_km2": 3.17,
+      "size_class": "small",
+      "peak_m": 445,
+      "peak_x_m": -128240,
+      "peak_z_m": -68400,
+      "peak_tile": [
+        -9,
+        -5
+      ],
+      "feature": "arc_1",
+      "tiles": [
+        [
+          -9,
+          -5
+        ]
+      ]
+    },
+    {
+      "id": 161,
+      "area_km2": 3.15,
+      "size_class": "small",
+      "peak_m": 313,
+      "peak_x_m": 60080,
+      "peak_z_m": 158320,
+      "peak_tile": [
+        3,
+        10
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          3,
+          10
+        ]
+      ]
+    },
+    {
+      "id": 162,
+      "area_km2": 3.12,
+      "size_class": "small",
+      "peak_m": 247,
+      "peak_x_m": -12400,
+      "peak_z_m": 162960,
+      "peak_tile": [
+        -1,
+        10
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          -1,
+          10
+        ]
+      ]
+    },
+    {
+      "id": 163,
+      "area_km2": 3.1,
+      "size_class": "small",
+      "peak_m": 151,
+      "peak_x_m": -64560,
+      "peak_z_m": -54960,
+      "peak_tile": [
+        -5,
+        -4
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -5,
+          -4
+        ]
+      ]
+    },
+    {
+      "id": 164,
+      "area_km2": 3.1,
+      "size_class": "small",
+      "peak_m": 318,
+      "peak_x_m": 7760,
+      "peak_z_m": 43280,
+      "peak_tile": [
+        0,
+        2
+      ],
+      "feature": "trench_arc",
+      "tiles": [
+        [
+          0,
+          2
+        ]
+      ]
+    },
+    {
+      "id": 165,
+      "area_km2": 3.1,
+      "size_class": "small",
+      "peak_m": 47,
+      "peak_x_m": 63920,
+      "peak_z_m": 56080,
+      "peak_tile": [
+        4,
+        3
+      ],
+      "feature": "shelf_p_p",
+      "tiles": [
+        [
+          4,
+          3
+        ]
+      ]
+    },
+    {
+      "id": 166,
+      "area_km2": 3.05,
+      "size_class": "small",
+      "peak_m": 439,
+      "peak_x_m": 104080,
+      "peak_z_m": 40720,
+      "peak_tile": [
+        6,
+        2
+      ],
+      "feature": "hotspot_3",
+      "tiles": [
+        [
+          6,
+          2
+        ]
+      ]
+    },
+    {
+      "id": 167,
+      "area_km2": 3.02,
+      "size_class": "small",
+      "peak_m": 111,
+      "peak_x_m": -79280,
+      "peak_z_m": 101360,
+      "peak_tile": [
+        -6,
+        6
+      ],
+      "feature": "shelf_n_p",
+      "tiles": [
+        [
+          -6,
+          6
+        ]
+      ]
+    },
+    {
+      "id": 168,
+      "area_km2": 3.0,
+      "size_class": "small",
+      "peak_m": 170,
+      "peak_x_m": 43120,
+      "peak_z_m": -143920,
+      "peak_tile": [
+        2,
+        -10
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          2,
+          -10
+        ]
+      ]
+    },
+    {
+      "id": 169,
+      "area_km2": 2.97,
+      "size_class": "small",
+      "peak_m": 242,
+      "peak_x_m": 122160,
+      "peak_z_m": 22480,
+      "peak_tile": [
+        7,
+        1
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          7,
+          1
+        ]
+      ]
+    },
+    {
+      "id": 170,
+      "area_km2": 2.94,
+      "size_class": "small",
+      "peak_m": 248,
+      "peak_x_m": 142640,
+      "peak_z_m": 42160,
+      "peak_tile": [
+        9,
+        2
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          9,
+          2
+        ]
+      ]
+    },
+    {
+      "id": 171,
+      "area_km2": 2.92,
+      "size_class": "small",
+      "peak_m": 132,
+      "peak_x_m": 24240,
+      "peak_z_m": 143280,
+      "peak_tile": [
+        1,
+        9
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          1,
+          9
+        ]
+      ]
+    },
+    {
+      "id": 172,
+      "area_km2": 2.89,
+      "size_class": "small",
+      "peak_m": 266,
+      "peak_x_m": 48240,
+      "peak_z_m": -146160,
+      "peak_tile": [
+        3,
+        -10
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          3,
+          -10
+        ]
+      ]
+    },
+    {
+      "id": 173,
+      "area_km2": 2.89,
+      "size_class": "small",
+      "peak_m": 198,
+      "peak_x_m": 115760,
+      "peak_z_m": 13200,
+      "peak_tile": [
+        7,
+        0
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          7,
+          0
+        ]
+      ]
+    },
+    {
+      "id": 174,
+      "area_km2": 2.87,
+      "size_class": "small",
+      "peak_m": 89,
+      "peak_x_m": -38960,
+      "peak_z_m": 57680,
+      "peak_tile": [
+        -3,
+        3
+      ],
+      "feature": "shelf_n_p",
+      "tiles": [
+        [
+          -3,
+          3
+        ]
+      ]
+    },
+    {
+      "id": 175,
+      "area_km2": 2.84,
+      "size_class": "small",
+      "peak_m": 320,
+      "peak_x_m": -27760,
+      "peak_z_m": 136880,
+      "peak_tile": [
+        -2,
+        8
+      ],
+      "feature": "arc_2",
+      "tiles": [
+        [
+          -2,
+          8
+        ]
+      ]
+    },
+    {
+      "id": 176,
+      "area_km2": 2.82,
+      "size_class": "small",
+      "peak_m": 103,
+      "peak_x_m": -78800,
+      "peak_z_m": -61200,
+      "peak_tile": [
+        -6,
+        -4
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -6,
+          -5
+        ],
+        [
+          -6,
+          -4
+        ]
+      ]
+    },
+    {
+      "id": 177,
+      "area_km2": 2.82,
+      "size_class": "small",
+      "peak_m": 224,
+      "peak_x_m": 156560,
+      "peak_z_m": 148400,
+      "peak_tile": [
+        10,
+        9
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          10,
+          9
+        ]
+      ]
+    },
+    {
+      "id": 178,
+      "area_km2": 2.79,
+      "size_class": "small",
+      "peak_m": 51,
+      "peak_x_m": 66320,
+      "peak_z_m": -31280,
+      "peak_tile": [
+        4,
+        -3
+      ],
+      "feature": "shelf_p_n",
+      "tiles": [
+        [
+          4,
+          -3
+        ],
+        [
+          4,
+          -2
+        ]
+      ]
+    },
+    {
+      "id": 179,
+      "area_km2": 2.79,
+      "size_class": "small",
+      "peak_m": 383,
+      "peak_x_m": -134960,
+      "peak_z_m": -5040,
+      "peak_tile": [
+        -9,
+        -1
+      ],
+      "feature": "arc_5",
+      "tiles": [
+        [
+          -9,
+          -1
+        ]
+      ]
+    },
+    {
+      "id": 180,
+      "area_km2": 2.79,
+      "size_class": "small",
+      "peak_m": 215,
+      "peak_x_m": -47280,
+      "peak_z_m": 59120,
+      "peak_tile": [
+        -4,
+        3
+      ],
+      "feature": "trench_arc",
+      "tiles": [
+        [
+          -4,
+          3
+        ]
+      ]
+    },
+    {
+      "id": 181,
+      "area_km2": 2.76,
+      "size_class": "small",
+      "peak_m": 109,
+      "peak_x_m": 109680,
+      "peak_z_m": 79600,
+      "peak_tile": [
+        7,
+        5
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          7,
+          5
+        ]
+      ]
+    },
+    {
+      "id": 182,
+      "area_km2": 2.74,
+      "size_class": "small",
+      "peak_m": 243,
+      "peak_x_m": 134000,
+      "peak_z_m": 5040,
+      "peak_tile": [
+        8,
+        0
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          8,
+          0
+        ]
+      ]
+    },
+    {
+      "id": 183,
+      "area_km2": 2.71,
+      "size_class": "small",
+      "peak_m": 478,
+      "peak_x_m": -15120,
+      "peak_z_m": -138000,
+      "peak_tile": [
+        -1,
+        -9
+      ],
+      "feature": "arc_2",
+      "tiles": [
+        [
+          -2,
+          -10
+        ],
+        [
+          -1,
+          -10
+        ],
+        [
+          -2,
+          -9
+        ],
+        [
+          -1,
+          -9
+        ]
+      ]
+    },
+    {
+      "id": 184,
+      "area_km2": 2.71,
+      "size_class": "small",
+      "peak_m": 140,
+      "peak_x_m": -41840,
+      "peak_z_m": 55280,
+      "peak_tile": [
+        -3,
+        3
+      ],
+      "feature": "trench_arc",
+      "tiles": [
+        [
+          -3,
+          3
+        ]
+      ]
+    },
+    {
+      "id": 185,
+      "area_km2": 2.69,
+      "size_class": "small",
+      "peak_m": 4,
+      "peak_x_m": -105520,
+      "peak_z_m": 42640,
+      "peak_tile": [
+        -7,
+        2
+      ],
+      "feature": "hotspot_1",
+      "tiles": [
+        [
+          -7,
+          2
+        ],
+        [
+          -7,
+          3
+        ]
+      ]
+    },
+    {
+      "id": 186,
+      "area_km2": 2.66,
+      "size_class": "small",
+      "peak_m": 260,
+      "peak_x_m": -4240,
+      "peak_z_m": 44400,
+      "peak_tile": [
+        -1,
+        2
+      ],
+      "feature": "trench_arc",
+      "tiles": [
+        [
+          -1,
+          2
+        ]
+      ]
+    },
+    {
+      "id": 187,
+      "area_km2": 2.64,
+      "size_class": "small",
+      "peak_m": 49,
+      "peak_x_m": -59440,
+      "peak_z_m": 104240,
+      "peak_tile": [
+        -4,
+        6
+      ],
+      "feature": "shelf_n_p",
+      "tiles": [
+        [
+          -4,
+          6
+        ]
+      ]
+    },
+    {
+      "id": 188,
+      "area_km2": 2.61,
+      "size_class": "small",
+      "peak_m": 58,
+      "peak_x_m": -51600,
+      "peak_z_m": -86000,
+      "peak_tile": [
+        -4,
+        -6
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -4,
+          -6
+        ]
+      ]
+    },
+    {
+      "id": 189,
+      "area_km2": 2.61,
+      "size_class": "small",
+      "peak_m": 312,
+      "peak_x_m": 149520,
+      "peak_z_m": 44400,
+      "peak_tile": [
+        9,
+        2
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          9,
+          2
+        ]
+      ]
+    },
+    {
+      "id": 190,
+      "area_km2": 2.59,
+      "size_class": "small",
+      "peak_m": 5,
+      "peak_x_m": 83600,
+      "peak_z_m": 23600,
+      "peak_tile": [
+        5,
+        1
+      ],
+      "feature": "hotspot_3",
+      "tiles": [
+        [
+          5,
+          1
+        ]
+      ]
+    },
+    {
+      "id": 191,
+      "area_km2": 2.56,
+      "size_class": "small",
+      "peak_m": 141,
+      "peak_x_m": 138320,
+      "peak_z_m": 28400,
+      "peak_tile": [
+        9,
+        1
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          8,
+          1
+        ],
+        [
+          9,
+          1
+        ]
+      ]
+    },
+    {
+      "id": 192,
+      "area_km2": 2.56,
+      "size_class": "small",
+      "peak_m": 240,
+      "peak_x_m": 24080,
+      "peak_z_m": 140880,
+      "peak_tile": [
+        1,
+        9
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          1,
+          9
+        ]
+      ]
+    },
+    {
+      "id": 193,
+      "area_km2": 2.53,
+      "size_class": "small",
+      "peak_m": 344,
+      "peak_x_m": -91120,
+      "peak_z_m": 32080,
+      "peak_tile": [
+        -6,
+        2
+      ],
+      "feature": "hotspot_1",
+      "tiles": [
+        [
+          -6,
+          2
+        ]
+      ]
+    },
+    {
+      "id": 194,
+      "area_km2": 2.43,
+      "size_class": "small",
+      "peak_m": 466,
+      "peak_x_m": -139760,
+      "peak_z_m": -124400,
+      "peak_tile": [
+        -10,
+        -9
+      ],
+      "feature": "arc_1",
+      "tiles": [
+        [
+          -10,
+          -9
+        ]
+      ]
+    },
+    {
+      "id": 195,
+      "area_km2": 2.43,
+      "size_class": "small",
+      "peak_m": 6,
+      "peak_x_m": 75280,
+      "peak_z_m": 19280,
+      "peak_tile": [
+        4,
+        1
+      ],
+      "feature": "hotspot_3",
+      "tiles": [
+        [
+          4,
+          1
+        ]
+      ]
+    },
+    {
+      "id": 196,
+      "area_km2": 2.38,
+      "size_class": "small",
+      "peak_m": 502,
+      "peak_x_m": 94320,
+      "peak_z_m": -146320,
+      "peak_tile": [
+        6,
+        -10
+      ],
+      "feature": "hotspot_4",
+      "tiles": [
+        [
+          6,
+          -10
+        ]
+      ]
+    },
+    {
+      "id": 197,
+      "area_km2": 2.33,
+      "size_class": "small",
+      "peak_m": 294,
+      "peak_x_m": 71280,
+      "peak_z_m": 153200,
+      "peak_tile": [
+        4,
+        9
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          4,
+          9
+        ],
+        [
+          4,
+          10
+        ]
+      ]
+    },
+    {
+      "id": 198,
+      "area_km2": 2.3,
+      "size_class": "small",
+      "peak_m": 74,
+      "peak_x_m": -44400,
+      "peak_z_m": -66320,
+      "peak_tile": [
+        -3,
+        -5
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -3,
+          -5
+        ]
+      ]
+    },
+    {
+      "id": 199,
+      "area_km2": 2.3,
+      "size_class": "small",
+      "peak_m": 3,
+      "peak_x_m": -108720,
+      "peak_z_m": 46960,
+      "peak_tile": [
+        -8,
+        3
+      ],
+      "feature": "hotspot_1",
+      "tiles": [
+        [
+          -8,
+          2
+        ],
+        [
+          -8,
+          3
+        ],
+        [
+          -7,
+          3
+        ]
+      ]
+    },
+    {
+      "id": 200,
+      "area_km2": 2.3,
+      "size_class": "small",
+      "peak_m": 258,
+      "peak_x_m": -38000,
+      "peak_z_m": 129680,
+      "peak_tile": [
+        -3,
+        8
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          -3,
+          8
+        ]
+      ]
+    },
+    {
+      "id": 201,
+      "area_km2": 2.23,
+      "size_class": "small",
+      "peak_m": 184,
+      "peak_x_m": 120240,
+      "peak_z_m": 120240,
+      "peak_tile": [
+        7,
+        7
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          7,
+          7
+        ]
+      ]
+    },
+    {
+      "id": 202,
+      "area_km2": 2.18,
+      "size_class": "small",
+      "peak_m": 146,
+      "peak_x_m": 151920,
+      "peak_z_m": 153040,
+      "peak_tile": [
+        9,
+        9
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          9,
+          9
+        ],
+        [
+          9,
+          10
+        ]
+      ]
+    },
+    {
+      "id": 203,
+      "area_km2": 2.15,
+      "size_class": "small",
+      "peak_m": 84,
+      "peak_x_m": 126800,
+      "peak_z_m": -73360,
+      "peak_tile": [
+        8,
+        -5
+      ],
+      "feature": "shelf_p_n",
+      "tiles": [
+        [
+          8,
+          -5
+        ]
+      ]
+    },
+    {
+      "id": 204,
+      "area_km2": 2.12,
+      "size_class": "small",
+      "peak_m": 5,
+      "peak_x_m": 96880,
+      "peak_z_m": 34640,
+      "peak_tile": [
+        6,
+        2
+      ],
+      "feature": "hotspot_3",
+      "tiles": [
+        [
+          6,
+          2
+        ]
+      ]
+    },
+    {
+      "id": 205,
+      "area_km2": 2.12,
+      "size_class": "small",
+      "peak_m": 221,
+      "peak_x_m": 113360,
+      "peak_z_m": 123120,
+      "peak_tile": [
+        7,
+        8
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          7,
+          7
+        ],
+        [
+          7,
+          8
+        ]
+      ]
+    },
+    {
+      "id": 206,
+      "area_km2": 2.05,
+      "size_class": "small",
+      "peak_m": 304,
+      "peak_x_m": 137680,
+      "peak_z_m": -19120,
+      "peak_tile": [
+        8,
+        -2
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          8,
+          -2
+        ],
+        [
+          9,
+          -2
+        ]
+      ]
+    },
+    {
+      "id": 207,
+      "area_km2": 2.0,
+      "size_class": "small",
+      "peak_m": 311,
+      "peak_x_m": 117040,
+      "peak_z_m": -94000,
+      "peak_tile": [
+        7,
+        -7
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          7,
+          -7
+        ]
+      ]
+    },
+    {
+      "id": 208,
+      "area_km2": 1.92,
+      "size_class": "small",
+      "peak_m": 272,
+      "peak_x_m": 137680,
+      "peak_z_m": -145520,
+      "peak_tile": [
+        8,
+        -10
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          8,
+          -10
+        ],
+        [
+          9,
+          -10
+        ]
+      ]
+    },
+    {
+      "id": 209,
+      "area_km2": 1.92,
+      "size_class": "small",
+      "peak_m": 348,
+      "peak_x_m": -151280,
+      "peak_z_m": -107280,
+      "peak_tile": [
+        -10,
+        -7
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          -10,
+          -8
+        ],
+        [
+          -10,
+          -7
+        ]
+      ]
+    },
+    {
+      "id": 210,
+      "area_km2": 1.92,
+      "size_class": "small",
+      "peak_m": 93,
+      "peak_x_m": -37360,
+      "peak_z_m": -28720,
+      "peak_tile": [
+        -3,
+        -2
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          -3,
+          -2
+        ]
+      ]
+    },
+    {
+      "id": 211,
+      "area_km2": 1.89,
+      "size_class": "small",
+      "peak_m": 5,
+      "peak_x_m": 65520,
+      "peak_z_m": 15600,
+      "peak_tile": [
+        4,
+        1
+      ],
+      "feature": "hotspot_3",
+      "tiles": [
+        [
+          4,
+          0
+        ],
+        [
+          4,
+          1
+        ]
+      ]
+    },
+    {
+      "id": 212,
+      "area_km2": 1.87,
+      "size_class": "small",
+      "peak_m": 60,
+      "peak_x_m": 55600,
+      "peak_z_m": -37360,
+      "peak_tile": [
+        3,
+        -3
+      ],
+      "feature": "shelf_p_n",
+      "tiles": [
+        [
+          3,
+          -3
+        ]
+      ]
+    },
+    {
+      "id": 213,
+      "area_km2": 1.87,
+      "size_class": "small",
+      "peak_m": 160,
+      "peak_x_m": -5680,
+      "peak_z_m": 129840,
+      "peak_tile": [
+        -1,
+        8
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          -1,
+          8
+        ]
+      ]
+    },
+    {
+      "id": 214,
+      "area_km2": 1.82,
+      "size_class": "small",
+      "peak_m": 94,
+      "peak_x_m": 28560,
+      "peak_z_m": 123120,
+      "peak_tile": [
+        1,
+        8
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          1,
+          7
+        ],
+        [
+          1,
+          8
+        ]
+      ]
+    },
+    {
+      "id": 215,
+      "area_km2": 1.79,
+      "size_class": "small",
+      "peak_m": 204,
+      "peak_x_m": 59120,
+      "peak_z_m": 24240,
+      "peak_tile": [
+        3,
+        1
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          3,
+          1
+        ]
+      ]
+    },
+    {
+      "id": 216,
+      "area_km2": 1.77,
+      "size_class": "small",
+      "peak_m": 5,
+      "peak_x_m": -97200,
+      "peak_z_m": 37520,
+      "peak_tile": [
+        -7,
+        2
+      ],
+      "feature": "hotspot_1",
+      "tiles": [
+        [
+          -7,
+          2
+        ]
+      ]
+    },
+    {
+      "id": 217,
+      "area_km2": 1.74,
+      "size_class": "small",
+      "peak_m": 250,
+      "peak_x_m": 75440,
+      "peak_z_m": -136560,
+      "peak_tile": [
+        4,
+        -9
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          4,
+          -9
+        ]
+      ]
+    },
+    {
+      "id": 218,
+      "area_km2": 1.74,
+      "size_class": "small",
+      "peak_m": 244,
+      "peak_x_m": 147920,
+      "peak_z_m": -96400,
+      "peak_tile": [
+        9,
+        -7
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          9,
+          -7
+        ]
+      ]
+    },
+    {
+      "id": 219,
+      "area_km2": 1.66,
+      "size_class": "small",
+      "peak_m": 146,
+      "peak_x_m": 141360,
+      "peak_z_m": 15440,
+      "peak_tile": [
+        9,
+        1
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          9,
+          0
+        ],
+        [
+          9,
+          1
+        ]
+      ]
+    },
+    {
+      "id": 220,
+      "area_km2": 1.64,
+      "size_class": "small",
+      "peak_m": 99,
+      "peak_x_m": -24720,
+      "peak_z_m": -24240,
+      "peak_tile": [
+        -2,
+        -2
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          -2,
+          -2
+        ]
+      ]
+    },
+    {
+      "id": 221,
+      "area_km2": 1.64,
+      "size_class": "small",
+      "peak_m": 224,
+      "peak_x_m": 138480,
+      "peak_z_m": 52720,
+      "peak_tile": [
+        9,
+        3
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          8,
+          3
+        ],
+        [
+          9,
+          3
+        ]
+      ]
+    },
+    {
+      "id": 222,
+      "area_km2": 1.61,
+      "size_class": "small",
+      "peak_m": 50,
+      "peak_x_m": -73360,
+      "peak_z_m": 127760,
+      "peak_tile": [
+        -5,
+        8
+      ],
+      "feature": "shelf_n_p",
+      "tiles": [
+        [
+          -5,
+          8
+        ]
+      ]
+    },
+    {
+      "id": 223,
+      "area_km2": 1.59,
+      "size_class": "small",
+      "peak_m": 35,
+      "peak_x_m": -86000,
+      "peak_z_m": 123120,
+      "peak_tile": [
+        -6,
+        8
+      ],
+      "feature": "shelf_n_p",
+      "tiles": [
+        [
+          -6,
+          7
+        ],
+        [
+          -6,
+          8
+        ]
+      ]
+    },
+    {
+      "id": 224,
+      "area_km2": 1.56,
+      "size_class": "small",
+      "peak_m": 303,
+      "peak_x_m": -116400,
+      "peak_z_m": -93040,
+      "peak_tile": [
+        -8,
+        -7
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          -8,
+          -7
+        ]
+      ]
+    },
+    {
+      "id": 225,
+      "area_km2": 1.56,
+      "size_class": "small",
+      "peak_m": 36,
+      "peak_x_m": 91600,
+      "peak_z_m": 80400,
+      "peak_tile": [
+        5,
+        5
+      ],
+      "feature": "shelf_p_p",
+      "tiles": [
+        [
+          5,
+          5
+        ],
+        [
+          6,
+          5
+        ]
+      ]
+    },
+    {
+      "id": 226,
+      "area_km2": 1.54,
+      "size_class": "small",
+      "peak_m": 66,
+      "peak_x_m": 69680,
+      "peak_z_m": 55120,
+      "peak_tile": [
+        4,
+        3
+      ],
+      "feature": "shelf_p_p",
+      "tiles": [
+        [
+          4,
+          3
+        ]
+      ]
+    },
+    {
+      "id": 227,
+      "area_km2": 1.48,
+      "size_class": "small",
+      "peak_m": 167,
+      "peak_x_m": -67280,
+      "peak_z_m": -145360,
+      "peak_tile": [
+        -5,
+        -10
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          -5,
+          -10
+        ]
+      ]
+    },
+    {
+      "id": 228,
+      "area_km2": 1.48,
+      "size_class": "small",
+      "peak_m": 181,
+      "peak_x_m": -143280,
+      "peak_z_m": -112880,
+      "peak_tile": [
+        -10,
+        -8
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          -10,
+          -8
+        ]
+      ]
+    },
+    {
+      "id": 229,
+      "area_km2": 1.48,
+      "size_class": "small",
+      "peak_m": 59,
+      "peak_x_m": 72560,
+      "peak_z_m": 54000,
+      "peak_tile": [
+        4,
+        3
+      ],
+      "feature": "shelf_p_p",
+      "tiles": [
+        [
+          4,
+          3
+        ]
+      ]
+    },
+    {
+      "id": 230,
+      "area_km2": 1.43,
+      "size_class": "small",
+      "peak_m": 226,
+      "peak_x_m": 126640,
+      "peak_z_m": 22800,
+      "peak_tile": [
+        8,
+        1
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          8,
+          1
+        ]
+      ]
+    },
+    {
+      "id": 231,
+      "area_km2": 1.36,
+      "size_class": "small",
+      "peak_m": 48,
+      "peak_x_m": -60400,
+      "peak_z_m": 80720,
+      "peak_tile": [
+        -4,
+        5
+      ],
+      "feature": "shelf_n_p",
+      "tiles": [
+        [
+          -5,
+          5
+        ],
+        [
+          -4,
+          5
+        ]
+      ]
+    },
+    {
+      "id": 232,
+      "area_km2": 1.31,
+      "size_class": "small",
+      "peak_m": 316,
+      "peak_x_m": 142320,
+      "peak_z_m": 163760,
+      "peak_tile": [
+        9,
+        10
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          9,
+          10
+        ]
+      ]
+    },
+    {
+      "id": 233,
+      "area_km2": 1.28,
+      "size_class": "small",
+      "peak_m": 200,
+      "peak_x_m": 128880,
+      "peak_z_m": 65520,
+      "peak_tile": [
+        8,
+        4
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          8,
+          4
+        ]
+      ]
+    },
+    {
+      "id": 234,
+      "area_km2": 1.28,
+      "size_class": "small",
+      "peak_m": 51,
+      "peak_x_m": -90640,
+      "peak_z_m": 86320,
+      "peak_tile": [
+        -6,
+        5
+      ],
+      "feature": "shelf_n_p",
+      "tiles": [
+        [
+          -6,
+          5
+        ]
+      ]
+    },
+    {
+      "id": 235,
+      "area_km2": 1.23,
+      "size_class": "small",
+      "peak_m": 190,
+      "peak_x_m": 124560,
+      "peak_z_m": 150480,
+      "peak_tile": [
+        8,
+        9
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          8,
+          9
+        ]
+      ]
+    },
+    {
+      "id": 236,
+      "area_km2": 1.2,
+      "size_class": "small",
+      "peak_m": 264,
+      "peak_x_m": 100240,
+      "peak_z_m": -118800,
+      "peak_tile": [
+        6,
+        -8
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          6,
+          -8
+        ]
+      ]
+    },
+    {
+      "id": 237,
+      "area_km2": 1.15,
+      "size_class": "small",
+      "peak_m": 305,
+      "peak_x_m": 114640,
+      "peak_z_m": -150480,
+      "peak_tile": [
+        7,
+        -10
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          7,
+          -10
+        ]
+      ]
+    },
+    {
+      "id": 238,
+      "area_km2": 1.15,
+      "size_class": "small",
+      "peak_m": 35,
+      "peak_x_m": 46000,
+      "peak_z_m": -65360,
+      "peak_tile": [
+        2,
+        -5
+      ],
+      "feature": "shelf_p_n",
+      "tiles": [
+        [
+          2,
+          -5
+        ],
+        [
+          3,
+          -5
+        ]
+      ]
+    },
+    {
+      "id": 239,
+      "area_km2": 1.15,
+      "size_class": "small",
+      "peak_m": 107,
+      "peak_x_m": 118000,
+      "peak_z_m": 99600,
+      "peak_tile": [
+        7,
+        6
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          7,
+          6
+        ]
+      ]
+    },
+    {
+      "id": 240,
+      "area_km2": 1.15,
+      "size_class": "small",
+      "peak_m": 171,
+      "peak_x_m": 37680,
+      "peak_z_m": 121040,
+      "peak_tile": [
+        2,
+        7
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          2,
+          7
+        ]
+      ]
+    },
+    {
+      "id": 241,
+      "area_km2": 1.08,
+      "size_class": "small",
+      "peak_m": 5,
+      "peak_x_m": 66800,
+      "peak_z_m": 11920,
+      "peak_tile": [
+        4,
+        0
+      ],
+      "feature": "hotspot_3",
+      "tiles": [
+        [
+          4,
+          0
+        ]
+      ]
+    },
+    {
+      "id": 242,
+      "area_km2": 1.08,
+      "size_class": "small",
+      "peak_m": 270,
+      "peak_x_m": 150000,
+      "peak_z_m": 165840,
+      "peak_tile": [
+        9,
+        10
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          9,
+          10
+        ]
+      ]
+    },
+    {
+      "id": 243,
+      "area_km2": 1.05,
+      "size_class": "small",
+      "peak_m": 282,
+      "peak_x_m": 52080,
+      "peak_z_m": -150000,
+      "peak_tile": [
+        3,
+        -10
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          3,
+          -10
+        ]
+      ]
+    },
+    {
+      "id": 244,
+      "area_km2": 1.02,
+      "size_class": "small",
+      "peak_m": 11,
+      "peak_x_m": 48880,
+      "peak_z_m": 59760,
+      "peak_tile": [
+        3,
+        3
+      ],
+      "feature": "shelf_p_p",
+      "tiles": [
+        [
+          3,
+          3
+        ]
+      ]
+    },
+    {
+      "id": 245,
+      "area_km2": 0.97,
+      "size_class": "islet",
+      "peak_m": 40,
+      "peak_x_m": -52400,
+      "peak_z_m": -24720,
+      "peak_tile": [
+        -4,
+        -2
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -4,
+          -2
+        ]
+      ]
+    },
+    {
+      "id": 246,
+      "area_km2": 0.97,
+      "size_class": "islet",
+      "peak_m": 246,
+      "peak_x_m": 132880,
+      "peak_z_m": 42640,
+      "peak_tile": [
+        8,
+        2
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          8,
+          2
+        ]
+      ]
+    },
+    {
+      "id": 247,
+      "area_km2": 0.95,
+      "size_class": "islet",
+      "peak_m": 30,
+      "peak_x_m": 77360,
+      "peak_z_m": 57200,
+      "peak_tile": [
+        5,
+        3
+      ],
+      "feature": "shelf_p_p",
+      "tiles": [
+        [
+          5,
+          3
+        ]
+      ]
+    },
+    {
+      "id": 248,
+      "area_km2": 0.92,
+      "size_class": "islet",
+      "peak_m": 41,
+      "peak_x_m": 91920,
+      "peak_z_m": -48720,
+      "peak_tile": [
+        5,
+        -4
+      ],
+      "feature": "shelf_p_n",
+      "tiles": [
+        [
+          5,
+          -4
+        ],
+        [
+          6,
+          -4
+        ]
+      ]
+    },
+    {
+      "id": 249,
+      "area_km2": 0.92,
+      "size_class": "islet",
+      "peak_m": 36,
+      "peak_x_m": -59760,
+      "peak_z_m": -47760,
+      "peak_tile": [
+        -4,
+        -4
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -4,
+          -4
+        ]
+      ]
+    },
+    {
+      "id": 250,
+      "area_km2": 0.9,
+      "size_class": "islet",
+      "peak_m": 110,
+      "peak_x_m": -46800,
+      "peak_z_m": 137520,
+      "peak_tile": [
+        -4,
+        8
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          -4,
+          8
+        ]
+      ]
+    },
+    {
+      "id": 251,
+      "area_km2": 0.87,
+      "size_class": "islet",
+      "peak_m": 199,
+      "peak_x_m": -134160,
+      "peak_z_m": -94960,
+      "peak_tile": [
+        -9,
+        -7
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          -9,
+          -7
+        ]
+      ]
+    },
+    {
+      "id": 252,
+      "area_km2": 0.87,
+      "size_class": "islet",
+      "peak_m": 350,
+      "peak_x_m": 58320,
+      "peak_z_m": 165840,
+      "peak_tile": [
+        3,
+        10
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          3,
+          10
+        ]
+      ]
+    },
+    {
+      "id": 253,
+      "area_km2": 0.82,
+      "size_class": "islet",
+      "peak_m": 274,
+      "peak_x_m": -67280,
+      "peak_z_m": -108240,
+      "peak_tile": [
+        -5,
+        -8
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          -5,
+          -8
+        ]
+      ]
+    },
+    {
+      "id": 254,
+      "area_km2": 0.79,
+      "size_class": "islet",
+      "peak_m": 21,
+      "peak_x_m": -80080,
+      "peak_z_m": 107120,
+      "peak_tile": [
+        -6,
+        6
+      ],
+      "feature": "shelf_n_p",
+      "tiles": [
+        [
+          -6,
+          6
+        ],
+        [
+          -6,
+          7
+        ]
+      ]
+    },
+    {
+      "id": 255,
+      "area_km2": 0.77,
+      "size_class": "islet",
+      "peak_m": 218,
+      "peak_x_m": 167120,
+      "peak_z_m": 160080,
+      "peak_tile": [
+        10,
+        10
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          10,
+          10
+        ]
+      ]
+    },
+    {
+      "id": 256,
+      "area_km2": 0.72,
+      "size_class": "islet",
+      "peak_m": 249,
+      "peak_x_m": 163440,
+      "peak_z_m": -144720,
+      "peak_tile": [
+        10,
+        -10
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          10,
+          -10
+        ]
+      ]
+    },
+    {
+      "id": 257,
+      "area_km2": 0.72,
+      "size_class": "islet",
+      "peak_m": 43,
+      "peak_x_m": 101360,
+      "peak_z_m": -71280,
+      "peak_tile": [
+        6,
+        -5
+      ],
+      "feature": "shelf_p_n",
+      "tiles": [
+        [
+          6,
+          -5
+        ]
+      ]
+    },
+    {
+      "id": 258,
+      "area_km2": 0.69,
+      "size_class": "islet",
+      "peak_m": 220,
+      "peak_x_m": 129200,
+      "peak_z_m": 114800,
+      "peak_tile": [
+        8,
+        7
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          8,
+          7
+        ]
+      ]
+    },
+    {
+      "id": 259,
+      "area_km2": 0.67,
+      "size_class": "islet",
+      "peak_m": 229,
+      "peak_x_m": -132240,
+      "peak_z_m": -98320,
+      "peak_tile": [
+        -9,
+        -7
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          -9,
+          -7
+        ]
+      ]
+    },
+    {
+      "id": 260,
+      "area_km2": 0.67,
+      "size_class": "islet",
+      "peak_m": 124,
+      "peak_x_m": 84080,
+      "peak_z_m": 32240,
+      "peak_tile": [
+        5,
+        2
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          5,
+          2
+        ]
+      ]
+    },
+    {
+      "id": 261,
+      "area_km2": 0.67,
+      "size_class": "islet",
+      "peak_m": 4,
+      "peak_x_m": -97840,
+      "peak_z_m": 37360,
+      "peak_tile": [
+        -7,
+        2
+      ],
+      "feature": "hotspot_1",
+      "tiles": [
+        [
+          -7,
+          2
+        ]
+      ]
+    },
+    {
+      "id": 262,
+      "area_km2": 0.64,
+      "size_class": "islet",
+      "peak_m": 30,
+      "peak_x_m": -71760,
+      "peak_z_m": -57040,
+      "peak_tile": [
+        -5,
+        -4
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -5,
+          -4
+        ]
+      ]
+    },
+    {
+      "id": 263,
+      "area_km2": 0.64,
+      "size_class": "islet",
+      "peak_m": 32,
+      "peak_x_m": 89040,
+      "peak_z_m": 81360,
+      "peak_tile": [
+        5,
+        5
+      ],
+      "feature": "shelf_p_p",
+      "tiles": [
+        [
+          5,
+          5
+        ]
+      ]
+    },
+    {
+      "id": 264,
+      "area_km2": 0.61,
+      "size_class": "islet",
+      "peak_m": 98,
+      "peak_x_m": -15920,
+      "peak_z_m": -116080,
+      "peak_tile": [
+        -2,
+        -8
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          -2,
+          -8
+        ]
+      ]
+    },
+    {
+      "id": 265,
+      "area_km2": 0.61,
+      "size_class": "islet",
+      "peak_m": 312,
+      "peak_x_m": 121200,
+      "peak_z_m": -103600,
+      "peak_tile": [
+        7,
+        -7
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          7,
+          -7
+        ]
+      ]
+    },
+    {
+      "id": 266,
+      "area_km2": 0.61,
+      "size_class": "islet",
+      "peak_m": 26,
+      "peak_x_m": 88080,
+      "peak_z_m": 82640,
+      "peak_tile": [
+        5,
+        5
+      ],
+      "feature": "shelf_p_p",
+      "tiles": [
+        [
+          5,
+          5
+        ]
+      ]
+    },
+    {
+      "id": 267,
+      "area_km2": 0.59,
+      "size_class": "islet",
+      "peak_m": 32,
+      "peak_x_m": -67280,
+      "peak_z_m": -55760,
+      "peak_tile": [
+        -5,
+        -4
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -5,
+          -4
+        ]
+      ]
+    },
+    {
+      "id": 268,
+      "area_km2": 0.59,
+      "size_class": "islet",
+      "peak_m": 268,
+      "peak_x_m": 120560,
+      "peak_z_m": 24720,
+      "peak_tile": [
+        7,
+        1
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          7,
+          1
+        ]
+      ]
+    },
+    {
+      "id": 269,
+      "area_km2": 0.59,
+      "size_class": "islet",
+      "peak_m": 15,
+      "peak_x_m": 66480,
+      "peak_z_m": 88720,
+      "peak_tile": [
+        4,
+        5
+      ],
+      "feature": "shelf_p_p",
+      "tiles": [
+        [
+          4,
+          5
+        ]
+      ]
+    },
+    {
+      "id": 270,
+      "area_km2": 0.56,
+      "size_class": "islet",
+      "peak_m": 164,
+      "peak_x_m": 40400,
+      "peak_z_m": -140880,
+      "peak_tile": [
+        2,
+        -10
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          2,
+          -10
+        ]
+      ]
+    },
+    {
+      "id": 271,
+      "area_km2": 0.56,
+      "size_class": "islet",
+      "peak_m": 40,
+      "peak_x_m": 90320,
+      "peak_z_m": 98480,
+      "peak_tile": [
+        5,
+        6
+      ],
+      "feature": "shelf_p_p",
+      "tiles": [
+        [
+          5,
+          6
+        ]
+      ]
+    },
+    {
+      "id": 272,
+      "area_km2": 0.51,
+      "size_class": "islet",
+      "peak_m": 21,
+      "peak_x_m": -68720,
+      "peak_z_m": -56400,
+      "peak_tile": [
+        -5,
+        -4
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -5,
+          -4
+        ]
+      ]
+    },
+    {
+      "id": 273,
+      "area_km2": 0.49,
+      "size_class": "islet",
+      "peak_m": 20,
+      "peak_x_m": 101680,
+      "peak_z_m": -62320,
+      "peak_tile": [
+        6,
+        -5
+      ],
+      "feature": "shelf_p_n",
+      "tiles": [
+        [
+          6,
+          -5
+        ]
+      ]
+    },
+    {
+      "id": 274,
+      "area_km2": 0.49,
+      "size_class": "islet",
+      "peak_m": 18,
+      "peak_x_m": 86480,
+      "peak_z_m": 59280,
+      "peak_tile": [
+        5,
+        3
+      ],
+      "feature": "shelf_p_p",
+      "tiles": [
+        [
+          5,
+          3
+        ]
+      ]
+    },
+    {
+      "id": 275,
+      "area_km2": 0.49,
+      "size_class": "islet",
+      "peak_m": 401,
+      "peak_x_m": 42000,
+      "peak_z_m": 168240,
+      "peak_tile": [
+        2,
+        10
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          2,
+          10
+        ]
+      ]
+    },
+    {
+      "id": 276,
+      "area_km2": 0.44,
+      "size_class": "islet",
+      "peak_m": 264,
+      "peak_x_m": -84720,
+      "peak_z_m": 17040,
+      "peak_tile": [
+        -6,
+        1
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          -6,
+          1
+        ]
+      ]
+    },
+    {
+      "id": 277,
+      "area_km2": 0.41,
+      "size_class": "islet",
+      "peak_m": 338,
+      "peak_x_m": -78160,
+      "peak_z_m": -141200,
+      "peak_tile": [
+        -6,
+        -10
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          -6,
+          -10
+        ]
+      ]
+    },
+    {
+      "id": 278,
+      "area_km2": 0.41,
+      "size_class": "islet",
+      "peak_m": 17,
+      "peak_x_m": 112880,
+      "peak_z_m": -72720,
+      "peak_tile": [
+        7,
+        -5
+      ],
+      "feature": "shelf_p_n",
+      "tiles": [
+        [
+          7,
+          -5
+        ]
+      ]
+    },
+    {
+      "id": 279,
+      "area_km2": 0.41,
+      "size_class": "islet",
+      "peak_m": 24,
+      "peak_x_m": -69520,
+      "peak_z_m": -57360,
+      "peak_tile": [
+        -5,
+        -4
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -5,
+          -4
+        ]
+      ]
+    },
+    {
+      "id": 280,
+      "area_km2": 0.41,
+      "size_class": "islet",
+      "peak_m": 92,
+      "peak_x_m": -49200,
+      "peak_z_m": -17520,
+      "peak_tile": [
+        -4,
+        -2
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          -4,
+          -2
+        ]
+      ]
+    },
+    {
+      "id": 281,
+      "area_km2": 0.41,
+      "size_class": "islet",
+      "peak_m": 289,
+      "peak_x_m": 133360,
+      "peak_z_m": 114000,
+      "peak_tile": [
+        8,
+        7
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          8,
+          7
+        ]
+      ]
+    },
+    {
+      "id": 282,
+      "area_km2": 0.41,
+      "size_class": "islet",
+      "peak_m": 353,
+      "peak_x_m": -18160,
+      "peak_z_m": 155920,
+      "peak_tile": [
+        -2,
+        10
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          -2,
+          10
+        ]
+      ]
+    },
+    {
+      "id": 283,
+      "area_km2": 0.41,
+      "size_class": "islet",
+      "peak_m": 243,
+      "peak_x_m": -151440,
+      "peak_z_m": 157200,
+      "peak_tile": [
+        -10,
+        10
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          -10,
+          10
+        ]
+      ]
+    },
+    {
+      "id": 284,
+      "area_km2": 0.38,
+      "size_class": "islet",
+      "peak_m": 239,
+      "peak_x_m": 22160,
+      "peak_z_m": 148720,
+      "peak_tile": [
+        1,
+        9
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          1,
+          9
+        ]
+      ]
+    },
+    {
+      "id": 285,
+      "area_km2": 0.36,
+      "size_class": "islet",
+      "peak_m": 15,
+      "peak_x_m": 78320,
+      "peak_z_m": 55280,
+      "peak_tile": [
+        5,
+        3
+      ],
+      "feature": "shelf_p_p",
+      "tiles": [
+        [
+          5,
+          3
+        ]
+      ]
+    },
+    {
+      "id": 286,
+      "area_km2": 0.36,
+      "size_class": "islet",
+      "peak_m": 165,
+      "peak_x_m": 140080,
+      "peak_z_m": 61680,
+      "peak_tile": [
+        9,
+        4
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          9,
+          3
+        ],
+        [
+          9,
+          4
+        ]
+      ]
+    },
+    {
+      "id": 287,
+      "area_km2": 0.36,
+      "size_class": "islet",
+      "peak_m": 208,
+      "peak_x_m": -17200,
+      "peak_z_m": 150480,
+      "peak_tile": [
+        -2,
+        9
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          -2,
+          9
+        ]
+      ]
+    },
+    {
+      "id": 288,
+      "area_km2": 0.36,
+      "size_class": "islet",
+      "peak_m": 321,
+      "peak_x_m": 46960,
+      "peak_z_m": 167920,
+      "peak_tile": [
+        3,
+        10
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          3,
+          10
+        ]
+      ]
+    },
+    {
+      "id": 289,
+      "area_km2": 0.33,
+      "size_class": "islet",
+      "peak_m": 316,
+      "peak_x_m": 162320,
+      "peak_z_m": -50800,
+      "peak_tile": [
+        10,
+        -4
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          10,
+          -4
+        ]
+      ]
+    },
+    {
+      "id": 290,
+      "area_km2": 0.33,
+      "size_class": "islet",
+      "peak_m": 132,
+      "peak_x_m": 144880,
+      "peak_z_m": 32560,
+      "peak_tile": [
+        9,
+        2
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          9,
+          2
+        ]
+      ]
+    },
+    {
+      "id": 291,
+      "area_km2": 0.33,
+      "size_class": "islet",
+      "peak_m": 203,
+      "peak_x_m": 115760,
+      "peak_z_m": 118000,
+      "peak_tile": [
+        7,
+        7
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          7,
+          7
+        ]
+      ]
+    },
+    {
+      "id": 292,
+      "area_km2": 0.31,
+      "size_class": "islet",
+      "peak_m": 6,
+      "peak_x_m": 100400,
+      "peak_z_m": 87280,
+      "peak_tile": [
+        6,
+        5
+      ],
+      "feature": "shelf_p_p",
+      "tiles": [
+        [
+          6,
+          5
+        ]
+      ]
+    },
+    {
+      "id": 293,
+      "area_km2": 0.28,
+      "size_class": "islet",
+      "peak_m": 148,
+      "peak_x_m": -141360,
+      "peak_z_m": -90000,
+      "peak_tile": [
+        -10,
+        -6
+      ],
+      "feature": "seamount_field",
+      "tiles": [
+        [
+          -10,
+          -6
+        ]
+      ]
+    },
+    {
+      "id": 294,
+      "area_km2": 0.26,
+      "size_class": "islet",
+      "peak_m": 11,
+      "peak_x_m": -66000,
+      "peak_z_m": -64080,
+      "peak_tile": [
+        -5,
+        -5
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -5,
+          -5
+        ]
+      ]
+    },
+    {
+      "id": 295,
+      "area_km2": 0.26,
+      "size_class": "islet",
+      "peak_m": 8,
+      "peak_x_m": -79600,
+      "peak_z_m": -47280,
+      "peak_tile": [
+        -6,
+        -4
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -6,
+          -4
+        ]
+      ]
+    },
+    {
+      "id": 296,
+      "area_km2": 0.15,
+      "size_class": "islet",
+      "peak_m": 5,
+      "peak_x_m": -71760,
+      "peak_z_m": -41840,
+      "peak_tile": [
+        -5,
+        -3
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -5,
+          -3
+        ]
+      ]
+    },
+    {
+      "id": 297,
+      "area_km2": 0.15,
+      "size_class": "islet",
+      "peak_m": 6,
+      "peak_x_m": 105200,
+      "peak_z_m": 71280,
+      "peak_tile": [
+        6,
+        4
+      ],
+      "feature": "shelf_p_p",
+      "tiles": [
+        [
+          6,
+          4
+        ]
+      ]
+    },
+    {
+      "id": 298,
+      "area_km2": 0.08,
+      "size_class": "islet",
+      "peak_m": 2,
+      "peak_x_m": 94000,
+      "peak_z_m": 116080,
+      "peak_tile": [
+        6,
+        7
+      ],
+      "feature": "shelf_p_p",
+      "tiles": [
+        [
+          6,
+          7
+        ]
+      ]
+    },
+    {
+      "id": 299,
+      "area_km2": 0.05,
+      "size_class": "islet",
+      "peak_m": 2,
+      "peak_x_m": -64400,
+      "peak_z_m": -74320,
+      "peak_tile": [
+        -5,
+        -5
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -5,
+          -5
+        ]
+      ]
+    },
+    {
+      "id": 300,
+      "area_km2": 0.05,
+      "size_class": "islet",
+      "peak_m": 5,
+      "peak_x_m": -63120,
+      "peak_z_m": -55600,
+      "peak_tile": [
+        -5,
+        -4
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -5,
+          -4
+        ]
+      ]
+    },
+    {
+      "id": 301,
+      "area_km2": 0.05,
+      "size_class": "islet",
+      "peak_m": 3,
+      "peak_x_m": 49360,
+      "peak_z_m": -52560,
+      "peak_tile": [
+        3,
+        -4
+      ],
+      "feature": "shelf_p_n",
+      "tiles": [
+        [
+          3,
+          -4
+        ]
+      ]
+    },
+    {
+      "id": 302,
+      "area_km2": 0.05,
+      "size_class": "islet",
+      "peak_m": 4,
+      "peak_x_m": -93040,
+      "peak_z_m": -40720,
+      "peak_tile": [
+        -7,
+        -3
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -7,
+          -3
+        ]
+      ]
+    },
+    {
+      "id": 303,
+      "area_km2": 0.05,
+      "size_class": "islet",
+      "peak_m": 5,
+      "peak_x_m": 85040,
+      "peak_z_m": 61040,
+      "peak_tile": [
+        5,
+        3
+      ],
+      "feature": "shelf_p_p",
+      "tiles": [
+        [
+          5,
+          3
+        ]
+      ]
+    },
+    {
+      "id": 304,
+      "area_km2": 0.05,
+      "size_class": "islet",
+      "peak_m": 6,
+      "peak_x_m": 92560,
+      "peak_z_m": 61040,
+      "peak_tile": [
+        6,
+        3
+      ],
+      "feature": "shelf_p_p",
+      "tiles": [
+        [
+          6,
+          3
+        ]
+      ]
+    },
+    {
+      "id": 305,
+      "area_km2": 0.05,
+      "size_class": "islet",
+      "peak_m": 2,
+      "peak_x_m": 105360,
+      "peak_z_m": 71600,
+      "peak_tile": [
+        6,
+        4
+      ],
+      "feature": "shelf_p_p",
+      "tiles": [
+        [
+          6,
+          4
+        ]
+      ]
+    },
+    {
+      "id": 306,
+      "area_km2": 0.03,
+      "size_class": "islet",
+      "peak_m": 2,
+      "peak_x_m": 49520,
+      "peak_z_m": -52880,
+      "peak_tile": [
+        3,
+        -4
+      ],
+      "feature": "",
+      "tiles": [
+        [
+          3,
+          -4
+        ]
+      ]
+    },
+    {
+      "id": 307,
+      "area_km2": 0.03,
+      "size_class": "islet",
+      "peak_m": 0,
+      "peak_x_m": 49680,
+      "peak_z_m": -52720,
+      "peak_tile": [
+        3,
+        -4
+      ],
+      "feature": "",
+      "tiles": [
+        [
+          3,
+          -4
+        ]
+      ]
+    },
+    {
+      "id": 308,
+      "area_km2": 0.03,
+      "size_class": "islet",
+      "peak_m": 0,
+      "peak_x_m": -52880,
+      "peak_z_m": -51280,
+      "peak_tile": [
+        -4,
+        -4
+      ],
+      "feature": "shelf_n_n",
+      "tiles": [
+        [
+          -4,
+          -4
+        ]
+      ]
+    },
+    {
+      "id": 309,
+      "area_km2": 0.03,
+      "size_class": "islet",
+      "peak_m": 1,
+      "peak_x_m": 98480,
+      "peak_z_m": 36560,
+      "peak_tile": [
+        6,
+        2
+      ],
+      "feature": "hotspot_3",
+      "tiles": [
+        [
+          6,
+          2
+        ]
+      ]
+    },
+    {
+      "id": 310,
+      "area_km2": 0.03,
+      "size_class": "islet",
+      "peak_m": 0,
+      "peak_x_m": 105520,
+      "peak_z_m": 71920,
+      "peak_tile": [
+        6,
+        4
+      ],
+      "feature": "shelf_p_p",
+      "tiles": [
+        [
+          6,
+          4
+        ]
+      ]
+    },
+    {
+      "id": 311,
+      "area_km2": 0.03,
+      "size_class": "islet",
+      "peak_m": 0,
+      "peak_x_m": 92560,
+      "peak_z_m": 80880,
+      "peak_tile": [
+        6,
+        5
+      ],
+      "feature": "shelf_p_p",
+      "tiles": [
+        [
+          6,
+          5
+        ]
+      ]
+    },
+    {
+      "id": 312,
+      "area_km2": 0.03,
+      "size_class": "islet",
+      "peak_m": 2,
+      "peak_x_m": 92720,
+      "peak_z_m": 81040,
+      "peak_tile": [
+        6,
+        5
+      ],
+      "feature": "shelf_p_p",
+      "tiles": [
+        [
+          6,
+          5
+        ]
+      ]
+    }
+  ]
+}

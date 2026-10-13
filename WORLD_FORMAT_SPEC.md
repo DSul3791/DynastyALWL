@@ -180,6 +180,8 @@ Each feature is a list of mounts (volcano, seamount, atoll or starter island: po
 
 ## 6. Tile matrix (`plan/tile_matrix.json`)
 
+> **Superseded (2026-10-13).** The per-tile island dice below belong to the old randomizer. The tile plan is now derived from the world sketch (Section 6b). The old matrix files stay only for reference.
+
 The plan for all 441 tiles, read and written by the randomizer and the island properties panel.
 
 **Each cell**
@@ -242,6 +244,29 @@ The largest class changed from the first draft (50 to 75 km²). Every tile edge 
 
 - A whole-world preview image showing every tile's islands, climate zones and starter tiles.
 - A summary: land area per zone, island counts per size class, and resource coverage per zone.
+
+## 6b. Tile plan (`plan/tile_plan.json`, `plan/island_list.json`)
+
+Derived from the sketch elevation map by `tools/build_tile_plan.gd`. Same container as the old matrix (`format_version` 1, `meta`, `cells`), `meta.source` is `sketch`. Locked and baked cells are kept on rebuild.
+
+**Each cell**
+
+| Field | Notes |
+|---|---|
+| x, z, zone | Tile coordinate and climate zone |
+| kind | ocean, shallows (sea above -200 m, no land), trench, islands, landmark, starter |
+| status | placeholder (nothing to bake), planned, baked, live |
+| locked | True for starters and the landmark tile |
+| starter_set | inner, outer or empty |
+| danger, danger_tier | From the danger map at the tile center |
+| land_km2, land_share | Land inside this tile |
+| peak_m, deepest_m | Highest and deepest elevation in the tile |
+| features | Sketch features with at least 0.25 km2 of land here, plus world features reaching the tile |
+| island_ids | World-wide island numbers touching this tile |
+| geology_hints | Union of the features' geology |
+| special | lava, salt_flat, scorched, ruins, road on the landmark island |
+
+`island_list.json` holds one record per island, largest first: area, size class, peak, peak tile, owning feature and every tile it touches. Islands can span several tiles; a tile file bakes the part inside its own tile.
 
 ## 7. Workflow
 
