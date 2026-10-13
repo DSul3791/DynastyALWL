@@ -9,7 +9,7 @@ Record of the design brainstorming sessions of 2026-10-11 and 2026-10-12. This i
 - **Version 3 (2026-10-12, later):** lifespan targets (start at about 15, die at about 80, in about 700 hours of play); families age with the player; the rescue-first philosophy and party composition; heirs arriving partly trained; the tension between server-owned towns and "no towns at the start"; and the clock arithmetic showing that one clock for aging and seasons is probably not workable. Open questions were updated.
 - **Version 4 (2026-10-12, latest):** two clocks decided (a world calendar for seasons and crops, and an aging clock); a one-to-two-week seasonal cycle; NPC aging at the average player's speed (70 years per real year); the weekly farming rhythm and a note on avoiding calendar years of exactly 7 or 14 days; Farming Simulator as an inspiration; no starting towns; and the civil engineer town-planning idea. The lifespan pacing figure changed from 65 to 70 years (15 to 85).
 - **Version 5 (2026-10-12, evening):** the "play what you like" and "no micromanagement" goals; server-clock aging for everyone as an idea; children, twins, wills and choosing an heir; 60-minute game days, seasonal day length and night; the weekend farming rhythm, crop tiers, farm labor and work buildings; stock levels, the order chain and building maintenance; the budget for language model use and self-hosting; town roles, land and property; quests and pastimes; real-money ideas, with gambling flagged for later; and the plan for growing the tile map one side at a time.
-- **Version 6 (2026-10-12, night):** minimum hardware target (older quad-core, 8 GB RAM, SATA SSD); the 15 to 16 hour tile bake and a proposal to bake 2D maps and generate voxels at runtime, with a table of what is baked, what the server works out and what the client does; language service hosting and scaling; NPC backgrounds, memory, honesty and conversation traits; an islands-first tile pipeline; geology stored as a feature list with ore placed by how deposits really form; surveying skill and prospecting clues; the surveyor's book; a massive pre-planned world, an arid equator on the origin row and three climate zones with transition rows; tile downloads and the client tile cache; a developer-built starter town (replacing "no starting towns"); natural animal behavior; rarer flotsam.
+- **Version 6 (2026-10-12, night):** minimum hardware target (older quad-core, 8 GB RAM, SATA SSD); the 15 to 16 hour tile bake and a proposal to bake 2D maps and generate voxels at runtime, with a table of what is baked, what the server works out and what the client does; language service hosting and scaling; NPC backgrounds, memory, honesty and conversation traits; an islands-first tile pipeline; geology stored as a feature list with ore placed by how deposits really form; surveying skill and prospecting clues; the surveyor's book; a massive pre-planned world, an arid equator on the origin row and three climate zones with transition rows; tile downloads and the client tile cache; a developer-built starter town (replacing "no starting towns"); natural animal behavior; rarer flotsam; several starter tiles; a full-size world filled with placeholder ocean tiles; a matrix of tile specifications; and a recommendation to start with voxel streaming.
 
 ## How to read this document
 
@@ -102,6 +102,13 @@ A persistent, rough-medieval, multiplayer online world: a survival, exploration 
 - **[Idea]** Once tiles generate in reasonable time, the whole massive world can be planned ahead of time, tile by tile.
 - **[Proposed]** A **world plan** file lists every planned tile (islands, sizes, character) at its permanent coordinate. Tiles can all be baked up front and still be released gradually by growing the active rectangle (Section 4.7). Open-ocean tiles are nearly free to store and help a huge world feel huge without needing content everywhere.
 - **[Open]** How large a world can be designed and still managed and served (Section 15).
+- **[Idea]** Like Atlas, eventually 4 or more starter towns, since the map is so big. This lets people coordinate with friends when they first log in. Town-friendly large islands sit at strategic **starter tiles**, for example (-4,0), (4,0), (0,-4), (0,4), and further out at distance 8.
+- **[Idea]** Generate the entire map at once, filling every unassigned tile with an ocean tile for now, and generate replacement tiles at predetermined coordinates later.
+- **[Idea]** Before baking, build a **matrix of tile specifications**. A randomized generator picks between zero and 4 or 5 islands per tile and sizes them, giving a mix of big islands, smaller clusters and archipelagos.
+- **[Proposed]** With 2D tile maps, ocean tiles cost almost nothing, so the world can be its full planned size from day one. The wrap bounds then never change, and growing the world becomes replacing placeholder tiles instead of adding rows and columns (Section 4.7 still applies if the world ever needs to grow beyond the plan).
+- **[Proposed]** Replacing a placeholder needs rules: only tiles marked as placeholders can be replaced; anything players left there (anchored ships, floating items, seabed edits) is moved or the new islands avoid it; and the tile's revision number rises so clients refresh their cached copy.
+- **[Proposed]** The matrix is a file you can read and edit. Each cell holds the tile's kind (ocean, starter, islands), island count, sizes, characters and seeds. Rules shape the random picks: a size mix, minimum sailing distances, starter tiles hand-tuned to be town friendly (flat land, a river, a harbor, varied resources nearby), and each climate zone getting a fair share of key resources. A whole-world preview image shows the result before anything is baked.
+- **[Proposed]** Starter tiles should give a choice of climate (desert and temperate, not arctic). With a world 13 tiles tall the rows run from -6 to 6, so starters at distance 8 north or south need a taller world, or sit east and west on existing rows.
 - **[Proposed]** A tile with zero islands is simply an open-ocean tile. This gives ships real distances without any special system.
 - **[Proposed]** Irregular coastlines with small offshore islets, instead of the current rounded-square outline.
 
@@ -262,7 +269,10 @@ A tile should then take minutes, and `world_preview.gd` could show island panel 
 
 - **[Decided]** A client starts in one tile. It downloads that tile and the surrounding tiles, and as the player travels it downloads the tiles around the current tile ahead of time.
 - **[Decided]** Players choose how much hard drive space to use for tiles. Tiles they have visited stay recorded in their maps, but the tiles furthest away are removed when space runs out and downloaded again if needed.
-- **[Proposed]** This favors clients generating terrain from the small tile maps (Section 4.8): a ring of 3 by 3 tiles is perhaps tens of megabytes, where streamed voxel blocks for the same area would be far larger. Generation then runs on the client, so it must be fast on the minimum machine, and different CPUs must produce identical terrain. Test that before relying on it.
+- **[Proposed] Recommended start: voxel streaming.** The server sends compressed terrain blocks near the player and the client keeps them in an on-disk cache of the size the player chooses, so the caching idea still applies, at the block level. It is simpler and more reliable (no risk of different CPUs producing different terrain), lighter on the client's CPU, and lets the server withhold ore that has not been exposed, which answers the x-ray concern (Section 4.9). The cost is more network traffic and server work per player, which needs measuring.
+- **[Proposed]** Clients still download each tile's small 2D maps, at low resolution, for the world map and for drawing distant terrain cheaply, while nearby terrain arrives as streamed voxels.
+- **[Proposed]** If bandwidth becomes the problem later, switch to clients generating unedited terrain from the tile maps.
+- **[Proposed]** Generating on the client from the small tile maps (Section 4.8) is the alternative: a ring of 3 by 3 tiles is perhaps tens of megabytes, where streamed voxel blocks for the same area would be far larger. Generation then runs on the client, so it must be fast on the minimum machine, and different CPUs must produce identical terrain. Test that before relying on it.
 - **[Proposed]** Edits travel separately as small deltas per region. The existing region manifest already has a revision number per region, which tells a client whether its cached edits are stale.
 - **[Proposed]** The player's map is kept separately from the tile cache, so removing a far tile does not erase what the player has explored.
 
@@ -462,6 +472,7 @@ Assumptions: 70 game years of aging (15 to 85) over one real year with about 700
 
 - **[Decided]** Players found towns by placing a **town block** that they own. They can assign themselves as owner or leave governance to AI.
 - **[Decided]** Players start at a **starter town**. For now it is just a spawn point, where the initial developers build the first town. That town becomes the starting town for future players. (This replaces the earlier "no starting towns" decision.)
+- **[Idea]** Eventually 4 or more starter towns on starter tiles across the big map (Section 4.1).
 - **[Decided]** Apart from the starter town, the first players (the project owner's friends and family) build the towns.
 - **[Idea]** Towns might become server-owned later (for example abandoned player towns), since a town belonging to the server was mentioned. Nothing is placed at the start, so this does not affect the bake.
 - **[Decided]** Players build roads and buildings, choosing from premade blueprints.
@@ -920,12 +931,13 @@ Generator, hardware and hosting
 
 41. Settled: resources are placed by how they really form, and the full volumetric simulation can be replaced by anything faster that reaches the same result (Section 4.9). Still open: which geological features a tile stores, since that list becomes permanent.
 42. Is runtime voxel generation on the server acceptable instead of reading everything from baked files? (Section 4.8)
-43. Does terrain reach the client as streamed blocks, or as small maps the client generates from? (Section 4.8)
+43. Recommended: start with streamed blocks plus a client cache and low-resolution maps for distance and the world map (Section 4.10). Confirm, and measure bandwidth once a prototype runs.
 44. Can players host a world on their own machine? If so, one minimum-spec machine runs both server and client. (Section 3)
 45. What frame rate and view distance should the minimum machine reach? (Section 3)
 46. How much protection against "x-ray" clients that read ore from received voxels is worth its cost? (Section 4.9)
 47. How large a world can be designed, managed and served, and is it one server process or split across several later? (Section 4.1)
-48. Where is the starter town: on the desert origin tile, or on a temperate tile? (Sections 4.2 and 8.1)
+48. Which tiles are starter tiles, how many, and in which climates? (Sections 4.1, 4.2 and 8.1)
+50. What is the fixed planned world size in tiles (height for climate, width for scale)? (Section 4.1)
 49. Is flora derived at runtime from the biome map and a placement seed (only removals stored), replacing the baked placement lists in Section 4.3? Is the 8 m map grid confirmed?
 
 ---
