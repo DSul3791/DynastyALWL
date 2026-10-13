@@ -4,7 +4,7 @@
     "sketch_version": 1,
     "seed_text": "This1is2the3greatest4game5of6all7time",
     "master_seed": 574716103,
-    "rules_sha256": "65cebfa23accccde95e82956891fbd7e31efb0247eeea5c9ff0d98653390fa4f"
+    "rules_sha256": "78bb8387dcf73410484175ef5d786994eead341c9e13e8849fd8fb95c81ed6bd"
   },
   "features": [
     {
@@ -54,10 +54,10 @@
           "type": "starter",
           "x": -37412,
           "z": -54486,
-          "a": 3646,
-          "b": 2610,
+          "a": 5471,
+          "b": 3916,
           "rot": -129,
-          "peak": 378,
+          "peak": 505,
           "exp": 0.75,
           "cliff": 0,
           "shore": 1500,
@@ -73,16 +73,18 @@
           "plain_width": 0.5,
           "rocky_cliff_m": 120,
           "bay_radius": 0.32,
-          "bay_depth_m": -14
+          "bay_depth_m": -14,
+          "strait_m": 1200,
+          "strait_depth_m": -80
         },
         {
           "type": "starter",
           "x": -85172,
           "z": -84336,
-          "a": 3593,
-          "b": 2826,
+          "a": 6193,
+          "b": 4871,
           "rot": -156,
-          "peak": 296,
+          "peak": 399,
           "exp": 0.75,
           "cliff": 0,
           "shore": 1500,
@@ -98,7 +100,9 @@
           "plain_width": 0.5,
           "rocky_cliff_m": 120,
           "bay_radius": 0.32,
-          "bay_depth_m": -14
+          "bay_depth_m": -14,
+          "strait_m": 1200,
+          "strait_depth_m": -80
         }
       ]
     },
@@ -158,10 +162,10 @@
           "type": "starter",
           "x": -39083,
           "z": 68339,
-          "a": 3350,
-          "b": 2755,
+          "a": 5045,
+          "b": 4148,
           "rot": 146,
-          "peak": 367,
+          "peak": 491,
           "exp": 0.75,
           "cliff": 0,
           "shore": 1500,
@@ -177,16 +181,18 @@
           "plain_width": 0.5,
           "rocky_cliff_m": 120,
           "bay_radius": 0.32,
-          "bay_depth_m": -14
+          "bay_depth_m": -14,
+          "strait_m": 1200,
+          "strait_depth_m": -80
         },
         {
           "type": "starter",
           "x": -83980,
           "z": 98830,
-          "a": 3311,
-          "b": 2714,
+          "a": 5796,
+          "b": 4752,
           "rot": 149,
-          "peak": 417,
+          "peak": 556,
           "exp": 0.75,
           "cliff": 0,
           "shore": 1500,
@@ -202,7 +208,9 @@
           "plain_width": 0.5,
           "rocky_cliff_m": 120,
           "bay_radius": 0.32,
-          "bay_depth_m": -14
+          "bay_depth_m": -14,
+          "strait_m": 1200,
+          "strait_depth_m": -80
         }
       ]
     },
@@ -253,10 +261,10 @@
           "type": "starter",
           "x": 53983,
           "z": -54928,
-          "a": 3750,
-          "b": 3006,
+          "a": 5529,
+          "b": 4431,
           "rot": 9,
-          "peak": 410,
+          "peak": 547,
           "exp": 0.75,
           "cliff": 0,
           "shore": 1500,
@@ -272,16 +280,18 @@
           "plain_width": 0.5,
           "rocky_cliff_m": 120,
           "bay_radius": 0.32,
-          "bay_depth_m": -14
+          "bay_depth_m": -14,
+          "strait_m": 1200,
+          "strait_depth_m": -80
         },
         {
           "type": "starter",
           "x": 100710,
           "z": -85561,
-          "a": 3929,
-          "b": 2670,
+          "a": 6745,
+          "b": 4585,
           "rot": -42,
-          "peak": 319,
+          "peak": 428,
           "exp": 0.75,
           "cliff": 0,
           "shore": 1500,
@@ -297,7 +307,9 @@
           "plain_width": 0.5,
           "rocky_cliff_m": 120,
           "bay_radius": 0.32,
-          "bay_depth_m": -14
+          "bay_depth_m": -14,
+          "strait_m": 1200,
+          "strait_depth_m": -80
         }
       ]
     },
@@ -348,10 +360,10 @@
           "type": "starter",
           "x": 52496,
           "z": 70200,
-          "a": 3690,
-          "b": 2949,
+          "a": 5459,
+          "b": 4363,
           "rot": 23,
-          "peak": 367,
+          "peak": 491,
           "exp": 0.75,
           "cliff": 0,
           "shore": 1500,
@@ -367,16 +379,18 @@
           "plain_width": 0.5,
           "rocky_cliff_m": 120,
           "bay_radius": 0.32,
-          "bay_depth_m": -14
+          "bay_depth_m": -14,
+          "strait_m": 1200,
+          "strait_depth_m": -80
         },
         {
           "type": "starter",
           "x": 99437,
           "z": 99151,
-          "a": 4030,
-          "b": 2629,
+          "a": 6911,
+          "b": 4508,
           "rot": 38,
-          "peak": 315,
+          "peak": 424,
           "exp": 0.75,
           "cliff": 0,
           "shore": 1500,
@@ -392,7 +406,9 @@
           "plain_width": 0.5,
           "rocky_cliff_m": 120,
           "bay_radius": 0.32,
-          "bay_depth_m": -14
+          "bay_depth_m": -14,
+          "strait_m": 1200,
+          "strait_depth_m": -80
         }
       ]
     },

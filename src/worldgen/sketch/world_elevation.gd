@@ -368,6 +368,17 @@ func _raise_mount(mount: Dictionary, owner_index: int) -> void:
 				_:
 					raised = _island_height(mount, distance, b, shore, slope, index, facing)
 
+			# A strait around a starter island keeps nearby shelf hills
+			# from joining it; they stay as satellite islands across the water.
+			if mount_type == "starter" and distance > 1.0:
+				var strait: float = float(mount.get("strait_m", 0))
+
+				if strait > 0.0:
+					var outside: float = (distance - 1.0) * b
+					var hold: float = 1.0 - _smooth(clampf((outside - strait) / strait, 0.0, 1.0))
+					var capped: float = minf(heights[index], float(mount.get("strait_depth_m", -30)))
+					heights[index] = lerpf(heights[index], capped, hold)
+
 			if raised <= heights[index] - 150.0:
 				continue
 

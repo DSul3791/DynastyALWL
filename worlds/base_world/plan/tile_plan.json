@@ -26,8 +26,8 @@
         "arc_1"
       ],
       "island_ids": [
-        37,
-        118
+        40,
+        125
       ],
       "geology_hints": [
         "volcanic",
@@ -55,8 +55,8 @@
         "arc_1"
       ],
       "island_ids": [
-        37,
-        118
+        40,
+        125
       ],
       "geology_hints": [
         "volcanic",
@@ -126,7 +126,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        277
+        286
       ],
       "geology_hints": [
         "volcanic"
@@ -153,7 +153,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        227
+        231
       ],
       "geology_hints": [
         "volcanic"
@@ -222,8 +222,8 @@
         "arc_2"
       ],
       "island_ids": [
-        24,
-        183
+        30,
+        187
       ],
       "geology_hints": [
         "volcanic",
@@ -251,7 +251,7 @@
         "arc_2"
       ],
       "island_ids": [
-        183
+        187
       ],
       "geology_hints": [
         "volcanic",
@@ -321,9 +321,9 @@
         "seamount_field"
       ],
       "island_ids": [
-        153,
-        168,
-        270
+        158,
+        172,
+        279
       ],
       "geology_hints": [
         "volcanic"
@@ -350,8 +350,8 @@
         "seamount_field"
       ],
       "island_ids": [
-        172,
-        243
+        176,
+        250
       ],
       "geology_hints": [
         "volcanic"
@@ -399,7 +399,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        155
+        160
       ],
       "geology_hints": [
         "volcanic"
@@ -426,8 +426,8 @@
         "hotspot_4"
       ],
       "island_ids": [
-        136,
-        196
+        142,
+        200
       ],
       "geology_hints": [
         "volcanic"
@@ -455,8 +455,8 @@
         "seamount_field"
       ],
       "island_ids": [
-        68,
-        237
+        70,
+        243
       ],
       "geology_hints": [
         "volcanic"
@@ -484,11 +484,11 @@
         "seamount_field"
       ],
       "island_ids": [
-        23,
-        63,
-        132,
-        154,
-        208
+        29,
+        65,
+        138,
+        159,
+        212
       ],
       "geology_hints": [
         "volcanic"
@@ -513,7 +513,7 @@
       "deepest_m": -2363,
       "features": [],
       "island_ids": [
-        208
+        212
       ],
       "geology_hints": [],
       "special": [],
@@ -538,8 +538,8 @@
         "seamount_field"
       ],
       "island_ids": [
-        129,
-        256
+        136,
+        264
       ],
       "geology_hints": [
         "volcanic"
@@ -566,9 +566,9 @@
         "arc_1"
       ],
       "island_ids": [
-        118,
-        145,
-        194
+        125,
+        150,
+        198
       ],
       "geology_hints": [
         "volcanic",
@@ -596,8 +596,8 @@
         "arc_1"
       ],
       "island_ids": [
-        118,
-        145
+        125,
+        150
       ],
       "geology_hints": [
         "volcanic",
@@ -751,7 +751,7 @@
         "arc_2"
       ],
       "island_ids": [
-        183
+        187
       ],
       "geology_hints": [
         "volcanic",
@@ -779,9 +779,9 @@
         "arc_2"
       ],
       "island_ids": [
-        25,
-        120,
-        183
+        31,
+        127,
+        187
       ],
       "geology_hints": [
         "volcanic",
@@ -807,7 +807,7 @@
       "deepest_m": -2286,
       "features": [],
       "island_ids": [
-        25
+        31
       ],
       "geology_hints": [],
       "special": [],
@@ -895,7 +895,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        217
+        221
       ],
       "geology_hints": [
         "volcanic"
@@ -985,8 +985,8 @@
         "hotspot_4"
       ],
       "island_ids": [
-        23,
-        63
+        29,
+        65
       ],
       "geology_hints": [
         "volcanic"
@@ -1056,10 +1056,10 @@
         "seamount_field"
       ],
       "island_ids": [
-        96,
-        152,
-        209,
-        228
+        100,
+        157,
+        213,
+        232
       ],
       "geology_hints": [
         "volcanic",
@@ -1087,7 +1087,7 @@
         "arc_1"
       ],
       "island_ids": [
-        96
+        100
       ],
       "geology_hints": [
         "volcanic",
@@ -1178,7 +1178,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        253
+        261
       ],
       "geology_hints": [
         "volcanic"
@@ -1247,7 +1247,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        264
+        272
       ],
       "geology_hints": [
         "volcanic"
@@ -1274,7 +1274,7 @@
         "arc_2"
       ],
       "island_ids": [
-        25
+        31
       ],
       "geology_hints": [
         "volcanic",
@@ -1302,8 +1302,8 @@
         "arc_2"
       ],
       "island_ids": [
-        25,
-        143
+        31,
+        148
       ],
       "geology_hints": [
         "volcanic",
@@ -1331,7 +1331,7 @@
         "arc_2"
       ],
       "island_ids": [
-        143
+        148
       ],
       "geology_hints": [
         "volcanic",
@@ -1443,7 +1443,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        236
+        242
       ],
       "geology_hints": [
         "volcanic"
@@ -1555,10 +1555,10 @@
         "seamount_field"
       ],
       "island_ids": [
-        43,
-        81,
-        96,
-        209
+        46,
+        83,
+        100,
+        213
       ],
       "geology_hints": [
         "volcanic",
@@ -1587,11 +1587,11 @@
         "seamount_field"
       ],
       "island_ids": [
-        43,
-        81,
-        96,
-        251,
-        259
+        46,
+        83,
+        100,
+        258,
+        267
       ],
       "geology_hints": [
         "volcanic",
@@ -1619,7 +1619,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        224
+        228
       ],
       "geology_hints": [
         "volcanic"
@@ -1667,8 +1667,8 @@
         "shelf_n_n"
       ],
       "island_ids": [
-        3,
-        94
+        2,
+        97
       ],
       "geology_hints": [
         "granite",
@@ -1697,7 +1697,7 @@
         "shelf_n_n"
       ],
       "island_ids": [
-        3
+        2
       ],
       "geology_hints": [
         "granite",
@@ -1894,7 +1894,7 @@
         "shelf_p_n"
       ],
       "island_ids": [
-        78
+        80
       ],
       "geology_hints": [
         "granite",
@@ -1938,7 +1938,7 @@
       "danger_tier": "hard",
       "land_km2": 0.0,
       "land_share": 0.0,
-      "peak_m": -1804,
+      "peak_m": -784,
       "deepest_m": -2245,
       "features": [],
       "island_ids": [],
@@ -1965,8 +1965,8 @@
         "seamount_field"
       ],
       "island_ids": [
-        207,
-        265
+        211,
+        273
       ],
       "geology_hints": [
         "volcanic"
@@ -2014,7 +2014,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        218
+        222
       ],
       "geology_hints": [
         "volcanic"
@@ -2041,7 +2041,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        138
+        144
       ],
       "geology_hints": [
         "volcanic"
@@ -2068,7 +2068,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        293
+        304
       ],
       "geology_hints": [
         "volcanic"
@@ -2129,15 +2129,17 @@
       "starter_set": "",
       "danger": 0.513,
       "danger_tier": "medium",
-      "land_km2": 36.45,
-      "land_share": 0.1545,
+      "land_km2": 26.39,
+      "land_share": 0.1119,
       "peak_m": 533,
       "deepest_m": -1992,
       "features": [
         "shelf_n_n"
       ],
       "island_ids": [
-        4
+        4,
+        67,
+        123
       ],
       "geology_hints": [
         "granite",
@@ -2153,20 +2155,22 @@
       "zone": "temperate",
       "kind": "starter",
       "status": "planned",
-      "locked": true,
+      "locked": false,
       "revision": 0,
       "starter_set": "outer",
       "danger": 0.442,
       "danger_tier": "medium",
-      "land_km2": 86.78,
-      "land_share": 0.3678,
-      "peak_m": 483,
+      "land_km2": 134.37,
+      "land_share": 0.5696,
+      "peak_m": 552,
       "deepest_m": -750,
       "features": [
         "shelf_n_n"
       ],
       "island_ids": [
-        4
+        4,
+        67,
+        108
       ],
       "geology_hints": [
         "granite",
@@ -2187,15 +2191,16 @@
       "starter_set": "",
       "danger": 0.311,
       "danger_tier": "moderate",
-      "land_km2": 86.84,
-      "land_share": 0.3681,
+      "land_km2": 86.89,
+      "land_share": 0.3683,
       "peak_m": 313,
       "deepest_m": -855,
       "features": [
         "shelf_n_n"
       ],
       "island_ids": [
-        3
+        2,
+        4
       ],
       "geology_hints": [
         "granite",
@@ -2224,8 +2229,8 @@
         "shelf_n_n"
       ],
       "island_ids": [
-        3,
-        188
+        2,
+        192
       ],
       "geology_hints": [
         "granite",
@@ -2410,7 +2415,7 @@
       ],
       "island_ids": [
         5,
-        78
+        80
       ],
       "geology_hints": [
         "granite",
@@ -2439,7 +2444,7 @@
         "shelf_p_n"
       ],
       "island_ids": [
-        34
+        37
       ],
       "geology_hints": [
         "granite",
@@ -2455,22 +2460,22 @@
       "zone": "temperate",
       "kind": "starter",
       "status": "planned",
-      "locked": true,
+      "locked": false,
       "revision": 0,
       "starter_set": "outer",
       "danger": 0.442,
       "danger_tier": "medium",
-      "land_km2": 32.79,
-      "land_share": 0.139,
-      "peak_m": 385,
-      "deepest_m": -2217,
+      "land_km2": 86.09,
+      "land_share": 0.3649,
+      "peak_m": 477,
+      "deepest_m": -2210,
       "features": [
         "shelf_p_n"
       ],
       "island_ids": [
-        28,
-        35,
-        47
+        13,
+        33,
+        38
       ],
       "geology_hints": [
         "granite",
@@ -2491,17 +2496,18 @@
       "starter_set": "",
       "danger": 0.513,
       "danger_tier": "medium",
-      "land_km2": 35.23,
-      "land_share": 0.1493,
+      "land_km2": 36.35,
+      "land_share": 0.1541,
       "peak_m": 378,
       "deepest_m": -2259,
       "features": [
         "shelf_p_n"
       ],
       "island_ids": [
-        35,
-        87,
-        100
+        13,
+        38,
+        89,
+        104
       ],
       "geology_hints": [
         "granite",
@@ -2572,7 +2578,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        138
+        144
       ],
       "geology_hints": [
         "volcanic"
@@ -2620,7 +2626,7 @@
         "arc_1"
       ],
       "island_ids": [
-        160
+        165
       ],
       "geology_hints": [
         "volcanic",
@@ -2682,18 +2688,19 @@
       "starter_set": "",
       "danger": 0.4,
       "danger_tier": "medium",
-      "land_km2": 21.5,
-      "land_share": 0.0911,
-      "peak_m": 290,
+      "land_km2": 17.84,
+      "land_share": 0.0756,
+      "peak_m": 240,
       "deepest_m": -2018,
       "features": [
         "shelf_n_n"
       ],
       "island_ids": [
-        4,
-        83,
-        135,
-        176
+        85,
+        108,
+        141,
+        180,
+        240
       ],
       "geology_hints": [
         "granite",
@@ -2722,10 +2729,10 @@
         "shelf_n_n"
       ],
       "island_ids": [
-        3,
-        57,
-        294,
-        299
+        2,
+        59,
+        305,
+        310
       ],
       "geology_hints": [
         "granite",
@@ -2754,8 +2761,8 @@
         "shelf_n_n"
       ],
       "island_ids": [
-        17,
-        32
+        22,
+        35
       ],
       "geology_hints": [
         "granite",
@@ -2784,7 +2791,7 @@
         "shelf_n_n"
       ],
       "island_ids": [
-        198
+        202
       ],
       "geology_hints": [
         "granite",
@@ -2897,8 +2904,8 @@
         "shelf_p_n"
       ],
       "island_ids": [
-        22,
-        238
+        28,
+        244
       ],
       "geology_hints": [
         "granite",
@@ -2919,8 +2926,8 @@
       "starter_set": "",
       "danger": 0.0,
       "danger_tier": "easy",
-      "land_km2": 30.18,
-      "land_share": 0.1279,
+      "land_km2": 23.63,
+      "land_share": 0.1002,
       "peak_m": 384,
       "deepest_m": -2149,
       "features": [
@@ -2928,11 +2935,11 @@
       ],
       "island_ids": [
         5,
-        22,
-        67,
-        73,
-        144,
-        238
+        28,
+        75,
+        149,
+        244,
+        298
       ],
       "geology_hints": [
         "granite",
@@ -2962,10 +2969,10 @@
       ],
       "island_ids": [
         5,
-        46,
-        73,
-        92,
-        119
+        49,
+        75,
+        95,
+        126
       ],
       "geology_hints": [
         "granite",
@@ -2994,10 +3001,10 @@
         "shelf_p_n"
       ],
       "island_ids": [
-        30,
-        46,
-        61,
-        92
+        34,
+        49,
+        62,
+        95
       ],
       "geology_hints": [
         "granite",
@@ -3026,11 +3033,11 @@
         "shelf_p_n"
       ],
       "island_ids": [
-        28,
-        30,
-        35,
-        257,
-        273
+        33,
+        34,
+        38,
+        265,
+        282
       ],
       "geology_hints": [
         "granite",
@@ -3059,9 +3066,9 @@
         "shelf_p_n"
       ],
       "island_ids": [
-        35,
-        69,
-        278
+        38,
+        71,
+        287
       ],
       "geology_hints": [
         "granite",
@@ -3090,7 +3097,7 @@
         "shelf_p_n"
       ],
       "island_ids": [
-        203
+        207
       ],
       "geology_hints": [
         "granite",
@@ -3119,7 +3126,7 @@
         "arc_4"
       ],
       "island_ids": [
-        123
+        130
       ],
       "geology_hints": [
         "volcanic",
@@ -3147,7 +3154,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        141
+        147
       ],
       "geology_hints": [
         "volcanic"
@@ -3237,7 +3244,7 @@
         "shelf_n_n"
       ],
       "island_ids": [
-        124
+        131
       ],
       "geology_hints": [
         "granite",
@@ -3266,12 +3273,12 @@
         "shelf_n_n"
       ],
       "island_ids": [
-        41,
-        59,
-        135,
-        157,
-        176,
-        295
+        45,
+        61,
+        141,
+        162,
+        180,
+        306
       ],
       "geology_hints": [
         "granite",
@@ -3300,14 +3307,14 @@
         "shelf_n_n"
       ],
       "island_ids": [
-        116,
-        121,
-        163,
-        262,
-        267,
-        272,
-        279,
-        300
+        122,
+        128,
+        168,
+        270,
+        275,
+        281,
+        288,
+        311
       ],
       "geology_hints": [
         "granite",
@@ -3336,11 +3343,11 @@
         "shelf_n_n"
       ],
       "island_ids": [
-        17,
-        32,
-        80,
-        249,
-        308
+        22,
+        35,
+        82,
+        256,
+        318
       ],
       "geology_hints": [
         "granite",
@@ -3356,22 +3363,22 @@
       "zone": "temperate",
       "kind": "starter",
       "status": "planned",
-      "locked": true,
+      "locked": false,
       "revision": 0,
       "starter_set": "inner",
       "danger": 0.0,
       "danger_tier": "easy",
-      "land_km2": 45.47,
-      "land_share": 0.1927,
-      "peak_m": 502,
+      "land_km2": 82.92,
+      "land_share": 0.3515,
+      "peak_m": 650,
       "deepest_m": -1957,
       "features": [
         "shelf_n_n"
       ],
       "island_ids": [
-        17,
-        26,
-        130
+        12,
+        22,
+        235
       ],
       "geology_hints": [
         "granite",
@@ -3476,16 +3483,16 @@
       "starter_set": "",
       "danger": 0.0,
       "danger_tier": "easy",
-      "land_km2": 31.9,
-      "land_share": 0.1352,
+      "land_km2": 31.92,
+      "land_share": 0.1353,
       "peak_m": 290,
       "deepest_m": -1181,
       "features": [
         "shelf_p_n"
       ],
       "island_ids": [
-        22,
-        60
+        28,
+        64
       ],
       "geology_hints": [
         "granite",
@@ -3501,27 +3508,24 @@
       "zone": "temperate",
       "kind": "starter",
       "status": "planned",
-      "locked": true,
+      "locked": false,
       "revision": 0,
       "starter_set": "inner",
       "danger": 0.0,
       "danger_tier": "easy",
-      "land_km2": 59.75,
-      "land_share": 0.2533,
-      "peak_m": 511,
+      "land_km2": 97.69,
+      "land_share": 0.4141,
+      "peak_m": 707,
       "deepest_m": -646,
       "features": [
         "shelf_p_n"
       ],
       "island_ids": [
-        22,
-        31,
-        60,
-        67,
-        142,
-        301,
-        306,
-        307
+        10,
+        28,
+        64,
+        247,
+        317
       ],
       "geology_hints": [
         "granite",
@@ -3542,16 +3546,17 @@
       "starter_set": "",
       "danger": 0.042,
       "danger_tier": "easy",
-      "land_km2": 65.95,
-      "land_share": 0.2795,
+      "land_km2": 65.72,
+      "land_share": 0.2785,
       "peak_m": 473,
       "deepest_m": -1429,
       "features": [
         "shelf_p_n"
       ],
       "island_ids": [
-        11,
-        142
+        16,
+        247,
+        300
       ],
       "geology_hints": [
         "granite",
@@ -3580,9 +3585,9 @@
         "shelf_p_n"
       ],
       "island_ids": [
-        30,
-        64,
-        248
+        34,
+        66,
+        255
       ],
       "geology_hints": [
         "granite",
@@ -3611,10 +3616,10 @@
         "shelf_p_n"
       ],
       "island_ids": [
-        30,
-        111,
-        148,
-        248
+        34,
+        116,
+        153,
+        255
       ],
       "geology_hints": [
         "granite",
@@ -3643,7 +3648,7 @@
         "shelf_p_n"
       ],
       "island_ids": [
-        146
+        151
       ],
       "geology_hints": [
         "granite",
@@ -3714,7 +3719,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        289
+        299
       ],
       "geology_hints": [
         "volcanic"
@@ -3741,7 +3746,7 @@
         "arc_5"
       ],
       "island_ids": [
-        10
+        14
       ],
       "geology_hints": [
         "volcanic",
@@ -3811,9 +3816,9 @@
         "shelf_n_n"
       ],
       "island_ids": [
-        41,
-        82,
-        302
+        45,
+        84,
+        312
       ],
       "geology_hints": [
         "granite",
@@ -3842,8 +3847,8 @@
         "shelf_n_n"
       ],
       "island_ids": [
-        13,
-        41
+        18,
+        45
       ],
       "geology_hints": [
         "granite",
@@ -3872,9 +3877,9 @@
         "shelf_n_n"
       ],
       "island_ids": [
-        13,
-        116,
-        296
+        18,
+        122,
+        307
       ],
       "geology_hints": [
         "granite",
@@ -3903,8 +3908,8 @@
         "shelf_n_n"
       ],
       "island_ids": [
-        49,
-        80
+        51,
+        82
       ],
       "geology_hints": [
         "granite",
@@ -4059,8 +4064,8 @@
         "shelf_p_n"
       ],
       "island_ids": [
-        98,
-        212
+        102,
+        216
       ],
       "geology_hints": [
         "granite",
@@ -4089,8 +4094,8 @@
         "shelf_p_n"
       ],
       "island_ids": [
-        11,
-        178
+        16,
+        182
       ],
       "geology_hints": [
         "granite",
@@ -4119,7 +4124,7 @@
         "shelf_p_n"
       ],
       "island_ids": [
-        64
+        66
       ],
       "geology_hints": [
         "granite",
@@ -4211,8 +4216,8 @@
         "arc_4"
       ],
       "island_ids": [
-        55,
-        74
+        57,
+        76
       ],
       "geology_hints": [
         "volcanic",
@@ -4240,7 +4245,7 @@
         "arc_5"
       ],
       "island_ids": [
-        10
+        14
       ],
       "geology_hints": [
         "volcanic",
@@ -4268,9 +4273,9 @@
         "arc_5"
       ],
       "island_ids": [
-        10,
-        88,
-        91
+        14,
+        90,
+        94
       ],
       "geology_hints": [
         "volcanic",
@@ -4382,7 +4387,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        137
+        143
       ],
       "geology_hints": [
         "volcanic"
@@ -4410,8 +4415,8 @@
         "seamount_field"
       ],
       "island_ids": [
-        245,
-        280
+        252,
+        289
       ],
       "geology_hints": [
         "granite",
@@ -4441,7 +4446,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        210
+        214
       ],
       "geology_hints": [
         "volcanic"
@@ -4468,7 +4473,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        220
+        224
       ],
       "geology_hints": [
         "volcanic"
@@ -4579,7 +4584,7 @@
         "shelf_p_n"
       ],
       "island_ids": [
-        98
+        102
       ],
       "geology_hints": [
         "granite",
@@ -4608,7 +4613,7 @@
         "shelf_p_n"
       ],
       "island_ids": [
-        178
+        182
       ],
       "geology_hints": [
         "granite",
@@ -4700,7 +4705,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        206
+        210
       ],
       "geology_hints": [
         "volcanic"
@@ -4727,10 +4732,10 @@
         "arc_4"
       ],
       "island_ids": [
-        55,
-        58,
-        99,
-        206
+        57,
+        60,
+        103,
+        210
       ],
       "geology_hints": [
         "volcanic",
@@ -4779,7 +4784,7 @@
         "arc_5"
       ],
       "island_ids": [
-        107
+        112
       ],
       "geology_hints": [
         "volcanic",
@@ -4807,9 +4812,9 @@
         "arc_5"
       ],
       "island_ids": [
-        107,
-        158,
-        179
+        112,
+        163,
+        183
       ],
       "geology_hints": [
         "volcanic",
@@ -4921,8 +4926,8 @@
         "hotspot_1"
       ],
       "island_ids": [
-        50,
-        56
+        52,
+        58
       ],
       "geology_hints": [
         "volcanic"
@@ -4949,8 +4954,8 @@
         "hotspot_1"
       ],
       "island_ids": [
-        27,
-        50
+        32,
+        52
       ],
       "geology_hints": [
         "volcanic"
@@ -5113,7 +5118,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        151
+        156
       ],
       "geology_hints": [
         "volcanic"
@@ -5224,9 +5229,9 @@
         "arc_4"
       ],
       "island_ids": [
-        58,
-        102,
-        108
+        60,
+        106,
+        113
       ],
       "geology_hints": [
         "volcanic",
@@ -5296,8 +5301,8 @@
         "arc_5"
       ],
       "island_ids": [
-        66,
-        158
+        68,
+        163
       ],
       "geology_hints": [
         "volcanic",
@@ -5388,8 +5393,8 @@
         "hotspot_1"
       ],
       "island_ids": [
-        71,
-        97
+        73,
+        101
       ],
       "geology_hints": [
         "volcanic"
@@ -5416,8 +5421,8 @@
         "hotspot_1"
       ],
       "island_ids": [
-        56,
-        71
+        58,
+        73
       ],
       "geology_hints": [
         "volcanic"
@@ -5489,7 +5494,7 @@
         "central_trench"
       ],
       "island_ids": [
-        2
+        1
       ],
       "geology_hints": [
         "volcanic"
@@ -5506,7 +5511,7 @@
       "zone": "desert",
       "kind": "landmark",
       "status": "planned",
-      "locked": true,
+      "locked": false,
       "revision": 0,
       "starter_set": "",
       "danger": 1.0,
@@ -5520,7 +5525,7 @@
         "central_trench"
       ],
       "island_ids": [
-        2
+        1
       ],
       "geology_hints": [
         "volcanic"
@@ -5554,7 +5559,7 @@
         "central_trench"
       ],
       "island_ids": [
-        2
+        1
       ],
       "geology_hints": [
         "volcanic"
@@ -5629,8 +5634,8 @@
         "hotspot_3"
       ],
       "island_ids": [
-        211,
-        241
+        215,
+        248
       ],
       "geology_hints": [
         "volcanic"
@@ -5699,7 +5704,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        173
+        177
       ],
       "geology_hints": [
         "volcanic"
@@ -5726,7 +5731,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        182
+        186
       ],
       "geology_hints": [
         "volcanic"
@@ -5754,10 +5759,10 @@
         "seamount_field"
       ],
       "island_ids": [
-        40,
-        102,
-        122,
-        219
+        44,
+        106,
+        129,
+        223
       ],
       "geology_hints": [
         "volcanic",
@@ -5785,8 +5790,8 @@
         "arc_4"
       ],
       "island_ids": [
-        40,
-        122
+        44,
+        129
       ],
       "geology_hints": [
         "volcanic",
@@ -5835,8 +5840,8 @@
         "arc_5"
       ],
       "island_ids": [
-        66,
-        114
+        68,
+        119
       ],
       "geology_hints": [
         "volcanic",
@@ -5885,7 +5890,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        149
+        154
       ],
       "geology_hints": [
         "volcanic"
@@ -5913,10 +5918,10 @@
         "seamount_field"
       ],
       "island_ids": [
-        106,
-        147,
-        149,
-        276
+        111,
+        152,
+        154,
+        285
       ],
       "geology_hints": [
         "volcanic"
@@ -5943,7 +5948,7 @@
         "hotspot_1"
       ],
       "island_ids": [
-        106
+        111
       ],
       "geology_hints": [
         "volcanic"
@@ -6127,7 +6132,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        215
+        219
       ],
       "geology_hints": [
         "volcanic"
@@ -6154,8 +6159,8 @@
         "hotspot_3"
       ],
       "island_ids": [
-        195,
-        211
+        199,
+        215
       ],
       "geology_hints": [
         "volcanic"
@@ -6183,8 +6188,8 @@
         "seamount_field"
       ],
       "island_ids": [
-        126,
-        190
+        133,
+        194
       ],
       "geology_hints": [
         "volcanic"
@@ -6211,7 +6216,7 @@
         "hotspot_3"
       ],
       "island_ids": [
-        126
+        133
       ],
       "geology_hints": [
         "volcanic"
@@ -6238,8 +6243,8 @@
         "seamount_field"
       ],
       "island_ids": [
-        169,
-        268
+        173,
+        276
       ],
       "geology_hints": [
         "volcanic"
@@ -6266,8 +6271,8 @@
         "seamount_field"
       ],
       "island_ids": [
-        191,
-        230
+        195,
+        234
       ],
       "geology_hints": [
         "volcanic"
@@ -6294,8 +6299,8 @@
         "seamount_field"
       ],
       "island_ids": [
-        191,
-        219
+        195,
+        223
       ],
       "geology_hints": [
         "volcanic"
@@ -6322,7 +6327,7 @@
         "arc_4"
       ],
       "island_ids": [
-        40
+        44
       ],
       "geology_hints": [
         "volcanic",
@@ -6392,7 +6397,7 @@
         "hotspot_1"
       ],
       "island_ids": [
-        199
+        203
       ],
       "geology_hints": [
         "volcanic"
@@ -6419,9 +6424,9 @@
         "hotspot_1"
       ],
       "island_ids": [
-        185,
-        216,
-        261
+        189,
+        220,
+        269
       ],
       "geology_hints": [
         "volcanic"
@@ -6448,7 +6453,7 @@
         "hotspot_1"
       ],
       "island_ids": [
-        193
+        197
       ],
       "geology_hints": [
         "volcanic"
@@ -6559,8 +6564,8 @@
         "trench_arc"
       ],
       "island_ids": [
-        139,
-        186
+        145,
+        190
       ],
       "geology_hints": [
         "volcanic",
@@ -6588,8 +6593,8 @@
         "trench_arc"
       ],
       "island_ids": [
-        112,
-        164
+        117,
+        169
       ],
       "geology_hints": [
         "volcanic",
@@ -6617,9 +6622,9 @@
         "trench_arc"
       ],
       "island_ids": [
-        38,
-        52,
-        112
+        41,
+        54,
+        117
       ],
       "geology_hints": [
         "volcanic",
@@ -6647,7 +6652,7 @@
         "trench_arc"
       ],
       "island_ids": [
-        52
+        54
       ],
       "geology_hints": [
         "volcanic",
@@ -6675,7 +6680,7 @@
         "shelf_p_p"
       ],
       "island_ids": [
-        51
+        53
       ],
       "geology_hints": [
         "granite",
@@ -6704,7 +6709,7 @@
         "shelf_p_p"
       ],
       "island_ids": [
-        51
+        53
       ],
       "geology_hints": [
         "granite",
@@ -6734,8 +6739,8 @@
         "seamount_field"
       ],
       "island_ids": [
-        126,
-        260
+        133,
+        268
       ],
       "geology_hints": [
         "volcanic"
@@ -6762,10 +6767,10 @@
         "hotspot_3"
       ],
       "island_ids": [
-        126,
-        166,
-        204,
-        309
+        133,
+        171,
+        208,
+        319
       ],
       "geology_hints": [
         "volcanic"
@@ -6792,7 +6797,7 @@
         "hotspot_3"
       ],
       "island_ids": [
-        110
+        115
       ],
       "geology_hints": [
         "volcanic"
@@ -6819,7 +6824,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        246
+        253
       ],
       "geology_hints": [
         "volcanic"
@@ -6846,9 +6851,9 @@
         "seamount_field"
       ],
       "island_ids": [
-        170,
-        189,
-        290
+        174,
+        193,
+        301
       ],
       "geology_hints": [
         "volcanic"
@@ -6938,7 +6943,7 @@
         "hotspot_1"
       ],
       "island_ids": [
-        199
+        203
       ],
       "geology_hints": [
         "volcanic"
@@ -6965,8 +6970,8 @@
         "hotspot_1"
       ],
       "island_ids": [
-        185,
-        199
+        189,
+        203
       ],
       "geology_hints": [
         "volcanic"
@@ -7036,8 +7041,8 @@
         "trench_arc"
       ],
       "island_ids": [
-        15,
-        180
+        20,
+        184
       ],
       "geology_hints": [
         "granite",
@@ -7068,8 +7073,8 @@
         "trench_arc"
       ],
       "island_ids": [
-        174,
-        184
+        178,
+        188
       ],
       "geology_hints": [
         "granite",
@@ -7162,8 +7167,8 @@
         "trench_arc"
       ],
       "island_ids": [
-        38,
-        52
+        41,
+        54
       ],
       "geology_hints": [
         "volcanic",
@@ -7191,9 +7196,9 @@
         "trench_arc"
       ],
       "island_ids": [
-        19,
-        52,
-        109
+        25,
+        54,
+        114
       ],
       "geology_hints": [
         "volcanic",
@@ -7222,9 +7227,9 @@
         "trench_arc"
       ],
       "island_ids": [
-        7,
-        19,
-        244
+        25,
+        42,
+        251
       ],
       "geology_hints": [
         "granite",
@@ -7254,11 +7259,11 @@
         "shelf_p_p"
       ],
       "island_ids": [
-        7,
-        54,
-        165,
-        226,
-        229
+        42,
+        56,
+        170,
+        230,
+        233
       ],
       "geology_hints": [
         "granite",
@@ -7287,10 +7292,10 @@
         "shelf_p_p"
       ],
       "island_ids": [
-        247,
-        274,
-        285,
-        303
+        254,
+        283,
+        294,
+        313
       ],
       "geology_hints": [
         "granite",
@@ -7317,7 +7322,7 @@
       "deepest_m": -2144,
       "features": [],
       "island_ids": [
-        304
+        314
       ],
       "geology_hints": [],
       "special": [],
@@ -7342,8 +7347,8 @@
         "hotspot_3"
       ],
       "island_ids": [
-        72,
-        110
+        74,
+        115
       ],
       "geology_hints": [
         "volcanic"
@@ -7371,9 +7376,9 @@
         "seamount_field"
       ],
       "island_ids": [
-        21,
-        62,
-        221
+        27,
+        63,
+        225
       ],
       "geology_hints": [
         "volcanic"
@@ -7400,8 +7405,8 @@
         "seamount_field"
       ],
       "island_ids": [
-        221,
-        286
+        225,
+        295
       ],
       "geology_hints": [
         "volcanic"
@@ -7533,7 +7538,7 @@
         "shelf_n_p"
       ],
       "island_ids": [
-        76
+        78
       ],
       "geology_hints": [
         "granite",
@@ -7562,8 +7567,8 @@
         "shelf_n_p"
       ],
       "island_ids": [
-        15,
-        16
+        20,
+        21
       ],
       "geology_hints": [
         "granite",
@@ -7592,8 +7597,8 @@
         "shelf_n_p"
       ],
       "island_ids": [
-        15,
-        16
+        20,
+        21
       ],
       "geology_hints": [
         "granite",
@@ -7609,20 +7614,22 @@
       "zone": "temperate",
       "kind": "starter",
       "status": "planned",
-      "locked": true,
+      "locked": false,
       "revision": 0,
       "starter_set": "inner",
       "danger": 0.0,
       "danger_tier": "easy",
-      "land_km2": 39.3,
-      "land_share": 0.1666,
-      "peak_m": 508,
+      "land_km2": 54.71,
+      "land_share": 0.2319,
+      "peak_m": 656,
       "deepest_m": -1923,
       "features": [
         "shelf_n_p"
       ],
       "island_ids": [
-        29
+        24,
+        277,
+        316
       ],
       "geology_hints": [
         "granite",
@@ -7645,7 +7652,7 @@
       "danger_tier": "easy",
       "land_km2": 0.0,
       "land_share": 0.0,
-      "peak_m": -1112,
+      "peak_m": -1110,
       "deepest_m": -2113,
       "features": [],
       "island_ids": [],
@@ -7729,7 +7736,7 @@
       "danger_tier": "easy",
       "land_km2": 0.0,
       "land_share": 0.0,
-      "peak_m": -39,
+      "peak_m": -2,
       "deepest_m": -2213,
       "features": [],
       "island_ids": [],
@@ -7743,21 +7750,22 @@
       "zone": "temperate",
       "kind": "starter",
       "status": "planned",
-      "locked": true,
+      "locked": false,
       "revision": 0,
       "starter_set": "inner",
       "danger": 0.0,
       "danger_tier": "easy",
-      "land_km2": 78.82,
-      "land_share": 0.3341,
-      "peak_m": 540,
+      "land_km2": 116.89,
+      "land_share": 0.4954,
+      "peak_m": 707,
       "deepest_m": -2223,
       "features": [
         "shelf_p_p"
       ],
       "island_ids": [
-        7,
-        9
+        8,
+        11,
+        42
       ],
       "geology_hints": [
         "granite",
@@ -7786,10 +7794,10 @@
         "shelf_p_p"
       ],
       "island_ids": [
-        7,
-        9,
-        54,
-        105
+        11,
+        42,
+        56,
+        110
       ],
       "geology_hints": [
         "granite",
@@ -7818,7 +7826,7 @@
         "shelf_p_p"
       ],
       "island_ids": [
-        33
+        36
       ],
       "geology_hints": [
         "granite",
@@ -7847,11 +7855,11 @@
         "shelf_p_p"
       ],
       "island_ids": [
-        33,
-        115,
-        297,
-        305,
-        310
+        36,
+        121,
+        308,
+        315,
+        320
       ],
       "geology_hints": [
         "granite",
@@ -7902,8 +7910,8 @@
         "seamount_field"
       ],
       "island_ids": [
-        21,
-        233
+        27,
+        238
       ],
       "geology_hints": [
         "volcanic"
@@ -7930,7 +7938,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        286
+        295
       ],
       "geology_hints": [
         "volcanic"
@@ -7958,8 +7966,8 @@
         "seamount_field"
       ],
       "island_ids": [
-        93,
-        117
+        96,
+        124
       ],
       "geology_hints": [
         "volcanic"
@@ -8070,10 +8078,10 @@
         "shelf_n_p"
       ],
       "island_ids": [
-        14,
-        44,
-        76,
-        234
+        19,
+        47,
+        78,
+        239
       ],
       "geology_hints": [
         "granite",
@@ -8102,10 +8110,10 @@
         "shelf_n_p"
       ],
       "island_ids": [
-        14,
-        16,
-        44,
-        231
+        19,
+        21,
+        47,
+        236
       ],
       "geology_hints": [
         "granite",
@@ -8134,10 +8142,10 @@
         "shelf_n_p"
       ],
       "island_ids": [
-        16,
-        45,
+        21,
         48,
-        231
+        50,
+        236
       ],
       "geology_hints": [
         "granite",
@@ -8166,7 +8174,7 @@
         "shelf_n_p"
       ],
       "island_ids": [
-        48
+        50
       ],
       "geology_hints": [
         "granite",
@@ -8292,15 +8300,15 @@
       "starter_set": "",
       "danger": 0.0,
       "danger_tier": "easy",
-      "land_km2": 12.39,
-      "land_share": 0.0525,
+      "land_km2": 11.8,
+      "land_share": 0.05,
       "peak_m": 296,
       "deepest_m": -2342,
       "features": [
         "shelf_p_p"
       ],
       "island_ids": [
-        9
+        11
       ],
       "geology_hints": [
         "granite",
@@ -8329,9 +8337,9 @@
         "shelf_p_p"
       ],
       "island_ids": [
-        9,
-        77,
-        269
+        11,
+        79,
+        278
       ],
       "geology_hints": [
         "granite",
@@ -8360,11 +8368,11 @@
         "shelf_p_p"
       ],
       "island_ids": [
-        1,
-        70,
-        225,
-        263,
-        266
+        7,
+        72,
+        229,
+        271,
+        274
       ],
       "geology_hints": [
         "granite",
@@ -8385,19 +8393,21 @@
       "starter_set": "",
       "danger": 0.4,
       "danger_tier": "medium",
-      "land_km2": 69.81,
-      "land_share": 0.2959,
+      "land_km2": 64.08,
+      "land_share": 0.2716,
       "peak_m": 430,
       "deepest_m": -2078,
       "features": [
         "shelf_p_p"
       ],
       "island_ids": [
-        1,
-        225,
-        292,
-        311,
-        312
+        3,
+        7,
+        120,
+        229,
+        303,
+        321,
+        322
       ],
       "geology_hints": [
         "granite",
@@ -8426,7 +8436,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        181
+        185
       ],
       "geology_hints": [
         "volcanic"
@@ -8453,7 +8463,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        140
+        146
       ],
       "geology_hints": [
         "volcanic"
@@ -8480,7 +8490,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        140
+        146
       ],
       "geology_hints": [
         "volcanic"
@@ -8507,7 +8517,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        117
+        124
       ],
       "geology_hints": [
         "volcanic"
@@ -8534,7 +8544,7 @@
         "hotspot_2"
       ],
       "island_ids": [
-        8
+        9
       ],
       "geology_hints": [
         "volcanic"
@@ -8611,24 +8621,24 @@
       "zone": "temperate",
       "kind": "starter",
       "status": "planned",
-      "locked": true,
+      "locked": false,
       "revision": 0,
       "starter_set": "outer",
       "danger": 0.442,
       "danger_tier": "medium",
-      "land_km2": 41.16,
-      "land_share": 0.1745,
-      "peak_m": 636,
-      "deepest_m": -2107,
+      "land_km2": 80.69,
+      "land_share": 0.342,
+      "peak_m": 739,
+      "deepest_m": -2102,
       "features": [
         "shelf_n_p"
       ],
       "island_ids": [
-        39,
-        42,
-        65,
-        167,
-        254
+        15,
+        43,
+        69,
+        259,
+        262
       ],
       "geology_hints": [
         "granite",
@@ -8657,9 +8667,9 @@
         "shelf_n_p"
       ],
       "island_ids": [
-        14,
-        45,
-        131
+        19,
+        48,
+        137
       ],
       "geology_hints": [
         "granite",
@@ -8688,9 +8698,9 @@
         "shelf_n_p"
       ],
       "island_ids": [
-        45,
-        131,
-        187
+        48,
+        137,
+        191
       ],
       "geology_hints": [
         "granite",
@@ -8866,7 +8876,7 @@
         "shelf_p_p"
       ],
       "island_ids": [
-        77
+        79
       ],
       "geology_hints": [
         "granite",
@@ -8887,18 +8897,18 @@
       "starter_set": "",
       "danger": 0.311,
       "danger_tier": "moderate",
-      "land_km2": 31.49,
-      "land_share": 0.1335,
-      "peak_m": 345,
+      "land_km2": 31.23,
+      "land_share": 0.1324,
+      "peak_m": 336,
       "deepest_m": -2025,
       "features": [
         "shelf_p_p"
       ],
       "island_ids": [
-        1,
-        77,
-        133,
-        271
+        7,
+        79,
+        139,
+        280
       ],
       "geology_hints": [
         "granite",
@@ -8914,20 +8924,22 @@
       "zone": "temperate",
       "kind": "starter",
       "status": "planned",
-      "locked": true,
+      "locked": false,
       "revision": 0,
       "starter_set": "outer",
       "danger": 0.442,
       "danger_tier": "medium",
-      "land_km2": 103.35,
-      "land_share": 0.438,
-      "peak_m": 420,
-      "deepest_m": -863,
+      "land_km2": 151.6,
+      "land_share": 0.6426,
+      "peak_m": 596,
+      "deepest_m": -766,
       "features": [
         "shelf_p_p"
       ],
       "island_ids": [
-        1
+        3,
+        7,
+        120
       ],
       "geology_hints": [
         "granite",
@@ -8948,8 +8960,8 @@
       "starter_set": "",
       "danger": 0.513,
       "danger_tier": "medium",
-      "land_km2": 28.13,
-      "land_share": 0.1192,
+      "land_km2": 15.69,
+      "land_share": 0.0665,
       "peak_m": 210,
       "deepest_m": -2217,
       "features": [
@@ -8957,8 +8969,11 @@
         "seamount_field"
       ],
       "island_ids": [
-        1,
-        239
+        3,
+        93,
+        99,
+        245,
+        323
       ],
       "geology_hints": [
         "granite",
@@ -9009,7 +9024,7 @@
         "ridge_1"
       ],
       "island_ids": [
-        101
+        105
       ],
       "geology_hints": [
         "volcanic"
@@ -9036,7 +9051,7 @@
         "hotspot_2"
       ],
       "island_ids": [
-        8
+        9
       ],
       "geology_hints": [
         "volcanic"
@@ -9063,7 +9078,7 @@
         "hotspot_2"
       ],
       "island_ids": [
-        85
+        87
       ],
       "geology_hints": [
         "volcanic"
@@ -9090,8 +9105,8 @@
         "hotspot_2"
       ],
       "island_ids": [
-        85,
-        104
+        87,
+        109
       ],
       "geology_hints": [
         "volcanic"
@@ -9160,11 +9175,11 @@
         "shelf_n_p"
       ],
       "island_ids": [
-        12,
-        39,
-        65,
-        223,
-        254
+        17,
+        43,
+        69,
+        227,
+        262
       ],
       "geology_hints": [
         "granite",
@@ -9193,8 +9208,8 @@
         "shelf_n_p"
       ],
       "island_ids": [
-        39,
-        131
+        43,
+        137
       ],
       "geology_hints": [
         "granite",
@@ -9223,8 +9238,8 @@
         "shelf_n_p"
       ],
       "island_ids": [
-        84,
-        131
+        86,
+        137
       ],
       "geology_hints": [
         "granite",
@@ -9337,7 +9352,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        214
+        218
       ],
       "geology_hints": [
         "volcanic"
@@ -9364,7 +9379,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        240
+        246
       ],
       "geology_hints": [
         "volcanic"
@@ -9454,9 +9469,9 @@
         "shelf_p_p"
       ],
       "island_ids": [
-        90,
-        95,
-        298
+        92,
+        98,
+        309
       ],
       "geology_hints": [
         "granite",
@@ -9486,11 +9501,11 @@
         "seamount_field"
       ],
       "island_ids": [
-        1,
-        128,
-        201,
+        93,
+        135,
         205,
-        291
+        209,
+        302
       ],
       "geology_hints": [
         "granite",
@@ -9520,8 +9535,8 @@
         "seamount_field"
       ],
       "island_ids": [
-        258,
-        281
+        266,
+        290
       ],
       "geology_hints": [
         "volcanic"
@@ -9569,7 +9584,7 @@
         "ridge_1"
       ],
       "island_ids": [
-        79
+        81
       ],
       "geology_hints": [
         "volcanic"
@@ -9617,7 +9632,7 @@
         "hotspot_2"
       ],
       "island_ids": [
-        159
+        164
       ],
       "geology_hints": [
         "volcanic"
@@ -9642,7 +9657,7 @@
       "deepest_m": -2051,
       "features": [],
       "island_ids": [
-        159
+        164
       ],
       "geology_hints": [],
       "special": [],
@@ -9688,8 +9703,8 @@
         "shelf_n_p"
       ],
       "island_ids": [
-        12,
-        223
+        17,
+        227
       ],
       "geology_hints": [
         "granite",
@@ -9718,8 +9733,8 @@
         "shelf_n_p"
       ],
       "island_ids": [
-        53,
-        222
+        55,
+        226
       ],
       "geology_hints": [
         "granite",
@@ -9749,8 +9764,8 @@
         "seamount_field"
       ],
       "island_ids": [
-        84,
-        250
+        86,
+        257
       ],
       "geology_hints": [
         "granite",
@@ -9780,7 +9795,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        200
+        204
       ],
       "geology_hints": [
         "volcanic"
@@ -9807,7 +9822,7 @@
         "arc_2"
       ],
       "island_ids": [
-        175
+        179
       ],
       "geology_hints": [
         "volcanic",
@@ -9835,7 +9850,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        213
+        217
       ],
       "geology_hints": [
         "volcanic"
@@ -9883,7 +9898,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        214
+        218
       ],
       "geology_hints": [
         "volcanic"
@@ -10015,7 +10030,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        205
+        209
       ],
       "geology_hints": [
         "volcanic"
@@ -10042,8 +10057,8 @@
         "arc_3"
       ],
       "island_ids": [
-        18,
-        86
+        23,
+        88
       ],
       "geology_hints": [
         "volcanic",
@@ -10072,7 +10087,7 @@
       ],
       "island_ids": [
         6,
-        86
+        88
       ],
       "geology_hints": [
         "volcanic",
@@ -10212,7 +10227,7 @@
         "shelf_n_p"
       ],
       "island_ids": [
-        12
+        17
       ],
       "geology_hints": [
         "granite",
@@ -10284,9 +10299,9 @@
         "seamount_field"
       ],
       "island_ids": [
-        20,
-        125,
-        127
+        26,
+        132,
+        134
       ],
       "geology_hints": [
         "volcanic",
@@ -10315,8 +10330,8 @@
         "seamount_field"
       ],
       "island_ids": [
-        20,
-        287
+        26,
+        296
       ],
       "geology_hints": [
         "volcanic",
@@ -10386,10 +10401,10 @@
         "seamount_field"
       ],
       "island_ids": [
-        134,
-        171,
-        192,
-        284
+        140,
+        175,
+        196,
+        293
       ],
       "geology_hints": [
         "volcanic"
@@ -10458,7 +10473,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        197
+        201
       ],
       "geology_hints": [
         "volcanic"
@@ -10485,7 +10500,7 @@
         "arc_3"
       ],
       "island_ids": [
-        103
+        107
       ],
       "geology_hints": [
         "volcanic",
@@ -10513,8 +10528,8 @@
         "arc_3"
       ],
       "island_ids": [
-        89,
-        103
+        91,
+        107
       ],
       "geology_hints": [
         "volcanic",
@@ -10542,7 +10557,7 @@
         "arc_3"
       ],
       "island_ids": [
-        75
+        77
       ],
       "geology_hints": [
         "volcanic",
@@ -10571,8 +10586,8 @@
         "seamount_field"
       ],
       "island_ids": [
-        18,
-        235
+        23,
+        241
       ],
       "geology_hints": [
         "volcanic",
@@ -10602,8 +10617,8 @@
       ],
       "island_ids": [
         6,
-        86,
-        202
+        88,
+        206
       ],
       "geology_hints": [
         "volcanic",
@@ -10633,8 +10648,8 @@
       ],
       "island_ids": [
         6,
-        150,
-        177
+        155,
+        181
       ],
       "geology_hints": [
         "volcanic",
@@ -10662,7 +10677,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        283
+        292
       ],
       "geology_hints": [
         "volcanic"
@@ -10689,7 +10704,7 @@
         "arc_1"
       ],
       "island_ids": [
-        113
+        118
       ],
       "geology_hints": [
         "volcanic",
@@ -10844,9 +10859,9 @@
         "seamount_field"
       ],
       "island_ids": [
-        20,
-        36,
-        282
+        26,
+        39,
+        291
       ],
       "geology_hints": [
         "volcanic",
@@ -10874,7 +10889,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        162
+        167
       ],
       "geology_hints": [
         "volcanic"
@@ -10943,8 +10958,8 @@
         "seamount_field"
       ],
       "island_ids": [
-        156,
-        275
+        161,
+        284
       ],
       "geology_hints": [
         "volcanic"
@@ -10971,9 +10986,9 @@
         "seamount_field"
       ],
       "island_ids": [
-        161,
-        252,
-        288
+        166,
+        260,
+        297
       ],
       "geology_hints": [
         "volcanic"
@@ -11000,7 +11015,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        197
+        201
       ],
       "geology_hints": [
         "volcanic"
@@ -11111,9 +11126,9 @@
         "seamount_field"
       ],
       "island_ids": [
-        202,
-        232,
-        242
+        206,
+        237,
+        249
       ],
       "geology_hints": [
         "volcanic"
@@ -11140,7 +11155,7 @@
         "seamount_field"
       ],
       "island_ids": [
-        255
+        263
       ],
       "geology_hints": [
         "volcanic"

@@ -959,9 +959,31 @@ func _test_tile_plan(settings, sketch: Dictionary, elevation, census: Dictionary
 	for tile in settings.get_all_starters():
 		var cell: Dictionary = matrix.get_cell(tile.x, tile.y)
 		_check(
-			str(cell["kind"]) == "starter" and bool(cell["locked"]) and float(cell["land_km2"]) > 25.0,
-			"starter tile (%d,%d) is locked and has land" % [tile.x, tile.y]
+			str(cell["kind"]) == "starter" and float(cell["land_km2"]) > 25.0,
+			"starter tile (%d,%d) is a starter with land" % [tile.x, tile.y]
 		)
+
+	# Each starter sits on a landmass in its size range.
+	var errors_rules: Array = []
+	var targets: Dictionary = SketchScript.load_rules(SKETCH_RULES_PATH, errors_rules)["starter_islands"]["landmass_km2"]
+	var label: PackedInt32Array = census["label"]
+
+	for feature in sketch["features"]:
+		for mount in feature.get("mounts", []):
+			if str(mount["type"]) != "starter":
+				continue
+
+			var tile: Vector2i = Vector2i(int(mount["starter"][0]), int(mount["starter"][1]))
+			var range_km2: Array = targets[settings.get_starter_set_of(tile)]
+			var column: int = int(floor((float(mount["x"]) - elevation.origin_x) / elevation.cell_m))
+			var row: int = int(floor((float(mount["z"]) - elevation.origin_z) / elevation.cell_m))
+			var number: int = label[elevation.index_of(column, row)]
+			var area: float = float(census["islands"][number]["area_km2"]) if number >= 0 else 0.0
+			print("starter %s landmass %.1f km2" % [str(tile), area])
+			_check(
+				area >= float(range_km2[0]) and area <= float(range_km2[1]),
+				"starter %s landmass %.1f km2 is in range %s" % [str(tile), area, str(range_km2)]
+			)
 
 	var center: Dictionary = matrix.get_cell(0, 0)
 	_check(
@@ -998,5 +1020,6 @@ func _test_tile_plan(settings, sketch: Dictionary, elevation, census: Dictionary
 		edited.cells[key] = matrix.cells[key].duplicate(true)
 
 	edited.cells[Vector2i(0, 0)]["notes"] = "hand edited"
+	edited.cells[Vector2i(0, 0)]["locked"] = true
 	var rebuilt = plan.build(edited)
 	_check(str(rebuilt.get_cell(0, 0)["notes"]) == "hand edited", "a locked plan tile is kept on rebuild")

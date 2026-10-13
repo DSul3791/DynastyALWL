@@ -15,6 +15,7 @@ Working plan for the new world generator described in `DESIGN_IDEAS.md` (Section
 - The world-first sketch replaced the per-tile dice (2026-10-13): sketch features, a seamless 160 m elevation map of the whole world and a shaded-relief preview (`plan/world_relief.png`). Rebuild with `godot --headless --path . --script res://src/worldgen/tools/build_sketch.gd`.
 - Fixed features: the central trench and the center island with its crater. Danger map in `world.json`.
 - Tile plan derived from the sketch (2026-10-13): `src/worldgen/plan/`, run `godot --headless --path . --script res://src/worldgen/tools/build_tile_plan.gd` (about 25 s). Writes `plan/tile_plan.json`, `island_list.json`, `tile_plan_summary.txt`. 312 islands, 227 tiles need a tile file. 741 checks pass.
+- Starter landmasses sized (2026-10-13): starter islands drawn at the target area with a strait that keeps shelf hills apart; test checks inner 50 to 100 km², outer 70 to 150 km². Tile plan no longer auto-locks starters (it is derived data). 749 checks pass.
 - Next: step 7 (one tile's detailed maps, read from the world elevation map).
 
 ## Steps

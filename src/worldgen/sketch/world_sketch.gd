@@ -219,8 +219,14 @@ func _make_shelves() -> Array:
 func _starter_island(
 	rng: RandomNumberGenerator, tile: Vector2i, rules: Dictionary, shelf_angle: float
 ) -> Dictionary:
+	# Area range per starter set (inner, outer), or one range for all.
+	var area_range: Variant = rules["area_km2"]
+
+	if typeof(area_range) == TYPE_DICTIONARY:
+		area_range = area_range.get(_settings.get_starter_set_of(tile), area_range.values()[0])
+
 	var area_m2: float = rng.randf_range(
-		float(rules["area_km2"][0]), float(rules["area_km2"][1])
+		float(area_range[0]), float(area_range[1])
 	) * 1000000.0
 	var aspect: float = rng.randf_range(float(rules["aspect"][0]), float(rules["aspect"][1]))
 	var ab: float = area_m2 / PI
@@ -254,6 +260,8 @@ func _starter_island(
 		"rocky_cliff_m": int(rules["rocky_cliff_m"]),
 		"bay_radius": float(rules["bay_radius"]),
 		"bay_depth_m": int(rules["bay_depth_m"]),
+		"strait_m": int(rules.get("strait_m", 0)),
+		"strait_depth_m": int(rules.get("strait_depth_m", -30)),
 	}
 
 

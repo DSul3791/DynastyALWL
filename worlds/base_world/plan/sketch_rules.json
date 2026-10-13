@@ -26,9 +26,9 @@
 	},
 
 	"starter_islands": {
-		"area_km2": [28, 36],
+		"area_km2": {"inner": [64, 78], "outer": [86, 104]},
 		"aspect": [1.2, 1.6],
-		"peak_m": [220, 420],
+		"peak_m": [300, 560],
 		"profile_exponent": 0.75,
 		"shore_shelf_m": 1500,
 		"max_offset_m": 1500,
@@ -38,7 +38,11 @@
 		"plain_width": 0.5,
 		"rocky_cliff_m": 120,
 		"bay_radius": 0.32,
-		"bay_depth_m": -14
+		"bay_depth_m": -14,
+		"strait_note": "A strait this wide (meters past the coast) keeps shelf hills from joining the starter island, so the starter landmass stays in its size range (landmass_km2, checked by a test). Smaller neighbors may still join by a narrow land bridge.",
+		"landmass_km2": {"inner": [50, 100], "outer": [70, 150]},
+		"strait_m": 1200,
+		"strait_depth_m": -80
 	},
 
 	"trench_arc": {

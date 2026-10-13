@@ -247,7 +247,7 @@ func _make_cell(tile: Vector2i, entry: Dictionary) -> Dictionary:
 		"zone": _settings.get_zone_id_for_row(tile.y),
 		"kind": kind_name,
 		"status": "planned" if needs_tile_file else "placeholder",
-		"locked": starter_set != "" or landmark,
+		"locked": false,
 		"revision": 0,
 		"starter_set": starter_set,
 		"danger": snappedf(danger, 0.001),
