@@ -204,7 +204,7 @@ The largest class changed from the first draft (50 to 75 km²). Every tile edge 
 - **No visible grid.** Island centers are jittered and sizes mixed, so neighboring tiles do not line up.
 - **Climate.** Arctic rows have fewer, smaller, glaciated islands and more sea ice. The desert row leans toward flatter and volcanic islands.
 - **World-scale patterns.** The matrix sees the whole world, so it can create patterns no single tile could: island chains that curve across several tiles, a volcanic arc, a few large open seas with no islands for epic crossings.
-- **Starter tiles.** The eight starter tiles are locked and hand-tuned: one medium-to-large, rolling, town-friendly island with flat land, a river and a natural harbor. Inner set at (-3,4), (3,4), (-3,-4), (3,-4); outer set at (-8,5), (8,5), (-8,-5), (8,-5).
+- **Starter tiles.** The eight starter tiles are locked and hand-tuned: one medium-to-large, rolling, town-friendly island with flat land, a river and a natural harbor. Inner set at (-3,4), (3,4), (-3,-4), (3,-4); outer set at (-6,6), (6,6), (-6,-6), (6,-6).
 - **Starter neighborhoods.** Within one or two tiles of each starter, guarantee medium islands that between them offer stone, wood, clay, iron, copper, tin and coal, reachable by an early boat.
 - **Resource fairness.** Every climate zone gets every key resource somewhere, steered through geology hints.
 - **Reproducible.** Every random pick derives from the world seed and the tile coordinate, so rerunning the randomizer gives the same result unless the rules change. Locked cells are always preserved.

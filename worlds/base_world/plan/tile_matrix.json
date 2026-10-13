@@ -334,7 +334,7 @@
       "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "open_sea:4",
+      "pattern": "",
       "starter_set": "",
       "required": [],
       "islands": [],
@@ -345,32 +345,120 @@
       "x": -4,
       "z": -10,
       "zone": "arctic",
-      "kind": "ocean",
-      "layout": "ocean",
-      "status": "placeholder",
+      "kind": "islands",
+      "layout": "peers",
+      "status": "planned",
       "locked": false,
       "revision": 0,
-      "pattern": "open_sea:4",
+      "pattern": "chain:4:island_chain",
       "starter_set": "",
       "required": [],
-      "islands": [],
-      "geology_hints": [],
+      "islands": [
+        {
+          "id": 1,
+          "role": "peer",
+          "center_x": 5160,
+          "center_z": -3165,
+          "semi_axis_a_m": 1473,
+          "semi_axis_b_m": 1007,
+          "rotation_deg": 10,
+          "shape": "ragged",
+          "aspect": 1.46,
+          "area_km2": 3.96,
+          "size_class": "small",
+          "character": "rolling",
+          "peak_height_m": 80,
+          "glaciated": true,
+          "geology": [
+            "basin"
+          ],
+          "seed": 1430044
+        },
+        {
+          "id": 2,
+          "role": "peer",
+          "center_x": -3688,
+          "center_z": 4952,
+          "semi_axis_a_m": 1162,
+          "semi_axis_b_m": 1152,
+          "rotation_deg": 152,
+          "shape": "round",
+          "aspect": 1.01,
+          "area_km2": 3.57,
+          "size_class": "small",
+          "character": "rolling",
+          "peak_height_m": 30,
+          "glaciated": true,
+          "geology": [
+            "fold_belt"
+          ],
+          "seed": 628417747
+        }
+      ],
+      "geology_hints": [
+        "basin",
+        "fold_belt"
+      ],
       "notes": ""
     },
     {
       "x": -3,
       "z": -10,
       "zone": "arctic",
-      "kind": "ocean",
-      "layout": "ocean",
-      "status": "placeholder",
+      "kind": "islands",
+      "layout": "peers",
+      "status": "planned",
       "locked": false,
       "revision": 0,
-      "pattern": "open_sea:4",
+      "pattern": "",
       "starter_set": "",
       "required": [],
-      "islands": [],
-      "geology_hints": [],
+      "islands": [
+        {
+          "id": 1,
+          "role": "peer",
+          "center_x": 2806,
+          "center_z": -3097,
+          "semi_axis_a_m": 1776,
+          "semi_axis_b_m": 880,
+          "rotation_deg": 162,
+          "shape": "elongated",
+          "aspect": 2.02,
+          "area_km2": 4.17,
+          "size_class": "small",
+          "character": "mountainous",
+          "peak_height_m": 330,
+          "glaciated": true,
+          "geology": [
+            "granite"
+          ],
+          "seed": 732635443
+        },
+        {
+          "id": 2,
+          "role": "peer",
+          "center_x": 1872,
+          "center_z": 2268,
+          "semi_axis_a_m": 1043,
+          "semi_axis_b_m": 989,
+          "rotation_deg": 176,
+          "shape": "round",
+          "aspect": 1.06,
+          "area_km2": 2.76,
+          "size_class": "small",
+          "character": "mountainous",
+          "peak_height_m": 500,
+          "glaciated": true,
+          "geology": [
+            "basin"
+          ],
+          "seed": 949705298
+        }
+      ],
+      "geology_hints": [
+        "basin",
+        "granite"
+      ],
       "notes": ""
     },
     {
@@ -563,64 +651,258 @@
       "x": 4,
       "z": -10,
       "zone": "arctic",
-      "kind": "ocean",
-      "layout": "ocean",
-      "status": "placeholder",
+      "kind": "islands",
+      "layout": "main",
+      "status": "planned",
       "locked": false,
       "revision": 0,
-      "pattern": "open_sea:3",
+      "pattern": "",
       "starter_set": "",
       "required": [],
-      "islands": [],
-      "geology_hints": [],
+      "islands": [
+        {
+          "id": 1,
+          "role": "main",
+          "center_x": -737,
+          "center_z": -58,
+          "semi_axis_a_m": 2811,
+          "semi_axis_b_m": 2686,
+          "rotation_deg": 28,
+          "shape": "round",
+          "aspect": 1.05,
+          "area_km2": 20.17,
+          "size_class": "large",
+          "character": "volcanic",
+          "peak_height_m": 960,
+          "glaciated": true,
+          "geology": [
+            "volcanic"
+          ],
+          "seed": 32767446
+        },
+        {
+          "id": 2,
+          "role": "satellite",
+          "center_x": -3325,
+          "center_z": 4217,
+          "semi_axis_a_m": 298,
+          "semi_axis_b_m": 269,
+          "rotation_deg": 5,
+          "shape": "round",
+          "aspect": 1.11,
+          "area_km2": 0.21,
+          "size_class": "islet",
+          "character": "volcanic",
+          "peak_height_m": 80,
+          "glaciated": true,
+          "geology": [
+            "volcanic"
+          ],
+          "seed": 289659492
+        },
+        {
+          "id": 3,
+          "role": "satellite",
+          "center_x": -6100,
+          "center_z": -241,
+          "semi_axis_a_m": 309,
+          "semi_axis_b_m": 182,
+          "rotation_deg": 86,
+          "shape": "elongated",
+          "aspect": 1.7,
+          "area_km2": 0.15,
+          "size_class": "islet",
+          "character": "volcanic",
+          "peak_height_m": 110,
+          "glaciated": true,
+          "geology": [
+            "volcanic"
+          ],
+          "seed": 802666663
+        }
+      ],
+      "geology_hints": [
+        "volcanic"
+      ],
       "notes": ""
     },
     {
       "x": 5,
       "z": -10,
       "zone": "arctic",
-      "kind": "ocean",
-      "layout": "ocean",
-      "status": "placeholder",
+      "kind": "islands",
+      "layout": "peers",
+      "status": "planned",
       "locked": false,
       "revision": 0,
-      "pattern": "open_sea:3",
+      "pattern": "",
       "starter_set": "",
       "required": [],
-      "islands": [],
-      "geology_hints": [],
+      "islands": [
+        {
+          "id": 1,
+          "role": "peer",
+          "center_x": 3825,
+          "center_z": 1166,
+          "semi_axis_a_m": 2137,
+          "semi_axis_b_m": 1970,
+          "rotation_deg": 26,
+          "shape": "round",
+          "aspect": 1.09,
+          "area_km2": 11.24,
+          "size_class": "medium",
+          "character": "volcanic",
+          "peak_height_m": 890,
+          "glaciated": true,
+          "geology": [
+            "volcanic"
+          ],
+          "seed": 949508499
+        },
+        {
+          "id": 2,
+          "role": "peer",
+          "center_x": -3713,
+          "center_z": 2521,
+          "semi_axis_a_m": 2468,
+          "semi_axis_b_m": 1121,
+          "rotation_deg": 116,
+          "shape": "elongated",
+          "aspect": 2.2,
+          "area_km2": 7.39,
+          "size_class": "medium",
+          "character": "volcanic",
+          "peak_height_m": 900,
+          "glaciated": true,
+          "geology": [
+            "volcanic"
+          ],
+          "seed": 204500256
+        }
+      ],
+      "geology_hints": [
+        "volcanic"
+      ],
       "notes": ""
     },
     {
       "x": 6,
       "z": -10,
       "zone": "arctic",
-      "kind": "ocean",
-      "layout": "ocean",
-      "status": "placeholder",
+      "kind": "islands",
+      "layout": "main",
+      "status": "planned",
       "locked": false,
       "revision": 0,
-      "pattern": "open_sea:3",
+      "pattern": "",
       "starter_set": "",
       "required": [],
-      "islands": [],
-      "geology_hints": [],
+      "islands": [
+        {
+          "id": 1,
+          "role": "main",
+          "center_x": -368,
+          "center_z": -1408,
+          "semi_axis_a_m": 3024,
+          "semi_axis_b_m": 2908,
+          "rotation_deg": 15,
+          "shape": "round",
+          "aspect": 1.04,
+          "area_km2": 23.48,
+          "size_class": "large",
+          "character": "mountainous",
+          "peak_height_m": 1220,
+          "glaciated": true,
+          "geology": [
+            "granite"
+          ],
+          "seed": 664177007
+        }
+      ],
+      "geology_hints": [
+        "granite"
+      ],
       "notes": ""
     },
     {
       "x": 7,
       "z": -10,
       "zone": "arctic",
-      "kind": "ocean",
-      "layout": "ocean",
-      "status": "placeholder",
+      "kind": "islands",
+      "layout": "peers",
+      "status": "planned",
       "locked": false,
       "revision": 0,
-      "pattern": "open_sea:3",
+      "pattern": "",
       "starter_set": "",
       "required": [],
-      "islands": [],
-      "geology_hints": [],
+      "islands": [
+        {
+          "id": 1,
+          "role": "peer",
+          "center_x": 2040,
+          "center_z": 342,
+          "semi_axis_a_m": 1556,
+          "semi_axis_b_m": 1370,
+          "rotation_deg": 97,
+          "shape": "round",
+          "aspect": 1.14,
+          "area_km2": 5.69,
+          "size_class": "medium",
+          "character": "mountainous",
+          "peak_height_m": 1080,
+          "glaciated": true,
+          "geology": [
+            "fold_belt"
+          ],
+          "seed": 646996599
+        },
+        {
+          "id": 2,
+          "role": "peer",
+          "center_x": -2297,
+          "center_z": -154,
+          "semi_axis_a_m": 1642,
+          "semi_axis_b_m": 1078,
+          "rotation_deg": 70,
+          "shape": "ragged",
+          "aspect": 1.52,
+          "area_km2": 4.73,
+          "size_class": "small",
+          "character": "mountainous",
+          "peak_height_m": 220,
+          "glaciated": true,
+          "geology": [
+            "volcanic"
+          ],
+          "seed": 300039487
+        },
+        {
+          "id": 3,
+          "role": "peer",
+          "center_x": 2372,
+          "center_z": 5051,
+          "semi_axis_a_m": 1535,
+          "semi_axis_b_m": 1148,
+          "rotation_deg": 153,
+          "shape": "ragged",
+          "aspect": 1.34,
+          "area_km2": 4.71,
+          "size_class": "small",
+          "character": "mountainous",
+          "peak_height_m": 540,
+          "glaciated": true,
+          "geology": [
+            "granite"
+          ],
+          "seed": 725466095
+        }
+      ],
+      "geology_hints": [
+        "fold_belt",
+        "granite",
+        "volcanic"
+      ],
       "notes": ""
     },
     {
@@ -632,7 +914,7 @@
       "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "",
+      "pattern": "open_sea:5",
       "starter_set": "",
       "required": [],
       "islands": [],
@@ -648,7 +930,7 @@
       "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "",
+      "pattern": "open_sea:5",
       "starter_set": "",
       "required": [],
       "islands": [],
@@ -659,39 +941,16 @@
       "x": 10,
       "z": -10,
       "zone": "arctic",
-      "kind": "islands",
-      "layout": "peers",
-      "status": "planned",
+      "kind": "ocean",
+      "layout": "ocean",
+      "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "",
+      "pattern": "open_sea:5",
       "starter_set": "",
       "required": [],
-      "islands": [
-        {
-          "id": 1,
-          "role": "peer",
-          "center_x": 3401,
-          "center_z": 4945,
-          "semi_axis_a_m": 1158,
-          "semi_axis_b_m": 844,
-          "rotation_deg": 36,
-          "shape": "ragged",
-          "aspect": 1.37,
-          "area_km2": 2.61,
-          "size_class": "small",
-          "character": "rolling",
-          "peak_height_m": 80,
-          "glaciated": true,
-          "geology": [
-            "basin"
-          ],
-          "seed": 782037614
-        }
-      ],
-      "geology_hints": [
-        "basin"
-      ],
+      "islands": [],
+      "geology_hints": [],
       "notes": ""
     },
     {
@@ -959,7 +1218,7 @@
       "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "open_sea:4",
+      "pattern": "",
       "starter_set": "",
       "required": [],
       "islands": [],
@@ -975,7 +1234,7 @@
       "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "open_sea:4",
+      "pattern": "",
       "starter_set": "",
       "required": [],
       "islands": [],
@@ -986,16 +1245,59 @@
       "x": -3,
       "z": -9,
       "zone": "arctic",
-      "kind": "ocean",
-      "layout": "ocean",
-      "status": "placeholder",
+      "kind": "islands",
+      "layout": "peers",
+      "status": "planned",
       "locked": false,
       "revision": 0,
-      "pattern": "open_sea:4",
+      "pattern": "chain:4:island_chain",
       "starter_set": "",
       "required": [],
-      "islands": [],
-      "geology_hints": [],
+      "islands": [
+        {
+          "id": 1,
+          "role": "peer",
+          "center_x": 1891,
+          "center_z": 5906,
+          "semi_axis_a_m": 656,
+          "semi_axis_b_m": 630,
+          "rotation_deg": 33,
+          "shape": "round",
+          "aspect": 1.04,
+          "area_km2": 1.1,
+          "size_class": "small",
+          "character": "mountainous",
+          "peak_height_m": 190,
+          "glaciated": true,
+          "geology": [
+            "granite"
+          ],
+          "seed": 994499589
+        },
+        {
+          "id": 2,
+          "role": "peer",
+          "center_x": 5855,
+          "center_z": 3153,
+          "semi_axis_a_m": 611,
+          "semi_axis_b_m": 601,
+          "rotation_deg": 6,
+          "shape": "round",
+          "aspect": 1.02,
+          "area_km2": 0.98,
+          "size_class": "islet",
+          "character": "mountainous",
+          "peak_height_m": 80,
+          "glaciated": true,
+          "geology": [
+            "granite"
+          ],
+          "seed": 1903581
+        }
+      ],
+      "geology_hints": [
+        "granite"
+      ],
       "notes": ""
     },
     {
@@ -1171,32 +1473,99 @@
       "x": 3,
       "z": -9,
       "zone": "arctic",
-      "kind": "ocean",
-      "layout": "ocean",
-      "status": "placeholder",
+      "kind": "islands",
+      "layout": "main",
+      "status": "planned",
       "locked": false,
       "revision": 0,
-      "pattern": "open_sea:3",
+      "pattern": "",
       "starter_set": "",
       "required": [],
-      "islands": [],
-      "geology_hints": [],
+      "islands": [
+        {
+          "id": 1,
+          "role": "main",
+          "center_x": 1665,
+          "center_z": -215,
+          "semi_axis_a_m": 3055,
+          "semi_axis_b_m": 2287,
+          "rotation_deg": 106,
+          "shape": "ragged",
+          "aspect": 1.34,
+          "area_km2": 18.66,
+          "size_class": "large",
+          "character": "rolling",
+          "peak_height_m": 350,
+          "glaciated": true,
+          "geology": [
+            "basin"
+          ],
+          "seed": 404643787
+        },
+        {
+          "id": 2,
+          "role": "satellite",
+          "center_x": 5810,
+          "center_z": -669,
+          "semi_axis_a_m": 824,
+          "semi_axis_b_m": 519,
+          "rotation_deg": 39,
+          "shape": "ragged",
+          "aspect": 1.59,
+          "area_km2": 1.14,
+          "size_class": "small",
+          "character": "rolling",
+          "peak_height_m": 120,
+          "glaciated": true,
+          "geology": [
+            "fold_belt"
+          ],
+          "seed": 26390404
+        }
+      ],
+      "geology_hints": [
+        "basin",
+        "fold_belt"
+      ],
       "notes": ""
     },
     {
       "x": 4,
       "z": -9,
       "zone": "arctic",
-      "kind": "ocean",
-      "layout": "ocean",
-      "status": "placeholder",
+      "kind": "islands",
+      "layout": "peers",
+      "status": "planned",
       "locked": false,
       "revision": 0,
-      "pattern": "open_sea:3",
+      "pattern": "",
       "starter_set": "",
       "required": [],
-      "islands": [],
-      "geology_hints": [],
+      "islands": [
+        {
+          "id": 1,
+          "role": "peer",
+          "center_x": -3485,
+          "center_z": -4417,
+          "semi_axis_a_m": 1160,
+          "semi_axis_b_m": 1067,
+          "rotation_deg": 67,
+          "shape": "round",
+          "aspect": 1.09,
+          "area_km2": 3.31,
+          "size_class": "small",
+          "character": "mountainous",
+          "peak_height_m": 480,
+          "glaciated": true,
+          "geology": [
+            "fold_belt"
+          ],
+          "seed": 808040809
+        }
+      ],
+      "geology_hints": [
+        "fold_belt"
+      ],
       "notes": ""
     },
     {
@@ -1208,7 +1577,7 @@
       "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "open_sea:3",
+      "pattern": "",
       "starter_set": "",
       "required": [],
       "islands": [],
@@ -1219,16 +1588,39 @@
       "x": 6,
       "z": -9,
       "zone": "arctic",
-      "kind": "ocean",
-      "layout": "ocean",
-      "status": "placeholder",
+      "kind": "islands",
+      "layout": "peers",
+      "status": "planned",
       "locked": false,
       "revision": 0,
-      "pattern": "open_sea:3",
+      "pattern": "",
       "starter_set": "",
       "required": [],
-      "islands": [],
-      "geology_hints": [],
+      "islands": [
+        {
+          "id": 1,
+          "role": "peer",
+          "center_x": -3899,
+          "center_z": 805,
+          "semi_axis_a_m": 2538,
+          "semi_axis_b_m": 1592,
+          "rotation_deg": 81,
+          "shape": "ragged",
+          "aspect": 1.59,
+          "area_km2": 10.79,
+          "size_class": "medium",
+          "character": "mountainous",
+          "peak_height_m": 890,
+          "glaciated": true,
+          "geology": [
+            "fold_belt"
+          ],
+          "seed": 915762061
+        }
+      ],
+      "geology_hints": [
+        "fold_belt"
+      ],
       "notes": ""
     },
     {
@@ -1240,7 +1632,7 @@
       "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "open_sea:3",
+      "pattern": "",
       "starter_set": "",
       "required": [],
       "islands": [],
@@ -1825,16 +2217,60 @@
       "x": -4,
       "z": -8,
       "zone": "arctic",
-      "kind": "ocean",
-      "layout": "ocean",
-      "status": "placeholder",
+      "kind": "islands",
+      "layout": "peers",
+      "status": "planned",
       "locked": false,
       "revision": 0,
-      "pattern": "open_sea:4",
+      "pattern": "",
       "starter_set": "",
       "required": [],
-      "islands": [],
-      "geology_hints": [],
+      "islands": [
+        {
+          "id": 1,
+          "role": "peer",
+          "center_x": 2337,
+          "center_z": -1810,
+          "semi_axis_a_m": 1129,
+          "semi_axis_b_m": 566,
+          "rotation_deg": 175,
+          "shape": "elongated",
+          "aspect": 2.0,
+          "area_km2": 1.7,
+          "size_class": "small",
+          "character": "mountainous",
+          "peak_height_m": 190,
+          "glaciated": true,
+          "geology": [
+            "basin"
+          ],
+          "seed": 299967988
+        },
+        {
+          "id": 2,
+          "role": "peer",
+          "center_x": -701,
+          "center_z": -4982,
+          "semi_axis_a_m": 720,
+          "semi_axis_b_m": 711,
+          "rotation_deg": 96,
+          "shape": "round",
+          "aspect": 1.01,
+          "area_km2": 1.37,
+          "size_class": "small",
+          "character": "mountainous",
+          "peak_height_m": 550,
+          "glaciated": true,
+          "geology": [
+            "granite"
+          ],
+          "seed": 961631489
+        }
+      ],
+      "geology_hints": [
+        "basin",
+        "granite"
+      ],
       "notes": ""
     },
     {
@@ -2148,32 +2584,141 @@
       "x": 4,
       "z": -8,
       "zone": "arctic",
-      "kind": "ocean",
-      "layout": "ocean",
-      "status": "placeholder",
+      "kind": "islands",
+      "layout": "main",
+      "status": "planned",
       "locked": false,
       "revision": 0,
-      "pattern": "open_sea:3",
+      "pattern": "",
       "starter_set": "",
       "required": [],
-      "islands": [],
-      "geology_hints": [],
+      "islands": [
+        {
+          "id": 1,
+          "role": "main",
+          "center_x": -651,
+          "center_z": 294,
+          "semi_axis_a_m": 2694,
+          "semi_axis_b_m": 2573,
+          "rotation_deg": 77,
+          "shape": "round",
+          "aspect": 1.05,
+          "area_km2": 18.52,
+          "size_class": "large",
+          "character": "rolling",
+          "peak_height_m": 80,
+          "glaciated": true,
+          "geology": [
+            "basin",
+            "granite"
+          ],
+          "seed": 477565663
+        },
+        {
+          "id": 2,
+          "role": "satellite",
+          "center_x": 21,
+          "center_z": -4696,
+          "semi_axis_a_m": 1052,
+          "semi_axis_b_m": 1035,
+          "rotation_deg": 51,
+          "shape": "round",
+          "aspect": 1.02,
+          "area_km2": 2.91,
+          "size_class": "small",
+          "character": "rolling",
+          "peak_height_m": 130,
+          "glaciated": true,
+          "geology": [
+            "granite"
+          ],
+          "seed": 114383134
+        },
+        {
+          "id": 3,
+          "role": "satellite",
+          "center_x": -3964,
+          "center_z": 3119,
+          "semi_axis_a_m": 1027,
+          "semi_axis_b_m": 816,
+          "rotation_deg": 73,
+          "shape": "ragged",
+          "aspect": 1.26,
+          "area_km2": 2.24,
+          "size_class": "small",
+          "character": "rolling",
+          "peak_height_m": 50,
+          "glaciated": true,
+          "geology": [
+            "fold_belt"
+          ],
+          "seed": 257615648
+        },
+        {
+          "id": 4,
+          "role": "satellite",
+          "center_x": -3932,
+          "center_z": 4779,
+          "semi_axis_a_m": 706,
+          "semi_axis_b_m": 310,
+          "rotation_deg": 174,
+          "shape": "elongated",
+          "aspect": 2.28,
+          "area_km2": 0.58,
+          "size_class": "islet",
+          "character": "rolling",
+          "peak_height_m": 15,
+          "glaciated": true,
+          "geology": [
+            "basin"
+          ],
+          "seed": 597373076
+        }
+      ],
+      "geology_hints": [
+        "basin",
+        "fold_belt",
+        "granite"
+      ],
       "notes": ""
     },
     {
       "x": 5,
       "z": -8,
       "zone": "arctic",
-      "kind": "ocean",
-      "layout": "ocean",
-      "status": "placeholder",
+      "kind": "islands",
+      "layout": "peers",
+      "status": "planned",
       "locked": false,
       "revision": 0,
-      "pattern": "open_sea:3",
+      "pattern": "",
       "starter_set": "",
       "required": [],
-      "islands": [],
-      "geology_hints": [],
+      "islands": [
+        {
+          "id": 1,
+          "role": "peer",
+          "center_x": 5049,
+          "center_z": -307,
+          "semi_axis_a_m": 1205,
+          "semi_axis_b_m": 1064,
+          "rotation_deg": 13,
+          "shape": "round",
+          "aspect": 1.13,
+          "area_km2": 3.42,
+          "size_class": "small",
+          "character": "rolling",
+          "peak_height_m": 30,
+          "glaciated": true,
+          "geology": [
+            "basin"
+          ],
+          "seed": 953922511
+        }
+      ],
+      "geology_hints": [
+        "basin"
+      ],
       "notes": ""
     },
     {
@@ -2185,7 +2730,7 @@
       "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "open_sea:3",
+      "pattern": "",
       "starter_set": "",
       "required": [],
       "islands": [],
@@ -3744,17 +4289,65 @@
       "x": -6,
       "z": -6,
       "zone": "temperate",
-      "kind": "ocean",
-      "layout": "ocean",
-      "status": "placeholder",
-      "locked": false,
+      "kind": "starter",
+      "layout": "starter",
+      "status": "planned",
+      "locked": true,
       "revision": 0,
       "pattern": "",
-      "starter_set": "",
-      "required": [],
-      "islands": [],
-      "geology_hints": [],
-      "notes": ""
+      "starter_set": "outer",
+      "required": [
+        "flat_land",
+        "river",
+        "harbor"
+      ],
+      "islands": [
+        {
+          "id": 1,
+          "role": "main",
+          "center_x": -1323,
+          "center_z": -164,
+          "semi_axis_a_m": 3586,
+          "semi_axis_b_m": 2690,
+          "rotation_deg": 152,
+          "shape": "ragged",
+          "aspect": 1.33,
+          "area_km2": 25.76,
+          "size_class": "large",
+          "character": "rolling",
+          "peak_height_m": 110,
+          "glaciated": false,
+          "geology": [
+            "granite"
+          ],
+          "seed": 21102350
+        },
+        {
+          "id": 2,
+          "role": "satellite",
+          "center_x": -3249,
+          "center_z": 4752,
+          "semi_axis_a_m": 457,
+          "semi_axis_b_m": 286,
+          "rotation_deg": 149,
+          "shape": "elongated",
+          "aspect": 1.6,
+          "area_km2": 0.35,
+          "size_class": "islet",
+          "character": "rolling",
+          "peak_height_m": 6,
+          "glaciated": false,
+          "geology": [
+            "fold_belt"
+          ],
+          "seed": 564727380
+        }
+      ],
+      "geology_hints": [
+        "fold_belt",
+        "granite"
+      ],
+      "notes": "Starter tile. Hand-tune: flat land for a town, a river, a natural harbor."
     },
     {
       "x": -5,
@@ -4506,17 +5099,66 @@
       "x": 6,
       "z": -6,
       "zone": "temperate",
-      "kind": "ocean",
-      "layout": "ocean",
-      "status": "placeholder",
-      "locked": false,
+      "kind": "starter",
+      "layout": "starter",
+      "status": "planned",
+      "locked": true,
       "revision": 0,
       "pattern": "",
-      "starter_set": "",
-      "required": [],
-      "islands": [],
-      "geology_hints": [],
-      "notes": ""
+      "starter_set": "outer",
+      "required": [
+        "flat_land",
+        "river",
+        "harbor"
+      ],
+      "islands": [
+        {
+          "id": 1,
+          "role": "main",
+          "center_x": 23,
+          "center_z": 824,
+          "semi_axis_a_m": 3751,
+          "semi_axis_b_m": 2643,
+          "rotation_deg": 151,
+          "shape": "ragged",
+          "aspect": 1.42,
+          "area_km2": 26.48,
+          "size_class": "large",
+          "character": "rolling",
+          "peak_height_m": 140,
+          "glaciated": false,
+          "geology": [
+            "granite",
+            "fold_belt"
+          ],
+          "seed": 955093568
+        },
+        {
+          "id": 2,
+          "role": "satellite",
+          "center_x": 5717,
+          "center_z": -3278,
+          "semi_axis_a_m": 757,
+          "semi_axis_b_m": 318,
+          "rotation_deg": 179,
+          "shape": "crescent",
+          "aspect": 2.38,
+          "area_km2": 0.64,
+          "size_class": "islet",
+          "character": "rolling",
+          "peak_height_m": 23,
+          "glaciated": false,
+          "geology": [
+            "granite"
+          ],
+          "seed": 721757454
+        }
+      ],
+      "geology_hints": [
+        "fold_belt",
+        "granite"
+      ],
+      "notes": "Starter tile. Hand-tune: flat land for a town, a river, a natural harbor."
     },
     {
       "x": 7,
@@ -4814,46 +5456,82 @@
       "x": -8,
       "z": -5,
       "zone": "temperate",
-      "kind": "starter",
-      "layout": "starter",
+      "kind": "islands",
+      "layout": "main",
       "status": "planned",
-      "locked": true,
+      "locked": false,
       "revision": 0,
       "pattern": "",
-      "starter_set": "outer",
-      "required": [
-        "flat_land",
-        "river",
-        "harbor"
-      ],
+      "starter_set": "",
+      "required": [],
       "islands": [
         {
           "id": 1,
           "role": "main",
-          "center_x": 1312,
-          "center_z": -299,
-          "semi_axis_a_m": 3488,
-          "semi_axis_b_m": 2520,
-          "rotation_deg": 142,
-          "shape": "ragged",
-          "aspect": 1.38,
-          "area_km2": 23.48,
+          "center_x": -786,
+          "center_z": 1248,
+          "semi_axis_a_m": 4227,
+          "semi_axis_b_m": 2075,
+          "rotation_deg": 174,
+          "shape": "elongated",
+          "aspect": 2.04,
+          "area_km2": 23.42,
           "size_class": "large",
           "character": "rolling",
-          "peak_height_m": 170,
+          "peak_height_m": 310,
           "glaciated": false,
           "geology": [
             "fold_belt",
             "granite"
           ],
           "seed": 955863401
+        },
+        {
+          "id": 2,
+          "role": "satellite",
+          "center_x": -174,
+          "center_z": -2558,
+          "semi_axis_a_m": 489,
+          "semi_axis_b_m": 442,
+          "rotation_deg": 157,
+          "shape": "round",
+          "aspect": 1.11,
+          "area_km2": 0.58,
+          "size_class": "islet",
+          "character": "rolling",
+          "peak_height_m": 30,
+          "glaciated": false,
+          "geology": [
+            "granite"
+          ],
+          "seed": 250828991
+        },
+        {
+          "id": 3,
+          "role": "satellite",
+          "center_x": 5705,
+          "center_z": 1653,
+          "semi_axis_a_m": 411,
+          "semi_axis_b_m": 291,
+          "rotation_deg": 164,
+          "shape": "ragged",
+          "aspect": 1.41,
+          "area_km2": 0.32,
+          "size_class": "islet",
+          "character": "rolling",
+          "peak_height_m": 29,
+          "glaciated": false,
+          "geology": [
+            "granite"
+          ],
+          "seed": 751428632
         }
       ],
       "geology_hints": [
         "fold_belt",
         "granite"
       ],
-      "notes": "Starter tile. Hand-tune: flat land for a town, a river, a natural harbor."
+      "notes": ""
     },
     {
       "x": -7,
@@ -5701,33 +6379,29 @@
       "x": 8,
       "z": -5,
       "zone": "temperate",
-      "kind": "starter",
-      "layout": "starter",
+      "kind": "islands",
+      "layout": "peers",
       "status": "planned",
-      "locked": true,
+      "locked": false,
       "revision": 0,
       "pattern": "",
-      "starter_set": "outer",
-      "required": [
-        "flat_land",
-        "river",
-        "harbor"
-      ],
+      "starter_set": "",
+      "required": [],
       "islands": [
         {
           "id": 1,
-          "role": "main",
-          "center_x": -522,
-          "center_z": 783,
-          "semi_axis_a_m": 3147,
-          "semi_axis_b_m": 2964,
-          "rotation_deg": 103,
-          "shape": "round",
-          "aspect": 1.06,
-          "area_km2": 24.9,
-          "size_class": "large",
+          "role": "peer",
+          "center_x": 250,
+          "center_z": 3559,
+          "semi_axis_a_m": 2211,
+          "semi_axis_b_m": 1608,
+          "rotation_deg": 150,
+          "shape": "ragged",
+          "aspect": 1.38,
+          "area_km2": 9.49,
+          "size_class": "medium",
           "character": "rolling",
-          "peak_height_m": 280,
+          "peak_height_m": 150,
           "glaciated": false,
           "geology": [
             "granite"
@@ -5736,51 +6410,30 @@
         },
         {
           "id": 2,
-          "role": "satellite",
-          "center_x": -2242,
-          "center_z": -3681,
-          "semi_axis_a_m": 487,
-          "semi_axis_b_m": 250,
-          "rotation_deg": 29,
-          "shape": "crescent",
-          "aspect": 1.95,
-          "area_km2": 0.32,
-          "size_class": "islet",
+          "role": "peer",
+          "center_x": -802,
+          "center_z": -1834,
+          "semi_axis_a_m": 2534,
+          "semi_axis_b_m": 1375,
+          "rotation_deg": 89,
+          "shape": "elongated",
+          "aspect": 1.84,
+          "area_km2": 9.3,
+          "size_class": "medium",
           "character": "rolling",
-          "peak_height_m": 15,
+          "peak_height_m": 210,
           "glaciated": false,
           "geology": [
             "fold_belt"
           ],
           "seed": 473963586
-        },
-        {
-          "id": 3,
-          "role": "satellite",
-          "center_x": -3966,
-          "center_z": 4370,
-          "semi_axis_a_m": 395,
-          "semi_axis_b_m": 274,
-          "rotation_deg": 55,
-          "shape": "ragged",
-          "aspect": 1.44,
-          "area_km2": 0.29,
-          "size_class": "islet",
-          "character": "rolling",
-          "peak_height_m": 6,
-          "glaciated": false,
-          "geology": [
-            "basin"
-          ],
-          "seed": 306929338
         }
       ],
       "geology_hints": [
-        "basin",
         "fold_belt",
         "granite"
       ],
-      "notes": "Starter tile. Hand-tune: flat land for a town, a river, a natural harbor."
+      "notes": ""
     },
     {
       "x": 9,
@@ -10147,7 +10800,7 @@
       "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "open_sea:5",
+      "pattern": "open_sea:3",
       "starter_set": "",
       "required": [],
       "islands": [],
@@ -10163,7 +10816,7 @@
       "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "open_sea:5",
+      "pattern": "open_sea:3",
       "starter_set": "",
       "required": [],
       "islands": [],
@@ -10179,7 +10832,7 @@
       "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "open_sea:5",
+      "pattern": "open_sea:3",
       "starter_set": "",
       "required": [],
       "islands": [],
@@ -11045,7 +11698,7 @@
       "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "open_sea:5",
+      "pattern": "open_sea:3",
       "starter_set": "",
       "required": [],
       "islands": [],
@@ -11061,7 +11714,7 @@
       "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "open_sea:5",
+      "pattern": "open_sea:3",
       "starter_set": "",
       "required": [],
       "islands": [],
@@ -16893,86 +17546,40 @@
       "x": -8,
       "z": 5,
       "zone": "temperate",
-      "kind": "starter",
-      "layout": "starter",
+      "kind": "islands",
+      "layout": "peers",
       "status": "planned",
-      "locked": true,
+      "locked": false,
       "revision": 0,
       "pattern": "",
-      "starter_set": "outer",
-      "required": [
-        "flat_land",
-        "river",
-        "harbor"
-      ],
+      "starter_set": "",
+      "required": [],
       "islands": [
         {
           "id": 1,
-          "role": "main",
-          "center_x": -1164,
-          "center_z": 70,
-          "semi_axis_a_m": 3687,
-          "semi_axis_b_m": 3038,
-          "rotation_deg": 27,
+          "role": "peer",
+          "center_x": -1108,
+          "center_z": 2583,
+          "semi_axis_a_m": 1434,
+          "semi_axis_b_m": 1146,
+          "rotation_deg": 19,
           "shape": "ragged",
-          "aspect": 1.21,
-          "area_km2": 29.91,
-          "size_class": "large",
-          "character": "rolling",
-          "peak_height_m": 160,
-          "glaciated": false,
-          "geology": [
-            "basin"
-          ],
-          "seed": 36916034
-        },
-        {
-          "id": 2,
-          "role": "satellite",
-          "center_x": -1518,
-          "center_z": -4811,
-          "semi_axis_a_m": 1597,
-          "semi_axis_b_m": 756,
-          "rotation_deg": 134,
-          "shape": "elongated",
-          "aspect": 2.11,
-          "area_km2": 3.23,
+          "aspect": 1.25,
+          "area_km2": 4.39,
           "size_class": "small",
-          "character": "rolling",
-          "peak_height_m": 110,
+          "character": "volcanic",
+          "peak_height_m": 290,
           "glaciated": false,
           "geology": [
             "volcanic"
           ],
-          "seed": 139605231
-        },
-        {
-          "id": 3,
-          "role": "satellite",
-          "center_x": 4308,
-          "center_z": 1160,
-          "semi_axis_a_m": 746,
-          "semi_axis_b_m": 559,
-          "rotation_deg": 168,
-          "shape": "ragged",
-          "aspect": 1.34,
-          "area_km2": 1.11,
-          "size_class": "small",
-          "character": "rolling",
-          "peak_height_m": 130,
-          "glaciated": false,
-          "geology": [
-            "fold_belt"
-          ],
-          "seed": 698855630
+          "seed": 36916034
         }
       ],
       "geology_hints": [
-        "basin",
-        "fold_belt",
         "volcanic"
       ],
-      "notes": "Starter tile. Hand-tune: flat land for a town, a river, a natural harbor."
+      "notes": ""
     },
     {
       "x": -7,
@@ -17762,33 +18369,29 @@
       "x": 8,
       "z": 5,
       "zone": "temperate",
-      "kind": "starter",
-      "layout": "starter",
+      "kind": "islands",
+      "layout": "main",
       "status": "planned",
-      "locked": true,
+      "locked": false,
       "revision": 0,
       "pattern": "",
-      "starter_set": "outer",
-      "required": [
-        "flat_land",
-        "river",
-        "harbor"
-      ],
+      "starter_set": "",
+      "required": [],
       "islands": [
         {
           "id": 1,
           "role": "main",
-          "center_x": -1502,
-          "center_z": -233,
-          "semi_axis_a_m": 3632,
-          "semi_axis_b_m": 2317,
-          "rotation_deg": 157,
-          "shape": "ragged",
-          "aspect": 1.57,
-          "area_km2": 22.48,
-          "size_class": "large",
-          "character": "rolling",
-          "peak_height_m": 100,
+          "center_x": -1047,
+          "center_z": 921,
+          "semi_axis_a_m": 5527,
+          "semi_axis_b_m": 2865,
+          "rotation_deg": 131,
+          "shape": "elongated",
+          "aspect": 1.93,
+          "area_km2": 42.29,
+          "size_class": "great",
+          "character": "flat",
+          "peak_height_m": 16,
           "glaciated": false,
           "geology": [
             "granite"
@@ -17798,29 +18401,50 @@
         {
           "id": 2,
           "role": "satellite",
-          "center_x": 1399,
-          "center_z": 3299,
-          "semi_axis_a_m": 450,
-          "semi_axis_b_m": 434,
-          "rotation_deg": 174,
-          "shape": "round",
-          "aspect": 1.04,
-          "area_km2": 0.52,
+          "center_x": 5756,
+          "center_z": -2973,
+          "semi_axis_a_m": 654,
+          "semi_axis_b_m": 401,
+          "rotation_deg": 58,
+          "shape": "elongated",
+          "aspect": 1.63,
+          "area_km2": 0.7,
           "size_class": "islet",
-          "character": "rolling",
-          "peak_height_m": 14,
+          "character": "flat",
+          "peak_height_m": 8,
           "glaciated": false,
           "geology": [
             "fold_belt"
           ],
           "seed": 715083104
+        },
+        {
+          "id": 3,
+          "role": "satellite",
+          "center_x": -6222,
+          "center_z": 2998,
+          "semi_axis_a_m": 755,
+          "semi_axis_b_m": 310,
+          "rotation_deg": 88,
+          "shape": "crescent",
+          "aspect": 2.43,
+          "area_km2": 0.63,
+          "size_class": "islet",
+          "character": "flat",
+          "peak_height_m": 4,
+          "glaciated": false,
+          "geology": [
+            "basin"
+          ],
+          "seed": 155548799
         }
       ],
       "geology_hints": [
+        "basin",
         "fold_belt",
         "granite"
       ],
-      "notes": "Starter tile. Hand-tune: flat land for a town, a river, a natural harbor."
+      "notes": ""
     },
     {
       "x": 9,
@@ -18222,17 +18846,64 @@
       "x": -6,
       "z": 6,
       "zone": "temperate",
-      "kind": "ocean",
-      "layout": "ocean",
-      "status": "placeholder",
-      "locked": false,
+      "kind": "starter",
+      "layout": "starter",
+      "status": "planned",
+      "locked": true,
       "revision": 0,
       "pattern": "",
-      "starter_set": "",
-      "required": [],
-      "islands": [],
-      "geology_hints": [],
-      "notes": ""
+      "starter_set": "outer",
+      "required": [
+        "flat_land",
+        "river",
+        "harbor"
+      ],
+      "islands": [
+        {
+          "id": 1,
+          "role": "main",
+          "center_x": -361,
+          "center_z": -779,
+          "semi_axis_a_m": 3608,
+          "semi_axis_b_m": 2866,
+          "rotation_deg": 49,
+          "shape": "ragged",
+          "aspect": 1.26,
+          "area_km2": 27.61,
+          "size_class": "large",
+          "character": "rolling",
+          "peak_height_m": 350,
+          "glaciated": false,
+          "geology": [
+            "basin"
+          ],
+          "seed": 774583106
+        },
+        {
+          "id": 2,
+          "role": "satellite",
+          "center_x": -504,
+          "center_z": 4060,
+          "semi_axis_a_m": 694,
+          "semi_axis_b_m": 467,
+          "rotation_deg": 139,
+          "shape": "ragged",
+          "aspect": 1.49,
+          "area_km2": 0.87,
+          "size_class": "islet",
+          "character": "rolling",
+          "peak_height_m": 17,
+          "glaciated": false,
+          "geology": [
+            "basin"
+          ],
+          "seed": 798685685
+        }
+      ],
+      "geology_hints": [
+        "basin"
+      ],
+      "notes": "Starter tile. Hand-tune: flat land for a town, a river, a natural harbor."
     },
     {
       "x": -5,
@@ -18793,17 +19464,44 @@
       "x": 6,
       "z": 6,
       "zone": "temperate",
-      "kind": "ocean",
-      "layout": "ocean",
-      "status": "placeholder",
-      "locked": false,
+      "kind": "starter",
+      "layout": "starter",
+      "status": "planned",
+      "locked": true,
       "revision": 0,
       "pattern": "",
-      "starter_set": "",
-      "required": [],
-      "islands": [],
-      "geology_hints": [],
-      "notes": ""
+      "starter_set": "outer",
+      "required": [
+        "flat_land",
+        "river",
+        "harbor"
+      ],
+      "islands": [
+        {
+          "id": 1,
+          "role": "main",
+          "center_x": 1010,
+          "center_z": -113,
+          "semi_axis_a_m": 3260,
+          "semi_axis_b_m": 3230,
+          "rotation_deg": 56,
+          "shape": "round",
+          "aspect": 1.01,
+          "area_km2": 28.12,
+          "size_class": "large",
+          "character": "rolling",
+          "peak_height_m": 220,
+          "glaciated": false,
+          "geology": [
+            "granite"
+          ],
+          "seed": 448855716
+        }
+      ],
+      "geology_hints": [
+        "granite"
+      ],
+      "notes": "Starter tile. Hand-tune: flat land for a town, a river, a natural harbor."
     },
     {
       "x": 7,
@@ -20762,7 +21460,7 @@
       "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "open_sea:6",
+      "pattern": "open_sea:4",
       "starter_set": "",
       "required": [],
       "islands": [],
@@ -20778,7 +21476,7 @@
       "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "open_sea:6",
+      "pattern": "open_sea:4",
       "starter_set": "",
       "required": [],
       "islands": [],
@@ -20794,7 +21492,7 @@
       "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "open_sea:6",
+      "pattern": "open_sea:4",
       "starter_set": "",
       "required": [],
       "islands": [],
@@ -21750,7 +22448,7 @@
       "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "open_sea:6",
+      "pattern": "open_sea:4",
       "starter_set": "",
       "required": [],
       "islands": [],
@@ -21766,7 +22464,7 @@
       "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "open_sea:6",
+      "pattern": "open_sea:4",
       "starter_set": "",
       "required": [],
       "islands": [],
@@ -21782,7 +22480,7 @@
       "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "open_sea:6",
+      "pattern": "open_sea:4",
       "starter_set": "",
       "required": [],
       "islands": [],
@@ -22018,80 +22716,32 @@
       "x": 8,
       "z": 9,
       "zone": "arctic",
-      "kind": "islands",
-      "layout": "peers",
-      "status": "planned",
+      "kind": "ocean",
+      "layout": "ocean",
+      "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "",
+      "pattern": "open_sea:5",
       "starter_set": "",
       "required": [],
-      "islands": [
-        {
-          "id": 1,
-          "role": "peer",
-          "center_x": -4332,
-          "center_z": 3576,
-          "semi_axis_a_m": 734,
-          "semi_axis_b_m": 317,
-          "rotation_deg": 152,
-          "shape": "crescent",
-          "aspect": 2.32,
-          "area_km2": 0.62,
-          "size_class": "islet",
-          "character": "mountainous",
-          "peak_height_m": 80,
-          "glaciated": true,
-          "geology": [
-            "granite"
-          ],
-          "seed": 621430933
-        }
-      ],
-      "geology_hints": [
-        "granite"
-      ],
+      "islands": [],
+      "geology_hints": [],
       "notes": ""
     },
     {
       "x": 9,
       "z": 9,
       "zone": "arctic",
-      "kind": "islands",
-      "layout": "peers",
-      "status": "planned",
+      "kind": "ocean",
+      "layout": "ocean",
+      "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "",
+      "pattern": "open_sea:5",
       "starter_set": "",
       "required": [],
-      "islands": [
-        {
-          "id": 1,
-          "role": "peer",
-          "center_x": 1708,
-          "center_z": 3893,
-          "semi_axis_a_m": 1589,
-          "semi_axis_b_m": 1290,
-          "rotation_deg": 53,
-          "shape": "ragged",
-          "aspect": 1.23,
-          "area_km2": 5.47,
-          "size_class": "medium",
-          "character": "mountainous",
-          "peak_height_m": 580,
-          "glaciated": true,
-          "geology": [
-            "fold_belt",
-            "granite"
-          ],
-          "seed": 759765680
-        }
-      ],
-      "geology_hints": [
-        "fold_belt",
-        "granite"
-      ],
+      "islands": [],
+      "geology_hints": [],
       "notes": ""
     },
     {
@@ -22636,7 +23286,7 @@
       "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "open_sea:6",
+      "pattern": "open_sea:4",
       "starter_set": "",
       "required": [],
       "islands": [],
@@ -22652,7 +23302,7 @@
       "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "open_sea:6",
+      "pattern": "open_sea:4",
       "starter_set": "",
       "required": [],
       "islands": [],
@@ -22668,7 +23318,7 @@
       "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "open_sea:6",
+      "pattern": "open_sea:4",
       "starter_set": "",
       "required": [],
       "islands": [],
@@ -22739,7 +23389,7 @@
       "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "open_sea:3",
+      "pattern": "",
       "starter_set": "",
       "required": [],
       "islands": [],
@@ -22755,7 +23405,7 @@
       "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "open_sea:3",
+      "pattern": "",
       "starter_set": "",
       "required": [],
       "islands": [],
@@ -22766,16 +23416,59 @@
       "x": 6,
       "z": 10,
       "zone": "arctic",
-      "kind": "ocean",
-      "layout": "ocean",
-      "status": "placeholder",
+      "kind": "islands",
+      "layout": "peers",
+      "status": "planned",
       "locked": false,
       "revision": 0,
-      "pattern": "open_sea:3",
+      "pattern": "",
       "starter_set": "",
       "required": [],
-      "islands": [],
-      "geology_hints": [],
+      "islands": [
+        {
+          "id": 1,
+          "role": "peer",
+          "center_x": -966,
+          "center_z": 800,
+          "semi_axis_a_m": 1498,
+          "semi_axis_b_m": 822,
+          "rotation_deg": 22,
+          "shape": "crescent",
+          "aspect": 1.82,
+          "area_km2": 3.29,
+          "size_class": "small",
+          "character": "rolling",
+          "peak_height_m": 23,
+          "glaciated": true,
+          "geology": [
+            "volcanic"
+          ],
+          "seed": 555169768
+        },
+        {
+          "id": 2,
+          "role": "peer",
+          "center_x": 4260,
+          "center_z": -2368,
+          "semi_axis_a_m": 1441,
+          "semi_axis_b_m": 671,
+          "rotation_deg": 100,
+          "shape": "crescent",
+          "aspect": 2.15,
+          "area_km2": 2.58,
+          "size_class": "small",
+          "character": "rolling",
+          "peak_height_m": 30,
+          "glaciated": true,
+          "geology": [
+            "volcanic"
+          ],
+          "seed": 829803954
+        }
+      ],
+      "geology_hints": [
+        "volcanic"
+      ],
       "notes": ""
     },
     {
@@ -22821,59 +23514,16 @@
       "x": 8,
       "z": 10,
       "zone": "arctic",
-      "kind": "islands",
-      "layout": "peers",
-      "status": "planned",
+      "kind": "ocean",
+      "layout": "ocean",
+      "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "",
+      "pattern": "open_sea:5",
       "starter_set": "",
       "required": [],
-      "islands": [
-        {
-          "id": 1,
-          "role": "peer",
-          "center_x": 1984,
-          "center_z": 3376,
-          "semi_axis_a_m": 1163,
-          "semi_axis_b_m": 835,
-          "rotation_deg": 93,
-          "shape": "ragged",
-          "aspect": 1.39,
-          "area_km2": 2.59,
-          "size_class": "small",
-          "character": "mountainous",
-          "peak_height_m": 460,
-          "glaciated": true,
-          "geology": [
-            "granite"
-          ],
-          "seed": 59751854
-        },
-        {
-          "id": 2,
-          "role": "peer",
-          "center_x": -4728,
-          "center_z": 4423,
-          "semi_axis_a_m": 958,
-          "semi_axis_b_m": 874,
-          "rotation_deg": 70,
-          "shape": "round",
-          "aspect": 1.1,
-          "area_km2": 2.24,
-          "size_class": "small",
-          "character": "mountainous",
-          "peak_height_m": 510,
-          "glaciated": true,
-          "geology": [
-            "granite"
-          ],
-          "seed": 781331521
-        }
-      ],
-      "geology_hints": [
-        "granite"
-      ],
+      "islands": [],
+      "geology_hints": [],
       "notes": ""
     },
     {
@@ -22885,7 +23535,7 @@
       "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "",
+      "pattern": "open_sea:5",
       "starter_set": "",
       "required": [],
       "islands": [],
@@ -22896,39 +23546,16 @@
       "x": 10,
       "z": 10,
       "zone": "arctic",
-      "kind": "islands",
-      "layout": "main",
-      "status": "planned",
+      "kind": "ocean",
+      "layout": "ocean",
+      "status": "placeholder",
       "locked": false,
       "revision": 0,
-      "pattern": "",
+      "pattern": "open_sea:5",
       "starter_set": "",
       "required": [],
-      "islands": [
-        {
-          "id": 1,
-          "role": "main",
-          "center_x": 174,
-          "center_z": 215,
-          "semi_axis_a_m": 3293,
-          "semi_axis_b_m": 3206,
-          "rotation_deg": 80,
-          "shape": "round",
-          "aspect": 1.03,
-          "area_km2": 28.19,
-          "size_class": "large",
-          "character": "volcanic",
-          "peak_height_m": 970,
-          "glaciated": true,
-          "geology": [
-            "volcanic"
-          ],
-          "seed": 18210577
-        }
-      ],
-      "geology_hints": [
-        "volcanic"
-      ],
+      "islands": [],
+      "geology_hints": [],
       "notes": ""
     }
   ]

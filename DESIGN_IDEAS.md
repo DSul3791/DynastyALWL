@@ -124,7 +124,7 @@ A persistent, rough-medieval, multiplayer online world: a survival, exploration 
 
 - **[Decided]** Starter tiles sit in the middle of the temperate zone, so new players do not suffer extreme climates.
 - **[Idea]** Because the map is so big, an inner set of 4 starter tiles and an outer set of 4, so people start in various areas and the center does not fill up too fast.
-- **[Proposed]** Inner set at (-3,4), (3,4), (-3,-4), (3,-4); outer set at (-8,5), (8,5), (-8,-5), (8,-5). Columns -8, -3, 3 and 8 are spaced 5, 6, 5 and 5 tiles apart around the east-west wrap, so starters are spread nearly evenly. The nearest starters are about 77 km apart. The desert center is left for players to expand into.
+- **[Decided]** Inner set at (-3,4), (3,4), (-3,-4), (3,-4); outer set at (-6,6), (6,6), (-6,-6), (6,-6). (The outer set was first proposed at columns ±8, row ±5, and moved inward so it sits in the medium danger zone, Section 4.13.) Each outer starter is about 3.6 tiles (55 km) from the nearest inner starter, and 4.5 tiles (69 km) from the deadly east-west edge. Row 6 is the last temperate row, so the outer starters are a little cooler. The desert center is left for players to expand into.
 - **[Proposed]** Open the inner set at launch and the outer set as the population grows. With placeholder ocean tiles, starter tiles can be baked first.
 - **[Proposed]** Traversal: crossing 322 km is tens of hours on foot and, at Atlas's roughly 7 km/h (derived from its 30 hours for about 212 km), about 46 hours of sailing. Ship speeds are not yet set. "Years" comes from exploring: a few hundred island tiles of up to ARK scale, at many hours each, is thousands of hours, several years for a player at 12 to 16 hours a week.
 - **[Proposed]** Starter tiles should give a choice of climate (desert and temperate, not arctic). With a world 13 tiles tall the rows run from -6 to 6, so starters at distance 8 north or south need a taller world, or sit east and west on existing rows.
@@ -330,7 +330,7 @@ A tile should then take minutes, and `world_preview.gd` could show island panel 
 - **[Proposed]** A **danger map** in the world settings: a smooth level for every position, combining a latitude part (lowest in the middle of the temperate bands, rising toward the equator row and the poles), a distance-from-starters part, and a peak at the abyss around (0,0). The server reads it at runtime for creature levels, sea monsters, pirates, storm strength and wreck density, so those can be tuned at any time. The world sketch reads it once to choose terrain: more cliffs, volcanic arcs and trenches where danger is high, gentle shelves near starters. Only that terrain part is permanent.
 - **[Proposed]** The abyss around (0,0) is an abyssal plain or trench about 3,000 m deep (the world bottom is -4,000 m), with caverns in its floor. Being in the desert row, it pairs the hottest seas with the most dangerous waters.
 - **[Decided]** The inner starter tiles are the easy zones. The outer edges are the maximum danger. The outer starter towns fall naturally into a medium zone.
-- **[Proposed]** Implemented as the danger map in `world.json` (curves by column and by row, plus the abyss peak) with five tiers: easy, moderate, medium, hard, deadly. Inner starters read about 0, outer starters about 0.45 (medium), tile (0,0) and the east-west and polar edges about 1. The east-west wrap seam is the dangerous edge; danger is continuous across it. A danger map image is drawn with the world plan (`plan/danger_map.png`).
+- **[Proposed]** Implemented as the danger map in `world.json` (curves by column and by row, plus the abyss peak) with five tiers: easy, moderate, medium, hard, deadly. Inner starters read about 0, outer starters about 0.44 (medium), tile (0,0) and the east-west and polar edges about 1. The east-west wrap seam is the dangerous edge; danger is continuous across it. A danger map image is drawn with the world plan (`plan/danger_map.png`).
 
 ---
 
@@ -997,7 +997,7 @@ Generator, hardware and hosting
 45. What frame rate and view distance should the minimum machine reach? (Section 3)
 46. How much protection against "x-ray" clients that read ore from received voxels is worth its cost? (Section 4.9)
 47. How large a world can be designed, managed and served, and is it one server process or split across several later? (Section 4.1)
-48. Mostly settled: eight temperate starter tiles in an inner and an outer set (Section 4.1). Confirm the proposed coordinates and when the outer set opens.
+48. Mostly settled: eight temperate starter tiles, inner at (±3, ±4) and outer at (±6, ±6) (Section 4.1). Still open: when the outer set opens.
 49. Settled: flora is derived at runtime from the biome map and a placement seed, only removals are stored, and the map grid is 8 m (Sections 4.3 and 4.8).
 50. Settled: 21 by 21 (Section 4.1). Still open: travel speeds on foot, by horse and by ship, which decide how long the world takes to cross.
 51. How far does polar sea ice reach, and can ships cross the pole in summer? (Section 4.2)

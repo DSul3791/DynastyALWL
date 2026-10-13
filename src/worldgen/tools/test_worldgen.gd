@@ -114,7 +114,7 @@ func _test_settings() -> void:
 		"Chebyshev distance wraps in both directions"
 	)
 	_check(settings.get_starter_set_of(Vector2i(3, 4)) == "inner", "inner starter")
-	_check(settings.get_starter_set_of(Vector2i(-8, -5)) == "outer", "outer starter")
+	_check(settings.get_starter_set_of(Vector2i(-6, -6)) == "outer", "outer starter")
 	_check(settings.get_starter_set_of(Vector2i(0, 0)) == "", "origin is no starter")
 	_check(settings.get_all_starters().size() == 8, "eight starter tiles")
 
