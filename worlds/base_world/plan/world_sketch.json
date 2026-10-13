@@ -1,0 +1,5214 @@
+{
+  "format_version": 1,
+  "meta": {
+    "sketch_version": 1,
+    "seed_text": "This1is2the3greatest4game5of6all7time",
+    "master_seed": 574716103,
+    "rules_sha256": "48dc1275c3a9fff0cd6b7cb40d53d7b1e65a97828afda4069976051763857cec"
+  },
+  "features": [
+    {
+      "id": "shelf_n_n",
+      "kind": "continental_shelf",
+      "locked": false,
+      "geology": [
+        "granite",
+        "basin",
+        "fold_belt"
+      ],
+      "shelf": {
+        "center_m": [
+          -68457,
+          -66016
+        ],
+        "half_length_m": 44893,
+        "half_width_m": 26001,
+        "rotation_deg": -129,
+        "depth_m": -90,
+        "edge_width": 0.15,
+        "hill_amplitude_m": 800,
+        "hill_threshold": 0.14
+      },
+      "lobes": [
+        {
+          "center_m": [
+            -78513,
+            -46931
+          ],
+          "half_length_m": 25148,
+          "half_width_m": 13522,
+          "rotation_deg": -176
+        },
+        {
+          "center_m": [
+            -87828,
+            -54135
+          ],
+          "half_length_m": 22520,
+          "half_width_m": 11964,
+          "rotation_deg": -69
+        }
+      ],
+      "mounts": [
+        {
+          "type": "starter",
+          "x": -37412,
+          "z": -54486,
+          "a": 3646,
+          "b": 2610,
+          "rot": -147,
+          "peak": 322,
+          "exp": 0.75,
+          "cliff": 0,
+          "shore": 1500,
+          "starter": [
+            -3,
+            -4
+          ]
+        },
+        {
+          "type": "starter",
+          "x": -85444,
+          "z": -85172,
+          "a": 3903,
+          "b": 2798,
+          "rot": -126,
+          "peak": 331,
+          "exp": 0.75,
+          "cliff": 0,
+          "shore": 1500,
+          "starter": [
+            -6,
+            -6
+          ]
+        }
+      ]
+    },
+    {
+      "id": "shelf_n_p",
+      "kind": "continental_shelf",
+      "locked": false,
+      "geology": [
+        "granite",
+        "basin",
+        "fold_belt"
+      ],
+      "shelf": {
+        "center_m": [
+          -64343,
+          87269
+        ],
+        "half_length_m": 51481,
+        "half_width_m": 17467,
+        "rotation_deg": 123,
+        "depth_m": -90,
+        "edge_width": 0.15,
+        "hill_amplitude_m": 800,
+        "hill_threshold": 0.14
+      },
+      "lobes": [
+        {
+          "center_m": [
+            -73477,
+            126665
+          ],
+          "half_length_m": 24674,
+          "half_width_m": 9245,
+          "rotation_deg": 167
+        },
+        {
+          "center_m": [
+            -53409,
+            62248
+          ],
+          "half_length_m": 18297,
+          "half_width_m": 6519,
+          "rotation_deg": 185
+        },
+        {
+          "center_m": [
+            -72879,
+            79176
+          ],
+          "half_length_m": 23298,
+          "half_width_m": 7385,
+          "rotation_deg": 153
+        }
+      ],
+      "mounts": [
+        {
+          "type": "starter",
+          "x": -39083,
+          "z": 68339,
+          "a": 3350,
+          "b": 2755,
+          "rot": 119,
+          "peak": 397,
+          "exp": 0.75,
+          "cliff": 0,
+          "shore": 1500,
+          "starter": [
+            -3,
+            4
+          ]
+        },
+        {
+          "type": "starter",
+          "x": -85832,
+          "z": 100340,
+          "a": 3615,
+          "b": 2984,
+          "rot": 103,
+          "peak": 342,
+          "exp": 0.75,
+          "cliff": 0,
+          "shore": 1500,
+          "starter": [
+            -6,
+            6
+          ]
+        }
+      ]
+    },
+    {
+      "id": "shelf_p_n",
+      "kind": "continental_shelf",
+      "locked": false,
+      "geology": [
+        "granite",
+        "basin",
+        "fold_belt"
+      ],
+      "shelf": {
+        "center_m": [
+          81041,
+          -65590
+        ],
+        "half_length_m": 56834,
+        "half_width_m": 17465,
+        "rotation_deg": -16,
+        "depth_m": -90,
+        "edge_width": 0.15,
+        "hill_amplitude_m": 800,
+        "hill_threshold": 0.14
+      },
+      "lobes": [
+        {
+          "center_m": [
+            63972,
+            -62936
+          ],
+          "half_length_m": 39534,
+          "half_width_m": 13332,
+          "rotation_deg": -80
+        },
+        {
+          "center_m": [
+            80390,
+            -51900
+          ],
+          "half_length_m": 28550,
+          "half_width_m": 7877,
+          "rotation_deg": 0
+        }
+      ],
+      "mounts": [
+        {
+          "type": "starter",
+          "x": 53983,
+          "z": -54928,
+          "a": 3750,
+          "b": 3006,
+          "rot": -12,
+          "peak": 402,
+          "exp": 0.75,
+          "cliff": 0,
+          "shore": 1500,
+          "starter": [
+            3,
+            -4
+          ]
+        },
+        {
+          "type": "starter",
+          "x": 100373,
+          "z": -83610,
+          "a": 4051,
+          "b": 2798,
+          "rot": -37,
+          "peak": 333,
+          "exp": 0.75,
+          "cliff": 0,
+          "shore": 1500,
+          "starter": [
+            6,
+            -6
+          ]
+        }
+      ]
+    },
+    {
+      "id": "shelf_p_p",
+      "kind": "continental_shelf",
+      "locked": false,
+      "geology": [
+        "granite",
+        "basin",
+        "fold_belt"
+      ],
+      "shelf": {
+        "center_m": [
+          77306,
+          78057
+        ],
+        "half_length_m": 53566,
+        "half_width_m": 18367,
+        "rotation_deg": 52,
+        "depth_m": -90,
+        "edge_width": 0.15,
+        "hill_amplitude_m": 800,
+        "hill_threshold": 0.14
+      },
+      "lobes": [
+        {
+          "center_m": [
+            81980,
+            63736
+          ],
+          "half_length_m": 27959,
+          "half_width_m": 9987,
+          "rotation_deg": 22
+        },
+        {
+          "center_m": [
+            72084,
+            67075
+          ],
+          "half_length_m": 29767,
+          "half_width_m": 10328,
+          "rotation_deg": 12
+        }
+      ],
+      "mounts": [
+        {
+          "type": "starter",
+          "x": 52496,
+          "z": 70200,
+          "a": 3690,
+          "b": 2949,
+          "rot": 25,
+          "peak": 222,
+          "exp": 0.75,
+          "cliff": 0,
+          "shore": 1500,
+          "starter": [
+            3,
+            4
+          ]
+        },
+        {
+          "type": "starter",
+          "x": 100836,
+          "z": 99437,
+          "a": 3974,
+          "b": 2714,
+          "rot": 38,
+          "peak": 264,
+          "exp": 0.75,
+          "cliff": 0,
+          "shore": 1500,
+          "starter": [
+            6,
+            6
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trench_arc",
+      "kind": "island_arc",
+      "locked": false,
+      "geology": [
+        "volcanic",
+        "granite"
+      ],
+      "side": "south",
+      "mounts": [
+        {
+          "type": "island",
+          "x": -47395,
+          "z": 59317,
+          "a": 1175,
+          "b": 705,
+          "rot": -34,
+          "peak": 205,
+          "exp": 0.9,
+          "cliff": 0,
+          "shore": 599
+        },
+        {
+          "type": "island",
+          "x": -41629,
+          "z": 55188,
+          "a": 1159,
+          "b": 707,
+          "rot": -12,
+          "peak": 157,
+          "exp": 0.9,
+          "cliff": 0,
+          "shore": 600
+        },
+        {
+          "type": "seamount",
+          "x": -36302,
+          "z": 52817,
+          "a": 2987,
+          "b": 2176,
+          "rot": -36,
+          "peak": -739
+        },
+        {
+          "type": "seamount",
+          "x": -29696,
+          "z": 50536,
+          "a": 4996,
+          "b": 3766,
+          "rot": -32,
+          "peak": -229
+        },
+        {
+          "type": "seamount",
+          "x": -23685,
+          "z": 47838,
+          "a": 3565,
+          "b": 2925,
+          "rot": -30,
+          "peak": -320
+        },
+        {
+          "type": "seamount",
+          "x": -17921,
+          "z": 46346,
+          "a": 5308,
+          "b": 3715,
+          "rot": -19,
+          "peak": -415
+        },
+        {
+          "type": "island",
+          "x": -12083,
+          "z": 45275,
+          "a": 1180,
+          "b": 899,
+          "rot": -19,
+          "peak": 211,
+          "exp": 1.04,
+          "cliff": 0,
+          "shore": 507
+        },
+        {
+          "type": "island",
+          "x": -4320,
+          "z": 44184,
+          "a": 1209,
+          "b": 670,
+          "rot": -12,
+          "peak": 266,
+          "exp": 1.13,
+          "cliff": 0,
+          "shore": 444
+        },
+        {
+          "type": "seamount",
+          "x": 885,
+          "z": 42929,
+          "a": 4899,
+          "b": 4614,
+          "rot": 4,
+          "peak": -174
+        },
+        {
+          "type": "island",
+          "x": 7544,
+          "z": 43341,
+          "a": 1283,
+          "b": 760,
+          "rot": 14,
+          "peak": 246,
+          "exp": 1.2,
+          "cliff": 60,
+          "shore": 393
+        },
+        {
+          "type": "island",
+          "x": 13590,
+          "z": 43212,
+          "a": 1590,
+          "b": 1063,
+          "rot": -4,
+          "peak": 465,
+          "exp": 1.2,
+          "cliff": 60,
+          "shore": 394
+        },
+        {
+          "type": "island",
+          "x": 20063,
+          "z": 43396,
+          "a": 4105,
+          "b": 2330,
+          "rot": 20,
+          "peak": 879,
+          "exp": 1.16,
+          "cliff": 53,
+          "shore": 419
+        },
+        {
+          "type": "island",
+          "x": 26026,
+          "z": 44963,
+          "a": 1297,
+          "b": 701,
+          "rot": 7,
+          "peak": 278,
+          "exp": 1.06,
+          "cliff": 0,
+          "shore": 493
+        },
+        {
+          "type": "island",
+          "x": 31833,
+          "z": 45671,
+          "a": 2885,
+          "b": 2207,
+          "rot": 17,
+          "peak": 853,
+          "exp": 1.0,
+          "cliff": 0,
+          "shore": 532
+        },
+        {
+          "type": "island",
+          "x": 38771,
+          "z": 48496,
+          "a": 1575,
+          "b": 1369,
+          "rot": 17,
+          "peak": 341,
+          "exp": 0.94,
+          "cliff": 0,
+          "shore": 574
+        },
+        {
+          "type": "island",
+          "x": 46694,
+          "z": 50852,
+          "a": 3900,
+          "b": 2786,
+          "rot": 41,
+          "peak": 995,
+          "exp": 0.91,
+          "cliff": 0,
+          "shore": 591
+        },
+        {
+          "type": "island",
+          "x": 52035,
+          "z": 52761,
+          "a": 1263,
+          "b": 1110,
+          "rot": 22,
+          "peak": 275,
+          "exp": 0.9,
+          "cliff": 0,
+          "shore": 599
+        },
+        {
+          "type": "seamount",
+          "x": 58757,
+          "z": 56537,
+          "a": 3418,
+          "b": 2833,
+          "rot": 17,
+          "peak": -370
+        }
+      ]
+    },
+    {
+      "id": "arc_1",
+      "kind": "island_arc",
+      "locked": false,
+      "geology": [
+        "volcanic",
+        "granite"
+      ],
+      "mounts": [
+        {
+          "type": "island",
+          "x": -128276,
+          "z": -68420,
+          "a": 1289,
+          "b": 858,
+          "rot": -120,
+          "peak": 329,
+          "exp": 1.47,
+          "cliff": 114,
+          "shore": 208
+        },
+        {
+          "type": "seamount",
+          "x": -130834,
+          "z": -74179,
+          "a": 3454,
+          "b": 2454,
+          "rot": -97,
+          "peak": -845
+        },
+        {
+          "type": "seamount",
+          "x": -133722,
+          "z": -81926,
+          "a": 2993,
+          "b": 2390,
+          "rot": -109,
+          "peak": -150
+        },
+        {
+          "type": "seamount",
+          "x": -135612,
+          "z": -88150,
+          "a": 4899,
+          "b": 4075,
+          "rot": -89,
+          "peak": -189
+        },
+        {
+          "type": "island",
+          "x": -137192,
+          "z": -94619,
+          "a": 2055,
+          "b": 2027,
+          "rot": -119,
+          "peak": 983,
+          "exp": 1.56,
+          "cliff": 131,
+          "shore": 150
+        },
+        {
+          "type": "island",
+          "x": -138474,
+          "z": -101600,
+          "a": 4066,
+          "b": 2329,
+          "rot": -91,
+          "peak": 1450,
+          "exp": 1.57,
+          "cliff": 134,
+          "shore": 141
+        },
+        {
+          "type": "island",
+          "x": -139315,
+          "z": -108393,
+          "a": 1833,
+          "b": 1379,
+          "rot": -89,
+          "peak": 752,
+          "exp": 1.57,
+          "cliff": 135,
+          "shore": 137
+        },
+        {
+          "type": "island",
+          "x": -139825,
+          "z": -117388,
+          "a": 1150,
+          "b": 954,
+          "rot": -81,
+          "peak": 379,
+          "exp": 1.58,
+          "cliff": 136,
+          "shore": 134
+        },
+        {
+          "type": "island",
+          "x": -139755,
+          "z": -124281,
+          "a": 959,
+          "b": 891,
+          "rot": -93,
+          "peak": 354,
+          "exp": 1.58,
+          "cliff": 137,
+          "shore": 132
+        },
+        {
+          "type": "island",
+          "x": -139338,
+          "z": -130614,
+          "a": 1260,
+          "b": 1039,
+          "rot": -66,
+          "peak": 492,
+          "exp": 1.59,
+          "cliff": 137,
+          "shore": 129
+        },
+        {
+          "type": "island",
+          "x": -138313,
+          "z": -138671,
+          "a": 1307,
+          "b": 1040,
+          "rot": -91,
+          "peak": 552,
+          "exp": 1.59,
+          "cliff": 139,
+          "shore": 125
+        },
+        {
+          "type": "island",
+          "x": -136948,
+          "z": -145733,
+          "a": 4242,
+          "b": 2511,
+          "rot": -82,
+          "peak": 1435,
+          "exp": 1.6,
+          "cliff": 139,
+          "shore": 122
+        },
+        {
+          "type": "seamount",
+          "x": -134779,
+          "z": 168571,
+          "a": 2890,
+          "b": 2276,
+          "rot": -87,
+          "peak": -214
+        },
+        {
+          "type": "island",
+          "x": -131663,
+          "z": 159555,
+          "a": 1698,
+          "b": 1091,
+          "rot": -85,
+          "peak": 524,
+          "exp": 1.59,
+          "cliff": 139,
+          "shore": 124
+        }
+      ]
+    },
+    {
+      "id": "arc_2",
+      "kind": "island_arc",
+      "locked": false,
+      "geology": [
+        "volcanic",
+        "granite"
+      ],
+      "mounts": [
+        {
+          "type": "seamount",
+          "x": 23477,
+          "z": -108651,
+          "a": 5024,
+          "b": 3672,
+          "rot": -175,
+          "peak": -812
+        },
+        {
+          "type": "island",
+          "x": 14949,
+          "z": -112191,
+          "a": 1465,
+          "b": 791,
+          "rot": -172,
+          "peak": 389,
+          "exp": 1.23,
+          "cliff": 65,
+          "shore": 376
+        },
+        {
+          "type": "seamount",
+          "x": 6387,
+          "z": -117065,
+          "a": 4147,
+          "b": 2802,
+          "rot": -144,
+          "peak": -516
+        },
+        {
+          "type": "island",
+          "x": -973,
+          "z": -122560,
+          "a": 1733,
+          "b": 1074,
+          "rot": -142,
+          "peak": 437,
+          "exp": 1.31,
+          "cliff": 82,
+          "shore": 318
+        },
+        {
+          "type": "island",
+          "x": -4971,
+          "z": -126183,
+          "a": 4697,
+          "b": 2696,
+          "rot": -137,
+          "peak": 1450,
+          "exp": 1.35,
+          "cliff": 91,
+          "shore": 289
+        },
+        {
+          "type": "island",
+          "x": -11141,
+          "z": -132938,
+          "a": 1560,
+          "b": 911,
+          "rot": -130,
+          "peak": 464,
+          "exp": 1.44,
+          "cliff": 107,
+          "shore": 232
+        },
+        {
+          "type": "island",
+          "x": -15085,
+          "z": -138263,
+          "a": 1210,
+          "b": 672,
+          "rot": -111,
+          "peak": 342,
+          "exp": 1.5,
+          "cliff": 120,
+          "shore": 188
+        },
+        {
+          "type": "island",
+          "x": -19340,
+          "z": -145349,
+          "a": 4269,
+          "b": 2430,
+          "rot": -114,
+          "peak": 1450,
+          "exp": 1.57,
+          "cliff": 133,
+          "shore": 142
+        },
+        {
+          "type": "island",
+          "x": -21794,
+          "z": -150424,
+          "a": 1508,
+          "b": 1064,
+          "rot": -109,
+          "peak": 466,
+          "exp": 1.59,
+          "cliff": 139,
+          "shore": 124
+        },
+        {
+          "type": "island",
+          "x": -25079,
+          "z": 163187,
+          "a": 1978,
+          "b": 1546,
+          "rot": -125,
+          "peak": 663,
+          "exp": 1.58,
+          "cliff": 137,
+          "shore": 131
+        },
+        {
+          "type": "island",
+          "x": -26452,
+          "z": 157906,
+          "a": 3435,
+          "b": 2059,
+          "rot": -97,
+          "peak": 1395,
+          "exp": 1.54,
+          "cliff": 129,
+          "shore": 158
+        },
+        {
+          "type": "island",
+          "x": -27775,
+          "z": 150066,
+          "a": 4189,
+          "b": 2487,
+          "rot": -100,
+          "peak": 1450,
+          "exp": 1.46,
+          "cliff": 112,
+          "shore": 217
+        },
+        {
+          "type": "island",
+          "x": -28257,
+          "z": 143363,
+          "a": 2199,
+          "b": 1798,
+          "rot": -72,
+          "peak": 763,
+          "exp": 1.38,
+          "cliff": 95,
+          "shore": 274
+        },
+        {
+          "type": "island",
+          "x": -28166,
+          "z": 136875,
+          "a": 1011,
+          "b": 847,
+          "rot": -70,
+          "peak": 258,
+          "exp": 1.3,
+          "cliff": 80,
+          "shore": 326
+        }
+      ]
+    },
+    {
+      "id": "arc_3",
+      "kind": "island_arc",
+      "locked": false,
+      "geology": [
+        "volcanic",
+        "granite"
+      ],
+      "mounts": [
+        {
+          "type": "island",
+          "x": 91496,
+          "z": 146345,
+          "a": 2010,
+          "b": 1172,
+          "rot": -28,
+          "peak": 678,
+          "exp": 1.48,
+          "cliff": 116,
+          "shore": 203
+        },
+        {
+          "type": "seamount",
+          "x": 96546,
+          "z": 144420,
+          "a": 5036,
+          "b": 3524,
+          "rot": -8,
+          "peak": -612
+        },
+        {
+          "type": "island",
+          "x": 105274,
+          "z": 141683,
+          "a": 1830,
+          "b": 1601,
+          "rot": -10,
+          "peak": 715,
+          "exp": 1.46,
+          "cliff": 111,
+          "shore": 219
+        },
+        {
+          "type": "island",
+          "x": 110286,
+          "z": 140433,
+          "a": 2865,
+          "b": 1561,
+          "rot": -9,
+          "peak": 776,
+          "exp": 1.45,
+          "cliff": 111,
+          "shore": 220
+        },
+        {
+          "type": "seamount",
+          "x": 117927,
+          "z": 138957,
+          "a": 4895,
+          "b": 3635,
+          "rot": -21,
+          "peak": -626
+        },
+        {
+          "type": "island",
+          "x": 127457,
+          "z": 137820,
+          "a": 3048,
+          "b": 2659,
+          "rot": 8,
+          "peak": 1354,
+          "exp": 1.49,
+          "cliff": 117,
+          "shore": 197
+        },
+        {
+          "type": "island",
+          "x": 133936,
+          "z": 137483,
+          "a": 3818,
+          "b": 2630,
+          "rot": -14,
+          "peak": 1275,
+          "exp": 1.51,
+          "cliff": 122,
+          "shore": 182
+        },
+        {
+          "type": "island",
+          "x": 140461,
+          "z": 137495,
+          "a": 2296,
+          "b": 1344,
+          "rot": 3,
+          "peak": 657,
+          "exp": 1.53,
+          "cliff": 127,
+          "shore": 165
+        },
+        {
+          "type": "island",
+          "x": 147898,
+          "z": 137941,
+          "a": 4464,
+          "b": 2785,
+          "rot": -5,
+          "peak": 1450,
+          "exp": 1.56,
+          "cliff": 132,
+          "shore": 146
+        },
+        {
+          "type": "island",
+          "x": 153533,
+          "z": 138588,
+          "a": 4164,
+          "b": 2430,
+          "rot": 3,
+          "peak": 1373,
+          "exp": 1.58,
+          "cliff": 136,
+          "shore": 135
+        },
+        {
+          "type": "island",
+          "x": 161400,
+          "z": 139947,
+          "a": 4117,
+          "b": 3459,
+          "rot": 1,
+          "peak": 1450,
+          "exp": 1.59,
+          "cliff": 139,
+          "shore": 124
+        },
+        {
+          "type": "island",
+          "x": 166901,
+          "z": 141220,
+          "a": 1980,
+          "b": 1240,
+          "rot": 13,
+          "peak": 723,
+          "exp": 1.6,
+          "cliff": 140,
+          "shore": 120
+        }
+      ]
+    },
+    {
+      "id": "arc_4",
+      "kind": "island_arc",
+      "locked": false,
+      "geology": [
+        "volcanic",
+        "granite"
+      ],
+      "mounts": [
+        {
+          "type": "island",
+          "x": 156191,
+          "z": 12545,
+          "a": 4248,
+          "b": 2241,
+          "rot": -134,
+          "peak": 1450,
+          "exp": 1.58,
+          "cliff": 136,
+          "shore": 132
+        },
+        {
+          "type": "island",
+          "x": 153358,
+          "z": 7397,
+          "a": 1454,
+          "b": 988,
+          "rot": -112,
+          "peak": 499,
+          "exp": 1.58,
+          "cliff": 135,
+          "shore": 137
+        },
+        {
+          "type": "island",
+          "x": 150041,
+          "z": 94,
+          "a": 1683,
+          "b": 1472,
+          "rot": -125,
+          "peak": 563,
+          "exp": 1.56,
+          "cliff": 132,
+          "shore": 146
+        },
+        {
+          "type": "island",
+          "x": 147603,
+          "z": -6757,
+          "a": 1894,
+          "b": 1137,
+          "rot": -97,
+          "peak": 680,
+          "exp": 1.55,
+          "cliff": 130,
+          "shore": 156
+        },
+        {
+          "type": "island",
+          "x": 145426,
+          "z": -15138,
+          "a": 2517,
+          "b": 2018,
+          "rot": -84,
+          "peak": 847,
+          "exp": 1.52,
+          "cliff": 125,
+          "shore": 172
+        },
+        {
+          "type": "island",
+          "x": 143949,
+          "z": -24727,
+          "a": 1699,
+          "b": 1486,
+          "rot": -78,
+          "peak": 652,
+          "exp": 1.5,
+          "cliff": 120,
+          "shore": 189
+        },
+        {
+          "type": "island",
+          "x": 143504,
+          "z": -33168,
+          "a": 2670,
+          "b": 2211,
+          "rot": -91,
+          "peak": 1110,
+          "exp": 1.48,
+          "cliff": 116,
+          "shore": 204
+        },
+        {
+          "type": "island",
+          "x": 143849,
+          "z": -41639,
+          "a": 2634,
+          "b": 1704,
+          "rot": -85,
+          "peak": 902,
+          "exp": 1.47,
+          "cliff": 115,
+          "shore": 206
+        },
+        {
+          "type": "seamount",
+          "x": 144834,
+          "z": -49196,
+          "a": 2908,
+          "b": 2151,
+          "rot": -85,
+          "peak": -718
+        },
+        {
+          "type": "seamount",
+          "x": 146305,
+          "z": -56087,
+          "a": 6900,
+          "b": 5100,
+          "rot": -75,
+          "peak": -162
+        },
+        {
+          "type": "island",
+          "x": 148247,
+          "z": -62664,
+          "a": 1435,
+          "b": 1163,
+          "rot": -53,
+          "peak": 558,
+          "exp": 1.51,
+          "cliff": 122,
+          "shore": 182
+        }
+      ]
+    },
+    {
+      "id": "arc_5",
+      "kind": "island_arc",
+      "locked": false,
+      "geology": [
+        "volcanic",
+        "granite"
+      ],
+      "mounts": [
+        {
+          "type": "island",
+          "x": -150999,
+          "z": -35053,
+          "a": 5140,
+          "b": 2798,
+          "rot": 43,
+          "peak": 1450,
+          "exp": 1.6,
+          "cliff": 140,
+          "shore": 121
+        },
+        {
+          "type": "island",
+          "x": -147961,
+          "z": -30969,
+          "a": 4154,
+          "b": 3316,
+          "rot": 45,
+          "peak": 1450,
+          "exp": 1.59,
+          "cliff": 139,
+          "shore": 125
+        },
+        {
+          "type": "island",
+          "x": -142836,
+          "z": -22870,
+          "a": 2201,
+          "b": 1162,
+          "rot": 45,
+          "peak": 759,
+          "exp": 1.58,
+          "cliff": 136,
+          "shore": 135
+        },
+        {
+          "type": "island",
+          "x": -140473,
+          "z": -18426,
+          "a": 1784,
+          "b": 1665,
+          "rot": 53,
+          "peak": 767,
+          "exp": 1.57,
+          "cliff": 134,
+          "shore": 140
+        },
+        {
+          "type": "island",
+          "x": -137764,
+          "z": -12508,
+          "a": 1638,
+          "b": 1301,
+          "rot": 52,
+          "peak": 559,
+          "exp": 1.57,
+          "cliff": 133,
+          "shore": 143
+        },
+        {
+          "type": "island",
+          "x": -135027,
+          "z": -5131,
+          "a": 949,
+          "b": 905,
+          "rot": 64,
+          "peak": 275,
+          "exp": 1.56,
+          "cliff": 132,
+          "shore": 148
+        },
+        {
+          "type": "island",
+          "x": -133531,
+          "z": -74,
+          "a": 1231,
+          "b": 759,
+          "rot": 58,
+          "peak": 345,
+          "exp": 1.56,
+          "cliff": 131,
+          "shore": 149
+        },
+        {
+          "type": "seamount",
+          "x": -131662,
+          "z": 8481,
+          "a": 6023,
+          "b": 4660,
+          "rot": 73,
+          "peak": -145
+        },
+        {
+          "type": "island",
+          "x": -130581,
+          "z": 17031,
+          "a": 3019,
+          "b": 1591,
+          "rot": 76,
+          "peak": 889,
+          "exp": 1.54,
+          "cliff": 129,
+          "shore": 158
+        },
+        {
+          "type": "island",
+          "x": -130267,
+          "z": 25932,
+          "a": 1629,
+          "b": 1119,
+          "rot": 85,
+          "peak": 445,
+          "exp": 1.54,
+          "cliff": 127,
+          "shore": 164
+        }
+      ]
+    },
+    {
+      "id": "hotspot_1",
+      "kind": "hotspot_track",
+      "locked": false,
+      "geology": [
+        "volcanic"
+      ],
+      "mounts": [
+        {
+          "type": "island",
+          "x": -37500,
+          "z": -10331,
+          "a": 4902,
+          "b": 3347,
+          "rot": 150,
+          "peak": 1194,
+          "exp": 1.41,
+          "cliff": 102,
+          "shore": 251
+        },
+        {
+          "type": "island",
+          "x": -44899,
+          "z": -4834,
+          "a": 3044,
+          "b": 2170,
+          "rot": 143,
+          "peak": 1450,
+          "exp": 1.37,
+          "cliff": 95,
+          "shore": 275
+        },
+        {
+          "type": "island",
+          "x": -52884,
+          "z": 1147,
+          "a": 2913,
+          "b": 1876,
+          "rot": 125,
+          "peak": 1151,
+          "exp": 1.33,
+          "cliff": 86,
+          "shore": 306
+        },
+        {
+          "type": "island",
+          "x": -60620,
+          "z": 7042,
+          "a": 2542,
+          "b": 1712,
+          "rot": 120,
+          "peak": 1029,
+          "exp": 1.33,
+          "cliff": 85,
+          "shore": 307
+        },
+        {
+          "type": "island",
+          "x": -67277,
+          "z": 12229,
+          "a": 1817,
+          "b": 1387,
+          "rot": 138,
+          "peak": 834,
+          "exp": 1.35,
+          "cliff": 89,
+          "shore": 294
+        },
+        {
+          "type": "island",
+          "x": -76008,
+          "z": 19243,
+          "a": 1635,
+          "b": 1138,
+          "rot": 132,
+          "peak": 715,
+          "exp": 1.36,
+          "cliff": 91,
+          "shore": 287
+        },
+        {
+          "type": "island",
+          "x": -82757,
+          "z": 24862,
+          "a": 1421,
+          "b": 764,
+          "rot": 135,
+          "peak": 492,
+          "exp": 1.36,
+          "cliff": 93,
+          "shore": 282
+        },
+        {
+          "type": "island",
+          "x": -91110,
+          "z": 32089,
+          "a": 1218,
+          "b": 699,
+          "rot": 143,
+          "peak": 281,
+          "exp": 1.31,
+          "cliff": 82,
+          "shore": 319
+        },
+        {
+          "type": "atoll",
+          "x": -98481,
+          "z": 38740,
+          "a": 1427,
+          "b": 1221,
+          "rot": 24,
+          "peak": 4,
+          "ring_m": 340
+        },
+        {
+          "type": "atoll",
+          "x": -106005,
+          "z": 45802,
+          "a": 2641,
+          "b": 2304,
+          "rot": 113,
+          "peak": 4,
+          "ring_m": 343
+        },
+        {
+          "type": "seamount",
+          "x": -111598,
+          "z": 51226,
+          "a": 5185,
+          "b": 3683,
+          "rot": 123,
+          "peak": -857
+        },
+        {
+          "type": "seamount",
+          "x": -117872,
+          "z": 57475,
+          "a": 2951,
+          "b": 2236,
+          "rot": 153,
+          "peak": -296
+        },
+        {
+          "type": "seamount",
+          "x": -122845,
+          "z": 62537,
+          "a": 5542,
+          "b": 4499,
+          "rot": 123,
+          "peak": -554
+        },
+        {
+          "type": "seamount",
+          "x": -128343,
+          "z": 68223,
+          "a": 6872,
+          "b": 4594,
+          "rot": 157,
+          "peak": -802
+        },
+        {
+          "type": "seamount",
+          "x": -133854,
+          "z": 73995,
+          "a": 4633,
+          "b": 3268,
+          "rot": 153,
+          "peak": -593
+        }
+      ]
+    },
+    {
+      "id": "hotspot_2",
+      "kind": "hotspot_track",
+      "locked": false,
+      "geology": [
+        "volcanic"
+      ],
+      "mounts": [
+        {
+          "type": "island",
+          "x": -150145,
+          "z": 96930,
+          "a": 5516,
+          "b": 3106,
+          "rot": 35,
+          "peak": 1450,
+          "exp": 1.6,
+          "cliff": 139,
+          "shore": 122
+        },
+        {
+          "type": "island",
+          "x": -144864,
+          "z": 102841,
+          "a": 4009,
+          "b": 2501,
+          "rot": 35,
+          "peak": 1450,
+          "exp": 1.58,
+          "cliff": 137,
+          "shore": 131
+        },
+        {
+          "type": "island",
+          "x": -137308,
+          "z": 111232,
+          "a": 2260,
+          "b": 1376,
+          "rot": 28,
+          "peak": 1276,
+          "exp": 1.56,
+          "cliff": 132,
+          "shore": 148
+        },
+        {
+          "type": "island",
+          "x": -130370,
+          "z": 118802,
+          "a": 1610,
+          "b": 1195,
+          "rot": 41,
+          "peak": 707,
+          "exp": 1.54,
+          "cliff": 127,
+          "shore": 163
+        },
+        {
+          "type": "island",
+          "x": -123853,
+          "z": 125743,
+          "a": 1347,
+          "b": 797,
+          "rot": 60,
+          "peak": 579,
+          "exp": 1.51,
+          "cliff": 122,
+          "shore": 182
+        },
+        {
+          "type": "seamount",
+          "x": -117660,
+          "z": 132156,
+          "a": 3478,
+          "b": 2703,
+          "rot": 58,
+          "peak": -467
+        },
+        {
+          "type": "seamount",
+          "x": -109762,
+          "z": 140049,
+          "a": 6089,
+          "b": 4827,
+          "rot": 39,
+          "peak": -97
+        },
+        {
+          "type": "seamount",
+          "x": -104473,
+          "z": 145150,
+          "a": 4951,
+          "b": 3841,
+          "rot": 59,
+          "peak": -257
+        },
+        {
+          "type": "seamount",
+          "x": -98196,
+          "z": 151015,
+          "a": 5440,
+          "b": 4598,
+          "rot": 45,
+          "peak": -62
+        },
+        {
+          "type": "seamount",
+          "x": -90870,
+          "z": 157615,
+          "a": 3815,
+          "b": 3306,
+          "rot": 39,
+          "peak": -897
+        }
+      ]
+    },
+    {
+      "id": "hotspot_3",
+      "kind": "hotspot_track",
+      "locked": false,
+      "geology": [
+        "volcanic"
+      ],
+      "mounts": [
+        {
+          "type": "island",
+          "x": 132863,
+          "z": 63635,
+          "a": 4421,
+          "b": 3829,
+          "rot": 213,
+          "peak": 1190,
+          "exp": 1.38,
+          "cliff": 95,
+          "shore": 274
+        },
+        {
+          "type": "island",
+          "x": 125176,
+          "z": 57360,
+          "a": 2762,
+          "b": 1985,
+          "rot": 230,
+          "peak": 1193,
+          "exp": 1.31,
+          "cliff": 82,
+          "shore": 320
+        },
+        {
+          "type": "island",
+          "x": 119318,
+          "z": 52612,
+          "a": 2277,
+          "b": 2248,
+          "rot": 202,
+          "peak": 1048,
+          "exp": 1.26,
+          "cliff": 72,
+          "shore": 352
+        },
+        {
+          "type": "island",
+          "x": 111078,
+          "z": 46033,
+          "a": 1592,
+          "b": 1262,
+          "rot": 231,
+          "peak": 593,
+          "exp": 1.25,
+          "cliff": 70,
+          "shore": 361
+        },
+        {
+          "type": "island",
+          "x": 104200,
+          "z": 40664,
+          "a": 1220,
+          "b": 877,
+          "rot": 204,
+          "peak": 405,
+          "exp": 1.26,
+          "cliff": 73,
+          "shore": 351
+        },
+        {
+          "type": "atoll",
+          "x": 97523,
+          "z": 35586,
+          "a": 1310,
+          "b": 1031,
+          "rot": 81,
+          "peak": 4,
+          "ring_m": 314
+        },
+        {
+          "type": "atoll",
+          "x": 90877,
+          "z": 30677,
+          "a": 2004,
+          "b": 1260,
+          "rot": 175,
+          "peak": 4,
+          "ring_m": 349
+        },
+        {
+          "type": "atoll",
+          "x": 82868,
+          "z": 24968,
+          "a": 1393,
+          "b": 1007,
+          "rot": 111,
+          "peak": 4,
+          "ring_m": 305
+        },
+        {
+          "type": "atoll",
+          "x": 74734,
+          "z": 19404,
+          "a": 1213,
+          "b": 879,
+          "rot": 68,
+          "peak": 4,
+          "ring_m": 336
+        },
+        {
+          "type": "atoll",
+          "x": 66138,
+          "z": 13773,
+          "a": 2154,
+          "b": 1969,
+          "rot": 42,
+          "peak": 4,
+          "ring_m": 224
+        }
+      ]
+    },
+    {
+      "id": "hotspot_4",
+      "kind": "hotspot_track",
+      "locked": false,
+      "geology": [
+        "volcanic"
+      ],
+      "mounts": [
+        {
+          "type": "island",
+          "x": 132838,
+          "z": -137499,
+          "a": 4500,
+          "b": 2957,
+          "rot": 201,
+          "peak": 1213,
+          "exp": 1.57,
+          "cliff": 133,
+          "shore": 144
+        },
+        {
+          "type": "island",
+          "x": 125676,
+          "z": -139260,
+          "a": 2592,
+          "b": 1950,
+          "rot": 201,
+          "peak": 1415,
+          "exp": 1.56,
+          "cliff": 133,
+          "shore": 145
+        },
+        {
+          "type": "island",
+          "x": 115670,
+          "z": -141684,
+          "a": 2352,
+          "b": 1786,
+          "rot": 184,
+          "peak": 1220,
+          "exp": 1.57,
+          "cliff": 133,
+          "shore": 143
+        },
+        {
+          "type": "island",
+          "x": 104702,
+          "z": -144245,
+          "a": 1400,
+          "b": 896,
+          "rot": 200,
+          "peak": 674,
+          "exp": 1.58,
+          "cliff": 135,
+          "shore": 137
+        },
+        {
+          "type": "island",
+          "x": 94414,
+          "z": -146506,
+          "a": 994,
+          "b": 848,
+          "rot": 185,
+          "peak": 407,
+          "exp": 1.58,
+          "cliff": 137,
+          "shore": 130
+        },
+        {
+          "type": "seamount",
+          "x": 86655,
+          "z": -148097,
+          "a": 3910,
+          "b": 3630,
+          "rot": 172,
+          "peak": -532
+        },
+        {
+          "type": "seamount",
+          "x": 75783,
+          "z": -150138,
+          "a": 4167,
+          "b": 3463,
+          "rot": 179,
+          "peak": -382
+        },
+        {
+          "type": "seamount",
+          "x": 66439,
+          "z": -151702,
+          "a": 4199,
+          "b": 3030,
+          "rot": 181,
+          "peak": -715
+        },
+        {
+          "type": "seamount",
+          "x": 59285,
+          "z": -152777,
+          "a": 6199,
+          "b": 5461,
+          "rot": 173,
+          "peak": -235
+        }
+      ]
+    },
+    {
+      "id": "ridge_1",
+      "kind": "mid_ocean_ridge",
+      "locked": false,
+      "geology": [
+        "volcanic"
+      ],
+      "crest_m": -1100,
+      "width_m": 12000,
+      "path": {
+        "center_x_tiles": 10.5,
+        "wiggle_tiles": 0.9,
+        "waves": 2,
+        "phase": 1.2764,
+        "height_tiles": 21.0
+      },
+      "points": [
+        [
+          -143225,
+          -153600
+        ],
+        [
+          -141866,
+          -149760
+        ],
+        [
+          -140543,
+          -145920
+        ],
+        [
+          -139423,
+          -142080
+        ],
+        [
+          -138680,
+          -138240
+        ],
+        [
+          -138470,
+          -134400
+        ],
+        [
+          -138912,
+          -130560
+        ],
+        [
+          -140065,
+          -126720
+        ],
+        [
+          -141920,
+          -122880
+        ],
+        [
+          -144397,
+          -119040
+        ],
+        [
+          -147351,
+          -115200
+        ],
+        [
+          -150591,
+          -111360
+        ],
+        [
+          168662,
+          -107520
+        ],
+        [
+          165508,
+          -103680
+        ],
+        [
+          162704,
+          -99840
+        ],
+        [
+          160401,
+          -96000
+        ],
+        [
+          158689,
+          -92160
+        ],
+        [
+          157589,
+          -88320
+        ],
+        [
+          157055,
+          -84480
+        ],
+        [
+          156988,
+          -80640
+        ],
+        [
+          157248,
+          -76800
+        ],
+        [
+          157680,
+          -72960
+        ],
+        [
+          158137,
+          -69120
+        ],
+        [
+          158506,
+          -65280
+        ],
+        [
+          158718,
+          -61440
+        ],
+        [
+          158762,
+          -57600
+        ],
+        [
+          158687,
+          -53760
+        ],
+        [
+          158592,
+          -49920
+        ],
+        [
+          158611,
+          -46080
+        ],
+        [
+          158891,
+          -42240
+        ],
+        [
+          159571,
+          -38400
+        ],
+        [
+          160753,
+          -34560
+        ],
+        [
+          162493,
+          -30720
+        ],
+        [
+          164777,
+          -26880
+        ],
+        [
+          167527,
+          -23040
+        ],
+        [
+          -151957,
+          -19200
+        ],
+        [
+          -148744,
+          -15360
+        ],
+        [
+          -145610,
+          -11520
+        ],
+        [
+          -142772,
+          -7680
+        ],
+        [
+          -140427,
+          -3840
+        ],
+        [
+          -138723,
+          0
+        ],
+        [
+          -137748,
+          3840
+        ],
+        [
+          -137517,
+          7680
+        ],
+        [
+          -137976,
+          11520
+        ],
+        [
+          -139009,
+          15360
+        ],
+        [
+          -140458,
+          19200
+        ],
+        [
+          -142140,
+          23040
+        ],
+        [
+          -143877,
+          26880
+        ],
+        [
+          -145519,
+          30720
+        ],
+        [
+          -146958,
+          34560
+        ],
+        [
+          -148146,
+          38400
+        ],
+        [
+          -149095,
+          42240
+        ],
+        [
+          -149872,
+          46080
+        ],
+        [
+          -150586,
+          49920
+        ],
+        [
+          -151368,
+          53760
+        ],
+        [
+          -152347,
+          57600
+        ],
+        [
+          168934,
+          61440
+        ],
+        [
+          167294,
+          65280
+        ],
+        [
+          165292,
+          69120
+        ],
+        [
+          162990,
+          72960
+        ],
+        [
+          160507,
+          76800
+        ],
+        [
+          158014,
+          80640
+        ],
+        [
+          155705,
+          84480
+        ],
+        [
+          153782,
+          88320
+        ],
+        [
+          152424,
+          92160
+        ],
+        [
+          151766,
+          96000
+        ],
+        [
+          151883,
+          99840
+        ],
+        [
+          152778,
+          103680
+        ],
+        [
+          154381,
+          107520
+        ],
+        [
+          156559,
+          111360
+        ],
+        [
+          159132,
+          115200
+        ],
+        [
+          161895,
+          119040
+        ],
+        [
+          164641,
+          122880
+        ],
+        [
+          167189,
+          126720
+        ],
+        [
+          -153155,
+          130560
+        ],
+        [
+          -151351,
+          134400
+        ],
+        [
+          -149969,
+          138240
+        ],
+        [
+          -148962,
+          142080
+        ],
+        [
+          -148232,
+          145920
+        ],
+        [
+          -147652,
+          149760
+        ],
+        [
+          -147086,
+          153600
+        ],
+        [
+          -146415,
+          157440
+        ],
+        [
+          -145559,
+          161280
+        ],
+        [
+          -144485,
+          165120
+        ]
+      ],
+      "mounts": [
+        {
+          "type": "island",
+          "x": 161895,
+          "z": 119040,
+          "a": 2327,
+          "b": 1676,
+          "rot": 103,
+          "peak": 537,
+          "exp": 1.59,
+          "cliff": 139,
+          "shore": 125
+        },
+        {
+          "type": "island",
+          "x": 151883,
+          "z": 99840,
+          "a": 1965,
+          "b": 1132,
+          "rot": 87,
+          "peak": 387,
+          "exp": 1.54,
+          "cliff": 128,
+          "shore": 161
+        },
+        {
+          "type": "island",
+          "x": 162990,
+          "z": 72960,
+          "a": 2001,
+          "b": 1410,
+          "rot": 72,
+          "peak": 378,
+          "exp": 1.59,
+          "cliff": 138,
+          "shore": 126
+        }
+      ]
+    },
+    {
+      "id": "seamount_field",
+      "kind": "seamount_field",
+      "locked": false,
+      "geology": [
+        "volcanic"
+      ],
+      "mounts": [
+        {
+          "type": "seamount",
+          "x": -25751,
+          "z": -76165,
+          "a": 6299,
+          "b": 4928,
+          "rot": 84,
+          "peak": -737
+        },
+        {
+          "type": "seamount",
+          "x": 128926,
+          "z": 39170,
+          "a": 5088,
+          "b": 3403,
+          "rot": 142,
+          "peak": -659
+        },
+        {
+          "type": "seamount",
+          "x": 73549,
+          "z": -113778,
+          "a": 5836,
+          "b": 5250,
+          "rot": 118,
+          "peak": -548
+        },
+        {
+          "type": "seamount",
+          "x": -128090,
+          "z": -101891,
+          "a": 4594,
+          "b": 4480,
+          "rot": 17,
+          "peak": -637
+        },
+        {
+          "type": "seamount",
+          "x": 60494,
+          "z": -143719,
+          "a": 3063,
+          "b": 2627,
+          "rot": 128,
+          "peak": -818
+        },
+        {
+          "type": "seamount",
+          "x": -33120,
+          "z": -88616,
+          "a": 4725,
+          "b": 4246,
+          "rot": 164,
+          "peak": -878
+        },
+        {
+          "type": "island",
+          "x": 33699,
+          "z": -147177,
+          "a": 1405,
+          "b": 769,
+          "rot": -2,
+          "peak": 66,
+          "exp": 1.58,
+          "cliff": 136,
+          "shore": 134
+        },
+        {
+          "type": "seamount",
+          "x": 22966,
+          "z": 105384,
+          "a": 3309,
+          "b": 3077,
+          "rot": 73,
+          "peak": -66
+        },
+        {
+          "type": "seamount",
+          "x": 86730,
+          "z": -129945,
+          "a": 5428,
+          "b": 5070,
+          "rot": 136,
+          "peak": -474
+        },
+        {
+          "type": "seamount",
+          "x": 145843,
+          "z": 104548,
+          "a": 2865,
+          "b": 2782,
+          "rot": 91,
+          "peak": -386
+        },
+        {
+          "type": "seamount",
+          "x": 75461,
+          "z": -112976,
+          "a": 5822,
+          "b": 4578,
+          "rot": 38,
+          "peak": -289
+        },
+        {
+          "type": "seamount",
+          "x": 97328,
+          "z": -30582,
+          "a": 4448,
+          "b": 3181,
+          "rot": 91,
+          "peak": -218
+        },
+        {
+          "type": "seamount",
+          "x": 154290,
+          "z": -46153,
+          "a": 4201,
+          "b": 3653,
+          "rot": 88,
+          "peak": -768
+        },
+        {
+          "type": "seamount",
+          "x": -49842,
+          "z": -98967,
+          "a": 5683,
+          "b": 5632,
+          "rot": 28,
+          "peak": -798
+        },
+        {
+          "type": "seamount",
+          "x": -59447,
+          "z": -14413,
+          "a": 6174,
+          "b": 4893,
+          "rot": 61,
+          "peak": -568
+        },
+        {
+          "type": "island",
+          "x": 140103,
+          "z": 61676,
+          "a": 439,
+          "b": 256,
+          "rot": 137,
+          "peak": 81,
+          "exp": 1.44,
+          "cliff": 108,
+          "shore": 229
+        },
+        {
+          "type": "seamount",
+          "x": 146361,
+          "z": 130395,
+          "a": 5435,
+          "b": 5350,
+          "rot": 38,
+          "peak": -494
+        },
+        {
+          "type": "island",
+          "x": 155448,
+          "z": 144963,
+          "a": 1114,
+          "b": 937,
+          "rot": 23,
+          "peak": 226,
+          "exp": 1.59,
+          "cliff": 138,
+          "shore": 128
+        },
+        {
+          "type": "seamount",
+          "x": 142382,
+          "z": 35144,
+          "a": 5528,
+          "b": 3897,
+          "rot": 85,
+          "peak": -626
+        },
+        {
+          "type": "seamount",
+          "x": 2084,
+          "z": -107190,
+          "a": 4968,
+          "b": 3794,
+          "rot": 27,
+          "peak": -451
+        },
+        {
+          "type": "seamount",
+          "x": -115023,
+          "z": -75695,
+          "a": 6095,
+          "b": 5239,
+          "rot": 82,
+          "peak": -452
+        },
+        {
+          "type": "seamount",
+          "x": 152799,
+          "z": 130937,
+          "a": 4217,
+          "b": 3602,
+          "rot": 119,
+          "peak": -643
+        },
+        {
+          "type": "seamount",
+          "x": 79855,
+          "z": -2415,
+          "a": 4220,
+          "b": 3251,
+          "rot": 147,
+          "peak": -625
+        },
+        {
+          "type": "seamount",
+          "x": 96154,
+          "z": 50607,
+          "a": 4896,
+          "b": 3970,
+          "rot": 134,
+          "peak": -449
+        },
+        {
+          "type": "seamount",
+          "x": 154491,
+          "z": 161018,
+          "a": 5327,
+          "b": 5304,
+          "rot": 184,
+          "peak": -163
+        },
+        {
+          "type": "seamount",
+          "x": 81632,
+          "z": 23055,
+          "a": 4632,
+          "b": 3090,
+          "rot": 29,
+          "peak": -743
+        },
+        {
+          "type": "island",
+          "x": 129072,
+          "z": 114837,
+          "a": 523,
+          "b": 421,
+          "rot": 89,
+          "peak": 122,
+          "exp": 1.44,
+          "cliff": 108,
+          "shore": 231
+        },
+        {
+          "type": "seamount",
+          "x": -106917,
+          "z": -567,
+          "a": 3686,
+          "b": 2597,
+          "rot": 98,
+          "peak": -142
+        },
+        {
+          "type": "seamount",
+          "x": 70442,
+          "z": 163532,
+          "a": 5973,
+          "b": 4094,
+          "rot": 71,
+          "peak": -697
+        },
+        {
+          "type": "island",
+          "x": 66530,
+          "z": -769,
+          "a": 1455,
+          "b": 768,
+          "rot": 169,
+          "peak": 94,
+          "exp": 1.33,
+          "cliff": 86,
+          "shore": 306
+        },
+        {
+          "type": "island",
+          "x": -132139,
+          "z": -98353,
+          "a": 599,
+          "b": 346,
+          "rot": 76,
+          "peak": 146,
+          "exp": 1.54,
+          "cliff": 128,
+          "shore": 163
+        },
+        {
+          "type": "seamount",
+          "x": 120854,
+          "z": 118871,
+          "a": 3341,
+          "b": 2604,
+          "rot": 132,
+          "peak": -579
+        },
+        {
+          "type": "seamount",
+          "x": 113917,
+          "z": -91605,
+          "a": 4889,
+          "b": 4054,
+          "rot": 1,
+          "peak": -849
+        },
+        {
+          "type": "island",
+          "x": -71881,
+          "z": -27340,
+          "a": 1509,
+          "b": 821,
+          "rot": 133,
+          "peak": 18,
+          "exp": 1.19,
+          "cliff": 58,
+          "shore": 402
+        },
+        {
+          "type": "island",
+          "x": 23873,
+          "z": 140935,
+          "a": 892,
+          "b": 885,
+          "rot": -4,
+          "peak": 188,
+          "exp": 1.35,
+          "cliff": 89,
+          "shore": 294
+        },
+        {
+          "type": "seamount",
+          "x": 96269,
+          "z": -34037,
+          "a": 3257,
+          "b": 2467,
+          "rot": 133,
+          "peak": -656
+        },
+        {
+          "type": "seamount",
+          "x": 126590,
+          "z": 145808,
+          "a": 4065,
+          "b": 3986,
+          "rot": 174,
+          "peak": -61
+        },
+        {
+          "type": "island",
+          "x": 137728,
+          "z": -145647,
+          "a": 852,
+          "b": 754,
+          "rot": 143,
+          "peak": 145,
+          "exp": 1.59,
+          "cliff": 138,
+          "shore": 125
+        },
+        {
+          "type": "seamount",
+          "x": 38108,
+          "z": -134066,
+          "a": 3815,
+          "b": 2703,
+          "rot": 22,
+          "peak": -602
+        },
+        {
+          "type": "seamount",
+          "x": -148094,
+          "z": 43417,
+          "a": 3545,
+          "b": 3236,
+          "rot": 63,
+          "peak": -703
+        },
+        {
+          "type": "seamount",
+          "x": -115699,
+          "z": -104943,
+          "a": 5562,
+          "b": 3781,
+          "rot": 95,
+          "peak": -482
+        },
+        {
+          "type": "island",
+          "x": 46970,
+          "z": 167818,
+          "a": 447,
+          "b": 281,
+          "rot": 134,
+          "peak": 247,
+          "exp": 1.6,
+          "cliff": 140,
+          "shore": 120
+        },
+        {
+          "type": "island",
+          "x": 162373,
+          "z": -50821,
+          "a": 402,
+          "b": 270,
+          "rot": 97,
+          "peak": 228,
+          "exp": 1.59,
+          "cliff": 138,
+          "shore": 127
+        },
+        {
+          "type": "island",
+          "x": 120424,
+          "z": 120505,
+          "a": 922,
+          "b": 888,
+          "rot": 66,
+          "peak": 88,
+          "exp": 1.42,
+          "cliff": 103,
+          "shore": 246
+        },
+        {
+          "type": "seamount",
+          "x": -31476,
+          "z": -28302,
+          "a": 3330,
+          "b": 2574,
+          "rot": 123,
+          "peak": -772
+        },
+        {
+          "type": "island",
+          "x": 122008,
+          "z": 22403,
+          "a": 1208,
+          "b": 705,
+          "rot": 79,
+          "peak": 145,
+          "exp": 1.43,
+          "cliff": 105,
+          "shore": 240
+        },
+        {
+          "type": "seamount",
+          "x": 168093,
+          "z": 132773,
+          "a": 5245,
+          "b": 5170,
+          "rot": -6,
+          "peak": -121
+        },
+        {
+          "type": "seamount",
+          "x": 141916,
+          "z": 130579,
+          "a": 7110,
+          "b": 4786,
+          "rot": 14,
+          "peak": -83
+        },
+        {
+          "type": "island",
+          "x": -18157,
+          "z": 155873,
+          "a": 520,
+          "b": 283,
+          "rot": 168,
+          "peak": 239,
+          "exp": 1.52,
+          "cliff": 125,
+          "shore": 172
+        },
+        {
+          "type": "seamount",
+          "x": 90770,
+          "z": -23608,
+          "a": 4288,
+          "b": 4158,
+          "rot": 172,
+          "peak": -168
+        },
+        {
+          "type": "island",
+          "x": 109859,
+          "z": 79446,
+          "a": 1174,
+          "b": 687,
+          "rot": 0,
+          "peak": 51,
+          "exp": 1.2,
+          "cliff": 61,
+          "shore": 392
+        },
+        {
+          "type": "island",
+          "x": 142772,
+          "z": 41961,
+          "a": 1146,
+          "b": 789,
+          "rot": 46,
+          "peak": 140,
+          "exp": 1.49,
+          "cliff": 118,
+          "shore": 197
+        },
+        {
+          "type": "seamount",
+          "x": 122236,
+          "z": 85621,
+          "a": 5890,
+          "b": 4600,
+          "rot": 78,
+          "peak": -537
+        },
+        {
+          "type": "seamount",
+          "x": 140020,
+          "z": -100494,
+          "a": 5067,
+          "b": 3652,
+          "rot": 128,
+          "peak": -240
+        },
+        {
+          "type": "island",
+          "x": 130092,
+          "z": -145912,
+          "a": 1283,
+          "b": 875,
+          "rot": 186,
+          "peak": 89,
+          "exp": 1.59,
+          "cliff": 138,
+          "shore": 127
+        },
+        {
+          "type": "island",
+          "x": -15940,
+          "z": -116047,
+          "a": 565,
+          "b": 365,
+          "rot": 118,
+          "peak": 32,
+          "exp": 1.25,
+          "cliff": 70,
+          "shore": 360
+        },
+        {
+          "type": "island",
+          "x": 81526,
+          "z": -146419,
+          "a": 1461,
+          "b": 802,
+          "rot": 156,
+          "peak": 34,
+          "exp": 1.58,
+          "cliff": 136,
+          "shore": 134
+        },
+        {
+          "type": "seamount",
+          "x": 58079,
+          "z": -100519,
+          "a": 4402,
+          "b": 4081,
+          "rot": 41,
+          "peak": -895
+        },
+        {
+          "type": "island",
+          "x": -37929,
+          "z": 129658,
+          "a": 972,
+          "b": 802,
+          "rot": 53,
+          "peak": 193,
+          "exp": 1.24,
+          "cliff": 68,
+          "shore": 369
+        },
+        {
+          "type": "seamount",
+          "x": 70054,
+          "z": -116176,
+          "a": 5556,
+          "b": 4170,
+          "rot": 76,
+          "peak": -579
+        },
+        {
+          "type": "seamount",
+          "x": 17008,
+          "z": 156668,
+          "a": 6337,
+          "b": 4998,
+          "rot": 77,
+          "peak": -797
+        },
+        {
+          "type": "seamount",
+          "x": 78785,
+          "z": -147953,
+          "a": 6113,
+          "b": 5338,
+          "rot": 133,
+          "peak": -156
+        },
+        {
+          "type": "seamount",
+          "x": 129509,
+          "z": 57451,
+          "a": 3228,
+          "b": 2669,
+          "rot": 68,
+          "peak": -265
+        },
+        {
+          "type": "island",
+          "x": -5568,
+          "z": 129873,
+          "a": 814,
+          "b": 703,
+          "rot": 153,
+          "peak": 102,
+          "exp": 1.24,
+          "cliff": 68,
+          "shore": 368
+        },
+        {
+          "type": "seamount",
+          "x": -27576,
+          "z": 144984,
+          "a": 5749,
+          "b": 4142,
+          "rot": 161,
+          "peak": -303
+        },
+        {
+          "type": "seamount",
+          "x": -6153,
+          "z": -56837,
+          "a": 5103,
+          "b": 4627,
+          "rot": 77,
+          "peak": -543
+        },
+        {
+          "type": "seamount",
+          "x": 22315,
+          "z": 137087,
+          "a": 5468,
+          "b": 4688,
+          "rot": 33,
+          "peak": -802
+        },
+        {
+          "type": "seamount",
+          "x": 45655,
+          "z": -152947,
+          "a": 4819,
+          "b": 4605,
+          "rot": 35,
+          "peak": -667
+        },
+        {
+          "type": "seamount",
+          "x": -18906,
+          "z": 105433,
+          "a": 3812,
+          "b": 3465,
+          "rot": 161,
+          "peak": -572
+        },
+        {
+          "type": "seamount",
+          "x": -148129,
+          "z": 69069,
+          "a": 4456,
+          "b": 3356,
+          "rot": 133,
+          "peak": -242
+        },
+        {
+          "type": "island",
+          "x": -141366,
+          "z": -89994,
+          "a": 383,
+          "b": 254,
+          "rot": 164,
+          "peak": 13,
+          "exp": 1.57,
+          "cliff": 134,
+          "shore": 140
+        },
+        {
+          "type": "island",
+          "x": 119343,
+          "z": 110253,
+          "a": 1412,
+          "b": 939,
+          "rot": 175,
+          "peak": 162,
+          "exp": 1.36,
+          "cliff": 92,
+          "shore": 286
+        },
+        {
+          "type": "seamount",
+          "x": 146154,
+          "z": 51440,
+          "a": 6137,
+          "b": 4191,
+          "rot": 105,
+          "peak": -281
+        },
+        {
+          "type": "seamount",
+          "x": 94010,
+          "z": 5315,
+          "a": 2978,
+          "b": 2923,
+          "rot": 115,
+          "peak": -686
+        },
+        {
+          "type": "island",
+          "x": 167113,
+          "z": 160179,
+          "a": 641,
+          "b": 343,
+          "rot": 50,
+          "peak": 100,
+          "exp": 1.6,
+          "cliff": 140,
+          "shore": 120
+        },
+        {
+          "type": "island",
+          "x": 132775,
+          "z": 42780,
+          "a": 606,
+          "b": 516,
+          "rot": 123,
+          "peak": 168,
+          "exp": 1.41,
+          "cliff": 102,
+          "shore": 249
+        },
+        {
+          "type": "island",
+          "x": 126599,
+          "z": 22864,
+          "a": 921,
+          "b": 511,
+          "rot": 119,
+          "peak": 116,
+          "exp": 1.45,
+          "cliff": 109,
+          "shore": 226
+        },
+        {
+          "type": "seamount",
+          "x": 128169,
+          "z": -50073,
+          "a": 4302,
+          "b": 3972,
+          "rot": 58,
+          "peak": -713
+        },
+        {
+          "type": "island",
+          "x": 117651,
+          "z": -93338,
+          "a": 673,
+          "b": 423,
+          "rot": 134,
+          "peak": 57,
+          "exp": 1.34,
+          "cliff": 87,
+          "shore": 300
+        },
+        {
+          "type": "seamount",
+          "x": -88567,
+          "z": -111603,
+          "a": 3248,
+          "b": 2662,
+          "rot": 85,
+          "peak": -646
+        },
+        {
+          "type": "seamount",
+          "x": 127340,
+          "z": 30050,
+          "a": 4312,
+          "b": 2954,
+          "rot": 31,
+          "peak": -859
+        },
+        {
+          "type": "seamount",
+          "x": -32251,
+          "z": -25784,
+          "a": 2654,
+          "b": 2517,
+          "rot": 0,
+          "peak": -780
+        },
+        {
+          "type": "seamount",
+          "x": -5964,
+          "z": -92015,
+          "a": 5924,
+          "b": 4042,
+          "rot": 154,
+          "peak": -302
+        },
+        {
+          "type": "seamount",
+          "x": 45868,
+          "z": 167936,
+          "a": 4065,
+          "b": 3110,
+          "rot": 175,
+          "peak": -726
+        },
+        {
+          "type": "seamount",
+          "x": 23490,
+          "z": -121167,
+          "a": 3556,
+          "b": 2645,
+          "rot": 51,
+          "peak": -88
+        },
+        {
+          "type": "island",
+          "x": 121037,
+          "z": -103511,
+          "a": 464,
+          "b": 417,
+          "rot": 72,
+          "peak": 240,
+          "exp": 1.41,
+          "cliff": 103,
+          "shore": 248
+        },
+        {
+          "type": "seamount",
+          "x": -64371,
+          "z": -110740,
+          "a": 5048,
+          "b": 4338,
+          "rot": 107,
+          "peak": -474
+        },
+        {
+          "type": "seamount",
+          "x": 57661,
+          "z": -127692,
+          "a": 5922,
+          "b": 4140,
+          "rot": 66,
+          "peak": -671
+        },
+        {
+          "type": "island",
+          "x": 162689,
+          "z": 76792,
+          "a": 1304,
+          "b": 1088,
+          "rot": 120,
+          "peak": 30,
+          "exp": 1.59,
+          "cliff": 138,
+          "shore": 127
+        },
+        {
+          "type": "seamount",
+          "x": 45893,
+          "z": -145851,
+          "a": 7043,
+          "b": 5111,
+          "rot": 114,
+          "peak": -257
+        },
+        {
+          "type": "island",
+          "x": 138350,
+          "z": 52615,
+          "a": 912,
+          "b": 590,
+          "rot": 124,
+          "peak": 126,
+          "exp": 1.43,
+          "cliff": 105,
+          "shore": 239
+        },
+        {
+          "type": "seamount",
+          "x": 110748,
+          "z": 56255,
+          "a": 4566,
+          "b": 4086,
+          "rot": 125,
+          "peak": -460
+        },
+        {
+          "type": "seamount",
+          "x": 119195,
+          "z": -150141,
+          "a": 3569,
+          "b": 2491,
+          "rot": 140,
+          "peak": -67
+        },
+        {
+          "type": "seamount",
+          "x": 132422,
+          "z": 153333,
+          "a": 5908,
+          "b": 5589,
+          "rot": 118,
+          "peak": -865
+        },
+        {
+          "type": "seamount",
+          "x": 6775,
+          "z": 128890,
+          "a": 4177,
+          "b": 3530,
+          "rot": 114,
+          "peak": -418
+        },
+        {
+          "type": "seamount",
+          "x": 23084,
+          "z": 147754,
+          "a": 3893,
+          "b": 2884,
+          "rot": 28,
+          "peak": -253
+        },
+        {
+          "type": "seamount",
+          "x": 85405,
+          "z": 37569,
+          "a": 5917,
+          "b": 4490,
+          "rot": 108,
+          "peak": -262
+        },
+        {
+          "type": "island",
+          "x": 113400,
+          "z": 123209,
+          "a": 1125,
+          "b": 592,
+          "rot": -3,
+          "peak": 130,
+          "exp": 1.39,
+          "cliff": 98,
+          "shore": 262
+        },
+        {
+          "type": "seamount",
+          "x": 137869,
+          "z": 94764,
+          "a": 4731,
+          "b": 4203,
+          "rot": 152,
+          "peak": -617
+        },
+        {
+          "type": "seamount",
+          "x": 77973,
+          "z": -102062,
+          "a": 6050,
+          "b": 4874,
+          "rot": 161,
+          "peak": -583
+        },
+        {
+          "type": "seamount",
+          "x": 121024,
+          "z": 31787,
+          "a": 6541,
+          "b": 5085,
+          "rot": 143,
+          "peak": -867
+        },
+        {
+          "type": "seamount",
+          "x": 119391,
+          "z": 56053,
+          "a": 4378,
+          "b": 3612,
+          "rot": 145,
+          "peak": -121
+        },
+        {
+          "type": "island",
+          "x": 28575,
+          "z": 123183,
+          "a": 996,
+          "b": 567,
+          "rot": 162,
+          "peak": 29,
+          "exp": 1.22,
+          "cliff": 63,
+          "shore": 384
+        },
+        {
+          "type": "island",
+          "x": -78191,
+          "z": -141299,
+          "a": 421,
+          "b": 281,
+          "rot": 60,
+          "peak": 258,
+          "exp": 1.56,
+          "cliff": 131,
+          "shore": 149
+        },
+        {
+          "type": "island",
+          "x": -151352,
+          "z": -107180,
+          "a": 937,
+          "b": 633,
+          "rot": 40,
+          "peak": 236,
+          "exp": 1.6,
+          "cliff": 140,
+          "shore": 120
+        },
+        {
+          "type": "seamount",
+          "x": 44684,
+          "z": 155070,
+          "a": 6192,
+          "b": 5689,
+          "rot": 70,
+          "peak": -326
+        },
+        {
+          "type": "seamount",
+          "x": 21222,
+          "z": 121066,
+          "a": 5172,
+          "b": 3537,
+          "rot": 57,
+          "peak": -626
+        },
+        {
+          "type": "seamount",
+          "x": 43877,
+          "z": -77455,
+          "a": 5532,
+          "b": 4789,
+          "rot": 125,
+          "peak": -453
+        },
+        {
+          "type": "seamount",
+          "x": 20382,
+          "z": -150280,
+          "a": 6249,
+          "b": 4446,
+          "rot": 78,
+          "peak": -634
+        },
+        {
+          "type": "island",
+          "x": -46787,
+          "z": 137703,
+          "a": 644,
+          "b": 463,
+          "rot": 112,
+          "peak": 34,
+          "exp": 1.31,
+          "cliff": 82,
+          "shore": 320
+        },
+        {
+          "type": "seamount",
+          "x": -149001,
+          "z": -128257,
+          "a": 4229,
+          "b": 3578,
+          "rot": 26,
+          "peak": -242
+        },
+        {
+          "type": "island",
+          "x": 155175,
+          "z": -92669,
+          "a": 1438,
+          "b": 966,
+          "rot": 88,
+          "peak": 257,
+          "exp": 1.57,
+          "cliff": 133,
+          "shore": 143
+        },
+        {
+          "type": "seamount",
+          "x": -44741,
+          "z": -98461,
+          "a": 4377,
+          "b": 4206,
+          "rot": 138,
+          "peak": -118
+        },
+        {
+          "type": "island",
+          "x": -39568,
+          "z": 147647,
+          "a": 1418,
+          "b": 957,
+          "rot": 157,
+          "peak": 151,
+          "exp": 1.43,
+          "cliff": 106,
+          "shore": 237
+        },
+        {
+          "type": "seamount",
+          "x": 164620,
+          "z": -113832,
+          "a": 5635,
+          "b": 4944,
+          "rot": 108,
+          "peak": -562
+        },
+        {
+          "type": "seamount",
+          "x": 157358,
+          "z": 39864,
+          "a": 5838,
+          "b": 4242,
+          "rot": 61,
+          "peak": -749
+        },
+        {
+          "type": "seamount",
+          "x": -32429,
+          "z": -85686,
+          "a": 5288,
+          "b": 4299,
+          "rot": 97,
+          "peak": -231
+        },
+        {
+          "type": "island",
+          "x": -143429,
+          "z": -112997,
+          "a": 939,
+          "b": 526,
+          "rot": 79,
+          "peak": 53,
+          "exp": 1.59,
+          "cliff": 137,
+          "shore": 129
+        },
+        {
+          "type": "seamount",
+          "x": 122356,
+          "z": 155551,
+          "a": 4285,
+          "b": 3912,
+          "rot": 117,
+          "peak": -193
+        },
+        {
+          "type": "seamount",
+          "x": 127107,
+          "z": 111008,
+          "a": 5821,
+          "b": 4062,
+          "rot": 111,
+          "peak": -783
+        },
+        {
+          "type": "seamount",
+          "x": 127863,
+          "z": -121786,
+          "a": 4282,
+          "b": 3137,
+          "rot": 113,
+          "peak": -442
+        },
+        {
+          "type": "seamount",
+          "x": 138659,
+          "z": -105606,
+          "a": 4869,
+          "b": 3782,
+          "rot": 16,
+          "peak": -67
+        },
+        {
+          "type": "seamount",
+          "x": 41183,
+          "z": -116339,
+          "a": 5244,
+          "b": 4215,
+          "rot": 150,
+          "peak": -829
+        },
+        {
+          "type": "seamount",
+          "x": 157614,
+          "z": 48350,
+          "a": 3044,
+          "b": 2324,
+          "rot": 49,
+          "peak": -367
+        },
+        {
+          "type": "seamount",
+          "x": 33617,
+          "z": 157202,
+          "a": 5051,
+          "b": 4673,
+          "rot": 107,
+          "peak": -433
+        },
+        {
+          "type": "island",
+          "x": 75302,
+          "z": -136502,
+          "a": 773,
+          "b": 708,
+          "rot": 161,
+          "peak": 125,
+          "exp": 1.49,
+          "cliff": 119,
+          "shore": 192
+        },
+        {
+          "type": "island",
+          "x": 58186,
+          "z": 165717,
+          "a": 661,
+          "b": 455,
+          "rot": 109,
+          "peak": 246,
+          "exp": 1.59,
+          "cliff": 139,
+          "shore": 124
+        },
+        {
+          "type": "seamount",
+          "x": 160297,
+          "z": 138003,
+          "a": 4475,
+          "b": 3786,
+          "rot": 12,
+          "peak": -430
+        },
+        {
+          "type": "seamount",
+          "x": 163048,
+          "z": -75024,
+          "a": 5985,
+          "b": 4288,
+          "rot": 64,
+          "peak": -630
+        },
+        {
+          "type": "island",
+          "x": 114625,
+          "z": -150514,
+          "a": 666,
+          "b": 541,
+          "rot": 1,
+          "peak": 174,
+          "exp": 1.6,
+          "cliff": 139,
+          "shore": 122
+        },
+        {
+          "type": "seamount",
+          "x": -25547,
+          "z": -26325,
+          "a": 6036,
+          "b": 4611,
+          "rot": 59,
+          "peak": -127
+        },
+        {
+          "type": "seamount",
+          "x": -11883,
+          "z": 133106,
+          "a": 3976,
+          "b": 3874,
+          "rot": 182,
+          "peak": -546
+        },
+        {
+          "type": "island",
+          "x": 141254,
+          "z": 15563,
+          "a": 887,
+          "b": 612,
+          "rot": 117,
+          "peak": 24,
+          "exp": 1.53,
+          "cliff": 125,
+          "shore": 171
+        },
+        {
+          "type": "seamount",
+          "x": 141432,
+          "z": -152228,
+          "a": 4192,
+          "b": 2827,
+          "rot": 142,
+          "peak": -712
+        },
+        {
+          "type": "seamount",
+          "x": 18970,
+          "z": 135336,
+          "a": 5835,
+          "b": 4732,
+          "rot": 24,
+          "peak": -817
+        },
+        {
+          "type": "seamount",
+          "x": -5422,
+          "z": 139189,
+          "a": 6825,
+          "b": 5095,
+          "rot": 62,
+          "peak": -270
+        },
+        {
+          "type": "seamount",
+          "x": -109751,
+          "z": 148546,
+          "a": 2879,
+          "b": 2588,
+          "rot": 101,
+          "peak": -514
+        },
+        {
+          "type": "island",
+          "x": -25467,
+          "z": 153428,
+          "a": 912,
+          "b": 902,
+          "rot": 119,
+          "peak": 38,
+          "exp": 1.5,
+          "cliff": 120,
+          "shore": 190
+        },
+        {
+          "type": "island",
+          "x": 161289,
+          "z": -150672,
+          "a": 1566,
+          "b": 870,
+          "rot": 151,
+          "peak": 21,
+          "exp": 1.6,
+          "cliff": 140,
+          "shore": 120
+        },
+        {
+          "type": "seamount",
+          "x": 149248,
+          "z": 162753,
+          "a": 3813,
+          "b": 2739,
+          "rot": 36,
+          "peak": -714
+        },
+        {
+          "type": "island",
+          "x": 163374,
+          "z": -144724,
+          "a": 554,
+          "b": 450,
+          "rot": 91,
+          "peak": 129,
+          "exp": 1.6,
+          "cliff": 140,
+          "shore": 120
+        },
+        {
+          "type": "seamount",
+          "x": 120935,
+          "z": 61678,
+          "a": 5378,
+          "b": 5171,
+          "rot": 175,
+          "peak": -655
+        },
+        {
+          "type": "seamount",
+          "x": 83635,
+          "z": 165433,
+          "a": 4804,
+          "b": 3213,
+          "rot": 2,
+          "peak": -226
+        },
+        {
+          "type": "island",
+          "x": 23998,
+          "z": 143294,
+          "a": 989,
+          "b": 926,
+          "rot": 160,
+          "peak": 41,
+          "exp": 1.37,
+          "cliff": 95,
+          "shore": 274
+        },
+        {
+          "type": "seamount",
+          "x": 84736,
+          "z": -148501,
+          "a": 6158,
+          "b": 5661,
+          "rot": 81,
+          "peak": -831
+        },
+        {
+          "type": "island",
+          "x": 120469,
+          "z": 24779,
+          "a": 528,
+          "b": 359,
+          "rot": 112,
+          "peak": 224,
+          "exp": 1.42,
+          "cliff": 103,
+          "shore": 247
+        },
+        {
+          "type": "island",
+          "x": -49054,
+          "z": -17515,
+          "a": 341,
+          "b": 338,
+          "rot": 111,
+          "peak": 97,
+          "exp": 1.1,
+          "cliff": 0,
+          "shore": 466
+        },
+        {
+          "type": "seamount",
+          "x": 63542,
+          "z": 161462,
+          "a": 5318,
+          "b": 4246,
+          "rot": 99,
+          "peak": -816
+        },
+        {
+          "type": "seamount",
+          "x": 70733,
+          "z": 163770,
+          "a": 4656,
+          "b": 3892,
+          "rot": 35,
+          "peak": -719
+        },
+        {
+          "type": "seamount",
+          "x": 142127,
+          "z": -27663,
+          "a": 3927,
+          "b": 2751,
+          "rot": 118,
+          "peak": -807
+        },
+        {
+          "type": "island",
+          "x": 126812,
+          "z": 136583,
+          "a": 398,
+          "b": 361,
+          "rot": 13,
+          "peak": 163,
+          "exp": 1.48,
+          "cliff": 116,
+          "shore": 203
+        },
+        {
+          "type": "seamount",
+          "x": 68416,
+          "z": -152531,
+          "a": 4942,
+          "b": 4317,
+          "rot": 19,
+          "peak": -817
+        },
+        {
+          "type": "seamount",
+          "x": -33016,
+          "z": 140268,
+          "a": 3003,
+          "b": 2157,
+          "rot": 44,
+          "peak": -642
+        },
+        {
+          "type": "island",
+          "x": -67362,
+          "z": -145318,
+          "a": 740,
+          "b": 668,
+          "rot": -1,
+          "peak": 41,
+          "exp": 1.57,
+          "cliff": 135,
+          "shore": 137
+        },
+        {
+          "type": "seamount",
+          "x": -30161,
+          "z": -93512,
+          "a": 5847,
+          "b": 4531,
+          "rot": -14,
+          "peak": -798
+        },
+        {
+          "type": "seamount",
+          "x": 120486,
+          "z": 47250,
+          "a": 6301,
+          "b": 4551,
+          "rot": 154,
+          "peak": -87
+        },
+        {
+          "type": "seamount",
+          "x": -18444,
+          "z": -32175,
+          "a": 5662,
+          "b": 4616,
+          "rot": 27,
+          "peak": -552
+        },
+        {
+          "type": "seamount",
+          "x": 147581,
+          "z": -98971,
+          "a": 4192,
+          "b": 3484,
+          "rot": 101,
+          "peak": -500
+        },
+        {
+          "type": "seamount",
+          "x": -26276,
+          "z": -71439,
+          "a": 5922,
+          "b": 4760,
+          "rot": 162,
+          "peak": -486
+        },
+        {
+          "type": "seamount",
+          "x": -14852,
+          "z": 131289,
+          "a": 2743,
+          "b": 2370,
+          "rot": 5,
+          "peak": -180
+        },
+        {
+          "type": "island",
+          "x": 156513,
+          "z": 148519,
+          "a": 1081,
+          "b": 894,
+          "rot": 76,
+          "peak": 85,
+          "exp": 1.59,
+          "cliff": 138,
+          "shore": 126
+        },
+        {
+          "type": "island",
+          "x": 142257,
+          "z": 163613,
+          "a": 677,
+          "b": 603,
+          "rot": 142,
+          "peak": 212,
+          "exp": 1.6,
+          "cliff": 139,
+          "shore": 122
+        },
+        {
+          "type": "seamount",
+          "x": -22765,
+          "z": 143862,
+          "a": 3298,
+          "b": 2614,
+          "rot": 88,
+          "peak": -431
+        },
+        {
+          "type": "seamount",
+          "x": 142019,
+          "z": -74609,
+          "a": 4000,
+          "b": 3148,
+          "rot": 2,
+          "peak": -189
+        },
+        {
+          "type": "island",
+          "x": 144872,
+          "z": 32541,
+          "a": 405,
+          "b": 302,
+          "rot": 56,
+          "peak": 11,
+          "exp": 1.52,
+          "cliff": 123,
+          "shore": 178
+        },
+        {
+          "type": "island",
+          "x": -12434,
+          "z": 162912,
+          "a": 1194,
+          "b": 829,
+          "rot": 148,
+          "peak": 102,
+          "exp": 1.58,
+          "cliff": 136,
+          "shore": 132
+        },
+        {
+          "type": "island",
+          "x": -92433,
+          "z": 17252,
+          "a": 1073,
+          "b": 1054,
+          "rot": 183,
+          "peak": 24,
+          "exp": 1.39,
+          "cliff": 98,
+          "shore": 264
+        },
+        {
+          "type": "seamount",
+          "x": -19469,
+          "z": 133768,
+          "a": 2631,
+          "b": 2483,
+          "rot": 83,
+          "peak": -336
+        },
+        {
+          "type": "island",
+          "x": 35879,
+          "z": 164400,
+          "a": 1256,
+          "b": 825,
+          "rot": 29,
+          "peak": 103,
+          "exp": 1.59,
+          "cliff": 138,
+          "shore": 127
+        },
+        {
+          "type": "seamount",
+          "x": 86512,
+          "z": 132354,
+          "a": 3878,
+          "b": 3762,
+          "rot": 73,
+          "peak": -638
+        },
+        {
+          "type": "seamount",
+          "x": 33511,
+          "z": 158131,
+          "a": 3225,
+          "b": 2290,
+          "rot": 85,
+          "peak": -105
+        },
+        {
+          "type": "seamount",
+          "x": 143517,
+          "z": -47174,
+          "a": 5394,
+          "b": 5262,
+          "rot": 114,
+          "peak": -456
+        },
+        {
+          "type": "island",
+          "x": -67200,
+          "z": -108400,
+          "a": 690,
+          "b": 387,
+          "rot": 110,
+          "peak": 241,
+          "exp": 1.3,
+          "cliff": 81,
+          "shore": 323
+        },
+        {
+          "type": "seamount",
+          "x": -140393,
+          "z": -95138,
+          "a": 3062,
+          "b": 2155,
+          "rot": 59,
+          "peak": -383
+        },
+        {
+          "type": "island",
+          "x": 29320,
+          "z": 150457,
+          "a": 1242,
+          "b": 1022,
+          "rot": 33,
+          "peak": 230,
+          "exp": 1.46,
+          "cliff": 113,
+          "shore": 214
+        },
+        {
+          "type": "seamount",
+          "x": -33264,
+          "z": 113600,
+          "a": 3764,
+          "b": 3034,
+          "rot": 189,
+          "peak": -324
+        },
+        {
+          "type": "island",
+          "x": 124606,
+          "z": 150365,
+          "a": 842,
+          "b": 451,
+          "rot": 93,
+          "peak": 63,
+          "exp": 1.54,
+          "cliff": 128,
+          "shore": 160
+        },
+        {
+          "type": "seamount",
+          "x": 39289,
+          "z": -148628,
+          "a": 5318,
+          "b": 4501,
+          "rot": 9,
+          "peak": -422
+        },
+        {
+          "type": "seamount",
+          "x": 80235,
+          "z": -151697,
+          "a": 6197,
+          "b": 5295,
+          "rot": 146,
+          "peak": -499
+        },
+        {
+          "type": "seamount",
+          "x": -6801,
+          "z": -52591,
+          "a": 4909,
+          "b": 4524,
+          "rot": 162,
+          "peak": -88
+        },
+        {
+          "type": "seamount",
+          "x": 6453,
+          "z": -63164,
+          "a": 2747,
+          "b": 2653,
+          "rot": 124,
+          "peak": -811
+        },
+        {
+          "type": "island",
+          "x": 147948,
+          "z": -96376,
+          "a": 765,
+          "b": 716,
+          "rot": 83,
+          "peak": 132,
+          "exp": 1.54,
+          "cliff": 127,
+          "shore": 164
+        },
+        {
+          "type": "island",
+          "x": -44270,
+          "z": 144872,
+          "a": 1286,
+          "b": 1013,
+          "rot": 81,
+          "peak": 254,
+          "exp": 1.39,
+          "cliff": 99,
+          "shore": 261
+        },
+        {
+          "type": "seamount",
+          "x": -82389,
+          "z": 8872,
+          "a": 3140,
+          "b": 2874,
+          "rot": 148,
+          "peak": -849
+        },
+        {
+          "type": "seamount",
+          "x": -32280,
+          "z": 145050,
+          "a": 6015,
+          "b": 5341,
+          "rot": 118,
+          "peak": -791
+        },
+        {
+          "type": "island",
+          "x": 118063,
+          "z": 99841,
+          "a": 662,
+          "b": 558,
+          "rot": 173,
+          "peak": 35,
+          "exp": 1.28,
+          "cliff": 75,
+          "shore": 342
+        },
+        {
+          "type": "seamount",
+          "x": 13576,
+          "z": -131558,
+          "a": 4451,
+          "b": 3369,
+          "rot": 30,
+          "peak": -856
+        },
+        {
+          "type": "seamount",
+          "x": -15574,
+          "z": 135187,
+          "a": 5756,
+          "b": 4609,
+          "rot": 21,
+          "peak": -260
+        },
+        {
+          "type": "island",
+          "x": 48405,
+          "z": -146032,
+          "a": 1058,
+          "b": 887,
+          "rot": 136,
+          "peak": 148,
+          "exp": 1.57,
+          "cliff": 134,
+          "shore": 139
+        },
+        {
+          "type": "seamount",
+          "x": -58736,
+          "z": -21710,
+          "a": 3298,
+          "b": 2955,
+          "rot": 186,
+          "peak": -416
+        },
+        {
+          "type": "seamount",
+          "x": 155439,
+          "z": 37345,
+          "a": 4108,
+          "b": 4031,
+          "rot": 84,
+          "peak": -828
+        },
+        {
+          "type": "island",
+          "x": 133397,
+          "z": 114022,
+          "a": 495,
+          "b": 270,
+          "rot": 139,
+          "peak": 221,
+          "exp": 1.46,
+          "cliff": 112,
+          "shore": 216
+        },
+        {
+          "type": "island",
+          "x": -133985,
+          "z": -95026,
+          "a": 578,
+          "b": 436,
+          "rot": 111,
+          "peak": 97,
+          "exp": 1.54,
+          "cliff": 128,
+          "shore": 160
+        },
+        {
+          "type": "seamount",
+          "x": 69896,
+          "z": -125201,
+          "a": 6085,
+          "b": 4219,
+          "rot": 160,
+          "peak": -735
+        },
+        {
+          "type": "seamount",
+          "x": 66931,
+          "z": -116648,
+          "a": 3809,
+          "b": 2691,
+          "rot": 104,
+          "peak": -805
+        },
+        {
+          "type": "seamount",
+          "x": 12976,
+          "z": -153300,
+          "a": 3121,
+          "b": 2121,
+          "rot": 69,
+          "peak": -731
+        },
+        {
+          "type": "seamount",
+          "x": 82275,
+          "z": -38368,
+          "a": 6253,
+          "b": 4735,
+          "rot": 132,
+          "peak": -422
+        },
+        {
+          "type": "seamount",
+          "x": -57578,
+          "z": -21426,
+          "a": 5178,
+          "b": 4230,
+          "rot": 27,
+          "peak": -416
+        },
+        {
+          "type": "island",
+          "x": 135861,
+          "z": -149948,
+          "a": 1550,
+          "b": 894,
+          "rot": 100,
+          "peak": 25,
+          "exp": 1.6,
+          "cliff": 140,
+          "shore": 121
+        },
+        {
+          "type": "seamount",
+          "x": 112513,
+          "z": 42441,
+          "a": 5066,
+          "b": 4560,
+          "rot": 19,
+          "peak": -623
+        },
+        {
+          "type": "island",
+          "x": 40425,
+          "z": -140827,
+          "a": 502,
+          "b": 349,
+          "rot": 51,
+          "peak": 44,
+          "exp": 1.53,
+          "cliff": 126,
+          "shore": 170
+        },
+        {
+          "type": "seamount",
+          "x": -30414,
+          "z": -60050,
+          "a": 3294,
+          "b": 2684,
+          "rot": -7,
+          "peak": -849
+        },
+        {
+          "type": "seamount",
+          "x": 128641,
+          "z": 121815,
+          "a": 4830,
+          "b": 4157,
+          "rot": 58,
+          "peak": -870
+        },
+        {
+          "type": "seamount",
+          "x": 13697,
+          "z": -89591,
+          "a": 5778,
+          "b": 4963,
+          "rot": 48,
+          "peak": -686
+        },
+        {
+          "type": "seamount",
+          "x": 157105,
+          "z": -71887,
+          "a": 3695,
+          "b": 3102,
+          "rot": 96,
+          "peak": -809
+        },
+        {
+          "type": "island",
+          "x": 139071,
+          "z": 87953,
+          "a": 1346,
+          "b": 967,
+          "rot": 13,
+          "peak": 104,
+          "exp": 1.43,
+          "cliff": 106,
+          "shore": 235
+        },
+        {
+          "type": "seamount",
+          "x": 121492,
+          "z": 13512,
+          "a": 5854,
+          "b": 5446,
+          "rot": 130,
+          "peak": -641
+        },
+        {
+          "type": "seamount",
+          "x": 65380,
+          "z": 165226,
+          "a": 3466,
+          "b": 2582,
+          "rot": 154,
+          "peak": -234
+        },
+        {
+          "type": "island",
+          "x": 115837,
+          "z": 13295,
+          "a": 1198,
+          "b": 752,
+          "rot": 42,
+          "peak": 89,
+          "exp": 1.43,
+          "cliff": 105,
+          "shore": 240
+        },
+        {
+          "type": "island",
+          "x": 137466,
+          "z": -19231,
+          "a": 1021,
+          "b": 661,
+          "rot": 73,
+          "peak": 216,
+          "exp": 1.46,
+          "cliff": 112,
+          "shore": 215
+        },
+        {
+          "type": "seamount",
+          "x": 110721,
+          "z": 123789,
+          "a": 3456,
+          "b": 2765,
+          "rot": 4,
+          "peak": -385
+        },
+        {
+          "type": "seamount",
+          "x": 80537,
+          "z": -98806,
+          "a": 4886,
+          "b": 3830,
+          "rot": 119,
+          "peak": -233
+        },
+        {
+          "type": "seamount",
+          "x": -22344,
+          "z": -44238,
+          "a": 4630,
+          "b": 3499,
+          "rot": 166,
+          "peak": -480
+        },
+        {
+          "type": "island",
+          "x": -151566,
+          "z": 157225,
+          "a": 470,
+          "b": 266,
+          "rot": 14,
+          "peak": 158,
+          "exp": 1.6,
+          "cliff": 140,
+          "shore": 120
+        },
+        {
+          "type": "island",
+          "x": 138151,
+          "z": 28178,
+          "a": 1163,
+          "b": 709,
+          "rot": 23,
+          "peak": 29,
+          "exp": 1.49,
+          "cliff": 118,
+          "shore": 194
+        },
+        {
+          "type": "island",
+          "x": 41979,
+          "z": 168169,
+          "a": 537,
+          "b": 334,
+          "rot": 51,
+          "peak": 252,
+          "exp": 1.6,
+          "cliff": 140,
+          "shore": 120
+        },
+        {
+          "type": "seamount",
+          "x": 157783,
+          "z": 39364,
+          "a": 4417,
+          "b": 3007,
+          "rot": 143,
+          "peak": -798
+        },
+        {
+          "type": "seamount",
+          "x": 120733,
+          "z": 28171,
+          "a": 4808,
+          "b": 3653,
+          "rot": 78,
+          "peak": -536
+        },
+        {
+          "type": "seamount",
+          "x": 152148,
+          "z": 36258,
+          "a": 4130,
+          "b": 2838,
+          "rot": 39,
+          "peak": -431
+        },
+        {
+          "type": "seamount",
+          "x": 61289,
+          "z": -131825,
+          "a": 5203,
+          "b": 4047,
+          "rot": 59,
+          "peak": -309
+        },
+        {
+          "type": "island",
+          "x": 71176,
+          "z": 153317,
+          "a": 883,
+          "b": 773,
+          "rot": 38,
+          "peak": 190,
+          "exp": 1.5,
+          "cliff": 121,
+          "shore": 186
+        },
+        {
+          "type": "island",
+          "x": -17125,
+          "z": 150534,
+          "a": 335,
+          "b": 334,
+          "rot": 184,
+          "peak": 134,
+          "exp": 1.46,
+          "cliff": 113,
+          "shore": 213
+        },
+        {
+          "type": "island",
+          "x": 37670,
+          "z": 121053,
+          "a": 751,
+          "b": 500,
+          "rot": 109,
+          "peak": 133,
+          "exp": 1.21,
+          "cliff": 62,
+          "shore": 386
+        },
+        {
+          "type": "seamount",
+          "x": -33425,
+          "z": -109485,
+          "a": 5040,
+          "b": 4554,
+          "rot": 191,
+          "peak": -213
+        },
+        {
+          "type": "seamount",
+          "x": -75814,
+          "z": -112278,
+          "a": 4148,
+          "b": 3675,
+          "rot": 40,
+          "peak": -180
+        },
+        {
+          "type": "seamount",
+          "x": 26804,
+          "z": -134605,
+          "a": 2893,
+          "b": 2584,
+          "rot": 1,
+          "peak": -163
+        },
+        {
+          "type": "seamount",
+          "x": 147092,
+          "z": 86219,
+          "a": 6557,
+          "b": 4970,
+          "rot": 19,
+          "peak": -388
+        },
+        {
+          "type": "island",
+          "x": 149977,
+          "z": 165691,
+          "a": 777,
+          "b": 494,
+          "rot": 46,
+          "peak": 133,
+          "exp": 1.6,
+          "cliff": 140,
+          "shore": 120
+        },
+        {
+          "type": "seamount",
+          "x": -45583,
+          "z": -100058,
+          "a": 3848,
+          "b": 3106,
+          "rot": 110,
+          "peak": -432
+        },
+        {
+          "type": "seamount",
+          "x": -39490,
+          "z": -25787,
+          "a": 3143,
+          "b": 2861,
+          "rot": 121,
+          "peak": -179
+        },
+        {
+          "type": "seamount",
+          "x": 71892,
+          "z": 125758,
+          "a": 4897,
+          "b": 4681,
+          "rot": 142,
+          "peak": -314
+        },
+        {
+          "type": "seamount",
+          "x": 157892,
+          "z": 48794,
+          "a": 4957,
+          "b": 3801,
+          "rot": -12,
+          "peak": -236
+        },
+        {
+          "type": "island",
+          "x": 52169,
+          "z": -149951,
+          "a": 731,
+          "b": 424,
+          "rot": 111,
+          "peak": 144,
+          "exp": 1.59,
+          "cliff": 139,
+          "shore": 125
+        },
+        {
+          "type": "seamount",
+          "x": 145974,
+          "z": 132537,
+          "a": 4489,
+          "b": 3611,
+          "rot": 130,
+          "peak": -457
+        },
+        {
+          "type": "seamount",
+          "x": 61098,
+          "z": -117215,
+          "a": 5686,
+          "b": 4432,
+          "rot": 117,
+          "peak": -895
+        },
+        {
+          "type": "seamount",
+          "x": 108912,
+          "z": 156267,
+          "a": 5305,
+          "b": 4656,
+          "rot": 107,
+          "peak": -345
+        },
+        {
+          "type": "seamount",
+          "x": -28346,
+          "z": -24287,
+          "a": 4656,
+          "b": 3565,
+          "rot": 154,
+          "peak": -574
+        },
+        {
+          "type": "island",
+          "x": -37569,
+          "z": -28429,
+          "a": 985,
+          "b": 586,
+          "rot": 124,
+          "peak": 93,
+          "exp": 1.0,
+          "cliff": 0,
+          "shore": 531
+        },
+        {
+          "type": "island",
+          "x": -84659,
+          "z": 17148,
+          "a": 422,
+          "b": 314,
+          "rot": 178,
+          "peak": 235,
+          "exp": 1.38,
+          "cliff": 97,
+          "shore": 269
+        },
+        {
+          "type": "seamount",
+          "x": 115948,
+          "z": 19657,
+          "a": 4029,
+          "b": 2914,
+          "rot": 151,
+          "peak": -777
+        },
+        {
+          "type": "seamount",
+          "x": 14640,
+          "z": -122440,
+          "a": 4844,
+          "b": 3775,
+          "rot": 125,
+          "peak": -445
+        },
+        {
+          "type": "island",
+          "x": -116389,
+          "z": -93116,
+          "a": 733,
+          "b": 647,
+          "rot": 152,
+          "peak": 220,
+          "exp": 1.42,
+          "cliff": 105,
+          "shore": 241
+        },
+        {
+          "type": "seamount",
+          "x": 99403,
+          "z": -21152,
+          "a": 5919,
+          "b": 5774,
+          "rot": 122,
+          "peak": -358
+        },
+        {
+          "type": "island",
+          "x": 43005,
+          "z": -143909,
+          "a": 1301,
+          "b": 742,
+          "rot": 83,
+          "peak": 44,
+          "exp": 1.56,
+          "cliff": 131,
+          "shore": 150
+        },
+        {
+          "type": "seamount",
+          "x": 118025,
+          "z": 131390,
+          "a": 5517,
+          "b": 4647,
+          "rot": 5,
+          "peak": -582
+        },
+        {
+          "type": "island",
+          "x": 158432,
+          "z": -65615,
+          "a": 1253,
+          "b": 910,
+          "rot": 154,
+          "peak": 193,
+          "exp": 1.57,
+          "cliff": 135,
+          "shore": 138
+        },
+        {
+          "type": "island",
+          "x": 134221,
+          "z": 5119,
+          "a": 1116,
+          "b": 786,
+          "rot": 103,
+          "peak": 130,
+          "exp": 1.5,
+          "cliff": 121,
+          "shore": 186
+        },
+        {
+          "type": "seamount",
+          "x": -43966,
+          "z": -8449,
+          "a": 5381,
+          "b": 4166,
+          "rot": 91,
+          "peak": -640
+        },
+        {
+          "type": "seamount",
+          "x": 133385,
+          "z": 167006,
+          "a": 5576,
+          "b": 4175,
+          "rot": 110,
+          "peak": -856
+        },
+        {
+          "type": "island",
+          "x": 115703,
+          "z": 117946,
+          "a": 421,
+          "b": 234,
+          "rot": 86,
+          "peak": 138,
+          "exp": 1.39,
+          "cliff": 98,
+          "shore": 265
+        },
+        {
+          "type": "seamount",
+          "x": -32157,
+          "z": 116568,
+          "a": 4537,
+          "b": 3458,
+          "rot": 186,
+          "peak": -679
+        },
+        {
+          "type": "seamount",
+          "x": -141541,
+          "z": -101252,
+          "a": 4759,
+          "b": 3570,
+          "rot": 38,
+          "peak": -277
+        },
+        {
+          "type": "seamount",
+          "x": 68230,
+          "z": 26097,
+          "a": 6718,
+          "b": 5337,
+          "rot": 17,
+          "peak": -575
+        },
+        {
+          "type": "seamount",
+          "x": 151833,
+          "z": 31922,
+          "a": 6207,
+          "b": 4323,
+          "rot": 80,
+          "peak": -820
+        },
+        {
+          "type": "seamount",
+          "x": 119997,
+          "z": 23179,
+          "a": 4362,
+          "b": 4360,
+          "rot": 160,
+          "peak": -274
+        },
+        {
+          "type": "island",
+          "x": 59942,
+          "z": 158269,
+          "a": 1136,
+          "b": 949,
+          "rot": 37,
+          "peak": 192,
+          "exp": 1.55,
+          "cliff": 129,
+          "shore": 156
+        },
+        {
+          "type": "seamount",
+          "x": 24823,
+          "z": -142375,
+          "a": 5418,
+          "b": 3712,
+          "rot": 42,
+          "peak": -199
+        },
+        {
+          "type": "island",
+          "x": 84097,
+          "z": 32094,
+          "a": 490,
+          "b": 476,
+          "rot": 93,
+          "peak": 61,
+          "exp": 1.23,
+          "cliff": 66,
+          "shore": 374
+        },
+        {
+          "type": "seamount",
+          "x": 120175,
+          "z": 35817,
+          "a": 5226,
+          "b": 3792,
+          "rot": 138,
+          "peak": -798
+        },
+        {
+          "type": "island",
+          "x": 151709,
+          "z": 152979,
+          "a": 938,
+          "b": 784,
+          "rot": 54,
+          "peak": 15,
+          "exp": 1.59,
+          "cliff": 138,
+          "shore": 127
+        },
+        {
+          "type": "island",
+          "x": 117026,
+          "z": -93975,
+          "a": 743,
+          "b": 448,
+          "rot": 130,
+          "peak": 248,
+          "exp": 1.34,
+          "cliff": 88,
+          "shore": 299
+        },
+        {
+          "type": "seamount",
+          "x": 141140,
+          "z": -72229,
+          "a": 6457,
+          "b": 4938,
+          "rot": 18,
+          "peak": -576
+        },
+        {
+          "type": "seamount",
+          "x": 122165,
+          "z": 81422,
+          "a": 2883,
+          "b": 2748,
+          "rot": 26,
+          "peak": -373
+        },
+        {
+          "type": "island",
+          "x": 128811,
+          "z": 65486,
+          "a": 648,
+          "b": 614,
+          "rot": 40,
+          "peak": 130,
+          "exp": 1.34,
+          "cliff": 88,
+          "shore": 299
+        },
+        {
+          "type": "seamount",
+          "x": 141297,
+          "z": 60210,
+          "a": 5353,
+          "b": 4903,
+          "rot": 126,
+          "peak": -883
+        },
+        {
+          "type": "seamount",
+          "x": 75089,
+          "z": 42425,
+          "a": 2862,
+          "b": 2605,
+          "rot": 88,
+          "peak": -869
+        },
+        {
+          "type": "seamount",
+          "x": -19239,
+          "z": 59322,
+          "a": 5258,
+          "b": 4397,
+          "rot": 105,
+          "peak": -220
+        },
+        {
+          "type": "island",
+          "x": 149286,
+          "z": 44507,
+          "a": 1190,
+          "b": 728,
+          "rot": -2,
+          "peak": 178,
+          "exp": 1.53,
+          "cliff": 126,
+          "shore": 169
+        },
+        {
+          "type": "seamount",
+          "x": 146415,
+          "z": 68836,
+          "a": 6121,
+          "b": 5425,
+          "rot": 80,
+          "peak": -94
+        },
+        {
+          "type": "seamount",
+          "x": 28851,
+          "z": 131567,
+          "a": 4844,
+          "b": 3904,
+          "rot": 11,
+          "peak": -890
+        },
+        {
+          "type": "seamount",
+          "x": 101328,
+          "z": 50154,
+          "a": 3539,
+          "b": 3287,
+          "rot": 13,
+          "peak": -423
+        },
+        {
+          "type": "seamount",
+          "x": -66827,
+          "z": 36608,
+          "a": 4274,
+          "b": 4023,
+          "rot": 68,
+          "peak": -324
+        },
+        {
+          "type": "seamount",
+          "x": 119510,
+          "z": -9347,
+          "a": 2875,
+          "b": 2813,
+          "rot": 63,
+          "peak": -306
+        },
+        {
+          "type": "island",
+          "x": 100189,
+          "z": -118877,
+          "a": 787,
+          "b": 534,
+          "rot": 165,
+          "peak": 224,
+          "exp": 1.4,
+          "cliff": 101,
+          "shore": 254
+        },
+        {
+          "type": "seamount",
+          "x": -49231,
+          "z": -90582,
+          "a": 4437,
+          "b": 3314,
+          "rot": 131,
+          "peak": -656
+        },
+        {
+          "type": "seamount",
+          "x": 88609,
+          "z": 44740,
+          "a": 4477,
+          "b": 3620,
+          "rot": 97,
+          "peak": -399
+        },
+        {
+          "type": "island",
+          "x": 59163,
+          "z": 24213,
+          "a": 849,
+          "b": 662,
+          "rot": 145,
+          "peak": 120,
+          "exp": 1.34,
+          "cliff": 88,
+          "shore": 300
+        },
+        {
+          "type": "island",
+          "x": -24622,
+          "z": -24386,
+          "a": 783,
+          "b": 750,
+          "rot": 49,
+          "peak": 107,
+          "exp": 1.14,
+          "cliff": 0,
+          "shore": 434
+        },
+        {
+          "type": "seamount",
+          "x": -118994,
+          "z": -95968,
+          "a": 6156,
+          "b": 5592,
+          "rot": 70,
+          "peak": -525
+        },
+        {
+          "type": "seamount",
+          "x": -5289,
+          "z": -97742,
+          "a": 3839,
+          "b": 2885,
+          "rot": 53,
+          "peak": -609
+        },
+        {
+          "type": "seamount",
+          "x": 19921,
+          "z": 120781,
+          "a": 5982,
+          "b": 4213,
+          "rot": 153,
+          "peak": -699
+        },
+        {
+          "type": "seamount",
+          "x": -2335,
+          "z": -117713,
+          "a": 5040,
+          "b": 3723,
+          "rot": 151,
+          "peak": -807
+        },
+        {
+          "type": "seamount",
+          "x": 53085,
+          "z": -101088,
+          "a": 6636,
+          "b": 4762,
+          "rot": 107,
+          "peak": -177
+        },
+        {
+          "type": "seamount",
+          "x": 149851,
+          "z": -70566,
+          "a": 2761,
+          "b": 2525,
+          "rot": 190,
+          "peak": -607
+        },
+        {
+          "type": "seamount",
+          "x": 157079,
+          "z": -97503,
+          "a": 3831,
+          "b": 3728,
+          "rot": 142,
+          "peak": -891
+        },
+        {
+          "type": "seamount",
+          "x": 162876,
+          "z": 58689,
+          "a": 6416,
+          "b": 5165,
+          "rot": 32,
+          "peak": -659
+        },
+        {
+          "type": "seamount",
+          "x": 2908,
+          "z": -41255,
+          "a": 5321,
+          "b": 4608,
+          "rot": 153,
+          "peak": -502
+        },
+        {
+          "type": "seamount",
+          "x": -126422,
+          "z": -80279,
+          "a": 6030,
+          "b": 4181,
+          "rot": 44,
+          "peak": -299
+        },
+        {
+          "type": "island",
+          "x": 133260,
+          "z": 61106,
+          "a": 719,
+          "b": 487,
+          "rot": 144,
+          "peak": 16,
+          "exp": 1.38,
+          "cliff": 96,
+          "shore": 271
+        },
+        {
+          "type": "island",
+          "x": 89224,
+          "z": 29516,
+          "a": 899,
+          "b": 479,
+          "rot": 43,
+          "peak": 188,
+          "exp": 1.29,
+          "cliff": 79,
+          "shore": 329
+        },
+        {
+          "type": "island",
+          "x": 22183,
+          "z": 148797,
+          "a": 410,
+          "b": 303,
+          "rot": 32,
+          "peak": 137,
+          "exp": 1.44,
+          "cliff": 109,
+          "shore": 227
+        },
+        {
+          "type": "seamount",
+          "x": 70286,
+          "z": 39510,
+          "a": 3457,
+          "b": 2585,
+          "rot": 21,
+          "peak": -222
+        },
+        {
+          "type": "seamount",
+          "x": 15805,
+          "z": -76081,
+          "a": 3277,
+          "b": 2724,
+          "rot": 153,
+          "peak": -811
+        },
+        {
+          "type": "seamount",
+          "x": -5891,
+          "z": -23102,
+          "a": 3298,
+          "b": 2334,
+          "rot": 27,
+          "peak": -574
+        },
+        {
+          "type": "seamount",
+          "x": 139197,
+          "z": -1040,
+          "a": 6102,
+          "b": 5390,
+          "rot": 121,
+          "peak": -270
+        },
+        {
+          "type": "seamount",
+          "x": 1185,
+          "z": -61931,
+          "a": 5418,
+          "b": 5222,
+          "rot": 79,
+          "peak": -226
+        },
+        {
+          "type": "seamount",
+          "x": 125823,
+          "z": 45318,
+          "a": 4422,
+          "b": 3572,
+          "rot": 157,
+          "peak": -768
+        },
+        {
+          "type": "seamount",
+          "x": -40490,
+          "z": -77424,
+          "a": 3021,
+          "b": 2242,
+          "rot": 171,
+          "peak": -130
+        },
+        {
+          "type": "seamount",
+          "x": 139270,
+          "z": -128078,
+          "a": 4432,
+          "b": 3281,
+          "rot": 53,
+          "peak": -773
+        },
+        {
+          "type": "seamount",
+          "x": -150677,
+          "z": -76394,
+          "a": 4018,
+          "b": 3518,
+          "rot": 34,
+          "peak": -128
+        }
+      ]
+    },
+    {
+      "id": "central_trench",
+      "kind": "abyssal_trench",
+      "fixed": true,
+      "locked": true,
+      "note": "Defined in world.json.",
+      "mounts": []
+    },
+    {
+      "id": "center_island",
+      "kind": "landmark_island",
+      "fixed": true,
+      "locked": true,
+      "note": "Defined in world.json.",
+      "mounts": []
+    }
+  ]
+}

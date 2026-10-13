@@ -1,0 +1,541 @@
+class_name WorldElevation
+extends RefCounted
+
+# Builds one coarse elevation map for the whole wrapping world from the
+# world sketch: the sea floor, the central trench, continental shelves,
+# the mid-ocean ridge, every volcano, seamount and atoll, and the center
+# island with its crater. Islands are wherever the map rises above sea
+# level. Each tile later adds fine detail on top of this map.
+#
+# Noise fields are made seamless, so the map joins up across the wrap
+# seam in both directions. Heights are meters relative to sea level.
+
+const SeedUtil := preload("res://src/worldgen/settings/worldgen_seed.gd")
+const SketchScript := preload("res://src/worldgen/sketch/world_sketch.gd")
+
+const OWNER_NONE := -1
+const SPECIAL_NONE := 0
+const SPECIAL_LAVA := 1
+
+var settings
+var rules: Dictionary = {}
+var cell_m: float = 160.0
+var size_x: int = 0
+var size_z: int = 0
+var origin_x: float = 0.0
+var origin_z: float = 0.0
+
+var heights: PackedFloat32Array = PackedFloat32Array()
+var owners: PackedInt32Array = PackedInt32Array()     # feature index per cell
+var special: PackedByteArray = PackedByteArray()      # lava and the like
+var feature_ids: Array = []
+
+var _province: PackedByteArray
+var _detail: PackedByteArray
+var _hills: PackedByteArray
+var _ridged: PackedByteArray
+var _warp_x: PackedByteArray
+var _warp_z: PackedByteArray
+var _fine_x: PackedByteArray
+var _fine_z: PackedByteArray
+var _master: int = 0
+
+
+# cell_override lets tests build a coarser map quickly.
+func build(world_settings, sketch_rules: Dictionary, sketch: Dictionary, cell_override: float = 0.0) -> void:
+	settings = world_settings
+	rules = sketch_rules
+	_master = settings.master_seed
+	cell_m = cell_override if cell_override > 0.0 else float(rules.get("cell_m", 160))
+	var tile: float = float(settings.tile_size_m)
+	size_x = int(round(float(settings.tiles_x) * tile / cell_m))
+	size_z = int(round(float(settings.tiles_z) * tile / cell_m))
+	origin_x = float(settings.min_tile) * tile
+	origin_z = float(settings.min_tile) * tile
+
+	_make_noise_fields()
+	_build_sea_floor()
+	_carve_trenches()
+
+	feature_ids.clear()
+
+	for feature in sketch.get("features", []):
+		feature_ids.append(str(feature["id"]))
+
+	var index: int = 0
+
+	for feature in sketch.get("features", []):
+		if str(feature["kind"]) == "continental_shelf":
+			_raise_shelf(feature["shelf"], feature["shelf"], index)
+
+			for lobe in feature.get("lobes", []):
+				_raise_shelf(lobe, feature["shelf"], index)
+
+		if str(feature["kind"]) == "mid_ocean_ridge":
+			_raise_ridge(feature, index)
+
+		index += 1
+
+	index = 0
+
+	for feature in sketch.get("features", []):
+		for mount in feature.get("mounts", []):
+			_raise_mount(mount, index)
+
+		index += 1
+
+	_raise_landmark_islands()
+	_clamp_heights()
+
+
+# ==================================================
+# INDEXING AND NOISE
+# ==================================================
+
+func index_of(column: int, row: int) -> int:
+	return posmod(row, size_z) * size_x + posmod(column, size_x)
+
+
+func height_at_m(x_m: float, z_m: float) -> float:
+	var column: int = int(floor((x_m - origin_x) / cell_m))
+	var row: int = int(floor((z_m - origin_z) / cell_m))
+	return heights[index_of(column, row)]
+
+
+func cell_center_m(column: int, row: int) -> Vector2:
+	return Vector2(
+		origin_x + (float(column) + 0.5) * cell_m,
+		origin_z + (float(row) + 0.5) * cell_m
+	)
+
+
+static func _value(field: PackedByteArray, index: int) -> float:
+	return float(field[index]) / 127.5 - 1.0
+
+
+# A seamless noise field covering the whole world, one byte per cell.
+func _field(purpose: String, wavelength_m: float, octaves: int, noise_type: int, fractal: int) -> PackedByteArray:
+	var noise: FastNoiseLite = FastNoiseLite.new()
+	noise.seed = SeedUtil.purpose_seed(_master, purpose)
+	noise.noise_type = noise_type
+	noise.frequency = cell_m / wavelength_m
+	noise.fractal_type = fractal
+	noise.fractal_octaves = octaves
+	var image: Image = noise.get_seamless_image(size_x, size_z, false, false, 0.12, true)
+
+	if image.get_format() != Image.FORMAT_L8:
+		image.convert(Image.FORMAT_L8)
+
+	return image.get_data()
+
+
+func _make_noise_fields() -> void:
+	var simplex: int = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	var fbm: int = FastNoiseLite.FRACTAL_FBM
+	_province = _field("elev_province", 60000.0, 3, simplex, fbm)
+	_detail = _field("elev_detail", 6000.0, 4, simplex, fbm)
+	_hills = _field("elev_hills", 14000.0, 4, simplex, fbm)
+	_ridged = _field("elev_ridged", 4000.0, 3, simplex, FastNoiseLite.FRACTAL_RIDGED)
+	_warp_x = _field("elev_warp_x", 16000.0, 2, simplex, fbm)
+	_warp_z = _field("elev_warp_z", 16000.0, 2, simplex, fbm)
+	_fine_x = _field("elev_fine_x", 3500.0, 2, simplex, fbm)
+	_fine_z = _field("elev_fine_z", 3500.0, 2, simplex, fbm)
+
+
+# ==================================================
+# SEA FLOOR AND TRENCH
+# ==================================================
+
+func _build_sea_floor() -> void:
+	var floor_rules: Dictionary = rules["sea_floor"]
+	var base: float = float(floor_rules["base_depth_m"])
+	var variation: float = float(floor_rules["variation_m"])
+	var detail: float = float(floor_rules["detail_m"])
+	var count: int = size_x * size_z
+	heights.resize(count)
+	owners.resize(count)
+	special.resize(count)
+	owners.fill(OWNER_NONE)
+	special.fill(SPECIAL_NONE)
+
+	for index in range(count):
+		heights[index] = (
+			base
+			+ variation * _value(_province, index)
+			+ detail * _value(_detail, index)
+		)
+
+
+func _carve_trenches() -> void:
+	for feature in settings.world_features:
+		if str(feature.get("kind", "")) != "abyssal_trench":
+			continue
+
+		var floor_m: float = float(feature["floor_m"])
+		var half_width: float = float(feature["half_width_tiles"])
+		var falloff: float = float(feature["edge_falloff_tiles"])
+		var reach_tiles: float = float(feature["half_length_tiles"]) + falloff + 0.5
+		var center: Vector2 = _feature_center_m(feature)
+		var radius_cells: int = int(ceil(reach_tiles * float(settings.tile_size_m) / cell_m))
+		var center_column: int = int(floor((center.x - origin_x) / cell_m))
+		var center_row: int = int(floor((center.y - origin_z) / cell_m))
+
+		for row_offset in range(-radius_cells, radius_cells + 1):
+			for column_offset in range(-radius_cells, radius_cells + 1):
+				var column: int = center_column + column_offset
+				var row: int = center_row + row_offset
+				var position: Vector2 = cell_center_m(column, row)
+				var tiles: Vector2 = settings.tiles_from_center(position.x, position.y)
+				var reach: float = settings.feature_reach(feature, tiles)
+				var index: int = index_of(column, row)
+				var detail: float = _value(_detail, index)
+
+				if reach <= 1.0:
+					heights[index] = minf(heights[index], floor_m + 120.0 * detail + 200.0 * reach * reach)
+					continue
+
+				var outside: float = (reach - 1.0) * half_width / falloff
+
+				if outside >= 1.0:
+					continue
+
+				var t: float = _smooth(outside)
+				var carved: float = lerpf(floor_m + 200.0, heights[index], t)
+				heights[index] = minf(heights[index], carved)
+
+
+# ==================================================
+# SHELVES AND RIDGES
+# ==================================================
+
+# outline: center, size and rotation of the shelf or one of its lobes.
+# shelf: the shelf's depth and hill settings, shared by its lobes.
+func _raise_shelf(outline: Dictionary, shelf: Dictionary, owner_index: int) -> void:
+	var center: Vector2 = Vector2(float(outline["center_m"][0]), float(outline["center_m"][1]))
+	var half_length: float = float(outline["half_length_m"])
+	var half_width: float = float(outline["half_width_m"])
+	var rotation: float = deg_to_rad(float(outline["rotation_deg"]))
+	var depth: float = float(shelf["depth_m"])
+	var edge: float = float(shelf["edge_width"])
+	var amplitude: float = float(shelf["hill_amplitude_m"])
+	var threshold: float = float(shelf["hill_threshold"])
+	var warp: float = half_width * 0.5
+	var reach: float = half_length * (1.0 + edge) + warp
+	var radius_cells: int = int(ceil(reach / cell_m))
+	var center_column: int = int(floor((center.x - origin_x) / cell_m))
+	var center_row: int = int(floor((center.y - origin_z) / cell_m))
+	var cos_r: float = cos(rotation)
+	var sin_r: float = sin(rotation)
+
+	for row_offset in range(-radius_cells, radius_cells + 1):
+		for column_offset in range(-radius_cells, radius_cells + 1):
+			var index: int = index_of(center_column + column_offset, center_row + row_offset)
+			var dx: float = float(column_offset) * cell_m + warp * _value(_warp_x, index)
+			var dz: float = float(row_offset) * cell_m + warp * _value(_warp_z, index)
+			var along: float = (dx * cos_r + dz * sin_r) / half_length
+			var across: float = (-dx * sin_r + dz * cos_r) / half_width
+			var distance: float = sqrt(along * along + across * across)
+
+			if distance >= 1.0 + edge:
+				continue
+
+			var mask: float = 1.0 - _smooth((distance - (1.0 - edge)) / (2.0 * edge))
+			var hills: float = _value(_hills, index)
+			var shelf_height: float = depth + amplitude * (hills - threshold)
+
+			# Hills fade toward the shelf edge so islands stay on the shelf.
+			shelf_height = lerpf(depth, shelf_height, _smooth(clampf((1.0 - distance) / 0.35, 0.0, 1.0)))
+			shelf_height += 30.0 * _value(_detail, index)
+			var blended: float = lerpf(heights[index], shelf_height, mask)
+
+			if blended > 0.0 and mask > 0.5:
+				owners[index] = owner_index
+
+			heights[index] = blended
+
+
+# The ridge crest follows a path x(z), so each row only needs the cells
+# near the crest.
+func _raise_ridge(feature: Dictionary, owner_index: int) -> void:
+	var path: Dictionary = feature["path"]
+	var crest: float = float(feature["crest_m"])
+	var width: float = float(feature["width_m"])
+	var reach_cells: int = int(ceil(width * 2.0 / cell_m))
+	var tile: float = float(settings.tile_size_m)
+
+	for row in range(size_z):
+		var row_center: Vector2 = cell_center_m(0, row)
+		var z_tiles: float = settings.tiles_from_center(row_center.x, row_center.y).y
+		var x_tiles: float = SketchScript.ridge_x_tiles(path, z_tiles)
+		var x_m: float = (x_tiles + 0.5) * tile
+		var center_column: int = int(floor((x_m - origin_x) / cell_m))
+		var center_offset: float = x_m - (origin_x + (float(center_column) + 0.5) * cell_m)
+
+		for column_offset in range(-reach_cells, reach_cells + 1):
+			var distance: float = absf(float(column_offset) * cell_m - center_offset)
+			var index: int = index_of(center_column + column_offset, row)
+			var noise_height: float = 380.0 * _value(_ridged, index) + 160.0 * _value(_detail, index)
+			var raised: float = -4000.0 + (crest + noise_height + 4000.0) * exp(-pow(distance / width, 2.0))
+
+			if raised > heights[index]:
+				heights[index] = _smooth_max(heights[index], raised, 120.0)
+
+
+# ==================================================
+# VOLCANOES, SEAMOUNTS, ATOLLS AND ISLANDS
+# ==================================================
+
+func _raise_mount(mount: Dictionary, owner_index: int) -> void:
+	var mount_type: String = str(mount["type"])
+	var a: float = float(mount["a"])
+	var b: float = float(mount["b"])
+	var shore: float = float(mount.get("shore", 600))
+	var slope: float = 5000.0
+
+	if mount_type == "seamount":
+		shore = 0.0
+		slope = 0.0
+	elif mount_type == "atoll":
+		shore = 0.0
+		slope = 2600.0
+
+	var warp: float = minf(b * 0.45, 2200.0)
+	var fine: float = minf(b * 0.12, 450.0)
+
+	# Starter islands get rougher coasts so they do not read as ovals.
+	if mount_type == "starter":
+		warp = b * 0.7
+		fine = b * 0.25
+	var reach: float = a + shore + slope + warp + fine
+
+	if mount_type == "seamount":
+		reach = a + warp
+
+	var radius_cells: int = int(ceil(reach / cell_m)) + 1
+	var center_column: int = int(floor((float(mount["x"]) - origin_x) / cell_m))
+	var center_row: int = int(floor((float(mount["z"]) - origin_z) / cell_m))
+	var offset_x: float = float(mount["x"]) - (origin_x + (float(center_column) + 0.5) * cell_m)
+	var offset_z: float = float(mount["z"]) - (origin_z + (float(center_row) + 0.5) * cell_m)
+	var rotation: float = deg_to_rad(float(mount["rot"]))
+	var cos_r: float = cos(rotation)
+	var sin_r: float = sin(rotation)
+
+	for row_offset in range(-radius_cells, radius_cells + 1):
+		for column_offset in range(-radius_cells, radius_cells + 1):
+			var index: int = index_of(center_column + column_offset, center_row + row_offset)
+			var dx: float = (
+				float(column_offset) * cell_m - offset_x
+				+ warp * _value(_warp_x, index) + fine * _value(_fine_x, index)
+			)
+			var dz: float = (
+				float(row_offset) * cell_m - offset_z
+				+ warp * _value(_warp_z, index) + fine * _value(_fine_z, index)
+			)
+			var along: float = (dx * cos_r + dz * sin_r) / a
+			var across: float = (-dx * sin_r + dz * cos_r) / b
+			var distance: float = sqrt(along * along + across * across)
+			var raised: float = -INF
+
+			match mount_type:
+				"seamount":
+					raised = _seamount_height(mount, distance)
+				"atoll":
+					raised = _atoll_height(mount, distance, b, index)
+				_:
+					raised = _island_height(mount, distance, b, shore, slope, index)
+
+			if raised <= heights[index] - 150.0:
+				continue
+
+			var combined: float = _smooth_max(heights[index], raised, 120.0)
+
+			if raised > heights[index] and raised > 0.0:
+				owners[index] = owner_index
+
+			heights[index] = combined
+
+
+func _island_height(
+	mount: Dictionary, distance: float, b: float, shore: float, slope: float, index: int
+) -> float:
+	var peak: float = float(mount["peak"])
+
+	if distance < 1.0:
+		var inland: float = 1.0 - distance
+		var exponent: float = float(mount.get("exp", 1.0))
+		var height: float = peak * pow(inland, exponent)
+		var cliff: float = float(mount.get("cliff", 0))
+		height += cliff * _smooth(clampf(inland / 0.07, 0.0, 1.0))
+
+		# Gullies and ridges on the slopes, strongest on high ground.
+		height += 0.18 * peak * inland * _value(_ridged, index)
+		height += 6.0 * _value(_detail, index)
+		return maxf(height, 1.0)
+
+	var outside: float = (distance - 1.0) * b
+	var shelf_depth: float = 40.0
+
+	# Shallow fringes vary in width around the coast.
+	shore *= 0.35 + 0.65 * (0.5 + 0.5 * _value(_hills, index))
+
+	if outside < shore:
+		return -shelf_depth * (outside / maxf(shore, 1.0)) - 1.0
+
+	var t: float = clampf((outside - shore) / slope, 0.0, 1.0)
+	return -shelf_depth - (4000.0 - shelf_depth) * pow(t, 0.8)
+
+
+func _seamount_height(mount: Dictionary, distance: float) -> float:
+	if distance >= 1.0:
+		return -INF
+
+	var peak: float = float(mount["peak"])
+	return peak - (peak + 4000.0) * pow(distance, 1.3)
+
+
+func _atoll_height(mount: Dictionary, distance: float, b: float, index: int) -> float:
+	var ring: float = float(mount.get("ring_m", 300))
+	var from_ring: float = (distance - 1.0) * b
+
+	if absf(from_ring) <= ring * 0.5:
+		# Reef islets with gaps where the sea breaks through.
+		return 2.0 + 5.0 * _value(_detail, index) if _value(_fine_x, index) > -0.35 else -3.0
+
+	if from_ring < 0.0:
+		return -22.0 + 6.0 * _value(_detail, index)
+
+	var t: float = clampf((from_ring - ring * 0.5) / 2600.0, 0.0, 1.0)
+	return -8.0 - 3992.0 * pow(t, 0.7)
+
+
+# ==================================================
+# THE CENTER ISLAND
+# ==================================================
+
+# A broad jungle shield with a steep volcano in the middle, a crater at
+# the top and a breach in the rim where lava will spill out.
+func _raise_landmark_islands() -> void:
+	var owner_index: int = feature_ids.find("center_island")
+
+	for feature in settings.world_features:
+		if str(feature.get("kind", "")) != "landmark_island":
+			continue
+
+		var tile: float = float(settings.tile_size_m)
+		var center: Vector2 = _feature_center_m(feature)
+		var a: float = float(feature["half_length_tiles"]) * tile
+		var b: float = float(feature["half_width_tiles"]) * tile
+		var rim_height: float = float(feature.get("peak_m", 1900))
+		var crater: Dictionary = feature.get("crater", {})
+		var crater_radius: float = float(crater.get("radius_m", 700))
+		var crater_depth: float = float(crater.get("depth_m", 250))
+
+		var shield: Dictionary = {
+			"type": "island", "x": center.x, "z": center.y, "a": a, "b": b,
+			"rot": float(feature.get("rotation_deg", 0)), "peak": 480.0, "exp": 0.85,
+			"cliff": 60.0, "shore": 400.0,
+		}
+		_raise_mount(shield, owner_index)
+
+		# The cone's rim sits at the requested peak height.
+		var cone_radius: float = b * 0.48
+		var cone_exponent: float = 1.25
+		var apex: float = rim_height / pow(1.0 - crater_radius / cone_radius, cone_exponent)
+		var cone: Dictionary = {
+			"type": "island", "x": center.x, "z": center.y, "a": cone_radius, "b": cone_radius,
+			"rot": 0.0, "peak": apex, "exp": cone_exponent, "cliff": 0.0, "shore": 0.0,
+		}
+		_raise_cone_exact(cone, owner_index)
+		_carve_crater(center, crater_radius, crater_depth, rim_height, crater)
+
+
+# The volcano cone without coastal warping, so the crater sits true.
+func _raise_cone_exact(cone: Dictionary, owner_index: int) -> void:
+	var radius: float = float(cone["a"])
+	var radius_cells: int = int(ceil(radius / cell_m)) + 1
+	var center_column: int = int(floor((float(cone["x"]) - origin_x) / cell_m))
+	var center_row: int = int(floor((float(cone["z"]) - origin_z) / cell_m))
+	var center: Vector2 = Vector2(float(cone["x"]), float(cone["z"]))
+
+	for row_offset in range(-radius_cells, radius_cells + 1):
+		for column_offset in range(-radius_cells, radius_cells + 1):
+			var column: int = center_column + column_offset
+			var row: int = center_row + row_offset
+			var index: int = index_of(column, row)
+			var position: Vector2 = cell_center_m(column, row)
+			var distance: float = position.distance_to(center) / radius
+
+			if distance >= 1.0:
+				continue
+
+			var height: float = float(cone["peak"]) * pow(1.0 - distance, float(cone["exp"]))
+			height += 0.08 * height * _value(_ridged, index)
+
+			if height > heights[index]:
+				heights[index] = _smooth_max(heights[index], height, 60.0)
+				owners[index] = owner_index
+
+
+func _carve_crater(
+	center: Vector2, radius: float, depth: float, rim_height: float, crater: Dictionary
+) -> void:
+	var floor_height: float = rim_height - depth
+	var bearing: float = deg_to_rad(float(crater.get("breach_bearing_deg", 160)))
+	var breach_direction: Vector2 = Vector2(sin(bearing), -cos(bearing))
+	var breach_half_width: float = maxf(float(crater.get("breach_width_m", 120)) * 0.5, cell_m * 0.75)
+	var reach: float = radius * 1.8
+	var radius_cells: int = int(ceil(reach / cell_m)) + 1
+	var center_column: int = int(floor((center.x - origin_x) / cell_m))
+	var center_row: int = int(floor((center.y - origin_z) / cell_m))
+
+	for row_offset in range(-radius_cells, radius_cells + 1):
+		for column_offset in range(-radius_cells, radius_cells + 1):
+			var column: int = center_column + column_offset
+			var row: int = center_row + row_offset
+			var index: int = index_of(column, row)
+			var offset: Vector2 = cell_center_m(column, row) - center
+			var distance: float = offset.length()
+
+			if distance < radius:
+				var bowl: float = floor_height + depth * pow(distance / radius, 3.0)
+				heights[index] = minf(heights[index], bowl)
+				special[index] = SPECIAL_LAVA
+
+			var along: float = offset.dot(breach_direction)
+			var lateral: float = absf(offset.cross(breach_direction))
+
+			if along > radius * 0.6 and along < radius * 1.8 and lateral < breach_half_width:
+				var channel: float = floor_height + 15.0 - (along - radius * 0.6) * 0.3
+				heights[index] = minf(heights[index], channel)
+
+
+# ==================================================
+# HELPERS
+# ==================================================
+
+func _clamp_heights() -> void:
+	var bottom: float = float(settings.world_bottom_m) + 20.0
+	var top: float = float(settings.world_top_m) - 40.0
+
+	for index in range(heights.size()):
+		heights[index] = clampf(heights[index], bottom, top)
+
+
+func _feature_center_m(feature: Dictionary) -> Vector2:
+	var tile: float = float(settings.tile_size_m)
+	var center_tile: Array = feature["center_tile"]
+	return Vector2(
+		(float(center_tile[0]) + 0.5) * tile,
+		(float(center_tile[1]) + 0.5) * tile
+	)
+
+
+static func _smooth(t: float) -> float:
+	var clamped: float = clampf(t, 0.0, 1.0)
+	return clamped * clamped * (3.0 - 2.0 * clamped)
+
+
+# Like max(), but rounds the crease where two shapes meet.
+static func _smooth_max(a: float, b: float, k: float) -> float:
+	var h: float = maxf(k - absf(a - b), 0.0) / k
+	return maxf(a, b) + h * h * k * 0.25

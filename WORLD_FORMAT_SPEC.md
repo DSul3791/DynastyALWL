@@ -158,6 +158,26 @@ A global ID is (tile x, tile z, tile revision, local ID). Ore body IDs are what 
 - **Generated block cache** per region: speeds up streaming. Disposable. It can be deleted and rebuilt from the tiles at any time.
 - **Region revision** (already in the region manifest): tells clients when cached blocks or edits are stale.
 
+## 5b. World sketch and elevation map (`plan/world_sketch.json`)
+
+**[Decided]** The world is planned world-first (approved 2026-10-13). Islands come from large undersea features, not per-tile dice, and the shared deep-ocean tile edge is dropped: neighboring tiles agree because they read the same world elevation map and world-coordinate detail. The tile matrix in Section 6 becomes a result of the sketch (still to be rebuilt).
+
+**Sketch features** (rules in `plan/sketch_rules.json`, Tunable until tiles are kept):
+
+| Feature | What it is |
+|---|---|
+| Continental shelf | One per pair of inner and outer starters: a shallow platform (about -90 m) with extra lobes so no two match. Hilly islands rise where hills break the surface. Each starter gets a town-friendly island (28 to 36 km² before coast roughening) near its tile middle. |
+| Trench arc | A curved chain of volcanoes along one side of the central trench, bowed toward it. |
+| Island arcs | Five curved volcanic chains in dangerous waters (danger 0.45 and up). |
+| Hotspot tracks | Four lines: a big young volcano, older smaller islands, then atolls in warm water or seamounts in cold water. |
+| Mid-ocean ridge | An undersea range following the east-west wrap seam, crossing both poles, with three islands on it. |
+| Seamount field | 300 seamounts and islets, mostly in groups, leaving wide empty seas. |
+| Central trench, center island | Fixed, from `world.json`. |
+
+Each feature is a list of mounts (volcano, seamount, atoll or starter island: position, size, rotation, peak height, profile, cliff height, shallow fringe width) plus, for shelves and the ridge, their outline or path. Danger shapes them: taller, steeper peaks, cliffs and narrow shallows where it is dangerous; gentle shores near starters. Ordinary peaks are capped at 1,450 m so the center volcano (rim 1,900 m) is the tallest. A feature marked `"locked": true` in a saved sketch is kept as it is when the sketch is rebuilt.
+
+**World elevation map:** one map for the whole world, 160 m per sample (2,016 by 2,016), heights in meters from sea level. Built from the sketch in about 17 seconds; noise fields are seamless, so the map joins across both wrap seams (checked by a test). The center island is a broad jungle shield plus a steep cone whose crater rim sits at 1,900 m, with a 250 m deep crater holding lava and a breach toward the south-southeast. The tile bake will add fine detail on top of this map.
+
 ## 6. Tile matrix (`plan/tile_matrix.json`)
 
 The plan for all 441 tiles, read and written by the randomizer and the island properties panel.

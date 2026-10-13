@@ -10,9 +10,13 @@ const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const RandomizerScript := preload("res://src/worldgen/matrix/matrix_randomizer.gd")
 const TileMatrixScript := preload("res://src/worldgen/matrix/tile_matrix.gd")
 const IslandShapeScript := preload("res://src/worldgen/matrix/island_shape.gd")
+const SketchScript := preload("res://src/worldgen/sketch/world_sketch.gd")
+const ElevationScript := preload("res://src/worldgen/sketch/world_elevation.gd")
+const CensusScript := preload("res://src/worldgen/sketch/island_census.gd")
 
 const WORLD_PATH := "res://worlds/base_world/world.json"
 const RULES_PATH := "res://worlds/base_world/plan/matrix_rules.json"
+const SKETCH_RULES_PATH := "res://worlds/base_world/plan/sketch_rules.json"
 
 var _passed: int = 0
 var _failed: int = 0
@@ -25,6 +29,7 @@ func _init() -> void:
 	_test_danger()
 	_test_tables()
 	_test_matrix()
+	_test_sketch()
 
 	print("")
 	print("%d passed, %d failed" % [_passed, _failed])
@@ -718,3 +723,153 @@ func _test_matrix_locking(settings, matrix, errors: Array) -> void:
 
 	print("tiles identical after locking two tiles: %d of 441" % same)
 	_check(same > 380, "locking two tiles leaves almost every other tile unchanged")
+
+
+# ==================================================
+# WORLD SKETCH AND ELEVATION
+# ==================================================
+
+func _test_sketch() -> void:
+	var settings = _load_settings()
+
+	if settings == null:
+		return
+
+	var errors: Array = []
+	var rules: Dictionary = SketchScript.load_rules(SKETCH_RULES_PATH, errors)
+	_check(not rules.is_empty(), "sketch rules load")
+
+	var maker = SketchScript.new()
+	maker.setup(settings, rules)
+	var sketch: Dictionary = maker.generate()
+	var again = SketchScript.new()
+	again.setup(settings, rules)
+	_check(
+		JSON.stringify(sketch) == JSON.stringify(again.generate()),
+		"the sketch is reproducible"
+	)
+
+	# A locked feature survives regeneration unchanged, even if edited.
+	var edited: Dictionary = sketch.duplicate(true)
+
+	for feature in edited["features"]:
+		if feature["id"] == "arc_1":
+			feature["locked"] = true
+			feature["mounts"][0]["peak"] = 1234
+
+	var regenerated: Dictionary = again.generate(edited)
+	var kept: bool = false
+
+	for feature in regenerated["features"]:
+		if feature["id"] == "arc_1":
+			kept = int(feature["mounts"][0]["peak"]) == 1234
+
+	_check(kept, "a locked sketch feature is kept")
+
+	# Build a coarse elevation map (320 m cells) for the checks.
+	var started: int = Time.get_ticks_msec()
+	var elevation = ElevationScript.new()
+	elevation.build(settings, rules, sketch, 320.0)
+	print("coarse elevation built in %d ms" % (Time.get_ticks_msec() - started))
+
+	var second = ElevationScript.new()
+	second.build(settings, rules, sketch, 320.0)
+	_check(elevation.heights == second.heights, "the elevation map is reproducible")
+
+	# The map joins up across the wrap seam in both directions.
+	var seam_x: float = 0.0
+	var inner_x: float = 0.0
+	var seam_z: float = 0.0
+	var inner_z: float = 0.0
+	var last: int = elevation.size_x - 1
+
+	for row in range(elevation.size_z):
+		seam_x += absf(elevation.heights[elevation.index_of(0, row)] - elevation.heights[elevation.index_of(last, row)])
+		# Compare with the steps just either side of the seam, where the
+		# terrain is of the same kind (the ridge runs along this seam).
+		inner_x += 0.5 * (
+			absf(elevation.heights[elevation.index_of(1, row)] - elevation.heights[elevation.index_of(0, row)])
+			+ absf(elevation.heights[elevation.index_of(last, row)] - elevation.heights[elevation.index_of(last - 1, row)])
+		)
+
+	for column in range(elevation.size_x):
+		seam_z += absf(elevation.heights[elevation.index_of(column, 0)] - elevation.heights[elevation.index_of(column, last)])
+		inner_z += 0.5 * (
+			absf(elevation.heights[elevation.index_of(column, 1)] - elevation.heights[elevation.index_of(column, 0)])
+			+ absf(elevation.heights[elevation.index_of(column, last)] - elevation.heights[elevation.index_of(column, last - 1)])
+		)
+
+	print("seam step east-west %.1f m vs beside it %.1f m; north-south %.1f m vs beside it %.1f m" % [
+		seam_x / float(elevation.size_z), inner_x / float(elevation.size_z),
+		seam_z / float(elevation.size_x), inner_z / float(elevation.size_x)
+	])
+	_check(seam_x < inner_x * 2.0 + 1.0, "no step at the east-west wrap seam")
+	_check(seam_z < inner_z * 2.0 + 1.0, "no step at the north-south wrap seam")
+
+	# Fixed features.
+	var tile: float = float(settings.tile_size_m)
+	var crater_floor: float = elevation.height_at_m(tile * 0.5, tile * 0.5)
+	_check(
+		crater_floor > 1400.0 and crater_floor < 1900.0,
+		"the crater floor sits below the rim (%.0f m)" % crater_floor
+	)
+
+	var highest: float = -INF
+	var lava: int = 0
+
+	for index in range(elevation.heights.size()):
+		highest = maxf(highest, elevation.heights[index])
+		lava += 1 if elevation.special[index] == ElevationScript.SPECIAL_LAVA else 0
+
+	_check(highest <= float(settings.world_top_m), "nothing rises above the world top")
+	_check(lava > 0, "the crater holds lava")
+	_check(
+		elevation.height_at_m(tile * 2.5, tile * 0.5) < -2300.0,
+		"the trench is deep beside the center island"
+	)
+
+	var census: Dictionary = CensusScript.count(elevation)
+	var center_label: int = census["label"][elevation.index_of(
+		int((tile * 0.5 - elevation.origin_x) / elevation.cell_m) + 12,
+		int((tile * 0.5 - elevation.origin_z) / elevation.cell_m)
+	)]
+	_check(center_label >= 0, "the center island is land")
+
+	if center_label >= 0:
+		var area: float = float(census["islands"][center_label]["area_km2"])
+		_check(area > 120.0, "the center island is huge (%.0f km2)" % area)
+
+		var tallest_other: float = 0.0
+
+		for number in range(census["islands"].size()):
+			if number != center_label:
+				tallest_other = maxf(tallest_other, float(census["islands"][number]["peak_m"]))
+
+		_check(
+			tallest_other < float(census["islands"][center_label]["peak_m"]),
+			"the center volcano is the tallest peak (%.0f m elsewhere)" % tallest_other
+		)
+
+	# Every starter tile has a decent island near its middle.
+	for tile_position in settings.get_all_starters():
+		var best: float = 0.0
+
+		for dz in range(-6, 7, 2):
+			for dx in range(-6, 7, 2):
+				var column: int = int(((float(tile_position.x) + 0.5) * tile - elevation.origin_x) / elevation.cell_m) + dx
+				var row: int = int(((float(tile_position.y) + 0.5) * tile - elevation.origin_z) / elevation.cell_m) + dz
+				var number: int = census["label"][elevation.index_of(column, row)]
+
+				if number >= 0:
+					best = maxf(best, float(census["islands"][number]["area_km2"]))
+
+		_check(best >= 15.0, "starter %s has an island (%.0f km2)" % [str(tile_position), best])
+
+	var land: float = 0.0
+
+	for island in census["islands"]:
+		land += float(island["area_km2"])
+
+	var share: float = land / (float(settings.tiles_x * settings.tiles_z) * pow(tile / 1000.0, 2.0))
+	print("land share %.1f%% in %d islands" % [share * 100.0, census["islands"].size()])
+	_check(share > 0.02 and share < 0.12, "the land share is plausible")

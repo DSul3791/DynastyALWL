@@ -314,6 +314,7 @@ A tile should then take minutes, and `world_preview.gd` could show island panel 
 
 - **[Decided]** The first tile-by-tile plan did not look natural ("a very dirty napkin"). Islands usually form from underwater mountain chains, and the map should reflect that.
 - **[Proposed]** Why it looked wrong: every tile rolled its own dice, so the texture was even everywhere; each tile kept its islands near the middle and every tile edge dropped to deep ocean, leaving empty lanes that showed the grid; island rotations were random instead of aligned along ridges; sizes lacked the steep real-world spread of a few big islands and very many small ones; the sea had no depth variation.
+- **[Decided]** The world-first approach is approved (2026-10-13). The first version is built: see `WORLD_FORMAT_SPEC.md` Section 5b and `plan/world_relief.png`.
 - **[Proposed] World first, tiles second.** The randomizer places 5 to 10 large features across the whole wrapped world: island arcs (curved volcanic chains beside trenches, like the Aleutians), hotspot tracks (a young volcano at one end, older eroded islands, then atolls and seamounts, like Hawaii), continental fragments (large varied islands on shallow shelves, like the British Isles), mid-ocean ridges (rarely breaking the surface, like Iceland), abyssal plains, and coral reefs and atolls in warm water. A coarse elevation map of the whole world (about 160 m per sample, about 2,016 by 2,016) comes from those features, and islands are wherever it rises above sea level.
 - **[Proposed]** Each feature also sets its islands' geology: arcs give volcanic rock, copper and gold; continental fragments give granite, basins and fold belts (coal, iron, tin); hotspots give basalt and sulfur; atolls give limestone. Resource placement follows how land really formed (Section 4.9).
 - **[Proposed]** Drop the rule that every tile edge falls to deep ocean. Neighboring tiles agree because both read the same world elevation map and the same detail noise in world coordinates, so islands may cross tile borders. Each island's rivers are worked out for the whole island, so both tiles get the same rivers. Tiles still bake one at a time.
@@ -1011,7 +1012,7 @@ Generator, hardware and hosting
 51. How far does polar sea ice reach, and can ships cross the pole in summer? (Section 4.2)
 52. Should island size classes grow with the bigger tiles? Island areas stayed the same when tiles grew from 10.24 km to 15.36 km, so land fell from about 11% to about 6% of the world. (Section 4.1)
 53. How does the client handle positions far from the origin: floating origin or a double-precision build? (Section 4.10)
-54. Is the world-first sketch approved, replacing per-tile dice and the shared deep-ocean tile edge? (Section 4.12)
+54. Settled: the world-first sketch is approved (2026-10-13), replacing per-tile dice and the shared deep-ocean tile edge? (Section 4.12)
 55. Settled: inner starters easy, outer starters medium, edges deadly (Section 4.13). Still open: how many tiers players see, and whether the curves need tuning once creatures exist.
 
 ---
