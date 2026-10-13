@@ -5,8 +5,20 @@ extends Resource
 @export_category("Identity")
 
 @export var world_name: String = "Modular Island World"
+
+# The world's master seed, written as a phrase. It is turned into a
+# number with SHA-256, which gives the same result on every machine
+# and every Godot version. Changing it reshapes every tile, so it is
+# fixed once tiles are kept.
+@export var world_seed_text: String = "This1is2the3greatest4game5of6all7time"
+
+# Numeric seed. Used as the master seed only when world_seed_text is
+# empty. After configure_island_tile() it holds the tile's own seed,
+# which is what the generator stages read.
 @export var world_seed: int = 123456
-@export var generator_version: int = 3
+
+# Version 4: master seed from text and SHA-256 tile seeds.
+@export var generator_version: int = 4
 
 
 @export_category("Island Address")
@@ -91,7 +103,7 @@ func get_island_tile_coord() -> Vector2i:
 
 func configure_island_tile(tile_x: int, tile_z: int) -> void:
 	if not _world_identity_seed_initialized:
-		_world_identity_seed = world_seed
+		_world_identity_seed = _compute_world_identity_seed()
 		_world_identity_seed_initialized = true
 
 	island_tile_x = tile_x
@@ -107,21 +119,45 @@ func get_world_identity_seed() -> int:
 	if _world_identity_seed_initialized:
 		return _world_identity_seed
 
-	return world_seed
+	return _compute_world_identity_seed()
 
 
+func _compute_world_identity_seed() -> int:
+	if world_seed_text.is_empty():
+		return world_seed & 0x7fffffff
+
+	return seed_from_text(world_seed_text)
+
+
+# Turns a phrase into the master seed. The region file header stores
+# the master seed as a 32-bit integer, so it is kept positive and
+# below 2^31.
+static func seed_from_text(text: String) -> int:
+	return _digest_to_int(text.sha256_buffer()) & 0x7fffffff
+
+
+# Each tile's seed comes from SHA-256 of the master seed and the tile
+# coordinate, so neighboring tiles get unrelated seeds.
+#
+# Generator stages add offsets of up to about 75,000 to the tile seed
+# before handing it to FastNoiseLite, which takes a 32-bit seed.
+# Keeping the tile seed below 2^30 leaves room for those offsets.
 static func _derive_tile_seed(
 	base_seed: int,
 	tile_x: int,
 	tile_z: int
 ) -> int:
-	# Integer-only coordinate hash. Masking keeps the result in the
-	# positive 31-bit range expected by FastNoiseLite.seed.
-	var mixed: int = base_seed
-	mixed = mixed ^ (tile_x * 73856093)
-	mixed = mixed ^ (tile_z * 19349663)
-	mixed = mixed ^ ((tile_x + tile_z) * 83492791)
-	return mixed & 0x7fffffff
+	var key: String = "tile:%d:%d:%d" % [base_seed, tile_x, tile_z]
+	return _digest_to_int(key.sha256_buffer()) & 0x3fffffff
+
+
+static func _digest_to_int(digest: PackedByteArray) -> int:
+	return (
+		(digest[0] << 24)
+		| (digest[1] << 16)
+		| (digest[2] << 8)
+		| digest[3]
+	)
 
 
 func get_world_height_meters() -> int:

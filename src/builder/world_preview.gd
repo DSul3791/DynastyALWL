@@ -1570,9 +1570,19 @@ func _load_world_definition() -> WorldDefinition:
 		return null
 
 
+	# Work on a copy so the shared cached resource keeps its master
+	# seed, then configure tile (0, 0) so the preview uses the same
+	# tile seed as the builder does for that tile.
 	var world_definition: WorldDefinition = (
-		resource as WorldDefinition
+		resource.duplicate(true) as WorldDefinition
 	)
+
+	if world_definition == null:
+		push_error("Could not duplicate the world definition.")
+
+		return null
+
+	world_definition.configure_island_tile(0, 0)
 
 	if not world_definition.is_valid():
 		push_error(
