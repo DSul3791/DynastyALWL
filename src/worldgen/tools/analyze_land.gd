@@ -25,6 +25,15 @@ const TOWN_MIN_KM2 := 2.0          # flat, connected ground for a town core
 const BASE_MIN_KM2 := 0.1          # room for a homestead or base
 const COAST_REACH_CELLS := 6       # about 1 km: town ground near the sea
 
+# Outposts: a small foothold on steeper ground right at the water, with
+# deep water close by for a dock.
+const OUTPOST_SLOPE := 0.30        # about 17 degrees
+const OUTPOST_MAX_HEIGHT := 600.0
+const OUTPOST_MIN_KM2 := 0.05
+const OUTPOST_SHORE_CELLS := 2     # within about 320 m of the sea
+const DOCK_DEPTH := -8.0
+const DOCK_REACH_CELLS := 3        # deep water within about 500 m
+
 
 func _init() -> void:
 	quit(_run("res://worlds/base_world"))
@@ -87,6 +96,8 @@ func _run(world_dir: String) -> int:
 	var town_patches: Dictionary = _patches(elevation, grade, 3)
 	var base_patches: Dictionary = _patches(elevation, grade, 2)
 
+	var outposts: Dictionary = _outpost_sites(elevation, label, islands.size())
+
 	# Per island: largest town patch (near the coast) and total buildable land.
 	var per_island: Array = []
 
@@ -112,7 +123,10 @@ func _run(world_dir: String) -> int:
 
 	# Summaries by danger tier and climate zone.
 	var lines: PackedStringArray = PackedStringArray()
-	var totals: Dictionary = {"land": 0.0, "build": 0.0, "town_islands": 0, "base_islands": 0}
+	var totals: Dictionary = {
+		"land": 0.0, "build": 0.0, "town_islands": 0, "base_islands": 0,
+		"outpost_islands": 0, "outpost_only": 0,
+	}
 	var by_tier: Dictionary = {}
 	var by_zone: Dictionary = {}
 
@@ -128,24 +142,28 @@ func _run(world_dir: String) -> int:
 		var zone: String = settings.get_zone_id_for_row(tile_z)
 		var town_ok: bool = bool(info["coastal_town"])
 		var base_ok: bool = float(info["base_km2"]) >= BASE_MIN_KM2
+		var outpost_ok: bool = bool(outposts["has_site"][number])
 
 		totals["land"] = float(totals["land"]) + float(island["area_km2"])
 		totals["build"] = float(totals["build"]) + float(info["build_km2"])
 		totals["town_islands"] = int(totals["town_islands"]) + (1 if town_ok else 0)
 		totals["base_islands"] = int(totals["base_islands"]) + (1 if base_ok else 0)
+		totals["outpost_islands"] = int(totals["outpost_islands"]) + (1 if outpost_ok else 0)
+		totals["outpost_only"] = int(totals["outpost_only"]) + (1 if outpost_ok and not town_ok else 0)
 
 		for pair in [[by_tier, tier], [by_zone, zone]]:
 			var table: Dictionary = pair[0]
 			var key: String = pair[1]
 
 			if not table.has(key):
-				table[key] = {"islands": 0, "land": 0.0, "build": 0.0, "town": 0, "base": 0}
+				table[key] = {"islands": 0, "land": 0.0, "build": 0.0, "town": 0, "base": 0, "outpost": 0}
 
 			table[key]["islands"] = int(table[key]["islands"]) + 1
 			table[key]["land"] = float(table[key]["land"]) + float(island["area_km2"])
 			table[key]["build"] = float(table[key]["build"]) + float(info["build_km2"])
 			table[key]["town"] = int(table[key]["town"]) + (1 if town_ok else 0)
 			table[key]["base"] = int(table[key]["base"]) + (1 if base_ok else 0)
+			table[key]["outpost"] = int(table[key]["outpost"]) + (1 if outpost_ok else 0)
 
 	lines.append("BUILDABLE LAND (from the 160 m world map; an upper estimate)")
 	lines.append(
@@ -163,18 +181,22 @@ func _run(world_dir: String) -> int:
 	])
 	lines.append("Islands with room for a town: %d" % int(totals["town_islands"]))
 	lines.append("Islands with room for a base: %d" % int(totals["base_islands"]))
+	lines.append(
+		"Islands with an outpost site (foothold on slopes up to %.0f%% at the shore, deep water within about 500 m for a dock): %d, of which %d have no town site"
+		% [OUTPOST_SLOPE * 100.0, int(totals["outpost_islands"]), int(totals["outpost_only"])]
+	)
 	lines.append("")
 
 	for pair in [["DANGER TIER", by_tier, ["easy", "moderate", "medium", "hard", "deadly"]],
 			["CLIMATE ZONE", by_zone, settings.get_zone_ids()]]:
 		lines.append("BY %s" % pair[0])
-		lines.append("%-18s %8s %9s %10s %7s %7s" % ["", "islands", "land km2", "build km2", "towns", "bases"])
+		lines.append("%-18s %8s %9s %10s %7s %7s %9s" % ["", "islands", "land km2", "build km2", "towns", "bases", "outposts"])
 
 		for key in pair[2]:
-			var row: Dictionary = pair[1].get(key, {"islands": 0, "land": 0.0, "build": 0.0, "town": 0, "base": 0})
-			lines.append("%-18s %8d %9.0f %10.0f %7d %7d" % [
+			var row: Dictionary = pair[1].get(key, {"islands": 0, "land": 0.0, "build": 0.0, "town": 0, "base": 0, "outpost": 0})
+			lines.append("%-18s %8d %9.0f %10.0f %7d %7d %9d" % [
 				key, int(row["islands"]), float(row["land"]), float(row["build"]),
-				int(row["town"]), int(row["base"])
+				int(row["town"]), int(row["base"]), int(row["outpost"])
 			])
 
 		lines.append("")
@@ -214,6 +236,64 @@ func _run(world_dir: String) -> int:
 
 	_save_overlay(settings, elevation, grade, town_patches, world_dir + "/plan/buildable_land.png")
 	return 0
+
+
+# For each island, whether it has a shore foothold for an outpost: a
+# connected patch of moderately sloped low ground at the water's edge,
+# with deep water close by for a dock.
+func _outpost_sites(elevation, label: PackedInt32Array, island_count: int) -> Dictionary:
+	var count: int = elevation.heights.size()
+	var cell: float = elevation.cell_m
+	var good: PackedByteArray = PackedByteArray()
+	good.resize(count)
+
+	for index in range(count):
+		var h: float = elevation.heights[index]
+
+		if h <= 0.0 or h > OUTPOST_MAX_HEIGHT or elevation.special[index] != 0:
+			continue
+
+		var column: int = index % elevation.size_x
+		var row: int = index / elevation.size_x
+		var dx: float = (
+			elevation.heights[elevation.index_of(column + 1, row)]
+			- elevation.heights[elevation.index_of(column - 1, row)]
+		) / (2.0 * cell)
+		var dz: float = (
+			elevation.heights[elevation.index_of(column, row + 1)]
+			- elevation.heights[elevation.index_of(column, row - 1)]
+		) / (2.0 * cell)
+
+		if sqrt(dx * dx + dz * dz) > OUTPOST_SLOPE:
+			continue
+
+		var at_shore: bool = false
+		var deep_water: bool = false
+
+		for step_z in range(-DOCK_REACH_CELLS, DOCK_REACH_CELLS + 1):
+			for step_x in range(-DOCK_REACH_CELLS, DOCK_REACH_CELLS + 1):
+				var near: float = elevation.heights[elevation.index_of(column + step_x, row + step_z)]
+
+				if near <= 0.0 and absi(step_x) <= OUTPOST_SHORE_CELLS and absi(step_z) <= OUTPOST_SHORE_CELLS:
+					at_shore = true
+
+				if near <= DOCK_DEPTH:
+					deep_water = true
+
+		if at_shore and deep_water:
+			good[index] = 1
+
+	var has_site: Array = []
+	has_site.resize(island_count)
+	has_site.fill(false)
+	var patches: Dictionary = _patches(elevation, good, 1)
+	var cell_km2: float = pow(cell / 1000.0, 2.0)
+
+	for patch in patches["patches"]:
+		if float(patch["cells"]) * cell_km2 >= OUTPOST_MIN_KM2:
+			has_site[label[int(patch["first"])]] = true
+
+	return {"has_site": has_site}
 
 
 # Connected patches of cells with grade >= minimum_grade.
