@@ -9,7 +9,7 @@ Record of the design brainstorming sessions of 2026-10-11 and 2026-10-12. This i
 - **Version 3 (2026-10-12, later):** lifespan targets (start at about 15, die at about 80, in about 700 hours of play); families age with the player; the rescue-first philosophy and party composition; heirs arriving partly trained; the tension between server-owned towns and "no towns at the start"; and the clock arithmetic showing that one clock for aging and seasons is probably not workable. Open questions were updated.
 - **Version 4 (2026-10-12, latest):** two clocks decided (a world calendar for seasons and crops, and an aging clock); a one-to-two-week seasonal cycle; NPC aging at the average player's speed (70 years per real year); the weekly farming rhythm and a note on avoiding calendar years of exactly 7 or 14 days; Farming Simulator as an inspiration; no starting towns; and the civil engineer town-planning idea. The lifespan pacing figure changed from 65 to 70 years (15 to 85).
 - **Version 5 (2026-10-12, evening):** the "play what you like" and "no micromanagement" goals; server-clock aging for everyone as an idea; children, twins, wills and choosing an heir; 60-minute game days, seasonal day length and night; the weekend farming rhythm, crop tiers, farm labor and work buildings; stock levels, the order chain and building maintenance; the budget for language model use and self-hosting; town roles, land and property; quests and pastimes; real-money ideas, with gambling flagged for later; and the plan for growing the tile map one side at a time.
-- **Version 6 (2026-10-12, night):** minimum hardware target (older quad-core, 8 GB RAM, SATA SSD); the 15 to 16 hour tile bake and a proposal to bake 2D maps and generate voxels at runtime, with a table of what is baked, what the server works out and what the client does; language service hosting and scaling; NPC backgrounds, memory, honesty and conversation traits; an islands-first tile pipeline; geology stored as a feature list with ore placed by how deposits really form; surveying skill and prospecting clues; the surveyor's book; a massive pre-planned world, an arid equator on the origin row and three climate zones with transition rows; tile downloads and the client tile cache; a developer-built starter town (replacing "no starting towns"); natural animal behavior; rarer flotsam; several starter tiles; a full-size world filled with placeholder ocean tiles; a matrix of tile specifications; and a recommendation to start with voxel streaming.
+- **Version 6 (2026-10-12, night):** minimum hardware target (older quad-core, 8 GB RAM, SATA SSD); the 15 to 16 hour tile bake and a proposal to bake 2D maps and generate voxels at runtime, with a table of what is baked, what the server works out and what the client does; language service hosting and scaling; NPC backgrounds, memory, honesty and conversation traits; an islands-first tile pipeline; geology stored as a feature list with ore placed by how deposits really form; surveying skill and prospecting clues; the surveyor's book; a massive pre-planned world, an arid equator on the origin row and three climate zones with transition rows; tile downloads and the client tile cache; a developer-built starter town (replacing "no starting towns"); natural animal behavior; rarer flotsam; several starter tiles; a full-size world filled with placeholder ocean tiles; a matrix of tile specifications; a recommendation to start with voxel streaming; a square final world (proposed 21 by 21); and polar sea ice.
 
 ## How to read this document
 
@@ -108,6 +108,17 @@ A persistent, rough-medieval, multiplayer online world: a survival, exploration 
 - **[Proposed]** With 2D tile maps, ocean tiles cost almost nothing, so the world can be its full planned size from day one. The wrap bounds then never change, and growing the world becomes replacing placeholder tiles instead of adding rows and columns (Section 4.7 still applies if the world ever needs to grow beyond the plan).
 - **[Proposed]** Replacing a placeholder needs rules: only tiles marked as placeholders can be replaced; anything players left there (anchored ships, floating items, seabed edits) is moved or the new islands avoid it; and the tile's revision number rises so clients refresh their cached copy.
 - **[Proposed]** The matrix is a file you can read and edit. Each cell holds the tile's kind (ocean, starter, islands), island count, sizes, characters and seeds. Rules shape the random picks: a size mix, minimum sailing distances, starter tiles hand-tuned to be town friendly (flat land, a river, a harbor, varied resources nearby), and each climate zone getting a fair share of key resources. A whole-world preview image shows the result before anything is baked.
+- **[Decided]** The final map is evenly square, around 18 by 18 or 20 by 20, or whatever number works.
+- **[Proposed]** Use an odd number so the desert row sits exactly in the middle and the north and south edges have matching climates where they wrap. **21 by 21** is the suggestion: 441 tiles, about 215 km on a side, about 46,000 km² (most of it ocean). Rows and columns run from -10 to 10. 19 by 19 is the smaller alternative.
+
+| Rows (21 tall) | Zone |
+|---|---|
+| -1 to 1 | Desert (3 rows) |
+| ±2 | Transition |
+| ±3 to ±6 | Temperate (4 rows each side) |
+| ±7 | Transition |
+| ±8 to ±10 | Arctic (3 rows each side, 6 rows meeting across the wrap seam) |
+
 - **[Proposed]** Starter tiles should give a choice of climate (desert and temperate, not arctic). With a world 13 tiles tall the rows run from -6 to 6, so starters at distance 8 north or south need a taller world, or sit east and west on existing rows.
 - **[Proposed]** A tile with zero islands is simply an open-ocean tile. This gives ships real distances without any special system.
 - **[Proposed]** Irregular coastlines with small offshore islets, instead of the current rounded-square outline.
@@ -124,6 +135,9 @@ Constraints inherited from the current generator:
 - **[Decided]** Tile (0,0) and its whole east-west row are the most arid, desert zone.
 - **[Idea]** Three zones (desert, temperate, arctic), with a transition row between zones where one zone gradually changes into the next as you travel north or south. The world's height in tiles decides how wide each zone is.
 - **[Proposed]** Because the world wraps north to south, the zones run symmetrically from the desert row: desert, transition, temperate, transition, arctic at both the north and south edges, where the wrap seam joins arctic to arctic. For example, a world 13 tiles tall gives desert 3 rows (-1 to 1), transitions at ±2, temperate ±3 to ±4, transitions at ±5, and arctic ±6 (2 rows meeting across the seam).
+- **[Idea]** At the north and south poles there should be sea ice, with the ocean frozen like Earth's poles.
+- **[Proposed]** Because the world wraps north to south, both poles are the same place: the wrap seam. Permanent pack ice covers the outermost arctic rows, and seasonal ice grows outward in winter and retreats in summer, worked out at runtime from latitude and the season so nothing seasonal is baked. Ice thickness decides whether ships can pass and whether people can walk or sled across. Broken ice refreezes over time.
+- **[Proposed]** Sea ice makes crossing the pole a seasonal event: a summer sailing passage, or a winter sled route, or an icebreaker later. It also supports the cold-climate life already planned (seal hunting, ice fishing, polar creatures). Arctic islands carry glaciers and snowfields baked as surface materials.
 - **[Proposed]** Temperature is a smooth function of the tile row, so transitions happen naturally and there are no seams. Altitude still cools mountains, and moisture can vary per island so not every desert-row island is sand.
 - **[Proposed]** The climate function must be fixed in absolute tile rows for the planned **final** world height before the first tile is kept. If it were scaled to the current world size, growing the world would change the climate of tiles already baked. Growing north and south alternately keeps the wrap seam joining matching climates.
 - **[Decided]** Climate strongly affects soil type, flora and fauna.
@@ -938,7 +952,8 @@ Generator, hardware and hosting
 47. How large a world can be designed, managed and served, and is it one server process or split across several later? (Section 4.1)
 48. Which tiles are starter tiles, how many, and in which climates? (Sections 4.1, 4.2 and 8.1)
 49. Is flora derived at runtime from the biome map and a placement seed (only removals stored), replacing the baked placement lists in Section 4.3? Is the 8 m map grid confirmed?
-50. What is the fixed planned world size in tiles (height for climate, width for scale)? (Section 4.1)
+50. Square, around 18 to 21 tiles: is 21 by 21 the final size? (Section 4.1)
+51. How far does polar sea ice reach, and can ships cross the pole in summer? (Section 4.2)
 
 ---
 
