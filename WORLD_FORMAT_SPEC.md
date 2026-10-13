@@ -171,7 +171,7 @@ The plan for all 441 tiles, read and written by the randomizer and the island pr
 | Field | Notes |
 |---|---|
 | ID | Local to the tile |
-| Center | Position within the tile in meters |
+| Center | Meters from the tile center (x east, z south) |
 | Size class and target area | See below |
 | Shape | Round, elongated, crescent, ragged, or a cluster for archipelagos |
 | Character | Mountainous, rolling, flat, volcanic, archipelago |
@@ -185,9 +185,11 @@ The plan for all 441 tiles, read and written by the randomizer and the island pr
 |---|---|
 | Islet | Under 1 km² |
 | Small | 1 to 5 km² |
-| Medium | 5 to 20 km² |
-| Large | 20 to 50 km² |
-| Great (ARK scale) | 50 to 75 km² |
+| Medium | 5 to 15 km² |
+| Large | 15 to 30 km² |
+| Great | 30 to 45 km² |
+
+The largest class changed from the first draft (50 to 75 km²). Every tile edge must drop to the shared deep-ocean floor, so an island keeps about 1 km of margin from the tile edge. A single island then cannot cover more than about 45 km². For scale, the project owner remembers the whole ARK map, ocean included, at about 48 km².
 
 **Randomizer rules (starting values, Tunable)**
 

@@ -9,6 +9,11 @@ Working plan for the new world generator described in `DESIGN_IDEAS.md` (Section
 - Permanent formats follow `WORLD_FORMAT_SPEC.md`. Any change to them updates the spec first.
 - Reuse what already works: tile coordinates, region mapping and wrapping, the resumable atomic write pattern, the 2D hydrology (ocean mask, flow, lakes, channels) and the SHA-256 seeds.
 
+## Progress
+
+- Steps 2 to 6 are built and tested on `claude/generator-v2`: folders, world settings, SHA-256 seeds, data tables, tile matrix randomizer and whole-world preview. Run the tests with `godot --headless --path . --script res://src/worldgen/tools/test_worldgen.gd` and rebuild the plan with `godot --headless --path . --script res://src/worldgen/tools/build_plan.gd`.
+- Next: the checkpoint review of the world plan, then step 7 (one tile's island layout and elevation).
+
 ## Steps
 
 ### Preparation
