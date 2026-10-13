@@ -7,8 +7,12 @@ extends SceneTree
 const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings.gd")
 const SeedUtil := preload("res://src/worldgen/settings/worldgen_seed.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
+const RandomizerScript := preload("res://src/worldgen/matrix/matrix_randomizer.gd")
+const TileMatrixScript := preload("res://src/worldgen/matrix/tile_matrix.gd")
+const IslandShapeScript := preload("res://src/worldgen/matrix/island_shape.gd")
 
 const WORLD_PATH := "res://worlds/base_world/world.json"
+const RULES_PATH := "res://worlds/base_world/plan/matrix_rules.json"
 
 var _passed: int = 0
 var _failed: int = 0
@@ -19,6 +23,7 @@ func _init() -> void:
 	_test_settings()
 	_test_climate()
 	_test_tables()
+	_test_matrix()
 
 	print("")
 	print("%d passed, %d failed" % [_passed, _failed])
@@ -259,3 +264,301 @@ func _test_tables() -> void:
 		"test"
 	)
 	_check(not errors.is_empty(), "a repeated ID is rejected")
+
+
+# ==================================================
+# TILE MATRIX
+# ==================================================
+
+func _make_randomizer(settings, errors: Array):
+	var rules: Dictionary = RandomizerScript.load_rules(RULES_PATH, errors)
+	var randomizer = RandomizerScript.new()
+	randomizer.setup(settings, rules)
+	return randomizer
+
+
+func _test_matrix() -> void:
+	var settings = _load_settings()
+
+	if settings == null:
+		return
+
+	var errors: Array = []
+	var rules: Dictionary = RandomizerScript.load_rules(RULES_PATH, errors)
+	_check(errors.is_empty() and not rules.is_empty(), "matrix rules load")
+
+	var start_ms: int = Time.get_ticks_msec()
+	var randomizer = _make_randomizer(settings, errors)
+	var matrix = randomizer.generate()
+	var elapsed_ms: int = Time.get_ticks_msec() - start_ms
+	print("matrix generated in %d ms" % elapsed_ms)
+
+	_check(matrix.cells.size() == 441, "matrix has 441 cells")
+
+	# Same world and rules give the same matrix.
+	var again = _make_randomizer(settings, errors).generate()
+	_check(
+		matrix.to_json_text() == again.to_json_text(),
+		"the matrix is reproducible"
+	)
+
+	# Saving and loading changes nothing.
+	var temp_path: String = "user://test_tile_matrix.json"
+	matrix.save(temp_path)
+	var loaded = TileMatrixScript.load_file(temp_path, errors)
+	_check(loaded != null, "the matrix loads back")
+
+	if loaded != null:
+		_check(
+			loaded.to_json_text() == matrix.to_json_text(),
+			"save and load keep the matrix identical"
+		)
+
+	_test_matrix_invariants(settings, rules, matrix)
+	_test_matrix_distribution(settings, rules, matrix)
+	_test_matrix_locking(settings, matrix, errors)
+
+
+func _test_matrix_invariants(settings, rules: Dictionary, matrix) -> void:
+	var limit: float = float(settings.tile_size_m) * 0.5 - float(
+		rules["island_edge_margin_m"]
+	)
+	var min_gap: float = float(rules["cluster_gap_m"][0]) - 5.0
+	var bad_fit: int = 0
+	var bad_gap: int = 0
+	var bad_class: int = 0
+	var bad_count: int = 0
+	var bad_kind: int = 0
+	var bad_hint: int = 0
+	var bad_cap: int = 0
+	var great_count: int = 0
+
+	for cell in matrix.get_sorted_cells():
+		var islands: Array = cell["islands"]
+		var total: float = 0.0
+		var big: int = 0
+
+		if (cell["kind"] == "ocean") != islands.is_empty():
+			bad_kind += 1
+
+		if islands.size() > 6:
+			bad_count += 1
+
+		for island in islands:
+			total += float(island["area_km2"])
+
+			if island["size_class"] in ["large", "great"]:
+				big += 1
+
+			if island["size_class"] == "great":
+				great_count += 1
+
+			var points: PackedVector2Array = IslandShapeScript.boundary(
+				float(island["center_x"]), float(island["center_z"]),
+				float(island["semi_axis_a_m"]), float(island["semi_axis_b_m"]),
+				float(island["rotation_deg"])
+			)
+
+			if not IslandShapeScript.fits_inside(points, limit + 0.5):
+				bad_fit += 1
+
+			for hint in island["geology"]:
+				if hint not in ["granite", "basin", "fold_belt", "volcanic"]:
+					bad_hint += 1
+
+			if island["geology"].is_empty():
+				bad_hint += 1
+
+		for first_index in range(islands.size()):
+			for second_index in range(first_index + 1, islands.size()):
+				var a: Dictionary = _island_geometry(islands[first_index])
+				var b: Dictionary = _island_geometry(islands[second_index])
+
+				if IslandShapeScript.gap_between(a, b) < min_gap:
+					bad_gap += 1
+
+		if big > 1:
+			bad_class += 1
+
+		if total > float(rules["total_land_cap_km2"]) + 5.0:
+			bad_cap += 1
+
+	_check(bad_fit == 0, "every island fits inside its tile margin (%d bad)" % bad_fit)
+	_check(bad_gap == 0, "islands keep their minimum gap (%d bad)" % bad_gap)
+	_check(bad_class == 0, "at most one large or great island per tile (%d bad)" % bad_class)
+	_check(bad_count == 0, "no tile has too many islands (%d bad)" % bad_count)
+	_check(bad_kind == 0, "ocean tiles are empty and island tiles are not (%d bad)" % bad_kind)
+	_check(bad_hint == 0, "every island has valid geology (%d bad)" % bad_hint)
+	_check(bad_cap == 0, "total land per tile stays under the cap (%d bad)" % bad_cap)
+	_check(great_count > 5, "great islands exist (%d)" % great_count)
+
+	# Starter tiles
+	var starters: Array = settings.get_all_starters()
+	_check(starters.size() == 8, "eight starters")
+
+	for tile in starters:
+		var cell: Dictionary = matrix.get_cell(tile.x, tile.y)
+		_check(cell.get("kind", "") == "starter", "starter %s kind" % str(tile))
+		_check(bool(cell.get("locked", false)), "starter %s is locked" % str(tile))
+		_check(
+			cell["islands"].size() >= 1 and cell["islands"][0]["role"] == "main",
+			"starter %s has a main island" % str(tile)
+		)
+
+		if not cell["islands"].is_empty():
+			var area: float = float(cell["islands"][0]["area_km2"])
+			_check(area >= 15.0, "starter %s island is large (%.1f km2)" % [str(tile), area])
+
+		_check(
+			cell["required"].has("harbor") and cell["required"].has("river"),
+			"starter %s lists what it needs" % str(tile)
+		)
+
+		# Starter neighborhood: medium islands and varied geology.
+		var medium_tiles: int = 0
+		var hints: Dictionary = {}
+
+		for dz in range(-2, 3):
+			for dx in range(-2, 3):
+				if dx == 0 and dz == 0:
+					continue
+
+				var near: Vector2i = settings.wrap_tile(tile.x + dx, tile.y + dz)
+				var near_cell: Dictionary = matrix.get_cell(near.x, near.y)
+				var has_medium: bool = false
+
+				for island in near_cell["islands"]:
+					if float(island["area_km2"]) >= 5.0:
+						has_medium = true
+
+					for hint in island["geology"]:
+						hints[hint] = true
+
+				if has_medium:
+					medium_tiles += 1
+
+		_check(medium_tiles >= 3, "starter %s has medium islands nearby" % str(tile))
+		_check(
+			hints.has("granite") and hints.has("basin") and hints.has("fold_belt"),
+			"starter %s has granite, basin and fold belt nearby" % str(tile)
+		)
+
+	# Every climate zone has every kind of geology.
+	for zone in settings.zones:
+		var counts: Dictionary = {}
+
+		for cell in matrix.get_sorted_cells():
+			if cell["zone"] != zone["id"]:
+				continue
+
+			for island in cell["islands"]:
+				for hint in island["geology"]:
+					counts[hint] = int(counts.get(hint, 0)) + 1
+
+		for hint in ["granite", "basin", "fold_belt", "volcanic"]:
+			_check(
+				int(counts.get(hint, 0)) >= 3,
+				"zone %s has %s (%d)" % [zone["id"], hint, int(counts.get(hint, 0))]
+			)
+
+
+func _island_geometry(island: Dictionary) -> Dictionary:
+	var geometry: Dictionary = {
+		"cx": float(island["center_x"]),
+		"cz": float(island["center_z"]),
+		"a": float(island["semi_axis_a_m"]),
+		"b": float(island["semi_axis_b_m"]),
+		"rot": float(island["rotation_deg"]),
+	}
+	geometry["pts"] = IslandShapeScript.boundary(
+		geometry["cx"], geometry["cz"], geometry["a"], geometry["b"], geometry["rot"]
+	)
+	return geometry
+
+
+func _test_matrix_distribution(settings, rules: Dictionary, matrix) -> void:
+	var ocean: int = 0
+	var arctic_ocean: int = 0
+	var arctic_total: int = 0
+	var temperate_ocean: int = 0
+	var temperate_total: int = 0
+	var seas: Dictionary = {}
+	var chains: Dictionary = {}
+
+	for cell in matrix.get_sorted_cells():
+		var is_ocean: bool = cell["kind"] == "ocean"
+
+		if is_ocean:
+			ocean += 1
+
+		if cell["zone"] == "arctic":
+			arctic_total += 1
+			arctic_ocean += 1 if is_ocean else 0
+
+		if cell["zone"] == "temperate":
+			temperate_total += 1
+			temperate_ocean += 1 if is_ocean else 0
+
+		var pattern: String = str(cell["pattern"])
+
+		if pattern.begins_with("open_sea"):
+			seas[pattern] = true
+
+		if pattern.begins_with("chain"):
+			chains[pattern.get_slice(":", 1)] = true
+
+	var fraction: float = float(ocean) / 441.0
+	print("ocean tiles: %d of 441 (%.0f%%)" % [ocean, fraction * 100.0])
+	_check(fraction > 0.2 and fraction < 0.5, "ocean share is plausible")
+	_check(
+		float(arctic_ocean) / float(arctic_total)
+		> float(temperate_ocean) / float(temperate_total),
+		"the arctic has more open ocean than the temperate zone"
+	)
+	_check(seas.size() >= 3, "open seas were placed (%d)" % seas.size())
+	_check(chains.size() >= 3, "island chains were placed (%d)" % chains.size())
+
+
+func _test_matrix_locking(settings, matrix, errors: Array) -> void:
+	# Lock one ordinary tile with hand edits, mark another as baked, and
+	# change the rules a little. Locked and baked tiles must not change.
+	var edited = TileMatrixScript.new()
+	edited.meta = matrix.meta.duplicate(true)
+
+	for key in matrix.cells.keys():
+		edited.cells[key] = matrix.cells[key].duplicate(true)
+
+	var locked_tile: Vector2i = Vector2i(5, 5)
+	var baked_tile: Vector2i = Vector2i(-6, 2)
+	var locked_cell: Dictionary = edited.get_cell(locked_tile.x, locked_tile.y)
+	locked_cell["locked"] = true
+	locked_cell["notes"] = "hand edited"
+	var baked_cell: Dictionary = edited.get_cell(baked_tile.x, baked_tile.y)
+	baked_cell["status"] = "baked"
+	baked_cell["notes"] = "already baked"
+
+	var rules: Dictionary = RandomizerScript.load_rules(RULES_PATH, errors)
+	var changed = RandomizerScript.new()
+	changed.setup(settings, rules)
+	var regenerated = changed.generate(edited)
+
+	_check(
+		JSON.stringify(regenerated.get_cell(locked_tile.x, locked_tile.y))
+		== JSON.stringify(edited.get_cell(locked_tile.x, locked_tile.y)),
+		"a locked tile is kept"
+	)
+	_check(
+		JSON.stringify(regenerated.get_cell(baked_tile.x, baked_tile.y))
+		== JSON.stringify(edited.get_cell(baked_tile.x, baked_tile.y)),
+		"a baked tile is kept"
+	)
+
+	# Tiles far from any pattern change only when their own inputs change.
+	var same: int = 0
+
+	for key in matrix.cells.keys():
+		if JSON.stringify(regenerated.cells[key]) == JSON.stringify(matrix.cells[key]):
+			same += 1
+
+	print("tiles identical after locking two tiles: %d of 441" % same)
+	_check(same > 380, "locking two tiles leaves almost every other tile unchanged")
