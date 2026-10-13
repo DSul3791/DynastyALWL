@@ -59,7 +59,7 @@
 		{
 			"id": "center_island",
 			"kind": "landmark_island",
-			"note": "The worst island in the game, rising out of the central trench: a huge volcanic island with a volcano peak and large jungle areas. Home of the worst creatures, climate and storms, with castles and caves. It crosses into the neighboring tiles.",
+			"note": "The worst island in the game, rising out of the central trench: a huge volcanic desert island on the hottest row of the world, with scorched earth around a volcano that has erupted many times. Home of the worst creatures, climate and storms, and the ruins of a fallen magical civilization. It crosses into the neighboring tiles.",
 			"center_tile": [0, 0],
 			"half_length_tiles": 0.65,
 			"half_width_tiles": 0.4,
@@ -67,16 +67,30 @@
 			"character": "volcanic",
 			"shape": "ragged",
 			"peak_m": 1900,
-			"main_biome": "tropical_forest",
-			"landmarks": ["volcano", "jungle", "castles", "caves"],
+			"main_biome": "hot_desert",
+			"landmarks": ["volcano", "desert", "scorched earth", "ruined city", "castles", "caves"],
 			"terrain": {
-				"note": "Hostile ground: radial ravines and jagged ridges off the volcano, sea cliffs, swampy basins in the lowlands and a lava river from the crater breach to the sea. No easy town ground.",
+				"note": "Hostile desert: jagged ridges and dry wadis running off the volcano, stepped mesas, salt flats in the lowland basins, sea cliffs, scorched lava fields and old lava flows around the volcano, and a lava river from the crater breach to the sea. No easy town ground.",
 				"ravines": 9,
 				"ravine_depth_m": 140,
 				"jaggedness_m": 150,
 				"cliff_m": 180,
-				"swamp_threshold": 0.15,
-				"swamp_inland": [0.1, 0.45]
+				"basin_kind": "salt_flat",
+				"basin_threshold": 0.15,
+				"basin_inland": [0.1, 0.45],
+				"mesa_threshold": 0.1,
+				"mesa_step_m": 55,
+				"scorched_inland": 0.62,
+				"old_flows": 5,
+				"old_flow_length_m": 8500
+			},
+			"ruined_city": {
+				"note": "Prepared ground for the fallen city: a broad stepped plateau on the northwest flank, away from the lava river, with old roads running to the coast and toward the volcano. Buildings and ruins are placed later, at the tile bake.",
+				"offset_m": [-4300, -1700],
+				"radius_m": 1700,
+				"plateau_m": 170,
+				"terraces": 3,
+				"roads": [[-1.0, -0.15], [-0.25, -1.0], [0.75, 0.55]]
 			},
 			"sites": {
 				"note": "Reserved for the tile bake: places for a fallen magical civilization. Positions are chosen deterministically when the center tiles are built.",

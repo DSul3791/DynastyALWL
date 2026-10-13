@@ -18,6 +18,13 @@ const SNOW := Color(0.94, 0.95, 0.97)
 const ROCK := Color(0.47, 0.44, 0.41)
 const LAVA := Color(0.95, 0.38, 0.06)
 const SWAMP := Color(0.20, 0.30, 0.20)
+const DESERT := Color(0.86, 0.66, 0.40)
+const DESERT_ROCK := Color(0.66, 0.44, 0.28)
+const SALT := Color(0.93, 0.91, 0.84)
+const SCORCHED := Color(0.17, 0.14, 0.13)
+const ASH := Color(0.36, 0.33, 0.31)
+const RUINS := Color(0.70, 0.64, 0.55)
+const ROAD := Color(0.95, 0.88, 0.70)
 
 
 static func render(settings, elevation, show_grid: bool = true) -> Image:
@@ -80,8 +87,19 @@ static func _land_color(
 	if elevation.special[index] == ElevationScript.SPECIAL_LAVA:
 		return LAVA
 
-	if elevation.special[index] == ElevationScript.SPECIAL_SWAMP:
-		return SWAMP.lerp(JUNGLE, 0.5 + 0.5 * ElevationScript._value(elevation._detail, index))
+	var detail: float = 0.5 + 0.5 * ElevationScript._value(elevation._detail, index)
+
+	match elevation.special[index]:
+		ElevationScript.SPECIAL_SWAMP:
+			return SWAMP.lerp(JUNGLE, detail)
+		ElevationScript.SPECIAL_SALT:
+			return SALT.lerp(DESERT, 0.25 * detail)
+		ElevationScript.SPECIAL_SCORCHED:
+			return SCORCHED.lerp(ASH, detail)
+		ElevationScript.SPECIAL_RUINS:
+			return RUINS.lerp(DESERT, 0.3 * detail)
+		ElevationScript.SPECIAL_ROAD:
+			return ROAD
 
 	if h < 5.0:
 		return SAND
@@ -90,8 +108,12 @@ static func _land_color(
 	var moisture: float = 0.5 + 0.5 * ElevationScript._value(elevation._hills, index)
 	var color: Color
 
-	if elevation.owners[index] == center_owner and center_owner >= 0 and h < 900.0:
-		color = JUNGLE
+	if elevation.owners[index] == center_owner and center_owner >= 0:
+		# The center island is a scorching desert: sand, red rock on the heights.
+		var dune: float = 0.5 + 0.5 * ElevationScript._value(elevation._fine_x, index)
+		color = DESERT.lerp(DESERT.darkened(0.12), dune)
+		color = color.lerp(DESERT_ROCK, clampf((h - 150.0) / 500.0, 0.0, 0.8))
+		return color
 	elif temperature >= 24.0:
 		color = SAND.lerp(SCRUB, moisture)
 	elif temperature >= 15.0:

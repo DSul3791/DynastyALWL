@@ -823,6 +823,22 @@ func _test_sketch() -> void:
 
 	_check(highest <= float(settings.world_top_m), "nothing rises above the world top")
 	_check(lava > 0, "the crater holds lava")
+
+	var counts: Dictionary = {}
+
+	for index in range(elevation.special.size()):
+		var kind: int = elevation.special[index]
+		counts[kind] = int(counts.get(kind, 0)) + 1
+
+	var cell_area: float = pow(elevation.cell_m / 1000.0, 2.0)
+	_check(int(counts.get(ElevationScript.SPECIAL_SCORCHED, 0)) > 0, "scorched earth surrounds the volcano")
+	_check(int(counts.get(ElevationScript.SPECIAL_SALT, 0)) > 0, "the center island has salt flats")
+	_check(int(counts.get(ElevationScript.SPECIAL_ROAD, 0)) > 0, "old roads lead from the ruined city")
+	_check(
+		float(counts.get(ElevationScript.SPECIAL_RUINS, 0)) * cell_area > 5.0,
+		"ground is prepared for the ruined city (%.1f km2)" % (float(counts.get(ElevationScript.SPECIAL_RUINS, 0)) * cell_area)
+	)
+	_check(int(counts.get(ElevationScript.SPECIAL_SWAMP, 0)) == 0, "no swamps on the desert island")
 	_check(
 		elevation.height_at_m(tile * 2.5, tile * 0.5) < -2300.0,
 		"the trench is deep beside the center island"

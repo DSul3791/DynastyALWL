@@ -17,6 +17,10 @@ const OWNER_NONE := -1
 const SPECIAL_NONE := 0
 const SPECIAL_LAVA := 1
 const SPECIAL_SWAMP := 2
+const SPECIAL_SALT := 3
+const SPECIAL_SCORCHED := 4
+const SPECIAL_RUINS := 5
+const SPECIAL_ROAD := 6
 
 var settings
 var rules: Dictionary = {}
@@ -556,8 +560,16 @@ func _raise_landmark_islands() -> void:
 		if not terrain.is_empty():
 			_make_hostile(center, a, b, terrain, owner_index)
 
+		var city: Dictionary = feature.get("ruined_city", {})
+
+		if not city.is_empty():
+			_prepare_ruined_city(center, city, owner_index)
+
 		_carve_crater(center, crater_radius, crater_depth, rim_height, crater)
 		_lava_river(center, crater_radius, rim_height - crater_depth, crater)
+
+		if not terrain.is_empty():
+			_scorch(center, a, b, crater_radius, terrain, owner_index)
 
 
 # Roughens the island into hostile ground: jagged ridges, ravines running
@@ -566,8 +578,11 @@ func _make_hostile(center: Vector2, a: float, b: float, terrain: Dictionary, own
 	var ravines: float = float(terrain.get("ravines", 9))
 	var ravine_depth: float = float(terrain.get("ravine_depth_m", 140))
 	var jagged: float = float(terrain.get("jaggedness_m", 150))
-	var swamp_threshold: float = float(terrain.get("swamp_threshold", 0.35))
-	var swamp_inland: Array = terrain.get("swamp_inland", [0.1, 0.45])
+	var swamp_threshold: float = float(terrain.get("basin_threshold", terrain.get("swamp_threshold", 0.35)))
+	var swamp_inland: Array = terrain.get("basin_inland", terrain.get("swamp_inland", [0.1, 0.45]))
+	var basin_special: int = SPECIAL_SALT if str(terrain.get("basin_kind", "swamp")) == "salt_flat" else SPECIAL_SWAMP
+	var mesa_threshold: float = float(terrain.get("mesa_threshold", 2.0))
+	var mesa_step: float = float(terrain.get("mesa_step_m", 55))
 	var radius_cells: int = int(ceil(a * 1.3 / cell_m)) + 1
 	var center_column: int = int(floor((center.x - origin_x) / cell_m))
 	var center_row: int = int(floor((center.y - origin_z) / cell_m))
@@ -608,12 +623,148 @@ func _make_hostile(center: Vector2, a: float, b: float, terrain: Dictionary, own
 
 			if swampiness > 0.0:
 				var marsh: float = 3.0 + 6.0 * (0.5 + 0.5 * _value(_fine_x, index))
+
+				if basin_special == SPECIAL_SALT:
+					marsh = 4.0 + 1.5 * _value(_fine_x, index)
+
 				h = lerpf(h, marsh, swampiness)
 
 				if swampiness > 0.5:
-					special[index] = SPECIAL_SWAMP
+					special[index] = basin_special
+
+			# Stepped mesas: flat tops and steep risers, in patches.
+			var mesa: float = _smooth(clampf((_value(_warp_z, index) - mesa_threshold) / 0.15, 0.0, 1.0))
+
+			if mesa > 0.0 and h > 40.0 and h < 1000.0:
+				var steps: float = h / mesa_step
+				var riser: float = _smooth(clampf((steps - floor(steps) - 0.7) / 0.3, 0.0, 1.0))
+				h = lerpf(h, (floor(steps) + riser) * mesa_step, mesa)
 
 			heights[index] = maxf(h, 1.0)
+
+
+# Flattens a broad, stepped plateau for the fallen city and marks the
+# old roads leading from it. Ruins themselves come at the tile bake.
+func _prepare_ruined_city(center: Vector2, city: Dictionary, owner_index: int) -> void:
+	var offset: Array = city["offset_m"]
+	var city_center: Vector2 = center + Vector2(float(offset[0]), float(offset[1]))
+	var radius: float = float(city["radius_m"])
+	var plateau: float = float(city["plateau_m"])
+	var terraces: float = float(city.get("terraces", 3))
+	var reach: float = radius * 1.6
+	var radius_cells: int = int(ceil(reach / cell_m)) + 1
+	var center_column: int = int(floor((city_center.x - origin_x) / cell_m))
+	var center_row: int = int(floor((city_center.y - origin_z) / cell_m))
+
+	for row_offset in range(-radius_cells, radius_cells + 1):
+		for column_offset in range(-radius_cells, radius_cells + 1):
+			var column: int = center_column + column_offset
+			var row: int = center_row + row_offset
+			var index: int = index_of(column, row)
+
+			if heights[index] <= 0.0:
+				continue
+
+			var ragged: float = 1.0 + 0.12 * _value(_fine_x, index) + 0.22 * _value(_warp_x, index)
+			var distance: float = (cell_center_m(column, row) - city_center).length() / (radius * ragged)
+
+			if distance >= 1.6:
+				continue
+
+			# Low terraces stepping up toward the citadel in the middle.
+			var level: float = floor((1.0 - clampf(distance, 0.0, 1.0)) * terraces)
+			var flat: float = plateau + level * 12.0
+			var blend: float = 1.0 - _smooth(clampf((distance - 1.0) / 0.6, 0.0, 1.0))
+			heights[index] = lerpf(heights[index], flat, blend)
+
+			if distance < 1.0:
+				special[index] = SPECIAL_RUINS
+				owners[index] = owner_index
+
+	# Old roads: from the city edge toward the coast and the volcano.
+	for road in city.get("roads", []):
+		var direction: Vector2 = Vector2(float(road[0]), float(road[1])).normalized()
+		var side: Vector2 = Vector2(-direction.y, direction.x)
+		var distance_along: float = radius
+
+		while distance_along < 14000.0:
+			var wander: float = 220.0 * sin(distance_along / 900.0) + 90.0 * sin(distance_along / 330.0)
+			var point: Vector2 = city_center + direction * distance_along + side * wander
+			var index: int = index_of(
+				int(floor((point.x - origin_x) / cell_m)), int(floor((point.y - origin_z) / cell_m))
+			)
+
+			if heights[index] <= 0.0 or special[index] == SPECIAL_LAVA:
+				break
+
+			if special[index] == SPECIAL_NONE or special[index] == SPECIAL_SALT:
+				special[index] = SPECIAL_ROAD
+
+			distance_along += cell_m * 0.5
+
+
+# Scorched earth: the volcano's upper slopes and the tongues of old lava
+# flows running down from the crater, black and ashen.
+func _scorch(center: Vector2, a: float, b: float, crater_radius: float, terrain: Dictionary, owner_index: int) -> void:
+	var scorched_inland: float = float(terrain.get("scorched_inland", 0.62))
+	var flows: int = int(terrain.get("old_flows", 5))
+	var flow_length: float = float(terrain.get("old_flow_length_m", 8500))
+	var radius_cells: int = int(ceil(a * 1.2 / cell_m)) + 1
+	var center_column: int = int(floor((center.x - origin_x) / cell_m))
+	var center_row: int = int(floor((center.y - origin_z) / cell_m))
+
+	for row_offset in range(-radius_cells, radius_cells + 1):
+		for column_offset in range(-radius_cells, radius_cells + 1):
+			var column: int = center_column + column_offset
+			var row: int = center_row + row_offset
+			var index: int = index_of(column, row)
+
+			if owners[index] != owner_index or heights[index] <= 0.0 or special[index] != SPECIAL_NONE:
+				continue
+
+			var offset: Vector2 = cell_center_m(column, row) - center
+			var reach: float = sqrt(pow(offset.x / a, 2.0) + pow(offset.y / b, 2.0))
+			var inland: float = 1.0 - reach + 0.08 * _value(_detail, index)
+
+			if inland > scorched_inland:
+				special[index] = SPECIAL_SCORCHED
+
+	# Old flows spread around the volcano, steering clear of the city side.
+	var rng: RandomNumberGenerator = SeedUtil.rng_for(_master, "center_island_flows")
+
+	for flow_index in range(flows):
+		var bearing: float = TAU * (float(flow_index) + rng.randf_range(0.15, 0.85)) / float(flows)
+		var direction: Vector2 = Vector2(sin(bearing), -cos(bearing))
+
+		# Northwest is the city's side; skip flows aimed at it.
+		if direction.dot(Vector2(-0.9, -0.4).normalized()) > 0.75:
+			continue
+
+		var side: Vector2 = Vector2(-direction.y, direction.x)
+		var distance_along: float = crater_radius
+		var width: float = rng.randf_range(300.0, 650.0)
+		var phase: float = rng.randf() * TAU
+
+		while distance_along < flow_length:
+			var wander: float = 700.0 * sin(distance_along / 2000.0 + phase)
+			var point: Vector2 = center + direction * distance_along + side * wander
+			var taper: float = width * (1.0 - 0.6 * distance_along / flow_length)
+			var cells: int = int(ceil(taper / cell_m))
+			var column: int = int(floor((point.x - origin_x) / cell_m))
+			var row: int = int(floor((point.y - origin_z) / cell_m))
+
+			for step_z in range(-cells, cells + 1):
+				for step_x in range(-cells, cells + 1):
+					if Vector2(step_x, step_z).length() * cell_m > taper:
+						continue
+
+					var index: int = index_of(column + step_x, row + step_z)
+
+					if heights[index] > 0.0 and (special[index] == SPECIAL_NONE or special[index] == SPECIAL_SALT):
+						special[index] = SPECIAL_SCORCHED
+						heights[index] += 4.0
+
+			distance_along += cell_m * 0.5
 
 
 # A lava river from the crater breach down to the sea.
