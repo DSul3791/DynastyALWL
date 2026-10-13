@@ -498,6 +498,8 @@ func _carve_bay(mount: Dictionary) -> void:
 		step += cell_m * 0.5
 
 	var center: Vector2 = coast - direction * radius * 0.6
+	mount["bay_center"] = [int(round(center.x)), int(round(center.y))]
+	mount["bay_radius_m"] = int(round(radius))
 	var side: Vector2 = Vector2(-direction.y, direction.x)
 	var reach: float = radius * 2.2
 	var radius_cells: int = int(ceil(reach / cell_m)) + 1

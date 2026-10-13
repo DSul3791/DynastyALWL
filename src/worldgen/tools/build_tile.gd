@@ -16,6 +16,7 @@ const SketchScript := preload("res://src/worldgen/sketch/world_sketch.gd")
 const ElevationScript := preload("res://src/worldgen/sketch/world_elevation.gd")
 const ReliefScript := preload("res://src/worldgen/sketch/relief_preview.gd")
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
+const TileWaterScript := preload("res://src/worldgen/tile/tile_water.gd")
 const TilePreviewScript := preload("res://src/worldgen/tile/tile_preview.gd")
 
 
@@ -34,6 +35,21 @@ func _init() -> void:
 			world_dir = argument.trim_prefix("--world=")
 
 	quit(_run(world_dir, tile, cell))
+
+
+# Bay and beach details for the starter island on this tile, if any.
+func _starter_info(sketch: Dictionary, tile: Vector2i) -> Dictionary:
+	for feature in sketch["features"]:
+		for mount in feature.get("mounts", []):
+			if str(mount["type"]) == "starter" and int(mount["starter"][0]) == tile.x and int(mount["starter"][1]) == tile.y \
+					and mount.has("bay_center"):
+				return {
+					"bay_center": Vector2(float(mount["bay_center"][0]), float(mount["bay_center"][1])),
+					"beach_dir": Vector2(float(mount["beach_dir"][0]), float(mount["beach_dir"][1])),
+					"bay_radius_m": float(mount["bay_radius_m"]),
+				}
+
+	return {}
 
 
 func _run(world_dir: String, tile: Vector2i, cell: float) -> int:
@@ -66,8 +82,27 @@ func _run(world_dir: String, tile: Vector2i, cell: float) -> int:
 	])
 
 	started = Time.get_ticks_msec()
-	var image: Image = TilePreviewScript.render(settings, height, tile)
+	var water = TileWaterScript.new()
+	water.setup(settings, tile_rules)
+	water.build(height, tile, _starter_info(sketch, tile))
+	var big_lakes: int = water.lakes.size()
+	print("Water done in %d ms: %d river cells, longest river %.0f m, %d lakes, %d pit cells filled" % [
+		Time.get_ticks_msec() - started, water.river_cells, water.longest_river_m, big_lakes, water.filled_cells
+	])
+
+	print("Starter river path points: %d" % water.starter_path.size())
+
+	for lake in water.lakes:
+		print("  lake %.1f ha, surface %.1f m, depth %.1f m" % [
+			float(lake["area_m2"]) / 10000.0, float(lake["surface_m"]), float(lake["depth_m"])
+		])
+
+	started = Time.get_ticks_msec()
 	var base: String = "%s/plan/tile_%d_%d" % [world_dir, tile.x, tile.y]
+	var image: Image = TilePreviewScript.render(settings, height, tile, true, null)
 	image.save_png(base + "_relief.png")
+	height.heights = water.heights
+	var wet_image: Image = TilePreviewScript.render(settings, height, tile, true, water)
+	wet_image.save_png(base + "_water.png")
 	print("Relief drawn in %d ms" % (Time.get_ticks_msec() - started))
 	return 0

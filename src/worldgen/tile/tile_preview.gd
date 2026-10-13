@@ -12,7 +12,7 @@ const FOREST := Color(0.22, 0.44, 0.22)
 const ROCK := Color(0.47, 0.44, 0.41)
 
 
-static func render(settings, height, tile: Vector2i, show_grid: bool = true) -> Image:
+static func render(settings, height, tile: Vector2i, show_grid: bool = true, water = null) -> Image:
 	var samples: int = height.samples
 	var spacing: float = height.spacing_m
 	var image: Image = Image.create(samples, samples, false, Image.FORMAT_RGB8)
@@ -34,7 +34,15 @@ static func render(settings, height, tile: Vector2i, show_grid: bool = true) -> 
 			var shade: float = maxf(normal.dot(light), 0.0)
 			var color: Color
 
-			if h > 0.0:
+			var wet: int = 0
+
+			if water != null:
+				wet = water.water_class[j * samples + i]
+
+			if wet == 3 or wet == 2:
+				var river_color: Color = Color(0.20, 0.45, 0.85) if wet == 3 else Color(0.12, 0.35, 0.72)
+				color = river_color * (0.8 + 0.3 * shade)
+			elif h > 0.0:
 				color = _land_color(h)
 				color = color * (0.45 + 0.75 * shade)
 			else:

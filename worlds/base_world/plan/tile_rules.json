@@ -1,20 +1,71 @@
 {
 	"format_version": 1,
 	"note": "Rules for turning the 160 m world elevation map into one tile's 8 m height map: smooth cubic upsampling plus fine detail noise that is continuous across tile borders. Rerun tools/build_tile.gd after editing.",
-
 	"detail": {
 		"note": "Noise octaves added on land. amplitude_m is the full strength; it fades in with height so beaches and the coastal plain stay smooth and the sea floor stays calm.",
 		"octaves": [
-			{"wavelength_m": 900, "amplitude_m": 14},
-			{"wavelength_m": 300, "amplitude_m": 7},
-			{"wavelength_m": 100, "amplitude_m": 3.0},
-			{"wavelength_m": 35, "amplitude_m": 1.2},
-			{"wavelength_m": 12, "amplitude_m": 0.45}
+			{
+				"wavelength_m": 900,
+				"amplitude_m": 14
+			},
+			{
+				"wavelength_m": 300,
+				"amplitude_m": 7
+			},
+			{
+				"wavelength_m": 100,
+				"amplitude_m": 3.0
+			},
+			{
+				"wavelength_m": 35,
+				"amplitude_m": 1.2
+			},
+			{
+				"wavelength_m": 12,
+				"amplitude_m": 0.45
+			}
 		],
 		"calm_below_m": 4,
 		"full_above_m": 120,
 		"calm_strength": 0.12,
 		"sea_strength": 0.05,
 		"coast_ragged_m": 1.6
+	},
+	"water": {
+		"note": "Hydrology on the 8 m height map. Rain falls evenly; each cell passes its water downhill. Rivers start where the catchment passes river_start_km2. Pits are filled unless they are big enough to be lakes.",
+		"river_start_km2": 0.5,
+		"river_width_base_m": 2.5,
+		"river_width_per_sqrt_km2": 2.2,
+		"river_depth_base_m": 0.7,
+		"river_depth_per_width": 0.12,
+		"bank_slope": 0.35,
+		"lake_min_area_m2": 6000,
+		"lake_min_depth_m": 1.5,
+		"fill_min_depth_m": 1.0,
+		"route_noise": [
+			{
+				"wavelength_m": 150,
+				"amplitude_m": 0.5
+			},
+			{
+				"wavelength_m": 40,
+				"amplitude_m": 0.25
+			}
+		],
+		"lake_min_fill_ratio": 0.45,
+		"lake_min_width_m": 40,
+		"starter_river": {
+			"note": "A river from the biggest highland lake to the head of the starter bay, following the easiest valley route. Extra water is fed in at the source so it is a real river.",
+			"enabled": true,
+			"source_min_height_m": 80,
+			"route_cell_m": 32,
+			"climb_cost": 8.0,
+			"guide_width_m": 5,
+			"guide_depth_m": 1.6,
+			"source_flow_km2": 5.0,
+			"meander_m": 28,
+			"meander_wavelength_m": 420,
+			"mouth_height_m": 0.4
+		}
 	}
 }
