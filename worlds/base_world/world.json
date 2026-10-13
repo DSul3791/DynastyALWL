@@ -69,6 +69,14 @@
 			"peak_m": 1900,
 			"main_biome": "tropical_forest",
 			"landmarks": ["volcano", "jungle", "castles", "caves"],
+			"crater": {
+				"note": "Baked into the terrain, so settle before the center tiles are kept. Lava itself is drawn and simulated at runtime.",
+				"radius_m": 700,
+				"depth_m": 250,
+				"breach_bearing_deg": 160,
+				"breach_width_m": 120,
+				"lava_flow_to_sea": true
+			},
 			"edge_falloff_tiles": 0.6,
 			"danger_peak": 1.0
 		}
