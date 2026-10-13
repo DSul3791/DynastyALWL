@@ -98,6 +98,7 @@ A persistent, rough-medieval, multiplayer online world: a survival, exploration 
 - **[Decided]** A generator **island properties panel** controls, per tile: how many islands, how big each is, and where each is placed in the tile.
 - **[Decided]** Tiles are baked and added to the map one at a time over the life of the project.
 - **[Decided]** Island size and the distance between islands should be varied across the world, from small islets up to ARK-scale.
+- **[Decided]** Tiles can hold several similar small or medium islands, or a large or great island with a random chance of a few islets or small islands just off it (`WORLD_FORMAT_SPEC.md`, Section 6).
 - **[Decided]** Sailing should feel adventurous and epic, as in Atlas. For scale: the project owner recalls the whole ARK map, ocean included, at about 48 km² and Atlas at about 12 by 12 grids. One tile here is about 105 km², so a 12 by 12 world (about 15,000 km²) would be larger than Atlas.
 - **[Idea]** Once tiles generate in reasonable time, the whole massive world can be planned ahead of time, tile by tile.
 - **[Proposed]** A **world plan** file lists every planned tile (islands, sizes, character) at its permanent coordinate. Tiles can all be baked up front and still be released gradually by growing the active rectangle (Section 4.7). Open-ocean tiles are nearly free to store and help a huge world feel huge without needing content everywhere.
@@ -160,13 +161,14 @@ Note: climate depends only on position, so each tile can compute it without look
 ### 4.3 Soil, flora and fauna
 
 - **[Decided]** Soil and surface materials are baked.
-- **[Decided]** Trees and other plants are **objects, not voxels**. At bake time the generator writes a compact placement list per region (position, species, size, rotation). The client downloads it with the region. The server loads the same list.
+- **[Decided]** Trees and other plants are **objects, not voxels**.
+- **[Decided]** Flora placement is worked out at runtime from the biome map and a per-tile placement seed, replacing the earlier plan of baked placement lists. Only removals are stored. The map grid is 8 m.
 - **[Decided]** Grass is never stored or synced. The client draws it near the player only, driven by ground type and a quality setting.
 - **[Decided]** Fauna is server-controlled spawning, based on climate, biome and terrain. It is never baked.
 - **[Decided]** Animals run on simple, classic programmed AI (not the language model), improved gradually over time with AI help. Behavior must not be ridiculously predictable or unnatural: a deer jumps and runs away when spooked, and a troll does not stomp around turning its back on you because it needs to walk around a tree.
 - **[Proposed]** Animal behavior built from perception (sight cones, hearing, smell carried by the wind), a short list of weighted needs (graze, flee, hunt, guard, rest), and steering. Steering lets a creature move around obstacles while still facing its target, so a predator sidesteps a tree instead of turning away. Herds react together and some individuals startle first. A little randomness in timing keeps it unpredictable. All of this runs on the server with simulation level of detail; the client only animates and smooths movement.
 - **[Decided]** Fantasy (Dungeons and Dragons style) species.
-- **[Proposed]** A removed tree is recorded as "item N in region R is gone." Because the list is the truth, changing placement rules later only affects newly baked tiles.
+- **[Proposed]** A removed tree is recorded as "item N in region R is gone." Because each tile freezes its generator version, placement never shifts under existing removals.
 - **[Proposed]** Climate and soil should also be queryable at runtime from the same function the generator uses, so the server and generator never disagree. This matters for farming.
 - **[Proposed]** Slate as a new rock type (shale metamorphoses into slate), tied to folded or deformed regions. Slate would make some islands valuable for roofing.
 
@@ -302,6 +304,7 @@ A tile should then take minutes, and `world_preview.gd` could show island panel 
 
 ### 4.11 At sea
 
+- **[Decided]** Players can dive on wrecks and fish with spears, as in Atlas. The open-ocean floor at tile edges is therefore -2,000 m instead of the world bottom, leaving rock beneath and shelves near islands within diving reach (`WORLD_FORMAT_SPEC.md`).
 - **[Decided]** Finding flotsam and jetsam and scooping it up with a grappling hook, as in Atlas, is a loved dynamic, but in Atlas it is far too abundant.
 - **[Proposed]** Flotsam comes from real events: a merchant ship lost in a storm or to pirates leaves its actual cargo drifting, following the same economy and same-odds rules as everything else. Some background flotsam keeps the sea interesting, at a rare rate. Items drift with currents and eventually sink or wash ashore.
 
@@ -971,7 +974,7 @@ Generator, hardware and hosting
 46. How much protection against "x-ray" clients that read ore from received voxels is worth its cost? (Section 4.9)
 47. How large a world can be designed, managed and served, and is it one server process or split across several later? (Section 4.1)
 48. Mostly settled: eight temperate starter tiles in an inner and an outer set (Section 4.1). Confirm the proposed coordinates and when the outer set opens.
-49. Is flora derived at runtime from the biome map and a placement seed (only removals stored), replacing the baked placement lists in Section 4.3? Is the 8 m map grid confirmed?
+49. Settled: flora is derived at runtime from the biome map and a placement seed, only removals are stored, and the map grid is 8 m (Sections 4.3 and 4.8).
 50. Settled: 21 by 21 (Section 4.1). Still open: travel speeds on foot, by horse and by ship, which decide how long the world takes to cross.
 51. How far does polar sea ice reach, and can ships cross the pole in summer? (Section 4.2)
 

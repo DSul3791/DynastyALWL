@@ -43,7 +43,7 @@ One file for the whole world, fixed before the first tile is kept.
 
 - Tile size, region size, map spacing (8 m) and map samples per side (1,281, see Section 4).
 - World extent and wrap, vertical range, sea level.
-- **Ocean edge floor depth.** Every tile edge converges to this depth. The current code uses the world bottom plus 1 m (about -3,999 m), so the open sea is 4 km deep with almost no rock beneath it. Proposed: -2,000 m, which keeps 2 km of rock under the deep sea and leaves room for shelves, seamounts and wrecks within diving reach near islands.
+- **Ocean edge floor depth.** Every tile edge converges to this depth. The current code uses the world bottom plus 1 m (about -3,999 m), so the open sea is 4 km deep with almost no rock beneath it. **[Decided]** -2,000 m, which keeps 2 km of rock under the deep sea and leaves room for shelves, seamounts and wrecks within diving reach near islands. Players will dive on wrecks and fish with spears, as in Atlas.
 
 **Climate (Permanent, because biomes are baked from it)**
 
@@ -94,7 +94,7 @@ One file per tile: `tiles/tile_<x>_<z>.tile`, written as `.partial` and renamed 
 | Revision | Starts at 1. Rises when the tile is replaced or re-encoded, so clients refresh cached copies |
 | Status | Placeholder or final |
 | Matrix entry | A copy of the tile's matrix cell (Section 5), so the tile can be previewed or rebaked exactly |
-| Map spacing and sample count | 8 m, 1,281 by 1,281 |
+| Map spacing and sample count | 8 m, 1,281 by 1,281 **[Decided]** |
 | Flora seed | For runtime flora placement |
 
 **Maps (8 m grid, 1,281 by 1,281 samples)**
@@ -140,7 +140,7 @@ A global ID is (tile x, tile z, tile revision, local ID). Ore body IDs are what 
 **Not stored in the tile**
 
 - Voxels, rock layers, caves, ore voxels, surface clues: derived by the runtime generator from the maps and lists.
-- Flora: derived from biome, moisture and the flora seed. Only removals are stored, in the living layer. (Pending confirmation: `DESIGN_IDEAS.md` question 49.)
+- Flora: derived from biome, moisture and the flora seed. Only removals are stored, in the living layer. **[Decided]**
 - Fauna, weather, seasons, sea ice: runtime.
 
 ## 5. Server-side stores (not part of the tile)
@@ -191,8 +191,13 @@ The plan for all 441 tiles, read and written by the randomizer and the island pr
 
 **Randomizer rules (starting values, Tunable)**
 
-- **Island count** per tile: 0 islands 25%, 1 island 30%, 2 islands 20%, 3 islands 12%, 4 islands 8%, 5 islands 5%.
-- **Count and size trade off.** A tile has at most one great island, and a tile with a great island has at most two small companions. Total land per tile is capped at about 75 km².
+- **[Decided] Two kinds of island tile, chosen at random for variety:**
+  - **Peers:** one to five islands of similar size (small or medium).
+  - **Main island with satellites:** one large or great island, with a chance of a few islets or small islands just off its coast.
+- **Tile odds (starting values):** ocean 25%, peers 40%, main island with satellites 35%.
+- **Peers:** 2 islands 35%, 3 islands 30%, 1 island 15%, 4 islands 12%, 5 islands 8%. Sizes vary within about a factor of two of each other.
+- **Satellites:** 0 satellites 30%, 1 satellite 30%, 2 satellites 20%, 3 satellites 12%, 4 satellites 8%. Each is an islet (70%) or small island (30%), placed 0.3 to 3 km off the main island's shore.
+- **One great island per tile at most.** Total land per tile is capped at about 75 km².
 - **Margins.** Islands keep a minimum distance from the tile edge for the shared ocean edge, and from each other (for example 1 km of open water), except within an archipelago cluster.
 - **No visible grid.** Island centers are jittered and sizes mixed, so neighboring tiles do not line up.
 - **Climate.** Arctic rows have fewer, smaller, glaciated islands and more sea ice. The desert row leans toward flatter and volcanic islands.
@@ -217,7 +222,7 @@ The plan for all 441 tiles, read and written by the randomizer and the island pr
 
 ## 8. Decisions needed
 
-1. Confirm flora is derived at runtime (only removals stored) and the 8 m map grid (`DESIGN_IDEAS.md` question 49).
-2. The ocean edge floor depth: -2,000 m, or keep about -4,000 m?
-3. The island count odds, size classes and world-scale patterns as starting values.
-4. Replacing the tile seed function and picking the final world identity seed.
+Settled: flora is derived at runtime, the map grid is 8 m, the ocean edge is -2,000 m, and island tiles are either peers or a main island with satellites.
+
+1. Replacing the tile seed function and picking the final world identity seed.
+2. The odds above are starting values to tune with the preview image.
