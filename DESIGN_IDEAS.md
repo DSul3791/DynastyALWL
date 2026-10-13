@@ -937,8 +937,8 @@ Generator, hardware and hosting
 46. How much protection against "x-ray" clients that read ore from received voxels is worth its cost? (Section 4.9)
 47. How large a world can be designed, managed and served, and is it one server process or split across several later? (Section 4.1)
 48. Which tiles are starter tiles, how many, and in which climates? (Sections 4.1, 4.2 and 8.1)
-50. What is the fixed planned world size in tiles (height for climate, width for scale)? (Section 4.1)
 49. Is flora derived at runtime from the biome map and a placement seed (only removals stored), replacing the baked placement lists in Section 4.3? Is the 8 m map grid confirmed?
+50. What is the fixed planned world size in tiles (height for climate, width for scale)? (Section 4.1)
 
 ---
 
