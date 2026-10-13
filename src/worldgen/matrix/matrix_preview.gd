@@ -216,3 +216,63 @@ static func _draw_markers(
 			),
 			Color(0.0, 0.9, 0.9)
 		)
+
+
+# Danger map: green near the inner starters through yellow and orange to
+# dark red at the deadliest places. Starter tiles are outlined.
+static func render_danger(settings, matrix, pixels_per_tile: int = 48) -> Image:
+	var width: int = settings.tiles_x * pixels_per_tile
+	var height: int = settings.tiles_z * pixels_per_tile
+	var image: Image = Image.create(width, height, false, Image.FORMAT_RGB8)
+	var meters_per_pixel: float = float(settings.tile_size_m) / float(pixels_per_tile)
+	var origin_x: float = float(settings.min_tile) * float(settings.tile_size_m)
+	var origin_z: float = float(settings.min_tile) * float(settings.tile_size_m)
+
+	for pixel_y in range(height):
+		for pixel_x in range(width):
+			var value: float = settings.danger_at(
+				origin_x + (float(pixel_x) + 0.5) * meters_per_pixel,
+				origin_z + (float(pixel_y) + 0.5) * meters_per_pixel
+			)
+			var color: Color = _danger_color(value)
+
+			if pixel_x % pixels_per_tile == 0 or pixel_y % pixels_per_tile == 0:
+				color = color.darkened(0.15)
+
+			image.set_pixel(pixel_x, pixel_y, color)
+
+	for tile_z in range(settings.min_tile, settings.get_max_tile_z() + 1):
+		for tile_x in range(settings.min_tile, settings.get_max_tile_x() + 1):
+			var cell: Dictionary = matrix.get_cell(tile_x, tile_z)
+
+			if cell.is_empty():
+				continue
+
+			var origin: Vector2i = Vector2i(
+				(tile_x - settings.min_tile) * pixels_per_tile,
+				(tile_z - settings.min_tile) * pixels_per_tile
+			)
+			var starter_only: Dictionary = cell.duplicate()
+			starter_only["pattern"] = ""
+			_draw_markers(image, starter_only, origin, pixels_per_tile)
+
+	return image
+
+
+static func _danger_color(value: float) -> Color:
+	var stops: Array = [
+		[0.0, Color(0.20, 0.62, 0.30)],
+		[0.3, Color(0.70, 0.80, 0.30)],
+		[0.5, Color(0.95, 0.80, 0.25)],
+		[0.7, Color(0.92, 0.45, 0.15)],
+		[1.0, Color(0.45, 0.05, 0.15)],
+	]
+
+	for index in range(1, stops.size()):
+		if value <= float(stops[index][0]):
+			var low: float = float(stops[index - 1][0])
+			var high: float = float(stops[index][0])
+			var t: float = (value - low) / maxf(high - low, 0.0001)
+			return (stops[index - 1][1] as Color).lerp(stops[index][1], t)
+
+	return stops[stops.size() - 1][1]

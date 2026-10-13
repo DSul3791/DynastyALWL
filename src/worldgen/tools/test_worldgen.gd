@@ -22,6 +22,7 @@ func _init() -> void:
 	_test_seeds()
 	_test_settings()
 	_test_climate()
+	_test_danger()
 	_test_tables()
 	_test_matrix()
 
@@ -220,6 +221,64 @@ func _test_climate() -> void:
 			settings.get_zone_id_for_row(-row) == expected[row],
 			"zone of row -%d" % row
 		)
+
+
+# ==================================================
+# DANGER
+# ==================================================
+
+func _test_danger() -> void:
+	var settings = _load_settings()
+
+	if settings == null:
+		return
+
+	for tile in settings.starter_tiles["inner"]:
+		var value: float = settings.danger_at_tile(tile.x, tile.y)
+		_check(value < 0.2, "inner starter %s is easy (%.2f)" % [str(tile), value])
+
+	for tile in settings.starter_tiles["outer"]:
+		var value: float = settings.danger_at_tile(tile.x, tile.y)
+		_check(
+			value >= 0.35 and value < 0.6,
+			"outer starter %s is medium (%.2f)" % [str(tile), value]
+		)
+
+	_check(settings.danger_at_tile(0, 0) >= 0.95, "tile (0,0) is the deadliest")
+	_check(settings.danger_at_tile(10, 4) >= 0.9, "the east edge is deadly")
+	_check(settings.danger_at_tile(-10, -4) >= 0.9, "the west edge is deadly")
+	_check(settings.danger_at_tile(0, 10) >= 0.9, "the south pole is deadly")
+	_check(settings.danger_at_tile(0, -10) >= 0.9, "the north pole is deadly")
+	_check(
+		settings.danger_at_tile(3, 0) > settings.danger_at_tile(3, 4) + 0.3,
+		"the equator row is more dangerous than the starter rows"
+	)
+	_check(
+		_approx(settings.danger_at_tile(5, 3), settings.danger_at_tile(-5, -3), 0.001),
+		"danger is symmetric"
+	)
+
+	# Rising steadily from an inner starter to the east edge.
+	var previous: float = -1.0
+	var rising: bool = true
+
+	for column in range(3, 11):
+		var value: float = settings.danger_at_tile(column, 4)
+
+		if value < previous - 0.0001:
+			rising = false
+
+		previous = value
+
+	_check(rising, "danger rises from the inner starters to the edge")
+
+	# No jump across the east-west wrap seam.
+	var tile: float = float(settings.tile_size_m)
+	var east: float = settings.danger_at(11.0 * tile - 1.0, 4.5 * tile)
+	var west: float = settings.danger_at(-10.0 * tile + 1.0, 4.5 * tile)
+	_check(_approx(east, west, 0.01), "danger is continuous across the wrap seam")
+	_check(settings.danger_tier(0.1) == "easy", "danger tier names")
+	_check(settings.danger_tier(0.99) == "deadly", "deadly tier")
 
 
 # ==================================================

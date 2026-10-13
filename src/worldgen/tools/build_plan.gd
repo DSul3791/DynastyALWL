@@ -83,4 +83,13 @@ func _run(world_dir: String, fresh: bool) -> int:
 	var save_error: int = image.save_png(image_path)
 	print("Preview drawn in %d ms: %s" % [Time.get_ticks_msec() - started, image_path])
 
+	if save_error != OK:
+		return 1
+
+	started = Time.get_ticks_msec()
+	var danger_image: Image = PreviewScript.render_danger(settings, matrix)
+	var danger_path: String = world_dir + "/plan/danger_map.png"
+	save_error = danger_image.save_png(danger_path)
+	print("Danger map drawn in %d ms: %s" % [Time.get_ticks_msec() - started, danger_path])
+
 	return 0 if save_error == OK else 1

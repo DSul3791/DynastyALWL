@@ -38,6 +38,9 @@ var zones: Array = []                # [{id, group, max_abs_row}, ...]
 # Starter tiles: {"inner": [Vector2i], "outer": [Vector2i]}
 var starter_tiles: Dictionary = {}
 
+# Danger map (runtime-tunable; the world sketch reads it once for terrain)
+var danger: Dictionary = {}
+
 # Runtime-tunable values (not baked into tiles)
 var tunable: Dictionary = {}
 
@@ -103,6 +106,7 @@ func _apply(data: Dictionary) -> void:
 
 		starter_tiles[str(set_name)] = list
 
+	danger = data.get("danger", {})
 	tunable = data.get("tunable", {})
 	master_seed = SeedUtil.master_seed(seed_text)
 
@@ -184,6 +188,15 @@ func validate() -> Array:
 
 		if previous_row < get_max_abs_row():
 			problems.append("zones do not reach the outermost tile row")
+
+	for curve_name in ["east_west_by_abs_column", "north_south_by_abs_row"]:
+		var curve: Array = danger.get(curve_name, [])
+
+		if curve.size() < 2:
+			problems.append("danger needs a %s curve" % curve_name)
+
+	if danger.get("tiers", []).is_empty():
+		problems.append("danger needs tiers")
 
 	for set_name in starter_tiles.keys():
 		for tile in starter_tiles[set_name]:
@@ -311,23 +324,26 @@ func latitude_for_z(z_m: float) -> float:
 
 # Sea-level annual mean temperature for a latitude.
 func sea_level_temperature_c(latitude: float) -> float:
-	var abs_latitude: float = clampf(absf(latitude), 0.0, 1.0)
+	return sample_curve(temperature_points, clampf(absf(latitude), 0.0, 1.0))
 
-	for index in range(1, temperature_points.size()):
-		var upper_lat: float = float(temperature_points[index][0])
 
-		if abs_latitude <= upper_lat:
-			var lower_lat: float = float(temperature_points[index - 1][0])
-			var lower_temp: float = float(temperature_points[index - 1][1])
-			var upper_temp: float = float(temperature_points[index][1])
-			var span: float = maxf(upper_lat - lower_lat, 0.000001)
-			var t: float = clampf((abs_latitude - lower_lat) / span, 0.0, 1.0)
+# Reads a curve of [x, value] control points, easing smoothly between
+# them so there are no kinks. Outside the points it holds the end values.
+static func sample_curve(points: Array, x: float) -> float:
+	if x <= float(points[0][0]):
+		return float(points[0][1])
 
-			# Smooth easing so the curve has no kinks at the control points.
+	for index in range(1, points.size()):
+		var upper_x: float = float(points[index][0])
+
+		if x <= upper_x:
+			var lower_x: float = float(points[index - 1][0])
+			var span: float = maxf(upper_x - lower_x, 0.000001)
+			var t: float = clampf((x - lower_x) / span, 0.0, 1.0)
 			t = t * t * (3.0 - 2.0 * t)
-			return lerpf(lower_temp, upper_temp, t)
+			return lerpf(float(points[index - 1][1]), float(points[index][1]), t)
 
-	return float(temperature_points[temperature_points.size() - 1][1])
+	return float(points[points.size() - 1][1])
 
 
 # Annual mean temperature at a position and altitude above sea level.
@@ -368,3 +384,66 @@ func get_zone_ids() -> Array:
 		ids.append(str(zone["id"]))
 
 	return ids
+
+
+# ==================================================
+# DANGER
+# ==================================================
+
+# Position in tiles relative to the middle of tile (0,0), wrapped so the
+# result runs from minus half the world to plus half the world.
+func tiles_from_center(x_m: float, z_m: float) -> Vector2:
+	var tile: float = float(tile_size_m)
+	var column: float = x_m / tile - 0.5
+	var row: float = z_m / tile - 0.5 - float(equator_tile_row)
+	var half_x: float = float(tiles_x) * 0.5
+	var half_z: float = float(tiles_z) * 0.5
+	column = fposmod(column + half_x, float(tiles_x)) - half_x
+	row = fposmod(row + half_z, float(tiles_z)) - half_z
+	return Vector2(column, row)
+
+
+# Danger from 0 (easy) to 1 (deadly). Lowest around the inner starter
+# tiles, rising toward the east-west edge, the equator row and the
+# poles, and peaking in the abyss around tile (0,0). The parts combine
+# so that any one of them alone can make a place dangerous.
+func danger_at(x_m: float, z_m: float) -> float:
+	var position: Vector2 = tiles_from_center(x_m, z_m)
+	var east_west: float = sample_curve(
+		danger["east_west_by_abs_column"], absf(position.x)
+	)
+	var north_south: float = sample_curve(
+		danger["north_south_by_abs_row"], absf(position.y)
+	)
+	var abyss_part: float = 0.0
+	var abyss: Dictionary = danger.get("abyss", {})
+
+	if not abyss.is_empty():
+		var abyss_tile: Array = abyss["tile"]
+		var abyss_center: Vector2 = tiles_from_center(
+			(float(abyss_tile[0]) + 0.5) * float(tile_size_m),
+			(float(abyss_tile[1]) + 0.5) * float(tile_size_m)
+		)
+		var distance: float = tile_distance(position, abyss_center)
+		var radius: float = float(abyss["radius_tiles"])
+		var t: float = clampf(1.0 - distance / radius, 0.0, 1.0)
+		abyss_part = float(abyss["peak"]) * t * t * (3.0 - 2.0 * t)
+
+	return clampf(
+		1.0 - (1.0 - east_west) * (1.0 - north_south) * (1.0 - abyss_part),
+		0.0,
+		1.0
+	)
+
+
+func danger_at_tile(tile_x: int, tile_z: int) -> float:
+	var tile: float = float(tile_size_m)
+	return danger_at((float(tile_x) + 0.5) * tile, (float(tile_z) + 0.5) * tile)
+
+
+func danger_tier(value: float) -> String:
+	for tier in danger.get("tiers", []):
+		if value < float(tier[0]):
+			return str(tier[1])
+
+	return "deadly"

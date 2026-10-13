@@ -329,7 +329,8 @@ A tile should then take minutes, and `world_preview.gd` could show island panel 
 - **[Decided]** The temperate zones near the starter islands are low level and fairly easy. Sailing further east and west gets more dangerous: higher-level and more dangerous creatures, more dangerous landscapes (cliffs, volcanoes), terrible storms and various sea creatures. Getting closer to the edges makes things worse.
 - **[Proposed]** A **danger map** in the world settings: a smooth level for every position, combining a latitude part (lowest in the middle of the temperate bands, rising toward the equator row and the poles), a distance-from-starters part, and a peak at the abyss around (0,0). The server reads it at runtime for creature levels, sea monsters, pirates, storm strength and wreck density, so those can be tuned at any time. The world sketch reads it once to choose terrain: more cliffs, volcanic arcs and trenches where danger is high, gentle shelves near starters. Only that terrain part is permanent.
 - **[Proposed]** The abyss around (0,0) is an abyssal plain or trench about 3,000 m deep (the world bottom is -4,000 m), with caverns in its floor. Being in the desert row, it pairs the hottest seas with the most dangerous waters.
-- **[Open]** The world wraps east to west, and the eight starter tiles are spread around it (columns -8, -3, 3 and 8), so sailing east from one starter eventually reaches another. "Further east and west is more dangerous" therefore needs a definition: danger rising with distance from the nearest starter (the gaps between starters, and the wrap seam, become dangerous), or a dangerous meridian at the east-west seam with the outer starters moved inward, away from it.
+- **[Decided]** The inner starter tiles are the easy zones. The outer edges are the maximum danger. The outer starter towns fall naturally into a medium zone.
+- **[Proposed]** Implemented as the danger map in `world.json` (curves by column and by row, plus the abyss peak) with five tiers: easy, moderate, medium, hard, deadly. Inner starters read about 0, outer starters about 0.45 (medium), tile (0,0) and the east-west and polar edges about 1. The east-west wrap seam is the dangerous edge; danger is continuous across it. A danger map image is drawn with the world plan (`plan/danger_map.png`).
 
 ---
 
@@ -1003,7 +1004,7 @@ Generator, hardware and hosting
 52. Should island size classes grow with the bigger tiles? Island areas stayed the same when tiles grew from 10.24 km to 15.36 km, so land fell from about 11% to about 6% of the world. (Section 4.1)
 53. How does the client handle positions far from the origin: floating origin or a double-precision build? (Section 4.10)
 54. Is the world-first sketch approved, replacing per-tile dice and the shared deep-ocean tile edge? (Section 4.12)
-55. How is "further east and west" measured on a wrapping world with eight spread-out starters? (Section 4.13)
+55. Settled: inner starters easy, outer starters medium, edges deadly (Section 4.13). Still open: how many tiers players see, and whether the curves need tuning once creatures exist.
 
 ---
 

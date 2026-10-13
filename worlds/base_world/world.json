@@ -43,6 +43,33 @@
 		"outer": [[-8, 5], [8, 5], [-8, -5], [8, -5]]
 	},
 
+	"danger": {
+		"note": "Danger from 0 (easy) to 1 (deadly). Distances are in tiles from the middle of tile (0,0). The server reads this at runtime, so it can be tuned at any time; only the world sketch's choice of terrain is baked from it.",
+		"east_west_by_abs_column": [
+			[0.0, 0.0],
+			[3.5, 0.0],
+			[8.0, 0.45],
+			[10.5, 1.0]
+		],
+		"north_south_by_abs_row": [
+			[0.0, 0.55],
+			[1.0, 0.45],
+			[2.0, 0.2],
+			[3.0, 0.0],
+			[5.5, 0.0],
+			[7.5, 0.45],
+			[10.5, 1.0]
+		],
+		"abyss": {"tile": [0, 0], "peak": 1.0, "radius_tiles": 1.8},
+		"tiers": [
+			[0.2, "easy"],
+			[0.4, "moderate"],
+			[0.6, "medium"],
+			[0.8, "hard"],
+			[1.01, "deadly"]
+		]
+	},
+
 	"tunable": {
 		"lethal_depth_m": -3000,
 		"seasonal_swing_c_equator": 3.0,
