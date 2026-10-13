@@ -69,6 +69,25 @@
 			"peak_m": 1900,
 			"main_biome": "tropical_forest",
 			"landmarks": ["volcano", "jungle", "castles", "caves"],
+			"terrain": {
+				"note": "Hostile ground: radial ravines and jagged ridges off the volcano, sea cliffs, swampy basins in the lowlands and a lava river from the crater breach to the sea. No easy town ground.",
+				"ravines": 9,
+				"ravine_depth_m": 140,
+				"jaggedness_m": 150,
+				"cliff_m": 180,
+				"swamp_threshold": 0.15,
+				"swamp_inland": [0.1, 0.45]
+			},
+			"sites": {
+				"note": "Reserved for the tile bake: places for a fallen magical civilization. Positions are chosen deterministically when the center tiles are built.",
+				"castles": 3,
+				"labyrinths": 2,
+				"cave_systems": 4,
+				"boss_lairs": 3,
+				"ruined_roads": true,
+				"ruins": true
+			},
+			"lore": "Home of a fallen civilization that used strong magic. Its fall left the island poisoned with many magics and terrible threats.",
 			"crater": {
 				"note": "Baked into the terrain, so settle before the center tiles are kept. Lava itself is drawn and simulated at runtime.",
 				"radius_m": 700,

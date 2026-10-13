@@ -17,6 +17,7 @@ const TUNDRA := Color(0.50, 0.50, 0.40)
 const SNOW := Color(0.94, 0.95, 0.97)
 const ROCK := Color(0.47, 0.44, 0.41)
 const LAVA := Color(0.95, 0.38, 0.06)
+const SWAMP := Color(0.20, 0.30, 0.20)
 
 
 static func render(settings, elevation, show_grid: bool = true) -> Image:
@@ -78,6 +79,9 @@ static func _land_color(
 ) -> Color:
 	if elevation.special[index] == ElevationScript.SPECIAL_LAVA:
 		return LAVA
+
+	if elevation.special[index] == ElevationScript.SPECIAL_SWAMP:
+		return SWAMP.lerp(JUNGLE, 0.5 + 0.5 * ElevationScript._value(elevation._detail, index))
 
 	if h < 5.0:
 		return SAND

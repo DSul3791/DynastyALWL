@@ -6,7 +6,7 @@ Features: shelf_n_n (2 mounts), shelf_n_p (2 mounts), shelf_p_n (2 mounts), shel
 
 LARGEST ISLANDS
     238.4 km2  peak   430 m  tile (  6,  5)  shelf_p_p
-    201.2 km2  peak  1928 m  tile (  0,  0)  center_island
+    201.2 km2  peak  1981 m  tile (  0,  0)  center_island
     175.3 km2  peak   401 m  tile ( -5, -7)  shelf_n_n
     140.3 km2  peak   533 m  tile ( -7, -6)  shelf_n_n
     120.8 km2  peak   465 m  tile (  4, -6)  shelf_p_n

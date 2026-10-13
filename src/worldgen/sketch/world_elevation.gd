@@ -16,6 +16,7 @@ const SketchScript := preload("res://src/worldgen/sketch/world_sketch.gd")
 const OWNER_NONE := -1
 const SPECIAL_NONE := 0
 const SPECIAL_LAVA := 1
+const SPECIAL_SWAMP := 2
 
 var settings
 var rules: Dictionary = {}
@@ -430,10 +431,11 @@ func _raise_landmark_islands() -> void:
 		var crater_radius: float = float(crater.get("radius_m", 700))
 		var crater_depth: float = float(crater.get("depth_m", 250))
 
+		var terrain: Dictionary = feature.get("terrain", {})
 		var shield: Dictionary = {
 			"type": "island", "x": center.x, "z": center.y, "a": a, "b": b,
 			"rot": float(feature.get("rotation_deg", 0)), "peak": 480.0, "exp": 0.85,
-			"cliff": 60.0, "shore": 400.0,
+			"cliff": float(terrain.get("cliff_m", 60)), "shore": 250.0,
 		}
 		_raise_mount(shield, owner_index)
 
@@ -446,7 +448,103 @@ func _raise_landmark_islands() -> void:
 			"rot": 0.0, "peak": apex, "exp": cone_exponent, "cliff": 0.0, "shore": 0.0,
 		}
 		_raise_cone_exact(cone, owner_index)
+
+		if not terrain.is_empty():
+			_make_hostile(center, a, b, terrain, owner_index)
+
 		_carve_crater(center, crater_radius, crater_depth, rim_height, crater)
+		_lava_river(center, crater_radius, rim_height - crater_depth, crater)
+
+
+# Roughens the island into hostile ground: jagged ridges, ravines running
+# down from the volcano, and swampy basins in the lowlands.
+func _make_hostile(center: Vector2, a: float, b: float, terrain: Dictionary, owner_index: int) -> void:
+	var ravines: float = float(terrain.get("ravines", 9))
+	var ravine_depth: float = float(terrain.get("ravine_depth_m", 140))
+	var jagged: float = float(terrain.get("jaggedness_m", 150))
+	var swamp_threshold: float = float(terrain.get("swamp_threshold", 0.35))
+	var swamp_inland: Array = terrain.get("swamp_inland", [0.1, 0.45])
+	var radius_cells: int = int(ceil(a * 1.3 / cell_m)) + 1
+	var center_column: int = int(floor((center.x - origin_x) / cell_m))
+	var center_row: int = int(floor((center.y - origin_z) / cell_m))
+
+	for row_offset in range(-radius_cells, radius_cells + 1):
+		for column_offset in range(-radius_cells, radius_cells + 1):
+			var column: int = center_column + column_offset
+			var row: int = center_row + row_offset
+			var index: int = index_of(column, row)
+
+			if owners[index] != owner_index or heights[index] <= 0.0:
+				continue
+
+			var h: float = heights[index]
+			var offset: Vector2 = cell_center_m(column, row) - center
+			var angle: float = atan2(offset.y, offset.x) + 0.6 * _value(_warp_x, index)
+			var reach: float = sqrt(pow(offset.x / a, 2.0) + pow(offset.y / b, 2.0))
+			var inland: float = clampf(1.0 - reach, 0.0, 1.0)
+
+			# Jagged ridges everywhere above the shore.
+			h += jagged * _value(_ridged, index) * _smooth(clampf(h / 40.0, 0.0, 1.0))
+
+			# Ravines radiating from the volcano, deepest mid-slope.
+			var ravine: float = absf(sin(angle * ravines * 0.5))
+			var cut: float = 1.0 - _smooth(clampf(ravine / 0.18, 0.0, 1.0))
+			h -= ravine_depth * cut * _smooth(clampf(inland * 3.0, 0.0, 1.0)) * clampf(h / 200.0, 0.2, 1.0)
+
+			# Swampy basins sunk into the lowlands, behind the sea cliffs,
+			# fading in and out so their edges are not straight lines.
+			var wet: float = 0.5 * _value(_hills, index) + 0.5 * _value(_detail, index)
+			var low: float = float(swamp_inland[0])
+			var high: float = float(swamp_inland[1])
+			var window: float = (
+				_smooth(clampf((inland - low) / 0.06, 0.0, 1.0))
+				* (1.0 - _smooth(clampf((inland - high) / 0.12 + 0.5, 0.0, 1.0)))
+			)
+			var swampiness: float = _smooth(clampf((wet - swamp_threshold) / 0.15, 0.0, 1.0)) * window
+
+			if swampiness > 0.0:
+				var marsh: float = 3.0 + 6.0 * (0.5 + 0.5 * _value(_fine_x, index))
+				h = lerpf(h, marsh, swampiness)
+
+				if swampiness > 0.5:
+					special[index] = SPECIAL_SWAMP
+
+			heights[index] = maxf(h, 1.0)
+
+
+# A lava river from the crater breach down to the sea.
+func _lava_river(center: Vector2, crater_radius: float, start_height: float, crater: Dictionary) -> void:
+	if not bool(crater.get("lava_flow_to_sea", false)):
+		return
+
+	var bearing: float = deg_to_rad(float(crater.get("breach_bearing_deg", 160)))
+	var direction: Vector2 = Vector2(sin(bearing), -cos(bearing))
+	var side: Vector2 = Vector2(-direction.y, direction.x)
+	var distance: float = crater_radius * 0.8
+	var height: float = start_height
+
+	while distance < 30000.0:
+		var wander: float = 600.0 * sin(distance / 1800.0) + 300.0 * sin(distance / 700.0 + 1.3)
+		var point: Vector2 = center + direction * distance + side * wander
+		var column: int = int(floor((point.x - origin_x) / cell_m))
+		var row: int = int(floor((point.y - origin_z) / cell_m))
+		var index: int = index_of(column, row)
+
+		if heights[index] <= 0.0:
+			break
+
+		# The river sits a little below its banks and never climbs.
+		height = minf(height, heights[index] - 6.0)
+		heights[index] = maxf(height, 1.0)
+		special[index] = SPECIAL_LAVA
+
+		for spread in [-1, 1]:
+			var bank: int = index_of(column + spread, row)
+
+			if heights[bank] > 0.0 and special[bank] == SPECIAL_NONE:
+				special[bank] = SPECIAL_LAVA
+
+		distance += cell_m * 0.5
 
 
 # The volcano cone without coastal warping, so the crater sits true.
