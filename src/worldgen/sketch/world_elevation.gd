@@ -681,26 +681,164 @@ func _prepare_ruined_city(center: Vector2, city: Dictionary, owner_index: int) -
 				special[index] = SPECIAL_RUINS
 				owners[index] = owner_index
 
-	# Old roads: from the city edge toward the coast and the volcano.
-	for road in city.get("roads", []):
-		var direction: Vector2 = Vector2(float(road[0]), float(road[1])).normalized()
-		var side: Vector2 = Vector2(-direction.y, direction.x)
-		var distance_along: float = radius
+	_ring_road(center, city_center, city, owner_index)
 
-		while distance_along < 14000.0:
-			var wander: float = 220.0 * sin(distance_along / 900.0) + 90.0 * sin(distance_along / 330.0)
-			var point: Vector2 = city_center + direction * distance_along + side * wander
-			var index: int = index_of(
-				int(floor((point.x - origin_x) / cell_m)), int(floor((point.y - origin_z) / cell_m))
+
+# The old road: a loop winding around the island at low to middle height,
+# following the lie of the land and never climbing toward the volcano,
+# with a short link to the city and spurs down to ruined shore villages.
+func _ring_road(island_center: Vector2, city_center: Vector2, city: Dictionary, owner_index: int) -> void:
+	var feature: Dictionary = {}
+
+	for candidate in settings.world_features:
+		if str(candidate.get("kind", "")) == "landmark_island":
+			feature = candidate
+
+	var tile: float = float(settings.tile_size_m)
+	var a: float = float(feature["half_length_tiles"]) * tile
+	var b: float = float(feature["half_width_tiles"]) * tile
+	var road: Dictionary = city.get("ring_road", {})
+	var reach_range: Array = road.get("reach", [0.6, 0.8])
+	var reach: float = float(road.get("start_reach", 0.7))
+	var angle_step: float = cell_m * 0.5 / (0.7 * b)
+	var previous_height: float = -1.0
+	var loop: Array = []
+	var angle: float = 0.0
+
+	# Walk once around, at each step choosing the nearby distance from the
+	# middle that keeps the road most level.
+	while angle < TAU:
+		var best_reach: float = reach
+		var best_cost: float = INF
+
+		for candidate_index in range(7):
+			var trial: float = clampf(
+				reach + (float(candidate_index) - 3.0) * 0.01,
+				float(reach_range[0]), float(reach_range[1])
 			)
+			var point: Vector2 = island_center + Vector2(cos(angle) * a, sin(angle) * b) * trial
+			var height: float = height_at_m(point.x, point.y)
+			var cost: float = 0.0 if previous_height < 0.0 else absf(height - previous_height)
+			cost += 40.0 * absf(trial - reach)
 
-			if heights[index] <= 0.0 or special[index] == SPECIAL_LAVA:
+			if height <= 0.0:
+				cost += 10000.0
+
+			if cost < best_cost:
+				best_cost = cost
+				best_reach = trial
+
+		reach = best_reach
+		var point: Vector2 = island_center + Vector2(cos(angle) * a, sin(angle) * b) * reach
+		previous_height = height_at_m(point.x, point.y)
+
+		if not loop.is_empty():
+			_mark_road_line(loop[loop.size() - 1], point, 0.0)
+
+		loop.append(point)
+		angle += angle_step
+
+	_mark_road_line(loop[loop.size() - 1], loop[0], 0.0)
+
+	# Link from the city's edge to the nearest point of the loop.
+	var nearest: Vector2 = loop[0]
+
+	for point in loop:
+		if point.distance_to(city_center) < nearest.distance_to(city_center):
+			nearest = point
+
+	_mark_road_line(city_center, nearest)
+
+	# Ruined shore villages, spread around the coast, each reached by a
+	# spur from the loop.
+	var villages: int = int(city.get("shore_villages", 0))
+	var village_radius: float = float(city.get("village_radius_m", 260))
+	var rng: RandomNumberGenerator = SeedUtil.rng_for(_master, "center_island_villages")
+	var city_angle: float = atan2((city_center.y - island_center.y) / b, (city_center.x - island_center.x) / a)
+
+	for village_index in range(villages):
+		var village_angle: float = city_angle + TAU * (float(village_index) + 0.5 + rng.randf_range(-0.2, 0.2)) / float(villages)
+		var direction: Vector2 = Vector2(cos(village_angle) * a, sin(village_angle) * b).normalized()
+		var on_loop: Vector2 = loop[0]
+
+		for point in loop:
+			var to_point: Vector2 = (point - island_center).normalized()
+
+			if to_point.dot(direction) > (on_loop - island_center).normalized().dot(direction):
+				on_loop = point
+
+		# Walk out to the shore, then step back inland a little.
+		var shore: Vector2 = on_loop
+		var walked: float = 0.0
+
+		while walked < 6000.0:
+			var probe: Vector2 = on_loop + direction * walked
+
+			if height_at_m(probe.x, probe.y) <= 0.0:
 				break
 
-			if special[index] == SPECIAL_NONE or special[index] == SPECIAL_SALT:
-				special[index] = SPECIAL_ROAD
+			shore = probe
+			walked += cell_m * 0.5
 
-			distance_along += cell_m * 0.5
+		var village: Vector2 = shore - direction * village_radius * 1.2
+
+		if special[_index_at(village)] == SPECIAL_LAVA:
+			continue
+
+		_mark_road_line(on_loop, village)
+		_flatten_ruin(village, village_radius, owner_index)
+
+
+func _index_at(point: Vector2) -> int:
+	return index_of(
+		int(floor((point.x - origin_x) / cell_m)), int(floor((point.y - origin_z) / cell_m))
+	)
+
+
+func _mark_road(point: Vector2) -> void:
+	var index: int = _index_at(point)
+
+	if heights[index] > 0.0 and (special[index] == SPECIAL_NONE or special[index] == SPECIAL_SALT):
+		special[index] = SPECIAL_ROAD
+
+
+func _mark_road_line(from: Vector2, to: Vector2, wiggle: float = 120.0) -> void:
+	var length: float = from.distance_to(to)
+	var steps: int = int(ceil(length / (cell_m * 0.25)))
+
+	for step in range(steps + 1):
+		var t: float = float(step) / float(maxi(steps, 1))
+		var side: Vector2 = (to - from).normalized().orthogonal()
+		var wander: float = wiggle * sin(t * PI * 3.0) * sin(t * PI)
+		_mark_road(from.lerp(to, t) + side * wander)
+
+
+# A small flattened patch where a village once stood.
+func _flatten_ruin(center: Vector2, radius: float, owner_index: int) -> void:
+	var radius_cells: int = int(ceil(radius * 1.6 / cell_m)) + 1
+	var center_column: int = int(floor((center.x - origin_x) / cell_m))
+	var center_row: int = int(floor((center.y - origin_z) / cell_m))
+	var level: float = maxf(height_at_m(center.x, center.y), 4.0)
+
+	for row_offset in range(-radius_cells, radius_cells + 1):
+		for column_offset in range(-radius_cells, radius_cells + 1):
+			var column: int = center_column + column_offset
+			var row: int = center_row + row_offset
+			var index: int = index_of(column, row)
+
+			if heights[index] <= 0.0:
+				continue
+
+			var distance: float = (cell_center_m(column, row) - center).length() / radius
+
+			if distance >= 1.6:
+				continue
+
+			var blend: float = 1.0 - _smooth(clampf((distance - 1.0) / 0.6, 0.0, 1.0))
+			heights[index] = lerpf(heights[index], level, blend)
+
+			if distance < 1.0 and special[index] != SPECIAL_LAVA:
+				special[index] = SPECIAL_RUINS
 
 
 # Scorched earth: the volcano's upper slopes and the tongues of old lava
@@ -760,7 +898,12 @@ func _scorch(center: Vector2, a: float, b: float, crater_radius: float, terrain:
 
 					var index: int = index_of(column + step_x, row + step_z)
 
-					if heights[index] > 0.0 and (special[index] == SPECIAL_NONE or special[index] == SPECIAL_SALT):
+					# Old flows bury whatever they cross, the road included.
+					if heights[index] > 0.0 and (
+						special[index] == SPECIAL_NONE
+						or special[index] == SPECIAL_SALT
+						or special[index] == SPECIAL_ROAD
+					):
 						special[index] = SPECIAL_SCORCHED
 						heights[index] += 4.0
 

@@ -85,12 +85,17 @@
 				"old_flow_length_m": 8500
 			},
 			"ruined_city": {
-				"note": "Prepared ground for the fallen city: a broad stepped plateau on the northwest flank, away from the lava river, with old roads running to the coast and toward the volcano. Buildings and ruins are placed later, at the tile bake.",
+				"note": "Prepared ground for the fallen city: a broad stepped plateau on the northwest flank, away from the lava river. An old ruined road winds around the island at low to middle height, never over the volcano, linking the city to ruined shore villages. Overgrown but still passable, it now serves as the path toward the caves, castles and labyrinths. Buildings, ruins and spur paths to those sites are placed later, at the tile bake.",
 				"offset_m": [-4300, -1700],
 				"radius_m": 1700,
 				"plateau_m": 170,
 				"terraces": 3,
-				"roads": [[-1.0, -0.15], [-0.25, -1.0], [0.75, 0.55]]
+				"ring_road": {
+					"reach": [0.6, 0.8],
+					"start_reach": 0.7
+				},
+				"shore_villages": 6,
+				"village_radius_m": 380
 			},
 			"sites": {
 				"note": "Reserved for the tile bake: places for a fallen magical civilization. Positions are chosen deterministically when the center tiles are built.",
@@ -98,6 +103,7 @@
 				"labyrinths": 2,
 				"cave_systems": 4,
 				"boss_lairs": 3,
+				"shore_villages": 6,
 				"ruined_roads": true,
 				"ruins": true
 			},
