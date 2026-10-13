@@ -1,0 +1,223 @@
+# World Format Specification (draft)
+
+Draft of 2026-10-12. Nothing here is implemented. It defines the permanent parts of the world: the world settings, what each tile stores, and the tile matrix that plans the whole map. The reasoning behind it is in `DESIGN_IDEAS.md`, Sections 4.1 to 4.11.
+
+Every item is **[Proposed]** unless marked otherwise. Items marked **Permanent** cannot change once tiles are kept without rebaking or breaking saved worlds. Items marked **Tunable** can change at any time.
+
+## 1. Principles
+
+- **Store what defines a place. Derive everything else.** Tiles store land shape, water, climate results, soil, geology features, ore bodies and sites. Voxels, rock layers, caves, ore voxels, surface clues, flora, fauna, weather, seasons and sea ice are worked out at runtime.
+- **Content is permanent. Encoding is not.** A tile's content can be re-encoded losslessly into a newer file format without changing a single hill. Only changes to content force a rebake.
+- **Each tile freezes its generator version.** The runtime generator keeps every released version's behavior. A new version is added for new tiles; an old one is never changed. This replaces the current rule that rejects worlds with mixed generator versions.
+- **IDs are append-only.** Biome, soil, rock, resource, site and feature type IDs are never renumbered or reused. New types get new numbers.
+- **A missing tile is ocean.** A tile with no file is a standard ocean placeholder, generated the same way everywhere. Replacing a placeholder means adding a file.
+
+## 2. Coordinates
+
+Builds on the current code (`world_definition.gd`, `region_mapper.gd`).
+
+| Item | Value | Status |
+|---|---|---|
+| Tile size | 10,240 m (10 by 10 regions of 1,024 m) | Permanent (existing) |
+| Tile (x, z) covers | x·10,240 to (x+1)·10,240 m, same for z | Permanent (existing) |
+| World size | 21 by 21 tiles, x and z from -10 to 10 | Permanent (decided) |
+| Wrap | Both axes, period 215,040 m | Permanent |
+| North | The -Z direction | Permanent |
+| Voxel size | 1 m | Permanent (existing) |
+| Vertical range | -4,000 m to +2,048 m, sea level 0 | Permanent (existing) |
+| Equator line | z = 5,120 m (the middle of row 0) | Permanent |
+
+The world is symmetric about the equator line: rows -10 and 10 are the same distance from it and meet across the wrap seam, which is the pole.
+
+## 3. World settings (`world.json`)
+
+One file for the whole world, fixed before the first tile is kept.
+
+**Identity (Permanent)**
+
+- World name and **world identity seed**. The current seed (123456) is a placeholder. Pick a large random number once.
+- Format version and the list of generator versions in use.
+- **Tile seed function.** The current hash (`_derive_tile_seed`) mixes coordinates with XOR and multiplication, which can give related seeds for nearby tiles. Since it becomes permanent, replace it now with a stronger mixer (for example a SplitMix64-style finalizer over the world seed, tile x and tile z). GDScript integers are 64-bit and wrap on overflow, so this works natively.
+
+**Geometry (Permanent)**
+
+- Tile size, region size, map spacing (8 m) and map samples per side (1,281, see Section 4).
+- World extent and wrap, vertical range, sea level.
+- **Ocean edge floor depth.** Every tile edge converges to this depth. The current code uses the world bottom plus 1 m (about -3,999 m), so the open sea is 4 km deep with almost no rock beneath it. Proposed: -2,000 m, which keeps 2 km of rock under the deep sea and leaves room for shelves, seamounts and wrecks within diving reach near islands.
+
+**Climate (Permanent, because biomes are baked from it)**
+
+- Latitude φ = (z − 5,120) / 107,520, from -1 (south pole) through 0 (equator) to 1 (north pole). The poles are the wrap seam.
+- Sea-level annual mean temperature as control points over |φ|, smoothly interpolated. Starting values to tune in the preview:
+
+| \|φ\| | Row (approx.) | Temperature | Zone |
+|---|---|---|---|
+| 0.00 | 0 | 30 °C | Desert (hottest) |
+| 0.14 | 1.5 | 26 °C | Desert edge |
+| 0.24 | 2.5 | 20 °C | Temperate edge |
+| 0.43 | 4.5 | 13 °C | Temperate middle (starter rows) |
+| 0.62 | 6.5 | 6 °C | Temperate edge |
+| 0.71 | 7.5 | 0 °C | Arctic edge |
+| 1.00 | 10.5 (pole) | -18 °C | Polar |
+
+- Temperature drops 6.5 °C per 1,000 m of altitude.
+- Zone thresholds that turn temperature and moisture into biomes.
+
+**Tunable (runtime, not baked)**
+
+- Seasonal swing by latitude (small at the equator, large at the poles).
+- Day length by season, sea ice extent and thickness, weather.
+- Lethal depth (about -3,000 m) and the heat, cold and altitude effects.
+
+**Tables (append-only IDs)**
+
+- Biomes, soils, rocks, resources, water classes, site types, feature types. Each table lives in its own data file that every system reads.
+
+## 4. Tile file
+
+One file per tile: `tiles/tile_<x>_<z>.tile`, written as `.partial` and renamed when complete, as the current bake does.
+
+**Container**
+
+- Header, then a section table (name, offset, size, compression, checksum), then the sections.
+- Sections are compressed with Zstandard, which Godot supports (`PackedByteArray.compress`). Ocean compresses to almost nothing.
+- Each section has a SHA-256 checksum (Godot's `HashingContext`).
+
+**Header**
+
+| Field | Notes |
+|---|---|
+| Magic and format version | Identifies the file |
+| World identity seed | Must match `world.json` |
+| Tile x, z and tile seed | |
+| Generator version | Frozen for this tile |
+| Revision | Starts at 1. Rises when the tile is replaced or re-encoded, so clients refresh cached copies |
+| Status | Placeholder or final |
+| Matrix entry | A copy of the tile's matrix cell (Section 5), so the tile can be previewed or rebaked exactly |
+| Map spacing and sample count | 8 m, 1,281 by 1,281 |
+| Flora seed | For runtime flora placement |
+
+**Maps (8 m grid, 1,281 by 1,281 samples)**
+
+Samples sit on grid points from the tile's west edge to its east edge inclusive, so a tile can be interpolated without reading its neighbors. The outer ring always holds the standard ocean edge values, so neighboring tiles agree automatically.
+
+| Map | Type | Encoding | Used for |
+|---|---|---|---|
+| Surface height | uint16 | height = raw × 0.1 − 4,000 m (covers -4,000 to +2,553 m) | Terrain shape |
+| Water surface | uint16 | Same encoding. 0 = no water | Lakes and rivers above sea level |
+| Water class | uint8 | None, ocean, lake, river, marsh | Water rendering, fishing, travel |
+| Flow | uint8 | Logarithmic river discharge | Channel width, water wheels, placer gold |
+| Biome | uint8 | Biome table ID | Flora, fauna, look |
+| Soil | uint8 | Soil table ID | Surface material, farming |
+| Fertility | uint8 | 0 to 255 | Farming, planner |
+| Moisture | uint8 | 0 to 255 | Farming, flora, planner |
+| Province | uint8 | Index into the tile's province list | Bedrock under this point |
+| Cover depth | uint8 | raw × 0.25 m (0 to 63.75 m) | Loose material above bedrock |
+| Layer offset | int16 | raw × 0.1 m (±3,276 m) | Bends rock layers for folds |
+
+About 13 bytes per sample, about 21 MB per tile before compression. Mostly-ocean tiles compress to a small fraction of that.
+
+**Low-resolution maps**
+
+A 32 m version (321 by 321) of height, water class and biome for the world map and for drawing distant terrain on clients. About 0.5 MB before compression.
+
+**Lists**
+
+Stored as compressed JSON during development for readability. They can move to a binary encoding later without changing content.
+
+- **Provinces:** ID, kind (granite, sedimentary basin, volcanic, fold belt), rock layer stack (rock ID and thickness from the top), base rock.
+- **Features:**
+  - Intrusions: kind, center, top depth, horizontal radii, depth extent.
+  - Faults: a line of points, dip angle and direction, width, depth extent.
+  - Volcanic vents and pipes: center, radius, depth.
+  - Salt domes: center, radius, top depth.
+- **Ore bodies:** ID, resource, shape (vein, lens, pipe, layer or halo) with its dimensions, grade, total amount, and the feature it formed from.
+- **Sites:** ID, kind (cave system, mineshaft, labyrinth, dormant lair, landmark, harbor, town site), position, size, seed and kind-specific settings. A cave system stores its entrances, bounds and seed. The runtime generator carves it.
+- **Starter data (starter tiles only):** spawn point and the suggested town block position.
+
+A global ID is (tile x, tile z, tile revision, local ID). Ore body IDs are what NPC miners draw down.
+
+**Not stored in the tile**
+
+- Voxels, rock layers, caves, ore voxels, surface clues: derived by the runtime generator from the maps and lists.
+- Flora: derived from biome, moisture and the flora seed. Only removals are stored, in the living layer. (Pending confirmation: `DESIGN_IDEAS.md` question 49.)
+- Fauna, weather, seasons, sea ice: runtime.
+
+## 5. Server-side stores (not part of the tile)
+
+- **Edits store** per region: voxel edits, removed trees, placed objects. Authoritative and backed up.
+- **Generated block cache** per region: speeds up streaming. Disposable. It can be deleted and rebuilt from the tiles at any time.
+- **Region revision** (already in the region manifest): tells clients when cached blocks or edits are stale.
+
+## 6. Tile matrix (`plan/tile_matrix.json`)
+
+The plan for all 441 tiles, read and written by the randomizer and the island properties panel.
+
+**Each cell**
+
+| Field | Notes |
+|---|---|
+| x, z | Tile coordinate |
+| Kind | Ocean, islands or starter |
+| Status | Placeholder, planned, baked or live |
+| Locked | If true, the randomizer never changes this cell |
+| Revision | Matches the tile file |
+| Islands | A list (below) |
+| Geology hints | Optional: granite, basin, volcanic, fold belt |
+| Notes | Free text |
+
+**Each island**
+
+| Field | Notes |
+|---|---|
+| ID | Local to the tile |
+| Center | Position within the tile in meters |
+| Size class and target area | See below |
+| Shape | Round, elongated, crescent, ragged, or a cluster for archipelagos |
+| Character | Mountainous, rolling, flat, volcanic, archipelago |
+| Peak height | Target highest point |
+| Rotation | Direction of the long axis |
+| Seed | Stored explicitly so it is visible and editable |
+
+**Size classes**
+
+| Class | Area |
+|---|---|
+| Islet | Under 1 km² |
+| Small | 1 to 5 km² |
+| Medium | 5 to 20 km² |
+| Large | 20 to 50 km² |
+| Great (ARK scale) | 50 to 75 km² |
+
+**Randomizer rules (starting values, Tunable)**
+
+- **Island count** per tile: 0 islands 25%, 1 island 30%, 2 islands 20%, 3 islands 12%, 4 islands 8%, 5 islands 5%.
+- **Count and size trade off.** A tile has at most one great island, and a tile with a great island has at most two small companions. Total land per tile is capped at about 75 km².
+- **Margins.** Islands keep a minimum distance from the tile edge for the shared ocean edge, and from each other (for example 1 km of open water), except within an archipelago cluster.
+- **No visible grid.** Island centers are jittered and sizes mixed, so neighboring tiles do not line up.
+- **Climate.** Arctic rows have fewer, smaller, glaciated islands and more sea ice. The desert row leans toward flatter and volcanic islands.
+- **World-scale patterns.** The matrix sees the whole world, so it can create patterns no single tile could: island chains that curve across several tiles, a volcanic arc, a few large open seas with no islands for epic crossings.
+- **Starter tiles.** The eight starter tiles are locked and hand-tuned: one medium-to-large, rolling, town-friendly island with flat land, a river and a natural harbor. Inner set at (-3,4), (3,4), (-3,-4), (3,-4); outer set at (-8,5), (8,5), (-8,-5), (8,-5).
+- **Starter neighborhoods.** Within one or two tiles of each starter, guarantee medium islands that between them offer stone, wood, clay, iron, copper, tin and coal, reachable by an early boat.
+- **Resource fairness.** Every climate zone gets every key resource somewhere, steered through geology hints.
+- **Reproducible.** Every random pick derives from the world seed and the tile coordinate, so rerunning the randomizer gives the same result unless the rules change. Locked cells are always preserved.
+
+**Outputs**
+
+- A whole-world preview image showing every tile's islands, climate zones and starter tiles.
+- A summary: land area per zone, island counts per size class, and resource coverage per zone.
+
+## 7. Workflow
+
+1. Fix `world.json`: identity seed, ocean edge depth, climate curve.
+2. Run the randomizer to fill the matrix. Review the preview, hand-edit, and lock what you like.
+3. Every tile starts as a placeholder (no file, so it is ocean).
+4. Bake the four inner starter tiles first, then their neighborhoods, then outward.
+5. Each baked tile goes live at a server restart, replacing its placeholder.
+
+## 8. Decisions needed
+
+1. Confirm flora is derived at runtime (only removals stored) and the 8 m map grid (`DESIGN_IDEAS.md` question 49).
+2. The ocean edge floor depth: -2,000 m, or keep about -4,000 m?
+3. The island count odds, size classes and world-scale patterns as starting values.
+4. Replacing the tile seed function and picking the final world identity seed.
