@@ -126,7 +126,7 @@ A persistent, rough-medieval, multiplayer online world: a survival, exploration 
 - **[Decided]** Starter islands in the northern hemisphere have rocky, steep north shores and long sandy beaches along the south shore. Islands in the southern hemisphere are the opposite. Town areas sit on nice, flattish ground near the beaches, or on a river, with a large port.
 - **[Proposed]** Implemented in the world sketch: each starter island's poleward side gets sea cliffs and a narrow, fast-dropping shore; its equator-facing side gets wide sandy shallows, a long gentle coastal plain (rising about 28 m over half the way inland) and a sheltered bay with a narrow mouth for the port, ringed by flat harbor ground. Every starter tile now has at least 2 km² of flat town ground (checked by a test). Rivers come with the detailed tile maps; the tile bake should prefer to run a river into each starter bay, so the port also sits at a river mouth.
 - **[Decided]** Starters sit on a **large landmass**, not a small separate island. Most players spend their first few weeks adventuring and questing there, so it must hold the starter town, farmland, wilderness, quest sites and room for several player towns.
-- **[Proposed]** Every starter landmass gets a guaranteed minimum size so no starter is short-changed. The tile plan currently gives very uneven results (inner starters 39 to 90 km² for their largest island, outer 31 to 240 km²). Proposed targets: inner starter landmass 120 to 180 km², outer 150 to 250 km² (outer starters are more dangerous and reward it with more land). Nearby satellite islands across a strait are welcome on top of that.
+- **[Proposed]** Every starter landmass gets a guaranteed minimum size so no starter is short-changed. The tile plan currently gives very uneven results (inner starters 39 to 90 km² for their largest island, outer 31 to 240 km²). Land will be densely covered with flora, fauna, trees and rocks to gather; for scale, the ARK island (about 6 by 6 km) took weeks to explore. Proposed targets: inner starter landmass 50 to 80 km² (one and a half to two ARK islands), outer 70 to 110 km² (outer starters are more dangerous and reward it with more land). Nearby satellite islands across a strait are welcome on top of that.
 - **[Idea]** Because the map is so big, an inner set of 4 starter tiles and an outer set of 4, so people start in various areas and the center does not fill up too fast.
 - **[Decided]** Inner set at (-3,4), (3,4), (-3,-4), (3,-4); outer set at (-6,6), (6,6), (-6,-6), (6,-6). (The outer set was first proposed at columns ±8, row ±5, and moved inward so it sits in the medium danger zone, Section 4.13.) Each outer starter is about 3.6 tiles (55 km) from the nearest inner starter, and 4.5 tiles (69 km) from the deadly east-west edge. Row 6 is the last temperate row, so the outer starters are a little cooler. The desert center is left for players to expand into.
 - **[Proposed]** Open the inner set at launch and the outer set as the population grows. With placeholder ocean tiles, starter tiles can be baked first.
@@ -564,7 +564,8 @@ Assumptions: 70 game years of aging (15 to 85) over one real year with about 700
 - **[Proposed]** Ruins as landmarks that decay lazily over time.
 - **[Open]** Whether ruins last forever or fade.
 - **[Decided]** Players can found their own town on a starter landmass as long as it is far enough from the starter town center. Large islands can hold several towns, which can build tension between neighboring towns.
-- **[Proposed]** Minimum distance from a starter town center to a new town block about 4 km, and between any two town blocks about 3 km, both tunable in `world.json`.
+- **[Proposed]** Minimum distance from a starter town center to a new town block about 3 km, and between any two town blocks about 2 km, both tunable in `world.json`.
+- **[Decided]** Mines owned by the starter town have guards to dissuade players from stealing.
 
 ### 8.2 NPC population
 
@@ -1048,7 +1049,7 @@ Generator, hardware and hosting
 53. How does the client handle positions far from the origin: floating origin or a double-precision build? (Section 4.10)
 54. Settled: the world-first sketch is approved (2026-10-13), replacing per-tile dice and the shared deep-ocean tile edge? (Section 4.12)
 55. Settled: inner starters easy, outer starters medium, edges deadly (Section 4.13). Still open: how many tiers players see, and whether the curves need tuning once creatures exist.
-56. Starter landmass sizes: inner 120 to 180 km², outer 150 to 250 km²? Town spacing 4 km from a starter town, 3 km between towns? (Sections 4.1, 8.1)
+56. Starter landmass sizes: inner 50 to 80 km², outer 70 to 110 km²? Town spacing 3 km from a starter town, 2 km between towns? (Sections 4.1, 8.1)
 57. How PvP works for players who want it, given the starter areas are PvE (Section 9.0).
 58. How long before a vacated home is abandoned, and what happens to its contents (Section 8.6).
 
