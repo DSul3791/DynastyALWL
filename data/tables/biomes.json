@@ -1,0 +1,122 @@
+{
+	"table": "biomes",
+	"format_version": 1,
+	"note": "IDs are append-only. Never renumber or reuse an ID; retire an entry with \"retired\": true and take the next ID from next_id for new entries.",
+	"next_id": 19,
+	"entries": [
+		{
+			"id": 0,
+			"name": "ocean",
+			"display": "Ocean",
+			"group": "water"
+		},
+		{
+			"id": 1,
+			"name": "beach",
+			"display": "Beach",
+			"group": "any"
+		},
+		{
+			"id": 2,
+			"name": "hot_desert",
+			"display": "Hot desert",
+			"group": "desert"
+		},
+		{
+			"id": 3,
+			"name": "dry_scrub",
+			"display": "Dry scrub",
+			"group": "desert"
+		},
+		{
+			"id": 4,
+			"name": "savanna",
+			"display": "Savanna",
+			"group": "desert"
+		},
+		{
+			"id": 5,
+			"name": "tropical_forest",
+			"display": "Tropical forest",
+			"group": "desert"
+		},
+		{
+			"id": 6,
+			"name": "mangrove",
+			"display": "Mangrove",
+			"group": "desert"
+		},
+		{
+			"id": 7,
+			"name": "temperate_grassland",
+			"display": "Temperate grassland",
+			"group": "temperate"
+		},
+		{
+			"id": 8,
+			"name": "temperate_forest",
+			"display": "Temperate forest",
+			"group": "temperate"
+		},
+		{
+			"id": 9,
+			"name": "mixed_forest",
+			"display": "Mixed forest",
+			"group": "temperate"
+		},
+		{
+			"id": 10,
+			"name": "marsh",
+			"display": "Marsh",
+			"group": "any"
+		},
+		{
+			"id": 11,
+			"name": "heath",
+			"display": "Heath",
+			"group": "temperate"
+		},
+		{
+			"id": 12,
+			"name": "boreal_forest",
+			"display": "Boreal forest",
+			"group": "arctic"
+		},
+		{
+			"id": 13,
+			"name": "tundra",
+			"display": "Tundra",
+			"group": "arctic"
+		},
+		{
+			"id": 14,
+			"name": "alpine_meadow",
+			"display": "Alpine meadow",
+			"group": "any"
+		},
+		{
+			"id": 15,
+			"name": "bare_rock",
+			"display": "Bare rock",
+			"group": "any"
+		},
+		{
+			"id": 16,
+			"name": "snowfield",
+			"display": "Snowfield",
+			"group": "arctic"
+		},
+		{
+			"id": 17,
+			"name": "glacier",
+			"display": "Glacier",
+			"group": "arctic"
+		},
+		{
+			"id": 18,
+			"name": "volcanic_waste",
+			"display": "Volcanic waste",
+			"group": "any"
+		}
+	]
+}

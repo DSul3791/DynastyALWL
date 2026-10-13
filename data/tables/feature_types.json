@@ -1,0 +1,43 @@
+{
+	"table": "feature_types",
+	"format_version": 1,
+	"note": "IDs are append-only. Never renumber or reuse an ID; retire an entry with \"retired\": true and take the next ID from next_id for new entries.",
+	"next_id": 7,
+	"entries": [
+		{
+			"id": 0,
+			"name": "intrusion",
+			"display": "Granite intrusion"
+		},
+		{
+			"id": 1,
+			"name": "fault",
+			"display": "Fault"
+		},
+		{
+			"id": 2,
+			"name": "basin",
+			"display": "Sedimentary basin"
+		},
+		{
+			"id": 3,
+			"name": "fold_belt",
+			"display": "Fold belt"
+		},
+		{
+			"id": 4,
+			"name": "volcanic_vent",
+			"display": "Volcanic vent"
+		},
+		{
+			"id": 5,
+			"name": "volcanic_pipe",
+			"display": "Volcanic pipe"
+		},
+		{
+			"id": 6,
+			"name": "salt_dome",
+			"display": "Salt dome"
+		}
+	]
+}

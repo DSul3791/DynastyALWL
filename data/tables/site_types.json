@@ -1,0 +1,58 @@
+{
+	"table": "site_types",
+	"format_version": 1,
+	"note": "IDs are append-only. Never renumber or reuse an ID; retire an entry with \"retired\": true and take the next ID from next_id for new entries.",
+	"next_id": 10,
+	"entries": [
+		{
+			"id": 0,
+			"name": "cave_system",
+			"display": "Cave system"
+		},
+		{
+			"id": 1,
+			"name": "mineshaft",
+			"display": "Abandoned mineshaft"
+		},
+		{
+			"id": 2,
+			"name": "labyrinth",
+			"display": "Labyrinth"
+		},
+		{
+			"id": 3,
+			"name": "dormant_lair",
+			"display": "Dormant lair"
+		},
+		{
+			"id": 4,
+			"name": "landmark",
+			"display": "Landmark"
+		},
+		{
+			"id": 5,
+			"name": "harbor",
+			"display": "Natural harbor"
+		},
+		{
+			"id": 6,
+			"name": "town_site",
+			"display": "Town site"
+		},
+		{
+			"id": 7,
+			"name": "ruin",
+			"display": "Ruin"
+		},
+		{
+			"id": 8,
+			"name": "shipwreck",
+			"display": "Shipwreck"
+		},
+		{
+			"id": 9,
+			"name": "spawn_point",
+			"display": "Spawn point"
+		}
+	]
+}

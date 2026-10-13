@@ -1,0 +1,104 @@
+{
+	"table": "soils",
+	"format_version": 1,
+	"note": "IDs are append-only. Never renumber or reuse an ID; retire an entry with \"retired\": true and take the next ID from next_id for new entries.",
+	"next_id": 16,
+	"entries": [
+		{
+			"id": 0,
+			"name": "bare_rock",
+			"display": "Bare rock",
+			"fertility_base": 0
+		},
+		{
+			"id": 1,
+			"name": "sand",
+			"display": "Sand",
+			"fertility_base": 20
+		},
+		{
+			"id": 2,
+			"name": "gravel",
+			"display": "Gravel",
+			"fertility_base": 25
+		},
+		{
+			"id": 3,
+			"name": "silt",
+			"display": "Silt",
+			"fertility_base": 140
+		},
+		{
+			"id": 4,
+			"name": "clay",
+			"display": "Clay",
+			"fertility_base": 100
+		},
+		{
+			"id": 5,
+			"name": "loam",
+			"display": "Loam",
+			"fertility_base": 220
+		},
+		{
+			"id": 6,
+			"name": "peat",
+			"display": "Peat",
+			"fertility_base": 120
+		},
+		{
+			"id": 7,
+			"name": "alluvium",
+			"display": "Alluvium",
+			"fertility_base": 200
+		},
+		{
+			"id": 8,
+			"name": "forest_humus",
+			"display": "Forest humus",
+			"fertility_base": 160
+		},
+		{
+			"id": 9,
+			"name": "stony_soil",
+			"display": "Stony soil",
+			"fertility_base": 60
+		},
+		{
+			"id": 10,
+			"name": "permafrost",
+			"display": "Permafrost",
+			"fertility_base": 15
+		},
+		{
+			"id": 11,
+			"name": "snow",
+			"display": "Snow",
+			"fertility_base": 0
+		},
+		{
+			"id": 12,
+			"name": "glacial_ice",
+			"display": "Glacial ice",
+			"fertility_base": 0
+		},
+		{
+			"id": 13,
+			"name": "salt_flat",
+			"display": "Salt flat",
+			"fertility_base": 5
+		},
+		{
+			"id": 14,
+			"name": "volcanic_ash",
+			"display": "Volcanic ash",
+			"fertility_base": 150
+		},
+		{
+			"id": 15,
+			"name": "beach_sand",
+			"display": "Beach sand",
+			"fertility_base": 10
+		}
+	]
+}
