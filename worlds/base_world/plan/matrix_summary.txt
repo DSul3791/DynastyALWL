@@ -1,23 +1,23 @@
 TILE MATRIX SUMMARY
 World: Modular Island World   seed phrase: This1is2the3greatest4game5of6all7time   master seed: 574716103
 
-Tiles: 441   world area: 104045 km2   land: 5852 km2 (5.6%)
-Islands: 734
-Tile layouts: main 118, ocean 139, peers 176, starter 8
-Island sizes: islet 145, small 272, medium 191, large 104, great 22
-Island characters: archipelago 69, flat 94, mountainous 206, rolling 254, volcanic 111
+Tiles: 441   world area: 104045 km2   land: 6016 km2 (5.8%)
+Islands: 735
+Tile layouts: landmark 1, main 118, ocean 138, peers 176, starter 8
+Island sizes: islet 145, small 272, medium 191, large 104, great 22, colossal 1
+Island characters: archipelago 69, flat 94, mountainous 206, rolling 254, volcanic 112
 
 BY CLIMATE ZONE
-zone               tiles   ocean  islands land km2  km2/tile  sizes (islet/small/medium/large/great)
-desert                63     57%       65      526       8.3  15/17/22/11/0
-transition_desert     42     17%       97      760      18.1  14/42/29/8/4
-temperate            168     19%      325     2903      17.3  65/109/85/53/13
-transition_arctic     42     19%       87      696      16.6  13/30/34/6/4
-arctic               126     44%      160      968       7.7  38/74/21/26/1
+zone               tiles   ocean  islands land km2  km2/tile  sizes (islet/small/medium/large/great/colossal)
+desert                63     56%       66      690      10.9  15/17/22/11/0/1
+transition_desert     42     17%       97      760      18.1  14/42/29/8/4/0
+temperate            168     19%      325     2903      17.3  65/109/85/53/13/0
+transition_arctic     42     19%       87      696      16.6  13/30/34/6/4/0
+arctic               126     44%      160      968       7.7  38/74/21/26/1/0
 
 GEOLOGY: ISLANDS WITH EACH KIND, BY ZONE
 zone                 granite     basin fold_belt  volcanic
-desert                    18        23         8        25
+desert                    18        23         8        26
 transition_desert         31        20        32        25
 temperate                103       108        99        72
 transition_arctic         21        25        20        28

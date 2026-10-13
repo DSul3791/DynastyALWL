@@ -65,7 +65,8 @@ One file for the whole world, fixed before the first tile is kept.
 
 **Fixed world features (Permanent once tiles are kept)**
 
-- Hand-placed features the generator must honor, such as `central_trench`: an abyssal trench covering columns -2 to 2 and rows -1 to 1, floor about -2,800 m, kept free of islands.
+- Hand-placed features the generator must honor, such as `central_trench`: an abyssal trench covering columns -2 to 2 and rows -1 to 1, floor about -2,800 m, kept free of ordinary islands.
+- `center_island`: the fixed landmark island at (0,0), about 20 by 12 km (about 164 km²), volcano peak 1,900 m, jungle flanks, rising from the middle of the trench and reaching into tiles (-1,0) and (1,0). Every value comes from `world.json` and its seed from the world seed, so it is identical on every generation.
 
 **Danger map (Tunable, except the terrain the world sketch derives from it)**
 

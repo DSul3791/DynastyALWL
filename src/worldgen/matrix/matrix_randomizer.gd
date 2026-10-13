@@ -143,10 +143,17 @@ func _make_starter_cell(tile: Vector2i) -> Dictionary:
 # PASS 1B: FIXED WORLD FEATURES
 # ==================================================
 
-# Tiles inside an abyssal trench hold no islands.
+# Tiles inside an abyssal trench hold no islands. A landmark island is
+# placed exactly as described in the world settings and locked.
 func _pass_world_features(matrix) -> void:
 	for feature in _settings.world_features:
-		if str(feature.get("kind", "")) != "abyssal_trench":
+		var kind: String = str(feature.get("kind", ""))
+
+		if kind == "landmark_island":
+			_place_landmark_island(matrix, feature)
+			continue
+
+		if kind != "abyssal_trench":
 			continue
 
 		for tile in _settings.get_all_tiles():
@@ -159,6 +166,63 @@ func _pass_world_features(matrix) -> void:
 			var trench: Dictionary = _make_cell(tile, "ocean", [])
 			trench["pattern"] = "feature:%s" % str(feature["id"])
 			matrix.set_cell(trench)
+
+
+func _place_landmark_island(matrix, feature: Dictionary) -> void:
+	var center_tile: Array = feature["center_tile"]
+	var tile: Vector2i = Vector2i(int(center_tile[0]), int(center_tile[1]))
+
+	if TileMatrixScript.is_frozen(matrix.get_cell(tile.x, tile.y)):
+		return
+
+	var tile_size: float = float(_settings.tile_size_m)
+	var a: float = float(feature["half_length_tiles"]) * tile_size
+	var b: float = float(feature["half_width_tiles"]) * tile_size
+	var area: float = snappedf(PI * a * b * _fill / 1000000.0, 0.01)
+	var island: Dictionary = {
+		"id": 1,
+		"role": "landmark",
+		"center_x": 0,
+		"center_z": 0,
+		"semi_axis_a_m": int(round(a)),
+		"semi_axis_b_m": int(round(b)),
+		"rotation_deg": int(feature.get("rotation_deg", 0)),
+		"shape": str(feature.get("shape", "ragged")),
+		"aspect": snappedf(a / maxf(b, 1.0), 0.01),
+		"area_km2": area,
+		"size_class": "colossal",
+		"character": str(feature.get("character", "volcanic")),
+		"peak_height_m": int(feature.get("peak_m", 1900)),
+		"glaciated": false,
+		"geology": [],
+		"seed": 0,
+		"main_biome": str(feature.get("main_biome", "")),
+		"landmarks": feature.get("landmarks", []).duplicate(),
+		"crosses_tiles": a > tile_size * 0.5 or b > tile_size * 0.5,
+	}
+	var cell: Dictionary = _make_cell(tile, "landmark", [island])
+	cell["kind"] = "islands"
+	cell["locked"] = true
+	cell["pattern"] = "feature:%s" % str(feature["id"])
+	cell["notes"] = str(feature.get("note", ""))
+	matrix.set_cell(cell)
+
+	# Mark the neighboring tiles the island reaches into.
+	var reach_x: int = int(ceil(a / tile_size - 0.5))
+	var reach_z: int = int(ceil(b / tile_size - 0.5))
+
+	for dz in range(-reach_z, reach_z + 1):
+		for dx in range(-reach_x, reach_x + 1):
+			if dx == 0 and dz == 0:
+				continue
+
+			var near: Vector2i = _settings.wrap_tile(tile.x + dx, tile.y + dz)
+			var near_cell: Dictionary = matrix.get_cell(near.x, near.y)
+
+			if TileMatrixScript.is_frozen(near_cell):
+				continue
+
+			near_cell["notes"] = "Part of %s reaches into this tile." % str(feature["id"])
 
 
 # ==================================================

@@ -55,6 +55,22 @@
 			"floor_m": -2800,
 			"edge_falloff_tiles": 1.2,
 			"danger_peak": 1.0
+		},
+		{
+			"id": "center_island",
+			"kind": "landmark_island",
+			"note": "The worst island in the game, rising out of the central trench: a huge volcanic island with a volcano peak and large jungle areas. Home of the worst creatures, climate and storms, with castles and caves. It crosses into the neighboring tiles.",
+			"center_tile": [0, 0],
+			"half_length_tiles": 0.65,
+			"half_width_tiles": 0.4,
+			"rotation_deg": 0,
+			"character": "volcanic",
+			"shape": "ragged",
+			"peak_m": 1900,
+			"main_biome": "tropical_forest",
+			"landmarks": ["volcano", "jungle", "castles", "caves"],
+			"edge_falloff_tiles": 0.6,
+			"danger_peak": 1.0
 		}
 	],
 

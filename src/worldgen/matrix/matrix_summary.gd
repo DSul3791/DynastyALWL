@@ -4,7 +4,7 @@ extends RefCounted
 # Plain-text report on a tile matrix: how much land and ocean each climate
 # zone has, island counts by size, geology coverage, starters, seas, chains.
 
-const CLASS_ORDER := ["islet", "small", "medium", "large", "great"]
+const CLASS_ORDER := ["islet", "small", "medium", "large", "great", "colossal"]
 const HINTS := ["granite", "basin", "fold_belt", "volcanic"]
 
 
@@ -52,7 +52,7 @@ static func build(settings, rules: Dictionary, matrix) -> String:
 	# ---- Per zone ----
 	lines.append("BY CLIMATE ZONE")
 	lines.append("%-18s %5s %7s %8s %8s %9s  %s" % [
-		"zone", "tiles", "ocean", "islands", "land km2", "km2/tile", "sizes (islet/small/medium/large/great)"
+		"zone", "tiles", "ocean", "islands", "land km2", "km2/tile", "sizes (islet/small/medium/large/great/colossal)"
 	])
 
 	for zone in settings.zones:

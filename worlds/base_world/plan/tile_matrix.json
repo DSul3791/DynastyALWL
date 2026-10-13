@@ -11689,23 +11689,54 @@
       "required": [],
       "islands": [],
       "geology_hints": [],
-      "notes": ""
+      "notes": "Part of center_island reaches into this tile."
     },
     {
       "x": 0,
       "z": 0,
       "zone": "desert",
-      "kind": "ocean",
-      "layout": "ocean",
-      "status": "placeholder",
-      "locked": false,
+      "kind": "islands",
+      "layout": "landmark",
+      "status": "planned",
+      "locked": true,
       "revision": 0,
-      "pattern": "feature:central_trench",
+      "pattern": "feature:center_island",
       "starter_set": "",
       "required": [],
-      "islands": [],
-      "geology_hints": [],
-      "notes": ""
+      "islands": [
+        {
+          "id": 1,
+          "role": "landmark",
+          "center_x": 0,
+          "center_z": 0,
+          "semi_axis_a_m": 9984,
+          "semi_axis_b_m": 6144,
+          "rotation_deg": 0,
+          "shape": "ragged",
+          "aspect": 1.63,
+          "area_km2": 163.8,
+          "size_class": "colossal",
+          "character": "volcanic",
+          "peak_height_m": 1900,
+          "glaciated": false,
+          "geology": [
+            "volcanic"
+          ],
+          "seed": 772943753,
+          "main_biome": "tropical_forest",
+          "landmarks": [
+            "volcano",
+            "jungle",
+            "castles",
+            "caves"
+          ],
+          "crosses_tiles": true
+        }
+      ],
+      "geology_hints": [
+        "volcanic"
+      ],
+      "notes": "The worst island in the game, rising out of the central trench: a huge volcanic island with a volcano peak and large jungle areas. Home of the worst creatures, climate and storms, with castles and caves. It crosses into the neighboring tiles."
     },
     {
       "x": 1,
@@ -11721,7 +11752,7 @@
       "required": [],
       "islands": [],
       "geology_hints": [],
-      "notes": ""
+      "notes": "Part of center_island reaches into this tile."
     },
     {
       "x": 2,

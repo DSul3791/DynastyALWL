@@ -442,7 +442,10 @@ func _test_matrix_invariants(settings, rules: Dictionary, matrix) -> void:
 				float(island["rotation_deg"])
 			)
 
-			if not IslandShapeScript.fits_inside(points, limit + 0.5):
+			if (
+				str(island["role"]) != "landmark"
+				and not IslandShapeScript.fits_inside(points, limit + 0.5)
+			):
 				bad_fit += 1
 
 			for hint in island["geology"]:
@@ -463,7 +466,10 @@ func _test_matrix_invariants(settings, rules: Dictionary, matrix) -> void:
 		if big > 1:
 			bad_class += 1
 
-		if total > float(rules["total_land_cap_km2"]) + 5.0:
+		if (
+			total > float(rules["total_land_cap_km2"]) + 5.0
+			and not str(cell["pattern"]).begins_with("feature:")
+		):
 			bad_cap += 1
 
 	_check(bad_fit == 0, "every island fits inside its tile margin (%d bad)" % bad_fit)
@@ -602,14 +608,70 @@ func _test_matrix_distribution(settings, rules: Dictionary, matrix) -> void:
 
 	var trench_islands: int = 0
 	var trench_tiles: int = 0
+	var trench: Dictionary = settings.world_features[0]
 
 	for cell in matrix.get_sorted_cells():
-		if str(cell["pattern"]) == "feature:central_trench":
+		if settings.is_tile_in_feature(trench, int(cell["x"]), int(cell["z"])):
 			trench_tiles += 1
-			trench_islands += cell["islands"].size()
+
+			for island in cell["islands"]:
+				if str(island["role"]) != "landmark":
+					trench_islands += 1
 
 	_check(trench_tiles == 15, "the trench covers fifteen tiles (%d)" % trench_tiles)
-	_check(trench_islands == 0, "the trench holds no islands")
+	_check(trench_islands == 0, "the trench holds no ordinary islands")
+
+	# The center island: the biggest island in the world, locked, volcanic.
+	var center: Dictionary = matrix.get_cell(0, 0)
+	_check(center["islands"].size() == 1, "tile (0,0) holds one island")
+
+	if center["islands"].size() == 1:
+		var island: Dictionary = center["islands"][0]
+		_check(island["role"] == "landmark", "the center island is the landmark")
+		_check(bool(center["locked"]), "the center island tile is locked")
+		_check(island["character"] == "volcanic", "the center island is volcanic")
+		_check(int(island["peak_height_m"]) >= 1800, "the volcano is very tall")
+		_check(bool(island["crosses_tiles"]), "the center island crosses tile borders")
+
+		# It is fixed by the world settings, never by chance: exactly the
+		# same size, shape, height and seed on every run.
+		var feature: Dictionary = settings.world_features[1]
+		var tile_size: float = float(settings.tile_size_m)
+		_check(
+			int(island["semi_axis_a_m"]) == int(round(float(feature["half_length_tiles"]) * tile_size))
+			and int(island["semi_axis_b_m"]) == int(round(float(feature["half_width_tiles"]) * tile_size))
+			and int(island["center_x"]) == 0 and int(island["center_z"]) == 0
+			and int(island["peak_height_m"]) == int(feature["peak_m"]),
+			"the center island matches its fixed description in world.json"
+		)
+		_check(
+			int(island["seed"]) == SeedUtil.purpose_seed(settings.master_seed, "island", 0, 0, 1),
+			"the center island's seed comes from the world seed"
+		)
+
+		# A fresh run with different rules still gives the identical island.
+		var changed_rules: Dictionary = rules.duplicate(true)
+		changed_rules["tile_kind_odds"]["desert"] = {"ocean": 0.1, "peers": 0.1, "main": 0.8}
+		changed_rules["open_seas"]["count"] = 2
+		var changed_randomizer = RandomizerScript.new()
+		changed_randomizer.setup(settings, changed_rules)
+		var other_matrix = changed_randomizer.generate()
+		_check(
+			JSON.stringify(other_matrix.get_cell(0, 0)) == JSON.stringify(center),
+			"the center island is identical even when the random rules change"
+		)
+		var biggest_other: float = 0.0
+
+		for cell in matrix.get_sorted_cells():
+			for other in cell["islands"]:
+				if str(other["role"]) != "landmark":
+					biggest_other = maxf(biggest_other, float(other["area_km2"]))
+
+		_check(
+			float(island["area_km2"]) > biggest_other * 2.0,
+			"the center island is far bigger than any other (%.0f vs %.0f km2)"
+			% [float(island["area_km2"]), biggest_other]
+		)
 	_check(chains.size() >= 3, "island chains were placed (%d)" % chains.size())
 
 

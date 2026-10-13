@@ -71,11 +71,19 @@ static func render(settings, matrix, pixels_per_tile: int = 96) -> Image:
 			image.fill_rect(Rect2i(origin.x, origin.y, pixels_per_tile, 1), grid_color)
 			image.fill_rect(Rect2i(origin.x, origin.y, 1, pixels_per_tile), grid_color)
 
+	_draw_trenches(image, settings, pixels_per_tile, STRIP_WIDTH)
+
+	for tile_z in range(settings.min_tile, settings.get_max_tile_z() + 1):
+		for tile_x in range(settings.min_tile, settings.get_max_tile_x() + 1):
 			var cell: Dictionary = matrix.get_cell(tile_x, tile_z)
 
 			if cell.is_empty():
 				continue
 
+			var origin: Vector2i = Vector2i(
+				STRIP_WIDTH + (tile_x - settings.min_tile) * pixels_per_tile,
+				(tile_z - settings.min_tile) * pixels_per_tile
+			)
 			var center: Vector2 = Vector2(
 				float(origin.x) + float(pixels_per_tile) * 0.5,
 				float(origin.y) + float(pixels_per_tile) * 0.5
@@ -86,7 +94,6 @@ static func render(settings, matrix, pixels_per_tile: int = 96) -> Image:
 
 			_draw_markers(image, cell, origin, pixels_per_tile)
 
-	_draw_trenches(image, settings, pixels_per_tile, STRIP_WIDTH)
 	return image
 
 
@@ -180,6 +187,8 @@ static func _draw_island(
 	var base_color: Color = CHARACTER_COLORS.get(
 		str(island["character"]), CHARACTER_COLORS["rolling"]
 	)
+	var is_landmark: bool = str(island.get("role", "")) == "landmark"
+	var jungle: Color = Color(0.10, 0.42, 0.16)
 
 	var noise: FastNoiseLite = FastNoiseLite.new()
 	noise.seed = int(island["seed"])
@@ -232,6 +241,14 @@ static func _draw_island(
 
 			if inland < 0.12:
 				color = BEACH_COLOR
+			elif is_landmark:
+				# Jungle flanks rising to a dark volcanic core and crater.
+				if inland > 0.82:
+					color = Color(0.85, 0.30, 0.08) if inland > 0.93 else Color(0.22, 0.12, 0.10)
+				elif inland > 0.6:
+					color = base_color.lerp(Color(0.30, 0.18, 0.14), (inland - 0.6) / 0.22)
+				else:
+					color = jungle.lightened(0.15 * (1.0 - inland))
 			else:
 				color = base_color.lightened(0.18 * inland).darkened(0.10 * (1.0 - inland))
 
