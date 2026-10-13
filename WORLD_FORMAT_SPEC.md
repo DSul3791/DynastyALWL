@@ -35,9 +35,9 @@ One file for the whole world, fixed before the first tile is kept.
 
 **Identity (Permanent)**
 
-- World name and **world identity seed**. The current seed (123456) is a placeholder. Pick a large random number once.
+- World name and **world identity seed**. **[Decided]** The seed is the phrase `This1is2the3greatest4game5of6all7time`, turned into a number with SHA-256, which gives the same result on every machine.
 - Format version and the list of generator versions in use.
-- **Tile seed function.** The current hash (`_derive_tile_seed`) mixes coordinates with XOR and multiplication, which can give related seeds for nearby tiles. Since it becomes permanent, replace it now with a stronger mixer (for example a SplitMix64-style finalizer over the world seed, tile x and tile z). GDScript integers are 64-bit and wrap on overflow, so this works natively.
+- **Tile seed function.** **[Decided]** SHA-256 of the master seed and the tile coordinate, replacing the old XOR-and-multiply hash that could give related seeds to nearby tiles.
 
 **Geometry (Permanent)**
 
@@ -224,5 +224,6 @@ The plan for all 441 tiles, read and written by the randomizer and the island pr
 
 Settled: flora is derived at runtime, the map grid is 8 m, the ocean edge is -2,000 m, and island tiles are either peers or a main island with satellites.
 
-1. Replacing the tile seed function and picking the final world identity seed.
-2. The odds above are starting values to tune with the preview image.
+Also settled: the master seed is the phrase `This1is2the3greatest4game5of6all7time`, turned into a number with SHA-256 (574716103), and each tile's seed is SHA-256 of the master seed and the tile coordinate (branch `claude/world-seed`).
+
+1. The odds above are starting values to tune with the preview image.
