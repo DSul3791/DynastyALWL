@@ -555,7 +555,17 @@ A tile should then take minutes, and `world_preview.gd` could show island panel 
 - **[Decided]** A dynasty may have several spouses over time. They die off from age or sickness, and each adds assets and holdings to the dynasty.
 - **[Decided]** Duress is a simple money sink, not a burden. It applies slowly to an ignored dynasty, which can then die off, be sold or fall apart.
 - **[Proposed]** Duress is one value per dynasty, so merging never multiplies the upkeep. The merged dynasty takes the higher value on the day of the merge, or the buyer's own, whichever the design settles on.
-- **[Open]** Whether spouses are held at the same time or one after another, and how children and inheritance from several spouses are divided.
+- **[Decided]** Only the chosen successor inherits. The whole dynasty passes to that one person. It does not matter which spouse a child came from, since all are the head's children and all are eligible to be successor at retirement or death.
+- **[Decided]** When the dynasty passes, the previous head's spouses become cared-for elders in the household. The new head must find a partner of their own.
+- **[Decided]** Siblings who are not the successor stay in the household and age out over time, unless they leave (see below).
+- **[Open]** Whether several spouses can be alive at the same time, or only one at a time. Not yet decided.
+
+### 6.8 Non-successor siblings (to design later)
+
+- **[Idea]** A sibling outside the succession line decides for themselves, using their traits, skills, memory and preferences, whether to stay with the dynasty or break off and live their own life.
+- **[Idea]** A sibling might marry another player and join that player's dynasty, or take a local job (temple, inn) and become a town character who keeps a tie to the family.
+- **[Idea]** A sibling who leaves chooses between their own house and living at the homestead, where their income counts toward the dynasty's income.
+- **[Open]** All of this is deferred. It needs the NPC decision system (traits, preferences, language) and the household income model first.
 
 ---
 
