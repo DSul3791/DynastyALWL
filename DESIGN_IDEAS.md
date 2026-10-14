@@ -870,6 +870,8 @@ To be fleshed out when the first NPC is designed.
 - **[Proposed]** Funds are held until delivery so a lost wagon cannot leave one side cheated.
 - **[Proposed]** Goods are tracked in batches with a source tag where theft matters. Commodities can stay as totals. Crafted items stay individual.
 - **[Proposed]** Anti-exploit: prices respond to volume, transport has real costs, and money has sinks (upkeep, tolls, taxes), so endless trade loops with a friend do not pay.
+- **[Decided]** (2026-10-13) A future market interface, where players shop, make deals and set up trade agreements, shows each offer's price together with its distance, delivery time and how often shipments come. Delivery time is part of the deal: a cheap load of logs that takes two weeks can lose to one at twice the price that arrives tomorrow from the next island.
+- **[Proposed]** Delivery times come from the same route data the wagons and ships use (road or sea path, travel speed, waiting for a free wagon or ship), so what the interface promises is what actually happens. Offers can be sorted by price, by arrival time or by total cost including transport.
 - **[Open]** Whether orders are given through warehouse forms and menus, free conversation with the merchant that is translated into validated actions, or both.
 
 ### 13.4 Businesses
