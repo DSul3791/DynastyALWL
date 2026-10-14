@@ -519,26 +519,31 @@ func _make_features(cell: Dictionary, rng: RandomNumberGenerator, seed_point: Ve
 			})
 			ores.append(ore)
 
-	# Opal in the volcanic rock around a vent.
+	# Lenses in the volcanic rock around a vent: opal, and alum where hot
+	# gases have altered the rock.
 	for feature in made_features:
-		if str(feature["type"]) != "volcanic_vent" or rng.randf() >= float(ore_rules["opal_chance"]):
+		if str(feature["type"]) != "volcanic_vent":
 			continue
 
-		var angle: float = rng.randf() * TAU
-		var spot: Vector2 = Vector2(float(feature["center"][0]), float(feature["center"][1])) \
-			+ Vector2(cos(angle), sin(angle)) * float(feature["radius_m"]) * rng.randf_range(1.5, 3.0)
-		var size: float = rng.randf_range(float(ore_rules["opal_size_m"][0]), float(ore_rules["opal_size_m"][1]))
-		var y: float = _elevation.height_at_m(spot.x, spot.y) - rng.randf_range(10.0, 120.0)
-		var ore: Dictionary = new_id.call(ore_counter)
-		ore.merge({
-			"resource": "opal", "shape": "lens", "feature": feature["id"],
-			"center": [snappedf(spot.x, 0.1), snappedf(y, 0.1), snappedf(spot.y, 0.1)],
-			"radius_a_m": snappedf(size, 0.1), "radius_b_m": snappedf(size * 0.6, 0.1), "angle": snappedf(angle, 0.001),
-			"thickness_m": snappedf(size * 0.15, 0.1),
-			"grade": snappedf(rng.randf_range(0.1, 0.5), 0.01),
-			"tonnes": int(PI * size * size * 0.6 * size * 0.15 * 0.66 * ROCK_DENSITY_T_M3),
-		})
-		ores.append(ore)
+		for lens in ore_rules["vent_lenses"]:
+			if rng.randf() >= float(lens["chance"]):
+				continue
+
+			var angle: float = rng.randf() * TAU
+			var spot: Vector2 = Vector2(float(feature["center"][0]), float(feature["center"][1])) \
+				+ Vector2(cos(angle), sin(angle)) * float(feature["radius_m"]) * rng.randf_range(1.5, 3.0)
+			var size: float = rng.randf_range(float(lens["size_m"][0]), float(lens["size_m"][1]))
+			var y: float = _elevation.height_at_m(spot.x, spot.y) - rng.randf_range(10.0, 120.0)
+			var ore: Dictionary = new_id.call(ore_counter)
+			ore.merge({
+				"resource": str(lens["resource"]), "shape": "lens", "feature": feature["id"],
+				"center": [snappedf(spot.x, 0.1), snappedf(y, 0.1), snappedf(spot.y, 0.1)],
+				"radius_a_m": snappedf(size, 0.1), "radius_b_m": snappedf(size * 0.6, 0.1), "angle": snappedf(angle, 0.001),
+				"thickness_m": snappedf(size * 0.15, 0.1),
+				"grade": snappedf(rng.randf_range(0.1, 0.5), 0.01),
+				"tonnes": int(PI * size * size * 0.6 * size * 0.15 * 0.66 * ROCK_DENSITY_T_M3),
+			})
+			ores.append(ore)
 
 	for n in range(_count(rng, rules["pipe"], kind)):
 		var r: Dictionary = rules["pipe"]
@@ -753,38 +758,32 @@ func _make_features(cell: Dictionary, rng: RandomNumberGenerator, seed_point: Ve
 				})
 				ores.append(ore)
 
-	# Gems scattered through a band of one layer across the province:
-	# geodes in basalt lava, garnets in folded slate.
-	var scatter_rules: Array = []
-
-	if kind == "volcanic":
-		scatter_rules.append(["basalt", "geode_chance", "geode_gems", "geode_band_m", "geode_density"])
-	elif kind == "fold_belt":
-		scatter_rules.append(["slate", "garnet_slate_chance", [["garnet", 1.0]], "garnet_band_m", "garnet_density"])
-
-	for scatter in scatter_rules:
-		if rng.randf() >= float(ore_rules[scatter[1]]):
+	# Things scattered through a band of one layer across the province:
+	# geodes in basalt lava, garnets in folded slate, flint in chalk (and
+	# chert in limestone), alum in shale.
+	for scatter in ore_rules["scatters"]:
+		if not scatter["kinds"].has(kind) or rng.randf() >= float(scatter["chance"]):
 			continue
 
 		var host: Dictionary = {}
 
 		for layer in cell["layers"]:
-			if str(layer["rock"]) == str(scatter[0]) and host.is_empty():
+			if str(layer["rock"]) == str(scatter["host"]) and host.is_empty():
 				host = layer
 
 		if host.is_empty():
 			continue
 
-		var band: float = minf(rng.randf_range(float(ore_rules[scatter[3]][0]), float(ore_rules[scatter[3]][1])), float(host["thickness_m"]))
-		var choices: Array = scatter[2] if typeof(scatter[2]) == TYPE_ARRAY else ore_rules[scatter[2]]
+		var band: float = minf(rng.randf_range(float(scatter["band_m"][0]), float(scatter["band_m"][1])), float(host["thickness_m"]))
 		var ore: Dictionary = new_id.call(ore_counter)
 		ore.merge({
-			"resource": _weighted(rng, choices), "shape": "scatter", "feature": "", "province": cell["id"],
+			"resource": _weighted(rng, scatter["resources"]), "shape": "scatter", "feature": "", "province": cell["id"],
+			"host_rock": str(scatter["host"]),
 			"depth_below_datum_m": snappedf(float(host["top_m"]) + rng.randf() * (float(host["thickness_m"]) - band), 0.1),
-			"thickness_m": snappedf(band, 0.1), "density": float(ore_rules[scatter[4]]),
+			"thickness_m": snappedf(band, 0.1), "density": float(scatter["density"]),
 			"cycle_m": cell["cycle_m"], "repeat_to_m": cell["repeat_to_m"],
 			"grade": snappedf(rng.randf_range(0.1, 0.5), 0.01),
-			"tonnes": int(_cell_m * _cell_m * band * float(ore_rules[scatter[4]]) * ROCK_DENSITY_T_M3),
+			"tonnes": int(_cell_m * _cell_m * band * float(scatter["density"]) * ROCK_DENSITY_T_M3),
 		})
 		ores.append(ore)
 

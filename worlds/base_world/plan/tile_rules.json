@@ -159,6 +159,11 @@
 			"basin": {
 				"layers": [
 					[
+						"chalk",
+						0,
+						80
+					],
+					[
 						"sandstone",
 						20,
 						70
@@ -582,33 +587,6 @@
 				15,
 				50
 			],
-			"geode_chance": 0.5,
-			"geode_gems": [
-				[
-					"amethyst",
-					0.4
-				],
-				[
-					"agate",
-					0.6
-				]
-			],
-			"geode_band_m": [
-				10,
-				40
-			],
-			"geode_density": 0.02,
-			"garnet_slate_chance": 0.4,
-			"garnet_band_m": [
-				10,
-				40
-			],
-			"garnet_density": 0.03,
-			"opal_chance": 0.2,
-			"opal_size_m": [
-				20,
-				60
-			],
 			"placer_resources": [
 				"gold",
 				"tin",
@@ -616,6 +594,122 @@
 				"ruby",
 				"sapphire",
 				"garnet"
+			],
+			"scatters": [
+				{
+					"kinds": [
+						"volcanic"
+					],
+					"host": "basalt",
+					"chance": 0.5,
+					"resources": [
+						[
+							"amethyst",
+							0.4
+						],
+						[
+							"agate",
+							0.6
+						]
+					],
+					"band_m": [
+						10,
+						40
+					],
+					"density": 0.02
+				},
+				{
+					"kinds": [
+						"fold_belt"
+					],
+					"host": "slate",
+					"chance": 0.4,
+					"resources": [
+						[
+							"garnet",
+							1.0
+						]
+					],
+					"band_m": [
+						10,
+						40
+					],
+					"density": 0.03
+				},
+				{
+					"kinds": [
+						"basin"
+					],
+					"host": "chalk",
+					"chance": 0.85,
+					"resources": [
+						[
+							"flint",
+							1.0
+						]
+					],
+					"band_m": [
+						20,
+						60
+					],
+					"density": 0.02
+				},
+				{
+					"kinds": [
+						"basin",
+						"fold_belt",
+						"granite"
+					],
+					"host": "limestone",
+					"chance": 0.3,
+					"resources": [
+						[
+							"flint",
+							1.0
+						]
+					],
+					"band_m": [
+						5,
+						20
+					],
+					"density": 0.004
+				},
+				{
+					"kinds": [
+						"basin"
+					],
+					"host": "shale",
+					"chance": 0.25,
+					"resources": [
+						[
+							"alum",
+							1.0
+						]
+					],
+					"band_m": [
+						10,
+						30
+					],
+					"density": 0.05
+				}
+			],
+			"vent_lenses": [
+				{
+					"resource": "opal",
+					"chance": 0.2,
+					"size_m": [
+						20,
+						60
+					]
+				},
+				{
+					"resource": "alum",
+					"chance": 0.3,
+					"size_m": [
+						30,
+						90
+					]
+				}
 			]
 		},
 		"cover": {

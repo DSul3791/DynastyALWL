@@ -1,7 +1,7 @@
 {
 	"table": "surficial_deposits",
 	"format_version": 1,
-	"note": "IDs are append-only. Never renumber or reuse an ID; retire an entry with \"retired\": true and take the next ID from next_id for new entries.",
+	"note": "IDs are append-only. Never renumber or reuse an ID; retire an entry with \"retired\": true and take the next ID from next_id for new entries. glass_quality (0 to 1, optional): how good the sand is for glass making.",
 	"next_id": 8,
 	"entries": [
 		{
@@ -22,7 +22,8 @@
 		{
 			"id": 3,
 			"name": "sand",
-			"display": "Sand"
+			"display": "Sand",
+			"glass_quality": 0.5
 		},
 		{
 			"id": 4,

@@ -290,6 +290,11 @@ A tile should then take minutes, and `world_preview.gd` could show island panel 
 | Lead and zinc | Hosted in limestone |
 | Gems (decided 2026-10-14: individual gems, not one "gemstone") | Diamond: deep volcanic pipes (very rare). Ruby and sapphire: marble beside granite. Emerald: granite edges in shale country. Topaz and aquamarine: crystal pockets (pegmatites) at granite edges. Amethyst and agate: geodes in basalt lava. Garnet: folded slate, and with diamonds in pipes. Opal: volcanic rock near vents. Hard gems also wash into river gravels like placer gold |
 | Marble (rock, decided 2026-10-14) | Limestone baked in a ring around granite intrusions, and limestone buried deep in fold belts |
+| Chalk (rock, decided 2026-10-14) | Soft white limestone at the top of sedimentary basins (white cliffs) |
+| Flint (decided 2026-10-14) | Nodules scattered through chalk layers, and thinner chert through limestone. Flint pebbles also lie on beaches and in river gravels below chalk outcrops, so new players can pick them up without digging (derived at runtime from the rock and soil maps, not stored) |
+| Alum (decided 2026-10-14) | Bands in shale (alum shale) in basins, and lenses in volcanic rock altered by hot gases near vents. Used to fix dyes and tan leather |
+| Glass sand (decided 2026-10-14) | The existing sand deposits, with a glass quality: clean beach sand best, inland sand fair, muddy river sand poor (`glass_quality` in the soil and deposit tables) |
+| Aluminum | Not used: it was unknown in medieval times (first isolated in the 1820s) |
 | Clay and peat | Wetlands and the surface deposit map |
 
 - **[Proposed]** Depth matters loosely but never predictably. A gold vein might outcrop on a hillside or start 800 m down along the same fault. Mountains stay the best places to mine, since erosion exposes deeper rock there.
