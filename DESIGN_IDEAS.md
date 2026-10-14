@@ -665,7 +665,7 @@ Assumptions: 70 game years of aging (15 to 85) over one real year with about 700
 - **[Proposed]** Starter items carry a "starter town" maker's mark under the provenance principle (Section 3), which is how vendors recognize them. Salvage yield rises with skill up to the 80% ceiling. Every admin warehouse withdrawal is logged.
 - **[Idea]** **Founding sequence.** The town block is a founding building such as the town hall, the magistrate's office or the town well. Next come a town planner's office and a builders' guild. The planner surveys the land and suggests the best areas for roads, districts, suburbs and town walls. Once the player approves, builders level the land for roads and lay cobblestone paths or dirt roads, with bridges where required. With roads done, the planner suggests building locations with an explanation of where and why. If approved, the planner places the building, or the player places it.
 - **[Decided]** Apart from the starter town, the first players (the project owner's friends and family) build the towns.
-- **[Idea]** Towns might become server-owned later (for example abandoned player towns), since a town belonging to the server was mentioned. Nothing is placed at the start, so this does not affect the bake.
+- **[Decided]** Towns become server-owned when a town owner's dynasty falls into receivership and nobody takes the town over, and are then offered for sale (Section 8.12). Nothing is placed at the start, so this does not affect the bake.
 - **[Decided]** Players build roads and buildings, choosing from premade blueprints.
 - **[Decided]** The town block interface sets rules and settings: militia, elite guards, a town bank and town funds, tax rates and tax rules. Towns can build and improve defenses.
 - **[Decided]** Player-run towns can fall into ruin.
@@ -831,6 +831,11 @@ Checked: this has not been in the design before. Section 4 has weather from the 
 - **[Proposed]** The decay clock is real days, not game days. A game day is one real hour (Section 7.5), so one point per game day would be 24 points per real day and erase a 10-point deed in about 10 real hours, which does not suit a weekly player. One point per real day lets a deed last about 10 days.
 - **[Proposed]** Deeds by NPCs count too (NPC builders, a farmhand's harvest delivered to the granary), so a town of mostly NPCs does not sink just because the players are away.
 - **[Proposed]** Spirit sits on a fixed scale (for example 0 to 100) and decays toward a floor set by permanent things like a temple, no pests, and clean water, not toward zero.
+- **[Decided]** NPC deeds count only a little toward spirit. They can barely maintain it, and a random event that pulls spirit down (bandits attacking caravans, for example) outweighs what the NPCs add. NPCs alone can never keep spirit high. Without real people playing in the town (quests, farming, donations, building), spirit slowly falls.
+- **[Decided]** Permanent features raise the floor spirit can fall to: a temple, clean water, a town wall and a strong town guard. NPC upkeep of these can slow the fall, since they keep adding a little.
+- **[Decided]** Town spirit works like duress for a town. If a town owner's dynasty falls into receivership, the town is part of what can be taken over. If nobody takes it, it reverts to the server and an administrator owns it.
+- **[Decided]** A server-owned town goes on a list that players can apply to buy. The price depends on the town's size, its population, its wealth and how long it has been without an owner. It is treated like a normal business: the buyer inherits a low-spirit town and also gets its potential for great wealth.
+- **[Open]** Exact price formula, the application process (reputation, funds, competing buyers), and whether the price falls the longer a town stays unowned.
 - **[Open]** The name of the score, the scale, the sizes of each deed, how far its weather reaches around the town, and how it interacts with crop yields and with mood details.
 
 ---
