@@ -1,6 +1,6 @@
 # Design Vision and Ideas
 
-Record of the design brainstorming sessions of 2026-10-11 and 2026-10-12. This is a planning document only. Nothing described here has been implemented, and no code was changed.
+Record of the design brainstorming sessions from 2026-10-11 onward. This is a planning document. The world generator described in Section 14 is partly built; the game systems in Sections 5 to 13 are design only and no code exists for them yet.
 
 **Revision history**
 
@@ -10,6 +10,7 @@ Record of the design brainstorming sessions of 2026-10-11 and 2026-10-12. This i
 - **Version 4 (2026-10-12, latest):** two clocks decided (a world calendar for seasons and crops, and an aging clock); a one-to-two-week seasonal cycle; NPC aging at the average player's speed (70 years per real year); the weekly farming rhythm and a note on avoiding calendar years of exactly 7 or 14 days; Farming Simulator as an inspiration; no starting towns; and the civil engineer town-planning idea. The lifespan pacing figure changed from 65 to 70 years (15 to 85).
 - **Version 5 (2026-10-12, evening):** the "play what you like" and "no micromanagement" goals; server-clock aging for everyone as an idea; children, twins, wills and choosing an heir; 60-minute game days, seasonal day length and night; the weekend farming rhythm, crop tiers, farm labor and work buildings; stock levels, the order chain and building maintenance; the budget for language model use and self-hosting; town roles, land and property; quests and pastimes; real-money ideas, with gambling flagged for later; and the plan for growing the tile map one side at a time.
 - **Version 6 (2026-10-12, night):** minimum hardware target (older quad-core, 8 GB RAM, SATA SSD); the 15 to 16 hour tile bake and a proposal to bake 2D maps and generate voxels at runtime, with a table of what is baked, what the server works out and what the client does; language service hosting and scaling; NPC backgrounds, memory, honesty and conversation traits; a tile size of 15 by 15 regions (15.36 km) and a comparison with Atlas; a world-first sketch where islands come from ocean-floor features; a danger map; an islands-first tile pipeline; geology stored as a feature list with ore placed by how deposits really form; surveying skill and prospecting clues; the surveyor's book; a massive pre-planned world, an arid equator on the origin row and three climate zones with transition rows; tile downloads and the client tile cache; a developer-built starter town (replacing "no starting towns"); natural animal behavior; rarer flotsam; several starter tiles; a full-size world filled with placeholder ocean tiles; a matrix of tile specifications; a recommendation to start with voxel streaming; a square final world (proposed 21 by 21); polar sea ice; years of travel; the admin town warehouse; the town founding sequence from town block to planner, builders, roads and buildings; admin warehouse access, NPC production limits and worthless starter items; the 21 by 21 world confirmed; eight temperate starter tiles in an inner and an outer set; cool desert dugouts; and a pointer to the draft world format specification.
+- **Version 7 (2026-10-14):** the generator work through climate, geology and ore, and natural caves (steps 10 to 12); the resource list (gems, marble, chalk, flint, alum, bitumen, graphite, bog iron, saltpeter) and the rule that every resource needs a use; renewable, semi-renewable and non-renewable resources; mine stability; quality tiers; reputation as personal and per viewer; admin town buying; duress, receivership and takeover; notifications; the free-to-play model; children, dynasty transfer, adoption and inclusion; the temple; town spirit and local weather; town decline, rubble and abandoned towns; contesting town claims; managers, remote control and in-world mail; the ultimate island; remains of the dead; resource passes and edge matching.
 
 ## How to read this document
 
@@ -19,6 +20,7 @@ Every item carries a status tag.
 - **[Idea]** Raised by the project owner as a direction or wish ("we could...", "maybe...", "it would be nice to eventually..."), not yet firmly settled.
 - **[Proposed]** Suggested by Claude during brainstorming. It was accepted in passing or not objected to, but never explicitly confirmed.
 - **[Open]** A question that has not been answered yet. Section 15 collects them.
+- **[Superseded]** Replaced by a later decision. Kept briefly for reference. When two statements disagree, the newest one from the project owner is the right one.
 
 When something is both a decision and a question, the decision is recorded in its section and the unresolved part appears in Section 15.
 
@@ -107,13 +109,11 @@ A persistent, rough-medieval, multiplayer online world: a survival, exploration 
 - **[Idea]** Once tiles generate in reasonable time, the whole massive world can be planned ahead of time, tile by tile.
 - **[Proposed]** A **world plan** file lists every planned tile (islands, sizes, character) at its permanent coordinate. Tiles can all be baked up front and still be released gradually by growing the active rectangle (Section 4.7). Open-ocean tiles are nearly free to store and help a huge world feel huge without needing content everywhere.
 - **[Open]** How large a world can be designed and still managed and served (Section 15).
-- **[Idea]** Like Atlas, eventually 4 or more starter towns, since the map is so big. This lets people coordinate with friends when they first log in. Town-friendly large islands sit at strategic **starter tiles**, for example (-4,0), (4,0), (0,-4), (0,4), and further out at distance 8.
 - **[Idea]** Generate the entire map at once, filling every unassigned tile with an ocean tile for now, and generate replacement tiles at predetermined coordinates later.
 - **[Idea]** Before baking, build a **matrix of tile specifications**. A randomized generator picks between zero and 4 or 5 islands per tile and sizes them, giving a mix of big islands, smaller clusters and archipelagos.
 - **[Proposed]** With 2D tile maps, ocean tiles cost almost nothing, so the world can be its full planned size from day one. The wrap bounds then never change, and growing the world becomes replacing placeholder tiles instead of adding rows and columns (Section 4.7 still applies if the world ever needs to grow beyond the plan).
 - **[Proposed]** Replacing a placeholder needs rules: only tiles marked as placeholders can be replaced; anything players left there (anchored ships, floating items, seabed edits) is moved or the new islands avoid it; and the tile's revision number rises so clients refresh their cached copy.
 - **[Proposed]** The matrix is a file you can read and edit. Each cell holds the tile's kind (ocean, starter, islands), island count, sizes, characters and seeds. Rules shape the random picks: a size mix, minimum sailing distances, starter tiles hand-tuned to be town friendly (flat land, a river, a harbor, varied resources nearby), and each climate zone getting a fair share of key resources. A whole-world preview image shows the result before anything is baked.
-- **[Decided]** The final map is evenly square, around 18 by 18 or 20 by 20, or whatever number works.
 - **[Decided]** 21 by 21, provided it gives a world that takes years to traverse.
 - **[Proposed]** Use an odd number so the desert row sits exactly in the middle and the north and south edges have matching climates where they wrap. **21 by 21** is the suggestion: 441 tiles, about 322 km on a side, about 104,000 km² (most of it ocean; the first plan puts about 6% of it as land). Rows and columns run from -10 to 10. 19 by 19 is the smaller alternative.
 
@@ -131,11 +131,9 @@ A persistent, rough-medieval, multiplayer online world: a survival, exploration 
 - **[Decided]** Starters sit on a **large landmass**, not a small separate island. Most players spend their first few weeks adventuring and questing there, so it must hold the starter town, farmland, wilderness, quest sites and room for several player towns.
 - **[Proposed]** Every starter landmass gets a guaranteed minimum size so no starter is short-changed. The tile plan currently gives very uneven results (inner starters 39 to 90 km² for their largest island, outer 31 to 240 km²). Land will be densely covered with flora, fauna, trees and rocks to gather; for scale, the ARK island (about 6 by 6 km) took weeks to explore. Proposed targets: inner starter landmass 50 to 100 km² (one and a half to three ARK islands), outer 70 to 150 km² (outer starters are more dangerous and reward it with more land). Nearby satellite islands across a strait are welcome on top of that, and smaller neighbors may join by a narrow land bridge (owner, 2026-10-13).
 - **[Proposed]** Implemented (2026-10-13): the starter island itself is drawn at the target size (inner 64 to 78 km², outer 86 to 104 km² before coastline roughness), and a 1.2 km strait at least 80 m deep is cleared around it so shelf hills stay separate satellites instead of merging into one huge landmass. Current sizes: inner 54, 81, 89, 96 km²; outer 72, 81, 138, 148 km². A test keeps every starter in range.
-- **[Idea]** Because the map is so big, an inner set of 4 starter tiles and an outer set of 4, so people start in various areas and the center does not fill up too fast.
-- **[Decided]** Inner set at (-3,4), (3,4), (-3,-4), (3,-4); outer set at (-6,6), (6,6), (-6,-6), (6,-6). (The outer set was first proposed at columns ±8, row ±5, and moved inward so it sits in the medium danger zone, Section 4.13.) Each outer starter is about 3.6 tiles (55 km) from the nearest inner starter, and 4.5 tiles (69 km) from the deadly east-west edge. Row 6 is the last temperate row, so the outer starters are a little cooler. The desert center is left for players to expand into.
+- **[Decided]** Like Atlas, there are several starter towns, since the map is so big, so people can coordinate with friends when they first log in. Inner set at (-3,4), (3,4), (-3,-4), (3,-4); outer set at (-6,6), (6,6), (-6,-6), (6,-6). (The outer set was first proposed at columns ±8, row ±5, and moved inward so it sits in the medium danger zone, Section 4.13.) Each outer starter is about 3.6 tiles (55 km) from the nearest inner starter, and 4.5 tiles (69 km) from the deadly east-west edge. Row 6 is the last temperate row, so the outer starters are a little cooler. The desert center is left for players to expand into.
 - **[Proposed]** Open the inner set at launch and the outer set as the population grows. With placeholder ocean tiles, starter tiles can be baked first.
 - **[Proposed]** Traversal: crossing 322 km is tens of hours on foot and, at Atlas's roughly 7 km/h (derived from its 30 hours for about 212 km), about 46 hours of sailing. Ship speeds are not yet set. "Years" comes from exploring: a few hundred island tiles of up to ARK scale, at many hours each, is thousands of hours, several years for a player at 12 to 16 hours a week.
-- **[Proposed]** Starter tiles should give a choice of climate (desert and temperate, not arctic). With a world 13 tiles tall the rows run from -6 to 6, so starters at distance 8 north or south need a taller world, or sit east and west on existing rows.
 - **[Proposed]** A tile with zero islands is simply an open-ocean tile. This gives ships real distances without any special system.
 - **[Proposed]** Irregular coastlines with small offshore islets, instead of the current rounded-square outline.
 
@@ -150,7 +148,7 @@ Constraints inherited from the current generator:
 - **[Decided]** The 500 km arctic line mentioned in discussion was only an example. The real scale is undecided.
 - **[Decided]** Tile (0,0) and its whole east-west row are the most arid, desert zone.
 - **[Idea]** Three zones (desert, temperate, arctic), with a transition row between zones where one zone gradually changes into the next as you travel north or south. The world's height in tiles decides how wide each zone is.
-- **[Proposed]** Because the world wraps north to south, the zones run symmetrically from the desert row: desert, transition, temperate, transition, arctic at both the north and south edges, where the wrap seam joins arctic to arctic. For example, a world 13 tiles tall gives desert 3 rows (-1 to 1), transitions at ±2, temperate ±3 to ±4, transitions at ±5, and arctic ±6 (2 rows meeting across the seam).
+- **[Proposed]** Because the world wraps north to south, the zones run symmetrically from the desert row: desert, transition, temperate, transition, arctic at both the north and south edges, where the wrap seam joins arctic to arctic. The final 21-row world is laid out in the table in Section 4.1.
 - **[Idea]** At the north and south poles there should be sea ice, with the ocean frozen like Earth's poles.
 - **[Proposed]** Because the world wraps north to south, both poles are the same place: the wrap seam. Permanent pack ice covers the outermost arctic rows, and seasonal ice grows outward in winter and retreats in summer, worked out at runtime from latitude and the season so nothing seasonal is baked. Ice thickness decides whether ships can pass and whether people can walk or sled across. Broken ice refreezes over time.
 - **[Proposed]** Sea ice makes crossing the pole a seasonal event: a summer sailing passage, or a winter sled route, or an icebreaker later. It also supports the cold-climate life already planned (seal hunting, ice fishing, polar creatures). Arctic islands carry glaciers and snowfields baked as surface materials.
@@ -233,7 +231,7 @@ These already exist in the repository and match the vision:
 - **[Decided]** Work starts with the map. The first step is to generate a first island tile that lets people get started.
 - **[Decided]** After that, the generator keeps creating unique tiles over time, with different sizes and numbers of islands.
 - **[Decided]** Because the world wraps at its edges, the set of tiles must always stay a complete rectangle, and growth has to be planned with that in mind.
-- **[Decided]** The world grows one side at a time by adding a full row or column. For example, a 4 by 4 map grows by picking a side and adding 4 tiles, making it 5 by 4. The next expansion picks a side and adds 4 or 5 tiles depending on which side is chosen.
+- **[Superseded]** The world grows one side at a time by adding a full row or column. The full 21 by 21 world is now planned from day one, with placeholder ocean tiles that are replaced as tiles are built (Section 4.1). Adding rows and columns is only a fallback if the world ever has to be enlarged beyond the plan.
 - **[Proposed]** Alternate opposite sides as the world grows (north then south, east then west), so the origin tile stays near the middle. That keeps the equator central and makes the north-south wrap seam join two equally cold edges.
 - **[Proposed]** A new row or column is baked into a staging folder and only goes live, at a server restart, once the whole row or column is complete. The existing builder and server already work this way (GENERATION_GUIDE.md).
 - **[Proposed]** Because growth is rare, new rows and columns can be baked on a separate machine and copied into the staging folder, so baking never competes with the running server.
@@ -253,7 +251,7 @@ The draft of the permanent formats (world settings, tile file, tile matrix) is i
 
 | Layer | Contents | Why |
 |---|---|---|
-| Baked once per tile, permanent | Tile seed and generator version; height, coast, rivers and lakes; climate zone; soil and biome class; flora placement lists; sites for caves, mineshafts, labyrinths and dormant lairs; possibly deposit identities and land-suitability layers | Defines the place. Changing it later moves coastlines and landmarks under players. Small: about 1,921 by 1,921 samples per map at 8 m. |
+| Baked once per tile, permanent | Tile seed and generator version; height, coast, rivers and lakes; climate zone; soil and biome class; sites for caves, mineshafts, labyrinths and dormant lairs; possibly deposit identities and land-suitability layers | Defines the place. Changing it later moves coastlines and landmarks under players. Small: about 1,921 by 1,921 samples per map at 8 m. |
 | Server, deterministic from the baked maps | Voxel fill, rock layers by depth, caves, ore, structure carving, fauna spawning, plant growth, weather | Cheap to produce on demand. Frozen per tile once players build there. |
 | Server, living layer | Voxel edits, removed trees, buildings, NPCs, crops, economy | Changes constantly. Saved as deltas on top of the baked and generated base. |
 | Client | Meshing, LOD display, fog and horizon impostors, grass and foliage shaders, animation, sound, weather visuals | Keeps the minimum machine light. |
@@ -267,11 +265,11 @@ The draft of the permanent formats (world settings, tile file, tile matrix) is i
 5. Climate from north-south position and altitude, moisture from distance to the sea and rain shadow, giving a biome map.
 6. Soil and surface from biome, slope and the existing surficial deposit map.
 7. Geology as a feature list (Section 4.9).
-8. Placement: flora lists, cave and mineshaft entrances, dormant lair sites.
+8. Placement: cave and mineshaft entrances and dormant lair sites. Flora is not baked: it is derived at runtime (Section 4.3).
 
 A tile should then take minutes, and `world_preview.gd` could show island panel changes almost live. The hardest part is the runtime generator that turns 8 m maps into convincing 1 m terrain (smooth interpolation, detail noise, rock layers, caves and ore) quickly. Voxel Tools' graph generator may do it natively. If not, a small native (C++) generator is the fallback.
 
-**[Open] How terrain reaches the client.** Either the server streams compressed blocks and clients cache them on disk (simplest, server authoritative), or clients download a tile's small 2D maps, generate unedited terrain themselves and receive only edits (far less bandwidth, but different CPUs might produce slightly different results, causing seams or desyncs). Measure before choosing the second.
+**[Proposed] How terrain reaches the client.** Either the server streams compressed blocks and clients cache them on disk, or clients download a tile's small 2D maps and generate unedited terrain themselves. The recommendation and the trade-offs are in Section 4.10 (streamed blocks first). Measure before changing.
 
 ### 4.9 Geology, resources and surveying
 
@@ -314,7 +312,38 @@ A tile should then take minutes, and `world_preview.gd` could show island panel 
 - **[Proposed]** The book is an item. Pages can be copied and sold or given away, and the book can be dropped, lost or stolen like other belongings, so a rival who takes it gains its knowledge.
 - **[Proposed]** The overlay is drawn by the client from the marks the server has sent, so it costs almost nothing on the minimum machine.
 - **[Proposed]** The server sends survey clues and marks to each player based on their own skill, so a low-skill player's client never receives what a high-skill one sees.
-- **[Open]** Ore inside voxels a client has received can be revealed by a modified client (an "x-ray" cheat). Possible answers range from accepting it, to sending ore materials only for nearby or exposed blocks.
+- **[Proposed]** Ore inside voxels a client has received can be revealed by a modified client (an "x-ray" cheat). The streaming recommendation in Section 4.10 answers it: the server withholds ore that has not been exposed and sends ore materials only for exposed or nearby blocks.
+
+- **[Decided]** (2026-10-14) There are several crucible types. Plain clay crucibles come first; graphite crucibles, which survive much higher heat, are a lucky later discovery (graphite in Section 4.9).
+
+### 4.9a Review of the geology and resource list (2026-10-14)
+
+Question from the project owner: do we have all the building blocks, with a safe way to add more resources later without hurting anything that exists?
+
+**What the first version of a tile can express.** Rock types (10): sediment, shale, limestone, coal, granite, slate, basalt, sandstone, marble, chalk. Province kinds (4): granite, basin, fold belt, volcanic. Feature types (7): intrusion, fault, basin, fold belt, volcanic vent, volcanic pipe, salt dome. Ore shapes (7): vein, lens, pipe, layer, halo, scatter, placer. Resources: IDs 1 to 31, of which 2 are retired (nickel, gemstone) and 2 are derived at runtime (bog iron, saltpeter). Flint pebbles on beaches are also derived at runtime, from the flint resource (ID 27) in chalk.
+
+- **[Decided]** (2026-10-14) New resources must be addable later without moving or removing anything that exists. The design for this is the resource pass (`WORLD_FORMAT_SPEC.md` Section 4a): a numbered, seeded step that only adds new records to tiles.
+- **[Proposed]** The only truly permanent part of the geology is the rock layer stack of each province, because it decides which rock voxels appear where. Everything else (ore bodies, features, sites) can be extended by passes. So the rock list is the one list to get right before tiles are kept. A new rock can still arrive later as a small lens or pocket (a rock body), but not as a new layer of a whole province.
+- **[Proposed]** The building blocks are enough. No new ore shape is needed now. A "blanket" shape (a thin surface layer of weathered rock, for ochre and similar) may be worth adding when pigments arrive, and a shape is only code, so it can be added later.
+
+**Possible gaps, each with the use that would justify it** (principle: every resource needs a use). None is added yet; each needs a yes or no.
+
+| Candidate | Where it would form | Use | Needed before tiles are kept? |
+|---|---|---|---|
+| Fireclay | Layer under coal seams | Furnace bricks and linings, middle-tier crucibles between clay and graphite (Section 5) | No, can be a pass |
+| Obsidian | Lens at volcanic vents and old lava flows | Early blades and arrowheads, a trade good | No, can be a pass |
+| Tuff | Volcanic province layers | Easy-to-cut stone for dugouts and cave dwellings (desert and cold regions, Section 4.5) | Yes if it should fill whole layers; no if it is small lenses |
+| Amber, jet | Amber in basins with coal forests; jet in coal seams | Jewellery, trade | No, can be a pass |
+| Ochre (iron earth), lapis lazuli, malachite and azurite | Weathered iron caps; marble contacts; copper oxidation zones | Pigments and dyes for paint, banners and cloth | No, when the dye system exists |
+| Cinnabar (mercury), arsenic minerals | Hot-spring and volcanic zones | Mercury for gold amalgam, pigment, poison | No, later |
+| Soapstone | Metamorphic belts | Cooking pots and hearths in the far north | No, later |
+| Quartz crystal, mica | Pegmatites and veins | Lenses, early window panes | No, later |
+| Fuller's earth, kaolin | Clay beds in basins | Cloth finishing, fine pottery | No, can be a pass |
+| Hot and mineral springs (a site type) | Volcanic and fault zones | Baths and healing at the temple, sulfur, a prospecting clue | No, but a new site type |
+
+- **[Proposed]** Things that need no tile data because they are worked out at runtime: sea salt (from coastal pans), well water (depth to the water table from moisture, height above the nearest water and soil, needed for the "established" town in Section 8.15), flint pebbles, bog iron, saltpeter.
+- **[Open]** Which candidates, if any, to add before tiles are kept. The recommendation is tuff only if whole-layer volcanic stone matters; everything else can come in a pass when its system is built.
+- **[Open]** Rock list completeness: whether gneiss or schist (hard metamorphic rock at fold belt roots), dolomite or quartzite are needed for stone variety. They have no gameplay use yet, so by the principle they stay out.
 
 ### 4.10 Tile downloads and the client cache
 
@@ -356,9 +385,9 @@ A tile should then take minutes, and `world_preview.gd` could show island panel 
 - **[Decided]** An abyssal trench runs through the middle of the world in an oblong shape, covering rows -1, 0 and 1 in the center columns.
 - **[Proposed]** Implemented as a fixed world feature in `world.json` (`central_trench`): an east-west oblong centered on tile (0,0), covering columns -2 to 2 and rows -1 to 1 (fifteen tiles), with its danger easing off over about 1.2 tiles beyond its edge. The tile plan keeps those fifteen tiles free of islands, and the danger map peaks inside it, deadliest at (0,0).
 - **[Proposed]** Trench floor about -2,800 m, just above the lethal heat depth (about -3,000 m from sea level, Section 4.5), so its floor caverns are the deepest reachable places in the world and anything deeper is deadly hot. The world bottom is -4,000 m.
-- **[Decided]** At the very center, (0,0), sits a huge island with a volcano peak and large jungle areas. It is the worst island in the whole game: the worst creatures, climate and storms, with castles and caves.
+- **[Decided]** At the very center, (0,0), sits a huge island with a volcano peak, a desert climate and scorched earth. It is the worst island in the whole game: the worst creatures, climate and storms, with castles and caves.
 - **[Decided]** The center island is fixed: it must come out exactly the same every time the world is generated.
-- **[Proposed]** Implemented as a fixed world feature in `world.json` (`center_island`): an oblong about 20 km east-west and 12 km north-south (about 164 km², roughly four times the largest ordinary island), volcano peak 1,900 m (the world top is 2,048 m), jungle flanks, rising out of the middle of the trench so the abyss is its moat. It reaches into tiles (-1,0) and (1,0), which needs the world-first change that lets islands cross tile borders (Section 4.12). Its size, shape, height and position come only from `world.json`, its seed from the world seed, and its tile is locked, so no random rule can change it. A test checks it is identical even when the random rules change.
+- **[Proposed]** Implemented as a fixed world feature in `world.json` (`center_island`): an oblong about 20 km east-west and 12 km north-south (about 164 km², roughly four times the largest ordinary island), volcano peak 1,900 m (the world top is 2,048 m), desert and scorched flanks, rising out of the middle of the trench so the abyss is its moat. It reaches into tiles (-1,0) and (1,0), which needs the world-first change that lets islands cross tile borders (Section 4.12). Its size, shape, height and position come only from `world.json`, its seed from the world seed, and its tile is locked, so no random rule can change it. A test checks it is identical even when the random rules change.
 - **[Decided]** The center island sits on the hottest row of the world, so it is a giant desert with desert features, not jungle, and scorched earth around the volcano where it has erupted in the past. (This replaces the earlier "large jungle areas".)
 - **[Decided]** An area is prepared for the fallen society's city from the far past.
 - **[Proposed]** Implemented in the world sketch: sand and red-rock desert with stepped mesas, dry wadis running off the volcano, salt flats in the lowland basins, sea cliffs, a blackened field of lava rock and ash on the upper slopes with old lava flows running down several sides, and the lava river from the crater breach. The fallen city gets a broad, stepped plateau (about 9 km², three low terraces rising to a citadel) on the northwest flank, away from the lava river and the old flows, with an old road (see below).
@@ -366,20 +395,23 @@ A tile should then take minutes, and `world_preview.gd` could show island panel 
 - **[Proposed]** Implemented in the world sketch: a loop around the island at low to middle height that picks the most level line as it goes, a short link from the city, and spurs down to six ruined shore villages (small flattened patches). The lava river and the old lava flows bury the road where they cross it, so it is broken in places. Spur paths to the castles, caves, labyrinths and boss lairs are added at the tile bake, when those sites are placed. Ruins, walls and buildings are placed at the tile bake, from the `ruined_city` entry in `world.json`.
 - **[Decided]** The center island is hostile terrain. It will have treacherous flora and fauna, and because it is huge it can hold a few caves, castles, labyrinths and bosses.
 - **[Decided]** It may have land enough for a town, but its incredibly harsh climate and terrors would destroy a town long before it got established.
+- **[Decided]** (2026-10-14) Working name: the **ultimate island**. The world setting key stays `center_island`. It is the most dangerous place on the whole map, and it holds the greatest riches and the greatest rewards.
+- **[Decided]** It is a desert island with a giant volcano. Its dangers include dragons and wyverns, mystical and mythical creatures, giant sandworms and scorpions, ruins, temples, caves and labyrinths, all of them hostile.
+- **[Decided]** The ruins, labyrinths and dragons mean treasure hoards and loot are scattered around it.
+- **[Decided]** Many fallen adventurers lie on the island with their gear still on them (see Section 6.1, remains). Some are placed with the world, some are players or NPCs who died there.
+- **[Proposed]** The placed remains are created by the server when the world starts, not baked into tiles, with gear tier chosen from the region's danger. They need nothing in the tile file.
 - **[Idea]** Over time, AI helps create dilapidated ruins and roads hinting at a fallen civilization, probably one that used strong magic and fell, leaving the island poisoned with many magics and terrible threats.
 - **[Proposed]** Implemented in the world sketch: jagged ridges and nine ravines radiating from the volcano, 180 m sea cliffs, swampy basins sunk behind the cliffs, and a lava river from the crater breach to the sea. Its share of flat town ground fell from 57 km² to small, broken patches. The island's entry in `world.json` reserves 3 castles, 2 labyrinths, 4 cave systems, 3 boss lairs, ruins and ruined roads, placed deterministically when the center tiles are baked, plus a lore note.
 - **[Proposed]** Ruins and roads authored with AI help become fixed data (sites and placed structures) once approved, so they are the same on every generation.
 - **[Idea]** Eventually the volcano is drilled out, filled with lava, and overflowing.
 - **[Proposed]** The crater is terrain, so its shape is permanent: a crater 1.4 km across and 250 m deep with a breach in the rim facing south-southeast, recorded now in `world.json` so the center tiles bake with it. The lava itself is not voxels. Like water, it is a surface level plus a glowing, moving shader, with heat, fire and damage handled by game rules. The overflow follows a lava river worked out at bake time with the same flow code used for rivers, from the breach down to the sea, where it can steam. Lava that cools could later harden into new basalt as a living-layer change.
 - **[Proposed]** Real trenches sit beside volcanic island arcs (the Mariana Trench and the Mariana Islands, for example). The world sketch could place a volcanic arc along one side of the trench, giving dramatic, dangerous islands with meaner creatures next to the abyss. Being in the desert row, the trench pairs the hottest seas with the most dangerous waters.
-- **[Decided]** The inner starter tiles are the easy zones. The outer edges are the maximum danger. The outer starter towns fall naturally into a medium zone.
 - **[Proposed]** Implemented as the danger map in `world.json` (curves by column and by row, plus the abyss peak) with five tiers: easy, moderate, medium, hard, deadly. Inner starters read about 0, outer starters about 0.44 (medium), tile (0,0) and the east-west and polar edges about 1. The east-west wrap seam is the dangerous edge; danger is continuous across it. A danger map image is drawn with the world plan (`plan/danger_map.png`).
 
 ---
 
 ## 5. Harvesting, tools and farming
 
-- **[Decided]** (2026-10-14) There are several crucible types. Plain clay crucibles come first; graphite crucibles, which survive much higher heat, are a lucky later discovery (graphite in Section 4.9).
 - **[Decided]** Everything is harvestable with strong enough tools: all trees, all plants (except basic grass), rocks and minerals.
 - **[Proposed]** A shared rule: every harvestable thing and every rock type has a hardness, every tool has a power, and a tool works if power is at least hardness. The project already has excavation resistance values for rock types and a resource list that can seed this.
 - **[Proposed]** Grass can be handled as small patches if needed, with harvested cells hidden by clients.
@@ -443,6 +475,11 @@ A tile should then take minutes, and `world_preview.gd` could show island panel 
 - **[Proposed]** Tie that risk to conditions the player can see and influence (poor food, a crowded house, no healer nearby, unsupervised dangerous work) plus a low baseline of childhood illness for every family, instead of a penalty for family size. Food, housing and land costs make a large family a real expense. Child death is emotionally heavy and can affect age ratings, so it may need gentle handling.
 - **[Decided]** A character who is killed with no way to recover, or who is too old or wounded to recover, dies. The player restarts as a new character.
 - **[Decided]** If the player restarts as their child, the child inherits everything that remains. The child's first quest may be to find the fallen parent, or hire local adventurers or services to retrieve the parent's gear.
+- **[Decided]** (2026-10-14) **Remains.** When a character dies they leave a two-dimensional image of themselves, a decayed body or skeleton with a backpack and all their gear still on it, instead of a tombstone or loot bag.
+- **[Decided]** Intelligent creatures may come along, pick up the gear and add it to their hoards. Otherwise it lies where it fell, waiting for someone to pick it up.
+- **[Decided]** In the desert, remains can be partly covered by sand, so they can be found but are not obvious.
+- **[Proposed]** The heir's retrieval quest (above) leads to these remains, so the mechanics line up: a creature that took the gear makes a hoard to raid.
+- **[Open]** How long remains last (see question 12 on dropped items), whether the image is a flat sprite that faces the player, how sand cover is worked out, which creatures collect gear, and whether NPC adventurers who die also leave remains.
 - **[Decided]** ARK-style unconsciousness before death. A downed character can be revived, carried or dragged to safety by party members.
 - **[Decided]** Characters age **slower** while their player is offline, but they stay in the world and remain vulnerable. Their body can fall unconscious, be burned or be killed while offline. Friends can pick them up, put them on a wagon, or drag them to cover.
 - **[Decided]** Characters and their families age slower while the player is offline, so the household ages together. The mismatch is between the household and the rest of the world, not within the family.
@@ -464,12 +501,12 @@ A tile should then take minutes, and `world_preview.gd` could show island panel 
 - **[Decided]** When the player comes back, duress instantly drops by half of what it is. After that it falls by 10 percent for each real day the player logs in (separate days), so it falls faster than it rose. Example: four months away is 40 percent. The player returns and it drops to 20 percent. Two logins on separate days clear the rest, and the crops grow and the NPC family works the farm or business at full strength again.
 - **[Proposed]** Duress maps directly onto the penalties: a duress of 20 percent means a 20 percent yield penalty, with illness chances for animals and family rising with it. At 100 percent (about ten months away) the dynasty is run into the ground and reverts to NPCs. It is resolved lazily from the last-seen time, so it costs nothing while nobody is looking.
 - **[Decided]** (2026-10-14) There is no separate free vacation notice. The month before duress starts is the built-in vacation: anyone who is away for up to a month is still within the grace period. Longer absences are covered by a paid block.
-- **[Idea]** **Duress block (real money, future).** A player who will be away for a long time, such as a migrant worker away for 48 days or three months at a time, could pay for a block of time that stops duress: for example $10 for three months, $18 for six months and $34 for a year (early examples, replaced by the per-month account-balance model below). The dynasty stays alive and keeps its place, the NPC family keeps working on the servers and adds to the world, and the player's account keeps bringing value. This fits the real-money ideas in Section 13.8.
+- **[Superseded]** **Duress block (real money, future).** A player who will be away for a long time, such as a migrant worker away for 48 days or three months at a time, could pay for a block of time that stops duress: for example $10 for three months, $18 for six months and $34 for a year (early examples, replaced by the per-month account-balance model below). The dynasty stays alive and keeps its place, the NPC family keeps working on the servers and adds to the world, and the player's account keeps bringing value. This fits the real-money ideas in Section 13.8.
 - **[Decided]** A block stops duress only. The character keeps aging (the dynasty clock still runs), so someone away long enough can age out. They then come back to their own funeral and choose a successor (Section 6).
 - **[Proposed]** The block is a convenience, not an advantage: it adds no bonus, and a player who is simply active never needs one. It follows the principle of never punishing a weekly rhythm.
 - **[Decided]** (2026-10-14) **Takeover by marriage.** When a dynasty falls into ruin naturally, the spouse becomes available to remarry. If they marry another player within a set time, that player may pay the town in game currency to cover the back taxes and any unpaid bills, and so claim the dynasty's properties and businesses. A player with enough money who finds a widow or widower that still has property can propose and take over that dynasty. What it costs depends on the dynasty's size, assets and liabilities. After the window ends, the town claims the assets instead (Section 8.6).
 - **[Decided]** A player who returns after their dynasty has completely fallen into ruin sees a screen telling them it fell into ruin and that they must start over.
-- **[Decided]** (2026-10-14) **Receivership.** A dynasty that has fallen into ruin is said to be **in receivership**. For a week or two (in game time) the family stays on the dynasty's land and property, and in that window other players can approach the spouse to discuss taking on the dynasty. The spouse and family are in dire need of help, so depending on their personalities, traits and how stressed they are, they are more than likely open to the idea.
+- **[Decided]** (2026-10-14) **Receivership.** A dynasty that has fallen into ruin is said to be **in receivership**. For a week or two (in real time) the family stays on the dynasty's land and property, and in that window other players can approach the spouse to discuss taking on the dynasty. The spouse and family are in dire need of help, so depending on their personalities, traits and how stressed they are, they are more than likely open to the idea.
 - **[Decided]** The conversation is the start of the relationship, and the memories the new player has with that spouse begin there (Section 8.8). How it goes is affected by the new player's reputation and affiliations (Section 13.3): a trusted player is welcomed, one with a bad name or an unwelcome allegiance is turned away or treated with suspicion.
 - **[Decided]** (2026-10-14) The receivership window is a week or two of **real** time, which gives the original player ample opportunity to come back.
 - **[Decided]** If the original player returns during receivership, they can take their dynasty back as their own successor. It comes back in a very bad state of disrepair and poverty, which gives them something to strive for. Duress drops drastically on return and keeps falling each day they log in (see the duress rules above).
@@ -486,10 +523,9 @@ A tile should then take minutes, and `world_preview.gd` could show island panel 
 - **[Decided]** (2026-10-14) Paying is not the only way to clear duress. When the first month ends, the player is notified and can clear it simply by logging in, with no payment. If they do not log in within the next 24 hours, the duress is applied. After that they get regular weekly updates showing how the dynasty is being affected, and at any point they can correct the situation by logging in (duress falls as described above) or by paying for protection.
 - **[Decided]** Protection time depends on the money in the account. As an example, protection costs $5 per month. Whenever additional duress is about to apply, the game checks the account and, if there is money, applies protection one month at a time and sends a notification. There is no limit on how long: it depends only on how much money the player has put in.
 - **[Decided]** The moment protection is bought or applied from the account, all current duress is erased.
-- **[Proposed]** The earlier example prices ($10 for three months and so on) are replaced by the per-month price, which is set by the market analysis (Section 13.8). Players can also buy a block directly from the web page instead of keeping a balance. A balance of real money, with purchases and refunds, is stored value, so check payment and consumer rules by country before building it, and decide whether unused balance can be refunded.
-- **[Proposed]** Real-money handling needs care before it is built: phone app stores generally require their own in-app purchase system for digital goods and take a fee, a prepaid balance with refunds is stored value and falls under payment and consumer rules that vary by country (Section 13.8), and the whole system should work without real money until then.
-- **[Open]** What happens when several players apply for the same dynasty, whether the money is held (escrowed) from the time of application, whether a failed payment at the end date passes the offer to the next applicant, whether a vacation notice is also offered for free, the notification channels and frequency, and the final prices for blocks.
-- **[Open]** (Settled above.) Whether time simply passes during short absences.
+- **[Proposed]** The earlier example prices ($10 for three months and so on) are replaced by the per-month price, which is set by the market analysis (Section 13.8). Phone app stores generally require their own in-app purchase system for digital goods and take a fee, and the whole system should work without real money until then. Players can also buy a block directly from the web page instead of keeping a balance. A balance of real money, with purchases and refunds, is stored value, so check payment and consumer rules by country before building it, and decide whether unused balance can be refunded.
+- **[Open]** What happens when several players apply for the same dynasty, whether the money is held (escrowed) from the time of application, whether a failed payment at the end date passes the offer to the next applicant, and the final prices for blocks. (A free vacation notice was decided against; notification channels are set above.)
+- **[Decided]** Short absences are covered by the free first month before duress starts (see above).
 - **[Open]** What happens when a character dies with no heir.
 - **[Open]** How permanent offline loss should be (can family members die, can buildings be destroyed).
 - **[Open]** Who can raid whom: only NPC bandits, monsters and sickness, or other players as well.
@@ -505,12 +541,12 @@ A tile should then take minutes, and `world_preview.gd` could show island panel 
 - **[Proposed]** Early on an heir leans on NPC employees and managers for skills they lack, and must learn the trade or hire for it.
 - **[Idea]** Children learn some skills from their parents as they grow, so when a parent dies the heir is a partially trained character already waiting. The project owner described this as a theory for now.
 - **[Open]** How large that head start is, and how it works for player heirs compared with NPC children.
-- **[Idea]** When a character dies, the player chooses which heir to become. An older child has better skills but less time left to play.
-- **[Idea]** A will lists the children with their skills and attributes and leaves the farm or the town to a chosen child. It should be set long before death and can be updated at any time.
+- **[Decided]** When a character retires or dies, the player chooses a successor from their children, whichever spouse they came from. The whole dynasty passes to that one successor (Section 6.7). An older child has better skills but less time left to play.
+- **[Idea]** The will names the successor and lists the children with their skills and attributes and leaves the farm or the town to a chosen child. It should be set long before death and can be updated at any time.
 - **[Proposed]** If a parent dies at 80, an heir aged 20 has about 11 months of real time left on average, one aged 35 about 8.6 months, and one aged 50 about 6 months.
-- **[Proposed]** Which character the player plays and who inherits the property could be separate choices. Playing one child while the will leaves the farm to another creates a sibling story.
-- **[Proposed]** A death without a will falls back on the town's inheritance law (eldest child, equal split, spouse first), set in the town control panel. NPC siblings with greed or resentment might contest a will, and a forged will would use the forgery system. Adult children who have moved away still appear on the list.
-- **[Open]** Whether the will decides who the player becomes, who owns the property, or both as separate choices.
+- **[Superseded]** Which character the player plays and who inherits the property could be separate choices. Playing one child while the will leaves the farm to another creates a sibling story.
+- **[Proposed]** A death without a will falls back on the town's inheritance law, set in the town control panel, which names the successor (by default the eldest child, otherwise the spouse). NPC siblings with greed or resentment might contest a will, and a forged will would use the forgery system. Adult children who have moved away still appear on the list.
+- **[Decided]** The person you play and the owner of the dynasty are the same: the successor.
 
 ### 6.3 Personal finances
 
@@ -562,6 +598,13 @@ A tile should then take minutes, and `world_preview.gd` could show island panel 
 - **[Decided]** Siblings who are not the successor stay in the household and age out over time, unless they leave (see below).
 - **[Decided]** A dynasty can have many living spouses at once. The aim is to grow a dynasty as in medieval times and plan against sickness and age. Spouses are people who help run the day-to-day work of the dynasty and household and help raise children.
 
+### 6.8 Non-successor siblings (to design later)
+
+- **[Idea]** A sibling outside the succession line decides for themselves, using their traits, skills, memory and preferences, whether to stay with the dynasty or break off and live their own life.
+- **[Idea]** A sibling might marry another player and join that player's dynasty, or take a local job (temple, inn) and become a town character who keeps a tie to the family.
+- **[Idea]** A sibling who leaves chooses between their own house and living at the homestead, where their income counts toward the dynasty's income.
+- **[Open]** All of this is deferred. It needs the NPC decision system (traits, preferences, language) and the household income model first.
+
 ### 6.9 Adoption and inclusion (to explore more)
 
 - **[Decided]** The game does not restrict who can be spouses. Same-gender couples, and any couple that cannot have children, are fully supported.
@@ -573,12 +616,6 @@ A tile should then take minutes, and `world_preview.gd` could show island panel 
 - **[Open]** How an adopted child's traits and background are generated, how the temple decides between applicants, and the age limit for a child to count as adoptable.
 - **[Open]** Whether other routes should exist (guardianship of a relative's child, fostering) and how they differ from adoption.
 
-### 6.8 Non-successor siblings (to design later)
-
-- **[Idea]** A sibling outside the succession line decides for themselves, using their traits, skills, memory and preferences, whether to stay with the dynasty or break off and live their own life.
-- **[Idea]** A sibling might marry another player and join that player's dynasty, or take a local job (temple, inn) and become a town character who keeps a tie to the family.
-- **[Idea]** A sibling who leaves chooses between their own house and living at the homestead, where their income counts toward the dynasty's income.
-- **[Open]** All of this is deferred. It needs the NPC decision system (traits, preferences, language) and the household income model first.
 
 ---
 
@@ -650,7 +687,6 @@ Assumptions: 70 game years of aging (15 to 85) over one real year with about 700
 
 - **[Decided]** Players found towns by placing a **town block** that they own. They can assign themselves as owner or leave governance to AI.
 - **[Decided]** Players start at a **starter town**. For now it is just a spawn point, where the initial developers build the first town. That town becomes the starting town for future players. (This replaces the earlier "no starting towns" decision.)
-- **[Idea]** Eventually 4 or more starter towns on starter tiles across the big map (Section 4.1).
 - **[Decided]** Players should spend years traveling and adventuring. Trade routes get established as towns are built.
 - **[Decided]** The original players build the original towns. Once the first town is started, AI NPCs are added to manage, design, build and extract resources.
 - **[Idea]** **Admin town warehouse.** Admins have a special menu that places an admin warehouse, a creative-mode style warehouse that supplies whatever is needed. Any NPC in that town can use it for building and for selling supplies, so the starter town's tradespeople always have basic supplies for sale and admin town building goes much faster. It might be a default for starter towns.
@@ -670,7 +706,7 @@ Assumptions: 70 game years of aging (15 to 85) over one real year with about 700
 - **[Decided]** The town block interface sets rules and settings: militia, elite guards, a town bank and town funds, tax rates and tax rules. Towns can build and improve defenses.
 - **[Decided]** Player-run towns can fall into ruin.
 - **[Proposed]** Ruins as landmarks that decay lazily over time.
-- **[Open]** Whether ruins last forever or fade.
+- **[Decided]** Ruins do not vanish. Buildings fall to rubble that stays until harvested, and roads stay (Section 8.13).
 - **[Decided]** Players can found their own town on a starter landmass as long as it is far enough from the starter town center. Large islands can hold several towns, which can build tension between neighboring towns.
 - **[Proposed]** Minimum distance from a starter town center to a new town block about 3 km, and between any two town blocks about 2 km, both tunable in `world.json`.
 - **[Decided]** Mines owned by the starter town have guards to dissuade players from stealing.
@@ -753,7 +789,6 @@ Assumptions: 70 game years of aging (15 to 85) over one real year with about 700
 - **[Proposed]** A legendary deed is one story record (who, what, where, when, the facts) plus, per NPC who has heard it, their version: how strongly they remember it, which details they changed and who told them. Spreading follows each NPC's social ties, a step every so often in game time, with talkative and social NPCs passing it on faster. Reputation from such a deed is permanent and does not need the teller to remember the details right. Travelers and wagons carry it on to other towns through the news system (Section 13.6). When a player asks an NPC about it, the language model voices that NPC's version, so different villagers tell it differently.
 - **[Proposed]** One way to do this: each kind of deed has a "recent count" that decays a little every day; a deed's value is divided by (1 + recent count), so a burst of the same deed quickly stops paying but the same deed once a day or so keeps paying almost full value. A steady habit over weeks (for example, a donation most days for a month) adds a lasting "known for good deeds" bonus. The temporary half of each gain fades linearly over seven in-game days; the numbers live in a tunable table.
 
-- **[Proposed]** A dynasty owning several businesses is several entries in the shared business structure (Section 13.4). The town gains from successful businesses through taxes, so a manager NPC offering contracts or loans to struggling businesses follows naturally.
 
 ### 8.7 Quests and pastimes
 
@@ -813,41 +848,44 @@ To be fleshed out when the first NPC is designed.
 - **[Proposed]** The clergy use the same NPC character, memory and conversation systems as other NPCs (Section 8.8). The conversation budget (Section 3) applies.
 - **[Open]** Whether a temple is built by the town, by players, or both, what it costs, and how many a town can have.
 
-### 8.12 Town spirit and local weather (new idea)
+### 8.12 Town spirit and local weather
 
-Checked: this has not been in the design before. Section 4 has weather from the world seed and clock (deterministic, same for everyone) and seasons in Section 7.3, but no town-level score and no link between how a town is doing and its weather.
 
 - **[Idea]** Each town has a score for how well it is doing. Working name: **town spirit**. It rises when the town is helped: pests and bandits cleared, sickness cured, medicine brought in or made, the hungry fed, a temple built. It falls when the town is plagued by vermin, goblins, bandits, sickness, blight or hunger.
 - **[Idea]** The score shapes local weather. A low-spirit town has thunderstorms, showers, sweltering heat and bitter cold. A high-spirit town has moderate weather with the right rain for crops, the right sun, and gentle breezes that keep windmills turning, plus butterflies and animals at play.
 - **[Idea]** A low score also acts like a depression on the people: it lowers NPC and player moods.
-- **[Proposed]** Climate stays in charge of the range. The baked climate and seasons set what is possible (a desert town never gets tropical rain). Town spirit only moves the weather between harsher and gentler within that range.
 - **[Proposed]** Weather stays deterministic and free of network traffic (Section 4). The score is one small number per town, sent to clients as part of the town's data, and each client adds it to the weather it already computes from the seed and clock.
 - **[Proposed]** Weather near a town border blends smoothly between towns and open country, so there are no walls of rain.
 - **[Proposed]** Safety valve, following "safe, kind, generous": a very low score must not trap people in a death spiral. Harsh weather is capped short of making farming impossible, and the worst towns get more help (the temple, rescue quests, outside aid) and not more punishment.
-- **[Decided]** Climate (position north to south) sets a base harshness, and town spirit modifies that base. Spirit does not decide the climate itself.
+- **[Decided]** Climate (position north to south) sets a base harshness and the range of weather that is possible (a desert town never gets tropical rain), and town spirit modifies that base, moving the weather between harsher and gentler inside the range. Spirit does not decide the climate itself.
 - **[Decided]** Spirit also affects people. Every NPC in a high-spirit town has a high spirit of their own, and one in a low-spirit town has a low one. It changes how they respond and react.
 - **[Decided]** If the weather is too bad to grow crops, the town buys food from other towns. The starter towns' administrative warehouse (Section 8.1) always supplies the bare minimum of food and necessities for a price, so a town can live on mining and manufacturing money while its farms recover.
-- **[Decided]** Spirit rises fast with good deeds and improvements and falls slowly. A new building, a new resident, a donation, a hunt delivered to the temple or inn, or a finished quest each add about 10 points. Each day with nobody doing anything takes about 1 point off.
+- **[Decided]** Spirit rises fast with good deeds and improvements and falls slowly. A new building, a new resident, a donation, a hunt delivered to the temple or inn, or a finished quest each add about 10 points. Each day with nobody doing anything takes about 1 point off. The decay clock is real days (see the Proposed note below).
 - **[Proposed]** The decay clock is real days, not game days. A game day is one real hour (Section 7.5), so one point per game day would be 24 points per real day and erase a 10-point deed in about 10 real hours, which does not suit a weekly player. One point per real day lets a deed last about 10 days.
-- **[Proposed]** Deeds by NPCs count too (NPC builders, a farmhand's harvest delivered to the granary), so a town of mostly NPCs does not sink just because the players are away.
 - **[Proposed]** Spirit sits on a fixed scale (for example 0 to 100) and decays toward a floor set by permanent things like a temple, no pests, and clean water, not toward zero.
 - **[Decided]** NPC deeds count only a little toward spirit. They can barely maintain it, and a random event that pulls spirit down (bandits attacking caravans, for example) outweighs what the NPCs add. NPCs alone can never keep spirit high. Without real people playing in the town (quests, farming, donations, building), spirit slowly falls.
 - **[Decided]** Permanent features raise the floor spirit can fall to: a temple, clean water, a town wall and a strong town guard. NPC upkeep of these can slow the fall, since they keep adding a little.
-- **[Decided]** Town spirit works like duress for a town. If a town owner's dynasty falls into receivership, the town is part of what can be taken over. If nobody takes it, it reverts to the server and an administrator owns it.
-- **[Decided]** A server-owned town goes on a list that players can apply to buy. The price depends on the town's size, its population, its wealth and how long it has been without an owner. It is treated like a normal business: the buyer inherits a low-spirit town and also gets its potential for great wealth.
-- **[Decided]** The exact price formula is worked out later, from the town's real value and its earning potential.
-- **[Decided]** A town's price falls the longer it stays server-owned, because its value falls as money runs out, buildings decay and people leave (Section 8.13).
-- **[Decided]** To apply, a buyer goes to the nearest town (which can be the town itself) and talks to the town manager, an NPC at this stage. The manager talks about the town's problems and says it is available if someone good enough can be found. The buyer negotiates with the manager. If the language model judges the negotiation to be in good faith, they reach an agreement. This must happen before the town falls apart.
 - **[Open]** The name of the score, the scale, the sizes of each deed, how far its weather reaches around the town, and how it interacts with crop yields and with mood details.
 
 ### 8.13 Town decline, ruin and deletion
+
+**Decline of a server-owned town**
 
 - **[Decided]** A town that stays server-owned loses spirit gradually and loses money, because it keeps paying for food and upkeep. When the money runs out the town falls into decay.
 - **[Decided]** Once decay reaches a certain stage, every building slowly falls down. NPCs die off, move to other towns, join bandit camps, become bandits, or find work elsewhere.
 - **[Decided]** Value drops as buildings decay and people leave. At the last moment of a town's life there is nothing but ruins and a town manager who has not yet left. A player can then buy the town for pennies on the dollar.
 - **[Decided]** A new owner pays to hire the town manager and new builders, chooses the order of the rebuild and approves each rebuild. The blueprints and the dilapidated buildings are still in place.
-- **[Decided]** Roads barely degrade (perhaps by a percentage) and never fully disappear. Buildings fall down and become rubble. Nothing erases itself completely.
+
+**Flagging for deletion**
+
+- **[Decided]** Flagging for deletion happens when nobody bought the town from its manager. At that moment the town manager leaves his post and the town's ledgers and ownership are gone.
 - **[Decided]** An administrator can flag an abandoned town for deletion, and the server administrators vote. A flagged town is not removed. Its buildings keep degrading at the regular speed, looking more worn and dilapidated until each collapses into rubble. Players can walk through a collapsing town and see that one used to be here.
+- **[Decided]** The manager becomes an ordinary NPC, available for others to hire. He keeps his skills and whatever money he held, and he lives on it until he finds work or falls into poverty over time.
+- **[Decided]** The town block stays. It is a small office at the centre of the town, and the town's circle of influence spreads from it. What is left is a dilapidated block, roads and rubble.
+- **[Decided]** The town block keeps the town's blueprints and its history: which buildings it had, its peak income, its farming and trade, its name and its previous owners.
+
+**Degradation and rubble**
+
 - **[Decided]** Nothing disappears outright. Degradation takes some material away from each building (see below) and the rest falls into rubble that stays until someone harvests it.
 - **[Decided]** The pile is called **rubble**. It is an item with models, and it is a chunk of the world.
 - **[Decided]** Every building has a bill of materials from its blueprint. As it ages without care it slowly loses material (hinges break, nails rust and weaken, untreated wood suffers sun rot). When it collapses, the rubble holds its bill of materials minus what degradation took.
@@ -855,22 +893,28 @@ Checked: this has not been in the design before. Section 4 has weather from the 
 - **[Decided]** Rubble is a salvage source. A player who reclaims a town can harvest the rubble for most of the rebuild materials without cutting thousands of trees.
 - **[Idea]** Salvage as a trade: businesses that go around clearing rubble from ruined towns and selling or reusing the materials. Harvested rubble is gone, and the harvester gets the contents minus degradation.
 - **[Idea]** Wood left in rubble could count as aged wood (and in some places petrified wood), a different material from fresh wood with its own uses and quality. Treated, maintained wood degrades much more slowly.
-- **[Proposed]** Rubble is stored as a pile of counted materials, not as individual pieces, so large ruined towns stay cheap to store and to draw on the minimum machine. Harvesting reduces the counts.
 - **[Idea]** Iron in rubble could slowly rust over a long time, giving less usable metal, while stone never changes. This is only a flavor idea and is left open.
+- **[Proposed]** Rubble is stored as a pile of counted materials, not as individual pieces, so large ruined towns stay cheap to store and to draw on the minimum machine. Harvesting reduces the counts.
+
+**Roads**
+
+- **[Decided]** Roads barely degrade (perhaps by a percentage) and never fully disappear. Buildings fall down and become rubble. Nothing erases itself completely.
 - **[Decided]** Roads have visible condition. In a maintained town a road looks pristine, with no grass growing through it. A road in disrepair looks different (grass, mud, ruts).
 - **[Decided]** Road condition has effects. A road in good repair lets you travel faster. A road in disrepair is muddier: it slows travel and makes travelers dirtier.
 - **[Proposed]** Road maintenance is paid by the town, so road condition follows the town's money and spirit. A road between towns could be maintained by whichever town owns the stretch, or by tolls (Section 13).
-- **[Open]** How many road condition levels exist, how dirt and cleanliness work for characters, and who owns and repairs roads between towns.
-- **[Decided]** Flagging for deletion happens when nobody bought the town from its manager. At that moment the town manager leaves his post and the town's ledgers and ownership are gone.
-- **[Decided]** The manager becomes an ordinary NPC, available for others to hire. He keeps his skills and whatever money he held, and he lives on it until he finds work or falls into poverty over time.
-- **[Decided]** The town block stays. It is a small office at the centre of the town, and the town's circle of influence spreads from it. What is left is a dilapidated block, roads and rubble.
-- **[Decided]** The town block keeps the town's blueprints and its history: which buildings it had, its peak income, its farming and trade, its name and its previous owners.
+
+**Claiming an abandoned town**
+
 - **[Decided]** Anyone can open an abandoned town block without claiming it and read that history before deciding.
 - **[Decided]** Anyone can claim an abandoned town block, and claiming costs nothing. Nothing stops a claim.
 - **[Decided]** A claimant uses blueprint mode to see every building of the old town as an outline, with what it was and the materials it needs. The rubble beneath each outline holds most of those materials. The owner harvests rubble piles and puts the materials into a blueprint, which rebuilds that building.
 - **[Decided]** The owner can hire a town manager, builders and guards when affordable, or cut trees and build alone or with friends, or turn the place into a small farming community until they can afford a manager. All of these paths are open.
 - **[Proposed]** The rebuild order is the owner's choice. A natural order is the town hall, then the temple and the well (which also raise the spirit floor, Section 8.12), then guards and the rest.
 - **[Decided]** No limit or cooldown on claiming abandoned blocks. Travel by foot, horse and ship is slow, so the distance itself is the limit.
+
+**Open**
+
+- **[Open]** How many road condition levels exist, how dirt and cleanliness work for characters, and who owns and repairs roads between towns.
 - **[Open]** How an abandoned block's circle of influence interacts with a new town block placed nearby, and whether a claimed town starts with the old spirit or a fresh low one.
 - **[Open]** How long each stage lasts, what the decay stages are called, the thresholds that trigger collapse, how many administrators must vote, and what happens to a town's records when it is deleted.
 
@@ -879,13 +923,13 @@ Checked: this has not been in the design before. Section 4 has weather from the 
 - **[Decided]** A town must have real things in it to be feasible. Someone who claims several towns and travels away needs managers and guards to hold each one.
 - **[Decided]** Anyone can make an offer to buy any town at any time by talking to its town manager. The manager sends a notification to the owner that an offer has been made, with a recommendation: for example, whether it is in good faith and what the manager thinks the town could fetch in currency or resources.
 - **[Decided]** The owner accepts, negotiates or declines. An accepted offer transfers the town at once. A good offer also gives owners a way to retire wealthy.
-- **[Decided]** A town without guards can be taken over by hostile means. If the owner declines the offer, the challenger can apply for a hostile takeover. The owner must get back to the town's circle of influence before the window ends to stop it, and the whole process then starts over.
-- **[Decided]** The window for an unguarded town depends on development: a bare town block about 2 hours, and with a town manager about 4 hours.
-- **[Decided]** A town with guards cannot be taken over hostilely. Offers can still be made, and the owner is free to refuse.
+- **[Decided]** A town that is not yet established (Section 8.15) can be taken over by hostile means. If the owner declines an offer, the challenger can apply for a hostile takeover. The owner must get back to the town's circle of influence before the window ends to stop it, and the whole process then starts over.
+- **[Decided]** The window depends on how developed the town is: a bare town block about 2 hours, and with a town manager about 4 hours.
+- **[Decided]** An established town cannot be taken over hostilely. Offers can still be made, and the owner is free to refuse.
 - **[Decided]** When a hostile takeover succeeds, the challenger pays the previous owner a fixed amount based on the town's value (or its rubble if it is a ruin).
 - **[Decided]** A town that does nothing productive but still has a manager, clean water, a temple and guards is an expense on the owner's other towns or dynasty, so hoarding idle towns costs money.
-- **[Superseded]** An earlier version had windows of about 24 hours for a town with a manager and guards and about 48 hours with a wall. Guards now give full protection from hostile takeover, so those windows are no longer needed.
-- **[Proposed]** "Guarded" means the town has become established (Section 8.15), not one hired guard. Guards who go unpaid leave, which removes the protection and ties it to the town's money.
+- **[Superseded]** An earlier version had windows of about 24 hours for a town with a manager and guards and about 48 hours with a wall. Established towns are now fully protected, so those windows are no longer needed.
+- **[Decided]** "Established" is what protects a town, not one hired guard (see Section 8.15 for what it includes). Guards who go unpaid leave, which removes the protection and ties it to the town's money.
 - **[Proposed]** The windows are in real time. How the owner hears of an offer or a challenge depends on whether the town has a manager (Section 8.15).
 - **[Open]** The minimum guard level, whether walls add anything now (for example a longer window for towns that are not yet fully guarded), and what happens to buildings, NPCs and debts when the owner changes.
 
@@ -893,16 +937,15 @@ Checked: this has not been in the design before. Section 4 has weather from the 
 
 - **[Decided]** A town with no manager has nobody to deliver word to the owner. There is no notification. If the owner is in the area, a visitor can see that and make an offer at the block. If the owner is away, a challenger simply puts in a claim, and if the owner does not return within the window (about 2 hours for a bare block), the challenger gets the town.
 - **[Decided]** The town stays on the former owner's ledger until the next time they visit it, because they still believe they own it. On arrival they find it is owned by someone else, and it drops from the ledger.
+- **[Decided]** This is a deliberate exception to the legibility principle (Section 3): not knowing about a loss until you return is part of the cost of leaving a town unmanaged. A town with a manager has no such gap, since the manager sends word.
 - **[Decided]** Without a manager, the owner must be physically at the town block, touching it, to change anything, give commands or read the town's books and interface.
 - **[Decided]** With a manager, the owner can control the town remotely through the manager, and the manager makes certain decisions while the owner is away. The owner sets which decisions the manager may make.
 - **[Decided]** The manager makes two kinds of decisions: ones he can make automatically, and ones where he must request approval or give the owner options to choose from.
-- **[Decided]** A manager can send word to the owner. Word must travel, so distance matters: local couriers on horseback, carrier pigeons on an island, ships over water. Each takes time.
 - **[Decided]** A town is unsafe, a gray area, until it has established its basics: guards, fresh water from a well, a temple and probably walls. Once established it is a PVE area.
 - **[Decided]** In a PVE area people can make offers and visit, but they cannot hurt anything. Nobody can raise an army and attack the town. Players who cross into a PVE area can no longer attack anyone.
 - **[Idea]** Later, designated parts of the map can be PVP areas. Players who build a town there and want warfare are welcome to, and the PVE protections do not apply.
-- **[Proposed]** Hostile takeover (Section 8.14) is possible only in a town that is not yet established. This replaces the simpler "has guards" rule: guards alone are not enough.
-- **[Proposed]** Word delivery uses a message system with distance delay and a carrier type (courier, pigeon, ship). Pigeons and couriers can fail or be intercepted. This is separate from the real-world email notifications for the player's account (Section 6), which exist for duress and receivership.
-- **[Decided]** In an established town, word can travel by carrier pigeon or by magic (this is a fantasy game). A town can have a pigeon tower or a wizard tower, run by a role that is the town's mail system (name to be chosen). A message goes to the nearest tower or mage, then onward to the recipient.
+- **[Proposed]** Word delivery uses a message system with distance delay and a carrier type (courier on horseback, pigeon, ship, later enchanted pigeon). Pigeons and couriers can fail or be intercepted. A manager can send word to the owner this way. This is separate from the real-world email notifications for the player's account (Section 6), which exist for duress and receivership.
+- **[Decided]** In an established town, word can travel by carrier pigeon or by magic (this is a fantasy game). A town can have a pigeon tower or a wizard tower, run by the pigeon master or the town mage (see the tiers below). A message goes to the nearest tower or mage, then onward to the recipient.
 - **[Decided]** Delay depends on distance: how long a pigeon flies, or how long magic takes to reach the nearest mage or tower and then the recipient.
 - **[Decided]** Matters of the whole dynasty use real-time messaging in the app. In-world mail and delay cover town business at a distance, such as an offer on a town.
 - **[Decided]** When someone makes an offer on a remotely controlled town, the owner is told that they will be notified in a stated number of hours or days, based on the delay for word to arrive. The offer then stands for a time.
@@ -917,6 +960,16 @@ Checked: this has not been in the design before. Section 4 has weather from the 
 - **[Open]** What a wizard tower costs, what the wizard's research actually unlocks, how strong the defence is against each threat, and the limits that keep one wizard from solving everything (for example a cost, a cool-down, or a single point of failure if the wizard is lost or hostile).
 - **[Open]** The cost of sending word, whether a standing offer needs a refresh or can be cancelled any time, and the delay formula.
 - **[Open]** Whether real-world app alerts also cover town challenges, what "established" requires exactly, what the manager can decide automatically, and where PVP areas are on the map.
+
+### 8.16 Buying a server-owned town
+
+- **[Decided]** Town spirit works like duress for a town. If a town owner's dynasty falls into receivership, the town is part of what can be taken over. If nobody takes it, it reverts to the server and an administrator owns it.
+- **[Decided]** A server-owned town goes on a list that players can apply to buy. The price depends on the town's size, its population, its wealth and how long it has been without an owner. It is treated like a normal business: the buyer inherits a low-spirit town and also gets its potential for great wealth.
+- **[Decided]** The exact price formula is worked out later, from the town's real value and its earning potential.
+- **[Decided]** A town's price falls the longer it stays server-owned, because its value falls as money runs out, buildings decay and people leave (Section 8.13).
+- **[Decided]** To apply, a buyer goes to the nearest town (which can be the town itself) and talks to the town manager, an NPC at this stage. The manager talks about the town's problems and says it is available if someone good enough can be found. The buyer negotiates with the manager. If the language model judges the negotiation to be in good faith, they reach an agreement. This must happen before the town falls apart.
+
+- **[Open]** The price formula, how competing applicants are handled, and what the manager's good-faith judgment looks at.
 
 ---
 
@@ -1031,8 +1084,8 @@ Checked: this has not been in the design before. Section 4 has weather from the 
 
 ### 11.4 Open questions
 
-- **[Open]** How NPC miners dig: physically carving tunnels (many terrain edits to store) or drawing down a deposit's remaining ore as a number and extending tunnels in stages (much cheaper, but each deposit needs a permanent ID and a starting amount in the baked data).
-- **[Open]** Whether ore deposits are finite or renew.
+- **[Open]** How NPC miners dig: physically carving tunnels (many terrain edits to store) or drawing down a deposit's remaining ore as a number and extending tunnels in stages (much cheaper). Ore bodies now have permanent IDs and tonnages (step 11), so the second option is possible.
+- **[Decided]** Ore deposits are finite and do not renew. Living resources renew and some river and surface deposits renew slowly (Section 5).
 - **[Open]** How big automation gets: a handful of linked machines per town, or Satisfactory-scale factories.
 - **[Open]** How far away simplified distant life should appear, for example whether players see it across valleys or only when closer.
 
@@ -1062,8 +1115,8 @@ Checked: this has not been in the design before. Section 4 has weather from the 
 - **[Proposed]** Danger tuning is a few adjustable numbers. Too deadly collapses trade, too safe makes guards pointless.
 - **[Proposed]** Threat pressure must not be able to wipe out an absent player's supply chain in one night.
 - **[Open]** Whether threats are fixed lairs that respawn slowly, roaming groups, or both.
-- **[Open]** Whether a ruined town can become a bandit stronghold.
-- **[Open]** Whether a failing town can recover (bounties, adventurer help, aid from neighbors) or can fall for good. A robbed town has less money for guards and gets robbed more, which is a death spiral unless something breaks it.
+- **[Proposed]** Displaced NPCs may become bandits or join camps (Sections 8.3 and 8.13). Whether a ruin itself becomes a stronghold is left to the threats system.
+- **[Decided]** A failing town can recover: spirit rises with good deeds, the temple, clean water and aid, help comes from the starter towns' warehouse, and a town that cannot recover is sold or abandoned and can be rebuilt by someone else (Sections 8.12 to 8.16).
 
 ---
 
@@ -1124,6 +1177,7 @@ Checked: this has not been in the design before. Section 4 has weather from the 
 - **[Proposed]** A business that cannot pay shuts down. Its NPC staff lose their jobs and become displaced, which feeds the migration and rogue-NPC systems.
 - **[Proposed]** The manager takes the reputation hit from a loss and might lose the job.
 - **[Open]** Whether every workplace really does share the same business structure.
+- **[Proposed]** A dynasty owning several businesses is several entries in the shared business structure (Section 13.4). The town gains from successful businesses through taxes, so a manager NPC offering contracts or loans to struggling businesses follows naturally.
 
 ### 13.5 Banking, letters of credit and forgery
 
@@ -1166,67 +1220,49 @@ Checked: this has not been in the design before. Section 4 has weather from the 
   - in-game currency, which also lets someone who wants to be rich buy a lot of it, and the owner does not mind. For example, a player could spend a couple of hundred dollars and use it to take over someone else's dynasty in receivership (Section 6), then spend more to repair it and inherit its tools, weapons, animals and family.
 - **[Decided]** Paid duress blocks (Section 6) are a purchase of the same kind. Their prices are not set yet: they will come from a market analysis later, looking at what players will accept. For comparison, many players refuse $15 a month for games like World of Warcraft, but $5 a month or $60 a year would be much less of a dealbreaker.
 - **[Proposed]** The earlier ideas below (buying the game and a monthly subscription, a subscription minimum, earning subscription credits) are superseded by this decision, and are kept as options if the model changes. Because every player, free ones included, costs real money to host (server time, and the language model for NPC conversation), the free tier needs a per-player budget for the expensive parts (Section 3), and the revenue needs checking against that cost before launch. Selling currency still needs legal advice and care about gambling, consumer protection and payment rules.
-- **[Idea]** People buy the game for a reasonable price and pay a monthly subscription, roughly the same as World of Warcraft's.
-- **[Idea]** Players can earn credits in game toward the subscription. A town earns credits for its owner and management team, more with more population and trade, encouraging people to run and grow towns.
-- **[Idea]** The subscription can be reduced to a minimum of about $5 a month. Whether players could earn the whole subscription was left undecided.
-- **[Idea]** NPC-run shops sell cosmetics with real money: skins, costumes, event items and other things that do not much affect play.
-- **[Idea]** Players can buy in-game currency with real money. The project owner considers this fair because it is their own disposable income, while players who play all day earn credits in game. During testing the admins may buy credits too.
+- **[Superseded]** People buy the game for a reasonable price and pay a monthly subscription, roughly the same as World of Warcraft's.
+- **[Superseded]** Players can earn credits in game toward the subscription. A town earns credits for its owner and management team, more with more population and trade, encouraging people to run and grow towns.
+- **[Superseded]** The subscription can be reduced to a minimum of about $5 a month. Whether players could earn the whole subscription was left undecided.
 - **[Decided]** Gambling (including wagering at the pub) is flagged for a future discussion, to be revisited when that work starts.
-- **[Proposed]** Credits created by the game cost real subscription revenue and give cheaters a cash incentive (fake trade between their own towns, extra accounts, bots), so they need strong anti-cheat, such as counting only trade with real, distinct players, plus caps.
-- **[Proposed]** A token model avoids that: one player buys a token with real money and sells it for in-game currency, and another player uses currency to pay the subscription. EVE Online (PLEX) and World of Warcraft (WoW Token) work this way. The developer is paid either way and no new money enters the economy. Running a successful town would earn currency that buys tokens.
-- **[Proposed]** Keep a subscription minimum, since every player costs real money to host, including the language model.
+- **[Superseded]** Credits created by the game cost real subscription revenue and give cheaters a cash incentive (fake trade between their own towns, extra accounts, bots), so they need strong anti-cheat, such as counting only trade with real, distinct players, plus caps.
+- **[Superseded]** A token model avoids that: one player buys a token with real money and sells it for in-game currency, and another player uses currency to pay the subscription. EVE Online (PLEX) and World of Warcraft (WoW Token) work this way. The developer is paid either way and no new money enters the economy. Running a successful town would earn currency that buys tokens.
+- **[Superseded]** Keep a subscription minimum, since every player costs real money to host, including the language model.
 - **[Proposed]** Currency bought from the game buys real power in a player-driven economy (land, guards, armies) and adds inflation. Caps or the token model reduce both.
 - **[Proposed]** Selling currency, and especially combining it with gambling, can fall under gambling, consumer protection and payment processor rules that vary by country. Get legal advice before any real money is involved.
 - **[Proposed]** Until then, design the economy to work without real money. The whole-number ledger already makes a token model easy to add later.
-- **[Idea]** (2026-10-14) Paid duress blocks (Section 6): a player pays for a block of time, such as $10 for three months, that stops duress while they are away.
-- **[Open]** Whether earned credits come from the game or from other players through tokens, and whether a player can earn the whole subscription.
+- **[Superseded]** Whether earned credits come from the game or from other players through tokens, and whether a player can earn the whole subscription.
 
 ---
 
 ## 14. Current code status
 
-From a read-through of the repository on 2026-10-11 (Godot 4.7, GDScript, about 29,600 lines, Voxel Tools).
+Updated 2026-10-14. The new generator lives in `src/worldgen/` on branch `claude/generator-v2` (GDScript, run headless in Godot). The plan and its progress log are in `GENERATOR_V2_PLAN.md`.
 
-**Already matches the vision**
+**Built and tested (798 checks pass)**
 
-- Deterministic per-tile generation with permanent tile coordinates.
-- Resumable baking that skips finalized region files.
-- Server-owned region catalog, complete-rectangle validation and wrap mapping.
-- Region manifest with per-region revision, and canonical position mapping for persistent objects.
-- A geology and hydrology pipeline: tectonics, folds, faults, strata, caves, minerals, erosion, rivers, lakes and surficial deposits.
-- A baked, read-only base world with a note that player changes will live in separate save data.
-- Ocean is classified at sea level without baking water voxels.
+- World settings, SHA-256 seeds, append-only data tables (biomes, soils, rocks, resources, water classes, site types, feature types, province kinds).
+- The world sketch and a seamless 160 m elevation map of the whole world, the fixed features (central trench, ultimate island), the danger map, and the derived tile plan (312 islands, 227 tiles with land).
+- For one tile (the starter tile (3,4)): the 8 m height map, erosion, water (rivers, lakes), climate, biome, soil and fertility, geology (provinces, features, ore bodies, placers), and natural caves, dormant lairs, harbor and starter spawn. About 2 minutes in total.
+- Preview images for each stage.
 
 **Not built yet**
 
-- Server-to-client streaming. The client reads region files locally. The server sends a welcome message and a manifest that the client does not act on yet.
-- Any layer for player changes (the client voxel stream's save function does nothing).
-- A "grow the world to this rectangle" command. Tiles are queued by hand.
-- Any vegetation, climate, biome or soil system.
-- An island properties panel, irregular coasts, or multiple islands per tile. The coast model produces one large rounded-square island per tile.
-- Lair sites, or any structure placement.
-- Players, NPCs, towns, building, law, economy, machinery, or any gameplay systems.
+- The tile file writer and reader (step 13), the runtime terrain generator (step 14), runtime flora, server streaming and the client cache, the layer for player changes.
+- Rivers that continue across tile edges, a final edge-matching pass, and wrap-seamless detail and climate noise (`WORLD_FORMAT_SPEC.md` Section 4b).
+- Any game system: players, NPCs, towns, building, law, economy, machinery.
 
-**Measured**
-
-- Baking one tile takes about 15 to 16 hours (reported by the project owner). Where the time goes has not been profiled. Section 4.8 proposes changing what the bake produces.
+**Old generator.** The earlier volumetric pipeline (10 by 10 region tiles, about 15 to 16 hours per tile) is still in the repository and untouched until the new one replaces it (plan step 19). `README.md`, `GENERATION_GUIDE.md`, `PROJECT_ROADMAP.md` and `CHANGES_THIS_PASS.md` describe it.
 
 **Not checked**
 
-- Total disk size of one baked tile.
-- How the current client performs on the minimum machine (Section 3).
-
-- Whether individual mineral deposits have stable identities, which NPC miners drawing down a deposit would need (Section 11.4).
+- The size of a baked tile on disk (the estimate is about 52 MB per tile before compression) and how the client performs on the minimum machine (Section 3).
 - Whether river flow data could be queried at runtime to power water wheels.
 
 **Current values**
 
-- World height: -4,000 m to +2,048 m, sea level 0.
-- 7 LODs, 16-voxel data blocks, 1,024 m regions, 10 by 10 regions per tile (the new generator uses 15 by 15).
-- Rock types: sediment, shale, limestone, coal, granite. Resources: coal, iron, copper, tin, lead, zinc, nickel, silver, gold, salt, sulfur, clay, gypsum, graphite, gemstone, peat.
+- World height -4,000 m to +2,048 m, sea level 0, 1 m voxels, 15,360 m tiles (15 by 15 regions of 1,024 m), 8 m map grid, 21 by 21 tiles.
+- Rock types (10): sediment, shale, limestone, coal, granite, slate, basalt, sandstone, marble, chalk. Resources: IDs 1 to 31 (Section 4.9a).
 - Default server capacity: 32 clients.
-
-**Compatibility warning.** The server rejects any world whose region files come from different generator versions. Once the generator gains islands, climate, soil, lair sites or structures, tiles baked earlier will need rebaking. Until the generator's feature set settles, tiles baked now should be treated as test tiles.
 
 ---
 
@@ -1242,7 +1278,7 @@ World and bake
 6. How far should altitude effects reach, given the 2,048 m ceiling?
 7. What limits diving, and can the deep ocean floor be dug?
 8. Is mining the terrain itself in the first version?
-9. Are ore deposits finite or renewing, and do NPC miners carve tunnels or draw down a deposit's amount?
+9. Settled: ore is finite and does not renew; living and some river and surface resources do (Section 5). Still open: do NPC miners carve tunnels or draw down a deposit's amount? (Section 11.4)
 10. How big should automation get, and how far away should simplified distant life appear?
 
 Time and persistence
@@ -1260,8 +1296,8 @@ Social, law and threats
 18. Are locks and security soft barriers?
 19. How far does justice spread, and are there limits to news?
 20. Can NPCs cross the ocean themselves?
-21. Do ruins last forever or decay, and can a ruined town become a bandit stronghold?
-22. Are threats fixed lairs, roaming groups, or both, and can a failing town recover?
+21. Settled: ruins stay as rubble and roads stay (Section 8.13). Still open: can a ruined town become a bandit stronghold?
+22. Are threats fixed lairs, roaming groups, or both? (A failing town can recover: settled in Sections 8.12 to 8.16.)
 
 Towns, economy and platform
 
@@ -1287,14 +1323,14 @@ Rescue and starting conditions
 Farming, families, time and money
 
 35. Do crop times follow realistic fractions of the year or get tuned for gameplay, and are hands paid by share, by wage, or the employer's choice? (Section 5)
-36. Does the will decide who the player becomes, who owns the property, or both? Do long absences get a special rule? (Section 6)
+36. Settled: the chosen successor inherits the whole dynasty, and the person you play is the owner (Sections 6.2 and 6.7). Long absences are covered by duress (Section 6).
 37. 60 or 72 minutes per game day, and how dangerous is night? (Section 7.5)
 38. Do earned subscription credits come from the game or from other players through tokens, and can a player earn the whole subscription? (Section 13.8) Gambling is flagged for a later discussion.
 
 Map growth
 
-39. What size is the first live world (one tile for testing, or several before players arrive), and which side grows first? (Section 4.7)
-40. Partly settled: three zones with transition rows, desert on row 0 (Section 4.2). Still open: the planned final world height, which sets how many tiles wide each zone is. It decides what gets baked into every tile, so it must be settled before baking tiles to keep.
+39. Settled: the world is 21 by 21 from the start, with placeholder ocean tiles. Still open: how many tiles to build before players arrive, besides the starter tiles.
+40. Settled: three zones with transition rows, desert on row 0, 21 rows tall (Section 4.1).
 
 Generator, hardware and hosting
 
@@ -1311,31 +1347,30 @@ Generator, hardware and hosting
 51. How far does polar sea ice reach, and can ships cross the pole in summer? (Section 4.2)
 52. Should island size classes grow with the bigger tiles? Island areas stayed the same when tiles grew from 10.24 km to 15.36 km, so land fell from about 11% to about 6% of the world. (Section 4.1)
 53. How does the client handle positions far from the origin: floating origin or a double-precision build? (Section 4.10)
-54. Settled: the world-first sketch is approved (2026-10-13), replacing per-tile dice and the shared deep-ocean tile edge? (Section 4.12)
+54. Settled: the world-first sketch was approved (2026-10-13), replacing per-tile dice and the shared deep-ocean tile edge (Section 4.12).
 55. Settled: inner starters easy, outer starters medium, edges deadly (Section 4.13). Still open: how many tiers players see, and whether the curves need tuning once creatures exist.
 56. Settled: starter landmass inner 50 to 100 km², outer 70 to 150 km². Still open: town spacing 3 km from a starter town, 2 km between towns? (Sections 4.1, 8.1)
 57. How PvP works for players who want it, given the starter areas are PvE (Section 9.0).
 58. How long before a vacated home is abandoned, and what happens to its contents (Section 8.6).
-63. Duress and absence (Section 6): all settled except the per-month protection price (market analysis, Section 13.8), refund rules for a real-money balance, what a player gets back after their dynasty became NPCs, which events count as urgent versus weekly, and payment handling.
 59. Does fallow land (farmland left unplanted) slowly recover fertility by itself, enabling medieval-style crop rotation, or only through lime and manure? To discuss later. (Section 5)
 60. Admin town buying: settled that budgets are money per day, the log shows bought and manifested goods, and prices come from the merchant's daily review. Still open: whether the daily cap is split per resource, per selling town or per player, and whether it buys only from connected towns (Section 8.1).
 61. Factions, political groups and guilds: none exist yet; ideas to come later. For now the town a player lives in acts as their group (Sections 8.6 and 13.3).
 62. Resource renewal and mine support (Sections 5 and 11.2): how fast each semi-renewable resource refills, mine abandonment time, opening sizes that need support, support types and whether collapses can hurt miners.
+63. Duress and absence (Section 6): all settled except the per-month protection price (market analysis, Section 13.8), refund rules for a real-money balance, what a player gets back after their dynasty became NPCs, which events count as urgent versus weekly, and payment handling.
 
 ---
 
 ## 16. Candidate work, in dependency order
 
-Nothing here is committed. It is a suggested ordering based on what affects baked data first, since baked changes force rebakes.
+Nothing here is committed. It follows `GENERATOR_V2_PLAN.md`, ordered by what affects baked data first, since baked changes force rebakes.
 
-1. Decide the bake layering (Section 4.8, questions 41 to 43), measure where the current bake spends its time, and test the current client on the minimum machine.
-2. Settle the open questions that change baked data: climate scale, seasons, world bottom, what the bake stores about soil and flora, whether deposits get stable IDs, how dormant lair sites are scored and placed, and whether to bake coarse land-suitability layers for the town planner (Section 8.4).
-3. Generate the first playable island tile, then the island properties panel, irregular coasts, small islets and open-ocean tiles, then grow the rectangle one side at a time (Section 4.7).
-4. Climate layer and soil or surface materials.
-5. Flora placement lists written at bake time.
-6. Natural structures: caves, mineshafts, labyrinths, ruins, dormant lair sites. Slate and any new rock types.
-7. A planner that takes a target rectangle and bakes only the missing tiles.
-8. Server-to-client region streaming and a layer for player changes.
-9. Runtime systems on top of that foundation: harvesting, building and blueprints, characters and aging, NPCs, law and recognition, fire, towns, then production, threats, trade and banking.
+1. Done: world settings, tables, world sketch, tile plan, and for one tile the height, erosion, water, climate, geology and sites (plan steps 2 to 12).
+2. Settle the permanent parts of the tile file (`WORLD_FORMAT_SPEC.md` Section 4): the ID scheme, the geology list (Section 4.9a), the resource pass design, the edge rule.
+3. Tile file writer and reader (step 13).
+4. Rivers across tile edges, overlap margins, wrap-seamless noise, and the final edge-matching pass (Section 4b of the spec).
+5. Runtime terrain generator from the maps (step 14), then runtime flora (step 15).
+6. Server streaming, the client cache and the layer for player changes (step 16), then the minimum machine test (step 17).
+7. Build the inner starter tiles and their neighborhoods (step 18), then retire the old pipeline (step 19).
+8. Game systems on top of that foundation: harvesting, building and blueprints, characters and aging, NPCs, towns, law and recognition, fire, then production, threats, trade and banking. A small first playable slice has to be chosen first.
 
-Growing the generator first keeps the foundation solid. Most gameplay systems in Sections 5 to 13 live in the server layer and can be added later without rebaking terrain. They are also numerous enough that a small first playable slice will need to be chosen before building them.
+Most gameplay systems in Sections 5 to 13 live in the server layer and can be added later without rebaking terrain.

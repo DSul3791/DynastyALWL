@@ -27,7 +27,6 @@ var voxel_size_m: float = 1.0
 var world_bottom_m: int = -4000
 var world_top_m: int = 2048
 var sea_level_m: int = 0
-var ocean_edge_floor_m: int = -2000
 
 # Climate
 var equator_tile_row: int = 0
@@ -88,9 +87,6 @@ func _apply(data: Dictionary) -> void:
 	world_bottom_m = int(geometry.get("world_bottom_m", world_bottom_m))
 	world_top_m = int(geometry.get("world_top_m", world_top_m))
 	sea_level_m = int(geometry.get("sea_level_m", sea_level_m))
-	ocean_edge_floor_m = int(
-		geometry.get("ocean_edge_floor_m", ocean_edge_floor_m)
-	)
 
 	var climate: Dictionary = data.get("climate", {})
 	equator_tile_row = int(climate.get("equator_tile_row", 0))
@@ -141,11 +137,6 @@ func validate() -> Array:
 
 	if world_bottom_m >= world_top_m:
 		problems.append("world_bottom_m must be below world_top_m")
-
-	if ocean_edge_floor_m <= world_bottom_m or ocean_edge_floor_m >= sea_level_m:
-		problems.append(
-			"ocean_edge_floor_m must be between world_bottom_m and sea level"
-		)
 
 	if equator_tile_row < min_tile or equator_tile_row > get_max_tile_z():
 		problems.append("equator_tile_row is outside the world")

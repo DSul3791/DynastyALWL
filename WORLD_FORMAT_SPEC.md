@@ -1,6 +1,6 @@
 # World Format Specification (draft)
 
-Draft of 2026-10-12. Nothing here is implemented. It defines the permanent parts of the world: the world settings, what each tile stores, and the tile matrix that plans the whole map. The reasoning behind it is in `DESIGN_IDEAS.md`, Sections 4.1 to 4.11.
+Draft of 2026-10-12, revised 2026-10-14. The generator is built and tested through step 12 (sites) on branch `claude/generator-v2`; the tile file writer and reader (step 13) are not yet written. This file defines the permanent parts of the world: the world settings, what each tile stores, and the plan of the whole map. The reasoning behind it is in `DESIGN_IDEAS.md`, Sections 4.1 to 4.11.
 
 Every item is **[Proposed]** unless marked otherwise. Items marked **Permanent** cannot change once tiles are kept without rebaking or breaking saved worlds. Items marked **Tunable** can change at any time.
 
@@ -43,7 +43,6 @@ One file for the whole world, fixed before the first tile is kept.
 
 - Tile size, region size, map spacing (8 m) and map samples per side (1,921, see Section 4).
 - World extent and wrap, vertical range, sea level.
-- **Ocean edge floor depth.** Every tile edge converges to this depth. The current code uses the world bottom plus 1 m (about -3,999 m), so the open sea is 4 km deep with almost no rock beneath it. **[Decided]** -2,000 m, which keeps 2 km of rock under the deep sea and leaves room for shelves, seamounts and wrecks within diving reach near islands. Players will dive on wrecks and fish with spears, as in Atlas.
 
 **Climate (Permanent, because biomes are baked from it)**
 
@@ -66,7 +65,7 @@ One file for the whole world, fixed before the first tile is kept.
 **Fixed world features (Permanent once tiles are kept)**
 
 - Hand-placed features the generator must honor, such as `central_trench`: an abyssal trench covering columns -2 to 2 and rows -1 to 1, floor about -2,800 m, kept free of ordinary islands.
-- `center_island`: the fixed landmark island at (0,0), about 20 by 12 km (about 164 km²), volcano peak 1,900 m, jungle flanks, rising from the middle of the trench and reaching into tiles (-1,0) and (1,0). Every value comes from `world.json` and its seed from the world seed, so it is identical on every generation.
+- `center_island`: the fixed landmark island at (0,0), about 20 by 12 km (about 164 km²), volcano peak 1,900 m, desert and scorched lava slopes (the "ultimate island", Section 4.13 of the design document), rising from the middle of the trench and reaching into tiles (-1,0) and (1,0). Every value comes from `world.json` and its seed from the world seed, so it is identical on every generation.
 
 **Danger map (Tunable, except the terrain the world sketch derives from it)**
 
@@ -108,7 +107,7 @@ One file per tile: `tiles/tile_<x>_<z>.tile`, written as `.partial` and renamed 
 
 **Maps (8 m grid, 1,921 by 1,921 samples)**
 
-Samples sit on grid points from the tile's west edge to its east edge inclusive, so a tile can be interpolated without reading its neighbors. The outer ring always holds the standard ocean edge values, so neighboring tiles agree automatically.
+Samples sit on grid points from the tile's west edge to its east edge inclusive, so a tile can be interpolated without reading its neighbors. Neighboring tiles hold the same values on their shared edge. They agree because both compute the edge from the same world-position data (the world elevation map, world-aligned noise, world-grid provinces, the world river network), never from a fixed edge value. Section 4b describes the final pass that checks every shared edge.
 
 | Map | Type | Encoding | Used for |
 |---|---|---|---|
@@ -124,7 +123,7 @@ Samples sit on grid points from the tile's west edge to its east edge inclusive,
 | Cover depth | uint8 | raw × 0.25 m (0 to 63.75 m) | Loose material above bedrock |
 | Layer offset | int16 | raw × 0.1 m (±3,276 m) | Bends rock layers for folds |
 
-About 13 bytes per sample, about 48 MB per tile before compression. Mostly-ocean tiles compress to a small fraction of that.
+About 14 bytes per sample (2+2+1+1+1+1+1+1+1+1+2), so about 52 MB per tile before compression (1,921 × 1,921 = 3,690,241 samples). Mostly-ocean tiles compress to a small fraction of that. **[Decided]** There is no size limit on tile files, because we do not yet know what they will need to hold. Efficiency is a standing goal: do not add a map or list without a use, store derived data only when computing it again is too slow, and measure the size of every new section when it is added.
 
 **Low-resolution maps**
 
@@ -141,17 +140,50 @@ Stored as compressed JSON during development for readability. They can move to a
   - Volcanic vents and pipes: center, radius, depth.
   - Salt domes: center, radius, top depth.
 - **Ore bodies:** ID, resource, shape (vein, lens, pipe, layer or halo) with its dimensions, grade, total amount, and the feature it formed from. First version (step 11) adds a `scatter` shape (gems spread thinly through a band of one layer across a province: geodes in basalt, garnets in slate; stores province, depth below datum, band thickness and density) and a `placer` shape (a line of points along a river with width and thickness) for gold and tin washed out of bodies that reach the surface. Layer bodies name their province and repeat with its cycle.
-- **IDs (first version):** features and ore bodies belong to the province cell they formed in. Their home tile is the tile holding that cell, and the local ID is cell index × 100 + n (features 1 to 49, ore 51 to 99). Placers belong to the tile they lie in (local IDs from 9001). A feature listed by two tiles is the identical record in both.
+- **IDs. [Proposed, recommended]** A record's identity is its **home tile and local ID**, written `x,z#local` (for example `3,4#101`). The tile revision is **not** part of identity: it is a cache marker that rises when a tile is replaced, re-encoded or extended by a resource pass, and records keep their IDs through all of that, so an NPC miner's record against an ore body never breaks. An ID is unique within its kind of record (province, feature, ore body, site), not across kinds.
+  - Features and ore bodies belong to the province cell they formed in. Their home tile is the tile holding that cell, and the local ID is cell index × 100 + n (features 1 to 49, ore 51 to 99). A feature listed by two tiles is the identical record in both.
+  - Placers belong to the tile they lie in, with local IDs from 9001. Sites use local IDs from 8001.
+  - Records added later by a resource pass (Section 4a) take local IDs from `pass number × 10,000 + n`, so they can never collide with the first-version ranges. Local IDs are never reused, including after a record is mined out or removed.
 - **Sites:** ID, kind (cave system, mineshaft, labyrinth, dormant lair, landmark, harbor, town site), position, size, seed and kind-specific settings. A cave system stores its entrances, bounds and seed. The runtime generator carves it. First version (step 12): a cave system stores its kind (karst, lava_tube, sea_cave, rock_shelter), a skeleton (nodes [x, y, z, width, height] with y at the passage center; segments [from, to, type] with type passage, squeeze, shaft, water or ledge), chambers (node, radius, height, features such as cavern or chasm with chasm depth and bridge width), entrance and skylight node lists, creature dens (node, where, tier), the ore bodies it exposes, bounds, length, depth and a seed for carving detail. Caves stay inside their tile. Dormant lairs point at a cave and chamber node with a score and a state. Site local IDs start at 8001.
 - **Starter data (starter tiles only):** spawn point and the suggested town block position.
 
-A global ID is (tile x, tile z, tile revision, local ID). Ore body IDs are what NPC miners draw down.
+A record's global ID is its home tile and local ID (see IDs above). Ore body IDs are what NPC miners draw down.
 
 **Not stored in the tile**
 
 - Voxels, rock layers, caves, ore voxels, surface clues: derived by the runtime generator from the maps and lists.
 - Flora: derived from biome, moisture and the flora seed. Only removals are stored, in the living layer. **[Decided]**
 - Fauna, weather, seasons, sea ice: runtime.
+
+## 4a. Adding resources later (resource passes)
+
+**[Proposed]** The world must be able to gain new ores and resources after tiles are kept, without moving or removing anything that exists. The pieces that make this possible are already in place: append-only ID tables, ore bodies built from a few shapes (vein, lens, pipe, layer, halo, scatter, placer) placed by how deposits really form, and a container made of independent, checksummed sections.
+
+A **resource pass** is a numbered, versioned generator step run against the finished world:
+
+- **Inputs, read only:** the tile's maps (height, water, flow, biome, soil, province, cover), its provinces, features, existing ore bodies and sites, and the pass's own rules file.
+- **Output:** one new section in the tile, `ore_bodies_pass_<n>`, holding new records. Existing sections, records and maps are never edited or removed. The tile's header lists which passes it carries, and the revision rises so clients refresh.
+- **Determinism:** the pass's seed is SHA-256 of the world seed, the pass number and the home tile, so running it again gives the same result, and the order tiles are processed in does not matter.
+- **Safety rules:** a pass adds only inside solid rock and never changes caves, sites, maps or earlier ore bodies. Nothing a player has built or dug is touched, because player changes live in a separate server layer. Ore that appears in rock a player has already tunnelled past is simply not present in the air they dug.
+- **Tool:** `run_resource_pass` takes a pass number and a list of tiles (or all), writes each tile to a temporary file and renames it when complete, as the baker does. It can be run on unkept tiles first and on live tiles later.
+- **Resources that are derived at runtime** (flint pebbles, bog iron, saltpeter, sea salt) need no pass at all. Adding a new derived resource is a table entry and a rule.
+
+Anything that changes where existing ore sits is not a pass. It is a new generator version, which only applies to tiles that have not been kept.
+
+## 4b. Rivers and edge matching
+
+**[Decided]** (2026-10-14) Rivers must continue across tile edges. A river that ends at a tile edge is a bug. The same holds for every other feature: mountain ranges continue as mountain ranges on both sides of an edge, plains as plains, and water as water.
+
+**[Proposed]** How to get there:
+
+1. **World river network.** Work out rivers once for the whole world, wrap-aware, on the 160 m world elevation map (flow accumulation, outlets to the sea or to lakes). The result is a list of river paths with discharge. Each tile reads from it the points where each river crosses each of its four edges (position and discharge).
+2. **Tile rivers follow the network.** The 8 m tile water step carves each channel so it enters and leaves at the stored crossing points with the stored discharge, and only fills in local detail between them. Two neighbors then agree on every crossing by construction.
+3. **Overlap margin.** Steps that look at neighboring ground (erosion, drainage, biome cells, flow) work on the tile plus a margin of about 1 km that is computed from the world-position data, then crop to the tile. The tile edge then sees the same inputs as its neighbor. This replaces the present erosion fade at tile edges.
+4. **Final edge-matching pass.** After the tiles of a region of the map are built, a tool compares every pair of neighboring tiles along their shared edge and reports differences in height, water, water class, flow, biome, soil, province and river crossings. Small differences are a failure to fix in the generator, not something to patch. The pass runs on the whole map before tiles are kept (step 18), and again when a placeholder tile is replaced.
+5. **Tests.** The existing check that height and geology match on a shared edge extends to every map and to the river crossings.
+6. **Wrap seam.** The same rules apply across the world wrap at x or z = ±10. Detail and climate noise must be made wrap-seamless first (known gap).
+
+Rivers that cross into a placeholder ocean tile simply reach the sea, since the world river network ends in the ocean there.
 
 ## 5. Server-side stores (not part of the tile)
 
@@ -161,7 +193,7 @@ A global ID is (tile x, tile z, tile revision, local ID). Ore body IDs are what 
 
 ## 5b. World sketch and elevation map (`plan/world_sketch.json`)
 
-**[Decided]** The world is planned world-first (approved 2026-10-13). Islands come from large undersea features, not per-tile dice, and the shared deep-ocean tile edge is dropped: neighboring tiles agree because they read the same world elevation map and world-coordinate detail. The tile matrix in Section 6 becomes a result of the sketch (still to be rebuilt).
+**[Decided]** The world is planned world-first (approved 2026-10-13). Islands come from large undersea features, not per-tile dice, and the shared deep-ocean tile edge is dropped: neighboring tiles agree because they read the same world elevation map and world-coordinate detail. The tile plan (Section 6) is derived from the sketch.
 
 **Sketch features** (rules in `plan/sketch_rules.json`, Tunable until tiles are kept):
 
@@ -177,76 +209,9 @@ A global ID is (tile x, tile z, tile revision, local ID). Ore body IDs are what 
 
 Each feature is a list of mounts (volcano, seamount, atoll or starter island: position, size, rotation, peak height, profile, cliff height, shallow fringe width) plus, for shelves and the ridge, their outline or path. Danger shapes them: taller, steeper peaks, cliffs and narrow shallows where it is dangerous; gentle shores near starters. Ordinary peaks are capped at 1,450 m so the center volcano (rim 1,900 m) is the tallest. A feature marked `"locked": true` in a saved sketch is kept as it is when the sketch is rebuilt.
 
-**World elevation map:** one map for the whole world, 160 m per sample (2,016 by 2,016), heights in meters from sea level. Built from the sketch in about 17 seconds; noise fields are seamless, so the map joins across both wrap seams (checked by a test). The center island is a broad jungle shield plus a steep cone whose crater rim sits at 1,900 m, with a 250 m deep crater holding lava and a breach toward the south-southeast. The tile bake will add fine detail on top of this map.
+**World elevation map:** one map for the whole world, 160 m per sample (2,016 by 2,016), heights in meters from sea level. Built from the sketch in about 17 seconds; noise fields are seamless, so the map joins across both wrap seams (checked by a test). The center island is a broad shield plus a steep cone whose crater rim sits at 1,900 m, with a 250 m deep crater holding lava and a breach toward the south-southeast. The tile bake will add fine detail on top of this map.
 
-## 6. Tile matrix (`plan/tile_matrix.json`)
-
-> **Superseded (2026-10-13).** The per-tile island dice below belong to the old randomizer. The tile plan is now derived from the world sketch (Section 6b). The old matrix files stay only for reference.
-
-The plan for all 441 tiles, read and written by the randomizer and the island properties panel.
-
-**Each cell**
-
-| Field | Notes |
-|---|---|
-| x, z | Tile coordinate |
-| Kind | Ocean, islands or starter |
-| Status | Placeholder, planned, baked or live |
-| Locked | If true, the randomizer never changes this cell |
-| Revision | Matches the tile file |
-| Islands | A list (below) |
-| Geology hints | Optional: granite, basin, volcanic, fold belt |
-| Notes | Free text |
-
-**Each island**
-
-| Field | Notes |
-|---|---|
-| ID | Local to the tile |
-| Center | Meters from the tile center (x east, z south) |
-| Size class and target area | See below |
-| Shape | Round, elongated, crescent, ragged, or a cluster for archipelagos |
-| Character | Mountainous, rolling, flat, volcanic, archipelago |
-| Peak height | Target highest point |
-| Rotation | Direction of the long axis |
-| Seed | Stored explicitly so it is visible and editable |
-
-**Size classes**
-
-| Class | Area |
-|---|---|
-| Islet | Under 1 km² |
-| Small | 1 to 5 km² |
-| Medium | 5 to 15 km² |
-| Large | 15 to 30 km² |
-| Great | 30 to 45 km² |
-
-The largest class changed from the first draft (50 to 75 km²). Every tile edge must drop to the shared deep-ocean floor, so an island keeps about 1 km of margin from the tile edge. A single island then cannot cover more than about 45 km². For scale, the project owner remembers the whole ARK map, ocean included, at about 48 km².
-
-**Randomizer rules (starting values, Tunable)**
-
-- **[Decided] Two kinds of island tile, chosen at random for variety:**
-  - **Peers:** one to five islands of similar size (small or medium).
-  - **Main island with satellites:** one large or great island, with a chance of a few islets or small islands just off its coast.
-- **Tile odds (starting values):** ocean 25%, peers 40%, main island with satellites 35%.
-- **Peers:** 2 islands 35%, 3 islands 30%, 1 island 15%, 4 islands 12%, 5 islands 8%. Sizes vary within about a factor of two of each other.
-- **Satellites:** 0 satellites 30%, 1 satellite 30%, 2 satellites 20%, 3 satellites 12%, 4 satellites 8%. Each is an islet (70%) or small island (30%), placed 0.3 to 3 km off the main island's shore.
-- **One great island per tile at most.** Total land per tile is capped at about 75 km².
-- **Margins.** Islands keep a minimum distance from the tile edge for the shared ocean edge, and from each other (for example 1 km of open water), except within an archipelago cluster.
-- **No visible grid.** Island centers are jittered and sizes mixed, so neighboring tiles do not line up.
-- **Climate.** Arctic rows have fewer, smaller, glaciated islands and more sea ice. The desert row leans toward flatter and volcanic islands.
-- **World-scale patterns.** The matrix sees the whole world, so it can create patterns no single tile could: island chains that curve across several tiles, a volcanic arc, a few large open seas with no islands for epic crossings.
-- **Starter tiles.** The eight starter tiles are locked and hand-tuned: one medium-to-large, rolling, town-friendly island with flat land, a river and a natural harbor. Inner set at (-3,4), (3,4), (-3,-4), (3,-4); outer set at (-6,6), (6,6), (-6,-6), (6,-6).
-- **Starter neighborhoods.** Within one or two tiles of each starter, guarantee medium islands that between them offer stone, wood, clay, iron, copper, tin and coal, reachable by an early boat.
-- **Resource fairness.** Every climate zone gets every key resource somewhere, steered through geology hints.
-- **Reproducible.** Every random pick derives from the world seed and the tile coordinate, so rerunning the randomizer gives the same result unless the rules change. Locked cells are always preserved.
-
-**Outputs**
-
-- A whole-world preview image showing every tile's islands, climate zones and starter tiles.
-- A summary: land area per zone, island counts per size class, and resource coverage per zone.
-
-## 6b. Tile plan (`plan/tile_plan.json`, `plan/island_list.json`)
+## 6. Tile plan (`plan/tile_plan.json`, `plan/island_list.json`)
 
 Derived from the sketch elevation map by `tools/build_tile_plan.gd`. Same container as the old matrix (`format_version` 1, `meta`, `cells`), `meta.source` is `sketch`. Locked and baked cells are kept on rebuild.
 
@@ -271,16 +236,13 @@ Derived from the sketch elevation map by `tools/build_tile_plan.gd`. Same contai
 
 ## 7. Workflow
 
-1. Fix `world.json`: identity seed, ocean edge depth, climate curve.
-2. Run the randomizer to fill the matrix. Review the preview, hand-edit, and lock what you like.
-3. Every tile starts as a placeholder (no file, so it is ocean).
-4. Bake the four inner starter tiles first, then their neighborhoods, then outward.
-5. Each baked tile goes live at a server restart, replacing its placeholder.
+1. Fix `world.json`: identity seed, climate curve, fixed world features, danger map.
+2. Build the world sketch and elevation map, then derive the tile plan. Review the preview images and tune `plan/sketch_rules.json`.
+3. A tile with no file is an ocean placeholder. Only tiles that hold land need a file (227 of 441 in the current plan).
+4. Build the four inner starter tiles first, then their neighborhoods, then outward.
+5. Run the edge-matching pass (Section 4b) over every built tile and its neighbors before any tile is kept.
+6. Each built tile goes live at a server restart, replacing its placeholder. Later additions go in through resource passes (Section 4a) or, for terrain, new generator versions on tiles not yet kept.
 
-## 8. Decisions needed
+## 8. Settled
 
-Settled: flora is derived at runtime, the map grid is 8 m, the ocean edge is -2,000 m, and island tiles are either peers or a main island with satellites.
-
-Also settled: the master seed is the phrase `This1is2the3greatest4game5of6all7time`, turned into a number with SHA-256 (574716103), and each tile's seed is SHA-256 of the master seed and the tile coordinate (branch `claude/world-seed`).
-
-1. The odds above are starting values to tune with the preview image.
+Flora is derived at runtime, the map grid is 8 m, the master seed is the phrase `This1is2the3greatest4game5of6all7time` turned into a number with SHA-256 (574716103), and each tile's seed is SHA-256 of the master seed and the tile coordinate (branch `claude/world-seed`). There is no shared deep-ocean tile edge: neighboring tiles agree because they read the same world data. The tile matrix randomizer of the first draft was replaced by the world sketch and tile plan.
