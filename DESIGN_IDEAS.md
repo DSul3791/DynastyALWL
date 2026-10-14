@@ -188,6 +188,10 @@ Note: climate depends only on position, so each tile can compute it without look
 - **[Proposed]** At bake time the generator scores natural hiding spots (caves, ruins, ridgelines, forest edges: defensible and out of sight) and places **dormant lair sites**: empty caves and camps that nobody lives in yet. At runtime the server only changes a site's state ("site 14 is held by a goblin horde"). That needs no terrain editing and no client download.
 - **[Idea]** People in extreme cold may build underground bases and grow things that need no light, such as mushrooms.
 - **[Proposed]** Cave generation should include some large, usable caverns and not only narrow tunnels, so underground bases and farms are possible.
+- **[Decided]** (2026-10-13) Caves come with inherent danger. They house creatures such as bears, snakes and bats. On starter islands these are low level, but still dangerous for a new player with no skills or gear; danger rises with the region's danger level (Section 4.13).
+- **[Decided]** Caves have natural hazards: steep slopes, thin natural rock bridges over drops, and tight squeezes just big enough to get through that slow the player down, sometimes with a cliff or other danger waiting on the far side.
+- **[Decided]** Cave delving pays off: large amounts of limestone to mine, and ore deposits exposed in cave walls.
+- **[Proposed]** How the generator supports this: each cave system is stored as a skeleton of passages (points with a width and height) whose segments are tagged (passage, chamber, squeeze, rock bridge, ledge, pit or shaft, water), plus entrances and creature dens. Dens carry a creature tier from the regional danger and the cave depth, and the server fills them at runtime. Passages are routed to pass through nearby ore bodies so ore shows in the walls, and limestone caves are cut in limestone, so the rock itself is the reward. Suggested density on a starter tile: 10 to 20 cave systems plus a few small rock shelters.
 
 ### 4.5 Depth, heat and altitude
 
