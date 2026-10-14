@@ -847,16 +847,21 @@ Checked: this has not been in the design before. Section 4 has weather from the 
 - **[Decided]** Value drops as buildings decay and people leave. At the last moment of a town's life there is nothing but ruins and a town manager who has not yet left. A player can then buy the town for pennies on the dollar.
 - **[Decided]** A new owner pays to hire the town manager and new builders, chooses the order of the rebuild and approves each rebuild. The blueprints and the dilapidated buildings are still in place.
 - **[Decided]** Roads barely degrade (perhaps by a percentage) and never fully disappear. Buildings fall down and become rubble. Nothing erases itself completely.
-- **[Decided]** An administrator can flag an abandoned town for deletion, and the server administrators vote on it. If approved, the town enters a final stage of further decay and slowly disappears into the ground.
-- **[Decided]** In that final stage, wood and other biodegradable materials vanish and feed the ground. Stone and other non-biodegradable materials never disappear. If a foundation took 100 pieces of stone, those 100 pieces remain as rubble mounds that other characters can harvest, unless someone tears them down and removes them first.
-- **[Decided]** The pile is called **rubble**. It is an item with models, and it is a chunk of the world. A collapsed building leaves one rubble pile holding what did not degrade: for example 100 stone, 200 to 300 wood, 600 nails, and any iron or other lasting goods.
-- **[Decided]** Rubble contents are not all permanent. Wood in a pile still rots in the final deletion stage (above), while stone and metal stay. Whatever remains can be harvested.
+- **[Decided]** An administrator can flag an abandoned town for deletion, and the server administrators vote. A flagged town is not removed. Its buildings keep degrading at the regular speed, looking more worn and dilapidated until each collapses into rubble. Players can walk through a collapsing town and see that one used to be here.
+- **[Decided]** Nothing disappears outright. Degradation takes some material away from each building (see below) and the rest falls into rubble that stays until someone harvests it.
+- **[Decided]** The pile is called **rubble**. It is an item with models, and it is a chunk of the world.
+- **[Decided]** Every building has a bill of materials from its blueprint. As it ages without care it slowly loses material (hinges break, nails rust and weaken, untreated wood suffers sun rot). When it collapses, the rubble holds its bill of materials minus what degradation took.
+- **[Decided]** Degradation is partial. Wood loses at most about 50 percent, not all of it. Stone loses nothing. Metal loses some. Example: a blueprint of 1000 stone, 2000 wood, 100 iron and 200 slate leaves roughly 1000 stone, about 1000 wood, most of the iron and all of the slate.
+- **[Decided]** Rubble is a salvage source. A player who reclaims a town can harvest the rubble for most of the rebuild materials without cutting thousands of trees.
+- **[Idea]** Salvage as a trade: businesses that go around clearing rubble from ruined towns and selling or reusing the materials. Harvested rubble is gone, and the harvester gets the contents minus degradation.
+- **[Idea]** Wood left in rubble could count as aged wood (and in some places petrified wood), a different material from fresh wood with its own uses and quality. Treated, maintained wood degrades much more slowly.
 - **[Proposed]** Rubble is stored as a pile of counted materials, not as individual pieces, so large ruined towns stay cheap to store and to draw on the minimum machine. Harvesting reduces the counts.
 - **[Idea]** Iron in rubble could slowly rust over a long time, giving less usable metal, while stone never changes. This is only a flavor idea and is left open.
 - **[Decided]** Roads have visible condition. In a maintained town a road looks pristine, with no grass growing through it. A road in disrepair looks different (grass, mud, ruts).
 - **[Decided]** Road condition has effects. A road in good repair lets you travel faster. A road in disrepair is muddier: it slows travel and makes travelers dirtier.
 - **[Proposed]** Road maintenance is paid by the town, so road condition follows the town's money and spirit. A road between towns could be maintained by whichever town owns the stretch, or by tolls (Section 13).
 - **[Open]** How many road condition levels exist, how dirt and cleanliness work for characters, and who owns and repairs roads between towns.
+- **[Open]** What flagging for deletion actually changes besides the continued decay (for example it ends ownership and the NPC simulation, and whether the land can later be claimed for a new town once the rubble is gone).
 - **[Open]** How long each stage lasts, what the decay stages are called, the thresholds that trigger collapse, how many administrators must vote, and what happens to a town's records when it is deleted.
 
 ---
