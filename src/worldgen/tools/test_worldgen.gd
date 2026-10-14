@@ -11,6 +11,7 @@ const RandomizerScript := preload("res://src/worldgen/matrix/matrix_randomizer.g
 const TileMatrixScript := preload("res://src/worldgen/matrix/tile_matrix.gd")
 const TilePlanScript := preload("res://src/worldgen/plan/tile_plan.gd")
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
+const TileSitesScript := preload("res://src/worldgen/tile/tile_sites.gd")
 const TileGeologyScript := preload("res://src/worldgen/tile/tile_geology.gd")
 const TileClimateScript := preload("res://src/worldgen/tile/tile_climate.gd")
 const TileWaterScript := preload("res://src/worldgen/tile/tile_water.gd")
@@ -1170,10 +1171,10 @@ func _test_tile_water(settings, elevation, sketch: Dictionary) -> void:
 	again.build(height, tile, starter)
 	_check(again.heights == water.heights and again.water_class == water.water_class, "the tile water is reproducible")
 
-	_test_tile_climate(settings, tile_rules, tile, water, elevation, sketch)
+	_test_tile_climate(settings, tile_rules, tile, water, elevation, sketch, starter)
 
 
-func _test_tile_climate(settings, tile_rules: Dictionary, tile: Vector2i, water, elevation, sketch: Dictionary) -> void:
+func _test_tile_climate(settings, tile_rules: Dictionary, tile: Vector2i, water, elevation, sketch: Dictionary, starter: Dictionary) -> void:
 	var tables = TableSetScript.new()
 	_check(tables.load_directory().is_empty(), "tables load for the climate step")
 	var climate = TileClimateScript.new()
@@ -1229,10 +1230,11 @@ func _test_tile_climate(settings, tile_rules: Dictionary, tile: Vector2i, water,
 	_check(again.biome == climate.biome and again.soil == climate.soil and again.fertility == climate.fertility
 		and again.moisture == climate.moisture, "the climate maps are reproducible")
 
-	_test_tile_geology(settings, tile_rules, tile, water, climate, elevation, sketch, tables)
+	var geology = _test_tile_geology(settings, tile_rules, tile, water, climate, elevation, sketch, tables)
+	_test_tile_sites(settings, tile_rules, tile, water, climate, geology, tables, starter)
 
 
-func _test_tile_geology(settings, tile_rules: Dictionary, tile: Vector2i, water, climate, elevation, sketch: Dictionary, tables) -> void:
+func _test_tile_geology(settings, tile_rules: Dictionary, tile: Vector2i, water, climate, elevation, sketch: Dictionary, tables):
 	var geology = TileGeologyScript.new()
 	geology.setup(settings, tile_rules, tables, elevation, sketch)
 	var started: int = Time.get_ticks_msec()
@@ -1359,6 +1361,126 @@ func _test_tile_geology(settings, tile_rules: Dictionary, tile: Vector2i, water,
 				differing += 1
 
 	_check(shared > 0 and differing == 0, "shared features and ore bodies are identical in both tiles (%d shared)" % shared)
+	return geology
+
+
+func _test_tile_sites(settings, tile_rules: Dictionary, tile: Vector2i, water, climate, geology, tables, starter: Dictionary) -> void:
+	var mouth: Vector2 = Vector2(NAN, NAN)
+
+	if water.starter_path.size() > 0:
+		mouth = Vector2(float(tile.x), float(tile.y)) * float(settings.tile_size_m) \
+			+ water.starter_path[water.starter_path.size() - 1] * float(settings.map_spacing_m)
+
+	var sites = TileSitesScript.new()
+	sites.setup(settings, tile_rules, tables)
+	var started: int = Time.get_ticks_msec()
+	sites.build(tile, water.heights, water.water_class, climate.soil, geology, starter, mouth)
+	print("tile sites built in %d ms: %d caves, %d lairs" % [Time.get_ticks_msec() - started, sites.caves.size(), sites.lairs.size()])
+	var rules: Dictionary = tile_rules["sites"]
+	var samples: int = water.samples
+	var spacing: float = float(settings.map_spacing_m)
+	var origin: Vector2 = Vector2(float(tile.x), float(tile.y)) * float(settings.tile_size_m)
+	var margin: float = float(rules["edge_margin_m"]) - 1.0
+	var tile_m: float = float(settings.tile_size_m)
+	var karst: int = 0
+	var outside: int = 0
+	var thin_roof: int = 0
+	var bad_links: int = 0
+	var bad_tiers: int = 0
+	var exposed: int = 0
+	var unknown_ore: int = 0
+	var near_town: int = 0
+	var segment_types: Array = ["passage", "squeeze", "shaft", "water", "ledge"]
+	var ore_ids: Dictionary = {}
+	var ids: Dictionary = {}
+	var duplicate_ids: int = 0
+
+	for ore in geology.ore_bodies:
+		ore_ids[ore["id"]] = true
+		ids[ore["id"]] = true
+
+	for feature in geology.features:
+		ids[feature["id"]] = true
+
+	var keep_clear: Array = []
+
+	for key in ["spawn_point", "town_block"]:
+		if sites.starter.has(key):
+			keep_clear.append(Vector2(float(sites.starter[key][0]), float(sites.starter[key][2])))
+
+	for cave in sites.caves:
+		if ids.has(cave["id"]):
+			duplicate_ids += 1
+
+		ids[cave["id"]] = true
+
+		if str(cave["cave_kind"]) == "karst":
+			karst += 1
+
+		var nodes: Array = cave["nodes"]
+
+		for n in range(nodes.size()):
+			var node: Array = nodes[n]
+			var p: Vector2 = Vector2(float(node[0]), float(node[2]))
+
+			if p.x < origin.x + margin or p.y < origin.y + margin or p.x > origin.x + tile_m - margin or p.y > origin.y + tile_m - margin:
+				outside += 1
+				continue
+
+			if cave["entrances"].has(n):
+				for spot in keep_clear:
+					if p.distance_to(spot) < float(rules["town_clear_m"]):
+						near_town += 1
+
+				continue
+
+			var index: int = int(round((p.y - origin.y) / spacing)) * samples + int(round((p.x - origin.x) / spacing))
+
+			if float(node[1]) + 0.5 * float(node[4]) > water.heights[index] - 1.0:
+				thin_roof += 1
+
+		for segment in cave["segments"]:
+			if int(segment[0]) >= nodes.size() or int(segment[1]) >= nodes.size() or not segment_types.has(str(segment[2])):
+				bad_links += 1
+
+		for den in cave["dens"]:
+			if int(den["tier"]) < 1 or int(den["tier"]) > 2:
+				bad_tiers += 1
+
+		if not cave["exposes"].is_empty():
+			exposed += 1
+
+		for ore_id in cave["exposes"]:
+			if not ore_ids.has(ore_id):
+				unknown_ore += 1
+
+	_check(sites.caves.size() >= 8 and karst >= 5, "the starter tile has caves (%d, %d limestone)" % [sites.caves.size(), karst])
+	_check(outside == 0, "cave nodes stay inside the tile margin")
+	_check(thin_roof == 0, "cave passages stay under the ground away from entrances (%d too shallow)" % thin_roof)
+	_check(bad_links == 0, "cave segments join real nodes with known types")
+	_check(bad_tiers == 0, "starter tile dens are low tier (1 or 2)")
+	_check(exposed > 0 and unknown_ore == 0, "some caves expose ore bodies (%d)" % exposed)
+	_check(near_town == 0, "no cave opens near the starter spawn or town block")
+	_check(duplicate_ids == 0, "site ids do not clash with geology ids")
+	_check(sites.starter.has("spawn_point") and sites.starter.has("town_block") and not sites.harbor.is_empty(),
+		"the starter tile has a spawn point, town block and harbor")
+
+	var lair_ok: bool = true
+	var cave_ids: Dictionary = {}
+
+	for cave in sites.caves:
+		cave_ids[cave["id"]] = true
+
+	for lair in sites.lairs:
+		lair_ok = lair_ok and cave_ids.has(lair["cave"])
+
+	_check(not sites.lairs.is_empty() and lair_ok, "dormant lair sites point at caves")
+
+	var again = TileSitesScript.new()
+	again.setup(settings, tile_rules, tables)
+	again.build(tile, water.heights, water.water_class, climate.soil, geology, starter, mouth)
+	_check(str(again.caves) == str(sites.caves) and str(again.lairs) == str(sites.lairs) and str(again.starter) == str(sites.starter),
+		"sites are reproducible")
 
 
 func _test_tile_erosion(settings, elevation) -> void:

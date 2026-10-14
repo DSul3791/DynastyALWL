@@ -240,3 +240,94 @@ static func _ring(image: Image, center: Vector2, radius: float, color: Color) ->
 
 		if x >= 0 and y >= 0 and x < image.get_width() and y < image.get_height():
 			image.set_pixel(x, y, color)
+
+
+const SEGMENT_COLORS := {
+	"squeeze": Color(1.0, 0.9, 0.1), "shaft": Color(1.0, 0.2, 0.9), "water": Color(0.2, 0.6, 1.0),
+	"ledge": Color(1.0, 0.5, 0.1),
+}
+
+
+# Caves and other sites over a grey relief. Passages shade from pale (just
+# under the ground) to deep violet (100 m or more below it); squeezes are
+# yellow, drops magenta, flooded passages blue, ledges orange. Chambers are
+# cyan rings (red if they have a chasm and rock bridge), entrances green,
+# dens red, lair sites white rings, the spawn a white cross and the town
+# block a white square.
+static func render_sites(height, sites) -> Image:
+	var samples: int = height.samples
+	var spacing: float = height.spacing_m
+	var image: Image = Image.create(samples, samples, false, Image.FORMAT_RGB8)
+	var light: Vector3 = Vector3(-1.0, 1.3, -1.0).normalized()
+
+	for j in range(samples):
+		for i in range(samples):
+			var index: int = j * samples + i
+			var h: float = height.heights[index]
+			var east: float = height.heights[j * samples + mini(i + 1, samples - 1)]
+			var west: float = height.heights[j * samples + maxi(i - 1, 0)]
+			var south: float = height.heights[mini(j + 1, samples - 1) * samples + i]
+			var north: float = height.heights[maxi(j - 1, 0) * samples + i]
+			var normal: Vector3 = Vector3(
+				-(east - west) / (2.0 * spacing) * 2.0, 1.0, -(south - north) / (2.0 * spacing) * 2.0
+			).normalized()
+			var shade: float = maxf(normal.dot(light), 0.0)
+			var grey: float = 0.25 + 0.4 * shade if h > 0.0 else 0.10
+			image.set_pixel(i, j, Color(grey, grey, grey * (1.0 if h > 0.0 else 2.2)))
+
+	var origin: Vector2 = Vector2(float(sites._x0), float(sites._z0))
+
+	for cave in sites.caves:
+		var nodes: Array = cave["nodes"]
+
+		for segment in cave["segments"]:
+			var a: Array = nodes[int(segment[0])]
+			var b: Array = nodes[int(segment[1])]
+			var pa: Vector2 = (Vector2(float(a[0]), float(a[2])) - origin) / spacing
+			var pb: Vector2 = (Vector2(float(b[0]), float(b[2])) - origin) / spacing
+			var color: Color = SEGMENT_COLORS.get(str(segment[2]), Color(0, 0, 0))
+
+			if str(segment[2]) == "passage":
+				var index: int = clampi(int(pb.y), 0, samples - 1) * samples + clampi(int(pb.x), 0, samples - 1)
+				var depth: float = clampf((height.heights[index] - float(b[1])) / 100.0, 0.0, 1.0)
+				color = Color(0.95, 0.9, 1.0).lerp(Color(0.45, 0.1, 0.75), depth)
+
+			_line(image, pa, pb, color, 3 if float(b[3]) >= 5.0 else 1)
+
+		for chamber in cave["chambers"]:
+			var node: Array = nodes[int(chamber["node"])]
+			var center: Vector2 = (Vector2(float(node[0]), float(node[2])) - origin) / spacing
+			var color: Color = Color(1.0, 0.3, 0.3) if chamber["features"].has("chasm") else Color(0.2, 1.0, 1.0)
+			_ring(image, center, maxf(float(chamber["radius_m"]) / spacing, 2.0), color)
+
+		for entrance in cave["entrances"]:
+			var node: Array = nodes[int(entrance)]
+			_disc(image, (Vector2(float(node[0]), float(node[2])) - origin) / spacing, 4.0, Color(0.2, 1.0, 0.2))
+
+		for den in cave["dens"]:
+			var node: Array = nodes[int(den["node"])]
+			_disc(image, (Vector2(float(node[0]), float(node[2])) - origin) / spacing, 2.0 + float(den["tier"]), Color(1.0, 0.1, 0.1))
+
+	for lair in sites.lairs:
+		for cave in sites.caves:
+			if cave["id"] == lair["cave"]:
+				var node: Array = cave["nodes"][int(lair["node"])]
+				_ring(image, (Vector2(float(node[0]), float(node[2])) - origin) / spacing, 14.0, Color(1, 1, 1))
+
+	if not sites.harbor.is_empty():
+		var center: Vector2 = (Vector2(float(sites.harbor["center"][0]), float(sites.harbor["center"][1])) - origin) / spacing
+		_ring(image, center, float(sites.harbor["radius_m"]) / spacing, Color(0.6, 0.8, 1.0))
+
+	if sites.starter.has("spawn_point"):
+		var spawn: Vector2 = (Vector2(float(sites.starter["spawn_point"][0]), float(sites.starter["spawn_point"][2])) - origin) / spacing
+		_line(image, spawn - Vector2(12, 12), spawn + Vector2(12, 12), Color(1, 1, 1), 3)
+		_line(image, spawn - Vector2(12, -12), spawn + Vector2(12, -12), Color(1, 1, 1), 3)
+
+	if sites.starter.has("town_block"):
+		var block: Vector2 = (Vector2(float(sites.starter["town_block"][0]), float(sites.starter["town_block"][2])) - origin) / spacing
+		var corners: Array = [Vector2(-14, -14), Vector2(14, -14), Vector2(14, 14), Vector2(-14, 14)]
+
+		for k in range(4):
+			_line(image, block + corners[k], block + corners[(k + 1) % 4], Color(1, 1, 1), 3)
+
+	return image

@@ -20,6 +20,7 @@ const TileErosionScript := preload("res://src/worldgen/tile/tile_erosion.gd")
 const TileWaterScript := preload("res://src/worldgen/tile/tile_water.gd")
 const TileClimateScript := preload("res://src/worldgen/tile/tile_climate.gd")
 const TileGeologyScript := preload("res://src/worldgen/tile/tile_geology.gd")
+const TileSitesScript := preload("res://src/worldgen/tile/tile_sites.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const TilePreviewScript := preload("res://src/worldgen/tile/tile_preview.gd")
 
@@ -186,5 +187,50 @@ func _run(world_dir: String, tile: Vector2i, cell: float) -> int:
 	print("  ore bodies: %s" % str(ore_counts))
 	print("  bedrock at surface (cells): %s" % str(geology.outcrop_cells))
 	TilePreviewScript.render_geology(height, geology, tables).save_png(base + "_geology.png")
+
+	started = Time.get_ticks_msec()
+	var sites = TileSitesScript.new()
+	sites.setup(settings, tile_rules, tables)
+	var mouth: Vector2 = Vector2(NAN, NAN)
+
+	if water.starter_path.size() > 0:
+		var last: Vector2 = water.starter_path[water.starter_path.size() - 1]
+		mouth = Vector2(float(tile.x) * float(settings.tile_size_m), float(tile.y) * float(settings.tile_size_m)) + last * float(settings.map_spacing_m)
+
+	sites.build(tile, water.heights, water.water_class, climate.soil, geology, _starter_info(sketch, tile), mouth)
+	var kinds: Dictionary = {}
+	var total_length: float = 0.0
+	var dens: Dictionary = {}
+	var hazards: Dictionary = {}
+
+	for cave in sites.caves:
+		kinds[cave["cave_kind"]] = int(kinds.get(cave["cave_kind"], 0)) + 1
+		total_length += float(cave["length_m"])
+
+		for den in cave["dens"]:
+			dens[den["tier"]] = int(dens.get(den["tier"], 0)) + 1
+
+		for segment in cave["segments"]:
+			if str(segment[2]) != "passage":
+				hazards[segment[2]] = int(hazards.get(segment[2], 0)) + 1
+
+		for chamber in cave["chambers"]:
+			for feature in chamber["features"]:
+				hazards[feature] = int(hazards.get(feature, 0)) + 1
+
+	print("Sites done in %d ms: %d caves %s, %.1f km of passages, %d lair sites" % [
+		Time.get_ticks_msec() - started, sites.caves.size(), str(kinds), total_length / 1000.0, sites.lairs.size()
+	])
+	print("  hazards: %s; dens by tier: %s; ore steering: %s" % [str(hazards), str(dens), str(sites.ore_report)])
+
+	for cave in sites.caves:
+		if str(cave["cave_kind"]) != "rock_shelter":
+			print("  %-9s %-10s %5.0f m long, %4.0f m deep, %d chambers, %d entrances, %d dens, exposes %s" % [
+				cave["id"], cave["cave_kind"], float(cave["length_m"]), float(cave["depth_m"]), cave["chambers"].size(),
+				cave["entrances"].size(), cave["dens"].size(), str(cave["exposes"])
+			])
+
+	print("  starter: %s; harbor: %s" % [str(sites.starter), str(sites.harbor)])
+	TilePreviewScript.render_sites(height, sites).save_png(base + "_caves.png")
 	print("Relief drawn in %d ms" % (Time.get_ticks_msec() - started))
 	return 0
