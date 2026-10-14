@@ -835,8 +835,22 @@ Checked: this has not been in the design before. Section 4 has weather from the 
 - **[Decided]** Permanent features raise the floor spirit can fall to: a temple, clean water, a town wall and a strong town guard. NPC upkeep of these can slow the fall, since they keep adding a little.
 - **[Decided]** Town spirit works like duress for a town. If a town owner's dynasty falls into receivership, the town is part of what can be taken over. If nobody takes it, it reverts to the server and an administrator owns it.
 - **[Decided]** A server-owned town goes on a list that players can apply to buy. The price depends on the town's size, its population, its wealth and how long it has been without an owner. It is treated like a normal business: the buyer inherits a low-spirit town and also gets its potential for great wealth.
-- **[Open]** Exact price formula, the application process (reputation, funds, competing buyers), and whether the price falls the longer a town stays unowned.
+- **[Decided]** The exact price formula is worked out later, from the town's real value and its earning potential.
+- **[Decided]** A town's price falls the longer it stays server-owned, because its value falls as money runs out, buildings decay and people leave (Section 8.13).
+- **[Decided]** To apply, a buyer goes to the nearest town (which can be the town itself) and talks to the town manager, an NPC at this stage. The manager talks about the town's problems and says it is available if someone good enough can be found. The buyer negotiates with the manager. If the language model judges the negotiation to be in good faith, they reach an agreement. This must happen before the town falls apart.
 - **[Open]** The name of the score, the scale, the sizes of each deed, how far its weather reaches around the town, and how it interacts with crop yields and with mood details.
+
+### 8.13 Town decline, ruin and deletion
+
+- **[Decided]** A town that stays server-owned loses spirit gradually and loses money, because it keeps paying for food and upkeep. When the money runs out the town falls into decay.
+- **[Decided]** Once decay reaches a certain stage, every building slowly falls down. NPCs die off, move to other towns, join bandit camps, become bandits, or find work elsewhere.
+- **[Decided]** Value drops as buildings decay and people leave. At the last moment of a town's life there is nothing but ruins and a town manager who has not yet left. A player can then buy the town for pennies on the dollar.
+- **[Decided]** A new owner pays to hire the town manager and new builders, chooses the order of the rebuild and approves each rebuild. The blueprints and the dilapidated buildings are still in place.
+- **[Decided]** Roads barely degrade (perhaps by a percentage) and never fully disappear. Buildings fall down and become rubble. Nothing erases itself completely.
+- **[Decided]** An administrator can flag an abandoned town for deletion, and the server administrators vote on it. If approved, the town enters a final stage of further decay and slowly disappears into the ground.
+- **[Decided]** In that final stage, wood and other biodegradable materials vanish and feed the ground. Stone and other non-biodegradable materials never disappear. If a foundation took 100 pieces of stone, those 100 pieces remain as rubble mounds that other characters can harvest, unless someone tears them down and removes them first.
+- **[Proposed]** Rubble mounds are stored as piles of material, not as individual pieces, so large ruined towns stay cheap to store and to draw on the minimum machine. A mound that is harvested is reduced in the same way.
+- **[Open]** How long each stage lasts, what the decay stages are called, the thresholds that trigger collapse, how many administrators must vote, and what happens to a town's records when it is deleted.
 
 ---
 
