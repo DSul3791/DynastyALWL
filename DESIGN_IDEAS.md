@@ -824,7 +824,14 @@ Checked: this has not been in the design before. Section 4 has weather from the 
 - **[Proposed]** Weather stays deterministic and free of network traffic (Section 4). The score is one small number per town, sent to clients as part of the town's data, and each client adds it to the weather it already computes from the seed and clock.
 - **[Proposed]** Weather near a town border blends smoothly between towns and open country, so there are no walls of rain.
 - **[Proposed]** Safety valve, following "safe, kind, generous": a very low score must not trap people in a death spiral. Harsh weather is capped short of making farming impossible, and the worst towns get more help (the temple, rescue quests, outside aid) and not more punishment.
-- **[Open]** The name of the score, what feeds it and how heavily, how fast it moves, how far its weather reaches around the town, and how it interacts with crop yields and with mood.
+- **[Decided]** Climate (position north to south) sets a base harshness, and town spirit modifies that base. Spirit does not decide the climate itself.
+- **[Decided]** Spirit also affects people. Every NPC in a high-spirit town has a high spirit of their own, and one in a low-spirit town has a low one. It changes how they respond and react.
+- **[Decided]** If the weather is too bad to grow crops, the town buys food from other towns. The starter towns' administrative warehouse (Section 8.1) always supplies the bare minimum of food and necessities for a price, so a town can live on mining and manufacturing money while its farms recover.
+- **[Decided]** Spirit rises fast with good deeds and improvements and falls slowly. A new building, a new resident, a donation, a hunt delivered to the temple or inn, or a finished quest each add about 10 points. Each day with nobody doing anything takes about 1 point off.
+- **[Proposed]** The decay clock is real days, not game days. A game day is one real hour (Section 7.5), so one point per game day would be 24 points per real day and erase a 10-point deed in about 10 real hours, which does not suit a weekly player. One point per real day lets a deed last about 10 days.
+- **[Proposed]** Deeds by NPCs count too (NPC builders, a farmhand's harvest delivered to the granary), so a town of mostly NPCs does not sink just because the players are away.
+- **[Proposed]** Spirit sits on a fixed scale (for example 0 to 100) and decays toward a floor set by permanent things like a temple, no pests, and clean water, not toward zero.
+- **[Open]** The name of the score, the scale, the sizes of each deed, how far its weather reaches around the town, and how it interacts with crop yields and with mood details.
 
 ---
 
