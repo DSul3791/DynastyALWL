@@ -519,6 +519,27 @@ func _make_features(cell: Dictionary, rng: RandomNumberGenerator, seed_point: Ve
 			})
 			ores.append(ore)
 
+	# Opal in the volcanic rock around a vent.
+	for feature in made_features:
+		if str(feature["type"]) != "volcanic_vent" or rng.randf() >= float(ore_rules["opal_chance"]):
+			continue
+
+		var angle: float = rng.randf() * TAU
+		var spot: Vector2 = Vector2(float(feature["center"][0]), float(feature["center"][1])) \
+			+ Vector2(cos(angle), sin(angle)) * float(feature["radius_m"]) * rng.randf_range(1.5, 3.0)
+		var size: float = rng.randf_range(float(ore_rules["opal_size_m"][0]), float(ore_rules["opal_size_m"][1]))
+		var y: float = _elevation.height_at_m(spot.x, spot.y) - rng.randf_range(10.0, 120.0)
+		var ore: Dictionary = new_id.call(ore_counter)
+		ore.merge({
+			"resource": "opal", "shape": "lens", "feature": feature["id"],
+			"center": [snappedf(spot.x, 0.1), snappedf(y, 0.1), snappedf(spot.y, 0.1)],
+			"radius_a_m": snappedf(size, 0.1), "radius_b_m": snappedf(size * 0.6, 0.1), "angle": snappedf(angle, 0.001),
+			"thickness_m": snappedf(size * 0.15, 0.1),
+			"grade": snappedf(rng.randf_range(0.1, 0.5), 0.01),
+			"tonnes": int(PI * size * size * 0.6 * size * 0.15 * 0.66 * ROCK_DENSITY_T_M3),
+		})
+		ores.append(ore)
+
 	for n in range(_count(rng, rules["pipe"], kind)):
 		var r: Dictionary = rules["pipe"]
 		var center: Vector2 = random_point.call(0.45)
@@ -537,7 +558,7 @@ func _make_features(cell: Dictionary, rng: RandomNumberGenerator, seed_point: Ve
 		if rng.randf() < float(ore_rules["pipe_gem_chance"]):
 			var ore: Dictionary = new_id.call(ore_counter)
 			ore.merge({
-				"resource": "gemstone", "shape": "pipe", "feature": feature["id"],
+				"resource": _weighted(rng, ore_rules["pipe_gems"]), "shape": "pipe", "feature": feature["id"],
 				"center": feature["center"], "radius_m": feature["radius_m"],
 				"top_y": feature["top_y"], "bottom_y": feature["bottom_y"],
 				"grade": snappedf(rng.randf_range(0.1, 0.6), 0.01),
@@ -630,14 +651,40 @@ func _make_features(cell: Dictionary, rng: RandomNumberGenerator, seed_point: Ve
 				})
 				ores.append(ore)
 
+				# Ruby or sapphire in the marble the heat made from the limestone.
+				if rng.randf() < float(ore_rules["corundum_chance"]):
+					var spin: float = angle + rng.randf_range(-0.6, 0.6)
+					var spot: Vector2 = center + Vector2(cos(spin) * ra, sin(spin) * rb).rotated(float(feature["angle"])) * 1.1
+					var gem_size: float = rng.randf_range(float(ore_rules["corundum_size_m"][0]), float(ore_rules["corundum_size_m"][1]))
+					var gem: Dictionary = new_id.call(ore_counter)
+					gem.merge({
+						"resource": _weighted(rng, ore_rules["corundum_gems"]), "shape": "lens", "feature": feature["id"],
+						"center": [snappedf(spot.x, 0.1), snappedf(lime_y, 0.1), snappedf(spot.y, 0.1)],
+						"radius_a_m": snappedf(gem_size, 0.1), "radius_b_m": snappedf(gem_size * 0.5, 0.1), "angle": snappedf(spin, 0.001),
+						"thickness_m": snappedf(minf(float(limestone["thickness_m"]), gem_size * 0.3), 0.1),
+						"grade": snappedf(rng.randf_range(0.1, 0.5), 0.01),
+						"tonnes": int(PI * gem_size * gem_size * 0.5 * gem_size * 0.3 * 0.66 * ROCK_DENSITY_T_M3),
+					})
+					ores.append(gem)
+
 		# Gem pegmatite at pluton edges.
 		if str(feature["size"]) == "pluton" and rng.randf() < float(ore_rules["pegmatite_gem_chance"]):
 			var angle: float = rng.randf() * TAU
 			var edge: Vector2 = center + Vector2(cos(angle) * ra, sin(angle) * rb).rotated(float(feature["angle"])) * 0.95
 			var y: float = top - float(feature["roof_drop_m"]) - rng.randf_range(50.0, 300.0)
 			var ore: Dictionary = new_id.call(ore_counter)
+			var pegmatite_gems: Array = []
+			var has_shale: bool = false
+
+			for layer in cell["layers"]:
+				has_shale = has_shale or str(layer["rock"]) == str(ore_rules["pegmatite_emerald_needs"])
+
+			for choice in ore_rules["pegmatite_gems"]:
+				if str(choice[0]) != "emerald" or has_shale:
+					pegmatite_gems.append(choice)
+
 			ore.merge({
-				"resource": "gemstone", "shape": "lens", "feature": feature["id"],
+				"resource": _weighted(rng, pegmatite_gems), "shape": "lens", "feature": feature["id"],
 				"center": [snappedf(edge.x, 0.1), snappedf(y, 0.1), snappedf(edge.y, 0.1)],
 				"radius_a_m": 30.0, "radius_b_m": 12.0, "angle": snappedf(angle, 0.001), "thickness_m": 4.0,
 				"grade": snappedf(rng.randf_range(0.2, 0.7), 0.01),
@@ -706,6 +753,41 @@ func _make_features(cell: Dictionary, rng: RandomNumberGenerator, seed_point: Ve
 				})
 				ores.append(ore)
 
+	# Gems scattered through a band of one layer across the province:
+	# geodes in basalt lava, garnets in folded slate.
+	var scatter_rules: Array = []
+
+	if kind == "volcanic":
+		scatter_rules.append(["basalt", "geode_chance", "geode_gems", "geode_band_m", "geode_density"])
+	elif kind == "fold_belt":
+		scatter_rules.append(["slate", "garnet_slate_chance", [["garnet", 1.0]], "garnet_band_m", "garnet_density"])
+
+	for scatter in scatter_rules:
+		if rng.randf() >= float(ore_rules[scatter[1]]):
+			continue
+
+		var host: Dictionary = {}
+
+		for layer in cell["layers"]:
+			if str(layer["rock"]) == str(scatter[0]) and host.is_empty():
+				host = layer
+
+		if host.is_empty():
+			continue
+
+		var band: float = minf(rng.randf_range(float(ore_rules[scatter[3]][0]), float(ore_rules[scatter[3]][1])), float(host["thickness_m"]))
+		var choices: Array = scatter[2] if typeof(scatter[2]) == TYPE_ARRAY else ore_rules[scatter[2]]
+		var ore: Dictionary = new_id.call(ore_counter)
+		ore.merge({
+			"resource": _weighted(rng, choices), "shape": "scatter", "feature": "", "province": cell["id"],
+			"depth_below_datum_m": snappedf(float(host["top_m"]) + rng.randf() * (float(host["thickness_m"]) - band), 0.1),
+			"thickness_m": snappedf(band, 0.1), "density": float(ore_rules[scatter[4]]),
+			"cycle_m": cell["cycle_m"], "repeat_to_m": cell["repeat_to_m"],
+			"grade": snappedf(rng.randf_range(0.1, 0.5), 0.01),
+			"tonnes": int(_cell_m * _cell_m * band * float(ore_rules[scatter[4]]) * ROCK_DENSITY_T_M3),
+		})
+		ores.append(ore)
+
 	# Ore ids live in the same numbering space as features, offset by 50.
 	for ore in ores:
 		ore["local_id"] = int(ore["local_id"]) + 50
@@ -771,7 +853,7 @@ func _collect_lists(tile: Vector2i, x0: float, z0: float) -> void:
 					features.append(feature)
 
 			for ore in cell["ores"]:
-				if str(ore["shape"]) == "layer":
+				if str(ore["shape"]) == "layer" or str(ore["shape"]) == "scatter":
 					if province_ids.has(ore["province"]):
 						ore_bodies.append(ore)
 				elif _bounds_of(ore).intersects(rect):
@@ -935,6 +1017,16 @@ func _compute_surface_rock(heights: PackedFloat32Array, x0: float, z0: float) ->
 		rocks.append(r)
 		bases.append(_rock_ids[str(entry["base_rock"])])
 
+	# Limestone turns to marble deep in fold belts (heat and pressure) and
+	# around granite intrusions (their heat), the contact aureole.
+	var meta: Dictionary = _rules["metamorphism"]
+	var marble: int = _rock_ids["marble"]
+	var limestone: int = _rock_ids["limestone"]
+	var marble_depth: PackedFloat32Array = PackedFloat32Array()
+
+	for entry in provinces:
+		marble_depth.append(float(meta["fold_belt_marble_depth_m"]) if str(entry["kind"]) == "fold_belt" else INF)
+
 	var bedrock: PackedFloat32Array = PackedFloat32Array()
 	bedrock.resize(total)
 
@@ -948,12 +1040,15 @@ func _compute_surface_rock(heights: PackedFloat32Array, x0: float, z0: float) ->
 
 		# The layer cycle repeats down to repeat_to_m, then base rock.
 		if depth < repeat_to[p]:
-			depth = fmod(depth, cycles[p])
+			var in_cycle: float = fmod(depth, cycles[p])
 
 			for k in range(layer_bottoms.size()):
-				if depth < layer_bottoms[k]:
+				if in_cycle < layer_bottoms[k]:
 					rock = rocks[p][k]
 					break
+
+		if rock == limestone and depth > marble_depth[p]:
+			rock = marble
 
 		surface_rock[index] = rock
 
@@ -967,7 +1062,12 @@ func _compute_surface_rock(heights: PackedFloat32Array, x0: float, z0: float) ->
 		if kind != "intrusion" and kind != "volcanic_vent" and kind != "volcanic_pipe":
 			continue
 
-		var rect: Rect2 = _bounds_of(feature)
+		var aureole: float = 0.0
+
+		if kind == "intrusion":
+			aureole = maxf(float(meta["aureole_share"]) * float(feature["radius_b_m"]), float(meta["aureole_min_m"]))
+
+		var rect: Rect2 = _bounds_of(feature).grow(aureole)
 		var i0: int = clampi(int(floor((rect.position.x - x0) / spacing_m)), 0, samples - 1)
 		var i1: int = clampi(int(ceil((rect.end.x - x0) / spacing_m)), 0, samples - 1)
 		var j0: int = clampi(int(floor((rect.position.y - z0) / spacing_m)), 0, samples - 1)
@@ -985,6 +1085,11 @@ func _compute_surface_rock(heights: PackedFloat32Array, x0: float, z0: float) ->
 
 					if q <= 1.0 and bedrock[index] <= float(feature["top_y"]) - float(feature["roof_drop_m"]) * q:
 						surface_rock[index] = granite
+					elif surface_rock[index] == limestone and bedrock[index] <= float(feature["top_y"]) + float(meta["aureole_above_top_m"]):
+						var outer: Vector2 = Vector2(float(feature["radius_a_m"]) + aureole, float(feature["radius_b_m"]) + aureole)
+
+						if pow(local.x / outer.x, 2.0) + pow(local.y / outer.y, 2.0) <= 1.0:
+							surface_rock[index] = marble
 				elif offset.length() <= float(feature["radius_m"]) and bedrock[index] <= float(feature["top_y"]):
 					surface_rock[index] = basalt
 
@@ -1008,7 +1113,7 @@ func _find_placers(tile: Vector2i, heights: PackedFloat32Array, water_class: Pac
 	for ore in ore_bodies:
 		var resource: String = str(ore["resource"])
 
-		if resource != "gold" and resource != "tin":
+		if not ore_rules["placer_resources"].has(resource):
 			continue
 
 		var outcrop: int = _outcrop_sample(ore, heights, x0, z0)
@@ -1106,6 +1211,10 @@ func _outcrop_sample(ore: Dictionary, heights: PackedFloat32Array, x0: float, z0
 
 		for k in range(steps + 1):
 			candidates.append([a.lerp(b, float(k) / float(steps)), float(ore["top_y"])])
+	elif str(ore["shape"]) == "lens":
+		candidates.append([Vector2(float(ore["center"][0]), float(ore["center"][2])), float(ore["center"][1]) + 0.5 * float(ore["thickness_m"])])
+	elif str(ore["shape"]) == "pipe":
+		candidates.append([Vector2(float(ore["center"][0]), float(ore["center"][1])), float(ore["top_y"])])
 	elif str(ore["shape"]) == "halo":
 		var center: Vector2 = Vector2(float(ore["center"][0]), float(ore["center"][1]))
 		candidates.append([center, float(ore["top_y"])])

@@ -124,13 +124,16 @@ static func render_biomes(height, climate, tables, water = null) -> Image:
 const ROCK_COLORS := {
 	"sediment": Color(0.80, 0.72, 0.55), "shale": Color(0.42, 0.45, 0.50), "limestone": Color(0.82, 0.82, 0.76),
 	"coal": Color(0.12, 0.12, 0.12), "granite": Color(0.86, 0.58, 0.58), "slate": Color(0.32, 0.36, 0.46),
-	"basalt": Color(0.22, 0.20, 0.22), "sandstone": Color(0.86, 0.66, 0.40),
+	"basalt": Color(0.22, 0.20, 0.22), "sandstone": Color(0.86, 0.66, 0.40), "marble": Color(0.98, 0.98, 1.0),
 }
 
 const RESOURCE_COLORS := {
 	"gold": Color(1.0, 0.85, 0.0), "silver": Color(0.85, 0.9, 1.0), "tin": Color(0.6, 1.0, 0.9),
 	"copper": Color(1.0, 0.45, 0.1), "iron": Color(0.75, 0.1, 0.05), "zinc": Color(0.5, 0.6, 1.0),
-	"lead": Color(0.55, 0.45, 0.75), "gemstone": Color(1.0, 0.2, 0.9), "sulfur": Color(0.95, 1.0, 0.3),
+	"lead": Color(0.55, 0.45, 0.75), "sulfur": Color(0.95, 1.0, 0.3),
+	"diamond": Color(0.9, 1.0, 1.0), "ruby": Color(0.9, 0.0, 0.2), "sapphire": Color(0.1, 0.2, 0.95),
+	"emerald": Color(0.0, 0.8, 0.3), "topaz": Color(1.0, 0.7, 0.3), "aquamarine": Color(0.4, 0.9, 0.9),
+	"amethyst": Color(0.6, 0.3, 0.9), "agate": Color(0.8, 0.5, 0.4), "garnet": Color(0.6, 0.05, 0.1), "opal": Color(0.95, 0.85, 0.95),
 	"salt": Color(1.0, 1.0, 1.0), "gypsum": Color(0.95, 0.9, 0.85), "coal": Color(0.0, 0.0, 0.0),
 }
 
@@ -186,7 +189,7 @@ static func render_geology(height, geology, tables) -> Image:
 		var color: Color = RESOURCE_COLORS.get(str(ore["resource"]), Color(1, 0, 1))
 		var shape: String = str(ore["shape"])
 
-		if shape == "layer":
+		if shape == "layer" or shape == "scatter":
 			continue
 
 		if ore.has("points"):

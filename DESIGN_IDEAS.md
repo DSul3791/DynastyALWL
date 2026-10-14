@@ -288,7 +288,8 @@ A tile should then take minutes, and `world_preview.gd` could show island panel 
 | Coal | Seams in sedimentary basins, bent with the folds |
 | Salt and gypsum | Layers in basins, sometimes pushed up as domes |
 | Lead and zinc | Hosted in limestone |
-| Gems | Granite edges and volcanic pipes |
+| Gems (decided 2026-10-14: individual gems, not one "gemstone") | Diamond: deep volcanic pipes (very rare). Ruby and sapphire: marble beside granite. Emerald: granite edges in shale country. Topaz and aquamarine: crystal pockets (pegmatites) at granite edges. Amethyst and agate: geodes in basalt lava. Garnet: folded slate, and with diamonds in pipes. Opal: volcanic rock near vents. Hard gems also wash into river gravels like placer gold |
+| Marble (rock, decided 2026-10-14) | Limestone baked in a ring around granite intrusions, and limestone buried deep in fold belts |
 | Clay and peat | Wetlands and the surface deposit map |
 
 - **[Proposed]** Depth matters loosely but never predictably. A gold vein might outcrop on a hillside or start 800 m down along the same fault. Mountains stay the best places to mine, since erosion exposes deeper rock there.

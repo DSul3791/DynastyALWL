@@ -2,7 +2,7 @@
 	"table": "resources",
 	"format_version": 1,
 	"note": "IDs are append-only. Never renumber or reuse an ID; retire an entry with \"retired\": true and take the next ID from next_id for new entries.",
-	"next_id": 17,
+	"next_id": 27,
 	"entries": [
 		{
 			"id": 0,
@@ -98,13 +98,75 @@
 			"id": 15,
 			"name": "gemstone",
 			"display": "Gemstone",
-			"category": "gem"
+			"category": "gem",
+			"retired": true,
+			"note": "Replaced by individual gems (2026-10-14)."
 		},
 		{
 			"id": 16,
 			"name": "peat",
 			"display": "Peat",
 			"category": "surface"
+		},
+		{
+			"id": 17,
+			"name": "diamond",
+			"display": "Diamond",
+			"category": "gem"
+		},
+		{
+			"id": 18,
+			"name": "ruby",
+			"display": "Ruby",
+			"category": "gem"
+		},
+		{
+			"id": 19,
+			"name": "sapphire",
+			"display": "Sapphire",
+			"category": "gem"
+		},
+		{
+			"id": 20,
+			"name": "emerald",
+			"display": "Emerald",
+			"category": "gem"
+		},
+		{
+			"id": 21,
+			"name": "topaz",
+			"display": "Topaz",
+			"category": "gem"
+		},
+		{
+			"id": 22,
+			"name": "aquamarine",
+			"display": "Aquamarine",
+			"category": "gem"
+		},
+		{
+			"id": 23,
+			"name": "amethyst",
+			"display": "Amethyst",
+			"category": "gem"
+		},
+		{
+			"id": 24,
+			"name": "agate",
+			"display": "Agate",
+			"category": "gem"
+		},
+		{
+			"id": 25,
+			"name": "garnet",
+			"display": "Garnet",
+			"category": "gem"
+		},
+		{
+			"id": 26,
+			"name": "opal",
+			"display": "Opal",
+			"category": "gem"
 		}
 	]
 }
