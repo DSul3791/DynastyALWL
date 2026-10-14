@@ -801,6 +801,9 @@ To be fleshed out when the first NPC is designed.
 ### 11.1 Tools, machines and automation
 
 - **[Decided]** Eventually, players use materials to build components and tools that help them mine or climb mountains.
+- **[Decided]** (2026-10-14) **Quality tiers for items.** Tools, weapons, cookware, crucibles and similar items come in material tiers, and a lower tier still works but does the job worse, which gives the game stages: crude stone and wood, bronze, iron, then steel, as in the Bronze Age and Iron Age. Examples: clay crucibles then graphite crucibles; iron tools then steel tools; unhardened then hardened edges (quenching and tempering).
+- **[Proposed]** Each tier trades off a few numbers set in the item tables: durability (how soon it breaks and how fast it wears), effectiveness (the tool-power-versus-hardness rule below, damage for weapons, the heat a crucible or cookpot survives, the yield of a smelt), and sometimes weight, repair cost or how often it fails under load. Better tiers need better materials and know-how (fuel, furnaces, a skilled smith, a recipe discovered or learned), so a new player starts in the low tiers and moving up is progress. Worn items are repaired, resharpened or melted down for part of their metal, so low tiers stay useful and the economy keeps demand for them.
+- **[Open]** How many tiers and which materials, whether a smith's skill adds a quality bonus within a tier, and how recipes are discovered (for example the lucky graphite crucible).
 - **[Idea]** Railways, and machinery that moves materials out of mines up to the surface: minecarts, steam-powered engines, windmills.
 - **[Proposed]** A progression from the existing resources (copper, tin and iron for tools, coal for steam), tied to the tool-power-versus-hardness rule so each step unlocks harder rock and deeper mining.
 - **[Proposed]** Machines are building pieces with inputs, outputs and a rate, listed in a recipe table.
