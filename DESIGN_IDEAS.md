@@ -902,7 +902,14 @@ Checked: this has not been in the design before. Section 4 has weather from the 
 - **[Idea]** Later, designated parts of the map can be PVP areas. Players who build a town there and want warfare are welcome to, and the PVE protections do not apply.
 - **[Proposed]** Hostile takeover (Section 8.14) is possible only in a town that is not yet established. This replaces the simpler "has guards" rule: guards alone are not enough.
 - **[Proposed]** Word delivery uses a message system with distance delay and a carrier type (courier, pigeon, ship). Pigeons and couriers can fail or be intercepted. This is separate from the real-world email notifications for the player's account (Section 6), which exist for duress and receivership.
-- **[Open]** Whether a player's real-world alerts also cover town challenges (a safety feature that might undercut the in-world distance idea), what "established" requires exactly, how courier and pigeon delays are set, what the manager can decide automatically, and where PVP areas are on the map.
+- **[Decided]** In an established town, word can travel by carrier pigeon or by magic (this is a fantasy game). A town can have a pigeon tower or a wizard tower, run by a role that is the town's mail system (name to be chosen). A message goes to the nearest tower or mage, then onward to the recipient.
+- **[Decided]** Delay depends on distance: how long a pigeon flies, or how long magic takes to reach the nearest mage or tower and then the recipient.
+- **[Decided]** Matters of the whole dynasty use real-time messaging in the app. In-world mail and delay cover town business at a distance, such as an offer on a town.
+- **[Decided]** When someone makes an offer on a remotely controlled town, the owner is told that they will be notified in a stated number of hours or days, based on the delay for word to arrive. The offer then stands for a time.
+- **[Decided]** How long an offer stands is the offerer's choice: a set period (for example a week) or a permanent standing offer. The time between offer and answer is expected, because communication takes time.
+- **[Proposed]** A standing offer does not lock the offerer's money. Funds are checked when the owner accepts, and an offer that cannot be paid fails with a reputation cost. A short offer could instead hold the money in escrow.
+- **[Open]** The name of the mail role (postmaster, pigeon master, mage), the cost of sending word, whether a standing offer needs a refresh or can be cancelled at any time, and the delay formula.
+- **[Open]** Whether real-world app alerts also cover town challenges, what "established" requires exactly, what the manager can decide automatically, and where PVP areas are on the map.
 
 ---
 
