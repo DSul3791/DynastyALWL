@@ -181,6 +181,7 @@ Note: climate depends only on position, so each tile can compute it without look
 ### 4.4 Natural structures and lair sites
 
 - **[Decided]** Caves, abandoned mineshafts, labyrinths and similar discoveries, as in Minecraft.
+- **[Decided]** (2026-10-13) The world generator places natural caves now (step 12). Abandoned mineshafts and labyrinths come later as add-ons.
 - **[Proposed]** Underground structures are baked as real voxels, since players can dig into and through them. They become destinations for NPC quests and bandit camps. If the layering in Section 4.8 is adopted, only each structure's site (position, type, seed) is baked, and the server carves the voxels from it with the same deterministic generator as the rest of the terrain.
 - **[Decided]** Towns are **not** baked. Players found towns (Section 8).
 - **[Decided]** Eventually a threats system will pinpoint areas that make natural bandit camp places. Premade goblin camps can also be dropped in like a blueprint, creating a small cave system filled with goblins (Section 12).

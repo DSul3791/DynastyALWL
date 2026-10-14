@@ -44,7 +44,7 @@ Working plan for the new world generator described in `DESIGN_IDEAS.md` (Section
 9. **Erosion.** A 2D erosion pass for valleys and winding terrain. Timed.
 10. **Climate, biome and soil.** Temperature, moisture, rain shadow, biome, soil, fertility. Preview images.
 11. **Geology and ore.** Provinces, features (intrusions, faults, basins, volcanic), ore bodies with stable IDs, layer offsets and cover depth.
-12. **Sites.** Cave systems, mineshafts, labyrinths, dormant lairs, harbors, and starter data for starter tiles.
+12. **Sites.** Natural cave systems, dormant lairs, harbors, and starter data for starter tiles. Mineshafts and labyrinths are later add-ons (decided 2026-10-13).
 13. **Tile file.** Writer and reader for the container in the spec (sections, Zstandard, SHA-256, atomic rename), plus low-resolution maps. **Checkpoint:** bake a starter tile end to end, record the time and file size.
 
 ### Seeing it in the game
