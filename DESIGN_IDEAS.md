@@ -1215,7 +1215,12 @@ To be fleshed out when the first NPC is designed.
 - **[Decided]** (2026-10-14) **Gates close at night.** Every worker comes in at dusk and must be inside before the gates close. At dawn the gates reopen and the working day continues.
 - **[Proposed]** (2026-10-14) **Trades.** Fibre and thatch go to a weaver and rope maker, who makes rope, baskets, nets and cloth. Guards report to the barracks. Whether they live in it or in their own houses is open.
 - **[Decided]** (2026-10-14) **Tents first.** Early on, supplies include tents that are set up during construction. Inside is a campfire in the middle, and each side of the tent has a bed and a storage chest. They are temporary shelter from the weather until the inn and houses are built.
-- **[Open]** Whether guards live in the barracks or in houses, and when the player character chooses a place to live.
+- **[Decided]** (2026-10-14) **Hiring guards once the barracks stands.** The owner or manager can hire any available guards in the area, meaning existing NPCs with guard experience. Their wages are set by their experience, and also by how hungry they are and how low their own spirit is from being poor or unemployed.
+- **[Decided]** (2026-10-14) **If no guards are available,** the barracks suggests four randomly generated new guards. They live in the barracks. Each has their own attributes, characteristics and skills.
+- **[Decided]** (2026-10-14) **The guard captain.** Given enough time, one guard is promoted to guard captain by the town manager, or by the owner if the owner plays that role. The captain manages the guards and assigns patrols and night watches. Other jobs for guards will be added later.
+- **[Proposed]** (2026-10-14) Wage rule to start with: a base wage times a factor for experience (0.8 for a rookie up to 1.5 for a veteran), times a discount of up to 30 percent for a guard who is hungry or has been out of work for a long time. The base wage is set with the rest of the economy. Guards who need work take less, but are less loyal if they feel underpaid later.
+- **[Decided]** (2026-10-14) Guards who are generated for the barracks live in it. Other guards hired from the area may live in their own homes and report to the barracks. The player character chooses a place to live eventually.
+- **[Open]** The base wage and the pay scale, and what else guards do besides patrols and night watches.
 
 
 ---
