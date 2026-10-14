@@ -643,6 +643,31 @@ Question from the project owner: do we have all the building blocks, with a safe
 - **[Open]** Whether other routes should exist (guardianship of a relative's child, fostering) and how they differ from adoption.
 
 
+### 6.10 Extended life and hiding it
+
+- **[Decided]** (2026-10-14) A dynasty can exist with no spouse and no children. A character in that position may seek immortality or a longer life during their lifetime.
+- **[Idea]** (2026-10-14) **Ways to get it.** Paying a large sum to the local mage; a journey or quest whose reward is a wish or some other special mechanic; or an arrangement with an otherworldly being that grants longer life or slower aging.
+- **[Idea]** (2026-10-14) **What it can do.** The character ages very slowly, has their age frozen at a chosen age, or is turned back to a chosen age. For example, a 70-year-old who completes a quest for a wish may wish to be 30 forever. If the server judges the wish reasonable, it locks the age in and makes them younger.
+- **[Decided]** (2026-10-14) It does not stop sickness or death. A long-lived character can still fall ill or be killed.
+- **[Idea]** (2026-10-14) **Others notice.** Over the years friends see that something is strange. The character may be labeled a witch or evil, because people do not understand. They would have to move from town to town to put distance between themselves and people who know them.
+- **[Idea]** (2026-10-14) **A new identity every 20 years.**
+  - The character keeps their old name but must re-establish a new identity about every 20 years, claiming to be the son or daughter of the earlier person.
+  - Returning to an old town, the people who knew them are old or dead. If they are old, the character can say the earlier person was their mother, father or grandparent.
+- **[Open]** How this fits the succession chain (Section 6.7) and the single server clock (Section 6.1); how the server decides whether a wish is "reasonable"; whether the 20-year identity change is enforced by rules or only by how NPCs react; and what it costs.
+
+### 6.11 Familiars (future)
+
+- **[Idea]** (2026-10-14) Familiars, as in D&D, could be added later as companions that give comic relief. The model is Claptrap from Borderlands 2, but as a parrot, monkey, dog or similar animal that talks to you, constantly teases or mocks you, and says funny things.
+- **[Idea]** (2026-10-14) Now and then a familiar could say a catchphrase in the style of a famous cartoon (such as a power-word shout), purely as a joke.
+- **[Open]** What a familiar does besides talk (carries items, scouts, delivers pigeon mail), how it is obtained, whether it ages or dies, and whether it can be turned off.
+
+### 6.12 Homages and Easter eggs (future)
+
+- **[Idea]** (2026-10-14) Hide references throughout the game as homage to the creators of great fiction, games, films and stories. The project owner's son suggested a wizard's tower that looks like a small box or telephone booth from outside but is large inside, with a painting of a caricature of the Doctor (or of all the Doctors) on the wall.
+- **[Idea]** (2026-10-14) Other examples: a religion whose god looks like a cartoon doctor from a famous time-travel show; in a wizard school's hallways, paintings of caricatured famous wizards from books, D&D games and films; a hall of heroes with caricatures that resemble famous cartoon heroes.
+- **[Decided]** (2026-10-14) **Never copy exactly.** The references must not look exactly like the originals, to avoid infringing anyone's copyright. They are nods, not copies. (This follows the same rule as the original-characters-only approach for anything drawn.)
+- **[Open]** Who decides what is a safe homage, and whether to review each one before release.
+
 ---
 
 ## 7. World time
@@ -1450,6 +1475,9 @@ Ambiguities found in the 2026-10-14 review (the newest statement was applied whe
 86. **Bridges and travel roads.** Maximum span and water depth of a bridge, which kinds exist (rope, timber, stone, causeway with culverts, ford), and who maintains the dirt roads that NPC travel creates. (Section 8.17)
 87. **Ring layout.** Are the rings in Section 8.17 hard rules or only the planner's preferences, and can the owner override them?
 88. **Marker hoarding.** Reserving a whole city's land with a marker lets a player block land by placing markers. What does a marker cost, does it need upkeep (or duress), and when is a reservation released (for example when a town is deleted)?
+89. **Extended life.** How is a wish judged "reasonable", what does each route cost, and how does a long-lived character fit the succession chain, the single server clock and the 20-year new identity? (Section 6.10)
+90. **Familiars.** What can they do besides talk, how are they obtained, do they age or die, and can the jokes be turned off? (Section 6.11)
+91. **Homages.** Who reviews each reference so it stays a nod and not a copy? (Section 6.12)
 
 ---
 
