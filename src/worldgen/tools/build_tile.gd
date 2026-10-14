@@ -175,7 +175,7 @@ func _run(world_dir: String, tile: Vector2i, cell: float) -> int:
 		var key: String = str(feature["type"]) + ("/" + str(feature["size"]) if feature.has("size") else "")
 		type_counts[key] = int(type_counts.get(key, 0)) + 1
 
-	print("  timings (ms): %s" % str(geology.timings))
+	print("  timings (ms): %s; gold or tin reaching the ground: %d" % [str(geology.timings), geology.placer_sources])
 	print("  features: %s" % str(type_counts))
 	var ore_counts: Dictionary = {}
 

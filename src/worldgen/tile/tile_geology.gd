@@ -46,6 +46,7 @@ var provinces: Array = []
 var features: Array = []
 var ore_bodies: Array = []
 var timings: Dictionary = {}
+var placer_sources: int = 0      # gold and tin bodies that reach the ground in this tile
 var outcrop_cells: Dictionary = {}      # rock name -> cells at the bedrock surface
 
 var _settings
@@ -1002,6 +1003,7 @@ func _find_placers(tile: Vector2i, heights: PackedFloat32Array, water_class: Pac
 	var local: int = 9000
 	var placers: Array = []
 	var used_rivers: Dictionary = {}
+	placer_sources = 0
 
 	for ore in ore_bodies:
 		var resource: String = str(ore["resource"])
@@ -1013,6 +1015,8 @@ func _find_placers(tile: Vector2i, heights: PackedFloat32Array, water_class: Pac
 
 		if outcrop < 0:
 			continue
+
+		placer_sources += 1
 
 		# Walk downhill to a river, then down the river.
 		var at: int = outcrop
@@ -1038,8 +1042,9 @@ func _find_placers(tile: Vector2i, heights: PackedFloat32Array, water_class: Pac
 
 				river_steps += 1
 
+			# Water goes where the drainage grows: the neighbor with the most
+			# flow above our own (this also crosses flats left by pit filling).
 			var next: int = -1
-			var best: float = heights[at]
 			var best_flow: float = flow[at]
 
 			for dz in range(-1, 2):
@@ -1055,13 +1060,8 @@ func _find_placers(tile: Vector2i, heights: PackedFloat32Array, water_class: Pac
 
 					var n: int = nj * samples + ni
 
-					# On the river, follow growing flow; on land, follow the slope.
-					if on_river:
-						if water_class[n] != 0 and flow[n] > best_flow:
-							best_flow = flow[n]
-							next = n
-					elif heights[n] < best:
-						best = heights[n]
+					if flow[n] > best_flow:
+						best_flow = flow[n]
 						next = n
 
 			if next < 0:
