@@ -368,6 +368,8 @@ A tile should then take minutes, and `world_preview.gd` could show island panel 
 - **[Decided]** Farming should work on a relaxed rhythm: several fields with rotating crops, and a player who logs in once a week to harvest and plant new crops (Section 7.3). Seasons are driven by the world calendar.
 - **[Proposed]** Wild versions of crops exist in the right climates and drop seeds. Planted crops are server-owned objects with a planted-at time, and growth stage is computed on demand.
 - **[Proposed]** Crops respond to climate and soil, so climate must be queryable at runtime.
+- **[Decided]** The generated fertility map is only the natural starting value. Farmers can improve poor land with time, money and tools: lime, manure and other soil treatment, and terracing or other terraforming. In principle a player could cultivate a whole hillside or a whole heath coast into fertile farmland. Heath stays in the biome mix because it adds realism.
+- **[Proposed]** Because of that, fertility needs a changeable layer on top of the generated one: player changes (soil treatment, terraces) are stored as small saved deltas per area, not baked into the tile files, and treatment can wear off over time unless kept up. Crops read generated fertility plus the delta.
 - **[Open]** Prepared ground (tilling) as a terrain edit, or seeds on any suitable surface.
 - **[Open]** Whether things regrow at different speeds and whether rocks and minerals ever return.
 - **[Open]** Whether tool and item type changes what a harvest yields.
