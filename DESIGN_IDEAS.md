@@ -908,7 +908,14 @@ Checked: this has not been in the design before. Section 4 has weather from the 
 - **[Decided]** When someone makes an offer on a remotely controlled town, the owner is told that they will be notified in a stated number of hours or days, based on the delay for word to arrive. The offer then stands for a time.
 - **[Decided]** How long an offer stands is the offerer's choice: a set period (for example a week) or a permanent standing offer. The time between offer and answer is expected, because communication takes time.
 - **[Proposed]** A standing offer does not lock the offerer's money. Funds are checked when the owner accepts, and an offer that cannot be paid fails with a reputation cost. A short offer could instead hold the money in escrow.
-- **[Open]** The name of the mail role (postmaster, pigeon master, mage), the cost of sending word, whether a standing offer needs a refresh or can be cancelled at any time, and the delay formula.
+- **[Decided]** Communication improves in tiers, in line with the early-to-late quality ladder (Section 11.1):
+  1. Early: a rider on horseback, or a message carried by ship. Slow, and it can fail or be delayed.
+  2. Next: a **pigeon master** with coops, a building and a business. Faster over the local region.
+  3. Later: a **wizard tower** with a town wizard (also called the town mage or high mage). Magic speeds up and can teleport the pigeons almost instantly to the destination, where the pigeon delivers the message and flies back on its own.
+- **[Decided]** The role names are pigeon master for the coops and town mage (or high mage) for the wizard tower.
+- **[Idea]** The wizard handles many roles, not just mail: solving problems around the town, defence of the town (a magical shielding dome, fighting from the ramparts during goblin or bandit attacks or a hill giant coming to ravage the town), and day-to-day research that improves the town's technology and its communication with neighbours.
+- **[Open]** What a wizard tower costs, what the wizard's research actually unlocks, how strong the defence is against each threat, and the limits that keep one wizard from solving everything (for example a cost, a cool-down, or a single point of failure if the wizard is lost or hostile).
+- **[Open]** The cost of sending word, whether a standing offer needs a refresh or can be cancelled any time, and the delay formula.
 - **[Open]** Whether real-world app alerts also cover town challenges, what "established" requires exactly, what the manager can decide automatically, and where PVP areas are on the map.
 
 ---
