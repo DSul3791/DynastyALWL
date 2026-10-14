@@ -599,6 +599,9 @@ Question from the project owner: do we have all the building blocks, with a safe
 - **[Decided]** Only the chosen successor inherits. The whole dynasty passes to that one person. It does not matter which spouse a child came from, since all are the head's children and all are eligible to be successor at retirement or death.
 - **[Decided]** When the dynasty passes, the previous head's spouses become cared-for elders in the household. The new head must find a partner of their own.
 - **[Decided]** (2026-10-14) **Retirement.** A character who lives into old age and becomes too old and frail to carry on can choose a successor and retire. The player then takes over the successor's body, and the retired character becomes a senior or elderly NPC who lives out their remaining days on the farm.
+- **[Decided]** (2026-10-14) **Naming a successor can be tested while alive.** Because NPCs talk through the language model, a player can say to a child, stepchild or spouse, "I am thinking of making you my successor", and they answer as themselves: proud, nervous, or unwilling. Naming someone does not bind them. They can still decline when the handover comes.
+- **[Decided]** **The handover chain.** When the dynasty is handed on (death or retirement), the named successor accepts or declines. If they decline it passes to the next sibling, who decides in turn. If every child and stepchild declines, it goes to the first spouse (who may be the same age, much younger or older, or dead), then the next spouse. Any living spouse who is able will accept: only a spouse who is elderly or dead can be skipped. Whoever takes it may become the player's character.
+- **[Decided]** So it pays a character to spend time encouraging the children to want to be the successor (conversation, teaching and the markers in Section 6.6).
 - **[Decided]** Siblings who are not the successor stay in the household and age out over time, unless they leave (see below).
 - **[Decided]** A dynasty can have many living spouses at once. The aim is to grow a dynasty as in medieval times and plan against sickness and age. Spouses are people who help run the day-to-day work of the dynasty and household and help raise children.
 
@@ -984,7 +987,23 @@ To be fleshed out when the first NPC is designed.
 - **[Decided]** (2026-10-14) The town block is a marker with no physical form: a floating arrow only the owner can see, which the owner can switch on and off. It adds an entry to the owner's ledger saying they own a claim. It marks the exact centre of the town.
 - **[Decided]** Until an office building is placed (a keep or castle with an office, a house with an office, a town hall or a magistrate's office), the owner cannot reach the town settings. The building is where the town manager lives and works.
 - **[Decided]** (2026-10-14) **Towns cannot overlap, so the land is reserved up front.** Settlements come in sizes (hamlet, village, town, city). A list gives the physical size of each, and the largest, a city, is the maximum a town can grow to. Placing a town marker reserves land from the marker out to the size of a maximum city, so nobody can place a marker anywhere that its own maximum city would overlap another town's. The aim is that one person can build a town into a giant city with a castle, thriving businesses and a guild of a thousand real players.
-- **[Proposed]** The minimum distance between two markers is then twice the maximum city radius R. For scale: R = 1 km matches the old 2 km spacing and reserves about 3 km² per town; R = 1.5 km reserves about 7 km², so a 50 km² starter landmass would hold at most 7 towns or so.
+- **[Proposed]** The minimum distance between two markers is then twice the maximum city radius R. The settlement ladder below puts R at 1.5 km.
+- **[Proposed]** (2026-10-14) **The settlement ladder.** A new claim is a **settlement**. Each paid expansion grows it by 50 percent in radius (or 25 percent for a smaller step), and the size names follow. Radius includes the surrounding farmland, since the circle runs out to the farms.
+
+| Stage | Radius | Area | Rough population (NPCs and players) |
+|---|---|---|---|
+| Settlement (a new claim) | 200 m | 0.13 km² | up to 25 |
+| Hamlet | 300 m | 0.28 km² | 25 to 100 |
+| Village | 450 m | 0.64 km² | 100 to 400 |
+| Town | 675 m | 1.4 km² | 400 to 1,500 |
+| City | 1,000 m | 3.1 km² | 1,500 to 5,000 |
+| Metropolis (the maximum) | 1,500 m | 7.1 km² | 5,000 to 15,000 |
+
+- **[Proposed]** The reservation (above) is a metropolis: radius 1,500 m, so two markers must be at least 3 km apart, and every marker reserves about 7 km² even while it is still a settlement. A 50 km² starter landmass then holds roughly 5 to 7 towns, and a 100 km² landmass roughly 12.
+- **[Proposed]** Moving up a stage needs the paid expansion plus a floor of buildings and population, so a stage name means something. The "established" status (Section 8.15) is reached at around the hamlet or village stage.
+- **[Proposed]** Population figures are guides, not caps. The NPC population cap per island and region (Section 8.2) and the language model budget (Section 3) limit the NPC share. The player share of a metropolis is the thousand-strong guild case.
+- **[Proposed]** An outpost has a fixed small radius, about 100 m, and reserves only that.
+
 - **[Decided]** A town has a **circle of influence** around its marker.
 - **[Idea]** The planner prefers rings, working outward from the centre:
   1. The core: the keep or castle, the main storage and warehouse, the guards, and extra storage and housing that can take people in during a defence.
@@ -1390,10 +1409,10 @@ Ambiguities found in the 2026-10-14 review (the newest statement was applied whe
 64. **The aging clock.** Settled (2026-10-14): one server clock; everyone ages online or offline; human biology including menopause; no cap on children beyond biology (Section 6.1). Still open: the exact fertility ages (proposed: fertile from 15, menopause 45 to 55).
 65. **One clock per system.** Everything runs on the single server clock. A "real time" window is server time, so it pauses when the server is down (proposed). Still open: reputation fades "over about a week" but "in-game days" means 7 real hours at 60-minute days; and whether a game day is 60 or 72 minutes.
 66. **Town block.** Settled (2026-10-14): a marker with no physical form, visible only to the owner, with a ledger entry; settings are reached through an office building (Section 8.17). Still open: how another player sees and claims an abandoned marker, and what "touching the block" becomes (proposed: being at the office).
-67. **The circle of influence.** Settled: a default size that grows by about 25 or 50 percent per paid expansion, up to the maximum city size, with no overlap between towns (Section 8.17). Still open: the default radius, the size list (hamlet, village, town, city), the maximum, expansion cost, and the outpost radius.
+67. **The circle of influence.** Settled: grows by paid expansion, no overlap, a maximum-city reservation (Section 8.17). Proposed: a ladder from settlement (200 m) to metropolis (1,500 m radius), each step 50 percent larger, with population guides. Still open: confirm or change the numbers and names, the expansion cost, and what each stage requires.
 68. **What "established" means.** Guards, a well, a temple and probably walls: how many guards, how strong, and does the town need all of them? What can players do to each other in a town that is not yet established (the "gray area")? Where do PvP and PvE rules live (Sections 8.15, 9.0, question 57)?
-69. **Succession details.** Settled (2026-10-14): without a will the family decides and the player's choice is random among the eligible; retirement means choosing a successor, taking over their body, and the retiree becoming an elderly NPC on the farm. Still open: can a named successor refuse, who is eligible, and at what age or frailty can a character retire?
-70. **Merging dynasties.** Settled (2026-10-14): the entire families combine under the player, including new spouses, stepchildren, properties, businesses and debts. Still open: which duress value is kept, are stepchildren eligible as successors, and what happens to the absorbed dynasty's reputation?
+69. **Succession details.** Settled (2026-10-14): without a will the family decides and the player's choice is random among the eligible; a named successor can refuse, then the next sibling, then the children and stepchildren, then the spouses in order (Section 6.7); retirement means choosing a successor, taking over their body, and the retiree becoming an elderly NPC on the farm. Still open: the order of siblings (oldest first?), what happens if nobody can accept, and at what age or frailty a character may retire.
+70. **Merging dynasties.** Settled (2026-10-14): the entire families combine under the player, with new spouses, stepchildren, properties, businesses and debts, and stepchildren can be successors. Still open: which duress value is kept and what happens to the absorbed dynasty's reputation.
 71. **Weekly check-in for duress.** Should clearing duress need one real choice instead of a bare login? Left undecided by the project owner.
 72. **Real-world alerts for town challenges.** Should an email or app alert also be sent when someone challenges a town? It is kinder, but it weakens the in-world distance and mail idea.
 73. **Flagging a town for deletion.** The administrators vote, but there is no trigger, deadline or fallback if nobody does. Should there be an automatic rule (for example after a set time with no owner and no manager)?
