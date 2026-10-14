@@ -339,6 +339,8 @@ func _test_tables() -> void:
 	_check(tables.id_of("resources", "tin") == ResourceIds.TIN, "tin ID")
 	_check(tables.id_of("resources", "gemstone") == ResourceIds.GEMSTONE, "gem ID")
 	_check(tables.id_of("resources", "peat") == ResourceIds.PEAT, "peat ID")
+	_check(tables.id_of("resources", "bog_iron") > 0 and tables.id_of("resources", "saltpeter") > 0, "bog iron and saltpeter exist")
+	_check(tables.entry_of("resources", "nickel").get("retired", false), "nickel is retired")
 	_check(
 		tables.id_of("surficial_deposits", "lake_sediment")
 		== SurficialDepositIds.LAKE_SEDIMENT,

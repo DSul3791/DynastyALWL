@@ -133,7 +133,7 @@ const RESOURCE_COLORS := {
 	"lead": Color(0.55, 0.45, 0.75), "sulfur": Color(0.95, 1.0, 0.3),
 	"diamond": Color(0.9, 1.0, 1.0), "ruby": Color(0.9, 0.0, 0.2), "sapphire": Color(0.1, 0.2, 0.95),
 	"emerald": Color(0.0, 0.8, 0.3), "topaz": Color(1.0, 0.7, 0.3), "aquamarine": Color(0.4, 0.9, 0.9),
-	"amethyst": Color(0.6, 0.3, 0.9), "agate": Color(0.8, 0.5, 0.4), "garnet": Color(0.6, 0.05, 0.1), "opal": Color(0.95, 0.85, 0.95), "flint": Color(0.3, 0.3, 0.35), "bitumen": Color(0.05, 0.03, 0.02), "alum": Color(0.85, 0.95, 0.85),
+	"amethyst": Color(0.6, 0.3, 0.9), "agate": Color(0.8, 0.5, 0.4), "garnet": Color(0.6, 0.05, 0.1), "opal": Color(0.95, 0.85, 0.95), "flint": Color(0.3, 0.3, 0.35), "bitumen": Color(0.05, 0.03, 0.02), "graphite": Color(0.4, 0.4, 0.45), "alum": Color(0.85, 0.95, 0.85),
 	"salt": Color(1.0, 1.0, 1.0), "gypsum": Color(0.95, 0.9, 0.85), "coal": Color(0.0, 0.0, 0.0),
 }
 

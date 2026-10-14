@@ -691,6 +691,24 @@
 						30
 					],
 					"density": 0.05
+				},
+				{
+					"kinds": [
+						"fold_belt"
+					],
+					"host": "shale",
+					"chance": 0.2,
+					"resources": [
+						[
+							"graphite",
+							1.0
+						]
+					],
+					"band_m": [
+						5,
+						20
+					],
+					"density": 0.01
 				}
 			],
 			"vent_lenses": [

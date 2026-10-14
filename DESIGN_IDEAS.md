@@ -296,6 +296,10 @@ A tile should then take minutes, and `world_preview.gd` could show island panel 
 | Alum (decided 2026-10-14) | Bands in shale (alum shale) in basins, and lenses in volcanic rock altered by hot gases near vents. Used to fix dyes and tan leather |
 | Glass sand (decided 2026-10-14) | The existing sand deposits, with a glass quality: clean beach sand best, inland sand fair, muddy river sand poor (`glass_quality` in the soil and deposit tables) |
 | Bitumen (decided 2026-10-14) | Natural tar seeping up beside salt domes and here and there in sedimentary basins, reaching the surface as tar pits. Use: waterproofing ships and roofs; a regional trade good, since most islands rely on pine tar made from trees instead |
+| Graphite (decided 2026-10-14) | Rare bands in shale deep in fold belts, where old plant-rich mud was cooked under pressure. Use: graphite crucibles. Early game uses plain clay crucibles; a lucky late-game discovery that graphite makes better, heat-proof crucibles gives a higher crucible tier for casting metals |
+| Bog iron (decided 2026-10-14) | Rust-colored lumps in marshes and peat bogs, where iron-rich groundwater meets air. An early iron source for a new player without a mine. Not stored in tiles: derived at runtime from the marsh biome and peat soil (like flint pebbles), and it regrows slowly |
+| Saltpeter (decided 2026-10-14) | Bat droppings (guano) on dry cave floors, in caves with bat dens, and white crusts on dry cave walls. Derived at runtime from the cave sites and their dens, not stored separately. Uses: fertilizer that raises farm fertility (Section 5), curing and preserving meat, and later gunpowder |
+| Nickel | Retired (2026-10-14): no medieval use. Kept in the table so its ID is never reused |
 | Aluminum | Not used: it was unknown in medieval times (first isolated in the 1820s) |
 | Clay and peat | Wetlands and the surface deposit map |
 
@@ -373,6 +377,7 @@ A tile should then take minutes, and `world_preview.gd` could show island panel 
 
 ## 5. Harvesting, tools and farming
 
+- **[Decided]** (2026-10-14) There are several crucible types. Plain clay crucibles come first; graphite crucibles, which survive much higher heat, are a lucky later discovery (graphite in Section 4.9).
 - **[Decided]** Everything is harvestable with strong enough tools: all trees, all plants (except basic grass), rocks and minerals.
 - **[Proposed]** A shared rule: every harvestable thing and every rock type has a hardness, every tool has a power, and a tool works if power is at least hardness. The project already has excavation resistance values for rock types and a resource list that can seed this.
 - **[Proposed]** Grass can be handled as small patches if needed, with harvested cells hidden by clients.

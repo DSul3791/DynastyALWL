@@ -2,7 +2,7 @@
 	"table": "resources",
 	"format_version": 1,
 	"note": "IDs are append-only. Never renumber or reuse an ID; retire an entry with \"retired\": true and take the next ID from next_id for new entries.",
-	"next_id": 30,
+	"next_id": 32,
 	"entries": [
 		{
 			"id": 0,
@@ -50,7 +50,9 @@
 			"id": 7,
 			"name": "nickel",
 			"display": "Nickel",
-			"category": "metal"
+			"category": "metal",
+			"retired": true,
+			"note": "No medieval use (isolated 1751); retired 2026-10-14. ID kept."
 		},
 		{
 			"id": 8,
@@ -185,6 +187,20 @@
 			"name": "bitumen",
 			"display": "Bitumen",
 			"category": "industrial"
+		},
+		{
+			"id": 30,
+			"name": "bog_iron",
+			"display": "Bog iron",
+			"category": "metal",
+			"derived": true
+		},
+		{
+			"id": 31,
+			"name": "saltpeter",
+			"display": "Saltpeter",
+			"category": "industrial",
+			"derived": true
 		}
 	]
 }
