@@ -843,8 +843,15 @@ Assumptions: 70 game years of aging (15 to 85) over one real year with about 700
 | 0 | 6.0 | 1.64 percent | 4.0 | 0.026 percent |
 
   A starter town at 75 therefore gives about two colds a game year and one or two major illnesses in a lifetime.
-- **[Proposed]** (2026-10-14) **Length and effect (tunable).** A cold lasts at most about 5 game days (5 real hours) and slows work by about 10 percent; temple treatment cuts it to a day. A major illness lasts at most about 30 game days (30 real hours), the person cannot work, and it needs treatment, which cuts it to about a week. At those lengths a person at spirit 75 is ill about 3 percent of the time from colds and about 0.3 percent of their life from major illness.
-- **[Proposed]** (2026-10-14) Major illness is twice as likely after age 50, and an old or poor person who is not treated could die of one. This is still open for the designer.
+- **[Proposed]** (2026-10-14) **Cold (tunable).** A cold lasts at most about 5 game days (5 real hours) and slows work by about 10 percent. Temple treatment cuts it to a day.
+- **[Decided]** (2026-10-14) **Major illness.**
+  - It takes about 30 game days unless the person is treated at the temple. The sick NPC may be confined to the temple.
+  - **A roll at the start decides life or death,** with a very small chance of death.
+  - If the roll says they live, they gradually get better over 15 days because they are at the temple. The town's spirit goes up by 2 points.
+  - If the roll says they die, they gradually get worse and die. The town's spirit goes down by 1 point.
+- **[Proposed]** (2026-10-14) **Chance of death (tunable).** Treated at the temple: about 2 percent for an adult under 50 and 5 percent from 50 on. Not treated (no temple, or not taken there): three times those. Over a lifetime of about 1.4 major illnesses that is roughly a 4 percent chance of dying of one for a treated person.
+- **[Proposed]** (2026-10-14) **Player characters.** Players are not confined to the temple against their will, but they can choose to go. A "dies" result for a player character becomes a grave illness with a countdown of game days, in the same way as the downed state (Section 6.1), so friends and family have time to get them to the temple.
+- **[Proposed]** (2026-10-14) A death also brings grief for the spouse, children and friends, with a prayer request on the bulletin board (Section 8.12).
 - **[Proposed]** (2026-10-14) To keep the server cheap, each person draws once the number of days until their next sickness (a geometric draw from the chance above) and does not roll every day. The draw is made again when spirit changes a lot or when they recover.
 - **[Proposed]** (2026-10-14) The other boosts stay modest (tunable): about 5 percent for productivity, crop growth and animal growth, and about 10 percent more fullness from food.
 - **[Decided]** The starter towns' prices are set by their merchant, not fixed by admins. The merchant reviews prices once a day and raises or lowers each one from supply, demand and other factors: an abundance of a good lowers its price, high demand raises it. Admin town buying pays these prices.
