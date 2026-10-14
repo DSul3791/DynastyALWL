@@ -849,7 +849,14 @@ Checked: this has not been in the design before. Section 4 has weather from the 
 - **[Decided]** Roads barely degrade (perhaps by a percentage) and never fully disappear. Buildings fall down and become rubble. Nothing erases itself completely.
 - **[Decided]** An administrator can flag an abandoned town for deletion, and the server administrators vote on it. If approved, the town enters a final stage of further decay and slowly disappears into the ground.
 - **[Decided]** In that final stage, wood and other biodegradable materials vanish and feed the ground. Stone and other non-biodegradable materials never disappear. If a foundation took 100 pieces of stone, those 100 pieces remain as rubble mounds that other characters can harvest, unless someone tears them down and removes them first.
-- **[Proposed]** Rubble mounds are stored as piles of material, not as individual pieces, so large ruined towns stay cheap to store and to draw on the minimum machine. A mound that is harvested is reduced in the same way.
+- **[Decided]** The pile is called **rubble**. It is an item with models, and it is a chunk of the world. A collapsed building leaves one rubble pile holding what did not degrade: for example 100 stone, 200 to 300 wood, 600 nails, and any iron or other lasting goods.
+- **[Decided]** Rubble contents are not all permanent. Wood in a pile still rots in the final deletion stage (above), while stone and metal stay. Whatever remains can be harvested.
+- **[Proposed]** Rubble is stored as a pile of counted materials, not as individual pieces, so large ruined towns stay cheap to store and to draw on the minimum machine. Harvesting reduces the counts.
+- **[Idea]** Iron in rubble could slowly rust over a long time, giving less usable metal, while stone never changes. This is only a flavor idea and is left open.
+- **[Decided]** Roads have visible condition. In a maintained town a road looks pristine, with no grass growing through it. A road in disrepair looks different (grass, mud, ruts).
+- **[Decided]** Road condition has effects. A road in good repair lets you travel faster. A road in disrepair is muddier: it slows travel and makes travelers dirtier.
+- **[Proposed]** Road maintenance is paid by the town, so road condition follows the town's money and spirit. A road between towns could be maintained by whichever town owns the stretch, or by tolls (Section 13).
+- **[Open]** How many road condition levels exist, how dirt and cleanliness work for characters, and who owns and repairs roads between towns.
 - **[Open]** How long each stage lasts, what the decay stages are called, the thresholds that trigger collapse, how many administrators must vote, and what happens to a town's records when it is deleted.
 
 ---
