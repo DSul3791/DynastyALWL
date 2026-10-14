@@ -861,7 +861,16 @@ Checked: this has not been in the design before. Section 4 has weather from the 
 - **[Decided]** Road condition has effects. A road in good repair lets you travel faster. A road in disrepair is muddier: it slows travel and makes travelers dirtier.
 - **[Proposed]** Road maintenance is paid by the town, so road condition follows the town's money and spirit. A road between towns could be maintained by whichever town owns the stretch, or by tolls (Section 13).
 - **[Open]** How many road condition levels exist, how dirt and cleanliness work for characters, and who owns and repairs roads between towns.
-- **[Open]** What flagging for deletion actually changes besides the continued decay (for example it ends ownership and the NPC simulation, and whether the land can later be claimed for a new town once the rubble is gone).
+- **[Decided]** Flagging for deletion happens when nobody bought the town from its manager. At that moment the town manager leaves his post and the town's ledgers and ownership are gone.
+- **[Decided]** The manager becomes an ordinary NPC, available for others to hire. He keeps his skills and whatever money he held, and he lives on it until he finds work or falls into poverty over time.
+- **[Decided]** The town block stays. It is a small office at the centre of the town, and the town's circle of influence spreads from it. What is left is a dilapidated block, roads and rubble.
+- **[Decided]** The town block keeps the town's blueprints and its history: which buildings it had, its peak income, its farming and trade, its name and its previous owners.
+- **[Decided]** Anyone can open an abandoned town block without claiming it and read that history before deciding.
+- **[Decided]** Anyone can claim an abandoned town block, and claiming costs nothing. Nothing stops a claim.
+- **[Decided]** A claimant uses blueprint mode to see every building of the old town as an outline, with what it was and the materials it needs. The rubble beneath each outline holds most of those materials. The owner harvests rubble piles and puts the materials into a blueprint, which rebuilds that building.
+- **[Decided]** The owner can hire a town manager, builders and guards when affordable, or cut trees and build alone or with friends, or turn the place into a small farming community until they can afford a manager. All of these paths are open.
+- **[Proposed]** The rebuild order is the owner's choice. A natural order is the town hall, then the temple and the well (which also raise the spirit floor, Section 8.12), then guards and the rest.
+- **[Open]** Whether a limit or cooldown stops one person claiming many abandoned blocks, how an abandoned block's circle of influence interacts with a new town block placed nearby, and whether a claimed town starts with the old spirit or a fresh low one.
 - **[Open]** How long each stage lasts, what the decay stages are called, the thresholds that trigger collapse, how many administrators must vote, and what happens to a town's records when it is deleted.
 
 ---
