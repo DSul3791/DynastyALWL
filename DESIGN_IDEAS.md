@@ -870,8 +870,20 @@ Checked: this has not been in the design before. Section 4 has weather from the 
 - **[Decided]** A claimant uses blueprint mode to see every building of the old town as an outline, with what it was and the materials it needs. The rubble beneath each outline holds most of those materials. The owner harvests rubble piles and puts the materials into a blueprint, which rebuilds that building.
 - **[Decided]** The owner can hire a town manager, builders and guards when affordable, or cut trees and build alone or with friends, or turn the place into a small farming community until they can afford a manager. All of these paths are open.
 - **[Proposed]** The rebuild order is the owner's choice. A natural order is the town hall, then the temple and the well (which also raise the spirit floor, Section 8.12), then guards and the rest.
-- **[Open]** Whether a limit or cooldown stops one person claiming many abandoned blocks, how an abandoned block's circle of influence interacts with a new town block placed nearby, and whether a claimed town starts with the old spirit or a fresh low one.
+- **[Decided]** No limit or cooldown on claiming abandoned blocks. Travel by foot, horse and ship is slow, so the distance itself is the limit.
+- **[Open]** How an abandoned block's circle of influence interacts with a new town block placed nearby, and whether a claimed town starts with the old spirit or a fresh low one.
 - **[Open]** How long each stage lasts, what the decay stages are called, the thresholds that trigger collapse, how many administrators must vote, and what happens to a town's records when it is deleted.
+
+### 8.14 Contesting a town claim
+
+- **[Decided]** A claimed town can be contested. A town must have real things in it to be feasible: someone who claims several towns and then travels away must have managers and guards who can defend each one.
+- **[Decided]** If the owner has not been near a town for a long time, another player can apply to buy it. If the two do not reach an agreement in a set time, the challenger can claim the block and pays the previous owner a fixed amount based on the value of the town or its rubble. If the owner cannot get back in time, the owner accepts the payment and loses the town.
+- **[Decided]** The time the owner has to respond depends on how developed the town is: a bare town block about 2 hours, with a town manager about 4 hours, with a town manager and guards about 24 hours, and with a wall about 48 hours.
+- **[Decided]** A town with no guard that the owner does not return to within the window is lost without a contest.
+- **[Decided]** In a town with militia or guards, a challenger can only make an offer to buy. The owner can accept, negotiate or decline.
+- **[Decided]** A town that is not doing anything productive but still has a manager, clean water, a temple and guards is an expense on the owner's other towns or dynasty, so hoarding idle towns costs money.
+- **[Open]** How the timer numbers and the "offer only" rule fit together for towns with guards (is the 24 or 48 hours the window to answer an offer?), whether the windows are real time or game time, and how a weekly player is protected.
+- **[Proposed]** Following "safe, kind, generous" and the weekly rhythm (Section 3), an owner gets an urgent notification (Section 6, notification priorities) the moment a challenge starts, and a manager's defence runs without the owner. A real-time window of 2 hours is short for a weekly player, so for any town with a manager or guards the windows should be long enough to read an email and respond.
 
 ---
 
