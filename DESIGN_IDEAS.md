@@ -560,8 +560,9 @@ Assumptions: 70 game years of aging (15 to 85) over one real year with about 700
 - **[Idea]** **Admin town warehouse.** Admins have a special menu that places an admin warehouse, a creative-mode style warehouse that supplies whatever is needed. Any NPC in that town can use it for building and for selling supplies, so the starter town's tradespeople always have basic supplies for sale and admin town building goes much faster. It might be a default for starter towns.
 - **[Decided]** Only town admins, town NPCs and residents can take goods from the admin warehouse. It shows two supply numbers: a limited supply for residents who are not admins, and an unlimited supply for server town admins.
 - **[Decided]** (2026-10-13) **Buy before manifesting.** Server admin towns with an admin warehouse always try to buy resources from player-run towns (when available) before using the warehouse's magical ability to manifest supplies. A new player therefore always finds a buyer waiting as soon as they start producing, and because all towns degrade and buildings need upkeep, that demand never ends.
-- **[Decided]** To avoid imbalance, admin town buying has limits: how much it will buy from each town and how much in total per day. Budget amounts are set in the town manager (Section 8.5).
-- **[Proposed]** Admins set a daily budget per resource (or per resource group) and a cap per selling town or player, with the warehouse manifesting only what purchases could not cover. Purchases show in the admin warehouse log next to manifested goods. The price paid follows the town's market price (Section 13.2), so admin towns support prices without setting them.
+- **[Decided]** To avoid imbalance, admin town buying has limits: how much it will buy from each town and how much in total per day. Budgets are a money amount per day, set in the town manager (Section 8.5). The warehouse manifests only what purchases could not cover.
+- **[Decided]** The admin warehouse log shows both: goods bought from players and goods manifested.
+- **[Decided]** The starter towns' prices are set by their merchant, not fixed by admins. The merchant reviews prices once a day and raises or lowers each one from supply, demand and other factors: an abundance of a good lowers its price, high demand raises it. Admin town buying pays these prices.
 - **[Decided]** Goods bought from NPC tradespeople are limited by how fast they can actually make them. They have orders to keep a stock level, and when someone buys an item the NPC has to stop and make another to replenish it (Section 13.7).
 - **[Decided]** Starter items are worthless to vendors, because everyone gets them from the starter town. A vendor asked to buy one says something like "you know how many of these I see in a day? I can't get rid of the stock I have."
 - **[Decided]** Starter items are made of the most basic materials. Melting one down returns at most 80% of the material, and only with a really good skill.
@@ -847,6 +848,8 @@ To be fleshed out when the first NPC is designed.
 
 ### 13.2 Markets
 
+- **[Decided]** (2026-10-13) Market prices are not regulated. Player towns and businesses set their own prices.
+- **[Decided]** NPC merchants (including in the starter towns) review their prices once a day and move them with supply and demand: plentiful goods get cheaper, goods in high demand get dearer (Section 8.1).
 - **[Proposed]** Local prices move with supply and demand. NPC consumption (everyone eats) creates steady demand without simulating each meal.
 - **[Proposed]** Climate and soil make different regions grow different goods, so towns and islands have goods the others want. That gives wagons and ships a reason to travel.
 
@@ -1064,7 +1067,7 @@ Generator, hardware and hosting
 57. How PvP works for players who want it, given the starter areas are PvE (Section 9.0).
 58. How long before a vacated home is abandoned, and what happens to its contents (Section 8.6).
 59. Does fallow land (farmland left unplanted) slowly recover fertility by itself, enabling medieval-style crop rotation, or only through lime and manure? To discuss later. (Section 5)
-60. Admin town buying: budgets per resource or per group, caps per town or per player, what price it pays, and whether it buys only from connected towns (Section 8.1).
+60. Admin town buying: settled that budgets are money per day, the log shows bought and manifested goods, and prices come from the merchant's daily review. Still open: whether the daily cap is split per resource, per selling town or per player, and whether it buys only from connected towns (Section 8.1).
 
 ---
 
