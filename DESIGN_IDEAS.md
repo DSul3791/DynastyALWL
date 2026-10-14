@@ -61,6 +61,7 @@ A persistent, rough-medieval, multiplayer online world: a survival, exploration 
 ## 2. Terminology
 
 - **Region:** one 1,024 m by 1,024 m storage file holding all 7 LODs. It is the natural unit to stream from server to client.
+- **Town block (town marker):** the marker a player places to claim a town. It has no physical form: it is a floating arrow only the owner can see, which the owner can switch on and off, and it creates an entry in the owner's ledger saying they own a claim. It is the centre of the town and the centre of its circle of influence. Town settings are reached through the town's office building, not through the marker (Section 8.17). An **outpost marker** works the same way for an outpost.
 - **Island tile:** a block of 15 by 15 regions, 15,360 m (about 15.36 km) on a side. Each tile is baked on its own and addressed by a permanent integer coordinate. (It was 10 by 10 regions and 10.24 km until 2026-10-12. The old generator still builds 10 by 10 tiles until it is retired.)
 - The project owner sometimes says "chunk". Depending on context that means a region or an island tile.
 - **[Decided]** Sizes are multiples of 1,024 because voxel data aligns best that way.
@@ -481,13 +482,13 @@ Question from the project owner: do we have all the building blocks, with a safe
 - **[Proposed]** The heir's retrieval quest (above) leads to these remains, so the mechanics line up: a creature that took the gear makes a hoard to raid.
 - **[Open]** How long remains last (see question 12 on dropped items), whether the image is a flat sprite that faces the player, how sand cover is worked out, which creatures collect gear, and whether NPC adventurers who die also leave remains.
 - **[Decided]** ARK-style unconsciousness before death. A downed character can be revived, carried or dragged to safety by party members.
-- **[Decided]** Characters age **slower** while their player is offline, but they stay in the world and remain vulnerable. Their body can fall unconscious, be burned or be killed while offline. Friends can pick them up, put them on a wagon, or drag them to cover.
-- **[Decided]** Characters and their families age slower while the player is offline, so the household ages together. The mismatch is between the household and the rest of the world, not within the family.
-- **[Idea]** Replace the rule above: since lifespans are averaged over about a year anyway, everyone (players, families and NPCs) simply ages on the server clock at the same rate, 70 years per real year. Claude recommended this because it removes the offline aging speed question and the household mismatch, and because the slower-offline rule only narrowed the gap in play hours per life a little (about 300 to 1,100 hours instead of 260 to 1,300 for 5 to 25 hours a week). It has not been confirmed. Its costs: time away ages a character (four weeks is about 5.4 years, two months about 12), and the clock must survive server downtime (Section 7.6).
+- **[Superseded]** Characters age slower while their player is offline. Replaced by the single server clock below. Characters still stay in the world and remain vulnerable while offline: their body can fall unconscious, be burned or be killed, and friends can pick them up, put them on a wagon, or drag them to cover.
+- **[Superseded]** Characters and their families age slower while the player is offline, so the household ages together. Replaced by the single server clock below, under which everyone ages together anyway.
+- **[Decided]** (2026-10-14) **One clock.** Everyone (players, families and NPCs) ages on the server clock at the same rate, whether or not the player is online. Ageing follows ordinary human rules: pregnancy lasts about nine months, women go through menopause, and a couple can have as many children as they choose to and as biology allows. At 70 years per real year, one year of age is about 5.2 real days, so a pregnancy is about 3.9 real days, a child reaches 10 after about 52 real days and 15 after about 78. Time away ages a character (four weeks is about 5.4 years). The clock must survive server downtime (Section 7.6).
 - **[Decided]** Spouses and children stay in the world while the player is away. Events such as bandit raids, dragons and sickness can affect them, which gives players a reason to return.
 - **[Decided]** Co-op: friends can tend animals and harvest crops for an absent owner, with permission.
 - **[Decided]** Because offline characters stay vulnerable, the downed timer keeps running while the player is offline.
-- **[Proposed]** Age is computed as online time at full speed plus offline time at a reduced rate.
+- **[Proposed]** Fertility numbers, to tune: fertile from about age 15, menopause at a random age between roughly 45 and 55 per character. Everything else follows from the server clock.
 - **[Proposed]** Downed window or recovery chance depends on age and condition.
 - **[Proposed]** Ownership held at the **dynasty** (family line) level, so nothing needs transferring when a character dies. This is consistent with the heir inheriting everything that remains.
 - **[Proposed]** Logging out in a bed, inn or your own town makes a character **safer** (not invulnerable), while logging out in the wilderness leaves the body exposed. The project owner agreed and noted inns can be abandoned, attacked or burned, with occupants inside.
@@ -631,6 +632,8 @@ Aging, marriage, children growing up, crop growth, regrowth, decay, taxes, loan 
 
 ### 7.2 Why one clock does not work
 
+**[Superseded in part]** (2026-10-14) The table below assumed ageing slower while offline. The decision is a single server clock for everything. The aging rate (70 years per real year) and the calendar rate (a 365-day year of 60-minute days is about 15.2 real days) are two rates derived from that one counter, which is why they can differ. Ageing offline is no longer a variable.
+
 Assumptions: 70 game years of aging (15 to 85) over one real year with about 700 online hours and about 8,060 offline hours. Aging runs at full speed online and at a reduced "offline speed" while logged out, and the household ages with the player.
 
 | Offline aging speed | One game year lasts (real time) | One season lasts | One online hour is worth |
@@ -661,7 +664,7 @@ Assumptions: 70 game years of aging (15 to 85) over one real year with about 700
 - **[Decided]** NPCs age at about the same speed as a typical player: 70 years over one real year, from a random starting age to a random death age. Starting ages are roughly 20 to 30 and death comes roughly between 70 and 90. Their aging runs on the character aging clock, not on the calendar.
 - **[Proposed]** At that speed one year of age is about 5.2 real days. An NPC who starts at 25 and dies at 80 lives about 9.4 months of real time. One who starts at 30 and dies at 70 lives about 7 months. A child takes about 11 weeks to reach 15. A town's population therefore turns over in about a year, so births, marriage and migration matter.
 - **[Proposed]** An NPC's birthday comes every 5.2 days, not once per calendar year. With a 10-day calendar year an NPC ages about 1.9 years per calendar year. Showing age as a life stage (child, young adult, adult, elder) instead of an exact number could avoid that oddity.
-- **[Open]** The offline aging speed (or whether everyone simply ages on the server clock, Section 6.1), the exact length of the calendar year, and whether age is shown as a number or a life stage.
+- **[Decided]** Everyone ages on the server clock (Section 6.1). **[Open]** The exact length of the calendar year, and whether age is shown as a number or a life stage.
 
 ### 7.5 Day and night
 
@@ -699,7 +702,8 @@ Assumptions: 70 game years of aging (15 to 85) over one real year with about 700
 - **[Decided]** Starter items are worthless to vendors, because everyone gets them from the starter town. A vendor asked to buy one says something like "you know how many of these I see in a day? I can't get rid of the stock I have."
 - **[Decided]** Starter items are made of the most basic materials. Melting one down returns at most 80% of the material, and only with a really good skill.
 - **[Proposed]** Starter items carry a "starter town" maker's mark under the provenance principle (Section 3), which is how vendors recognize them. Salvage yield rises with skill up to the 80% ceiling. Every admin warehouse withdrawal is logged.
-- **[Idea]** **Founding sequence.** The town block is a founding building such as the town hall, the magistrate's office or the town well. Next come a town planner's office and a builders' guild. The planner surveys the land and suggests the best areas for roads, districts, suburbs and town walls. Once the player approves, builders level the land for roads and lay cobblestone paths or dirt roads, with bridges where required. With roads done, the planner suggests building locations with an explanation of where and why. If approved, the planner places the building, or the player places it.
+- **[Decided]** (2026-10-14) **Founding.** The town block is a marker with no physical form (see Terminology). Until the owner puts down an office building (a keep or castle with an office, a house with an office, a town hall or a magistrate's office) they cannot reach the town settings. The building is also where the town manager lives and works. The marker is the centre of the town, so the well naturally goes over or beside it.
+- **[Idea]** **Founding sequence.** After the first office come a town planner's office and a builders' guild. The planner surveys the land and suggests the best areas for roads, districts, suburbs and town walls. Once the player approves, builders level the land for roads and lay cobblestone paths or dirt roads, with bridges where required. With roads done, the planner suggests building locations with an explanation of where and why. If approved, the planner places the building, or the player places it.
 - **[Decided]** Apart from the starter town, the first players (the project owner's friends and family) build the towns.
 - **[Decided]** Towns become server-owned when a town owner's dynasty falls into receivership and nobody takes the town over, and are then offered for sale (Section 8.12). Nothing is placed at the start, so this does not affect the bake.
 - **[Decided]** Players build roads and buildings, choosing from premade blueprints.
@@ -833,6 +837,7 @@ To be fleshed out when the first NPC is designed.
 - **[Idea]** A town on a good island has lots of land. Satellite outposts can be built on the hillsides of the mountainous island chains: a mine, a dock and an outpost master. Mines ship supplies back to the town. An outpost needs less room and can handle steeper slopes right next to the water.
 - **[Proposed]** Measured on the first world sketch (`plan/buildable_summary.txt`): 36 islands have room for a town, but 289 have an outpost site (a foothold of at least 0.05 km² on slopes up to about 17 degrees at the shore, with water at least 8 m deep within about 500 m for a dock). 253 of those have no town site, so outposts are how most islands get used, and the volcanic chains in hard and deadly waters (134 outpost islands) become mining frontiers.
 - **[Proposed]** An outpost is a business in the shared business structure (Section 13.4), owned by a town or player and run by an outpost master NPC. It claims a small plot (an outpost block with a much smaller radius than a town block) and links to its parent town's warehouse by a sea route. Ships run that route on a schedule (materialized only when seen, Section 3), carrying ore out and food, tools and wages in.
+- **[Decided]** (2026-10-14) An outpost is claimed with an outpost marker, in the same way as a town marker (Section 8.17).
 - **[Proposed]** Outpost blueprints are built for slopes: terraces, stilts, stairs and a jetty, so the blueprint leveling check (Section 10.1) allows steeper ground for them than for town buildings.
 - **[Proposed]** Danger matters: outposts in hard and deadly waters need a palisade and guards paid by the parent town, and are natural targets for raids, pirates and sea creatures, which ties into threats and pacing (Section 12). Losing an outpost cuts a supply line rather than ending a town.
 - **[Proposed]** Volcanic islands drop steeply into deep water, which makes them good for docks. The geology already favors them for ore: copper and gold on arcs, sulfur and gems on hotspot volcanoes (Section 4.9). When ore bodies are placed at bake time, some should sit near outpost-friendly coves so mines and docks pair naturally.
@@ -881,8 +886,8 @@ To be fleshed out when the first NPC is designed.
 - **[Decided]** Flagging for deletion happens when nobody bought the town from its manager. At that moment the town manager leaves his post and the town's ledgers and ownership are gone.
 - **[Decided]** An administrator can flag an abandoned town for deletion, and the server administrators vote. A flagged town is not removed. Its buildings keep degrading at the regular speed, looking more worn and dilapidated until each collapses into rubble. Players can walk through a collapsing town and see that one used to be here.
 - **[Decided]** The manager becomes an ordinary NPC, available for others to hire. He keeps his skills and whatever money he held, and he lives on it until he finds work or falls into poverty over time.
-- **[Decided]** The town block stays. It is a small office at the centre of the town, and the town's circle of influence spreads from it. What is left is a dilapidated block, roads and rubble.
-- **[Decided]** The town block keeps the town's blueprints and its history: which buildings it had, its peak income, its farming and trade, its name and its previous owners.
+- **[Decided]** The town marker stays, and so does the town's office building (dilapidated, like the rest). The marker is the centre of the town, and the town's circle of influence spreads from it. What is left is the marker, the office, roads and rubble.
+- **[Decided]** The office keeps the town's blueprints and its history: which buildings it had, its peak income, its farming and trade, its name and its previous owners.
 
 **Degradation and rubble**
 
@@ -905,8 +910,8 @@ To be fleshed out when the first NPC is designed.
 
 **Claiming an abandoned town**
 
-- **[Decided]** Anyone can open an abandoned town block without claiming it and read that history before deciding.
-- **[Decided]** Anyone can claim an abandoned town block, and claiming costs nothing. Nothing stops a claim.
+- **[Decided]** Anyone can open an abandoned town's office without claiming it and read that history before deciding.
+- **[Decided]** Anyone can claim an abandoned town by taking over its marker, and claiming costs nothing. Nothing stops a claim.
 - **[Decided]** A claimant uses blueprint mode to see every building of the old town as an outline, with what it was and the materials it needs. The rubble beneath each outline holds most of those materials. The owner harvests rubble piles and puts the materials into a blueprint, which rebuilds that building.
 - **[Decided]** The owner can hire a town manager, builders and guards when affordable, or cut trees and build alone or with friends, or turn the place into a small farming community until they can afford a manager. All of these paths are open.
 - **[Proposed]** The rebuild order is the owner's choice. A natural order is the town hall, then the temple and the well (which also raise the spirit floor, Section 8.12), then guards and the rest.
@@ -938,7 +943,7 @@ To be fleshed out when the first NPC is designed.
 - **[Decided]** A town with no manager has nobody to deliver word to the owner. There is no notification. If the owner is in the area, a visitor can see that and make an offer at the block. If the owner is away, a challenger simply puts in a claim, and if the owner does not return within the window (about 2 hours for a bare block), the challenger gets the town.
 - **[Decided]** The town stays on the former owner's ledger until the next time they visit it, because they still believe they own it. On arrival they find it is owned by someone else, and it drops from the ledger.
 - **[Decided]** This is a deliberate exception to the legibility principle (Section 3): not knowing about a loss until you return is part of the cost of leaving a town unmanaged. A town with a manager has no such gap, since the manager sends word.
-- **[Decided]** Without a manager, the owner must be physically at the town block, touching it, to change anything, give commands or read the town's books and interface.
+- **[Decided]** Without a manager, the owner must be physically at the town's office to change anything, give commands or read the town's books and interface.
 - **[Decided]** With a manager, the owner can control the town remotely through the manager, and the manager makes certain decisions while the owner is away. The owner sets which decisions the manager may make.
 - **[Decided]** The manager makes two kinds of decisions: ones he can make automatically, and ones where he must request approval or give the owner options to choose from.
 - **[Decided]** A town is unsafe, a gray area, until it has established its basics: guards, fresh water from a well, a temple and probably walls. Once established it is a PVE area.
@@ -970,6 +975,23 @@ To be fleshed out when the first NPC is designed.
 - **[Decided]** To apply, a buyer goes to the nearest town (which can be the town itself) and talks to the town manager, an NPC at this stage. The manager talks about the town's problems and says it is available if someone good enough can be found. The buyer negotiates with the manager. If the language model judges the negotiation to be in good faith, they reach an agreement. This must happen before the town falls apart.
 
 - **[Open]** The price formula, how competing applicants are handled, and what the manager's good-faith judgment looks at.
+
+### 8.17 Town marker, territory and outposts
+
+- **[Decided]** (2026-10-14) The town block is a marker with no physical form: a floating arrow only the owner can see, which the owner can switch on and off. It adds an entry to the owner's ledger saying they own a claim. It marks the exact centre of the town.
+- **[Decided]** Until an office building is placed (a keep or castle with an office, a house with an office, a town hall or a magistrate's office), the owner cannot reach the town settings. The building is where the town manager lives and works.
+- **[Decided]** A town has a **circle of influence** around its marker. A new town starts with a default size. With money the owner can have it grown: the town planner sends the builders out, woodcutters clear trees, and the radius grows by about 25 or 50 percent per expansion. The planner then recommends roads and zones for the new ground (industrial, residential, farming), which the owner approves.
+- **[Idea]** The planner prefers rings, working outward from the centre:
+  1. The core: the keep or castle, the main storage and warehouse, the guards, and extra storage and housing that can take people in during a defence.
+  2. Businesses and tradespeople: the blacksmith, merchants, sales stalls and inns.
+  3. The waterfront, on the side with water: the harbour and port with bars, shanties, shipping businesses and agents. On the landward sides this ring holds small farms or more storage.
+  4. Beyond that, farmland.
+- **[Decided]** An **outpost** is claimed with an outpost marker, like a town marker. The owner can then put buildings on it and hire a manager. The kind of building decides the kind of manager and outpost: a mine manager, or a lumber mill with a master who runs a few NPCs who cut wood, bring it in, process it and ship it to the town.
+- **[Decided]** Outposts and towns exchange goods by NPC travel, and that travel makes roads. The NPCs path-find by least resistance, so the first road between an outpost and its town is a rough dirt road formed by the travel itself. This is a system to build in.
+- **[Decided]** When a route needs a bridge, the NPCs tell the town builder, who arranges builders and decides where the road and the bridge go.
+- **[Idea]** Bridges use bridge blueprints, or a special dynamic bridge blueprint that fits the gap.
+- **[Idea]** Cheaper crossings: shallow fords that horses can walk through, or a causeway across shallows with pipes or culverts for the water.
+- **[Open]** The default radius, the cost and the limits of expansion, whether the rings are fixed rules or only planner preferences, the maximum span and water depth of a bridge, the kinds of bridge (rope, timber, stone), who maintains roads formed by travel, and how an abandoned marker is seen and claimed by other players.
 
 ---
 
@@ -1283,7 +1305,7 @@ World and bake
 
 Time and persistence
 
-11. Does everyone age on the server clock (Section 6.1), or keep the slower offline aging speed? How long is the calendar year exactly (avoiding 7 or 14 days), and is age shown as a number or a life stage? (Section 7)
+11. Settled: everyone ages on the server clock (Section 6.1). Still open: the exact length of the calendar year, and whether age is shown as a number or a life stage. (Section 7)
 12. Do dropped items expire, and do hard-to-reach ones last longer?
 13. What happens when a character dies with no heir?
 14. Is there a grace period for accidental disconnects, and does the game warn about risky logout spots?
@@ -1360,10 +1382,10 @@ Generator, hardware and hosting
 
 Ambiguities found in the 2026-10-14 review (the newest statement was applied wherever two disagreed; these are the cases where it is still unclear)
 
-64. **The aging clock (the biggest one).** Do characters age while their player is offline, and how fast? Everyone on the server clock at 70 years per real year (one year of age is about 5.2 real days)? How long is a pregnancy, how many children can a couple have, and how long until a child is useful (about 52 real days to age 10 at that speed)? Sections 6.1, 6.6, 7.2 and 7.4 disagree or are open on this.
-65. **One clock per system.** Reputation timing is "in-game days" but fades "over about a week" (seven in-game days is 7 real hours at 60-minute days). Town spirit decays by real days. Duress, receivership and takeover windows are real time. The length of a game day (60 or 72 minutes) is still open. Which clock does each system use, and do real-time windows pause when the server is down?
-66. **Town block or town hall?** Section 8.1 calls the town block a founding building such as the town hall. Section 8.13 calls it a small office at the centre with a circle of influence. Are the town block and the town hall the same object? What does each do?
-67. **The circle of influence.** What is its radius, what grows it, how do overlapping circles settle, how does it relate to the 3 km and 2 km spacing in Section 8.1, and what is an outpost's smaller radius?
+64. **The aging clock.** Settled (2026-10-14): one server clock; everyone ages online or offline; human biology including menopause; no cap on children beyond biology (Section 6.1). Still open: the exact fertility ages (proposed: fertile from 15, menopause 45 to 55).
+65. **One clock per system.** Everything runs on the single server clock. A "real time" window is server time, so it pauses when the server is down (proposed). Still open: reputation fades "over about a week" but "in-game days" means 7 real hours at 60-minute days; and whether a game day is 60 or 72 minutes.
+66. **Town block.** Settled (2026-10-14): a marker with no physical form, visible only to the owner, with a ledger entry; settings are reached through an office building (Section 8.17). Still open: how another player sees and claims an abandoned marker, and what "touching the block" becomes (proposed: being at the office).
+67. **The circle of influence.** Settled in part: a default size that grows by about 25 or 50 percent per paid expansion, with the planner recommending zones (Section 8.17). Still open: the default radius, expansion cost and limits, overlap with other towns, spacing against the 3 km and 2 km rules in Section 8.1, and the outpost radius.
 68. **What "established" means.** Guards, a well, a temple and probably walls: how many guards, how strong, and does the town need all of them? What can players do to each other in a town that is not yet established (the "gray area")? Where do PvP and PvE rules live (Sections 8.15, 9.0, question 57)?
 69. **Succession details.** Who succeeds when there is no will (default proposed: eldest child, then spouse)? What if there are no children or spouse? What does retirement mean: can a head retire at any time, and what does the retired character do afterward?
 70. **Merging dynasties.** When two dynasties merge, which duress value is kept? Are the absorbed dynasty's children eligible as successors? What happens to its spouses, its debts and its reputation?
@@ -1382,6 +1404,8 @@ Ambiguities found in the 2026-10-14 review (the newest statement was applied whe
 83. **River network and edge matching.** Confirm the approach in `WORLD_FORMAT_SPEC.md` Section 4b (a world river network on the 160 m map, overlap margins, a final edge-matching pass) and that step 13b is done before any tile is kept.
 84. **PvP zones.** If PvP areas are added later, they should be a world-level map in `world.json`, not part of tiles. Confirm.
 85. **Temple.** Is a temple built by the town, by players, or both, what does it cost, and how many can a town have? (Section 8.11)
+86. **Bridges and travel roads.** Maximum span and water depth of a bridge, which kinds exist (rope, timber, stone, causeway with culverts, ford), and who maintains the dirt roads that NPC travel creates. (Section 8.17)
+87. **Ring layout.** Are the rings in Section 8.17 hard rules or only the planner's preferences, and can the owner override them?
 
 ---
 
