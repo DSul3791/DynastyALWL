@@ -1055,6 +1055,7 @@ Generator, hardware and hosting
 56. Settled: starter landmass inner 50 to 100 km², outer 70 to 150 km². Still open: town spacing 3 km from a starter town, 2 km between towns? (Sections 4.1, 8.1)
 57. How PvP works for players who want it, given the starter areas are PvE (Section 9.0).
 58. How long before a vacated home is abandoned, and what happens to its contents (Section 8.6).
+59. Does fallow land (farmland left unplanted) slowly recover fertility by itself, enabling medieval-style crop rotation, or only through lime and manure? To discuss later. (Section 5)
 
 ---
 
