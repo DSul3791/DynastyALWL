@@ -595,6 +595,36 @@ func _make_features(cell: Dictionary, rng: RandomNumberGenerator, seed_point: Ve
 		})
 		ores.append(ore)
 
+	# Bitumen (natural tar) seeps up beside salt domes and here and there in
+	# basins, reaching the surface as a tar pit.
+	if kind == "basin":
+		var seep_rules: Dictionary = ore_rules["seep"]
+		var seeps: Array = []
+
+		for feature in made_features:
+			if str(feature["type"]) == "salt_dome" and rng.randf() < float(seep_rules["dome_chance"]):
+				var angle: float = rng.randf() * TAU
+				seeps.append([Vector2(float(feature["center"][0]), float(feature["center"][1]))
+					+ Vector2(cos(angle), sin(angle)) * float(feature["radius_m"]) * 1.2, feature["id"]])
+
+		if rng.randf() < float(seep_rules["basin_chance"]):
+			seeps.append([random_point.call(0.45), ""])
+
+		for seep in seeps:
+			var spot: Vector2 = seep[0]
+			var radius: float = rng.randf_range(float(seep_rules["radius_m"][0]), float(seep_rules["radius_m"][1]))
+			var surface: float = _elevation.height_at_m(spot.x, spot.y)
+			var depth: float = rng.randf_range(float(seep_rules["depth_m"][0]), float(seep_rules["depth_m"][1]))
+			var ore: Dictionary = new_id.call(ore_counter)
+			ore.merge({
+				"resource": "bitumen", "shape": "pipe", "feature": seep[1],
+				"center": [snappedf(spot.x, 0.1), snappedf(spot.y, 0.1)], "radius_m": snappedf(radius, 0.1),
+				"top_y": snappedf(surface + 5.0, 0.1), "bottom_y": snappedf(surface - depth, 0.1),
+				"grade": snappedf(rng.randf_range(0.3, 0.9), 0.01),
+				"tonnes": int(PI * radius * radius * depth * 1.1),
+			})
+			ores.append(ore)
+
 	# Ore around the intrusions.
 	var limestone: Dictionary = {}
 

@@ -710,7 +710,19 @@
 						90
 					]
 				}
-			]
+			],
+			"seep": {
+				"dome_chance": 0.5,
+				"basin_chance": 0.2,
+				"radius_m": [
+					8,
+					30
+				],
+				"depth_m": [
+					50,
+					250
+				]
+			}
 		},
 		"cover": {
 			"flat_m": 6.0,

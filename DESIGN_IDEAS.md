@@ -295,6 +295,7 @@ A tile should then take minutes, and `world_preview.gd` could show island panel 
 | Flint (decided 2026-10-14) | Nodules scattered through chalk layers, and thinner chert through limestone. Flint pebbles also lie on beaches and in river gravels below chalk outcrops, so new players can pick them up without digging (derived at runtime from the rock and soil maps, not stored) |
 | Alum (decided 2026-10-14) | Bands in shale (alum shale) in basins, and lenses in volcanic rock altered by hot gases near vents. Used to fix dyes and tan leather |
 | Glass sand (decided 2026-10-14) | The existing sand deposits, with a glass quality: clean beach sand best, inland sand fair, muddy river sand poor (`glass_quality` in the soil and deposit tables) |
+| Bitumen (decided 2026-10-14) | Natural tar seeping up beside salt domes and here and there in sedimentary basins, reaching the surface as tar pits. Use: waterproofing ships and roofs; a regional trade good, since most islands rely on pine tar made from trees instead |
 | Aluminum | Not used: it was unknown in medieval times (first isolated in the 1820s) |
 | Clay and peat | Wetlands and the surface deposit map |
 
