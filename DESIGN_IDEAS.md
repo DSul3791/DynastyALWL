@@ -803,8 +803,6 @@ To be fleshed out when the first NPC is designed.
 - **[Proposed]** Volcanic islands drop steeply into deep water, which makes them good for docks. The geology already favors them for ore: copper and gold on arcs, sulfur and gems on hotspot volcanoes (Section 4.9). When ore bodies are placed at bake time, some should sit near outpost-friendly coves so mines and docks pair naturally.
 - **[Proposed]** The generator does not need to bake outpost sites: they can be found at runtime from the tile maps (slope, height, shoreline, water depth), the same way the town planner surveys land. Natural harbors and coves can still be marked as sites at bake time.
 
----
-
 ### 8.11 The temple
 
 - **[Decided]** Every town can have a temple. It is non-denominational (no real-world religion) and built entirely on the principle "be safe, be kind, be generous" (Section 3).
@@ -827,6 +825,8 @@ Checked: this has not been in the design before. Section 4 has weather from the 
 - **[Proposed]** Weather near a town border blends smoothly between towns and open country, so there are no walls of rain.
 - **[Proposed]** Safety valve, following "safe, kind, generous": a very low score must not trap people in a death spiral. Harsh weather is capped short of making farming impossible, and the worst towns get more help (the temple, rescue quests, outside aid) and not more punishment.
 - **[Open]** The name of the score, what feeds it and how heavily, how fast it moves, how far its weather reaches around the town, and how it interacts with crop yields and with mood.
+
+---
 
 ## 9. Law, crime and recognition
 
