@@ -389,7 +389,12 @@ A tile should then take minutes, and `world_preview.gd` could show island panel 
 - **[Decided]** The generated fertility map is only the natural starting value. Farmers can improve poor land with time, money and tools: lime, manure and other soil treatment, and terracing or other terraforming. In principle a player could cultivate a whole hillside or a whole heath coast into fertile farmland. Heath stays in the biome mix because it adds realism.
 - **[Proposed]** Because of that, fertility needs a changeable layer on top of the generated one: player changes (soil treatment, terraces) are stored as small saved deltas per area, not baked into the tile files, and fertility is used up by growing crops, not by the passage of time alone. Crops read generated fertility plus the delta. Growing crops draws fertility down (some crops more than others, which is where rotation and fallow fields matter); lime and manure build it back. Whether fallow land recovers by itself is open.
 - **[Open]** Prepared ground (tilling) as a terrain edit, or seeds on any suitable surface.
-- **[Open]** Whether things regrow at different speeds and whether rocks and minerals ever return.
+- **[Decided]** (2026-10-14) **Three kinds of resource, by how they renew.** The world is not instant-respawn: nothing comes back an hour later.
+  - **Renewable:** living things (trees, crops, grass, wild plants). They regrow in stages, so a cleared area fills with seedlings, then young trees, then medium trees, then mature ones, with different species for each biome and climate. Grass keeps spreading into bare neighboring ground, and a forest slowly refills around a clearing.
+  - **Semi-renewable:** things nature keeps delivering slowly, such as placer gold, tin and gems in river gravels (worn from veins upstream, so they trickle back), river gravel, pebbles and sand, bog iron, flint pebbles on beaches, saltpeter crusts and clay.
+  - **Non-renewable:** rock and ore in the ground (stone, coal, iron, copper, tin, gold veins, gems in the rock, salt and so on). A rock is not renewable. When a deposit is mined out it is gone for good.
+- **[Proposed]** How it fits the generator: each ore body has a stable ID and a total tonnage (step 11), so the server keeps a small record per body of how much has been taken, and does the same for each placer. A semi-renewable deposit refills at a slow rate set per resource (a fraction of its capacity per game year, resolved lazily from timestamps like crops), so a panned river stays workable if worked gently and runs thin if stripped. Worked-out non-renewable deposits stay at zero, so the world's supply of coal and iron is finite, which gives islands and trade real value.
+- **[Proposed]** Plant regrowth uses the same lazy rule as Section 5 above: store when something was cut, and work out the stage of the replacement when someone is near.
 - **[Open]** Whether tool and item type changes what a harvest yields.
 - **[Open]** Whether mining the terrain itself (tunnels and veins) is in the first version or only surface rocks. Digging and leveling land are wanted overall.
 
@@ -815,6 +820,11 @@ To be fleshed out when the first NPC is designed.
 - **[Idea]** Villagers work in the mine during work hours, mining ore and filling the ore receptacle. Machinery gradually moves it up to the surface in an assembly-line way. Other villagers load it on wagons and move it to town, where craftspeople buy it to make tools, weapons, hinges and building parts.
 - **[Proposed]** Output depends on the miners' skill, their tools and the ore richness. The depth heat limit applies to miners, so deep mines need ventilation stations and staff.
 - **[Proposed]** Tracks and roads use the same leveling rules as blueprints.
+- **[Decided]** (2026-10-14) Mines and caves can become unstable. A natural cave stays up as long as its openings are small enough; the bigger a man-made opening, the more it needs support. Miners must shore up their workings with timbers or pillars, and supports slowly wear and need maintenance. This is a deliberate difference from games where players can dig out huge spaces for free.
+- **[Decided]** If a mine lies inside a town block or an outpost block, its support maintenance falls under the town's repair schedule. Builders do not have to be physically present: the supports age and are repaired automatically on the town's schedule, and the cost comes out of the mine owner's account.
+- **[Decided]** If the owner stops playing for a set time (say three or six months) or their account runs out of in-game money, repairs stop and the supports gradually fail until the mine **caves in**. A cave-in only refills the workings with rubble. The land above does not sink.
+- **[Proposed]** What the collapse does not do: it does not bring ore back (the tonnage taken stays taken), and rubble can be dug out again, so an abandoned mine can be reclaimed at the cost of clearing and re-shoring it. The server tracks each mine's support health as a few numbers (opening size, supports installed, last repaired, owner funded or not) and resolves wear and collapse lazily from timestamps, like regrowth, so it works while nobody is nearby.
+- **[Open]** The abandonment time (three or six months), how big an opening needs supports, what kinds of supports there are (timber, stone pillars, masonry arches, later iron), whether a collapse can trap or injure miners inside, and whether natural caves can ever collapse after players dig them wider.
 
 ### 11.3 Life in the world
 
@@ -1105,6 +1115,7 @@ Generator, hardware and hosting
 59. Does fallow land (farmland left unplanted) slowly recover fertility by itself, enabling medieval-style crop rotation, or only through lime and manure? To discuss later. (Section 5)
 60. Admin town buying: settled that budgets are money per day, the log shows bought and manifested goods, and prices come from the merchant's daily review. Still open: whether the daily cap is split per resource, per selling town or per player, and whether it buys only from connected towns (Section 8.1).
 61. Factions, political groups and guilds: none exist yet; ideas to come later. For now the town a player lives in acts as their group (Sections 8.6 and 13.3).
+62. Resource renewal and mine support (Sections 5 and 11.2): how fast each semi-renewable resource refills, mine abandonment time, opening sizes that need support, support types and whether collapses can hurt miners.
 
 ---
 
