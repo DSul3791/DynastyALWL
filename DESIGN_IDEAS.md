@@ -549,8 +549,9 @@ A tile should then take minutes, and `world_preview.gd` could show island panel 
 
 - **[Proposed]** Bots and client automation are banned in the terms of service. Hands-off play via NPC staff is allowed by design, and the household economy already pays less for neglect (Section 6.6).
 - **[Proposed]** A weekly check-in that clears duress could require one real choice (sign off on the ledger, answer a letter, pick a family task), so a bare login does nothing.
-- **[Proposed]** Dynasties transfer inside the game by marriage, adoption, will or sale to a successor, with a transfer tax. The login itself is not sold, so identity, reputation and record stay with the person.
-- **[Open]** Whether the weekly choice is wanted, and whether dynasty sale is allowed beyond inheritance.
+- **[Decided]** Dynasties transfer inside the game by several routes: marriage, adoption, will, or sale to a successor, with a transfer tax. The login itself is not sold, so identity, reputation and record stay with the person.
+- **[Open]** Whether the weekly check-in needs a real choice. The project owner is undecided for now.
+- **[Open]** Whether one person can hold several dynasties (buy them, merge them, take several spouses). Under discussion.
 
 ---
 
