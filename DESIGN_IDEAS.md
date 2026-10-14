@@ -1358,6 +1358,31 @@ Generator, hardware and hosting
 62. Resource renewal and mine support (Sections 5 and 11.2): how fast each semi-renewable resource refills, mine abandonment time, opening sizes that need support, support types and whether collapses can hurt miners.
 63. Duress and absence (Section 6): all settled except the per-month protection price (market analysis, Section 13.8), refund rules for a real-money balance, what a player gets back after their dynasty became NPCs, which events count as urgent versus weekly, and payment handling.
 
+Ambiguities found in the 2026-10-14 review (the newest statement was applied wherever two disagreed; these are the cases where it is still unclear)
+
+64. **The aging clock (the biggest one).** Do characters age while their player is offline, and how fast? Everyone on the server clock at 70 years per real year (one year of age is about 5.2 real days)? How long is a pregnancy, how many children can a couple have, and how long until a child is useful (about 52 real days to age 10 at that speed)? Sections 6.1, 6.6, 7.2 and 7.4 disagree or are open on this.
+65. **One clock per system.** Reputation timing is "in-game days" but fades "over about a week" (seven in-game days is 7 real hours at 60-minute days). Town spirit decays by real days. Duress, receivership and takeover windows are real time. The length of a game day (60 or 72 minutes) is still open. Which clock does each system use, and do real-time windows pause when the server is down?
+66. **Town block or town hall?** Section 8.1 calls the town block a founding building such as the town hall. Section 8.13 calls it a small office at the centre with a circle of influence. Are the town block and the town hall the same object? What does each do?
+67. **The circle of influence.** What is its radius, what grows it, how do overlapping circles settle, how does it relate to the 3 km and 2 km spacing in Section 8.1, and what is an outpost's smaller radius?
+68. **What "established" means.** Guards, a well, a temple and probably walls: how many guards, how strong, and does the town need all of them? What can players do to each other in a town that is not yet established (the "gray area")? Where do PvP and PvE rules live (Sections 8.15, 9.0, question 57)?
+69. **Succession details.** Who succeeds when there is no will (default proposed: eldest child, then spouse)? What if there are no children or spouse? What does retirement mean: can a head retire at any time, and what does the retired character do afterward?
+70. **Merging dynasties.** When two dynasties merge, which duress value is kept? Are the absorbed dynasty's children eligible as successors? What happens to its spouses, its debts and its reputation?
+71. **Weekly check-in for duress.** Should clearing duress need one real choice instead of a bare login? Left undecided by the project owner.
+72. **Real-world alerts for town challenges.** Should an email or app alert also be sent when someone challenges a town? It is kinder, but it weakens the in-world distance and mail idea.
+73. **Flagging a town for deletion.** The administrators vote, but there is no trigger, deadline or fallback if nobody does. Should there be an automatic rule (for example after a set time with no owner and no manager)?
+74. **Server-town decay against the spirit floor.** A server-owned town with a temple and clean water keeps a spirit floor, but also loses money and decays. Which decides when buildings start to fall, and how long does it take?
+75. **Hostile takeover payment.** "A fixed amount based on the town's value": who works out the value, and does it include the buildings, the stock and the NPCs?
+76. **Weekly players and short windows.** A bare town block can be lost after a 2 hour window, which fights the principle "never punish a weekly rhythm". Is that acceptable, or should the windows be longer or the first claim protected for a while?
+77. **Duress: yield penalty or money sink?** The project owner described duress as a money sink that slowly stresses an ignored dynasty. Section 6.1 describes it as yield penalties and illness, with paid protection. Is the main effect money drained, yields cut, or both?
+78. **Households without limits.** Many living spouses and children are allowed. Is there any cap, or only cost (housing, food, care)? How does a large household affect duress and the weekly player?
+79. **Remains.** How long do remains last, are they flat images that face the player, how is sand cover worked out, which creatures collect gear, and do NPC adventurers leave remains too? (Sections 4.13 and 6.1)
+80. **Rubble.** How big is a rubble chunk, and how is it stored in the server's living layer when terrain is regenerated?
+81. **Tile ID scheme.** Confirm the recommendation: a record's identity is its home tile and local ID, the revision is only a cache marker, and records added by resource passes use local IDs from pass number × 10,000. (`WORLD_FORMAT_SPEC.md` Section 4)
+82. **Which extra resources before tiles are kept.** Only tuff (whole-layer volcanic stone) might need to come first. The rest can be added later by passes. See the table in Section 4.9a.
+83. **River network and edge matching.** Confirm the approach in `WORLD_FORMAT_SPEC.md` Section 4b (a world river network on the 160 m map, overlap margins, a final edge-matching pass) and that step 13b is done before any tile is kept.
+84. **PvP zones.** If PvP areas are added later, they should be a world-level map in `world.json`, not part of tiles. Confirm.
+85. **Temple.** Is a temple built by the town, by players, or both, what does it cost, and how many can a town have? (Section 8.11)
+
 ---
 
 ## 16. Candidate work, in dependency order

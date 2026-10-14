@@ -22,7 +22,7 @@ Working plan for the new world generator described in `DESIGN_IDEAS.md` (Section
 - Step 10 (climate, moisture, biome, soil, fertility) done for the starter tile: `src/worldgen/tile/tile_climate.gd`. Moisture comes from wet air swept along the zone's wind (rain shadow behind mountains) plus nearness to fresh water; biome, soil and fertility follow from temperature, moisture, slope, height and water. Rules in `tile_rules.json` "climate". Preview: `tile_3_4_biomes.png`. Known tuning notes: fertile land (150+) is only about 3 km2 because slope penalises hilly ground; heath appears on the windward coast; to be tuned when we look at farms and towns.
 - Step 11 (geology and ore) first version: `src/worldgen/tile/tile_geology.gd`. Provinces are world-grid cells (about 3.8 km) whose kind comes from the sketch feature under them; each has a repeating rock layer stack starting just above its highest ground, folds or a basin sag, and its own features (granite plutons and stocks, faults, volcanic vents and pipes, salt domes) and ore bodies (tin roofs, copper halos, skarn iron/copper/zinc, gold and silver veins on faults, lead and zinc lenses in limestone, coal seams, salt and gypsum layers, gem pipes and pegmatites, sulfur around vents, placer gold and tin in rivers below exposed bodies). Maps: province index, cover depth, layer offset, plus a bedrock-surface rock map for previews. About 10 s per tile. Preview: `tile_3_4_geology.png`. Rules in `tile_rules.json` "geology". Known gaps: ore amounts are rough estimates, coal tonnes count one cycle only, the world wrap seam is not yet handled by the per-tile detail and climate noise (provinces do handle it).
 - Step 12 (sites) first version: `src/worldgen/tile/tile_sites.gd`. Natural caves only (mineshafts and labyrinths are later add-ons): limestone caves that follow the folded limestone beds, with squeezes (often followed by a drop), shafts, ledges, chambers, a rare large cavern, chasms crossed by thin rock bridges and shallow flooded sumps; about half start near ore and send a side passage into it; lava tubes from volcanic vents on land, with skylights; sea caves in coastal cliffs; rock shelters. Each cave is a skeleton of nodes and typed segments plus chambers, entrances and creature dens (tier from regional danger and depth). Caves stay inside their tile. Also dormant lair sites (caves with a chamber and a den), the harbor, and on starter tiles the spawn point (beach beside the starter river mouth) and a suggested town block; no cave opens within 600 m of either. Under 1 s per tile. Preview: `tile_3_4_caves.png`. Rules in `tile_rules.json` "sites".
-- Next: step 13 tile file writer and reader; formerly: step 12 sites; formerly: step 11 geology and ore; formerly: step 10 climate, biome and soil; formerly: step 9 erosion, then step 10 climate, biome and soil; formerly: step 8 water (rivers into the bay), then step 9 erosion; formerly: step 7 (one tile's detailed maps, read from the world elevation map).
+- Next: step 13, the tile file writer and reader. Before it, the permanent parts of the format are settled in `WORLD_FORMAT_SPEC.md` (IDs, resource passes, edge rule). After it, step 13b: rivers across tile edges, overlap margins, wrap-seamless noise and the final edge-matching pass (spec Section 4b).
 
 ## Steps
 
@@ -35,18 +35,19 @@ Working plan for the new world generator described in `DESIGN_IDEAS.md` (Section
 
 3. **World settings.** `worlds/<world>/world.json` with identity, geometry, climate curve and runtime-tunable values, plus a loader that validates it. The climate function (latitude, temperature, altitude) lives here.
 4. **Data tables.** Append-only ID tables for biomes, soils, rocks, resources, water classes, site types and feature types.
-5. **Tile matrix randomizer.** Fills `plan/tile_matrix.json` for all 441 tiles: ocean, peers, or main island with satellites; locked starter tiles; reproducible from the seed; locked cells preserved.
+5. **Tile plan.** Originally a per-tile randomizer; replaced on 2026-10-13 by the world sketch and a tile plan derived from it (`plan/tile_plan.json`).
 6. **Whole-world preview.** One image of all tiles (islands, climate zones, starter tiles) and a text summary (land per zone, islands per size class). **Checkpoint:** the project owner reviews and tunes the odds.
 
 ### Building one tile (2D maps)
 
-7. **Island layout and elevation.** From a matrix cell: land masks with irregular coasts and islets, height from coast distance, mountain spines and ridges, shelves down to the -2,000 m ocean edge. Preview image.
+7. **Island layout and elevation.** From the world elevation map: cubic upsample to 8 m plus seam-safe detail noise. Neighboring tiles match on shared edges. Preview image.
 8. **Water.** Adapt the existing hydrology to the new height field: rivers, lakes, flow. Preview image.
 9. **Erosion.** A 2D erosion pass for valleys and winding terrain. Timed.
 10. **Climate, biome and soil.** Temperature, moisture, rain shadow, biome, soil, fertility. Preview images.
 11. **Geology and ore.** Provinces, features (intrusions, faults, basins, volcanic), ore bodies with stable IDs, layer offsets and cover depth.
 12. **Sites.** Natural cave systems, dormant lairs, harbors, and starter data for starter tiles. Mineshafts and labyrinths are later add-ons (decided 2026-10-13).
 13. **Tile file.** Writer and reader for the container in the spec (sections, Zstandard, SHA-256, atomic rename), plus low-resolution maps. **Checkpoint:** bake a starter tile end to end, record the time and file size.
+13b. **Rivers across edges and edge matching.** A world river network, tile rivers that follow it, overlap margins, wrap-seamless detail and climate noise, and a pass that checks every shared tile edge (spec Section 4b). Must be done before any tile is kept.
 
 ### Seeing it in the game
 

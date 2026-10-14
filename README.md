@@ -1,5 +1,7 @@
 # Baked Voxel Game — Modular Island Generator
 
+> **Old generator.** This file describes the earlier volumetric generator (10 by 10 region tiles, 10,240 m). It stays accurate for that code, which remains in the repository until the new generator replaces it (plan step 19 in `GENERATOR_V2_PLAN.md`). For the current design see `DESIGN_IDEAS.md` and `WORLD_FORMAT_SPEC.md`.
+
 Godot 4.7 project for deterministic, geology-driven voxel islands stored as independently movable region files.
 
 ## What changed in V3
