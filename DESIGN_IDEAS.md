@@ -551,7 +551,11 @@ A tile should then take minutes, and `world_preview.gd` could show island panel 
 - **[Proposed]** A weekly check-in that clears duress could require one real choice (sign off on the ledger, answer a letter, pick a family task), so a bare login does nothing.
 - **[Decided]** Dynasties transfer inside the game by several routes: marriage, adoption, will, or sale to a successor, with a transfer tax. The login itself is not sold, so identity, reputation and record stay with the person.
 - **[Open]** Whether the weekly check-in needs a real choice. The project owner is undecided for now.
-- **[Open]** Whether one person can hold several dynasties (buy them, merge them, take several spouses). Under discussion.
+- **[Decided]** A person has only one dynasty. Taking over another dynasty (purchase, marriage, rescue) merges it into theirs, and its assets and holdings join the one dynasty.
+- **[Decided]** A dynasty may have several spouses over time. They die off from age or sickness, and each adds assets and holdings to the dynasty.
+- **[Decided]** Duress is a simple money sink, not a burden. It applies slowly to an ignored dynasty, which can then die off, be sold or fall apart.
+- **[Proposed]** Duress is one value per dynasty, so merging never multiplies the upkeep. The merged dynasty takes the higher value on the day of the merge, or the buyer's own, whichever the design settles on.
+- **[Open]** Whether spouses are held at the same time or one after another, and how children and inheritance from several spouses are divided.
 
 ---
 
