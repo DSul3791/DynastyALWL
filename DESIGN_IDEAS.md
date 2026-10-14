@@ -994,6 +994,12 @@ To be fleshed out when the first NPC is designed.
 
 ### 13.8 Real money (future)
 
+- **[Decided]** (2026-10-14) **Free to play, paid through small purchases.** The game is free and must run on older computers. There is no required monthly fee. Revenue comes from small, reasonable purchases:
+  - cosmetics such as holiday outfits, and special or event versions of gear, never anything extremely overpowered;
+  - simple goods that starter towns already sell, such as an iron sword or silver sword, for players who want to save time and effort on basics;
+  - in-game currency, which also lets someone who wants to be rich buy a lot of it, and the owner does not mind. For example, a player could spend a couple of hundred dollars and use it to take over someone else's dynasty in receivership (Section 6), then spend more to repair it and inherit its tools, weapons, animals and family.
+- **[Decided]** Paid duress blocks (Section 6) are a purchase of the same kind. Their prices are not set yet: they will come from a market analysis later, looking at what players will accept. For comparison, many players refuse $15 a month for games like World of Warcraft, but $5 a month or $60 a year would be much less of a dealbreaker.
+- **[Proposed]** The earlier ideas below (buying the game and a monthly subscription, a subscription minimum, earning subscription credits) are superseded by this decision, and are kept as options if the model changes. Because every player, free ones included, costs real money to host (server time, and the language model for NPC conversation), the free tier needs a per-player budget for the expensive parts (Section 3), and the revenue needs checking against that cost before launch. Selling currency still needs legal advice and care about gambling, consumer protection and payment rules.
 - **[Idea]** People buy the game for a reasonable price and pay a monthly subscription, roughly the same as World of Warcraft's.
 - **[Idea]** Players can earn credits in game toward the subscription. A town earns credits for its owner and management team, more with more population and trade, encouraging people to run and grow towns.
 - **[Idea]** The subscription can be reduced to a minimum of about $5 a month. Whether players could earn the whole subscription was left undecided.
@@ -1144,7 +1150,7 @@ Generator, hardware and hosting
 56. Settled: starter landmass inner 50 to 100 km², outer 70 to 150 km². Still open: town spacing 3 km from a starter town, 2 km between towns? (Sections 4.1, 8.1)
 57. How PvP works for players who want it, given the starter areas are PvE (Section 9.0).
 58. How long before a vacated home is abandoned, and what happens to its contents (Section 8.6).
-63. Duress and absence (Section 6): rise, halving on return, daily recovery, receivership (real-time week or two), takeover price (arrears, spouse chooses among applicants) and the built-in one-month vacation grace are settled. Still open: paid block prices, minimum and maximum block length, buying a block after duress has started, what a player gets back after their dynasty became NPCs, notification channels and frequency, and payment handling (Section 13.8).
+63. Duress and absence (Section 6): rise, halving on return, daily recovery, receivership (real-time week or two), takeover price (arrears, spouse chooses among applicants) and the built-in one-month vacation grace are settled. Still open: paid block prices (to be set by market analysis, Section 13.8), minimum and maximum block length, buying a block after duress has started, what a player gets back after their dynasty became NPCs, notification channels and frequency, and payment handling (Section 13.8).
 59. Does fallow land (farmland left unplanted) slowly recover fertility by itself, enabling medieval-style crop rotation, or only through lime and manure? To discuss later. (Section 5)
 60. Admin town buying: settled that budgets are money per day, the log shows bought and manifested goods, and prices come from the merchant's daily review. Still open: whether the daily cap is split per resource, per selling town or per player, and whether it buys only from connected towns (Section 8.1).
 61. Factions, political groups and guilds: none exist yet; ideas to come later. For now the town a player lives in acts as their group (Sections 8.6 and 13.3).
