@@ -455,7 +455,12 @@ A tile should then take minutes, and `world_preview.gd` could show island panel 
 - **[Proposed]** A "while you were away" report on login, with events resolved by game rules and optionally narrated by the language model.
 - **[Open]** Whether the game warns about the risk of a logout location.
 - **[Open]** A grace period for accidental disconnects.
-- **[Open]** Whether long absences get a special rule, or time simply passes.
+- **[Decided]** (2026-10-14) Long absences are a soft limit, not deletion. A character is never deleted for being away. After about a month away, **duress** starts to build on the dynasty, and each further month it becomes more stressful to run: crop yields drop (for example 10 percent, then 20 percent), animals get sickly and illnesses start to befall the family. Left long enough, the dynasty is run into the ground and the character becomes an NPC again.
+- **[Decided]** A character who reverts to an NPC may seek help from the temple and become one of the less fortunate of the town, join the nearest bandit camp, or, if they have skills, look for work in the nearest town and join the local workforce.
+- **[Decided]** When a dynasty reverts to NPC, its assets (houses, businesses, farmland, mines and other resource sources) appear on the town manager's operations screen so the town can claim them (Section 8.6).
+- **[Proposed]** Duress is a single score per dynasty. It starts after one month away and rises each further month (the numbers live in a settings table), and its effects scale with it: yield penalty, animal and family illness chance, and eventually the reversion. A visit lowers it. Whether it clears at once or over time is open, and so are warnings, a vacation notice and a buy-back for a returning player. Duress is resolved lazily from the last-seen time, so it costs nothing while nobody is looking.
+- **[Open]** How a returning player is handled: does duress clear at once or gradually, is there a vacation or away notice that slows it, and what a player gets back after their dynasty has become NPCs (a fresh start, a discounted buy-back of the old property, or a place among the NPC family).
+- **[Open]** (Settled above.) Whether time simply passes during short absences.
 - **[Open]** What happens when a character dies with no heir.
 - **[Open]** How permanent offline loss should be (can family members die, can buildings be destroyed).
 - **[Open]** Who can raid whom: only NPC bandits, monsters and sickness, or other players as well.
@@ -656,6 +661,7 @@ Assumptions: 70 game years of aging (15 to 85) over one real year with about 700
 - **[Idea]** A player might live in a town run by the server (if those exist later), in another player's town, or in their own.
 - **[Decided]** Starter towns have houses and farmland for sale. A player who buys one can work the land and live on the starter island.
 - **[Decided]** A home whose owner vacates is eventually deemed **abandoned** once enough time passes, and returns to the market.
+- **[Decided]** (2026-10-14) A property owner who has gone long enough that their dynasty reverts to NPC (Section 6, duress) loses the property to the town: it appears on the town manager's screen and the town may claim the houses, businesses, farmland, mines and other resource sources. For a mine, the town pays for repairs before letting it collapse (Section 11.2).
 - **[Open]** How long before a home counts as abandoned, whether the owner gets warnings, and what happens to belongings and stored goods.
 - **[Decided]** (2026-10-13) Players can own houses, businesses and farmland in any town, several in one town or spread across towns, as long as each town accepts their reputation.
 - **[Decided]** Players can also prospect their own land in the wilds and mark it with a **town stone** (to found a town, within the spacing rules in Section 8.1) or a **homestead stone** (a private holding).
@@ -824,7 +830,9 @@ To be fleshed out when the first NPC is designed.
 - **[Decided]** If a mine lies inside a town block or an outpost block, its support maintenance falls under the town's repair schedule. Builders do not have to be physically present: the supports age and are repaired automatically on the town's schedule, and the cost comes out of the mine owner's account.
 - **[Decided]** If the owner stops playing for a set time (say three or six months) or their account runs out of in-game money, repairs stop and the supports gradually fail until the mine **caves in**. A cave-in only refills the workings with rubble. The land above does not sink.
 - **[Proposed]** What the collapse does not do: it does not bring ore back (the tonnage taken stays taken), and rubble can be dug out again, so an abandoned mine can be reclaimed at the cost of clearing and re-shoring it. The server tracks each mine's support health as a few numbers (opening size, supports installed, last repaired, owner funded or not) and resolves wear and collapse lazily from timestamps, like regrowth, so it works while nobody is nearby.
-- **[Open]** The abandonment time (three or six months), how big an opening needs supports, what kinds of supports there are (timber, stone pillars, masonry arches, later iron), whether a collapse can trap or injure miners inside, and whether natural caves can ever collapse after players dig them wider.
+- **[Decided]** (2026-10-14) When a player's mine does collapse (or is left to), it slowly reverts to its natural state: erosion and water filling it in. A ruin is left on the surface, such as a collapsed entrance, old timbers and spoil heaps, so other players can tell there used to be a mine there. That is a hint that resources may be nearby, though the ore taken is still gone. The ruins fade as the mine fills in.
+- **[Decided]** Mines of dynasties that revert to NPC go to the town to claim (Section 8.6); the town pays for the repairs before allowing a cave-in.
+- **[Open]** The abandonment time (three or six months, now tied to the duress timeline in Section 6), how big an opening needs supports, what kinds of supports there are (timber, stone pillars, masonry arches, later iron), whether a collapse can trap or injure miners inside, and whether natural caves can ever collapse after players dig them wider.
 
 ### 11.3 Life in the world
 
@@ -1112,6 +1120,7 @@ Generator, hardware and hosting
 56. Settled: starter landmass inner 50 to 100 km², outer 70 to 150 km². Still open: town spacing 3 km from a starter town, 2 km between towns? (Sections 4.1, 8.1)
 57. How PvP works for players who want it, given the starter areas are PvE (Section 9.0).
 58. How long before a vacated home is abandoned, and what happens to its contents (Section 8.6).
+63. Returning players after absence: does duress clear at once or gradually, is there a vacation notice, and what does a player get back after their dynasty became NPCs (Section 6).
 59. Does fallow land (farmland left unplanted) slowly recover fertility by itself, enabling medieval-style crop rotation, or only through lime and manure? To discuss later. (Section 5)
 60. Admin town buying: settled that budgets are money per day, the log shows bought and manifested goods, and prices come from the merchant's daily review. Still open: whether the daily cap is split per resource, per selling town or per player, and whether it buys only from connected towns (Section 8.1).
 61. Factions, political groups and guilds: none exist yet; ideas to come later. For now the town a player lives in acts as their group (Sections 8.6 and 13.3).
