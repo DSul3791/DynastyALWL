@@ -465,13 +465,13 @@ Question from the project owner: do we have all the building blocks, with a safe
 ### 6.1 Aging and death
 
 - **[Decided]** Players age. They can woo a partner and have children.
-- **[Decided]** Characters start at about age 15.
-- **[Decided]** Lifespan is variable. The average person lives between 72 and 90 years, so a typical character dies at about 80 to 85 unless cut down early.
-- **[Decided]** For pacing, a typical character ages from 15 to 85 (70 years) over about one real year and about 700 hours of play (Section 7).
+- **[Decided]** (2026-10-14) Characters start at age 20. Marriage and children are possible from age 18 at the earliest. (This replaces "about 15".)
+- **[Decided]** (2026-10-14) **Lifespan is drawn at birth** from a bell curve around 62 years with a spread of about 8, never below 45 or above 85, to account for genetics. Sickness, accidents and fights come on top of that. (This replaces "72 to 90".)
+- **[Decided]** (2026-10-14) For pacing, a typical character lives from 20 to about 62 (42 years) over about 21 months of real time, roughly 1,270 hours of play at 14 hours a week (Section 7). Retirement comes around 50, after about 15 months. (This replaces the one year and 700 hours.)
 - **[Idea]** In their early 20s, players will hopefully settle down, establish a home and a spouse, and make that their base of operations.
 - **[Idea]** The base can be in a town that belongs to another player or to the player. A town belonging to the server was also mentioned. The developer-built starter town (Section 8.1) is the first such town.
 - **[Decided]** Children age too.
-- **[Idea]** Couples realistically keep having children, about one every year or two, and twins are possible. That is one every 5 to 10 real days, or about a dozen children between parent ages 22 and 40 over about three months of real time.
+- **[Idea]** Couples realistically keep having children, about one every year or two, and twins are possible. That is one every 15 to 30 real days, or about a dozen children between parent ages 22 and 40 over about nine months of real time.
 - **[Idea]** Population control: if a family has many children, one might fall sick and die or have a farming accident.
 - **[Proposed]** Tie that risk to conditions the player can see and influence (poor food, a crowded house, no healer nearby, unsupervised dangerous work) plus a low baseline of childhood illness for every family, instead of a penalty for family size. Food, housing and land costs make a large family a real expense. Child death is emotionally heavy and can affect age ratings, so it may need gentle handling.
 - **[Decided]** A character who is killed with no way to recover, or who is too old or wounded to recover, dies. The player restarts as a new character.
@@ -484,11 +484,11 @@ Question from the project owner: do we have all the building blocks, with a safe
 - **[Decided]** ARK-style unconsciousness before death. A downed character can be revived, carried or dragged to safety by party members.
 - **[Superseded]** Characters age slower while their player is offline. Replaced by the single server clock below. Characters still stay in the world and remain vulnerable while offline: their body can fall unconscious, be burned or be killed, and friends can pick them up, put them on a wagon, or drag them to cover.
 - **[Superseded]** Characters and their families age slower while the player is offline, so the household ages together. Replaced by the single server clock below, under which everyone ages together anyway.
-- **[Decided]** (2026-10-14) **One clock.** Everyone (players, families and NPCs) ages on the server clock at the same rate, whether or not the player is online. Ageing follows ordinary human rules: pregnancy lasts about nine months, women go through menopause, and a couple can have as many children as they choose to and as biology allows. At 70 years per real year, one year of age is about 5.2 real days, so a pregnancy is about 3.9 real days, a child reaches 10 after about 52 real days and 15 after about 78. Time away ages a character (four weeks is about 5.4 years). The clock must survive server downtime (Section 7.6).
+- **[Decided]** (2026-10-14) **One clock.** Everyone (players, families and NPCs) ages on the server clock at the same rate, whether or not the player is online. Ageing follows ordinary human rules: pregnancy lasts about nine months, women go through menopause, and a couple can have as many children as they choose to and as biology allows. One year of age is one calendar year of 365 game days, which at the default ratio of 24 (Section 7.3) is 15.2 real days. A pregnancy is about 11.4 real days, a child reaches 10 after about 152 real days and 18 after about 274. Time away ages a character (four weeks is about 1.8 years). The clock must survive server downtime (Section 7.6).
 - **[Decided]** Spouses and children stay in the world while the player is away. Events such as bandit raids, dragons and sickness can affect them, which gives players a reason to return.
 - **[Decided]** Co-op: friends can tend animals and harvest crops for an absent owner, with permission.
 - **[Decided]** Because offline characters stay vulnerable, the downed timer keeps running while the player is offline.
-- **[Proposed]** Fertility numbers, to tune: fertile from about age 15, menopause at a random age between roughly 45 and 55 per character. Everything else follows from the server clock.
+- **[Decided]** (2026-10-14) Fertility: marriage and children from 18 at the earliest; the chance falls gradually from 35; menopause at a random age between 45 and 55 set at birth; men stay fertile for life, with the chance dropping after 60.
 - **[Proposed]** Downed window or recovery chance depends on age and condition.
 - **[Proposed]** Ownership held at the **dynasty** (family line) level, so nothing needs transferring when a character dies. This is consistent with the heir inheriting everything that remains.
 - **[Proposed]** Logging out in a bed, inn or your own town makes a character **safer** (not invulnerable), while logging out in the wilderness leaves the body exposed. The project owner agreed and noted inns can be abandoned, attacked or burned, with occupants inside.
@@ -695,7 +695,7 @@ Question from the project owner: do we have all the building blocks, with a safe
   - **Example offers:** "I want to be the richest character in the world" is answered with a smaller grant, such as 5,000 or 50,000 gold. Other offers: everyone forgets who you are; your bad reputation in an area is erased; a lifelong boon of better reputation so people tend to like you; slower aging; being made 30 again and living another 500 years, or 100 years.
 - **[Decided]** (2026-10-14) **All characters age at the server clock** (Section 6.1), unless a wish changes it. Familiars age at the same speed as their handlers.
 - **[Decided]** (2026-10-14) **"I wish to live forever" is answered with a smaller grant.** The granter says it cannot make anyone live forever, but it can extend life and roll back years. The character is made half the age they are now, and one trait is changed so that they age significantly slower.
-- **[Proposed]** (2026-10-14) **How much slower.** Three tiers tied to the value of the adventure: aging at half speed for an ordinary wish, a third for a large one, a quarter for a great one. As an example, a 70-year-old made 35 who ages at a quarter speed has about 45 years of life left at normal speed, which stretches to about 180 years of aging time, about 215 years in all. At 70 years per real year the quarter-speed character gets roughly 2.6 real years of play instead of 0.64. The extra years still have to be renewed by another quest or payment, as above.
+- **[Proposed]** (2026-10-14) **How much slower.** Three tiers tied to the value of the adventure: aging at half speed for an ordinary wish, a third for a large one, a quarter for a great one. As an example, a 60-year-old made 30 who ages at a quarter speed has about 32 years of life left at the normal rate, which stretches to about 128 calendar years, about 5.3 real years of play instead of about 1.3. The extra years still have to be renewed by another quest or payment, as above.
 - **[Decided]** (2026-10-14) **Extra years run out and can be renewed.** During that time the character must do another quest, or pay another wizard, before they die to keep living that way. Money can buy a longer life, but it never buys skills or abilities. Those still have to be earned.
 - **[Decided]** (2026-10-14) **Changing identity counts as retiring.** A character who never ages does not need to worry about retiring, but when they take a new identity it is treated like retiring or dying:
   - They get a picture on the wall of themselves, in the outfit they wore when they changed over.
@@ -735,13 +735,13 @@ Aging, marriage, children growing up, crop growth, regrowth, decay, taxes, loan 
 
 ### 7.1 Lifespan targets
 
-- **[Decided]** For pacing, a typical 15-year-old character ages to 85, which is 70 years over about one real year and about 700 hours of play. Lifespan varies, averaging 72 to 90 years (Section 6.1). An earlier version of this document used 15 to about 80 (65 years).
-- **[Decided]** The expected player plays 12 to 16 hours a week (for example four hours on three nights, or eight hours on each of two nights), about a year of real time per character, allowing for two missed weeks. That is 50 weeks, so 600 to 800 hours, about 700 in the middle.
+- **[Decided]** (2026-10-14) For pacing, a typical character starts at 20 and dies at about 62 (Section 6.1), which is 42 years of age at one year per 15.2 real days, about 21 months of real time. At 14 hours a week that is roughly 1,270 hours. Retirement comes around 50, after about 15 months. The earlier 15-to-85 figure (70 years over one real year and about 700 hours) is superseded.
+- **[Decided]** The expected player plays 12 to 16 hours a week (for example four hours on three nights, or eight hours on each of two nights). The earlier target of about a year of real time per character (600 to 800 hours) is superseded by the single clock above; the new figure is about 21 months. This will be tested and, if needed, tuned with the one time ratio (a ratio of 36 would give about 14 months).
 - **[Proposed]** Skills should feel competent in tens of hours and mastered in a few hundred, so a character gets time at the peak before aging slows them. That much play time needs enough depth to stay interesting.
 
 ### 7.2 Why one clock does not work
 
-**[Superseded in part]** (2026-10-14) The table below assumed ageing slower while offline. The decision is a single server clock for everything. The aging rate (70 years per real year) and the calendar rate (a 365-day year of 60-minute days is about 15.2 real days) are two rates derived from that one counter, which is why they can differ. Ageing offline is no longer a variable.
+**[Superseded]** (2026-10-14) This whole section is replaced by the single time ratio in Section 7.3. The table below assumed ageing slower while offline and a separate aging rate. It is kept only for reference.
 
 Assumptions: 70 game years of aging (15 to 85) over one real year with about 700 online hours and about 8,060 offline hours. Aging runs at full speed online and at a reduced "offline speed" while logged out, and the household ages with the player.
 
@@ -757,7 +757,14 @@ Assumptions: 70 game years of aging (15 to 85) over one real year with about 700
 - If aging, seasons, crop growth and taxes all ran on one clock, a game year would last under a week in every row and a season would be about a day or less. A crop cycle would be shorter than a play session. That is why the game uses two clocks (Section 7.3).
 - **[Proposed]** The offline aging speed also decides how much heavy and light players differ. With the average player fixed at 70 years per real year, a player online 25 hours a week ages about 95 years in a real year at one-tenth offline speed, 82 at one quarter and 74 at one half. A player online 5 hours a week ages about 52, 62 and 67. A higher offline speed keeps players closer together, and a low one makes heavy play shorten a character's real-time life.
 
-### 7.3 Two clocks
+### 7.3 The time ratio and the calendar
+
+- **[Decided]** (2026-10-14) **One time ratio.** The server has one setting for the speed of time: game hours per real hour. The default is 24, so one real hour is one game day. Two more settings: days per year (default 365) and seasons per year (default 4). A game year is then 15.2 real days, a season 3.8 real days, and a month (12 per year) about 30 real hours.
+- **[Decided]** (2026-10-14) **Everything follows the one clock:** seasons, crops, aging, birthdays, taxes and loan terms all use game time derived from the ratio. Only deadlines a player must answer, such as challenge windows, duress checks and the reputation fade of about a week, are written in real days. The phrase "in-game days" is not used for those. The clock pauses when the server is down.
+- **[Decided]** (2026-10-14) **Why 24.** It gives a 60-minute day (close to 7 Days to Die at 60 minutes and Medieval Dynasty at about 48), a year of about two weeks (inside the 1 to 2 week cycle), and it avoids aliasing with weekly play: a week is 0.46 of a year, so a weekly player sees different points of the year on each visit. Ratios near 26 or 52 would repeat the same point every week and are avoided.
+- **[Decided]** (2026-10-14) **Three player types are all served:** the daily player sees a season change every three to four logins; the player on three evenings a week sees about half a season between visits; the weekend player (long sessions on Friday and Saturday) sees one to two seasons between visits.
+- **[Idea]** Seasons shape activities: ice fishing on frozen lakes in winter, boat fishing in summer, easier mining on firm ground in summer and winter, muddy roads in spring and autumn.
+- **[Superseded]** The earlier "two clocks" idea (a separate aging clock and calendar clock at different rates), the 70-years-per-real-year aging rate, and the 240-day and 28-day year proposals.
 
 - **[Decided]** The world has its own calendar clock, running at its own reasonable pace. Seasons depend on it.
 - **[Decided]** Characters experience all four seasons (spring, summer, autumn, winter). A full seasonal cycle takes about one to two weeks of real time. The exact length does not matter as long as it feels reasonable, but it must let players put crops in the ground, watch them grow and harvest them.
@@ -770,20 +777,20 @@ Assumptions: 70 game years of aging (15 to 85) over one real year with about 700
 
 ### 7.4 NPC aging
 
-- **[Decided]** NPCs age at about the same speed as a typical player: 70 years over one real year, from a random starting age to a random death age. Starting ages are roughly 20 to 30 and death comes roughly between 70 and 90. Their aging runs on the character aging clock, not on the calendar.
-- **[Proposed]** At that speed one year of age is about 5.2 real days. An NPC who starts at 25 and dies at 80 lives about 9.4 months of real time. One who starts at 30 and dies at 70 lives about 7 months. A child takes about 11 weeks to reach 15. A town's population therefore turns over in about a year, so births, marriage and migration matter.
-- **[Proposed]** An NPC's birthday comes every 5.2 days, not once per calendar year. With a 10-day calendar year an NPC ages about 1.9 years per calendar year. Showing age as a life stage (child, young adult, adult, elder) instead of an exact number could avoid that oddity.
-- **[Decided]** Everyone ages on the server clock (Section 6.1). **[Open]** The exact length of the calendar year, and whether age is shown as a number or a life stage.
+- **[Decided]** NPCs age on the same single clock as players (Section 7.3), from a random starting age to a death age drawn from the same bell curve as players. Starting ages are roughly 20 to 30. (The earlier 70-years-per-real-year rate is superseded.)
+- **[Proposed]** At the default ratio one year of age is 15.2 real days. An NPC who starts at 25 and dies at 62 lives about 18 months of real time. A child takes about 9 months to reach 18. A town's population therefore turns over in about two years, so births, marriage and migration matter.
+- **[Decided]** (2026-10-14) An NPC's birthday comes once per calendar year, every 15.2 real days. Showing age as a number plus a life stage (child, young adult, adult, elder) is still available.
+- **[Decided]** Everyone ages on the server clock (Section 6.1). Age is shown as a number plus a life stage.
 
 ### 7.5 Day and night
 
-- **[Idea]** One game day lasts one real hour (24 to 1). The project owner leans toward 60 minutes over 72: it gives more day and night cycles per session and encourages shorter weekday visits to keep up with farming, which spreads server load across the week instead of concentrating it on weekends.
+- **[Decided]** (2026-10-14) One game day lasts one real hour at the default ratio of 24. It gives more day and night cycles per session and encourages shorter weekday visits to keep up with farming, which spreads server load across the week instead of concentrating it on weekends. 72 minutes was rejected.
 - **[Proposed]** Day length varies with the season and with latitude, calculated on each client from the server clock, the day of the year and the latitude, so it costs nothing on the network. Near the equator day and night stay about even all year. Toward the poles summers have long days and winters long nights, and far-north winter darkness becomes another soft limit.
 - **[Proposed]** Night is compressed compared with the real world, aiming for about two-thirds day and one-third night at mid-latitudes (around 40 minutes of day and 20 of night), with long, usable dusk and dawn.
 - **[Proposed]** Night is never pitch black. Moonlight and torches keep it playable. A persistent multiplayer world cannot let players sleep through the night, so night has to be content, not waiting: more danger, monsters, stealth for thieves, guards on watch.
 - **[Proposed]** For comparison, from memory: Minecraft's full cycle is about 20 minutes and Valheim's about 30. The slower 60-minute day suits a game about settling and farming.
 - **[Proposed]** Shops, work hours and schedules run on game hours. A 10-hour work day is about 25 real minutes.
-- **[Open]** 60 or 72 minutes per game day, and how much more dangerous night is than day.
+- **[Open]** How much more dangerous night is than day.
 
 ### 7.6 The server clock
 
@@ -1509,8 +1516,8 @@ Generator, hardware and hosting
 
 Ambiguities found in the 2026-10-14 review (the newest statement was applied wherever two disagreed; these are the cases where it is still unclear)
 
-64. **The aging clock.** Settled (2026-10-14): one server clock; everyone ages online or offline; human biology including menopause; no cap on children beyond biology (Section 6.1). Fertility settled (2026-10-14): characters can marry and have children from age 18 at the earliest (about the typical medieval age for a young woman, and not younger); the chance falls gradually from 35; menopause is set at birth to fall between 45 and 55; men stay fertile for life, with the chance dropping after 60.
-65. **One clock per system.** Everything runs on the single server clock. A "real time" window is server time, so it pauses when the server is down (proposed). Still open: reputation fades "over about a week" but "in-game days" means 7 real hours at 60-minute days; and whether a game day is 60 or 72 minutes.
+64. **The aging clock.** Settled (2026-10-14): one server clock; everyone ages online or offline; human biology including menopause; no cap on children beyond biology (Section 6.1). Fertility settled (2026-10-14): characters can marry and have children from age 18 at the earliest (about the typical medieval age for a young woman, and not younger); the chance falls gradually from 35; menopause is set at birth to fall between 45 and 55; men stay fertile for life, with the chance dropping after 60. Starting age is 20 and lifespan is drawn at birth from a bell curve around 62, spread 8, clamped 45 to 85 (Section 6.1). Nothing is open here.
+65. **One clock per system.** Settled (2026-10-14): one time ratio (game hours per real hour, default 24) with days per year (365) and seasons per year (4) as the other two settings; a game day is 60 real minutes, a year 15.2 real days, a season 3.8; aging, seasons, crops, taxes and loans follow the one game clock; the clock pauses when the server is down; player deadlines (challenge windows, duress, the reputation fade) are in real days (Section 7.3). Nothing is open here.
 66. **Town block.** Settled (2026-10-14): a marker with no physical form, visible only to the owner, with a ledger entry; settings are reached through an office building (Section 8.17). Still open: how another player sees and claims an abandoned marker, and what "touching the block" becomes (proposed: being at the office).
 67. **The circle of influence.** Settled: grows by paid expansion, no overlap, a maximum-city reservation (Section 8.17). Proposed: a ladder from settlement (200 m) to metropolis (1,500 m radius), each step 50 percent larger, with population guides. Still open: confirm or change the numbers and names, the expansion cost, and what each stage requires.
 68. **What "established" means.** Guards, a well, a temple and probably walls: how many guards, how strong, and does the town need all of them? What can players do to each other in a town that is not yet established (the "gray area")? Where do PvP and PvE rules live (Sections 8.15, 9.0, question 57)?
