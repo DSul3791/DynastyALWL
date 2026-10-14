@@ -1077,6 +1077,8 @@ To be fleshed out when the first NPC is designed.
 - **[Idea]** Wood left in rubble could count as aged wood (and in some places petrified wood), a different material from fresh wood with its own uses and quality. Treated, maintained wood degrades much more slowly.
 - **[Idea]** Iron in rubble could slowly rust over a long time, giving less usable metal, while stone never changes. This is only a flavor idea and is left open.
 - **[Proposed]** Rubble is stored as a pile of counted materials, not as individual pieces, so large ruined towns stay cheap to store and to draw on the minimum machine. Harvesting reduces the counts.
+- **[Decided]** (2026-10-14) **The terrain stays as it was.** The ground under a fallen town does not reset. Whatever the terrain looked like while the town stood (levelled ground, foundations, cuts and roads) is what it still looks like after the buildings fall, because nothing in the world would explain it changing. The world is made from the seed and the baked maps, and every change players and towns made is kept as a record in the server's living layer on top of that, and is applied again each time the area loads.
+- **[Proposed]** (2026-10-14) Rubble is stored in the living layer as a record per pile: position, size, counts of each material and age. One pile per 100 m² of building footprint, so a large ruin can be harvested a bit at a time.
 
 **Roads**
 
@@ -1705,7 +1707,7 @@ Ambiguities found in the 2026-10-14 review (the newest statement was applied whe
 77. **Duress.** Settled (2026-10-14): duress does not raise bills. It lowers crop yields and animal growth, slightly lowers reputation, and speeds property degradation a little; costs rise only because more needs fixing (Section 6.1). Still open: the size of each effect at each level.
 78. **Households without limits.** Many living spouses and children are allowed. Is there any cap, or only cost (housing, food, care)? How does a large household affect duress and the weekly player?
 79. **Remains.** How long do remains last, are they flat images that face the player, how is sand cover worked out, which creatures collect gear, and do NPC adventurers leave remains too? (Sections 4.13 and 6.1)
-80. **Rubble.** How big is a rubble chunk, and how is it stored in the server's living layer when terrain is regenerated?
+80. **Rubble.** Settled (2026-10-14): one pile per 100 m² of footprint, stored in the server's living layer as a record (position, size, counts of each material, age); the terrain under a fallen town stays as it was (Section 8.13). Nothing is open here.
 81. **Tile ID scheme.** Confirm the recommendation: a record's identity is its home tile and local ID, the revision is only a cache marker, and records added by resource passes use local IDs from pass number × 10,000. (`WORLD_FORMAT_SPEC.md` Section 4)
 82. **Which extra resources before tiles are kept.** Only tuff (whole-layer volcanic stone) might need to come first. The rest can be added later by passes. See the table in Section 4.9a.
 83. **River network and edge matching.** Confirm the approach in `WORLD_FORMAT_SPEC.md` Section 4b (a world river network on the 160 m map, overlap margins, a final edge-matching pass) and that step 13b is done before any tile is kept.
