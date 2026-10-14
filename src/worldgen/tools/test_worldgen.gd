@@ -12,6 +12,7 @@ const TileMatrixScript := preload("res://src/worldgen/matrix/tile_matrix.gd")
 const TilePlanScript := preload("res://src/worldgen/plan/tile_plan.gd")
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 const TileWaterScript := preload("res://src/worldgen/tile/tile_water.gd")
+const TileErosionScript := preload("res://src/worldgen/tile/tile_erosion.gd")
 const IslandShapeScript := preload("res://src/worldgen/matrix/island_shape.gd")
 const SketchScript := preload("res://src/worldgen/sketch/world_sketch.gd")
 const ElevationScript := preload("res://src/worldgen/sketch/world_elevation.gd")
@@ -920,6 +921,7 @@ func _test_sketch() -> void:
 
 	_test_tile_plan(settings, sketch, elevation, census)
 	_test_tile_height(settings, elevation)
+	_test_tile_erosion(settings, elevation)
 	_test_tile_water(settings, elevation, sketch)
 
 
@@ -1165,3 +1167,45 @@ func _test_tile_water(settings, elevation, sketch: Dictionary) -> void:
 	again.setup(settings, tile_rules)
 	again.build(height, tile, starter)
 	_check(again.heights == water.heights and again.water_class == water.water_class, "the tile water is reproducible")
+
+
+func _test_tile_erosion(settings, elevation) -> void:
+	var errors: Array = []
+	var tile_rules: Dictionary = TileHeightScript.load_rules("res://worlds/base_world/plan/tile_rules.json", errors)
+	var height = TileHeightScript.new()
+	height.setup(settings, elevation, tile_rules)
+	height.build(Vector2i(3, 4))
+	var erosion = TileErosionScript.new()
+	erosion.setup(settings, tile_rules)
+	var started: int = Time.get_ticks_msec()
+	erosion.build(height)
+	print("tile erosion in %d ms: deepest cut %.1f m" % [Time.get_ticks_msec() - started, erosion.deepest_cut_m])
+	_check(erosion.deepest_cut_m > 10.0, "erosion cuts valleys")
+
+	var n: int = height.samples
+	var edges_same: bool = true
+	var sea_same: bool = true
+	var land_kept: bool = true
+
+	for k in range(n):
+		for index in [k, (n - 1) * n + k, k * n, k * n + n - 1]:
+			if erosion.heights[index] != height.heights[index]:
+				edges_same = false
+
+	for index in range(n * n):
+		var before: float = height.heights[index]
+
+		if before <= 0.0 and erosion.heights[index] != before:
+			sea_same = false
+
+		if before > 0.0 and erosion.heights[index] <= 0.0:
+			land_kept = false
+
+	_check(edges_same, "erosion leaves tile edges unchanged so neighbors match")
+	_check(sea_same, "erosion leaves the sea floor alone")
+	_check(land_kept, "erosion never turns land into sea")
+
+	var again = TileErosionScript.new()
+	again.setup(settings, tile_rules)
+	again.build(height)
+	_check(again.heights == erosion.heights, "erosion is reproducible")

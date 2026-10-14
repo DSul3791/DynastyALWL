@@ -16,6 +16,7 @@ const SketchScript := preload("res://src/worldgen/sketch/world_sketch.gd")
 const ElevationScript := preload("res://src/worldgen/sketch/world_elevation.gd")
 const ReliefScript := preload("res://src/worldgen/sketch/relief_preview.gd")
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
+const TileErosionScript := preload("res://src/worldgen/tile/tile_erosion.gd")
 const TileWaterScript := preload("res://src/worldgen/tile/tile_water.gd")
 const TilePreviewScript := preload("res://src/worldgen/tile/tile_preview.gd")
 
@@ -81,6 +82,19 @@ func _run(world_dir: String, tile: Vector2i, cell: float) -> int:
 		str(tile), height.samples, height.samples, Time.get_ticks_msec() - started
 	])
 
+	var base: String = "%s/plan/tile_%d_%d" % [world_dir, tile.x, tile.y]
+	TilePreviewScript.render(settings, height, tile, true, null).save_png(base + "_relief.png")
+
+	started = Time.get_ticks_msec()
+	var erosion = TileErosionScript.new()
+	erosion.setup(settings, tile_rules)
+	erosion.build(height)
+	height.heights = erosion.heights
+	print("Erosion done in %d ms: deepest cut %.1f m, highest fill %.1f m" % [
+		Time.get_ticks_msec() - started, erosion.deepest_cut_m, erosion.highest_fill_m
+	])
+	TilePreviewScript.render(settings, height, tile, true, null).save_png(base + "_eroded.png")
+
 	started = Time.get_ticks_msec()
 	var water = TileWaterScript.new()
 	water.setup(settings, tile_rules)
@@ -98,9 +112,6 @@ func _run(world_dir: String, tile: Vector2i, cell: float) -> int:
 		])
 
 	started = Time.get_ticks_msec()
-	var base: String = "%s/plan/tile_%d_%d" % [world_dir, tile.x, tile.y]
-	var image: Image = TilePreviewScript.render(settings, height, tile, true, null)
-	image.save_png(base + "_relief.png")
 	height.heights = water.heights
 	var wet_image: Image = TilePreviewScript.render(settings, height, tile, true, water)
 	wet_image.save_png(base + "_water.png")

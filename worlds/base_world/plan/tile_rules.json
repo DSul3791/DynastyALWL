@@ -31,6 +31,16 @@
 		"sea_strength": 0.05,
 		"coast_ragged_m": 1.6
 	},
+	"erosion": {
+		"note": "Erosion on a 32 m copy of the tile: water cuts valleys in proportion to how much flows through (stream power), slopes soften (diffusion). The change is added back onto the 8 m map. It fades out near the tile edges so neighboring tiles still match.",
+		"cell_m": 32,
+		"iterations": 30,
+		"stream_k": 0.005,
+		"area_exponent": 0.5,
+		"diffusion": 0.01,
+		"edge_fade_m": 640,
+		"min_land_m": 0.3
+	},
 	"water": {
 		"note": "Hydrology on the 8 m height map. Rain falls evenly; each cell passes its water downhill. Rivers start where the catchment passes river_start_km2. Pits are filled unless they are big enough to be lakes.",
 		"river_start_km2": 0.5,
