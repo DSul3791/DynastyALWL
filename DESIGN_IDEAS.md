@@ -848,7 +848,7 @@ To be fleshed out when the first NPC is designed.
 
 ### 13.2 Markets
 
-- **[Decided]** (2026-10-13) Market prices are not regulated. Player towns and businesses set their own prices.
+- **[Decided]** (2026-10-13) Market prices are not regulated. Players, player towns and businesses set their own prices and the market decides whether to buy at them: price too high and nothing sells, too low and stock sells out fast, leaving money on the table. NPC buyers (including admin towns) compare prices and buy where it suits them.
 - **[Decided]** NPC merchants (including in the starter towns) review their prices once a day and move them with supply and demand: plentiful goods get cheaper, goods in high demand get dearer (Section 8.1).
 - **[Proposed]** Local prices move with supply and demand. NPC consumption (everyone eats) creates steady demand without simulating each meal.
 - **[Proposed]** Climate and soil make different regions grow different goods, so towns and islands have goods the others want. That gives wagons and ships a reason to travel.
