@@ -832,16 +832,19 @@ Assumptions: 70 game years of aging (15 to 85) over one real year with about 700
   - The chance falls as the town's spirit rises: the lower the spirit, the higher the chance. At a spirit of 100 it is lowest, and at 0 it is highest.
   - Once a person is sick they stop rolling. The sickness lasts up to a maximum length unless they get treatment at the temple, which rapidly improves their health and well-being.
   - Recovering lifts their own spirit.
-- **[Proposed]** (2026-10-14) **Numbers that fit a per-game-day check (tunable).** You wrote "75 percent at zero", which I read as a rate much lower than 50 percent, because a daily check at those figures would make everybody sick all the time. I kept the same 50-to-1 ratio between spirit 0 and spirit 100 and set the chance per game day on a straight line:
+- **[Decided]** (2026-10-14) **Two kinds of sickness, with reasonable frequency.** A person should have a reasonable chance of catching a cold at least twice in a game year. A major illness should happen maybe once or twice in a lifetime. At a spirit of 100 the chance of either is very low. At a spirit of 0 it is a medium chance, because it is constantly raining, people stay indoors and everyone is in a bad mood.
+- **[Proposed]** (2026-10-14) **Numbers that fit those targets (tunable).** Each is a straight line from spirit 100 to spirit 0, checked once per game day (a game year is 365 game days; a working lifetime from 20 to about 62 is about 15,300 game days):
 
-| Town spirit | Chance per game day | Sicknesses per game year (365 game days) |
-|---|---|---|
-| 100 | 0.04 percent | about 0.15 |
-| 75 (starter town) | 0.55 percent | about 2 |
-| 50 | 1.1 percent | about 4 |
-| 0 | 2.1 percent | about 7.6 |
+| Town spirit | Colds per game year | Chance of a cold per game day | Major illnesses per lifetime | Chance per game day |
+|---|---|---|---|---|
+| 100 | 1.0 | 0.27 percent | 0.5 | 0.003 percent |
+| 75 (starter town) | 2.25 | 0.62 percent | 1.4 | 0.009 percent |
+| 50 | 3.5 | 0.96 percent | 2.25 | 0.015 percent |
+| 0 | 6.0 | 1.64 percent | 4.0 | 0.026 percent |
 
-  With a sickness lasting at most about 10 game days (10 real hours), that is sick about 0.4 percent of the time at spirit 100, 5.5 percent at 75, and about 20 percent at spirit 0. Temple treatment cuts a sickness to a day or two.
+  A starter town at 75 therefore gives about two colds a game year and one or two major illnesses in a lifetime.
+- **[Proposed]** (2026-10-14) **Length and effect (tunable).** A cold lasts at most about 5 game days (5 real hours) and slows work by about 10 percent; temple treatment cuts it to a day. A major illness lasts at most about 30 game days (30 real hours), the person cannot work, and it needs treatment, which cuts it to about a week. At those lengths a person at spirit 75 is ill about 3 percent of the time from colds and about 0.3 percent of their life from major illness.
+- **[Proposed]** (2026-10-14) Major illness is twice as likely after age 50, and an old or poor person who is not treated could die of one. This is still open for the designer.
 - **[Proposed]** (2026-10-14) To keep the server cheap, each person draws once the number of days until their next sickness (a geometric draw from the chance above) and does not roll every day. The draw is made again when spirit changes a lot or when they recover.
 - **[Proposed]** (2026-10-14) The other boosts stay modest (tunable): about 5 percent for productivity, crop growth and animal growth, and about 10 percent more fullness from food.
 - **[Decided]** The starter towns' prices are set by their merchant, not fixed by admins. The merchant reviews prices once a day and raises or lowers each one from supply, demand and other factors: an abundance of a good lowers its price, high demand raises it. Admin town buying pays these prices.
