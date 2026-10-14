@@ -1017,7 +1017,7 @@ To be fleshed out when the first NPC is designed.
 - **[Decided]** Nothing disappears outright. Degradation takes some material away from each building (see below) and the rest falls into rubble that stays until someone harvests it.
 - **[Decided]** The pile is called **rubble**. It is an item with models, and it is a chunk of the world.
 - **[Decided]** Every building has a bill of materials from its blueprint. As it ages without care it slowly loses material (hinges break, nails rust and weaken, untreated wood suffers sun rot). When it collapses, the rubble holds its bill of materials minus what degradation took.
-- **[Decided]** Degradation is partial. Wood loses at most about 50 percent, not all of it. Stone loses nothing. Metal loses some. Example: a blueprint of 1000 stone, 2000 wood, 100 iron and 200 slate leaves roughly 1000 stone, about 1000 wood, most of the iron and all of the slate.
+- **[Decided]** Degradation is partial. Wood loses at most about 50 percent, not all of it. (2026-10-14: this applies to degraded wood, such as in rubble. Sound wood that is taken down on purpose, like an old wall in good shape, keeps all of its value.) Stone loses nothing. Metal loses some. Example: a blueprint of 1000 stone, 2000 wood, 100 iron and 200 slate leaves roughly 1000 stone, about 1000 wood, most of the iron and all of the slate.
 - **[Decided]** Rubble is a salvage source. A player who reclaims a town can harvest the rubble for most of the rebuild materials without cutting thousands of trees.
 - **[Idea]** Salvage as a trade: businesses that go around clearing rubble from ruined towns and selling or reusing the materials. Harvested rubble is gone, and the harvester gets the contents minus degradation.
 - **[Idea]** Wood left in rubble could count as aged wood (and in some places petrified wood), a different material from fresh wood with its own uses and quality. Treated, maintained wood degrades much more slowly.
@@ -1143,7 +1143,7 @@ To be fleshed out when the first NPC is designed.
 - **[Proposed]** (2026-10-14) **How to price a stage (tunable).**
   - Each stage has a plan: the new wall ring, new roads, the required buildings and the extra guards. The planner turns it into a bill of materials and a labor estimate. The gold price is that bill times the market prices, so it is calculated and not typed in.
   - Wall type grows with the stage: palisade for a settlement and hamlet, palisade with a ditch and outer spikes for a village, stone for a town and a city, stone with towers for a metropolis.
-  - The old wall is taken down and salvaged under the usual rule (wood keeps up to half its value, stone loses nothing), which lowers the cost of the next wall.
+  - The old wall is taken down and salvaged by its condition. A wall in good shape keeps all of its wood and all of its stone when it is taken down, so the next wall costs only the new material. The loss of up to about 50 percent applies only to degraded wood, such as in rubble (Section 8.13).
   - A longer wall needs more guards: at least one guard for each 100 m of wall plus the one per 25 residents already proposed, whichever is larger.
   - **Balance test:** a stage is priced correctly when the town's net income at that stage repays the expansion in 1 to 2 game years (15 to 30 real days). If it takes longer, the stage is too expensive. If it pays back in days, it is too cheap.
 - **[Proposed]** (2026-10-14) **Requirements still apply** (tunable): enough residents and buildings, so a stage name means something.
