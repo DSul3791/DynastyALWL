@@ -885,9 +885,24 @@ Checked: this has not been in the design before. Section 4 has weather from the 
 - **[Decided]** When a hostile takeover succeeds, the challenger pays the previous owner a fixed amount based on the town's value (or its rubble if it is a ruin).
 - **[Decided]** A town that does nothing productive but still has a manager, clean water, a temple and guards is an expense on the owner's other towns or dynasty, so hoarding idle towns costs money.
 - **[Superseded]** An earlier version had windows of about 24 hours for a town with a manager and guards and about 48 hours with a wall. Guards now give full protection from hostile takeover, so those windows are no longer needed.
-- **[Proposed]** "Has guards" should mean a real minimum, such as paid guards on duty in numbers that scale with the town's size, not one hired guard. Guards who go unpaid leave, which removes the protection and ties it to the town's money.
-- **[Proposed]** The owner gets an urgent notification (Section 6, notification priorities) the moment an offer or a hostile takeover begins. The windows are in real time.
+- **[Proposed]** "Guarded" means the town has become established (Section 8.15), not one hired guard. Guards who go unpaid leave, which removes the protection and ties it to the town's money.
+- **[Proposed]** The windows are in real time. How the owner hears of an offer or a challenge depends on whether the town has a manager (Section 8.15).
 - **[Open]** The minimum guard level, whether walls add anything now (for example a longer window for towns that are not yet fully guarded), and what happens to buildings, NPCs and debts when the owner changes.
+
+### 8.15 Managers, remote control, word and safe towns
+
+- **[Decided]** A town with no manager has nobody to deliver word to the owner. There is no notification. If the owner is in the area, a visitor can see that and make an offer at the block. If the owner is away, a challenger simply puts in a claim, and if the owner does not return within the window (about 2 hours for a bare block), the challenger gets the town.
+- **[Decided]** The town stays on the former owner's ledger until the next time they visit it, because they still believe they own it. On arrival they find it is owned by someone else, and it drops from the ledger.
+- **[Decided]** Without a manager, the owner must be physically at the town block, touching it, to change anything, give commands or read the town's books and interface.
+- **[Decided]** With a manager, the owner can control the town remotely through the manager, and the manager makes certain decisions while the owner is away. The owner sets which decisions the manager may make.
+- **[Decided]** The manager makes two kinds of decisions: ones he can make automatically, and ones where he must request approval or give the owner options to choose from.
+- **[Decided]** A manager can send word to the owner. Word must travel, so distance matters: local couriers on horseback, carrier pigeons on an island, ships over water. Each takes time.
+- **[Decided]** A town is unsafe, a gray area, until it has established its basics: guards, fresh water from a well, a temple and probably walls. Once established it is a PVE area.
+- **[Decided]** In a PVE area people can make offers and visit, but they cannot hurt anything. Nobody can raise an army and attack the town. Players who cross into a PVE area can no longer attack anyone.
+- **[Idea]** Later, designated parts of the map can be PVP areas. Players who build a town there and want warfare are welcome to, and the PVE protections do not apply.
+- **[Proposed]** Hostile takeover (Section 8.14) is possible only in a town that is not yet established. This replaces the simpler "has guards" rule: guards alone are not enough.
+- **[Proposed]** Word delivery uses a message system with distance delay and a carrier type (courier, pigeon, ship). Pigeons and couriers can fail or be intercepted. This is separate from the real-world email notifications for the player's account (Section 6), which exist for duress and receivership.
+- **[Open]** Whether a player's real-world alerts also cover town challenges (a safety feature that might undercut the in-world distance idea), what "established" requires exactly, how courier and pigeon delays are set, what the manager can decide automatically, and where PVP areas are on the map.
 
 ---
 
