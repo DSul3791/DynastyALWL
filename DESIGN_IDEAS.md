@@ -534,6 +534,24 @@ A tile should then take minutes, and `world_preview.gd` could show island panel 
 - **[Open]** How NPC rescue works in practice: companions only, passersby, or patrols dispatched to a call, and how to stop it from making death meaningless or being farmed.
 - **[Open]** Whether NPC companions count toward party size, and what they cost (wages, upkeep).
 
+### 6.6 Children and family growth
+
+- **[Decided]** Having a child is a joint decision. The player discusses it with the spouse, they agree, and the pregnancy begins. It is not automatic and a bot-run household does not breed on its own.
+- **[Decided]** A baby and young child are a cost on the household (food, care, the spouse's time), not a worker. The child becomes useful around age 10 to 12.
+- **[Decided]** At about that age the player talks with the child about what direction to take and can set markers that steer them (farming, mining, a trade, adventure, schooling, being the heir). The child follows the markers according to their own interests and abilities.
+- **[Decided]** The default for a child with no markers is idleness: play, little work, few skills. An unattended household therefore raises children with weak skills and a farm that stagnates.
+- **[Decided]** An engaged player can teach the children, so different children can serve different branches of the dynasty (one runs the mine, others work the farm, some adventure). All of these bring wealth and options to the family.
+- **[Proposed]** Teaching speed depends on the parent's own skill in the trade and the time they spend with the child. This links to the partial-training idea in Section 6.2.
+- **[Proposed]** The child's own traits can pull against the markers, so a strong push against a child's nature gives slower, grumbling progress.
+- **[Open]** How much time teaching costs the parent, and whether NPC tutors or apprenticeships can stand in for the parent.
+
+### 6.7 Automation and dynasty transfer (discussion)
+
+- **[Proposed]** Bots and client automation are banned in the terms of service. Hands-off play via NPC staff is allowed by design, and the household economy already pays less for neglect (Section 6.6).
+- **[Proposed]** A weekly check-in that clears duress could require one real choice (sign off on the ledger, answer a letter, pick a family task), so a bare login does nothing.
+- **[Proposed]** Dynasties transfer inside the game by marriage, adoption, will or sale to a successor, with a transfer tax. The login itself is not sold, so identity, reputation and record stay with the person.
+- **[Open]** Whether the weekly choice is wanted, and whether dynasty sale is allowed beyond inheritance.
+
 ---
 
 ## 7. World time
