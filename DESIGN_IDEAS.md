@@ -827,8 +827,22 @@ Assumptions: 70 game years of aging (15 to 85) over one real year with about 700
 - **[Decided]** (2026-10-14) **The boost covers the whole starter town:** everything inside the walls, the harbour, its outposts, and the surrounding farmland out to the edge of its metropolis-sized circle.
 - **[Decided]** (2026-10-14) **The spirit hovers at about 75 percent,** not at the top. Good deeds by new characters can still lift it, so players on the starter islands feel they are doing something that matters.
 - **[Decided]** (2026-10-14) **A wealthy temple.** Since these towns do so well, the temple is rich and can afford to help people who fall sick, so there is less illness in general.
-- **[Decided]** (2026-10-14) **Spirit sets the chance of sickness (starting numbers).** At a spirit of 100 a person has about a 1 percent chance of getting sick each day. At a spirit of 0 the chance is about 50 percent. In between, the chance moves with the spirit score. This is a general rule for any town, and the starter towns are the ones that sit high on it.
-- **[Proposed]** (2026-10-14) Reading the numbers: a straight line from 1 percent at 100 to 50 percent at 0, so at the starter town's 75 the chance is about 13 percent. "Each day" should mean a **real** day, not a game day. A game day is one real hour, so 13 percent per game day would mean being sick almost all the time. At 13 percent per real day a person is sick about twice per game year, which is close to ordinary colds.
+- **[Decided]** (2026-10-14) **Sickness is checked each game day, by each person for themselves.**
+  - Every NPC rolls once per game day to see whether they fall ill, so different people get sick at different times and nobody falls ill on a fixed weekday.
+  - The chance falls as the town's spirit rises: the lower the spirit, the higher the chance. At a spirit of 100 it is lowest, and at 0 it is highest.
+  - Once a person is sick they stop rolling. The sickness lasts up to a maximum length unless they get treatment at the temple, which rapidly improves their health and well-being.
+  - Recovering lifts their own spirit.
+- **[Proposed]** (2026-10-14) **Numbers that fit a per-game-day check (tunable).** You wrote "75 percent at zero", which I read as a rate much lower than 50 percent, because a daily check at those figures would make everybody sick all the time. I kept the same 50-to-1 ratio between spirit 0 and spirit 100 and set the chance per game day on a straight line:
+
+| Town spirit | Chance per game day | Sicknesses per game year (365 game days) |
+|---|---|---|
+| 100 | 0.04 percent | about 0.15 |
+| 75 (starter town) | 0.55 percent | about 2 |
+| 50 | 1.1 percent | about 4 |
+| 0 | 2.1 percent | about 7.6 |
+
+  With a sickness lasting at most about 10 game days (10 real hours), that is sick about 0.4 percent of the time at spirit 100, 5.5 percent at 75, and about 20 percent at spirit 0. Temple treatment cuts a sickness to a day or two.
+- **[Proposed]** (2026-10-14) To keep the server cheap, each person draws once the number of days until their next sickness (a geometric draw from the chance above) and does not roll every day. The draw is made again when spirit changes a lot or when they recover.
 - **[Proposed]** (2026-10-14) The other boosts stay modest (tunable): about 5 percent for productivity, crop growth and animal growth, and about 10 percent more fullness from food.
 - **[Decided]** The starter towns' prices are set by their merchant, not fixed by admins. The merchant reviews prices once a day and raises or lowers each one from supply, demand and other factors: an abundance of a good lowers its price, high demand raises it. Admin town buying pays these prices.
 - **[Decided]** Goods bought from NPC tradespeople are limited by how fast they can actually make them. They have orders to keep a stock level, and when someone buys an item the NPC has to stop and make another to replenish it (Section 13.7).
