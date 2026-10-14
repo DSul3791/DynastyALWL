@@ -1160,7 +1160,35 @@ To be fleshed out when the first NPC is designed.
 - **[Decided]** (2026-10-14) **A ship is the first base.** It has value, can carry shipments and deliveries, and can go adventuring. A player can log out in it while anchored in friendly waters.
 - **[Decided]** (2026-10-14) **Ship wear.** A ship degrades very little, or very slowly, over time. Damage comes from running into other ships, hitting rocks, very bad weather, or being shot by enemies.
 - **[Idea]** (2026-10-14) The boat system is imagined as similar to Atlas. When we start building it we will review what we like and do not like and decide then.
-- **[Open]** Build time for each ship size (suggestion: a small boat 2 real days, a large ship 7), the price of a blueprint against a finished ship, and where players can anchor safely when logged out.
+- **[Decided]** (2026-10-14) **Many tiers of boats.**
+  - Very small boats for getting around an island and fishing.
+  - Small boats that handle longer voyages and are faster because they are longer.
+  - Long, narrow boats built for speed.
+  - Bigger, heavier boats built for cargo.
+  - Massive ships at the top, which take days to build and are never starter boats.
+- **[Decided]** (2026-10-14) **Build time grows with size.** The smaller the boat, the faster it is built. A first-tier boat is ready in about 15 minutes of real time (it may even be bought already built), the next tier about 30 minutes, then 45 minutes, then an hour. At the large end, the basic frame, deck and sails of a big ship takes a full day. Nobody should wait an hour or two for their first boat. (This replaces the earlier suggestion of 2 and 7 days.)
+- **[Decided]** (2026-10-14) **What a shipyard sells.** A purchase from a shipyard is the basic boat: hull, sails, anchor and decks. The owner installs the steering wheel and fits the ship out, as in Atlas, if it is a bigger ship. Smaller ships are pre-designed, again like Atlas.
+- **[Decided]** (2026-10-14) **Boats are trade goods.** A town with its own shipyard can build boats for other players and sell them. An owner can sell a boat to someone else.
+- **[Open]** Build times for the middle and top tiers, prices, blueprint prices against finished ships, and where players can anchor safely when logged out.
+
+### 8.19 The first ten buildings
+
+- **[Decided]** (2026-10-14) **The town manager building comes first.** It is the building where the owner makes decisions. The owner can hire a town manager to run it. Once there is a town manager, the same building can also hold a **town planner**, who uses AI to scan the area and decide where natural roads would go and where to put the well, the temple and the guards.
+- **[Decided]** (2026-10-14) **The temple costs the town money but lifts the base town spirit.** It is a liability, but it gives a place for orphans, counselling, food or financial help, and protection. The **well** has upkeep, which is a cost to the town.
+- **[Proposed]** (2026-10-14) **The ten buildings every new settlement should have**, in order of priority. They are the target the town planner works to place, with roads between them and a central square around the well:
+  1. **Town manager building** (office and town hall). The first building. Without it the owner cannot reach the town settings.
+  2. **Well**, in the central square. Clean water, with upkeep.
+  3. **Guard house.** With the manager building, this makes the settlement established.
+  4. **Temple** (a small chapel at first). Raises town spirit, shelters orphans, offers counselling and help.
+  5. **Storehouse** (settlement warehouse). Every other building's goods need somewhere to go, and it is where town stock and shipments are kept.
+  6. **Homes**: a group of at least three cottages, each with a small garden. Without residents nothing else is needed.
+  7. **Sawmill and carpenter.** Timber and planks are what every later building is made from, so this is the foundation.
+  8. **Blacksmith.** Nails, hinges, gates, mechanisms and tools. It needs charcoal or coal, so it depends on the woodcutters.
+  9. **Granary and mill.** Grain storage and flour, with farmland around the settlement. Food comes before comfort.
+  10. **Inn with market stalls** on the square. Lodging for travellers, a place for news and trade, and the first market.
+- **[Proposed]** (2026-10-14) **What comes next** (not in the first ten): stonemason and quarry, tannery and leatherworker, baker and butcher, healer or apothecary, a harbour and shipyard on the coast, a second well, more homes, walls.
+- **[Proposed]** (2026-10-14) **Space needed (estimates).** Rough footprints, including yards: manager building 200 m², well and central square 1,600 m², guard house 400, temple 400, storehouse 300, homes 3 × 80 plus gardens 600, sawmill and carpenter 500, blacksmith 300, granary and mill 400, inn 400. Together about 5,000 m². Roads and paths add about 30 percent, and room to grow doubles it, so the core is about 1.7 hectares, a circle of radius about 75 m. The 200 m circle of a new claim (12.6 hectares) holds that core and leaves most of the rest for farmland and room to grow.
+- **[Open]** Whether the first ten are the right ten, the exact footprints, and what the expansion steps cost (question 67). Expansion is decided after the building list and sizes are settled.
 
 ---
 
