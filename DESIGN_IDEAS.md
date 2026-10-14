@@ -642,7 +642,12 @@ Assumptions: 70 game years of aging (15 to 85) over one real year with about 700
 - **[Decided]** (2026-10-13) Players can own houses, businesses and farmland in any town, several in one town or spread across towns, as long as each town accepts their reputation.
 - **[Decided]** Players can also prospect their own land in the wilds and mark it with a **town stone** (to found a town, within the spacing rules in Section 8.1) or a **homestead stone** (a private holding).
 - **[Decided]** Owning property in an enemy town is hard. Someone who owned property in two towns before they became enemies keeps it, but tensions can get weird and their loyalty, and so their reputation, may come into question in both.
-- **[Proposed]** Each town keeps a standing toward every property owner (its view of their reputation, Section 13.3), and whether it accepts a purchase is a town setting (open to all, reputation above a threshold, residents only, approval by the land manager role in Section 8.5). When two towns turn hostile, owners in both get a warning and a choice: keep both and accept the standing loss, or sell one.
+- **[Decided]** (2026-10-13) A town is basically a group of friends, and the town owner sets its rules. Residents are already vetted because they are already in the town.
+- **[Decided]** Buying into a town: players whose reputation with the town is at or above a score the owner sets are accepted automatically. Players below it must be approved, and meanwhile can stay at the inn.
+- **[Decided]** Players below the score can earn their way in: work around town, adventures and quests for the town, and acts of kindness such as hunting and donating the food to the local temple or inn, ridding the area of bandits or goblins, or volunteering at the well or wherever help is needed. Once their reputation reaches the score they are accepted automatically.
+- **[Decided]** The town owner can whitelist or blacklist players by **account**, not just by character name, so a banned player cannot come back as a new character.
+- **[Proposed]** When two towns turn hostile, owners in both get a warning and a choice: keep both and accept the standing loss, or sell one.
+- **[Proposed]** Good deeds raise reputation only with the town that benefits (and, through news, a little with its allies), each kind of deed has diminishing returns so it cannot be farmed, and NPCs who witness or benefit from a deed remember it (Section 8.8).
 
 - **[Proposed]** A dynasty owning several businesses is several entries in the shared business structure (Section 13.4). The town gains from successful businesses through taxes, so a manager NPC offering contracts or loans to struggling businesses follows naturally.
 
