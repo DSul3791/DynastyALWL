@@ -1001,6 +1001,17 @@ To be fleshed out when the first NPC is designed.
 
 ### 8.13 Town decline, ruin and deletion
 
+**Decline of a player-owned town**
+
+- **[Decided]** (2026-10-14) A town always has an owner. Its welfare is paid from the town's coffers. When the coffers run empty, the owner can top them up from their own wealth or let the town lapse. They still own it either way.
+- **[Decided]** (2026-10-14) **A lapsing town breaks down step by step.** There is not enough money to pay for things, so the town starts cutting costs and getting rid of its weakest links by firing people. The core survives longest: guards, healing, the inn, the temple and the well. Maintenance of the walls, gates, roads and the like is cut back constantly.
+- **[Decided]** (2026-10-14) **People leave one by one, by their own reasons, not at a fixed time.** A guard does not simply quit after a month without pay. Whether and when someone leaves depends on whether they are eating, whether they are living well, and what is happening to the town's spirit. It also depends on their attributes and traits: they may be very loyal but bad at handling stress, or stalwart people who weather any storm. Some leave early and some late, and the town gradually collapses.
+- **[Decided]** (2026-10-14) **The last to leave is the town manager,** who quits when the last coin is gone. The owner gets a notification and has **24 hours** to act before the manager quits. The owner can put more money into the sinking town (village or city) or say "let it go".
+- **[Decided]** (2026-10-14) **"Let it go."** The town is flagged for further degradation. It falls into disrepair and collapses in on itself into piles of rubble. The moment the owner says let it go, anyone can come along and claim it (see "Claiming an abandoned town" below).
+- **[Proposed]** (2026-10-14) How the leaving rule could work (tunable): each NPC has a stay score worked out from pay received, food, housing, town spirit and their own traits (loyalty, stress tolerance, stubbornness). They leave when it falls below a personal threshold, with some randomness. When the town cuts costs, it fires the lowest-value jobs first and keeps the core roles. A role's rank is set by how much the town needs it, not by pay.
+- **[Proposed]** (2026-10-14) If the owner never answers the 24-hour notice, the manager quits and the town is treated as let go. The notice goes out through every channel the owner has, with the in-world delay (Section 8.15).
+
+
 **Decline of a server-owned town**
 
 - **[Decided]** A town that stays server-owned loses spirit gradually and loses money, because it keeps paying for food and upkeep. When the money runs out the town falls into decay.
@@ -1011,7 +1022,7 @@ To be fleshed out when the first NPC is designed.
 **Flagging for deletion**
 
 - **[Decided]** Flagging for deletion happens when nobody bought the town from its manager. At that moment the town manager leaves his post and the town's ledgers and ownership are gone.
-- **[Decided]** An administrator can flag an abandoned town for deletion, and the server administrators vote. A flagged town is not removed. Its buildings keep degrading at the regular speed, looking more worn and dilapidated until each collapses into rubble. Players can walk through a collapsing town and see that one used to be here.
+- **[Decided]** (2026-10-14: this is for a server-owned town. A player-owned town is flagged when its owner says "let it go".) An administrator can flag an abandoned town for deletion, and the server administrators vote. A flagged town is not removed. Its buildings keep degrading at the regular speed, looking more worn and dilapidated until each collapses into rubble. Players can walk through a collapsing town and see that one used to be here.
 - **[Decided]** The manager becomes an ordinary NPC, available for others to hire. He keeps his skills and whatever money he held, and he lives on it until he finds work or falls into poverty over time.
 - **[Decided]** The town marker stays, and so does the town's office building (dilapidated, like the rest). The marker is the centre of the town, and the town's circle of influence spreads from it. What is left is the marker, the office, roads and rubble.
 - **[Decided]** The office keeps the town's blueprints and its history: which buildings it had, its peak income, its farming and trade, its name and its previous owners.
@@ -1078,6 +1089,7 @@ To be fleshed out when the first NPC is designed.
 - **[Decided]** (2026-10-14) **No extra grace for new claims.** Every claim, new or old, has the same two rounds of 24-hour protection: 48 hours to get back inside the claim. A player who places a marker must log back in within two days. Before placing a claim, a player should earn enough money by trading at the starter town or another town to buy the claim, build the town manager building and the guard building, and pay the guards' first wages.
   - The name of the group (tribe, clan, circle of friends) and the shape of the zone are not settled.
 - **[Decided]** When a hostile takeover succeeds, the challenger pays the previous owner a fixed amount based on the town's value (or its rubble if it is a ruin).
+- **[Proposed]** (2026-10-14) The price is the rubble value of the buildings (the bill of materials minus degradation) plus the unpaid wages and debts the new owner takes on. The server works it out from the town ledger, with no negotiation.
 - **[Decided]** A town that does nothing productive but still has a manager, clean water, a temple and guards is an expense on the owner's other towns or dynasty, so hoarding idle towns costs money.
 - **[Superseded]** An earlier version had windows of about 24 hours for a town with a manager and guards and about 48 hours with a wall. Established towns are now fully protected, so those windows are no longer needed.
 - **[Decided]** Paid guards protect a town from hostile takeover (see above). Guards who go unpaid leave, which removes the protection and ties it to the town's money.
@@ -1647,9 +1659,9 @@ Ambiguities found in the 2026-10-14 review (the newest statement was applied whe
 70. **Merging dynasties.** Settled (2026-10-14): the entire families combine under the player, with new spouses, stepchildren, properties, businesses and debts, and stepchildren can be successors. The absorbed dynasty's duress ceases at the merge, and the buyer takes on none. Reputation belongs to each person, so nothing passes on in a merge; the dynasty has no reputation of its own, only a mean average used for credit (Section 6.2). Nothing is open here.
 71. **Weekly check-in for duress.** Settled (2026-10-14): the check-in needs a real action that works as robot detection, not a bare login (Section 6.1). Still open: the list of qualifying actions.
 72. **Real-world alerts for town challenges.** Settled (2026-10-14): an alert is sent only after the in-world delay it would take a message to reach the player, instant if they are logged out in the town; no challenges are possible while paid guards stand (Sections 8.14, 8.15). Nothing is open here.
-73. **Flagging a town for deletion.** The administrators vote, but there is no trigger, deadline or fallback if nobody does. Should there be an automatic rule (for example after a set time with no owner and no manager)?
-74. **Server-town decay against the spirit floor.** A server-owned town with a temple and clean water keeps a spirit floor, but also loses money and decays. Which decides when buildings start to fall, and how long does it take?
-75. **Hostile takeover payment.** "A fixed amount based on the town's value": who works out the value, and does it include the buildings, the stock and the NPCs?
+73. **Flagging a town for deletion.** Settled (2026-10-14): a town always has an owner. A player-owned town is flagged when the owner says "let it go" (or does not answer the 24-hour notice before the manager quits); there is no automatic flag after a set time with no owner (Section 8.13). Administrators vote only for server-owned towns. Nothing is open here.
+74. **Server-town decay against the spirit floor.** Settled (2026-10-14): the spirit floor sets the mood and the weather, but money decides decay. The decline follows the same system as a player-owned town: costs are cut, people leave by their own reasons, the manager leaves last. There are no fixed times (Section 8.13). Still open: the stay-score numbers.
+75. **Hostile takeover payment.** Settled (2026-10-14): the price is the rubble value of the buildings plus the unpaid wages and debts the new owner takes on, worked out from the town ledger (Section 8.14). Nothing is open here.
 76. **Weekly players and short windows.** Settled (2026-10-14): the old 2-hour and 4-hour windows are replaced by a 24-hour presence timer plus a 24-hour takeover, which a group member can reset by logging in (Section 8.14). Proposed: a new claim is protected for its first 7 real days, and paid guards remove the risk entirely. Still open: whether a weekly player with no group member is treated fairly after 48 hours away.
 77. **Duress.** Settled (2026-10-14): duress does not raise bills. It lowers crop yields and animal growth, slightly lowers reputation, and speeds property degradation a little; costs rise only because more needs fixing (Section 6.1). Still open: the size of each effect at each level.
 78. **Households without limits.** Many living spouses and children are allowed. Is there any cap, or only cost (housing, food, care)? How does a large household affect duress and the weekly player?
