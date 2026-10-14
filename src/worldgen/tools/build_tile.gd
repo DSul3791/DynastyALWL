@@ -18,6 +18,8 @@ const ReliefScript := preload("res://src/worldgen/sketch/relief_preview.gd")
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 const TileErosionScript := preload("res://src/worldgen/tile/tile_erosion.gd")
 const TileWaterScript := preload("res://src/worldgen/tile/tile_water.gd")
+const TileClimateScript := preload("res://src/worldgen/tile/tile_climate.gd")
+const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const TilePreviewScript := preload("res://src/worldgen/tile/tile_preview.gd")
 
 
@@ -115,5 +117,37 @@ func _run(world_dir: String, tile: Vector2i, cell: float) -> int:
 	height.heights = water.heights
 	var wet_image: Image = TilePreviewScript.render(settings, height, tile, true, water)
 	wet_image.save_png(base + "_water.png")
+
+	started = Time.get_ticks_msec()
+	var tables = TableSetScript.new()
+	var table_problems: Array = tables.load_directory()
+
+	if not table_problems.is_empty():
+		push_error("\n".join(table_problems))
+		return 1
+
+	var climate = TileClimateScript.new()
+	climate.setup(settings, tile_rules, tables)
+	climate.build(water.heights, water.water_class, tile)
+	print("Climate done in %d ms; fertile land (150+) %.1f km2" % [
+		Time.get_ticks_msec() - started, climate.fertile_km2
+	])
+	var land_cells: int = 0
+
+	for name in climate.biome_cells.keys():
+		if name != "ocean":
+			land_cells += int(climate.biome_cells[name])
+
+	for name in climate.biome_cells.keys():
+		if name != "ocean":
+			print("  biome %-20s %6.1f km2 (%4.1f%%)" % [
+				name, float(climate.biome_cells[name]) * 64.0 / 1.0e6,
+				100.0 * float(climate.biome_cells[name]) / maxf(float(land_cells), 1.0)
+			])
+
+	for name in climate.soil_cells.keys():
+		print("  soil  %-20s %6.1f km2" % [name, float(climate.soil_cells[name]) * 64.0 / 1.0e6])
+
+	TilePreviewScript.render_biomes(height, climate, tables, water).save_png(base + "_biomes.png")
 	print("Relief drawn in %d ms" % (Time.get_ticks_msec() - started))
 	return 0

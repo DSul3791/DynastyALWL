@@ -78,5 +78,73 @@
 			"meander_wavelength_m": 420,
 			"mouth_height_m": 0.4
 		}
+	},
+	"climate": {
+		"note": "Climate, moisture, biome, soil and fertility for one tile. Temperature comes from latitude and height. Moisture comes from a wet-air sweep along the prevailing wind (wet over sea, drier over land, much drier behind mountains) plus nearness to fresh water. Thresholds are in degrees C, 0 to 1 moisture, degrees of slope and meters.",
+		"wind_toward_x": {
+			"desert": -1,
+			"transition": 0,
+			"temperate": 1,
+			"arctic": -1
+		},
+		"zone_wetness": {
+			"desert": 0.3,
+			"transition": 0.5,
+			"temperate": 0.68,
+			"arctic": 0.5
+		},
+		"air": {
+			"land_loss_per_km": 0.035,
+			"rise_loss_per_100m": 0.11,
+			"minimum": 0.08,
+			"sea_recharge_per_km": 1.2
+		},
+		"coarse_cell_m": 32,
+		"near_fresh_water_m": 240,
+		"fresh_water_bonus": 0.22,
+		"noise": {
+			"moisture_amplitude": 0.1,
+			"moisture_wavelength_m": 260,
+			"temperature_amplitude_c": 0.8,
+			"temperature_wavelength_m": 600
+		},
+		"biome": {
+			"beach_height_m": 2.5,
+			"beach_distance_m": 110,
+			"marsh_height_m": 4.0,
+			"marsh_slope_deg": 3.0,
+			"marsh_moisture": 0.62,
+			"rock_slope_deg": 38.0,
+			"scree_slope_deg": 26.0,
+			"hot_min_c": 24.0,
+			"warm_min_c": 5.0,
+			"cold_min_c": -3.0,
+			"snow_max_c": -8.0,
+			"glacier_max_c": -14.0,
+			"desert_moisture": 0.25,
+			"scrub_moisture": 0.4,
+			"savanna_moisture": 0.58,
+			"grassland_moisture": 0.42,
+			"mixed_moisture": 0.7,
+			"cool_forest_below_c": 12.0,
+			"boreal_moisture": 0.38,
+			"alpine_min_height_m": 900.0
+		},
+		"soil": {
+			"floodplain_distance_m": 110,
+			"floodplain_slope_deg": 6.0,
+			"clay_moisture": 0.78,
+			"sand_moisture": 0.3,
+			"stony_slope_deg": 20.0
+		},
+		"fertility": {
+			"moisture_peak": 0.55,
+			"moisture_width": 0.45,
+			"temperature_best_low_c": 8.0,
+			"temperature_best_high_c": 26.0,
+			"temperature_zero_low_c": -4.0,
+			"temperature_zero_high_c": 38.0,
+			"slope_zero_deg": 34.0
+		}
 	}
 }

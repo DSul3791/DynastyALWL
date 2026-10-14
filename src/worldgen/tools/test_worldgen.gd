@@ -11,6 +11,7 @@ const RandomizerScript := preload("res://src/worldgen/matrix/matrix_randomizer.g
 const TileMatrixScript := preload("res://src/worldgen/matrix/tile_matrix.gd")
 const TilePlanScript := preload("res://src/worldgen/plan/tile_plan.gd")
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
+const TileClimateScript := preload("res://src/worldgen/tile/tile_climate.gd")
 const TileWaterScript := preload("res://src/worldgen/tile/tile_water.gd")
 const TileErosionScript := preload("res://src/worldgen/tile/tile_erosion.gd")
 const IslandShapeScript := preload("res://src/worldgen/matrix/island_shape.gd")
@@ -1167,6 +1168,65 @@ func _test_tile_water(settings, elevation, sketch: Dictionary) -> void:
 	again.setup(settings, tile_rules)
 	again.build(height, tile, starter)
 	_check(again.heights == water.heights and again.water_class == water.water_class, "the tile water is reproducible")
+
+	_test_tile_climate(settings, tile_rules, tile, water)
+
+
+func _test_tile_climate(settings, tile_rules: Dictionary, tile: Vector2i, water) -> void:
+	var tables = TableSetScript.new()
+	_check(tables.load_directory().is_empty(), "tables load for the climate step")
+	var climate = TileClimateScript.new()
+	climate.setup(settings, tile_rules, tables)
+	var started: int = Time.get_ticks_msec()
+	climate.build(water.heights, water.water_class, tile)
+	print("tile climate built in %d ms, fertile land %.1f km2" % [Time.get_ticks_msec() - started, climate.fertile_km2])
+	var total: int = water.samples * water.samples
+	_check(climate.biome.size() == total and climate.soil.size() == total and climate.fertility.size() == total
+		and climate.moisture.size() == total, "climate maps cover the tile")
+
+	var biome_count: int = tables.get_entries("biomes").size()
+	var soil_count: int = tables.get_entries("soils").size()
+	var ocean: int = tables.id_of("biomes", "ocean")
+	var bad: int = 0
+	var water_fertile: int = 0
+	var beach_near_sea: int = 0
+	var wet_west: float = 0.0
+	var dry_east: float = 0.0
+	var west_cells: int = 0
+	var east_cells: int = 0
+
+	for j in range(0, water.samples, 4):
+		for i in range(0, water.samples, 4):
+			var index: int = j * water.samples + i
+
+			if climate.biome[index] >= biome_count or climate.soil[index] >= soil_count:
+				bad += 1
+
+			if water.water_class[index] != 0:
+				if climate.biome[index] != ocean or climate.fertility[index] != 0:
+					water_fertile += 1
+			elif water.heights[index] > 5.0:
+				if i < water.samples / 3:
+					wet_west += float(climate.moisture[index])
+					west_cells += 1
+				elif i > water.samples * 2 / 3:
+					dry_east += float(climate.moisture[index])
+					east_cells += 1
+
+	_check(bad == 0, "every biome and soil id is in its table")
+	_check(water_fertile == 0, "water cells are ocean biome with no fertility")
+	_check(climate.biome_cells.has("beach"), "the tile has beaches")
+	_check(climate.biome_cells.has("temperate_forest") and climate.biome_cells.has("temperate_grassland"),
+		"the temperate tile has forest and grassland")
+	_check(not climate.biome_cells.has("hot_desert") and not climate.biome_cells.has("glacier"),
+		"a temperate tile has no desert or glacier")
+	_check(climate.fertile_km2 > 1.0, "the starter tile has farmable fertile land (%.1f km2)" % climate.fertile_km2)
+
+	var again = TileClimateScript.new()
+	again.setup(settings, tile_rules, tables)
+	again.build(water.heights, water.water_class, tile)
+	_check(again.biome == climate.biome and again.soil == climate.soil and again.fertility == climate.fertility
+		and again.moisture == climate.moisture, "the climate maps are reproducible")
 
 
 func _test_tile_erosion(settings, elevation) -> void:
