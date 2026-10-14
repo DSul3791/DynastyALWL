@@ -81,6 +81,8 @@ A persistent, rough-medieval, multiplayer online world: a survival, exploration 
 - **[Proposed] News travels with people.** Warrants, reputation, threat warnings and price news are facts with a place and time of origin that spread slowly through travelers, wagons and ships (Section 13.6).
 - **[Proposed] Legibility.** Hidden rules feel unfair. Show the ledger, risk overlays, estimated effects and the reason an action is blocked or risky.
 - **[Proposed] Money is stored as whole numbers of the smallest coin,** never decimals, so balances never drift.
+- **[Decided] Safe, kind, generous, in that order.** (2026-10-14) The game is built on the idea that people should be safe, then kind, then generous. If you cannot be generous, be safe and kind. If you cannot be kind, at least be safe. If you cannot manage all three, remove yourself from the situation. Systems for safety (protection from abuse, ways to leave a bad situation), kindness (rescue, understanding, second chances) and generosity (gifts, charity, adoption, helping struggling dynasties) are treated as core design, not extras.
+- **[Decided] We do not dictate relationships.** (2026-10-14) A spouse can be any gender, and the game supports couples of any kind. Where a couple cannot have children, the game offers adoption and other routes (Section 6.9). The goal is to be understanding and inclusive.
 - **[Decided] Every resource needs a use.** (2026-10-14) A resource, rock or material is added only when we can say what it will be used for in the game. Nothing is added just because it exists in the real world.
 - **[Decided] Build the generator first, with the whole design in mind.** The immediate work is the generator that produces the giant adventuring world, but every system in this document should be considered while it is built, so nothing baked now blocks something wanted later.
 - **[Decided] Language model budget.** Rules drive routine NPC work (a smith making nails, a farmhand harvesting, builders repairing). The model handles conversation with players and occasional judgment calls, such as a warehouse manager reviewing stock about once per game season. Its output is bounded and structured, game rules validate it, and a simple formula or rule takes over when no model is available. Each decision is logged with its reason.
@@ -558,7 +560,15 @@ A tile should then take minutes, and `world_preview.gd` could show island panel 
 - **[Decided]** Only the chosen successor inherits. The whole dynasty passes to that one person. It does not matter which spouse a child came from, since all are the head's children and all are eligible to be successor at retirement or death.
 - **[Decided]** When the dynasty passes, the previous head's spouses become cared-for elders in the household. The new head must find a partner of their own.
 - **[Decided]** Siblings who are not the successor stay in the household and age out over time, unless they leave (see below).
-- **[Open]** Whether several spouses can be alive at the same time, or only one at a time. Not yet decided.
+- **[Decided]** A dynasty can have many living spouses at once. The aim is to grow a dynasty as in medieval times and plan against sickness and age. Spouses are people who help run the day-to-day work of the dynasty and household and help raise children.
+
+### 6.9 Adoption and inclusion (to explore more)
+
+- **[Decided]** The game does not restrict who can be spouses. Same-gender couples, and any couple that cannot have children, are fully supported.
+- **[Decided]** Dynasties can adopt children. A couple can apply to the local temple, or the temple can reach out to them.
+- **[Proposed]** Requirements to adopt: the dynasty has a home, enough income to raise a child, and a good enough reputation. A child who is adopted becomes family and can become the successor.
+- **[Open]** Where the adoptable children come from (orphans of the town, children of dynasties lost to receivership or death, abandoned children), how temples decide, and how an adopted child's traits and background work.
+- **[Open]** Whether other routes should exist (guardianship of a relative's child, fostering) and how they differ from adoption.
 
 ### 6.8 Non-successor siblings (to design later)
 
