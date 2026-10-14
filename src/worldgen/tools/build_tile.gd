@@ -19,6 +19,7 @@ const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 const TileErosionScript := preload("res://src/worldgen/tile/tile_erosion.gd")
 const TileWaterScript := preload("res://src/worldgen/tile/tile_water.gd")
 const TileClimateScript := preload("res://src/worldgen/tile/tile_climate.gd")
+const TileGeologyScript := preload("res://src/worldgen/tile/tile_geology.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const TilePreviewScript := preload("res://src/worldgen/tile/tile_preview.gd")
 
@@ -149,5 +150,41 @@ func _run(world_dir: String, tile: Vector2i, cell: float) -> int:
 		print("  soil  %-20s %6.1f km2" % [name, float(climate.soil_cells[name]) * 64.0 / 1.0e6])
 
 	TilePreviewScript.render_biomes(height, climate, tables, water).save_png(base + "_biomes.png")
+
+	started = Time.get_ticks_msec()
+	var geology = TileGeologyScript.new()
+	geology.setup(settings, tile_rules, tables, elevation, sketch)
+	geology.build(tile, water.heights, water.water_class, water.flow, climate.soil)
+	print("Geology done in %d ms: %d provinces, %d features, %d ore bodies" % [
+		Time.get_ticks_msec() - started, geology.provinces.size(), geology.features.size(), geology.ore_bodies.size()
+	])
+
+	for entry in geology.provinces:
+		var rocks: Array = []
+
+		for layer in entry["layers"]:
+			rocks.append("%s %.0f" % [layer["rock"], float(layer["thickness_m"])])
+
+		print("  province %-10s %-9s datum %4.0f m: %s, base %s" % [
+			entry["id"], entry["kind"], float(entry["datum_m"]), ", ".join(rocks), entry["base_rock"]
+		])
+
+	var type_counts: Dictionary = {}
+
+	for feature in geology.features:
+		var key: String = str(feature["type"]) + ("/" + str(feature["size"]) if feature.has("size") else "")
+		type_counts[key] = int(type_counts.get(key, 0)) + 1
+
+	print("  timings (ms): %s" % str(geology.timings))
+	print("  features: %s" % str(type_counts))
+	var ore_counts: Dictionary = {}
+
+	for ore in geology.ore_bodies:
+		var key: String = "%s %s" % [ore["resource"], ore["shape"]]
+		ore_counts[key] = int(ore_counts.get(key, 0)) + 1
+
+	print("  ore bodies: %s" % str(ore_counts))
+	print("  bedrock at surface (cells): %s" % str(geology.outcrop_cells))
+	TilePreviewScript.render_geology(height, geology, tables).save_png(base + "_geology.png")
 	print("Relief drawn in %d ms" % (Time.get_ticks_msec() - started))
 	return 0

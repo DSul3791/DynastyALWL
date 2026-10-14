@@ -119,3 +119,124 @@ static func render_biomes(height, climate, tables, water = null) -> Image:
 			image.set_pixel(i, j, color)
 
 	return image
+
+
+const ROCK_COLORS := {
+	"sediment": Color(0.80, 0.72, 0.55), "shale": Color(0.42, 0.45, 0.50), "limestone": Color(0.82, 0.82, 0.76),
+	"coal": Color(0.12, 0.12, 0.12), "granite": Color(0.86, 0.58, 0.58), "slate": Color(0.32, 0.36, 0.46),
+	"basalt": Color(0.22, 0.20, 0.22), "sandstone": Color(0.86, 0.66, 0.40),
+}
+
+const RESOURCE_COLORS := {
+	"gold": Color(1.0, 0.85, 0.0), "silver": Color(0.85, 0.9, 1.0), "tin": Color(0.6, 1.0, 0.9),
+	"copper": Color(1.0, 0.45, 0.1), "iron": Color(0.75, 0.1, 0.05), "zinc": Color(0.5, 0.6, 1.0),
+	"lead": Color(0.55, 0.45, 0.75), "gemstone": Color(1.0, 0.2, 0.9), "sulfur": Color(0.95, 1.0, 0.3),
+	"salt": Color(1.0, 1.0, 1.0), "gypsum": Color(0.95, 0.9, 0.85), "coal": Color(0.0, 0.0, 0.0),
+}
+
+
+# Bedrock map under hill shading: rock at the bedrock surface, province
+# borders, fault traces and ore bodies (a ring marks ore that reaches the
+# surface). Sea floor is drawn darker.
+static func render_geology(height, geology, tables) -> Image:
+	var samples: int = height.samples
+	var spacing: float = height.spacing_m
+	var image: Image = Image.create(samples, samples, false, Image.FORMAT_RGB8)
+	var light: Vector3 = Vector3(-1.0, 1.3, -1.0).normalized()
+	var colors: Dictionary = {}
+
+	for entry in tables.get_entries("rocks"):
+		colors[int(entry["id"])] = ROCK_COLORS.get(str(entry["name"]), Color(1, 0, 1))
+
+	for j in range(samples):
+		for i in range(samples):
+			var index: int = j * samples + i
+			var h: float = height.heights[index]
+			var east: float = height.heights[j * samples + mini(i + 1, samples - 1)]
+			var west: float = height.heights[j * samples + maxi(i - 1, 0)]
+			var south: float = height.heights[mini(j + 1, samples - 1) * samples + i]
+			var north: float = height.heights[maxi(j - 1, 0) * samples + i]
+			var normal: Vector3 = Vector3(
+				-(east - west) / (2.0 * spacing) * 2.0, 1.0, -(south - north) / (2.0 * spacing) * 2.0
+			).normalized()
+			var shade: float = maxf(normal.dot(light), 0.0)
+			var color: Color = colors[geology.surface_rock[index]] * (0.55 + 0.6 * shade)
+
+			if h <= 0.0:
+				color = color.lerp(Color(0.05, 0.12, 0.28), 0.6)
+
+			var p: int = geology.province[index]
+
+			if (i + 1 < samples and geology.province[index + 1] != p) or (j + 1 < samples and geology.province[index + samples] != p):
+				color = Color(0.05, 0.05, 0.05)
+
+			color.a = 1.0
+			image.set_pixel(i, j, color)
+
+	var x0: float = float(geology.tile_origin.x)
+	var z0: float = float(geology.tile_origin.y)
+
+	for feature in geology.features:
+		if str(feature["type"]) == "fault":
+			var a: Vector2 = (Vector2(float(feature["points"][0][0]), float(feature["points"][0][1])) - Vector2(x0, z0)) / spacing
+			var b: Vector2 = (Vector2(float(feature["points"][1][0]), float(feature["points"][1][1])) - Vector2(x0, z0)) / spacing
+			_line(image, a, b, Color(0.9, 0.1, 0.1), 1)
+
+	for ore in geology.ore_bodies:
+		var color: Color = RESOURCE_COLORS.get(str(ore["resource"]), Color(1, 0, 1))
+		var shape: String = str(ore["shape"])
+
+		if shape == "layer":
+			continue
+
+		if ore.has("points"):
+			for k in range(ore["points"].size() - 1):
+				var a: Vector2 = (Vector2(float(ore["points"][k][0]), float(ore["points"][k][1])) - Vector2(x0, z0)) / spacing
+				var b: Vector2 = (Vector2(float(ore["points"][k + 1][0]), float(ore["points"][k + 1][1])) - Vector2(x0, z0)) / spacing
+				_line(image, a, b, color, 3 if shape == "placer" else 2)
+			continue
+
+		var center: Vector2 = (Vector2(float(ore["center"][0]), float(ore["center"][ore["center"].size() - 1])) - Vector2(x0, z0)) / spacing
+		var radius: float = maxf(float(ore.get("radius_m", ore.get("radius_a_m", 20.0))) / spacing, 5.0)
+		_disc(image, center, minf(radius, 9.0), color)
+		_ring(image, center, radius, color)
+
+	return image
+
+
+static func _line(image: Image, a: Vector2, b: Vector2, color: Color, thickness: int) -> void:
+	var steps: int = int(a.distance_to(b)) + 1
+
+	for k in range(steps + 1):
+		var p: Vector2 = a.lerp(b, float(k) / float(steps))
+
+		for dy in range(-thickness / 2, thickness / 2 + 1):
+			for dx in range(-thickness / 2, thickness / 2 + 1):
+				var x: int = int(p.x) + dx
+				var y: int = int(p.y) + dy
+
+				if x >= 0 and y >= 0 and x < image.get_width() and y < image.get_height():
+					image.set_pixel(x, y, color)
+
+
+static func _disc(image: Image, center: Vector2, radius: float, color: Color) -> void:
+	for dy in range(-int(radius), int(radius) + 1):
+		for dx in range(-int(radius), int(radius) + 1):
+			if dx * dx + dy * dy <= radius * radius:
+				var x: int = int(center.x) + dx
+				var y: int = int(center.y) + dy
+
+				if x >= 0 and y >= 0 and x < image.get_width() and y < image.get_height():
+					image.set_pixel(x, y, color)
+
+
+static func _ring(image: Image, center: Vector2, radius: float, color: Color) -> void:
+	var steps: int = maxi(int(radius * 6.0), 16)
+
+	for k in range(steps):
+		var angle: float = float(k) * TAU / float(steps)
+		var x: int = int(center.x + cos(angle) * radius)
+		var y: int = int(center.y + sin(angle) * radius)
+
+		if x >= 0 and y >= 0 and x < image.get_width() and y < image.get_height():
+			image.set_pixel(x, y, color)

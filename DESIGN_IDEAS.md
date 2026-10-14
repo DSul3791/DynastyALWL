@@ -1037,7 +1037,7 @@ Map growth
 
 Generator, hardware and hosting
 
-41. Settled: resources are placed by how they really form, and the full volumetric simulation can be replaced by anything faster that reaches the same result (Section 4.9). Still open: which geological features a tile stores, since that list becomes permanent.
+41. Settled: resources are placed by how they really form, and the full volumetric simulation can be replaced by anything faster that reaches the same result (Section 4.9). Still open: which geological features a tile stores, since that list becomes permanent. First version built in step 11 (intrusions, faults, volcanic vents and pipes, salt domes; ore as vein, lens, pipe, layer, halo and placer); to be confirmed before tiles are kept (step 13).
 42. Is runtime voxel generation on the server acceptable instead of reading everything from baked files? (Section 4.8)
 43. Recommended: start with streamed blocks plus a client cache and low-resolution maps for distance and the world map (Section 4.10). Confirm, and measure bandwidth once a prototype runs.
 44. Can players host a world on their own machine? If so, one minimum-spec machine runs both server and client. (Section 3)

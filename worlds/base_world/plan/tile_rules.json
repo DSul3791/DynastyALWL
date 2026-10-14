@@ -146,5 +146,418 @@
 			"temperature_zero_high_c": 38.0,
 			"slope_zero_deg": 34.0
 		}
+	},
+	"geology": {
+		"province_cells_per_tile": 4,
+		"province_jitter": 0.8,
+		"province_warp_m": 700,
+		"province_warp_wavelength_m": 3000,
+		"kind_wavelength_m": 9000,
+		"noise_cell_m": 320,
+		"compute_cell_m": 16,
+		"stacks": {
+			"basin": {
+				"layers": [
+					[
+						"sandstone",
+						20,
+						70
+					],
+					[
+						"shale",
+						20,
+						60
+					],
+					[
+						"coal",
+						2,
+						6
+					],
+					[
+						"shale",
+						20,
+						50
+					],
+					[
+						"coal",
+						1,
+						4
+					],
+					[
+						"sandstone",
+						30,
+						80
+					],
+					[
+						"limestone",
+						40,
+						120
+					],
+					[
+						"shale",
+						40,
+						100
+					]
+				],
+				"base": "slate",
+				"repeat_to_m": 900
+			},
+			"fold_belt": {
+				"layers": [
+					[
+						"slate",
+						30,
+						90
+					],
+					[
+						"sandstone",
+						20,
+						70
+					],
+					[
+						"limestone",
+						30,
+						100
+					],
+					[
+						"shale",
+						30,
+						90
+					],
+					[
+						"sandstone",
+						30,
+						80
+					]
+				],
+				"base": "slate",
+				"repeat_to_m": 1200
+			},
+			"granite": {
+				"layers": [
+					[
+						"sandstone",
+						20,
+						80
+					],
+					[
+						"shale",
+						20,
+						70
+					],
+					[
+						"limestone",
+						0,
+						90
+					],
+					[
+						"slate",
+						40,
+						150
+					]
+				],
+				"base": "slate",
+				"repeat_to_m": 800
+			},
+			"volcanic": {
+				"layers": [
+					[
+						"basalt",
+						150,
+						500
+					]
+				],
+				"base": "basalt",
+				"repeat_to_m": 0
+			}
+		},
+		"min_layer_m": 8,
+		"folds": {
+			"fold_belt": {
+				"amplitude_m": [
+					80,
+					260
+				],
+				"wavelength_m": [
+					900,
+					2600
+				]
+			},
+			"granite": {
+				"amplitude_m": [
+					40,
+					140
+				],
+				"wavelength_m": [
+					1500,
+					3500
+				]
+			},
+			"basin": {
+				"sag_m": [
+					60,
+					220
+				]
+			}
+		},
+		"burial": {
+			"min_m": -200,
+			"max_m": 900,
+			"power": 1.4,
+			"mountain_height_m": 700,
+			"mountain_reduction": 0.7
+		},
+		"features": {
+			"pluton": {
+				"granite": [
+					1,
+					1
+				],
+				"radius_m": [
+					900,
+					1700
+				],
+				"aspect": [
+					0.6,
+					1.0
+				],
+				"roof_drop_m": [
+					150,
+					400
+				],
+				"depth_m": [
+					2500,
+					4000
+				]
+			},
+			"stock": {
+				"granite": [
+					0,
+					2
+				],
+				"fold_belt": [
+					0,
+					1
+				],
+				"volcanic_arc_chance": 0.6,
+				"volcanic_chance": 0.15,
+				"radius_m": [
+					150,
+					450
+				],
+				"aspect": [
+					0.6,
+					1.0
+				],
+				"roof_drop_m": [
+					40,
+					150
+				],
+				"depth_m": [
+					1500,
+					3000
+				]
+			},
+			"fault": {
+				"granite": [
+					1,
+					2
+				],
+				"fold_belt": [
+					1,
+					2
+				],
+				"basin": [
+					0,
+					1
+				],
+				"volcanic": [
+					0,
+					1
+				],
+				"length_m": [
+					2000,
+					6000
+				],
+				"dip_deg": [
+					55,
+					85
+				],
+				"width_m": [
+					4,
+					20
+				],
+				"depth_m": [
+					1200,
+					2500
+				]
+			},
+			"vent": {
+				"volcanic": [
+					1,
+					3
+				],
+				"radius_m": [
+					100,
+					350
+				],
+				"depth_m": [
+					1500,
+					3000
+				]
+			},
+			"pipe": {
+				"volcanic": [
+					0,
+					2
+				],
+				"radius_m": [
+					20,
+					60
+				],
+				"burial_m": [
+					0,
+					400
+				],
+				"depth_m": [
+					800,
+					2000
+				]
+			},
+			"salt_dome": {
+				"basin": [
+					0,
+					1
+				],
+				"radius_m": [
+					300,
+					800
+				],
+				"burial_m": [
+					80,
+					600
+				]
+			}
+		},
+		"ores": {
+			"tin_roof_chance": 0.7,
+			"tin_thickness_m": [
+				30,
+				80
+			],
+			"copper_halo_chance": 0.6,
+			"copper_halo_scale": 1.8,
+			"copper_thickness_m": [
+				150,
+				400
+			],
+			"arc_gold_chance": 0.3,
+			"skarn_chance": 0.8,
+			"skarn_resources": [
+				[
+					"iron",
+					0.5
+				],
+				[
+					"copper",
+					0.3
+				],
+				[
+					"zinc",
+					0.2
+				]
+			],
+			"skarn_size_m": [
+				60,
+				200
+			],
+			"vein_chance": 0.55,
+			"vein_resources": [
+				[
+					"gold",
+					0.65
+				],
+				[
+					"silver",
+					0.35
+				]
+			],
+			"vein_width_m": [
+				0.5,
+				3.0
+			],
+			"vein_length_m": [
+				300,
+				1500
+			],
+			"vein_depth_m": [
+				200,
+				800
+			],
+			"limestone_lens_count": [
+				0,
+				2
+			],
+			"limestone_lens_chance": 0.5,
+			"limestone_lens_resources": [
+				[
+					"lead",
+					0.5
+				],
+				[
+					"zinc",
+					0.5
+				]
+			],
+			"limestone_lens_size_m": [
+				40,
+				150
+			],
+			"pipe_gem_chance": 0.7,
+			"pegmatite_gem_chance": 0.2,
+			"sulfur_chance": 0.8,
+			"sulfur_thickness_m": [
+				15,
+				50
+			],
+			"evaporite_chance": 0.5,
+			"evaporite_resources": [
+				[
+					"salt",
+					0.6
+				],
+				[
+					"gypsum",
+					0.4
+				]
+			],
+			"evaporite_thickness_m": [
+				3,
+				20
+			],
+			"salt_dome_resource": "salt",
+			"placer_length_m": 3000,
+			"placer_thickness_m": [
+				1,
+				3
+			],
+			"placer_step_m": 96
+		},
+		"cover": {
+			"flat_m": 6.0,
+			"zero_slope_deg": 42,
+			"alluvium_m": 8,
+			"beach_m": 5,
+			"peat_m": 3,
+			"sand_m": 3,
+			"ocean_m": 8,
+			"lake_m": 3,
+			"river_m": 2,
+			"noise": 0.3
+		},
+		"datum_above_m": [
+			0,
+			60
+		]
 	}
 }

@@ -134,13 +134,14 @@ A 32 m version (481 by 481) of height, water class and biome for the world map a
 
 Stored as compressed JSON during development for readability. They can move to a binary encoding later without changing content.
 
-- **Provinces:** ID, kind (granite, sedimentary basin, volcanic, fold belt), rock layer stack (rock ID and thickness from the top), base rock.
+- **Provinces:** ID, kind (granite, sedimentary basin, volcanic, fold belt), rock layer stack (rock ID and thickness from the top), base rock. First version (step 11): provinces are cells of a world grid (four per tile edge, about 3.8 km) with one jittered seed point each and warped borders, so they cross tile edges cleanly. A province also stores its datum (height of the top of the stack, just above the highest ground in the cell), cycle length (the stack repeats down to `repeat_to_m`, then base rock) and fold settings (a sine fold with direction, wavelength, amplitude and phase, or a basin sag). The per-sample layer offset map is computed from these.
 - **Features:**
   - Intrusions: kind, center, top depth, horizontal radii, depth extent.
   - Faults: a line of points, dip angle and direction, width, depth extent.
   - Volcanic vents and pipes: center, radius, depth.
   - Salt domes: center, radius, top depth.
-- **Ore bodies:** ID, resource, shape (vein, lens, pipe, layer or halo) with its dimensions, grade, total amount, and the feature it formed from.
+- **Ore bodies:** ID, resource, shape (vein, lens, pipe, layer or halo) with its dimensions, grade, total amount, and the feature it formed from. First version (step 11) adds a `placer` shape (a line of points along a river with width and thickness) for gold and tin washed out of bodies that reach the surface. Layer bodies name their province and repeat with its cycle.
+- **IDs (first version):** features and ore bodies belong to the province cell they formed in. Their home tile is the tile holding that cell, and the local ID is cell index × 100 + n (features 1 to 49, ore 51 to 99). Placers belong to the tile they lie in (local IDs from 9001). A feature listed by two tiles is the identical record in both.
 - **Sites:** ID, kind (cave system, mineshaft, labyrinth, dormant lair, landmark, harbor, town site), position, size, seed and kind-specific settings. A cave system stores its entrances, bounds and seed. The runtime generator carves it.
 - **Starter data (starter tiles only):** spawn point and the suggested town block position.
 

@@ -11,6 +11,7 @@ const RandomizerScript := preload("res://src/worldgen/matrix/matrix_randomizer.g
 const TileMatrixScript := preload("res://src/worldgen/matrix/tile_matrix.gd")
 const TilePlanScript := preload("res://src/worldgen/plan/tile_plan.gd")
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
+const TileGeologyScript := preload("res://src/worldgen/tile/tile_geology.gd")
 const TileClimateScript := preload("res://src/worldgen/tile/tile_climate.gd")
 const TileWaterScript := preload("res://src/worldgen/tile/tile_water.gd")
 const TileErosionScript := preload("res://src/worldgen/tile/tile_erosion.gd")
@@ -1169,10 +1170,10 @@ func _test_tile_water(settings, elevation, sketch: Dictionary) -> void:
 	again.build(height, tile, starter)
 	_check(again.heights == water.heights and again.water_class == water.water_class, "the tile water is reproducible")
 
-	_test_tile_climate(settings, tile_rules, tile, water)
+	_test_tile_climate(settings, tile_rules, tile, water, elevation, sketch)
 
 
-func _test_tile_climate(settings, tile_rules: Dictionary, tile: Vector2i, water) -> void:
+func _test_tile_climate(settings, tile_rules: Dictionary, tile: Vector2i, water, elevation, sketch: Dictionary) -> void:
 	var tables = TableSetScript.new()
 	_check(tables.load_directory().is_empty(), "tables load for the climate step")
 	var climate = TileClimateScript.new()
@@ -1227,6 +1228,137 @@ func _test_tile_climate(settings, tile_rules: Dictionary, tile: Vector2i, water)
 	again.build(water.heights, water.water_class, tile)
 	_check(again.biome == climate.biome and again.soil == climate.soil and again.fertility == climate.fertility
 		and again.moisture == climate.moisture, "the climate maps are reproducible")
+
+	_test_tile_geology(settings, tile_rules, tile, water, climate, elevation, sketch, tables)
+
+
+func _test_tile_geology(settings, tile_rules: Dictionary, tile: Vector2i, water, climate, elevation, sketch: Dictionary, tables) -> void:
+	var geology = TileGeologyScript.new()
+	geology.setup(settings, tile_rules, tables, elevation, sketch)
+	var started: int = Time.get_ticks_msec()
+	geology.build(tile, water.heights, water.water_class, water.flow, climate.soil)
+	print("tile geology built in %d ms: %d provinces, %d features, %d ore bodies" % [
+		Time.get_ticks_msec() - started, geology.provinces.size(), geology.features.size(), geology.ore_bodies.size()
+	])
+	var samples: int = water.samples
+	var total: int = samples * samples
+	_check(geology.province.size() == total and geology.cover.size() == total and geology.layer_offset.size() == total
+		and geology.surface_rock.size() == total, "geology maps cover the tile")
+
+	var bad_province: int = 0
+
+	for index in range(0, total, 7):
+		if geology.province[index] >= geology.provinces.size():
+			bad_province += 1
+
+	_check(bad_province == 0, "every sample points at a listed province")
+
+	# Names used in the lists exist in the tables.
+	var unknown: Array = []
+
+	for entry in geology.provinces:
+		if tables.id_of("province_kinds", entry["kind"]) < 0:
+			unknown.append(entry["kind"])
+
+		for layer in entry["layers"]:
+			if tables.id_of("rocks", layer["rock"]) < 0:
+				unknown.append(layer["rock"])
+
+		if tables.id_of("rocks", entry["base_rock"]) < 0:
+			unknown.append(entry["base_rock"])
+
+	for feature in geology.features:
+		if tables.id_of("feature_types", str(feature["type"])) < 0:
+			unknown.append(feature["type"])
+
+	var ids: Dictionary = {}
+	var duplicate_ids: int = 0
+	var metals: Dictionary = {}
+
+	for ore in geology.ore_bodies:
+		if tables.id_of("resources", ore["resource"]) < 0:
+			unknown.append(ore["resource"])
+
+		if ids.has(ore["id"]):
+			duplicate_ids += 1
+
+		ids[ore["id"]] = true
+
+		if tables.entry_of("resources", ore["resource"]).get("category", "") in ["metal", "precious"]:
+			metals[ore["resource"]] = true
+
+	for feature in geology.features:
+		if ids.has(feature["id"]):
+			duplicate_ids += 1
+
+		ids[feature["id"]] = true
+
+	_check(unknown.is_empty(), "geology names are all in the tables %s" % str(unknown))
+	_check(duplicate_ids == 0, "feature and ore ids are unique in the tile")
+	_check(geology.ore_bodies.size() >= 10, "the starter tile has ore bodies (%d)" % geology.ore_bodies.size())
+	_check(metals.size() >= 3, "the starter tile has at least three metals %s" % str(metals.keys()))
+
+	# Cover: bare rock has none, sea floor has some.
+	var bare: int = tables.id_of("soils", "bare_rock")
+	var bad_cover: int = 0
+
+	for index in range(0, total, 5):
+		if water.water_class[index] == 0 and climate.soil[index] == bare and geology.cover[index] != 0:
+			bad_cover += 1
+		elif water.water_class[index] == 1 and geology.cover[index] == 0:
+			bad_cover += 1
+
+	_check(bad_cover == 0, "cover depth is zero on bare rock and present on the sea floor")
+
+	# Reproducible.
+	var again = TileGeologyScript.new()
+	again.setup(settings, tile_rules, tables, elevation, sketch)
+	again.build(tile, water.heights, water.water_class, water.flow, climate.soil)
+	_check(again.province == geology.province and again.layer_offset == geology.layer_offset
+		and again.cover == geology.cover and again.surface_rock == geology.surface_rock
+		and str(again.ore_bodies) == str(geology.ore_bodies), "geology is reproducible")
+
+	# The east neighbor agrees on the shared edge: same province, same layer
+	# offset, and the same feature and ore records where both list them.
+	var east = TileGeologyScript.new()
+	east.setup(settings, tile_rules, tables, elevation, sketch)
+	var blank_heights: PackedFloat32Array = PackedFloat32Array()
+	blank_heights.resize(total)
+	var blank_bytes: PackedByteArray = PackedByteArray()
+	blank_bytes.resize(total)
+	east.build(tile + Vector2i(1, 0), blank_heights, blank_bytes, blank_heights, blank_bytes)
+	var edge_mismatch: int = 0
+
+	for j in range(samples):
+		var mine: int = j * samples + samples - 1
+		var theirs: int = j * samples
+
+		if geology.provinces[geology.province[mine]]["id"] != east.provinces[east.province[theirs]]["id"] \
+				or geology.layer_offset[mine] != east.layer_offset[theirs]:
+			edge_mismatch += 1
+
+	_check(edge_mismatch == 0, "geology matches the east neighbor along the edge (%d mismatches)" % edge_mismatch)
+
+	var by_id: Dictionary = {}
+
+	for feature in east.features:
+		by_id[feature["id"]] = feature
+
+	for ore in east.ore_bodies:
+		if str(ore["shape"]) != "placer":
+			by_id[ore["id"]] = ore
+
+	var shared: int = 0
+	var differing: int = 0
+
+	for item in geology.features + geology.ore_bodies:
+		if by_id.has(item["id"]):
+			shared += 1
+
+			if str(by_id[item["id"]]) != str(item):
+				differing += 1
+
+	_check(shared > 0 and differing == 0, "shared features and ore bodies are identical in both tiles (%d shared)" % shared)
 
 
 func _test_tile_erosion(settings, elevation) -> void:
