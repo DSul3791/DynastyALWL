@@ -567,7 +567,10 @@ A tile should then take minutes, and `world_preview.gd` could show island panel 
 - **[Decided]** The game does not restrict who can be spouses. Same-gender couples, and any couple that cannot have children, are fully supported.
 - **[Decided]** Dynasties can adopt children. A couple can apply to the local temple, or the temple can reach out to them.
 - **[Proposed]** Requirements to adopt: the dynasty has a home, enough income to raise a child, and a good enough reputation. A child who is adopted becomes family and can become the successor.
-- **[Open]** Where the adoptable children come from (orphans of the town, children of dynasties lost to receivership or death, abandoned children), how temples decide, and how an adopted child's traits and background work.
+- **[Decided]** Adoptable children come first from displaced NPCs: children under a set age from collapsed dynasties who have no parent.
+- **[Decided]** A displaced child who still has a parent can come with that parent. The temple may introduce a displaced spouse with children, and the couple may choose marriage, adoption or both.
+- **[Decided]** When there are not enough displaced NPCs, the server keeps a number of pre-generated orphans at each temple, with the number picked at random each week. There is also a random chance of a spouse with one or two children waiting at the temple.
+- **[Open]** How an adopted child's traits and background are generated, how the temple decides between applicants, and the age limit for a child to count as adoptable.
 - **[Open]** Whether other routes should exist (guardianship of a relative's child, fostering) and how they differ from adoption.
 
 ### 6.8 Non-successor siblings (to design later)
@@ -801,6 +804,29 @@ To be fleshed out when the first NPC is designed.
 - **[Proposed]** The generator does not need to bake outpost sites: they can be found at runtime from the tile maps (slope, height, shoreline, water depth), the same way the town planner surveys land. Natural harbors and coves can still be marked as sites at bake time.
 
 ---
+
+### 8.11 The temple
+
+- **[Decided]** Every town can have a temple. It is non-denominational (no real-world religion) and built entirely on the principle "be safe, be kind, be generous" (Section 3).
+- **[Decided]** The temple is the centre of kindness in a town. It is where a person goes for help: healing, food, shelter, and protection. It demands nothing from anyone. Donations are always welcome and improve the donor's reputation.
+- **[Decided]** Players can simply talk with the clergy, like a counsellor, about philosophy and meaning. The teaching encourages: recognizing your inner voice, questioning why you think as you do, reflecting, self-help, self-worth, being useful to your community and helping neighbours, and being good to yourself in times of need.
+- **[Decided]** The clergy are the most neutral religious experience possible. They are pleasant, but they are human and can have a bad day, while still doing their best.
+- **[Decided]** The temple handles adoption (Section 6.9), takes in the displaced (Section 8.3) and receives donated food and goods.
+- **[Proposed]** The clergy use the same NPC character, memory and conversation systems as other NPCs (Section 8.8). The conversation budget (Section 3) applies.
+- **[Open]** Whether a temple is built by the town, by players, or both, what it costs, and how many a town can have.
+
+### 8.12 Town spirit and local weather (new idea)
+
+Checked: this has not been in the design before. Section 4 has weather from the world seed and clock (deterministic, same for everyone) and seasons in Section 7.3, but no town-level score and no link between how a town is doing and its weather.
+
+- **[Idea]** Each town has a score for how well it is doing. Working name: **town spirit**. It rises when the town is helped: pests and bandits cleared, sickness cured, medicine brought in or made, the hungry fed, a temple built. It falls when the town is plagued by vermin, goblins, bandits, sickness, blight or hunger.
+- **[Idea]** The score shapes local weather. A low-spirit town has thunderstorms, showers, sweltering heat and bitter cold. A high-spirit town has moderate weather with the right rain for crops, the right sun, and gentle breezes that keep windmills turning, plus butterflies and animals at play.
+- **[Idea]** A low score also acts like a depression on the people: it lowers NPC and player moods.
+- **[Proposed]** Climate stays in charge of the range. The baked climate and seasons set what is possible (a desert town never gets tropical rain). Town spirit only moves the weather between harsher and gentler within that range.
+- **[Proposed]** Weather stays deterministic and free of network traffic (Section 4). The score is one small number per town, sent to clients as part of the town's data, and each client adds it to the weather it already computes from the seed and clock.
+- **[Proposed]** Weather near a town border blends smoothly between towns and open country, so there are no walls of rain.
+- **[Proposed]** Safety valve, following "safe, kind, generous": a very low score must not trap people in a death spiral. Harsh weather is capped short of making farming impossible, and the worst towns get more help (the temple, rescue quests, outside aid) and not more punishment.
+- **[Open]** The name of the score, what feeds it and how heavily, how fast it moves, how far its weather reaches around the town, and how it interacts with crop yields and with mood.
 
 ## 9. Law, crime and recognition
 
