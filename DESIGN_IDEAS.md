@@ -500,6 +500,7 @@ Question from the project owner: do we have all the building blocks, with a safe
 - **[Decided]** When a dynasty reverts to NPC, its assets (houses, businesses, farmland, mines and other resource sources) appear on the town manager's operations screen so the town can claim them (Section 8.6).
 - **[Decided]** (2026-10-14) **How duress rises and falls.** Duress rises slowly: 10 percent for each full month away (one month away gives 10 percent, two months 20 percent, and so on). It does not start rising again until the player has been away a full month of real time.
 - **[Decided]** When the player comes back, duress instantly drops by half of what it is. After that it falls by 10 percent for each real day the player logs in (separate days), so it falls faster than it rose. Example: four months away is 40 percent. The player returns and it drops to 20 percent. Two logins on separate days clear the rest, and the crops grow and the NPC family works the farm or business at full strength again.
+- **[Decided]** (2026-10-14) **What duress does.** It applies stress to a neglected dynasty. Crop yields drop, animals may not grow to full weight, reputation takes a small hit over time, and with continued stress the degradation of properties speeds up a little. Bills do not go up because of stress. Costs rise only naturally, because there is more to fix.
 - **[Proposed]** Duress maps directly onto the penalties: a duress of 20 percent means a 20 percent yield penalty, with illness chances for animals and family rising with it. At 100 percent (about ten months away) the dynasty is run into the ground and reverts to NPCs. It is resolved lazily from the last-seen time, so it costs nothing while nobody is looking.
 - **[Decided]** (2026-10-14) There is no separate free vacation notice. The month before duress starts is the built-in vacation: anyone who is away for up to a month is still within the grace period. Longer absences are covered by a paid block.
 - **[Superseded]** **Duress block (real money, future).** A player who will be away for a long time, such as a migrant worker away for 48 days or three months at a time, could pay for a block of time that stops duress: for example $10 for three months, $18 for six months and $34 for a year (early examples, replaced by the per-month account-balance model below). The dynasty stays alive and keeps its place, the NPC family keeps working on the servers and adds to the world, and the player's account keeps bringing value. This fits the real-money ideas in Section 13.8.
@@ -546,7 +547,8 @@ Question from the project owner: do we have all the building blocks, with a safe
 - **[Idea]** The will names the successor and lists the children with their skills and attributes and leaves the farm or the town to a chosen child. It should be set long before death and can be updated at any time.
 - **[Proposed]** If a parent dies at 80, an heir aged 20 has about 11 months of real time left on average, one aged 35 about 8.6 months, and one aged 50 about 6 months.
 - **[Superseded]** Which character the player plays and who inherits the property could be separate choices. Playing one child while the will leaves the farm to another creates a sibling story.
-- **[Proposed]** A death without a will falls back on the town's inheritance law, set in the town control panel, which names the successor (by default the eldest child, otherwise the spouse). NPC siblings with greed or resentment might contest a will, and a forged will would use the forgery system. Adult children who have moved away still appear on the list.
+- **[Decided]** (2026-10-14) Without a will, the family decides. The children and the spouses decide among themselves who should be next. A child may not want it, may lack the skills, and may have other plans (their own dynasty, pig farming, adventure). For a player's character the result is a random choice among the eligible, so it is wise to make a will while able to. There is no automatic "eldest child" rule.
+- **[Proposed]** NPC siblings with greed or resentment might contest a will, and a forged will would use the forgery system. Adult children who have moved away still appear on the list.
 - **[Decided]** The person you play and the owner of the dynasty are the same: the successor.
 
 ### 6.3 Personal finances
@@ -590,12 +592,13 @@ Question from the project owner: do we have all the building blocks, with a safe
 - **[Proposed]** A weekly check-in that clears duress could require one real choice (sign off on the ledger, answer a letter, pick a family task), so a bare login does nothing.
 - **[Decided]** Dynasties transfer inside the game by several routes: marriage, adoption, will, or sale to a successor, with a transfer tax. The login itself is not sold, so identity, reputation and record stay with the person.
 - **[Open]** Whether the weekly check-in needs a real choice. The project owner is undecided for now.
-- **[Decided]** A person has only one dynasty. Taking over another dynasty (purchase, marriage, rescue) merges it into theirs, and its assets and holdings join the one dynasty.
+- **[Decided]** A person has only one dynasty. Taking over another dynasty (purchase, marriage, rescue) merges the two by combining the entire families. Everyone comes in under the player: the player gains a new spouse or spouses and stepchildren, and all the properties, businesses, debts and everything else that goes with the dynasty.
 - **[Decided]** A dynasty may have several spouses over time. They die off from age or sickness, and each adds assets and holdings to the dynasty.
-- **[Decided]** Duress is a simple money sink, not a burden. It applies slowly to an ignored dynasty, which can then die off, be sold or fall apart.
+- **[Decided]** Duress stays simple. It slowly applies stress to an ignored dynasty, which can then die off, be sold or fall apart. It is a money sink only indirectly, through the effects above and the extra repairs they cause.
 - **[Proposed]** Duress is one value per dynasty, so merging never multiplies the upkeep. The merged dynasty takes the higher value on the day of the merge, or the buyer's own, whichever the design settles on.
 - **[Decided]** Only the chosen successor inherits. The whole dynasty passes to that one person. It does not matter which spouse a child came from, since all are the head's children and all are eligible to be successor at retirement or death.
 - **[Decided]** When the dynasty passes, the previous head's spouses become cared-for elders in the household. The new head must find a partner of their own.
+- **[Decided]** (2026-10-14) **Retirement.** A character who lives into old age and becomes too old and frail to carry on can choose a successor and retire. The player then takes over the successor's body, and the retired character becomes a senior or elderly NPC who lives out their remaining days on the farm.
 - **[Decided]** Siblings who are not the successor stay in the household and age out over time, unless they leave (see below).
 - **[Decided]** A dynasty can have many living spouses at once. The aim is to grow a dynasty as in medieval times and plan against sickness and age. Spouses are people who help run the day-to-day work of the dynasty and household and help raise children.
 
@@ -712,7 +715,7 @@ Assumptions: 70 game years of aging (15 to 85) over one real year with about 700
 - **[Proposed]** Ruins as landmarks that decay lazily over time.
 - **[Decided]** Ruins do not vanish. Buildings fall to rubble that stays until harvested, and roads stay (Section 8.13).
 - **[Decided]** Players can found their own town on a starter landmass as long as it is far enough from the starter town center. Large islands can hold several towns, which can build tension between neighboring towns.
-- **[Proposed]** Minimum distance from a starter town center to a new town block about 3 km, and between any two town blocks about 2 km, both tunable in `world.json`.
+- **[Superseded]** Minimum distance from a starter town center to a new town block about 3 km, and between any two town blocks about 2 km, both tunable in `world.json`. Replaced by the reservation rule in Section 8.17.
 - **[Decided]** Mines owned by the starter town have guards to dissuade players from stealing.
 
 ### 8.2 NPC population
@@ -980,7 +983,9 @@ To be fleshed out when the first NPC is designed.
 
 - **[Decided]** (2026-10-14) The town block is a marker with no physical form: a floating arrow only the owner can see, which the owner can switch on and off. It adds an entry to the owner's ledger saying they own a claim. It marks the exact centre of the town.
 - **[Decided]** Until an office building is placed (a keep or castle with an office, a house with an office, a town hall or a magistrate's office), the owner cannot reach the town settings. The building is where the town manager lives and works.
-- **[Decided]** A town has a **circle of influence** around its marker. A new town starts with a default size. With money the owner can have it grown: the town planner sends the builders out, woodcutters clear trees, and the radius grows by about 25 or 50 percent per expansion. The planner then recommends roads and zones for the new ground (industrial, residential, farming), which the owner approves.
+- **[Decided]** (2026-10-14) **Towns cannot overlap, so the land is reserved up front.** Settlements come in sizes (hamlet, village, town, city). A list gives the physical size of each, and the largest, a city, is the maximum a town can grow to. Placing a town marker reserves land from the marker out to the size of a maximum city, so nobody can place a marker anywhere that its own maximum city would overlap another town's. The aim is that one person can build a town into a giant city with a castle, thriving businesses and a guild of a thousand real players.
+- **[Proposed]** The minimum distance between two markers is then twice the maximum city radius R. For scale: R = 1 km matches the old 2 km spacing and reserves about 3 km² per town; R = 1.5 km reserves about 7 km², so a 50 km² starter landmass would hold at most 7 towns or so.
+- **[Decided]** A town has a **circle of influence** around its marker.
 - **[Idea]** The planner prefers rings, working outward from the centre:
   1. The core: the keep or castle, the main storage and warehouse, the guards, and extra storage and housing that can take people in during a defence.
   2. Businesses and tradespeople: the blacksmith, merchants, sales stalls and inns.
@@ -1156,7 +1161,7 @@ To be fleshed out when the first NPC is designed.
 - **[Idea]** A road inside a town block's circle belongs to that town for taxing and upkeep. The length of road in the circle is added to the ledger automatically.
 - **[Proposed]** Stretches of road between towns have no tax, no upkeep and no coverage. They are the natural danger zones, which gives players a reason to claim land or fund outposts there.
 - **[Proposed]** A town block placed beside a busy road could collect tolls, like a toll castle. Traffic may reroute, and toll rates may need a cap.
-- **[Open]** How overlapping town blocks are settled: first claim, nearest town block, or shared.
+- **[Decided]** Town circles never overlap. Placing a town marker reserves land out to the size of a maximum city (Section 8.17), so no one can place a marker whose full circle would overlap another.
 - **[Open]** What rights player residents of a town have (leave, protest, vote out the owner) or whether the owner rules unchallenged.
 - **[Open]** How many tax levers there are: a few simple sliders (shop tax, farm tax, militia budget) or detailed rules for goods and groups.
 
@@ -1323,7 +1328,7 @@ Social, law and threats
 
 Towns, economy and platform
 
-23. How are overlapping town blocks settled?
+23. Settled: town circles never overlap; a marker reserves a maximum city's worth of land (Section 8.17). Still open: the list of settlement sizes and the maximum.
 24. What rights do player residents have, and how many tax levers exist?
 25. Are orders given through forms, conversation, or both?
 26. Does every workplace share one business structure?
@@ -1385,17 +1390,17 @@ Ambiguities found in the 2026-10-14 review (the newest statement was applied whe
 64. **The aging clock.** Settled (2026-10-14): one server clock; everyone ages online or offline; human biology including menopause; no cap on children beyond biology (Section 6.1). Still open: the exact fertility ages (proposed: fertile from 15, menopause 45 to 55).
 65. **One clock per system.** Everything runs on the single server clock. A "real time" window is server time, so it pauses when the server is down (proposed). Still open: reputation fades "over about a week" but "in-game days" means 7 real hours at 60-minute days; and whether a game day is 60 or 72 minutes.
 66. **Town block.** Settled (2026-10-14): a marker with no physical form, visible only to the owner, with a ledger entry; settings are reached through an office building (Section 8.17). Still open: how another player sees and claims an abandoned marker, and what "touching the block" becomes (proposed: being at the office).
-67. **The circle of influence.** Settled in part: a default size that grows by about 25 or 50 percent per paid expansion, with the planner recommending zones (Section 8.17). Still open: the default radius, expansion cost and limits, overlap with other towns, spacing against the 3 km and 2 km rules in Section 8.1, and the outpost radius.
+67. **The circle of influence.** Settled: a default size that grows by about 25 or 50 percent per paid expansion, up to the maximum city size, with no overlap between towns (Section 8.17). Still open: the default radius, the size list (hamlet, village, town, city), the maximum, expansion cost, and the outpost radius.
 68. **What "established" means.** Guards, a well, a temple and probably walls: how many guards, how strong, and does the town need all of them? What can players do to each other in a town that is not yet established (the "gray area")? Where do PvP and PvE rules live (Sections 8.15, 9.0, question 57)?
-69. **Succession details.** Who succeeds when there is no will (default proposed: eldest child, then spouse)? What if there are no children or spouse? What does retirement mean: can a head retire at any time, and what does the retired character do afterward?
-70. **Merging dynasties.** When two dynasties merge, which duress value is kept? Are the absorbed dynasty's children eligible as successors? What happens to its spouses, its debts and its reputation?
+69. **Succession details.** Settled (2026-10-14): without a will the family decides and the player's choice is random among the eligible; retirement means choosing a successor, taking over their body, and the retiree becoming an elderly NPC on the farm. Still open: can a named successor refuse, who is eligible, and at what age or frailty can a character retire?
+70. **Merging dynasties.** Settled (2026-10-14): the entire families combine under the player, including new spouses, stepchildren, properties, businesses and debts. Still open: which duress value is kept, are stepchildren eligible as successors, and what happens to the absorbed dynasty's reputation?
 71. **Weekly check-in for duress.** Should clearing duress need one real choice instead of a bare login? Left undecided by the project owner.
 72. **Real-world alerts for town challenges.** Should an email or app alert also be sent when someone challenges a town? It is kinder, but it weakens the in-world distance and mail idea.
 73. **Flagging a town for deletion.** The administrators vote, but there is no trigger, deadline or fallback if nobody does. Should there be an automatic rule (for example after a set time with no owner and no manager)?
 74. **Server-town decay against the spirit floor.** A server-owned town with a temple and clean water keeps a spirit floor, but also loses money and decays. Which decides when buildings start to fall, and how long does it take?
 75. **Hostile takeover payment.** "A fixed amount based on the town's value": who works out the value, and does it include the buildings, the stock and the NPCs?
 76. **Weekly players and short windows.** A bare town block can be lost after a 2 hour window, which fights the principle "never punish a weekly rhythm". Is that acceptable, or should the windows be longer or the first claim protected for a while?
-77. **Duress: yield penalty or money sink?** The project owner described duress as a money sink that slowly stresses an ignored dynasty. Section 6.1 describes it as yield penalties and illness, with paid protection. Is the main effect money drained, yields cut, or both?
+77. **Duress.** Settled (2026-10-14): duress does not raise bills. It lowers crop yields and animal growth, slightly lowers reputation, and speeds property degradation a little; costs rise only because more needs fixing (Section 6.1). Still open: the size of each effect at each level.
 78. **Households without limits.** Many living spouses and children are allowed. Is there any cap, or only cost (housing, food, care)? How does a large household affect duress and the weekly player?
 79. **Remains.** How long do remains last, are they flat images that face the player, how is sand cover worked out, which creatures collect gear, and do NPC adventurers leave remains too? (Sections 4.13 and 6.1)
 80. **Rubble.** How big is a rubble chunk, and how is it stored in the server's living layer when terrain is regenerated?
@@ -1406,6 +1411,7 @@ Ambiguities found in the 2026-10-14 review (the newest statement was applied whe
 85. **Temple.** Is a temple built by the town, by players, or both, what does it cost, and how many can a town have? (Section 8.11)
 86. **Bridges and travel roads.** Maximum span and water depth of a bridge, which kinds exist (rope, timber, stone, causeway with culverts, ford), and who maintains the dirt roads that NPC travel creates. (Section 8.17)
 87. **Ring layout.** Are the rings in Section 8.17 hard rules or only the planner's preferences, and can the owner override them?
+88. **Marker hoarding.** Reserving a whole city's land with a marker lets a player block land by placing markers. What does a marker cost, does it need upkeep (or duress), and when is a reservation released (for example when a town is deleted)?
 
 ---
 
