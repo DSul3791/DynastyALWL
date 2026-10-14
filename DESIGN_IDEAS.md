@@ -817,6 +817,14 @@ Assumptions: 70 game years of aging (15 to 85) over one real year with about 700
 - **[Decided]** (2026-10-13) **Buy before manifesting.** Server admin towns with an admin warehouse always try to buy resources from player-run towns (when available) before using the warehouse's magical ability to manifest supplies. A new player therefore always finds a buyer waiting as soon as they start producing, and because all towns degrade and buildings need upkeep, that demand never ends.
 - **[Decided]** To avoid imbalance, admin town buying has limits: how much it will buy from each town and how much in total per day. Budgets are a money amount per day, set in the town manager (Section 8.5). The warehouse manifests only what purchases could not cover.
 - **[Decided]** The admin warehouse log shows both: goods bought from players and goods manifested.
+- **[Decided]** (2026-10-14) **Two kinds of server-owned town.** A **designated server town** (the starter towns) has an admin warehouse and falls under special rules, below. A town that has **reverted to the server** because its owner's dynasty fell into receivership has no admin warehouse and declines under the normal rules (Sections 8.13 and 8.16).
+- **[Decided]** (2026-10-14) **Special rules for a designated server town.**
+  - It never gets a bad spirit.
+  - It never runs out of money to pay its bills.
+  - Its warehouse always has supplies.
+  - A boost applies to everyone who lives there, because the spirit is always high: people are more productive, happier and more loyal, and feel fuller when they eat. Crops grow a little better, animals grow healthy, and there is less sickness.
+  - **Purpose:** starter towns are the foundation of the game, a place where players can always start and be in a nice town.
+- **[Proposed]** (2026-10-14) Suggested numbers (tunable): spirit held at about 90 on the 0 to 100 scale, and the boost kept modest, "a little better": about 5 percent for productivity, crop growth and animal growth, about 10 percent more fullness from food, and about 25 percent less sickness. The boost applies only to the town itself, so it is a reason to start there and not a reason to stay forever.
 - **[Decided]** The starter towns' prices are set by their merchant, not fixed by admins. The merchant reviews prices once a day and raises or lowers each one from supply, demand and other factors: an abundance of a good lowers its price, high demand raises it. Admin town buying pays these prices.
 - **[Decided]** Goods bought from NPC tradespeople are limited by how fast they can actually make them. They have orders to keep a stock level, and when someone buys an item the NPC has to stop and make another to replenish it (Section 13.7).
 - **[Decided]** Starter items are worthless to vendors, because everyone gets them from the starter town. A vendor asked to buy one says something like "you know how many of these I see in a day? I can't get rid of the stock I have."
@@ -1012,7 +1020,7 @@ To be fleshed out when the first NPC is designed.
 - **[Proposed]** (2026-10-14) If the owner never answers the 24-hour notice, the manager quits and the town is treated as let go. The notice goes out through every channel the owner has, with the in-world delay (Section 8.15).
 
 
-**Decline of a server-owned town**
+**Decline of a town that reverted to the server** (not a designated starter town, which never declines; see Section 8.1)
 
 - **[Decided]** A town that stays server-owned loses spirit gradually and loses money, because it keeps paying for food and upkeep. When the money runs out the town falls into decay.
 - **[Decided]** Once decay reaches a certain stage, every building slowly falls down. NPCs die off, move to other towns, join bandit camps, become bandits, or find work elsewhere.
@@ -1606,7 +1614,7 @@ Language model
 
 Rescue and starting conditions
 
-32. Who runs the developer-built starter town over time, and do other towns become server-owned later (for example abandoned player towns)?
+32. Who runs the developer-built starter town over time, and do other towns become server-owned later (for example abandoned player towns)? Answered (2026-10-14): the starter towns are designated server towns with special rules (Section 8.1); abandoned player towns become server-owned but decline normally.
 33. How does NPC rescue work in practice, and how is it kept from trivializing death? Do NPC companions count toward party size and what do they cost?
 34. Should the bake include coarse land-suitability layers (slope, fertility, water access) for the town planner, and can plans run unattended? (Section 8.4)
 
@@ -1660,7 +1668,7 @@ Ambiguities found in the 2026-10-14 review (the newest statement was applied whe
 71. **Weekly check-in for duress.** Settled (2026-10-14): the check-in needs a real action that works as robot detection, not a bare login (Section 6.1). Still open: the list of qualifying actions.
 72. **Real-world alerts for town challenges.** Settled (2026-10-14): an alert is sent only after the in-world delay it would take a message to reach the player, instant if they are logged out in the town; no challenges are possible while paid guards stand (Sections 8.14, 8.15). Nothing is open here.
 73. **Flagging a town for deletion.** Settled (2026-10-14): a town always has an owner. A player-owned town is flagged when the owner says "let it go" (or does not answer the 24-hour notice before the manager quits); there is no automatic flag after a set time with no owner (Section 8.13). Administrators vote only for server-owned towns. Nothing is open here.
-74. **Server-town decay against the spirit floor.** Settled (2026-10-14): the spirit floor sets the mood and the weather, but money decides decay. The decline follows the same system as a player-owned town: costs are cut, people leave by their own reasons, the manager leaves last. There are no fixed times (Section 8.13). Still open: the stay-score numbers.
+74. **Server-town decay against the spirit floor.** Settled (2026-10-14): the spirit floor sets the mood and the weather, but money decides decay. The decline follows the same system as a player-owned town: costs are cut, people leave by their own reasons, the manager leaves last. There are no fixed times (Section 8.13). Still open: the stay-score numbers. Update (2026-10-14): this applies to a town that reverted to the server. A designated server town (a starter town with an admin warehouse) never gets a bad spirit and never runs out of money (Section 8.1).
 75. **Hostile takeover payment.** Settled (2026-10-14): the price is the rubble value of the buildings plus the unpaid wages and debts the new owner takes on, worked out from the town ledger (Section 8.14). Nothing is open here.
 76. **Weekly players and short windows.** Settled (2026-10-14): the old 2-hour and 4-hour windows are replaced by a 24-hour presence timer plus a 24-hour takeover, which a group member can reset by logging in (Section 8.14). Proposed: a new claim is protected for its first 7 real days, and paid guards remove the risk entirely. Still open: whether a weekly player with no group member is treated fairly after 48 hours away.
 77. **Duress.** Settled (2026-10-14): duress does not raise bills. It lowers crop yields and animal growth, slightly lowers reputation, and speeds property degradation a little; costs rise only because more needs fixing (Section 6.1). Still open: the size of each effect at each level.
