@@ -876,14 +876,18 @@ Checked: this has not been in the design before. Section 4 has weather from the 
 
 ### 8.14 Contesting a town claim
 
-- **[Decided]** A claimed town can be contested. A town must have real things in it to be feasible: someone who claims several towns and then travels away must have managers and guards who can defend each one.
-- **[Decided]** If the owner has not been near a town for a long time, another player can apply to buy it. If the two do not reach an agreement in a set time, the challenger can claim the block and pays the previous owner a fixed amount based on the value of the town or its rubble. If the owner cannot get back in time, the owner accepts the payment and loses the town.
-- **[Decided]** The time the owner has to respond depends on how developed the town is: a bare town block about 2 hours, with a town manager about 4 hours, with a town manager and guards about 24 hours, and with a wall about 48 hours.
-- **[Decided]** A town with no guard that the owner does not return to within the window is lost without a contest.
-- **[Decided]** In a town with militia or guards, a challenger can only make an offer to buy. The owner can accept, negotiate or decline.
-- **[Decided]** A town that is not doing anything productive but still has a manager, clean water, a temple and guards is an expense on the owner's other towns or dynasty, so hoarding idle towns costs money.
-- **[Open]** How the timer numbers and the "offer only" rule fit together for towns with guards (is the 24 or 48 hours the window to answer an offer?), whether the windows are real time or game time, and how a weekly player is protected.
-- **[Proposed]** Following "safe, kind, generous" and the weekly rhythm (Section 3), an owner gets an urgent notification (Section 6, notification priorities) the moment a challenge starts, and a manager's defence runs without the owner. A real-time window of 2 hours is short for a weekly player, so for any town with a manager or guards the windows should be long enough to read an email and respond.
+- **[Decided]** A town must have real things in it to be feasible. Someone who claims several towns and travels away needs managers and guards to hold each one.
+- **[Decided]** Anyone can make an offer to buy any town at any time by talking to its town manager. The manager sends a notification to the owner that an offer has been made, with a recommendation: for example, whether it is in good faith and what the manager thinks the town could fetch in currency or resources.
+- **[Decided]** The owner accepts, negotiates or declines. An accepted offer transfers the town at once. A good offer also gives owners a way to retire wealthy.
+- **[Decided]** A town without guards can be taken over by hostile means. If the owner declines the offer, the challenger can apply for a hostile takeover. The owner must get back to the town's circle of influence before the window ends to stop it, and the whole process then starts over.
+- **[Decided]** The window for an unguarded town depends on development: a bare town block about 2 hours, and with a town manager about 4 hours.
+- **[Decided]** A town with guards cannot be taken over hostilely. Offers can still be made, and the owner is free to refuse.
+- **[Decided]** When a hostile takeover succeeds, the challenger pays the previous owner a fixed amount based on the town's value (or its rubble if it is a ruin).
+- **[Decided]** A town that does nothing productive but still has a manager, clean water, a temple and guards is an expense on the owner's other towns or dynasty, so hoarding idle towns costs money.
+- **[Superseded]** An earlier version had windows of about 24 hours for a town with a manager and guards and about 48 hours with a wall. Guards now give full protection from hostile takeover, so those windows are no longer needed.
+- **[Proposed]** "Has guards" should mean a real minimum, such as paid guards on duty in numbers that scale with the town's size, not one hired guard. Guards who go unpaid leave, which removes the protection and ties it to the town's money.
+- **[Proposed]** The owner gets an urgent notification (Section 6, notification priorities) the moment an offer or a hostile takeover begins. The windows are in real time.
+- **[Open]** The minimum guard level, whether walls add anything now (for example a longer window for towns that are not yet fully guarded), and what happens to buildings, NPCs and debts when the owner changes.
 
 ---
 
