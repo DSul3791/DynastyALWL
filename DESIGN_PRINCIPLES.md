@@ -12,4 +12,11 @@ Status tags are the same as in `DESIGN_IDEAS.md`: [Decided], [Idea], [Proposed],
 - **[Decided]** What this means for design: systems for safety (protection from abuse, ways to leave a bad situation), kindness (rescue, understanding, second chances) and generosity (gifts, charity, adoption, helping struggling dynasties) are core design, not extras. When two rules conflict, the one that keeps people safer wins, then the kinder one.
 - **[Decided]** Examples already in the game: the temple (Section 8.11 of `DESIGN_IDEAS.md`), rescue before death, the safety valve that stops a failing town from falling into a death spiral, and PvE areas where nothing can be hurt.
 
+## 2. Do it yourself, or hire it out
+
+- **[Decided]** (2026-10-15) You can do anything in the game yourself, and you never have to. If a player loves cutting down trees, they can cut down trees all day. If they do not want to, they can hire an NPC to cut the trees for them.
+- **[Decided]** Why: players come to the game to enjoy a particular style of play, not to be forced through every chore. Handing a job off lets people spend their time on the parts they like, and keeps their dynasty running while they are away. Every kind of work should therefore work both ways: by hand for fun, or delegated to family or hirelings.
+- **[Decided]** What this means for design: no job may be possible only by hand, and no job may be possible only through NPCs. Doing it yourself pays more, and delegating costs a cut but keeps things running, so neither route is a trap.
+- The matching game rule is "No micromanagement" in `DESIGN_IDEAS.md` Section 3, kept as it is.
+
 The original wording is also in `DESIGN_IDEAS.md` Section 3. How the two documents should relate (whether the copy in Section 3 stays or becomes a pointer to this file) is [Open] until the project owner reviews it.
