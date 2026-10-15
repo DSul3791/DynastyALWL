@@ -974,7 +974,8 @@ One server clock drives aging, marriage, children growing up, crop growth, regro
 - **[Decided]** A home whose owner vacates is eventually deemed **abandoned** once enough time passes, and returns to the market.
 - **[Decided]** A remarrying spouse can take over a ruined dynasty's property by paying the town its back taxes and bills (Section 6). If nobody does within the window, the town claims it.
 - **[Decided]** A property owner who has gone long enough that their dynasty reverts to NPC (Section 6, duress) loses the property to the town: it appears on the town manager's screen and the town may claim the houses, businesses, farmland, mines and other resource sources. For a mine, the town pays for repairs before letting it collapse (Section 11.2).
-- **[Open]** How long before a home counts as abandoned, whether the owner gets warnings, and what happens to belongings and stored goods.
+- **[Decided]** **When a home is abandoned.** If a home's rent or bills go unpaid for **two game months**, it is deemed abandoned and returns to the market. The owner gets a **notice after the first game month** of non-payment. A game month is about 30 real hours, so the whole thing is roughly 60 real hours (2.5 real days). Bills are paid automatically from the dynasty's banked funds, even while the player is offline, so it is the player's responsibility to keep enough money banked to cover bills during absences (see duress and receivership, Section 6.1).
+- **[Open]** What happens to belongings and stored goods in an abandoned home.
 - **[Decided]** Players can own houses, businesses and farmland in any town, several in one town or spread across towns, as long as each town accepts their reputation.
 - **[Decided]** Players can also prospect their own land in the wilds and mark it with a **town stone** (to found a town, within the spacing rules in Section 8.17) or a **homestead marker** (a private home, Section 8.17).
 - **[Decided]** Owning property in an enemy town is hard. Someone who owned property in two towns before they became enemies keeps it, but tensions can get weird and their loyalty, and so their reputation, may come into question in both.
@@ -1759,7 +1760,7 @@ Only genuinely open items are listed. Everything decided lives in its own sectio
 45. How NPC rescue works without trivializing death, and the cost of NPC companions (Section 12.2).
 46. Land-suitability layers in the bake for the town planner, and whether plans can run unattended (Section 8.4).
 47. Factions and guilds between groups: none yet; friends groups, towns and parties exist (Section 6.13).
-48. How long before a vacated home is abandoned, and what happens to its contents (Section 8.6).
+48. What happens to the belongings and stored goods in an abandoned home (Section 8.6). The timing is decided: two game months unpaid, with a notice after the first.
 
 ---
 
