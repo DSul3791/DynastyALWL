@@ -343,7 +343,7 @@ Question from the project owner: do we have all the building blocks, with a safe
 | Hot and mineral springs (a site type) | Volcanic and fault zones | Baths and healing at the temple, sulfur, a prospecting clue | No, but a new site type |
 
 - **[Proposed]** Things that need no tile data because they are worked out at runtime: sea salt (from coastal pans), well water (depth to the water table from moisture, height above the nearest water and soil, needed for the "established" town in Section 8.15), flint pebbles, bog iron, saltpeter.
-- **[Open]** Which candidates, if any, to add before tiles are kept. The recommendation is tuff only if whole-layer volcanic stone matters; everything else can come in a pass when its system is built.
+- **[Decided]** (2026-10-14) Add **tuff** to the volcanic province rock layers before tiles are kept, because it fills whole layers. Everything else on this list can come later by resource passes.
 - **[Open]** Rock list completeness: whether gneiss or schist (hard metamorphic rock at fold belt roots), dolomite or quartzite are needed for stone variety. They have no gameplay use yet, so by the principle they stay out.
 
 ### 4.10 Tile downloads and the client cache
@@ -1310,7 +1310,13 @@ To be fleshed out when the first NPC is designed.
 ### 9.0 PvE and PvP
 
 - **[Decided]** The starter areas are definitely PvE (no player-versus-player combat).
-- **[Open]** How PvP is offered later for players who want it: flagged players, dangerous regions only, war between towns, or a mix (question 57).
+- **[Decided]** (2026-10-14) **PvP zones are a world-level map.** PvP is offered through zones. Each zone is a range of world coordinates ("from this coordinate to this coordinate is a PvP zone"), stored in `world.json`, not in the tiles. There can be several zones, and they can be moved or adjusted later.
+- **[Decided]** (2026-10-14) **Players do not choose PvE or PvP.** They get it by entering the different zones.
+- **[Decided]** (2026-10-14) **A warning at the border.** A player in a PvE zone who travels toward a PvP zone gets a warning that they are entering a PvP zone, and what will happen. They choose whether to continue. If they say no, they have to go backwards and cannot move forward until they say yes.
+- **[Decided]** (2026-10-14) **Leaving takes a run (the project owner and his son's idea).** Once in a PvP zone, to get out a player must cross the border and then travel a further random distance into the PvE zone before their PvP status drops. The distance is rolled when they enter the PvP zone. This stops people from sniping or sneaking into a zone, taking shots, and running back to safety. A character caught doing something they should not, who is chased toward the PvE zone, can still be killed legally on the way.
+- **[Decided]** (2026-10-14) **Entering has to be a real danger, unless you enter as a spectator.** A spectator can go into the zone, go on adventures and fight monsters, but cannot harm other people or other people's belongings. This lets players watch a war, an invasion or a server event while staying safe.
+- **[Proposed]** (2026-10-14) Suggested details (tunable): the exit distance is rolled between 200 and 800 m. Spectators are visibly marked (for example a ribbon or glow) so others know they cannot be harmed or robbed, and spectators cannot take part in combat or pick up other players' things. A spectator who wants to fight must leave and re-enter through the border warning. Zones are rectangles or polygons in `world.json`. Starter islands and established towns are never inside a PvP zone. If a zone is moved while players are inside it, their status stays until they have run their exit distance.
+- **[Open]** What dying in a PvP zone costs the dynasty, how PvP zones relate to war between towns, and which parts of the map get PvP zones first.
 
 ### 9.1 Soft law
 
@@ -1682,7 +1688,7 @@ Generator, hardware and hosting
 54. Settled: the world-first sketch was approved (2026-10-13), replacing per-tile dice and the shared deep-ocean tile edge (Section 4.12).
 55. Settled: inner starters easy, outer starters medium, edges deadly (Section 4.13). Still open: how many tiers players see, and whether the curves need tuning once creatures exist.
 56. Settled: starter landmass inner 50 to 100 km², outer 70 to 150 km². Still open: town spacing 3 km from a starter town, 2 km between towns? (Sections 4.1, 8.1)
-57. How PvP works for players who want it, given the starter areas are PvE (Section 9.0).
+57. How PvP works for players who want it, given the starter areas are PvE (Section 9.0). Answered (2026-10-14): see Section 9.0.
 58. How long before a vacated home is abandoned, and what happens to its contents (Section 8.6).
 59. Does fallow land (farmland left unplanted) slowly recover fertility by itself, enabling medieval-style crop rotation, or only through lime and manure? To discuss later. (Section 5)
 60. Admin town buying: settled that budgets are money per day, the log shows bought and manifested goods, and prices come from the merchant's daily review. Still open: whether the daily cap is split per resource, per selling town or per player, and whether it buys only from connected towns (Section 8.1).
@@ -1710,9 +1716,9 @@ Ambiguities found in the 2026-10-14 review (the newest statement was applied whe
 79. **Remains.** Settled (2026-10-14): remains last 30 real days, then bones; flat image facing the player; sand covers them over 7 days; only intelligent creatures collect gear; NPC adventurers leave remains too, at most 50 per tile (Section 6.1). Nothing is open here.
 80. **Rubble.** Settled (2026-10-14): one pile per 100 m² of footprint, stored in the server's living layer as a record (position, size, counts of each material, age); the terrain under a fallen town stays as it was (Section 8.13). Nothing is open here.
 81. **Tile ID scheme.** Settled (2026-10-14): a record's identity is its home tile and local ID (`x,z#local`); the revision is only a cache marker; records added by resource passes use local IDs from pass number × 10,000. Confirmed by the project owner. (`WORLD_FORMAT_SPEC.md` Section 4)
-82. **Which extra resources before tiles are kept.** Only tuff (whole-layer volcanic stone) might need to come first. The rest can be added later by passes. See the table in Section 4.9a.
+82. **Which extra resources before tiles are kept.** Settled (2026-10-14): add tuff (whole-layer volcanic stone) before tiles are kept; everything else comes later by passes (Section 4.9a). The work is plan step 12b.
 83. **River network and edge matching.** Settled (2026-10-14): a world river network on the 160 m map, overlap margins and a final edge-matching pass, as step 13b before any tile is kept. Confirmed by the project owner. (`WORLD_FORMAT_SPEC.md` Section 4b)
-84. **PvP zones.** If PvP areas are added later, they should be a world-level map in `world.json`, not part of tiles. Confirm.
+84. **PvP zones.** Settled (2026-10-14): a world-level map in `world.json`, not part of tiles; players get PvP by entering a zone after a border warning; a random exit distance; a safe spectator mode (Section 9.0). Still open: the cost of dying in a PvP zone and how zones relate to war between towns.
 85. **Temple.** Is a temple built by the town, by players, or both, what does it cost, and how many can a town have? (Section 8.11)
 86. **Bridges and travel roads.** Maximum span and water depth of a bridge, which kinds exist (rope, timber, stone, causeway with culverts, ford), and who maintains the dirt roads that NPC travel creates. (Section 8.17)
 87. **Ring layout.** Are the rings in Section 8.17 hard rules or only the planner's preferences, and can the owner override them?

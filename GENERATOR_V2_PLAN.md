@@ -46,6 +46,7 @@ Working plan for the new world generator described in `DESIGN_IDEAS.md` (Section
 10. **Climate, biome and soil.** Temperature, moisture, rain shadow, biome, soil, fertility. Preview images.
 11. **Geology and ore.** Provinces, features (intrusions, faults, basins, volcanic), ore bodies with stable IDs, layer offsets and cover depth.
 12. **Sites.** Natural cave systems, dormant lairs, harbors, and starter data for starter tiles. Mineshafts and labyrinths are later add-ons (decided 2026-10-13).
+12b. **Add tuff to the geology.** Whole-layer volcanic stone in the volcanic province layer stacks, with rules in `tile_rules.json` and tests, before any tile is kept (decided 2026-10-14).
 13. **Tile file.** Writer and reader for the container in the spec (sections, Zstandard, SHA-256, atomic rename), plus low-resolution maps. **Checkpoint:** bake a starter tile end to end, record the time and file size.
 13b. **Rivers across edges and edge matching.** A world river network, tile rivers that follow it, overlap margins, wrap-seamless detail and climate noise, and a pass that checks every shared tile edge (spec Section 4b). Must be done before any tile is kept.
 
