@@ -19,4 +19,11 @@ Status tags are the same as in `DESIGN_IDEAS.md`: [Decided], [Idea], [Proposed],
 - **[Decided]** What this means for design: no job may be possible only by hand, and no job may be possible only through NPCs. Doing it yourself pays more, and delegating costs a cut but keeps things running, so neither route is a trap.
 - The matching game rule is "No micromanagement" in `DESIGN_IDEAS.md` Section 3, kept as it is.
 
+## 3. Nobody is forced to build a town
+
+- **[Decided]** (2026-10-15) A player must never be forced to build a town or settlement to get the full dynasty experience. A player can woo a spouse, raise a family and run a dynasty with no fixed home at all, travelling together and living out of a ship, or a wagon with tents. Whenever they want to settle down, even for a while, they pick a spot and put down a tent, as with a camp.
+- **[Decided]** Why: the game is about playing the way you like (Section 3 of `DESIGN_IDEAS.md`, "Play what you like"), and town building is only one style. Towns, homesteads and nomadic life are equal choices.
+- **[Decided]** What this means for design: before adding a system, check that it does not quietly require a fixed home, a farm or a town. Anything a household needs (a bed, food, childcare, safe logout) needs a version a travelling family can use.
+- The concrete design question this raises is logged as an open item in `DESIGN_IDEAS.md` Section 15 (the nomadic household).
+
 The original wording is also in `DESIGN_IDEAS.md` Section 3. How the two documents should relate (whether the copy in Section 3 stays or becomes a pointer to this file) is [Open] until the project owner reviews it.

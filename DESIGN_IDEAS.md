@@ -1736,42 +1736,43 @@ Only genuinely open items are listed. Everything decided lives in its own sectio
 19. Duress details: refund rules for a real-money balance, what a player gets back after their dynasty became NPCs, which events are urgent and which weekly, and payment handling (Sections 6.1, 13.8). The protection price comes from a market analysis.
 20. What happens when several players apply for the same dynasty in receivership, and whether money is held in escrow (Section 6.1).
 21. Whether other players and NPCs can rob or finish a downed character. Suggestion: outside PvP zones it is a crime, not a blocked action (Sections 6.1, 9.0).
+22. The nomadic household: a dynasty with no fixed home (living in a ship, or a wagon with tents) still needs a household for children, food and safe logout, and today those assume a home base with fields and a bed. Perhaps the ship or wagon itself is the household unit; settling down means putting down a tent as at a camp. Design later (`DESIGN_PRINCIPLES.md`, Section 3; Sections 6.1, 6.6, 8.17).
 
 **Towns and claims**
 
-22. The name "grand city" for the top stage is a placeholder. The top stage name "grand city" is a placeholder; alternatives are capital or great city.
-23. The shape of the presence zone, how strong guards must be, what the manager can decide automatically, and whether a weekly player with no group member is treated fairly after 48 real hours away (Sections 8.14, 8.15).
-24. What the town and the owner lose when ownership changes, and whether walls add anything (Section 8.14).
-25. Price formula for server-owned towns, how competing applicants are handled, and what the good-faith judgment looks at (Section 8.16).
-26. Stay-score numbers for NPCs leaving a declining town, decay stage names, collapse thresholds, administrator vote size, and what happens to records at deletion (Section 8.13). Whether a claimed ruin starts with the old spirit or a fresh low one.
-27. Temple cost (Section 8.11); waits for the money scale.
-28. Homestead details: size, growth stages (house, estate, keep or castle), whether it uses the camp slot, and its outpost budget (Section 8.17).
-29. NPC role templates (weights and variance per role, including scavengers) as the roles are built (Section 8.2).
-30. Bridges: maximum span and depth, kinds, and who maintains NPC dirt roads (Section 8.17). Ring layout: rules or planner preferences, and whether the owner can override (Section 8.17).
-31. Marker hoarding: the one-camp-at-a-time rule limits it; still open is the cost or upkeep of a marker and when a reservation is released (Section 8.17).
-32. Expansion and building prices wait for the money scale (below). Whether the first ten buildings are the right ten (Section 8.19).
-33. Wizard tower cost, research, defence strength and limits; cost of sending word and the delay formula (Section 8.15).
+23. The name "grand city" for the top stage is a placeholder. The top stage name "grand city" is a placeholder; alternatives are capital or great city.
+24. The shape of the presence zone, how strong guards must be, what the manager can decide automatically, and whether a weekly player with no group member is treated fairly after 48 real hours away (Sections 8.14, 8.15).
+25. What the town and the owner lose when ownership changes, and whether walls add anything (Section 8.14).
+26. Price formula for server-owned towns, how competing applicants are handled, and what the good-faith judgment looks at (Section 8.16).
+27. Stay-score numbers for NPCs leaving a declining town, decay stage names, collapse thresholds, administrator vote size, and what happens to records at deletion (Section 8.13). Whether a claimed ruin starts with the old spirit or a fresh low one.
+28. Temple cost (Section 8.11); waits for the money scale.
+29. Homestead details: size, growth stages (house, estate, keep or castle), whether it uses the camp slot, and its outpost budget (Section 8.17).
+30. NPC role templates (weights and variance per role, including scavengers) as the roles are built (Section 8.2).
+31. Bridges: maximum span and depth, kinds, and who maintains NPC dirt roads (Section 8.17). Ring layout: rules or planner preferences, and whether the owner can override (Section 8.17).
+32. Marker hoarding: the one-camp-at-a-time rule limits it; still open is the cost or upkeep of a marker and when a reservation is released (Section 8.17).
+33. Expansion and building prices wait for the money scale (below). Whether the first ten buildings are the right ten (Section 8.19).
+34. Wizard tower cost, research, defence strength and limits; cost of sending word and the delay formula (Section 8.15).
 
 **Law, threats and PvP**
 
-34. Locks and security as soft barriers, how far justice and news spread, and whether NPCs can cross the ocean (Sections 9.1, 13.6).
-35. Fixed lairs, roaming groups or both, and whether a ruined town can become a bandit stronghold (Section 12).
-36. PvP: the cost of dying in a zone, how zones relate to war between towns, and which parts of the map get zones first (Section 9.0).
-37. Danger tiers players see, and whether the curves need tuning once creatures exist (Section 4.13).
+35. Locks and security as soft barriers, how far justice and news spread, and whether NPCs can cross the ocean (Sections 9.1, 13.6).
+36. Fixed lairs, roaming groups or both, and whether a ruined town can become a bandit stronghold (Section 12).
+37. PvP: the cost of dying in a zone, how zones relate to war between towns, and which parts of the map get zones first (Section 9.0).
+38. Danger tiers players see, and whether the curves need tuning once creatures exist (Section 4.13).
 
 **Economy and production**
 
-38. **Money scale.** Money has no anchor yet. Later: balance the value of time spent harvesting, fishing and building against prices, set starter numbers, and rebalance constantly (Section 13).
-39. Player resident rights, number of tax levers, order forms versus conversation, one business structure for every workplace (Sections 8.5, 13.4).
-40. Hands paid by share, wage or employer's choice (Section 5.2).
-41. Blueprints built all at once or in stages; fire treatment as material or upgrade; wind and weather on fire; who fights fires; ventilation as a simple range effect (Sections 10.1, 10.2).
-42. Whether admin buying splits its daily cap per resource, per seller or per player (Section 8.1).
-43. Resource renewal rates, how a mine decays when abandoned (full cave-in, partial, or old shaft), support types and whether collapses hurt miners (Sections 5, 11.2).
-44. Gambling and the real-money design (Section 13.8): to be revisited when that work starts. Steam and Workshop as a target.
-45. Who hosts servers and pays for language model calls (Section 8.9).
-46. How NPC rescue works without trivializing death, and the cost of NPC companions (Section 12.2).
-47. Land-suitability layers in the bake for the town planner, and whether plans can run unattended (Section 8.4).
-48. Factions and guilds between groups: none yet; friends groups, towns and parties exist (Section 6.13).
+39. **Money scale.** Money has no anchor yet. Later: balance the value of time spent harvesting, fishing and building against prices, set starter numbers, and rebalance constantly (Section 13).
+40. Player resident rights, number of tax levers, order forms versus conversation, one business structure for every workplace (Sections 8.5, 13.4).
+41. Hands paid by share, wage or employer's choice (Section 5.2).
+42. Blueprints built all at once or in stages; fire treatment as material or upgrade; wind and weather on fire; who fights fires; ventilation as a simple range effect (Sections 10.1, 10.2).
+43. Whether admin buying splits its daily cap per resource, per seller or per player (Section 8.1).
+44. Resource renewal rates, how a mine decays when abandoned (full cave-in, partial, or old shaft), support types and whether collapses hurt miners (Sections 5, 11.2).
+45. Gambling and the real-money design (Section 13.8): to be revisited when that work starts. Steam and Workshop as a target.
+46. Who hosts servers and pays for language model calls (Section 8.9).
+47. How NPC rescue works without trivializing death, and the cost of NPC companions (Section 12.2).
+48. Land-suitability layers in the bake for the town planner, and whether plans can run unattended (Section 8.4).
+49. Factions and guilds between groups: none yet; friends groups, towns and parties exist (Section 6.13).
 
 ---
 
