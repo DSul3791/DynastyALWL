@@ -66,9 +66,9 @@ A persistent, rough-medieval, multiplayer online world: a survival, exploration 
 - The project owner sometimes says "chunk". Depending on context that means a region or an island tile.
 - **[Decided]** Sizes are multiples of 1,024 because voxel data aligns best that way.
 - **Game time and real time:** unlabeled times are game time; "real" is written out where a rule is tied to the player's life (Section 7.1). A **game month** is about 30 real hours; a **real month** is calendar time.
-- **Established town:** a town with a manager building, a guard building and the first guard wages paid (Section 8.18). Established towns are PvE except inside PvP zones.
+- **Established town:** a camp with two guards, or a larger claim with a manager building, a guard building and the first guard wages paid (Section 8.18). Established towns are PvE except inside PvP zones.
 - **Spirit:** a town's mood, 0 to 100 (Section 8.12).
-- **Settlement ladder:** the sizes of a town's circle of influence, radius 200, 300, 450, 675, 1,000 and 1,500 m (Section 8.17).
+- **Settlement ladder:** the stages of a claim and the radius of its circle of influence: camp 200 m, settlement 300, village 450, town 675, city 1,000, grand city 1,500 (Section 8.17). A new claim starts as a **camp**.
 - **Duress:** stress on a neglected dynasty, 10 percent for each full real month away (Section 6.1).
 - **Baked** data is produced once by the generator and never changes. **Server layer** data is what players and NPCs change while the game runs.
 
@@ -811,7 +811,7 @@ One server clock drives aging, marriage, children growing up, crop growth, regro
   - Its warehouse always has supplies.
   - A boost applies to everyone who lives there, because the spirit is always high: people are more productive, happier and more loyal, and feel fuller when they eat. Crops grow a little better, animals grow healthy, and there is less sickness.
   - **Purpose:** starter towns are the foundation of the game, a place where players can always start and be in a nice town.
-- **[Decided]** **The boost covers the whole starter town:** everything inside the walls, the harbour, its outposts, and the surrounding farmland out to the edge of its metropolis-sized circle.
+- **[Decided]** **The boost covers the whole starter town:** everything inside the walls, the harbour, its outposts, and the surrounding farmland out to the edge of its grand-city-sized circle.
 - **[Decided]** **The spirit hovers at about 75 percent,** not at the top. Good deeds by new characters can still lift it, so players on the starter islands feel they are doing something that matters.
 - **[Decided]** **A wealthy temple.** Since these towns do so well, the temple is rich and can afford to help people who fall sick, so there is less illness in general.
 - **[Decided]** **Sickness is checked each game day, by each person for themselves.**
@@ -1015,7 +1015,7 @@ To be fleshed out when the first NPC is designed.
 - **[Proposed]** Spirit sits on a fixed scale (for example 0 to 100) and decays toward a floor set by permanent things like a temple, no pests, and clean water, not toward zero.
 - **[Decided]** NPC deeds count only a little toward spirit. They can barely maintain it, and a random event that pulls spirit down (bandits attacking caravans, for example) outweighs what the NPCs add. NPCs alone can never keep spirit high. Without real people playing in the town (quests, farming, donations, building), spirit slowly falls.
 - **[Decided]** Permanent features raise the floor spirit can fall to: a temple, clean water, a town wall and a strong town guard. NPC upkeep of these can slow the fall, since they keep adding a little.
-- **[Decided]** **Starting spirit.** A new settlement starts with a neutral or high spirit, because people are excited to build something new. (Suggestion: start at 70 on the 0 to 100 scale.) When the player arrives on a new island the weather should be nice or reasonable.
+- **[Decided]** **Starting spirit.** A new camp starts with a neutral or high spirit, because people are excited to build something new. (Suggestion: start at 70 on the 0 to 100 scale.) When the player arrives on a new island the weather should be nice or reasonable.
 - **[Decided]** **What lowers spirit.** Rain during the day lowers it by a point or two. Rain at night makes no difference, because people are inside resting. An attack by goblins or bandits lowers it by about a point. Others, as they are added to the game: an NPC with a cold or sick, someone aging out and dying, someone attacked by a bear in the woods, starvation.
 - **[Decided]** **What raises spirit.** Finishing buildings, getting the wall up, installing the well, and successfully repelling an attack, especially if every goblin is killed. If the attackers only retreat, tired of attacking, and just one or two die, fear remains and spirit may not rise. Feeding the town for a few days by hunting or fishing raises it a lot.
 - **[Decided]** Fresh water, a temple and guards raise the base spirit, in addition to the permanent features above.
@@ -1149,7 +1149,7 @@ To be fleshed out when the first NPC is designed.
 - **[Decided]** Without a manager, the owner must be physically at the town's office to change anything, give commands or read the town's books and interface.
 - **[Decided]** With a manager, the owner can control the town remotely through the manager, and the manager makes certain decisions while the owner is away. The owner sets which decisions the manager may make.
 - **[Decided]** The manager makes two kinds of decisions: ones he can make automatically, and ones where he must request approval or give the owner options to choose from.
-- **[Decided]** A town is unsafe, a gray area, until it is established. A settlement becomes established when it has a town manager building and a guard building, and the first round of guard wages is paid (Section 8.18). Once established it is a PvE area, unless it lies inside a PvP zone (Section 9.0).
+- **[Decided]** A town is unsafe, a gray area, until it is established. A camp becomes established when two NPC guards are assigned to it; a larger claim, when it has a town manager building and a guard building and the first round of guard wages is paid (Section 8.18). Once established it is a PvE area, unless it lies inside a PvP zone (Section 9.0).
 - **[Decided]** In a PVE area people can make offers and visit, but they cannot hurt anything. Nobody can raise an army and attack the town. Players who cross into a PVE area can no longer attack anyone.
 - **[Decided]** Inside a PvP zone there is no established status and no protection: no PvE rules, no guard protection from takeover, no safe towns (Section 9.0).
 - **[Proposed]** Word delivery uses a message system with distance delay and a carrier type (courier on horseback, pigeon, ship, later enchanted pigeon). Pigeons and couriers can fail or be intercepted. A manager can send word to the owner this way. This is separate from the real-world email notifications for the player's account (Section 6), which exist for duress and receivership.
@@ -1184,26 +1184,26 @@ To be fleshed out when the first NPC is designed.
 
 - **[Decided]** The town block is a marker with no physical form: a floating arrow only the owner can see, which the owner can switch on and off. It adds an entry to the owner's ledger saying they own a claim. It marks the exact centre of the town.
 - **[Decided]** Until an office building is placed (a keep or castle with an office, a house with an office, a town hall or a magistrate's office), the owner cannot reach the town settings. The building is where the town manager lives and works.
-- **[Decided]** **Towns cannot overlap, so the land is reserved up front.** Settlements come in sizes (hamlet, village, town, city). A list gives the physical size of each, and the largest, a city, is the maximum a town can grow to. Placing a town marker reserves land from the marker out to the size of a maximum city, so nobody can place a marker anywhere that its own maximum city would overlap another town's. The aim is that one person can build a town into a giant city with a castle, thriving businesses and a guild of a thousand real players.
-- **[Proposed]** The minimum distance between two markers is then twice the maximum city radius R. The settlement ladder below puts R at 1.5 km.
-- **[Proposed]** **The settlement ladder.** A new claim is a **settlement**. Each paid expansion grows it by 50 percent in radius (or 25 percent for a smaller step), and the size names follow. Radius includes the surrounding farmland, since the circle runs out to the farms.
+- **[Decided]** **Towns cannot overlap, so the land is reserved up front.** Claims come in stages (camp, settlement, village, town, city, grand city). A list gives the physical size of each, and the largest, a grand city, is the maximum a claim can grow to. Placing a town marker reserves land from the marker out to the size of a grand city, so nobody can place a marker anywhere that its own maximum city would overlap another town's. The aim is that one person can build a town into a giant city with a castle, thriving businesses and a guild of a thousand real players.
+- **[Proposed]** The minimum distance between two markers is then twice the grand-city radius R. The settlement ladder below puts R at 1.5 km.
+- **[Proposed]** **The settlement ladder.** A new claim is a **camp**: a marker and a tent. Each paid expansion grows it by 50 percent in radius (or 25 percent for a smaller step), and the size names follow. Radius includes the surrounding farmland, since the circle runs out to the farms.
 
 | Stage | Radius | Area | Rough population (NPCs and players) |
 |---|---|---|---|
-| Settlement (a new claim) | 200 m | 0.13 km² | up to 25 |
-| Hamlet | 300 m | 0.28 km² | 25 to 100 |
+| Camp (a new claim) | 200 m | 0.13 km² | up to 25 |
+| Settlement | 300 m | 0.28 km² | 25 to 100 |
 | Village | 450 m | 0.64 km² | 100 to 400 |
 | Town | 675 m | 1.4 km² | 400 to 1,500 |
 | City | 1,000 m | 3.1 km² | 1,500 to 5,000 |
-| Metropolis (the maximum) | 1,500 m | 7.1 km² | 5,000 to 15,000 |
+| Grand city (the maximum) | 1,500 m | 7.1 km² | 5,000 to 15,000 |
 
-- **[Proposed]** The reservation (above) is a metropolis: radius 1,500 m, so two markers must be at least 3 km apart, and every marker reserves about 7 km² even while it is still a settlement. A 50 km² starter landmass then holds roughly 5 to 7 towns, and a 100 km² landmass roughly 12.
-- **[Proposed]** Moving up a stage needs the paid expansion plus a floor of buildings and population, so a stage name means something. "Established" status (Section 8.18) does not depend on the stage: a manager building and a guard building with wages paid are enough, even for a new settlement.
+- **[Proposed]** The reservation (above) is a grand city: radius 1,500 m, so two markers must be at least 3 km apart, and every marker reserves about 7 km² even while it is still a camp. A 50 km² starter landmass then holds roughly 5 to 7 towns, and a 100 km² landmass roughly 12.
+- **[Proposed]** Moving up a stage needs the paid expansion plus a floor of buildings and population, so a stage name means something. "Established" status (Section 8.18) does not depend on the stage: a camp with two guards is already established.
 - **[Decided]** **An expansion costs what it really costs, and the money does not vanish into the server's coffers.** The cost of a step is the materials and labor the expansion needs: more builders, more guards, more supplies, and wages for the people at the stonemason, the lumber mill and the rope making. It includes a new, bigger and stronger wall, for example palisade logs, then stonework, and spike walls outside the palisade.
 - **[Decided]** **Costs are worked out from what the work takes.** Over time we calculate each expansion's cost from the materials it needs and the pay of the people who do it. Each stage must be priced with the next step in mind: once the expansion is done, the first building wanted next costs a certain amount, and the town needs the money to buy it, so that building can earn the money for the one after.
 - **[Proposed]** **How to price a stage (tunable).**
   - Each stage has a plan: the new wall ring, new roads, the required buildings and the extra guards. The planner turns it into a bill of materials and a labor estimate. The gold price is that bill times the market prices, so it is calculated and not typed in.
-  - Wall type grows with the stage: palisade for a settlement and hamlet, palisade with a ditch and outer spikes for a village, stone for a town and a city, stone with towers for a metropolis.
+  - Wall type grows with the stage: no wall for a camp (a tent), palisade for a settlement, palisade with a ditch and outer spikes for a village, stone for a town and a city, stone with towers for a grand city.
   - The old wall is taken down and salvaged by its condition. A wall in good shape keeps all of its wood and all of its stone when it is taken down, so the next wall costs only the new material. The loss of up to about 50 percent applies only to degraded wood, such as in rubble (Section 8.13).
   - A longer wall needs more guards: at least one guard for each 100 m of wall plus the one per 25 residents already proposed, whichever is larger.
   - **Balance test:** a stage is priced correctly when the town's net income at that stage repays the expansion in 1 to 2 game years (15 to 30 real days). If it takes longer, the stage is too expensive. If it pays back in days, it is too cheap.
@@ -1211,13 +1211,13 @@ To be fleshed out when the first NPC is designed.
 
 | Step | Residents | Buildings |
 |---|---|---|
-| Settlement to hamlet | 25 | the first ten, built |
-| Hamlet to village | 100 | 25, including blacksmith, granary and mill, and healer |
+| Camp to settlement | 25 | the first ten, built |
+| Settlement to village | 100 | 25, including blacksmith, granary and mill, and healer |
 | Village to town | 400 | 60, including a market hall and a second well |
 | Town to city | 1,500 | 150, including a harbour or a major road hub |
-| City to metropolis | 5,000 | 400 |
+| City to grand city | 5,000 | 400 |
 
-- **[Proposed]** Population figures are guides, not caps. The NPC population cap per island and region (Section 8.2) and the language model budget (Section 3) limit the NPC share. The player share of a metropolis is the thousand-strong guild case.
+- **[Proposed]** Population figures are guides, not caps. The NPC population cap per island and region (Section 8.2) and the language model budget (Section 3) limit the NPC share. The player share of a grand city is the thousand-strong guild case.
 - **[Proposed]** An outpost has a fixed small radius, about 100 m, and reserves only that.
 
 - **[Decided]** A town has a **circle of influence** around its marker.
@@ -1235,7 +1235,8 @@ To be fleshed out when the first NPC is designed.
 
 ### 8.18 Becoming established, water, and the first steps for a new character
 
-- **[Decided]** **Established is two buildings and a payroll:** a town manager building and a guard building, with the guards' first wages paid. That is all a settlement needs to become established. A well and a temple are not required.
+- **[Decided]** **A camp is established by two guards.** A claim starts as a camp: a marker and a tent. If the player has two NPCs travelling with them, they can assign them as guards, and the camp is immediately established and PvE safe (and protected from hostile takeover, Section 8.14). Their wages are paid as for any guard.
+- **[Decided]** **From a settlement up, established is two buildings and a payroll:** a town manager building and a guard building, with the guards' first wages paid. A well and a temple are not required.
 - **[Decided]** **Wells.** A well provides clean water without limit up to a number of units per day. A small population has plenty from one well. A larger one needs several. A town with no well can buy water and food from another city on the same island or on a neighbouring island.
 - **[Proposed]** Suggested numbers (tunable): one well supplies 50 residents. Requests to buy supplies reach towns within 2 tiles (about 31 km) of the town marker, which keeps the supply route within one day's sail. Supplies arrive by NPC cart or ship, so delivery takes real time.
 - **[Open]** Whether the supply distance is server-wide, a number of tiles or a number of kilometres (the suggestion above is a number of tiles).
@@ -1640,7 +1641,7 @@ Only genuinely open items are listed. Everything decided lives in its own sectio
 
 **Towns and claims**
 
-23. Names: the group (tribe, clan, circle), and the stage names of the settlement ladder (a list is proposed separately for approval).
+23. Names: the group (tribe, clan, circle). The top stage name "grand city" is a placeholder; alternatives are capital or great city.
 24. The shape of the presence zone, how strong guards must be, what the manager can decide automatically, and whether a weekly player with no group member is treated fairly after 48 real hours away (Sections 8.14, 8.15).
 25. What the town and the owner lose when ownership changes, and whether walls add anything (Section 8.14).
 26. Price formula for server-owned towns, how competing applicants are handled, and what the good-faith judgment looks at (Section 8.16).
