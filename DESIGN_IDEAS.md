@@ -1134,6 +1134,8 @@ To be fleshed out when the first NPC is designed.
   | 6 | 144 | 73% | 22% |
   | 7 | 168 | 100% | 27% |
 
+  **Duress stacks with the wear rule.** Neglect and duress are separate causes. A building is neglected when the dynasty has no money to pay for care. A dynasty is under duress when its player does not come back to the game. A dynasty can have either or both. When both apply, duress makes wear up to 1.5 times faster on top of the neglect speed-up (Section 6.1).
+
   Maintained wear is much slower: about 5 percent of condition per game year, restored by repairs. Buildings and roads get a much longer `T` than a mine (tuned later), so towns last longer than mines. Because the server only needs the time care stopped, the condition is worked out lazily when someone looks.
 - **[Decided]** Degradation is partial. Wood loses at most about 50 percent, not all of it. Stone loses nothing. Metal loses some. Example: a blueprint of 1000 stone, 2000 wood, 100 iron and 200 slate leaves roughly 1000 stone, about 1000 wood, most of the iron and all of the slate.
 - **[Decided]** Rubble is a salvage source. A player who reclaims a town can harvest the rubble for most of the rebuild materials without cutting thousands of trees.
