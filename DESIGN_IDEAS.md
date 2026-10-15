@@ -988,6 +988,24 @@ To be fleshed out when the first NPC is designed.
 - **[Proposed]** Volcanic islands drop steeply into deep water, which makes them good for docks. The geology already favors them for ore: copper and gold on arcs, sulfur and gems on hotspot volcanoes (Section 4.9). When ore bodies are placed at bake time, some should sit near outpost-friendly coves so mines and docks pair naturally.
 - **[Proposed]** The generator does not need to bake outpost sites: they can be found at runtime from the tile maps (slope, height, shoreline, water depth), the same way the town planner surveys land. Natural harbors and coves can still be marked as sites at bake time.
 
+- **[Decided]** **The size of a settlement limits its outposts.** The bigger the claim, the more outposts it can support, and the bigger they can be. A settlement might support two small outposts (say a logging camp and a quarry); a hamlet four small ones or two medium ones, so the owner can grow a quarry or add a mine. This is a working theory, to be rounded out as it is built.
+- **[Proposed]** **Outpost points (tunable).** Each outpost has a size that costs points from its parent claim's budget. A small outpost costs 1 point (radius about 50 m), a medium one 2 (about 100 m), a large one 4 (about 150 m). Growing an outpost costs the difference in points, plus the real cost of the expansion. The budget grows with the stage:
+
+  | Parent stage | Outpost points | Example |
+  |---|---|---|
+  | Camp | 0 | none yet |
+  | Settlement | 2 | two small outposts (logging camp, quarry) |
+  | Hamlet | 4 | four small, or two medium |
+  | Village | 8 | a large mine plus several small outposts |
+  | Town | 12 | |
+  | City | 20 | |
+  | Grand city | 32 | |
+
+- **[Proposed]** Some outposts have a minimum size: a logging camp, quarry or fishing dock can be small, but a mine needs at least medium (it needs room for supports and a hoist), and a large mine needs a large outpost. A watchtower or pigeon coop is always small.
+- **[Proposed]** Outposts may sit outside the parent's circle of influence, even on another island, and still count against the parent's budget. Each outpost needs guards and upkeep paid by its parent, so the budget is a money limit as well as a points limit. If a town shrinks below a stage, its newest outposts are the first to be cut loose (Section 8.13).
+- **[Proposed]** Homesteads and individual players who own outposts directly get a small fixed budget (suggestion: 2 points), not tied to a ladder.
+- **[Open]** The exact point values and budgets, the list of outpost types and their minimum sizes, and what happens to over-budget outposts when a town loses a stage.
+
 ### 8.11 The temple
 
 - **[Decided]** Every town can have a temple. It is non-denominational (no real-world religion) and built entirely on the principle "be safe, be kind, be generous" (Section 3).
