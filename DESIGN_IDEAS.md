@@ -976,7 +976,7 @@ One server clock drives aging, marriage, children growing up, crop growth, regro
 - **[Decided]** A property owner who has gone long enough that their dynasty reverts to NPC (Section 6, duress) loses the property to the town: it appears on the town manager's screen and the town may claim the houses, businesses, farmland, mines and other resource sources. For a mine, the town pays for repairs before letting it collapse (Section 11.2).
 - **[Open]** How long before a home counts as abandoned, whether the owner gets warnings, and what happens to belongings and stored goods.
 - **[Decided]** Players can own houses, businesses and farmland in any town, several in one town or spread across towns, as long as each town accepts their reputation.
-- **[Decided]** Players can also prospect their own land in the wilds and mark it with a **town stone** (to found a town, within the spacing rules in Section 8.17) or a **homestead stone** (a private holding; see Section 15).
+- **[Decided]** Players can also prospect their own land in the wilds and mark it with a **town stone** (to found a town, within the spacing rules in Section 8.17) or a **homestead marker** (a private home, Section 8.17).
 - **[Decided]** Owning property in an enemy town is hard. Someone who owned property in two towns before they became enemies keeps it, but tensions can get weird and their loyalty, and so their reputation, may come into question in both.
 - **[Decided]** A town is basically a group of friends, and the town owner sets its rules. Residents are already vetted because they are already in the town.
 - **[Decided]** Buying into a town: players whose reputation with the town is at or above a score the owner sets are accepted automatically. Players below it must be approved, and meanwhile can stay at the inn.
@@ -1062,7 +1062,7 @@ To be fleshed out when the first NPC is designed.
 
 - **[Proposed]** A watchtower or pigeon coop is always small. Other minimum sizes will be decided with each outpost type.
 - **[Proposed]** Outposts may sit outside the parent's circle of influence, even on another island, and still count against the parent's budget. Each outpost needs guards and upkeep paid by its parent, so the budget is a money limit as well as a points limit. A town never drops a stage: it keeps its stage (a city stays a city) and falls into ruin instead (Section 8.13). Its outposts stop being paid and decline with it, as the mine rule describes (Section 11.2).
-- **[Proposed]** Homesteads and individual players who own outposts directly get a small fixed budget (suggestion: 2 points), not tied to a ladder.
+- **[Proposed]** Homesteads and individual players who own outposts directly get a small fixed budget (suggestion: 2 points), not tied to the town ladder (Section 8.17).
 - **[Open]** The exact point values and budgets, the list of outpost types and their minimum sizes.
 
 ### 8.11 The temple
@@ -1303,6 +1303,8 @@ To be fleshed out when the first NPC is designed.
 | City to grand city | 5,000 | 400 |
 
 - **[Proposed]** Population figures are guides, not caps. The NPC population cap per island and region (Section 8.2) and the language model budget (Section 3) limit the NPC share. The player share of a grand city is the thousand-strong guild case.
+- **[Decided]** **Homestead.** A homestead is a home, not a town. It starts like a camp: the player places a marker and a tent, and that is a **homestead camp**. It does not grow into a town. It grows into a bigger home instead, such as a house, then an estate, then a keep or castle. The stages and sizes of homes are to be designed later.
+- **[Proposed]** Details (tunable): a dynasty has one homestead at a time, and it does not use up the one-camp slot of the town ladder. A homestead has a small fixed circle (suggestion: about 100 m, growing with the home), needs no town manager, and can be protected by two guards in the same way as a camp. It gets a small outpost budget (suggestion: 2 points, Section 8.10).
 - **[Decided]** An outpost reserves only its own area, whose size depends on its size class (Section 8.10).
 
 - **[Decided]** A town has a **circle of influence** around its marker.
@@ -1350,7 +1352,7 @@ To be fleshed out when the first NPC is designed.
 - **[Decided]** **The temple costs the town money but lifts the base town spirit.** It is a liability, but it gives a place for orphans, counselling, food or financial help, and protection. The **well** has upkeep, which is a cost to the town.
 - **[Decided]** **Walls and the inner circle.** From the settlement stage up, a claim is surrounded by a wall (a camp is only a tent), even if it sits next to the water, so there is no open area that lets people into the innermost circle. The inner circle holds the core buildings, such as the manager's house and the guard house. The **harbour is always outside the wall**. The sawmill and the stonemason are **temporary fixtures** that start near a gate and are gradually moved further out of town later.
 - **[Decided]** **Self-sufficient from the start.** The first settlement needs wood, stone and rope. Rope comes from harvesting plants for thatch and fibre. At first, rope and wooden pins join beams together to build walls, buildings and joinery. These are the rustic starter buildings, upgraded and improved over time. A blacksmith comes later. Until then the settlers can bring nails and hinges, or raw iron, bought at the starter village.
-- **[Decided]** **The settlement starter kit.** A kit sold as one heavy box that takes one inventory slot. It would fill the weight of a second- or third-tier starter boat. It contains everything needed to start a town or homestead, and the player must earn the money to buy it first.
+- **[Decided]** **The settlement starter kit.** A kit sold as one heavy box that takes one inventory slot. It would fill the weight of a second- or third-tier starter boat. It contains everything needed to start a town or a homestead camp, and the player must earn the money to buy it first.
 - **[Proposed]** **The ten things a new settlement needs, in the order the planner builds them:**
   1. **Town manager building** (also the owner's house if the owner wants to live in it). Everything starts here.
   2. **Roads and the central square**, laid out first by the planner, with the well in the square.
