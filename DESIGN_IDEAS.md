@@ -1137,7 +1137,7 @@ To be fleshed out when the first NPC is designed.
   **Duress stacks with the wear rule.** Neglect and duress are separate causes. A building is neglected when the dynasty has no money to pay for care. A dynasty is under duress when its player does not come back to the game. A dynasty can have either or both. When both apply, duress makes wear up to 1.5 times faster on top of the neglect speed-up (Section 6.1).
 
   Maintained wear is much slower: about 5 percent of condition per game year, restored by repairs. Buildings and roads get a much longer `T` than a mine (tuned later), so towns last longer than mines. Because the server only needs the time care stopped, the condition is worked out lazily when someone looks.
-- **[Decided]** Degradation is partial. Wood loses at most about 50 percent, not all of it. Stone loses nothing. Metal loses some. Example: a blueprint of 1000 stone, 2000 wood, 100 iron and 200 slate leaves roughly 1000 stone, about 1000 wood, most of the iron and all of the slate.
+- **[Decided]** Degradation is partial, and each material stops at its minimum integrity (see the wear rule below). Rubble holds the bill of materials times each material's condition. Using the starting floors for outdoor buildings: a blueprint of 1000 stone, 2000 wood, 100 iron and 200 slate leaves at worst 1000 stone, 1000 wood (floor 50), 70 iron (floor 70) and all of the slate.
 - **[Decided]** Rubble is a salvage source. A player who reclaims a town can harvest the rubble for most of the rebuild materials without cutting thousands of trees.
 - **[Idea]** Salvage as a trade: businesses that go around clearing rubble from ruined towns and selling or reusing the materials. Harvested rubble is gone, and the harvester gets the contents minus degradation.
 - **[Idea]** Wood left in rubble could count as aged wood (and in some places petrified wood), a different material from fresh wood with its own uses and quality. Treated, maintained wood degrades much more slowly.
@@ -1215,7 +1215,7 @@ To be fleshed out when the first NPC is designed.
 - **[Decided]** Delay depends on distance: how long a pigeon flies, or how long magic takes to reach the nearest mage or tower and then the recipient.
 - **[Decided]** Matters of the whole dynasty use real-time messaging in the app. In-world mail and delay cover town business at a distance, such as an offer on a town.
 - **[Decided]** When someone makes an offer on a remotely controlled town, the owner is told that they will be notified in a stated number of hours or days, based on the delay for word to arrive. The offer then stands for a time.
-- **[Decided]** How long an offer stands is the offerer's choice: a set period (for example a week) or a permanent standing offer. The time between offer and answer is expected, because communication takes time.
+- **[Decided]** How long an offer stands is the offerer's choice: a set period (for example a real week, since players must have time to log in) or a permanent standing offer. The time between offer and answer is expected, because communication takes time.
 - **[Proposed]** A standing offer does not lock the offerer's money. Funds are checked when the owner accepts, and an offer that cannot be paid fails with a reputation cost. A short offer could instead hold the money in escrow.
 - **[Decided]** Communication improves in tiers, in line with the early-to-late quality ladder (Section 11.1):
   1. Early: a rider on horseback, or a message carried by ship. Slow, and it can fail or be delayed.
@@ -1267,7 +1267,7 @@ To be fleshed out when the first NPC is designed.
 - **[Proposed]** **How to price a stage (tunable).**
   - Each stage has a plan: the new wall ring, new roads, the required buildings and the extra guards. The planner turns it into a bill of materials and a labor estimate. The gold price is that bill times the market prices, so it is calculated and not typed in.
   - Wall type grows with the stage: no wall for a camp (a tent), palisade for a settlement and hamlet, palisade with a ditch and outer spikes for a village, stone for a town and a city, stone with towers for a grand city.
-  - The old wall is taken down and salvaged by its condition. A wall in good shape keeps all of its wood and all of its stone when it is taken down, so the next wall costs only the new material. The loss of up to about 50 percent applies only to degraded wood, such as in rubble (Section 8.13).
+  - The old wall is taken down and salvaged by its condition. A wall in good shape keeps all of its wood and all of its stone when it is taken down, so the next wall costs only the new material. Loss happens only through wear, down to each material's minimum integrity (Section 8.13).
   - A longer wall needs more guards: at least one guard for each 100 m of wall plus the one per 25 residents already proposed, whichever is larger.
   - **Balance test:** a stage is priced correctly when the town's net income at that stage repays the expansion in 1 to 2 game years (15 to 30 real days). If it takes longer, the stage is too expensive. If it pays back in days, it is too cheap.
 - **[Proposed]** **Requirements still apply** (tunable): enough residents and buildings, so a stage name means something.
@@ -1447,7 +1447,7 @@ To be fleshed out when the first NPC is designed.
 - **[Proposed]** Fine-grained piece-by-piece fire where players are present, and building-level outcomes elsewhere, using the same rules. The server holds authoritative fire state and clients only draw flames.
 - **[Proposed]** Fire effects are a quality setting and capped on older machines.
 - **[Proposed]** Town building codes, fire brigades (an NPC job) and wells fit into the town block rules. Dry, hot climates burn easier.
-- **[Proposed]** A shared material catalog for building pieces (flammability, strength, source of raw material) read by fire, repair, shelter and trade.
+- **[Proposed]** A shared material catalog for building pieces (flammability, strength, source of raw material, time to failure `T` and minimum integrity by setting, Section 8.13) read by fire, repair, wear, shelter and trade.
 - **[Open]** Whether treatment is a crafted material (treated planks) or an upgrade applied to placed pieces.
 - **[Open]** Whether weather and wind affect fire.
 - **[Open]** Who fights fires: players, NPC brigades, or both.
