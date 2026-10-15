@@ -13,7 +13,7 @@ New entries go at the end of their section, with the date.
 
 ## Characters and death
 
-- **Players dying of disease.** [Rejected] (2026-10-14) Why: dying of disease would be a terrible way to die in a game, and there are enough things trying to kill players already. Player characters get at most a one-game-day flu. NPCs can still fall sick and die. Current rule: Section 8.7.
+- **Players dying of disease.** [Rejected] (2026-10-14) Why: dying of disease would be a terrible way to die in a game, and there are enough things trying to kill players already. Player characters get at most a one-game-day flu. NPCs can still fall sick and die. Current rule: Section 8.1 (illness).
 - **Remains as a tombstone or loot bag.** [Rejected] (2026-10-14) Why: no reason recorded beyond the preference for a body with a backpack and all gear on it that decays over time. Current rule: Section 6.1, Remains.
 
 ## Towns and settlements
@@ -23,4 +23,4 @@ New entries go at the end of their section, with the date.
 
 ## Resources
 
-- **Aluminum as a resource.** [Rejected] Why: it was unknown in medieval times (first isolated in the 1820s). Current rule: Section 5 resource list.
+- **Aluminum as a resource.** [Rejected] Why: it was unknown in medieval times (first isolated in the 1820s). Current rule: Section 4.9 resource list.
