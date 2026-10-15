@@ -543,7 +543,7 @@ Question from the project owner: do we have all the building blocks, with a safe
 
 - **[Decided]** **Takeover by marriage.** When a dynasty falls into ruin naturally, the spouse becomes available to remarry. If they marry another player within a set time, that player may pay the town in game currency to cover the back taxes and any unpaid bills, and so claim the dynasty's properties and businesses. A player with enough money who finds a widow or widower that still has property can propose and take over that dynasty. What it costs depends on the dynasty's size, assets and liabilities. After the window ends, the town claims the assets instead (Section 8.6).
 - **[Decided]** A player who returns after their dynasty has completely fallen into ruin sees a screen telling them it fell into ruin and that they must start over.
-- **[Decided]** **Receivership.** A dynasty that has fallen into ruin is said to be **in receivership**. For a week or two of real time, which gives the original player ample opportunity to come back, the family stays on the dynasty's land and property, and in that window other players can approach the spouse to discuss taking on the dynasty. The spouse and family are in dire need of help, so depending on their personalities, traits and how stressed they are, they are more than likely open to the idea.
+- **[Decided]** **Receivership.** A dynasty that has fallen into ruin is said to be **in receivership**. For **14 real days**, which gives the original player ample opportunity to come back, the family stays on the dynasty's land and property, and in that window other players can approach the spouse to discuss taking on the dynasty. The spouse and family are in dire need of help, so depending on their personalities, traits and how stressed they are, they are more than likely open to the idea.
 - **[Decided]** The conversation is the start of the relationship, and the memories the new player has with that spouse begin there (Section 8.8). How it goes is affected by the new player's reputation and affiliations (Section 13.3): a trusted player is welcomed, one with a bad name or an unwelcome allegiance is turned away or treated with suspicion.
 - **[Decided]** If the original player returns during receivership, they can take their dynasty back as their own successor. It comes back in a very bad state of disrepair and poverty, which gives them something to strive for. Duress drops drastically on return and keeps falling each day they log in (see the duress rules above).
 - **[Decided]** A returning player can go to the bank for a loan based on their reputation, to buy animals, replant crops or buy food for the winter until they are back on their feet. Loan rates for this are very reasonable, because the town wants to see them succeed (Section 13.5).
@@ -567,8 +567,8 @@ Question from the project owner: do we have all the building blocks, with a safe
 #### Open items
 
 - **[Open]** What happens when several players apply for the same dynasty, whether the money is held (escrowed) from the time of application, whether a failed payment at the end date passes the offer to the next applicant, and the final prices for blocks. (A free vacation notice was decided against; notification channels are set above.)
-- **[Open]** How permanent offline loss should be (can family members die, can buildings be destroyed).
-- **[Open]** Who can raid whom: only NPC bandits, monsters and sickness, or other players as well.
+- **[Decided]** **No extra risk for being offline.** Logging off adds no hidden penalty. Family members and buildings are lost only through the normal causes (sickness, age, fire, raids, wear), and being away matters only through duress and the wear rule (Section 8.13).
+- **[Decided]** **Who can raid whom.** NPC threats (bandits, monsters and so on) can hit anyone, anywhere. Players can raid other players only inside PvP zones (Section 9.0).
 - **[Open]** Whether dropped items expire, and whether items in hard-to-reach places last longer.
 - **[Open]** Whether other players and NPCs can rob or finish a downed character. The suggested answer is that outside PvP zones it is a crime handled by the legal system (Section 9), not a blocked action; inside PvP zones there is no protection (Section 9.0).
 
@@ -975,7 +975,7 @@ One server clock drives aging, marriage, children growing up, crop growth, regro
 - **[Decided]** A remarrying spouse can take over a ruined dynasty's property by paying the town its back taxes and bills (Section 6). If nobody does within the window, the town claims it.
 - **[Decided]** A property owner who has gone long enough that their dynasty reverts to NPC (Section 6, duress) loses the property to the town: it appears on the town manager's screen and the town may claim the houses, businesses, farmland, mines and other resource sources. For a mine, the town pays for repairs before letting it collapse (Section 11.2).
 - **[Decided]** **When a home is abandoned.** If a home's rent or bills go unpaid for **two game months**, it is deemed abandoned and returns to the market. The owner gets a **notice after the first game month** of non-payment. A game month is about 30 real hours, so the whole thing is roughly 60 real hours (2.5 real days). Bills are paid automatically from the dynasty's banked funds, even while the player is offline, so it is the player's responsibility to keep enough money banked to cover bills during absences (see duress and receivership, Section 6.1).
-- **[Open]** What happens to belongings and stored goods in an abandoned home.
+- **[Decided]** **Furnished or empty.** When an abandoned house goes up for sale, the buyer chooses: buy it **furnished** at full price, with the previous owner's belongings and stored goods still inside, or buy it **empty** at a reduced price. If the buyer takes it empty, the old belongings simply disappear. They are not stored anywhere for anyone to claim later.
 - **[Decided]** Players can own houses, businesses and farmland in any town, several in one town or spread across towns, as long as each town accepts their reputation.
 - **[Decided]** Players can also prospect their own land in the wilds and mark it with a **town stone** (to found a town, within the spacing rules in Section 8.17) or a **homestead marker** (a private home, Section 8.17).
 - **[Decided]** Owning property in an enemy town is hard. Someone who owned property in two towns before they became enemies keeps it, but tensions can get weird and their loyalty, and so their reputation, may come into question in both.
@@ -1074,7 +1074,8 @@ To be fleshed out when the first NPC is designed.
 - **[Decided]** The clergy are the most neutral religious experience possible. They are pleasant, but they are human and can have a bad day, while still doing their best.
 - **[Decided]** The temple handles adoption (Section 6.9), takes in the displaced (Section 8.3) and receives donated food and goods.
 - **[Proposed]** The clergy use the same NPC character, memory and conversation systems as other NPCs (Section 8.8). The conversation budget (Section 3) applies.
-- **[Open]** Whether a temple is built by the town, by players, or both, what it costs, and how many a town can have.
+- **[Decided]** **Who builds it and how many.** The town owner builds the temple. A town has one, and a second becomes available at the city stage. (This is the starting rule.)
+- **[Open]** What a temple costs (waits for the money scale).
 
 ### 8.12 Town spirit and local weather
 
@@ -1733,7 +1734,7 @@ Only genuinely open items are listed. Everything decided lives in its own sectio
 24. What the town and the owner lose when ownership changes, and whether walls add anything (Section 8.14).
 25. Price formula for server-owned towns, how competing applicants are handled, and what the good-faith judgment looks at (Section 8.16).
 26. Stay-score numbers for NPCs leaving a declining town, decay stage names, collapse thresholds, administrator vote size, and what happens to records at deletion (Section 8.13). Whether a claimed ruin starts with the old spirit or a fresh low one.
-27. Temple: who builds it, cost, how many per town (Section 8.11).
+27. Temple cost (Section 8.11); waits for the money scale.
 28. Bridges: maximum span and depth, kinds, and who maintains NPC dirt roads (Section 8.17). Ring layout: rules or planner preferences, and whether the owner can override (Section 8.17).
 29. Marker hoarding: the one-camp-at-a-time rule limits it; still open is the cost or upkeep of a marker and when a reservation is released (Section 8.17).
 30. Expansion and building prices wait for the money scale (below). Whether the first ten buildings are the right ten (Section 8.19).
@@ -1741,26 +1742,24 @@ Only genuinely open items are listed. Everything decided lives in its own sectio
 
 **Law, threats and PvP**
 
-32. Who can raid whom: NPCs only, or other players too, outside PvP zones (Sections 9, 12).
-33. Locks and security as soft barriers, how far justice and news spread, and whether NPCs can cross the ocean (Sections 9.1, 13.6).
-34. Fixed lairs, roaming groups or both, and whether a ruined town can become a bandit stronghold (Section 12).
-35. PvP: the cost of dying in a zone, how zones relate to war between towns, and which parts of the map get zones first (Section 9.0).
-36. Danger tiers players see, and whether the curves need tuning once creatures exist (Section 4.13).
+32. Locks and security as soft barriers, how far justice and news spread, and whether NPCs can cross the ocean (Sections 9.1, 13.6).
+33. Fixed lairs, roaming groups or both, and whether a ruined town can become a bandit stronghold (Section 12).
+34. PvP: the cost of dying in a zone, how zones relate to war between towns, and which parts of the map get zones first (Section 9.0).
+35. Danger tiers players see, and whether the curves need tuning once creatures exist (Section 4.13).
 
 **Economy and production**
 
-37. **Money scale.** Money has no anchor yet. Later: balance the value of time spent harvesting, fishing and building against prices, set starter numbers, and rebalance constantly (Section 13).
-38. Player resident rights, number of tax levers, order forms versus conversation, one business structure for every workplace (Sections 8.5, 13.4).
-39. Hands paid by share, wage or employer's choice (Section 5.2).
-40. Blueprints built all at once or in stages; fire treatment as material or upgrade; wind and weather on fire; who fights fires; ventilation as a simple range effect (Sections 10.1, 10.2).
-41. Whether admin buying splits its daily cap per resource, per seller or per player (Section 8.1).
-42. Resource renewal rates, how a mine decays when abandoned (full cave-in, partial, or old shaft), support types and whether collapses hurt miners (Sections 5, 11.2).
-43. Gambling and the real-money design (Section 13.8): to be revisited when that work starts. Steam and Workshop as a target.
-44. Who hosts servers and pays for language model calls (Section 8.9).
-45. How NPC rescue works without trivializing death, and the cost of NPC companions (Section 12.2).
-46. Land-suitability layers in the bake for the town planner, and whether plans can run unattended (Section 8.4).
-47. Factions and guilds between groups: none yet; friends groups, towns and parties exist (Section 6.13).
-48. What happens to the belongings and stored goods in an abandoned home (Section 8.6). The timing is decided: two game months unpaid, with a notice after the first.
+36. **Money scale.** Money has no anchor yet. Later: balance the value of time spent harvesting, fishing and building against prices, set starter numbers, and rebalance constantly (Section 13).
+37. Player resident rights, number of tax levers, order forms versus conversation, one business structure for every workplace (Sections 8.5, 13.4).
+38. Hands paid by share, wage or employer's choice (Section 5.2).
+39. Blueprints built all at once or in stages; fire treatment as material or upgrade; wind and weather on fire; who fights fires; ventilation as a simple range effect (Sections 10.1, 10.2).
+40. Whether admin buying splits its daily cap per resource, per seller or per player (Section 8.1).
+41. Resource renewal rates, how a mine decays when abandoned (full cave-in, partial, or old shaft), support types and whether collapses hurt miners (Sections 5, 11.2).
+42. Gambling and the real-money design (Section 13.8): to be revisited when that work starts. Steam and Workshop as a target.
+43. Who hosts servers and pays for language model calls (Section 8.9).
+44. How NPC rescue works without trivializing death, and the cost of NPC companions (Section 12.2).
+45. Land-suitability layers in the bake for the town planner, and whether plans can run unattended (Section 8.4).
+46. Factions and guilds between groups: none yet; friends groups, towns and parties exist (Section 6.13).
 
 ---
 
