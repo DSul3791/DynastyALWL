@@ -140,7 +140,7 @@ Stored as compressed JSON during development for readability. They can move to a
   - Volcanic vents and pipes: center, radius, depth.
   - Salt domes: center, radius, top depth.
 - **Ore bodies:** ID, resource, shape (vein, lens, pipe, layer or halo) with its dimensions, grade, total amount, and the feature it formed from. First version (step 11) adds a `scatter` shape (gems spread thinly through a band of one layer across a province: geodes in basalt, garnets in slate; stores province, depth below datum, band thickness and density) and a `placer` shape (a line of points along a river with width and thickness) for gold and tin washed out of bodies that reach the surface. Layer bodies name their province and repeat with its cycle.
-- **IDs. [Proposed, recommended]** A record's identity is its **home tile and local ID**, written `x,z#local` (for example `3,4#101`). The tile revision is **not** part of identity: it is a cache marker that rises when a tile is replaced, re-encoded or extended by a resource pass, and records keep their IDs through all of that, so an NPC miner's record against an ore body never breaks. An ID is unique within its kind of record (province, feature, ore body, site), not across kinds.
+- **IDs. [Decided 2026-10-14]** A record's identity is its **home tile and local ID**, written `x,z#local` (for example `3,4#101`). The tile revision is **not** part of identity: it is a cache marker that rises when a tile is replaced, re-encoded or extended by a resource pass, and records keep their IDs through all of that, so an NPC miner's record against an ore body never breaks. An ID is unique within its kind of record (province, feature, ore body, site), not across kinds.
   - Features and ore bodies belong to the province cell they formed in. Their home tile is the tile holding that cell, and the local ID is cell index × 100 + n (features 1 to 49, ore 51 to 99). A feature listed by two tiles is the identical record in both.
   - Placers belong to the tile they lie in, with local IDs from 9001. Sites use local IDs from 8001.
   - Records added later by a resource pass (Section 4a) take local IDs from `pass number × 10,000 + n`, so they can never collide with the first-version ranges. Local IDs are never reused, including after a record is mined out or removed.
@@ -157,7 +157,7 @@ A record's global ID is its home tile and local ID (see IDs above). Ore body IDs
 
 ## 4a. Adding resources later (resource passes)
 
-**[Proposed]** The world must be able to gain new ores and resources after tiles are kept, without moving or removing anything that exists. The pieces that make this possible are already in place: append-only ID tables, ore bodies built from a few shapes (vein, lens, pipe, layer, halo, scatter, placer) placed by how deposits really form, and a container made of independent, checksummed sections.
+**[Decided 2026-10-14]** The world must be able to gain new ores and resources after tiles are kept, without moving or removing anything that exists. The pieces that make this possible are already in place: append-only ID tables, ore bodies built from a few shapes (vein, lens, pipe, layer, halo, scatter, placer) placed by how deposits really form, and a container made of independent, checksummed sections.
 
 A **resource pass** is a numbered, versioned generator step run against the finished world:
 
@@ -174,7 +174,7 @@ Anything that changes where existing ore sits is not a pass. It is a new generat
 
 **[Decided]** (2026-10-14) Rivers must continue across tile edges. A river that ends at a tile edge is a bug. The same holds for every other feature: mountain ranges continue as mountain ranges on both sides of an edge, plains as plains, and water as water.
 
-**[Proposed]** How to get there:
+**[Decided 2026-10-14]** How to get there (the approach was confirmed by the project owner):
 
 1. **World river network.** Work out rivers once for the whole world, wrap-aware, on the 160 m world elevation map (flow accumulation, outlets to the sea or to lakes). The result is a list of river paths with discharge. Each tile reads from it the points where each river crosses each of its four edges (position and discharge).
 2. **Tile rivers follow the network.** The 8 m tile water step carves each channel so it enters and leaves at the stored crossing points with the stored discharge, and only fills in local detail between them. Two neighbors then agree on every crossing by construction.
@@ -244,5 +244,7 @@ Derived from the sketch elevation map by `tools/build_tile_plan.gd`. Same contai
 6. Each built tile goes live at a server restart, replacing its placeholder. Later additions go in through resource passes (Section 4a) or, for terrain, new generator versions on tiles not yet kept.
 
 ## 8. Settled
+
+Confirmed by the project owner on 2026-10-14: the ID scheme (home tile plus local ID, revision only a cache marker, resource-pass IDs from pass number times 10,000) and the river plan (world river network, overlap margins, final edge-matching pass as step 13b before any tile is kept).
 
 Flora is derived at runtime, the map grid is 8 m, the master seed is the phrase `This1is2the3greatest4game5of6all7time` turned into a number with SHA-256 (574716103), and each tile's seed is SHA-256 of the master seed and the tile coordinate (branch `claude/world-seed`). There is no shared deep-ocean tile edge: neighboring tiles agree because they read the same world data. The tile matrix randomizer of the first draft was replaced by the world sketch and tile plan.
