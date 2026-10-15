@@ -750,7 +750,7 @@ One server clock drives aging, marriage, children growing up, crop growth, regro
 
 - **[Decided]** **Unlabeled times are game time.** Any amount of time in this document, in the game or in the rules ("a month", "a year", "three days") means game time unless it says **real**. Real time is written out ("real hours", "real month") only where a rule is tied to the player's own life.
 - **[Decided]** **Real-time items:** the presence timer, takeover and challenge windows, the 24-hour owner notice before a manager quits, the duress rules (a real month away; protection at $5 per real month; first real month free), receivership windows, remains lasting 30 real days, sand covering remains over 7 real days, and the reputation fade of about a real week. 
-- **[Decided]** **Crops** ripen on the game clock but their tiers are quoted in real days (Section 5.1), because they follow the player's rhythm. **Game-time items:** boat build times (6 game hours for the first tier, converted from 15 real minutes at the 24-to-1 ratio), mine abandonment (about 6 to 12 game years, converted from three to six real months), aging and lifespans, pregnancy and growing up, seasons, loan and wage terms (loans 4 to 16 percent per game year, wage raises per game month), guard notice (one game month), work hours, shop hours, building and production schedules, spirit and town decline measured in game months, and expansion balance tests in game years.
+- **[Decided]** **Crops** ripen on the game clock but their tiers are quoted in real days (Section 5.1), because they follow the player's rhythm. **Game-time items:** boat build times (6 game hours for the first tier, converted from 15 real minutes at the 24-to-1 ratio), aging and lifespans, pregnancy and growing up, seasons, loan and wage terms (loans 4 to 16 percent per game year, wage raises per game month), guard notice (one game month), work hours, shop hours, building and production schedules, spirit and town decline measured in game months, and expansion balance tests in game years.
 
 ### 7.2 The time ratio and the calendar
 
@@ -1390,11 +1390,16 @@ To be fleshed out when the first NPC is designed.
 - **[Proposed]** Tracks and roads use the same leveling rules as blueprints.
 - **[Decided]** Mines and caves can become unstable. A natural cave stays up as long as its openings are small enough; the bigger a man-made opening, the more it needs support. Miners must shore up their workings with timbers or pillars, and supports slowly wear and need maintenance. This is a deliberate difference from games where players can dig out huge spaces for free.
 - **[Decided]** If a mine lies inside a town block or an outpost block, its support maintenance falls under the town's repair schedule. Builders do not have to be physically present: the supports age and are repaired automatically on the town's schedule, and the cost comes out of the mine owner's account.
-- **[Decided]** If the owner stops playing for a set time (say about 6 or 12 game years, which is three or six real months) or their account runs out of in-game money, repairs stop and the supports gradually fail until the mine **caves in**. A cave-in only refills the workings with rubble. The land above does not sink.
+- **[Decided]** **Every mine and outpost belongs to something.** An outpost, including a mine, is always attached to a town, a homestead or a player. It never stands alone.
+- **[Decided]** **How a mine becomes abandoned.** There are two ways, and no separate abandonment timer:
+  1. **Its owner stops paying.** If the owning town falls into decline and stops paying its bills, the mine is one of the things it stops paying for. The moment payment stops, the workers quit and repairs stop, and the mine declines on the same schedule as the town. If the town cut the mine off earlier, the mine decays earlier. A homestead or player owner works the same way: when the money for upkeep runs out, repairs stop.
+  2. **The owner chooses to abandon it.** Repairs stop from that moment.
+- **[Decided]** Once repairs stop, the supports gradually fail. Depending on how well supported the mine was, it may cave in completely, or only partly degrade and leave an old abandoned mineshaft behind. A cave-in only refills the workings with rubble. The land above does not sink.
+- **[Open]** Which outcome happens when: full cave-in, partial degradation, or a surviving old shaft (the rule will depend on how much support the mine had and how big its openings are).
 - **[Proposed]** What the collapse does not do: it does not bring ore back (the tonnage taken stays taken), and rubble can be dug out again, so an abandoned mine can be reclaimed at the cost of clearing and re-shoring it. The server tracks each mine's support health as a few numbers (opening size, supports installed, last repaired, owner funded or not) and resolves wear and collapse lazily from timestamps, like regrowth, so it works while nobody is nearby.
 - **[Decided]** When a player's mine does collapse (or is left to), it slowly reverts to its natural state: erosion and water filling it in. A ruin is left on the surface, such as a collapsed entrance, old timbers and spoil heaps, so other players can tell there used to be a mine there. That is a hint that resources may be nearby, though the ore taken is still gone. The ruins fade as the mine fills in.
 - **[Decided]** Mines of dynasties that revert to NPC go to the town to claim (Section 8.6); the town pays for the repairs before allowing a cave-in.
-- **[Open]** The abandonment time (about 6 or 12 game years, now tied to the duress timeline in Section 6), how big an opening needs supports, what kinds of supports there are (timber, stone pillars, masonry arches, later iron), whether a collapse can trap or injure miners inside, and whether natural caves can ever collapse after players dig them wider.
+- **[Open]** How big an opening needs supports, what kinds of supports there are (timber, stone pillars, masonry arches, later iron), whether a collapse can trap or injure miners inside, and whether natural caves can ever collapse after players dig them wider.
 
 ### 11.3 Life in the world
 
@@ -1638,7 +1643,7 @@ Only genuinely open items are listed. Everything decided lives in its own sectio
 41. Hands paid by share, wage or employer's choice (Section 5.2).
 42. Blueprints built all at once or in stages; fire treatment as material or upgrade; wind and weather on fire; who fights fires; ventilation as a simple range effect (Sections 10.1, 10.2).
 43. Whether admin buying splits its daily cap per resource, per seller or per player (Section 8.1).
-44. Resource renewal rates, mine abandonment time, support types and whether collapses hurt miners (Sections 5, 11.2).
+44. Resource renewal rates, how a mine decays when abandoned (full cave-in, partial, or old shaft), support types and whether collapses hurt miners (Sections 5, 11.2).
 45. Gambling and the real-money design (Section 13.8): to be revisited when that work starts. Steam and Workshop as a target.
 46. Who hosts servers and pays for language model calls (Section 8.9).
 47. How NPC rescue works without trivializing death, and the cost of NPC companions (Section 12.2).
