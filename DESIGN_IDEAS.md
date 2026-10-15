@@ -988,8 +988,14 @@ To be fleshed out when the first NPC is designed.
 - **[Proposed]** Volcanic islands drop steeply into deep water, which makes them good for docks. The geology already favors them for ore: copper and gold on arcs, sulfur and gems on hotspot volcanoes (Section 4.9). When ore bodies are placed at bake time, some should sit near outpost-friendly coves so mines and docks pair naturally.
 - **[Proposed]** The generator does not need to bake outpost sites: they can be found at runtime from the tile maps (slope, height, shoreline, water depth), the same way the town planner surveys land. Natural harbors and coves can still be marked as sites at bake time.
 
+- **[Decided]** **The basic outposts for now:** a logging camp, a stone quarry and a mine. A quarry is an open pit worked from the surface; a mine is drilled, with a shaft that goes down into the ground. The full list of outpost types and their rules will be decided later.
+- **[Decided]** **Setting up an outpost.**
+  - The player places an outpost marker and adjusts the area, the same way as placing a blueprint (including the ground check, Section 10.1).
+  - The only prefabricated piece is a small building such as a mining shed. It designates the area. A line marks the border of the outpost, visible in building mode.
+  - Once set up, the owner can hire NPCs to work it, from the existing pool of unemployed NPCs or from newly manufactured ones. They start working the area immediately.
+  - The outpost comes in four sizes: small, medium, large and colossal.
 - **[Decided]** **The size of a settlement limits its outposts.** The bigger the claim, the more outposts it can support, and the bigger they can be. A settlement might support two small outposts (say a logging camp and a quarry); a hamlet four small ones or two medium ones, so the owner can grow a quarry or add a mine. This is a working theory, to be rounded out as it is built.
-- **[Proposed]** **Outpost points (tunable).** Each outpost has a size that costs points from its parent claim's budget. A small outpost costs 1 point (radius about 50 m), a medium one 2 (about 100 m), a large one 4 (about 150 m). Growing an outpost costs the difference in points, plus the real cost of the expansion. The budget grows with the stage:
+- **[Proposed]** **Outpost points (tunable).** Each outpost has one of four sizes: **small, medium, large and colossal**. Its size costs points from its parent claim's budget: small 1 point (radius about 50 m), medium 2 (about 100 m), large 4 (about 150 m), colossal 8 (about 250 m). Growing an outpost costs the difference in points, plus the real cost of the expansion. The budget grows with the stage:
 
   | Parent stage | Outpost points | Example |
   |---|---|---|
@@ -1001,7 +1007,7 @@ To be fleshed out when the first NPC is designed.
   | City | 20 | |
   | Grand city | 32 | |
 
-- **[Proposed]** Some outposts have a minimum size: a logging camp, quarry or fishing dock can be small, but a mine needs at least medium (it needs room for supports and a hoist), and a large mine needs a large outpost. A watchtower or pigeon coop is always small.
+- **[Proposed]** A watchtower or pigeon coop is always small. Other minimum sizes will be decided with each outpost type.
 - **[Proposed]** Outposts may sit outside the parent's circle of influence, even on another island, and still count against the parent's budget. Each outpost needs guards and upkeep paid by its parent, so the budget is a money limit as well as a points limit. A town never drops a stage: it keeps its stage (a city stays a city) and falls into ruin instead (Section 8.13). Its outposts stop being paid and decline with it, as the mine rule describes (Section 11.2).
 - **[Proposed]** Homesteads and individual players who own outposts directly get a small fixed budget (suggestion: 2 points), not tied to a ladder.
 - **[Open]** The exact point values and budgets, the list of outpost types and their minimum sizes.
@@ -1242,7 +1248,7 @@ To be fleshed out when the first NPC is designed.
 | City to grand city | 5,000 | 400 |
 
 - **[Proposed]** Population figures are guides, not caps. The NPC population cap per island and region (Section 8.2) and the language model budget (Section 3) limit the NPC share. The player share of a grand city is the thousand-strong guild case.
-- **[Proposed]** An outpost has a fixed small radius, about 100 m, and reserves only that.
+- **[Decided]** An outpost reserves only its own area, whose size depends on its size class (Section 8.10).
 
 - **[Decided]** A town has a **circle of influence** around its marker.
 - **[Idea]** The planner prefers rings, working outward from the centre:
