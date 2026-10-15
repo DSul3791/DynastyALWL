@@ -14,6 +14,7 @@ This list records what changed and when. Later entries override earlier ones, an
 - **Version 6 (2026-10-12, night):** minimum hardware target (older quad-core, 8 GB RAM, SATA SSD); the 15 to 16 hour tile bake and a proposal to bake 2D maps and generate voxels at runtime, with a table of what is baked, what the server works out and what the client does; language service hosting and scaling; NPC backgrounds, memory, honesty and conversation traits; a tile size of 15 by 15 regions (15.36 km) and a comparison with Atlas; a world-first sketch where islands come from ocean-floor features; a danger map; an islands-first tile pipeline; geology stored as a feature list with ore placed by how deposits really form; surveying skill and prospecting clues; the surveyor's book; a massive pre-planned world, an arid equator on the origin row and three climate zones with transition rows; tile downloads and the client tile cache; a developer-built starter town (replacing "no starting towns"); natural animal behavior; rarer flotsam; several starter tiles; a full-size world filled with placeholder ocean tiles; a matrix of tile specifications; a recommendation to start with voxel streaming; a square final world (proposed 21 by 21); polar sea ice; years of travel; the admin town warehouse; the town founding sequence from town block to planner, builders, roads and buildings; admin warehouse access, NPC production limits and worthless starter items; the 21 by 21 world confirmed; eight temperate starter tiles in an inner and an outer set; cool desert dugouts; and a pointer to the draft world format specification.
 - **Version 7 (2026-10-14):** the generator work through climate, geology and ore, and natural caves (steps 10 to 12); the resource list (gems, marble, chalk, flint, alum, bitumen, graphite, bog iron, saltpeter) and the rule that every resource needs a use; renewable, semi-renewable and non-renewable resources; mine stability; quality tiers; reputation as personal and per viewer; admin town buying; duress, receivership and takeover; notifications; the free-to-play model; children, dynasty transfer, adoption and inclusion; the temple; town spirit and local weather; town decline, rubble and abandoned towns; contesting town claims; managers, remote control and in-world mail; the ultimate island; remains of the dead; resource passes and edge matching.
 - **Version 8 (2026-10-14, cleanup):** removed superseded rules; unlabeled times are game time and real-time items are labeled (Section 7.1); succession and inheritance regrouped (Section 6.7); PvP zones are lawless; abandoned-town paths clarified; the wear rule with minimum integrity (Section 8.13); mine supports and abandonment (Section 11.2); the settlement ladder from camp to grand city, one camp at a time, and outpost sizes and points (Sections 8.10, 8.17); the seven-day remains timeline and the wizard retrieval service (Section 6.1); friends groups (Section 6.13); Section 15 reduced to open items only.
+- **Version 9 (2026-10-15, audit passes):** homestead (a private home that starts as a tent and grows into estates and keeps, separate from the town ladder); abandoned homes (two game months unpaid, notice after the first; buyer chooses furnished or empty); no extra risk for being offline; who can raid whom (NPCs everywhere, players only in PvP zones); receivership of 14 real days; the temple (town owner builds one, a second at city stage); dropped items follow the remains timeline; roaming scavengers; role-weighted NPC rolls with variance; `DESIGN_REJECTED.md` started.
 
 ## How to read this document
 
@@ -25,6 +26,8 @@ Every item carries a status tag.
 - **[Open]** A question that has not been answered yet. Section 15 collects them.
 
 When something is both a decision and a question, the decision is recorded in its section and the unresolved part appears in Section 15.
+
+Ideas the project owner has turned down are kept in `DESIGN_REJECTED.md`, with reasons. Check it before proposing something new.
 
 ---
 
@@ -564,12 +567,13 @@ Question from the project owner: do we have all the building blocks, with a safe
 - **[Decided]** The moment protection is bought or applied from the account, all current duress is erased.
 - **[Proposed]** The per-real-month price is set by the market analysis (Section 13.8). Phone app stores generally require their own in-app purchase system for digital goods and take a fee, and the whole system should work without real money until then. Players can also buy a block directly from the web page instead of keeping a balance. A balance of real money, with purchases and refunds, is stored value, so check payment and consumer rules by country before building it, and decide whether unused balance can be refunded.
 
-#### Open items
-
-- **[Open]** What happens when several players apply for the same dynasty, whether the money is held (escrowed) from the time of application, whether a failed payment at the end date passes the offer to the next applicant, and the final prices for blocks. (A free vacation notice was decided against; notification channels are set above.)
 - **[Decided]** **No extra risk for being offline.** Logging off adds no hidden penalty. Family members and buildings are lost only through the normal causes (sickness, age, fire, raids, wear), and being away matters only through duress and the wear rule (Section 8.13).
 - **[Decided]** **Who can raid whom.** NPC threats (bandits, monsters and so on) can hit anyone, anywhere. Players can raid other players only inside PvP zones (Section 9.0).
 - **[Decided]** **Dropped items follow the remains timeline** (Section 6.1, Remains): freely takeable on day one, decaying over the week, and gone by day eight. Items in hard-to-reach places follow the same timeline.
+
+#### Open items
+
+- **[Open]** What happens when several players apply for the same dynasty, whether the money is held (escrowed) from the time of application, whether a failed payment at the end date passes the offer to the next applicant, and the final prices for blocks. (A free vacation notice was decided against; notification channels are set above.)
 - **[Open]** Whether other players and NPCs can rob or finish a downed character. The suggested answer is that outside PvP zones it is a crime handled by the legal system (Section 9), not a blocked action; inside PvP zones there is no protection (Section 9.0).
 
 ### 6.2 What an heir inherits
@@ -1731,40 +1735,43 @@ Only genuinely open items are listed. Everything decided lives in its own sectio
 18. How dangerous night is compared with day (Section 7.5).
 19. Duress details: refund rules for a real-money balance, what a player gets back after their dynasty became NPCs, which events are urgent and which weekly, and payment handling (Sections 6.1, 13.8). The protection price comes from a market analysis.
 20. What happens when several players apply for the same dynasty in receivership, and whether money is held in escrow (Section 6.1).
+21. Whether other players and NPCs can rob or finish a downed character. Suggestion: outside PvP zones it is a crime, not a blocked action (Sections 6.1, 9.0).
 
 **Towns and claims**
 
-21. The name "grand city" for the top stage is a placeholder. The top stage name "grand city" is a placeholder; alternatives are capital or great city.
-22. The shape of the presence zone, how strong guards must be, what the manager can decide automatically, and whether a weekly player with no group member is treated fairly after 48 real hours away (Sections 8.14, 8.15).
-23. What the town and the owner lose when ownership changes, and whether walls add anything (Section 8.14).
-24. Price formula for server-owned towns, how competing applicants are handled, and what the good-faith judgment looks at (Section 8.16).
-25. Stay-score numbers for NPCs leaving a declining town, decay stage names, collapse thresholds, administrator vote size, and what happens to records at deletion (Section 8.13). Whether a claimed ruin starts with the old spirit or a fresh low one.
-26. Temple cost (Section 8.11); waits for the money scale.
-27. Bridges: maximum span and depth, kinds, and who maintains NPC dirt roads (Section 8.17). Ring layout: rules or planner preferences, and whether the owner can override (Section 8.17).
-28. Marker hoarding: the one-camp-at-a-time rule limits it; still open is the cost or upkeep of a marker and when a reservation is released (Section 8.17).
-29. Expansion and building prices wait for the money scale (below). Whether the first ten buildings are the right ten (Section 8.19).
-30. Wizard tower cost, research, defence strength and limits; cost of sending word and the delay formula (Section 8.15).
+22. The name "grand city" for the top stage is a placeholder. The top stage name "grand city" is a placeholder; alternatives are capital or great city.
+23. The shape of the presence zone, how strong guards must be, what the manager can decide automatically, and whether a weekly player with no group member is treated fairly after 48 real hours away (Sections 8.14, 8.15).
+24. What the town and the owner lose when ownership changes, and whether walls add anything (Section 8.14).
+25. Price formula for server-owned towns, how competing applicants are handled, and what the good-faith judgment looks at (Section 8.16).
+26. Stay-score numbers for NPCs leaving a declining town, decay stage names, collapse thresholds, administrator vote size, and what happens to records at deletion (Section 8.13). Whether a claimed ruin starts with the old spirit or a fresh low one.
+27. Temple cost (Section 8.11); waits for the money scale.
+28. Homestead details: size, growth stages (house, estate, keep or castle), whether it uses the camp slot, and its outpost budget (Section 8.17).
+29. NPC role templates (weights and variance per role, including scavengers) as the roles are built (Section 8.2).
+30. Bridges: maximum span and depth, kinds, and who maintains NPC dirt roads (Section 8.17). Ring layout: rules or planner preferences, and whether the owner can override (Section 8.17).
+31. Marker hoarding: the one-camp-at-a-time rule limits it; still open is the cost or upkeep of a marker and when a reservation is released (Section 8.17).
+32. Expansion and building prices wait for the money scale (below). Whether the first ten buildings are the right ten (Section 8.19).
+33. Wizard tower cost, research, defence strength and limits; cost of sending word and the delay formula (Section 8.15).
 
 **Law, threats and PvP**
 
-31. Locks and security as soft barriers, how far justice and news spread, and whether NPCs can cross the ocean (Sections 9.1, 13.6).
-32. Fixed lairs, roaming groups or both, and whether a ruined town can become a bandit stronghold (Section 12).
-33. PvP: the cost of dying in a zone, how zones relate to war between towns, and which parts of the map get zones first (Section 9.0).
-34. Danger tiers players see, and whether the curves need tuning once creatures exist (Section 4.13).
+34. Locks and security as soft barriers, how far justice and news spread, and whether NPCs can cross the ocean (Sections 9.1, 13.6).
+35. Fixed lairs, roaming groups or both, and whether a ruined town can become a bandit stronghold (Section 12).
+36. PvP: the cost of dying in a zone, how zones relate to war between towns, and which parts of the map get zones first (Section 9.0).
+37. Danger tiers players see, and whether the curves need tuning once creatures exist (Section 4.13).
 
 **Economy and production**
 
-35. **Money scale.** Money has no anchor yet. Later: balance the value of time spent harvesting, fishing and building against prices, set starter numbers, and rebalance constantly (Section 13).
-36. Player resident rights, number of tax levers, order forms versus conversation, one business structure for every workplace (Sections 8.5, 13.4).
-37. Hands paid by share, wage or employer's choice (Section 5.2).
-38. Blueprints built all at once or in stages; fire treatment as material or upgrade; wind and weather on fire; who fights fires; ventilation as a simple range effect (Sections 10.1, 10.2).
-39. Whether admin buying splits its daily cap per resource, per seller or per player (Section 8.1).
-40. Resource renewal rates, how a mine decays when abandoned (full cave-in, partial, or old shaft), support types and whether collapses hurt miners (Sections 5, 11.2).
-41. Gambling and the real-money design (Section 13.8): to be revisited when that work starts. Steam and Workshop as a target.
-42. Who hosts servers and pays for language model calls (Section 8.9).
-43. How NPC rescue works without trivializing death, and the cost of NPC companions (Section 12.2).
-44. Land-suitability layers in the bake for the town planner, and whether plans can run unattended (Section 8.4).
-45. Factions and guilds between groups: none yet; friends groups, towns and parties exist (Section 6.13).
+38. **Money scale.** Money has no anchor yet. Later: balance the value of time spent harvesting, fishing and building against prices, set starter numbers, and rebalance constantly (Section 13).
+39. Player resident rights, number of tax levers, order forms versus conversation, one business structure for every workplace (Sections 8.5, 13.4).
+40. Hands paid by share, wage or employer's choice (Section 5.2).
+41. Blueprints built all at once or in stages; fire treatment as material or upgrade; wind and weather on fire; who fights fires; ventilation as a simple range effect (Sections 10.1, 10.2).
+42. Whether admin buying splits its daily cap per resource, per seller or per player (Section 8.1).
+43. Resource renewal rates, how a mine decays when abandoned (full cave-in, partial, or old shaft), support types and whether collapses hurt miners (Sections 5, 11.2).
+44. Gambling and the real-money design (Section 13.8): to be revisited when that work starts. Steam and Workshop as a target.
+45. Who hosts servers and pays for language model calls (Section 8.9).
+46. How NPC rescue works without trivializing death, and the cost of NPC companions (Section 12.2).
+47. Land-suitability layers in the bake for the town planner, and whether plans can run unattended (Section 8.4).
+48. Factions and guilds between groups: none yet; friends groups, towns and parties exist (Section 6.13).
 
 ---
 
