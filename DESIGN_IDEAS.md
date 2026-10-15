@@ -68,7 +68,7 @@ A persistent, rough-medieval, multiplayer online world: a survival, exploration 
 - **Game time and real time:** unlabeled times are game time; "real" is written out where a rule is tied to the player's life (Section 7.1). A **game month** is about 30 real hours; a **real month** is calendar time.
 - **Established town:** a camp with two guards, or a larger claim with a manager building, a guard building and the first guard wages paid (Section 8.18). Established towns are PvE except inside PvP zones.
 - **Spirit:** a town's mood, 0 to 100 (Section 8.12).
-- **Settlement ladder:** the stages of a claim and the radius of its circle of influence: camp 200 m, settlement 300, village 450, town 675, city 1,000, grand city 1,500 (Section 8.17). A new claim starts as a **camp**.
+- **Settlement ladder:** the stages of a claim and the radius of its circle of influence: camp 150 m, settlement 200, hamlet 300, village 450, town 675, city 1,000, grand city 1,500 (Section 8.17). A new claim starts as a **camp**. Only a hamlet and above has homes and villagers.
 - **Duress:** stress on a neglected dynasty, 10 percent for each full real month away (Section 6.1).
 - **Baked** data is produced once by the generator and never changes. **Server layer** data is what players and NPCs change while the game runs.
 
@@ -1184,26 +1184,30 @@ To be fleshed out when the first NPC is designed.
 
 - **[Decided]** The town block is a marker with no physical form: a floating arrow only the owner can see, which the owner can switch on and off. It adds an entry to the owner's ledger saying they own a claim. It marks the exact centre of the town.
 - **[Decided]** Until an office building is placed (a keep or castle with an office, a house with an office, a town hall or a magistrate's office), the owner cannot reach the town settings. The building is where the town manager lives and works.
-- **[Decided]** **Towns cannot overlap, so the land is reserved up front.** Claims come in stages (camp, settlement, village, town, city, grand city). A list gives the physical size of each, and the largest, a grand city, is the maximum a claim can grow to. Placing a town marker reserves land from the marker out to the size of a grand city, so nobody can place a marker anywhere that its own maximum city would overlap another town's. The aim is that one person can build a town into a giant city with a castle, thriving businesses and a guild of a thousand real players.
+- **[Decided]** **Towns cannot overlap, so the land is reserved up front.** Claims come in stages (camp, settlement, hamlet, village, town, city, grand city). A list gives the physical size of each, and the largest, a grand city, is the maximum a claim can grow to. Placing a town marker reserves land from the marker out to the size of a grand city, so nobody can place a marker anywhere that its own maximum city would overlap another town's. The aim is that one person can build a town into a giant city with a castle, thriving businesses and a guild of a thousand real players.
 - **[Proposed]** The minimum distance between two markers is then twice the grand-city radius R. The settlement ladder below puts R at 1.5 km.
 - **[Proposed]** **The settlement ladder.** A new claim is a **camp**: a marker and a tent. Each paid expansion grows it by 50 percent in radius (or 25 percent for a smaller step), and the size names follow. Radius includes the surrounding farmland, since the circle runs out to the farms.
 
 | Stage | Radius | Area | Rough population (NPCs and players) |
 |---|---|---|---|
-| Camp (a new claim) | 200 m | 0.13 km² | up to 25 |
-| Settlement | 300 m | 0.28 km² | 25 to 100 |
+| Camp (a new claim) | 150 m | 0.07 km² | the player and guards |
+| Settlement (preparing the ground) | 200 m | 0.13 km² | up to 10, builders and guards, no homes yet |
+| Hamlet (first homes and villagers) | 300 m | 0.28 km² | 10 to 100 |
 | Village | 450 m | 0.64 km² | 100 to 400 |
 | Town | 675 m | 1.4 km² | 400 to 1,500 |
 | City | 1,000 m | 3.1 km² | 1,500 to 5,000 |
 | Grand city (the maximum) | 1,500 m | 7.1 km² | 5,000 to 15,000 |
 
 - **[Proposed]** The reservation (above) is a grand city: radius 1,500 m, so two markers must be at least 3 km apart, and every marker reserves about 7 km² even while it is still a camp. A 50 km² starter landmass then holds roughly 5 to 7 towns, and a 100 km² landmass roughly 12.
+- **[Decided]** **One camp at a time.** A dynasty can hold only one claim below the hamlet stage. While you have a camp or a settlement, you cannot place another camp. You must first build it up to a hamlet, the stage where it has homes and villagers. Only then may you go exploring and place a second camp.
+  - The camp is the tent. The settlement is the introductory stage where you prepare the ground for a liveable place. At the hamlet stage it actually has homes and villagers.
+- **[Proposed]** Details to work out later: if a camp or settlement is let go, lost or abandoned, the player may place a new one; buying an existing town is not limited by this rule; a hamlet that falls back below the hamlet stage does not stop the player keeping their other claims. This also limits marker hoarding (Section 15).
 - **[Proposed]** Moving up a stage needs the paid expansion plus a floor of buildings and population, so a stage name means something. "Established" status (Section 8.18) does not depend on the stage: a camp with two guards is already established.
 - **[Decided]** **An expansion costs what it really costs, and the money does not vanish into the server's coffers.** The cost of a step is the materials and labor the expansion needs: more builders, more guards, more supplies, and wages for the people at the stonemason, the lumber mill and the rope making. It includes a new, bigger and stronger wall, for example palisade logs, then stonework, and spike walls outside the palisade.
 - **[Decided]** **Costs are worked out from what the work takes.** Over time we calculate each expansion's cost from the materials it needs and the pay of the people who do it. Each stage must be priced with the next step in mind: once the expansion is done, the first building wanted next costs a certain amount, and the town needs the money to buy it, so that building can earn the money for the one after.
 - **[Proposed]** **How to price a stage (tunable).**
   - Each stage has a plan: the new wall ring, new roads, the required buildings and the extra guards. The planner turns it into a bill of materials and a labor estimate. The gold price is that bill times the market prices, so it is calculated and not typed in.
-  - Wall type grows with the stage: no wall for a camp (a tent), palisade for a settlement, palisade with a ditch and outer spikes for a village, stone for a town and a city, stone with towers for a grand city.
+  - Wall type grows with the stage: no wall for a camp (a tent), palisade for a settlement and hamlet, palisade with a ditch and outer spikes for a village, stone for a town and a city, stone with towers for a grand city.
   - The old wall is taken down and salvaged by its condition. A wall in good shape keeps all of its wood and all of its stone when it is taken down, so the next wall costs only the new material. The loss of up to about 50 percent applies only to degraded wood, such as in rubble (Section 8.13).
   - A longer wall needs more guards: at least one guard for each 100 m of wall plus the one per 25 residents already proposed, whichever is larger.
   - **Balance test:** a stage is priced correctly when the town's net income at that stage repays the expansion in 1 to 2 game years (15 to 30 real days). If it takes longer, the stage is too expensive. If it pays back in days, it is too cheap.
@@ -1211,8 +1215,9 @@ To be fleshed out when the first NPC is designed.
 
 | Step | Residents | Buildings |
 |---|---|---|
-| Camp to settlement | 25 | the first ten, built |
-| Settlement to village | 100 | 25, including blacksmith, granary and mill, and healer |
+| Camp to settlement | none | a town manager building and a guard building, wages paid |
+| Settlement to hamlet | 10 | the first ten, built, including homes |
+| Hamlet to village | 100 | 25, including blacksmith, granary and mill, and healer |
 | Village to town | 400 | 60, including a market hall and a second well |
 | Town to city | 1,500 | 150, including a harbour or a major road hub |
 | City to grand city | 5,000 | 400 |
@@ -1648,7 +1653,7 @@ Only genuinely open items are listed. Everything decided lives in its own sectio
 27. Stay-score numbers for NPCs leaving a declining town, decay stage names, collapse thresholds, administrator vote size, and what happens to records at deletion (Section 8.13). Whether a claimed ruin starts with the old spirit or a fresh low one.
 28. Temple: who builds it, cost, how many per town (Section 8.11).
 29. Bridges: maximum span and depth, kinds, and who maintains NPC dirt roads (Section 8.17). Ring layout: rules or planner preferences, and whether the owner can override (Section 8.17).
-30. Marker hoarding: the cost or upkeep of a marker and when a reservation is released (Section 8.17).
+30. Marker hoarding: the one-camp-at-a-time rule limits it; still open is the cost or upkeep of a marker and when a reservation is released (Section 8.17).
 31. Expansion and building prices wait for the money scale (below). Whether the first ten buildings are the right ten (Section 8.19).
 32. Wizard tower cost, research, defence strength and limits; cost of sending word and the delay formula (Section 8.15).
 
