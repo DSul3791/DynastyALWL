@@ -124,7 +124,7 @@ static func render_biomes(height, climate, tables, water = null) -> Image:
 const ROCK_COLORS := {
 	"sediment": Color(0.80, 0.72, 0.55), "shale": Color(0.42, 0.45, 0.50), "limestone": Color(0.82, 0.82, 0.76),
 	"coal": Color(0.12, 0.12, 0.12), "granite": Color(0.86, 0.58, 0.58), "slate": Color(0.32, 0.36, 0.46),
-	"basalt": Color(0.22, 0.20, 0.22), "sandstone": Color(0.86, 0.66, 0.40), "marble": Color(0.98, 0.98, 1.0), "chalk": Color(0.95, 0.95, 0.85),
+	"basalt": Color(0.22, 0.20, 0.22), "sandstone": Color(0.86, 0.66, 0.40), "marble": Color(0.98, 0.98, 1.0), "chalk": Color(0.95, 0.95, 0.85), "tuff": Color(0.74, 0.62, 0.52),
 }
 
 const RESOURCE_COLORS := {

@@ -333,7 +333,7 @@ Question from the project owner: do we have all the building blocks, with a safe
 |---|---|---|---|
 | Fireclay | Layer under coal seams | Furnace bricks and linings, middle-tier crucibles between clay and graphite (Section 5) | No, can be a pass |
 | Obsidian | Lens at volcanic vents and old lava flows | Early blades and arrowheads, a trade good | No, can be a pass |
-| Tuff | Volcanic province layers | Easy-to-cut stone for dugouts and cave dwellings (desert and cold regions, Section 4.5) | Yes if it should fill whole layers; no if it is small lenses |
+| Tuff | Volcanic province layers | Easy-to-cut stone for dugouts and cave dwellings (desert and cold regions, Section 4.5) | **Done (2026-10-14).** Rock ID 11; a 40 to 200 m layer on top of the basalt in volcanic provinces |
 | Amber, jet | Amber in basins with coal forests; jet in coal seams | Jewellery, trade | No, can be a pass |
 | Ochre (iron earth), lapis lazuli, malachite and azurite | Weathered iron caps; marble contacts; copper oxidation zones | Pigments and dyes for paint, banners and cloth | No, when the dye system exists |
 | Cinnabar (mercury), arsenic minerals | Hot-spring and volcanic zones | Mercury for gold amalgam, pigment, poison | No, later |

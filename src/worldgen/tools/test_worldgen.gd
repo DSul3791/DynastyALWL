@@ -336,6 +336,15 @@ func _test_tables() -> void:
 	# IDs must match the ones the existing generator already uses.
 	_check(tables.id_of("rocks", "granite") == GeologyIds.GRANITE, "granite ID")
 	_check(tables.id_of("rocks", "coal") == GeologyIds.COAL, "coal rock ID")
+	_check(tables.id_of("rocks", "tuff") == 11, "tuff rock ID is 11")
+	var rules_errors: Array = []
+	var geology_rules: Dictionary = TileHeightScript.load_rules("res://worlds/base_world/plan/tile_rules.json", rules_errors)
+	var volcanic_layers: Array = geology_rules["geology"]["stacks"]["volcanic"]["layers"] if geology_rules.has("geology") else []
+	var has_tuff_layer: bool = false
+	for layer in volcanic_layers:
+		if str(layer[0]) == "tuff":
+			has_tuff_layer = true
+	_check(has_tuff_layer, "volcanic rock stack has a tuff layer")
 	_check(tables.id_of("resources", "tin") == ResourceIds.TIN, "tin ID")
 	_check(tables.id_of("resources", "gemstone") == ResourceIds.GEMSTONE, "gem ID")
 	_check(tables.id_of("resources", "peat") == ResourceIds.PEAT, "peat ID")

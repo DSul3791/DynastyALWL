@@ -267,6 +267,11 @@
 			"volcanic": {
 				"layers": [
 					[
+						"tuff",
+						40,
+						200
+					],
+					[
 						"basalt",
 						150,
 						500

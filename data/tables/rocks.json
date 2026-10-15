@@ -2,7 +2,7 @@
 	"table": "rocks",
 	"format_version": 1,
 	"note": "IDs are append-only. Never renumber or reuse an ID; retire an entry with \"retired\": true and take the next ID from next_id for new entries.",
-	"next_id": 11,
+	"next_id": 12,
 	"entries": [
 		{
 			"id": 0,
@@ -69,6 +69,12 @@
 			"name": "chalk",
 			"display": "Chalk",
 			"family": "sedimentary"
+		},
+		{
+			"id": 11,
+			"name": "tuff",
+			"display": "Tuff",
+			"family": "igneous"
 		}
 	]
 }
