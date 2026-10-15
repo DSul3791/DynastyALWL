@@ -758,19 +758,19 @@ Question from the project owner: do we have all the building blocks, with a safe
 
 ---
 
-### 6.13 Groups: parties, towns and player groups
+### 6.13 Groups: parties, towns and friends groups
 
 There are three kinds of group, from the shortest-lived to the longest-lived. None of them puts people in the same dynasty.
 
 - **[Decided]** **Adventuring party.** A group that goes out and agrees to adventure together, with a party leader. It is temporary. Party mates are the first layer of rescue (Section 6.5), and the leader can have the wizard retrieve the NPC members' gear (Section 6.1).
 - **[Decided]** **Town affiliation.** A resident of a town is a member of that town's group, and the town owner sets its rules (Section 8.6).
-- **[Decided]** **Player group (above the dynasty).** A level of group above the dynasty, where friends join so they can find each other and play together. Joining does not put anyone in the same dynasty. For example, two friends each keep their own dynasty and are both in the same group. The group allows members to:
+- **[Decided]** **Friends group (above the dynasty).** A level of group above the dynasty, where friends join so they can find each other and play together. Joining does not put anyone in the same dynasty. For example, two friends each keep their own dynasty and are both in the same group. The group allows members to:
   - see each other on the map;
   - communicate;
   - share permissions, such as letting a friend work in or control one of their towns, for example as a town overseer (Section 8.6).
 - **[Decided]** Members of the owner's group count as the owner's presence for the claim timer (Section 8.14): a member inside the zone stops the countdown.
-- **[Proposed]** Details (tunable): a person belongs to one player group at a time; invitations are accepted by the invited person; a group has a leader (or a few) who can invite and remove members; membership suggestion is up to 50 people. Permissions are granted by the owner, per town and per role, and can be taken back at any time. Groups share nothing else by default: no money, no reputation (reputation belongs to the person) and no inheritance. A shared treasury may come later.
-- **[Proposed]** Name: **company** (as in a trading or adventuring company) fits the medieval setting. Other options: fellowship, league, circle.
+- **[Proposed]** Details (tunable): a person belongs to one friends group at a time; invitations are accepted by the invited person; a group has a leader (or a few) who can invite and remove members; membership suggestion is up to 50 people. Permissions are granted by the owner, per town and per role, and can be taken back at any time. Groups share nothing else by default: no money, no reputation (reputation belongs to the person) and no inheritance. A shared treasury may come later.
+- **[Decided]** Name: the **friends group**. Plain and clear. (Company, fellowship, league and circle were considered.)
 - **[Open]** Politics between groups (the factions and guild ideas) and what a group's leader can do beyond inviting and removing members.
 
 ## 7. World time
@@ -1188,7 +1188,7 @@ To be fleshed out when the first NPC is designed.
   - The zone that counts for presence is the town's current circle of influence (200 m for a new claim), not the whole reserved area, otherwise someone 1.4 km away would hold the claim.
   - Guards: at least 2, and 1 per 25 residents as the town grows. If the coffers cannot pay, the guards give notice for one game month (about 30 real hours, so a game-time rule) before leaving. Protection ends when they leave, and the timers can start.
 - **[Decided]** **No extra grace for new claims.** Every claim, new or old, has the same two rounds of 24-real-hour protection: 48 real hours to get back inside the claim. A player who places a marker must log back in within two real days. Before placing a claim, a player should earn enough money by trading at the starter town or another town to buy the claim, build the town manager building and the guard building, and pay the guards' first wages.
-  - The shape of the zone is not settled. The group is the player group of Section 6.13.
+  - The shape of the zone is not settled. The group is the friends group of Section 6.13.
 - **[Decided]** When a hostile takeover succeeds, the challenger pays the previous owner a fixed amount based on the town's value (or its rubble if it is a ruin).
 - **[Proposed]** The price is the rubble value of the buildings (the bill of materials minus degradation) plus the unpaid wages and debts the new owner takes on. The server works it out from the town ledger, with no negotiation.
 - **[Decided]** A town that does nothing productive but still has a manager, clean water, a temple and guards is an expense on the owner's other towns or dynasty, so hoarding idle towns costs money.
@@ -1702,7 +1702,7 @@ Only genuinely open items are listed. Everything decided lives in its own sectio
 
 **Towns and claims**
 
-23. Name of the player group (Section 6.13; "company" suggested). The top stage name "grand city" is a placeholder; alternatives are capital or great city.
+23. The name "grand city" for the top stage is a placeholder. The top stage name "grand city" is a placeholder; alternatives are capital or great city.
 24. The shape of the presence zone, how strong guards must be, what the manager can decide automatically, and whether a weekly player with no group member is treated fairly after 48 real hours away (Sections 8.14, 8.15).
 25. What the town and the owner lose when ownership changes, and whether walls add anything (Section 8.14).
 26. Price formula for server-owned towns, how competing applicants are handled, and what the good-faith judgment looks at (Section 8.16).
@@ -1733,7 +1733,7 @@ Only genuinely open items are listed. Everything decided lives in its own sectio
 46. Who hosts servers and pays for language model calls (Section 8.9).
 47. How NPC rescue works without trivializing death, and the cost of NPC companions (Section 12.2).
 48. Land-suitability layers in the bake for the town planner, and whether plans can run unattended (Section 8.4).
-49. Factions and guilds between groups: none yet; player groups, towns and parties exist (Section 6.13).
+49. Factions and guilds between groups: none yet; friends groups, towns and parties exist (Section 6.13).
 50. How long before a vacated home is abandoned, and what happens to its contents (Section 8.6).
 
 ---
