@@ -1199,6 +1199,7 @@ To be fleshed out when the first NPC is designed.
 | Grand city (the maximum) | 1,500 m | 7.1 km² | 5,000 to 15,000 |
 
 - **[Proposed]** The reservation (above) is a grand city: radius 1,500 m, so two markers must be at least 3 km apart, and every marker reserves about 7 km² even while it is still a camp. A 50 km² starter landmass then holds roughly 5 to 7 towns, and a 100 km² landmass roughly 12.
+- **[Decided]** **The ladder sizes stand for now.** For scale, medieval London inside its walls was about 1.3 km², so a 1,000 m city is already large. Doubling every radius would cut the towns on a 50 km² island from about 5 to 7 down to 1 or 2. The sizes can be adjusted later, ideally with one scale setting for the whole ladder.
 - **[Decided]** **One camp at a time.** A dynasty can hold only one claim below the hamlet stage. While you have a camp or a settlement, you cannot place another camp. You must first build it up to a hamlet, the stage where it has homes and villagers. Only then may you go exploring and place a second camp.
   - The camp is the tent. The settlement is the introductory stage where you prepare the ground for a liveable place. At the hamlet stage it actually has homes and villagers.
 - **[Proposed]** Details to work out later: if a camp or settlement is let go, lost or abandoned, the player may place a new one; buying an existing town is not limited by this rule; a hamlet that falls back below the hamlet stage does not stop the player keeping their other claims. This also limits marker hoarding (Section 15).
