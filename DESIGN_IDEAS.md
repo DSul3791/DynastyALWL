@@ -201,7 +201,7 @@ Note: climate depends only on position, so each tile can compute it without look
   - Very rare, worth recording as a discovery: sunsilver vine (gilding dye), frostglass orchid (stops decay), sevenyear lily (flowers once every 7 game years, longevity), stillwater lotus (lake lotus, prophecy).
   - Legendary, a few per tile: gloaming star (blooms only at dusk, luck), everember (tree with ember leaves, revival), witness tree (giant tree whose bark shows the past), tidecrown (shore reed that grows pearls, water breathing).
 - **[Decided]** (owner, 2026-10-16) **Discoveries.** A very rare or legendary plant is a discovery: the finder can record it in their journal (Section 6.15), name it, and then guard it (claim the land around it as an outpost, Section 8.17), harvest it in secret, or sell the secret (a map or journal page, or a tip to a library or herbalist). Rarity is placement density only for now; time of day (`time_of_day`), discovery and the seven-year bloom are data that later systems will read.
-- **[Open]** How deep gathering and crafting chains go.
+- **[Decided]** How deep gathering and crafting go: an easy floor and a deep ceiling (Section 5.3).
 - **[Proposed] Built (2026-10-16).** The flora table now has 83 species, 55 of them added for gathering: berries (blueberry, lingonberry, cranberry, cloudberry, wild strawberry, raspberry, crowberry, elder, rowan, rose hips, sloes, haws, sea buckthorn), fruit and nut trees (crab apple, wild pear, wild cherry, sweet chestnut, walnut), kitchen herbs and greens (wild garlic, thyme, water mint, sorrel, dandelion, wild carrot, watercress, samphire, marjoram, sage, rosemary, lavender), healing herbs (yarrow, plantain, chamomile, comfrey, St John's wort, valerian, meadowsweet, feverfew, burdock, mugwort, arnica, angelica, aloe), poisons and potion reagents (foxglove, deadly nightshade, wolfsbane, henbane, fly agaric), mushrooms (chanterelle, porcini, morel, puffball, tinder fungus) and warm-climate food plants (wild banana, date palm, prickly pear). Each species lists its yields, season, rarity, uses (food, sauce, tea, brewing, medicine, ointment, potion, poison, dye and so on) and properties (wound healing, fever, sleep, toxic and so on) for the gathering and crafting tables to come. A 1 km square of the starter tile holds 55 species. Fantasy (Dungeons and Dragons style) herbs can be added to the same table later.
 - **[Proposed]** Seasons are data only for now: plants are always placed, and the season says when their yield can be gathered. Using it waits for the world calendar.
 - **[Proposed]** Climate and soil should also be queryable at runtime from the same function the generator uses, so the server and generator never disagree. This matters for farming.
@@ -487,6 +487,31 @@ Question from the project owner: do we have all the building blocks, with a safe
 - **[Proposed]** A hand low in lawfulness might skim, using the theft and provenance systems.
 - **[Proposed]** Balance rule: the hands' cut must leave an absent player's modest farm earning more than its taxes and upkeep.
 - **[Open]** Whether hands are paid a share of the harvest (sharecropping), a fixed wage, or the employer's choice.
+
+### 5.3 Crafting
+
+The owner approved the direction of the crafting proposal deck ("How Deep Should Crafting Go", 2026-10-16) as an easy floor and a deep ceiling. The details below are from that deck; numbers are tunable.
+
+- **[Decided]** Crafting should be fun, never a chore: simple things become simple tools easily, without being swamped by things to craft (owner).
+- **[Decided]** **Four depths, each a choice and never a gate:** hand (anywhere, seconds: torch, rope, stone knife, poultice), camp bench (fits a tent or wagon, so nomadic households are never shut out: bow, wooden tools, stew, herbal tea, snares), workshop (the existing work buildings: smithy, apothecary, kitchen), and master work (skill plus rare finds: heartroot revival draught, hearthwood, a named blade).
+- **[Decided]** **Hand-craft rule:** at most two ingredients, no station, a few seconds, known from day one or learned by picking the thing up. Hand-made items are crude: useful, but a bench-made or bought one is better.
+- **[Decided]** Everything can be bought, commissioned or hired out (do it yourself or hire it out). Chains are about three steps (gather, prepare, make, then refine for masters), and any step can be bought instead.
+- **[Decided]** Crafting pays: making it yourself costs about 35 to 50 percent of the shop price, hiring about 60 to 75 percent, buying 100 percent (tunable). Wear and maintenance keep crafters in demand.
+- **[Decided]** Specialist paths, starting with smith, herbalist, cook and brewer, carpenter, tailor and tanner, and mason; anyone can dabble in all of them.
+- **[Decided]** Mastery rewards: better quality within a tier, a maker's mark and reputation that spread with the news, secret recipes found by experiment and kept in the journal (sold or guarded, like discoveries), and a family trade taught to children and apprentices.
+- **[Decided]** Recipes: the basics are known, the rest discovered (deck recommendation, approved with the direction).
+- **[Decided]** How many skills one character can master depends on how long they live: characters can live very long (Section 6.10), so there is no fixed cap (owner, 2026-10-16).
+- **[Decided]** **Build order: from the foundation up.** The first trades to design are the labour-intensive ones that make building materials: felling and sawing boards, quarrying and cutting stone, making bricks, making rope, then the buildings, walls and other structures built from them (owner, 2026-10-16). This replaces the deck's suggestion to build the herbalist path first.
+
+### 5.4 Skills
+
+- **[Decided]** **Each skill has three parts** (owner, 2026-10-16):
+  - **Innate ability:** the talent the person was born with.
+  - **Trained ability:** learned from books and teachers.
+  - **Practice:** ability gained by actually doing the work.
+- **[Decided]** Innate plus trained ability is the **base**. A share of practice, about 20 percent, also feeds the base.
+- **[Decided]** An unused skill slowly decays, but never below 20 percent of the highest level that person reached. Using it again brings the lost part back quickly, like re-honing. Someone who stops woodworking to take up swordplay sees their woodworking drift down while they fight, but they keep excellent skills.
+- **[Open]** The exact formula: how the three parts combine into the working skill, how fast practice grows and decays, and how fast regained skill returns. How this meets aging (skills fall with physical ability, Section 6.7) and children learning from parents (Section 6.6).
 
 ---
 
