@@ -19,6 +19,7 @@ const TileErosionScript := preload("res://src/worldgen/tile/tile_erosion.gd")
 const IslandShapeScript := preload("res://src/worldgen/matrix/island_shape.gd")
 const SketchScript := preload("res://src/worldgen/sketch/world_sketch.gd")
 const ElevationScript := preload("res://src/worldgen/sketch/world_elevation.gd")
+const WrapNoiseScript := preload("res://src/worldgen/tile/wrap_noise.gd")
 const RiverNetworkScript := preload("res://src/worldgen/sketch/river_network.gd")
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 const CensusScript := preload("res://src/worldgen/sketch/island_census.gd")
@@ -1247,6 +1248,7 @@ func _test_tile_climate(settings, tile_rules: Dictionary, tile: Vector2i, water,
 	var built_sites = _test_tile_sites(settings, tile_rules, tile, water, climate, geology, tables, starter)
 	_test_tile_file(settings, tile, water, climate, geology, built_sites)
 	_test_river_network()
+	_test_wrap_noise()
 
 
 func _test_tile_geology(settings, tile_rules: Dictionary, tile: Vector2i, water, climate, elevation, sketch: Dictionary, tables):
@@ -1551,6 +1553,33 @@ class FakeElevation:
 	var origin_x: float = 0.0
 	var origin_z: float = 0.0
 	var heights: PackedFloat32Array = PackedFloat32Array()
+
+
+func _test_wrap_noise() -> void:
+	var noise := FastNoiseLite.new()
+	noise.seed = 77
+	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	noise.fractal_type = FastNoiseLite.FRACTAL_FBM
+	noise.fractal_octaves = 2
+	noise.frequency = 8.0 / 260.0
+	var period: int = 21 * 1280
+	var start: int = -10 * 1280
+	var east: PackedByteArray = WrapNoiseScript.bytes(noise, start + period - 40, start + period - 30, 80, 60, start, start, period, period, 130)
+	var west: PackedByteArray = WrapNoiseScript.bytes(noise, start - 40, start - 30, 80, 60, start, start, period, period, 130)
+	var worst: int = 0
+
+	for k in range(east.size()):
+		worst = maxi(worst, absi(int(east[k]) - int(west[k])))
+
+	_check(worst <= 1, "wrap noise repeats across the world seam, east and west corners (worst %d)" % worst)
+	var plain: PackedByteArray = WrapNoiseScript.bytes(noise, 100, 100, 40, 40, start, start, period, period, 130)
+	noise.offset = Vector3(100, 100, 0)
+	var image: Image = noise.get_image(40, 40, false, false, false)
+
+	if image.get_format() != Image.FORMAT_L8:
+		image.convert(Image.FORMAT_L8)
+
+	_check(plain == image.get_data(), "wrap noise is the plain noise image away from the seam")
 
 
 func _test_river_network() -> void:

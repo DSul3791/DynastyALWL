@@ -13,6 +13,7 @@ extends RefCounted
 #
 # Maps are one byte per sample (same grid as the height map).
 
+const WrapNoiseScript := preload("res://src/worldgen/tile/wrap_noise.gd")
 const SeedUtil := preload("res://src/worldgen/settings/worldgen_seed.gd")
 
 const OCEAN := 1
@@ -482,13 +483,11 @@ func _noise(purpose: String, wavelength_m: float) -> PackedByteArray:
 	noise.fractal_type = FastNoiseLite.FRACTAL_FBM
 	noise.fractal_octaves = 2
 	noise.frequency = spacing_m / wavelength_m
-	noise.offset = Vector3(float(_origin_sx), float(_origin_sz), 0.0)
-	var image: Image = noise.get_image(samples, samples, false, false, false)
-
-	if image.get_format() != Image.FORMAT_L8:
-		image.convert(Image.FORMAT_L8)
-
-	return image.get_data()
+	var tile_samples_w: int = int(_settings.tile_size_m / _settings.map_spacing_m)
+	return WrapNoiseScript.bytes(
+		noise, _origin_sx, _origin_sz, samples, samples, _settings.min_tile * tile_samples_w, _settings.min_tile * tile_samples_w,
+		_settings.tiles_x * tile_samples_w, _settings.tiles_z * tile_samples_w, int(ceil(4.0 * wavelength_m / spacing_m))
+	)
 
 
 # The tile row a position lies in, wrapped into the world's rows.

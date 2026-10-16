@@ -14,6 +14,7 @@ extends RefCounted
 # Tile edges: land cells on the tile border count as outlets, so rivers
 # end at the edge. Joining rivers across tile borders is a later step.
 
+const WrapNoiseScript := preload("res://src/worldgen/tile/wrap_noise.gd")
 const SeedUtil := preload("res://src/worldgen/settings/worldgen_seed.gd")
 
 const NONE := 0
@@ -163,13 +164,11 @@ func _routing_heights() -> PackedInt32Array:
 		noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 		noise.fractal_type = FastNoiseLite.FRACTAL_NONE
 		noise.frequency = spacing_m / float(octave["wavelength_m"])
-		noise.offset = Vector3(float(_origin_sx), float(_origin_sz), 0.0)
-		var image: Image = noise.get_image(samples, samples, false, false, false)
-
-		if image.get_format() != Image.FORMAT_L8:
-			image.convert(Image.FORMAT_L8)
-
-		var data: PackedByteArray = image.get_data()
+		var tile_samples_w: int = int(_settings.tile_size_m / _settings.map_spacing_m)
+		var data: PackedByteArray = WrapNoiseScript.bytes(
+			noise, _origin_sx, _origin_sz, samples, samples, _settings.min_tile * tile_samples_w, _settings.min_tile * tile_samples_w,
+			_settings.tiles_x * tile_samples_w, _settings.tiles_z * tile_samples_w, int(ceil(4.0 * float(octave["wavelength_m"]) / spacing_m))
+		)
 		var amplitude: float = float(octave["amplitude_m"])
 
 		for index in range(total):

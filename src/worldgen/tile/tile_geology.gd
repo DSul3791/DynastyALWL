@@ -26,6 +26,7 @@ extends RefCounted
 # local id that never change; placer deposits are found per tile from the
 # rivers and belong to the tile they lie in.
 
+const WrapNoiseScript := preload("res://src/worldgen/tile/wrap_noise.gd")
 const SeedUtil := preload("res://src/worldgen/settings/worldgen_seed.gd")
 
 const OCEAN := 1
@@ -992,13 +993,11 @@ func _compute_cover(heights: PackedFloat32Array, water_class: PackedByteArray, s
 	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 	noise.frequency = spacing_m / 180.0
 	var tile_samples: int = samples - 1
-	noise.offset = Vector3(float(tile.x * tile_samples), float(tile.y * tile_samples), 0.0)
-	var image: Image = noise.get_image(samples, samples, false, false, false)
-
-	if image.get_format() != Image.FORMAT_L8:
-		image.convert(Image.FORMAT_L8)
-
-	var jitter: PackedByteArray = image.get_data()
+	var tile_samples_w: int = tile_samples
+	var jitter: PackedByteArray = WrapNoiseScript.bytes(
+		noise, tile.x * tile_samples, tile.y * tile_samples, samples, samples, _settings.min_tile * tile_samples_w, _settings.min_tile * tile_samples_w,
+		_settings.tiles_x * tile_samples_w, _settings.tiles_z * tile_samples_w, int(ceil(4.0 * 180.0 / spacing_m))
+	)
 	cover.resize(samples * samples)
 	var inv: float = 1.0 / (2.0 * spacing_m)
 	var has_ghost: bool = not ghost.is_empty()

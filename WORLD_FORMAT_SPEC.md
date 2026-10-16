@@ -200,7 +200,7 @@ Anything that changes where existing ore sits is not a pass. It is a new generat
 - Climate: the wet-air field is computed once on the 160 m map (swept along the wind with wrap, two laps) and sampled per tile.
 - Stored `flow` is river discharge only: 0 on dry land and below the river start size (0.5 km²), because the local trickle elsewhere depends on how much neighboring ground the tile could see.
 - `edge_match.gd` compares east and south neighbors, skips planned but unbaked land tiles, treats missing ocean tiles as placeholders, and exits 1 on a failure. Result on tiles (3,3), (3,4), (4,4), (3,5): 4 edges, 0 failures, river crossings matched.
-- Not yet done: wrap-seamless detail, climate, route and cover noise across x or z = ±10.
+- Wrap seam: detail, route, climate and cover noise go through `WrapNoise` (`wrap_noise.gd`), which crossfades the noise with the noise one world width back across a band of four wavelengths before the seam, so values repeat exactly at x or z = ±10. Tested at the noise level (east and west corners match); no land tile sits on the seam yet, so no seam tile pair has been baked.
 
 Rivers that cross into a placeholder ocean tile simply reach the sea, since the world river network ends in the ocean there.
 
