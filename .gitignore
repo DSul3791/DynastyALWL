@@ -16,4 +16,7 @@ data_*/
 mono_crash.*.json
 
 # Baked tile files (large, rebuilt by the generator)
-worlds/*/tiles/
+worlds/*/tiles/*
+# Except the starter tile, so every session has it without rebaking (about 9 MB;
+# each rebake adds that much to the history, so commit it only after real changes).
+!worlds/base_world/tiles/tile_3_4.tile

@@ -52,7 +52,7 @@ godot --headless --path . --script res://src/worldgen/tools/terrain_bench.gd -- 
 godot --path . res://scenes/terrain_preview/terrain_preview.tscn                              # walk the tile (needs a baked tile)
 ```
 
-Tile files are git-ignored. The starter tile is (3,4). Bake time is 25 to 70 s per tile (plus about 25 s setup).
+Tile files are git-ignored except the starter tile `worlds/base_world/tiles/tile_3_4.tile` (about 9 MB, committed so every session has it; recommit it only after a rebake that changes it). The starter tile is (3,4). Bake time is 25 to 70 s per tile (plus about 25 s setup).
 
 ## Reading the big files
 
