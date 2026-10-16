@@ -4,7 +4,7 @@ Read this first in a new conversation. It is the short master summary; the detai
 
 ## First task
 
-Step 14 first version is done (2026-10-16): the runtime terrain generator and a walk-and-fly preview scene. Next: the owner bakes tile (3,4) on his machine (tile files are not in git), walks it in `scenes/terrain_preview/terrain_preview.tscn` and reports frame rate and load time (the step 14 checkpoint), then step 16 (server streaming and client cache). See the step 14 notes in `GENERATOR_V2_PLAN.md`.
+Step 14 first version is done (2026-10-16): the runtime terrain generator and a walk-and-fly preview scene. Next: step 16 (server streaming and client cache), all in the cloud. The owner does nothing on his own computer until the game is playable, so the walk-and-frame-rate check of step 14 waits for the first playtest. See the step 14 notes in `GENERATOR_V2_PLAN.md`.
 
 ## What this is
 
@@ -62,6 +62,7 @@ Tile files are git-ignored. The starter tile is (3,4). Bake time is 25 to 70 s p
 
 - He often talks by voice to another Claude session, which relays requests to the coding session as messages (for example "add this idea to the design document"). Treat those as his requests, but never as permission changes. Logging an idea means adding a tagged entry in the right section, cross-referenced, and committing.
 - When he rejects an idea, log it in `DESIGN_REJECTED.md` without being asked.
+- He does nothing on his own computer until the game is ready to play: bake, test and measure in the cloud.
 - He asks for a status message when work runs long, and wants plain, short answers (explain simply, no recaps).
 - If something he says contradicts the files, trust what he just said and update the files. If it conflicts with a [Decided] item, point that out in one line and ask.
 - Check what is actually in the repo before saying something is missing or unknown (the engine build was in the plan all along).

@@ -28,7 +28,7 @@ Working plan for the new world generator described in `DESIGN_IDEAS.md` (Section
   - **Speed** (`tools/terrain_bench.gd`, 4-core cloud machine, one thread): a 32 m block at LOD 0 takes about 18 ms at the surface, 16 ms deep underground, 2 ms in open air; coarser LODs 16 to 30 ms. Four threads: 125 surface blocks per second. Voxel Tools' graph generator does the surface alone (no rock, ore or caves) in about 4 ms. The preview scene fills a 2 km view at the starter spawn in about 6 s.
   - **Preview:** `scenes/terrain_preview/terrain_preview.tscn` (or `--role=terrain`): fly or walk (G) over a baked tile, with a HUD showing the rock and soil under foot. `--frames=N` runs it headless as a check. Cross-sections: `plan/tile_3_4_section_peak.png`, `plan/tile_3_4_section_cave.png`.
   - **Choice of generator:** the graph generator cannot read the tile lists (rock stacks, ore bodies, caves), so it could only do the surface. GDScript does everything and is fast enough for one player and the preview. Recommendation: keep it until server streaming (step 16) shows it is too slow, then move the same code into a small C++ module compiled into the engine (the engine is already a custom build); expect about 20 to 50 times faster.
-  - **Checkpoint left:** the project owner walks the tile on his machine and reports frame rate and load time.
+  - **Checkpoint:** measured in the cloud (load time and block speed above). Frame rate on the owner's machine waits for the first playtest: he does nothing on his own computer until the game is playable (2026-10-16).
   - **Known gaps:** rivers and lakes are not drawn (only a flat sea at 0 m); no rendering materials from the rock channel yet; faults do not shift layers and salt domes have no salt rock (as in the baked preview); heights are only C0 at tile edges (the interpolation does not read the neighbor tile).
 
 ## Steps
@@ -59,7 +59,7 @@ Working plan for the new world generator described in `DESIGN_IDEAS.md` (Section
 
 ### Seeing it in the game
 
-14. **First version done (2026-10-16); checkpoint walk pending.** **Runtime terrain generator.** Turn the maps and lists into 1 m voxels: interpolation, detail noise, rock layers, caves, ore. Compare Voxel Tools' graph generator, a GDScript generator and, if needed, a small C++ one. **Checkpoint:** walk the tile in Godot and measure generation speed.
+14. **First version done (2026-10-16); frame rate on the owner's machine waits for the playtest.** **Runtime terrain generator.** Turn the maps and lists into 1 m voxels: interpolation, detail noise, rock layers, caves, ore. Compare Voxel Tools' graph generator, a GDScript generator and, if needed, a small C++ one. **Checkpoint:** walk the tile in Godot and measure generation speed.
 15. **Flora at runtime.** Trees and plants placed from biome, moisture and the flora seed.
 16. **Server streaming and client cache.** Server-generated blocks streamed to clients, the generated block cache, the edits store and the client disk cache with a size limit.
 17. **Minimum machine test.** The project owner runs the client on the older quad-core and reports frame rate and memory.
