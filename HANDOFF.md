@@ -4,7 +4,7 @@ Read this first in a new conversation. It is the short master summary; the detai
 
 ## First task
 
-Finish step 13b: add meander to the river guide curves so network rivers stop running in straight 45 degree lines (the 160 m grid shows through; see `river_network.gd` and `tile_water.gd`). Rebake tiles (3,4), (3,3), (4,4), (3,5), rerun `edge_match.gd` (it must still show 0 hard failures, and the neighboring tiles must agree on the meander since it comes from world position), rerun the tests, look at `plan/tile_3_4_water.png`, then update `GENERATOR_V2_PLAN.md` and commit.
+Step 13b is done (2026-10-16). Next is step 14, the runtime terrain generator, which needs the Voxel Tools build first (plan step 1). Ask the owner whether to do that on his machine or get a Linux build here.
 
 ## What this is
 
@@ -33,10 +33,10 @@ A multiplayer medieval survival and town-building game: Godot 4.7.2 (custom buil
 
 ## Generator status
 
-Steps 2 to 13 are done. Step 13b (rivers across tile edges and edge matching) is nearly done:
+Steps 2 to 13b are done. Step 13b (rivers across tile edges and edge matching):
 
-- Done: world river network on the 160 m map (`src/worldgen/sketch/river_network.gd`), tiles built on a 640 m margin then cropped (`tile_baker.gd`), world-wide wet-air field, guide-carved rivers, `edge_match.gd` tool, wrap-seamless noise (`wrap_noise.gd`), stored flow = river discharge only. Four neighboring tiles and both wrap-seam pairs match with 0 failures. 837 tests pass.
-- Left: rivers show long straight 45 degree runs (the 160 m grid shows through). Add meander to the guide curves in `tile_water.gd` / `river_network.gd`, rebake, rerun the edge check. Then update the plan and commit.
+- Done: world river network on the 160 m map (`src/worldgen/sketch/river_network.gd`), tiles built on a 640 m margin then cropped (`tile_baker.gd`), world-wide wet-air field, guide-carved rivers, `edge_match.gd` tool, wrap-seamless noise (`wrap_noise.gd`), stored flow = river discharge only. Four neighboring tiles and both wrap-seam pairs match with 0 failures.
+- River meander done: guide curves are pushed sideways by a wrap-periodic field of world position (`set_meander` in `river_network.gd`, rules in `tile_rules.json` water "network_meander"). Edges still match with 0 failures; 839 tests pass.
 - Then: step 14 (runtime terrain generator that turns the tile maps into 1 m voxel blocks), then step 16 (server streaming to the client with a disk cache). The owner's near-term goal: bake a real tile, run the server, connect a client and see the world.
 
 ## Commands

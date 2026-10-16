@@ -49,6 +49,12 @@
 		"note": "Hydrology on the 8 m height map. Rain falls evenly; each cell passes its water downhill. Rivers start where the catchment passes river_start_km2. Pits are filled unless they are big enough to be lakes.",
 		"river_start_km2": 0.5,
 		"bed_window_m": 500,
+		"network_meander_note": "Sideways push of the world river curves so they do not follow the 160 m grid. Each octave is a smooth random field; amplitude is the typical push in meters. Keep the total well under one 160 m cell.",
+		"network_meander": [
+			{"wavelength_m": 2400, "amplitude_m": 80},
+			{"wavelength_m": 800, "amplitude_m": 35},
+			{"wavelength_m": 260, "amplitude_m": 12}
+		],
 		"river_width_base_m": 2.5,
 		"river_width_per_sqrt_km2": 2.2,
 		"river_depth_base_m": 0.7,

@@ -21,6 +21,7 @@ const TileGeologyScript := preload("res://src/worldgen/tile/tile_geology.gd")
 const TileSitesScript := preload("res://src/worldgen/tile/tile_sites.gd")
 const RiverNetworkScript := preload("res://src/worldgen/sketch/river_network.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
+const SeedUtil := preload("res://src/worldgen/settings/worldgen_seed.gd")
 
 var settings
 var tile_rules: Dictionary = {}
@@ -58,6 +59,7 @@ func setup(world_directory: String, elevation_cell_m: float = 0.0) -> String:
 	world_air = TileClimateScript.build_world_air(settings, tile_rules, elevation)
 	river_network = RiverNetworkScript.new()
 	river_network.build(elevation, float(tile_rules["water"]["river_start_km2"]))
+	river_network.set_meander(tile_rules["water"].get("network_meander", []), SeedUtil.rng_for(settings.master_seed, "river_meander"))
 	tables = TableSetScript.new()
 	var table_problems: Array = tables.load_directory()
 

@@ -19,6 +19,12 @@ extends RefCounted
 #   4. A tile asks for the chains that cross its frame. Each chain is drawn
 #      as a smooth Catmull-Rom curve through its cell centers, sampled every
 #      few meters, with the area interpolated along it.
+#   5. Meander: every curve point is pushed sideways by a smooth random
+#      field of world position (a sum of plane waves that repeat exactly
+#      across the world wrap). Without it the curves follow the 160 m grid
+#      in long straight 45 degree runs. Because the push depends only on
+#      where a point is, neighboring tiles, both sides of the wrap seam and
+#      a tributary meeting its main river all move the same way.
 #
 # Chains use unwrapped coordinates (they may run past the world edge); the
 # lookup tries the world shifted by one period in each direction.
@@ -33,6 +39,7 @@ var chains: Array = []             # {"points": PackedVector2Array, "areas": Pac
 
 var _receiver: PackedInt32Array = PackedInt32Array()
 var _area_cells: PackedFloat32Array = PackedFloat32Array()
+var _waves: Array = []             # meander waves: [kx, kz, phase, dx, dz, amplitude]
 
 
 func build(elevation, river_start_km2: float) -> void:
@@ -227,6 +234,46 @@ func _build_chains(order: PackedInt32Array, seen: PackedByteArray, river_start_k
 		chains.append({"points": points, "areas": areas, "bounds": bounds.grow(cell_m)})
 
 
+# Turns on the meander. `octaves` is a list of {"wavelength_m", "amplitude_m"}
+# (amplitude is the typical sideways push); each octave is made of
+# `waves_per_octave` plane waves in random directions. Every wave fits a
+# whole number of times into the world, so the field repeats exactly at
+# the wrap seam. Call after build().
+func set_meander(octaves: Array, rng: RandomNumberGenerator, waves_per_octave: int = 6) -> void:
+	_waves = []
+	var world_w: float = float(size_x) * cell_m
+	var world_h: float = float(size_z) * cell_m
+
+	for octave in octaves:
+		var wavelength: float = float(octave["wavelength_m"])
+		# A sum of n unit waves has a typical size of sqrt(n / 2).
+		var amplitude: float = float(octave["amplitude_m"]) / sqrt(float(waves_per_octave) * 0.5)
+
+		for _i in range(waves_per_octave):
+			var angle: float = rng.randf() * TAU
+			var nx: float = round(cos(angle) * world_w / wavelength)
+			var nz: float = round(sin(angle) * world_h / wavelength)
+
+			if nx == 0.0 and nz == 0.0:
+				nx = 1.0
+
+			var push: float = rng.randf() * TAU
+			_waves.append([TAU * nx / world_w, TAU * nz / world_h, rng.randf() * TAU, cos(push), sin(push), amplitude])
+
+
+# The meander push at a world position (meters).
+func meander_offset(x: float, z: float) -> Vector2:
+	var dx: float = 0.0
+	var dz: float = 0.0
+
+	for wave in _waves:
+		var value: float = wave[5] * cos(wave[0] * x + wave[1] * z + wave[2])
+		dx += wave[3] * value
+		dz += wave[4] * value
+
+	return Vector2(dx, dz)
+
+
 # The center of a cell, moved by whole world widths so that it stays within
 # half a world of the previous point of its chain.
 func _unwrapped_center(index: int, previous: Vector2, has_previous: bool) -> Vector2:
@@ -288,11 +335,11 @@ func _sample_chain(chain: Dictionary, shift: Vector2, wanted: Rect2, step_m: flo
 	var piece_areas: PackedFloat32Array = PackedFloat32Array()
 
 	for i in range(count - 1):
-		var a: Vector2 = points[i] + shift
-		var b: Vector2 = points[i + 1] + shift
+		var a: Vector2 = points[i]
+		var b: Vector2 = points[i + 1]
 
 		# Skip segments that cannot touch the rectangle.
-		var segment_box: Rect2 = Rect2(a, Vector2.ZERO).expand(b).grow(cell_m)
+		var segment_box: Rect2 = Rect2(a + shift, Vector2.ZERO).expand(b + shift).grow(cell_m)
 
 		if not segment_box.intersects(wanted):
 			if piece_points.size() > 1:
@@ -302,21 +349,30 @@ func _sample_chain(chain: Dictionary, shift: Vector2, wanted: Rect2, step_m: flo
 			piece_areas = PackedFloat32Array()
 			continue
 
-		var p0: Vector2 = points[i - 1] + shift if i > 0 else 2.0 * a - b
-		var p3: Vector2 = points[i + 2] + shift if i + 2 < count else 2.0 * b - a
+		# The curve is worked out on the chain's own coordinates and moved
+		# by `shift` last, so every copy of it gets exactly the same shape.
+		var p0: Vector2 = points[i - 1] if i > 0 else 2.0 * a - b
+		var p3: Vector2 = points[i + 2] if i + 2 < count else 2.0 * b - a
 		var pieces: int = maxi(int(ceil(a.distance_to(b) / step_m)), 1)
 
 		for s in range(pieces):
 			var t: float = float(s) / float(pieces)
-			piece_points.append(_catmull_rom(p0, a, b, p3, t))
+			piece_points.append(_meandered(_catmull_rom(p0, a, b, p3, t)) + shift)
 			piece_areas.append(lerpf(areas[i], areas[i + 1], t))
 
 		if i == count - 2:
-			piece_points.append(b)
+			piece_points.append(_meandered(b) + shift)
 			piece_areas.append(areas[i + 1])
 
 	if piece_points.size() > 1:
 		out.append({"points": piece_points, "areas": piece_areas})
+
+
+func _meandered(point: Vector2) -> Vector2:
+	if _waves.is_empty():
+		return point
+
+	return point + meander_offset(point.x, point.y)
 
 
 static func _catmull_rom(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector2, t: float) -> Vector2:

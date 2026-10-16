@@ -1605,6 +1605,22 @@ func _test_river_network() -> void:
 	var again = RiverNetworkScript.new()
 	again.build(fake, 0.5)
 	_check(again.chains.size() == network.chains.size() and again.river_cells == network.river_cells, "the river network is reproducible")
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	network.set_meander([{"wavelength_m": 900, "amplitude_m": 40}], rng)
+	var world_w: float = 24.0 * 160.0
+	var seam_gap: float = 0.0
+	var biggest_push: float = 0.0
+
+	for k in range(50):
+		var x: float = 37.0 * float(k)
+		var z: float = 61.0 * float(k)
+		var push: Vector2 = network.meander_offset(x, z)
+		biggest_push = maxf(biggest_push, push.length())
+		seam_gap = maxf(seam_gap, push.distance_to(network.meander_offset(x + world_w, z - world_w)))
+
+	_check(seam_gap < 0.01, "the river meander repeats exactly across the world wrap (gap %.4f m)" % seam_gap)
+	_check(biggest_push > 5.0 and biggest_push < 200.0, "the river meander pushes curves sideways (%.0f m)" % biggest_push)
 
 
 # Writes the starter tile through the tile file writer, reads it back and
