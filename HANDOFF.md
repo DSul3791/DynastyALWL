@@ -41,7 +41,7 @@ Steps 2 to 13b are done, and first versions of 14, 15 and 16. Step 13b (rivers a
 - Step 14 first version: `src/worldgen/runtime/` (GDScript `VoxelGeneratorScript`, about 18 ms per 32 m block).
 - Step 15 first version: `flora_placer.gd`, `data/tables/flora.json`, `src/flora/flora_view.gd`; about 33 ms per 256 m chunk; only removals are stored.
 - Step 16 first version: `src/stream/`, `scenes/terrain_server/`, `scenes/terrain_client/`. A cold 2 km view loads in about 33 s from a fresh server, 0.4 s from the client cache. The owner's near-term goal: run the server, connect a client and see the world.
-- Starter-town playtest prep (2026-10-16): rivers and lakes are drawn per flora chunk (`water_grid.gd`); the ground is colored by its soil, or its rock where bare (voxel channel INDICES, mesher "Single" texturing, `src/client/ground_material.gd`, colors in soils.json and rocks.json; cave walls and dug holes still show the surface color); `--role=play` starts a hidden server and joins it. `TERRAIN_VERSION` in `terrain_layout.gd` clears old server and client block caches when generated blocks change.
+- Starter-town playtest prep (2026-10-16): rivers and lakes are drawn per flora chunk (`water_grid.gd`); the ground is colored by its soil, or its rock where bare (voxel channel INDICES, mesher "Single" texturing, `src/client/ground_material.gd`, colors in soils.json and rocks.json; below the soil cover each voxel is drawn as its own rock, so cave walls and dug holes show stone); `--role=play` starts a hidden server and joins it. `TERRAIN_VERSION` in `terrain_layout.gd` clears old server and client block caches when generated blocks change.
 
 ## Commands
 

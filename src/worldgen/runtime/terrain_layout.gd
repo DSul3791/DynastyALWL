@@ -10,8 +10,10 @@ extends RefCounted
 #   SOIL      8 bit   soil table id of cover voxels, 0 elsewhere
 #   RESOURCE  8 bit   resource table id of ore voxels, 0 elsewhere
 #   INDICES   8 bit   ground material for drawing (Voxel Tools "Single"
-#                     texturing): the soil id of the column's top, or
-#                     MATERIAL_ROCK + rock id where no soil covers it
+#                     texturing): in the cover and the air above, the soil
+#                     id of the column's top (MATERIAL_ROCK + rock id where
+#                     no soil covers it); below the cover, MATERIAL_ROCK +
+#                     the voxel's own rock
 #
 # TERRAIN_VERSION rises whenever generated blocks change meaning, so
 # server block caches and client caches made before are thrown away.
@@ -22,7 +24,7 @@ const CHANNEL_SOIL := VoxelBuffer.CHANNEL_DATA6
 const CHANNEL_RESOURCE := VoxelBuffer.CHANNEL_DATA7
 const CHANNEL_MATERIAL := VoxelBuffer.CHANNEL_INDICES
 const MATERIAL_ROCK := 32
-const TERRAIN_VERSION := 2
+const TERRAIN_VERSION := 3
 
 const ROCK_SEDIMENT := 1
 

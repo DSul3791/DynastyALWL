@@ -391,8 +391,8 @@ func generate(buffer: VoxelBuffer, origin: Vector3i, lod: int) -> void:
 			for j in range(j_lo, j_hi):
 				buffer.set_voxel_f((oy + float(j) * sf - h) * norm, i, j, k, Layout.CHANNEL_SDF)
 
-			# The ground material, the same down the whole column (cave walls
-			# and dug holes show it too for now).
+			# The ground material of the column's top; the rock fill below
+			# replaces it under the cover.
 			buffer.fill_area(_surface_material(data, wx[i + 1], wz[k + 1], h), Vector3i(i, 0, k), Vector3i(i + 1, ny, k + 1), Layout.CHANNEL_MATERIAL)
 
 			# Nothing solid in this column of the block.
@@ -434,6 +434,9 @@ func _fill_rock_column(buffer: VoxelBuffer, data, bodies: Array, i: int, k: int,
 		buffer.fill_area(Layout.ROCK_SEDIMENT, Vector3i(i, 0, k), Vector3i(i + 1, j_surface + 1, k + 1), Layout.CHANNEL_ROCK)
 		return
 
+	# Ground material below the cover is the rock itself, so cave walls and
+	# dug holes show their stone (the cover band keeps the surface material).
+
 	var cover_m: float = data.cover_at(x, z)
 	var yb: float = h - cover_m
 	var j_bed: int = mini(int(floor((yb - oy) / sf)), ny - 1)
@@ -458,6 +461,7 @@ func _fill_rock_column(buffer: VoxelBuffer, data, bodies: Array, i: int, k: int,
 		var step: float = data.next_boundary(p, depth)
 		var count: int = j + 1 if step == INF else clampi(int(ceil(step / sf)), 1, j + 1)
 		buffer.fill_area(rock, Vector3i(i, j - count + 1, k), Vector3i(i + 1, j + 1, k + 1), Layout.CHANNEL_ROCK)
+		buffer.fill_area(Layout.MATERIAL_ROCK + rock, Vector3i(i, j - count + 1, k), Vector3i(i + 1, j + 1, k + 1), Layout.CHANNEL_MATERIAL)
 		j -= count
 
 	var point: Vector2 = Vector2(x, z)
@@ -469,6 +473,7 @@ func _fill_rock_column(buffer: VoxelBuffer, data, bodies: Array, i: int, k: int,
 		if int(body["kind"]) == 1:
 			if point.distance_squared_to(body["center"]) <= float(body["radius"]) * float(body["radius"]):
 				_fill_run(buffer, _basalt, float(body["bottom"]), minf(float(body["top"]), yb), i, k, oy, sf, ny, Layout.CHANNEL_ROCK)
+				_fill_run(buffer, Layout.MATERIAL_ROCK + _basalt, float(body["bottom"]), minf(float(body["top"]), yb), i, k, oy, sf, ny, Layout.CHANNEL_MATERIAL)
 
 			continue
 
@@ -477,6 +482,7 @@ func _fill_rock_column(buffer: VoxelBuffer, data, bodies: Array, i: int, k: int,
 
 		if q <= 1.0:
 			_fill_run(buffer, _granite, float(body["bottom"]), minf(float(body["top"]) - float(body["roof_drop"]) * q, yb), i, k, oy, sf, ny, Layout.CHANNEL_ROCK)
+			_fill_run(buffer, Layout.MATERIAL_ROCK + _granite, float(body["bottom"]), minf(float(body["top"]) - float(body["roof_drop"]) * q, yb), i, k, oy, sf, ny, Layout.CHANNEL_MATERIAL)
 			continue
 
 		var outer_a: float = float(body["ra"]) + float(body["aureole"])
@@ -492,6 +498,7 @@ func _fill_rock_column(buffer: VoxelBuffer, data, bodies: Array, i: int, k: int,
 		for jj in range(lo, hi + 1):
 			if buffer.get_voxel(i, jj, k, Layout.CHANNEL_ROCK) == _limestone:
 				buffer.set_voxel(_marble, i, jj, k, Layout.CHANNEL_ROCK)
+				buffer.set_voxel(Layout.MATERIAL_ROCK + _marble, i, jj, k, Layout.CHANNEL_MATERIAL)
 
 
 # Intrusions, vents and pipes whose bounds touch the block, per tile.

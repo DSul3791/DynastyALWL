@@ -1823,8 +1823,8 @@ func _test_ground_material(generator, data, tables) -> void:
 		var origin: Vector3i = Vector3i(int(floor(x)) - 4, int(floor(h)) - 4, int(floor(z)) - 4)
 		generator.generate(buffer, origin, 0)
 		var soil: int = data.soil[data.nearest(float(origin.x + 4), float(origin.z + 4))]
-		var material: int = buffer.get_voxel(4, 0, 4, TerrainLayout.CHANNEL_MATERIAL)
-		var column_same: bool = material == buffer.get_voxel(4, 7, 4, TerrainLayout.CHANNEL_MATERIAL)
+		var material: int = buffer.get_voxel(4, 7, 4, TerrainLayout.CHANNEL_MATERIAL)
+		var column_same: bool = material == buffer.get_voxel(4, 6, 4, TerrainLayout.CHANNEL_MATERIAL)
 		columns += 1
 
 		if soil > 0:
@@ -1837,6 +1837,28 @@ func _test_ground_material(generator, data, tables) -> void:
 				right += 1
 
 	_check(right == columns, "each column is drawn in its soil, or its rock where bare (%d of %d, %d bare)" % [right, columns, bare])
+	# Deep down, every solid voxel is drawn as its own rock.
+	var deep: VoxelBuffer = TerrainLayout.make_buffer(16)
+	var x_deep: float = data.x0 + 7000.0
+	var z_deep: float = data.z0 + 7000.0
+	generator.generate(deep, Vector3i(int(x_deep), int(generator.surface_height(x_deep, z_deep)) - 120, int(z_deep)), 0)
+	var solid: int = 0
+	var as_rock: int = 0
+
+	for kk in range(16):
+		for jj in range(16):
+			for ii in range(16):
+				var rock: int = deep.get_voxel(ii, jj, kk, TerrainLayout.CHANNEL_ROCK)
+
+				if rock == 0:
+					continue
+
+				solid += 1
+
+				if deep.get_voxel(ii, jj, kk, TerrainLayout.CHANNEL_MATERIAL) == TerrainLayout.MATERIAL_ROCK + rock:
+					as_rock += 1
+
+	_check(solid > 0 and as_rock == solid, "deep rock is drawn as its own rock, so caves and holes show stone (%d of %d)" % [as_rock, solid])
 	var palette: PackedVector3Array = GroundMaterialScript.palette(tables)
 	var colored: bool = palette.size() == GroundMaterialScript.PALETTE_SIZE
 
