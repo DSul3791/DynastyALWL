@@ -2,6 +2,10 @@
 
 Read this first in a new conversation. It is the short master summary; the details are in the files named below.
 
+## First task
+
+Finish step 13b: add meander to the river guide curves so network rivers stop running in straight 45 degree lines (the 160 m grid shows through; see `river_network.gd` and `tile_water.gd`). Rebake tiles (3,4), (3,3), (4,4), (3,5), rerun `edge_match.gd` (it must still show 0 hard failures, and the neighboring tiles must agree on the meander since it comes from world position), rerun the tests, look at `plan/tile_3_4_water.png`, then update `GENERATOR_V2_PLAN.md` and commit.
+
 ## What this is
 
 A multiplayer medieval survival and town-building game: Godot 4.7.2 (custom build with Voxel Tools 1.7 compiled in), GDScript, built for weak hardware (older quad-core, 8 GB RAM, SATA SSD). Owner: David Sullivan. Repo `DSul3791/WorldGeneratorV1` (it moved from `WorldGeneratorv1`). Work happens on branch `claude/generator-v2`. Never touch `main`.
