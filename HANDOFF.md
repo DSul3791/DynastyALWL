@@ -4,7 +4,7 @@ Read this first in a new conversation. It is the short master summary; the detai
 
 ## What this is
 
-A multiplayer medieval survival and town-building game: Godot 4.7.x, GDScript, Voxel Tools 1.7, built for weak hardware (older quad-core, 8 GB RAM, SATA SSD). Owner: David Sullivan. Repo `DSul3791/WorldGeneratorV1` (it moved from `WorldGeneratorv1`). Work happens on branch `claude/generator-v2`. Never touch `main`.
+A multiplayer medieval survival and town-building game: Godot 4.7.2 (custom build with Voxel Tools 1.7 compiled in), GDScript, built for weak hardware (older quad-core, 8 GB RAM, SATA SSD). Owner: David Sullivan. Repo `DSul3791/WorldGeneratorV1` (it moved from `WorldGeneratorv1`). Work happens on branch `claude/generator-v2`. Never touch `main`.
 
 ## Where things are
 
@@ -50,8 +50,8 @@ Tile files are git-ignored. The starter tile is (3,4). Bake time is 25 to 70 s p
 
 ## Setup a new session needs
 
-- **Godot 4.7.1 stable, headless (Linux x86_64).** Download it from the Godot releases page, unzip it, and use the binary in the commands above. Nothing carries over from earlier sessions.
-- **Voxel Tools 1.7** (Zylann's `godot_voxel`, the add-on that does the voxel terrain). It is not in the repo and not needed yet: the generator only makes 2D maps and runs on plain Godot. It is needed from step 14 (runtime terrain generator) and step 16 (server streaming and the client). It must match the Godot version: use a build made for Godot 4.7 (a custom engine build or the GDExtension release, whichever the project settles on) and put it in the project as the add-on's instructions say. Check the project settings and the roadmap before choosing.
+- **Your engine:** Godot 4.7.2 stable, a custom build (`ed1daf0bf`) with Voxel Tools 1.7 compiled into it. There is no add-on folder. The README and `GENERATION_GUIDE.md` use the console build of that executable.
+- **Cloud sessions** cannot use your Windows build. Until step 14 they can run the generator on any stock Godot 4.7 headless Linux binary (4.7.1 was used so far; the generator makes 2D maps only and does not touch Voxel Tools). Step 14 (runtime terrain generator) and step 16 (server streaming and client) need a Linux build of Godot 4.7.2 with the Voxel Tools 1.7 module compiled in, or the work is done on your machine. That is plan step 1 ("Voxel Tools build") and is still pending.
 - **Git:** work on `claude/generator-v2`, push to `origin`. GitHub reports the repo moved to `DSul3791/WorldGeneratorV1`; the old address still works.
 - **Python 3** is handy for small scripted edits and plan checks.
 
