@@ -2,7 +2,7 @@ extends Node
 
 
 func _ready() -> void:
-	var role := AppConfig.get_command_line_value("role", "client")
+	var role := AppConfig.get_command_line_value("role", "play")
 
 	print("Launcher role: ", role)
 
