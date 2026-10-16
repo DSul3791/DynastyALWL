@@ -56,7 +56,7 @@ godot --headless --path . --script res://src/worldgen/tools/terrain_bench.gd -- 
 godot --headless --path . --script res://src/worldgen/tools/flora_map.gd -- --tile=3,4         # top-down flora picture around the spawn
 godot --path . res://scenes/terrain_preview/terrain_preview.tscn                              # walk the tile (needs a baked tile)
 godot --headless --path . res://scenes/terrain_server/terrain_server.tscn -- --port=24600     # terrain server
-godot --path . res://scenes/terrain_client/terrain_client.tscn -- --server=127.0.0.1           # client (headless check: add --frames=6000 [--dig] [--cut])
+godot --path . res://scenes/terrain_client/terrain_client.tscn -- --server=127.0.0.1           # client (headless check: add --frames=6000 [--dig] [--cut]; --frames=12000 --walk checks landing, walking and tree collisions)
 godot --path . -- --role=play                                                                  # host and play: starts a server in the background and joins it
 ```
 

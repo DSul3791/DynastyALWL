@@ -15,6 +15,8 @@ extends Node
 #   --move=M          with --frames: fly east at M m/s, 20 m above the ground
 #   --dig             with --frames: 20 s in, ask the server to dig a hole under the spawn
 #   --cut             with --frames: 25 s in, ask the server to cut the tree nearest the spawn
+#   --walk            with --frames: 15 s in, drop to the ground, walk east for 30 s, then
+#                     walk into the nearest tree, and print what happened
 #   --wait=S          keep trying to connect for S seconds (the "play" launcher
 #                     uses 120 while its own server starts)
 #
@@ -52,6 +54,11 @@ var flying: bool = true
 var pitch: float = 0.0
 var frames_left: int = -1
 var test_speed: float = 0.0
+var test_walk: bool = false
+var _walk_phase: int = 0               # 0 wait, 1 falling, 2 walking, 3 into a tree, 4 done
+var _walk_msec: int = 0
+var _walk_dir: Vector3 = Vector3.ZERO
+var _walk_stats: Dictionary = {}
 var test_dig: bool = false
 var cache_mb: int = 2048
 var cache_dir: String = ""
@@ -95,6 +102,8 @@ func _ready() -> void:
 			test_speed = float(argument.trim_prefix("--move="))
 		elif argument.begins_with("--wait="):
 			_wait_until_msec = Time.get_ticks_msec() + int(float(argument.trim_prefix("--wait=")) * 1000.0)
+		elif argument == "--walk":
+			test_walk = true
 		elif argument == "--dig":
 			test_dig = true
 		elif argument == "--cut":
@@ -373,6 +382,10 @@ func _physics_process(delta: float) -> void:
 		float(Input.is_key_pressed(KEY_S)) - float(Input.is_key_pressed(KEY_W))
 	)
 	var direction: Vector3 = body.global_transform.basis * input
+
+	if test_walk:
+		_walk_step()
+		direction = _walk_dir
 	var fast: float = FAST if Input.is_key_pressed(KEY_SHIFT) else 1.0
 
 	if test_speed > 0.0 and frames_left > 0:
@@ -430,9 +443,9 @@ func _process(_delta: float) -> void:
 
 	if frames_left > 0 and now >= _report_msec:
 		_report_msec = now + 10000
-		print("client: %d s, %d blocks loaded, %d from the server (%.1f MB), %d waiting, %d fps" % [
+		print("client: %d s, %d blocks loaded, %d from the server (%.1f MB), %d waiting, %d fps, at %s" % [
 			(now - connected_msec) / 1000, stream.loads, stream.blocks_received,
-			float(stream.bytes_received) / 1048576.0, stream.pending(), Engine.get_frames_per_second()
+			float(stream.bytes_received) / 1048576.0, stream.pending(), Engine.get_frames_per_second(), str(body.global_position.round())
 		])
 
 	hud.text = "%d fps   %s\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
@@ -457,6 +470,112 @@ func _process(_delta: float) -> void:
 			var probe: Vector3i = Vector3i((Vector3(world["spawn"]) + Vector3(0.0, -3.0, 0.0)).round())
 			print("Terrain client: ground value 3 m under the spawn %.2f (above 0 is open)" % terrain.get_voxel_tool().get_voxel_f(probe))
 			_finish(0)
+
+
+# Headless walking check (--walk): lands on the ground, walks east without
+# falling through, and is stopped by a tree trunk.
+func _walk_step() -> void:
+	var now: int = Time.get_ticks_msec()
+
+	match _walk_phase:
+		0:
+			if connected_msec > 0 and now - connected_msec > 15000:
+				flying = false
+				# Away from the spawn, where earlier --dig checks leave a hole.
+				body.global_position += Vector3(0.0, 0.0, 40.0)
+				_walk_phase = 1
+				_walk_msec = now
+				print("Terrain client: walk: dropping from %s, ground below %.1f" % [str(body.global_position.round()), _ground_below(body.global_position)])
+				_walk_stats = {"start_y": body.global_position.y, "fell_through": 0, "floor_frames": 0, "frames": 0, "lowest_gap": INF}
+		1:
+			if body.is_on_floor():
+				_walk_stats["landed_s"] = float(now - _walk_msec) / 1000.0
+				_walk_stats["drop_m"] = float(_walk_stats["start_y"]) - body.global_position.y
+				_walk_stats["start_x"] = body.global_position.x
+				_walk_phase = 2
+				_walk_msec = now
+				_walk_dir = Vector3(1.0, 0.0, 0.0)
+			elif now - _walk_msec > 20000:
+				_walk_stats["landed_s"] = -1.0
+				_walk_phase = 4
+				_walk_report()
+		2:
+			var ground: float = _ground_below(body.global_position)
+			_walk_stats["frames"] += 1
+
+			if body.is_on_floor():
+				_walk_stats["floor_frames"] += 1
+
+			if not is_nan(ground):
+				var gap: float = body.global_position.y - ground
+				_walk_stats["lowest_gap"] = minf(_walk_stats["lowest_gap"], gap)
+
+				if gap < -0.5:
+					_walk_stats["fell_through"] += 1
+
+			if now - _walk_msec > 30000:
+				_walk_stats["walked_m"] = body.global_position.x - float(_walk_stats["start_x"])
+				_walk_dir = Vector3.ZERO
+				_walk_phase = 3 if _place_by_tree() else 4
+				_walk_msec = now
+
+				if _walk_phase == 4:
+					_walk_report()
+		3:
+			_walk_stats["tree_max_x"] = maxf(_walk_stats.get("tree_max_x", -INF), body.global_position.x)
+
+			if now - _walk_msec > 4000:
+				_walk_dir = Vector3.ZERO
+				_walk_phase = 4
+				_walk_report()
+			elif now - _walk_msec > 1000:
+				_walk_dir = Vector3(1.0, 0.0, 0.0)
+
+
+# Ground height under a point, from the terrain colliders (NAN if none).
+func _ground_below(p: Vector3) -> float:
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(p + Vector3(0.0, 2.0, 0.0), p + Vector3(0.0, -200.0, 0.0))
+	query.exclude = [body.get_rid()]
+	var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(query)
+	return float(hit["position"].y) if not hit.is_empty() else NAN
+
+
+# Puts the player 3 m west of the nearest tree with a trunk collider.
+func _place_by_tree() -> bool:
+	var here: Vector3 = body.global_position
+	var best: Array = []
+
+	for chunk in flora._chunks:
+		var items: Dictionary = flora._chunks[chunk]["items"]
+
+		for n in range(items["ids"].size()):
+			var info: Dictionary = flora._species.get(items["ids"][n] >> 16, {})
+
+			if info.get("kind", 2) != 0 or float(info.get("trunk", 0.0)) < 0.1:
+				continue
+
+			var d: float = (items["positions"][n] - here).length()
+
+			if d < 100.0 and (best.is_empty() or d < best[0]):
+				best = [d, items["positions"][n]]
+
+	if best.is_empty():
+		return false
+
+	var tree: Vector3 = best[1]
+	_walk_stats["tree_x"] = tree.x
+	body.global_position = Vector3(tree.x - 3.0, maxf(tree.y, _ground_below(Vector3(tree.x - 3.0, tree.y + 50.0, tree.z))) + 1.2, tree.z)
+	body.velocity = Vector3.ZERO
+	return true
+
+
+func _walk_report() -> void:
+	var s: Dictionary = _walk_stats
+	print("Terrain client: walk: landed %.1f s after dropping %.0f m; walked %.0f m east in 30 s, on the ground %d%% of frames, %d frames below the ground (lowest gap %.2f m); tree trunk at x %.1f, furthest reached %.1f" % [
+		float(s.get("landed_s", -1.0)), float(s.get("drop_m", 0.0)), float(s.get("walked_m", 0.0)),
+		100 * int(s.get("floor_frames", 0)) / maxi(int(s.get("frames", 0)), 1), int(s.get("fell_through", 0)), float(s.get("lowest_gap", 0.0)),
+		float(s.get("tree_x", NAN)), float(s.get("tree_max_x", NAN))
+	])
 
 
 func _finish(code: int) -> void:
