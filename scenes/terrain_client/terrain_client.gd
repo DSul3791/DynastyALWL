@@ -55,6 +55,7 @@ var pitch: float = 0.0
 var frames_left: int = -1
 var test_speed: float = 0.0
 var rescued: int = 0                   # times the player was lifted back above the ground
+var _floor_msec: int = 0               # last time the player stood on something
 var test_walk: bool = false
 var _walk_phase: int = 0               # 0 wait, 1 falling, 2 walking, 3 into a tree, 4 done
 var _walk_msec: int = 0
@@ -412,6 +413,11 @@ func _physics_process(delta: float) -> void:
 		body.velocity = velocity
 		body.move_and_slide()
 
+		if body.is_on_floor():
+			_floor_msec = Time.get_ticks_msec()
+		elif Time.get_ticks_msec() - _floor_msec > 1200 and _under_the_ground():
+			rescued += 1
+
 	sea.global_position = Vector3(body.global_position.x, 0.0, body.global_position.z)
 
 
@@ -457,7 +463,7 @@ func _process(_delta: float) -> void:
 			float(stream.bytes_received) / 1048576.0, stream.pending(), Engine.get_frames_per_second(), str(body.global_position.round())
 		])
 
-	hud.text = "build 3   %d fps   %s\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
+	hud.text = "build 4   %d fps   %s\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
 		Engine.get_frames_per_second(), "flying" if flying else "walking",
 		stream.blocks_received, float(stream.bytes_received) / 1048576.0, cache.hits, flora.instances, flora.colliders,
 		body.global_position.x, body.global_position.y, body.global_position.z
@@ -573,6 +579,24 @@ func _ground_ready() -> bool:
 		rescued += 1
 
 	return false
+
+
+# Off the floor for a while and below the highest collider overhead: the
+# player slipped through the ground (a gap, or collision that was not ready).
+# Stands the player on top of the surface and returns true.
+func _under_the_ground() -> bool:
+	var here: Vector3 = body.global_position
+	var up: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(here + Vector3(0.0, 800.0, 0.0), here + Vector3(0.0, -1.0, 0.0))
+	up.exclude = [body.get_rid()]
+	var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(up)
+
+	if hit.is_empty() or float(hit["position"].y) < here.y + 2.0:
+		return false
+
+	body.global_position = Vector3(here.x, float(hit["position"].y) + 1.2, here.z)
+	body.velocity = Vector3.ZERO
+	_floor_msec = Time.get_ticks_msec()
+	return true
 
 
 # Ground height under a point, from the terrain colliders (NAN if none).
