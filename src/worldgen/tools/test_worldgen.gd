@@ -23,6 +23,8 @@ const WrapNoiseScript := preload("res://src/worldgen/tile/wrap_noise.gd")
 const RiverNetworkScript := preload("res://src/worldgen/sketch/river_network.gd")
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 const CensusScript := preload("res://src/worldgen/sketch/island_census.gd")
+const TerrainGeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
+const TerrainLayout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 
 const WORLD_PATH := "res://worlds/base_world/world.json"
 const RULES_PATH := "res://worlds/base_world/plan/matrix_rules.json"
@@ -1247,6 +1249,7 @@ func _test_tile_climate(settings, tile_rules: Dictionary, tile: Vector2i, water,
 	var geology = _test_tile_geology(settings, tile_rules, tile, water, climate, elevation, sketch, tables)
 	var built_sites = _test_tile_sites(settings, tile_rules, tile, water, climate, geology, tables, starter)
 	_test_tile_file(settings, tile, water, climate, geology, built_sites)
+	_test_runtime_terrain(settings, tile_rules, tables, tile, water, geology)
 	_test_river_network()
 	_test_wrap_noise()
 
@@ -1623,6 +1626,162 @@ func _test_river_network() -> void:
 	_check(biggest_push > 5.0 and biggest_push < 200.0, "the river meander pushes curves sideways (%.0f m)" % biggest_push)
 
 
+# The runtime terrain generator (plan step 14) on the tile file written by
+# _test_tile_file.
+func _test_runtime_terrain(settings, tile_rules: Dictionary, tables, tile: Vector2i, water, geology) -> void:
+	var dir: String = "user://test_tiles"
+	var target: String = "%s/tile_%d_%d.tile" % [dir, tile.x, tile.y]
+	_check(FileAccess.file_exists(target), "the test tile file is there for the terrain generator")
+	var generator = TerrainGeneratorScript.new()
+	generator.setup(settings, tile_rules, tables, dir)
+	var data = generator.get_tile(tile)
+	_check(not data.placeholder, "the terrain generator loads the tile file")
+	_check(data.prov_datum.size() == geology.provinces.size(), "the terrain generator reads every province")
+	var samples: int = water.samples
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 14
+
+	# On grid points the interpolated height is the stored height.
+	var worst: float = 0.0
+
+	for n in range(300):
+		var i: int = rng.randi_range(2, samples - 3)
+		var j: int = rng.randi_range(2, samples - 3)
+		var x: float = data.x0 + float(i) * data.spacing_m
+		var z: float = data.z0 + float(j) * data.spacing_m
+		worst = maxf(worst, absf(data.height_at(x, z) - water.heights[j * samples + i]))
+
+	_check(worst < 0.06, "the generator's height matches the height map on grid points (worst %.3f m)" % worst)
+
+	# Detail noise made as images matches the column-by-column noise.
+	var x_mid: float = data.x0 + 7000.0
+	var z_mid: float = data.z0 + 7000.0
+	var grid: PackedFloat32Array = generator._detail_grid(x_mid, z_mid, 8, 1, 1.0)
+	var grid_gap: float = 0.0
+
+	for n in range(8):
+		var dry: float = 1.0 - data.wet_at(x_mid + float(n), z_mid)
+
+		if dry > 0.99:
+			grid_gap = maxf(grid_gap, absf(grid[n] - generator._detail_at(data, x_mid + float(n), z_mid, 1.0)))
+
+	_check(grid_gap < 0.02, "detail noise images match the per-column noise (gap %.3f m)" % grid_gap)
+
+	# The world wraps.
+	var period: float = generator.period_m
+	_check(_approx(generator.surface_height(x_mid, z_mid), generator.surface_height(x_mid + period, z_mid - period), 0.01),
+		"terrain height repeats one world width away")
+	_check(_approx(generator.surface_height(-153590.0, 5.0), float(tile_rules["runtime_terrain"]["placeholder_depth_m"]), 0.001),
+		"a tile with no file is open sea at the placeholder depth")
+
+	# Rock under the ground agrees with the baked bedrock-surface map.
+	var agree: int = 0
+	var tested: int = 0
+
+	for n in range(120):
+		var i: int = rng.randi_range(4, samples - 5)
+		var j: int = rng.randi_range(4, samples - 5)
+		var index: int = j * samples + i
+
+		if water.heights[index] <= 2.0:
+			continue
+
+		var x: int = int(data.x0) + i * 8
+		var z: int = int(data.z0) + j * 8
+		var bed: float = generator.surface_height(float(x), float(z)) - data.cover_at(float(x), float(z))
+		var y: int = int(floor(bed - 2.0))
+		var buffer: VoxelBuffer = TerrainLayout.make_buffer(16)
+		var origin: Vector3i = Vector3i(x - 8, y - 8, z - 8)
+		generator.generate(buffer, origin, 0)
+		tested += 1
+
+		if buffer.get_voxel(8, 8, 8, TerrainLayout.CHANNEL_ROCK) == geology.surface_rock[index]:
+			agree += 1
+
+	_check(tested > 30 and float(agree) >= 0.9 * float(tested), "runtime rock just under the bedrock surface matches the baked map (%d of %d)" % [agree, tested])
+
+	# Air high up, solid rock deep down, and the same block twice.
+	var air: VoxelBuffer = TerrainLayout.make_buffer()
+	generator.generate(air, Vector3i(int(x_mid), 1500, int(z_mid)), 0)
+	_check(air.get_voxel_f(5, 5, 5, TerrainLayout.CHANNEL_SDF) > 0.0 and air.get_voxel(5, 5, 5, TerrainLayout.CHANNEL_ROCK) == 0, "blocks high above the ground are air")
+	var deep: VoxelBuffer = TerrainLayout.make_buffer()
+	generator.generate(deep, Vector3i(int(x_mid), -2000, int(z_mid)), 0)
+	var solid: bool = true
+
+	for k in range(0, 32, 5):
+		for i in range(0, 32, 5):
+			for j in range(0, 32, 5):
+				if deep.get_voxel_f(i, j, k, TerrainLayout.CHANNEL_SDF) >= 0.0 or deep.get_voxel(i, j, k, TerrainLayout.CHANNEL_ROCK) == 0:
+					solid = false
+
+	_check(solid, "blocks 2 km down are solid rock")
+	var h_mid: float = generator.surface_height(x_mid, z_mid)
+	var first: VoxelBuffer = TerrainLayout.make_buffer()
+	var second: VoxelBuffer = TerrainLayout.make_buffer()
+	var surface_origin: Vector3i = Vector3i(int(x_mid), int(floor(h_mid)) - 16, int(z_mid))
+	generator.generate(first, surface_origin, 0)
+	generator.generate(second, surface_origin, 0)
+	var same: bool = true
+	var crossings: int = 0
+
+	for k in range(32):
+		for i in range(32):
+			for j in range(32):
+				var a: float = first.get_voxel_f(i, j, k, TerrainLayout.CHANNEL_SDF)
+
+				if a != second.get_voxel_f(i, j, k, TerrainLayout.CHANNEL_SDF) or first.get_voxel(i, j, k, TerrainLayout.CHANNEL_ROCK) != second.get_voxel(i, j, k, TerrainLayout.CHANNEL_ROCK):
+					same = false
+
+				if j > 0 and (a < 0.0) != (first.get_voxel_f(i, j - 1, k, TerrainLayout.CHANNEL_SDF) < 0.0):
+					crossings += 1
+
+	_check(same, "a block generates the same twice")
+	_check(crossings >= 1024, "every column of a surface block crosses the ground (%d)" % crossings)
+
+	# A cave chamber is hollow; an ore lens holds its resource.
+	var hollow: int = 0
+	var chambers: int = 0
+
+	for cave in data.caves:
+		for chamber in cave["chambers"]:
+			var c: Vector3 = chamber["center"]
+
+			if c.y > generator.surface_height(c.x, c.z) - 4.0:
+				continue
+
+			chambers += 1
+			var buffer: VoxelBuffer = TerrainLayout.make_buffer(8)
+			generator.generate(buffer, Vector3i(int(floor(c.x)) - 4, int(floor(c.y)) - 4, int(floor(c.z)) - 4), 0)
+
+			if buffer.get_voxel_f(4, 4, 4, TerrainLayout.CHANNEL_SDF) > 0.0 and buffer.get_voxel(4, 4, 4, TerrainLayout.CHANNEL_ROCK) == 0:
+				hollow += 1
+
+	_check(chambers > 0 and hollow == chambers, "cave chambers are carved out (%d of %d)" % [hollow, chambers])
+	var lenses: int = 0
+	var found: int = 0
+
+	for ore in data.ores:
+		if str(ore["shape"]) != "lens":
+			continue
+
+		var c: Vector3 = Vector3(float(ore["center"][0]), float(ore["center"][1]), float(ore["center"][2]))
+		var inside_tile: bool = c.x > data.x0 + 8.0 and c.z > data.z0 + 8.0 and c.x < data.x0 + 15350.0 and c.z < data.z0 + 15350.0
+
+		if not inside_tile or c.y > generator.surface_height(c.x, c.z) - 10.0:
+			continue
+
+		lenses += 1
+		var buffer: VoxelBuffer = TerrainLayout.make_buffer(8)
+		generator.generate(buffer, Vector3i(int(floor(c.x)) - 4, int(floor(c.y)) - 4, int(floor(c.z)) - 4), 0)
+
+		# Caves steered to an ore body may have hollowed out its middle.
+		if buffer.get_voxel(4, 4, 4, TerrainLayout.CHANNEL_RESOURCE) == int(ore["resource_id"]) or buffer.get_voxel_f(4, 4, 4, TerrainLayout.CHANNEL_SDF) > 0.0:
+			found += 1
+
+	_check(lenses == 0 or found == lenses, "ore lenses hold their resource at the center unless a cave reached it (%d of %d)" % [found, lenses])
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(target))
+
+
 # Writes the starter tile through the tile file writer, reads it back and
 # checks every section.
 func _test_tile_file(settings, tile: Vector2i, water, climate, geology, sites) -> void:
@@ -1640,6 +1799,9 @@ func _test_tile_file(settings, tile: Vector2i, water, climate, geology, sites) -
 	_check(not FileAccess.file_exists(path + ".partial"), "no .partial file is left behind")
 	var again: Dictionary = TileFileScript.write(path, TileFileScript.pack_tile(settings, tile, plan_cell, water, climate, geology, sites))
 	_check(int(again["bytes"]) == int(written["bytes"]) and FileAccess.get_sha256(path) != "", "writing twice gives a file of the same size")
+	# A copy for the runtime terrain test, before the damage test below.
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("user://test_tiles"))
+	DirAccess.copy_absolute(ProjectSettings.globalize_path(path), ProjectSettings.globalize_path("user://test_tiles/tile_%d_%d.tile" % [tile.x, tile.y]))
 
 	var head: Dictionary = TileFileScript.read_header(path)
 	_check(head["ok"], "the tile header reads back")

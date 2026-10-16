@@ -1690,7 +1690,10 @@ To be fleshed out when the first NPC is designed.
 
 The new generator lives in `src/worldgen/` on branch `claude/generator-v2` (GDScript, run headless in Godot). The plan and its progress log are in `GENERATOR_V2_PLAN.md`.
 
-**Built and tested (831 checks pass)**
+**Built and tested (853 checks pass, 2026-10-16)**
+
+- Step 14 first version: the runtime terrain generator (`src/worldgen/runtime/`), GDScript, about 18 ms per 32 m block, with a walk-and-fly preview scene. **[Proposed]** Keep it in GDScript until server streaming shows it is too slow, then move it into a small C++ module in the custom engine. Details in `GENERATOR_V2_PLAN.md`.
+- A Linux build of the project's engine (Godot 4.7.2 with Voxel Tools 1.7) for cloud sessions: `tools/build_godot_linux.sh`.
 
 - World settings, SHA-256 seeds, append-only data tables (biomes, soils, rocks, resources, water classes, site types, feature types, province kinds).
 - The world sketch and a seamless 160 m elevation map of the whole world, the fixed features (central trench, ultimate island), the danger map, and the derived tile plan (312 islands, 227 tiles with land).
@@ -1700,8 +1703,7 @@ The new generator lives in `src/worldgen/` on branch `claude/generator-v2` (GDSc
 
 **Not built yet**
 
-- The runtime terrain generator (step 14), runtime flora, server streaming and the client cache, the layer for player changes.
-- Rivers that continue across tile edges, a final edge-matching pass, and wrap-seamless detail and climate noise (`WORLD_FORMAT_SPEC.md` Section 4b).
+- Runtime flora, server streaming and the client cache, the layer for player changes. (Rivers across tile edges, edge matching and wrap-seamless noise were built in step 13b; a first runtime terrain generator in step 14, see below.)
 - Any game system: players, NPCs, towns, building, law, economy, machinery.
 
 **Old generator.** The earlier volumetric pipeline (10 by 10 region tiles, about 15 to 16 hours per tile) is still in the repository and untouched until the new one replaces it (plan step 19). `README.md`, `GENERATION_GUIDE.md`, `PROJECT_ROADMAP.md` and `CHANGES_THIS_PASS.md` describe it.

@@ -21,6 +21,11 @@ func _launch_role(role: String) -> void:
 				"res://scenes/client/client_main.tscn"
 			)
 
+		"terrain":
+			get_tree().change_scene_to_file(
+				"res://scenes/terrain_preview/terrain_preview.tscn"
+			)
+
 		"builder":
 			get_tree().change_scene_to_file(
 				"res://scenes/builder/world_builder.tscn"

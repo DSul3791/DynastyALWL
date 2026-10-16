@@ -4,7 +4,7 @@ Read this first in a new conversation. It is the short master summary; the detai
 
 ## First task
 
-Step 13b is done (2026-10-16). Next is step 14, the runtime terrain generator, which needs the Voxel Tools build first (plan step 1). Ask the owner whether to do that on his machine or get a Linux build here.
+Step 14 first version is done (2026-10-16): the runtime terrain generator and a walk-and-fly preview scene. Next: the owner bakes tile (3,4) on his machine (tile files are not in git), walks it in `scenes/terrain_preview/terrain_preview.tscn` and reports frame rate and load time (the step 14 checkpoint), then step 16 (server streaming and client cache). See the step 14 notes in `GENERATOR_V2_PLAN.md`.
 
 ## What this is
 
@@ -37,7 +37,7 @@ Steps 2 to 13b are done. Step 13b (rivers across tile edges and edge matching):
 
 - Done: world river network on the 160 m map (`src/worldgen/sketch/river_network.gd`), tiles built on a 640 m margin then cropped (`tile_baker.gd`), world-wide wet-air field, guide-carved rivers, `edge_match.gd` tool, wrap-seamless noise (`wrap_noise.gd`), stored flow = river discharge only. Four neighboring tiles and both wrap-seam pairs match with 0 failures.
 - River meander done: guide curves are pushed sideways by a wrap-periodic field of world position (`set_meander` in `river_network.gd`, rules in `tile_rules.json` water "network_meander"). Edges still match with 0 failures; 839 tests pass.
-- Then: step 14 (runtime terrain generator that turns the tile maps into 1 m voxel blocks), then step 16 (server streaming to the client with a disk cache). The owner's near-term goal: bake a real tile, run the server, connect a client and see the world.
+- Step 14 first version: `src/worldgen/runtime/` (GDScript `VoxelGeneratorScript`, about 18 ms per 32 m block). Then step 16 (server streaming to the client with a disk cache). The owner's near-term goal: bake a real tile, run the server, connect a client and see the world.
 
 ## Commands
 
@@ -48,6 +48,8 @@ godot --headless --path . --script res://src/worldgen/tools/test_worldgen.gd    
 godot --headless --path . --script res://src/worldgen/tools/bake_tiles.gd -- "--tiles=3,4;3,3"   # bake tiles to worlds/base_world/tiles/
 godot --headless --path . --script res://src/worldgen/tools/edge_match.gd           # compare neighboring tiles
 godot --headless --path . --script res://src/worldgen/tools/build_tile.gd -- --tile=3,4          # preview pngs in plan/
+godot --headless --path . --script res://src/worldgen/tools/terrain_bench.gd -- --tile=3,4      # runtime generator speed and cross-sections
+godot --path . res://scenes/terrain_preview/terrain_preview.tscn                              # walk the tile (needs a baked tile)
 ```
 
 Tile files are git-ignored. The starter tile is (3,4). Bake time is 25 to 70 s per tile (plus about 25 s setup).

@@ -947,5 +947,16 @@
 				40
 			]
 		}
+	},
+	"runtime_terrain": {
+		"note": "Runtime voxel generator (plan step 14). Not baked: the voxels are worked out from the tile maps when a block is needed. detail: small height noise added on land (faded out on water); octaves finer than two voxels are skipped at coarse LODs. sdf_band_voxels: voxels written one by one on each side of the surface; the rest of the column is filled in runs. placeholder_depth_m: sea floor of a tile with no file. Caves are carved up to cave_max_lod, ore is written up to ore_max_lod.",
+		"detail": [
+			{"wavelength_m": 30, "amplitude_m": 0.7},
+			{"wavelength_m": 9, "amplitude_m": 0.2}
+		],
+		"sdf_band_voxels": 3,
+		"placeholder_depth_m": -200,
+		"cave_max_lod": 2,
+		"ore_max_lod": 0
 	}
 }
