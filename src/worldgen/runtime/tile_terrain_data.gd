@@ -3,14 +3,15 @@ extends RefCounted
 # One tile file loaded for the runtime terrain generator (plan step 14).
 #
 # Holds the maps the voxel generator reads (height, cover, province, layer
-# offset, soil, water class) decoded into memory, and the lists (provinces,
+# offset, soil, water class) and the flora placer reads (biome, moisture)
+# decoded into memory, and the lists (provinces,
 # features, ore bodies, caves) turned into flat arrays with bounds, so a
 # block only looks at the few items that touch it.
 #
 # Everything here is read-only once `load_file` returns, so worker threads
 # can share one instance.
 #
-# Memory: about 40 MB per tile (height and layer offset as 4-byte values,
+# Memory: about 47 MB per tile (height and layer offset as 4-byte values,
 # the rest one byte per sample).
 
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
@@ -29,6 +30,9 @@ var province: PackedByteArray = PackedByteArray()
 var layer_offset: PackedInt32Array = PackedInt32Array()  # raw x 0.1 m
 var soil: PackedByteArray = PackedByteArray()
 var water_class: PackedByteArray = PackedByteArray()
+var biome: PackedByteArray = PackedByteArray()
+var moisture: PackedByteArray = PackedByteArray()
+var flora_seed: int = 0
 
 # Provinces, one entry per index of the province map.
 var prov_datum: PackedFloat32Array = PackedFloat32Array()
@@ -73,7 +77,9 @@ func load_file(path: String, tile_coord: Vector2i, tile_size_m: float, rules: Di
 	spacing_m = float(header["map_spacing_m"])
 	var maps: Dictionary = {}
 
-	for name in ["height", "cover", "province", "layer_offset", "soil", "water_class"]:
+	flora_seed = int(header.get("flora_seed", 0))
+
+	for name in ["height", "cover", "province", "layer_offset", "soil", "water_class", "biome", "moisture"]:
 		var section: Dictionary = TileFileScript.read_section(path, table, name)
 
 		if not section["ok"]:
@@ -87,6 +93,8 @@ func load_file(path: String, tile_coord: Vector2i, tile_size_m: float, rules: Di
 	province = maps["province"]
 	soil = maps["soil"]
 	water_class = maps["water_class"]
+	biome = maps["biome"]
+	moisture = maps["moisture"]
 
 	var lists: Dictionary = {}
 

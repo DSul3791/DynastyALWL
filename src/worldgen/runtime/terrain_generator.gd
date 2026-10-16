@@ -46,6 +46,7 @@ var tile_size_m: float = 15360.0
 var period_m: float = 322560.0
 var world_min_m: float = -153600.0
 var min_tile: int = -10
+var master_seed: int = 0
 var tile_count: int = 21
 var blocks_generated: int = 0         # blocks made through _generate_block
 var generation_usec: int = 0          # time spent on them, summed over threads
@@ -71,6 +72,7 @@ var _basalt: int = 7
 # `tables` is a TableSet, `tile_rules` the parsed tile_rules.json.
 func setup(settings, tile_rules: Dictionary, tables, tiles_directory: String) -> void:
 	tiles_dir = tiles_directory
+	master_seed = int(settings.master_seed)
 	tile_size_m = float(settings.tile_size_m)
 	min_tile = int(settings.min_tile)
 	tile_count = int(settings.tiles_x)

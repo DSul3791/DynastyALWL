@@ -21,19 +21,24 @@ const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 const NetScript := preload("res://src/stream/terrain_net.gd")
+const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
+const FloraStoreScript := preload("res://src/stream/server_flora.gd")
 
 const MAX_BATCH_BYTES := 192 * 1024
 const MAX_QUEUE_PER_PEER := 20000
 
 var generator
 var store
+var flora
 var settings
 var spawn: Vector3 = Vector3.ZERO
 var net
 var _queue: Array = []                 # urgent [peer, key Vector4i], oldest first
 var _prefetch: Array = []              # prefetch [peer, key], oldest first
 var _queued: Dictionary = {}           # [peer, key] -> "u" urgent, "p" prefetch, "r" running
-var _queue_mutex: Mutex = Mutex.new()  # guards the three above
+var _flora_queue: Array = []           # [peer, chunk Vector2i], oldest first
+var _flora_queued: Dictionary = {}     # [peer, chunk] -> true
+var _queue_mutex: Mutex = Mutex.new()  # guards the five above
 var _work: Semaphore = Semaphore.new() # one post per queued item
 var _workers: Array = []               # Threads making blocks
 var _stopping: bool = false
@@ -89,6 +94,10 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 
+	var placer = PlacerScript.new()
+	placer.setup(generator, tables, rules)
+	flora = FloraStoreScript.new()
+	flora.setup(placer, store_dir)
 	spawn = _spawn_point(world_dir)
 	var peer: ENetMultiplayerPeer = ENetMultiplayerPeer.new()
 	var error: int = peer.create_server(port, 32)
@@ -103,6 +112,8 @@ func _ready() -> void:
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
 	net.blocks_requested.connect(_on_blocks_requested)
 	net.dig_requested.connect(_on_dig_requested)
+	net.flora_requested.connect(_on_flora_requested)
+	net.cut_flora_requested.connect(_on_cut_flora_requested)
 	_report_at_msec = Time.get_ticks_msec() + 10000
 
 	for n in range(_max_running):
@@ -146,11 +157,14 @@ func _on_peer_connected(peer_id: int) -> void:
 
 func _on_peer_disconnected(peer_id: int) -> void:
 	var info: Dictionary = _peers.get(peer_id, {})
-	print("Client %d left after %d blocks, %.1f MB" % [peer_id, int(info.get("blocks", 0)), float(info.get("bytes", 0)) / 1048576.0])
+	print("Client %d left after %d blocks, %.1f MB; flora %.1f MB" % [
+		peer_id, int(info.get("blocks", 0)), float(info.get("bytes", 0)) / 1048576.0, float(info.get("flora_bytes", 0)) / 1048576.0
+	])
 	_peers.erase(peer_id)
 	_queue_mutex.lock()
 	_queue = _queue.filter(func(item): return item[0] != peer_id)
 	_prefetch = _prefetch.filter(func(item): return item[0] != peer_id)
+	_flora_queue = _flora_queue.filter(func(item): return item[0] != peer_id)
 	_queue_mutex.unlock()
 
 
@@ -184,6 +198,31 @@ func _on_blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int) -> 
 		_work.post()
 
 
+# Flora chunks wait behind urgent blocks and before prefetch blocks.
+func _on_flora_requested(peer_id: int, chunks: PackedInt32Array) -> void:
+	var added: int = 0
+	_queue_mutex.lock()
+
+	for n in range(chunks.size() / 2):
+		var id: Array = [peer_id, Vector2i(chunks[2 * n], chunks[2 * n + 1])]
+
+		if _flora_queue.size() < MAX_QUEUE_PER_PEER and not _flora_queued.has(id):
+			_flora_queued[id] = true
+			_flora_queue.append(id)
+			added += 1
+
+	_queue_mutex.unlock()
+
+	for n in range(added):
+		_work.post()
+
+
+func _on_cut_flora_requested(_peer_id: int, chunk: Vector2i, id: int) -> void:
+	if flora.cut(chunk, id):
+		net.flora_cut.rpc(chunk, id)
+		print("Cut flora item %d in chunk %s" % [id, str(chunk)])
+
+
 func _on_dig_requested(_peer_id: int, center: Vector3, radius: float) -> void:
 	var tiles: Array = store.dig_sphere(center, radius)
 
@@ -208,13 +247,21 @@ func _process(_delta: float) -> void:
 	_queue_mutex.lock()
 
 	for entry in done:
-		_queued.erase([entry[0], entry[1]])
+		if entry.size() > 3:
+			_flora_queued.erase([entry[0], entry[1]])
+		else:
+			_queued.erase([entry[0], entry[1]])
 
 	var queued: Array = [_queue.size(), _prefetch.size()]
 	_queue_mutex.unlock()
 
 	for entry in done:
 		if not _peers.has(entry[0]):
+			continue
+
+		if entry.size() > 3:
+			net.deliver_flora.rpc_id(entry[0], entry[1], entry[2])
+			_peers[entry[0]]["flora_bytes"] = int(_peers[entry[0]].get("flora_bytes", 0)) + (entry[2] as PackedByteArray).size()
 			continue
 
 		if not batches.has(entry[0]):
@@ -238,8 +285,8 @@ func _process(_delta: float) -> void:
 
 	if now >= _report_at_msec:
 		_report_at_msec = now + 10000
-		print("server: %d urgent and %d prefetch queued; generated %d, cache hits %d, edit hits %d" % [
-			queued[0], queued[1], store.blocks_generated, store.cache_hits, store.edit_hits
+		print("server: %d urgent and %d prefetch queued; generated %d, cache hits %d, edit hits %d; flora chunks %d made, %d from memory" % [
+			queued[0], queued[1], store.blocks_generated, store.cache_hits, store.edit_hits, flora.chunks_made, flora.memory_hits
 		])
 
 	if _quit_at_msec > 0 and now >= _quit_at_msec:
@@ -261,8 +308,13 @@ func _worker_loop() -> void:
 		_work.wait()
 		_queue_mutex.lock()
 		var item: Array = []
+		var flora_item: Array = []
 
-		while item.is_empty() and not (_queue.is_empty() and _prefetch.is_empty()):
+		# Order: urgent blocks, flora chunks, prefetch blocks.
+		if _queue.is_empty() and not _flora_queue.is_empty():
+			flora_item = _flora_queue.pop_front()
+
+		while flora_item.is_empty() and item.is_empty() and not (_queue.is_empty() and _prefetch.is_empty()):
 			var urgent: bool = not _queue.is_empty()
 			var next: Array = _queue.pop_front() if urgent else _prefetch.pop_front()
 
@@ -276,6 +328,13 @@ func _worker_loop() -> void:
 
 		if stopping:
 			return
+
+		if not flora_item.is_empty():
+			var chunk_bytes: PackedByteArray = flora.chunk_bytes(flora_item[1])
+			_done_mutex.lock()
+			_done.append([flora_item[0], flora_item[1], chunk_bytes, "flora"])
+			_done_mutex.unlock()
+			continue
 
 		if item.is_empty():
 			continue

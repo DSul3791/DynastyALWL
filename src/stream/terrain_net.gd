@@ -12,11 +12,15 @@ extends Node
 #   server -> client  tile_changed     a tile's new revision after an edit
 #   client -> server  dig              ask the server to remove a sphere of ground (test edit)
 #   server -> client  dug              a sphere of ground was removed: apply it to loaded terrain
+#   client -> server  request_flora    flora chunks wanted (pairs of chunk x, z)
+#   server -> client  deliver_flora    one chunk's flora (FloraPlacer.encode, removals applied)
+#   client -> server  cut_flora        remove one flora item (test harvest)
+#   server -> client  flora_cut        a flora item was removed
 #
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 2
+const PROTOCOL_VERSION := 3
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -24,6 +28,10 @@ signal blocks_received(keys: PackedInt32Array, payloads: Array)
 signal tile_changed_received(tile: Vector2i, revision: int)
 signal dig_requested(peer_id: int, center: Vector3, radius: float)
 signal dug_received(center: Vector3, radius: float)
+signal flora_requested(peer_id: int, chunks: PackedInt32Array)
+signal flora_received(chunk: Vector2i, bytes: PackedByteArray)
+signal cut_flora_requested(peer_id: int, chunk: Vector2i, id: int)
+signal flora_cut_received(chunk: Vector2i, id: int)
 
 
 @rpc("authority", "call_remote", "reliable")
@@ -56,3 +64,25 @@ func dig(center: Vector3, radius: float) -> void:
 @rpc("authority", "call_remote", "reliable")
 func dug(center: Vector3, radius: float) -> void:
 	dug_received.emit(center, radius)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func request_flora(chunks: PackedInt32Array) -> void:
+	if multiplayer.is_server() and chunks.size() % 2 == 0:
+		flora_requested.emit(multiplayer.get_remote_sender_id(), chunks)
+
+
+@rpc("authority", "call_remote", "reliable")
+func deliver_flora(chunk: Vector2i, bytes: PackedByteArray) -> void:
+	flora_received.emit(chunk, bytes)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func cut_flora(chunk: Vector2i, id: int) -> void:
+	if multiplayer.is_server():
+		cut_flora_requested.emit(multiplayer.get_remote_sender_id(), chunk, id)
+
+
+@rpc("authority", "call_remote", "reliable")
+func flora_cut(chunk: Vector2i, id: int) -> void:
+	flora_cut_received.emit(chunk, id)

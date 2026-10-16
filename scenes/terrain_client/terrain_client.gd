@@ -1,7 +1,8 @@
 extends Node
 
-# Terrain client (plan step 16): connects to a terrain server, streams the
-# blocks around the player and keeps them in a disk cache.
+# Terrain client (plan steps 15 and 16): connects to a terrain server,
+# streams the blocks around the player and keeps them in a disk cache, and
+# draws the trees and plants the server sends.
 #
 #   godot --path . res://scenes/terrain_client/terrain_client.tscn -- --server=127.0.0.1
 #
@@ -13,6 +14,7 @@ extends Node
 #   --frames=N        headless check: run N frames, print what arrived, quit
 #   --move=M          with --frames: fly east at M m/s, 20 m above the ground
 #   --dig             with --frames: 20 s in, ask the server to dig a hole under the spawn
+#   --cut             with --frames: 25 s in, ask the server to cut the tree nearest the spawn
 #
 # Controls as in the terrain preview: mouse look, W A S D, Space and Ctrl,
 # Shift fast, G fly or walk, Esc frees the mouse.
@@ -21,6 +23,10 @@ const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const StreamScript := preload("res://src/stream/network_voxel_stream.gd")
 const CacheScript := preload("res://src/stream/client_block_cache.gd")
 const NetScript := preload("res://src/stream/terrain_net.gd")
+const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
+const FloraViewScript := preload("res://src/flora/flora_view.gd")
+const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
+const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 
 const VIEW_DISTANCE := 2048
 const FLY_SPEED := 30.0
@@ -51,6 +57,14 @@ var world: Dictionary = {}
 var _budget_check_msec: int = 0
 var _report_msec: int = 0
 var dig_applied: int = 0
+var flora                             # FloraView
+var test_cut: bool = false
+var _flora_asked: Dictionary = {}     # chunk -> true (asked or held)
+var _flora_check_msec: int = 0
+var _flora_chunks: int = 0
+var _flora_bytes: int = 0
+var _flora_cuts: int = 0
+var _flora_done_msec: int = 0
 
 
 func _ready() -> void:
@@ -73,11 +87,15 @@ func _ready() -> void:
 			test_speed = float(argument.trim_prefix("--move="))
 		elif argument == "--dig":
 			test_dig = true
+		elif argument == "--cut":
+			test_cut = true
 
 	net.welcome_received.connect(_on_welcome)
 	net.blocks_received.connect(_on_blocks)
 	net.tile_changed_received.connect(_on_tile_changed)
 	net.dug_received.connect(_on_dug)
+	net.flora_received.connect(_on_flora)
+	net.flora_cut_received.connect(_on_flora_cut)
 	var peer: ENetMultiplayerPeer = ENetMultiplayerPeer.new()
 	var error: int = peer.create_client(host, port)
 
@@ -124,6 +142,12 @@ func _on_welcome(info: Dictionary) -> void:
 	terrain.material = _terrain_material()
 	root.add_child(terrain)
 	_make_player(root, info["spawn"] + Vector3(0.0, 28.0, 0.0))
+	var tables = TableSetScript.new()
+	tables.load_directory()
+	flora = FloraViewScript.new()
+	flora.name = "Flora"
+	flora.setup(tables, TileHeightScript.load_rules("res://worlds/base_world/plan/tile_rules.json", []))
+	root.add_child(flora)
 	_make_environment(root)
 	var layer: CanvasLayer = CanvasLayer.new()
 	add_child(layer)
@@ -165,6 +189,75 @@ func _on_dug(center: Vector3, radius: float) -> void:
 	print("Terrain client: applied a %.1f m dig at %s; ground value there now %.2f (above 0 is open)" % [
 		radius, str(center), tool.get_voxel_f(Vector3i(center.round()))
 	])
+
+
+func _on_flora(chunk: Vector2i, bytes: PackedByteArray) -> void:
+	if flora == null:
+		return
+
+	_flora_chunks += 1
+	_flora_bytes += bytes.size()
+	_flora_done_msec = Time.get_ticks_msec() - connected_msec
+	flora.set_chunk(chunk, PlacerScript.decode(bytes, Vector2(chunk) * flora.chunk_m), body.global_position)
+
+
+func _on_flora_cut(chunk: Vector2i, id: int) -> void:
+	if flora == null:
+		return
+
+	# The server names the chunk in its own (wrapped) coordinates; any copy
+	# of it this client holds is the same chunk.
+	var period: int = int(round(float(world["tiles_per_side"]) * float(world["tile_size_m"]) / flora.chunk_m))
+
+	for held in _flora_asked:
+		if posmod(held.x - chunk.x, period) == 0 and posmod(held.y - chunk.y, period) == 0:
+			flora.remove_item(held, id, body.global_position)
+
+	_flora_cuts += 1
+	print("Terrain client: flora item %d in chunk %s was cut" % [id, str(chunk)])
+
+
+# Asks for flora chunks coming into view and forgets ones far behind.
+func _update_flora() -> void:
+	var p: Vector3 = body.global_position
+
+	for chunk in flora.update(p):
+		_flora_asked.erase(chunk)
+
+	var wanted: PackedInt32Array = PackedInt32Array()
+
+	for chunk in flora.wanted_chunks(p):
+		if not _flora_asked.has(chunk):
+			_flora_asked[chunk] = true
+			wanted.append_array(PackedInt32Array([chunk.x, chunk.y]))
+
+	if not wanted.is_empty():
+		net.request_flora.rpc_id(1, wanted)
+
+
+# Headless check: cut the tree nearest the spawn.
+func _cut_nearest_tree() -> void:
+	var spawn: Vector3 = world["spawn"]
+	var best: Array = []
+
+	for chunk in flora._chunks:
+		var items: Dictionary = flora._chunks[chunk]["items"]
+
+		for n in range(items["ids"].size()):
+			if flora._species.get(items["ids"][n] >> 16, {}).get("kind", 2) != 0:
+				continue
+
+			var d: float = (items["positions"][n] - spawn).length()
+
+			if best.is_empty() or d < best[0]:
+				best = [d, chunk, items["ids"][n]]
+
+	if best.is_empty():
+		print("Terrain client: no tree to cut")
+		return
+
+	print("Terrain client: asking to cut tree %d in chunk %s, %.0f m from the spawn" % [best[2], str(best[1]), best[0]])
+	net.cut_flora.rpc_id(1, best[1], best[2])
 
 
 func _make_player(root: Node3D, start: Vector3) -> void:
@@ -312,6 +405,14 @@ func _process(_delta: float) -> void:
 
 	settled_msec = stream.last_load_msec - connected_msec
 
+	if now >= _flora_check_msec:
+		_flora_check_msec = now + 500
+		_update_flora()
+
+	if test_cut and now - connected_msec > 25000:
+		test_cut = false
+		_cut_nearest_tree()
+
 	# Headless check: dig under the spawn once the ground around it is in.
 	if test_dig and now - connected_msec > 20000:
 		test_dig = false
@@ -324,9 +425,9 @@ func _process(_delta: float) -> void:
 			float(stream.bytes_received) / 1048576.0, stream.pending(), Engine.get_frames_per_second()
 		])
 
-	hud.text = "%d fps   %s\nblocks: %d from server (%.1f MB), %d from cache\nx %.0f  y %.1f  z %.0f" % [
+	hud.text = "%d fps   %s\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
 		Engine.get_frames_per_second(), "flying" if flying else "walking",
-		stream.blocks_received, float(stream.bytes_received) / 1048576.0, cache.hits,
+		stream.blocks_received, float(stream.bytes_received) / 1048576.0, cache.hits, flora.instances, flora.colliders,
 		body.global_position.x, body.global_position.y, body.global_position.z
 	]
 
@@ -339,6 +440,9 @@ func _process(_delta: float) -> void:
 				float(stream.bytes_received) / maxf(float(stream.blocks_received), 1.0), cache.hits, cache.misses, stream.timeouts, stream.pending(), stream.prefetch_used
 			])
 			print("Terrain client: cache folder %.1f MB" % (float(cache.size_bytes()) / 1048576.0))
+			print("Terrain client: flora %d chunks (%.2f MB, last %d ms after the welcome), %d items held, %d drawn, %d colliders, %d cuts" % [
+				_flora_chunks, float(_flora_bytes) / 1048576.0, _flora_done_msec, flora.item_count(), flora.instances, flora.colliders, _flora_cuts
+			])
 			var probe: Vector3i = Vector3i((Vector3(world["spawn"]) + Vector3(0.0, -3.0, 0.0)).round())
 			print("Terrain client: ground value 3 m under the spawn %.2f (above 0 is open)" % terrain.get_voxel_tool().get_voxel_f(probe))
 			_finish(0)

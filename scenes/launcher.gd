@@ -26,6 +26,16 @@ func _launch_role(role: String) -> void:
 				"res://scenes/terrain_preview/terrain_preview.tscn"
 			)
 
+		"terrain_server":
+			get_tree().change_scene_to_file(
+				"res://scenes/terrain_server/terrain_server.tscn"
+			)
+
+		"terrain_client":
+			get_tree().change_scene_to_file(
+				"res://scenes/terrain_client/terrain_client.tscn"
+			)
+
 		"builder":
 			get_tree().change_scene_to_file(
 				"res://scenes/builder/world_builder.tscn"

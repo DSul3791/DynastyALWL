@@ -186,6 +186,8 @@ Note: climate depends only on position, so each tile can compute it without look
 - **[Proposed]** Animal behavior built from perception (sight cones, hearing, smell carried by the wind), a short list of weighted needs (graze, flee, hunt, guard, rest), and steering. Steering lets a creature move around obstacles while still facing its target, so a predator sidesteps a tree instead of turning away. Herds react together and some individuals startle first. A little randomness in timing keeps it unpredictable. All of this runs on the server with simulation level of detail; the client only animates and smooths movement.
 - **[Decided]** Fantasy (Dungeons and Dragons style) species.
 - **[Proposed]** A removed tree is recorded as "item N in region R is gone." Because each tile freezes its generator version, placement never shifts under existing removals.
+- **[Proposed] Built first version (plan step 15, 2026-10-16).** Species live in a data table (`data/tables/flora.json`): density per biome, moisture, slope, altitude and water limits, size, and yields for harvesting later. Placement runs per 256 m chunk; the "region" of a removal is the chunk and the item number is the species plus its grid cell, so adding a species or cutting a tree never moves anything else. Woods are patchy (glades with more shrubs). The server works flora out and sends it to clients like terrain, minus removals; clients never need the tile files. First species are real-world (oak, beech, pine, spruce, birch, alder, willow, palms, hazel, bramble, gorse, heather, reeds, wild flax for fibre and rope, ferns, nettles, mushrooms and so on); fantasy species can be added to the table later.
+- **[Proposed]** The density setting changes item numbers, so it must be frozen once players start cutting trees in a world.
 - **[Proposed]** Climate and soil should also be queryable at runtime from the same function the generator uses, so the server and generator never disagree. This matters for farming.
 - **[Proposed]** Slate as a new rock type (shale metamorphoses into slate), tied to folded or deformed regions. Slate would make some islands valuable for roofing.
 
@@ -1692,9 +1694,10 @@ To be fleshed out when the first NPC is designed.
 
 The new generator lives in `src/worldgen/` on branch `claude/generator-v2` (GDScript, run headless in Godot). The plan and its progress log are in `GENERATOR_V2_PLAN.md`.
 
-**Built and tested (866 checks pass, 2026-10-16)**
+**Built and tested (877 checks pass, 2026-10-16)**
 
 - Step 14 first version: the runtime terrain generator (`src/worldgen/runtime/`), GDScript, about 18 ms per 32 m block, with a walk-and-fly preview scene. **[Proposed]** Keep it in GDScript until server streaming shows it is too slow, then move it into a small C++ module in the custom engine. Details in `GENERATOR_V2_PLAN.md`.
+- Step 15 first version: runtime trees and plants from a species table, sent by the server, drawn in the client and preview, with removals stored (Section 4.3).
 - Step 16 first version: a terrain server streaming blocks to a client with a disk cache (`src/stream/`, `scenes/terrain_server/`, `scenes/terrain_client/`). See Section 4.10 and `GENERATOR_V2_PLAN.md`.
 - A Linux build of the project's engine (Godot 4.7.2 with Voxel Tools 1.7) for cloud sessions: `tools/build_godot_linux.sh`.
 
@@ -1706,7 +1709,7 @@ The new generator lives in `src/worldgen/` on branch `claude/generator-v2` (GDSc
 
 **Not built yet**
 
-- Runtime flora, the layer for player changes (beyond the test dig). (Rivers across tile edges, edge matching and wrap-seamless noise were built in step 13b; a first runtime terrain generator in step 14, see below.)
+- Flora regrowth and harvesting yields, grass near the player, the layer for player changes (beyond the test dig and test tree cut). (Rivers across tile edges, edge matching and wrap-seamless noise were built in step 13b; a first runtime terrain generator in step 14, see below.)
 - Any game system: players, NPCs, towns, building, law, economy, machinery.
 
 **Old generator.** The earlier volumetric pipeline (10 by 10 region tiles, about 15 to 16 hours per tile) is still in the repository and untouched until the new one replaces it (plan step 19). `README.md`, `GENERATION_GUIDE.md`, `PROJECT_ROADMAP.md` and `CHANGES_THIS_PASS.md` describe it.

@@ -1,0 +1,1015 @@
+{
+	"table": "flora",
+	"format_version": 1,
+	"note": "IDs are append-only. Never renumber or reuse an ID; retire an entry with \"retired\": true and take the next ID from next_id for new entries. Placement (plan step 15) reads per_hectare (plants per hectare by biome name, before the density setting in tile_rules.json runtime_flora), moisture (0 to 255 map value), max_slope_deg, altitude_m (ground height above sea level) and water (water classes it may stand in; empty = dry land only). crown_m is the spacing radius of trees and shrubs, trunk_m the collision radius (0 = walk through). yields are names for the harvesting tables to come.",
+	"next_id": 27,
+	"entries": [
+		{
+			"id": 0,
+			"name": "oak",
+			"display": "Oak",
+			"kind": "tree",
+			"shape": "broadleaf",
+			"height_m": [
+				14,
+				24
+			],
+			"crown_m": 5.0,
+			"trunk_m": 0.45,
+			"color": [
+				0.27,
+				0.4,
+				0.16
+			],
+			"per_hectare": {
+				"temperate_forest": 70,
+				"mixed_forest": 30,
+				"temperate_grassland": 2
+			},
+			"moisture": [
+				90,
+				255
+			],
+			"max_slope_deg": 32,
+			"altitude_m": [
+				1,
+				900
+			],
+			"water": [],
+			"yields": [
+				"hardwood",
+				"acorns",
+				"bark"
+			]
+		},
+		{
+			"id": 1,
+			"name": "beech",
+			"display": "Beech",
+			"kind": "tree",
+			"shape": "broadleaf",
+			"height_m": [
+				18,
+				30
+			],
+			"crown_m": 5.0,
+			"trunk_m": 0.4,
+			"color": [
+				0.33,
+				0.47,
+				0.18
+			],
+			"per_hectare": {
+				"temperate_forest": 60,
+				"mixed_forest": 25
+			},
+			"moisture": [
+				110,
+				255
+			],
+			"max_slope_deg": 35,
+			"altitude_m": [
+				1,
+				1000
+			],
+			"water": [],
+			"yields": [
+				"hardwood",
+				"beechnuts"
+			]
+		},
+		{
+			"id": 2,
+			"name": "birch",
+			"display": "Birch",
+			"kind": "tree",
+			"shape": "broadleaf",
+			"height_m": [
+				10,
+				20
+			],
+			"crown_m": 2.8,
+			"trunk_m": 0.2,
+			"color": [
+				0.42,
+				0.56,
+				0.22
+			],
+			"per_hectare": {
+				"mixed_forest": 40,
+				"boreal_forest": 35,
+				"temperate_forest": 8,
+				"heath": 4
+			},
+			"moisture": [
+				80,
+				255
+			],
+			"max_slope_deg": 38,
+			"altitude_m": [
+				1,
+				1300
+			],
+			"water": [],
+			"yields": [
+				"wood",
+				"birch_bark",
+				"sap"
+			]
+		},
+		{
+			"id": 3,
+			"name": "scots_pine",
+			"display": "Scots pine",
+			"kind": "tree",
+			"shape": "conifer",
+			"height_m": [
+				15,
+				30
+			],
+			"crown_m": 3.2,
+			"trunk_m": 0.35,
+			"color": [
+				0.18,
+				0.33,
+				0.18
+			],
+			"per_hectare": {
+				"mixed_forest": 40,
+				"boreal_forest": 60,
+				"heath": 6,
+				"temperate_forest": 4
+			},
+			"moisture": [
+				50,
+				255
+			],
+			"max_slope_deg": 40,
+			"altitude_m": [
+				1,
+				1500
+			],
+			"water": [],
+			"yields": [
+				"softwood",
+				"resin",
+				"pine_tar"
+			]
+		},
+		{
+			"id": 4,
+			"name": "spruce",
+			"display": "Spruce",
+			"kind": "tree",
+			"shape": "conifer",
+			"height_m": [
+				18,
+				35
+			],
+			"crown_m": 3.0,
+			"trunk_m": 0.35,
+			"color": [
+				0.12,
+				0.27,
+				0.15
+			],
+			"per_hectare": {
+				"boreal_forest": 120,
+				"mixed_forest": 20,
+				"alpine_meadow": 4
+			},
+			"moisture": [
+				90,
+				255
+			],
+			"max_slope_deg": 42,
+			"altitude_m": [
+				1,
+				1800
+			],
+			"water": [],
+			"yields": [
+				"softwood",
+				"resin"
+			]
+		},
+		{
+			"id": 5,
+			"name": "alder",
+			"display": "Alder",
+			"kind": "tree",
+			"shape": "broadleaf",
+			"height_m": [
+				8,
+				18
+			],
+			"crown_m": 3.0,
+			"trunk_m": 0.25,
+			"color": [
+				0.24,
+				0.38,
+				0.17
+			],
+			"per_hectare": {
+				"marsh": 30,
+				"temperate_forest": 5,
+				"mixed_forest": 5
+			},
+			"moisture": [
+				170,
+				255
+			],
+			"max_slope_deg": 20,
+			"altitude_m": [
+				0.3,
+				600
+			],
+			"water": [
+				"marsh"
+			],
+			"yields": [
+				"wood",
+				"charcoal_wood"
+			]
+		},
+		{
+			"id": 6,
+			"name": "willow",
+			"display": "Willow",
+			"kind": "tree",
+			"shape": "broadleaf",
+			"height_m": [
+				8,
+				15
+			],
+			"crown_m": 4.5,
+			"trunk_m": 0.4,
+			"color": [
+				0.45,
+				0.55,
+				0.25
+			],
+			"per_hectare": {
+				"marsh": 15,
+				"temperate_grassland": 1
+			},
+			"moisture": [
+				190,
+				255
+			],
+			"max_slope_deg": 15,
+			"altitude_m": [
+				0.3,
+				500
+			],
+			"water": [
+				"marsh"
+			],
+			"yields": [
+				"wood",
+				"withies",
+				"willow_bark"
+			]
+		},
+		{
+			"id": 7,
+			"name": "coconut_palm",
+			"display": "Coconut palm",
+			"kind": "tree",
+			"shape": "palm",
+			"height_m": [
+				10,
+				22
+			],
+			"crown_m": 3.5,
+			"trunk_m": 0.25,
+			"color": [
+				0.3,
+				0.5,
+				0.18
+			],
+			"per_hectare": {
+				"beach": 5,
+				"tropical_forest": 15,
+				"mangrove": 3
+			},
+			"moisture": [
+				60,
+				255
+			],
+			"max_slope_deg": 25,
+			"altitude_m": [
+				0.5,
+				200
+			],
+			"water": [],
+			"yields": [
+				"palm_wood",
+				"coconuts",
+				"palm_fronds"
+			]
+		},
+		{
+			"id": 8,
+			"name": "tropical_hardwood",
+			"display": "Tropical hardwood",
+			"kind": "tree",
+			"shape": "broadleaf",
+			"height_m": [
+				25,
+				45
+			],
+			"crown_m": 7.0,
+			"trunk_m": 0.6,
+			"color": [
+				0.15,
+				0.38,
+				0.12
+			],
+			"per_hectare": {
+				"tropical_forest": 90
+			},
+			"moisture": [
+				140,
+				255
+			],
+			"max_slope_deg": 35,
+			"altitude_m": [
+				1,
+				1200
+			],
+			"water": [],
+			"yields": [
+				"hardwood",
+				"resin"
+			]
+		},
+		{
+			"id": 9,
+			"name": "acacia",
+			"display": "Acacia",
+			"kind": "tree",
+			"shape": "broadleaf",
+			"height_m": [
+				6,
+				12
+			],
+			"crown_m": 4.5,
+			"trunk_m": 0.25,
+			"color": [
+				0.38,
+				0.45,
+				0.18
+			],
+			"per_hectare": {
+				"savanna": 10,
+				"dry_scrub": 3
+			},
+			"moisture": [
+				20,
+				180
+			],
+			"max_slope_deg": 30,
+			"altitude_m": [
+				1,
+				1500
+			],
+			"water": [],
+			"yields": [
+				"hardwood",
+				"gum"
+			]
+		},
+		{
+			"id": 10,
+			"name": "mangrove",
+			"display": "Mangrove",
+			"kind": "tree",
+			"shape": "broadleaf",
+			"height_m": [
+				5,
+				12
+			],
+			"crown_m": 3.5,
+			"trunk_m": 0.3,
+			"color": [
+				0.2,
+				0.38,
+				0.15
+			],
+			"per_hectare": {
+				"mangrove": 180
+			},
+			"moisture": [
+				0,
+				255
+			],
+			"max_slope_deg": 10,
+			"altitude_m": [
+				-1.5,
+				3
+			],
+			"water": [
+				"marsh",
+				"estuary",
+				"ocean"
+			],
+			"yields": [
+				"wood",
+				"tannin_bark"
+			]
+		},
+		{
+			"id": 11,
+			"name": "hazel",
+			"display": "Hazel",
+			"kind": "shrub",
+			"shape": "shrub",
+			"height_m": [
+				3,
+				6
+			],
+			"crown_m": 2.0,
+			"trunk_m": 0.1,
+			"color": [
+				0.33,
+				0.46,
+				0.19
+			],
+			"per_hectare": {
+				"temperate_forest": 30,
+				"mixed_forest": 30,
+				"temperate_grassland": 2
+			},
+			"moisture": [
+				100,
+				255
+			],
+			"max_slope_deg": 35,
+			"altitude_m": [
+				1,
+				900
+			],
+			"water": [],
+			"yields": [
+				"poles",
+				"hazelnuts"
+			]
+		},
+		{
+			"id": 12,
+			"name": "bramble",
+			"display": "Bramble",
+			"kind": "shrub",
+			"shape": "shrub",
+			"height_m": [
+				0.8,
+				1.8
+			],
+			"crown_m": 1.2,
+			"trunk_m": 0.05,
+			"color": [
+				0.25,
+				0.35,
+				0.15
+			],
+			"per_hectare": {
+				"temperate_forest": 15,
+				"mixed_forest": 15,
+				"temperate_grassland": 6,
+				"heath": 3
+			},
+			"moisture": [
+				80,
+				255
+			],
+			"max_slope_deg": 35,
+			"altitude_m": [
+				1,
+				800
+			],
+			"water": [],
+			"yields": [
+				"blackberries",
+				"thorny_canes"
+			]
+		},
+		{
+			"id": 13,
+			"name": "juniper",
+			"display": "Juniper",
+			"kind": "shrub",
+			"shape": "shrub",
+			"height_m": [
+				1,
+				4
+			],
+			"crown_m": 1.2,
+			"trunk_m": 0.08,
+			"color": [
+				0.22,
+				0.35,
+				0.24
+			],
+			"per_hectare": {
+				"heath": 25,
+				"alpine_meadow": 12,
+				"dry_scrub": 6,
+				"boreal_forest": 6
+			},
+			"moisture": [
+				30,
+				255
+			],
+			"max_slope_deg": 45,
+			"altitude_m": [
+				1,
+				2000
+			],
+			"water": [],
+			"yields": [
+				"juniper_berries",
+				"wood"
+			]
+		},
+		{
+			"id": 14,
+			"name": "gorse",
+			"display": "Gorse",
+			"kind": "shrub",
+			"shape": "shrub",
+			"height_m": [
+				1,
+				2.5
+			],
+			"crown_m": 1.0,
+			"trunk_m": 0.05,
+			"color": [
+				0.45,
+				0.48,
+				0.12
+			],
+			"per_hectare": {
+				"heath": 60,
+				"temperate_grassland": 4
+			},
+			"moisture": [
+				60,
+				255
+			],
+			"max_slope_deg": 40,
+			"altitude_m": [
+				1,
+				700
+			],
+			"water": [],
+			"yields": [
+				"kindling",
+				"fodder"
+			]
+		},
+		{
+			"id": 15,
+			"name": "dwarf_birch",
+			"display": "Dwarf birch",
+			"kind": "shrub",
+			"shape": "shrub",
+			"height_m": [
+				0.4,
+				1.2
+			],
+			"crown_m": 0.8,
+			"trunk_m": 0.03,
+			"color": [
+				0.4,
+				0.42,
+				0.2
+			],
+			"per_hectare": {
+				"tundra": 40
+			},
+			"moisture": [
+				60,
+				255
+			],
+			"max_slope_deg": 35,
+			"altitude_m": [
+				1,
+				2000
+			],
+			"water": [],
+			"yields": [
+				"kindling"
+			]
+		},
+		{
+			"id": 16,
+			"name": "saltbush",
+			"display": "Saltbush",
+			"kind": "shrub",
+			"shape": "shrub",
+			"height_m": [
+				0.5,
+				1.5
+			],
+			"crown_m": 1.0,
+			"trunk_m": 0.05,
+			"color": [
+				0.55,
+				0.58,
+				0.45
+			],
+			"per_hectare": {
+				"dry_scrub": 40,
+				"hot_desert": 6
+			},
+			"moisture": [
+				0,
+				140
+			],
+			"max_slope_deg": 30,
+			"altitude_m": [
+				0.5,
+				1500
+			],
+			"water": [],
+			"yields": [
+				"fodder",
+				"potash"
+			]
+		},
+		{
+			"id": 17,
+			"name": "cactus",
+			"display": "Cactus",
+			"kind": "shrub",
+			"shape": "cactus",
+			"height_m": [
+				1,
+				5
+			],
+			"crown_m": 0.6,
+			"trunk_m": 0.3,
+			"color": [
+				0.3,
+				0.48,
+				0.25
+			],
+			"per_hectare": {
+				"hot_desert": 8,
+				"dry_scrub": 15
+			},
+			"moisture": [
+				0,
+				100
+			],
+			"max_slope_deg": 35,
+			"altitude_m": [
+				1,
+				1500
+			],
+			"water": [],
+			"yields": [
+				"water",
+				"spines"
+			]
+		},
+		{
+			"id": 18,
+			"name": "fern",
+			"display": "Fern",
+			"kind": "plant",
+			"shape": "fern",
+			"height_m": [
+				0.5,
+				1.2
+			],
+			"crown_m": 0.6,
+			"trunk_m": 0.0,
+			"color": [
+				0.28,
+				0.48,
+				0.18
+			],
+			"per_hectare": {
+				"temperate_forest": 250,
+				"mixed_forest": 150,
+				"tropical_forest": 300,
+				"boreal_forest": 40
+			},
+			"moisture": [
+				120,
+				255
+			],
+			"max_slope_deg": 40,
+			"altitude_m": [
+				1,
+				1400
+			],
+			"water": [],
+			"yields": [
+				"bedding",
+				"fiddleheads"
+			]
+		},
+		{
+			"id": 19,
+			"name": "heather",
+			"display": "Heather",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.2,
+				0.6
+			],
+			"crown_m": 0.4,
+			"trunk_m": 0.0,
+			"color": [
+				0.5,
+				0.3,
+				0.45
+			],
+			"per_hectare": {
+				"heath": 500,
+				"boreal_forest": 20
+			},
+			"moisture": [
+				80,
+				255
+			],
+			"max_slope_deg": 45,
+			"altitude_m": [
+				1,
+				1500
+			],
+			"water": [],
+			"yields": [
+				"thatch",
+				"bedding",
+				"honey_flowers"
+			]
+		},
+		{
+			"id": 20,
+			"name": "reeds",
+			"display": "Reeds",
+			"kind": "plant",
+			"shape": "reed",
+			"height_m": [
+				1.5,
+				3
+			],
+			"crown_m": 0.4,
+			"trunk_m": 0.0,
+			"color": [
+				0.55,
+				0.58,
+				0.3
+			],
+			"per_hectare": {
+				"marsh": 800,
+				"mangrove": 20
+			},
+			"moisture": [
+				150,
+				255
+			],
+			"max_slope_deg": 8,
+			"altitude_m": [
+				-0.5,
+				400
+			],
+			"water": [
+				"marsh",
+				"estuary",
+				"lake",
+				"river"
+			],
+			"yields": [
+				"thatch",
+				"reed_stems"
+			]
+		},
+		{
+			"id": 21,
+			"name": "flax",
+			"display": "Wild flax",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.4,
+				0.9
+			],
+			"crown_m": 0.3,
+			"trunk_m": 0.0,
+			"color": [
+				0.4,
+				0.5,
+				0.7
+			],
+			"per_hectare": {
+				"temperate_grassland": 40,
+				"temperate_forest": 2
+			},
+			"moisture": [
+				60,
+				200
+			],
+			"max_slope_deg": 25,
+			"altitude_m": [
+				1,
+				800
+			],
+			"water": [],
+			"yields": [
+				"fibre",
+				"linseed"
+			]
+		},
+		{
+			"id": 22,
+			"name": "tall_grass",
+			"display": "Tall grass",
+			"kind": "plant",
+			"shape": "grass",
+			"height_m": [
+				0.6,
+				1.4
+			],
+			"crown_m": 0.4,
+			"trunk_m": 0.0,
+			"color": [
+				0.55,
+				0.62,
+				0.3
+			],
+			"per_hectare": {
+				"temperate_grassland": 300,
+				"savanna": 300,
+				"alpine_meadow": 100,
+				"heath": 40,
+				"beach": 10
+			},
+			"moisture": [
+				20,
+				255
+			],
+			"max_slope_deg": 40,
+			"altitude_m": [
+				0.5,
+				2200
+			],
+			"water": [],
+			"yields": [
+				"thatch",
+				"straw",
+				"fibre"
+			]
+		},
+		{
+			"id": 23,
+			"name": "nettle",
+			"display": "Nettle",
+			"kind": "plant",
+			"shape": "fern",
+			"height_m": [
+				0.5,
+				1.2
+			],
+			"crown_m": 0.4,
+			"trunk_m": 0.0,
+			"color": [
+				0.25,
+				0.42,
+				0.18
+			],
+			"per_hectare": {
+				"temperate_forest": 30,
+				"mixed_forest": 20,
+				"marsh": 20
+			},
+			"moisture": [
+				130,
+				255
+			],
+			"max_slope_deg": 30,
+			"altitude_m": [
+				1,
+				700
+			],
+			"water": [],
+			"yields": [
+				"fibre",
+				"greens"
+			]
+		},
+		{
+			"id": 24,
+			"name": "cotton_grass",
+			"display": "Cotton grass",
+			"kind": "plant",
+			"shape": "grass",
+			"height_m": [
+				0.2,
+				0.5
+			],
+			"crown_m": 0.3,
+			"trunk_m": 0.0,
+			"color": [
+				0.85,
+				0.85,
+				0.8
+			],
+			"per_hectare": {
+				"tundra": 300,
+				"marsh": 30
+			},
+			"moisture": [
+				120,
+				255
+			],
+			"max_slope_deg": 15,
+			"altitude_m": [
+				0.5,
+				1500
+			],
+			"water": [],
+			"yields": [
+				"tinder",
+				"stuffing"
+			]
+		},
+		{
+			"id": 25,
+			"name": "alpine_flowers",
+			"display": "Alpine flowers",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.1,
+				0.3
+			],
+			"crown_m": 0.3,
+			"trunk_m": 0.0,
+			"color": [
+				0.75,
+				0.65,
+				0.3
+			],
+			"per_hectare": {
+				"alpine_meadow": 400
+			},
+			"moisture": [
+				60,
+				255
+			],
+			"max_slope_deg": 45,
+			"altitude_m": [
+				300,
+				2500
+			],
+			"water": [],
+			"yields": [
+				"herbs",
+				"dye"
+			]
+		},
+		{
+			"id": 26,
+			"name": "mushrooms",
+			"display": "Mushrooms",
+			"kind": "plant",
+			"shape": "mushroom",
+			"height_m": [
+				0.1,
+				0.3
+			],
+			"crown_m": 0.2,
+			"trunk_m": 0.0,
+			"color": [
+				0.65,
+				0.45,
+				0.3
+			],
+			"per_hectare": {
+				"temperate_forest": 12,
+				"mixed_forest": 15,
+				"boreal_forest": 12
+			},
+			"moisture": [
+				150,
+				255
+			],
+			"max_slope_deg": 30,
+			"altitude_m": [
+				1,
+				1500
+			],
+			"water": [],
+			"yields": [
+				"food",
+				"tinder_fungus"
+			]
+		}
+	]
+}

@@ -28,6 +28,8 @@ const TerrainLayout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const ServerStoreScript := preload("res://src/stream/server_block_store.gd")
 const ClientCacheScript := preload("res://src/stream/client_block_cache.gd")
 const NetworkStreamScript := preload("res://src/stream/network_voxel_stream.gd")
+const FloraPlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
+const ServerFloraScript := preload("res://src/stream/server_flora.gd")
 
 const WORLD_PATH := "res://worlds/base_world/world.json"
 const RULES_PATH := "res://worlds/base_world/plan/matrix_rules.json"
@@ -1783,6 +1785,7 @@ func _test_runtime_terrain(settings, tile_rules: Dictionary, tables, tile: Vecto
 
 	_check(lenses == 0 or found == lenses, "ore lenses hold their resource at the center unless a cave reached it (%d of %d)" % [found, lenses])
 	_test_streaming(generator, data)
+	_test_flora(generator, data, tables, tile_rules)
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(target))
 
 
@@ -1901,6 +1904,121 @@ func _test_streaming(generator, data) -> void:
 		"the client stream uses a prefetched block without asking the server")
 	_check(cache.load_block(cached, far, 0), "a streamed block goes into the client cache")
 	cache.flush()
+	_remove_tree(root)
+
+
+# Plan step 15: runtime flora placement and the server's removals.
+func _test_flora(generator, data, tables, tile_rules: Dictionary) -> void:
+	var biome_names: Dictionary = {}
+	var water_names: Dictionary = {}
+
+	for entry in tables.get_entries("biomes"):
+		biome_names[str(entry["name"])] = int(entry["id"])
+
+	for entry in tables.get_entries("water_classes"):
+		water_names[str(entry["name"])] = true
+
+	var bad_names: Array = []
+
+	for entry in tables.get_entries("flora"):
+		for name in entry["per_hectare"]:
+			if not biome_names.has(name):
+				bad_names.append(name)
+
+		for name in entry.get("water", []):
+			if not water_names.has(name):
+				bad_names.append(name)
+
+	_check(tables.get_entries("flora").size() > 20 and bad_names.is_empty(), "the flora table names only real biomes and water classes %s" % str(bad_names))
+	var placer = FloraPlacerScript.new()
+	placer.setup(generator, tables, tile_rules)
+
+	# The busiest of a few chunks in the middle of the tile.
+	var best: Vector2i = Vector2i.ZERO
+	var items: Dictionary = {}
+
+	for n in range(6):
+		var chunk: Vector2i = placer.chunk_of(data.x0 + 4000.0 + 1100.0 * n, data.z0 + 4000.0 + 900.0 * n)
+		var found: Dictionary = placer.chunk_items(chunk)
+
+		if items.is_empty() or found["ids"].size() > items["ids"].size():
+			best = chunk
+			items = found
+
+	var ids: PackedInt32Array = items["ids"]
+	var trees: int = 0
+	var ok_place: bool = true
+	var unique: Dictionary = {}
+	var origin: Vector2 = placer.chunk_origin(best)
+
+	for n in range(ids.size()):
+		var item: Dictionary = placer.species_of(ids[n])
+		var p: Vector3 = items["positions"][n]
+		var k: int = data.nearest(p.x, p.z)
+		unique[ids[n]] = true
+
+		if item["kind"] == FloraPlacerScript.KIND_TREE:
+			trees += 1
+
+		if p.x < origin.x or p.z < origin.y or p.x >= origin.x + placer.chunk_m or p.z >= origin.y + placer.chunk_m:
+			ok_place = false
+
+		if absf(p.y - generator.surface_height(p.x, p.z)) > 0.01 or item["per_biome"][data.biome[k]] <= 0.0:
+			ok_place = false
+
+		if data.water_class[k] != 0 and (item["water_mask"] & (1 << data.water_class[k])) == 0:
+			ok_place = false
+
+	_check(ids.size() > 500 and trees > 20, "a land chunk holds trees and plants (%d items, %d trees)" % [ids.size(), trees])
+	_check(ok_place, "flora sits on the ground inside its chunk, in a biome and water class it allows")
+	_check(unique.size() == ids.size(), "flora item ids are unique in their chunk")
+	var crowded: int = 0
+
+	for a in range(ids.size()):
+		var sa: Dictionary = placer.species_of(ids[a])
+
+		if sa["kind"] == FloraPlacerScript.KIND_PLANT:
+			continue
+
+		for b in range(a + 1, ids.size()):
+			var sb: Dictionary = placer.species_of(ids[b])
+
+			if sb["kind"] == FloraPlacerScript.KIND_PLANT:
+				continue
+
+			var gap: float = minf(0.6 * (float(sa["crown"]) + float(sb["crown"])), FloraPlacerScript.OCCUPANCY_CELL)
+			var pa: Vector3 = items["positions"][a]
+			var pb: Vector3 = items["positions"][b]
+
+			if Vector2(pa.x - pb.x, pa.z - pb.z).length() < gap - 0.001:
+				crowded += 1
+
+	_check(crowded == 0, "tree and shrub crowns keep apart (%d too close)" % crowded)
+	var again: Dictionary = placer.chunk_items(best)
+	_check(again["ids"] == ids and again["positions"] == items["positions"], "a chunk's flora is the same every time")
+	var period_chunks: int = int(round(generator.period_m / placer.chunk_m))
+	_check(placer.normalize(best + Vector2i(period_chunks, -period_chunks)) == best, "flora chunks wrap with the world")
+	var decoded: Dictionary = FloraPlacerScript.decode(FloraPlacerScript.encode(items, origin), origin)
+	var worst: float = 0.0
+
+	for n in range(ids.size()):
+		worst = maxf(worst, (decoded["positions"][n] - items["positions"][n]).length())
+
+	_check(decoded["ids"] == ids and worst < 0.005, "flora survives packing for the network (worst %.4f m)" % worst)
+
+	# Removals: stored, applied and kept over a restart.
+	var root: String = "user://test_flora"
+	_remove_tree(root)
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(root))
+	var server = ServerFloraScript.new()
+	server.setup(placer, root)
+	var before: int = FloraPlacerScript.decode(server.chunk_bytes(best), origin)["ids"].size()
+	_check(server.cut(best, ids[0]) and not server.cut(best, ids[0]) and not server.cut(best, 12345678), "the server cuts a real item once and refuses unknown ones")
+	var after: Dictionary = FloraPlacerScript.decode(server.chunk_bytes(best), origin)
+	_check(after["ids"].size() == before - 1 and after["ids"].find(ids[0]) < 0, "a cut item is gone from the chunk sent to clients")
+	var restarted = ServerFloraScript.new()
+	restarted.setup(placer, root)
+	_check(restarted.removed_in(best) == [ids[0]], "flora removals survive a server restart")
 	_remove_tree(root)
 
 

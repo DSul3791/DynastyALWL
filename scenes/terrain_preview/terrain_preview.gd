@@ -14,7 +14,9 @@ extends Node3D
 # The player starts at the starter spawn point of the tile named by
 # --tile=X,Z (default 3,4), or at the tile's middle. Terrain comes straight
 # from the generator, with no disk cache. Water is drawn only as a flat
-# sea at 0 m; rivers and lakes are not drawn yet.
+# sea at 0 m; rivers and lakes are not drawn yet. Trees and plants come
+# straight from the flora placer (plan step 15), worked out on worker
+# threads.
 #
 # Headless check: --frames=N runs N frames, prints what was generated and
 # quits; with --move=M the player flies east at M m/s, 20 m above the ground.
@@ -25,6 +27,8 @@ const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
+const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
+const FloraViewScript := preload("res://src/flora/flora_view.gd")
 
 const WORLD_DIR := "res://worlds/base_world"
 const VIEW_DISTANCE := 2048
@@ -50,6 +54,12 @@ var test_speed: float = 0.0           # --move=M: fly east at M m/s (headless ch
 var rock_names: Dictionary = {}
 var soil_names: Dictionary = {}
 var resource_names: Dictionary = {}
+var placer
+var flora
+var _flora_asked: Dictionary = {}     # chunk -> true
+var _flora_done: Array = []           # [chunk, items] from worker threads
+var _flora_mutex: Mutex = Mutex.new()
+var _flora_check_msec: int = 0
 
 
 func _ready() -> void:
@@ -89,6 +99,12 @@ func _ready() -> void:
 	var start: Vector3 = _start_point(tile, settings)
 	_make_terrain()
 	_make_player(start)
+	placer = PlacerScript.new()
+	placer.setup(generator, tables, rules)
+	flora = FloraViewScript.new()
+	flora.name = "Flora"
+	flora.setup(tables, rules)
+	add_child(flora)
 	_make_environment()
 	_make_hud()
 	started_msec = Time.get_ticks_msec()
@@ -275,6 +291,7 @@ func _process(_delta: float) -> void:
 		return
 
 	var p: Vector3 = body.global_position
+	_update_flora(p)
 	var ground: float = generator.surface_height(p.x, p.z)
 	var below: Vector3i = Vector3i(int(floor(p.x)), int(floor(ground - 1.5)), int(floor(p.z)))
 	var tool: VoxelTool = terrain.get_voxel_tool()
@@ -287,9 +304,9 @@ func _process(_delta: float) -> void:
 		var soil: int = tool.get_voxel(below)
 		under = "%s%s" % [rock_names.get(rock, str(rock)), "" if soil == 0 else " (%s)" % soil_names.get(soil, str(soil))]
 
-	hud.text = "%s  %d fps\nx %.0f  y %.1f  z %.0f   tile %s\nground %.1f m   under foot: %s\nG: fly/walk  Shift: fast  Esc: mouse" % [
+	hud.text = "%s  %d fps\nx %.0f  y %.1f  z %.0f   tile %s\nground %.1f m   under foot: %s\nflora: %d drawn, %d colliders\nG: fly/walk  Shift: fast  Esc: mouse" % [
 		"flying" if flying else "walking", Engine.get_frames_per_second(), p.x, p.y, p.z,
-		str(generator.tile_of(p.x, p.z)), ground, under
+		str(generator.tile_of(p.x, p.z)), ground, under, flora.instances, flora.colliders
 	]
 
 	if frames_left > 0:
@@ -308,3 +325,46 @@ func _process(_delta: float) -> void:
 			])
 			print(hud.text)
 			get_tree().quit(0)
+
+
+# Hands finished flora chunks to the view and starts the ones coming into
+# view on worker threads.
+func _update_flora(p: Vector3) -> void:
+	_flora_mutex.lock()
+	var done: Array = _flora_done
+	_flora_done = []
+	_flora_mutex.unlock()
+
+	for entry in done:
+		if _flora_asked.has(entry[0]):
+			flora.set_chunk(entry[0], entry[1], p)
+
+	var now: int = Time.get_ticks_msec()
+
+	if now < _flora_check_msec:
+		return
+
+	_flora_check_msec = now + 500
+
+	for chunk in flora.update(p):
+		_flora_asked.erase(chunk)
+
+	for chunk in flora.wanted_chunks(p):
+		if not _flora_asked.has(chunk):
+			_flora_asked[chunk] = true
+			WorkerThreadPool.add_task(_make_flora_chunk.bind(chunk))
+
+
+func _make_flora_chunk(chunk: Vector2i) -> void:
+	var home: Vector2i = placer.normalize(chunk)
+	var items: Dictionary = placer.chunk_items(home)
+	# Positions as seen from this chunk (differs only across the wrap seam).
+	var shift: Vector3 = Vector3(float(chunk.x - home.x), 0.0, float(chunk.y - home.y)) * placer.chunk_m
+
+	if shift != Vector3.ZERO:
+		for n in range(items["positions"].size()):
+			items["positions"][n] += shift
+
+	_flora_mutex.lock()
+	_flora_done.append([chunk, items])
+	_flora_mutex.unlock()
