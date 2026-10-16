@@ -1,8 +1,8 @@
 {
 	"table": "flora",
 	"format_version": 1,
-	"note": "IDs are append-only. Never renumber or reuse an ID; retire an entry with \"retired\": true and take the next ID from next_id for new entries. Placement (plan step 15) reads per_hectare (plants per hectare by biome name, before the density setting in tile_rules.json runtime_flora), moisture (0 to 255 map value), max_slope_deg, altitude_m (ground height above sea level) and water (water classes it may stand in; empty = dry land only). crown_m is the spacing radius of trees and shrubs, trunk_m the collision radius (0 = walk through). yields are names for the harvesting tables to come. season: when the main yield can be gathered (spring, summer, autumn, winter or all). rarity: common, uncommon, rare (a label for players; how often a plant appears comes from per_hectare). uses: what the yields are good for (food, seasoning, sauce, jam, tea, brewing, medicine, ointment, potion, poison, dye, fibre, timber and so on). properties: effects for the crafting tables to come (wound_healing, fever, sleep, toxic, ...). fantasy: true marks invented species (the owner chose real plus fantasy plants, 2026-10-16); they are rarer than real plants and carry magical properties (glow, arcane, revival, ghost_warding, water_breathing and so on).",
-	"next_id": 98,
+	"note": "IDs are append-only. Never renumber or reuse an ID; retire an entry with \"retired\": true and take the next ID from next_id for new entries. Placement (plan step 15) reads per_hectare (plants per hectare by biome name, before the density setting in tile_rules.json runtime_flora), moisture (0 to 255 map value), max_slope_deg, altitude_m (ground height above sea level) and water (water classes it may stand in; empty = dry land only). crown_m is the spacing radius of trees and shrubs, trunk_m the collision radius (0 = walk through). yields are names for the harvesting tables to come. season: when the main yield can be gathered (spring, summer, autumn, winter or all). rarity: common, uncommon, rare (a label for players; how often a plant appears comes from per_hectare). uses: what the yields are good for (food, seasoning, sauce, jam, tea, brewing, medicine, ointment, potion, poison, dye, fibre, timber and so on). properties: effects for the crafting tables to come (wound_healing, fever, sleep, toxic, ...). fantasy: true marks invented species (the owner chose real plus fantasy plants, 2026-10-16); they are rarer than real plants and carry magical properties (glow, arcane, revival, ghost_warding, water_breathing and so on). rarity can also be very_rare or legendary. Optional: time_of_day (dawn, dusk or night: when it can be found or gathered), discovery (true: rare enough that finding one is worth recording and protecting), bloom_years (flowers only every N game years). Placement does not read these yet.",
+	"next_id": 125,
 	"entries": [
 		{
 			"id": 0,
@@ -4076,8 +4076,8 @@
 		},
 		{
 			"id": 83,
-			"name": "moonpetal",
-			"display": "Moonpetal",
+			"name": "owlpetal",
+			"display": "Owlpetal",
 			"kind": "plant",
 			"shape": "flower",
 			"height_m": [
@@ -4106,7 +4106,7 @@
 			],
 			"water": [],
 			"yields": [
-				"moonpetals"
+				"owlpetals"
 			],
 			"season": [
 				"summer"
@@ -4120,12 +4120,13 @@
 				"night_sight",
 				"calming"
 			],
-			"fantasy": true
+			"fantasy": true,
+			"time_of_day": "night"
 		},
 		{
 			"id": 84,
-			"name": "bloodmoss",
-			"display": "Bloodmoss",
+			"name": "staunchmoss",
+			"display": "Staunchmoss",
 			"kind": "plant",
 			"shape": "fern",
 			"height_m": [
@@ -4155,7 +4156,7 @@
 			],
 			"water": [],
 			"yields": [
-				"bloodmoss"
+				"staunchmoss"
 			],
 			"season": [
 				"all"
@@ -4224,8 +4225,8 @@
 		},
 		{
 			"id": 86,
-			"name": "frostcap",
-			"display": "Frostcap",
+			"name": "rimecap",
+			"display": "Rimecap",
 			"kind": "plant",
 			"shape": "mushroom",
 			"height_m": [
@@ -4255,7 +4256,7 @@
 			],
 			"water": [],
 			"yields": [
-				"frostcap_caps"
+				"rimecap_caps"
 			],
 			"season": [
 				"autumn",
@@ -4322,7 +4323,8 @@
 				"warding",
 				"visions"
 			],
-			"fantasy": true
+			"fantasy": true,
+			"time_of_day": "night"
 		},
 		{
 			"id": 88,
@@ -4377,8 +4379,8 @@
 		},
 		{
 			"id": 89,
-			"name": "silverleaf",
-			"display": "Silverleaf",
+			"name": "mirrorbark",
+			"display": "Mirrorbark",
 			"kind": "tree",
 			"shape": "broadleaf",
 			"height_m": [
@@ -4407,8 +4409,8 @@
 			],
 			"water": [],
 			"yields": [
-				"silverleaf_bark",
-				"silverleaf_wood"
+				"mirrorbark_bark",
+				"mirrorbark_wood"
 			],
 			"season": [
 				"all"
@@ -4479,8 +4481,8 @@
 		},
 		{
 			"id": 91,
-			"name": "dreamshade",
-			"display": "Dreamshade",
+			"name": "hushfern",
+			"display": "Hushfern",
 			"kind": "plant",
 			"shape": "fern",
 			"height_m": [
@@ -4510,7 +4512,7 @@
 			],
 			"water": [],
 			"yields": [
-				"dreamshade_fronds"
+				"hushfern_fronds"
 			],
 			"season": [
 				"summer",
@@ -4581,8 +4583,8 @@
 		},
 		{
 			"id": 93,
-			"name": "glowcap",
-			"display": "Glowcap",
+			"name": "lumencap",
+			"display": "Lumencap",
 			"kind": "plant",
 			"shape": "mushroom",
 			"height_m": [
@@ -4613,7 +4615,7 @@
 			],
 			"water": [],
 			"yields": [
-				"glowcap_caps"
+				"lumencap_caps"
 			],
 			"season": [
 				"autumn"
@@ -4627,7 +4629,8 @@
 				"glow",
 				"arcane"
 			],
-			"fantasy": true
+			"fantasy": true,
+			"time_of_day": "night"
 		},
 		{
 			"id": 94,
@@ -4835,6 +4838,1356 @@
 				"calming"
 			],
 			"fantasy": true
+		},
+		{
+			"id": 98,
+			"name": "dewlantern",
+			"display": "Dewlantern",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.2,
+				0.4
+			],
+			"crown_m": 0.2,
+			"trunk_m": 0.0,
+			"color": [
+				0.7,
+				0.9,
+				0.85
+			],
+			"per_hectare": {
+				"temperate_grassland": 8,
+				"temperate_forest": 3,
+				"mixed_forest": 3
+			},
+			"moisture": [
+				90,
+				220
+			],
+			"max_slope_deg": 30,
+			"altitude_m": [
+				1,
+				1200
+			],
+			"water": [],
+			"yields": [
+				"lantern_dew"
+			],
+			"season": [
+				"spring",
+				"summer"
+			],
+			"rarity": "common",
+			"uses": [
+				"potion",
+				"drink"
+			],
+			"properties": [
+				"glow",
+				"cleansing"
+			],
+			"fantasy": true,
+			"time_of_day": "dawn"
+		},
+		{
+			"id": 99,
+			"name": "honeyspindle",
+			"display": "Honeyspindle",
+			"kind": "shrub",
+			"shape": "shrub",
+			"height_m": [
+				1.0,
+				2.2
+			],
+			"crown_m": 0.9,
+			"trunk_m": 0.0,
+			"color": [
+				0.85,
+				0.7,
+				0.3
+			],
+			"per_hectare": {
+				"mixed_forest": 3,
+				"temperate_forest": 3,
+				"heath": 2
+			},
+			"moisture": [
+				80,
+				210
+			],
+			"max_slope_deg": 30,
+			"altitude_m": [
+				1,
+				1100
+			],
+			"water": [],
+			"yields": [
+				"honeyspindle_nectar",
+				"honeyspindle_pods"
+			],
+			"season": [
+				"summer"
+			],
+			"rarity": "common",
+			"uses": [
+				"food",
+				"mead",
+				"honey",
+				"syrup"
+			],
+			"properties": [
+				"mood",
+				"soothing"
+			],
+			"fantasy": true
+		},
+		{
+			"id": 100,
+			"name": "marrowroot",
+			"display": "Marrowroot",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.3,
+				0.6
+			],
+			"crown_m": 0.25,
+			"trunk_m": 0.0,
+			"color": [
+				0.75,
+				0.62,
+				0.45
+			],
+			"per_hectare": {
+				"temperate_grassland": 6,
+				"alpine_meadow": 2,
+				"savanna": 2
+			},
+			"moisture": [
+				50,
+				200
+			],
+			"max_slope_deg": 30,
+			"altitude_m": [
+				1,
+				1600
+			],
+			"water": [],
+			"yields": [
+				"marrowroots"
+			],
+			"season": [
+				"autumn"
+			],
+			"rarity": "common",
+			"uses": [
+				"food",
+				"flour",
+				"stew"
+			],
+			"properties": [
+				"stamina"
+			],
+			"fantasy": true
+		},
+		{
+			"id": 101,
+			"name": "riverbraid",
+			"display": "Riverbraid",
+			"kind": "plant",
+			"shape": "reed",
+			"height_m": [
+				0.8,
+				1.6
+			],
+			"crown_m": 0.2,
+			"trunk_m": 0.0,
+			"color": [
+				0.35,
+				0.55,
+				0.4
+			],
+			"per_hectare": {
+				"temperate_grassland": 3,
+				"temperate_forest": 3,
+				"mixed_forest": 3,
+				"boreal_forest": 2,
+				"marsh": 3
+			},
+			"moisture": [
+				150,
+				255
+			],
+			"max_slope_deg": 15,
+			"altitude_m": [
+				0.5,
+				900
+			],
+			"water": [
+				"river",
+				"lake"
+			],
+			"yields": [
+				"riverbraid_stems"
+			],
+			"season": [
+				"summer",
+				"autumn"
+			],
+			"rarity": "common",
+			"uses": [
+				"rope",
+				"fibre",
+				"basketry"
+			],
+			"properties": [
+				"water_resistant"
+			],
+			"fantasy": true
+		},
+		{
+			"id": 102,
+			"name": "brinebell",
+			"display": "Brinebell",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.15,
+				0.35
+			],
+			"crown_m": 0.2,
+			"trunk_m": 0.0,
+			"color": [
+				0.55,
+				0.7,
+				0.85
+			],
+			"per_hectare": {
+				"beach": 6,
+				"marsh": 2,
+				"mangrove": 2
+			},
+			"moisture": [
+				0,
+				255
+			],
+			"max_slope_deg": 20,
+			"altitude_m": [
+				0,
+				20
+			],
+			"water": [
+				"estuary"
+			],
+			"yields": [
+				"brinebells"
+			],
+			"season": [
+				"summer"
+			],
+			"rarity": "common",
+			"uses": [
+				"seasoning",
+				"pickle"
+			],
+			"properties": [
+				"preserving"
+			],
+			"fantasy": true
+		},
+		{
+			"id": 103,
+			"name": "sleetberry",
+			"display": "Sleetberry",
+			"kind": "shrub",
+			"shape": "shrub",
+			"height_m": [
+				0.3,
+				0.8
+			],
+			"crown_m": 0.5,
+			"trunk_m": 0.0,
+			"color": [
+				0.75,
+				0.82,
+				0.9
+			],
+			"per_hectare": {
+				"boreal_forest": 4,
+				"tundra": 3,
+				"alpine_meadow": 1
+			},
+			"moisture": [
+				80,
+				255
+			],
+			"max_slope_deg": 30,
+			"altitude_m": [
+				1,
+				1800
+			],
+			"water": [],
+			"yields": [
+				"sleetberries"
+			],
+			"season": [
+				"winter"
+			],
+			"rarity": "common",
+			"uses": [
+				"food",
+				"jam",
+				"cordial"
+			],
+			"properties": [
+				"cold_resistance",
+				"vitality"
+			],
+			"fantasy": true
+		},
+		{
+			"id": 104,
+			"name": "quenchbell",
+			"display": "Quenchbell",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.3,
+				0.6
+			],
+			"crown_m": 0.2,
+			"trunk_m": 0.0,
+			"color": [
+				0.72,
+				0.45,
+				0.25
+			],
+			"per_hectare": {
+				"heath": 2,
+				"bare_rock": 1,
+				"alpine_meadow": 1
+			},
+			"moisture": [
+				30,
+				180
+			],
+			"max_slope_deg": 50,
+			"altitude_m": [
+				50,
+				2200
+			],
+			"water": [],
+			"yields": [
+				"quenchbell_heads"
+			],
+			"season": [
+				"summer"
+			],
+			"rarity": "uncommon",
+			"uses": [
+				"smithing",
+				"dye"
+			],
+			"properties": [
+				"tempering"
+			],
+			"fantasy": true
+		},
+		{
+			"id": 105,
+			"name": "whisperfern",
+			"display": "Whisperfern",
+			"kind": "plant",
+			"shape": "fern",
+			"height_m": [
+				0.4,
+				1.0
+			],
+			"crown_m": 0.35,
+			"trunk_m": 0.0,
+			"color": [
+				0.3,
+				0.48,
+				0.32
+			],
+			"per_hectare": {
+				"temperate_forest": 1.5,
+				"mixed_forest": 1.5,
+				"boreal_forest": 1
+			},
+			"moisture": [
+				120,
+				255
+			],
+			"max_slope_deg": 30,
+			"altitude_m": [
+				1,
+				1400
+			],
+			"water": [],
+			"yields": [
+				"whisperfern_fronds"
+			],
+			"season": [
+				"summer",
+				"autumn"
+			],
+			"rarity": "uncommon",
+			"uses": [
+				"potion",
+				"incense"
+			],
+			"properties": [
+				"keen_hearing"
+			],
+			"fantasy": true
+		},
+		{
+			"id": 106,
+			"name": "cinderfoot",
+			"display": "Cinderfoot",
+			"kind": "plant",
+			"shape": "mushroom",
+			"height_m": [
+				0.05,
+				0.15
+			],
+			"crown_m": 0.15,
+			"trunk_m": 0.0,
+			"color": [
+				0.3,
+				0.25,
+				0.22
+			],
+			"per_hectare": {
+				"volcanic_waste": 3,
+				"dry_scrub": 1,
+				"heath": 1
+			},
+			"moisture": [
+				0,
+				160
+			],
+			"max_slope_deg": 40,
+			"altitude_m": [
+				1,
+				2200
+			],
+			"water": [],
+			"yields": [
+				"cinderfoot_caps"
+			],
+			"season": [
+				"all"
+			],
+			"rarity": "uncommon",
+			"uses": [
+				"ointment",
+				"potion"
+			],
+			"properties": [
+				"burn_healing",
+				"fire_resistance"
+			],
+			"fantasy": true
+		},
+		{
+			"id": 107,
+			"name": "duskmallow",
+			"display": "Duskmallow",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.4,
+				1.0
+			],
+			"crown_m": 0.3,
+			"trunk_m": 0.0,
+			"color": [
+				0.75,
+				0.55,
+				0.8
+			],
+			"per_hectare": {
+				"temperate_grassland": 2,
+				"marsh": 1,
+				"heath": 1
+			},
+			"moisture": [
+				90,
+				230
+			],
+			"max_slope_deg": 25,
+			"altitude_m": [
+				1,
+				900
+			],
+			"water": [],
+			"yields": [
+				"duskmallow_flowers",
+				"duskmallow_roots"
+			],
+			"season": [
+				"summer",
+				"autumn"
+			],
+			"rarity": "uncommon",
+			"uses": [
+				"tea",
+				"medicine"
+			],
+			"properties": [
+				"calming",
+				"sleep"
+			],
+			"fantasy": true,
+			"time_of_day": "dusk"
+		},
+		{
+			"id": 108,
+			"name": "tanglewort",
+			"display": "Tanglewort",
+			"kind": "plant",
+			"shape": "shrub",
+			"height_m": [
+				0.3,
+				0.9
+			],
+			"crown_m": 0.4,
+			"trunk_m": 0.0,
+			"color": [
+				0.32,
+				0.42,
+				0.22
+			],
+			"per_hectare": {
+				"tropical_forest": 3,
+				"temperate_forest": 1.5,
+				"mixed_forest": 1.5
+			},
+			"moisture": [
+				110,
+				255
+			],
+			"max_slope_deg": 35,
+			"altitude_m": [
+				1,
+				1200
+			],
+			"water": [],
+			"yields": [
+				"tanglewort_vines"
+			],
+			"season": [
+				"all"
+			],
+			"rarity": "uncommon",
+			"uses": [
+				"rope",
+				"snares",
+				"basketry"
+			],
+			"properties": [
+				"binding"
+			],
+			"fantasy": true
+		},
+		{
+			"id": 109,
+			"name": "stormreed",
+			"display": "Stormreed",
+			"kind": "plant",
+			"shape": "reed",
+			"height_m": [
+				1.2,
+				2.4
+			],
+			"crown_m": 0.25,
+			"trunk_m": 0.0,
+			"color": [
+				0.45,
+				0.5,
+				0.6
+			],
+			"per_hectare": {
+				"marsh": 1.5
+			},
+			"moisture": [
+				170,
+				255
+			],
+			"max_slope_deg": 10,
+			"altitude_m": [
+				0.5,
+				700
+			],
+			"water": [
+				"marsh",
+				"lake"
+			],
+			"yields": [
+				"stormreed_stalks"
+			],
+			"season": [
+				"summer",
+				"autumn"
+			],
+			"rarity": "uncommon",
+			"uses": [
+				"thatch",
+				"potion"
+			],
+			"properties": [
+				"lightning_ward"
+			],
+			"fantasy": true
+		},
+		{
+			"id": 110,
+			"name": "truthsage",
+			"display": "Truthsage",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.3,
+				0.6
+			],
+			"crown_m": 0.25,
+			"trunk_m": 0.0,
+			"color": [
+				0.6,
+				0.7,
+				0.62
+			],
+			"per_hectare": {
+				"alpine_meadow": 0.4,
+				"heath": 0.3
+			},
+			"moisture": [
+				50,
+				200
+			],
+			"max_slope_deg": 40,
+			"altitude_m": [
+				300,
+				2200
+			],
+			"water": [],
+			"yields": [
+				"truthsage_leaves"
+			],
+			"season": [
+				"summer"
+			],
+			"rarity": "rare",
+			"uses": [
+				"tea",
+				"potion"
+			],
+			"properties": [
+				"truth"
+			],
+			"fantasy": true
+		},
+		{
+			"id": 111,
+			"name": "mirrorcap",
+			"display": "Mirrorcap",
+			"kind": "plant",
+			"shape": "mushroom",
+			"height_m": [
+				0.06,
+				0.15
+			],
+			"crown_m": 0.15,
+			"trunk_m": 0.0,
+			"color": [
+				0.82,
+				0.84,
+				0.88
+			],
+			"per_hectare": {
+				"mixed_forest": 0.3,
+				"boreal_forest": 0.3
+			},
+			"moisture": [
+				140,
+				255
+			],
+			"max_slope_deg": 30,
+			"altitude_m": [
+				1,
+				1500
+			],
+			"water": [],
+			"yields": [
+				"mirrorcap_caps"
+			],
+			"season": [
+				"autumn"
+			],
+			"rarity": "rare",
+			"uses": [
+				"potion"
+			],
+			"properties": [
+				"disguise"
+			],
+			"fantasy": true,
+			"time_of_day": "night"
+		},
+		{
+			"id": 112,
+			"name": "echo_moss",
+			"display": "Echo moss",
+			"kind": "plant",
+			"shape": "fern",
+			"height_m": [
+				0.02,
+				0.06
+			],
+			"crown_m": 0.3,
+			"trunk_m": 0.0,
+			"color": [
+				0.4,
+				0.5,
+				0.45
+			],
+			"per_hectare": {
+				"bare_rock": 0.5,
+				"alpine_meadow": 0.3,
+				"boreal_forest": 0.2
+			},
+			"moisture": [
+				80,
+				255
+			],
+			"max_slope_deg": 60,
+			"altitude_m": [
+				100,
+				2600
+			],
+			"water": [],
+			"yields": [
+				"echo_moss"
+			],
+			"season": [
+				"all"
+			],
+			"rarity": "rare",
+			"uses": [
+				"potion",
+				"messages"
+			],
+			"properties": [
+				"voice_carrying"
+			],
+			"fantasy": true
+		},
+		{
+			"id": 113,
+			"name": "hearthwood",
+			"display": "Hearthwood",
+			"kind": "tree",
+			"shape": "broadleaf",
+			"height_m": [
+				12,
+				24
+			],
+			"crown_m": 4.0,
+			"trunk_m": 0.45,
+			"color": [
+				0.55,
+				0.32,
+				0.18
+			],
+			"per_hectare": {
+				"temperate_forest": 0.15,
+				"mixed_forest": 0.15
+			},
+			"moisture": [
+				90,
+				220
+			],
+			"max_slope_deg": 30,
+			"altitude_m": [
+				1,
+				1000
+			],
+			"water": [],
+			"yields": [
+				"hearthwood_logs"
+			],
+			"season": [
+				"all"
+			],
+			"rarity": "rare",
+			"uses": [
+				"fuel",
+				"timber",
+				"charcoal"
+			],
+			"properties": [
+				"warming",
+				"long_burning"
+			],
+			"fantasy": true
+		},
+		{
+			"id": 114,
+			"name": "nightcrown",
+			"display": "Nightcrown",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.15,
+				0.35
+			],
+			"crown_m": 0.2,
+			"trunk_m": 0.0,
+			"color": [
+				0.2,
+				0.22,
+				0.55
+			],
+			"per_hectare": {
+				"alpine_meadow": 0.3,
+				"tundra": 0.2
+			},
+			"moisture": [
+				60,
+				220
+			],
+			"max_slope_deg": 40,
+			"altitude_m": [
+				900,
+				2800
+			],
+			"water": [],
+			"yields": [
+				"nightcrown_blooms"
+			],
+			"season": [
+				"summer"
+			],
+			"rarity": "rare",
+			"uses": [
+				"potion"
+			],
+			"properties": [
+				"arcane",
+				"night_sight"
+			],
+			"fantasy": true,
+			"time_of_day": "night"
+		},
+		{
+			"id": 115,
+			"name": "mournbloom",
+			"display": "Mournbloom",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.3,
+				0.7
+			],
+			"crown_m": 0.25,
+			"trunk_m": 0.0,
+			"color": [
+				0.55,
+				0.55,
+				0.65
+			],
+			"per_hectare": {
+				"heath": 0.2,
+				"bare_rock": 0.2,
+				"boreal_forest": 0.1
+			},
+			"moisture": [
+				40,
+				220
+			],
+			"max_slope_deg": 40,
+			"altitude_m": [
+				1,
+				1800
+			],
+			"water": [],
+			"yields": [
+				"mournbloom_petals"
+			],
+			"season": [
+				"autumn"
+			],
+			"rarity": "rare",
+			"uses": [
+				"potion",
+				"incense"
+			],
+			"properties": [
+				"spirit_sight"
+			],
+			"fantasy": true,
+			"time_of_day": "night"
+		},
+		{
+			"id": 116,
+			"name": "pilgrims_cup",
+			"display": "Pilgrim's cup",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.3,
+				0.7
+			],
+			"crown_m": 0.25,
+			"trunk_m": 0.0,
+			"color": [
+				0.5,
+				0.65,
+				0.3
+			],
+			"per_hectare": {
+				"marsh": 0.3,
+				"tropical_forest": 0.3,
+				"mangrove": 0.2
+			},
+			"moisture": [
+				170,
+				255
+			],
+			"max_slope_deg": 15,
+			"altitude_m": [
+				0.5,
+				900
+			],
+			"water": [
+				"marsh"
+			],
+			"yields": [
+				"pilgrims_cup_water",
+				"pilgrims_cup_pitchers"
+			],
+			"season": [
+				"summer"
+			],
+			"rarity": "rare",
+			"uses": [
+				"water",
+				"medicine"
+			],
+			"properties": [
+				"antidote",
+				"cleansing"
+			],
+			"fantasy": true
+		},
+		{
+			"id": 117,
+			"name": "sunsilver_vine",
+			"display": "Sunsilver vine",
+			"kind": "shrub",
+			"shape": "shrub",
+			"height_m": [
+				1.5,
+				3.0
+			],
+			"crown_m": 1.2,
+			"trunk_m": 0.0,
+			"color": [
+				0.9,
+				0.85,
+				0.55
+			],
+			"per_hectare": {
+				"tropical_forest": 0.03,
+				"temperate_forest": 0.01,
+				"mixed_forest": 0.01
+			},
+			"moisture": [
+				120,
+				255
+			],
+			"max_slope_deg": 35,
+			"altitude_m": [
+				1,
+				900
+			],
+			"water": [],
+			"yields": [
+				"sunsilver_leaves"
+			],
+			"season": [
+				"summer"
+			],
+			"rarity": "very_rare",
+			"uses": [
+				"dye",
+				"gilding",
+				"perfume"
+			],
+			"properties": [
+				"gilding"
+			],
+			"fantasy": true,
+			"discovery": true
+		},
+		{
+			"id": 118,
+			"name": "frostglass_orchid",
+			"display": "Frostglass orchid",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.15,
+				0.3
+			],
+			"crown_m": 0.2,
+			"trunk_m": 0.0,
+			"color": [
+				0.85,
+				0.92,
+				0.98
+			],
+			"per_hectare": {
+				"alpine_meadow": 0.02,
+				"tundra": 0.01
+			},
+			"moisture": [
+				80,
+				255
+			],
+			"max_slope_deg": 50,
+			"altitude_m": [
+				1400,
+				3000
+			],
+			"water": [],
+			"yields": [
+				"frostglass_petals"
+			],
+			"season": [
+				"winter"
+			],
+			"rarity": "very_rare",
+			"uses": [
+				"perfume",
+				"potion"
+			],
+			"properties": [
+				"preserving"
+			],
+			"fantasy": true,
+			"discovery": true
+		},
+		{
+			"id": 119,
+			"name": "sevenyear_lily",
+			"display": "Sevenyear lily",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.6,
+				1.2
+			],
+			"crown_m": 0.3,
+			"trunk_m": 0.0,
+			"color": [
+				0.95,
+				0.88,
+				0.7
+			],
+			"per_hectare": {
+				"temperate_grassland": 0.02,
+				"marsh": 0.02,
+				"heath": 0.01
+			},
+			"moisture": [
+				90,
+				240
+			],
+			"max_slope_deg": 25,
+			"altitude_m": [
+				1,
+				1200
+			],
+			"water": [],
+			"yields": [
+				"sevenyear_bulbs",
+				"sevenyear_blossoms"
+			],
+			"season": [
+				"summer"
+			],
+			"rarity": "very_rare",
+			"uses": [
+				"potion",
+				"medicine"
+			],
+			"properties": [
+				"longevity"
+			],
+			"fantasy": true,
+			"discovery": true,
+			"bloom_years": 7
+		},
+		{
+			"id": 120,
+			"name": "stillwater_lotus",
+			"display": "Stillwater lotus",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.1,
+				0.3
+			],
+			"crown_m": 0.4,
+			"trunk_m": 0.0,
+			"color": [
+				0.95,
+				0.75,
+				0.85
+			],
+			"per_hectare": {
+				"marsh": 0.02,
+				"temperate_forest": 0.01,
+				"mixed_forest": 0.01,
+				"tropical_forest": 0.01
+			},
+			"moisture": [
+				100,
+				255
+			],
+			"max_slope_deg": 10,
+			"altitude_m": [
+				0.5,
+				1500
+			],
+			"water": [
+				"lake"
+			],
+			"yields": [
+				"stillwater_seeds",
+				"stillwater_petals"
+			],
+			"season": [
+				"summer"
+			],
+			"rarity": "very_rare",
+			"uses": [
+				"potion",
+				"incense"
+			],
+			"properties": [
+				"visions",
+				"prophecy"
+			],
+			"fantasy": true,
+			"discovery": true
+		},
+		{
+			"id": 121,
+			"name": "gloaming_star",
+			"display": "Gloaming star",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.2,
+				0.4
+			],
+			"crown_m": 0.2,
+			"trunk_m": 0.0,
+			"color": [
+				0.95,
+				0.6,
+				0.85
+			],
+			"per_hectare": {
+				"heath": 0.002,
+				"alpine_meadow": 0.002,
+				"temperate_grassland": 0.001
+			},
+			"moisture": [
+				60,
+				220
+			],
+			"max_slope_deg": 35,
+			"altitude_m": [
+				1,
+				2400
+			],
+			"water": [],
+			"yields": [
+				"gloaming_star"
+			],
+			"season": [
+				"all"
+			],
+			"rarity": "legendary",
+			"uses": [
+				"potion"
+			],
+			"properties": [
+				"arcane",
+				"luck"
+			],
+			"fantasy": true,
+			"discovery": true,
+			"time_of_day": "dusk"
+		},
+		{
+			"id": 122,
+			"name": "everember",
+			"display": "Everember",
+			"kind": "tree",
+			"shape": "broadleaf",
+			"height_m": [
+				10,
+				18
+			],
+			"crown_m": 3.5,
+			"trunk_m": 0.4,
+			"color": [
+				0.85,
+				0.35,
+				0.15
+			],
+			"per_hectare": {
+				"volcanic_waste": 0.002,
+				"mixed_forest": 0.0005,
+				"temperate_forest": 0.0005
+			},
+			"moisture": [
+				0,
+				220
+			],
+			"max_slope_deg": 35,
+			"altitude_m": [
+				1,
+				1800
+			],
+			"water": [],
+			"yields": [
+				"everember_leaves",
+				"everember_wood"
+			],
+			"season": [
+				"all"
+			],
+			"rarity": "legendary",
+			"uses": [
+				"potion",
+				"fine_wood"
+			],
+			"properties": [
+				"revival",
+				"warming"
+			],
+			"fantasy": true,
+			"discovery": true
+		},
+		{
+			"id": 123,
+			"name": "witness_tree",
+			"display": "Witness tree",
+			"kind": "tree",
+			"shape": "broadleaf",
+			"height_m": [
+				30,
+				45
+			],
+			"crown_m": 8.0,
+			"trunk_m": 1.2,
+			"color": [
+				0.3,
+				0.38,
+				0.25
+			],
+			"per_hectare": {
+				"temperate_forest": 0.001,
+				"mixed_forest": 0.001,
+				"boreal_forest": 0.0005
+			},
+			"moisture": [
+				90,
+				240
+			],
+			"max_slope_deg": 25,
+			"altitude_m": [
+				1,
+				1200
+			],
+			"water": [],
+			"yields": [
+				"witness_bark"
+			],
+			"season": [
+				"all"
+			],
+			"rarity": "legendary",
+			"uses": [
+				"potion",
+				"ink"
+			],
+			"properties": [
+				"memory",
+				"visions"
+			],
+			"fantasy": true,
+			"discovery": true
+		},
+		{
+			"id": 124,
+			"name": "tidecrown",
+			"display": "Tidecrown",
+			"kind": "plant",
+			"shape": "reed",
+			"height_m": [
+				0.2,
+				0.5
+			],
+			"crown_m": 0.25,
+			"trunk_m": 0.0,
+			"color": [
+				0.75,
+				0.88,
+				0.92
+			],
+			"per_hectare": {
+				"beach": 0.002,
+				"mangrove": 0.002
+			},
+			"moisture": [
+				0,
+				255
+			],
+			"max_slope_deg": 10,
+			"altitude_m": [
+				-2,
+				3
+			],
+			"water": [
+				"estuary",
+				"ocean"
+			],
+			"yields": [
+				"tidecrown_pearls"
+			],
+			"season": [
+				"summer"
+			],
+			"rarity": "legendary",
+			"uses": [
+				"jewelry",
+				"potion"
+			],
+			"properties": [
+				"water_breathing",
+				"wealth"
+			],
+			"fantasy": true,
+			"discovery": true
 		}
 	]
 }
