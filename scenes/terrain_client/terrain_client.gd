@@ -24,6 +24,7 @@ const StreamScript := preload("res://src/stream/network_voxel_stream.gd")
 const CacheScript := preload("res://src/stream/client_block_cache.gd")
 const NetScript := preload("res://src/stream/terrain_net.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
+const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const FloraViewScript := preload("res://src/flora/flora_view.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
@@ -191,14 +192,14 @@ func _on_dug(center: Vector3, radius: float) -> void:
 	])
 
 
-func _on_flora(chunk: Vector2i, bytes: PackedByteArray) -> void:
+func _on_flora(chunk: Vector2i, bytes: PackedByteArray, water: PackedByteArray) -> void:
 	if flora == null:
 		return
 
 	_flora_chunks += 1
-	_flora_bytes += bytes.size()
+	_flora_bytes += bytes.size() + water.size()
 	_flora_done_msec = Time.get_ticks_msec() - connected_msec
-	flora.set_chunk(chunk, PlacerScript.decode(bytes, Vector2(chunk) * flora.chunk_m), body.global_position)
+	flora.set_chunk(chunk, PlacerScript.decode(bytes, Vector2(chunk) * flora.chunk_m), body.global_position, WaterGridScript.decode(water))
 
 
 func _on_flora_cut(chunk: Vector2i, id: int) -> void:
@@ -440,8 +441,9 @@ func _process(_delta: float) -> void:
 				float(stream.bytes_received) / maxf(float(stream.blocks_received), 1.0), cache.hits, cache.misses, stream.timeouts, stream.pending(), stream.prefetch_used
 			])
 			print("Terrain client: cache folder %.1f MB" % (float(cache.size_bytes()) / 1048576.0))
-			print("Terrain client: flora %d chunks (%.2f MB, last %d ms after the welcome), %d items held, %d drawn, %d colliders, %d cuts" % [
-				_flora_chunks, float(_flora_bytes) / 1048576.0, _flora_done_msec, flora.item_count(), flora.instances, flora.colliders, _flora_cuts
+			print("Terrain client: flora %d chunks (%.2f MB with water, last %d ms after the welcome), %d items held, %d drawn, %d colliders, %d cuts; water in %d chunks, %d cells" % [
+				_flora_chunks, float(_flora_bytes) / 1048576.0, _flora_done_msec, flora.item_count(), flora.instances, flora.colliders, _flora_cuts,
+				flora.water_chunks, flora.water_cells
 			])
 			var probe: Vector3i = Vector3i((Vector3(world["spawn"]) + Vector3(0.0, -3.0, 0.0)).round())
 			print("Terrain client: ground value 3 m under the spawn %.2f (above 0 is open)" % terrain.get_voxel_tool().get_voxel_f(probe))

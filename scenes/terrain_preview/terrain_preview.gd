@@ -14,7 +14,7 @@ extends Node3D
 # The player starts at the starter spawn point of the tile named by
 # --tile=X,Z (default 3,4), or at the tile's middle. Terrain comes straight
 # from the generator, with no disk cache. Water is drawn only as a flat
-# sea at 0 m; rivers and lakes are not drawn yet. Trees and plants come
+# sea at 0 m; rivers and lakes as flat water at their surface level. Trees and plants come
 # straight from the flora placer (plan step 15), worked out on worker
 # threads.
 #
@@ -28,6 +28,7 @@ const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
+const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const FloraViewScript := preload("res://src/flora/flora_view.gd")
 
 const WORLD_DIR := "res://worlds/base_world"
@@ -337,7 +338,7 @@ func _update_flora(p: Vector3) -> void:
 
 	for entry in done:
 		if _flora_asked.has(entry[0]):
-			flora.set_chunk(entry[0], entry[1], p)
+			flora.set_chunk(entry[0], entry[1], p, entry[2])
 
 	var now: int = Time.get_ticks_msec()
 
@@ -365,6 +366,7 @@ func _make_flora_chunk(chunk: Vector2i) -> void:
 		for n in range(items["positions"].size()):
 			items["positions"][n] += shift
 
+	var water: Dictionary = WaterGridScript.chunk_levels(generator, placer.chunk_origin(home), placer.chunk_m)
 	_flora_mutex.lock()
-	_flora_done.append([chunk, items])
+	_flora_done.append([chunk, items, water])
 	_flora_mutex.unlock()

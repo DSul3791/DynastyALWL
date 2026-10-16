@@ -260,7 +260,7 @@ func _process(_delta: float) -> void:
 			continue
 
 		if entry.size() > 3:
-			net.deliver_flora.rpc_id(entry[0], entry[1], entry[2])
+			net.deliver_flora.rpc_id(entry[0], entry[1], entry[2], entry[4])
 			_peers[entry[0]]["flora_bytes"] = int(_peers[entry[0]].get("flora_bytes", 0)) + (entry[2] as PackedByteArray).size()
 			continue
 
@@ -331,8 +331,9 @@ func _worker_loop() -> void:
 
 		if not flora_item.is_empty():
 			var chunk_bytes: PackedByteArray = flora.chunk_bytes(flora_item[1])
+			var water_bytes: PackedByteArray = flora.water_bytes(flora_item[1])
 			_done_mutex.lock()
-			_done.append([flora_item[0], flora_item[1], chunk_bytes, "flora"])
+			_done.append([flora_item[0], flora_item[1], chunk_bytes, "flora", water_bytes])
 			_done_mutex.unlock()
 			continue
 

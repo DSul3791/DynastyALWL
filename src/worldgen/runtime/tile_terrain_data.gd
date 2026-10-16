@@ -11,7 +11,7 @@ extends RefCounted
 # Everything here is read-only once `load_file` returns, so worker threads
 # can share one instance.
 #
-# Memory: about 47 MB per tile (height and layer offset as 4-byte values,
+# Memory: about 62 MB per tile (height and layer offset as 4-byte values,
 # the rest one byte per sample).
 
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
@@ -30,6 +30,7 @@ var province: PackedByteArray = PackedByteArray()
 var layer_offset: PackedInt32Array = PackedInt32Array()  # raw x 0.1 m
 var soil: PackedByteArray = PackedByteArray()
 var water_class: PackedByteArray = PackedByteArray()
+var water_surface: PackedFloat32Array = PackedFloat32Array()   # NAN = no water above sea level
 var biome: PackedByteArray = PackedByteArray()
 var moisture: PackedByteArray = PackedByteArray()
 var flora_seed: int = 0
@@ -79,7 +80,7 @@ func load_file(path: String, tile_coord: Vector2i, tile_size_m: float, rules: Di
 
 	flora_seed = int(header.get("flora_seed", 0))
 
-	for name in ["height", "cover", "province", "layer_offset", "soil", "water_class", "biome", "moisture"]:
+	for name in ["height", "cover", "province", "layer_offset", "soil", "water_class", "water_surface", "biome", "moisture"]:
 		var section: Dictionary = TileFileScript.read_section(path, table, name)
 
 		if not section["ok"]:
@@ -93,6 +94,7 @@ func load_file(path: String, tile_coord: Vector2i, tile_size_m: float, rules: Di
 	province = maps["province"]
 	soil = maps["soil"]
 	water_class = maps["water_class"]
+	water_surface = TileFileScript.decode_water_surface(maps["water_surface"])
 	biome = maps["biome"]
 	moisture = maps["moisture"]
 

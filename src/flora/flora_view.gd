@@ -11,9 +11,13 @@ extends Node3D
 # are culled cheaply. Trees and shrubs within collision_m get trunk
 # colliders so the player cannot walk through them.
 #
+# Each chunk also carries its rivers and lakes (WaterGrid levels), drawn as
+# flat water out to tree view distance.
+#
 # Meshes are simple stand-ins built from the species table (trunk, crown
 # shape and color) until real models exist.
 
+const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const KIND_TREE := 0
 const KIND_SHRUB := 1
 const KIND_PLANT := 2
@@ -25,10 +29,13 @@ var view_m: PackedFloat32Array = PackedFloat32Array([900.0, 300.0, 120.0])
 var collision_m: float = 160.0
 var instances: int = 0                 # items drawn now
 var colliders: int = 0                 # trunk colliders now
+var water_chunks: int = 0              # chunks with water drawn
+var water_cells: int = 0
 
 var _species: Dictionary = {}          # species id -> {"kind", "mesh", "trunk", "height"}
 var _chunks: Dictionary = {}           # Vector2i -> {"items", "level", "node"}
 var _trunk_material: StandardMaterial3D
+var _water_material: StandardMaterial3D
 
 
 func setup(tables, tile_rules: Dictionary) -> void:
@@ -43,6 +50,12 @@ func setup(tables, tile_rules: Dictionary) -> void:
 	_trunk_material = StandardMaterial3D.new()
 	_trunk_material.albedo_color = Color(0.32, 0.24, 0.16)
 	_trunk_material.roughness = 1.0
+	_water_material = StandardMaterial3D.new()
+	_water_material.albedo_color = Color(0.16, 0.36, 0.42, 0.78)
+	_water_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_water_material.roughness = 0.08
+	_water_material.metallic_specular = 0.8
+	_water_material.cull_mode = BaseMaterial3D.CULL_DISABLED
 
 	for entry in tables.get_entries("flora"):
 		if entry.get("retired", false):
@@ -81,9 +94,24 @@ func has_chunk(chunk: Vector2i) -> bool:
 
 
 # Sets a chunk's items (as from FloraPlacer.chunk_items or decode).
-func set_chunk(chunk: Vector2i, items: Dictionary, position: Vector3) -> void:
+func set_chunk(chunk: Vector2i, items: Dictionary, position: Vector3, water: Dictionary = {}) -> void:
 	drop_chunk(chunk)
-	_chunks[chunk] = {"items": items, "level": -1, "node": null}
+	var entry: Dictionary = {"items": items, "level": -1, "node": null, "water": null}
+	_chunks[chunk] = entry
+
+	if int(water.get("wet", 0)) > 0:
+		var mesh: ArrayMesh = WaterGridScript.build_mesh(water, _water_material)
+
+		if mesh.get_surface_count() > 0:
+			var draw: MeshInstance3D = MeshInstance3D.new()
+			draw.mesh = mesh
+			draw.position = Vector3(float(chunk.x) * chunk_m, 0.0, float(chunk.y) * chunk_m)
+			draw.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			add_child(draw)
+			entry["water"] = draw
+			water_chunks += 1
+			water_cells += mesh.surface_get_array_len(0) / 6
+
 	_refresh(chunk, position)
 
 
@@ -94,6 +122,13 @@ func drop_chunk(chunk: Vector2i) -> void:
 		return
 
 	_clear_node(entry)
+	var water: MeshInstance3D = entry.get("water")
+
+	if water != null:
+		water_chunks -= 1
+		water_cells -= water.mesh.surface_get_array_len(0) / 6
+		water.queue_free()
+
 	_chunks.erase(chunk)
 
 

@@ -14,13 +14,14 @@ extends Node
 #   server -> client  dug              a sphere of ground was removed: apply it to loaded terrain
 #   client -> server  request_flora    flora chunks wanted (pairs of chunk x, z)
 #   server -> client  deliver_flora    one chunk's flora (FloraPlacer.encode, removals applied)
+#                                      and its rivers and lakes (WaterGrid.encode, empty if dry)
 #   client -> server  cut_flora        remove one flora item (test harvest)
 #   server -> client  flora_cut        a flora item was removed
 #
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 3
+const PROTOCOL_VERSION := 4
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -29,7 +30,7 @@ signal tile_changed_received(tile: Vector2i, revision: int)
 signal dig_requested(peer_id: int, center: Vector3, radius: float)
 signal dug_received(center: Vector3, radius: float)
 signal flora_requested(peer_id: int, chunks: PackedInt32Array)
-signal flora_received(chunk: Vector2i, bytes: PackedByteArray)
+signal flora_received(chunk: Vector2i, bytes: PackedByteArray, water: PackedByteArray)
 signal cut_flora_requested(peer_id: int, chunk: Vector2i, id: int)
 signal flora_cut_received(chunk: Vector2i, id: int)
 
@@ -73,8 +74,8 @@ func request_flora(chunks: PackedInt32Array) -> void:
 
 
 @rpc("authority", "call_remote", "reliable")
-func deliver_flora(chunk: Vector2i, bytes: PackedByteArray) -> void:
-	flora_received.emit(chunk, bytes)
+func deliver_flora(chunk: Vector2i, bytes: PackedByteArray, water: PackedByteArray) -> void:
+	flora_received.emit(chunk, bytes, water)
 
 
 @rpc("any_peer", "call_remote", "reliable")

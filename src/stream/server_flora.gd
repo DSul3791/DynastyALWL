@@ -13,6 +13,7 @@ extends RefCounted
 # Thread safe: chunk_bytes may run on many worker threads at once.
 
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
+const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const MEMORY_CHUNKS := 2048
 
 var placer
@@ -22,6 +23,7 @@ var memory_hits: int = 0
 var _path: String = ""
 var _removed: Dictionary = {}          # Vector2i chunk -> {item id: true}
 var _memory: Dictionary = {}           # Vector2i chunk -> PackedByteArray
+var _water: Dictionary = {}            # Vector2i chunk -> PackedByteArray (water never changes)
 var _mutex: Mutex = Mutex.new()
 
 
@@ -73,6 +75,28 @@ func chunk_bytes(chunk: Vector2i) -> PackedByteArray:
 
 	while _memory.size() > MEMORY_CHUNKS:
 		_memory.erase(_memory.keys()[0])
+
+	_mutex.unlock()
+	return bytes
+
+
+# A chunk's rivers and lakes for clients (empty when it has none).
+func water_bytes(chunk: Vector2i) -> PackedByteArray:
+	var home: Vector2i = placer.normalize(chunk)
+	_mutex.lock()
+	var known: bool = _water.has(home)
+	var bytes: PackedByteArray = _water.get(home, PackedByteArray())
+	_mutex.unlock()
+
+	if known:
+		return bytes
+
+	bytes = WaterGridScript.encode(WaterGridScript.chunk_levels(placer.generator, placer.chunk_origin(home), placer.chunk_m))
+	_mutex.lock()
+	_water[home] = bytes
+
+	while _water.size() > MEMORY_CHUNKS:
+		_water.erase(_water.keys()[0])
 
 	_mutex.unlock()
 	return bytes
