@@ -14,7 +14,8 @@ A multiplayer medieval survival and town-building game: Godot 4.7.2 (custom buil
 
 | File | What it holds |
 |---|---|
-| `DESIGN_IDEAS.md` | The whole game design (16 sections), every decision tagged [Decided] / [Proposed] / [Idea] / [Open] |
+| `DESIGN_IDEAS.md` | The whole game design (16 sections), every decision tagged [Decided] / [Proposed] / [Idea] / [Open]. The permanent home for ideas to raise in design discussions and fold in when they fit; "(brainstorm)" marks ideas from the owner's ChatGPT sessions |
+| `ideas_inbox/` | Where ChatGPT drops design ideas from the owner's conversations; see its README |
 | `DESIGN_REJECTED.md` | Ideas the owner rejected (log them here automatically) |
 | `DESIGN_PRINCIPLES.md` | Underlying philosophy (safe, kind, generous; do it yourself or hire it out; nobody is forced to build a town) |
 | `GENERATOR_V2_PLAN.md` | Step-by-step plan for the world generator, with progress notes per step |
@@ -24,6 +25,7 @@ A multiplayer medieval survival and town-building game: Godot 4.7.2 (custom buil
 ## Working rules
 
 - Every decision goes in `DESIGN_IDEAS.md` with a status tag. The newest user statement wins.
+- At the start of each session, and whenever the owner mentions new ideas, check `ideas_inbox/`: fold each file into `DESIGN_IDEAS.md` as "(brainstorm)" ideas, flag conflicts with `DESIGN_PRINCIPLES.md` and `DESIGN_REJECTED.md`, delete the file, commit, and tell the owner briefly (steps in `ideas_inbox/README.md`).
 - Unlabeled time is game time; real time only when written "real". Ratio 24: a game day is one real hour, a game year 15.2 real days.
 - Explain simply, suggest answers with questions, do not over-micromanage. The owner often uses voice: keep answers short, no recaps, ask when unclear.
 - Rejected ideas go to `DESIGN_REJECTED.md`; the philosophy behind them goes to `DESIGN_PRINCIPLES.md`.
