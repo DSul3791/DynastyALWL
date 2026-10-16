@@ -91,41 +91,98 @@ static func decode(bytes: PackedByteArray) -> Dictionary:
 	return {"count": count, "spacing": spacing, "levels": levels, "wet": wet}
 
 
-# A water mesh for a chunk: one quad per grid cell with any wet corner, at
-# the mean level of its wet corners (the ground hides the parts that lie
-# under the banks). Vertex positions are relative to the chunk corner.
+# A water mesh for a chunk: one smooth surface over the grid. Wet points
+# sit at their own level; dry points beside water are pulled under the bank
+# (SHORE_DROP m lower) and fade out, so the surface slides under the ground
+# without hard edges or overlapping panels. Only cells with at least one
+# wet corner are drawn. Vertex positions are relative to the chunk corner;
+# vertex alpha carries the fade (use vertex colors as albedo).
+const SHORE_DROP := 1.5
+
+
 static func build_mesh(grid: Dictionary, material: Material) -> ArrayMesh:
 	var count: int = int(grid["count"])
 	var spacing: float = float(grid["spacing"])
 	var levels: PackedFloat32Array = grid["levels"]
-	var vertices: PackedVector3Array = PackedVector3Array()
-	var normals: PackedVector3Array = PackedVector3Array()
+	var height: PackedFloat32Array = PackedFloat32Array()
+	height.resize(count * count)
+	height.fill(NAN)
 
-	for j in range(count - 1):
-		for i in range(count - 1):
+	for j in range(count):
+		for i in range(count):
+			var n: int = j * count + i
+
+			if not is_nan(levels[n]):
+				height[n] = levels[n]
+				continue
+
 			var total: float = 0.0
 			var wet: int = 0
 
-			for corner in [j * count + i, j * count + i + 1, (j + 1) * count + i, (j + 1) * count + i + 1]:
-				if not is_nan(levels[corner]):
-					total += levels[corner]
-					wet += 1
+			for dj in range(-1, 2):
+				for di in range(-1, 2):
+					var jj: int = j + dj
+					var ii: int = i + di
 
-			if wet == 0:
+					if jj < 0 or jj >= count or ii < 0 or ii >= count:
+						continue
+
+					var other: float = levels[jj * count + ii]
+
+					if not is_nan(other):
+						total += other
+						wet += 1
+
+			if wet > 0:
+				height[n] = total / float(wet) - SHORE_DROP
+
+	var vertices: PackedVector3Array = PackedVector3Array()
+	var normals: PackedVector3Array = PackedVector3Array()
+	var colors: PackedColorArray = PackedColorArray()
+	var indices: PackedInt32Array = PackedInt32Array()
+	var slot: PackedInt32Array = PackedInt32Array()
+	slot.resize(count * count)
+	slot.fill(-1)
+
+	for j in range(count - 1):
+		for i in range(count - 1):
+			var corners: Array = [j * count + i, j * count + i + 1, (j + 1) * count + i + 1, (j + 1) * count + i]
+			var any_wet: bool = false
+
+			for c in corners:
+				if not is_nan(levels[c]):
+					any_wet = true
+
+			if not any_wet:
 				continue
 
-			var y: float = total / float(wet)
-			var x0: float = float(i) * spacing
-			var z0: float = float(j) * spacing
-			# Slightly larger than the cell so neighbors at different levels overlap.
-			var a: Vector3 = Vector3(x0 - 0.3, y, z0 - 0.3)
-			var b: Vector3 = Vector3(x0 + spacing + 0.3, y, z0 - 0.3)
-			var c: Vector3 = Vector3(x0 + spacing + 0.3, y, z0 + spacing + 0.3)
-			var d: Vector3 = Vector3(x0 - 0.3, y, z0 + spacing + 0.3)
-			vertices.append_array(PackedVector3Array([a, b, c, a, c, d]))
+			var ids: Array = []
 
-			for n in range(6):
-				normals.append(Vector3.UP)
+			for c in corners:
+				if slot[c] < 0:
+					slot[c] = vertices.size()
+					var level: float = height[c]
+
+					if is_nan(level):
+						# A dry corner with no wet neighbor in this chunk: sit with the cell's wet ones.
+						level = 0.0
+						var wet_total: float = 0.0
+						var wet_count: int = 0
+
+						for d in corners:
+							if not is_nan(levels[d]):
+								wet_total += levels[d]
+								wet_count += 1
+
+						level = wet_total / float(wet_count) - SHORE_DROP
+
+					vertices.append(Vector3(float(c % count) * spacing, level, float(c / count) * spacing))
+					normals.append(Vector3.UP)
+					colors.append(Color(1.0, 1.0, 1.0, 1.0 if not is_nan(levels[c]) else 0.0))
+
+				ids.append(slot[c])
+
+			indices.append_array(PackedInt32Array([ids[0], ids[1], ids[2], ids[0], ids[2], ids[3]]))
 
 	var mesh: ArrayMesh = ArrayMesh.new()
 
@@ -136,6 +193,8 @@ static func build_mesh(grid: Dictionary, material: Material) -> ArrayMesh:
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX] = vertices
 	arrays[Mesh.ARRAY_NORMAL] = normals
+	arrays[Mesh.ARRAY_COLOR] = colors
+	arrays[Mesh.ARRAY_INDEX] = indices
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	mesh.surface_set_material(0, material)
 	return mesh

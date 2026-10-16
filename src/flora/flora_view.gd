@@ -56,6 +56,7 @@ func setup(tables, tile_rules: Dictionary) -> void:
 	_water_material.roughness = 0.08
 	_water_material.metallic_specular = 0.8
 	_water_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_water_material.vertex_color_use_as_albedo = true
 
 	for entry in tables.get_entries("flora"):
 		if entry.get("retired", false):
@@ -110,7 +111,7 @@ func set_chunk(chunk: Vector2i, items: Dictionary, position: Vector3, water: Dic
 			add_child(draw)
 			entry["water"] = draw
 			water_chunks += 1
-			water_cells += mesh.surface_get_array_len(0) / 6
+			water_cells += mesh.surface_get_array_index_len(0) / 6
 
 	_refresh(chunk, position)
 
@@ -126,7 +127,7 @@ func drop_chunk(chunk: Vector2i) -> void:
 
 	if water != null:
 		water_chunks -= 1
-		water_cells -= water.mesh.surface_get_array_len(0) / 6
+		water_cells -= water.mesh.surface_get_array_index_len(0) / 6
 		water.queue_free()
 
 	_chunks.erase(chunk)

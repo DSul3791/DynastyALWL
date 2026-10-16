@@ -50,10 +50,11 @@ var body: CharacterBody3D
 var camera: Camera3D
 var hud: Label
 var sea: MeshInstance3D
-var flying: bool = true
+var flying: bool = false
 var pitch: float = 0.0
 var frames_left: int = -1
 var test_speed: float = 0.0
+var rescued: int = 0                   # times the player was lifted back above the ground
 var test_walk: bool = false
 var _walk_phase: int = 0               # 0 wait, 1 falling, 2 walking, 3 into a tree, 4 done
 var _walk_msec: int = 0
@@ -395,6 +396,14 @@ func _physics_process(delta: float) -> void:
 		body.global_position += direction * FLY_SPEED * fast * delta
 	else:
 		var velocity: Vector3 = direction.normalized() * WALK_SPEED * fast
+
+		# Gravity only applies once there is ground below to land on. Fresh
+		# or far-off ground has no collision yet, so wait for it; a player who
+		# already fell below it is lifted back to the surface.
+		if not _ground_ready():
+			body.velocity = Vector3.ZERO
+			return
+
 		velocity.y = body.velocity.y - GRAVITY * delta
 
 		if body.is_on_floor() and Input.is_key_pressed(KEY_SPACE):
@@ -521,15 +530,49 @@ func _walk_step() -> void:
 
 				if _walk_phase == 4:
 					_walk_report()
+		5:
+			if now - _walk_msec > 3000:
+				_walk_stats["rescued_gap"] = body.global_position.y - float(_walk_stats.get("rescue_ground", 0.0))
+				_walk_phase = 4
+				_walk_report()
 		3:
 			_walk_stats["tree_max_x"] = maxf(_walk_stats.get("tree_max_x", -INF), body.global_position.x)
 
 			if now - _walk_msec > 4000:
+				# Fell through the world? Drop the player 60 m below the ground
+				# and see that they are lifted back.
 				_walk_dir = Vector3.ZERO
-				_walk_phase = 4
-				_walk_report()
+				var p: Vector3 = body.global_position
+				_walk_stats["rescue_ground"] = _ground_below(p)
+				body.global_position = p + Vector3(0.0, -60.0, 0.0)
+				body.velocity = Vector3.ZERO
+				_walk_phase = 5
+				_walk_msec = now
 			elif now - _walk_msec > 1000:
 				_walk_dir = Vector3(1.0, 0.0, 0.0)
+
+
+# True when collision exists below the player. When there is none, finds
+# the surface above (the player fell through, or the ground loaded
+# underneath) and stands the player on it; false while nothing is loaded.
+func _ground_ready() -> bool:
+	var here: Vector3 = body.global_position
+	var space: PhysicsDirectSpaceState3D = body.get_world_3d().direct_space_state
+	var down: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(here + Vector3(0.0, 1.0, 0.0), here + Vector3(0.0, -300.0, 0.0))
+	down.exclude = [body.get_rid()]
+
+	if not space.intersect_ray(down).is_empty():
+		return true
+
+	var up: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(here + Vector3(0.0, 800.0, 0.0), here + Vector3(0.0, -1.0, 0.0))
+	up.exclude = [body.get_rid()]
+	var hit: Dictionary = space.intersect_ray(up)
+
+	if not hit.is_empty():
+		body.global_position = Vector3(here.x, float(hit["position"].y) + 1.2, here.z)
+		rescued += 1
+
+	return false
 
 
 # Ground height under a point, from the terrain colliders (NAN if none).
@@ -571,10 +614,10 @@ func _place_by_tree() -> bool:
 
 func _walk_report() -> void:
 	var s: Dictionary = _walk_stats
-	print("Terrain client: walk: landed %.1f s after dropping %.0f m; walked %.0f m east in 30 s, on the ground %d%% of frames, %d frames below the ground (lowest gap %.2f m); tree trunk at x %.1f, furthest reached %.1f" % [
+	print("Terrain client: walk: landed %.1f s after dropping %.0f m; walked %.0f m east in 30 s, on the ground %d%% of frames, %d frames below the ground (lowest gap %.2f m); tree trunk at x %.1f, furthest reached %.1f; put 60 m under the ground, then %.1f m above it (%d rescues)" % [
 		float(s.get("landed_s", -1.0)), float(s.get("drop_m", 0.0)), float(s.get("walked_m", 0.0)),
 		100 * int(s.get("floor_frames", 0)) / maxi(int(s.get("frames", 0)), 1), int(s.get("fell_through", 0)), float(s.get("lowest_gap", 0.0)),
-		float(s.get("tree_x", NAN)), float(s.get("tree_max_x", NAN))
+		float(s.get("tree_x", NAN)), float(s.get("tree_max_x", NAN)), float(s.get("rescued_gap", NAN)), rescued
 	])
 
 
