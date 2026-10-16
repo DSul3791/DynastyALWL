@@ -48,6 +48,21 @@ godot --headless --path . --script res://src/worldgen/tools/build_tile.gd -- --t
 
 Tile files are git-ignored. The starter tile is (3,4). Bake time is 25 to 70 s per tile (plus about 25 s setup).
 
+## Setup a new session needs
+
+- **Godot 4.7.1 stable, headless (Linux x86_64).** Download it from the Godot releases page, unzip it, and use the binary in the commands above. Nothing carries over from earlier sessions.
+- **Voxel Tools 1.7** (Zylann's `godot_voxel`, the add-on that does the voxel terrain). It is not in the repo and not needed yet: the generator only makes 2D maps and runs on plain Godot. It is needed from step 14 (runtime terrain generator) and step 16 (server streaming and the client). It must match the Godot version: use a build made for Godot 4.7 (a custom engine build or the GDExtension release, whichever the project settles on) and put it in the project as the add-on's instructions say. Check the project settings and the roadmap before choosing.
+- **Git:** work on `claude/generator-v2`, push to `origin`. GitHub reports the repo moved to `DSul3791/WorldGeneratorV1`; the old address still works.
+- **Python 3** is handy for small scripted edits and plan checks.
+
+## Gotchas learned
+
+- In headless scripts, do not rely on `class_name` globals (for example `RiverNetwork`): use `const X := preload("res://...")` instead, or the script fails to parse.
+- Run bakes and the test suite in the background (`setsid nohup ... &`) and poll. A foreground command over about 10 minutes is killed, and so is anything still attached to it.
+- Tile data layout: tiles are 1,921 by 1,921 samples at 8 m. Each is built on a frame with an 80 sample (640 m) margin and cropped, so neighbors agree on shared edges. Map encodings and the file layout are in `WORLD_FORMAT_SPEC.md`.
+- Noise is made with `FastNoiseLite`; wrap-seam noise goes through `wrap_noise.gd`, and it must round down (floor) exactly as the noise image does or seam tiles drift by 0.1 to 0.3 m.
+- The world is 21 by 21 tiles (tile coordinates -10 to 10) and wraps in both directions. The starter tile is (3,4). Seam test pairs: (-2,10) with (-2,-10), and (10,6) with (-10,6).
+
 ## Open design items
 
 About 50 are listed in `DESIGN_IDEAS.md` Section 15 (nomadic household, homestead details, NPC role templates, temple cost, and more). Recently logged ideas: road builder, admin mine digger and mountain tunnel builder (Section 8.4 and the sub-section "Road, mine and tunnel builders" in 8.17).
