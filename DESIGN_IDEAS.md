@@ -511,6 +511,10 @@ The owner approved the direction of the crafting proposal deck ("How Deep Should
   - **Practice:** ability gained by actually doing the work.
 - **[Decided]** Innate plus trained ability is the **base**. A share of practice, about 20 percent, also feeds the base.
 - **[Decided]** An unused skill slowly decays, but never below 20 percent of the highest level that person reached. Using it again brings the lost part back quickly, like re-honing. Someone who stops woodworking to take up swordplay sees their woodworking drift down while they fight, but they keep excellent skills.
+- **[Decided]** **Attributes feed skills through a web of connections** (owner, 2026-10-16). A naturally strong character is naturally good at strength skills, a dexterous one at dexterity skills, and a skill that needs both (say strength and dexterity) inherits points from both. Every trait works this way: each skill names the attributes it draws on and how much from each.
+- **[Decided]** **Skills form a tree:** a broad catch-all group (swords), then categories and sub-groups, then specific skills (broadsword, rapier). The same pattern holds for axes, hammers, spears, the other weapon families and every other kind of skill (crafts, gathering and so on).
+  - Practice in a specific skill goes about 80 percent to that skill and 20 percent to its parent group. Training with the broadsword makes you better with swords in general, so a little better with a rapier too; later rapier practice likewise feeds back into swords.
+  - The working skill for a specific item is the parent's skill plus the specific skill (broadsword = sword + broadsword), all the way up the tree.
 - **[Open]** The exact formula: how the three parts combine into the working skill, how fast practice grows and decays, and how fast regained skill returns. How this meets aging (skills fall with physical ability, Section 6.7) and children learning from parents (Section 6.6).
 
 ---

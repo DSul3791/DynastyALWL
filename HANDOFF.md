@@ -94,6 +94,6 @@ Baked tiles for the inner starters and their neighbors (36 files) are in `/mnt/p
 
 ## Open design items
 
-- Crafting direction decided (DESIGN_IDEAS 5.3): easy floor, deep ceiling, four depths (hand, camp bench, workshop, master work). Skills (5.4): innate + trained + practice, unused skills decay to no less than 20 percent of their peak and come back fast. First trades to design are the building-material ones (boards, stone, bricks, rope), from the foundation up.
+- Crafting direction decided (DESIGN_IDEAS 5.3): easy floor, deep ceiling, four depths (hand, camp bench, workshop, master work). Skills (5.4): innate + trained + practice, unused skills decay to no less than 20 percent of their peak and come back fast. Attributes feed each skill by weights; skills form a tree (swords > broadsword), practice splits about 80/20 between a skill and its parent, and working skill = parent + specific. First trades to design are the building-material ones (boards, stone, bricks, rope), from the foundation up.
 
 About 50 are listed in `DESIGN_IDEAS.md` Section 15 (nomadic household, homestead details, NPC role templates, temple cost, and more). Recently logged ideas: road builder, admin mine digger and mountain tunnel builder (Section 8.4 and the sub-section "Road, mine and tunnel builders" in 8.17).
