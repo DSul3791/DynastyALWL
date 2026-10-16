@@ -74,6 +74,6 @@ static func bytes(
 
 					total += wx * wz * noise.get_noise_2d(float(ux - a * period_x), float(vz - b * period_z))
 
-			data[j * width + i] = clampi(int(round((total * 0.5 + 0.5) * 255.0)), 0, 255)
+			data[j * width + i] = clampi(int(floor((total * 0.5 + 0.5) * 255.0)), 0, 255)
 
 	return data
