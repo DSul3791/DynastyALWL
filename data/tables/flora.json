@@ -1,8 +1,8 @@
 {
 	"table": "flora",
 	"format_version": 1,
-	"note": "IDs are append-only. Never renumber or reuse an ID; retire an entry with \"retired\": true and take the next ID from next_id for new entries. Placement (plan step 15) reads per_hectare (plants per hectare by biome name, before the density setting in tile_rules.json runtime_flora), moisture (0 to 255 map value), max_slope_deg, altitude_m (ground height above sea level) and water (water classes it may stand in; empty = dry land only). crown_m is the spacing radius of trees and shrubs, trunk_m the collision radius (0 = walk through). yields are names for the harvesting tables to come.",
-	"next_id": 27,
+	"note": "IDs are append-only. Never renumber or reuse an ID; retire an entry with \"retired\": true and take the next ID from next_id for new entries. Placement (plan step 15) reads per_hectare (plants per hectare by biome name, before the density setting in tile_rules.json runtime_flora), moisture (0 to 255 map value), max_slope_deg, altitude_m (ground height above sea level) and water (water classes it may stand in; empty = dry land only). crown_m is the spacing radius of trees and shrubs, trunk_m the collision radius (0 = walk through). yields are names for the harvesting tables to come. season: when the main yield can be gathered (spring, summer, autumn, winter or all). rarity: common, uncommon, rare (a label for players; how often a plant appears comes from per_hectare). uses: what the yields are good for (food, seasoning, sauce, jam, tea, brewing, medicine, ointment, potion, poison, dye, fibre, timber and so on). properties: effects for the crafting tables to come (wound_healing, fever, sleep, toxic, ...).",
+	"next_id": 83,
 	"entries": [
 		{
 			"id": 0,
@@ -40,7 +40,18 @@
 				"hardwood",
 				"acorns",
 				"bark"
-			]
+			],
+			"season": [
+				"all"
+			],
+			"rarity": "common",
+			"uses": [
+				"timber",
+				"fuel",
+				"tannin",
+				"animal_feed"
+			],
+			"properties": []
 		},
 		{
 			"id": 1,
@@ -76,7 +87,17 @@
 			"yields": [
 				"hardwood",
 				"beechnuts"
-			]
+			],
+			"season": [
+				"all"
+			],
+			"rarity": "common",
+			"uses": [
+				"timber",
+				"fuel",
+				"food"
+			],
+			"properties": []
 		},
 		{
 			"id": 2,
@@ -115,6 +136,20 @@
 				"wood",
 				"birch_bark",
 				"sap"
+			],
+			"season": [
+				"all"
+			],
+			"rarity": "common",
+			"uses": [
+				"timber",
+				"fuel",
+				"tinder",
+				"syrup",
+				"medicine"
+			],
+			"properties": [
+				"pain_relief"
 			]
 		},
 		{
@@ -154,7 +189,18 @@
 				"softwood",
 				"resin",
 				"pine_tar"
-			]
+			],
+			"season": [
+				"all"
+			],
+			"rarity": "common",
+			"uses": [
+				"timber",
+				"fuel",
+				"pitch",
+				"tea"
+			],
+			"properties": []
 		},
 		{
 			"id": 4,
@@ -191,7 +237,18 @@
 			"yields": [
 				"softwood",
 				"resin"
-			]
+			],
+			"season": [
+				"all"
+			],
+			"rarity": "common",
+			"uses": [
+				"timber",
+				"fuel",
+				"pitch",
+				"tea"
+			],
+			"properties": []
 		},
 		{
 			"id": 5,
@@ -230,7 +287,17 @@
 			"yields": [
 				"wood",
 				"charcoal_wood"
-			]
+			],
+			"season": [
+				"all"
+			],
+			"rarity": "common",
+			"uses": [
+				"timber",
+				"charcoal",
+				"dye"
+			],
+			"properties": []
 		},
 		{
 			"id": 6,
@@ -269,6 +336,18 @@
 				"wood",
 				"withies",
 				"willow_bark"
+			],
+			"season": [
+				"all"
+			],
+			"rarity": "common",
+			"uses": [
+				"basketry",
+				"timber",
+				"medicine"
+			],
+			"properties": [
+				"pain_relief"
 			]
 		},
 		{
@@ -307,7 +386,19 @@
 				"palm_wood",
 				"coconuts",
 				"palm_fronds"
-			]
+			],
+			"season": [
+				"all"
+			],
+			"rarity": "uncommon",
+			"uses": [
+				"food",
+				"drink",
+				"timber",
+				"thatch",
+				"oil"
+			],
+			"properties": []
 		},
 		{
 			"id": 8,
@@ -342,7 +433,16 @@
 			"yields": [
 				"hardwood",
 				"resin"
-			]
+			],
+			"season": [
+				"all"
+			],
+			"rarity": "common",
+			"uses": [
+				"timber",
+				"fuel"
+			],
+			"properties": []
 		},
 		{
 			"id": 9,
@@ -378,7 +478,17 @@
 			"yields": [
 				"hardwood",
 				"gum"
-			]
+			],
+			"season": [
+				"all"
+			],
+			"rarity": "uncommon",
+			"uses": [
+				"timber",
+				"fuel",
+				"glue"
+			],
+			"properties": []
 		},
 		{
 			"id": 10,
@@ -417,7 +527,16 @@
 			"yields": [
 				"wood",
 				"tannin_bark"
-			]
+			],
+			"season": [
+				"all"
+			],
+			"rarity": "common",
+			"uses": [
+				"timber",
+				"tannin"
+			],
+			"properties": []
 		},
 		{
 			"id": 11,
@@ -454,7 +573,17 @@
 			"yields": [
 				"poles",
 				"hazelnuts"
-			]
+			],
+			"season": [
+				"autumn"
+			],
+			"rarity": "common",
+			"uses": [
+				"food",
+				"poles",
+				"basketry"
+			],
+			"properties": []
 		},
 		{
 			"id": 12,
@@ -492,7 +621,19 @@
 			"yields": [
 				"blackberries",
 				"thorny_canes"
-			]
+			],
+			"season": [
+				"summer",
+				"autumn"
+			],
+			"rarity": "common",
+			"uses": [
+				"food",
+				"jam",
+				"dye",
+				"wine"
+			],
+			"properties": []
 		},
 		{
 			"id": 13,
@@ -530,6 +671,19 @@
 			"yields": [
 				"juniper_berries",
 				"wood"
+			],
+			"season": [
+				"autumn",
+				"winter"
+			],
+			"rarity": "uncommon",
+			"uses": [
+				"spice",
+				"medicine",
+				"brewing"
+			],
+			"properties": [
+				"digestive"
 			]
 		},
 		{
@@ -566,7 +720,17 @@
 			"yields": [
 				"kindling",
 				"fodder"
-			]
+			],
+			"season": [
+				"all"
+			],
+			"rarity": "common",
+			"uses": [
+				"kindling",
+				"fodder",
+				"dye"
+			],
+			"properties": []
 		},
 		{
 			"id": 15,
@@ -600,7 +764,15 @@
 			"water": [],
 			"yields": [
 				"kindling"
-			]
+			],
+			"season": [
+				"all"
+			],
+			"rarity": "common",
+			"uses": [
+				"kindling"
+			],
+			"properties": []
 		},
 		{
 			"id": 16,
@@ -636,7 +808,17 @@
 			"yields": [
 				"fodder",
 				"potash"
-			]
+			],
+			"season": [
+				"all"
+			],
+			"rarity": "common",
+			"uses": [
+				"fodder",
+				"potash",
+				"food"
+			],
+			"properties": []
 		},
 		{
 			"id": 17,
@@ -672,7 +854,16 @@
 			"yields": [
 				"water",
 				"spines"
-			]
+			],
+			"season": [
+				"all"
+			],
+			"rarity": "uncommon",
+			"uses": [
+				"water",
+				"food"
+			],
+			"properties": []
 		},
 		{
 			"id": 18,
@@ -710,7 +901,18 @@
 			"yields": [
 				"bedding",
 				"fiddleheads"
-			]
+			],
+			"season": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"rarity": "common",
+			"uses": [
+				"bedding",
+				"food"
+			],
+			"properties": []
 		},
 		{
 			"id": 19,
@@ -747,7 +949,20 @@
 				"thatch",
 				"bedding",
 				"honey_flowers"
-			]
+			],
+			"season": [
+				"summer",
+				"autumn"
+			],
+			"rarity": "common",
+			"uses": [
+				"thatch",
+				"bedding",
+				"dye",
+				"brewing",
+				"honey"
+			],
+			"properties": []
 		},
 		{
 			"id": 20,
@@ -788,7 +1003,17 @@
 			"yields": [
 				"thatch",
 				"reed_stems"
-			]
+			],
+			"season": [
+				"all"
+			],
+			"rarity": "common",
+			"uses": [
+				"thatch",
+				"basketry",
+				"matting"
+			],
+			"properties": []
 		},
 		{
 			"id": 21,
@@ -824,7 +1049,18 @@
 			"yields": [
 				"fibre",
 				"linseed"
-			]
+			],
+			"season": [
+				"summer"
+			],
+			"rarity": "uncommon",
+			"uses": [
+				"fibre",
+				"rope",
+				"cloth",
+				"oil"
+			],
+			"properties": []
 		},
 		{
 			"id": 22,
@@ -864,7 +1100,19 @@
 				"thatch",
 				"straw",
 				"fibre"
-			]
+			],
+			"season": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"rarity": "common",
+			"uses": [
+				"thatch",
+				"fodder",
+				"fibre"
+			],
+			"properties": []
 		},
 		{
 			"id": 23,
@@ -901,6 +1149,21 @@
 			"yields": [
 				"fibre",
 				"greens"
+			],
+			"season": [
+				"spring",
+				"summer"
+			],
+			"rarity": "common",
+			"uses": [
+				"food",
+				"fibre",
+				"medicine",
+				"dye"
+			],
+			"properties": [
+				"stings",
+				"cleansing"
 			]
 		},
 		{
@@ -937,7 +1200,16 @@
 			"yields": [
 				"tinder",
 				"stuffing"
-			]
+			],
+			"season": [
+				"summer"
+			],
+			"rarity": "common",
+			"uses": [
+				"tinder",
+				"stuffing"
+			],
+			"properties": []
 		},
 		{
 			"id": 25,
@@ -972,7 +1244,16 @@
 			"yields": [
 				"herbs",
 				"dye"
-			]
+			],
+			"season": [
+				"summer"
+			],
+			"rarity": "uncommon",
+			"uses": [
+				"medicine",
+				"dye"
+			],
+			"properties": []
 		},
 		{
 			"id": 26,
@@ -1009,7 +1290,2789 @@
 			"yields": [
 				"food",
 				"tinder_fungus"
+			],
+			"season": [
+				"summer",
+				"autumn"
+			],
+			"rarity": "common",
+			"uses": [
+				"food"
+			],
+			"properties": []
+		},
+		{
+			"id": 27,
+			"name": "blueberry",
+			"display": "Blueberry",
+			"kind": "plant",
+			"shape": "shrub",
+			"height_m": [
+				0.3,
+				0.7
+			],
+			"crown_m": 0.5,
+			"trunk_m": 0.0,
+			"color": [
+				0.22,
+				0.32,
+				0.45
+			],
+			"per_hectare": {
+				"heath": 60,
+				"boreal_forest": 70,
+				"mixed_forest": 25
+			},
+			"moisture": [
+				100,
+				255
+			],
+			"max_slope_deg": 35,
+			"altitude_m": [
+				1,
+				1400
+			],
+			"water": [],
+			"yields": [
+				"blueberries",
+				"leaves"
+			],
+			"season": [
+				"summer"
+			],
+			"rarity": "common",
+			"uses": [
+				"food",
+				"jam",
+				"dye",
+				"medicine"
+			],
+			"properties": [
+				"eyesight",
+				"astringent"
 			]
+		},
+		{
+			"id": 28,
+			"name": "lingonberry",
+			"display": "Lingonberry",
+			"kind": "plant",
+			"shape": "shrub",
+			"height_m": [
+				0.1,
+				0.3
+			],
+			"crown_m": 0.4,
+			"trunk_m": 0.0,
+			"color": [
+				0.55,
+				0.22,
+				0.2
+			],
+			"per_hectare": {
+				"boreal_forest": 80,
+				"heath": 30,
+				"tundra": 20
+			},
+			"moisture": [
+				80,
+				255
+			],
+			"max_slope_deg": 35,
+			"altitude_m": [
+				1,
+				1600
+			],
+			"water": [],
+			"yields": [
+				"lingonberries",
+				"leaves"
+			],
+			"season": [
+				"autumn"
+			],
+			"rarity": "common",
+			"uses": [
+				"food",
+				"sauce",
+				"jam",
+				"medicine"
+			],
+			"properties": [
+				"preserving"
+			]
+		},
+		{
+			"id": 29,
+			"name": "cranberry",
+			"display": "Cranberry",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.1,
+				0.2
+			],
+			"crown_m": 0.4,
+			"trunk_m": 0.0,
+			"color": [
+				0.65,
+				0.15,
+				0.18
+			],
+			"per_hectare": {
+				"marsh": 120,
+				"tundra": 20,
+				"boreal_forest": 6
+			},
+			"moisture": [
+				170,
+				255
+			],
+			"max_slope_deg": 10,
+			"altitude_m": [
+				0.3,
+				1200
+			],
+			"water": [
+				"marsh"
+			],
+			"yields": [
+				"cranberries"
+			],
+			"season": [
+				"autumn"
+			],
+			"rarity": "common",
+			"uses": [
+				"food",
+				"sauce",
+				"juice",
+				"medicine"
+			],
+			"properties": [
+				"cleansing"
+			]
+		},
+		{
+			"id": 30,
+			"name": "cloudberry",
+			"display": "Cloudberry",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.1,
+				0.25
+			],
+			"crown_m": 0.3,
+			"trunk_m": 0.0,
+			"color": [
+				0.85,
+				0.55,
+				0.2
+			],
+			"per_hectare": {
+				"tundra": 20,
+				"marsh": 6,
+				"boreal_forest": 3
+			},
+			"moisture": [
+				150,
+				255
+			],
+			"max_slope_deg": 15,
+			"altitude_m": [
+				1,
+				1500
+			],
+			"water": [
+				"marsh"
+			],
+			"yields": [
+				"cloudberries"
+			],
+			"season": [
+				"summer"
+			],
+			"rarity": "rare",
+			"uses": [
+				"food",
+				"jam",
+				"liqueur"
+			],
+			"properties": [
+				"vitality"
+			]
+		},
+		{
+			"id": 31,
+			"name": "wild_strawberry",
+			"display": "Wild strawberry",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.1,
+				0.25
+			],
+			"crown_m": 0.3,
+			"trunk_m": 0.0,
+			"color": [
+				0.75,
+				0.2,
+				0.2
+			],
+			"per_hectare": {
+				"temperate_grassland": 35,
+				"temperate_forest": 15,
+				"mixed_forest": 15,
+				"alpine_meadow": 10
+			},
+			"moisture": [
+				90,
+				230
+			],
+			"max_slope_deg": 35,
+			"altitude_m": [
+				1,
+				1500
+			],
+			"water": [],
+			"yields": [
+				"strawberries",
+				"leaves"
+			],
+			"season": [
+				"summer"
+			],
+			"rarity": "common",
+			"uses": [
+				"food",
+				"jam",
+				"tea",
+				"sauce"
+			],
+			"properties": [
+				"digestive"
+			]
+		},
+		{
+			"id": 32,
+			"name": "raspberry",
+			"display": "Raspberry",
+			"kind": "shrub",
+			"shape": "shrub",
+			"height_m": [
+				1.0,
+				2.0
+			],
+			"crown_m": 0.7,
+			"trunk_m": 0.02,
+			"color": [
+				0.55,
+				0.25,
+				0.28
+			],
+			"per_hectare": {
+				"temperate_forest": 14,
+				"mixed_forest": 18,
+				"boreal_forest": 8
+			},
+			"moisture": [
+				100,
+				255
+			],
+			"max_slope_deg": 35,
+			"altitude_m": [
+				1,
+				1200
+			],
+			"water": [],
+			"yields": [
+				"raspberries",
+				"raspberry_leaves"
+			],
+			"season": [
+				"summer"
+			],
+			"rarity": "common",
+			"uses": [
+				"food",
+				"jam",
+				"wine",
+				"tea",
+				"medicine"
+			],
+			"properties": [
+				"womens_health"
+			]
+		},
+		{
+			"id": 33,
+			"name": "crowberry",
+			"display": "Crowberry",
+			"kind": "plant",
+			"shape": "shrub",
+			"height_m": [
+				0.1,
+				0.3
+			],
+			"crown_m": 0.4,
+			"trunk_m": 0.0,
+			"color": [
+				0.15,
+				0.18,
+				0.2
+			],
+			"per_hectare": {
+				"heath": 40,
+				"tundra": 40,
+				"alpine_meadow": 10
+			},
+			"moisture": [
+				60,
+				255
+			],
+			"max_slope_deg": 45,
+			"altitude_m": [
+				1,
+				2000
+			],
+			"water": [],
+			"yields": [
+				"crowberries"
+			],
+			"season": [
+				"autumn"
+			],
+			"rarity": "common",
+			"uses": [
+				"food",
+				"dye"
+			],
+			"properties": []
+		},
+		{
+			"id": 34,
+			"name": "elder",
+			"display": "Elder",
+			"kind": "shrub",
+			"shape": "shrub",
+			"height_m": [
+				3,
+				7
+			],
+			"crown_m": 2.0,
+			"trunk_m": 0.12,
+			"color": [
+				0.32,
+				0.42,
+				0.22
+			],
+			"per_hectare": {
+				"temperate_forest": 4,
+				"mixed_forest": 4,
+				"temperate_grassland": 2,
+				"marsh": 3
+			},
+			"moisture": [
+				110,
+				255
+			],
+			"max_slope_deg": 30,
+			"altitude_m": [
+				1,
+				700
+			],
+			"water": [],
+			"yields": [
+				"elderberries",
+				"elderflowers",
+				"wood"
+			],
+			"season": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"rarity": "uncommon",
+			"uses": [
+				"food",
+				"wine",
+				"cordial",
+				"medicine",
+				"potion",
+				"dye"
+			],
+			"properties": [
+				"fever",
+				"cold_remedy"
+			]
+		},
+		{
+			"id": 35,
+			"name": "rowan",
+			"display": "Rowan",
+			"kind": "tree",
+			"shape": "broadleaf",
+			"height_m": [
+				6,
+				14
+			],
+			"crown_m": 2.5,
+			"trunk_m": 0.2,
+			"color": [
+				0.35,
+				0.42,
+				0.18
+			],
+			"per_hectare": {
+				"mixed_forest": 6,
+				"boreal_forest": 6,
+				"heath": 2,
+				"alpine_meadow": 2
+			},
+			"moisture": [
+				80,
+				255
+			],
+			"max_slope_deg": 40,
+			"altitude_m": [
+				1,
+				1500
+			],
+			"water": [],
+			"yields": [
+				"rowan_berries",
+				"wood"
+			],
+			"season": [
+				"autumn"
+			],
+			"rarity": "uncommon",
+			"uses": [
+				"jelly",
+				"brewing",
+				"timber",
+				"potion"
+			],
+			"properties": [
+				"warding"
+			]
+		},
+		{
+			"id": 36,
+			"name": "wild_rose",
+			"display": "Wild rose",
+			"kind": "shrub",
+			"shape": "shrub",
+			"height_m": [
+				1,
+				2.5
+			],
+			"crown_m": 1.0,
+			"trunk_m": 0.03,
+			"color": [
+				0.4,
+				0.42,
+				0.22
+			],
+			"per_hectare": {
+				"temperate_grassland": 6,
+				"heath": 4,
+				"temperate_forest": 2
+			},
+			"moisture": [
+				60,
+				220
+			],
+			"max_slope_deg": 35,
+			"altitude_m": [
+				1,
+				900
+			],
+			"water": [],
+			"yields": [
+				"rose_hips",
+				"rose_petals"
+			],
+			"season": [
+				"summer",
+				"autumn"
+			],
+			"rarity": "common",
+			"uses": [
+				"syrup",
+				"tea",
+				"perfume",
+				"medicine"
+			],
+			"properties": [
+				"cold_remedy",
+				"soothing"
+			]
+		},
+		{
+			"id": 37,
+			"name": "blackthorn",
+			"display": "Blackthorn",
+			"kind": "shrub",
+			"shape": "shrub",
+			"height_m": [
+				2,
+				4
+			],
+			"crown_m": 1.5,
+			"trunk_m": 0.08,
+			"color": [
+				0.25,
+				0.3,
+				0.18
+			],
+			"per_hectare": {
+				"temperate_grassland": 5,
+				"temperate_forest": 3
+			},
+			"moisture": [
+				70,
+				230
+			],
+			"max_slope_deg": 35,
+			"altitude_m": [
+				1,
+				600
+			],
+			"water": [],
+			"yields": [
+				"sloes",
+				"thorny_wood"
+			],
+			"season": [
+				"autumn"
+			],
+			"rarity": "common",
+			"uses": [
+				"liqueur",
+				"jam",
+				"dye",
+				"tool_handles"
+			],
+			"properties": [
+				"astringent"
+			]
+		},
+		{
+			"id": 38,
+			"name": "hawthorn",
+			"display": "Hawthorn",
+			"kind": "shrub",
+			"shape": "shrub",
+			"height_m": [
+				3,
+				7
+			],
+			"crown_m": 2.2,
+			"trunk_m": 0.12,
+			"color": [
+				0.3,
+				0.4,
+				0.18
+			],
+			"per_hectare": {
+				"temperate_grassland": 5,
+				"temperate_forest": 3,
+				"mixed_forest": 2
+			},
+			"moisture": [
+				70,
+				230
+			],
+			"max_slope_deg": 35,
+			"altitude_m": [
+				1,
+				700
+			],
+			"water": [],
+			"yields": [
+				"haws",
+				"hawthorn_blossom",
+				"hard_wood"
+			],
+			"season": [
+				"spring",
+				"autumn"
+			],
+			"rarity": "common",
+			"uses": [
+				"food",
+				"tea",
+				"medicine",
+				"potion"
+			],
+			"properties": [
+				"heart_tonic"
+			]
+		},
+		{
+			"id": 39,
+			"name": "sea_buckthorn",
+			"display": "Sea buckthorn",
+			"kind": "shrub",
+			"shape": "shrub",
+			"height_m": [
+				1.5,
+				3.5
+			],
+			"crown_m": 1.2,
+			"trunk_m": 0.06,
+			"color": [
+				0.55,
+				0.58,
+				0.48
+			],
+			"per_hectare": {
+				"beach": 8,
+				"dry_scrub": 3
+			},
+			"moisture": [
+				40,
+				220
+			],
+			"max_slope_deg": 30,
+			"altitude_m": [
+				0.5,
+				300
+			],
+			"water": [],
+			"yields": [
+				"sea_buckthorn_berries",
+				"oil"
+			],
+			"season": [
+				"autumn"
+			],
+			"rarity": "uncommon",
+			"uses": [
+				"food",
+				"juice",
+				"ointment",
+				"medicine"
+			],
+			"properties": [
+				"skin_healing",
+				"vitality"
+			]
+		},
+		{
+			"id": 40,
+			"name": "wild_apple",
+			"display": "Crab apple",
+			"kind": "tree",
+			"shape": "broadleaf",
+			"height_m": [
+				5,
+				10
+			],
+			"crown_m": 3.0,
+			"trunk_m": 0.25,
+			"color": [
+				0.38,
+				0.5,
+				0.22
+			],
+			"per_hectare": {
+				"temperate_forest": 3,
+				"temperate_grassland": 1,
+				"mixed_forest": 1
+			},
+			"moisture": [
+				100,
+				240
+			],
+			"max_slope_deg": 30,
+			"altitude_m": [
+				1,
+				700
+			],
+			"water": [],
+			"yields": [
+				"crab_apples",
+				"wood"
+			],
+			"season": [
+				"autumn"
+			],
+			"rarity": "uncommon",
+			"uses": [
+				"food",
+				"cider",
+				"sauce",
+				"pectin",
+				"vinegar"
+			],
+			"properties": []
+		},
+		{
+			"id": 41,
+			"name": "wild_pear",
+			"display": "Wild pear",
+			"kind": "tree",
+			"shape": "broadleaf",
+			"height_m": [
+				8,
+				15
+			],
+			"crown_m": 3.0,
+			"trunk_m": 0.28,
+			"color": [
+				0.36,
+				0.48,
+				0.22
+			],
+			"per_hectare": {
+				"temperate_forest": 1,
+				"temperate_grassland": 1
+			},
+			"moisture": [
+				100,
+				230
+			],
+			"max_slope_deg": 30,
+			"altitude_m": [
+				1,
+				600
+			],
+			"water": [],
+			"yields": [
+				"wild_pears",
+				"wood"
+			],
+			"season": [
+				"autumn"
+			],
+			"rarity": "rare",
+			"uses": [
+				"food",
+				"perry",
+				"fine_wood"
+			],
+			"properties": []
+		},
+		{
+			"id": 42,
+			"name": "wild_cherry",
+			"display": "Wild cherry",
+			"kind": "tree",
+			"shape": "broadleaf",
+			"height_m": [
+				12,
+				22
+			],
+			"crown_m": 3.5,
+			"trunk_m": 0.3,
+			"color": [
+				0.4,
+				0.48,
+				0.2
+			],
+			"per_hectare": {
+				"temperate_forest": 3,
+				"mixed_forest": 3
+			},
+			"moisture": [
+				100,
+				240
+			],
+			"max_slope_deg": 32,
+			"altitude_m": [
+				1,
+				800
+			],
+			"water": [],
+			"yields": [
+				"cherries",
+				"cherry_wood",
+				"gum"
+			],
+			"season": [
+				"summer"
+			],
+			"rarity": "uncommon",
+			"uses": [
+				"food",
+				"liqueur",
+				"fine_wood",
+				"medicine"
+			],
+			"properties": [
+				"cough_remedy"
+			]
+		},
+		{
+			"id": 43,
+			"name": "sweet_chestnut",
+			"display": "Sweet chestnut",
+			"kind": "tree",
+			"shape": "broadleaf",
+			"height_m": [
+				18,
+				30
+			],
+			"crown_m": 6.0,
+			"trunk_m": 0.6,
+			"color": [
+				0.3,
+				0.42,
+				0.16
+			],
+			"per_hectare": {
+				"temperate_forest": 5
+			},
+			"moisture": [
+				110,
+				240
+			],
+			"max_slope_deg": 30,
+			"altitude_m": [
+				1,
+				800
+			],
+			"water": [],
+			"yields": [
+				"chestnuts",
+				"timber"
+			],
+			"season": [
+				"autumn"
+			],
+			"rarity": "uncommon",
+			"uses": [
+				"food",
+				"flour",
+				"timber",
+				"tannin"
+			],
+			"properties": []
+		},
+		{
+			"id": 44,
+			"name": "walnut",
+			"display": "Walnut",
+			"kind": "tree",
+			"shape": "broadleaf",
+			"height_m": [
+				15,
+				25
+			],
+			"crown_m": 6.0,
+			"trunk_m": 0.5,
+			"color": [
+				0.3,
+				0.4,
+				0.18
+			],
+			"per_hectare": {
+				"temperate_forest": 1,
+				"temperate_grassland": 0.5
+			},
+			"moisture": [
+				100,
+				220
+			],
+			"max_slope_deg": 25,
+			"altitude_m": [
+				1,
+				600
+			],
+			"water": [],
+			"yields": [
+				"walnuts",
+				"walnut_husks",
+				"fine_wood"
+			],
+			"season": [
+				"autumn"
+			],
+			"rarity": "rare",
+			"uses": [
+				"food",
+				"oil",
+				"dye",
+				"fine_wood"
+			],
+			"properties": []
+		},
+		{
+			"id": 45,
+			"name": "wild_garlic",
+			"display": "Wild garlic",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.2,
+				0.45
+			],
+			"crown_m": 0.3,
+			"trunk_m": 0.0,
+			"color": [
+				0.3,
+				0.55,
+				0.25
+			],
+			"per_hectare": {
+				"temperate_forest": 60,
+				"mixed_forest": 20
+			},
+			"moisture": [
+				150,
+				255
+			],
+			"max_slope_deg": 25,
+			"altitude_m": [
+				1,
+				700
+			],
+			"water": [],
+			"yields": [
+				"wild_garlic_leaves",
+				"wild_garlic_bulbs"
+			],
+			"season": [
+				"spring"
+			],
+			"rarity": "common",
+			"uses": [
+				"food",
+				"seasoning",
+				"sauce",
+				"medicine"
+			],
+			"properties": [
+				"cleansing",
+				"antiseptic"
+			]
+		},
+		{
+			"id": 46,
+			"name": "wild_thyme",
+			"display": "Wild thyme",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.05,
+				0.15
+			],
+			"crown_m": 0.3,
+			"trunk_m": 0.0,
+			"color": [
+				0.55,
+				0.4,
+				0.55
+			],
+			"per_hectare": {
+				"temperate_grassland": 30,
+				"heath": 20,
+				"alpine_meadow": 30,
+				"dry_scrub": 15
+			},
+			"moisture": [
+				30,
+				180
+			],
+			"max_slope_deg": 45,
+			"altitude_m": [
+				1,
+				2200
+			],
+			"water": [],
+			"yields": [
+				"thyme"
+			],
+			"season": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"rarity": "common",
+			"uses": [
+				"seasoning",
+				"tea",
+				"medicine",
+				"ointment"
+			],
+			"properties": [
+				"antiseptic",
+				"cough_remedy"
+			]
+		},
+		{
+			"id": 47,
+			"name": "wild_mint",
+			"display": "Water mint",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.2,
+				0.6
+			],
+			"crown_m": 0.3,
+			"trunk_m": 0.0,
+			"color": [
+				0.35,
+				0.55,
+				0.35
+			],
+			"per_hectare": {
+				"marsh": 40,
+				"temperate_grassland": 4,
+				"temperate_forest": 3
+			},
+			"moisture": [
+				170,
+				255
+			],
+			"max_slope_deg": 15,
+			"altitude_m": [
+				0.3,
+				900
+			],
+			"water": [
+				"marsh",
+				"river"
+			],
+			"yields": [
+				"mint"
+			],
+			"season": [
+				"spring",
+				"summer"
+			],
+			"rarity": "common",
+			"uses": [
+				"seasoning",
+				"tea",
+				"sauce",
+				"medicine"
+			],
+			"properties": [
+				"digestive",
+				"cooling"
+			]
+		},
+		{
+			"id": 48,
+			"name": "sorrel",
+			"display": "Sorrel",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.2,
+				0.6
+			],
+			"crown_m": 0.3,
+			"trunk_m": 0.0,
+			"color": [
+				0.5,
+				0.35,
+				0.25
+			],
+			"per_hectare": {
+				"temperate_grassland": 40,
+				"alpine_meadow": 15
+			},
+			"moisture": [
+				80,
+				230
+			],
+			"max_slope_deg": 35,
+			"altitude_m": [
+				1,
+				1800
+			],
+			"water": [],
+			"yields": [
+				"sorrel_leaves"
+			],
+			"season": [
+				"spring",
+				"summer"
+			],
+			"rarity": "common",
+			"uses": [
+				"food",
+				"sauce",
+				"seasoning"
+			],
+			"properties": []
+		},
+		{
+			"id": 49,
+			"name": "dandelion",
+			"display": "Dandelion",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.1,
+				0.3
+			],
+			"crown_m": 0.25,
+			"trunk_m": 0.0,
+			"color": [
+				0.85,
+				0.75,
+				0.15
+			],
+			"per_hectare": {
+				"temperate_grassland": 80,
+				"alpine_meadow": 20,
+				"beach": 4
+			},
+			"moisture": [
+				50,
+				240
+			],
+			"max_slope_deg": 40,
+			"altitude_m": [
+				0.5,
+				1800
+			],
+			"water": [],
+			"yields": [
+				"dandelion_leaves",
+				"dandelion_roots",
+				"dandelion_flowers"
+			],
+			"season": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"rarity": "common",
+			"uses": [
+				"food",
+				"coffee_substitute",
+				"wine",
+				"medicine"
+			],
+			"properties": [
+				"cleansing",
+				"digestive"
+			]
+		},
+		{
+			"id": 50,
+			"name": "wild_carrot",
+			"display": "Wild carrot",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.4,
+				1.0
+			],
+			"crown_m": 0.3,
+			"trunk_m": 0.0,
+			"color": [
+				0.88,
+				0.88,
+				0.82
+			],
+			"per_hectare": {
+				"temperate_grassland": 15,
+				"beach": 3
+			},
+			"moisture": [
+				50,
+				200
+			],
+			"max_slope_deg": 30,
+			"altitude_m": [
+				0.5,
+				800
+			],
+			"water": [],
+			"yields": [
+				"wild_carrot_roots",
+				"seeds"
+			],
+			"season": [
+				"summer",
+				"autumn"
+			],
+			"rarity": "common",
+			"uses": [
+				"food",
+				"seasoning"
+			],
+			"properties": []
+		},
+		{
+			"id": 51,
+			"name": "watercress",
+			"display": "Watercress",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.1,
+				0.3
+			],
+			"crown_m": 0.3,
+			"trunk_m": 0.0,
+			"color": [
+				0.25,
+				0.5,
+				0.22
+			],
+			"per_hectare": {
+				"marsh": 30,
+				"temperate_forest": 2,
+				"temperate_grassland": 2
+			},
+			"moisture": [
+				170,
+				255
+			],
+			"max_slope_deg": 8,
+			"altitude_m": [
+				0.3,
+				800
+			],
+			"water": [
+				"river",
+				"marsh"
+			],
+			"yields": [
+				"watercress"
+			],
+			"season": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"rarity": "uncommon",
+			"uses": [
+				"food",
+				"sauce",
+				"medicine"
+			],
+			"properties": [
+				"vitality"
+			]
+		},
+		{
+			"id": 52,
+			"name": "samphire",
+			"display": "Samphire",
+			"kind": "plant",
+			"shape": "grass",
+			"height_m": [
+				0.1,
+				0.3
+			],
+			"crown_m": 0.3,
+			"trunk_m": 0.0,
+			"color": [
+				0.35,
+				0.55,
+				0.3
+			],
+			"per_hectare": {
+				"beach": 40,
+				"marsh": 15,
+				"mangrove": 10
+			},
+			"moisture": [
+				60,
+				255
+			],
+			"max_slope_deg": 10,
+			"altitude_m": [
+				-0.5,
+				3
+			],
+			"water": [
+				"estuary",
+				"marsh"
+			],
+			"yields": [
+				"samphire"
+			],
+			"season": [
+				"summer"
+			],
+			"rarity": "common",
+			"uses": [
+				"food",
+				"pickle",
+				"glass_ash"
+			],
+			"properties": []
+		},
+		{
+			"id": 53,
+			"name": "wild_marjoram",
+			"display": "Wild marjoram",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.3,
+				0.6
+			],
+			"crown_m": 0.3,
+			"trunk_m": 0.0,
+			"color": [
+				0.65,
+				0.45,
+				0.6
+			],
+			"per_hectare": {
+				"temperate_grassland": 10,
+				"dry_scrub": 10
+			},
+			"moisture": [
+				30,
+				170
+			],
+			"max_slope_deg": 40,
+			"altitude_m": [
+				1,
+				1000
+			],
+			"water": [],
+			"yields": [
+				"marjoram"
+			],
+			"season": [
+				"summer"
+			],
+			"rarity": "uncommon",
+			"uses": [
+				"seasoning",
+				"tea",
+				"medicine"
+			],
+			"properties": [
+				"antiseptic"
+			]
+		},
+		{
+			"id": 54,
+			"name": "wild_sage",
+			"display": "Wild sage",
+			"kind": "plant",
+			"shape": "shrub",
+			"height_m": [
+				0.3,
+				0.7
+			],
+			"crown_m": 0.4,
+			"trunk_m": 0.0,
+			"color": [
+				0.55,
+				0.62,
+				0.55
+			],
+			"per_hectare": {
+				"dry_scrub": 25,
+				"savanna": 10
+			},
+			"moisture": [
+				20,
+				150
+			],
+			"max_slope_deg": 40,
+			"altitude_m": [
+				1,
+				1200
+			],
+			"water": [],
+			"yields": [
+				"sage"
+			],
+			"season": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"rarity": "common",
+			"uses": [
+				"seasoning",
+				"tea",
+				"medicine",
+				"incense"
+			],
+			"properties": [
+				"antiseptic",
+				"memory"
+			]
+		},
+		{
+			"id": 55,
+			"name": "rosemary",
+			"display": "Rosemary",
+			"kind": "shrub",
+			"shape": "shrub",
+			"height_m": [
+				0.6,
+				1.5
+			],
+			"crown_m": 0.6,
+			"trunk_m": 0.03,
+			"color": [
+				0.35,
+				0.48,
+				0.4
+			],
+			"per_hectare": {
+				"dry_scrub": 15,
+				"savanna": 4
+			},
+			"moisture": [
+				20,
+				150
+			],
+			"max_slope_deg": 40,
+			"altitude_m": [
+				1,
+				900
+			],
+			"water": [],
+			"yields": [
+				"rosemary"
+			],
+			"season": [
+				"all"
+			],
+			"rarity": "common",
+			"uses": [
+				"seasoning",
+				"oil",
+				"medicine",
+				"perfume"
+			],
+			"properties": [
+				"memory",
+				"antiseptic"
+			]
+		},
+		{
+			"id": 56,
+			"name": "lavender",
+			"display": "Lavender",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.3,
+				0.7
+			],
+			"crown_m": 0.4,
+			"trunk_m": 0.0,
+			"color": [
+				0.55,
+				0.45,
+				0.75
+			],
+			"per_hectare": {
+				"dry_scrub": 20,
+				"temperate_grassland": 3
+			},
+			"moisture": [
+				20,
+				150
+			],
+			"max_slope_deg": 40,
+			"altitude_m": [
+				1,
+				1200
+			],
+			"water": [],
+			"yields": [
+				"lavender_flowers"
+			],
+			"season": [
+				"summer"
+			],
+			"rarity": "uncommon",
+			"uses": [
+				"perfume",
+				"soap",
+				"oil",
+				"medicine",
+				"potion"
+			],
+			"properties": [
+				"calming",
+				"sleep"
+			]
+		},
+		{
+			"id": 57,
+			"name": "yarrow",
+			"display": "Yarrow",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.3,
+				0.7
+			],
+			"crown_m": 0.3,
+			"trunk_m": 0.0,
+			"color": [
+				0.9,
+				0.88,
+				0.8
+			],
+			"per_hectare": {
+				"temperate_grassland": 30,
+				"heath": 10,
+				"alpine_meadow": 15
+			},
+			"moisture": [
+				40,
+				220
+			],
+			"max_slope_deg": 40,
+			"altitude_m": [
+				1,
+				2000
+			],
+			"water": [],
+			"yields": [
+				"yarrow"
+			],
+			"season": [
+				"summer"
+			],
+			"rarity": "common",
+			"uses": [
+				"medicine",
+				"ointment",
+				"potion",
+				"brewing"
+			],
+			"properties": [
+				"stops_bleeding",
+				"wound_healing"
+			]
+		},
+		{
+			"id": 58,
+			"name": "plantain",
+			"display": "Ribwort plantain",
+			"kind": "plant",
+			"shape": "grass",
+			"height_m": [
+				0.1,
+				0.4
+			],
+			"crown_m": 0.25,
+			"trunk_m": 0.0,
+			"color": [
+				0.35,
+				0.48,
+				0.25
+			],
+			"per_hectare": {
+				"temperate_grassland": 50,
+				"alpine_meadow": 10
+			},
+			"moisture": [
+				50,
+				230
+			],
+			"max_slope_deg": 40,
+			"altitude_m": [
+				0.5,
+				1500
+			],
+			"water": [],
+			"yields": [
+				"plantain_leaves",
+				"seeds"
+			],
+			"season": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"rarity": "common",
+			"uses": [
+				"medicine",
+				"ointment",
+				"food"
+			],
+			"properties": [
+				"wound_healing",
+				"soothing"
+			]
+		},
+		{
+			"id": 59,
+			"name": "chamomile",
+			"display": "Chamomile",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.2,
+				0.5
+			],
+			"crown_m": 0.3,
+			"trunk_m": 0.0,
+			"color": [
+				0.95,
+				0.95,
+				0.85
+			],
+			"per_hectare": {
+				"temperate_grassland": 20,
+				"beach": 3
+			},
+			"moisture": [
+				40,
+				200
+			],
+			"max_slope_deg": 30,
+			"altitude_m": [
+				0.5,
+				900
+			],
+			"water": [],
+			"yields": [
+				"chamomile_flowers"
+			],
+			"season": [
+				"summer"
+			],
+			"rarity": "common",
+			"uses": [
+				"tea",
+				"medicine",
+				"potion",
+				"ointment"
+			],
+			"properties": [
+				"calming",
+				"sleep",
+				"digestive"
+			]
+		},
+		{
+			"id": 60,
+			"name": "comfrey",
+			"display": "Comfrey",
+			"kind": "plant",
+			"shape": "fern",
+			"height_m": [
+				0.5,
+				1.2
+			],
+			"crown_m": 0.4,
+			"trunk_m": 0.0,
+			"color": [
+				0.3,
+				0.45,
+				0.25
+			],
+			"per_hectare": {
+				"marsh": 15,
+				"temperate_forest": 4,
+				"temperate_grassland": 3
+			},
+			"moisture": [
+				150,
+				255
+			],
+			"max_slope_deg": 25,
+			"altitude_m": [
+				0.5,
+				800
+			],
+			"water": [
+				"marsh"
+			],
+			"yields": [
+				"comfrey_leaves",
+				"comfrey_roots"
+			],
+			"season": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"rarity": "common",
+			"uses": [
+				"ointment",
+				"poultice",
+				"medicine",
+				"fertilizer"
+			],
+			"properties": [
+				"bone_knitting",
+				"wound_healing"
+			]
+		},
+		{
+			"id": 61,
+			"name": "st_johns_wort",
+			"display": "St John's wort",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.3,
+				0.8
+			],
+			"crown_m": 0.3,
+			"trunk_m": 0.0,
+			"color": [
+				0.9,
+				0.8,
+				0.2
+			],
+			"per_hectare": {
+				"temperate_grassland": 15,
+				"temperate_forest": 3,
+				"heath": 4
+			},
+			"moisture": [
+				40,
+				200
+			],
+			"max_slope_deg": 35,
+			"altitude_m": [
+				1,
+				1200
+			],
+			"water": [],
+			"yields": [
+				"st_johns_wort"
+			],
+			"season": [
+				"summer"
+			],
+			"rarity": "uncommon",
+			"uses": [
+				"medicine",
+				"oil",
+				"potion",
+				"dye"
+			],
+			"properties": [
+				"mood",
+				"wound_healing"
+			]
+		},
+		{
+			"id": 62,
+			"name": "valerian",
+			"display": "Valerian",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.6,
+				1.5
+			],
+			"crown_m": 0.4,
+			"trunk_m": 0.0,
+			"color": [
+				0.92,
+				0.82,
+				0.85
+			],
+			"per_hectare": {
+				"marsh": 10,
+				"temperate_forest": 2,
+				"mixed_forest": 2
+			},
+			"moisture": [
+				160,
+				255
+			],
+			"max_slope_deg": 25,
+			"altitude_m": [
+				0.5,
+				1500
+			],
+			"water": [
+				"marsh"
+			],
+			"yields": [
+				"valerian_roots"
+			],
+			"season": [
+				"autumn"
+			],
+			"rarity": "uncommon",
+			"uses": [
+				"medicine",
+				"potion"
+			],
+			"properties": [
+				"sleep",
+				"calming"
+			]
+		},
+		{
+			"id": 63,
+			"name": "meadowsweet",
+			"display": "Meadowsweet",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.6,
+				1.2
+			],
+			"crown_m": 0.4,
+			"trunk_m": 0.0,
+			"color": [
+				0.93,
+				0.92,
+				0.8
+			],
+			"per_hectare": {
+				"marsh": 30,
+				"temperate_grassland": 3
+			},
+			"moisture": [
+				170,
+				255
+			],
+			"max_slope_deg": 20,
+			"altitude_m": [
+				0.3,
+				900
+			],
+			"water": [
+				"marsh",
+				"river"
+			],
+			"yields": [
+				"meadowsweet_flowers"
+			],
+			"season": [
+				"summer"
+			],
+			"rarity": "common",
+			"uses": [
+				"medicine",
+				"mead",
+				"tea",
+				"potion"
+			],
+			"properties": [
+				"pain_relief",
+				"fever"
+			]
+		},
+		{
+			"id": 64,
+			"name": "feverfew",
+			"display": "Feverfew",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.3,
+				0.6
+			],
+			"crown_m": 0.3,
+			"trunk_m": 0.0,
+			"color": [
+				0.92,
+				0.92,
+				0.7
+			],
+			"per_hectare": {
+				"temperate_grassland": 6,
+				"dry_scrub": 4
+			},
+			"moisture": [
+				40,
+				180
+			],
+			"max_slope_deg": 35,
+			"altitude_m": [
+				1,
+				800
+			],
+			"water": [],
+			"yields": [
+				"feverfew"
+			],
+			"season": [
+				"summer"
+			],
+			"rarity": "uncommon",
+			"uses": [
+				"medicine",
+				"potion"
+			],
+			"properties": [
+				"fever",
+				"headache"
+			]
+		},
+		{
+			"id": 65,
+			"name": "burdock",
+			"display": "Burdock",
+			"kind": "plant",
+			"shape": "fern",
+			"height_m": [
+				0.6,
+				1.5
+			],
+			"crown_m": 0.6,
+			"trunk_m": 0.0,
+			"color": [
+				0.3,
+				0.42,
+				0.22
+			],
+			"per_hectare": {
+				"temperate_grassland": 6,
+				"temperate_forest": 4,
+				"marsh": 3
+			},
+			"moisture": [
+				100,
+				240
+			],
+			"max_slope_deg": 30,
+			"altitude_m": [
+				0.5,
+				800
+			],
+			"water": [],
+			"yields": [
+				"burdock_roots",
+				"burrs"
+			],
+			"season": [
+				"autumn"
+			],
+			"rarity": "common",
+			"uses": [
+				"food",
+				"medicine",
+				"brewing"
+			],
+			"properties": [
+				"cleansing"
+			]
+		},
+		{
+			"id": 66,
+			"name": "mugwort",
+			"display": "Mugwort",
+			"kind": "plant",
+			"shape": "fern",
+			"height_m": [
+				0.6,
+				1.5
+			],
+			"crown_m": 0.4,
+			"trunk_m": 0.0,
+			"color": [
+				0.45,
+				0.52,
+				0.42
+			],
+			"per_hectare": {
+				"temperate_grassland": 8,
+				"dry_scrub": 6,
+				"beach": 3
+			},
+			"moisture": [
+				30,
+				200
+			],
+			"max_slope_deg": 35,
+			"altitude_m": [
+				0.5,
+				900
+			],
+			"water": [],
+			"yields": [
+				"mugwort"
+			],
+			"season": [
+				"summer"
+			],
+			"rarity": "common",
+			"uses": [
+				"brewing",
+				"medicine",
+				"potion",
+				"incense"
+			],
+			"properties": [
+				"dreams",
+				"digestive"
+			]
+		},
+		{
+			"id": 67,
+			"name": "arnica",
+			"display": "Arnica",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.2,
+				0.5
+			],
+			"crown_m": 0.3,
+			"trunk_m": 0.0,
+			"color": [
+				0.95,
+				0.7,
+				0.15
+			],
+			"per_hectare": {
+				"alpine_meadow": 25,
+				"heath": 3
+			},
+			"moisture": [
+				60,
+				220
+			],
+			"max_slope_deg": 45,
+			"altitude_m": [
+				300,
+				2400
+			],
+			"water": [],
+			"yields": [
+				"arnica_flowers"
+			],
+			"season": [
+				"summer"
+			],
+			"rarity": "rare",
+			"uses": [
+				"ointment",
+				"medicine"
+			],
+			"properties": [
+				"bruise_healing",
+				"swelling"
+			]
+		},
+		{
+			"id": 68,
+			"name": "angelica",
+			"display": "Angelica",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				1,
+				2
+			],
+			"crown_m": 0.5,
+			"trunk_m": 0.0,
+			"color": [
+				0.75,
+				0.85,
+				0.6
+			],
+			"per_hectare": {
+				"marsh": 6,
+				"alpine_meadow": 6,
+				"boreal_forest": 2
+			},
+			"moisture": [
+				150,
+				255
+			],
+			"max_slope_deg": 30,
+			"altitude_m": [
+				0.5,
+				2000
+			],
+			"water": [
+				"marsh",
+				"river"
+			],
+			"yields": [
+				"angelica_roots",
+				"angelica_stems"
+			],
+			"season": [
+				"summer"
+			],
+			"rarity": "uncommon",
+			"uses": [
+				"medicine",
+				"liqueur",
+				"candied_food",
+				"potion"
+			],
+			"properties": [
+				"warding",
+				"digestive"
+			]
+		},
+		{
+			"id": 69,
+			"name": "aloe",
+			"display": "Aloe",
+			"kind": "plant",
+			"shape": "cactus",
+			"height_m": [
+				0.3,
+				0.8
+			],
+			"crown_m": 0.4,
+			"trunk_m": 0.15,
+			"color": [
+				0.45,
+				0.58,
+				0.42
+			],
+			"per_hectare": {
+				"dry_scrub": 12,
+				"hot_desert": 4,
+				"savanna": 3
+			},
+			"moisture": [
+				0,
+				130
+			],
+			"max_slope_deg": 35,
+			"altitude_m": [
+				1,
+				1200
+			],
+			"water": [],
+			"yields": [
+				"aloe_gel"
+			],
+			"season": [
+				"all"
+			],
+			"rarity": "uncommon",
+			"uses": [
+				"ointment",
+				"medicine"
+			],
+			"properties": [
+				"burn_healing",
+				"soothing"
+			]
+		},
+		{
+			"id": 70,
+			"name": "foxglove",
+			"display": "Foxglove",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.6,
+				1.5
+			],
+			"crown_m": 0.3,
+			"trunk_m": 0.0,
+			"color": [
+				0.72,
+				0.35,
+				0.62
+			],
+			"per_hectare": {
+				"temperate_forest": 6,
+				"mixed_forest": 6,
+				"heath": 3
+			},
+			"moisture": [
+				100,
+				240
+			],
+			"max_slope_deg": 35,
+			"altitude_m": [
+				1,
+				1200
+			],
+			"water": [],
+			"yields": [
+				"foxglove_leaves"
+			],
+			"season": [
+				"summer"
+			],
+			"rarity": "uncommon",
+			"uses": [
+				"medicine",
+				"poison",
+				"potion"
+			],
+			"properties": [
+				"heart_drug",
+				"toxic"
+			]
+		},
+		{
+			"id": 71,
+			"name": "belladonna",
+			"display": "Deadly nightshade",
+			"kind": "plant",
+			"shape": "fern",
+			"height_m": [
+				0.5,
+				1.5
+			],
+			"crown_m": 0.4,
+			"trunk_m": 0.0,
+			"color": [
+				0.22,
+				0.32,
+				0.2
+			],
+			"per_hectare": {
+				"temperate_forest": 0.6,
+				"mixed_forest": 0.4
+			},
+			"moisture": [
+				100,
+				230
+			],
+			"max_slope_deg": 30,
+			"altitude_m": [
+				1,
+				800
+			],
+			"water": [],
+			"yields": [
+				"belladonna_berries",
+				"belladonna_leaves"
+			],
+			"season": [
+				"summer",
+				"autumn"
+			],
+			"rarity": "rare",
+			"uses": [
+				"poison",
+				"potion",
+				"medicine"
+			],
+			"properties": [
+				"toxic",
+				"sight"
+			]
+		},
+		{
+			"id": 72,
+			"name": "wolfsbane",
+			"display": "Wolfsbane",
+			"kind": "plant",
+			"shape": "flower",
+			"height_m": [
+				0.5,
+				1.2
+			],
+			"crown_m": 0.3,
+			"trunk_m": 0.0,
+			"color": [
+				0.35,
+				0.3,
+				0.7
+			],
+			"per_hectare": {
+				"alpine_meadow": 6,
+				"boreal_forest": 1.5,
+				"mixed_forest": 0.5
+			},
+			"moisture": [
+				100,
+				255
+			],
+			"max_slope_deg": 40,
+			"altitude_m": [
+				200,
+				2200
+			],
+			"water": [],
+			"yields": [
+				"wolfsbane_roots"
+			],
+			"season": [
+				"summer"
+			],
+			"rarity": "rare",
+			"uses": [
+				"poison",
+				"potion"
+			],
+			"properties": [
+				"toxic",
+				"warding"
+			]
+		},
+		{
+			"id": 73,
+			"name": "henbane",
+			"display": "Henbane",
+			"kind": "plant",
+			"shape": "fern",
+			"height_m": [
+				0.3,
+				0.8
+			],
+			"crown_m": 0.3,
+			"trunk_m": 0.0,
+			"color": [
+				0.6,
+				0.58,
+				0.4
+			],
+			"per_hectare": {
+				"temperate_grassland": 1,
+				"dry_scrub": 2,
+				"beach": 1
+			},
+			"moisture": [
+				30,
+				180
+			],
+			"max_slope_deg": 30,
+			"altitude_m": [
+				0.5,
+				700
+			],
+			"water": [],
+			"yields": [
+				"henbane_seeds",
+				"henbane_leaves"
+			],
+			"season": [
+				"summer"
+			],
+			"rarity": "rare",
+			"uses": [
+				"poison",
+				"potion",
+				"medicine"
+			],
+			"properties": [
+				"toxic",
+				"sleep"
+			]
+		},
+		{
+			"id": 74,
+			"name": "chanterelle",
+			"display": "Chanterelle",
+			"kind": "plant",
+			"shape": "mushroom",
+			"height_m": [
+				0.05,
+				0.12
+			],
+			"crown_m": 0.15,
+			"trunk_m": 0.0,
+			"color": [
+				0.95,
+				0.7,
+				0.2
+			],
+			"per_hectare": {
+				"mixed_forest": 8,
+				"boreal_forest": 6,
+				"temperate_forest": 4
+			},
+			"moisture": [
+				140,
+				255
+			],
+			"max_slope_deg": 30,
+			"altitude_m": [
+				1,
+				1400
+			],
+			"water": [],
+			"yields": [
+				"chanterelles"
+			],
+			"season": [
+				"summer",
+				"autumn"
+			],
+			"rarity": "uncommon",
+			"uses": [
+				"food",
+				"sauce"
+			],
+			"properties": []
+		},
+		{
+			"id": 75,
+			"name": "porcini",
+			"display": "Porcini",
+			"kind": "plant",
+			"shape": "mushroom",
+			"height_m": [
+				0.1,
+				0.25
+			],
+			"crown_m": 0.2,
+			"trunk_m": 0.0,
+			"color": [
+				0.55,
+				0.38,
+				0.22
+			],
+			"per_hectare": {
+				"temperate_forest": 5,
+				"mixed_forest": 6,
+				"boreal_forest": 4
+			},
+			"moisture": [
+				130,
+				255
+			],
+			"max_slope_deg": 30,
+			"altitude_m": [
+				1,
+				1600
+			],
+			"water": [],
+			"yields": [
+				"porcini"
+			],
+			"season": [
+				"autumn"
+			],
+			"rarity": "uncommon",
+			"uses": [
+				"food",
+				"sauce",
+				"dried_food"
+			],
+			"properties": []
+		},
+		{
+			"id": 76,
+			"name": "morel",
+			"display": "Morel",
+			"kind": "plant",
+			"shape": "mushroom",
+			"height_m": [
+				0.05,
+				0.15
+			],
+			"crown_m": 0.15,
+			"trunk_m": 0.0,
+			"color": [
+				0.6,
+				0.5,
+				0.35
+			],
+			"per_hectare": {
+				"temperate_forest": 1.5,
+				"mixed_forest": 1
+			},
+			"moisture": [
+				130,
+				240
+			],
+			"max_slope_deg": 30,
+			"altitude_m": [
+				1,
+				1000
+			],
+			"water": [],
+			"yields": [
+				"morels"
+			],
+			"season": [
+				"spring"
+			],
+			"rarity": "rare",
+			"uses": [
+				"food",
+				"sauce"
+			],
+			"properties": []
+		},
+		{
+			"id": 77,
+			"name": "fly_agaric",
+			"display": "Fly agaric",
+			"kind": "plant",
+			"shape": "mushroom",
+			"height_m": [
+				0.1,
+				0.25
+			],
+			"crown_m": 0.2,
+			"trunk_m": 0.0,
+			"color": [
+				0.85,
+				0.15,
+				0.12
+			],
+			"per_hectare": {
+				"boreal_forest": 4,
+				"mixed_forest": 3
+			},
+			"moisture": [
+				120,
+				255
+			],
+			"max_slope_deg": 30,
+			"altitude_m": [
+				1,
+				1600
+			],
+			"water": [],
+			"yields": [
+				"fly_agaric_caps"
+			],
+			"season": [
+				"autumn"
+			],
+			"rarity": "uncommon",
+			"uses": [
+				"poison",
+				"potion",
+				"insect_bait"
+			],
+			"properties": [
+				"toxic",
+				"visions"
+			]
+		},
+		{
+			"id": 78,
+			"name": "puffball",
+			"display": "Giant puffball",
+			"kind": "plant",
+			"shape": "mushroom",
+			"height_m": [
+				0.15,
+				0.4
+			],
+			"crown_m": 0.3,
+			"trunk_m": 0.0,
+			"color": [
+				0.95,
+				0.95,
+				0.92
+			],
+			"per_hectare": {
+				"temperate_grassland": 2,
+				"temperate_forest": 1
+			},
+			"moisture": [
+				100,
+				240
+			],
+			"max_slope_deg": 25,
+			"altitude_m": [
+				1,
+				900
+			],
+			"water": [],
+			"yields": [
+				"puffball"
+			],
+			"season": [
+				"summer",
+				"autumn"
+			],
+			"rarity": "rare",
+			"uses": [
+				"food",
+				"tinder",
+				"wound_dressing"
+			],
+			"properties": [
+				"stops_bleeding"
+			]
+		},
+		{
+			"id": 79,
+			"name": "tinder_fungus",
+			"display": "Tinder fungus",
+			"kind": "plant",
+			"shape": "mushroom",
+			"height_m": [
+				0.15,
+				0.3
+			],
+			"crown_m": 0.2,
+			"trunk_m": 0.0,
+			"color": [
+				0.55,
+				0.5,
+				0.45
+			],
+			"per_hectare": {
+				"mixed_forest": 6,
+				"boreal_forest": 8,
+				"temperate_forest": 3
+			},
+			"moisture": [
+				110,
+				255
+			],
+			"max_slope_deg": 35,
+			"altitude_m": [
+				1,
+				1500
+			],
+			"water": [],
+			"yields": [
+				"amadou"
+			],
+			"season": [
+				"all"
+			],
+			"rarity": "common",
+			"uses": [
+				"tinder",
+				"wound_dressing",
+				"felt"
+			],
+			"properties": [
+				"stops_bleeding"
+			]
+		},
+		{
+			"id": 80,
+			"name": "wild_banana",
+			"display": "Wild banana",
+			"kind": "shrub",
+			"shape": "palm",
+			"height_m": [
+				3,
+				6
+			],
+			"crown_m": 1.8,
+			"trunk_m": 0.15,
+			"color": [
+				0.35,
+				0.55,
+				0.25
+			],
+			"per_hectare": {
+				"tropical_forest": 15
+			},
+			"moisture": [
+				150,
+				255
+			],
+			"max_slope_deg": 25,
+			"altitude_m": [
+				1,
+				800
+			],
+			"water": [],
+			"yields": [
+				"bananas",
+				"banana_leaves"
+			],
+			"season": [
+				"all"
+			],
+			"rarity": "common",
+			"uses": [
+				"food",
+				"wrapping",
+				"fibre"
+			],
+			"properties": []
+		},
+		{
+			"id": 81,
+			"name": "date_palm",
+			"display": "Date palm",
+			"kind": "tree",
+			"shape": "palm",
+			"height_m": [
+				12,
+				22
+			],
+			"crown_m": 3.0,
+			"trunk_m": 0.25,
+			"color": [
+				0.45,
+				0.52,
+				0.3
+			],
+			"per_hectare": {
+				"hot_desert": 2,
+				"dry_scrub": 2,
+				"savanna": 1
+			},
+			"moisture": [
+				120,
+				255
+			],
+			"max_slope_deg": 15,
+			"altitude_m": [
+				0.5,
+				500
+			],
+			"water": [],
+			"yields": [
+				"dates",
+				"palm_fronds",
+				"palm_wood"
+			],
+			"season": [
+				"autumn"
+			],
+			"rarity": "rare",
+			"uses": [
+				"food",
+				"syrup",
+				"thatch",
+				"timber"
+			],
+			"properties": []
+		},
+		{
+			"id": 82,
+			"name": "prickly_pear",
+			"display": "Prickly pear",
+			"kind": "shrub",
+			"shape": "cactus",
+			"height_m": [
+				0.8,
+				2.5
+			],
+			"crown_m": 0.8,
+			"trunk_m": 0.3,
+			"color": [
+				0.38,
+				0.55,
+				0.32
+			],
+			"per_hectare": {
+				"dry_scrub": 12,
+				"hot_desert": 4,
+				"savanna": 3
+			},
+			"moisture": [
+				0,
+				130
+			],
+			"max_slope_deg": 35,
+			"altitude_m": [
+				1,
+				1200
+			],
+			"water": [],
+			"yields": [
+				"prickly_pears",
+				"cactus_pads"
+			],
+			"season": [
+				"summer",
+				"autumn"
+			],
+			"rarity": "common",
+			"uses": [
+				"food",
+				"dye",
+				"syrup"
+			],
+			"properties": []
 		}
 	]
 }
