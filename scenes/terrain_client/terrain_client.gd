@@ -457,7 +457,7 @@ func _process(_delta: float) -> void:
 			float(stream.bytes_received) / 1048576.0, stream.pending(), Engine.get_frames_per_second(), str(body.global_position.round())
 		])
 
-	hud.text = "build 2   %d fps   %s\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
+	hud.text = "build 3   %d fps   %s\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
 		Engine.get_frames_per_second(), "flying" if flying else "walking",
 		stream.blocks_received, float(stream.bytes_received) / 1048576.0, cache.hits, flora.instances, flora.colliders,
 		body.global_position.x, body.global_position.y, body.global_position.z

@@ -25,22 +25,67 @@ static func chunk_levels(generator, origin: Vector2, chunk_m: float) -> Dictiona
 
 	for j in range(count):
 		for i in range(count):
-			var x: float = origin.x + float(i) * spacing
-			var z: float = origin.y + float(j) * spacing
-			# The last row and column may sit on the next tile.
-			var source = data if (x < data.x0 + float(data.samples - 1) * spacing and z < data.z0 + float(data.samples - 1) * spacing) else generator.get_tile(generator.tile_of(x, z))
+			var level: float = _level_at(generator, data, origin.x + float(i) * spacing, origin.y + float(j) * spacing, spacing)
 
-			if source.placeholder:
-				continue
-
-			var k: int = source.nearest(x, z)
-			var level: float = source.water_surface[k]
-
-			if source.water_class[k] > 1 and not is_nan(level):
+			if not is_nan(level):
 				levels[j * count + i] = level
 				wet += 1
 
+	if wet == 0:
+		return {"count": count, "spacing": spacing, "levels": levels, "wet": 0}
+
+	var closed: PackedFloat32Array = levels.duplicate()
+
+	for j in range(count):
+		for i in range(count):
+			if is_nan(levels[j * count + i]):
+				var level: float = _gap_level(generator, data, origin.x + float(i) * spacing, origin.y + float(j) * spacing, spacing)
+
+				if not is_nan(level):
+					closed[j * count + i] = level
+					wet += 1
+
+	levels = closed
+
 	return {"count": count, "spacing": spacing, "levels": levels, "wet": wet}
+
+
+# The inland water level at one point (NAN when dry).
+static func _level_at(generator, data, x: float, z: float, spacing: float) -> float:
+	# The last row and column may sit on the next tile.
+	var source = data if (x < data.x0 + float(data.samples - 1) * spacing and z < data.z0 + float(data.samples - 1) * spacing) else generator.get_tile(generator.tile_of(x, z))
+
+	if source.placeholder:
+		return NAN
+
+	var k: int = source.nearest(x, z)
+	var level: float = source.water_surface[k]
+	return level if source.water_class[k] > 1 and not is_nan(level) else NAN
+
+
+# Rivers are one or two samples wide and the baked map leaves holes along
+# them, mostly where the line steps sideways. A dry point with water on
+# both sides of it (one or two steps away, up and down or left and right,
+# allowing one step across) takes the mean of the two, closing the hole.
+static func _gap_level(generator, data, x: float, z: float, spacing: float) -> float:
+	for axis in [Vector2(0, 1), Vector2(1, 0)]:
+		var across: Vector2 = Vector2(axis.y, axis.x)
+
+		for before in [1, 2]:
+			for side_a in [-1, 0, 1]:
+				var a: float = _level_at(generator, data, x + (across.x * side_a - axis.x * before) * spacing, z + (across.y * side_a - axis.y * before) * spacing, spacing)
+
+				if is_nan(a):
+					continue
+
+				for after in [1, 2]:
+					for side_b in [-1, 0, 1]:
+						var b: float = _level_at(generator, data, x + (across.x * side_b + axis.x * after) * spacing, z + (across.y * side_b + axis.y * after) * spacing, spacing)
+
+						if not is_nan(b):
+							return (a + b) * 0.5
+
+	return NAN
 
 
 # Packs levels for sending: empty when the chunk holds no inland water,
