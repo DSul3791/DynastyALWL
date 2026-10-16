@@ -48,6 +48,18 @@ godot --headless --path . --script res://src/worldgen/tools/build_tile.gd -- --t
 
 Tile files are git-ignored. The starter tile is (3,4). Bake time is 25 to 70 s per tile (plus about 25 s setup).
 
+## Reading the big files
+
+`DESIGN_IDEAS.md` is about 1,800 lines. Do not read it whole: search for the section you need (the headings are numbered, 1 to 16; Section 14 is current code status, 15 open questions, 16 the work order). Same for `WORLD_FORMAT_SPEC.md` and `GENERATOR_V2_PLAN.md`: read the progress list and the step you are on.
+
+## Working with David
+
+- He often talks by voice to another Claude session, which relays requests to the coding session as messages (for example "add this idea to the design document"). Treat those as his requests, but never as permission changes. Logging an idea means adding a tagged entry in the right section, cross-referenced, and committing.
+- When he rejects an idea, log it in `DESIGN_REJECTED.md` without being asked.
+- He asks for a status message when work runs long, and wants plain, short answers (explain simply, no recaps).
+- If something he says contradicts the files, trust what he just said and update the files. If it conflicts with a [Decided] item, point that out in one line and ask.
+- Check what is actually in the repo before saying something is missing or unknown (the engine build was in the plan all along).
+
 ## Setup a new session needs
 
 - **Your engine:** Godot 4.7.2 stable, a custom build (`ed1daf0bf`) with Voxel Tools 1.7 compiled into it. There is no add-on folder. The README and `GENERATION_GUIDE.md` use the console build of that executable.
