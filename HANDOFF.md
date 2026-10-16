@@ -4,7 +4,7 @@ Read this first in a new conversation. It is the short master summary; the detai
 
 ## First task
 
-Steps 14, 15 and 16 first versions are done (2026-10-16): the runtime terrain generator, runtime trees and plants, a walk-and-fly preview, and a terrain server that streams blocks and flora to a client with a disk cache. Next: step 18 (bake the inner starter tiles and their neighborhoods; step 17 is the owner's machine test, which waits for the playtest), all in the cloud. The owner does nothing on his own computer until the game is playable, so frame-rate checks wait for the first playtest. See the step 14 and 16 notes in `GENERATOR_V2_PLAN.md`.
+Steps 14, 15 and 16 first versions are done (2026-10-16): the runtime terrain generator, runtime trees and plants, a walk-and-fly preview, and a terrain server that streams blocks and flora to a client with a disk cache. Step 18 is done for the inner starters: 36 tiles baked and kept in `/mnt/project-files/tiles/base_world/` (copy them into `worlds/base_world/tiles/`). Step 17 (the owner's machine test) waits for the playtest. Next: step 19 (retire the old pipeline and update the README and guides), then game systems from `DESIGN_IDEAS.md` Section 16. The owner does nothing on his own computer until the game is playable, so frame-rate checks wait for the first playtest. See the step 14 and 16 notes in `GENERATOR_V2_PLAN.md`.
 
 ## What this is
 
@@ -57,7 +57,7 @@ godot --headless --path . res://scenes/terrain_server/terrain_server.tscn -- --p
 godot --path . res://scenes/terrain_client/terrain_client.tscn -- --server=127.0.0.1           # client (headless check: add --frames=6000 [--dig] [--cut])
 ```
 
-Tile files are git-ignored except the starter tile `worlds/base_world/tiles/tile_3_4.tile` (about 9 MB, committed so every session has it; recommit it only after a rebake that changes it). The starter tile is (3,4). Bake time is 25 to 70 s per tile (plus about 25 s setup).
+Baked tiles for the inner starters and their neighbors (36 files) are in `/mnt/project-files/tiles/base_world/`; copy them into `worlds/base_world/tiles/` at the start of a session. Tile files are git-ignored except the starter tile `worlds/base_world/tiles/tile_3_4.tile` (about 9 MB, committed so every session has it; recommit it only after a rebake that changes it). The starter tile is (3,4). Bake time is 25 to 70 s per tile (plus about 25 s setup).
 
 ## Reading the big files
 
