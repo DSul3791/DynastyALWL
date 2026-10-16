@@ -41,7 +41,7 @@ Steps 2 to 13b are done. Step 13b (rivers across tile edges and edge matching):
 
 ## Commands
 
-You need a Godot 4.7 headless binary (the one used so far lived in a session scratch folder and will not exist in a new session; download it).
+Use the Linux engine build described under Setup below (`godot` here means that binary).
 
 ```
 godot --headless --path . --script res://src/worldgen/tools/test_worldgen.gd        # tests (about 6 min, run in background)
@@ -67,7 +67,7 @@ Tile files are git-ignored. The starter tile is (3,4). Bake time is 25 to 70 s p
 ## Setup a new session needs
 
 - **Your engine:** Godot 4.7.2 stable, a custom build (`ed1daf0bf`) with Voxel Tools 1.7 compiled into it. There is no add-on folder. The README and `GENERATION_GUIDE.md` use the console build of that executable.
-- **Cloud sessions** cannot use your Windows build. Until step 14 they can run the generator on any stock Godot 4.7 headless Linux binary (4.7.1 was used so far; the generator makes 2D maps only and does not touch Voxel Tools). Step 14 (runtime terrain generator) and step 16 (server streaming and client) need a Linux build of Godot 4.7.2 with the Voxel Tools 1.7 module compiled in, or the work is done on your machine. That is plan step 1 ("Voxel Tools build") and is still pending.
+- **Cloud sessions** use a Linux build of the same engine (Godot 4.7.2 `ed1daf0bf` plus Voxel Tools 1.7, headless), made by `tools/build_godot_linux.sh` (about 30 minutes). A compressed copy is kept in the project folder at `/mnt/project-files/engine/godot-4.7.2-voxel1.7-linux-headless.xz`: unpack it with `xz -dc file > godot && chmod +x godot` instead of rebuilding. Plan step 1 is done.
 - **Git:** work on `claude/generator-v2`, push to `origin`. GitHub reports the repo moved to `DSul3791/WorldGeneratorV1`; the old address still works.
 - **Python 3** is handy for small scripted edits and plan checks.
 

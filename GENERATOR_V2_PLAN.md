@@ -29,7 +29,7 @@ Working plan for the new world generator described in `DESIGN_IDEAS.md` (Section
 
 ### Preparation
 
-1. **Voxel Tools build.** The project uses Voxel Tools compiled into Godot (there is no addon folder), so terrain steps need a matching Linux build in Claude's workspace. The project owner uses Godot 4.7.2 stable (custom build `ed1daf0bf`) with Voxel Tools 1.7. Get or compile a matching Linux build (Godot 4.7.2 source plus the Voxel Tools 1.7 module) before step 14.
+1. **Done (2026-10-16).** **Voxel Tools build.** Built with `tools/build_godot_linux.sh` (headless Linux, 27 minutes on 4 cores; reports `4.7.2.stable.custom_build.ed1daf0bf`). The project uses Voxel Tools compiled into Godot (there is no addon folder), so terrain steps need a matching Linux build in Claude's workspace. The project owner uses Godot 4.7.2 stable (custom build `ed1daf0bf`) with Voxel Tools 1.7. Get or compile a matching Linux build (Godot 4.7.2 source plus the Voxel Tools 1.7 module) before step 14.
 2. **Folder layout and branch.** Create `src/worldgen/` with subfolders for settings, tables, matrix, tile pipeline, tile file and runtime. Create branch `claude/generator-v2`.
 
 ### Planning the world (no terrain yet)
