@@ -1679,16 +1679,17 @@ To be fleshed out when the first NPC is designed.
 
 The new generator lives in `src/worldgen/` on branch `claude/generator-v2` (GDScript, run headless in Godot). The plan and its progress log are in `GENERATOR_V2_PLAN.md`.
 
-**Built and tested (800 checks pass)**
+**Built and tested (831 checks pass)**
 
 - World settings, SHA-256 seeds, append-only data tables (biomes, soils, rocks, resources, water classes, site types, feature types, province kinds).
 - The world sketch and a seamless 160 m elevation map of the whole world, the fixed features (central trench, ultimate island), the danger map, and the derived tile plan (312 islands, 227 tiles with land).
 - For one tile (the starter tile (3,4)): the 8 m height map, erosion, water (rivers, lakes), climate, biome, soil and fertility, geology (provinces, features, ore bodies, placers), and natural caves, dormant lairs, harbor and starter spawn. About 2 minutes in total.
 - Preview images for each stage.
+- The tile file writer and reader (`tile_file.gd`, step 13): header, section table, Zstandard sections with SHA-256 checks, atomic rename, all maps, low-resolution maps and lists; the starter tile is written and read back and every section checked.
 
 **Not built yet**
 
-- The tile file writer and reader (step 13, next), the runtime terrain generator (step 14), runtime flora, server streaming and the client cache, the layer for player changes.
+- The runtime terrain generator (step 14), runtime flora, server streaming and the client cache, the layer for player changes.
 - Rivers that continue across tile edges, a final edge-matching pass, and wrap-seamless detail and climate noise (`WORLD_FORMAT_SPEC.md` Section 4b).
 - Any game system: players, NPCs, towns, building, law, economy, machinery.
 
@@ -1696,7 +1697,7 @@ The new generator lives in `src/worldgen/` on branch `claude/generator-v2` (GDSc
 
 **Not checked**
 
-- The size of a baked tile on disk (the estimate is about 52 MB per tile before compression) and how the client performs on the minimum machine (Section 3).
+- How the client performs on the minimum machine (Section 3). The starter tile file measures 9.85 MB (the earlier estimate was about 52 MB before compression).
 - Whether river flow data could be queried at runtime to power water wheels.
 
 **Current values**
@@ -1722,7 +1723,7 @@ Only genuinely open items are listed. Everything decided lives in its own sectio
 7. Runtime voxel generation on the server against baked files, the streaming and cache plan, and floating origin against double precision (Sections 4.8, 4.10). Suggestion: streamed blocks plus a client cache, measured once a prototype runs.
 8. Frame rate and view distance on the minimum machine, and whether players can host a world themselves (Section 3).
 9. Protection against x-ray clients, and the largest world one server process can serve (Sections 4.9, 4.1).
-10. Which geological features a tile stores. The first version is built; confirm before tiles are kept (step 13).
+10. Which geological features a tile stores. The first version is built; confirm before tiles are kept (step 18).
 11. When the outer starter set opens, how many tiles are built before players arrive, and travel speeds on foot, horse and ship (Sections 4.1, 4.11).
 12. Town spacing: 3 km from a starter town and 2 km between towns (Sections 4.1, 8.1).
 13. Does fallow land recover fertility by itself, or only through lime and manure (Section 5)?
@@ -1783,7 +1784,7 @@ Nothing here is committed. It follows `GENERATOR_V2_PLAN.md`, ordered by what af
 
 1. Done: world settings, tables, world sketch, tile plan, and for one tile the height, erosion, water, climate, geology and sites (plan steps 2 to 12).
 2. Done: the permanent parts of the tile file (`WORLD_FORMAT_SPEC.md` Section 4): the ID scheme, the geology list with tuff (step 12b), the resource pass design, the river plan.
-3. Tile file writer and reader (step 13).
+3. Done (2026-10-15): the tile file writer and reader (step 13): the starter tile bakes to a 9.85 MB file in about 2.5 seconds of file work on top of the generator's 2 minutes.
 4. Rivers across tile edges, overlap margins, wrap-seamless noise, and the final edge-matching pass (Section 4b of the spec).
 5. Runtime terrain generator from the maps (step 14), then runtime flora (step 15).
 6. Server streaming, the client cache and the layer for player changes (step 16), then the minimum machine test (step 17).

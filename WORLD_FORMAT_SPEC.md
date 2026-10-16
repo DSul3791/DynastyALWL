@@ -1,6 +1,6 @@
 # World Format Specification (draft)
 
-Draft of 2026-10-12, revised 2026-10-14. The generator is built and tested through step 12 (sites) on branch `claude/generator-v2`; the tile file writer and reader (step 13) are not yet written. This file defines the permanent parts of the world: the world settings, what each tile stores, and the plan of the whole map. The reasoning behind it is in `DESIGN_IDEAS.md`, Sections 4.1 to 4.11.
+Draft of 2026-10-12, revised 2026-10-14. The generator is built and tested through step 12 (sites) on branch `claude/generator-v2`; the tile file writer and reader (step 13) are built and tested (`src/worldgen/tile/tile_file.gd`). This file defines the permanent parts of the world: the world settings, what each tile stores, and the plan of the whole map. The reasoning behind it is in `DESIGN_IDEAS.md`, Sections 4.1 to 4.11.
 
 Every item is **[Proposed]** unless marked otherwise. Items marked **Permanent** cannot change once tiles are kept without rebaking or breaking saved worlds. Items marked **Tunable** can change at any time.
 
@@ -123,7 +123,16 @@ Samples sit on grid points from the tile's west edge to its east edge inclusive,
 | Cover depth | uint8 | raw × 0.25 m (0 to 63.75 m) | Loose material above bedrock |
 | Layer offset | int16 | raw × 0.1 m (±3,276 m) | Bends rock layers for folds |
 
-About 14 bytes per sample (2+2+1+1+1+1+1+1+1+1+2), so about 52 MB per tile before compression (1,921 × 1,921 = 3,690,241 samples). Mostly-ocean tiles compress to a small fraction of that. **[Decided]** There is no size limit on tile files, because we do not yet know what they will need to hold. Efficiency is a standing goal: do not add a map or list without a use, store derived data only when computing it again is too slow, and measure the size of every new section when it is added.
+About 14 bytes per sample (2+2+1+1+1+1+1+1+1+1+2), so about 52 MB per tile before compression (1,921 × 1,921 = 3,690,241 samples). **Measured (step 13, starter tile 3,4):** 9.85 MB on disk after Zstandard, with the 16-bit maps arranged as two byte planes first. The largest sections are height (3.4 MB), fertility, moisture and cover (about 1.5 MB each) and flow (1.1 MB). Mostly-ocean tiles compress to a small fraction of that. **[Decided]** There is no size limit on tile files, because we do not yet know what they will need to hold. Efficiency is a standing goal: do not add a map or list without a use, store derived data only when computing it again is too slow, and measure the size of every new section when it is added.
+
+**File layout as built (step 13, 2026-10-15)**
+
+- A 16-byte preamble (`WTIL`, format version, header length, table length), then the header as JSON, then the section table as JSON, then the sections. Each table entry holds the section's name, offset, stored size, raw size, compression (`zstd` or `none`), filter (`planes2` for 16-bit maps, otherwise `none`), type and grid size, and the SHA-256 of the section content before compression.
+- The header and table hold no clock time, so the same tile always makes the same bytes.
+- Flow is stored as raw = round(11 × log2(drainage cells)), so a doubling of the drainage area adds 11 and one value step is about 6 percent.
+- The per-sample surface-rock map is a report and preview aid and is **not** stored; it can be derived again.
+- Lists are JSON, so whole numbers read back as floats: readers cast with `int()`. Lists use arrays for positions (no Vector types).
+- Readers can load the header and table alone, then read one section at a time, each checked against its SHA-256.
 
 **Low-resolution maps**
 

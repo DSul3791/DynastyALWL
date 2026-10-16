@@ -19,6 +19,7 @@ const TileErosionScript := preload("res://src/worldgen/tile/tile_erosion.gd")
 const IslandShapeScript := preload("res://src/worldgen/matrix/island_shape.gd")
 const SketchScript := preload("res://src/worldgen/sketch/world_sketch.gd")
 const ElevationScript := preload("res://src/worldgen/sketch/world_elevation.gd")
+const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 const CensusScript := preload("res://src/worldgen/sketch/island_census.gd")
 
 const WORLD_PATH := "res://worlds/base_world/world.json"
@@ -1242,7 +1243,8 @@ func _test_tile_climate(settings, tile_rules: Dictionary, tile: Vector2i, water,
 		and again.moisture == climate.moisture, "the climate maps are reproducible")
 
 	var geology = _test_tile_geology(settings, tile_rules, tile, water, climate, elevation, sketch, tables)
-	_test_tile_sites(settings, tile_rules, tile, water, climate, geology, tables, starter)
+	var built_sites = _test_tile_sites(settings, tile_rules, tile, water, climate, geology, tables, starter)
+	_test_tile_file(settings, tile, water, climate, geology, built_sites)
 
 
 func _test_tile_geology(settings, tile_rules: Dictionary, tile: Vector2i, water, climate, elevation, sketch: Dictionary, tables):
@@ -1375,7 +1377,7 @@ func _test_tile_geology(settings, tile_rules: Dictionary, tile: Vector2i, water,
 	return geology
 
 
-func _test_tile_sites(settings, tile_rules: Dictionary, tile: Vector2i, water, climate, geology, tables, starter: Dictionary) -> void:
+func _test_tile_sites(settings, tile_rules: Dictionary, tile: Vector2i, water, climate, geology, tables, starter: Dictionary):
 	var mouth: Vector2 = Vector2(NAN, NAN)
 
 	if water.starter_path.size() > 0:
@@ -1492,6 +1494,7 @@ func _test_tile_sites(settings, tile_rules: Dictionary, tile: Vector2i, water, c
 	again.build(tile, water.heights, water.water_class, climate.soil, geology, starter, mouth)
 	_check(str(again.caves) == str(sites.caves) and str(again.lairs) == str(sites.lairs) and str(again.starter) == str(sites.starter),
 		"sites are reproducible")
+	return sites
 
 
 func _test_tile_erosion(settings, elevation) -> void:
@@ -1534,3 +1537,130 @@ func _test_tile_erosion(settings, elevation) -> void:
 	again.setup(settings, tile_rules)
 	again.build(height)
 	_check(again.heights == erosion.heights, "erosion is reproducible")
+
+
+# Writes the starter tile through the tile file writer, reads it back and
+# checks every section.
+func _test_tile_file(settings, tile: Vector2i, water, climate, geology, sites) -> void:
+	var plan_cell: Dictionary = {"x": tile.x, "z": tile.y, "kind": "starter", "status": "planned"}
+	var packed: Dictionary = TileFileScript.pack_tile(settings, tile, plan_cell, water, climate, geology, sites)
+	var path: String = "user://test_tile_%d_%d.tile" % [tile.x, tile.y]
+	var started: int = Time.get_ticks_msec()
+	var written: Dictionary = TileFileScript.write(path, packed)
+	print("tile file written in %d ms: %d bytes" % [Time.get_ticks_msec() - started, int(written["bytes"])])
+	_check(written["ok"], "the tile file is written (%s)" % str(written["error"]))
+
+	if not written["ok"]:
+		return
+
+	_check(not FileAccess.file_exists(path + ".partial"), "no .partial file is left behind")
+	var again: Dictionary = TileFileScript.write(path, TileFileScript.pack_tile(settings, tile, plan_cell, water, climate, geology, sites))
+	_check(int(again["bytes"]) == int(written["bytes"]) and FileAccess.get_sha256(path) != "", "writing twice gives a file of the same size")
+
+	var head: Dictionary = TileFileScript.read_header(path)
+	_check(head["ok"], "the tile header reads back")
+	var header: Dictionary = head["header"]
+	var table: Array = head["table"]
+	_check(int(header["tile_x"]) == tile.x and int(header["tile_z"]) == tile.y, "header tile coordinate")
+	_check(int(header["master_seed"]) == settings.master_seed and int(header["tile_seed"]) == settings.tile_seed(tile.x, tile.y), "header seeds")
+	_check(int(header["samples"]) == water.samples and int(header["map_spacing_m"]) == 8, "header map size")
+	_check(int(header["revision"]) == 1 and str(header["status"]) == "final", "header revision and status")
+
+	var all_ok: bool = true
+
+	for entry in table:
+		var section: Dictionary = TileFileScript.read_section(path, table, str(entry["name"]))
+
+		if not section["ok"]:
+			all_ok = false
+			print("  section %s: %s" % [entry["name"], section["error"]])
+
+	_check(all_ok, "every section decompresses and passes its checksum")
+
+	var height_raw: PackedByteArray = TileFileScript.read_section(path, table, "height")["raw"]
+	var heights: PackedFloat32Array = TileFileScript.decode_height(height_raw)
+	var worst: float = 0.0
+
+	for i in range(heights.size()):
+		worst = maxf(worst, absf(heights[i] - clampf(water.heights[i], -4000.0, 2553.5)))
+
+	_check(heights.size() == water.samples * water.samples and worst <= 0.0501, "heights read back within 0.05 m (worst %.3f)" % worst)
+
+	var surface: PackedFloat32Array = TileFileScript.decode_water_surface(TileFileScript.read_section(path, table, "water_surface")["raw"])
+	var surface_ok: bool = true
+
+	for i in range(surface.size()):
+		if water.water_class[i] == 0:
+			if not is_nan(surface[i]):
+				surface_ok = false
+				break
+		elif absf(surface[i] - water.water_surface[i]) > 0.0501:
+			surface_ok = false
+			break
+
+	_check(surface_ok, "water surface reads back, and dry cells have no surface")
+
+	for name in ["water_class", "biome", "soil", "fertility", "moisture", "province", "cover"]:
+		var source: PackedByteArray = {
+			"water_class": water.water_class, "biome": climate.biome, "soil": climate.soil, "fertility": climate.fertility,
+			"moisture": climate.moisture, "province": geology.province, "cover": geology.cover,
+		}[name]
+		_check(TileFileScript.read_section(path, table, name)["raw"] == source, "%s map reads back exactly" % name)
+
+	var offsets: PackedInt32Array = TileFileScript.decode_layer_offset(TileFileScript.read_section(path, table, "layer_offset")["raw"])
+	var offsets_ok: bool = offsets.size() == geology.layer_offset.size()
+
+	for i in range(offsets.size()):
+		if offsets[i] != clampi(geology.layer_offset[i], -32768, 32767):
+			offsets_ok = false
+			break
+
+	_check(offsets_ok, "layer offsets read back exactly")
+
+	var flow: PackedFloat32Array = TileFileScript.decode_flow(TileFileScript.read_section(path, table, "flow")["raw"])
+	var flow_ok: bool = true
+
+	for i in range(flow.size()):
+		var source_flow: float = maxf(water.flow[i], 1.0)
+
+		if flow[i] < source_flow / 1.0445 or flow[i] > source_flow * 1.0445:
+			if source_flow < 2.0 ** 23.0:
+				flow_ok = false
+				break
+
+	_check(flow_ok, "flow reads back within the logarithmic step (about 4 percent)")
+
+	var low: int = int(header["low_res_samples"])
+	var low_heights: PackedFloat32Array = TileFileScript.decode_height(TileFileScript.read_section(path, table, "low_height")["raw"])
+	_check(low == 481 and low_heights.size() == 481 * 481, "low-resolution maps are 481 by 481")
+	_check(absf(low_heights[100 * 481 + 200] - heights[400 * water.samples + 800]) < 0.001, "low-resolution height is every fourth sample")
+
+	for name in ["provinces", "features", "ore_bodies", "sites"]:
+		var listed: Dictionary = TileFileScript.read_list(path, table, name)
+		_check(listed["ok"], "list %s reads back" % name)
+
+	var ores: Array = TileFileScript.read_list(path, table, "ore_bodies")["value"]
+	_check(ores.size() == geology.ore_bodies.size() and str(ores[0]["id"]) == str(geology.ore_bodies[0]["id"]), "ore bodies keep their count and IDs")
+	var cave_list: Dictionary = TileFileScript.read_list(path, table, "sites")["value"]
+	_check(cave_list["caves"].size() == sites.caves.size() and cave_list["lairs"].size() == sites.lairs.size(), "sites keep their caves and lairs")
+
+	if not sites.starter.is_empty():
+		_check(TileFileScript.read_list(path, table, "starter")["ok"], "starter data is stored on a starter tile")
+
+	# A flipped byte in any section must be caught.
+	var damaged: FileAccess = FileAccess.open(path, FileAccess.READ_WRITE)
+	var target: Dictionary = {}
+
+	for entry in table:
+		if str(entry["name"]) == "biome":
+			target = entry
+
+	damaged.seek(int(target["offset"]) + int(target["size"]) / 2)
+	var byte: int = damaged.get_8()
+	damaged.seek(int(target["offset"]) + int(target["size"]) / 2)
+	damaged.store_8(byte ^ 0x55)
+	damaged.close()
+	_check(not TileFileScript.read_section(path, table, "biome")["ok"], "a damaged section is caught")
+	_check(TileFileScript.read_section(path, table, "height")["ok"], "other sections still read after one is damaged")
+
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))

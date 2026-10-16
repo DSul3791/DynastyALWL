@@ -8,6 +8,7 @@ extends SceneTree
 #   --tile=X,Z   tile coordinate (default 3,4)
 #   --cell=N     world elevation cell size in meters (default from sketch_rules.json)
 #   --world=DIR  world folder (default res://worlds/base_world)
+#   --write      also write the tile file (tiles/tile_X_Z.tile) and read it back to check it
 #
 # Needs plan/world_sketch.json. Writes plan/tile_X_Z_relief.png.
 
@@ -22,6 +23,7 @@ const TileClimateScript := preload("res://src/worldgen/tile/tile_climate.gd")
 const TileGeologyScript := preload("res://src/worldgen/tile/tile_geology.gd")
 const TileSitesScript := preload("res://src/worldgen/tile/tile_sites.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
+const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 const TilePreviewScript := preload("res://src/worldgen/tile/tile_preview.gd")
 
 
@@ -29,6 +31,7 @@ func _init() -> void:
 	var tile: Vector2i = Vector2i(3, 4)
 	var cell: float = 0.0
 	var world_dir: String = "res://worlds/base_world"
+	var write_file: bool = false
 
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--tile="):
@@ -38,8 +41,10 @@ func _init() -> void:
 			cell = float(argument.trim_prefix("--cell="))
 		elif argument.begins_with("--world="):
 			world_dir = argument.trim_prefix("--world=")
+		elif argument == "--write":
+			write_file = true
 
-	quit(_run(world_dir, tile, cell))
+	quit(_run(world_dir, tile, cell, write_file))
 
 
 # Bay and beach details for the starter island on this tile, if any.
@@ -57,7 +62,8 @@ func _starter_info(sketch: Dictionary, tile: Vector2i) -> Dictionary:
 	return {}
 
 
-func _run(world_dir: String, tile: Vector2i, cell: float) -> int:
+func _run(world_dir: String, tile: Vector2i, cell: float, write_file: bool = false) -> int:
+	var total_started: int = Time.get_ticks_msec()
 	var errors: Array = []
 	var settings = WorldSettingsScript.load_from_file(world_dir + "/world.json", errors)
 	var rules: Dictionary = SketchScript.load_rules(world_dir + "/plan/sketch_rules.json", errors)
@@ -233,4 +239,54 @@ func _run(world_dir: String, tile: Vector2i, cell: float) -> int:
 	print("  starter: %s; harbor: %s" % [str(sites.starter), str(sites.harbor)])
 	TilePreviewScript.render_sites(height, sites).save_png(base + "_caves.png")
 	print("Relief drawn in %d ms" % (Time.get_ticks_msec() - started))
+
+	if write_file:
+		return _write_and_check(world_dir, tile, settings, water, climate, geology, sites, total_started)
+
+	return 0
+
+
+# Writes the tile file, reads every section back and reports time and size.
+func _write_and_check(world_dir: String, tile: Vector2i, settings, water, climate, geology, sites, total_started: int) -> int:
+	var plan_cell: Dictionary = {}
+	var plan: Variant = JSON.parse_string(FileAccess.get_file_as_string(world_dir + "/plan/tile_plan.json"))
+
+	if typeof(plan) == TYPE_DICTIONARY:
+		for entry in plan["cells"]:
+			if int(entry["x"]) == tile.x and int(entry["z"]) == tile.y:
+				plan_cell = entry
+
+	var started: int = Time.get_ticks_msec()
+	var packed: Dictionary = TileFileScript.pack_tile(settings, tile, plan_cell, water, climate, geology, sites)
+	var packed_ms: int = Time.get_ticks_msec() - started
+	var path: String = "%s/tiles/tile_%d_%d.tile" % [world_dir, tile.x, tile.y]
+	started = Time.get_ticks_msec()
+	var written: Dictionary = TileFileScript.write(path, packed)
+
+	if not written["ok"]:
+		push_error("Tile file not written: %s" % written["error"])
+		return 1
+
+	var write_ms: int = Time.get_ticks_msec() - started
+	print("Tile file: packed in %d ms, compressed and written in %d ms, %.2f MB" % [packed_ms, write_ms, float(written["bytes"]) / 1048576.0])
+
+	for section in written["sections"]:
+		print("  %-16s %9d -> %9d bytes" % [section["name"], int(section["raw"]), int(section["stored"])])
+
+	started = Time.get_ticks_msec()
+	var head: Dictionary = TileFileScript.read_header(path)
+
+	if not head["ok"]:
+		push_error("Tile file header does not read back: %s" % head["error"])
+		return 1
+
+	for entry in head["table"]:
+		var read: Dictionary = TileFileScript.read_section(path, head["table"], str(entry["name"]))
+
+		if not read["ok"]:
+			push_error("Tile file read-back failed: %s" % read["error"])
+			return 1
+
+	print("Read back and checked all %d sections in %d ms" % [head["table"].size(), Time.get_ticks_msec() - started])
+	print("Whole tile, generation plus file: %.1f s" % (float(Time.get_ticks_msec() - total_started) / 1000.0))
 	return 0
