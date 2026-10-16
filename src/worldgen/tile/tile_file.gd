@@ -28,7 +28,7 @@ extends RefCounted
 # Map encodings (all little endian)
 #   height, water_surface   uint16, raw x 0.1 m - 4,000 m (water_surface raw 0 = no water)
 #   water_class             uint8   0 none, 1 ocean, 2 lake, 3 river, 4 marsh
-#   flow                    uint8   raw = round(11 x log2(drainage cells)); cells = 2^(raw / 11)
+#   flow                    uint8   raw = round(11 x log2(drainage cells)); cells = 2^(raw / 11); 0 below the river start size
 #   biome, soil, fertility, moisture, province   uint8
 #   cover                   uint8   raw x 0.25 m
 #   layer_offset            int16   raw x 0.1 m
@@ -136,14 +136,17 @@ static func decode_layer_offset(bytes: PackedByteArray) -> PackedInt32Array:
 
 
 # Flow is the drainage area in cells. One cell is 0, each doubling adds 11.
-static func encode_flow(values: PackedFloat32Array) -> PackedByteArray:
+# Cells that drain less than `river_start_cells` are written as 0: flow is
+# the discharge of rivers, and the trickle elsewhere depends on how much of
+# the neighborhood the tile could see, so it is not stored.
+static func encode_flow(values: PackedFloat32Array, river_start_cells: float = 0.0, water_class: PackedByteArray = PackedByteArray()) -> PackedByteArray:
 	var count: int = values.size()
 	var out: PackedByteArray = PackedByteArray()
 	out.resize(count)
 	var scale: float = FLOW_STEPS_PER_OCTAVE / log(2.0)
 
 	for i in range(count):
-		out[i] = clampi(roundi(log(maxf(values[i], 1.0)) * scale), 0, 255)
+		out[i] = 0 if (values[i] < river_start_cells or (water_class.size() > 0 and water_class[i] == 0)) else clampi(roundi(log(maxf(values[i], 1.0)) * scale), 0, 255)
 
 	return out
 
@@ -226,14 +229,14 @@ static func plain(value: Variant) -> Variant:
 # Builds the header and the list of sections for one tile from the generator
 # results. `plan_cell` is the tile's cell from tile_plan.json (stored in the
 # header so the tile can be previewed or rebaked exactly).
-static func pack_tile(settings, tile: Vector2i, plan_cell: Dictionary, water, climate, geology, sites) -> Dictionary:
+static func pack_tile(settings, tile: Vector2i, plan_cell: Dictionary, water, climate, geology, sites, river_start_cells: float = 0.0) -> Dictionary:
 	var samples: int = int(water.samples)
 	var water_class: PackedByteArray = water.water_class
 	var sections: Array = []
 	sections.append(_map("height", "uint16", samples, encode_height(water.heights)))
 	sections.append(_map("water_surface", "uint16", samples, encode_water_surface(water.water_surface, water_class)))
 	sections.append(_map("water_class", "uint8", samples, water_class))
-	sections.append(_map("flow", "uint8", samples, encode_flow(water.flow)))
+	sections.append(_map("flow", "uint8", samples, encode_flow(water.flow, river_start_cells, water.water_class)))
 	sections.append(_map("biome", "uint8", samples, climate.biome))
 	sections.append(_map("soil", "uint8", samples, climate.soil))
 	sections.append(_map("fertility", "uint8", samples, climate.fertility))

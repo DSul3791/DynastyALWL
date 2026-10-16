@@ -35,6 +35,9 @@ var spacing_m: float = 8.0
 var _settings
 var _rules: Dictionary = {}
 var _tables
+var _air_field: Dictionary = {}     # world wet-air field (see build_world_air), empty = sweep per tile
+var _origin_sx: int = 0             # world sample index of sample 0 / row 0
+var _origin_sz: int = 0
 
 
 func setup(settings, rules: Dictionary, tables) -> void:
@@ -44,13 +47,26 @@ func setup(settings, rules: Dictionary, tables) -> void:
 	spacing_m = float(settings.map_spacing_m)
 
 
-func build(heights: PackedFloat32Array, water_class: PackedByteArray, tile: Vector2i) -> void:
+# Gives the climate the world-wide wet-air field, so the air at a place does
+# not depend on which tile is being built. Without it, each tile sweeps the
+# wind across itself starting from a fixed value.
+func use_world_air(field: Dictionary) -> void:
+	_air_field = field
+
+
+# Builds a frame of the world grid: `heights` and `water_class` hold
+# n by n samples whose first sample is world sample (origin_sx, origin_sz).
+# A frame wider than a tile (a margin) must start on a multiple of the
+# coarse step, so neighboring frames share the same coarse grid.
+func build(heights: PackedFloat32Array, water_class: PackedByteArray, origin_sx: int, origin_sz: int) -> void:
+	_origin_sx = origin_sx
+	_origin_sz = origin_sz
 	samples = int(round(sqrt(float(heights.size()))))
 	var total: int = samples * samples
 	var step: int = maxi(int(round(float(_rules["coarse_cell_m"]) / spacing_m)), 1)
 	var coarse: int = (samples - 1) / step + 1
 	var tile_m: float = float(_settings.tile_size_m)
-	var z0: float = float(tile.y) * tile_m
+	var z0: float = float(origin_sz) * spacing_m
 
 	# Sea-level temperature for each row.
 	var sea_temperature: PackedFloat32Array = PackedFloat32Array()
@@ -92,16 +108,22 @@ func build(heights: PackedFloat32Array, water_class: PackedByteArray, tile: Vect
 	var cell_m: float = float(step) * spacing_m
 	var ocean_distance: PackedFloat32Array = _chamfer(ocean_mask, coarse, cell_m)
 	var fresh_distance: PackedFloat32Array = _chamfer(fresh_mask, coarse, cell_m)
-	var air: PackedFloat32Array = _wet_air(coarse_height, coarse, cell_m, tile)
+	var air: PackedFloat32Array = _world_air_grid(coarse, step) if not _air_field.is_empty() else _wet_air(coarse_height, coarse, cell_m, tile_row_of(z0))
 
 	# Noise so boundaries are organic.
 	var noise_rules: Dictionary = _rules["noise"]
-	var moisture_noise: PackedByteArray = _noise("climate_moisture", float(noise_rules["moisture_wavelength_m"]), tile)
-	var temperature_noise: PackedByteArray = _noise("climate_temperature", float(noise_rules["temperature_wavelength_m"]), tile)
+	var moisture_noise: PackedByteArray = _noise("climate_moisture", float(noise_rules["moisture_wavelength_m"]))
+	var temperature_noise: PackedByteArray = _noise("climate_temperature", float(noise_rules["temperature_wavelength_m"]))
 	var moisture_amplitude: float = float(noise_rules["moisture_amplitude"])
 	var temperature_amplitude: float = float(noise_rules["temperature_amplitude_c"])
 
-	var wetness: float = float(_rules["zone_wetness"][_settings.get_zone_group_for_row(tile.y)])
+	# Wetness follows the tile row each sample row lies in (the row shared by
+	# two tile rows belongs to the southern one), so neighbors agree.
+	var row_wetness: PackedFloat32Array = PackedFloat32Array()
+	row_wetness.resize(samples)
+
+	for j in range(samples):
+		row_wetness[j] = float(_rules["zone_wetness"][_settings.get_zone_group_for_row(tile_row_of(z0 + float(j) * spacing_m))])
 	var near_fresh: float = float(_rules["near_fresh_water_m"])
 	var fresh_bonus: float = float(_rules["fresh_water_bonus"])
 
@@ -183,7 +205,7 @@ func build(heights: PackedFloat32Array, water_class: PackedByteArray, tile: Vect
 				lerpf(air[base_cell + coarse], air[base_cell + coarse + 1], tu), tv
 			)
 			var fresh_here: float = fresh_distance[(r0 + (1 if tv > 0.5 else 0)) * coarse + c0 + (1 if tu > 0.5 else 0)]
-			var wet: float = wetness * (0.4 + 0.9 * air_here)
+			var wet: float = row_wetness[j] * (0.4 + 0.9 * air_here)
 			wet += fresh_bonus * clampf(1.0 - fresh_here / near_fresh, 0.0, 1.0)
 			wet += moisture_amplitude * (float(moisture_noise[index]) / 127.5 - 1.0)
 			wet = clampf(wet, 0.0, 1.0)
@@ -359,9 +381,9 @@ func _pick_soil(
 
 # Wet air per coarse cell, swept along the prevailing wind (an average of
 # both directions where the wind is calm).
-func _wet_air(coarse_height: PackedFloat32Array, coarse: int, cell_m: float, tile: Vector2i) -> PackedFloat32Array:
+func _wet_air(coarse_height: PackedFloat32Array, coarse: int, cell_m: float, tile_row: int) -> PackedFloat32Array:
 	var rules: Dictionary = _rules["air"]
-	var direction: int = int(_rules["wind_toward_x"][_settings.get_zone_group_for_row(tile.y)])
+	var direction: int = int(_rules["wind_toward_x"][_settings.get_zone_group_for_row(tile_row)])
 	var forward: PackedFloat32Array = _sweep(coarse_height, coarse, cell_m, 1, rules) if direction >= 0 else PackedFloat32Array()
 	var backward: PackedFloat32Array = _sweep(coarse_height, coarse, cell_m, -1, rules) if direction <= 0 else PackedFloat32Array()
 
@@ -453,18 +475,105 @@ func _chamfer(mask: PackedByteArray, size: int, cell_m: float) -> PackedFloat32A
 
 
 # World-aligned noise (one byte per sample, 127.5 = zero).
-func _noise(purpose: String, wavelength_m: float, tile: Vector2i) -> PackedByteArray:
+func _noise(purpose: String, wavelength_m: float) -> PackedByteArray:
 	var noise: FastNoiseLite = FastNoiseLite.new()
 	noise.seed = SeedUtil.purpose_seed(_settings.master_seed, purpose)
 	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 	noise.fractal_type = FastNoiseLite.FRACTAL_FBM
 	noise.fractal_octaves = 2
 	noise.frequency = spacing_m / wavelength_m
-	var tile_samples: int = samples - 1
-	noise.offset = Vector3(float(tile.x * tile_samples), float(tile.y * tile_samples), 0.0)
+	noise.offset = Vector3(float(_origin_sx), float(_origin_sz), 0.0)
 	var image: Image = noise.get_image(samples, samples, false, false, false)
 
 	if image.get_format() != Image.FORMAT_L8:
 		image.convert(Image.FORMAT_L8)
 
 	return image.get_data()
+
+
+# The tile row a position lies in, wrapped into the world's rows.
+func tile_row_of(z_m: float) -> int:
+	var row: int = int(floor(z_m / float(_settings.tile_size_m)))
+	return posmod(row - _settings.min_tile, _settings.tiles_z) + _settings.min_tile
+
+
+# Wet air for this frame's coarse grid, read from the world field.
+func _world_air_grid(coarse: int, step: int) -> PackedFloat32Array:
+	var out: PackedFloat32Array = PackedFloat32Array()
+	out.resize(coarse * coarse)
+	var values: PackedFloat32Array = _air_field["values"]
+	var size_x: int = int(_air_field["size_x"])
+	var size_z: int = int(_air_field["size_z"])
+	var cell: float = float(_air_field["cell_m"])
+	var origin_x: float = float(_air_field["origin_x"])
+	var origin_z: float = float(_air_field["origin_z"])
+
+	for row in range(coarse):
+		var v: float = (float(_origin_sz + row * step) * spacing_m - origin_z) / cell - 0.5
+		var r0: int = int(floor(v))
+		var tv: float = v - float(r0)
+		var rb: int = posmod(r0, size_z) * size_x
+		var rc: int = posmod(r0 + 1, size_z) * size_x
+
+		for column in range(coarse):
+			var u: float = (float(_origin_sx + column * step) * spacing_m - origin_x) / cell - 0.5
+			var c0: int = int(floor(u))
+			var tu: float = u - float(c0)
+			var c_a: int = posmod(c0, size_x)
+			var c_b: int = posmod(c0 + 1, size_x)
+			out[row * coarse + column] = lerpf(lerpf(values[rb + c_a], values[rb + c_b], tu), lerpf(values[rc + c_a], values[rc + c_b], tu), tv)
+
+	return out
+
+
+# The wet-air field for the whole world, on the world elevation grid. Each
+# row is swept along its wind (an average of both directions where the wind
+# is calm), twice around the wrapped world so it settles.
+static func build_world_air(settings, rules: Dictionary, elevation) -> Dictionary:
+	var climate_rules: Dictionary = rules["climate"]
+	var air_rules: Dictionary = climate_rules["air"]
+	var size_x: int = elevation.size_x
+	var size_z: int = elevation.size_z
+	var values: PackedFloat32Array = PackedFloat32Array()
+	values.resize(size_x * size_z)
+	var km: float = elevation.cell_m / 1000.0
+	var land_loss: float = float(air_rules["land_loss_per_km"]) * km
+	var rise_loss: float = float(air_rules["rise_loss_per_100m"]) / 100.0
+	var minimum: float = float(air_rules["minimum"])
+	var recharge: float = float(air_rules["sea_recharge_per_km"]) * km
+
+	for row in range(size_z):
+		var z_m: float = elevation.origin_z + (float(row) + 0.5) * elevation.cell_m
+		var tile_row: int = posmod(int(floor(z_m / float(settings.tile_size_m))) - settings.min_tile, settings.tiles_z) + settings.min_tile
+		var direction: int = int(climate_rules["wind_toward_x"][settings.get_zone_group_for_row(tile_row)])
+		var passes: Array = []
+
+		if direction >= 0:
+			passes.append(1)
+
+		if direction <= 0:
+			passes.append(-1)
+
+		for sweep_direction in passes:
+			var current: float = 0.6
+			var previous_height: float = elevation.heights[row * size_x]
+
+			for k in range(2 * size_x):
+				var column: int = k % size_x if sweep_direction > 0 else size_x - 1 - (k % size_x)
+				var index: int = row * size_x + column
+				var h: float = elevation.heights[index]
+
+				if h <= 0.0:
+					current = minf(1.0, current + recharge)
+				else:
+					current = maxf(current - land_loss - rise_loss * maxf(h - previous_height, 0.0), minimum)
+
+				previous_height = h
+
+				if k >= size_x:
+					values[index] += current / float(passes.size())
+
+	return {
+		"values": values, "size_x": size_x, "size_z": size_z, "cell_m": elevation.cell_m,
+		"origin_x": elevation.origin_x, "origin_z": elevation.origin_z,
+	}

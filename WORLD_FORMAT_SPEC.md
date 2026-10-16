@@ -192,6 +192,16 @@ Anything that changes where existing ore sits is not a pass. It is a new generat
 5. **Tests.** The existing check that height and geology match on a shared edge extends to every map and to the river crossings.
 6. **Wrap seam.** The same rules apply across the world wrap at x or z = ±10. Detail and climate noise must be made wrap-seamless first (known gap).
 
+**As built (13b, 2026-10-15).**
+
+- `RiverNetwork` (`src/worldgen/sketch/river_network.gd`): priority flood from the sea on the wrapped 160 m map, drainage areas, river cells at 0.5 km² or more, chains from each source to the sea or a join, drawn as Catmull-Rom curves every 4 m with the area interpolated. About 6,500 river cells in about 1,000 chains.
+- Frame: every tile is built on a frame 80 samples (640 m) larger on each side, then cropped to 1,921 by 1,921. The margin is a multiple of the climate coarse step. Erosion runs on the tile only, with a 640 m zero zone at the edge plus the 640 m fade. Geology gets the padded heights as a ghost for edge slopes.
+- Rivers: `TileWater` carves each guide with a bed equal to the lowest (ground minus depth) over a trailing 500 m window (shorter than the margin, so both tiles agree). The strongest river sets class, surface and flow.
+- Climate: the wet-air field is computed once on the 160 m map (swept along the wind with wrap, two laps) and sampled per tile.
+- Stored `flow` is river discharge only: 0 on dry land and below the river start size (0.5 km²), because the local trickle elsewhere depends on how much neighboring ground the tile could see.
+- `edge_match.gd` compares east and south neighbors, skips planned but unbaked land tiles, treats missing ocean tiles as placeholders, and exits 1 on a failure. Result on tiles (3,3), (3,4), (4,4), (3,5): 4 edges, 0 failures, river crossings matched.
+- Not yet done: wrap-seamless detail, climate, route and cover noise across x or z = ±10.
+
 Rivers that cross into a placeholder ocean tile simply reach the sea, since the world river network ends in the ocean there.
 
 ## 5. Server-side stores (not part of the tile)

@@ -19,6 +19,7 @@ const TileErosionScript := preload("res://src/worldgen/tile/tile_erosion.gd")
 const IslandShapeScript := preload("res://src/worldgen/matrix/island_shape.gd")
 const SketchScript := preload("res://src/worldgen/sketch/world_sketch.gd")
 const ElevationScript := preload("res://src/worldgen/sketch/world_elevation.gd")
+const RiverNetworkScript := preload("res://src/worldgen/sketch/river_network.gd")
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 const CensusScript := preload("res://src/worldgen/sketch/island_census.gd")
 
@@ -1129,7 +1130,7 @@ func _test_tile_water(settings, elevation, sketch: Dictionary) -> void:
 	var water = TileWaterScript.new()
 	water.setup(settings, tile_rules)
 	var started: int = Time.get_ticks_msec()
-	water.build(height, tile, starter)
+	water.build(height, starter)
 	print("tile water built in %d ms: %d river cells, %d lakes" % [
 		Time.get_ticks_msec() - started, water.river_cells, water.lakes.size()
 	])
@@ -1180,7 +1181,7 @@ func _test_tile_water(settings, elevation, sketch: Dictionary) -> void:
 
 	var again = TileWaterScript.new()
 	again.setup(settings, tile_rules)
-	again.build(height, tile, starter)
+	again.build(height, starter)
 	_check(again.heights == water.heights and again.water_class == water.water_class, "the tile water is reproducible")
 
 	_test_tile_climate(settings, tile_rules, tile, water, elevation, sketch, starter)
@@ -1192,7 +1193,7 @@ func _test_tile_climate(settings, tile_rules: Dictionary, tile: Vector2i, water,
 	var climate = TileClimateScript.new()
 	climate.setup(settings, tile_rules, tables)
 	var started: int = Time.get_ticks_msec()
-	climate.build(water.heights, water.water_class, tile)
+	climate.build(water.heights, water.water_class, tile.x * 1920, tile.y * 1920)
 	print("tile climate built in %d ms, fertile land %.1f km2" % [Time.get_ticks_msec() - started, climate.fertile_km2])
 	var total: int = water.samples * water.samples
 	_check(climate.biome.size() == total and climate.soil.size() == total and climate.fertility.size() == total
@@ -1238,13 +1239,14 @@ func _test_tile_climate(settings, tile_rules: Dictionary, tile: Vector2i, water,
 
 	var again = TileClimateScript.new()
 	again.setup(settings, tile_rules, tables)
-	again.build(water.heights, water.water_class, tile)
+	again.build(water.heights, water.water_class, tile.x * 1920, tile.y * 1920)
 	_check(again.biome == climate.biome and again.soil == climate.soil and again.fertility == climate.fertility
 		and again.moisture == climate.moisture, "the climate maps are reproducible")
 
 	var geology = _test_tile_geology(settings, tile_rules, tile, water, climate, elevation, sketch, tables)
 	var built_sites = _test_tile_sites(settings, tile_rules, tile, water, climate, geology, tables, starter)
 	_test_tile_file(settings, tile, water, climate, geology, built_sites)
+	_test_river_network()
 
 
 func _test_tile_geology(settings, tile_rules: Dictionary, tile: Vector2i, water, climate, elevation, sketch: Dictionary, tables):
@@ -1539,6 +1541,43 @@ func _test_tile_erosion(settings, elevation) -> void:
 	_check(again.heights == erosion.heights, "erosion is reproducible")
 
 
+# A tiny sloped world: sea in the west column, land rising eastwards. The
+# river network must find a river that reaches the sea.
+class FakeElevation:
+	extends RefCounted
+	var size_x: int = 24
+	var size_z: int = 24
+	var cell_m: float = 160.0
+	var origin_x: float = 0.0
+	var origin_z: float = 0.0
+	var heights: PackedFloat32Array = PackedFloat32Array()
+
+
+func _test_river_network() -> void:
+	var fake := FakeElevation.new()
+	fake.heights.resize(fake.size_x * fake.size_z)
+
+	for z in range(fake.size_z):
+		for x in range(fake.size_x):
+			fake.heights[z * fake.size_x + x] = -5.0 if x < 2 else 10.0 + 5.0 * float(x) + 0.3 * absf(float(z) - 12.0)
+
+	var network = RiverNetworkScript.new()
+	network.build(fake, 0.5)
+	_check(network.river_cells > 0 and network.chains.size() > 0, "the river network finds rivers on a sloped world")
+	var guides: Array = network.guides_in(Rect2(0, 0, 24.0 * 160.0, 24.0 * 160.0), 4.0)
+	_check(guides.size() > 0, "a tile frame over the whole world gets river guides")
+	var biggest: float = 0.0
+
+	for guide in guides:
+		for area in guide["areas"]:
+			biggest = maxf(biggest, area)
+
+	_check(biggest > 0.5, "river guides carry a drainage area")
+	var again = RiverNetworkScript.new()
+	again.build(fake, 0.5)
+	_check(again.chains.size() == network.chains.size() and again.river_cells == network.river_cells, "the river network is reproducible")
+
+
 # Writes the starter tile through the tile file writer, reads it back and
 # checks every section.
 func _test_tile_file(settings, tile: Vector2i, water, climate, geology, sites) -> void:
@@ -1622,6 +1661,14 @@ func _test_tile_file(settings, tile: Vector2i, water, climate, geology, sites) -
 
 	for i in range(flow.size()):
 		var source_flow: float = maxf(water.flow[i], 1.0)
+
+		# Flow is stored for water only (spec Section 4b).
+		if water.water_class[i] == 0:
+			if flow[i] > 1.0:
+				flow_ok = false
+				break
+
+			continue
 
 		if flow[i] < source_flow / 1.0445 or flow[i] > source_flow * 1.0445:
 			if source_flow < 2.0 ** 23.0:

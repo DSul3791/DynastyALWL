@@ -1,6 +1,6 @@
 extends SceneTree
 
-# Builds one tile's 8 m height map and a relief picture of it. Run with:
+# Bakes one tile and writes reports and pictures of every stage. Run with:
 #
 #   godot --headless --path . --script res://src/worldgen/tools/build_tile.gd -- --tile=3,4
 #
@@ -12,17 +12,7 @@ extends SceneTree
 #
 # Needs plan/world_sketch.json. Writes plan/tile_X_Z_relief.png.
 
-const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings.gd")
-const SketchScript := preload("res://src/worldgen/sketch/world_sketch.gd")
-const ElevationScript := preload("res://src/worldgen/sketch/world_elevation.gd")
-const ReliefScript := preload("res://src/worldgen/sketch/relief_preview.gd")
-const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
-const TileErosionScript := preload("res://src/worldgen/tile/tile_erosion.gd")
-const TileWaterScript := preload("res://src/worldgen/tile/tile_water.gd")
-const TileClimateScript := preload("res://src/worldgen/tile/tile_climate.gd")
-const TileGeologyScript := preload("res://src/worldgen/tile/tile_geology.gd")
-const TileSitesScript := preload("res://src/worldgen/tile/tile_sites.gd")
-const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
+const TileBakerScript := preload("res://src/worldgen/tile/tile_baker.gd")
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 const TilePreviewScript := preload("res://src/worldgen/tile/tile_preview.gd")
 
@@ -47,73 +37,40 @@ func _init() -> void:
 	quit(_run(world_dir, tile, cell, write_file))
 
 
-# Bay and beach details for the starter island on this tile, if any.
-func _starter_info(sketch: Dictionary, tile: Vector2i) -> Dictionary:
-	for feature in sketch["features"]:
-		for mount in feature.get("mounts", []):
-			if str(mount["type"]) == "starter" and int(mount["starter"][0]) == tile.x and int(mount["starter"][1]) == tile.y \
-					and mount.has("bay_center"):
-				return {
-					"bay_center": Vector2(float(mount["bay_center"][0]), float(mount["bay_center"][1])),
-					"beach_dir": Vector2(float(mount["beach_dir"][0]), float(mount["beach_dir"][1])),
-					"bay_radius_m": float(mount["bay_radius_m"]),
-				}
-
-	return {}
-
-
 func _run(world_dir: String, tile: Vector2i, cell: float, write_file: bool = false) -> int:
 	var total_started: int = Time.get_ticks_msec()
-	var errors: Array = []
-	var settings = WorldSettingsScript.load_from_file(world_dir + "/world.json", errors)
-	var rules: Dictionary = SketchScript.load_rules(world_dir + "/plan/sketch_rules.json", errors)
-	var tile_rules: Dictionary = TileHeightScript.load_rules(world_dir + "/plan/tile_rules.json", errors)
-
-	if settings == null or rules.is_empty() or tile_rules.is_empty():
-		push_error("\n".join(errors))
-		return 1
-
-	var sketch: Variant = JSON.parse_string(FileAccess.get_file_as_string(world_dir + "/plan/world_sketch.json"))
-
-	if typeof(sketch) != TYPE_DICTIONARY:
-		push_error("world_sketch.json is missing or invalid (run build_sketch.gd first)")
-		return 1
-
+	var baker = TileBakerScript.new()
 	var started: int = Time.get_ticks_msec()
-	var elevation = ElevationScript.new()
-	elevation.build(settings, rules, sketch, cell)
-	print("World elevation built in %d ms" % (Time.get_ticks_msec() - started))
+	var problem: String = baker.setup(world_dir, cell)
+
+	if problem != "":
+		push_error(problem)
+		return 1
+
+	var settings = baker.settings
+	var tables = baker.tables
+	print("World elevation, wet-air field and tables ready in %d ms" % (Time.get_ticks_msec() - started))
 
 	started = Time.get_ticks_msec()
-	var height = TileHeightScript.new()
-	height.setup(settings, elevation, tile_rules)
-	height.build(tile)
-	print("Tile %s height map %d x %d built in %d ms" % [
-		str(tile), height.samples, height.samples, Time.get_ticks_msec() - started
-	])
-
+	var result: Dictionary = baker.bake(tile)
+	print("Tile %s baked in %d ms (margin %d samples): %s" % [str(tile), Time.get_ticks_msec() - started, baker.margin, str(result["timings"])])
+	var height = result["height"]
+	var erosion = result["erosion"]
+	var water = result["water"]
+	var climate = result["climate"]
+	var geology = result["geology"]
+	var sites = result["sites"]
 	var base: String = "%s/plan/tile_%d_%d" % [world_dir, tile.x, tile.y]
+
+	height.heights = result["raw_heights"]
 	TilePreviewScript.render(settings, height, tile, true, null).save_png(base + "_relief.png")
-
-	started = Time.get_ticks_msec()
-	var erosion = TileErosionScript.new()
-	erosion.setup(settings, tile_rules)
-	erosion.build(height)
-	height.heights = erosion.heights
-	print("Erosion done in %d ms: deepest cut %.1f m, highest fill %.1f m" % [
-		Time.get_ticks_msec() - started, erosion.deepest_cut_m, erosion.highest_fill_m
-	])
+	height.heights = result["eroded_heights"]
+	print("Erosion: deepest cut %.1f m, highest fill %.1f m" % [erosion.deepest_cut_m, erosion.highest_fill_m])
 	TilePreviewScript.render(settings, height, tile, true, null).save_png(base + "_eroded.png")
-
-	started = Time.get_ticks_msec()
-	var water = TileWaterScript.new()
-	water.setup(settings, tile_rules)
-	water.build(height, tile, _starter_info(sketch, tile))
-	var big_lakes: int = water.lakes.size()
-	print("Water done in %d ms: %d river cells, longest river %.0f m, %d lakes, %d pit cells filled" % [
-		Time.get_ticks_msec() - started, water.river_cells, water.longest_river_m, big_lakes, water.filled_cells
+	height.heights = water.heights
+	print("Water: %d river cells, longest river %.0f m, %d lakes, %d pit cells filled" % [
+		water.river_cells, water.longest_river_m, water.lakes.size(), water.filled_cells
 	])
-
 	print("Starter river path points: %d" % water.starter_path.size())
 
 	for lake in water.lakes:
@@ -121,25 +78,8 @@ func _run(world_dir: String, tile: Vector2i, cell: float, write_file: bool = fal
 			float(lake["area_m2"]) / 10000.0, float(lake["surface_m"]), float(lake["depth_m"])
 		])
 
-	started = Time.get_ticks_msec()
-	height.heights = water.heights
-	var wet_image: Image = TilePreviewScript.render(settings, height, tile, true, water)
-	wet_image.save_png(base + "_water.png")
-
-	started = Time.get_ticks_msec()
-	var tables = TableSetScript.new()
-	var table_problems: Array = tables.load_directory()
-
-	if not table_problems.is_empty():
-		push_error("\n".join(table_problems))
-		return 1
-
-	var climate = TileClimateScript.new()
-	climate.setup(settings, tile_rules, tables)
-	climate.build(water.heights, water.water_class, tile)
-	print("Climate done in %d ms; fertile land (150+) %.1f km2" % [
-		Time.get_ticks_msec() - started, climate.fertile_km2
-	])
+	TilePreviewScript.render(settings, height, tile, true, water).save_png(base + "_water.png")
+	print("Climate: fertile land (150+) %.1f km2" % climate.fertile_km2)
 	var land_cells: int = 0
 
 	for name in climate.biome_cells.keys():
@@ -157,14 +97,7 @@ func _run(world_dir: String, tile: Vector2i, cell: float, write_file: bool = fal
 		print("  soil  %-20s %6.1f km2" % [name, float(climate.soil_cells[name]) * 64.0 / 1.0e6])
 
 	TilePreviewScript.render_biomes(height, climate, tables, water).save_png(base + "_biomes.png")
-
-	started = Time.get_ticks_msec()
-	var geology = TileGeologyScript.new()
-	geology.setup(settings, tile_rules, tables, elevation, sketch)
-	geology.build(tile, water.heights, water.water_class, water.flow, climate.soil)
-	print("Geology done in %d ms: %d provinces, %d features, %d ore bodies" % [
-		Time.get_ticks_msec() - started, geology.provinces.size(), geology.features.size(), geology.ore_bodies.size()
-	])
+	print("Geology: %d provinces, %d features, %d ore bodies" % [geology.provinces.size(), geology.features.size(), geology.ore_bodies.size()])
 
 	for entry in geology.provinces:
 		var rocks: Array = []
@@ -194,16 +127,6 @@ func _run(world_dir: String, tile: Vector2i, cell: float, write_file: bool = fal
 	print("  bedrock at surface (cells): %s" % str(geology.outcrop_cells))
 	TilePreviewScript.render_geology(height, geology, tables).save_png(base + "_geology.png")
 
-	started = Time.get_ticks_msec()
-	var sites = TileSitesScript.new()
-	sites.setup(settings, tile_rules, tables)
-	var mouth: Vector2 = Vector2(NAN, NAN)
-
-	if water.starter_path.size() > 0:
-		var last: Vector2 = water.starter_path[water.starter_path.size() - 1]
-		mouth = Vector2(float(tile.x) * float(settings.tile_size_m), float(tile.y) * float(settings.tile_size_m)) + last * float(settings.map_spacing_m)
-
-	sites.build(tile, water.heights, water.water_class, climate.soil, geology, _starter_info(sketch, tile), mouth)
 	var kinds: Dictionary = {}
 	var total_length: float = 0.0
 	var dens: Dictionary = {}
@@ -224,9 +147,7 @@ func _run(world_dir: String, tile: Vector2i, cell: float, write_file: bool = fal
 			for feature in chamber["features"]:
 				hazards[feature] = int(hazards.get(feature, 0)) + 1
 
-	print("Sites done in %d ms: %d caves %s, %.1f km of passages, %d lair sites" % [
-		Time.get_ticks_msec() - started, sites.caves.size(), str(kinds), total_length / 1000.0, sites.lairs.size()
-	])
+	print("Sites: %d caves %s, %.1f km of passages, %d lair sites" % [sites.caves.size(), str(kinds), total_length / 1000.0, sites.lairs.size()])
 	print("  hazards: %s; dens by tier: %s; ore steering: %s" % [str(hazards), str(dens), str(sites.ore_report)])
 
 	for cave in sites.caves:
@@ -238,26 +159,19 @@ func _run(world_dir: String, tile: Vector2i, cell: float, write_file: bool = fal
 
 	print("  starter: %s; harbor: %s" % [str(sites.starter), str(sites.harbor)])
 	TilePreviewScript.render_sites(height, sites).save_png(base + "_caves.png")
-	print("Relief drawn in %d ms" % (Time.get_ticks_msec() - started))
 
 	if write_file:
-		return _write_and_check(world_dir, tile, settings, water, climate, geology, sites, total_started)
+		return _write_and_check(world_dir, tile, baker, result, total_started)
 
 	return 0
 
 
 # Writes the tile file, reads every section back and reports time and size.
-func _write_and_check(world_dir: String, tile: Vector2i, settings, water, climate, geology, sites, total_started: int) -> int:
-	var plan_cell: Dictionary = {}
-	var plan: Variant = JSON.parse_string(FileAccess.get_file_as_string(world_dir + "/plan/tile_plan.json"))
-
-	if typeof(plan) == TYPE_DICTIONARY:
-		for entry in plan["cells"]:
-			if int(entry["x"]) == tile.x and int(entry["z"]) == tile.y:
-				plan_cell = entry
-
+func _write_and_check(world_dir: String, tile: Vector2i, baker, result: Dictionary, total_started: int) -> int:
 	var started: int = Time.get_ticks_msec()
-	var packed: Dictionary = TileFileScript.pack_tile(settings, tile, plan_cell, water, climate, geology, sites)
+	var packed: Dictionary = TileFileScript.pack_tile(
+		baker.settings, tile, baker.plan_cell(tile), result["water"], result["climate"], result["geology"], result["sites"], baker.river_start_cells()
+	)
 	var packed_ms: int = Time.get_ticks_msec() - started
 	var path: String = "%s/tiles/tile_%d_%d.tile" % [world_dir, tile.x, tile.y]
 	started = Time.get_ticks_msec()

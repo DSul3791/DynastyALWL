@@ -7,8 +7,10 @@ extends RefCounted
 #      faster where more water passes (an implicit, always-stable step).
 #   3. Diffusion: slopes soften a little.
 # The total change is then added back onto the 8 m map, so the fine
-# detail stays. Changes fade out near the tile edges so neighboring tiles
-# still match exactly; sea cells are never changed and land stays land.
+# detail stays. Nothing changes within `edge_zero_m` of the tile edge and
+# the change fades in over the next `edge_fade_m`, so neighboring tiles
+# (and the margin each tile builds around itself) see identical ground along
+# the edge; sea cells are never changed and land stays land.
 
 var samples: int = 0
 var heights: PackedFloat32Array = PackedFloat32Array()
@@ -62,13 +64,14 @@ func build(height_map) -> void:
 
 	# Change per coarse point, faded toward the tile edges.
 	var fade_cells: float = float(_rules["edge_fade_m"]) / dx
+	var zero_cells: float = float(_rules.get("edge_zero_m", 0.0)) / dx
 	var delta: PackedFloat32Array = PackedFloat32Array()
 	delta.resize(coarse * coarse)
 
 	for row in range(coarse):
 		for column in range(coarse):
 			var edge: float = float(mini(mini(row, column), mini(coarse - 1 - row, coarse - 1 - column)))
-			var fade: float = clampf(edge / maxf(fade_cells, 1.0), 0.0, 1.0)
+			var fade: float = clampf((edge - zero_cells) / maxf(fade_cells, 1.0), 0.0, 1.0)
 			fade = fade * fade * (3.0 - 2.0 * fade)
 			var index: int = row * coarse + column
 			delta[index] = (current[index] - start[index]) * fade

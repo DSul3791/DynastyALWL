@@ -9,8 +9,10 @@ extends RefCounted
 
 const SeedUtil := preload("res://src/worldgen/settings/worldgen_seed.gd")
 
-var samples: int = 0                 # samples per side (1921)
+var samples: int = 0                 # samples per side (1921 for a plain tile, more with a margin)
 var spacing_m: float = 8.0
+var origin_sx: int = 0               # world sample index of sample 0 (east) and
+var origin_sz: int = 0               # of row 0 (south), in 8 m samples
 var heights: PackedFloat32Array = PackedFloat32Array()
 
 var _settings
@@ -40,9 +42,21 @@ func setup(settings, elevation, rules: Dictionary) -> void:
 	samples = int(settings.tile_size_m / settings.map_spacing_m) + 1
 
 
+# A tile's own 1,921 by 1,921 samples.
 func build(tile: Vector2i) -> void:
-	var x0: float = float(tile.x) * float(_settings.tile_size_m)
-	var z0: float = float(tile.y) * float(_settings.tile_size_m)
+	var tile_samples: int = int(_settings.tile_size_m / _settings.map_spacing_m)
+	build_frame(tile.x * tile_samples, tile.y * tile_samples, tile_samples + 1)
+
+
+# Any square of the world grid: `count` samples per side whose first sample
+# is world sample (origin_x, origin_z). A tile with a margin is built this
+# way, so its edge samples see the same inputs as the neighbor's.
+func build_frame(origin_x: int, origin_z: int, count: int) -> void:
+	samples = count
+	origin_sx = origin_x
+	origin_sz = origin_z
+	var x0: float = float(origin_x) * spacing_m
+	var z0: float = float(origin_z) * spacing_m
 	var cell: float = _elevation.cell_m
 	heights = PackedFloat32Array()
 	heights.resize(samples * samples)
@@ -61,7 +75,7 @@ func build(tile: Vector2i) -> void:
 
 	# Source rows needed, with the horizontal pass done once per source row.
 	var first_row: int = int(floor((z0 - _elevation.origin_z) / cell - 0.5)) - 1
-	var last_row: int = int(floor((z0 + float(_settings.tile_size_m) - _elevation.origin_z) / cell - 0.5)) + 2
+	var last_row: int = int(floor((z0 + float(samples - 1) * spacing_m - _elevation.origin_z) / cell - 0.5)) + 2
 	var horizontal: Array = []
 
 	for source_row in range(first_row, last_row + 1):
@@ -101,7 +115,7 @@ func build(tile: Vector2i) -> void:
 		for i in range(samples):
 			heights[out + i] = w0 * line_0[i] + w1 * line_1[i] + w2 * line_2[i] + w3 * line_3[i]
 
-	_add_detail(tile)
+	_add_detail()
 
 
 static func _cubic_weights(t: float, out: PackedFloat32Array, offset: int) -> void:
@@ -115,14 +129,13 @@ static func _cubic_weights(t: float, out: PackedFloat32Array, offset: int) -> vo
 
 # Fine noise, faded by height. Noise octaves are generated for the whole
 # tile in one call at world-aligned offsets, so they match across tiles.
-func _add_detail(tile: Vector2i) -> void:
+func _add_detail() -> void:
 	var detail: Dictionary = _rules["detail"]
 	var calm_below: float = float(detail["calm_below_m"])
 	var full_above: float = float(detail["full_above_m"])
 	var calm: float = float(detail["calm_strength"])
 	var sea: float = float(detail["sea_strength"])
 	var ragged: float = float(detail["coast_ragged_m"])
-	var tile_samples: int = int(_settings.tile_size_m / _settings.map_spacing_m)
 	var total: int = samples * samples
 	var field: PackedFloat32Array = PackedFloat32Array()
 	field.resize(total)
@@ -135,7 +148,7 @@ func _add_detail(tile: Vector2i) -> void:
 		noise.fractal_type = FastNoiseLite.FRACTAL_NONE
 		noise.frequency = spacing_m / float(octave["wavelength_m"])
 		# The image is sampled in sample units, so shift by whole tiles.
-		noise.offset = Vector3(float(tile.x * tile_samples), float(tile.y * tile_samples), 0.0)
+		noise.offset = Vector3(float(origin_sx), float(origin_sz), 0.0)
 		var image: Image = noise.get_image(samples, samples, false, false, false)
 
 		if image.get_format() != Image.FORMAT_L8:

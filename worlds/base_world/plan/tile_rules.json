@@ -1,6 +1,10 @@
 {
 	"format_version": 1,
 	"note": "Rules for turning the 160 m world elevation map into one tile's 8 m height map: smooth cubic upsampling plus fine detail noise that is continuous across tile borders. Rerun tools/build_tile.gd after editing.",
+	"frame": {
+		"note": "Each tile is built on a frame that reaches this many 8 m samples beyond its edge on every side, then cropped. Edge samples then see the same neighbors as the next tile's. Must be a multiple of the climate coarse step (4) and at least as far as the longest distance the climate looks at (600 m = 75 samples).",
+		"margin_samples": 80
+	},
 	"detail": {
 		"note": "Noise octaves added on land. amplitude_m is the full strength; it fades in with height so beaches and the coastal plain stay smooth and the sea floor stays calm.",
 		"octaves": [
@@ -38,12 +42,13 @@
 		"stream_k": 0.005,
 		"area_exponent": 0.5,
 		"diffusion": 0.01,
-		"edge_fade_m": 640,
+		"edge_zero_m": 640, "edge_fade_m": 640,
 		"min_land_m": 0.3
 	},
 	"water": {
 		"note": "Hydrology on the 8 m height map. Rain falls evenly; each cell passes its water downhill. Rivers start where the catchment passes river_start_km2. Pits are filled unless they are big enough to be lakes.",
 		"river_start_km2": 0.5,
+		"bed_window_m": 500,
 		"river_width_base_m": 2.5,
 		"river_width_per_sqrt_km2": 2.2,
 		"river_depth_base_m": 0.7,

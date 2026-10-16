@@ -39,6 +39,10 @@ var starter_path: PackedVector2Array = PackedVector2Array()   # sample coordinat
 
 var _settings
 var _rules: Dictionary = {}
+var _legacy_rivers: bool = true
+var _ocean: PackedByteArray = PackedByteArray()
+var _origin_sx: int = 0       # world sample index of sample 0 (set by build)
+var _origin_sz: int = 0
 
 
 func setup(settings, rules: Dictionary) -> void:
@@ -47,8 +51,15 @@ func setup(settings, rules: Dictionary) -> void:
 	spacing_m = float(settings.map_spacing_m)
 
 
-func build(height_map, tile: Vector2i, starter: Dictionary = {}) -> void:
+# `guides` are the world's rivers crossing this frame, as returned by
+# RiverNetwork.guides_in (world meters). With guides, rivers are cut along
+# them, so a river is the same in every tile it passes through. Without
+# (null), rivers come from this tile's own drainage, as before.
+func build(height_map, starter: Dictionary = {}, guides: Variant = null) -> void:
+	_legacy_rivers = guides == null
 	samples = height_map.samples
+	_origin_sx = int(height_map.origin_sx)
+	_origin_sz = int(height_map.origin_sz)
 	var total: int = samples * samples
 	heights = height_map.heights.duplicate()
 	water_class = PackedByteArray()
@@ -68,20 +79,20 @@ func build(height_map, tile: Vector2i, starter: Dictionary = {}) -> void:
 	# highland lake to the bay head and the whole thing is run again.
 	var original: PackedFloat32Array = heights.duplicate()
 	var clock: int = Time.get_ticks_msec()
-	_hydrology(tile, {})
+	_hydrology({})
 	_log("pass 1 done (%d lakes)" % lakes.size(), clock)
 
 	if bool(river_rules.get("enabled", false)) and not starter.is_empty():
-		var source: int = _pick_source(starter, tile, float(river_rules["source_min_height_m"]))
+		var source: int = _pick_source(starter, float(river_rules["source_min_height_m"]))
 		_log("source picked: %d" % source, clock)
 
 		if source >= 0:
 			heights = original.duplicate()
-			extra = _cut_starter_river(source, starter, tile, river_rules)
+			extra = _cut_starter_river(source, starter, river_rules)
 			_log("starter river cut (%d path points)" % starter_path.size(), clock)
 
 			if not extra.is_empty():
-				_hydrology(tile, extra)
+				_hydrology(extra)
 				_log("pass 2 done", clock)
 				var probes: PackedStringArray = PackedStringArray()
 
@@ -93,14 +104,25 @@ func build(height_map, tile: Vector2i, starter: Dictionary = {}) -> void:
 				print("  water: starter river probes ", ", ".join(probes))
 			else:
 				heights = original.duplicate()
-				_hydrology(tile, {})
+				_hydrology({})
+
+	if not _legacy_rivers:
+		var rivers: Array = []
+
+		for guide in guides:
+			rivers.append(_guide_to_samples(guide["points"], guide["areas"]))
+
+		if starter_path.size() > 1:
+			rivers.append(_starter_guide())
+
+		_carve_guides(rivers)
 
 
 static func _log(message: String, since_ms: int) -> void:
 	print("  water: %s at +%d ms" % [message, Time.get_ticks_msec() - since_ms])
 
 
-func _hydrology(tile: Vector2i, extra: Dictionary) -> void:
+func _hydrology(extra: Dictionary) -> void:
 	var total: int = samples * samples
 	water_class.fill(0)
 	water_surface.fill(0.0)
@@ -108,7 +130,7 @@ func _hydrology(tile: Vector2i, extra: Dictionary) -> void:
 	lakes = []
 	river_cells = 0
 	filled_cells = 0
-	var routed: PackedInt32Array = _routing_heights(tile)
+	var routed: PackedInt32Array = _routing_heights()
 	var ocean: PackedByteArray = _find_ocean()
 	var level: PackedInt32Array = PackedInt32Array()
 	var parent: PackedInt32Array = PackedInt32Array()
@@ -121,14 +143,16 @@ func _hydrology(tile: Vector2i, extra: Dictionary) -> void:
 			water_class[index] = OCEAN
 			water_surface[index] = 0.0
 
-	_carve_rivers(level, parent, ocean)
+	_ocean = ocean
+
+	if _legacy_rivers:
+		_carve_rivers(level, parent, ocean)
 
 
 # Heights in tenths of a meter with a little noise, so flat ground drains
 # in gentle bends instead of straight lines.
-func _routing_heights(tile: Vector2i) -> PackedInt32Array:
+func _routing_heights() -> PackedInt32Array:
 	var total: int = samples * samples
-	var tile_samples: int = samples - 1
 	var offset_field: PackedFloat32Array = PackedFloat32Array()
 	offset_field.resize(total)
 	var index_octave: int = 0
@@ -139,7 +163,7 @@ func _routing_heights(tile: Vector2i) -> PackedInt32Array:
 		noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 		noise.fractal_type = FastNoiseLite.FRACTAL_NONE
 		noise.frequency = spacing_m / float(octave["wavelength_m"])
-		noise.offset = Vector3(float(tile.x * tile_samples), float(tile.y * tile_samples), 0.0)
+		noise.offset = Vector3(float(_origin_sx), float(_origin_sz), 0.0)
 		var image: Image = noise.get_image(samples, samples, false, false, false)
 
 		if image.get_format() != Image.FORMAT_L8:
@@ -427,6 +451,179 @@ func _carve_rivers(level: PackedInt32Array, parent: PackedInt32Array, ocean: Pac
 	longest_river_m = longest * spacing_m
 
 
+# ---------------------------------------------------------------- guide rivers
+
+# A river from the world network in sample coordinates of this frame.
+func _guide_to_samples(points: PackedVector2Array, areas_km2: PackedFloat32Array) -> Dictionary:
+	var converted: PackedVector2Array = PackedVector2Array()
+	converted.resize(points.size())
+
+	for k in range(points.size()):
+		converted[k] = Vector2(points[k].x / spacing_m - float(_origin_sx), points[k].y / spacing_m - float(_origin_sz))
+
+	return {"points": converted, "areas": areas_km2}
+
+
+# The designed starter river as a guide: its path, with the water it carries
+# taken from the drainage of the second pass (never shrinking downstream).
+func _starter_guide() -> Dictionary:
+	var areas: PackedFloat32Array = PackedFloat32Array()
+	var cell_km2: float = spacing_m * spacing_m / 1.0e6
+	var carried: float = 0.0
+
+	for point in starter_path:
+		var at: int = clampi(int(round(point.y)), 0, samples - 1) * samples + clampi(int(round(point.x)), 0, samples - 1)
+		carried = maxf(carried, flow[at])
+		areas.append(carried * cell_km2)
+
+	return {"points": starter_path, "areas": areas}
+
+
+# Cuts every river along its guide. The bed under a point is the lowest
+# (ground minus channel depth) over the last `bed_window_m` of river, so
+# the bed never climbs over a hill and the same window is seen by the
+# neighbor tile (the window must be shorter than the frame margin).
+func _carve_guides(rivers: Array) -> void:
+	var cell_km2: float = spacing_m * spacing_m / 1.0e6
+	var width_base: float = float(_rules["river_width_base_m"])
+	var width_scale: float = float(_rules["river_width_per_sqrt_km2"])
+	var depth_base: float = float(_rules["river_depth_base_m"])
+	var depth_scale: float = float(_rules["river_depth_per_width"])
+	var slope: float = float(_rules["bank_slope"])
+	var start_km2: float = float(_rules["river_start_km2"])
+	var window_m: float = float(_rules.get("bed_window_m", 500.0))
+	var total: int = samples * samples
+	var best_flow: PackedFloat32Array = PackedFloat32Array()
+	best_flow.resize(total)
+	var carved: PackedFloat32Array = heights.duplicate()
+	var longest: float = 0.0
+	river_cells = 0
+
+	for river in rivers:
+		var points: PackedVector2Array = river["points"]
+		var areas: PackedFloat32Array = river["areas"]
+		var count: int = points.size()
+
+		if count < 2:
+			continue
+
+		var low_values: PackedFloat32Array = PackedFloat32Array()
+		var depths: PackedFloat32Array = PackedFloat32Array()
+		var widths: PackedFloat32Array = PackedFloat32Array()
+		var usable: PackedByteArray = PackedByteArray()
+		low_values.resize(count)
+		depths.resize(count)
+		widths.resize(count)
+		usable.resize(count)
+
+		for k in range(count):
+			var point: Vector2 = points[k]
+			var width: float = width_base + width_scale * sqrt(maxf(areas[k], start_km2))
+			var depth: float = depth_base + depth_scale * width
+			widths[k] = width
+			depths[k] = depth
+
+			# Ground is only known inside the frame, and only on land or lakes
+			# that are not already sea.
+			if point.x < 0.0 or point.y < 0.0 or point.x > float(samples - 1) or point.y > float(samples - 1):
+				continue
+
+			var at: int = int(round(point.y)) * samples + int(round(point.x))
+
+			if _ocean[at] == 1 or water_class[at] == LAKE:
+				continue
+
+			usable[k] = 1
+			low_values[k] = _bilinear(heights, point) - depth
+
+		# Lowest value over a trailing window, taken only over usable points.
+		var step_m: float = 4.0
+
+		if count > 1:
+			step_m = maxf(points[0].distance_to(points[1]) * spacing_m, 0.5)
+
+		var window: int = maxi(int(round(window_m / step_m)), 1)
+		var deque: PackedInt32Array = PackedInt32Array()
+		var head_at: int = 0
+		var run_length: float = 0.0
+
+		for k in range(count):
+			if k > 0:
+				run_length += points[k].distance_to(points[k - 1]) * spacing_m
+
+			if usable[k] == 0:
+				continue
+
+			# Window by position along the river, not by index, so gaps do not matter.
+			while head_at < deque.size() and k - deque[head_at] > window:
+				head_at += 1
+
+			while deque.size() > head_at and low_values[deque[deque.size() - 1]] >= low_values[k]:
+				deque.remove_at(deque.size() - 1)
+
+			deque.append(k)
+			var bed: float = low_values[deque[head_at]]
+			var strength: float = areas[k] / cell_km2
+			river_cells += 1
+			_stamp_at(carved, points[k], widths[k], depths[k], bed, slope, strength, best_flow)
+
+		longest = maxf(longest, run_length)
+
+	heights = carved
+	longest_river_m = longest
+
+
+# Bilinear height at a position in sample coordinates (inside the frame).
+func _bilinear(field: PackedFloat32Array, point: Vector2) -> float:
+	var x0: int = clampi(int(floor(point.x)), 0, samples - 2)
+	var z0: int = clampi(int(floor(point.y)), 0, samples - 2)
+	var tx: float = clampf(point.x - float(x0), 0.0, 1.0)
+	var tz: float = clampf(point.y - float(z0), 0.0, 1.0)
+	var a: float = field[z0 * samples + x0]
+	var b: float = field[z0 * samples + x0 + 1]
+	var c: float = field[(z0 + 1) * samples + x0]
+	var d: float = field[(z0 + 1) * samples + x0 + 1]
+	return lerpf(lerpf(a, b, tx), lerpf(c, d, tx), tz)
+
+
+# Like _stamp, centered on any position (sample coordinates). The strongest
+# river wins each cell's water class, surface and flow.
+func _stamp_at(
+	carved: PackedFloat32Array, center: Vector2, width: float, depth: float, bed: float, slope: float,
+	strength: float, best_flow: PackedFloat32Array
+) -> void:
+	var radius_m: float = width * 0.5 + (depth + 1.0) / slope
+	var radius_cells: float = radius_m / spacing_m
+	var first_x: int = maxi(int(ceil(center.x - radius_cells)), 0)
+	var last_x: int = mini(int(floor(center.x + radius_cells)), samples - 1)
+	var first_z: int = maxi(int(ceil(center.y - radius_cells)), 0)
+	var last_z: int = mini(int(floor(center.y + radius_cells)), samples - 1)
+
+	for nr in range(first_z, last_z + 1):
+		var dz: float = float(nr) - center.y
+
+		for nc in range(first_x, last_x + 1):
+			var dx: float = float(nc) - center.x
+			var distance: float = sqrt(dx * dx + dz * dz) * spacing_m
+
+			if distance > radius_m:
+				continue
+
+			var target: int = nr * samples + nc
+
+			if _ocean[target] == 1:
+				continue
+
+			var floor_height: float = bed + maxf(distance - width * 0.5, 0.0) * slope
+			carved[target] = minf(carved[target], floor_height)
+
+			if distance <= width * 0.5 and strength >= best_flow[target]:
+				best_flow[target] = strength
+				flow[target] = strength
+				water_class[target] = RIVER
+				water_surface[target] = bed + 0.75 * depth
+
+
 # Lowers the ground around one river cell: a channel of the given width
 # with banks rising at bank_slope. With mark_water, cells inside the
 # channel become river water (the one with the bigger flow wins).
@@ -472,8 +669,8 @@ func _stamp(
 
 # The surface point of the highland lake nearest the bay head, so the river
 # starts on the bay side of the mountains.
-func _pick_source(starter: Dictionary, tile: Vector2i, min_height: float) -> int:
-	var head: Vector2 = _bay_head_samples(starter, tile)
+func _pick_source(starter: Dictionary, min_height: float) -> int:
+	var head: Vector2 = _bay_head_samples(starter)
 	var best: int = -1
 	var best_distance: float = INF
 
@@ -492,26 +689,25 @@ func _pick_source(starter: Dictionary, tile: Vector2i, min_height: float) -> int
 	return best
 
 
-func _bay_head_samples(starter: Dictionary, tile: Vector2i) -> Vector2:
-	var tile_m: float = float(_settings.tile_size_m)
+func _bay_head_samples(starter: Dictionary) -> Vector2:
 	var center: Vector2 = starter["bay_center"]
 	var direction: Vector2 = starter["beach_dir"]
 	var radius: float = float(starter["bay_radius_m"])
 	var head_m: Vector2 = center - direction * radius * 0.95
 	return Vector2(
-		(head_m.x - float(tile.x) * tile_m) / spacing_m,
-		(head_m.y - float(tile.y) * tile_m) / spacing_m
+		head_m.x / spacing_m - float(_origin_sx),
+		head_m.y / spacing_m - float(_origin_sz)
 	)
 
 
 # Finds the easiest valley route from the source to the bay head, cuts a
 # guide channel along it (bed never rises downstream) and returns the extra
 # water to feed in at the source: {cell index: extra catchment cells}.
-func _cut_starter_river(source: int, starter: Dictionary, tile: Vector2i, river_rules: Dictionary) -> Dictionary:
+func _cut_starter_river(source: int, starter: Dictionary, river_rules: Dictionary) -> Dictionary:
 	var step: int = maxi(int(round(float(river_rules["route_cell_m"]) / spacing_m)), 1)
 	var coarse: int = (samples - 1) / step + 1
 	var climb_cost: float = float(river_rules["climb_cost"])
-	var head: Vector2 = _bay_head_samples(starter, tile)
+	var head: Vector2 = _bay_head_samples(starter)
 	var goal: Vector2i = Vector2i(int(round(head.x / float(step))), int(round(head.y / float(step))))
 	goal = Vector2i(clampi(goal.x, 0, coarse - 1), clampi(goal.y, 0, coarse - 1))
 	var start: Vector2i = Vector2i((source % samples) / step, (source / samples) / step)

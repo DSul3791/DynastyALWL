@@ -115,7 +115,10 @@ func setup(settings, rules: Dictionary, tables, elevation, sketch: Dictionary) -
 
 # heights: finished 8 m height map. water_class, flow: from TileWater.
 # soil: soil ids from TileClimate (for cover depth).
-func build(tile: Vector2i, heights: PackedFloat32Array, water_class: PackedByteArray, flow: PackedFloat32Array, soil: PackedByteArray) -> void:
+# `ghost` (optional) holds the same height map with a margin around it, so
+# slopes on the tile's edge samples look at real neighbors:
+# {"heights": PackedFloat32Array, "samples": n, "margin": samples}.
+func build(tile: Vector2i, heights: PackedFloat32Array, water_class: PackedByteArray, flow: PackedFloat32Array, soil: PackedByteArray, ghost: Dictionary = {}) -> void:
 	samples = int(round(sqrt(float(heights.size()))))
 	var total: int = samples * samples
 	var tile_m: float = float(_settings.tile_size_m)
@@ -133,7 +136,7 @@ func build(tile: Vector2i, heights: PackedFloat32Array, water_class: PackedByteA
 	_compute_offsets(x0, z0)
 	timings["offsets"] = Time.get_ticks_msec() - clock
 	clock = Time.get_ticks_msec()
-	_compute_cover(heights, water_class, soil, tile)
+	_compute_cover(heights, water_class, soil, tile, ghost)
 	timings["cover"] = Time.get_ticks_msec() - clock
 	clock = Time.get_ticks_msec()
 	_compute_surface_rock(heights, x0, z0)
@@ -972,7 +975,7 @@ func _compute_offsets(x0: float, z0: float) -> void:
 			layer_offset[index] = clampi(int(round(value * 10.0)), -32768, 32767)
 
 
-func _compute_cover(heights: PackedFloat32Array, water_class: PackedByteArray, soil: PackedByteArray, tile: Vector2i) -> void:
+func _compute_cover(heights: PackedFloat32Array, water_class: PackedByteArray, soil: PackedByteArray, tile: Vector2i, ghost: Dictionary = {}) -> void:
 	var rules: Dictionary = _rules["cover"]
 	var zero_tan: float = tan(deg_to_rad(float(rules["zero_slope_deg"])))
 	var flat: float = float(rules["flat_m"])
@@ -998,6 +1001,10 @@ func _compute_cover(heights: PackedFloat32Array, water_class: PackedByteArray, s
 	var jitter: PackedByteArray = image.get_data()
 	cover.resize(samples * samples)
 	var inv: float = 1.0 / (2.0 * spacing_m)
+	var has_ghost: bool = not ghost.is_empty()
+	var ghost_heights: PackedFloat32Array = ghost.get("heights", PackedFloat32Array())
+	var ghost_n: int = int(ghost.get("samples", 0))
+	var margin: int = int(ghost.get("margin", 0))
 
 	for j in range(samples):
 		for i in range(samples):
@@ -1008,8 +1015,16 @@ func _compute_cover(heights: PackedFloat32Array, water_class: PackedByteArray, s
 			if kind != 0:
 				depth = water_depth.get(kind, 2.0)
 			elif soil[index] != bare:
-				var gx: float = (heights[index + (1 if i < samples - 1 else 0)] - heights[index - (1 if i > 0 else 0)]) * inv
-				var gz: float = (heights[index + (samples if j < samples - 1 else 0)] - heights[index - (samples if j > 0 else 0)]) * inv
+				var gx: float
+				var gz: float
+
+				if has_ghost:
+					var at: int = (j + margin) * ghost_n + i + margin
+					gx = (ghost_heights[at + 1] - ghost_heights[at - 1]) * inv
+					gz = (ghost_heights[at + ghost_n] - ghost_heights[at - ghost_n]) * inv
+				else:
+					gx = (heights[index + (1 if i < samples - 1 else 0)] - heights[index - (1 if i > 0 else 0)]) * inv
+					gz = (heights[index + (samples if j < samples - 1 else 0)] - heights[index - (samples if j > 0 else 0)]) * inv
 				var share: float = clampf(1.0 - sqrt(gx * gx + gz * gz) / zero_tan, 0.0, 1.0)
 				depth = flat * pow(share, 1.5) + float(extra.get(soil[index], 0.0)) * share
 
