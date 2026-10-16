@@ -25,6 +25,9 @@ const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 const CensusScript := preload("res://src/worldgen/sketch/island_census.gd")
 const TerrainGeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
 const TerrainLayout := preload("res://src/worldgen/runtime/terrain_layout.gd")
+const ServerStoreScript := preload("res://src/stream/server_block_store.gd")
+const ClientCacheScript := preload("res://src/stream/client_block_cache.gd")
+const NetworkStreamScript := preload("res://src/stream/network_voxel_stream.gd")
 
 const WORLD_PATH := "res://worlds/base_world/world.json"
 const RULES_PATH := "res://worlds/base_world/plan/matrix_rules.json"
@@ -1779,7 +1782,126 @@ func _test_runtime_terrain(settings, tile_rules: Dictionary, tables, tile: Vecto
 			found += 1
 
 	_check(lenses == 0 or found == lenses, "ore lenses hold their resource at the center unless a cave reached it (%d of %d)" % [found, lenses])
+	_test_streaming(generator, data)
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(target))
+
+
+static func _remove_tree(path: String) -> void:
+	var absolute: String = ProjectSettings.globalize_path(path)
+
+	if not DirAccess.dir_exists_absolute(absolute):
+		return
+
+	for file in DirAccess.get_files_at(absolute):
+		DirAccess.remove_absolute(absolute + "/" + file)
+
+	for sub in DirAccess.get_directories_at(absolute):
+		_remove_tree(absolute + "/" + sub)
+
+	DirAccess.remove_absolute(absolute)
+
+
+# Plan step 16: the server store, the client cache and the client stream,
+# without a network.
+func _test_streaming(generator, data) -> void:
+	var root: String = "user://test_stream"
+	_remove_tree(root)
+
+	# A block survives the trip through the serializer.
+	var x_mid: float = data.x0 + 7000.0
+	var z_mid: float = data.z0 + 7000.0
+	var h_mid: float = generator.surface_height(x_mid, z_mid)
+	var block: Vector3i = Vector3i(int(floor(x_mid / 16.0)), int(floor(h_mid / 16.0)), int(floor(z_mid / 16.0)))
+	var original: VoxelBuffer = TerrainLayout.make_buffer(16)
+	generator.generate(original, block * 16, 0)
+	var bytes: PackedByteArray = VoxelBlockSerializer.serialize_to_byte_array(original, VoxelBlockSerializer.COMPRESSION_ZSTD)
+	var copy: VoxelBuffer = TerrainLayout.make_buffer(16)
+	VoxelBlockSerializer.deserialize_from_byte_array(bytes, copy, true)
+	var same: bool = true
+
+	for k in range(16):
+		for j in range(16):
+			for i in range(16):
+				for channel in [TerrainLayout.CHANNEL_ROCK, TerrainLayout.CHANNEL_SOIL, TerrainLayout.CHANNEL_RESOURCE]:
+					if original.get_voxel(i, j, k, channel) != copy.get_voxel(i, j, k, channel):
+						same = false
+
+				if absf(original.get_voxel_f(i, j, k, TerrainLayout.CHANNEL_SDF) - copy.get_voxel_f(i, j, k, TerrainLayout.CHANNEL_SDF)) > 0.001:
+					same = false
+
+	_check(same, "a block comes through the serializer unchanged (%d bytes)" % bytes.size())
+
+	# Ore deeper than the limit is hidden; ore near a surface stays.
+	var ore: VoxelBuffer = TerrainLayout.make_buffer(16)
+	ore.fill_f(-3.0, TerrainLayout.CHANNEL_SDF)
+	ore.set_voxel(7, 1, 1, 1, TerrainLayout.CHANNEL_RESOURCE)
+	ore.set_voxel_f(-1.0, 2, 2, 2, TerrainLayout.CHANNEL_SDF)
+	ore.set_voxel(7, 2, 2, 2, TerrainLayout.CHANNEL_RESOURCE)
+	ServerStoreScript.hide_buried_ore(ore, 2.0)
+	_check(ore.get_voxel(1, 1, 1, TerrainLayout.CHANNEL_RESOURCE) == 0 and ore.get_voxel(2, 2, 2, TerrainLayout.CHANNEL_RESOURCE) == 7,
+		"buried ore is hidden from clients and ore near a surface is not")
+
+	# The server store makes a block once, then serves its cache, then edits.
+	var store = ServerStoreScript.new()
+	_check(store.setup(generator, root + "/server") == "", "the server store opens")
+	var first: PackedByteArray = store.block_bytes(block, 0)
+	var second: PackedByteArray = store.block_bytes(block, 0)
+	_check(store.blocks_generated == 1 and store.cache_hits == 1 and first == second, "the server makes a block once and then serves it from its cache")
+	var center: Vector3 = Vector3(x_mid, h_mid - 3.0, z_mid)
+	var tile: Vector2i = generator.tile_of(x_mid, z_mid)
+	var tiles: Array = store.dig_sphere(center, 4.0)
+	_check(tiles == [tile] and store.revision_of(tile) == 2, "a dig raises its tile's revision")
+	var dug: VoxelBuffer = TerrainLayout.make_buffer(16)
+	var dug_block: Vector3i = Vector3i((center / 16.0).floor())
+	store.load_block(dug, dug_block, 0)
+	var inside: Vector3i = Vector3i(center.floor()) - dug_block * 16
+	_check(store.edit_hits == 1 and dug.get_voxel_f(inside.x, inside.y, inside.z, TerrainLayout.CHANNEL_SDF) > 0.0,
+		"the dug block comes from the edits store and is open at the dig")
+	store.flush()
+	var reopened = ServerStoreScript.new()
+	reopened.setup(generator, root + "/server")
+	_check(reopened.revision_of(tile) == 2, "tile revisions survive a server restart")
+
+	# The client cache: hits, stale revisions and the size limit.
+	var world: Dictionary = {"tile_size_m": generator.tile_size_m, "min_tile": generator.min_tile, "tiles_per_side": int(round(generator.period_m / generator.tile_size_m))}
+	var cache = ClientCacheScript.new()
+	cache.setup(root + "/client", world, {}, 2048)
+	_check(cache.tile_of_block(block, 0) == tile and cache.tile_of_block(block + Vector3i(int(generator.period_m / 16.0), 0, 0), 0) == tile,
+		"the client cache files a block under its tile, across the wrap")
+	cache.save_block(original, block, 0)
+	cache.flush()
+	var cached: VoxelBuffer = TerrainLayout.make_buffer(16)
+	_check(cache.load_block(cached, block, 0) and cached.get_voxel(3, 3, 3, TerrainLayout.CHANNEL_ROCK) == original.get_voxel(3, 3, 3, TerrainLayout.CHANNEL_ROCK),
+		"the client cache returns a saved block")
+	cache.set_revision(tile, 2)
+	_check(not cache.load_block(cached, block, 0), "a newer tile revision empties that tile from the client cache")
+	var tile_blocks: int = int(generator.tile_size_m / 16.0)
+
+	for step in [0, 1, 5, 8]:
+		cache.save_block(original, block + Vector3i(step * tile_blocks, 0, 0), 0)
+
+	cache.flush()
+	cache.budget_bytes = 0
+	var removed: int = cache.enforce_budget(tile)
+	cache.budget_bytes = 2048 * 1024 * 1024
+	_check(removed == 2 and cache.load_block(cached, block, 0) and cache.load_block(cached, block + Vector3i(tile_blocks, 0, 0), 0)
+		and not cache.load_block(cached, block + Vector3i(8 * tile_blocks, 0, 0), 0),
+		"over its size limit the client cache drops far tiles and keeps the near ones (%d dropped)" % removed)
+
+	# The client stream: a prefetched block is used without asking again.
+	var stream = NetworkStreamScript.new()
+	stream.cache = cache
+	var far: Vector3i = block + Vector3i(0, 0, 3 * tile_blocks)
+	stream.deliver(PackedInt32Array([far.x, far.y, far.z, 0]), [bytes])
+	var streamed: VoxelBuffer = TerrainLayout.make_buffer(16)
+	var result: int = stream._load_voxel_block(streamed, far, 0)
+	var keys: Array = stream.take_requests()
+	_check(result == VoxelStream.RESULT_BLOCK_FOUND and stream.prefetch_used == 1 and keys[0].is_empty()
+		and streamed.get_voxel(3, 3, 3, TerrainLayout.CHANNEL_ROCK) == original.get_voxel(3, 3, 3, TerrainLayout.CHANNEL_ROCK),
+		"the client stream uses a prefetched block without asking the server")
+	_check(cache.load_block(cached, far, 0), "a streamed block goes into the client cache")
+	cache.flush()
+	_remove_tree(root)
 
 
 # Writes the starter tile through the tile file writer, reads it back and

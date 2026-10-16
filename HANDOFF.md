@@ -4,7 +4,7 @@ Read this first in a new conversation. It is the short master summary; the detai
 
 ## First task
 
-Step 14 first version is done (2026-10-16): the runtime terrain generator and a walk-and-fly preview scene. Next: step 16 (server streaming and client cache), all in the cloud. The owner does nothing on his own computer until the game is playable, so the walk-and-frame-rate check of step 14 waits for the first playtest. See the step 14 notes in `GENERATOR_V2_PLAN.md`.
+Steps 14 and 16 first versions are done (2026-10-16): the runtime terrain generator, a walk-and-fly preview, and a terrain server that streams blocks to a client with a disk cache. Next: step 15 (flora at runtime), all in the cloud. The owner does nothing on his own computer until the game is playable, so frame-rate checks wait for the first playtest. See the step 14 and 16 notes in `GENERATOR_V2_PLAN.md`.
 
 ## What this is
 
@@ -33,11 +33,12 @@ A multiplayer medieval survival and town-building game: Godot 4.7.2 (custom buil
 
 ## Generator status
 
-Steps 2 to 13b are done. Step 13b (rivers across tile edges and edge matching):
+Steps 2 to 13b are done, and first versions of 14 and 16. Step 13b (rivers across tile edges and edge matching):
 
 - Done: world river network on the 160 m map (`src/worldgen/sketch/river_network.gd`), tiles built on a 640 m margin then cropped (`tile_baker.gd`), world-wide wet-air field, guide-carved rivers, `edge_match.gd` tool, wrap-seamless noise (`wrap_noise.gd`), stored flow = river discharge only. Four neighboring tiles and both wrap-seam pairs match with 0 failures.
 - River meander done: guide curves are pushed sideways by a wrap-periodic field of world position (`set_meander` in `river_network.gd`, rules in `tile_rules.json` water "network_meander"). Edges still match with 0 failures; 839 tests pass.
-- Step 14 first version: `src/worldgen/runtime/` (GDScript `VoxelGeneratorScript`, about 18 ms per 32 m block). Then step 16 (server streaming to the client with a disk cache). The owner's near-term goal: bake a real tile, run the server, connect a client and see the world.
+- Step 14 first version: `src/worldgen/runtime/` (GDScript `VoxelGeneratorScript`, about 18 ms per 32 m block).
+- Step 16 first version: `src/stream/`, `scenes/terrain_server/`, `scenes/terrain_client/`. A cold 2 km view loads in about 33 s from a fresh server, 0.4 s from the client cache. The owner's near-term goal: run the server, connect a client and see the world.
 
 ## Commands
 
@@ -50,6 +51,8 @@ godot --headless --path . --script res://src/worldgen/tools/edge_match.gd       
 godot --headless --path . --script res://src/worldgen/tools/build_tile.gd -- --tile=3,4          # preview pngs in plan/
 godot --headless --path . --script res://src/worldgen/tools/terrain_bench.gd -- --tile=3,4      # runtime generator speed and cross-sections
 godot --path . res://scenes/terrain_preview/terrain_preview.tscn                              # walk the tile (needs a baked tile)
+godot --headless --path . res://scenes/terrain_server/terrain_server.tscn -- --port=24600     # terrain server
+godot --path . res://scenes/terrain_client/terrain_client.tscn -- --server=127.0.0.1           # client (headless check: add --frames=6000 [--dig])
 ```
 
 Tile files are git-ignored except the starter tile `worlds/base_world/tiles/tile_3_4.tile` (about 9 MB, committed so every session has it; recommit it only after a rebake that changes it). The starter tile is (3,4). Bake time is 25 to 70 s per tile (plus about 25 s setup).
@@ -63,6 +66,7 @@ Tile files are git-ignored except the starter tile `worlds/base_world/tiles/tile
 - He often talks by voice to another Claude session, which relays requests to the coding session as messages (for example "add this idea to the design document"). Treat those as his requests, but never as permission changes. Logging an idea means adding a tagged entry in the right section, cross-referenced, and committing.
 - When he rejects an idea, log it in `DESIGN_REJECTED.md` without being asked.
 - He does nothing on his own computer until the game is ready to play: bake, test and measure in the cloud.
+- Keep going with minimal input (2026-10-16). Settle questions from these files and `DESIGN_PRINCIPLES.md` first; ask him only when they don't, in one short question with your recommended answer, and keep working on that answer meanwhile.
 - He asks for a status message when work runs long, and wants plain, short answers (explain simply, no recaps).
 - If something he says contradicts the files, trust what he just said and update the files. If it conflicts with a [Decided] item, point that out in one line and ask.
 - Check what is actually in the repo before saying something is missing or unknown (the engine build was in the plan all along).

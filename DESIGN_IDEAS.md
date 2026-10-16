@@ -367,6 +367,8 @@ Question from the project owner: do we have all the building blocks, with a safe
 - **[Open]** The world is one coordinate space about 322 km across. Single-precision positions lose detail far from the origin (about 1.6 cm at 160 km), so the client needs a floating origin (shifting the world around the player) or an engine build with double precision. The wrap lets the client recentre whenever it crosses the seam. Test early in the terrain steps.
 - **[Proposed]** Edits travel separately as small deltas per region. The existing region manifest already has a revision number per region, which tells a client whether its cached edits are stale.
 - **[Proposed]** The player's map is kept separately from the tile cache, so removing a far tile does not erase what the player has explored.
+- **[Proposed] Built first version (plan step 16, 2026-10-16).** Streamed blocks as recommended above: the server answers from its edits store, then its generated-block cache, then the generator; the client keeps one cache file per tile and tile revision and drops the farthest tiles first when over the player's size limit. Ore buried more than 2 m below any surface is withheld. Each missing block also brings its neighbors as low-priority prefetch, which made loading about three times faster. Measured on one machine: a cold 2 km view in about 33 s and 7 MB; from the client cache in 0.4 s.
+- **[Proposed]** For now any edit raises its whole tile's revision, so every client re-downloads that tile's blocks. Fine while edits are rare; move to per-region revisions (as suggested above) before players dig in earnest.
 
 ### 4.11 At sea
 
@@ -1690,9 +1692,10 @@ To be fleshed out when the first NPC is designed.
 
 The new generator lives in `src/worldgen/` on branch `claude/generator-v2` (GDScript, run headless in Godot). The plan and its progress log are in `GENERATOR_V2_PLAN.md`.
 
-**Built and tested (853 checks pass, 2026-10-16)**
+**Built and tested (866 checks pass, 2026-10-16)**
 
 - Step 14 first version: the runtime terrain generator (`src/worldgen/runtime/`), GDScript, about 18 ms per 32 m block, with a walk-and-fly preview scene. **[Proposed]** Keep it in GDScript until server streaming shows it is too slow, then move it into a small C++ module in the custom engine. Details in `GENERATOR_V2_PLAN.md`.
+- Step 16 first version: a terrain server streaming blocks to a client with a disk cache (`src/stream/`, `scenes/terrain_server/`, `scenes/terrain_client/`). See Section 4.10 and `GENERATOR_V2_PLAN.md`.
 - A Linux build of the project's engine (Godot 4.7.2 with Voxel Tools 1.7) for cloud sessions: `tools/build_godot_linux.sh`.
 
 - World settings, SHA-256 seeds, append-only data tables (biomes, soils, rocks, resources, water classes, site types, feature types, province kinds).
@@ -1703,7 +1706,7 @@ The new generator lives in `src/worldgen/` on branch `claude/generator-v2` (GDSc
 
 **Not built yet**
 
-- Runtime flora, server streaming and the client cache, the layer for player changes. (Rivers across tile edges, edge matching and wrap-seamless noise were built in step 13b; a first runtime terrain generator in step 14, see below.)
+- Runtime flora, the layer for player changes (beyond the test dig). (Rivers across tile edges, edge matching and wrap-seamless noise were built in step 13b; a first runtime terrain generator in step 14, see below.)
 - Any game system: players, NPCs, towns, building, law, economy, machinery.
 
 **Old generator.** The earlier volumetric pipeline (10 by 10 region tiles, about 15 to 16 hours per tile) is still in the repository and untouched until the new one replaces it (plan step 19). `README.md`, `GENERATION_GUIDE.md`, `PROJECT_ROADMAP.md` and `CHANGES_THIS_PASS.md` describe it.
