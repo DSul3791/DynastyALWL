@@ -40,6 +40,7 @@ Steps 2 to 13b are done, and first versions of 14, 15 and 16. Step 13b (rivers a
 - Step 14 first version: `src/worldgen/runtime/` (GDScript `VoxelGeneratorScript`, about 18 ms per 32 m block).
 - Step 15 first version: `flora_placer.gd`, `data/tables/flora.json`, `src/flora/flora_view.gd`; about 33 ms per 256 m chunk; only removals are stored.
 - Step 16 first version: `src/stream/`, `scenes/terrain_server/`, `scenes/terrain_client/`. A cold 2 km view loads in about 33 s from a fresh server, 0.4 s from the client cache. The owner's near-term goal: run the server, connect a client and see the world.
+- Starter-town playtest prep (2026-10-16): rivers and lakes are drawn per flora chunk (`water_grid.gd`); the ground is colored by its soil, or its rock where bare (voxel channel INDICES, mesher "Single" texturing, `src/client/ground_material.gd`, colors in soils.json and rocks.json; cave walls and dug holes still show the surface color); `--role=play` starts a hidden server and joins it. `TERRAIN_VERSION` in `terrain_layout.gd` clears old server and client block caches when generated blocks change.
 
 ## Commands
 
@@ -55,6 +56,7 @@ godot --headless --path . --script res://src/worldgen/tools/flora_map.gd -- --ti
 godot --path . res://scenes/terrain_preview/terrain_preview.tscn                              # walk the tile (needs a baked tile)
 godot --headless --path . res://scenes/terrain_server/terrain_server.tscn -- --port=24600     # terrain server
 godot --path . res://scenes/terrain_client/terrain_client.tscn -- --server=127.0.0.1           # client (headless check: add --frames=6000 [--dig] [--cut])
+godot --path . -- --role=play                                                                  # host and play: starts a server in the background and joins it
 ```
 
 Baked tiles for the inner starters and their neighbors (36 files) are in `/mnt/project-files/tiles/base_world/`; copy them into `worlds/base_world/tiles/` at the start of a session. Tile files are git-ignored except the starter tile `worlds/base_world/tiles/tile_3_4.tile` (about 9 MB, committed so every session has it; recommit it only after a rebake that changes it). The starter tile is (3,4). Bake time is 25 to 70 s per tile (plus about 25 s setup).

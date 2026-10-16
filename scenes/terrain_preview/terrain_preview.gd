@@ -26,6 +26,7 @@ const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.g
 const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings.gd")
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
+const GroundMaterialScript := preload("res://src/client/ground_material.gd")
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
@@ -39,6 +40,7 @@ const FAST := 5.0
 const GRAVITY := 20.0
 const MOUSE_SENSITIVITY := 0.002
 
+var _tables
 var generator
 var terrain: VoxelLodTerrain
 var body: CharacterBody3D
@@ -79,6 +81,7 @@ func _ready() -> void:
 	var settings = WorldSettingsScript.load_from_file(WORLD_DIR + "/world.json", errors)
 	var rules: Dictionary = TileHeightScript.load_rules(WORLD_DIR + "/plan/tile_rules.json", errors)
 	var tables = TableSetScript.new()
+	_tables = tables
 	errors.append_array(tables.load_directory())
 
 	if settings == null or rules.is_empty() or not errors.is_empty():
@@ -137,13 +140,15 @@ func _make_terrain() -> void:
 	terrain.name = "Terrain"
 	terrain.format = Layout.make_format()
 	terrain.generator = generator
-	terrain.mesher = VoxelMesherTransvoxel.new()
+	var mesher: VoxelMesherTransvoxel = VoxelMesherTransvoxel.new()
+	mesher.texturing_mode = VoxelMesherTransvoxel.TEXTURES_SINGLE_S4
+	terrain.mesher = mesher
 	terrain.lod_count = 7
 	terrain.view_distance = VIEW_DISTANCE
 	terrain.mesh_block_size = 32
 	terrain.generate_collisions = true
 	terrain.collision_lod_count = 1
-	terrain.material = _terrain_material()
+	terrain.material = GroundMaterialScript.make(_tables)
 	add_child(terrain)
 
 
@@ -211,35 +216,6 @@ func _make_hud() -> void:
 
 
 # Colours by height and slope, with rock showing on steep ground.
-func _terrain_material() -> ShaderMaterial:
-	var shader: Shader = Shader.new()
-	shader.code = """
-shader_type spatial;
-varying vec3 world_pos;
-varying vec3 world_normal;
-void vertex() {
-	world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
-	world_normal = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
-}
-void fragment() {
-	float slope = 1.0 - clamp(world_normal.y, 0.0, 1.0);
-	vec3 sand = vec3(0.76, 0.70, 0.50);
-	vec3 grass = vec3(0.30, 0.45, 0.20);
-	vec3 high = vec3(0.45, 0.48, 0.35);
-	vec3 rock = vec3(0.42, 0.40, 0.38);
-	vec3 seabed = vec3(0.35, 0.33, 0.28);
-	vec3 color = mix(grass, high, smoothstep(250.0, 650.0, world_pos.y));
-	color = mix(sand, color, smoothstep(0.5, 3.0, world_pos.y));
-	color = mix(seabed, color, smoothstep(-3.0, 0.0, world_pos.y));
-	color = mix(color, rock, smoothstep(0.25, 0.45, slope));
-	ALBEDO = color;
-	ROUGHNESS = 0.9;
-}
-"""
-	var material: ShaderMaterial = ShaderMaterial.new()
-	material.shader = shader
-	return material
-
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:

@@ -15,6 +15,8 @@ extends Node
 #   --move=M          with --frames: fly east at M m/s, 20 m above the ground
 #   --dig             with --frames: 20 s in, ask the server to dig a hole under the spawn
 #   --cut             with --frames: 25 s in, ask the server to cut the tree nearest the spawn
+#   --wait=S          keep trying to connect for S seconds (the "play" launcher
+#                     uses 120 while its own server starts)
 #
 # Controls as in the terrain preview: mouse look, W A S D, Space and Ctrl,
 # Shift fast, G fly or walk, Esc frees the mouse.
@@ -27,6 +29,7 @@ const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const FloraViewScript := preload("res://src/flora/flora_view.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
+const GroundMaterialScript := preload("res://src/client/ground_material.gd")
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 
 const VIEW_DISTANCE := 2048
@@ -36,6 +39,7 @@ const FAST := 5.0
 const GRAVITY := 20.0
 const MOUSE_SENSITIVITY := 0.002
 
+var _tables
 var net
 var stream
 var cache
@@ -66,6 +70,9 @@ var _flora_chunks: int = 0
 var _flora_bytes: int = 0
 var _flora_cuts: int = 0
 var _flora_done_msec: int = 0
+var _host: String = "127.0.0.1"
+var _port: int = 24600
+var _wait_until_msec: int = 0
 
 
 func _ready() -> void:
@@ -86,6 +93,8 @@ func _ready() -> void:
 			frames_left = int(argument.trim_prefix("--frames="))
 		elif argument.begins_with("--move="):
 			test_speed = float(argument.trim_prefix("--move="))
+		elif argument.begins_with("--wait="):
+			_wait_until_msec = Time.get_ticks_msec() + int(float(argument.trim_prefix("--wait=")) * 1000.0)
 		elif argument == "--dig":
 			test_dig = true
 		elif argument == "--cut":
@@ -97,19 +106,40 @@ func _ready() -> void:
 	net.dug_received.connect(_on_dug)
 	net.flora_received.connect(_on_flora)
 	net.flora_cut_received.connect(_on_flora_cut)
+	_host = host
+	_port = port
+
+	# Started by the "play" launcher, whose server may still be loading.
+	if AppConfig.get_command_line_value("role", "") == "play" and _wait_until_msec == 0:
+		_wait_until_msec = Time.get_ticks_msec() + 120000
+	multiplayer.server_disconnected.connect(func(): print("Terrain client: server left"); _finish(1))
+	multiplayer.connection_failed.connect(_on_connection_failed)
+	started_msec = Time.get_ticks_msec()
+	_connect()
+
+
+func _connect() -> void:
 	var peer: ENetMultiplayerPeer = ENetMultiplayerPeer.new()
-	var error: int = peer.create_client(host, port)
+	var error: int = peer.create_client(_host, _port)
 
 	if error != OK:
-		push_error("Terrain client: cannot connect to %s:%d (%s)" % [host, port, error_string(error)])
+		push_error("Terrain client: cannot connect to %s:%d (%s)" % [_host, _port, error_string(error)])
 		get_tree().quit(1)
 		return
 
 	multiplayer.multiplayer_peer = peer
-	multiplayer.server_disconnected.connect(func(): print("Terrain client: server left"); _finish(1))
-	multiplayer.connection_failed.connect(func(): print("Terrain client: connection failed"); _finish(1))
-	started_msec = Time.get_ticks_msec()
-	print("Terrain client: connecting to %s:%d" % [host, port])
+	print("Terrain client: connecting to %s:%d" % [_host, _port])
+
+
+# While a --wait is running, a server not up yet is tried again.
+func _on_connection_failed() -> void:
+	if Time.get_ticks_msec() < _wait_until_msec:
+		multiplayer.multiplayer_peer = null
+		get_tree().create_timer(1.0).timeout.connect(_connect)
+		return
+
+	print("Terrain client: connection failed")
+	_finish(1)
 
 
 func _on_welcome(info: Dictionary) -> void:
@@ -122,7 +152,8 @@ func _on_welcome(info: Dictionary) -> void:
 	connected_msec = Time.get_ticks_msec()
 
 	if cache_dir == "":
-		cache_dir = "user://terrain_cache/%s" % str(info["world_name"]).validate_filename()
+		# One folder per terrain version, so older blocks are never mixed in.
+		cache_dir = "user://terrain_cache/%s/v%d" % [str(info["world_name"]).validate_filename(), int(info.get("terrain_version", 1))]
 
 	cache = CacheScript.new()
 	cache.setup(cache_dir, info, info["revisions"], cache_mb)
@@ -131,23 +162,25 @@ func _on_welcome(info: Dictionary) -> void:
 	var root: Node3D = Node3D.new()
 	root.name = "World"
 	add_child(root)
+	_tables = TableSetScript.new()
+	_tables.load_directory()
 	terrain = VoxelLodTerrain.new()
 	terrain.format = Layout.make_format()
 	terrain.stream = stream
-	terrain.mesher = VoxelMesherTransvoxel.new()
+	var mesher: VoxelMesherTransvoxel = VoxelMesherTransvoxel.new()
+	mesher.texturing_mode = VoxelMesherTransvoxel.TEXTURES_SINGLE_S4
+	terrain.mesher = mesher
 	terrain.lod_count = 7
 	terrain.view_distance = VIEW_DISTANCE
 	terrain.mesh_block_size = 32
 	terrain.generate_collisions = true
 	terrain.collision_lod_count = 1
-	terrain.material = _terrain_material()
+	terrain.material = GroundMaterialScript.make(_tables)
 	root.add_child(terrain)
 	_make_player(root, info["spawn"] + Vector3(0.0, 28.0, 0.0))
-	var tables = TableSetScript.new()
-	tables.load_directory()
 	flora = FloraViewScript.new()
 	flora.name = "Flora"
-	flora.setup(tables, TileHeightScript.load_rules("res://worlds/base_world/plan/tile_rules.json", []))
+	flora.setup(_tables, TileHeightScript.load_rules("res://worlds/base_world/plan/tile_rules.json", []))
 	root.add_child(flora)
 	_make_environment(root)
 	var layer: CanvasLayer = CanvasLayer.new()
@@ -310,30 +343,6 @@ func _make_environment(root: Node3D) -> void:
 	sea.material_override = water
 	root.add_child(sea)
 
-
-func _terrain_material() -> ShaderMaterial:
-	var shader: Shader = Shader.new()
-	shader.code = """
-shader_type spatial;
-varying vec3 world_pos;
-varying vec3 world_normal;
-void vertex() {
-	world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
-	world_normal = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
-}
-void fragment() {
-	float slope = 1.0 - clamp(world_normal.y, 0.0, 1.0);
-	vec3 color = mix(vec3(0.30, 0.45, 0.20), vec3(0.45, 0.48, 0.35), smoothstep(250.0, 650.0, world_pos.y));
-	color = mix(vec3(0.76, 0.70, 0.50), color, smoothstep(0.5, 3.0, world_pos.y));
-	color = mix(vec3(0.35, 0.33, 0.28), color, smoothstep(-3.0, 0.0, world_pos.y));
-	color = mix(color, vec3(0.42, 0.40, 0.38), smoothstep(0.25, 0.45, slope));
-	ALBEDO = color;
-	ROUGHNESS = 0.9;
-}
-"""
-	var material: ShaderMaterial = ShaderMaterial.new()
-	material.shader = shader
-	return material
 
 
 func _unhandled_input(event: InputEvent) -> void:

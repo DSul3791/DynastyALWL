@@ -9,19 +9,26 @@ extends RefCounted
 #                     loose cover above bedrock)
 #   SOIL      8 bit   soil table id of cover voxels, 0 elsewhere
 #   RESOURCE  8 bit   resource table id of ore voxels, 0 elsewhere
+#   INDICES   8 bit   ground material for drawing (Voxel Tools "Single"
+#                     texturing): the soil id of the column's top, or
+#                     MATERIAL_ROCK + rock id where no soil covers it
 #
-# The rendering channels (INDICES and WEIGHTS) stay free for the client.
+# TERRAIN_VERSION rises whenever generated blocks change meaning, so
+# server block caches and client caches made before are thrown away.
 
 const CHANNEL_SDF := VoxelBuffer.CHANNEL_SDF
 const CHANNEL_ROCK := VoxelBuffer.CHANNEL_DATA5
 const CHANNEL_SOIL := VoxelBuffer.CHANNEL_DATA6
 const CHANNEL_RESOURCE := VoxelBuffer.CHANNEL_DATA7
+const CHANNEL_MATERIAL := VoxelBuffer.CHANNEL_INDICES
+const MATERIAL_ROCK := 32
+const TERRAIN_VERSION := 2
 
 const ROCK_SEDIMENT := 1
 
 
 static func used_channels_mask() -> int:
-	return (1 << CHANNEL_SDF) | (1 << CHANNEL_ROCK) | (1 << CHANNEL_SOIL) | (1 << CHANNEL_RESOURCE)
+	return (1 << CHANNEL_SDF) | (1 << CHANNEL_ROCK) | (1 << CHANNEL_SOIL) | (1 << CHANNEL_RESOURCE) | (1 << CHANNEL_MATERIAL)
 
 
 # A voxel format with the depths above, for VoxelTerrain, VoxelLodTerrain
@@ -32,6 +39,7 @@ static func make_format() -> VoxelFormat:
 	format.set_channel_depth(CHANNEL_ROCK, VoxelBuffer.DEPTH_8_BIT)
 	format.set_channel_depth(CHANNEL_SOIL, VoxelBuffer.DEPTH_8_BIT)
 	format.set_channel_depth(CHANNEL_RESOURCE, VoxelBuffer.DEPTH_8_BIT)
+	format.set_channel_depth(CHANNEL_MATERIAL, VoxelBuffer.DEPTH_8_BIT)
 	return format
 
 
@@ -43,4 +51,5 @@ static func make_buffer(size: int = 32) -> VoxelBuffer:
 	buffer.set_channel_depth(CHANNEL_ROCK, VoxelBuffer.DEPTH_8_BIT)
 	buffer.set_channel_depth(CHANNEL_SOIL, VoxelBuffer.DEPTH_8_BIT)
 	buffer.set_channel_depth(CHANNEL_RESOURCE, VoxelBuffer.DEPTH_8_BIT)
+	buffer.set_channel_depth(CHANNEL_MATERIAL, VoxelBuffer.DEPTH_8_BIT)
 	return buffer

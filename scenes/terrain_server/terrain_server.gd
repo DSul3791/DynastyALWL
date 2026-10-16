@@ -11,6 +11,8 @@ extends Node
 #   --store=DIR     server store folder (default user://server_store/<world name>)
 #   --threads=N     worker threads making blocks (default: processor count - 1)
 #   --quit-after=S  stop after S seconds (headless checks)
+#   --quit-when-empty  stop 10 s after the last player leaves, or after 5 min
+#                      if nobody joins (the "play" launcher's own server)
 #
 # Clients start at the starter spawn point of tile (3,4).
 
@@ -21,6 +23,7 @@ const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 const NetScript := preload("res://src/stream/terrain_net.gd")
+const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const FloraStoreScript := preload("res://src/stream/server_flora.gd")
 
@@ -47,6 +50,10 @@ var _done: Array = []                  # [peer, key, bytes]
 var _done_mutex: Mutex = Mutex.new()
 var _peers: Dictionary = {}            # peer -> {"blocks": n, "bytes": n}
 var _quit_at_msec: int = -1
+var _quit_when_empty: bool = false
+var _empty_since_msec: int = 0
+var _quit_grace_msec: int = 10000
+var _never_joined: bool = true
 var _report_at_msec: int = 0
 
 
@@ -66,6 +73,8 @@ func _ready() -> void:
 			store_dir = argument.trim_prefix("--store=")
 		elif argument.begins_with("--threads="):
 			_max_running = maxi(int(argument.trim_prefix("--threads=")), 1)
+		elif argument == "--quit-when-empty":
+			_quit_when_empty = true
 		elif argument.begins_with("--quit-after="):
 			_quit_at_msec = Time.get_ticks_msec() + int(float(argument.trim_prefix("--quit-after=")) * 1000.0)
 
@@ -141,6 +150,7 @@ func _spawn_point(world_dir: String) -> Vector3:
 
 
 func _on_peer_connected(peer_id: int) -> void:
+	_never_joined = false
 	_peers[peer_id] = {"blocks": 0, "bytes": 0, "since": Time.get_ticks_msec()}
 	print("Client %d connected" % peer_id)
 	net.welcome.rpc_id(peer_id, {
@@ -152,6 +162,7 @@ func _on_peer_connected(peer_id: int) -> void:
 		"tiles_per_side": settings.tiles_x,
 		"revisions": store.revisions(),
 		"spawn": spawn,
+		"terrain_version": Layout.TERRAIN_VERSION,
 	})
 
 
@@ -288,6 +299,16 @@ func _process(_delta: float) -> void:
 		print("server: %d urgent and %d prefetch queued; generated %d, cache hits %d, edit hits %d; flora chunks %d made, %d from memory" % [
 			queued[0], queued[1], store.blocks_generated, store.cache_hits, store.edit_hits, flora.chunks_made, flora.memory_hits
 		])
+
+	if _quit_when_empty and _quit_at_msec < 0:
+		if not _peers.is_empty():
+			_empty_since_msec = 0
+		elif _empty_since_msec == 0:
+			_empty_since_msec = now
+			_quit_grace_msec = 300000 if _never_joined else 10000
+		elif now - _empty_since_msec >= _quit_grace_msec:
+			print("server: no players left")
+			_quit_at_msec = now
 
 	if _quit_at_msec > 0 and now >= _quit_at_msec:
 		_quit_at_msec = -1

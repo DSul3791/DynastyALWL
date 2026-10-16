@@ -285,6 +285,7 @@ func generate(buffer: VoxelBuffer, origin: Vector3i, lod: int) -> void:
 	buffer.fill(0, Layout.CHANNEL_ROCK)
 	buffer.fill(0, Layout.CHANNEL_SOIL)
 	buffer.fill(0, Layout.CHANNEL_RESOURCE)
+	buffer.fill(Layout.MATERIAL_ROCK + Layout.ROCK_SEDIMENT, Layout.CHANNEL_MATERIAL)
 
 	# Heights on the block's columns plus a one-column ring for slopes.
 	var wx: PackedFloat32Array = PackedFloat32Array()
@@ -390,6 +391,10 @@ func generate(buffer: VoxelBuffer, origin: Vector3i, lod: int) -> void:
 			for j in range(j_lo, j_hi):
 				buffer.set_voxel_f((oy + float(j) * sf - h) * norm, i, j, k, Layout.CHANNEL_SDF)
 
+			# The ground material, the same down the whole column (cave walls
+			# and dug holes show it too for now).
+			buffer.fill_area(_surface_material(data, wx[i + 1], wz[k + 1], h), Vector3i(i, 0, k), Vector3i(i + 1, ny, k + 1), Layout.CHANNEL_MATERIAL)
+
 			# Nothing solid in this column of the block.
 			if h < oy:
 				continue
@@ -401,6 +406,23 @@ func generate(buffer: VoxelBuffer, origin: Vector3i, lod: int) -> void:
 
 	if not shapes.is_empty():
 		_carve_caves(buffer, shapes, origin, sf, size)
+
+
+# What the top of a column looks like: its soil, else the rock at the
+# bedrock surface (intrusions and vents are not looked at).
+func _surface_material(data, x: float, z: float, h: float) -> int:
+	if data.placeholder:
+		return Layout.MATERIAL_ROCK + Layout.ROCK_SEDIMENT
+
+	var sample: int = data.nearest(x, z)
+	var soil: int = data.soil[sample]
+
+	if soil > 0:
+		return soil
+
+	var p: int = data.province[sample]
+	var depth: float = data.prov_datum[p] + data.offset_at(x, z) - (h - data.cover_at(x, z))
+	return Layout.MATERIAL_ROCK + data.layered_rock(p, maxf(depth, 0.0), _limestone, _marble)
 
 
 # Rock and soil of one column: cover on top, layered bedrock below, then

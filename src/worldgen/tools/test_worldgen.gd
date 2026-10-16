@@ -4,6 +4,7 @@ extends SceneTree
 #   godot --headless --path . --script res://src/worldgen/tools/test_worldgen.gd
 # Exits with code 0 when every check passes.
 
+const GroundMaterialScript := preload("res://src/client/ground_material.gd")
 const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings.gd")
 const SeedUtil := preload("res://src/worldgen/settings/worldgen_seed.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
@@ -1784,6 +1785,7 @@ func _test_runtime_terrain(settings, tile_rules: Dictionary, tables, tile: Vecto
 			found += 1
 
 	_check(lenses == 0 or found == lenses, "ore lenses hold their resource at the center unless a cave reached it (%d of %d)" % [found, lenses])
+	_test_ground_material(generator, data, tables)
 	_test_streaming(generator, data)
 	_test_flora(generator, data, tables, tile_rules)
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(target))
@@ -1802,6 +1804,49 @@ static func _remove_tree(path: String) -> void:
 		_remove_tree(absolute + "/" + sub)
 
 	DirAccess.remove_absolute(absolute)
+
+
+# The ground material drawn by clients: the soil of each column's top, or
+# its rock where no soil covers it, all the way down the column.
+func _test_ground_material(generator, data, tables) -> void:
+	var columns: int = 0
+	var right: int = 0
+	var bare: int = 0
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 77
+
+	for n in range(40):
+		var x: float = data.x0 + rng.randf_range(200.0, 15000.0)
+		var z: float = data.z0 + rng.randf_range(200.0, 15000.0)
+		var h: float = generator.surface_height(x, z)
+		var buffer: VoxelBuffer = TerrainLayout.make_buffer(8)
+		var origin: Vector3i = Vector3i(int(floor(x)) - 4, int(floor(h)) - 4, int(floor(z)) - 4)
+		generator.generate(buffer, origin, 0)
+		var soil: int = data.soil[data.nearest(float(origin.x + 4), float(origin.z + 4))]
+		var material: int = buffer.get_voxel(4, 0, 4, TerrainLayout.CHANNEL_MATERIAL)
+		var column_same: bool = material == buffer.get_voxel(4, 7, 4, TerrainLayout.CHANNEL_MATERIAL)
+		columns += 1
+
+		if soil > 0:
+			if material == soil and column_same:
+				right += 1
+		else:
+			bare += 1
+
+			if material > TerrainLayout.MATERIAL_ROCK and column_same:
+				right += 1
+
+	_check(right == columns, "each column is drawn in its soil, or its rock where bare (%d of %d, %d bare)" % [right, columns, bare])
+	var palette: PackedVector3Array = GroundMaterialScript.palette(tables)
+	var colored: bool = palette.size() == GroundMaterialScript.PALETTE_SIZE
+
+	for entry in tables.get_entries("soils"):
+		colored = colored and entry.has("color") and palette[int(entry["id"])].is_equal_approx(Vector3(entry["color"][0], entry["color"][1], entry["color"][2]))
+
+	for entry in tables.get_entries("rocks"):
+		colored = colored and entry.has("color") and int(entry["id"]) + TerrainLayout.MATERIAL_ROCK < palette.size()
+
+	_check(colored, "every soil and rock has a color in the ground palette")
 
 
 # Plan step 16: the server store, the client cache and the client stream,
@@ -1825,7 +1870,7 @@ func _test_streaming(generator, data) -> void:
 	for k in range(16):
 		for j in range(16):
 			for i in range(16):
-				for channel in [TerrainLayout.CHANNEL_ROCK, TerrainLayout.CHANNEL_SOIL, TerrainLayout.CHANNEL_RESOURCE]:
+				for channel in [TerrainLayout.CHANNEL_ROCK, TerrainLayout.CHANNEL_SOIL, TerrainLayout.CHANNEL_RESOURCE, TerrainLayout.CHANNEL_MATERIAL]:
 					if original.get_voxel(i, j, k, channel) != copy.get_voxel(i, j, k, channel):
 						same = false
 
@@ -1933,17 +1978,24 @@ func _test_flora(generator, data, tables, tile_rules: Dictionary) -> void:
 	var placer = FloraPlacerScript.new()
 	placer.setup(generator, tables, tile_rules)
 
-	# The busiest of a few chunks in the middle of the tile.
+	# The most wooded of a few chunks in the middle of the tile.
 	var best: Vector2i = Vector2i.ZERO
 	var items: Dictionary = {}
+	var best_trees: int = -1
 
 	for n in range(6):
 		var chunk: Vector2i = placer.chunk_of(data.x0 + 4000.0 + 1100.0 * n, data.z0 + 4000.0 + 900.0 * n)
 		var found: Dictionary = placer.chunk_items(chunk)
+		var found_trees: int = 0
 
-		if items.is_empty() or found["ids"].size() > items["ids"].size():
+		for id in found["ids"]:
+			if placer.species_of(id)["kind"] == FloraPlacerScript.KIND_TREE:
+				found_trees += 1
+
+		if found_trees > best_trees:
 			best = chunk
 			items = found
+			best_trees = found_trees
 
 	var ids: PackedInt32Array = items["ids"]
 	var trees: int = 0

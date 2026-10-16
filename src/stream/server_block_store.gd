@@ -49,6 +49,18 @@ func setup(terrain_generator, store_dir: String) -> String:
 	if error != OK and not DirAccess.dir_exists_absolute(ProjectSettings.globalize_path(store_dir)):
 		return "cannot create %s" % store_dir
 
+	# Generated blocks from an older terrain version are thrown away.
+	var version_path: String = store_dir + "/terrain_version.txt"
+	var version: String = FileAccess.get_file_as_string(version_path).strip_edges() if FileAccess.file_exists(version_path) else ""
+
+	if version != str(Layout.TERRAIN_VERSION):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(store_dir + "/generated.sqlite"))
+		var file: FileAccess = FileAccess.open(version_path, FileAccess.WRITE)
+
+		if file != null:
+			file.store_string(str(Layout.TERRAIN_VERSION))
+			file.close()
+
 	_cache = VoxelStreamSQLite.new()
 	_cache.database_path = ProjectSettings.globalize_path(store_dir + "/generated.sqlite")
 	_edits = VoxelStreamSQLite.new()
