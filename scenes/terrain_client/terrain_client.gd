@@ -20,8 +20,8 @@ extends Node
 #   --wait=S          keep trying to connect for S seconds (the "play" launcher
 #                     uses 120 while its own server starts)
 #
-# Controls as in the terrain preview: mouse look, W A S D, Space and Ctrl,
-# Shift fast, G fly or walk, Esc frees the mouse.
+# Controls (see CONTROLS.md): mouse look, W A S D, Space and Ctrl, walk WASD,
+# jog double-tap W, run Shift+W, G or F fly or walk, Esc frees the mouse.
 
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const StreamScript := preload("res://src/stream/network_voxel_stream.gd")
@@ -37,7 +37,10 @@ const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 const VIEW_DISTANCE := 2048
 const FLY_SPEED := 30.0
 const WALK_SPEED := 6.0
-const FAST := 3.0
+const FAST := 3.0                     # flying: Shift multiplier
+const JOG_SPEED := 11.0
+const RUN_SPEED := 18.0
+const DOUBLE_TAP_MSEC := 300          # second W press within this starts jogging
 const GRAVITY := 20.0
 const MOUSE_SENSITIVITY := 0.002
 
@@ -52,6 +55,9 @@ var hud: Label
 var sea: MeshInstance3D
 var flying: bool = false
 var underwater: bool = false
+var jogging: bool = false             # double-tapped W; ends when W is released
+var running: bool = false             # Shift held with W
+var _last_w_msec: int = -1000
 var waiting_for_ground: bool = false
 var _tint: ColorRect
 var _aim_msec: int = 0
@@ -397,6 +403,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_ESCAPE:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		elif event.keycode == KEY_W:
+			var now: int = Time.get_ticks_msec()
+
+			if now - _last_w_msec <= DOUBLE_TAP_MSEC:
+				jogging = true
+
+			_last_w_msec = now
 		elif event.keycode == KEY_G or event.keycode == KEY_F:
 			flying = not flying
 			body.velocity = Vector3.ZERO
@@ -417,6 +430,15 @@ func _physics_process(delta: float) -> void:
 		_walk_step()
 		direction = _walk_dir
 	var fast: float = FAST if Input.is_key_pressed(KEY_SHIFT) else 1.0
+	var forward: bool = Input.is_key_pressed(KEY_W)
+
+	# Gaits (CONTROLS.md): walk is plain WASD, jog is a double-tap of W, run is
+	# Shift with W. Letting go of W ends both.
+	if not forward:
+		jogging = false
+
+	running = forward and Input.is_key_pressed(KEY_SHIFT)
+	var pace: float = RUN_SPEED if running else (JOG_SPEED if jogging else WALK_SPEED)
 
 	if test_speed > 0.0 and frames_left > 0:
 		body.global_position.x += test_speed * delta
@@ -424,7 +446,7 @@ func _physics_process(delta: float) -> void:
 		direction.y += float(Input.is_key_pressed(KEY_SPACE)) - float(Input.is_key_pressed(KEY_CTRL))
 		body.global_position += direction * FLY_SPEED * fast * delta
 	else:
-		var velocity: Vector3 = direction.normalized() * (run_speed if run_speed > 0.0 and test_walk else WALK_SPEED * fast)
+		var velocity: Vector3 = direction.normalized() * (run_speed if run_speed > 0.0 and test_walk else pace)
 
 		# Gravity only applies once there is ground below to land on. Fresh
 		# or far-off ground has no collision yet, so wait for it; a player who
@@ -512,9 +534,22 @@ func _process(_delta: float) -> void:
 			float(stream.bytes_received) / 1048576.0, stream.pending(), Engine.get_frames_per_second(), str(body.global_position.round())
 		])
 
-	var mode: String = ("flying" if flying else "walking") + (" (underwater)" if underwater else "") + (" (waiting for ground)" if waiting_for_ground and not flying else "")
+	var mode: String = ""
+
+	if flying:
+		mode = "flying"
+	elif running:
+		mode = "Running"
+	elif jogging:
+		mode = "Jogging"
+
+	if underwater:
+		mode = (mode + " (underwater)").strip_edges()
+
+	if waiting_for_ground and not flying:
+		mode = (mode + " (waiting for ground)").strip_edges()
 	_mode_label.text = mode
-	hud.text = "build 11  %d fps\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
+	hud.text = "build 12  %d fps\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
 		Engine.get_frames_per_second(),
 		stream.blocks_received, float(stream.bytes_received) / 1048576.0, cache.hits, flora.instances, flora.colliders,
 		body.global_position.x, body.global_position.y, body.global_position.z

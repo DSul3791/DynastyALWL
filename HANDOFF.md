@@ -14,6 +14,7 @@ A multiplayer medieval survival and town-building game: Godot 4.7.2 (custom buil
 
 | File | What it holds |
 |---|---|
+| `CONTROLS.md` | The player controls, now and planned. Update it when a control changes |
 | `DESIGN_IDEAS.md` | The whole game design (16 sections), every decision tagged [Decided] / [Proposed] / [Idea] / [Open]. The permanent home for ideas to raise in design discussions and fold in when they fit; "(brainstorm)" marks ideas from the owner's ChatGPT sessions |
 | `DESIGN_REJECTED.md` | Ideas the owner rejected (log them here automatically) |
 | `DESIGN_PRINCIPLES.md` | Underlying philosophy (safe, kind, generous; do it yourself or hire it out; nobody is forced to build a town) |
