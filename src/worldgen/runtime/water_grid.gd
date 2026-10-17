@@ -63,6 +63,10 @@ static func _level_at(generator, data, x: float, z: float, spacing: float) -> fl
 	return level if source.water_class[k] > 1 and not is_nan(level) else NAN
 
 
+# How far (in grid steps) a hole in a river may be closed. Steep falls leave long holes.
+const GAP_STEPS := 6
+
+
 # Rivers are one or two samples wide and the baked map leaves holes along
 # them, mostly where the line steps sideways. A dry point with water on
 # both sides of it (up to three steps away, up and down or left and right,
@@ -70,20 +74,35 @@ static func _level_at(generator, data, x: float, z: float, spacing: float) -> fl
 static func _gap_level(generator, data, x: float, z: float, spacing: float) -> float:
 	for axis in [Vector2(0, 1), Vector2(1, 0)]:
 		var across: Vector2 = Vector2(axis.y, axis.x)
+		var a: float = NAN
+		var da: int = 0
 
-		for before in [1, 2, 3]:
-			for side_a in [-1, 0, 1]:
-				var a: float = _level_at(generator, data, x + (across.x * side_a - axis.x * before) * spacing, z + (across.y * side_a - axis.y * before) * spacing, spacing)
+		for before in range(1, GAP_STEPS + 1):
+			for side_a in [0, -1, 1]:
+				a = _level_at(generator, data, x + (across.x * side_a - axis.x * before) * spacing, z + (across.y * side_a - axis.y * before) * spacing, spacing)
 
-				if is_nan(a):
-					continue
+				if not is_nan(a):
+					break
 
-				for after in [1, 2, 3]:
-					for side_b in [-1, 0, 1]:
-						var b: float = _level_at(generator, data, x + (across.x * side_b + axis.x * after) * spacing, z + (across.y * side_b + axis.y * after) * spacing, spacing)
+			if not is_nan(a):
+				da = before
+				break
 
-						if not is_nan(b):
-							return (a + b) * 0.5
+		if is_nan(a):
+			continue
+
+		for after in range(1, GAP_STEPS + 1):
+			for side_b in [0, -1, 1]:
+				var b: float = _level_at(generator, data, x + (across.x * side_b + axis.x * after) * spacing, z + (across.y * side_b + axis.y * after) * spacing, spacing)
+
+				if not is_nan(b):
+					# A long hole is only a waterfall when the two ends differ in height;
+					# level water far apart is separate water with land between.
+					if da + after > 4 and absf(a - b) < 1.5:
+						break
+
+					# Nearer end counts more, so a long drop slopes instead of stepping.
+					return lerpf(a, b, float(da) / float(da + after))
 
 	return NAN
 
