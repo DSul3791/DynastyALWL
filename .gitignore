@@ -20,4 +20,13 @@ worlds/*/tiles/*
 # Except the starter tile, so every session has it without rebaking (about 9 MB;
 # each rebake adds that much to the history, so commit it only after real changes).
 !worlds/base_world/tiles/tile_3_4.tile
+# The eight neighbors of the starter tile too (owner commits all nine after a bake).
+!worlds/base_world/tiles/tile_2_3.tile
+!worlds/base_world/tiles/tile_2_4.tile
+!worlds/base_world/tiles/tile_2_5.tile
+!worlds/base_world/tiles/tile_3_3.tile
+!worlds/base_world/tiles/tile_3_5.tile
+!worlds/base_world/tiles/tile_4_3.tile
+!worlds/base_world/tiles/tile_4_4.tile
+!worlds/base_world/tiles/tile_4_5.tile
 godot_path.txt
