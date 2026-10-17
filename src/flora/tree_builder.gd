@@ -228,13 +228,13 @@ static func _conifer(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: floa
 	var tint: Color = BARK_TINT_SOFT
 	var lean: Vector2 = Vector2(rng.randf_range(-0.03, 0.03), rng.randf_range(-0.03, 0.03)) * h
 	var centers: Array = _trunk(bark, rng, h * 0.95, trunk, trunk * 0.12, lean, tint, 5 if far else 7, 1 if far else 3, 0.0 if far else 0.8)
-	var tiers: int = 6 if far else rng.randi_range(11, 13)
-	var per: int = 5 if far else 8
+	var tiers: int = 7 if far else rng.randi_range(15, 17)
+	var per: int = 6 if far else 12
 
 	for t in range(tiers):
 		var f: float = float(t) / float(tiers - 1)
 		var y: float = lerpf(h * 0.16, h * 0.9, f) + rng.randf_range(-0.04, 0.04) * h
-		var reach: float = crown * 1.25 * pow(1.0 - f, 0.8) + crown * 0.15
+		var reach: float = crown * 1.3 * pow(1.0 - f, 0.8) + crown * 0.2
 		var center: Vector3 = Vector3(lean.x * pow(y / h, 2.0), y, lean.y * pow(y / h, 2.0))
 		var phase: float = rng.randf() * TAU
 		var shade: float = lerpf(0.62, 1.0, f) * rng.randf_range(0.9, 1.06)
@@ -252,7 +252,7 @@ static func _conifer(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: floa
 			var up: Vector3 = out.cross(Vector3.UP).normalized()
 			var normal: Vector3 = (out * 0.5 + Vector3.UP * 0.85).normalized()
 			# Two cards per bough (flat and tilted) so it has body from any angle.
-			acc_bough(leaves, mid, right, up, length * 0.5, reach * 0.8, normal, color)
+			acc_bough(leaves, mid, right, up, length * 0.5, reach * 0.95, normal, color)
 			acc_bough(leaves, mid, right, (up + Vector3.UP * 0.9).normalized(), length * 0.5, reach * 0.55, normal, color)
 
 

@@ -24,7 +24,10 @@ const KIND_SHRUB := 1
 const KIND_PLANT := 2
 const AUTUMN: Array[Color] = [
 	Color(0.80, 0.66, 0.24), Color(0.76, 0.54, 0.20), Color(0.78, 0.43, 0.18), Color(0.70, 0.31, 0.16),
-	Color(0.60, 0.22, 0.16), Color(0.46, 0.17, 0.14), Color(0.66, 0.48, 0.22)
+	Color(0.60, 0.22, 0.16), Color(0.46, 0.17, 0.14), Color(0.66, 0.48, 0.22),
+	# The bright ones: lemon yellow, burning orange, flame and scarlet red.
+	Color(0.98, 0.82, 0.10), Color(1.00, 0.72, 0.08), Color(1.00, 0.46, 0.04), Color(0.96, 0.30, 0.04),
+	Color(0.92, 0.12, 0.06), Color(0.82, 0.07, 0.09), Color(0.98, 0.78, 0.12), Color(1.00, 0.40, 0.06)
 ]
 
 const FOLIAGE_SHADER := """
