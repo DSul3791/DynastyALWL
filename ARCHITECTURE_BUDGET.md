@@ -58,7 +58,7 @@ view distance, ground detail rings, flora density and distance, tree detail leve
 - **Meshing on few cores.** Ground meshes are built on background threads; a 4-core CPU also runs physics and the game. Running fast needs ground ready quickly (*[Measured]* fixed with 4 collision rings); on a slow CPU it may lag again. *[Risk]*
 - **Water and tint effects** (smooth surface, underwater fog) are cheap now but will grow with realistic water; keep a flat-water fallback.
 - **Client cache size.** It is capped at 2048 MB, which is fine on a hard drive; make it a setting.
-- **Server-side speed.** Blocks not yet built on the server arrive late for everyone; low-tier players feel it most because their clients cannot hide it. Pre-building the starter ground (step 4 below) helps all tiers.
+- **Server-side speed.** Blocks not yet built on the server arrive late for everyone; low-tier players feel it most because their clients cannot hide it. The server's background builder around players (*[Measured]*) is the answer, not a big pre-build (Section 7).
 
 ## 5. Modeled and procedural assets
 
@@ -75,5 +75,15 @@ Owner art direction: Valheim or better, storybook look, heroic characters with a
 1. **Real-hardware measurement at the playtest**, including one machine matching the low tier (1050-class, 8 GB, SATA drive). Frame time split (CPU vs GPU), memory, and load times from a hard drive and a SATA SSD. Everything above is a target until then.
 2. **Tree levels of detail and variants.** Biggest GPU and memory lever; set the model and detail-level format before any art is made.
 3. **A quality setting and per-tier budgets in code** (view distance, flora density, shadow and water quality) so one setting scales the game from the 1050-class minimum to high end.
-4. **Pre-build coarse ground for the nine starter tiles**, with full detail near the town (*[Measured]* about 9 hours and 24 GB for coarse levels; full detail costs far more, about 2-5 hours and 6-12 GB per tile), so players never wait on the server.
+4. **Cache size limit and a clear-cache control** on the client (see Section 7), so the grown cache never fills a small drive.
 5. **Frame-time and memory readout in the game HUD**, so every later change shows its cost right away.
+
+## 7. Install size and growth (owner decision, 2026-10-17: **[Decided]**)
+
+No big pre-build. The install download stays as light as possible. Ground is built and saved as the player travels, so the local data grows with where that player has been. (The measured 24 GB pre-build estimate for nine tiles is shelved; the prebuild tool stays for tests.)
+
+What this means for the low tier (8 GB RAM, SATA drive) *[Practice]*:
+- **Small install, growing cache.** Only the game and a small starter set ship; the rest is cached on first visit. First visits to new ground are the slow moments, so the server's background builder around each player and the ground-under-the-player priority matter most there.
+- **Cache size limit.** Keep the existing client cache cap (2 GB now) as a setting. Suggested defaults: Low 1 GB, Mid 4 GB, High 10 GB. When full, drop the least recently visited blocks first.
+- **A clear-cache button** in settings, with the current cache size shown, so a player can free disk without reinstalling. Nothing is lost: the ground is rebuilt or re-sent when visited again.
+- **Hard drives:** write the cache in large batches off the main thread, so saving never causes hitches.

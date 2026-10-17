@@ -24,6 +24,7 @@ A multiplayer medieval survival and town-building game: Godot 4.7.2 (custom buil
 
 ## Working rules
 
+- Install size (owner, 2026-10-17, decided): no big pre-build of the world. Keep the download light; ground is built and saved as the player travels, so local data grows with exploration. Client cache needs a size limit and a clear button (`ARCHITECTURE_BUDGET.md` Section 7).
 - Art direction (owner, 2026-10-17, `DESIGN_IDEAS.md` Section 1): Valheim or better, ultra-realistic water, weather and lighting, old fantasy book illustration world, heroic slightly cartoonish characters. A direction only; do not change visuals for it yet.
 - Every decision goes in `DESIGN_IDEAS.md` with a status tag. The newest user statement wins.
 - The owner brainstorms design with ChatGPT, which uploads `DESIGN_IDEAS_BY_CHATGPT.md` to the repo root. Only when the owner asks: read it, fold each idea into the matching section of `DESIGN_IDEAS.md` tagged [Idea] / [Proposed] / [Open] with "(brainstorm)" (unapproved ideas to discuss), join overlapping entries, flag conflicts with `DESIGN_PRINCIPLES.md` and `DESIGN_REJECTED.md`, delete the file, commit, and tell the owner briefly.
