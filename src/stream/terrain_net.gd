@@ -19,14 +19,11 @@ extends Node
 #                                      so the server makes the ground ahead of and under them first
 #   client -> server  cut_flora        remove one flora item (test harvest)
 #   server -> client  flora_cut        a flora item was removed
-#   client -> server  clear_ground     throw the generated ground away (only honoured from the
-#                                      same computer: the options menu's Clear saved ground)
-#   server -> client  ground_cleared   done; the client clears its own cache and reloads
 #
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 6
+const PROTOCOL_VERSION := 5
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -39,8 +36,6 @@ signal flora_received(chunk: Vector2i, bytes: PackedByteArray, water: PackedByte
 signal position_reported(peer_id: int, position: Vector3, velocity: Vector3)
 signal cut_flora_requested(peer_id: int, chunk: Vector2i, id: int)
 signal flora_cut_received(chunk: Vector2i, id: int)
-signal clear_ground_requested(peer_id: int)
-signal ground_cleared_received()
 
 
 @rpc("authority", "call_remote", "reliable")
@@ -101,13 +96,3 @@ func flora_cut(chunk: Vector2i, id: int) -> void:
 func report_position(position: Vector3, velocity: Vector3) -> void:
 	if multiplayer.is_server():
 		position_reported.emit(multiplayer.get_remote_sender_id(), position, velocity.limit_length(2000.0))
-
-
-@rpc("any_peer", "call_remote", "reliable")
-func clear_ground() -> void:
-	clear_ground_requested.emit(multiplayer.get_remote_sender_id())
-
-
-@rpc("authority", "call_remote", "reliable")
-func ground_cleared() -> void:
-	ground_cleared_received.emit()

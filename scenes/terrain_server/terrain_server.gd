@@ -8,6 +8,9 @@ extends Node
 # Options (after "--"):
 #   --port=N        UDP port (default 24600)
 #   --world=DIR     world folder (default res://worlds/base_world)
+#   --clear-generated  throw away the generated ground at start (edits are kept);
+#                     while running, creating the file clear_generated.now in the
+#                     store folder does the same
 #   --store=DIR     server store folder (default user://server_store/<world name>)
 #   --threads=N     worker threads making blocks (default: processor count - 1)
 #   --quit-after=S  stop after S seconds (headless checks)
@@ -67,6 +70,11 @@ var _idle_built: int = 0
 var _aim: Dictionary = {}              # peer -> Vector2 ground point to make first (metres), from reported position and speed
 
 
+var _clear_generated_at_start: bool = false
+var _flag_check_msec: int = 0
+var _store_path: String = ""
+
+
 func _ready() -> void:
 	net = $TerrainNet
 	var port: int = 24600
@@ -79,6 +87,8 @@ func _ready() -> void:
 			port = int(argument.trim_prefix("--port="))
 		elif argument.begins_with("--world="):
 			world_dir = argument.trim_prefix("--world=")
+		elif argument == "--clear-generated":
+			_clear_generated_at_start = true
 		elif argument.begins_with("--store="):
 			store_dir = argument.trim_prefix("--store=")
 		elif argument.begins_with("--threads="):
@@ -108,7 +118,12 @@ func _ready() -> void:
 	if store_dir == "":
 		store_dir = "user://server_store/%s" % settings.world_name.validate_filename()
 
+	_store_path = store_dir
 	var problem: String = store.setup(generator, store_dir)
+
+	if _clear_generated_at_start:
+		store.clear_generated()
+		print("server: cleared the generated ground as asked (--clear-generated)")
 
 	if problem != "":
 		push_error("Terrain server: %s" % problem)
@@ -130,7 +145,6 @@ func _ready() -> void:
 
 	multiplayer.multiplayer_peer = peer
 	multiplayer.peer_connected.connect(_on_peer_connected)
-	net.clear_ground_requested.connect(_on_clear_ground)
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
 	net.blocks_requested.connect(_on_blocks_requested)
 	net.dig_requested.connect(_on_dig_requested)
@@ -171,19 +185,6 @@ func _spawn_point(world_dir: String) -> Vector3:
 
 	point.y = maxf(generator.surface_height(point.x, point.z), 0.0) + 2.0
 	return point
-
-
-# The options menu's "Clear saved ground", honoured only from this computer.
-func _on_clear_ground(peer_id: int) -> void:
-	var peer: ENetPacketPeer = (multiplayer.multiplayer_peer as ENetMultiplayerPeer).get_peer(peer_id)
-
-	if peer == null or not (peer.get_remote_address() in ["127.0.0.1", "::1", "::ffff:127.0.0.1"]):
-		print("server: refused a clear-ground request from peer %d (not this computer)" % peer_id)
-		return
-
-	store.clear_generated()
-	print("server: cleared the generated ground as asked by peer %d" % peer_id)
-	net.ground_cleared.rpc_id(peer_id)
 
 
 func _on_peer_connected(peer_id: int) -> void:
@@ -348,6 +349,16 @@ func _process(_delta: float) -> void:
 			_send(peer_id, batches[peer_id])
 
 	var now: int = Time.get_ticks_msec()
+
+	var flag_path: String = _store_path + "/clear_generated.now"
+
+	if now >= _flag_check_msec:
+		_flag_check_msec = now + 3000
+
+		if FileAccess.file_exists(flag_path):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(flag_path))
+			store.clear_generated()
+			print("server: cleared the generated ground as asked (clear_generated.now)")
 
 	if now >= _report_at_msec:
 		_report_at_msec = now + 10000

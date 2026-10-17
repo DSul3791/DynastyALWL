@@ -83,7 +83,6 @@ var _inspect_label: Label            # what the player is looking at (inspection
 var inspecting: bool = false
 var test_clear: bool = false          # --test-clear: press Clear saved ground 12 s after the welcome
 var _test_clear_done: bool = false
-var _clearing: bool = false
 var menu_open: bool = false          # the Esc options menu
 var _menu: Control
 var _menu_pages: Dictionary = {}     # page name -> VBoxContainer
@@ -177,7 +176,6 @@ func _ready() -> void:
 	net.welcome_received.connect(_on_welcome)
 	net.blocks_received.connect(_on_blocks)
 	net.tile_changed_received.connect(_on_tile_changed)
-	net.ground_cleared_received.connect(_on_ground_cleared)
 	net.dug_received.connect(_on_dug)
 	net.flora_received.connect(_on_flora)
 	net.flora_cut_received.connect(_on_flora_cut)
@@ -593,24 +591,10 @@ func _set_menu(open: bool) -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
-# "Clear saved ground": the server (if it runs on this computer) forgets its
-# generated ground, then this client drops its saved copy and reloads the
-# terrain, so bad blocks are gone at once.
+# "Clear saved ground": this client drops its own saved copy and reloads the
+# terrain. The server's own saved ground is the server's business (its
+# --clear-generated option); a client never clears it.
 func _ask_clear_cache() -> void:
-	_clearing = true
-	_menu_note.text = "Clearing the saved ground..."
-	net.clear_ground.rpc_id(1)
-	# A server on another computer ignores the request: clear this side anyway.
-	get_tree().create_timer(4.0).timeout.connect(func():
-		if _clearing:
-			_on_ground_cleared())
-
-
-func _on_ground_cleared() -> void:
-	if not _clearing:
-		return
-
-	_clearing = false
 	cache.clear_all()
 	stream.close()
 	stream = StreamScript.new()
@@ -962,7 +946,7 @@ func _process(delta: float) -> void:
 		total_ms += ms
 
 	var avg_ms: float = total_ms / maxf(float(_frame_ms.size()), 1.0)
-	hud.text = "build 21  %d fps  avg %.1f ms  worst %.1f ms  quality %s (F2)\nmem %.0f MB\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
+	hud.text = "build 22  %d fps  avg %.1f ms  worst %.1f ms  quality %s (F2)\nmem %.0f MB\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
 		Engine.get_frames_per_second(), avg_ms, worst_ms, QUALITY_NAMES[quality],
 		float(OS.get_static_memory_usage()) / 1048576.0,
 		stream.blocks_received, float(stream.bytes_received) / 1048576.0, cache.hits, flora.instances, flora.colliders,
