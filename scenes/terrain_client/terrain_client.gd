@@ -54,6 +54,7 @@ var flying: bool = false
 var underwater: bool = false
 var waiting_for_ground: bool = false
 var _tint: ColorRect
+var _mode_label: Label
 var _environment: Environment
 var pitch: float = 0.0
 var frames_left: int = -1
@@ -206,6 +207,15 @@ func _on_welcome(info: Dictionary) -> void:
 	_tint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tint.visible = false
 	layer.add_child(_tint)
+	_mode_label = Label.new()
+	_mode_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_mode_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_mode_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_mode_label.add_theme_font_size_override("font_size", 48)
+	_mode_label.add_theme_constant_override("outline_size", 8)
+	_mode_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
+	_mode_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(_mode_label)
 	hud = Label.new()
 	hud.position = Vector2(12.0, 12.0)
 	layer.add_child(hud)
@@ -478,8 +488,10 @@ func _process(_delta: float) -> void:
 			float(stream.bytes_received) / 1048576.0, stream.pending(), Engine.get_frames_per_second(), str(body.global_position.round())
 		])
 
-	hud.text = "build 6   %d fps   %s\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
-		Engine.get_frames_per_second(), ("flying" if flying else "walking") + (" (underwater)" if underwater else "") + (" (waiting for ground)" if waiting_for_ground and not flying else ""),
+	var mode: String = ("flying" if flying else "walking") + (" (underwater)" if underwater else "") + (" (waiting for ground)" if waiting_for_ground and not flying else "")
+	_mode_label.text = mode
+	hud.text = "build 7   %d fps\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
+		Engine.get_frames_per_second(),
 		stream.blocks_received, float(stream.bytes_received) / 1048576.0, cache.hits, flora.instances, flora.colliders,
 		body.global_position.x, body.global_position.y, body.global_position.z
 	]
