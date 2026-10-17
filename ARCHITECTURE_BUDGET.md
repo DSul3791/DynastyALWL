@@ -35,13 +35,30 @@ Rules of thumb: the server decides, the client draws. Never send what the client
 
 ## 4. Target per player machine (all *[Practice]* targets, to be measured at the playtest)
 
-| Tier | Example | Frame rate | Game memory | View distance | Notes |
-|---|---|---|---|---|---|
-| Low | Older laptop, integrated graphics | 30 fps steady | up to 4 GB | short, trees fade early | Fewer tree variants, no volumetric weather, simple water |
-| Mid | 4-6 year old desktop, mid graphics card | 60 fps | up to 8 GB | medium | Full instancing, shadows near, nice water |
-| High | Current graphics card | 60-144 fps | up to 16 GB | long | Best lighting, weather, water, extra detail |
+**Owner's minimum (2026-10-17):** an old GTX/RTX 1050-class graphics card, 8 GB of RAM and a SATA drive (SSD or spinning hard drive) must be able to enjoy the game, and high-end machines must also be well served. Ray tracing is not in scope now.
 
-The existing decision still holds: the client stays light enough for older computers. One quality setting should move all of these together.
+| Tier | Machine | Frame rate | Game RAM / video memory | View distance | Notes |
+|---|---|---|---|---|---|
+| **Low (the minimum)** | GTX/RTX 1050-class (2-4 GB video memory), 8 GB RAM, 4-core CPU, SATA SSD or HDD, 1080p | 30 fps steady, never below 20 | Game up to 3.5 GB RAM (the system and browser need the rest); up to 1.5 GB video memory | Short; trees fade early, far ground is coarse | One shadow level or none, simple water (no reflections), fewer tree variants, density of grass and small plants cut, light weather effects, no volumetrics |
+| Mid | 4-6 year old desktop, mid graphics card, 16 GB | 60 fps | up to 6 GB RAM, 4 GB video | Medium | Full instancing, near shadows, nicer water |
+| High | Current graphics card, 16-32 GB | 60-144 fps | up to 10 GB RAM, 8+ GB video | Long | Best lighting, weather, water, extra detail |
+
+Ray tracing: **[Future option]**. Keep lighting and water behind a quality setting so a ray-traced path can be added later for high-end cards without touching the low tier.
+
+### Quality settings that scale between low and high
+
+One master setting (Low, Medium, High, Ultra) sets a bundle of individual sliders, which players can still change:
+view distance, ground detail rings, flora density and distance, tree detail level, shadow quality, water quality (flat, animated, reflective), weather and lighting effects, texture size, and the size of the client cache. The game picks a starting tier from the detected graphics card and memory. Every new feature must say what it does at Low before it is accepted. *[Practice]*
+
+### What in the current build is risky for the low tier
+
+- **Loading hitches from SATA.** The client reads blocks from its disk cache (*[Measured]* 11,928 blocks, 14.6 MB, from cache). A hard drive is slow at many small reads, and a SATA SSD is still far slower than the fast drives we may be assuming. Reads must stay on background threads, in larger batches, ahead of the player. Not yet tested on slow disks. *[Risk]*
+- **Memory.** *[Measured]* 125,671 flora items held and 23,949 drawn near spawn. That is fine now, but the full forest of nine tiles plus modeled trees may press 8 GB. Needs a measured memory ceiling and a flora density setting. *[Risk]*
+- **Draw load.** 23,949 drawn items on an old card at 1080p with shadows could drop below 30 fps. Tree distance fade and a density setting are needed. We have only run headless, so this is unmeasured. *[Risk]*
+- **Meshing on few cores.** Ground meshes are built on background threads; a 4-core CPU also runs physics and the game. Running fast needs ground ready quickly (*[Measured]* fixed with 4 collision rings); on a slow CPU it may lag again. *[Risk]*
+- **Water and tint effects** (smooth surface, underwater fog) are cheap now but will grow with realistic water; keep a flat-water fallback.
+- **Client cache size.** It is capped at 2048 MB, which is fine on a hard drive; make it a setting.
+- **Server-side speed.** Blocks not yet built on the server arrive late for everyone; low-tier players feel it most because their clients cannot hide it. Pre-building the starter ground (step 4 below) helps all tiers.
 
 ## 5. Modeled and procedural assets
 
@@ -55,8 +72,8 @@ Owner art direction: Valheim or better, storybook look, heroic characters with a
 
 ## 6. Most valuable next steps, in order
 
-1. **Real-hardware measurement at the playtest.** Frame time split (CPU vs GPU), memory, and load times on at least one low and one mid machine. Everything above is a target until then.
+1. **Real-hardware measurement at the playtest**, including one machine matching the low tier (1050-class, 8 GB, SATA drive). Frame time split (CPU vs GPU), memory, and load times from a hard drive and a SATA SSD. Everything above is a target until then.
 2. **Tree levels of detail and variants.** Biggest GPU and memory lever; set the model and detail-level format before any art is made.
-3. **A quality setting and per-tier budgets in code** (view distance, flora density, shadow and water quality) so one slider scales the game.
+3. **A quality setting and per-tier budgets in code** (view distance, flora density, shadow and water quality) so one setting scales the game from the 1050-class minimum to high end.
 4. **Pre-build coarse ground for the nine starter tiles**, with full detail near the town (*[Measured]* about 9 hours and 24 GB for coarse levels; full detail costs far more, about 2-5 hours and 6-12 GB per tile), so players never wait on the server.
 5. **Frame-time and memory readout in the game HUD**, so every later change shows its cost right away.
