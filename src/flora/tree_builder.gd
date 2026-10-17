@@ -191,7 +191,7 @@ static func _broadleaf(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: fl
 	var top: Vector3 = centers[centers.size() - 1]
 	# Short clear trunk, then one dense, full, egg-shaped crown from about a quarter of
 	# the height to the top, like a street maple; a few limbs show through.
-	var base_y: float = h * 0.26
+	var base_y: float = h * 0.36
 	var limbs: int = 5 if far else rng.randi_range(9, 11)
 	var size_base: float = crown * (0.95 if far else 0.6)
 
@@ -215,6 +215,7 @@ static func _broadleaf(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: fl
 			var t: float = lerpf(0.3, 1.0, float(m) / float(along - 1))
 			var p: Vector3 = start.lerp(tip, t)
 			p += Vector3(rng.randfn(), rng.randfn() * 0.5, rng.randfn()) * crown * 0.12
+			p.y = maxf(p.y, base_y + crown * 0.5)
 			var vf: float = clampf((p.y - base_y) / (h - base_y), 0.0, 1.0)
 			var shade: float = lerpf(0.55, 1.0, vf) * rng.randf_range(0.9, 1.08)
 			_clump(leaves, rng, p, Vector3(start.x, p.y - crown * 0.3, start.z), size_base * rng.randf_range(0.9, 1.3), shade, 2 if far else 3)
@@ -228,7 +229,7 @@ static func _conifer(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: floa
 	var tint: Color = BARK_TINT_SOFT
 	var lean: Vector2 = Vector2(rng.randf_range(-0.03, 0.03), rng.randf_range(-0.03, 0.03)) * h
 	var centers: Array = _trunk(bark, rng, h * 0.95, trunk, trunk * 0.12, lean, tint, 5 if far else 7, 1 if far else 3, 0.0 if far else 0.8)
-	var tiers: int = 11 if far else rng.randi_range(18, 20)
+	var tiers: int = 11 if far else rng.randi_range(24, 27)
 	var per: int = 7 if far else 12
 	# Each tree is its own build of the arrowhead: slim and steep like a spruce, or
 	# fuller and flatter like a fir, so a stand never looks cloned.
@@ -239,7 +240,8 @@ static func _conifer(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: floa
 		var f: float = float(t) / float(tiers - 1)
 		# Spacing shrinks with the tiers, matching their width, so the tip stays solid.
 		var y: float = lerpf(h * 0.12, h * 0.97, 1.0 - pow(1.0 - f, 1.9))
-		var reach: float = crown * 1.2 * slim * pow(1.0 - f, 0.95) + crown * 0.06
+		# Boughs grow with the tree's height (big old firs get massive), not a fixed size.
+		var reach: float = maxf(crown * 1.2, h * 0.17) * slim * pow(1.0 - f, 0.95) + crown * 0.06
 		var center: Vector3 = Vector3(lean.x * pow(y / h, 2.0), y, lean.y * pow(y / h, 2.0))
 		var phase: float = rng.randf() * TAU
 		var shade: float = lerpf(0.62, 1.0, f) * rng.randf_range(0.9, 1.06)
