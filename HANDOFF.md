@@ -8,7 +8,7 @@ Steps 14, 15 and 16 first versions are done (2026-10-16): the runtime terrain ge
 
 ## What this is
 
-A multiplayer medieval survival and town-building game: Godot 4.7.2 (custom build with Voxel Tools 1.7 compiled in), GDScript, built for weak hardware (older quad-core, 8 GB RAM, SATA SSD). Owner: David Sullivan. Repo `DSul3791/WorldGeneratorV1` (it moved from `WorldGeneratorv1`). Work happens on branch `claude/generator-v2`. Never touch `main`.
+A multiplayer medieval survival and town-building game: Godot 4.7.2 (custom build with Voxel Tools 1.7 compiled in), GDScript, built for weak hardware (older quad-core, 8 GB RAM, SATA SSD). Owner: David Sullivan. Repo `DSul3791/DynastyALWL` (renamed from `WorldGeneratorV1`, which was earlier `WorldGeneratorv1`). Work happens on branch `claude/generator-v2`. Never touch `main`.
 
 ## Where things are
 
@@ -81,7 +81,7 @@ Baked tiles for the inner starters and their neighbors (36 files) are in `/mnt/p
 
 - **Your engine:** Godot 4.7.2 stable, a custom build (`ed1daf0bf`) with Voxel Tools 1.7 compiled into it. There is no add-on folder. The README and `GENERATION_GUIDE.md` use the console build of that executable.
 - **Cloud sessions** use a Linux build of the same engine (Godot 4.7.2 `ed1daf0bf` plus Voxel Tools 1.7, headless), made by `tools/build_godot_linux.sh` (about 30 minutes). A compressed copy is kept in the project folder at `/mnt/project-files/engine/godot-4.7.2-voxel1.7-linux-headless.xz`: unpack it with `xz -dc file > godot && chmod +x godot` instead of rebuilding. Plan step 1 is done.
-- **Git:** work on `claude/generator-v2`, push to `origin`. GitHub reports the repo moved to `DSul3791/WorldGeneratorV1`; the old address still works.
+- **Git:** work on `claude/generator-v2`, push to `origin`. The repo is `DSul3791/DynastyALWL` (renamed 2026-10-17); old addresses redirect.
 - **Python 3** is handy for small scripted edits and plan checks.
 
 ## Gotchas learned
