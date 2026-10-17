@@ -76,8 +76,8 @@ void fragment() {
 	color *= mix(vec3(1.06, 1.0, 0.86), vec3(0.92, 1.04, 0.94), large);
 
 	// Rock strata on steep faces: bands that wander with the surface.
-	float strata = vnoise(vec3(world_pos.x * 0.06, world_pos.y * 1.1 + large * 3.0, world_pos.z * 0.06));
-	color *= mix(1.0, 0.7 + 0.55 * strata, rock_mask);
+	float strata = vnoise(vec3(world_pos.x * 0.03, world_pos.y * 0.4 + large * 3.0, world_pos.z * 0.03));
+	color *= mix(1.0, 0.8 + 0.35 * strata, rock_mask);
 
 	// Sea bed and shallows: wet, muddy.
 	color = mix(vec3(0.07, 0.065, 0.05), color, smoothstep(-3.0, 0.0, world_pos.y));
