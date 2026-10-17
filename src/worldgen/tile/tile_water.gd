@@ -607,14 +607,44 @@ func _carve_guides(rivers: Array) -> void:
 		longest = maxf(longest, run_length)
 
 		if is_source:
-			# A spring pond at the head, its lower rim just upstream of the channel.
-			for k in range(mini(2, count)):
-				if usable[k] == 1:
-					# A broad shallow shelf first, then the deeper bowl on gentle banks, so the
-					# pond edge rolls smoothly into the hillside.
-					_stamp_at(carved, points[k], pond_width * 1.5, pond_depth * 0.35, beds[k] - 0.1, slope * 0.35, areas[k] / cell_km2, best_flow)
-					_stamp_at(carved, points[k], pond_width, pond_depth, beds[k] - 0.3, slope * 0.5, areas[k] / cell_km2, best_flow)
-					break
+			# A spring pond on the flattest ground near the head, held in by its own
+			# rim: the water level is the lowest point of the rim, so the pond cuts
+			# into the hillside on the uphill side and never floats on the downhill one.
+			var best_k: int = -1
+			var best_range: float = INF
+			var best_low: float = 0.0
+			var ring_cells: float = pond_width * 0.5 / spacing_m
+			var candidates: int = mini(count, int(160.0 / step_m) + 1)
+
+			for k in range(candidates):
+				if usable[k] == 0:
+					continue
+
+				var low: float = INF
+				var high: float = -INF
+				var inside: bool = true
+
+				for r in range(8):
+					var a_r: float = TAU * float(r) / 8.0
+					var at_r: Vector2 = points[k] + Vector2(cos(a_r), sin(a_r)) * ring_cells
+
+					if at_r.x < 1.0 or at_r.y < 1.0 or at_r.x > float(samples - 2) or at_r.y > float(samples - 2):
+						inside = false
+						break
+
+					var h_r: float = _bilinear(heights, at_r)
+					low = minf(low, h_r)
+					high = maxf(high, h_r)
+
+				if inside and high - low < best_range:
+					best_range = high - low
+					best_k = k
+					best_low = low
+
+			if best_k >= 0:
+				var scale: float = clampf(8.0 / maxf(best_range, 8.0), 0.45, 1.0)
+				var bed_level: float = best_low - 0.75 * pond_depth - 0.4
+				_stamp_at(carved, points[best_k], pond_width * scale, pond_depth, bed_level, slope * 0.4, areas[best_k] / cell_km2, best_flow)
 
 		# A plunge pool at the foot of every steep drop (waterfall or cascade):
 		# the water scours a basin where it lands.
