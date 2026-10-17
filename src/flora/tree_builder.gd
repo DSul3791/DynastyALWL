@@ -236,10 +236,14 @@ static func _conifer(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: floa
 	var slim: float = rng.randf_range(0.72, 1.12)
 	var sag: float = rng.randf_range(0.45, 0.8)
 
+	# The bottom 4 feet stay bare: the lowest bough tip hangs 1.3 m above the ground.
+	var widest: float = maxf(crown * 1.2, h * 0.17) * slim + crown * 0.06
+	var y_low: float = 1.3 + widest * sag
+
 	for t in range(tiers):
 		var f: float = float(t) / float(tiers - 1)
 		# Spacing shrinks with the tiers, matching their width, so the tip stays solid.
-		var y: float = lerpf(h * 0.12, h * 0.97, 1.0 - pow(1.0 - f, 1.9))
+		var y: float = lerpf(y_low, h * 0.97, 1.0 - pow(1.0 - f, 1.9))
 		# Boughs grow with the tree's height (big old firs get massive), not a fixed size.
 		var reach: float = maxf(crown * 1.2, h * 0.17) * slim * pow(1.0 - f, 0.95) + crown * 0.06
 		var center: Vector3 = Vector3(lean.x * pow(y / h, 2.0), y, lean.y * pow(y / h, 2.0))
