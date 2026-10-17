@@ -501,7 +501,7 @@ func _process(_delta: float) -> void:
 
 	var mode: String = ("flying" if flying else "walking") + (" (underwater)" if underwater else "") + (" (waiting for ground)" if waiting_for_ground and not flying else "")
 	_mode_label.text = mode
-	hud.text = "build 9   %d fps\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
+	hud.text = "build 10  %d fps\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
 		Engine.get_frames_per_second(),
 		stream.blocks_received, float(stream.bytes_received) / 1048576.0, cache.hits, flora.instances, flora.colliders,
 		body.global_position.x, body.global_position.y, body.global_position.z

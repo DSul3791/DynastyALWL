@@ -106,6 +106,24 @@ func load_block(buffer: VoxelBuffer, block: Vector3i, lod: int) -> void:
 	_count("generated")
 
 
+# Makes and saves a block nobody has asked for yet (idle pre-building).
+# Returns true when it had to be generated, false when it already existed
+# (as an edit or in the cache).
+func ensure_block(block: Vector3i, lod: int) -> bool:
+	var buffer: VoxelBuffer = Layout.make_buffer(BLOCK_SIZE)
+
+	if _edits.load_voxel_block(buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND:
+		return false
+
+	if _cache.load_voxel_block(buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND:
+		return false
+
+	generator.generate(buffer, block * (BLOCK_SIZE << lod), lod)
+	_cache.save_voxel_block(buffer, block, lod)
+	_count("generated")
+	return true
+
+
 # The block as it is sent to clients: buried ore hidden, compressed.
 func block_bytes(block: Vector3i, lod: int) -> PackedByteArray:
 	var buffer: VoxelBuffer = Layout.make_buffer(BLOCK_SIZE)

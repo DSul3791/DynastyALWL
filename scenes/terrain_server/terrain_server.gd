@@ -29,6 +29,9 @@ const FloraStoreScript := preload("res://src/stream/server_flora.gd")
 
 const MAX_BATCH_BYTES := 192 * 1024
 const MAX_QUEUE_PER_PEER := 20000
+const IDLE_LODS := 4                   # detail levels the idle builder keeps ahead of players
+const IDLE_RADIUS_BLOCKS := 12         # circle around each player, in blocks of that level
+const IDLE_MAX_DONE := 400000          # remembered built blocks (skips re-checking the store)
 
 var generator
 var store
@@ -55,6 +58,12 @@ var _empty_since_msec: int = 0
 var _quit_grace_msec: int = 10000
 var _never_joined: bool = true
 var _report_at_msec: int = 0
+var _idle_threads: int = 2             # idle builder threads (--idle-threads=N, 0 turns it off)
+var _idle_workers: Array = []
+var _idle_offsets: Array = []          # [lod, dx, dz] nearest first, same for every player
+var _idle_anchor: Dictionary = {}      # peer -> Vector3i LOD 0 block the player is at
+var _idle_done: Dictionary = {}        # Vector4i -> true, built or found saved
+var _idle_built: int = 0
 
 
 func _ready() -> void:
@@ -73,6 +82,8 @@ func _ready() -> void:
 			store_dir = argument.trim_prefix("--store=")
 		elif argument.begins_with("--threads="):
 			_max_running = maxi(int(argument.trim_prefix("--threads=")), 1)
+		elif argument.begins_with("--idle-threads="):
+			_idle_threads = maxi(int(argument.trim_prefix("--idle-threads=")), 0)
 		elif argument == "--quit-when-empty":
 			_quit_when_empty = true
 		elif argument.begins_with("--quit-after="):
@@ -130,6 +141,13 @@ func _ready() -> void:
 		thread.start(_worker_loop)
 		_workers.append(thread)
 
+	_make_idle_offsets()
+
+	for n in range(_idle_threads):
+		var idle: Thread = Thread.new()
+		idle.start(_idle_loop)
+		_idle_workers.append(idle)
+
 	print("Terrain server listening on port %d with %d worker threads; store %s; spawn %s" % [port, _max_running, store_dir, str(spawn)])
 
 
@@ -173,6 +191,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	])
 	_peers.erase(peer_id)
 	_queue_mutex.lock()
+	_idle_anchor.erase(peer_id)
 	_queue = _queue.filter(func(item): return item[0] != peer_id)
 	_prefetch = _prefetch.filter(func(item): return item[0] != peer_id)
 	_flora_queue = _flora_queue.filter(func(item): return item[0] != peer_id)
@@ -194,6 +213,9 @@ func _on_blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int) -> 
 		var state: String = _queued.get(id, "")
 
 		if n < urgent:
+			if key.w == 0:
+				_idle_anchor[peer_id] = Vector3i(key.x, key.y, key.z)
+
 			if state == "" or state == "p":
 				_queued[id] = "u"
 				_queue.append(id)
@@ -296,8 +318,8 @@ func _process(_delta: float) -> void:
 
 	if now >= _report_at_msec:
 		_report_at_msec = now + 10000
-		print("server: %d urgent and %d prefetch queued; generated %d, cache hits %d, edit hits %d; flora chunks %d made, %d from memory" % [
-			queued[0], queued[1], store.blocks_generated, store.cache_hits, store.edit_hits, flora.chunks_made, flora.memory_hits
+		print("server: %d urgent and %d prefetch queued; generated %d, cache hits %d, edit hits %d; flora chunks %d made, %d from memory; idle-built %d columns" % [
+			queued[0], queued[1], store.blocks_generated, store.cache_hits, store.edit_hits, flora.chunks_made, flora.memory_hits, _idle_built
 		])
 
 	if _quit_when_empty and _quit_at_msec < 0:
@@ -368,6 +390,119 @@ func _worker_loop() -> void:
 		_done_mutex.unlock()
 
 
+# Block offsets around a player, nearest first; each detail level covers a
+# circle of IDLE_RADIUS_BLOCKS blocks of its own size, so coarse levels reach
+# farther. Levels are interleaved by how far out in their own circle they are.
+func _make_idle_offsets() -> void:
+	var list: Array = []
+
+	for lod in range(IDLE_LODS):
+		for dz in range(-IDLE_RADIUS_BLOCKS, IDLE_RADIUS_BLOCKS + 1):
+			for dx in range(-IDLE_RADIUS_BLOCKS, IDLE_RADIUS_BLOCKS + 1):
+				var d: float = sqrt(float(dx * dx + dz * dz)) / float(IDLE_RADIUS_BLOCKS)
+
+				if d <= 1.0:
+					list.append([d + 0.01 * float(lod), lod, dx, dz])
+
+	list.sort_custom(func(a, b): return a[0] < b[0])
+	_idle_offsets = list.map(func(item): return [item[1], item[2], item[3]])
+
+
+# Idle thread: while no player is waiting for anything, makes and saves the
+# blocks around each player, starting with the ones closest to them. Real
+# requests always go first (checked before every block).
+func _idle_loop() -> void:
+	var cursors: Dictionary = {}       # peer -> [anchor, next offset index]
+
+	while true:
+		_queue_mutex.lock()
+		var stopping: bool = _stopping
+		var busy: bool = not (_queue.is_empty() and _prefetch.is_empty() and _flora_queue.is_empty())
+		var anchors: Dictionary = _idle_anchor.duplicate()
+		_queue_mutex.unlock()
+
+		if stopping:
+			return
+
+		if busy or anchors.is_empty():
+			OS.delay_msec(20)
+			continue
+
+		var worked: bool = false
+
+		for peer in anchors:
+			var anchor: Vector3i = anchors[peer]
+			var cursor: Array = cursors.get(peer, [Vector3i(), 0])
+
+			# Followed the player somewhere new: start again from the nearest blocks.
+			if (cursor[0] - anchor).length() > 2.0:
+				cursor = [anchor, 0]
+
+			var offset: Array = []
+
+			while cursor[1] < _idle_offsets.size():
+				offset = _idle_offsets[cursor[1]]
+				cursor[1] += 1
+
+				if _idle_prebuild_column(anchor, offset):
+					worked = true
+					break
+
+			cursors[peer] = cursor
+
+			if worked:
+				break
+
+		if not worked:
+			OS.delay_msec(100)
+
+
+# Makes the surface blocks of one column (one block above and below the
+# ground). True if it made anything.
+func _idle_prebuild_column(anchor: Vector3i, offset: Array) -> bool:
+	var lod: int = offset[0]
+	var block_m: float = float(16 << lod)
+	var bx: int = (anchor.x >> lod) + offset[1]
+	var bz: int = (anchor.z >> lod) + offset[2]
+	var key: Vector4i = Vector4i(bx, 0, bz, lod)
+
+	_queue_mutex.lock()
+	var seen: bool = _idle_done.has(key)
+
+	if _idle_done.size() >= IDLE_MAX_DONE:
+		_idle_done.clear()
+
+	_idle_done[key] = true     # claimed, so no other idle thread repeats it
+	_queue_mutex.unlock()
+
+	if seen:
+		return false
+
+	var low: float = INF
+	var high: float = -INF
+
+	for k in range(5):
+		var sx: float = (float(bx) + (0.5 if k == 4 else float(k % 2) * 0.99)) * block_m
+		var sz: float = (float(bz) + (0.5 if k == 4 else float(k / 2 % 2) * 0.99)) * block_m
+		var h: float = generator.surface_height(sx, sz)
+		low = minf(low, h)
+		high = maxf(high, h)
+
+	var made: bool = false
+
+	for by in range(int(floor(low / block_m)) - 1, int(floor(high / block_m)) + 2):
+		if store.ensure_block(Vector3i(bx, by, bz), lod):
+			made = true
+
+	_queue_mutex.lock()
+
+	if made:
+		_idle_built += 1
+
+	_queue_mutex.unlock()
+	return made
+
+
 func _exit_tree() -> void:
 	_queue_mutex.lock()
 	_stopping = true
@@ -377,6 +512,9 @@ func _exit_tree() -> void:
 		_work.post()
 
 	for thread in _workers:
+		thread.wait_to_finish()
+
+	for thread in _idle_workers:
 		thread.wait_to_finish()
 
 	if store != null:
