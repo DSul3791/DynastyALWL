@@ -978,7 +978,7 @@
 		"density": 1.0,
 		"patchiness": 0.9,
 		"patch_m": 160,
-		"view_m": {"tree": 900, "shrub": 300, "plant": 120},
+		"view_m": {"tree": 560, "shrub": 300, "plant": 120},
 		"collision_m": 160
 	}
 }

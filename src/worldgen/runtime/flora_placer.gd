@@ -25,6 +25,7 @@ extends RefCounted
 # Thread safe: chunk_items only reads.
 
 const KIND_TREE := 0
+const TREE_DENSITY := 2.0   # trees twice as many as the table's per-hectare figures
 const KIND_SHRUB := 1
 const KIND_PLANT := 2
 const KINDS := ["tree", "shrub", "plant"]
@@ -86,7 +87,7 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 
 		for name in entry["per_hectare"]:
 			if biome_ids.has(name):
-				var value: float = float(entry["per_hectare"][name]) * density
+				var value: float = float(entry["per_hectare"][name]) * density * (TREE_DENSITY if str(entry["kind"]) == "tree" else 1.0)
 				per_biome[biome_ids[name]] = value
 				peak = maxf(peak, value)
 
@@ -266,7 +267,9 @@ func chunk_items(chunk: Vector2i) -> Dictionary:
 
 				result["ids"].append((species_id << 16) | (cz * count + cx))
 				result["positions"].append(Vector3(x, y, z))
-				result["heights"].append(lerpf(item["height_min"], item["height_max"], size))
+				# Trees get an extra stable height spread (young and stunted to veteran) on top of the table's range.
+				var spread: float = lerpf(0.62, 1.12, rng_pick(x + 7.0, z + 3.0, species_id)) if item["kind"] == KIND_TREE else 1.0
+				result["heights"].append(lerpf(item["height_min"], item["height_max"], size) * spread)
 				result["yaws"].append(yaw)
 
 	return result

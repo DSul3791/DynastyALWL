@@ -24,7 +24,7 @@ const GRASS_SOILS := {3: 0.9, 4: 0.5, 5: 1.0, 6: 0.7, 7: 1.0, 8: 0.6, 9: 0.3}
 const LAYERS := [
 	{"name": "cover", "texture": "ground_cover", "width": 0.7, "height": 0.0, "per_point": 5, "reach": 0.45, "quads": 0, "wind": 0.0},
 	{"name": "short", "texture": "grass_short", "width": 0.60, "height": 0.40, "per_point": 3, "reach": 0.85, "quads": 3, "wind": 1.0},
-	{"name": "tall", "texture": "grass_tall", "width": 0.50, "height": 0.95, "per_point": 1, "reach": 1.0, "quads": 2, "wind": 1.4},
+	{"name": "tall", "texture": "grass_tall", "width": 0.45, "height": 0.75, "per_point": 1, "reach": 1.0, "quads": 2, "wind": 1.4},
 ]
 
 const SHADER := """
@@ -323,8 +323,8 @@ func _build(cell: Vector2i) -> int:
 						continue
 
 					var at: Vector3 = point + Vector3(rng.randf_range(-0.5, 0.5) * spacing, 0.0, rng.randf_range(-0.5, 0.5) * spacing) * 0.95
-					var size: float = rng.randf_range(0.75, 1.3)
-					var basis: Basis = Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(size, size * rng.randf_range(0.75, 1.25), size))
+					var size: float = rng.randf_range(0.75, 1.15)
+					var basis: Basis = Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(size, size * rng.randf_range(0.8, 1.15), size))
 					transforms[layer].append(Transform3D(basis, at - Vector3(0.0, 0.03, 0.0)))
 					var shade: float = rng.randf_range(0.82, 1.15)
 					var tone: Color = green

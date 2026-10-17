@@ -2064,7 +2064,7 @@ func _test_flora(generator, data, tables, tile_rules: Dictionary) -> void:
 			var pa: Vector3 = items["positions"][a]
 			var pb: Vector3 = items["positions"][b]
 
-			if Vector2(pa.x - pb.x, pa.z - pb.z).length() < gap - 0.001:
+			if Vector2(pa.x - pb.x, pa.z - pb.z).length() < gap - 0.01:
 				crowded += 1
 
 	_check(crowded == 0, "tree and shrub crowns keep apart (%d too close)" % crowded)

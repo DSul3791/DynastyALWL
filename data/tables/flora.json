@@ -1186,8 +1186,8 @@
 			"kind": "plant",
 			"shape": "grass",
 			"height_m": [
-				0.6,
-				1.4
+				0.5,
+				1.0
 			],
 			"crown_m": 0.4,
 			"trunk_m": 0.0,
