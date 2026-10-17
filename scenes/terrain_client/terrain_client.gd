@@ -32,6 +32,7 @@ const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const FloraViewScript := preload("res://src/flora/flora_view.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
+const GrassViewScript := preload("res://src/client/grass_view.gd")
 const GroundMaterialScript := preload("res://src/client/ground_material.gd")
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 
@@ -43,6 +44,8 @@ const VIEW_DISTANCE := 2048
 const QUALITY_NAMES := ["Low", "Medium", "High", "Ultra"]
 const QUALITY_VIEW := [768, 1280, 2048, 2048]
 const QUALITY_FLORA := [0.4, 0.7, 1.0, 1.0]
+const QUALITY_GRASS_M := [14.0, 24.0, 34.0, 48.0]       # grass drawn this far around the player
+const QUALITY_GRASS_POINTS := [2, 3, 4, 5]               # ground samples per 6 m cell side
 const QUALITY_SHADOW_M := [0.0, 60.0, 100.0, 250.0]    # 0 = no shadows
 const QUALITY_CACHE_MB := [1024, 4096, 10240, 10240]    # ground cache limit on disk
 const FLY_SPEED := 30.0
@@ -124,6 +127,7 @@ var _budget_check_msec: int = 0
 var _report_msec: int = 0
 var dig_applied: int = 0
 var flora                             # FloraView
+var grass                             # GrassView
 var quality: int = 2                  # index into QUALITY_NAMES; High is the default
 var _flora_view_full: PackedFloat32Array = PackedFloat32Array()
 var _viewer: VoxelViewer
@@ -279,6 +283,10 @@ func _on_welcome(info: Dictionary) -> void:
 	flora.setup(_tables, TileHeightScript.load_rules("res://worlds/base_world/plan/tile_rules.json", []))
 	root.add_child(flora)
 	_flora_view_full = flora.view_m.duplicate()
+	grass = GrassViewScript.new()
+	grass.name = "Grass"
+	root.add_child(grass)
+	grass.setup(terrain, flora, _tables)
 	_make_environment(root)
 	_apply_quality()
 	var layer: CanvasLayer = CanvasLayer.new()
@@ -474,6 +482,9 @@ func _apply_quality() -> void:
 
 	for n in range(_flora_view_full.size()):
 		flora.view_m[n] = _flora_view_full[n] * float(QUALITY_FLORA[quality])
+
+	grass.points_per_side = QUALITY_GRASS_POINTS[quality]
+	grass.set_radius(QUALITY_GRASS_M[quality])
 
 	if _sun != null:
 		_sun.shadow_enabled = float(QUALITY_SHADOW_M[quality]) > 0.0
@@ -914,6 +925,9 @@ func _process(delta: float) -> void:
 		_flora_check_msec = now + 500
 		_update_flora()
 
+	if not flying and body != null:
+		grass.update(body.global_position)
+
 	if test_cut and now - connected_msec > 25000:
 		test_cut = false
 		_cut_nearest_tree()
@@ -956,10 +970,10 @@ func _process(delta: float) -> void:
 		total_ms += ms
 
 	var avg_ms: float = total_ms / maxf(float(_frame_ms.size()), 1.0)
-	hud.text = "build 23  %d fps  avg %.1f ms  worst %.1f ms  quality %s (F2)\nmem %.0f MB\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
+	hud.text = "build 24  %d fps  avg %.1f ms  worst %.1f ms  quality %s (F2)\nmem %.0f MB\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders, grass %d\nx %.0f  y %.1f  z %.0f" % [
 		Engine.get_frames_per_second(), avg_ms, worst_ms, QUALITY_NAMES[quality],
 		float(OS.get_static_memory_usage()) / 1048576.0,
-		stream.blocks_received, float(stream.bytes_received) / 1048576.0, cache.hits, flora.instances, flora.colliders,
+		stream.blocks_received, float(stream.bytes_received) / 1048576.0, cache.hits, flora.instances, flora.colliders, grass.tufts,
 		body.global_position.x, body.global_position.y, body.global_position.z
 	]
 
@@ -976,6 +990,7 @@ func _process(delta: float) -> void:
 				_flora_chunks, float(_flora_bytes) / 1048576.0, _flora_done_msec, flora.item_count(), flora.instances, flora.colliders, _flora_cuts,
 				flora.water_chunks, flora.water_cells
 			])
+			print("Terrain client: grass %d tufts in %d cells (radius %.0f m)" % [grass.tufts, grass.cells_built, grass.radius_m])
 			var probe: Vector3i = Vector3i((Vector3(world["spawn"]) + Vector3(0.0, -3.0, 0.0)).round())
 			print("Terrain client: ground value 3 m under the spawn %.2f (above 0 is open)" % terrain.get_voxel_tool().get_voxel_f(probe))
 			_finish(0)
