@@ -64,6 +64,7 @@ var _idle_offsets: Array = []          # [lod, dx, dz] nearest first, same for e
 var _idle_anchor: Dictionary = {}      # peer -> Vector3i LOD 0 block the player is at
 var _idle_done: Dictionary = {}        # Vector4i -> true, built or found saved
 var _idle_built: int = 0
+var _aim: Dictionary = {}              # peer -> Vector2 ground point to make first (metres), from reported position and speed
 
 
 func _ready() -> void:
@@ -134,12 +135,16 @@ func _ready() -> void:
 	net.dig_requested.connect(_on_dig_requested)
 	net.flora_requested.connect(_on_flora_requested)
 	net.cut_flora_requested.connect(_on_cut_flora_requested)
+	net.position_reported.connect(_on_position_reported)
 	_report_at_msec = Time.get_ticks_msec() + 10000
 
 	for n in range(_max_running):
 		var thread: Thread = Thread.new()
 		thread.start(_worker_loop)
 		_workers.append(thread)
+
+	if OS.has_environment("DYNASTY_IDLE_THREADS"):
+		_idle_threads = maxi(int(OS.get_environment("DYNASTY_IDLE_THREADS")), 0)
 
 	_make_idle_offsets()
 
@@ -184,6 +189,19 @@ func _on_peer_connected(peer_id: int) -> void:
 	})
 
 
+# Where the player will touch the ground: straight below if hovering, farther
+# along their heading the higher and faster they are. Blocks nearest this
+# point are made first.
+func _on_position_reported(peer_id: int, position: Vector3, velocity: Vector3) -> void:
+	var height: float = maxf(position.y - generator.surface_height(position.x, position.z), 0.0)
+	var descent: float = maxf(-velocity.y, 10.0)
+	var seconds: float = minf(height / descent, 8.0)
+	var point: Vector2 = Vector2(position.x + velocity.x * seconds, position.z + velocity.z * seconds)
+	_queue_mutex.lock()
+	_aim[peer_id] = point
+	_queue_mutex.unlock()
+
+
 func _on_peer_disconnected(peer_id: int) -> void:
 	var info: Dictionary = _peers.get(peer_id, {})
 	print("Client %d left after %d blocks, %.1f MB; flora %.1f MB" % [
@@ -192,6 +210,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	_peers.erase(peer_id)
 	_queue_mutex.lock()
 	_idle_anchor.erase(peer_id)
+	_aim.erase(peer_id)
 	_queue = _queue.filter(func(item): return item[0] != peer_id)
 	_prefetch = _prefetch.filter(func(item): return item[0] != peer_id)
 	_flora_queue = _flora_queue.filter(func(item): return item[0] != peer_id)
@@ -359,7 +378,7 @@ func _worker_loop() -> void:
 
 		while flora_item.is_empty() and item.is_empty() and not (_queue.is_empty() and _prefetch.is_empty()):
 			var urgent: bool = not _queue.is_empty()
-			var next: Array = _queue.pop_front() if urgent else _prefetch.pop_front()
+			var next: Array = _pop_nearest_urgent() if urgent else _prefetch.pop_front()
 
 			# A prefetch entry moved up to urgent, or already taken, is skipped.
 			if _queued.get(next, "") == ("u" if urgent else "p"):
@@ -388,6 +407,33 @@ func _worker_loop() -> void:
 		_done_mutex.lock()
 		_done.append([item[0], key, bytes])
 		_done_mutex.unlock()
+
+
+# Takes the urgent block closest to where its player will land (queue mutex held).
+# Looks at the oldest 400 only, so one pick stays cheap; blocks of players with
+# no report yet go in arrival order.
+func _pop_nearest_urgent() -> Array:
+	var best: int = 0
+	var best_score: float = INF
+
+	for n in range(mini(_queue.size(), 400)):
+		var item: Array = _queue[n]
+		var aim: Variant = _aim.get(item[0], null)
+
+		if aim == null:
+			return _queue.pop_front() if n == 0 else _queue.pop_at(n)
+
+		var key: Vector4i = item[1]
+		var block_m: float = float(16 << key.w)
+		var centre: Vector2 = Vector2((float(key.x) + 0.5) * block_m, (float(key.z) + 0.5) * block_m)
+		# Finer detail first among equals: ground you stand on before far views.
+		var score: float = centre.distance_to(aim) + 60.0 * float(key.w)
+
+		if score < best_score:
+			best_score = score
+			best = n
+
+	return _queue.pop_at(best)
 
 
 # Block offsets around a player, nearest first; each detail level covers a
@@ -419,6 +465,12 @@ func _idle_loop() -> void:
 		var stopping: bool = _stopping
 		var busy: bool = not (_queue.is_empty() and _prefetch.is_empty() and _flora_queue.is_empty())
 		var anchors: Dictionary = _idle_anchor.duplicate()
+
+		for peer in anchors:
+			if _aim.has(peer):
+				var aim: Vector2 = _aim[peer]
+				anchors[peer] = Vector3i(int(floor(aim.x / 16.0)), anchors[peer].y, int(floor(aim.y / 16.0)))
+
 		_queue_mutex.unlock()
 
 		if stopping:

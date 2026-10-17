@@ -54,6 +54,8 @@ var flying: bool = false
 var underwater: bool = false
 var waiting_for_ground: bool = false
 var _tint: ColorRect
+var _aim_msec: int = 0
+var _aim_pos: Vector3 = Vector3.ZERO
 var _mode_label: Label
 var _environment: Environment
 var pitch: float = 0.0
@@ -468,6 +470,17 @@ func _process(_delta: float) -> void:
 
 	var now: int = Time.get_ticks_msec()
 
+	# Tell the server where we are heading so it makes that ground first.
+	if now - _aim_msec >= 200:
+		var here: Vector3 = body.global_position
+		var seconds: float = float(now - _aim_msec) / 1000.0
+
+		if _aim_msec > 0:
+			net.report_position.rpc_id(1, here, (here - _aim_pos) / seconds)
+
+		_aim_msec = now
+		_aim_pos = here
+
 	if now >= _budget_check_msec:
 		_budget_check_msec = now + 15000
 		cache.flush()
@@ -501,7 +514,7 @@ func _process(_delta: float) -> void:
 
 	var mode: String = ("flying" if flying else "walking") + (" (underwater)" if underwater else "") + (" (waiting for ground)" if waiting_for_ground and not flying else "")
 	_mode_label.text = mode
-	hud.text = "build 10  %d fps\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
+	hud.text = "build 11  %d fps\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
 		Engine.get_frames_per_second(),
 		stream.blocks_received, float(stream.bytes_received) / 1048576.0, cache.hits, flora.instances, flora.colliders,
 		body.global_position.x, body.global_position.y, body.global_position.z

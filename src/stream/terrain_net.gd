@@ -15,13 +15,15 @@ extends Node
 #   client -> server  request_flora    flora chunks wanted (pairs of chunk x, z)
 #   server -> client  deliver_flora    one chunk's flora (FloraPlacer.encode, removals applied)
 #                                      and its rivers and lakes (WaterGrid.encode, empty if dry)
+#   client -> server  report_position  where the player is and how fast it moves (a few times a second),
+#                                      so the server makes the ground ahead of and under them first
 #   client -> server  cut_flora        remove one flora item (test harvest)
 #   server -> client  flora_cut        a flora item was removed
 #
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 4
+const PROTOCOL_VERSION := 5
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -31,6 +33,7 @@ signal dig_requested(peer_id: int, center: Vector3, radius: float)
 signal dug_received(center: Vector3, radius: float)
 signal flora_requested(peer_id: int, chunks: PackedInt32Array)
 signal flora_received(chunk: Vector2i, bytes: PackedByteArray, water: PackedByteArray)
+signal position_reported(peer_id: int, position: Vector3, velocity: Vector3)
 signal cut_flora_requested(peer_id: int, chunk: Vector2i, id: int)
 signal flora_cut_received(chunk: Vector2i, id: int)
 
@@ -87,3 +90,9 @@ func cut_flora(chunk: Vector2i, id: int) -> void:
 @rpc("authority", "call_remote", "reliable")
 func flora_cut(chunk: Vector2i, id: int) -> void:
 	flora_cut_received.emit(chunk, id)
+
+
+@rpc("any_peer", "call_remote", "unreliable_ordered")
+func report_position(position: Vector3, velocity: Vector3) -> void:
+	if multiplayer.is_server():
+		position_reported.emit(multiplayer.get_remote_sender_id(), position, velocity.limit_length(2000.0))
