@@ -43,6 +43,7 @@ const QUALITY_NAMES := ["Low", "Medium", "High", "Ultra"]
 const QUALITY_VIEW := [768, 1280, 2048, 2048]
 const QUALITY_FLORA := [0.4, 0.7, 1.0, 1.0]
 const QUALITY_SHADOW_M := [0.0, 60.0, 100.0, 250.0]    # 0 = no shadows
+const QUALITY_CACHE_MB := [1024, 4096, 10240, 10240]    # ground cache limit on disk
 const FLY_SPEED := 30.0
 const WALK_SPEED := 6.0
 const FAST := 3.0                     # flying: Shift multiplier
@@ -91,7 +92,9 @@ var _walk_msec: int = 0
 var _walk_dir: Vector3 = Vector3.ZERO
 var _walk_stats: Dictionary = {}
 var test_dig: bool = false
-var cache_mb: int = 2048
+var cache_mb: int = 0                 # 0 = by quality preset; --cache-mb= overrides
+var cache_mb_from_quality: bool = false
+var clear_cache: bool = false         # --clear-cache wipes the saved ground before starting
 var cache_dir: String = ""
 var started_msec: int = 0
 var connected_msec: int = 0
@@ -138,6 +141,8 @@ func _ready() -> void:
 			test_speed = float(argument.trim_prefix("--move="))
 		elif argument.begins_with("--wait="):
 			_wait_until_msec = Time.get_ticks_msec() + int(float(argument.trim_prefix("--wait=")) * 1000.0)
+		elif argument == "--clear-cache":
+			clear_cache = true
 		elif argument.begins_with("--quality="):
 			quality = clampi(int(argument.trim_prefix("--quality=")), 0, QUALITY_NAMES.size() - 1)
 		elif argument == "--walk":
@@ -205,6 +210,18 @@ func _on_welcome(info: Dictionary) -> void:
 		cache_dir = "user://terrain_cache/%s/v%d" % [str(info["world_name"]).validate_filename(), int(info.get("terrain_version", 1))]
 
 	cache = CacheScript.new()
+	if cache_mb <= 0:
+		cache_mb = QUALITY_CACHE_MB[quality]
+		cache_mb_from_quality = true
+
+	if clear_cache:
+		var folder: String = ProjectSettings.globalize_path(cache_dir)
+
+		for file in DirAccess.get_files_at(folder):
+			DirAccess.remove_absolute(folder + "/" + file)
+
+		print("Terrain client: cleared the saved ground cache")
+
 	cache.setup(cache_dir, info, info["revisions"], cache_mb)
 	stream = StreamScript.new()
 	stream.cache = cache
@@ -390,6 +407,10 @@ func _make_player(root: Node3D, start: Vector3) -> void:
 func _apply_quality() -> void:
 	var view: int = QUALITY_VIEW[quality]
 	terrain.view_distance = view
+
+	if cache != null and cache_mb_from_quality:
+		cache_mb = QUALITY_CACHE_MB[quality]
+		cache.budget_bytes = cache_mb * 1024 * 1024
 
 	if _viewer != null:
 		_viewer.view_distance = view
