@@ -1,0 +1,44 @@
+TILE PLAN SUMMARY (built from the world sketch)
+World: Modular Island World   seed phrase: This1is2the3greatest4game5of6all7time
+Tiles: 441   tiles needing a tile file: 227   land: 4398 km2
+Tile kinds: islands 218, landmark 1, ocean 171, shallows 31, starter 8, trench 12
+Islands: 323   islet 72, small 129, medium 53, large 25, great 24, colossal 20
+Tiles by geology hint: basin 83, fold_belt 83, granite 133, volcanic 147
+
+LAND BY CLIMATE ZONE
+  desert                  442 km2
+  transition_desert       176 km2
+  temperate              2831 km2
+  transition_arctic       227 km2
+  arctic                  722 km2
+
+BY DANGER TIER (tiles, land km2)
+  easy        72 tiles      1181 km2
+  moderate    38 tiles       516 km2
+  medium      82 tiles      1019 km2
+  hard        92 tiles       541 km2
+  deadly     157 tiles      1141 km2
+
+STARTER TILES
+  outer  ( -6, -6)  land  134.4 km2  islands [4, 67, 108]  danger 0.44
+  outer  (  6, -6)  land   86.1 km2  islands [13, 33, 38]  danger 0.44
+  inner  ( -3, -4)  land   82.9 km2  islands [12, 22, 235]  danger 0.00
+  inner  (  3, -4)  land   97.7 km2  islands [10, 28, 64, 247, 317]  danger 0.00
+  inner  ( -3,  4)  land   54.7 km2  islands [24, 277, 316]  danger 0.00
+  inner  (  3,  4)  land  116.9 km2  islands [8, 11, 42]  danger 0.00
+  outer  ( -6,  6)  land   80.7 km2  islands [15, 43, 69, 259, 262]  danger 0.44
+  outer  (  6,  6)  land  151.6 km2  islands [3, 7, 120]  danger 0.44
+
+TILES WITH THE MOST LAND
+  (  0,  0)   174.4 km2  deadly     center_island, central_trench
+  (  6,  6)   151.6 km2  medium     shelf_p_p
+  ( -6, -6)   134.4 km2  medium     shelf_n_n
+  (  3,  4)   116.9 km2  easy       shelf_p_p
+  (  3, -4)    97.7 km2  easy       shelf_p_n
+  ( -5, -6)    86.9 km2  moderate   shelf_n_n
+  (  6, -6)    86.1 km2  medium     shelf_p_n
+  ( -3, -4)    82.9 km2  easy       shelf_n_n
+  (-10,  6)    82.0 km2  deadly     hotspot_2
+  ( -6,  6)    80.7 km2  medium     shelf_n_p
+  (  4, -6)    70.4 km2  easy       shelf_p_n
+  ( -6,  8)    67.6 km2  hard       shelf_n_p

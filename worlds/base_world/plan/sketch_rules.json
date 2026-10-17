@@ -1,0 +1,118 @@
+{
+	"format_version": 1,
+	"note": "Rules for the world sketch: the large undersea features that islands grow from. Distances in meters unless the name says tiles. Rerun tools/build_sketch.gd after editing.",
+
+	"cell_m": 160,
+
+	"sea_floor": {
+		"base_depth_m": -2000,
+		"variation_m": 350,
+		"detail_m": 60
+	},
+
+	"shelves": {
+		"note": "One continental shelf around each pair of inner and outer starters. Islands on it come from rolling hills breaking the surface.",
+		"extra_length_tiles": [1.0, 2.0],
+		"half_width_tiles": [1.1, 1.7],
+		"rotation_jitter_deg": 25,
+		"center_jitter_tiles": 0.5,
+		"lobes": [1, 3],
+		"lobe_size": [0.35, 0.7],
+		"shelf_depth_m": -90,
+		"edge_width": 0.15,
+		"hill_amplitude_m": 800,
+		"hill_threshold": 0.14,
+		"geology": ["granite", "basin", "fold_belt"]
+	},
+
+	"starter_islands": {
+		"area_km2": {"inner": [64, 78], "outer": [86, 104]},
+		"aspect": [1.2, 1.6],
+		"peak_m": [300, 560],
+		"profile_exponent": 0.75,
+		"shore_shelf_m": 1500,
+		"max_offset_m": 1500,
+		"note": "Poleward shores are rocky and steep, equator-facing shores have long sandy beaches with a flat coastal plain for the town and a sheltered bay for the port.",
+		"beach_angle_jitter_deg": 25,
+		"plain_height_m": 28,
+		"plain_width": 0.5,
+		"rocky_cliff_m": 120,
+		"bay_radius": 0.32,
+		"bay_depth_m": -14,
+		"strait_note": "A strait this wide (meters past the coast) keeps shelf hills from joining the starter island, so the starter landmass stays in its size range (landmass_km2, checked by a test). Smaller neighbors may still join by a narrow land bridge.",
+		"landmass_km2": {"inner": [50, 100], "outer": [70, 150]},
+		"strait_m": 1200,
+		"strait_depth_m": -80
+	},
+
+	"trench_arc": {
+		"note": "A curved chain of volcanoes along one side of the central trench, bowed toward it like real arcs.",
+		"offset_tiles": 2.3,
+		"half_span_tiles": 3.6,
+		"bow_tiles_per_tile2": 0.08,
+		"spacing_m": [5000, 8000],
+		"island_chance": 0.65
+	},
+
+	"island_arcs": {
+		"count": 5,
+		"min_danger": 0.45,
+		"radius_tiles": [4, 8],
+		"length_tiles": [4, 7],
+		"spacing_m": [5000, 10000],
+		"island_chance": [0.5, 0.85]
+	},
+
+	"volcanoes": {
+		"coast_radius_m": [900, 3800],
+		"size_power": 1.8,
+		"peak_m": [250, 1400],
+		"seamount_radius_m": [2500, 6000],
+		"seamount_peak_m": [-900, -60],
+		"max_peak_m": 1450
+	},
+
+	"hotspots": {
+		"count": 4,
+		"min_danger": 0.3,
+		"length_tiles": [5, 9],
+		"spacing_m": [7000, 12000],
+		"young_coast_radius_m": [3000, 4800],
+		"young_peak_m": [900, 1700],
+		"atoll_after_age": 0.55,
+		"atoll_min_temperature_c": 20
+	},
+
+	"ridge": {
+		"note": "A mid-ocean ridge winding along the dangerous east-west edge and across both poles.",
+		"crest_m": -1100,
+		"width_m": 12000,
+		"wiggle_tiles": 0.9,
+		"waves": 2,
+		"islands": 3
+	},
+
+	"seamount_field": {
+		"count": 300,
+		"clusters": 26,
+		"cluster_spread_tiles": 0.8,
+		"clustered_share": 0.7,
+		"islet_chance_at_danger_0": 0.12,
+		"islet_chance_at_danger_1": 0.4,
+		"islet_coast_radius_m": [300, 1200],
+		"islet_peak_m": [10, 260]
+	},
+
+	"danger_effects": {
+		"note": "How danger shapes land: steeper peaks, cliffs and narrow shelves where it is dangerous, gentle shores near starters.",
+		"peak_scale": [0.75, 1.35],
+		"profile_exponent": [0.9, 1.6],
+		"cliff_m": [0, 140],
+		"shore_shelf_m": [600, 120]
+	},
+
+	"keep_clear": {
+		"shelf_margin_tiles": 0.6,
+		"trench_margin": 1.25
+	}
+}

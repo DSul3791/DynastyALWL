@@ -1,0 +1,154 @@
+{
+	"format_version": 1,
+	"name": "Modular Island World",
+	"seed_text": "This1is2the3greatest4game5of6all7time",
+
+	"geometry": {
+		"tile_size_m": 15360,
+		"region_size_m": 1024,
+		"map_spacing_m": 8,
+		"min_tile": -10,
+		"tiles_x": 21,
+		"tiles_z": 21,
+		"voxel_size_m": 1.0,
+		"world_bottom_m": -4000,
+		"world_top_m": 2048,
+		"sea_level_m": 0
+	},
+
+	"climate": {
+		"equator_tile_row": 0,
+		"lapse_rate_c_per_km": 6.5,
+		"temperature_by_abs_latitude": [
+			[0.00, 30.0],
+			[0.14, 26.0],
+			[0.24, 20.0],
+			[0.43, 13.0],
+			[0.62, 6.0],
+			[0.71, 0.0],
+			[1.00, -18.0]
+		],
+		"zones": [
+			{"id": "desert", "group": "desert", "max_abs_row": 1},
+			{"id": "transition_desert", "group": "transition", "max_abs_row": 2},
+			{"id": "temperate", "group": "temperate", "max_abs_row": 6},
+			{"id": "transition_arctic", "group": "transition", "max_abs_row": 7},
+			{"id": "arctic", "group": "arctic", "max_abs_row": 10}
+		]
+	},
+
+	"starter_tiles": {
+		"inner": [[-3, 4], [3, 4], [-3, -4], [3, -4]],
+		"outer": [[-6, 6], [6, 6], [-6, -6], [6, -6]]
+	},
+
+	"world_features": [
+		{
+			"id": "central_trench",
+			"kind": "abyssal_trench",
+			"note": "Oblong abyssal trench along the equator, covering rows -1 to 1 and columns -2 to 2. Its floor sits just above the lethal heat depth, with caverns below. The world sketch must keep it free of islands.",
+			"center_tile": [0, 0],
+			"half_length_tiles": 2.6,
+			"half_width_tiles": 1.6,
+			"rotation_deg": 0,
+			"floor_m": -2800,
+			"edge_falloff_tiles": 1.2,
+			"danger_peak": 1.0
+		},
+		{
+			"id": "center_island",
+			"kind": "landmark_island",
+			"note": "The worst island in the game, rising out of the central trench: a huge volcanic desert island on the hottest row of the world, with scorched earth around a volcano that has erupted many times. Home of the worst creatures, climate and storms, and the ruins of a fallen magical civilization. It crosses into the neighboring tiles.",
+			"center_tile": [0, 0],
+			"half_length_tiles": 0.65,
+			"half_width_tiles": 0.4,
+			"rotation_deg": 0,
+			"character": "volcanic",
+			"shape": "ragged",
+			"peak_m": 1900,
+			"main_biome": "hot_desert",
+			"landmarks": ["volcano", "desert", "scorched earth", "ruined city", "castles", "caves"],
+			"terrain": {
+				"note": "Hostile desert: jagged ridges and dry wadis running off the volcano, stepped mesas, salt flats in the lowland basins, sea cliffs, scorched lava fields and old lava flows around the volcano, and a lava river from the crater breach to the sea. No easy town ground.",
+				"ravines": 9,
+				"ravine_depth_m": 140,
+				"jaggedness_m": 150,
+				"cliff_m": 180,
+				"basin_kind": "salt_flat",
+				"basin_threshold": 0.15,
+				"basin_inland": [0.1, 0.45],
+				"mesa_threshold": 0.1,
+				"mesa_step_m": 55,
+				"scorched_inland": 0.62,
+				"old_flows": 5,
+				"old_flow_length_m": 8500
+			},
+			"ruined_city": {
+				"note": "Prepared ground for the fallen city: a broad stepped plateau on the northwest flank, away from the lava river. An old ruined road winds around the island at low to middle height, never over the volcano, linking the city to ruined shore villages. Overgrown but still passable, it now serves as the path toward the caves, castles and labyrinths. Buildings, ruins and spur paths to those sites are placed later, at the tile bake.",
+				"offset_m": [-4300, -1700],
+				"radius_m": 1700,
+				"plateau_m": 170,
+				"terraces": 3,
+				"ring_road": {
+					"reach": [0.6, 0.8],
+					"start_reach": 0.7
+				},
+				"shore_villages": 6,
+				"village_radius_m": 380
+			},
+			"sites": {
+				"note": "Reserved for the tile bake: places for a fallen magical civilization. Positions are chosen deterministically when the center tiles are built.",
+				"castles": 3,
+				"labyrinths": 2,
+				"cave_systems": 4,
+				"boss_lairs": 3,
+				"shore_villages": 6,
+				"ruined_roads": true,
+				"ruins": true
+			},
+			"lore": "Home of a fallen civilization that used strong magic. Its fall left the island poisoned with many magics and terrible threats.",
+			"crater": {
+				"note": "Baked into the terrain, so settle before the center tiles are kept. Lava itself is drawn and simulated at runtime.",
+				"radius_m": 700,
+				"depth_m": 250,
+				"breach_bearing_deg": 160,
+				"breach_width_m": 120,
+				"lava_flow_to_sea": true
+			},
+			"edge_falloff_tiles": 0.6,
+			"danger_peak": 1.0
+		}
+	],
+
+	"danger": {
+		"note": "Danger from 0 (easy) to 1 (deadly). Distances are in tiles from the middle of tile (0,0). The server reads this at runtime, so it can be tuned at any time; only the world sketch's choice of terrain is baked from it.",
+		"east_west_by_abs_column": [
+			[0.0, 0.0],
+			[3.5, 0.0],
+			[6.0, 0.4],
+			[10.5, 1.0]
+		],
+		"north_south_by_abs_row": [
+			[0.0, 0.55],
+			[1.0, 0.45],
+			[2.0, 0.2],
+			[3.0, 0.0],
+			[5.5, 0.0],
+			[7.5, 0.45],
+			[10.5, 1.0]
+		],
+		"tiers": [
+			[0.2, "easy"],
+			[0.4, "moderate"],
+			[0.6, "medium"],
+			[0.8, "hard"],
+			[1.01, "deadly"]
+		]
+	},
+
+	"tunable": {
+		"lethal_depth_m": -3000,
+		"seasonal_swing_c_equator": 3.0,
+		"seasonal_swing_c_pole": 22.0
+	}
+}

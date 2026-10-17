@@ -1,0 +1,110 @@
+{
+	"format_version": 1,
+	"note": "Starting values for the tile matrix randomizer. Edit and rerun tools/build_plan.gd to see the effect. Areas are in square kilometers, distances in meters unless the name says tiles.",
+
+	"island_edge_margin_m": 1000,
+	"island_fill_factor": 0.85,
+	"min_gap_between_islands_m": 1000,
+	"cluster_gap_m": [300, 1200],
+	"satellite_gap_m": [300, 3000],
+	"total_land_cap_km2": 75,
+
+	"size_classes": {
+		"islet": [0.15, 1.0],
+		"small": [1.0, 5.0],
+		"medium": [5.0, 15.0],
+		"large": [15.0, 30.0],
+		"great": [30.0, 45.0]
+	},
+
+	"tile_kind_odds": {
+		"desert": {"ocean": 0.25, "peers": 0.40, "main": 0.35},
+		"transition": {"ocean": 0.25, "peers": 0.40, "main": 0.35},
+		"temperate": {"ocean": 0.25, "peers": 0.40, "main": 0.35},
+		"arctic": {"ocean": 0.40, "peers": 0.35, "main": 0.25}
+	},
+
+	"peers_count_weights": {
+		"default": {"1": 15, "2": 35, "3": 30, "4": 12, "5": 8},
+		"arctic": {"1": 35, "2": 35, "3": 20, "4": 7, "5": 3}
+	},
+	"peer_class_weights": {"small": 45, "medium": 55},
+	"peer_size_variation": [0.7, 1.4],
+
+	"archipelago_chance": 0.25,
+	"archipelago_count_weights": {"3": 35, "4": 35, "5": 30},
+	"archipelago_class_weights": {"islet": 25, "small": 75},
+
+	"main_class_weights": {
+		"default": {"large": 70, "great": 30},
+		"arctic": {"large": 85, "great": 15}
+	},
+	"satellite_count_weights": {"0": 30, "1": 30, "2": 20, "3": 12, "4": 8},
+	"satellite_class_weights": {"islet": 70, "small": 30},
+	"area_scale": {"arctic": 0.75},
+
+	"shape_weights": {"round": 30, "elongated": 25, "crescent": 15, "ragged": 30},
+	"shape_aspect": {
+		"round": [1.0, 1.15],
+		"elongated": [1.6, 2.4],
+		"crescent": [1.8, 2.5],
+		"ragged": [1.2, 1.6]
+	},
+
+	"character_weights": {
+		"desert": {"flat": 35, "volcanic": 25, "rolling": 20, "mountainous": 20},
+		"transition": {"flat": 20, "rolling": 35, "volcanic": 20, "mountainous": 25},
+		"temperate": {"rolling": 40, "mountainous": 30, "flat": 15, "volcanic": 15},
+		"arctic": {"mountainous": 40, "rolling": 30, "flat": 20, "volcanic": 10}
+	},
+	"peak_range_by_character_m": {
+		"flat": [10, 120],
+		"rolling": [60, 450],
+		"mountainous": [500, 1900],
+		"volcanic": [300, 1500],
+		"archipelago": [10, 200]
+	},
+	"peak_scale_by_class": {
+		"islet": 0.08, "small": 0.3, "medium": 0.6, "large": 0.85, "great": 1.0
+	},
+
+	"geology_primary_weights": {
+		"volcanic": {"volcanic": 100},
+		"mountainous": {"fold_belt": 40, "granite": 40, "volcanic": 10, "basin": 10},
+		"rolling": {"basin": 40, "fold_belt": 25, "granite": 25, "volcanic": 10},
+		"flat": {"basin": 60, "granite": 15, "fold_belt": 15, "volcanic": 10},
+		"archipelago": {"granite": 40, "volcanic": 30, "basin": 15, "fold_belt": 15}
+	},
+	"geology_extra_chance": 0.4,
+	"hint_resources": {
+		"granite": ["tin", "copper", "gemstone"],
+		"basin": ["coal", "clay", "salt", "gypsum"],
+		"fold_belt": ["iron", "lead", "zinc", "silver"],
+		"volcanic": ["sulfur", "gemstone", "copper"]
+	},
+
+	"open_seas": {
+		"count": 6,
+		"radius_tiles": [1.3, 2.3],
+		"keep_clear_of_starters_tiles": 2.9
+	},
+	"chains": {
+		"count": 5,
+		"volcanic_arcs": 1,
+		"length_tiles": [5, 9],
+		"curve": 0.35,
+		"island_count_weights": {"1": 40, "2": 40, "3": 20}
+	},
+
+	"starter": {
+		"area_km2": [22, 30],
+		"satellite_count_weights": {"0": 40, "1": 40, "2": 20},
+		"required": ["flat_land", "river", "harbor"]
+	},
+	"starter_neighborhood": {
+		"radius_tiles": 2,
+		"min_medium_island_tiles": 3,
+		"required_hints": ["granite", "basin", "fold_belt"]
+	},
+	"zone_coverage": {"min_islands_per_hint": 3}
+}

@@ -1,0 +1,28 @@
+{
+	"table": "province_kinds",
+	"format_version": 1,
+	"note": "IDs are append-only. Never renumber or reuse an ID; retire an entry with \"retired\": true and take the next ID from next_id for new entries.",
+	"next_id": 4,
+	"entries": [
+		{
+			"id": 0,
+			"name": "granite",
+			"display": "Granite province"
+		},
+		{
+			"id": 1,
+			"name": "basin",
+			"display": "Sedimentary basin province"
+		},
+		{
+			"id": 2,
+			"name": "fold_belt",
+			"display": "Fold belt province"
+		},
+		{
+			"id": 3,
+			"name": "volcanic",
+			"display": "Volcanic province"
+		}
+	]
+}

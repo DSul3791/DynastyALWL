@@ -1,0 +1,38 @@
+{
+	"table": "water_classes",
+	"format_version": 1,
+	"note": "IDs are append-only. Never renumber or reuse an ID; retire an entry with \"retired\": true and take the next ID from next_id for new entries.",
+	"next_id": 6,
+	"entries": [
+		{
+			"id": 0,
+			"name": "none",
+			"display": "None"
+		},
+		{
+			"id": 1,
+			"name": "ocean",
+			"display": "Ocean"
+		},
+		{
+			"id": 2,
+			"name": "lake",
+			"display": "Lake"
+		},
+		{
+			"id": 3,
+			"name": "river",
+			"display": "River"
+		},
+		{
+			"id": 4,
+			"name": "marsh",
+			"display": "Marsh"
+		},
+		{
+			"id": 5,
+			"name": "estuary",
+			"display": "Estuary"
+		}
+	]
+}

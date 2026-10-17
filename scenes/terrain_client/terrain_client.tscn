@@ -1,0 +1,10 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/terrain_client/terrain_client.gd" id="1_client"]
+[ext_resource type="Script" path="res://src/stream/terrain_net.gd" id="2_net"]
+
+[node name="Main" type="Node"]
+script = ExtResource("1_client")
+
+[node name="TerrainNet" type="Node" parent="."]
+script = ExtResource("2_net")

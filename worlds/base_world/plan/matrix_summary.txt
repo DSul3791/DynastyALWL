@@ -1,0 +1,45 @@
+TILE MATRIX SUMMARY
+World: Modular Island World   seed phrase: This1is2the3greatest4game5of6all7time   master seed: 574716103
+
+Tiles: 441   world area: 104045 km2   land: 6016 km2 (5.8%)
+Islands: 735
+Tile layouts: landmark 1, main 118, ocean 138, peers 176, starter 8
+Island sizes: islet 145, small 272, medium 191, large 104, great 22, colossal 1
+Island characters: archipelago 69, flat 94, mountainous 206, rolling 254, volcanic 112
+
+BY CLIMATE ZONE
+zone               tiles   ocean  islands land km2  km2/tile  sizes (islet/small/medium/large/great/colossal)
+desert                63     56%       66      690      10.9  15/17/22/11/0/1
+transition_desert     42     17%       97      760      18.1  14/42/29/8/4/0
+temperate            168     19%      325     2903      17.3  65/109/85/53/13/0
+transition_arctic     42     19%       87      696      16.6  13/30/34/6/4/0
+arctic               126     44%      160      968       7.7  38/74/21/26/1/0
+
+GEOLOGY: ISLANDS WITH EACH KIND, BY ZONE
+zone                 granite     basin fold_belt  volcanic
+desert                    18        23         8        26
+transition_desert         31        20        32        25
+temperate                103       108        99        72
+transition_arctic         21        25        20        28
+arctic                    54        46        36        40
+
+Planned resources by geology (coarse planning guide):
+  granite    tin, copper, gemstone
+  basin      coal, clay, salt, gypsum
+  fold_belt  iron, lead, zinc, silver
+  volcanic   sulfur, gemstone, copper
+
+STARTER TILES
+  inner  ( -3,  4) temperate          25.3 km2 rolling island, 0 satellite(s)   geology: basin, volcanic
+  inner  (  3,  4) temperate          22.9 km2 rolling island, 1 satellite(s)   geology: granite, volcanic
+  inner  ( -3, -4) temperate          29.9 km2 rolling island, 1 satellite(s)   geology: basin, fold_belt
+  inner  (  3, -4) temperate          23.0 km2 rolling island, 0 satellite(s)   geology: basin
+  outer  ( -6,  6) temperate          27.6 km2 rolling island, 1 satellite(s)   geology: basin
+  outer  (  6,  6) temperate          28.1 km2 rolling island, 0 satellite(s)   geology: granite
+  outer  ( -6, -6) temperate          25.8 km2 rolling island, 1 satellite(s)   geology: fold_belt, granite
+  outer  (  6, -6) temperate          26.5 km2 rolling island, 1 satellite(s)   geology: fold_belt, granite
+
+WORLD-SCALE PATTERNS
+Open seas: 5  (open_sea:1 9, open_sea:2 10, open_sea:3 5, open_sea:4 9, open_sea:5 8 tiles)
+Chains: 5  (chain:1:volcanic_arc 8, chain:2:island_chain 4, chain:3:island_chain 8, chain:4:island_chain 5, chain:5:island_chain 6 tiles)
+Tiles added near starters for medium islands: 0

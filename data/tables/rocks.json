@@ -1,0 +1,92 @@
+{
+	"table": "rocks",
+	"format_version": 1,
+	"note": "IDs are append-only. Never renumber or reuse an ID; retire an entry with \"retired\": true and take the next ID from next_id for new entries. color: ground color for drawing (red, green, blue, 0 to 1).",
+	"next_id": 12,
+	"entries": [
+		{
+			"id": 0,
+			"name": "air",
+			"display": "Air",
+			"family": "none",
+			"color": [0, 0, 0]
+		},
+		{
+			"id": 1,
+			"name": "sediment",
+			"display": "Sediment",
+			"family": "sedimentary",
+			"color": [0.5, 0.45, 0.35]
+		},
+		{
+			"id": 2,
+			"name": "shale",
+			"display": "Shale",
+			"family": "sedimentary",
+			"color": [0.35, 0.35, 0.36]
+		},
+		{
+			"id": 3,
+			"name": "limestone",
+			"display": "Limestone",
+			"family": "sedimentary",
+			"color": [0.78, 0.76, 0.7]
+		},
+		{
+			"id": 4,
+			"name": "coal",
+			"display": "Coal",
+			"family": "sedimentary",
+			"color": [0.12, 0.12, 0.12]
+		},
+		{
+			"id": 5,
+			"name": "granite",
+			"display": "Granite",
+			"family": "igneous",
+			"color": [0.62, 0.58, 0.56]
+		},
+		{
+			"id": 6,
+			"name": "slate",
+			"display": "Slate",
+			"family": "metamorphic",
+			"color": [0.3, 0.32, 0.36]
+		},
+		{
+			"id": 7,
+			"name": "basalt",
+			"display": "Basalt",
+			"family": "igneous",
+			"color": [0.22, 0.22, 0.23]
+		},
+		{
+			"id": 8,
+			"name": "sandstone",
+			"display": "Sandstone",
+			"family": "sedimentary",
+			"color": [0.76, 0.62, 0.45]
+		},
+		{
+			"id": 9,
+			"name": "marble",
+			"display": "Marble",
+			"family": "metamorphic",
+			"color": [0.9, 0.9, 0.88]
+		},
+		{
+			"id": 10,
+			"name": "chalk",
+			"display": "Chalk",
+			"family": "sedimentary",
+			"color": [0.94, 0.94, 0.9]
+		},
+		{
+			"id": 11,
+			"name": "tuff",
+			"display": "Tuff",
+			"family": "igneous",
+			"color": [0.6, 0.55, 0.48]
+		}
+	]
+}

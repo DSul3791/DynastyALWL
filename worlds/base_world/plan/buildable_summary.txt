@@ -1,0 +1,41 @@
+BUILDABLE LAND (from the 160 m world map; an upper estimate)
+Town ground: slope under 8%, below 800 m, flat patch of 2 km2 or more within about 1 km of the sea.
+Base ground: slope under 18%, below 800 m, patch of 0.1 km2 or more.
+
+Islands: 323   land: 4398 km2   buildable: 2099 km2 (48% of land)
+Islands with room for a town: 40
+Islands with room for a base: 228
+Islands with an outpost site (foothold on slopes up to 30% at the shore, deep water within about 500 m for a dock): 299, of which 259 have no town site
+
+BY DANGER TIER
+                    islands  land km2  build km2   towns   bases  outposts
+easy                     61      1246        799      16      56        59
+moderate                 44       578        364       6      38        42
+medium                   69       994        670      12      54        64
+hard                     52       454        124       2      31        45
+deadly                   97      1126        142       4      49        89
+
+BY CLIMATE ZONE
+                    islands  land km2  build km2   towns   bases  outposts
+desert                   34       451         77       1      19        30
+transition_desert        29       154         35       2      16        26
+temperate               153      2707       1656      29     132       146
+transition_arctic        29       365        204       4      19        27
+arctic                   78       721        126       4      42        70
+
+LARGEST TOWN SITES (biggest flat coastal patch per island)
+  tile ( -6, -6)  island  138.2 km2  flat town ground  24.0 km2  buildable 111.5 km2  medium
+  tile (  6,  6)  island  148.1 km2  flat town ground  23.7 km2  buildable 120.0 km2  medium
+  tile ( -6,  6)  island   71.8 km2  flat town ground  22.8 km2  buildable  43.9 km2  medium
+  tile (  3, -4)  island   88.5 km2  flat town ground  21.7 km2  buildable  59.2 km2  easy
+  tile (  3,  4)  island   95.7 km2  flat town ground  17.6 km2  buildable  66.5 km2  easy
+  tile (  6, -6)  island   80.9 km2  flat town ground  16.9 km2  buildable  63.8 km2  medium
+  tile ( -3, -4)  island   81.1 km2  flat town ground  13.5 km2  buildable  49.4 km2  easy
+  tile ( -3,  4)  island   54.1 km2  flat town ground   6.5 km2  buildable  34.0 km2  easy
+  tile ( -5, -7)  island  175.3 km2  flat town ground   6.0 km2  buildable 118.8 km2  medium
+  tile (  3,  3)  island   53.9 km2  flat town ground   5.3 km2  buildable  19.6 km2  easy
+  tile (  5, -5)  island   17.5 km2  flat town ground   5.2 km2  buildable  15.0 km2  moderate
+  tile (  4,  6)  island   12.6 km2  flat town ground   5.2 km2  buildable  11.9 km2  easy
+  tile ( -4, -3)  island   11.9 km2  flat town ground   5.0 km2  buildable  10.5 km2  easy
+  tile (  2, -4)  island   44.5 km2  flat town ground   4.6 km2  buildable  35.7 km2  easy
+  tile ( -6, -7)  island    7.9 km2  flat town ground   4.3 km2  buildable   7.8 km2  medium

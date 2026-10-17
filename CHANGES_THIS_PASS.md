@@ -1,5 +1,7 @@
 # Changes in this pass
 
+> **Old generator.** This file describes the earlier volumetric generator (10 by 10 region tiles, 10,240 m). It stays accurate for that code, which remains in the repository until the new generator replaces it (plan step 19 in `GENERATOR_V2_PLAN.md`). For the current design see `DESIGN_IDEAS.md` and `WORLD_FORMAT_SPEC.md`.
+
 ## 1. Shared horizontal column cache
 
 The LOD bake path now computes these common X/Z facts once in `BakedVoxelSampler`:

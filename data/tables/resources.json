@@ -1,0 +1,206 @@
+{
+	"table": "resources",
+	"format_version": 1,
+	"note": "IDs are append-only. Never renumber or reuse an ID; retire an entry with \"retired\": true and take the next ID from next_id for new entries.",
+	"next_id": 32,
+	"entries": [
+		{
+			"id": 0,
+			"name": "none",
+			"display": "None",
+			"category": "none"
+		},
+		{
+			"id": 1,
+			"name": "coal",
+			"display": "Coal",
+			"category": "fuel"
+		},
+		{
+			"id": 2,
+			"name": "iron",
+			"display": "Iron",
+			"category": "metal"
+		},
+		{
+			"id": 3,
+			"name": "copper",
+			"display": "Copper",
+			"category": "metal"
+		},
+		{
+			"id": 4,
+			"name": "tin",
+			"display": "Tin",
+			"category": "metal"
+		},
+		{
+			"id": 5,
+			"name": "lead",
+			"display": "Lead",
+			"category": "metal"
+		},
+		{
+			"id": 6,
+			"name": "zinc",
+			"display": "Zinc",
+			"category": "metal"
+		},
+		{
+			"id": 7,
+			"name": "nickel",
+			"display": "Nickel",
+			"category": "metal",
+			"retired": true,
+			"note": "No medieval use (isolated 1751); retired 2026-10-14. ID kept."
+		},
+		{
+			"id": 8,
+			"name": "silver",
+			"display": "Silver",
+			"category": "precious"
+		},
+		{
+			"id": 9,
+			"name": "gold",
+			"display": "Gold",
+			"category": "precious"
+		},
+		{
+			"id": 10,
+			"name": "salt",
+			"display": "Salt",
+			"category": "industrial"
+		},
+		{
+			"id": 11,
+			"name": "sulfur",
+			"display": "Sulfur",
+			"category": "industrial"
+		},
+		{
+			"id": 12,
+			"name": "clay",
+			"display": "Clay",
+			"category": "industrial"
+		},
+		{
+			"id": 13,
+			"name": "gypsum",
+			"display": "Gypsum",
+			"category": "industrial"
+		},
+		{
+			"id": 14,
+			"name": "graphite",
+			"display": "Graphite",
+			"category": "industrial"
+		},
+		{
+			"id": 15,
+			"name": "gemstone",
+			"display": "Gemstone",
+			"category": "gem",
+			"retired": true,
+			"note": "Replaced by individual gems (2026-10-14)."
+		},
+		{
+			"id": 16,
+			"name": "peat",
+			"display": "Peat",
+			"category": "surface"
+		},
+		{
+			"id": 17,
+			"name": "diamond",
+			"display": "Diamond",
+			"category": "gem"
+		},
+		{
+			"id": 18,
+			"name": "ruby",
+			"display": "Ruby",
+			"category": "gem"
+		},
+		{
+			"id": 19,
+			"name": "sapphire",
+			"display": "Sapphire",
+			"category": "gem"
+		},
+		{
+			"id": 20,
+			"name": "emerald",
+			"display": "Emerald",
+			"category": "gem"
+		},
+		{
+			"id": 21,
+			"name": "topaz",
+			"display": "Topaz",
+			"category": "gem"
+		},
+		{
+			"id": 22,
+			"name": "aquamarine",
+			"display": "Aquamarine",
+			"category": "gem"
+		},
+		{
+			"id": 23,
+			"name": "amethyst",
+			"display": "Amethyst",
+			"category": "gem"
+		},
+		{
+			"id": 24,
+			"name": "agate",
+			"display": "Agate",
+			"category": "gem"
+		},
+		{
+			"id": 25,
+			"name": "garnet",
+			"display": "Garnet",
+			"category": "gem"
+		},
+		{
+			"id": 26,
+			"name": "opal",
+			"display": "Opal",
+			"category": "gem"
+		},
+		{
+			"id": 27,
+			"name": "flint",
+			"display": "Flint",
+			"category": "industrial"
+		},
+		{
+			"id": 28,
+			"name": "alum",
+			"display": "Alum",
+			"category": "industrial"
+		},
+		{
+			"id": 29,
+			"name": "bitumen",
+			"display": "Bitumen",
+			"category": "industrial"
+		},
+		{
+			"id": 30,
+			"name": "bog_iron",
+			"display": "Bog iron",
+			"category": "metal",
+			"derived": true
+		},
+		{
+			"id": 31,
+			"name": "saltpeter",
+			"display": "Saltpeter",
+			"category": "industrial",
+			"derived": true
+		}
+	]
+}
