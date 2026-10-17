@@ -252,6 +252,15 @@ func chunk_items(chunk: Vector2i) -> Dictionary:
 				if y < item["altitude_min"] or y > item["altitude_max"]:
 					continue
 
+				# Evergreens hold the ridges and dry heights; hardwoods take the valleys
+				# and fields and crowd the evergreens out (80/20 either way).
+				if item["kind"] == KIND_TREE and item["shape"] in ["conifer", "broadleaf"]:
+					var ridge: float = _ridge_factor(data, x, z, y)
+					var mult: float = lerpf(0.25, 1.0, ridge) if item["shape"] == "conifer" else lerpf(1.0, 0.25, ridge)
+
+					if rng_pick(x, z, species_id) >= mult:
+						continue
+
 				if woody and not _make_room(occupied, x, z, crown):
 					continue
 
@@ -264,6 +273,23 @@ func chunk_items(chunk: Vector2i) -> Dictionary:
 
 
 # The patch field, about -1 to 1, the same across the wrap seam.
+# 0 in a valley or field, 1 on a ridge top: how far the ground stands above the
+# average of the ground 90 m around it.
+func _ridge_factor(data, x: float, z: float, y: float) -> float:
+	var total: float = 0.0
+
+	for k in range(8):
+		var a: float = TAU * float(k) / 8.0
+		total += data.height_at(x + cos(a) * 90.0, z + sin(a) * 90.0)
+
+	return smoothstep(-6.0, 14.0, y - total / 8.0)
+
+
+# A stable 0..1 number per spot and species, so the woods look the same every visit.
+func rng_pick(x: float, z: float, species_id: int) -> float:
+	return float(_mix(int(x * 4.0), int(z * 4.0), species_id, 7919) % 10000) / 10000.0
+
+
 func patch_at(x: float, z: float) -> float:
 	return clampf(1.6 * generator._wrapped_noise(_patches, x, z, 600.0), -1.0, 1.0)
 
