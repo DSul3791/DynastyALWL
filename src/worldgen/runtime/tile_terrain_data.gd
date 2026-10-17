@@ -15,6 +15,8 @@ extends RefCounted
 # the rest one byte per sample).
 
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
+const WaterStore := preload("res://src/water/water_store.gd")
+const WetMeters := 0.12   # water drawn from this depth (the water simulation's WET_M)
 
 var tile: Vector2i = Vector2i.ZERO
 var samples: int = 0
@@ -25,6 +27,9 @@ var placeholder: bool = false      # no file: open ocean
 var placeholder_depth_m: float = -200.0
 
 var heights: PackedFloat32Array = PackedFloat32Array()
+# Settled simulated water level per sample (NAN dry); empty when the tile has no
+# settled water file, in which case the painted water classes are drawn instead.
+var sim_levels: PackedFloat32Array = PackedFloat32Array()
 var cover: PackedByteArray = PackedByteArray()          # raw x 0.25 m
 var province: PackedByteArray = PackedByteArray()
 var layer_offset: PackedInt32Array = PackedInt32Array()  # raw x 0.1 m
@@ -112,7 +117,25 @@ func load_file(path: String, tile_coord: Vector2i, tile_size_m: float, rules: Di
 	_load_bodies(lists["features"], rules)
 	_load_ores(lists["ore_bodies"], resource_ids, rock_ids)
 	_load_caves(lists["sites"].get("caves", []))
+	_load_sim_water(path)
 	return ""
+
+
+# The tile's settled simulated water, saved beside the tiles (worlds/X/water/tile_A_B.water).
+func _load_sim_water(path: String) -> void:
+	var water_path: String = path.get_base_dir().get_base_dir() + "/water/" + path.get_file().get_basename() + ".water"
+	var depth: PackedFloat32Array = WaterStore.load_depth(water_path, samples)
+
+	if depth.is_empty():
+		return
+
+	sim_levels = PackedFloat32Array()
+	sim_levels.resize(samples * samples)
+	sim_levels.fill(NAN)
+
+	for k in range(samples * samples):
+		if depth[k] >= WetMeters:
+			sim_levels[k] = heights[k] + depth[k]
 
 
 # An ocean tile with no file: a flat sea floor.

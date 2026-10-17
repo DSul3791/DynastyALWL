@@ -34,6 +34,10 @@ static func chunk_levels(generator, origin: Vector2, chunk_m: float) -> Dictiona
 	if wet == 0:
 		return {"count": count, "spacing": spacing, "levels": levels, "wet": 0}
 
+	# Settled simulated water is already continuous: no hole closing.
+	if not data.sim_levels.is_empty():
+		return {"count": count, "spacing": spacing, "levels": levels, "wet": wet}
+
 	var closed: PackedFloat32Array = levels.duplicate()
 
 	for j in range(count):
@@ -59,6 +63,12 @@ static func _level_at(generator, data, x: float, z: float, spacing: float) -> fl
 		return NAN
 
 	var k: int = source.nearest(x, z)
+
+	# A tile with settled simulated water draws that; the painted classes only
+	# stand in for tiles that have not been settled yet.
+	if not source.sim_levels.is_empty():
+		return source.sim_levels[k] if source.heights[k] > 0.0 else NAN
+
 	var level: float = source.water_surface[k]
 	return level if source.water_class[k] > 1 and not is_nan(level) else NAN
 

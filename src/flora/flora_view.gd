@@ -315,6 +315,42 @@ func has_chunk(chunk: Vector2i) -> bool:
 	return _chunks.has(chunk)
 
 
+# The chunks held now.
+func held_chunks() -> Array:
+	return _chunks.keys()
+
+
+# Redraws only a held chunk's water (the simulated water moved).
+func set_water(chunk: Vector2i, water: Dictionary) -> void:
+	var entry: Dictionary = _chunks.get(chunk, {})
+
+	if entry.is_empty():
+		return
+
+	var old: MeshInstance3D = entry.get("water")
+
+	if old != null:
+		water_chunks -= 1
+		water_cells -= old.mesh.surface_get_array_index_len(0) / 6
+		old.queue_free()
+		entry["water"] = null
+
+	entry["grid"] = water
+
+	if int(water.get("wet", 0)) > 0:
+		var mesh: ArrayMesh = WaterGridScript.build_mesh(water, _water_material)
+
+		if mesh.get_surface_count() > 0:
+			var draw: MeshInstance3D = MeshInstance3D.new()
+			draw.mesh = mesh
+			draw.position = Vector3(float(chunk.x) * chunk_m, 0.0, float(chunk.y) * chunk_m)
+			draw.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			add_child(draw)
+			entry["water"] = draw
+			water_chunks += 1
+			water_cells += mesh.surface_get_array_index_len(0) / 6
+
+
 # Sets a chunk's items (as from FloraPlacer.chunk_items or decode).
 func set_chunk(chunk: Vector2i, items: Dictionary, position: Vector3, water: Dictionary = {}) -> void:
 	drop_chunk(chunk)

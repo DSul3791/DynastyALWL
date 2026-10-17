@@ -23,7 +23,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 5
+const PROTOCOL_VERSION := 6
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -36,6 +36,11 @@ signal flora_received(chunk: Vector2i, bytes: PackedByteArray, water: PackedByte
 signal position_reported(peer_id: int, position: Vector3, velocity: Vector3)
 signal cut_flora_requested(peer_id: int, chunk: Vector2i, id: int)
 signal flora_cut_received(chunk: Vector2i, id: int)
+signal water_rate_requested(peer_id: int, direction: int)
+signal water_rate_received(rate: float, busy: bool)
+signal water_changed_received()
+signal water_requested(peer_id: int, chunks: PackedInt32Array)
+signal water_received(chunk: Vector2i, water: PackedByteArray)
 
 
 @rpc("authority", "call_remote", "reliable")
@@ -96,3 +101,33 @@ func flora_cut(chunk: Vector2i, id: int) -> void:
 func report_position(position: Vector3, velocity: Vector3) -> void:
 	if multiplayer.is_server():
 		position_reported.emit(multiplayer.get_remote_sender_id(), position, velocity.limit_length(2000.0))
+
+
+# A player pressed + (1) or - (-1): step the flow rate of all water.
+@rpc("any_peer", "call_remote", "reliable")
+func step_water_rate(direction: int) -> void:
+	if multiplayer.is_server():
+		water_rate_requested.emit(multiplayer.get_remote_sender_id(), clampi(direction, -1, 1))
+
+
+@rpc("authority", "call_remote", "reliable")
+func water_rate(rate: float, busy: bool) -> void:
+	water_rate_received.emit(rate, busy)
+
+
+# The server's water has new levels: clients ask again for the chunks they hold.
+@rpc("authority", "call_remote", "reliable")
+func water_changed() -> void:
+	water_changed_received.emit()
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func request_water(chunks: PackedInt32Array) -> void:
+	if multiplayer.is_server() and chunks.size() % 2 == 0 and chunks.size() <= 4000:
+		water_requested.emit(multiplayer.get_remote_sender_id(), chunks)
+
+
+@rpc("authority", "call_remote", "reliable")
+func deliver_water(chunk: Vector2i, water: PackedByteArray) -> void:
+	water_received.emit(chunk, water)
+

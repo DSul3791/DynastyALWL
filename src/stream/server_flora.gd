@@ -23,7 +23,7 @@ var memory_hits: int = 0
 var _path: String = ""
 var _removed: Dictionary = {}          # Vector2i chunk -> {item id: true}
 var _memory: Dictionary = {}           # Vector2i chunk -> PackedByteArray
-var _water: Dictionary = {}            # Vector2i chunk -> PackedByteArray (water never changes)
+var _water: Dictionary = {}            # Vector2i chunk -> PackedByteArray (cleared when the water moves)
 var _mutex: Mutex = Mutex.new()
 
 
@@ -78,6 +78,13 @@ func chunk_bytes(chunk: Vector2i) -> PackedByteArray:
 
 	_mutex.unlock()
 	return bytes
+
+
+# Forgets the packed water (the simulated water changed).
+func clear_water() -> void:
+	_mutex.lock()
+	_water.clear()
+	_mutex.unlock()
 
 
 # A chunk's rivers and lakes for clients (empty when it has none).

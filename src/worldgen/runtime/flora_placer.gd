@@ -291,6 +291,9 @@ func _near_water(data, x: float, z: float) -> bool:
 		if data.water_class[k] > 1 and not is_nan(data.water_surface[k]):
 			return true
 
+		if not data.sim_levels.is_empty() and not is_nan(data.sim_levels[k]):
+			return true
+
 	return false
 
 

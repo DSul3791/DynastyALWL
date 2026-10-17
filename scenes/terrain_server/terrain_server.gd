@@ -29,9 +29,11 @@ const NetScript := preload("res://src/stream/terrain_net.gd")
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const FloraStoreScript := preload("res://src/stream/server_flora.gd")
+const WaterLiveScript := preload("res://src/water/water_live.gd")
 
 const MAX_BATCH_BYTES := 192 * 1024
 const MAX_QUEUE_PER_PEER := 20000
+const WATER_BASE_RATE := 3.0            # meters of water per tick at each spring; the + and - keys scale it
 const IDLE_LODS := 4                   # detail levels the idle builder keeps ahead of players
 const IDLE_RADIUS_BLOCKS := 12         # circle around each player, in blocks of that level
 const IDLE_MAX_DONE := 400000          # remembered built blocks (skips re-checking the store)
@@ -39,6 +41,7 @@ const IDLE_MAX_DONE := 400000          # remembered built blocks (skips re-check
 var generator
 var store
 var flora
+var water_live                         # the starter tile's running water, tuned with + and - on the client
 var settings
 var spawn: Vector3 = Vector3.ZERO
 var net
@@ -135,6 +138,13 @@ func _ready() -> void:
 	flora = FloraStoreScript.new()
 	flora.setup(placer, store_dir)
 	spawn = _spawn_point(world_dir)
+	var water_tile: Vector2i = Vector2i(3, 4)
+	var water_data = generator.get_tile(water_tile)
+
+	if not water_data.placeholder:
+		water_live = WaterLiveScript.new()
+		water_live.setup(water_data, "%s/water/tile_%d_%d.water" % [world_dir, water_tile.x, water_tile.y], WATER_BASE_RATE)
+
 	var peer: ENetMultiplayerPeer = ENetMultiplayerPeer.new()
 	var error: int = peer.create_server(port, 32)
 
@@ -151,6 +161,8 @@ func _ready() -> void:
 	net.flora_requested.connect(_on_flora_requested)
 	net.cut_flora_requested.connect(_on_cut_flora_requested)
 	net.position_reported.connect(_on_position_reported)
+	net.water_rate_requested.connect(_on_water_rate_requested)
+	net.water_requested.connect(_on_water_requested)
 	_report_at_msec = Time.get_ticks_msec() + 10000
 
 	for n in range(_max_running):
@@ -284,6 +296,37 @@ func _on_flora_requested(peer_id: int, chunks: PackedInt32Array) -> void:
 		_work.post()
 
 
+func _on_water_rate_requested(_peer_id: int, direction: int) -> void:
+	if water_live == null:
+		return
+
+	var rate: float = water_live.step_rate(direction)
+	print("server: water flow rate now x%.2f" % rate)
+	net.water_rate.rpc(rate, true)
+
+
+func _on_water_requested(peer_id: int, chunks: PackedInt32Array) -> void:
+	for n in range(chunks.size() / 2):
+		var chunk: Vector2i = Vector2i(chunks[2 * n], chunks[2 * n + 1])
+		net.deliver_water.rpc_id(peer_id, chunk, flora.water_bytes(chunk))
+
+
+# New levels from the water thread: swap them into the tile and tell clients.
+func _poll_water() -> void:
+	if water_live == null:
+		return
+
+	var levels: PackedFloat32Array = water_live.take_levels()
+
+	if not levels.is_empty():
+		water_live.data.sim_levels = levels
+		flora.clear_water()
+		net.water_changed.rpc()
+
+		if not water_live.busy:
+			net.water_rate.rpc(water_live.rate, false)
+
+
 func _on_cut_flora_requested(_peer_id: int, chunk: Vector2i, id: int) -> void:
 	if flora.cut(chunk, id):
 		net.flora_cut.rpc(chunk, id)
@@ -304,6 +347,8 @@ func _on_dig_requested(_peer_id: int, center: Vector3, radius: float) -> void:
 func _process(_delta: float) -> void:
 	if store == null:
 		return
+
+	_poll_water()
 
 	# Send what the workers made, batched per peer.
 	_done_mutex.lock()
@@ -593,6 +638,9 @@ func _exit_tree() -> void:
 
 	for thread in _idle_workers:
 		thread.wait_to_finish()
+
+	if water_live != null:
+		water_live.stop()
 
 	if store != null:
 		store.flush()

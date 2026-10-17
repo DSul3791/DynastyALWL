@@ -14,6 +14,7 @@ extends Node
 #   --frames=N        headless check: run N frames, print what arrived, quit
 #   --move=M          with --frames: fly east at M m/s, 20 m above the ground
 #   --dig             with --frames: 20 s in, ask the server to dig a hole under the spawn
+#   --water-step      with --frames: 12 s in, press + twice (the server re-settles the water)
 #   --cut             with --frames: 25 s in, ask the server to cut the tree nearest the spawn
 #   --walk            with --frames: 15 s in, drop to the ground, walk east for 30 s, then
 #                     walk into the nearest tree, and print what happened
@@ -89,6 +90,9 @@ var _aim_msec: int = 0
 var _aim_pos: Vector3 = Vector3.ZERO
 var _mode_label: Label
 var _brain_icon: TextureRect         # shown while inspection mode is on
+var test_water_step: bool = false   # headless check: press + twice 12 s in
+var _water_label: Label             # the water flow rate readout, shown for 3 seconds after + or -
+var _water_label_until_msec: int = 0
 var _inspect_label: Label            # what the player is looking at (inspection mode)
 var inspecting: bool = false
 var test_clear: bool = false          # --test-clear: press Clear saved ground 12 s after the welcome
@@ -184,6 +188,8 @@ func _ready() -> void:
 			test_walk = true
 		elif argument.begins_with("--runspeed="):
 			run_speed = float(argument.trim_prefix("--runspeed="))
+		elif argument == "--water-step":
+			test_water_step = true
 		elif argument == "--dig":
 			test_dig = true
 		elif argument == "--cut":
@@ -195,6 +201,9 @@ func _ready() -> void:
 	net.dug_received.connect(_on_dug)
 	net.flora_received.connect(_on_flora)
 	net.flora_cut_received.connect(_on_flora_cut)
+	net.water_rate_received.connect(_on_water_rate)
+	net.water_changed_received.connect(_on_water_changed)
+	net.water_received.connect(_on_water_received)
 	_host = host
 	_port = port
 
@@ -324,6 +333,16 @@ func _on_welcome(info: Dictionary) -> void:
 	_inspect_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
 	_inspect_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(_inspect_label)
+	_water_label = Label.new()
+	_water_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_water_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_water_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	_water_label.offset_top = 150.0
+	_water_label.add_theme_font_size_override("font_size", 36)
+	_water_label.add_theme_constant_override("outline_size", 8)
+	_water_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
+	_water_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(_water_label)
 	_brain_icon = TextureRect.new()
 	_brain_icon.texture = _load_brain_icon()
 	_brain_icon.anchor_left = 0.5
@@ -392,6 +411,32 @@ func _on_flora(chunk: Vector2i, bytes: PackedByteArray, water: PackedByteArray) 
 	_flora_bytes += bytes.size() + water.size()
 	_flora_done_msec = Time.get_ticks_msec() - connected_msec
 	flora.set_chunk(chunk, PlacerScript.decode(bytes, Vector2(chunk) * flora.chunk_m), body.global_position, WaterGridScript.decode(water))
+
+
+func _on_water_rate(rate: float, busy: bool) -> void:
+	_water_label.text = "Water flow rate: x%.2f%s" % [rate, "  (settling...)" if busy else ""]
+	_water_label_until_msec = Time.get_ticks_msec() + 3000
+
+
+# The server's water moved: ask again for the water of every flora chunk held.
+func _on_water_changed() -> void:
+	if flora == null:
+		return
+
+	var chunks: PackedInt32Array = PackedInt32Array()
+
+	for chunk in flora.held_chunks():
+		chunks.append_array(PackedInt32Array([chunk.x, chunk.y]))
+
+	print("Terrain client: the water moved, asking again for %d chunks" % (chunks.size() / 2))
+
+	if not chunks.is_empty():
+		net.request_water.rpc_id(1, chunks)
+
+
+func _on_water_received(chunk: Vector2i, water: PackedByteArray) -> void:
+	if flora != null:
+		flora.set_water(chunk, WaterGridScript.decode(water))
 
 
 func _on_flora_cut(chunk: Vector2i, id: int) -> void:
@@ -799,6 +844,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 			if not inspecting:
 				_inspect_label.text = ""
+		elif event.keycode == KEY_EQUAL or event.keycode == KEY_PLUS or event.keycode == KEY_KP_ADD:
+			net.step_water_rate.rpc_id(1, 1)
+		elif event.keycode == KEY_MINUS or event.keycode == KEY_KP_SUBTRACT:
+			net.step_water_rate.rpc_id(1, -1)
 		elif event.keycode == KEY_F2:
 			quality = (quality + 1) % QUALITY_NAMES.size()
 			_apply_quality()
@@ -904,6 +953,9 @@ func _update_bob(delta: float) -> void:
 
 
 func _process(delta: float) -> void:
+	if _water_label != null and _water_label.text != "" and Time.get_ticks_msec() > _water_label_until_msec:
+		_water_label.text = ""
+
 	_frame_ms.append(delta * 1000.0)
 
 	if _frame_ms.size() > 120:
@@ -969,6 +1021,11 @@ func _process(delta: float) -> void:
 			_show_menu_page("advanced")
 			_menu_note.text = finished
 			print("Terrain client: ", finished)
+
+	if test_water_step and now - connected_msec > 12000:
+		test_water_step = false
+		net.step_water_rate.rpc_id(1, 1)
+		net.step_water_rate.rpc_id(1, 1)
 
 	if test_cut and now - connected_msec > 25000:
 		test_cut = false
