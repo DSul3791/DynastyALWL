@@ -243,6 +243,11 @@ func chunk_items(chunk: Vector2i) -> Dictionary:
 				if water != 0 and (item["water_mask"] & (1 << water)) == 0:
 					continue
 
+				# Trees and shrubs never stand in water, only at its edge: no inland water
+				# at the spot or within a few meters around it.
+				if woody and _near_water(data, x, z):
+					continue
+
 				var slope: float = Vector2(data.height_at(x + 2.0, z) - data.height_at(x - 2.0, z), data.height_at(x, z + 2.0) - data.height_at(x, z - 2.0)).length() / 4.0
 
 				if slope > item["max_slope"]:
@@ -276,6 +281,19 @@ func chunk_items(chunk: Vector2i) -> Dictionary:
 
 
 # The patch field, about -1 to 1, the same across the wrap seam.
+const WATER_MARGIN_M := 4.0
+
+
+func _near_water(data, x: float, z: float) -> bool:
+	for offset in [Vector2.ZERO, Vector2(WATER_MARGIN_M, 0.0), Vector2(-WATER_MARGIN_M, 0.0), Vector2(0.0, WATER_MARGIN_M), Vector2(0.0, -WATER_MARGIN_M)]:
+		var k: int = data.nearest(x + offset.x, z + offset.y)
+
+		if data.water_class[k] > 1 and not is_nan(data.water_surface[k]):
+			return true
+
+	return false
+
+
 # 0 in a valley or field, 1 on a ridge top: how far the ground stands above the
 # average of the ground 90 m around it.
 func _ridge_factor(data, x: float, z: float, y: float) -> float:
