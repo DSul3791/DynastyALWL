@@ -111,7 +111,7 @@ func build(height_map, starter: Dictionary = {}, guides: Variant = null) -> void
 		var rivers: Array = []
 
 		for guide in guides:
-			rivers.append(_guide_to_samples(guide["points"], guide["areas"]))
+			rivers.append(_guide_to_samples(guide["points"], guide["areas"], bool(guide.get("source", false))))
 
 		if starter_path.size() > 1:
 			rivers.append(_starter_guide())
@@ -453,14 +453,14 @@ func _carve_rivers(level: PackedInt32Array, parent: PackedInt32Array, ocean: Pac
 # ---------------------------------------------------------------- guide rivers
 
 # A river from the world network in sample coordinates of this frame.
-func _guide_to_samples(points: PackedVector2Array, areas_km2: PackedFloat32Array) -> Dictionary:
+func _guide_to_samples(points: PackedVector2Array, areas_km2: PackedFloat32Array, source: bool = false) -> Dictionary:
 	var converted: PackedVector2Array = PackedVector2Array()
 	converted.resize(points.size())
 
 	for k in range(points.size()):
 		converted[k] = Vector2(points[k].x / spacing_m - float(_origin_sx), points[k].y / spacing_m - float(_origin_sz))
 
-	return {"points": converted, "areas": areas_km2}
+	return {"points": converted, "areas": areas_km2, "source": source}
 
 
 # The designed starter river as a guide: its path, with the water it carries
@@ -491,6 +491,13 @@ func _carve_guides(rivers: Array) -> void:
 	var slope: float = float(_rules["bank_slope"])
 	var start_km2: float = float(_rules["river_start_km2"])
 	var window_m: float = float(_rules.get("bed_window_m", 500.0))
+	var taper_m: float = float(_rules.get("head_taper_m", 140.0))
+	var taper_min: float = float(_rules.get("head_taper_min", 0.4))
+	var pond_width: float = float(_rules.get("head_pond_width_m", 22.0))
+	var pond_depth: float = float(_rules.get("head_pond_depth_m", 1.6))
+	var fall_slope: float = float(_rules.get("fall_slope", 0.30))
+	var fall_min_drop: float = float(_rules.get("fall_min_drop_m", 5.0))
+	var pool_depth: float = float(_rules.get("pool_depth_m", 2.5))
 	var total: int = samples * samples
 	var best_flow: PackedFloat32Array = PackedFloat32Array()
 	best_flow.resize(total)
@@ -510,7 +517,12 @@ func _carve_guides(rivers: Array) -> void:
 		var depths: PackedFloat32Array = PackedFloat32Array()
 		var widths: PackedFloat32Array = PackedFloat32Array()
 		var usable: PackedByteArray = PackedByteArray()
+		var beds: PackedFloat32Array = PackedFloat32Array()
+		var is_source: bool = bool(river.get("source", false))
+		var along: float = 0.0
 		low_values.resize(count)
+		beds.resize(count)
+		beds.fill(NAN)
 		depths.resize(count)
 		widths.resize(count)
 		usable.resize(count)
@@ -519,6 +531,16 @@ func _carve_guides(rivers: Array) -> void:
 			var point: Vector2 = points[k]
 			var width: float = width_base + width_scale * sqrt(maxf(areas[k], start_km2))
 			var depth: float = depth_base + depth_scale * width
+
+			if k > 0:
+				along += points[k].distance_to(points[k - 1]) * spacing_m
+
+			if is_source and along < taper_m:
+				# The brook grows out of its spring pond instead of starting full size.
+				var grow: float = lerpf(taper_min, 1.0, along / taper_m)
+				width *= grow
+				depth *= grow
+
 			widths[k] = width
 			depths[k] = depth
 
@@ -563,10 +585,40 @@ func _carve_guides(rivers: Array) -> void:
 			deque.append(k)
 			var bed: float = low_values[deque[head_at]]
 			var strength: float = areas[k] / cell_km2
+			beds[k] = bed
 			river_cells += 1
 			_stamp_at(carved, points[k], widths[k], depths[k], bed, slope, strength, best_flow)
 
 		longest = maxf(longest, run_length)
+
+		if is_source:
+			# A spring pond at the head, its lower rim just upstream of the channel.
+			for k in range(mini(2, count)):
+				if usable[k] == 1:
+					_stamp_at(carved, points[k], pond_width, pond_depth, beds[k] - 0.3, slope, areas[k] / cell_km2, best_flow)
+					break
+
+		# A plunge pool at the foot of every steep drop (waterfall or cascade):
+		# the water scours a basin where it lands.
+		var run_start: int = -1
+
+		for k in range(count - 2):
+			if is_nan(beds[k]) or is_nan(beds[k + 2]):
+				run_start = -1
+				continue
+
+			var steep: bool = (beds[k] - beds[k + 2]) / (2.0 * step_m) > fall_slope
+
+			if steep and run_start < 0:
+				run_start = k
+			elif not steep and run_start >= 0:
+				var drop: float = beds[run_start] - beds[k]
+
+				if drop >= fall_min_drop:
+					var pool_width: float = clampf(widths[k] * 1.8 + 6.0, 10.0, 26.0)
+					_stamp_at(carved, points[k], pool_width, pool_depth, beds[k] - pool_depth * 0.9, slope, areas[k] / cell_km2, best_flow)
+
+				run_start = -1
 
 	heights = carved
 	longest_river_m = longest

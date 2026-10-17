@@ -333,6 +333,7 @@ func _sample_chain(chain: Dictionary, shift: Vector2, wanted: Rect2, step_m: flo
 	var count: int = points.size()
 	var piece_points: PackedVector2Array = PackedVector2Array()
 	var piece_areas: PackedFloat32Array = PackedFloat32Array()
+	var piece_source: bool = false       # this piece starts at the chain's first point (a true river head)
 
 	for i in range(count - 1):
 		var a: Vector2 = points[i]
@@ -343,11 +344,15 @@ func _sample_chain(chain: Dictionary, shift: Vector2, wanted: Rect2, step_m: flo
 
 		if not segment_box.intersects(wanted):
 			if piece_points.size() > 1:
-				out.append({"points": piece_points, "areas": piece_areas})
+				out.append({"points": piece_points, "areas": piece_areas, "source": piece_source})
 
 			piece_points = PackedVector2Array()
 			piece_areas = PackedFloat32Array()
+			piece_source = false
 			continue
+
+		if i == 0:
+			piece_source = true
 
 		# The curve is worked out on the chain's own coordinates and moved
 		# by `shift` last, so every copy of it gets exactly the same shape.
@@ -365,7 +370,7 @@ func _sample_chain(chain: Dictionary, shift: Vector2, wanted: Rect2, step_m: flo
 			piece_areas.append(areas[i + 1])
 
 	if piece_points.size() > 1:
-		out.append({"points": piece_points, "areas": piece_areas})
+		out.append({"points": piece_points, "areas": piece_areas, "source": piece_source})
 
 
 func _meandered(point: Vector2) -> Vector2:

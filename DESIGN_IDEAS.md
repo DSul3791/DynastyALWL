@@ -526,6 +526,13 @@ The owner approved the direction of the crafting proposal deck ("How Deep Should
   - The working skill for a specific item is the parent's skill plus the specific skill (broadsword = sword + broadsword), all the way up the tree.
 - **[Open]** The exact formula: how the three parts combine into the working skill, how fast practice grows and decays, and how fast regained skill returns. How this meets aging (skills fall with physical ability, Section 6.7) and children learning from parents (Section 6.6).
 
+### 6.15b Water features: spring ponds and plunge pools
+
+- **[Decided] (owner, 2026-10-17)** Every river head gets a spring pond or marsh pool, and the first stretch of channel narrows toward it so the brook grows out of the pond. Built 2026-10-17 in `tile_water.gd` (pond about 22 m wide, taper over 140 m); tuning values are in `tile_rules.json`.
+- **[Decided] (owner, 2026-10-17)** Where water drops steeply (waterfall or cascade), a **plunge pool** lies at the foot, a basin the water has scoured out (built: 10 to 26 m wide, 2.5 m deep, at the end of any steep run dropping 5 m or more).
+- **[Open]** Marsh plants around spring ponds; a real waterfall look (white water, mist, sound) on steep stretches; ground and soil washed out around pools (gravel, sand); ponds on slopes may still look like a flat lid on a hillside and need damming.
+
+
 ---
 
 ## 6. Characters, aging, death, heirs and personal finance
