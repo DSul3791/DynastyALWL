@@ -21,7 +21,7 @@ extends Node
 #                     uses 120 while its own server starts)
 #
 # Controls (see CONTROLS.md): mouse look, W A S D, Space and Ctrl, walk WASD,
-# jog double-tap W, run Shift+W, G or F fly or walk, Esc frees the mouse.
+# jog double-tap W, run Shift+W, G or F fly or walk, Esc opens the options menu.
 
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const KnowledgeScript := preload("res://src/client/inspection_knowledge.gd")
@@ -40,6 +40,8 @@ const VIEW_DISTANCE := 2048
 # Quality presets (ARCHITECTURE_BUDGET.md): ground view distance, how far trees,
 # shrubs and plants are drawn as a share of their full distance, and shadows.
 # Low is the minimum machine (GTX 1050 class, 8 GB RAM). F2 cycles; --quality=N.
+const CLEAR_CLIENT_FLAG := "user://clear_client_cache.flag"
+const CLEAR_SERVER_FLAG := "user://clear_server_store.flag"
 const QUALITY_NAMES := ["Low", "Medium", "High", "Ultra"]
 const QUALITY_VIEW := [768, 1280, 2048, 2048]
 const QUALITY_FLORA := [0.4, 0.7, 1.0, 1.0]
@@ -81,6 +83,10 @@ var _mode_label: Label
 var _brain_icon: TextureRect         # shown while inspection mode is on
 var _inspect_label: Label            # what the player is looking at (inspection mode)
 var inspecting: bool = false
+var menu_open: bool = false          # the Esc options menu
+var _menu: Control
+var _menu_pages: Dictionary = {}     # page name -> VBoxContainer
+var _menu_note: Label
 var knowledge = KnowledgeScript.new()   # what this character knows (placeholder stats)
 var test_inspect: bool = false       # --inspect: start with inspection on and print what it names
 var _last_inspected: String = ""
@@ -225,6 +231,10 @@ func _on_welcome(info: Dictionary) -> void:
 		cache_mb = QUALITY_CACHE_MB[quality]
 		cache_mb_from_quality = true
 
+	if FileAccess.file_exists(CLEAR_CLIENT_FLAG):
+		clear_cache = true
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(CLEAR_CLIENT_FLAG))
+
 	if clear_cache:
 		var folder: String = ProjectSettings.globalize_path(cache_dir)
 
@@ -310,6 +320,7 @@ func _on_welcome(info: Dictionary) -> void:
 	_brain_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_brain_icon.visible = inspecting
 	layer.add_child(_brain_icon)
+	_build_menu(layer)
 	hud = Label.new()
 	hud.position = Vector2(12.0, 12.0)
 	layer.add_child(hud)
@@ -480,6 +491,121 @@ func _load_brain_icon() -> Texture2D:
 	return ImageTexture.create_from_image(image) if image != null else null
 
 
+# ------------------------------------------------------------------ options menu
+
+# The Esc menu: Resume, Settings, Advanced (clear saved ground), Quit game.
+func _build_menu(layer: CanvasLayer) -> void:
+	_menu = Control.new()
+	_menu.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_menu.visible = false
+	layer.add_child(_menu)
+	var shade: ColorRect = ColorRect.new()
+	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	shade.color = Color(0.0, 0.0, 0.0, 0.55)
+	_menu.add_child(shade)
+	var center: CenterContainer = CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_menu.add_child(center)
+	var panel: PanelContainer = PanelContainer.new()
+	center.add_child(panel)
+	var margin: MarginContainer = MarginContainer.new()
+
+	for side in ["left", "right", "top", "bottom"]:
+		margin.add_theme_constant_override("margin_" + side, 28)
+
+	panel.add_child(margin)
+	var column: VBoxContainer = VBoxContainer.new()
+	column.add_theme_constant_override("separation", 12)
+	margin.add_child(column)
+	var title: Label = Label.new()
+	title.text = "Dynasty"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 40)
+	column.add_child(title)
+
+	var main: VBoxContainer = _menu_page(column, "main")
+	_menu_button(main, "Resume", func(): _set_menu(false))
+	_menu_button(main, "Settings", func(): _show_menu_page("settings"))
+	_menu_button(main, "Advanced", func(): _show_menu_page("advanced"))
+	_menu_button(main, "Quit game", func(): get_tree().quit())
+
+	var settings: VBoxContainer = _menu_page(column, "settings")
+	var quality_title: Label = Label.new()
+	quality_title.text = "Quality"
+	quality_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	settings.add_child(quality_title)
+
+	for n in range(QUALITY_NAMES.size()):
+		var index: int = n
+		_menu_button(settings, QUALITY_NAMES[n], func():
+			quality = index
+			_apply_quality()
+			_menu_note.text = "Quality: %s" % QUALITY_NAMES[index])
+
+	_menu_button(settings, "Back", func(): _show_menu_page("main"))
+
+	var advanced: VBoxContainer = _menu_page(column, "advanced")
+	_menu_button(advanced, "Clear saved ground", func():
+		_ask_clear_cache())
+	_menu_button(advanced, "Back", func(): _show_menu_page("main"))
+
+	_menu_note = Label.new()
+	_menu_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_menu_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_menu_note.custom_minimum_size = Vector2(380.0, 0.0)
+	column.add_child(_menu_note)
+	_show_menu_page("main")
+
+
+func _menu_page(parent: VBoxContainer, page_name: String) -> VBoxContainer:
+	var page: VBoxContainer = VBoxContainer.new()
+	page.add_theme_constant_override("separation", 10)
+	page.visible = false
+	parent.add_child(page)
+	_menu_pages[page_name] = page
+	return page
+
+
+func _menu_button(parent: VBoxContainer, text: String, action: Callable) -> void:
+	var button: Button = Button.new()
+	button.text = text
+	button.custom_minimum_size = Vector2(380.0, 52.0)
+	button.add_theme_font_size_override("font_size", 26)
+	button.pressed.connect(action)
+	parent.add_child(button)
+
+
+func _show_menu_page(page_name: String) -> void:
+	for name in _menu_pages:
+		_menu_pages[name].visible = name == page_name
+
+	_menu_note.text = ""
+
+
+func _set_menu(open: bool) -> void:
+	menu_open = open
+	_menu.visible = open
+
+	if open:
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		_show_menu_page("main")
+	elif DisplayServer.get_name() != "headless":
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+
+# The saved ground cannot be deleted while the game is using it, so this leaves
+# a note for the next start, which clears it (this computer's server too).
+func _ask_clear_cache() -> void:
+	for flag in [CLEAR_CLIENT_FLAG, CLEAR_SERVER_FLAG]:
+		var file: FileAccess = FileAccess.open(flag, FileAccess.WRITE)
+
+		if file != null:
+			file.store_string("clear")
+			file.close()
+
+	_menu_note.text = "Done. The saved ground is cleared the next time you start the game. Quit and start it again."
+
+
 # Inspection mode (the / key): names whatever the crosshair points at. Checked
 # ten times a second with one physics ray, so it costs next to nothing.
 func _update_inspect() -> void:
@@ -606,6 +732,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	if body == null:
 		return
 
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
+		_set_menu(not menu_open)
+		return
+
+	if menu_open:
+		return
+
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		body.rotate_y(-event.relative.x * MOUSE_SENSITIVITY)
 		pitch = clampf(pitch - event.relative.y * MOUSE_SENSITIVITY, -1.5, 1.5)
@@ -613,9 +746,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventMouseButton and event.pressed:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	elif event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_ESCAPE:
-			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-		elif event.keycode == KEY_W:
+		if event.keycode == KEY_W:
 			var now: int = Time.get_ticks_msec()
 
 			if now - _last_w_msec <= DOUBLE_TAP_MSEC:
@@ -638,6 +769,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _physics_process(delta: float) -> void:
 	if body == null:
+		return
+
+	if menu_open:
+		body.velocity = Vector3.ZERO
 		return
 
 	var input: Vector3 = Vector3(
@@ -808,7 +943,7 @@ func _process(delta: float) -> void:
 		total_ms += ms
 
 	var avg_ms: float = total_ms / maxf(float(_frame_ms.size()), 1.0)
-	hud.text = "build 19  %d fps  avg %.1f ms  worst %.1f ms  quality %s (F2)\nmem %.0f MB\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
+	hud.text = "build 20  %d fps  avg %.1f ms  worst %.1f ms  quality %s (F2)\nmem %.0f MB\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
 		Engine.get_frames_per_second(), avg_ms, worst_ms, QUALITY_NAMES[quality],
 		float(OS.get_static_memory_usage()) / 1048576.0,
 		stream.blocks_received, float(stream.bytes_received) / 1048576.0, cache.hits, flora.instances, flora.colliders,

@@ -108,6 +108,16 @@ func _ready() -> void:
 	if store_dir == "":
 		store_dir = "user://server_store/%s" % settings.world_name.validate_filename()
 
+	# The client's Advanced menu asks for the generated ground to be cleared.
+	if FileAccess.file_exists("user://clear_server_store.flag"):
+		var generated: String = ProjectSettings.globalize_path(store_dir + "/generated.sqlite")
+
+		for suffix in ["", "-wal", "-shm", "-journal"]:
+			DirAccess.remove_absolute(generated + suffix)
+
+		DirAccess.remove_absolute(ProjectSettings.globalize_path("user://clear_server_store.flag"))
+		print("server: cleared the generated ground as asked")
+
 	var problem: String = store.setup(generator, store_dir)
 
 	if problem != "":
