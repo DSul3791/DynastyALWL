@@ -47,49 +47,6 @@ static func chunk_levels(generator, origin: Vector2, chunk_m: float) -> Dictiona
 
 	levels = closed
 
-	# Falls: where neighboring wet points differ steeply in height, give the water one
-	# more point on each side so a fall reads as a sheet, not a thread. The extra
-	# points sit under the canyon walls, so they only show where the ground is lower.
-	var widened: PackedFloat32Array = levels.duplicate()
-
-	for j in range(count):
-		for i in range(count):
-			var here: float = levels[j * count + i]
-
-			if is_nan(here):
-				continue
-
-			var steep: bool = false
-
-			for step in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
-				var ni: int = i + step.x
-				var nj: int = j + step.y
-
-				if ni < 0 or nj < 0 or ni >= count or nj >= count:
-					continue
-
-				var other: float = levels[nj * count + ni]
-
-				if not is_nan(other) and absf(other - here) > FALL_STEP_M:
-					steep = true
-
-			if not steep:
-				continue
-
-			for dj in range(-1, 2):
-				for di in range(-1, 2):
-					var wi: int = i + di
-					var wj: int = j + dj
-
-					if wi < 0 or wj < 0 or wi >= count or wj >= count:
-						continue
-
-					if is_nan(widened[wj * count + wi]):
-						widened[wj * count + wi] = here
-						wet += 1
-
-	levels = widened
-
 	return {"count": count, "spacing": spacing, "levels": levels, "wet": wet}
 
 
@@ -108,9 +65,6 @@ static func _level_at(generator, data, x: float, z: float, spacing: float) -> fl
 
 # How far (in grid steps) a hole in a river may be closed. Steep falls leave long holes.
 const GAP_STEPS := 6
-
-# Wet neighbors this far apart in height (m) count as a waterfall.
-const FALL_STEP_M := 2.0
 
 
 # Rivers are one or two samples wide and the baked map leaves holes along
