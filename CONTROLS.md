@@ -2,7 +2,7 @@
 
 Tracks what the controls are now and what is planned. Update it whenever a control changes.
 
-## Now (terrain client, build 14)
+## Now (terrain client, build 15)
 
 | Control | Action |
 |---|---|

@@ -92,4 +92,6 @@ What this means for the low tier (8 GB RAM, SATA drive) *[Practice]*:
 
 - **Done (build 14):** quality presets Low, Medium, High, Ultra (F2 or `--quality=N` in the client). They set ground view distance (768, 1280, 2048, 2048 m), tree/shrub/plant draw distance (40%, 70%, 100%, 100%) and shadow distance (none, 60, 100, 250 m). *[Measured, headless]* Low loads about 18% fewer ground blocks in the same walk (9,784 against 11,924). Real frame rates still need real machines.
 - **Done (build 14):** the on-screen readout shows frames per second, average and worst frame time over the last 120 frames, quality name and game memory.
-- **Not started:** real-machine measurement (needs a playtest), tree levels of detail and variants, cache limit and clear button.
+- **Done (build 14):** the client cache limit follows the preset (1, 4, 10 GB) and the oldest, farthest places are dropped first; `--clear-cache` wipes it at start.
+- **Done (build 15):** ground detail comes from a cheap noise shader (no textures to load); fine detail fades out with distance. Colors were converted to true display values and muted. Not seen on screen yet.
+- **Not started:** real-machine measurement (needs a playtest), tree levels of detail and variants, an in-game clear-cache button.

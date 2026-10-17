@@ -22,8 +22,8 @@ const KIND_TREE := 0
 const KIND_SHRUB := 1
 const KIND_PLANT := 2
 const AUTUMN: Array[Color] = [
-	Color(0.95, 0.8, 0.15), Color(0.9, 0.65, 0.1), Color(0.93, 0.5, 0.1), Color(0.85, 0.32, 0.08),
-	Color(0.78, 0.15, 0.1), Color(0.6, 0.1, 0.1), Color(0.8, 0.55, 0.15)
+	Color(0.80, 0.66, 0.24), Color(0.76, 0.54, 0.20), Color(0.78, 0.43, 0.18), Color(0.70, 0.31, 0.16),
+	Color(0.60, 0.22, 0.16), Color(0.46, 0.17, 0.14), Color(0.66, 0.48, 0.22)
 ]
 const KINDS := ["tree", "shrub", "plant"]
 const PART_M := [256.0, 128.0, 128.0]
@@ -63,7 +63,7 @@ func setup(tables, tile_rules: Dictionary) -> void:
 	_hardwood_material.albedo_color = Color(0.5, 0.5, 0.5)
 	_hardwood_material.roughness = 1.0
 	_water_material = StandardMaterial3D.new()
-	_water_material.albedo_color = Color(0.16, 0.36, 0.42, 0.78)
+	_water_material.albedo_color = Color(0.13, 0.30, 0.34, 0.80)
 	_water_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	_water_material.roughness = 0.08
 	_water_material.metallic_specular = 0.8
@@ -344,6 +344,13 @@ func _autumn_color(id: int) -> Color:
 	return Color(minf(base.r * shade, 1.0), minf(base.g * shade, 1.0), minf(base.b * shade, 1.0))
 
 
+# Mutes a species color toward natural tones: a little less saturated and
+# slightly darker, so greens read as foliage and not as paint.
+static func _natural(c: Color) -> Color:
+	var grey: float = 0.299 * c.r + 0.587 * c.g + 0.114 * c.b
+	return Color(lerpf(grey, c.r, 0.72) * 0.9, lerpf(grey, c.g, 0.72) * 0.9, lerpf(grey, c.b, 0.72) * 0.9)
+
+
 # ---------------------------------------------------------------- meshes
 
 # A stand-in mesh for a species at its reference height `h`.
@@ -351,7 +358,7 @@ func _make_mesh(entry: Dictionary, h: float) -> ArrayMesh:
 	var mesh: ArrayMesh = ArrayMesh.new()
 	var color: Array = entry["color"]
 	var leaf: StandardMaterial3D = StandardMaterial3D.new()
-	leaf.albedo_color = Color(float(color[0]), float(color[1]), float(color[2]))
+	leaf.albedo_color = _natural(Color(float(color[0]), float(color[1]), float(color[2])))
 	leaf.roughness = 1.0
 	var broadleaf: bool = str(entry["shape"]) == "broadleaf"
 
