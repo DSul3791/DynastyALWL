@@ -135,6 +135,7 @@ var _bake_status: String = ""
 var _bake_alert_until: int = 0
 var quality: int = 2                  # index into QUALITY_NAMES; High is the default
 var _flora_view_full: PackedFloat32Array = PackedFloat32Array()
+var _flora_near_full: PackedFloat32Array = PackedFloat32Array()
 var _viewer: VoxelViewer
 var _sun: DirectionalLight3D
 var _frame_ms: Array = []             # recent frame times for the HUD readout
@@ -288,6 +289,7 @@ func _on_welcome(info: Dictionary) -> void:
 	flora.setup(_tables, TileHeightScript.load_rules("res://worlds/base_world/plan/tile_rules.json", []))
 	root.add_child(flora)
 	_flora_view_full = flora.view_m.duplicate()
+	_flora_near_full = flora.near_m.duplicate()
 	grass = GrassViewScript.new()
 	grass.name = "Grass"
 	root.add_child(grass)
@@ -491,6 +493,9 @@ func _apply_quality() -> void:
 
 	for n in range(_flora_view_full.size()):
 		flora.view_m[n] = _flora_view_full[n] * float(QUALITY_FLORA[quality])
+
+	for n in range(_flora_near_full.size()):
+		flora.near_m[n] = _flora_near_full[n] * float(QUALITY_FLORA[quality])
 
 	grass.points_per_side = QUALITY_GRASS_POINTS[quality]
 	grass.set_radius(QUALITY_GRASS_M[quality])
@@ -1007,7 +1012,7 @@ func _process(delta: float) -> void:
 		total_ms += ms
 
 	var avg_ms: float = total_ms / maxf(float(_frame_ms.size()), 1.0)
-	hud.text = "build 29  %d fps  avg %.1f ms  worst %.1f ms  quality %s (F2)\nmem %.0f MB\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders, grass %d\nx %.0f  y %.1f  z %.0f" % [
+	hud.text = "build 30  %d fps  avg %.1f ms  worst %.1f ms  quality %s (F2)\nmem %.0f MB\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders, grass %d\nx %.0f  y %.1f  z %.0f" % [
 		Engine.get_frames_per_second(), avg_ms, worst_ms, QUALITY_NAMES[quality],
 		float(OS.get_static_memory_usage()) / 1048576.0,
 		stream.blocks_received, float(stream.bytes_received) / 1048576.0, cache.hits, flora.instances, flora.colliders, grass.tufts,

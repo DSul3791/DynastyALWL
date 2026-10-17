@@ -18,6 +18,7 @@ extends Node3D
 # shape and color) until real models exist.
 
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
+const TreeBuilder := preload("res://src/flora/tree_builder.gd")
 const KIND_TREE := 0
 const KIND_SHRUB := 1
 const KIND_PLANT := 2
@@ -25,12 +26,66 @@ const AUTUMN: Array[Color] = [
 	Color(0.80, 0.66, 0.24), Color(0.76, 0.54, 0.20), Color(0.78, 0.43, 0.18), Color(0.70, 0.31, 0.16),
 	Color(0.60, 0.22, 0.16), Color(0.46, 0.17, 0.14), Color(0.66, 0.48, 0.22)
 ]
+
+const FOLIAGE_SHADER := """
+shader_type spatial;
+render_mode cull_disabled, diffuse_burley, specular_disabled;
+uniform sampler2D leaves : source_color, filter_linear_mipmap, repeat_disable;
+uniform float sway = 0.012;
+uniform float flutter = 0.06;
+varying vec3 tint;
+varying vec3 view_normal;
+
+void vertex() {
+	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
+	float bend = max(VERTEX.y, 0.0) * sway;
+	VERTEX.x += gust * bend;
+	VERTEX.z += gust * bend * 0.6;
+	VERTEX += vec3(sin(TIME * 3.7 + wp.x * 1.7 + VERTEX.y), 0.0, cos(TIME * 3.1 + wp.z * 1.3 + VERTEX.y)) * flutter * COLOR.a;
+	tint = INSTANCE_CUSTOM.rgb;
+	view_normal = normalize((MODELVIEW_NORMAL_MATRIX * NORMAL));
+}
+
+void fragment() {
+	vec4 t = texture(leaves, UV);
+	if (t.a < 0.5) {
+		discard;
+	}
+	// Light every card the same from both sides, using the crown's soft normals.
+	NORMAL = view_normal;
+	ALBEDO = t.rgb * COLOR.rgb * tint;
+	ROUGHNESS = 1.0;
+}
+"""
+
+const BARK_SHADER := """
+shader_type spatial;
+render_mode diffuse_burley, specular_disabled;
+uniform sampler2D bark : source_color, filter_linear_mipmap, repeat_enable;
+uniform float sway = 0.004;
+
+void vertex() {
+	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
+	float bend = max(VERTEX.y, 0.0) * sway;
+	VERTEX.x += gust * bend;
+	VERTEX.z += gust * bend * 0.6;
+}
+
+void fragment() {
+	ALBEDO = texture(bark, UV).rgb * COLOR.rgb * 1.8;
+	ROUGHNESS = 1.0;
+}
+"""
+
 const KINDS := ["tree", "shrub", "plant"]
 const PART_M := [256.0, 128.0, 128.0]
 
 var chunk_m: float = 256.0
 var view_m: PackedFloat32Array = PackedFloat32Array([900.0, 300.0, 120.0])
 var collision_m: float = 160.0
+var near_m: PackedFloat32Array = PackedFloat32Array([260.0, 110.0, 0.0])   # full-detail model out to this distance (tree, shrub)
 var instances: int = 0                 # items drawn now
 var colliders: int = 0                 # trunk colliders now
 var water_chunks: int = 0              # chunks with water drawn
@@ -47,6 +102,7 @@ var _trunk_material: StandardMaterial3D
 var _softwood_material: StandardMaterial3D   # conifer trunks: dark brown
 var _hardwood_material: StandardMaterial3D   # broadleaf trunks: gray
 var _water_material: StandardMaterial3D
+var _tree_materials: Dictionary = {}       # TreeBuilder materials (bark, broad, conifer, palm)
 
 
 func setup(tables, tile_rules: Dictionary) -> void:
@@ -58,6 +114,10 @@ func setup(tables, tile_rules: Dictionary) -> void:
 		view_m[n] = float(view.get(KINDS[n], view_m[n]))
 
 	collision_m = float(rules.get("collision_m", collision_m))
+	var near: Dictionary = rules.get("near_m", {})
+	near_m[0] = float(near.get("tree", near_m[0]))
+	near_m[1] = float(near.get("shrub", near_m[1]))
+	_make_tree_materials()
 	_trunk_material = StandardMaterial3D.new()
 	_trunk_material.albedo_color = Color(0.32, 0.24, 0.16)
 	_trunk_material.roughness = 1.0
@@ -86,13 +146,69 @@ func setup(tables, tile_rules: Dictionary) -> void:
 		_alikes[int(entry["id"])] = entry.get("look_alikes", [])
 		_slugs[int(entry["id"])] = str(entry["name"])
 		_display[int(entry["id"])] = str(entry.get("display", entry.get("name", "")))
+		var kind: int = KINDS.find(str(entry["kind"]))
+		var near_meshes: Array = []
+		var far_meshes: Array = []
+
+		if kind == KIND_PLANT:
+			var plain: ArrayMesh = _make_mesh(entry, reference)
+			near_meshes = [plain]
+			far_meshes = [plain]
+		else:
+			for v in range(TreeBuilder.VARIANTS):
+				near_meshes.append(TreeBuilder.build(entry, reference, v, false, _tree_materials))
+				far_meshes.append(TreeBuilder.build(entry, reference, v, true, _tree_materials))
+
+		var c: Array = entry["color"]
 		_species[int(entry["id"])] = {
-			"kind": KINDS.find(str(entry["kind"])),
+			"kind": kind,
 			"height": reference,
 			"trunk": float(entry["trunk_m"]),
 			"hardwood": str(entry["shape"]) == "broadleaf",
-			"mesh": _make_mesh(entry, reference),
+			"near": near_meshes,
+			"far": far_meshes,
+			"tint": _natural(Color(float(c[0]), float(c[1]), float(c[2]))) * 1.5,
 		}
+
+
+func _make_tree_materials() -> void:
+	var foliage: Shader = Shader.new()
+	foliage.code = FOLIAGE_SHADER
+	var bark: Shader = Shader.new()
+	bark.code = BARK_SHADER
+	_tree_materials = {}
+	var bark_material: ShaderMaterial = ShaderMaterial.new()
+	bark_material.shader = bark
+	bark_material.set_shader_parameter("bark", _load_texture("res://assets/trees/bark.png"))
+	_tree_materials["bark"] = bark_material
+
+	for pair in [["broad", "leaf_broad"], ["conifer", "leaf_conifer"], ["palm", "leaf_palm"]]:
+		var material: ShaderMaterial = ShaderMaterial.new()
+		material.shader = foliage
+		material.set_shader_parameter("leaves", _load_texture("res://assets/trees/%s.png" % pair[1]))
+		_tree_materials[pair[0]] = material
+
+	# Conifer boughs hang from the trunk, so they sway less; palms sway more.
+	_tree_materials["conifer"].set_shader_parameter("sway", 0.006)
+	_tree_materials["palm"].set_shader_parameter("sway", 0.02)
+
+
+# A painted texture, imported by the editor or else read straight from the file.
+static func _load_texture(path: String) -> Texture2D:
+	if ResourceLoader.exists(path):
+		var imported: Texture2D = load(path) as Texture2D
+
+		if imported != null:
+			return imported
+
+	var image: Image = Image.load_from_file(ProjectSettings.globalize_path(path))
+
+	if image == null:
+		image = Image.create(4, 4, false, Image.FORMAT_RGBA8)
+		image.fill(Color(0.5, 0.6, 0.4, 1.0))
+
+	image.generate_mipmaps()
+	return ImageTexture.create_from_image(image)
 
 
 # "Hemlock (Toxic)": the display name, with the first listed property as a note.
@@ -296,6 +412,11 @@ func _level(chunk: Vector2i, position: Vector3) -> int:
 	if distance <= collision_m:
 		level |= 8
 
+	# Full-detail models near the player (trees 16, shrubs 32).
+	for kind in range(2):
+		if distance <= near_m[kind]:
+			level |= 16 << kind
+
 	return level
 
 
@@ -327,7 +448,9 @@ func _refresh(chunk: Vector2i, position: Vector3) -> void:
 
 		var p: Vector3 = items["positions"][n]
 		var part_m: float = PART_M[info["kind"]]
-		var key: Array = [species_id, int(floor(p.x / part_m)), int(floor(p.z / part_m))]
+		var variant: int = (ids[n] * 2654435761 >> 5) % int(info["near"].size())
+		var is_near: int = 1 if (int(info["kind"]) != KIND_PLANT and (level & (16 << int(info["kind"]))) != 0) else 0
+		var key: Array = [species_id, int(floor(p.x / part_m)), int(floor(p.z / part_m)), variant, is_near]
 
 		if not groups.has(key):
 			groups[key] = PackedInt32Array()
@@ -358,8 +481,8 @@ func _refresh(chunk: Vector2i, position: Vector3) -> void:
 		var indices: PackedInt32Array = groups[key]
 		var multimesh: MultiMesh = MultiMesh.new()
 		multimesh.transform_format = MultiMesh.TRANSFORM_3D
-		multimesh.mesh = info["mesh"]
-		multimesh.use_colors = bool(info["hardwood"])
+		multimesh.mesh = (info["near"] if key[4] == 1 else info["far"])[key[3]]
+		multimesh.use_custom_data = int(info["kind"]) != KIND_PLANT
 		multimesh.instance_count = indices.size()
 
 		for m in range(indices.size()):
@@ -369,8 +492,8 @@ func _refresh(chunk: Vector2i, position: Vector3) -> void:
 			# Sunk a little so slopes do not show a gap under the trunk.
 			multimesh.set_instance_transform(m, Transform3D(basis, items["positions"][n] - Vector3(0.0, 0.15, 0.0)))
 
-			if info["hardwood"]:
-				multimesh.set_instance_color(m, _autumn_color(ids[n]))
+			if int(info["kind"]) != KIND_PLANT:
+				multimesh.set_instance_custom_data(m, _autumn_tint(ids[n]) if info["hardwood"] else info["tint"])
 
 		var draw: MultiMeshInstance3D = MultiMeshInstance3D.new()
 		draw.multimesh = multimesh
@@ -424,6 +547,13 @@ func _autumn_color(id: int) -> Color:
 	var base: Color = AUTUMN[mix % AUTUMN.size()]
 	var shade: float = 0.9 + 0.2 * float((mix >> 8) % 100) / 100.0
 	return Color(minf(base.r * shade, 1.0), minf(base.g * shade, 1.0), minf(base.b * shade, 1.0))
+
+
+# The leaf tint for a hardwood tree: its autumn color, scaled up because the
+# painted leaf texture is light gray and the tint multiplies it.
+func _autumn_tint(id: int) -> Color:
+	var c: Color = _autumn_color(id)
+	return Color(c.r * 1.5, c.g * 1.5, c.b * 1.5)
 
 
 # Mutes a species color toward natural tones: a little less saturated and
