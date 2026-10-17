@@ -12,6 +12,7 @@ const STARTER_TILE := "worlds/base_world/tiles/tile_3_4.tile"
 var running: bool = false
 var _pid: int = -1
 var _started_unix: int = 0
+var _started_msec: int = 0
 var _log_path: String = ""
 
 
@@ -23,6 +24,7 @@ func start() -> String:
 	var project: String = ProjectSettings.globalize_path("res://")
 	_log_path = ProjectSettings.globalize_path("user://bake.log")
 	_started_unix = int(Time.get_unix_time_from_system())
+	_started_msec = Time.get_ticks_msec()
 	_pid = OS.create_process(OS.get_executable_path(), [
 		"--headless", "--path", project,
 		"--log-file", _log_path,
@@ -49,9 +51,12 @@ func status() -> String:
 		done = FileAccess.get_file_as_string(_log_path).count(" baked in ")
 
 	if done == 0:
-		return "Baking starter tiles: starting up (about 30 s)..."
+		return "Baking starter tiles: starting up, about 6 minutes to go"
 
-	return "Baking starter tiles: %d of %d done" % [done, total]
+	# Time left from the pace so far (the first tile also carries the setup).
+	var elapsed_min: float = float(Time.get_ticks_msec() - _started_msec) / 60000.0
+	var left_min: float = elapsed_min / float(done) * float(total - done)
+	return "Baking starter tiles: %d of %d done, about %d min left" % [done, total, maxi(int(ceil(left_min)), 1)]
 
 
 # "" while nothing new to say; a message once the bake has ended.
@@ -70,4 +75,4 @@ func poll() -> String:
 	if baked == 0:
 		return "The bake ended without writing tiles. See %s" % _log_path
 
-	return "Baked %d tiles. In GitHub Desktop commit %s and push, then restart the game." % [baked, STARTER_TILE]
+	return "FINISHED: baked %d tiles. In GitHub Desktop commit %s and push, then restart the game." % [baked, STARTER_TILE]

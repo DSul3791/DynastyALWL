@@ -132,6 +132,7 @@ var grass                             # GrassView
 var _bake = TileBakeScript.new()      # admin: background tile bake
 var _bake_check_msec: int = 0
 var _bake_status: String = ""
+var _bake_alert_until: int = 0
 var quality: int = 2                  # index into QUALITY_NAMES; High is the default
 var _flora_view_full: PackedFloat32Array = PackedFloat32Array()
 var _viewer: VoxelViewer
@@ -339,6 +340,9 @@ func _on_welcome(info: Dictionary) -> void:
 	_build_menu(layer)
 	hud = Label.new()
 	hud.position = Vector2(12.0, 12.0)
+	hud.add_theme_font_size_override("font_size", 30)
+	hud.add_theme_constant_override("outline_size", 6)
+	hud.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
 	layer.add_child(hud)
 	print("Terrain client: welcome after %d ms; world %s; spawn %s; cache %s (%d MB)" % [
 		connected_msec - started_msec, str(info["world_name"]), str(info["spawn"]), cache_dir, cache_mb
@@ -946,6 +950,7 @@ func _process(delta: float) -> void:
 
 		if finished != "":
 			_bake_status = finished
+			_bake_alert_until = now + 20000
 			_menu_note.text = finished
 			_set_menu(true)
 			_show_menu_page("advanced")
@@ -985,6 +990,9 @@ func _process(delta: float) -> void:
 
 	if waiting_for_ground and not flying:
 		mode = (mode + " (building the ground around you, the first visit takes longer)").strip_edges()
+	if Time.get_ticks_msec() < _bake_alert_until:
+		mode = _bake_status
+
 	_mode_label.text = mode
 	var worst_ms: float = 0.0
 	var total_ms: float = 0.0
@@ -994,7 +1002,7 @@ func _process(delta: float) -> void:
 		total_ms += ms
 
 	var avg_ms: float = total_ms / maxf(float(_frame_ms.size()), 1.0)
-	hud.text = "build 27  %d fps  avg %.1f ms  worst %.1f ms  quality %s (F2)\nmem %.0f MB\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders, grass %d\nx %.0f  y %.1f  z %.0f" % [
+	hud.text = "build 28  %d fps  avg %.1f ms  worst %.1f ms  quality %s (F2)\nmem %.0f MB\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders, grass %d\nx %.0f  y %.1f  z %.0f" % [
 		Engine.get_frames_per_second(), avg_ms, worst_ms, QUALITY_NAMES[quality],
 		float(OS.get_static_memory_usage()) / 1048576.0,
 		stream.blocks_received, float(stream.bytes_received) / 1048576.0, cache.hits, flora.instances, flora.colliders, grass.tufts,

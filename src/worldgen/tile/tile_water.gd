@@ -495,6 +495,9 @@ func _carve_guides(rivers: Array) -> void:
 	var taper_min: float = float(_rules.get("head_taper_min", 0.4))
 	var pond_width: float = float(_rules.get("head_pond_width_m", 22.0))
 	var pond_depth: float = float(_rules.get("head_pond_depth_m", 1.6))
+	var widen_from: float = float(_rules.get("fall_widen_from_slope", 0.15))
+	var widen_rate: float = float(_rules.get("fall_widen_rate", 3.0))
+	var widen_max: float = float(_rules.get("fall_widen_max", 2.5))
 	var fall_slope: float = float(_rules.get("fall_slope", 0.30))
 	var fall_min_drop: float = float(_rules.get("fall_min_drop_m", 5.0))
 	var pool_depth: float = float(_rules.get("pool_depth_m", 2.5))
@@ -585,6 +588,13 @@ func _carve_guides(rivers: Array) -> void:
 			deque.append(k)
 			var bed: float = low_values[deque[head_at]]
 			var strength: float = areas[k] / cell_km2
+
+			# Water falling steeply spreads into a wider, shallower sheet.
+			if k + 2 < count and usable[k + 2] == 1:
+				var drop_slope: float = (low_values[k] - low_values[k + 2]) / (2.0 * step_m)
+				var widen: float = 1.0 + clampf((drop_slope - widen_from) * widen_rate, 0.0, widen_max - 1.0)
+				widths[k] *= widen
+
 			beds[k] = bed
 			river_cells += 1
 			_stamp_at(carved, points[k], widths[k], depths[k], bed, slope, strength, best_flow)
