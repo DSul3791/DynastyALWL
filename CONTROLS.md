@@ -2,7 +2,7 @@
 
 Tracks what the controls are now and what is planned. Update it whenever a control changes.
 
-## Now (terrain client, build 13)
+## Now (terrain client, build 14)
 
 | Control | Action |
 |---|---|
@@ -14,6 +14,7 @@ Tracks what the controls are now and what is planned. Update it whenever a contr
 | Space | Jump (walking) or go up (flying) |
 | Ctrl | Go down (flying) |
 | G or F | Switch between walking and flying |
+| F2 | Cycle quality: Low, Medium, High, Ultra (Low is the minimum machine) |
 | Esc | Free the mouse |
 
 Gait rules:

@@ -35,7 +35,7 @@ Rules of thumb: the server decides, the client draws. Never send what the client
 
 ## 4. Target per player machine (all *[Practice]* targets, to be measured at the playtest)
 
-**Owner's minimum (2026-10-17):** an old GTX/RTX 1050-class graphics card, 8 GB of RAM and a SATA drive (SSD or spinning hard drive) must be able to enjoy the game, and high-end machines must also be well served. Ray tracing is not in scope now.
+**[Decided] Owner's minimum (2026-10-17), with 30 fps agreed as the low-tier goal and stronger machines welcome to enjoy more:** an old GTX/RTX 1050-class graphics card, 8 GB of RAM and a SATA drive (SSD or spinning hard drive) must be able to enjoy the game, and high-end machines must also be well served. Ray tracing is not in scope now.
 
 | Tier | Machine | Frame rate | Game RAM / video memory | View distance | Notes |
 |---|---|---|---|---|---|
@@ -87,3 +87,9 @@ What this means for the low tier (8 GB RAM, SATA drive) *[Practice]*:
 - **Cache size limit.** Keep the existing client cache cap (2 GB now) as a setting. Suggested defaults: Low 1 GB, Mid 4 GB, High 10 GB. When full, drop the least recently visited blocks first.
 - **A clear-cache button** in settings, with the current cache size shown, so a player can free disk without reinstalling. Nothing is lost: the ground is rebuilt or re-sent when visited again.
 - **Hard drives:** write the cache in large batches off the main thread, so saving never causes hitches.
+
+## 8. Progress
+
+- **Done (build 14):** quality presets Low, Medium, High, Ultra (F2 or `--quality=N` in the client). They set ground view distance (768, 1280, 2048, 2048 m), tree/shrub/plant draw distance (40%, 70%, 100%, 100%) and shadow distance (none, 60, 100, 250 m). *[Measured, headless]* Low loads about 18% fewer ground blocks in the same walk (9,784 against 11,924). Real frame rates still need real machines.
+- **Done (build 14):** the on-screen readout shows frames per second, average and worst frame time over the last 120 frames, quality name and game memory.
+- **Not started:** real-machine measurement (needs a playtest), tree levels of detail and variants, cache limit and clear button.

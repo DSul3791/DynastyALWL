@@ -35,6 +35,14 @@ const GroundMaterialScript := preload("res://src/client/ground_material.gd")
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 
 const VIEW_DISTANCE := 2048
+
+# Quality presets (ARCHITECTURE_BUDGET.md): ground view distance, how far trees,
+# shrubs and plants are drawn as a share of their full distance, and shadows.
+# Low is the minimum machine (GTX 1050 class, 8 GB RAM). F2 cycles; --quality=N.
+const QUALITY_NAMES := ["Low", "Medium", "High", "Ultra"]
+const QUALITY_VIEW := [768, 1280, 2048, 2048]
+const QUALITY_FLORA := [0.4, 0.7, 1.0, 1.0]
+const QUALITY_SHADOW_M := [0.0, 60.0, 100.0, 250.0]    # 0 = no shadows
 const FLY_SPEED := 30.0
 const WALK_SPEED := 6.0
 const FAST := 3.0                     # flying: Shift multiplier
@@ -93,6 +101,11 @@ var _budget_check_msec: int = 0
 var _report_msec: int = 0
 var dig_applied: int = 0
 var flora                             # FloraView
+var quality: int = 2                  # index into QUALITY_NAMES; High is the default
+var _flora_view_full: PackedFloat32Array = PackedFloat32Array()
+var _viewer: VoxelViewer
+var _sun: DirectionalLight3D
+var _frame_ms: Array = []             # recent frame times for the HUD readout
 var test_cut: bool = false
 var _flora_asked: Dictionary = {}     # chunk -> true (asked or held)
 var _flora_check_msec: int = 0
@@ -125,6 +138,8 @@ func _ready() -> void:
 			test_speed = float(argument.trim_prefix("--move="))
 		elif argument.begins_with("--wait="):
 			_wait_until_msec = Time.get_ticks_msec() + int(float(argument.trim_prefix("--wait=")) * 1000.0)
+		elif argument.begins_with("--quality="):
+			quality = clampi(int(argument.trim_prefix("--quality=")), 0, QUALITY_NAMES.size() - 1)
 		elif argument == "--walk":
 			test_walk = true
 		elif argument.begins_with("--runspeed="):
@@ -216,7 +231,9 @@ func _on_welcome(info: Dictionary) -> void:
 	flora.name = "Flora"
 	flora.setup(_tables, TileHeightScript.load_rules("res://worlds/base_world/plan/tile_rules.json", []))
 	root.add_child(flora)
+	_flora_view_full = flora.view_m.duplicate()
 	_make_environment(root)
+	_apply_quality()
 	var layer: CanvasLayer = CanvasLayer.new()
 	add_child(layer)
 	_tint = ColorRect.new()
@@ -362,15 +379,34 @@ func _make_player(root: Node3D, start: Vector3) -> void:
 	viewer.view_distance = VIEW_DISTANCE
 	viewer.requires_collisions = true
 	body.add_child(viewer)
+	_viewer = viewer
 
 	if DisplayServer.get_name() != "headless":
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+
+# Applies the current quality preset to ground view distance, flora distances
+# and shadows.
+func _apply_quality() -> void:
+	var view: int = QUALITY_VIEW[quality]
+	terrain.view_distance = view
+
+	if _viewer != null:
+		_viewer.view_distance = view
+
+	for n in range(_flora_view_full.size()):
+		flora.view_m[n] = _flora_view_full[n] * float(QUALITY_FLORA[quality])
+
+	if _sun != null:
+		_sun.shadow_enabled = float(QUALITY_SHADOW_M[quality]) > 0.0
+		_sun.directional_shadow_max_distance = maxf(float(QUALITY_SHADOW_M[quality]), 1.0)
 
 
 func _make_environment(root: Node3D) -> void:
 	var sun: DirectionalLight3D = DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-50.0, -30.0, 0.0)
 	sun.shadow_enabled = true
+	_sun = sun
 	root.add_child(sun)
 	var environment: Environment = Environment.new()
 	environment.background_mode = Environment.BG_SKY
@@ -415,6 +451,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				jogging = true
 
 			_last_w_msec = now
+		elif event.keycode == KEY_F2:
+			quality = (quality + 1) % QUALITY_NAMES.size()
+			_apply_quality()
 		elif event.keycode == KEY_G or event.keycode == KEY_F:
 			flying = not flying
 			body.velocity = Vector3.ZERO
@@ -508,7 +547,12 @@ func _update_bob(delta: float) -> void:
 	camera.rotation.z = deg_to_rad(SWAY_DEGREES) * sin(_bob_phase * 0.5) * _bob_amount
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	_frame_ms.append(delta * 1000.0)
+
+	if _frame_ms.size() > 120:
+		_frame_ms.pop_front()
+
 	if stream == null:
 		return
 
@@ -576,8 +620,17 @@ func _process(_delta: float) -> void:
 	if waiting_for_ground and not flying:
 		mode = (mode + " (waiting for ground)").strip_edges()
 	_mode_label.text = mode
-	hud.text = "build 13  %d fps\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
-		Engine.get_frames_per_second(),
+	var worst_ms: float = 0.0
+	var total_ms: float = 0.0
+
+	for ms in _frame_ms:
+		worst_ms = maxf(worst_ms, ms)
+		total_ms += ms
+
+	var avg_ms: float = total_ms / maxf(float(_frame_ms.size()), 1.0)
+	hud.text = "build 14  %d fps  avg %.1f ms  worst %.1f ms  quality %s (F2)\nmem %.0f MB\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
+		Engine.get_frames_per_second(), avg_ms, worst_ms, QUALITY_NAMES[quality],
+		float(OS.get_static_memory_usage()) / 1048576.0,
 		stream.blocks_received, float(stream.bytes_received) / 1048576.0, cache.hits, flora.instances, flora.colliders,
 		body.global_position.x, body.global_position.y, body.global_position.z
 	]
