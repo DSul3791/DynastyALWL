@@ -37,6 +37,23 @@ func start() -> String:
 	return ""
 
 
+# How far the bake is, read from its log (one \"baked in\" line per finished tile).
+func status() -> String:
+	if not running:
+		return ""
+
+	var done: int = 0
+	var total: int = TILES.split(";").size()
+
+	if FileAccess.file_exists(_log_path):
+		done = FileAccess.get_file_as_string(_log_path).count(" baked in ")
+
+	if done == 0:
+		return "Baking starter tiles: starting up (about 30 s)..."
+
+	return "Baking starter tiles: %d of %d done" % [done, total]
+
+
 # "" while nothing new to say; a message once the bake has ended.
 func poll() -> String:
 	if not running or OS.is_process_running(_pid):

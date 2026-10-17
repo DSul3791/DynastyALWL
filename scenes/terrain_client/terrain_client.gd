@@ -131,6 +131,7 @@ var flora                             # FloraView
 var grass                             # GrassView
 var _bake = TileBakeScript.new()      # admin: background tile bake
 var _bake_check_msec: int = 0
+var _bake_status: String = ""
 var quality: int = 2                  # index into QUALITY_NAMES; High is the default
 var _flora_view_full: PackedFloat32Array = PackedFloat32Array()
 var _viewer: VoxelViewer
@@ -936,9 +937,15 @@ func _process(delta: float) -> void:
 
 	if _bake.running and now >= _bake_check_msec:
 		_bake_check_msec = now + 2000
+		_bake_status = _bake.status()
+
+		if menu_open:
+			_menu_note.text = _bake_status
+
 		var finished: String = _bake.poll()
 
 		if finished != "":
+			_bake_status = finished
 			_menu_note.text = finished
 			_set_menu(true)
 			_show_menu_page("advanced")
@@ -993,6 +1000,9 @@ func _process(delta: float) -> void:
 		stream.blocks_received, float(stream.bytes_received) / 1048576.0, cache.hits, flora.instances, flora.colliders, grass.tufts,
 		body.global_position.x, body.global_position.y, body.global_position.z
 	]
+
+	if _bake_status != "":
+		hud.text += "\n" + _bake_status
 
 	if frames_left > 0:
 		frames_left -= 1
