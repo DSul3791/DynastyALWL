@@ -50,9 +50,15 @@ const WALK_SPEED := 6.0
 const FAST := 3.0                     # flying: Shift multiplier
 const JOG_SPEED := 11.0
 const RUN_SPEED := 18.0
-const BOB_HEIGHT := 0.035            # metres of camera rise at a walk; scales up gently
-const SWAY_DEGREES := 0.35          # slight sideways roll, once per two steps
-const BOB_STEP := 1.4                # metres per step, so faster gaits step faster
+# Walking camera (all tuning is here; each list is [walk, jog, run]). A footfall
+# is the lowest point of the bob and the far end of the sway: left foot, camera
+# down and leaning left; midway it rises back to the middle; right foot, down
+# and leaning right. The bob therefore repeats every step and the sway every
+# two steps.
+const STEP_M := [3.0, 4.2, 6.0]          # metres per step: longer strides when faster
+const BOB_M := [0.030, 0.042, 0.055]     # how far the camera dips at a footfall
+const SWAY_M := [0.020, 0.026, 0.032]    # sideways shift at a footfall
+const SWAY_DEG := [0.16, 0.20, 0.24]     # roll toward the stepping side at a footfall
 const DOUBLE_TAP_MSEC := 300          # second W press within this starts jogging
 const GRAVITY := 20.0
 const MOUSE_SENSITIVITY := 0.002
@@ -836,7 +842,7 @@ func _physics_process(delta: float) -> void:
 
 	if flying:
 		_bob_amount = 0.0
-		camera.position.y = 0.7
+		camera.position = Vector3(0.0, 0.7, 0.0)
 		camera.rotation.z = 0.0
 
 	sea.global_position = Vector3(body.global_position.x, 0.0, body.global_position.z)
@@ -849,13 +855,17 @@ func _update_bob(delta: float) -> void:
 	var pace: float = Vector2(body.velocity.x, body.velocity.z).length()
 	var moving: bool = body.is_on_floor() and pace > 1.0
 	_bob_amount = move_toward(_bob_amount, 1.0 if moving else 0.0, delta * 6.0)
+	var gait: int = 2 if running else (1 if jogging else 0)
 
 	if moving:
-		_bob_phase += delta * pace / BOB_STEP * TAU
+		# One full turn of the phase is one step (a footfall at 0, then at TAU).
+		_bob_phase = fposmod(_bob_phase + delta * pace / float(STEP_M[gait]) * TAU, 2.0 * TAU)
 
-	var height: float = BOB_HEIGHT * (1.0 + 0.25 * (pace - WALK_SPEED) / WALK_SPEED)
-	camera.position.y = 0.7 + absf(sin(_bob_phase * 0.5)) * height * _bob_amount
-	camera.rotation.z = deg_to_rad(SWAY_DEGREES) * sin(_bob_phase * 0.5) * _bob_amount
+	var dip: float = 0.5 * (1.0 + cos(_bob_phase))            # 1 at a footfall, 0 mid-stride
+	var side: float = cos(_bob_phase * 0.5)                   # +1 left foot, -1 right foot
+	camera.position.y = 0.7 - float(BOB_M[gait]) * dip * _bob_amount
+	camera.position.x = -float(SWAY_M[gait]) * side * _bob_amount
+	camera.rotation.z = deg_to_rad(float(SWAY_DEG[gait])) * side * _bob_amount
 
 
 func _process(delta: float) -> void:
@@ -946,7 +956,7 @@ func _process(delta: float) -> void:
 		total_ms += ms
 
 	var avg_ms: float = total_ms / maxf(float(_frame_ms.size()), 1.0)
-	hud.text = "build 22  %d fps  avg %.1f ms  worst %.1f ms  quality %s (F2)\nmem %.0f MB\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
+	hud.text = "build 23  %d fps  avg %.1f ms  worst %.1f ms  quality %s (F2)\nmem %.0f MB\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
 		Engine.get_frames_per_second(), avg_ms, worst_ms, QUALITY_NAMES[quality],
 		float(OS.get_static_memory_usage()) / 1048576.0,
 		stream.blocks_received, float(stream.bytes_received) / 1048576.0, cache.hits, flora.instances, flora.colliders,
