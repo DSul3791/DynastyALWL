@@ -37,6 +37,7 @@ var water_chunks: int = 0              # chunks with water drawn
 var water_cells: int = 0
 
 var _species: Dictionary = {}          # species id -> {"kind", "mesh", "trunk", "height"}
+var _labels: Dictionary = {}           # species id -> name with a note on its main property
 var _chunks: Dictionary = {}           # Vector2i -> {"items", "level", "node"}
 var _trunk_material: StandardMaterial3D
 var _softwood_material: StandardMaterial3D   # conifer trunks: dark brown
@@ -76,6 +77,7 @@ func setup(tables, tile_rules: Dictionary) -> void:
 
 		var height: Array = entry["height_m"]
 		var reference: float = 0.5 * (float(height[0]) + float(height[1]))
+		_labels[int(entry["id"])] = _label_for(entry)
 		_species[int(entry["id"])] = {
 			"kind": KINDS.find(str(entry["kind"])),
 			"height": reference,
@@ -83,6 +85,46 @@ func setup(tables, tile_rules: Dictionary) -> void:
 			"hardwood": str(entry["shape"]) == "broadleaf",
 			"mesh": _make_mesh(entry, reference),
 		}
+
+
+# "Hemlock (Toxic)": the display name, with the first listed property as a note.
+static func _label_for(entry: Dictionary) -> String:
+	var text: String = str(entry.get("display", entry.get("name", "Plant")))
+	var properties: Array = entry.get("properties", [])
+
+	if not properties.is_empty():
+		text += " (%s)" % str(properties[0]).replace("_", " ").capitalize()
+
+	return text
+
+
+func label_of(species_id: int) -> String:
+	return str(_labels.get(species_id, ""))
+
+
+# The species label of the shrub, plant or tree standing nearest `point`
+# within `radius` metres ("" when none).
+func label_near(point: Vector3, radius: float) -> String:
+	var chunk: Vector2i = Vector2i(int(floor(point.x / chunk_m)), int(floor(point.z / chunk_m)))
+
+	if not _chunks.has(chunk):
+		return ""
+
+	var items: Dictionary = _chunks[chunk]["items"]
+	var best: float = radius * radius
+	var found: int = -1
+	var positions: PackedVector3Array = items["positions"]
+	var ids: PackedInt32Array = items["ids"]
+
+	for n in range(positions.size()):
+		var d: Vector3 = positions[n] - point
+		var squared: float = d.x * d.x + d.z * d.z + 0.25 * d.y * d.y
+
+		if squared < best:
+			best = squared
+			found = ids[n] >> 16
+
+	return label_of(found) if found >= 0 else ""
 
 
 # The chunks to have, nearest first: every chunk within tree view distance.
@@ -239,6 +281,7 @@ func _refresh(chunk: Vector2i, position: Vector3) -> void:
 	var ids: PackedInt32Array = items["ids"]
 	var groups: Dictionary = {}       # [species, part] -> PackedInt32Array of indices
 	var body: StaticBody3D = null
+	var shape_species: PackedInt32Array = PackedInt32Array()
 
 	for n in range(ids.size()):
 		var species_id: int = ids[n] >> 16
@@ -269,7 +312,11 @@ func _refresh(chunk: Vector2i, position: Vector3) -> void:
 			shape.shape = cylinder
 			shape.position = p + Vector3(0.0, 1.2, 0.0)
 			body.add_child(shape)
+			shape_species.append(species_id)
 			colliders += 1
+
+	if body != null:
+		body.set_meta("species_ids", shape_species)
 
 	for key in groups:
 		var info: Dictionary = _species[key[0]]

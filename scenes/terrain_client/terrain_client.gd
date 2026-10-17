@@ -77,6 +77,11 @@ var _tint: ColorRect
 var _aim_msec: int = 0
 var _aim_pos: Vector3 = Vector3.ZERO
 var _mode_label: Label
+var _inspect_label: Label            # what the player is looking at (inspection mode)
+var inspecting: bool = false
+var test_inspect: bool = false       # --inspect: start with inspection on and print what it names
+var _last_inspected: String = ""
+var _inspect_msec: int = 0
 var _environment: Environment
 var pitch: float = 0.0
 var frames_left: int = -1
@@ -145,6 +150,9 @@ func _ready() -> void:
 			clear_cache = true
 		elif argument.begins_with("--quality="):
 			quality = clampi(int(argument.trim_prefix("--quality=")), 0, QUALITY_NAMES.size() - 1)
+		elif argument == "--inspect":
+			inspecting = true
+			test_inspect = true
 		elif argument == "--walk":
 			test_walk = true
 		elif argument.begins_with("--runspeed="):
@@ -273,6 +281,16 @@ func _on_welcome(info: Dictionary) -> void:
 	_mode_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
 	_mode_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(_mode_label)
+	_inspect_label = Label.new()
+	_inspect_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_inspect_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_inspect_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_inspect_label.offset_top = 90.0
+	_inspect_label.add_theme_font_size_override("font_size", 40)
+	_inspect_label.add_theme_constant_override("outline_size", 8)
+	_inspect_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
+	_inspect_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(_inspect_label)
 	hud = Label.new()
 	hud.position = Vector2(12.0, 12.0)
 	layer.add_child(hud)
@@ -428,6 +446,80 @@ func _apply_quality() -> void:
 		_sun.directional_shadow_max_distance = maxf(float(QUALITY_SHADOW_M[quality]), 1.0)
 
 
+# Inspection mode (the / key): names whatever the crosshair points at. Checked
+# ten times a second with one physics ray, so it costs next to nothing.
+func _update_inspect() -> void:
+	_set_inspect_text_from(_inspect_target())
+
+	if test_inspect and _inspect_label.text != _last_inspected:
+		_last_inspected = _inspect_label.text
+		print("Terrain client: inspect -> '%s'" % _last_inspected)
+
+
+func _set_inspect_text_from(text: String) -> void:
+	if text != "<wait>":
+		_inspect_label.text = text
+
+
+func _inspect_target() -> String:
+	var now: int = Time.get_ticks_msec()
+
+	if now < _inspect_msec:
+		return "<wait>"
+
+	_inspect_msec = now + 100
+	var origin: Vector3 = camera.global_position
+	var direction: Vector3 = -camera.global_transform.basis.z
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(origin, origin + direction * 30.0)
+	query.exclude = [body.get_rid()]
+	var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(query)
+
+	if hit.is_empty():
+		return ""
+
+	var collider: Object = hit["collider"]
+
+	# A tree trunk: its shape number says which species it is.
+	if collider != null and collider.has_meta("species_ids"):
+		var species: PackedInt32Array = collider.get_meta("species_ids")
+		var index: int = int(hit["shape"])
+
+		if index >= 0 and index < species.size():
+			return flora.label_of(species[index])
+
+	var point: Vector3 = hit["position"]
+	var plant: String = flora.label_near(point, 1.3)
+
+	if plant != "":
+		return plant
+
+	return _ground_name(point - hit["normal"] * 0.4)
+
+
+# The ore, rock or soil at a point in the ground.
+func _ground_name(point: Vector3) -> String:
+	var tool: VoxelTool = terrain.get_voxel_tool()
+	var cell: Vector3i = Vector3i(point.floor())
+	tool.channel = Layout.CHANNEL_RESOURCE
+	var resource: int = tool.get_voxel(cell)
+
+	if resource > 0:
+		for entry in _tables.get_entries("resources"):
+			if int(entry["id"]) == resource:
+				return str(entry.get("display", entry["name"]))
+
+	tool.channel = Layout.CHANNEL_MATERIAL
+	var material: int = tool.get_voxel(cell)
+	var table: String = "rocks" if material >= Layout.MATERIAL_ROCK else "soils"
+	var id: int = material - Layout.MATERIAL_ROCK if material >= Layout.MATERIAL_ROCK else material
+
+	for entry in _tables.get_entries(table):
+		if int(entry["id"]) == id:
+			return str(entry.get("display", entry["name"]))
+
+	return "Ground"
+
+
 func _make_environment(root: Node3D) -> void:
 	var sun: DirectionalLight3D = DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-50.0, -30.0, 0.0)
@@ -477,6 +569,11 @@ func _unhandled_input(event: InputEvent) -> void:
 				jogging = true
 
 			_last_w_msec = now
+		elif event.keycode == KEY_SLASH:
+			inspecting = not inspecting
+
+			if not inspecting:
+				_inspect_label.text = ""
 		elif event.keycode == KEY_F2:
 			quality = (quality + 1) % QUALITY_NAMES.size()
 			_apply_quality()
@@ -640,6 +737,9 @@ func _process(delta: float) -> void:
 	elif jogging:
 		mode = "Jogging"
 
+	if inspecting:
+		_update_inspect()
+
 	if underwater:
 		mode = (mode + " (underwater)").strip_edges()
 
@@ -654,7 +754,7 @@ func _process(delta: float) -> void:
 		total_ms += ms
 
 	var avg_ms: float = total_ms / maxf(float(_frame_ms.size()), 1.0)
-	hud.text = "build 16  %d fps  avg %.1f ms  worst %.1f ms  quality %s (F2)\nmem %.0f MB\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
+	hud.text = "build 17  %d fps  avg %.1f ms  worst %.1f ms  quality %s (F2)\nmem %.0f MB\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
 		Engine.get_frames_per_second(), avg_ms, worst_ms, QUALITY_NAMES[quality],
 		float(OS.get_static_memory_usage()) / 1048576.0,
 		stream.blocks_received, float(stream.bytes_received) / 1048576.0, cache.hits, flora.instances, flora.colliders,
