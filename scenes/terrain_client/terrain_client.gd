@@ -77,6 +77,7 @@ var _tint: ColorRect
 var _aim_msec: int = 0
 var _aim_pos: Vector3 = Vector3.ZERO
 var _mode_label: Label
+var _brain_icon: TextureRect         # shown while inspection mode is on
 var _inspect_label: Label            # what the player is looking at (inspection mode)
 var inspecting: bool = false
 var test_inspect: bool = false       # --inspect: start with inspection on and print what it names
@@ -291,6 +292,22 @@ func _on_welcome(info: Dictionary) -> void:
 	_inspect_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
 	_inspect_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(_inspect_label)
+	_brain_icon = TextureRect.new()
+	_brain_icon.texture = _load_brain_icon()
+	_brain_icon.anchor_left = 0.5
+	_brain_icon.anchor_right = 0.5
+	_brain_icon.anchor_top = 0.2
+	_brain_icon.anchor_bottom = 0.2
+	_brain_icon.offset_left = -44.0
+	_brain_icon.offset_right = 44.0
+	_brain_icon.offset_top = -44.0
+	_brain_icon.offset_bottom = 44.0
+	_brain_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_brain_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_brain_icon.modulate = Color(1.0, 1.0, 1.0, 0.85)
+	_brain_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_brain_icon.visible = inspecting
+	layer.add_child(_brain_icon)
 	hud = Label.new()
 	hud.position = Vector2(12.0, 12.0)
 	layer.add_child(hud)
@@ -446,6 +463,21 @@ func _apply_quality() -> void:
 		_sun.directional_shadow_max_distance = maxf(float(QUALITY_SHADOW_M[quality]), 1.0)
 
 
+# The thinking-brain icon, a white outline with a gray inside. Loaded as an
+# imported texture, or straight from the file if the editor has not imported it yet.
+func _load_brain_icon() -> Texture2D:
+	var path: String = "res://assets/ui/brain_icon.png"
+
+	if ResourceLoader.exists(path):
+		var imported: Texture2D = load(path) as Texture2D
+
+		if imported != null:
+			return imported
+
+	var image: Image = Image.load_from_file(ProjectSettings.globalize_path(path))
+	return ImageTexture.create_from_image(image) if image != null else null
+
+
 # Inspection mode (the / key): names whatever the crosshair points at. Checked
 # ten times a second with one physics ray, so it costs next to nothing.
 func _update_inspect() -> void:
@@ -571,6 +603,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			_last_w_msec = now
 		elif event.keycode == KEY_SLASH:
 			inspecting = not inspecting
+			_brain_icon.visible = inspecting
 
 			if not inspecting:
 				_inspect_label.text = ""
@@ -754,7 +787,7 @@ func _process(delta: float) -> void:
 		total_ms += ms
 
 	var avg_ms: float = total_ms / maxf(float(_frame_ms.size()), 1.0)
-	hud.text = "build 17  %d fps  avg %.1f ms  worst %.1f ms  quality %s (F2)\nmem %.0f MB\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
+	hud.text = "build 18  %d fps  avg %.1f ms  worst %.1f ms  quality %s (F2)\nmem %.0f MB\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
 		Engine.get_frames_per_second(), avg_ms, worst_ms, QUALITY_NAMES[quality],
 		float(OS.get_static_memory_usage()) / 1048576.0,
 		stream.blocks_received, float(stream.bytes_received) / 1048576.0, cache.hits, flora.instances, flora.colliders,

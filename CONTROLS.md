@@ -2,7 +2,7 @@
 
 Tracks what the controls are now and what is planned. Update it whenever a control changes.
 
-## Now (terrain client, build 17)
+## Now (terrain client, build 18)
 
 | Control | Action |
 |---|---|
@@ -14,7 +14,7 @@ Tracks what the controls are now and what is planned. Update it whenever a contr
 | Space | Jump (walking) or go up (flying) |
 | Ctrl | Go down (flying) |
 | G or F | Switch between walking and flying |
-| / (key with ? on it) | Inspection mode on or off (toggle). Shows the name and key note of what the crosshair points at, in the middle of the screen: Oak, Beach sand, Coal, Hemlock (Toxic) |
+| / (key with ? on it) | Inspection mode on or off (toggle). A brain icon shows near the top. Shows the name and key note of what the crosshair points at, in the middle of the screen: Oak, Beach sand, Coal, Hemlock (Toxic) |
 | F2 | Cycle quality: Low, Medium, High, Ultra (Low is the minimum machine) |
 | Esc | Free the mouse |
 
