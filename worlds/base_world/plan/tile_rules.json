@@ -58,6 +58,7 @@
 		"fall_widen_from_slope": 0.15,
 		"fall_widen_rate": 3.0,
 		"fall_widen_max": 2.5,
+		"fall_min_cells": 1.6,
 		"fall_min_drop_m": 5,
 		"pool_depth_m": 2.5,
 		"network_meander_note": "Sideways push of the world river curves so they do not follow the 160 m grid. Each octave is a smooth random field; amplitude is the typical push in meters. Keep the total well under one 160 m cell.",

@@ -499,6 +499,7 @@ func _carve_guides(rivers: Array) -> void:
 	var widen_rate: float = float(_rules.get("fall_widen_rate", 3.0))
 	var widen_max: float = float(_rules.get("fall_widen_max", 2.5))
 	var fall_slope: float = float(_rules.get("fall_slope", 0.30))
+	var fall_min_cells: float = float(_rules.get("fall_min_cells", 1.6))
 	var fall_min_drop: float = float(_rules.get("fall_min_drop_m", 5.0))
 	var pool_depth: float = float(_rules.get("pool_depth_m", 2.5))
 	var total: int = samples * samples
@@ -594,6 +595,10 @@ func _carve_guides(rivers: Array) -> void:
 				var drop_slope: float = (low_values[k] - low_values[k + 2]) / (2.0 * step_m)
 				var widen: float = 1.0 + clampf((drop_slope - widen_from) * widen_rate, 0.0, widen_max - 1.0)
 				widths[k] *= widen
+
+				# A fall must fill whole grid cells or the baked water breaks into holes.
+				if drop_slope > widen_from:
+					widths[k] = maxf(widths[k], spacing_m * fall_min_cells)
 
 			beds[k] = bed
 			river_cells += 1
