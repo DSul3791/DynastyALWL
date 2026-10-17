@@ -65,37 +65,38 @@ def clump(name, size, count, height_range, width, spread, seed, base_c, tip_c):
 
 
 def cover(name, size, seed):
-    # Ground cover: clover leaves (three round lobes), little rosette leaves and
-    # a few short blades, all low and flat.
+    # Ground cover seen from above: scattered clover leaves (three round lobes
+    # with a pale chevron) and a few small flowers, on a see-through background.
     rng = random.Random(seed)
     w, h = size[0] * SS, size[1] * SS
-    base_c, tip_c = (118, 168, 78), (188, 222, 120)
+    base_c, tip_c = (110, 160, 72), (178, 214, 112)
     rgb = Image.new("RGB", (w, h), base_c)
     alpha = Image.new("L", (w, h), 0)
     rd, ad = ImageDraw.Draw(rgb), ImageDraw.Draw(alpha)
-    for n in range(26):
-        cx = rng.uniform(0.1, 0.9) * w
-        cy = h - rng.uniform(0.08, 0.5) * h
-        r = rng.uniform(0.035, 0.055) * w
+    for n in range(34):
+        cx = rng.uniform(0.08, 0.92) * w
+        cy = rng.uniform(0.08, 0.92) * h
+        r = rng.uniform(0.028, 0.045) * w
         ang = rng.uniform(0, math.tau)
-        stem = rng.uniform(0.04, 0.12) * h
-        rd.line([(cx, h), (cx, cy + stem)], fill=lerp(base_c, (40, 80, 30), 0.4), width=int(w * 0.006))
-        ad.line([(cx, h), (cx, cy + stem)], fill=255, width=int(w * 0.006))
+        col = lerp(base_c, tip_c, rng.uniform(0.15, 0.9))
         for k in range(3):
             a = ang + k * math.tau / 3
-            lx, ly = cx + math.cos(a) * r * 0.8, cy + stem * 0.0 + math.sin(a) * r * 0.8
-            col = lerp(base_c, tip_c, rng.uniform(0.2, 0.9))
-            box = [lx - r * 0.75, ly - r * 0.75, lx + r * 0.75, ly + r * 0.75]
+            lx, ly = cx + math.cos(a) * r * 0.9, cy + math.sin(a) * r * 0.9
+            box = [lx - r, ly - r, lx + r, ly + r]
             rd.ellipse(box, fill=col)
             ad.ellipse(box, fill=255)
-            rd.ellipse([lx - r * 0.45, ly - r * 0.15, lx + r * 0.45, ly + r * 0.15], fill=lerp(col, (235, 240, 215), 0.45))
-    for n in range(8):
-        blade(rd, ad, w, h, rng.uniform(0.1, 0.9) * w, rng.uniform(-0.2, 0.2), 0.05, rng.uniform(0.2, 0.45), rng, base_c, tip_c)
+            tip = (lx + math.cos(a) * r * 0.2, ly + math.sin(a) * r * 0.2)
+            rd.line([(cx, cy), tip], fill=lerp(col, (225, 235, 205), 0.5), width=max(1, int(w * 0.004)))
+    for n in range(7):
+        cx, cy = rng.uniform(0.1, 0.9) * w, rng.uniform(0.1, 0.9) * h
+        r = w * 0.012
+        rd.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(246, 244, 226))
+        ad.ellipse([cx - r, cy - r, cx + r, cy + r], fill=255)
     finish(rgb, alpha, name, size)
 
 
 if __name__ == "__main__":
     clump("grass_short.png", (256, 256), 11, (0.55, 0.95), 0.07, 0.22, 3, (84, 130, 54), (186, 218, 112))
     clump("grass_tall.png", (128, 256), 7, (0.7, 1.0), 0.09, 0.2, 5, (96, 138, 62), (200, 220, 128))
-    cover("ground_cover.png", (256, 128), 9)
+    cover("ground_cover.png", (256, 256), 9)
     print("wrote grass textures to", HERE)

@@ -22,7 +22,7 @@ const GRASS_SOILS := {3: 0.9, 4: 0.5, 5: 1.0, 6: 0.7, 7: 1.0, 8: 0.6, 9: 0.3}
 # The three layers, from the ground up. "reach" is the share of the grass
 # radius the layer is drawn to; "per_point" is how many cards per ground sample.
 const LAYERS := [
-	{"name": "cover", "texture": "ground_cover", "width": 0.55, "height": 0.16, "per_point": 6, "reach": 0.45, "quads": 2, "wind": 0.35},
+	{"name": "cover", "texture": "ground_cover", "width": 0.7, "height": 0.0, "per_point": 5, "reach": 0.45, "quads": 0, "wind": 0.0},
 	{"name": "short", "texture": "grass_short", "width": 0.60, "height": 0.40, "per_point": 3, "reach": 0.85, "quads": 3, "wind": 1.0},
 	{"name": "tall", "texture": "grass_tall", "width": 0.50, "height": 0.95, "per_point": 1, "reach": 1.0, "quads": 2, "wind": 1.4},
 ]
@@ -45,8 +45,7 @@ void vertex() {
 	float gust = sin(TIME * 1.7 + wp.x * 0.35 + wp.z * 0.21) + 0.5 * sin(TIME * 3.1 + wp.x * 0.9 + wp.z * 0.6);
 	VERTEX.x += gust * wind_strength * tip * tip;
 	VERTEX.z += gust * wind_strength * 0.5 * tip * tip;
-	VERTEX.y *= fade;
-	NORMAL = vec3(0.0, 1.0, 0.0);
+	VERTEX *= fade;
 	blade_color = INSTANCE_CUSTOM.rgb;
 }
 
@@ -55,6 +54,8 @@ void fragment() {
 	if (t.a < 0.5) {
 		discard;
 	}
+	// Light every card as if it faced up, front or back, so the ground's lighting carries over.
+	NORMAL = normalize((VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
 	ALBEDO = t.rgb * blade_color * mix(0.8, 1.1, tip);
 	ROUGHNESS = 1.0;
 }
@@ -146,6 +147,19 @@ static func _make_cards(width: float, height: float, quads: int) -> ArrayMesh:
 	var vertices: PackedVector3Array = PackedVector3Array()
 	var uvs: PackedVector2Array = PackedVector2Array()
 	var indices: PackedInt32Array = PackedInt32Array()
+
+	if quads == 0:
+		# Flat card lying on the ground (ground cover seen from above).
+		var half: float = width * 0.5
+		var y: float = 0.03
+		var flat: Array = []
+		flat.resize(Mesh.ARRAY_MAX)
+		flat[Mesh.ARRAY_VERTEX] = PackedVector3Array([Vector3(-half, y, half), Vector3(half, y, half), Vector3(half, y, -half), Vector3(-half, y, -half)])
+		flat[Mesh.ARRAY_TEX_UV] = PackedVector2Array([Vector2(0, 1), Vector2(1, 1), Vector2(1, 0), Vector2(0, 0)])
+		flat[Mesh.ARRAY_INDEX] = PackedInt32Array([0, 1, 2, 0, 2, 3])
+		var flat_mesh: ArrayMesh = ArrayMesh.new()
+		flat_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, flat)
+		return flat_mesh
 
 	for n in range(quads):
 		var angle: float = PI * float(n) / float(quads)
