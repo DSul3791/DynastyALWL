@@ -610,7 +610,10 @@ func _carve_guides(rivers: Array) -> void:
 			# A spring pond at the head, its lower rim just upstream of the channel.
 			for k in range(mini(2, count)):
 				if usable[k] == 1:
-					_stamp_at(carved, points[k], pond_width, pond_depth, beds[k] - 0.3, slope, areas[k] / cell_km2, best_flow)
+					# A broad shallow shelf first, then the deeper bowl on gentle banks, so the
+					# pond edge rolls smoothly into the hillside.
+					_stamp_at(carved, points[k], pond_width * 1.5, pond_depth * 0.35, beds[k] - 0.1, slope * 0.35, areas[k] / cell_km2, best_flow)
+					_stamp_at(carved, points[k], pond_width, pond_depth, beds[k] - 0.3, slope * 0.5, areas[k] / cell_km2, best_flow)
 					break
 
 		# A plunge pool at the foot of every steep drop (waterfall or cascade):

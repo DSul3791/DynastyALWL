@@ -181,7 +181,11 @@ static func _clump(acc: Acc, rng: RandomNumberGenerator, at: Vector3, crown_cent
 		acc.card(at, right, (up + right * tilt * 0.25).normalized(), size * 0.5, size * 0.5, (out * 0.8 + Vector3.UP * 0.2).normalized(), color)
 
 
-static func _broadleaf(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, far: bool) -> void:
+static func _broadleaf(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown_m: float, trunk_m: float, far: bool) -> void:
+	# Small trees keep a visible trunk: the crown is sized to the height and the
+	# trunk never gets thinner than a few percent of it.
+	var crown: float = minf(crown_m, h * 0.3)
+	var trunk: float = maxf(trunk_m, h * 0.035)
 	var tint: Color = BARK_TINT_HARD
 	var trunk_h: float = h * rng.randf_range(0.55, 0.65)
 	var lean: Vector2 = Vector2(rng.randf_range(-0.07, 0.07), rng.randf_range(-0.07, 0.07)) * h
