@@ -40,8 +40,6 @@ const VIEW_DISTANCE := 2048
 # Quality presets (ARCHITECTURE_BUDGET.md): ground view distance, how far trees,
 # shrubs and plants are drawn as a share of their full distance, and shadows.
 # Low is the minimum machine (GTX 1050 class, 8 GB RAM). F2 cycles; --quality=N.
-const CLEAR_CLIENT_FLAG := "user://clear_client_cache.flag"
-const CLEAR_SERVER_FLAG := "user://clear_server_store.flag"
 const QUALITY_NAMES := ["Low", "Medium", "High", "Ultra"]
 const QUALITY_VIEW := [768, 1280, 2048, 2048]
 const QUALITY_FLORA := [0.4, 0.7, 1.0, 1.0]
@@ -83,6 +81,9 @@ var _mode_label: Label
 var _brain_icon: TextureRect         # shown while inspection mode is on
 var _inspect_label: Label            # what the player is looking at (inspection mode)
 var inspecting: bool = false
+var test_clear: bool = false          # --test-clear: press Clear saved ground 12 s after the welcome
+var _test_clear_done: bool = false
+var _clearing: bool = false
 var menu_open: bool = false          # the Esc options menu
 var _menu: Control
 var _menu_pages: Dictionary = {}     # page name -> VBoxContainer
@@ -159,6 +160,8 @@ func _ready() -> void:
 			clear_cache = true
 		elif argument.begins_with("--quality="):
 			quality = clampi(int(argument.trim_prefix("--quality=")), 0, QUALITY_NAMES.size() - 1)
+		elif argument == "--test-clear":
+			test_clear = true
 		elif argument == "--inspect":
 			inspecting = true
 			test_inspect = true
@@ -174,6 +177,7 @@ func _ready() -> void:
 	net.welcome_received.connect(_on_welcome)
 	net.blocks_received.connect(_on_blocks)
 	net.tile_changed_received.connect(_on_tile_changed)
+	net.ground_cleared_received.connect(_on_ground_cleared)
 	net.dug_received.connect(_on_dug)
 	net.flora_received.connect(_on_flora)
 	net.flora_cut_received.connect(_on_flora_cut)
@@ -230,10 +234,6 @@ func _on_welcome(info: Dictionary) -> void:
 	if cache_mb <= 0:
 		cache_mb = QUALITY_CACHE_MB[quality]
 		cache_mb_from_quality = true
-
-	if FileAccess.file_exists(CLEAR_CLIENT_FLAG):
-		clear_cache = true
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(CLEAR_CLIENT_FLAG))
 
 	if clear_cache:
 		var folder: String = ProjectSettings.globalize_path(cache_dir)
@@ -593,17 +593,32 @@ func _set_menu(open: bool) -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
-# The saved ground cannot be deleted while the game is using it, so this leaves
-# a note for the next start, which clears it (this computer's server too).
+# "Clear saved ground": the server (if it runs on this computer) forgets its
+# generated ground, then this client drops its saved copy and reloads the
+# terrain, so bad blocks are gone at once.
 func _ask_clear_cache() -> void:
-	for flag in [CLEAR_CLIENT_FLAG, CLEAR_SERVER_FLAG]:
-		var file: FileAccess = FileAccess.open(flag, FileAccess.WRITE)
+	_clearing = true
+	_menu_note.text = "Clearing the saved ground..."
+	net.clear_ground.rpc_id(1)
+	# A server on another computer ignores the request: clear this side anyway.
+	get_tree().create_timer(4.0).timeout.connect(func():
+		if _clearing:
+			_on_ground_cleared())
 
-		if file != null:
-			file.store_string("clear")
-			file.close()
 
-	_menu_note.text = "Done. The saved ground is cleared the next time you start the game. Quit and start it again."
+func _on_ground_cleared() -> void:
+	if not _clearing:
+		return
+
+	_clearing = false
+	cache.clear_all()
+	stream.close()
+	stream = StreamScript.new()
+	stream.cache = cache
+	terrain.stream = stream
+	cache.seed_starter("res://worlds/base_world/starter_cache")
+	_menu_note.text = "Done. The ground is reloading."
+	print("Terrain client: cleared the saved ground and reloaded the terrain")
 
 
 # Inspection mode (the / key): names whatever the crosshair points at. Checked
@@ -868,6 +883,10 @@ func _process(delta: float) -> void:
 	if stream == null:
 		return
 
+	if test_clear and not _test_clear_done and Time.get_ticks_msec() - connected_msec > 12000:
+		_test_clear_done = true
+		_ask_clear_cache()
+
 	var wanted: Array = stream.take_requests()
 
 	if not wanted[0].is_empty():
@@ -943,7 +962,7 @@ func _process(delta: float) -> void:
 		total_ms += ms
 
 	var avg_ms: float = total_ms / maxf(float(_frame_ms.size()), 1.0)
-	hud.text = "build 20  %d fps  avg %.1f ms  worst %.1f ms  quality %s (F2)\nmem %.0f MB\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
+	hud.text = "build 21  %d fps  avg %.1f ms  worst %.1f ms  quality %s (F2)\nmem %.0f MB\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
 		Engine.get_frames_per_second(), avg_ms, worst_ms, QUALITY_NAMES[quality],
 		float(OS.get_static_memory_usage()) / 1048576.0,
 		stream.blocks_received, float(stream.bytes_received) / 1048576.0, cache.hits, flora.instances, flora.colliders,

@@ -108,16 +108,6 @@ func _ready() -> void:
 	if store_dir == "":
 		store_dir = "user://server_store/%s" % settings.world_name.validate_filename()
 
-	# The client's Advanced menu asks for the generated ground to be cleared.
-	if FileAccess.file_exists("user://clear_server_store.flag"):
-		var generated: String = ProjectSettings.globalize_path(store_dir + "/generated.sqlite")
-
-		for suffix in ["", "-wal", "-shm", "-journal"]:
-			DirAccess.remove_absolute(generated + suffix)
-
-		DirAccess.remove_absolute(ProjectSettings.globalize_path("user://clear_server_store.flag"))
-		print("server: cleared the generated ground as asked")
-
 	var problem: String = store.setup(generator, store_dir)
 
 	if problem != "":
@@ -140,6 +130,7 @@ func _ready() -> void:
 
 	multiplayer.multiplayer_peer = peer
 	multiplayer.peer_connected.connect(_on_peer_connected)
+	net.clear_ground_requested.connect(_on_clear_ground)
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
 	net.blocks_requested.connect(_on_blocks_requested)
 	net.dig_requested.connect(_on_dig_requested)
@@ -180,6 +171,19 @@ func _spawn_point(world_dir: String) -> Vector3:
 
 	point.y = maxf(generator.surface_height(point.x, point.z), 0.0) + 2.0
 	return point
+
+
+# The options menu's "Clear saved ground", honoured only from this computer.
+func _on_clear_ground(peer_id: int) -> void:
+	var peer: ENetPacketPeer = (multiplayer.multiplayer_peer as ENetMultiplayerPeer).get_peer(peer_id)
+
+	if peer == null or not (peer.get_remote_address() in ["127.0.0.1", "::1", "::ffff:127.0.0.1"]):
+		print("server: refused a clear-ground request from peer %d (not this computer)" % peer_id)
+		return
+
+	store.clear_generated()
+	print("server: cleared the generated ground as asked by peer %d" % peer_id)
+	net.ground_cleared.rpc_id(peer_id)
 
 
 func _on_peer_connected(peer_id: int) -> void:

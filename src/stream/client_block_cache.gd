@@ -20,6 +20,8 @@ var hits: int = 0
 var misses: int = 0
 
 var _dir: String = ""
+var _base_dir: String = ""
+var _generation: int = 0              # bumped by clear_all(): a fresh folder, the old one is purged at the next start
 var _tile_size_m: float = 15360.0
 var _world_min_m: float = -153600.0
 var _period_m: float = 322560.0
@@ -32,8 +34,11 @@ var _mutex: Mutex = Mutex.new()
 # `world` holds tile_size_m, min_tile and tiles_per_side (from the server's
 # welcome); `revisions` maps "x,z" to the tile's revision.
 func setup(cache_dir: String, world: Dictionary, revisions: Dictionary, budget_mb: int) -> void:
-	_dir = ProjectSettings.globalize_path(cache_dir)
+	_base_dir = ProjectSettings.globalize_path(cache_dir)
+	_generation = _read_generation()
+	_dir = _generation_dir(_generation)
 	DirAccess.make_dir_recursive_absolute(_dir)
+	_purge_other_generations()
 	_tile_size_m = float(world["tile_size_m"])
 	_tiles_per_side = int(world["tiles_per_side"])
 	_world_min_m = float(world["min_tile"]) * _tile_size_m
@@ -50,6 +55,53 @@ func tile_of_block(block: Vector3i, lod: int) -> Vector2i:
 
 
 # Applies the server's revisions: files of older revisions are deleted.
+func _generation_dir(generation: int) -> String:
+	return _base_dir if generation == 0 else "%s_g%d" % [_base_dir, generation]
+
+
+func _generation_file() -> String:
+	return _base_dir + "_generation.txt"
+
+
+func _read_generation() -> int:
+	var path: String = _generation_file()
+	return int(FileAccess.get_file_as_string(path).strip_edges()) if FileAccess.file_exists(path) else 0
+
+
+# Removes the folders of earlier generations (best effort; they may still be
+# in use right after a clear, so this runs at the next start).
+func _purge_other_generations() -> void:
+	var parent: String = _base_dir.get_base_dir()
+	var name: String = _base_dir.get_file()
+
+	for folder in DirAccess.get_directories_at(parent):
+		var is_mine: bool = folder == name or folder.begins_with(name + "_g")
+
+		if is_mine and parent + "/" + folder != _dir:
+			var path: String = parent + "/" + folder
+
+			for file in DirAccess.get_files_at(path):
+				DirAccess.remove_absolute(path + "/" + file)
+
+			DirAccess.remove_absolute(path)
+
+
+# Throws the saved ground away at once: a new empty folder is used from now on.
+func clear_all() -> void:
+	_mutex.lock()
+	_generation += 1
+	var file: FileAccess = FileAccess.open(_generation_file(), FileAccess.WRITE)
+
+	if file != null:
+		file.store_string(str(_generation))
+		file.close()
+
+	_streams.clear()
+	_dir = _generation_dir(_generation)
+	DirAccess.make_dir_recursive_absolute(_dir)
+	_mutex.unlock()
+
+
 # First run: copies the shipped starter ground (gzipped tile files in `res_dir`,
 # built by running a client at the spawn) into an empty cache, so the ground
 # under the spawn is there at once. Returns the number of files seeded. Call

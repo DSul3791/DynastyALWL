@@ -34,6 +34,7 @@ var cache_hits: int = 0
 var edit_hits: int = 0
 
 var _store_dir: String = ""
+var _generation: int = 0
 var _cache: VoxelStreamSQLite
 var _edits: VoxelStreamSQLite
 var _mutex: Mutex = Mutex.new()
@@ -61,8 +62,9 @@ func setup(terrain_generator, store_dir: String) -> String:
 			file.store_string(str(Layout.TERRAIN_VERSION))
 			file.close()
 
-	_cache = VoxelStreamSQLite.new()
-	_cache.database_path = ProjectSettings.globalize_path(store_dir + "/generated.sqlite")
+	_generation = int(FileAccess.get_file_as_string(store_dir + "/generated_generation.txt").strip_edges()) if FileAccess.file_exists(store_dir + "/generated_generation.txt") else 0
+	_purge_old_generated()
+	_cache = _open_generated()
 	_edits = VoxelStreamSQLite.new()
 	_edits.database_path = ProjectSettings.globalize_path(store_dir + "/edits.sqlite")
 	var path: String = store_dir + "/revisions.json"
@@ -75,6 +77,38 @@ func setup(terrain_generator, store_dir: String) -> String:
 				tile_revisions[str(key)] = int(parsed[key])
 
 	return ""
+
+
+func _generated_name() -> String:
+	return "generated.sqlite" if _generation == 0 else "generated_g%d.sqlite" % _generation
+
+
+func _open_generated() -> VoxelStreamSQLite:
+	var stream: VoxelStreamSQLite = VoxelStreamSQLite.new()
+	stream.database_path = ProjectSettings.globalize_path(_store_dir + "/" + _generated_name())
+	return stream
+
+
+# Deletes generated ground files of other generations (best effort).
+func _purge_old_generated() -> void:
+	var folder: String = ProjectSettings.globalize_path(_store_dir)
+
+	for file in DirAccess.get_files_at(folder):
+		if file.begins_with("generated") and file.contains(".sqlite") and not file.begins_with(_generated_name()):
+			DirAccess.remove_absolute(folder + "/" + file)
+
+
+# Throws the generated ground away at once (edits are kept): later blocks are
+# made again into a fresh file; the old file is deleted at the next start.
+func clear_generated() -> void:
+	_generation += 1
+	var file: FileAccess = FileAccess.open(_store_dir + "/generated_generation.txt", FileAccess.WRITE)
+
+	if file != null:
+		file.store_string(str(_generation))
+		file.close()
+
+	_cache = _open_generated()
 
 
 func revision_of(tile: Vector2i) -> int:
@@ -97,12 +131,14 @@ func load_block(buffer: VoxelBuffer, block: Vector3i, lod: int) -> void:
 		_count("edit")
 		return
 
-	if _cache.load_voxel_block(buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND:
+	var cache: VoxelStreamSQLite = _cache
+
+	if cache.load_voxel_block(buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND:
 		_count("cache")
 		return
 
 	generator.generate(buffer, block * (BLOCK_SIZE << lod), lod)
-	_cache.save_voxel_block(buffer, block, lod)
+	cache.save_voxel_block(buffer, block, lod)
 	_count("generated")
 
 
@@ -115,11 +151,13 @@ func ensure_block(block: Vector3i, lod: int) -> bool:
 	if _edits.load_voxel_block(buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND:
 		return false
 
-	if _cache.load_voxel_block(buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND:
+	var cache: VoxelStreamSQLite = _cache
+
+	if cache.load_voxel_block(buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND:
 		return false
 
 	generator.generate(buffer, block * (BLOCK_SIZE << lod), lod)
-	_cache.save_voxel_block(buffer, block, lod)
+	cache.save_voxel_block(buffer, block, lod)
 	_count("generated")
 	return true
 
