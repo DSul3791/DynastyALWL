@@ -50,6 +50,36 @@ func tile_of_block(block: Vector3i, lod: int) -> Vector2i:
 
 
 # Applies the server's revisions: files of older revisions are deleted.
+# First run: copies the shipped starter ground (gzipped tile files in `res_dir`,
+# built by running a client at the spawn) into an empty cache, so the ground
+# under the spawn is there at once. Returns the number of files seeded. Call
+# set_revisions afterward so stale starter files are dropped.
+func seed_starter(res_dir: String) -> int:
+	var seeded: int = 0
+
+	if not DirAccess.get_files_at(_dir).is_empty():
+		return 0
+
+	for file in DirAccess.get_files_at(res_dir):
+		if not file.ends_with(".sqlite.gz"):
+			continue
+
+		var packed: PackedByteArray = FileAccess.get_file_as_bytes(res_dir + "/" + file)
+		var bytes: PackedByteArray = packed.decompress_dynamic(-1, FileAccess.COMPRESSION_GZIP)
+
+		if bytes.is_empty():
+			continue
+
+		var out: FileAccess = FileAccess.open(_dir + "/" + file.trim_suffix(".gz"), FileAccess.WRITE)
+
+		if out != null:
+			out.store_buffer(bytes)
+			out.close()
+			seeded += 1
+
+	return seeded
+
+
 func set_revisions(revisions: Dictionary) -> void:
 	_mutex.lock()
 

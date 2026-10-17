@@ -223,6 +223,11 @@ func _on_welcome(info: Dictionary) -> void:
 		print("Terrain client: cleared the saved ground cache")
 
 	cache.setup(cache_dir, info, info["revisions"], cache_mb)
+	var seeded: int = cache.seed_starter("res://worlds/base_world/starter_cache")
+
+	if seeded > 0:
+		cache.set_revisions(info["revisions"])
+		print("Terrain client: first run, copied the starter ground for the spawn (%d tile)" % seeded)
 	stream = StreamScript.new()
 	stream.cache = cache
 	var root: Node3D = Node3D.new()
@@ -639,7 +644,7 @@ func _process(delta: float) -> void:
 		mode = (mode + " (underwater)").strip_edges()
 
 	if waiting_for_ground and not flying:
-		mode = (mode + " (waiting for ground)").strip_edges()
+		mode = (mode + " (building the ground around you, the first visit takes longer)").strip_edges()
 	_mode_label.text = mode
 	var worst_ms: float = 0.0
 	var total_ms: float = 0.0
@@ -649,7 +654,7 @@ func _process(delta: float) -> void:
 		total_ms += ms
 
 	var avg_ms: float = total_ms / maxf(float(_frame_ms.size()), 1.0)
-	hud.text = "build 15  %d fps  avg %.1f ms  worst %.1f ms  quality %s (F2)\nmem %.0f MB\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
+	hud.text = "build 16  %d fps  avg %.1f ms  worst %.1f ms  quality %s (F2)\nmem %.0f MB\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
 		Engine.get_frames_per_second(), avg_ms, worst_ms, QUALITY_NAMES[quality],
 		float(OS.get_static_memory_usage()) / 1048576.0,
 		stream.blocks_received, float(stream.bytes_received) / 1048576.0, cache.hits, flora.instances, flora.colliders,

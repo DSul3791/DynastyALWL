@@ -26,6 +26,7 @@ A multiplayer medieval survival and town-building game: Godot 4.7.2 (custom buil
 
 - Minimum machine (owner, 2026-10-17, decided): GTX/RTX 1050-class, 8 GB RAM, SATA drive at 30 fps; stronger machines get more through quality settings (`ARCHITECTURE_BUDGET.md`).
 - Sound (owner, 2026-10-17, direction only): content, visuals and audio count equally; long-term goal is a full sound stage like theHunter: Call of the Wild (`DESIGN_PRINCIPLES.md` Section 4). Do not build audio yet.
+- Starter ground (2026-10-17): `worlds/base_world/starter_cache/*.sqlite.gz` (5.6 MB) is the client cache for the spawn area, copied into an empty cache on first run so the ground is ready at once (cold start was about 25 s in the cloud, 2 min on the owner's PC). Rebuild it when terrain changes (revision or version): run a client with `--cache=DIR --frames=5000` against a fresh server store, VACUUM the sqlite, gzip it. Exports must include `*.gz` in this folder.
 - Install size (owner, 2026-10-17, decided): no big pre-build of the world. Keep the download light; ground is built and saved as the player travels, so local data grows with exploration. Client cache needs a size limit and a clear button (`ARCHITECTURE_BUDGET.md` Section 7).
 - Art direction (owner, 2026-10-17, `DESIGN_IDEAS.md` Section 1): Valheim or better, ultra-realistic water, weather and lighting, old fantasy book illustration world, heroic slightly cartoonish characters. A direction only; do not change visuals for it yet.
 - Every decision goes in `DESIGN_IDEAS.md` with a status tag. The newest user statement wins.
