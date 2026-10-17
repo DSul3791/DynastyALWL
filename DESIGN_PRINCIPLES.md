@@ -32,4 +32,15 @@ Status tags are the same as in `DESIGN_IDEAS.md`: [Decided], [Idea], [Proposed],
 - **[Decided]** Why: our brains react faster and more strongly to sound. A full, layered sound stage lets a player close their eyes and believe they are in the world. Inspiration: theHunter: Call of the Wild, where much of the play is listening (ducks, waves on the water, a gentle breeze, a stick cracking, squirrels chirping, birds calling) and some players fall asleep to it with headphones on.
 - **[Decided]** What this means for design: when adding a system, ask what it looks like and what it sounds like, not only what it does. Audio has its own performance budget (`ARCHITECTURE_BUDGET.md` Section 9). This is a direction; no audio is being built yet.
 
+## 5. Three programs that can be pulled apart
+
+- **[Decided]** (2026-10-17) The project is three separate programs: the **server** (builds, saves and serves the world), the **client** (draws it and takes the player's input) and the **admin tool** (generates and bakes the initial world). Today the "play" launcher starts a server and a client together on one computer, but the code must stay dividable so each can be exported and run on its own (a hosted server, a player download, an admin build).
+- **[Decided]** Why: a real hosted game needs a server that runs without any client, and a light client download (the minimum machine goal); keeping them apart from the start is far cheaper than separating them later.
+- **[Decided]** Rules for the code:
+  - Server and client talk only through the network messages in `src/stream/terrain_net.gd`. Neither reads the other's files; a client never changes the server's saved data.
+  - The client may use shared code (message formats, voxel layout, data tables, flora and water encoding) but not server-only code (the terrain generator, the block store, flora placement, baking tools).
+  - Server-only and admin-only code stays out of the client folders, and client-only code (drawing, input, menus, cache) stays out of the server folders.
+  - Anything both sides need goes in a shared place, not copied.
+- **[Open]** Known places to tidy: the client still reads tile rules (`tile_height.gd`, for flora view distances) and the voxel layout from the worldgen folders. These should move to the server's welcome message or a `shared` folder.
+
 The original wording is also in `DESIGN_IDEAS.md` Section 3. How the two documents should relate (whether the copy in Section 3 stays or becomes a pointer to this file) is [Open] until the project owner reviews it.
