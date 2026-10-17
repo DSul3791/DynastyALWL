@@ -237,7 +237,8 @@ static func _conifer(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: floa
 
 	for t in range(tiers):
 		var f: float = float(t) / float(tiers - 1)
-		var y: float = lerpf(h * 0.12, h * 0.97, f) + rng.randf_range(-0.008, 0.008) * h
+		# Spacing shrinks with the tiers, matching their width, so the tip stays solid.
+		var y: float = lerpf(h * 0.12, h * 0.97, 1.0 - pow(1.0 - f, 1.9))
 		var reach: float = crown * 1.2 * slim * pow(1.0 - f, 0.95) + crown * 0.06
 		var center: Vector3 = Vector3(lean.x * pow(y / h, 2.0), y, lean.y * pow(y / h, 2.0))
 		var phase: float = rng.randf() * TAU
