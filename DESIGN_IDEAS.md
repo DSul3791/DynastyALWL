@@ -62,6 +62,8 @@ A persistent, rough-medieval, multiplayer online world: a survival, exploration 
 - **[Decided]** The game is designed to keep players alive even though the whole world is trying to kill them. Layers of rescue (party mates, helpful NPCs) catch a fallen character before they die (Section 6.5).
 - **[Decided] Play what you like.** Players should never have to switch games to change style. Farmer, miner, trader, town manager, hunter or trapper selling to the butcher and furrier, caravan sword for hire, adventurer, someone who plays board games or roleplays conversations in the pub, or someone who wanders the rivers and fields enjoying nature. Each style needs a complete loop of its own.
 - **[Decided] No micromanagement.** Every avenue can be done by hand for fun, or handed off to NPCs, whether family or hirelings. Doing it yourself pays more. Delegating costs a cut but keeps things running.
+- **[Decided] Art direction (owner, 2026-10-17; a direction, not a task).** The long-term look is as good as or better than Valheim. Water, weather and lighting are ultra-realistic, like the near-photoreal AI videos the owner likes. The world itself looks like the best of old fantasy book illustrations. Characters fit that world but are more heroic, with just a hint of cartoon, like hand-drawn D&D characters in epic poses. No visuals change now.
+  - **[Idea] What it implies for trees (suggestion only).** Trees are procedural today (trunk and leaf shapes built in code). Later, modeled tree variants per species with detail levels (full model up close, simpler shapes farther away, flat cards at a distance) would fit this look. Wind sway and seasonal color suit the lighting and weather goals.
 
 ---
 
