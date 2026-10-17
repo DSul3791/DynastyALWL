@@ -21,6 +21,10 @@ const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const KIND_TREE := 0
 const KIND_SHRUB := 1
 const KIND_PLANT := 2
+const AUTUMN: Array[Color] = [
+	Color(0.95, 0.8, 0.15), Color(0.9, 0.65, 0.1), Color(0.93, 0.5, 0.1), Color(0.85, 0.32, 0.08),
+	Color(0.78, 0.15, 0.1), Color(0.6, 0.1, 0.1), Color(0.8, 0.55, 0.15)
+]
 const KINDS := ["tree", "shrub", "plant"]
 const PART_M := [256.0, 128.0, 128.0]
 
@@ -35,6 +39,8 @@ var water_cells: int = 0
 var _species: Dictionary = {}          # species id -> {"kind", "mesh", "trunk", "height"}
 var _chunks: Dictionary = {}           # Vector2i -> {"items", "level", "node"}
 var _trunk_material: StandardMaterial3D
+var _softwood_material: StandardMaterial3D   # conifer trunks: dark brown
+var _hardwood_material: StandardMaterial3D   # broadleaf trunks: gray
 var _water_material: StandardMaterial3D
 
 
@@ -50,6 +56,12 @@ func setup(tables, tile_rules: Dictionary) -> void:
 	_trunk_material = StandardMaterial3D.new()
 	_trunk_material.albedo_color = Color(0.32, 0.24, 0.16)
 	_trunk_material.roughness = 1.0
+	_softwood_material = StandardMaterial3D.new()
+	_softwood_material.albedo_color = Color(0.2, 0.13, 0.08)
+	_softwood_material.roughness = 1.0
+	_hardwood_material = StandardMaterial3D.new()
+	_hardwood_material.albedo_color = Color(0.5, 0.5, 0.5)
+	_hardwood_material.roughness = 1.0
 	_water_material = StandardMaterial3D.new()
 	_water_material.albedo_color = Color(0.16, 0.36, 0.42, 0.78)
 	_water_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -68,6 +80,7 @@ func setup(tables, tile_rules: Dictionary) -> void:
 			"kind": KINDS.find(str(entry["kind"])),
 			"height": reference,
 			"trunk": float(entry["trunk_m"]),
+			"hardwood": str(entry["shape"]) == "broadleaf",
 			"mesh": _make_mesh(entry, reference),
 		}
 
@@ -249,6 +262,7 @@ func _refresh(chunk: Vector2i, position: Vector3) -> void:
 		var multimesh: MultiMesh = MultiMesh.new()
 		multimesh.transform_format = MultiMesh.TRANSFORM_3D
 		multimesh.mesh = info["mesh"]
+		multimesh.use_colors = bool(info["hardwood"])
 		multimesh.instance_count = indices.size()
 
 		for m in range(indices.size()):
@@ -257,6 +271,9 @@ func _refresh(chunk: Vector2i, position: Vector3) -> void:
 			var basis: Basis = Basis(Vector3.UP, float(items["yaws"][n])).scaled(Vector3.ONE * scale)
 			# Sunk a little so slopes do not show a gap under the trunk.
 			multimesh.set_instance_transform(m, Transform3D(basis, items["positions"][n] - Vector3(0.0, 0.15, 0.0)))
+
+			if info["hardwood"]:
+				multimesh.set_instance_color(m, _autumn_color(ids[n]))
 
 		var draw: MultiMeshInstance3D = MultiMeshInstance3D.new()
 		draw.multimesh = multimesh
@@ -303,6 +320,15 @@ func _distance(chunk: Vector2i, position: Vector3) -> float:
 	return sqrt(dx * dx + dz * dz)
 
 
+# One autumn leaf color per hardwood tree, fixed by the tree's id so it
+# looks the same for every player and every visit.
+func _autumn_color(id: int) -> Color:
+	var mix: int = (id * 2654435761) & 0x7fffffff
+	var base: Color = AUTUMN[mix % AUTUMN.size()]
+	var shade: float = 0.9 + 0.2 * float((mix >> 8) % 100) / 100.0
+	return Color(minf(base.r * shade, 1.0), minf(base.g * shade, 1.0), minf(base.b * shade, 1.0))
+
+
 # ---------------------------------------------------------------- meshes
 
 # A stand-in mesh for a species at its reference height `h`.
@@ -312,15 +338,21 @@ func _make_mesh(entry: Dictionary, h: float) -> ArrayMesh:
 	var leaf: StandardMaterial3D = StandardMaterial3D.new()
 	leaf.albedo_color = Color(float(color[0]), float(color[1]), float(color[2]))
 	leaf.roughness = 1.0
+	var broadleaf: bool = str(entry["shape"]) == "broadleaf"
+
+	if broadleaf:
+		# Each tree brings its own leaf color (multimesh instance color).
+		leaf.albedo_color = Color.WHITE
+		leaf.vertex_color_use_as_albedo = true
 	var crown: float = float(entry["crown_m"])
 	var trunk: float = maxf(float(entry["trunk_m"]), 0.03)
 
 	match str(entry["shape"]):
 		"broadleaf":
-			_add(mesh, _cylinder(trunk * 0.7, trunk, h * 0.6, 6), Vector3(0.0, h * 0.3, 0.0), _trunk_material)
+			_add(mesh, _cylinder(trunk * 0.7, trunk, h * 0.6, 6), Vector3(0.0, h * 0.3, 0.0), _hardwood_material)
 			_add(mesh, _sphere(crown, minf(crown * 1.7, h * 0.75), 8, 5), Vector3(0.0, h - minf(crown * 0.85, h * 0.375), 0.0), leaf)
 		"conifer":
-			_add(mesh, _cylinder(trunk * 0.5, trunk, h * 0.35, 6), Vector3(0.0, h * 0.175, 0.0), _trunk_material)
+			_add(mesh, _cylinder(trunk * 0.5, trunk, h * 0.35, 6), Vector3(0.0, h * 0.175, 0.0), _softwood_material)
 			_add(mesh, _cylinder(0.0, crown, h * 0.82, 8), Vector3(0.0, h * 0.59, 0.0), leaf)
 		"palm":
 			_add(mesh, _cylinder(trunk * 0.8, trunk, h, 6), Vector3(0.0, h * 0.5, 0.0), _trunk_material)

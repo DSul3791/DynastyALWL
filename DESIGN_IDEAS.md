@@ -206,6 +206,7 @@ Note: climate depends only on position, so each tile can compute it without look
 - **[Proposed]** Seasons are data only for now: plants are always placed, and the season says when their yield can be gathered. Using it waits for the world calendar.
 - **[Proposed]** Climate and soil should also be queryable at runtime from the same function the generator uses, so the server and generator never disagree. This matters for farming.
 - **[Proposed]** Slate as a new rock type (shale metamorphoses into slate), tied to folded or deformed regions. Slate would make some islands valuable for roofing.
+- **[Decided] Tree colors (Dave, 2026-10-17).** Hardwood (broadleaf) trees get gray trunks and one autumn leaf color each (yellow, gold, orange, red, crimson, rust), fixed per tree. Softwood (conifer) trunks are dark brown. Built in the stand-in meshes; real models later.
 
 ### 4.4 Natural structures and lair sites
 
