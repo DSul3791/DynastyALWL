@@ -97,3 +97,9 @@ Baked tiles for the inner starters and their neighbors (36 files) are in `/mnt/p
 - Crafting direction decided (DESIGN_IDEAS 5.3): easy floor, deep ceiling, four depths (hand, camp bench, workshop, master work). Skills (5.4): innate + trained + practice, unused skills decay to no less than 20 percent of their peak and come back fast. Attributes feed each skill by weights; skills form a tree (swords > broadsword), practice splits about 80/20 between a skill and its parent, and working skill = parent + specific. First trades to design are the building-material ones (boards, stone, bricks, rope), from the foundation up.
 
 About 50 are listed in `DESIGN_IDEAS.md` Section 15 (nomadic household, homestead details, NPC role templates, temple cost, and more). Recently logged ideas: road builder, admin mine digger and mountain tunnel builder (Section 8.4 and the sub-section "Road, mine and tunnel builders" in 8.17).
+
+
+## Ground loading speed (2026-10-17)
+- `terrain_client.gd --walk --runspeed=N` walks east at N m/s for 30 s and reports frames spent waiting for ground and frames below ground.
+- With one collision LOD, ground fell behind above ~12 m/s (warm cache 30 m/s fine, 60 m/s on ground 23% of frames). `collision_lod_count = 4` (coarser solid ground out to ~4x farther) holds 60 and 120 m/s with blocks on disk.
+- Cold ground (blocks not yet generated) is still limited by server generation (about 30 m/s on a 4-core cloud box with client and server sharing it). Next idea: pre-generate or bake terrain blocks for the starter tiles. Widening `lod_distance` was much slower; do not do that.

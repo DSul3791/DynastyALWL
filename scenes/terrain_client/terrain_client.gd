@@ -37,7 +37,7 @@ const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 const VIEW_DISTANCE := 2048
 const FLY_SPEED := 30.0
 const WALK_SPEED := 6.0
-const FAST := 2.0
+const FAST := 3.0
 const GRAVITY := 20.0
 const MOUSE_SENSITIVITY := 0.002
 
@@ -59,6 +59,9 @@ var _environment: Environment
 var pitch: float = 0.0
 var frames_left: int = -1
 var test_speed: float = 0.0
+var run_speed: float = 0.0            # with --walk: ground speed in m/s instead of the walking pace
+var _wait_frames: int = 0             # walk test: frames spent waiting for ground
+var _slowest_frame: float = 0.0       # walk test: longest frame (s)
 var rescued: int = 0                   # times the player was lifted back above the ground
 var _floor_msec: int = 0               # last time the player stood on something
 var test_walk: bool = false
@@ -111,6 +114,8 @@ func _ready() -> void:
 			_wait_until_msec = Time.get_ticks_msec() + int(float(argument.trim_prefix("--wait=")) * 1000.0)
 		elif argument == "--walk":
 			test_walk = true
+		elif argument.begins_with("--runspeed="):
+			run_speed = float(argument.trim_prefix("--runspeed="))
 		elif argument == "--dig":
 			test_dig = true
 		elif argument == "--cut":
@@ -190,7 +195,7 @@ func _on_welcome(info: Dictionary) -> void:
 	terrain.view_distance = VIEW_DISTANCE
 	terrain.mesh_block_size = 32
 	terrain.generate_collisions = true
-	terrain.collision_lod_count = 1
+	terrain.collision_lod_count = 4
 	terrain.material = GroundMaterialScript.make(_tables)
 	root.add_child(terrain)
 	_make_player(root, info["spawn"] + Vector3(0.0, 28.0, 0.0))
@@ -417,7 +422,7 @@ func _physics_process(delta: float) -> void:
 		direction.y += float(Input.is_key_pressed(KEY_SPACE)) - float(Input.is_key_pressed(KEY_CTRL))
 		body.global_position += direction * FLY_SPEED * fast * delta
 	else:
-		var velocity: Vector3 = direction.normalized() * WALK_SPEED * fast
+		var velocity: Vector3 = direction.normalized() * (run_speed if run_speed > 0.0 and test_walk else WALK_SPEED * fast)
 
 		# Gravity only applies once there is ground below to land on. Fresh
 		# or far-off ground has no collision yet, so wait for it; a player who
@@ -425,6 +430,12 @@ func _physics_process(delta: float) -> void:
 		# Without ground to land on yet, glide level instead of falling or
 		# standing frozen: the ground appears as collision loads.
 		waiting_for_ground = not _ground_ready()
+
+		if test_walk and _walk_phase == 2:
+			_slowest_frame = maxf(_slowest_frame, delta)
+
+			if waiting_for_ground:
+				_wait_frames += 1
 
 		if waiting_for_ground:
 			velocity.y = 0.0
@@ -490,7 +501,7 @@ func _process(_delta: float) -> void:
 
 	var mode: String = ("flying" if flying else "walking") + (" (underwater)" if underwater else "") + (" (waiting for ground)" if waiting_for_ground and not flying else "")
 	_mode_label.text = mode
-	hud.text = "build 8   %d fps\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
+	hud.text = "build 9   %d fps\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
 		Engine.get_frames_per_second(),
 		stream.blocks_received, float(stream.bytes_received) / 1048576.0, cache.hits, flora.instances, flora.colliders,
 		body.global_position.x, body.global_position.y, body.global_position.z
@@ -680,10 +691,11 @@ func _place_by_tree() -> bool:
 
 func _walk_report() -> void:
 	var s: Dictionary = _walk_stats
-	print("Terrain client: walk: landed %.1f s after dropping %.0f m; walked %.0f m east in 30 s, on the ground %d%% of frames, %d frames below the ground (lowest gap %.2f m); tree trunk at x %.1f, furthest reached %.1f; put 60 m under the ground, then %.1f m above it (%d rescues)" % [
+	print("Terrain client: walk: landed %.1f s after dropping %.0f m; walked %.0f m east in 30 s, on the ground %d%% of frames, %d frames below the ground (lowest gap %.2f m); tree trunk at x %.1f, furthest reached %.1f; put 60 m under the ground, then %.1f m above it (%d rescues); waited for ground %d of %d frames, slowest frame %.0f ms" % [
 		float(s.get("landed_s", -1.0)), float(s.get("drop_m", 0.0)), float(s.get("walked_m", 0.0)),
 		100 * int(s.get("floor_frames", 0)) / maxi(int(s.get("frames", 0)), 1), int(s.get("fell_through", 0)), float(s.get("lowest_gap", 0.0)),
-		float(s.get("tree_x", NAN)), float(s.get("tree_max_x", NAN)), float(s.get("rescued_gap", NAN)), rescued
+		float(s.get("tree_x", NAN)), float(s.get("tree_max_x", NAN)), float(s.get("rescued_gap", NAN)), rescued,
+		_wait_frames, int(s.get("frames", 0)), _slowest_frame * 1000.0
 	])
 
 
