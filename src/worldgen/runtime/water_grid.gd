@@ -65,20 +65,20 @@ static func _level_at(generator, data, x: float, z: float, spacing: float) -> fl
 
 # Rivers are one or two samples wide and the baked map leaves holes along
 # them, mostly where the line steps sideways. A dry point with water on
-# both sides of it (one or two steps away, up and down or left and right,
+# both sides of it (up to three steps away, up and down or left and right,
 # allowing one step across) takes the mean of the two, closing the hole.
 static func _gap_level(generator, data, x: float, z: float, spacing: float) -> float:
 	for axis in [Vector2(0, 1), Vector2(1, 0)]:
 		var across: Vector2 = Vector2(axis.y, axis.x)
 
-		for before in [1, 2]:
+		for before in [1, 2, 3]:
 			for side_a in [-1, 0, 1]:
 				var a: float = _level_at(generator, data, x + (across.x * side_a - axis.x * before) * spacing, z + (across.y * side_a - axis.y * before) * spacing, spacing)
 
 				if is_nan(a):
 					continue
 
-				for after in [1, 2]:
+				for after in [1, 2, 3]:
 					for side_b in [-1, 0, 1]:
 						var b: float = _level_at(generator, data, x + (across.x * side_b + axis.x * after) * spacing, z + (across.y * side_b + axis.y * after) * spacing, spacing)
 
