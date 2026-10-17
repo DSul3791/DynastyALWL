@@ -10,10 +10,7 @@
 			"display": "Oak",
 			"kind": "tree",
 			"shape": "broadleaf",
-			"height_m": [
-				14,
-				24
-			],
+			"height_m": [12, 22],
 			"crown_m": 5.0,
 			"trunk_m": 0.45,
 			"color": [
@@ -67,10 +64,7 @@
 			"display": "Beech",
 			"kind": "tree",
 			"shape": "broadleaf",
-			"height_m": [
-				18,
-				30
-			],
+			"height_m": [15, 26],
 			"crown_m": 5.0,
 			"trunk_m": 0.4,
 			"color": [
@@ -121,10 +115,7 @@
 			"display": "Birch",
 			"kind": "tree",
 			"shape": "broadleaf",
-			"height_m": [
-				10,
-				20
-			],
+			"height_m": [9, 18],
 			"crown_m": 2.8,
 			"trunk_m": 0.2,
 			"color": [
@@ -181,10 +172,7 @@
 			"display": "Scots pine",
 			"kind": "tree",
 			"shape": "conifer",
-			"height_m": [
-				15,
-				30
-			],
+			"height_m": [20, 35],
 			"crown_m": 3.2,
 			"trunk_m": 0.35,
 			"color": [
@@ -236,10 +224,7 @@
 			"display": "Spruce",
 			"kind": "tree",
 			"shape": "conifer",
-			"height_m": [
-				18,
-				35
-			],
+			"height_m": [28, 48],
 			"crown_m": 3.0,
 			"trunk_m": 0.35,
 			"color": [
@@ -458,10 +443,7 @@
 			"display": "Tropical hardwood",
 			"kind": "tree",
 			"shape": "broadleaf",
-			"height_m": [
-				25,
-				45
-			],
+			"height_m": [22, 36],
 			"crown_m": 7.0,
 			"trunk_m": 0.6,
 			"color": [
@@ -2342,10 +2324,7 @@
 			"display": "Wild cherry",
 			"kind": "tree",
 			"shape": "broadleaf",
-			"height_m": [
-				12,
-				22
-			],
+			"height_m": [10, 18],
 			"crown_m": 3.5,
 			"trunk_m": 0.3,
 			"color": [
@@ -2398,10 +2377,7 @@
 			"display": "Sweet chestnut",
 			"kind": "tree",
 			"shape": "broadleaf",
-			"height_m": [
-				18,
-				30
-			],
+			"height_m": [14, 24],
 			"crown_m": 6.0,
 			"trunk_m": 0.6,
 			"color": [
@@ -2452,10 +2428,7 @@
 			"display": "Walnut",
 			"kind": "tree",
 			"shape": "broadleaf",
-			"height_m": [
-				15,
-				25
-			],
+			"height_m": [12, 22],
 			"crown_m": 6.0,
 			"trunk_m": 0.5,
 			"color": [
@@ -4976,10 +4949,7 @@
 			"display": "Mirrorbark",
 			"kind": "tree",
 			"shape": "broadleaf",
-			"height_m": [
-				10,
-				22
-			],
+			"height_m": [10, 20],
 			"crown_m": 3.5,
 			"trunk_m": 0.35,
 			"color": [
@@ -5153,10 +5123,7 @@
 			"display": "Wardpine",
 			"kind": "tree",
 			"shape": "conifer",
-			"height_m": [
-				12,
-				28
-			],
+			"height_m": [18, 36],
 			"crown_m": 3.0,
 			"trunk_m": 0.4,
 			"color": [
@@ -6350,10 +6317,7 @@
 			"display": "Hearthwood",
 			"kind": "tree",
 			"shape": "broadleaf",
-			"height_m": [
-				12,
-				24
-			],
+			"height_m": [11, 22],
 			"crown_m": 4.0,
 			"trunk_m": 0.45,
 			"color": [
@@ -6916,10 +6880,7 @@
 			"display": "Witness tree",
 			"kind": "tree",
 			"shape": "broadleaf",
-			"height_m": [
-				30,
-				45
-			],
+			"height_m": [26, 38],
 			"crown_m": 8.0,
 			"trunk_m": 1.2,
 			"color": [

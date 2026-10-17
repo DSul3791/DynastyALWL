@@ -571,10 +571,13 @@ func _build_menu(layer: CanvasLayer) -> void:
 			_apply_quality()
 			_menu_note.text = "Quality: %s" % QUALITY_NAMES[index])
 
-	_menu_button(settings, "VSync: on", func():
-		var on: bool = DisplayServer.window_get_vsync_mode() == DisplayServer.VSYNC_DISABLED
-		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED if on else DisplayServer.VSYNC_DISABLED)
-		_menu_note.text = "VSync is now %s. With VSync on, the frame rate snaps to 60, 30 or 20, hiding the real speed." % ("on" if on else "off"))
+	_menu_button(settings, "VSync: change", func():
+		var order: Array = [DisplayServer.VSYNC_ENABLED, DisplayServer.VSYNC_ADAPTIVE, DisplayServer.VSYNC_DISABLED]
+		var names: Array = ["on", "adaptive", "off"]
+		var at: int = order.find(DisplayServer.window_get_vsync_mode())
+		at = (at + 1) % order.size()
+		DisplayServer.window_set_vsync_mode(order[at])
+		_menu_note.text = "VSync is now %s. On snaps to 60 or 30; adaptive avoids the halving; off shows the true speed." % names[at])
 	_menu_button(settings, "Back", func(): _show_menu_page("main"))
 
 	var advanced: VBoxContainer = _menu_page(column, "advanced")
@@ -1012,7 +1015,7 @@ func _process(delta: float) -> void:
 		total_ms += ms
 
 	var avg_ms: float = total_ms / maxf(float(_frame_ms.size()), 1.0)
-	hud.text = "build 30  %d fps  avg %.1f ms  worst %.1f ms  quality %s (F2)\nmem %.0f MB\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders, grass %d\nx %.0f  y %.1f  z %.0f" % [
+	hud.text = "build 31  %d fps  avg %.1f ms  worst %.1f ms  quality %s (F2)\nmem %.0f MB\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders, grass %d\nx %.0f  y %.1f  z %.0f" % [
 		Engine.get_frames_per_second(), avg_ms, worst_ms, QUALITY_NAMES[quality],
 		float(OS.get_static_memory_usage()) / 1048576.0,
 		stream.blocks_received, float(stream.bytes_received) / 1048576.0, cache.hits, flora.instances, flora.colliders, grass.tufts,
@@ -1023,7 +1026,7 @@ func _process(delta: float) -> void:
 	hud.text += "\nframe work: cpu %.1f ms, gpu %.1f ms, vsync %s, draws %d" % [
 		RenderingServer.viewport_get_measured_render_time_cpu(vp) + RenderingServer.get_frame_setup_time_cpu(),
 		RenderingServer.viewport_get_measured_render_time_gpu(vp),
-		"on" if DisplayServer.window_get_vsync_mode() != DisplayServer.VSYNC_DISABLED else "off",
+		["on", "adaptive", "off"][clampi([DisplayServer.VSYNC_ENABLED, DisplayServer.VSYNC_ADAPTIVE, DisplayServer.VSYNC_DISABLED].find(DisplayServer.window_get_vsync_mode()), 0, 2)],
 		int(RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME))]
 
 	if _bake_status != "":

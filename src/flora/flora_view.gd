@@ -150,10 +150,19 @@ func setup(tables, tile_rules: Dictionary) -> void:
 		var near_meshes: Array = []
 		var far_meshes: Array = []
 
-		if kind == KIND_PLANT:
+		var shape: String = str(entry["shape"])
+		var built: bool = kind != KIND_PLANT or shape in ["grass", "reed", "fern", "flower", "shrub", "cactus"]
+
+		if not built:
 			var plain: ArrayMesh = _make_mesh(entry, reference)
 			near_meshes = [plain]
 			far_meshes = [plain]
+		elif kind == KIND_PLANT:
+			# Small plants: two variants, one model at every distance.
+			for v in range(2):
+				var model: ArrayMesh = TreeBuilder.build(entry, reference, v, false, _tree_materials)
+				near_meshes.append(model)
+				far_meshes.append(model)
 		else:
 			for v in range(TreeBuilder.VARIANTS):
 				near_meshes.append(TreeBuilder.build(entry, reference, v, false, _tree_materials))
@@ -165,9 +174,10 @@ func setup(tables, tile_rules: Dictionary) -> void:
 			"height": reference,
 			"trunk": float(entry["trunk_m"]),
 			"hardwood": str(entry["shape"]) == "broadleaf",
+			"tinted": built,
 			"near": near_meshes,
 			"far": far_meshes,
-			"tint": _natural(Color(float(c[0]), float(c[1]), float(c[2]))) * 1.5,
+			"tint": _plant_tint(entry, c),
 		}
 
 
@@ -182,15 +192,17 @@ func _make_tree_materials() -> void:
 	bark_material.set_shader_parameter("bark", _load_texture("res://assets/trees/bark.png"))
 	_tree_materials["bark"] = bark_material
 
-	for pair in [["broad", "leaf_broad"], ["conifer", "leaf_conifer"], ["palm", "leaf_palm"]]:
+	for pair in [["broad", "res://assets/trees/leaf_broad.png"], ["conifer", "res://assets/trees/leaf_conifer.png"], ["palm", "res://assets/trees/leaf_palm.png"], ["grass", "res://assets/grass/grass_tall.png"]]:
 		var material: ShaderMaterial = ShaderMaterial.new()
 		material.shader = foliage
-		material.set_shader_parameter("leaves", _load_texture("res://assets/trees/%s.png" % pair[1]))
+		material.set_shader_parameter("leaves", _load_texture(pair[1]))
 		_tree_materials[pair[0]] = material
 
 	# Conifer boughs hang from the trunk, so they sway less; palms sway more.
 	_tree_materials["conifer"].set_shader_parameter("sway", 0.006)
 	_tree_materials["palm"].set_shader_parameter("sway", 0.02)
+	_tree_materials["grass"].set_shader_parameter("sway", 0.09)
+	_tree_materials["grass"].set_shader_parameter("flutter", 0.01)
 
 
 # A painted texture, imported by the editor or else read straight from the file.
@@ -482,7 +494,7 @@ func _refresh(chunk: Vector2i, position: Vector3) -> void:
 		var multimesh: MultiMesh = MultiMesh.new()
 		multimesh.transform_format = MultiMesh.TRANSFORM_3D
 		multimesh.mesh = (info["near"] if key[4] == 1 else info["far"])[key[3]]
-		multimesh.use_custom_data = int(info["kind"]) != KIND_PLANT
+		multimesh.use_custom_data = bool(info["tinted"])
 		multimesh.instance_count = indices.size()
 
 		for m in range(indices.size()):
@@ -492,7 +504,7 @@ func _refresh(chunk: Vector2i, position: Vector3) -> void:
 			# Sunk a little so slopes do not show a gap under the trunk.
 			multimesh.set_instance_transform(m, Transform3D(basis, items["positions"][n] - Vector3(0.0, 0.15, 0.0)))
 
-			if int(info["kind"]) != KIND_PLANT:
+			if bool(info["tinted"]):
 				multimesh.set_instance_custom_data(m, _autumn_tint(ids[n]) if info["hardwood"] else info["tint"])
 
 		var draw: MultiMeshInstance3D = MultiMeshInstance3D.new()
@@ -547,6 +559,21 @@ func _autumn_color(id: int) -> Color:
 	var base: Color = AUTUMN[mix % AUTUMN.size()]
 	var shade: float = 0.9 + 0.2 * float((mix >> 8) % 100) / 100.0
 	return Color(minf(base.r * shade, 1.0), minf(base.g * shade, 1.0), minf(base.b * shade, 1.0))
+
+
+# The foliage tint for a species: grasses stay near the painted blade color,
+# flowers show their bloom color, the rest take the species green.
+static func _plant_tint(entry: Dictionary, c: Array) -> Color:
+	var base: Color = Color(float(c[0]), float(c[1]), float(c[2]))
+	var shape: String = str(entry["shape"])
+
+	if shape == "grass" or shape == "reed":
+		return Color(1.0, 1.0, 1.0).lerp(_natural(base) * 2.2, 0.3)
+
+	if shape == "flower":
+		return base * 1.9
+
+	return _natural(base) * 1.5
 
 
 # The leaf tint for a hardwood tree: its autumn color, scaled up because the
