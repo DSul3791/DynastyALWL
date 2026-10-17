@@ -26,4 +26,10 @@ Status tags are the same as in `DESIGN_IDEAS.md`: [Decided], [Idea], [Proposed],
 - **[Decided]** What this means for design: before adding a system, check that it does not quietly require a fixed home, a farm or a town. Anything a household needs (a bed, food, childcare, safe logout) needs a version a travelling family can use.
 - The concrete design question this raises is logged as an open item in `DESIGN_IDEAS.md` Section 15 (the nomadic household).
 
+## 4. Content, visuals and sound count equally
+
+- **[Decided]** (2026-10-17) Content, visuals and audio get equal attention. Older games leaned on content and neglected how they looked and sounded. Visuals have since become amazing, and in a few games sound has become a main focus.
+- **[Decided]** Why: our brains react faster and more strongly to sound. A full, layered sound stage lets a player close their eyes and believe they are in the world. Inspiration: theHunter: Call of the Wild, where much of the play is listening (ducks, waves on the water, a gentle breeze, a stick cracking, squirrels chirping, birds calling) and some players fall asleep to it with headphones on.
+- **[Decided]** What this means for design: when adding a system, ask what it looks like and what it sounds like, not only what it does. Audio has its own performance budget (`ARCHITECTURE_BUDGET.md` Section 9). This is a direction; no audio is being built yet.
+
 The original wording is also in `DESIGN_IDEAS.md` Section 3. How the two documents should relate (whether the copy in Section 3 stays or becomes a pointer to this file) is [Open] until the project owner reviews it.
