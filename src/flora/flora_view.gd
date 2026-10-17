@@ -110,7 +110,7 @@ func has_chunk(chunk: Vector2i) -> bool:
 # Sets a chunk's items (as from FloraPlacer.chunk_items or decode).
 func set_chunk(chunk: Vector2i, items: Dictionary, position: Vector3, water: Dictionary = {}) -> void:
 	drop_chunk(chunk)
-	var entry: Dictionary = {"items": items, "level": -1, "node": null, "water": null}
+	var entry: Dictionary = {"items": items, "level": -1, "node": null, "water": null, "grid": water}
 	_chunks[chunk] = entry
 
 	if int(water.get("wet", 0)) > 0:
@@ -127,6 +127,21 @@ func set_chunk(chunk: Vector2i, items: Dictionary, position: Vector3, water: Dic
 			water_cells += mesh.surface_get_array_index_len(0) / 6
 
 	_refresh(chunk, position)
+
+
+# The lake or river surface level at a point (NAN where there is none).
+func water_level_at(x: float, z: float) -> float:
+	var chunk: Vector2i = Vector2i(int(floor(x / chunk_m)), int(floor(z / chunk_m)))
+	var grid: Dictionary = _chunks.get(chunk, {}).get("grid", {})
+
+	if int(grid.get("wet", 0)) == 0:
+		return NAN
+
+	var spacing: float = float(grid["spacing"])
+	var count: int = int(grid["count"])
+	var i: int = clampi(int(round((x - float(chunk.x) * chunk_m) / spacing)), 0, count - 1)
+	var j: int = clampi(int(round((z - float(chunk.y) * chunk_m) / spacing)), 0, count - 1)
+	return float(grid["levels"][j * count + i])
 
 
 func drop_chunk(chunk: Vector2i) -> void:

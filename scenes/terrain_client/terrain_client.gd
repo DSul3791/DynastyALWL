@@ -51,6 +51,10 @@ var camera: Camera3D
 var hud: Label
 var sea: MeshInstance3D
 var flying: bool = false
+var underwater: bool = false
+var waiting_for_ground: bool = false
+var _tint: ColorRect
+var _environment: Environment
 var pitch: float = 0.0
 var frames_left: int = -1
 var test_speed: float = 0.0
@@ -196,6 +200,12 @@ func _on_welcome(info: Dictionary) -> void:
 	_make_environment(root)
 	var layer: CanvasLayer = CanvasLayer.new()
 	add_child(layer)
+	_tint = ColorRect.new()
+	_tint.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_tint.color = Color(0.05, 0.25, 0.4, 0.55)
+	_tint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tint.visible = false
+	layer.add_child(_tint)
 	hud = Label.new()
 	hud.position = Vector2(12.0, 12.0)
 	layer.add_child(hud)
@@ -341,6 +351,7 @@ func _make_environment(root: Node3D) -> void:
 	environment.sky = sky
 	environment.fog_enabled = true
 	environment.fog_density = 0.0004
+	_environment = environment
 	var world_environment: WorldEnvironment = WorldEnvironment.new()
 	world_environment.environment = environment
 	root.add_child(world_environment)
@@ -369,7 +380,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_ESCAPE:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-		elif event.keycode == KEY_G:
+		elif event.keycode == KEY_G or event.keycode == KEY_F:
 			flying = not flying
 			body.velocity = Vector3.ZERO
 
@@ -401,11 +412,14 @@ func _physics_process(delta: float) -> void:
 		# Gravity only applies once there is ground below to land on. Fresh
 		# or far-off ground has no collision yet, so wait for it; a player who
 		# already fell below it is lifted back to the surface.
-		if not _ground_ready():
-			body.velocity = Vector3.ZERO
-			return
+		# Without ground to land on yet, glide level instead of falling or
+		# standing frozen: the ground appears as collision loads.
+		waiting_for_ground = not _ground_ready()
 
-		velocity.y = body.velocity.y - GRAVITY * delta
+		if waiting_for_ground:
+			velocity.y = 0.0
+		else:
+			velocity.y = body.velocity.y - GRAVITY * delta
 
 		if body.is_on_floor() and Input.is_key_pressed(KEY_SPACE):
 			velocity.y = 7.0
@@ -419,6 +433,7 @@ func _physics_process(delta: float) -> void:
 			rescued += 1
 
 	sea.global_position = Vector3(body.global_position.x, 0.0, body.global_position.z)
+	_update_underwater()
 
 
 func _process(_delta: float) -> void:
@@ -463,8 +478,8 @@ func _process(_delta: float) -> void:
 			float(stream.bytes_received) / 1048576.0, stream.pending(), Engine.get_frames_per_second(), str(body.global_position.round())
 		])
 
-	hud.text = "build 5   %d fps   %s\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
-		Engine.get_frames_per_second(), "flying" if flying else "walking",
+	hud.text = "build 6   %d fps   %s\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
+		Engine.get_frames_per_second(), ("flying" if flying else "walking") + (" (underwater)" if underwater else "") + (" (waiting for ground)" if waiting_for_ground and not flying else ""),
 		stream.blocks_received, float(stream.bytes_received) / 1048576.0, cache.hits, flora.instances, flora.colliders,
 		body.global_position.x, body.global_position.y, body.global_position.z
 	]
@@ -597,6 +612,21 @@ func _under_the_ground() -> bool:
 	body.velocity = Vector3.ZERO
 	_floor_msec = Time.get_ticks_msec()
 	return true
+
+
+# Blue tint and thick blue fog while the camera is below the sea or a lake.
+func _update_underwater() -> void:
+	var eye: Vector3 = camera.global_position
+	var surface: float = flora.water_level_at(eye.x, eye.z)
+	var under: bool = eye.y < 0.0 or (not is_nan(surface) and eye.y < surface)
+
+	if under == underwater:
+		return
+
+	underwater = under
+	_tint.visible = under
+	_environment.fog_density = 0.05 if under else 0.0004
+	_environment.fog_light_color = Color(0.08, 0.28, 0.4) if under else Color(0.518, 0.553, 0.608)
 
 
 # Ground height under a point, from the terrain colliders (NAN if none).
