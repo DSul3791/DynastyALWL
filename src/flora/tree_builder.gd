@@ -254,7 +254,7 @@ static func _conifer(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: floa
 			var length: float = axis.length()
 			var right: Vector3 = axis / length
 			var up: Vector3 = out.cross(Vector3.UP).normalized()
-			var normal: Vector3 = (out * 0.5 + Vector3.UP * 0.85).normalized()
+			var normal: Vector3 = (out * 0.95 + Vector3.UP * 0.5).normalized()
 			# Two cards per bough (flat and tilted) so it has body from any angle.
 			acc_bough(leaves, mid, right, up, length * 0.5, reach * 0.95, normal, color)
 			acc_bough(leaves, mid, right, (up + Vector3.UP * 0.9).normalized(), length * 0.5, reach * 0.55, normal, color)

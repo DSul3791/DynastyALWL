@@ -591,13 +591,13 @@ func _autumn_tint(id: int) -> Color:
 func _conifer_tint(id: int, base: Color) -> Color:
 	var mix: int = (id * 2654435761) & 0x7fffffff
 	var f: float = float(mix % 1000) / 1000.0
-	var dark: Color = Color(0.55, 0.78, 0.68)
-	var lime: Color = Color(1.35, 1.7, 0.65)
+	var dark: Color = Color(0.82, 0.92, 0.86)
+	var lime: Color = Color(1.15, 1.35, 0.8)
 
-	if f < 0.2:
-		return base * lime.lerp(Color(1.0, 1.2, 0.8), float((mix >> 10) % 100) / 100.0)
+	if f < 0.1:
+		return base * lime
 
-	return base * dark.lerp(Color(1.0, 1.1, 0.95), (f - 0.2) / 0.8)
+	return base * dark.lerp(Color(1.0, 1.1, 0.95), (f - 0.1) / 0.9)
 
 
 # Mutes a species color toward natural tones: a little less saturated and
