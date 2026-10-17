@@ -2,7 +2,7 @@
 
 Tracks what the controls are now and what is planned. Update it whenever a control changes.
 
-## Now (terrain client, build 12)
+## Now (terrain client, build 13)
 
 | Control | Action |
 |---|---|
@@ -10,6 +10,7 @@ Tracks what the controls are now and what is planned. Update it whenever a contr
 | W A S D | Walk (6 m/s) |
 | Double-tap W (within 0.30 s) | Jog (11 m/s) |
 | Shift + W | Run (18 m/s) |
+| (automatic) | Very slight camera bob and sway when moving on the ground; steps faster when jogging or running |
 | Space | Jump (walking) or go up (flying) |
 | Ctrl | Go down (flying) |
 | G or F | Switch between walking and flying |

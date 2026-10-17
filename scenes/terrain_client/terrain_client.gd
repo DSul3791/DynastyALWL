@@ -40,6 +40,9 @@ const WALK_SPEED := 6.0
 const FAST := 3.0                     # flying: Shift multiplier
 const JOG_SPEED := 11.0
 const RUN_SPEED := 18.0
+const BOB_HEIGHT := 0.035            # metres of camera rise at a walk; scales up gently
+const SWAY_DEGREES := 0.35          # slight sideways roll, once per two steps
+const BOB_STEP := 1.4                # metres per step, so faster gaits step faster
 const DOUBLE_TAP_MSEC := 300          # second W press within this starts jogging
 const GRAVITY := 20.0
 const MOUSE_SENSITIVITY := 0.002
@@ -58,6 +61,8 @@ var underwater: bool = false
 var jogging: bool = false             # double-tapped W; ends when W is released
 var running: bool = false             # Shift held with W
 var _last_w_msec: int = -1000
+var _bob_phase: float = 0.0           # walking head bob
+var _bob_amount: float = 0.0
 var waiting_for_ground: bool = false
 var _tint: ColorRect
 var _aim_msec: int = 0
@@ -477,8 +482,30 @@ func _physics_process(delta: float) -> void:
 		elif Time.get_ticks_msec() - _floor_msec > 1200 and _under_the_ground():
 			rescued += 1
 
+		_update_bob(delta)
+
+	if flying:
+		_bob_amount = 0.0
+		camera.position.y = 0.7
+		camera.rotation.z = 0.0
+
 	sea.global_position = Vector3(body.global_position.x, 0.0, body.global_position.z)
 	_update_underwater()
+
+
+# A very small up-and-down camera bob while walking on the ground. Its speed
+# follows the pace and its height grows only a little, to avoid motion sickness.
+func _update_bob(delta: float) -> void:
+	var pace: float = Vector2(body.velocity.x, body.velocity.z).length()
+	var moving: bool = body.is_on_floor() and pace > 1.0
+	_bob_amount = move_toward(_bob_amount, 1.0 if moving else 0.0, delta * 6.0)
+
+	if moving:
+		_bob_phase += delta * pace / BOB_STEP * TAU
+
+	var height: float = BOB_HEIGHT * (1.0 + 0.25 * (pace - WALK_SPEED) / WALK_SPEED)
+	camera.position.y = 0.7 + absf(sin(_bob_phase * 0.5)) * height * _bob_amount
+	camera.rotation.z = deg_to_rad(SWAY_DEGREES) * sin(_bob_phase * 0.5) * _bob_amount
 
 
 func _process(_delta: float) -> void:
@@ -549,7 +576,7 @@ func _process(_delta: float) -> void:
 	if waiting_for_ground and not flying:
 		mode = (mode + " (waiting for ground)").strip_edges()
 	_mode_label.text = mode
-	hud.text = "build 12  %d fps\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
+	hud.text = "build 13  %d fps\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
 		Engine.get_frames_per_second(),
 		stream.blocks_received, float(stream.bytes_received) / 1048576.0, cache.hits, flora.instances, flora.colliders,
 		body.global_position.x, body.global_position.y, body.global_position.z
