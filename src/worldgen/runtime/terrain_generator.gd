@@ -33,6 +33,8 @@ const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const DataScript := preload("res://src/worldgen/runtime/tile_terrain_data.gd")
 const SeedUtil := preload("res://src/worldgen/settings/worldgen_seed.gd")
 
+const TOPSOIL_M := 0.4                 # topsoil layer over a clay subsoil
+const CLAY_UNDER_MOISTURE := 165       # wet air (0 to 255) from which loam and humus lie on clay
 const ORE_LENS := 0
 const ORE_HALO := 1
 const ORE_PIPE := 2
@@ -64,6 +66,11 @@ var _placeholder_depth: float = -200.0
 var _cave_max_lod: int = 2
 var _ore_max_lod: int = 0
 var _limestone: int = 3
+var _clay: int = -1
+var _loam: int = -1
+var _humus: int = -1
+var _silt: int = -1
+var _alluvium: int = -1
 var _marble: int = 9
 var _granite: int = 5
 var _basalt: int = 7
@@ -87,6 +94,14 @@ func setup(settings, tile_rules: Dictionary, tables, tiles_directory: String) ->
 
 	for entry in tables.get_entries("rocks"):
 		_rock_ids[str(entry["name"])] = int(entry["id"])
+
+	for entry in tables.get_entries("soils"):
+		match str(entry["name"]):
+			"clay": _clay = int(entry["id"])
+			"loam": _loam = int(entry["id"])
+			"forest_humus": _humus = int(entry["id"])
+			"silt": _silt = int(entry["id"])
+			"alluvium": _alluvium = int(entry["id"])
 
 	for entry in tables.get_entries("resources"):
 		_resource_ids[str(entry["name"])] = int(entry["id"])
@@ -408,6 +423,11 @@ func generate(buffer: VoxelBuffer, origin: Vector3i, lod: int) -> void:
 		_carve_caves(buffer, shapes, origin, sf, size)
 
 
+# True where the soil at the surface sits on a clay subsoil.
+func _clay_under(soil: int, moisture: int) -> bool:
+	return _clay >= 0 and moisture >= CLAY_UNDER_MOISTURE and (soil == _loam or soil == _humus or soil == _silt or soil == _alluvium)
+
+
 # What the top of a column looks like: its soil, else the rock at the
 # bedrock surface (intrusions and vents are not looked at).
 func _surface_material(data, x: float, z: float, h: float) -> int:
@@ -446,6 +466,15 @@ func _fill_rock_column(buffer: VoxelBuffer, data, bodies: Array, i: int, k: int,
 		var lo: int = maxi(j_bed + 1, 0)
 		buffer.fill_area(Layout.ROCK_SEDIMENT, Vector3i(i, lo, k), Vector3i(i + 1, j_surface + 1, k + 1), Layout.CHANNEL_ROCK)
 		buffer.fill_area(data.soil[sample], Vector3i(i, lo, k), Vector3i(i + 1, j_surface + 1, k + 1), Layout.CHANNEL_SOIL)
+
+		# Wet lowland loam, humus, silt and alluvium lies on clay: a topsoil
+		# layer on the surface and clay below it (owner, 2026-10-17).
+		if _clay_under(data.soil[sample], data.moisture[sample]):
+			var j_clay: int = mini(int(floor((h - TOPSOIL_M - oy) / sf)), j_surface)
+
+			if j_clay >= lo:
+				buffer.fill_area(_clay, Vector3i(i, lo, k), Vector3i(i + 1, j_clay + 1, k + 1), Layout.CHANNEL_SOIL)
+				buffer.fill_area(_clay, Vector3i(i, lo, k), Vector3i(i + 1, j_clay + 1, k + 1), Layout.CHANNEL_MATERIAL)
 
 	if j_bed < 0:
 		return

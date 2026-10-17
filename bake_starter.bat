@@ -1,18 +1,33 @@
 @echo off
 rem Bakes the starter town tile (3,4) and its eight neighbors on this computer.
-rem One-time setup: set GODOT below to your Godot 4.7.2 program (the one you run the game with).
-rem Then double-click this file. It takes about 5 to 10 minutes.
+rem Just double-click it. It finds your Godot by itself the first time and remembers it.
+rem (If it cannot find Godot, drag your Godot program onto this file once.)
+rem Takes about 5 to 10 minutes.
 
-set GODOT=C:\Godot\Godot_v4.7.2-stable_win64_console.exe
+cd /d "%~dp0"
+set GODOT=
 
-if not exist "%GODOT%" (
-  echo Godot was not found at: %GODOT%
-  echo Open this file in Notepad and set the GODOT line to your Godot console program.
+rem 1. Dragged-on program, else the remembered one.
+if not "%~1"=="" set GODOT=%~1
+if "%GODOT%"=="" if exist godot_path.txt set /p GODOT=<godot_path.txt
+
+rem 2. Look in the usual places (the console version is preferred).
+if "%GODOT%"=="" for %%R in ("%USERPROFILE%\Downloads" "%USERPROFILE%\Desktop" "C:\Godot" "C:\GodotProjects" "C:\Program Files\Godot" "%LOCALAPPDATA%\Godot") do (
+  if "%GODOT%"=="" if exist "%%~R" for /f "delims=" %%F in ('dir /s /b "%%~R\Godot*console*.exe" 2^>nul') do if "%GODOT%"=="" set GODOT=%%F
+)
+if "%GODOT%"=="" for %%R in ("%USERPROFILE%\Downloads" "%USERPROFILE%\Desktop" "C:\Godot" "C:\GodotProjects" "C:\Program Files\Godot" "%LOCALAPPDATA%\Godot") do (
+  if "%GODOT%"=="" if exist "%%~R" for /f "delims=" %%F in ('dir /s /b "%%~R\Godot*.exe" 2^>nul') do if "%GODOT%"=="" set GODOT=%%F
+)
+
+if "%GODOT%"=="" (
+  echo Could not find Godot. Drag your Godot program onto bake_starter.bat once.
   pause
   exit /b 1
 )
 
-cd /d "%~dp0"
+echo Using Godot: %GODOT%
+>godot_path.txt echo %GODOT%
+
 "%GODOT%" --headless --path . --script res://src/worldgen/tools/bake_tiles.gd -- "--tiles=2,3;2,4;2,5;3,3;3,4;3,5;4,3;4,4;4,5"
 
 echo.

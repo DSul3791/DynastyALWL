@@ -38,6 +38,7 @@ var species: Array = []              # Dictionary per table row (retired rows sk
 var _by_id: Dictionary = {}          # species id -> Dictionary
 var _by_biome: Array = []            # biome id -> Array of species Dictionaries (sorted by id)
 var patchiness: float = 0.0
+var _soil_growth: PackedFloat32Array = PackedFloat32Array()   # soil id -> tree and shrub growth factor
 var _patches: FastNoiseLite
 
 
@@ -56,6 +57,12 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 	_patches.frequency = 1.0 / float(rules.get("patch_m", 150.0))
 	var biome_ids: Dictionary = {}
 	var water_ids: Dictionary = {}
+	_soil_growth.resize(256)
+	_soil_growth.fill(1.0)
+
+	for entry in tables.get_entries("soils"):
+		_soil_growth[int(entry["id"])] = float(entry.get("tree_growth", 1.0))
+
 
 	for entry in tables.get_entries("biomes"):
 		biome_ids[str(entry["name"])] = int(entry["id"])
@@ -214,6 +221,10 @@ func chunk_items(chunk: Vector2i) -> Dictionary:
 
 				if chance <= 0.0:
 					continue
+
+				# Trees and shrubs thin out on clay, peat, sand and other poor ground.
+				if woody:
+					chance *= _soil_growth[data.soil[k]]
 
 				if patch_sign != 0.0:
 					chance *= clampf(1.0 + patch_sign * patch_at(x, z), 0.0, 2.0)

@@ -1,7 +1,7 @@
 {
 	"table": "soils",
 	"format_version": 1,
-	"note": "familiarity (0 to 100): the base chance in percent that a character already recognizes it at first sight. IDs are append-only. Never renumber or reuse an ID; retire an entry with \"retired\": true and take the next ID from next_id for new entries. glass_quality (0 to 1, optional): how good the sand is for glass making. color: ground color for drawing (red, green, blue, 0 to 1).",
+	"note": "familiarity (0 to 100): the base chance in percent that a character already recognizes it at first sight. IDs are append-only. Never renumber or reuse an ID; retire an entry with \"retired\": true and take the next ID from next_id for new entries. glass_quality (0 to 1, optional): how good the sand is for glass making. color: ground color for drawing (red, green, blue, 0 to 1). tree_growth (0 to 1, optional): how well trees and shrubs grow (a multiplier on their placing chance; plants ignore it).",
 	"next_id": 16,
 	"entries": [
 		{
@@ -10,7 +10,12 @@
 			"display": "Bare rock",
 			"familiarity": 98,
 			"fertility_base": 0,
-			"color": [0.45, 0.43, 0.4]
+			"color": [
+				0.45,
+				0.43,
+				0.4
+			],
+			"tree_growth": 0.0
 		},
 		{
 			"id": 1,
@@ -19,7 +24,12 @@
 			"familiarity": 98,
 			"fertility_base": 20,
 			"glass_quality": 0.6,
-			"color": [0.8, 0.74, 0.55]
+			"color": [
+				0.8,
+				0.74,
+				0.55
+			],
+			"tree_growth": 0.3
 		},
 		{
 			"id": 2,
@@ -27,7 +37,12 @@
 			"display": "Gravel",
 			"familiarity": 95,
 			"fertility_base": 25,
-			"color": [0.55, 0.52, 0.48]
+			"color": [
+				0.55,
+				0.52,
+				0.48
+			],
+			"tree_growth": 0.35
 		},
 		{
 			"id": 3,
@@ -35,7 +50,12 @@
 			"display": "Silt",
 			"familiarity": 60,
 			"fertility_base": 140,
-			"color": [0.46, 0.47, 0.3]
+			"color": [
+				0.46,
+				0.47,
+				0.3
+			],
+			"tree_growth": 0.9
 		},
 		{
 			"id": 4,
@@ -43,7 +63,12 @@
 			"display": "Clay",
 			"familiarity": 88,
 			"fertility_base": 100,
-			"color": [0.52, 0.42, 0.3]
+			"color": [
+				0.52,
+				0.42,
+				0.3
+			],
+			"tree_growth": 0.25
 		},
 		{
 			"id": 5,
@@ -51,7 +76,12 @@
 			"display": "Loam",
 			"familiarity": 85,
 			"fertility_base": 220,
-			"color": [0.32, 0.42, 0.2]
+			"color": [
+				0.32,
+				0.42,
+				0.2
+			],
+			"tree_growth": 1.0
 		},
 		{
 			"id": 6,
@@ -59,7 +89,12 @@
 			"display": "Peat",
 			"familiarity": 72,
 			"fertility_base": 120,
-			"color": [0.22, 0.18, 0.12]
+			"color": [
+				0.22,
+				0.18,
+				0.12
+			],
+			"tree_growth": 0.25
 		},
 		{
 			"id": 7,
@@ -67,7 +102,12 @@
 			"display": "Alluvium",
 			"familiarity": 35,
 			"fertility_base": 200,
-			"color": [0.34, 0.44, 0.22]
+			"color": [
+				0.34,
+				0.44,
+				0.22
+			],
+			"tree_growth": 1.0
 		},
 		{
 			"id": 8,
@@ -75,7 +115,12 @@
 			"display": "Forest humus",
 			"familiarity": 70,
 			"fertility_base": 160,
-			"color": [0.25, 0.31, 0.16]
+			"color": [
+				0.25,
+				0.31,
+				0.16
+			],
+			"tree_growth": 1.0
 		},
 		{
 			"id": 9,
@@ -83,7 +128,12 @@
 			"display": "Stony soil",
 			"familiarity": 80,
 			"fertility_base": 60,
-			"color": [0.45, 0.45, 0.35]
+			"color": [
+				0.45,
+				0.45,
+				0.35
+			],
+			"tree_growth": 0.5
 		},
 		{
 			"id": 10,
@@ -91,7 +141,12 @@
 			"display": "Permafrost",
 			"familiarity": 45,
 			"fertility_base": 15,
-			"color": [0.52, 0.55, 0.5]
+			"color": [
+				0.52,
+				0.55,
+				0.5
+			],
+			"tree_growth": 0.1
 		},
 		{
 			"id": 11,
@@ -99,7 +154,12 @@
 			"display": "Snow",
 			"familiarity": 99,
 			"fertility_base": 0,
-			"color": [0.92, 0.94, 0.96]
+			"color": [
+				0.92,
+				0.94,
+				0.96
+			],
+			"tree_growth": 0.0
 		},
 		{
 			"id": 12,
@@ -107,7 +167,12 @@
 			"display": "Glacial ice",
 			"familiarity": 90,
 			"fertility_base": 0,
-			"color": [0.75, 0.85, 0.92]
+			"color": [
+				0.75,
+				0.85,
+				0.92
+			],
+			"tree_growth": 0.0
 		},
 		{
 			"id": 13,
@@ -115,7 +180,12 @@
 			"display": "Salt flat",
 			"familiarity": 65,
 			"fertility_base": 5,
-			"color": [0.9, 0.88, 0.82]
+			"color": [
+				0.9,
+				0.88,
+				0.82
+			],
+			"tree_growth": 0.02
 		},
 		{
 			"id": 14,
@@ -123,7 +193,12 @@
 			"display": "Volcanic ash",
 			"familiarity": 55,
 			"fertility_base": 150,
-			"color": [0.3, 0.28, 0.27]
+			"color": [
+				0.3,
+				0.28,
+				0.27
+			],
+			"tree_growth": 0.5
 		},
 		{
 			"id": 15,
@@ -132,7 +207,12 @@
 			"familiarity": 98,
 			"fertility_base": 10,
 			"glass_quality": 0.9,
-			"color": [0.86, 0.8, 0.6]
+			"color": [
+				0.86,
+				0.8,
+				0.6
+			],
+			"tree_growth": 0.08
 		}
 	]
 }

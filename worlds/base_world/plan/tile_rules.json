@@ -153,6 +153,8 @@
 			"floodplain_distance_m": 110,
 			"floodplain_slope_deg": 6.0,
 			"clay_moisture": 0.78,
+			"clay_edge_note": "Bare clay shows at the surface only this close to fresh water (owner, 2026-10-17); elsewhere clay lies under topsoil.",
+			"clay_edge_m": 160,
 			"sand_moisture": 0.3,
 			"stony_slope_deg": 20.0
 		},
