@@ -192,35 +192,36 @@ static func _broadleaf(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: fl
 	# Short clear trunk, then one dense, full, egg-shaped crown from about a quarter of
 	# the height to the top, like a street maple; a few limbs show through.
 	var base_y: float = h * 0.26
-	var half_v: float = (h - base_y) * 0.5
-	var center: Vector3 = Vector3(top.x, base_y + half_v, top.z)
-	var wide: float = crown * 1.15
-	var count: int = 10 if far else rng.randi_range(30, 36)
-	var size_base: float = crown * (0.95 if far else 0.62)
+	var limbs: int = 5 if far else rng.randi_range(9, 11)
+	var size_base: float = crown * (0.95 if far else 0.6)
 
-	for k in range(count):
-		var dir: Vector3 = Vector3(rng.randfn(), rng.randfn() * 0.9, rng.randfn()).normalized()
-		var r: float = pow(rng.randf_range(0.2, 1.0), 0.45)
-		var p: Vector3 = center + Vector3(dir.x * wide * r, dir.y * half_v * r, dir.z * wide * r)
-		p.y = maxf(p.y, base_y)
-		# Narrower toward the bottom and the very top, widest a bit below the middle.
-		var vf: float = clampf((p.y - base_y) / (2.0 * half_v), 0.0, 1.0)
-		var squeeze: float = lerpf(0.75, 1.0, sin(vf * PI))
-		p.x = center.x + (p.x - center.x) * squeeze
-		p.z = center.z + (p.z - center.z) * squeeze
-		var shade: float = lerpf(0.55, 1.0, vf) * rng.randf_range(0.9, 1.08)
-		_clump(leaves, rng, p, center, size_base * rng.randf_range(0.9, 1.3), shade, 2 if far else 3)
-
-	if far:
-		return
-
-	for k in range(6):
-		var a: float = rng.randf() * TAU
-		var y0: float = rng.randf_range(h * 0.2, h * 0.45)
-		var reach: float = crown * rng.randf_range(0.5, 0.9)
+	# Limbs sweep up and out from the trunk at an angle, like a young maple, and carry
+	# the leaves along their length so the crown is built from them.
+	for k in range(limbs):
+		var f: float = (float(k) + rng.randf()) / float(limbs)
+		var y0: float = lerpf(base_y, h * 0.62, f)
+		var az: float = rng.randf() * TAU
+		var rise: float = deg_to_rad(rng.randf_range(38.0, 62.0))
+		var reach: float = (h - y0) * rng.randf_range(0.85, 1.0) / sin(rise) * 0.55
+		reach = minf(reach, crown * 1.9)
 		var start: Vector3 = Vector3(lean.x * (y0 / h), y0, lean.y * (y0 / h))
-		var tip: Vector3 = start + Vector3(cos(a) * reach, reach * 0.3, sin(a) * reach)
-		_branch(bark, start, tip, trunk * 0.3, trunk * 0.08, tint, 5)
+		var dirv: Vector3 = Vector3(cos(az) * cos(rise), sin(rise), sin(az) * cos(rise))
+		var tip: Vector3 = start + dirv * reach
+		tip.y = minf(tip.y, h * 0.97)
+		if not far:
+			_branch(bark, start, tip, trunk * lerpf(0.34, 0.14, f), trunk * 0.07, tint, 5)
+		var along: int = 3 if far else 5
+		for m in range(along):
+			var t: float = lerpf(0.3, 1.0, float(m) / float(along - 1))
+			var p: Vector3 = start.lerp(tip, t)
+			p += Vector3(rng.randfn(), rng.randfn() * 0.5, rng.randfn()) * crown * 0.12
+			var vf: float = clampf((p.y - base_y) / (h - base_y), 0.0, 1.0)
+			var shade: float = lerpf(0.55, 1.0, vf) * rng.randf_range(0.9, 1.08)
+			_clump(leaves, rng, p, Vector3(start.x, p.y - crown * 0.3, start.z), size_base * rng.randf_range(0.9, 1.3), shade, 2 if far else 3)
+
+	# Leader: the crown tops out on the trunk's own tip.
+	var cap: Vector3 = Vector3(top.x, h - crown * 0.3, top.z)
+	_clump(leaves, rng, cap, cap - Vector3(0.0, 1.0, 0.0), size_base * 1.2, 1.0, 2 if far else 3)
 
 
 static func _conifer(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, far: bool) -> void:
