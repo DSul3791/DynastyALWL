@@ -32,6 +32,7 @@ const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const FloraViewScript := preload("res://src/flora/flora_view.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
+const TileBakeScript := preload("res://src/admin/tile_bake_launcher.gd")
 const GrassViewScript := preload("res://src/client/grass_view.gd")
 const GroundMaterialScript := preload("res://src/client/ground_material.gd")
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
@@ -128,6 +129,8 @@ var _report_msec: int = 0
 var dig_applied: int = 0
 var flora                             # FloraView
 var grass                             # GrassView
+var _bake = TileBakeScript.new()      # admin: background tile bake
+var _bake_check_msec: int = 0
 var quality: int = 2                  # index into QUALITY_NAMES; High is the default
 var _flora_view_full: PackedFloat32Array = PackedFloat32Array()
 var _viewer: VoxelViewer
@@ -562,6 +565,9 @@ func _build_menu(layer: CanvasLayer) -> void:
 	var advanced: VBoxContainer = _menu_page(column, "advanced")
 	_menu_button(advanced, "Clear saved ground", func():
 		_ask_clear_cache())
+	_menu_button(advanced, "Admin: Bake starter tiles", func():
+		var problem: String = _bake.start()
+		_menu_note.text = "Baking the starter tiles in the background (about 5 to 10 minutes). The game stays usable; the result shows here." if problem == "" else problem)
 	_menu_button(advanced, "Back", func(): _show_menu_page("main"))
 
 	_menu_note = Label.new()
@@ -928,6 +934,17 @@ func _process(delta: float) -> void:
 	if not flying and body != null:
 		grass.update(body.global_position)
 
+	if _bake.running and now >= _bake_check_msec:
+		_bake_check_msec = now + 2000
+		var finished: String = _bake.poll()
+
+		if finished != "":
+			_menu_note.text = finished
+			_set_menu(true)
+			_show_menu_page("advanced")
+			_menu_note.text = finished
+			print("Terrain client: ", finished)
+
 	if test_cut and now - connected_msec > 25000:
 		test_cut = false
 		_cut_nearest_tree()
@@ -970,7 +987,7 @@ func _process(delta: float) -> void:
 		total_ms += ms
 
 	var avg_ms: float = total_ms / maxf(float(_frame_ms.size()), 1.0)
-	hud.text = "build 26  %d fps  avg %.1f ms  worst %.1f ms  quality %s (F2)\nmem %.0f MB\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders, grass %d\nx %.0f  y %.1f  z %.0f" % [
+	hud.text = "build 27  %d fps  avg %.1f ms  worst %.1f ms  quality %s (F2)\nmem %.0f MB\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders, grass %d\nx %.0f  y %.1f  z %.0f" % [
 		Engine.get_frames_per_second(), avg_ms, worst_ms, QUALITY_NAMES[quality],
 		float(OS.get_static_memory_usage()) / 1048576.0,
 		stream.blocks_received, float(stream.bytes_received) / 1048576.0, cache.hits, flora.instances, flora.colliders, grass.tufts,
