@@ -1,7 +1,7 @@
 {
 	"table": "flora",
 	"format_version": 1,
-	"note": "IDs are append-only. Never renumber or reuse an ID; retire an entry with \"retired\": true and take the next ID from next_id for new entries. Placement (plan step 15) reads per_hectare (plants per hectare by biome name, before the density setting in tile_rules.json runtime_flora), moisture (0 to 255 map value), max_slope_deg, altitude_m (ground height above sea level) and water (water classes it may stand in; empty = dry land only). crown_m is the spacing radius of trees and shrubs, trunk_m the collision radius (0 = walk through). yields are names for the harvesting tables to come. season: when the main yield can be gathered (spring, summer, autumn, winter or all). rarity: common, uncommon, rare (a label for players; how often a plant appears comes from per_hectare). uses: what the yields are good for (food, seasoning, sauce, jam, tea, brewing, medicine, ointment, potion, poison, dye, fibre, timber and so on). properties: effects for the crafting tables to come (wound_healing, fever, sleep, toxic, ...). fantasy: true marks invented species (the owner chose real plus fantasy plants, 2026-10-16); they are rarer than real plants and carry magical properties (glow, arcane, revival, ghost_warding, water_breathing and so on). rarity can also be very_rare or legendary. Optional: time_of_day (dawn, dusk or night: when it can be found or gathered), discovery (true: rare enough that finding one is worth recording and protecting), bloom_years (flowers only every N game years). Placement does not read these yet.",
+	"note": "IDs are append-only. Never renumber or reuse an ID; retire an entry with \"retired\": true and take the next ID from next_id for new entries. Placement (plan step 15) reads per_hectare (plants per hectare by biome name, before the density setting in tile_rules.json runtime_flora), moisture (0 to 255 map value), max_slope_deg, altitude_m (ground height above sea level) and water (water classes it may stand in; empty = dry land only). crown_m is the spacing radius of trees and shrubs, trunk_m the collision radius (0 = walk through). yields are names for the harvesting tables to come. season: when the main yield can be gathered (spring, summer, autumn, winter or all). rarity: common, uncommon, rare (a label for players; how often a plant appears comes from per_hectare). uses: what the yields are good for (food, seasoning, sauce, jam, tea, brewing, medicine, ointment, potion, poison, dye, fibre, timber and so on). properties: effects for the crafting tables to come (wound_healing, fever, sleep, toxic, ...). fantasy: true marks invented species (the owner chose real plus fantasy plants, 2026-10-16); they are rarer than real plants and carry magical properties (glow, arcane, revival, ghost_warding, water_breathing and so on). rarity can also be very_rare or legendary. Optional: time_of_day (dawn, dusk or night: when it can be found or gathered), discovery (true: rare enough that finding one is worth recording and protecting), bloom_years (flowers only every N game years). Placement does not read these yet. look_alikes: names of species this one might be mistaken for on sight (real-world or visual resemblance); the inspection check draws a wrong guess from this list. familiarity (0 to 100, on every inspectable table): the base chance in percent that a character already recognizes the thing the first time they see it; it feeds the inspection memory check. High for everyday things and for famous or legendary ones, low for obscure ones.",
 	"next_id": 125,
 	"entries": [
 		{
@@ -45,11 +45,19 @@
 				"all"
 			],
 			"rarity": "common",
+			"familiarity": 98,
 			"uses": [
 				"timber",
 				"fuel",
 				"tannin",
 				"animal_feed"
+			],
+			"look_alikes": [
+				"beech",
+				"sweet_chestnut",
+				"walnut",
+				"witness_tree",
+				"hearthwood"
 			],
 			"properties": []
 		},
@@ -92,10 +100,18 @@
 				"all"
 			],
 			"rarity": "common",
+			"familiarity": 85,
 			"uses": [
 				"timber",
 				"fuel",
 				"food"
+			],
+			"look_alikes": [
+				"oak",
+				"sweet_chestnut",
+				"walnut",
+				"witness_tree",
+				"hearthwood"
 			],
 			"properties": []
 		},
@@ -141,12 +157,19 @@
 				"all"
 			],
 			"rarity": "common",
+			"familiarity": 97,
 			"uses": [
 				"timber",
 				"fuel",
 				"tinder",
 				"syrup",
 				"medicine"
+			],
+			"look_alikes": [
+				"alder",
+				"rowan",
+				"mirrorbark",
+				"everember"
 			],
 			"properties": [
 				"pain_relief"
@@ -194,11 +217,16 @@
 				"all"
 			],
 			"rarity": "common",
+			"familiarity": 93,
 			"uses": [
 				"timber",
 				"fuel",
 				"pitch",
 				"tea"
+			],
+			"look_alikes": [
+				"spruce",
+				"wardpine"
 			],
 			"properties": []
 		},
@@ -242,11 +270,16 @@
 				"all"
 			],
 			"rarity": "common",
+			"familiarity": 95,
 			"uses": [
 				"timber",
 				"fuel",
 				"pitch",
 				"tea"
+			],
+			"look_alikes": [
+				"scots_pine",
+				"wardpine"
 			],
 			"properties": []
 		},
@@ -292,10 +325,19 @@
 				"all"
 			],
 			"rarity": "common",
+			"familiarity": 60,
 			"uses": [
 				"timber",
 				"charcoal",
 				"dye"
+			],
+			"look_alikes": [
+				"birch",
+				"rowan",
+				"mirrorbark",
+				"everember",
+				"willow",
+				"hagwillow"
 			],
 			"properties": []
 		},
@@ -341,10 +383,15 @@
 				"all"
 			],
 			"rarity": "common",
+			"familiarity": 92,
 			"uses": [
 				"basketry",
 				"timber",
 				"medicine"
+			],
+			"look_alikes": [
+				"alder",
+				"hagwillow"
 			],
 			"properties": [
 				"pain_relief"
@@ -391,12 +438,17 @@
 				"all"
 			],
 			"rarity": "uncommon",
+			"familiarity": 95,
 			"uses": [
 				"food",
 				"drink",
 				"timber",
 				"thatch",
 				"oil"
+			],
+			"look_alikes": [
+				"date_palm",
+				"wild_banana"
 			],
 			"properties": []
 		},
@@ -438,9 +490,14 @@
 				"all"
 			],
 			"rarity": "common",
+			"familiarity": 35,
 			"uses": [
 				"timber",
 				"fuel"
+			],
+			"look_alikes": [
+				"acacia",
+				"mangrove"
 			],
 			"properties": []
 		},
@@ -483,10 +540,15 @@
 				"all"
 			],
 			"rarity": "uncommon",
+			"familiarity": 70,
 			"uses": [
 				"timber",
 				"fuel",
 				"glue"
+			],
+			"look_alikes": [
+				"tropical_hardwood",
+				"mangrove"
 			],
 			"properties": []
 		},
@@ -532,9 +594,14 @@
 				"all"
 			],
 			"rarity": "common",
+			"familiarity": 65,
 			"uses": [
 				"timber",
 				"tannin"
+			],
+			"look_alikes": [
+				"acacia",
+				"tropical_hardwood"
 			],
 			"properties": []
 		},
@@ -578,10 +645,16 @@
 				"autumn"
 			],
 			"rarity": "common",
+			"familiarity": 88,
 			"uses": [
 				"food",
 				"poles",
 				"basketry"
+			],
+			"look_alikes": [
+				"elder",
+				"hawthorn",
+				"honeyspindle"
 			],
 			"properties": []
 		},
@@ -627,11 +700,19 @@
 				"autumn"
 			],
 			"rarity": "common",
+			"familiarity": 97,
 			"uses": [
 				"food",
 				"jam",
 				"dye",
 				"wine"
+			],
+			"look_alikes": [
+				"raspberry",
+				"wild_rose",
+				"blackthorn",
+				"sunsilver_vine",
+				"tanglewort"
 			],
 			"properties": []
 		},
@@ -677,10 +758,15 @@
 				"winter"
 			],
 			"rarity": "uncommon",
+			"familiarity": 75,
 			"uses": [
 				"spice",
 				"medicine",
 				"brewing"
+			],
+			"look_alikes": [
+				"gorse",
+				"sea_buckthorn"
 			],
 			"properties": [
 				"digestive"
@@ -725,10 +811,15 @@
 				"all"
 			],
 			"rarity": "common",
+			"familiarity": 70,
 			"uses": [
 				"kindling",
 				"fodder",
 				"dye"
+			],
+			"look_alikes": [
+				"juniper",
+				"sea_buckthorn"
 			],
 			"properties": []
 		},
@@ -769,8 +860,13 @@
 				"all"
 			],
 			"rarity": "common",
+			"familiarity": 40,
 			"uses": [
 				"kindling"
+			],
+			"look_alikes": [
+				"crowberry",
+				"heather"
 			],
 			"properties": []
 		},
@@ -813,10 +909,15 @@
 				"all"
 			],
 			"rarity": "common",
+			"familiarity": 30,
 			"uses": [
 				"fodder",
 				"potash",
 				"food"
+			],
+			"look_alikes": [
+				"samphire",
+				"tideglass_weed"
 			],
 			"properties": []
 		},
@@ -859,9 +960,14 @@
 				"all"
 			],
 			"rarity": "uncommon",
+			"familiarity": 97,
 			"uses": [
 				"water",
 				"food"
+			],
+			"look_alikes": [
+				"prickly_pear",
+				"aloe"
 			],
 			"properties": []
 		},
@@ -908,9 +1014,16 @@
 				"autumn"
 			],
 			"rarity": "common",
+			"familiarity": 97,
 			"uses": [
 				"bedding",
 				"food"
+			],
+			"look_alikes": [
+				"hushfern",
+				"staunchmoss",
+				"whisperfern",
+				"echo_moss"
 			],
 			"properties": []
 		},
@@ -955,12 +1068,20 @@
 				"autumn"
 			],
 			"rarity": "common",
+			"familiarity": 88,
 			"uses": [
 				"thatch",
 				"bedding",
 				"dye",
 				"brewing",
 				"honey"
+			],
+			"look_alikes": [
+				"dwarf_birch",
+				"crowberry",
+				"alpine_flowers",
+				"lavender",
+				"duskmallow"
 			],
 			"properties": []
 		},
@@ -1008,10 +1129,18 @@
 				"all"
 			],
 			"rarity": "common",
+			"familiarity": 93,
 			"uses": [
 				"thatch",
 				"basketry",
 				"matting"
+			],
+			"look_alikes": [
+				"riverbraid",
+				"stormreed",
+				"tall_grass",
+				"tidecrown",
+				"wispbloom"
 			],
 			"properties": []
 		},
@@ -1054,11 +1183,17 @@
 				"summer"
 			],
 			"rarity": "uncommon",
+			"familiarity": 55,
 			"uses": [
 				"fibre",
 				"rope",
 				"cloth",
 				"oil"
+			],
+			"look_alikes": [
+				"tall_grass",
+				"cotton_grass",
+				"plantain"
 			],
 			"properties": []
 		},
@@ -1107,10 +1242,19 @@
 				"autumn"
 			],
 			"rarity": "common",
+			"familiarity": 99,
 			"uses": [
 				"thatch",
 				"fodder",
 				"fibre"
+			],
+			"look_alikes": [
+				"reeds",
+				"riverbraid",
+				"stormreed",
+				"tidecrown",
+				"wispbloom",
+				"cotton_grass"
 			],
 			"properties": []
 		},
@@ -1155,11 +1299,16 @@
 				"summer"
 			],
 			"rarity": "common",
+			"familiarity": 97,
 			"uses": [
 				"food",
 				"fibre",
 				"medicine",
 				"dye"
+			],
+			"look_alikes": [
+				"mugwort",
+				"comfrey"
 			],
 			"properties": [
 				"stings",
@@ -1205,9 +1354,15 @@
 				"summer"
 			],
 			"rarity": "common",
+			"familiarity": 50,
 			"uses": [
 				"tinder",
 				"stuffing"
+			],
+			"look_alikes": [
+				"tall_grass",
+				"plantain",
+				"flax"
 			],
 			"properties": []
 		},
@@ -1249,9 +1404,17 @@
 				"summer"
 			],
 			"rarity": "uncommon",
+			"familiarity": 70,
 			"uses": [
 				"medicine",
 				"dye"
+			],
+			"look_alikes": [
+				"heather",
+				"lavender",
+				"duskmallow",
+				"gloomthistle",
+				"burdock"
 			],
 			"properties": []
 		},
@@ -1296,8 +1459,14 @@
 				"autumn"
 			],
 			"rarity": "common",
+			"familiarity": 92,
 			"uses": [
 				"food"
+			],
+			"look_alikes": [
+				"chanterelle",
+				"porcini",
+				"fly_agaric"
 			],
 			"properties": []
 		},
@@ -1341,11 +1510,20 @@
 				"summer"
 			],
 			"rarity": "common",
+			"familiarity": 95,
 			"uses": [
 				"food",
 				"jam",
 				"dye",
 				"medicine"
+			],
+			"look_alikes": [
+				"lingonberry",
+				"crowberry",
+				"cranberry",
+				"sunberry",
+				"sleetberry",
+				"belladonna"
 			],
 			"properties": [
 				"eyesight",
@@ -1392,11 +1570,20 @@
 				"autumn"
 			],
 			"rarity": "common",
+			"familiarity": 65,
 			"uses": [
 				"food",
 				"sauce",
 				"jam",
 				"medicine"
+			],
+			"look_alikes": [
+				"blueberry",
+				"crowberry",
+				"cranberry",
+				"sunberry",
+				"sleetberry",
+				"belladonna"
 			],
 			"properties": [
 				"preserving"
@@ -1443,11 +1630,20 @@
 				"autumn"
 			],
 			"rarity": "common",
+			"familiarity": 75,
 			"uses": [
 				"food",
 				"sauce",
 				"juice",
 				"medicine"
+			],
+			"look_alikes": [
+				"blueberry",
+				"lingonberry",
+				"crowberry",
+				"sunberry",
+				"sleetberry",
+				"belladonna"
 			],
 			"properties": [
 				"cleansing"
@@ -1494,10 +1690,15 @@
 				"summer"
 			],
 			"rarity": "rare",
+			"familiarity": 40,
 			"uses": [
 				"food",
 				"jam",
 				"liqueur"
+			],
+			"look_alikes": [
+				"wild_strawberry",
+				"wild_rose"
 			],
 			"properties": [
 				"vitality"
@@ -1544,11 +1745,16 @@
 				"summer"
 			],
 			"rarity": "common",
+			"familiarity": 96,
 			"uses": [
 				"food",
 				"jam",
 				"tea",
 				"sauce"
+			],
+			"look_alikes": [
+				"cloudberry",
+				"wild_rose"
 			],
 			"properties": [
 				"digestive"
@@ -1594,12 +1800,20 @@
 				"summer"
 			],
 			"rarity": "common",
+			"familiarity": 96,
 			"uses": [
 				"food",
 				"jam",
 				"wine",
 				"tea",
 				"medicine"
+			],
+			"look_alikes": [
+				"bramble",
+				"wild_rose",
+				"blackthorn",
+				"sunsilver_vine",
+				"tanglewort"
 			],
 			"properties": [
 				"womens_health"
@@ -1644,9 +1858,18 @@
 				"autumn"
 			],
 			"rarity": "common",
+			"familiarity": 40,
 			"uses": [
 				"food",
 				"dye"
+			],
+			"look_alikes": [
+				"dwarf_birch",
+				"heather",
+				"blueberry",
+				"lingonberry",
+				"cranberry",
+				"sunberry"
 			],
 			"properties": []
 		},
@@ -1694,6 +1917,7 @@
 				"autumn"
 			],
 			"rarity": "uncommon",
+			"familiarity": 85,
 			"uses": [
 				"food",
 				"wine",
@@ -1701,6 +1925,11 @@
 				"medicine",
 				"potion",
 				"dye"
+			],
+			"look_alikes": [
+				"hazel",
+				"hawthorn",
+				"honeyspindle"
 			],
 			"properties": [
 				"fever",
@@ -1748,11 +1977,18 @@
 				"autumn"
 			],
 			"rarity": "uncommon",
+			"familiarity": 75,
 			"uses": [
 				"jelly",
 				"brewing",
 				"timber",
 				"potion"
+			],
+			"look_alikes": [
+				"birch",
+				"alder",
+				"mirrorbark",
+				"everember"
 			],
 			"properties": [
 				"warding"
@@ -1799,11 +2035,20 @@
 				"autumn"
 			],
 			"rarity": "common",
+			"familiarity": 93,
 			"uses": [
 				"syrup",
 				"tea",
 				"perfume",
 				"medicine"
+			],
+			"look_alikes": [
+				"bramble",
+				"raspberry",
+				"blackthorn",
+				"sunsilver_vine",
+				"tanglewort",
+				"wild_strawberry"
 			],
 			"properties": [
 				"cold_remedy",
@@ -1849,11 +2094,20 @@
 				"autumn"
 			],
 			"rarity": "common",
+			"familiarity": 60,
 			"uses": [
 				"liqueur",
 				"jam",
 				"dye",
 				"tool_handles"
+			],
+			"look_alikes": [
+				"bramble",
+				"raspberry",
+				"wild_rose",
+				"sunsilver_vine",
+				"tanglewort",
+				"drakethorn"
 			],
 			"properties": [
 				"astringent"
@@ -1901,11 +2155,20 @@
 				"autumn"
 			],
 			"rarity": "common",
+			"familiarity": 70,
 			"uses": [
 				"food",
 				"tea",
 				"medicine",
 				"potion"
+			],
+			"look_alikes": [
+				"wild_apple",
+				"wild_pear",
+				"wild_cherry",
+				"hazel",
+				"elder",
+				"honeyspindle"
 			],
 			"properties": [
 				"heart_tonic"
@@ -1950,11 +2213,16 @@
 				"autumn"
 			],
 			"rarity": "uncommon",
+			"familiarity": 35,
 			"uses": [
 				"food",
 				"juice",
 				"ointment",
 				"medicine"
+			],
+			"look_alikes": [
+				"juniper",
+				"gorse"
 			],
 			"properties": [
 				"skin_healing",
@@ -2001,12 +2269,18 @@
 				"autumn"
 			],
 			"rarity": "uncommon",
+			"familiarity": 85,
 			"uses": [
 				"food",
 				"cider",
 				"sauce",
 				"pectin",
 				"vinegar"
+			],
+			"look_alikes": [
+				"wild_pear",
+				"wild_cherry",
+				"hawthorn"
 			],
 			"properties": []
 		},
@@ -2049,10 +2323,16 @@
 				"autumn"
 			],
 			"rarity": "rare",
+			"familiarity": 80,
 			"uses": [
 				"food",
 				"perry",
 				"fine_wood"
+			],
+			"look_alikes": [
+				"wild_apple",
+				"wild_cherry",
+				"hawthorn"
 			],
 			"properties": []
 		},
@@ -2096,11 +2376,17 @@
 				"summer"
 			],
 			"rarity": "uncommon",
+			"familiarity": 88,
 			"uses": [
 				"food",
 				"liqueur",
 				"fine_wood",
 				"medicine"
+			],
+			"look_alikes": [
+				"wild_apple",
+				"wild_pear",
+				"hawthorn"
 			],
 			"properties": [
 				"cough_remedy"
@@ -2144,11 +2430,19 @@
 				"autumn"
 			],
 			"rarity": "uncommon",
+			"familiarity": 80,
 			"uses": [
 				"food",
 				"flour",
 				"timber",
 				"tannin"
+			],
+			"look_alikes": [
+				"oak",
+				"beech",
+				"walnut",
+				"witness_tree",
+				"hearthwood"
 			],
 			"properties": []
 		},
@@ -2192,11 +2486,19 @@
 				"autumn"
 			],
 			"rarity": "rare",
+			"familiarity": 92,
 			"uses": [
 				"food",
 				"oil",
 				"dye",
 				"fine_wood"
+			],
+			"look_alikes": [
+				"oak",
+				"beech",
+				"sweet_chestnut",
+				"witness_tree",
+				"hearthwood"
 			],
 			"properties": []
 		},
@@ -2239,11 +2541,16 @@
 				"spring"
 			],
 			"rarity": "common",
+			"familiarity": 78,
 			"uses": [
 				"food",
 				"seasoning",
 				"sauce",
 				"medicine"
+			],
+			"look_alikes": [
+				"sorrel",
+				"wild_marjoram"
 			],
 			"properties": [
 				"cleansing",
@@ -2292,11 +2599,20 @@
 				"autumn"
 			],
 			"rarity": "common",
+			"familiarity": 72,
 			"uses": [
 				"seasoning",
 				"tea",
 				"medicine",
 				"ointment"
+			],
+			"look_alikes": [
+				"rosemary",
+				"lavender",
+				"wild_sage",
+				"truthsage",
+				"wild_marjoram",
+				"wild_mint"
 			],
 			"properties": [
 				"antiseptic",
@@ -2346,11 +2662,20 @@
 				"summer"
 			],
 			"rarity": "common",
+			"familiarity": 75,
 			"uses": [
 				"seasoning",
 				"tea",
 				"sauce",
 				"medicine"
+			],
+			"look_alikes": [
+				"wild_thyme",
+				"wild_marjoram",
+				"watercress",
+				"sorrel",
+				"dewlantern",
+				"pilgrims_cup"
 			],
 			"properties": [
 				"digestive",
@@ -2396,10 +2721,18 @@
 				"summer"
 			],
 			"rarity": "common",
+			"familiarity": 60,
 			"uses": [
 				"food",
 				"sauce",
 				"seasoning"
+			],
+			"look_alikes": [
+				"wild_garlic",
+				"wild_marjoram",
+				"watercress",
+				"wild_mint",
+				"dewlantern"
 			],
 			"properties": []
 		},
@@ -2446,11 +2779,17 @@
 				"autumn"
 			],
 			"rarity": "common",
+			"familiarity": 99,
 			"uses": [
 				"food",
 				"coffee_substitute",
 				"wine",
 				"medicine"
+			],
+			"look_alikes": [
+				"arnica",
+				"st_johns_wort",
+				"marrowroot"
 			],
 			"properties": [
 				"cleansing",
@@ -2497,9 +2836,18 @@
 				"autumn"
 			],
 			"rarity": "common",
+			"familiarity": 65,
 			"uses": [
 				"food",
 				"seasoning"
+			],
+			"look_alikes": [
+				"angelica",
+				"yarrow",
+				"meadowsweet",
+				"valerian",
+				"heartroot",
+				"marrowroot"
 			],
 			"properties": []
 		},
@@ -2547,10 +2895,16 @@
 				"autumn"
 			],
 			"rarity": "uncommon",
+			"familiarity": 75,
 			"uses": [
 				"food",
 				"sauce",
 				"medicine"
+			],
+			"look_alikes": [
+				"sorrel",
+				"wild_mint",
+				"dewlantern"
 			],
 			"properties": [
 				"vitality"
@@ -2598,10 +2952,15 @@
 				"summer"
 			],
 			"rarity": "common",
+			"familiarity": 40,
 			"uses": [
 				"food",
 				"pickle",
 				"glass_ash"
+			],
+			"look_alikes": [
+				"saltbush",
+				"tideglass_weed"
 			],
 			"properties": []
 		},
@@ -2643,10 +3002,17 @@
 				"summer"
 			],
 			"rarity": "uncommon",
+			"familiarity": 55,
 			"uses": [
 				"seasoning",
 				"tea",
 				"medicine"
+			],
+			"look_alikes": [
+				"wild_garlic",
+				"sorrel",
+				"wild_thyme",
+				"wild_mint"
 			],
 			"properties": [
 				"antiseptic"
@@ -2692,11 +3058,18 @@
 				"autumn"
 			],
 			"rarity": "common",
+			"familiarity": 70,
 			"uses": [
 				"seasoning",
 				"tea",
 				"medicine",
 				"incense"
+			],
+			"look_alikes": [
+				"rosemary",
+				"lavender",
+				"wild_thyme",
+				"truthsage"
 			],
 			"properties": [
 				"antiseptic",
@@ -2741,11 +3114,18 @@
 				"all"
 			],
 			"rarity": "common",
+			"familiarity": 88,
 			"uses": [
 				"seasoning",
 				"oil",
 				"medicine",
 				"perfume"
+			],
+			"look_alikes": [
+				"lavender",
+				"wild_sage",
+				"wild_thyme",
+				"truthsage"
 			],
 			"properties": [
 				"memory",
@@ -2790,12 +3170,21 @@
 				"summer"
 			],
 			"rarity": "uncommon",
+			"familiarity": 90,
 			"uses": [
 				"perfume",
 				"soap",
 				"oil",
 				"medicine",
 				"potion"
+			],
+			"look_alikes": [
+				"rosemary",
+				"wild_sage",
+				"wild_thyme",
+				"truthsage",
+				"heather",
+				"alpine_flowers"
 			],
 			"properties": [
 				"calming",
@@ -2841,11 +3230,20 @@
 				"summer"
 			],
 			"rarity": "common",
+			"familiarity": 40,
 			"uses": [
 				"medicine",
 				"ointment",
 				"potion",
 				"brewing"
+			],
+			"look_alikes": [
+				"wild_carrot",
+				"angelica",
+				"meadowsweet",
+				"valerian",
+				"chamomile",
+				"feverfew"
 			],
 			"properties": [
 				"stops_bleeding",
@@ -2893,10 +3291,16 @@
 				"autumn"
 			],
 			"rarity": "common",
+			"familiarity": 55,
 			"uses": [
 				"medicine",
 				"ointment",
 				"food"
+			],
+			"look_alikes": [
+				"tall_grass",
+				"cotton_grass",
+				"flax"
 			],
 			"properties": [
 				"wound_healing",
@@ -2941,11 +3345,16 @@
 				"summer"
 			],
 			"rarity": "common",
+			"familiarity": 25,
 			"uses": [
 				"tea",
 				"medicine",
 				"potion",
 				"ointment"
+			],
+			"look_alikes": [
+				"feverfew",
+				"yarrow"
 			],
 			"properties": [
 				"calming",
@@ -2997,11 +3406,19 @@
 				"autumn"
 			],
 			"rarity": "common",
+			"familiarity": 25,
 			"uses": [
 				"ointment",
 				"poultice",
 				"medicine",
 				"fertilizer"
+			],
+			"look_alikes": [
+				"foxglove",
+				"burdock",
+				"wolfsbane",
+				"nettle",
+				"mugwort"
 			],
 			"properties": [
 				"bone_knitting",
@@ -3047,11 +3464,17 @@
 				"summer"
 			],
 			"rarity": "uncommon",
+			"familiarity": 30,
 			"uses": [
 				"medicine",
 				"oil",
 				"potion",
 				"dye"
+			],
+			"look_alikes": [
+				"dandelion",
+				"arnica",
+				"marrowroot"
 			],
 			"properties": [
 				"mood",
@@ -3099,9 +3522,16 @@
 				"autumn"
 			],
 			"rarity": "uncommon",
+			"familiarity": 20,
 			"uses": [
 				"medicine",
 				"potion"
+			],
+			"look_alikes": [
+				"wild_carrot",
+				"angelica",
+				"yarrow",
+				"meadowsweet"
 			],
 			"properties": [
 				"sleep",
@@ -3149,11 +3579,18 @@
 				"summer"
 			],
 			"rarity": "common",
+			"familiarity": 30,
 			"uses": [
 				"medicine",
 				"mead",
 				"tea",
 				"potion"
+			],
+			"look_alikes": [
+				"wild_carrot",
+				"angelica",
+				"yarrow",
+				"valerian"
 			],
 			"properties": [
 				"pain_relief",
@@ -3198,9 +3635,14 @@
 				"summer"
 			],
 			"rarity": "uncommon",
+			"familiarity": 15,
 			"uses": [
 				"medicine",
 				"potion"
+			],
+			"look_alikes": [
+				"chamomile",
+				"yarrow"
 			],
 			"properties": [
 				"fever",
@@ -3247,10 +3689,18 @@
 				"autumn"
 			],
 			"rarity": "common",
+			"familiarity": 50,
 			"uses": [
 				"food",
 				"medicine",
 				"brewing"
+			],
+			"look_alikes": [
+				"foxglove",
+				"comfrey",
+				"wolfsbane",
+				"gloomthistle",
+				"alpine_flowers"
 			],
 			"properties": [
 				"cleansing"
@@ -3295,11 +3745,18 @@
 				"summer"
 			],
 			"rarity": "common",
+			"familiarity": 25,
 			"uses": [
 				"brewing",
 				"medicine",
 				"potion",
 				"incense"
+			],
+			"look_alikes": [
+				"belladonna",
+				"henbane",
+				"nettle",
+				"comfrey"
 			],
 			"properties": [
 				"dreams",
@@ -3344,9 +3801,15 @@
 				"summer"
 			],
 			"rarity": "rare",
+			"familiarity": 20,
 			"uses": [
 				"ointment",
 				"medicine"
+			],
+			"look_alikes": [
+				"dandelion",
+				"st_johns_wort",
+				"marrowroot"
 			],
 			"properties": [
 				"bruise_healing",
@@ -3396,11 +3859,18 @@
 				"summer"
 			],
 			"rarity": "uncommon",
+			"familiarity": 25,
 			"uses": [
 				"medicine",
 				"liqueur",
 				"candied_food",
 				"potion"
+			],
+			"look_alikes": [
+				"wild_carrot",
+				"yarrow",
+				"meadowsweet",
+				"valerian"
 			],
 			"properties": [
 				"warding",
@@ -3446,9 +3916,16 @@
 				"all"
 			],
 			"rarity": "uncommon",
+			"familiarity": 92,
 			"uses": [
 				"ointment",
 				"medicine"
+			],
+			"look_alikes": [
+				"cactus",
+				"prickly_pear",
+				"pilgrims_cup",
+				"wild_mint"
 			],
 			"properties": [
 				"burn_healing",
@@ -3494,10 +3971,16 @@
 				"summer"
 			],
 			"rarity": "uncommon",
+			"familiarity": 75,
 			"uses": [
 				"medicine",
 				"poison",
 				"potion"
+			],
+			"look_alikes": [
+				"comfrey",
+				"burdock",
+				"wolfsbane"
 			],
 			"properties": [
 				"heart_drug",
@@ -3544,10 +4027,19 @@
 				"autumn"
 			],
 			"rarity": "rare",
+			"familiarity": 60,
 			"uses": [
 				"poison",
 				"potion",
 				"medicine"
+			],
+			"look_alikes": [
+				"blueberry",
+				"lingonberry",
+				"crowberry",
+				"cranberry",
+				"sunberry",
+				"sleetberry"
 			],
 			"properties": [
 				"toxic",
@@ -3593,9 +4085,15 @@
 				"summer"
 			],
 			"rarity": "rare",
+			"familiarity": 18,
 			"uses": [
 				"poison",
 				"potion"
+			],
+			"look_alikes": [
+				"foxglove",
+				"comfrey",
+				"burdock"
 			],
 			"properties": [
 				"toxic",
@@ -3642,10 +4140,15 @@
 				"summer"
 			],
 			"rarity": "rare",
+			"familiarity": 8,
 			"uses": [
 				"poison",
 				"potion",
 				"medicine"
+			],
+			"look_alikes": [
+				"belladonna",
+				"mugwort"
 			],
 			"properties": [
 				"toxic",
@@ -3692,9 +4195,15 @@
 				"autumn"
 			],
 			"rarity": "uncommon",
+			"familiarity": 55,
 			"uses": [
 				"food",
 				"sauce"
+			],
+			"look_alikes": [
+				"porcini",
+				"fly_agaric",
+				"mushrooms"
 			],
 			"properties": []
 		},
@@ -3737,10 +4246,16 @@
 				"autumn"
 			],
 			"rarity": "uncommon",
+			"familiarity": 55,
 			"uses": [
 				"food",
 				"sauce",
 				"dried_food"
+			],
+			"look_alikes": [
+				"chanterelle",
+				"fly_agaric",
+				"mushrooms"
 			],
 			"properties": []
 		},
@@ -3782,9 +4297,14 @@
 				"spring"
 			],
 			"rarity": "rare",
+			"familiarity": 35,
 			"uses": [
 				"food",
 				"sauce"
+			],
+			"look_alikes": [
+				"tinder_fungus",
+				"puffball"
 			],
 			"properties": []
 		},
@@ -3826,10 +4346,19 @@
 				"autumn"
 			],
 			"rarity": "uncommon",
+			"familiarity": 88,
 			"uses": [
 				"poison",
 				"potion",
 				"insect_bait"
+			],
+			"look_alikes": [
+				"chanterelle",
+				"porcini",
+				"mushrooms",
+				"rimecap",
+				"lumencap",
+				"mirrorcap"
 			],
 			"properties": [
 				"toxic",
@@ -3875,10 +4404,15 @@
 				"autumn"
 			],
 			"rarity": "rare",
+			"familiarity": 60,
 			"uses": [
 				"food",
 				"tinder",
 				"wound_dressing"
+			],
+			"look_alikes": [
+				"morel",
+				"tinder_fungus"
 			],
 			"properties": [
 				"stops_bleeding"
@@ -3923,10 +4457,15 @@
 				"all"
 			],
 			"rarity": "common",
+			"familiarity": 35,
 			"uses": [
 				"tinder",
 				"wound_dressing",
 				"felt"
+			],
+			"look_alikes": [
+				"morel",
+				"puffball"
 			],
 			"properties": [
 				"stops_bleeding"
@@ -3970,10 +4509,15 @@
 				"all"
 			],
 			"rarity": "common",
+			"familiarity": 90,
 			"uses": [
 				"food",
 				"wrapping",
 				"fibre"
+			],
+			"look_alikes": [
+				"coconut_palm",
+				"date_palm"
 			],
 			"properties": []
 		},
@@ -4018,11 +4562,16 @@
 				"autumn"
 			],
 			"rarity": "rare",
+			"familiarity": 95,
 			"uses": [
 				"food",
 				"syrup",
 				"thatch",
 				"timber"
+			],
+			"look_alikes": [
+				"coconut_palm",
+				"wild_banana"
 			],
 			"properties": []
 		},
@@ -4067,10 +4616,15 @@
 				"autumn"
 			],
 			"rarity": "common",
+			"familiarity": 85,
 			"uses": [
 				"food",
 				"dye",
 				"syrup"
+			],
+			"look_alikes": [
+				"cactus",
+				"aloe"
 			],
 			"properties": []
 		},
@@ -4112,9 +4666,15 @@
 				"summer"
 			],
 			"rarity": "rare",
+			"familiarity": 20,
 			"uses": [
 				"potion",
 				"perfume"
+			],
+			"look_alikes": [
+				"nightcrown",
+				"duskmallow",
+				"mournbloom"
 			],
 			"properties": [
 				"night_sight",
@@ -4162,10 +4722,17 @@
 				"all"
 			],
 			"rarity": "uncommon",
+			"familiarity": 40,
 			"uses": [
 				"medicine",
 				"poultice",
 				"wound_dressing"
+			],
+			"look_alikes": [
+				"fern",
+				"hushfern",
+				"whisperfern",
+				"echo_moss"
 			],
 			"properties": [
 				"stops_bleeding",
@@ -4213,9 +4780,15 @@
 				"winter"
 			],
 			"rarity": "uncommon",
+			"familiarity": 40,
 			"uses": [
 				"spice",
 				"potion"
+			],
+			"look_alikes": [
+				"heartroot",
+				"marrowroot",
+				"wild_carrot"
 			],
 			"properties": [
 				"warming",
@@ -4263,9 +4836,16 @@
 				"winter"
 			],
 			"rarity": "uncommon",
+			"familiarity": 40,
 			"uses": [
 				"potion",
 				"medicine"
+			],
+			"look_alikes": [
+				"lumencap",
+				"mirrorcap",
+				"cinderfoot",
+				"fly_agaric"
 			],
 			"properties": [
 				"cooling",
@@ -4314,9 +4894,17 @@
 				"autumn"
 			],
 			"rarity": "rare",
+			"familiarity": 20,
 			"uses": [
 				"potion",
 				"lantern_oil"
+			],
+			"look_alikes": [
+				"reeds",
+				"riverbraid",
+				"stormreed",
+				"tall_grass",
+				"tidecrown"
 			],
 			"properties": [
 				"glow",
@@ -4365,10 +4953,15 @@
 				"autumn"
 			],
 			"rarity": "uncommon",
+			"familiarity": 40,
 			"uses": [
 				"food",
 				"sauce",
 				"potion"
+			],
+			"look_alikes": [
+				"blackthorn",
+				"hawthorn"
 			],
 			"properties": [
 				"strength",
@@ -4416,10 +5009,17 @@
 				"all"
 			],
 			"rarity": "rare",
+			"familiarity": 20,
 			"uses": [
 				"fine_wood",
 				"wand_making",
 				"medicine"
+			],
+			"look_alikes": [
+				"birch",
+				"alder",
+				"rowan",
+				"everember"
 			],
 			"properties": [
 				"warding",
@@ -4466,11 +5066,20 @@
 				"summer"
 			],
 			"rarity": "uncommon",
+			"familiarity": 40,
 			"uses": [
 				"food",
 				"jam",
 				"cordial",
 				"potion"
+			],
+			"look_alikes": [
+				"blueberry",
+				"lingonberry",
+				"crowberry",
+				"cranberry",
+				"sleetberry",
+				"belladonna"
 			],
 			"properties": [
 				"vitality",
@@ -4519,10 +5128,17 @@
 				"autumn"
 			],
 			"rarity": "uncommon",
+			"familiarity": 40,
 			"uses": [
 				"potion",
 				"poison",
 				"incense"
+			],
+			"look_alikes": [
+				"fern",
+				"staunchmoss",
+				"whisperfern",
+				"echo_moss"
 			],
 			"properties": [
 				"sleep",
@@ -4570,10 +5186,15 @@
 				"all"
 			],
 			"rarity": "rare",
+			"familiarity": 20,
 			"uses": [
 				"incense",
 				"pitch",
 				"timber"
+			],
+			"look_alikes": [
+				"scots_pine",
+				"spruce"
 			],
 			"properties": [
 				"warding",
@@ -4621,9 +5242,16 @@
 				"autumn"
 			],
 			"rarity": "uncommon",
+			"familiarity": 40,
 			"uses": [
 				"potion",
 				"lantern_oil"
+			],
+			"look_alikes": [
+				"rimecap",
+				"mirrorcap",
+				"cinderfoot",
+				"fly_agaric"
 			],
 			"properties": [
 				"glow",
@@ -4674,10 +5302,15 @@
 				"all"
 			],
 			"rarity": "rare",
+			"familiarity": 20,
 			"uses": [
 				"potion",
 				"basketry",
 				"medicine"
+			],
+			"look_alikes": [
+				"willow",
+				"alder"
 			],
 			"properties": [
 				"pain_relief",
@@ -4725,9 +5358,15 @@
 				"autumn"
 			],
 			"rarity": "rare",
+			"familiarity": 20,
 			"uses": [
 				"medicine",
 				"potion"
+			],
+			"look_alikes": [
+				"marrowroot",
+				"emberroot",
+				"wild_carrot"
 			],
 			"properties": [
 				"revival",
@@ -4777,9 +5416,14 @@
 				"summer"
 			],
 			"rarity": "uncommon",
+			"familiarity": 40,
 			"uses": [
 				"potion",
 				"food"
+			],
+			"look_alikes": [
+				"saltbush",
+				"samphire"
 			],
 			"properties": [
 				"water_breathing",
@@ -4827,10 +5471,15 @@
 				"autumn"
 			],
 			"rarity": "uncommon",
+			"familiarity": 40,
 			"uses": [
 				"potion",
 				"stuffing",
 				"incense"
+			],
+			"look_alikes": [
+				"burdock",
+				"alpine_flowers"
 			],
 			"properties": [
 				"ghost_warding",
@@ -4879,9 +5528,17 @@
 				"summer"
 			],
 			"rarity": "common",
+			"familiarity": 70,
 			"uses": [
 				"potion",
 				"drink"
+			],
+			"look_alikes": [
+				"watercress",
+				"sorrel",
+				"wild_mint",
+				"brinebell",
+				"quenchbell"
 			],
 			"properties": [
 				"glow",
@@ -4930,11 +5587,17 @@
 				"summer"
 			],
 			"rarity": "common",
+			"familiarity": 70,
 			"uses": [
 				"food",
 				"mead",
 				"honey",
 				"syrup"
+			],
+			"look_alikes": [
+				"hazel",
+				"elder",
+				"hawthorn"
 			],
 			"properties": [
 				"mood",
@@ -4981,10 +5644,19 @@
 				"autumn"
 			],
 			"rarity": "common",
+			"familiarity": 70,
 			"uses": [
 				"food",
 				"flour",
 				"stew"
+			],
+			"look_alikes": [
+				"dandelion",
+				"arnica",
+				"st_johns_wort",
+				"heartroot",
+				"emberroot",
+				"wild_carrot"
 			],
 			"properties": [
 				"stamina"
@@ -5036,10 +5708,18 @@
 				"autumn"
 			],
 			"rarity": "common",
+			"familiarity": 70,
 			"uses": [
 				"rope",
 				"fibre",
 				"basketry"
+			],
+			"look_alikes": [
+				"reeds",
+				"stormreed",
+				"tall_grass",
+				"tidecrown",
+				"wispbloom"
 			],
 			"properties": [
 				"water_resistant"
@@ -5087,9 +5767,14 @@
 				"summer"
 			],
 			"rarity": "common",
+			"familiarity": 70,
 			"uses": [
 				"seasoning",
 				"pickle"
+			],
+			"look_alikes": [
+				"quenchbell",
+				"dewlantern"
 			],
 			"properties": [
 				"preserving"
@@ -5135,10 +5820,19 @@
 				"winter"
 			],
 			"rarity": "common",
+			"familiarity": 70,
 			"uses": [
 				"food",
 				"jam",
 				"cordial"
+			],
+			"look_alikes": [
+				"blueberry",
+				"lingonberry",
+				"crowberry",
+				"cranberry",
+				"sunberry",
+				"belladonna"
 			],
 			"properties": [
 				"cold_resistance",
@@ -5185,9 +5879,14 @@
 				"summer"
 			],
 			"rarity": "uncommon",
+			"familiarity": 40,
 			"uses": [
 				"smithing",
 				"dye"
+			],
+			"look_alikes": [
+				"brinebell",
+				"dewlantern"
 			],
 			"properties": [
 				"tempering"
@@ -5234,9 +5933,16 @@
 				"autumn"
 			],
 			"rarity": "uncommon",
+			"familiarity": 40,
 			"uses": [
 				"potion",
 				"incense"
+			],
+			"look_alikes": [
+				"fern",
+				"hushfern",
+				"staunchmoss",
+				"echo_moss"
 			],
 			"properties": [
 				"keen_hearing"
@@ -5282,9 +5988,16 @@
 				"all"
 			],
 			"rarity": "uncommon",
+			"familiarity": 40,
 			"uses": [
 				"ointment",
 				"potion"
+			],
+			"look_alikes": [
+				"rimecap",
+				"lumencap",
+				"mirrorcap",
+				"fly_agaric"
 			],
 			"properties": [
 				"burn_healing",
@@ -5333,9 +6046,18 @@
 				"autumn"
 			],
 			"rarity": "uncommon",
+			"familiarity": 40,
 			"uses": [
 				"tea",
 				"medicine"
+			],
+			"look_alikes": [
+				"heather",
+				"alpine_flowers",
+				"lavender",
+				"owlpetal",
+				"nightcrown",
+				"mournbloom"
 			],
 			"properties": [
 				"calming",
@@ -5383,10 +6105,18 @@
 				"all"
 			],
 			"rarity": "uncommon",
+			"familiarity": 40,
 			"uses": [
 				"rope",
 				"snares",
 				"basketry"
+			],
+			"look_alikes": [
+				"bramble",
+				"raspberry",
+				"wild_rose",
+				"blackthorn",
+				"sunsilver_vine"
 			],
 			"properties": [
 				"binding"
@@ -5434,9 +6164,17 @@
 				"autumn"
 			],
 			"rarity": "uncommon",
+			"familiarity": 40,
 			"uses": [
 				"thatch",
 				"potion"
+			],
+			"look_alikes": [
+				"reeds",
+				"riverbraid",
+				"tall_grass",
+				"tidecrown",
+				"wispbloom"
 			],
 			"properties": [
 				"lightning_ward"
@@ -5481,9 +6219,16 @@
 				"summer"
 			],
 			"rarity": "rare",
+			"familiarity": 20,
 			"uses": [
 				"tea",
 				"potion"
+			],
+			"look_alikes": [
+				"rosemary",
+				"lavender",
+				"wild_sage",
+				"wild_thyme"
 			],
 			"properties": [
 				"truth"
@@ -5528,8 +6273,15 @@
 				"autumn"
 			],
 			"rarity": "rare",
+			"familiarity": 20,
 			"uses": [
 				"potion"
+			],
+			"look_alikes": [
+				"rimecap",
+				"lumencap",
+				"cinderfoot",
+				"fly_agaric"
 			],
 			"properties": [
 				"disguise"
@@ -5576,9 +6328,16 @@
 				"all"
 			],
 			"rarity": "rare",
+			"familiarity": 20,
 			"uses": [
 				"potion",
 				"messages"
+			],
+			"look_alikes": [
+				"fern",
+				"hushfern",
+				"staunchmoss",
+				"whisperfern"
 			],
 			"properties": [
 				"voice_carrying"
@@ -5623,10 +6382,18 @@
 				"all"
 			],
 			"rarity": "rare",
+			"familiarity": 20,
 			"uses": [
 				"fuel",
 				"timber",
 				"charcoal"
+			],
+			"look_alikes": [
+				"oak",
+				"beech",
+				"sweet_chestnut",
+				"walnut",
+				"witness_tree"
 			],
 			"properties": [
 				"warming",
@@ -5672,8 +6439,14 @@
 				"summer"
 			],
 			"rarity": "rare",
+			"familiarity": 20,
 			"uses": [
 				"potion"
+			],
+			"look_alikes": [
+				"owlpetal",
+				"duskmallow",
+				"mournbloom"
 			],
 			"properties": [
 				"arcane",
@@ -5721,9 +6494,15 @@
 				"autumn"
 			],
 			"rarity": "rare",
+			"familiarity": 20,
 			"uses": [
 				"potion",
 				"incense"
+			],
+			"look_alikes": [
+				"owlpetal",
+				"nightcrown",
+				"duskmallow"
 			],
 			"properties": [
 				"spirit_sight"
@@ -5773,9 +6552,14 @@
 				"summer"
 			],
 			"rarity": "rare",
+			"familiarity": 20,
 			"uses": [
 				"water",
 				"medicine"
+			],
+			"look_alikes": [
+				"aloe",
+				"wild_mint"
 			],
 			"properties": [
 				"antidote",
@@ -5822,10 +6606,18 @@
 				"summer"
 			],
 			"rarity": "very_rare",
+			"familiarity": 8,
 			"uses": [
 				"dye",
 				"gilding",
 				"perfume"
+			],
+			"look_alikes": [
+				"bramble",
+				"raspberry",
+				"wild_rose",
+				"blackthorn",
+				"tanglewort"
 			],
 			"properties": [
 				"gilding"
@@ -5871,9 +6663,15 @@
 				"winter"
 			],
 			"rarity": "very_rare",
+			"familiarity": 8,
 			"uses": [
 				"perfume",
 				"potion"
+			],
+			"look_alikes": [
+				"gloaming_star",
+				"sevenyear_lily",
+				"stillwater_lotus"
 			],
 			"properties": [
 				"preserving"
@@ -5921,9 +6719,15 @@
 				"summer"
 			],
 			"rarity": "very_rare",
+			"familiarity": 8,
 			"uses": [
 				"potion",
 				"medicine"
+			],
+			"look_alikes": [
+				"gloaming_star",
+				"frostglass_orchid",
+				"stillwater_lotus"
 			],
 			"properties": [
 				"longevity"
@@ -5975,9 +6779,15 @@
 				"summer"
 			],
 			"rarity": "very_rare",
+			"familiarity": 8,
 			"uses": [
 				"potion",
 				"incense"
+			],
+			"look_alikes": [
+				"gloaming_star",
+				"frostglass_orchid",
+				"sevenyear_lily"
 			],
 			"properties": [
 				"visions",
@@ -6025,8 +6835,14 @@
 				"all"
 			],
 			"rarity": "legendary",
+			"familiarity": 3,
 			"uses": [
 				"potion"
+			],
+			"look_alikes": [
+				"frostglass_orchid",
+				"sevenyear_lily",
+				"stillwater_lotus"
 			],
 			"properties": [
 				"arcane",
@@ -6076,9 +6892,16 @@
 				"all"
 			],
 			"rarity": "legendary",
+			"familiarity": 3,
 			"uses": [
 				"potion",
 				"fine_wood"
+			],
+			"look_alikes": [
+				"birch",
+				"alder",
+				"rowan",
+				"mirrorbark"
 			],
 			"properties": [
 				"revival",
@@ -6126,9 +6949,17 @@
 				"all"
 			],
 			"rarity": "legendary",
+			"familiarity": 3,
 			"uses": [
 				"potion",
 				"ink"
+			],
+			"look_alikes": [
+				"oak",
+				"beech",
+				"sweet_chestnut",
+				"walnut",
+				"hearthwood"
 			],
 			"properties": [
 				"memory",
@@ -6178,9 +7009,17 @@
 				"summer"
 			],
 			"rarity": "legendary",
+			"familiarity": 3,
 			"uses": [
 				"jewelry",
 				"potion"
+			],
+			"look_alikes": [
+				"reeds",
+				"riverbraid",
+				"stormreed",
+				"tall_grass",
+				"wispbloom"
 			],
 			"properties": [
 				"water_breathing",

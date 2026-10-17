@@ -1,13 +1,14 @@
 {
 	"table": "soils",
 	"format_version": 1,
-	"note": "IDs are append-only. Never renumber or reuse an ID; retire an entry with \"retired\": true and take the next ID from next_id for new entries. glass_quality (0 to 1, optional): how good the sand is for glass making. color: ground color for drawing (red, green, blue, 0 to 1).",
+	"note": "familiarity (0 to 100): the base chance in percent that a character already recognizes it at first sight. IDs are append-only. Never renumber or reuse an ID; retire an entry with \"retired\": true and take the next ID from next_id for new entries. glass_quality (0 to 1, optional): how good the sand is for glass making. color: ground color for drawing (red, green, blue, 0 to 1).",
 	"next_id": 16,
 	"entries": [
 		{
 			"id": 0,
 			"name": "bare_rock",
 			"display": "Bare rock",
+			"familiarity": 98,
 			"fertility_base": 0,
 			"color": [0.45, 0.43, 0.4]
 		},
@@ -15,6 +16,7 @@
 			"id": 1,
 			"name": "sand",
 			"display": "Sand",
+			"familiarity": 98,
 			"fertility_base": 20,
 			"glass_quality": 0.6,
 			"color": [0.8, 0.74, 0.55]
@@ -23,6 +25,7 @@
 			"id": 2,
 			"name": "gravel",
 			"display": "Gravel",
+			"familiarity": 95,
 			"fertility_base": 25,
 			"color": [0.55, 0.52, 0.48]
 		},
@@ -30,6 +33,7 @@
 			"id": 3,
 			"name": "silt",
 			"display": "Silt",
+			"familiarity": 60,
 			"fertility_base": 140,
 			"color": [0.46, 0.47, 0.3]
 		},
@@ -37,6 +41,7 @@
 			"id": 4,
 			"name": "clay",
 			"display": "Clay",
+			"familiarity": 88,
 			"fertility_base": 100,
 			"color": [0.52, 0.42, 0.3]
 		},
@@ -44,6 +49,7 @@
 			"id": 5,
 			"name": "loam",
 			"display": "Loam",
+			"familiarity": 85,
 			"fertility_base": 220,
 			"color": [0.32, 0.42, 0.2]
 		},
@@ -51,6 +57,7 @@
 			"id": 6,
 			"name": "peat",
 			"display": "Peat",
+			"familiarity": 72,
 			"fertility_base": 120,
 			"color": [0.22, 0.18, 0.12]
 		},
@@ -58,6 +65,7 @@
 			"id": 7,
 			"name": "alluvium",
 			"display": "Alluvium",
+			"familiarity": 35,
 			"fertility_base": 200,
 			"color": [0.34, 0.44, 0.22]
 		},
@@ -65,6 +73,7 @@
 			"id": 8,
 			"name": "forest_humus",
 			"display": "Forest humus",
+			"familiarity": 70,
 			"fertility_base": 160,
 			"color": [0.25, 0.31, 0.16]
 		},
@@ -72,6 +81,7 @@
 			"id": 9,
 			"name": "stony_soil",
 			"display": "Stony soil",
+			"familiarity": 80,
 			"fertility_base": 60,
 			"color": [0.45, 0.45, 0.35]
 		},
@@ -79,6 +89,7 @@
 			"id": 10,
 			"name": "permafrost",
 			"display": "Permafrost",
+			"familiarity": 45,
 			"fertility_base": 15,
 			"color": [0.52, 0.55, 0.5]
 		},
@@ -86,6 +97,7 @@
 			"id": 11,
 			"name": "snow",
 			"display": "Snow",
+			"familiarity": 99,
 			"fertility_base": 0,
 			"color": [0.92, 0.94, 0.96]
 		},
@@ -93,6 +105,7 @@
 			"id": 12,
 			"name": "glacial_ice",
 			"display": "Glacial ice",
+			"familiarity": 90,
 			"fertility_base": 0,
 			"color": [0.75, 0.85, 0.92]
 		},
@@ -100,6 +113,7 @@
 			"id": 13,
 			"name": "salt_flat",
 			"display": "Salt flat",
+			"familiarity": 65,
 			"fertility_base": 5,
 			"color": [0.9, 0.88, 0.82]
 		},
@@ -107,6 +121,7 @@
 			"id": 14,
 			"name": "volcanic_ash",
 			"display": "Volcanic ash",
+			"familiarity": 55,
 			"fertility_base": 150,
 			"color": [0.3, 0.28, 0.27]
 		},
@@ -114,6 +129,7 @@
 			"id": 15,
 			"name": "beach_sand",
 			"display": "Beach sand",
+			"familiarity": 98,
 			"fertility_base": 10,
 			"glass_quality": 0.9,
 			"color": [0.86, 0.8, 0.6]

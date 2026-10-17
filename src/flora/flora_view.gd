@@ -37,6 +37,10 @@ var water_chunks: int = 0              # chunks with water drawn
 var water_cells: int = 0
 
 var _species: Dictionary = {}          # species id -> {"kind", "mesh", "trunk", "height"}
+var _familiarity: Dictionary = {}      # species id -> base chance (percent) of knowing it on sight
+var _display: Dictionary = {}          # species id -> display name
+var _alikes: Dictionary = {}           # species id -> names of look-alike species
+var _slugs: Dictionary = {}            # species id -> table name
 var _labels: Dictionary = {}           # species id -> name with a note on its main property
 var _chunks: Dictionary = {}           # Vector2i -> {"items", "level", "node"}
 var _trunk_material: StandardMaterial3D
@@ -78,6 +82,10 @@ func setup(tables, tile_rules: Dictionary) -> void:
 		var height: Array = entry["height_m"]
 		var reference: float = 0.5 * (float(height[0]) + float(height[1]))
 		_labels[int(entry["id"])] = _label_for(entry)
+		_familiarity[int(entry["id"])] = int(entry.get("familiarity", 50))
+		_alikes[int(entry["id"])] = entry.get("look_alikes", [])
+		_slugs[int(entry["id"])] = str(entry["name"])
+		_display[int(entry["id"])] = str(entry.get("display", entry.get("name", "")))
 		_species[int(entry["id"])] = {
 			"kind": KINDS.find(str(entry["kind"])),
 			"height": reference,
@@ -102,13 +110,40 @@ func label_of(species_id: int) -> String:
 	return str(_labels.get(species_id, ""))
 
 
-# The species label of the shrub, plant or tree standing nearest `point`
-# within `radius` metres ("" when none).
-func label_near(point: Vector3, radius: float) -> String:
+# The base percent chance a character already knows this species on sight.
+func familiarity_of(species_id: int) -> int:
+	return int(_familiarity.get(species_id, 50))
+
+
+# Display names of the species this one might be mistaken for (the table's
+# look_alikes), or other species of the same kind when none are listed.
+func lookalikes(species_id: int) -> Array:
+	var names: Array = []
+
+	for slug in _alikes.get(species_id, []):
+		for id in _display:
+			if _slugs.get(id, "") == slug:
+				names.append(str(_display[id]))
+
+	if not names.is_empty() or not _species.has(species_id):
+		return names
+
+	var kind: int = int(_species[species_id]["kind"])
+
+	for id in _species:
+		if id != species_id and int(_species[id]["kind"]) == kind:
+			names.append(str(_display.get(id, "")))
+
+	return names
+
+
+# The species id of the shrub, plant or tree standing nearest `point` within
+# `radius` metres (-1 when none).
+func species_near(point: Vector3, radius: float) -> int:
 	var chunk: Vector2i = Vector2i(int(floor(point.x / chunk_m)), int(floor(point.z / chunk_m)))
 
 	if not _chunks.has(chunk):
-		return ""
+		return -1
 
 	var items: Dictionary = _chunks[chunk]["items"]
 	var best: float = radius * radius
@@ -124,7 +159,7 @@ func label_near(point: Vector3, radius: float) -> String:
 			best = squared
 			found = ids[n] >> 16
 
-	return label_of(found) if found >= 0 else ""
+	return found
 
 
 # The chunks to have, nearest first: every chunk within tree view distance.

@@ -24,6 +24,7 @@ extends Node
 # jog double-tap W, run Shift+W, G or F fly or walk, Esc frees the mouse.
 
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
+const KnowledgeScript := preload("res://src/client/inspection_knowledge.gd")
 const StreamScript := preload("res://src/stream/network_voxel_stream.gd")
 const CacheScript := preload("res://src/stream/client_block_cache.gd")
 const NetScript := preload("res://src/stream/terrain_net.gd")
@@ -80,6 +81,7 @@ var _mode_label: Label
 var _brain_icon: TextureRect         # shown while inspection mode is on
 var _inspect_label: Label            # what the player is looking at (inspection mode)
 var inspecting: bool = false
+var knowledge = KnowledgeScript.new()   # what this character knows (placeholder stats)
 var test_inspect: bool = false       # --inspect: start with inspection on and print what it names
 var _last_inspected: String = ""
 var _inspect_msec: int = 0
@@ -500,6 +502,7 @@ func _inspect_target() -> String:
 		return "<wait>"
 
 	_inspect_msec = now + 100
+	knowledge.admin = flying
 	var origin: Vector3 = camera.global_position
 	var direction: Vector3 = -camera.global_transform.basis.z
 	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(origin, origin + direction * 30.0)
@@ -510,25 +513,28 @@ func _inspect_target() -> String:
 		return ""
 
 	var collider: Object = hit["collider"]
+	var species: int = -1
 
 	# A tree trunk: its shape number says which species it is.
 	if collider != null and collider.has_meta("species_ids"):
-		var species: PackedInt32Array = collider.get_meta("species_ids")
+		var ids: PackedInt32Array = collider.get_meta("species_ids")
 		var index: int = int(hit["shape"])
 
-		if index >= 0 and index < species.size():
-			return flora.label_of(species[index])
+		if index >= 0 and index < ids.size():
+			species = ids[index]
 
 	var point: Vector3 = hit["position"]
-	var plant: String = flora.label_near(point, 1.3)
 
-	if plant != "":
-		return plant
+	if species < 0:
+		species = flora.species_near(point, 1.3)
+
+	if species >= 0:
+		return knowledge.reveal("f%d" % species, flora.label_of(species), flora.familiarity_of(species), "horticulture", flora.lookalikes(species))
 
 	return _ground_name(point - hit["normal"] * 0.4)
 
 
-# The ore, rock or soil at a point in the ground.
+# The ore, rock or soil at a point in the ground, as this character knows it.
 func _ground_name(point: Vector3) -> String:
 	var tool: VoxelTool = terrain.get_voxel_tool()
 	var cell: Vector3i = Vector3i(point.floor())
@@ -536,20 +542,35 @@ func _ground_name(point: Vector3) -> String:
 	var resource: int = tool.get_voxel(cell)
 
 	if resource > 0:
-		for entry in _tables.get_entries("resources"):
-			if int(entry["id"]) == resource:
-				return str(entry.get("display", entry["name"]))
+		return _known_from_table("resources", "o", resource)
 
 	tool.channel = Layout.CHANNEL_MATERIAL
 	var material: int = tool.get_voxel(cell)
-	var table: String = "rocks" if material >= Layout.MATERIAL_ROCK else "soils"
-	var id: int = material - Layout.MATERIAL_ROCK if material >= Layout.MATERIAL_ROCK else material
+
+	if material >= Layout.MATERIAL_ROCK:
+		return _known_from_table("rocks", "r", material - Layout.MATERIAL_ROCK)
+
+	return _known_from_table("soils", "s", material)
+
+
+func _known_from_table(table: String, prefix: String, id: int) -> String:
+	var label: String = ""
+	var familiarity: int = 50
+	var others: Array = []
 
 	for entry in _tables.get_entries(table):
-		if int(entry["id"]) == id:
-			return str(entry.get("display", entry["name"]))
+		var name: String = str(entry.get("display", entry["name"]))
 
-	return "Ground"
+		if int(entry["id"]) == id:
+			label = name
+			familiarity = int(entry.get("familiarity", 50))
+		elif int(entry["id"]) > 0:
+			others.append(name)
+
+	if label == "":
+		return "Ground"
+
+	return knowledge.reveal("%s%d" % [prefix, id], label, familiarity, "geology", others)
 
 
 func _make_environment(root: Node3D) -> void:
@@ -787,7 +808,7 @@ func _process(delta: float) -> void:
 		total_ms += ms
 
 	var avg_ms: float = total_ms / maxf(float(_frame_ms.size()), 1.0)
-	hud.text = "build 18  %d fps  avg %.1f ms  worst %.1f ms  quality %s (F2)\nmem %.0f MB\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
+	hud.text = "build 19  %d fps  avg %.1f ms  worst %.1f ms  quality %s (F2)\nmem %.0f MB\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders\nx %.0f  y %.1f  z %.0f" % [
 		Engine.get_frames_per_second(), avg_ms, worst_ms, QUALITY_NAMES[quality],
 		float(OS.get_static_memory_usage()) / 1048576.0,
 		stream.blocks_received, float(stream.bytes_received) / 1048576.0, cache.hits, flora.instances, flora.colliders,

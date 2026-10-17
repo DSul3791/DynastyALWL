@@ -1,55 +1,63 @@
 {
 	"table": "resources",
 	"format_version": 1,
-	"note": "IDs are append-only. Never renumber or reuse an ID; retire an entry with \"retired\": true and take the next ID from next_id for new entries.",
+	"note": "IDs are append-only. Never renumber or reuse an ID; retire an entry with \"retired\": true and take the next ID from next_id for new entries. familiarity (0 to 100): the base chance in percent that a character already recognizes it at first sight.",
 	"next_id": 32,
 	"entries": [
 		{
 			"id": 0,
 			"name": "none",
 			"display": "None",
+			"familiarity": 50,
 			"category": "none"
 		},
 		{
 			"id": 1,
 			"name": "coal",
 			"display": "Coal",
+			"familiarity": 90,
 			"category": "fuel"
 		},
 		{
 			"id": 2,
 			"name": "iron",
 			"display": "Iron",
+			"familiarity": 88,
 			"category": "metal"
 		},
 		{
 			"id": 3,
 			"name": "copper",
 			"display": "Copper",
+			"familiarity": 80,
 			"category": "metal"
 		},
 		{
 			"id": 4,
 			"name": "tin",
 			"display": "Tin",
+			"familiarity": 65,
 			"category": "metal"
 		},
 		{
 			"id": 5,
 			"name": "lead",
 			"display": "Lead",
+			"familiarity": 65,
 			"category": "metal"
 		},
 		{
 			"id": 6,
 			"name": "zinc",
 			"display": "Zinc",
+			"familiarity": 35,
 			"category": "metal"
 		},
 		{
 			"id": 7,
 			"name": "nickel",
 			"display": "Nickel",
+			"familiarity": 25,
 			"category": "metal",
 			"retired": true,
 			"note": "No medieval use (isolated 1751); retired 2026-10-14. ID kept."
@@ -58,48 +66,56 @@
 			"id": 8,
 			"name": "silver",
 			"display": "Silver",
+			"familiarity": 90,
 			"category": "precious"
 		},
 		{
 			"id": 9,
 			"name": "gold",
 			"display": "Gold",
+			"familiarity": 98,
 			"category": "precious"
 		},
 		{
 			"id": 10,
 			"name": "salt",
 			"display": "Salt",
+			"familiarity": 95,
 			"category": "industrial"
 		},
 		{
 			"id": 11,
 			"name": "sulfur",
 			"display": "Sulfur",
+			"familiarity": 55,
 			"category": "industrial"
 		},
 		{
 			"id": 12,
 			"name": "clay",
 			"display": "Clay",
+			"familiarity": 90,
 			"category": "industrial"
 		},
 		{
 			"id": 13,
 			"name": "gypsum",
 			"display": "Gypsum",
+			"familiarity": 25,
 			"category": "industrial"
 		},
 		{
 			"id": 14,
 			"name": "graphite",
 			"display": "Graphite",
+			"familiarity": 40,
 			"category": "industrial"
 		},
 		{
 			"id": 15,
 			"name": "gemstone",
 			"display": "Gemstone",
+			"familiarity": 60,
 			"category": "gem",
 			"retired": true,
 			"note": "Replaced by individual gems (2026-10-14)."
@@ -108,90 +124,105 @@
 			"id": 16,
 			"name": "peat",
 			"display": "Peat",
+			"familiarity": 70,
 			"category": "surface"
 		},
 		{
 			"id": 17,
 			"name": "diamond",
 			"display": "Diamond",
+			"familiarity": 98,
 			"category": "gem"
 		},
 		{
 			"id": 18,
 			"name": "ruby",
 			"display": "Ruby",
+			"familiarity": 88,
 			"category": "gem"
 		},
 		{
 			"id": 19,
 			"name": "sapphire",
 			"display": "Sapphire",
+			"familiarity": 85,
 			"category": "gem"
 		},
 		{
 			"id": 20,
 			"name": "emerald",
 			"display": "Emerald",
+			"familiarity": 90,
 			"category": "gem"
 		},
 		{
 			"id": 21,
 			"name": "topaz",
 			"display": "Topaz",
+			"familiarity": 55,
 			"category": "gem"
 		},
 		{
 			"id": 22,
 			"name": "aquamarine",
 			"display": "Aquamarine",
+			"familiarity": 45,
 			"category": "gem"
 		},
 		{
 			"id": 23,
 			"name": "amethyst",
 			"display": "Amethyst",
+			"familiarity": 70,
 			"category": "gem"
 		},
 		{
 			"id": 24,
 			"name": "agate",
 			"display": "Agate",
+			"familiarity": 45,
 			"category": "gem"
 		},
 		{
 			"id": 25,
 			"name": "garnet",
 			"display": "Garnet",
+			"familiarity": 50,
 			"category": "gem"
 		},
 		{
 			"id": 26,
 			"name": "opal",
 			"display": "Opal",
+			"familiarity": 60,
 			"category": "gem"
 		},
 		{
 			"id": 27,
 			"name": "flint",
 			"display": "Flint",
+			"familiarity": 75,
 			"category": "industrial"
 		},
 		{
 			"id": 28,
 			"name": "alum",
 			"display": "Alum",
+			"familiarity": 15,
 			"category": "industrial"
 		},
 		{
 			"id": 29,
 			"name": "bitumen",
 			"display": "Bitumen",
+			"familiarity": 45,
 			"category": "industrial"
 		},
 		{
 			"id": 30,
 			"name": "bog_iron",
 			"display": "Bog iron",
+			"familiarity": 20,
 			"category": "metal",
 			"derived": true
 		},
@@ -199,6 +230,7 @@
 			"id": 31,
 			"name": "saltpeter",
 			"display": "Saltpeter",
+			"familiarity": 25,
 			"category": "industrial",
 			"derived": true
 		}
