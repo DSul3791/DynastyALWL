@@ -230,11 +230,15 @@ static func _conifer(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: floa
 	var centers: Array = _trunk(bark, rng, h * 0.95, trunk, trunk * 0.12, lean, tint, 5 if far else 7, 1 if far else 3, 0.0 if far else 0.8)
 	var tiers: int = 11 if far else rng.randi_range(18, 20)
 	var per: int = 7 if far else 12
+	# Each tree is its own build of the arrowhead: slim and steep like a spruce, or
+	# fuller and flatter like a fir, so a stand never looks cloned.
+	var slim: float = rng.randf_range(0.72, 1.12)
+	var sag: float = rng.randf_range(0.45, 0.8)
 
 	for t in range(tiers):
 		var f: float = float(t) / float(tiers - 1)
 		var y: float = lerpf(h * 0.12, h * 0.97, f) + rng.randf_range(-0.008, 0.008) * h
-		var reach: float = crown * 1.3 * pow(1.0 - f, 0.95) + crown * 0.1
+		var reach: float = crown * 1.2 * slim * pow(1.0 - f, 0.95) + crown * 0.06
 		var center: Vector3 = Vector3(lean.x * pow(y / h, 2.0), y, lean.y * pow(y / h, 2.0))
 		var phase: float = rng.randf() * TAU
 		var shade: float = lerpf(0.62, 1.0, f) * rng.randf_range(0.9, 1.06)
@@ -243,7 +247,7 @@ static func _conifer(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: floa
 		for k in range(per):
 			var a: float = phase + TAU * float(k) / float(per)
 			var out: Vector3 = Vector3(cos(a), 0.0, sin(a))
-			var droop: float = reach * 0.6
+			var droop: float = reach * sag
 			# A bough: a card running outward from the trunk, drooping at the tip.
 			var mid: Vector3 = center + out * reach * 0.5 - Vector3(0.0, droop * 0.5, 0.0)
 			var axis: Vector3 = (out * reach - Vector3(0.0, droop, 0.0))

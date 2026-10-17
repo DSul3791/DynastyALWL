@@ -508,7 +508,7 @@ func _refresh(chunk: Vector2i, position: Vector3) -> void:
 			multimesh.set_instance_transform(m, Transform3D(basis, items["positions"][n] - Vector3(0.0, 0.15, 0.0)))
 
 			if bool(info["tinted"]):
-				multimesh.set_instance_custom_data(m, _autumn_tint(ids[n]) if info["hardwood"] else info["tint"])
+				multimesh.set_instance_custom_data(m, _autumn_tint(ids[n]) if info["hardwood"] else (_conifer_tint(ids[n], info["tint"]) if info["kind"] == KIND_TREE else info["tint"]))
 
 		var draw: MultiMeshInstance3D = MultiMeshInstance3D.new()
 		draw.multimesh = multimesh
@@ -584,6 +584,20 @@ static func _plant_tint(entry: Dictionary, c: Array) -> Color:
 func _autumn_tint(id: int) -> Color:
 	var c: Color = _autumn_color(id)
 	return Color(c.r * 1.5, c.g * 1.5, c.b * 1.5)
+
+
+# Evergreens vary tree to tree like a real stand: dark blue-green spruce, mid
+# green fir, and the odd bright lime young tree, fixed by the tree's id.
+func _conifer_tint(id: int, base: Color) -> Color:
+	var mix: int = (id * 2654435761) & 0x7fffffff
+	var f: float = float(mix % 1000) / 1000.0
+	var dark: Color = Color(0.55, 0.78, 0.68)
+	var lime: Color = Color(1.35, 1.7, 0.65)
+
+	if f < 0.2:
+		return base * lime.lerp(Color(1.0, 1.2, 0.8), float((mix >> 10) % 100) / 100.0)
+
+	return base * dark.lerp(Color(1.0, 1.1, 0.95), (f - 0.2) / 0.8)
 
 
 # Mutes a species color toward natural tones: a little less saturated and
