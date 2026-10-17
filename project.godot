@@ -10,7 +10,14 @@ config_version=5
 
 [application]
 
-config/name="BakedVoxelGame"
+config/name="Dynasty a life well lived"
+config/description="**Dynasty: A Life Well Lived** is an ambitious medieval open-world survival and life-simulation game focused on realism, player freedom, and a living, evolving world.
+
+Players can explore, gather resources, craft, build homes, establish families, develop settlements, and create lasting dynasties across generations. An advanced NPC simulation gives characters individual personalities, relationships, memories, occupations, and daily routines, allowing communities and social interactions to evolve naturally.
+
+The game emphasizes meaningful choices, immersive survival, a dynamic economy, and a persistent world shaped by player actions. Players can live independently, cooperate with others, build thriving communities, or hire NPCs to perform work.
+
+**Core philosophy:** A world where players choose their own path, actions have lasting consequences, and no one is forced into a particular playstyle."
 run/main_scene="uid://c472o28ctl2t3"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
