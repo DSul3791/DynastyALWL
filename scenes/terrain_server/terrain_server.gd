@@ -41,6 +41,7 @@ const IDLE_MAX_DONE := 400000          # remembered built blocks (skips re-check
 var generator
 var store
 var flora
+var _water_updates: int = 0
 var water_live                         # the starter tile's running water, tuned with + and - on the client
 var settings
 var spawn: Vector3 = Vector3.ZERO
@@ -142,8 +143,17 @@ func _ready() -> void:
 	var water_data = generator.get_tile(water_tile)
 
 	if not water_data.placeholder:
+		# Owner (2026-10-18): the world starts dry and the springs fill it, so the real water
+		# paths show; --settled-water starts from the baked water file instead.
+		var dry_start: bool = not OS.get_cmdline_user_args().has("--settled-water")
+
+		if dry_start:
+			water_data.sim_levels = PackedFloat32Array()
+			water_data.sim_levels.resize(water_data.samples * water_data.samples)
+			water_data.sim_levels.fill(NAN)
+
 		water_live = WaterLiveScript.new()
-		water_live.setup(water_data, "%s/water/tile_%d_%d.water" % [world_dir, water_tile.x, water_tile.y], WATER_BASE_RATE, generator)
+		water_live.setup(water_data, "%s/water/tile_%d_%d.water" % [world_dir, water_tile.x, water_tile.y], WATER_BASE_RATE, generator, dry_start)
 
 	var peer: ENetMultiplayerPeer = ENetMultiplayerPeer.new()
 	var error: int = peer.create_server(port, 32)
@@ -320,6 +330,17 @@ func _poll_water() -> void:
 
 	if not levels.is_empty():
 		water_live.data.sim_levels = levels
+		_water_updates += 1
+
+		if _water_updates == 1 or _water_updates % 5 == 0:
+			var wet: int = 0
+
+			for level in levels:
+				if not is_nan(level):
+					wet += 1
+
+			print("server: water update %d, %d wet squares" % [_water_updates, wet])
+
 		flora.clear_water()
 		net.water_changed.rpc()
 

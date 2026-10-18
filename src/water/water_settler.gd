@@ -31,12 +31,12 @@ static func _drawn_ground(data, generator) -> PackedFloat32Array:
 
 # A simulation started from the painted water with springs placed. `rate` is each
 # spring's meters of water per tick.
-static func build(data, rate: float, generator):
+static func build(data, rate: float, generator, seed_painted: bool = true):
 	var side: int = data.samples
 	var sim = WaterSim.new()
 	sim.setup(side, data.spacing_m, _drawn_ground(data, generator))
 
-	for k in range(side * side):
+	for k in range(side * side if seed_painted else 0):
 		var surface: float = data.water_surface[k]
 
 		if (data.water_class[k] == RIVER or data.water_class[k] == LAKE) and not is_nan(surface) and surface > sim.ground[k]:
@@ -111,7 +111,7 @@ static func _plateau_near(sim, head: Vector2i, side: int, data = null) -> Vector
 
 			for r in range(8):
 				var angle: float = TAU * float(r) / 8.0
-				var h: float = sim.ground[(j + int(round(sin(angle) * 4.0))) * side + i + int(round(cos(angle) * 4.0))]
+				var h: float = sim.ground[(j + int(round(sin(angle) * 6.0))) * side + i + int(round(cos(angle) * 6.0))]
 				low = minf(low, h)
 				high = maxf(high, h)
 
@@ -140,17 +140,17 @@ static func _pond_near(data, head: Vector2i, side: int) -> Vector2i:
 			var i: int = head.x + di
 			var j: int = head.y + dj
 
-			if i < 4 or j < 4 or i >= side - 4 or j >= side - 4 or data.water_class[j * side + i] == 0:
+			if i < 8 or j < 8 or i >= side - 8 or j >= side - 8 or data.water_class[j * side + i] == 0:
 				continue
 
-			# The bottom of a bowl: every cell four steps around it stands well above it.
+			# The bottom of a bowl: every cell six steps around it stands well above it.
 			var floor_here: float = data.heights[j * side + i]
 			var inside: bool = true
 
 			for r in range(8):
 				var angle: float = TAU * float(r) / 8.0
 
-				if data.heights[(j + int(round(sin(angle) * 4.0))) * side + i + int(round(cos(angle) * 4.0))] < floor_here + 4.0:
+				if data.heights[(j + int(round(sin(angle) * 6.0))) * side + i + int(round(cos(angle) * 6.0))] < floor_here + 4.0:
 					inside = false
 					break
 

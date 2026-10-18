@@ -16,6 +16,8 @@ const RATE_MIN := 0.1
 const RATE_MAX := 5.0
 const PUBLISH_TICKS := 15
 const RUN_TICKS := 200            # ticks to run after each change, then the water rests
+const START_TICKS := 20000        # a dry start runs this long on its own, so the springs fill the land
+const START_PUBLISH_TICKS := 40
 
 var data
 var rate: float = 1.0
@@ -30,9 +32,17 @@ var _budget: int = 0
 var _quit: bool = false
 var _pending: PackedFloat32Array = PackedFloat32Array()
 var _ticks: int = 0
+var _dry_start: bool = false
 
 
-func setup(tile_data, water_path: String, base_rate: float, tile_generator) -> void:
+# With dry_start the tile begins with no fresh water at all (only the sea): the springs
+# fill the ponds and the rivers run down on their own, so the real water paths show.
+func setup(tile_data, water_path: String, base_rate: float, tile_generator, dry_start: bool = false) -> void:
+	_dry_start = dry_start
+
+	if dry_start:
+		_budget = START_TICKS
+
 	data = tile_data
 	_generator = tile_generator
 	_path = water_path
@@ -54,7 +64,7 @@ func stop() -> void:
 func step_rate(direction: int) -> float:
 	_mutex.lock()
 	rate = clampf(rate * (RATE_STEP if direction > 0 else 1.0 / RATE_STEP), RATE_MIN, RATE_MAX)
-	_budget = RUN_TICKS
+	_budget = maxi(_budget, RUN_TICKS)
 	var now: float = rate
 	_mutex.unlock()
 	return now
@@ -70,8 +80,8 @@ func take_levels() -> PackedFloat32Array:
 
 
 func _run() -> void:
-	var sim = WaterSettler.build(data, _base_rate, _generator)
-	var saved: PackedFloat32Array = WaterStore.load_depth(_path, data.samples)
+	var sim = WaterSettler.build(data, _base_rate, _generator, not _dry_start)
+	var saved: PackedFloat32Array = PackedFloat32Array() if _dry_start else WaterStore.load_depth(_path, data.samples)
 
 	if not saved.is_empty():
 		sim.depth = saved
@@ -103,7 +113,7 @@ func _run() -> void:
 		sim.step()
 		since += 1
 
-		if since >= PUBLISH_TICKS or _budget == 0:
+		if since >= (START_PUBLISH_TICKS if _dry_start else PUBLISH_TICKS) or _budget == 0:
 			since = 0
 			var levels: PackedFloat32Array = sim.level_map()
 			_mutex.lock()
