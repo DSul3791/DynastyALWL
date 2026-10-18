@@ -493,8 +493,9 @@ func _carve_guides(rivers: Array) -> void:
 	var window_m: float = float(_rules.get("bed_window_m", 500.0))
 	var taper_m: float = float(_rules.get("head_taper_m", 140.0))
 	var taper_min: float = float(_rules.get("head_taper_min", 0.4))
-	var pond_width: float = float(_rules.get("head_pond_width_m", 22.0))
-	var pond_depth: float = float(_rules.get("head_pond_depth_m", 1.6))
+	var pond_radius: float = float(_rules.get("head_pond_diameter_m", 30.0)) * 0.5
+	var pond_depth: float = float(_rules.get("head_pond_depth_m", 10.0))
+	var pond_back: float = float(_rules.get("head_pond_back_m", 50.0))
 	var widen_from: float = float(_rules.get("fall_widen_from_slope", 0.15))
 	var widen_rate: float = float(_rules.get("fall_widen_rate", 3.0))
 	var widen_max: float = float(_rules.get("fall_widen_max", 2.5))
@@ -607,45 +608,29 @@ func _carve_guides(rivers: Array) -> void:
 		longest = maxf(longest, run_length)
 
 		if is_source:
-			# A spring pond on the flattest ground near the head, held in by its own
-			# rim: the water level is the lowest point of the rim, so the pond cuts
-			# into the hillside on the uphill side and never floats on the downhill one.
-			var best_k: int = -1
-			var best_range: float = INF
-			var best_low: float = 0.0
-			var ring_cells: float = pond_width * 0.5 / spacing_m
-			var candidates: int = mini(count, int(160.0 / step_m) + 1)
+			# The spring pond sits back in the hill above the head (owner, 2026-10-18): a
+			# bowl cut into the slope, as deep as it is told below its lowest lip, so it
+			# holds water and spills over that lip toward the brook.
+			var head_point: Vector2 = points[0]
 
-			for k in range(candidates):
-				if usable[k] == 0:
-					continue
+			if usable[0] == 1:
+				var uphill: Vector2 = Vector2(
+					_bilinear(heights, head_point + Vector2(1.0, 0.0)) - _bilinear(heights, head_point - Vector2(1.0, 0.0)),
+					_bilinear(heights, head_point + Vector2(0.0, 1.0)) - _bilinear(heights, head_point - Vector2(0.0, 1.0))
+				)
 
-				var low: float = INF
-				var high: float = -INF
-				var inside: bool = true
+				if uphill.length() > 0.001:
+					var centre: Vector2 = head_point + uphill.normalized() * pond_back / spacing_m
+					var margin: float = pond_radius / spacing_m + 3.0
 
-				for r in range(8):
-					var a_r: float = TAU * float(r) / 8.0
-					var at_r: Vector2 = points[k] + Vector2(cos(a_r), sin(a_r)) * ring_cells
+					if centre.x > margin and centre.y > margin and centre.x < float(samples - 1) - margin and centre.y < float(samples - 1) - margin:
+						var rim_low: float = INF
 
-					if at_r.x < 1.0 or at_r.y < 1.0 or at_r.x > float(samples - 2) or at_r.y > float(samples - 2):
-						inside = false
-						break
+						for r in range(16):
+							var a_r: float = TAU * float(r) / 16.0
+							rim_low = minf(rim_low, _bilinear(heights, centre + Vector2(cos(a_r), sin(a_r)) * pond_radius / spacing_m))
 
-					var h_r: float = _bilinear(heights, at_r)
-					low = minf(low, h_r)
-					high = maxf(high, h_r)
-
-				if inside and high - low < best_range:
-					best_range = high - low
-					best_k = k
-					best_low = low
-
-			# No flat ground close by: no pond (it would be a terrace cut into a hillside).
-			if best_k >= 0 and best_range <= float(_rules.get("head_pond_max_range_m", 4.0)):
-				var scale: float = clampf(8.0 / maxf(best_range, 8.0), 0.45, 1.0)
-				var bed_level: float = best_low - 0.75 * pond_depth - 0.4
-				_stamp_at(carved, points[best_k], pond_width * scale, pond_depth, bed_level, slope, areas[best_k] / cell_km2, best_flow, 0.75 * pond_depth)
+						_stamp_pond(carved, centre, pond_radius, rim_low - pond_depth, rim_low, areas[0] / cell_km2, best_flow)
 
 		# A plunge pool at the foot of every steep drop (waterfall or cascade):
 		# the water scours a basin where it lands.
@@ -727,6 +712,37 @@ func _stamp_at(
 				flow[target] = strength
 				water_class[target] = RIVER
 				water_surface[target] = bed + 0.75 * depth
+
+
+# A bowl-shaped spring pond: the floor is `bottom` in the middle and rises to the lowest
+# lip (`rim_low`) at the edge, and the water stands just under that lip.
+func _stamp_pond(
+	carved: PackedFloat32Array, center: Vector2, radius_m: float, bottom: float, rim_low: float,
+	strength: float, best_flow: PackedFloat32Array
+) -> void:
+	var reach_cells: float = radius_m / spacing_m
+	var surface: float = rim_low - 1.0
+
+	for nr in range(maxi(int(ceil(center.y - reach_cells)), 0), mini(int(floor(center.y + reach_cells)), samples - 1) + 1):
+		for nc in range(maxi(int(ceil(center.x - reach_cells)), 0), mini(int(floor(center.x + reach_cells)), samples - 1) + 1):
+			var distance: float = sqrt(pow(float(nc) - center.x, 2.0) + pow(float(nr) - center.y, 2.0)) * spacing_m
+
+			if distance > radius_m:
+				continue
+
+			var target: int = nr * samples + nc
+
+			if _ocean[target] == 1:
+				continue
+
+			var floor_height: float = bottom + (rim_low - bottom) * pow(distance / radius_m, 2.0)
+			carved[target] = minf(carved[target], floor_height)
+
+			if floor_height < surface and strength >= best_flow[target]:
+				best_flow[target] = strength
+				flow[target] = strength
+				water_class[target] = RIVER
+				water_surface[target] = surface
 
 
 # Lowers the ground around one river cell: a channel of the given width
