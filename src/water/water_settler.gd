@@ -42,8 +42,21 @@ static func build(data, rate: float, generator, seed_painted: bool = true):
 		if (data.water_class[k] == RIVER or data.water_class[k] == LAKE) and not is_nan(surface) and surface > sim.ground[k]:
 			sim.depth[k] = surface - sim.ground[k]
 
+	var placed: Array = []
+
 	for head in _find_heads(data, side):
 		var spot: Vector2i = _plateau_near(sim, head, side, data)
+		var duplicate: bool = false
+
+		# A big head pond has several "heads" around its edge: one spring per pond.
+		for other in placed:
+			if Vector2(spot - other).length() < 30.0:
+				duplicate = true
+
+		if duplicate:
+			continue
+
+		placed.append(spot)
 		sim.add_spring(spot.x, spot.y, rate)
 
 	sim.wake_all_wet()
@@ -160,12 +173,23 @@ static func _pond_near(data, head: Vector2i, side: int) -> Vector2i:
 				best_dist = dist
 				best = Vector2i(i, j)
 
-	# Springs push water only to their own height: the spring sits on the highest ground
-	# inside the bowl's uphill wall (80% of its radius, never on the rim, which would spill
-	# water out over the hillside) and the water runs down into the pond and fills it.
+	# Springs push water only to their own height: the spring sits on the bowl's uphill
+	# wall at the height of the pond's water line (one metre under its lowest lip), so its
+	# water joins the pond at once instead of running down the wall, and never on the rim,
+	# which would spill it out over the hillside.
 	if best.x >= 0:
-		var top: Vector2i = best
-		var top_height: float = data.heights[best.y * side + best.x]
+		var rim_low: float = INF
+
+		for r in range(16):
+			var a_r: float = TAU * float(r) / 16.0
+			var rx: int = clampi(best.x + int(round(cos(a_r) * 14.0)), 0, side - 1)
+			var rz: int = clampi(best.y + int(round(sin(a_r) * 14.0)), 0, side - 1)
+			rim_low = minf(rim_low, data.heights[rz * side + rx])
+
+		var line: float = rim_low - 1.0
+		var away: Vector2 = Vector2(best - head)
+		var spot: Vector2i = best
+		var spot_gap: float = INF
 
 		for dj in range(-15, 16):
 			for di in range(-15, 16):
@@ -175,10 +199,16 @@ static func _pond_near(data, head: Vector2i, side: int) -> Vector2i:
 				if i2 < 4 or j2 < 4 or i2 >= side - 4 or j2 >= side - 4 or di * di + dj * dj > 144:
 					continue
 
-				if data.heights[j2 * side + i2] > top_height:
-					top_height = data.heights[j2 * side + i2]
-					top = Vector2i(i2, j2)
+				# Only on the far side of the pond from the river head.
+				if Vector2(di, dj).dot(away) <= 0.0:
+					continue
 
-		best = top
+				var gap: float = absf(data.heights[j2 * side + i2] - line)
+
+				if gap < spot_gap:
+					spot_gap = gap
+					spot = Vector2i(i2, j2)
+
+		best = spot
 
 	return best
