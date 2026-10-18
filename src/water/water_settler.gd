@@ -161,7 +161,8 @@ static func _pond_near(data, head: Vector2i, side: int) -> Vector2i:
 				best = Vector2i(i, j)
 
 	# Springs push water only to their own height: the spring sits on the highest ground
-	# around the bowl (its uphill rim) and the water runs down into the pond and fills it.
+	# inside the bowl's uphill wall (80% of its radius, never on the rim, which would spill
+	# water out over the hillside) and the water runs down into the pond and fills it.
 	if best.x >= 0:
 		var top: Vector2i = best
 		var top_height: float = data.heights[best.y * side + best.x]
@@ -171,7 +172,7 @@ static func _pond_near(data, head: Vector2i, side: int) -> Vector2i:
 				var i2: int = best.x + di
 				var j2: int = best.y + dj
 
-				if i2 < 4 or j2 < 4 or i2 >= side - 4 or j2 >= side - 4 or di * di + dj * dj > 225:
+				if i2 < 4 or j2 < 4 or i2 >= side - 4 or j2 >= side - 4 or di * di + dj * dj > 144:
 					continue
 
 				if data.heights[j2 * side + i2] > top_height:
