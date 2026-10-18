@@ -86,6 +86,45 @@ void fragment() {
 }
 """
 
+# Everember: dark ridged bark with glowing veins in its furrows. The glow
+# (EMISSION) is strongest where the bark texture is darkest (the furrows),
+# broken up by a second, coarser sample so not every furrow burns, and scaled
+# by the vertex alpha (1 low on the trunk and roots, fading up the tree, 0 on
+# small limbs). It pulses very slowly.
+const EMBER_SHADER := """
+shader_type spatial;
+render_mode diffuse_burley, specular_disabled;
+uniform sampler2D bark : source_color, filter_linear_mipmap, repeat_enable;
+uniform vec3 glow_color : source_color = vec3(1.0, 0.42, 0.1);
+uniform float glow_energy = 4.0;
+uniform vec2 uv_scale = vec2(3.0, 0.5);
+
+float hash2(vec2 p) {
+	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+
+float vnoise(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(hash2(i), hash2(i + vec2(1.0, 0.0)), f.x), mix(hash2(i + vec2(0.0, 1.0)), hash2(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+
+void fragment() {
+	vec3 t = texture(bark, UV * uv_scale).rgb;
+	ALBEDO = t * COLOR.rgb * 1.8;
+	ROUGHNESS = 1.0;
+	// Veins: thin lines where a stretched noise crosses its middle, mostly
+	// running up the trunk, with a finer second set branching off them.
+	float n1 = vnoise(UV * vec2(4.0, 0.12));
+	float n2 = vnoise(UV * vec2(9.0, 0.4) + 7.3);
+	float vein = max(1.0 - smoothstep(0.015, 0.05, abs(n1 - 0.5)), 0.6 * (1.0 - smoothstep(0.01, 0.035, abs(n2 - 0.5))));
+	float pulse = 0.85 + 0.15 * sin(TIME * 0.6 + UV.y * 0.3);
+	ALBEDO *= 1.0 - 0.6 * vein * COLOR.a;
+	EMISSION = glow_color * glow_energy * vein * COLOR.a * pulse;
+}
+"""
+
 # Mirrorbark: polished chrome bark. Fully metallic and nearly smooth, so it
 # mirrors the sky and ground; the bark is split into faceted patches, each
 # tipped a little differently, so the mirror breaks up like the owner's pictures.
@@ -119,6 +158,8 @@ void fragment() {
 """
 
 const KINDS := ["tree", "shrub", "plant"]
+const GLOW_CELL_M := 24.0   # one glow light per this square of a glowing grove
+const GLOW_LIGHTS := 24     # at most this many glow lights per chunk
 const PART_M := [256.0, 128.0, 128.0]
 
 var chunk_m: float = 256.0
@@ -225,6 +266,10 @@ func setup(tables, tile_rules: Dictionary) -> void:
 		if entry.has("young_below_m"):
 			_species[int(entry["id"])]["young_below"] = float(entry["young_below_m"])
 
+		if entry.has("glow"):
+			var g: Array = entry["glow"]
+			_species[int(entry["id"])]["glow"] = Color(float(g[0]), float(g[1]), float(g[2]))
+
 		if entry.has("autumn_colors"):
 			var palette: Array[Color] = []
 			for ac in entry["autumn_colors"]:
@@ -260,6 +305,12 @@ func _make_tree_materials() -> void:
 	var chrome_material: ShaderMaterial = ShaderMaterial.new()
 	chrome_material.shader = chrome
 	_tree_materials["chrome"] = chrome_material
+	var ember: Shader = Shader.new()
+	ember.code = EMBER_SHADER
+	var ember_material: ShaderMaterial = ShaderMaterial.new()
+	ember_material.shader = ember
+	ember_material.set_shader_parameter("bark", _load_texture("res://assets/trees/bark.png"))
+	_tree_materials["ember"] = ember_material
 
 	for pair in [["broad", "res://assets/trees/leaf_broad.png"], ["conifer", "res://assets/trees/leaf_conifer.png"], ["palm", "res://assets/trees/leaf_palm.png"], ["grass", "res://assets/grass/grass_tall.png"], ["twig", "res://assets/trees/twig_birch.png"], ["oak", "res://assets/trees/leaf_oak.png"], ["willow", "res://assets/trees/leaf_willow.png"], ["rowan", "res://assets/trees/leaf_rowan.png"], ["maple", "res://assets/trees/leaf_maple.png"]]:
 		var material: ShaderMaterial = ShaderMaterial.new()
@@ -613,6 +664,36 @@ func _refresh(chunk: Vector2i, position: Vector3) -> void:
 
 	if body != null:
 		body.set_meta("species_ids", shape_species)
+
+	# Glowing trees (everember) light the ground around them, near the player
+	# only: one warm light per GLOW_CELL_M square, at most GLOW_LIGHTS per chunk.
+	if (level & 8) != 0:
+		var lit: Dictionary = {}
+
+		for n in range(ids.size()):
+			var info: Dictionary = _species.get(ids[n] >> 16, {})
+
+			if not info.has("glow") or lit.size() >= GLOW_LIGHTS:
+				continue
+
+			var p: Vector3 = items["positions"][n]
+			var cell: Vector2i = Vector2i(int(floor(p.x / GLOW_CELL_M)), int(floor(p.z / GLOW_CELL_M)))
+
+			if lit.has(cell):
+				continue
+
+			lit[cell] = true
+			var scale: float = float(items["heights"][n]) / float(info["height"])
+			var light: OmniLight3D = OmniLight3D.new()
+			light.light_color = info["glow"]
+			light.light_energy = 2.0
+			light.omni_range = 8.0 + float(info["trunk"]) * scale * 4.0
+			light.shadow_enabled = false
+			light.distance_fade_enabled = true
+			light.distance_fade_begin = collision_m * 0.7
+			light.distance_fade_length = collision_m * 0.3
+			light.position = p + Vector3(0.0, 2.0, 0.0)
+			node.add_child(light)
 
 	for key in groups:
 		var info: Dictionary = _species[key[0]]

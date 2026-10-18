@@ -6941,18 +6941,29 @@
 			"name": "everember",
 			"display": "Everember",
 			"kind": "tree",
-			"shape": "broadleaf",
-			"height_m": [
-				10,
-				18
+			"shape": "conifer",
+			"model": "everember",
+			"young_below_m": 25,
+			"young_share": 0.25,
+			"young_height_m": [8, 20],
+			"young_color": [0.36, 0.6, 0.2],
+			"young_m": [8, 20],
+			"autumn_colors": [
+				[0.3, 0.36, 0.16],
+				[0.34, 0.36, 0.17],
+				[0.28, 0.34, 0.15]
 			],
-			"crown_m": 3.5,
-			"trunk_m": 0.4,
-			"color": [
-				0.85,
-				0.35,
-				0.15
-			],
+			"glow": [1.0, 0.45, 0.12],
+			"grove": {
+				"spacing_m": 11,
+				"radius_m": [90, 150],
+				"every_km": 4,
+				"chance": 0.35
+			},
+			"height_m": [70, 110],
+			"crown_m": 7.0,
+			"trunk_m": 3.2,
+			"color": [0.16, 0.3, 0.12],
 			"per_hectare": {
 				"volcanic_waste": 0.002,
 				"mixed_forest": 0.0005,
@@ -6969,8 +6980,7 @@
 			],
 			"water": [],
 			"yields": [
-				"everember_leaves",
-				"everember_wood"
+				"everember_needles", "everember_wood", "everember_sap"
 			],
 			"season": [
 				"all"
@@ -6982,10 +6992,7 @@
 				"fine_wood"
 			],
 			"look_alikes": [
-				"birch",
-				"alder",
-				"rowan",
-				"mirrorbark"
+				"spruce", "scots_pine", "wardpine"
 			],
 			"properties": [
 				"revival",

@@ -2016,6 +2016,25 @@ func _test_flora(generator, data, tables, tile_rules: Dictionary) -> void:
 	var placer = FloraPlacerScript.new()
 	placer.setup(generator, tables, tile_rules)
 
+	# Grove species (everember) grow only in groves, which are stable and sized as the table says.
+	var ever: Dictionary = placer.species_by_id(122)
+	var grove_count: int = 0
+	var grove_ok: bool = ever.has("grove")
+
+	if grove_ok:
+		# Every chunk of a 12 km square (nine grove squares).
+		for gz in range(47):
+			for gx in range(47):
+				var at: Vector2 = Vector2(float(gx) * 256.0, float(gz) * 256.0)
+				var groves: Array = placer._groves_near(ever, 122, at)
+				grove_ok = grove_ok and str(groves) == str(placer._groves_near(ever, 122, at))
+
+				for g in groves:
+					grove_count += 1
+					grove_ok = grove_ok and g[1] >= 90.0 and g[1] <= 150.0 and placer._in_grove([g], g[0].x, g[0].y) and not placer._in_grove([g], g[0].x + 200.0, g[0].y)
+
+	_check(grove_ok and grove_count > 0, "everember groves are stable, 90 to 150 m across in radius, and found (%d)" % grove_count)
+
 	# The most wooded of a few chunks in the middle of the tile.
 	var best: Vector2i = Vector2i.ZERO
 	var items: Dictionary = {}

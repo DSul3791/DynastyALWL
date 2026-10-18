@@ -39,6 +39,7 @@ const CATKIN_TINT := Color(0.78, 0.74, 0.52)          # chestnut catkins: long a
 const BURR_TINT := Color(0.50, 0.52, 0.16)            # chestnut burrs: spiny green-gold
 const NUT_TINT := Color(0.36, 0.16, 0.06)             # chestnuts: glossy brown
 const CHROME_TINT := Color(0.56, 0.56, 0.57)          # mirrorbark: polished chrome (the chrome material does the shine)
+const BARK_TINT_EVEREMBER := Color(0.30, 0.21, 0.18)   # everember: charcoal to dark red-brown (the ember material adds the glowing veins)
 const BARK_TINT_HEARTHWOOD := Color(0.56, 0.36, 0.26)  # hearthwood: reddish brown, fine vertical ridges
 const BARK_TINT_WALNUT := Color(0.52, 0.51, 0.49)     # walnut: pale gray, straight deep furrows
 const WALNUT_CATKIN_TINT := Color(0.56, 0.62, 0.18)   # walnut catkins: long, yellow-green
@@ -103,6 +104,7 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 	var twigs: Acc = Acc.new()   # bare winter twig curtains
 	var smooth: Acc = Acc.new()  # smooth gray bark (beech)
 	var chrome: Acc = Acc.new()  # mirror-polished bark (mirrorbark)
+	var ember: Acc = Acc.new()   # bark with glowing veins (everember); vertex alpha = glow
 	var crown: float = float(entry["crown_m"])
 	var trunk: float = maxf(float(entry["trunk_m"]), 0.03)
 
@@ -132,6 +134,8 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 			_alder(smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season == "winter")
 		"beech":
 			_beech(smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season == "winter")
+		"everember":
+			_everember(ember, leaves, rng, h, variant, far)
 		"hearthwood":
 			_hearthwood(bark, leaves, twigs, rng, h, variant, far, season == "winter")
 		"mirrorbark":
@@ -168,6 +172,7 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 	white.commit(mesh, materials.get("birch_bark", materials["bark"]))
 	smooth.commit(mesh, materials.get("smooth_bark", materials["bark"]))
 	chrome.commit(mesh, materials.get("chrome", materials["bark"]))
+	ember.commit(mesh, materials.get("ember", materials["bark"]))
 	twigs.commit(mesh, materials.get("twig", materials["broad"]))
 	var shape: String = str(entry["shape"])
 	var leaf_kind: String = "broad"
@@ -1138,6 +1143,111 @@ static func _chestnut(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGener
 			_bead(bark, at, Vector3(0.24, 0.06, 0.06), burr)
 			_bead(bark, at, Vector3(0.06, 0.06, 0.24), burr)
 			_bead(bark, at + Vector3(0.0, 0.13, 0.0), Vector3(0.09, 0.09, 0.09), NUT_TINT)
+
+
+# Everember (fantasy). From the owner's description and pictures (2026-10-18):
+# a colossal redwood-like evergreen, 70 to 110 m tall on a straight trunk 5 to
+# 9 m across that tapers slowly to a high, narrow, conical crown; enormous
+# buttress roots; thick bark in heavy vertical ridges, charcoal to dark
+# red-brown, with veins of glowing amber and red running through the furrows
+# from the roots up the trunk and into the biggest limbs (the "ember" material
+# glows where the vertex alpha is high). Dense dark-green needles; bright green
+# new growth, bronze-green in autumn. Mature trees have lost their low limbs,
+# so the foliage is high above the ground; young ones (8 to 20 m, trunk 20 to
+# 60 cm) are narrow and densely branched nearly to the ground.
+# Variants: 0 and 1 mature, 2 and 3 young (young_below_m picks them).
+static func _everember(ember: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, variant: int, far: bool) -> void:
+	var young: bool = variant >= 2
+	var trunk_r: float = h * (0.018 if young else 0.04) * rng.randf_range(0.9, 1.1)
+	var trunk_h: float = h * 0.96
+	var lean: Vector2 = Vector2(rng.randf_range(-0.004, 0.004), rng.randf_range(-0.004, 0.004)) * h
+	var first: int = ember.v.size()
+	var glow: Color = Color(BARK_TINT_EVEREMBER.r, BARK_TINT_EVEREMBER.g, BARK_TINT_EVEREMBER.b, 1.0)
+	_trunk(ember, rng, trunk_h, trunk_r, trunk_r * 0.12, lean, glow, 6 if far else 16, 3 if far else 12, 0.0 if far else 1.2)
+
+	if not far:
+		# Heavy vertical ridges; the glow fades out high on the trunk.
+		for k in range(first, ember.v.size()):
+			var n: Vector3 = ember.n[k]
+			var ridge: float = sin(atan2(n.z, n.x) * 18.0 + sin(ember.v[k].y * 0.4) * 0.6)
+			var t: float = ember.v[k].y / trunk_h
+			ember.v[k] += n * ridge * trunk_r * lerpf(0.06, 0.02, t)
+			var shade: float = 1.0 + ridge * 0.15
+			ember.c[k] = Color(glow.r * shade, glow.g * shade, glow.b * shade, lerpf(1.0, 0.6, smoothstep(0.4, 0.95, t)))
+
+		# Buttress roots spreading out and down from the base.
+		var roots: int = rng.randi_range(6, 9)
+		var az: float = rng.randf() * TAU
+		for k in range(roots):
+			az += TAU / float(roots) + rng.randf_range(-0.25, 0.25)
+			var out: Vector3 = Vector3(cos(az), 0.0, sin(az))
+			var top: Vector3 = out * trunk_r * 0.75 + Vector3(0.0, trunk_r * rng.randf_range(0.9, 1.6), 0.0)
+			var foot: Vector3 = out * trunk_r * rng.randf_range(2.0, 2.7) + Vector3(0.0, -0.2, 0.0)
+			_branch(ember, top, foot, trunk_r * 0.42, trunk_r * 0.12, glow, 7)
+
+	var axis_at := func(y: float) -> Vector3:
+		var t: float = y / trunk_h
+		return Vector3(lean.x * t * t, y, lean.y * t * t)
+	# Young: dense and conical nearly to the ground. Mature: a high, narrow cone.
+	var crown_base: float = h * (rng.randf_range(0.08, 0.14) if young else rng.randf_range(0.42, 0.5))
+	var crown_w: float = h * (0.13 if young else 0.12) * rng.randf_range(0.9, 1.1)
+	var limbs: int = (14 if far else rng.randi_range(34, 40)) if young else (16 if far else rng.randi_range(44, 52))
+	var phase: float = rng.randf() * TAU
+
+	for k in range(limbs):
+		var g: float = (float(k) + rng.randf_range(0.0, 0.8)) / float(limbs)
+		var y0: float = lerpf(crown_base, h * 0.93, g)
+		phase += 2.4   # golden-angle turn
+		var out: Vector3 = Vector3(cos(phase), 0.0, sin(phase))
+		# A cone: longest at the bottom of the crown, short at the top.
+		var length: float = crown_w * maxf(1.0 - g * 0.85, 0.12) * rng.randf_range(0.8, 1.15)
+		var p0: Vector3 = axis_at.call(y0)
+		# Heavy limbs droop a little, then sweep up at the tips.
+		var p1: Vector3 = p0 + (out + Vector3.UP * lerpf(-0.25, 0.15, g) + Vector3(rng.randfn(), 0.0, rng.randfn()) * 0.08).normalized() * length * 0.65
+		var p2: Vector3 = p1 + (out + Vector3.UP * lerpf(0.2, 0.6, g)).normalized() * length * 0.4
+
+		if not far:
+			var r0: float = trunk_r * lerpf(0.16, 0.06, g)
+			# The biggest limbs carry a little of the glow.
+			var limb_c: Color = Color(glow.r, glow.g, glow.b, 0.5 if (not young and g < 0.3) else 0.0)
+			_branch(ember, p0, p1, r0, r0 * 0.55, limb_c, 6)
+			_branch(ember, p1, p2, r0 * 0.55, r0 * 0.2, Color(glow.r, glow.g, glow.b, 0.0), 4)
+
+		var shade: float = lerpf(0.7, 1.0, g) * rng.randf_range(0.92, 1.06)
+		var sprays: int = 3 if far else rng.randi_range(7, 9)
+
+		# Dense sprays of short needles along the outer limb.
+		for m in range(sprays):
+			var f: float = lerpf(0.3, 1.0, float(m) / float(sprays - 1))
+			var on: Vector3 = p0.lerp(p1, f * 1.5) if f < 0.65 else p1.lerp(p2, (f - 0.65) / 0.35)
+			var side: Vector3 = (Vector3(-out.z, 0.0, out.x) * rng.randf_range(-1.0, 1.0) + out * 0.5).normalized()
+			var at: Vector3 = on + side * length * rng.randf_range(0.05, 0.15)
+			var size: float = (length * rng.randf_range(0.45, 0.55) + 0.8) * (1.5 if far else 1.0)
+			var c: Color = Color(shade, shade, shade, 0.45)
+			var yaw: float = rng.randf() * PI
+
+			for q in range(2 if far else 3):
+				var turn: float = yaw + PI * float(q) / 3.0
+				var right: Vector3 = Vector3(cos(turn), 0.0, sin(turn))
+				var up: Vector3 = Vector3(-right.z, 0.0, right.x) if q == 0 else (Vector3(-right.z, 0.0, right.x) * 0.3 + Vector3.UP).normalized()
+				leaves.card(at, right, up, size * 0.5, size * (0.4 if q == 0 else 0.36), (side * 0.5 + Vector3.UP).normalized(), c)
+
+	# Dark inner foliage around the trunk, so the crown reads as dense as a real one.
+	var inner: int = 4 if far else 9
+	for k in range(inner):
+		var g: float = (float(k) + 0.5) / float(inner)
+		var y: float = lerpf(crown_base + h * 0.03, h * 0.9, g)
+		var half_w: float = crown_w * maxf(1.0 - g * 0.85, 0.15) * 0.75
+		for q in range(2):
+			var turn: float = phase + float(k) * 0.9 + PI * 0.5 * float(q)
+			var right: Vector3 = Vector3(cos(turn), 0.0, sin(turn))
+			leaves.card(axis_at.call(y), right, Vector3.UP, half_w, (h * 0.93 - crown_base) / float(inner) * 0.75, right.cross(Vector3.UP), Color(0.6, 0.6, 0.6, 0.45))
+
+	# The spire on the leader.
+	var tip: Vector3 = axis_at.call(trunk_h)
+	for q in range(3):
+		var turn: float = phase + PI * float(q) / 3.0
+		leaves.card(tip, Vector3(cos(turn), 0.0, sin(turn)), Vector3.UP, crown_w * 0.12 + 0.3, h * 0.035, Vector3.UP, Color(1.0, 1.0, 1.0, 0.45))
 
 
 # Hearthwood (fantasy). From the owner's description and pictures (2026-10-18):

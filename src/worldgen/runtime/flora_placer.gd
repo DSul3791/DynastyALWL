@@ -19,6 +19,14 @@ extends RefCounted
 # cell draws the same numbers whether or not it is kept, so adding a
 # species later or removing a tree never moves anything else.
 #
+# Grove species (flora.json "grove", the everember) ignore the per-hectare
+# figure: they grow only in groves, packed spacing_m apart on their own grid.
+# Groves sit on a world grid every_km across; each grid square holds one with
+# the given chance, at a jittered spot, with a radius from radius_m. Inside a
+# grove every candidate whose biome lists the species is kept (moisture,
+# slope, altitude and water still apply). "young_share" and "young_height_m"
+# make that share of a species young, with heights from the young range.
+#
 # Item ID: species ID << 16 | grid cell index, unique within its chunk and
 # stable: "item N in chunk C" is what a removal records.
 #
@@ -41,6 +49,7 @@ var _by_biome: Array = []            # biome id -> Array of species Dictionaries
 var patchiness: float = 0.0
 var _soil_growth: PackedFloat32Array = PackedFloat32Array()   # soil id -> tree and shrub growth factor
 var _patches: FastNoiseLite
+var _grove_seed: int = 0
 
 
 # `tables` is a TableSet, `tile_rules` the parsed tile_rules.json.
@@ -56,6 +65,7 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 	_patches.fractal_type = FastNoiseLite.FRACTAL_FBM
 	_patches.fractal_octaves = 2
 	_patches.frequency = 1.0 / float(rules.get("patch_m", 150.0))
+	_grove_seed = SeedUtil.purpose_seed(int(generator.master_seed), "flora_groves")
 	var biome_ids: Dictionary = {}
 	var water_ids: Dictionary = {}
 	_soil_growth.resize(256)
@@ -123,6 +133,21 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 			"altitude_max": float(altitude[1]),
 			"water_mask": water_mask,
 		}
+
+		if entry.has("grove"):
+			var grove: Dictionary = entry["grove"]
+			item["grove"] = {
+				"every_m": float(grove.get("every_km", 4.0)) * 1000.0,
+				"chance": float(grove.get("chance", 0.5)),
+				"radius_min": float(grove["radius_m"][0]),
+				"radius_max": float(grove["radius_m"][1]),
+			}
+			item["cell"] = maxf(float(grove.get("spacing_m", 11.0)), 1.0)
+
+		if entry.has("young_height_m"):
+			item["young_share"] = float(entry.get("young_share", 0.0))
+			item["young_min"] = float(entry["young_height_m"][0])
+			item["young_max"] = float(entry["young_height_m"][1])
 		species.append(item)
 		_by_id[item["id"]] = item
 
@@ -202,6 +227,13 @@ func chunk_items(chunk: Vector2i) -> Dictionary:
 		var crown: float = item["crown"]
 		# Trees follow the patch field, shrubs the opposite, plants ignore it.
 		var patch_sign: float = [1.0, -1.0, 0.0][item["kind"]] * patchiness
+		var groves: Array = _groves_near(item, species_id, origin) if item.has("grove") else []
+
+		if item.has("grove") and groves.is_empty():
+			continue
+
+		if item.has("grove"):
+			patch_sign = 0.0
 		rng.seed = _mix(data.flora_seed, chunk.x, chunk.y, species_id)
 
 		for cz in range(count):
@@ -222,6 +254,11 @@ func chunk_items(chunk: Vector2i) -> Dictionary:
 
 				if chance <= 0.0:
 					continue
+
+				if not groves.is_empty():
+					if not _in_grove(groves, x, z):
+						continue
+					chance = peak + 1.0
 
 				# Trees and shrubs thin out on clay, peat, sand and other poor ground.
 				if woody:
@@ -260,7 +297,7 @@ func chunk_items(chunk: Vector2i) -> Dictionary:
 
 				# Evergreens hold the ridges and dry heights; hardwoods take the valleys
 				# and fields and crowd the evergreens out (80/20 either way).
-				if item["kind"] == KIND_TREE and item["shape"] in ["conifer", "broadleaf"]:
+				if item["kind"] == KIND_TREE and item["shape"] in ["conifer", "broadleaf"] and groves.is_empty():
 					var ridge: float = _ridge_factor(data, x, z, y)
 					var mult: float = lerpf(0.25, 1.0, ridge) if item["shape"] == "conifer" else lerpf(1.0, 0.25, ridge)
 
@@ -274,10 +311,55 @@ func chunk_items(chunk: Vector2i) -> Dictionary:
 				result["positions"].append(Vector3(x, y, z))
 				# Trees get an extra stable height spread (young and stunted to veteran) on top of the table's range.
 				var spread: float = lerpf(0.62, 1.12, rng_pick(x + 7.0, z + 3.0, species_id)) if item["kind"] == KIND_TREE else 1.0
-				result["heights"].append(lerpf(item["height_min"], item["height_max"], size) * spread)
+				if item.has("young_share") and rng_pick(x + 11.0, z + 5.0, species_id) < float(item["young_share"]):
+					result["heights"].append(lerpf(item["young_min"], item["young_max"], size))
+				else:
+					result["heights"].append(lerpf(item["height_min"], item["height_max"], size) * spread)
 				result["yaws"].append(yaw)
 
 	return result
+
+
+# The groves of a grove species that can reach the chunk at `origin`: [center, radius] pairs.
+func _groves_near(item: Dictionary, species_id: int, origin: Vector2) -> Array:
+	var grove: Dictionary = item["grove"]
+	var every: float = grove["every_m"]
+	var reach: float = grove["radius_max"]
+	var found: Array = []
+
+	for gj in range(int(floor((origin.y - reach) / every)), int(floor((origin.y + chunk_m + reach) / every)) + 1):
+		for gi in range(int(floor((origin.x - reach) / every)), int(floor((origin.x + chunk_m + reach) / every)) + 1):
+			var h: int = _mix(_grove_seed, gi, gj, species_id)
+
+			if float(h % 10007) / 10007.0 >= float(grove["chance"]):
+				continue
+
+			# Kept off the square's edges so groves never run together.
+			var fx: float = float((h >> 14) % 1000) / 1000.0
+			var fz: float = float((h >> 24) % 1000) / 1000.0
+			var fr: float = float((h >> 34) % 1000) / 1000.0
+			var radius: float = lerpf(grove["radius_min"], grove["radius_max"], fr)
+			var margin: float = minf(radius / every, 0.45)
+			var center: Vector2 = Vector2((float(gi) + lerpf(margin, 1.0 - margin, fx)) * every, (float(gj) + lerpf(margin, 1.0 - margin, fz)) * every)
+
+			if center.x + radius < origin.x or center.x - radius > origin.x + chunk_m or center.y + radius < origin.y or center.y - radius > origin.y + chunk_m:
+				continue
+
+			found.append([center, radius])
+
+	return found
+
+
+func _in_grove(groves: Array, x: float, z: float) -> bool:
+	for g in groves:
+		# A ragged edge: the radius wobbles around the grove.
+		var off: Vector2 = Vector2(x, z) - g[0]
+		var wobble: float = 1.0 + 0.15 * sin(atan2(off.y, off.x) * 5.0 + g[0].x)
+
+		if off.length() < g[1] * wobble:
+			return true
+
+	return false
 
 
 # The patch field, about -1 to 1, the same across the wrap seam.

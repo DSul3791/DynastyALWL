@@ -36,7 +36,7 @@ def main():
     models = json.load(open(args[0]))
     tex = {"conifer": load("leaf_conifer.png"), "broad": load("leaf_broad.png"), "palm": load("leaf_palm.png"), "bark": load("bark.png"),
            "birch_bark": load("bark_birch.png"), "twig": load("twig_birch.png"), "oak": load("leaf_oak.png"),
-           "smooth_bark": load("bark_smooth.png"), "willow": load("leaf_willow.png"), "rowan": load("leaf_rowan.png"), "maple": load("leaf_maple.png"), "chrome": load("bark_smooth.png")}
+           "smooth_bark": load("bark_smooth.png"), "willow": load("leaf_willow.png"), "rowan": load("leaf_rowan.png"), "maple": load("leaf_maple.png"), "chrome": load("bark_smooth.png"), "ember": load("bark.png")}
     widths = []
     for m in models:
         xs = np.concatenate([np.array(s["v"]).reshape(-1, 3)[:, 0] for s in m["surfaces"]])
@@ -97,7 +97,7 @@ def main():
                     continue
                 z = l0 * a[2] + l1 * b[2] + l2 * c[2]
                 t_uv = l0[..., None] * uv[tri[0]] + l1[..., None] * uv[tri[1]] + l2[..., None] * uv[tri[2]]
-                if mat in ("bark", "birch_bark", "smooth_bark", "chrome"):
+                if mat in ("bark", "birch_bark", "smooth_bark", "chrome", "ember"):
                     tu = (t_uv[..., 0] % 1.0) * (tw - 1)
                     tv = (t_uv[..., 1] % 1.0) * (th - 1)
                 else:
@@ -115,6 +115,27 @@ def main():
                 if mat == "twig":
                     albedo = texel[..., :3] * vc * np.array([0.30, 0.24, 0.22]) * 1.6
                     shade = 0.6 + 0.4 * abs(float(nn @ light))
+                elif mat == "ember":
+                    # Dark bark; its furrows glow orange where the vertex alpha says so.
+                    albedo = texel[..., :3] * vc * 1.8
+                    shade = 0.45 + 0.55 * max(0.0, float(nn @ light))
+                    # The same veins as the ember shader in flora_view.gd.
+                    def hash2(px, py):
+                        return np.modf(np.sin(px * 127.1 + py * 311.7) * 43758.5453)[0] % 1.0
+                    def vnoise(px, py):
+                        ix, iy = np.floor(px), np.floor(py)
+                        fx, fy = px - ix, py - iy
+                        fx, fy = fx * fx * (3 - 2 * fx), fy * fy * (3 - 2 * fy)
+                        a0 = hash2(ix, iy) * (1 - fx) + hash2(ix + 1, iy) * fx
+                        a1 = hash2(ix, iy + 1) * (1 - fx) + hash2(ix + 1, iy + 1) * fx
+                        return a0 * (1 - fy) + a1 * fy
+                    def band(v, lo, hi):
+                        return 1.0 - np.clip((np.abs(v - 0.5) - lo) / (hi - lo), 0, 1)
+                    u, v = t_uv[..., 0], t_uv[..., 1]
+                    vein = np.maximum(band(vnoise(u * 4.0, v * 0.12), 0.015, 0.05), 0.6 * band(vnoise(u * 9.0 + 7.3, v * 0.4 + 7.3), 0.01, 0.035))[..., None]
+                    a_ = float(col[tri[0]][3])
+                    albedo = albedo * shade * (1 - 0.6 * vein * a_) + vein * a_ * np.array([1.0, 0.42, 0.1]) * 1.2
+                    shade = 1.0
                 elif mat == "chrome":
                     # Rough stand-in for a mirror: the sky above, the ground below,
                     # and a hot highlight toward the sun.
