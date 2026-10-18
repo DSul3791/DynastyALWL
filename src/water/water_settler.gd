@@ -143,14 +143,14 @@ static func _pond_near(data, head: Vector2i, side: int) -> Vector2i:
 			if i < 4 or j < 4 or i >= side - 4 or j >= side - 4 or data.water_class[j * side + i] == 0:
 				continue
 
-			# The bottom of a bowl: every cell two steps around it stands well above it.
+			# The bottom of a bowl: every cell four steps around it stands well above it.
 			var floor_here: float = data.heights[j * side + i]
 			var inside: bool = true
 
 			for r in range(8):
 				var angle: float = TAU * float(r) / 8.0
 
-				if data.heights[(j + int(round(sin(angle) * 2.0))) * side + i + int(round(cos(angle) * 2.0))] < floor_here + 4.0:
+				if data.heights[(j + int(round(sin(angle) * 4.0))) * side + i + int(round(cos(angle) * 4.0))] < floor_here + 4.0:
 					inside = false
 					break
 
@@ -166,12 +166,12 @@ static func _pond_near(data, head: Vector2i, side: int) -> Vector2i:
 		var top: Vector2i = best
 		var top_height: float = data.heights[best.y * side + best.x]
 
-		for dj in range(-3, 4):
-			for di in range(-3, 4):
+		for dj in range(-15, 16):
+			for di in range(-15, 16):
 				var i2: int = best.x + di
 				var j2: int = best.y + dj
 
-				if i2 < 4 or j2 < 4 or i2 >= side - 4 or j2 >= side - 4 or di * di + dj * dj > 9:
+				if i2 < 4 or j2 < 4 or i2 >= side - 4 or j2 >= side - 4 or di * di + dj * dj > 225:
 					continue
 
 				if data.heights[j2 * side + i2] > top_height:
