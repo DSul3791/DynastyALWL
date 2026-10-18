@@ -233,7 +233,18 @@ func step() -> float:
 		_add_delta(k, -out_total)
 
 	for sp in springs:
-		_add_delta(int(sp[0]), float(sp[1]) * spring_multiplier)
+		# The spring's water is added over a 5 x 5 patch, not one square: the same amount
+		# of water, but a strong spring no longer piles into a tall column of water.
+		var centre: int = int(sp[0])
+		var share: float = float(sp[1]) * spring_multiplier / 25.0
+
+		for dj in range(-2, 3):
+			for di in range(-2, 3):
+				var ci: int = centre % side + di
+				var cj: int = centre / side + dj
+
+				if ci >= 0 and ci < side and cj >= 0 and cj < side:
+					_add_delta(cj * side + ci, share)
 
 	# Apply, then decide who works next tick.
 	for t in range(_touched.size()):
