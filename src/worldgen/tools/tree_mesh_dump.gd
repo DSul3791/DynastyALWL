@@ -37,7 +37,7 @@ func _init() -> void:
 	var table: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/tables/flora.json"))
 	var materials: Dictionary = {}
 
-	for key in ["bark", "broad", "conifer", "palm", "grass", "birch_bark", "twig", "oak", "smooth_bark", "willow"]:
+	for key in ["bark", "broad", "conifer", "palm", "grass", "birch_bark", "twig", "oak", "smooth_bark", "willow", "rowan"]:
 		var material: StandardMaterial3D = StandardMaterial3D.new()
 		material.resource_name = key
 		materials[key] = material

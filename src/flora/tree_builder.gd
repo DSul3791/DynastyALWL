@@ -22,6 +22,9 @@ const BARK_TINT_MAPLE := Color(0.46, 0.43, 0.40)      # maple: furrowed gray-bro
 const BARK_TINT_BEECH := Color(0.56, 0.56, 0.55)      # beech: smooth bark texture at full brightness
 const BARK_TINT_ALDER := Color(0.46, 0.45, 0.44)      # alder: darker gray, paler patches
 const BARK_TINT_WILLOW := Color(0.40, 0.35, 0.30)     # willow: dark, deeply furrowed gray-brown
+const BARK_TINT_ROWAN := Color(0.50, 0.47, 0.44)      # rowan: smooth gray-brown, rougher at the foot
+const BERRY_TINT_ROWAN := Color(0.78, 0.08, 0.04)     # rowan berries: scarlet (times the bark shader's light texture)
+const FLOWER_TINT_ROWAN := Color(0.72, 0.70, 0.62)    # rowan flower heads: creamy white
 const BARK_TINT_OAK := Color(0.44, 0.40, 0.36)        # oak: rugged, deeply furrowed gray-brown
 const BARK_TINT_WARDPINE := Color(0.54, 0.46, 0.38)   # wardpine: weathered silver-brown
 const BARK_TINT_PINE_LOW := Color(0.54, 0.46, 0.40)   # Scots pine: thick gray-brown plates low down
@@ -96,6 +99,8 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 			_scots_pine(bark, leaves, rng, h, crown, trunk, variant, far)
 		"wardpine":
 			_wardpine(bark, leaves, rng, h, crown, trunk, variant, far)
+		"rowan":
+			_rowan(smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season)
 		"willow":
 			_willow(bark, leaves, twigs, rng, h, crown, trunk, variant, far, season == "winter")
 		"alder":
@@ -1298,6 +1303,96 @@ static func _willow(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerat
 			var at: Vector3 = Vector3(cos(a), 0.0, sin(a)) * crown_w * rng.randf_range(0.0, 0.4) + Vector3(0.0, dome_y * rng.randf_range(0.97, 1.02), 0.0)
 			var right: Vector3 = Vector3(cos(a + PI * 0.5), 0.0, sin(a + PI * 0.5))
 			leaves.card(at - Vector3(0.0, h * 0.04, 0.0), right, Vector3.UP, crown_w * 0.25, h * 0.12, Vector3.UP, Color(0.92, 0.92, 0.92, 0.9))
+
+
+# Rowan, mountain ash (Sorbus aucuparia). From the owner's photos (2026-10-18:
+# young and mature trees in summer, autumn and winter, and close-ups of the
+# flowers and berries): compound leaves of narrow toothed leaflets
+# (leaf_rowan.png) turning orange and red in autumn; flat heads of creamy white
+# flowers in early summer and big hanging clusters of scarlet berries in autumn
+# (the game shows autumn, so the berries). A mature rowan has a short trunk
+# forking into climbing limbs under a rounded crown; a young one is a slim stem
+# with an airy upright crown. Variants: 0 and 1 mature, 2 and 3 young.
+static func _rowan(smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, variant: int, far: bool, season: String) -> void:
+	var bare: bool = season == "winter"
+	var young: bool = variant >= 2
+	var crown_w: float = maxf(crown, h * (0.24 if young else 0.36)) * rng.randf_range(0.9, 1.1)
+	var center: Vector3
+	var half_h: float
+
+	if young:
+		var lean: Vector3 = Vector3(rng.randf_range(-0.02, 0.02), 0.0, rng.randf_range(-0.02, 0.02)) * h
+		_pole(smooth, leaves, twigs, rng, Vector3.ZERO, Vector3(0.0, h * 0.95, 0.0) + lean, maxf(trunk * 0.7, h * 0.014), crown_w, h * rng.randf_range(0.25, 0.32), 7 if far else rng.randi_range(12, 15), 0.9, BARK_TINT_ROWAN.lerp(Color(0.6, 0.56, 0.5), 0.5), far, bare, 0.3)
+		center = Vector3(0.0, h * 0.62, 0.0)
+		half_h = h * 0.32
+	else:
+		var trunk_r: float = maxf(trunk, h * 0.025)
+		var fork_y: float = h * rng.randf_range(0.25, 0.32)
+		_trunk(smooth, rng, fork_y + h * 0.05, trunk_r, trunk_r * 0.8, Vector2.ZERO, BARK_TINT_ROWAN, 6 if far else 10, 1 if far else 3, 0.0 if far else 0.9)
+		var fork: Vector3 = Vector3(0.0, fork_y, 0.0)
+		center = Vector3(0.0, lerpf(fork_y, h, 0.45), 0.0)
+		half_h = h - center.y
+		var limbs: int = rng.randi_range(4, 6)
+		var phase: float = rng.randf() * TAU
+
+		for k in range(limbs):
+			phase += TAU / float(limbs) + rng.randf_range(-0.4, 0.4)
+			var out: Vector3 = Vector3(cos(phase), 0.0, sin(phase))
+			var rise: float = deg_to_rad(78.0 if k == 0 else rng.randf_range(48.0, 62.0))
+			var dir: Vector3 = (out * cos(rise) + Vector3.UP * sin(rise)).normalized()
+			var length: float = (h - fork_y) * (0.25 if k == 0 else rng.randf_range(0.19, 0.24))
+			_maple_limb(smooth, leaves, twigs, rng, fork + Vector3(0.0, rng.randf_range(-0.04, 0.03) * h, 0.0), dir, length, trunk_r * 0.45, 0, 2 if far else 3, center, crown_w, h, far, bare, 0.2, BARK_TINT_ROWAN)
+
+		_skirt_limbs(rng, fork_y, Vector2.ZERO, trunk_r, crown_w, far, func(from: Vector3, dir: Vector3, length: float, r: float) -> void:
+			_maple_limb(smooth, leaves, twigs, rng, from, dir, length, r, 0, 1 if far else 2, center, crown_w, h, far, bare, -0.3, BARK_TINT_ROWAN))
+
+	if far or bare:
+		return
+
+	# Berry clusters in autumn (the game's season), flower heads in summer; the
+	# flowers only on mature trees.
+	var flowers: bool = season == "summer"
+
+	if flowers and young:
+		return
+
+	for n in range(rng.randi_range(8, 12) if young else rng.randi_range(16, 24)):
+		# On the outside of the crown, mostly its upper part.
+		var a: float = rng.randf() * TAU
+		var v: float = rng.randf_range(-0.5, 0.6)
+		var ring: float = sqrt(maxf(1.0 - v * v, 0.0))
+		var at: Vector3 = center + Vector3(cos(a) * ring * crown_w * 0.8, v * half_h * 0.8, sin(a) * ring * crown_w * 0.8)
+		# A little larger than life (real clusters 10 to 15 cm) so they read in the storybook look.
+		_cluster(smooth, rng, at, rng.randf_range(0.28, 0.4), FLOWER_TINT_ROWAN if flowers else BERRY_TINT_ROWAN, flowers)
+
+
+# A cluster of small round fruit (or a flat flower head): little diamonds
+# heaped into a dome that hangs (berries) or sits flat (flowers).
+static func _cluster(acc: Acc, rng: RandomNumberGenerator, at: Vector3, radius: float, color: Color, flat: bool) -> void:
+	var count: int = rng.randi_range(8, 10)
+	var bead: float = radius * 0.36
+
+	for k in range(count):
+		var a: float = rng.randf() * TAU
+		var r: float = sqrt(rng.randf()) * radius
+		var drop: float = (radius - r) * (0.15 if flat else 0.8)
+		var p: Vector3 = at + Vector3(cos(a) * r, -drop if not flat else -drop * 0.3, sin(a) * r)
+		var shade: float = rng.randf_range(0.85, 1.15)
+		var c: Color = Color(color.r * shade, color.g * shade, color.b * shade)
+		var tips: Array[Vector3] = [Vector3.UP, Vector3.DOWN, Vector3.RIGHT, Vector3.LEFT, Vector3.FORWARD, Vector3.BACK]
+		var first: int = acc.v.size()
+		for d in tips:
+			acc.vert(p + d * bead, d, Vector2(0.5 + d.x * 0.5, 0.5 + d.z * 0.5), c)
+		# Eight faces of an octahedron: (up or down) x the four sides.
+		for pole in [0, 1]:
+			var ring: Array[int] = [2, 4, 3, 5]
+			for q in range(4):
+				var i0: int = first + ring[q]
+				var i1: int = first + ring[(q + 1) % 4]
+				if pole == 0:
+					acc.tri(first, i1, i0)
+				else:
+					acc.tri(first + 1, i0, i1)
 
 
 static func acc_bough(acc: Acc, at: Vector3, right: Vector3, up: Vector3, half_w: float, half_h: float, normal: Vector3, color: Color) -> void:

@@ -2,7 +2,7 @@
 
 Run: python3 assets/trees/make_tree_textures.py
 Writes leaf_broad.png, leaf_conifer.png, leaf_palm.png, bark.png, bark_birch.png
-twig_birch.png, leaf_oak.png, bark_smooth.png and leaf_willow.png next to this file.
+twig_birch.png, leaf_oak.png, bark_smooth.png, leaf_willow.png and leaf_rowan.png next to this file.
 Foliage and bark are painted in light neutral values; the tree shader multiplies
 them by a per-tree color (autumn leaf color, species green, bark brown).
 Replace with real hand-painted art under the same names and sizes any time.
@@ -205,6 +205,36 @@ def willow(name, size, seed):
     finish(rgb, alpha, name, size)
 
 
+def rowan(name, size, seed):
+    # Rowan: compound leaves, a stalk with six or seven pairs of narrow,
+    # pointed leaflets and one at the tip (owner's photos, 2026-10-18).
+    rng = random.Random(seed)
+    w, h = size[0] * SS, size[1] * SS
+    rgb = Image.new("RGB", (w, h), grey(150))
+    alpha = Image.new("L", (w, h), 0)
+    rd, ad = ImageDraw.Draw(rgb), ImageDraw.Draw(alpha)
+    for n in range(16):
+        r = rng.random() ** 0.6 * 0.3
+        a = rng.uniform(0, math.tau)
+        cx, cy = w * (0.5 + r * math.cos(a)), h * (0.5 + r * math.sin(a))
+        angle = rng.uniform(0, math.tau)
+        length = w * rng.uniform(0.38, 0.5)
+        x0, y0 = cx - math.cos(angle) * length / 2, cy - math.sin(angle) * length / 2
+        ca, sa = math.cos(angle), math.sin(angle)
+        rd.line([(x0, y0), (x0 + ca * length, y0 + sa * length)], fill=grey(110), width=max(2, int(w * 0.006)))
+        ad.line([(x0, y0), (x0 + ca * length, y0 + sa * length)], fill=255, width=max(2, int(w * 0.006)))
+        pairs = rng.choice((6, 7))
+        for k in range(pairs):
+            t = 0.12 + 0.8 * k / pairs
+            px, py = x0 + ca * length * t, y0 + sa * length * t
+            ll = length * 0.24
+            for side in (-1, 1):
+                la = angle + side * 1.05
+                leaf(rd, ad, px, py, ll, ll * 0.3, la, rng.uniform(130, 235))
+        leaf(rd, ad, x0 + ca * length * 0.92, y0 + sa * length * 0.92, length * 0.22, length * 0.066, angle, rng.uniform(130, 235))
+    finish(rgb, alpha, name, size)
+
+
 def smooth_bark(name, size, seed):
     # Beech: smooth, pale elephant-gray bark with soft mottling and a few faint
     # horizontal wrinkles; fully opaque, tiles both ways.
@@ -314,4 +344,5 @@ if __name__ == "__main__":
     oak("leaf_oak.png", (256, 256), 13)
     smooth_bark("bark_smooth.png", (128, 256), 17)
     willow("leaf_willow.png", (256, 256), 19)
+    rowan("leaf_rowan.png", (256, 256), 23)
     print("wrote tree textures to", HERE)

@@ -1973,6 +1973,15 @@
 			"display": "Rowan",
 			"kind": "tree",
 			"shape": "broadleaf",
+			"model": "rowan",
+			"leaf": "rowan",
+			"young_below_m": 8,
+			"autumn_colors": [
+				[0.96, 0.42, 0.08],
+				[0.92, 0.3, 0.06],
+				[0.98, 0.56, 0.1],
+				[0.9, 0.22, 0.08]
+			],
 			"height_m": [
 				6,
 				14
