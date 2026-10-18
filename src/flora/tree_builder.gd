@@ -39,6 +39,7 @@ const CATKIN_TINT := Color(0.78, 0.74, 0.52)          # chestnut catkins: long a
 const BURR_TINT := Color(0.50, 0.52, 0.16)            # chestnut burrs: spiny green-gold
 const NUT_TINT := Color(0.36, 0.16, 0.06)             # chestnuts: glossy brown
 const CHROME_TINT := Color(0.56, 0.56, 0.57)          # mirrorbark: polished chrome (the chrome material does the shine)
+const BARK_TINT_HEARTHWOOD := Color(0.56, 0.36, 0.26)  # hearthwood: reddish brown, fine vertical ridges
 const BARK_TINT_WALNUT := Color(0.52, 0.51, 0.49)     # walnut: pale gray, straight deep furrows
 const WALNUT_CATKIN_TINT := Color(0.56, 0.62, 0.18)   # walnut catkins: long, yellow-green
 const WALNUT_HUSK_TINT := Color(0.38, 0.52, 0.16)     # walnuts in their green husks
@@ -131,6 +132,8 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 			_alder(smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season == "winter")
 		"beech":
 			_beech(smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season == "winter")
+		"hearthwood":
+			_hearthwood(bark, leaves, twigs, rng, h, variant, far, season == "winter")
 		"mirrorbark":
 			_mirrorbark(chrome, leaves, twigs, rng, h, crown, trunk, variant, far, season == "winter")
 		"walnut":
@@ -1137,6 +1140,39 @@ static func _chestnut(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGener
 			_bead(bark, at + Vector3(0.0, 0.13, 0.0), Vector3(0.09, 0.09, 0.09), NUT_TINT)
 
 
+# Hearthwood (fantasy). From the owner's description and pictures (2026-10-18):
+# tall and straight like a softwood, a perfectly round trunk about 30 cm
+# (12 in) across for most of its height, tapering only in the crown, with
+# tight reddish-brown bark in fine vertical ridges; a clear central leader to
+# the top; many thin, light limbs reaching out and slightly up instead of a few
+# heavy ones, carrying small oval leaves in a narrow, elongated crown. Amber,
+# copper and golden orange in autumn. The best firewood tree: many good logs.
+# Variants: 0 and 1 mature, 2 and 3 young (young_below_m picks them).
+static func _hearthwood(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, variant: int, far: bool, bare: bool) -> void:
+	var young: bool = variant >= 2
+	var trunk_r: float = 0.15 if not young else clampf(h * 0.012, 0.05, 0.12)
+	var crown_w: float = h * (0.2 if young else 0.21) * rng.randf_range(0.9, 1.1)
+	var first: int = bark.v.size()
+	var lean: Vector3 = Vector3(rng.randf_range(-0.01, 0.01), 0.0, rng.randf_range(-0.01, 0.01)) * h
+	var low: float = h * (rng.randf_range(0.28, 0.34) if young else rng.randf_range(0.36, 0.42))
+	var limbs: int = (8 if far else rng.randi_range(14, 17)) if young else (10 if far else rng.randi_range(22, 28))
+	_pole(bark, leaves, twigs, rng, Vector3.ZERO, Vector3(0.0, h, 0.0) + lean, trunk_r, crown_w, low, limbs, 0.7, BARK_TINT_HEARTHWOOD, far, bare, 0.25, 0.75)
+
+	if far:
+		return
+
+	# Fine vertical ridges on the trunk (the first part _pole builds).
+	for k in range(first, bark.v.size()):
+		var p: Vector3 = bark.v[k]
+		if Vector2(p.x - lean.x * p.y / h, p.z - lean.z * p.y / h).length() > trunk_r * 1.4:
+			continue
+		var n: Vector3 = bark.n[k]
+		var ridge: float = sin(atan2(n.z, n.x) * 14.0)
+		bark.v[k] += n * ridge * trunk_r * 0.04
+		var shade: float = 1.0 + ridge * 0.1
+		bark.c[k] = Color(BARK_TINT_HEARTHWOOD.r * shade, BARK_TINT_HEARTHWOOD.g * shade, BARK_TINT_HEARTHWOOD.b * shade)
+
+
 # Mirrorbark (fantasy). From the owner's pictures (2026-10-18, young and mature
 # in four seasons): an ordinary hardwood in shape and leaf, orange in autumn,
 # but its bark is polished chrome in faceted mirror patches (the "chrome"
@@ -1322,11 +1358,19 @@ static func _beech_young(smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumber
 # A slim, straight stem from `base` to `top` with short limbs climbing along it
 # from height `low` up, each carrying leaf sprays (young beech and alder, the
 # stems of a mature alder). `leafy` scales the spray size (alder is sparser).
-static func _pole(acc: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, base: Vector3, top: Vector3, trunk_r: float, crown_w: float, low: float, limbs: int, leafy: float, tint: Color, far: bool, bare: bool, flare: float) -> void:
+# `taper_from` (0 to 1): keep the stem its full width up to that fraction of its
+# height and taper only above it (the hearthwood); 0 tapers the whole way.
+static func _pole(acc: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, base: Vector3, top: Vector3, trunk_r: float, crown_w: float, low: float, limbs: int, leafy: float, tint: Color, far: bool, bare: bool, flare: float, taper_from: float = 0.0) -> void:
 	var height: float = top.y - base.y
 	var lean: Vector2 = Vector2(top.x - base.x, top.z - base.z)
 	var first: int = acc.v.size()
 	_trunk(acc, rng, height, trunk_r, trunk_r * 0.12, Vector2.ZERO, tint, 5 if far else 8, 1 if far else 6, 0.0 if far else flare)
+	if taper_from > 0.0:
+		for k in range(first, acc.v.size()):
+			var t: float = clampf(acc.v[k].y / height, 0.0, 1.0)
+			var now: float = lerpf(1.0, 0.12, t)
+			var want: float = 1.0 if t < taper_from else lerpf(1.0, 0.12, (t - taper_from) / (1.0 - taper_from))
+			acc.v[k] = Vector3(acc.v[k].x * want / now, acc.v[k].y, acc.v[k].z * want / now)
 	# _trunk builds upright at the origin; lean it toward `top` and move it to `base`.
 	for k in range(first, acc.v.size()):
 		var t: float = acc.v[k].y / height

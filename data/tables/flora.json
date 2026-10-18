@@ -6433,14 +6433,19 @@
 			"display": "Hearthwood",
 			"kind": "tree",
 			"shape": "broadleaf",
-			"height_m": [11, 22],
-			"crown_m": 4.0,
-			"trunk_m": 0.45,
-			"color": [
-				0.55,
-				0.32,
-				0.18
+			"model": "hearthwood",
+			"young_below_m": 10,
+			"young_color": [0.5, 0.66, 0.26],
+			"autumn_colors": [
+				[0.92, 0.6, 0.14],
+				[0.8, 0.42, 0.14],
+				[0.95, 0.7, 0.18],
+				[0.86, 0.5, 0.12]
 			],
+			"height_m": [5, 26],
+			"crown_m": 4.0,
+			"trunk_m": 0.15,
+			"color": [0.3, 0.44, 0.18],
 			"per_hectare": {
 				"temperate_forest": 0.15,
 				"mixed_forest": 0.15
@@ -6465,8 +6470,7 @@
 			"familiarity": 20,
 			"uses": [
 				"fuel",
-				"timber",
-				"charcoal"
+				"timber", "beams", "charcoal"
 			],
 			"look_alikes": [
 				"oak",
