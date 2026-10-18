@@ -45,6 +45,12 @@ static func build(data, rate: float, generator, seed_painted: bool = true):
 	var placed: Array = []
 
 	for head in _find_heads(data, side):
+		# Dry start (owner, 2026-10-18): water comes only from head ponds. A head with no
+		# pond (a river entering from the next tile, a short brook) got a spring on bare
+		# hillside that flooded the flatland.
+		if not seed_painted and _pond_near(data, head, side).x < 0:
+			continue
+
 		var spot: Vector2i = _plateau_near(sim, head, side, data)
 		var duplicate: bool = false
 
@@ -124,7 +130,7 @@ static func _plateau_near(sim, head: Vector2i, side: int, data = null) -> Vector
 
 			for r in range(8):
 				var angle: float = TAU * float(r) / 8.0
-				var h: float = sim.ground[(j + int(round(sin(angle) * 6.0))) * side + i + int(round(cos(angle) * 6.0))]
+				var h: float = sim.ground[(j + int(round(sin(angle) * 10.0))) * side + i + int(round(cos(angle) * 10.0))]
 				low = minf(low, h)
 				high = maxf(high, h)
 
@@ -153,17 +159,17 @@ static func _pond_near(data, head: Vector2i, side: int) -> Vector2i:
 			var i: int = head.x + di
 			var j: int = head.y + dj
 
-			if i < 8 or j < 8 or i >= side - 8 or j >= side - 8 or data.water_class[j * side + i] == 0:
+			if i < 12 or j < 12 or i >= side - 12 or j >= side - 12 or data.water_class[j * side + i] == 0:
 				continue
 
-			# The bottom of a bowl: every cell six steps around it stands well above it.
+			# The bottom of a bowl: every cell ten steps (80 m) around it stands at least 15 m above it, which a river gorge never does.
 			var floor_here: float = data.heights[j * side + i]
 			var inside: bool = true
 
 			for r in range(8):
 				var angle: float = TAU * float(r) / 8.0
 
-				if data.heights[(j + int(round(sin(angle) * 6.0))) * side + i + int(round(cos(angle) * 6.0))] < floor_here + 4.0:
+				if data.heights[(j + int(round(sin(angle) * 10.0))) * side + i + int(round(cos(angle) * 10.0))] < floor_here + 15.0:
 					inside = false
 					break
 
