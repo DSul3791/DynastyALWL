@@ -16,6 +16,7 @@ var _pid: int = -1
 var _started_unix: int = 0
 var _started_msec: int = 0
 var _log_path: String = ""
+var _settle_log_path: String = ""     # its own log, so the water settle never overwrites the tile bake log
 var _stage: int = 1               # 1 baking tiles, 2 settling the water
 var _settle_msec: int = 0
 var _baked: int = 0
@@ -53,15 +54,15 @@ func status() -> String:
 	if _stage == 2:
 		var ticks: int = 0
 
-		if FileAccess.file_exists(_log_path):
-			var text: String = FileAccess.get_file_as_string(_log_path)
+		if FileAccess.file_exists(_settle_log_path):
+			var text: String = FileAccess.get_file_as_string(_settle_log_path)
 			var at: int = text.rfind("  tick ")
 
 			if at >= 0:
 				ticks = int(text.substr(at + 7).get_slice(":", 0)) + 1
 
 		var seconds: int = (Time.get_ticks_msec() - _settle_msec) / 1000
-		return "Settling the water: tick %d of %d, %d s so far" % [ticks, SETTLE_TICKS, seconds]
+		return "Step 2 of 2, settling the water: tick %d of %d, %d s so far (step 1: all %d tiles are baked)" % [ticks, SETTLE_TICKS, seconds, _baked]
 
 	var done: int = 0
 	var total: int = TILES.split(";").size()
@@ -70,12 +71,12 @@ func status() -> String:
 		done = FileAccess.get_file_as_string(_log_path).count(" baked in ")
 
 	if done == 0:
-		return "Baking starter tiles: starting up, about 6 minutes to go"
+		return "Step 1 of 2, baking starter tiles: starting up (then the water settles, about 5 more minutes)"
 
 	# Time left from the pace so far (the first tile also carries the setup).
 	var elapsed_min: float = float(Time.get_ticks_msec() - _started_msec) / 60000.0
 	var left_min: float = elapsed_min / float(done) * float(total - done)
-	return "Baking starter tiles: %d of %d done, about %d min left" % [done, total, maxi(int(ceil(left_min)), 1)]
+	return "Step 1 of 2, baking starter tiles: %d of %d done, about %d min left (then the water settles, about 5 more minutes)" % [done, total, maxi(int(ceil(left_min)), 1)]
 
 
 # "" while nothing new to say; a message once the bake and the water settle have ended.
@@ -100,9 +101,10 @@ func poll() -> String:
 		_stage = 2
 		_settle_msec = Time.get_ticks_msec()
 		_started_unix = int(Time.get_unix_time_from_system())
+		_settle_log_path = ProjectSettings.globalize_path("user://settle.log")
 		_pid = OS.create_process(OS.get_executable_path(), [
 			"--headless", "--path", ProjectSettings.globalize_path("res://"),
-			"--log-file", _log_path,
+			"--log-file", _settle_log_path,
 			"--script", "res://src/worldgen/tools/settle_water.gd",
 			"--", "--tile=3,4", "--ticks=%d" % SETTLE_TICKS, "--rate=0.6",
 		])
@@ -115,5 +117,5 @@ func poll() -> String:
 
 	running = false
 	var settled: bool = FileAccess.file_exists(ProjectSettings.globalize_path("res://" + WATER_FILE)) and FileAccess.get_modified_time(ProjectSettings.globalize_path("res://" + WATER_FILE)) >= _started_unix
-	var note: String = "the water is settled" if settled else "the water settle did not finish (see %s)" % _log_path
+	var note: String = "the water is settled" if settled else "the water settle did not finish (see %s)" % _settle_log_path
 	return "FINISHED: baked %d tiles and %s. In GitHub Desktop commit everything under worlds/base_world (tiles and water) and push, then restart the game." % [_baked, note]
