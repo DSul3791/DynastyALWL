@@ -2,7 +2,7 @@
 
 Run: python3 assets/trees/make_tree_textures.py
 Writes leaf_broad.png, leaf_conifer.png, leaf_palm.png, bark.png, bark_birch.png
-and twig_birch.png next to this file.
+twig_birch.png, leaf_oak.png and bark_smooth.png next to this file.
 Foliage and bark are painted in light neutral values; the tree shader multiplies
 them by a per-tree color (autumn leaf color, species green, bark brown).
 Replace with real hand-painted art under the same names and sizes any time.
@@ -139,6 +139,68 @@ def bark(name, size, seed):
     finish(rgb, alpha, name, size)
 
 
+def oak_leaf(rd, ad, cx, cy, length, angle, shade, rng):
+    # A white-oak leaf (owner's leaf photos, 2026-10-18): long and narrow, a
+    # tapered base, and deep rounded lobes, three or four a side.
+    pts_l, pts_r = [], []
+    lobes = rng.choice((3, 4))
+    n = 60
+    for i in range(n + 1):
+        t = i / n
+        envelope = math.sin(min(t * 1.15, 1.0) * math.pi) ** 0.7
+        lobe = 0.22 + 0.78 * abs(math.sin((t * (lobes + 0.5)) * math.pi)) ** 0.6
+        half = length * 0.3 * envelope * lobe
+        pts_l.append((t * length, -half))
+        pts_r.append((t * length, half * (0.9 + 0.2 * rng.random())))
+    pts = pts_l + pts_r[::-1]
+    ca, sa = math.cos(angle), math.sin(angle)
+    poly = [(cx + x * ca - y * sa, cy + x * sa + y * ca) for x, y in pts]
+    rd.polygon(poly, fill=grey(shade))
+    ad.polygon(poly, fill=255)
+    rd.line([(cx, cy), (cx + length * ca, cy + length * sa)], fill=grey(shade * 0.75), width=max(1, int(length * 0.025)))
+
+
+def oak(name, size, seed):
+    rng = random.Random(seed)
+    w, h = size[0] * SS, size[1] * SS
+    rgb = Image.new("RGB", (w, h), grey(150))
+    alpha = Image.new("L", (w, h), 0)
+    rd, ad = ImageDraw.Draw(rgb), ImageDraw.Draw(alpha)
+    for n in range(70):
+        r = rng.random() ** 0.55 * 0.42
+        a = rng.uniform(0, math.tau)
+        cx, cy = w * (0.5 + r * math.cos(a)), h * (0.5 + r * math.sin(a))
+        length = w * rng.uniform(0.22, 0.3)
+        angle = rng.uniform(0, math.tau)
+        shade = rng.uniform(120, 235) * (1.0 - 0.3 * r)
+        oak_leaf(rd, ad, cx - math.cos(angle) * length / 2, cy - math.sin(angle) * length / 2, length, angle, shade, rng)
+    finish(rgb, alpha, name, size)
+
+
+def smooth_bark(name, size, seed):
+    # Beech: smooth, pale elephant-gray bark with soft mottling and a few faint
+    # horizontal wrinkles; fully opaque, tiles both ways.
+    rng = random.Random(seed)
+    w, h = size[0] * SS, size[1] * SS
+    rgb = Image.new("RGB", (w, h), grey(196))
+    d = ImageDraw.Draw(rgb)
+    for n in range(90):
+        x, y = rng.uniform(0, w), rng.uniform(0, h)
+        rx, ry = rng.uniform(0.05, 0.22) * w, rng.uniform(0.02, 0.07) * h
+        shade = rng.uniform(165, 220)
+        for dx in (-w, 0, w):
+            for dy in (-h, 0, h):
+                d.ellipse([x + dx - rx, y + dy - ry, x + dx + rx, y + dy + ry], fill=grey(shade))
+    for n in range(30):
+        x, y = rng.uniform(0, w), rng.uniform(0, h)
+        length = rng.uniform(0.05, 0.18) * w
+        for dx in (-w, 0, w):
+            for dy in (-h, 0, h):
+                d.line([(x + dx, y + dy), (x + dx + length, y + dy + rng.uniform(-2, 2))], fill=grey(rng.uniform(140, 170)), width=2)
+    alpha = Image.new("L", (w, h), 255)
+    finish(rgb, alpha, name, size)
+
+
 def birch_bark(name, size, seed):
     # Paper birch: chalk-white bark ringed with thin dark lenticel dashes, and
     # black wedge-shaped patches below old branch scars; fully opaque, tiles
@@ -221,4 +283,6 @@ if __name__ == "__main__":
     bark("bark.png", (128, 256), 2)
     birch_bark("bark_birch.png", (128, 256), 7)
     twig_birch("twig_birch.png", (256, 256), 9)
+    oak("leaf_oak.png", (256, 256), 13)
+    smooth_bark("bark_smooth.png", (128, 256), 17)
     print("wrote tree textures to", HERE)

@@ -36,6 +36,9 @@ render_mode cull_disabled, diffuse_burley, specular_disabled;
 uniform sampler2D leaves : source_color, filter_linear_mipmap, repeat_disable;
 uniform float sway = 0.012;
 uniform float flutter = 0.06;
+// Leaves are not opaque: about 40% of the sunlight comes through, so a crown
+// glows when the sun is behind it (owner, 2026-10-18: autumn leaves shine).
+uniform float backlight = 0.4;
 varying vec3 tint;
 varying vec3 view_normal;
 
@@ -58,6 +61,7 @@ void fragment() {
 	// Light every card the same from both sides, using the crown's soft normals.
 	NORMAL = view_normal;
 	ALBEDO = t.rgb * COLOR.rgb * tint;
+	BACKLIGHT = ALBEDO * backlight;
 	ROUGHNESS = 1.0;
 }
 """
@@ -186,6 +190,9 @@ func setup(tables, tile_rules: Dictionary) -> void:
 			"tint": _plant_tint(entry, c),
 		}
 
+		if entry.has("young_below_m"):
+			_species[int(entry["id"])]["young_below"] = float(entry["young_below_m"])
+
 		if entry.has("autumn_colors"):
 			var palette: Array[Color] = []
 			for ac in entry["autumn_colors"]:
@@ -212,8 +219,12 @@ func _make_tree_materials() -> void:
 	birch_material.shader = bark
 	birch_material.set_shader_parameter("bark", _load_texture("res://assets/trees/bark_birch.png"))
 	_tree_materials["birch_bark"] = birch_material
+	var smooth_material: ShaderMaterial = ShaderMaterial.new()
+	smooth_material.shader = bark
+	smooth_material.set_shader_parameter("bark", _load_texture("res://assets/trees/bark_smooth.png"))
+	_tree_materials["smooth_bark"] = smooth_material
 
-	for pair in [["broad", "res://assets/trees/leaf_broad.png"], ["conifer", "res://assets/trees/leaf_conifer.png"], ["palm", "res://assets/trees/leaf_palm.png"], ["grass", "res://assets/grass/grass_tall.png"], ["twig", "res://assets/trees/twig_birch.png"]]:
+	for pair in [["broad", "res://assets/trees/leaf_broad.png"], ["conifer", "res://assets/trees/leaf_conifer.png"], ["palm", "res://assets/trees/leaf_palm.png"], ["grass", "res://assets/grass/grass_tall.png"], ["twig", "res://assets/trees/twig_birch.png"], ["oak", "res://assets/trees/leaf_oak.png"]]:
 		var material: ShaderMaterial = ShaderMaterial.new()
 		material.shader = foliage
 		material.set_shader_parameter("leaves", _load_texture(pair[1]))
@@ -221,9 +232,12 @@ func _make_tree_materials() -> void:
 
 	# Conifer boughs hang from the trunk, so they sway less; palms sway more.
 	_tree_materials["conifer"].set_shader_parameter("sway", 0.006)
+	_tree_materials["conifer"].set_shader_parameter("backlight", 0.25)   # needles are denser
 	_tree_materials["palm"].set_shader_parameter("sway", 0.02)
 	_tree_materials["grass"].set_shader_parameter("sway", 0.09)
 	_tree_materials["grass"].set_shader_parameter("flutter", 0.01)
+	_tree_materials["grass"].set_shader_parameter("backlight", 0.3)
+	_tree_materials["twig"].set_shader_parameter("backlight", 0.0)   # bare twigs are solid wood
 
 
 # A painted texture, imported by the editor or else read straight from the file.
@@ -531,6 +545,11 @@ func _refresh(chunk: Vector2i, position: Vector3) -> void:
 		var p: Vector3 = items["positions"][n]
 		var part_m: float = PART_M[info["kind"]]
 		var variant: int = (ids[n] * 2654435761 >> 5) % int(info["near"].size())
+
+		if info.has("young_below"):
+			# First half of the variants mature, second half young (beech).
+			var half: int = int(info["near"].size()) / 2
+			variant = variant % half + (half if float(items["heights"][n]) < float(info["young_below"]) else 0)
 		var is_near: int = 1 if (int(info["kind"]) != KIND_PLANT and (level & (16 << int(info["kind"]))) != 0) else 0
 		var key: Array = [species_id, int(floor(p.x / part_m)), int(floor(p.z / part_m)), variant, is_near]
 
