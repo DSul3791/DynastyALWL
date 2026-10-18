@@ -129,7 +129,7 @@ static func _plateau_near(sim, head: Vector2i, side: int, data = null) -> Vector
 	return best
 
 
-# The middle of the head pond near a river head (the pond holds the spring's water and
+# The uphill rim of the head pond near a river head (the pond holds the spring's water and
 # spills it into the river), or (-1, -1) when there is none close by.
 static func _pond_near(data, head: Vector2i, side: int) -> Vector2i:
 	var best: Vector2i = Vector2i(-1, -1)
@@ -159,5 +159,25 @@ static func _pond_near(data, head: Vector2i, side: int) -> Vector2i:
 			if inside and dist < best_dist:
 				best_dist = dist
 				best = Vector2i(i, j)
+
+	# Springs push water only to their own height: the spring sits on the highest ground
+	# around the bowl (its uphill rim) and the water runs down into the pond and fills it.
+	if best.x >= 0:
+		var top: Vector2i = best
+		var top_height: float = data.heights[best.y * side + best.x]
+
+		for dj in range(-3, 4):
+			for di in range(-3, 4):
+				var i2: int = best.x + di
+				var j2: int = best.y + dj
+
+				if i2 < 4 or j2 < 4 or i2 >= side - 4 or j2 >= side - 4 or di * di + dj * dj > 9:
+					continue
+
+				if data.heights[j2 * side + i2] > top_height:
+					top_height = data.heights[j2 * side + i2]
+					top = Vector2i(i2, j2)
+
+		best = top
 
 	return best
