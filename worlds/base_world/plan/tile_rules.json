@@ -969,7 +969,7 @@
 			{"wavelength_m": 30, "amplitude_m": 0.7},
 			{"wavelength_m": 9, "amplitude_m": 0.2}
 		],
-		"sim_water": {"tiles": ["3,4"], "river_carve_m": 3.5, "bank_carve_m": 1.8, "lake_slope_m_per_cell": 0.5, "lake_max_m": 3.0},
+		"sim_water": {"tiles": ["3,4"], "river_carve_m": 6.0, "bank_carve_m": 2.5, "lake_slope_m_per_cell": 0.5, "lake_max_m": 3.0},
 		"sdf_band_voxels": 3,
 		"placeholder_depth_m": -200,
 		"cave_max_lod": 2,
