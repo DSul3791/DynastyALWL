@@ -13,7 +13,7 @@ const WaterStore := preload("res://src/water/water_store.gd")
 
 const RATE_STEP := 1.1            # each + or - key press changes the rate by about 10 %
 const RATE_MIN := 0.1
-const RATE_MAX := 10.0
+const RATE_MAX := 5.0
 const PUBLISH_TICKS := 15
 const RUN_TICKS := 200            # ticks to run after each change, then the water rests
 
@@ -99,7 +99,7 @@ func _run() -> void:
 			continue
 
 		sim.spring_multiplier = multiplier
-		sim.speed_multiplier = clampf(multiplier, 0.25, 2.0)
+		sim.speed_multiplier = clampf(multiplier, 0.25, 1.2)
 		sim.step()
 		since += 1
 

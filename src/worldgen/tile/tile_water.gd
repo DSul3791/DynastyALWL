@@ -641,7 +641,8 @@ func _carve_guides(rivers: Array) -> void:
 					best_k = k
 					best_low = low
 
-			if best_k >= 0:
+			# No flat ground close by: no pond (it would be a terrace cut into a hillside).
+			if best_k >= 0 and best_range <= float(_rules.get("head_pond_max_range_m", 4.0)):
 				var scale: float = clampf(8.0 / maxf(best_range, 8.0), 0.45, 1.0)
 				var bed_level: float = best_low - 0.75 * pond_depth - 0.4
 				_stamp_at(carved, points[best_k], pond_width * scale, pond_depth, bed_level, slope * 0.4, areas[best_k] / cell_km2, best_flow)

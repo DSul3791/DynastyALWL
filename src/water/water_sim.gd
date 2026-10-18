@@ -140,8 +140,10 @@ func step() -> float:
 	var count: int = _active.size()
 	var width: int = side
 	var area: float = spacing_m * spacing_m
-	var spread: float = minf(SPREAD_RATE * speed_multiplier, 0.5)
-	var fall: float = minf(FALL_RATE * speed_multiplier, 0.5)
+	# Past about 0.3 per neighbor a level overshoots its neighbors more each tick and
+	# the water piles into spikes, so the speed has a ceiling.
+	var spread: float = minf(SPREAD_RATE * speed_multiplier, 0.3)
+	var fall: float = minf(FALL_RATE * speed_multiplier, 0.45)
 
 	_touched.clear()
 

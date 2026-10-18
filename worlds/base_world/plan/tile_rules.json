@@ -54,6 +54,7 @@
 		"head_taper_min": 0.4,
 		"head_pond_width_m": 80,
 		"head_pond_depth_m": 3.0,
+		"head_pond_max_range_m": 4.0,
 		"fall_slope": 0.3,
 		"fall_widen_from_slope": 0.15,
 		"fall_widen_rate": 3.0,
