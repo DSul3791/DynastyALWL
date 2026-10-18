@@ -167,7 +167,21 @@ func get_tile(coord: Vector2i):
 	var path: String = "%s/tile_%d_%d.tile" % [tiles_dir, coord.x, coord.y]
 
 	if FileAccess.file_exists(path):
-		var error: String = data.load_file(path, coord, tile_size_m, _rules, _rock_ids, _resource_ids)
+		# The tile file is read in several passes; a bake that replaces it in between would
+		# mix two versions. Reload until the file is the same before and after the read.
+		var error: String = ""
+
+		for attempt in range(4):
+			var stamp: int = FileAccess.get_modified_time(path)
+			var length: int = _file_length(path)
+			data = DataScript.new()
+			error = data.load_file(path, coord, tile_size_m, _rules, _rock_ids, _resource_ids)
+
+			if FileAccess.get_modified_time(path) == stamp and _file_length(path) == length:
+				break
+
+			error = "%s changed while it was being read" % path
+			OS.delay_msec(500)
 
 		if error != "":
 			# A tile file that exists but would not load (for example while a bake is
@@ -193,6 +207,17 @@ func get_tile(coord: Vector2i):
 
 	_mutex.unlock()
 	return data
+
+
+func _file_length(path: String) -> int:
+	var file: FileAccess = FileAccess.open(path, FileAccess.READ)
+
+	if file == null:
+		return -1
+
+	var length: int = file.get_length()
+	file.close()
+	return length
 
 
 # ---------------------------------------------------------------- surface
