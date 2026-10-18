@@ -7150,8 +7150,10 @@
 			"kind": "tree",
 			"shape": "broadleaf",
 			"model": "maple",
+			"leaf": "maple",
+			"young_below_m": 10,
 			"height_m": [
-				12,
+				5,
 				26
 			],
 			"crown_m": 5.0,

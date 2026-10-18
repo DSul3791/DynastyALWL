@@ -36,7 +36,7 @@ def main():
     models = json.load(open(args[0]))
     tex = {"conifer": load("leaf_conifer.png"), "broad": load("leaf_broad.png"), "palm": load("leaf_palm.png"), "bark": load("bark.png"),
            "birch_bark": load("bark_birch.png"), "twig": load("twig_birch.png"), "oak": load("leaf_oak.png"),
-           "smooth_bark": load("bark_smooth.png"), "willow": load("leaf_willow.png"), "rowan": load("leaf_rowan.png")}
+           "smooth_bark": load("bark_smooth.png"), "willow": load("leaf_willow.png"), "rowan": load("leaf_rowan.png"), "maple": load("leaf_maple.png")}
     widths = []
     for m in models:
         xs = np.concatenate([np.array(s["v"]).reshape(-1, 3)[:, 0] for s in m["surfaces"]])

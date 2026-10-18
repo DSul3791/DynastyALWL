@@ -2,7 +2,7 @@
 
 Run: python3 assets/trees/make_tree_textures.py
 Writes leaf_broad.png, leaf_conifer.png, leaf_palm.png, bark.png, bark_birch.png
-twig_birch.png, leaf_oak.png, bark_smooth.png, leaf_willow.png and leaf_rowan.png next to this file.
+twig_birch.png, leaf_oak.png, bark_smooth.png, leaf_willow.png, leaf_rowan.png and leaf_maple.png next to this file.
 Foliage and bark are painted in light neutral values; the tree shader multiplies
 them by a per-tree color (autumn leaf color, species green, bark brown).
 Replace with real hand-painted art under the same names and sizes any time.
@@ -235,6 +235,45 @@ def rowan(name, size, seed):
     finish(rgb, alpha, name, size)
 
 
+def maple_leaf(rd, ad, cx, cy, size, angle, shade):
+    # A sugar maple leaf: five pointed lobes on a broad palm, the stalk at the bottom.
+    pts = []
+    n = 120
+    for i in range(n):
+        t = i / n * math.tau
+        # Lobe tips at -90 (top), -90 +/- 60 and -90 +/- 120 degrees; a notch at the stalk.
+        rel = (t + math.pi / 2) % math.tau
+        if rel > math.pi:
+            rel -= math.tau
+        lobe = abs(math.cos(rel * 2.5))
+        r = size * (0.6 + 0.4 * lobe ** 2)
+        if abs(rel) > 2.3:
+            r = size * 0.3
+        pts.append((r * math.cos(t), r * math.sin(t)))
+    ca, sa = math.cos(angle), math.sin(angle)
+    poly = [(cx + x * ca - y * sa, cy + x * sa + y * ca) for x, y in pts]
+    rd.polygon(poly, fill=grey(shade))
+    ad.polygon(poly, fill=255)
+    for k in (-2, -1, 0, 1, 2):
+        a = -math.pi / 2 + k * math.pi / 3 + angle
+        rd.line([(cx, cy), (cx + math.cos(a) * size * 0.8, cy + math.sin(a) * size * 0.8)], fill=grey(shade * 0.75), width=2)
+
+
+def maple(name, size, seed):
+    rng = random.Random(seed)
+    w, h = size[0] * SS, size[1] * SS
+    rgb = Image.new("RGB", (w, h), grey(150))
+    alpha = Image.new("L", (w, h), 0)
+    rd, ad = ImageDraw.Draw(rgb), ImageDraw.Draw(alpha)
+    for n in range(80):
+        r = rng.random() ** 0.55 * 0.42
+        a = rng.uniform(0, math.tau)
+        cx, cy = w * (0.5 + r * math.cos(a)), h * (0.5 + r * math.sin(a))
+        shade = rng.uniform(120, 235) * (1.0 - 0.3 * r)
+        maple_leaf(rd, ad, cx, cy, w * rng.uniform(0.08, 0.12), rng.uniform(-0.8, 0.8), shade)
+    finish(rgb, alpha, name, size)
+
+
 def smooth_bark(name, size, seed):
     # Beech: smooth, pale elephant-gray bark with soft mottling and a few faint
     # horizontal wrinkles; fully opaque, tiles both ways.
@@ -345,4 +384,5 @@ if __name__ == "__main__":
     smooth_bark("bark_smooth.png", (128, 256), 17)
     willow("leaf_willow.png", (256, 256), 19)
     rowan("leaf_rowan.png", (256, 256), 23)
+    maple("leaf_maple.png", (256, 256), 29)
     print("wrote tree textures to", HERE)

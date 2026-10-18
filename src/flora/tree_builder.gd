@@ -605,9 +605,17 @@ static func _birch(white: Acc, bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNu
 # into a dense, broad, rounded crown reaching low on open-grown trees. Leaves
 # fresh green in summer, fiery red, orange and yellow in autumn (the tint,
 # flora_view.gd); in winter the bare crown is a fine upright web of twigs.
-# Variants: 0 and 2 open grown (broad, low crown), 1 and 3 stand grown (taller
-# clear trunk, narrower crown); 2 and 3 fork into fewer, wider limbs.
+# Owner's sugar maple photos (2026-10-18, young and mature in four seasons):
+# five-lobed leaves (leaf_maple.png); a young maple is a slim, pale stem with
+# an airy upright crown of climbing limbs.
+# Variants: 0 open grown (broad, low crown), 1 stand grown (taller clear trunk,
+# narrower crown), 2 and 3 young (young_below_m picks them).
 static func _maple(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, variant: int, far: bool, bare: bool) -> void:
+	if variant >= 2:
+		var lean: Vector3 = Vector3(rng.randf_range(-0.02, 0.02), 0.0, rng.randf_range(-0.02, 0.02)) * h
+		_pole(bark, leaves, twigs, rng, Vector3.ZERO, Vector3(0.0, h * 0.95, 0.0) + lean, maxf(trunk * 0.5, h * 0.014), maxf(crown * 0.7, h * 0.26), h * rng.randf_range(0.25, 0.32), 8 if far else rng.randi_range(13, 16), 0.8, BARK_TINT_MAPLE.lerp(Color(0.6, 0.57, 0.52), 0.6), far, bare, 0.3)
+		return
+
 	var stand_grown: bool = variant % 2 == 1
 	var trunk_r: float = maxf(trunk, h * 0.022)
 	var fork_y: float = h * (rng.randf_range(0.36, 0.44) if stand_grown else rng.randf_range(0.26, 0.34))
@@ -618,7 +626,7 @@ static func _maple(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerato
 	var crown_w: float = maxf(crown, h * (0.24 if stand_grown else 0.36)) * rng.randf_range(0.92, 1.08)
 	# The crown is an egg standing on the fork: wide low down, round on top.
 	var center: Vector3 = Vector3(lean.x, lerpf(fork_y, h, 0.45), lean.y)
-	var limbs: int = rng.randi_range(3, 4) if variant >= 2 else rng.randi_range(4, 6)
+	var limbs: int = rng.randi_range(4, 6)
 	var phase: float = rng.randf() * TAU
 
 	for k in range(limbs):
