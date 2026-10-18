@@ -13,8 +13,8 @@ extends RefCounted
 # altitude and water. A smooth world-wide noise field makes the woods
 # patchy: trees thin out into glades, where shrubs grow thicker (and the
 # other way round), so forests are not an even spread. Trees and shrubs
-# keep their crowns apart; species
-# with lower IDs place first. Every species draws from its own random
+# keep their crowns apart; landmark species (grove species and those marked
+# place_first) place first, then the rest by ID. Every species draws from its own random
 # stream, seeded by the flora seed, the chunk and the species ID, and every
 # cell draws the same numbers whether or not it is kept, so adding a
 # species later or removing a tree never moves anything else.
@@ -24,7 +24,7 @@ extends RefCounted
 # Groves sit on a world grid every_km across; each grid square holds one with
 # the given chance, at a jittered spot, with a radius from radius_m. Inside a
 # grove every candidate whose biome lists the species is kept (moisture,
-# slope, altitude and water still apply). "young_share" and "young_height_m"
+# slope, altitude and water still apply). "fixed" adds groves by hand. "young_share" and "young_height_m"
 # make that share of a species young, with heights from the young range.
 #
 # Item ID: species ID << 16 | grid cell index, unique within its chunk and
@@ -132,6 +132,7 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 			"altitude_min": float(altitude[0]),
 			"altitude_max": float(altitude[1]),
 			"water_mask": water_mask,
+			"first": bool(entry.get("place_first", false)) or entry.has("grove"),
 		}
 
 		if entry.has("grove"):
@@ -141,7 +142,13 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 				"chance": float(grove.get("chance", 0.5)),
 				"radius_min": float(grove["radius_m"][0]),
 				"radius_max": float(grove["radius_m"][1]),
+				"fixed": [],
 			}
+
+			# Groves placed by hand (x, z, radius in world meters), e.g. one near the starter town.
+			for f in grove.get("fixed", []):
+				item["grove"]["fixed"].append([Vector2(float(f[0]), float(f[1])), float(f[2])])
+				item["grove"]["radius_max"] = maxf(item["grove"]["radius_max"], float(f[2]))
 			item["cell"] = maxf(float(grove.get("spacing_m", 11.0)), 1.0)
 
 		if entry.has("young_height_m"):
@@ -212,8 +219,10 @@ func chunk_items(chunk: Vector2i) -> Dictionary:
 		for item in _by_biome[b]:
 			candidates[item["id"]] = item
 
+	# Landmark trees (grove species and "place_first") claim their ground before
+	# the common woods fill it; otherwise by ID.
 	var order: Array = candidates.keys()
-	order.sort()
+	order.sort_custom(func(a, b): return [0 if candidates[a]["first"] else 1, a] < [0 if candidates[b]["first"] else 1, b])
 	var occupied: Dictionary = {}       # occupancy cell -> Array of [x, z, crown]
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
@@ -310,7 +319,8 @@ func chunk_items(chunk: Vector2i) -> Dictionary:
 				result["ids"].append((species_id << 16) | (cz * count + cx))
 				result["positions"].append(Vector3(x, y, z))
 				# Trees get an extra stable height spread (young and stunted to veteran) on top of the table's range.
-				var spread: float = lerpf(0.62, 1.12, rng_pick(x + 7.0, z + 3.0, species_id)) if item["kind"] == KIND_TREE else 1.0
+				# Species with their own young range (everember, witness tree) keep the table heights as given.
+				var spread: float = lerpf(0.62, 1.12, rng_pick(x + 7.0, z + 3.0, species_id)) if item["kind"] == KIND_TREE and not item.has("young_share") else 1.0
 				if item.has("young_share") and rng_pick(x + 11.0, z + 5.0, species_id) < float(item["young_share"]):
 					result["heights"].append(lerpf(item["young_min"], item["young_max"], size))
 				else:
@@ -346,6 +356,10 @@ func _groves_near(item: Dictionary, species_id: int, origin: Vector2) -> Array:
 				continue
 
 			found.append([center, radius])
+
+	for g in grove["fixed"]:
+		if g[0].x + g[1] >= origin.x and g[0].x - g[1] <= origin.x + chunk_m and g[0].y + g[1] >= origin.y and g[0].y - g[1] <= origin.y + chunk_m:
+			found.append(g)
 
 	return found
 
