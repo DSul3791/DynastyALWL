@@ -31,6 +31,8 @@ const BLOSSOM_TINT := Color(0.74, 0.62, 0.62)         # apple blossom: white flu
 const BARK_TINT_PEAR := Color(0.40, 0.36, 0.32)       # wild pear: dark, blocky
 const PEAR_TINT := Color(0.56, 0.52, 0.16)            # wild pears: green-gold
 const BLOSSOM_TINT_PEAR := Color(0.76, 0.75, 0.70)    # pear blossom: pure white
+const BARK_TINT_CHERRY := Color(0.50, 0.47, 0.46)     # wild cherry: smooth gray with darker bands
+const CHERRY_TINT := Color(0.62, 0.04, 0.05)          # wild cherries: deep red
 const BARK_TINT_OAK := Color(0.44, 0.40, 0.36)        # oak: rugged, deeply furrowed gray-brown
 const BARK_TINT_WARDPINE := Color(0.54, 0.46, 0.38)   # wardpine: weathered silver-brown
 const BARK_TINT_PINE_LOW := Color(0.54, 0.46, 0.40)   # Scots pine: thick gray-brown plates low down
@@ -109,6 +111,8 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 			_wild_apple(bark, smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season)
 		"wild_pear":
 			_wild_apple(bark, smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season, true)
+		"wild_cherry":
+			_wild_apple(bark, smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season, false, true)
 		"rowan":
 			_rowan(smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season)
 		"willow":
@@ -1415,11 +1419,14 @@ static func _bead(acc: Acc, p: Vector3, size: Vector3, c: Color) -> void:
 		acc.tri(first + 1, i0, i1)
 
 
-static func _wild_apple(bark: Acc, smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, variant: int, far: bool, season: String, pear: bool = false) -> void:
+# Wild cherry (owner's photos, 2026-10-18) shares this model: a taller clear
+# trunk of smooth gray banded bark, a rounded crown, white blossom in spring
+# and red cherries in summer and autumn.
+static func _wild_apple(bark: Acc, smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, variant: int, far: bool, season: String, pear: bool = false, cherry: bool = false) -> void:
 	var bare: bool = season == "winter"
 	var young: bool = variant >= 2
-	var crown_w: float = maxf(crown, h * (0.24 if young else (0.34 if pear else 0.46))) * rng.randf_range(0.9, 1.1)
-	var bark_tint: Color = BARK_TINT_PEAR if pear else BARK_TINT_APPLE
+	var crown_w: float = maxf(crown, h * (0.24 if young else (0.38 if cherry else (0.34 if pear else 0.46)))) * rng.randf_range(0.9, 1.1)
+	var bark_tint: Color = BARK_TINT_CHERRY if cherry else (BARK_TINT_PEAR if pear else BARK_TINT_APPLE)
 	var center: Vector3
 	var half_h: float
 
@@ -1429,11 +1436,19 @@ static func _wild_apple(bark: Acc, smooth: Acc, leaves: Acc, twigs: Acc, rng: Ra
 		center = Vector3(0.0, h * 0.64, 0.0)
 		half_h = h * 0.3
 	else:
-		var trunk_r: float = maxf(trunk, h * 0.035)
-		var fork_y: float = h * rng.randf_range(0.2, 0.27)
+		var trunk_r: float = maxf(trunk, h * (0.028 if cherry else 0.035))
+		var fork_y: float = h * (rng.randf_range(0.28, 0.34) if cherry else rng.randf_range(0.2, 0.27))
 		var lean: Vector2 = Vector2(rng.randf_range(-0.04, 0.04), rng.randf_range(-0.04, 0.04)) * h
 		var first: int = bark.v.size()
-		_trunk(bark, rng, fork_y + h * 0.04, trunk_r, trunk_r * 0.8, lean, bark_tint, 6 if far else 10, 1 if far else 3, 0.0 if far else 0.8)
+		if cherry:
+			first = smooth.v.size()
+			_trunk(smooth, rng, fork_y + h * 0.04, trunk_r, trunk_r * 0.8, lean, bark_tint, 6 if far else 10, 1 if far else 3, 0.0 if far else 0.3)
+			# Darker horizontal bands of lenticels.
+			for k in range(first, smooth.v.size()):
+				var band: float = 0.82 if fmod(smooth.v[k].y * 3.0, 1.0) < 0.25 else 1.0
+				smooth.c[k] = bark_tint * band
+		else:
+			_trunk(bark, rng, fork_y + h * 0.04, trunk_r, trunk_r * 0.8, lean, bark_tint, 6 if far else 10, 1 if far else 3, 0.0 if far else 0.8)
 
 		if pear and not far:
 			# Rugged bark broken into small blocks.
@@ -1451,7 +1466,7 @@ static func _wild_apple(bark: Acc, smooth: Acc, leaves: Acc, twigs: Acc, rng: Ra
 		for k in range(limbs):
 			phase += TAU / float(limbs) + rng.randf_range(-0.4, 0.4)
 			var out: Vector3 = Vector3(cos(phase), 0.0, sin(phase))
-			var rise: float = deg_to_rad(78.0 if k == 0 else (rng.randf_range(52.0, 66.0) if pear else rng.randf_range(38.0, 55.0)))
+			var rise: float = deg_to_rad(78.0 if k == 0 else (rng.randf_range(52.0, 66.0) if pear or cherry else rng.randf_range(38.0, 55.0)))
 			var dir: Vector3 = (out * cos(rise) + Vector3.UP * sin(rise)).normalized()
 			var length: float = (h - fork_y) * (0.25 if k == 0 else rng.randf_range(0.2, 0.26))
 			_maple_limb(bark, leaves, twigs, rng, fork + Vector3(0.0, rng.randf_range(-0.04, 0.03) * h, 0.0), dir, length, trunk_r * 0.45, 0, 2 if far else 3, center, crown_w, h, far, bare, 0.3 if pear else 0.15, bark_tint)
@@ -1459,26 +1474,38 @@ static func _wild_apple(bark: Acc, smooth: Acc, leaves: Acc, twigs: Acc, rng: Ra
 		_skirt_limbs(rng, fork_y, lean, trunk_r, crown_w, far, func(from: Vector3, dir: Vector3, length: float, r: float) -> void:
 			_maple_limb(bark, leaves, twigs, rng, from, dir, length, r, 0, 1 if far else 2, center, crown_w, h, far, bare, -0.3, bark_tint))
 
-	if far or season == "summer":
+	if far or (season == "summer" and not cherry):
 		return
 
 	# Blossom in spring, apples in autumn (the game's season), a few left in winter.
 	var blossom: bool = season == "spring"
 	var count: int = rng.randi_range(16, 22) if young else rng.randi_range(50, 65)
 	if bare:
+		if cherry:
+			return
 		count = rng.randi_range(4, 6) if young else rng.randi_range(8, 12)
 	elif blossom:
 		count = rng.randi_range(30, 40) if young else rng.randi_range(80, 100)
+		if cherry:
+			# Cherry blossom smothers the whole crown.
+			count *= 3
+	elif cherry:
+		count *= 2
 
 	for n in range(count):
 		var a: float = rng.randf() * TAU
 		var v: float = rng.randf_range(-0.6, 0.45 if pear else 0.7)
 		var ring: float = sqrt(maxf(1.0 - v * v, 0.0))
 		# On the crown's outside, where they show.
-		var depth: float = rng.randf_range(0.6, 0.9) if young else (rng.randf_range(0.65, 0.92) if pear else rng.randf_range(0.85, 1.02))
+		var depth: float = rng.randf_range(0.6, 0.9) if young else (rng.randf_range(0.65, 0.92) if pear or cherry else rng.randf_range(0.85, 1.02))
+		if blossom and cherry:
+			depth = rng.randf_range(0.75, 1.0)
 		var at: Vector3 = center + Vector3(cos(a) * ring * crown_w * depth, v * half_h * depth, sin(a) * ring * crown_w * depth)
 		if blossom:
-			_cluster(smooth, rng, at, rng.randf_range(0.35, 0.5), BLOSSOM_TINT_PEAR if pear else BLOSSOM_TINT, true)
+			_cluster(smooth, rng, at, rng.randf_range(0.35, 0.5), BLOSSOM_TINT_PEAR if pear or cherry else BLOSSOM_TINT, true)
+		elif cherry:
+			# Cherries hang in small bunches; real ones are 1 to 2 cm, drawn larger so they read.
+			_cluster(smooth, rng, at, 0.2, CHERRY_TINT, false, rng.randi_range(2, 4))
 		elif pear:
 			# A small pear, drawn about twice life size: a round body under a narrower neck.
 			var c: Color = PEAR_TINT.lerp(Color(0.6, 0.24, 0.1), rng.randf() * 0.4)

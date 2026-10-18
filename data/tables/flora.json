@@ -2398,7 +2398,18 @@
 			"display": "Wild cherry",
 			"kind": "tree",
 			"shape": "broadleaf",
-			"height_m": [10, 18],
+			"model": "wild_cherry",
+			"young_below_m": 8,
+			"autumn_colors": [
+				[0.92, 0.36, 0.08],
+				[0.95, 0.62, 0.12],
+				[0.82, 0.18, 0.06],
+				[0.96, 0.76, 0.18]
+			],
+			"height_m": [
+				4,
+				18
+			],
 			"crown_m": 3.5,
 			"trunk_m": 0.3,
 			"color": [
