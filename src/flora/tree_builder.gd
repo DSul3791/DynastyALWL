@@ -74,7 +74,7 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 		"palm":
 			_palm(bark, leaves, rng, h, crown, trunk, far)
 		"shrub":
-			_shrub(leaves, rng, h, crown, far)
+			_shrub(bark, leaves, rng, h, crown, far)
 		"cactus":
 			_column(bark, rng, h, trunk, Color(0.7, 0.9, 0.6), 6 if far else 8, 3)
 		"grass", "reed":
@@ -84,7 +84,7 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 		"flower":
 			_flower(bark, leaves, rng, h, crown, far)
 		_:
-			_shrub(leaves, rng, h, crown, far)
+			_shrub(bark, leaves, rng, h, crown, far)
 
 	var mesh: ArrayMesh = ArrayMesh.new()
 	bark.commit(mesh, materials["bark"])
@@ -345,8 +345,36 @@ static func _flower(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float
 			_frond(leaves, rng, Vector3(0.0, h * 0.05, 0.0), Vector3(cos(a), 0.0, sin(a)), maxf(crown * 1.4, h * 0.5), 0.2, 1, 0.3)
 
 
-# Shrubs: a squat mound of leaf clumps with no trunk.
-static func _shrub(leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
+# Shrubs: a squat mound of leaf clumps. Tall ones (elder, hazel, hawthorn up to 7 m)
+# stand on several thin stems that lean out from one base, with the clumps on the upper
+# stems, so no crown floats in the air.
+static func _shrub(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
+	if h > 2.0:
+		var tint: Color = BARK_TINT_SOFT
+		var stems: int = 3 if far else rng.randi_range(4, 6)
+		var tips: Array = []
+		var stem_r: float = maxf(h * 0.012, 0.03)
+
+		for k in range(stems):
+			var a: float = TAU * (float(k) + rng.randf_range(-0.25, 0.25)) / float(stems)
+			var out: float = crown * rng.randf_range(0.3, 0.8)
+			var base: Vector3 = Vector3(cos(a), 0.0, sin(a)) * crown * 0.08
+			var tip: Vector3 = Vector3(cos(a) * out, h * rng.randf_range(0.7, 0.95), sin(a) * out)
+			_branch(bark, base, tip, stem_r * 1.6, stem_r * 0.6, tint, 5)
+			tips.append(tip)
+
+		var clumps: int = 5 if far else rng.randi_range(9, 12)
+		var size: float = maxf(crown * (1.1 if far else 0.8), h * 0.28)
+
+		for k in range(clumps):
+			var tip: Vector3 = tips[k % stems]
+			var p: Vector3 = tip + Vector3(rng.randfn(), rng.randf_range(-0.6, 0.2), rng.randfn()) * crown * 0.35
+			p.y = clampf(p.y, h * 0.35, h * 0.98)
+			var shade: float = lerpf(0.6, 1.0, clampf(p.y / h, 0.0, 1.0)) * rng.randf_range(0.9, 1.08)
+			_clump(leaves, rng, p, Vector3(0.0, h * 0.4, 0.0), size, shade, 2 if far else 3)
+
+		return
+
 	var center: Vector3 = Vector3(0.0, h * 0.45, 0.0)
 	var count: int = 4 if far else rng.randi_range(8, 11)
 
