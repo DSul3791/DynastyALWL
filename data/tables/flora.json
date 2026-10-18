@@ -2524,8 +2524,17 @@
 			"display": "Walnut",
 			"kind": "tree",
 			"shape": "broadleaf",
-			"height_m": [12, 22],
-			"crown_m": 6.0,
+			"model": "walnut",
+			"leaf": "rowan",
+			"young_below_m": 9,
+			"autumn_colors": [
+				[0.9, 0.74, 0.14],
+				[0.94, 0.8, 0.2],
+				[0.82, 0.66, 0.12],
+				[0.86, 0.72, 0.22]
+			],
+			"height_m": [5, 22],
+			"crown_m": 8.0,
 			"trunk_m": 0.5,
 			"color": [
 				0.3,
