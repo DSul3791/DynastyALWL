@@ -788,6 +788,10 @@ func _make_environment(root: Node3D) -> void:
 	var sun: DirectionalLight3D = DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-50.0, -30.0, 0.0)
 	sun.shadow_enabled = true
+	# Long parallel stripes on ground and water were shadow acne: bigger biases (2026-10-18, judged from screenshots only).
+	sun.shadow_bias = 0.3
+	sun.shadow_normal_bias = 3.0
+	sun.directional_shadow_blend_splits = true
 	_sun = sun
 	root.add_child(sun)
 	var environment: Environment = Environment.new()
