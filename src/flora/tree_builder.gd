@@ -287,8 +287,12 @@ static func _conifer(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: floa
 # and some are missing, and low down the tree is often bare on one side and
 # thin on the other (dead twigs show through). Young trees are bright green and
 # darken with age (the tint is chosen per tree by height in flora_view.gd).
-# Variants: 0 and 2 open grown (live crown low, cone year), 1 and 3 stand grown
-# (higher, sparser live crown over a bare trunk).
+# Variants: 0 the full open-grown "perfect" fir; 2 open grown but bare low on one
+# side; both open grown (live crown low, cone year), 1 and 3 stand grown
+# (higher, sparser live crown over a bare trunk). The open-grown shape follows
+# the owner's photo of a "perfect middle-aged" fir: a broad full skirt low down,
+# widest near the bottom, and a narrower, airy top whose boughs sweep upward
+# with sky showing between them.
 static func _balsam_fir(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, variant: int, far: bool) -> void:
 	var stand_grown: bool = variant % 2 == 1
 	var coning: bool = variant % 2 == 0 and not far
@@ -299,7 +303,8 @@ static func _balsam_fir(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: f
 	var trunk_r: float = maxf(trunk, h * 0.009)
 	_trunk(bark, rng, h * 0.985, trunk_r, trunk_r * 0.08, lean, tint, 5 if far else 7, 1 if far else 4, 0.0 if far else 0.5)
 	# Narrow crown: widest spread about a quarter to a third of the height.
-	var widest: float = maxf(crown, h * 0.15) * rng.randf_range(0.9, 1.1)
+	var full_skirt: bool = variant == 0
+	var widest: float = maxf(crown, h * (0.15 if stand_grown else (0.22 if full_skirt else 0.19))) * rng.randf_range(0.9, 1.1)
 	var crown_base: float = h * (rng.randf_range(0.28, 0.4) if stand_grown else 0.0)
 	# Lowest live bough tips stay above 4 feet (1.3 m).
 	var y_low: float = maxf(crown_base, 1.3 + widest * 0.32)
@@ -311,7 +316,7 @@ static func _balsam_fir(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: f
 	# thin on the other.
 	var bare_dir: float = rng.randf() * TAU
 	var low_zone: float = rng.randf_range(0.25, 0.4)
-	var gaps: float = 0.22 if stand_grown else 0.1
+	var gaps: float = 0.22 if stand_grown else (0.05 if full_skirt else 0.1)
 	var dead_tint: Color = Color(0.5, 0.48, 0.46)
 
 	for t in range(tiers):
@@ -320,17 +325,18 @@ static func _balsam_fir(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: f
 		var y: float = lerpf(y_low, h * 0.93, 1.0 - pow(1.0 - f, 1.45))
 		var g: float = clampf((y - y_low) / (h - y_low), 0.0, 1.0)
 		# Straight-sided cone, a touch fuller in the middle, sharp spire on top.
-		var reach: float = (widest * pow(1.0 - g, 0.92) * (1.0 + 0.12 * sin(g * PI)) + 0.12) * rng.randf_range(0.85, 1.12)
+		var profile: float = pow(1.0 - g, 0.92) * (1.0 + 0.12 * sin(g * PI)) if stand_grown else pow(1.0 - g, 0.8)
+		var reach: float = (widest * profile + 0.12) * rng.randf_range(0.85, 1.12)
 		var low: float = clampf(1.0 - g / low_zone, 0.0, 1.0)   # 1 at the lowest whorl, 0 above the low zone
 		# Low boughs droop at the tip; high ones angle up toward the light.
-		var droop: float = lerpf(0.32, -0.25, g)
+		var droop: float = lerpf(0.32, -0.25 if stand_grown else -0.55, g)
 		var center: Vector3 = Vector3(lean.x * pow(y / h, 2.0), y, lean.y * pow(y / h, 2.0))
 		phase += 2.4   # golden-angle turn per whorl, so boughs never line up in columns
 		var shade: float = lerpf(0.58, 1.0, g) * shade_top
-		var count: int = per if g < 0.8 else maxi(per - 2, 3)
+		var count: int = per if g < (0.8 if stand_grown else 0.5) else maxi(per - 2, 3)
 		var gap: float = (h * 0.93 - y_low) / float(tiers) * (2.0 - 1.45 * g)
 
-		if not far and low < 0.3:
+		if not far and (low < 0.3 or full_skirt) and (stand_grown or g < 0.55):
 			# Dark inner foliage around the trunk, so the crown reads as dense as a real
 			# fir's and the trunk only shows low down.
 			for k in range(3):
@@ -345,7 +351,7 @@ static func _balsam_fir(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: f
 			var r: float = reach * rng.randf_range(0.65, 1.12)
 			var facing: float = cos(a - bare_dir)
 			# Bare side: most low boughs gone; thin side: some gone, the rest shorter.
-			var lose: float = gaps + low * (0.85 if facing > 0.25 else 0.35)
+			var lose: float = gaps + (0.0 if full_skirt else low * (0.85 if facing > 0.25 else 0.35))
 
 			if rng.randf() < lose:
 				if not far and rng.randf() < 0.6:
@@ -371,7 +377,7 @@ static func _balsam_fir(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: f
 				var axis: Vector3 = p1 - p0
 				var length: float = axis.length()
 				var along: Vector3 = axis / length
-				var width: float = r * (0.5 if seg == 0 else 0.42)
+				var width: float = r * (0.5 if seg == 0 else 0.42) * (1.0 if stand_grown else lerpf(1.0, 0.7, g))
 				var normal: Vector3 = (out * 0.6 + Vector3.UP * 0.8).normalized()
 				# A flat spray, the fir's layered look, plus a steeper card for body seen side-on.
 				leaves.card((p0 + p1) * 0.5, along, side, length * 0.55, width, normal, c)
