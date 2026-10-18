@@ -29,6 +29,9 @@ const BLOCK_SIZE := 16
 var generator
 var hide_ore_depth_m: float = 2.0
 var tile_revisions: Dictionary = {}     # "x,z" -> revision (missing = 1)
+var tiles_stamp: String = ""            # fingerprint of the tile files the ground is made from
+var _tile_dates: String = ""            # tile file names, sizes and dates last seen
+var _dates_changed_msec: int = -1       # when they last changed (a bake is writing)
 var blocks_generated: int = 0
 var cache_hits: int = 0
 var edit_hits: int = 0
@@ -51,19 +54,21 @@ func setup(terrain_generator, store_dir: String) -> String:
 	if error != OK and not DirAccess.dir_exists_absolute(ProjectSettings.globalize_path(store_dir)):
 		return "cannot create %s" % store_dir
 
-	# Generated blocks from an older terrain version are thrown away.
+	# Generated blocks from an older terrain version, or from other tile files
+	# (a re-bake), are thrown away.
 	var version_path: String = store_dir + "/terrain_version.txt"
 	var version: String = FileAccess.get_file_as_string(version_path).strip_edges() if FileAccess.file_exists(version_path) else ""
-
-	if version != str(Layout.TERRAIN_VERSION):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(store_dir + "/generated.sqlite"))
-		var file: FileAccess = FileAccess.open(version_path, FileAccess.WRITE)
-
-		if file != null:
-			file.store_string(str(Layout.TERRAIN_VERSION))
-			file.close()
-
+	tiles_stamp = Layout.tiles_stamp(generator.tiles_dir)
+	var wanted: String = "%d %s" % [Layout.TERRAIN_VERSION, tiles_stamp]
 	_generation = int(FileAccess.get_file_as_string(store_dir + "/generated_generation.txt").strip_edges()) if FileAccess.file_exists(store_dir + "/generated_generation.txt") else 0
+
+	if version != wanted:
+		# A new generation: every older generated file is deleted below.
+		_generation += 1
+		_write(store_dir + "/generated_generation.txt", str(_generation))
+		_write(version_path, wanted)
+		print("server: terrain or tile files changed, old generated ground thrown away")
+
 	_purge_old_generated()
 	_cache = _open_generated()
 	_edits = VoxelStreamSQLite.new()
@@ -78,6 +83,54 @@ func setup(terrain_generator, store_dir: String) -> String:
 				tile_revisions[str(key)] = int(parsed[key])
 
 	return ""
+
+
+# Called every few seconds: true once the tile files have changed (a bake
+# finished) and then stayed still for TILES_SETTLE_MSEC. The generated ground
+# is then thrown away (edits kept) and tiles_stamp is the new fingerprint.
+const TILES_SETTLE_MSEC := 15000
+
+
+func check_tiles(now_msec: int) -> bool:
+	var parts: PackedStringArray = PackedStringArray()
+
+	for file in DirAccess.get_files_at(generator.tiles_dir):
+		if file.ends_with(".tile"):
+			var path: String = generator.tiles_dir + "/" + file
+			parts.append("%s:%d" % [file, FileAccess.get_modified_time(path)])
+
+	var dates: String = ",".join(parts)
+
+	if _tile_dates == "":
+		_tile_dates = dates
+		return false
+
+	if dates != _tile_dates:
+		_tile_dates = dates
+		_dates_changed_msec = now_msec
+		return false
+
+	if _dates_changed_msec < 0 or now_msec - _dates_changed_msec < TILES_SETTLE_MSEC:
+		return false
+
+	_dates_changed_msec = -1
+	var stamp: String = Layout.tiles_stamp(generator.tiles_dir)
+
+	if stamp == tiles_stamp:
+		return false
+
+	tiles_stamp = stamp
+	clear_generated()
+	_write(_store_dir + "/terrain_version.txt", "%d %s" % [Layout.TERRAIN_VERSION, tiles_stamp])
+	return true
+
+
+func _write(path: String, text: String) -> void:
+	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
+
+	if file != null:
+		file.store_string(text)
+		file.close()
 
 
 func _generated_name() -> String:

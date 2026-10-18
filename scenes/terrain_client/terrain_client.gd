@@ -203,6 +203,7 @@ func _ready() -> void:
 	net.flora_cut_received.connect(_on_flora_cut)
 	net.water_rate_received.connect(_on_water_rate)
 	net.water_changed_received.connect(_on_water_changed)
+	net.ground_reset_received.connect(_on_ground_reset)
 	net.water_received.connect(_on_water_received)
 	_host = host
 	_port = port
@@ -250,8 +251,8 @@ func _on_welcome(info: Dictionary) -> void:
 	connected_msec = Time.get_ticks_msec()
 
 	if cache_dir == "":
-		# One folder per terrain version, so older blocks are never mixed in.
-		cache_dir = "user://terrain_cache/%s/v%d" % [str(info["world_name"]).validate_filename(), int(info.get("terrain_version", 1))]
+		# One folder per terrain version and set of tile files, so older blocks are never mixed in.
+		cache_dir = "user://terrain_cache/%s/v%d_%s" % [str(info["world_name"]).validate_filename(), int(info.get("terrain_version", 1)), str(info.get("tiles_stamp", ""))]
 
 	cache = CacheScript.new()
 	if cache_mb <= 0:
@@ -267,7 +268,7 @@ func _on_welcome(info: Dictionary) -> void:
 		print("Terrain client: cleared the saved ground cache")
 
 	cache.setup(cache_dir, info, info["revisions"], cache_mb)
-	var seeded: int = cache.seed_starter("res://worlds/base_world/starter_cache")
+	var seeded: int = cache.seed_starter("res://worlds/base_world/starter_cache", str(world.get("starter_stamp", "")))
 
 	if seeded > 0:
 		cache.set_revisions(info["revisions"])
@@ -681,14 +682,37 @@ func _set_menu(open: bool) -> void:
 # terrain. The server's own saved ground is the server's business (its
 # --clear-generated option); a client never clears it.
 func _ask_clear_cache() -> void:
+	_reload_ground()
+	_menu_note.text = "Done. The ground is reloading."
+	print("Terrain client: cleared the saved ground and reloaded the terrain")
+
+
+# The server made its ground again from new tile files (a bake finished): drop the
+# saved ground and the plants and load them again, and close the menu.
+func _on_ground_reset(tiles_stamp: String, starter_stamp: String) -> void:
+	world["tiles_stamp"] = tiles_stamp
+	world["starter_stamp"] = starter_stamp
+	_reload_ground()
+
+	if flora != null:
+		for chunk in flora.held_chunks():
+			flora.drop_chunk(chunk)
+
+		_flora_asked.clear()
+
+	_set_menu(false)
+	_bake_status = "Finished: new tiles loaded, the ground and plants are reloading"
+	_bake_alert_until = Time.get_ticks_msec() + 20000
+	print("Terrain client: the tile files changed on the server; reloaded the ground and plants")
+
+
+func _reload_ground() -> void:
 	cache.clear_all()
 	stream.close()
 	stream = StreamScript.new()
 	stream.cache = cache
 	terrain.stream = stream
-	cache.seed_starter("res://worlds/base_world/starter_cache")
-	_menu_note.text = "Done. The ground is reloading."
-	print("Terrain client: cleared the saved ground and reloaded the terrain")
+	cache.seed_starter("res://worlds/base_world/starter_cache", str(world.get("starter_stamp", "")))
 
 
 # Inspection mode (the / key): names whatever the crosshair points at. Checked
@@ -1020,9 +1044,6 @@ func _process(delta: float) -> void:
 		if finished != "":
 			_bake_status = finished
 			_bake_alert_until = now + 20000
-			_menu_note.text = finished
-			_set_menu(true)
-			_show_menu_page("advanced")
 			_menu_note.text = finished
 			print("Terrain client: ", finished)
 

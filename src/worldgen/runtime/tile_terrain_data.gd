@@ -135,6 +135,11 @@ func _carve_beds(config: Dictionary) -> void:
 	var bank_m: float = float(config.get("bank_carve_m", 0.8))
 	var slope: float = float(config.get("lake_slope_m_per_cell", 0.5))
 	var lake_max: float = float(config.get("lake_max_m", 3.0))
+
+	# Owner (2026-10-18): the ground is what the generator baked; nothing reshapes it when loaded.
+	if river_m <= 0.0 and bank_m <= 0.0 and lake_max <= 0.0:
+		return
+
 	var count: int = samples * samples
 	var near: PackedFloat32Array = PackedFloat32Array()
 	near.resize(count)

@@ -80,6 +80,14 @@ func chunk_bytes(chunk: Vector2i) -> PackedByteArray:
 	return bytes
 
 
+# Forgets every made chunk (the tile files changed).
+func clear_memory() -> void:
+	_mutex.lock()
+	_memory.clear()
+	_water.clear()
+	_mutex.unlock()
+
+
 # Forgets the packed water (the simulated water changed).
 func clear_water() -> void:
 	_mutex.lock()

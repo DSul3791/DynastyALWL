@@ -106,10 +106,19 @@ func clear_all() -> void:
 # built by running a client at the spawn) into an empty cache, so the ground
 # under the spawn is there at once. Returns the number of files seeded. Call
 # set_revisions afterward so stale starter files are dropped.
-func seed_starter(res_dir: String) -> int:
+func seed_starter(res_dir: String, starter_stamp: String = "") -> int:
 	var seeded: int = 0
 
 	if not DirAccess.get_files_at(_dir).is_empty():
+		return 0
+
+	# The starter ground is only good for the tile file it was built from
+	# (tiles_stamp.txt: terrain version _ Layout.tile_stamp of tile 3,4); after a re-bake it waits
+	# for a rebuild and the ground comes from the server meanwhile.
+	var stamp_path: String = res_dir + "/tiles_stamp.txt"
+	var built_for: String = FileAccess.get_file_as_string(stamp_path).strip_edges() if FileAccess.file_exists(stamp_path) else ""
+
+	if starter_stamp != "" and built_for != starter_stamp:
 		return 0
 
 	for file in DirAccess.get_files_at(res_dir):

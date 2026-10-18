@@ -23,7 +23,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 7
+const PROTOCOL_VERSION := 8
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -39,6 +39,7 @@ signal flora_cut_received(chunk: Vector2i, id: int)
 signal water_rate_requested(peer_id: int, direction: int)
 signal water_rate_received(rate: float, busy: bool)
 signal water_changed_received()
+signal ground_reset_received(tiles_stamp: String, starter_stamp: String)
 signal water_requested(peer_id: int, chunks: PackedInt32Array)
 signal water_received(chunk: Vector2i, water: PackedByteArray)
 
@@ -119,6 +120,13 @@ func water_rate(rate: float, busy: bool) -> void:
 @rpc("authority", "call_remote", "reliable")
 func water_changed() -> void:
 	water_changed_received.emit()
+
+
+# The tile files changed (a bake finished): the server threw its generated ground
+# away; clients drop their saved copy and load the ground again.
+@rpc("authority", "call_remote", "reliable")
+func ground_reset(tiles_stamp: String, starter_stamp: String) -> void:
+	ground_reset_received.emit(tiles_stamp, starter_stamp)
 
 
 @rpc("any_peer", "call_remote", "reliable")

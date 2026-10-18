@@ -34,9 +34,10 @@ static func chunk_levels(generator, origin: Vector2, chunk_m: float) -> Dictiona
 	if wet == 0:
 		return {"count": count, "spacing": spacing, "levels": levels, "wet": 0}
 
-	# Settled simulated water is already continuous: no hole closing.
+	# Settled simulated water is already continuous: no hole closing. Running
+	# water gets a finer surface laid on the real ground (_fine_cells).
 	if not data.sim_levels.is_empty():
-		return {"count": count, "spacing": spacing, "levels": levels, "wet": wet}
+		return {"count": count, "spacing": spacing, "levels": levels, "wet": wet, "fine": _fine_cells(generator, origin, count, spacing, levels)}
 
 	var closed: PackedFloat32Array = levels.duplicate()
 
@@ -71,6 +72,108 @@ static func _level_at(generator, data, x: float, z: float, spacing: float) -> fl
 
 	var level: float = source.water_surface[k]
 	return level if source.water_class[k] > 1 and not is_nan(level) else NAN
+
+
+# ---------------------------------------------------------------- running water on the ground
+
+# The 8 m grid is too coarse for thin running water: between grid points the real
+# ground (smooth curve plus detail noise, up to about half a meter off a straight
+# line) rises through a thin sheet or drops away under it, which showed as stripes.
+# A cell whose wet corners are not level is running water; its surface is laid on
+# the real ground at FINE_SUB x FINE_SUB points, each the ground plus the water depth
+# blended from the corners (so the sheet never dips under the ground or floats over a
+# dip). Level water (ponds, lakes) keeps the flat 8 m surface.
+const FINE_SUB := 4
+const FINE_SLOPE_M := 0.15     # wet corners differing more than this make a running-water cell
+const FILM_M := 0.04           # a running sheet sits this far over the ground
+const FINE_DEPTH_M := 1.5      # cells where all the water is deeper than this stay flat (no stripes there)
+
+static var _ground_cache: Dictionary = {}
+static var _ground_mutex: Mutex = Mutex.new()
+const GROUND_CACHE_MAX := 400000
+
+
+# {cell index: PackedFloat32Array of (FINE_SUB + 1)^2 surface heights, row by row}.
+static func _fine_cells(generator, origin: Vector2, count: int, spacing: float, levels: PackedFloat32Array) -> Dictionary:
+	var fine: Dictionary = {}
+	var depth: PackedFloat32Array = PackedFloat32Array()
+	depth.resize(count * count)
+	depth.fill(NAN)
+	var step: float = spacing / float(FINE_SUB)
+	var side: int = FINE_SUB + 1
+
+	for j in range(count - 1):
+		for i in range(count - 1):
+			var corners: Array = [j * count + i, j * count + i + 1, (j + 1) * count + i, (j + 1) * count + i + 1]
+			var low: float = INF
+			var high: float = -INF
+
+			for c in corners:
+				if not is_nan(levels[c]):
+					low = minf(low, levels[c])
+					high = maxf(high, levels[c])
+
+			if low == INF or high - low < FINE_SLOPE_M:
+				continue
+
+			var d: Array = []
+
+			for c in corners:
+				if is_nan(levels[c]):
+					d.append(0.0)
+					continue
+
+				# The simulation's ground is the 8 m grid ground (detail at 8 m spacing).
+				if is_nan(depth[c]):
+					depth[c] = maxf(levels[c] - generator.surface_height(origin.x + float(c % count) * spacing, origin.y + float(c / count) * spacing, 3), 0.0)
+
+				d.append(depth[c])
+
+			var shallowest: float = INF
+
+			for n in range(4):
+				if not is_nan(levels[corners[n]]):
+					shallowest = minf(shallowest, d[n])
+
+			if shallowest > FINE_DEPTH_M:
+				continue
+
+			var heights: PackedFloat32Array = PackedFloat32Array()
+			heights.resize(side * side)
+
+			for b in range(side):
+				var v: float = float(b) / float(FINE_SUB)
+
+				for a in range(side):
+					var u: float = float(a) / float(FINE_SUB)
+					var water: float = lerpf(lerpf(d[0], d[1], u), lerpf(d[2], d[3], u), v)
+					var ground: float = _fine_ground(generator, origin.x + float(i) * spacing + float(a) * step, origin.y + float(j) * spacing + float(b) * step)
+					heights[b * side + a] = ground + water + FILM_M
+
+			fine[j * count + i] = heights
+
+	return fine
+
+
+# Real (finest) ground height, cached: the ground does not change while water runs.
+static func _fine_ground(generator, x: float, z: float) -> float:
+	var key: Vector2i = Vector2i(int(round(x * 4.0)), int(round(z * 4.0)))
+	_ground_mutex.lock()
+	var known: Variant = _ground_cache.get(key)
+	_ground_mutex.unlock()
+
+	if known != null:
+		return known
+
+	var height: float = generator.surface_height(x, z, 0)
+	_ground_mutex.lock()
+
+	if _ground_cache.size() >= GROUND_CACHE_MAX:
+		_ground_cache.clear()
+
+	_ground_cache[key] = height
+	_ground_mutex.unlock()
+	return height
 
 
 # How far (in grid steps) a hole in a river may be closed. Steep falls leave long holes.
@@ -135,6 +238,16 @@ static func encode(grid: Dictionary) -> PackedByteArray:
 		if wet:
 			buffer.put_32(int(round(levels[n] * 100.0)))
 
+	var fine: Dictionary = grid.get("fine", {})
+	buffer.put_u8(FINE_SUB)
+	buffer.put_u32(fine.size())
+
+	for cell in fine:
+		buffer.put_u32(cell)
+
+		for h in fine[cell]:
+			buffer.put_32(int(round(h * 100.0)))
+
 	var raw: PackedByteArray = buffer.data_array
 	var packed: PackedByteArray = PackedByteArray()
 	packed.resize(4)
@@ -162,7 +275,22 @@ static func decode(bytes: PackedByteArray) -> Dictionary:
 		else:
 			levels[n] = NAN
 
-	return {"count": count, "spacing": spacing, "levels": levels, "wet": wet}
+	var fine: Dictionary = {}
+
+	if buffer.get_available_bytes() >= 5 and buffer.get_u8() == FINE_SUB:
+		var side: int = FINE_SUB + 1
+
+		for f in range(buffer.get_u32()):
+			var cell: int = buffer.get_u32()
+			var heights: PackedFloat32Array = PackedFloat32Array()
+			heights.resize(side * side)
+
+			for n in range(side * side):
+				heights[n] = float(buffer.get_32()) / 100.0
+
+			fine[cell] = heights
+
+	return {"count": count, "spacing": spacing, "levels": levels, "wet": wet, "fine": fine}
 
 
 # A water mesh for a chunk: one smooth surface over the grid. Wet points
@@ -178,6 +306,7 @@ static func build_mesh(grid: Dictionary, material: Material) -> ArrayMesh:
 	var count: int = int(grid["count"])
 	var spacing: float = float(grid["spacing"])
 	var levels: PackedFloat32Array = grid["levels"]
+	var fine: Dictionary = grid.get("fine", {})
 	var height: PackedFloat32Array = PackedFloat32Array()
 	height.resize(count * count)
 	height.fill(NAN)
@@ -230,6 +359,10 @@ static func build_mesh(grid: Dictionary, material: Material) -> ArrayMesh:
 			if not any_wet:
 				continue
 
+			if fine.has(j * count + i):
+				_add_fine_cell(fine[j * count + i], i, j, spacing, levels, count, vertices, normals, colors, indices)
+				continue
+
 			var ids: Array = []
 
 			for c in corners:
@@ -272,3 +405,33 @@ static func build_mesh(grid: Dictionary, material: Material) -> ArrayMesh:
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	mesh.surface_set_material(0, material)
 	return mesh
+
+
+# A running-water cell drawn from its fine heights: own vertices, normals from the
+# surface slope, alpha blended from the wet corners (the sheet fades out toward a dry one).
+static func _add_fine_cell(heights: PackedFloat32Array, i: int, j: int, spacing: float, levels: PackedFloat32Array, count: int, vertices: PackedVector3Array, normals: PackedVector3Array, colors: PackedColorArray, indices: PackedInt32Array) -> void:
+	var side: int = FINE_SUB + 1
+	var step: float = spacing / float(FINE_SUB)
+	var w00: float = 0.0 if is_nan(levels[j * count + i]) else 1.0
+	var w10: float = 0.0 if is_nan(levels[j * count + i + 1]) else 1.0
+	var w01: float = 0.0 if is_nan(levels[(j + 1) * count + i]) else 1.0
+	var w11: float = 0.0 if is_nan(levels[(j + 1) * count + i + 1]) else 1.0
+	var first: int = vertices.size()
+
+	for b in range(side):
+		for a in range(side):
+			var u: float = float(a) / float(FINE_SUB)
+			var v: float = float(b) / float(FINE_SUB)
+			var h: float = heights[b * side + a]
+			var dx: float = heights[b * side + mini(a + 1, FINE_SUB)] - heights[b * side + maxi(a - 1, 0)]
+			var dz: float = heights[mini(b + 1, FINE_SUB) * side + a] - heights[maxi(b - 1, 0) * side + a]
+			var run_x: float = step * float(mini(a + 1, FINE_SUB) - maxi(a - 1, 0))
+			var run_z: float = step * float(mini(b + 1, FINE_SUB) - maxi(b - 1, 0))
+			vertices.append(Vector3(float(i) * spacing + float(a) * step, h, float(j) * spacing + float(b) * step))
+			normals.append(Vector3(-dx / run_x, 1.0, -dz / run_z).normalized())
+			colors.append(Color(1.0, 1.0, 1.0, lerpf(lerpf(w00, w10, u), lerpf(w01, w11, u), v)))
+
+	for b in range(FINE_SUB):
+		for a in range(FINE_SUB):
+			var p: int = first + b * side + a
+			indices.append_array(PackedInt32Array([p, p + 1, p + side + 1, p, p + side + 1, p + side]))

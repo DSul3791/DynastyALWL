@@ -16,7 +16,8 @@ extends RefCounted
 #                     the voxel's own rock
 #
 # TERRAIN_VERSION rises whenever generated blocks change meaning, so
-# server block caches and client caches made before are thrown away.
+# server block caches and client caches made before are thrown away. The
+# same happens when the tile files change (a re-bake): see tiles_stamp.
 
 const CHANNEL_SDF := VoxelBuffer.CHANNEL_SDF
 const CHANNEL_ROCK := VoxelBuffer.CHANNEL_DATA5
@@ -24,9 +25,30 @@ const CHANNEL_SOIL := VoxelBuffer.CHANNEL_DATA6
 const CHANNEL_RESOURCE := VoxelBuffer.CHANNEL_DATA7
 const CHANNEL_MATERIAL := VoxelBuffer.CHANNEL_INDICES
 const MATERIAL_ROCK := 32
-const TERRAIN_VERSION := 16
+const TERRAIN_VERSION := 17
 
 const ROCK_SEDIMENT := 1
+
+
+# A short fingerprint of the tile files in a folder (their contents, not their
+# dates). A re-bake changes it, so ground generated from the old tiles is
+# thrown away on the server and in client caches (owner, 2026-10-18: stale
+# ground from before a bake kept coming back after clearing the client cache).
+static func tiles_stamp(tiles_dir: String) -> String:
+	var files: Array = Array(DirAccess.get_files_at(tiles_dir)).filter(func(f): return f.ends_with(".tile"))
+	files.sort()
+	var parts: PackedStringArray = PackedStringArray()
+
+	for file in files:
+		parts.append("%s=%s" % [file, FileAccess.get_md5(tiles_dir + "/" + file)])
+
+	return ",".join(parts).md5_text().substr(0, 10)
+
+
+# Fingerprint of one tile file ("" when it is missing).
+static func tile_stamp(tiles_dir: String, tile: Vector2i) -> String:
+	var path: String = "%s/tile_%d_%d.tile" % [tiles_dir, tile.x, tile.y]
+	return FileAccess.get_md5(path).substr(0, 10) if FileAccess.file_exists(path) else ""
 
 
 static func used_channels_mask() -> int:

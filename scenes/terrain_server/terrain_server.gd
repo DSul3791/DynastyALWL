@@ -223,7 +223,14 @@ func _on_peer_connected(peer_id: int) -> void:
 		"revisions": store.revisions(),
 		"spawn": spawn,
 		"terrain_version": Layout.TERRAIN_VERSION,
+		"tiles_stamp": store.tiles_stamp,
+		"starter_stamp": _starter_stamp(),
 	})
+
+
+# Which starter ground (shipped client cache) fits the tiles: terrain version and the spawn tile file.
+func _starter_stamp() -> String:
+	return "%d_%s" % [Layout.TERRAIN_VERSION, Layout.tile_stamp(generator.tiles_dir, Vector2i(3, 4))]
 
 
 # Where the player will touch the ground: straight below if hovering, farther
@@ -425,6 +432,12 @@ func _process(_delta: float) -> void:
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(flag_path))
 			store.clear_generated()
 			print("server: cleared the generated ground as asked (clear_generated.now)")
+
+		# A bake finished: the ground is made again from the new tiles, and clients reload.
+		if store.check_tiles(now):
+			flora.clear_memory()
+			net.ground_reset.rpc(store.tiles_stamp, _starter_stamp())
+			print("server: the tile files changed (a bake finished); generated ground thrown away, players reload")
 
 	if now >= _report_at_msec:
 		_report_at_msec = now + 10000
