@@ -40,6 +40,8 @@ const BURR_TINT := Color(0.50, 0.52, 0.16)            # chestnut burrs: spiny gr
 const NUT_TINT := Color(0.36, 0.16, 0.06)             # chestnuts: glossy brown
 const CHROME_TINT := Color(0.56, 0.56, 0.57)          # mirrorbark: polished chrome (the chrome material does the shine)
 const BARK_TINT_EVEREMBER := Color(0.30, 0.21, 0.18)   # everember: charcoal to dark red-brown (the ember material adds the glowing veins)
+const BARK_TINT_WITNESS := Color(0.62, 0.60, 0.66)    # witness tree: silvery gray with a violet undertone
+const FLOWER_TINT_WITNESS := Color(0.70, 0.56, 0.80)  # witness tree flowers: pale purple
 const BARK_TINT_HEARTHWOOD := Color(0.56, 0.36, 0.26)  # hearthwood: reddish brown, fine vertical ridges
 const BARK_TINT_WALNUT := Color(0.52, 0.51, 0.49)     # walnut: pale gray, straight deep furrows
 const WALNUT_CATKIN_TINT := Color(0.56, 0.62, 0.18)   # walnut catkins: long, yellow-green
@@ -134,6 +136,8 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 			_alder(smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season == "winter")
 		"beech":
 			_beech(smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season == "winter")
+		"witness_tree":
+			_witness(smooth, leaves, twigs, rng, h, variant, far, season)
 		"everember":
 			_everember(ember, leaves, rng, h, variant, far)
 		"hearthwood":
@@ -1143,6 +1147,85 @@ static func _chestnut(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGener
 			_bead(bark, at, Vector3(0.24, 0.06, 0.06), burr)
 			_bead(bark, at, Vector3(0.06, 0.06, 0.24), burr)
 			_bead(bark, at + Vector3(0.0, 0.13, 0.0), Vector3(0.09, 0.09, 0.09), NUT_TINT)
+
+
+# Witness tree (fantasy). From the owner's design and pictures (2026-10-18):
+# an elegant hardwood 18 to 28 m tall on a straight trunk 60 to 120 cm across
+# that splits into gracefully spreading limbs under a broad rounded crown.
+# Smooth silvery-gray bark with a violet undertone; on mature trees, shallow
+# swirling grain and knots like half-closed eyes. Oval, finely toothed leaves
+# with violet veins (leaf_witness.png) that glow soft purple at night (the
+# "witness" leaf material); pale purple flower clusters in spring; violet,
+# burgundy and crimson in autumn; bare in winter. Young trees (4 to 8 m) are
+# slim and pale.
+# Variants: 0 and 1 mature, 2 and 3 young (young_below_m picks them).
+static func _witness(smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, variant: int, far: bool, season: String) -> void:
+	var bare: bool = season == "winter"
+	var young: bool = variant >= 2
+	var crown_w: float = h * (0.24 if young else 0.42) * rng.randf_range(0.9, 1.1)
+	var center: Vector3
+	var half_h: float
+
+	if young:
+		var lean: Vector3 = Vector3(rng.randf_range(-0.02, 0.02), 0.0, rng.randf_range(-0.02, 0.02)) * h
+		_pole(smooth, leaves, twigs, rng, Vector3.ZERO, Vector3(0.0, h * 0.95, 0.0) + lean, h * 0.0065, crown_w, h * rng.randf_range(0.3, 0.36), 7 if far else rng.randi_range(12, 15), 0.8, BARK_TINT_WITNESS, far, bare, 0.3)
+		center = Vector3(0.0, h * 0.64, 0.0)
+		half_h = h * 0.3
+	else:
+		var trunk_r: float = h * 0.02
+		var fork_y: float = h * rng.randf_range(0.3, 0.36)
+		var lean: Vector2 = Vector2(rng.randf_range(-0.02, 0.02), rng.randf_range(-0.02, 0.02)) * h
+		var first: int = smooth.v.size()
+		_trunk(smooth, rng, fork_y + h * 0.05, trunk_r, trunk_r * 0.82, lean, BARK_TINT_WITNESS, 6 if far else 12, 1 if far else 6, 0.0 if far else 1.1)
+
+		if not far:
+			# Shallow grooves whose grain swirls around the trunk.
+			for k in range(first, smooth.v.size()):
+				var n: Vector3 = smooth.n[k]
+				var y: float = smooth.v[k].y
+				var groove: float = sin(atan2(n.z, n.x) * 7.0 + sin(y * 0.8) * 1.2 + y * 0.25)
+				smooth.v[k] += n * groove * trunk_r * 0.05
+				var shade: float = 1.0 + groove * 0.08
+				smooth.c[k] = Color(BARK_TINT_WITNESS.r * shade, BARK_TINT_WITNESS.g * shade, BARK_TINT_WITNESS.b * shade)
+
+			# Two to four knots like half-closed eyes: a pale lid around a dark pupil.
+			for e in range(rng.randi_range(2, 4)):
+				var a: float = rng.randf() * TAU
+				var y: float = rng.randf_range(1.2, fork_y * 0.9)
+				var out: Vector3 = Vector3(cos(a), 0.0, sin(a))
+				var at: Vector3 = Vector3(lean.x * pow(y / fork_y, 2.0), y, lean.y * pow(y / fork_y, 2.0)) + out * trunk_r * (1.0 + 1.1 * pow(1.0 - y / (fork_y + h * 0.05), 6.0)) * 1.02
+				var side: Vector3 = Vector3(-out.z, 0.0, out.x)
+				var size: float = trunk_r * rng.randf_range(0.18, 0.26)
+				_bead(smooth, at, side.abs() * size + Vector3(0.0, size * 0.45, 0.0) + out.abs() * size * 0.15, BARK_TINT_WITNESS * 0.75)
+				_bead(smooth, at + out * size * 0.12, side.abs() * size * 0.38 + Vector3(0.0, size * 0.3, 0.0) + out.abs() * size * 0.12, Color(0.12, 0.1, 0.12))
+
+		var fork: Vector3 = Vector3(lean.x, fork_y, lean.y)
+		center = Vector3(lean.x, lerpf(fork_y, h, 0.5), lean.y)
+		half_h = h - center.y
+		var limbs: int = rng.randi_range(4, 6)
+		var phase: float = rng.randf() * TAU
+
+		for k in range(limbs):
+			phase += TAU / float(limbs) + rng.randf_range(-0.35, 0.35)
+			var out: Vector3 = Vector3(cos(phase), 0.0, sin(phase))
+			var rise: float = deg_to_rad(74.0 if k == 0 else rng.randf_range(48.0, 62.0))
+			var dir: Vector3 = (out * cos(rise) + Vector3.UP * sin(rise)).normalized()
+			var length: float = (h - fork_y) * (0.27 if k == 0 else rng.randf_range(0.21, 0.26))
+			_maple_limb(smooth, leaves, twigs, rng, fork + Vector3(0.0, rng.randf_range(-0.04, 0.03) * h, 0.0), dir, length, trunk_r * 0.45, 0, 2 if far else 3, center, crown_w, h, far, bare, 0.2, BARK_TINT_WITNESS)
+
+		_skirt_limbs(rng, fork_y, lean, trunk_r, crown_w, far, func(from: Vector3, d: Vector3, length: float, r: float) -> void:
+			_maple_limb(smooth, leaves, twigs, rng, from, d, length, r, 0, 1 if far else 2, center, crown_w, h, far, bare, -0.3, BARK_TINT_WITNESS))
+
+	if far or season != "spring":
+		return
+
+	# Small clusters of pale purple flowers along the outer branches.
+	for n in range(rng.randi_range(30, 40) if young else rng.randi_range(130, 160)):
+		var a: float = rng.randf() * TAU
+		var v: float = rng.randf_range(-0.4, 0.55)
+		var ring: float = sqrt(maxf(1.0 - v * v, 0.0))
+		var depth: float = rng.randf_range(0.85, 1.0)
+		_cluster(smooth, rng, center + Vector3(cos(a) * ring * crown_w * depth, v * half_h * depth * 0.85, sin(a) * ring * crown_w * depth), rng.randf_range(0.3, 0.45), FLOWER_TINT_WITNESS, false, 6)
 
 
 # Everember (fantasy). From the owner's description and pictures (2026-10-18):

@@ -2,7 +2,7 @@
 
 Run: python3 assets/trees/make_tree_textures.py
 Writes leaf_broad.png, leaf_conifer.png, leaf_palm.png, bark.png, bark_birch.png
-twig_birch.png, leaf_oak.png, bark_smooth.png, leaf_willow.png, leaf_rowan.png and leaf_maple.png next to this file.
+twig_birch.png, leaf_oak.png, bark_smooth.png, leaf_willow.png, leaf_rowan.png, leaf_maple.png and leaf_witness.png next to this file.
 Foliage and bark are painted in light neutral values; the tree shader multiplies
 them by a per-tree color (autumn leaf color, species green, bark brown).
 Replace with real hand-painted art under the same names and sizes any time.
@@ -373,6 +373,56 @@ def twig_birch(name, size, seed):
     finish(rgb, alpha, name, size)
 
 
+def witness_leaf(rd, ad, cx, cy, length, width, angle, shade, rng):
+    # Witness tree (owner, 2026-10-18): an oval, finely toothed leaf with
+    # violet veins; now and then a faint eye-shaped mark.
+    ca, sa = math.cos(angle), math.sin(angle)
+    def at(x, y):
+        return (cx + x * ca - y * sa, cy + x * sa + y * ca)
+    n = 24
+    pts = []
+    for i in range(n + 1):
+        t = i / n
+        w = math.sin(t * math.pi) ** 0.7 * width * 0.5 * (1.06 if i % 2 else 0.97)
+        pts.append(at(t * length, -w))
+    for i in range(n, -1, -1):
+        t = i / n
+        w = math.sin(t * math.pi) ** 0.7 * width * 0.5 * (1.06 if i % 2 else 0.97)
+        pts.append(at(t * length, w))
+    rd.polygon(pts, fill=grey(shade))
+    ad.polygon(pts, fill=255)
+    vein = (int(min(255, shade * 1.05)), int(shade * 0.72), int(min(255, shade * 1.2)))
+    rd.line([at(0, 0), at(length, 0)], fill=vein, width=max(1, int(width * 0.06)))
+    for k in range(1, 6):
+        x = length * k / 6.5
+        w = math.sin(x / length * math.pi) ** 0.7 * width * 0.42
+        for side in (-1, 1):
+            rd.line([at(x, 0), at(x + length * 0.12, side * w)], fill=vein, width=max(1, int(width * 0.03)))
+    if rng.random() < 0.06:
+        ex, ey = at(length * 0.5, 0)
+        r = width * 0.16
+        rd.ellipse([ex - r * 1.6, ey - r, ex + r * 1.6, ey + r], outline=grey(shade * 0.6), width=max(1, int(r * 0.25)))
+        rd.ellipse([ex - r * 0.45, ey - r * 0.45, ex + r * 0.45, ey + r * 0.45], fill=grey(shade * 0.5))
+
+
+def witness(name, size, seed):
+    rng = random.Random(seed)
+    w, h = size[0] * SS, size[1] * SS
+    rgb = Image.new("RGB", (w, h), grey(150))
+    alpha = Image.new("L", (w, h), 0)
+    rd, ad = ImageDraw.Draw(rgb), ImageDraw.Draw(alpha)
+    for n in range(170):
+        r = rng.random() ** 0.55 * 0.44
+        a = rng.uniform(0, math.tau)
+        cx, cy = w * (0.5 + r * math.cos(a)), h * (0.5 + r * math.sin(a))
+        length = w * rng.uniform(0.15, 0.22)
+        width = length * rng.uniform(0.5, 0.62)
+        angle = rng.uniform(0, math.tau)
+        shade = rng.uniform(130, 235) * (1.0 - 0.3 * r)
+        witness_leaf(rd, ad, cx - math.cos(angle) * length / 2, cy - math.sin(angle) * length / 2, length, width, angle, shade, rng)
+    finish(rgb, alpha, name, size)
+
+
 if __name__ == "__main__":
     broad("leaf_broad.png", (256, 256), 11)
     conifer("leaf_conifer.png", (256, 128), 5)
@@ -385,4 +435,5 @@ if __name__ == "__main__":
     willow("leaf_willow.png", (256, 256), 19)
     rowan("leaf_rowan.png", (256, 256), 23)
     maple("leaf_maple.png", (256, 256), 29)
+    witness("leaf_witness.png", (256, 256), 31)
     print("wrote tree textures to", HERE)

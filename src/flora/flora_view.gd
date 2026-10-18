@@ -39,7 +39,12 @@ uniform float flutter = 0.06;
 // Leaves are not opaque: about 40% of the sunlight comes through, so a crown
 // glows when the sun is behind it (owner, 2026-10-18: autumn leaves shine).
 uniform float backlight = 0.4;
+// Leaves that glow (the witness tree): EMISSION = glow times the instance
+// custom alpha (how strongly this tree glows; young ones weakly). Black for
+// every other species. Faint by day, plain at night.
+uniform vec3 glow : source_color = vec3(0.0);
 varying vec3 tint;
+varying float glow_amount;
 varying vec3 view_normal;
 
 void vertex() {
@@ -50,6 +55,7 @@ void vertex() {
 	VERTEX.z += gust * bend * 0.6;
 	VERTEX += vec3(sin(TIME * 3.7 + wp.x * 1.7 + VERTEX.y), 0.0, cos(TIME * 3.1 + wp.z * 1.3 + VERTEX.y)) * flutter * COLOR.a;
 	tint = INSTANCE_CUSTOM.rgb;
+	glow_amount = INSTANCE_CUSTOM.a;
 	view_normal = normalize((MODELVIEW_NORMAL_MATRIX * NORMAL));
 }
 
@@ -63,6 +69,7 @@ void fragment() {
 	ALBEDO = t.rgb * COLOR.rgb * tint;
 	BACKLIGHT = ALBEDO * backlight;
 	ROUGHNESS = 1.0;
+	EMISSION = glow * glow_amount * (0.6 + 0.4 * t.r);
 }
 """
 
@@ -266,9 +273,14 @@ func setup(tables, tile_rules: Dictionary) -> void:
 		if entry.has("young_below_m"):
 			_species[int(entry["id"])]["young_below"] = float(entry["young_below_m"])
 
+		if entry.has("leaf_glow"):
+			_species[int(entry["id"])]["leaf_glow"] = true
+
 		if entry.has("glow"):
 			var g: Array = entry["glow"]
 			_species[int(entry["id"])]["glow"] = Color(float(g[0]), float(g[1]), float(g[2]))
+			_species[int(entry["id"])]["glow_energy"] = float(entry.get("glow_energy", 2.0))
+			_species[int(entry["id"])]["glow_height"] = float(entry.get("glow_height", 0.0))   # light height, fraction of the tree
 
 		if entry.has("autumn_colors"):
 			var palette: Array[Color] = []
@@ -312,7 +324,7 @@ func _make_tree_materials() -> void:
 	ember_material.set_shader_parameter("bark", _load_texture("res://assets/trees/bark.png"))
 	_tree_materials["ember"] = ember_material
 
-	for pair in [["broad", "res://assets/trees/leaf_broad.png"], ["conifer", "res://assets/trees/leaf_conifer.png"], ["palm", "res://assets/trees/leaf_palm.png"], ["grass", "res://assets/grass/grass_tall.png"], ["twig", "res://assets/trees/twig_birch.png"], ["oak", "res://assets/trees/leaf_oak.png"], ["willow", "res://assets/trees/leaf_willow.png"], ["rowan", "res://assets/trees/leaf_rowan.png"], ["maple", "res://assets/trees/leaf_maple.png"]]:
+	for pair in [["broad", "res://assets/trees/leaf_broad.png"], ["conifer", "res://assets/trees/leaf_conifer.png"], ["palm", "res://assets/trees/leaf_palm.png"], ["grass", "res://assets/grass/grass_tall.png"], ["twig", "res://assets/trees/twig_birch.png"], ["oak", "res://assets/trees/leaf_oak.png"], ["willow", "res://assets/trees/leaf_willow.png"], ["rowan", "res://assets/trees/leaf_rowan.png"], ["maple", "res://assets/trees/leaf_maple.png"], ["witness", "res://assets/trees/leaf_witness.png"]]:
 		var material: ShaderMaterial = ShaderMaterial.new()
 		material.shader = foliage
 		material.set_shader_parameter("leaves", _load_texture(pair[1]))
@@ -326,6 +338,7 @@ func _make_tree_materials() -> void:
 	_tree_materials["grass"].set_shader_parameter("flutter", 0.01)
 	_tree_materials["grass"].set_shader_parameter("backlight", 0.3)
 	_tree_materials["twig"].set_shader_parameter("backlight", 0.0)   # bare twigs are solid wood
+	_tree_materials["witness"].set_shader_parameter("glow", Color(0.42, 0.26, 0.7))   # soft lavender night glow
 
 
 # A painted texture, imported by the editor or else read straight from the file.
@@ -665,7 +678,7 @@ func _refresh(chunk: Vector2i, position: Vector3) -> void:
 	if body != null:
 		body.set_meta("species_ids", shape_species)
 
-	# Glowing trees (everember) light the ground around them, near the player
+	# Glowing trees (everember, witness tree) light the ground around them, near the player
 	# only: one warm light per GLOW_CELL_M square, at most GLOW_LIGHTS per chunk.
 	if (level & 8) != 0:
 		var lit: Dictionary = {}
@@ -682,17 +695,20 @@ func _refresh(chunk: Vector2i, position: Vector3) -> void:
 			if lit.has(cell):
 				continue
 
+			if float(items["heights"][n]) < float(info.get("young_below", 0.0)):
+				continue
+
 			lit[cell] = true
 			var scale: float = float(items["heights"][n]) / float(info["height"])
 			var light: OmniLight3D = OmniLight3D.new()
 			light.light_color = info["glow"]
-			light.light_energy = 2.0
-			light.omni_range = 8.0 + float(info["trunk"]) * scale * 4.0
+			light.light_energy = float(info["glow_energy"])
+			light.omni_range = maxf(8.0 + float(info["trunk"]) * scale * 4.0, float(items["heights"][n]) * 0.6)
 			light.shadow_enabled = false
 			light.distance_fade_enabled = true
 			light.distance_fade_begin = collision_m * 0.7
 			light.distance_fade_length = collision_m * 0.3
-			light.position = p + Vector3(0.0, 2.0, 0.0)
+			light.position = p + Vector3(0.0, maxf(2.0, float(items["heights"][n]) * float(info["glow_height"])), 0.0)
 			node.add_child(light)
 
 	for key in groups:
@@ -712,7 +728,10 @@ func _refresh(chunk: Vector2i, position: Vector3) -> void:
 			multimesh.set_instance_transform(m, Transform3D(basis, items["positions"][n] - Vector3(0.0, 0.15, 0.0)))
 
 			if bool(info["tinted"]):
-				multimesh.set_instance_custom_data(m, _autumn_tint(ids[n], info.get("autumn", AUTUMN)) if info["hardwood"] else (_conifer_tint(ids[n], _age_tint(info, float(items["heights"][n]))) if info["kind"] == KIND_TREE else info["tint"]))
+				var custom: Color = _autumn_tint(ids[n], info.get("autumn", AUTUMN)) if info["hardwood"] else (_conifer_tint(ids[n], _age_tint(info, float(items["heights"][n]))) if info["kind"] == KIND_TREE else info["tint"])
+				# Glowing leaves: young trees glow weakly, grown ones fully.
+				custom.a = clampf(float(items["heights"][n]) / float(info.get("young_below", 1.0)), 0.25, 1.0) if info.has("leaf_glow") else 0.0
+				multimesh.set_instance_custom_data(m, custom)
 
 		var draw: MultiMeshInstance3D = MultiMeshInstance3D.new()
 		draw.multimesh = multimesh
