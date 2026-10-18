@@ -2275,8 +2275,16 @@
 			"display": "Crab apple",
 			"kind": "tree",
 			"shape": "broadleaf",
+			"model": "wild_apple",
+			"young_below_m": 6,
+			"autumn_colors": [
+				[0.92, 0.66, 0.14],
+				[0.86, 0.56, 0.12],
+				[0.95, 0.75, 0.2],
+				[0.8, 0.5, 0.14]
+			],
 			"height_m": [
-				5,
+				4,
 				10
 			],
 			"crown_m": 3.0,

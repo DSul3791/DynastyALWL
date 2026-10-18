@@ -4,7 +4,7 @@ extends SceneTree
 # normals, uvs, colors and triangles per surface), so tools/render_trees.py can draw a
 # preview picture without a graphics card.
 #
-#   godot --headless --path . --script res://src/worldgen/tools/tree_mesh_dump.gd -- --species=balsam_fir,spruce [--far] [--scales=0.4,1,1.4] [--season=winter] [--out=PATH]
+#   godot --headless --path . --script res://src/worldgen/tools/tree_mesh_dump.gd -- --species=balsam_fir,spruce [--far] [--scales=0.4,1,1.4] [--season=spring|summer|winter] [--out=PATH]
 #
 # Default output: worlds/base_world/plan/tree_meshes.json. Each species gives
 # its TreeBuilder variants at its reference height (middle of height_m), or

@@ -25,6 +25,9 @@ const BARK_TINT_WILLOW := Color(0.40, 0.35, 0.30)     # willow: dark, deeply fur
 const BARK_TINT_ROWAN := Color(0.50, 0.47, 0.44)      # rowan: smooth gray-brown, rougher at the foot
 const BERRY_TINT_ROWAN := Color(0.78, 0.08, 0.04)     # rowan berries: scarlet (times the bark shader's light texture)
 const FLOWER_TINT_ROWAN := Color(0.72, 0.70, 0.62)    # rowan flower heads: creamy white
+const BARK_TINT_APPLE := Color(0.46, 0.40, 0.34)      # wild apple: scaly gray-brown
+const APPLE_TINT := Color(0.74, 0.12, 0.06)           # wild apples: small and red
+const BLOSSOM_TINT := Color(0.74, 0.62, 0.62)         # apple blossom: white flushed pink
 const BARK_TINT_OAK := Color(0.44, 0.40, 0.36)        # oak: rugged, deeply furrowed gray-brown
 const BARK_TINT_WARDPINE := Color(0.54, 0.46, 0.38)   # wardpine: weathered silver-brown
 const BARK_TINT_PINE_LOW := Color(0.54, 0.46, 0.40)   # Scots pine: thick gray-brown plates low down
@@ -99,6 +102,8 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 			_scots_pine(bark, leaves, rng, h, crown, trunk, variant, far)
 		"wardpine":
 			_wardpine(bark, leaves, rng, h, crown, trunk, variant, far)
+		"wild_apple":
+			_wild_apple(bark, smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season)
 		"rowan":
 			_rowan(smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season)
 		"willow":
@@ -1368,8 +1373,9 @@ static func _rowan(smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenera
 
 # A cluster of small round fruit (or a flat flower head): little diamonds
 # heaped into a dome that hangs (berries) or sits flat (flowers).
-static func _cluster(acc: Acc, rng: RandomNumberGenerator, at: Vector3, radius: float, color: Color, flat: bool) -> void:
-	var count: int = rng.randi_range(8, 10)
+static func _cluster(acc: Acc, rng: RandomNumberGenerator, at: Vector3, radius: float, color: Color, flat: bool, count: int = 0) -> void:
+	if count <= 0:
+		count = rng.randi_range(8, 10)
 	var bead: float = radius * 0.36
 
 	for k in range(count):
@@ -1393,6 +1399,72 @@ static func _cluster(acc: Acc, rng: RandomNumberGenerator, at: Vector3, radius: 
 					acc.tri(first, i1, i0)
 				else:
 					acc.tri(first + 1, i0, i1)
+
+
+# Wild apple, crab apple (Malus sylvestris). From the owner's photos
+# (2026-10-18: young and mature trees in spring, summer, autumn and winter): a
+# short, scaly gray-brown trunk splitting low into crooked limbs under a broad,
+# rounded crown wider than it is tall; white blossom flushed pink in spring;
+# small red apples all through the crown in autumn (the game's season), and a
+# few still hanging in winter; yellow and orange autumn leaves. A young tree is
+# a slim stem with a light, upright crown. Variants: 0 and 1 mature, 2 and 3 young.
+static func _wild_apple(bark: Acc, smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, variant: int, far: bool, season: String) -> void:
+	var bare: bool = season == "winter"
+	var young: bool = variant >= 2
+	var crown_w: float = maxf(crown, h * (0.26 if young else 0.46)) * rng.randf_range(0.9, 1.1)
+	var center: Vector3
+	var half_h: float
+
+	if young:
+		var lean: Vector3 = Vector3(rng.randf_range(-0.03, 0.03), 0.0, rng.randf_range(-0.03, 0.03)) * h
+		_pole(smooth, leaves, twigs, rng, Vector3.ZERO, Vector3(0.0, h * 0.95, 0.0) + lean, maxf(trunk * 0.6, h * 0.016), crown_w, h * rng.randf_range(0.3, 0.38), 7 if far else rng.randi_range(12, 15), 0.6, Color(0.52, 0.47, 0.42), far, bare, 0.3)
+		center = Vector3(0.0, h * 0.64, 0.0)
+		half_h = h * 0.3
+	else:
+		var trunk_r: float = maxf(trunk, h * 0.035)
+		var fork_y: float = h * rng.randf_range(0.2, 0.27)
+		var lean: Vector2 = Vector2(rng.randf_range(-0.04, 0.04), rng.randf_range(-0.04, 0.04)) * h
+		_trunk(bark, rng, fork_y + h * 0.04, trunk_r, trunk_r * 0.8, lean, BARK_TINT_APPLE, 6 if far else 10, 1 if far else 3, 0.0 if far else 0.8)
+		var fork: Vector3 = Vector3(lean.x, fork_y, lean.y)
+		center = Vector3(lean.x, lerpf(fork_y, h, 0.45), lean.y)
+		half_h = h - center.y
+		var limbs: int = rng.randi_range(4, 6)
+		var phase: float = rng.randf() * TAU
+
+		for k in range(limbs):
+			phase += TAU / float(limbs) + rng.randf_range(-0.4, 0.4)
+			var out: Vector3 = Vector3(cos(phase), 0.0, sin(phase))
+			var rise: float = deg_to_rad(72.0 if k == 0 else rng.randf_range(38.0, 55.0))
+			var dir: Vector3 = (out * cos(rise) + Vector3.UP * sin(rise)).normalized()
+			var length: float = (h - fork_y) * (0.25 if k == 0 else rng.randf_range(0.2, 0.26))
+			_maple_limb(bark, leaves, twigs, rng, fork + Vector3(0.0, rng.randf_range(-0.04, 0.03) * h, 0.0), dir, length, trunk_r * 0.45, 0, 2 if far else 3, center, crown_w, h, far, bare, 0.15, BARK_TINT_APPLE)
+
+		_skirt_limbs(rng, fork_y, lean, trunk_r, crown_w, far, func(from: Vector3, dir: Vector3, length: float, r: float) -> void:
+			_maple_limb(bark, leaves, twigs, rng, from, dir, length, r, 0, 1 if far else 2, center, crown_w, h, far, bare, -0.3, BARK_TINT_APPLE))
+
+	if far or season == "summer":
+		return
+
+	# Blossom in spring, apples in autumn (the game's season), a few left in winter.
+	var blossom: bool = season == "spring"
+	var count: int = rng.randi_range(16, 22) if young else rng.randi_range(50, 65)
+	if bare:
+		count = rng.randi_range(4, 6) if young else rng.randi_range(8, 12)
+	elif blossom:
+		count = rng.randi_range(30, 40) if young else rng.randi_range(80, 100)
+
+	for n in range(count):
+		var a: float = rng.randf() * TAU
+		var v: float = rng.randf_range(-0.6, 0.7)
+		var ring: float = sqrt(maxf(1.0 - v * v, 0.0))
+		# On the crown's outside, where they show.
+		var depth: float = rng.randf_range(0.6, 0.9) if young else rng.randf_range(0.85, 1.02)
+		var at: Vector3 = center + Vector3(cos(a) * ring * crown_w * depth, v * half_h * depth, sin(a) * ring * crown_w * depth)
+		if blossom:
+			_cluster(smooth, rng, at, rng.randf_range(0.35, 0.5), BLOSSOM_TINT, true)
+		else:
+			# Real crab apples are 3 to 4 cm; drawn about twice that so they read.
+			_cluster(smooth, rng, at, 0.26, APPLE_TINT, false, rng.randi_range(1, 3))
 
 
 static func acc_bough(acc: Acc, at: Vector3, right: Vector3, up: Vector3, half_w: float, half_h: float, normal: Vector3, color: Color) -> void:
