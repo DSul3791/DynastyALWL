@@ -632,7 +632,9 @@ func _carve_guides(rivers: Array) -> void:
 
 						for r in range(16):
 							var a_r: float = TAU * float(r) / 16.0
-							rim_low = minf(rim_low, _bilinear(heights, centre + Vector2(cos(a_r), sin(a_r)) * pond_radius / spacing_m))
+							# Measured on the carved ground: the brook's own channel is the lip, so a
+							# shallow pond (10 m, owner 2026-10-18) is not drained by its deeper river cut.
+							rim_low = minf(rim_low, _bilinear(carved, centre + Vector2(cos(a_r), sin(a_r)) * pond_radius / spacing_m))
 
 						_stamp_pond(carved, centre, pond_radius, rim_low - pond_depth, rim_low, areas[0] / cell_km2, best_flow)
 

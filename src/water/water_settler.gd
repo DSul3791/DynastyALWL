@@ -162,14 +162,16 @@ static func _pond_near(data, head: Vector2i, side: int) -> Vector2i:
 			if i < 12 or j < 12 or i >= side - 12 or j >= side - 12 or data.water_class[j * side + i] == 0:
 				continue
 
-			# The bottom of a bowl: every cell ten steps (80 m) around it stands at least 8 m above it, which a river gorge never does.
+			# The bottom of a bowl: every cell 14 steps (112 m, just inside the 120 m pond rim) around
+			# it stands at least 5 m above it, which a river gorge never does. Ponds are 10 m deep
+			# (owner, 2026-10-18), so the bowl wall is about 8.7 m up there.
 			var floor_here: float = data.heights[j * side + i]
 			var inside: bool = true
 
 			for r in range(8):
 				var angle: float = TAU * float(r) / 8.0
 
-				if data.heights[(j + int(round(sin(angle) * 10.0))) * side + i + int(round(cos(angle) * 10.0))] < floor_here + 8.0:
+				if data.heights[(j + int(round(sin(angle) * 14.0))) * side + i + int(round(cos(angle) * 14.0))] < floor_here + 5.0:
 					inside = false
 					break
 

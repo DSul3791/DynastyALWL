@@ -54,7 +54,7 @@
 		"head_taper_min": 1.0,
 		"bed_extra_cut_m": 10,
 		"head_pond_diameter_m": 240,
-		"head_pond_depth_m": 30,
+		"head_pond_depth_m": 10,
 		"head_pond_back_m": 50,
 		"fall_slope": 0.3,
 		"fall_widen_from_slope": 0.15,
