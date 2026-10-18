@@ -4,10 +4,11 @@ extends SceneTree
 # normals, uvs, colors and triangles per surface), so tools/render_trees.py can draw a
 # preview picture without a graphics card.
 #
-#   godot --headless --path . --script res://src/worldgen/tools/tree_mesh_dump.gd -- --species=balsam_fir,spruce [--far] [--out=PATH]
+#   godot --headless --path . --script res://src/worldgen/tools/tree_mesh_dump.gd -- --species=balsam_fir,spruce [--far] [--scales=0.4,1,1.4] [--out=PATH]
 #
 # Default output: worlds/base_world/plan/tree_meshes.json. Each species gives
-# its TreeBuilder variants at its reference height (middle of height_m).
+# its TreeBuilder variants at its reference height (middle of height_m), or
+# with --scales each variant scaled as the game scales a shorter or taller tree.
 
 const TreeBuilder := preload("res://src/flora/tree_builder.gd")
 
@@ -15,11 +16,16 @@ const TreeBuilder := preload("res://src/flora/tree_builder.gd")
 func _init() -> void:
 	var names: PackedStringArray = PackedStringArray(["balsam_fir"])
 	var far: bool = false
+	var scales: PackedFloat64Array = PackedFloat64Array([1.0])
 	var out_path: String = "res://worlds/base_world/plan/tree_meshes.json"
 
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--species="):
 			names = argument.trim_prefix("--species=").split(",")
+		elif argument.begins_with("--scales="):
+			scales = PackedFloat64Array()
+			for part in argument.trim_prefix("--scales=").split(","):
+				scales.append(float(part))
 		elif argument == "--far":
 			far = true
 		elif argument.begins_with("--out="):
@@ -42,7 +48,9 @@ func _init() -> void:
 		var height: Array = entry["height_m"]
 		var reference: float = 0.5 * (float(height[0]) + float(height[1]))
 
-		for v in range(TreeBuilder.VARIANTS):
+		for index in range(TreeBuilder.VARIANTS * scales.size()):
+			var v: int = index % TreeBuilder.VARIANTS
+			var scale: float = scales[index / TreeBuilder.VARIANTS]
 			var mesh: ArrayMesh = TreeBuilder.build(entry, reference, v, far, materials)
 			var surfaces: Array = []
 
@@ -57,7 +65,7 @@ func _init() -> void:
 					flat_n.append_array([q.x, q.y, q.z])
 
 				for p in arrays[Mesh.ARRAY_VERTEX]:
-					flat_v.append_array([p.x, p.y, p.z])
+					flat_v.append_array([p.x * scale, p.y * scale, p.z * scale])
 
 				for t in arrays[Mesh.ARRAY_TEX_UV]:
 					flat_uv.append_array([t.x, t.y])
@@ -71,7 +79,8 @@ func _init() -> void:
 					"i": Array(arrays[Mesh.ARRAY_INDEX]),
 				})
 
-			result.append({"name": str(entry["name"]), "variant": v, "height": reference, "color": entry["color"], "surfaces": surfaces})
+			result.append({"name": str(entry["name"]), "variant": v, "height": reference * scale, "color": entry["color"],
+				"young_color": entry.get("young_color", entry["color"]), "young_m": entry.get("young_m", [0.0, 0.1]), "surfaces": surfaces})
 			print("%s variant %d: %d triangles" % [entry["name"], v, _triangles(mesh)])
 
 	var file: FileAccess = FileAccess.open(out_path, FileAccess.WRITE)

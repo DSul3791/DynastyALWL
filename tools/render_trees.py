@@ -59,7 +59,11 @@ def main():
 
     for m, w in zip(models, widths):
         cx = ox + w * px * 0.5
-        tint = natural(m["color"]) * 1.5 * 0.92
+        # Same age tint as flora_view.gd: young_color when small, color when grown.
+        lo, hi = m.get("young_m", [0.0, 0.1])
+        age = min(max((m["height"] - lo) / max(hi - lo, 0.1), 0.0), 1.0)
+        base = np.array(m.get("young_color", m["color"])[:3]) * (1 - age) + np.array(m["color"][:3]) * age
+        tint = natural(base) * 1.5 * 0.92
         for s in m["surfaces"]:
             v = np.array(s["v"]).reshape(-1, 3)
             n = np.array(s["n"]).reshape(-1, 3)

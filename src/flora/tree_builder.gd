@@ -15,7 +15,7 @@ const BARK_TINT_HARD := Color(0.42, 0.42, 0.41)       # hardwood: gray (owner, 2
 const BARK_TINT_SOFT := Color(0.50, 0.34, 0.22)       # softwood and evergreens: brown
 const BARK_TINT_PALM := Color(0.60, 0.50, 0.36)
 const BARK_TINT_FIR := Color(0.55, 0.54, 0.52)        # balsam fir: smooth ash gray, browner with age
-const CONE_TINT_FIR := Color(0.36, 0.22, 0.42)        # balsam fir cones: dark purple, upright
+const CONE_TINT_FIR := Color(0.40, 0.30, 0.34)        # balsam fir cones: purple-brown, upright
 
 
 class Acc:
@@ -283,12 +283,17 @@ static func _conifer(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: floa
 # in flat sprays, so the crown looks layered; shiny dark green; smooth gray bark
 # that browns with age; dark purple cones stand upright on the top branches.
 # Trees in a stand keep a few dead, bare twigs below the live crown.
-# Variants: 0 and 2 open grown (live crown low, cone year), 1 and 3 stand grown.
+# Owner's photos (2026-10-18): not as even as a pine; boughs differ in length
+# and some are missing, and low down the tree is often bare on one side and
+# thin on the other (dead twigs show through). Young trees are bright green and
+# darken with age (the tint is chosen per tree by height in flora_view.gd).
+# Variants: 0 and 2 open grown (live crown low, cone year), 1 and 3 stand grown
+# (higher, sparser live crown over a bare trunk).
 static func _balsam_fir(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, variant: int, far: bool) -> void:
 	var stand_grown: bool = variant % 2 == 1
 	var coning: bool = variant % 2 == 0 and not far
 	var age: float = rng.randf()
-	var tint: Color = BARK_TINT_FIR.lerp(BARK_TINT_SOFT, 0.15 + age * 0.35)
+	var tint: Color = BARK_TINT_FIR.lerp(BARK_TINT_SOFT, age * 0.2)
 	# Firs grow very straight; only a hint of lean.
 	var lean: Vector2 = Vector2(rng.randf_range(-0.012, 0.012), rng.randf_range(-0.012, 0.012)) * h
 	var trunk_r: float = maxf(trunk, h * 0.009)
@@ -302,6 +307,12 @@ static func _balsam_fir(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: f
 	var per: int = 5 if far else 6
 	var phase: float = rng.randf() * TAU
 	var shade_top: float = rng.randf_range(0.95, 1.05)
+	# The lower crown is bare toward one side (shaded by neighbors or browsed) and
+	# thin on the other.
+	var bare_dir: float = rng.randf() * TAU
+	var low_zone: float = rng.randf_range(0.25, 0.4)
+	var gaps: float = 0.22 if stand_grown else 0.1
+	var dead_tint: Color = Color(0.5, 0.48, 0.46)
 
 	for t in range(tiers):
 		var f: float = float(t) / float(tiers - 1)
@@ -309,7 +320,8 @@ static func _balsam_fir(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: f
 		var y: float = lerpf(y_low, h * 0.93, 1.0 - pow(1.0 - f, 1.45))
 		var g: float = clampf((y - y_low) / (h - y_low), 0.0, 1.0)
 		# Straight-sided cone, a touch fuller in the middle, sharp spire on top.
-		var reach: float = widest * pow(1.0 - g, 0.92) * (1.0 + 0.12 * sin(g * PI)) + 0.12
+		var reach: float = (widest * pow(1.0 - g, 0.92) * (1.0 + 0.12 * sin(g * PI)) + 0.12) * rng.randf_range(0.85, 1.12)
+		var low: float = clampf(1.0 - g / low_zone, 0.0, 1.0)   # 1 at the lowest whorl, 0 above the low zone
 		# Low boughs droop at the tip; high ones angle up toward the light.
 		var droop: float = lerpf(0.32, -0.25, g)
 		var center: Vector3 = Vector3(lean.x * pow(y / h, 2.0), y, lean.y * pow(y / h, 2.0))
@@ -318,7 +330,7 @@ static func _balsam_fir(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: f
 		var count: int = per if g < 0.8 else maxi(per - 2, 3)
 		var gap: float = (h * 0.93 - y_low) / float(tiers) * (2.0 - 1.45 * g)
 
-		if not far:
+		if not far and low < 0.3:
 			# Dark inner foliage around the trunk, so the crown reads as dense as a real
 			# fir's and the trunk only shows low down.
 			for k in range(3):
@@ -330,7 +342,18 @@ static func _balsam_fir(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: f
 		for k in range(count):
 			var a: float = phase + TAU * (float(k) + rng.randf_range(-0.2, 0.2)) / float(count)
 			var out: Vector3 = Vector3(cos(a), 0.0, sin(a))
-			var r: float = reach * rng.randf_range(0.85, 1.08)
+			var r: float = reach * rng.randf_range(0.65, 1.12)
+			var facing: float = cos(a - bare_dir)
+			# Bare side: most low boughs gone; thin side: some gone, the rest shorter.
+			var lose: float = gaps + low * (0.85 if facing > 0.25 else 0.35)
+
+			if rng.randf() < lose:
+				if not far and rng.randf() < 0.6:
+					var stub: Vector3 = center + Vector3(0.0, -0.05, 0.0)
+					_branch(bark, stub, stub + (out + Vector3(0.0, -0.15, 0.0)) * r * rng.randf_range(0.3, 0.7), trunk_r * 0.07, 0.01, dead_tint, 3)
+				continue
+
+			r *= 1.0 - low * 0.3 * maxf(-facing, 0.0)
 			var side: Vector3 = out.cross(Vector3.UP).normalized()
 			var c: Color = Color(shade * rng.randf_range(0.93, 1.05), shade, shade, 0.6)
 			# Two segments: a level inner run, then the outer run that droops or lifts.
@@ -368,7 +391,6 @@ static func _balsam_fir(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: f
 
 	if not far and stand_grown:
 		# Dead lower branches: short gray spikes under the live crown.
-		var dead_tint: Color = Color(0.5, 0.48, 0.46)
 		var dy: float = 1.6
 		while dy < crown_base - 0.4:
 			for k in range(rng.randi_range(2, 4)):
@@ -380,8 +402,8 @@ static func _balsam_fir(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: f
 
 	if coning:
 		# Upright cones in rows along the tops of the highest boughs.
-		for n in range(rng.randi_range(14, 22)):
-			var g: float = rng.randf_range(0.78, 0.94)
+		for n in range(rng.randi_range(26, 40)):
+			var g: float = rng.randf_range(0.7, 0.94)
 			var y: float = lerpf(y_low, h * 0.93, g)
 			var reach: float = widest * pow(1.0 - (y - y_low) / (h - y_low), 0.92) + 0.12
 			var a: float = rng.randf() * TAU

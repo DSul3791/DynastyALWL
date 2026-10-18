@@ -184,6 +184,11 @@ func setup(tables, tile_rules: Dictionary) -> void:
 			"tint": _plant_tint(entry, c),
 		}
 
+		if entry.has("young_color"):
+			var yc: Array = entry["young_color"]
+			_species[int(entry["id"])]["young_tint"] = _plant_tint(entry, yc)
+			_species[int(entry["id"])]["young_m"] = entry.get("young_m", [4.0, 15.0])
+
 
 func _make_tree_materials() -> void:
 	var foliage: Shader = Shader.new()
@@ -558,7 +563,7 @@ func _refresh(chunk: Vector2i, position: Vector3) -> void:
 			multimesh.set_instance_transform(m, Transform3D(basis, items["positions"][n] - Vector3(0.0, 0.15, 0.0)))
 
 			if bool(info["tinted"]):
-				multimesh.set_instance_custom_data(m, _autumn_tint(ids[n]) if info["hardwood"] else (_conifer_tint(ids[n], info["tint"]) if info["kind"] == KIND_TREE else info["tint"]))
+				multimesh.set_instance_custom_data(m, _autumn_tint(ids[n]) if info["hardwood"] else (_conifer_tint(ids[n], _age_tint(info, float(items["heights"][n]))) if info["kind"] == KIND_TREE else info["tint"]))
 
 		var draw: MultiMeshInstance3D = MultiMeshInstance3D.new()
 		draw.multimesh = multimesh
@@ -634,6 +639,17 @@ static func _plant_tint(entry: Dictionary, c: Array) -> Color:
 func _autumn_tint(id: int) -> Color:
 	var c: Color = _autumn_color(id)
 	return Color(c.r * 1.5, c.g * 1.5, c.b * 1.5)
+
+
+# Species with a young color (balsam fir) are bright when small and darken as
+# they grow.
+static func _age_tint(info: Dictionary, height: float) -> Color:
+	if not info.has("young_tint"):
+		return info["tint"]
+
+	var span: Array = info["young_m"]
+	var t: float = clampf((height - float(span[0])) / maxf(float(span[1]) - float(span[0]), 0.1), 0.0, 1.0)
+	return (info["young_tint"] as Color).lerp(info["tint"], t)
 
 
 # Evergreens vary tree to tree like a real stand: dark blue-green spruce, mid
