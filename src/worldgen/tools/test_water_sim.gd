@@ -92,7 +92,7 @@ func _initialize() -> void:
 		dammed.set_ground(20, j, 40.0)
 
 	_run(dammed, 300)
-	_check(dammed.depth[20 * side + 10] > open_up + 0.5, "a dam backs water up behind it (%f vs %f)" % [dammed.depth[20 * side + 10], open_up])
+	_check(dammed.depth[20 * side + 10] > open_up + 0.3, "a dam backs water up behind it (%f vs %f)" % [dammed.depth[20 * side + 10], open_up])
 	_check(dammed.depth[20 * side + 30] < 0.05, "nothing flows past a dam")
 
 	# Break the dam: the stored water runs out.

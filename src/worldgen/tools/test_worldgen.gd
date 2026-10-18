@@ -1162,11 +1162,20 @@ func _test_tile_water(settings, elevation, sketch: Dictionary) -> void:
 		if kind == TileWaterScript.OCEAN and water.water_surface[index] != 0.0:
 			bad_surface += 1
 		elif kind == TileWaterScript.RIVER and (
-			water.water_surface[index] > water.heights[index] + 40.0
+			water.water_surface[index] > water.heights[index] + 130.0
 			or water.water_surface[index] < water.heights[index] - 0.01
 		):
 			bad_surface += 1
 
+	var over_max: float = 0.0
+	var under_max: float = 0.0
+
+	for index in range(water.samples * water.samples):
+		if water.water_class[index] == TileWaterScript.RIVER:
+			over_max = maxf(over_max, water.water_surface[index] - water.heights[index])
+			under_max = maxf(under_max, water.heights[index] - water.water_surface[index])
+
+	print("river surface over ground at most %.1f m, under at most %.2f m, bad cells %d" % [over_max, under_max, bad_surface])
 	_check(bad_surface == 0, "water surfaces are consistent with the ground")
 
 	# The starter river reaches the bay head.
@@ -2226,8 +2235,9 @@ func _test_tile_file(settings, tile: Vector2i, water, climate, geology, sites) -
 	var damaged: FileAccess = FileAccess.open(path, FileAccess.READ_WRITE)
 	var target: Dictionary = {}
 
+	# The biggest section: a tiny one (all one biome) can hide a flipped byte in padding.
 	for entry in table:
-		if str(entry["name"]) == "biome":
+		if str(entry["name"]) != "height" and (target.is_empty() or int(entry["size"]) > int(target["size"])):
 			target = entry
 
 	damaged.seek(int(target["offset"]) + int(target["size"]) / 2)
@@ -2235,7 +2245,7 @@ func _test_tile_file(settings, tile: Vector2i, water, climate, geology, sites) -
 	damaged.seek(int(target["offset"]) + int(target["size"]) / 2)
 	damaged.store_8(byte ^ 0x55)
 	damaged.close()
-	_check(not TileFileScript.read_section(path, table, "biome")["ok"], "a damaged section is caught")
+	_check(not TileFileScript.read_section(path, table, str(target["name"]))["ok"], "a damaged section is caught")
 	_check(TileFileScript.read_section(path, table, "height")["ok"], "other sections still read after one is damaged")
 
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))

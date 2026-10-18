@@ -491,6 +491,7 @@ func _carve_guides(rivers: Array) -> void:
 	var slope: float = float(_rules["bank_slope"])
 	var start_km2: float = float(_rules["river_start_km2"])
 	var window_m: float = float(_rules.get("bed_window_m", 500.0))
+	var extra_cut: float = float(_rules.get("bed_extra_cut_m", 10.0))
 	var taper_m: float = float(_rules.get("head_taper_m", 140.0))
 	var taper_min: float = float(_rules.get("head_taper_min", 0.4))
 	var pond_radius: float = float(_rules.get("head_pond_diameter_m", 30.0)) * 0.5
@@ -589,6 +590,9 @@ func _carve_guides(rivers: Array) -> void:
 
 			deque.append(k)
 			var bed: float = low_values[deque[head_at]]
+
+			# A river crossing a peak must not cut a gorge far deeper than its own depth.
+			bed = maxf(bed, low_values[k] - extra_cut)
 			var strength: float = areas[k] / cell_km2
 
 			# Water falling steeply spreads into a wider, shallower sheet.
@@ -715,30 +719,61 @@ func _stamp_at(
 
 
 # A bowl-shaped spring pond: the floor is `bottom` in the middle and rises to the lowest
-# lip (`rim_low`) at the edge, and the water stands just under that lip.
+# lip (`rim_low`) at the edge, and the water stands just under that lip. The bowl keeps
+# rising past its edge like a crater wall, and the rim is then rounded off (no raised lip
+# or knife edge, owner 2026-10-18).
 func _stamp_pond(
 	carved: PackedFloat32Array, center: Vector2, radius_m: float, bottom: float, rim_low: float,
 	strength: float, best_flow: PackedFloat32Array
 ) -> void:
-	var reach_cells: float = radius_m / spacing_m
-	var surface: float = rim_low - 1.0
+	var reach_cells: float = 3.0 * radius_m / spacing_m
+	var first_x: int = maxi(int(ceil(center.x - reach_cells)), 1)
+	var last_x: int = mini(int(floor(center.x + reach_cells)), samples - 2)
+	var first_z: int = maxi(int(ceil(center.y - reach_cells)), 1)
+	var last_z: int = mini(int(floor(center.y + reach_cells)), samples - 2)
 
-	for nr in range(maxi(int(ceil(center.y - reach_cells)), 0), mini(int(floor(center.y + reach_cells)), samples - 1) + 1):
-		for nc in range(maxi(int(ceil(center.x - reach_cells)), 0), mini(int(floor(center.x + reach_cells)), samples - 1) + 1):
+	for nr in range(first_z, last_z + 1):
+		for nc in range(first_x, last_x + 1):
 			var distance: float = sqrt(pow(float(nc) - center.x, 2.0) + pow(float(nr) - center.y, 2.0)) * spacing_m
 
-			if distance > radius_m:
+			if distance > 3.0 * radius_m or _ocean[nr * samples + nc] == 1:
 				continue
 
-			var target: int = nr * samples + nc
-
-			if _ocean[target] == 1:
-				continue
-
+			# A bowl inside the edge, then a walkable ramp (0.4, about 22 degrees) up and out.
 			var floor_height: float = bottom + (rim_low - bottom) * pow(distance / radius_m, 2.0)
-			carved[target] = minf(carved[target], floor_height)
 
-			if floor_height < surface and strength >= best_flow[target]:
+			if distance > radius_m:
+				floor_height = rim_low + (distance - radius_m) * 0.4
+
+			carved[nr * samples + nc] = minf(carved[nr * samples + nc], floor_height)
+
+	# Round off the rim and the wall (not the floor): repeated 3 x 3 averaging.
+	for pass_n in range(12):
+		var before: PackedFloat32Array = carved.duplicate()
+
+		for nr in range(first_z, last_z + 1):
+			for nc in range(first_x, last_x + 1):
+				var distance: float = sqrt(pow(float(nc) - center.x, 2.0) + pow(float(nr) - center.y, 2.0)) * spacing_m
+
+				if distance < 0.75 * radius_m or distance > 2.8 * radius_m or _ocean[nr * samples + nc] == 1:
+					continue
+
+				var total: float = 0.0
+
+				for dz in range(-1, 2):
+					for dx in range(-1, 2):
+						total += before[(nr + dz) * samples + nc + dx]
+
+				carved[nr * samples + nc] = total / 9.0
+
+	var surface: float = rim_low - 1.0
+
+	for nr in range(first_z, last_z + 1):
+		for nc in range(first_x, last_x + 1):
+			var target: int = nr * samples + nc
+			var distance: float = sqrt(pow(float(nc) - center.x, 2.0) + pow(float(nr) - center.y, 2.0)) * spacing_m
+
+			if distance <= radius_m and _ocean[target] != 1 and carved[target] < surface and strength >= best_flow[target]:
 				best_flow[target] = strength
 				flow[target] = strength
 				water_class[target] = RIVER

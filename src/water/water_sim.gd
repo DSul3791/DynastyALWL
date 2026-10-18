@@ -21,6 +21,8 @@ const MIN_DIFF_M := 0.002       # smaller differences are level
 const WET_M := 0.12             # drawn as water from this depth
 const STEEP_WET_M := 0.6       # on a steep drop (below), water thinner than this is not drawn
 const STEEP_DROP_M := 3.0      # ground this much higher than a neighbour counts as steep
+const LEVEL_DEEP_M := 1.0      # water at least this deep levels out quickly (ponds, lakes, deep rivers)
+const LEVEL_PASSES := 4
 const PUDDLE_M := 0.06          # loose water thinner than this, with nowhere to go, dries
 const DRY_PER_TICK_M := 0.003   # how fast a stranded puddle dries
 
@@ -266,6 +268,31 @@ func step() -> float:
 				sea_m3 += (depth[k] - cap) * area
 				depth[k] = cap
 
+	# Standing water finds its level at once: deep water spreads sideways a few extra
+	# steps each tick (same volume), so a pond or lake stays flat instead of heaping
+	# up where a spring pours in.
+	for pass_n in range(LEVEL_PASSES):
+		for t in range(_touched.size()):
+			var k: int = _touched[t]
+
+			if depth[k] < LEVEL_DEEP_M:
+				continue
+
+			var i: int = k % width
+			var j: int = k / width
+
+			if i < width - 1:
+				_level_pair(k, k + 1)
+
+			if j < width - 1:
+				_level_pair(k, k + width)
+
+			if i > 0:
+				_level_pair(k, k - 1)
+
+			if j > 0:
+				_level_pair(k, k - width)
+
 	var previous: PackedInt32Array = _active.duplicate()
 
 	for a in range(count):
@@ -390,6 +417,31 @@ func _refresh_level(k: int) -> void:
 		return
 
 	_levels[k] = ground[k] + depth[k]
+
+
+# Moves water between two deep neighbours towards equal levels (volume kept).
+func _level_pair(a: int, b: int) -> void:
+	if depth[b] < LEVEL_DEEP_M:
+		return
+
+	var gap: float = (ground[a] + depth[a]) - (ground[b] + depth[b])
+
+	if absf(gap) < 0.01:
+		return
+
+	var flow: float = gap * 0.25
+
+	if flow > 0.0:
+		flow = minf(flow, depth[a] * 0.5)
+	else:
+		flow = maxf(flow, -depth[b] * 0.5)
+
+	depth[a] -= flow
+	depth[b] += flow
+	_dirty.append(a)
+	_dirty.append(b)
+	_moved[a] = 1
+	_moved[b] = 1
 
 
 func _is_steep(k: int) -> bool:
