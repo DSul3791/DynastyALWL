@@ -332,7 +332,7 @@ func _poll_water() -> void:
 		water_live.data.sim_levels = levels
 		_water_updates += 1
 
-		if _water_updates == 1 or _water_updates % 5 == 0:
+		if _water_updates == 1 or _water_updates % 10 == 0:
 			var wet: int = 0
 
 			for level in levels:

@@ -119,5 +119,28 @@ func _initialize() -> void:
 	_run(swell, 150)
 	_check(swell.depth[20 * side + 10] > calm, "a bigger spring rate makes the river swell")
 
+	# 10. The drawing levels kept up to date from changed squares match a full recount.
+	var inc = WaterSim.new()
+	var hill: PackedFloat32Array = _flat(31, 20.0)
+
+	for j in range(31):
+		for i in range(31):
+			hill[j * 31 + i] = 20.0 - float(j) * 0.5
+
+	inc.setup(31, 8.0, hill)
+	inc.add_spring(15, 2, 0.5)
+	inc.level_map()
+	_run(inc, 120)
+	var fast: PackedFloat32Array = inc.level_map()
+	inc._levels = PackedFloat32Array()
+	var full: PackedFloat32Array = inc.level_map()
+	var same: bool = true
+
+	for k in range(fast.size()):
+		if is_nan(fast[k]) != is_nan(full[k]) or (not is_nan(fast[k]) and absf(fast[k] - full[k]) > 0.0001):
+			same = false
+
+	_check(same, "kept-up-to-date drawing levels match a full recount")
+
 	print("water sim: %d passed, %d failed" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)

@@ -39,6 +39,8 @@ var _delta: PackedFloat32Array = PackedFloat32Array()
 var _mark: PackedByteArray = PackedByteArray()
 var _moved: PackedByteArray = PackedByteArray()
 var _spring_cell: PackedByteArray = PackedByteArray()
+var _levels: PackedFloat32Array = PackedFloat32Array()   # drawing levels, kept up to date from _dirty
+var _dirty: PackedInt32Array = PackedInt32Array()
 var _active: PackedInt32Array = PackedInt32Array()
 var _touched: PackedInt32Array = PackedInt32Array()
 
@@ -82,6 +84,7 @@ func add_spring(i: int, j: int, per_tick_m: float) -> void:
 func add_water(i: int, j: int, meters: float) -> void:
 	var k: int = cell(i, j)
 	depth[k] += meters
+	_dirty.append(k)
 	_wake(k)
 
 
@@ -90,6 +93,7 @@ func add_water(i: int, j: int, meters: float) -> void:
 func rain(meters: float, cells: PackedInt32Array) -> void:
 	for k in cells:
 		depth[k] += meters
+		_dirty.append(k)
 		_wake(k)
 
 
@@ -252,6 +256,7 @@ func step() -> float:
 		depth[k] = maxf(depth[k] + _delta[k], 0.0)
 		_delta[k] = 0.0
 		_moved[k] = 1
+		_dirty.append(k)
 
 		# The sea and the edge absorb: cells at or below 0 m hold water only up to sea level.
 		if ground[k] <= 0.0:
@@ -297,6 +302,7 @@ func step() -> float:
 		if depth[k] > 0.0 and depth[k] < PUDDLE_M and ground[k] > 0.0 and not _is_spring(k):
 			var lost: float = minf(depth[k], DRY_PER_TICK_M)
 			depth[k] -= lost
+			_dirty.append(k)
 			evaporated_m3 += lost * area
 			_wake_if_wet(k)
 
@@ -357,22 +363,33 @@ func _is_stranded(k: int) -> bool:
 
 # Levels for drawing: the water level where the depth is at least WET_M, NAN elsewhere.
 func level_map() -> PackedFloat32Array:
-	var levels: PackedFloat32Array = PackedFloat32Array()
-	levels.resize(depth.size())
-	levels.fill(NAN)
+	# The first call works out every square; after that only the squares that changed.
+	if _levels.is_empty():
+		_levels.resize(depth.size())
+		_levels.fill(NAN)
 
-	for k in range(depth.size()):
-		if depth[k] < WET_M:
-			continue
+		for k in range(depth.size()):
+			_refresh_level(k)
+	else:
+		for k in _dirty:
+			_refresh_level(k)
 
-		# Thin water running down a steep wall is not drawn: it drew spikes of water up
-		# the sides of the ponds and cliffs.
-		if depth[k] < STEEP_WET_M and _is_steep(k):
-			continue
+	_dirty.clear()
+	return _levels.duplicate()
 
-		levels[k] = ground[k] + depth[k]
 
-	return levels
+func _refresh_level(k: int) -> void:
+	_levels[k] = NAN
+
+	if depth[k] < WET_M:
+		return
+
+	# Thin water running down a steep wall is not drawn: it drew spikes of water up
+	# the sides of the ponds and cliffs.
+	if depth[k] < STEEP_WET_M and _is_steep(k):
+		return
+
+	_levels[k] = ground[k] + depth[k]
 
 
 func _is_steep(k: int) -> bool:
