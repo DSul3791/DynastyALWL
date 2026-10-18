@@ -117,8 +117,103 @@ func load_file(path: String, tile_coord: Vector2i, tile_size_m: float, rules: Di
 	_load_bodies(lists["features"], rules)
 	_load_ores(lists["ore_bodies"], resource_ids, rock_ids)
 	_load_caves(lists["sites"].get("caves", []))
+	_carve_beds(rules.get("runtime_terrain", {}).get("sim_water", {}))
 	_load_sim_water(path)
 	return ""
+
+
+# Simulated-water tiles (rules runtime_terrain.sim_water.tiles) get real channels and
+# bowls: the painted river cells are cut deeper, with sloping banks, and each lake
+# cell is cut by its distance from the shore, so water can be held by the ground
+# itself instead of by a flat painted bed. The same heights are drawn, walked on and
+# used by the water, so nothing is out of step.
+func _carve_beds(config: Dictionary) -> void:
+	if not config.has("tiles") or not config["tiles"].has("%d,%d" % [tile.x, tile.y]):
+		return
+
+	var river_m: float = float(config.get("river_carve_m", 2.0))
+	var bank_m: float = float(config.get("bank_carve_m", 0.8))
+	var slope: float = float(config.get("lake_slope_m_per_cell", 0.5))
+	var lake_max: float = float(config.get("lake_max_m", 3.0))
+	var count: int = samples * samples
+	var near: PackedFloat32Array = PackedFloat32Array()
+	near.resize(count)
+	near.fill(0.0)
+
+	# Distance (in cells, chamfer) from the shore, inside lake cells only.
+	for k in range(count):
+		near[k] = 0.0 if water_class[k] != 2 else 1000.0
+
+	for j in range(samples):
+		for i in range(samples):
+			var k: int = j * samples + i
+
+			if near[k] == 0.0:
+				continue
+
+			var best: float = near[k]
+
+			if i > 0:
+				best = minf(best, near[k - 1] + 1.0)
+
+			if j > 0:
+				best = minf(best, near[k - samples] + 1.0)
+				if i > 0:
+					best = minf(best, near[k - samples - 1] + 1.4)
+				if i < samples - 1:
+					best = minf(best, near[k - samples + 1] + 1.4)
+
+			near[k] = best
+
+	for j in range(samples - 1, -1, -1):
+		for i in range(samples - 1, -1, -1):
+			var k: int = j * samples + i
+
+			if near[k] == 0.0:
+				continue
+
+			var best: float = near[k]
+
+			if i < samples - 1:
+				best = minf(best, near[k + 1] + 1.0)
+
+			if j < samples - 1:
+				best = minf(best, near[k + samples] + 1.0)
+				if i < samples - 1:
+					best = minf(best, near[k + samples + 1] + 1.4)
+				if i > 0:
+					best = minf(best, near[k + samples - 1] + 1.4)
+
+			near[k] = best
+
+	var cut: PackedFloat32Array = PackedFloat32Array()
+	cut.resize(count)
+
+	for j in range(2, samples - 2):
+		for i in range(2, samples - 2):
+			var k: int = j * samples + i
+
+			if heights[k] < 2.0:
+				continue
+
+			var kind: int = water_class[k]
+
+			if kind == 3:
+				cut[k] = maxf(cut[k], river_m)
+			elif kind == 2:
+				cut[k] = maxf(cut[k], minf(near[k] * slope, lake_max))
+
+			if kind == 3 or kind == 2:
+				for dj in range(-2, 3):
+					for di in range(-2, 3):
+						var n: int = k + dj * samples + di
+
+						if water_class[n] == 0 and (j + dj) > 0 and (j + dj) < samples - 1 and (i + di) > 0 and (i + di) < samples - 1:
+							cut[n] = maxf(cut[n], bank_m if absi(di) + absi(dj) <= 1 else bank_m * 0.45)
+
+	for k in range(count):
+		if cut[k] > 0.0:
+			heights[k] -= cut[k]
 
 
 # The tile's settled simulated water, saved beside the tiles (worlds/X/water/tile_A_B.water).

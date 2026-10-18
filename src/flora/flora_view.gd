@@ -136,6 +136,7 @@ func setup(tables, tile_rules: Dictionary) -> void:
 	_water_material.roughness = 0.08
 	_water_material.metallic_specular = 0.8
 	_water_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_water_material.disable_receive_shadows = true     # no striped terrain shadow acne on the surface
 	_water_material.vertex_color_use_as_albedo = true
 
 	for entry in tables.get_entries("flora"):

@@ -21,7 +21,8 @@ var data
 var rate: float = 1.0
 var busy: bool = false
 
-var _base_rate: float = 3.0
+var _generator
+var _base_rate: float = 0.6
 var _path: String = ""
 var _thread: Thread = null
 var _mutex: Mutex = Mutex.new()
@@ -31,8 +32,9 @@ var _pending: PackedFloat32Array = PackedFloat32Array()
 var _ticks: int = 0
 
 
-func setup(tile_data, water_path: String, base_rate: float) -> void:
+func setup(tile_data, water_path: String, base_rate: float, tile_generator) -> void:
 	data = tile_data
+	_generator = tile_generator
 	_path = water_path
 	_base_rate = base_rate
 	_thread = Thread.new()
@@ -68,7 +70,7 @@ func take_levels() -> PackedFloat32Array:
 
 
 func _run() -> void:
-	var sim = WaterSettler.build(data, _base_rate)
+	var sim = WaterSettler.build(data, _base_rate, _generator)
 	var saved: PackedFloat32Array = WaterStore.load_depth(_path, data.samples)
 
 	if not saved.is_empty():
@@ -97,6 +99,7 @@ func _run() -> void:
 			continue
 
 		sim.spring_multiplier = multiplier
+		sim.speed_multiplier = clampf(multiplier, 0.25, 2.0)
 		sim.step()
 		since += 1
 

@@ -29,6 +29,7 @@ var depth: PackedFloat32Array = PackedFloat32Array()
 var springs: Array = []         # [cell index, depth added per tick]
 var ticks: int = 0
 var evaporated_m3: float = 0.0
+var speed_multiplier: float = 1.0    # how fast water moves (the flow-rate keys scale this along with the springs)
 var spring_multiplier: float = 1.0   # rain later swells every spring (and so the rivers) by this factor
 var sea_m3: float = 0.0         # water that reached the sea or the edge
 
@@ -139,6 +140,8 @@ func step() -> float:
 	var count: int = _active.size()
 	var width: int = side
 	var area: float = spacing_m * spacing_m
+	var spread: float = minf(SPREAD_RATE * speed_multiplier, 0.5)
+	var fall: float = minf(FALL_RATE * speed_multiplier, 0.5)
 
 	_touched.clear()
 
@@ -167,33 +170,33 @@ func step() -> float:
 			var diff: float = here - ground[n0] - depth[n0]
 
 			if diff > MIN_DIFF_M:
-				a0 = minf(diff * (FALL_RATE if diff > FALL_DIFF_M else SPREAD_RATE), diff * 0.5)
+				a0 = minf(diff * (fall if diff > FALL_DIFF_M else spread), diff * 0.5)
 		else:
-			edge += w * SPREAD_RATE
+			edge += w * spread
 
 		if n1 >= 0:
 			var diff: float = here - ground[n1] - depth[n1]
 
 			if diff > MIN_DIFF_M:
-				a1 = minf(diff * (FALL_RATE if diff > FALL_DIFF_M else SPREAD_RATE), diff * 0.5)
+				a1 = minf(diff * (fall if diff > FALL_DIFF_M else spread), diff * 0.5)
 		else:
-			edge += w * SPREAD_RATE
+			edge += w * spread
 
 		if n2 >= 0:
 			var diff: float = here - ground[n2] - depth[n2]
 
 			if diff > MIN_DIFF_M:
-				a2 = minf(diff * (FALL_RATE if diff > FALL_DIFF_M else SPREAD_RATE), diff * 0.5)
+				a2 = minf(diff * (fall if diff > FALL_DIFF_M else spread), diff * 0.5)
 		else:
-			edge += w * SPREAD_RATE
+			edge += w * spread
 
 		if n3 >= 0:
 			var diff: float = here - ground[n3] - depth[n3]
 
 			if diff > MIN_DIFF_M:
-				a3 = minf(diff * (FALL_RATE if diff > FALL_DIFF_M else SPREAD_RATE), diff * 0.5)
+				a3 = minf(diff * (fall if diff > FALL_DIFF_M else spread), diff * 0.5)
 		else:
-			edge += w * SPREAD_RATE
+			edge += w * spread
 
 		var out_total: float = a0 + a1 + a2 + a3 + edge
 

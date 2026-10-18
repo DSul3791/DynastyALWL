@@ -13,12 +13,28 @@ const PLATEAU_SEARCH := 15        # cells (120 m) to look for flat high ground n
 const PLATEAU_RANGE_M := 3.0      # height range on the ring that counts as flat
 
 
+# The ground as it is drawn: the map height plus the fine detail noise the voxel
+# generator adds on dry land (up to about 0.9 m, which matters to shallow water).
+static func _drawn_ground(data, generator) -> PackedFloat32Array:
+	var ground: PackedFloat32Array = data.heights.duplicate()
+	var side: int = data.samples
+
+	for j in range(side):
+		for i in range(side):
+			var k: int = j * side + i
+
+			if ground[k] > 0.0:
+				ground[k] += generator._detail_at(data, data.x0 + float(i) * data.spacing_m, data.z0 + float(j) * data.spacing_m, data.spacing_m)
+
+	return ground
+
+
 # A simulation started from the painted water with springs placed. `rate` is each
 # spring's meters of water per tick.
-static func build(data, rate: float):
+static func build(data, rate: float, generator):
 	var side: int = data.samples
 	var sim = WaterSim.new()
-	sim.setup(side, data.spacing_m, data.heights.duplicate())
+	sim.setup(side, data.spacing_m, _drawn_ground(data, generator))
 
 	for k in range(side * side):
 		var surface: float = data.water_surface[k]
@@ -27,7 +43,7 @@ static func build(data, rate: float):
 			sim.depth[k] = surface - sim.ground[k]
 
 	for head in _find_heads(data, side):
-		var spot: Vector2i = _plateau_near(sim, head, side)
+		var spot: Vector2i = _plateau_near(sim, head, side, data)
 		sim.add_spring(spot.x, spot.y, rate)
 
 	sim.wake_all_wet()
@@ -67,7 +83,12 @@ static func _find_heads(data, side: int) -> Array:
 
 # Springs belong on flat high ground (a plateau or the very top of a rise), not on a
 # hillside: look near the head for the flattest cell that is not lower than it.
-static func _plateau_near(sim, head: Vector2i, side: int) -> Vector2i:
+static func _plateau_near(sim, head: Vector2i, side: int, data = null) -> Vector2i:
+	var pond: Vector2i = _pond_near(data, head, side) if data != null else Vector2i(-1, -1)
+
+	if pond.x >= 0:
+		return pond
+
 	var best: Vector2i = head
 	var best_score: float = INF
 	var head_height: float = sim.ground[head.y * side + head.x]
@@ -103,6 +124,38 @@ static func _plateau_near(sim, head: Vector2i, side: int) -> Vector2i:
 
 			if score < best_score:
 				best_score = score
+				best = Vector2i(i, j)
+
+	return best
+
+
+# The middle of the head pond near a river head (the pond holds the spring's water and
+# spills it into the river), or (-1, -1) when there is none close by.
+static func _pond_near(data, head: Vector2i, side: int) -> Vector2i:
+	var best: Vector2i = Vector2i(-1, -1)
+	var best_dist: float = INF
+
+	for dj in range(-PLATEAU_SEARCH, PLATEAU_SEARCH + 1):
+		for di in range(-PLATEAU_SEARCH, PLATEAU_SEARCH + 1):
+			var i: int = head.x + di
+			var j: int = head.y + dj
+
+			if i < 4 or j < 4 or i >= side - 4 or j >= side - 4 or data.water_class[j * side + i] != LAKE:
+				continue
+
+			var inside: bool = true
+
+			for r in range(8):
+				var angle: float = TAU * float(r) / 8.0
+
+				if data.water_class[(j + int(round(sin(angle) * 3.0))) * side + i + int(round(cos(angle) * 3.0))] != LAKE:
+					inside = false
+					break
+
+			var dist: float = sqrt(float(di * di + dj * dj))
+
+			if inside and dist < best_dist:
+				best_dist = dist
 				best = Vector2i(i, j)
 
 	return best

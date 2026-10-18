@@ -33,7 +33,7 @@ const WaterLiveScript := preload("res://src/water/water_live.gd")
 
 const MAX_BATCH_BYTES := 192 * 1024
 const MAX_QUEUE_PER_PEER := 20000
-const WATER_BASE_RATE := 3.0            # meters of water per tick at each spring; the + and - keys scale it
+const WATER_BASE_RATE := 0.6            # meters of water per tick at each spring; the + and - keys scale it
 const IDLE_LODS := 4                   # detail levels the idle builder keeps ahead of players
 const IDLE_RADIUS_BLOCKS := 12         # circle around each player, in blocks of that level
 const IDLE_MAX_DONE := 400000          # remembered built blocks (skips re-checking the store)
@@ -143,7 +143,7 @@ func _ready() -> void:
 
 	if not water_data.placeholder:
 		water_live = WaterLiveScript.new()
-		water_live.setup(water_data, "%s/water/tile_%d_%d.water" % [world_dir, water_tile.x, water_tile.y], WATER_BASE_RATE)
+		water_live.setup(water_data, "%s/water/tile_%d_%d.water" % [world_dir, water_tile.x, water_tile.y], WATER_BASE_RATE, generator)
 
 	var peer: ENetMultiplayerPeer = ENetMultiplayerPeer.new()
 	var error: int = peer.create_server(port, 32)

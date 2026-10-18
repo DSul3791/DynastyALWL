@@ -1639,7 +1639,9 @@ func _test_runtime_terrain(settings, tile_rules: Dictionary, tables, tile: Vecto
 	var target: String = "%s/tile_%d_%d.tile" % [dir, tile.x, tile.y]
 	_check(FileAccess.file_exists(target), "the test tile file is there for the terrain generator")
 	var generator = TerrainGeneratorScript.new()
-	generator.setup(settings, tile_rules, tables, dir)
+	var plain_rules: Dictionary = tile_rules.duplicate(true)      # without the simulated-water channel cutting
+	plain_rules["runtime_terrain"].erase("sim_water")
+	generator.setup(settings, plain_rules, tables, dir)
 	var data = generator.get_tile(tile)
 	_check(not data.placeholder, "the terrain generator loads the tile file")
 	_check(data.prov_datum.size() == geology.provinces.size(), "the terrain generator reads every province")

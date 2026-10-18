@@ -9,7 +9,7 @@ extends RefCounted
 const TILES := "2,3;2,4;2,5;3,3;3,4;3,5;4,3;4,4;4,5"
 const STARTER_TILE := "worlds/base_world/tiles/tile_3_4.tile"
 const WATER_FILE := "worlds/base_world/water/tile_3_4.water"
-const SETTLE_TICKS := 400   # about 3 to 5 minutes on a modern computer
+const SETTLE_TICKS := 800   # about 3 to 5 minutes on a modern computer
 
 var running: bool = false
 var _pid: int = -1
@@ -104,7 +104,7 @@ func poll() -> String:
 			"--headless", "--path", ProjectSettings.globalize_path("res://"),
 			"--log-file", _log_path,
 			"--script", "res://src/worldgen/tools/settle_water.gd",
-			"--", "--tile=3,4", "--ticks=%d" % SETTLE_TICKS, "--rate=3.0",
+			"--", "--tile=3,4", "--ticks=%d" % SETTLE_TICKS, "--rate=0.6",
 		])
 
 		if _pid <= 0:

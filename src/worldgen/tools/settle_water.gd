@@ -56,7 +56,7 @@ func _init() -> void:
 
 	var side: int = data.samples
 	var started: int = Time.get_ticks_msec()
-	var sim = WaterSettler.build(data, rate)
+	var sim = WaterSettler.build(data, rate, generator)
 	var placed: int = sim.springs.size()
 	print("settle %s: %d cells, %d wet to start, %d springs, ready in %d ms" % [tile, side * side, sim.wet_cells(), placed, Time.get_ticks_msec() - started])
 	started = Time.get_ticks_msec()
