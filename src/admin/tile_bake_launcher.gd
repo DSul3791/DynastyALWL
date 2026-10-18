@@ -9,6 +9,9 @@ extends RefCounted
 const TILES := "2,3;2,4;2,5;3,3;3,4;3,5;4,3;4,4;4,5"
 const STARTER_TILE := "worlds/base_world/tiles/tile_3_4.tile"
 const WATER_FILE := "worlds/base_world/water/tile_3_4.water"
+# The world starts with dry fresh water and the springs fill it live (owner, 2026-10-18),
+# so the baked water file is not needed any more; set true to settle it again.
+const SETTLE_AFTER_BAKE := false
 const SETTLE_TICKS := 800   # about 3 to 5 minutes on a modern computer
 
 var running: bool = false
@@ -71,12 +74,12 @@ func status() -> String:
 		done = FileAccess.get_file_as_string(_log_path).count(" baked in ")
 
 	if done == 0:
-		return "Step 1 of 2, baking starter tiles: starting up (then the water settles, about 5 more minutes)"
+		return "Baking starter tiles: starting up"
 
 	# Time left from the pace so far (the first tile also carries the setup).
 	var elapsed_min: float = float(Time.get_ticks_msec() - _started_msec) / 60000.0
 	var left_min: float = elapsed_min / float(done) * float(total - done)
-	return "Step 1 of 2, baking starter tiles: %d of %d done, about %d min left (then the water settles, about 5 more minutes)" % [done, total, maxi(int(ceil(left_min)), 1)]
+	return "Baking starter tiles: %d of %d done, about %d min left" % [done, total, maxi(int(ceil(left_min)), 1)]
 
 
 # "" while nothing new to say; a message once the bake and the water settle have ended.
@@ -97,6 +100,11 @@ func poll() -> String:
 			return "The bake ended without writing tiles. See %s" % _log_path
 
 		_baked = baked
+
+		if not SETTLE_AFTER_BAKE:
+			running = false
+			return "FINISHED: baked %d tiles. In GitHub Desktop commit everything under worlds/base_world and push, then restart the game." % _baked
+
 		# Second step: settle the water on the freshly baked starter tile.
 		_stage = 2
 		_settle_msec = Time.get_ticks_msec()
