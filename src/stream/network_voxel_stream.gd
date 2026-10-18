@@ -24,6 +24,7 @@ var cache                             # ClientBlockCache
 var blocks_received: int = 0
 var bytes_received: int = 0
 var timeouts: int = 0
+var bad_blocks: int = 0               # blocks that arrived damaged or would not unpack (dropped, not cached)
 var prefetch_used: int = 0
 var loads: int = 0                    # blocks Voxel Tools asked for
 var last_load_msec: int = 0
@@ -113,12 +114,37 @@ func _load_voxel_block(out_buffer: VoxelBuffer, block: Vector3i, lod: int) -> in
 
 
 func _store(bytes: PackedByteArray, out_buffer: VoxelBuffer, block: Vector3i, lod: int) -> int:
-	VoxelBlockSerializer.deserialize_from_byte_array(bytes, out_buffer, true)
+	# The last four bytes are the server's checksum of the rest.
+	var size: int = bytes.size() - 4
+	var body: PackedByteArray = bytes.slice(0, size) if size > 0 else PackedByteArray()
+
+	if size <= 0 or (hash(body) & 0xffffffff) != bytes.decode_u32(size):
+		_note_bad(block, lod, "checksum mismatch")
+		return RESULT_ERROR
+
+	# The unpack call reports nothing, so plant a marker first: if it is still there after,
+	# the unpack did not write the buffer and the block must not be cached.
+	out_buffer.set_voxel(255, 0, 0, 0, Layout.CHANNEL_RESOURCE)
+	var marker: int = out_buffer.get_voxel(0, 0, 0, Layout.CHANNEL_RESOURCE)
+	VoxelBlockSerializer.deserialize_from_byte_array(body, out_buffer, true)
+
+	if marker != 0 and out_buffer.get_voxel(0, 0, 0, Layout.CHANNEL_RESOURCE) == marker and out_buffer.is_uniform(Layout.CHANNEL_RESOURCE):
+		_note_bad(block, lod, "could not unpack")
+		return RESULT_ERROR
 
 	if cache != null:
 		cache.save_block(out_buffer, block, lod)
 
 	return RESULT_BLOCK_FOUND
+
+
+# A block that arrived damaged or would not unpack is dropped, never cached; it is asked for again.
+func _note_bad(block: Vector3i, lod: int, why: String) -> void:
+	_mutex.lock()
+	bad_blocks += 1
+	_asked.erase(Vector4i(block.x, block.y, block.z, lod))
+	_mutex.unlock()
+	push_error("client: bad block %s at LOD %d (%s); not cached" % [str(block), lod, why])
 
 
 func _save_voxel_block(_buffer: VoxelBuffer, _block: Vector3i, _lod: int) -> void:

@@ -106,7 +106,7 @@ func poll() -> String:
 			"--headless", "--path", ProjectSettings.globalize_path("res://"),
 			"--log-file", _settle_log_path,
 			"--script", "res://src/worldgen/tools/settle_water.gd",
-			"--", "--tile=3,4", "--ticks=%d" % SETTLE_TICKS, "--rate=0.6",
+			"--", "--tile=3,4", "--ticks=%d" % SETTLE_TICKS, "--rate=3.0",
 		])
 
 		if _pid <= 0:

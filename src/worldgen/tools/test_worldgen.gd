@@ -1964,7 +1964,12 @@ func _test_streaming(generator, data) -> void:
 	var stream = NetworkStreamScript.new()
 	stream.cache = cache
 	var far: Vector3i = block + Vector3i(0, 0, 3 * tile_blocks)
-	stream.deliver(PackedInt32Array([far.x, far.y, far.z, 0]), [bytes])
+	var sent: PackedByteArray = bytes.duplicate()          # as the server sends it: the block plus its checksum
+	var check: PackedByteArray = PackedByteArray()
+	check.resize(4)
+	check.encode_u32(0, hash(bytes) & 0xffffffff)
+	sent.append_array(check)
+	stream.deliver(PackedInt32Array([far.x, far.y, far.z, 0]), [sent])
 	var streamed: VoxelBuffer = TerrainLayout.make_buffer(16)
 	var result: int = stream._load_voxel_block(streamed, far, 0)
 	var keys: Array = stream.take_requests()

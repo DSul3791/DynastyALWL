@@ -58,6 +58,7 @@ var _terrain: Dictionary = {}         # tile rules "runtime_terrain"
 var _rock_ids: Dictionary = {}
 var _resource_ids: Dictionary = {}
 var _tiles: Dictionary = {}           # Vector2i -> tile data
+var failed_tiles: int = 0              # times a tile file existed but failed to load (a stand-in was used)
 var _mutex: Mutex = Mutex.new()
 var _detail: Array = []               # [FastNoiseLite, amplitude_m, wavelength_m]
 var _band: float = 3.0
@@ -169,9 +170,16 @@ func get_tile(coord: Vector2i):
 		var error: String = data.load_file(path, coord, tile_size_m, _rules, _rock_ids, _resource_ids)
 
 		if error != "":
-			push_error("terrain: %s" % error)
+			# A tile file that exists but would not load (for example while a bake is
+			# rewriting it) gets a stand-in for this call only, so it is read again next
+			# time; blocks built from a stand-in are not saved (see failed_tiles).
+			push_error("terrain: %s (using a stand-in tile for now; blocks built from it are not saved)" % error)
 			data = DataScript.new()
 			data.make_placeholder(coord, tile_size_m, _placeholder_depth)
+			_mutex.lock()
+			failed_tiles += 1
+			_mutex.unlock()
+			return data
 	else:
 		data.make_placeholder(coord, tile_size_m, _placeholder_depth)
 

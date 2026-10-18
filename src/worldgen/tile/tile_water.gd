@@ -645,7 +645,7 @@ func _carve_guides(rivers: Array) -> void:
 			if best_k >= 0 and best_range <= float(_rules.get("head_pond_max_range_m", 4.0)):
 				var scale: float = clampf(8.0 / maxf(best_range, 8.0), 0.45, 1.0)
 				var bed_level: float = best_low - 0.75 * pond_depth - 0.4
-				_stamp_at(carved, points[best_k], pond_width * scale, pond_depth, bed_level, slope * 0.4, areas[best_k] / cell_km2, best_flow)
+				_stamp_at(carved, points[best_k], pond_width * scale, pond_depth, bed_level, slope, areas[best_k] / cell_km2, best_flow, 0.75 * pond_depth)
 
 		# A plunge pool at the foot of every steep drop (waterfall or cascade):
 		# the water scours a basin where it lands.
@@ -690,7 +690,7 @@ func _bilinear(field: PackedFloat32Array, point: Vector2) -> float:
 # river wins each cell's water class, surface and flow.
 func _stamp_at(
 	carved: PackedFloat32Array, center: Vector2, width: float, depth: float, bed: float, slope: float,
-	strength: float, best_flow: PackedFloat32Array
+	strength: float, best_flow: PackedFloat32Array, bowl: float = 0.0
 ) -> void:
 	var radius_m: float = width * 0.5 + (depth + 1.0) / slope
 	var radius_cells: float = radius_m / spacing_m
@@ -715,6 +715,11 @@ func _stamp_at(
 				continue
 
 			var floor_height: float = bed + maxf(distance - width * 0.5, 0.0) * slope
+
+			# A pond is a bowl: deepest in the middle, rising to the water level at its edge.
+			if bowl > 0.0 and distance < width * 0.5:
+				floor_height = bed + bowl * pow(distance / (width * 0.5), 2.0)
+
 			carved[target] = minf(carved[target], floor_height)
 
 			if distance <= width * 0.5 and strength >= best_flow[target]:

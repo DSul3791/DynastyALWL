@@ -33,7 +33,7 @@ const WaterLiveScript := preload("res://src/water/water_live.gd")
 
 const MAX_BATCH_BYTES := 192 * 1024
 const MAX_QUEUE_PER_PEER := 20000
-const WATER_BASE_RATE := 0.6            # meters of water per tick at each spring; the + and - keys scale it
+const WATER_BASE_RATE := 3.0            # meters of water per tick at each spring; the + and - keys scale it
 const IDLE_LODS := 4                   # detail levels the idle builder keeps ahead of players
 const IDLE_RADIUS_BLOCKS := 12         # circle around each player, in blocks of that level
 const IDLE_MAX_DONE := 400000          # remembered built blocks (skips re-checking the store)
@@ -407,8 +407,8 @@ func _process(_delta: float) -> void:
 
 	if now >= _report_at_msec:
 		_report_at_msec = now + 10000
-		print("server: %d urgent and %d prefetch queued; generated %d, cache hits %d, edit hits %d; flora chunks %d made, %d from memory; idle-built %d columns" % [
-			queued[0], queued[1], store.blocks_generated, store.cache_hits, store.edit_hits, flora.chunks_made, flora.memory_hits, _idle_built
+		print("server: %d urgent and %d prefetch queued; generated %d, cache hits %d, edit hits %d; flora chunks %d made, %d from memory; idle-built %d columns; bad blocks %d, failed tile loads %d" % [
+			queued[0], queued[1], store.blocks_generated, store.cache_hits, store.edit_hits, flora.chunks_made, flora.memory_hits, _idle_built, store.bad_blocks, generator.failed_tiles
 		])
 
 	if _quit_when_empty and _quit_at_msec < 0:
@@ -474,6 +474,10 @@ func _worker_loop() -> void:
 
 		var key: Vector4i = item[1]
 		var bytes: PackedByteArray = store.block_bytes(Vector3i(key.x, key.y, key.z), key.w)
+		var check: PackedByteArray = PackedByteArray()
+		check.resize(4)
+		check.encode_u32(0, hash(bytes) & 0xffffffff)
+		bytes.append_array(check)           # the client verifies this before using the block
 		_done_mutex.lock()
 		_done.append([item[0], key, bytes])
 		_done_mutex.unlock()

@@ -22,7 +22,7 @@ var rate: float = 1.0
 var busy: bool = false
 
 var _generator
-var _base_rate: float = 0.6
+var _base_rate: float = 3.0
 var _path: String = ""
 var _thread: Thread = null
 var _mutex: Mutex = Mutex.new()

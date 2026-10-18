@@ -32,6 +32,7 @@ var tile_revisions: Dictionary = {}     # "x,z" -> revision (missing = 1)
 var blocks_generated: int = 0
 var cache_hits: int = 0
 var edit_hits: int = 0
+var bad_blocks: int = 0                 # built blocks that failed the sanity check (not saved)
 
 var _store_dir: String = ""
 var _generation: int = 0
@@ -137,8 +138,19 @@ func load_block(buffer: VoxelBuffer, block: Vector3i, lod: int) -> void:
 		_count("cache")
 		return
 
+	var failed_before: int = generator.failed_tiles
 	generator.generate(buffer, block * (BLOCK_SIZE << lod), lod)
-	cache.save_voxel_block(buffer, block, lod)
+
+	# A block built from a stand-in tile, or one that fails the check, is served this
+	# once but never saved, so a bad build cannot become permanent.
+	if generator.failed_tiles == failed_before and _is_sane(buffer, block, lod):
+		cache.save_voxel_block(buffer, block, lod)
+	elif generator.failed_tiles == failed_before:
+		generator.generate(buffer, block * (BLOCK_SIZE << lod), lod)
+
+		if _is_sane(buffer, block, lod):
+			cache.save_voxel_block(buffer, block, lod)
+
 	_count("generated")
 
 
@@ -156,10 +168,42 @@ func ensure_block(block: Vector3i, lod: int) -> bool:
 	if cache.load_voxel_block(buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND:
 		return false
 
+	var failed_before: int = generator.failed_tiles
 	generator.generate(buffer, block * (BLOCK_SIZE << lod), lod)
-	cache.save_voxel_block(buffer, block, lod)
+
+	if generator.failed_tiles == failed_before and _is_sane(buffer, block, lod):
+		cache.save_voxel_block(buffer, block, lod)
+
 	_count("generated")
 	return true
+
+
+# The ground is solid exactly where a voxel lies below its column's surface (caves
+# only add air), so a solid voxel well above the ground is a bad build. Checks the
+# top and middle layers of nine columns against the height the generator reports.
+func _is_sane(buffer: VoxelBuffer, block: Vector3i, lod: int) -> bool:
+	var s: float = float(1 << lod)
+	var origin: Vector3 = Vector3(block * (BLOCK_SIZE << lod))
+
+	for layer in [BLOCK_SIZE - 1, BLOCK_SIZE / 2]:
+		var y: float = origin.y + float(layer) * s
+
+		for cz in [0, BLOCK_SIZE / 2, BLOCK_SIZE - 1]:
+			for cx in [0, BLOCK_SIZE / 2, BLOCK_SIZE - 1]:
+				var h: float = generator.surface_height(origin.x + float(cx) * s, origin.z + float(cz) * s, lod)
+
+				if y > h + 2.0 * s and buffer.get_voxel_f(cx, layer, cz, Layout.CHANNEL_SDF) < 0.0:
+					_report_bad(block, lod, cx, layer, cz, y, h)
+					return false
+
+	return true
+
+
+func _report_bad(block: Vector3i, lod: int, cx: int, layer: int, cz: int, y: float, h: float) -> void:
+	_mutex.lock()
+	bad_blocks += 1
+	_mutex.unlock()
+	push_error("server: bad block %s at LOD %d: solid at column (%d, %d) layer %d, y %.1f, but the ground there is %.1f; not saved" % [str(block), lod, cx, cz, layer, y, h])
 
 
 # The block as it is sent to clients: buried ore hidden, compressed.
