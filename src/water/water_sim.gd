@@ -19,6 +19,8 @@ const FALL_RATE := 0.5          # the same, where the drop is steep (water falls
 const FALL_DIFF_M := 3.0        # level difference counted as a fall
 const MIN_DIFF_M := 0.002       # smaller differences are level
 const WET_M := 0.12             # drawn as water from this depth
+const STEEP_WET_M := 0.6       # on a steep drop (below), water thinner than this is not drawn
+const STEEP_DROP_M := 3.0      # ground this much higher than a neighbour counts as steep
 const PUDDLE_M := 0.06          # loose water thinner than this, with nowhere to go, dries
 const DRY_PER_TICK_M := 0.003   # how fast a stranded puddle dries
 
@@ -349,7 +351,24 @@ func level_map() -> PackedFloat32Array:
 	levels.fill(NAN)
 
 	for k in range(depth.size()):
-		if depth[k] >= WET_M:
-			levels[k] = ground[k] + depth[k]
+		if depth[k] < WET_M:
+			continue
+
+		# Thin water running down a steep wall is not drawn: it drew spikes of water up
+		# the sides of the ponds and cliffs.
+		if depth[k] < STEEP_WET_M and _is_steep(k):
+			continue
+
+		levels[k] = ground[k] + depth[k]
 
 	return levels
+
+
+func _is_steep(k: int) -> bool:
+	var lowest: float = ground[k]
+
+	for n in [k - 1, k + 1, k - side, k + side]:
+		if n >= 0 and n < ground.size():
+			lowest = minf(lowest, ground[n])
+
+	return ground[k] - lowest > STEEP_DROP_M
