@@ -224,7 +224,7 @@ func _make_tree_materials() -> void:
 	smooth_material.set_shader_parameter("bark", _load_texture("res://assets/trees/bark_smooth.png"))
 	_tree_materials["smooth_bark"] = smooth_material
 
-	for pair in [["broad", "res://assets/trees/leaf_broad.png"], ["conifer", "res://assets/trees/leaf_conifer.png"], ["palm", "res://assets/trees/leaf_palm.png"], ["grass", "res://assets/grass/grass_tall.png"], ["twig", "res://assets/trees/twig_birch.png"], ["oak", "res://assets/trees/leaf_oak.png"]]:
+	for pair in [["broad", "res://assets/trees/leaf_broad.png"], ["conifer", "res://assets/trees/leaf_conifer.png"], ["palm", "res://assets/trees/leaf_palm.png"], ["grass", "res://assets/grass/grass_tall.png"], ["twig", "res://assets/trees/twig_birch.png"], ["oak", "res://assets/trees/leaf_oak.png"], ["willow", "res://assets/trees/leaf_willow.png"]]:
 		var material: ShaderMaterial = ShaderMaterial.new()
 		material.shader = foliage
 		material.set_shader_parameter("leaves", _load_texture(pair[1]))

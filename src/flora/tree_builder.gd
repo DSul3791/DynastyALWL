@@ -21,6 +21,7 @@ const TWIG_TINT_BIRCH := Color(0.30, 0.24, 0.22)      # birch twigs: dark gray-b
 const BARK_TINT_MAPLE := Color(0.46, 0.43, 0.40)      # maple: furrowed gray-brown
 const BARK_TINT_BEECH := Color(0.56, 0.56, 0.55)      # beech: smooth bark texture at full brightness
 const BARK_TINT_ALDER := Color(0.46, 0.45, 0.44)      # alder: darker gray, paler patches
+const BARK_TINT_WILLOW := Color(0.40, 0.35, 0.30)     # willow: dark, deeply furrowed gray-brown
 const BARK_TINT_OAK := Color(0.44, 0.40, 0.36)        # oak: rugged, deeply furrowed gray-brown
 const BARK_TINT_WARDPINE := Color(0.54, 0.46, 0.38)   # wardpine: weathered silver-brown
 const BARK_TINT_PINE_LOW := Color(0.54, 0.46, 0.40)   # Scots pine: thick gray-brown plates low down
@@ -95,6 +96,8 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 			_scots_pine(bark, leaves, rng, h, crown, trunk, variant, far)
 		"wardpine":
 			_wardpine(bark, leaves, rng, h, crown, trunk, variant, far)
+		"willow":
+			_willow(bark, leaves, twigs, rng, h, crown, trunk, variant, far, season == "winter")
 		"alder":
 			_alder(smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season == "winter")
 		"beech":
@@ -1207,6 +1210,94 @@ static func _alder(smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenera
 			var r: float = crown_w * rng.randf_range(0.5, 0.85) * sin(PI * clampf((y / h - 0.2) / 0.85, 0.0, 1.0))
 			var at: Vector3 = Vector3(cos(a) * r, y, sin(a) * r)
 			_branch(smooth, at, at - Vector3(0.0, 0.07, 0.0), 0.015, 0.008, Color(0.2, 0.16, 0.14), 3)
+
+
+# Weeping willow (Salix babylonica). From the owner's photos (2026-10-18: a
+# young and a mature tree, each in summer, autumn and winter): long, whip-like
+# strands hang from every limb in curtains of narrow leaves (leaf_willow.png)
+# that fall nearly to the ground; golden yellow in autumn; bare hanging strands
+# in winter. A mature willow has a short, thick, dark furrowed trunk splitting
+# low into big limbs that climb and arch out into a broad dome; a young one is
+# a slim stem with lighter limbs whose strands hang to a third of its height.
+# Variants: 0 and 1 mature, 2 and 3 young (young_below_m picks them).
+static func _willow(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, variant: int, far: bool, bare: bool) -> void:
+	var young: bool = variant >= 2
+	var trunk_r: float = maxf(trunk * (0.55 if young else 1.0), h * (0.016 if young else 0.045))
+	var fork_y: float = h * (rng.randf_range(0.3, 0.38) if young else rng.randf_range(0.2, 0.28))
+	var trunk_h: float = h * 0.9 if young else fork_y + h * 0.04
+	var first: int = bark.v.size()
+	_trunk(bark, rng, trunk_h, trunk_r, trunk_r * (0.15 if young else 0.75), Vector2.ZERO, BARK_TINT_WILLOW, 6 if far else 10, 1 if far else 5, 0.0 if far else 1.0)
+
+	if not far and not young:
+		# Deep furrows twisting up the trunk.
+		for k in range(first, bark.v.size()):
+			var n: Vector3 = bark.n[k]
+			var ridge: float = sin(atan2(n.z, n.x) * 9.0 + bark.v[k].y * 0.5)
+			bark.v[k] += n * ridge * trunk_r * 0.07
+			bark.c[k] = BARK_TINT_WILLOW * (1.0 + ridge * 0.15)
+
+	var crown_w: float = maxf(crown, h * (0.32 if young else 0.52)) * rng.randf_range(0.92, 1.08)
+	var limbs: int = (7 if far else rng.randi_range(10, 13)) if young else (6 if far else rng.randi_range(7, 9))
+	var phase: float = rng.randf() * TAU
+	var floor_y: float = h * 0.3 if young else 0.5   # how low the strands hang
+	var dome_y: float = 0.0   # highest limb top, for the crown's cap
+
+	for k in range(limbs):
+		var g: float = (float(k) + rng.randf_range(0.0, 0.8)) / float(limbs)
+		phase += 2.4 if young else TAU / float(limbs) + rng.randf_range(-0.3, 0.3)
+		var out: Vector3 = Vector3(cos(phase), 0.0, sin(phase))
+		var y0: float = lerpf(fork_y, h * 0.85, g) if young else fork_y + rng.randf_range(-0.04, 0.04) * h
+		var p0: Vector3 = Vector3(0.0, y0, 0.0)
+		# Limbs climb, then arch out and over.
+		var reach: float = crown_w * (lerpf(1.0, 0.5, g) if young else rng.randf_range(0.8, 1.05))
+		var climb: float = (h - y0) * (lerpf(0.5, 0.25, g) if young else rng.randf_range(0.5, 0.7))
+		var p1: Vector3 = p0 + out * reach * 0.35 + Vector3.UP * climb * 0.75
+		var p2: Vector3 = p0 + out * reach * 0.75 + Vector3.UP * climb
+		var p3: Vector3 = p0 + out * reach + Vector3.UP * climb * 0.8
+		p2.y = minf(p2.y, h * 0.99)
+		p1.y = minf(p1.y, h * 0.95)
+		dome_y = maxf(dome_y, p2.y)
+
+		if not far:
+			var r0: float = trunk_r * (0.3 if young else 0.5)
+			_branch(bark, p0, p1, r0, r0 * 0.65, BARK_TINT_WILLOW, 6)
+			_branch(bark, p1, p2, r0 * 0.65, r0 * 0.35, BARK_TINT_WILLOW, 5)
+			_branch(bark, p2, p3, r0 * 0.35, 0.02, BARK_TINT_WILLOW, 4)
+
+		var curtains: int = (3 if far else 6) if young else (5 if far else 10)
+
+		# Curtains of strands hanging from the arching limb and its side shoots.
+		for m in range(curtains):
+			var t: float = rng.randf_range(0.2, 1.0)
+			var top: Vector3 = p1.lerp(p2, t * 2.0) if t < 0.5 else p2.lerp(p3, (t - 0.5) * 2.0)
+			top += Vector3(rng.randfn(), 0.0, rng.randfn()) * reach * 0.12
+			var hang: float = (top.y - floor_y) * rng.randf_range(0.7, 1.0)
+
+			if hang < 0.4:
+				continue
+
+			var away: Vector3 = Vector3(top.x, 0.0, top.z).normalized()
+			var normal: Vector3 = (away * 0.8 + Vector3.UP * 0.3).normalized()
+			var yaw: float = atan2(away.z, away.x) + PI * 0.5 + rng.randf_range(-0.5, 0.5)
+			var shade: float = lerpf(0.72, 1.0, clampf(top.y / h, 0.0, 1.0)) * rng.randf_range(0.92, 1.06)
+
+			for c in range(1 if far else 2):
+				var turn: float = yaw + PI * 0.5 * float(c) * 0.6
+				var right: Vector3 = Vector3(cos(turn), 0.0, sin(turn))
+				var center: Vector3 = top - Vector3.UP * hang * 0.5
+				var half_w: float = rng.randf_range(0.5, 0.8) * (1.6 if far else 1.0) * (0.7 if young else 1.0)
+				if bare:
+					twigs.card(center, right, Vector3.UP, half_w, hang * 0.5, normal, Color(1.0, 1.0, 1.0, 0.3))
+				else:
+					leaves.card(center, right, Vector3.UP, half_w, hang * 0.5, normal, Color(shade, shade, shade, rng.randf_range(0.8, 1.0)))
+
+	if not bare:
+		# Close the dome's top with a few strand cards draped over the limb ends.
+		for n in range(3 if far else 6):
+			var a: float = rng.randf() * TAU
+			var at: Vector3 = Vector3(cos(a), 0.0, sin(a)) * crown_w * rng.randf_range(0.0, 0.4) + Vector3(0.0, dome_y * rng.randf_range(0.97, 1.02), 0.0)
+			var right: Vector3 = Vector3(cos(a + PI * 0.5), 0.0, sin(a + PI * 0.5))
+			leaves.card(at - Vector3(0.0, h * 0.04, 0.0), right, Vector3.UP, crown_w * 0.25, h * 0.12, Vector3.UP, Color(0.92, 0.92, 0.92, 0.9))
 
 
 static func acc_bough(acc: Acc, at: Vector3, right: Vector3, up: Vector3, half_w: float, half_h: float, normal: Vector3, color: Color) -> void:

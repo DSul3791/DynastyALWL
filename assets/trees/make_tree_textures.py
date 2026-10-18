@@ -2,7 +2,7 @@
 
 Run: python3 assets/trees/make_tree_textures.py
 Writes leaf_broad.png, leaf_conifer.png, leaf_palm.png, bark.png, bark_birch.png
-twig_birch.png, leaf_oak.png and bark_smooth.png next to this file.
+twig_birch.png, leaf_oak.png, bark_smooth.png and leaf_willow.png next to this file.
 Foliage and bark are painted in light neutral values; the tree shader multiplies
 them by a per-tree color (autumn leaf color, species green, bark brown).
 Replace with real hand-painted art under the same names and sizes any time.
@@ -177,6 +177,34 @@ def oak(name, size, seed):
     finish(rgb, alpha, name, size)
 
 
+def willow(name, size, seed):
+    # Weeping willow: long hanging strands from the top edge, hung with narrow
+    # pointed leaves angled downward (owner's photos, 2026-10-18).
+    rng = random.Random(seed)
+    w, h = size[0] * SS, size[1] * SS
+    rgb = Image.new("RGB", (w, h), grey(150))
+    alpha = Image.new("L", (w, h), 0)
+    rd, ad = ImageDraw.Draw(rgb), ImageDraw.Draw(alpha)
+    for n in range(14):
+        x = rng.uniform(0.06, 0.94) * w
+        drift = rng.uniform(-0.04, 0.04) * w
+        end = h * rng.uniform(0.7, 0.99)
+        rd.line([(x, 0), (x + drift, end)], fill=grey(110), width=max(2, int(w * 0.006)))
+        ad.line([(x, 0), (x + drift, end)], fill=255, width=max(2, int(w * 0.006)))
+        y = rng.uniform(0.0, 0.04) * h
+        side = 1
+        while y < end - h * 0.02:
+            t = y / end
+            sx = x + drift * t
+            length = w * rng.uniform(0.07, 0.1)
+            angle = math.pi / 2 + side * rng.uniform(0.25, 0.55)   # hanging down and out
+            width = length * 0.22
+            leaf(rd, ad, sx, y, length, width, angle, rng.uniform(130, 235))
+            side = -side
+            y += h * rng.uniform(0.025, 0.04)
+    finish(rgb, alpha, name, size)
+
+
 def smooth_bark(name, size, seed):
     # Beech: smooth, pale elephant-gray bark with soft mottling and a few faint
     # horizontal wrinkles; fully opaque, tiles both ways.
@@ -285,4 +313,5 @@ if __name__ == "__main__":
     twig_birch("twig_birch.png", (256, 256), 9)
     oak("leaf_oak.png", (256, 256), 13)
     smooth_bark("bark_smooth.png", (128, 256), 17)
+    willow("leaf_willow.png", (256, 256), 19)
     print("wrote tree textures to", HERE)
