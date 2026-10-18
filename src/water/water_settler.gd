@@ -179,37 +179,44 @@ static func _pond_near(data, head: Vector2i, side: int) -> Vector2i:
 				best_dist = dist
 				best = Vector2i(i, j)
 
-	# Springs push water only to their own height: the spring sits on the bowl's uphill
-	# wall at the height of the pond's water line (one metre under its lowest lip), so its
-	# water joins the pond at once instead of running down the wall, and never on the rim,
-	# which would spill it out over the hillside.
+	# Owner's rule (2026-10-18): find the pond's lowest lip, and put the spring on the
+	# opposite side of the pond, 10 m higher than that lip. Its water runs down the wall into
+	# the pond, fills it to the lip and spills over there, never out over the far side.
 	if best.x >= 0:
 		var rim_low: float = INF
+		var low_angle: float = 0.0
 
-		for r in range(16):
-			var a_r: float = TAU * float(r) / 16.0
+		for r in range(32):
+			var a_r: float = TAU * float(r) / 32.0
 			var rx: int = clampi(best.x + int(round(cos(a_r) * 14.0)), 0, side - 1)
 			var rz: int = clampi(best.y + int(round(sin(a_r) * 14.0)), 0, side - 1)
-			rim_low = minf(rim_low, data.heights[rz * side + rx])
+			var rim_here: float = data.heights[rz * side + rx]
 
-		var line: float = rim_low - 1.0
-		var away: Vector2 = Vector2(best - head)
+			if rim_here < rim_low:
+				rim_low = rim_here
+				low_angle = a_r
+
+		var wanted: float = rim_low + 10.0
+		var opposite: Vector2 = Vector2(cos(low_angle + PI), sin(low_angle + PI))
 		var spot: Vector2i = best
 		var spot_gap: float = INF
 
-		for dj in range(-15, 16):
-			for di in range(-15, 16):
+		for dj in range(-30, 31):
+			for di in range(-30, 31):
 				var i2: int = best.x + di
 				var j2: int = best.y + dj
 
-				if i2 < 4 or j2 < 4 or i2 >= side - 4 or j2 >= side - 4 or di * di + dj * dj > 144:
+				if i2 < 4 or j2 < 4 or i2 >= side - 4 or j2 >= side - 4:
 					continue
 
-				# Only on the far side of the pond from the river head.
-				if Vector2(di, dj).dot(away) <= 0.0:
+				var offset: Vector2 = Vector2(di, dj)
+				var distance: float = offset.length()
+
+				# Within a 60 degree cone on the far side, between the middle and the outer ramp.
+				if distance < 8.0 or distance > 30.0 or offset.normalized().dot(opposite) < 0.866:
 					continue
 
-				var gap: float = absf(data.heights[j2 * side + i2] - line)
+				var gap: float = absf(data.heights[j2 * side + i2] - wanted) + 0.01 * distance
 
 				if gap < spot_gap:
 					spot_gap = gap
