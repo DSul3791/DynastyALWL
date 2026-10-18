@@ -5054,14 +5054,18 @@
 			"display": "Mirrorbark",
 			"kind": "tree",
 			"shape": "broadleaf",
-			"height_m": [10, 20],
-			"crown_m": 3.5,
-			"trunk_m": 0.35,
-			"color": [
-				0.72,
-				0.76,
-				0.74
+			"model": "mirrorbark",
+			"young_below_m": 8,
+			"autumn_colors": [
+				[0.94, 0.48, 0.08],
+				[0.9, 0.38, 0.06],
+				[0.96, 0.6, 0.12],
+				[0.84, 0.3, 0.06]
 			],
+			"height_m": [4, 20],
+			"crown_m": 7.0,
+			"trunk_m": 0.35,
+			"color": [0.36, 0.46, 0.2],
 			"per_hectare": {
 				"mixed_forest": 0.6,
 				"temperate_forest": 0.4

@@ -86,6 +86,38 @@ void fragment() {
 }
 """
 
+# Mirrorbark: polished chrome bark. Fully metallic and nearly smooth, so it
+# mirrors the sky and ground; the bark is split into faceted patches, each
+# tipped a little differently, so the mirror breaks up like the owner's pictures.
+const CHROME_SHADER := """
+shader_type spatial;
+render_mode diffuse_burley;
+uniform float sway = 0.004;
+
+void vertex() {
+	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
+	float bend = max(VERTEX.y, 0.0) * sway;
+	VERTEX.x += gust * bend;
+	VERTEX.z += gust * bend * 0.6;
+}
+
+float hash2(vec2 p) {
+	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+
+void fragment() {
+	vec2 cell = floor(UV * vec2(4.0, 3.0));
+	float a = hash2(cell);
+	float b = hash2(cell + 17.0);
+	NORMAL = normalize(NORMAL + (VIEW_MATRIX * vec4(a - 0.5, 0.0, b - 0.5, 0.0)).xyz * 0.5);
+	ALBEDO = vec3(0.9, 0.91, 0.93) * (0.85 + 0.3 * a) * COLOR.rgb * 1.6;
+	METALLIC = 1.0;
+	ROUGHNESS = 0.06 + 0.08 * b;
+	SPECULAR = 0.8;
+}
+"""
+
 const KINDS := ["tree", "shrub", "plant"]
 const PART_M := [256.0, 128.0, 128.0]
 
@@ -223,6 +255,11 @@ func _make_tree_materials() -> void:
 	smooth_material.shader = bark
 	smooth_material.set_shader_parameter("bark", _load_texture("res://assets/trees/bark_smooth.png"))
 	_tree_materials["smooth_bark"] = smooth_material
+	var chrome: Shader = Shader.new()
+	chrome.code = CHROME_SHADER
+	var chrome_material: ShaderMaterial = ShaderMaterial.new()
+	chrome_material.shader = chrome
+	_tree_materials["chrome"] = chrome_material
 
 	for pair in [["broad", "res://assets/trees/leaf_broad.png"], ["conifer", "res://assets/trees/leaf_conifer.png"], ["palm", "res://assets/trees/leaf_palm.png"], ["grass", "res://assets/grass/grass_tall.png"], ["twig", "res://assets/trees/twig_birch.png"], ["oak", "res://assets/trees/leaf_oak.png"], ["willow", "res://assets/trees/leaf_willow.png"], ["rowan", "res://assets/trees/leaf_rowan.png"], ["maple", "res://assets/trees/leaf_maple.png"]]:
 		var material: ShaderMaterial = ShaderMaterial.new()

@@ -38,6 +38,7 @@ const BARK_TINT_CHESTNUT := Color(0.46, 0.42, 0.38)   # sweet chestnut: gray-bro
 const CATKIN_TINT := Color(0.78, 0.74, 0.52)          # chestnut catkins: long and creamy
 const BURR_TINT := Color(0.50, 0.52, 0.16)            # chestnut burrs: spiny green-gold
 const NUT_TINT := Color(0.36, 0.16, 0.06)             # chestnuts: glossy brown
+const CHROME_TINT := Color(0.56, 0.56, 0.57)          # mirrorbark: polished chrome (the chrome material does the shine)
 const BARK_TINT_WALNUT := Color(0.52, 0.51, 0.49)     # walnut: pale gray, straight deep furrows
 const WALNUT_CATKIN_TINT := Color(0.56, 0.62, 0.18)   # walnut catkins: long, yellow-green
 const WALNUT_HUSK_TINT := Color(0.38, 0.52, 0.16)     # walnuts in their green husks
@@ -100,6 +101,7 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 	var white: Acc = Acc.new()   # birch bark
 	var twigs: Acc = Acc.new()   # bare winter twig curtains
 	var smooth: Acc = Acc.new()  # smooth gray bark (beech)
+	var chrome: Acc = Acc.new()  # mirror-polished bark (mirrorbark)
 	var crown: float = float(entry["crown_m"])
 	var trunk: float = maxf(float(entry["trunk_m"]), 0.03)
 
@@ -129,6 +131,8 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 			_alder(smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season == "winter")
 		"beech":
 			_beech(smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season == "winter")
+		"mirrorbark":
+			_mirrorbark(chrome, leaves, twigs, rng, h, crown, trunk, variant, far, season == "winter")
 		"walnut":
 			_chestnut(bark, leaves, twigs, rng, h, crown, trunk, variant, far, season, true)
 		"sweet_chestnut":
@@ -160,6 +164,7 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 	bark.commit(mesh, materials["bark"])
 	white.commit(mesh, materials.get("birch_bark", materials["bark"]))
 	smooth.commit(mesh, materials.get("smooth_bark", materials["bark"]))
+	chrome.commit(mesh, materials.get("chrome", materials["bark"]))
 	twigs.commit(mesh, materials.get("twig", materials["broad"]))
 	var shape: String = str(entry["shape"])
 	var leaf_kind: String = "broad"
@@ -1130,6 +1135,62 @@ static func _chestnut(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGener
 			_bead(bark, at, Vector3(0.24, 0.06, 0.06), burr)
 			_bead(bark, at, Vector3(0.06, 0.06, 0.24), burr)
 			_bead(bark, at + Vector3(0.0, 0.13, 0.0), Vector3(0.09, 0.09, 0.09), NUT_TINT)
+
+
+# Mirrorbark (fantasy). From the owner's pictures (2026-10-18, young and mature
+# in four seasons): an ordinary hardwood in shape and leaf, orange in autumn,
+# but its bark is polished chrome in faceted mirror patches (the "chrome"
+# material), and its trunk twists like rope as it climbs.
+# Variants: 0 and 1 mature, 2 and 3 young (young_below_m picks them).
+static func _mirrorbark(chrome: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, variant: int, far: bool, bare: bool) -> void:
+	var young: bool = variant >= 2
+	var crown_w: float = (h * 0.3 if young else maxf(crown, h * 0.4)) * rng.randf_range(0.9, 1.1)
+	var twist: float = rng.randf_range(1.6, 2.4) * (1.0 if rng.randf() < 0.5 else -1.0)
+	var first: int = chrome.v.size()
+	var trunk_r: float
+	var twist_top: float
+
+	if young:
+		trunk_r = maxf(trunk * 0.5, h * 0.018)
+		twist_top = h * 0.45
+		var lean: Vector3 = Vector3(rng.randf_range(-0.04, 0.04), 0.0, rng.randf_range(-0.04, 0.04)) * h
+		_pole(chrome, leaves, twigs, rng, Vector3.ZERO, Vector3(0.0, h * 0.95, 0.0) + lean, trunk_r, crown_w, h * rng.randf_range(0.3, 0.36), 7 if far else rng.randi_range(11, 14), 0.8, CHROME_TINT, far, bare, 0.4)
+	else:
+		trunk_r = maxf(trunk, h * 0.034)
+		var fork_y: float = h * rng.randf_range(0.28, 0.34)
+		twist_top = fork_y + h * 0.05
+		var lean: Vector2 = Vector2(rng.randf_range(-0.03, 0.03), rng.randf_range(-0.03, 0.03)) * h
+		_trunk(chrome, rng, twist_top, trunk_r, trunk_r * 0.8, lean, CHROME_TINT, 6 if far else 12, 1 if far else 6, 0.0 if far else 1.2)
+		var fork: Vector3 = Vector3(lean.x, fork_y, lean.y)
+		var center: Vector3 = Vector3(lean.x, lerpf(fork_y, h, 0.48), lean.y)
+		var limbs: int = rng.randi_range(4, 6)
+		var phase: float = rng.randf() * TAU
+
+		for k in range(limbs):
+			phase += TAU / float(limbs) + rng.randf_range(-0.35, 0.35)
+			var out: Vector3 = Vector3(cos(phase), 0.0, sin(phase))
+			var rise: float = deg_to_rad(74.0 if k == 0 else rng.randf_range(46.0, 62.0))
+			var dir: Vector3 = (out * cos(rise) + Vector3.UP * sin(rise)).normalized()
+			var length: float = (h - fork_y) * (0.26 if k == 0 else rng.randf_range(0.2, 0.25))
+			_maple_limb(chrome, leaves, twigs, rng, fork + Vector3(0.0, rng.randf_range(-0.04, 0.03) * h, 0.0), dir, length, trunk_r * 0.45, 0, 2 if far else 3, center, crown_w, h, far, bare, 0.2, CHROME_TINT)
+
+		_skirt_limbs(rng, fork_y, lean, trunk_r, crown_w, far, func(from: Vector3, d: Vector3, length: float, r: float) -> void:
+			_maple_limb(chrome, leaves, twigs, rng, from, d, length, r, 0, 1 if far else 2, center, crown_w, h, far, bare, -0.3, CHROME_TINT))
+
+	if far:
+		return
+
+	# Rope-like twist: thick strands spiral up the trunk, each a mirror facet
+	# a little brighter or darker than its neighbor.
+	for k in range(first, chrome.v.size()):
+		var p: Vector3 = chrome.v[k]
+		if p.y > twist_top or Vector2(p.x, p.z).length() > trunk_r * 2.2:
+			continue
+		var n: Vector3 = chrome.n[k]
+		var strand: float = sin(atan2(n.z, n.x) * 3.0 + p.y * twist / maxf(trunk_r * 4.0, 0.3))
+		chrome.v[k] += n * strand * trunk_r * 0.26
+		var shade: float = 1.0 + strand * 0.25
+		chrome.c[k] = Color(CHROME_TINT.r * shade, CHROME_TINT.g * shade, CHROME_TINT.b * shade)
 
 
 # One crooked oak limb: two kinked pieces, then two or three smaller limbs that

@@ -36,7 +36,7 @@ def main():
     models = json.load(open(args[0]))
     tex = {"conifer": load("leaf_conifer.png"), "broad": load("leaf_broad.png"), "palm": load("leaf_palm.png"), "bark": load("bark.png"),
            "birch_bark": load("bark_birch.png"), "twig": load("twig_birch.png"), "oak": load("leaf_oak.png"),
-           "smooth_bark": load("bark_smooth.png"), "willow": load("leaf_willow.png"), "rowan": load("leaf_rowan.png"), "maple": load("leaf_maple.png")}
+           "smooth_bark": load("bark_smooth.png"), "willow": load("leaf_willow.png"), "rowan": load("leaf_rowan.png"), "maple": load("leaf_maple.png"), "chrome": load("bark_smooth.png")}
     widths = []
     for m in models:
         xs = np.concatenate([np.array(s["v"]).reshape(-1, 3)[:, 0] for s in m["surfaces"]])
@@ -97,7 +97,7 @@ def main():
                     continue
                 z = l0 * a[2] + l1 * b[2] + l2 * c[2]
                 t_uv = l0[..., None] * uv[tri[0]] + l1[..., None] * uv[tri[1]] + l2[..., None] * uv[tri[2]]
-                if mat in ("bark", "birch_bark", "smooth_bark"):
+                if mat in ("bark", "birch_bark", "smooth_bark", "chrome"):
                     tu = (t_uv[..., 0] % 1.0) * (tw - 1)
                     tv = (t_uv[..., 1] % 1.0) * (th - 1)
                 else:
@@ -115,6 +115,16 @@ def main():
                 if mat == "twig":
                     albedo = texel[..., :3] * vc * np.array([0.30, 0.24, 0.22]) * 1.6
                     shade = 0.6 + 0.4 * abs(float(nn @ light))
+                elif mat == "chrome":
+                    # Rough stand-in for a mirror: the sky above, the ground below,
+                    # and a hot highlight toward the sun.
+                    r = nn - 2.0 * float(nn @ np.array([0.0, 0.0, -1.0])) * np.array([0.0, 0.0, -1.0])
+                    up = float(r[1])
+                    sky = np.array([0.55, 0.7, 0.92]) * up + np.array([0.86, 0.9, 0.94]) * (1.0 - up)
+                    env = sky if up > -0.25 else np.array([0.34, 0.36, 0.3])
+                    glint = max(0.0, float(r @ light)) ** 12
+                    albedo = np.broadcast_to(np.clip(env * float(vc.mean()) * 1.25 + glint, 0, 1), texel[..., :3].shape)
+                    shade = 1.0
                 elif mat in ("bark", "birch_bark", "smooth_bark"):
                     albedo = texel[..., :3] * vc * 1.8
                     shade = 0.45 + 0.55 * max(0.0, float(nn @ light))
