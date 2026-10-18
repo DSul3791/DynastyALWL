@@ -2462,8 +2462,19 @@
 			"display": "Sweet chestnut",
 			"kind": "tree",
 			"shape": "broadleaf",
-			"height_m": [14, 24],
-			"crown_m": 6.0,
+			"model": "sweet_chestnut",
+			"young_below_m": 10,
+			"autumn_colors": [
+				[0.86, 0.6, 0.14],
+				[0.92, 0.7, 0.18],
+				[0.76, 0.46, 0.12],
+				[0.82, 0.54, 0.16]
+			],
+			"height_m": [
+				5,
+				24
+			],
+			"crown_m": 8.0,
 			"trunk_m": 0.6,
 			"color": [
 				0.3,
