@@ -384,9 +384,22 @@ func water_level_at(x: float, z: float) -> float:
 
 	var spacing: float = float(grid["spacing"])
 	var count: int = int(grid["count"])
-	var i: int = clampi(int(round((x - float(chunk.x) * chunk_m) / spacing)), 0, count - 1)
-	var j: int = clampi(int(round((z - float(chunk.y) * chunk_m) / spacing)), 0, count - 1)
-	return float(grid["levels"][j * count + i])
+	var fx: float = (x - float(chunk.x) * chunk_m) / spacing
+	var fz: float = (z - float(chunk.y) * chunk_m) / spacing
+	var i0: int = clampi(int(floor(fx)), 0, count - 1)
+	var j0: int = clampi(int(floor(fz)), 0, count - 1)
+	var best: float = NAN
+
+	# The highest wet corner of the square the point is in (a single nearest corner
+	# missed the water at the bottom of a steep pond).
+	for j in range(j0, mini(j0 + 2, count)):
+		for i in range(i0, mini(i0 + 2, count)):
+			var level: float = float(grid["levels"][j * count + i])
+
+			if not is_nan(level) and (is_nan(best) or level > best):
+				best = level
+
+	return best
 
 
 func drop_chunk(chunk: Vector2i) -> void:
