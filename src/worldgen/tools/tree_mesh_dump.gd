@@ -4,7 +4,7 @@ extends SceneTree
 # normals, uvs, colors and triangles per surface), so tools/render_trees.py can draw a
 # preview picture without a graphics card.
 #
-#   godot --headless --path . --script res://src/worldgen/tools/tree_mesh_dump.gd -- --species=balsam_fir,spruce [--far] [--scales=0.4,1,1.4] [--out=PATH]
+#   godot --headless --path . --script res://src/worldgen/tools/tree_mesh_dump.gd -- --species=balsam_fir,spruce [--far] [--scales=0.4,1,1.4] [--season=winter] [--out=PATH]
 #
 # Default output: worlds/base_world/plan/tree_meshes.json. Each species gives
 # its TreeBuilder variants at its reference height (middle of height_m), or
@@ -16,6 +16,7 @@ const TreeBuilder := preload("res://src/flora/tree_builder.gd")
 func _init() -> void:
 	var names: PackedStringArray = PackedStringArray(["balsam_fir"])
 	var far: bool = false
+	var season: String = ""
 	var scales: PackedFloat64Array = PackedFloat64Array([1.0])
 	var out_path: String = "res://worlds/base_world/plan/tree_meshes.json"
 
@@ -26,6 +27,8 @@ func _init() -> void:
 			scales = PackedFloat64Array()
 			for part in argument.trim_prefix("--scales=").split(","):
 				scales.append(float(part))
+		elif argument.begins_with("--season="):
+			season = argument.trim_prefix("--season=")
 		elif argument == "--far":
 			far = true
 		elif argument.begins_with("--out="):
@@ -34,7 +37,7 @@ func _init() -> void:
 	var table: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/tables/flora.json"))
 	var materials: Dictionary = {}
 
-	for key in ["bark", "broad", "conifer", "palm", "grass"]:
+	for key in ["bark", "broad", "conifer", "palm", "grass", "birch_bark", "twig"]:
 		var material: StandardMaterial3D = StandardMaterial3D.new()
 		material.resource_name = key
 		materials[key] = material
@@ -51,7 +54,7 @@ func _init() -> void:
 		for index in range(TreeBuilder.VARIANTS * scales.size()):
 			var v: int = index % TreeBuilder.VARIANTS
 			var scale: float = scales[index / TreeBuilder.VARIANTS]
-			var mesh: ArrayMesh = TreeBuilder.build(entry, reference, v, far, materials)
+			var mesh: ArrayMesh = TreeBuilder.build(entry, reference, v, far, materials, season)
 			var surfaces: Array = []
 
 			for s in range(mesh.get_surface_count()):
@@ -80,7 +83,8 @@ func _init() -> void:
 				})
 
 			result.append({"name": str(entry["name"]), "variant": v, "height": reference * scale, "color": entry["color"],
-				"young_color": entry.get("young_color", entry["color"]), "young_m": entry.get("young_m", [0.0, 0.1]), "surfaces": surfaces})
+				"young_color": entry.get("young_color", entry["color"]), "young_m": entry.get("young_m", [0.0, 0.1]),
+				"autumn_colors": entry.get("autumn_colors", []), "surfaces": surfaces})
 			print("%s variant %d: %d triangles" % [entry["name"], v, _triangles(mesh)])
 
 	var file: FileAccess = FileAccess.open(out_path, FileAccess.WRITE)

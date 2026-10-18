@@ -2,7 +2,8 @@
 without a graphics card: a small z-buffered software renderer using the real
 leaf and bark textures and roughly the game's foliage tint and lighting.
 
-Run: python3 tools/render_trees.py MESHES.json OUT.png [--elev=DEG] [--px=PIXELS_PER_M]
+Run: python3 tools/render_trees.py MESHES.json OUT.png [--elev=DEG] [--px=PIXELS_PER_M] [--autumn]
+--autumn tints leaves with the species' first autumn color instead of its green.
 Each model is drawn side on (or from the given elevation), left to right, with a
 1.8 m figure for scale.
 """
@@ -33,7 +34,8 @@ def main():
     elev = math.radians(float(opts.get("elev", 8)))
     px = float(opts.get("px", 14))
     models = json.load(open(args[0]))
-    tex = {"conifer": load("leaf_conifer.png"), "broad": load("leaf_broad.png"), "palm": load("leaf_palm.png"), "bark": load("bark.png")}
+    tex = {"conifer": load("leaf_conifer.png"), "broad": load("leaf_broad.png"), "palm": load("leaf_palm.png"), "bark": load("bark.png"),
+           "birch_bark": load("bark_birch.png"), "twig": load("twig_birch.png")}
     widths = []
     for m in models:
         xs = np.concatenate([np.array(s["v"]).reshape(-1, 3)[:, 0] for s in m["surfaces"]])
@@ -64,6 +66,8 @@ def main():
         age = min(max((m["height"] - lo) / max(hi - lo, 0.1), 0.0), 1.0)
         base = np.array(m.get("young_color", m["color"])[:3]) * (1 - age) + np.array(m["color"][:3]) * age
         tint = natural(base) * 1.5 * 0.92
+        if "--autumn" in sys.argv and m.get("autumn_colors"):
+            tint = np.array(m["autumn_colors"][0][:3]) * 1.5 * 0.92
         for s in m["surfaces"]:
             v = np.array(s["v"]).reshape(-1, 3)
             n = np.array(s["n"]).reshape(-1, 3)
@@ -92,7 +96,7 @@ def main():
                     continue
                 z = l0 * a[2] + l1 * b[2] + l2 * c[2]
                 t_uv = l0[..., None] * uv[tri[0]] + l1[..., None] * uv[tri[1]] + l2[..., None] * uv[tri[2]]
-                if mat == "bark":
+                if mat in ("bark", "birch_bark"):
                     tu = (t_uv[..., 0] % 1.0) * (tw - 1)
                     tv = (t_uv[..., 1] % 1.0) * (th - 1)
                 else:
@@ -107,7 +111,10 @@ def main():
                 vc = col[tri[0]][:3]
                 nn = n[tri].mean(0)
                 nn /= max(np.linalg.norm(nn), 1e-6)
-                if mat == "bark":
+                if mat == "twig":
+                    albedo = texel[..., :3] * vc * np.array([0.30, 0.24, 0.22]) * 1.6
+                    shade = 0.6 + 0.4 * abs(float(nn @ light))
+                elif mat in ("bark", "birch_bark"):
                     albedo = texel[..., :3] * vc * 1.8
                     shade = 0.45 + 0.55 * max(0.0, float(nn @ light))
                 else:

@@ -184,6 +184,12 @@ func setup(tables, tile_rules: Dictionary) -> void:
 			"tint": _plant_tint(entry, c),
 		}
 
+		if entry.has("autumn_colors"):
+			var palette: Array[Color] = []
+			for ac in entry["autumn_colors"]:
+				palette.append(Color(float(ac[0]), float(ac[1]), float(ac[2])))
+			_species[int(entry["id"])]["autumn"] = palette
+
 		if entry.has("young_color"):
 			var yc: Array = entry["young_color"]
 			_species[int(entry["id"])]["young_tint"] = _plant_tint(entry, yc)
@@ -200,8 +206,12 @@ func _make_tree_materials() -> void:
 	bark_material.shader = bark
 	bark_material.set_shader_parameter("bark", _load_texture("res://assets/trees/bark.png"))
 	_tree_materials["bark"] = bark_material
+	var birch_material: ShaderMaterial = ShaderMaterial.new()
+	birch_material.shader = bark
+	birch_material.set_shader_parameter("bark", _load_texture("res://assets/trees/bark_birch.png"))
+	_tree_materials["birch_bark"] = birch_material
 
-	for pair in [["broad", "res://assets/trees/leaf_broad.png"], ["conifer", "res://assets/trees/leaf_conifer.png"], ["palm", "res://assets/trees/leaf_palm.png"], ["grass", "res://assets/grass/grass_tall.png"]]:
+	for pair in [["broad", "res://assets/trees/leaf_broad.png"], ["conifer", "res://assets/trees/leaf_conifer.png"], ["palm", "res://assets/trees/leaf_palm.png"], ["grass", "res://assets/grass/grass_tall.png"], ["twig", "res://assets/trees/twig_birch.png"]]:
 		var material: ShaderMaterial = ShaderMaterial.new()
 		material.shader = foliage
 		material.set_shader_parameter("leaves", _load_texture(pair[1]))
@@ -563,7 +573,7 @@ func _refresh(chunk: Vector2i, position: Vector3) -> void:
 			multimesh.set_instance_transform(m, Transform3D(basis, items["positions"][n] - Vector3(0.0, 0.15, 0.0)))
 
 			if bool(info["tinted"]):
-				multimesh.set_instance_custom_data(m, _autumn_tint(ids[n]) if info["hardwood"] else (_conifer_tint(ids[n], _age_tint(info, float(items["heights"][n]))) if info["kind"] == KIND_TREE else info["tint"]))
+				multimesh.set_instance_custom_data(m, _autumn_tint(ids[n], info.get("autumn", AUTUMN)) if info["hardwood"] else (_conifer_tint(ids[n], _age_tint(info, float(items["heights"][n]))) if info["kind"] == KIND_TREE else info["tint"]))
 
 		var draw: MultiMeshInstance3D = MultiMeshInstance3D.new()
 		draw.multimesh = multimesh
@@ -612,9 +622,9 @@ func _distance(chunk: Vector2i, position: Vector3) -> float:
 
 # One autumn leaf color per hardwood tree, fixed by the tree's id so it
 # looks the same for every player and every visit.
-func _autumn_color(id: int) -> Color:
+func _autumn_color(id: int, palette: Array[Color] = AUTUMN) -> Color:
 	var mix: int = (id * 2654435761) & 0x7fffffff
-	var base: Color = AUTUMN[mix % AUTUMN.size()]
+	var base: Color = palette[mix % palette.size()]
 	var shade: float = 0.9 + 0.2 * float((mix >> 8) % 100) / 100.0
 	return Color(minf(base.r * shade, 1.0), minf(base.g * shade, 1.0), minf(base.b * shade, 1.0))
 
@@ -635,9 +645,10 @@ static func _plant_tint(entry: Dictionary, c: Array) -> Color:
 
 
 # The leaf tint for a hardwood tree: its autumn color, scaled up because the
-# painted leaf texture is light gray and the tint multiplies it.
-func _autumn_tint(id: int) -> Color:
-	var c: Color = _autumn_color(id)
+# painted leaf texture is light gray and the tint multiplies it. A species
+# with its own autumn colors (birch: golden yellow) picks from those.
+func _autumn_tint(id: int, palette: Array[Color] = AUTUMN) -> Color:
+	var c: Color = _autumn_color(id, palette)
 	return Color(c.r * 1.5, c.g * 1.5, c.b * 1.5)
 
 

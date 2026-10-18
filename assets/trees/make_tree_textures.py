@@ -1,7 +1,8 @@
 """Paints the tree textures (hand-painted style, made in code).
 
 Run: python3 assets/trees/make_tree_textures.py
-Writes leaf_broad.png, leaf_conifer.png, leaf_palm.png and bark.png next to this file.
+Writes leaf_broad.png, leaf_conifer.png, leaf_palm.png, bark.png, bark_birch.png
+and twig_birch.png next to this file.
 Foliage and bark are painted in light neutral values; the tree shader multiplies
 them by a per-tree color (autumn leaf color, species green, bark brown).
 Replace with real hand-painted art under the same names and sizes any time.
@@ -138,9 +139,86 @@ def bark(name, size, seed):
     finish(rgb, alpha, name, size)
 
 
+def birch_bark(name, size, seed):
+    # Paper birch: chalk-white bark ringed with thin dark lenticel dashes, and
+    # black wedge-shaped patches below old branch scars; fully opaque, tiles
+    # both ways (owner's photos, 2026-10-18).
+    rng = random.Random(seed)
+    w, h = size[0] * SS, size[1] * SS
+    rgb = Image.new("RGB", (w, h), grey(236, 1.0))
+    d = ImageDraw.Draw(rgb)
+
+    def tiled(draw_fn):
+        for dx in (-w, 0, w):
+            for dy in (-h, 0, h):
+                draw_fn(dx, dy)
+
+    # Faint cream and gray mottling, so the white is not flat.
+    for n in range(70):
+        x, y = rng.uniform(0, w), rng.uniform(0, h)
+        rx, ry = rng.uniform(0.05, 0.2) * w, rng.uniform(0.01, 0.04) * h
+        shade = rng.uniform(205, 248)
+        tiled(lambda dx, dy: d.ellipse([x + dx - rx, y + dy - ry, x + dx + rx, y + dy + ry], fill=grey(shade, 1.0)))
+    # Lenticels: thin horizontal dashes running around the trunk.
+    for n in range(100):
+        x, y = rng.uniform(0, w), rng.uniform(0, h)
+        length = rng.uniform(0.04, 0.22) * w
+        thick = max(2, int(rng.uniform(0.004, 0.011) * h))
+        shade = rng.uniform(40, 110)
+        tiled(lambda dx, dy: d.line([(x + dx, y + dy), (x + dx + length, y + dy + rng.uniform(-3, 3))], fill=grey(shade), width=thick))
+    # Black patches: wide on top, tapering down, rough edged.
+    for n in range(9):
+        x, y = rng.uniform(0, w), rng.uniform(0, h)
+        half = rng.uniform(0.07, 0.2) * w
+        tall = rng.uniform(0.04, 0.1) * h
+        pts = []
+        for k in range(9):
+            t = k / 8.0
+            pts.append((x - half + 2 * half * t, y + rng.uniform(-0.15, 0.15) * tall))
+        for k in range(6):
+            t = k / 5.0
+            pts.append((x + half * (1 - 2 * t) * 0.6, y + tall * (0.6 + 0.4 * math.sin(t * math.pi)) + rng.uniform(-0.2, 0.2) * tall))
+        shade = rng.uniform(25, 55)
+        tiled(lambda dx, dy: d.polygon([(px + dx, py + dy) for px, py in pts], fill=grey(shade)))
+    alpha = Image.new("L", (w, h), 255)
+    finish(rgb, alpha, name, size)
+
+
+def twig_birch(name, size, seed):
+    # A curtain of fine birch twigs hanging from the top edge, for bare winter
+    # crowns: thin dark lines, branching and drooping; light neutral values so
+    # the shader tint gives the twig color.
+    rng = random.Random(seed)
+    w, h = size[0] * SS, size[1] * SS
+    rgb = Image.new("RGB", (w, h), grey(140))
+    alpha = Image.new("L", (w, h), 0)
+    rd, ad = ImageDraw.Draw(rgb), ImageDraw.Draw(alpha)
+
+    def twig(x, y, ang, length, width, depth):
+        steps = 6
+        for s in range(steps):
+            nx = x + math.sin(ang) * length / steps
+            ny = y + math.cos(ang) * length / steps
+            shade = rng.uniform(110, 170)
+            rd.line([(x, y), (nx, ny)], fill=grey(shade), width=max(1, int(width)))
+            ad.line([(x, y), (nx, ny)], fill=255, width=max(1, int(width)))
+            x, y = nx, ny
+            ang += rng.uniform(-0.12, 0.12) - ang * 0.08   # bend toward hanging straight down
+            width *= 0.9
+            if depth > 0 and rng.random() < 0.45:
+                twig(x, y, ang + rng.choice((-1, 1)) * rng.uniform(0.3, 0.7), length * rng.uniform(0.35, 0.6), width * 0.8, depth - 1)
+
+    for n in range(10):
+        x0 = rng.uniform(0.05, 0.95) * w
+        twig(x0, 0, rng.uniform(-0.35, 0.35), h * rng.uniform(0.6, 0.98), w * 0.008, 2)
+    finish(rgb, alpha, name, size)
+
+
 if __name__ == "__main__":
     broad("leaf_broad.png", (256, 256), 11)
     conifer("leaf_conifer.png", (256, 128), 5)
     palm("leaf_palm.png", (256, 128), 3)
     bark("bark.png", (128, 256), 2)
+    birch_bark("bark_birch.png", (128, 256), 7)
+    twig_birch("twig_birch.png", (256, 256), 9)
     print("wrote tree textures to", HERE)

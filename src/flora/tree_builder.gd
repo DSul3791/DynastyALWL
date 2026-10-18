@@ -16,6 +16,8 @@ const BARK_TINT_SOFT := Color(0.50, 0.34, 0.22)       # softwood and evergreens:
 const BARK_TINT_PALM := Color(0.60, 0.50, 0.36)
 const BARK_TINT_FIR := Color(0.55, 0.54, 0.52)        # balsam fir: smooth ash gray, browner with age
 const CONE_TINT_FIR := Color(0.40, 0.30, 0.34)        # balsam fir cones: purple-brown, upright
+const BARK_TINT_BIRCH := Color(0.56, 0.56, 0.55)      # birch: white bark texture at full brightness
+const TWIG_TINT_BIRCH := Color(0.30, 0.24, 0.22)      # birch twigs: dark gray-brown
 
 
 class Acc:
@@ -59,12 +61,17 @@ class Acc:
 		mesh.surface_set_material(mesh.get_surface_count() - 1, material)
 
 
-# `materials`: {"bark": Material, "broad": Material, "conifer": Material, "palm": Material}
-static func build(entry: Dictionary, h: float, variant: int, far: bool, materials: Dictionary) -> ArrayMesh:
+# `materials`: {"bark": Material, "broad": Material, "conifer": Material, "palm": Material,
+# "birch_bark": Material, "twig": Material}. `season`: "winter" gives species that
+# have a bare model (birch) no leaves; anything else gives the leafy model (the
+# leaf color is the per-tree tint, so summer and autumn share one model).
+static func build(entry: Dictionary, h: float, variant: int, far: bool, materials: Dictionary, season: String = "") -> ArrayMesh:
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = hash([str(entry["name"]), variant])
 	var bark: Acc = Acc.new()
 	var leaves: Acc = Acc.new()
+	var white: Acc = Acc.new()   # birch bark
+	var twigs: Acc = Acc.new()   # bare winter twig curtains
 	var crown: float = float(entry["crown_m"])
 	var trunk: float = maxf(float(entry["trunk_m"]), 0.03)
 
@@ -72,6 +79,8 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 	match str(entry.get("model", entry["shape"])):
 		"balsam_fir":
 			_balsam_fir(bark, leaves, rng, h, crown, trunk, variant, far)
+		"birch":
+			_birch(white, bark, leaves, twigs, rng, h, crown, trunk, variant, far, season == "winter")
 		"broadleaf":
 			_broadleaf(bark, leaves, rng, h, crown, trunk, far)
 		"conifer":
@@ -93,6 +102,8 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 
 	var mesh: ArrayMesh = ArrayMesh.new()
 	bark.commit(mesh, materials["bark"])
+	white.commit(mesh, materials.get("birch_bark", materials["bark"]))
+	twigs.commit(mesh, materials.get("twig", materials["broad"]))
 	var shape: String = str(entry["shape"])
 	var leaf_kind: String = "broad"
 
@@ -417,6 +428,131 @@ static func _balsam_fir(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: f
 			# A little larger than life (real cones 4 to 8 cm) so they read in the storybook look.
 			var len: float = rng.randf_range(0.12, 0.16)
 			_branch(bark, base, base + Vector3(0.0, len, 0.0), 0.04, 0.028, CONE_TINT_FIR, 5)
+
+
+# Birch (Betula papyrifera / pendula). From the owner's photos (2026-10-18,
+# summer, autumn and winter beside a lake) and field guides: one slim, slightly
+# leaning chalk-white trunk with dark lenticel dashes and black patches, turning
+# black and rough at the foot of old trees; the trunk carries on as a leader
+# into the top. Limbs leave at a steep angle, arch outward and droop at the
+# tips, and fine dark red-brown twigs hang from them in curtains, so the crown
+# is an airy, open oval with sky showing through. Small leaves, light green in
+# summer, golden yellow in autumn (the tint, flora_view.gd); bare in winter,
+# when the hanging twigs show as a fine dark haze.
+# Variants: 0 open grown (crown low and broad, like the photos), 1 stand grown
+# (crown high and narrow over a long clear trunk), 2 open grown and leaning
+# (the summer photo), 3 stand grown and leaning.
+static func _birch(white: Acc, bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, variant: int, far: bool, bare: bool) -> void:
+	var stand_grown: bool = variant % 2 == 1
+	var leaning: bool = variant >= 2
+	var lean_m: float = h * (rng.randf_range(0.1, 0.14) if leaning else rng.randf_range(0.01, 0.035))
+	var lean_az: float = rng.randf() * TAU
+	var lean: Vector2 = Vector2(cos(lean_az), sin(lean_az)) * lean_m
+	var trunk_r: float = maxf(trunk, h * 0.015)
+	var first: int = white.v.size()
+	var sides: int = 5 if far else 8
+	var rings: int = 1 if far else 12
+	_trunk(white, rng, h * 0.9, trunk_r, trunk_r * 0.14, lean, BARK_TINT_BIRCH, sides, rings, 0.0 if far else 0.7)
+
+	if not far:
+		# The foot of an old birch goes black and rough in ragged tongues: the
+		# lowest ring is mostly black, the next one only flecked.
+		for k in range(first, white.v.size()):
+			var ring: int = (k - first) / (sides + 1)
+			var dark: float = 0.0
+			if ring == 0:
+				dark = rng.randf_range(0.55, 0.95)
+			elif ring == 1:
+				dark = rng.randf_range(0.0, 0.4)
+			white.c[k] = BARK_TINT_BIRCH.lerp(Color(0.16, 0.15, 0.14), dark)
+
+	var crown_base: float = h * (rng.randf_range(0.42, 0.52) if stand_grown else rng.randf_range(0.22, 0.32))
+	var crown_w: float = maxf(crown * (1.0 if stand_grown else 1.35), h * (0.17 if stand_grown else 0.3)) * rng.randf_range(0.9, 1.1)
+	var limbs: int = 7 if far else rng.randi_range(13, 17)
+	var phase: float = rng.randf() * TAU
+	var axis_at := func(y: float) -> Vector3:
+		var t: float = y / (h * 0.9)
+		return Vector3(lean.x * t * t, y, lean.y * t * t)
+
+	for k in range(limbs):
+		var g: float = (float(k) + rng.randf_range(0.0, 0.8)) / float(limbs)
+		var y0: float = lerpf(crown_base, h * 0.86, g)
+		phase += 2.4   # golden-angle turn, so limbs never line up in columns
+		var out: Vector3 = Vector3(cos(phase), 0.0, sin(phase))
+		# Oval crown: limbs longest a third of the way up, short at the top.
+		var prof: float = pow(sin(PI * clampf(0.12 + 0.88 * g, 0.0, 1.0) * 0.92 + 0.08), 0.8)
+		var length: float = crown_w * maxf(prof, 0.25) * rng.randf_range(0.8, 1.15)
+		# Leaning trees reach farther on their lean side.
+		length *= 1.0 + 0.25 * out.dot(Vector3(lean.x, 0.0, lean.y).normalized()) * (1.0 if leaning else 0.0)
+		var rise0: float = deg_to_rad(lerpf(52.0, 68.0, g) + rng.randf_range(-6.0, 6.0))
+		var rise1: float = deg_to_rad(lerpf(14.0, 40.0, g) + rng.randf_range(-6.0, 6.0))
+		var droop: float = lerpf(0.45, 0.1, g) * rng.randf_range(0.8, 1.2)
+		var p0: Vector3 = axis_at.call(y0)
+		var p1: Vector3 = p0 + (out * cos(rise0) + Vector3.UP * sin(rise0)) * length * 0.42
+		var p2: Vector3 = p1 + (out * cos(rise1) + Vector3.UP * sin(rise1)) * length * 0.4
+		var p3: Vector3 = p2 + out * length * 0.28 - Vector3.UP * length * droop * 0.5
+		p1.y = minf(p1.y, h * 0.97)
+		p2.y = minf(p2.y, h * 0.98)
+		p3.y = minf(p3.y, h * 0.96)
+
+		if not far:
+			var r0: float = trunk_r * lerpf(0.42, 0.22, g)
+			_branch(white, p0, p1, r0, r0 * 0.6, BARK_TINT_BIRCH, 6)
+			_branch(white, p1, p2, r0 * 0.6, r0 * 0.3, BARK_TINT_BIRCH, 5)
+			_branch(bark, p2, p3, r0 * 0.3, 0.01, TWIG_TINT_BIRCH, 4)
+
+		var shade: float = lerpf(0.72, 1.0, clampf((p2.y - crown_base) / (h - crown_base), 0.0, 1.0)) * rng.randf_range(0.92, 1.06)
+		var curtains: int = 3 if far else 9
+
+		# Hanging curtains of twigs and leaves along the outer part of the limb.
+		for m in range(curtains):
+			var t: float = lerpf(0.25, 1.0, float(m) / float(curtains - 1))
+			var top: Vector3 = p1.lerp(p2, t * 2.0) if t < 0.5 else p2.lerp(p3, (t - 0.5) * 2.0)
+			top += Vector3(rng.randfn(), rng.randfn() * 0.3, rng.randfn()) * length * 0.1
+			var hang: float = minf(length * rng.randf_range(0.3, 0.5) * lerpf(1.0, 0.6, g) + 0.4, top.y - 1.8)
+
+			if hang < 0.3:
+				continue
+
+			var away: Vector3 = Vector3(top.x - p0.x, 0.0, top.z - p0.z).normalized()
+			var normal: Vector3 = (away * 0.8 + Vector3.UP * 0.3).normalized()
+			var yaw: float = phase + rng.randf_range(-0.6, 0.6)
+
+			for c in range(1 if far else 2):
+				var turn: float = yaw + PI * 0.5 * float(c)
+				var right: Vector3 = Vector3(cos(turn), 0.0, sin(turn))
+				var down: Vector3 = (Vector3.UP + right * rng.randf_range(-0.1, 0.1)).normalized()
+				var center: Vector3 = top - down * hang * 0.5 + away * hang * 0.08
+				var half_w: float = hang * rng.randf_range(0.22, 0.32) * (1.6 if far else 1.0)
+
+				if bare:
+					var tw: float = rng.randf_range(0.85, 1.1)
+					twigs.card(center, right, down, half_w, hang * 0.5, normal, Color(tw, tw, tw, 0.3))
+				else:
+					var leaf_c: Color = Color(shade, shade, shade, rng.randf_range(0.75, 1.0))
+					leaves.card(center, right, down, half_w, hang * 0.5, normal, leaf_c)
+
+		if not bare:
+			# Leafy body along the limb, so the crown has some fullness from afar.
+			for m in range(1 if far else 2):
+				var at: Vector3 = p1.lerp(p3, rng.randf_range(0.5, 1.0)) + Vector3(0.0, length * 0.05, 0.0)
+				_clump(leaves, rng, at, axis_at.call(at.y - crown_w * 0.3), length * rng.randf_range(0.22, 0.32) * (1.8 if far else 1.0), shade, 2 if far else 3)
+		elif not far:
+			# Bare upright twig sprays at the limb's end.
+			var tip_up: Vector3 = p3 + Vector3(0.0, length * 0.12, 0.0)
+			for c in range(2):
+				var turn: float = phase + PI * 0.5 * float(c)
+				twigs.card(tip_up, Vector3(cos(turn), 0.0, sin(turn)), Vector3.DOWN, length * 0.2, length * 0.18, Vector3.UP, Color(1.0, 1.0, 1.0, 0.3))
+
+	# The leader's top: a narrow spray, leafy or bare.
+	var crest: Vector3 = axis_at.call(h * 0.9) + Vector3(0.0, h * 0.05, 0.0)
+	for c in range(2):
+		var turn: float = phase + PI * 0.5 * float(c)
+		var right: Vector3 = Vector3(cos(turn), 0.0, sin(turn))
+		if bare:
+			twigs.card(crest, right, Vector3.DOWN, h * 0.035, h * 0.07, Vector3.UP, Color(1.0, 1.0, 1.0, 0.3))
+		else:
+			leaves.card(crest, right, Vector3.UP, crown_w * 0.12, h * 0.06, Vector3.UP, Color(1.0, 1.0, 1.0, 0.9))
 
 
 static func acc_bough(acc: Acc, at: Vector3, right: Vector3, up: Vector3, half_w: float, half_h: float, normal: Vector3, color: Color) -> void:
