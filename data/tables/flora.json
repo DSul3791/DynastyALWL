@@ -1,8 +1,8 @@
 {
 	"table": "flora",
 	"format_version": 1,
-	"note": "IDs are append-only. Never renumber or reuse an ID; retire an entry with \"retired\": true and take the next ID from next_id for new entries. Placement (plan step 15) reads per_hectare (plants per hectare by biome name, before the density setting in tile_rules.json runtime_flora), moisture (0 to 255 map value), max_slope_deg, altitude_m (ground height above sea level) and water (water classes it may stand in; empty = dry land only). crown_m is the spacing radius of trees and shrubs, trunk_m the collision radius (0 = walk through). yields are names for the harvesting tables to come. season: when the main yield can be gathered (spring, summer, autumn, winter or all). rarity: common, uncommon, rare (a label for players; how often a plant appears comes from per_hectare). uses: what the yields are good for (food, seasoning, sauce, jam, tea, brewing, medicine, ointment, potion, poison, dye, fibre, timber and so on). properties: effects for the crafting tables to come (wound_healing, fever, sleep, toxic, ...). fantasy: true marks invented species (the owner chose real plus fantasy plants, 2026-10-16); they are rarer than real plants and carry magical properties (glow, arcane, revival, ghost_warding, water_breathing and so on). rarity can also be very_rare or legendary. Optional: time_of_day (dawn, dusk or night: when it can be found or gathered), discovery (true: rare enough that finding one is worth recording and protecting), bloom_years (flowers only every N game years). Placement does not read these yet. model (trees): a model of its own in src/flora/tree_builder.gd (for example balsam_fir); without it the shape picks the model. autumn_colors (hardwoods): the autumn leaf colors this species picks from (birch: golden yellow); without it a hardwood takes one from the shared autumn palette in flora_view.gd. young_color and young_m (trees): a tree at or below young_m[0] meters takes young_color, darkening to color by young_m[1]. look_alikes: names of species this one might be mistaken for on sight (real-world or visual resemblance); the inspection check draws a wrong guess from this list. familiarity (0 to 100, on every inspectable table): the base chance in percent that a character already recognizes the thing the first time they see it; it feeds the inspection memory check. High for everyday things and for famous or legendary ones, low for obscure ones.",
-	"next_id": 126,
+	"note": "IDs are append-only. Never renumber or reuse an ID; retire an entry with \"retired\": true and take the next ID from next_id for new entries. Placement (plan step 15) reads per_hectare (plants per hectare by biome name, before the density setting in tile_rules.json runtime_flora), moisture (0 to 255 map value), max_slope_deg, altitude_m (ground height above sea level) and water (water classes it may stand in; empty = dry land only). crown_m is the spacing radius of trees and shrubs, trunk_m the collision radius (0 = walk through). yields are names for the harvesting tables to come. season: when the main yield can be gathered (spring, summer, autumn, winter or all). rarity: common, uncommon, rare (a label for players; how often a plant appears comes from per_hectare). uses: what the yields are good for (food, seasoning, sauce, jam, tea, brewing, medicine, ointment, potion, poison, dye, fibre, timber and so on). properties: effects for the crafting tables to come (wound_healing, fever, sleep, toxic, ...). fantasy: true marks invented species (the owner chose real plus fantasy plants, 2026-10-16); they are rarer than real plants and carry magical properties (glow, arcane, revival, ghost_warding, water_breathing and so on). rarity can also be very_rare or legendary. Optional: time_of_day (dawn, dusk or night: when it can be found or gathered), discovery (true: rare enough that finding one is worth recording and protecting), bloom_years (flowers only every N game years). Placement does not read these yet. model (trees): a model of its own in src/flora/tree_builder.gd (for example balsam_fir); without it the shape picks the model. autumn_colors: the autumn leaf colors this species picks from (birch: golden yellow); without it a hardwood takes one from the shared autumn palette in flora_view.gd. A conifer with autumn_colors (wardpine) turns color like a hardwood. young_color and young_m (trees): a tree at or below young_m[0] meters takes young_color, darkening to color by young_m[1]. look_alikes: names of species this one might be mistaken for on sight (real-world or visual resemblance); the inspection check draws a wrong guess from this list. familiarity (0 to 100, on every inspectable table): the base chance in percent that a character already recognizes the thing the first time they see it; it feeds the inspection memory check. High for everyday things and for famous or legendary ones, low for obscure ones.",
+	"next_id": 127,
 	"entries": [
 		{
 			"id": 0,
@@ -179,13 +179,14 @@
 			"display": "Scots pine",
 			"kind": "tree",
 			"shape": "conifer",
+			"model": "scots_pine",
 			"height_m": [20, 35],
 			"crown_m": 3.2,
 			"trunk_m": 0.35,
 			"color": [
-				0.18,
-				0.33,
-				0.18
+				0.2,
+				0.36,
+				0.28
 			],
 			"per_hectare": {
 				"mixed_forest": 40,
@@ -231,6 +232,7 @@
 			"display": "Spruce",
 			"kind": "tree",
 			"shape": "conifer",
+			"model": "spruce",
 			"height_m": [28, 48],
 			"crown_m": 3.0,
 			"trunk_m": 0.35,
@@ -5130,13 +5132,20 @@
 			"display": "Wardpine",
 			"kind": "tree",
 			"shape": "conifer",
+			"model": "wardpine",
+			"autumn_colors": [
+				[0.96, 0.32, 0.05],
+				[1.0, 0.5, 0.06],
+				[0.98, 0.7, 0.12],
+				[0.9, 0.22, 0.06]
+			],
 			"height_m": [18, 36],
 			"crown_m": 3.0,
 			"trunk_m": 0.4,
 			"color": [
-				0.22,
-				0.32,
-				0.3
+				0.24,
+				0.42,
+				0.2
 			],
 			"per_hectare": {
 				"alpine_meadow": 0.8,
@@ -7068,6 +7077,68 @@
 				"wound_healing",
 				"cold_remedy"
 			]
+		},
+		{
+			"id": 126,
+			"name": "maple",
+			"display": "Sugar maple",
+			"kind": "tree",
+			"shape": "broadleaf",
+			"model": "maple",
+			"height_m": [
+				12,
+				26
+			],
+			"crown_m": 5.0,
+			"trunk_m": 0.35,
+			"color": [
+				0.36,
+				0.62,
+				0.18
+			],
+			"autumn_colors": [
+				[0.96, 0.3, 0.04],
+				[1.0, 0.46, 0.04],
+				[0.92, 0.18, 0.05],
+				[1.0, 0.62, 0.08],
+				[0.98, 0.38, 0.06]
+			],
+			"per_hectare": {
+				"temperate_forest": 35,
+				"mixed_forest": 30
+			},
+			"moisture": [
+				90,
+				240
+			],
+			"max_slope_deg": 35,
+			"altitude_m": [
+				1,
+				1100
+			],
+			"water": [],
+			"yields": [
+				"wood",
+				"sap"
+			],
+			"season": [
+				"spring"
+			],
+			"rarity": "common",
+			"familiarity": 96,
+			"uses": [
+				"timber",
+				"fuel",
+				"syrup",
+				"sugar",
+				"tool_handles"
+			],
+			"look_alikes": [
+				"oak",
+				"beech",
+				"hearthwood"
+			],
+			"properties": []
 		}
 	]
 }

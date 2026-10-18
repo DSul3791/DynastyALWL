@@ -177,7 +177,9 @@ func setup(tables, tile_rules: Dictionary) -> void:
 			"kind": kind,
 			"height": reference,
 			"trunk": float(entry["trunk_m"]),
-			"hardwood": str(entry["shape"]) == "broadleaf",
+			# Hardwoods, and any species with autumn colors of its own (the
+			# wardpine), take an autumn tint.
+			"hardwood": str(entry["shape"]) == "broadleaf" or entry.has("autumn_colors"),
 			"tinted": built,
 			"near": near_meshes,
 			"far": far_meshes,
