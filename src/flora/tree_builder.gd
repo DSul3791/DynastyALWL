@@ -14,6 +14,8 @@ const VARIANTS := 4
 const BARK_TINT_HARD := Color(0.42, 0.42, 0.41)       # hardwood: gray (owner, 2026-10-17)
 const BARK_TINT_SOFT := Color(0.50, 0.34, 0.22)       # softwood and evergreens: brown
 const BARK_TINT_PALM := Color(0.60, 0.50, 0.36)
+const BARK_TINT_FIR := Color(0.55, 0.54, 0.52)        # balsam fir: smooth ash gray, browner with age
+const CONE_TINT_FIR := Color(0.36, 0.22, 0.42)        # balsam fir cones: dark purple, upright
 
 
 class Acc:
@@ -66,7 +68,10 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 	var crown: float = float(entry["crown_m"])
 	var trunk: float = maxf(float(entry["trunk_m"]), 0.03)
 
-	match str(entry["shape"]):
+	# A species can ask for its own model; it still draws with its shape's leaves.
+	match str(entry.get("model", entry["shape"])):
+		"balsam_fir":
+			_balsam_fir(bark, leaves, rng, h, crown, trunk, variant, far)
 		"broadleaf":
 			_broadleaf(bark, leaves, rng, h, crown, trunk, far)
 		"conifer":
@@ -269,6 +274,121 @@ static func _conifer(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: floa
 			# Two cards per bough (flat and tilted) so it has body from any angle.
 			acc_bough(leaves, mid, right, up, length * 0.5, reach * 0.95, normal, color)
 			acc_bough(leaves, mid, right, (up + Vector3.UP * 0.9).normalized(), length * 0.5, reach * 0.55, normal, color)
+
+
+# Balsam fir (Abies balsamea), the New Brunswick provincial tree. From field
+# guides (Maine Forest Service, USDA FEIS, Wikipedia): a dense, narrow cone that
+# ends in a slender spire; branches leave the trunk at right angles in even
+# whorls, lower ones spreading and drooping, upper ones angled up; foliage lies
+# in flat sprays, so the crown looks layered; shiny dark green; smooth gray bark
+# that browns with age; dark purple cones stand upright on the top branches.
+# Trees in a stand keep a few dead, bare twigs below the live crown.
+# Variants: 0 and 2 open grown (live crown low, cone year), 1 and 3 stand grown.
+static func _balsam_fir(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, variant: int, far: bool) -> void:
+	var stand_grown: bool = variant % 2 == 1
+	var coning: bool = variant % 2 == 0 and not far
+	var age: float = rng.randf()
+	var tint: Color = BARK_TINT_FIR.lerp(BARK_TINT_SOFT, 0.15 + age * 0.35)
+	# Firs grow very straight; only a hint of lean.
+	var lean: Vector2 = Vector2(rng.randf_range(-0.012, 0.012), rng.randf_range(-0.012, 0.012)) * h
+	var trunk_r: float = maxf(trunk, h * 0.009)
+	_trunk(bark, rng, h * 0.985, trunk_r, trunk_r * 0.08, lean, tint, 5 if far else 7, 1 if far else 4, 0.0 if far else 0.5)
+	# Narrow crown: widest spread about a quarter to a third of the height.
+	var widest: float = maxf(crown, h * 0.15) * rng.randf_range(0.9, 1.1)
+	var crown_base: float = h * (rng.randf_range(0.28, 0.4) if stand_grown else 0.0)
+	# Lowest live bough tips stay above 4 feet (1.3 m).
+	var y_low: float = maxf(crown_base, 1.3 + widest * 0.32)
+	var tiers: int = 11 if far else rng.randi_range(27, 30)
+	var per: int = 5 if far else 6
+	var phase: float = rng.randf() * TAU
+	var shade_top: float = rng.randf_range(0.95, 1.05)
+
+	for t in range(tiers):
+		var f: float = float(t) / float(tiers - 1)
+		# Whorls get closer toward the top, as yearly growth does on a crowded leader.
+		var y: float = lerpf(y_low, h * 0.93, 1.0 - pow(1.0 - f, 1.45))
+		var g: float = clampf((y - y_low) / (h - y_low), 0.0, 1.0)
+		# Straight-sided cone, a touch fuller in the middle, sharp spire on top.
+		var reach: float = widest * pow(1.0 - g, 0.92) * (1.0 + 0.12 * sin(g * PI)) + 0.12
+		# Low boughs droop at the tip; high ones angle up toward the light.
+		var droop: float = lerpf(0.32, -0.25, g)
+		var center: Vector3 = Vector3(lean.x * pow(y / h, 2.0), y, lean.y * pow(y / h, 2.0))
+		phase += 2.4   # golden-angle turn per whorl, so boughs never line up in columns
+		var shade: float = lerpf(0.58, 1.0, g) * shade_top
+		var count: int = per if g < 0.8 else maxi(per - 2, 3)
+		var gap: float = (h * 0.93 - y_low) / float(tiers) * (2.0 - 1.45 * g)
+
+		if not far:
+			# Dark inner foliage around the trunk, so the crown reads as dense as a real
+			# fir's and the trunk only shows low down.
+			for k in range(3):
+				var turn: float = phase + PI * float(k) / 3.0
+				var right: Vector3 = Vector3(cos(turn), 0.0, sin(turn))
+				var inner: Color = Color(shade * 0.7, shade * 0.7, shade * 0.7, 0.3)
+				leaves.card(center, right, Vector3.UP, reach * 0.5, minf(gap * 0.75, maxf(y - 1.3, 0.1)), right.cross(Vector3.UP), inner)
+
+		for k in range(count):
+			var a: float = phase + TAU * (float(k) + rng.randf_range(-0.2, 0.2)) / float(count)
+			var out: Vector3 = Vector3(cos(a), 0.0, sin(a))
+			var r: float = reach * rng.randf_range(0.85, 1.08)
+			var side: Vector3 = out.cross(Vector3.UP).normalized()
+			var c: Color = Color(shade * rng.randf_range(0.93, 1.05), shade, shade, 0.6)
+			# Two segments: a level inner run, then the outer run that droops or lifts.
+			var knee: Vector3 = center + out * r * 0.55 + Vector3(0.0, -r * droop * 0.15, 0.0)
+			var tip: Vector3 = center + out * r + Vector3(0.0, -r * droop, 0.0)
+			# The lowest boughs flatten out rather than hang into the bare bottom 4 feet.
+			tip.y = maxf(tip.y, 1.45)
+
+			if not far and g < 0.7:
+				_branch(bark, center, knee, trunk_r * lerpf(0.22, 0.08, g), trunk_r * 0.04, tint, 4)
+
+			for seg in range(2):
+				var p0: Vector3 = center if seg == 0 else knee
+				var p1: Vector3 = knee if seg == 0 else tip
+				var axis: Vector3 = p1 - p0
+				var length: float = axis.length()
+				var along: Vector3 = axis / length
+				var width: float = r * (0.5 if seg == 0 else 0.42)
+				var normal: Vector3 = (out * 0.6 + Vector3.UP * 0.8).normalized()
+				# A flat spray, the fir's layered look, plus a steeper card for body seen side-on.
+				leaves.card((p0 + p1) * 0.5, along, side, length * 0.55, width, normal, c)
+				if seg == 1 or far:
+					var steep: Vector3 = (side + Vector3.UP * 1.2).normalized()
+					var mid: Vector3 = (p0 + p1) * 0.5
+					# Keep the hanging card's lower edge above 4 feet as well.
+					var half: float = minf(maxf(width * 0.6, gap * 0.8), maxf(mid.y - absf(along.y) * length * 0.55 - 1.3, 0.1) / steep.y)
+					leaves.card(mid, along, steep, length * 0.55, half, normal, c)
+
+	# The spire: a slim leader standing clear of the last whorl.
+	var top: Vector3 = Vector3(lean.x, h, lean.y)
+	var spire: Color = Color(shade_top, shade_top, shade_top, 0.6)
+	for k in range(2):
+		var turn: float = phase + PI * 0.5 * float(k)
+		leaves.card(top - Vector3(0.0, h * 0.04, 0.0), Vector3(cos(turn), 0.0, sin(turn)), Vector3.UP, widest * 0.035 + 0.05, h * 0.045, Vector3.UP, spire)
+
+	if not far and stand_grown:
+		# Dead lower branches: short gray spikes under the live crown.
+		var dead_tint: Color = Color(0.5, 0.48, 0.46)
+		var dy: float = 1.6
+		while dy < crown_base - 0.4:
+			for k in range(rng.randi_range(2, 4)):
+				var a: float = rng.randf() * TAU
+				var out: Vector3 = Vector3(cos(a), rng.randf_range(-0.25, 0.05), sin(a)).normalized()
+				var from: Vector3 = Vector3(lean.x * pow(dy / h, 2.0), dy, lean.y * pow(dy / h, 2.0))
+				_branch(bark, from, from + out * rng.randf_range(0.4, 1.2) * (1.0 - dy / h), trunk_r * 0.08, 0.01, dead_tint, 3)
+			dy += rng.randf_range(0.5, 0.9)
+
+	if coning:
+		# Upright cones in rows along the tops of the highest boughs.
+		for n in range(rng.randi_range(14, 22)):
+			var g: float = rng.randf_range(0.78, 0.94)
+			var y: float = lerpf(y_low, h * 0.93, g)
+			var reach: float = widest * pow(1.0 - (y - y_low) / (h - y_low), 0.92) + 0.12
+			var a: float = rng.randf() * TAU
+			var base: Vector3 = Vector3(cos(a), 0.0, sin(a)) * reach * rng.randf_range(0.3, 0.75) + Vector3(lean.x, y + 0.03, lean.y)
+			# A little larger than life (real cones 4 to 8 cm) so they read in the storybook look.
+			var len: float = rng.randf_range(0.12, 0.16)
+			_branch(bark, base, base + Vector3(0.0, len, 0.0), 0.04, 0.028, CONE_TINT_FIR, 5)
 
 
 static func acc_bough(acc: Acc, at: Vector3, right: Vector3, up: Vector3, half_w: float, half_h: float, normal: Vector3, color: Color) -> void:

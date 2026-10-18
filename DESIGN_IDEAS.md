@@ -215,6 +215,7 @@ Note: climate depends only on position, so each tile can compute it without look
 - **[Proposed]** Climate and soil should also be queryable at runtime from the same function the generator uses, so the server and generator never disagree. This matters for farming.
 - **[Proposed]** Slate as a new rock type (shale metamorphoses into slate), tied to folded or deformed regions. Slate would make some islands valuable for roofing.
 - **[Decided] Tree colors (Dave, 2026-10-17).** Hardwood (broadleaf) trees get gray trunks and one autumn leaf color each (yellow, gold, orange, red, crimson, rust), fixed per tree. Softwood (conifer) trunks are dark brown. Built in the stand-in meshes; real models later.
+- **[Proposed] Balsam fir (Dave asked for it, 2026-10-18).** First species with its own procedural model (`model: "balsam_fir"` in flora.json, `_balsam_fir` in `src/flora/tree_builder.gd`), built from field-guide descriptions of New Brunswick's provincial tree: 12 to 21 m, a narrow dense cone ending in a slender spire, level whorled branches that droop low and lift high, flat layered sprays, dark green, dark purple cones standing upright on the top branches, and trees in a stand keep a few dead twigs below a higher live crown. Bark is smooth ash gray browning with age (true to life), an exception to the dark brown conifer trunk rule above pending Dave's call. Grows in boreal and mixed forest on damp ground. Preview: `src/worldgen/tools/tree_mesh_dump.gd` then `tools/render_trees.py`.
 
 ### 4.4 Natural structures and lair sites
 
