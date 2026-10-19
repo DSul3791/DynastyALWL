@@ -103,7 +103,7 @@ func poll() -> String:
 
 		if not SETTLE_AFTER_BAKE:
 			running = false
-			return "FINISHED: baked %d tiles. In GitHub Desktop commit everything under worlds/base_world and push, then restart the game." % _baked
+			return "FINISHED: baked %d tiles and reloaded the ground. In GitHub Desktop commit everything under worlds/base_world and push." % _baked
 
 		# Second step: settle the water on the freshly baked starter tile.
 		_stage = 2

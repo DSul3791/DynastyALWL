@@ -137,6 +137,8 @@ var _bake = TileBakeScript.new()      # admin: background tile bake
 var _bake_check_msec: int = 0
 var _bake_status: String = ""
 var _bake_alert_until: int = 0
+var _bake_alert_at: Vector3 = Vector3.ZERO   # where the player stood when the finished notice came up
+var _bake_done_note: String = ""          # the bake's own finished message, shown once the ground reloads
 var quality: int = 2                  # index into QUALITY_NAMES; High is the default
 var _flora_view_full: PackedFloat32Array = PackedFloat32Array()
 var _flora_near_full: PackedFloat32Array = PackedFloat32Array()
@@ -701,8 +703,11 @@ func _on_ground_reset(tiles_stamp: String, starter_stamp: String) -> void:
 		_flora_asked.clear()
 
 	_set_menu(false)
-	_bake_status = "Finished: new tiles loaded, the ground and plants are reloading"
-	_bake_alert_until = Time.get_ticks_msec() + 20000
+	_bake_status = _bake_done_note if _bake_done_note != "" else "Finished: new tiles loaded, the ground and plants are reloading"
+	_bake_done_note = ""
+	# Owner (2026-10-19): the finished notice stays until the player moves.
+	_bake_alert_until = 1 << 62
+	_bake_alert_at = body.global_position if body != null else Vector3.ZERO
 	print("Terrain client: the tile files changed on the server; reloaded the ground and plants")
 
 
@@ -998,6 +1003,12 @@ func _process(delta: float) -> void:
 
 	var wanted: Array = stream.take_requests()
 
+	# Owner (2026-10-19): while a bake runs, ask only for the ground the game is waiting on
+	# right now, not the extra ground around it (it is all thrown away when the bake ends).
+	if _bake.running and wanted[1] * 4 < wanted[0].size():
+		stream.forget_prefetch()
+		wanted[0] = wanted[0].slice(0, wanted[1] * 4)
+
 	if not wanted[0].is_empty():
 		net.request_blocks.rpc_id(1, wanted[0], wanted[1])
 
@@ -1041,10 +1052,11 @@ func _process(delta: float) -> void:
 
 		var finished: String = _bake.poll()
 
+		# The ground reloads (and the finished notice shows) when the server sees the new tiles.
 		if finished != "":
-			_bake_status = finished
-			_bake_alert_until = now + 20000
-			_menu_note.text = finished
+			_bake_done_note = finished
+			_bake_status = "The bake is done; the ground reloads in a few seconds"
+			_menu_note.text = _bake_status
 			print("Terrain client: ", finished)
 
 	if test_water_step and now - connected_msec > 12000:
@@ -1086,7 +1098,12 @@ func _process(delta: float) -> void:
 	if waiting_for_ground and not flying:
 		mode = (mode + " (building the ground around you, the first visit takes longer)").strip_edges()
 	if Time.get_ticks_msec() < _bake_alert_until:
-		mode = _bake_status
+		# Sideways only: the player may drop a little while the ground reloads.
+		if body != null and Vector2(body.global_position.x - _bake_alert_at.x, body.global_position.z - _bake_alert_at.z).length() > 1.0:
+			_bake_alert_until = 0
+			_bake_status = ""
+		else:
+			mode = _bake_status
 
 	_mode_label.text = mode
 	var worst_ms: float = 0.0

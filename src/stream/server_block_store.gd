@@ -89,9 +89,15 @@ func setup(terrain_generator, store_dir: String) -> String:
 # finished) and then stayed still for TILES_SETTLE_MSEC. The generated ground
 # is then thrown away (edits kept) and tiles_stamp is the new fingerprint.
 const TILES_SETTLE_MSEC := 15000
+const BAKE_LOCK_STALE_SEC := 1800   # a bake lock this old is left over from a bake that died
 
 
 func check_tiles(now_msec: int) -> bool:
+	# Owner (2026-10-19): while a bake runs, wait; reload once when all its tiles are written.
+	if baking():
+		_dates_changed_msec = -1
+		return false
+
 	var parts: PackedStringArray = PackedStringArray()
 
 	for file in DirAccess.get_files_at(generator.tiles_dir):
@@ -123,6 +129,17 @@ func check_tiles(now_msec: int) -> bool:
 	clear_generated()
 	_write(_store_dir + "/terrain_version.txt", "%d %s" % [Layout.TERRAIN_VERSION, tiles_stamp])
 	return true
+
+
+# A bake is writing the tile files (bake_tiles.gd keeps a lock file there, touched after
+# every tile; one older than BAKE_LOCK_STALE_SEC is left over from a bake that died).
+func baking() -> bool:
+	var lock: String = generator.tiles_dir + "/baking.lock"
+
+	if not FileAccess.file_exists(lock):
+		return false
+
+	return int(Time.get_unix_time_from_system()) - FileAccess.get_modified_time(lock) < BAKE_LOCK_STALE_SEC
 
 
 func _write(path: String, text: String) -> void:

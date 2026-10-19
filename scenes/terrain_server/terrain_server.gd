@@ -45,6 +45,7 @@ var flora
 var _water_updates: int = 0
 var water_live                         # the starter tile's running water, tuned with + and - on the client
 var _world_dir: String = ""
+var _bake_running: bool = false        # a tile bake is writing the tile files (store.baking)
 var settings
 var spawn: Vector3 = Vector3.ZERO
 var net
@@ -443,6 +444,13 @@ func _process(_delta: float) -> void:
 			store.clear_generated()
 			print("server: cleared the generated ground as asked (clear_generated.now)")
 
+		# Owner (2026-10-19): no building ahead while a bake runs (it would only be thrown away).
+		var baking_now: bool = store.baking()
+
+		if baking_now != _bake_running:
+			_bake_running = baking_now
+			print("server: a tile bake is running; building ahead is paused until it is done" if baking_now else "server: the tile bake is done")
+
 		# A bake finished: the ground is made again from the new tiles, and clients reload.
 		if store.check_tiles(now):
 			generator.forget_tiles()
@@ -605,7 +613,7 @@ func _idle_loop() -> void:
 		if stopping:
 			return
 
-		if busy or anchors.is_empty():
+		if busy or anchors.is_empty() or _bake_running:
 			OS.delay_msec(20)
 			continue
 
