@@ -18,6 +18,7 @@ static const double SPEED_MAX_M_S = 12.0;
 static const double SLEEP_M = 0.00002;
 static const double WET_M = 0.12;
 static const double STEEP_WET_M = 0.6;
+static const double THIN_WET_M = 0.02;   // thinner running water drawn where it joins wet water on both sides
 static const double STEEP_DROP_M = 3.0;
 static const double PUDDLE_M = 0.06;
 static const double LEVEL_M = 0.002;
@@ -327,10 +328,41 @@ bool WaterCore::is_steep(int32_t k) const {
 	return ground[k] - lowest > STEEP_DROP_M;
 }
 
+// Thin water from k in one direction reaches water deep enough to draw within two squares.
+bool WaterCore::reaches_wet(int32_t k, int32_t step) const {
+	int32_t n = k;
+	for (int hop = 0; hop < 2; hop++) {
+		int32_t next = n + step;
+		if (next < 0 || next >= (int32_t)depth.size() || ((step == 1 || step == -1) && next / side != n / side)) {
+			return false;
+		}
+		n = next;
+		if (depth[n] >= WET_M) {
+			return true;
+		}
+		if (depth[n] < THIN_WET_M) {
+			return false;
+		}
+	}
+	return false;
+}
+
+// Owner report (2026-10-19, a dry band across the river): a shallow riffle under WET_M cut
+// the drawn river in two; thin water with drawn water on both sides is drawn too.
+bool WaterCore::drawn_wet(int32_t k) const {
+	if (depth[k] >= WET_M) {
+		return true;
+	}
+	if (depth[k] < THIN_WET_M) {
+		return false;
+	}
+	return (reaches_wet(k, -1) && reaches_wet(k, 1)) || (reaches_wet(k, -side) && reaches_wet(k, side));
+}
+
 void WaterCore::refresh_level(int32_t k) {
 	float *l = levels.ptrw();
 	l[k] = NAN;
-	if (depth[k] < WET_M || ground[k] <= 0.0f) {
+	if (ground[k] <= 0.0f || !drawn_wet(k)) {
 		return;
 	}
 	if (depth[k] < STEEP_WET_M && is_steep(k)) {
@@ -347,8 +379,15 @@ PackedFloat32Array WaterCore::level_map() {
 		}
 		levels_ready = true;
 	} else {
+		// A change can decide whether thin water up to two squares away is drawn.
+		const int32_t total = (int32_t)depth.size();
 		for (int32_t k : dirty) {
-			refresh_level(k);
+			int32_t near[9] = { k, k - 1, k + 1, k - 2, k + 2, k - side, k + side, k - 2 * side, k + 2 * side };
+			for (int32_t n : near) {
+				if (n >= 0 && n < total) {
+					refresh_level(n);
+				}
+			}
 		}
 	}
 	dirty.clear();

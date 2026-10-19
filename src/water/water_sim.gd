@@ -31,6 +31,7 @@ const FACE_MIN_M := 0.001       # thinner water than this between two cells does
 const SPEED_MAX_M_S := 12.0     # a ceiling on water speed (keeps falls stable)
 const SLEEP_M := 0.00002        # a cell whose depth changes less than this in a tick may sleep
 const WET_M := 0.12             # drawn as water from this depth
+const THIN_WET_M := 0.02        # thinner running water drawn where it joins wet water on both sides
 const STEEP_WET_M := 0.6       # on a steep drop (below), water thinner than this is not drawn
 const STEEP_DROP_M := 3.0      # ground this much higher than a neighbour counts as steep
 const PUDDLE_M := 0.06          # loose water thinner than this, with nowhere lower to go, dries
@@ -490,7 +491,8 @@ func _is_spring(k: int) -> bool:
 	return _spring_cell[k] == 1
 
 
-# Levels for drawing: the water level where the depth is at least WET_M, NAN elsewhere.
+# Levels for drawing: the water level where the depth is at least WET_M (or thin water
+# bridging drawn water, _drawn_wet), NAN elsewhere.
 func level_map() -> PackedFloat32Array:
 	if _core != null:
 		return _core.level_map()
@@ -503,8 +505,11 @@ func level_map() -> PackedFloat32Array:
 		for k in range(depth.size()):
 			_refresh_level(k)
 	else:
+		# A change can decide whether thin water up to two squares away is drawn.
 		for k in _dirty:
-			_refresh_level(k)
+			for n in [k, k - 1, k + 1, k - 2, k + 2, k - side, k + side, k - 2 * side, k + 2 * side]:
+				if n >= 0 and n < depth.size():
+					_refresh_level(n)
 
 	_dirty.clear()
 	return _levels.duplicate()
@@ -513,7 +518,7 @@ func level_map() -> PackedFloat32Array:
 func _refresh_level(k: int) -> void:
 	_levels[k] = NAN
 
-	if depth[k] < WET_M or ground[k] <= 0.0:
+	if ground[k] <= 0.0 or not _drawn_wet(k):
 		return
 
 	# Thin water running down a steep wall is not drawn: it drew spikes of water up
@@ -522,6 +527,39 @@ func _refresh_level(k: int) -> void:
 		return
 
 	_levels[k] = ground[k] + depth[k]
+
+
+# Owner report (2026-10-19, a dry band across the river): a shallow riffle under WET_M cut
+# the drawn river in two; thin water with drawn water on both sides is drawn too.
+func _drawn_wet(k: int) -> bool:
+	if depth[k] >= WET_M:
+		return true
+
+	if depth[k] < THIN_WET_M:
+		return false
+
+	return (_reaches_wet(k, -1) and _reaches_wet(k, 1)) or (_reaches_wet(k, -side) and _reaches_wet(k, side))
+
+
+# Thin water from k in one direction reaches water deep enough to draw within two squares.
+func _reaches_wet(k: int, step: int) -> bool:
+	var n: int = k
+
+	for hop in range(2):
+		var next: int = n + step
+
+		if next < 0 or next >= depth.size() or (absi(step) == 1 and next / side != n / side):
+			return false
+
+		n = next
+
+		if depth[n] >= WET_M:
+			return true
+
+		if depth[n] < THIN_WET_M:
+			return false
+
+	return false
 
 
 func _is_steep(k: int) -> bool:

@@ -227,3 +227,18 @@ func _suite() -> void:
 
 	_check(same, "kept-up-to-date drawing levels match a full recount")
 
+	# 11. Owner report (2026-10-19, a dry band across the river): a shallow riffle between
+	# drawn water is drawn; thin water at the end of a river is not.
+	var riffle = WaterSim.new()
+	riffle.setup(9, 8.0, _flat(9, 5.0))
+	var start: PackedFloat32Array = _flat(9, 0.0)
+
+	for i in range(1, 6):
+		start[4 * 9 + i] = 0.3
+
+	start[4 * 9 + 3] = 0.05
+	start[4 * 9 + 6] = 0.05
+	riffle.set_depth(start)
+	var drawn: PackedFloat32Array = riffle.level_map()
+	_check(not is_nan(drawn[4 * 9 + 3]), "a shallow riffle between river water is drawn")
+	_check(is_nan(drawn[4 * 9 + 6]), "thin water past the end of the river is not drawn")

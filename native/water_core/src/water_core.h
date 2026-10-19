@@ -71,6 +71,8 @@ private:
 	double face(double q, double level_a, double ground_a, double level_b, double ground_b, double step_s) const;
 	bool is_stranded(int32_t k) const;
 	bool is_steep(int32_t k) const;
+	bool reaches_wet(int32_t k, int32_t step) const;
+	bool drawn_wet(int32_t k) const;
 	void refresh_level(int32_t k);
 };
 

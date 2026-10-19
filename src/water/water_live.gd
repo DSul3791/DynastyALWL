@@ -12,7 +12,7 @@ const WaterSettler := preload("res://src/water/water_settler.gd")
 const WaterStore := preload("res://src/water/water_store.gd")
 
 const RATE_STEP := 1.1            # each + or - key press changes the rate by about 10 %
-const RATE_MIN := 0.1
+const RATE_MIN := 0.5            # owner (2026-10-19): 0.5x looks most like a brook and still keeps flowing
 const RATE_MAX := 20.0           # owner (2026-10-19): higher than 5x, for floods
 const PUBLISH_TICKS := 15
 # The water moves in real seconds now (water_sim.gd), so these are simulated time.
