@@ -2026,8 +2026,8 @@ func _test_flora(generator, data, tables, tile_rules: Dictionary) -> void:
 		for gz in range(47):
 			for gx in range(47):
 				var at: Vector2 = Vector2(float(gx) * 256.0, float(gz) * 256.0)
-				var groves: Array = placer._groves_near(ever, 122, at)
-				grove_ok = grove_ok and str(groves) == str(placer._groves_near(ever, 122, at))
+				var groves: Array = placer._groves_near(ever, ever["grove"], placer._grove_seed, 122, at)
+				grove_ok = grove_ok and str(groves) == str(placer._groves_near(ever, ever["grove"], placer._grove_seed, 122, at))
 
 				for g in groves:
 					grove_count += 1
@@ -2095,7 +2095,9 @@ func _test_flora(generator, data, tables, tile_rules: Dictionary) -> void:
 			if sb["kind"] == FloraPlacerScript.KIND_PLANT:
 				continue
 
-			var gap: float = minf(0.6 * (float(sa["crown"]) + float(sb["crown"])), FloraPlacerScript.OCCUPANCY_CELL)
+			var stand_a: float = float(sa["stand"]["spacing_m"]) if (ids[a] & 0xffff) >= FloraPlacerScript.STAND_BASE else 0.0
+			var stand_b: float = float(sb["stand"]["spacing_m"]) if (ids[b] & 0xffff) >= FloraPlacerScript.STAND_BASE else 0.0
+			var gap: float = FloraPlacerScript.min_gap(sa["kind"], FloraPlacerScript.spacing_radius(sa, items["heights"][a]), stand_a, ids[a] >> 16, sb["kind"], FloraPlacerScript.spacing_radius(sb, items["heights"][b]), stand_b, ids[b] >> 16)
 			var pa: Vector3 = items["positions"][a]
 			var pb: Vector3 = items["positions"][b]
 
