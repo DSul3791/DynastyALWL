@@ -39,15 +39,28 @@ float hash(vec2 p) {
 	return fract((p3.x + p3.y) * p3.z);
 }
 
+// Gradient noise (smooth, no square blocks like value noise; owner 2026-10-19: blocky water).
+vec2 gradient(vec2 i) {
+	float a = hash(i) * 6.2831853;
+	return vec2(cos(a), sin(a));
+}
+
 float noise(vec2 p) {
 	vec2 i = floor(p);
 	vec2 f = fract(p);
-	vec2 u = f * f * (3.0 - 2.0 * f);
-	return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+	vec2 u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
+	float a = dot(gradient(i), f);
+	float b = dot(gradient(i + vec2(1.0, 0.0)), f - vec2(1.0, 0.0));
+	float c = dot(gradient(i + vec2(0.0, 1.0)), f - vec2(0.0, 1.0));
+	float d = dot(gradient(i + vec2(1.0, 1.0)), f - vec2(1.0, 1.0));
+	return 0.5 + 0.7 * mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
 }
 
+// Octaves turned against each other so no grid direction shows.
 float ripples(vec2 p) {
-	return noise(p) * 0.6 + noise(p * 2.3 + 17.0) * 0.3 + noise(p * 5.1 - 9.0) * 0.1;
+	const mat2 turn = mat2(vec2(0.8, 0.6), vec2(-0.6, 0.8));
+	vec2 q = turn * p * 2.1 + 17.0;
+	return noise(p) * 0.62 + noise(q) * 0.28 + noise(turn * q * 2.2 - 9.0) * 0.10;
 }
 
 // Slope of the ripple field (finite differences).
@@ -87,7 +100,12 @@ void fragment() {
 	float drift = mod(TIME, 2000.0);
 	vec2 still = ripple_slope(local / 5.0 + vec2(drift * 0.03, drift * 0.02));
 	vec2 bump = (run * (0.05 + 0.35 * sqrt(steep)) * (1.0 + 0.8 * rough) + swell * 0.5 * rough) * step(0.001, steep) + still * 0.04;
-	vec3 up = (INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz;
+	// Ripples fade with distance (far away they only sparkle in single pixels).
+	float distance_m = length(VERTEX);
+	bump *= 1.0 / (1.0 + distance_m / 35.0);
+	// The mesh's own normal tilts differently on each 8 m square; water is nearly flat, so
+	// lean it toward straight up to hide the square seams.
+	vec3 up = normalize(mix((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz, vec3(0.0, 1.0, 0.0), 0.75));
 	NORMAL = normalize((VIEW_MATRIX * vec4(normalize(up - vec3(bump.x, 0.0, bump.y)), 0.0)).xyz);
 
 	// Patches of foam carried by the flow (the same moving pattern as the ripples, coarser).
@@ -95,14 +113,15 @@ void fragment() {
 	// because the direction changes from square to square; carried noise has no seams.
 	float carried_a = ripples(local / 3.0 - velocity * phase0 * cycle / 3.0);
 	float carried_b = ripples(local / 3.0 + 13.0 - velocity * phase1 * cycle / 3.0);
-	float streaks = smoothstep(0.58, 0.75, mix(carried_a, carried_b, blend));
+	float streaks = smoothstep(0.56, 0.82, mix(carried_a, carried_b, blend));
 	// Foam follows the water speed (about the square root of the slope): riffles on ordinary
 	// streams already show some, fast water much more.
 	float speed = sqrt(steep);
 	float foam = streaks * smoothstep(mix(0.2, 0.05, rough), mix(0.55, 0.3, rough), speed) * step(0.001, steep);
 	// White water breaking on the fastest stretches when the flow is high.
 	float white = mix(ripples(p * 1.7 - velocity * phase0 * cycle * 1.7 / scale), ripples(p * 1.7 + 5.0 - velocity * phase1 * cycle * 1.7 / scale), blend);
-	foam = max(foam, smoothstep(0.52, 0.7, white) * rough * smoothstep(0.1, 0.4, speed));
+	foam = max(foam, smoothstep(0.5, 0.75, white) * rough * smoothstep(0.1, 0.4, speed));
+	foam *= 1.0 / (1.0 + distance_m / 120.0);
 
 	vec3 water = mix(mix(shallow_color, deep_color, murk), mud_color * mix(1.0, 0.7, murk), mud);
 	ALBEDO = mix(water, mix(foam_color, mud_color * 1.6, mud * 0.6), foam * 0.85);
