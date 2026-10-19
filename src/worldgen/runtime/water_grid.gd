@@ -37,7 +37,8 @@ static func chunk_levels(generator, origin: Vector2, chunk_m: float) -> Dictiona
 	# Settled simulated water is already continuous: no hole closing. Running
 	# water gets a finer surface laid on the real ground (_fine_cells).
 	if not data.sim_levels.is_empty():
-		return {"count": count, "spacing": spacing, "levels": levels, "wet": wet, "fine": _fine_cells(generator, origin, count, spacing, levels)}
+		var edge: PackedFloat32Array = _shore_levels(generator, data, origin, count, spacing, levels)
+		return {"count": count, "spacing": spacing, "levels": levels, "wet": wet, "edge": edge, "fine": _fine_cells(generator, origin, count, spacing, levels, edge)}
 
 	var closed: PackedFloat32Array = levels.duplicate()
 
@@ -74,6 +75,55 @@ static func _level_at(generator, data, x: float, z: float, spacing: float) -> fl
 	return level if source.water_class[k] > 1 and not is_nan(level) else NAN
 
 
+# Owner report (2026-10-19): the water's edges stuck out in big square corners along the
+# 8 m cells. A dry point beside water now carries the water level on into the bank (the
+# mean of its wet neighbours), so the drawn surface runs flat into the rising ground and
+# the terrain cuts it off along its real contour. Where the ground there is lower than
+# the water (the water did not reach it) the point sinks under the ground instead, so
+# the sheet dips into the ground rather than floating. NAN where a point is wet or has
+# no wet neighbour.
+const SHORE_SINK_M := 0.3
+
+
+static func _shore_levels(generator, data, origin: Vector2, count: int, spacing: float, levels: PackedFloat32Array) -> PackedFloat32Array:
+	var edge: PackedFloat32Array = PackedFloat32Array()
+	edge.resize(count * count)
+	edge.fill(NAN)
+
+	for j in range(count):
+		for i in range(count):
+			if not is_nan(levels[j * count + i]):
+				continue
+
+			var total: float = 0.0
+			var wet: int = 0
+
+			for dj in range(-1, 2):
+				for di in range(-1, 2):
+					var ii: int = i + di
+					var jj: int = j + dj
+					var other: float
+
+					if ii >= 0 and jj >= 0 and ii < count and jj < count:
+						other = levels[jj * count + ii]
+					else:
+						# Across the chunk edge: the same answer the next chunk gets.
+						other = _level_at(generator, data, origin.x + float(ii) * spacing, origin.y + float(jj) * spacing, spacing)
+
+					if not is_nan(other):
+						total += other
+						wet += 1
+
+			if wet == 0:
+				continue
+
+			var level: float = total / float(wet)
+			var ground: float = _fine_ground(generator, origin.x + float(i) * spacing, origin.y + float(j) * spacing)
+			edge[j * count + i] = level if ground > level else ground - SHORE_SINK_M
+
+	return edge
+
+
 # ---------------------------------------------------------------- running water on the ground
 
 # The 8 m grid is too coarse for thin running water: between grid points the real
@@ -94,7 +144,7 @@ const GROUND_CACHE_MAX := 400000
 
 
 # {cell index: PackedFloat32Array of (FINE_SUB + 1)^2 surface heights, row by row}.
-static func _fine_cells(generator, origin: Vector2, count: int, spacing: float, levels: PackedFloat32Array) -> Dictionary:
+static func _fine_cells(generator, origin: Vector2, count: int, spacing: float, levels: PackedFloat32Array, edge: PackedFloat32Array) -> Dictionary:
 	var fine: Dictionary = {}
 	var depth: PackedFloat32Array = PackedFloat32Array()
 	depth.resize(count * count)
@@ -120,7 +170,13 @@ static func _fine_cells(generator, origin: Vector2, count: int, spacing: float, 
 
 			for c in corners:
 				if is_nan(levels[c]):
-					d.append(0.0)
+					# A shore point: below zero where the bank rises above the water, so
+					# the sheet meets the ground along its contour instead of the cell edge.
+					if is_nan(edge[c]):
+						d.append(0.0)
+					else:
+						d.append(edge[c] - generator.surface_height(origin.x + float(c % count) * spacing, origin.y + float(c / count) * spacing, 3))
+
 					continue
 
 				# The simulation's ground is the 8 m grid ground (detail at 8 m spacing).
@@ -228,7 +284,7 @@ static func _gap_level(generator, data, x: float, z: float, spacing: float) -> f
 
 
 # Packs levels for sending: empty when the chunk holds no inland water,
-# else a wet mask and the wet levels in cm, Zstandard-compressed.
+# else a mask (1 wet, 2 shore) with those levels in cm, then the fine cells, Zstandard-compressed.
 static func encode(grid: Dictionary) -> PackedByteArray:
 	if int(grid.get("wet", 0)) == 0:
 		return PackedByteArray()
@@ -238,12 +294,17 @@ static func encode(grid: Dictionary) -> PackedByteArray:
 	buffer.put_u16(int(grid["count"]))
 	buffer.put_float(float(grid["spacing"]))
 
-	for n in range(levels.size()):
-		var wet: bool = not is_nan(levels[n])
-		buffer.put_u8(1 if wet else 0)
+	var edge: PackedFloat32Array = grid.get("edge", PackedFloat32Array())
 
-		if wet:
+	for n in range(levels.size()):
+		if not is_nan(levels[n]):
+			buffer.put_u8(1)
 			buffer.put_32(int(round(levels[n] * 100.0)))
+		elif not edge.is_empty() and not is_nan(edge[n]):
+			buffer.put_u8(2)          # a shore point (_shore_levels)
+			buffer.put_32(int(round(edge[n] * 100.0)))
+		else:
+			buffer.put_u8(0)
 
 	var fine: Dictionary = grid.get("fine", {})
 	buffer.put_u8(FINE_SUB)
@@ -273,14 +334,20 @@ static func decode(bytes: PackedByteArray) -> Dictionary:
 	var spacing: float = buffer.get_float()
 	var levels: PackedFloat32Array = PackedFloat32Array()
 	levels.resize(count * count)
+	var edge: PackedFloat32Array = PackedFloat32Array()
+	edge.resize(count * count)
+	edge.fill(NAN)
 	var wet: int = 0
 
 	for n in range(count * count):
-		if buffer.get_u8() == 1:
+		var kind: int = buffer.get_u8()
+		levels[n] = NAN
+
+		if kind == 1:
 			levels[n] = float(buffer.get_32()) / 100.0
 			wet += 1
-		else:
-			levels[n] = NAN
+		elif kind == 2:
+			edge[n] = float(buffer.get_32()) / 100.0
 
 	var fine: Dictionary = {}
 
@@ -297,7 +364,7 @@ static func decode(bytes: PackedByteArray) -> Dictionary:
 
 			fine[cell] = heights
 
-	return {"count": count, "spacing": spacing, "levels": levels, "wet": wet, "fine": fine}
+	return {"count": count, "spacing": spacing, "levels": levels, "wet": wet, "edge": edge, "fine": fine}
 
 
 # A water mesh for a chunk: one smooth surface over the grid. Wet points
@@ -362,6 +429,7 @@ static func build_mesh(grid: Dictionary, material: Material) -> ArrayMesh:
 	var spacing: float = float(grid["spacing"])
 	var levels: PackedFloat32Array = grid["levels"]
 	var fine: Dictionary = grid.get("fine", {})
+	var edge: PackedFloat32Array = grid.get("edge", PackedFloat32Array())
 	var height: PackedFloat32Array = PackedFloat32Array()
 	height.resize(count * count)
 	height.fill(NAN)
@@ -372,6 +440,10 @@ static func build_mesh(grid: Dictionary, material: Material) -> ArrayMesh:
 
 			if not is_nan(levels[n]):
 				height[n] = levels[n]
+				continue
+
+			if not edge.is_empty() and not is_nan(edge[n]):
+				height[n] = edge[n]
 				continue
 
 			var total: float = 0.0
@@ -415,7 +487,7 @@ static func build_mesh(grid: Dictionary, material: Material) -> ArrayMesh:
 				continue
 
 			if fine.has(j * count + i):
-				_add_fine_cell(_seal_fine_edges(fine, i, j, count, height), i, j, spacing, levels, count, vertices, normals, colors, indices)
+				_add_fine_cell(_seal_fine_edges(fine, i, j, count, height), i, j, spacing, levels, edge, count, vertices, normals, colors, indices)
 				continue
 
 			var ids: Array = []
@@ -440,7 +512,7 @@ static func build_mesh(grid: Dictionary, material: Material) -> ArrayMesh:
 
 					vertices.append(Vector3(float(c % count) * spacing, level, float(c / count) * spacing))
 					normals.append(Vector3.UP)
-					colors.append(_flow_color(levels, c % count, c / count, count, spacing, 1.0 if not is_nan(levels[c]) else 0.0))
+					colors.append(_flow_color(levels, c % count, c / count, count, spacing, 1.0 if not is_nan(levels[c]) or _is_shore(edge, c) else 0.0))
 
 				ids.append(slot[c])
 
@@ -509,15 +581,20 @@ static func _seal_fine_edges(fine: Dictionary, i: int, j: int, count: int, heigh
 	return heights
 
 
+# A shore point (the water runs on into the bank there and the ground cuts it off).
+static func _is_shore(edge: PackedFloat32Array, n: int) -> bool:
+	return not edge.is_empty() and not is_nan(edge[n])
+
+
 # A running-water cell drawn from its fine heights: own vertices, normals from the
 # surface slope, alpha blended from the wet corners (the sheet fades out toward a dry one).
-static func _add_fine_cell(heights: PackedFloat32Array, i: int, j: int, spacing: float, levels: PackedFloat32Array, count: int, vertices: PackedVector3Array, normals: PackedVector3Array, colors: PackedColorArray, indices: PackedInt32Array) -> void:
+static func _add_fine_cell(heights: PackedFloat32Array, i: int, j: int, spacing: float, levels: PackedFloat32Array, edge: PackedFloat32Array, count: int, vertices: PackedVector3Array, normals: PackedVector3Array, colors: PackedColorArray, indices: PackedInt32Array) -> void:
 	var side: int = FINE_SUB + 1
 	var step: float = spacing / float(FINE_SUB)
-	var w00: float = 0.0 if is_nan(levels[j * count + i]) else 1.0
-	var w10: float = 0.0 if is_nan(levels[j * count + i + 1]) else 1.0
-	var w01: float = 0.0 if is_nan(levels[(j + 1) * count + i]) else 1.0
-	var w11: float = 0.0 if is_nan(levels[(j + 1) * count + i + 1]) else 1.0
+	var w00: float = 0.0 if is_nan(levels[j * count + i]) and not _is_shore(edge, j * count + i) else 1.0
+	var w10: float = 0.0 if is_nan(levels[j * count + i + 1]) and not _is_shore(edge, j * count + i + 1) else 1.0
+	var w01: float = 0.0 if is_nan(levels[(j + 1) * count + i]) and not _is_shore(edge, (j + 1) * count + i) else 1.0
+	var w11: float = 0.0 if is_nan(levels[(j + 1) * count + i + 1]) and not _is_shore(edge, (j + 1) * count + i + 1) else 1.0
 	var first: int = vertices.size()
 	var flow: Array = [
 		_flow_color(levels, i, j, count, spacing, 1.0), _flow_color(levels, i + 1, j, count, spacing, 1.0),

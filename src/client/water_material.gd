@@ -141,8 +141,11 @@ void fragment() {
 	float phase0 = fract(TIME / cycle);
 	float phase1 = fract(TIME / cycle + 0.5);
 	float blend = abs(phase0 - 0.5) * 2.0;
-	vec2 run = mix(ripple_slope(p - velocity * phase0 * cycle / scale), ripple_slope(p + 31.0 - velocity * phase1 * cycle / scale), blend);
-	vec2 swell = mix(ripple_slope(local / 5.0 - velocity * phase0 * cycle / 5.0), ripple_slope(local / 5.0 + 7.0 - velocity * phase1 * cycle / 5.0), blend);
+	// Owner playtest (2026-10-19): the GPU time rose with the new water; the costly layers are
+	// only worked out where they show (running water, high flow, low view angles).
+	bool running = steep > 0.001;
+	vec2 run = running ? mix(ripple_slope(p - velocity * phase0 * cycle / scale), ripple_slope(p + 31.0 - velocity * phase1 * cycle / scale), blend) : vec2(0.0);
+	vec2 swell = running && rough > 0.001 ? mix(ripple_slope(local / 5.0 - velocity * phase0 * cycle / 5.0), ripple_slope(local / 5.0 + 7.0 - velocity * phase1 * cycle / 5.0), blend) : vec2(0.0);
 	float drift = mod(TIME, 2000.0);
 	vec2 still = ripple_slope(local / 5.0 + vec2(drift * 0.03, drift * 0.02));
 	vec2 bump = (run * (0.05 + 0.35 * sqrt(steep)) * (1.0 + 0.8 * rough) + swell * 0.5 * rough) * step(0.001, steep) + still * 0.04;
@@ -163,26 +166,24 @@ void fragment() {
 	float fresnel = 0.02 + 0.98 * pow(1.0 - facing, 5.0);
 	vec3 mirrored = reflect(-to_eye, normal_world);
 	vec3 sky = mix(sky_horizon, sky_top, sqrt(clamp(mirrored.y, 0.0, 1.0)));
-	vec4 cloud = mirrored_clouds(mirrored, world_pos);
+	vec4 cloud = fresnel > 0.03 ? mirrored_clouds(mirrored, world_pos) : vec4(0.0);
 	sky = mix(sky, cloud.rgb, cloud.a);
 
 	// Shore foam (step 3): a soft, moving line where the water thins against the bank.
 	float thickness = through * max(to_eye.y, 0.15);
 	float shore = 1.0 - smoothstep(0.02, 0.35, thickness);
-	float shore_foam = shore * smoothstep(0.42, 0.68, ripples(local / 1.3 + vec2(drift * 0.12, -drift * 0.08)));
+	float shore_foam = shore > 0.0 ? shore * smoothstep(0.42, 0.68, ripples(local / 1.3 + vec2(drift * 0.12, -drift * 0.08))) : 0.0;
 
 	// Patches of foam carried by the flow (the same moving pattern as the ripples, coarser).
 	// Owner (2026-10-19): stretching the foam along the local flow direction drew zigzags,
 	// because the direction changes from square to square; carried noise has no seams.
-	float carried_a = ripples(local / 3.0 - velocity * phase0 * cycle / 3.0);
-	float carried_b = ripples(local / 3.0 + 13.0 - velocity * phase1 * cycle / 3.0);
-	float streaks = smoothstep(0.56, 0.82, mix(carried_a, carried_b, blend));
+	float streaks = running ? smoothstep(0.56, 0.82, mix(ripples(local / 3.0 - velocity * phase0 * cycle / 3.0), ripples(local / 3.0 + 13.0 - velocity * phase1 * cycle / 3.0), blend)) : 0.0;
 	// Foam follows the water speed (about the square root of the slope): riffles on ordinary
 	// streams already show some, fast water much more.
 	float speed = sqrt(steep);
 	float foam = streaks * smoothstep(mix(0.2, 0.05, rough), mix(0.55, 0.3, rough), speed) * step(0.001, steep);
 	// White water breaking on the fastest stretches when the flow is high.
-	float white = mix(ripples(p * 1.7 - velocity * phase0 * cycle * 1.7 / scale), ripples(p * 1.7 + 5.0 - velocity * phase1 * cycle * 1.7 / scale), blend);
+	float white = running && rough > 0.001 ? mix(ripples(p * 1.7 - velocity * phase0 * cycle * 1.7 / scale), ripples(p * 1.7 + 5.0 - velocity * phase1 * cycle * 1.7 / scale), blend) : 0.0;
 	foam = max(foam, smoothstep(0.5, 0.75, white) * rough * smoothstep(0.1, 0.4, speed));
 	foam = max(foam, shore_foam * 0.8);
 	foam *= 1.0 / (1.0 + distance_m / 120.0);
