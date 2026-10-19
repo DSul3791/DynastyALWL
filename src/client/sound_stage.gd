@@ -22,7 +22,8 @@ const VOICES := 6                       # footstep and swish players, reused in 
 const FEET_M := 0.9                     # player origin to the soles (capsule half height)
 
 # Soil ids (data/tables/soils.json) to footstep surfaces. Rock (MATERIAL_ROCK
-# and above) is stone; water deeper than WATER_STEP_M splashes.
+# and above) is stone; water deeper than WATER_STEP_M splashes, a thinner
+# film at the waterline sounds damp (mud).
 const SOIL_SURFACE := {
 	0: "stone", 1: "sand", 2: "gravel", 3: "dirt", 4: "dirt", 5: "dirt", 6: "mud", 7: "dirt",
 	8: "leaves", 9: "gravel", 10: "dirt", 11: "snow", 12: "stone", 13: "sand", 14: "sand", 15: "sand",
@@ -33,9 +34,13 @@ const SURFACE_DB := {
 	"leaves": -6.0, "mud": -10.0, "snow": -11.0, "water": -10.0,
 }
 const GRASS_MIN := 0.35                 # grass thickness from which a step sounds like grass
-const WATER_STEP_M := 0.04              # water above the soles that turns steps into splashes
+const WATER_STEP_M := 0.12              # water above the soles that turns steps into splashes
+const DAMP_M := 0.03                    # shallower film at the waterline: a damp, muddy step
 const SWIM_M := 1.3                     # deeper than this: no footsteps
-const GAIT_DB := [-3.0, 0.0, 2.5]       # walk, jog, run
+# Walk quiet, jog a little louder, run loud (owner 2026-10-19: build 47's run
+# level was a bit too loud for running).
+const GAIT_DB := [-11.0, -6.5, -3.0]     # walk, jog, run
+const BRUSH_GAIT_DB := [-5.0, -2.5, 0.0]
 const GAIT_PITCH := [1.0, 1.03, 1.06]
 const VOLUME_STEPS := [1.0, 0.75, 0.5, 0.25, 0.0]
 
@@ -121,8 +126,9 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	var rush: float = clampf(body.velocity.length() / 80.0, 0.0, 1.0) if flying else 0.0
 	var strength: float = clampf(0.35 + 0.65 * gust + 0.4 * height - 0.45 * _shelter + rush, 0.05, 1.6)
 	# A calm day (owner, 2026-10-19: the first version sounded like a storm by the sea).
-	_wind_low.volume_db = linear_to_db(0.03 + 0.07 * strength)
-	_wind_gust.volume_db = linear_to_db(0.01 + 0.08 * pow(strength, 1.6))
+	# Owner 2026-10-19, twice: still a windstorm. Now a faint breeze that only rises a little in gusts.
+	_wind_low.volume_db = linear_to_db(0.008 + 0.025 * strength)
+	_wind_gust.volume_db = linear_to_db(0.004 + 0.025 * pow(strength, 1.6))
 	_wind_filter.cutoff_hz = lerpf(1500.0, 7000.0, clampf(strength - 0.2 * _shelter, 0.0, 1.0))
 	_muffle.cutoff_hz = 500.0 if underwater else 20000.0
 
@@ -142,7 +148,7 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 # One footfall at gait 0 walk, 1 jog, 2 run; `boost_db` makes it louder (landings).
 func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0) -> void:
 	var feet: Vector3 = body.global_position - Vector3(0.0, FEET_M, 0.0)
-	var water: float = _flora.water_level_at(feet.x, feet.z)
+	var water: float = _flora.water_surface_at(feet.x, feet.z)
 
 	if feet.y < 0.0 and (is_nan(water) or water < 0.0):
 		water = 0.0                                              # the sea
@@ -164,6 +170,9 @@ func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0) -> void:
 	if depth > WATER_STEP_M:
 		surface = "water"
 		thick = 0.0
+	elif depth > DAMP_M:
+		surface = "mud"                                          # wet ground at the waterline
+		thick = 0.0
 	elif soil < 0 or soil >= Layout.MATERIAL_ROCK:
 		surface = "stone"
 	elif thick >= GRASS_MIN and soil != 8:
@@ -179,7 +188,7 @@ func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0) -> void:
 		# Blades brushing the boots: louder in thick and tall grass and at speed.
 		var name: String = "grass_brush_tall" if tall > 0.35 else "grass_brush"
 		var amount: float = clampf(thick * (0.6 + 0.6 * tall), 0.0, 1.0)
-		_play(name, linear_to_db(0.06 + 0.2 * amount) + GAIT_DB[gait] * 1.5, _rng.randf_range(0.9, 1.1) * (1.0 + 0.05 * gait))
+		_play(name, linear_to_db(0.06 + 0.2 * amount) + BRUSH_GAIT_DB[gait], _rng.randf_range(0.9, 1.1) * (1.0 + 0.05 * gait))
 		swishes_played += 1
 
 

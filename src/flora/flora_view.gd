@@ -548,6 +548,44 @@ func water_level_at(x: float, z: float) -> float:
 	return best
 
 
+# The water surface at a point for footsteps: the wet corners of the square,
+# blended by distance (bilinear weights over the wet corners only), NAN when
+# none is wet. Unlike water_level_at (the highest wet corner, which the
+# underwater check needs), it does not lift a dry bank to the level of
+# higher water beside it.
+func water_surface_at(x: float, z: float) -> float:
+	var chunk: Vector2i = Vector2i(int(floor(x / chunk_m)), int(floor(z / chunk_m)))
+	var grid: Dictionary = _chunks.get(chunk, {}).get("grid", {})
+
+	if int(grid.get("wet", 0)) == 0:
+		return NAN
+
+	var spacing: float = float(grid["spacing"])
+	var count: int = int(grid["count"])
+	var fx: float = (x - float(chunk.x) * chunk_m) / spacing
+	var fz: float = (z - float(chunk.y) * chunk_m) / spacing
+	var i0: int = clampi(int(floor(fx)), 0, count - 2)
+	var j0: int = clampi(int(floor(fz)), 0, count - 2)
+	var tx: float = clampf(fx - float(i0), 0.0, 1.0)
+	var tz: float = clampf(fz - float(j0), 0.0, 1.0)
+	var total: float = 0.0
+	var weight: float = 0.0
+
+	for c in range(4):
+		var i: int = i0 + (c & 1)
+		var j: int = j0 + (c >> 1)
+		var level: float = float(grid["levels"][j * count + i])
+
+		if is_nan(level):
+			continue
+
+		var w: float = (tx if c & 1 else 1.0 - tx) * (tz if c >> 1 else 1.0 - tz) + 0.0001
+		total += level * w
+		weight += w
+
+	return total / weight if weight > 0.0 else NAN
+
+
 func drop_chunk(chunk: Vector2i) -> void:
 	var entry: Dictionary = _chunks.get(chunk, {})
 

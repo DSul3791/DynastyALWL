@@ -109,8 +109,13 @@ def burst(rng, length, center, octaves):
 
 
 def finish(x, peak=0.9):
+    """Footstep and brush finish: a soft 5 ms onset and gentle top roll-off so
+    nothing clicks harshly (owner 2026-10-19: steps were harsh)."""
     x = x - np.mean(x)
     n = len(x)
+    x = shape(x, lowpass(freqs(n), 4500, 1))
+    rise = min(int(0.005 * SR), n // 4)
+    x[:rise] *= np.linspace(0, 1, rise)
     fade = min(int(0.01 * SR), n // 4)
     x[-fade:] *= np.linspace(1, 0, fade)
     return x * (peak / (np.max(np.abs(x)) + 1e-9))
@@ -172,10 +177,11 @@ def step_sand(rng):
 def step_gravel(rng):
     out, toe = step_base(rng, 0.42, 80, 0.025, heel=0.8, toe=0.4)
     n = len(out)
-    stone = lambda: ping(rng.uniform(1200, 5000), rng.uniform(0.0015, 0.005))
-    pings = grains(rng, n, 260, 0.004, 0.11, stone) + 0.8 * grains(rng, n, 180, toe, 0.12, stone)
-    roll = noise(rng, n, lambda f: band(f, 2500, 1.2)) * env(n, 0.005, 0.06)
-    return finish(out / 3.5 + 0.35 * pings + 0.05 * roll)
+    # Dry crunch of stones grinding: noise grains, not ringing pings (pings
+    # sounded like water dripping, owner 2026-10-19).
+    stone = lambda: burst(rng, rng.uniform(0.003, 0.008), rng.uniform(700, 2200), 0.8)
+    crunch = grains(rng, n, 120, 0.004, 0.12, stone, 0.5) + 0.7 * grains(rng, n, 80, toe, 0.12, stone, 0.5)
+    return finish(out / 2.5 + 0.3 * crunch)
 
 
 def step_stone(rng):
