@@ -305,8 +305,36 @@ static func decode(bytes: PackedByteArray) -> Dictionary:
 # (SHORE_DROP m lower) and fade out, so the surface slides under the ground
 # without hard edges or overlapping panels. Only cells with at least one
 # wet corner are drawn. Vertex positions are relative to the chunk corner;
-# vertex alpha carries the fade (use vertex colors as albedo).
+# vertex alpha carries the fade; red and green carry the downhill slope of the
+# water surface (blue 0 marks it) so the water shader can run ripples downstream.
 const SHORE_DROP := 1.5
+const FLOW_SLOPE_FULL := 0.05   # a surface slope this steep is drawn as the fastest flow
+
+
+# The vertex colour for a point: downhill direction and steepness of the water surface
+# around grid point (i, j), from the levels on either side.
+static func _flow_color(levels: PackedFloat32Array, i: int, j: int, count: int, spacing: float, alpha: float) -> Color:
+	var gx: float = _slope_along(levels, i, j, 1, 0, count, spacing)
+	var gz: float = _slope_along(levels, i, j, 0, 1, count, spacing)
+	var scale: float = 0.5 / FLOW_SLOPE_FULL
+	return Color(0.5 + clampf(-gx * scale, -0.5, 0.5), 0.5 + clampf(-gz * scale, -0.5, 0.5), 0.0, alpha)
+
+
+static func _slope_along(levels: PackedFloat32Array, i: int, j: int, di: int, dj: int, count: int, spacing: float) -> float:
+	var here: float = levels[j * count + i] if i >= 0 and j >= 0 and i < count and j < count else NAN
+	var ahead: float = levels[(j + dj) * count + i + di] if i + di < count and j + dj < count else NAN
+	var back: float = levels[(j - dj) * count + i - di] if i - di >= 0 and j - dj >= 0 else NAN
+
+	if not is_nan(ahead) and not is_nan(back):
+		return (ahead - back) / (2.0 * spacing)
+
+	if not is_nan(here) and not is_nan(ahead):
+		return (ahead - here) / spacing
+
+	if not is_nan(here) and not is_nan(back):
+		return (here - back) / spacing
+
+	return 0.0
 
 
 static func build_mesh(grid: Dictionary, material: Material) -> ArrayMesh:
@@ -392,7 +420,7 @@ static func build_mesh(grid: Dictionary, material: Material) -> ArrayMesh:
 
 					vertices.append(Vector3(float(c % count) * spacing, level, float(c / count) * spacing))
 					normals.append(Vector3.UP)
-					colors.append(Color(1.0, 1.0, 1.0, 1.0 if not is_nan(levels[c]) else 0.0))
+					colors.append(_flow_color(levels, c % count, c / count, count, spacing, 1.0 if not is_nan(levels[c]) else 0.0))
 
 				ids.append(slot[c])
 
@@ -471,6 +499,10 @@ static func _add_fine_cell(heights: PackedFloat32Array, i: int, j: int, spacing:
 	var w01: float = 0.0 if is_nan(levels[(j + 1) * count + i]) else 1.0
 	var w11: float = 0.0 if is_nan(levels[(j + 1) * count + i + 1]) else 1.0
 	var first: int = vertices.size()
+	var flow: Array = [
+		_flow_color(levels, i, j, count, spacing, 1.0), _flow_color(levels, i + 1, j, count, spacing, 1.0),
+		_flow_color(levels, i, j + 1, count, spacing, 1.0), _flow_color(levels, i + 1, j + 1, count, spacing, 1.0),
+	]
 
 	for b in range(side):
 		for a in range(side):
@@ -483,7 +515,9 @@ static func _add_fine_cell(heights: PackedFloat32Array, i: int, j: int, spacing:
 			var run_z: float = step * float(mini(b + 1, FINE_SUB) - maxi(b - 1, 0))
 			vertices.append(Vector3(float(i) * spacing + float(a) * step, h, float(j) * spacing + float(b) * step))
 			normals.append(Vector3(-dx / run_x, 1.0, -dz / run_z).normalized())
-			colors.append(Color(1.0, 1.0, 1.0, lerpf(lerpf(w00, w10, u), lerpf(w01, w11, u), v)))
+			var color: Color = (flow[0] as Color).lerp(flow[1], u).lerp((flow[2] as Color).lerp(flow[3], u), v)
+			color.a = lerpf(lerpf(w00, w10, u), lerpf(w01, w11, u), v)
+			colors.append(color)
 
 	for b in range(FINE_SUB):
 		for a in range(FINE_SUB):
