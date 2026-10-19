@@ -25,6 +25,7 @@ Gait rules:
 - Walking shows no label. Jogging shows "Jogging". Running shows "Running".
 - Other status words (underwater, waiting for ground) still show.
 - Flying is an admin look-around tool (noclip). Shift multiplies flying speed.
+- Temporary admin compass (2026-10-19): a strip at the top of the screen scrolls as you turn, N, NE, E, SE, S, SW, W, NW with a tick every 10 degrees and the exact heading under the red pointer (north is -z, east is +x).
 
 ## Planned / not decided
 

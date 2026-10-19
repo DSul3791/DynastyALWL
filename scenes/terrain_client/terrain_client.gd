@@ -28,6 +28,7 @@ extends Node
 
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")
+const CompassScript := preload("res://src/client/admin_compass.gd")
 const KnowledgeScript := preload("res://src/client/inspection_knowledge.gd")
 const StreamScript := preload("res://src/stream/network_voxel_stream.gd")
 const CacheScript := preload("res://src/stream/client_block_cache.gd")
@@ -80,6 +81,7 @@ var terrain: VoxelLodTerrain
 var body: CharacterBody3D
 var camera: Camera3D
 var hud: Label
+var compass                         # temporary admin compass (AdminCompass)
 var sea: MeshInstance3D
 var flying: bool = false
 var underwater: bool = false
@@ -381,6 +383,8 @@ func _on_welcome(info: Dictionary) -> void:
 	hud.add_theme_constant_override("outline_size", 6)
 	hud.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
 	layer.add_child(hud)
+	compass = CompassScript.new()
+	layer.add_child(compass)
 	print("Terrain client: welcome after %d ms; world %s; spawn %s; cache %s (%d MB)" % [
 		connected_msec - started_msec, str(info["world_name"]), str(info["spawn"]), cache_dir, cache_mb
 	])
@@ -1058,6 +1062,9 @@ func _process(delta: float) -> void:
 
 	_frame_ms.append(delta * 1000.0)
 	Probe.frame(delta)
+
+	if compass != null and camera != null:
+		compass.heading = CompassScript.heading_of(camera)
 
 	if _frame_ms.size() > 120:
 		_frame_ms.pop_front()
