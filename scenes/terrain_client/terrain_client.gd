@@ -30,7 +30,7 @@ const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")
 const CompassScript := preload("res://src/client/admin_compass.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 39
+const BUILD := 40
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const KnowledgeScript := preload("res://src/client/inspection_knowledge.gd")
 const StreamScript := preload("res://src/stream/network_voxel_stream.gd")
@@ -42,6 +42,7 @@ const FloraViewScript := preload("res://src/flora/flora_view.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const TileBakeScript := preload("res://src/admin/tile_bake_launcher.gd")
 const GrassViewScript := preload("res://src/client/grass_view.gd")
+const SoundStageScript := preload("res://src/client/sound_stage.gd")
 const GroundMaterialScript := preload("res://src/client/ground_material.gd")
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 
@@ -148,6 +149,7 @@ var _report_msec: int = 0
 var dig_applied: int = 0
 var flora                             # FloraView
 var grass                             # GrassView
+var sound                             # SoundStage: wind, footsteps, grass swish
 var _bake = TileBakeScript.new()      # admin: background tile bake
 var _bake_check_msec: int = 0
 var _bake_status: String = ""
@@ -323,6 +325,10 @@ func _on_welcome(info: Dictionary) -> void:
 	grass.name = "Grass"
 	root.add_child(grass)
 	grass.setup(terrain, flora, _tables)
+	sound = SoundStageScript.new()
+	sound.name = "Sound"
+	root.add_child(sound)
+	sound.setup(terrain, flora, grass)
 	_make_environment(root)
 	_apply_quality()
 	RenderingServer.viewport_set_measure_render_time(get_viewport().get_viewport_rid(), true)
@@ -716,6 +722,9 @@ func _build_menu(layer: CanvasLayer) -> void:
 		at = (at + 1) % order.size()
 		DisplayServer.window_set_vsync_mode(order[at])
 		_menu_note.text = "VSync is now %s. On snaps to 60 or 30; adaptive avoids the halving; off shows the true speed." % names[at])
+	_menu_button(settings, "Sound volume: change", func():
+		var share: float = sound.step_volume()
+		_menu_note.text = "Sound is off" if share <= 0.0 else "Sound volume %d %%" % roundi(share * 100.0))
 	_menu_button(settings, "Back", func(): _show_menu_page("main"))
 
 	var advanced: VBoxContainer = _menu_page(column, "advanced")
@@ -985,6 +994,9 @@ func _physics_process(delta: float) -> void:
 	var t: int = Probe.start()
 	_move_player(delta)
 	Probe.stop("player move", t)
+	var ts: int = Probe.start()
+	sound.update(delta, body, flying, underwater)
+	Probe.stop("sound", ts)
 
 
 func _move_player(delta: float) -> void:
@@ -1077,7 +1089,11 @@ func _update_bob(delta: float) -> void:
 
 	if moving:
 		# One full turn of the phase is one step (a footfall at 0, then at TAU).
+		var before: float = _bob_phase
 		_bob_phase = fposmod(_bob_phase + delta * pace / float(STEP_M[gait]) * TAU, 2.0 * TAU)
+
+		if floor(before / TAU) != floor(_bob_phase / TAU):
+			sound.footstep(body, gait)
 
 	var dip: float = 0.5 * (1.0 + cos(_bob_phase))            # 1 at a footfall, 0 mid-stride
 	var side: float = cos(_bob_phase * 0.5)                   # +1 left foot, -1 right foot
@@ -1263,6 +1279,7 @@ func _process(delta: float) -> void:
 				flora.water_chunks, flora.water_cells
 			])
 			print("Terrain client: grass %d tufts in %d cells (radius %.0f m)" % [grass.tufts, grass.cells_built, grass.radius_m])
+			print("Terrain client: sound: footsteps %s, grass swishes %d, last ground %s, gust %.2f" % [str(sound.steps_played), sound.swishes_played, sound.surface, sound.gust])
 			print("Terrain client: blocks waited for %d times, %.0f ms on average, worst %d ms; at most %d loader threads waiting at once" % [stream.waits, float(stream.wait_msec_total) / maxf(float(stream.waits), 1.0), stream.wait_msec_worst, stream.most_waiting])
 			print(Probe.report())
 			var probe: Vector3i = Vector3i((Vector3(world["spawn"]) + Vector3(0.0, -3.0, 0.0)).round())
