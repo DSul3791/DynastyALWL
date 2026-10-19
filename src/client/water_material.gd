@@ -33,7 +33,10 @@ void vertex() {
 }
 
 float hash(vec2 p) {
-	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+	// No sine: stays exact for the large world coordinates (sin of big numbers breaks up on GPUs).
+	vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+	p3 += dot(p3, p3.yzx + 33.33);
+	return fract((p3.x + p3.y) * p3.z);
 }
 
 float noise(vec2 p) {
@@ -66,27 +69,36 @@ void fragment() {
 	// cycle apart blend so the pattern never stretches. Still water only shivers.
 	float steep = clamp(length(flow), 0.0, 1.0);
 	vec2 velocity = steep > 0.001 ? normalize(flow) * fastest_m_s * sqrt(steep) : vec2(0.0);
-	// Higher flow: faster, finer, stronger chop and more white water.
-	velocity *= 1.0 + 1.2 * rough;
-	float scale = mix(1.6, 0.9, rough);
-	vec2 p = world_pos.xz / scale;
-	float cycle = mix(1.5, 0.8, rough);
+	// Higher flow: faster, stronger chop, bigger swells and more white water. The pattern
+	// moves at most about one ripple per cycle (the cycle shortens as the flow rises), so it
+	// always reads as flowing instead of flickering. Positions are taken modulo 4 km to keep
+	// precision far from the world origin; time only enters through the repeating phases.
+	velocity *= 1.0 + 0.8 * rough;
+	float scale = 1.6;
+	vec2 local = mod(world_pos.xz, 4096.0);
+	vec2 p = local / scale;
+	float cycle = mix(1.5, 0.7, rough);            // the same everywhere, so phases never band
+	velocity *= min(1.0, 1.2 * scale / max(length(velocity) * cycle, 0.001));
 	float phase0 = fract(TIME / cycle);
 	float phase1 = fract(TIME / cycle + 0.5);
 	float blend = abs(phase0 - 0.5) * 2.0;
 	vec2 run = mix(ripple_slope(p - velocity * phase0 * cycle / scale), ripple_slope(p + 31.0 - velocity * phase1 * cycle / scale), blend);
-	vec2 still = ripple_slope(world_pos.xz / 5.0 + vec2(TIME * 0.03, TIME * 0.02));
-	vec2 bump = run * (0.05 + 0.35 * sqrt(steep)) * (1.0 + 2.0 * rough) * step(0.001, steep) + still * 0.04;
+	vec2 swell = mix(ripple_slope(local / 5.0 - velocity * phase0 * cycle / 5.0), ripple_slope(local / 5.0 + 7.0 - velocity * phase1 * cycle / 5.0), blend);
+	float drift = mod(TIME, 2000.0);
+	vec2 still = ripple_slope(local / 5.0 + vec2(drift * 0.03, drift * 0.02));
+	vec2 bump = (run * (0.05 + 0.35 * sqrt(steep)) * (1.0 + 0.8 * rough) + swell * 0.5 * rough) * step(0.001, steep) + still * 0.04;
 	vec3 up = (INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz;
 	NORMAL = normalize((VIEW_MATRIX * vec4(normalize(up - vec3(bump.x, 0.0, bump.y)), 0.0)).xyz);
 
 	// Streaks of foam where the water runs fast, stretched along the flow.
 	vec2 along = steep > 0.001 ? normalize(flow) : vec2(1.0, 0.0);
-	vec2 streak_p = vec2(dot(world_pos.xz, along) * 0.25, dot(world_pos.xz, vec2(-along.y, along.x)) * 1.5);
-	float streaks = smoothstep(0.62, 0.9, mix(ripples(streak_p - vec2(TIME * length(velocity) * 0.25, 0.0)), ripples(streak_p + 11.0 - vec2(TIME * length(velocity) * 0.25, 0.0)), 0.5));
+	vec2 streak_p = vec2(dot(local, along) * 0.25, dot(local, vec2(-along.y, along.x)) * 1.5);
+	float carried = length(velocity) * cycle * 0.25;
+	float streaks = smoothstep(0.62, 0.9, mix(ripples(streak_p - vec2(phase0 * carried, 0.0)), ripples(streak_p + 11.0 - vec2(phase1 * carried, 0.0)), blend));
 	float foam = streaks * smoothstep(mix(0.15, 0.0, rough), mix(0.8, 0.25, rough), steep) * step(0.001, steep);
 	// White water breaking on the fastest stretches when the flow is high.
-	foam = max(foam, smoothstep(0.5, 0.8, ripples(p * 1.7 - velocity * TIME * 0.5)) * rough * smoothstep(0.05, 0.4, steep));
+	float white = mix(ripples(p * 1.7 - velocity * phase0 * cycle * 1.7 / scale), ripples(p * 1.7 + 5.0 - velocity * phase1 * cycle * 1.7 / scale), blend);
+	foam = max(foam, smoothstep(0.5, 0.8, white) * rough * smoothstep(0.05, 0.4, steep));
 
 	vec3 water = mix(mix(shallow_color, deep_color, murk), mud_color * mix(1.0, 0.7, murk), mud);
 	ALBEDO = mix(water, mix(foam_color, mud_color * 1.6, mud * 0.6), foam * 0.5);
