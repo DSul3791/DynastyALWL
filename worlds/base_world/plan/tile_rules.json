@@ -980,12 +980,12 @@
 		"ore_max_lod": 0
 	},
 	"runtime_flora": {
-		"note": "Runtime flora (plan step 15). Not baked: placed per chunk from biome, moisture, ground shape and the tile's flora seed, with species from data/tables/flora.json. chunk_m: chunk size (must divide the tile size). density: multiplies every species' per-hectare figure; it changes item ids, so freeze it once players remove trees. patchiness (0 to 1) and patch_m: a smooth noise field of that wavelength thins trees into glades (shrubs no longer follow it: they also grow under the trees). view_m: how far each kind is drawn (owner 2026-10-18: trees cut from 560 to 420 m and shrubs from 300 to 160 m to pay for denser woods and three times the shrubs; the extra plants sit in the far ring, unnoticed from the ground). collision_m: trees and shrubs this close to the player get collision.",
+		"note": "Runtime flora (plan step 15). Not baked: placed per chunk from biome, moisture, ground shape and the tile's flora seed, with species from data/tables/flora.json. chunk_m: chunk size (must divide the tile size). density: multiplies every species' per-hectare figure; it changes item ids, so freeze it once players remove trees. patchiness (0 to 1) and patch_m: a smooth noise field of that wavelength thins trees into glades (shrubs no longer follow it: they also grow under the trees). view_m: how far each kind is drawn (owner 2026-10-18: trees cut from 560 to 420 m and shrubs from 300 to 160 m to pay for denser woods and three times the shrubs; the extra plants sit in the far ring, unnoticed from the ground; 2026-10-19: trees cut again to 300 m and shrubs to 120 m because the world loaded slower, which takes the flora chunks around the player from about 16 to 10). collision_m: trees and shrubs this close to the player get collision.",
 		"chunk_m": 256,
 		"density": 1.0,
 		"patchiness": 0.9,
 		"patch_m": 160,
-		"view_m": {"tree": 420, "shrub": 160, "plant": 120},
+		"view_m": {"tree": 300, "shrub": 120, "plant": 120},
 		"collision_m": 160
 	}
 }
