@@ -134,7 +134,7 @@ Built:
 - Underwater test checks all four corners of the water square (`flora_view.gd water_level_at`). Sun shadow bias raised (`terrain_client.gd`), unverified.
 - Server prints `water: N springs at [...]` at start and a water update line every 10 publishes.
 
-Baked by the owner on 2026-10-18 (all nine tiles pushed, terrain version 16); the starter cache was rebuilt from them. Tune only if the owner reports the look.
+Baked by the owner on 2026-10-19 with 10 m ponds and 20 m x 3 m downhill-only rivers (all nine tiles pushed, terrain version 17; edges match, 63 head ponds); the starter cache was rebuilt from them. Tune only if the owner reports the look.
 
 Open problems (all judged from the owner's screenshots, the cloud has no GPU):
 - Owner feedback 2026-10-18 (screenshots seen before the stale-ground fix, so re-check first): the crater he saw was the stale 60 m pond; after the fix he chose 10 m deep ponds (rules changed, needs his re-bake; `_pond_near` now checks a 112 m ring 5 m higher). A 10 m bowl was drained by the 20 m river cut at its head, so the pond's lip is now measured on the carved ground (`tile_water.gd`, rim_low from `carved`): the brook channel is the lip. Cloud test bake: 51 ponds found (was 2 before that change). Streams "need to be 2 to 3 m deep": rivers are baked 100 m wide and about 20 m deep, so the shallow streams he saw are probably water finding its own way over land (pond spills not lined up with a carved river) or old ground; ask him again after he plays the fixed build.
