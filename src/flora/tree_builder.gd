@@ -46,6 +46,11 @@ const BARK_TINT_HEARTHWOOD := Color(0.56, 0.36, 0.26)  # hearthwood: reddish bro
 const BARK_TINT_WALNUT := Color(0.52, 0.51, 0.49)     # walnut: pale gray, straight deep furrows
 const WALNUT_CATKIN_TINT := Color(0.56, 0.62, 0.18)   # walnut catkins: long, yellow-green
 const WALNUT_HUSK_TINT := Color(0.38, 0.52, 0.16)     # walnuts in their green husks
+const BARK_TINT_HAZEL := Color(0.54, 0.47, 0.40)     # hazel: smooth gray-brown stems, silvery when old
+const HAZEL_CATKIN_TINT := Color(0.86, 0.80, 0.28)    # hazel catkins in spring: pale lemon yellow
+const HAZEL_CATKIN_WINTER := Color(0.42, 0.20, 0.12)  # next spring's catkins over winter: tight, red-brown
+const HAZEL_HUSK_TINT := Color(0.52, 0.56, 0.22)      # the frilly leafy husk round the nuts
+const HAZELNUT_TINT := Color(0.50, 0.30, 0.12)        # hazelnuts: warm brown
 const BARK_TINT_OAK := Color(0.44, 0.40, 0.36)        # oak: rugged, deeply furrowed gray-brown
 const BARK_TINT_WARDPINE := Color(0.54, 0.46, 0.38)   # wardpine: weathered silver-brown
 const BARK_TINT_PINE_LOW := Color(0.54, 0.46, 0.40)   # Scots pine: thick gray-brown plates low down
@@ -148,6 +153,8 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 			_chestnut(bark, leaves, twigs, rng, h, crown, trunk, variant, far, season, true)
 		"sweet_chestnut":
 			_chestnut(bark, leaves, twigs, rng, h, crown, trunk, variant, far, season)
+		"hazel":
+			_hazel(smooth, leaves, twigs, rng, h, variant, far, season)
 		"oak":
 			_oak(bark, leaves, twigs, rng, h, crown, trunk, variant, far, season == "winter")
 		"maple":
@@ -1147,6 +1154,110 @@ static func _chestnut(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGener
 			_bead(bark, at, Vector3(0.24, 0.06, 0.06), burr)
 			_bead(bark, at, Vector3(0.06, 0.06, 0.24), burr)
 			_bead(bark, at + Vector3(0.0, 0.13, 0.0), Vector3(0.09, 0.09, 0.09), NUT_TINT)
+
+
+# Common hazel (Corylus avellana). From the owner's 8-panel and notes (2026-10-19):
+# never one trunk but a clump of many slender stems rising from one root base
+# and fanning out like a vase into a broad, rounded, dense crown. Smooth
+# gray-brown stems, silvery and rougher on old clumps; large soft oval leaves
+# with toothed edges; long pale yellow catkins hanging in early spring; dense
+# green in summer; golden yellow in autumn with clusters of brown nuts in
+# frilly leafy husks; bare in winter with next spring's tight red-brown
+# catkins already hanging. Mature clumps 4 to 8 m tall and about as wide as
+# they are tall; young ones 1 to 2 m with fewer, thinner stems.
+# Variants: 0 and 1 mature, 2 and 3 young (young_below_m picks them).
+static func _hazel(smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, variant: int, far: bool, season: String) -> void:
+	var bare: bool = season == "winter"
+	var young: bool = variant >= 2
+	var tint: Color = BARK_TINT_HAZEL.lerp(Color(0.6, 0.58, 0.55), 0.3 if young else 0.0)
+	var crown_w: float = h * (0.34 if young else 0.42) * rng.randf_range(0.9, 1.1)
+	var stems: int = (6 if far else rng.randi_range(10, 14)) if young else (9 if far else rng.randi_range(16, 24))
+	var stem_r: float = h * (0.006 if young else 0.009)
+	var az: float = rng.randf() * TAU
+	var center: Vector3 = Vector3(0.0, h * 0.6, 0.0)   # the rounded crown
+	var half_h: float = h * 0.4
+
+	for k in range(stems):
+		az += TAU / float(stems) + rng.randf_range(-0.3, 0.3)
+		var out: Vector3 = Vector3(cos(az), 0.0, sin(az))
+		# Inner stems stand nearly straight; outer ones lean out more.
+		var ring: float = rng.randf_range(0.15, 1.0)
+		var base: Vector3 = out * h * 0.035 * ring
+		var top_y: float = h * lerpf(1.0, 0.72, ring) * rng.randf_range(0.88, 1.0)
+		var top: Vector3 = out * crown_w * lerpf(0.25, 0.9, ring) + Vector3(0.0, top_y, 0.0)
+		# A gentle bow outward makes the vase.
+		var mid: Vector3 = base.lerp(top, 0.5) + out * crown_w * 0.08
+		var r: float = stem_r * rng.randf_range(0.7, 1.15)
+		_branch(smooth, base, mid, r, r * 0.65, tint, 4 if far else 6)
+		_branch(smooth, mid, top, r * 0.65, r * 0.15, tint, 4 if far else 5)
+
+		# Thin side shoots from the upper half, angled out and up.
+		var shoots: Array = [top]
+		for m in range(0 if far else rng.randi_range(2, 3)):
+			var from: Vector3 = mid.lerp(top, rng.randf_range(0.0, 0.8))
+			var side: Vector3 = (out + Vector3(-out.z, 0.0, out.x) * rng.randf_range(-0.8, 0.8)).normalized()
+			var tip: Vector3 = from + (side * 0.8 + Vector3.UP * 0.6).normalized() * crown_w * rng.randf_range(0.25, 0.4)
+			tip.y = minf(tip.y, h)
+			_branch(smooth, from, tip, r * 0.3, r * 0.08, tint, 3)
+			shoots.append(tip)
+
+		var shade: float = lerpf(0.72, 1.0, top_y / h) * rng.randf_range(0.92, 1.06)
+
+		if bare:
+			if not far:
+				twigs.card(top - Vector3(0.0, crown_w * 0.1, 0.0), Vector3(-out.z, 0.0, out.x), Vector3.UP, crown_w * 0.3, crown_w * 0.28, out, Color(1.0, 1.0, 1.0, 0.3))
+		else:
+			# Leaf sprays along the upper half of every stem and on its shoots;
+			# spring leaves are still small, so the catkins show.
+			var leafy: float = (0.75 if season == "spring" else 1.0) * (1.4 if far else 1.0)
+			var sprays: int = 2 if far else 3
+			for m in range(sprays):
+				var at: Vector3 = mid.lerp(top, float(m) / float(sprays - 1))
+				_clump(leaves, rng, at, Vector3(0.0, at.y - crown_w * 0.4, 0.0), crown_w * rng.randf_range(0.42, 0.55) * leafy, shade, 2 if far else 3)
+			for n in range(1, shoots.size()):
+				_clump(leaves, rng, shoots[n], Vector3(0.0, shoots[n].y - crown_w * 0.4, 0.0), crown_w * rng.randf_range(0.36, 0.46) * leafy, shade, 2)
+
+	if not bare:
+		# Fill the dome so the summer crown reads dense, as in the photos.
+		# Its foot stays open, so the stems show below.
+		for n in range(5 if far else 10):
+			var a: float = rng.randf() * TAU
+			var v: float = rng.randf_range(-0.35, 0.9)
+			var ring: float = sqrt(maxf(1.0 - v * v, 0.0))
+			var at: Vector3 = center + Vector3(cos(a) * ring * crown_w * 0.8, v * half_h * 0.9, sin(a) * ring * crown_w * 0.8)
+			_clump(leaves, rng, at, center, crown_w * (0.8 if far else 0.58) * (0.8 if season == "spring" else 1.0), lerpf(0.75, 1.0, at.y / h), 2 if far else 3)
+
+	if far:
+		return
+
+	# Catkins hang in spring and, still tight and red-brown, all winter; nuts
+	# ripen in autumn (also the model the game shows, season "").
+	var catkins: bool = season == "spring" or bare
+	if season == "summer":
+		return
+	var count: int = (rng.randi_range(18, 26) if young else rng.randi_range(50, 70)) if catkins else (rng.randi_range(8, 12) if young else rng.randi_range(30, 40))
+	# On the crown's outside, where they are seen; drawn about three times life
+	# size so they read from a few paces.
+	var big: float = 1.0 if young else 1.4
+	for n in range(count):
+		var a: float = rng.randf() * TAU
+		var v: float = rng.randf_range(-0.3, 0.8)
+		var ring: float = sqrt(maxf(1.0 - v * v, 0.0))
+		var depth: float = rng.randf_range(0.85, 1.0)
+		var at: Vector3 = center + Vector3(cos(a) * ring * crown_w * depth, v * half_h * depth, sin(a) * ring * crown_w * depth)
+		if catkins:
+			# Two to four tassels hanging from one twig.
+			for t in range(rng.randi_range(2, 4)):
+				var long: float = (rng.randf_range(0.1, 0.15) if season == "spring" else rng.randf_range(0.05, 0.08)) * big
+				var off: Vector3 = Vector3(rng.randf_range(-0.08, 0.08), 0.0, rng.randf_range(-0.08, 0.08)) * big
+				_bead(smooth, at + off - Vector3(0.0, long, 0.0), Vector3(0.025, long, 0.025) * Vector3(big, 1.0, big), (HAZEL_CATKIN_TINT if season == "spring" else HAZEL_CATKIN_WINTER) * rng.randf_range(0.9, 1.1))
+		else:
+			# Two to four nuts, each in its frilly husk.
+			for t in range(rng.randi_range(2, 4)):
+				var p: Vector3 = at + Vector3(rng.randf_range(-0.08, 0.08), rng.randf_range(-0.05, 0.03), rng.randf_range(-0.08, 0.08)) * big
+				var husk: Color = HAZEL_HUSK_TINT.lerp(Color(0.6, 0.48, 0.2), rng.randf() * 0.5)
+				_bead(smooth, p, Vector3(0.07, 0.05, 0.07) * big, husk)
+				_bead(smooth, p + Vector3(0.0, -0.04, 0.0) * big, Vector3(0.05, 0.055, 0.05) * big, HAZELNUT_TINT * rng.randf_range(0.9, 1.1))
 
 
 # Witness tree (fantasy). From the owner's design and pictures (2026-10-18):

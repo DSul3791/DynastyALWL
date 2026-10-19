@@ -19,8 +19,9 @@ extends RefCounted
 # crown grown with its height, so big old trees stand apart while young ones
 # crowd, never closer than 6 ft. Some species also grow in dense stands
 # ("stand": birch in groups of hundreds about 10 ft apart, alder and young
-# firs in thickets). Young trees need light: none grow under a dense crown,
-# and under a light one only shade-tolerant ones (firs, beech) grow freely.
+# firs in thickets, hazel in groups of clumps and the odd thicket). Young
+# trees need light: none grow under a dense crown, and under a light one
+# only shade-tolerant ones (firs, beech) grow freely.
 # Shrubs are three times the table figures and tuck in under the trees,
 # keeping only clear of trunks. Every species draws from its own random
 # stream, seeded by the flora seed, the chunk and the species ID, and every
@@ -163,6 +164,9 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 				"fixed": [],
 				"spacing_m": maxf(float(stand.get("spacing_m", 3.0)), MIN_TREE_GAP),
 				"fill": float(stand.get("fill", 0.8)),
+				# A share of the circles are thickets, filled fuller (hazel).
+				"thicket_chance": float(stand.get("thicket_chance", 0.0)),
+				"thicket_fill": float(stand.get("thicket_fill", 0.9)),
 				"height_min": float(stand.get("height", [0.5, 1.0])[0]),
 				"height_max": float(stand.get("height", [0.5, 1.0])[1]),
 			}
@@ -335,7 +339,7 @@ func chunk_items(chunk: Vector2i) -> Dictionary:
 
 				found.append([_tier(item, height), species_id, cz * count + cx, x, y, z, height, yaw, 0.0])
 
-		# Dense stands (birch, alder, young firs): extra trees packed close
+		# Dense stands (birch, alder, young firs, hazel clumps): extra plants packed close
 		# inside stand circles, each cell drawn from its own stable numbers.
 		if item.has("stand"):
 			var stand: Dictionary = item["stand"]
@@ -345,6 +349,10 @@ func chunk_items(chunk: Vector2i) -> Dictionary:
 			for st in _groves_near(item, stand, _stand_seed, species_id, origin):
 				var c: Vector2 = st[0]
 				var r: float = st[1] * 1.15
+				var fill: float = float(stand["fill"])
+
+				if float(_mix(_stand_seed, int(c.x), int(c.y), species_id + 7) % 10007) / 10007.0 < float(stand["thicket_chance"]):
+					fill = float(stand["thicket_fill"])
 				var z0: int = maxi(int(floor((c.y - r - origin.y) / spacing)), 0)
 				var z1: int = mini(int(floor((c.y + r - origin.y) / spacing)), per_row - 1)
 				var x0: int = maxi(int(floor((c.x - r - origin.x) / spacing)), 0)
@@ -365,7 +373,7 @@ func chunk_items(chunk: Vector2i) -> Dictionary:
 
 						var k: int = data.nearest(x, z)
 
-						if per_biome[data.biome[k]] <= 0.0 or keep >= float(stand["fill"]) * _soil_growth[data.soil[k]]:
+						if per_biome[data.biome[k]] <= 0.0 or keep >= fill * _soil_growth[data.soil[k]]:
 							continue
 
 						var y: float = _ground_ok(item, data, k, x, z)
@@ -480,16 +488,17 @@ static func spacing_radius(item: Dictionary, height: float) -> float:
 
 # The least distance between two woody items: trees by their spacing radii
 # (capped at OCCUPANCY_CELL, never under 6 ft); trees of one stand by the
-# stand's spacing; a shrub keeps only clear of trunks under a tree.
+# stand's spacing (shrub stands too: hazel clumps); a shrub keeps only clear
+# of trunks under a tree.
 static func min_gap(kind_a: int, radius_a: float, stand_a: float, species_a: int, kind_b: int, radius_b: float, stand_b: float, species_b: int) -> float:
+	if stand_a > 0.0 and stand_b > 0.0 and species_a == species_b:
+		return maxf(minf(stand_a, stand_b), MIN_TREE_GAP)
+
 	if kind_a == KIND_SHRUB and kind_b == KIND_SHRUB:
 		return minf(0.6 * (radius_a + radius_b), OCCUPANCY_CELL)
 
 	if kind_a == KIND_SHRUB or kind_b == KIND_SHRUB:
 		return SHRUB_TRUNK_GAP
-
-	if stand_a > 0.0 and stand_b > 0.0 and species_a == species_b:
-		return maxf(minf(stand_a, stand_b), MIN_TREE_GAP)
 
 	return maxf(minf(0.6 * (radius_a + radius_b), OCCUPANCY_CELL), MIN_TREE_GAP)
 
