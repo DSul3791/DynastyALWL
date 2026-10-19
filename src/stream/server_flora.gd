@@ -8,7 +8,8 @@ extends RefCounted
 # Regrowth comes later.
 #
 # Packed chunks are kept in memory (up to MEMORY_CHUNKS, oldest dropped
-# first) so a chunk asked for by several players is worked out once.
+# first) so a chunk asked for by several players is worked out once. A chunk
+# comes in two forms: full, or trees only for chunks seen from afar.
 #
 # Thread safe: chunk_bytes may run on many worker threads at once.
 
@@ -22,7 +23,7 @@ var memory_hits: int = 0
 
 var _path: String = ""
 var _removed: Dictionary = {}          # Vector2i chunk -> {item id: true}
-var _memory: Dictionary = {}           # Vector2i chunk -> PackedByteArray
+var _memory: Dictionary = {}           # Vector3i (chunk x, z, 1 full / 0 trees only) -> PackedByteArray
 var _water: Dictionary = {}            # Vector2i chunk -> PackedByteArray (cleared when the water moves)
 var _mutex: Mutex = Mutex.new()
 
@@ -52,11 +53,12 @@ func setup(flora_placer, store_dir: String) -> void:
 
 # A chunk's flora for clients, with removals applied, packed relative to
 # the chunk as asked for (so a client across the wrap seam gets positions
-# in its own coordinates).
-func chunk_bytes(chunk: Vector2i) -> PackedByteArray:
+# in its own coordinates). `full` false: trees only.
+func chunk_bytes(chunk: Vector2i, full: bool = true) -> PackedByteArray:
 	var home: Vector2i = placer.normalize(chunk)
+	var key: Vector3i = Vector3i(home.x, home.y, 1 if full else 0)
 	_mutex.lock()
-	var bytes: PackedByteArray = _memory.get(home, PackedByteArray())
+	var bytes: PackedByteArray = _memory.get(key, PackedByteArray())
 
 	if not bytes.is_empty():
 		memory_hits += 1
@@ -67,11 +69,11 @@ func chunk_bytes(chunk: Vector2i) -> PackedByteArray:
 	if not bytes.is_empty():
 		return bytes
 
-	var items: Dictionary = PlacerScript.without(placer.chunk_items(home), removed)
+	var items: Dictionary = PlacerScript.without(placer.chunk_items(home, not full), removed)
 	bytes = PlacerScript.encode(items, placer.chunk_origin(home))
 	_mutex.lock()
 	chunks_made += 1
-	_memory[home] = bytes
+	_memory[key] = bytes
 
 	while _memory.size() > MEMORY_CHUNKS:
 		_memory.erase(_memory.keys()[0])
@@ -133,7 +135,8 @@ func cut(chunk: Vector2i, id: int) -> bool:
 		_removed[home] = {}
 
 	_removed[home][id] = true
-	_memory.erase(home)
+	_memory.erase(Vector3i(home.x, home.y, 1))
+	_memory.erase(Vector3i(home.x, home.y, 0))
 	var copy: Dictionary = {}
 
 	for key in _removed:

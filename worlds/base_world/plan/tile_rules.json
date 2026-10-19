@@ -1007,12 +1007,13 @@
 		"ore_max_lod": 0
 	},
 	"runtime_flora": {
-		"note": "Runtime flora (plan step 15). Not baked: placed per chunk from biome, moisture, ground shape and the tile's flora seed, with species from data/tables/flora.json. chunk_m: chunk size (must divide the tile size). density: multiplies every species' per-hectare figure; it changes item ids, so freeze it once players remove trees. patchiness (0 to 1) and patch_m: a smooth noise field of that wavelength thins trees into glades (shrubs no longer follow it: they also grow under the trees). view_m: how far each kind is drawn (owner 2026-10-18: trees cut from 560 to 420 m and shrubs from 300 to 160 m to pay for denser woods and three times the shrubs; the extra plants sit in the far ring, unnoticed from the ground; 2026-10-19: trees cut again to 300 m and shrubs to 120 m because the world loaded slower, which takes the flora chunks around the player from about 16 to 10; 2026-10-19 again: trees and shrubs 25% shorter, to 225 m and 90 m, for loading speed). collision_m: trees and shrubs this close to the player get collision.",
+		"note": "Runtime flora (plan step 15). Not baked: placed per chunk from biome, moisture, ground shape and the tile's flora seed, with species from data/tables/flora.json. chunk_m: chunk size (must divide the tile size). density: multiplies every species' per-hectare figure; it changes item ids, so freeze it once players remove trees. patchiness (0 to 1) and patch_m: a smooth noise field of that wavelength thins trees into glades (shrubs no longer follow it: they also grow under the trees). view_m: how far each kind is drawn (owner 2026-10-18: trees cut from 560 to 420 m and shrubs from 300 to 160 m to pay for denser woods and three times the shrubs; the extra plants sit in the far ring, unnoticed from the ground; 2026-10-19: trees cut again to 300 m and shrubs to 120 m because the world loaded slower, which takes the flora chunks around the player from about 16 to 10; 2026-10-19 again: trees and shrubs 25% shorter, to 225 m and 90 m, for loading speed). Owner 2026-10-19 (later): only the big things far: trees out to 450 m, shrubs 45 m and small plants 60 m; chunks beyond the shrub and plant range come with their trees only (flora_view.gd full_m). near_m: full-detail models out to this distance, cheap far models beyond (tree 150 m). collision_m: trees and shrubs this close to the player get collision.",
 		"chunk_m": 256,
 		"density": 1.0,
 		"patchiness": 0.9,
 		"patch_m": 160,
-		"view_m": {"tree": 225, "shrub": 90, "plant": 120},
+		"view_m": {"tree": 450, "shrub": 45, "plant": 60},
+		"near_m": {"tree": 150, "shrub": 45},
 		"collision_m": 160
 	}
 }

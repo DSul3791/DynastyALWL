@@ -30,7 +30,7 @@ const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")
 const CompassScript := preload("res://src/client/admin_compass.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 40
+const BUILD := 41
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const KnowledgeScript := preload("res://src/client/inspection_knowledge.gd")
 const StreamScript := preload("res://src/stream/network_voxel_stream.gd")
@@ -163,7 +163,7 @@ var _viewer: VoxelViewer
 var _sun: DirectionalLight3D
 var _frame_ms: Array = []             # recent frame times for the HUD readout
 var test_cut: bool = false
-var _flora_asked: Dictionary = {}     # chunk -> true (asked or held)
+var _flora_asked: Dictionary = {}     # chunk -> true asked or held in full, false trees only
 var _flora_check_msec: int = 0
 var _flora_chunks: int = 0
 var _flora_bytes: int = 0
@@ -433,8 +433,12 @@ func _on_dug(center: Vector3, radius: float) -> void:
 	])
 
 
-func _on_flora(chunk: Vector2i, bytes: PackedByteArray, water: PackedByteArray) -> void:
+func _on_flora(chunk: Vector2i, bytes: PackedByteArray, water: PackedByteArray, full: bool) -> void:
 	if flora == null:
+		return
+
+	# A late trees-only answer for a chunk already held in full.
+	if not full and flora.holds_full(chunk):
 		return
 
 	_flora_chunks += 1
@@ -445,7 +449,10 @@ func _on_flora(chunk: Vector2i, bytes: PackedByteArray, water: PackedByteArray) 
 	var water_cells: Dictionary = WaterGridScript.decode(water)
 	Probe.stop("flora decode", t)
 	t = Probe.start()
-	flora.set_chunk(chunk, items, _anchor, water_cells)
+	if flora.has_chunk(chunk):
+		flora.replace_items(chunk, items, _anchor, full)
+	else:
+		flora.set_chunk(chunk, items, _anchor, water_cells, full)
 	Probe.stop("flora chunk in", t)
 
 
@@ -521,7 +528,8 @@ func _on_flora_cut(chunk: Vector2i, id: int) -> void:
 	print("Terrain client: flora item %d in chunk %s was cut" % [id, str(chunk)])
 
 
-# Asks for flora chunks coming into view and forgets ones far behind.
+# Asks for flora chunks coming into view and forgets ones far behind. Far chunks
+# are asked for with their trees only, near ones in full (owner, 2026-10-19).
 func _update_flora() -> void:
 	var p: Vector3 = _anchor
 
@@ -531,9 +539,11 @@ func _update_flora() -> void:
 	var wanted: PackedInt32Array = PackedInt32Array()
 
 	for chunk in flora.wanted_chunks(p):
-		if not _flora_asked.has(chunk):
-			_flora_asked[chunk] = true
-			wanted.append_array(PackedInt32Array([chunk.x, chunk.y]))
+		var full: bool = flora.needs_full(chunk, p)
+
+		if not _flora_asked.has(chunk) or (full and not _flora_asked[chunk]):
+			_flora_asked[chunk] = full
+			wanted.append_array(PackedInt32Array([chunk.x, chunk.y, 1 if full else 0]))
 
 	if not wanted.is_empty():
 		net.request_flora.rpc_id(1, wanted)

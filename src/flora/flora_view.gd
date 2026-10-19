@@ -495,9 +495,9 @@ func set_water(chunk: Vector2i, water: Dictionary) -> void:
 
 
 # Sets a chunk's items (as from FloraPlacer.chunk_items or decode).
-func set_chunk(chunk: Vector2i, items: Dictionary, position: Vector3, water: Dictionary = {}) -> void:
+func set_chunk(chunk: Vector2i, items: Dictionary, position: Vector3, water: Dictionary = {}, full: bool = true) -> void:
 	drop_chunk(chunk)
-	var entry: Dictionary = {"items": items, "level": -1, "node": null, "water": null, "grid": water}
+	var entry: Dictionary = {"items": items, "level": -1, "node": null, "water": null, "grid": water, "full": full}
 	_chunks[chunk] = entry
 
 	if int(water.get("wet", 0)) > 0:
@@ -559,6 +559,36 @@ func drop_chunk(chunk: Vector2i) -> void:
 		water.queue_free()
 
 	_chunks.erase(chunk)
+
+
+# Owner (2026-10-19): trees are drawn far, shrubs and small plants only near. Chunks
+# beyond this distance are asked for with their trees only; a chunk coming
+# closer is asked for again in full.
+func full_m() -> float:
+	return maxf(view_m[KIND_SHRUB], view_m[KIND_PLANT]) + 0.25 * chunk_m
+
+
+func needs_full(chunk: Vector2i, position: Vector3) -> bool:
+	return _distance(chunk, position) <= full_m()
+
+
+func holds_full(chunk: Vector2i) -> bool:
+	return bool(_chunks.get(chunk, {}).get("full", false))
+
+
+# A held chunk's items replaced (its trees-only form by the full one). The old
+# drawing stays until the new one is built, so nothing blinks.
+func replace_items(chunk: Vector2i, items: Dictionary, position: Vector3, full: bool) -> void:
+	var entry: Dictionary = _chunks.get(chunk, {})
+
+	if entry.is_empty():
+		return
+
+	entry["items"] = items
+	entry["full"] = full
+	entry["level"] = -1
+	entry.erase("building")
+	_refresh(chunk, position)
 
 
 # Removes one item (cut down) and redraws its chunk.

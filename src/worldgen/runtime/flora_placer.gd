@@ -229,8 +229,11 @@ func chunk_origin(chunk: Vector2i) -> Vector2:
 
 # The flora of one chunk: ids (PackedInt32Array), positions
 # (PackedVector3Array, the base of each item on the ground) and
-# heights and yaws (PackedFloat32Array each).
-func chunk_items(chunk: Vector2i) -> Dictionary:
+# heights and yaws (PackedFloat32Array each). `trees_only` leaves out shrubs
+# and plants for chunks seen only from afar (owner, 2026-10-19: draw the big
+# trees far, the small stuff near). Trees are placed before shrubs and plants
+# and never make room for them, so the trees come out the same either way.
+func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 	var result: Dictionary = {
 		"ids": PackedInt32Array(), "positions": PackedVector3Array(),
 		"heights": PackedFloat32Array(), "yaws": PackedFloat32Array(),
@@ -253,7 +256,8 @@ func chunk_items(chunk: Vector2i) -> Dictionary:
 
 	for b in present:
 		for item in _by_biome[b]:
-			candidates[item["id"]] = item
+			if not trees_only or item["kind"] == KIND_TREE:
+				candidates[item["id"]] = item
 
 	var order: Array = candidates.keys()
 	order.sort()

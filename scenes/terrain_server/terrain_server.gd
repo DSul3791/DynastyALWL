@@ -52,8 +52,8 @@ var net
 var _queue: Array = []                 # urgent [peer, key Vector4i], oldest first
 var _prefetch: Array = []              # prefetch [peer, key], oldest first
 var _queued: Dictionary = {}           # [peer, key] -> "u" urgent, "p" prefetch, "r" running
-var _flora_queue: Array = []           # [peer, chunk Vector2i], oldest first
-var _flora_queued: Dictionary = {}     # [peer, chunk] -> true
+var _flora_queue: Array = []           # [peer, chunk Vector2i, full (false: trees only)], oldest first
+var _flora_queued: Dictionary = {}     # [peer, chunk, full] -> true
 var _queue_mutex: Mutex = Mutex.new()  # guards the five above
 var _work: Semaphore = Semaphore.new() # one post per queued item
 var _workers: Array = []               # Threads making blocks
@@ -317,8 +317,8 @@ func _on_flora_requested(peer_id: int, chunks: PackedInt32Array) -> void:
 	var added: int = 0
 	_queue_mutex.lock()
 
-	for n in range(chunks.size() / 2):
-		var id: Array = [peer_id, Vector2i(chunks[2 * n], chunks[2 * n + 1])]
+	for n in range(chunks.size() / 3):
+		var id: Array = [peer_id, Vector2i(chunks[3 * n], chunks[3 * n + 1]), chunks[3 * n + 2] != 0]
 
 		if _flora_queue.size() < MAX_QUEUE_PER_PEER and not _flora_queued.has(id):
 			_flora_queued[id] = true
@@ -409,7 +409,7 @@ func _process(_delta: float) -> void:
 
 	for entry in done:
 		if entry.size() > 3:
-			_flora_queued.erase([entry[0], entry[1]])
+			_flora_queued.erase([entry[0], entry[1], entry[5]])
 		else:
 			_queued.erase([entry[0], entry[1]])
 
@@ -421,7 +421,7 @@ func _process(_delta: float) -> void:
 			continue
 
 		if entry.size() > 3:
-			net.deliver_flora.rpc_id(entry[0], entry[1], entry[2], entry[4])
+			net.deliver_flora.rpc_id(entry[0], entry[1], entry[2], entry[4], entry[5])
 			_peers[entry[0]]["flora_bytes"] = int(_peers[entry[0]].get("flora_bytes", 0)) + (entry[2] as PackedByteArray).size()
 			continue
 
@@ -535,10 +535,10 @@ func _worker_loop() -> void:
 			return
 
 		if not flora_item.is_empty():
-			var chunk_bytes: PackedByteArray = flora.chunk_bytes(flora_item[1])
+			var chunk_bytes: PackedByteArray = flora.chunk_bytes(flora_item[1], flora_item[2])
 			var water_bytes: PackedByteArray = flora.water_bytes(flora_item[1])
 			_done_mutex.lock()
-			_done.append([flora_item[0], flora_item[1], chunk_bytes, "flora", water_bytes])
+			_done.append([flora_item[0], flora_item[1], chunk_bytes, "flora", water_bytes, flora_item[2]])
 			_done_mutex.unlock()
 			continue
 

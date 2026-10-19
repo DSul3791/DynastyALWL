@@ -12,8 +12,8 @@ extends Node
 #   server -> client  tile_changed     a tile's new revision after an edit
 #   client -> server  dig              ask the server to remove a sphere of ground (test edit)
 #   server -> client  dug              a sphere of ground was removed: apply it to loaded terrain
-#   client -> server  request_flora    flora chunks wanted (pairs of chunk x, z)
-#   server -> client  deliver_flora    one chunk's flora (FloraPlacer.encode, removals applied)
+#   client -> server  request_flora    flora chunks wanted (chunk x, z, 1 full or 0 trees only)
+#   server -> client  deliver_flora    one chunk's flora (FloraPlacer.encode, removals applied), and whether full
 #                                      and its rivers and lakes (WaterGrid.encode, empty if dry)
 #   client -> server  report_position  where the player is and how fast it moves (a few times a second),
 #                                      so the server makes the ground ahead of and under them first
@@ -32,7 +32,7 @@ signal tile_changed_received(tile: Vector2i, revision: int)
 signal dig_requested(peer_id: int, center: Vector3, radius: float)
 signal dug_received(center: Vector3, radius: float)
 signal flora_requested(peer_id: int, chunks: PackedInt32Array)
-signal flora_received(chunk: Vector2i, bytes: PackedByteArray, water: PackedByteArray)
+signal flora_received(chunk: Vector2i, bytes: PackedByteArray, water: PackedByteArray, full: bool)
 signal position_reported(peer_id: int, position: Vector3, velocity: Vector3)
 signal cut_flora_requested(peer_id: int, chunk: Vector2i, id: int)
 signal flora_cut_received(chunk: Vector2i, id: int)
@@ -78,13 +78,13 @@ func dug(center: Vector3, radius: float) -> void:
 
 @rpc("any_peer", "call_remote", "reliable")
 func request_flora(chunks: PackedInt32Array) -> void:
-	if multiplayer.is_server() and chunks.size() % 2 == 0:
+	if multiplayer.is_server() and chunks.size() % 3 == 0:
 		flora_requested.emit(multiplayer.get_remote_sender_id(), chunks)
 
 
 @rpc("authority", "call_remote", "reliable")
-func deliver_flora(chunk: Vector2i, bytes: PackedByteArray, water: PackedByteArray) -> void:
-	flora_received.emit(chunk, bytes, water)
+func deliver_flora(chunk: Vector2i, bytes: PackedByteArray, water: PackedByteArray, full: bool) -> void:
+	flora_received.emit(chunk, bytes, water, full)
 
 
 @rpc("any_peer", "call_remote", "reliable")
