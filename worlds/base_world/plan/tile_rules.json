@@ -35,6 +35,17 @@
 		"sea_strength": 0.05,
 		"coast_ragged_m": 1.6
 	},
+	"valleys": {
+		"note": "Owner (2026-10-19): rivers run at the bottom of real valleys. Around each world river the land is lowered toward the river's water level: a flat floor (floor_half_m each side, more for big rivers), then walls rising smoothly into the hills out to half_width_m (capped by half_width_max_m, which must stay under the frame margin of 640 m). Ground a little below the water beside the river is lifted up to lift_max_m. Detail noise on the floor is cut to detail_on_floor of its strength.",
+		"grid_m": 32,
+		"floor_half_m": 18,
+		"floor_half_per_sqrt_km2": 1.5,
+		"half_width_m": 120,
+		"half_width_per_sqrt_km2": 25,
+		"half_width_max_m": 480,
+		"lift_max_m": 3,
+		"detail_on_floor": 0.1
+	},
 	"erosion": {
 		"note": "Erosion on a 32 m copy of the tile: water cuts valleys in proportion to how much flows through (stream power), slopes soften (diffusion). The change is added back onto the 8 m map. It fades out near the tile edges so neighboring tiles still match.",
 		"cell_m": 32,
@@ -58,8 +69,12 @@
 		"head_pond_diameter_m": 35,
 		"head_pond_depth_m": 15,
 		"head_pond_back_m": 30,
-		"head_pond_max_rim_range_m": 4,
+		"head_pond_max_rim_range_m": 6,
 		"head_pond_wall_fade_m": 30,
+		"head_pond_shore_m": 12,
+		"head_pond_setback_m": 60,
+		"head_pond_setback_note": "Owner (2026-10-19): the pond sits up to this far back from the edge of the flat ground it is on, so its stream runs across the flat to the edge before dropping.",
+		"head_pond_shore_note": "Owner (2026-10-19): the pond sits on a flat bench this wide around its water, the land sloping gently away (blended over head_pond_wall_fade_m, longer where the land is far off), never like a crater.",
 		"head_pond_search_m": 1200,
 		"head_pond_search_note": "With no flat ground just above a river head, the pond moves up to the first flat ground within this distance uphill and a straight brook runs down to the head (owner, 2026-10-19).",
 		"head_straighten_slope": 0.25,

@@ -140,6 +140,15 @@ func bake(tile: Vector2i) -> Dictionary:
 	var clock: int = Time.get_ticks_msec()
 	var frame_height = TileHeightScript.new()
 	frame_height.setup(settings, elevation, tile_rules)
+	var frame_rect: Rect2 = Rect2(
+		Vector2(float(origin_sx), float(origin_sz)) * float(settings.map_spacing_m),
+		Vector2(float(n - 1), float(n - 1)) * float(settings.map_spacing_m)
+	)
+
+	# Valleys reach this far from a river, so rivers just outside the frame shape it too.
+	if tile_rules.has("valleys"):
+		frame_height.valley_guides = river_network.guides_in(frame_rect.grow(float(tile_rules["valleys"]["half_width_max_m"])), 4.0)
+
 	frame_height.build_frame(origin_sx, origin_sz, n)
 	timings["height"] = Time.get_ticks_msec() - clock
 	var raw_heights: PackedFloat32Array = crop(frame_height.heights, n, core)
@@ -160,10 +169,6 @@ func bake(tile: Vector2i) -> Dictionary:
 	var starter: Dictionary = starter_info(tile)
 	var water = TileWaterScript.new()
 	water.setup(settings, tile_rules)
-	var frame_rect: Rect2 = Rect2(
-		Vector2(float(origin_sx), float(origin_sz)) * float(settings.map_spacing_m),
-		Vector2(float(n - 1), float(n - 1)) * float(settings.map_spacing_m)
-	)
 	water.build(frame_height, starter, river_network.guides_in(frame_rect, 4.0))
 	timings["water"] = Time.get_ticks_msec() - clock
 

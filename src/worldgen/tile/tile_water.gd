@@ -506,6 +506,8 @@ func _carve_guides(rivers: Array) -> void:
 	var max_rim_range: float = float(_rules.get("head_pond_max_rim_range_m", 15.0))
 	var wall_fade: float = float(_rules.get("head_pond_wall_fade_m", 60.0))
 	var pond_search_m: float = float(_rules.get("head_pond_search_m", 1200.0))
+	var pond_shore: float = float(_rules.get("head_pond_shore_m", 12.0))
+	var pond_setback: float = float(_rules.get("head_pond_setback_m", 60.0))
 	var widen_from: float = float(_rules.get("fall_widen_from_slope", 0.15))
 	var widen_rate: float = float(_rules.get("fall_widen_rate", 3.0))
 	var widen_max: float = float(_rules.get("fall_widen_max", 2.5))
@@ -668,16 +670,38 @@ func _carve_guides(rivers: Array) -> void:
 						climbed += 3.0 * spacing_m
 						fit = _pond_fit(carved, centre, pond_radius, wall_fade, max_rim_range)
 
+					# Owner (2026-10-19): the pond sits back from the edge of the flat ground, so
+					# its stream crosses the flat before it drops: move it on, away from the head,
+					# while it still fits, up to pond_setback.
+					if not fit.is_empty():
+						var away: Vector2 = (centre - head_point).normalized()
+						var moved_m: float = 0.0
+
+						while moved_m < pond_setback:
+							var further: Vector2 = centre + away
+							var fit_further: Dictionary = _pond_fit(carved, further, pond_radius, wall_fade, max_rim_range)
+
+							if fit_further.is_empty():
+								break
+
+							centre = further
+							fit = fit_further
+							moved_m += spacing_m
+
 					if not fit.is_empty():
 						var radius_here: float = fit["radius"]
-						var rim_low: float = fit["rim_low"]
-
-						if centre.distance_to(head_point) * spacing_m > radius_here:
-							_cut_brook(carved, centre, radius_here, rim_low, head_point, beds[0], widths[0], depths[0], min_fall, slope, areas[0] / cell_km2, best_flow)
+						# Owner (2026-10-19): the pond sits on a small flat bench with a shore, the land
+						# sloping gently away from it, so it never looks like a crater in a hillside.
+						var rim_low: float = fit["bench"]
+						_bench(carved, centre, radius_here + pond_shore, rim_low, wall_fade)
 
 						ponds_made += 1
 						ponds_moved += 1 if climbed > 0.0 else 0
-						_stamp_pond(carved, centre, radius_here, rim_low - pond_depth, rim_low, areas[0] / cell_km2, best_flow, max_rim_range + 4.0, wall_fade)
+						_stamp_pond(carved, centre, radius_here, rim_low - pond_depth, rim_low, areas[0] / cell_km2, best_flow, max_rim_range + 4.0, wall_fade, pond_shore)
+
+						# The brook is cut last: where it leaves the pond is the pond's one low lip.
+						if centre.distance_to(head_point) * spacing_m > radius_here:
+							_cut_brook(carved, centre, radius_here, rim_low, head_point, beds[0], widths[0], depths[0], min_fall, slope, areas[0] / cell_km2, best_flow)
 
 		# A plunge pool at the foot of every steep drop (waterfall or cascade):
 		# the water scours a basin where it lands.
@@ -707,7 +731,8 @@ func _carve_guides(rivers: Array) -> void:
 
 # Where a head pond fits around `centre` (sample coordinates): a pond whose rim varies by at most max_rim_range on the natural ground
 # (owner, 2026-10-18/19: ponds sit on flat ground, never cut deep into a hillside), as
-# {"radius", "rim_low"}, or empty when none fits.
+# {"radius", "bench"} (bench: the height of the flat ground the pond is set in, the middle
+# of its rim), or empty when none fits.
 func _pond_fit(carved: PackedFloat32Array, centre: Vector2, pond_radius: float, wall_fade: float, max_rim_range: float) -> Dictionary:
 	for scale in [1.0]:
 		var radius_here: float = pond_radius * scale
@@ -716,23 +741,46 @@ func _pond_fit(carved: PackedFloat32Array, centre: Vector2, pond_radius: float, 
 		if centre.x <= margin or centre.y <= margin or centre.x >= float(samples - 1) - margin or centre.y >= float(samples - 1) - margin:
 			continue
 
-		var rim_low: float = INF
 		var natural_low: float = INF
 		var natural_high: float = -INF
+		var rim: Array = []
 
 		for r in range(16):
 			var on_rim: Vector2 = centre + Vector2(cos(TAU * float(r) / 16.0), sin(TAU * float(r) / 16.0)) * radius_here / spacing_m
 			var natural: float = _bilinear(heights, on_rim)
 			natural_low = minf(natural_low, natural)
 			natural_high = maxf(natural_high, natural)
-			# The brook's channel is the lip (so the pond spills into it), but a
-			# deep cut downstream may not pull the lip far under the ground.
-			rim_low = minf(rim_low, maxf(_bilinear(carved, on_rim), natural - 4.0))
+			rim.append(natural)
 
 		if natural_high - natural_low <= max_rim_range:
-			return {"radius": radius_here, "rim_low": rim_low}
+			rim.sort()
+			return {"radius": radius_here, "bench": (float(rim[7]) + float(rim[8])) * 0.5}
 
 	return {}
+
+
+# Levels the ground to `height` out to `radius_m` from `centre` (sample coordinates), then
+# blends back to the land around over at least fade_m, longer where the land is far above
+# or below, so the slope away from the flat stays gentle (at most about 1 in 3).
+func _bench(carved: PackedFloat32Array, centre: Vector2, radius_m: float, height: float, fade_m: float) -> void:
+	var reach_m: float = radius_m + fade_m * 4.0
+	var reach_cells: float = reach_m / spacing_m + 1.0
+
+	for nr in range(maxi(int(ceil(centre.y - reach_cells)), 0), mini(int(floor(centre.y + reach_cells)), samples - 1) + 1):
+		for nc in range(maxi(int(ceil(centre.x - reach_cells)), 0), mini(int(floor(centre.x + reach_cells)), samples - 1) + 1):
+			var target: int = nr * samples + nc
+
+			if _ocean[target] == 1:
+				continue
+
+			var distance: float = Vector2(float(nc), float(nr)).distance_to(centre) * spacing_m
+			var here: float = carved[target]
+			var blend_m: float = clampf(absf(here - height) / 0.3, fade_m, fade_m * 4.0)
+			var weight: float = 1.0 - smoothstep(radius_m, radius_m + blend_m, distance)
+
+			if weight > 0.0:
+				carved[target] = lerpf(here, height, weight)
+
 
 
 # Uphill direction of a field at a point, measured `reach` samples either side
@@ -923,7 +971,7 @@ func _stamp_at(
 # or knife edge, owner 2026-10-18).
 func _stamp_pond(
 	carved: PackedFloat32Array, center: Vector2, radius_m: float, bottom: float, rim_low: float,
-	strength: float, best_flow: PackedFloat32Array, max_cut: float, fade_m: float
+	strength: float, best_flow: PackedFloat32Array, max_cut: float, fade_m: float, shore_m: float = 0.0
 ) -> void:
 	var reach_cells: float = (radius_m + fade_m) / spacing_m + 2.0
 	var first_x: int = maxi(int(ceil(center.x - reach_cells)), 1)
@@ -950,8 +998,10 @@ func _stamp_pond(
 			pond_cut_max_m = maxf(pond_cut_max_m, heights[nr * samples + nc] - floor_height)
 			carved[nr * samples + nc] = minf(carved[nr * samples + nc], floor_height)
 
-	# Round off the rim and the wall (not the floor): repeated 3 x 3 averaging.
-	for pass_n in range(12):
+	# Round off the rim and the wall (not the floor): repeated 3 x 3 averaging. Then the
+	# shore stays at the lip's height all round (owner, 2026-10-19: smoothing a small pond
+	# had worn its rim below the water, so it spilled on every side).
+	for pass_n in range(12 if shore_m <= 0.0 else 3):
 		var before: PackedFloat32Array = carved.duplicate()
 
 		for nr in range(first_z, last_z + 1):
@@ -968,6 +1018,14 @@ func _stamp_pond(
 						total += before[(nr + dz) * samples + nc + dx]
 
 				carved[nr * samples + nc] = total / 9.0
+
+	if shore_m > 0.0:
+		for nr in range(first_z, last_z + 1):
+			for nc in range(first_x, last_x + 1):
+				var distance: float = sqrt(pow(float(nc) - center.x, 2.0) + pow(float(nr) - center.y, 2.0)) * spacing_m
+
+				if distance >= radius_m and distance <= radius_m + shore_m and _ocean[nr * samples + nc] != 1:
+					carved[nr * samples + nc] = maxf(carved[nr * samples + nc], rim_low)
 
 	var surface: float = rim_low - 1.0
 
