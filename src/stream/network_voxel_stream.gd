@@ -41,6 +41,7 @@ var _spare: Dictionary = {}           # Vector4i -> PackedByteArray, prefetched
 var _answers: Dictionary = {}         # Vector4i -> PackedByteArray
 var _waiting: Dictionary = {}         # Vector4i -> true
 var _closing: bool = false
+var paused: bool = false              # main thread: requests are held (flying), so waits do not time out
 
 
 func _get_used_channels_mask() -> int:
@@ -96,6 +97,11 @@ func _load_voxel_block(out_buffer: VoxelBuffer, block: Vector3i, lod: int) -> in
 			_waiting.erase(key)
 
 		var closing: bool = _closing
+
+		# Held while the player flies: the wait only counts once requests go out again.
+		if paused:
+			started = Time.get_ticks_msec()
+
 		_mutex.unlock()
 
 		if not bytes.is_empty() or closing:
@@ -198,6 +204,18 @@ func deliver(keys: PackedInt32Array, payloads: Array) -> void:
 		_spare.erase(oldest)
 		_asked.erase(oldest)
 
+	_mutex.unlock()
+
+
+# Drops prefetch requests not yet sent (they were for where the player was), so the
+# ground around the player now comes first.
+func drop_unsent_prefetch() -> void:
+	_mutex.lock()
+
+	for k in range(0, _prefetch.size(), 4):
+		_asked.erase(Vector4i(_prefetch[k], _prefetch[k + 1], _prefetch[k + 2], _prefetch[k + 3]))
+
+	_prefetch = PackedInt32Array()
 	_mutex.unlock()
 
 

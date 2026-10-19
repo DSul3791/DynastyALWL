@@ -13,6 +13,8 @@ extends Node
 #   --cache=DIR       cache folder (default user://terrain_cache/<world name>)
 #   --frames=N        headless check: run N frames, print what arrived, quit
 #   --move=M          with --frames: fly east at M m/s, 20 m above the ground
+#   --fly             with --move: in flying mode (no ground is built while moving),
+#                     stopping after 30 s to check the ground then loads under the player
 #   --dig             with --frames: 20 s in, ask the server to dig a hole under the spawn
 #   --water-step      with --frames: 12 s in, press + twice (the server re-settles the water)
 #   --cut             with --frames: 25 s in, ask the server to cut the tree nearest the spawn
@@ -52,6 +54,7 @@ const QUALITY_GRASS_POINTS := [2, 3, 4, 5]               # ground samples per 6 
 const QUALITY_SHADOW_M := [0.0, 60.0, 100.0, 250.0]    # 0 = no shadows
 const QUALITY_CACHE_MB := [1024, 4096, 10240, 10240]    # ground cache limit on disk
 const FLY_SPEED := 30.0
+const STILL_MSEC := 3000              # flying: ground loads again after staying still this long
 const WALK_SPEED := 6.0
 const FAST := 3.0                     # flying: Shift multiplier
 const JOG_SPEED := 11.0
@@ -110,6 +113,12 @@ var _environment: Environment
 var pitch: float = 0.0
 var frames_left: int = -1
 var test_speed: float = 0.0
+var test_fly: bool = false
+var _anchor: Vector3 = Vector3.ZERO    # where the ground and plants are loaded around (the viewer)
+var _anchor_set: bool = false
+var _last_pos: Vector3 = Vector3.ZERO
+var _still_since_msec: int = 0
+var _building_paused: bool = false    # flying and moving: no ground is asked for
 var run_speed: float = 0.0            # with --walk: ground speed in m/s instead of the walking pace
 var _wait_frames: int = 0             # walk test: frames spent waiting for ground
 var _slowest_frame: float = 0.0       # walk test: longest frame (s)
@@ -176,6 +185,8 @@ func _ready() -> void:
 			frames_left = int(argument.trim_prefix("--frames="))
 		elif argument.begins_with("--move="):
 			test_speed = float(argument.trim_prefix("--move="))
+		elif argument == "--fly":
+			test_fly = true
 		elif argument.begins_with("--wait="):
 			_wait_until_msec = Time.get_ticks_msec() + int(float(argument.trim_prefix("--wait=")) * 1000.0)
 		elif argument == "--clear-cache":
@@ -421,7 +432,7 @@ func _on_flora(chunk: Vector2i, bytes: PackedByteArray, water: PackedByteArray) 
 	var water_cells: Dictionary = WaterGridScript.decode(water)
 	Probe.stop("flora decode", t)
 	t = Probe.start()
-	flora.set_chunk(chunk, items, body.global_position, water_cells)
+	flora.set_chunk(chunk, items, _anchor, water_cells)
 	Probe.stop("flora chunk in", t)
 
 
@@ -463,7 +474,7 @@ func _on_flora_cut(chunk: Vector2i, id: int) -> void:
 
 	for held in _flora_asked:
 		if posmod(held.x - chunk.x, period) == 0 and posmod(held.y - chunk.y, period) == 0:
-			flora.remove_item(held, id, body.global_position)
+			flora.remove_item(held, id, _anchor)
 
 	_flora_cuts += 1
 	print("Terrain client: flora item %d in chunk %s was cut" % [id, str(chunk)])
@@ -471,7 +482,7 @@ func _on_flora_cut(chunk: Vector2i, id: int) -> void:
 
 # Asks for flora chunks coming into view and forgets ones far behind.
 func _update_flora() -> void:
-	var p: Vector3 = body.global_position
+	var p: Vector3 = _anchor
 
 	for chunk in flora.update(p):
 		_flora_asked.erase(chunk)
@@ -485,6 +496,36 @@ func _update_flora() -> void:
 
 	if not wanted.is_empty():
 		net.request_flora.rpc_id(1, wanted)
+
+
+# Owner (2026-10-19): while flying and moving no ground or plants are built (requests are
+# held); after the player has stayed still for STILL_MSEC the ground is built around them
+# again, nearest first. On foot (landed) the ground always follows the player.
+func _update_anchor(now: int, delta: float) -> void:
+	var here: Vector3 = body.global_position
+	var speed: float = here.distance_to(_last_pos) / maxf(delta, 0.001)
+	_last_pos = here
+
+	if speed > 0.5:
+		_still_since_msec = now
+
+	var follow: bool = not flying or not _anchor_set or now - _still_since_msec >= STILL_MSEC
+	var was_paused: bool = _building_paused
+	_building_paused = not follow
+	stream.paused = _building_paused
+
+	if was_paused and not _building_paused:
+		stream.drop_unsent_prefetch()
+
+	if follow:
+		if flying and _anchor_set and _anchor.distance_to(here) > 1.0:
+			print("Terrain client: stopped flying at %s, loading the ground here" % str(here.round()))
+
+		_anchor = here
+		_anchor_set = true
+
+	if _viewer != null:
+		_viewer.global_position = _anchor
 
 
 # Headless check: cut the tree nearest the spawn.
@@ -530,6 +571,9 @@ func _make_player(root: Node3D, start: Vector3) -> void:
 	var viewer: VoxelViewer = VoxelViewer.new()
 	viewer.view_distance = VIEW_DISTANCE
 	viewer.requires_collisions = true
+	# Placed by _update_anchor, not carried by the player (owner 2026-10-19: no new ground
+	# while flying).
+	viewer.top_level = true
 	body.add_child(viewer)
 	_viewer = viewer
 
@@ -936,6 +980,12 @@ func _move_player(delta: float) -> void:
 	var pace: float = RUN_SPEED if running else (JOG_SPEED if jogging else WALK_SPEED)
 
 	if test_speed > 0.0 and frames_left > 0:
+		if test_fly:
+			flying = true
+
+			if Time.get_ticks_msec() - connected_msec > 30000:
+				test_speed = 0.0
+
 		body.global_position.x += test_speed * delta
 	elif flying:
 		direction.y += float(Input.is_key_pressed(KEY_SPACE)) - float(Input.is_key_pressed(KEY_CTRL))
@@ -1019,7 +1069,8 @@ func _process(delta: float) -> void:
 		_test_clear_done = true
 		_ask_clear_cache()
 
-	var wanted: Array = stream.take_requests()
+	_update_anchor(Time.get_ticks_msec(), delta)
+	var wanted: Array = [PackedInt32Array(), 0] if _building_paused else stream.take_requests()
 
 	# Owner (2026-10-19): while a bake runs, ask only for the ground the game is waiting on
 	# right now, not the extra ground around it (it is all thrown away when the bake ends).
@@ -1034,7 +1085,7 @@ func _process(delta: float) -> void:
 
 	# Tell the server where we are heading so it makes that ground first.
 	if now - _aim_msec >= 200:
-		var here: Vector3 = body.global_position
+		var here: Vector3 = _anchor
 		var seconds: float = float(now - _aim_msec) / 1000.0
 
 		if _aim_msec > 0:

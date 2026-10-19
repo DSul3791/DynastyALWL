@@ -121,6 +121,8 @@ About 50 are listed in `DESIGN_IDEAS.md` Section 15 (nomadic household, homestea
 - Next bottlenecks (measured, not fixed): server block generation (GDScript, about 18 ms a block) limits first-visit flight; the client loads blocks one at a time (Voxel Tools calls the script stream serially), so every miss costs a round trip; prefetch is only the 26 neighbours of a miss.
 - Walk check (`--frames=12000 --walk`) currently reports "ground below nan" and walks 0 m in the cloud, the same before and after the 2026-10-19 change (not caused by it); look into it.
 
+- Flying builds nothing (owner, 2026-10-19): while flying and moving the client holds its block requests and leaves the ground viewer where it was (`terrain_client.gd _update_anchor`, `network_voxel_stream.paused`, waits do not time out); after 3 s still (`STILL_MSEC`) the viewer moves to the player and loading starts there, nearest first (unsent old prefetch dropped); on foot the viewer follows the player as before. Flora and position reports use the same anchor. The flight check above (`--move=90` without `--fly`) still measures loading while moving; `--fly` checks the pause (cloud: 0 blocks while moving 30 s, then about 4000 in 30 s after stopping). Tree and shrub draw distance cut 25% (225 m, 90 m).
+
 ## Ground loading speed (2026-10-17)
 - `terrain_client.gd --walk --runspeed=N` walks east at N m/s for 30 s and reports frames spent waiting for ground and frames below ground.
 - With one collision LOD, ground fell behind above ~12 m/s (warm cache 30 m/s fine, 60 m/s on ground 23% of frames). `collision_lod_count = 4` (coarser solid ground out to ~4x farther) holds 60 and 120 m/s with blocks on disk.
