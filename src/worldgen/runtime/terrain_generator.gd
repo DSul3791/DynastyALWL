@@ -35,6 +35,8 @@ const SeedUtil := preload("res://src/worldgen/settings/worldgen_seed.gd")
 
 const TOPSOIL_M := 0.4                 # topsoil layer over a clay subsoil
 const CLAY_UNDER_MOISTURE := 165       # wet air (0 to 255) from which loam and humus lie on clay
+const MUD_DEPTH_M := 3.0               # lake and river beds this far below the water line are mud
+const BANK_SOIL_M := 1.0               # banks within this of the water line (or above it) are soil, between is clay
 const ORE_LENS := 0
 const ORE_HALO := 1
 const ORE_PIPE := 2
@@ -72,6 +74,7 @@ var _loam: int = -1
 var _humus: int = -1
 var _silt: int = -1
 var _alluvium: int = -1
+var _mud: int = -1
 var _marble: int = 9
 var _granite: int = 5
 var _basalt: int = 7
@@ -103,6 +106,7 @@ func setup(settings, tile_rules: Dictionary, tables, tiles_directory: String) ->
 			"forest_humus": _humus = int(entry["id"])
 			"silt": _silt = int(entry["id"])
 			"alluvium": _alluvium = int(entry["id"])
+			"mud": _mud = int(entry["id"])
 
 	for entry in tables.get_entries("resources"):
 		_resource_ids[str(entry["name"])] = int(entry["id"])
@@ -468,6 +472,30 @@ func _clay_under(soil: int, moisture: int) -> bool:
 	return _clay >= 0 and moisture >= CLAY_UNDER_MOISTURE and (soil == _loam or soil == _humus or soil == _silt or soil == _alluvium)
 
 
+# The soil of a lake, pond or river cell, chosen by how far the ground lies
+# below the water line (owner, 2026-10-19: the baked gravel and silt drew the
+# beds and banks grey): mud on the bed, wet clay on the lower bank, alluvium
+# near and above the water line. Other cells keep their baked soil.
+func _ground_soil(data, sample: int, h: float) -> int:
+	var soil: int = data.soil[sample]
+	var kind: int = data.water_class[sample]
+
+	if _mud < 0 or (kind != 2 and kind != 3):
+		return soil
+
+	var level: float = data.water_surface[sample]
+
+	if is_nan(level):
+		return soil
+
+	var depth: float = level - h
+
+	if depth > MUD_DEPTH_M:
+		return _mud
+
+	return _clay if depth > BANK_SOIL_M else _alluvium
+
+
 # What the top of a column looks like: its soil, else the rock at the
 # bedrock surface (intrusions and vents are not looked at).
 func _surface_material(data, x: float, z: float, h: float) -> int:
@@ -475,7 +503,7 @@ func _surface_material(data, x: float, z: float, h: float) -> int:
 		return Layout.MATERIAL_ROCK + Layout.ROCK_SEDIMENT
 
 	var sample: int = data.nearest(x, z)
-	var soil: int = data.soil[sample]
+	var soil: int = _ground_soil(data, sample, h)
 
 	if soil > 0:
 		return soil
@@ -504,12 +532,13 @@ func _fill_rock_column(buffer: VoxelBuffer, data, bodies: Array, i: int, k: int,
 
 	if j_surface > j_bed:
 		var lo: int = maxi(j_bed + 1, 0)
+		var soil: int = _ground_soil(data, sample, h)
 		buffer.fill_area(Layout.ROCK_SEDIMENT, Vector3i(i, lo, k), Vector3i(i + 1, j_surface + 1, k + 1), Layout.CHANNEL_ROCK)
-		buffer.fill_area(data.soil[sample], Vector3i(i, lo, k), Vector3i(i + 1, j_surface + 1, k + 1), Layout.CHANNEL_SOIL)
+		buffer.fill_area(soil, Vector3i(i, lo, k), Vector3i(i + 1, j_surface + 1, k + 1), Layout.CHANNEL_SOIL)
 
 		# Wet lowland loam, humus, silt and alluvium lies on clay: a topsoil
 		# layer on the surface and clay below it (owner, 2026-10-17).
-		if _clay_under(data.soil[sample], data.moisture[sample]):
+		if _clay_under(soil, data.moisture[sample]):
 			var j_clay: int = mini(int(floor((h - TOPSOIL_M - oy) / sf)), j_surface)
 
 			if j_clay >= lo:

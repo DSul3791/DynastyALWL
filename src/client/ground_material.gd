@@ -5,7 +5,8 @@ extends RefCounted
 # color from soils.json and rocks.json, blended across cells by the mesher
 # (VoxelMesherTransvoxel TEXTURES_SINGLE_S4: CUSTOM1.x packs 4 material
 # indices, CUSTOM1.y their 4 weights). Steep slopes darken toward bare
-# stone; the sea bed is muddied.
+# stone (rock) or bare earth (soil); mud (lake and river beds) is glossy;
+# the sea bed is muddied.
 
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const PALETTE_SIZE := 64
@@ -49,10 +50,17 @@ float vnoise(vec3 x) {
 void fragment() {
 	float total = max(dot(material_weights, vec4(1.0)), 0.0001);
 	vec3 color = vec3(0.0);
+	float stone = 0.0;
+	float mud = 0.0;
 	for (int n = 0; n < 4; n++) {
-		color += palette[clamp(int(material_indices[n] + 0.5), 0, 63)] * material_weights[n];
+		int index = clamp(int(material_indices[n] + 0.5), 0, 63);
+		color += palette[index] * material_weights[n];
+		stone += (index >= 32 || index == 0) ? material_weights[n] : 0.0;
+		mud += (index == 16) ? material_weights[n] : 0.0;
 	}
 	color /= total;
+	stone /= total;
+	mud /= total;
 
 	// The table colors are display (sRGB) values; convert so they read as
 	// intended, then mute them toward natural earth tones.
@@ -62,7 +70,9 @@ void fragment() {
 
 	float slope = 1.0 - clamp(world_normal.y, 0.0, 1.0);
 	float rock_mask = smoothstep(0.3, 0.6, slope);
-	color = mix(color, color * 0.7 + vec3(0.42, 0.40, 0.38) * 0.3 * 0.5, rock_mask);
+	// Steep faces: stone turns toward grey rock, soil toward darker bare earth.
+	vec3 steep_tint = mix(vec3(0.40, 0.31, 0.21), vec3(0.42, 0.40, 0.38), stone);
+	color = mix(color, color * 0.7 + steep_tint * 0.15, rock_mask);
 
 	// Detail from noise in world space: no textures to load. Fine grain fades
 	// out with distance so far ground stays calm and cheap.
@@ -87,7 +97,8 @@ void fragment() {
 	NORMAL = normalize(NORMAL + (VIEW_MATRIX * vec4(bump, 0.0)).xyz * 0.55 * closeness);
 
 	ALBEDO = color;
-	ROUGHNESS = 0.92;
+	// Mud is wet: a little sheen.
+	ROUGHNESS = mix(0.92, 0.55, mud);
 }
 """
 

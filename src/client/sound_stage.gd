@@ -26,6 +26,7 @@ const FEET_M := 0.9                     # player origin to the soles (capsule ha
 const SOIL_SURFACE := {
 	0: "stone", 1: "sand", 2: "gravel", 3: "dirt", 4: "dirt", 5: "dirt", 6: "mud", 7: "dirt",
 	8: "leaves", 9: "gravel", 10: "dirt", 11: "snow", 12: "stone", 13: "sand", 14: "sand", 15: "sand",
+	16: "mud",
 }
 const SURFACE_DB := {
 	"grass": -9.0, "dirt": -10.0, "sand": -8.0, "gravel": -9.0, "stone": -8.0,
