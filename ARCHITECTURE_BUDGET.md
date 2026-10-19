@@ -96,7 +96,7 @@ What this means for the low tier (8 GB RAM, SATA drive) *[Practice]*:
 - **Done (build 15):** ground detail comes from a cheap noise shader (no textures to load); fine detail fades out with distance. Colors were converted to true display values and muted. Not seen on screen yet.
 - **Not started:** real-machine measurement (needs a playtest), tree levels of detail and variants, an in-game clear-cache button.
 
-## 9. Audio budget (direction only, nothing built)
+## 9. Audio budget (first sounds built 2026-10-19: wind, footsteps, grass; under 1 MB of Ogg, at most 8 playing)
 
 Audio needs its own budget, especially on the low tier *[Practice]*:
 - **CPU:** mixing many sounds at once (wind, water, birds, footsteps, animals) costs processor time. Cap the number of sounds playing together (for example about 24 on Low, 48 on Mid, 96 on High) and drop the quietest or farthest first.

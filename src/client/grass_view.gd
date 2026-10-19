@@ -108,6 +108,24 @@ func setup(terrain: Node3D, flora, tables) -> void:
 	set_radius(radius_m)
 
 
+# How much grass grows at a spot on soil `soil`, by the same rules the tufts
+# are placed by: x is the thickness (0 none to 1 thick), y the share of it that
+# is tall meadow grass. The sound stage uses it for the swish against the boots.
+func grass_at(x: float, z: float, soil: int) -> Vector2:
+	if not GRASS_SOILS.has(soil):
+		return Vector2.ZERO
+
+	var thick: float = float(GRASS_SOILS[soil])
+	return Vector2(thick, clampf((_patch.get_noise_2d(x, z) - 0.05) * 3.0, 0.0, 1.0) * 0.9)
+
+
+# The wind sways the grass with the same gusts the sound stage plays
+# (strength about 0 calm to 1.6 for a strong gust high up).
+func set_wind(strength: float) -> void:
+	for n in range(_materials.size()):
+		_materials[n].set_shader_parameter("wind_strength", 0.12 * float(LAYERS[n]["wind"]) * clampf(0.6 + 0.5 * strength, 0.6, 1.4))
+
+
 # The painted texture, imported by the editor or else straight from the file.
 static func _load_texture(name: String) -> Texture2D:
 	var path: String = "res://assets/grass/%s.png" % name
