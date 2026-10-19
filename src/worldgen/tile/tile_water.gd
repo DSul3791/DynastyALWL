@@ -36,6 +36,7 @@ var filled_cells: int = 0
 var longest_river_m: float = 0.0
 var max_bed_rise_m: float = 0.0       # largest climb of any river bed toward the sea (0: none)
 var ponds_made: int = 0               # head ponds stamped
+var largest_pond_m: float = 0.0       # widest head pond stamped (meters across)
 var _world_ponds: Array = []          # head ponds from the world river network (RiverNetwork.ponds_in), world meters
 var ponds_moved: int = 0              # of those, ponds moved up off a steep head onto flat ground
 var heads_straightened: int = 0       # steep river heads re-routed straight down the slope
@@ -124,7 +125,7 @@ func build(height_map, starter: Dictionary = {}, guides: Variant = null, world_p
 			rivers.append(_starter_guide())
 
 		_carve_guides(rivers)
-		print("  water: %d head ponds (%d moved up to flat ground), %d steep heads straightened, deepest pond cut %.1f m, largest river bed climb %.2f m" % [ponds_made, ponds_moved, heads_straightened, pond_cut_max_m, max_bed_rise_m])
+		print("  water: %d head ponds (%d moved up to flat ground), %d steep heads straightened, widest %.0f m, deepest pond cut %.1f m, largest river bed climb %.2f m" % [ponds_made, ponds_moved, heads_straightened, largest_pond_m, pond_cut_max_m, max_bed_rise_m])
 
 
 static func _log(message: String, since_ms: int) -> void:
@@ -503,6 +504,7 @@ func _carve_guides(rivers: Array) -> void:
 	var taper_m: float = float(_rules.get("head_taper_m", 140.0))
 	var taper_min: float = float(_rules.get("head_taper_min", 0.4))
 	var pond_radius: float = float(_rules.get("head_pond_diameter_m", 30.0)) * 0.5
+	var pond_radius_max: float = maxf(float(_rules.get("head_pond_diameter_max_m", 70.0)) * 0.5, pond_radius)
 	var pond_depth: float = float(_rules.get("head_pond_depth_m", 10.0))
 	var pond_back: float = float(_rules.get("head_pond_back_m", 50.0))
 	var max_rim_range: float = float(_rules.get("head_pond_max_rim_range_m", 15.0))
@@ -529,9 +531,11 @@ func _carve_guides(rivers: Array) -> void:
 	for pond in _world_ponds:
 		var centre: Vector2 = Vector2(pond["centre"]) / spacing_m - Vector2(float(_origin_sx), float(_origin_sz))
 		var level: float = float(pond["level"])
+		var radius_here: float = float(pond.get("radius", pond_radius))
 		ponds_made += 1
-		_bench(carved, centre, pond_radius + pond_shore, level, wall_fade)
-		_stamp_pond(carved, centre, pond_radius, level - pond_depth, level, start_km2 / cell_km2, best_flow, max_rim_range + 4.0, wall_fade, pond_shore)
+		largest_pond_m = maxf(largest_pond_m, radius_here * 2.0)
+		_bench(carved, centre, radius_here + pond_shore, level, wall_fade)
+		_stamp_pond(carved, centre, radius_here, level - pond_depth, level, start_km2 / cell_km2, best_flow, max_rim_range + 4.0, wall_fade, pond_shore)
 
 	var ponds_placed: Array = []          # [centre, rim height] of every head pond so far
 	river_cells = 0
@@ -559,6 +563,10 @@ func _carve_guides(rivers: Array) -> void:
 		var beds: PackedFloat32Array = PackedFloat32Array()
 		var is_source: bool = bool(river.get("source", false))
 		var along: float = 0.0
+		# Owner (2026-10-19): the stream out of a bigger pond starts bigger (a lake's outlet
+		# is a stream, a small pond's is a brook).
+		var pond_size: float = clampf((float(river.get("pond_radius", pond_radius)) - pond_radius) / maxf(pond_radius_max - pond_radius, 1.0), 0.0, 1.0)
+		var taper_here: float = lerpf(taper_min, 1.0, pond_size)
 		low_values.resize(count)
 		beds.resize(count)
 		beds.fill(NAN)
@@ -576,7 +584,7 @@ func _carve_guides(rivers: Array) -> void:
 
 			if is_source and along < taper_m:
 				# The brook grows out of its spring pond instead of starting full size.
-				var grow: float = lerpf(taper_min, 1.0, along / taper_m)
+				var grow: float = lerpf(taper_here, 1.0, along / taper_m)
 				width *= grow
 				depth *= grow
 
@@ -649,7 +657,19 @@ func _carve_guides(rivers: Array) -> void:
 
 			beds[k] = bed
 			river_cells += 1
-			_stamp_at(carved, points[k], widths[k], depths[k], bed, slope, strength, best_flow)
+
+			# Owner (2026-10-19): where the river runs down a steep face its banks are at least
+			# as steep as the river itself, so the bank of a point lower down never cuts a notch
+			# into the face above it.
+			var bank_here: float = slope
+			var up_k: int = maxi(k - 3, 0)
+			var down_k: int = mini(k + 3, count - 1)
+
+			if usable[up_k] == 1 and usable[down_k] == 1 and down_k > up_k:
+				var face: float = (low_values[up_k] - low_values[down_k]) / (float(down_k - up_k) * step_m)
+				bank_here = maxf(slope, face * 1.25)
+
+			_stamp_at(carved, points[k], widths[k], depths[k], bed, bank_here, strength, best_flow)
 
 		longest = maxf(longest, run_length)
 
@@ -762,6 +782,8 @@ func _carve_guides(rivers: Array) -> void:
 		var brook_depth: float = depth_base + depth_scale * brook_width
 
 		var paths: Array = pond["paths"]
+		var brook_size: float = clampf((float(pond.get("radius", pond_radius)) - pond_radius) / maxf(pond_radius_max - pond_radius, 1.0), 0.0, 1.0)
+		var brook_scale: float = lerpf(maxf(taper_min, 0.6), 1.0, brook_size)
 
 		for h in range(heads.size()):
 			var path: PackedVector2Array = PackedVector2Array()
@@ -769,7 +791,7 @@ func _carve_guides(rivers: Array) -> void:
 			for point in paths[h]:
 				path.append(Vector2(point) / spacing_m - Vector2(float(_origin_sx), float(_origin_sz)))
 
-			_cut_brook_path(carved, centre, pond_radius, float(pond["level"]), path, float(head_levels[h]) - brook_depth, brook_width, brook_depth, slope, start_km2 / cell_km2, best_flow)
+			_cut_brook_path(carved, centre, float(pond.get("radius", pond_radius)), float(pond["level"]), path, float(head_levels[h]) - brook_depth, brook_width * brook_scale, brook_depth, slope, start_km2 / cell_km2, best_flow)
 
 	heights = carved
 	longest_river_m = longest
@@ -1039,6 +1061,13 @@ func _stamp_at(
 	strength: float, best_flow: PackedFloat32Array, bowl: float = 0.0
 ) -> void:
 	var radius_m: float = width * 0.5 + (depth + 1.0) / slope
+
+	# Owner (2026-10-19): where the bed is cut well below the ground the banks slope back
+	# far enough to reach it (a valley), instead of ending in a cliff.
+	if bowl <= 0.0:
+		var cut: float = _bilinear(heights, center) - bed
+		radius_m = minf(maxf(radius_m, width * 0.5 + (cut + 1.0) / slope), maxf(float(_rules.get("bank_reach_max_m", 150.0)), radius_m))
+
 	var radius_cells: float = radius_m / spacing_m
 	var first_x: int = maxi(int(ceil(center.x - radius_cells)), 0)
 	var last_x: int = mini(int(floor(center.x + radius_cells)), samples - 1)

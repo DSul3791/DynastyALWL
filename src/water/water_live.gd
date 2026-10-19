@@ -15,7 +15,7 @@ const RATE_STEP := 1.1            # each + or - key press changes the rate by ab
 const RATE_MIN := 0.1
 const RATE_MAX := 5.0
 const PUBLISH_TICKS := 15
-const RUN_TICKS := 200            # ticks to run after each change, then the water rests
+const RUN_TICKS := 3000           # ticks to run after each change (long enough for rivers to drain to a trickle), then the water rests
 const START_TICKS := 20000        # a dry start runs this long on its own, so the springs fill the land
 const START_PUBLISH_TICKS := 40
 
@@ -110,7 +110,9 @@ func _run() -> void:
 			continue
 
 		sim.spring_multiplier = multiplier
-		sim.speed_multiplier = clampf(multiplier, 0.25, 1.2)
+		# Owner (2026-10-19): turning the springs down must let the rivers drain to a
+		# trickle, so a low rate never slows the water itself down.
+		sim.speed_multiplier = clampf(multiplier, 1.0, 1.2)
 		sim.step()
 		since += 1
 

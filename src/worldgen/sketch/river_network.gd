@@ -436,7 +436,10 @@ func place_ponds(rules: Dictionary) -> void:
 	var rim_range: float = float(rules.get("head_pond_max_rim_range_m", 6.0))
 	var search_m: float = float(rules.get("head_pond_search_m", 2000.0))
 	var setback_m: float = float(rules.get("head_pond_setback_m", 60.0))
+	var radius_max: float = maxf(float(rules.get("head_pond_diameter_max_m", 70.0)) * 0.5, radius)
+	var climb_max: float = float(rules.get("head_pond_climb_max_m", 60.0))
 	var placed: Array = []
+	var placed_radius: Array = []
 	ponds = []
 
 	for c in range(chains.size()):
@@ -457,8 +460,11 @@ func place_ponds(rules: Dictionary) -> void:
 		var found: bool = false
 		# The way up is the brook's way down: it follows the fall line.
 		var path: PackedVector2Array = PackedVector2Array([head, spot])
+		var head_height: float = smooth_height(head.x, head.y)
 
-		while climbed <= search_m:
+		# Owner (2026-10-19): the pond goes on the first flat ground above the head, not on
+		# a summit far above it.
+		while climbed <= search_m and smooth_height(spot.x, spot.y) - head_height <= climb_max:
 			var score: float = _pond_score(spot, radius, shore, rim_range)
 
 			if score <= 0.0:
@@ -481,13 +487,24 @@ func place_ponds(rules: Dictionary) -> void:
 
 		path = path.slice(0, best_at + 1)
 		spot = path[path.size() - 1]
+		var pond_radius: float = radius
+
+		# Owner (2026-10-19): ponds vary from the smallest size up to small lakes. Each pond
+		# draws a size (most stay small) and grows toward it only while the flat ground
+		# around it still holds it with its shore, so ponds near slopes stay small.
+		if found:
+			var draw: float = _hash01(spot)
+			var wanted: float = lerpf(radius, radius_max, draw * draw)
+
+			while pond_radius + 5.0 <= wanted and _pond_score(spot, pond_radius + 5.0, shore, rim_range) <= 0.0:
+				pond_radius += 5.0
 
 		# Back from the edge of the flat, so the stream crosses it before dropping.
 		if found:
 			var away: Vector2 = (spot - path[maxi(path.size() - 2, 0)]).normalized()
 			var moved: float = 0.0
 
-			while moved < setback_m and _pond_score(spot + away * 8.0, radius, shore, rim_range) <= 0.0:
+			while moved < setback_m and _pond_score(spot + away * 8.0, pond_radius, shore, rim_range) <= 0.0:
 				spot += away * 8.0
 				moved += 8.0
 
@@ -496,13 +513,14 @@ func place_ponds(rules: Dictionary) -> void:
 		var shared: int = -1
 
 		for p in range(placed.size()):
-			if Vector2(placed[p]).distance_to(spot) < 2.0 * radius + shore:
+			if Vector2(placed[p]).distance_to(spot) < pond_radius + float(placed_radius[p]) + shore:
 				shared = p
 				break
 
 		if shared < 0:
 			placed.append(spot)
-			ponds.append({"centre": spot, "level": _rim_median(spot, radius), "heads": [], "head_levels": [], "paths": []})
+			placed_radius.append(pond_radius)
+			ponds.append({"centre": spot, "radius": pond_radius, "level": _rim_median(spot, pond_radius), "heads": [], "head_levels": [], "paths": []})
 			shared = ponds.size() - 1
 		else:
 			path.append(placed[shared])
@@ -512,6 +530,13 @@ func place_ponds(rules: Dictionary) -> void:
 		ponds[shared]["heads"].append(head)
 		ponds[shared]["head_levels"].append(minf(levels[0], smooth_height(head.x, head.y)))
 		chain["pond"] = shared
+		chain["pond_radius"] = float(ponds[shared]["radius"])
+
+
+# A steady 0..1 number for a world position (the same in every tile and every bake).
+static func _hash01(point: Vector2) -> float:
+	var h: int = hash(Vector2i(int(round(point.x)), int(round(point.y))))
+	return float(posmod(h, 1000003)) / 1000003.0
 
 
 # How far a spot is from fitting a pond: 0 or less when the rim (and, at up to twice the
@@ -601,7 +626,7 @@ func ponds_in(rect: Rect2, reach_m: float) -> Array:
 
 					paths.append(path)
 
-				out.append({"centre": centre, "level": pond["level"], "heads": heads, "head_levels": pond["head_levels"], "paths": paths})
+				out.append({"centre": centre, "radius": pond["radius"], "level": pond["level"], "heads": heads, "head_levels": pond["head_levels"], "paths": paths})
 
 	return out
 
@@ -709,6 +734,7 @@ func _sample_chain(chain: Dictionary, shift: Vector2, wanted: Rect2, step_m: flo
 	var piece_levels: PackedFloat32Array = PackedFloat32Array()
 	var piece_marks: PackedByteArray = PackedByteArray()   # 1 on every 4th point of a segment (the same points in every tile)
 	var piece_source: bool = false       # this piece starts at the chain's first point (a true river head)
+	var pond_radius: float = float(chain.get("pond_radius", 0.0))
 
 	for i in range(count - 1):
 		var a: Vector2 = points[i]
@@ -719,7 +745,7 @@ func _sample_chain(chain: Dictionary, shift: Vector2, wanted: Rect2, step_m: flo
 
 		if not segment_box.intersects(wanted):
 			if piece_points.size() > 1:
-				out.append({"points": piece_points, "areas": piece_areas, "levels": piece_levels, "marks": piece_marks, "source": piece_source})
+				out.append({"points": piece_points, "areas": piece_areas, "levels": piece_levels, "marks": piece_marks, "source": piece_source, "pond_radius": pond_radius})
 
 			piece_points = PackedVector2Array()
 			piece_areas = PackedFloat32Array()
@@ -741,7 +767,11 @@ func _sample_chain(chain: Dictionary, shift: Vector2, wanted: Rect2, step_m: flo
 			var t: float = float(s) / float(pieces)
 			piece_points.append(_meandered(_catmull_rom(p0, a, b, p3, t)) + shift)
 			piece_areas.append(lerpf(areas[i], areas[i + 1], t))
-			piece_levels.append(lerpf(levels[i], levels[i + 1], t))
+			# Owner (2026-10-19): the level follows the land, not a straight line between the
+			# 160 m cells (that line cut a gorge through a ridge): the upstream cell's level,
+			# lowered to the smooth ground where that is lower.
+			var refined: Vector2 = _catmull_rom(p0, a, b, p3, t)
+			piece_levels.append(minf(levels[i], smooth_height(refined.x, refined.y)))
 			piece_marks.append(1 if s % 4 == 0 else 0)
 
 		if i == count - 2:
@@ -751,7 +781,7 @@ func _sample_chain(chain: Dictionary, shift: Vector2, wanted: Rect2, step_m: flo
 			piece_marks.append(1)
 
 	if piece_points.size() > 1:
-		out.append({"points": piece_points, "areas": piece_areas, "levels": piece_levels, "marks": piece_marks, "source": piece_source})
+		out.append({"points": piece_points, "areas": piece_areas, "levels": piece_levels, "marks": piece_marks, "source": piece_source, "pond_radius": pond_radius})
 
 
 func _meandered(point: Vector2) -> Vector2:
