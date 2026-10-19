@@ -19,8 +19,15 @@ uniform float mud = 0.0;             // 0 clear, 1 brown flood water (rivers and
 uniform float clarity_m = 0.45;      // water this thick hides about two thirds of what is behind it
 uniform float edge_alpha = 0.35;     // the thinnest water
 uniform float fastest_m_s = 2.5;     // drawn speed of the steepest running water
-uniform vec3 sky_top : source_color = vec3(0.385, 0.454, 0.55);       // ProceduralSkyMaterial defaults
-uniform vec3 sky_horizon : source_color = vec3(0.6463, 0.6558, 0.6708);
+uniform vec3 sky_top : source_color = vec3(0.33, 0.47, 0.68);         // the sky shader's colours (sky_clouds.gd)
+uniform vec3 sky_horizon : source_color = vec3(0.63, 0.68, 0.75);
+uniform vec3 cloud_lit : source_color = vec3(0.92, 0.92, 0.9);
+uniform vec3 cloud_shadow : source_color = vec3(0.46, 0.52, 0.62);
+uniform float cloud_height_m = 2000.0;   // the cloud layer of sky_clouds.gd, so the mirrored clouds
+uniform float cloud_scale_m = 1800.0;    // line up with the ones overhead
+uniform float coverage = 0.53;
+uniform float softness = 0.2;
+uniform vec2 wind_m_s = vec2(9.0, 4.0);
 uniform float refraction = 1.0;      // 0 (Low quality): see-through by blending; 1: the bottom bends under the ripples
 uniform sampler2D depth_texture : hint_depth_texture, filter_nearest;
 uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
@@ -58,6 +65,41 @@ float noise(vec2 p) {
 	float c = dot(gradient(i + vec2(0.0, 1.0)), f - vec2(0.0, 1.0));
 	float d = dot(gradient(i + vec2(1.0, 1.0)), f - vec2(1.0, 1.0));
 	return 0.5 + 0.7 * mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+}
+
+// The sky shader's cloud noise (value noise, three octaves; the sky draws more).
+float cloud_noise(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	vec2 u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
+	return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+}
+
+// Clouds seen in the water along a mirrored ray: colour (rgb) and cover (a).
+vec4 mirrored_clouds(vec3 dir, vec3 from) {
+	if (dir.y < 0.01) {
+		return vec4(0.0);
+	}
+	const mat2 turn = mat2(vec2(0.8, 0.6), vec2(-0.6, 0.8));
+	float t = max(cloud_height_m - from.y, 200.0) / dir.y;
+	vec2 drift = wind_m_s * TIME / cloud_scale_m;
+	vec2 p = (from.xz + dir.xz * t) / cloud_scale_m + drift;
+	vec2 morph = drift * 0.6;
+	float sum = 0.0;
+	float amp = 0.5;
+	float total = 0.0;
+	for (int i = 0; i < 3; i++) {
+		sum += amp * cloud_noise(p + morph * float(i) * 0.35);
+		total += amp;
+		p = turn * p * 2.03 + 11.7;
+		amp *= 0.5;
+	}
+	float n = sum / total;
+	float cover = smoothstep(coverage, coverage + softness, n);
+	float core = smoothstep(coverage + 0.05, coverage + 0.4, n);
+	float haze = smoothstep(0.03, 0.4, dir.y);
+	vec3 color = mix(sky_horizon, mix(cloud_lit, cloud_shadow, 0.4 * core), 0.35 + 0.65 * haze);
+	return vec4(color, cover * (0.25 + 0.75 * haze));
 }
 
 // Octaves turned against each other so no grid direction shows.
@@ -114,12 +156,15 @@ void fragment() {
 	NORMAL = normalize((VIEW_MATRIX * vec4(normal_world, 0.0)).xyz);
 
 	// Sky in the water (the plan for Atlas-like water, step 1): the surface mirrors the sky
-	// more the lower the view angle (Fresnel), from the horizon colour to the sky above.
+	// more the lower the view angle (Fresnel), from the horizon colour to the sky above,
+	// and the clouds of the sky shader drifting with the same wind.
 	vec3 to_eye = normalize(INV_VIEW_MATRIX[3].xyz - world_pos);
 	float facing = clamp(dot(normal_world, to_eye), 0.0, 1.0);
 	float fresnel = 0.02 + 0.98 * pow(1.0 - facing, 5.0);
 	vec3 mirrored = reflect(-to_eye, normal_world);
 	vec3 sky = mix(sky_horizon, sky_top, sqrt(clamp(mirrored.y, 0.0, 1.0)));
+	vec4 cloud = mirrored_clouds(mirrored, world_pos);
+	sky = mix(sky, cloud.rgb, cloud.a);
 
 	// Shore foam (step 3): a soft, moving line where the water thins against the bank.
 	float thickness = through * max(to_eye.y, 0.15);
