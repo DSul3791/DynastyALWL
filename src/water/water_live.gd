@@ -91,6 +91,7 @@ func take_levels() -> PackedFloat32Array:
 
 func _run() -> void:
 	var sim = WaterSettler.build(data, _base_rate, _generator, not _dry_start)
+	print("water: running on the %s core" % ("C++" if sim.native() else "GDScript (the C++ add-on did not load)"))
 	print("water: %d springs at %s" % [sim.springs.size(), str(sim.springs.map(func(sp): return [int(sp[0]) % data.samples, int(sp[0]) / data.samples]))])
 	var saved: PackedFloat32Array = PackedFloat32Array() if _dry_start else WaterStore.load_depth(_path, data.samples)
 
