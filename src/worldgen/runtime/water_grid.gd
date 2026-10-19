@@ -155,6 +155,13 @@ static func _fine_cells(generator, origin: Vector2, count: int, spacing: float, 
 	return fine
 
 
+# Forgets the cached ground (the tile files changed).
+static func forget_ground() -> void:
+	_ground_mutex.lock()
+	_ground_cache.clear()
+	_ground_mutex.unlock()
+
+
 # Real (finest) ground height, cached: the ground does not change while water runs.
 static func _fine_ground(generator, x: float, z: float) -> float:
 	var key: Vector2i = Vector2i(int(round(x * 4.0)), int(round(z * 4.0)))

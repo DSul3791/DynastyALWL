@@ -30,6 +30,7 @@ const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const FloraStoreScript := preload("res://src/stream/server_flora.gd")
 const WaterLiveScript := preload("res://src/water/water_live.gd")
+const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 
 const MAX_BATCH_BYTES := 192 * 1024
 const MAX_QUEUE_PER_PEER := 20000
@@ -43,6 +44,7 @@ var store
 var flora
 var _water_updates: int = 0
 var water_live                         # the starter tile's running water, tuned with + and - on the client
+var _world_dir: String = ""
 var settings
 var spawn: Vector3 = Vector3.ZERO
 var net
@@ -139,21 +141,8 @@ func _ready() -> void:
 	flora = FloraStoreScript.new()
 	flora.setup(placer, store_dir)
 	spawn = _spawn_point(world_dir)
-	var water_tile: Vector2i = Vector2i(3, 4)
-	var water_data = generator.get_tile(water_tile)
-
-	if not water_data.placeholder:
-		# Owner (2026-10-18): the world starts dry and the springs fill it, so the real water
-		# paths show; --settled-water starts from the baked water file instead.
-		var dry_start: bool = not OS.get_cmdline_user_args().has("--settled-water")
-
-		if dry_start:
-			water_data.sim_levels = PackedFloat32Array()
-			water_data.sim_levels.resize(water_data.samples * water_data.samples)
-			water_data.sim_levels.fill(NAN)
-
-		water_live = WaterLiveScript.new()
-		water_live.setup(water_data, "%s/water/tile_%d_%d.water" % [world_dir, water_tile.x, water_tile.y], WATER_BASE_RATE, generator, dry_start)
+	_world_dir = world_dir
+	_start_water()
 
 	var peer: ENetMultiplayerPeer = ENetMultiplayerPeer.new()
 	var error: int = peer.create_server(port, 32)
@@ -226,6 +215,27 @@ func _on_peer_connected(peer_id: int) -> void:
 		"tiles_stamp": store.tiles_stamp,
 		"starter_stamp": _starter_stamp(),
 	})
+
+
+# Starts the starter tile's running water on the tile as it is now loaded.
+func _start_water() -> void:
+	var water_tile: Vector2i = Vector2i(3, 4)
+	var water_data = generator.get_tile(water_tile)
+
+	if water_data.placeholder:
+		return
+
+	# Owner (2026-10-18): the world starts dry and the springs fill it, so the real water
+	# paths show; --settled-water starts from the baked water file instead.
+	var dry_start: bool = not OS.get_cmdline_user_args().has("--settled-water")
+
+	if dry_start:
+		water_data.sim_levels = PackedFloat32Array()
+		water_data.sim_levels.resize(water_data.samples * water_data.samples)
+		water_data.sim_levels.fill(NAN)
+
+	water_live = WaterLiveScript.new()
+	water_live.setup(water_data, "%s/water/tile_%d_%d.water" % [_world_dir, water_tile.x, water_tile.y], WATER_BASE_RATE, generator, dry_start)
 
 
 # Which starter ground (shipped client cache) fits the tiles: terrain version and the spawn tile file.
@@ -437,6 +447,16 @@ func _process(_delta: float) -> void:
 		if store.check_tiles(now):
 			generator.forget_tiles()
 			flora.clear_memory()
+			WaterGridScript.forget_ground()
+
+			# The water ran on the old ground (owner, 2026-10-19: it stood as a dome where the
+			# new bake had taken the pond away): start it again on the new tiles.
+			if water_live != null:
+				water_live.stop()
+				water_live = null
+
+			_start_water()
+
 			net.ground_reset.rpc(store.tiles_stamp, _starter_stamp())
 			print("server: the tile files changed (a bake finished); generated ground thrown away, players reload")
 

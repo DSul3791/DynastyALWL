@@ -36,6 +36,8 @@ var filled_cells: int = 0
 var longest_river_m: float = 0.0
 var max_bed_rise_m: float = 0.0       # largest climb of any river bed toward the sea (0: none)
 var ponds_made: int = 0               # head ponds stamped
+var ponds_moved: int = 0              # of those, ponds moved up off a steep head onto flat ground
+var heads_straightened: int = 0       # steep river heads re-routed straight down the slope
 var pond_cut_max_m: float = 0.0       # deepest cut a head pond made into the ground
 var _route_clock: int = 0
 var _source_surface_m: float = 0.0
@@ -120,7 +122,7 @@ func build(height_map, starter: Dictionary = {}, guides: Variant = null) -> void
 			rivers.append(_starter_guide())
 
 		_carve_guides(rivers)
-		print("  water: %d head ponds, deepest pond cut %.1f m, largest river bed climb %.2f m" % [ponds_made, pond_cut_max_m, max_bed_rise_m])
+		print("  water: %d head ponds (%d moved up to flat ground), %d steep heads straightened, deepest pond cut %.1f m, largest river bed climb %.2f m" % [ponds_made, ponds_moved, heads_straightened, pond_cut_max_m, max_bed_rise_m])
 
 
 static func _log(message: String, since_ms: int) -> void:
@@ -503,6 +505,7 @@ func _carve_guides(rivers: Array) -> void:
 	var pond_back: float = float(_rules.get("head_pond_back_m", 50.0))
 	var max_rim_range: float = float(_rules.get("head_pond_max_rim_range_m", 15.0))
 	var wall_fade: float = float(_rules.get("head_pond_wall_fade_m", 60.0))
+	var pond_search_m: float = float(_rules.get("head_pond_search_m", 1200.0))
 	var widen_from: float = float(_rules.get("fall_widen_from_slope", 0.15))
 	var widen_rate: float = float(_rules.get("fall_widen_rate", 3.0))
 	var widen_max: float = float(_rules.get("fall_widen_max", 2.5))
@@ -520,6 +523,14 @@ func _carve_guides(rivers: Array) -> void:
 	for river in rivers:
 		var points: PackedVector2Array = river["points"]
 		var areas: PackedFloat32Array = river["areas"]
+
+		# Owner (2026-10-19): a brook coming down a mountainside runs straight down it, not
+		# sideways across the face the way the coarse world river path goes.
+		if bool(river.get("source", false)):
+			var straight: Array = _straighten_head(points, areas)
+			points = straight[0]
+			areas = straight[1]
+
 		var count: int = points.size()
 
 		if count < 2:
@@ -640,36 +651,33 @@ func _carve_guides(rivers: Array) -> void:
 
 				if uphill.length() > 0.001:
 					var centre: Vector2 = head_point + uphill.normalized() * pond_back / spacing_m
+					var fit: Dictionary = _pond_fit(carved, centre, pond_radius, wall_fade, max_rim_range)
 
-					# Owner (2026-10-18/19): ponds sit on flat ground, never cut deep into a hillside.
-					# The pond takes the largest size whose rim varies by at most max_rim_range on the
-					# natural ground (full, half or a quarter across); with none, no pond.
-					for scale in [1.0, 0.5, 0.25]:
-						var radius_here: float = pond_radius * scale
-						var margin: float = (radius_here + wall_fade) / spacing_m + 3.0
+					# Owner (2026-10-19): with no flat ground just above the head (a steep mountain
+					# face), the pond goes up on the first flat ground above it (a plateau or the top
+					# of the rise) and a straight brook runs from it down to the head.
+					var climbed: float = 0.0
 
-						if centre.x <= margin or centre.y <= margin or centre.x >= float(samples - 1) - margin or centre.y >= float(samples - 1) - margin:
-							continue
+					while fit.is_empty() and climbed < pond_search_m:
+						var rise: Vector2 = _gradient(heights, centre, 4.0)
 
-						var rim_low: float = INF
-						var natural_low: float = INF
-						var natural_high: float = -INF
+						if rise.length() < 0.002:
+							break
 
-						for r in range(16):
-							var on_rim: Vector2 = centre + Vector2(cos(TAU * float(r) / 16.0), sin(TAU * float(r) / 16.0)) * radius_here / spacing_m
-							var natural: float = _bilinear(heights, on_rim)
-							natural_low = minf(natural_low, natural)
-							natural_high = maxf(natural_high, natural)
-							# The brook's channel is the lip (so the pond spills into it), but a
-							# deep cut downstream may not pull the lip far under the ground.
-							rim_low = minf(rim_low, maxf(_bilinear(carved, on_rim), natural - 4.0))
+						centre += rise.normalized() * 3.0
+						climbed += 3.0 * spacing_m
+						fit = _pond_fit(carved, centre, pond_radius, wall_fade, max_rim_range)
 
-						if natural_high - natural_low > max_rim_range:
-							continue
+					if not fit.is_empty():
+						var radius_here: float = fit["radius"]
+						var rim_low: float = fit["rim_low"]
+
+						if centre.distance_to(head_point) * spacing_m > radius_here:
+							_cut_brook(carved, centre, radius_here, rim_low, head_point, beds[0], widths[0], depths[0], min_fall, slope, areas[0] / cell_km2, best_flow)
 
 						ponds_made += 1
+						ponds_moved += 1 if climbed > 0.0 else 0
 						_stamp_pond(carved, centre, radius_here, rim_low - pond_depth, rim_low, areas[0] / cell_km2, best_flow, max_rim_range + 4.0, wall_fade)
-						break
 
 		# A plunge pool at the foot of every steep drop (waterfall or cascade):
 		# the water scours a basin where it lands.
@@ -695,6 +703,162 @@ func _carve_guides(rivers: Array) -> void:
 
 	heights = carved
 	longest_river_m = longest
+
+
+# Where a head pond fits around `centre` (sample coordinates): a pond whose rim varies by at most max_rim_range on the natural ground
+# (owner, 2026-10-18/19: ponds sit on flat ground, never cut deep into a hillside), as
+# {"radius", "rim_low"}, or empty when none fits.
+func _pond_fit(carved: PackedFloat32Array, centre: Vector2, pond_radius: float, wall_fade: float, max_rim_range: float) -> Dictionary:
+	for scale in [1.0]:
+		var radius_here: float = pond_radius * scale
+		var margin: float = (radius_here + wall_fade) / spacing_m + 3.0
+
+		if centre.x <= margin or centre.y <= margin or centre.x >= float(samples - 1) - margin or centre.y >= float(samples - 1) - margin:
+			continue
+
+		var rim_low: float = INF
+		var natural_low: float = INF
+		var natural_high: float = -INF
+
+		for r in range(16):
+			var on_rim: Vector2 = centre + Vector2(cos(TAU * float(r) / 16.0), sin(TAU * float(r) / 16.0)) * radius_here / spacing_m
+			var natural: float = _bilinear(heights, on_rim)
+			natural_low = minf(natural_low, natural)
+			natural_high = maxf(natural_high, natural)
+			# The brook's channel is the lip (so the pond spills into it), but a
+			# deep cut downstream may not pull the lip far under the ground.
+			rim_low = minf(rim_low, maxf(_bilinear(carved, on_rim), natural - 4.0))
+
+		if natural_high - natural_low <= max_rim_range:
+			return {"radius": radius_here, "rim_low": rim_low}
+
+	return {}
+
+
+# Uphill direction of a field at a point, measured `reach` samples either side
+# (sample coordinates; meters up per sample).
+func _gradient(field: PackedFloat32Array, point: Vector2, reach: float) -> Vector2:
+	return Vector2(
+		_bilinear(field, point + Vector2(reach, 0.0)) - _bilinear(field, point - Vector2(reach, 0.0)),
+		_bilinear(field, point + Vector2(0.0, reach)) - _bilinear(field, point - Vector2(0.0, reach))
+	) / (2.0 * reach)
+
+
+# A straight brook from a pond's lip down to a river head: it leaves the pond just under
+# the lip (so the pond spills into it) and only ever falls, cutting in where the ground
+# rises, until it meets the river's bed at the head.
+func _cut_brook(
+	carved: PackedFloat32Array, pond_centre: Vector2, radius_m: float, rim_low: float, head: Vector2,
+	head_bed: float, width: float, depth: float, min_fall: float, slope: float, strength: float,
+	best_flow: PackedFloat32Array
+) -> void:
+	var direction: Vector2 = (head - pond_centre).normalized()
+	var start: Vector2 = pond_centre + direction * (radius_m * 0.8 / spacing_m)
+	var length: float = start.distance_to(head)
+	var steps: int = maxi(int(ceil(length)), 1)
+	var bed: float = rim_low - 1.5
+	var floor_bed: float = minf(head_bed, bed)
+
+	for k in range(steps + 1):
+		var point: Vector2 = start.lerp(head, float(k) / float(steps))
+		bed = minf(bed - min_fall * spacing_m, _bilinear(heights, point) - depth)
+		bed = maxf(bed, floor_bed)
+		_stamp_at(carved, point, width, depth, bed, slope, strength, best_flow)
+
+
+# The head of a source river, re-routed straight down a steep slope: from the head the path
+# follows the steepest way down the (uncarved) ground until it is back on the river below
+# the steep stretch. Left as it was when there is no steep stretch, when the new way does
+# not meet the river again, or near the tile's edge (where the neighbor tile, which carves
+# the same river, would not see the change).
+func _straighten_head(points: PackedVector2Array, areas: PackedFloat32Array) -> Array:
+	var steep_slope: float = float(_rules.get("head_straighten_slope", 0.25))
+	var keep_out: float = float(_rules.get("head_straighten_edge_samples", 180.0))
+	var count: int = points.size()
+	var unchanged: Array = [points, areas]
+
+	if count < 3:
+		return unchanged
+
+	var inside: Callable = func(point: Vector2) -> bool:
+		return point.x > keep_out and point.y > keep_out and point.x < float(samples - 1) - keep_out and point.y < float(samples - 1) - keep_out
+
+	# The steep stretch: from the head down to the first point on gentle ground.
+	var end_at: int = -1
+	var seen_steep: bool = false
+
+	for k in range(mini(count, 400)):
+		if not inside.call(points[k]):
+			return unchanged
+
+		var steep: bool = _gradient(heights, points[k], 8.0).length() > steep_slope
+		seen_steep = seen_steep or steep
+
+		if seen_steep and not steep:
+			end_at = k
+			break
+
+	if end_at < 2:
+		return unchanged
+
+	# Steepest way down from the head, in 1-sample steps.
+	var path: PackedVector2Array = PackedVector2Array([points[0]])
+	var here: Vector2 = points[0]
+	var limit: int = end_at * 3 + 20
+	var rejoin: int = -1
+	var foot_height: float = _bilinear(heights, points[end_at])
+
+	for step in range(limit):
+		var fall: Vector2 = -_gradient(heights, here, 4.0)
+
+		# Down at the foot of the slope (or in a hollow): join the river from here.
+		if fall.length() < 0.001 or _bilinear(heights, here) < foot_height - 2.0:
+			break
+
+		here += fall.normalized()
+
+		if not inside.call(here):
+			return unchanged
+
+		path.append(here)
+
+		for k in range(end_at, mini(count, end_at + 60)):
+			if points[k].distance_to(here) < 1.5:
+				rejoin = k
+				break
+
+		if rejoin >= 0:
+			break
+
+	# Not on the river yet: a short straight piece to the nearest river point below.
+	if rejoin < 0:
+		var nearest: float = 20.0
+
+		for k in range(end_at, mini(count, end_at + 100)):
+			if points[k].distance_to(here) < nearest:
+				nearest = points[k].distance_to(here)
+				rejoin = k
+
+		if rejoin < 0:
+			return unchanged
+
+		var pieces: int = int(ceil(nearest))
+
+		for n in range(1, pieces):
+			path.append(here.lerp(points[rejoin], float(n) / float(pieces)))
+
+	var new_points: PackedVector2Array = path
+	var new_areas: PackedFloat32Array = PackedFloat32Array()
+
+	for k in range(path.size()):
+		new_areas.append(lerpf(areas[0], areas[rejoin], float(k) / float(path.size())))
+
+	for k in range(rejoin, count):
+		new_points.append(points[k])
+		new_areas.append(areas[k])
+
+	heads_straightened += 1
+	return [new_points, new_areas]
 
 
 # Bilinear height at a position in sample coordinates (inside the frame).
