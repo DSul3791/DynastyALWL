@@ -174,7 +174,10 @@ static func shader_for(quality: int) -> Shader:
 		var shader: Shader = Shader.new()
 		var defines: String = "#define OCTAVES %d\n#define LIGHT_SAMPLES %d\n#define CIRRUS %s\n" % [
 			OCTAVES[q], LIGHT_SAMPLES[q], "true" if CIRRUS[q] else "false"]
-		shader.code = SHADER.replace("shader_type sky;\n", "shader_type sky;\n" + defines)
+		# Windows checkouts have CRLF line ends (.gitattributes text=auto), so match the first
+		# line without its newline; build 44 matched "\n" only, the defines went missing and the
+		# shader failed to compile on the owner's PC (black sky, dark ambient light).
+		shader.code = SHADER.replace("\r", "").replace("shader_type sky;", "shader_type sky;\n" + defines)
 		_shaders[q] = shader
 	return _shaders[q]
 
