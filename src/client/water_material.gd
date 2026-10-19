@@ -96,6 +96,9 @@ void fragment() {
 	float carried_a = ripples(local / 3.0 - velocity * phase0 * cycle / 3.0);
 	float carried_b = ripples(local / 3.0 + 13.0 - velocity * phase1 * cycle / 3.0);
 	float streaks = smoothstep(0.58, 0.75, mix(carried_a, carried_b, blend));
+	// Foam follows the water speed (about the square root of the slope): riffles on ordinary
+	// streams already show some, fast water much more.
+	float speed = sqrt(steep);
 	float foam = streaks * smoothstep(mix(0.2, 0.05, rough), mix(0.55, 0.3, rough), speed) * step(0.001, steep);
 	// White water breaking on the fastest stretches when the flow is high.
 	float white = mix(ripples(p * 1.7 - velocity * phase0 * cycle * 1.7 / scale), ripples(p * 1.7 + 5.0 - velocity * phase1 * cycle * 1.7 / scale), blend);
