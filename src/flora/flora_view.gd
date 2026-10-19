@@ -202,6 +202,10 @@ var _tree_materials: Dictionary = {}       # TreeBuilder materials (bark, broad,
 
 # Owner (2026-10-19): rivers and ponds stay clear up to flow x1 and turn muddy brown
 # above it, like runoff after rain (fully brown from about x8). The sea stays clear.
+func set_water_quality(quality: int) -> void:
+	WaterMaterial.apply_quality(_water_material, quality)
+
+
 func set_flow_rate(rate: float) -> void:
 	if _water_material != null:
 		_water_material.set_shader_parameter("mud", clampf(log(maxf(rate, 1.0)) / log(8.0), 0.0, 1.0))

@@ -19,7 +19,11 @@ uniform float mud = 0.0;             // 0 clear, 1 brown flood water (rivers and
 uniform float clarity_m = 0.45;      // water this thick hides about two thirds of what is behind it
 uniform float edge_alpha = 0.35;     // the thinnest water
 uniform float fastest_m_s = 2.5;     // drawn speed of the steepest running water
+uniform vec3 sky_top : source_color = vec3(0.385, 0.454, 0.55);       // ProceduralSkyMaterial defaults
+uniform vec3 sky_horizon : source_color = vec3(0.6463, 0.6558, 0.6708);
+uniform float refraction = 1.0;      // 0 (Low quality): see-through by blending; 1: the bottom bends under the ripples
 uniform sampler2D depth_texture : hint_depth_texture, filter_nearest;
+uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
 
 varying float sheet_alpha;
 varying vec2 flow;                   // downhill direction times 0..1 steepness (0 for lakes and the sea)
@@ -106,7 +110,21 @@ void fragment() {
 	// The mesh's own normal tilts differently on each 8 m square; water is nearly flat, so
 	// lean it toward straight up to hide the square seams.
 	vec3 up = normalize(mix((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz, vec3(0.0, 1.0, 0.0), 0.75));
-	NORMAL = normalize((VIEW_MATRIX * vec4(normalize(up - vec3(bump.x, 0.0, bump.y)), 0.0)).xyz);
+	vec3 normal_world = normalize(up - vec3(bump.x, 0.0, bump.y));
+	NORMAL = normalize((VIEW_MATRIX * vec4(normal_world, 0.0)).xyz);
+
+	// Sky in the water (the plan for Atlas-like water, step 1): the surface mirrors the sky
+	// more the lower the view angle (Fresnel), from the horizon colour to the sky above.
+	vec3 to_eye = normalize(INV_VIEW_MATRIX[3].xyz - world_pos);
+	float facing = clamp(dot(normal_world, to_eye), 0.0, 1.0);
+	float fresnel = 0.02 + 0.98 * pow(1.0 - facing, 5.0);
+	vec3 mirrored = reflect(-to_eye, normal_world);
+	vec3 sky = mix(sky_horizon, sky_top, sqrt(clamp(mirrored.y, 0.0, 1.0)));
+
+	// Shore foam (step 3): a soft, moving line where the water thins against the bank.
+	float thickness = through * max(to_eye.y, 0.15);
+	float shore = 1.0 - smoothstep(0.02, 0.35, thickness);
+	float shore_foam = shore * smoothstep(0.42, 0.68, ripples(local / 1.3 + vec2(drift * 0.12, -drift * 0.08)));
 
 	// Patches of foam carried by the flow (the same moving pattern as the ripples, coarser).
 	// Owner (2026-10-19): stretching the foam along the local flow direction drew zigzags,
@@ -121,11 +139,32 @@ void fragment() {
 	// White water breaking on the fastest stretches when the flow is high.
 	float white = mix(ripples(p * 1.7 - velocity * phase0 * cycle * 1.7 / scale), ripples(p * 1.7 + 5.0 - velocity * phase1 * cycle * 1.7 / scale), blend);
 	foam = max(foam, smoothstep(0.5, 0.75, white) * rough * smoothstep(0.1, 0.4, speed));
+	foam = max(foam, shore_foam * 0.8);
 	foam *= 1.0 / (1.0 + distance_m / 120.0);
 
 	vec3 water = mix(mix(shallow_color, deep_color, murk), mud_color * mix(1.0, 0.7, murk), mud);
-	ALBEDO = mix(water, mix(foam_color, mud_color * 1.6, mud * 0.6), foam * 0.85);
-	ALPHA = max(mix(edge_alpha, 0.97, murk), foam * 0.9) * sheet_alpha;
+	vec3 foam_tint = mix(foam_color, mud_color * 1.6, mud * 0.6);
+	float body_alpha = mix(edge_alpha, 0.97, murk);
+
+	if (refraction > 0.5) {
+		// Refraction (step 2): look through the water at the scene behind it, pushed sideways
+		// by the ripples; only where what is seen there really lies behind the water.
+		vec2 bent_uv = SCREEN_UV + bump * 0.04 * (1.0 - murk) / (1.0 + distance_m / 20.0);
+		float bent_depth = texture(depth_texture, bent_uv).r;
+		vec4 bent_behind = INV_PROJECTION_MATRIX * vec4(bent_uv * 2.0 - 1.0, bent_depth, 1.0);
+		bent_behind.xyz /= bent_behind.w;
+		bent_uv = bent_behind.z < VERTEX.z ? bent_uv : SCREEN_UV;
+		vec3 below = textureLod(screen_texture, bent_uv, 0.0).rgb;
+		vec3 seen = mix(below, water, body_alpha);
+		seen = mix(seen, sky, fresnel * 0.8);
+		// The lighting adds the sun glint on top; keep the body itself unlit-looking.
+		ALBEDO = mix(seen * 0.6, foam_tint, foam * 0.85);
+		EMISSION = seen * 0.4 * (1.0 - foam);
+		ALPHA = sheet_alpha;
+	} else {
+		ALBEDO = mix(mix(water, sky, fresnel * 0.8), foam_tint, foam * 0.85);
+		ALPHA = max(max(body_alpha, fresnel * 0.8), foam * 0.9) * sheet_alpha;
+	}
 	ROUGHNESS = 0.08 + 0.3 * foam;
 	SPECULAR = 0.6;
 }
@@ -142,3 +181,9 @@ static func make() -> ShaderMaterial:
 	var material: ShaderMaterial = ShaderMaterial.new()
 	material.shader = _shader
 	return material
+
+
+# Quality (F2): Low blends the water over the ground; Medium and up bend the view through it.
+static func apply_quality(material: ShaderMaterial, quality: int) -> void:
+	if material != null:
+		material.set_shader_parameter("refraction", 1.0 if quality >= 1 else 0.0)
