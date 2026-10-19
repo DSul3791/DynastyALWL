@@ -36,6 +36,7 @@ var filled_cells: int = 0
 var longest_river_m: float = 0.0
 var max_bed_rise_m: float = 0.0       # largest climb of any river bed toward the sea (0: none)
 var ponds_made: int = 0               # head ponds stamped
+var _world_ponds: Array = []          # head ponds from the world river network (RiverNetwork.ponds_in), world meters
 var ponds_moved: int = 0              # of those, ponds moved up off a steep head onto flat ground
 var heads_straightened: int = 0       # steep river heads re-routed straight down the slope
 var pond_cut_max_m: float = 0.0       # deepest cut a head pond made into the ground
@@ -61,7 +62,8 @@ func setup(settings, rules: Dictionary) -> void:
 # RiverNetwork.guides_in (world meters). With guides, rivers are cut along
 # them, so a river is the same in every tile it passes through. Without
 # (null), rivers come from this tile's own drainage, as before.
-func build(height_map, starter: Dictionary = {}, guides: Variant = null) -> void:
+func build(height_map, starter: Dictionary = {}, guides: Variant = null, world_ponds: Array = []) -> void:
+	_world_ponds = world_ponds
 	_legacy_rivers = guides == null
 	samples = height_map.samples
 	_origin_sx = int(height_map.origin_sx)
@@ -520,6 +522,18 @@ func _carve_guides(rivers: Array) -> void:
 	best_flow.resize(total)
 	var carved: PackedFloat32Array = heights.duplicate()
 	var longest: float = 0.0
+
+	# Owner (2026-10-19): every river starts at its head pond, placed for the whole world
+	# (the same in every tile that touches it), on a plateau built where the land has none.
+	# Made first, so the rivers and brooks then cut their way out of it.
+	for pond in _world_ponds:
+		var centre: Vector2 = Vector2(pond["centre"]) / spacing_m - Vector2(float(_origin_sx), float(_origin_sz))
+		var level: float = float(pond["level"])
+		ponds_made += 1
+		_bench(carved, centre, pond_radius + pond_shore, level, wall_fade)
+		_stamp_pond(carved, centre, pond_radius, level - pond_depth, level, start_km2 / cell_km2, best_flow, max_rim_range + 4.0, wall_fade, pond_shore)
+
+	var ponds_placed: Array = []          # [centre, rim height] of every head pond so far
 	river_cells = 0
 
 	for river in rivers:
@@ -645,7 +659,10 @@ func _carve_guides(rivers: Array) -> void:
 			# holds water and spills over that lip toward the brook.
 			var head_point: Vector2 = points[0]
 
-			if usable[0] == 1:
+			var keep_out: float = _pond_keep_out() + 4.0
+			var head_clear: bool = head_point.x > keep_out and head_point.y > keep_out and head_point.x < float(samples - 1) - keep_out and head_point.y < float(samples - 1) - keep_out
+
+			if usable[0] == 1 and head_clear and _world_ponds.is_empty():
 				var uphill: Vector2 = Vector2(
 					_bilinear(heights, head_point + Vector2(1.0, 0.0)) - _bilinear(heights, head_point - Vector2(1.0, 0.0)),
 					_bilinear(heights, head_point + Vector2(0.0, 1.0)) - _bilinear(heights, head_point - Vector2(0.0, 1.0))
@@ -653,7 +670,7 @@ func _carve_guides(rivers: Array) -> void:
 
 				if uphill.length() > 0.001:
 					var centre: Vector2 = head_point + uphill.normalized() * pond_back / spacing_m
-					var fit: Dictionary = _pond_fit(carved, centre, pond_radius, wall_fade, max_rim_range)
+					var fit: Dictionary = _pond_fit(carved, centre, pond_radius, wall_fade, max_rim_range, pond_shore)
 
 					# Owner (2026-10-19): with no flat ground just above the head (a steep mountain
 					# face), the pond goes up on the first flat ground above it (a plateau or the top
@@ -668,7 +685,7 @@ func _carve_guides(rivers: Array) -> void:
 
 						centre += rise.normalized() * 3.0
 						climbed += 3.0 * spacing_m
-						fit = _pond_fit(carved, centre, pond_radius, wall_fade, max_rim_range)
+						fit = _pond_fit(carved, centre, pond_radius, wall_fade, max_rim_range, pond_shore)
 
 					# Owner (2026-10-19): the pond sits back from the edge of the flat ground, so
 					# its stream crosses the flat before it drops: move it on, away from the head,
@@ -679,7 +696,7 @@ func _carve_guides(rivers: Array) -> void:
 
 						while moved_m < pond_setback:
 							var further: Vector2 = centre + away
-							var fit_further: Dictionary = _pond_fit(carved, further, pond_radius, wall_fade, max_rim_range)
+							var fit_further: Dictionary = _pond_fit(carved, further, pond_radius, wall_fade, max_rim_range, pond_shore)
 
 							if fit_further.is_empty():
 								break
@@ -693,11 +710,22 @@ func _carve_guides(rivers: Array) -> void:
 						# Owner (2026-10-19): the pond sits on a small flat bench with a shore, the land
 						# sloping gently away from it, so it never looks like a crater in a hillside.
 						var rim_low: float = fit["bench"]
-						_bench(carved, centre, radius_here + pond_shore, rim_low, wall_fade)
+						var shared: bool = false
 
-						ponds_made += 1
-						ponds_moved += 1 if climbed > 0.0 else 0
-						_stamp_pond(carved, centre, radius_here, rim_low - pond_depth, rim_low, areas[0] / cell_km2, best_flow, max_rim_range + 4.0, wall_fade, pond_shore)
+						# Two heads close together share one pond (no overlapping ponds).
+						for other in ponds_placed:
+							if centre.distance_to(other[0]) * spacing_m < 2.0 * radius_here + pond_shore:
+								centre = other[0]
+								rim_low = other[1]
+								shared = true
+								break
+
+						if not shared:
+							ponds_placed.append([centre, rim_low])
+							_bench(carved, centre, radius_here + pond_shore, rim_low, wall_fade)
+							ponds_made += 1
+							ponds_moved += 1 if climbed > 0.0 else 0
+							_stamp_pond(carved, centre, radius_here, rim_low - pond_depth, rim_low, areas[0] / cell_km2, best_flow, max_rim_range + 4.0, wall_fade, pond_shore)
 
 						# The brook is cut last: where it leaves the pond is the pond's one low lip.
 						if centre.distance_to(head_point) * spacing_m > radius_here:
@@ -725,6 +753,24 @@ func _carve_guides(rivers: Array) -> void:
 
 				run_start = -1
 
+	# The brooks from the head ponds (made before the rivers, below) down to their heads.
+	for pond in _world_ponds:
+		var centre: Vector2 = Vector2(pond["centre"]) / spacing_m - Vector2(float(_origin_sx), float(_origin_sz))
+		var heads: Array = pond["heads"]
+		var head_levels: Array = pond["head_levels"]
+		var brook_width: float = width_base + width_scale * sqrt(start_km2)
+		var brook_depth: float = depth_base + depth_scale * brook_width
+
+		var paths: Array = pond["paths"]
+
+		for h in range(heads.size()):
+			var path: PackedVector2Array = PackedVector2Array()
+
+			for point in paths[h]:
+				path.append(Vector2(point) / spacing_m - Vector2(float(_origin_sx), float(_origin_sz)))
+
+			_cut_brook_path(carved, centre, pond_radius, float(pond["level"]), path, float(head_levels[h]) - brook_depth, brook_width, brook_depth, slope, start_km2 / cell_km2, best_flow)
+
 	heights = carved
 	longest_river_m = longest
 
@@ -733,10 +779,12 @@ func _carve_guides(rivers: Array) -> void:
 # (owner, 2026-10-18/19: ponds sit on flat ground, never cut deep into a hillside), as
 # {"radius", "bench"} (bench: the height of the flat ground the pond is set in, the middle
 # of its rim), or empty when none fits.
-func _pond_fit(carved: PackedFloat32Array, centre: Vector2, pond_radius: float, wall_fade: float, max_rim_range: float) -> Dictionary:
+func _pond_fit(carved: PackedFloat32Array, centre: Vector2, pond_radius: float, wall_fade: float, max_rim_range: float, shore_m: float) -> Dictionary:
 	for scale in [1.0]:
 		var radius_here: float = pond_radius * scale
-		var margin: float = (radius_here + wall_fade) / spacing_m + 3.0
+		# Kept clear of the strip a neighbor tile also bakes (see _pond_keep_out), so a pond is
+		# made by exactly one tile and the edges still match.
+		var margin: float = (radius_here + shore_m + 4.0 * wall_fade) / spacing_m + 3.0 + _pond_keep_out()
 
 		if centre.x <= margin or centre.y <= margin or centre.x >= float(samples - 1) - margin or centre.y >= float(samples - 1) - margin:
 			continue
@@ -752,11 +800,66 @@ func _pond_fit(carved: PackedFloat32Array, centre: Vector2, pond_radius: float, 
 			natural_high = maxf(natural_high, natural)
 			rim.append(natural)
 
-		if natural_high - natural_low <= max_rim_range:
+		# Owner (2026-10-19): the flat around the pond is big enough to hold it with room for
+		# the stream to run across: the ground a shore's width out may vary twice as much
+		# (the bench levels it).
+		var outer_low: float = INF
+		var outer_high: float = -INF
+
+		for r in range(24):
+			var on_outer: Vector2 = centre + Vector2(cos(TAU * float(r) / 24.0), sin(TAU * float(r) / 24.0)) * (radius_here + shore_m) / spacing_m
+			var outer: float = _bilinear(heights, on_outer)
+			outer_low = minf(outer_low, outer)
+			outer_high = maxf(outer_high, outer)
+
+		if natural_high - natural_low <= max_rim_range and outer_high - outer_low <= 2.0 * max_rim_range:
 			rim.sort()
 			return {"radius": radius_here, "bench": (float(rim[7]) + float(rim[8])) * 0.5}
 
 	return {}
+
+
+# A brook from a world head pond's lip down to its river head, along `path` (pond end
+# first, sample coordinates: the fall line the pond was found along). Its bed falls evenly
+# from just under the lip to the head (it depends only on the path, so every tile cuts the
+# same brook); where the land dips below that it runs on the land.
+func _cut_brook_path(
+	carved: PackedFloat32Array, pond_centre: Vector2, radius_m: float, rim: float, path: PackedVector2Array,
+	head_bed: float, width: float, depth: float, slope: float, strength: float, best_flow: PackedFloat32Array
+) -> void:
+	var start_bed: float = rim - 1.5
+	var end_bed: float = minf(head_bed, start_bed)
+	var reach: float = (width * 0.5 + (depth + 1.0) / slope) / spacing_m + 1.0
+	var total: float = 0.0
+
+	for k in range(path.size() - 1):
+		total += path[k].distance_to(path[k + 1])
+
+	if total <= 0.0:
+		return
+
+	var done: float = 0.0
+
+	for k in range(path.size() - 1):
+		var a: Vector2 = path[k]
+		var b: Vector2 = path[k + 1]
+		var length: float = a.distance_to(b)
+		var steps: int = maxi(int(ceil(length)), 1)
+
+		for n in range(steps + 1):
+			var point: Vector2 = a.lerp(b, float(n) / float(steps))
+			var along: float = (done + length * float(n) / float(steps)) / total
+
+			# Inside the pond the bowl is deeper than the brook anyway.
+			if point.distance_to(pond_centre) * spacing_m < radius_m * 0.8:
+				continue
+
+			if point.x < -reach or point.y < -reach or point.x > float(samples - 1) + reach or point.y > float(samples - 1) + reach:
+				continue
+
+			_stamp_at(carved, point, width, depth, lerpf(start_bed, end_bed, along), slope, strength, best_flow)
+
+		done += length
 
 
 # Levels the ground to `height` out to `radius_m` from `centre` (sample coordinates), then
@@ -781,6 +884,13 @@ func _bench(carved: PackedFloat32Array, centre: Vector2, radius_m: float, height
 			if weight > 0.0:
 				carved[target] = lerpf(here, height, weight)
 
+
+
+# Samples from the frame edge where a neighbor tile's frame also reaches (twice the frame
+# margin: the neighbor's margin overlaps this tile's own samples by one margin). Ponds and
+# their brooks stay out of it.
+func _pond_keep_out() -> float:
+	return float(_rules.get("head_straighten_edge_samples", 180.0))
 
 
 # Uphill direction of a field at a point, measured `reach` samples either side

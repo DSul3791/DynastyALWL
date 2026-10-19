@@ -60,6 +60,7 @@ func setup(world_directory: String, elevation_cell_m: float = 0.0) -> String:
 	river_network = RiverNetworkScript.new()
 	river_network.build(elevation, float(tile_rules["water"]["river_start_km2"]))
 	river_network.set_meander(tile_rules["water"].get("network_meander", []), SeedUtil.rng_for(settings.master_seed, "river_meander"))
+	river_network.place_ponds(tile_rules["water"])
 	tables = TableSetScript.new()
 	var table_problems: Array = tables.load_directory()
 
@@ -169,7 +170,7 @@ func bake(tile: Vector2i) -> Dictionary:
 	var starter: Dictionary = starter_info(tile)
 	var water = TileWaterScript.new()
 	water.setup(settings, tile_rules)
-	water.build(frame_height, starter, river_network.guides_in(frame_rect, 4.0))
+	water.build(frame_height, starter, river_network.guides_in(frame_rect, 4.0), river_network.ponds_in(frame_rect, float(tile_rules["water"].get("head_pond_search_m", 2000.0)) + 700.0))
 	timings["water"] = Time.get_ticks_msec() - clock
 
 	clock = Time.get_ticks_msec()

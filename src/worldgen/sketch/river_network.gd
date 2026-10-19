@@ -35,6 +35,7 @@ var cell_m: float = 160.0
 var origin_x: float = 0.0
 var origin_z: float = 0.0
 var river_cells: int = 0
+var ponds: Array = []              # head ponds (place_ponds): {"centre", "level", "heads"}
 var chains: Array = []             # {"points": PackedVector2Array, "areas": PackedFloat32Array (km2), "bounds": Rect2}
 
 var _receiver: PackedInt32Array = PackedInt32Array()
@@ -420,6 +421,189 @@ static func _cubic(t: float) -> PackedFloat32Array:
 	var t2: float = t * t
 	var t3: float = t2 * t
 	return PackedFloat32Array([-0.5 * t3 + t2 - 0.5 * t, 1.5 * t3 - 2.5 * t2 + 1.0, -1.5 * t3 + 2.0 * t2 + 0.5 * t, 0.5 * t3 - 0.5 * t2])
+
+
+# Owner (2026-10-19): every river starts at a spring in a head pond. Each chain gets one:
+# from its head the pond climbs the smooth land until it finds ground flat enough for the
+# pond and its shore (or, with none within search_m, the flattest place it passed: the tile
+# then builds the plateau), then moves back from the edge of that flat by up to setback_m.
+# Heads that end up close together share a pond. Worked out once for the world, so every
+# tile that touches a pond makes exactly the same one. Call after build().
+func place_ponds(rules: Dictionary) -> void:
+	var radius: float = float(rules.get("head_pond_diameter_m", 70.0)) * 0.5
+	var shore: float = float(rules.get("head_pond_shore_m", 40.0))
+	var back: float = float(rules.get("head_pond_back_m", 30.0))
+	var rim_range: float = float(rules.get("head_pond_max_rim_range_m", 6.0))
+	var search_m: float = float(rules.get("head_pond_search_m", 2000.0))
+	var setback_m: float = float(rules.get("head_pond_setback_m", 60.0))
+	var placed: Array = []
+	ponds = []
+
+	for c in range(chains.size()):
+		var chain: Dictionary = chains[c]
+		var points: PackedVector2Array = chain["points"]
+		var levels: PackedFloat32Array = chain["levels"]
+		# Where a tile's river starts (the meander moves it a little on flat ground).
+		var head: Vector2 = _meandered(points[0])
+		var uphill: Vector2 = _smooth_gradient(head)
+
+		if uphill.length() < 0.0001:
+			uphill = (points[0] - points[mini(1, points.size() - 1)]).normalized()
+
+		var spot: Vector2 = head + uphill.normalized() * back
+		var best_at: int = 0
+		var best_score: float = INF
+		var climbed: float = 0.0
+		var found: bool = false
+		# The way up is the brook's way down: it follows the fall line.
+		var path: PackedVector2Array = PackedVector2Array([head, spot])
+
+		while climbed <= search_m:
+			var score: float = _pond_score(spot, radius, shore, rim_range)
+
+			if score <= 0.0:
+				found = true
+				best_at = path.size() - 1
+				break
+
+			if score < best_score:
+				best_score = score
+				best_at = path.size() - 1
+
+			var rise: Vector2 = _smooth_gradient(spot)
+
+			if rise.length() < 0.002:
+				break
+
+			spot += rise.normalized() * 16.0
+			climbed += 16.0
+			path.append(spot)
+
+		path = path.slice(0, best_at + 1)
+		spot = path[path.size() - 1]
+
+		# Back from the edge of the flat, so the stream crosses it before dropping.
+		if found:
+			var away: Vector2 = (spot - path[maxi(path.size() - 2, 0)]).normalized()
+			var moved: float = 0.0
+
+			while moved < setback_m and _pond_score(spot + away * 8.0, radius, shore, rim_range) <= 0.0:
+				spot += away * 8.0
+				moved += 8.0
+
+			path.append(spot)
+
+		var shared: int = -1
+
+		for p in range(placed.size()):
+			if Vector2(placed[p]).distance_to(spot) < 2.0 * radius + shore:
+				shared = p
+				break
+
+		if shared < 0:
+			placed.append(spot)
+			ponds.append({"centre": spot, "level": _rim_median(spot, radius), "heads": [], "head_levels": [], "paths": []})
+			shared = ponds.size() - 1
+		else:
+			path.append(placed[shared])
+
+		path.reverse()
+		ponds[shared]["paths"].append(path)
+		ponds[shared]["heads"].append(head)
+		ponds[shared]["head_levels"].append(minf(levels[0], smooth_height(head.x, head.y)))
+		chain["pond"] = shared
+
+
+# How far a spot is from fitting a pond: 0 or less when the rim (and, at up to twice the
+# range, the shore's outer edge) is flat enough on the smooth land.
+func _pond_score(spot: Vector2, radius: float, shore: float, rim_range: float) -> float:
+	var low: float = INF
+	var high: float = -INF
+	var outer_low: float = INF
+	var outer_high: float = -INF
+
+	for r in range(16):
+		var direction: Vector2 = Vector2(cos(TAU * float(r) / 16.0), sin(TAU * float(r) / 16.0))
+		var h: float = smooth_height(spot.x + direction.x * radius, spot.y + direction.y * radius)
+		low = minf(low, h)
+		high = maxf(high, h)
+		var o: float = smooth_height(spot.x + direction.x * (radius + shore), spot.y + direction.y * (radius + shore))
+		outer_low = minf(outer_low, o)
+		outer_high = maxf(outer_high, o)
+
+	return maxf((high - low) - rim_range, (outer_high - outer_low) - 2.0 * rim_range)
+
+
+func _rim_median(spot: Vector2, radius: float) -> float:
+	var rim: Array = []
+
+	for r in range(16):
+		rim.append(smooth_height(spot.x + cos(TAU * float(r) / 16.0) * radius, spot.y + sin(TAU * float(r) / 16.0) * radius))
+
+	rim.sort()
+	return (float(rim[7]) + float(rim[8])) * 0.5
+
+
+func _smooth_gradient(point: Vector2) -> Vector2:
+	var e: float = 16.0
+	return Vector2(
+		smooth_height(point.x + e, point.y) - smooth_height(point.x - e, point.y),
+		smooth_height(point.x, point.y + e) - smooth_height(point.x, point.y - e)
+	) / (2.0 * e)
+
+
+# Head ponds near a rectangle (world meters): each as {"centre", "level" (the height of
+# its flat), "heads" (the river heads it feeds), "head_levels" (the land there)}, moved by whole world widths to sit
+# by the rectangle.
+func ponds_in(rect: Rect2, reach_m: float) -> Array:
+	var out: Array = []
+	var world_w: float = float(size_x) * cell_m
+	var world_h: float = float(size_z) * cell_m
+	var wanted: Rect2 = rect.grow(reach_m)
+
+	for pond in ponds:
+		for kx in range(-1, 2):
+			for kz in range(-1, 2):
+				var shift: Vector2 = Vector2(float(kx) * world_w, float(kz) * world_h)
+				var centre: Vector2 = Vector2(pond["centre"]) + shift
+
+				if not wanted.has_point(centre):
+					continue
+
+				var heads: Array = []
+
+				for head in pond["heads"]:
+					var moved_head: Vector2 = Vector2(head) + shift
+
+					# A head copied by the wrap lies within one world of the pond.
+					while moved_head.x - centre.x > world_w * 0.5:
+						moved_head.x -= world_w
+
+					while centre.x - moved_head.x > world_w * 0.5:
+						moved_head.x += world_w
+
+					while moved_head.y - centre.y > world_h * 0.5:
+						moved_head.y -= world_h
+
+					while centre.y - moved_head.y > world_h * 0.5:
+						moved_head.y += world_h
+
+					heads.append(moved_head)
+
+				var paths: Array = []
+
+				for h in range(heads.size()):
+					var path: PackedVector2Array = PackedVector2Array(pond["paths"][h])
+					var delta: Vector2 = Vector2(heads[h]) - Vector2(pond["heads"][h])
+
+					for q in range(path.size()):
+						path[q] += delta
+
+					paths.append(path)
+
+				out.append({"centre": centre, "level": pond["level"], "heads": heads, "head_levels": pond["head_levels"], "paths": paths})
+
+	return out
 
 
 # Turns on the meander. `octaves` is a list of {"wavelength_m", "amplitude_m"}
