@@ -205,6 +205,8 @@ var _tree_materials: Dictionary = {}       # TreeBuilder materials (bark, broad,
 func set_flow_rate(rate: float) -> void:
 	if _water_material != null:
 		_water_material.set_shader_parameter("mud", clampf(log(maxf(rate, 1.0)) / log(8.0), 0.0, 1.0))
+		# Owner (2026-10-19): more flow looks more violent (raging from about x10).
+		_water_material.set_shader_parameter("rough", clampf(log(maxf(rate, 1.0)) / log(10.0), 0.0, 1.0))
 
 
 func setup(tables, tile_rules: Dictionary) -> void:

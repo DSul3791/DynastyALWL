@@ -183,12 +183,19 @@ func _ready() -> void:
 	print("Terrain server listening on port %d with %d worker threads; store %s; spawn %s" % [port, _max_running, store_dir, str(spawn)])
 
 
+# Owner (2026-10-19): spawn here (x, z in meters) instead of the baked spot at the bay
+# head. Set to Vector2.ZERO to use the baked spot again.
+const SPAWN_OVERRIDE := Vector2(53233.0, 68448.0)
+
+
 func _spawn_point(world_dir: String) -> Vector3:
 	var path: String = world_dir + "/tiles/tile_3_4.tile"
 	var point: Vector3 = Vector3(3.5, 0.0, 4.5) * float(settings.tile_size_m)
 	var head: Dictionary = TileFileScript.read_header(path)
 
-	if head["ok"]:
+	if SPAWN_OVERRIDE != Vector2.ZERO:
+		point = Vector3(SPAWN_OVERRIDE.x, 0.0, SPAWN_OVERRIDE.y)
+	elif head["ok"]:
 		var starter: Dictionary = TileFileScript.read_list(path, head["table"], "starter")
 
 		if starter["ok"] and typeof(starter["value"]) == TYPE_DICTIONARY and starter["value"].has("spawn_point"):
