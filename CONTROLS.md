@@ -16,6 +16,7 @@ Tracks what the controls are now and what is planned. Update it whenever a contr
 | G or F | Switch between walking and flying |
 | / (key with ? on it) | Inspection mode on or off (toggle). A brain icon shows near the top. Shows the name and key note of what the crosshair points at, in the middle of the screen: Oak, Beach sand, Coal, Hemlock (Toxic). What you see depends on what your character knows: it may say Unknown or Might be (a wrong guess). Flying (admin) always shows the truth |
 | + / - (also numpad) | Raise or lower how much every spring pours, by about 10 % per press (tuning tool, x0.1 to x20; above x1 rivers and ponds turn muddy brown). Shows "Water flow rate: x1.21 = 12.1 m3/s per spring (191,800 gal/min)" for 3 seconds. The water then runs by real physics for two simulated hours ("running...") and redraws as it moves |
+| X | Admin: dig a 2 m hole where the crosshair meets the ground (up to 80 m away). Water flows into holes that open toward it (testing digging against the water) |
 | F2 | Cycle quality: Low, Medium, High, Ultra (Low is the minimum machine) |
 | Esc | Options menu: Resume, Settings (quality), Advanced (Clear saved ground, which takes effect at once), Quit game. Esc again resumes |
 

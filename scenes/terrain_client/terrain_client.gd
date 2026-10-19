@@ -30,7 +30,7 @@ const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")
 const CompassScript := preload("res://src/client/admin_compass.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 36
+const BUILD := 37
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const KnowledgeScript := preload("res://src/client/inspection_knowledge.gd")
 const StreamScript := preload("res://src/stream/network_voxel_stream.gd")
@@ -451,6 +451,18 @@ func _on_water_rate(rate: float, busy: bool, spring_m3_s: float) -> void:
 
 	if flora != null:
 		flora.set_flow_rate(rate)
+
+
+# Admin tool (owner, 2026-10-19, testing water against digging): X digs a 2 m hole
+# where the crosshair meets the ground, up to 80 m away.
+func _admin_dig() -> void:
+	var origin: Vector3 = camera.global_position
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(origin, origin - camera.global_transform.basis.z * 80.0)
+	query.exclude = [body.get_rid()]
+	var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(query)
+
+	if not hit.is_empty():
+		net.dig.rpc_id(1, hit["position"], 2.0)
 
 
 func _thousands(value: int) -> String:
@@ -956,6 +968,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			net.step_water_rate.rpc_id(1, 1)
 		elif event.keycode == KEY_MINUS or event.keycode == KEY_KP_SUBTRACT:
 			net.step_water_rate.rpc_id(1, -1)
+		elif event.keycode == KEY_X:
+			_admin_dig()
 		elif event.keycode == KEY_F2:
 			quality = (quality + 1) % QUALITY_NAMES.size()
 			_apply_quality()
