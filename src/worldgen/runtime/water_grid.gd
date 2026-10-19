@@ -314,8 +314,28 @@ const FLOW_SLOPE_FULL := 0.05   # a surface slope this steep is drawn as the fas
 # The vertex colour for a point: downhill direction and steepness of the water surface
 # around grid point (i, j), from the levels on either side.
 static func _flow_color(levels: PackedFloat32Array, i: int, j: int, count: int, spacing: float, alpha: float) -> Color:
-	var gx: float = _slope_along(levels, i, j, 1, 0, count, spacing)
-	var gz: float = _slope_along(levels, i, j, 0, 1, count, spacing)
+	# Averaged over the 3 x 3 points around, so the flow turns smoothly from square to
+	# square (owner, 2026-10-19: sharp changes drew zigzags and square seams in the ripples).
+	var gx: float = 0.0
+	var gz: float = 0.0
+	var used: int = 0
+
+	for dj in range(-1, 2):
+		for di in range(-1, 2):
+			var ii: int = i + di
+			var jj: int = j + dj
+
+			if ii < 0 or jj < 0 or ii >= count or jj >= count or is_nan(levels[jj * count + ii]):
+				continue
+
+			gx += _slope_along(levels, ii, jj, 1, 0, count, spacing)
+			gz += _slope_along(levels, ii, jj, 0, 1, count, spacing)
+			used += 1
+
+	if used > 0:
+		gx /= float(used)
+		gz /= float(used)
+
 	var scale: float = 0.5 / FLOW_SLOPE_FULL
 	return Color(0.5 + clampf(-gx * scale, -0.5, 0.5), 0.5 + clampf(-gz * scale, -0.5, 0.5), 0.0, alpha)
 

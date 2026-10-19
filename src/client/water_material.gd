@@ -90,14 +90,12 @@ void fragment() {
 	vec3 up = (INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz;
 	NORMAL = normalize((VIEW_MATRIX * vec4(normalize(up - vec3(bump.x, 0.0, bump.y)), 0.0)).xyz);
 
-	// Streaks of foam where the water runs fast, stretched along the flow.
-	vec2 along = steep > 0.001 ? normalize(flow) : vec2(1.0, 0.0);
-	vec2 streak_p = vec2(dot(local, along) * 0.25, dot(local, vec2(-along.y, along.x)) * 1.5);
-	float carried = length(velocity) * cycle * 0.25;
-	float streaks = smoothstep(0.55, 0.72, mix(ripples(streak_p - vec2(phase0 * carried, 0.0)), ripples(streak_p + 11.0 - vec2(phase1 * carried, 0.0)), blend));
-	// Foam follows the water speed (about the square root of the slope): riffles on ordinary
-	// streams already show some, fast water much more (owner, 2026-10-19: no foam was seen).
-	float speed = sqrt(steep);
+	// Patches of foam carried by the flow (the same moving pattern as the ripples, coarser).
+	// Owner (2026-10-19): stretching the foam along the local flow direction drew zigzags,
+	// because the direction changes from square to square; carried noise has no seams.
+	float carried_a = ripples(local / 3.0 - velocity * phase0 * cycle / 3.0);
+	float carried_b = ripples(local / 3.0 + 13.0 - velocity * phase1 * cycle / 3.0);
+	float streaks = smoothstep(0.58, 0.75, mix(carried_a, carried_b, blend));
 	float foam = streaks * smoothstep(mix(0.2, 0.05, rough), mix(0.55, 0.3, rough), speed) * step(0.001, steep);
 	// White water breaking on the fastest stretches when the flow is high.
 	float white = mix(ripples(p * 1.7 - velocity * phase0 * cycle * 1.7 / scale), ripples(p * 1.7 + 5.0 - velocity * phase1 * cycle * 1.7 / scale), blend);
