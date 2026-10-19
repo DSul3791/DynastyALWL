@@ -1,7 +1,7 @@
 {
 	"table": "flora",
 	"format_version": 1,
-	"note": "IDs are append-only. Never renumber or reuse an ID; retire an entry with \"retired\": true and take the next ID from next_id for new entries. Placement (plan step 15) reads per_hectare (plants per hectare by biome name, before the density setting in tile_rules.json runtime_flora), moisture (0 to 255 map value), max_slope_deg, altitude_m (ground height above sea level) and water (water classes it may stand in; empty = dry land only). crown_m is the spacing radius of trees and shrubs, trunk_m the collision radius (0 = walk through). yields are names for the harvesting tables to come. season: when the main yield can be gathered (spring, summer, autumn, winter or all). rarity: common, uncommon, rare (a label for players; how often a plant appears comes from per_hectare). uses: what the yields are good for (food, seasoning, sauce, jam, tea, brewing, medicine, ointment, potion, poison, dye, fibre, timber and so on). properties: effects for the crafting tables to come (wound_healing, fever, sleep, toxic, ...). fantasy: true marks invented species (the owner chose real plus fantasy plants, 2026-10-16); they are rarer than real plants and carry magical properties (glow, arcane, revival, ghost_warding, water_breathing and so on). rarity can also be very_rare or legendary. Optional: time_of_day (dawn, dusk or night: when it can be found or gathered), discovery (true: rare enough that finding one is worth recording and protecting), bloom_years (flowers only every N game years). Placement does not read these yet. model (trees): a model of its own in src/flora/tree_builder.gd (for example balsam_fir); without it the shape picks the model. autumn_colors: the autumn leaf colors this species picks from (birch: golden yellow); without it a hardwood takes one from the shared autumn palette in flora_view.gd. A conifer with autumn_colors (wardpine) turns color like a hardwood. young_below_m (trees with a young and a mature model, beech): trees shorter than this use the young variants. leaf (trees): a leaf texture of its own (oak: lobed leaves, leaf_oak.png); without it the shape picks one. glow (trees): an emissive bark or leaf glow color; glow_energy and glow_height set the warm light near the player (everember, witness tree). leaf_glow: the leaves glow at night (witness tree). grove: grows only in groves (everember; see flora_placer.gd). place_first: a landmark tree that claims its ground before the common woods (witness tree; grove species always do). young_share and young_height_m: that share of the trees are young, with heights from that range. young_color and young_m (trees): a tree at or below young_m[0] meters takes young_color, darkening to color by young_m[1]. look_alikes: names of species this one might be mistaken for on sight (real-world or visual resemblance); the inspection check draws a wrong guess from this list. familiarity (0 to 100, on every inspectable table): the base chance in percent that a character already recognizes the thing the first time they see it; it feeds the inspection memory check. High for everyday things and for famous or legendary ones, low for obscure ones.",
+	"note": "IDs are append-only. Never renumber or reuse an ID; retire an entry with \"retired\": true and take the next ID from next_id for new entries. Placement (plan step 15) reads per_hectare (plants per hectare by biome name, before the density setting in tile_rules.json runtime_flora), moisture (0 to 255 map value), max_slope_deg, altitude_m (ground height above sea level) and water (water classes it may stand in; empty = dry land only). crown_m is the spacing radius of trees and shrubs, trunk_m the collision radius (0 = walk through). yields are names for the harvesting tables to come. season: when the main yield can be gathered (spring, summer, autumn, winter or all). rarity: common, uncommon, rare (a label for players; how often a plant appears comes from per_hectare). uses: what the yields are good for (food, seasoning, sauce, jam, tea, brewing, medicine, ointment, potion, poison, dye, fibre, timber and so on). properties: effects for the crafting tables to come (wound_healing, fever, sleep, toxic, ...). fantasy: true marks invented species (the owner chose real plus fantasy plants, 2026-10-16); they are rarer than real plants and carry magical properties (glow, arcane, revival, ghost_warding, water_breathing and so on). rarity can also be very_rare or legendary. Optional: time_of_day (dawn, dusk or night: when it can be found or gathered), discovery (true: rare enough that finding one is worth recording and protecting), bloom_years (flowers only every N game years). Placement does not read these yet. model (trees): a model of its own in src/flora/tree_builder.gd (for example balsam_fir); without it the shape picks the model. autumn_colors: the autumn leaf colors this species picks from (birch: golden yellow); without it a hardwood takes one from the shared autumn palette in flora_view.gd. A conifer with autumn_colors (wardpine) turns color like a hardwood. young_below_m (trees with a young and a mature model, beech): trees shorter than this use the young variants. leaf (trees): a leaf texture of its own (oak: lobed leaves, leaf_oak.png); without it the shape picks one. glow (trees): an emissive bark or leaf glow color; glow_energy and glow_height set the warm light near the player (everember, witness tree). leaf_glow: the leaves glow at night (witness tree). grove: grows only in groves (everember; see flora_placer.gd). place_first: a landmark tree that claims its ground before the common woods (witness tree; grove species always do). canopy (trees): \"dense\" (default; little light below) or \"light\" (birch, alder, pines, fruit trees); young trees grow under a light canopy only. shade_tolerant: young ones grow fully under a light canopy (firs, beech). stand: dense stands of this species inside circles on a world grid (every_m, chance, radius_m, spacing_m apart, fill share, height scale), on top of the per-hectare trees (owner, 2026-10-18: birch in groups of hundreds about 10 ft apart; alder and young firs in thickets at least 6 ft apart). young_share and young_height_m: that share of the trees are young, with heights from that range. young_color and young_m (trees): a tree at or below young_m[0] meters takes young_color, darkening to color by young_m[1]. look_alikes: names of species this one might be mistaken for on sight (real-world or visual resemblance); the inspection check draws a wrong guess from this list. familiarity (0 to 100, on every inspectable table): the base chance in percent that a character already recognizes the thing the first time they see it; it feeds the inspection memory check. High for everyday things and for famous or legendary ones, low for obscure ones.",
 	"next_id": 127,
 	"entries": [
 		{
@@ -84,6 +84,7 @@
 				[0.82, 0.38, 0.12],
 				[0.92, 0.62, 0.2]
 			],
+			"shade_tolerant": true,
 			"height_m": [
 				6,
 				28
@@ -145,6 +146,8 @@
 				[0.92, 0.80, 0.22],
 				[0.88, 0.60, 0.10]
 			],
+			"canopy": "light",
+			"stand": {"every_m": 220, "chance": 0.45, "radius_m": [14, 32], "spacing_m": 3.0, "fill": 0.85, "height": [0.55, 0.95]},
 			"height_m": [9, 18],
 			"crown_m": 2.8,
 			"trunk_m": 0.2,
@@ -154,10 +157,10 @@
 				0.24
 			],
 			"per_hectare": {
-				"mixed_forest": 40,
-				"boreal_forest": 35,
-				"temperate_forest": 8,
-				"heath": 4
+				"mixed_forest": 13.33,
+				"boreal_forest": 11.67,
+				"temperate_forest": 2.67,
+				"heath": 1.33
 			},
 			"moisture": [
 				80,
@@ -203,6 +206,7 @@
 			"kind": "tree",
 			"shape": "conifer",
 			"model": "scots_pine",
+			"canopy": "light",
 			"height_m": [20, 35],
 			"crown_m": 3.2,
 			"trunk_m": 0.35,
@@ -256,6 +260,8 @@
 			"kind": "tree",
 			"shape": "conifer",
 			"model": "spruce",
+			"shade_tolerant": true,
+			"stand": {"every_m": 300, "chance": 0.3, "radius_m": [10, 24], "spacing_m": 2.0, "fill": 0.85, "height": [0.1, 0.3]},
 			"height_m": [28, 48],
 			"crown_m": 3.0,
 			"trunk_m": 0.35,
@@ -314,6 +320,8 @@
 				[0.78, 0.7, 0.18],
 				[0.6, 0.6, 0.24]
 			],
+			"canopy": "light",
+			"stand": {"every_m": 200, "chance": 0.4, "radius_m": [10, 24], "spacing_m": 2.0, "fill": 0.9, "height": [0.4, 0.8]},
 			"height_m": [
 				8,
 				18
@@ -381,6 +389,7 @@
 				[0.98, 0.84, 0.2],
 				[0.88, 0.66, 0.14]
 			],
+			"canopy": "light",
 			"height_m": [
 				5,
 				16
@@ -437,6 +446,7 @@
 			"display": "Coconut palm",
 			"kind": "tree",
 			"shape": "palm",
+			"canopy": "light",
 			"height_m": [
 				10,
 				22
@@ -538,6 +548,7 @@
 			"display": "Acacia",
 			"kind": "tree",
 			"shape": "broadleaf",
+			"canopy": "light",
 			"height_m": [
 				6,
 				12
@@ -1982,6 +1993,7 @@
 				[0.98, 0.56, 0.1],
 				[0.9, 0.22, 0.08]
 			],
+			"canopy": "light",
 			"height_m": [
 				6,
 				14
@@ -2283,6 +2295,7 @@
 				[0.95, 0.75, 0.2],
 				[0.8, 0.5, 0.14]
 			],
+			"canopy": "light",
 			"height_m": [
 				4,
 				10
@@ -2346,6 +2359,7 @@
 				[0.94, 0.8, 0.22],
 				[0.78, 0.62, 0.18]
 			],
+			"canopy": "light",
 			"height_m": [
 				4,
 				15
@@ -2406,6 +2420,7 @@
 				[0.82, 0.18, 0.06],
 				[0.96, 0.76, 0.18]
 			],
+			"canopy": "light",
 			"height_m": [
 				4,
 				18
@@ -4605,6 +4620,7 @@
 			"display": "Date palm",
 			"kind": "tree",
 			"shape": "palm",
+			"canopy": "light",
 			"height_m": [
 				12,
 				22
@@ -5062,6 +5078,7 @@
 				[0.96, 0.6, 0.12],
 				[0.84, 0.3, 0.06]
 			],
+			"canopy": "light",
 			"height_m": [4, 20],
 			"crown_m": 7.0,
 			"trunk_m": 0.35,
@@ -5239,6 +5256,7 @@
 				[0.98, 0.7, 0.12],
 				[0.9, 0.22, 0.06]
 			],
+			"shade_tolerant": true,
 			"height_m": [18, 36],
 			"crown_m": 3.0,
 			"trunk_m": 0.4,
@@ -6442,6 +6460,7 @@
 				[0.95, 0.7, 0.18],
 				[0.86, 0.5, 0.12]
 			],
+			"canopy": "light",
 			"height_m": [5, 26],
 			"crown_m": 4.0,
 			"trunk_m": 0.15,
@@ -7126,6 +7145,8 @@
 			"kind": "tree",
 			"shape": "conifer",
 			"model": "balsam_fir",
+			"shade_tolerant": true,
+			"stand": {"every_m": 240, "chance": 0.4, "radius_m": [10, 26], "spacing_m": 2.0, "fill": 0.9, "height": [0.2, 0.5]},
 			"height_m": [
 				6,
 				21
