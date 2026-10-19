@@ -19,6 +19,7 @@ extends Node3D
 
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const TreeBuilder := preload("res://src/flora/tree_builder.gd")
+const WaterMaterial := preload("res://src/client/water_material.gd")
 const KIND_TREE := 0
 const KIND_SHRUB := 1
 const KIND_PLANT := 2
@@ -195,7 +196,7 @@ var _jobs: Array = []                  # chunk drawings being put in the scene p
 var _trunk_material: StandardMaterial3D
 var _softwood_material: StandardMaterial3D   # conifer trunks: dark brown
 var _hardwood_material: StandardMaterial3D   # broadleaf trunks: gray
-var _water_material: StandardMaterial3D
+var _water_material: ShaderMaterial
 var _tree_materials: Dictionary = {}       # TreeBuilder materials (bark, broad, conifer, palm)
 
 
@@ -221,14 +222,7 @@ func setup(tables, tile_rules: Dictionary) -> void:
 	_hardwood_material = StandardMaterial3D.new()
 	_hardwood_material.albedo_color = Color(0.5, 0.5, 0.5)
 	_hardwood_material.roughness = 1.0
-	_water_material = StandardMaterial3D.new()
-	_water_material.albedo_color = Color(0.13, 0.30, 0.34, 0.80)
-	_water_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	_water_material.roughness = 0.08
-	_water_material.metallic_specular = 0.8
-	_water_material.cull_mode = BaseMaterial3D.CULL_DISABLED
-	_water_material.disable_receive_shadows = true     # no striped terrain shadow acne on the surface
-	_water_material.vertex_color_use_as_albedo = true
+	_water_material = WaterMaterial.make()     # the same look as the sea (src/client/water_material.gd)
 
 	for entry in tables.get_entries("flora"):
 		if entry.get("retired", false):

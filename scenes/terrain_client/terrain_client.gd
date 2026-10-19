@@ -29,6 +29,7 @@ extends Node
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")
 const CompassScript := preload("res://src/client/admin_compass.gd")
+const WaterMaterial := preload("res://src/client/water_material.gd")
 const KnowledgeScript := preload("res://src/client/inspection_knowledge.gd")
 const StreamScript := preload("res://src/stream/network_voxel_stream.gd")
 const CacheScript := preload("res://src/stream/client_block_cache.gd")
@@ -910,10 +911,7 @@ func _make_environment(root: Node3D) -> void:
 	var plane: PlaneMesh = PlaneMesh.new()
 	plane.size = Vector2(12000.0, 12000.0)
 	sea.mesh = plane
-	var water: StandardMaterial3D = StandardMaterial3D.new()
-	water.albedo_color = Color(0.12, 0.32, 0.45, 0.8)
-	water.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	sea.material_override = water
+	sea.material_override = WaterMaterial.make()   # the same look as the rivers
 	root.add_child(sea)
 
 

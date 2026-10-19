@@ -24,6 +24,7 @@ extends Node3D
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
 const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings.gd")
+const WaterMaterial := preload("res://src/client/water_material.gd")
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const GroundMaterialScript := preload("res://src/client/ground_material.gd")
@@ -198,11 +199,7 @@ func _make_environment() -> void:
 	var plane: PlaneMesh = PlaneMesh.new()
 	plane.size = Vector2(12000.0, 12000.0)
 	sea.mesh = plane
-	var water: StandardMaterial3D = StandardMaterial3D.new()
-	water.albedo_color = Color(0.12, 0.32, 0.45, 0.8)
-	water.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	water.roughness = 0.1
-	sea.material_override = water
+	sea.material_override = WaterMaterial.make()   # the same look as the rivers
 	add_child(sea)
 
 
