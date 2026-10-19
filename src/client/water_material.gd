@@ -94,15 +94,18 @@ void fragment() {
 	vec2 along = steep > 0.001 ? normalize(flow) : vec2(1.0, 0.0);
 	vec2 streak_p = vec2(dot(local, along) * 0.25, dot(local, vec2(-along.y, along.x)) * 1.5);
 	float carried = length(velocity) * cycle * 0.25;
-	float streaks = smoothstep(0.62, 0.9, mix(ripples(streak_p - vec2(phase0 * carried, 0.0)), ripples(streak_p + 11.0 - vec2(phase1 * carried, 0.0)), blend));
-	float foam = streaks * smoothstep(mix(0.15, 0.0, rough), mix(0.8, 0.25, rough), steep) * step(0.001, steep);
+	float streaks = smoothstep(0.55, 0.72, mix(ripples(streak_p - vec2(phase0 * carried, 0.0)), ripples(streak_p + 11.0 - vec2(phase1 * carried, 0.0)), blend));
+	// Foam follows the water speed (about the square root of the slope): riffles on ordinary
+	// streams already show some, fast water much more (owner, 2026-10-19: no foam was seen).
+	float speed = sqrt(steep);
+	float foam = streaks * smoothstep(mix(0.2, 0.05, rough), mix(0.55, 0.3, rough), speed) * step(0.001, steep);
 	// White water breaking on the fastest stretches when the flow is high.
 	float white = mix(ripples(p * 1.7 - velocity * phase0 * cycle * 1.7 / scale), ripples(p * 1.7 + 5.0 - velocity * phase1 * cycle * 1.7 / scale), blend);
-	foam = max(foam, smoothstep(0.5, 0.8, white) * rough * smoothstep(0.05, 0.4, steep));
+	foam = max(foam, smoothstep(0.52, 0.7, white) * rough * smoothstep(0.1, 0.4, speed));
 
 	vec3 water = mix(mix(shallow_color, deep_color, murk), mud_color * mix(1.0, 0.7, murk), mud);
-	ALBEDO = mix(water, mix(foam_color, mud_color * 1.6, mud * 0.6), foam * 0.5);
-	ALPHA = max(mix(edge_alpha, 0.97, murk), foam * 0.8) * sheet_alpha;
+	ALBEDO = mix(water, mix(foam_color, mud_color * 1.6, mud * 0.6), foam * 0.85);
+	ALPHA = max(mix(edge_alpha, 0.97, murk), foam * 0.9) * sheet_alpha;
 	ROUGHNESS = 0.08 + 0.3 * foam;
 	SPECULAR = 0.6;
 }
