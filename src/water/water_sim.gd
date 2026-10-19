@@ -130,6 +130,46 @@ func set_ground(i: int, j: int, height: float) -> void:
 			_wake(n)
 
 
+# A dug sphere (world meters, `origin` = world position of cell 0, 0): every cell whose
+# square the hole opens from above sinks to the deepest floor of the hole inside that
+# square. Owner (2026-10-19, step 1 of the water plan): digging reaches the water. On the
+# 8 m squares a narrow ditch counts as square-wide until the fine 1 m water arrives.
+# Returns how many cells changed.
+func dig(center: Vector3, radius: float, origin: Vector2) -> int:
+	var half: float = spacing_m * 0.5
+	var low_i: int = maxi(int(floor((center.x - radius - origin.x) / spacing_m)), 0)
+	var high_i: int = mini(int(ceil((center.x + radius - origin.x) / spacing_m)), side - 1)
+	var low_j: int = maxi(int(floor((center.z - radius - origin.y) / spacing_m)), 0)
+	var high_j: int = mini(int(ceil((center.z + radius - origin.y) / spacing_m)), side - 1)
+	var changed: int = 0
+
+	for j in range(low_j, high_j + 1):
+		for i in range(low_i, high_i + 1):
+			var cx: float = origin.x + float(i) * spacing_m
+			var cz: float = origin.y + float(j) * spacing_m
+			# The point of this cell's square nearest the hole's centre.
+			var near: Vector2 = Vector2(clampf(center.x, cx - half, cx + half), clampf(center.z, cz - half, cz + half))
+			var reach2: float = radius * radius - near.distance_squared_to(Vector2(center.x, center.z))
+
+			if reach2 <= 0.0:
+				continue
+
+			var reach: float = sqrt(reach2)
+			var k: int = j * side + i
+
+			# Only a hole that opens to the air changes the water's ground (not a tunnel).
+			if center.y + reach < ground[k] or ground[k] <= 0.0:
+				continue
+
+			var floor_y: float = center.y - reach
+
+			if floor_y < ground[k]:
+				set_ground(i, j, floor_y)
+				changed += 1
+
+	return changed
+
+
 func total_volume() -> float:
 	var total: float = 0.0
 

@@ -150,6 +150,43 @@ func _initialize() -> void:
 	print("  channel at 10 m3/s: %.2f m deep, %d wet squares; at 0.1: %.2f m; at 5x: %.2f m, %d wet squares" % [normal_depth, normal_wet, low_depth, flood.depth[20 * side + 20], flood.wet_cells()])
 	_check(flood.depth[20 * side + 20] > normal_depth * 1.5 and flood.wet_cells() > normal_wet, "at 5x the river rises and spreads (%.2f m, %d wet squares from %d)" % [flood.depth[20 * side + 20], flood.wet_cells(), normal_wet])
 
+	# 7. Digging (owner, 2026-10-19): a ditch dug from a walled pond down the slope drains it.
+	var land: PackedFloat32Array = PackedFloat32Array()
+	land.resize(side * side)
+
+	for j in range(side):
+		for i in range(side):
+			land[j * side + i] = 30.0 - float(i) * 0.5          # slopes down to the east
+
+	for j in range(15, 26):
+		for i in range(5, 16):
+			land[j * side + i] = 24.0                          # a hollow (the pond floor)
+
+	for j in range(14, 27):
+		for i in range(4, 17):
+			if j == 14 or j == 26 or i == 4 or i == 16:
+				land[j * side + i] = 32.0                      # its walls
+
+	var pond = WaterSim.new()
+	pond.setup(side, 8.0, land)
+
+	for j in range(15, 26):
+		for i in range(5, 16):
+			pond.add_water(i, j, 3.0)
+
+	_run_s(pond, 600.0)
+	var kept: float = pond.depth[20 * side + 10]
+	_check(kept > 2.5, "a walled pond keeps its water (%.2f m)" % kept)
+	# Dig through the east wall and on down the slope (2 m holes, 4 m apart).
+	var origin: Vector2 = Vector2.ZERO
+
+	for step_m in range(0, 80, 4):
+		var x: float = 16.0 * 8.0 - 8.0 + float(step_m)
+		pond.dig(Vector3(x, land[20 * side + int(x / 8.0)] - 0.5, 20.0 * 8.0), 2.5, origin)
+
+	_run_s(pond, 3000.0)
+	_check(pond.depth[20 * side + 10] < kept - 0.5, "a ditch dug from the pond drains it (%.2f m from %.2f m)" % [pond.depth[20 * side + 10], kept])
+
 	# 10. The drawing levels kept up to date from changed squares match a full recount.
 	var inc = WaterSim.new()
 	var hill: PackedFloat32Array = _flat(31, 20.0)

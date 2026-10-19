@@ -34,6 +34,7 @@ var _quit: bool = false
 var _pending: PackedFloat32Array = PackedFloat32Array()
 var _ticks: int = 0
 var _dry_start: bool = false
+var _digs: Array = []              # [center, radius] waiting for the water thread
 
 
 # With dry_start the tile begins with no fresh water at all (only the sea): the springs
@@ -71,6 +72,14 @@ func step_rate(direction: int) -> float:
 	return now
 
 
+# A player dug a hole: the water thread lowers its ground there and runs again.
+func dig(center: Vector3, radius: float) -> void:
+	_mutex.lock()
+	_digs.append([center, radius])
+	_budget = maxf(_budget, RUN_SECONDS)
+	_mutex.unlock()
+
+
 # New drawing levels from the water thread, or empty when there is nothing new.
 func take_levels() -> PackedFloat32Array:
 	_mutex.lock()
@@ -96,6 +105,8 @@ func _run() -> void:
 		var quit: bool = _quit
 		var run: bool = _budget > 0.0
 		var multiplier: float = rate
+		var digs: Array = _digs
+		_digs = []
 
 		busy = run
 		_mutex.unlock()
@@ -106,6 +117,10 @@ func _run() -> void:
 		if not run:
 			OS.delay_msec(100)
 			continue
+
+		for hole in digs:
+			var cells: int = sim.dig(hole[0], hole[1], Vector2(data.x0, data.z0))
+			print("water: a dig at %s lowered %d water squares" % [str(hole[0]), cells])
 
 		# The rate scales the springs only; the water itself moves by gravity and
 		# friction, so a low rate drains the rivers to a trickle (owner, 2026-10-19).

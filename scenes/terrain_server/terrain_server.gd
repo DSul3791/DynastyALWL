@@ -387,6 +387,9 @@ func _on_dig_requested(_peer_id: int, center: Vector3, radius: float) -> void:
 
 	net.dug.rpc(center, radius)
 
+	if water_live != null:
+		water_live.dig(center, radius)
+
 	print("Dug a %.1f m sphere at %s; tiles %s" % [radius, str(center), str(tiles)])
 
 
