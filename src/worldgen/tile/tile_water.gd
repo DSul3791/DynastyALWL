@@ -34,6 +34,7 @@ var river_cells: int = 0
 var lakes: Array = []            # {"cells", "area_m2", "surface_m", "depth_m"}
 var filled_cells: int = 0
 var longest_river_m: float = 0.0
+var max_bed_rise_m: float = 0.0       # largest climb of any river bed toward the sea (0: none)
 var _route_clock: int = 0
 var _source_surface_m: float = 0.0
 var starter_path: PackedVector2Array = PackedVector2Array()   # sample coordinates, source to mouth
@@ -491,7 +492,7 @@ func _carve_guides(rivers: Array) -> void:
 	var slope: float = float(_rules["bank_slope"])
 	var start_km2: float = float(_rules["river_start_km2"])
 	var window_m: float = float(_rules.get("bed_window_m", 500.0))
-	var extra_cut: float = float(_rules.get("bed_extra_cut_m", 10.0))
+	var min_fall: float = float(_rules.get("river_min_fall", 0.001))
 	var taper_m: float = float(_rules.get("head_taper_m", 140.0))
 	var taper_min: float = float(_rules.get("head_taper_min", 0.4))
 	var pond_radius: float = float(_rules.get("head_pond_diameter_m", 30.0)) * 0.5
@@ -573,6 +574,8 @@ func _carve_guides(rivers: Array) -> void:
 		var deque: PackedInt32Array = PackedInt32Array()
 		var head_at: int = 0
 		var run_length: float = 0.0
+		var last_bed: float = INF
+		var last_along: float = 0.0
 
 		for k in range(count):
 			if k > 0:
@@ -591,8 +594,15 @@ func _carve_guides(rivers: Array) -> void:
 			deque.append(k)
 			var bed: float = low_values[deque[head_at]]
 
-			# A river crossing a peak must not cut a gorge far deeper than its own depth.
-			bed = maxf(bed, low_values[k] - extra_cut)
+			# Owner (2026-10-18): a river only ever runs downhill, falling at least min_fall
+			# per meter from its source to the sea. Where the ground rises the river cuts
+			# through it instead of climbing.
+			if last_bed < INF:
+				bed = minf(bed, last_bed - min_fall * (run_length - last_along))
+				max_bed_rise_m = maxf(max_bed_rise_m, bed - last_bed)
+
+			last_bed = bed
+			last_along = run_length
 			var strength: float = areas[k] / cell_km2
 
 			# Water falling steeply spreads into a wider, shallower sheet.

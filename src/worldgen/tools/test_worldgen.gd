@@ -1144,6 +1144,7 @@ func _test_tile_water(settings, elevation, sketch: Dictionary) -> void:
 		Time.get_ticks_msec() - started, water.river_cells, water.lakes.size()
 	])
 	_check(water.river_cells > 500, "the tile has rivers")
+	_check(water.max_bed_rise_m <= 0.0, "river beds only run downhill toward the sea (largest climb %.2f m)" % water.max_bed_rise_m)
 
 	var low_lake: bool = false
 
