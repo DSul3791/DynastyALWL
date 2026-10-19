@@ -35,6 +35,8 @@ var lakes: Array = []            # {"cells", "area_m2", "surface_m", "depth_m"}
 var filled_cells: int = 0
 var longest_river_m: float = 0.0
 var max_bed_rise_m: float = 0.0       # largest climb of any river bed toward the sea (0: none)
+var ponds_made: int = 0               # head ponds stamped
+var pond_cut_max_m: float = 0.0       # deepest cut a head pond made into the ground
 var _route_clock: int = 0
 var _source_surface_m: float = 0.0
 var starter_path: PackedVector2Array = PackedVector2Array()   # sample coordinates, source to mouth
@@ -118,6 +120,7 @@ func build(height_map, starter: Dictionary = {}, guides: Variant = null) -> void
 			rivers.append(_starter_guide())
 
 		_carve_guides(rivers)
+		print("  water: %d head ponds, deepest pond cut %.1f m, largest river bed climb %.2f m" % [ponds_made, pond_cut_max_m, max_bed_rise_m])
 
 
 static func _log(message: String, since_ms: int) -> void:
@@ -498,6 +501,8 @@ func _carve_guides(rivers: Array) -> void:
 	var pond_radius: float = float(_rules.get("head_pond_diameter_m", 30.0)) * 0.5
 	var pond_depth: float = float(_rules.get("head_pond_depth_m", 10.0))
 	var pond_back: float = float(_rules.get("head_pond_back_m", 50.0))
+	var max_rim_range: float = float(_rules.get("head_pond_max_rim_range_m", 15.0))
+	var wall_fade: float = float(_rules.get("head_pond_wall_fade_m", 60.0))
 	var widen_from: float = float(_rules.get("fall_widen_from_slope", 0.15))
 	var widen_rate: float = float(_rules.get("fall_widen_rate", 3.0))
 	var widen_max: float = float(_rules.get("fall_widen_max", 2.5))
@@ -635,18 +640,36 @@ func _carve_guides(rivers: Array) -> void:
 
 				if uphill.length() > 0.001:
 					var centre: Vector2 = head_point + uphill.normalized() * pond_back / spacing_m
-					var margin: float = pond_radius / spacing_m + 3.0
 
-					if centre.x > margin and centre.y > margin and centre.x < float(samples - 1) - margin and centre.y < float(samples - 1) - margin:
+					# Owner (2026-10-18/19): ponds sit on flat ground, never cut deep into a hillside.
+					# The pond takes the largest size whose rim varies by at most max_rim_range on the
+					# natural ground (full, half or a quarter across); with none, no pond.
+					for scale in [1.0, 0.5, 0.25]:
+						var radius_here: float = pond_radius * scale
+						var margin: float = (radius_here + wall_fade) / spacing_m + 3.0
+
+						if centre.x <= margin or centre.y <= margin or centre.x >= float(samples - 1) - margin or centre.y >= float(samples - 1) - margin:
+							continue
+
 						var rim_low: float = INF
+						var natural_low: float = INF
+						var natural_high: float = -INF
 
 						for r in range(16):
-							var a_r: float = TAU * float(r) / 16.0
-							# Measured on the carved ground: the brook's own channel is the lip, so a
-							# shallow pond (10 m, owner 2026-10-18) is not drained by its deeper river cut.
-							rim_low = minf(rim_low, _bilinear(carved, centre + Vector2(cos(a_r), sin(a_r)) * pond_radius / spacing_m))
+							var on_rim: Vector2 = centre + Vector2(cos(TAU * float(r) / 16.0), sin(TAU * float(r) / 16.0)) * radius_here / spacing_m
+							var natural: float = _bilinear(heights, on_rim)
+							natural_low = minf(natural_low, natural)
+							natural_high = maxf(natural_high, natural)
+							# The brook's channel is the lip (so the pond spills into it), but a
+							# deep cut downstream may not pull the lip far under the ground.
+							rim_low = minf(rim_low, maxf(_bilinear(carved, on_rim), natural - 4.0))
 
-						_stamp_pond(carved, centre, pond_radius, rim_low - pond_depth, rim_low, areas[0] / cell_km2, best_flow)
+						if natural_high - natural_low > max_rim_range:
+							continue
+
+						ponds_made += 1
+						_stamp_pond(carved, centre, radius_here, rim_low - pond_depth, rim_low, areas[0] / cell_km2, best_flow, max_rim_range + 4.0, wall_fade)
+						break
 
 		# A plunge pool at the foot of every steep drop (waterfall or cascade):
 		# the water scours a basin where it lands.
@@ -736,9 +759,9 @@ func _stamp_at(
 # or knife edge, owner 2026-10-18).
 func _stamp_pond(
 	carved: PackedFloat32Array, center: Vector2, radius_m: float, bottom: float, rim_low: float,
-	strength: float, best_flow: PackedFloat32Array
+	strength: float, best_flow: PackedFloat32Array, max_cut: float, fade_m: float
 ) -> void:
-	var reach_cells: float = 3.0 * radius_m / spacing_m
+	var reach_cells: float = (radius_m + fade_m) / spacing_m + 2.0
 	var first_x: int = maxi(int(ceil(center.x - reach_cells)), 1)
 	var last_x: int = mini(int(floor(center.x + reach_cells)), samples - 2)
 	var first_z: int = maxi(int(ceil(center.y - reach_cells)), 1)
@@ -748,15 +771,19 @@ func _stamp_pond(
 		for nc in range(first_x, last_x + 1):
 			var distance: float = sqrt(pow(float(nc) - center.x, 2.0) + pow(float(nr) - center.y, 2.0)) * spacing_m
 
-			if distance > 3.0 * radius_m or _ocean[nr * samples + nc] == 1:
+			if distance > radius_m + fade_m or _ocean[nr * samples + nc] == 1:
 				continue
 
 			# A bowl inside the edge, then a walkable ramp (0.4, about 22 degrees) up and out.
+			# Outside the edge the cut fades out over fade_m (owner, 2026-10-19: on a hillside the
+			# ramp carved a deep cone ending in a cliff).
 			var floor_height: float = bottom + (rim_low - bottom) * pow(distance / radius_m, 2.0)
 
 			if distance > radius_m:
-				floor_height = rim_low + (distance - radius_m) * 0.4
+				var fade: float = 1.0 - (distance - radius_m) / fade_m
+				floor_height = maxf(rim_low + (distance - radius_m) * 0.4, carved[nr * samples + nc] - max_cut * fade)
 
+			pond_cut_max_m = maxf(pond_cut_max_m, heights[nr * samples + nc] - floor_height)
 			carved[nr * samples + nc] = minf(carved[nr * samples + nc], floor_height)
 
 	# Round off the rim and the wall (not the floor): repeated 3 x 3 averaging.
@@ -767,7 +794,7 @@ func _stamp_pond(
 			for nc in range(first_x, last_x + 1):
 				var distance: float = sqrt(pow(float(nc) - center.x, 2.0) + pow(float(nr) - center.y, 2.0)) * spacing_m
 
-				if distance < 0.75 * radius_m or distance > 2.8 * radius_m or _ocean[nr * samples + nc] == 1:
+				if distance < 0.75 * radius_m or distance > radius_m + 0.8 * fade_m or _ocean[nr * samples + nc] == 1:
 					continue
 
 				var total: float = 0.0

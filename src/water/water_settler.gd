@@ -153,6 +153,7 @@ static func _plateau_near(sim, head: Vector2i, side: int, data = null) -> Vector
 static func _pond_near(data, head: Vector2i, side: int) -> Vector2i:
 	var best: Vector2i = Vector2i(-1, -1)
 	var best_dist: float = INF
+	var best_ring: float = 14.0
 
 	for dj in range(-PLATEAU_SEARCH, PLATEAU_SEARCH + 1):
 		for di in range(-PLATEAU_SEARCH, PLATEAU_SEARCH + 1):
@@ -166,13 +167,24 @@ static func _pond_near(data, head: Vector2i, side: int) -> Vector2i:
 			# it stands at least 5 m above it, which a river gorge never does. Ponds are 10 m deep
 			# (owner, 2026-10-18), so the bowl wall is about 8.7 m up there.
 			var floor_here: float = data.heights[j * side + i]
-			var inside: bool = true
+			var inside: bool = false
+			var matched: float = 14.0
 
-			for r in range(8):
-				var angle: float = TAU * float(r) / 8.0
+			# Ponds are 240, 120 or 60 m across (whatever fits flat ground), so try a ring
+			# just inside each size.
+			for ring in [14.0, 7.0, 3.0]:
+				var all_higher: bool = true
 
-				if data.heights[(j + int(round(sin(angle) * 14.0))) * side + i + int(round(cos(angle) * 14.0))] < floor_here + 5.0:
-					inside = false
+				for r in range(8):
+					var angle: float = TAU * float(r) / 8.0
+
+					if data.heights[(j + int(round(sin(angle) * ring))) * side + i + int(round(cos(angle) * ring))] < floor_here + 5.0:
+						all_higher = false
+						break
+
+				if all_higher:
+					inside = true
+					matched = ring
 					break
 
 			var dist: float = sqrt(float(di * di + dj * dj))
@@ -180,6 +192,7 @@ static func _pond_near(data, head: Vector2i, side: int) -> Vector2i:
 			if inside and dist < best_dist:
 				best_dist = dist
 				best = Vector2i(i, j)
+				best_ring = matched
 
 	# Owner's rule (2026-10-18): find the pond's lowest lip, and put the spring on the
 	# opposite side of the pond, 10 m higher than that lip. Its water runs down the wall into
@@ -190,8 +203,8 @@ static func _pond_near(data, head: Vector2i, side: int) -> Vector2i:
 
 		for r in range(32):
 			var a_r: float = TAU * float(r) / 32.0
-			var rx: int = clampi(best.x + int(round(cos(a_r) * 14.0)), 0, side - 1)
-			var rz: int = clampi(best.y + int(round(sin(a_r) * 14.0)), 0, side - 1)
+			var rx: int = clampi(best.x + int(round(cos(a_r) * best_ring)), 0, side - 1)
+			var rz: int = clampi(best.y + int(round(sin(a_r) * best_ring)), 0, side - 1)
 			var rim_here: float = data.heights[rz * side + rx]
 
 			if rim_here < rim_low:
@@ -203,8 +216,10 @@ static func _pond_near(data, head: Vector2i, side: int) -> Vector2i:
 		var spot: Vector2i = best
 		var spot_gap: float = INF
 
-		for dj in range(-30, 31):
-			for di in range(-30, 31):
+		var reach: int = int(ceil(best_ring * 2.2))
+
+		for dj in range(-reach, reach + 1):
+			for di in range(-reach, reach + 1):
 				var i2: int = best.x + di
 				var j2: int = best.y + dj
 
@@ -215,7 +230,7 @@ static func _pond_near(data, head: Vector2i, side: int) -> Vector2i:
 				var distance: float = offset.length()
 
 				# Within a 60 degree cone on the far side, between the middle and the outer ramp.
-				if distance < 8.0 or distance > 30.0 or offset.normalized().dot(opposite) < 0.866:
+				if distance < best_ring * 0.55 or distance > best_ring * 2.2 or offset.normalized().dot(opposite) < 0.866:
 					continue
 
 				var gap: float = absf(data.heights[j2 * side + i2] - wanted) + 0.01 * distance

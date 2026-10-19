@@ -209,6 +209,13 @@ func get_tile(coord: Vector2i):
 	return data
 
 
+# Drops every loaded tile so the next use reads the files again (a bake replaced them).
+func forget_tiles() -> void:
+	_mutex.lock()
+	_tiles.clear()
+	_mutex.unlock()
+
+
 func _file_length(path: String) -> int:
 	var file: FileAccess = FileAccess.open(path, FileAccess.READ)
 

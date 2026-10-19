@@ -435,6 +435,7 @@ func _process(_delta: float) -> void:
 
 		# A bake finished: the ground is made again from the new tiles, and clients reload.
 		if store.check_tiles(now):
+			generator.forget_tiles()
 			flora.clear_memory()
 			net.ground_reset.rpc(store.tiles_stamp, _starter_stamp())
 			print("server: the tile files changed (a bake finished); generated ground thrown away, players reload")
