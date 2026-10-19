@@ -15,7 +15,7 @@ Tracks what the controls are now and what is planned. Update it whenever a contr
 | Ctrl | Go down (flying) |
 | G or F | Switch between walking and flying |
 | / (key with ? on it) | Inspection mode on or off (toggle). A brain icon shows near the top. Shows the name and key note of what the crosshair points at, in the middle of the screen: Oak, Beach sand, Coal, Hemlock (Toxic). What you see depends on what your character knows: it may say Unknown or Might be (a wrong guess). Flying (admin) always shows the truth |
-| + / - (also numpad) | Raise or lower the flow rate of all water by about 10 % per press (tuning tool). Shows "Water flow rate: x1.21" near the top of the screen for 3 seconds. The water re-settles on the server for a minute or two ("settling...") and redraws as it moves |
+| + / - (also numpad) | Raise or lower how much every spring pours, by about 10 % per press (tuning tool, x0.1 to x5). Shows "Water flow rate: x1.21 = 12.1 m3/s per spring (191,800 gal/min)" for 3 seconds. The water then runs by real physics for two simulated hours ("running...") and redraws as it moves |
 | F2 | Cycle quality: Low, Medium, High, Ultra (Low is the minimum machine) |
 | Esc | Options menu: Resume, Settings (quality), Advanced (Clear saved ground, which takes effect at once), Quit game. Esc again resumes |
 

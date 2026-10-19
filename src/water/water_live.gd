@@ -15,8 +15,9 @@ const RATE_STEP := 1.1            # each + or - key press changes the rate by ab
 const RATE_MIN := 0.1
 const RATE_MAX := 5.0
 const PUBLISH_TICKS := 15
-const RUN_TICKS := 3000           # ticks to run after each change (long enough for rivers to drain to a trickle), then the water rests
-const START_TICKS := 20000        # a dry start runs this long on its own, so the springs fill the land
+# The water moves in real seconds now (water_sim.gd), so these are simulated time.
+const RUN_SECONDS := 7200.0       # simulated time to run after each change (rivers settle to the new flow), then the water rests
+const START_SECONDS := 21600.0    # a dry start runs this long on its own, so the springs fill the land
 const START_PUBLISH_TICKS := 40
 
 var data
@@ -28,7 +29,7 @@ var _base_rate: float = 3.0
 var _path: String = ""
 var _thread: Thread = null
 var _mutex: Mutex = Mutex.new()
-var _budget: int = 0
+var _budget: float = 0.0          # simulated seconds left to run
 var _quit: bool = false
 var _pending: PackedFloat32Array = PackedFloat32Array()
 var _ticks: int = 0
@@ -41,7 +42,7 @@ func setup(tile_data, water_path: String, base_rate: float, tile_generator, dry_
 	_dry_start = dry_start
 
 	if dry_start:
-		_budget = START_TICKS
+		_budget = START_SECONDS
 
 	data = tile_data
 	_generator = tile_generator
@@ -64,7 +65,7 @@ func stop() -> void:
 func step_rate(direction: int) -> float:
 	_mutex.lock()
 	rate = clampf(rate * (RATE_STEP if direction > 0 else 1.0 / RATE_STEP), RATE_MIN, RATE_MAX)
-	_budget = maxi(_budget, RUN_TICKS)
+	_budget = maxf(_budget, RUN_SECONDS)
 	var now: float = rate
 	_mutex.unlock()
 	return now
@@ -93,11 +94,8 @@ func _run() -> void:
 	while true:
 		_mutex.lock()
 		var quit: bool = _quit
-		var run: bool = _budget > 0
+		var run: bool = _budget > 0.0
 		var multiplier: float = rate
-
-		if run:
-			_budget -= 1
 
 		busy = run
 		_mutex.unlock()
@@ -109,14 +107,16 @@ func _run() -> void:
 			OS.delay_msec(100)
 			continue
 
+		# The rate scales the springs only; the water itself moves by gravity and
+		# friction, so a low rate drains the rivers to a trickle (owner, 2026-10-19).
 		sim.spring_multiplier = multiplier
-		# Owner (2026-10-19): turning the springs down must let the rivers drain to a
-		# trickle, so a low rate never slows the water itself down.
-		sim.speed_multiplier = clampf(multiplier, 1.0, 1.2)
 		sim.step()
+		_mutex.lock()
+		_budget -= sim.dt
+		_mutex.unlock()
 		since += 1
 
-		if since >= (START_PUBLISH_TICKS if _dry_start else PUBLISH_TICKS) or _budget == 0:
+		if since >= (START_PUBLISH_TICKS if _dry_start else PUBLISH_TICKS) or _budget <= 0.0:
 			since = 0
 			var levels: PackedFloat32Array = sim.level_map()
 			_mutex.lock()

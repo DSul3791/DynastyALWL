@@ -2,69 +2,88 @@ extends RefCounted
 
 # Simulated water (the "real water" design, DESIGN_IDEAS 6.18).
 #
-# Level-based, no pressure: every cell holds a depth of water on its ground, and
-# water moves from a cell to each lower neighbor (by level = ground + depth), one
-# cell per tick. Basins fill to their own level, spill over their lowest rim and run
-# downhill. Water leaves the world only at the sea (cells at or below 0 m) and the
-# edge of the simulated area; a shallow puddle with nowhere to go dries slowly;
-# rain adds water. Springs add a fixed amount every tick, forever.
+# Real physics (owner, 2026-10-19: "water should just fall using the normal gravity,
+# head and slope equations"): the local inertial shallow-water method (Bates et al.
+# 2010, as in the LISFLOOD-FP flood model). Every cell holds a depth of water; between
+# two cells the flow (m2/s per meter of face) is pushed by gravity down the slope of
+# the water surface and held back by bed friction (Manning). So deeper water carries
+# more, steeper water runs faster, a river widens or floods when it gets more water
+# than its channel carries, and it shrinks to a trickle when the springs ease off.
+# Time is real: each tick moves the water `dt` seconds (picked so the method stays
+# stable), and springs pour a flow in m3/s.
+#
+# Water leaves the world only at the sea (cells at or below 0 m, held at sea level)
+# and the edge of the simulated area; a shallow puddle with nowhere to go dries
+# slowly; rain adds water. Springs pour forever.
 #
 # This is a plain object with no scene or network code: the server owns one per
 # tile region and saves it, clients only draw its levels. Cell size equals the
 # tile map spacing (8 m). Editing the ground (dig, dam) goes through set_ground,
-# which wakes the cells around the change.
+# which wakes the cells around the change. Cells whose water stops changing sleep
+# (their flows are taken as balanced) until a neighbour changes.
 
-const SPREAD_RATE := 0.25       # share of a level difference moved per tick
-const FALL_RATE := 0.5          # the same, where the drop is steep (water falls faster)
-const FALL_DIFF_M := 3.0        # level difference counted as a fall
-const MIN_DIFF_M := 0.002       # smaller differences are level
+const GRAVITY := 9.81
+const MANNING_N := 0.035        # bed roughness of a natural stream (s/m^(1/3))
+const STABILITY := 0.7          # share of the largest stable time step used
+const DT_MAX_S := 2.0
+const DT_MIN_S := 0.05
+const FACE_MIN_M := 0.001       # thinner water than this between two cells does not flow
+const SPEED_MAX_M_S := 12.0     # a ceiling on water speed (keeps falls stable)
+const SLEEP_M := 0.00002        # a cell whose depth changes less than this in a tick may sleep
 const WET_M := 0.12             # drawn as water from this depth
 const STEEP_WET_M := 0.6       # on a steep drop (below), water thinner than this is not drawn
 const STEEP_DROP_M := 3.0      # ground this much higher than a neighbour counts as steep
-const LEVEL_DEEP_M := 1.0      # water at least this deep levels out quickly (ponds, lakes, deep rivers)
-const LEVEL_PASSES := 4
-const PUDDLE_M := 0.06          # loose water thinner than this, with nowhere to go, dries
-const DRY_PER_TICK_M := 0.003   # how fast a stranded puddle dries
+const PUDDLE_M := 0.06          # loose water thinner than this, with nowhere lower to go, dries
+const LEVEL_M := 0.002          # smaller level differences count as level
+const DRY_M_PER_S := 0.0001     # how fast a stranded puddle dries (fast, for play: 6 cm in 10 minutes)
+
 
 var side: int = 0
 var spacing_m: float = 8.0
 var ground: PackedFloat32Array = PackedFloat32Array()
 var depth: PackedFloat32Array = PackedFloat32Array()
-var springs: Array = []         # [cell index, depth added per tick]
+var flow_x: PackedFloat32Array = PackedFloat32Array()   # m2/s across the face to the +i neighbour
+var flow_z: PackedFloat32Array = PackedFloat32Array()   # m2/s across the face to the +j neighbour
+var springs: Array = []         # [cell index, m3 per second]
 var ticks: int = 0
+var seconds: float = 0.0        # simulated time so far
+var dt: float = 0.5             # the length of the last tick (s)
 var evaporated_m3: float = 0.0
-var speed_multiplier: float = 1.0    # how fast water moves (the flow-rate keys scale this along with the springs)
-var spring_multiplier: float = 1.0   # rain later swells every spring (and so the rivers) by this factor
+var spring_multiplier: float = 1.0   # the flow-rate keys (and rain later) scale every spring by this
 var sea_m3: float = 0.0         # water that reached the sea or the edge
 
 var _delta: PackedFloat32Array = PackedFloat32Array()
 var _mark: PackedByteArray = PackedByteArray()
-var _moved: PackedByteArray = PackedByteArray()
 var _spring_cell: PackedByteArray = PackedByteArray()
 var _levels: PackedFloat32Array = PackedFloat32Array()   # drawing levels, kept up to date from _dirty
 var _dirty: PackedInt32Array = PackedInt32Array()
 var _active: PackedInt32Array = PackedInt32Array()
 var _touched: PackedInt32Array = PackedInt32Array()
+var _deepest: float = 1.0       # deepest active water last tick (sets the time step)
 
 
 func setup(cells_per_side: int, spacing: float, ground_heights: PackedFloat32Array) -> void:
 	side = cells_per_side
 	spacing_m = spacing
 	ground = ground_heights
+	var count: int = side * side
 	depth = PackedFloat32Array()
-	depth.resize(side * side)
+	depth.resize(count)
+	flow_x = PackedFloat32Array()
+	flow_x.resize(count)
+	flow_z = PackedFloat32Array()
+	flow_z.resize(count)
 	_delta = PackedFloat32Array()
-	_delta.resize(side * side)
+	_delta.resize(count)
 	_mark = PackedByteArray()
-	_mark.resize(side * side)
-	_moved = PackedByteArray()
-	_moved.resize(side * side)
+	_mark.resize(count)
 	_spring_cell = PackedByteArray()
-	_spring_cell.resize(side * side)
+	_spring_cell.resize(count)
 	_active = PackedInt32Array()
 	_touched = PackedInt32Array()
 	springs = []
 	ticks = 0
+	seconds = 0.0
 	evaporated_m3 = 0.0
 	sea_m3 = 0.0
 
@@ -77,8 +96,9 @@ func level(k: int) -> float:
 	return ground[k] + depth[k]
 
 
-func add_spring(i: int, j: int, per_tick_m: float) -> void:
-	springs.append([cell(i, j), per_tick_m])
+# A spring pouring `m3_per_s` (times spring_multiplier) forever.
+func add_spring(i: int, j: int, m3_per_s: float) -> void:
+	springs.append([cell(i, j), m3_per_s])
 	_spring_cell[cell(i, j)] = 1
 	_wake(cell(i, j))
 
@@ -105,12 +125,17 @@ func set_ground(i: int, j: int, height: float) -> void:
 	ground[k] = height
 	_wake(k)
 
+	for n in [k - 1, k + 1, k - side, k + side]:
+		if n >= 0 and n < ground.size():
+			_wake(n)
+
 
 func total_volume() -> float:
 	var total: float = 0.0
 
 	for k in range(depth.size()):
-		total += depth[k]
+		if ground[k] > 0.0:
+			total += depth[k]
 
 	return total * spacing_m * spacing_m
 
@@ -137,212 +162,193 @@ func wake_all_wet() -> void:
 
 
 func _wake(k: int) -> void:
-	if _mark[k] == 0:
+	if _mark[k] == 0 and ground[k] > 0.0:
 		_mark[k] = 1
 		_active.append(k)
 
 
-# One tick. Returns the volume moved (m3), a rough measure of how settled things are.
+# The flow across one face after this tick (m2/s, positive from a to b). `level_b` and
+# `ground_b` describe the far side (the sea or the open edge have no cell of their own).
+func _face(q: float, level_a: float, ground_a: float, level_b: float, ground_b: float, step_s: float) -> float:
+	var face_depth: float = maxf(level_a, level_b) - maxf(ground_a, ground_b)
+
+	if face_depth <= FACE_MIN_M:
+		return 0.0
+
+	# Gravity down the water-surface slope, friction (Manning) taken implicitly.
+	var push: float = GRAVITY * face_depth * step_s * (level_a - level_b) / spacing_m
+	q = (q + push) / (1.0 + GRAVITY * step_s * MANNING_N * MANNING_N * absf(q) / pow(face_depth, 7.0 / 3.0))
+	var most: float = SPEED_MAX_M_S * face_depth
+	return clampf(q, -most, most)
+
+
+# One tick of `dt` seconds. Returns the volume moved (m3), a rough measure of how
+# settled things are.
 func step() -> float:
-	var moved: float = 0.0
-	var count: int = _active.size()
 	var width: int = side
 	var area: float = spacing_m * spacing_m
-	# Past about 0.3 per neighbor a level overshoots its neighbors more each tick and
-	# the water piles into spikes, so the speed has a ceiling.
-	var spread: float = minf(SPREAD_RATE * speed_multiplier, 0.3)
-	var fall: float = minf(FALL_RATE * speed_multiplier, 0.45)
-
+	var count: int = _active.size()
+	dt = clampf(STABILITY * spacing_m / sqrt(GRAVITY * maxf(_deepest, 0.05)), DT_MIN_S, DT_MAX_S)
+	var step_s: float = dt
+	var per_flow: float = step_s / spacing_m      # m2/s of face flow -> m of depth this tick
+	var moved: float = 0.0
 	_touched.clear()
 
+	# 1. Flows on every face of the working cells (a face shared with another working
+	# cell is done once, by the cell on its low side).
 	for a in range(count):
 		var k: int = _active[a]
-		var w: float = depth[k]
-
-		if w <= 0.0:
-			continue
-
 		var i: int = k % width
 		var j: int = k / width
-		var here: float = ground[k] + w
 		var gk: float = ground[k]
-		var n0: int = k - 1 if i > 0 else -1
-		var n1: int = k + 1 if i < width - 1 else -1
-		var n2: int = k - width if j > 0 else -1
-		var n3: int = k + width if j < width - 1 else -1
-		var a0: float = 0.0
-		var a1: float = 0.0
-		var a2: float = 0.0
-		var a3: float = 0.0
-		var edge: float = 0.0
+		var here: float = gk + depth[k]
 
-		if n0 >= 0:
-			var diff: float = here - ground[n0] - depth[n0]
+		for d in range(4):
+			var n: int = -1
 
-			if diff > MIN_DIFF_M:
-				a0 = minf(diff * (fall if diff > FALL_DIFF_M else spread), diff * 0.5)
-		else:
-			edge += w * spread
+			if d == 0:
+				n = k + 1 if i < width - 1 else -1
+			elif d == 1:
+				n = k + width if j < width - 1 else -1
+			elif d == 2:
+				if i == 0 or _mark[k - 1] == 1:
+					if i == 0:
+						n = -2
+					else:
+						continue
+				else:
+					n = k - 1
+			else:
+				if j == 0 or _mark[k - width] == 1:
+					if j == 0:
+						n = -2
+					else:
+						continue
+				else:
+					n = k - width
 
-		if n1 >= 0:
-			var diff: float = here - ground[n1] - depth[n1]
+			# The open edge: water runs out as if onto dry ground of the same height.
+			if n < 0:
+				if depth[k] <= 0.0:
+					continue
 
-			if diff > MIN_DIFF_M:
-				a1 = minf(diff * (fall if diff > FALL_DIFF_M else spread), diff * 0.5)
-		else:
-			edge += w * spread
+				var out: float = maxf(_face(0.0, here, gk, gk, gk, step_s), 0.0)
+				out = minf(out, depth[k] * 0.25 / per_flow)
+				var gone: float = out * per_flow
+				_add_delta(k, -gone)
+				sea_m3 += gone * area
+				moved += gone * area
+				continue
 
-		if n2 >= 0:
-			var diff: float = here - ground[n2] - depth[n2]
+			var gn: float = ground[n]
+			var there: float = (gn + depth[n]) if gn > 0.0 else 0.0   # the sea holds at 0 m
+			var forward: bool = d < 2       # the stored flow points from k to n
+			var stored: float = (flow_x[k] if d == 0 else flow_z[k]) if forward else -(flow_x[n] if d == 2 else flow_z[n])
+			var q: float = _face(stored, here, gk, there, gn, step_s)
 
-			if diff > MIN_DIFF_M:
-				a2 = minf(diff * (fall if diff > FALL_DIFF_M else spread), diff * 0.5)
-		else:
-			edge += w * spread
+			# Never take more than a quarter of a cell's water through one face.
+			if q > 0.0:
+				q = minf(q, depth[k] * 0.25 / per_flow)
+			elif gn > 0.0:
+				q = maxf(q, -depth[n] * 0.25 / per_flow)
+			else:
+				q = 0.0                     # the sea never flows back onto land
 
-		if n3 >= 0:
-			var diff: float = here - ground[n3] - depth[n3]
+			if d == 0:
+				flow_x[k] = q
+			elif d == 1:
+				flow_z[k] = q
+			elif d == 2:
+				flow_x[n] = -q
+			else:
+				flow_z[n] = -q
 
-			if diff > MIN_DIFF_M:
-				a3 = minf(diff * (fall if diff > FALL_DIFF_M else spread), diff * 0.5)
-		else:
-			edge += w * spread
+			if q == 0.0:
+				continue
 
-		var out_total: float = a0 + a1 + a2 + a3 + edge
+			var amount: float = q * per_flow
+			_add_delta(k, -amount)
+			moved += absf(amount) * area
 
-		if out_total <= 0.0:
-			continue
+			if gn > 0.0:
+				_add_delta(n, amount)
+			else:
+				sea_m3 += amount * area
 
-		if out_total > w:
-			var scale: float = w / out_total
-			a0 *= scale
-			a1 *= scale
-			a2 *= scale
-			a3 *= scale
-			edge *= scale
-			out_total = w
-
-		if a0 > 0.0:
-			_add_delta(n0, a0)
-
-		if a1 > 0.0:
-			_add_delta(n1, a1)
-
-		if a2 > 0.0:
-			_add_delta(n2, a2)
-
-		if a3 > 0.0:
-			_add_delta(n3, a3)
-
-		sea_m3 += edge * area
-		moved += out_total * area
-		_add_delta(k, -out_total)
-
+	# 2. Springs pour over a 5 x 5 patch (the same water, without a tall column).
 	for sp in springs:
-		# The spring's water is added over a 5 x 5 patch, not one square: the same amount
-		# of water, but a strong spring no longer piles into a tall column of water.
 		var centre: int = int(sp[0])
-		var share: float = float(sp[1]) * spring_multiplier / 25.0
+		var share: float = float(sp[1]) * spring_multiplier * step_s / area / 25.0
 
 		for dj in range(-2, 3):
 			for di in range(-2, 3):
 				var ci: int = centre % side + di
 				var cj: int = centre / side + dj
 
-				if ci >= 0 and ci < side and cj >= 0 and cj < side:
+				if ci >= 0 and ci < side and cj >= 0 and cj < side and ground[cj * side + ci] > 0.0:
 					_add_delta(cj * side + ci, share)
 
-	# Apply, then decide who works next tick.
-	for t in range(_touched.size()):
-		var k: int = _touched[t]
-		depth[k] = maxf(depth[k] + _delta[k], 0.0)
-		_delta[k] = 0.0
-		_moved[k] = 1
-		_dirty.append(k)
-
-		# The sea and the edge absorb: cells at or below 0 m hold water only up to sea level.
-		if ground[k] <= 0.0:
-			var cap: float = -ground[k]
-
-			if depth[k] > cap:
-				sea_m3 += (depth[k] - cap) * area
-				depth[k] = cap
-
-	# Standing water finds its level at once: deep water spreads sideways a few extra
-	# steps each tick (same volume), so a pond or lake stays flat instead of heaping
-	# up where a spring pours in.
-	for pass_n in range(LEVEL_PASSES):
-		for t in range(_touched.size()):
-			var k: int = _touched[t]
-
-			if depth[k] < LEVEL_DEEP_M:
-				continue
-
-			var i: int = k % width
-			var j: int = k / width
-
-			if i < width - 1:
-				_level_pair(k, k + 1)
-
-			if j < width - 1:
-				_level_pair(k, k + width)
-
-			if i > 0:
-				_level_pair(k, k - 1)
-
-			if j > 0:
-				_level_pair(k, k - width)
-
+	# 3. Apply, and decide who works next tick: cells that changed and their neighbours.
 	var previous: PackedInt32Array = _active.duplicate()
 
 	for a in range(count):
 		_mark[_active[a]] = 0
 
 	_active.clear()
+	_deepest = 0.05
 
 	for t in range(_touched.size()):
 		var k: int = _touched[t]
+		var change: float = _delta[k]
+		depth[k] = maxf(depth[k] + change, 0.0)
+		_delta[k] = 0.0
+		_dirty.append(k)
 
-		if depth[k] > 0.0:
+		if absf(change) > SLEEP_M or _spring_cell[k] == 1:
 			_wake(k)
+			_wake_inside(k - 1, k % width > 0)
+			_wake_inside(k + 1, k % width < width - 1)
+			_wake_inside(k - width, k >= width)
+			_wake_inside(k + width, k < width * (width - 1))
 
-			var i: int = k % width
-			var j: int = k / width
-
-			if i > 0:
-				_wake_if_wet(k - 1)
-
-			if i < width - 1:
-				_wake_if_wet(k + 1)
-
-			if j > 0:
-				_wake_if_wet(k - width)
-
-			if j < width - 1:
-				_wake_if_wet(k + width)
-
-	# Stranded puddles dry: thin loose water that did not move this tick keeps
-	# working (so it is looked at again) until it is gone.
+	# 4. Stranded puddles dry: thin water barely moving keeps working until it is gone.
 	for a in range(count):
 		var k: int = previous[a]
 
-		if depth[k] > 0.0 and depth[k] < PUDDLE_M and ground[k] > 0.0 and not _is_spring(k):
-			var lost: float = minf(depth[k], DRY_PER_TICK_M)
+		if depth[k] > 0.0 and depth[k] < PUDDLE_M and _spring_cell[k] == 0 and _is_stranded(k):
+			var lost: float = minf(depth[k], DRY_M_PER_S * step_s)
 			depth[k] -= lost
 			_dirty.append(k)
 			evaporated_m3 += lost * area
-			_wake_if_wet(k)
+			_wake(k)
 
-	for t in range(_touched.size()):
-		_moved[_touched[t]] = 0
+	for a in range(_active.size()):
+		_deepest = maxf(_deepest, depth[_active[a]])
 
 	ticks += 1
+	seconds += step_s
 	return moved
 
 
-func _wake_if_wet(k: int) -> void:
-	if depth[k] > 0.0:
+func _wake_inside(k: int, inside: bool) -> void:
+	if inside:
 		_wake(k)
+
+
+# No neighbour lies lower: the water has nowhere to run (a thin film on a slope still runs).
+func _is_stranded(k: int) -> bool:
+	var i: int = k % side
+	var j: int = k / side
+	var here: float = ground[k] + depth[k] - LEVEL_M
+
+	if i == 0 or j == 0 or i == side - 1 or j == side - 1:
+		return false
+
+	for n in [k - 1, k + 1, k - side, k + side]:
+		if ground[n] + depth[n] < here:
+			return false
+
+	return true
 
 
 func _add_delta(k: int, amount: float) -> void:
@@ -356,36 +362,6 @@ func _add_delta(k: int, amount: float) -> void:
 
 func _is_spring(k: int) -> bool:
 	return _spring_cell[k] == 1
-
-
-func _is_stranded(k: int) -> bool:
-	if ground[k] <= 0.0:
-		return false
-
-	var i: int = k % side
-	var j: int = k / side
-	var here: float = ground[k] + depth[k]
-
-	for d in range(4):
-		var n: int = -1
-
-		if d == 0 and i > 0:
-			n = k - 1
-		elif d == 1 and i < side - 1:
-			n = k + 1
-		elif d == 2 and j > 0:
-			n = k - side
-		elif d == 3 and j < side - 1:
-			n = k + side
-
-		if n >= 0 and ground[n] + depth[n] < here - MIN_DIFF_M:
-			return false
-
-	for sp in springs:
-		if int(sp[0]) == k:
-			return false
-
-	return true
 
 
 # Levels for drawing: the water level where the depth is at least WET_M, NAN elsewhere.
@@ -408,7 +384,7 @@ func level_map() -> PackedFloat32Array:
 func _refresh_level(k: int) -> void:
 	_levels[k] = NAN
 
-	if depth[k] < WET_M:
+	if depth[k] < WET_M or ground[k] <= 0.0:
 		return
 
 	# Thin water running down a steep wall is not drawn: it drew spikes of water up
@@ -417,31 +393,6 @@ func _refresh_level(k: int) -> void:
 		return
 
 	_levels[k] = ground[k] + depth[k]
-
-
-# Moves water between two deep neighbours towards equal levels (volume kept).
-func _level_pair(a: int, b: int) -> void:
-	if depth[b] < LEVEL_DEEP_M:
-		return
-
-	var gap: float = (ground[a] + depth[a]) - (ground[b] + depth[b])
-
-	if absf(gap) < 0.01:
-		return
-
-	var flow: float = gap * 0.25
-
-	if flow > 0.0:
-		flow = minf(flow, depth[a] * 0.5)
-	else:
-		flow = maxf(flow, -depth[b] * 0.5)
-
-	depth[a] -= flow
-	depth[b] += flow
-	_dirty.append(a)
-	_dirty.append(b)
-	_moved[a] = 1
-	_moved[b] = 1
 
 
 func _is_steep(k: int) -> bool:

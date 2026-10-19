@@ -440,9 +440,22 @@ func _on_flora(chunk: Vector2i, bytes: PackedByteArray, water: PackedByteArray) 
 	Probe.stop("flora chunk in", t)
 
 
-func _on_water_rate(rate: float, busy: bool) -> void:
-	_water_label.text = "Water flow rate: x%.2f%s" % [rate, "  (settling...)" if busy else ""]
+func _on_water_rate(rate: float, busy: bool, spring_m3_s: float) -> void:
+	# 1 m3 is about 264.17 US gallons.
+	_water_label.text = "Water flow rate: x%.2f = %.1f m3/s per spring (%s gal/min)%s" % [
+		rate, spring_m3_s, _thousands(int(round(spring_m3_s * 264.17 * 60.0))), "  (running...)" if busy else ""]
 	_water_label_until_msec = Time.get_ticks_msec() + 3000
+
+
+func _thousands(value: int) -> String:
+	var text: String = str(value)
+	var out: String = ""
+
+	while text.length() > 3:
+		out = "," + text.substr(text.length() - 3) + out
+		text = text.substr(0, text.length() - 3)
+
+	return text + out
 
 
 # The server's water moved: ask again for the water of every flora chunk held.

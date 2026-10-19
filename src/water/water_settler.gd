@@ -30,7 +30,7 @@ static func _drawn_ground(data, generator) -> PackedFloat32Array:
 
 
 # A simulation started from the painted water with springs placed. `rate` is each
-# spring's meters of water per tick.
+# spring's flow in m3 per second.
 static func build(data, rate: float, generator, seed_painted: bool = true):
 	var side: int = data.samples
 	var sim = WaterSim.new()

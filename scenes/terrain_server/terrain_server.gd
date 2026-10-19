@@ -34,7 +34,7 @@ const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 
 const MAX_BATCH_BYTES := 192 * 1024
 const MAX_QUEUE_PER_PEER := 20000
-const WATER_BASE_RATE := 3.0            # meters of water per tick at each spring; the + and - keys scale it
+const WATER_BASE_RATE := 10.0           # m3 per second at each spring (about 158,000 US gallons a minute); the + and - keys scale it
 const IDLE_LODS := 4                   # detail levels the idle builder keeps ahead of players
 const IDLE_RADIUS_BLOCKS := 12         # circle around each player, in blocks of that level
 const IDLE_MAX_DONE := 400000          # remembered built blocks (skips re-checking the store)
@@ -330,7 +330,7 @@ func _on_water_rate_requested(_peer_id: int, direction: int) -> void:
 
 	var rate: float = water_live.step_rate(direction)
 	print("server: water flow rate now x%.2f" % rate)
-	net.water_rate.rpc(rate, true)
+	net.water_rate.rpc(rate, true, rate * WATER_BASE_RATE)
 
 
 func _on_water_requested(peer_id: int, chunks: PackedInt32Array) -> void:
@@ -363,7 +363,7 @@ func _poll_water() -> void:
 		net.water_changed.rpc()
 
 		if not water_live.busy:
-			net.water_rate.rpc(water_live.rate, false)
+			net.water_rate.rpc(water_live.rate, false, water_live.rate * WATER_BASE_RATE)
 
 
 func _on_cut_flora_requested(_peer_id: int, chunk: Vector2i, id: int) -> void:

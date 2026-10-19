@@ -37,7 +37,7 @@ signal position_reported(peer_id: int, position: Vector3, velocity: Vector3)
 signal cut_flora_requested(peer_id: int, chunk: Vector2i, id: int)
 signal flora_cut_received(chunk: Vector2i, id: int)
 signal water_rate_requested(peer_id: int, direction: int)
-signal water_rate_received(rate: float, busy: bool)
+signal water_rate_received(rate: float, busy: bool, spring_m3_s: float)
 signal water_changed_received()
 signal ground_reset_received(tiles_stamp: String, starter_stamp: String)
 signal water_requested(peer_id: int, chunks: PackedInt32Array)
@@ -112,8 +112,8 @@ func step_water_rate(direction: int) -> void:
 
 
 @rpc("authority", "call_remote", "reliable")
-func water_rate(rate: float, busy: bool) -> void:
-	water_rate_received.emit(rate, busy)
+func water_rate(rate: float, busy: bool, spring_m3_s: float) -> void:
+	water_rate_received.emit(rate, busy, spring_m3_s)
 
 
 # The server's water has new levels: clients ask again for the chunks they hold.

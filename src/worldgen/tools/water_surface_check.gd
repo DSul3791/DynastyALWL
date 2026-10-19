@@ -41,7 +41,7 @@ func _init() -> void:
 		return
 
 	var dry: bool = OS.get_cmdline_user_args().has("--dry")
-	var sim = WaterSettler.build(data, 3.0, generator, not dry)
+	var sim = WaterSettler.build(data, 10.0, generator, not dry)
 	var tick_start: int = Time.get_ticks_msec()
 
 	for t in range(ticks):
