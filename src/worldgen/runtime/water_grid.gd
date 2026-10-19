@@ -367,7 +367,7 @@ static func build_mesh(grid: Dictionary, material: Material) -> ArrayMesh:
 				continue
 
 			if fine.has(j * count + i):
-				_add_fine_cell(fine[j * count + i], i, j, spacing, levels, count, vertices, normals, colors, indices)
+				_add_fine_cell(_seal_fine_edges(fine, i, j, count, height), i, j, spacing, levels, count, vertices, normals, colors, indices)
 				continue
 
 			var ids: Array = []
@@ -412,6 +412,53 @@ static func build_mesh(grid: Dictionary, material: Material) -> ArrayMesh:
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	mesh.surface_set_material(0, material)
 	return mesh
+
+
+# Owner report (2026-10-19, thin lines in the water): a fine cell's edge must meet its
+# neighbour exactly. Where the cell across an edge is drawn plain (or lies in the next
+# chunk), the edge follows that plain cell's straight edge between the shared corners; a
+# corner touching any plain cell takes the plain corner height. Edges between two fine
+# cells already match. Returns the cell's heights with its edges sealed.
+static func _seal_fine_edges(fine: Dictionary, i: int, j: int, count: int, height: PackedFloat32Array) -> PackedFloat32Array:
+	var heights: PackedFloat32Array = PackedFloat32Array(fine[j * count + i])
+	var side: int = FINE_SUB + 1
+	var plain: Callable = func(ci: int, cj: int) -> bool:
+		return ci < 0 or cj < 0 or ci >= count - 1 or cj >= count - 1 or not fine.has(cj * count + ci)
+	var corner_h: Callable = func(ci: int, cj: int, own: float) -> float:
+		var h: float = height[cj * count + ci]
+		return own if is_nan(h) else h
+	# Each side: the cell across it, its two corners (grid i, j) and the sample indices along it.
+	var sides: Array = [
+		[i, j - 1, Vector2i(i, j), Vector2i(i + 1, j), func(t: int) -> int: return t],
+		[i, j + 1, Vector2i(i, j + 1), Vector2i(i + 1, j + 1), func(t: int) -> int: return FINE_SUB * side + t],
+		[i - 1, j, Vector2i(i, j), Vector2i(i, j + 1), func(t: int) -> int: return t * side],
+		[i + 1, j, Vector2i(i + 1, j), Vector2i(i + 1, j + 1), func(t: int) -> int: return t * side + FINE_SUB],
+	]
+
+	for entry in sides:
+		if not plain.call(entry[0], entry[1]):
+			continue
+
+		var at: Callable = entry[4]
+		var a: Vector2i = entry[2]
+		var b: Vector2i = entry[3]
+		var ha: float = corner_h.call(a.x, a.y, heights[at.call(0)])
+		var hb: float = corner_h.call(b.x, b.y, heights[at.call(FINE_SUB)])
+
+		for t in range(side):
+			heights[at.call(t)] = lerpf(ha, hb, float(t) / float(FINE_SUB))
+
+	# Corners shared with a plain cell only diagonally.
+	var corners: Array = [[0, 0, -1, -1], [FINE_SUB, 0, 1, -1], [0, FINE_SUB, -1, 1], [FINE_SUB, FINE_SUB, 1, 1]]
+
+	for c in corners:
+		var ci: int = i + (1 if c[0] > 0 else 0)
+		var cj: int = j + (1 if c[1] > 0 else 0)
+
+		if plain.call(i + c[2], j + c[3]):
+			heights[c[1] * side + c[0]] = corner_h.call(ci, cj, heights[c[1] * side + c[0]])
+
+	return heights
 
 
 # A running-water cell drawn from its fine heights: own vertices, normals from the

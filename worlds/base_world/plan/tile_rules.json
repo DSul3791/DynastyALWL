@@ -121,8 +121,8 @@
 		"lake_min_width_m": 100,
 		"lake_min_surface_m": 60,
 		"starter_river": {
-			"note": "A river from the biggest highland lake to the head of the starter bay, following the easiest valley route. Extra water is fed in at the source so it is a real river.",
-			"enabled": true,
+			"note": "A river from the biggest highland lake to the head of the starter bay, following the easiest valley route. Extra water is fed in at the source so it is a real river. Owner (2026-10-19): turned off; its route climbed a hill and cut a canyon through it, and rivers now come only from head ponds along real valleys. The spawn then sits at the bay head.",
+			"enabled": false,
 			"source_min_height_m": 150,
 			"route_cell_m": 96,
 			"climb_cost": 8.0,

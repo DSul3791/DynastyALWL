@@ -1179,9 +1179,13 @@ func _test_tile_water(settings, elevation, sketch: Dictionary) -> void:
 	print("river surface over ground at most %.1f m, under at most %.2f m, bad cells %d" % [over_max, under_max, bad_surface])
 	_check(bad_surface == 0, "water surfaces are consistent with the ground")
 
-	# The starter river reaches the bay head.
+	# The starter river reaches the bay head (when it is turned on; owner 2026-10-19: off).
 	var path: PackedVector2Array = water.starter_path
-	_check(path.size() > 50, "a starter river route was found (%d points)" % path.size())
+
+	if bool(tile_rules["water"].get("starter_river", {}).get("enabled", false)):
+		_check(path.size() > 50, "a starter river route was found (%d points)" % path.size())
+	else:
+		_check(path.is_empty(), "no designed starter river while it is turned off")
 
 	if path.size() > 50:
 		var mouth: Vector2 = path[path.size() - 1]
