@@ -36,11 +36,17 @@ static func build(data, rate: float, generator, seed_painted: bool = true):
 	var sim = WaterSim.new()
 	sim.setup(side, data.spacing_m, _drawn_ground(data, generator))
 
-	for k in range(side * side if seed_painted else 0):
-		var surface: float = data.water_surface[k]
+	if seed_painted:
+		var start: PackedFloat32Array = PackedFloat32Array()
+		start.resize(side * side)
 
-		if (data.water_class[k] == RIVER or data.water_class[k] == LAKE) and not is_nan(surface) and surface > sim.ground[k]:
-			sim.depth[k] = surface - sim.ground[k]
+		for k in range(side * side):
+			var surface: float = data.water_surface[k]
+
+			if (data.water_class[k] == RIVER or data.water_class[k] == LAKE) and not is_nan(surface) and surface > sim.ground[k]:
+				start[k] = surface - sim.ground[k]
+
+		sim.set_depth(start)
 
 	var placed: Array = []
 

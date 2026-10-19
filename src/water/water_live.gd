@@ -95,7 +95,7 @@ func _run() -> void:
 	var saved: PackedFloat32Array = PackedFloat32Array() if _dry_start else WaterStore.load_depth(_path, data.samples)
 
 	if not saved.is_empty():
-		sim.depth = saved
+		sim.set_depth(saved)
 		sim.wake_all_wet()
 
 	var since: int = 0

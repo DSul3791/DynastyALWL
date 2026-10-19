@@ -1,0 +1,11 @@
+#!/usr/bin/env python
+# Builds the water simulation core (see build.sh). godot-cpp is fetched by build.sh into
+# ./godot-cpp (not committed); the libraries land in res://addons/water_core/bin.
+import os
+
+env = SConscript("godot-cpp/SConstruct")
+env.Append(CPPPATH=["src/"])
+sources = Glob("src/*.cpp")
+out = "../../addons/water_core/bin/libwatercore{}{}".format(env["suffix"], env["SHLIBSUFFIX"])
+library = env.SharedLibrary(out, source=sources)
+Default(library)

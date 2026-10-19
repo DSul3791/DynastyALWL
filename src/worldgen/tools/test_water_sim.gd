@@ -37,6 +37,23 @@ func _run_s(sim, seconds: float) -> void:
 
 
 func _initialize() -> void:
+	# Both versions of the core: C++ (when the add-on loads) and the GDScript fallback.
+	var probe = WaterSim.new()
+	probe.setup(3, 8.0, _flat(3, 1.0))
+	print("water sim: C++ core %s" % ("loaded" if probe.native() else "not loaded"))
+
+	if probe.native():
+		_suite()
+		print("  (above: C++ core; below: GDScript fallback)")
+
+	WaterSim.force_script = true
+	_suite()
+	WaterSim.force_script = false
+	print("water sim: %d passed, %d failed" % [_passed, _failed])
+	quit(1 if _failed > 0 else 0)
+
+
+func _suite() -> void:
 	# 1. A closed bowl fills level and keeps every drop of water.
 	var g: PackedFloat32Array = _flat(21, 10.0)
 
@@ -57,7 +74,7 @@ func _initialize() -> void:
 		for i in range(5, 16):
 			var k: int = j * 21 + i
 
-			if bowl.depth[k] > 0.05:
+			if bowl.depth_at(k) > 0.05:
 				lowest = minf(lowest, bowl.level(k))
 				highest = maxf(highest, bowl.level(k))
 
@@ -75,7 +92,7 @@ func _initialize() -> void:
 	river.setup(side, 8.0, slope)
 	river.add_spring(2, 20, 5.0)
 	_run_s(river, 1200.0)
-	_check(river.depth[20 * side + 20] > 0.01, "a spring's water reaches downhill (%f)" % river.depth[20 * side + 20])
+	_check(river.depth_at(20 * side + 20) > 0.01, "a spring's water reaches downhill (%f)" % river.depth_at(20 * side + 20))
 	_check(river.sea_m3 > 0.0, "water reaches the sea")
 
 	# 3. A dam: block the valley, the water backs up behind it.
@@ -90,7 +107,7 @@ func _initialize() -> void:
 	open.setup(side, 8.0, valley.duplicate())
 	open.add_spring(2, 20, 3.0)
 	_run_s(open, 1500.0)
-	var open_up: float = open.depth[20 * side + 8]
+	var open_up: float = open.depth_at(20 * side + 8)
 
 	var dammed = WaterSim.new()
 	dammed.setup(side, 8.0, valley.duplicate())
@@ -100,13 +117,13 @@ func _initialize() -> void:
 		dammed.set_ground(20, j, 40.0)
 
 	_run_s(dammed, 1500.0)
-	_check(dammed.depth[20 * side + 10] > open_up + 0.3, "a dam backs water up behind it (%f vs %f)" % [dammed.depth[20 * side + 10], open_up])
-	_check(dammed.depth[20 * side + 30] < 0.05, "nothing flows past a dam")
+	_check(dammed.depth_at(20 * side + 10) > open_up + 0.3, "a dam backs water up behind it (%f vs %f)" % [dammed.depth_at(20 * side + 10), open_up])
+	_check(dammed.depth_at(20 * side + 30) < 0.05, "nothing flows past a dam")
 
 	# Break the dam: the stored water runs out.
 	dammed.set_ground(20, 20, valley[20 * side + 20])
 	_run_s(dammed, 1500.0)
-	_check(dammed.depth[20 * side + 30] > 0.05, "a broken dam lets the water through")
+	_check(dammed.depth_at(20 * side + 30) > 0.05, "a broken dam lets the water through")
 
 	# 4. A stranded puddle dries.
 	var dry = WaterSim.new()
@@ -115,17 +132,17 @@ func _initialize() -> void:
 	dry.setup(9, 8.0, pit)
 	dry.add_water(4, 4, 0.03)
 	_run_s(dry, 600.0)
-	_check(dry.depth[4 * 9 + 4] < 0.001, "a stranded puddle dries")
+	_check(dry.depth_at(4 * 9 + 4) < 0.001, "a stranded puddle dries")
 
 	# 5. The spring multiplier (rain later) swells the flow.
 	var swell = WaterSim.new()
 	swell.setup(side, 8.0, slope.duplicate())
 	swell.add_spring(2, 20, 3.0)
 	_run_s(swell, 900.0)
-	var calm: float = swell.depth[20 * side + 10]
+	var calm: float = swell.depth_at(20 * side + 10)
 	swell.spring_multiplier = 3.0
 	_run_s(swell, 900.0)
-	_check(swell.depth[20 * side + 10] > calm, "a bigger spring rate makes the river swell")
+	_check(swell.depth_at(20 * side + 10) > calm, "a bigger spring rate makes the river swell")
 
 	# 6. Real flow (owner, 2026-10-19): in a channel, less water runs shallower (a
 	# trickle at 0.1) and more water rises and spreads wider (a flood at 5x).
@@ -139,16 +156,16 @@ func _initialize() -> void:
 	flood.setup(side, 8.0, channel)
 	flood.add_spring(2, 20, 10.0)
 	_run_s(flood, 3000.0)
-	var normal_depth: float = flood.depth[20 * side + 20]
+	var normal_depth: float = flood.depth_at(20 * side + 20)
 	var normal_wet: int = flood.wet_cells()
 	flood.spring_multiplier = 0.1
 	_run_s(flood, 3000.0)
-	var low_depth: float = flood.depth[20 * side + 20]
+	var low_depth: float = flood.depth_at(20 * side + 20)
 	_check(low_depth < normal_depth * 0.5, "at 0.1 the river drops to a trickle (%.2f m from %.2f m)" % [low_depth, normal_depth])
 	flood.spring_multiplier = 5.0
 	_run_s(flood, 3000.0)
-	print("  channel at 10 m3/s: %.2f m deep, %d wet squares; at 0.1: %.2f m; at 5x: %.2f m, %d wet squares" % [normal_depth, normal_wet, low_depth, flood.depth[20 * side + 20], flood.wet_cells()])
-	_check(flood.depth[20 * side + 20] > normal_depth * 1.5 and flood.wet_cells() > normal_wet, "at 5x the river rises and spreads (%.2f m, %d wet squares from %d)" % [flood.depth[20 * side + 20], flood.wet_cells(), normal_wet])
+	print("  channel at 10 m3/s: %.2f m deep, %d wet squares; at 0.1: %.2f m; at 5x: %.2f m, %d wet squares" % [normal_depth, normal_wet, low_depth, flood.depth_at(20 * side + 20), flood.wet_cells()])
+	_check(flood.depth_at(20 * side + 20) > normal_depth * 1.5 and flood.wet_cells() > normal_wet, "at 5x the river rises and spreads (%.2f m, %d wet squares from %d)" % [flood.depth_at(20 * side + 20), flood.wet_cells(), normal_wet])
 
 	# 7. Digging (owner, 2026-10-19): a ditch dug from a walled pond down the slope drains it.
 	var land: PackedFloat32Array = PackedFloat32Array()
@@ -175,7 +192,7 @@ func _initialize() -> void:
 			pond.add_water(i, j, 3.0)
 
 	_run_s(pond, 600.0)
-	var kept: float = pond.depth[20 * side + 10]
+	var kept: float = pond.depth_at(20 * side + 10)
 	_check(kept > 2.5, "a walled pond keeps its water (%.2f m)" % kept)
 	# Dig through the east wall and on down the slope (2 m holes, 4 m apart).
 	var origin: Vector2 = Vector2.ZERO
@@ -185,7 +202,7 @@ func _initialize() -> void:
 		pond.dig(Vector3(x, land[20 * side + int(x / 8.0)] - 0.5, 20.0 * 8.0), 2.5, origin)
 
 	_run_s(pond, 3000.0)
-	_check(pond.depth[20 * side + 10] < kept - 0.5, "a ditch dug from the pond drains it (%.2f m from %.2f m)" % [pond.depth[20 * side + 10], kept])
+	_check(pond.depth_at(20 * side + 10) < kept - 0.5, "a ditch dug from the pond drains it (%.2f m from %.2f m)" % [pond.depth_at(20 * side + 10), kept])
 
 	# 10. The drawing levels kept up to date from changed squares match a full recount.
 	var inc = WaterSim.new()
@@ -200,7 +217,7 @@ func _initialize() -> void:
 	inc.level_map()
 	_run(inc, 120)
 	var fast: PackedFloat32Array = inc.level_map()
-	inc._levels = PackedFloat32Array()
+	inc.reset_levels()
 	var full: PackedFloat32Array = inc.level_map()
 	var same: bool = true
 
@@ -210,5 +227,3 @@ func _initialize() -> void:
 
 	_check(same, "kept-up-to-date drawing levels match a full recount")
 
-	print("water sim: %d passed, %d failed" % [_passed, _failed])
-	quit(1 if _failed > 0 else 0)

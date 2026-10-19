@@ -69,7 +69,7 @@ func _init() -> void:
 
 	var out: String = "%s/water/tile_%d_%d.water" % [WORLD_DIR, tile.x, tile.y]
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(WORLD_DIR + "/water"))
-	var saved: int = WaterStore.save(out, side, sim.depth)
+	var saved: int = WaterStore.save(out, side, sim.get_depth())
 	print("saved %d wet cells to %s" % [saved, out])
 
 	if picture != "":
@@ -80,6 +80,7 @@ func _init() -> void:
 
 func _draw(sim, side: int, path: String) -> void:
 	var image: Image = Image.create(side, side, false, Image.FORMAT_RGB8)
+	var depth: PackedFloat32Array = sim.get_depth()
 
 	for j in range(side):
 		for i in range(side):
@@ -90,8 +91,8 @@ func _draw(sim, side: int, path: String) -> void:
 			var shade: float = clampf(0.62 - 0.05 * east - 0.03 * south, 0.25, 0.95)
 			var color: Color = Color(shade * 0.85, shade * 0.9, shade * 0.7) if g > 0.0 else Color(0.1, 0.2, 0.35)
 
-			if sim.depth[k] >= sim.WET_M and g > 0.0:
-				color = Color(0.1, 0.35, 0.8).lerp(Color(0.0, 0.1, 0.4), clampf(sim.depth[k] / 4.0, 0.0, 1.0))
+			if depth[k] >= sim.WET_M and g > 0.0:
+				color = Color(0.1, 0.35, 0.8).lerp(Color(0.0, 0.1, 0.4), clampf(depth[k] / 4.0, 0.0, 1.0))
 
 			image.set_pixel(i, j, color)
 

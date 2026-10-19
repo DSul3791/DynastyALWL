@@ -1,0 +1,9 @@
+; The water simulation core in C++ (native/water_core, built by native/water_core/build.sh).
+; src/water/water_sim.gd uses it when it loads and falls back to GDScript otherwise.
+[configuration]
+entry_symbol = "water_core_init"
+compatibility_minimum = "4.7"
+
+[libraries]
+linux.x86_64 = "res://addons/water_core/bin/libwatercore.linux.template_release.x86_64.so"
+windows.x86_64 = "res://addons/water_core/bin/libwatercore.windows.template_release.x86_64.dll"

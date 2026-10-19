@@ -38,6 +38,11 @@ const LEVEL_M := 0.002          # smaller level differences count as level
 const DRY_M_PER_S := 0.0001     # how fast a stranded puddle dries (fast, for play: 6 cm in 10 minutes)
 
 
+# The C++ core (addons/water_core, native/water_core) runs the hot loop when it loads; this
+# script is the fallback and keeps everything that is not hot. Set force_script to test
+# the GDScript path.
+static var force_script: bool = false
+
 var side: int = 0
 var spacing_m: float = 8.0
 var ground: PackedFloat32Array = PackedFloat32Array()
@@ -60,6 +65,12 @@ var _dirty: PackedInt32Array = PackedInt32Array()
 var _active: PackedInt32Array = PackedInt32Array()
 var _touched: PackedInt32Array = PackedInt32Array()
 var _deepest: float = 1.0       # deepest active water last tick (sets the time step)
+var _core = null                # WaterCore when the C++ add-on is loaded
+
+
+# Whether the C++ core is in use.
+func native() -> bool:
+	return _core != null
 
 
 func setup(cells_per_side: int, spacing: float, ground_heights: PackedFloat32Array) -> void:
@@ -86,6 +97,16 @@ func setup(cells_per_side: int, spacing: float, ground_heights: PackedFloat32Arr
 	seconds = 0.0
 	evaporated_m3 = 0.0
 	sea_m3 = 0.0
+	_core = null
+
+	if not force_script and ClassDB.class_exists("WaterCore"):
+		_core = ClassDB.instantiate("WaterCore")
+		_core.setup(side, spacing_m, ground)
+		# The C++ core holds the state; keep only the ground here (digging reads it).
+		depth = PackedFloat32Array()
+		flow_x = PackedFloat32Array()
+		flow_z = PackedFloat32Array()
+		_delta = PackedFloat32Array()
 
 
 func cell(i: int, j: int) -> int:
@@ -93,18 +114,55 @@ func cell(i: int, j: int) -> int:
 
 
 func level(k: int) -> float:
-	return ground[k] + depth[k]
+	return ground[k] + depth_at(k)
+
+
+func depth_at(k: int) -> float:
+	return _core.depth_at(k) if _core != null else depth[k]
+
+
+# All depths (a copy when the C++ core runs).
+func get_depth() -> PackedFloat32Array:
+	return _core.get_depth() if _core != null else depth
+
+
+func set_depth(values: PackedFloat32Array) -> void:
+	if _core != null:
+		_core.set_depth(values)
+	else:
+		depth = values.duplicate()
+
+		for k in range(depth.size()):
+			_dirty.append(k)
+
+
+# Forgets the drawing levels so the next level_map() works out every square.
+func reset_levels() -> void:
+	if _core != null:
+		_core.reset_levels()
+	else:
+		_levels = PackedFloat32Array()
 
 
 # A spring pouring `m3_per_s` (times spring_multiplier) forever.
 func add_spring(i: int, j: int, m3_per_s: float) -> void:
 	springs.append([cell(i, j), m3_per_s])
+
+	if _core != null:
+		_core.add_spring(cell(i, j), m3_per_s)
+		return
+
 	_spring_cell[cell(i, j)] = 1
 	_wake(cell(i, j))
 
 
 func add_water(i: int, j: int, meters: float) -> void:
 	var k: int = cell(i, j)
+
+	if _core != null:
+		_core.add_water(k, meters)
+		return
+
 	depth[k] += meters
 	_dirty.append(k)
 	_wake(k)
@@ -114,6 +172,10 @@ func add_water(i: int, j: int, meters: float) -> void:
 # Dug trenches fill because their water arrives from the cells around them.
 func rain(meters: float, cells: PackedInt32Array) -> void:
 	for k in cells:
+		if _core != null:
+			_core.add_water(k, meters)
+			continue
+
 		depth[k] += meters
 		_dirty.append(k)
 		_wake(k)
@@ -123,6 +185,11 @@ func rain(meters: float, cells: PackedInt32Array) -> void:
 func set_ground(i: int, j: int, height: float) -> void:
 	var k: int = cell(i, j)
 	ground[k] = height
+
+	if _core != null:
+		_core.set_ground(k, height)
+		return
+
 	_wake(k)
 
 	for n in [k - 1, k + 1, k - side, k + side]:
@@ -171,6 +238,9 @@ func dig(center: Vector3, radius: float, origin: Vector2) -> int:
 
 
 func total_volume() -> float:
+	if _core != null:
+		return _core.total_volume()
+
 	var total: float = 0.0
 
 	for k in range(depth.size()):
@@ -181,6 +251,9 @@ func total_volume() -> float:
 
 
 func wet_cells() -> int:
+	if _core != null:
+		return _core.wet_cells()
+
 	var count: int = 0
 
 	for k in range(depth.size()):
@@ -191,11 +264,15 @@ func wet_cells() -> int:
 
 
 func active_cells() -> int:
-	return _active.size()
+	return _core.active_cells() if _core != null else _active.size()
 
 
 # Puts every wet cell to work (after loading a saved state, or for a first settle).
 func wake_all_wet() -> void:
+	if _core != null:
+		_core.wake_all_wet()
+		return
+
 	for k in range(depth.size()):
 		if depth[k] > 0.0:
 			_wake(k)
@@ -225,6 +302,15 @@ func _face(q: float, level_a: float, ground_a: float, level_b: float, ground_b: 
 # One tick of `dt` seconds. Returns the volume moved (m3), a rough measure of how
 # settled things are.
 func step() -> float:
+	if _core != null:
+		var moved_m3: float = _core.step(spring_multiplier)
+		ticks = _core.get_ticks()
+		seconds = _core.get_seconds()
+		dt = _core.get_dt()
+		evaporated_m3 = _core.get_evaporated_m3()
+		sea_m3 = _core.get_sea_m3()
+		return moved_m3
+
 	var width: int = side
 	var area: float = spacing_m * spacing_m
 	var count: int = _active.size()
@@ -406,6 +492,9 @@ func _is_spring(k: int) -> bool:
 
 # Levels for drawing: the water level where the depth is at least WET_M, NAN elsewhere.
 func level_map() -> PackedFloat32Array:
+	if _core != null:
+		return _core.level_map()
+
 	# The first call works out every square; after that only the squares that changed.
 	if _levels.is_empty():
 		_levels.resize(depth.size())
