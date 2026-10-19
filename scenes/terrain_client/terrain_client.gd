@@ -32,6 +32,7 @@ const CompassScript := preload("res://src/client/admin_compass.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
 const BUILD := 44
 const WaterMaterial := preload("res://src/client/water_material.gd")
+const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const KnowledgeScript := preload("res://src/client/inspection_knowledge.gd")
 const StreamScript := preload("res://src/stream/network_voxel_stream.gd")
 const CacheScript := preload("res://src/stream/client_block_cache.gd")
@@ -653,6 +654,8 @@ func _apply_quality() -> void:
 
 	grass.points_per_side = QUALITY_GRASS_POINTS[quality]
 	grass.set_radius(QUALITY_GRASS_M[quality])
+	if _environment != null:
+		SkyClouds.set_quality(_environment.sky, quality)
 
 	if sea != null:
 		WaterMaterial.apply_quality(sea.material_override as ShaderMaterial, quality)
@@ -940,11 +943,13 @@ func _make_environment(root: Node3D) -> void:
 	root.add_child(sun)
 	var environment: Environment = Environment.new()
 	environment.background_mode = Environment.BG_SKY
-	var sky: Sky = Sky.new()
-	sky.sky_material = ProceduralSkyMaterial.new()
-	environment.sky = sky
+	environment.sky = SkyClouds.make_sky(quality)
 	environment.fog_enabled = true
 	environment.fog_density = 0.0004
+	# The fog used to paint the whole sky grey (owner, 2026-10-19: "the sky has nothing");
+	# the sky shader hazes its own horizon, and the fog colour matches that horizon.
+	environment.fog_sky_affect = 0.0
+	environment.fog_light_color = SkyClouds.HORIZON
 	_environment = environment
 	var world_environment: WorldEnvironment = WorldEnvironment.new()
 	world_environment.environment = environment
@@ -1427,7 +1432,8 @@ func _update_underwater() -> void:
 	underwater = under
 	_tint.visible = under
 	_environment.fog_density = 0.05 if under else 0.0004
-	_environment.fog_light_color = Color(0.08, 0.28, 0.4) if under else Color(0.518, 0.553, 0.608)
+	_environment.fog_light_color = Color(0.08, 0.28, 0.4) if under else SkyClouds.HORIZON
+	_environment.fog_sky_affect = 1.0 if under else 0.0
 
 
 # Ground height under a point, from the terrain colliders (NAN if none).
