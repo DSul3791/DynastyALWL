@@ -103,4 +103,3 @@ Audio needs its own budget, especially on the low tier *[Practice]*:
 - **Memory:** short sounds stay in RAM; long ambient beds are streamed from disk, never fully loaded. Keep total loaded sound under a set size per tier (suggested 150 MB on Low).
 - **Disk:** compressed formats (Ogg), streamed in the background, so a slow SATA drive never stalls the game. Sound adds to the install size, so it is part of the light-download goal.
 - **Placement:** sounds are placed in space (direction and distance), which is what makes a sound stage believable; keep the position math cheap and only for nearby sources.
-
