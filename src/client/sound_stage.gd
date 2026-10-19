@@ -73,7 +73,7 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	_tool = terrain.get_voxel_tool()
 	_rng.randomize()
 	_gust_noise.seed = 9
-	_gust_noise.frequency = 0.05
+	_gust_noise.frequency = 0.02
 	_gust_noise.fractal_octaves = 2
 	var wind_bus: int = _make_bus("Wind")
 	_wind_filter = AudioEffectLowPassFilter.new()
@@ -119,9 +119,10 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	var height: float = clampf((position.y - 10.0) / 300.0, 0.0, 1.0)   # higher is windier
 	var rush: float = clampf(body.velocity.length() / 80.0, 0.0, 1.0) if flying else 0.0
 	var strength: float = clampf(0.35 + 0.65 * gust + 0.4 * height - 0.45 * _shelter + rush, 0.05, 1.6)
-	_wind_low.volume_db = linear_to_db(0.18 + 0.3 * strength)
-	_wind_gust.volume_db = linear_to_db(0.02 + 0.32 * pow(strength, 1.6))
-	_wind_filter.cutoff_hz = lerpf(900.0, 9000.0, clampf(strength - 0.2 * _shelter, 0.0, 1.0))
+	# A calm day (owner, 2026-10-19: the first version sounded like a storm by the sea).
+	_wind_low.volume_db = linear_to_db(0.03 + 0.07 * strength)
+	_wind_gust.volume_db = linear_to_db(0.01 + 0.08 * pow(strength, 1.6))
+	_wind_filter.cutoff_hz = lerpf(1500.0, 7000.0, clampf(strength - 0.2 * _shelter, 0.0, 1.0))
 	_muffle.cutoff_hz = 500.0 if underwater else 20000.0
 
 	if _grass != null:
@@ -177,7 +178,7 @@ func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0) -> void:
 		# Blades brushing the boots: louder in thick and tall grass and at speed.
 		var name: String = "grass_brush_tall" if tall > 0.35 else "grass_brush"
 		var amount: float = clampf(thick * (0.6 + 0.6 * tall), 0.0, 1.0)
-		_play(name, linear_to_db(0.12 + 0.4 * amount) + GAIT_DB[gait] * 1.5, _rng.randf_range(0.9, 1.1) * (1.0 + 0.05 * gait))
+		_play(name, linear_to_db(0.06 + 0.2 * amount) + GAIT_DB[gait] * 1.5, _rng.randf_range(0.9, 1.1) * (1.0 + 0.05 * gait))
 		swishes_played += 1
 
 

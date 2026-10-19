@@ -144,10 +144,12 @@ def step_base(rng, length, f0, decay, heel=1.0, toe=0.45, click_cut=1200.0):
 def step_grass(rng):
     out, toe = step_base(rng, 0.42, 75, 0.022, heel=0.55, toe=0.25, click_cut=700)
     n = len(out)
-    blades = lambda: burst(rng, rng.uniform(0.002, 0.006), rng.uniform(1500, 4000), 0.6)
-    crush = grains(rng, n, 90, 0.005, 0.14, blades) + 0.6 * grains(rng, n, 50, toe, 0.12, blades)
-    swish = noise(rng, n, lambda f: band(f, 2400, 1.0)) * env(n, 0.03, 0.08, int(0.01 * SR))
-    return finish(out / 3.0 + 0.35 * crush + 0.08 * swish)
+    # A soft, dark rustle under the boot. Many tiny bright grains read as
+    # crinkling plastic, so the texture is smooth noise kept below about 2 kHz.
+    rustle = noise(rng, n, lambda f: band(f, 900, 1.2) * lowpass(f, 2200, 3) * highpass(f, 120))
+    rustle /= np.max(np.abs(rustle)) + 1e-9
+    soft = env(n, 0.015, 0.05, int(0.004 * SR)) + 0.5 * env(n, 0.015, 0.045, int(toe * SR))
+    return finish(out / 2.0 + 0.22 * rustle * soft)
 
 
 def step_dirt(rng):
@@ -233,20 +235,21 @@ def step_snow(rng):
 
 
 def step_water(rng):
-    n = int(0.6 * SR)
+    # Short and dry: long tails and many ringing bubbles sounded like a tunnel.
+    n = int(0.32 * SR)
     out = np.zeros(n)
-    splash = noise(rng, n, lambda f: band(f, 2000, 1.3) * highpass(f, 300)) * env(n, 0.006, 0.09)
-    slosh = noise(rng, n, lambda f: lowpass(f, 600, 2) * highpass(f, 60)) * env(n, 0.03, 0.18)
+    splash = noise(rng, n, lambda f: band(f, 2200, 1.4) * highpass(f, 300)) * env(n, 0.004, 0.035)
+    slosh = noise(rng, n, lambda f: lowpass(f, 900, 2) * highpass(f, 80)) * env(n, 0.015, 0.06)
     splash /= np.max(np.abs(splash)) + 1e-9
     slosh /= np.max(np.abs(slosh)) + 1e-9
-    out += 0.7 * splash + 0.45 * slosh
-    for _ in range(rng.integers(8, 15)):
-        f0 = rng.uniform(450, 1800)
-        d = rng.uniform(0.012, 0.035)
+    out += 0.8 * splash + 0.4 * slosh
+    for _ in range(rng.integers(2, 4)):
+        f0 = rng.uniform(700, 1500)
+        d = rng.uniform(0.004, 0.008)
         m = int(d * 5 * SR)
         tt = np.arange(m) / SR
-        bubble = np.sin(2 * np.pi * np.cumsum(f0 * (1 + 4.0 * tt)) / SR) * np.exp(-tt / d)
-        add(out, rng.uniform(0.1, 0.35) * bubble, rng.uniform(0.01, 0.3))
+        bubble = np.sin(2 * np.pi * np.cumsum(f0 * (1 + 3.0 * tt)) / SR) * np.exp(-tt / d)
+        add(out, rng.uniform(0.05, 0.12) * bubble, rng.uniform(0.02, 0.12))
     return finish(out)
 
 
@@ -271,14 +274,9 @@ def brush(rng, length, center, body):
     t = np.arange(n) / SR
     rise = rng.uniform(0.25, 0.35) * length
     shape_env = np.where(t < rise, np.sin(0.5 * np.pi * t / rise) ** 2, np.exp(-(t - rise) / (0.28 * length)))
-    air = noise(rng, n, lambda f: (band(f, center, 1.0) + body * band(f, center * 0.4, 0.8)) * lowpass(f, 6000, 2))
+    air = noise(rng, n, lambda f: (band(f, center, 1.0) + body * band(f, center * 0.4, 0.8)) * lowpass(f, 3000, 3))
     air /= np.max(np.abs(air)) + 1e-9
-    flick = lambda: burst(rng, rng.uniform(0.002, 0.006), rng.uniform(2500, 5000), 0.5)
-    flicks = np.zeros(n)
-    for _ in range(70):
-        at = rng.beta(2.0, 3.0) * length
-        add(flicks, flick() * rng.uniform(0.1, 0.6), at)
-    return finish(air * shape_env + 0.25 * flicks * shape_env)
+    return finish(air * shape_env)
 
 
 # ---------------------------------------------------------------- wind
@@ -297,7 +295,8 @@ def wind_loop(rng, seconds, layer):
     out = np.zeros(n)
     # Gust shape: slow sines that each fit a whole number of times in the loop.
     phases = rng.uniform(0, 2 * np.pi, 4)
-    cycles = [1, 2, 3, 7] if layer == "low" else [2, 3, 5, 9]
+    # Only slow swells (a few per minute); faster ones sounded like surf.
+    cycles = [1, 2, 3, 4] if layer == "low" else [1, 2, 3, 5]
     weights = [0.45, 0.3, 0.17, 0.08]
     whistle_cycles = [1, 2]
     for k in range(frames):
@@ -309,16 +308,17 @@ def wind_loop(rng, seconds, layer):
         spec = np.fft.rfft(white[idx] * window)
         pink = 1.0 / np.sqrt(np.maximum(f, 20.0))
         if layer == "low":
-            cut = 220 + 520 * g
-            gain = pink * lowpass(f, cut, 2) * highpass(f, 35, 2) * (0.45 + 0.55 * g)
+            # A soft airy hush, not a roar: little below 150 Hz.
+            cut = 500 + 500 * g
+            gain = pink * lowpass(f, cut, 2) * highpass(f, 150, 2) * (0.6 + 0.4 * g)
         else:
-            center = 700 + 900 * g
-            gain = pink * band(f, center, 1.4) * highpass(f, 200, 2)
-            # Two faint whistles drifting in pitch, strongest in the gusts.
+            # Leaves and grass stirring: airy, faint whistle only at the peaks.
+            center = 1500 + 900 * g
+            gain = pink * band(f, center, 1.2) * highpass(f, 300, 2)
             for j, c in enumerate(whistle_cycles):
-                wf = 620 + 260 * j + 120 * np.sin(2 * np.pi * c * x + phases[j])
-                gain = gain + 0.35 * pink * band(f, wf, 0.04) * g ** 2
-            gain = gain * (0.15 + 0.85 * g ** 1.5)
+                wf = 700 + 260 * j + 120 * np.sin(2 * np.pi * c * x + phases[j])
+                gain = gain + 0.08 * pink * band(f, wf, 0.04) * g ** 3
+            gain = gain * (0.25 + 0.75 * g ** 1.5)
         frame = np.fft.irfft(spec * gain, win) * window
         out[idx] += frame
     out /= 1.5  # hann squared at quarter hop sums to 1.5
@@ -336,11 +336,11 @@ def main():
             write_ogg("step_%s_%d" % (name, v), make(rng))
             made.append("step_%s_%d" % (name, v))
     for v in range(4):
-        write_ogg("grass_brush_%d" % v, brush(rng, rng.uniform(0.38, 0.5), 2200, 0.2))
-        write_ogg("grass_brush_tall_%d" % v, brush(rng, rng.uniform(0.6, 0.8), 1600, 0.5))
+        write_ogg("grass_brush_%d" % v, brush(rng, rng.uniform(0.38, 0.5), 1400, 0.3))
+        write_ogg("grass_brush_tall_%d" % v, brush(rng, rng.uniform(0.6, 0.8), 1100, 0.5))
         made += ["grass_brush_%d" % v, "grass_brush_tall_%d" % v]
-    write_ogg("wind_low", wind_loop(rng, 24.0, "low"), 3)
-    write_ogg("wind_gust", wind_loop(rng, 31.0, "gust"), 3)
+    write_ogg("wind_low", wind_loop(rng, 60.0, "low"), 3)
+    write_ogg("wind_gust", wind_loop(rng, 47.0, "gust"), 3)
     made += ["wind_low", "wind_gust"]
     print("Wrote %d sounds to %s" % (len(made), HERE))
 
