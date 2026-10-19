@@ -13,6 +13,8 @@ render_mode blend_mix, cull_disabled, shadows_disabled, specular_schlick_ggx;
 uniform vec3 shallow_color : source_color = vec3(0.17, 0.33, 0.33);
 uniform vec3 deep_color : source_color = vec3(0.04, 0.17, 0.24);
 uniform vec3 foam_color : source_color = vec3(0.78, 0.82, 0.80);
+uniform vec3 mud_color : source_color = vec3(0.36, 0.27, 0.16);
+uniform float mud = 0.0;             // 0 clear, 1 brown flood water (rivers and ponds above x1, set by the client)
 uniform float clarity_m = 0.45;      // water this thick hides about two thirds of what is behind it
 uniform float edge_alpha = 0.35;     // the thinnest water
 uniform float fastest_m_s = 2.5;     // drawn speed of the steepest running water
@@ -56,7 +58,7 @@ void fragment() {
 	vec4 behind = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, scene, 1.0);
 	behind.xyz /= behind.w;
 	float through = max(VERTEX.z - behind.z, 0.0);   // meters of water along the view ray
-	float murk = 1.0 - exp(-through / clarity_m);
+	float murk = 1.0 - exp(-through / (clarity_m * (1.0 - 0.7 * mud)));
 
 	// Running water (owner, 2026-10-19): ripples carried downstream at a speed that grows
 	// with the slope (about as the square root, as in real channels); two copies half a
@@ -80,7 +82,8 @@ void fragment() {
 	float streaks = smoothstep(0.62, 0.9, mix(ripples(streak_p - vec2(TIME * length(velocity) * 0.25, 0.0)), ripples(streak_p + 11.0 - vec2(TIME * length(velocity) * 0.25, 0.0)), 0.5));
 	float foam = streaks * smoothstep(0.15, 0.8, steep);
 
-	ALBEDO = mix(mix(shallow_color, deep_color, murk), foam_color, foam * 0.5);
+	vec3 water = mix(mix(shallow_color, deep_color, murk), mud_color * mix(1.0, 0.7, murk), mud);
+	ALBEDO = mix(water, mix(foam_color, mud_color * 1.6, mud * 0.6), foam * 0.5);
 	ALPHA = max(mix(edge_alpha, 0.97, murk), foam * 0.8) * sheet_alpha;
 	ROUGHNESS = 0.08 + 0.3 * foam;
 	SPECULAR = 0.6;

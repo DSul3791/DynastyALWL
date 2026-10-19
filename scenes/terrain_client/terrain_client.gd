@@ -447,6 +447,9 @@ func _on_water_rate(rate: float, busy: bool, spring_m3_s: float) -> void:
 		rate, spring_m3_s, _thousands(int(round(spring_m3_s * 264.17 * 60.0))), "  (running...)" if busy else ""]
 	_water_label_until_msec = Time.get_ticks_msec() + 3000
 
+	if flora != null:
+		flora.set_flow_rate(rate)
+
 
 func _thousands(value: int) -> String:
 	var text: String = str(value)
