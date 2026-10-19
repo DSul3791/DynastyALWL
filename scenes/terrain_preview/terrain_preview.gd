@@ -307,6 +307,7 @@ func _process(_delta: float) -> void:
 # Hands finished flora chunks to the view and starts the ones coming into
 # view on worker threads.
 func _update_flora(p: Vector3) -> void:
+	flora.apply_built()
 	_flora_mutex.lock()
 	var done: Array = _flora_done
 	_flora_done = []

@@ -25,6 +25,7 @@ extends Node
 # jog double-tap W, run Shift+W, G or F fly or walk, Esc opens the options menu.
 
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
+const Probe := preload("res://src/debug/frame_probe.gd")
 const KnowledgeScript := preload("res://src/client/inspection_knowledge.gd")
 const StreamScript := preload("res://src/stream/network_voxel_stream.gd")
 const CacheScript := preload("res://src/stream/client_block_cache.gd")
@@ -377,7 +378,9 @@ func _on_welcome(info: Dictionary) -> void:
 
 func _on_blocks(keys: PackedInt32Array, payloads: Array) -> void:
 	if stream != null:
+		var t: int = Probe.start()
 		stream.deliver(keys, payloads)
+		Probe.stop("blocks in", t)
 
 
 func _on_tile_changed(tile: Vector2i, revision: int) -> void:
@@ -413,7 +416,13 @@ func _on_flora(chunk: Vector2i, bytes: PackedByteArray, water: PackedByteArray) 
 	_flora_chunks += 1
 	_flora_bytes += bytes.size() + water.size()
 	_flora_done_msec = Time.get_ticks_msec() - connected_msec
-	flora.set_chunk(chunk, PlacerScript.decode(bytes, Vector2(chunk) * flora.chunk_m), body.global_position, WaterGridScript.decode(water))
+	var t: int = Probe.start()
+	var items: Dictionary = PlacerScript.decode(bytes, Vector2(chunk) * flora.chunk_m)
+	var water_cells: Dictionary = WaterGridScript.decode(water)
+	Probe.stop("flora decode", t)
+	t = Probe.start()
+	flora.set_chunk(chunk, items, body.global_position, water_cells)
+	Probe.stop("flora chunk in", t)
 
 
 func _on_water_rate(rate: float, busy: bool) -> void:
@@ -439,7 +448,9 @@ func _on_water_changed() -> void:
 
 func _on_water_received(chunk: Vector2i, water: PackedByteArray) -> void:
 	if flora != null:
+		var t: int = Probe.start()
 		flora.set_water(chunk, WaterGridScript.decode(water))
+		Probe.stop("water in", t)
 
 
 func _on_flora_cut(chunk: Vector2i, id: int) -> void:
@@ -893,6 +904,12 @@ func _physics_process(delta: float) -> void:
 	if body == null:
 		return
 
+	var t: int = Probe.start()
+	_move_player(delta)
+	Probe.stop("player move", t)
+
+
+func _move_player(delta: float) -> void:
 	if menu_open:
 		body.velocity = Vector3.ZERO
 		return
@@ -990,6 +1007,7 @@ func _process(delta: float) -> void:
 		_water_label.text = ""
 
 	_frame_ms.append(delta * 1000.0)
+	Probe.frame(delta)
 
 	if _frame_ms.size() > 120:
 		_frame_ms.pop_front()
@@ -1027,9 +1045,11 @@ func _process(delta: float) -> void:
 
 	if now >= _budget_check_msec:
 		_budget_check_msec = now + 15000
+		var tc: int = Probe.start()
 		cache.flush()
 		var p: Vector3 = body.global_position
 		var removed: int = cache.enforce_budget(cache.tile_of_block(Vector3i(int(floor(p.x / 16.0)), 0, int(floor(p.z / 16.0))), 0))
+		Probe.stop("cache upkeep", tc)
 
 		if removed > 0:
 			print("Terrain client: cache over %d MB, removed %d far tiles" % [cache_mb, removed])
@@ -1038,10 +1058,19 @@ func _process(delta: float) -> void:
 
 	if now >= _flora_check_msec:
 		_flora_check_msec = now + 500
+		var tf: int = Probe.start()
 		_update_flora()
+		Probe.stop("flora update", tf)
+
+	if flora != null:
+		var ta: int = Probe.start()
+		flora.apply_built()
+		Probe.stop("flora apply", ta)
 
 	if not flying and body != null:
+		var tg: int = Probe.start()
 		grass.update(body.global_position)
+		Probe.stop("grass", tg)
 
 	if _bake.running and now >= _bake_check_msec:
 		_bake_check_msec = now + 2000
@@ -1145,6 +1174,8 @@ func _process(delta: float) -> void:
 				flora.water_chunks, flora.water_cells
 			])
 			print("Terrain client: grass %d tufts in %d cells (radius %.0f m)" % [grass.tufts, grass.cells_built, grass.radius_m])
+			print("Terrain client: blocks waited for %d times, %.0f ms on average, worst %d ms; at most %d loader threads waiting at once" % [stream.waits, float(stream.wait_msec_total) / maxf(float(stream.waits), 1.0), stream.wait_msec_worst, stream.most_waiting])
+			print(Probe.report())
 			var probe: Vector3i = Vector3i((Vector3(world["spawn"]) + Vector3(0.0, -3.0, 0.0)).round())
 			print("Terrain client: ground value 3 m under the spawn %.2f (above 0 is open)" % terrain.get_voxel_tool().get_voxel_f(probe))
 			_finish(0)

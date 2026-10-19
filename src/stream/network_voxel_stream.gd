@@ -28,6 +28,10 @@ var bad_blocks: int = 0               # blocks that arrived damaged or would not
 var prefetch_used: int = 0
 var loads: int = 0                    # blocks Voxel Tools asked for
 var last_load_msec: int = 0
+var waits: int = 0                    # loads that had to wait for the server
+var wait_msec_total: int = 0
+var wait_msec_worst: int = 0
+var most_waiting: int = 0             # most loader threads waiting for the server at once
 
 var _mutex: Mutex = Mutex.new()
 var _outbox: PackedInt32Array = PackedInt32Array()         # urgent keys
@@ -78,6 +82,7 @@ func _load_voxel_block(out_buffer: VoxelBuffer, block: Vector3i, lod: int) -> in
 						_asked[near] = true
 						_prefetch.append_array(PackedInt32Array([near.x, near.y, near.z, lod]))
 
+	most_waiting = maxi(most_waiting, _waiting.size())
 	_mutex.unlock()
 	var started: int = Time.get_ticks_msec()
 	var bytes: PackedByteArray = PackedByteArray()
@@ -97,6 +102,13 @@ func _load_voxel_block(out_buffer: VoxelBuffer, block: Vector3i, lod: int) -> in
 			break
 
 		OS.delay_msec(2)
+
+	_mutex.lock()
+	var waited: int = Time.get_ticks_msec() - started
+	waits += 1
+	wait_msec_total += waited
+	wait_msec_worst = maxi(wait_msec_worst, waited)
+	_mutex.unlock()
 
 	if bytes.is_empty():
 		_mutex.lock()

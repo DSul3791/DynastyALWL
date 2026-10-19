@@ -168,6 +168,7 @@ const KINDS := ["tree", "shrub", "plant"]
 const GLOW_CELL_M := 24.0   # one glow light per this square of a glowing grove
 const GLOW_LIGHTS := 24     # at most this many glow lights per chunk
 const PART_M := [256.0, 128.0, 128.0]
+const SHAPES_PER_BODY := 64  # trunk colliders per body
 
 var chunk_m: float = 256.0
 var view_m: PackedFloat32Array = PackedFloat32Array([900.0, 300.0, 120.0])
@@ -185,6 +186,12 @@ var _alikes: Dictionary = {}           # species id -> names of look-alike speci
 var _slugs: Dictionary = {}            # species id -> table name
 var _labels: Dictionary = {}           # species id -> name with a note on its main property
 var _chunks: Dictionary = {}           # Vector2i -> {"items", "level", "node"}
+var _serial: int = 0                   # numbers each chunk plan, so an outdated plan is skipped
+var _tasks: Array = []                 # WorkerThreadPool tasks making chunk plans
+var _built: Array = []                 # finished plans: [chunk, serial, level, plan]
+var _built_mutex: Mutex = Mutex.new()
+var _trunk_shapes: Dictionary = {}     # radius in cm -> CylinderShape3D
+var _jobs: Array = []                  # chunk drawings being put in the scene piece by piece
 var _trunk_material: StandardMaterial3D
 var _softwood_material: StandardMaterial3D   # conifer trunks: dark brown
 var _hardwood_material: StandardMaterial3D   # broadleaf trunks: gray
@@ -568,6 +575,7 @@ func remove_item(chunk: Vector2i, id: int, position: Vector3) -> void:
 		items[key].remove_at(index)
 
 	entry["level"] = -1
+	entry.erase("building")
 	_refresh(chunk, position)
 
 
@@ -617,24 +625,109 @@ func _level(chunk: Vector2i, position: Vector3) -> int:
 	return level
 
 
+# Owner (2026-10-19): the game paused while flying because redrawing a chunk (hundreds of
+# trees, set one by one) ran on the main thread, several chunks at a time. Now the layout of
+# a chunk is worked out on a worker thread (_plan) and only the finished pieces are put in
+# the scene on the main thread (apply_built, called every frame).
 func _refresh(chunk: Vector2i, position: Vector3) -> void:
 	var entry: Dictionary = _chunks[chunk]
 	var level: int = _level(chunk, position)
 
-	if level == entry["level"]:
+	if level == entry["level"] or level == entry.get("building", -2):
 		return
 
-	_clear_node(entry)
-	entry["level"] = level
-	var node: Node3D = Node3D.new()
-	node.name = "Chunk_%d_%d" % [chunk.x, chunk.y]
-	add_child(node)
-	entry["node"] = node
-	var items: Dictionary = entry["items"]
+	_serial += 1
+	entry["building"] = level
+	entry["serial"] = _serial
+	var items: Dictionary = entry["items"].duplicate(true)
+	_tasks.append(WorkerThreadPool.add_task(_plan_task.bind(chunk, _serial, level, items), false, "flora chunk"))
+
+
+func _plan_task(chunk: Vector2i, serial: int, level: int, items: Dictionary) -> void:
+	var plan: Dictionary = _plan(items, level)
+	_built_mutex.lock()
+	_built.append([chunk, serial, level, plan])
+	_built_mutex.unlock()
+
+
+# Puts finished chunks in the scene a few pieces at a time, for about budget_usec per call
+# (always some progress). Call every frame. A chunk keeps its old drawing until the new
+# one is complete, so nothing blinks out.
+func apply_built(budget_usec: int = 3000) -> void:
+	var still: Array = []
+
+	for task in _tasks:
+		if WorkerThreadPool.is_task_completed(task):
+			WorkerThreadPool.wait_for_task_completion(task)
+		else:
+			still.append(task)
+
+	_tasks = still
+	_built_mutex.lock()
+	var arrived: Array = _built
+	_built = []
+	_built_mutex.unlock()
+
+	for next in arrived:
+		var entry: Dictionary = _chunks.get(next[0], {})
+
+		# Dropped, or asked again since: a newer plan is on its way.
+		if not entry.is_empty() and int(entry.get("serial", -1)) == int(next[1]):
+			var node: Node3D = Node3D.new()
+			node.name = "Chunk_%d_%d" % [next[0].x, next[0].y]
+			add_child(node)
+			_jobs.append({"chunk": next[0], "serial": next[1], "level": next[2], "plan": next[3], "node": node, "draw": 0, "shape": 0})
+
+	var started: int = Time.get_ticks_usec()
+
+	while not _jobs.is_empty() and Time.get_ticks_usec() - started < budget_usec:
+		var job: Dictionary = _jobs[0]
+		var entry: Dictionary = _chunks.get(job["chunk"], {})
+
+		if entry.is_empty() or int(entry.get("serial", -1)) != int(job["serial"]):
+			_discard(job["node"])
+			_jobs.pop_front()
+			continue
+
+		if _apply_step(job):
+			_clear_node(entry)
+			entry["node"] = job["node"]
+			entry["level"] = job["level"]
+			entry.erase("building")
+			entry["drawn"] = _drawn_count(job["node"])
+			_jobs.pop_front()
+
+
+# A half-built drawing that is no longer wanted.
+func _discard(node: Node3D) -> void:
+	for child in node.get_children():
+		if child is MultiMeshInstance3D:
+			instances -= child.multimesh.instance_count
+		elif child is StaticBody3D:
+			colliders -= child.get_child_count()
+
+	node.queue_free()
+
+
+func _exit_tree() -> void:
+	finish_tasks()
+
+
+# Waits for chunk work still running (call before freeing the view).
+func finish_tasks() -> void:
+	for task in _tasks:
+		WorkerThreadPool.wait_for_task_completion(task)
+
+	_tasks = []
+
+
+# The drawing of a chunk at a level, as plain data (safe on a worker thread): per group of
+# one species, part and model a MultiMesh buffer; trunk colliders; glow lights.
+func _plan(items: Dictionary, level: int) -> Dictionary:
 	var ids: PackedInt32Array = items["ids"]
-	var groups: Dictionary = {}       # [species, part] -> PackedInt32Array of indices
-	var body: StaticBody3D = null
-	var shape_species: PackedInt32Array = PackedInt32Array()
+	var groups: Dictionary = {}       # [species, part x, part z, variant, near] -> PackedInt32Array of indices
+	var shapes: Array = []            # [species, radius, position]
+	var lights: Array = []
 
 	for n in range(ids.size()):
 		var species_id: int = ids[n] >> 16
@@ -660,23 +753,8 @@ func _refresh(chunk: Vector2i, position: Vector3) -> void:
 		groups[key].append(n)
 
 		if (level & 8) != 0 and int(info["kind"]) != KIND_PLANT and float(info["trunk"]) >= 0.1:
-			if body == null:
-				body = StaticBody3D.new()
-				node.add_child(body)
-
-			var shape: CollisionShape3D = CollisionShape3D.new()
-			var cylinder: CylinderShape3D = CylinderShape3D.new()
 			var scale: float = float(items["heights"][n]) / float(info["height"])
-			cylinder.radius = float(info["trunk"]) * scale
-			cylinder.height = 3.0
-			shape.shape = cylinder
-			shape.position = p + Vector3(0.0, 1.2, 0.0)
-			body.add_child(shape)
-			shape_species.append(species_id)
-			colliders += 1
-
-	if body != null:
-		body.set_meta("species_ids", shape_species)
+			shapes.append([species_id, float(info["trunk"]) * scale, p + Vector3(0.0, 1.2, 0.0)])
 
 	# Glowing trees (everember, witness tree) light the ground around them, near the player
 	# only: one warm light per GLOW_CELL_M square, at most GLOW_LIGHTS per chunk.
@@ -700,47 +778,131 @@ func _refresh(chunk: Vector2i, position: Vector3) -> void:
 
 			lit[cell] = true
 			var scale: float = float(items["heights"][n]) / float(info["height"])
-			var light: OmniLight3D = OmniLight3D.new()
-			light.light_color = info["glow"]
-			light.light_energy = float(info["glow_energy"])
-			light.omni_range = maxf(8.0 + float(info["trunk"]) * scale * 4.0, float(items["heights"][n]) * 0.6)
-			light.shadow_enabled = false
-			light.distance_fade_enabled = true
-			light.distance_fade_begin = collision_m * 0.7
-			light.distance_fade_length = collision_m * 0.3
-			light.position = p + Vector3(0.0, maxf(2.0, float(items["heights"][n]) * float(info["glow_height"])), 0.0)
-			node.add_child(light)
+			lights.append([info["glow"], float(info["glow_energy"]),
+				maxf(8.0 + float(info["trunk"]) * scale * 4.0, float(items["heights"][n]) * 0.6),
+				p + Vector3(0.0, maxf(2.0, float(items["heights"][n]) * float(info["glow_height"])), 0.0)])
+
+	var draws: Array = []
 
 	for key in groups:
 		var info: Dictionary = _species[key[0]]
 		var indices: PackedInt32Array = groups[key]
-		var multimesh: MultiMesh = MultiMesh.new()
-		multimesh.transform_format = MultiMesh.TRANSFORM_3D
-		multimesh.mesh = (info["near"] if key[4] == 1 else info["far"])[key[3]]
-		multimesh.use_custom_data = bool(info["tinted"])
-		multimesh.instance_count = indices.size()
+		var tinted: bool = bool(info["tinted"])
+		var stride: int = 16 if tinted else 12
+		var buffer: PackedFloat32Array = PackedFloat32Array()
+		buffer.resize(indices.size() * stride)
 
 		for m in range(indices.size()):
 			var n: int = indices[m]
 			var scale: float = float(items["heights"][n]) / float(info["height"])
 			var basis: Basis = Basis(Vector3.UP, float(items["yaws"][n])).scaled(Vector3.ONE * scale)
 			# Sunk a little so slopes do not show a gap under the trunk.
-			multimesh.set_instance_transform(m, Transform3D(basis, items["positions"][n] - Vector3(0.0, 0.15, 0.0)))
+			var origin: Vector3 = items["positions"][n] - Vector3(0.0, 0.15, 0.0)
+			var o: int = m * stride
+			buffer[o] = basis.x.x
+			buffer[o + 1] = basis.y.x
+			buffer[o + 2] = basis.z.x
+			buffer[o + 3] = origin.x
+			buffer[o + 4] = basis.x.y
+			buffer[o + 5] = basis.y.y
+			buffer[o + 6] = basis.z.y
+			buffer[o + 7] = origin.y
+			buffer[o + 8] = basis.x.z
+			buffer[o + 9] = basis.y.z
+			buffer[o + 10] = basis.z.z
+			buffer[o + 11] = origin.z
 
-			if bool(info["tinted"]):
+			if tinted:
 				var custom: Color = _autumn_tint(ids[n], info.get("autumn", AUTUMN)) if info["hardwood"] else (_conifer_tint(ids[n], _age_tint(info, float(items["heights"][n]))) if info["kind"] == KIND_TREE else info["tint"])
 				# Glowing leaves: young trees glow weakly, grown ones fully.
 				custom.a = clampf(float(items["heights"][n]) / float(info.get("young_below", 1.0)), 0.25, 1.0) if info.has("leaf_glow") else 0.0
-				multimesh.set_instance_custom_data(m, custom)
+				buffer[o + 12] = custom.r
+				buffer[o + 13] = custom.g
+				buffer[o + 14] = custom.b
+				buffer[o + 15] = custom.a
 
-		var draw: MultiMeshInstance3D = MultiMeshInstance3D.new()
-		draw.multimesh = multimesh
-		draw.visibility_range_end = view_m[info["kind"]] + 0.7 * PART_M[info["kind"]]
-		draw.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if info["kind"] == KIND_TREE else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		node.add_child(draw)
-		instances += indices.size()
+		draws.append([key, indices.size(), buffer])
 
-	entry["drawn"] = _drawn_count(node)
+	return {"draws": draws, "shapes": shapes, "lights": lights}
+
+
+# Adds the next piece of a job's drawing: a batch of trunk colliders (each batch its own
+# small body: one body taking a thousand shapes took most of a second), the glow lights, or
+# one MultiMesh. Returns true when the drawing is complete.
+func _apply_step(job: Dictionary) -> bool:
+	var plan: Dictionary = job["plan"]
+	var node: Node3D = job["node"]
+	var shapes: Array = plan["shapes"]
+
+	if int(job["shape"]) < shapes.size():
+		var first: int = int(job["shape"])
+		var last: int = mini(first + SHAPES_PER_BODY, shapes.size())
+		var body: StaticBody3D = StaticBody3D.new()
+		var shape_species: PackedInt32Array = PackedInt32Array()
+
+		for k in range(first, last):
+			var item: Array = shapes[k]
+			var shape: CollisionShape3D = CollisionShape3D.new()
+			shape.shape = _trunk_shape(float(item[1]))
+			shape.position = item[2]
+			body.add_child(shape)
+			shape_species.append(int(item[0]))
+
+		body.set_meta("species_ids", shape_species)
+		node.add_child(body)
+		colliders += last - first
+		job["shape"] = last
+		return false
+
+	if int(job["draw"]) == 0:
+		for item in plan["lights"]:
+			var light: OmniLight3D = OmniLight3D.new()
+			light.light_color = item[0]
+			light.light_energy = item[1]
+			light.omni_range = item[2]
+			light.shadow_enabled = false
+			light.distance_fade_enabled = true
+			light.distance_fade_begin = collision_m * 0.7
+			light.distance_fade_length = collision_m * 0.3
+			light.position = item[3]
+			node.add_child(light)
+
+	var draws: Array = plan["draws"]
+
+	if int(job["draw"]) >= draws.size():
+		return true
+
+	var draw_plan: Array = draws[int(job["draw"])]
+	job["draw"] = int(job["draw"]) + 1
+	var key: Array = draw_plan[0]
+	var info: Dictionary = _species[key[0]]
+	var multimesh: MultiMesh = MultiMesh.new()
+	multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	multimesh.mesh = (info["near"] if key[4] == 1 else info["far"])[key[3]]
+	multimesh.use_custom_data = bool(info["tinted"])
+	multimesh.instance_count = int(draw_plan[1])
+	multimesh.buffer = draw_plan[2]
+	var draw: MultiMeshInstance3D = MultiMeshInstance3D.new()
+	draw.multimesh = multimesh
+	draw.visibility_range_end = view_m[info["kind"]] + 0.7 * PART_M[info["kind"]]
+	draw.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if info["kind"] == KIND_TREE else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	node.add_child(draw)
+	instances += int(draw_plan[1])
+	return int(job["draw"]) >= draws.size()
+
+
+# One shared trunk shape per radius (to the centimetre).
+func _trunk_shape(radius: float) -> CylinderShape3D:
+	var key: int = int(round(radius * 100.0))
+	var shape: CylinderShape3D = _trunk_shapes.get(key)
+
+	if shape == null:
+		shape = CylinderShape3D.new()
+		shape.radius = float(key) / 100.0
+		shape.height = 3.0
+		_trunk_shapes[key] = shape
+
+	return shape
 
 
 func _clear_node(entry: Dictionary) -> void:
