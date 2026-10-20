@@ -33,8 +33,11 @@ const Probe := preload("res://src/debug/frame_probe.gd")
 const CompassScript := preload("res://src/client/admin_compass.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
 const WeatherScript := preload("res://src/shared/weather.gd")
+const RenderScale := preload("res://src/client/render_scale.gd")
+const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
+const GpuProbeScript := preload("res://src/debug/gpu_probe.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
 const BUILD := 120
 const WaterMaterial := preload("res://src/client/water_material.gd")
@@ -64,10 +67,12 @@ const QUALITY_NAMES := ["Low", "Medium", "High", "Ultra"]
 const QUALITY_VIEW := [768, 1280, 2048, 2048]
 const QUALITY_FLORA := [0.4, 0.7, 1.0, 1.0]
 const QUALITY_GRASS_M := [14.0, 24.0, 34.0, 48.0]       # grass drawn this far around the player
-const QUALITY_GRASS_POINTS := [3, 4, 5, 6]               # ground samples per 6 m cell side
+const QUALITY_GRASS_POINTS := [3, 5, 6, 7]               # ground samples per 6 m cell side
+const QUALITY_GRASS_DENSITY := [0.45, 0.65, 0.75, 0.85]     # cards per ground sample, times the layers' own counts
 const QUALITY_SHADOW_M := [0.0, 60.0, 100.0, 250.0]    # 0 = no shadows
 const QUALITY_CACHE_MB := [1024, 4096, 10240, 10240]    # ground cache limit on disk
 const FLY_SPEED := 30.0
+const INCOMING_USEC := 3000           # most time a frame puts arrived chunks in the scene (one at least)
 const WATER_HOLD_MSEC := 2000        # water refreshes wait this long while ground loads
 const STILL_MSEC := 3000              # flying: ground loads again after staying still this long
 const WALK_SPEED := 6.0
@@ -163,13 +168,16 @@ var flora                             # FloraView
 var grass                             # GrassView
 var sound                             # SoundStage: wind, footsteps, grass swish
 var _commit: String = GitStamp.short_commit()   # which checkout is running
+var _render_scale: float = 1.0            # 3D resolution scale now (render_scale.gd)
 var _jitter_test                      # float-precision test, J or Esc > Advanced
+var _gpu_probe                        # GPU cost per piece of the scene, F8
 var _bake = TileBakeScript.new()      # admin: background tile bake
 var _bake_check_msec: int = 0
 var _bake_status: String = ""
 var _bake_alert_until: int = 0
 var _bake_alert_at: Vector3 = Vector3.ZERO   # where the player stood when the finished notice came up
 var _bake_done_note: String = ""          # the bake's own finished message, shown once the ground reloads
+var display = DisplaySettingsScript.new()   # saved window, VSync and quality choices
 var quality: int = 2                  # index into QUALITY_NAMES; High is the default
 var _flora_view_full: PackedFloat32Array = PackedFloat32Array()
 var _flora_near_full: PackedFloat32Array = PackedFloat32Array()
@@ -180,13 +188,15 @@ var test_cut: bool = false
 var _flora_asked: Dictionary = {}     # chunk -> true asked or held in full, false trees only
 var _flora_check_msec: int = 0
 var link = null                       # direct block line (block_link.gd)
+var _in_queue: Array = []             # chunks from the server being unpacked, in arrival order
+var _in_mutex: Mutex = Mutex.new()
+var _in_generation: int = 0           # raised when the plants are dropped (a bake): older chunks are ignored
 var weather: Dictionary = {}          # the weather here and now (WeatherScript.state): the same on every client, no network traffic; rendering and sounds read it
 var _weather_next_msec: int = 0
 var game_clock = GameClockScript.new()   # copy of the server's game clock, set at the welcome
 var _sound_test_at: int = -1          # Esc > Settings "Sound test time"; -1 follows the game clock
+var _sound_weather_at: int = -1         # Esc > Settings "Sound test weather"; -1 follows the weather state
 var _water_dirty: bool = false        # the server said the water moved; not asked for yet
-var _water_inbox: Dictionary = {}     # chunk -> newest water bytes, rebuilt a few per frame
-const WATER_APPLY_USEC := 2000        # each water chunk costs ~2 ms; all at once was a hitch every second
 var _water_asked_msec: int = 0
 var _flora_chunks: int = 0
 var _flora_bytes: int = 0
@@ -199,6 +209,13 @@ var _wait_until_msec: int = 0
 
 func _ready() -> void:
 	net = $TerrainNet
+	display.load_saved()
+
+	if display.quality >= 0:
+		quality = clampi(display.quality, 0, QUALITY_NAMES.size() - 1)
+
+	RenderScale.cap = display.size()
+	display.apply(get_window())
 	var host: String = "127.0.0.1"
 	var port: int = 24600
 
@@ -292,7 +309,7 @@ func _on_welcome(info: Dictionary) -> void:
 		return
 
 	world = info
-	game_clock.seconds = float(info.get("game_seconds", game_clock.seconds))
+	game_clock.sync(float(info.get("game_seconds", game_clock.seconds)))
 	connected_msec = Time.get_ticks_msec()
 
 	if cache_dir == "":
@@ -360,12 +377,16 @@ func _on_welcome(info: Dictionary) -> void:
 	_jitter_test = JitterTestScript.new()
 	add_child(_jitter_test)
 	_jitter_test.setup(self)
+	_gpu_probe = GpuProbeScript.new()
+	add_child(_gpu_probe)
+	_gpu_probe.setup(self)
 	sound = SoundStageScript.new()
 	sound.name = "Sound"
 	root.add_child(sound)
 	sound.setup(terrain, flora, grass)
 	_make_environment(root)
 	_apply_quality()
+	get_window().size_changed.connect(_apply_render_scale)
 	RenderingServer.viewport_set_measure_render_time(get_viewport().get_viewport_rid(), true)
 	var layer: CanvasLayer = CanvasLayer.new()
 	add_child(layer)
@@ -458,6 +479,9 @@ func _on_dug(center: Vector3, radius: float) -> void:
 	if terrain == null:
 		return
 
+	if sound != null and sound.dig != null and body != null:
+		sound.dig.dug(center, radius, body.global_position)        # before the ground changes: it hears what was there
+
 	var tool: VoxelTool = terrain.get_voxel_tool()
 	tool.channel = VoxelBuffer.CHANNEL_SDF
 	tool.mode = VoxelTool.MODE_REMOVE
@@ -479,16 +503,95 @@ func _on_flora(chunk: Vector2i, bytes: PackedByteArray, water: PackedByteArray, 
 	_flora_chunks += 1
 	_flora_bytes += bytes.size() + water.size()
 	_flora_done_msec = Time.get_ticks_msec() - connected_msec
-	var t: int = Probe.start()
-	var items: Dictionary = PlacerScript.decode(bytes, Vector2(chunk) * flora.chunk_m)
-	var water_cells: Dictionary = WaterGridScript.decode(water)
-	Probe.stop("flora decode", t)
-	t = Probe.start()
-	if flora.has_chunk(chunk):
-		flora.replace_items(chunk, items, _anchor, full)
+	_queue_in({"kind": "flora", "chunk": chunk, "bytes": bytes, "water": water, "full": full})
+
+
+# Owner (2026-10-20, 100 ms frames while ground and plants load): chunks from the server are
+# unpacked and their water drawing built on a worker thread, and put in the scene in arrival
+# order within INCOMING_USEC a frame (at least one). Decoding and building them on the main
+# thread cost up to 16 ms and 23 ms a call, several in one frame after a water update.
+func _queue_in(job: Dictionary) -> void:
+	# Every key is set before the task starts: adding a key while the worker writes the
+	# result would race on the dictionary.
+	job["done"] = false
+	job["result"] = null
+	job["task"] = -1
+	job["gen"] = _in_generation
+	job["chunk_m"] = flora.chunk_m
+	_in_queue.append(job)
+	var material: Material = flora.water_material()
+	job["task"] = WorkerThreadPool.add_task(_decode_in.bind(job, material))
+
+
+func _decode_in(job: Dictionary, material: Material) -> void:
+	var result: Dictionary = {}
+
+	if job["kind"] == "flora":
+		result["items"] = PlacerScript.decode(job["bytes"], Vector2(job["chunk"]) * float(job["chunk_m"]))
+		result["grid"] = WaterGridScript.decode(job["water"])
 	else:
-		flora.set_chunk(chunk, items, _anchor, water_cells, full)
-	Probe.stop("flora chunk in", t)
+		result["grid"] = WaterGridScript.decode(job["water"])
+
+	var grid: Dictionary = result["grid"]
+
+	if int(grid.get("wet", 0)) > 0:
+		grid["mesh"] = WaterGridScript.build_mesh(grid, material)
+
+	_in_mutex.lock()
+	job["result"] = result
+	job["done"] = true
+	_in_mutex.unlock()
+
+
+# On exit: lets the unpacking tasks finish (they would run into the engine shutting down).
+func _drain_incoming() -> void:
+	for job in _in_queue:
+		if int(job["task"]) >= 0:
+			WorkerThreadPool.wait_for_task_completion(job["task"])
+
+	_in_queue.clear()
+
+
+func _apply_incoming() -> void:
+	var started: int = Time.get_ticks_usec()
+	var applied: int = 0
+
+	while not _in_queue.is_empty():
+		_in_mutex.lock()
+		var job: Dictionary = _in_queue[0]
+		var done: bool = job["done"]
+		_in_mutex.unlock()
+
+		if not done or (applied > 0 and Time.get_ticks_usec() - started > INCOMING_USEC):
+			break
+
+		_in_queue.pop_front()
+
+		if flora == null or int(job["gen"]) != _in_generation:
+			continue
+
+		applied += 1
+		var chunk: Vector2i = job["chunk"]
+		var result: Dictionary = job["result"]
+
+		if job["kind"] == "flora":
+			var t: int = Probe.start()
+			var full: bool = job["full"]
+
+			if not full and flora.holds_full(chunk):
+				Probe.stop("flora chunk in", t)
+				continue
+
+			if flora.has_chunk(chunk):
+				flora.replace_items(chunk, result["items"], _anchor, full)
+			else:
+				flora.set_chunk(chunk, result["items"], _anchor, result["grid"], full)
+
+			Probe.stop("flora chunk in", t)
+		else:
+			var tw: int = Probe.start()
+			flora.set_water(chunk, result["grid"])
+			Probe.stop("water in", tw)
 
 
 # Weather from the game clock, the world seed, the zone of the tile the player is in and their
@@ -505,6 +608,9 @@ func _update_weather() -> void:
 	var row: int = int(floor(_anchor.z / tile_m))
 	var group: String = WeatherScript.zone_group(world.get("zones", []), int(world.get("equator_row", 0)), row)
 	weather = WeatherScript.state(int(world.get("master_seed", 0)), game_clock.seconds, group, _anchor.y, 0.0)
+
+	if _sound_weather_at < 0 and sound != null and sound.weather != null:
+		sound.weather.apply_state(weather)
 
 
 func _on_water_rate(rate: float, busy: bool, spring_m3_s: float) -> void:
@@ -570,23 +676,7 @@ func _send_water_request(now: int) -> void:
 
 func _on_water_received(chunk: Vector2i, water: PackedByteArray) -> void:
 	if flora != null:
-		_water_inbox[chunk] = water
-
-
-# Rebuilds received water chunks within a small time budget (at least one a frame).
-func _apply_water_inbox() -> void:
-	var start: int = Time.get_ticks_usec()
-
-	while not _water_inbox.is_empty() and flora != null:
-		var chunk: Vector2i = _water_inbox.keys()[0]
-		var water: PackedByteArray = _water_inbox[chunk]
-		_water_inbox.erase(chunk)
-		var t: int = Probe.start()
-		flora.set_water(chunk, WaterGridScript.decode(water))
-		Probe.stop("water in", t)
-
-		if Time.get_ticks_usec() - start >= WATER_APPLY_USEC:
-			return
+		_queue_in({"kind": "water", "chunk": chunk, "water": water})
 
 
 func _on_flora_cut(chunk: Vector2i, id: int) -> void:
@@ -714,6 +804,9 @@ func _make_player(root: Node3D, start: Vector3) -> void:
 # Applies the current quality preset to ground view distance, flora distances
 # and shadows.
 func _apply_quality() -> void:
+	if sound != null and sound.ambient != null:
+		sound.set_quality(quality)
+
 	var view: int = QUALITY_VIEW[quality]
 	terrain.view_distance = view
 
@@ -731,6 +824,7 @@ func _apply_quality() -> void:
 		flora.near_m[n] = _flora_near_full[n] * float(QUALITY_FLORA[quality])
 
 	grass.points_per_side = QUALITY_GRASS_POINTS[quality]
+	grass.density = QUALITY_GRASS_DENSITY[quality]
 	grass.set_radius(QUALITY_GRASS_M[quality])
 	if _environment != null:
 		SkyClouds.set_quality(_environment.sky, quality)
@@ -744,6 +838,10 @@ func _apply_quality() -> void:
 	if _sun != null:
 		_sun.shadow_enabled = float(QUALITY_SHADOW_M[quality]) > 0.0
 		_sun.directional_shadow_max_distance = maxf(float(QUALITY_SHADOW_M[quality]), 1.0)
+		# Two cascades instead of four at Medium and High: every cascade draws the casters again
+		# (Godot's own shadow docs), and 100 m of range does not need four. A smaller shadow map at Medium.
+		_sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS if quality >= 3 else DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+		RenderingServer.directional_shadow_atlas_set_size(2048 if quality <= 1 else 4096, true)
 
 	if terrain != null and quality != _ground_quality:
 		_ground_quality = quality
@@ -751,7 +849,22 @@ func _apply_quality() -> void:
 
 	if _environment != null:
 		LookSettings.apply(_environment, _sun, get_viewport(), quality)
+		_apply_render_scale()
 		_environment.fog_density = 0.05 if underwater else LookSettings.FOG_DENSITY
+
+
+# Saves the window, VSync and quality choices (display_settings.gd).
+func _save_display() -> void:
+	display.quality = quality
+	display.save()
+
+
+# 3D resolution follows the tier's pixel budget (render_scale.gd) and the window size.
+func _apply_render_scale() -> void:
+	if DisplayServer.get_name() == "headless":
+		return
+
+	_render_scale = RenderScale.apply(get_viewport(), get_window().size, quality)
 
 
 # The thinking-brain icon, a white outline with a gray inside. Loaded as an
@@ -818,18 +931,42 @@ func _build_menu(layer: CanvasLayer) -> void:
 		_menu_button(settings, QUALITY_NAMES[n], func():
 			quality = index
 			_apply_quality()
+			_save_display()
 			_menu_note.text = "Quality: %s" % QUALITY_NAMES[index])
 
 	_menu_button(settings, "VSync: change", func():
-		var order: Array = [DisplayServer.VSYNC_ENABLED, DisplayServer.VSYNC_ADAPTIVE, DisplayServer.VSYNC_DISABLED]
-		var names: Array = ["on", "adaptive", "off"]
-		var at: int = order.find(DisplayServer.window_get_vsync_mode())
-		at = (at + 1) % order.size()
-		DisplayServer.window_set_vsync_mode(order[at])
-		_menu_note.text = "VSync is now %s. On snaps to 60 or 30; adaptive avoids the halving; off shows the true speed." % names[at])
+		display.vsync_index = (display.vsync_index + 1) % display.VSYNC_MODES.size()
+		display.apply(get_window())
+		_save_display()
+		_menu_note.text = "VSync is now %s. On snaps to 60 or 30; adaptive avoids the halving; off shows the true speed." % display.VSYNC_NAMES[display.vsync_index])
+	_menu_button(settings, "Resolution: change", func():
+		display.size_index = (display.size_index + 1) % display.SIZES.size()
+		RenderScale.cap = display.size()
+		display.apply(get_window())
+		_apply_render_scale()
+		_save_display()
+		_menu_note.text = "3D resolution %s (the highest is 1920x1080).%s" % [display.size_text(), " Fullscreen windowed stretches it to the screen." if display.fullscreen else ""])
+	_menu_button(settings, "Reset display to default", func():
+		display.reset()
+		quality = 2
+		RenderScale.cap = display.size()
+		display.apply(get_window())
+		_apply_quality()
+		_save_display()
+		_menu_note.text = "Display reset: High, windowed 1920x1080, VSync on.")
+	_menu_button(settings, "Window: windowed or fullscreen windowed", func():
+		display.fullscreen = not display.fullscreen
+		display.apply(get_window())
+		_apply_render_scale()
+		_save_display()
+		_menu_note.text = "Fullscreen windowed: the 3D picture stays at %s and is stretched to the screen." % display.size_text() if display.fullscreen else "Windowed, %s." % display.size_text())
 	_menu_button(settings, "Sound volume: change", func():
 		var share: float = sound.step_volume()
 		_menu_note.text = "Sound is off" if share <= 0.0 else "Sound volume %d %%" % roundi(share * 100.0))
+	for group in ["wind", "nature", "steps"]:
+		_menu_button(settings, "%s volume: change" % group.capitalize(), func():
+			var share: float = sound.mix_step(group)
+			_menu_note.text = "%s sounds are off" % group.capitalize() if share <= 0.0 else "%s volume %d %%" % [group.capitalize(), roundi(share * 100.0)])
 	_menu_button(settings, "Sound test time: change", func():
 		var order: Array = [["day", 14.0, "autumn"], ["dawn", 6.0, "autumn"], ["dusk", 18.4, "autumn"], ["night", 23.0, "autumn"], ["winter day", 12.0, "winter"], ["summer dawn", 5.0, "summer"], ["spring night", 22.0, "spring"], ["clock runs", -1.0, "autumn"], ["world clock", -2.0, ""]]
 		_sound_test_at = (_sound_test_at + 1) % order.size()
@@ -846,6 +983,17 @@ func _build_menu(layer: CanvasLayer) -> void:
 			sound.ambient.conditions["hour"] = pick[1]
 
 		_menu_note.text = "Nature sounds now play as: %s (a test setting; the sky does not follow)" % pick[0])
+	_menu_button(settings, "Sound test weather: change", func():
+		var kinds: Array = sound.weather.KINDS.keys()
+		_sound_weather_at += 1
+
+		if _sound_weather_at >= kinds.size():
+			_sound_weather_at = -1
+			_menu_note.text = "Weather sounds follow the game's weather"
+			return
+
+		sound.weather.set_weather(kinds[_sound_weather_at], 1.0)
+		_menu_note.text = "Weather sounds now play: %s (a test setting; sky and ground do not follow). Press again until it follows the game's weather." % kinds[_sound_weather_at])
 	_menu_button(settings, "Back", func(): _show_menu_page("main"))
 
 	var advanced: VBoxContainer = _menu_page(column, "advanced")
@@ -918,6 +1066,8 @@ func _on_ground_reset(tiles_stamp: String, starter_stamp: String) -> void:
 	world["tiles_stamp"] = tiles_stamp
 	world["starter_stamp"] = starter_stamp
 	_reload_ground()
+
+	_in_generation += 1
 
 	if flora != null:
 		for chunk in flora.held_chunks():
@@ -1113,9 +1263,12 @@ func _unhandled_input(event: InputEvent) -> void:
 			_admin_dig()
 		elif event.keycode == KEY_J and _jitter_test != null:
 			_jitter_test.next_spot()
+		elif event.keycode == KEY_F8:
+			_gpu_probe.toggle()
 		elif event.keycode == KEY_F2:
 			quality = (quality + 1) % QUALITY_NAMES.size()
 			_apply_quality()
+			_save_display()
 		elif event.keycode == KEY_G or event.keycode == KEY_F:
 			flying = not flying
 			body.velocity = Vector3.ZERO
@@ -1187,7 +1340,9 @@ func _move_player(delta: float) -> void:
 		# already fell below it is lifted back to the surface.
 		# Without ground to land on yet, glide level instead of falling or
 		# standing frozen: the ground appears as collision loads.
+		var tq: int = Probe.start()
 		waiting_for_ground = not _ground_ready()
+		Probe.stop("p ground_ready", tq)
 
 		if test_walk and _walk_phase == 2:
 			_slowest_frame = maxf(_slowest_frame, delta)
@@ -1204,14 +1359,18 @@ func _move_player(delta: float) -> void:
 			velocity.y = 7.0
 
 		body.velocity = velocity
+		var tm: int = Probe.start()
 		body.move_and_slide()
+		Probe.stop("p slide", tm)
 
 		if body.is_on_floor():
 			_floor_msec = Time.get_ticks_msec()
 		elif Time.get_ticks_msec() - _floor_msec > 1200 and _under_the_ground():
 			rescued += 1
 
+		var tb: int = Probe.start()
 		_update_bob(delta)
+		Probe.stop("p bob", tb)
 
 	if flying:
 		_bob_amount = 0.0
@@ -1247,8 +1406,7 @@ func _update_bob(delta: float) -> void:
 
 func _process(delta: float) -> void:
 	_step_player(delta)
-	_apply_water_inbox()
-	game_clock.advance(delta)
+	game_clock.tick()
 	_update_weather()
 
 	if _sound_test_at < 0 and sound != null and sound.ambient != null:
@@ -1310,6 +1468,7 @@ func _process(delta: float) -> void:
 	settled_msec = stream.last_load_msec - connected_msec
 
 	_send_water_request(now)
+	_apply_incoming()
 
 	if now >= _flora_check_msec:
 		_flora_check_msec = now + 500
@@ -1411,7 +1570,14 @@ func _process(delta: float) -> void:
 	if not weather.is_empty():
 		hud.text += "\nweather: rain %.2f snow %.2f storm %.2f sun %.2f wind %.2f, %.0f C" % [weather["rain"], weather["snow"], weather["storm"], weather["sun"], weather["wind"], weather["temp_c"]]
 
+	var win: Vector2i = get_window().size
+	hud.text += "\n3D %dx%d of window %dx%d (scale %.2f), %s, %s" % [int(win.x * _render_scale), int(win.y * _render_scale), win.x, win.y, _render_scale, RenderingServer.get_video_adapter_name(), RenderingServer.get_current_rendering_driver_name()]
 	hud.text += "\nlast step: " + sound.last_step
+	hud.text += "\nsound budget: " + sound.budget_text()
+	hud.text += "\nmuffled sounds: %d filtered, %d behind hills" % [sound.occlusion.filtered, sound.occlusion.occluded]
+	hud.text += "\ncave: enclosure %.2f, drips %d" % [sound.cave.enclosure, sound.cave.drips_played]
+	hud.text += "\nlast dig sound: %s" % sound.dig.last_dig
+	hud.text += "\nweather sounds: %s (rain %.1f, wind %.1f, thunder %d)" % [sound.weather.kind, sound.weather.rain, sound.weather.wind, sound.weather.thunders_played]
 	hud.text += "\nnature (%02d:%02d %s): forest %.1f meadow %.1f water %.1f high %.1f, last %s" % [int(sound.ambient.conditions["hour"]), int(fposmod(float(sound.ambient.conditions["hour"]), 1.0) * 60.0), sound.ambient.conditions["season"], sound.ambient.weights["forest"], sound.ambient.weights["meadow"], sound.ambient.weights["water"], sound.ambient.weights["highland"], sound.ambient.last_call]
 	hud.text += "\nwater sounds: " + sound.water.summary
 	hud.text += "\nframe work: cpu %.1f ms, gpu %.1f ms, vsync %s, draws %d" % [
@@ -1447,6 +1613,11 @@ func _process(delta: float) -> void:
 			print("Terrain client: grass %d tufts in %d cells (radius %.0f m)" % [grass.tufts, grass.cells_built, grass.radius_m])
 			print("Terrain client: water sounds: %s" % sound.water.summary)
 			print("Terrain client: nature calls %s, zones %s" % [str(sound.ambient.calls_played), str(sound.ambient.weights)])
+			print("Terrain client: muffled sounds: %d filtered, %d behind hills" % [sound.occlusion.filtered, sound.occlusion.occluded])
+			print("Terrain client: cave enclosure %.2f, drips %d" % [sound.cave.enclosure, sound.cave.drips_played])
+			print("Terrain client: dig sounds %s, last %s" % [str(sound.dig.digs_played), sound.dig.last_dig])
+			print("Terrain client: sound budget: %s, %d loads refused" % [sound.budget_text(), sound.refused_loads])
+			print("Terrain client: weather %s rain %.2f wind %.2f calls %.2f thunders %d" % [sound.weather.kind, sound.weather.rain, sound.weather.wind, sound.weather.calls, sound.weather.thunders_played])
 			print("Terrain client: sound: footsteps %s, grass swishes %d, last ground %s, gust %.2f" % [str(sound.steps_played), sound.swishes_played, sound.surface, sound.gust])
 			print("Terrain client: blocks waited for %d times, %.0f ms on average, worst %d ms; at most %d loader threads waiting at once; %d blocks came on the block line" % [stream.waits, float(stream.wait_msec_total) / maxf(float(stream.waits), 1.0), stream.wait_msec_worst, stream.most_waiting, link.blocks_in])
 			print(Probe.report())
@@ -1631,6 +1802,8 @@ func _walk_report() -> void:
 
 
 func _finish(code: int) -> void:
+	_drain_incoming()
+
 	if link != null:
 		link.close()
 
@@ -1644,5 +1817,6 @@ func _finish(code: int) -> void:
 
 
 func _exit_tree() -> void:
+	_drain_incoming()
 	if stream != null:
 		stream.close()

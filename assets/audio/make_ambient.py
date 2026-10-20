@@ -230,7 +230,7 @@ SOUNDS = {
     "cricket_chirp": cricket,
     "frog_croak": frog_croak,
     "tree_frog_peep": tree_frog_peep,
-    "fish_plop": fish_plop,
+    "fish_splash": fish_plop,
 }
 
 

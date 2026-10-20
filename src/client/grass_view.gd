@@ -24,18 +24,19 @@ const GRASS_SOILS := {3: 0.9, 4: 0.5, 5: 1.0, 6: 0.7, 7: 1.0, 8: 0.6, 9: 0.3}
 # The three layers, from the ground up. "reach" is the share of the grass
 # radius the layer is drawn to; "per_point" is how many cards per ground sample.
 const LAYERS := [
-	{"name": "cover", "texture": "ground_cover", "width": 0.7, "height": 0.0, "per_point": 4, "reach": 0.5, "quads": 0, "wind": 0.0},
-	{"name": "short", "texture": "grass_short", "width": 0.70, "height": 0.40, "per_point": 4, "reach": 0.85, "quads": 3, "wind": 1.0},
-	{"name": "tall", "texture": "grass_tall", "width": 0.50, "height": 0.75, "per_point": 2, "reach": 1.0, "quads": 2, "wind": 1.4},
+	{"name": "cover", "texture": "ground_cover", "width": 0.6, "height": 0.0, "per_point": 6, "reach": 0.6, "quads": 0, "wind": 0.0, "backlight": 0.0},
+	{"name": "short", "texture": "grass_short", "width": 0.55, "height": 0.34, "per_point": 8, "reach": 0.7, "quads": 2, "wind": 1.0, "backlight": 0.0},
+	{"name": "tall", "texture": "grass_tall", "width": 0.42, "height": 0.7, "per_point": 3, "reach": 1.0, "quads": 2, "wind": 1.4, "backlight": 0.35},
 ]
 
 const SHADER := """
 shader_type spatial;
-render_mode cull_disabled, diffuse_burley, specular_disabled;
+render_mode cull_disabled, diffuse_lambert, specular_disabled;
 uniform sampler2D blades : source_color, filter_linear_mipmap, repeat_disable;
 uniform float fade_start = 20.0;
 uniform float fade_end = 30.0;
 uniform float wind_strength = 0.12;
+uniform float backlight = 0.0;
 varying vec3 blade_color;
 varying float tip;
 
@@ -60,13 +61,14 @@ void fragment() {
 	NORMAL = normalize((VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
 	// The painted card already shades root to tip; a little more here, and light that shows through the blades.
 	ALBEDO = t.rgb * blade_color * mix(0.85, 1.05, tip);
-	BACKLIGHT = ALBEDO * 0.35;
+	BACKLIGHT = ALBEDO * backlight;
 	ROUGHNESS = 1.0;
 }
 """
 
 var radius_m: float = 30.0
 var points_per_side: int = 4
+var density: float = 1.0                 # share of each layer's per_point cards drawn (quality)
 var tufts: int = 0                       # cards drawn now
 var cells_built: int = 0
 
@@ -81,6 +83,7 @@ var _tint := FastNoiseLite.new()         # greener and yellower patches
 var _cover := FastNoiseLite.new()        # breaks the grass up into patches on slopes
 var _cells: Dictionary = {}              # Vector2i -> {"nodes", "retry", "busy", "built", "count"}
 var _pending: Array = []                 # cells waiting for rays, nearest first
+var _scan_cell: Vector2i = Vector2i(1 << 30, 1 << 30)
 var _scan_msec: int = 0
 var _center: Vector3 = Vector3.ZERO
 var enabled: bool = true
@@ -110,6 +113,7 @@ func setup(terrain: Node3D, flora, tables) -> void:
 		material.shader = shader
 		material.set_shader_parameter("blades", _load_texture(str(layer["texture"])))
 		material.set_shader_parameter("wind_strength", 0.12 * float(layer["wind"]))
+		material.set_shader_parameter("backlight", float(layer["backlight"]))
 		_materials.append(material)
 
 	set_radius(radius_m)
@@ -230,8 +234,13 @@ func update(position: Vector3) -> void:
 	_center = position
 	var now: int = Time.get_ticks_msec()
 
-	if now - _scan_msec > 400:
+	# Owner (2026-10-20, pauses while walking): the scan listed and sorted every cell in range
+	# every 0.4 s. Now only when the player is in another cell, or every 1.5 s to retry cells.
+	var here_cell: Vector2i = Vector2i(int(floor(position.x / CELL_M)), int(floor(position.z / CELL_M)))
+
+	if here_cell != _scan_cell or now - _scan_msec > 1500:
 		_scan_msec = now
+		_scan_cell = here_cell
 		_rescan(position, now)
 
 	var rays: int = RAYS_PER_FRAME
@@ -272,8 +281,11 @@ func _rescan(position: Vector3, now: int) -> void:
 			_pending.append(cell)
 
 	var near: Vector2 = Vector2(position.x, position.z) / CELL_M
-	_pending.sort_custom(func(a, b):
-		return (Vector2(a) + Vector2(0.5, 0.5)).distance_squared_to(near) < (Vector2(b) + Vector2(0.5, 0.5)).distance_squared_to(near))
+
+	if _pending.size() > 1:
+		_pending.sort_custom(func(a, b):
+			return (Vector2(a) + Vector2(0.5, 0.5)).distance_squared_to(near) < (Vector2(b) + Vector2(0.5, 0.5)).distance_squared_to(near))
+
 	var keep: Dictionary = {}
 
 	for cell in wanted:
@@ -338,7 +350,8 @@ func _build(cell: Vector2i) -> int:
 			var meadow: float = _patch.get_noise_2d(x, z)
 
 			for layer in range(LAYERS.size()):
-				var count: int = int(LAYERS[layer]["per_point"])
+				var want: float = float(LAYERS[layer]["per_point"]) * density
+				var count: int = int(want) + (1 if rng.randf() < want - floorf(want) else 0)
 				var chance: float = thick
 
 				if layer == 2:

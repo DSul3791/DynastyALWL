@@ -133,8 +133,8 @@ def main():
     args = parser.parse_args()
     os.makedirs(args.out, exist_ok=True)
     rng = np.random.default_rng(77)
-    finish(cover((256, 256), 85, rng), (256, 256), os.path.join(args.out, "ground_cover.png"))
-    finish(tuft((256, 256), 46, 0.45, 0.98, rng), (256, 256), os.path.join(args.out, "grass_short.png"))
+    finish(cover((256, 256), 120, rng), (256, 256), os.path.join(args.out, "ground_cover.png"))
+    finish(tuft((256, 256), 70, 0.45, 0.98, rng, spread=0.8), (256, 256), os.path.join(args.out, "grass_short.png"))
     finish(tuft((128, 256), 30, 0.5, 1.0, rng, seeds=5, spread=0.7), (128, 256), os.path.join(args.out, "grass_tall.png"))
 
 

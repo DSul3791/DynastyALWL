@@ -216,6 +216,10 @@ var _tree_materials: Dictionary = {}       # TreeBuilder materials (bark, broad,
 
 # Owner (2026-10-19): rivers and ponds stay clear up to flow x1 and turn muddy brown
 # above it, like runoff after rain (fully brown from about x8). The sea stays clear.
+func water_material() -> Material:
+	return _water_material
+
+
 func set_water_quality(quality: int) -> void:
 	WaterMaterial.apply_quality(_water_material, quality)
 	water_ease = quality >= 1
@@ -548,7 +552,7 @@ func _draw_water(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void:
 	entry["grid"] = water
 
 	if int(water.get("wet", 0)) > 0:
-		var mesh: ArrayMesh = WaterGridScript.build_mesh(water, _water_material)
+		var mesh: ArrayMesh = water["mesh"] if water.has("mesh") else WaterGridScript.build_mesh(water, _water_material)
 
 		if mesh.get_surface_count() > 0:
 			var draw: MeshInstance3D = MeshInstance3D.new()
@@ -561,6 +565,8 @@ func _draw_water(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void:
 			water_cells += mesh.surface_get_array_index_len(0) / 6
 
 
+# A water grid may carry its drawing already built under "mesh" (made on a worker
+# thread by the client, see terrain_client.gd _decode_in).
 # Sets a chunk's items (as from FloraPlacer.chunk_items or decode).
 func set_chunk(chunk: Vector2i, items: Dictionary, position: Vector3, water: Dictionary = {}, full: bool = true) -> void:
 	drop_chunk(chunk)
@@ -568,7 +574,7 @@ func set_chunk(chunk: Vector2i, items: Dictionary, position: Vector3, water: Dic
 	_chunks[chunk] = entry
 
 	if int(water.get("wet", 0)) > 0:
-		var mesh: ArrayMesh = WaterGridScript.build_mesh(water, _water_material)
+		var mesh: ArrayMesh = water["mesh"] if water.has("mesh") else WaterGridScript.build_mesh(water, _water_material)
 
 		if mesh.get_surface_count() > 0:
 			var draw: MeshInstance3D = MeshInstance3D.new()
@@ -648,6 +654,28 @@ func water_surface_at(x: float, z: float) -> float:
 
 	# One wet corner up to 8 m away is not water under the feet: need more than half the square wet.
 	return total / weight if weight > 0.5 else NAN
+
+
+# The speed of the water current (m/s) at the nearest wet grid point, -1 where there is no water
+# or the chunk carries no current. Cheap: one chunk lookup and one point (used by the water sounds).
+func water_speed_at(x: float, z: float) -> float:
+	var chunk: Vector2i = Vector2i(int(floor(x / chunk_m)), int(floor(z / chunk_m)))
+	var grid: Dictionary = _chunks.get(chunk, {}).get("grid", {})
+
+	if int(grid.get("wet", 0)) == 0:
+		return -1.0
+
+	var vel: PackedFloat32Array = grid.get("vel", PackedFloat32Array())
+	var spacing: float = float(grid["spacing"])
+	var count: int = int(grid["count"])
+	var i: int = clampi(int(round((x - float(chunk.x) * chunk_m) / spacing)), 0, count - 1)
+	var j: int = clampi(int(round((z - float(chunk.y) * chunk_m) / spacing)), 0, count - 1)
+	var n: int = j * count + i
+
+	if vel.size() != count * count * 2 or is_nan(float(grid["levels"][n])):
+		return -1.0
+
+	return Vector2(vel[n * 2], vel[n * 2 + 1]).length()
 
 
 func drop_chunk(chunk: Vector2i) -> void:

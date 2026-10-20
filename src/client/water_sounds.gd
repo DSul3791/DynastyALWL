@@ -28,6 +28,10 @@ const SCAN_SEC := 1.5
 const SPACING_M := 8.0
 const HALF := 8                         # squares each way: 8 x 8 m = 64 m reach
 const MAX_SOURCES := 4
+const MAX_DEPTH_M := 12.0
+const SPEED_REF := 0.5                  # m/s with no loudness change (the current simulated rivers run 0.1 to 1 m/s)
+const SPEED_FLOOR := 0.15
+const SPEED_DB_PER_OCTAVE := 5.0        # per doubling of the current speed
 const ROWS_PER_FRAME := 3               # of the 17 scan rows
 const SEPARATION_M := 36.0
 const FALL_DROP_M := 1.0                # surface drop between neighbouring squares
@@ -52,14 +56,20 @@ var _scan_left: float = 0.0
 var _rng := RandomNumberGenerator.new()
 var _row: int = -1                      # next scan row to read, -1 between scans
 var _level: PackedFloat32Array = PackedFloat32Array()
+var _speed: PackedFloat32Array = PackedFloat32Array()   # current at each square, m/s, -1 unknown
+var _tool: VoxelTool
 var _origin: Vector3 = Vector3.ZERO
 var _cx: float = 0.0
 var _cz: float = 0.0
 var _candidates: Array = []
 
 
-func setup(flora) -> void:
+func setup(flora, terrain: VoxelLodTerrain = null) -> void:
 	_flora = flora
+
+	if terrain != null:
+		_tool = terrain.get_voxel_tool()
+		_tool.channel = VoxelBuffer.CHANNEL_SDF
 	_rng.randomize()
 
 	for n in range(MAX_SOURCES):
@@ -71,11 +81,22 @@ func setup(flora) -> void:
 		player.max_distance = 140.0
 		player.attenuation_filter_cutoff_hz = 9000.0
 		add_child(player)
+		player.add_to_group("world_sounds")
 		_slots.append({"player": player, "kind": "", "target": Vector3.ZERO, "fade": -80.0})
 
 	# Loads the loops now, so the first river met doesn't stall a frame reading a file.
 	for kind in KINDS:
 		_variants(str(KINDS[kind]["file"]))
+
+
+func voices_playing() -> int:
+	var count: int = 0
+
+	for slot in _slots:
+		if slot["player"].playing:
+			count += 1
+
+	return count
 
 
 func update(delta: float, body: CharacterBody3D, underwater: bool) -> void:
@@ -109,6 +130,7 @@ func update(delta: float, body: CharacterBody3D, underwater: bool) -> void:
 		player.global_position = player.global_position.lerp(slot["target"], clampf(delta * 3.0, 0.0, 1.0))
 		var db: float = float(slot["fade"])
 		player.volume_db = lerpf(player.volume_db, db, clampf(delta * 2.0, 0.0, 1.0))
+		player.pitch_scale = lerpf(player.pitch_scale, float(slot.get("pitch", 1.0)), clampf(delta * 1.5, 0.0, 1.0))
 
 		if db <= -60.0 and player.volume_db < -55.0:
 			player.stop()
@@ -123,6 +145,7 @@ func _start_scan(origin: Vector3) -> void:
 	_cx = floorf(origin.x / SPACING_M) * SPACING_M + SPACING_M * 0.5
 	_cz = floorf(origin.z / SPACING_M) * SPACING_M + SPACING_M * 0.5
 	_level.resize(count * count)
+	_speed.resize(count * count)
 	_row = 0
 
 
@@ -136,7 +159,10 @@ func _read_rows(rows: int) -> void:
 		var j: int = _row
 
 		for i in range(count):
-			_level[j * count + i] = _flora.water_surface_at(_cx + float(i - HALF) * SPACING_M, _cz + float(j - HALF) * SPACING_M)
+			var x: float = _cx + float(i - HALF) * SPACING_M
+			var z: float = _cz + float(j - HALF) * SPACING_M
+			_level[j * count + i] = _flora.water_surface_at(x, z)
+			_speed[j * count + i] = _flora.water_speed_at(x, z) if not is_nan(_level[j * count + i]) else -1.0
 
 		_row += 1
 
@@ -189,7 +215,7 @@ func _classify_row(j: int) -> void:
 		var distance: float = Vector2(at.x - origin.x, at.z - origin.z).length()
 
 		if distance <= float(KINDS[kind]["reach"]):
-			_candidates.append({"kind": kind, "at": at, "distance": distance, "drop": drop, "score": distance / float(KINDS[kind]["reach"])})
+			_candidates.append({"kind": kind, "at": at, "distance": distance, "drop": drop, "speed": _speed[j * count + i], "score": distance / float(KINDS[kind]["reach"])})
 
 
 
@@ -211,6 +237,9 @@ func _choose() -> void:
 
 		if apart:
 			chosen.append(candidate)
+
+	for candidate in chosen:
+		candidate["depth"] = _depth_at(candidate["at"])
 
 	_assign(chosen, _origin)
 
@@ -285,17 +314,47 @@ func _assign(chosen: Array, origin: Vector3) -> void:
 		if slot["kind"] != "" and slot["fade"] > -60.0:
 			var d: float = Vector2(slot["target"].x - origin.x, slot["target"].z - origin.z).length()
 			sources.append({"kind": slot["kind"], "distance": d})
-			parts.append("%s %.0f m" % [slot["kind"], d])
+			parts.append("%s %.0f m %s" % [slot["kind"], d, slot.get("tuned", "")])
 
 	summary = ", ".join(parts) if not parts.is_empty() else "none"
 
 
+# How deep the water is under a surface point (m): a voxel ray down to the bed, -1 when unknown.
+func _depth_at(at: Vector3) -> float:
+	if _tool == null:
+		return -1.0
+
+	var hit = _tool.raycast(at + Vector3(0.0, 0.5, 0.0), Vector3.DOWN, MAX_DEPTH_M)
+	return maxf(float(hit.distance) - 0.5, 0.0) if hit != null else -1.0
+
+
+# The source's loudness and pitch follow the real current and depth (build 101 carries the
+# current in the water chunk): faster water is louder, brighter and a touch higher, deep
+# water is a touch lower and softer. Ponds, falls and unknown currents keep their set level.
 func _aim(slot: Dictionary, candidate: Dictionary, origin: Vector3) -> void:
 	slot["target"] = candidate["at"]
 	var db: float = float(KINDS[candidate["kind"]]["db"])
+	var pitch: float = 1.0
 
 	if candidate["kind"] == "brook":
 		db += clampf(float(candidate["drop"]) / 0.5, 0.0, 1.0) * 5.0     # steeper babbles louder
+
+	var speed: float = float(candidate.get("speed", -1.0))
+
+	if speed >= 0.0 and candidate["kind"] in ["brook", "river"]:
+		var octaves: float = log(maxf(speed, SPEED_FLOOR) / SPEED_REF) / log(2.0)
+		db += clampf(SPEED_DB_PER_OCTAVE * octaves, -5.0, 8.0)
+		pitch += 0.08 * clampf(octaves, -1.5, 2.0)
+
+	var depth: float = float(candidate.get("depth", -1.0))
+
+	if depth >= 0.0 and candidate["kind"] in ["brook", "river", "pond"]:
+		var deep: float = clampf(depth / 3.0, 0.0, 1.0)
+		db -= 3.0 * deep
+		pitch -= 0.07 * deep
+
+	slot["pitch"] = clampf(pitch, 0.85, 1.15)
+	slot["tuned"] = "v%.1f d%.1f" % [speed, depth]
 
 	slot["fade"] = db
 

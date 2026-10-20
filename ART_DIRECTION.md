@@ -129,3 +129,10 @@ What changed (client look only, no model or save format change):
 Cost at Low: no new textures, no new draws. About 6 extra shader operations per leaf pixel and 4 per bark pixel; one extra varying. Not measurable in the cloud (stills only), to be confirmed in Dave's frame probe.
 
 Still open for step 4: far-tree impostors (LOD format needs Technical direction approval, joint with Ground loading item 6).
+
+## 14. Denser grass, round two (build 102, Dave: "we need much more grass")
+
+Findings: grass is already built once per 6 m ground cell (one MultiMesh per layer per cell, kept until the cell leaves the radius, no per-frame rebuild or buffer rewrite) and each layer shares ONE clump mesh and ONE material for all cells. Shadows are already off for grass. So the cost is GPU fill and shading, not CPU or re-uploads. Dave's High screenshot: cpu 1.7 ms, gpu 28.3 ms, 11,929 grass cards.
+Changes: smaller, more numerous cards (cover 6, short 8, tall 3 per ground sample before the quality factor; short cards 2 crossed quads instead of 3, 0.55 by 0.34 m), fuller textures (70 blades per short card, 120 per cover card), quality density factor (Low 0.45, Medium 0.65, High 0.75, Ultra 0.85), more ground samples (Medium 5, High 6, Ultra 7 per 6 m side), short layer drawn to 70% of the radius (was 85%), cover layer to 60% (was 50%). Shader: diffuse_lambert instead of burley, back-light only on tall grass.
+Test clearing cards at High: 55,000 at density 1.0 (build 97: 22,000); shipped at 0.75, about 41,000.
+Measuring: F8 in game (GPU probe) lists GPU ms with grass off, trees off, ground off, sea off, shadows off, SSAO off, glow off, fog off and AA off. Real per-tier cost needs that table from Dave's machine; the cloud only renders stills.

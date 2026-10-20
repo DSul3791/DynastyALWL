@@ -11,13 +11,16 @@ extends Node
 # - Each call in EVENTS has its own timer. When it comes due it plays only if
 #   the zones it belongs to are present (chance = zone weight), the time of
 #   day and season allow it, no other call played in the last MIN_GAP_SEC and
-#   fewer than MAX_VOICES are playing. Then it is placed in 3D: birds up in the
+#   fewer than max_voices (the quality tier) and the whole sound stage is within its voice budget. Then it is placed in 3D: birds up in the
 #   trees, crickets and frogs on the ground, frogs and fish at the water.
 # - Running scares wildlife: calls come about half as often above RUN_SCARE_MS.
 # - Crow alarm: a crow scolds from the trees when the player keeps running
 #   through crow country (forest or highland, by day), at most once per
 #   ALARM_COOLDOWN_SEC. alarm(at) is the hook a later danger system calls to
 #   warn the player (a predator or bandits near): it plays even when other calls are busy.
+# - Birds taking off: running through trees or grass by day sometimes flushes a bird
+#   (wing_flap, the owner's recording at several speeds, flying away and fading), and a
+#   crow alarm sends crows up too. flush(at) is the hook for other scares.
 # - Optional loops `bed_<zone>.ogg` (a quiet forest or stream background) fade in
 #   with the zone weight when a file exists; none ship yet.
 #
@@ -32,7 +35,6 @@ const RECORDED_DIR := "res://assets/audio/recorded/ambient/"
 
 const SCAN_SEC := 1.5
 const MIN_GAP_SEC := 3.0               # no two calls closer than this
-const MAX_VOICES := 4                  # calls playing at once
 const RUN_SCARE_MS := 8.0
 const TRUNK_RADIUS := 45.0
 const TRUNKS_FOR_FOREST := 28.0        # collider shapes in that radius for a full forest
@@ -51,6 +53,11 @@ const DUSK_BEFORE := 1.0               # dusk swell: this long before sunset...
 const DUSK_AFTER := 0.75               # ...and after
 const DARK_BEFORE := 0.5               # dark from this long before sunrise to this long after sunset
 const GAME_HOURS_PER_SEC := 24.0 / 3600.0   # game clock: 24 game hours per real hour
+const FLUSH_DB := -7.0
+const FLUSH_CHANCE := 0.12             # per scan while running in forest or meadow by day
+const FLUSH_COOLDOWN_SEC := 25.0
+const FLUSH_FLY_SEC := [1.6, 3.2]
+const FLUSH_FLY_M := [25.0, 60.0]
 const ALARM_DB := -6.0
 const ALARM_COOLDOWN_SEC := 90.0
 const ALARM_RUN_SEC := 2.0             # running this long in crow country can set one off
@@ -74,9 +81,9 @@ const EVENTS := [
 	{"name": "owl_hoot", "zones": {"forest": 1.0}, "every": [30, 70], "dist": [40, 110], "height": [5, 14], "db": -8.0, "night": true},
 	{"name": "hawk_screech", "zones": {"highland": 1.0}, "every": [60, 150], "dist": [120, 300], "height": [50, 110], "db": -4.0, "hours": [9, 17], "seasons": {"winter": 0.6}},
 	{"name": "cricket_chirp", "zones": {"meadow": 1.0, "water": 0.4}, "every": [22, 55], "dist": [5, 28], "height": [0, 0], "db": -16.0, "night_rate": 5.0, "dusk": 2.0, "seasons": {"autumn": 0.9, "summer": 1.0, "spring": 0.3, "winter": 0.0}},
-	{"name": "frog_croak", "zones": {"water": 1.0}, "every": [40, 90], "dist": [6, 24], "height": [0, 0], "db": -18.0, "water": true, "night_rate": 3.0, "dusk": 2.0, "seasons": {"autumn": 0.3, "summer": 1.0, "spring": 1.0, "winter": 0.0}},
-	{"name": "tree_frog_peep", "zones": {"water": 0.8, "forest": 0.2}, "every": [16, 40], "dist": [4, 28], "height": [0, 3], "db": -14.0, "night_rate": 3.0, "dusk": 2.0, "seasons": {"autumn": 0.2, "summer": 1.0, "spring": 1.0, "winter": 0.0}},
-	{"name": "fish_plop", "zones": {"water": 1.0}, "every": [60, 150], "dist": [6, 22], "height": [0, 0], "db": -20.0, "water": true},
+	{"name": "frog_croak", "zones": {"water": 1.0}, "every": [40, 90], "dist": [6, 24], "height": [0, 0], "db": -18.0, "wet": true, "water": true, "night_rate": 3.0, "dusk": 2.0, "seasons": {"autumn": 0.3, "summer": 1.0, "spring": 1.0, "winter": 0.0}},
+	{"name": "tree_frog_peep", "zones": {"water": 0.8, "forest": 0.2}, "every": [16, 40], "dist": [4, 28], "height": [0, 3], "db": -14.0, "wet": true, "night_rate": 3.0, "dusk": 2.0, "seasons": {"autumn": 0.2, "summer": 1.0, "spring": 1.0, "winter": 0.0}},
+	{"name": "fish_splash", "zones": {"water": 1.0}, "every": [60, 150], "dist": [6, 22], "height": [0, 0], "db": -10.0, "water": true},
 ]
 const ZONES := ["forest", "meadow", "water", "highland"]
 
@@ -84,6 +91,11 @@ var conditions: Dictionary = {"hour": 14.0, "season": "autumn", "weather": "clea
 var weights: Dictionary = {"forest": 0.0, "meadow": 0.0, "water": 0.0, "highland": 0.0}
 var calls_played: Dictionary = {}       # call name -> count (for the headless check)
 var last_call: String = ""
+var last_file: String = ""              # the file last played, e.g. fish_splash_2
+var _source: Dictionary = {}            # call name -> "recorded" or "generated"
+var max_voices: int = 4                 # calls and flushes playing at once (the quality tier sets it)
+var weather_calls: float = 1.0          # share of calls still made in this weather (weather_sounds.gd)
+var weather_wet: float = 0.0            # 0 to 1: rain, which frogs like
 var clock_runs: bool = false            # true: this layer advances conditions["hour"] itself (no game clock yet)
 var time_scale: float = 1.0             # >1 speeds the timers (--nature-fast, headless checks)
 
@@ -102,6 +114,8 @@ var _sphere: PhysicsShapeQueryParameters3D
 var _beds: Dictionary = {}              # zone -> AudioStreamPlayer
 var _speed: float = 0.0
 var _running_sec: float = 0.0
+var _flush_wait: float = 0.0
+var _fliers: Array = []                 # [{player, from, to, t, dur}] birds flying off
 var _alarm_wait: float = 0.0
 
 
@@ -143,12 +157,15 @@ func update(delta: float, body: CharacterBody3D, flying: bool) -> void:
 	_speed = Vector2(body.velocity.x, body.velocity.z).length()
 	_running_sec = _running_sec + delta if _speed > RUN_SCARE_MS and not flying else 0.0
 	_alarm_wait -= delta * time_scale
+	_flush_wait -= delta * time_scale
+	_move_fliers(delta)
 	_scan_left -= delta
 
 	if _scan_left <= 0.0:
 		_scan_left = SCAN_SEC
 		_scan(body)
 		_maybe_scare_crows(body)
+		_maybe_flush(body)
 
 	for zone in _beds:
 		var target: float = linear_to_db(maxf(float(weights[zone]), 0.0001)) + BED_DB
@@ -170,7 +187,7 @@ func update(delta: float, body: CharacterBody3D, flying: bool) -> void:
 
 		_next[name] = _rng.randf_range(float(event["every"][0]), float(event["every"][1]))
 
-		if _since_call * time_scale < MIN_GAP_SEC or _voices.size() >= MAX_VOICES:
+		if _since_call * time_scale < MIN_GAP_SEC or _voices.size() >= max_voices or not _stage.has_room():
 			continue
 
 		_try(event, body)
@@ -300,6 +317,10 @@ func _hour_ok(event: Dictionary) -> bool:
 
 
 # A due call: plays when the zones, hour and season allow it.
+func voices_playing() -> int:
+	return _voices.size()
+
+
 func _try(event: Dictionary, body: CharacterBody3D) -> void:
 	if not _hour_ok(event):
 		return
@@ -312,7 +333,9 @@ func _try(event: Dictionary, body: CharacterBody3D) -> void:
 	var season: float = float(event.get("seasons", {}).get(str(conditions["season"]), 1.0))
 	var scare: float = 0.5 if _speed > RUN_SCARE_MS else 1.0
 
-	if _rng.randf() > fit * season * scare:
+	var weather: float = weather_calls * (1.0 + weather_wet if event.get("wet", false) else 1.0)
+
+	if _rng.randf() > fit * season * scare * weather:
 		return
 
 	var list: Array = _variants(event["name"])
@@ -325,8 +348,8 @@ func _try(event: Dictionary, body: CharacterBody3D) -> void:
 	if is_nan(at.x):
 		return
 
-	_play(list, at, float(event["db"]))
-	last_call = "%s %.0f m" % [event["name"], at.distance_to(body.global_position)]
+	_play(event["name"], list, at, float(event["db"]))
+	last_call = "%s %.0f m (%s)" % [last_file, at.distance_to(body.global_position), _source.get(event["name"], "?")]
 	calls_played[event["name"]] = int(calls_played.get(event["name"], 0)) + 1
 
 
@@ -338,7 +361,8 @@ func alarm(at: Vector3) -> bool:
 	if list.is_empty():
 		return false
 
-	_play(list, at, ALARM_DB)
+	_play("crow_alarm", list, at, ALARM_DB)
+	flush(at + Vector3(0.0, 1.0, 0.0), 0.35)
 	_alarm_wait = ALARM_COOLDOWN_SEC
 	last_call = "crow_alarm"
 	calls_played["crow_alarm"] = int(calls_played.get("crow_alarm", 0)) + 1
@@ -360,9 +384,67 @@ func _maybe_scare_crows(body: CharacterBody3D) -> void:
 		alarm(at)
 
 
-func _play(list: Array, at: Vector3, db: float) -> void:
+func _maybe_flush(body: CharacterBody3D) -> void:
+	if _flush_wait > 0.0 or _running_sec < 1.0 or _is_night():
+		return
+
+	var cover: float = maxf(float(weights["forest"]), float(weights["meadow"]) * 0.6)
+
+	if _rng.randf() > FLUSH_CHANCE * cover * weather_calls * time_scale:
+		return
+
+	var at: Vector3 = _place({"dist": [10, 30], "height": [0, 3]}, body)
+
+	if not is_nan(at.x):
+		flush(at, 0.0)
+
+
+# A bird (or a few) bursts out of cover at `at` and flies off: wing beats that move and fade.
+# `delay` waits before it starts (a crow takes off after it calls).
+func flush(at: Vector3, delay: float = 0.0) -> bool:
+	var list: Array = _variants("wing_flap")
+
+	if list.is_empty():
+		return false
+
+	var player: AudioStreamPlayer3D = _play("wing_flap", list, at, FLUSH_DB)
+	_flush_wait = FLUSH_COOLDOWN_SEC
+	var angle: float = _rng.randf() * TAU
+	var away: Vector3 = Vector3(cos(angle), 0.0, sin(angle)) * _rng.randf_range(float(FLUSH_FLY_M[0]), float(FLUSH_FLY_M[1]))
+	var dur: float = _rng.randf_range(float(FLUSH_FLY_SEC[0]), float(FLUSH_FLY_SEC[1]))
+	_fliers.append({"player": player, "from": at, "to": at + away + Vector3(0.0, _rng.randf_range(4.0, 12.0), 0.0), "t": -delay, "dur": dur})
+	calls_played["wing_flap"] = int(calls_played.get("wing_flap", 0)) + 1
+
+	if delay > 0.0:
+		player.stream_paused = true
+
+	return true
+
+
+func _move_fliers(delta: float) -> void:
+	for n in range(_fliers.size() - 1, -1, -1):
+		var flier: Dictionary = _fliers[n]
+		var player: AudioStreamPlayer3D = flier["player"]
+
+		if not is_instance_valid(player) or not player.playing:
+			_fliers.remove_at(n)
+			continue
+
+		flier["t"] = float(flier["t"]) + delta
+
+		if float(flier["t"]) < 0.0:
+			continue
+
+		player.stream_paused = false
+		var k: float = clampf(float(flier["t"]) / float(flier["dur"]), 0.0, 1.0)
+		player.global_position = flier["from"].lerp(flier["to"], k)
+
+
+func _play(name: String, list: Array, at: Vector3, db: float) -> AudioStreamPlayer3D:
 	var player: AudioStreamPlayer3D = AudioStreamPlayer3D.new()
-	player.stream = list[_rng.randi_range(0, list.size() - 1)]
+	var pick: int = _rng.randi_range(0, list.size() - 1)
+	player.stream = list[pick]
+	last_file = "%s_%d" % [name, pick]
 	player.bus = "Nature"
 	player.volume_db = db + _rng.randf_range(-2.0, 1.0)
 	player.pitch_scale = _rng.randf_range(0.95, 1.05)
@@ -371,11 +453,13 @@ func _play(list: Array, at: Vector3, db: float) -> void:
 	player.max_distance = 400.0
 	player.attenuation_filter_cutoff_hz = 9000.0
 	add_child(player)
+	player.add_to_group("world_sounds")
 	player.global_position = at
 	player.finished.connect(player.queue_free)
 	player.play()
 	_voices.append(player)
 	_since_call = 0.0
+	return player
 
 
 # Where the call comes from: a water square for frogs and fish, else a random
@@ -408,9 +492,11 @@ func _variants(name: String) -> Array:
 		return _streams[name]
 
 	var list: Array = SoundStage._find(RECORDED_DIR, name)
+	_source[name] = "recorded"
 
 	if list.is_empty():
 		list = SoundStage._find(GENERATED_DIR, name)
+		_source[name] = "generated"
 
 	_streams[name] = list
 	return list
