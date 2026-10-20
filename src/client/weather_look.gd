@@ -30,6 +30,14 @@ const CanopyMapScript := preload("res://src/client/canopy_map.gd")
 
 signal flash_started(at_world: Vector3, distance_m: float)
 
+# Rain and storm darkening, the numbers to tweak (owner, 2026-10-20): how dark a full storm gets.
+const RAIN_OVERCAST := 0.6               # cloud cover as soon as it rains (light rain), rising to 1 in heavy rain
+const SUN_STORM := 0.05                  # share of the sun left under full cover
+const AMBIENT_STORM := 0.4               # ambient light left in a full storm (1 clear)
+const EXPOSURE_CLEAR := 1.1
+const EXPOSURE_STORM := 0.95
+const SATURATION_CLEAR := 1.12
+const SATURATION_STORM := 0.72
 const EASE_S := 8.0                      # seconds for a front to fade fully in or out
 const RAIN_AMOUNT := [500, 1400, 2800, 4500]
 const SNOW_AMOUNT := [350, 900, 2000, 3200]
@@ -271,7 +279,7 @@ func _process(delta: float) -> void:
 	# rains"): the old cover barely moved in light rain and the sky's lighting cubemap is drawn once, so
 	# the sun and the ambient light below carry the darkening.
 	var wet_sky: float = smoothstep(0.02, 0.2, maxf(rain, snow))
-	cloud_cover = clampf(maxf(float(_s["cloud"]), maxf(wet_sky * (0.6 + 0.4 * maxf(rain, snow * 0.9)), storm)), 0.0, 1.0)
+	cloud_cover = clampf(maxf(float(_s["cloud"]), maxf(wet_sky * (RAIN_OVERCAST + (1.0 - RAIN_OVERCAST) * maxf(rain, snow * 0.9)), storm)), 0.0, 1.0)
 	gloom = clampf(0.3 * cloud_cover + 0.45 * rain + 0.2 * snow + 0.6 * storm, 0.0, 1.0)
 	_dark = clampf(0.5 * cloud_cover + 0.35 * rain + 0.15 * snow + 0.35 * storm, 0.0, 1.0)
 
@@ -300,12 +308,12 @@ func _process(delta: float) -> void:
 	var sun_amount: float = clampf(1.0 - cloud_cover * 1.25, 0.0, 1.0)
 
 	if _client._sun != null:
-		_client._sun.light_energy = LookSettings.SUN_ENERGY * lerpf(0.05, 1.0, sun_amount) + flash_level * 1.2
+		_client._sun.light_energy = LookSettings.SUN_ENERGY * lerpf(SUN_STORM, 1.0, sun_amount) + flash_level * 1.2
 
-	environment.ambient_light_energy = lerpf(1.0, 0.4, _dark) + flash_level * 2.0
+	environment.ambient_light_energy = lerpf(1.0, AMBIENT_STORM, _dark) + flash_level * 2.0
 	# The whole picture goes dimmer and greyer with the weather.
-	environment.tonemap_exposure = lerpf(1.1, 0.95, _dark)
-	environment.adjustment_saturation = lerpf(1.12, 0.72, _dark)
+	environment.tonemap_exposure = lerpf(EXPOSURE_CLEAR, EXPOSURE_STORM, _dark)
+	environment.adjustment_saturation = lerpf(SATURATION_CLEAR, SATURATION_STORM, _dark)
 
 	if not _client.underwater:
 		var thick: float = 1.0 + 5.0 * rain + 4.0 * snow + 3.0 * storm + 12.0 * float(_s["fog"])
