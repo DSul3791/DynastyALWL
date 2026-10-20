@@ -18,10 +18,10 @@ const NIGHT_TO := 5.0
 
 # Per zone group: how wet, the mean temperature (C) and the seasonal swing (C).
 const ZONES := {
-	"desert": {"wet": 0.08, "temp": 28.0, "swing": 8.0},
-	"transition": {"wet": 0.26, "temp": 19.0, "swing": 11.0},
-	"temperate": {"wet": 0.44, "temp": 10.0, "swing": 14.0},
-	"arctic": {"wet": 0.34, "temp": -9.0, "swing": 14.0},
+	"desert": {"wet": 0.04, "temp": 28.0, "swing": 8.0},
+	"transition": {"wet": 0.17, "temp": 19.0, "swing": 11.0},
+	"temperate": {"wet": 0.27, "temp": 10.0, "swing": 14.0},
+	"arctic": {"wet": 0.22, "temp": -9.0, "swing": 14.0},
 }
 
 # The year's phase, 0..1: spring starts at 0, high summer is about 0.375, winter's middle 0.875.
@@ -77,7 +77,7 @@ static func state(seed_value: int, game_s: float, zone_group: String, altitude_m
 		var longer: float = smoothstep(need - 0.2 * -spirit, need + 0.2, front)
 		precip = clampf(maxf(precip, longer) * (1.0 + 0.9 * -spirit), 0.0, 1.0) if zone_group != "desert" else precip
 
-	var storm: float = clampf((precip - 0.55) / 0.45, 0.0, 1.0) * (0.5 + 0.5 * -minf(spirit, 0.0)) if precip > 0.55 else 0.0
+	var storm: float = clampf((precip - 0.7) / 0.3, 0.0, 1.0) * (0.5 + 0.5 * -minf(spirit, 0.0)) if precip > 0.7 else 0.0
 	var snowing: bool = temp < 0.5
 	var cloud: float = clampf(maxf(precip, front * wet * 1.2), 0.0, 1.0)
 

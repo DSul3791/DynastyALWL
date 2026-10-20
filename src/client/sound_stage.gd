@@ -23,6 +23,8 @@ const DigScript := preload("res://src/client/dig_sounds.gd")
 const CaveScript := preload("res://src/client/cave_sounds.gd")
 const HitScript := preload("res://src/client/hit_sounds.gd")
 const TownScript := preload("res://src/client/town_sounds.gd")
+const SwimScript := preload("res://src/client/swim_sounds.gd")
+const UiScript := preload("res://src/client/ui_sounds.gd")
 const OcclusionScript := preload("res://src/client/sound_occlusion.gd")
 const WaterSoundsScript := preload("res://src/client/water_sounds.gd")
 const AUDIO_DIR := "res://assets/audio/"
@@ -61,7 +63,12 @@ const ORE_STEP := {1: ["stone", -3.0, 0.9], 10: ["sand", 0.0, 1.05], 12: ["mud",
 const ORE_METAL := [2, 3, 4, 5, 6, 7, 8, 9, 15, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27]
 # Soils with their own character: [dB, pitch] on top of their surface (data/tables/soils.json).
 const SOIL_TUNE := {3: [-1.0, 0.95], 4: [0.0, 0.97], 12: [2.0, 1.1], 13: [0.0, 1.06], 14: [-3.0, 0.9]}
-const RAIN_SOAK := 0.5                  # rain level from which loose dirt and leaves turn to wet mud steps
+const RAIN_SOAK := 0.5                  # ground wetness from which loose dirt and leaves turn to wet mud steps
+const SNOW_COVER := 0.35                # snow on the ground from which steps crunch
+const PUDDLE_WET := 0.6                 # ground wetness from which steps on firm ground splash
+const SNOW_SURFACES := ["grass", "grass_tall", "dirt", "leaves", "sand", "gravel", "bushes", "mud"]
+const PUDDLE_SURFACES := ["grass", "grass_tall", "stone", "gravel", "sand", "bushes"]
+const PUDDLE_DB := -13.0
 # Esc > Settings mixer groups: name -> the buses it sets. Shares step through VOLUME_STEPS.
 const MIX_GROUPS := {"wind": ["Wind"], "nature": ["Nature", "Weather"], "steps": ["Foley"]}
 const SETTINGS_PATH := "user://sound_settings.cfg"
@@ -86,6 +93,7 @@ const SHELTER_HITS := 16
 
 var steps_played: Dictionary = {}       # surface -> count (for the headless walk check)
 var swishes_played: int = 0
+var puddles_played: int = 0
 var surface: String = ""                # what the feet were last on
 var _stable: String = ""                # the surface being sounded (changes only after two steps)
 var _pending: String = ""
@@ -134,6 +142,8 @@ var water                               # WaterSounds: brooks, rivers, pond shor
 var weather                             # WeatherSounds: rain, gale, thunder, snow hush (set_weather)
 var occlusion                           # SoundOcclusion: hills and forest muffle distant sounds
 var hits                                # HitSounds: axe, pick, hammer, spade on wood, stone, soil (hit, hit_ground)
+var ui                                  # UiSounds: menu click, toggle and quality cues (play(name))
+var swim                                # SwimSounds: splash, strokes, diving, the hum under water (driven by the body)
 var town                                # TownSounds: fire, hammering, crowd, bell hooks (set_sources, ring_bell)
 var cave                                # CaveSounds: reverb, muffling and drips under rock
 var dig                                 # DigSounds: the sound of what is dug (dug(center, radius, listener))
@@ -195,6 +205,14 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	town.name = "Town"
 	add_child(town)
 	town.setup(self)
+	ui = UiScript.new()
+	ui.name = "Ui"
+	add_child(ui)
+	ui.setup(self)
+	swim = SwimScript.new()
+	swim.name = "Swim"
+	add_child(swim)
+	swim.setup(self)
 	hits = HitScript.new()
 	hits.name = "Hits"
 	add_child(hits)
@@ -263,6 +281,7 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	dig.update(delta)
 	cave.update(delta, body, flying)
 	town.update(delta, body)
+	swim.update(delta, body, flying, underwater)
 	occlusion.update(delta, body, flying)
 	_time += delta
 	gust = clampf(0.5 + 0.8 * _gust_noise.get_noise_1d(_time), 0.0, 1.0)
@@ -323,7 +342,7 @@ func voices_playing() -> int:
 		if player.playing:
 			count += 1
 
-	return count + ambient.voices_playing() + water.voices_playing() + weather.voices_playing()
+	return count + ambient.voices_playing() + water.voices_playing() + weather.voices_playing() + swim.voices_playing()
 
 
 # True while another optional sound (a call, a flush) fits in the voice budget.
@@ -385,9 +404,14 @@ func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: Str
 		surface = str(SOIL_SURFACE.get(soil, "dirt"))
 		tune = SOIL_TUNE.get(soil, [0.0, 1.0])
 
-		if surface in ["dirt", "leaves"] and weather != null and weather.rain >= RAIN_SOAK:
+		if surface in ["dirt", "leaves"] and weather != null and weather.ground_wet >= RAIN_SOAK:
 			surface = "mud"                                      # soaked ground
 			tune = [-2.0, 1.0]
+
+	# Snow lying on the ground (it fell, and has not melted): any loose ground crunches.
+	if weather != null and weather.ground_snow >= SNOW_COVER and surface in SNOW_SURFACES:
+		surface = "snow"
+		tune = [0.0, 1.0]
 
 	# Steady ground: a different surface must show on two steps in a row before the sound
 	# changes, so one odd sample (a bush, a patch edge) never flips it back and forth.
@@ -413,6 +437,11 @@ func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: Str
 	last_step = "%s (soil %d, water %.2f m, %s)" % [surface, soil, depth, name + "_" + foot if recorded else name + " generated"]
 	_play(name, float(SURFACE_DB.get(surface, -9.0)) + float(tune[0]) + GAIT_DB[gait] + boost_db + _rng.randf_range(-1.5, 1.0), pitch, foot)
 	steps_played[surface] = int(steps_played.get(surface, 0)) + 1
+
+	# Wet ground: a puddle splash joins most steps on grass, stone, gravel and sand.
+	if weather != null and weather.ground_wet >= PUDDLE_WET and surface in PUDDLE_SURFACES and _rng.randf() < weather.ground_wet * 0.7:
+		puddles_played += 1
+		_play("step_water", PUDDLE_DB + GAIT_DB[gait] - float(GAIT_DB[0]) + _rng.randf_range(-2.0, 1.0), _rng.randf_range(0.95, 1.15) * GAIT_PITCH[gait], foot)
 
 	# The recorded grass, tall grass and bush steps carry the swish of the blades themselves.
 

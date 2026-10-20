@@ -15,7 +15,7 @@ import wave
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from make_sounds import SR, band, freqs, highpass, lowpass  # noqa: E402
+from make_sounds import SR, add, band, env, freqs, highpass, lowpass, noise  # noqa: E402
 from make_water import normalize, shaped_noise, slow_swell  # noqa: E402
 
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "weather")
@@ -49,38 +49,42 @@ def drops(rng, n, rate, center, octaves, decay, gain=1.0):
     return out
 
 
+# Owner 2026-10-20: the rain had a "sheeting" sound like brushing a horse. That was the steady broadband
+# hiss bed under the drops (4.5 to 5.5 kHz noise). The beds are gone: rain is now only drops (many fine
+# ticks and some larger plops, random in time and level), plus a low soft body in heavy rain.
+
 def rain_light(rng, n):
-    hiss = shaped_noise(rng, n, lambda f: band(f, 5500, 1.2) * highpass(f, 1800, 2))
-    hiss /= np.std(hiss)
-    d = drops(rng, n, 160, 4000, 1.0, 0.004)
-    d /= np.std(d) + 1e-9
-    return normalize((0.7 * hiss + 0.5 * d) * slow_swell(rng, n, 0.12, (2, 4, 7)))
+    fine = drops(rng, n, 420, 4200, 1.0, 0.003)
+    fine /= np.std(fine) + 1e-9
+    plops = drops(rng, n, 60, 2200, 0.8, 0.009)
+    plops /= np.std(plops) + 1e-9
+    return normalize((0.8 * fine + 0.5 * plops) * slow_swell(rng, n, 0.12, (2, 4, 7)))
 
 
 def rain_heavy(rng, n):
-    hiss = shaped_noise(rng, n, lambda f: band(f, 4500, 1.6) * highpass(f, 900, 2))
-    hiss /= np.std(hiss)
-    body = shaped_noise(rng, n, lambda f: band(f, 600, 1.2) * highpass(f, 150, 2))
+    fine = drops(rng, n, 1000, 3600, 1.1, 0.003)
+    fine /= np.std(fine) + 1e-9
+    plops = drops(rng, n, 160, 2000, 0.8, 0.008)
+    plops /= np.std(plops) + 1e-9
+    body = shaped_noise(rng, n, lambda f: band(f, 300, 1.0) * highpass(f, 90, 2))
     body /= np.std(body)
-    d = drops(rng, n, 420, 3000, 1.2, 0.006)
-    d /= np.std(d) + 1e-9
-    return normalize((hiss + 0.5 * body + 0.5 * d) * slow_swell(rng, n, 0.15, (2, 5, 9)))
+    return normalize((0.8 * fine + 0.6 * plops + 0.25 * body) * slow_swell(rng, n, 0.15, (2, 5, 9)))
 
 
 def rain_leaves(rng, n):
     d = drops(rng, n, 380, 2200, 0.9, 0.007)
     d /= np.std(d) + 1e-9
-    soft = shaped_noise(rng, n, lambda f: band(f, 2600, 1.0) * highpass(f, 900, 2))
-    soft /= np.std(soft)
-    return normalize((0.9 * d + 0.4 * soft) * slow_swell(rng, n, 0.1, (3, 6, 8)))
+    big = drops(rng, n, 50, 1500, 0.7, 0.012)
+    big /= np.std(big) + 1e-9
+    return normalize((0.9 * d + 0.4 * big) * slow_swell(rng, n, 0.1, (3, 6, 8)))
 
 
 def rain_water(rng, n):
-    hiss = shaped_noise(rng, n, lambda f: band(f, 3500, 1.3) * highpass(f, 1200, 2))
-    hiss /= np.std(hiss)
+    fine = drops(rng, n, 300, 3000, 1.0, 0.004)
+    fine /= np.std(fine) + 1e-9
     pits = drops(rng, n, 120, 1800, 0.7, 0.012)
     pits /= np.std(pits) + 1e-9
-    return normalize((0.6 * hiss + 0.7 * pits) * slow_swell(rng, n, 0.1, (3, 5, 8)))
+    return normalize((0.5 * fine + 0.8 * pits) * slow_swell(rng, n, 0.1, (3, 5, 8)))
 
 
 def wind_storm(rng, n):
@@ -142,6 +146,22 @@ def thunder_far(rng, seconds):
     return np.tanh(x / np.max(np.abs(x)) * 1.4) * 0.8
 
 
+def rain_drip(rng):
+    """One fat drop falling from a leaf: a soft tick and a short watery plink."""
+    n = int(0.35 * SR)
+    out = np.zeros(n)
+    m = int(0.02 * SR)
+    tick = noise(rng, m, lambda f: band(f, 3000, 1.0) * highpass(f, 800)) * env(m, 0.0005, 0.005)
+    add(out, tick / (np.max(np.abs(tick)) + 1e-9) * 0.5, 0.0)
+    d = int(0.12 * SR)
+    t = np.arange(d) / SR
+    f0 = rng.uniform(500, 900)
+    plink = np.sin(2 * np.pi * np.cumsum(f0 * (1.0 + 1.2 * t / 0.12)) / SR) * np.exp(-t / 0.025)
+    add(out, plink * 0.7, 0.004)
+    out[-int(0.05 * SR):] *= np.linspace(1, 0, int(0.05 * SR))
+    return out * (0.7 / (np.max(np.abs(out)) + 1e-9))
+
+
 def main():
     rng = np.random.default_rng(20261020)
     for name, make, seconds in (("rain_light", rain_light, 14), ("rain_heavy", rain_heavy, 14),
@@ -154,7 +174,10 @@ def main():
         write_ogg("thunder_near_%d" % v, thunder_near(rng, 3.5))
         write_ogg("thunder_far_%d" % v, thunder_far(rng, 11.0))
 
-    print("Wrote 14 weather sounds to %s" % OUT)
+    for v in range(4):
+        write_ogg("rain_drip_%d" % v, rain_drip(rng))
+
+    print("Wrote 18 weather sounds to %s" % OUT)
 
 
 if __name__ == "__main__":

@@ -10,7 +10,7 @@ extends Node
 #   Sounds fade over several seconds as the state changes.
 # - `wind` (0 to 1) is read by sound_stage.gd and adds to the wind strength, which also
 #   drives the grass sway; `hush` and `calls` quiet the nature layer (ambient_life.gd reads
-#   `calls`, frogs get `wet`).
+#   `calls`, frogs get `frogs`).
 # - signal lightning(at, distance_m): fired with each thunder roll, for a later sky flash.
 #
 # How the weather is meant to be chosen (owner, 2026-10-20, not built): by zone north to
@@ -40,18 +40,29 @@ const THUNDER_MAX_DELAY_SEC := 10.0
 const SPEED_OF_SOUND := 343.0
 
 # kind: rain (0 to 1), wind (0 to 1), hush (0 to 1, quiets the nature layer), thunder (0 or 1),
-# calls (share of the birds and insects still calling), wet (frogs like it).
+# calls (share of the birds and insects still calling), frogs (share of frog calls: more than 1 in
+# light rain, which they like, none in storms, snow and blizzards; owner 2026-10-20).
 const KINDS := {
-	"clear": {"rain": 0.0, "wind": 0.0, "hush": 0.0, "thunder": 0.0, "calls": 1.0, "wet": 0.0},
-	"drizzle": {"rain": 0.3, "wind": 0.1, "hush": 0.1, "thunder": 0.0, "calls": 0.6, "wet": 0.6},
-	"rain": {"rain": 0.65, "wind": 0.25, "hush": 0.25, "thunder": 0.0, "calls": 0.3, "wet": 1.0},
-	"storm": {"rain": 1.0, "wind": 0.75, "hush": 0.4, "thunder": 1.0, "calls": 0.05, "wet": 0.5},
-	"snow": {"rain": 0.0, "wind": 0.05, "hush": 0.5, "thunder": 0.0, "calls": 0.5, "wet": 0.0},
-	"blizzard": {"rain": 0.0, "wind": 1.0, "hush": 0.3, "thunder": 0.0, "calls": 0.0, "wet": 0.0},
-	"fog": {"rain": 0.0, "wind": 0.0, "hush": 0.2, "thunder": 0.0, "calls": 0.8, "wet": 0.0},
+	"clear": {"rain": 0.0, "wind": 0.0, "hush": 0.0, "thunder": 0.0, "calls": 1.0, "frogs": 1.0},
+	"drizzle": {"rain": 0.3, "wind": 0.1, "hush": 0.1, "thunder": 0.0, "calls": 0.5, "frogs": 1.6},
+	"rain": {"rain": 0.65, "wind": 0.25, "hush": 0.25, "thunder": 0.0, "calls": 0.15, "frogs": 1.2},
+	"storm": {"rain": 1.0, "wind": 0.75, "hush": 0.4, "thunder": 1.0, "calls": 0.0, "frogs": 0.0},
+	"snow": {"rain": 0.0, "wind": 0.05, "hush": 0.5, "thunder": 0.0, "calls": 0.4, "frogs": 0.0},
+	"blizzard": {"rain": 0.0, "wind": 1.0, "hush": 0.3, "thunder": 0.0, "calls": 0.0, "frogs": 0.0},
+	"fog": {"rain": 0.0, "wind": 0.0, "hush": 0.2, "thunder": 0.0, "calls": 0.8, "frogs": 0.8},
 }
 const LOOP_DB := {"rain_light": -14.0, "rain_heavy": -13.0, "rain_leaves": -15.0, "rain_water": -17.0, "wind_storm": -18.0}
 const THUNDER_DB := -4.0
+# The ground remembers the weather (owner's job 17): it soaks in rain and dries slowly, snow settles
+# while it snows and melts above freezing. The footsteps read ground_wet and ground_snow.
+const WET_RISE_SEC := 25.0              # rain from 0.25: dry to soaked in this long
+const WET_DRY_SEC := 240.0
+const SNOW_RISE_SEC := 60.0
+const SNOW_MELT_SEC := 120.0            # above MELT_C
+const SNOW_STAY_SEC := 900.0            # below it, snow stays a long while
+const MELT_C := 1.0
+const DRIP_DB := -22.0
+const DRIP_EVERY := [0.5, 2.2]          # seconds between drips under trees at full rain
 
 var forced: bool = false                # --weather=KIND on the command line: the world weather is ignored
 var kind: String = "clear"
@@ -60,8 +71,12 @@ var rain: float = 0.0                   # smoothed levels the sound stage and HU
 var wind: float = 0.0
 var hush: float = 0.0
 var calls: float = 1.0
-var wet: float = 0.0
+var frogs: float = 1.0                  # share of frog calls in this weather (can top 1 in light rain)
 var thunders_played: int = 0
+var ground_wet: float = 0.0             # 0 dry .. 1 soaked: puddle splashes, mud
+var ground_snow: float = 0.0            # 0 bare .. 1 snow lies: footsteps crunch
+var drips_played: int = 0
+var temp_c: float = 10.0
 var last_thunder: String = ""
 var world_wind: float = 0.35            # the world's wind (0.15 calm to 1 storm), smoothed: sets the wind sound
 var storm_level: float = 1.0            # the world's storm value (0 to 1) behind the current kind
@@ -74,6 +89,7 @@ var _loops: Dictionary = {}             # name -> AudioStreamPlayer
 var _streams: Dictionary = {}
 var _thunder_in: float = 20.0
 var _pending: Array = []                # [seconds left, AudioStreamPlayer, stream] thunder waiting for its delay
+var _drip_in: float = 1.0
 var _under: float = 1.0                 # 0 underwater, 1 in the air, smoothed
 
 
@@ -90,6 +106,9 @@ func setup(stage, ambient) -> void:
 			rain = float(KINDS[kind]["rain"]) * intensity
 			wind = float(KINDS[kind]["wind"]) * intensity
 			calls = float(KINDS[kind]["calls"])
+			ground_wet = 1.0 if float(KINDS[kind]["rain"]) > 0.0 else 0.0
+			ground_snow = 1.0 if kind in ["snow", "blizzard"] else 0.0
+			frogs = float(KINDS[kind]["frogs"])
 
 	for name in LOOP_DB:
 		var list: Array = _variants(name)
@@ -125,6 +144,7 @@ func apply_state(state: Dictionary) -> void:
 
 	storm_level = float(state.get("storm", 0.0))
 	_wind_target = float(state.get("wind", 0.35))
+	temp_c = float(state.get("temp_c", temp_c))
 	var snow: float = float(state.get("snow", 0.0))
 	var storm: float = float(state.get("storm", 0.0))
 	var rain_level: float = float(state.get("rain", 0.0))
@@ -160,10 +180,10 @@ func update(delta: float, body: CharacterBody3D, underwater: bool) -> void:
 	wind = move_toward(wind, float(target["wind"]) * intensity, step)
 	hush = move_toward(hush, float(target["hush"]) * intensity, step)
 	calls = move_toward(calls, lerpf(1.0, float(target["calls"]), intensity), step)
-	wet = move_toward(wet, float(target["wet"]) * intensity, step)
+	frogs = move_toward(frogs, lerpf(1.0, float(target["frogs"]), intensity), step)
 	_under = move_toward(_under, 0.12 if underwater else 1.0, delta * 3.0)
 	_ambient.weather_calls = calls
-	_ambient.weather_wet = wet
+	_ambient.weather_frogs = frogs
 	var cover: float = float(_ambient.weights["forest"])
 	var water: float = float(_ambient.weights["water"])
 	var heavy: float = smoothstep(0.4, 0.9, rain)
@@ -174,6 +194,54 @@ func update(delta: float, body: CharacterBody3D, underwater: bool) -> void:
 	_loop("rain_water", minf(rain * 1.6, 1.0) * water)
 	_loop("wind_storm", clampf(wind - 0.2, 0.0, 1.0) / 0.8)
 	_thunder(delta)
+	_ground(delta)
+	_drips(delta, body, cover)
+
+
+# The ground soaks and dries, snow settles and melts (slowly; a test kind forces temperature to cold).
+func _ground(delta: float) -> void:
+	if rain >= 0.25:
+		ground_wet = move_toward(ground_wet, minf(rain * 1.5, 1.0), delta / WET_RISE_SEC)
+	else:
+		ground_wet = move_toward(ground_wet, 0.0, delta / WET_DRY_SEC)
+
+	if kind == "snow" or kind == "blizzard":
+		ground_snow = move_toward(ground_snow, 1.0, delta / SNOW_RISE_SEC)
+	else:
+		ground_snow = move_toward(ground_snow, 0.0, delta / (SNOW_MELT_SEC if temp_c > MELT_C else SNOW_STAY_SEC))
+
+
+# Under trees in rain: now and then a drop falls from a leaf nearby.
+func _drips(delta: float, body: CharacterBody3D, cover: float) -> void:
+	if rain < 0.15 or cover < 0.3 or not _stage.has_room():
+		return
+
+	_drip_in -= delta * _ambient.time_scale
+
+	if _drip_in > 0.0:
+		return
+
+	_drip_in = lerpf(DRIP_EVERY[1], DRIP_EVERY[0], clampf(rain, 0.0, 1.0)) * _rng.randf_range(0.6, 1.4) / maxf(cover, 0.3)
+	var list: Array = _variants("rain_drip")
+
+	if list.is_empty():
+		return
+
+	var player: AudioStreamPlayer3D = AudioStreamPlayer3D.new()
+	player.stream = list[_rng.randi_range(0, list.size() - 1)]
+	player.bus = "Weather"
+	player.volume_db = DRIP_DB + _rng.randf_range(-4.0, 2.0) + linear_to_db(clampf(cover, 0.3, 1.0))
+	player.pitch_scale = _rng.randf_range(0.85, 1.2)
+	player.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
+	player.unit_size = 3.0
+	player.max_distance = 20.0
+	add_child(player)
+	player.add_to_group("world_sounds")
+	var angle: float = _rng.randf() * TAU
+	player.global_position = body.global_position + Vector3(cos(angle), _rng.randf_range(-0.8, 1.5), sin(angle)) * _rng.randf_range(1.5, 7.0)
+	player.finished.connect(player.queue_free)
+	player.play()
+	drips_played += 1
 
 
 func _loop(name: String, level: float) -> void:
