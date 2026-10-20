@@ -18,7 +18,8 @@ const STEP_M := 2.0               # the polyline is resampled this often along a
 const LIFT_M := 0.35              # the ribbon rides this far over the real ground
 const WIDTH_PER_ROOT_M3S := 0.6   # width = this * sqrt(flow m3/s), within the limits below
 const WIDTH_MIN_M := 0.8
-const WIDTH_MAX_M := 12.0
+const CURTAIN_M2S := 0.6          # m3/s per metre of width over a lip (10 m3/s: a curtain about 17 m wide)
+const WIDTH_MAX_M := 25.0           # the wire holds up to 25.5 m (u8, 0.1 m)
 const FLOW_MAX_M3S := 6000.0
 const FOAM_PER_WIDTH := 2.0       # radius of the churning foam over the ribbon width
 const SPLASH_PER_WIDTH := 3.0     # splash quad size over the ribbon width
@@ -243,7 +244,9 @@ static func _fall(chain: PackedInt32Array, flow: float, origin: Vector2, count: 
 			last_y = y
 
 	var drop: float = points[0].y - points[points.size() - 1].y
-	var width: float = clampf(WIDTH_PER_ROOT_M3S * sqrt(flow), WIDTH_MIN_M, WIDTH_MAX_M)
+	# Owner report (2026-10-20, build 257): a normal-flow fall was a 2 m stripe under a 20 m
+	# river. Water going over a lip spreads into a curtain: about CURTAIN_M2S per metre of width.
+	var width: float = clampf(maxf(WIDTH_PER_ROOT_M3S * sqrt(flow), flow / CURTAIN_M2S), WIDTH_MIN_M, WIDTH_MAX_M)
 	return {"width": width, "flow": flow, "points": points, "drop": drop, "pool": levels[chain[chain.size() - 1]]}
 
 

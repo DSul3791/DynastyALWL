@@ -671,6 +671,8 @@ func _carve_guides(rivers: Array) -> void:
 		var run_length: float = 0.0
 		var last_bed: float = INF
 		var last_along: float = 0.0
+		var lip_drop: float = float(_rules.get("brook_lip_drop_m", 5.0))
+		var held: float = INF             # the bed at the lip of the drop the river is going over
 
 		for k in range(count):
 			if k > 0:
@@ -732,7 +734,23 @@ func _carve_guides(rivers: Array) -> void:
 
 				bank_here = maxf(slope, face * 1.25)
 
-			_stamp_at(carved, points[k], widths[k], depths[k], bed, bank_here, strength, best_flow)
+			# Owner (2026-10-20): a river stays cut to its full depth right to the edge of a ledge
+			# and pours over it; owner report (build 232/257): the river cut a chute down pond B's
+			# cliff from a rounded lip, the water spread there to a few cm and the fall started
+			# halfway down. From the lip (the land drops lip_drop within two steps) the bed holds
+			# the lip's height while the land keeps dropping: only ground above it is cut, so the
+			# face stands as it is and the water leaves the channel over a sharp edge.
+			var drop_ahead: bool = k + 2 < count and usable[k + 2] == 1 and low_values[k] - low_values[k + 2] > lip_drop
+			var drop_behind: bool = k >= 2 and usable[k - 2] == 1 and low_values[k - 2] - low_values[k] > lip_drop
+
+			if drop_ahead or drop_behind:
+				if held == INF:
+					held = bed
+
+				_stamp_at(carved, points[k], widths[k], depths[k], maxf(bed, held), bank_here, strength, best_flow)
+			else:
+				held = INF
+				_stamp_at(carved, points[k], widths[k], depths[k], bed, bank_here, strength, best_flow)
 
 		longest = maxf(longest, run_length)
 
