@@ -29,6 +29,7 @@ var _grid: GridContainer
 var _buttons: Array = []
 var _selected: int = -1
 var _prompt: Label
+var plant_hint: String = ""            # set by the harvest prompt (harvest.gd)
 var _crafting: int = 0                # recipe being made (0 none)
 var _craft_done_msec: int = 0
 var _craft_label: Label
@@ -152,6 +153,8 @@ func _process(_delta: float) -> void:
 
 	if near[0] == 0 and fire != 0:
 		_prompt.text = "C: roast food    V: add wood" if _world[fire]["state"] == 1 else "V: add wood to relight"
+	elif near[0] == 0:
+		_prompt.text = plant_hint
 
 
 
@@ -219,6 +222,19 @@ func felled_trunk_near(point: Vector3) -> int:
 				return id
 
 	return 0
+
+
+func show_notice(text: String) -> void:
+	_on_notice(text)
+
+
+# Is a tool of this class on the hotbar (slots 1 to 8), the way the server checks it?
+func has_tool_class(tool_class: String) -> bool:
+	for slot in range(8):
+		if inventory.numbers[slot] != 0 and str(table.entry(table.id_of(inventory.numbers[slot])).get("tool_class", "")) == tool_class:
+			return true
+
+	return false
 
 
 func _on_notice(text: String) -> void:
@@ -838,9 +854,17 @@ func run_gather_test(client) -> void:
 	await get_tree().create_timer(3.0).timeout
 	var sticks: int = table.number_of("stick")
 	var before: int = inventory.count_of(sticks)
-	client._gather_nearest()
+	await get_tree().create_timer(0.6).timeout
+	print("Gather test: prompt \"%s\"" % plant_hint)
+	client.harvest.tap()
 	await get_tree().create_timer(2.0).timeout
 	print("Gather test: sticks %d -> %d; loose things in view %d" % [before, inventory.count_of(sticks), _world.size()])
+	var after_tap: int = inventory.count_of(sticks)
+	client.harvest.update(0.0, true)
+	client.harvest.update(0.5, true)
+	client.harvest.update(0.3, true)
+	await get_tree().create_timer(1.5).timeout
+	print("Gather test: sweep, sticks %d -> %d (a picked-bare shrub is skipped); prompt \"%s\"" % [after_tap, inventory.count_of(sticks), plant_hint])
 
 
 # Headless check (--chop): stand by the nearest tree with an axe and chop it down.

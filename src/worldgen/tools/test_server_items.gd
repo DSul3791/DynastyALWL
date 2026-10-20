@@ -105,6 +105,7 @@ func _init() -> void:
 	var g = make("user://test_server_items_b")
 	g.ground_height = func(x, z): return 20.0 + x * 0.1
 	g.world_seed = 5
+	g.gather_pace_ms = 0
 	var clock: Array = [1000.0]
 	g.game_seconds = func(): return clock[0]
 	g.season_now = func(): return "summer"

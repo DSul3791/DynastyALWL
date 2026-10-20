@@ -69,6 +69,7 @@ const TileBakeScript := preload("res://src/admin/tile_bake_launcher.gd")
 const GrassViewScript := preload("res://src/client/grass_view.gd")
 const SoundStageScript := preload("res://src/client/sound_stage.gd")
 const GroundMaterialScript := preload("res://src/client/ground_material.gd")
+const HarvestScript := preload("res://src/client/harvest.gd")
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 
 const VIEW_DISTANCE := 2048
@@ -222,6 +223,7 @@ var _report_msec: int = 0
 var dig_applied: int = 0
 var flora                             # FloraView
 var items                             # InventoryView: inventory panel (I), pick-up (E)
+var harvest                           # Harvest: E prompt, tap to pick, hold to sweep
 var held                              # HeldItem: hotbar keys 1 to 8, spear jab and throw
 var grass                             # GrassView
 var sound                             # SoundStage: wind, footsteps, grass swish
@@ -567,6 +569,8 @@ func _on_welcome(info: Dictionary) -> void:
 	items.knowledge = knowledge
 	items.max_lights = func(): return [1, 2, 3, 3][clampi(quality, 0, 3)]
 	items.is_inspecting = func(): return inspecting
+	harvest = HarvestScript.new()
+	harvest.setup(self, items, net)
 	held = HeldItemScript.new()
 	held.name = "Held"
 	add_child(held)
@@ -1594,7 +1598,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			items.fuel_nearest()
 		elif event.keycode == KEY_E and items != null:
 			if not items.pick_up_nearest():
-				_gather_nearest()
+				harvest.tap()
 		elif event.keycode == KEY_BRACKETRIGHT and items != null:
 			items.admin_give_test_set()
 		elif event.keycode == KEY_J and _jitter_test != null:
@@ -1802,6 +1806,9 @@ func _fire_test_step(step: int, at: Vector3) -> String:
 
 func _process(delta: float) -> void:
 	_step_player(delta)
+
+	if harvest != null:
+		harvest.update(delta, Input.is_key_pressed(KEY_E) and not items.open)
 	game_clock.tick()
 	_update_weather()
 

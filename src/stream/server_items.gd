@@ -50,6 +50,8 @@ const PROCESS_REACH_M := 4.0
 const PROCESS_COOLDOWN_MS := 450
 const FIRE_USE_M := 3.5
 const COOKING_PATH := "res://data/items/cooking.json"
+const GatherRules := preload("res://src/shared/gather_rules.gd")
+const GATHER_PACE_MS := 80              # at most about 12 picks a second per player (hold-E sweep)
 const MINE_REACH_M := 4.5
 const MINE_COOLDOWN_MS := 700
 const MINE_CELL_M := 8.0                 # one outcrop patch
@@ -94,6 +96,8 @@ var _save_in: float = SAVE_EVERY_S
 var _dirty: bool = false
 var _drops: Dictionary = {}
 var _cooking: Dictionary = {}
+var gather_pace_ms: int = GATHER_PACE_MS
+var _last_gather: Dictionary = {}   # peer -> msec
 var _last_cook: Dictionary = {}     # peer -> msec
 var _flora_by_name: Dictionary = {}   # flora table rows by species name (yields, seasons)
 var _picked: Dictionary = {}          # "cx,cz,id" -> game seconds when last picked
@@ -152,6 +156,7 @@ func peer_left(peer: int) -> void:
 	_last_mine.erase(peer)
 	_last_hit.erase(peer)
 	_last_cook.erase(peer)
+	_last_gather.erase(peer)
 	_last_process.erase(peer)
 
 
@@ -332,6 +337,12 @@ func gather(peer: int, species_name: String, kind: String, flora_key: String, fl
 	if not _peer_pos.has(peer) or _peer_pos[peer].distance_to(plant_position) > GATHER_M:
 		return false
 
+	var tick: int = Time.get_ticks_msec()
+
+	if tick - int(_last_gather.get(peer, -100000)) < gather_pace_ms:
+		return false
+
+	_last_gather[peer] = tick
 	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
 
 	if now_s - float(_picked.get(flora_key, -1.0e12)) < REGROW_GAME_S:
@@ -382,16 +393,8 @@ func gather(peer: int, species_name: String, kind: String, flora_key: String, fl
 	return true
 
 
-# The tool class a natural yield needs ("" = by hand), from drops.json tool_rules.
 func _tool_for(item_id: String) -> String:
-	var suffixes: Dictionary = _drops.get("tool_rules", {}).get("suffixes", {})
-
-	for tool_class in suffixes:
-		for suffix in suffixes[tool_class]:
-			if item_id.ends_with(str(suffix)):
-				return str(tool_class)
-
-	return ""
+	return GatherRules.tool_for(item_id, _drops)
 
 
 func _say(peer: int, text: String) -> void:
