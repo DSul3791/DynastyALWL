@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Fails if the near-field meadow grass (the near distance band, which runs to 0.35 of the radius) is thinner
-than it was in build 228, the density the owner liked, or the reach is shorter than 228's, per quality tier
-(Low, Medium, High, Ultra). Coverage = cards per square metre times the distance band's card width scale. The
-middle and far bands are printed for information (they are thinner on purpose to pay for the reach).
-Run before pushing any change to grass_view.gd or the QUALITY_GRASS_* tables:
-python3 tools/check_grass_density.py   (ART_DIRECTION.md section 31)"""
+"""Fails if the meadow grass gets thinner, shorter in reach or costlier than the owner-approved numbers
+(ART_DIRECTION.md section 33), per quality tier (Low, Medium, High, Ultra):
+  - near-field coverage (cards per m2 times the near band's card width) not below the approved level and not
+    below build 228's;
+  - reach (QUALITY_GRASS_M) not below 40 / 80 / 120 / 160 m (owner 2026-10-20: Low 25 percent, Medium 50,
+    High 75, Ultra 100 percent of the 160 m between his two screenshots);
+  - the estimated cards on open meadow not above the caps (Low 25k, Medium 130k, High 250k, Ultra 400k).
+Run before pushing any change to grass_view.gd or the QUALITY_GRASS_* tables: python3 tools/check_grass_density.py"""
 import re, sys, pathlib, math
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -15,50 +17,61 @@ def table(name):
     m = re.search(r"const %s := \[([^\]]*)\]" % name, client)
     return [float(v) for v in m.group(1).split(",")]
 
+def vtable(name):
+    m = re.search(r"const %s := \[([^\]]*)\]" % name, view)
+    return [float(v) for v in m.group(1).split(",")]
+
 radius, points, density = table("QUALITY_GRASS_M"), table("QUALITY_GRASS_POINTS"), table("QUALITY_GRASS_DENSITY")
-scales = [float(v) for v in re.search(r"const LOD_SCALE := \[([^\]]*)\]", view).group(1).split(",")]
+scale_big, scale_low, share = vtable("LOD_SCALE"), vtable("LOD_SCALE_SHORT"), vtable("BAND_SHARE")
 cards = sum(int(re.search(r'"name": "%s".*?"per_point": (\d+)' % n, view).group(1)) for n in ("short", "tall"))
 
 # The rules the bands follow; the asserts fail when grass_view.gd changes them without this script.
-assert "clampf(radius_m * 0.35, 14.0, 26.0)" in view and "radius_m * 0.65" in view, "band limits changed: update check_grass_density.py"
-m = re.search(r"return \[points_per_side, maxi\((\d+), int\(round\(points_per_side \* ([\d.]+)\)\)\), (\d+)\]\[lod\]", view)
-assert m, "_lod_points changed: update check_grass_density.py"
-mid_min, mid_share, far_pts = int(m.group(1)), float(m.group(2)), int(m.group(3))
+for needle in ("clampf(meters * 0.3, NEAR_END_MIN, NEAR_END_MAX)", "_mid_end = meters * 0.5", "_far_end = meters * 0.8",
+               "_mid_end = meters * 0.65", "return [points_per_side, 3, 2, 1][lod]",
+               "return [points_per_side, maxi(2, int(round(points_per_side * 0.5))), 2, 2][lod]"):
+    assert needle in view, "band rule changed (%s): update check_grass_density.py" % needle
+NEAR_MIN, NEAR_MAX = (float(re.search(r"const %s := ([\d.]+)" % n, view).group(1)) for n in ("NEAR_END_MIN", "NEAR_END_MAX"))
 
-# Build 228 (Low, Medium, High, Ultra): radius, points per 6 m cell side, cards per sample.
+# Build 228: radius, points per cell side, cards per sample (8 + 3 per sample then).
 B228 = [(14.0, 3, 0.68), (24.0, 5, 2.6), (34.0, 6, 3.0), (48.0, 7, 3.4)]
+APPROVED_NEAR = [15.0, 39.0, 65.0, 100.0]          # cards per m2 in the near band (build 290 doubled the card counts)
+APPROVED_REACH = [40.0, 80.0, 120.0, 160.0]
+CAPS_K = [25.0, 130.0, 250.0, 400.0]
 names = ["Low", "Medium", "High", "Ultra"]
 bad = []
 
-def coverage(q, d):
-    r, pts = radius[q], points[q]
-    near_end = min(max(r * 0.35, 14.0), 26.0)
-    far_start = r * 0.65
-    band = 0 if d < near_end else (1 if d < far_start else 2)
-    pps = [pts, max(mid_min, math.floor(pts * mid_share + 0.5)), far_pts][band]
-    return (pps / 6.0) ** 2 * density[q] * cards * scales[band]
+def bands(q):
+    r = radius[q]
+    big = r > 50.0
+    ne = min(max(r * 0.3, NEAR_MIN), NEAR_MAX)
+    me, fe = (r * 0.5, r * 0.8) if big else (r * 0.65, r)
+    pts = points[q]
+    pps = [pts, 3, 2, 1] if big else [pts, max(2, int(math.floor(pts * 0.5 + 0.5))), 2, 2]
+    edges = [0.0, ne, me, fe, r]
+    scales = scale_big if big else scale_low
+    sh = share if big else [1.0, 1.0, 1.0, 1.0]
+    return [(edges[b], edges[b + 1], pps[b], scales[b], sh[b]) for b in range(4)]
 
-print("grass coverage (cards per m2 x band width), now vs build 228")
-print("%-7s %-9s %8s %8s" % ("tier", "distance", "now", "b228"))
+print("%-7s %-18s %9s %9s %9s" % ("tier", "band (m)", "cards/m2", "coverage", "k cards"))
 for q in range(4):
-    r228, p228, d228 = B228[q]
-    for a, b in ((0, 10), (10, 20), (20, 40)):
-        if a >= r228:
-            continue
-        samples = [a + (b - a) * k / 10.0 for k in range(10)]
-        samples = [d for d in samples if d < r228]
-        now = min(coverage(q, d) for d in samples)
-        old = (p228 / 6.0) ** 2 * d228 * cards
-        print("%-7s %2d-%2d m   %8.1f %8.1f" % (names[q], a, b, now, old))
-        near_end = min(max(radius[q] * 0.35, 14.0), 26.0)
-        near_only = min((coverage(q, d) for d in samples if d < near_end), default=old)
-        if near_only < old - 1e-6:
-            bad.append("%s %d-%d m: %.1f < %.1f" % (names[q], a, b, now, old))
-    if radius[q] < r228:
-        bad.append("%s reach %.0f m is shorter than build 228's %.0f m" % (names[q], radius[q], r228))
+    total = 0.0
+    for b, (a, e, p, sc, sh) in enumerate(bands(q)):
+        per_m2 = (p / 6.0) ** 2 * density[q] * cards * sh
+        k = math.pi * (e * e - a * a) * per_m2 / 1000.0
+        total += k
+        print("%-7s %-18s %9.1f %9.1f %9.0f" % (names[q] if b == 0 else "", "%3.0f to %3.0f" % (a, e), per_m2, per_m2 * sc, k))
+    near_cov = (points[q] / 6.0) ** 2 * density[q] * cards
+    old = (B228[q][1] / 6.0) ** 2 * B228[q][2] * 11
+    print("%-7s total %.0fk (cap %.0fk), near %.1f per m2 (approved %.0f, build 228 %.1f), reach %.0f m" % ("", total, CAPS_K[q], near_cov, APPROVED_NEAR[q], old, radius[q]))
+    if near_cov < APPROVED_NEAR[q] or near_cov < old:
+        bad.append("%s near field %.1f per m2 is below %.0f" % (names[q], near_cov, max(APPROVED_NEAR[q], old)))
+    if radius[q] < APPROVED_REACH[q]:
+        bad.append("%s reach %.0f m is below %.0f m" % (names[q], radius[q], APPROVED_REACH[q]))
+    if total > CAPS_K[q]:
+        bad.append("%s about %.0fk cards is over the %.0fk cap" % (names[q], total, CAPS_K[q]))
 
 if bad:
-    print("FAIL: the near-field grass is thinner than build 228:")
+    print("FAIL:")
     print("\n".join("  " + b for b in bad))
     sys.exit(1)
 print("grass density check: ok")
