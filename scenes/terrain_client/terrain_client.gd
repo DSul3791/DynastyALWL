@@ -31,10 +31,11 @@ extends Node
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")
 const CompassScript := preload("res://src/client/admin_compass.gd")
+const GameClockScript := preload("res://src/shared/game_clock.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 101
+const BUILD := 105
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -178,7 +179,8 @@ var test_cut: bool = false
 var _flora_asked: Dictionary = {}     # chunk -> true asked or held in full, false trees only
 var _flora_check_msec: int = 0
 var link = null                       # direct block line (block_link.gd)
-var _sound_test_at: int = 0           # Esc > Settings "Sound test time" (until the game clock exists)
+var game_clock = GameClockScript.new()   # copy of the server's game clock, set at the welcome
+var _sound_test_at: int = -1          # Esc > Settings "Sound test time"; -1 follows the game clock
 var _water_dirty: bool = false        # the server said the water moved; not asked for yet
 var _water_inbox: Dictionary = {}     # chunk -> newest water bytes, rebuilt a few per frame
 const WATER_APPLY_USEC := 2000        # each water chunk costs ~2 ms; all at once was a hitch every second
@@ -287,6 +289,7 @@ func _on_welcome(info: Dictionary) -> void:
 		return
 
 	world = info
+	game_clock.seconds = float(info.get("game_seconds", game_clock.seconds))
 	connected_msec = Time.get_ticks_msec()
 
 	if cache_dir == "":
@@ -809,11 +812,16 @@ func _build_menu(layer: CanvasLayer) -> void:
 		var share: float = sound.step_volume()
 		_menu_note.text = "Sound is off" if share <= 0.0 else "Sound volume %d %%" % roundi(share * 100.0))
 	_menu_button(settings, "Sound test time: change", func():
-		var order: Array = [["day", 14.0, "autumn"], ["dawn", 6.0, "autumn"], ["dusk", 18.4, "autumn"], ["night", 23.0, "autumn"], ["winter day", 12.0, "winter"], ["summer dawn", 5.0, "summer"], ["spring night", 22.0, "spring"], ["clock runs", -1.0, "autumn"]]
+		var order: Array = [["day", 14.0, "autumn"], ["dawn", 6.0, "autumn"], ["dusk", 18.4, "autumn"], ["night", 23.0, "autumn"], ["winter day", 12.0, "winter"], ["summer dawn", 5.0, "summer"], ["spring night", 22.0, "spring"], ["clock runs", -1.0, "autumn"], ["world clock", -2.0, ""]]
 		_sound_test_at = (_sound_test_at + 1) % order.size()
 		var pick: Array = order[_sound_test_at]
+		if float(pick[1]) == -2.0:
+			_sound_test_at = -1
+			_menu_note.text = "Nature sounds follow the world clock again."
+			return
+
 		sound.ambient.conditions["season"] = pick[2]
-		sound.ambient.clock_runs = float(pick[1]) < 0.0
+		sound.ambient.clock_runs = float(pick[1]) == -1.0
 
 		if float(pick[1]) >= 0.0:
 			sound.ambient.conditions["hour"] = pick[1]
@@ -1221,6 +1229,10 @@ func _update_bob(delta: float) -> void:
 func _process(delta: float) -> void:
 	_step_player(delta)
 	_apply_water_inbox()
+	game_clock.advance(delta)
+
+	if _sound_test_at < 0 and sound != null and sound.ambient != null:
+		sound.ambient.set_conditions(game_clock.hour(), game_clock.season())
 
 	if _water_label != null and _water_label.text != "" and Time.get_ticks_msec() > _water_label_until_msec:
 		_water_label.text = ""
@@ -1375,6 +1387,7 @@ func _process(delta: float) -> void:
 	]
 
 	var vp: RID = get_viewport().get_viewport_rid()
+	hud.text += "\ngame time: year %d, day %d (%s), %02d:%02d" % [game_clock.year() + 1, game_clock.day_of_year() + 1, game_clock.season(), int(game_clock.hour()), int(fposmod(game_clock.hour(), 1.0) * 60.0)]
 	hud.text += "\nlast step: " + sound.last_step
 	hud.text += "\nnature (%02d:%02d %s): forest %.1f meadow %.1f water %.1f high %.1f, last %s" % [int(sound.ambient.conditions["hour"]), int(fposmod(float(sound.ambient.conditions["hour"]), 1.0) * 60.0), sound.ambient.conditions["season"], sound.ambient.weights["forest"], sound.ambient.weights["meadow"], sound.ambient.weights["water"], sound.ambient.weights["highland"], sound.ambient.last_call]
 	hud.text += "\nwater sounds: " + sound.water.summary

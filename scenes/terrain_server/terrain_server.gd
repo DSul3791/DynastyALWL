@@ -19,6 +19,7 @@ extends Node
 #
 # Clients start at the starter spawn point of tile (3,4).
 
+const GameClockScript := preload("res://src/shared/game_clock.gd")
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
 const StoreScript := preload("res://src/stream/server_block_store.gd")
 const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings.gd")
@@ -91,6 +92,8 @@ var _aim: Dictionary = {}              # peer -> Vector2 ground point to make fi
 var _clear_generated_at_start: bool = false
 var _flag_check_msec: int = 0
 var _store_path: String = ""
+var game_clock = GameClockScript.new()   # the one game clock; advances only while the server runs
+var _clock_saved_msec: int = 0
 
 
 func _ready() -> void:
@@ -137,6 +140,7 @@ func _ready() -> void:
 		store_dir = "user://server_store/%s" % settings.world_name.validate_filename()
 
 	_store_path = store_dir
+	_load_game_clock()
 	var problem: String = store.setup(generator, store_dir)
 
 	if _clear_generated_at_start:
@@ -245,6 +249,7 @@ func _on_peer_connected(peer_id: int) -> void:
 		"tiles_stamp": store.tiles_stamp,
 		"starter_stamp": _starter_stamp(),
 		"block_port": _link_port,
+		"game_seconds": game_clock.seconds,
 	})
 
 
@@ -451,9 +456,14 @@ func _on_dig_requested(_peer_id: int, center: Vector3, radius: float) -> void:
 	print("Dug a %.1f m sphere at %s; tiles %s" % [radius, str(center), str(tiles)])
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if store == null:
 		return
+
+	game_clock.advance(delta)
+
+	if Time.get_ticks_msec() - _clock_saved_msec > 30000:
+		_save_game_clock()
 
 	_poll_water()
 	_update_weather()
@@ -772,7 +782,33 @@ func _idle_prebuild_column(anchor: Vector3i, offset: Array) -> bool:
 	return made
 
 
+func _load_game_clock() -> void:
+	var path: String = _store_path + "/game_clock.json"
+	_clock_saved_msec = Time.get_ticks_msec()
+
+	if not FileAccess.file_exists(path):
+		return
+
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+
+	if typeof(parsed) == TYPE_DICTIONARY and parsed.has("seconds"):
+		game_clock.seconds = float(parsed["seconds"])
+
+
+func _save_game_clock() -> void:
+	_clock_saved_msec = Time.get_ticks_msec()
+
+	if _store_path == "":
+		return
+
+	var file: FileAccess = FileAccess.open(_store_path + "/game_clock.json", FileAccess.WRITE)
+
+	if file != null:
+		file.store_string(JSON.stringify({"seconds": game_clock.seconds}))
+
+
 func _exit_tree() -> void:
+	_save_game_clock()
 	_queue_mutex.lock()
 	_stopping = true
 	_queue_mutex.unlock()
