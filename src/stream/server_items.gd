@@ -116,6 +116,8 @@ var _exertion_cfg: Dictionary = {}
 var _strain: Dictionary = {}        # peer -> {s: strain, state: 0..3, t: seconds in the state}
 var _strain_sent: Dictionary = {}
 var _craft_queues: Dictionary = {}    # player key -> {entries: [[recipe, crafts left], ...], elapsed: seconds on the first}
+const QUEUE_ACT_GAP_MS := 100          # queue and cancel requests closer together than this from one player are ignored
+var _last_queue_act: Dictionary = {}   # peer -> msec of its last accepted queue or cancel request
 const CRAFT_QUEUE_ENTRIES := 10
 const CRAFT_QUEUE_MAX_COUNT := 20
 var _stance: Dictionary = {}        # peer -> 0 stand, 1 crouch, 2 sit, 3 lie
@@ -345,10 +347,16 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_throw(peer, inv, a, at)
 	elif kind == Net.ACT_CRAFT:
 		recipes.craft(a, inv)
-	elif kind == Net.ACT_CRAFT_QUEUE:
-		_queue_craft(peer, inv, a, count)
-	elif kind == Net.ACT_CRAFT_CANCEL:
-		_cancel_craft(peer, a)
+	elif kind == Net.ACT_CRAFT_QUEUE or kind == Net.ACT_CRAFT_CANCEL:
+		var now: int = Time.get_ticks_msec()
+
+		if now - int(_last_queue_act.get(peer, -100000)) >= QUEUE_ACT_GAP_MS:
+			_last_queue_act[peer] = now
+
+			if kind == Net.ACT_CRAFT_QUEUE:
+				_queue_craft(peer, inv, a, count)
+			else:
+				_cancel_craft(peer, a)
 	elif kind == Net.ACT_ADMIN_GIVE:
 		if table.id_of(a) != "":
 			var left: int = inv.add(a, clampi(count, 1, 100))
@@ -1911,16 +1919,15 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int) -> void:
 	if merge:
 		entries[entries.size() - 1][1] = mini(int(entries[entries.size() - 1][1]) + taken, CRAFT_QUEUE_MAX_COUNT)
 	else:
-		entries.append([recipe_number, taken])
+		entries.append([recipe_number, taken, recipe["needs"].duplicate(true)])
 
 	_dirty = true
 	_sync_craft_queue(peer)
 
 
 func _refund_entry(peer: int, entry: Array) -> void:
-	var recipe: Dictionary = recipes.recipe(int(entry[0]))
-
-	for need in recipe.get("needs", []):
+	# The entry keeps its own ingredient list, so a refund works even if the recipe is later removed or renumbered.
+	for need in entry[2]:
 		give(peer, int(need[0]), int(need[1]) * int(entry[1]))
 
 
@@ -1950,6 +1957,16 @@ func _craft_tick(spent: float) -> void:
 
 		var head: Array = queue["entries"][0]
 		var recipe: Dictionary = recipes.recipe(int(head[0]))
+
+		if recipe.is_empty():
+			queue["entries"].remove_at(0)
+			queue["elapsed"] = 0.0
+			_refund_entry(peer, head)
+			_say(peer, "A craft was cancelled: that recipe is gone")
+			_dirty = true
+			_sync_craft_queue(peer)
+			continue
+
 		queue["elapsed"] = float(queue["elapsed"]) + spent
 
 		if float(queue["elapsed"]) < float(recipe.get("craft_s", 3.0)):
@@ -1991,11 +2008,20 @@ func _sync_craft_queue(peer: int) -> void:
 		var craft_s: float = float(recipes.recipe(int(entries[0][0])).get("craft_s", 3.0))
 		left_ms = int(maxf(craft_s - float(queue["elapsed"]), 0.0) * 1000.0)
 
-	send_craft_queue.call(peer, entries.duplicate(true), left_ms)
+	send_craft_queue.call(peer, _pairs(entries), left_ms)
+
+
+func _pairs(entries: Array) -> Array:
+	var out: Array = []
+
+	for entry in entries:
+		out.append([int(entry[0]), int(entry[1])])
+
+	return out
 
 
 func craft_queue_of(peer: int) -> Array:
-	return _craft_queues.get(_peer_key.get(peer, ""), {}).get("entries", [])
+	return _pairs(_craft_queues.get(_peer_key.get(peer, ""), {}).get("entries", []))
 
 
 func _save_craft_queues() -> void:
@@ -2019,13 +2045,12 @@ func _load_craft_queues() -> void:
 		var entries: Array = []
 
 		for entry in row.get("entries", []):
-			var recipe: Dictionary = recipes.recipe(int(entry[0]))
+			var needs: Array = []
 
-			if recipe.is_empty():
-				# A recipe that no longer exists: hand back what was paid, if the pack has room.
-				continue
+			for need in entry[2] if entry.size() > 2 else []:
+				needs.append([int(need[0]), int(need[1])])
 
-			entries.append([int(entry[0]), clampi(int(entry[1]), 1, CRAFT_QUEUE_MAX_COUNT)])
+			entries.append([int(entry[0]), clampi(int(entry[1]), 1, CRAFT_QUEUE_MAX_COUNT), needs])
 
 		_craft_queues[str(key)] = {"entries": entries, "elapsed": float(row.get("elapsed", 0.0))}
 

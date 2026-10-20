@@ -786,12 +786,16 @@ func _init() -> void:
 	var fibre: int = cq.table.number_of("plant_fibre")
 	var cord: int = cq.table.number_of("cordage")
 	cq.give(1, fibre, 30)
+	cq._last_queue_act.clear()
 	cq.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 4, Vector3.ZERO)
 	check(cq.inventory_of(1).count_of(fibre) == 18, "queueing 4 cordage takes 12 fibre now (%d left)" % cq.inventory_of(1).count_of(fibre))
 	check(cq.craft_queue_of(1) == [[1, 4]], "queue holds one entry of 4")
+	cq._last_queue_act.clear()
 	cq.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 2, Vector3.ZERO)
 	check(cq.craft_queue_of(1) == [[1, 6]], "queueing the same recipe again merges")
+	cq._last_queue_act.clear()
 	cq.action(1, Net.ACT_CRAFT_QUEUE, 99, 0, 1, Vector3.ZERO)
+	cq._last_queue_act.clear()
 	cq.action(1, Net.ACT_CRAFT_QUEUE, 16, 0, 1, Vector3.ZERO)
 	check(cq.craft_queue_of(1).size() == 1, "unknown recipes are refused")
 
@@ -804,19 +808,71 @@ func _init() -> void:
 	cq2.send_vitals = func(_p, _h, _he, _w): pass
 	cq2.peer_connected_hello(1, "queuekey0001")
 	check(cq2.craft_queue_of(1) == [[1, 5]], "the queue survives a restart")
+	cq._last_queue_act.clear()
 	cq.action(1, Net.ACT_CRAFT_CANCEL, 5, 0, 0, Vector3.ZERO)
 	check(cq.craft_queue_of(1).size() == 1, "cancelling a bad index does nothing")
+	cq._last_queue_act.clear()
 	cq.action(1, Net.ACT_CRAFT_CANCEL, 0, 0, 0, Vector3.ZERO)
 	check(cq.craft_queue_of(1).is_empty() and cq.inventory_of(1).count_of(fibre) == 27, "cancel refunds the whole unfinished entry (%d fibre)" % cq.inventory_of(1).count_of(fibre))
 	check(not queue_seen.is_empty(), "the queue is sent to the player")
 	cq.give(1, fibre, 100)
 
 	for n in range(14):
+		cq._last_queue_act.clear()
 		cq.action(1, Net.ACT_CRAFT_QUEUE, 1 if n % 2 == 0 else 7, 0, 1, Vector3.ZERO)
 
 	check(cq.craft_queue_of(1).size() <= 10, "queue is capped at 10 entries (%d)" % cq.craft_queue_of(1).size())
+	cq._last_queue_act.clear()
+	var in_a_row: int = cq.craft_queue_of(1).size()
+	cq.action(1, Net.ACT_CRAFT_CANCEL, 0, 0, 0, Vector3.ZERO)
+	cq.action(1, Net.ACT_CRAFT_CANCEL, 0, 0, 0, Vector3.ZERO)
+	check(cq.craft_queue_of(1).size() == in_a_row - 1, "queue requests faster than 100 ms apart are ignored")
+
+	# Restart mid-craft keeps the progress; a refund into a full pack drops the rest at the player's feet.
+	DirAccess.make_dir_recursive_absolute(qd + "_full")
+
+	for file in DirAccess.get_files_at(qd + "_full"):
+		DirAccess.remove_absolute(qd + "_full/" + file)
+
+	var rq = make(qd + "_full")
+	rq.send_craft_queue = func(_p, _e, _l): pass
+	rq.send_vitals = func(_p, _h, _he, _w): pass
+	rq.peer_connected_hello(1, "queuekey0002")
+	rq.report_position(1, Vector3(0.0, 10.0, 0.0))
+	rq.give(1, fibre, 9)
+	rq.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 3, Vector3.ZERO)
+	rq._craft_tick(1.5)
+	rq._save_craft_queues()
+	var rq2 = make(qd + "_full")
+	rq2.send_craft_queue = func(_p, _e, _l): pass
+	rq2.send_vitals = func(_p, _h, _he, _w): pass
+	rq2.peer_connected_hello(1, "queuekey0002")
+	rq2.report_position(1, Vector3(0.0, 10.0, 0.0))
+	check(float(rq2._craft_queues["queuekey0002"]["elapsed"]) == 1.5, "the running craft keeps its progress over a restart")
+	rq2._craft_tick(0.75)
+	check(rq2.inventory_of(1).count_of(cord) == 1, "the restored craft finishes after the rest of its time")
+
+	for n in range(rq2.inventory_of(1).SLOTS):
+		if rq2.inventory_of(1).numbers[n] == 0:
+			rq2.inventory_of(1).numbers[n] = rq2.table.number_of("stone")
+			rq2.inventory_of(1).counts[n] = 1
+
+	rq2._last_queue_act.clear()
+	rq2.action(1, Net.ACT_CRAFT_CANCEL, 0, 0, 0, Vector3.ZERO)
+	var on_ground: int = 0
+
+	for item_id in rq2._items:
+		if rq2._items[item_id]["number"] == fibre:
+			on_ground += int(rq2._items[item_id]["count"])
+
+	check(rq2.craft_queue_of(1).is_empty() and on_ground == 6, "a refund into a full pack lands at the player's feet (%d fibre)" % on_ground)
+	# An entry refunds from its own saved ingredient list even if its recipe has gone.
+	rq2._craft_queues["queuekey0002"]["entries"] = [[9999, 2, [[fibre, 3]]]]
+	rq2._craft_tick(0.25)
+	check(rq2.craft_queue_of(1).is_empty(), "an entry for a removed recipe is cancelled")
 
 	# Scatter placement: sticks favour tree cover, stones favour slopes (half of the cell each).
+	DirAccess.make_dir_recursive_absolute(qd + "_scatter")
 	var sc = make(qd + "_scatter")
 	sc.ground_height = func(x, z): return 10.0 + maxf(x - 112.0, 0.0) * 0.5
 	sc.cover_at = func(p): return 1.0 if p.x > 112.0 else 0.0
