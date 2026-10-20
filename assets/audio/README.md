@@ -169,3 +169,16 @@ The river loop sounded like ocean surf (a wide low rumble and a broad wash). `ma
 
 ## Volume sliders (build 151)
 Esc > Settings has four sliders: Master, Effects (Foley bus: steps, tools, items, fire, town), Ambient (Wind, Nature, Weather buses) and Interface. They replace the old stepped "Sound volume" button; the Wind, Nature and Steps step buttons stay as fine tuning and multiply with them. Saved in `user://sound_settings.cfg` (`[levels]`), applied at start. `sound.set_level(name, 0..1)`; `--levels` headless sets, prints bus levels and resets.
+
+## Loudness pass and probe table (build 153)
+`python3 assets/audio/loudness_report.py [--md]` lists the active RMS and peak of every sound slot (recorded wins), flags files more than 8 dB from their group median, and shows footsteps as heard (file RMS + `SURFACE_DB`) and nature calls as played (file RMS + `EVENTS` db); `--md` writes `assets/audio/LOUDNESS.md`. Findings: the recorded steps are all normalised to about -18.5 dB, so the surface hierarchy comes only from `SURFACE_DB` (grass -33, leaves -25 heard: kept, it is deliberate; Dave to judge by ear). The generated owl hoot and woodpecker were the odd ones among the nature calls (owl 10 dB hot, woodpecker 6 dB quiet): owl -8 to -13 dB, woodpecker -8 to -5 dB. Dave's recorded frog, fish, crow and wing clips were not touched without his ears.
+
+Sound probe (headless, 4000 frames, storm at 06:00, `--nature-fast`, walking; sound.update only, no audio device):
+
+| tier | avg ms | worst ms | sounds playing (peak) | loaded MB |
+|---|---|---|---|---|
+| Low | 0.29 | 6.8 | 15/24 (15) | 3.2/150 |
+| Medium | 0.30 | 5.9 | 15/48 (15) | 3.2/300 |
+| High | 0.31 | 7.7 | 13/96 (16) | 3.2/600 |
+
+Averages are flat across tiers; the worst frame is a one-off spike (first load of files) in each. Cave rays and hill occlusion were not exercised (flat walk).
