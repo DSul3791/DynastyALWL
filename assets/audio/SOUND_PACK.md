@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **174 slots: 17 recorded, 148 generated placeholders, 9 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **178 slots: 17 recorded, 152 generated placeholders, 9 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -124,6 +124,10 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 3 | `plant_rustle_leaves` | generated | 2 | harvest_sounds.gd: leaves and shrub shaking when picked | 2 recordings of shaking a leafy plant, 1 s |
 | 3 | `plant_rustle_reeds` | generated | 2 | harvest_sounds.gd: reeds and grass swishing when picked | 2 recordings of shaking reeds or tall grass, 1 s |
 | 3 | `rain_drip` | generated | 4 | weather_sounds.gd: a drop falling from a leaf near you, under trees in rain | 3 to 4 single drops falling from leaves onto leaves or ground, 0.3 s |
+| 3 | `rain_litter` | generated | 1 | weather_sounds.gd: rain on forest leaf litter in the open | Rain on dry leaf litter loop, seamless |
+| 3 | `rain_mud` | generated | 1 | weather_sounds.gd: rain on mud and soaked soil | Rain on mud loop, seamless |
+| 3 | `rain_snow` | generated | 1 | weather_sounds.gd: rain falling on lying snow (very quiet) | Rain on snow loop, soft, seamless |
+| 3 | `rain_stone` | generated | 1 | weather_sounds.gd: rain on stone, rock, slab, plank or path ground under the player (open sky) | Rain on bare rock or flagstones loop, seamless |
 | 3 | `rain_water` | generated | 1 | weather_sounds.gd: rain falling on ponds and rivers near the player | Rain on a lake surface loop, seamless |
 | 3 | `saw_mill` | generated | 1 | workshop_sounds.gd set_saws: a running saw mill (hook until it exists, loop) | A seamless loop of a saw mill running, blade rasp and frame, 10 s or more |
 | 3 | `spear_flight` | generated | 3 | spear_sounds.gd: a thrown spear whistling through the air (moves along the path) | 3 thin air whistles of a spear in flight, 1 to 2 s |

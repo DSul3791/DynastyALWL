@@ -737,6 +737,34 @@ func _trunks_near(body: CharacterBody3D, radius: float) -> int:
 	return count
 
 
+# What the rain falls on under the player, for the rain loops: "snow" when snow lies, "stone" on rock, a
+# built stone, plank or path floor, "mud" on mud and soaked loose soil, "litter" on leaf litter, else "soft".
+func rain_ground(body: CharacterBody3D) -> String:
+	if weather.ground_snow >= SNOW_COVER:
+		return "snow"
+
+	if floor_surface in ["slab", "plank", "path"]:
+		return "stone"
+
+	var soil: int = _ground_under(body.global_position - Vector3(0.0, FEET_M, 0.0))
+
+	if soil < 0 or soil >= Layout.MATERIAL_ROCK:
+		return "stone"
+
+	var ground: String = str(SOIL_SURFACE.get(soil, "dirt"))
+
+	if ground == "stone":
+		return "stone"
+
+	if ground == "mud" or (ground in ["dirt", "leaves"] and weather.ground_wet >= RAIN_SOAK):
+		return "mud"
+
+	if ground == "leaves":
+		return "litter"
+
+	return "soft"
+
+
 # 1.0 when the player stands under a tree's canopy, else 0.0 (owner 2026-10-20: any spot under a canopy
 # counts, any tree): the shared Cover.at query (src/shared/cover.gd, tech/COVER_QUERY.md) on the flora's
 # crown index. Rain, leaf drips and a dry ground all read this one function.

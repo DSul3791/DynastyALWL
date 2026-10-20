@@ -37,9 +37,15 @@ SCENARIOS = [
     ("floor", ["--walk", "--floor=plank"], 6000, [
         ("plank steps", r"footsteps \{ \"plank\": " + NUM, 8, 1000),
     ]),
-    ("rain", ["--weather=rain", "--walk"], 6000, [
+    ("rain", ["--weather=rain", "--walk"], 9000, [
         ("rain level", r"weather rain rain " + NUM, 0.5, 1.0),
         ("footsteps played", r"footsteps (\{[^}]*\})", 8, 1000, "sum"),
+    ]),
+    ("rain_stone", ["--weather=rain", "--rain-ground=stone"], 5000, [
+        ("stone weight", r"rain ground stone \(weights \{ \"stone\": " + NUM, 0.95, 1.0),
+    ]),
+    ("rain_snow", ["--weather=rain", "--rain-ground=snow"], 5000, [
+        ("snow weight", r"rain ground snow \(weights \{ \"stone\": [\d.]+, \"mud\": [\d.]+, \"litter\": [\d.]+, \"snow\": " + NUM, 0.95, 1.0),
     ]),
     ("storm", ["--weather=storm", "--distant"], 5000, [
         ("storm weather", r"weather storm rain " + NUM, 0.9, 1.0),

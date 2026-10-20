@@ -56,7 +56,12 @@ const KINDS := {
 	"blizzard": {"rain": 0.0, "wind": 1.0, "hush": 0.3, "thunder": 0.0, "calls": 0.0, "frogs": 0.0},
 	"fog": {"rain": 0.0, "wind": 0.0, "hush": 0.2, "thunder": 0.0, "calls": 0.8, "frogs": 0.8},
 }
-const LOOP_DB := {"rain_light": -14.0, "rain_heavy": -13.0, "rain_leaves": -15.0, "rain_water": -17.0, "wind_storm": -18.0}
+const LOOP_DB := {"rain_light": -14.0, "rain_heavy": -13.0, "rain_leaves": -15.0, "rain_water": -17.0, "wind_storm": -18.0,
+	"rain_stone": -14.0, "rain_mud": -15.0, "rain_litter": -16.0, "rain_snow": -23.0}
+# Rain on the ground under the player (open sky only; under a canopy the leaves take it): how much of the plain
+# open-ground bed (rain_light / rain_heavy) stays when that ground has its own loop.
+const GROUND_BED_KEEP := {"stone": 0.35, "mud": 0.4, "litter": 0.5, "snow": 0.2}
+const GROUND_EASE_SEC := 1.5
 const THUNDER_DB := -4.0
 # The ground remembers the weather (owner's job 17): it soaks in rain and dries slowly, snow settles
 # while it snows and melts above freezing. The footsteps read ground_wet and ground_snow.
@@ -72,6 +77,7 @@ const DRIP_DB := -22.0
 const DRIP_EVERY := [0.5, 2.2]          # seconds between drips under trees at full rain
 
 var forced_cover: bool = false          # --covered on the command line: always under a canopy (headless check)
+var forced_ground: String = ""          # --rain-ground=NAME on the command line: the rain falls on that ground (headless check)
 var forced: bool = false                # --weather=KIND on the command line: the world weather is ignored
 var kind: String = "clear"
 var intensity: float = 1.0
@@ -97,6 +103,8 @@ var _rng := RandomNumberGenerator.new()
 var _loops: Dictionary = {}             # name -> AudioStreamPlayer
 var _streams: Dictionary = {}
 var _thunder_in: float = 20.0
+var ground_class: String = "soft"       # what the rain falls on under the player (HUD): stone, mud, litter, snow or soft
+var _ground_w: Dictionary = {"stone": 0.0, "mud": 0.0, "litter": 0.0, "snow": 0.0}
 var _pending: Array = []                # [seconds left, AudioStreamPlayer, stream] thunder waiting for its delay
 var _cover_in: float = 0.0
 var _tick_acc: float = 0.0
@@ -114,6 +122,9 @@ func setup(stage, ambient) -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg == "--covered":
 			forced_cover = true
+
+		if arg.begins_with("--rain-ground="):
+			forced_ground = arg.get_slice("=", 1)
 
 		if arg.begins_with("--weather="):
 			forced = true
@@ -211,14 +222,22 @@ func update(frame_delta: float, body: CharacterBody3D, underwater: bool) -> void
 	if _cover_in <= 0.0:
 		_cover_in = COVER_EVERY_SEC
 		_cover_target = 1.0 if forced_cover or _stage.interior.amount > 0.5 else _stage.under_cover(body)
+		ground_class = forced_ground if forced_ground != "" else _stage.rain_ground(body)
 
 	covered = move_toward(covered, _cover_target, delta / 1.5)
 	var cover: float = covered
 	var water: float = float(_ambient.weights["water"])
 	var heavy: float = smoothstep(0.4, 0.9, rain)
 	var light: float = minf(rain * 2.0, 1.0) * (1.0 - 0.6 * heavy)
-	_loop("rain_light", light * (1.0 - 0.7 * cover))
-	_loop("rain_heavy", heavy * (1.0 - 0.7 * cover))
+	var keep: float = 1.0
+
+	for key in _ground_w:
+		_ground_w[key] = move_toward(_ground_w[key], 1.0 if ground_class == key else 0.0, delta / GROUND_EASE_SEC)
+		keep -= (1.0 - float(GROUND_BED_KEEP[key])) * float(_ground_w[key])
+		_loop("rain_" + key, minf(rain * 1.6, 1.0) * float(_ground_w[key]) * (1.0 - cover))
+
+	_loop("rain_light", light * (1.0 - 0.7 * cover) * keep)
+	_loop("rain_heavy", heavy * (1.0 - 0.7 * cover) * keep)
 	_loop("rain_leaves", minf(rain * 1.6, 1.0) * cover)
 	_loop("rain_water", minf(rain * 1.6, 1.0) * water)
 	_loop("wind_storm", clampf(wind - 0.2, 0.0, 1.0) / 0.8)

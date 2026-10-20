@@ -104,7 +104,7 @@ bird wings recording, with copies at other speeds.
 ## Licences of supplied recordings (build 199)
 
 `assets/audio/CREDITS.csv` is the table: one row per supplied recording or family (`pattern` is a glob under `recorded/`), with author, source, licence (CC0, CC-BY-4.0, CC-BY-3.0, public-domain, own, or TODO), the attribution text to show players, a link and the date added. `python3 assets/audio/make_credits.py` writes `CREDITS.md` from it. `validate_pack.py` fails a recording that no row covers (UNCREDITED), an unknown licence, or a CC-BY row without attribution text; a licence still TODO is a warning, and an error with `--strict` (run that before release).
-Dave's supplied recordings (footsteps, frogs, fish splash, crow calls, angry crow, wing flaps) are listed with source and licence TODO: Dave confirmed on 2026-10-20 they came from a free source; fill the `source`, `licence` and `attribution` cells of those 7 rows once known. Add a row whenever a recording is added. The generated placeholders are made by the make_*.py scripts and carry no third-party material.
+Dave's supplied recordings (footsteps, frogs, fish splash, crow calls, angry crow, wing flaps) came from Pixabay, a page labelled "free sounds" (Dave, 2026-10-20): the 7 rows say Pixabay-Content-License (royalty-free, no attribution required). That licence is not CC0 or CC-BY and does not allow redistributing the sounds as a standalone pack, so they are fine inside the game but must not be shipped as separate files. Still TODO: the page URL of each sound, and verifying the Pixabay terms before release. Add a row whenever a recording is added. The generated placeholders are made by the make_*.py scripts and carry no third-party material.
 
 ## Cave sounds (build 113)
 

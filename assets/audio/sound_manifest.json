@@ -57,6 +57,38 @@
    "priority": 3
   },
   {
+   "name": "rain_stone",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "weather_sounds.gd: rain on stone, rock, slab, plank or path ground under the player (open sky)",
+   "to_supply": "Rain on bare rock or flagstones loop, seamless",
+   "priority": 3
+  },
+  {
+   "name": "rain_mud",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "weather_sounds.gd: rain on mud and soaked soil",
+   "to_supply": "Rain on mud loop, seamless",
+   "priority": 3
+  },
+  {
+   "name": "rain_litter",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "weather_sounds.gd: rain on forest leaf litter in the open",
+   "to_supply": "Rain on dry leaf litter loop, seamless",
+   "priority": 3
+  },
+  {
+   "name": "rain_snow",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "weather_sounds.gd: rain falling on lying snow (very quiet)",
+   "to_supply": "Rain on snow loop, soft, seamless",
+   "priority": 3
+  },
+  {
    "name": "thunder",
    "state": "generated",
    "variants": 3,

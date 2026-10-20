@@ -2,7 +2,8 @@
 
 Run: python3 assets/audio/make_weather.py   (needs numpy and ffmpeg)
 Writes assets/audio/weather/<name>.ogg: seamless loops rain_light, rain_heavy, rain_leaves
-(rain pattering on foliage), rain_water (rain on a pond or river), wind_storm (a howling
+(rain pattering on foliage), rain_water (rain on a pond or river), rain_stone, rain_mud, rain_litter and
+rain_snow (rain on that ground under the player), wind_storm (a howling
 gale), and three one-shot thunder_N rolls. Recordings go in assets/audio/recorded/weather/
 under the same names (thunder_N and the loops may have _N variants); the game prefers them.
 """
@@ -85,6 +86,40 @@ def rain_water(rng, n):
     pits = drops(rng, n, 120, 1800, 0.7, 0.012)
     pits /= np.std(pits) + 1e-9
     return normalize((0.5 * fine + 0.8 * pits) * slow_swell(rng, n, 0.1, (3, 5, 8)))
+
+
+# Rain on the ground under the player (build 210): only drops, no steady bed (the sheeting rule above).
+# Stone: sharp bright ticks, nearly no body. Mud: soft low plops. Leaf litter: patter with a dry rustle.
+# Snow: very faint muffled taps, the snow swallows the rain.
+
+def rain_stone(rng, n):
+    fine = drops(rng, n, 700, 5200, 1.0, 0.0025)
+    fine /= np.std(fine) + 1e-9
+    tick = drops(rng, n, 120, 3200, 0.7, 0.005)
+    tick /= np.std(tick) + 1e-9
+    return normalize((0.9 * fine + 0.6 * tick) * slow_swell(rng, n, 0.1, (2, 5, 8)))
+
+
+def rain_mud(rng, n):
+    plop = drops(rng, n, 150, 900, 0.7, 0.014)
+    plop /= np.std(plop) + 1e-9
+    soft = drops(rng, n, 300, 1800, 0.9, 0.006)
+    soft /= np.std(soft) + 1e-9
+    return normalize((0.9 * plop + 0.4 * soft) * slow_swell(rng, n, 0.1, (3, 5, 9)))
+
+
+def rain_litter(rng, n):
+    d = drops(rng, n, 420, 2600, 0.9, 0.006)
+    d /= np.std(d) + 1e-9
+    dry = drops(rng, n, 160, 3800, 0.8, 0.003)
+    dry /= np.std(dry) + 1e-9
+    return normalize((0.9 * d + 0.5 * dry) * slow_swell(rng, n, 0.1, (3, 6, 8)))
+
+
+def rain_snow(rng, n):
+    soft = drops(rng, n, 160, 1100, 0.9, 0.01)
+    soft /= np.std(soft) + 1e-9
+    return normalize(soft * slow_swell(rng, n, 0.1, (2, 4, 7)))
 
 
 def wind_storm(rng, n):
@@ -177,7 +212,13 @@ def main():
     for v in range(4):
         write_ogg("rain_drip_%d" % v, rain_drip(rng))
 
-    print("Wrote 18 weather sounds to %s" % OUT)
+    # Added last, from their own generator, so the sounds above stay the same files when this runs again.
+    ground = np.random.default_rng(20261032)
+
+    for name, make in (("rain_stone", rain_stone), ("rain_mud", rain_mud), ("rain_litter", rain_litter), ("rain_snow", rain_snow)):
+        write_ogg(name, make(ground, 14 * SR))
+
+    print("Wrote 22 weather sounds to %s" % OUT)
 
 
 if __name__ == "__main__":
