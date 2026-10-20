@@ -178,6 +178,9 @@ var test_fire: bool = false
 var _fire_sync_left: float = 0.0
 var _tree_sync_left: float = 0.0
 var test_levels: bool = false
+var test_exertion: bool = false
+var _test_exertion_t: float = -1.0
+var _sound_exertion_at: int = -1
 var _test_fire_at: int = 0
 var _test_fire_step: int = 0
 var _sound_fire_at: int = -1
@@ -315,6 +318,8 @@ func _ready() -> void:
 			test_flood = true
 		elif argument == "--gear":
 			test_gear = true
+		elif argument == "--exertion":
+			test_exertion = true
 		elif argument == "--levels":
 			test_levels = true
 		elif argument == "--fire":
@@ -1214,6 +1219,12 @@ func _build_menu(layer: CanvasLayer) -> void:
 	_menu_button(settings, "Sound test: fire", func():
 		_sound_fire_at = (_sound_fire_at + 1) % 7
 		_menu_note.text = _fire_test_step(_sound_fire_at, body.global_position + -camera.global_transform.basis.z * 3.0) + " (press again for the next)")
+	_menu_button(settings, "Sound test: exertion", func():
+		_sound_exertion_at = (_sound_exertion_at + 1) % 5
+		var levels: Array = [0.0, 0.35, 0.6, 0.9, 1.0]
+		var notes: Array = ["Rested: silent", "Light exertion: soft slow breaths", "Hard exertion: clear quick breaths, heartbeat starts", "Severe exertion: gasps and a strong heartbeat", "Exhausted: fastest gasps (then it follows your running again)"]
+		sound.breath.set_exertion(levels[_sound_exertion_at])
+		_menu_note.text = "%s (press again for the next)" % notes[_sound_exertion_at])
 	_menu_button(settings, "Sound test: interior", func():
 		_sound_interior_at = (_sound_interior_at + 1) % 5
 		var here: Vector3 = body.global_position + -camera.global_transform.basis.z * 2.0
@@ -1885,6 +1896,23 @@ func _process(delta: float) -> void:
 			test_creatures = false
 			sound.creatures.wild = true                              # then the natural far calls run on their own
 
+	# Headless check: exertion steps (rested, light, hard, severe) a few seconds each.
+	if test_exertion and now - connected_msec > 18000:
+		if _test_exertion_t < 0.0:
+			_test_exertion_t = 0.0
+
+		_test_exertion_t += get_process_delta_time()
+		var step: int = int(_test_exertion_t / 5.0)
+		var levels: Array = [0.0, 0.35, 0.6, 0.9]
+
+		if step >= levels.size():
+			test_exertion = false
+			print("Terrain client: exertion check done: %d breaths, %d heartbeats, last %s" % [sound.breath.breaths_played, sound.breath.beats_played, sound.breath.last])
+		else:
+			sound.breath.set_exertion(levels[step])
+			if fmod(_test_exertion_t, 5.0) < get_process_delta_time():
+				print("Terrain client: exertion %.2f: %d breaths, %d heartbeats so far" % [levels[step], sound.breath.breaths_played, sound.breath.beats_played])
+
 	# Headless check: the volume sliders change the buses and reset.
 	if test_levels and now - connected_msec > 18000:
 		test_levels = false
@@ -2105,6 +2133,7 @@ func _debug_text(avg_ms: float, worst_ms: float) -> String:
 	text += "\nlast step: " + sound.last_step
 	text += "\nsound budget: " + sound.budget_text()
 	text += "\n" + sound.wind_text()
+	text += "\nexertion %.2f: %d breaths, %d heartbeats, last %s" % [sound.breath.exertion, sound.breath.breaths_played, sound.breath.beats_played, sound.breath.last]
 	text += "\ntree sounds: %d falls, %d sprays, last %s" % [sound.trees.falls_played, sound.trees.chips_played, sound.trees.last]
 	text += "\nfire sounds: %d loops, %d lit, %d put out, last %s" % [sound.fire.loops_playing, sound.fire.lit_played, sound.fire.out_played, sound.fire.last]
 	text += "\nitem sounds: %d, last %s" % [sound.itemfx.played, sound.itemfx.last]
@@ -2138,7 +2167,7 @@ func _debug_text(avg_ms: float, worst_ms: float) -> String:
 # The one-line "last sound": whichever sound source's last-played text changed most recently.
 func _note_last_sound() -> void:
 	var sources: Array = [
-		["step", sound.last_step], ["fire", sound.fire.last], ["tree", sound.trees.last], ["item", sound.itemfx.last], ["spear", sound.spear.last],
+		["step", sound.last_step], ["breath", sound.breath.last], ["fire", sound.fire.last], ["tree", sound.trees.last], ["item", sound.itemfx.last], ["spear", sound.spear.last],
 		["interior", sound.interior.last], ["gear", sound.gear.last], ["creature", sound.creatures.last], ["swim", sound.swim.last],
 		["dig", sound.dig.last_dig], ["nature", sound.ambient.last_call],
 	]

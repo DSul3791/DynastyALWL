@@ -29,6 +29,7 @@ const CreatureScript := preload("res://src/client/creature_sounds.gd")
 const GearScript := preload("res://src/client/gear_sounds.gd")
 const InteriorScript := preload("res://src/client/interior_sounds.gd")
 const SpearScript := preload("res://src/client/spear_sounds.gd")
+const BreathScript := preload("res://src/client/breath_sounds.gd")
 const TreeScript := preload("res://src/client/tree_sounds.gd")
 const FireScript := preload("res://src/client/fire_sounds.gd")
 const ItemScript := preload("res://src/client/item_sounds.gd")
@@ -151,6 +152,7 @@ var water                               # WaterSounds: brooks, rivers, pond shor
 var weather                             # WeatherSounds: rain, gale, thunder, snow hush (set_weather)
 var occlusion                           # SoundOcclusion: hills and forest muffle distant sounds
 var hits                                # HitSounds: axe, pick, hammer, spade on wood, stone, soil (hit, hit_ground)
+var breath                              # BreathSounds: breathing and heartbeat from exertion (set_exertion, stand-in follows the body)
 var trees                               # TreeSounds: felling (watch the world rows, fall(), chips())
 var fire                                # FireSounds: campfire loops by size, lit, put out, rain sizzle (set_fires)
 var ground_below: Callable = Callable()   # terrain_client sets this: ground height under a point (NAN when not loaded)
@@ -222,6 +224,10 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	town.name = "Town"
 	add_child(town)
 	town.setup(self)
+	breath = BreathScript.new()
+	breath.name = "Breath"
+	add_child(breath)
+	breath.setup(self)
 	trees = TreeScript.new()
 	trees.name = "Trees"
 	add_child(trees)
@@ -335,6 +341,8 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	spear.update(delta)
 	fire.update(delta, body)
 	trees.update(delta)
+	breath.follow_body(delta, body, flying, swim.swimming)
+	breath.update(delta, underwater)
 	occlusion.update(delta, body, flying)
 	_time += delta
 	gust = clampf(0.5 + 0.8 * _gust_noise.get_noise_1d(_time), 0.0, 1.0)

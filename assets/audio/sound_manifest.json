@@ -657,6 +657,38 @@
    "priority": 2
   },
   {
+   "name": "breath_in",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "breath_sounds.gd: breathing in, from moderate exertion",
+   "to_supply": "3 soft breaths in through the mouth, 0.8 s",
+   "priority": 2
+  },
+  {
+   "name": "breath_out",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "breath_sounds.gd: breathing out",
+   "to_supply": "3 soft breaths out, 0.9 s",
+   "priority": 2
+  },
+  {
+   "name": "breath_gasp",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "breath_sounds.gd: ragged hard breathing at severe exertion",
+   "to_supply": "3 hard gasping breaths of an exhausted runner, 0.7 s",
+   "priority": 2
+  },
+  {
+   "name": "heartbeat",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "breath_sounds.gd: the player's own heartbeat when exerted (lub-dub)",
+   "to_supply": "3 heartbeat lub-dubs, 0.4 s, no room tone",
+   "priority": 3
+  },
+  {
    "name": "tree_creak",
    "state": "generated",
    "variants": 3,
