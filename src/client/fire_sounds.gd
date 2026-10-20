@@ -305,6 +305,7 @@ func _loop_player(name: String, at: Vector3) -> AudioStreamPlayer3D:
 		player.stream.loop = true
 
 	player.bus = "Foley"
+	player.set_meta("air_kind", "fire")              # far fires go dull by band bus (air_bands.gd)
 	player.volume_db = -80.0
 	player.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
 	player.unit_size = UNIT_SIZE

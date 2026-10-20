@@ -70,7 +70,6 @@ const RIVER_AROUND := 8
 # distance low-pass (the player's own attenuation filter) takes the top off with range.
 const FALL_MAX_M := 300.0
 const FALL_UNIT := 26.0
-const FALL_FILTER_HZ := 2200.0
 
 const KINDS := {
 	"brook": {"file": "water_brook", "db": -22.0, "reach": 45.0},   # Dave 2026-10-20: -10 sounded like loud constant wind; his recording (EQ'd, -24 dB RMS) now sits near the other ambience
@@ -596,7 +595,14 @@ func _assign(chosen: Array, origin: Vector3) -> void:
 		var far: bool = candidate["kind"] == "fall"
 		player.max_distance = FALL_MAX_M if far else 140.0
 		player.unit_size = FALL_UNIT if far else 10.0
-		player.attenuation_filter_cutoff_hz = FALL_FILTER_HZ if far else 9000.0
+		player.attenuation_filter_cutoff_hz = 9000.0
+		player.bus = "Nature"
+		player.set_meta("air_band", 0)
+
+		if far:
+			player.set_meta("air_kind", "fall")                    # sound_occlusion.gd moves it to a dull band bus by distance and cover
+		elif player.has_meta("air_kind"):
+			player.remove_meta("air_kind")
 		player.global_position = candidate["at"]
 		player.volume_db = -80.0
 		slot["kind"] = candidate["kind"]

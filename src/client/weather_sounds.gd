@@ -38,9 +38,8 @@ const THUNDER_NEAR_M := 500.0           # closer than this: sharp crack and thud
 const THUNDER_FAR_M := 1800.0           # farther than this: a low grumble
 const THUNDER_MAX_DELAY_SEC := 4.0       # the light-to-sound wait is shortened so a far strike still feels connected
 const THUNDER_DELAY_SCALE := 0.5         # of the real travel time, then capped
-# Distant thunder is dulled by the air: past these distances it plays on a bus with a low-pass,
-# the farther the darker (name, from metres, cutoff Hz). Near strikes use the plain Weather bus.
-const THUNDER_BUSES := [["WeatherFar", 1800.0, 450.0], ["WeatherMid", 600.0, 1600.0]]
+# Distant thunder is dulled by the air and by cover: air_bands.gd puts it on a low-passed child of Weather (one filter per band).
+const AirBands := preload("res://src/client/air_bands.gd")
 const SPEED_OF_SOUND := 343.0
 
 # kind: rain (0 to 1), wind (0 to 1), hush (0 to 1, quiets the nature layer), thunder (0 or 1),
@@ -429,22 +428,12 @@ func thunder_delay(distance_m: float) -> float:
 	return minf(distance_m / SPEED_OF_SOUND * THUNDER_DELAY_SCALE, THUNDER_MAX_DELAY_SEC)
 
 
-# The bus a strike this far away plays on: a low-passed child of Weather for distant ones.
+# The bus a strike this far away plays on: the farther, and the more forest, roof or cave around, the darker the band.
 func _thunder_bus(distance_m: float) -> String:
-	for entry in THUNDER_BUSES:
-		if distance_m >= float(entry[1]):
-			var bus_name: String = str(entry[0])
-
-			if AudioServer.get_bus_index(bus_name) < 0:
-				var index: int = SoundStage._make_bus(bus_name)
-				AudioServer.set_bus_send(index, "Weather")
-				var low: AudioEffectLowPassFilter = AudioEffectLowPassFilter.new()
-				low.cutoff_hz = float(entry[2])
-				AudioServer.add_bus_effect(index, low)
-
-			return bus_name
-
-	return "Weather"
+	var forest: float = float(_ambient.weights["forest"]) if _ambient != null else 0.0
+	var enclosure: float = float(_stage.cave.enclosure) if _stage != null and _stage.get("cave") != null else 0.0
+	var effective: float = distance_m * AirBands.stretch(distance_m, forest, false, roofed, enclosure)
+	return AirBands.bus_for("thunder", AirBands.band_for("thunder", effective, 0))
 
 
 func _variants(name: String) -> Array:

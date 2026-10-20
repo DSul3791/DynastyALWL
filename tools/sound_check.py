@@ -65,7 +65,7 @@ SCENARIOS = [
     ("storm", ["--weather=storm", "--distant"], 5000, [
         ("storm weather", r"weather storm rain " + NUM, 0.9, 1.0),
         ("heard list names sounds", r"sounds heard \(" + NUM + r"\)", 2, 40),
-        ("far thunder takes the far bus", r"thunder (thunder_far 2500 m, WeatherFar)", 0, 1, "text"),
+        ("far thunder takes the far bus", r"thunder (thunder_far 2500 m, Air_thunder_2)", 0, 1, "text"),
     ]),
     ("fire", ["--fire"], 5000, [
         ("fires lit", r"fire sounds: " + NUM + r" lit", 1, 10),
@@ -147,6 +147,17 @@ SCENARIOS = [
         ("no insect hum at a lake by day", r"lake noon " + NUM, 0, 0),
         ("the lake still hums at night in summer", r"lake 2h " + NUM, 0.2, 0.7),
         ("lake counts as full daylight at noon", r"lake day (true)", 0, 1, "text"),
+    ]),
+    ("air", ["--air-test"], 3500, [
+        ("a near fall is open, a mid one dull, a far one duller", r"open falls (Nature,Air_fall_1,Air_fall_2)", 0, 1, "text"),
+        ("forest pushes the same falls one band darker", r"forest falls (Nature,Air_fall_2,Air_fall_3)", 0, 1, "text"),
+        ("fires step down with distance", r"open fires (Foley,Air_fire_1,Air_fire_2,Foley)", 0, 1, "text"),
+        ("forest dulls fires sooner", r"forest fires (Foley,Air_fire_2,Air_fire_3,Foley)", 0, 1, "text"),
+        ("under a roof a fire 20 m away is dulled", r"roofed fire (Air_fire_\d)", 0, 1, "text"),
+        ("thunder: far, mid, near", r"thunder (Air_thunder_2 Air_thunder_1 Weather)", 0, 1, "text"),
+        ("a voice inside the hysteresis band stays put", r"hold 1 up 0", 0, 1, "text"),
+        ("one filter per band bus (8 buses, 7 voices)", r"filters " + NUM, 8, 8),
+        ("a fire's shed rank counts as Foley", r"shed parent (Foley)", 0, 1, "text"),
     ]),
     ("flush", ["--flush-test"], 3500, [
         ("small birds are the commonest", r"small " + NUM + r", medium", 135, 200),

@@ -1,5 +1,7 @@
 extends Node
 
+const AirBands := preload("res://src/client/air_bands.gd")
+
 # Muffling for sounds in the world (client only): a call, a stream or a dig sound behind a hill
 # or far off through dense forest loses its high end, the way it does in real life.
 #
@@ -23,6 +25,7 @@ const EASE_PER_SEC := 3.0               # of the way to the target cutoff per se
 
 var occluded: int = 0                   # sources behind a hill at the last scan (HUD)
 var filtered: int = 0                   # sources with a cutoff below open at the last scan
+var air_counts: Dictionary = {}         # band bus -> voices on it at the last scan (falls, fires; air_bands.gd)
 
 var _stage                              # SoundStage (tier, ambient weights)
 var _tool: VoxelTool
@@ -63,6 +66,7 @@ func _scan(body: CharacterBody3D, flying: bool) -> void:
 	_targets.clear()
 	occluded = 0
 	filtered = 0
+	air_counts.clear()
 	var head: Vector3 = body.global_position + Vector3(0.0, 0.6, 0.0)
 	var forest: float = float(_stage.ambient.weights["forest"])
 
@@ -75,6 +79,7 @@ func _scan(body: CharacterBody3D, flying: bool) -> void:
 		var to: Vector3 = player.global_position - head
 		var distance: float = to.length()
 		var cutoff: float = OPEN_HZ
+		var hill: bool = false
 
 		if distance > NEAR_M and not flying:
 			cutoff *= lerpf(1.0, FOREST_FLOOR, forest * clampf(distance / FOREST_FULL_M, 0.0, 1.0))
@@ -85,6 +90,16 @@ func _scan(body: CharacterBody3D, flying: bool) -> void:
 				if hit != null and hit.distance < distance - MARGIN_M:
 					cutoff *= HILL_HZ / OPEN_HZ
 					occluded += 1
+					hill = true
+
+		if player.has_meta("air_kind"):                   # big far sounds are dulled by shared band buses, not this voice's filter
+			var kind: String = str(player.get_meta("air_kind"))
+			var effective: float = distance * AirBands.stretch(distance, forest, hill, float(_stage.weather.roofed), float(_stage.cave.enclosure))
+			var band: int = AirBands.band_for(kind, effective, int(player.get_meta("air_band", 0)))
+			player.set_meta("air_band", band)
+			player.bus = AirBands.bus_for(kind, band)
+			air_counts[player.bus] = int(air_counts.get(player.bus, 0)) + 1
+			cutoff = OPEN_HZ
 
 		if cutoff < OPEN_HZ - 1.0:
 			filtered += 1

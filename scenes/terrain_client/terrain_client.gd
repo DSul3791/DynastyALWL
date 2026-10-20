@@ -57,6 +57,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
 const BUILD := 290
+const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -207,6 +208,7 @@ var test_stepfx: bool = false          # --stepfx: wade, then dry steps: squelch
 var test_swing: bool = false           # --swing-test: tool whooshes (job 71)
 var test_insects: bool = false         # --insect-test: summer insect bed levels by season and hour (job 72)
 var _lake_calm_laps: int = 0
+var test_air: bool = false             # --air-test: distance and cover dulling by band bus (job 82)
 var test_flush: bool = false           # --flush-test: variety of the bird take-off sounds (Dave 2026-10-20)
 var test_reject: bool = false          # --reject-test: refused-action cue and its rate limit (job 73)
 var test_step_levels: bool = false     # --step-levels: the step loudness table loads and can be overridden (job 76)
@@ -421,6 +423,8 @@ func _ready() -> void:
 			test_night = true
 		elif argument == "--step-levels":
 			test_step_levels = true
+		elif argument == "--air-test":
+			test_air = true
 		elif argument == "--flush-test":
 			test_flush = true
 		elif argument == "--reject-test":
@@ -2623,6 +2627,60 @@ func _process(delta: float) -> void:
 		sound.insects.level = 0.9
 		sound.insects.update(0.1)
 		print("Terrain client: insect check: summer noon %s, summer 2h %s, winter noon %s, spring noon %s, sunrise edge %s, sunset edge %s, rain %s, playing %d, lake noon %s, lake 2h %s, lake day %s" % (levels + [sound.insects.voices_playing(), lake_noon, lake_night, str(lake_cricket)]))
+
+	if test_air and now - connected_msec > 18000 and now >= _test_fire_at:
+		_test_fire_at = now + 10000000
+		var made: Array = []
+		var aims: Array = [["fall", 40.0], ["fall", 200.0], ["fall", 400.0], ["fire", 20.0], ["fire", 60.0], ["fire", 140.0], ["fire", 5.0]]
+
+		for aim in aims:
+			var voice := AudioStreamPlayer3D.new()
+			voice.stream = AudioStreamGenerator.new()
+			voice.bus = "Nature" if aim[0] == "fall" else "Foley"
+			voice.set_meta("air_kind", aim[0])
+			add_child(voice)
+			voice.add_to_group("world_sounds")
+			voice.global_position = body.global_position + Vector3(float(aim[1]), 0.0, 0.0)
+			voice.play()
+			made.append(voice)
+
+		sound.ambient.weights = {"forest": 0.0, "meadow": 1.0, "water": 0.0, "highland": 0.0}
+		sound.weather.roofed = 0.0
+		sound.cave.enclosure = 0.0
+		sound.occlusion._scan(body, false)
+		var open_buses: Array = []
+
+		for voice in made:
+			open_buses.append(str(voice.bus))
+
+		sound.ambient.weights = {"forest": 1.0, "meadow": 0.0, "water": 0.0, "highland": 0.0}
+		sound.occlusion._scan(body, false)
+		var forest_buses: Array = []
+
+		for voice in made:
+			forest_buses.append(str(voice.bus))
+
+		sound.weather.roofed = 1.0
+		sound.occlusion._scan(body, false)
+		var roof_fire: String = str(made[3].bus)
+		sound.weather.roofed = 0.0
+		var thunder_open: String = sound.weather._thunder_bus(2500.0)
+		var thunder_mid: String = sound.weather._thunder_bus(900.0)
+		var thunder_near: String = sound.weather._thunder_bus(200.0)
+		var hold: int = AirBandsCheck.band_for("fall", 120.0, 1)      # inside the edge's hysteresis it stays
+		var hold_up: int = AirBandsCheck.band_for("fall", 120.0, 0)
+		var filters: int = 0
+
+		for bus_name in ["Air_fall_1", "Air_fall_2", "Air_fall_3", "Air_fire_1", "Air_fire_2", "Air_fire_3", "Air_thunder_1", "Air_thunder_2"]:
+			var index: int = AudioServer.get_bus_index(bus_name)
+			filters += AudioServer.get_bus_effect_count(index) if index >= 0 else 0
+
+		print("Terrain client: air check: open falls %s, forest falls %s, open fires %s, forest fires %s, roofed fire %s, thunder %s %s %s, hold %d up %d, filters %d, shed parent %s" % [
+			",".join(open_buses.slice(0, 3)), ",".join(forest_buses.slice(0, 3)), ",".join(open_buses.slice(3)), ",".join(forest_buses.slice(3)), roof_fire,
+			thunder_open, thunder_mid, thunder_near, hold, hold_up, filters, AirBandsCheck.parent_of("Air_fire_2")])
+
+		for voice in made:
+			voice.queue_free()
 
 	if test_flush and now - connected_msec > 18000 and now >= _test_fire_at:
 		_test_fire_at = now + 10000000

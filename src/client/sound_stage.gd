@@ -43,6 +43,7 @@ const BreathScript := preload("res://src/client/breath_sounds.gd")
 const TreeScript := preload("res://src/client/tree_sounds.gd")
 const FireScript := preload("res://src/client/fire_sounds.gd")
 const ItemScript := preload("res://src/client/item_sounds.gd")
+const AirBands := preload("res://src/client/air_bands.gd")
 const OcclusionScript := preload("res://src/client/sound_occlusion.gd")
 const WaterSoundsScript := preload("res://src/client/water_sounds.gd")
 const AUDIO_DIR := "res://assets/audio/"
@@ -529,7 +530,7 @@ func _shed(body: CharacterBody3D, count: int) -> void:
 func _shed_rank(player: AudioStreamPlayer3D, body: CharacterBody3D) -> float:
 	var distance: float = player.global_position.distance_to(body.global_position)
 	var rank: float = distance - player.volume_db * 4.0              # far and quiet sorts last
-	var bus: String = String(player.bus)
+	var bus: String = AirBands.parent_of(String(player.bus))
 
 	if bus in AMBIENT_BUSES:
 		rank += 1000.0
@@ -1219,7 +1220,9 @@ func _exit_tree() -> void:
 
 	_streams.clear()
 
-	for name in ["Wind", "Foley", "Nature", "WeatherMid", "WeatherFar", "Weather"]:
+	AirBands.remove_all()
+
+	for name in ["Wind", "Foley", "Nature", "Weather"]:
 		var index: int = AudioServer.get_bus_index(name)
 
 		if index >= 0:
