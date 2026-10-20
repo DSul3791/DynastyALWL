@@ -9,14 +9,18 @@ extends Node
 # A ceiling alone (an overhang, a cliff ledge) gives a little; ceiling and near walls together
 # give the full effect. It eases in and out over a couple of seconds.
 #
-# Cost by tier: Low is filters only (a low-pass and a level drop on the Wind, Weather and Nature
-# buses) with 5 rays a scan; Mid and High also run a reverb on the Foley and Nature buses and cast 9 rays.
+# Reverb: ONE reverb effect, on a bus "World" that Foley and Nature (and the band buses under them) send to; steps, tools, calls
+# and drips echo, the wind/weather/interface/body buses do not. Its size and wetness follow the enclosure: a hollow under a
+# ledge is a small dry room, a tunnel a long wet one. Cost by tier: Low runs the same single reverb lighter (small room, wet
+# capped at 0.15, 4 rays); Mid and High run it fully (wet up to 0.35 / 0.45, larger room) with 8 rays. Off while open air
+# (enclosure under 0.05).
 # Drips: assets/audio/cave/cave_drip_N.ogg (make_cave.py), recordings in recorded/cave/ win.
 
 const SoundStage := preload("res://src/client/sound_stage.gd")
 const GENERATED_DIR := "res://assets/audio/cave/"
 const RECORDED_DIR := "res://assets/audio/recorded/cave/"
 
+const WORLD_BUS := "World"
 const SCAN_SEC := 0.25
 const UP_M := 30.0                      # ceiling this high counts for nothing beyond it
 const WALL_M := 20.0
@@ -44,7 +48,6 @@ var _next_drip: float = 3.0
 var _lowpass: Dictionary = {}           # bus name -> AudioEffectLowPassFilter
 var _amplify: Dictionary = {}           # bus name -> AudioEffectAmplify
 var _reverb: AudioEffectReverb
-var _reverb_bus: Array = []             # [bus index, effect index] pairs
 var _streams: Dictionary = {}
 var _rng := RandomNumberGenerator.new()
 
@@ -78,16 +81,15 @@ func setup(stage) -> void:
 	_reverb.spread = 0.8
 	_reverb.dry = 1.0
 	_reverb.wet = 0.0
+	var world: int = SoundStage._make_bus(WORLD_BUS)
+	AudioServer.move_bus(world, 1)                      # a bus sends only to buses before it: World goes ahead of Foley and Nature
+	world = AudioServer.get_bus_index(WORLD_BUS)
+	AudioServer.add_bus_effect(world, _reverb)
+	AudioServer.set_bus_effect_enabled(world, 0, false)
 
 	for bus_name in ["Foley", "Nature"]:
-		var bus: int = AudioServer.get_bus_index(bus_name)
-
-		if bus >= 0:
-			var effect: AudioEffectReverb = _reverb.duplicate()
-			AudioServer.add_bus_effect(bus, effect)
-			var at: int = AudioServer.get_bus_effect_count(bus) - 1
-			AudioServer.set_bus_effect_enabled(bus, at, false)
-			_reverb_bus.append([bus, at, effect])
+		if AudioServer.get_bus_index(bus_name) >= 0:
+			AudioServer.set_bus_send(AudioServer.get_bus_index(bus_name), WORLD_BUS)
 
 
 # The quality tier: Low has no reverb and fewer rays.
@@ -167,10 +169,12 @@ func _apply() -> void:
 		_amplify[bus_name].volume_db = float(DROP_DB[bus_name]) * enclosure
 
 	var on: bool = bool(_stage.preset["cave_reverb"]) and enclosure > REVERB_FROM
+	var world: int = AudioServer.get_bus_index(WORLD_BUS)
 
-	for entry in _reverb_bus:
-		AudioServer.set_bus_effect_enabled(entry[0], entry[1], on)
-		entry[2].wet = 0.45 * enclosure
+	if world >= 0:
+		AudioServer.set_bus_effect_enabled(world, 0, on)
+		_reverb.wet = float(_stage.preset["cave_wet"]) * enclosure
+		_reverb.room_size = lerpf(float(_stage.preset["cave_room"]) * 0.5, float(_stage.preset["cave_room"]), enclosure)
 
 
 func _drip(delta: float, body: CharacterBody3D) -> void:

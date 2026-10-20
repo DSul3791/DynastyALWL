@@ -208,6 +208,7 @@ var test_stepfx: bool = false          # --stepfx: wade, then dry steps: squelch
 var test_swing: bool = false           # --swing-test: tool whooshes (job 71)
 var test_insects: bool = false         # --insect-test: summer insect bed levels by season and hour (job 72)
 var _lake_calm_laps: int = 0
+var test_reverb: bool = false          # --reverb-test: the one cave reverb on bus World, by tier and enclosure (job 81)
 var test_air: bool = false             # --air-test: distance and cover dulling by band bus (job 82)
 var test_flush: bool = false           # --flush-test: variety of the bird take-off sounds (Dave 2026-10-20)
 var test_reject: bool = false          # --reject-test: refused-action cue and its rate limit (job 73)
@@ -423,6 +424,8 @@ func _ready() -> void:
 			test_night = true
 		elif argument == "--step-levels":
 			test_step_levels = true
+		elif argument == "--reverb-test":
+			test_reverb = true
 		elif argument == "--air-test":
 			test_air = true
 		elif argument == "--flush-test":
@@ -2627,6 +2630,31 @@ func _process(delta: float) -> void:
 		sound.insects.level = 0.9
 		sound.insects.update(0.1)
 		print("Terrain client: insect check: summer noon %s, summer 2h %s, winter noon %s, spring noon %s, sunrise edge %s, sunset edge %s, rain %s, playing %d, lake noon %s, lake 2h %s, lake day %s" % (levels + [sound.insects.voices_playing(), lake_noon, lake_night, str(lake_cricket)]))
+
+	if test_reverb and now - connected_msec > 18000 and now >= _test_fire_at:
+		_test_fire_at = now + 10000000
+		var world: int = AudioServer.get_bus_index("World")
+		var rows: Array = []
+
+		for tier_n in [0, 1, 2]:
+			sound.set_quality(tier_n)
+
+			for level in [0.0, 0.3, 1.0]:
+				sound.cave.enclosure = level
+				sound.cave._apply()
+				var verb: AudioEffectReverb = AudioServer.get_bus_effect(world, 0)
+				rows.append("t%d e%.1f %s wet %.2f room %.2f" % [tier_n, level, "on" if AudioServer.is_bus_effect_enabled(world, 0) else "off", verb.wet, verb.room_size])
+
+		var reverbs: int = 0
+
+		for n in AudioServer.bus_count:
+			for k in AudioServer.get_bus_effect_count(n):
+				reverbs += 1 if AudioServer.get_bus_effect(n, k) is AudioEffectReverb else 0
+
+		print("Terrain client: reverb check: %s; reverbs %d, World sends %s, Foley sends %s, Nature sends %s, World before Foley %s" % ["; ".join(rows), reverbs, AudioServer.get_bus_send(world), AudioServer.get_bus_send(AudioServer.get_bus_index("Foley")), AudioServer.get_bus_send(AudioServer.get_bus_index("Nature")), str(world < AudioServer.get_bus_index("Foley"))])
+		sound.set_quality(1)
+		sound.cave.enclosure = 0.0
+		sound.cave._apply()
 
 	if test_air and now - connected_msec > 18000 and now >= _test_fire_at:
 		_test_fire_at = now + 10000000

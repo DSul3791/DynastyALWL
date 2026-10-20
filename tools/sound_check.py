@@ -148,6 +148,17 @@ SCENARIOS = [
         ("the lake still hums at night in summer", r"lake 2h " + NUM, 0.2, 0.7),
         ("lake counts as full daylight at noon", r"lake day (true)", 0, 1, "text"),
     ]),
+    ("reverb", ["--reverb-test"], 3500, [
+        ("off in open air on Low", r"t0 e0.0 (off) wet", 0, 1, "text"),
+        ("off in open air on Mid", r"t1 e0.0 (off) wet", 0, 1, "text"),
+        ("off in open air on High", r"t2 e0.0 (off) wet", 0, 1, "text"),
+        ("Low is lighter: wet 0.15 at most", r"t0 e1.0 on wet (0.15)", 0, 1, "text"),
+        ("Mid wet 0.35 in a tunnel", r"t1 e1.0 on wet (0.35)", 0, 1, "text"),
+        ("High wet 0.45 in a tunnel", r"t2 e1.0 on wet (0.45) room 0.85", 0, 1, "text"),
+        ("a hollow is a smaller room than a tunnel", r"t2 e0.3 on wet 0.14 (room 0.5\d)", 0, 1, "text"),
+        ("exactly one reverb effect in the whole mixer", r"reverbs " + NUM, 1, 1),
+        ("Foley and Nature send to World, World ahead of them", r"World sends Master, Foley sends World, Nature sends World, World before Foley (true)", 0, 1, "text"),
+    ]),
     ("air", ["--air-test"], 3500, [
         ("a near fall is open, a mid one dull, a far one duller", r"open falls (Nature,Air_fall_1,Air_fall_2)", 0, 1, "text"),
         ("forest pushes the same falls one band darker", r"forest falls (Nature,Air_fall_2,Air_fall_3)", 0, 1, "text"),

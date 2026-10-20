@@ -1222,7 +1222,7 @@ func _exit_tree() -> void:
 
 	AirBands.remove_all()
 
-	for name in ["Wind", "Foley", "Nature", "Weather"]:
+	for name in ["Wind", "Foley", "Nature", "Weather", "World"]:
 		var index: int = AudioServer.get_bus_index(name)
 
 		if index >= 0:

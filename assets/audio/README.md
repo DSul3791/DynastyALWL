@@ -426,3 +426,13 @@ First run found real clipping in 17 generated placeholders: the rain loops, fire
 `src/client/air_bands.gd`: waterfalls, fires and thunder lose their high end with distance and cover. One low-pass per band bus, not per voice: each kind has up to three child buses (`Air_fall_1..3` sending to Nature, `Air_fire_1..3` to Foley, `Air_thunder_1..2` to Weather), made on first use, each with one LowPass effect. A voice is moved to the band its effective distance falls in. Edges (effective m) and cutoffs: fall 110 / 260 / 520 m at 6000 / 3000 / 1400 Hz; fire 30 / 70 / 150 m at 7000 / 3800 / 2000 Hz; thunder 600 / 1800 m at 1600 / 450 Hz (the old WeatherMid/WeatherFar). Effective distance = real distance x (1 + 0.6 x forest share x min(d/80, 1) + 1.2 behind a hill + 0.8 x roofed + 1.5 x cave enclosure). A band is entered at its edge +15% and left at -15%, so nothing flips back and forth at a boundary.
 Falls and fires carry the meta `air_kind`; `sound_occlusion.gd` (scan every 0.5 s) sets their band and gives them no per-voice dulling (its hill ray decides the hill share). Thunder picks its band once, at the strike. The shed priority and the mixer see a band bus as its parent. Cost: a bus change per band crossing, the same filters whether one fire plays or twenty; Low keeps the hill ray off, so there cover is forest, roof and cave only. Check: `sound_check.py --only air`.
 
+## Cave and tunnel reverb (job 81)
+
+One reverb, on a bus `World` that Foley and Nature (and the `Air_*` band buses under them) send to; it sits ahead of them in the bus list because a bus sends only to buses before it. Steps, tools, calls and drips echo in a cave; wind, weather, interface and body buses do not. It was two reverbs (one each on Foley and Nature) and off at Low; now it is one, and Low runs it lighter. Strength follows the enclosure the rays measure: off under 0.05 (open air), wet = enclosure x the tier's wet, room size from half the tier's room (a hollow or overhang: small, dry) up to the full room (a tunnel: long, wet).
+| tier | wet at full enclosure | room at full | rays |
+|---|---|---|---|
+| Low | 0.15 | 0.50 | 4 |
+| Mid | 0.35 | 0.70 | 8 |
+| High/Ultra | 0.45 | 0.85 | 8 |
+Cost: one Godot reverb effect (stereo comb and all-pass filters) in the mixer only while enclosure is over 0.05; when out in the open it is bypassed, so the open-world cost is zero and the cave cost is one reverb on a bus for every tier, down from two. Not heard by ear. Tunables: `cave_wet` and `cave_room` in `sound_presets.gd`. Check: `sound_check.py --only reverb`.
+
