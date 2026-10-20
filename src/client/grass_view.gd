@@ -10,6 +10,7 @@ extends Node3D
 # grass, tall grass patches). Cells are built a few rays per frame so walking never stalls.
 
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
+const TrampleScript := preload("res://src/client/grass_trample.gd")
 const CELL_M := 6.0
 const RAYS_PER_FRAME := 40
 const RETRY_MSEC := 1500
@@ -76,6 +77,8 @@ uniform float fade_start = 20.0;
 uniform float fade_end = 30.0;
 uniform float wind_strength = 0.12;
 uniform float backlight = 0.0;
+uniform sampler2D trample : filter_nearest, repeat_enable, hint_default_black;   // where the grass was trodden (grass_trample.gd)
+uniform float trample_now = 0.0;
 varying vec3 blade_color;
 varying float tip;
 
@@ -87,8 +90,16 @@ void vertex() {
 	float gust = sin(TIME * 1.7 + wp.x * 0.35 + wp.z * 0.21) + 0.5 * sin(TIME * 3.1 + wp.x * 0.9 + wp.z * 0.6);
 	VERTEX.x += gust * wind_strength * tip * tip;
 	VERTEX.z += gust * wind_strength * 0.5 * tip * tip;
+	// Trodden grass lies down by how recently it was trodden and rises again over five minutes.
+	vec4 trod = textureLod(trample, MODEL_MATRIX[3].xz / 256.0, 0.0);
+	float flat_down = 0.0;
+	if (trod.b > 0.5) {
+		float age = mod(trample_now - (trod.r * 255.0 + trod.g * 255.0 * 256.0) + 65536.0, 65536.0);
+		flat_down = 1.0 - smoothstep(0.0, 300.0, age);
+	}
+	VERTEX.y *= 1.0 - 0.85 * flat_down;
 	VERTEX *= fade;
-	blade_color = INSTANCE_CUSTOM.rgb;
+	blade_color = INSTANCE_CUSTOM.rgb * (1.0 - 0.12 * flat_down);
 }
 
 void fragment() {
@@ -118,6 +129,8 @@ var shore_density: float = 0.0
 var shore_cards: int = 0                 # pebbles and reeds drawn now
 
 var _terrain: Node3D
+var _trample = null                      # GrassTrample: where the grass is trodden down
+var _trample_msec: int = 0
 var _flora
 var _tables
 var _soil_color: Dictionary = {}         # soil id -> Color
@@ -171,6 +184,12 @@ func setup(terrain: Node3D, flora, tables) -> void:
 		material.set_shader_parameter("backlight", float(layer["backlight"]))
 		_materials.append(material)
 
+	_trample = TrampleScript.new()
+
+	for n in range(_materials.size()):
+		if not LAYERS[n].get("branch", false) and not LAYERS[n].get("pebble", false):
+			_materials[n].set_shader_parameter("trample", _trample.texture)
+
 	set_radius(radius_m)
 
 
@@ -183,6 +202,13 @@ func grass_at(x: float, z: float, soil: int) -> Vector2:
 
 	var thick: float = float(GRASS_SOILS[soil])
 	return Vector2(thick, clampf((_patch.get_noise_2d(x, z) - 0.05) * 3.0, 0.0, 1.0) * 0.9)
+
+
+# Grass lies down under a foot at this position (the local player each step; other players and creatures
+# the client can see call it too). It rises again over five minutes of real time (grass_trample.gd).
+func stamp(position: Vector3) -> void:
+	if enabled and _trample != null:
+		_trample.stamp(position)
 
 
 # The wind sways the grass with the same gusts the sound stage plays
@@ -402,6 +428,12 @@ func update(position: Vector3) -> void:
 
 	_center = position
 	var now: int = Time.get_ticks_msec()
+	_trample.flush()
+	var clock: float = TrampleScript.now_s()
+
+	for n in range(_materials.size()):
+		if not LAYERS[n].get("branch", false) and not LAYERS[n].get("pebble", false):
+			_materials[n].set_shader_parameter("trample_now", clock)
 
 	# Owner (2026-10-20, pauses while walking): the scan listed and sorted every cell in range
 	# every 0.4 s. Now only when the player is in another cell, or every 1.5 s to retry cells.

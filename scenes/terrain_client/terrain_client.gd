@@ -1217,6 +1217,8 @@ func _apply_quality() -> void:
 	grass.points_per_side = QUALITY_GRASS_POINTS[quality]
 	grass.density = QUALITY_GRASS_DENSITY[quality]
 	grass.set_radius(QUALITY_GRASS_M[quality])
+	if terrain != null:
+		GroundMaterialScript.set_grass_far(terrain.material as ShaderMaterial, QUALITY_GRASS_M[quality])
 	grass.set_litter(QUALITY_LITTER_M[quality], QUALITY_LITTER_AMOUNT[quality])
 	grass.set_shore(QUALITY_SHORE_M[quality], QUALITY_SHORE_AMOUNT[quality])
 	if fall_mist != null:
@@ -2202,6 +2204,9 @@ func _process(delta: float) -> void:
 	if not flying and body != null:
 		var tg: int = Probe.start()
 		grass.update(body.global_position)
+
+		if body.is_on_floor() and (body.velocity.x != 0.0 or body.velocity.z != 0.0):
+			grass.stamp(body.global_position)
 		Probe.stop("grass", tg)
 
 	if _bake.running and now >= _bake_check_msec:

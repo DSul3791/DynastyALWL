@@ -26,6 +26,7 @@ uniform float tile_m = 3.0;             // metres one texture tile covers
 uniform bool triplanar = true;          // Low skips the side projections
 uniform float wet = 0.0;                // 0 dry, 1 soaked by rain: darker and glossier (weather_look.gd)
 uniform float snow = 0.0;               // 0 bare, 1 snow lies on level ground (weather_look.gd)
+uniform float grass_far = 40.0;         // where the drawn grass cards end (grass_view.gd radius); the ground carries the meadow beyond it
 uniform vec4 fall_zone[3];              // nearest waterfalls: base x, z, spray radius, strength 0..1 (set_falls)
 uniform vec2 fall_height[3];            // their base and top height; the walls are damp up to the top
 uniform sampler2D canopy : filter_linear, hint_default_black;   // where trees shelter the ground (canopy_map.gd)
@@ -159,6 +160,16 @@ void fragment() {
 	// as one green carpet near and far, and no dark soil shows between the blades.
 	vec3 meadow = mix(vec3(0.15, 0.25, 0.07), vec3(0.22, 0.27, 0.08), large) * (0.85 + 0.3 * medium);
 	color = mix(color, meadow, 0.8 * lw[0] * cover);
+	// Far field of the meadow (step 2): past the drawn grass the grassy ground carries grass-like streaks
+	// and clump mottling, so the meadow fades into grass-coloured ground instead of stopping. Only where
+	// it shows (grass soil, beyond 60 percent of the card radius), about 40 ALU there.
+	float field = smoothstep(grass_far * 0.6, grass_far, dist) * (1.0 - smoothstep(grass_far * 5.0, grass_far * 9.0, dist)) * lw[0] * cover;
+	if (field > 0.01) {
+		float streak = vnoise(vec3(world_pos.x * 5.0, 0.0, world_pos.z * 1.4));
+		float clump = vnoise(vec3(world_pos.x * 0.9, 0.0, world_pos.z * 0.9));
+		color *= 1.0 + field * ((streak - 0.5) * 0.3 + (clump - 0.5) * 0.35);
+		color = mix(color, color * vec3(1.05, 1.08, 0.9), field * 0.3);
+	}
 	// Broad patches of dry and lush, so wide fields are not one flat color.
 	color *= mix(vec3(1.06, 1.0, 0.86), vec3(0.92, 1.04, 0.94), large);
 
@@ -346,3 +357,9 @@ static func set_falls(material: ShaderMaterial, falls: Array, at: Vector3) -> vo
 
 	material.set_shader_parameter("fall_zone", zones)
 	material.set_shader_parameter("fall_height", heights)
+
+
+# Tells the ground shader where the grass cards end (the far field of the meadow starts to show there).
+static func set_grass_far(material: ShaderMaterial, meters: float) -> void:
+	if material != null:
+		material.set_shader_parameter("grass_far", maxf(meters, 4.0))
