@@ -2,8 +2,8 @@
 
 Run: python3 assets/audio/make_water.py   (needs numpy and ffmpeg)
 Writes assets/audio/water/water_<kind>.ogg, each a seamless loop (circular noise
-and bubbles that wrap around the end). Kinds: brook (babbling, bright), river
-(broad soft rush), pond (slow soft lapping at a shore), fall (heavy roar).
+that wraps around the end, 24 s, no bubbles and no periodic swell). Kinds: brook (thin bright
+rush, a few small drips), river (fuller smooth rush), pond (soft hush, few soft laps), fall (smooth wide rush).
 Real recordings go in assets/audio/recorded/water/ under the same names.
 """
 import os
@@ -68,64 +68,88 @@ def normalize(x, rms=0.12):
     return np.tanh(x * (rms / (np.std(x) + 1e-9)) * 1.5)
 
 
-# Owner 2026-10-20: the river sounded like a raging ocean surf, wrong in character, not only loud. The
-# wide low rumble and the broadband wash were the surf. Brook and river are now made of small
-# bubbles and trickles (higher, brighter, many tiny events) with only a faint wash and no rumble;
-# real roar is left to the waterfall. The river is the same babble a little deeper and softer.
+# Owner 2026-10-20 (third round): the first loops were a raging ocean surf; the bubble rebuild
+# (build 145) read as "a witches caldron and a horse brush sweeping". Both came from structure the
+# ear picks up: discrete bubbles and a repeating wash pulse. Water is now only steady, smooth,
+# broadband flowing noise, shaped by gentle band-passes, with no bubble layer and no periodic
+# amplitude swell (a tiny, random, never-repeating drift only). The loops are circular noise, so
+# there is no seam, and long (24 s) so the grain does not repeat quickly. Brooks get a few sparse
+# small drips; ponds a very soft hush with a few soft, irregular laps; falls a smooth wide rush.
+
+def drift(rng, n, depth=0.05):
+    """A random, never-repeating, nearly imperceptible level drift (noise below 0.2 Hz, loop-safe)."""
+    w = shaped_noise(rng, n, lambda f: (f < 0.2) * 1.0 + 0.0 * f)
+    w /= np.max(np.abs(w)) + 1e-9
+    return 1.0 + depth * w
+
+
+def flow(rng, n, lo, hi, tilt):
+    """Smooth flowing-water noise: a band from lo to hi Hz with a gentle spectral tilt (1/f^tilt above lo)."""
+    x = shaped_noise(rng, n, lambda f: highpass(f, lo, 2) * lowpass(f, hi, 2) / np.maximum(f / 1000.0, 0.05) ** tilt)
+    return x / (np.std(x) + 1e-9)
+
+
+def drips(rng, n, rate, f_lo, f_hi, gain):
+    """A few small, quiet drips: short soft plinks at random times (sparse; wrapped around the loop end)."""
+    out = np.zeros(n)
+
+    for _ in range(max(int(rate * n / SR), 1)):
+        f0 = np.exp(rng.uniform(np.log(f_lo), np.log(f_hi)))
+        d = rng.uniform(0.012, 0.03)
+        m = int(d * 6 * SR)
+        t = np.arange(m) / SR
+        plink = np.sin(2 * np.pi * np.cumsum(f0 * (1.0 + 1.5 * t / d * 0.3)) / SR) * np.exp(-t / d) * np.minimum(t / 0.002, 1.0)
+        idx = (rng.integers(0, n) + np.arange(m)) % n
+        out[idx] += plink * rng.uniform(0.4, 1.0) * gain
+
+    return out
+
 
 def brook(rng, n):
-    bed = shaped_noise(rng, n, lambda f: band(f, 2600, 1.0) * highpass(f, 900, 2))
-    bed /= np.std(bed)
-    b = bubbles(rng, n, 200, 400, 2000, 0.010, 1.0)
-    b /= np.std(b) + 1e-9
-    trickle = bubbles(rng, n, 140, 1400, 4200, 0.005, 1.0)
-    trickle /= np.std(trickle) + 1e-9
-    return normalize((0.2 * bed + 1.0 * b + 0.7 * trickle) * slow_swell(rng, n, 0.2))
+    """Brighter and quieter: a thin smooth rush above 1 kHz, a few small drips."""
+    body = flow(rng, n, 900, 6500, 0.4)
+    air = flow(rng, n, 2500, 9000, 0.1)
+    x = (body + 0.5 * air) * drift(rng, n, 0.05)
+    x = x / np.std(x) + drips(rng, n, 0.12, 900, 2200, 0.5)
+    return normalize(x)
 
 
 def river(rng, n):
-    wash = shaped_noise(rng, n, lambda f: band(f, 2200, 1.0) * highpass(f, 900, 2))
-    wash /= np.std(wash)
-    b = bubbles(rng, n, 110, 250, 1200, 0.016, 1.0)
-    b /= np.std(b) + 1e-9
-    trickle = bubbles(rng, n, 100, 1000, 3200, 0.006, 1.0)
-    trickle /= np.std(trickle) + 1e-9
-    return normalize((0.12 * wash + 1.0 * b + 0.6 * trickle) * slow_swell(rng, n, 0.2))
+    """Fuller but smooth: a wide soft rush from 300 Hz up, no rumble, no bubbles at all."""
+    body = flow(rng, n, 300, 5000, 0.2)
+    top = flow(rng, n, 1500, 7000, 0.3)
+    x = (body + 0.35 * top) * drift(rng, n, 0.05)
+    return normalize(x)
 
 
 def pond(rng, n):
-    """Soft laps at a shore: slow swells of hushed noise, now and then a tiny plink."""
-    out = np.zeros(n)
-    laps = int(n / SR / 2.2)
-    for _ in range(laps):
-        d = rng.uniform(0.5, 1.0)
+    """A very soft hush, with a few soft, irregular, widely spaced laps (no regular rhythm)."""
+    out = flow(rng, n, 450, 2400, 0.3) * 0.6 * drift(rng, n, 0.05)
+
+    for _ in range(max(int(n / SR / 5.0), 1)):
+        d = rng.uniform(0.7, 1.4)
         m = int(d * SR)
         t = np.arange(m) / SR
-        lap = shaped_noise(rng, m, lambda f: band(f, 700, 1.0) * lowpass(f, 2200, 2)) * np.sin(np.pi * t / d) ** 2
+        lap = shaped_noise(rng, m, lambda f: band(f, 600, 1.0) * lowpass(f, 1800, 2)) * np.sin(np.pi * t / d) ** 3
         lap /= np.max(np.abs(lap)) + 1e-9
-        at = rng.integers(0, n)
-        idx = (at + np.arange(m)) % n
-        out[idx] += lap * rng.uniform(0.3, 1.0)
-    b = bubbles(rng, n, 6, 500, 1400, 0.01, 1.0)
-    b /= np.std(b) + 1e-9
-    out /= np.std(out) + 1e-9
-    return normalize(out * 0.9 + b * 0.35)
+        idx = (rng.integers(0, n) + np.arange(m)) % n
+        out[idx] += lap * rng.uniform(0.2, 0.6)
+
+    return normalize(out / (np.std(out) + 1e-9))
 
 
 def fall(rng, n):
-    roar = shaped_noise(rng, n, lambda f: lowpass(f, 6500, 2) * highpass(f, 60, 2) / (np.maximum(f, 120) / 500) ** 0.3)
-    roar /= np.std(roar)
-    rumble = shaped_noise(rng, n, lambda f: lowpass(f, 180, 2) * highpass(f, 30, 2))
-    rumble /= np.std(rumble)
-    hiss = shaped_noise(rng, n, lambda f: band(f, 4000, 0.8))
-    hiss /= np.std(hiss)
-    return normalize((roar + 0.7 * rumble + 0.4 * hiss) * slow_swell(rng, n, 0.12, (2, 5, 9)))
+    """A smooth wide rush with a soft low body: no rhythm, no pulses."""
+    body = flow(rng, n, 150, 6500, 0.2)
+    low = flow(rng, n, 80, 400, 0.0)
+    x = (body + 0.15 * low) * drift(rng, n, 0.04)
+    return normalize(x)
 
 
 def main():
     rng = np.random.default_rng(20261020)
-    for name, make, seconds in (("water_brook", brook, 14), ("water_river", river, 16),
-                                ("water_pond", pond, 20), ("water_fall", fall, 12)):
+    for name, make, seconds in (("water_brook", brook, 24), ("water_river", river, 24),
+                                ("water_pond", pond, 24), ("water_fall", fall, 24)):
         write_ogg(name, make(rng, seconds * SR))
     print("Wrote 4 water loops to %s" % OUT)
 
