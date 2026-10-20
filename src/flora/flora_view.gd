@@ -90,10 +90,12 @@ render_mode diffuse_burley, specular_disabled;
 uniform sampler2D bark : source_color, filter_linear_mipmap, repeat_enable;
 uniform float sway = 0.004;
 varying float base_h;
+varying float north_face;
 
 void vertex() {
 	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	base_h = VERTEX.y;
+	north_face = -normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz).z;   // north is -z
 	float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
 	float bend = max(VERTEX.y, 0.0) * sway;
 	VERTEX.x += gust * bend;
@@ -106,6 +108,9 @@ void fragment() {
 	c *= mix(0.72, 1.12, t.a);                                       // furrows darker, ridges lighter
 	float moss = (1.0 - smoothstep(0.1, 1.1, base_h)) * (0.35 + 0.65 * (1.0 - t.a));   // damp moss at the foot
 	c = mix(c, c * vec3(0.55, 0.75, 0.32), moss * 0.6);
+	// Moss on the north side of the trunk (ART_DIRECTION.md section 32), thinning up the trunk.
+	float north_moss = smoothstep(0.3, 0.9, north_face) * (1.0 - smoothstep(1.5, 5.0, base_h)) * (0.4 + 0.6 * (1.0 - t.a));
+	c = mix(c, c * vec3(0.5, 0.72, 0.3), north_moss * 0.55);
 	ALBEDO = c;
 	ROUGHNESS = 1.0;
 }
