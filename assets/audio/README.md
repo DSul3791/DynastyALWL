@@ -157,3 +157,6 @@ Frogs: normal in clear, 1.6x in drizzle, 1.2x in rain, silent in storms, snow an
 
 ## Water: river and brook character (owner, 2026-10-20)
 The river loop sounded like ocean surf (a wide low rumble and a broad wash). `make_water.py` now builds brook and river from many small bubbles and trickles with only a faint wash and no rumble (river under 3 percent of its energy below 300 Hz, was 42 percent); the river is quieter in the game (-17 dB at the source) and only rapids (a steep reach) and fast current make it louder. The most useful recording from Dave is a gentle stream or small river burbling over stones, 20 s or more, seamless, with no waterfall or big rapids in it.
+
+## Spear sounds (build 144)
+`spear_sounds.gd`, made by `make_spear.py` into `assets/audio/spear/`; recordings in `recorded/spear/` win. Names (`_N` variants): `spear_jab`, `spear_throw`, `spear_flight` (moved along the path), `spear_hit_wood`, `spear_hit_stone`, `spear_hit_soil`, `spear_hit_flesh`. Hooks only until a weapon system exists.

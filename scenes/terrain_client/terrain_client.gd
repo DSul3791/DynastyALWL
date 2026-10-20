@@ -19,6 +19,7 @@ extends Node
 #   --swim            with --frames: 20 s in, play a scripted swim (splash, strokes, dive, surface)
 #   --creatures       with --frames: 18 s in, play every creature call in every mood, then calls by zone
 #   --interior        with --frames: 18 s in, go inside and use a door, a chest and furniture
+#   --spear-sounds    with --frames: 18 s in, a spear sound jab, then a throw into each material
 #   --gear            with --frames: wear plate and iron boots from the start (checks the gear layers on the walk)
 #   --flood           with --frames: 18 s in, start 80 tool hits at once and check the voice cap sheds the farthest and quietest
 #   --ui              with --frames: 18 s in, play the interface cues one every 0.5 s
@@ -166,6 +167,10 @@ var test_swim: bool = false
 var test_ui: bool = false
 var test_flood: bool = false
 var test_gear: bool = false
+var test_spear_sounds: bool = false
+var _test_spear_step: int = 0
+var _test_spear_at: int = 0
+var _sound_spear_at: int = -1
 var test_interior: bool = false
 var _test_interior_step: int = 0
 var _test_interior_at: int = 0
@@ -296,6 +301,8 @@ func _ready() -> void:
 			test_flood = true
 		elif argument == "--gear":
 			test_gear = true
+		elif argument == "--spear-sounds":
+			test_spear_sounds = true
 		elif argument == "--interior":
 			test_interior = true
 		elif argument == "--items":
@@ -1140,6 +1147,21 @@ func _build_menu(layer: CanvasLayer) -> void:
 		var distance: float = (float(sound.creatures.KINDS[kind]["dist"][0]) + float(sound.creatures.KINDS[kind]["dist"][1])) * 0.5
 		var played: bool = sound.creatures.call_nearby(kind, mood, distance)
 		_menu_note.text = "Creature call: %s, %s, about %.0f m away%s (press again for the next)" % [kind, mood, distance, "" if played else " (did not play)"])
+	_menu_button(settings, "Sound test: spear", func():
+		_sound_spear_at = (_sound_spear_at + 1) % 6
+		var eye: Vector3 = camera.global_position
+		var ahead: Vector3 = -camera.global_transform.basis.z
+
+		if _sound_spear_at == 0:
+			sound.spear.jab(eye + ahead * 1.0)
+			_menu_note.text = "Spear jab (press again: throws into wood, stone, soil, flesh, then hits right here)"
+		elif _sound_spear_at <= 4:
+			var material: String = sound.spear.MATERIALS[_sound_spear_at - 1]
+			sound.spear.throw(eye + ahead, eye + ahead * 30.0, 28.0, material)
+			_menu_note.text = "Spear thrown 30 m ahead into %s" % material
+		else:
+			sound.spear.hit("wood", eye + ahead * 2.0, 1.0)
+			_menu_note.text = "Spear hits wood two metres ahead")
 	_menu_button(settings, "Sound test: interior", func():
 		_sound_interior_at = (_sound_interior_at + 1) % 5
 		var here: Vector3 = body.global_position + -camera.global_transform.basis.z * 2.0
@@ -1737,6 +1759,22 @@ func _process(delta: float) -> void:
 			test_creatures = false
 			sound.creatures.wild = true                              # then the natural far calls run on their own
 
+	# Headless check: a jab, then a throw into each material.
+	if test_spear_sounds and now - connected_msec > 18000 and now >= _test_spear_at:
+		_test_spear_at = now + 1500
+		var spear_materials: Array = sound.spear.MATERIALS
+
+		if _test_spear_step == 0:
+			print("Terrain client: spear jab -> %s" % sound.spear.jab(body.global_position + Vector3(1.0, 0.0, 0.0)))
+		elif _test_spear_step <= spear_materials.size():
+			var material: String = spear_materials[_test_spear_step - 1]
+			var flight_s: float = sound.spear.throw(body.global_position + Vector3(0.0, 1.5, 0.0), body.global_position + Vector3(25.0, 1.0, 5.0), 28.0, material)
+			print("Terrain client: spear throw into %s -> flight %.2f s" % [material, flight_s])
+		else:
+			test_spear_sounds = false
+
+		_test_spear_step += 1
+
 	# Headless check: step inside, use each object, step back out.
 	if test_interior and now - connected_msec > 18000 and now >= _test_interior_at:
 		_test_interior_at = now + 600
@@ -1845,6 +1883,7 @@ func _process(delta: float) -> void:
 	hud.text += "\nlast step: " + sound.last_step
 	hud.text += "\nsound budget: " + sound.budget_text()
 	hud.text += "\n" + sound.wind_text()
+	hud.text += "\nspear sounds: %s, last %s" % [str(sound.spear.played), sound.spear.last]
 	hud.text += "\ninterior: %.2f inside (%s), %d objects, %d creaks, last %s" % [sound.interior.amount, sound.interior.kind, sound.interior.objects_played, sound.interior.creaks_played, sound.interior.last]
 	hud.text += "\ngear: worn %s, %d steps, last %s" % [str(sound.gear.worn), sound.gear.steps_played, sound.gear.last]
 	hud.text += "\ncreature calls: %s, last %s" % [str(sound.creatures.calls_played), sound.creatures.last]
@@ -1891,6 +1930,7 @@ func _process(delta: float) -> void:
 			print("Terrain client: grass %d tufts in %d cells (radius %.0f m)" % [grass.tufts, grass.cells_built, grass.radius_m])
 			print("Terrain client: water sounds: %s" % sound.water.summary)
 			print("Terrain client: nature calls %s, zones %s" % [str(sound.ambient.calls_played), str(sound.ambient.weights)])
+			print("Terrain client: spear sounds %s, last %s" % [str(sound.spear.played), sound.spear.last])
 			print("Terrain client: interior sounds: %d objects, %d creaks, last %s" % [sound.interior.objects_played, sound.interior.creaks_played, sound.interior.last])
 			print("Terrain client: gear: worn %s, %d steps, last %s" % [str(sound.gear.worn), sound.gear.steps_played, sound.gear.last])
 			print("Terrain client: creature calls %s, last %s" % [str(sound.creatures.calls_played), sound.creatures.last])

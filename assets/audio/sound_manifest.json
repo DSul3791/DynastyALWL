@@ -617,6 +617,62 @@
    "priority": 4
   },
   {
+   "name": "spear_jab",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "spear_sounds.gd: a spear thrust through the air",
+   "to_supply": "3 spear thrust whooshes, 0.3 s",
+   "priority": 3
+  },
+  {
+   "name": "spear_throw",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "spear_sounds.gd: the heave and release of a thrown spear",
+   "to_supply": "3 spear throw whooshes with effort, 0.7 s",
+   "priority": 3
+  },
+  {
+   "name": "spear_flight",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "spear_sounds.gd: a thrown spear whistling through the air (moves along the path)",
+   "to_supply": "3 thin air whistles of a spear in flight, 1 to 2 s",
+   "priority": 3
+  },
+  {
+   "name": "spear_hit_wood",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "spear_sounds.gd: a spear sticking into wood (the shaft quivers)",
+   "to_supply": "3 spear thunks into a tree or board with shaft vibration",
+   "priority": 2
+  },
+  {
+   "name": "spear_hit_stone",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "spear_sounds.gd: a spear striking stone",
+   "to_supply": "3 spear tips hitting rock, clack and scrape",
+   "priority": 3
+  },
+  {
+   "name": "spear_hit_soil",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "spear_sounds.gd: a spear sticking into earth",
+   "to_supply": "3 spear thuds into dirt",
+   "priority": 3
+  },
+  {
+   "name": "spear_hit_flesh",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "spear_sounds.gd: a spear hitting flesh",
+   "to_supply": "3 wet heavy thumps of a spear hitting an animal or body",
+   "priority": 2
+  },
+  {
    "name": "ui_click",
    "state": "generated",
    "variants": 2,

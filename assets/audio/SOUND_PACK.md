@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **103 slots: 17 recorded, 82 generated placeholders, 4 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **110 slots: 17 recorded, 89 generated placeholders, 4 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -31,6 +31,8 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 2 | `interior_rain_roof` | generated | 1 | interior_sounds.gd: rain on a roof heard from inside (loop) | Rain on a wooden or thatched roof from inside, seamless |
 | 2 | `owl_hoot` | generated | 3 | ambient_life.gd: forest at night | 2 to 3 owl hoots (tawny or barred), 2 to 3 s |
 | 2 | `rain_leaves` | generated | 1 | weather_sounds.gd: rain pattering on leaves under trees | Rain on forest canopy loop, seamless |
+| 2 | `spear_hit_flesh` | generated | 3 | spear_sounds.gd: a spear hitting flesh | 3 wet heavy thumps of a spear hitting an animal or body |
+| 2 | `spear_hit_wood` | generated | 3 | spear_sounds.gd: a spear sticking into wood (the shaft quivers) | 3 spear thunks into a tree or board with shaft vibration |
 | 2 | `swim_splash_big` | generated | 3 | swim_sounds.gd: a jump or fall into water (4 m/s and up) | 3 big splashes of a person falling in, 1 to 2 s |
 | 2 | `swim_splash_small` | generated | 3 | swim_sounds.gd: the body enters water slowly (under 4 m/s) | 3 small body-into-water splashes, 0.5 to 1 s |
 | 2 | `thunder_far` | generated | 3 | weather_sounds.gd: a far strike (over 1800 m): a low grumble | 2 to 3 distant low rumbles, 8 to 12 s |
@@ -69,6 +71,11 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 3 | `hit_spade_soil` | generated | 3 | hit_sounds.gd: a spade strike into soil | 3 spade thuds into earth |
 | 3 | `rain_drip` | generated | 4 | weather_sounds.gd: a drop falling from a leaf near you, under trees in rain | 3 to 4 single drops falling from leaves onto leaves or ground, 0.3 s |
 | 3 | `rain_water` | generated | 1 | weather_sounds.gd: rain falling on ponds and rivers near the player | Rain on a lake surface loop, seamless |
+| 3 | `spear_flight` | generated | 3 | spear_sounds.gd: a thrown spear whistling through the air (moves along the path) | 3 thin air whistles of a spear in flight, 1 to 2 s |
+| 3 | `spear_hit_soil` | generated | 3 | spear_sounds.gd: a spear sticking into earth | 3 spear thuds into dirt |
+| 3 | `spear_hit_stone` | generated | 3 | spear_sounds.gd: a spear striking stone | 3 spear tips hitting rock, clack and scrape |
+| 3 | `spear_jab` | generated | 3 | spear_sounds.gd: a spear thrust through the air | 3 spear thrust whooshes, 0.3 s |
+| 3 | `spear_throw` | generated | 3 | spear_sounds.gd: the heave and release of a thrown spear | 3 spear throw whooshes with effort, 0.7 s |
 | 3 | `swim_dive` | generated | 3 | swim_sounds.gd: the head goes under | 3 bubbling gulps of going under, 1 s |
 | 3 | `swim_stroke` | generated | 3 | swim_sounds.gd: an arm stroke while swimming, one every 0.6 to 1.4 s | 3 breaststroke or crawl arm pulls through water, 0.5 s |
 | 3 | `swim_surface` | generated | 3 | swim_sounds.gd: the head comes out of the water | 3 breaths and running water on surfacing, 1 s |
