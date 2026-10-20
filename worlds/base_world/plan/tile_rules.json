@@ -105,6 +105,8 @@
 		"head_pond_climb_max_m": 60,
 		"spring_base_m3s": 3.0,
 		"spring_rate_max": 20,
+		"spring_full_pond_diameter_m": 125,
+		"spring_size_note": "Owner (2026-10-20): one spring per head pond; ponds up to this width get the base flow, bigger ponds get flow in step with their diameter (a 250 m pond pours twice as much), and the brook depth floor uses the same flow.",
 		"stream_min_depth_m": 3.0,
 		"stream_freeboard_m": 1.5,
 		"stream_depth_note": "Owner (2026-10-20): the brook was too shallow and the water left it. Every brook and river is cut at least as deep as the flow it must carry (base spring flow times the top flow key) plus a freeboard, and never under a minimum; brook beds only fall.",

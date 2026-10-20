@@ -34,7 +34,7 @@ const CompassScript := preload("res://src/client/admin_compass.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 94
+const BUILD := 95
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")

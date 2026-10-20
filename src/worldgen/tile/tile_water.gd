@@ -584,6 +584,9 @@ func _carve_guides(rivers: Array) -> void:
 		# is a stream, a small pond's is a brook).
 		var pond_size: float = clampf((float(river.get("pond_radius", pond_radius)) - pond_radius) / maxf(pond_radius_max - pond_radius, 1.0), 0.0, 1.0)
 		var taper_here: float = lerpf(taper_min, 1.0, pond_size)
+		# Owner (2026-10-20): the river out of a pond is sized for the pond's spring flow
+		# (bigger pond, more water), easing back to the catchment's size downstream.
+		var pond_flow: float = _pond_flow(float(river.get("pond_radius", pond_radius))) if is_source else 1.0
 		low_values.resize(count)
 		beds.resize(count)
 		beds.fill(NAN)
@@ -594,7 +597,9 @@ func _carve_guides(rivers: Array) -> void:
 		for k in range(count):
 			var point: Vector2 = points[k]
 			var width: float = width_base + width_scale * sqrt(maxf(areas[k], start_km2))
-			var depth: float = _stream_depth(depth_base + depth_scale * width, width)
+			var carry: float = lerpf(pond_flow, 1.0, clampf(along / (maxf(taper_m, 1.0) * 3.0), 0.0, 1.0))
+			width *= sqrt(carry)
+			var depth: float = _stream_depth(depth_base + depth_scale * width, width, carry)
 
 			if k > 0:
 				along += points[k].distance_to(points[k - 1]) * spacing_m
@@ -812,7 +817,10 @@ func _carve_guides(rivers: Array) -> void:
 		var paths: Array = pond["paths"]
 		var brook_size: float = clampf((float(pond.get("radius", pond_radius)) - pond_radius) / maxf(pond_radius_max - pond_radius, 1.0), 0.0, 1.0)
 		var brook_scale: float = lerpf(maxf(taper_min, 0.6), 1.0, brook_size)
-		brook_depth = _stream_depth(brook_depth, brook_width * brook_scale)
+		# Owner (2026-10-20): a pond's spring flow grows with its size (water_settler.flow_factor).
+		var pond_flow: float = _pond_flow(float(pond.get("radius", pond_radius)))
+		brook_width *= sqrt(pond_flow)
+		brook_depth = _stream_depth(depth_base + depth_scale * brook_width, brook_width * brook_scale, pond_flow)
 
 		for h in range(heads.size()):
 			var path: PackedVector2Array = PackedVector2Array()
@@ -938,8 +946,12 @@ func _pond_fit(carved: PackedFloat32Array, centre: Vector2, pond_radius: float, 
 # Owner (2026-10-20): no stream is shallower than its own water. Depth is at least the
 # flow depth over a crest of this width at the spring's greatest flow (base rate times the
 # top flow key, Q = 1.7 W h^1.5), plus a freeboard, and never under a minimum.
-func _stream_depth(depth: float, width: float) -> float:
-	var q_max: float = float(_rules.get("spring_base_m3s", 3.0)) * float(_rules.get("spring_rate_max", 20.0))
+func _pond_flow(radius_m: float) -> float:
+	return maxf(2.0 * radius_m / float(_rules.get("spring_full_pond_diameter_m", 125.0)), 1.0)
+
+
+func _stream_depth(depth: float, width: float, flow_factor: float = 1.0) -> float:
+	var q_max: float = float(_rules.get("spring_base_m3s", 3.0)) * float(_rules.get("spring_rate_max", 20.0)) * flow_factor
 	var flow_depth: float = pow(q_max / (1.7 * maxf(width, 1.0)), 2.0 / 3.0)
 	return maxf(depth, maxf(float(_rules.get("stream_min_depth_m", 3.0)), flow_depth + float(_rules.get("stream_freeboard_m", 1.5))))
 
