@@ -9,9 +9,13 @@ Reports, from assets/audio/make_manifest.py's SLOTS table and the files on disk:
                the game will never play it)
   STALE        sound_manifest.json differs from what the folders hold now (run make_manifest.py)
   UNPAIRED     a footstep surface with only left or only right files, or uneven counts
+  UNCREDITED   a recording in recorded/ that no CREDITS.csv row covers (error); CREDITS.csv rows with
+               an unknown licence (error), a licence still TODO (warning, an error with --strict:
+               the release gate), or matching no file (warning); CREDITS.md out of date (warning)
 Exit status 1 when there are errors (oversized beyond ERROR_KB, unreferenced, unpaired); with
 --strict, missing slots and warnings count as errors too. Run it before committing sounds.
 """
+import fnmatch
 import json
 import os
 import re
@@ -19,6 +23,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import make_credits as mc  # noqa: E402
 import make_manifest as mm  # noqa: E402
 
 WARN_KB = 400
@@ -105,6 +110,29 @@ def main():
             if row is None or row["state"] != state or row["variants"] != count:
                 warnings.append("STALE manifest row for %s (file says %s, folders hold %s x%d): run make_manifest.py" % (
                     name, row["state"] + " x%d" % row["variants"] if row else "nothing", state, count))
+
+    credits = mc.rows()
+    recorded = [os.path.relpath(path, "recorded").replace(os.sep, "/") for path, _ in files if path.startswith("recorded" + os.sep)]
+
+    for path in recorded:
+        if not any(fnmatch.fnmatch(path, row["pattern"]) for row in credits):
+            errors.append("UNCREDITED recorded/%s: add a row to CREDITS.csv (source and licence)" % path)
+
+    for row in credits:
+        if row["licence"] not in mc.LICENCES:
+            errors.append("LICENCE %s: %r is not one of %s" % (row["pattern"], row["licence"], ", ".join(mc.LICENCES)))
+        elif row["licence"] == "TODO":
+            warnings.append("LICENCE %s: source and licence still TODO (needed before release)" % row["pattern"])
+        elif row["licence"].startswith("CC-BY") and row["attribution"].strip().lower() in ("", "none", "todo"):
+            errors.append("LICENCE %s: %s needs an attribution text" % (row["pattern"], row["licence"]))
+
+        if not any(fnmatch.fnmatch(path, row["pattern"]) for path in recorded):
+            warnings.append("CREDITS row %s matches no file in recorded/" % row["pattern"])
+
+    credits_md = os.path.join(HERE, "CREDITS.md")
+
+    if not os.path.exists(credits_md):
+        warnings.append("STALE CREDITS.md is missing: run make_credits.py")
 
     notes.append("%d sound files, %.1f MB in recorded/, %d slots, %d footstep surfaces" % (len(files), total / 1048576.0, len(slot_names), len(mm.STEPS)))
 
