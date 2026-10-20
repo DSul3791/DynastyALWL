@@ -1,7 +1,7 @@
 {
 	"table": "gathered_items",
 	"format_version": 1,
-	"note": "Generated from data/tables/flora.json yields by tools/gen_gathered_items.py. Numbers start at 1000 and are append-only: re-running only adds new yields. Each yield becomes a plain material until food, herb and potion systems give them effects.",
+	"note": "Generated from data/tables/flora.json yields by tools/gen_gathered_items.py. Numbers start at 1000 and are append-only: re-running only adds new yields. Each yield becomes a plain material until food, herb and potion systems give them effects. Numbers 1008 and 1083 are retired (bark and leaves became core items 13 and 14); never reuse them.",
 	"next_number": 1176,
 	"items": {
 		"acorns": {
@@ -56,13 +56,6 @@
 		"bananas": {
 			"number": 1007,
 			"name": "Bananas",
-			"kind": "material",
-			"stack": 20,
-			"look_alikes": []
-		},
-		"bark": {
-			"number": 1008,
-			"name": "Bark",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": []
@@ -581,13 +574,6 @@
 		"lavender_flowers": {
 			"number": 1082,
 			"name": "Lavender flowers",
-			"kind": "material",
-			"stack": 20,
-			"look_alikes": []
-		},
-		"leaves": {
-			"number": 1083,
-			"name": "Leaves",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": []
