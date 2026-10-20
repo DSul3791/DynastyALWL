@@ -68,22 +68,29 @@ def normalize(x, rms=0.12):
     return np.tanh(x * (rms / (np.std(x) + 1e-9)) * 1.5)
 
 
+# Owner 2026-10-20: the river sounded like a raging ocean surf, wrong in character, not only loud. The
+# wide low rumble and the broadband wash were the surf. Brook and river are now made of small
+# bubbles and trickles (higher, brighter, many tiny events) with only a faint wash and no rumble;
+# real roar is left to the waterfall. The river is the same babble a little deeper and softer.
+
 def brook(rng, n):
-    bed = shaped_noise(rng, n, lambda f: band(f, 2400, 1.0) * highpass(f, 500, 2))
+    bed = shaped_noise(rng, n, lambda f: band(f, 2600, 1.0) * highpass(f, 900, 2))
     bed /= np.std(bed)
-    b = bubbles(rng, n, 220, 350, 1800, 0.012, 1.0)
+    b = bubbles(rng, n, 200, 400, 2000, 0.010, 1.0)
     b /= np.std(b) + 1e-9
-    return normalize((0.5 * bed + 1.0 * b) * slow_swell(rng, n, 0.25))
+    trickle = bubbles(rng, n, 140, 1400, 4200, 0.005, 1.0)
+    trickle /= np.std(trickle) + 1e-9
+    return normalize((0.2 * bed + 1.0 * b + 0.7 * trickle) * slow_swell(rng, n, 0.2))
 
 
 def river(rng, n):
-    low = shaped_noise(rng, n, lambda f: lowpass(f, 900, 2) * highpass(f, 90, 2) / np.sqrt(np.maximum(f, 40) / 100))
-    low /= np.std(low)
-    mid = shaped_noise(rng, n, lambda f: band(f, 1800, 1.1) * highpass(f, 400, 2))
-    mid /= np.std(mid)
-    b = bubbles(rng, n, 60, 250, 900, 0.02, 1.0)
+    wash = shaped_noise(rng, n, lambda f: band(f, 2200, 1.0) * highpass(f, 900, 2))
+    wash /= np.std(wash)
+    b = bubbles(rng, n, 110, 250, 1200, 0.016, 1.0)
     b /= np.std(b) + 1e-9
-    return normalize((1.0 * low + 0.35 * mid + 0.4 * b) * slow_swell(rng, n, 0.35))
+    trickle = bubbles(rng, n, 100, 1000, 3200, 0.006, 1.0)
+    trickle /= np.std(trickle) + 1e-9
+    return normalize((0.12 * wash + 1.0 * b + 0.6 * trickle) * slow_swell(rng, n, 0.2))
 
 
 def pond(rng, n):

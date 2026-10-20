@@ -154,3 +154,6 @@ Frogs: normal in clear, 1.6x in drizzle, 1.2x in rain, silent in storms, snow an
 
 ## Interior sounds (build 141)
 `interior_sounds.gd`, made by `make_interior.py` into `assets/audio/interior/`; recordings in `recorded/interior/` win. Loops: `interior_room`, `interior_rain_roof`. One-shots (`_N` variants): `interior_creak`, `door_open`, `door_close`, `door_knock`, `chest_open`, `chest_close`, `furniture_drag`. Hooks only until buildings exist.
+
+## Water: river and brook character (owner, 2026-10-20)
+The river loop sounded like ocean surf (a wide low rumble and a broad wash). `make_water.py` now builds brook and river from many small bubbles and trickles with only a faint wash and no rumble (river under 3 percent of its energy below 300 Hz, was 42 percent); the river is quieter in the game (-17 dB at the source) and only rapids (a steep reach) and fast current make it louder. The most useful recording from Dave is a gentle stream or small river burbling over stones, 20 s or more, seamless, with no waterfall or big rapids in it.

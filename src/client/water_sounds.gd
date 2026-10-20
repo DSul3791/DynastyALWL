@@ -1,7 +1,7 @@
 extends Node
 
 # Water you can hear (client only; queue job "water sounds"). Four kinds, each a
-# seamless loop: brook (narrow, babbling), river (wide, a soft broad rush), pond
+# seamless loop: brook (narrow, babbling), river (wide, a deeper burble and trickle, no rumble), pond
 # (a lake or pond shore, slow lapping) and waterfall (a steep drop, a heavy roar).
 #
 # Every SCAN_SEC seconds the water squares (8 m grid, the same lookups the water
@@ -40,10 +40,10 @@ const RIVER_AROUND := 8
 
 # kind: loop name, loudness at the source (dB), how far it carries (m) for choosing sources
 const KINDS := {
-	"brook": {"file": "water_brook", "db": -8.0, "reach": 45.0},
-	"river": {"file": "water_river", "db": -9.0, "reach": 60.0},
+	"brook": {"file": "water_brook", "db": -10.0, "reach": 45.0},
+	"river": {"file": "water_river", "db": -17.0, "reach": 50.0},
 	"pond": {"file": "water_pond", "db": -12.0, "reach": 35.0},
-	"fall": {"file": "water_fall", "db": -5.0, "reach": 70.0},
+	"fall": {"file": "water_fall", "db": -8.0, "reach": 70.0},
 }
 
 var sources: Array = []                 # what is playing now: [{kind, distance}] for the HUD
@@ -337,14 +337,18 @@ func _aim(slot: Dictionary, candidate: Dictionary, origin: Vector3) -> void:
 	var pitch: float = 1.0
 
 	if candidate["kind"] == "brook":
-		db += clampf(float(candidate["drop"]) / 0.5, 0.0, 1.0) * 5.0     # steeper babbles louder
+		db += clampf(float(candidate["drop"]) / 0.5, 0.0, 1.0) * 4.0     # steeper babbles louder
+	elif candidate["kind"] == "river":
+		db += clampf((float(candidate["drop"]) - 0.1) / 0.5, 0.0, 1.0) * 5.0    # a steep reach (rapids) is louder; a calm one stays quiet
 
 	var speed: float = float(candidate.get("speed", -1.0))
 
 	if speed >= 0.0 and candidate["kind"] in ["brook", "river"]:
 		var octaves: float = log(maxf(speed, SPEED_FLOOR) / SPEED_REF) / log(2.0)
-		db += clampf(SPEED_DB_PER_OCTAVE * octaves, -5.0, 8.0)
-		pitch += 0.08 * clampf(octaves, -1.5, 2.0)
+		# Owner 2026-10-20: rivers sounded like ocean surf. Only fast water gets louder (up to +3 dB, and
+		# only rapids add the slope boost below); calm reaches get quieter and keep their pitch.
+		db += clampf(SPEED_DB_PER_OCTAVE * octaves, -6.0, 3.0)
+		pitch += 0.04 * clampf(octaves, -1.5, 2.0)
 
 	var depth: float = float(candidate.get("depth", -1.0))
 
