@@ -11,6 +11,7 @@ const RecipeTableScript := preload("res://src/shared/recipe_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
 const VitalsRules := preload("res://src/shared/vitals_rules.gd")
+const CarryRules := preload("res://src/shared/carry_rules.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
 const KEY_FILE := "user://player_key.txt"
 const PICKUP_M := 3.0
@@ -46,6 +47,7 @@ var hunger: int = 100                  # stomach, percent
 var health: int = 100
 var weight_kg: float = 75.0
 var _vitals_cfg: Dictionary = {}
+var _carry_cfg: Dictionary = {}
 var _eat_item: String = ""
 var _hunger_bar: ColorRect
 var _health_bar: ColorRect
@@ -79,6 +81,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.chest_received.connect(_on_chest)
 	net.vitals_received.connect(_on_vitals)
 	_vitals_cfg = VitalsRules.load_config()
+	_carry_cfg = CarryRules.load_config()
 	_build_vitals_hud()
 	_prompt = Label.new()
 	_prompt.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -588,7 +591,24 @@ func _place_vitals() -> void:
 	_vitals_warning.text = "You are starving: you recover slowly" if hunger <= 0 else ("You are hungry" if hunger <= warn else "")
 
 	if _weight_label != null:
-		_weight_label.text = "Body weight %.1f kg   (hunger %d%%, health %d)" % [weight_kg, hunger, health]
+		_weight_label.text = _load_text() + "\nBody weight %.1f kg   (hunger %d%%, health %d)" % [weight_kg, hunger, health]
+
+
+# Kilograms in the pack (the server counts the same way).
+func carried_kg() -> float:
+	return CarryRules.carried_kg(inventory, table, _carry_cfg) if not _carry_cfg.is_empty() else 0.0
+
+
+# Walking speed multiplier for the load: 1 when comfortable, easing down past it.
+func speed_factor() -> float:
+	return CarryRules.speed_factor(carried_kg(), weight_kg, _carry_cfg) if not _carry_cfg.is_empty() else 1.0
+
+
+func _load_text() -> String:
+	var load_kg: float = carried_kg()
+	var comfort: float = CarryRules.comfort_kg(weight_kg, _carry_cfg)
+	var state: String = "" if load_kg <= comfort else ("   (heavy: you move slower)" if load_kg < CarryRules.cap_kg(weight_kg, _carry_cfg) else "   (at the limit)")
+	return "Carrying %.1f kg of %.0f kg comfortable%s" % [load_kg, comfort, state]
 
 
 func _on_vitals(new_hunger: int, new_health: int, weight_dkg: int) -> void:
@@ -1225,6 +1245,9 @@ func _tooltip(number: int, count: int) -> String:
 	var kcal: int = VitalsRules.food_value(table.id_of(number), _vitals_cfg)
 	var heal: int = VitalsRules.heal_value(table.id_of(number), _vitals_cfg)
 
+ 	if not _carry_cfg.is_empty():
+		text += "\n%.2f kg each" % CarryRules.weight_of(table.id_of(number), _carry_cfg)
+
 	if kcal > 0:
 		text += "\n%d kcal  (right click when held, or Eat / use)" % kcal
 
@@ -1272,6 +1295,9 @@ func _recipe_matches(r: Dictionary, filter: String) -> bool:
 func _refresh() -> void:
 	if _panel == null:
 		return
+
+	if _weight_label != null:
+		_weight_label.text = _load_text() + "\nBody weight %.1f kg   (hunger %d%%, health %d)" % [weight_kg, hunger, health]
 
 	var filter: String = _search.text.strip_edges().to_lower() if _search != null else ""
 

@@ -55,3 +55,6 @@ Kit from 1 log (recipe 15), placed like the other structures (cap 4 per 256 m ch
 
 ## Hunger, health and body weight (protocol 18)
 Server-owned and saved per player (vitals.json). Energy balance: a stomach holds up to 2400 kcal; the daily need comes from body weight and exertion; surplus or deficit moves a slow body weight (7700 kcal per kg). A full stomach lasts about 1.07 game days (about 64 real minutes at the 24:1 clock) at ordinary work, longer at rest. No death from hunger: at zero only a warning and slower health recovery. Food kcal and heal values live in data/items/vitals.json. Eat: ACT_EAT (18). RPC vitals(hunger, health, weight_dkg). Events for Sounds: eat and heal via sound.itemfx.eat(item_id).
+
+## Carrying weight (no protocol change)
+Slots plus weight. data/items/weights.json gives kg per item (by_id, by_suffix, default). Comfortable load = 0.35 x body weight (placeholder for strength; 26 kg at 75 kg). Past it the walk slows smoothly (smoothstep) to 35 percent speed at 2x the comfortable load, which is also the hard cap: the server (give, pickup, chest take) will not take more. A heavy pack adds up to 30 percent work per comfortable load to exertion, so it burns more food. The client shows "Carrying x of y kg" in the inventory panel and item weights in tooltips. Shared rules: src/shared/carry_rules.gd.

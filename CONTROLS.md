@@ -51,3 +51,4 @@ Gait rules:
 - Potions, horses and dragons will move much faster than running; ground loading is built to keep up.
 
 - Right click with a held food or medicine item: eat it / apply it (hunger and health bars at the bottom left). The inventory panel's "Eat / use" button does the same for the selected slot.
+- Carrying: no key; the inventory panel shows "Carrying x of y kg". A heavy pack slows walking, jogging and running; flying is unaffected.

@@ -683,5 +683,26 @@ func _init() -> void:
 	vt2.peer_connected_hello(1, "abcdef123456")
 	check(absf(float(vt2.vitals_of(1)["weight"]) - float(vt.vitals_of(1)["weight"])) < 0.001, "weight survives a restart")
 
+	# Carrying weight: stones weigh 1 kg; a 75 kg player carries 26 kg comfortably and 52 kg at most.
+	var cwd: String = "user://test_server_items_carry"
+	DirAccess.make_dir_recursive_absolute(cwd)
+
+	for file in DirAccess.get_files_at(cwd):
+		DirAccess.remove_absolute(cwd + "/" + file)
+
+	var cw = make(cwd)
+	cw.send_vitals = func(_p, _h, _he, _w): pass
+	cw.peer_connected_hello(1, "carrykey0001")
+	cw.report_position(1, Vector3(0.0, 10.0, 0.0))
+	cw.give(1, cw.table.number_of("stone"), 20)
+	check(absf(cw.carried_kg_of(1) - 20.0) < 0.01, "twenty stones weigh 20 kg (%.1f)" % cw.carried_kg_of(1))
+	cw.give(1, cw.table.number_of("stone"), 100)
+	check(cw.carried_kg_of(1) <= 52.01 and cw.carried_kg_of(1) > 50.0, "give stops at the hard cap, %.1f kg" % cw.carried_kg_of(1))
+	var CarryScript = load("res://src/shared/carry_rules.gd")
+	var ccfg: Dictionary = CarryScript.load_config()
+	check(CarryScript.speed_factor(20.0, 75.0, ccfg) == 1.0 and absf(CarryScript.speed_factor(52.5, 75.0, ccfg) - 0.35) < 0.001, "no slocwdown when comfortable, 35 percent speed at the cap")
+	var mid: float = CarryScript.speed_factor(39.0, 75.0, ccfg)
+	check(mid > 0.35 and mid < 1.0, "slocwdown is smooth in between (%.2f)" % mid)
+
 	print("server item tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

@@ -1,0 +1,36 @@
+{
+	"note": "Carrying (Dave 2026-10-20): weight in kg per single item. by_id wins over by_suffix (an item id that ends with the word); anything else is default_kg. The comfortable load is comfort_kg_per_body_kg x body weight (placeholder for strength). Past it you slow smoothly down to min_speed at hard_cap_ratio x the comfortable load; the server refuses to pick up more than that. load_exertion adds that fraction of work per full comfortable load.",
+	"default_kg": 0.1,
+	"comfort_kg_per_body_kg": 0.35,
+	"hard_cap_ratio": 2.0,
+	"min_speed": 0.35,
+	"load_exertion": 0.3,
+	"by_id": {
+		"stone": 1.0,
+		"stick": 0.15,
+		"log": 15.0,
+		"firewood": 1.5,
+		"plant_fibre": 0.02,
+		"tree_roots": 0.6,
+		"seed_bundle": 0.02,
+		"roast_forage": 0.2,
+		"poultice": 0.15,
+		"bandage": 0.05,
+		"campfire_kit": 0.5,
+		"lean_to_kit": 4.0,
+		"chest_kit": 3.0,
+		"chopping_block_kit": 8.0,
+		"torch": 0.5
+	},
+	"by_suffix": {
+		"berries": 0.05,
+		"nuts": 0.05,
+		"leaves": 0.02,
+		"caps": 0.05,
+		"axe": 1.8,
+		"pick": 2.0,
+		"hammer": 1.5,
+		"spade": 1.2,
+		"knife": 0.3
+	}
+}

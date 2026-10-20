@@ -109,6 +109,7 @@ var _struct_gap_m: float = 2.5
 var _chests: Dictionary = {}        # structure uid -> Inventory (server-owned contents, chests.json)
 var _next_uid: int = 1
 var _vitals_cfg: Dictionary = {}
+var _carry_cfg: Dictionary = {}
 var _vitals: Dictionary = {}        # player key -> {hunger, health} floats
 var _vitals_sent: Dictionary = {}   # peer -> [hunger, health] last whole points sent
 var _exertion: Dictionary = {}      # peer -> smoothed 0..1 from movement
@@ -119,6 +120,7 @@ var _unfit: Dictionary = {}         # item id -> true: yields of poisonous plant
 var _last_use: Dictionary = {}      # peer -> msec of the last structure use
 const CHEST_REACH_M := 4.0
 const VitalsRules := preload("res://src/shared/vitals_rules.gd")
+const CarryRules := preload("res://src/shared/carry_rules.gd")
 const GAME_RATE := 24.0                 # game seconds per real second
 var _slow_in: float = 0.0
 const SLOW_TICK_S := 0.25
@@ -152,6 +154,7 @@ func setup(item_table, store_dir: String) -> void:
 		_struct_gap_m = float(structures.get("gap_m", 2.5))
 
 	_vitals_cfg = VitalsRules.load_config()
+	_carry_cfg = CarryRules.load_config()
 	_load_vitals()
 	_load_inventories()
 	_load_chests()
@@ -231,7 +234,8 @@ func give(peer: int, number: int, count: int) -> int:
 		return 0
 
 	var before: Array = _snapshot(inv)
-	var left: int = inv.add(number, count)
+	var fits: int = _fit(peer, inv, number, count)
+	var left: int = inv.add(number, fits) + (count - fits)
 	_send_changes(peer, inv, before)
 	_dirty = true
 
@@ -668,7 +672,13 @@ func _pickup(peer: int, inv, id: int) -> void:
 	if it.is_empty() or it.has("fire") or it.has("tree") or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(it["pos"]) > PICKUP_M + 2.0:
 		return
 
-	var left: int = inv.add(int(it["number"]), int(it["count"]), int(it.get("wear", 0)))
+	var fits: int = _fit(peer, inv, int(it["number"]), int(it["count"]))
+
+	if fits == 0:
+		_say(peer, "Too heavy to carry any more")
+		return
+
+	var left: int = inv.add(int(it["number"]), fits, int(it.get("wear", 0))) + (int(it["count"]) - fits)
 
 	if left == 0:
 		if it.has("scatter"):
@@ -1622,6 +1632,7 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int) -> vo
 		var number: int = chest.numbers[a]
 		var held_wear: int = chest.wear[a]
 		var amount: int = mini(count, chest.counts[a])
+		amount = _fit(peer, inv, number, amount)
 		var left: int = inv.add(number, amount, held_wear)
 		chest.take_from_slot(a, amount - left)
 		_dirty = true
@@ -1658,6 +1669,20 @@ func _load_chests() -> void:
 # burns body weight, a surplus beyond a full one adds it. The player sees hunger as the stomach's
 # share in percent, health in points and weight in tenths of a kilo.
 
+# How many of `count` more of an item the player can carry before the hard cap (weights.json).
+func _fit(peer: int, inv, number: int, count: int) -> int:
+	if _carry_cfg.is_empty():
+		return count
+
+	var body: float = float(vitals_of(peer).get("weight", 75.0))
+	return CarryRules.fit_count(table.id_of(number), count, CarryRules.carried_kg(inv, table, _carry_cfg), body, _carry_cfg)
+
+
+func carried_kg_of(peer: int) -> float:
+	var inv = inventory_of(peer)
+	return CarryRules.carried_kg(inv, table, _carry_cfg) if inv != null and not _carry_cfg.is_empty() else 0.0
+
+
 func vitals_of(peer: int) -> Dictionary:
 	return _vitals.get(_peer_key.get(peer, ""), {})
 
@@ -1672,6 +1697,12 @@ func exertion_of(peer: int) -> float:
 
 	if Time.get_ticks_msec() < int(_work_until.get(peer, 0)):
 		level = maxf(level, 0.6)
+
+	# A heavy pack is work: up to load_exertion more at a full comfortable load.
+	if not _carry_cfg.is_empty():
+		var body: float = float(vitals_of(peer).get("weight", 75.0))
+		var ratio: float = carried_kg_of(peer) / maxf(CarryRules.comfort_kg(body, _carry_cfg), 1.0)
+		level = minf(level * (1.0 + float(_carry_cfg.get("load_exertion", 0.3)) * minf(ratio, 2.0)), 1.0)
 
 	return level
 

@@ -1744,6 +1744,9 @@ func _move_player(delta: float) -> void:
 	running = forward and Input.is_key_pressed(KEY_SHIFT)
 	var pace: float = RUN_SPEED if running else (JOG_SPEED if jogging else WALK_SPEED)
 
+	if items != null and not flying:
+		pace *= items.speed_factor()
+
 	if test_speed > 0.0 and frames_left > 0:
 		if test_fly:
 			flying = true
