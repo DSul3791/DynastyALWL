@@ -2600,7 +2600,11 @@ func _walk_step() -> void:
 
 	match _walk_phase:
 		0:
-			if connected_msec > 0 and now - connected_msec > 15000:
+			# Wait for ground under the drop point (headless ground sometimes loads late: the walk then never landed
+			# and the sound checks saw 0 footsteps), but not past 45 s.
+			var drop_at: Vector3 = body.global_position + Vector3(0.0, 0.0, 40.0)
+
+			if connected_msec > 0 and now - connected_msec > 15000 and (not is_nan(_ground_below(drop_at)) or now - connected_msec > 45000):
 				flying = false
 				# Away from the spawn, where earlier --dig checks leave a hole.
 				body.global_position += Vector3(0.0, 0.0, 40.0)

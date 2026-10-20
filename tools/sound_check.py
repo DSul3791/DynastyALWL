@@ -31,10 +31,10 @@ NUM = r"(-?\d+(?:\.\d+)?)"
 
 # name, client flags, frames, checks
 SCENARIOS = [
-    ("walk", ["--walk"], 6000, [
+    ("walk", ["--walk"], 9000, [
         ("footsteps played", r"footsteps (\{[^}]*\})", 8, 1000, "sum"),
     ]),
-    ("floor", ["--walk", "--floor=plank"], 6000, [
+    ("floor", ["--walk", "--floor=plank"], 9000, [
         ("plank steps", r"footsteps \{ \"plank\": " + NUM, 8, 1000),
     ]),
     ("rain", ["--weather=rain", "--walk"], 9000, [
