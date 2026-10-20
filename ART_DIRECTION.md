@@ -111,3 +111,9 @@ Weather is set by the north-south zone, every zone has seasons, dry zones stay d
 ## 11. Forest floor objects (owner decision, 2026-10-20)
 
 **[Decided]** First: fallen branches and leaf litter on the forest floor. Later: reeds, driftwood, pebbles and the rest of the Stage 7 list. Built in Art queue item 5 (rock and small details); the litter texture layer from step 2 already covers the base look.
+
+## 12. Dense grass (step 3, build 97)
+
+New painted card textures from `tools/make_grass_textures.py` (fine tapered blades, dark root to light tip, tall grass with seed heads, ground cover as blades splayed flat). More cards: 4 cover, 4 short, 2 tall per ground sample, and more ground samples per tier (3, 4, 5, 6 per 6 m side, was 2, 3, 4, 5). Blades have back-light so the sun glows through them. The ground shader tints grassy ground (`lw[0] * cover`) to the same meadow green so no dark soil shows between tufts and far ground matches near.
+**Cost per tier** (cards, estimated from the cloud test clearing and radius; real frame time still needs a playtest): Low about 1.3 k cards at 14 m (was about 0.6 k), Medium about 6 k at 24 m, High about 20 k at 34 m (22 k in the test clearing), Ultra about 55 k at 48 m. Low stays at 14 m. Alpha-to-coverage was not used: it needs MSAA, which Low cannot afford; Medium and up smooth the card edges with TAA.
+Renders: `art/grass_before.png`, `art/grass_after.png`.
