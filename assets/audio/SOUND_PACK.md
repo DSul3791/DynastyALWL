@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **151 slots: 17 recorded, 125 generated placeholders, 9 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **156 slots: 17 recorded, 130 generated placeholders, 9 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -28,9 +28,11 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 2 | `cave_drip` | generated | 5 | cave_sounds.gd: water drops in caves and tunnels | 3 to 6 single water drips in a stone room, 1 to 2 s each |
 | 2 | `container_put` | generated | 2 | placed_sounds.gd: something put into a chest | 2 short wood clacks with a little rustle |
 | 2 | `container_take` | generated | 2 | placed_sounds.gd: something taken out of a chest | 2 short rustles and a wood clack |
+| 2 | `cook_sizzle` | generated | 2 | fire_sounds.gd cook(): food laid on the embers (heard when a roast appears in the bag at a fire) | 2 to 3 recordings of meat or food sizzling on embers, 3 s |
 | 2 | `craft_done` | generated | 3 | item_sounds.gd: a craft finished | 3 wooden knock and small chime cues |
 | 2 | `dig_rock` | generated | 3 | dig_sounds.gd: breaking rock | 3 pickaxe on rock or rock breaking sounds |
 | 2 | `dig_soil` | generated | 3 | dig_sounds.gd: digging dirt and humus | 3 spade or shovel scoops into earth |
+| 2 | `fire_fuel` | generated | 2 | fire_sounds.gd fuel(): a stick or log laid on a fire (V key) | 2 recordings of wood put on a fire with a flare of crackles, 1 s |
 | 2 | `fire_large` | generated | 1 | fire_sounds.gd: a big fire (loop) | a bonfire loop with roar, crackle and pops, 10 to 15 s |
 | 2 | `fire_light` | generated | 3 | fire_sounds.gd: a fire catches (one-shot) | 3 fire-lighting sounds: strike and soft whoomph, 1 to 2 s |
 | 2 | `fire_out` | generated | 3 | fire_sounds.gd: a fire put out (one-shot) | 3 water or rain extinguishing a fire, hiss and steam, 2 to 3 s |
@@ -89,6 +91,9 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 3 | `dig_water` | generated | 3 | dig_sounds.gd: water pouring into a new hole | 3 water splashing into a pit |
 | 3 | `door_close` | generated | 2 | interior_sounds.gd: a door closes (object) | 2 to 3 wooden door closes with a thud and latch |
 | 3 | `door_open` | generated | 2 | interior_sounds.gd: a door opens (object) | 2 to 3 wooden door opens with latch and hinge creak |
+| 3 | `drink_gulp` | generated | 2 | item_sounds.gd eat("drink"): two swallows | 2 recordings of drinking and swallowing, 1 s |
+| 3 | `eat_crunch` | generated | 3 | item_sounds.gd eat(): a crisp bite and chews (roast, nuts, roots) | 2 to 3 recordings of biting and chewing something crisp, 1 s |
+| 3 | `eat_soft` | generated | 3 | item_sounds.gd eat(): soft chewing (berries, greens) | 2 to 3 recordings of chewing something soft, 1 s |
 | 3 | `flame_lantern` | generated | 1 | flame_sounds.gd: a lantern in the hand (quiet loop) | a lantern flame behind glass, 10 s loop |
 | 3 | `fox_bark` | generated | 2 | creature_sounds.gd: a fox's bark (idle, alert), a night sound | 2 to 3 red fox barks, 1 to 3 per clip |
 | 3 | `fox_scream` | generated | 2 | creature_sounds.gd: a vixen's scream (threat), a night sound | 2 to 3 red fox screams, about 1 s |

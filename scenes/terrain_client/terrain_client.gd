@@ -181,6 +181,9 @@ var _tree_sync_left: float = 0.0
 var _item_sync_left: float = 0.0
 var test_levels: bool = false
 var test_placed: bool = false
+var test_cooking: bool = false
+var test_wear: bool = false
+var _test_wear_t: float = -1.0
 var test_distant: bool = false
 var test_craft_sounds: bool = false
 var _test_craft_t: float = -1.0
@@ -335,6 +338,10 @@ func _ready() -> void:
 			test_craft_sounds = true
 		elif argument == "--distant":
 			test_distant = true
+		elif argument == "--wear-sounds":
+			test_wear = true
+		elif argument == "--cooking":
+			test_cooking = true
 		elif argument == "--placed":
 			test_placed = true
 		elif argument == "--levels":
@@ -1599,6 +1606,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			items.cook_nearest()
 		elif event.keycode == KEY_V and items != null:
 			items.fuel_nearest()
+			sound.itemfx.fuel_pressed()
 		elif event.keycode == KEY_E and items != null:
 			if not items.pick_up_nearest():
 				harvest.tap()
@@ -2008,6 +2016,38 @@ func _process(delta: float) -> void:
 		for metres in [300.0, 1000.0, 2500.0]:
 			sound.weather.strike(metres)
 			print("Terrain client: thunder %s" % sound.weather.last_thunder)
+
+	# Headless check: an axe in the bag is worn out client-side, then mended; the tool break and repair sounds follow.
+	if test_wear and now - connected_msec > 18000:
+		if _test_wear_t < 0.0:
+			_test_wear_t = 0.0
+			net.inventory_action.rpc_id(1, NetScript.ACT_ADMIN_GIVE, items.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
+
+		var before_wear: float = _test_wear_t
+		_test_wear_t += get_process_delta_time()
+		var axe_slot: int = items.inventory.numbers.find(items.table.number_of("stone_axe"))
+
+		if before_wear < 3.0 and _test_wear_t >= 3.0 and axe_slot >= 0:
+			items.inventory.wear[axe_slot] = int(items.table.entry("stone_axe").get("durability", 40))
+
+		if before_wear < 5.0 and _test_wear_t >= 5.0 and axe_slot >= 0:
+			items.inventory.wear[axe_slot] = 0
+
+		if _test_wear_t > 7.0:
+			test_wear = false
+			print("Terrain client: wear sounds %s, last %s" % [str(sound.placed.played), sound.placed.last])
+
+	# Headless check: the cooking and eating sounds play (sizzle and fuel at a spot beside the player, then each way of eating).
+	if test_cooking and now - connected_msec > 18000:
+		test_cooking = false
+		var spot: Vector3 = body.global_position + Vector3(1.5, 0.0, 0.0)
+		sound.fire.cook(spot)
+		sound.fire.fuel(spot)
+
+		for kind in ["crunch", "soft", "drink", "roast_forage", "berries"]:
+			sound.itemfx.eat(kind)
+
+		print("Terrain client: cooking sounds: sizzle %d, fuel %d, eaten %d, last fire %s, last item %s" % [sound.fire.cook_played, sound.fire.fuel_played, sound.itemfx.eat_played, sound.fire.last, sound.itemfx.last])
 
 	# Headless check: every placed-thing hook once, then a synthetic chest row appears and vanishes beside the player.
 	if test_placed and now - connected_msec > 18000:

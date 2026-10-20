@@ -1017,6 +1017,46 @@
    "priority": 3
   },
   {
+   "name": "cook_sizzle",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "fire_sounds.gd cook(): food laid on the embers (heard when a roast appears in the bag at a fire)",
+   "to_supply": "2 to 3 recordings of meat or food sizzling on embers, 3 s",
+   "priority": 2
+  },
+  {
+   "name": "fire_fuel",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "fire_sounds.gd fuel(): a stick or log laid on a fire (V key)",
+   "to_supply": "2 recordings of wood put on a fire with a flare of crackles, 1 s",
+   "priority": 2
+  },
+  {
+   "name": "eat_crunch",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "item_sounds.gd eat(): a crisp bite and chews (roast, nuts, roots)",
+   "to_supply": "2 to 3 recordings of biting and chewing something crisp, 1 s",
+   "priority": 3
+  },
+  {
+   "name": "eat_soft",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "item_sounds.gd eat(): soft chewing (berries, greens)",
+   "to_supply": "2 to 3 recordings of chewing something soft, 1 s",
+   "priority": 3
+  },
+  {
+   "name": "drink_gulp",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "item_sounds.gd eat(\"drink\"): two swallows",
+   "to_supply": "2 recordings of drinking and swallowing, 1 s",
+   "priority": 3
+  },
+  {
    "name": "place_leanto",
    "state": "generated",
    "variants": 2,
