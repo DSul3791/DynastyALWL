@@ -1,0 +1,79 @@
+# Sound pack manifest
+
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **51 slots: 17 recorded, 30 generated placeholders, 4 empty.**
+
+Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
+
+## Sounds to supply, most wanted first
+
+| Priority | Slot | State | Variants | Where it plays | What to supply |
+|---|---|---|---|---|---|
+| 1 | `bird_chirp` | generated | 3 | ambient_life.gd: meadow, water-edge and forest, the most frequent call | 3 to 5 short sparrow-like chirps, 0.5 s |
+| 1 | `cricket_chirp` | generated | 3 | ambient_life.gd: meadow and water edge at dusk and night, summer and autumn | 2 to 3 cricket chirps runs, 2 s (one species) |
+| 1 | `rain_heavy` | generated | 1 | weather_sounds.gd: heavy rain and storm loop | A heavy downpour loop, seamless |
+| 1 | `rain_light` | generated | 1 | weather_sounds.gd: drizzle and light rain loop | A light rain on open ground loop, seamless |
+| 1 | `thunder` | generated | 3 | weather_sounds.gd: a mid-distance thunder roll | 2 to 3 rolling thunder claps, 5 to 9 s |
+| 1 | `water_brook` | generated | 1 | water_sounds.gd: a fast shallow stream, positional loop | A babbling brook loop, seamless |
+| 1 | `water_river` | generated | 1 | water_sounds.gd: a wide slow river, positional loop | A broad river flow loop, seamless |
+| 1 | `wind_gust` | generated | 1 | sound_stage.gd: the swelling gust layer on top of the bed | A leaf-and-grass rustling wind loop with soft swells, seamless |
+| 1 | `wind_low` | generated | 1 | sound_stage.gd: the steady wind bed, louder with height and open ground, softer in trees | A calm open-field wind loop, 20 s or more, seamless, no gusts (low rumble layer) |
+| 2 | `bird_trill` | generated | 3 | ambient_life.gd: meadow bird, by day | 2 to 3 trilling songs, about 1 s |
+| 2 | `bird_whistle` | generated | 3 | ambient_life.gd: forest bird, by day | 2 to 4 clear songbird whistles, 1 to 2 s |
+| 2 | `cave_drip` | generated | 5 | cave_sounds.gd: water drops in caves and tunnels | 3 to 6 single water drips in a stone room, 1 to 2 s each |
+| 2 | `dig_rock` | generated | 3 | dig_sounds.gd: breaking rock | 3 pickaxe on rock or rock breaking sounds |
+| 2 | `dig_soil` | generated | 3 | dig_sounds.gd: digging dirt and humus | 3 spade or shovel scoops into earth |
+| 2 | `owl_hoot` | generated | 3 | ambient_life.gd: forest at night | 2 to 3 owl hoots (tawny or barred), 2 to 3 s |
+| 2 | `rain_leaves` | generated | 1 | weather_sounds.gd: rain pattering on leaves under trees | Rain on forest canopy loop, seamless |
+| 2 | `thunder_far` | generated | 3 | weather_sounds.gd: a far strike (over 1800 m): a low grumble | 2 to 3 distant low rumbles, 8 to 12 s |
+| 2 | `thunder_near` | generated | 3 | weather_sounds.gd: a close strike (under 500 m): sharp crack and thud | 2 to 3 close, sharp thunder cracks, 2 to 4 s |
+| 2 | `water_fall` | generated | 1 | water_sounds.gd: a waterfall roar | A waterfall loop, seamless |
+| 2 | `water_pond` | generated | 1 | water_sounds.gd: gentle lapping at a pond shore | A calm lake shore lapping loop, seamless |
+| 2 | `wind_storm` | generated | 1 | weather_sounds.gd: gale howl in storms and blizzards | A howling gale loop, seamless |
+| 3 | `bed_forest` | empty | 0 | ambient_life.gd (optional bed): a quiet forest background that fades in with forest cover | A quiet forest background loop, 30 s or more, no clear single calls |
+| 3 | `bed_highland` | empty | 0 | ambient_life.gd (optional bed): highland wind and space | A thin high-altitude background loop |
+| 3 | `bed_meadow` | empty | 0 | ambient_life.gd (optional bed): a meadow background | A meadow background loop (insects, distant birds), seamless |
+| 3 | `bed_water` | empty | 0 | ambient_life.gd (optional bed): a water-edge background | A quiet marsh or lake edge background loop |
+| 3 | `bird_feebee` | generated | 3 | ambient_life.gd: forest bird, by day | 2 chickadee-style two-note calls |
+| 3 | `dig_clay` | generated | 3 | dig_sounds.gd: digging clay, mud and peat | 3 wet sticky digs |
+| 3 | `dig_gravel` | generated | 3 | dig_sounds.gd: digging gravel | 3 gravel shovelling sounds |
+| 3 | `dig_ore` | generated | 3 | dig_sounds.gd: digging out ore (metal clink on rock) | 3 pick on ore sounds |
+| 3 | `dig_sand` | generated | 3 | dig_sounds.gd: digging sand and snow | 3 sand shovelling sounds |
+| 3 | `dig_water` | generated | 3 | dig_sounds.gd: water pouring into a new hole | 3 water splashing into a pit |
+| 3 | `hawk_screech` | generated | 3 | ambient_life.gd: highland, by day | 2 to 3 hawk screeches |
+| 3 | `rain_water` | generated | 1 | weather_sounds.gd: rain falling on ponds and rivers near the player | Rain on a lake surface loop, seamless |
+| 3 | `woodpecker` | generated | 3 | ambient_life.gd: forest, by day | 2 to 3 woodpecker drumming runs, about 1 s |
+| 4 | `frog_croak` | recorded | 6 | ambient_life.gd: ponds and rivers, spring to autumn, more at night and in rain | have: Dave's frogs (mostly small trillers); a deep bullfrog croak is still missing |
+| 5 | `crow_alarm` | recorded | 3 | ambient_life.gd: alarm(at): a crow scolds when the player runs through crow country, and the danger warning hook | have: Dave's angry crow |
+| 5 | `crow_caw` | recorded | 7 | ambient_life.gd: forest and highland, by day | have: Dave's crow calls |
+| 5 | `fish_splash` | recorded | 3 | ambient_life.gd: a fish jumps at the water edge, rare | have: Dave's fish jumping clip, played whole |
+| 5 | `tree_frog_peep` | recorded | 6 | ambient_life.gd: water edge and forest, spring to autumn | have: Dave's frogs (short peeps) |
+| 5 | `wing_flap` | recorded | 5 | ambient_life.gd: flush(at): a bird bursts out of cover and flies off | have: Dave's wing flaps |
+
+## Footsteps (recorded left and right, `step_<ground>_<left|right>_N`)
+
+| Slot | State | Files | Ground |
+|---|---|---|---|
+| `step_grass` | recorded | 6 | short grass ground |
+| `step_grass_tall` | recorded | 6 | tall grass |
+| `step_bushes` | recorded | 6 | walking through shrubs |
+| `step_dirt` | recorded | 6 | soil, forest soil, clay, stony ground |
+| `step_leaves` | recorded | 6 | leaf litter on forest humus |
+| `step_mud` | recorded | 6 | mud, peat, wet ground, soaked ground in rain |
+| `step_sand` | recorded | 6 | sand, beach, salt flat, ash |
+| `step_snow` | recorded | 6 | snow |
+| `step_stone` | recorded | 6 | rock, outcrops, ore, ice |
+| `step_gravel` | recorded | 6 | gravel, soft rock |
+| `step_water` | recorded | 6 | wading in water |
+
+## Planned (hooks come with jobs 14 and 15; supplying them early is fine)
+
+| Slot | Where it will play | What to supply |
+|---|---|---|
+| `hit_axe_wood / hit_axe_stone / hit_axe_soil` | axe blows on wood (felling), stone and soil | 2 to 3 each, 0.3 to 0.6 s |
+| `hit_pick_wood / hit_pick_stone / hit_pick_soil` | pickaxe blows | 2 to 3 each |
+| `hit_hammer_wood / hit_hammer_stone / hit_hammer_soil` | hammer blows (building, chiselling) | 2 to 3 each |
+| `hit_spade_wood / hit_spade_stone / hit_spade_soil` | spade strikes and scrapes | 2 to 3 each |
+| `town_bell` | a town bell tolling by position | 1 to 2 bell strikes with long ring |
+| `town_hammering` | a smith or builder working nearby | a loop or 3 to 4 short hammering runs |
+| `town_fire` | fire crackle at hearths and forges | a seamless fire crackle loop |
+| `town_crowd` | a crowd murmur in a busy square | a seamless murmur loop, no clear words |
