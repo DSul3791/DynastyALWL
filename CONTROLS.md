@@ -21,6 +21,9 @@ Tracks what the controls are now and what is planned. Update it whenever a contr
 | F8 | GPU probe: stand still, press once; after about 20 s it lists what each piece (grass, trees, ground, sea, shadows, SSAO, glow, fog, anti-aliasing) costs in GPU ms; also saved to gpu_probe.txt in the game data folder |
 | J | Float jitter test: fly to the next far-from-origin spot (admin test, build 68) |
 | Esc | Options menu: Resume, Settings (quality, Resolution 1280x720 to 1920x1080, Window: windowed or fullscreen windowed, VSync, sound volume 100/75/50/25 % or off), Advanced (Clear saved ground, which takes effect at once), Quit game. Esc again resumes |
+| I | Open or close the inventory (click a slot, then another to move; Drop stack / Drop one). Esc closes it first |
+| E | Pick up the nearest item on the ground within 3 m |
+| ] | Admin test tool: give 10 each of stone, stick, plant fibre and log |
 
 Gait rules:
 - Minecraft style: double-tap W toggles jogging on, and Shift adds running while held.

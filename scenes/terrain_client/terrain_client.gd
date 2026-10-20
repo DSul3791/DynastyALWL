@@ -159,13 +159,11 @@ var _walk_stats: Dictionary = {}
 var test_dig: bool = false
 var test_swim: bool = false
 var test_ui: bool = false
-<<<<<<< HEAD
+var test_items: bool = false
 var test_creatures: bool = false
 var _test_creature_at: int = 0
 var _test_creature_step: int = 0
 var _sound_creature_at: int = -1
-=======
-var test_items: bool = false
 var _quality_cued: int = -1
 var _test_ui_next: int = 0
 var _test_ui_step: int = 0
@@ -278,12 +276,10 @@ func _ready() -> void:
 			test_swim = true
 		elif argument == "--ui":
 			test_ui = true
-<<<<<<< HEAD
-		elif argument == "--creatures":
-			test_creatures = true
-=======
 		elif argument == "--items":
 			test_items = true
+		elif argument == "--creatures":
+			test_creatures = true
 
 	net.welcome_received.connect(_on_welcome)
 	net.blocks_received.connect(_on_blocks)
