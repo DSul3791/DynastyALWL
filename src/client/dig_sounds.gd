@@ -104,6 +104,7 @@ func _play(name: String, at: Vector3, db: float) -> void:
 	player.unit_size = 8.0
 	player.max_distance = MAX_DISTANCE_M + 40.0
 	add_child(player)
+	player.add_to_group("world_sounds")
 	player.global_position = at
 	player.finished.connect(player.queue_free)
 	player.play()

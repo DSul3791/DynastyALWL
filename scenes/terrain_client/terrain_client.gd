@@ -195,6 +195,7 @@ var weather: Dictionary = {}          # the weather here and now (WeatherScript.
 var _weather_next_msec: int = 0
 var game_clock = GameClockScript.new()   # copy of the server's game clock, set at the welcome
 var _sound_test_at: int = -1          # Esc > Settings "Sound test time"; -1 follows the game clock
+var _sound_hit_at: int = -1
 var _sound_weather_at: int = -1         # Esc > Settings "Sound test weather"; -1 follows the weather state
 var _water_dirty: bool = false        # the server said the water moved; not asked for yet
 var _water_asked_msec: int = 0
@@ -1005,6 +1006,12 @@ func _build_menu(layer: CanvasLayer) -> void:
 			sound.ambient.conditions["hour"] = pick[1]
 
 		_menu_note.text = "Nature sounds now play as: %s (a test setting; the sky does not follow)" % pick[0])
+	_menu_button(settings, "Sound test: tool hit", func():
+		_sound_hit_at = (_sound_hit_at + 1) % (sound.hits.TOOLS.size() * sound.hits.MATERIALS.size())
+		var tool: String = sound.hits.TOOLS[_sound_hit_at / sound.hits.MATERIALS.size()]
+		var material: String = sound.hits.MATERIALS[_sound_hit_at % sound.hits.MATERIALS.size()]
+		sound.hits.hit(tool, material, body.global_position + -camera.global_transform.basis.z * 2.0, 1.0)
+		_menu_note.text = "Tool hit: %s on %s (press again for the next; a test of the sounds, no tools exist yet)" % [tool, material])
 	_menu_button(settings, "Sound test weather: change", func():
 		var kinds: Array = sound.weather.KINDS.keys()
 		_sound_weather_at += 1
@@ -1596,6 +1603,8 @@ func _process(delta: float) -> void:
 	hud.text += "\n3D %dx%d of window %dx%d (scale %.2f)%s, %s, %s" % [int(win.x * _render_scale), int(win.y * _render_scale), win.x, win.y, _render_scale, " (embedded: editor owns the window)" if display.embedded() else "", RenderingServer.get_video_adapter_name(), RenderingServer.get_current_rendering_driver_name()]
 	hud.text += "\nlast step: " + sound.last_step
 	hud.text += "\nsound budget: " + sound.budget_text()
+	hud.text += "\n" + sound.wind_text()
+	hud.text += "\nmuffled sounds: %d filtered, %d behind hills" % [sound.occlusion.filtered, sound.occlusion.occluded]
 	hud.text += "\ncave: enclosure %.2f, drips %d" % [sound.cave.enclosure, sound.cave.drips_played]
 	hud.text += "\nlast dig sound: %s" % sound.dig.last_dig
 	hud.text += "\nweather sounds: %s (rain %.1f, wind %.1f, thunder %d)" % [sound.weather.kind, sound.weather.rain, sound.weather.wind, sound.weather.thunders_played]
@@ -1634,8 +1643,11 @@ func _process(delta: float) -> void:
 			print("Terrain client: grass %d tufts in %d cells (radius %.0f m)" % [grass.tufts, grass.cells_built, grass.radius_m])
 			print("Terrain client: water sounds: %s" % sound.water.summary)
 			print("Terrain client: nature calls %s, zones %s" % [str(sound.ambient.calls_played), str(sound.ambient.weights)])
+			print("Terrain client: tool hits %d, last %s" % [sound.hits.hits_played, sound.hits.last_hit])
+			print("Terrain client: muffled sounds: %d filtered, %d behind hills" % [sound.occlusion.filtered, sound.occlusion.occluded])
 			print("Terrain client: cave enclosure %.2f, drips %d" % [sound.cave.enclosure, sound.cave.drips_played])
 			print("Terrain client: dig sounds %s, last %s" % [str(sound.dig.digs_played), sound.dig.last_dig])
+			print("Terrain client: ", sound.wind_text())
 			print("Terrain client: sound budget: %s, %d loads refused" % [sound.budget_text(), sound.refused_loads])
 			print("Terrain client: weather %s rain %.2f wind %.2f calls %.2f thunders %d" % [sound.weather.kind, sound.weather.rain, sound.weather.wind, sound.weather.calls, sound.weather.thunders_played])
 			print("Terrain client: sound: footsteps %s, grass swishes %d, last ground %s, gust %.2f" % [str(sound.steps_played), sound.swishes_played, sound.surface, sound.gust])

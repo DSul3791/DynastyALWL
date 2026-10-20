@@ -957,9 +957,9 @@ func _stream_depth(depth: float, width: float, flow_factor: float = 1.0) -> floa
 
 
 # A brook from a world head pond's lip down to its river head, along `path` (pond end
-# first, sample coordinates: the fall line the pond was found along). Its bed falls evenly
-# from just under the lip to the head (it depends only on the path, so every tile cuts the
-# same brook); where the land dips below that it runs on the land.
+# first, sample coordinates: the fall line the pond was found along). Its bed is its depth
+# under the land (it depends only on the path and the land, so every tile cuts the same
+# brook) and falls to the ledge edge, where the water pours over.
 func _cut_brook_path(
 	carved: PackedFloat32Array, land: PackedFloat32Array, pond_centre: Vector2, radius_m: float, rim: float, path: PackedVector2Array,
 	head_bed: float, width: float, depth: float, slope: float, strength: float, best_flow: PackedFloat32Array
@@ -969,26 +969,18 @@ func _cut_brook_path(
 	var outlet_min_width: float = float(_rules.get("head_pond_outlet_width_m", 24.0))
 	var outlet_blend: float = maxf(float(_rules.get("head_pond_outlet_blend_m", 60.0)), 1.0)
 	var reach: float = (width * 0.5 + (depth + 1.0) / slope) / spacing_m + 1.0
-	var total: float = 0.0
-	var last_bed: float = start_bed
+	var lip_drop: float = float(_rules.get("brook_lip_drop_m", 5.0))
+	var points: PackedVector2Array = PackedVector2Array()
+	var lands: PackedFloat32Array = PackedFloat32Array()
 
-	for k in range(path.size() - 1):
-		total += path[k].distance_to(path[k + 1])
-
-	if total <= 0.0:
-		return
-
-	var done: float = 0.0
-
+	# The points along the path, one sample apart, outside the pond bowl and inside the frame.
 	for k in range(path.size() - 1):
 		var a: Vector2 = path[k]
 		var b: Vector2 = path[k + 1]
-		var length: float = a.distance_to(b)
-		var steps: int = maxi(int(ceil(length)), 1)
+		var steps: int = maxi(int(ceil(a.distance_to(b))), 1)
 
 		for n in range(steps + 1):
 			var point: Vector2 = a.lerp(b, float(n) / float(steps))
-			var along: float = (done + length * float(n) / float(steps)) / total
 
 			# Inside the pond the bowl is deeper than the brook anyway.
 			if point.distance_to(pond_centre) * spacing_m < radius_m * 0.8:
@@ -997,25 +989,55 @@ func _cut_brook_path(
 			if point.x < -reach or point.y < -reach or point.x > float(samples - 1) + reach or point.y > float(samples - 1) + reach:
 				continue
 
-			# Owner report (2026-10-20): the brook ran in a slot cut straight through the edge
-			# of the pond's plateau instead of going over the cliff. Its bed is never more than
-			# its own depth under the land, so it crosses the flat in a shallow channel and
-			# falls down the face as a waterfall.
-			var bed: float = lerpf(start_bed, end_bed, along)
-			bed = maxf(bed, minf(_bilinear(land, point) - depth, start_bed))
-			# A brook never climbs: its bed only falls from the pond, so water cannot pool in it.
-			bed = minf(bed, last_bed)
-			last_bed = bed
+			points.append(point)
+			lands.append(_bilinear(land, point))
 
-			# Owner report (2026-10-20): the outlet showed a half bridge of land across it.
-			# Leaving the pond the channel is at least outlet_min_width_m across (a whole
-			# river's width, not a one-cell trickle), narrowing to the brook's own width
-			# over outlet_blend_m.
-			var from_edge: float = maxf(point.distance_to(pond_centre) * spacing_m - radius_m, 0.0)
-			var open_width: float = lerpf(maxf(width, outlet_min_width), width, clampf(from_edge / outlet_blend, 0.0, 1.0))
-			_stamp_at(carved, point, open_width, depth, bed, slope, strength, best_flow)
+	# Owner (2026-10-20): the brook is cut deep (its full depth under the land, never above the
+	# river it feeds) all the way to the ledge edge, then drops over it as a waterfall. Its bed
+	# only falls. A ledge is where the land drops lip_drop_m within two steps; from there the
+	# bed holds its height, so it is carved only where land stands above it and the water
+	# pours off the lip (the river below carries it down). Rock hardness plays no part: the
+	# brook is cut after the land is made, wherever its path goes.
+	var last_bed: float = start_bed
+	var past_lip: bool = false
+	var brook_fall: float = float(_rules.get("brook_min_fall", 0.004))
+	var remaining: PackedFloat32Array = PackedFloat32Array()
+	remaining.resize(points.size())
+	var run: float = 0.0
 
-		done += length
+	for k in range(points.size() - 1, -1, -1):
+		remaining[k] = run
+
+		if k > 0:
+			run += points[k].distance_to(points[k - 1]) * spacing_m
+
+	for k in range(points.size()):
+		var bed: float = last_bed
+
+		if k > 0:
+			# The bed always falls, at least min fall per metre and at least the share of the
+			# drop still to come over the length still to go, so it reaches the river head's
+			# bed at the end with no level stretch before a steep drop.
+			var step_m: float = points[k].distance_to(points[k - 1]) * spacing_m
+			var share: float = (last_bed - end_bed) * step_m / maxf(remaining[k - 1], step_m)
+			bed = maxf(last_bed - maxf(brook_fall * step_m, share), end_bed)
+
+		if not past_lip:
+			if k + 2 < points.size() and lands[k] - lands[k + 2] > lip_drop:
+				past_lip = true
+			else:
+				bed = minf(bed, maxf(lands[k] - depth, end_bed))
+
+		last_bed = bed
+		var point: Vector2 = points[k]
+
+		# Owner report (2026-10-20): the outlet showed a half bridge of land across it.
+		# Leaving the pond the channel is at least outlet_min_width_m across (a whole
+		# river's width, not a one-cell trickle), narrowing to the brook's own width
+		# over outlet_blend_m.
+		var from_edge: float = maxf(point.distance_to(pond_centre) * spacing_m - radius_m, 0.0)
+		var open_width: float = lerpf(maxf(width, outlet_min_width), width, clampf(from_edge / outlet_blend, 0.0, 1.0))
+		_stamp_at(carved, point, open_width, depth, bed, slope, strength, best_flow)
 
 
 # Levels the ground to `height` out to `radius_m` from `centre` (sample coordinates), then

@@ -1,0 +1,510 @@
+{
+ "slots": [
+  {
+   "name": "wind_low",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "sound_stage.gd: the steady wind bed, louder with height and open ground, softer in trees",
+   "to_supply": "A calm open-field wind loop, 20 s or more, seamless, no gusts (low rumble layer)",
+   "priority": 1
+  },
+  {
+   "name": "wind_gust",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "sound_stage.gd: the swelling gust layer on top of the bed",
+   "to_supply": "A leaf-and-grass rustling wind loop with soft swells, seamless",
+   "priority": 1
+  },
+  {
+   "name": "wind_storm",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "weather_sounds.gd: gale howl in storms and blizzards",
+   "to_supply": "A howling gale loop, seamless",
+   "priority": 2
+  },
+  {
+   "name": "rain_light",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "weather_sounds.gd: drizzle and light rain loop",
+   "to_supply": "A light rain on open ground loop, seamless",
+   "priority": 1
+  },
+  {
+   "name": "rain_heavy",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "weather_sounds.gd: heavy rain and storm loop",
+   "to_supply": "A heavy downpour loop, seamless",
+   "priority": 1
+  },
+  {
+   "name": "rain_leaves",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "weather_sounds.gd: rain pattering on leaves under trees",
+   "to_supply": "Rain on forest canopy loop, seamless",
+   "priority": 2
+  },
+  {
+   "name": "rain_water",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "weather_sounds.gd: rain falling on ponds and rivers near the player",
+   "to_supply": "Rain on a lake surface loop, seamless",
+   "priority": 3
+  },
+  {
+   "name": "thunder",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "weather_sounds.gd: a mid-distance thunder roll",
+   "to_supply": "2 to 3 rolling thunder claps, 5 to 9 s",
+   "priority": 1
+  },
+  {
+   "name": "thunder_near",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "weather_sounds.gd: a close strike (under 500 m): sharp crack and thud",
+   "to_supply": "2 to 3 close, sharp thunder cracks, 2 to 4 s",
+   "priority": 2
+  },
+  {
+   "name": "thunder_far",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "weather_sounds.gd: a far strike (over 1800 m): a low grumble",
+   "to_supply": "2 to 3 distant low rumbles, 8 to 12 s",
+   "priority": 2
+  },
+  {
+   "name": "water_brook",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "water_sounds.gd: a fast shallow stream, positional loop",
+   "to_supply": "A babbling brook loop, seamless",
+   "priority": 1
+  },
+  {
+   "name": "water_river",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "water_sounds.gd: a wide slow river, positional loop",
+   "to_supply": "A broad river flow loop, seamless",
+   "priority": 1
+  },
+  {
+   "name": "water_pond",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "water_sounds.gd: gentle lapping at a pond shore",
+   "to_supply": "A calm lake shore lapping loop, seamless",
+   "priority": 2
+  },
+  {
+   "name": "water_fall",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "water_sounds.gd: a waterfall roar",
+   "to_supply": "A waterfall loop, seamless",
+   "priority": 2
+  },
+  {
+   "name": "bird_whistle",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "ambient_life.gd: forest bird, by day",
+   "to_supply": "2 to 4 clear songbird whistles, 1 to 2 s",
+   "priority": 2
+  },
+  {
+   "name": "bird_feebee",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "ambient_life.gd: forest bird, by day",
+   "to_supply": "2 chickadee-style two-note calls",
+   "priority": 3
+  },
+  {
+   "name": "bird_trill",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "ambient_life.gd: meadow bird, by day",
+   "to_supply": "2 to 3 trilling songs, about 1 s",
+   "priority": 2
+  },
+  {
+   "name": "bird_chirp",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "ambient_life.gd: meadow, water-edge and forest, the most frequent call",
+   "to_supply": "3 to 5 short sparrow-like chirps, 0.5 s",
+   "priority": 1
+  },
+  {
+   "name": "crow_caw",
+   "state": "recorded",
+   "variants": 7,
+   "used_in": "ambient_life.gd: forest and highland, by day",
+   "to_supply": "have: Dave's crow calls",
+   "priority": 5
+  },
+  {
+   "name": "crow_alarm",
+   "state": "recorded",
+   "variants": 3,
+   "used_in": "ambient_life.gd: alarm(at): a crow scolds when the player runs through crow country, and the danger warning hook",
+   "to_supply": "have: Dave's angry crow",
+   "priority": 5
+  },
+  {
+   "name": "wing_flap",
+   "state": "recorded",
+   "variants": 5,
+   "used_in": "ambient_life.gd: flush(at): a bird bursts out of cover and flies off",
+   "to_supply": "have: Dave's wing flaps",
+   "priority": 5
+  },
+  {
+   "name": "woodpecker",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "ambient_life.gd: forest, by day",
+   "to_supply": "2 to 3 woodpecker drumming runs, about 1 s",
+   "priority": 3
+  },
+  {
+   "name": "owl_hoot",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "ambient_life.gd: forest at night",
+   "to_supply": "2 to 3 owl hoots (tawny or barred), 2 to 3 s",
+   "priority": 2
+  },
+  {
+   "name": "hawk_screech",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "ambient_life.gd: highland, by day",
+   "to_supply": "2 to 3 hawk screeches",
+   "priority": 3
+  },
+  {
+   "name": "cricket_chirp",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "ambient_life.gd: meadow and water edge at dusk and night, summer and autumn",
+   "to_supply": "2 to 3 cricket chirps runs, 2 s (one species)",
+   "priority": 1
+  },
+  {
+   "name": "frog_croak",
+   "state": "recorded",
+   "variants": 6,
+   "used_in": "ambient_life.gd: ponds and rivers, spring to autumn, more at night and in rain",
+   "to_supply": "have: Dave's frogs (mostly small trillers); a deep bullfrog croak is still missing",
+   "priority": 4
+  },
+  {
+   "name": "tree_frog_peep",
+   "state": "recorded",
+   "variants": 6,
+   "used_in": "ambient_life.gd: water edge and forest, spring to autumn",
+   "to_supply": "have: Dave's frogs (short peeps)",
+   "priority": 5
+  },
+  {
+   "name": "fish_splash",
+   "state": "recorded",
+   "variants": 3,
+   "used_in": "ambient_life.gd: a fish jumps at the water edge, rare",
+   "to_supply": "have: Dave's fish jumping clip, played whole",
+   "priority": 5
+  },
+  {
+   "name": "bed_forest",
+   "state": "empty",
+   "variants": 0,
+   "used_in": "ambient_life.gd (optional bed): a quiet forest background that fades in with forest cover",
+   "to_supply": "A quiet forest background loop, 30 s or more, no clear single calls",
+   "priority": 3
+  },
+  {
+   "name": "bed_meadow",
+   "state": "empty",
+   "variants": 0,
+   "used_in": "ambient_life.gd (optional bed): a meadow background",
+   "to_supply": "A meadow background loop (insects, distant birds), seamless",
+   "priority": 3
+  },
+  {
+   "name": "bed_water",
+   "state": "empty",
+   "variants": 0,
+   "used_in": "ambient_life.gd (optional bed): a water-edge background",
+   "to_supply": "A quiet marsh or lake edge background loop",
+   "priority": 3
+  },
+  {
+   "name": "bed_highland",
+   "state": "empty",
+   "variants": 0,
+   "used_in": "ambient_life.gd (optional bed): highland wind and space",
+   "to_supply": "A thin high-altitude background loop",
+   "priority": 3
+  },
+  {
+   "name": "cave_drip",
+   "state": "generated",
+   "variants": 5,
+   "used_in": "cave_sounds.gd: water drops in caves and tunnels",
+   "to_supply": "3 to 6 single water drips in a stone room, 1 to 2 s each",
+   "priority": 2
+  },
+  {
+   "name": "dig_soil",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "dig_sounds.gd: digging dirt and humus",
+   "to_supply": "3 spade or shovel scoops into earth",
+   "priority": 2
+  },
+  {
+   "name": "dig_clay",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "dig_sounds.gd: digging clay, mud and peat",
+   "to_supply": "3 wet sticky digs",
+   "priority": 3
+  },
+  {
+   "name": "dig_sand",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "dig_sounds.gd: digging sand and snow",
+   "to_supply": "3 sand shovelling sounds",
+   "priority": 3
+  },
+  {
+   "name": "dig_gravel",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "dig_sounds.gd: digging gravel",
+   "to_supply": "3 gravel shovelling sounds",
+   "priority": 3
+  },
+  {
+   "name": "dig_rock",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "dig_sounds.gd: breaking rock",
+   "to_supply": "3 pickaxe on rock or rock breaking sounds",
+   "priority": 2
+  },
+  {
+   "name": "dig_ore",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "dig_sounds.gd: digging out ore (metal clink on rock)",
+   "to_supply": "3 pick on ore sounds",
+   "priority": 3
+  },
+  {
+   "name": "hit_axe_wood",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: an axe blow on wood (felling, chopping)",
+   "to_supply": "3 axe chops into a log or tree",
+   "priority": 2
+  },
+  {
+   "name": "hit_axe_stone",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: an axe blow on stone",
+   "to_supply": "3 axe strikes on rock",
+   "priority": 4
+  },
+  {
+   "name": "hit_axe_soil",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: an axe blow on soil",
+   "to_supply": "3 axe thuds into earth",
+   "priority": 4
+  },
+  {
+   "name": "hit_pick_wood",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: a pickaxe blow on wood",
+   "to_supply": "3 pick strikes into wood",
+   "priority": 4
+  },
+  {
+   "name": "hit_pick_stone",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: a pickaxe blow on rock (mining)",
+   "to_supply": "3 pickaxe strikes on rock",
+   "priority": 2
+  },
+  {
+   "name": "hit_pick_soil",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: a pickaxe blow on soil",
+   "to_supply": "3 pick strikes into hard earth",
+   "priority": 3
+  },
+  {
+   "name": "hit_hammer_wood",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: a hammer blow on wood (building)",
+   "to_supply": "3 hammer knocks on timber, or nails driven",
+   "priority": 2
+  },
+  {
+   "name": "hit_hammer_stone",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: a hammer blow on stone (chiselling, smithing)",
+   "to_supply": "3 hammer clanks on stone",
+   "priority": 3
+  },
+  {
+   "name": "hit_hammer_soil",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: a hammer blow on soil (driving stakes)",
+   "to_supply": "3 mallet thumps into earth",
+   "priority": 4
+  },
+  {
+   "name": "hit_spade_wood",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: a spade strike on wood",
+   "to_supply": "3 spade knocks and scrapes on wood",
+   "priority": 4
+  },
+  {
+   "name": "hit_spade_stone",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: a spade scraping on stone",
+   "to_supply": "3 spade scrapes on stone",
+   "priority": 4
+  },
+  {
+   "name": "hit_spade_soil",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: a spade strike into soil",
+   "to_supply": "3 spade thuds into earth",
+   "priority": 3
+  },
+  {
+   "name": "dig_water",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "dig_sounds.gd: water pouring into a new hole",
+   "to_supply": "3 water splashing into a pit",
+   "priority": 3
+  }
+ ],
+ "steps": [
+  {
+   "name": "step_grass",
+   "state": "recorded",
+   "variants": 6,
+   "used_in": "short grass ground"
+  },
+  {
+   "name": "step_grass_tall",
+   "state": "recorded",
+   "variants": 6,
+   "used_in": "tall grass"
+  },
+  {
+   "name": "step_bushes",
+   "state": "recorded",
+   "variants": 6,
+   "used_in": "walking through shrubs"
+  },
+  {
+   "name": "step_dirt",
+   "state": "recorded",
+   "variants": 6,
+   "used_in": "soil, forest soil, clay, stony ground"
+  },
+  {
+   "name": "step_leaves",
+   "state": "recorded",
+   "variants": 6,
+   "used_in": "leaf litter on forest humus"
+  },
+  {
+   "name": "step_mud",
+   "state": "recorded",
+   "variants": 6,
+   "used_in": "mud, peat, wet ground, soaked ground in rain"
+  },
+  {
+   "name": "step_sand",
+   "state": "recorded",
+   "variants": 6,
+   "used_in": "sand, beach, salt flat, ash"
+  },
+  {
+   "name": "step_snow",
+   "state": "recorded",
+   "variants": 6,
+   "used_in": "snow"
+  },
+  {
+   "name": "step_stone",
+   "state": "recorded",
+   "variants": 6,
+   "used_in": "rock, outcrops, ore, ice"
+  },
+  {
+   "name": "step_gravel",
+   "state": "recorded",
+   "variants": 6,
+   "used_in": "gravel, soft rock"
+  },
+  {
+   "name": "step_water",
+   "state": "recorded",
+   "variants": 6,
+   "used_in": "wading in water"
+  }
+ ],
+ "planned": [
+  {
+   "name": "town_bell",
+   "used_in": "a town bell tolling by position",
+   "to_supply": "1 to 2 bell strikes with long ring"
+  },
+  {
+   "name": "town_hammering",
+   "used_in": "a smith or builder working nearby",
+   "to_supply": "a loop or 3 to 4 short hammering runs"
+  },
+  {
+   "name": "town_fire",
+   "used_in": "fire crackle at hearths and forges",
+   "to_supply": "a seamless fire crackle loop"
+  },
+  {
+   "name": "town_crowd",
+   "used_in": "a crowd murmur in a busy square",
+   "to_supply": "a seamless murmur loop, no clear words"
+  }
+ ]
+}
