@@ -7,7 +7,7 @@ extends Node
 # Every SCAN_SEC seconds the water squares (8 m grid, the same lookups the water
 # drawing and the footsteps use) around the player are read into a small grid.
 # A wet square is sorted by how much water lies around it and how steeply the
-# surface drops: a drop of FALL_DROP_M or more between neighbours is a waterfall,
+# surface drops: a drop of FALL_DROP_M or more between neighbours is rapids (louder), real waterfalls come from the water chunk fall list,
 # 16 or more wet squares in the 5 x 5 around it a pond, 8 or more a river, else a
 # brook. The nearest square of each kind becomes a source, with a second one of
 # the same kind at least SEPARATION_M further along when there is room, and the
@@ -204,9 +204,8 @@ func _classify_row(j: int) -> void:
 
 		var kind: String = "brook"
 
-		if drop >= FALL_DROP_M:
-			kind = "fall"
-		elif around >= POND_AROUND:
+		# Waterfalls come from the water chunk's fall columns (_fall_candidates); a steep reach on the grid is rapids.
+		if around >= POND_AROUND:
 			kind = "pond"
 		elif around >= RIVER_AROUND:
 			kind = "river"
@@ -221,6 +220,7 @@ func _classify_row(j: int) -> void:
 
 func _choose() -> void:
 	var candidates: Array = _candidates
+	candidates.append_array(_fall_candidates(_origin))
 	candidates.sort_custom(func(a, b): return a["score"] < b["score"])
 	var chosen: Array = []
 
@@ -239,9 +239,29 @@ func _choose() -> void:
 			chosen.append(candidate)
 
 	for candidate in chosen:
-		candidate["depth"] = _depth_at(candidate["at"])
+		candidate["depth"] = _depth_at(candidate["at"]) if candidate["kind"] != "fall" else -1.0
 
 	_assign(chosen, _origin)
+
+
+# The waterfalls the water chunks carry (flora.fall_list(): top, base, pool, flow, width in world coordinates):
+# the roar sits at the landing point, louder with the width and the height of the drop.
+func _fall_candidates(origin: Vector3) -> Array:
+	var found: Array = []
+
+	if _flora == null or not _flora.has_method("fall_list"):
+		return found
+
+	for fall in _flora.fall_list():
+		var base: Vector3 = fall["base"]
+		var at: Vector3 = Vector3(base.x, maxf(float(fall["pool"]), base.y), base.z)
+		var distance: float = Vector2(at.x - origin.x, at.z - origin.z).length()
+
+		if distance <= float(KINDS["fall"]["reach"]):
+			found.append({"kind": "fall", "at": at, "distance": distance, "drop": float(fall["top"].y) - base.y, "speed": -1.0,
+				"width": float(fall["width"]), "score": distance / float(KINDS["fall"]["reach"])})
+
+	return found
 
 
 func _assign(chosen: Array, origin: Vector3) -> void:
@@ -340,6 +360,10 @@ func _aim(slot: Dictionary, candidate: Dictionary, origin: Vector3) -> void:
 		db += clampf(float(candidate["drop"]) / 0.5, 0.0, 1.0) * 4.0     # steeper babbles louder
 	elif candidate["kind"] == "river":
 		db += clampf((float(candidate["drop"]) - 0.1) / 0.5, 0.0, 1.0) * 5.0    # a steep reach (rapids) is louder; a calm one stays quiet
+
+	if candidate["kind"] == "fall":
+		db += clampf(3.0 * log(maxf(float(candidate.get("width", 4.0)), 0.5) / 4.0) / log(2.0), -5.0, 4.0)    # wider falls roar louder
+		db += clampf((float(candidate["drop"]) - 3.0) / 10.0, 0.0, 1.0) * 3.0                                # and taller ones
 
 	var speed: float = float(candidate.get("speed", -1.0))
 

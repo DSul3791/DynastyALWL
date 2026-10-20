@@ -36,6 +36,7 @@ const WaterSoundsScript := preload("res://src/client/water_sounds.gd")
 const AUDIO_DIR := "res://assets/audio/"
 const RECORDED_DIR := "res://assets/audio/recorded/"
 # Audio budget per quality tier Low, Mid, High (ARCHITECTURE_BUDGET.md section 9).
+const WaterVolume := preload("res://src/shared/water_volume.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
 const Presets := preload("res://src/client/sound_presets.gd")   # the per-tier mixer limits (voices, memory, layers)
 const VOICES := 6                       # footstep and swish players, reused in turn
@@ -150,6 +151,7 @@ var weather                             # WeatherSounds: rain, gale, thunder, sn
 var occlusion                           # SoundOcclusion: hills and forest muffle distant sounds
 var hits                                # HitSounds: axe, pick, hammer, spade on wood, stone, soil (hit, hit_ground)
 var fire                                # FireSounds: campfire loops by size, lit, put out, rain sizzle (set_fires)
+var ground_below: Callable = Callable()   # terrain_client sets this: ground height under a point (NAN when not loaded)
 var itemfx                              # ItemSounds: inventory cues (watch(items) every frame)
 var spear                               # SpearSounds: jab, throw, flight, hits on wood, stone, soil, flesh
 var interior                            # InteriorSounds: inside a building, doors, chests, furniture (set_inside, object)
@@ -652,6 +654,14 @@ func resource_at(point: Vector3) -> int:
 # The water surface height above a point (NAN when there is no water there).
 func water_level_at(point: Vector3) -> float:
 	return _flora.water_surface_at(point.x, point.z)
+
+
+# Water depth over the ground at a point by the shared WaterVolume rules (0 under MIN_DEPTH_M: a film is wet ground).
+func water_depth_at(point: Vector3) -> float:
+	var surface: float = water_level_at(point)
+	var ground: float = ground_below.call(point) if ground_below.is_valid() else NAN
+	var depth: float = WaterVolume.depth(surface, ground)
+	return depth if depth >= WaterVolume.MIN_DEPTH_M else 0.0
 
 
 # The ore id showing in the rock under the soles, 0 when none.

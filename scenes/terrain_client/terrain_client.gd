@@ -464,6 +464,7 @@ func _on_welcome(info: Dictionary) -> void:
 	sound = SoundStageScript.new()
 	sound.name = "Sound"
 	root.add_child(sound)
+	sound.ground_below = _ground_below
 	sound.setup(terrain, flora, grass)
 
 	if test_gear:
@@ -2043,7 +2044,7 @@ func _process(delta: float) -> void:
 			print("Terrain client: fall columns: %d meshes drawn (cap %d per chunk)" % [flora.falls_drawn, flora.fall_cap])
 			print("Terrain client: cover index %d tree crowns in %d chunks" % [flora.cover.trees, flora.cover.chunk_count()])
 			print("Terrain client: grass %d tufts in %d cells (radius %.0f m)" % [grass.tufts, grass.cells_built, grass.radius_m])
-			print("Terrain client: water sounds: %s" % sound.water.summary)
+			print("Terrain client: water sounds: %s (%d falls known)" % [sound.water.summary, flora.fall_list().size()])
 			print("Terrain client: nature calls %s, zones %s" % [str(sound.ambient.calls_played), str(sound.ambient.weights)])
 			print("Terrain client: fire sounds: %d lit, %d put out, %d loops, last %s" % [sound.fire.lit_played, sound.fire.out_played, sound.fire.loops_playing, sound.fire.last])
 			print("Terrain client: item sounds %d, last %s" % [sound.itemfx.played, sound.itemfx.last])

@@ -78,6 +78,11 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 		level = 0.0                                              # the sea
 
 	var immersion: float = level - feet.y if not is_nan(level) else -1.0
+
+	# A film of water is wet ground, not a pool (the shared WaterVolume rule, same as the drawing).
+	if immersion > 0.0 and feet.y >= 0.0 and _stage.water_depth_at(feet) <= 0.0:
+		immersion = -1.0
+
 	_step(delta, immersion, Vector2(body.velocity.x, body.velocity.z).length(), body.velocity.y, underwater)
 
 
