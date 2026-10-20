@@ -656,6 +656,28 @@ func water_surface_at(x: float, z: float) -> float:
 	return total / weight if weight > 0.5 else NAN
 
 
+# The speed of the water current (m/s) at the nearest wet grid point, -1 where there is no water
+# or the chunk carries no current. Cheap: one chunk lookup and one point (used by the water sounds).
+func water_speed_at(x: float, z: float) -> float:
+	var chunk: Vector2i = Vector2i(int(floor(x / chunk_m)), int(floor(z / chunk_m)))
+	var grid: Dictionary = _chunks.get(chunk, {}).get("grid", {})
+
+	if int(grid.get("wet", 0)) == 0:
+		return -1.0
+
+	var vel: PackedFloat32Array = grid.get("vel", PackedFloat32Array())
+	var spacing: float = float(grid["spacing"])
+	var count: int = int(grid["count"])
+	var i: int = clampi(int(round((x - float(chunk.x) * chunk_m) / spacing)), 0, count - 1)
+	var j: int = clampi(int(round((z - float(chunk.y) * chunk_m) / spacing)), 0, count - 1)
+	var n: int = j * count + i
+
+	if vel.size() != count * count * 2 or is_nan(float(grid["levels"][n])):
+		return -1.0
+
+	return Vector2(vel[n * 2], vel[n * 2 + 1]).length()
+
+
 func drop_chunk(chunk: Vector2i) -> void:
 	_ease.erase(chunk)
 	var entry: Dictionary = _chunks.get(chunk, {})

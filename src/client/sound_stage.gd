@@ -166,7 +166,7 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	water = WaterSoundsScript.new()
 	water.name = "Water"
 	add_child(water)
-	water.setup(_flora)
+	water.setup(_flora, _terrain)
 	weather = WeatherScript.new()
 	weather.name = "Weather"
 	add_child(weather)
