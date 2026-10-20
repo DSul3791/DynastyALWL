@@ -19,6 +19,12 @@ const PUBLISH_TICKS := 15
 const RUN_SECONDS := 7200.0       # simulated time to run after each change (rivers settle to the new flow), then the water rests
 const START_SECONDS := 21600.0    # a dry start runs this long on its own, so the springs fill the land
 const START_PUBLISH_TICKS := 40
+# Owner report (2026-10-20, build 130 bake): the water poured over the pond lip and down the
+# cliff, but as a film a few cm to 20 cm deep, thinner than the draw rules (water_sim.gd
+# WET_M 0.12 m, STEEP_WET_M 0.6 m on drops), so the lip and the fall showed as dry dirt.
+# On the baked channel (brook, river, fall) any water this deep is drawn.
+const CHANNEL_WET_M := 0.01
+const CHANNEL_LIFT_M := 0.12     # drawn this far above the bed so a film shows over it
 
 var data
 var rate: float = 1.0
@@ -113,6 +119,11 @@ func _run() -> void:
 		sim.wake_all_wet()
 
 	var since: int = 0
+	var channel: PackedInt32Array = PackedInt32Array()
+
+	for k in range(data.water_class.size()):
+		if data.water_class[k] != 0 and data.heights[k] > 0.0:
+			channel.append(k)
 
 	while true:
 		_mutex.lock()
@@ -147,7 +158,21 @@ func _run() -> void:
 
 		if since >= (START_PUBLISH_TICKS if _dry_start else PUBLISH_TICKS) or _budget <= 0.0:
 			since = 0
-			var levels: PackedFloat32Array = sim.level_map()
+			var levels: PackedFloat32Array = _show_channel(sim, sim.level_map(), channel)
 			_mutex.lock()
 			_pending = levels
 			_mutex.unlock()
+
+
+# Draws thin running water on the channel cells the sim's own draw rules leave out.
+static func _show_channel(sim, levels: PackedFloat32Array, channel: PackedInt32Array) -> PackedFloat32Array:
+	if levels.size() != sim.ground.size():
+		return levels
+
+	var depth: PackedFloat32Array = sim.get_depth()
+
+	for k in channel:
+		if is_nan(levels[k]) and depth[k] >= CHANNEL_WET_M:
+			levels[k] = sim.ground[k] + maxf(depth[k], CHANNEL_LIFT_M)
+
+	return levels
