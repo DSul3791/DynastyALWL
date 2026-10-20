@@ -27,10 +27,16 @@ const SoundStage := preload("res://src/client/sound_stage.gd")
 const GENERATED_DIR := "res://assets/audio/weather/"
 const RECORDED_DIR := "res://assets/audio/recorded/weather/"
 
+# The strike event for the sky (Art direction): `lightning(at, distance_m)` fires at the moment of
+# the flash, `at` being the strike's place relative to the player; the thunder sounds after
+# distance / 343 m/s. strike(distance_m) makes one on demand (a script, a test, the weather system).
 signal lightning(at: Vector3, distance_m: float)
 
 const FADE_PER_SEC := 0.15              # about 7 s from none to full
-const THUNDER_EVERY := [14.0, 45.0]
+const THUNDER_EVERY := [14.0, 45.0]     # at the full storm value; a weaker storm waits longer
+const THUNDER_NEAR_M := 500.0           # closer than this: sharp crack and thud
+const THUNDER_FAR_M := 1800.0           # farther than this: a low grumble
+const THUNDER_MAX_DELAY_SEC := 10.0
 const SPEED_OF_SOUND := 343.0
 
 # kind: rain (0 to 1), wind (0 to 1), hush (0 to 1, quiets the nature layer), thunder (0 or 1),
@@ -57,6 +63,7 @@ var calls: float = 1.0
 var wet: float = 0.0
 var thunders_played: int = 0
 var last_thunder: String = ""
+var storm_level: float = 1.0            # the world's storm value (0 to 1) behind the current kind
 
 var _stage                              # SoundStage
 var _ambient                            # AmbientLife (zone weights)
@@ -114,6 +121,7 @@ func apply_state(state: Dictionary) -> void:
 	if forced:
 		return
 
+	storm_level = float(state.get("storm", 0.0))
 	var snow: float = float(state.get("snow", 0.0))
 	var storm: float = float(state.get("storm", 0.0))
 	var rain_level: float = float(state.get("rain", 0.0))
@@ -204,25 +212,41 @@ func _thunder(delta: float) -> void:
 	if _thunder_in > 0.0:
 		return
 
-	_thunder_in = _rng.randf_range(float(THUNDER_EVERY[0]), float(THUNDER_EVERY[1])) / maxf(intensity, 0.3)
-	var list: Array = _variants("thunder")
+	var strength: float = clampf(1.0 if forced else storm_level, 0.2, 1.0) * maxf(intensity, 0.3)
+	_thunder_in = _rng.randf_range(float(THUNDER_EVERY[0]), float(THUNDER_EVERY[1])) / strength
+	# More strikes land close in a fierce storm: distance leans nearer as the storm grows.
+	strike(_rng.randf_range(250.0, 2800.0) * pow(_rng.randf(), 0.5 + 0.5 * (1.0 - strength)))
+
+
+# One lightning strike `distance_m` away (in a random direction unless `angle` is given):
+# emits `lightning` now and plays the thunder after the sound has travelled. Near strikes crack,
+# far ones grumble. Returns false when no thunder sound exists.
+func strike(distance_m: float, angle: float = -1.0) -> bool:
+	var sound_name: String = "thunder_near" if distance_m < THUNDER_NEAR_M else ("thunder_far" if distance_m > THUNDER_FAR_M else "thunder")
+	var list: Array = _variants(sound_name)
 
 	if list.is_empty():
-		return
+		list = _variants("thunder")
 
-	var distance: float = _rng.randf_range(250.0, 2500.0)
+	if list.is_empty():
+		return false
+
 	var voice: AudioStreamPlayer = AudioStreamPlayer.new()
 	voice.stream = list[_rng.randi_range(0, list.size() - 1)]
 	voice.bus = "Weather"
-	voice.volume_db = THUNDER_DB - distance / 400.0 + _rng.randf_range(-2.0, 1.0)
+	voice.volume_db = THUNDER_DB - distance_m / 400.0 + (3.0 if distance_m < THUNDER_NEAR_M else 0.0) + _rng.randf_range(-2.0, 1.0)
 	voice.pitch_scale = _rng.randf_range(0.9, 1.1)
 	add_child(voice)
 	voice.finished.connect(voice.queue_free)
-	var angle: float = _rng.randf() * TAU
-	lightning.emit(Vector3(cos(angle) * distance, 0.0, sin(angle) * distance), distance)
-	_pending.append([minf(distance / SPEED_OF_SOUND, 7.0), voice])
+
+	if angle < 0.0:
+		angle = _rng.randf() * TAU
+
+	lightning.emit(Vector3(cos(angle) * distance_m, 0.0, sin(angle) * distance_m), distance_m)
+	_pending.append([minf(distance_m / SPEED_OF_SOUND, THUNDER_MAX_DELAY_SEC), voice])
 	thunders_played += 1
-	last_thunder = "%.0f m" % distance
+	last_thunder = "%s %.0f m" % [sound_name, distance_m]
+	return true
 
 
 func _variants(name: String) -> Array:

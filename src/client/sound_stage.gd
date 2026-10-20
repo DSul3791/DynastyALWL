@@ -200,7 +200,7 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	water.update(delta, body, underwater)
 	weather.update(delta, body, underwater)
 	dig.update(delta)
-	cave.update(delta, body)
+	cave.update(delta, body, flying)
 	_time += delta
 	gust = clampf(0.5 + 0.8 * _gust_noise.get_noise_1d(_time), 0.0, 1.0)
 	var position: Vector3 = body.global_position

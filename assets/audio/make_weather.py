@@ -113,6 +113,35 @@ def thunder(rng, seconds):
     return np.tanh(x / np.max(np.abs(x)) * 1.6) * 0.8
 
 
+def thunder_near(rng, seconds):
+    """A close strike: a sharp, wide crack and a heavy thud, a short tumble."""
+    n = int(seconds * SR)
+    t = np.arange(n) / SR
+    crack = shaped_noise(rng, n, lambda f: highpass(f, 150, 2) * lowpass(f, 5500, 1)) * np.exp(-t / 0.09)
+    thud = shaped_noise(rng, n, lambda f: lowpass(f, 250, 3) * highpass(f, 30, 2)) * np.exp(-t / 0.5)
+    tumble = shaped_noise(rng, n, lambda f: lowpass(f, 400, 2) * highpass(f, 40, 2)) * np.exp(-t / 1.1) * (0.5 + 0.5 * np.sin(2 * np.pi * 1.3 * t + rng.uniform(0, 6)))
+    x = crack / np.std(crack) * 1.0 + thud / np.std(thud) * 0.9 + tumble / np.std(tumble) * 0.5
+    x = x - np.mean(x)
+    x[:int(0.002 * SR)] *= np.linspace(0, 1, int(0.002 * SR))
+    x[-int(0.4 * SR):] *= np.linspace(1, 0, int(0.4 * SR))
+    return np.tanh(x / np.max(np.abs(x)) * 1.8) * 0.85
+
+
+def thunder_far(rng, seconds):
+    """A distant strike: only a long, low grumble, no crack."""
+    n = int(seconds * SR)
+    t = np.arange(n) / SR
+    rumble = shaped_noise(rng, n, lambda f: lowpass(f, 140, 3) * highpass(f, 25, 2))
+    rolls = np.zeros(n)
+
+    for k in range(rng.integers(3, 6)):
+        rolls += np.exp(-((t - rng.uniform(0.5, seconds * 0.7)) / rng.uniform(0.8, 2.0)) ** 2) * rng.uniform(0.4, 1.0)
+
+    x = rumble / np.std(rumble) * (0.15 + rolls) * np.minimum(t / 0.6, 1.0) * np.exp(-t / (seconds * 0.5))
+    x[-int(0.6 * SR):] *= np.linspace(1, 0, int(0.6 * SR))
+    return np.tanh(x / np.max(np.abs(x)) * 1.4) * 0.8
+
+
 def main():
     rng = np.random.default_rng(20261020)
     for name, make, seconds in (("rain_light", rain_light, 14), ("rain_heavy", rain_heavy, 14),
@@ -121,7 +150,11 @@ def main():
         write_ogg(name, make(rng, seconds * SR))
     for v, seconds in enumerate((7.0, 9.0, 6.0)):
         write_ogg("thunder_%d" % v, thunder(rng, seconds))
-    print("Wrote 8 weather sounds to %s" % OUT)
+    for v in range(3):
+        write_ogg("thunder_near_%d" % v, thunder_near(rng, 3.5))
+        write_ogg("thunder_far_%d" % v, thunder_far(rng, 11.0))
+
+    print("Wrote 14 weather sounds to %s" % OUT)
 
 
 if __name__ == "__main__":
