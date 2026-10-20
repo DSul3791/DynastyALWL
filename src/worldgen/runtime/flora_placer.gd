@@ -339,8 +339,11 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 				var steep: float = smoothstep(STEEP_FROM, STEEP_TO, slope)
 
 				if item["kind"] == KIND_TREE and item["shape"] in ["conifer", "broadleaf"] and groves.is_empty():
-					var ridge: float = _ridge_factor(data, x, z, y)
-					var mult: float = lerpf(0.25, 1.0, ridge) if item["shape"] == "conifer" else lerpf(1.0, 0.25, ridge)
+					# Firs hold the ridges and the ground below a mountain, hardwoods the lowlands, with a
+					# smooth change between (owner, 2026-10-20: 80 to 90% firs below the mountain,
+					# reversing gradually toward the fertile low ground).
+					var mountain: float = maxf(_ridge_factor(data, x, z, y), _mountain_near(data, x, z, y))
+					var mult: float = lerpf(MIX_MINOR, 1.0, mountain) if item["shape"] == "conifer" else lerpf(1.0, MIX_HARD_AT_MOUNTAIN, mountain)
 
 					if item["shape"] == "broadleaf":
 						mult = minf(mult, lerpf(1.0, 0.05, steep))      # hardwoods give way on the slopes
@@ -463,6 +466,11 @@ const TIER_PLANT := 4
 const STAND_BASE := 49152   # stand cells' item numbers start here (main grid cells stay below)
 const STEEP_FROM := 0.20    # ground slope (rise over run) where hardwoods start to thin
 const STEEP_TO := 0.60      # and where they are nearly gone
+const MIX_MINOR := 0.12     # the evergreens' chance multiplier in the lowlands (tables give about 86% hardwoods there)
+const MIX_HARD_AT_MOUNTAIN := 0.05   # the hardwoods' chance multiplier below a mountain (about 88% firs there)
+const MOUNTAIN_RISE_FROM := 25.0    # high ground within MOUNTAIN_RING_M standing this far above the spot starts to count as "below a mountain"
+const MOUNTAIN_RISE_TO := 120.0     # and this far above counts fully
+const MOUNTAIN_RING_M := [200.0, 450.0]
 const LEDGE_MAX_SLOPE := 0.30   # a ledge: the surface within 1.5 m is flatter than this
 const LEDGE_CHANCE := 0.3       # share of ledge spots that grow something
 const MONTANE_PATCH_M := 30.0   # size of the squares that are or are not a low evergreen patch
@@ -698,6 +706,19 @@ func _ridge_factor(data, x: float, z: float, y: float) -> float:
 		total += data.height_at(x + cos(a) * 90.0, z + sin(a) * 90.0)
 
 	return smoothstep(-6.0, 14.0, y - total / 8.0)
+
+
+# 0 in the lowlands, 1 on the ground below a mountain: how far the highest ground on rings 200 and
+# 450 m around the spot stands above it, so the mix changes gradually with distance from the mountain.
+func _mountain_near(data, x: float, z: float, y: float) -> float:
+	var top: float = y
+
+	for r in MOUNTAIN_RING_M:
+		for k in range(8):
+			var a: float = TAU * float(k) / 8.0
+			top = maxf(top, data.height_at(x + cos(a) * r, z + sin(a) * r))
+
+	return smoothstep(MOUNTAIN_RISE_FROM, MOUNTAIN_RISE_TO, top - y)
 
 
 # A stable 0..1 number per spot and species, so the woods look the same every visit.
