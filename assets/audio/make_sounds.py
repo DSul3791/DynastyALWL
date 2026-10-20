@@ -310,7 +310,7 @@ def wind_loop(rng, seconds, layer):
             # A soft airy hush, not a roar: little below 150 Hz.
             cut = 500 + 500 * g
             # Mostly lulls: a steady hush sounded like a river (owner 2026-10-20).
-            gain = pink * lowpass(f, cut, 2) * highpass(f, 150, 2) * (0.04 + 0.96 * g ** 3)
+            gain = pink * lowpass(f, cut, 2) * highpass(f, 150, 2) * (0.25 + 0.75 * g ** 3)
         else:
             # Leaves and grass stirring: airy, faint whistle only at the peaks.
             center = 1500 + 900 * g
@@ -318,7 +318,7 @@ def wind_loop(rng, seconds, layer):
             for j, c in enumerate(whistle_cycles):
                 wf = 700 + 260 * j + 120 * np.sin(2 * np.pi * c * x + phases[j])
                 gain = gain + 0.08 * pink * band(f, wf, 0.04) * g ** 3
-            gain = gain * (0.05 + 0.95 * g ** 2.5)
+            gain = gain * (0.22 + 0.78 * g ** 2.5)
         frame = np.fft.irfft(spec * gain, win) * window
         out[idx] += frame
     out /= 1.5  # hann squared at quarter hop sums to 1.5

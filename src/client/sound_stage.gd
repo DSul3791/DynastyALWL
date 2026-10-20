@@ -134,8 +134,8 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	# Owner 2026-10-19, twice: still a windstorm. Now a faint breeze that only rises a little in gusts.
 	# Build 51: the low layer still sounded like surf nearby; it is lower again.
 	# Build 79: still like a river; lower again and the loops now have deep lulls between the swells.
-	_wind_low.volume_db = linear_to_db(0.0015 + 0.006 * strength)
-	_wind_gust.volume_db = linear_to_db(0.001 + 0.012 * pow(strength, 1.6))
+	_wind_low.volume_db = linear_to_db(0.0035 + 0.006 * strength)
+	_wind_gust.volume_db = linear_to_db(0.0025 + 0.012 * pow(strength, 1.6))
 	_wind_filter.cutoff_hz = lerpf(1500.0, 7000.0, clampf(strength - 0.2 * _shelter, 0.0, 1.0))
 	_muffle.cutoff_hz = 500.0 if underwater else 20000.0
 
