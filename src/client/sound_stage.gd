@@ -21,6 +21,7 @@ const AmbientScript := preload("res://src/client/ambient_life.gd")
 const WeatherScript := preload("res://src/client/weather_sounds.gd")
 const DigScript := preload("res://src/client/dig_sounds.gd")
 const CaveScript := preload("res://src/client/cave_sounds.gd")
+const SplashScript := preload("res://src/client/rain_splashes.gd")
 const HitScript := preload("res://src/client/hit_sounds.gd")
 const TownScript := preload("res://src/client/town_sounds.gd")
 const SwimScript := preload("res://src/client/swim_sounds.gd")
@@ -201,6 +202,7 @@ var creatures                           # CreatureSounds: deer, rabbit, fox, wol
 var ui                                  # UiSounds: menu click, toggle and quality cues (play(name))
 var swim                                # SwimSounds: splash, strokes, diving, the hum under water (driven by the body)
 var town                                # TownSounds: fire, hammering, crowd, bell hooks (set_sources, ring_bell)
+var splashes                           # RainSplashes: single rain drops near the player, by ground
 var cave                                # CaveSounds: reverb, muffling and drips under rock
 var dig                                 # DigSounds: the sound of what is dug (dug(center, radius, listener))
 var _sphere: PhysicsShapeQueryParameters3D
@@ -342,6 +344,10 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	swim.name = "Swim"
 	add_child(swim)
 	swim.setup(self)
+	splashes = SplashScript.new()
+	splashes.name = "Splashes"
+	add_child(splashes)
+	splashes.setup(self)
 	hits = HitScript.new()
 	hits.name = "Hits"
 	add_child(hits)
@@ -415,6 +421,7 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	water.update(delta, body, underwater)
 	insects.update(delta, underwater)
 	weather.update(delta, body, underwater)
+	splashes.update(delta, body, underwater)
 	dig.update(delta)
 	cave.update(delta, body, flying)
 	town.update(delta, body)
@@ -979,6 +986,32 @@ func _trunks_near(body: CharacterBody3D, radius: float) -> int:
 
 # What the rain falls on under the player, for the rain loops: "snow" when snow lies, "stone" on rock, a
 # built stone, plank or path floor, "mud" on mud and soaked loose soil, "litter" on leaf litter, else "soft".
+# The ground a rain drop near the player lands on, for rain_splashes.gd: stone, gravel, grass, dirt, sand, mud or litter;
+# "" while snow lies (no drops).
+func splash_ground(body: CharacterBody3D) -> String:
+	if weather.ground_snow >= SNOW_COVER:
+		return ""
+
+	if floor_surface in ["slab", "plank", "path"]:
+		return "stone"
+
+	var feet: Vector3 = body.global_position - Vector3(0.0, FEET_M, 0.0)
+	var soil: int = _ground_under(feet)
+
+	if soil < 0 or soil >= Layout.MATERIAL_ROCK:
+		return "stone"
+
+	var surface: String = str(SOIL_SURFACE.get(soil, "dirt"))
+
+	if surface == "mud" or (surface in ["dirt", "leaves"] and weather.ground_wet >= RAIN_SOAK):
+		return "mud"
+
+	if surface == "dirt" and _grass != null and _grass.grass_at(feet.x, feet.z, soil).x > 0.3:
+		return "grass"
+
+	return {"leaves": "litter", "stone": "stone", "sand": "sand", "gravel": "gravel"}.get(surface, "dirt")
+
+
 func rain_ground(body: CharacterBody3D) -> String:
 	if weather.ground_snow >= SNOW_COVER:
 		return "snow"

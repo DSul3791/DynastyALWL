@@ -208,6 +208,7 @@ var test_stepfx: bool = false          # --stepfx: wade, then dry steps: squelch
 var test_swing: bool = false           # --swing-test: tool whooshes (job 71)
 var test_insects: bool = false         # --insect-test: summer insect bed levels by season and hour (job 72)
 var _lake_calm_laps: int = 0
+var test_splash: bool = false          # --splash-test: single rain drops per ground (job 83)
 var test_reverb: bool = false          # --reverb-test: the one cave reverb on bus World, by tier and enclosure (job 81)
 var test_air: bool = false             # --air-test: distance and cover dulling by band bus (job 82)
 var test_flush: bool = false           # --flush-test: variety of the bird take-off sounds (Dave 2026-10-20)
@@ -424,6 +425,8 @@ func _ready() -> void:
 			test_night = true
 		elif argument == "--step-levels":
 			test_step_levels = true
+		elif argument == "--splash-test":
+			test_splash = true
 		elif argument == "--reverb-test":
 			test_reverb = true
 		elif argument == "--air-test":
@@ -2632,6 +2635,71 @@ func _process(delta: float) -> void:
 		sound.insects.level = 0.9
 		sound.insects.update(0.1)
 		print("Terrain client: insect check: summer noon %s, summer 2h %s, winter noon %s, spring noon %s, sunrise edge %s, sunset edge %s, rain %s, playing %d, lake noon %s, lake 2h %s, lake day %s" % (levels + [sound.insects.voices_playing(), lake_noon, lake_night, str(lake_cricket)]))
+
+	if test_splash and now - connected_msec > 18000 and now >= _test_fire_at:
+		_test_fire_at = now + 10000000
+		var sp = sound.splashes
+		sound.set_quality(2)
+		var at_p: Vector3 = body.global_position + Vector3(3.0, 0.0, 0.0)
+		var played: int = 0
+
+		for g in ["stone", "gravel", "grass", "dirt", "sand", "mud", "litter", "water"]:
+			played += 1 if sp.drop(g, at_p, 1.0) else 0
+			sp.test_release()
+
+		var unknown: bool = sp.drop("lava", at_p, 1.0)
+		var burst: int = 0
+
+		for n in 40:
+			burst += 1 if sp.drop("stone", at_p, 1.0) else 0
+
+		var live_now: int = sp.voices_playing()
+		var cap_now: int = sp.cap()
+		sp.test_release()
+		var weather = sound.weather
+		weather.rain = 1.0
+		weather.covered = 0.0
+		weather.roofed = 0.0
+		weather.ground_snow = 0.0
+		sp.ground = "stone"
+		sp._scan_left = 100.0
+		var before: int = sp.drops_played
+		sound.cave.enclosure = 0.0
+
+		for n in 50:
+			sp.update(0.1, body, false)
+			sp.test_release()
+
+		var open_drops: int = sp.drops_played - before
+		weather.covered = 1.0
+		before = sp.drops_played
+
+		for n in 50:
+			sp.update(0.1, body, false)
+
+		var covered_drops: int = sp.drops_played - before
+		weather.covered = 0.0
+		weather.roofed = 1.0
+		before = sp.drops_played
+
+		for n in 50:
+			sp.update(0.1, body, false)
+
+		var roofed_drops: int = sp.drops_played - before
+		weather.roofed = 0.0
+		weather.rain = 0.5
+		before = sp.drops_played
+
+		for n in 50:
+			sp.update(0.1, body, false)
+			sp.test_release()
+
+		var half_drops: int = sp.drops_played - before
+		weather.rain = 0.0
+		weather.covered = 0.0
+		print("Terrain client: splash check: %d grounds played, unknown %s, burst %d of 40 (cap %d, live %d), 5 s of heavy rain %d, covered %d, roofed %d, half rain %d, rate %.1f %.1f %.1f, last %s" % [
+			played, str(unknown), burst, cap_now, live_now, open_drops, covered_drops, roofed_drops, half_drops, sp.rate(1.0, 0.0, 0.0, false), sp.rate(1.0, 0.0, 0.0, true), sp.rate(0.05, 0.0, 0.0, false), sp.last])
+		sound.set_quality(1)
 
 	if test_reverb and now - connected_msec > 18000 and now >= _test_fire_at:
 		_test_fire_at = now + 10000000

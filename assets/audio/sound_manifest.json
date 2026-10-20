@@ -225,6 +225,70 @@
    "priority": 5
   },
   {
+   "name": "rain_splash_stone",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "rain_splashes.gd: a single rain drop landing on stone near the player (open sky only)",
+   "to_supply": "A single raindrop landing on stone, close, 3 or 4 different drops",
+   "priority": 3
+  },
+  {
+   "name": "rain_splash_gravel",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "rain_splashes.gd: a single rain drop landing on gravel near the player (open sky only)",
+   "to_supply": "A single raindrop landing on gravel, close, 3 or 4 different drops",
+   "priority": 3
+  },
+  {
+   "name": "rain_splash_grass",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "rain_splashes.gd: a single rain drop landing on grass near the player (open sky only)",
+   "to_supply": "A single raindrop landing on grass, close, 3 or 4 different drops",
+   "priority": 3
+  },
+  {
+   "name": "rain_splash_dirt",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "rain_splashes.gd: a single rain drop landing on bare soil near the player (open sky only)",
+   "to_supply": "A single raindrop landing on bare soil, close, 3 or 4 different drops",
+   "priority": 3
+  },
+  {
+   "name": "rain_splash_sand",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "rain_splashes.gd: a single rain drop landing on sand near the player (open sky only)",
+   "to_supply": "A single raindrop landing on sand, close, 3 or 4 different drops",
+   "priority": 3
+  },
+  {
+   "name": "rain_splash_mud",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "rain_splashes.gd: a single rain drop landing on mud near the player (open sky only)",
+   "to_supply": "A single raindrop landing on mud, close, 3 or 4 different drops",
+   "priority": 3
+  },
+  {
+   "name": "rain_splash_litter",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "rain_splashes.gd: a single rain drop landing on fallen leaves near the player (open sky only)",
+   "to_supply": "A single raindrop landing on fallen leaves, close, 3 or 4 different drops",
+   "priority": 3
+  },
+  {
+   "name": "rain_splash_water",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "rain_splashes.gd: a single rain drop landing on water near the player (open sky only)",
+   "to_supply": "A single raindrop landing on water, close, 3 or 4 different drops",
+   "priority": 3
+  },
+  {
    "name": "wing_grain",
    "state": "recorded",
    "variants": 3,

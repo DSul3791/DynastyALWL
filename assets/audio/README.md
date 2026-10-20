@@ -436,3 +436,8 @@ One reverb, on a bus `World` that Foley and Nature (and the `Air_*` band buses u
 | High/Ultra | 0.45 | 0.85 | 8 |
 Cost: one Godot reverb effect (stereo comb and all-pass filters) in the mixer only while enclosure is over 0.05; when out in the open it is bypassed, so the open-world cost is zero and the cave cost is one reverb on a bus for every tier, down from two. Not heard by ear. Tunables: `cave_wet` and `cave_room` in `sound_presets.gd`. Check: `sound_check.py --only reverb`.
 
+## Rain drops by ground (job 83)
+
+`src/client/rain_splashes.gd`: single drops landing 1 to 7 m from the player (nearer more often), on top of the rain beds, in the group `world_sounds` on the Weather bus (so the first to be cut when the voice cap bites). Sounds `rain_splash_<ground>_N` (3 each) from `make_splash.py` in `splash/`; recordings in `recorded/splash/` win. Grounds: stone (sharp tick), gravel (scatter of clicks), grass (soft pat), dirt (dull pat), sand (short hiss), mud (plop), litter (dry leaf tick), water (plip). The ground under the player comes from `sound_stage.splash_ground(body)` (same soil table as the footsteps: stone/slab/path/rock, mud when soaked, leaves = litter, grass by `grass_at` thickness over 0.3); any drop whose landing point is over water (`water_depth_at`) is a plip instead.
+Rate: `6 x rain^1.3` drops a second, times (1 - covered) x (1 - roofed); none under 0.12 rain, when snow lies, in a cave (enclosure over 0.3) or underwater. Budget: at most `nature_calls + 2` live drops (6 Low, 8 Mid, 10 High) and `has_room()` before each; level -27 dB at full rain, +6 dB x rain, per-ground offset (stone +3 to sand -4). Tunables are consts at the top of the file. Check: `sound_check.py --only splash`.
+

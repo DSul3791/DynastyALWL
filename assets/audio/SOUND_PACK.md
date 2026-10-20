@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **200 slots: 18 recorded, 173 generated placeholders, 9 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **208 slots: 18 recorded, 181 generated placeholders, 9 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -136,6 +136,14 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 3 | `rain_litter` | generated | 1 | weather_sounds.gd: rain on forest leaf litter in the open | Rain on dry leaf litter loop, seamless |
 | 3 | `rain_mud` | generated | 1 | weather_sounds.gd: rain on mud and soaked soil | Rain on mud loop, seamless |
 | 3 | `rain_snow` | generated | 1 | weather_sounds.gd: rain falling on lying snow (very quiet) | Rain on snow loop, soft, seamless |
+| 3 | `rain_splash_dirt` | generated | 3 | rain_splashes.gd: a single rain drop landing on bare soil near the player (open sky only) | A single raindrop landing on bare soil, close, 3 or 4 different drops |
+| 3 | `rain_splash_grass` | generated | 3 | rain_splashes.gd: a single rain drop landing on grass near the player (open sky only) | A single raindrop landing on grass, close, 3 or 4 different drops |
+| 3 | `rain_splash_gravel` | generated | 3 | rain_splashes.gd: a single rain drop landing on gravel near the player (open sky only) | A single raindrop landing on gravel, close, 3 or 4 different drops |
+| 3 | `rain_splash_litter` | generated | 3 | rain_splashes.gd: a single rain drop landing on fallen leaves near the player (open sky only) | A single raindrop landing on fallen leaves, close, 3 or 4 different drops |
+| 3 | `rain_splash_mud` | generated | 3 | rain_splashes.gd: a single rain drop landing on mud near the player (open sky only) | A single raindrop landing on mud, close, 3 or 4 different drops |
+| 3 | `rain_splash_sand` | generated | 3 | rain_splashes.gd: a single rain drop landing on sand near the player (open sky only) | A single raindrop landing on sand, close, 3 or 4 different drops |
+| 3 | `rain_splash_stone` | generated | 3 | rain_splashes.gd: a single rain drop landing on stone near the player (open sky only) | A single raindrop landing on stone, close, 3 or 4 different drops |
+| 3 | `rain_splash_water` | generated | 3 | rain_splashes.gd: a single rain drop landing on water near the player (open sky only) | A single raindrop landing on water, close, 3 or 4 different drops |
 | 3 | `rain_stone` | generated | 1 | weather_sounds.gd: rain on stone, rock, slab, plank or path ground under the player (open sky) | Rain on bare rock or flagstones loop, seamless |
 | 3 | `rain_water` | generated | 1 | weather_sounds.gd: rain falling on ponds and rivers near the player | Rain on a lake surface loop, seamless |
 | 3 | `saw_mill` | generated | 1 | workshop_sounds.gd set_saws: a running saw mill (hook until it exists, loop) | A seamless loop of a saw mill running, blade rasp and frame, 10 s or more |
