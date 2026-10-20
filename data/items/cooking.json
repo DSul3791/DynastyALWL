@@ -1,0 +1,26 @@
+{
+	"note": "Cooking placeholder (until the cook and food systems exist): at a lit fire, one raw forage item becomes Roasted forage. A gathered item cooks when its id ends with one of these words.",
+	"cookable_suffixes": [
+		"berries",
+		"nuts",
+		"roots",
+		"caps",
+		"mushrooms",
+		"morels",
+		"porcini",
+		"chanterelles",
+		"bulbs",
+		"pods",
+		"pears",
+		"bananas",
+		"hazelnuts",
+		"acorns"
+	],
+	"gives": "roast_forage",
+	"pace_ms": 1200,
+	"fuel": {
+		"stick": 120.0,
+		"log": 600.0
+	},
+	"max_burn_s": 3600.0
+}

@@ -48,6 +48,8 @@ const RESPAWN_CHANCE := 0.5              # per rotted-away stump, rolled once fr
 const FLORA_CHUNK_M := 256.0
 const PROCESS_REACH_M := 4.0
 const PROCESS_COOLDOWN_MS := 450
+const FIRE_USE_M := 3.5
+const COOKING_PATH := "res://data/items/cooking.json"
 const MINE_REACH_M := 4.5
 const MINE_COOLDOWN_MS := 700
 const MINE_CELL_M := 8.0                 # one outcrop patch
@@ -91,6 +93,8 @@ var _sync_in: float = 0.0
 var _save_in: float = SAVE_EVERY_S
 var _dirty: bool = false
 var _drops: Dictionary = {}
+var _cooking: Dictionary = {}
+var _last_cook: Dictionary = {}     # peer -> msec
 var _flora_by_name: Dictionary = {}   # flora table rows by species name (yields, seasons)
 var _picked: Dictionary = {}          # "cx,cz,id" -> game seconds when last picked
 var _flights: Array = []            # thrown things in the air: {number, pos, vel, age}
@@ -114,6 +118,8 @@ func setup(item_table, store_dir: String) -> void:
 	_load_inventories()
 	_load_world_items()
 	_load_trees()
+	var cooking: Variant = JSON.parse_string(FileAccess.get_file_as_string(COOKING_PATH))
+	_cooking = cooking if typeof(cooking) == TYPE_DICTIONARY else {}
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(DROPS_PATH))
 	_drops = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
 	var flora_table: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/tables/flora.json"))
@@ -145,6 +151,7 @@ func peer_left(peer: int) -> void:
 	_last_throw.erase(peer)
 	_last_mine.erase(peer)
 	_last_hit.erase(peer)
+	_last_cook.erase(peer)
 	_last_process.erase(peer)
 
 
@@ -230,6 +237,10 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_pickup(peer, inv, a)
 	elif kind == Net.ACT_HIT:
 		_hit(peer, inv, a, Vector2i(b, count))
+	elif kind == Net.ACT_FUEL:
+		_fuel(peer, inv, a)
+	elif kind == Net.ACT_COOK:
+		_cook(peer, inv, a)
 	elif kind == Net.ACT_SPLIT:
 		_split(inv, a, count)
 	elif kind == Net.ACT_PROCESS:
@@ -1099,3 +1110,76 @@ func _split(inv, slot: int, count: int) -> void:
 			inv.counts[target] = count
 			inv.counts[slot] -= count
 			return
+
+
+# Wood on the fire: a stick or a log adds burning time (up to max_burn_s). A fire the rain put out
+# lights again when fed where rain no longer reaches it (covered, or the rain has stopped).
+func _fuel(peer: int, inv, id: int) -> void:
+	var fire: Dictionary = _fire_in_reach(peer, id)
+
+	if fire.is_empty():
+		return
+
+	var fuel: Dictionary = _cooking.get("fuel", {})
+	var raining: bool = rain_now.is_valid() and float(rain_now.call()) >= RAIN_PUTS_OUT
+
+	if int(fire["state"]) == 2 and raining and not bool(fire["covered"]):
+		return
+
+	for wood in ["stick", "log"]:
+		var number: int = table.number_of(wood)
+
+		if inv.has(number, 1):
+			inv.remove(number, 1)
+			fire["burn_left"] = minf(float(fire["burn_left"]) + float(fuel.get(wood, 120.0)), float(_cooking.get("max_burn_s", 3600.0)))
+
+			if int(fire["state"]) == 2:
+				fire["state"] = 1
+				_items[id]["left"] = 1.0e9
+
+			return
+
+
+# Roasting at a lit fire: one raw forage item (cookable_suffixes in cooking.json) becomes Roasted forage.
+func _cook(peer: int, inv, id: int) -> void:
+	var fire: Dictionary = _fire_in_reach(peer, id)
+
+	if fire.is_empty() or int(fire["state"]) != 1:
+		return
+
+	var now: int = Time.get_ticks_msec()
+
+	if now - int(_last_cook.get(peer, -100000)) < int(_cooking.get("pace_ms", 1200)):
+		return
+
+	for slot in range(inv.SLOTS):
+		if inv.numbers[slot] != 0 and _cookable(table.id_of(inv.numbers[slot])):
+			_last_cook[peer] = now
+			inv.take_from_slot(slot, 1)
+			var left: int = inv.add(table.number_of(str(_cooking.get("gives", "roast_forage"))), 1)
+
+			if left > 0:
+				drop_in_world(table.number_of(str(_cooking.get("gives", "roast_forage"))), left, _peer_pos[peer])
+
+			return
+
+
+func _cookable(item_id: String) -> bool:
+	if item_id == "" or item_id == str(_cooking.get("gives", "")):
+		return false
+
+	for suffix in _cooking.get("cookable_suffixes", []):
+		if item_id.ends_with(str(suffix)):
+			return true
+
+	return false
+
+
+# The fire record of a world item id when the player stands within reach of it, else {}.
+func _fire_in_reach(peer: int, id: int) -> Dictionary:
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or not it.has("fire") or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(it["pos"]) > FIRE_USE_M:
+		return {}
+
+	return it["fire"]

@@ -27,6 +27,7 @@ Tracks what the controls are now and what is planned. Update it whenever a contr
 | Left click | Use the held item (spear: jab; stone axe: swing, with the hit sound of what it strikes, and a blow on bare rock gives a stone; a held torch lights the way; on a tree trunk, repeated blows fell the tree into a trunk and a stump) |
 | Right click (hold) | Spear: aim a throw; then left click throws. Letting go returns to the normal stance |
 | Left click with a campfire kit held | Place the fire where the ring shows: yellow ring = open ground (rain puts the fire out), green = under a tree's crown (the fire survives rain) |
+| C / V (near a fire) | C roasts one raw forage item at a lit fire; V adds a stick or log (also relights a fire the rain put out, if it is now sheltered or the rain has stopped) |
 | E | Pick up the nearest item on the ground within 3 m; with nothing there, pick from the nearest plant or shrub within 2.5 m (fibre, sticks and, in season, its berries, leaves, roots or nuts; the plant stays and bears again after 3 game days) |
 | ] | Admin test tool: give 10 each of stone, stick, plant fibre and log |
 

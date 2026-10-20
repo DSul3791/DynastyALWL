@@ -13,7 +13,7 @@ const Net := preload("res://src/stream/terrain_net.gd")
 const KEY_FILE := "user://player_key.txt"
 const PICKUP_M := 3.0
 const COLUMNS := 6
-const MAX_FIRE_LIGHTS := 3
+const MAX_FIRE_LIGHTS := 3              # at High and Ultra; fewer below (max_lights)
 
 var open: bool = false
 var table
@@ -147,7 +147,40 @@ func _process(_delta: float) -> void:
 	if now < _notice_until_msec:
 		return
 	var near: Array = _nearest()
+	var fire: int = _nearest_fire()
 	_prompt.text = "" if near[0] == 0 else "E: pick up %s x%d" % [table.name_of(near[1]), near[2]]
+
+	if near[0] == 0 and fire != 0:
+		_prompt.text = "C: roast food    V: add wood" if _world[fire]["state"] == 1 else "V: add wood to relight"
+
+
+
+# The id of the nearest fire (lit or out) within 3 m, 0 when none.
+func _nearest_fire() -> int:
+	var here: Vector3 = _player_position.call()
+	var best: int = 0
+	var best_d: float = 3.0
+
+	for id in _world:
+		if _world[id]["state"] in [1, 2] and here.distance_to(_world[id]["pos"]) <= best_d:
+			best_d = here.distance_to(_world[id]["pos"])
+			best = id
+
+	return best
+
+
+func cook_nearest() -> void:
+	var fire: int = _nearest_fire()
+
+	if fire != 0:
+		net.inventory_action.rpc_id(1, Net.ACT_COOK, fire, 0, 0, Vector3.ZERO)
+
+
+func fuel_nearest() -> void:
+	var fire: int = _nearest_fire()
+
+	if fire != 0:
+		net.inventory_action.rpc_id(1, Net.ACT_FUEL, fire, 0, 0, Vector3.ZERO)
 
 
 # [id, number, count] of the closest item within reach, or [0, 0, 0].
@@ -260,7 +293,7 @@ func _update_fire_lights() -> void:
 
 	for n in lit.size():
 		var light: OmniLight3D = lit[n][1]
-		light.visible = n < MAX_FIRE_LIGHTS
+		light.visible = n < (int(max_lights.call()) if max_lights.is_valid() else MAX_FIRE_LIGHTS)
 		light.light_energy = 1.6 + 0.35 * sin(float(Time.get_ticks_msec()) * 0.013 + float(n))
 
 
@@ -412,6 +445,7 @@ var _selected_recipe: int = 0
 var _quantity: SpinBox
 var _qty: int = 1
 var knowledge                          # InspectionKnowledge (set by the client): item names follow what the character knows
+var max_lights: Callable               # () -> how many fire lights the quality tier allows
 var is_inspecting: Callable            # () -> true while inspection mode is on
 var _craft_queue: int = 0             # crafts still to do after the one running
 var _slot_scroll: ScrollContainer

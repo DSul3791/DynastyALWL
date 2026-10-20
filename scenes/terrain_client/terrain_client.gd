@@ -549,6 +549,7 @@ func _on_welcome(info: Dictionary) -> void:
 	add_child(items)
 	items.setup(net, layer, root, func(): return body.global_position, _ground_below)
 	items.knowledge = knowledge
+	items.max_lights = func(): return [1, 2, 3, 3][clampi(quality, 0, 3)]
 	items.is_inspecting = func(): return inspecting
 	held = HeldItemScript.new()
 	held.name = "Held"
@@ -1570,6 +1571,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			_admin_dig()
 		elif event.keycode >= KEY_1 and event.keycode <= KEY_8 and held != null:
 			held.select(event.keycode - KEY_1)
+		elif event.keycode == KEY_C and items != null:
+			items.cook_nearest()
+		elif event.keycode == KEY_V and items != null:
+			items.fuel_nearest()
 		elif event.keycode == KEY_E and items != null:
 			if not items.pick_up_nearest():
 				_gather_nearest()

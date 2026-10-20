@@ -65,6 +65,8 @@ const ACT_MINE := 8       # at = the point the axe struck; on bare rock the serv
 const ACT_HIT := 7        # a = tree id, b = flora chunk x, count = flora chunk z: one axe blow on a standing tree
 const ACT_PROCESS := 9    # a = world item id of a felled trunk: one axe blow on it gives branches, leaves, bark, logs
 const ACT_SPLIT := 10     # a = slot, count = how many go to the first empty slot
+const ACT_FUEL := 11      # a = fire world id: burn one stick (or a log) in the fire
+const ACT_COOK := 12      # a = fire world id: roast one raw forage item at the fire
 const ACT_THROW := 5      # a = slot, at = aim direction (the server starts the throw from the player)
 
 

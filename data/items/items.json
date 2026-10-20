@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode.",
-	"next_number": 15,
+	"next_number": 16,
 	"items": {
 		"stone":       {"number": 1, "name": "Stone", "kind": "material", "stack": 20, "look_alikes": []},
 		"stick":       {"number": 2, "name": "Stick", "kind": "material", "stack": 40, "look_alikes": []},
@@ -17,6 +17,7 @@
 		"torch":       {"number": 12, "name": "Torch", "kind": "tool", "tool_class": "torch", "tier": 1, "stack": 1, "light_m": 9.0, "look_alikes": []},
 		"bark":        {"number": 13, "name": "Bark", "kind": "material", "stack": 40, "look_alikes": []},
 		"leaves":      {"number": 14, "name": "Leaves", "kind": "material", "stack": 40, "look_alikes": []},
+		"roast_forage": {"number": 15, "name": "Roasted forage", "kind": "food", "stack": 20, "look_alikes": []},
 		"seed_bundle": {"number": 9, "name": "Seeds", "kind": "material", "stack": 40, "look_alikes": []}
 	}
 }

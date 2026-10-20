@@ -206,8 +206,24 @@ func _init() -> void:
 	f.tick(1.0)
 	check(f._items[open_id]["fire"]["state"] == 2, "rain puts out the open fire")
 	check(f._items[covered_id]["fire"]["state"] == 1, "the covered fire survives rain")
+	f.report_position(1, Vector3(2.0, 10.0, 0.0))
+	f.action(1, Net.ACT_ADMIN_GIVE, f.table.number_of("stick"), 0, 3, Vector3.ZERO)
+	f.action(1, Net.ACT_FUEL, open_id, 0, 0, Vector3.ZERO)
+	check(f._items[open_id]["fire"]["state"] == 2 and f.inventory_of(1).count_of(f.table.number_of("stick")) == 3, "feeding an open fire in rain does nothing")
 	rain[0] = 0.0
-	for n in range(int(ItemsScript.FIRE_BURN_S / 10.0) + 1):
+	f.action(1, Net.ACT_FUEL, open_id, 0, 0, Vector3.ZERO)
+	check(f._items[open_id]["fire"]["state"] == 1 and f.inventory_of(1).count_of(f.table.number_of("stick")) == 2, "a stick relights it once the rain stops")
+	var berries: int = f.table.number_of("blueberries") if f.table.has_id("blueberries") else 0
+	f.action(1, Net.ACT_ADMIN_GIVE, berries, 0, 2, Vector3.ZERO)
+	f.action(1, Net.ACT_COOK, open_id, 0, 0, Vector3.ZERO)
+	check(f.inventory_of(1).count_of(f.table.number_of("roast_forage")) == 1 and f.inventory_of(1).count_of(berries) == 1, "a lit fire roasts one berry item")
+	f.report_position(1, Vector3(40.0, 10.0, 0.0))
+	f._last_cook.clear()
+	f.action(1, Net.ACT_COOK, open_id, 0, 0, Vector3.ZERO)
+	check(f.inventory_of(1).count_of(f.table.number_of("roast_forage")) == 1, "too far from the fire to cook")
+	rain[0] = 0.6
+	rain[0] = 0.0
+	for n in range(int(ItemsScript.FIRE_BURN_S / 10.0) + 20):
 		f.tick(10.0)
 
 	check(f._items[covered_id]["fire"]["state"] == 2, "a fire burns out in time")
