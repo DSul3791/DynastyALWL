@@ -574,6 +574,9 @@ The owner approved the direction of the crafting proposal deck ("How Deep Should
 - **[Decided]** Recipes: the basics are known, the rest discovered (deck recommendation, approved with the direction).
 - **[Decided]** How many skills one character can master depends on how long they live: characters can live very long (Section 6.10), so there is no fixed cap (owner, 2026-10-16).
 - **[Decided]** **Build order: from the foundation up.** The first trades to design are the labour-intensive ones that make building materials: felling and sawing boards, quarrying and cutting stone, making bricks, making rope, then the buildings, walls and other structures built from them (owner, 2026-10-16). This replaces the deck's suggestion to build the herbalist path first.
+- **[Decided]** **First three things to craft (owner, 2026-10-20):** a stone axe, a spear and a campfire. The stone axe is also used as the pick, so there is no stone pickaxe.
+- **[Decided]** **Spear controls (owner, 2026-10-20):** held and jabbed by default with the normal attack keys. Hold right click to raise it and aim a throw, then left click throws it. Letting go of right click returns to the normal stance.
+- **[Proposed]** Prerequisites in order: item and inventory system, harvest and drop system (stone, sticks, fibre, wood), hand-craft recipe system (two ingredients, no station), fire (campfire place, light, burn, rain rule from 4.2), tool use (axe on trees and rock, spear attack and throw).
 
 ### 5.4 Skills
 

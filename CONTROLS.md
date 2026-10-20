@@ -32,5 +32,7 @@ Gait rules:
 
 ## Planned / not decided
 
+- Spear (Dave, 2026-10-20, decided, not built): normal attack keys jab; hold right click to raise and aim a throw, left click throws, release right click returns to normal stance.
+
 - Dave's other two "things" from the old design (not yet given).
 - Potions, horses and dragons will move much faster than running; ground loading is built to keep up.
