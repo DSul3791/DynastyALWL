@@ -182,3 +182,6 @@ Sound probe (headless, 4000 frames, storm at 06:00, `--nature-fast`, walking; so
 | High | 0.31 | 7.7 | 13/96 (16) | 3.2/600 |
 
 Averages are flat across tiers; the worst frame is a one-off spike (first load of files) in each. Cave rays and hill occlusion were not exercised (flat walk).
+
+## Sound pack validator (build 159)
+`python3 assets/audio/validate_pack.py [--strict]` checks the folders against `make_manifest.py`: MISSING slots (no recording and no generated sound), OVERSIZED files (warning over 400 KB, error over 2500 KB, error when `recorded/` passes 40 MB), UNREFERENCED files (a name no slot or footstep uses, usually a typo), UNPAIRED left/right footsteps and a STALE `sound_manifest.json`. Exit 1 on errors; `--strict` also fails on warnings. Run it before committing sounds. Today: 0 errors, 5 warnings (the four optional ambient beds are not built; `wind_low` is 455 KB, a long loop).
