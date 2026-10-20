@@ -319,6 +319,7 @@ def main():
     godot = GODOT
 
     if "--list" in args:
+        print("slots      (offline) tools/slot_audit.py")
         for name, flags, frames, _ in SCENARIOS:
             print("%-10s %s (%d frames)" % (name, " ".join(flags), frames))
 
@@ -332,6 +333,16 @@ def main():
 
     verbose = "--verbose" in args
     failed = 0
+
+    if not only or "slots" in only:                       # every sound file, offline: clipping, silence, loop seams, loudness
+        started = time.time()
+        run = subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "slot_audit.py")], capture_output=True, text=True)
+        lines = [l for l in run.stdout.splitlines() if l.startswith("FAIL")]
+        failed += 1 if run.returncode else 0
+        print("%s  %-9s %s, %.0f s" % ("FAIL" if run.returncode else "PASS", "slots", run.stdout.strip().splitlines()[-1] if run.stdout.strip() else run.stderr[-200:], time.time() - started))
+
+        for line in lines:
+            print("      - " + line)
 
     for index, (name, flags, frames, checks) in enumerate(SCENARIOS):
         if only and name not in only:

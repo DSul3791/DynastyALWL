@@ -15,6 +15,7 @@ import wave
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import make_sounds  # noqa: E402
 from make_sounds import SR, add, band, env, highpass, lowpass, noise  # noqa: E402
 
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "stance")
@@ -23,7 +24,7 @@ VARIANTS = 3
 
 def write_ogg(name, x):
     os.makedirs(OUT, exist_ok=True)
-    data = (np.clip(x, -1, 1) * 32767).astype(np.int16)
+    data = (np.clip(make_sounds.soft_limit(x), -1, 1) * 32767).astype(np.int16)
     with tempfile.TemporaryDirectory() as tmp:
         wav = os.path.join(tmp, "s.wav")
         with wave.open(wav, "wb") as w:
