@@ -1502,7 +1502,7 @@ func _refresh_detail() -> void:
 		return
 
 	var heading: Label = Label.new()
-	heading.text = "%s  ->  %s" % [r["name"], table.name_of(r["gives"][0])]
+	heading.text = str(r["name"])
 	heading.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_style(heading, BODY_PX)
 	_detail.add_child(heading)

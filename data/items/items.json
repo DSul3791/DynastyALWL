@@ -131,7 +131,7 @@
 		},
 		"torch": {
 			"number": 12,
-			"name": "Torch",
+			"name": "Basic torch",
 			"kind": "tool",
 			"tool_class": "torch",
 			"tier": 1,
@@ -207,7 +207,7 @@
 		},
 		"lean_to_kit": {
 			"number": 20,
-			"name": "Lean-to kit",
+			"name": "Small shelter",
 			"kind": "placeable",
 			"stack": 1,
 			"look_alikes": [],
@@ -216,14 +216,14 @@
 		},
 		"lean_to": {
 			"number": 21,
-			"name": "Lean-to shelter",
+			"name": "Small shelter",
 			"kind": "structure",
 			"stack": 1,
 			"look_alikes": []
 		},
 		"chest_kit": {
 			"number": 22,
-			"name": "Woven chest kit",
+			"name": "Woven chest",
 			"kind": "placeable",
 			"stack": 1,
 			"look_alikes": [],
@@ -251,7 +251,7 @@
 		},
 		"chopping_block": {
 			"number": 25,
-			"name": "Chopping block (set)",
+			"name": "Chopping block",
 			"kind": "structure",
 			"stack": 1,
 			"look_alikes": []
@@ -273,7 +273,7 @@
 		},
 		"plank_chest_kit": {
 			"number": 28,
-			"name": "Plank chest kit",
+			"name": "Plank chest",
 			"kind": "placeable",
 			"stack": 1,
 			"look_alikes": [],
