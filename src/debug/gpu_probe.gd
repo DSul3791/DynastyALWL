@@ -24,7 +24,7 @@ func setup(client) -> void:
 	var layer: CanvasLayer = CanvasLayer.new()
 	_label = Label.new()
 	_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
-	_label.position += Vector2(10.0, -260.0)
+	_label.position += Vector2(10.0, -330.0)
 	_label.add_theme_font_size_override("font_size", 16)
 	_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	_label.add_theme_constant_override("outline_size", 4)
@@ -49,6 +49,9 @@ func toggle() -> void:
 		["glow off", func(on): _client._environment.glow_enabled = on],
 		["fog off", func(on): _client._environment.fog_enabled = on],
 		["anti-aliasing off", func(on): _aa(on)],
+		["3D at full window size", func(on): _scale(on, 1.0)],
+		["3D at half the pixels (0.71)", func(on): _scale(on, 0.71)],
+		["sky clouds at Low quality", func(on): _sky(on)],
 	]
 	_results = []
 	_saved = {
@@ -61,6 +64,16 @@ func toggle() -> void:
 	_at = -1
 	_next_step()
 	set_process(true)
+
+
+func _scale(on: bool, value: float) -> void:
+	var vp: Viewport = get_viewport()
+	vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_FSR if (on and _client._render_scale < 0.99) or (not on and value < 0.99) else Viewport.SCALING_3D_MODE_BILINEAR
+	vp.scaling_3d_scale = _client._render_scale if on else value
+
+
+func _sky(on: bool) -> void:
+	_client.SkyClouds.set_quality(_client._environment.sky, _client.quality if on else 0)
 
 
 func _aa(on: bool) -> void:
@@ -101,7 +114,9 @@ func _process(_delta: float) -> void:
 
 
 func _show(done: bool) -> void:
+	var win: Vector2i = get_window().size
 	var text: String = "GPU probe (F8)%s\n" % ("" if done else ", keep still: step %d of %d" % [_results.size() + 1, _steps.size()])
+	text += "%s, %s, window %dx%d, 3D scale %.2f, quality %s\n" % [RenderingServer.get_video_adapter_name(), RenderingServer.get_current_rendering_driver_name(), win.x, win.y, _client._render_scale, _client.QUALITY_NAMES[_client.quality]]
 
 	for n in range(_results.size()):
 		var gpu: float = float(_results[n][1])
@@ -130,6 +145,8 @@ func _finish(completed: bool) -> void:
 		_client.sea.visible = _saved.get("sea", true)
 
 	_aa(true)
+	_scale(true, 1.0)
+	_sky(true)
 	_at = -1
 	set_process(false)
 	_show(completed)

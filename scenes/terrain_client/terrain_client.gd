@@ -33,11 +33,12 @@ const Probe := preload("res://src/debug/frame_probe.gd")
 const CompassScript := preload("res://src/client/admin_compass.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
 const WeatherScript := preload("res://src/shared/weather.gd")
+const RenderScale := preload("res://src/client/render_scale.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 const GpuProbeScript := preload("res://src/debug/gpu_probe.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 110
+const BUILD := 112
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -165,6 +166,7 @@ var flora                             # FloraView
 var grass                             # GrassView
 var sound                             # SoundStage: wind, footsteps, grass swish
 var _commit: String = GitStamp.short_commit()   # which checkout is running
+var _render_scale: float = 1.0            # 3D resolution scale now (render_scale.gd)
 var _jitter_test                      # float-precision test, J or Esc > Advanced
 var _gpu_probe                        # GPU cost per piece of the scene, F8
 var _bake = TileBakeScript.new()      # admin: background tile bake
@@ -373,6 +375,7 @@ func _on_welcome(info: Dictionary) -> void:
 	sound.setup(terrain, flora, grass)
 	_make_environment(root)
 	_apply_quality()
+	get_window().size_changed.connect(_apply_render_scale)
 	RenderingServer.viewport_set_measure_render_time(get_viewport().get_viewport_rid(), true)
 	var layer: CanvasLayer = CanvasLayer.new()
 	add_child(layer)
@@ -761,6 +764,10 @@ func _apply_quality() -> void:
 	if _sun != null:
 		_sun.shadow_enabled = float(QUALITY_SHADOW_M[quality]) > 0.0
 		_sun.directional_shadow_max_distance = maxf(float(QUALITY_SHADOW_M[quality]), 1.0)
+		# Two cascades instead of four at Medium and High: every cascade draws the casters again
+		# (Godot's own shadow docs), and 100 m of range does not need four. A smaller shadow map at Medium.
+		_sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS if quality >= 3 else DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+		RenderingServer.directional_shadow_atlas_set_size(2048 if quality <= 1 else 4096, true)
 
 	if terrain != null and quality != _ground_quality:
 		_ground_quality = quality
@@ -768,7 +775,16 @@ func _apply_quality() -> void:
 
 	if _environment != null:
 		LookSettings.apply(_environment, _sun, get_viewport(), quality)
+		_apply_render_scale()
 		_environment.fog_density = 0.05 if underwater else LookSettings.FOG_DENSITY
+
+
+# 3D resolution follows the tier's pixel budget (render_scale.gd) and the window size.
+func _apply_render_scale() -> void:
+	if DisplayServer.get_name() == "headless":
+		return
+
+	_render_scale = RenderScale.apply(get_viewport(), get_window().size, quality)
 
 
 # The thinking-brain icon, a white outline with a gray inside. Loaded as an
@@ -1445,6 +1461,8 @@ func _process(delta: float) -> void:
 	if not weather.is_empty():
 		hud.text += "\nweather: rain %.2f snow %.2f storm %.2f sun %.2f wind %.2f, %.0f C" % [weather["rain"], weather["snow"], weather["storm"], weather["sun"], weather["wind"], weather["temp_c"]]
 
+	var win: Vector2i = get_window().size
+	hud.text += "\n3D %dx%d of window %dx%d (scale %.2f), %s, %s" % [int(win.x * _render_scale), int(win.y * _render_scale), win.x, win.y, _render_scale, RenderingServer.get_video_adapter_name(), RenderingServer.get_current_rendering_driver_name()]
 	hud.text += "\nlast step: " + sound.last_step
 	hud.text += "\nsound budget: " + sound.budget_text()
 	hud.text += "\nlast dig sound: %s" % sound.dig.last_dig
