@@ -359,7 +359,6 @@ func setup(tables, tile_rules: Dictionary) -> void:
 			"near": near_meshes,
 			"far": far_meshes,
 			"shape": shape,
-			"crown": float(entry.get("crown_m", 0.0)),
 			"glows": entry.has("glow") or entry.has("leaf_glow"),
 			"tint": _plant_tint(entry, c),
 		}
@@ -841,37 +840,11 @@ func update(position: Vector3) -> Array:
 	return dropped
 
 
-# The crowns of the held trees within radius_m of (x, z), as [x, z, canopy radius]: the crown
-# diameter of the species scaled by the tree's height (owner Q8, 2026-10-20: anywhere under it
-# counts as cover). The canopy map (src/client/canopy_map.gd) is drawn from this.
+# The crowns of the held trees within radius_m of (x, z), as [x, z, canopy radius]: the shared
+# cover index (src/shared/cover.gd, owner Q8, 2026-10-20: anywhere under a crown counts as
+# cover). The canopy map (src/client/canopy_map.gd) is drawn from this.
 func canopy_discs(x: float, z: float, radius_m: float) -> Array:
-	var out: Array = []
-
-	for chunk in _chunks:
-		var low: Vector2 = Vector2(float(chunk.x), float(chunk.y)) * chunk_m
-
-		if x + radius_m < low.x or x - radius_m > low.x + chunk_m or z + radius_m < low.y or z - radius_m > low.y + chunk_m:
-			continue
-
-		var items: Dictionary = _chunks[chunk]["items"]
-		var ids: PackedInt32Array = items["ids"]
-		var positions: PackedVector3Array = items["positions"]
-		var heights: PackedFloat32Array = items["heights"]
-
-		for n in range(ids.size()):
-			var info: Dictionary = _species.get(ids[n] >> 16, {})
-
-			if info.is_empty() or int(info["kind"]) != KIND_TREE or float(info["crown"]) <= 0.0:
-				continue
-
-			var p: Vector3 = positions[n]
-
-			if absf(p.x - x) > radius_m or absf(p.z - z) > radius_m:
-				continue
-
-			out.append([p.x, p.z, 0.5 * float(info["crown"]) * float(heights[n]) / float(info["height"])])
-
-	return out
+	return cover.discs_near(x, z, radius_m)
 
 
 func item_count() -> int:
