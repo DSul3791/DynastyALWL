@@ -86,7 +86,15 @@
 		"stones_flat": 0.5,
 		"stones_per_slope": 3.0,
 		"stones_max": 4,
-		"sticks_max": 2
+		"sticks_max": 2,
+		"spot_tries": 4,
+		"stone_open": 0.12,
+		"stone_slope": 1.2,
+		"stone_foot": 0.25,
+		"stone_rock": 0.4,
+		"stick_open": 0.12,
+		"stick_tree": 0.88,
+		"stick_on_rock": 0.3
 	},
 	"trunk": {
 		"note": "Working a felled trunk with the axe, one blow at a time: first the branches and leaves come off, then logs, with some bark and now and then seeds. The trunk is used up when its logs are gone. When the last log is gone the root ball comes up (roots). The seed roll gives the species' own fruit or nut from by_species when it has one, else a seed bundle.",

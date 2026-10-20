@@ -952,6 +952,28 @@ func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 		if _taken.has(key):
 			continue
 
+		var spot: Vector3 = _scatter_spot(rng, cell, cell_m, kinds[n] == "stone")
+		var x: float = spot.x
+		var z: float = spot.z
+		var y: float = spot.y
+
+		if is_nan(y) or y < 1.0:
+			continue
+
+		_items[_next_id] = {"number": table.number_of(kinds[n]), "count": 1, "pos": Vector3(x, y, z), "left": 1.0e9, "scatter": key}
+		_next_id += 1
+
+
+# Where in a cell a loose stone or stick lies (Dave 2026-10-20: place them appropriately). A few random spots are
+# tried and the first one the terrain "likes" is taken, so the counts stay as they were but the places are natural:
+# sticks mostly under and around tree crowns and rarely on bare rock; stones on slopes, on bare rock and gravel, and
+# in hollows at the foot of a rise, with a few left in open ground. The odds are in data/items/drops.json.
+func _scatter_spot(rng: RandomNumberGenerator, cell: Vector2i, cell_m: float, stone: bool) -> Vector3:
+	var cfg: Dictionary = _drops.get("ground_scatter", {})
+	var tries: int = int(cfg.get("spot_tries", 4))
+	var best: Vector3 = Vector3(0.0, NAN, 0.0)
+
+	for attempt in range(tries):
 		var x: float = (float(cell.x) + rng.randf()) * cell_m
 		var z: float = (float(cell.y) + rng.randf()) * cell_m
 		var y: float = float(ground_height.call(x, z))
@@ -959,8 +981,35 @@ func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 		if is_nan(y) or y < 1.0:
 			continue
 
-		_items[_next_id] = {"number": table.number_of(kinds[n]), "count": 1, "pos": Vector3(x, y, z), "left": 1.0e9, "scatter": key}
-		_next_id += 1
+		var spot: Vector3 = Vector3(x, y, z)
+		var like: float
+
+		if stone:
+			var east: float = float(ground_height.call(x + 3.0, z))
+			var south: float = float(ground_height.call(x, z + 3.0))
+			var rise: float = (absf(east - y) + absf(south - y)) / 3.0
+			var west: float = float(ground_height.call(x - 6.0, z))
+			var north: float = float(ground_height.call(x, z - 6.0))
+			var hollow: float = clampf(((west + north + float(ground_height.call(x + 6.0, z)) + float(ground_height.call(x, z + 6.0))) / 4.0 - y) / 3.0, 0.0, 1.0)
+			like = float(cfg.get("stone_open", 0.12)) + minf(rise * float(cfg.get("stone_slope", 1.2)), 0.6) + hollow * float(cfg.get("stone_foot", 0.25))
+
+			if rock_at.is_valid() and bool(rock_at.call(x, z)):
+				like += float(cfg.get("stone_rock", 0.4))
+		else:
+			like = float(cfg.get("stick_open", 0.12))
+
+			if cover_at.is_valid() and float(cover_at.call(spot)) > 0.5:
+				like += float(cfg.get("stick_tree", 0.88))
+
+			if rock_at.is_valid() and bool(rock_at.call(x, z)):
+				like *= float(cfg.get("stick_on_rock", 0.3))
+
+		best = spot
+
+		if like >= rng.randf():
+			return spot
+
+	return best
 
 
 # One axe blow on a standing tree. Enough blows fell it: the standing tree is removed, and a trunk

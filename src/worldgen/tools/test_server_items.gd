@@ -816,5 +816,22 @@ func _init() -> void:
 
 	check(cq.craft_queue_of(1).size() <= 10, "queue is capped at 10 entries (%d)" % cq.craft_queue_of(1).size())
 
+	# Scatter placement: sticks favour tree cover, stones favour slopes (half of the cell each).
+	var sc = make(qd + "_scatter")
+	sc.ground_height = func(x, z): return 10.0 + maxf(x - 112.0, 0.0) * 0.5
+	sc.cover_at = func(p): return 1.0 if p.x > 112.0 else 0.0
+	sc.rock_at = func(x, z): return false
+	var srng: RandomNumberGenerator = RandomNumberGenerator.new()
+	srng.seed = 5
+	var stick_cover: int = 0
+	var stone_slope: int = 0
+
+	for n in range(400):
+		stick_cover += 1 if sc._scatter_spot(srng, Vector2i(3, 0), 32.0, false).x > 112.0 else 0
+		stone_slope += 1 if sc._scatter_spot(srng, Vector2i(3, 0), 32.0, true).x > 112.0 else 0
+
+	check(stick_cover > 280, "sticks lie mostly under tree cover (%d of 400, 200 if random)" % stick_cover)
+	check(stone_slope > 280, "stones lie mostly on the slope (%d of 400, 200 if random)" % stone_slope)
+
 	print("server item tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

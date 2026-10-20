@@ -919,10 +919,11 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 		if state == 0:
 			var box: MeshInstance3D = MeshInstance3D.new()
-			box.mesh = _mesh_for(row[1])
+			var real: Mesh = _natural_mesh(int(row[1]), int(row[0]))
+			box.mesh = real if real != null else _mesh_for(row[1])
 			node = box
 			node.position = row[3] + Vector3(0.0, 0.12, 0.0)
-			_dress_item(node, int(row[1]), int(row[0]))
+			_dress_item(node, int(row[1]), int(row[0]), real != null)
 		else:
 			node = _make_fire(state == 1, state == 9)
 			node.position = row[3]
@@ -1198,10 +1199,15 @@ func _branch_mesh(length: float, r0: float, r1: float, bend: float) -> ArrayMesh
 
 # Turns and scales a lying item by its world id so a heap of them does not look stamped. Sticks and logs lie flat,
 # stones sit a little in the ground.
-func _dress_item(node: Node3D, number: int, world_id: int) -> void:
+func _dress_item(node: Node3D, number: int, world_id: int, natural: bool = false) -> void:
 	var id: String = table.id_of(number)
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = world_id * 2654435761 + 17
+
+	if natural:
+		_dress_natural(node as MeshInstance3D, id, rng)
+		return
+
 	node.rotation = Vector3(0.0, rng.randf_range(0.0, TAU), 0.0)
 
 	if id == "stick" or id == "plant_fibre" or id == "firewood" or id == "log":
@@ -1210,6 +1216,82 @@ func _dress_item(node: Node3D, number: int, world_id: int) -> void:
 	elif id == "stone":
 		node.scale = Vector3(rng.randf_range(0.8, 1.3), rng.randf_range(0.7, 1.1), rng.randf_range(0.8, 1.3))
 		node.position.y -= 0.07
+
+
+# Dave's real pickup meshes (assets/natural_pickups, glTF, metres, Y up, resting contact at Y=0, vertex colours).
+# Three of each kind, shared by every loose item of that kind: a loose stone or stick picks one by its world id.
+# The meshes carry generated levels of detail from the import, and each item is hidden beyond a short range, so a
+# scatter of hundreds costs little. Falls back to the procedural shapes if a file is missing or not yet imported.
+const PICKUP_DIR := "res://assets/natural_pickups/"
+const PICKUP_FILES := {
+	"stone_smooth": ["stone_smooth_01_river_grey", "stone_smooth_02_tan_flat", "stone_smooth_03_dark_oval"],
+	"stone_rough": ["stone_rough_01_granite", "stone_rough_02_slate", "stone_rough_03_ochre"],
+	"stick": ["stick_forest_01_twig", "stick_forest_02_snap", "stick_forest_03_crooked"],
+	"driftwood": ["driftwood_01_bleached", "driftwood_02_forked", "driftwood_03_long"],
+}
+const STONE_VIEW_M := 45.0
+const STICK_VIEW_M := 70.0
+var _pickup_meshes: Dictionary = {}   # group -> Array of Mesh (empty when the files are not there)
+
+
+func _pickup_group(group: String) -> Array:
+	if not _pickup_meshes.has(group):
+		var meshes: Array = []
+
+		for file in PICKUP_FILES[group]:
+			var packed: Variant = load(PICKUP_DIR + file + ".glb") if ResourceLoader.exists(PICKUP_DIR + file + ".glb") else null
+
+			if packed is PackedScene:
+				var instance: Node = packed.instantiate()
+				var found: Array = instance.find_children("*", "MeshInstance3D", true, false)
+
+				if not found.is_empty():
+					meshes.append((found[0] as MeshInstance3D).mesh)
+
+				instance.free()
+
+		_pickup_meshes[group] = meshes if meshes.size() == 3 else []
+
+	return _pickup_meshes[group]
+
+
+# The real mesh for a loose stone or stick, or null (any other item, or the files are missing).
+func _natural_mesh(number: int, world_id: int) -> Mesh:
+	var id: String = table.id_of(number)
+	var pick: int = int(((world_id * 2654435761) >> 8) & 0xffff)
+	var group: String = ""
+
+	if id == "stone":
+		group = "stone_smooth" if pick % 100 < 55 else "stone_rough"
+	elif id == "stick":
+		group = "stick"
+	else:
+		return null
+
+	var meshes: Array = _pickup_group(group)
+	return null if meshes.is_empty() else meshes[(pick / 100) % 3]
+
+
+# Turn, size, tilt and bury each loose item a little (by its world id, set once): stones sit part in the soil, sticks
+# lie with a slight tilt and a hand's breadth of grass over them. Mesh origin is the resting contact (Y=0).
+func _dress_natural(node: MeshInstance3D, id: String, rng: RandomNumberGenerator) -> void:
+	var height: float = node.mesh.get_aabb().size.y
+	node.position.y -= 0.12   # undo the placeholder lift: the real meshes rest on y = 0
+
+	if id == "stone":
+		var size: float = rng.randf_range(0.8, 1.45)
+		node.scale = Vector3(size * rng.randf_range(0.9, 1.15), size * rng.randf_range(0.75, 1.0), size * rng.randf_range(0.9, 1.15))
+		node.rotation = Vector3(rng.randf_range(-0.3, 0.3), rng.randf_range(0.0, TAU), rng.randf_range(-0.3, 0.3))
+		node.position.y -= height * node.scale.y * rng.randf_range(0.05, 0.4)
+		node.visibility_range_end = STONE_VIEW_M
+		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	else:
+		var size: float = rng.randf_range(0.75, 1.3)
+		node.scale = Vector3(size, size, size)
+		node.rotation = Vector3(rng.randf_range(-0.1, 0.1), rng.randf_range(0.0, TAU), rng.randf_range(-0.08, 0.08))
+		node.position.y -= rng.randf_range(0.0, 0.02)
+		node.visibility_range_end = STICK_VIEW_M
+		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 
 # The crafting and inventory screen, laid out like Ark's (Dave, 2026-10-20): recipes on the left,
@@ -1912,6 +1994,22 @@ func run_gather_test(client) -> void:
 	for look in ["stick", "stone", "log", "plant_fibre", "roast_forage"]:
 		var shape: Mesh = _mesh_for(table.number_of(look))
 		print("Item look: %s is a %s, %.2f x %.2f x %.2f m" % [look, shape.get_class(), shape.get_aabb().size.x, shape.get_aabb().size.y, shape.get_aabb().size.z])
+
+	for look in ["stick", "stone"]:
+		var seen: Dictionary = {}
+
+		for world_id in range(1, 40):
+			var real: Mesh = _natural_mesh(table.number_of(look), world_id)
+
+			if real != null:
+				seen[real.get_rid().get_id()] = real
+
+		var sizes: Array = []
+
+		for real in seen.values():
+			sizes.append("%.2f m" % real.get_aabb().size.x)
+
+		print("Natural look: %s uses %d real meshes (%s)" % [look, seen.size(), ", ".join(sizes)])
 
 
 # Headless check (--quickkeys): D drops, S splits and E eats the stack under the mouse.

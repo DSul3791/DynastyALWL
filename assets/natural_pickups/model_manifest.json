@@ -1,0 +1,158 @@
+[
+  {
+    "name": "stone_smooth_01_river_grey",
+    "category": "Smooth stones",
+    "description": "Rounded river stone, weathered grey",
+    "triangles": 1280,
+    "vertices": 642,
+    "size_m": [
+      0.138,
+      0.092,
+      0.109
+    ],
+    "relative_path": "models/stone_smooth_01_river_grey.glb"
+  },
+  {
+    "name": "stone_smooth_02_tan_flat",
+    "category": "Smooth stones",
+    "description": "Flatter tan water-worn palm stone",
+    "triangles": 1280,
+    "vertices": 642,
+    "size_m": [
+      0.142,
+      0.06,
+      0.114
+    ],
+    "relative_path": "models/stone_smooth_02_tan_flat.glb"
+  },
+  {
+    "name": "stone_smooth_03_dark_oval",
+    "category": "Smooth stones",
+    "description": "Elongated dark smooth stone",
+    "triangles": 1280,
+    "vertices": 642,
+    "size_m": [
+      0.112,
+      0.085,
+      0.147
+    ],
+    "relative_path": "models/stone_smooth_03_dark_oval.glb"
+  },
+  {
+    "name": "stone_rough_01_granite",
+    "category": "Rough stones",
+    "description": "Fractured angular granite",
+    "triangles": 1280,
+    "vertices": 3840,
+    "size_m": [
+      0.172,
+      0.123,
+      0.153
+    ],
+    "relative_path": "models/stone_rough_01_granite.glb"
+  },
+  {
+    "name": "stone_rough_02_slate",
+    "category": "Rough stones",
+    "description": "Jagged blue-grey slate fragment",
+    "triangles": 1280,
+    "vertices": 3840,
+    "size_m": [
+      0.171,
+      0.097,
+      0.133
+    ],
+    "relative_path": "models/stone_rough_02_slate.glb"
+  },
+  {
+    "name": "stone_rough_03_ochre",
+    "category": "Rough stones",
+    "description": "Rust-colored chipped fieldstone",
+    "triangles": 1280,
+    "vertices": 3840,
+    "size_m": [
+      0.139,
+      0.134,
+      0.161
+    ],
+    "relative_path": "models/stone_rough_03_ochre.glb"
+  },
+  {
+    "name": "stick_forest_01_twig",
+    "category": "Forest sticks",
+    "description": "Small forked forest twig with bark",
+    "triangles": 970,
+    "vertices": 499,
+    "size_m": [
+      0.402,
+      0.06,
+      0.219
+    ],
+    "relative_path": "models/stick_forest_01_twig.glb"
+  },
+  {
+    "name": "stick_forest_02_snap",
+    "category": "Forest sticks",
+    "description": "Broken fallen branch with snapped ends and forks",
+    "triangles": 1356,
+    "vertices": 698,
+    "size_m": [
+      0.491,
+      0.086,
+      0.212
+    ],
+    "relative_path": "models/stick_forest_02_snap.glb"
+  },
+  {
+    "name": "stick_forest_03_crooked",
+    "category": "Forest sticks",
+    "description": "Crooked woodland stick with thinner limbs",
+    "triangles": 1356,
+    "vertices": 698,
+    "size_m": [
+      0.583,
+      0.072,
+      0.386
+    ],
+    "relative_path": "models/stick_forest_03_crooked.glb"
+  },
+  {
+    "name": "driftwood_01_bleached",
+    "category": "Beach driftwood",
+    "description": "Small grey-beige water-worn driftwood",
+    "triangles": 1698,
+    "vertices": 864,
+    "size_m": [
+      0.412,
+      0.083,
+      0.206
+    ],
+    "relative_path": "models/driftwood_01_bleached.glb"
+  },
+  {
+    "name": "driftwood_02_forked",
+    "category": "Beach driftwood",
+    "description": "Pale forked beach driftwood",
+    "triangles": 1698,
+    "vertices": 864,
+    "size_m": [
+      0.578,
+      0.117,
+      0.369
+    ],
+    "relative_path": "models/driftwood_02_forked.glb"
+  },
+  {
+    "name": "driftwood_03_long",
+    "category": "Beach driftwood",
+    "description": "Long slim bleached salt-worn branch",
+    "triangles": 1698,
+    "vertices": 864,
+    "size_m": [
+      0.648,
+      0.062,
+      0.142
+    ],
+    "relative_path": "models/driftwood_03_long.glb"
+  }
+]

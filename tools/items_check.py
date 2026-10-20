@@ -39,6 +39,8 @@ CLIENTS = [
     ("gather", ["--gather"], 2500, [
         ("harvest prompt shown", r"prompt \"(Press E to harvest [^\"]*)\"", None, None),
         ("sticks gathered", r"sticks 0 -> " + NUM, 1, 100),
+        ("stones use the real meshes", r"Natural look: stone uses " + NUM + " real meshes", 6, 6),
+        ("sticks use the real meshes", r"Natural look: stick uses " + NUM + " real meshes", 3, 3),
     ]),
     ("plantpick", ["--plantpick"], 6000, [
         ("plants were picked", r"tried (\d+), gone", 3, 20),
