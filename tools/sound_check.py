@@ -79,6 +79,8 @@ SCENARIOS = [
         ("falls share a voice", r"falls 6 -> " + NUM + r" voices", 2, 2),
         ("fall width adds up", r"voices, \d+ merged, widest " + NUM, 20, 20),
         ("far fires share a loop", r"fires 7 -> " + NUM + r" loops", 2, 2),
+        ("fall base plays near a fall", r"fall base: playing (true)", 0, 1, "text"),
+        ("fall base level", r"fall base: playing true at " + NUM + r" dB", -30, -5),
         ("five hearths merged", r"loops, " + NUM + r" merged", 5, 5),
     ]),
     ("felling", ["--chop"], 7000, [

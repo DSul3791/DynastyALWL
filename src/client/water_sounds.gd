@@ -36,6 +36,13 @@ const ROWS_PER_FRAME := 2               # of the 17 scan rows
 const SEPARATION_M := 36.0
 const FALL_MERGE_M := 100.0              # falls farther than this and within FALL_CLUSTER_M of each other share one voice
 const FALL_CLUSTER_M := 120.0
+
+# The base of a fall (job 55): a close hiss and splash under the roar, only within BASE_REACH_M of the landing
+# point. Level from the fall: +3 dB per doubling of width (4 m reference) and +2 dB per doubling of the drop (4 m),
+# the flow through the width. One loop at most, a few dB softer with distance by its own attenuation.
+const BASE_REACH_M := 60.0
+const BASE_DB := -12.0
+const BASE_FILE := "water_fall_base"
 const FALL_DROP_M := 1.0                # surface drop between neighbouring squares
 const POND_AROUND := 16
 const RIVER_AROUND := 8
@@ -59,6 +66,10 @@ var summary: String = ""
 var merged_falls: int = 0               # falls folded into another's voice at the last choice (HUD, check)
 
 var _flora
+var _base: AudioStreamPlayer3D          # the fall-base hiss and splash, one loop at the nearest fall within BASE_REACH_M
+var _base_target: Vector3 = Vector3.ZERO
+var _base_db: float = -80.0
+var base_fall_drop: float = 0.0         # HUD: drop height of the fall the base sound sits at, 0 when none
 var _slots: Array = []                  # {player, kind, target, fade}
 var _streams: Dictionary = {}
 var _scan_left: float = 0.0
@@ -93,13 +104,26 @@ func setup(flora, terrain: VoxelLodTerrain = null) -> void:
 		player.add_to_group("world_sounds")
 		_slots.append({"player": player, "kind": "", "target": Vector3.ZERO, "fade": -80.0})
 
+	# The base of the nearest fall, heard close (job 55): spray and churn under the roar.
+	_base = AudioStreamPlayer3D.new()
+	_base.bus = "Nature"
+	_base.volume_db = -80.0
+	_base.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
+	_base.unit_size = 6.0
+	_base.max_distance = BASE_REACH_M * 1.5
+	_base.attenuation_filter_cutoff_hz = 12000.0
+	add_child(_base)
+	_base.add_to_group("world_sounds")
+
 	# Loads the loops now, so the first river met doesn't stall a frame reading a file.
 	for kind in KINDS:
 		_variants(str(KINDS[kind]["file"]))
 
+	_variants(BASE_FILE)
+
 
 func voices_playing() -> int:
-	var count: int = 0
+	var count: int = 1 if _base.playing else 0
 
 	for slot in _slots:
 		if slot["player"].playing:
@@ -130,6 +154,8 @@ func update(delta: float, body: CharacterBody3D, underwater: bool) -> void:
 			_row = -1
 			_choose()
 
+	_update_base(delta)
+
 	for slot in _slots:
 		var player: AudioStreamPlayer3D = slot["player"]
 
@@ -144,6 +170,28 @@ func update(delta: float, body: CharacterBody3D, underwater: bool) -> void:
 		if db <= -60.0 and player.volume_db < -55.0:
 			player.stop()
 			slot["kind"] = ""
+
+
+func _update_base(delta: float) -> void:
+	if _base_db <= -60.0 and _base.volume_db < -55.0:
+		if _base.playing:
+			_base.stop()
+
+		return
+
+	if not _base.playing:
+		var list: Array = _variants(BASE_FILE)
+
+		if list.is_empty():
+			return
+
+		_base.stream = list[0]
+		_base.global_position = _base_target
+		_base.volume_db = -80.0
+		_base.play(_rng.randf() * 8.0)
+
+	_base.global_position = _base.global_position.lerp(_base_target, clampf(delta * 3.0, 0.0, 1.0))
+	_base.volume_db = lerpf(_base.volume_db, _base_db, clampf(delta * 2.0, 0.0, 1.0))
 
 
 # A scan reads the squares a few rows per frame (no frame pays for all of it),
@@ -246,6 +294,8 @@ func _choose() -> void:
 
 		if apart:
 			chosen.append(candidate)
+
+	_pick_base(candidates)
 
 	for candidate in chosen:
 		candidate["depth"] = _depth_at(candidate["at"]) if candidate["kind"] != "fall" else -1.0
@@ -405,6 +455,28 @@ func _assign(chosen: Array, origin: Vector3) -> void:
 			parts.append("%s %.0f m %s" % [slot["kind"], d, slot.get("tuned", "")])
 
 	summary = ", ".join(parts) if not parts.is_empty() else "none"
+
+
+# The nearest single fall within BASE_REACH_M gets the close hiss and splash.
+func _pick_base(candidates: Array) -> void:
+	var best: Dictionary = {}
+
+	for candidate in candidates:
+		if candidate["kind"] != "fall" or candidate.has("merged") or float(candidate["distance"]) > BASE_REACH_M:
+			continue
+
+		if best.is_empty() or float(candidate["distance"]) < float(best["distance"]):
+			best = candidate
+
+	if best.is_empty():
+		_base_db = -80.0
+		base_fall_drop = 0.0
+		return
+
+	_base_target = best["at"]
+	base_fall_drop = float(best["drop"])
+	_base_db = BASE_DB + clampf(3.0 * log(maxf(float(best.get("width", 4.0)), 0.5) / 4.0) / log(2.0), -5.0, 4.0) \
+		+ clampf(2.0 * log(maxf(base_fall_drop, 1.0) / 4.0) / log(2.0), -4.0, 5.0)
 
 
 # How deep the water is under a surface point (m): a voxel ray down to the bed, -1 when unknown.

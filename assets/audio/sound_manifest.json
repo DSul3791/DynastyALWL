@@ -145,6 +145,14 @@
    "priority": 2
   },
   {
+   "name": "water_fall_base",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "water_sounds.gd: the close spray and churn where a fall lands (within 60 m)",
+   "to_supply": "A close waterfall base loop: hiss and splash, steady, seamless, no bubbles",
+   "priority": 2
+  },
+  {
    "name": "water_fall",
    "state": "generated",
    "variants": 1,

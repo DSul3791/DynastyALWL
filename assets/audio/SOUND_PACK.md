@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **179 slots: 17 recorded, 153 generated placeholders, 9 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **180 slots: 17 recorded, 154 generated placeholders, 9 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -75,6 +75,7 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 2 | `treewind_leaves` | generated | 1 | tree_wind.gd: wind in summer and spring leaves (loop) | A seamless loop of wind in green broadleaf trees, 20 s or more |
 | 2 | `treewind_pine` | generated | 1 | tree_wind.gd: wind through conifers, a soft needle hiss (loop, level follows wind and conifer count) | A seamless loop of wind in pines, 20 s or more, steady, no gusts |
 | 2 | `water_fall` | generated | 1 | water_sounds.gd: a waterfall roar | A waterfall loop, seamless |
+| 2 | `water_fall_base` | generated | 1 | water_sounds.gd: the close spray and churn where a fall lands (within 60 m) | A close waterfall base loop: hiss and splash, steady, seamless, no bubbles |
 | 2 | `water_pond` | generated | 1 | water_sounds.gd: gentle lapping at a pond shore | A calm lake shore lapping loop, seamless |
 | 2 | `wind_storm` | generated | 1 | weather_sounds.gd: gale howl in storms and blizzards | A howling gale loop, seamless |
 | 2 | `wolf_howl` | generated | 2 | creature_sounds.gd: a wolf's howl (idle), far away at night | 2 to 3 long wolf howls, 3 to 6 s, single wolf and a pack |

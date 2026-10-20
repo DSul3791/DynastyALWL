@@ -146,12 +146,22 @@ def fall(rng, n):
     return normalize(x)
 
 
+def fall_base(rng, n):
+    """The spray and churn where a fall lands, heard close: a steady bright hiss over a wide splashing body, smooth
+    (no bubbles, no rhythm: the earlier cauldron and horse-brush complaints)."""
+    hiss = flow(rng, n, 2500, 10500, 0.0)
+    body = flow(rng, n, 500, 3800, 0.2)
+    x = (body + 0.8 * hiss) * drift(rng, n, 0.05)
+    return normalize(x)
+
+
 def main():
     rng = np.random.default_rng(20261020)
     for name, make, seconds in (("water_brook", brook, 24), ("water_river", river, 24),
                                 ("water_pond", pond, 24), ("water_fall", fall, 24)):
         write_ogg(name, make(rng, seconds * SR))
-    print("Wrote 4 water loops to %s" % OUT)
+    write_ogg("water_fall_base", fall_base(np.random.default_rng(20261121), 24 * SR))   # its own stream: the older loops stay as they were
+    print("Wrote 5 water loops to %s" % OUT)
 
 
 if __name__ == "__main__":

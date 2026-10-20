@@ -2329,7 +2329,11 @@ func _process(delta: float) -> void:
 			var out: Array = sound.water._merge_far_falls(falls, base)
 			print("Terrain client: merge check: falls 6 -> %d voices, %d merged, widest %.0f" % [out.size(), sound.water.merged_falls, out.reduce(func(m, f): return maxf(m, float(f["width"])), 0.0)])
 
+		if _merge_step == 0:
+			sound.water._pick_base([{"kind": "fall", "at": base + Vector3(10.0, 0.0, 0.0), "distance": 10.0, "drop": 8.0, "width": 8.0}])
+
 		if _merge_step == 120:
+			print("Terrain client: fall base: playing %s at %.1f dB (target %.1f), drop %.0f m" % [str(sound.water._base.playing), sound.water._base.volume_db, sound.water._base_db, sound.water.base_fall_drop])
 			print("Terrain client: merge check: fires 7 -> %d loops, %d merged" % [sound.fire._loops.size(), sound.fire.merged_fires])
 
 		_merge_step += 1
