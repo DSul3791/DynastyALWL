@@ -32,9 +32,10 @@ const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")
 const CompassScript := preload("res://src/client/admin_compass.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 65
+const BUILD := 66
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
+const LookSettings := preload("res://src/client/look_settings.gd")
 const KnowledgeScript := preload("res://src/client/inspection_knowledge.gd")
 const StreamScript := preload("res://src/stream/network_voxel_stream.gd")
 const BlockLinkScript := preload("res://src/stream/block_link.gd")
@@ -695,6 +696,10 @@ func _apply_quality() -> void:
 	if _sun != null:
 		_sun.shadow_enabled = float(QUALITY_SHADOW_M[quality]) > 0.0
 		_sun.directional_shadow_max_distance = maxf(float(QUALITY_SHADOW_M[quality]), 1.0)
+
+	if _environment != null:
+		LookSettings.apply(_environment, _sun, get_viewport(), quality)
+		_environment.fog_density = 0.05 if underwater else LookSettings.FOG_DENSITY
 
 
 # The thinking-brain icon, a white outline with a gray inside. Loaded as an
@@ -1474,7 +1479,7 @@ func _update_underwater() -> void:
 
 	underwater = under
 	_tint.visible = under
-	_environment.fog_density = 0.05 if under else 0.0004
+	_environment.fog_density = 0.05 if under else LookSettings.FOG_DENSITY
 	_environment.fog_light_color = Color(0.08, 0.28, 0.4) if under else SkyClouds.HORIZON
 	_environment.fog_sky_affect = 1.0 if under else 0.0
 

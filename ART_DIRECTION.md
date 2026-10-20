@@ -79,6 +79,6 @@ Ranked by how much closer each step gets us per millisecond of frame time on a 1
 
 Every step gets a before-and-after render (cloud software rendering, `cloud-rendering` memory) and a frame-time check in the owner's playtest.
 
-## 5. Open question for the owner
+## 5. Realism over storybook
 
-**[Proposed]** The picture is near-photoreal, while the earlier direction (DESIGN_IDEAS Section 1) said "the world looks like the best of old fantasy book illustrations" with slightly cartoonish characters. Recommended: the picture wins. The world aims for natural, realistic materials and light with warm, rich colour, and "storybook" lives in the colour and mood rather than in painted shapes. The character style stays open until characters are built.
+**[Decided] (owner, 2026-10-20: "to me the picture is right")** The picture is near-photoreal, while the earlier direction (DESIGN_IDEAS Section 1) said "the world looks like the best of old fantasy book illustrations" with slightly cartoonish characters. The picture wins. The world aims for natural, realistic materials and light with warm, rich colour, and "storybook" lives in the colour and mood rather than in painted shapes. The character style stays open until characters are built.
