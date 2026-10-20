@@ -229,6 +229,9 @@ var _serial: int = 0                   # numbers each chunk plan, so an outdated
 var _tasks: Array = []                 # WorkerThreadPool tasks making chunk plans
 var _setup_queue: Array = []           # species entries still to build (see _setup_step)
 var _setup_next: int = 0
+var _models_ready: Dictionary = {}      # species id -> [near meshes, far meshes] from the worker
+var _models_mutex: Mutex = Mutex.new()
+var _models_task_id: int = -1
 var _setup_total: int = 0
 var _setup_done: bool = false
 var _mid_wanted: Array = []            # [species id, variant, full mesh] still to be simplified (see _decimate_task)
@@ -347,11 +350,46 @@ func setup(tables, tile_rules: Dictionary) -> void:
 
 	_setup_queue = tables.get_entries("flora").filter(func(entry): return not entry.get("retired", false))
 	_setup_total = _setup_queue.size()
-	_setup_step(0)
+	_models_task_id = WorkerThreadPool.add_task(_models_task.bind(_setup_queue.duplicate()), false, "flora models")
+
+
+# Worker thread: builds each species' models (a tree species took 14 to 56 ms on the main thread).
+# Only meshes are made here; the tables are filled on the main thread in _setup_entry.
+func _models_task(entries: Array) -> void:
+	for entry in entries:
+		var height: Array = entry["height_m"]
+		var reference: float = 0.5 * (float(height[0]) + float(height[1]))
+		var kind: int = KINDS.find(str(entry["kind"]))
+		var shape: String = str(entry["shape"])
+		var built: bool = kind != KIND_PLANT or shape in ["grass", "reed", "fern", "flower", "shrub", "cactus"]
+		var near_meshes: Array = []
+		var far_meshes: Array = []
+
+		if not built:
+			var plain: ArrayMesh = _make_mesh(entry, reference)
+			near_meshes = [plain]
+			far_meshes = [plain]
+		elif kind == KIND_PLANT:
+			# Small plants: two variants, one model at every distance.
+			for v in range(2):
+				var model: ArrayMesh = TreeBuilder.build(entry, reference, v, false, _tree_materials)
+				near_meshes.append(model)
+				far_meshes.append(model)
+		else:
+			for v in range(TreeBuilder.VARIANTS):
+				near_meshes.append(TreeBuilder.build(entry, reference, v, false, _tree_materials))
+				far_meshes.append(TreeBuilder.build(entry, reference, v, true, _tree_materials))
+
+		_models_mutex.lock()
+		_models_ready[int(entry["id"])] = [near_meshes, far_meshes]
+		_models_mutex.unlock()
 
 
 # Builds every queued species now (tools and the preview, which have no frame budget).
 func finish_setup() -> void:
+	if _models_task_id != -1:
+		WorkerThreadPool.wait_for_task_completion(_models_task_id)
+
 	_setup_step(1 << 40)
 
 
@@ -360,7 +398,9 @@ func _setup_step(budget_usec: int = 4000) -> bool:
 	var start: int = Time.get_ticks_usec()
 
 	while _setup_next < _setup_queue.size():
-		_setup_entry(_setup_queue[_setup_next])
+		if not _setup_entry(_setup_queue[_setup_next]):
+			break      # the worker has not built this species yet
+
 		_setup_next += 1
 
 		if Time.get_ticks_usec() - start >= budget_usec:
@@ -372,6 +412,8 @@ func _setup_step(budget_usec: int = 4000) -> bool:
 	if not _setup_done:
 		_setup_done = true
 		_setup_queue = []
+		WorkerThreadPool.wait_for_task_completion(_models_task_id)
+		_models_task_id = -1
 		_start_mid_task()
 
 		# Chunks that arrived before their species were built had no crowns in the cover index.
@@ -385,7 +427,7 @@ func _setup_step(budget_usec: int = 4000) -> bool:
 
 # Builds one species (models and look table). setup queues them; _setup_step does a few per frame
 # so the welcome does not stall on all of them at once (build 233).
-func _setup_entry(entry: Dictionary) -> void:
+func _setup_entry(entry: Dictionary) -> bool:
 	var height: Array = entry["height_m"]
 	var reference: float = 0.5 * (float(height[0]) + float(height[1]))
 	_labels[int(entry["id"])] = _label_for(entry)
@@ -394,26 +436,18 @@ func _setup_entry(entry: Dictionary) -> void:
 	_slugs[int(entry["id"])] = str(entry["name"])
 	_display[int(entry["id"])] = str(entry.get("display", entry.get("name", "")))
 	var kind: int = KINDS.find(str(entry["kind"]))
-	var near_meshes: Array = []
-	var far_meshes: Array = []
-
 	var shape: String = str(entry["shape"])
 	var built: bool = kind != KIND_PLANT or shape in ["grass", "reed", "fern", "flower", "shrub", "cactus"]
+	# The models come from the worker (_models_task); wait for this species' turn.
+	_models_mutex.lock()
+	var models: Array = _models_ready.get(int(entry["id"]), [])
+	_models_mutex.unlock()
 
-	if not built:
-		var plain: ArrayMesh = _make_mesh(entry, reference)
-		near_meshes = [plain]
-		far_meshes = [plain]
-	elif kind == KIND_PLANT:
-		# Small plants: two variants, one model at every distance.
-		for v in range(2):
-			var model: ArrayMesh = TreeBuilder.build(entry, reference, v, false, _tree_materials)
-			near_meshes.append(model)
-			far_meshes.append(model)
-	else:
-		for v in range(TreeBuilder.VARIANTS):
-			near_meshes.append(TreeBuilder.build(entry, reference, v, false, _tree_materials))
-			far_meshes.append(TreeBuilder.build(entry, reference, v, true, _tree_materials))
+	if models.is_empty():
+		return false
+
+	var near_meshes: Array = models[0]
+	var far_meshes: Array = models[1]
 
 	# The mid model starts as the full model; _decimate_task swaps in the simplified one when ready.
 	var mid_meshes: Array = near_meshes.duplicate()
@@ -461,7 +495,7 @@ func _setup_entry(entry: Dictionary) -> void:
 		var yc: Array = entry["young_color"]
 		_species[int(entry["id"])]["young_tint"] = _plant_tint(entry, yc)
 		_species[int(entry["id"])]["young_m"] = entry.get("young_m", [4.0, 15.0])
-
+	return true
 
 func _make_tree_materials() -> void:
 	var foliage: Shader = Shader.new()
@@ -1061,7 +1095,7 @@ func _refresh(chunk: Vector2i, position: Vector3) -> void:
 	_serial += 1
 	entry["building"] = level
 	entry["serial"] = _serial
-	var items: Dictionary = entry["items"].duplicate(true)
+	var items: Dictionary = entry["items"].duplicate()     # packed arrays copy on write, so the worker never sees later removals
 	_tasks.append(WorkerThreadPool.add_task(_plan_task.bind(chunk, _serial, level, items), false, "flora chunk"))
 
 
@@ -1144,6 +1178,10 @@ func _exit_tree() -> void:
 
 # Waits for chunk work still running (call before freeing the view).
 func finish_tasks() -> void:
+	if _models_task_id != -1:
+		WorkerThreadPool.wait_for_task_completion(_models_task_id)
+		_models_task_id = -1
+
 	for task in _tasks:
 		WorkerThreadPool.wait_for_task_completion(task)
 

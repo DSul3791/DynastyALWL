@@ -40,17 +40,25 @@ static func at(pos: Vector3, index) -> float:
 # (empty for unknown species).
 static func add_chunk(index, chunk: Vector2i, items: Dictionary, info: Callable) -> void:
 	var ids: PackedInt32Array = items["ids"]
+	var heights = items["heights"]
+	var positions = items["positions"]
 	var trees: Array = []
+	var rows: Dictionary = {}     # species id -> info row, asked once per species (this runs on the main thread)
 
 	for n in range(ids.size()):
-		var row: Array = info.call(ids[n] >> 16)
+		var species: int = ids[n] >> 16
+		var row: Array = rows.get(species, [])
+
+		if not rows.has(species):
+			row = info.call(species)
+			rows[species] = row
 
 		if row.is_empty() or int(row[0]) != KIND_TREE:
 			continue
 
-		var height: float = float(items["heights"][n])
+		var height: float = float(heights[n])
 		var scale: float = clampf(height / maxf(float(row[2]), 0.1), SIZE_MIN, SIZE_MAX)
-		var p: Vector3 = items["positions"][n]
+		var p: Vector3 = positions[n]
 		trees.append([ids[n], p.x, p.z, float(row[1]) * 0.5 * scale, p.y + height])
 
 	index.set_chunk(chunk, trees)
@@ -96,7 +104,12 @@ class Index:
 				_cells[cell] = {"f": PackedFloat32Array(), "k": PackedInt64Array()}
 
 			var entry: Dictionary = _cells[cell]
-			entry["f"].append_array(PackedFloat32Array([x, z, radius, float(row[4])]))
+			var f: PackedFloat32Array = entry["f"]
+			f.append(x)
+			f.append(z)
+			f.append(radius)
+			f.append(float(row[4]))
+			entry["f"] = f
 			entry["k"].append(base | (int(row[0]) & 0xFFFFFF))
 			cells[cell] = true
 			trees += 1
