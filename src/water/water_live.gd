@@ -159,7 +159,7 @@ func _run() -> void:
 
 		if since >= (START_PUBLISH_TICKS if _dry_start else PUBLISH_TICKS) or _budget <= 0.0:
 			since = 0
-			var levels: PackedFloat32Array = _show_channel(sim, sim.level_map(), channel)
+			var levels: PackedFloat32Array = sim.level_map()
 			_mutex.lock()
 			_pending = levels
 			_mutex.unlock()

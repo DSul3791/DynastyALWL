@@ -552,7 +552,7 @@ func _carve_guides(rivers: Array) -> void:
 
 	for pond in _world_ponds:
 		var centre: Vector2 = Vector2(pond["centre"]) / spacing_m - Vector2(float(_origin_sx), float(_origin_sz))
-		_guard_shore(centre, float(pond.get("radius", pond_radius)), float(pond["level"]) - 1.5, pond_shore)
+		_guard_shore(centre, float(pond.get("radius", pond_radius)), float(pond["level"]) - float(_rules.get("head_pond_outlet_drop_m", 3.0)), pond_shore)
 
 	var ponds_placed: Array = []          # [centre, rim height] of every head pond so far
 	river_cells = 0
@@ -964,7 +964,7 @@ func _cut_brook_path(
 	carved: PackedFloat32Array, land: PackedFloat32Array, pond_centre: Vector2, radius_m: float, rim: float, path: PackedVector2Array,
 	head_bed: float, width: float, depth: float, slope: float, strength: float, best_flow: PackedFloat32Array
 ) -> void:
-	var start_bed: float = rim - 1.5
+	var start_bed: float = rim - float(_rules.get("head_pond_outlet_drop_m", 3.0))
 	var end_bed: float = minf(head_bed, start_bed)
 	var outlet_min_width: float = float(_rules.get("head_pond_outlet_width_m", 24.0))
 	var outlet_blend: float = maxf(float(_rules.get("head_pond_outlet_blend_m", 60.0)), 1.0)
