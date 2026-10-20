@@ -117,7 +117,9 @@ func build_frame(origin_x: int, origin_z: int, count: int) -> void:
 		for i in range(samples):
 			heights[out + i] = w0 * line_0[i] + w1 * line_1[i] + w2 * line_2[i] + w3 * line_3[i]
 
-	_add_detail(_shape_valleys())
+	var detail_scale: PackedFloat32Array = _shape_valleys()
+	_add_detail(detail_scale)
+	_add_strata(detail_scale)
 
 
 # Owner (2026-10-19): rivers run at the bottom of real valleys. Around every world river
@@ -349,3 +351,101 @@ func _add_detail(detail_scale: PackedFloat32Array = PackedFloat32Array()) -> voi
 
 func height_at(i: int, j: int) -> float:
 	return heights[j * samples + i]
+
+
+# Owner (2026-10-20): "the terrain is way too smooth ... erosion was supposed to wear away
+# the soft stuff leaving the hard stuff to create ledges, mountains, cliffs, plateaus".
+# The rock under the land lies in beds (strata). Over time soft beds wear back into gentle
+# slopes, while a hard bed stands as a cliff with a flat bench (its own top) behind it.
+# Done as a remap of each sample's height, a function of world position only, so tiles
+# still match along their edges: inside a hard bed the land is made steeper (the cliff),
+# above it nearly flat (the bench), so every hillside that crosses the bed gets a ledge
+# at the same height all around the hill, as real layered rock does. The beds tilt and
+# bend gently over kilometers (dip), and some country is ledge country while elsewhere
+# the hills stay rounded (hard_country). Valley floors, the coast and low land are left
+# alone. Rivers are cut afterwards and fall over the ledges as waterfalls.
+func _add_strata(detail_scale: PackedFloat32Array = PackedFloat32Array()) -> void:
+	if not _rules.has("strata"):
+		return
+
+	var rules: Dictionary = _rules["strata"]
+	var bed: float = float(rules["bed_m"])
+	var hard_share: float = float(rules["hard_share"])
+	var talus: float = float(rules["talus_part"])           # lower part of a hard bed: steep slope of fallen rock
+	var cliff: float = float(rules["cliff_part"])           # then the cliff
+	var talus_rate: float = float(rules["talus_steepen"])
+	var bench_rate: float = float(rules["bench_flatten"])
+	var cliff_rate: float = (1.0 - talus * talus_rate - (1.0 - talus - cliff) * bench_rate) / cliff
+	var land_from: float = float(rules["land_from_m"])
+	var land_full: float = float(rules["land_full_m"])
+	var dip: PackedFloat32Array = _noise_field("strata_dip", float(rules["dip_wavelength_m"]))
+	var country: PackedFloat32Array = _noise_field("strata_country", float(rules["country_wavelength_m"]))
+	var dip_m: float = float(rules["dip_m"])
+	var country_low: float = float(rules["country_from"])
+	var country_high: float = float(rules["country_full"])
+	var seed_value: int = SeedUtil.purpose_seed(_settings.master_seed, "strata_beds", 0)
+
+	for index in range(samples * samples):
+		var h: float = heights[index]
+
+		if h <= land_from:
+			continue
+
+		var strength: float = smoothstep(land_from, land_full, h) * smoothstep(country_low, country_high, country[index])
+
+		if not detail_scale.is_empty():
+			strength *= detail_scale[index]
+
+		if strength <= 0.0:
+			continue
+
+		# Position in the beds: tilted and bent a little.
+		var depth: float = (h + dip_m * dip[index]) / bed
+		var bed_index: int = int(floor(depth))
+		var t: float = depth - float(bed_index)
+
+		if _bed_hash(bed_index, seed_value) >= hard_share:
+			continue
+
+		# Each hard bed has its own strength: some are low ledges, some tall cliffs.
+		strength *= 0.4 + 0.6 * _bed_hash(bed_index + 7919, seed_value)
+
+		# Height gained within the bed, as a share of the bed (0..1 at t 0..1, like t).
+		var rise: float
+
+		if t < talus:
+			rise = t * talus_rate
+		elif t < talus + cliff:
+			rise = talus * talus_rate + (t - talus) * cliff_rate
+		else:
+			rise = talus * talus_rate + cliff * cliff_rate + (t - talus - cliff) * bench_rate
+
+		heights[index] = h + (rise - t) * bed * strength
+
+
+static func _bed_hash(bed_index: int, seed_value: int) -> float:
+	var x: int = (bed_index * 73856093) ^ seed_value
+	x = (x ^ (x >> 13)) * 1274126177
+	x = x ^ (x >> 16)
+	return float(x & 0xFFFF) / 65535.0
+
+
+# A smooth noise field over this frame, -1..1, world-aligned (the same in every tile).
+func _noise_field(purpose: String, wavelength_m: float) -> PackedFloat32Array:
+	var noise: FastNoiseLite = FastNoiseLite.new()
+	noise.seed = SeedUtil.purpose_seed(_settings.master_seed, purpose, 0)
+	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	noise.fractal_type = FastNoiseLite.FRACTAL_NONE
+	noise.frequency = spacing_m / wavelength_m
+	var tile_samples_w: int = int(_settings.tile_size_m / _settings.map_spacing_m)
+	var data: PackedByteArray = WrapNoiseScript.bytes(
+		noise, origin_sx, origin_sz, samples, samples, _settings.min_tile * tile_samples_w, _settings.min_tile * tile_samples_w,
+		_settings.tiles_x * tile_samples_w, _settings.tiles_z * tile_samples_w, int(ceil(4.0 * wavelength_m / spacing_m))
+	)
+	var field: PackedFloat32Array = PackedFloat32Array()
+	field.resize(samples * samples)
+
+	for index in range(samples * samples):
+		field[index] = float(data[index]) / 127.5 - 1.0
+
+	return field

@@ -793,6 +793,32 @@ func _carve_guides(rivers: Array) -> void:
 
 			_cut_brook_path(carved, centre, float(pond.get("radius", pond_radius)), float(pond["level"]), path, float(head_levels[h]) - brook_depth, brook_width * brook_scale, brook_depth, slope, start_km2 / cell_km2, best_flow)
 
+	# Owner report (2026-10-20): gorges end in odd protruding edges: knobs and spurs of the
+	# old ground left standing between the stamps of the bed and the banks. On cut ground
+	# beside the water a spur is worn down to the average of its neighbours, never raised,
+	# so the river and the walls stay as cut. Done before the pond rims are restored.
+	for pass_n in range(2):
+		var before: PackedFloat32Array = carved.duplicate()
+
+		for nr in range(1, samples - 1):
+			for nc in range(1, samples - 1):
+				var k: int = nr * samples + nc
+
+				if water_class[k] != 0 or _ocean[k] == 1:
+					continue
+
+				var sum_h: float = 0.0
+				var next_to_cut: bool = false
+
+				for dz in range(-1, 2):
+					for dx in range(-1, 2):
+						var n: int = k + dz * samples + dx
+						sum_h += before[n]
+						next_to_cut = next_to_cut or before[n] < heights[n] - 3.0
+
+				if next_to_cut:
+					carved[k] = minf(before[k], sum_h / 9.0)
+
 	# Owner report (2026-10-20, an empty head pond): the rivers are cut after their ponds,
 	# and a river bed passing by (or leaving at the head's depth) cut the pond's rim down to
 	# its floor, so it drained. The shore ring is raised back to just under the lip, the

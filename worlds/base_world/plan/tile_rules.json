@@ -46,6 +46,22 @@
 		"lift_max_m": 3,
 		"detail_on_floor": 0.1
 	},
+	"strata": {
+		"note": "Owner (2026-10-20): hard rock beds stand as ledges and cliffs with flat benches on top, soft beds wear into gentle slopes (tile_height.gd _add_strata). Heights in a hard bed are remapped: talus_part of the bed steepened by talus_steepen, then cliff_part made into the cliff, the rest flattened to bench_flatten. dip bends the beds over kilometers; country picks ledge country (above country_from, full at country_full) versus rounded hills.",
+		"bed_m": 30,
+		"hard_share": 0.45,
+		"talus_part": 0.3,
+		"talus_steepen": 0.7,
+		"cliff_part": 0.12,
+		"bench_flatten": 0.05,
+		"land_from_m": 12,
+		"land_full_m": 40,
+		"dip_m": 40,
+		"dip_wavelength_m": 3000,
+		"country_wavelength_m": 6000,
+		"country_from": -0.35,
+		"country_full": 0.1
+	},
 	"erosion": {
 		"note": "Erosion on a 32 m copy of the tile: water cuts valleys in proportion to how much flows through (stream power), slopes soften (diffusion). The change is added back onto the 8 m map. It fades out near the tile edges so neighboring tiles still match.",
 		"cell_m": 32,
