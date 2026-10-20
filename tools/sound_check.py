@@ -140,9 +140,12 @@ SCENARIOS = [
         ("last is the rise", r"last (stance_rise)", 0, 1, "text"),
     ]),
     ("lake", ["--lake"], 9000, [
-        ("soft laps, not a steady bed", r"lake laps: " + NUM + r" laps", 2, 8),
+        ("silent on a calm day", r"lake laps: " + NUM + r" laps calm", 0, 0),
+        ("rare laps when windy", r" " + NUM + r" laps windy", 1, 8),
         ("brook is Dave's recording", r"brook loop (recorded)", 0, 1, "text"),
         ("laps are the slowed fish splash", r"last (lake_lap_\d)", 0, 1, "text"),
+        ("head pond with a spring current is a lake", r"kinds (pond pond river pond brook);", 0, 1, "text"),
+        ("river and brook next to a lake stay silent, the far river plays", r"flowing near lake kept " + NUM + r" of 3", 1, 1),
     ]),
     ("ui_sounds", ["--ui-sounds"], 6000, [
         ("a tick per changed slot", r"ui sounds: " + NUM + r" hotbar ticks", 3, 3),

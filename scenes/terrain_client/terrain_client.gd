@@ -203,6 +203,7 @@ var _hurts: Array = []
 var test_stepfx: bool = false          # --stepfx: wade, then dry steps: squelch and cloth layers
 var test_swing: bool = false           # --swing-test: tool whooshes (job 71)
 var test_insects: bool = false         # --insect-test: summer insect bed levels by season and hour (job 72)
+var _lake_calm_laps: int = 0
 var test_stance: bool = false          # --stance: stand, crouch, sit, lie and rise in turn (job 56)
 var _stance_step: int = 0
 var _lake_start_msec: int = 0
@@ -2422,16 +2423,30 @@ func _process(delta: float) -> void:
 			print("Terrain client: ui sounds: %d hotbar ticks, last %s" % [sound.itemfx.hotbar_played, sound.itemfx.last])
 			_ui_step += 1
 
-	# Lake laps: still-water squares 8 to 14 m away for 30 s; the report counts the laps.
+	# Lake: still water is silent. Squares 8 to 14 m away: 10 s calm (no laps), then 10 s windy (rare laps, waits cut to a tenth);
+	# the classification table and the near-lake quieting are asserted too.
 	if test_lake and now - connected_msec > 18000:
-		if sound.water.test_shore.is_empty():
+		var water = sound.water
+
+		if water.test_shore.is_empty():
 			var at: Vector3 = body.global_position
-			sound.water.test_shore = [{"at": at + Vector3(8.0, -1.0, 0.0)}, {"at": at + Vector3(-10.0, -1.0, 6.0)}, {"at": at + Vector3(0.0, -1.0, -14.0)}]
+			water.test_shore = [{"at": at + Vector3(8.0, -1.0, 0.0)}, {"at": at + Vector3(-10.0, -1.0, 6.0)}, {"at": at + Vector3(0.0, -1.0, -14.0)}]
+			water.lap_scale = 0.1
+			water.test_wind = 0.0
 			_lake_start_msec = now
-		elif now - _lake_start_msec > 20000 and test_lake:
+		elif now - _lake_start_msec > 10000 and water.test_wind == 0.0:
+			_lake_calm_laps = water.laps_played
+			water.test_wind = 1.0
+			water._lap_left = 0.5
+		elif now - _lake_start_msec > 25000 and test_lake:
 			test_lake = false
-			print("Terrain client: lake laps: %d laps in 20 s, last %s; brook loop %s" % [sound.water.laps_played, sound.water.last_lap, sound.water.brook_tag()])
-			sound.water.test_shore = []
+			var table: String = "%s %s %s %s %s" % [water.kind_for(25, 0.8), water.kind_for(20, 0.1), water.kind_for(12, 0.9), water.kind_for(10, 0.1), water.kind_for(3, 0.4)]
+			var at2: Vector3 = body.global_position
+			var lakes: Array = [{"kind": "pond", "at": at2 + Vector3(10.0, 0.0, 0.0)}]
+			var flowing: Array = [{"kind": "river", "at": at2 + Vector3(20.0, 0.0, 0.0)}, {"kind": "brook", "at": at2 + Vector3(-8.0, 0.0, 0.0)}, {"kind": "river", "at": at2 + Vector3(0.0, 0.0, 60.0)}]
+			var kept: int = water.quiet_near_lakes(lakes, flowing, at2).size()
+			print("Terrain client: lake laps: %d laps calm, %d laps windy, last %s; brook loop %s; kinds %s; flowing near lake kept %d of 3 (silenced %d)" % [_lake_calm_laps, water.laps_played - _lake_calm_laps, water.last_lap, water.brook_tag(), table, kept, water.lake_silenced])
+			water.test_shore = []
 
 	if test_voice_priority and now - connected_msec > 18000 and now >= _test_fire_at:
 		_test_fire_at = now + 10000000

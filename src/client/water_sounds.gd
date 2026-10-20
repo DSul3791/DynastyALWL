@@ -42,8 +42,16 @@ const FALL_CLUSTER_M := 120.0
 # the flow through the width. One loop at most, a few dB softer with distance by its own attenuation.
 # Lake and pond shores (Dave 2026-10-20): no rushing bed; every LAP_EVERY seconds a soft lap, a slowed and softened fish
 # splash (make_lake.py), from a random still-water square within LAP_SPREAD_M. At most LAP_VOICES at once; none under water.
+# Dave 2026-10-20 (again): still water has NO sound of its own; only a fish jump (ambient_life.gd, his recording) and,
+# rarely, a soft lap on a windy day. Laps need wind strength LAP_WIND, then come every 30 to 80 s.
+# A lake (a big body of water, 16+ wet squares in the 5 x 5, whatever current a spring or outlet gives it) never plays
+# the river or brook loop, and flowing water within LAKE_QUIET_M of a lake square stays silent while the player is
+# within LAKE_PLAYER_M of that lake (the outlet fades in again once past it).
 const LAP_SQUARES := 10
-const LAP_EVERY := [3.0, 8.0]
+const LAP_EVERY := [30.0, 80.0]
+const LAP_WIND := 0.6
+const LAKE_QUIET_M := 24.0
+const LAKE_PLAYER_M := 45.0
 const LAP_DB := -22.0
 const LAP_VOICES := 2
 const LAP_REACH_M := 35.0
@@ -53,6 +61,7 @@ const BASE_DB := -12.0
 const BASE_FILE := "water_fall_base"
 const FALL_DROP_M := 1.0                # surface drop between neighbouring squares
 const POND_AROUND := 16
+const BROOK_MAX_DB := -17.0
 const STILL_MPS := 0.35                 # current under this is still water (a lake or pond), over it a river
 const RIVER_AROUND := 8
 
@@ -64,7 +73,7 @@ const FALL_UNIT := 26.0
 const FALL_FILTER_HZ := 2200.0
 
 const KINDS := {
-	"brook": {"file": "water_brook", "db": -10.0, "reach": 45.0},   # -10: Dave's recording (build 244) is 5 dB quieter than the placeholder it replaced
+	"brook": {"file": "water_brook", "db": -22.0, "reach": 45.0},   # Dave 2026-10-20: -10 sounded like loud constant wind; his recording (EQ'd, -24 dB RMS) now sits near the other ambience
 	"river": {"file": "water_river", "db": -22.0, "reach": 50.0},
 	"pond": {"file": "water_pond", "db": -17.0, "reach": 35.0},
 	"fall": {"file": "water_fall", "db": -14.0, "reach": 260.0},
@@ -84,6 +93,9 @@ var _lap_left: float = 2.0
 var laps_played: int = 0
 var test_shore: Array = []              # --lake: stand-in still-water squares [{at}] (the headless spawn has no lake)
 var last_lap: String = ""
+var lap_scale: float = 1.0              # --lake shortens the wait between laps
+var test_wind: float = -1.0             # --lake forces the wind strength laps look at
+var lake_silenced: int = 0              # flowing squares dropped near a lake at the last choice (HUD, check)
 var _slots: Array = []                  # {player, kind, target, fade}
 var _streams: Dictionary = {}
 var _scan_left: float = 0.0
@@ -194,7 +206,11 @@ func _laps(delta: float, here: Vector3, underwater: bool) -> void:
 	if _lap_left > 0.0:
 		return
 
-	_lap_left = _rng.randf_range(float(LAP_EVERY[0]), float(LAP_EVERY[1]))
+	_lap_left = _rng.randf_range(float(LAP_EVERY[0]), float(LAP_EVERY[1])) * lap_scale
+	var wind: float = test_wind if test_wind >= 0.0 else float(get_parent().wind_strength)
+
+	if wind < LAP_WIND:
+		return
 
 	var shore: Array = test_shore if not test_shore.is_empty() else _shore
 
@@ -312,6 +328,52 @@ func _read_rows(rows: int) -> void:
 		_row += 1
 
 
+# The kind of water a square is, from the wet squares around it (of 25) and the current there (m/s, -1 unknown).
+static func kind_for(around: int, flow_mps: float) -> String:
+	if around >= POND_AROUND:
+		return "pond"                                   # a big body of water is a lake, whatever current a spring or outlet gives it
+
+	if flow_mps >= 0.0 and flow_mps < STILL_MPS and around >= RIVER_AROUND:
+		return "pond"
+
+	if around >= RIVER_AROUND:
+		return "river"
+
+	return "brook"
+
+
+# Flowing water near a lake stays quiet while the player is at the lake (a spring or an outlet next to a pond is not
+# the sound of the pond). `lakes` and `flowing` are candidate squares; returns the flowing ones that may play.
+func quiet_near_lakes(lakes: Array, flowing: Array, origin: Vector3) -> Array:
+	lake_silenced = 0
+	var near_lake: bool = false
+
+	for lake in lakes:
+		if Vector2(lake["at"].x - origin.x, lake["at"].z - origin.z).length() <= LAKE_PLAYER_M:
+			near_lake = true
+			break
+
+	if not near_lake:
+		return flowing
+
+	var kept: Array = []
+
+	for candidate in flowing:
+		var quiet: bool = false
+
+		for lake in lakes:
+			if Vector2(lake["at"].x - candidate["at"].x, lake["at"].z - candidate["at"].z).length() <= LAKE_QUIET_M:
+				quiet = true
+				break
+
+		if quiet:
+			lake_silenced += 1
+		else:
+			kept.append(candidate)
+
+	return kept
+
+
 func _classify_row(j: int) -> void:
 	var count: int = HALF * 2 + 1
 	var level: PackedFloat32Array = _level
@@ -353,14 +415,7 @@ func _classify_row(j: int) -> void:
 		# Waterfalls come from the water chunk's fall columns (_fall_candidates); a steep reach on the grid is rapids.
 		# Still water with enough water around it is a lake or pond (soft lapping, Dave 2026-10-20: a lake shore played
 		# river rush because shore squares have few wet neighbours); water with a current is a river however wide.
-		if flow_mps >= 0.0 and flow_mps < STILL_MPS and around >= RIVER_AROUND:
-			kind = "pond"
-		elif flow_mps >= STILL_MPS and around >= RIVER_AROUND:
-			kind = "river"
-		elif around >= POND_AROUND:
-			kind = "pond"
-		elif around >= RIVER_AROUND:
-			kind = "river"
+		kind = kind_for(around, flow_mps)
 
 		var at: Vector3 = Vector3(cx + float(i - HALF) * SPACING_M, here, cz + float(j - HALF) * SPACING_M)
 		var distance: float = Vector2(at.x - origin.x, at.z - origin.z).length()
@@ -376,8 +431,13 @@ func _choose() -> void:
 	candidates.sort_custom(func(a, b): return a["score"] < b["score"])
 	var chosen: Array = []
 	_shore.clear()
+	var lakes: Array = candidates.filter(func(c): return c["kind"] == "pond")
+	var allowed: Array = quiet_near_lakes(lakes, candidates.filter(func(c): return c["kind"] in ["brook", "river"]), _origin)
 
 	for candidate in candidates:
+		if candidate["kind"] in ["brook", "river"] and not candidate in allowed:
+			continue
+
 		if candidate["kind"] == "pond":
 			if _shore.size() < LAP_SQUARES:
 				_shore.append(candidate)
@@ -602,7 +662,7 @@ func _aim(slot: Dictionary, candidate: Dictionary, origin: Vector3) -> void:
 	var pitch: float = 1.0
 
 	if candidate["kind"] == "brook":
-		db += clampf(float(candidate["drop"]) / 0.5, 0.0, 1.0) * 4.0     # steeper babbles louder
+		db += clampf(float(candidate["drop"]) / 0.5, 0.0, 1.0) * 2.0     # steeper babbles a little louder
 	elif candidate["kind"] == "river":
 		db += clampf((float(candidate["drop"]) - 0.1) / 0.5, 0.0, 1.0) * 5.0    # a steep reach (rapids) is louder; a calm one stays quiet
 
@@ -625,6 +685,9 @@ func _aim(slot: Dictionary, candidate: Dictionary, origin: Vector3) -> void:
 		var deep: float = clampf(depth / 3.0, 0.0, 1.0)
 		db -= 3.0 * deep
 		pitch -= 0.07 * deep
+
+	if candidate["kind"] == "brook":
+		db = minf(db, BROOK_MAX_DB)                                    # never louder than this, whatever the slope and current
 
 	slot["pitch"] = clampf(pitch, 0.85, 1.15)
 	slot["tuned"] = "v%.1f d%.1f" % [speed, depth]
