@@ -185,6 +185,8 @@ var test_spear_sounds: bool = false
 var test_fire: bool = false
 var test_fire_world: bool = false      # --fire-world: a fake world row goes through states 8, 9, 1, 9, 8 (loaded, lit, rained out, emptied)
 var _fire_world_step: int = 0
+var test_stance: bool = false          # --stance: stand, crouch, sit, lie and rise in turn (job 56)
+var _stance_step: int = 0
 var test_merge: bool = false           # --merge-check: far fires and far falls share voices (job 53)
 var _merge_step: int = 0
 var test_faint: bool = false           # --faint: the scripted over-exertion, faint and waking run (breath_sounds.demo)
@@ -377,6 +379,8 @@ func _ready() -> void:
 			test_levels = true
 		elif argument == "--fire":
 			test_fire = true
+		elif argument == "--stance":
+			test_stance = true
 		elif argument == "--merge-check":
 			test_merge = true
 		elif argument == "--faint":
@@ -555,6 +559,7 @@ func _welcome_body(info: Dictionary) -> void:
 	sound.ground_below = _ground_below
 	var t4: int = Probe.start()
 	sound.setup(terrain, flora, grass)
+	stance.changed.connect(func(new_stance: int): sound.stance.set_stance(["stand", "crouch", "sit", "lie"][clampi(new_stance, 0, 3)]))
 	Probe.stop("welcome: sound setup", t4)
 
 	for argument in OS.get_cmdline_user_args():
@@ -2318,6 +2323,19 @@ func _process(delta: float) -> void:
 
 		if _test_fire_step >= 7:
 			test_fire = false
+
+	# Stance sounds: crouch, stand, sit, stand, lie (and sit for 20 s to hear settles), stand.
+	if test_stance and now - connected_msec > 18000 and now >= _test_fire_at:
+		_test_fire_at = now + 1500
+		var order: Array = ["crouch", "stand", "sit", "stand", "lie", "stand"]
+
+		if _stance_step < order.size():
+			sound.gear.set_worn(["cloth", "plate"])
+			sound.stance.set_stance(order[_stance_step])
+			_stance_step += 1
+		elif _stance_step == order.size():
+			print("Terrain client: stance check: %d changes, %d settles, crouch step %.0f dB, last %s" % [sound.stance.changes_played, sound.stance.settles_played, sound.stance.step_db(), sound.stance.last])
+			_stance_step += 1
 
 	# Distant fires and falls merge: one near fire and six far hearths, five far falls in a valley.
 	if test_merge and now - connected_msec > 18000:

@@ -83,6 +83,10 @@ SCENARIOS = [
         ("fall base level", r"fall base: playing true at " + NUM + r" dB", -30, -5),
         ("five hearths merged", r"loops, " + NUM + r" merged", 5, 5),
     ]),
+    ("stance", ["--stance"], 6000, [
+        ("posture changes heard", r"stance check: " + NUM + r" changes", 6, 6),
+        ("last is the rise", r"last (stance_rise)", 0, 1, "text"),
+    ]),
     ("felling", ["--chop"], 7000, [
         ("trees fell", r"tree sounds: " + NUM + r" falls", 1, 10),
     ]),

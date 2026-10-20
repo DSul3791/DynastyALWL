@@ -27,6 +27,7 @@ const SwimScript := preload("res://src/client/swim_sounds.gd")
 const UiScript := preload("res://src/client/ui_sounds.gd")
 const CreatureScript := preload("res://src/client/creature_sounds.gd")
 const GearScript := preload("res://src/client/gear_sounds.gd")
+const StanceScript := preload("res://src/client/stance_sounds.gd")
 const InteriorScript := preload("res://src/client/interior_sounds.gd")
 const SpearScript := preload("res://src/client/spear_sounds.gd")
 const PlacedScript := preload("res://src/client/placed_sounds.gd")
@@ -174,6 +175,7 @@ var treewind                            # TreeWind: pine hiss, leaf rustle, dry 
 var placed                              # PlacedSounds: lean-to and chest place/pick up, container, tool break and repair (hooks, watch_world)
 var spear                               # SpearSounds: jab, throw, flight, hits on wood, stone, soil, flesh
 var interior                            # InteriorSounds: inside a building, doors, chests, furniture (set_inside, object)
+var stance                              # StanceSounds: crouch, sit, lie, rise and settle cloth sounds (set_stance); crouching softens steps
 var gear                                # GearSounds: armour and clothing layers on the footsteps (set_worn, step_at)
 var creatures                           # CreatureSounds: deer, rabbit, fox, wolf, bear calls (call_at, call_in_zone; wild = natural far calls)
 var ui                                  # UiSounds: menu click, toggle and quality cues (play(name))
@@ -287,6 +289,10 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	gear.name = "Gear"
 	add_child(gear)
 	gear.setup(self)
+	stance = StanceScript.new()
+	stance.name = "Stance"
+	add_child(stance)
+	stance.setup(self)
 	creatures = CreatureScript.new()
 	creatures.name = "Creatures"
 	add_child(creatures)
@@ -381,6 +387,7 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	trees.update(delta)
 	breath.follow_body(delta, body, flying, swim.swimming)
 	breath.update(delta, underwater)
+	stance.update(delta)
 	flame.update(delta, body)
 	occlusion.update(delta, body, flying)
 	_warm_one(delta)
@@ -539,6 +546,7 @@ func set_floor(name: String) -> void:
 # One footfall at gait 0 walk, 1 jog, 2 run; `boost_db` makes it louder (landings).
 # `foot` is "left" or "right" (recorded sets have one of each).
 func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: String = "left") -> void:
+	boost_db += stance.step_db()                                  # crouched steps are softer, and the gear with them
 	var feet: Vector3 = body.global_position - Vector3(0.0, FEET_M, 0.0)
 	var water: float = _flora.water_surface_at(feet.x, feet.z)
 

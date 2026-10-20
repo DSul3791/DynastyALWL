@@ -537,6 +537,46 @@
    "priority": 2
   },
   {
+   "name": "stance_crouch",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "stance_sounds.gd: cloth rustle crouching down",
+   "to_supply": "3 soft cloth rustles of crouching down, 0.45 s",
+   "priority": 3
+  },
+  {
+   "name": "stance_sit",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "stance_sounds.gd: sitting down, rustle and a soft weight",
+   "to_supply": "3 sitting-down rustles with a soft thud, 0.7 s",
+   "priority": 3
+  },
+  {
+   "name": "stance_lie",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "stance_sounds.gd: lying down on the ground",
+   "to_supply": "3 lying-down slides and thuds, 1 s",
+   "priority": 3
+  },
+  {
+   "name": "stance_rise",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "stance_sounds.gd: getting up",
+   "to_supply": "3 getting-up rustles, 0.7 s",
+   "priority": 3
+  },
+  {
+   "name": "stance_settle",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "stance_sounds.gd: a tiny shift while sitting or lying",
+   "to_supply": "3 tiny cloth shifts, 0.3 s",
+   "priority": 4
+  },
+  {
    "name": "gear_cloth",
    "state": "generated",
    "variants": 3,
