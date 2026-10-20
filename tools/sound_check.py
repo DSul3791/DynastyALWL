@@ -65,6 +65,10 @@ SCENARIOS = [
         ("eaten", r"eaten " + NUM, 5, 5),
         ("sizzle", r"sizzle " + NUM, 1, 1),
     ]),
+    ("harvest", ["--gather"], 4500, [
+        ("plants picked with sound", r"harvest sounds (\{[^}]*\})", 2, 40, "sum"),
+        ("twist kinds known", r"\"twist\": " + NUM, 1, 1000),
+    ]),
     ("treewind", ["--treewind"], 5500, [
         ("a loop plays", r"tree wind: .* playing (\w+) ", 0, 0, "text"),
     ]),

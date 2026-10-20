@@ -2289,6 +2289,16 @@ func _process(delta: float) -> void:
 			print("Terrain client: tree sounds: %d falls, %d stump sprays, last %s" % [sound.trees.falls_played, sound.trees.chips_played, sound.trees.last])
 			print("Terrain client: fire sounds: %d lit, %d put out, %d loops, last %s" % [sound.fire.lit_played, sound.fire.out_played, sound.fire.loops_playing, sound.fire.last])
 			print("Terrain client: item sounds %d, last %s" % [sound.itemfx.played, sound.itemfx.last])
+			var kinds: Dictionary = {}
+
+			for row_id in harvest._flora_by_id:
+				var row: Dictionary = harvest._flora_by_id[row_id]
+
+				if row.get("kind", "") != "tree":
+					var k: String = sound.harvestfx.pick_kind(row)
+					kinds[k] = int(kinds.get(k, 0)) + 1
+
+			print("Terrain client: harvest sounds %s, last %s; plant kinds %s" % [str(sound.harvestfx.played), sound.harvestfx.last, str(kinds)])
 			print("Terrain client: spear sounds %s, last %s" % [str(sound.spear.played), sound.spear.last])
 			print("Terrain client: interior sounds: %d objects, %d creaks, last %s" % [sound.interior.objects_played, sound.interior.creaks_played, sound.interior.last])
 			print("Terrain client: gear: worn %s, %d steps, last %s" % [str(sound.gear.worn), sound.gear.steps_played, sound.gear.last])

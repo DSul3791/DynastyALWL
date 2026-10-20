@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **160 slots: 17 recorded, 134 generated placeholders, 9 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **167 slots: 17 recorded, 141 generated placeholders, 9 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -50,6 +50,11 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 2 | `item_drop` | generated | 3 | item_sounds.gd: stacks in the inventory shrank (dropped) | 3 dull thuds of setting an item down |
 | 2 | `item_pickup` | generated | 3 | item_sounds.gd: stacks in the inventory grew (picked up, harvested) | 3 soft scoop and rustle cues of picking something up |
 | 2 | `owl_hoot` | generated | 3 | ambient_life.gd: forest at night | 2 to 3 owl hoots (tawny or barred), 2 to 3 s |
+| 2 | `pick_pluck` | generated | 3 | harvest_sounds.gd: a berry, fruit or nut picked | 3 recordings of plucking a berry or nut from its stalk, 0.3 s |
+| 2 | `pick_pull` | generated | 3 | harvest_sounds.gd: a root or bulb pulled from the soil | 3 recordings of pulling a root or carrot out of soil, 0.6 s |
+| 2 | `pick_snap` | generated | 3 | harvest_sounds.gd: a stalk, reed, fibre plant or twig snapped | 3 recordings of snapping a green stalk or reed, 0.3 s |
+| 2 | `pick_snip` | generated | 3 | harvest_sounds.gd: a herb, leaf or flower nipped off | 3 recordings of snipping a leaf or herb stem, 0.3 s |
+| 2 | `pick_twist` | generated | 3 | harvest_sounds.gd: a mushroom twisted off | 3 recordings of twisting a mushroom off its base, 0.4 s |
 | 2 | `place_chest` | generated | 2 | placed_sounds.gd: a chest set down | 2 to 3 recordings of a heavy wooden box put on the ground |
 | 2 | `place_leanto` | generated | 2 | placed_sounds.gd: a lean-to set up (hook place("leanto"); also heard from a world row of item id lean_to) | 2 to 3 recordings of planting poles and laying brush, 1 s |
 | 2 | `rain_leaves` | generated | 1 | weather_sounds.gd: rain pattering on leaves under trees | Rain on forest canopy loop, seamless |
@@ -111,6 +116,8 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 3 | `hit_spade_soil` | generated | 3 | hit_sounds.gd: a spade strike into soil | 3 spade thuds into earth |
 | 3 | `pickup_placed` | generated | 2 | placed_sounds.gd: a placed thing picked up again | 2 recordings of dragging and lifting a wooden thing |
 | 3 | `place_thump` | generated | 2 | placed_sounds.gd: any other thing set on the ground | 2 short dull thumps on soil |
+| 3 | `plant_rustle_leaves` | generated | 2 | harvest_sounds.gd: leaves and shrub shaking when picked | 2 recordings of shaking a leafy plant, 1 s |
+| 3 | `plant_rustle_reeds` | generated | 2 | harvest_sounds.gd: reeds and grass swishing when picked | 2 recordings of shaking reeds or tall grass, 1 s |
 | 3 | `rain_drip` | generated | 4 | weather_sounds.gd: a drop falling from a leaf near you, under trees in rain | 3 to 4 single drops falling from leaves onto leaves or ground, 0.3 s |
 | 3 | `rain_water` | generated | 1 | weather_sounds.gd: rain falling on ponds and rivers near the player | Rain on a lake surface loop, seamless |
 | 3 | `spear_flight` | generated | 3 | spear_sounds.gd: a thrown spear whistling through the air (moves along the path) | 3 thin air whistles of a spear in flight, 1 to 2 s |

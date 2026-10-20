@@ -31,6 +31,7 @@ const InteriorScript := preload("res://src/client/interior_sounds.gd")
 const SpearScript := preload("res://src/client/spear_sounds.gd")
 const PlacedScript := preload("res://src/client/placed_sounds.gd")
 const TreeWindScript := preload("res://src/client/tree_wind.gd")
+const HarvestFxScript := preload("res://src/client/harvest_sounds.gd")
 const FlameScript := preload("res://src/client/flame_sounds.gd")
 const BreathScript := preload("res://src/client/breath_sounds.gd")
 const TreeScript := preload("res://src/client/tree_sounds.gd")
@@ -166,6 +167,7 @@ var trees                               # TreeSounds: felling (watch the world r
 var fire                                # FireSounds: campfire loops by size, lit, put out, rain sizzle (set_fires)
 var ground_below: Callable = Callable()   # terrain_client sets this: ground height under a point (NAN when not loaded)
 var itemfx                              # ItemSounds: inventory cues (watch(items) every frame)
+var harvestfx                           # HarvestSounds: plant picks (twist, pull, pluck, snap, snip) and the plant rustling; harvest.gd calls pick(row, at)
 var treewind                            # TreeWind: pine hiss, leaf rustle, dry autumn leaves, bare winter branches by the trees near the player
 var placed                              # PlacedSounds: lean-to and chest place/pick up, container, tool break and repair (hooks, watch_world)
 var spear                               # SpearSounds: jab, throw, flight, hits on wood, stone, soil, flesh
@@ -267,6 +269,10 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	treewind.name = "TreeWind"
 	add_child(treewind)
 	treewind.setup(self)
+	harvestfx = HarvestFxScript.new()
+	harvestfx.name = "HarvestFx"
+	add_child(harvestfx)
+	harvestfx.setup(self)
 	interior = InteriorScript.new()
 	interior.name = "Interior"
 	add_child(interior)

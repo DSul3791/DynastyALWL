@@ -1017,6 +1017,62 @@
    "priority": 3
   },
   {
+   "name": "pick_pluck",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "harvest_sounds.gd: a berry, fruit or nut picked",
+   "to_supply": "3 recordings of plucking a berry or nut from its stalk, 0.3 s",
+   "priority": 2
+  },
+  {
+   "name": "pick_snip",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "harvest_sounds.gd: a herb, leaf or flower nipped off",
+   "to_supply": "3 recordings of snipping a leaf or herb stem, 0.3 s",
+   "priority": 2
+  },
+  {
+   "name": "pick_pull",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "harvest_sounds.gd: a root or bulb pulled from the soil",
+   "to_supply": "3 recordings of pulling a root or carrot out of soil, 0.6 s",
+   "priority": 2
+  },
+  {
+   "name": "pick_twist",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "harvest_sounds.gd: a mushroom twisted off",
+   "to_supply": "3 recordings of twisting a mushroom off its base, 0.4 s",
+   "priority": 2
+  },
+  {
+   "name": "pick_snap",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "harvest_sounds.gd: a stalk, reed, fibre plant or twig snapped",
+   "to_supply": "3 recordings of snapping a green stalk or reed, 0.3 s",
+   "priority": 2
+  },
+  {
+   "name": "plant_rustle_leaves",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "harvest_sounds.gd: leaves and shrub shaking when picked",
+   "to_supply": "2 recordings of shaking a leafy plant, 1 s",
+   "priority": 3
+  },
+  {
+   "name": "plant_rustle_reeds",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "harvest_sounds.gd: reeds and grass swishing when picked",
+   "to_supply": "2 recordings of shaking reeds or tall grass, 1 s",
+   "priority": 3
+  },
+  {
    "name": "treewind_pine",
    "state": "generated",
    "variants": 1,

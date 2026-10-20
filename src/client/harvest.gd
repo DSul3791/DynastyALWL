@@ -92,6 +92,7 @@ func tap() -> void:
 
 func _pick(c: Dictionary) -> void:
 	_net.cut_flora.rpc_id(1, c["chunk"], c["id"])
+	_client.sound.harvestfx.pick(_flora_by_id.get(int(c["id"]) >> 16, {}), c["pos"])
 	_picked_until[c["key"]] = _client.game_clock.seconds + REGROW_GAME_S
 
 
@@ -157,7 +158,7 @@ func _candidates(radius: float) -> Array:
 			else:
 				verdict = GatherRules.check(row, "shrub" if kind == 1 else "plant", _drops, season, has_tool, exists)
 
-			out.append({"d": d, "chunk": chunk, "id": id, "key": key, "name": name, "ok": verdict["ok"], "reason": verdict["reason"]})
+			out.append({"d": d, "pos": p, "chunk": chunk, "id": id, "key": key, "name": name, "ok": verdict["ok"], "reason": verdict["reason"]})
 
 	out.sort_custom(func(a, b): return a["d"] < b["d"])
 	return out
