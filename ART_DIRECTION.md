@@ -107,3 +107,7 @@ Weather is set by the north-south zone, every zone has seasons, dry zones stay d
 ## 10. Character look (owner decision, 2026-10-20)
 
 **[Decided]** Characters are slightly stylised: heroic proportions and a hint of cartoon, not realistic, and lighter on older machines (a lower triangle and texture budget than the target picture's character, which was realistic). The world around them stays realistic. This unblocks character model work (Art queue item 7); the budget per character (triangles, bones, texture size, per tier) still goes through the asset budget table with Technical direction before any model is made.
+
+## 11. Forest floor objects (owner decision, 2026-10-20)
+
+**[Decided]** First: fallen branches and leaf litter on the forest floor. Later: reeds, driftwood, pebbles and the rest of the Stage 7 list. Built in Art queue item 5 (rock and small details); the litter texture layer from step 2 already covers the base look.
