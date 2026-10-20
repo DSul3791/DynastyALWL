@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **196 slots: 18 recorded, 169 generated placeholders, 9 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **197 slots: 18 recorded, 170 generated placeholders, 9 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -62,6 +62,7 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 2 | `place_chest` | generated | 2 | placed_sounds.gd: a chest set down | 2 to 3 recordings of a heavy wooden box put on the ground |
 | 2 | `place_leanto` | generated | 2 | placed_sounds.gd: a lean-to set up (hook place("leanto"); also heard from a world row of item id lean_to) | 2 to 3 recordings of planting poles and laying brush, 1 s |
 | 2 | `rain_leaves` | generated | 1 | weather_sounds.gd: rain pattering on leaves under trees | Rain on forest canopy loop, seamless |
+| 2 | `rain_roof` | generated | 1 | weather_sounds.gd: rain pattering on a roof overhead (a lean-to), boards or thatch | Rain on a wooden roof from underneath, loop, seamless |
 | 2 | `spear_hit_flesh` | generated | 3 | spear_sounds.gd: a spear hitting flesh | 3 wet heavy thumps of a spear hitting an animal or body |
 | 2 | `spear_hit_wood` | generated | 3 | spear_sounds.gd: a spear sticking into wood (the shaft quivers) | 3 spear thunks into a tree or board with shaft vibration |
 | 2 | `swim_splash_big` | generated | 3 | swim_sounds.gd: a jump or fall into water (4 m/s and up) | 3 big splashes of a person falling in, 1 to 2 s |

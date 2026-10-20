@@ -56,7 +56,7 @@ const KINDS := {
 	"blizzard": {"rain": 0.0, "wind": 1.0, "hush": 0.3, "thunder": 0.0, "calls": 0.0, "frogs": 0.0},
 	"fog": {"rain": 0.0, "wind": 0.0, "hush": 0.2, "thunder": 0.0, "calls": 0.8, "frogs": 0.8},
 }
-const LOOP_DB := {"rain_light": -14.0, "rain_heavy": -13.0, "rain_leaves": -15.0, "rain_water": -17.0, "wind_storm": -18.0,
+const LOOP_DB := {"rain_light": -14.0, "rain_heavy": -13.0, "rain_leaves": -15.0, "rain_roof": -14.0, "rain_water": -17.0, "wind_storm": -18.0,
 	"rain_stone": -14.0, "rain_mud": -15.0, "rain_litter": -16.0, "rain_snow": -23.0}
 # Rain on the ground under the player (open sky only; under a canopy the leaves take it): how much of the plain
 # open-ground bed (rain_light / rain_heavy) stays when that ground has its own loop.
@@ -93,6 +93,7 @@ var snow_hush: float = 0.0             # 0..1 the quiet of snow: lying snow 0.8,
 var ground_snow: float = 0.0            # 0 bare .. 1 snow lies: footsteps crunch
 var drips_played: int = 0
 var temp_c: float = 10.0
+var roofed: float = 0.0                 # 0 no roof overhead, 1 under a roof (lean-to and the like; smoothed): its rain is the roof patter, not leaves
 var covered: float = 0.0                # 0 open, 1 under a canopy (smoothed); the ground there stays dry
 var last_thunder: String = ""
 var world_wind: float = 0.35            # the world's wind (0.15 calm to 1 storm), smoothed: sets the wind sound
@@ -111,6 +112,8 @@ var _pending: Array = []                # [seconds left, AudioStreamPlayer, stre
 var _cover_in: float = 0.0
 var _tick_acc: float = 0.0
 var _cover_target: float = 0.0
+var _roof_target: float = 0.0
+var forced_roof: bool = false           # --roofed: a roof overhead (headless check)
 var _drip_in: float = 1.0
 var _under: float = 1.0                 # 0 underwater, 1 in the air, smoothed
 
@@ -124,6 +127,9 @@ func setup(stage, ambient) -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg == "--covered":
 			forced_cover = true
+		elif arg == "--roofed":
+			forced_cover = true
+			forced_roof = true
 
 		if arg.begins_with("--rain-ground="):
 			forced_ground = arg.get_slice("=", 1)
@@ -235,10 +241,13 @@ func update(frame_delta: float, body: CharacterBody3D, underwater: bool) -> void
 	if _cover_in <= 0.0:
 		_cover_in = COVER_EVERY_SEC
 		_cover_target = 1.0 if forced_cover or _stage.interior.amount > 0.5 else _stage.under_cover(body)
+		_roof_target = 1.0 if forced_roof or _roof_over(body.global_position) else 0.0
 		ground_class = forced_ground if forced_ground != "" else _stage.rain_ground(body)
 
 	covered = move_toward(covered, _cover_target, delta / 1.5)
+	roofed = move_toward(roofed, _roof_target, delta / 1.5)
 	var cover: float = covered
+	var roof: float = minf(roofed, cover)
 	var water: float = float(_ambient.weights["water"])
 	var heavy: float = smoothstep(0.4, 0.9, rain)
 	var light: float = minf(rain * 2.0, 1.0) * (1.0 - 0.6 * heavy)
@@ -249,14 +258,42 @@ func update(frame_delta: float, body: CharacterBody3D, underwater: bool) -> void
 		keep -= (1.0 - float(GROUND_BED_KEEP[key])) * float(_ground_w[key])
 		_loop("rain_" + key, minf(rain * 1.6, 1.0) * float(_ground_w[key]) * (1.0 - cover))
 
-	_loop("rain_light", light * (1.0 - 0.7 * cover) * keep)
-	_loop("rain_heavy", heavy * (1.0 - 0.7 * cover) * keep)
-	_loop("rain_leaves", minf(rain * 1.6, 1.0) * cover)
+	_loop("rain_light", light * (1.0 - 0.7 * cover) * (1.0 - roof) * keep)
+	_loop("rain_heavy", heavy * (1.0 - 0.7 * cover) * (1.0 - roof) * keep)
+	_loop("rain_leaves", minf(rain * 1.6, 1.0) * (cover - roof))
+	_loop("rain_roof", minf(rain * 1.6, 1.0) * roof)
 	_loop("rain_water", minf(rain * 1.6, 1.0) * water)
 	_loop("wind_storm", clampf(wind - 0.2, 0.0, 1.0) / 0.8)
 	_thunder(delta)
 	_ground(delta)
 	_drips(delta, body, cover)
+
+
+# Is a roof (a lean-to and the like, Cover roofs) directly over this point? Trees do not count here (leaves, not a roof).
+func _roof_over(pos: Vector3) -> bool:
+	var flora = _stage._flora
+
+	if flora == null or flora.get("cover") == null or not flora.cover.has_method("roofs_near"):
+		return false
+
+	for roof in flora.cover.roofs_near(pos.x, pos.z, 1.0):
+		if pos.y < float(roof[6]) or pos.y > float(roof[7]):
+			continue
+
+		var dx: float = pos.x - float(roof[1])
+		var dz: float = pos.z - float(roof[2])
+
+		if int(roof[0]) == 1:
+			if dx * dx + dz * dz <= float(roof[3]) * float(roof[3]):
+				return true
+		else:
+			var c: float = cos(float(roof[5]))
+			var sn: float = sin(float(roof[5]))
+
+			if absf(dx * c + dz * sn) <= float(roof[3]) and absf(-dx * sn + dz * c) <= float(roof[4]):
+				return true
+
+	return false
 
 
 # The ground soaks and dries, snow settles and melts (slowly; a test kind forces temperature to cold).

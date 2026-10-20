@@ -46,6 +46,16 @@ SCENARIOS = [
         ("hush builds", r"snow hush " + NUM, 0.3, 1.0),
         ("nature bus lower", r"snow hush [\d.]+ \(nature bus " + NUM, -20, -1.0),
     ]),
+    ("rain_roof", ["--weather=rain", "--roofed"], 5000, [
+        ("under a roof", r"roofed " + NUM + r", loops", 0.9, 1.0),
+        ("roof patter plays", r"loops .*(rain_roof)", 0, 1, "text"),
+        ("no leaf patter under a roof", r"loops (?!.*rain_leaves)", 0, 1, "text"),
+    ]),
+    ("rain_covered", ["--weather=rain", "--covered"], 5000, [
+        ("under a crown", r"covered " + NUM + r",", 0.9, 1.0),
+        ("leaf patter plays", r"loops .*(rain_leaves)", 0, 1, "text"),
+        ("not the roof patter", r"loops (?!.*rain_roof)", 0, 1, "text"),
+    ]),
     ("rain_stone", ["--weather=rain", "--rain-ground=stone"], 5000, [
         ("stone weight", r"rain ground stone \(weights \{ \"stone\": " + NUM, 0.95, 1.0),
     ]),

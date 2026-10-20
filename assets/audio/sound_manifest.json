@@ -41,6 +41,14 @@
    "priority": 1
   },
   {
+   "name": "rain_roof",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "weather_sounds.gd: rain pattering on a roof overhead (a lean-to), boards or thatch",
+   "to_supply": "Rain on a wooden roof from underneath, loop, seamless",
+   "priority": 2
+  },
+  {
    "name": "rain_leaves",
    "state": "generated",
    "variants": 1,

@@ -20,6 +20,7 @@ SLOTS = [
     ("wind_storm", "weather", "weather_sounds.gd: gale howl in storms and blizzards", "A howling gale loop, seamless", 2),
     ("rain_light", "weather", "weather_sounds.gd: drizzle and light rain loop", "A light rain on open ground loop, seamless", 1),
     ("rain_heavy", "weather", "weather_sounds.gd: heavy rain and storm loop", "A heavy downpour loop, seamless", 1),
+    ("rain_roof", "weather", "weather_sounds.gd: rain pattering on a roof overhead (a lean-to), boards or thatch", "Rain on a wooden roof from underneath, loop, seamless", 2),
     ("rain_leaves", "weather", "weather_sounds.gd: rain pattering on leaves under trees", "Rain on forest canopy loop, seamless", 2),
     ("rain_water", "weather", "weather_sounds.gd: rain falling on ponds and rivers near the player", "Rain on a lake surface loop, seamless", 3),
     ("rain_stone", "weather", "weather_sounds.gd: rain on stone, rock, slab, plank or path ground under the player (open sky)", "Rain on bare rock or flagstones loop, seamless", 3),
