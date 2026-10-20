@@ -101,7 +101,7 @@ func _once(name: String, at: Vector3, db: float, strength: float) -> bool:
 	player.finished.connect(player.queue_free)
 	player.play()
 	_count(name)
-	last = "%s_%d" % [name, pick]
+	last = "%s_%d (%s)" % [name, pick, SoundStage.tag(list[pick])]
 	return true
 
 

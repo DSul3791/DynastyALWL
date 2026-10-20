@@ -123,7 +123,7 @@ func call_at(kind: String, at: Vector3, mood: String = "idle") -> bool:
 	player.play()
 	_voices.append(player)
 	calls_played[kind] = int(calls_played.get(kind, 0)) + 1
-	last = "%s %s %s_%d at %.0f m" % [kind, mood, name, pick, distance]
+	last = "%s %s %s_%d (%s) at %.0f m" % [kind, mood, name, pick, SoundStage.tag(list[pick]), distance]
 	return true
 
 

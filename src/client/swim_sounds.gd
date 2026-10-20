@@ -190,7 +190,7 @@ func _event(name: String, volume_db: float) -> void:
 	add_child(player)
 	player.finished.connect(player.queue_free)
 	player.play()
-	last = "%s_%d" % [name, pick]
+	last = "%s_%d (%s)" % [name, pick, SoundStage.tag(list[pick])]
 
 
 func _variants(name: String) -> Array:

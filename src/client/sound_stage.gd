@@ -740,6 +740,11 @@ func _variants(name: String) -> Array:
 	return list
 
 
+# "recorded" or "generated" for a loaded sound, for the last-sound line.
+static func tag(stream: Resource) -> String:
+	return "recorded" if stream != null and stream.resource_path.contains("/recorded/") else "generated"
+
+
 static func _find(folder: String, name: String) -> Array:
 	var single: AudioStream = _load(folder, name)
 

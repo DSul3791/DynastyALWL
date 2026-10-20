@@ -61,7 +61,7 @@ func hit(tool: String, material: String, at: Vector3, strength: float = 1.0) -> 
 	player.finished.connect(player.queue_free)
 	player.play()
 	hits_played += 1
-	last_hit = "%s_%d" % [name, pick]
+	last_hit = "%s_%d (%s)" % [name, pick, SoundStage.tag(list[pick])]
 	return true
 
 

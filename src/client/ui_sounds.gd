@@ -62,7 +62,7 @@ func play(name: String) -> bool:
 	_player.pitch_scale = _rng.randf_range(0.97, 1.03)
 	_player.play()
 	played += 1
-	last = "%s_%d" % [name, pick]
+	last = "%s_%d (%s)" % [name, pick, SoundStage.tag(list[pick])]
 	return true
 
 

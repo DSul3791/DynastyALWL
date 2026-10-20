@@ -86,7 +86,7 @@ func object(name: String, at: Vector3, strength: float = 1.0) -> bool:
 	player.finished.connect(player.queue_free)
 	player.play()
 	objects_played += 1
-	last = "%s_%d" % [name, pick]
+	last = "%s_%d (%s)" % [name, pick, SoundStage.tag(list[pick])]
 	return true
 
 

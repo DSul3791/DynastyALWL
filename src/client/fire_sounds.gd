@@ -248,7 +248,7 @@ func _one_shot(name: String, at: Vector3) -> void:
 	player.global_position = at
 	player.finished.connect(player.queue_free)
 	player.play()
-	last = "%s_%d" % [name, pick]
+	last = "%s_%d (%s)" % [name, pick, SoundStage.tag(list[pick])]
 
 
 func _variants(name: String) -> Array:
