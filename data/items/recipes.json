@@ -276,15 +276,15 @@
 		},
 		"chest_kit": {
 			"number": 14,
-			"name": "Build a storage chest",
+			"name": "Weave a storage chest",
 			"needs": [
 				[
-					"log",
-					4
+					"stick",
+					10
 				],
 				[
 					"cordage",
-					2
+					4
 				]
 			],
 			"gives": [

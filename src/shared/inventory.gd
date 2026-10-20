@@ -10,6 +10,7 @@ const FORMAT := 2               # 2 added wear per slot
 var table
 var numbers: PackedInt32Array = PackedInt32Array()
 var counts: PackedInt32Array = PackedInt32Array()
+var usable: int = SLOTS               # slots in use: a small container only fills its first few
 var wear: PackedInt32Array = PackedInt32Array()      # uses spent so far, tools only (stack 1); 0 for anything else
 
 
@@ -28,13 +29,13 @@ func add(number: int, count: int, item_wear: int = 0) -> int:
 	var stack: int = table.stack_of(number)
 	var left: int = count
 
-	for i in SLOTS:
+	for i in usable:
 		if left > 0 and numbers[i] == number and counts[i] < stack:
 			var put: int = mini(left, stack - counts[i])
 			counts[i] += put
 			left -= put
 
-	for i in SLOTS:
+	for i in usable:
 		if left > 0 and numbers[i] == 0:
 			var put: int = mini(left, stack)
 			numbers[i] = number

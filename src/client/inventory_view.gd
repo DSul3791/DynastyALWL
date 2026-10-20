@@ -451,7 +451,7 @@ func _build_chest_panel() -> void:
 	columns.add_theme_constant_override("separation", _px(24))
 	_chest_panel.add_child(columns)
 
-	for side in ["Storage chest  (click a stack to take it)", "Your pack  (click a stack to put it in)"]:
+	for side in ["Woven chest  (click a stack to take it)", "Your pack  (click a stack to put it in)"]:
 		var box: VBoxContainer = VBoxContainer.new()
 		box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		columns.add_child(box)
@@ -501,7 +501,11 @@ func _refresh_chest() -> void:
 	if not chest_mode or _chest_panel == null:
 		return
 
+	var capacity: int = int(table.entry(table.id_of(int(_world.get(chest_id, {}).get("number", 0)))).get("slots", inventory.SLOTS))
+
 	for i in inventory.SLOTS:
+		_chest_buttons[i].visible = i < capacity
+
 		for pair in [[_chest_buttons, chest_inv], [_pack_buttons, inventory]]:
 			var button: Button = pair[0][i]
 			var source = pair[1]
@@ -616,13 +620,13 @@ func _make_leanto() -> Node3D:
 	return root
 
 
-# A storage chest: a wooden box with a lid band.
+# A woven chest: a wicker basket box of twine and sticks with a lid band.
 func _make_chest() -> Node3D:
 	var root: Node3D = Node3D.new()
 	var wood: StandardMaterial3D = StandardMaterial3D.new()
-	wood.albedo_color = Color(0.45, 0.3, 0.16)
+	wood.albedo_color = Color(0.62, 0.5, 0.28)      # wicker: pale woven twigs
 	var band: StandardMaterial3D = StandardMaterial3D.new()
-	band.albedo_color = Color(0.22, 0.2, 0.2)
+	band.albedo_color = Color(0.4, 0.3, 0.16)
 	var body: MeshInstance3D = MeshInstance3D.new()
 	var body_mesh: BoxMesh = BoxMesh.new()
 	body_mesh.size = Vector3(0.9, 0.55, 0.55)

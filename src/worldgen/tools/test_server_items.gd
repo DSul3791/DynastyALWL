@@ -539,6 +539,7 @@ func _init() -> void:
 	var chest_kit: int = ch.table.number_of("chest_kit")
 	var stones_n: int = ch.table.number_of("stone")
 	ch.action(1, Net.ACT_ADMIN_GIVE, chest_kit, 0, 1, Vector3.ZERO)
+	check(ch.recipes.recipe(14)["needs"] == [[ch.table.number_of("stick"), 10], [ch.table.number_of("cordage"), 4]], "the first chest is woven from 10 sticks and 4 twine")
 	ch.action(1, Net.ACT_ADMIN_GIVE, stones_n, 0, 10, Vector3.ZERO)
 	ch.action(1, Net.ACT_PLACE, ch.inventory_of(1).numbers.find(chest_kit), 0, 0, Vector3(2.0, 10.0, 0.0))
 	var chest_id: int = 0
@@ -552,6 +553,21 @@ func _init() -> void:
 	check(sent.is_empty(), "too far from the chest to open it")
 	ch.action(1, Net.ACT_CHEST_OPEN, chest_id, 0, 0, Vector3.ZERO)
 	check(sent.size() == 1 and sent[0][0] == 1, "opening sends the contents to the opener only")
+	check(ch._chests[1].usable == 12, "the woven chest has 12 slots")
+	ch.action(1, Net.ACT_ADMIN_GIVE, ch.table.number_of("plant_fibre"), 0, 1, Vector3.ZERO)
+
+	for n in range(14):
+		ch._chests[1].numbers[n] = 0
+
+	for n in range(12):
+		ch._chests[1].add(1000 + n, 1)
+
+	check(ch._chests[1].add(ch.table.number_of("stone"), 1) == 1, "a full woven chest takes no more")
+
+	for n in range(12):
+		ch._chests[1].numbers[n] = 0
+		ch._chests[1].counts[n] = 0
+
 	var chest_stone_slot: int = ch.inventory_of(1).numbers.find(stones_n)
 	ch.action(1, Net.ACT_CHEST_PUT, chest_stone_slot, chest_id, 6, Vector3.ZERO)
 	check(ch.inventory_of(1).count_of(stones_n) == 4 and ch._chests[1].count_of(stones_n) == 6, "putting stones in moves them")

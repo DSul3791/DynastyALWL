@@ -16,7 +16,7 @@
 			"item": "chest",
 			"state": 6,
 			"cap_per_chunk": 8,
-			"slots": 30
+			"slots": 12
 		}
 	}
 }

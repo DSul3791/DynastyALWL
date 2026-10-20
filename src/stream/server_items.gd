@@ -1480,7 +1480,12 @@ func _chest_of(peer: int, id: int):
 	if _peer_pos[peer].distance_to(it["pos"]) > CHEST_REACH_M:
 		return null
 
-	return _chests.get(int(it["struct"]["uid"]))
+	var chest = _chests.get(int(it["struct"]["uid"]))
+
+	if chest != null:
+		chest.usable = clampi(int(_structures.get(str(it["struct"]["kind"]), {}).get("slots", chest.SLOTS)), 1, chest.SLOTS)
+
+	return chest
 
 
 func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int) -> void:

@@ -44,3 +44,7 @@ Dave 2026-10-20: tools wear out slowly and are repaired with materials. `durabil
 ## Lean-to and storage chest (builds 198 and the chest push)
 
 Both are placed from kits (structures.json): left click with the kit held, yaw from where you look (count in ACT_PLACE), 2.5 m apart, caps per 256 m chunk (6 lean-tos, 8 chests). A lean-to adds a 2.2 x 1.9 m roof, 2.1 m high, to the Cover index on server and client (Water's roof API), so fires under it survive rain. A chest has 30 server-owned slots (chests.json, keyed by a stable uid saved in the world-item row); ACT_CHEST_OPEN / PUT / TAKE with a 4 m reach check, the full contents go only to the acting player (chest_contents RPC). A chest holding things cannot be taken down; anyone can open any chest until households exist. Sound hooks: `sound.placed.chest/container` from the chest screen, world rows are heard by item id.
+
+## First chest is woven (Dave, 2026-10-20)
+
+There are no boards without a saw mill, so the first storage chest is a woven basket chest: 10 sticks + 4 twine, 12 slots, item ids unchanged (`chest_kit`, `chest`; names "Woven chest kit" and "Woven chest"; material wicker). Taking an empty one down returns the kit. A plank chest (more slots, wood, boards plus nails or twine) is a later item with its own id after the saw mill. Art: the model should read as wicker, pale twigs bound with twine, a lid band of darker twine; Sounds: material is wicker, not wood.
