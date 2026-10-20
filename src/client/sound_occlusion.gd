@@ -11,6 +11,7 @@ extends Node
 # Updated every SCAN_SEC and eased, so nothing jumps. Nothing is done while flying (admin tool).
 # A voxel ray reads the loaded ground data, so it works past the distance with physics colliders.
 
+const EASE_TICK_SEC := 0.05            # the cutoff easing runs at 20 Hz
 const SCAN_SEC := 0.5
 const OPEN_HZ := 9000.0                 # the distance filter's cutoff for a clear path
 const HILL_HZ := 700.0                  # behind a hill
@@ -25,6 +26,7 @@ var filtered: int = 0                   # sources with a cutoff below open at th
 
 var _stage                              # SoundStage (tier, ambient weights)
 var _tool: VoxelTool
+var _ease_acc: float = 0.0
 var _scan_left: float = 0.0
 var _targets: Dictionary = {}           # player instance id -> target cutoff
 
@@ -42,7 +44,13 @@ func update(delta: float, body: CharacterBody3D, flying: bool) -> void:
 		_scan_left = SCAN_SEC
 		_scan(body, flying)
 
-	var ease_k: float = clampf(delta * EASE_PER_SEC, 0.0, 1.0)
+	_ease_acc += delta
+
+	if _ease_acc < EASE_TICK_SEC:
+		return
+
+	var ease_k: float = clampf(_ease_acc * EASE_PER_SEC, 0.0, 1.0)
+	_ease_acc = 0.0
 
 	for node in get_tree().get_nodes_in_group("world_sounds"):
 		var player: AudioStreamPlayer3D = node as AudioStreamPlayer3D

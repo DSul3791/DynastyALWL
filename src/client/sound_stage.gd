@@ -83,7 +83,7 @@ const SETTINGS_PATH := "user://sound_settings.cfg"
 const EXPOSURE_RING_M := 70.0           # ground is read on this ring around the player
 const EXPOSURE_FULL_M := 40.0           # this far above or below the ring's average is a full ridge or valley
 const EXPOSURE_GAIN := 0.45             # ridge wind is this much stronger (valley this much weaker)
-const EXPOSURE_EVERY_FRAMES := 6        # one ring point per this many frames
+const EXPOSURE_EVERY_FRAMES := 10       # one ring point per this many frames
 const GRASS_MIN := 0.35                 # grass thickness from which a step sounds like grass
 const WATER_STEP_M := 0.12              # water above the soles that turns steps into splashes
 const DAMP_M := 0.03                    # shallower film at the waterline: a damp, muddy step
@@ -284,6 +284,7 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	occlusion.setup(self, _terrain)
 
 	_load_settings()
+	_build_warm_list()
 
 	if _wind_low.stream != null:
 		_wind_low.play()
@@ -351,6 +352,7 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	breath.update(delta, underwater)
 	flame.update(delta, body)
 	occlusion.update(delta, body, flying)
+	_warm_one(delta)
 	_time += delta
 	gust = clampf(0.5 + 0.8 * _gust_noise.get_noise_1d(_time), 0.0, 1.0)
 	var position: Vector3 = body.global_position
@@ -589,6 +591,50 @@ func _apply_buses() -> void:
 			var share: float = shares[bus_name]
 			AudioServer.set_bus_mute(index, share <= 0.001)
 			AudioServer.set_bus_volume_db(index, linear_to_db(maxf(share, 0.001)))
+
+
+# Sound files are loaded the first time a layer needs them, which cost 5 to 20 ms frames (first rain, first
+# creak). After the first WARM_START_SEC the common ones are loaded one per frame instead.
+const WARM_START_SEC := 3.0
+var _warm: Array = []                   # [module, name] still to load
+var _warm_wait: float = 0.0
+
+
+func _build_warm_list() -> void:
+	for event in ambient.EVENTS:
+		_warm.append([ambient, str(event["name"])])
+
+	for kind in water.KINDS:
+		_warm.append([water, str(water.KINDS[kind]["file"])])
+
+	for tool in hits.TOOLS:
+		for material in hits.MATERIALS:
+			_warm.append([hits, "hit_%s_%s" % [tool, material]])
+
+	for name in ["fire_small", "fire_large", "fire_rain", "fire_light", "fire_out"]:
+		_warm.append([fire, name])
+
+	for name in ["flame_torch", "flame_lantern"]:
+		_warm.append([flame, name])
+
+	for name in ["tree_creak", "tree_leaves", "tree_crash", "stump_chips"]:
+		_warm.append([trees, name])
+
+	for name in ["item_pickup", "item_drop", "inv_open", "inv_close", "item_swap", "craft_done"]:
+		_warm.append([itemfx, name])
+
+	for name in ["breath_in", "breath_out", "breath_gasp", "heartbeat"]:
+		_warm.append([breath, name])
+
+
+func _warm_one(delta: float) -> void:
+	_warm_wait += delta
+
+	if _warm_wait < WARM_START_SEC or _warm.is_empty():
+		return
+
+	var entry: Array = _warm.pop_front()
+	entry[0]._variants(entry[1])
 
 
 func _load_settings() -> void:

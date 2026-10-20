@@ -24,7 +24,7 @@ const SoundStage := preload("res://src/client/sound_stage.gd")
 const GENERATED_DIR := "res://assets/audio/water/"
 const RECORDED_DIR := "res://assets/audio/recorded/water/"
 
-const SCAN_SEC := 1.5
+const SCAN_SEC := 2.5
 const SPACING_M := 8.0
 const HALF := 8                         # squares each way: 8 x 8 m = 64 m reach
 const MAX_SOURCES := 4
@@ -32,7 +32,7 @@ const MAX_DEPTH_M := 12.0
 const SPEED_REF := 0.5                  # m/s with no loudness change (the current simulated rivers run 0.1 to 1 m/s)
 const SPEED_FLOOR := 0.15
 const SPEED_DB_PER_OCTAVE := 5.0        # per doubling of the current speed
-const ROWS_PER_FRAME := 3               # of the 17 scan rows
+const ROWS_PER_FRAME := 2               # of the 17 scan rows
 const SEPARATION_M := 36.0
 const FALL_DROP_M := 1.0                # surface drop between neighbouring squares
 const POND_AROUND := 16

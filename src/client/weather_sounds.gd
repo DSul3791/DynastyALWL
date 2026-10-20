@@ -42,6 +42,7 @@ const SPEED_OF_SOUND := 343.0
 # kind: rain (0 to 1), wind (0 to 1), hush (0 to 1, quiets the nature layer), thunder (0 or 1),
 # calls (share of the birds and insects still calling), frogs (share of frog calls: more than 1 in
 # light rain, which they like, none in storms, snow and blizzards; owner 2026-10-20).
+const TICK_SEC := 0.05                 # the whole weather mix runs at 20 Hz on the accumulated time
 const KINDS := {
 	"clear": {"rain": 0.0, "wind": 0.0, "hush": 0.0, "thunder": 0.0, "calls": 1.0, "frogs": 1.0},
 	"drizzle": {"rain": 0.3, "wind": 0.1, "hush": 0.1, "thunder": 0.0, "calls": 0.5, "frogs": 1.6},
@@ -94,6 +95,7 @@ var _streams: Dictionary = {}
 var _thunder_in: float = 20.0
 var _pending: Array = []                # [seconds left, AudioStreamPlayer, stream] thunder waiting for its delay
 var _cover_in: float = 0.0
+var _tick_acc: float = 0.0
 var _cover_target: float = 0.0
 var _drip_in: float = 1.0
 var _under: float = 1.0                 # 0 underwater, 1 in the air, smoothed
@@ -181,7 +183,14 @@ func voices_playing() -> int:
 	return count
 
 
-func update(delta: float, body: CharacterBody3D, underwater: bool) -> void:
+func update(frame_delta: float, body: CharacterBody3D, underwater: bool) -> void:
+	_tick_acc += frame_delta
+
+	if _tick_acc < TICK_SEC:
+		return
+
+	var delta: float = _tick_acc
+	_tick_acc = 0.0
 	var target: Dictionary = KINDS[kind]
 	var step: float = FADE_PER_SEC * delta
 	world_wind = move_toward(world_wind, maxf(_wind_target, wind) if forced else _wind_target, 0.1 * delta)

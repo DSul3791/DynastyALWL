@@ -37,6 +37,8 @@ var forced: float = -1.0                # --cave=0..1 forces it (headless checks
 var _stage                              # SoundStage (tier, voice room)
 var _tier: int = 2
 var _target: float = 0.0
+var _applied: float = -1.0              # the enclosure the bus effects were last set to
+var _applied_tier: int = -1
 var _scan_left: float = 0.0
 var _next_drip: float = 3.0
 var _lowpass: Dictionary = {}           # bus name -> AudioEffectLowPassFilter
@@ -107,7 +109,12 @@ func update(delta: float, body: CharacterBody3D, flying: bool = false) -> void:
 			_target = _measure(body)
 
 	enclosure = move_toward(enclosure, maxf(_target, interior_floor), EASE_PER_SEC * delta)
-	_apply()
+
+	if absf(enclosure - _applied) > 0.002 or _tier != _applied_tier:
+		_applied = enclosure
+		_applied_tier = _tier
+		_apply()
+
 	_drip(delta, body)
 
 

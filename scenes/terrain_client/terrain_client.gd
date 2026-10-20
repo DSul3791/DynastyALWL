@@ -177,6 +177,7 @@ var test_spear_sounds: bool = false
 var test_fire: bool = false
 var _fire_sync_left: float = 0.0
 var _tree_sync_left: float = 0.0
+var _item_sync_left: float = 0.0
 var test_levels: bool = false
 var test_flame: bool = false
 var _test_flame_t: float = -1.0
@@ -1614,7 +1615,12 @@ func _step_player(delta: float) -> void:
 	Probe.stop("player move", t)
 	var ts: int = Probe.start()
 	sound.update(delta, body, flying, underwater)
-	sound.itemfx.watch(items)
+	_item_sync_left -= delta
+
+	if _item_sync_left <= 0.0:
+		_item_sync_left = 0.1
+		sound.itemfx.watch(items)
+
 	_fire_sync_left -= delta
 
 	if _fire_sync_left <= 0.0 and items != null:

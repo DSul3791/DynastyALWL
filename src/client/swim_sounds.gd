@@ -13,6 +13,7 @@ const SoundStage := preload("res://src/client/sound_stage.gd")
 const GENERATED_DIR := "res://assets/audio/swim/"
 const RECORDED_DIR := "res://assets/audio/recorded/swim/"
 
+const LOOK_SEC := 0.1                  # the water and ground are read at 10 Hz; between reads the depth follows the feet
 const SWIM_M := 1.3                     # feet this far under the surface: swimming (same as the footsteps)
 const ENTER_M := 0.8                    # feet this far under: counts as having jumped in
 const FALL_SPLASH_MPS := 2.5            # a drop this fast splashes in any depth
@@ -31,6 +32,9 @@ var dives: int = 0
 var surfaces: int = 0
 var last: String = ""                   # HUD: the last event and file
 var swimming: bool = false
+var _look_left: float = 0.0
+var _cached_immersion: float = -2.0      # the last water reading (metres over the soles); -2 none yet
+var _cached_feet_y: float = 0.0
 var demo_runs: int = 0
 
 var _stage                              # SoundStage (water level, voice budget)
@@ -71,6 +75,13 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 		_step(delta, -1.0, 0.0, 0.0, false)
 		return
 
+	_look_left -= delta
+
+	if _look_left > 0.0 and _cached_immersion != -2.0:
+		_step(delta, _cached_immersion + (_cached_feet_y - (body.global_position.y - SoundStage.FEET_M)) if _cached_immersion > 0.0 else _cached_immersion, Vector2(body.velocity.x, body.velocity.z).length(), body.velocity.y, underwater)
+		return
+
+	_look_left = LOOK_SEC
 	var feet: Vector3 = body.global_position - Vector3(0.0, SoundStage.FEET_M, 0.0)
 	var level: float = _stage.water_level_at(feet)
 
@@ -83,6 +94,8 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	if immersion > 0.0 and feet.y >= 0.0 and _stage.water_depth_at(feet) <= 0.0:
 		immersion = -1.0
 
+	_cached_immersion = immersion
+	_cached_feet_y = feet.y
 	_step(delta, immersion, Vector2(body.velocity.x, body.velocity.z).length(), body.velocity.y, underwater)
 
 

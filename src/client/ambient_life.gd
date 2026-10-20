@@ -33,6 +33,7 @@ const SoundStage := preload("res://src/client/sound_stage.gd")
 const GENERATED_DIR := "res://assets/audio/ambient/"
 const RECORDED_DIR := "res://assets/audio/recorded/ambient/"
 
+const EVENT_TICK_SEC := 0.1          # the call timers tick at 10 Hz
 const SCAN_SEC := 1.5
 const MIN_GAP_SEC := 3.0               # no two calls closer than this
 const RUN_SCARE_MS := 8.0
@@ -106,6 +107,7 @@ var _grass
 var _rng := RandomNumberGenerator.new()
 var _scan_left: float = 0.0
 var _next: Dictionary = {}              # call name -> seconds until it is tried
+var _event_acc: float = 0.0
 var _since_call: float = MIN_GAP_SEC
 var _voices: Array = []                 # AudioStreamPlayer3D now playing
 var _streams: Dictionary = {}
@@ -175,8 +177,16 @@ func update(delta: float, body: CharacterBody3D, flying: bool) -> void:
 		conditions["hour"] = fposmod(float(conditions["hour"]) + delta * GAME_HOURS_PER_SEC, 24.0)
 
 	_since_call += delta
+	_event_acc += delta
+
+	if _event_acc < EVENT_TICK_SEC:
+		return
+
+	# The call timers run at 10 Hz on the time that passed (nothing here needs frame precision).
+	var tick: float = _event_acc
+	_event_acc = 0.0
 	_voices = _voices.filter(func(v): return is_instance_valid(v) and v.playing)
-	var step: float = delta * time_scale
+	var step: float = tick * time_scale
 
 	for event in EVENTS:
 		var name: String = event["name"]
