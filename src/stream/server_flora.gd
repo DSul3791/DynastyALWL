@@ -82,9 +82,9 @@ func chunk_bytes(chunk: Vector2i, full: bool = true) -> PackedByteArray:
 		if not extra.is_empty():
 			items = items.duplicate()
 
-			for key in items:
-				items[key] = items[key].duplicate()
-				items[key].append_array(extra[key])
+			for field in items:
+				items[field] = items[field].duplicate()
+				items[field].append_array(extra[field])
 	bytes = PlacerScript.encode(items, placer.chunk_origin(home))
 	_mutex.lock()
 	_fill_cover(home, items)
