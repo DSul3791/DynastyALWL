@@ -23,7 +23,7 @@ Tracks what the controls are now and what is planned. Update it whenever a contr
 | Esc | Options menu: Resume, Settings (quality, Resolution 1280x720 to 1920x1080, Window: windowed or fullscreen windowed, VSync, sound volume 100/75/50/25 % or off), Advanced (Clear saved ground, which takes effect at once), Quit game. Esc again resumes |
 | I | Open or close the inventory (click a slot, then another to move; Drop stack / Drop one; "Make by hand" lists the crafts: cordage, stone axe, spear, campfire). Esc closes it first |
 | 1 to 8 | Hold what is in inventory slot 1 to 8 (the first row) |
-| Left click | Use the held item (spear: jab; stone axe: swing, with the hit sound of what it strikes) |
+| Left click | Use the held item (spear: jab; stone axe: swing, with the hit sound of what it strikes, and a blow on bare rock gives a stone; a held torch lights the way) |
 | Right click (hold) | Spear: aim a throw; then left click throws. Letting go returns to the normal stance |
 | Left click with a campfire kit held | Place the fire where the ring shows: yellow ring = open ground (rain puts the fire out), green = under a tree's crown (the fire survives rain) |
 | E | Pick up the nearest item on the ground within 3 m; with nothing there, gather the nearest plant or shrub within 2.5 m (flax, nettle and reeds give fibre, shrubs give sticks) |

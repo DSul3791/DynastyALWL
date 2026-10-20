@@ -85,6 +85,14 @@ func _is_placeable() -> bool:
 	return str(_inv.table.entry(held_id()).get("kind", "")) == "placeable"
 
 
+func _is_torch() -> bool:
+	return str(_inv.table.entry(held_id()).get("tool_class", "")) == "torch"
+
+
+func _is_knife() -> bool:
+	return str(_inv.table.entry(held_id()).get("tool_class", "")) == "knife"
+
+
 func _is_axe() -> bool:
 	return str(_inv.table.entry(held_id()).get("tool_class", "")) == "axe"
 
@@ -149,7 +157,16 @@ func _process(delta: float) -> void:
 		if _swing_t >= SWING_S:
 			_swing_t = -1.0
 
-	if _model != null and _is_axe():
+	if _model != null and _is_torch():
+		var flicker: OmniLight3D = _model.get_node_or_null("Light")
+
+		if flicker != null:
+			flicker.light_energy = 1.4 + 0.3 * sin(float(Time.get_ticks_msec()) * 0.017)
+
+		_model.position = _model.position.lerp(REST, clampf(delta * 14.0, 0.0, 1.0))
+	elif _model != null and _is_knife():
+		_model.position = _model.position.lerp(REST, clampf(delta * 14.0, 0.0, 1.0))
+	elif _model != null and _is_axe():
 		var u: float = clampf(_swing_t / SWING_S, 0.0, 1.0) if _swing_t >= 0.0 else 0.0
 		var arc: float = sin(u * PI)
 		_model.position = _model.position.lerp(REST + Vector3(-0.1 * arc, -0.15 * arc, -0.2 * arc), clampf(delta * 20.0, 0.0, 1.0))
@@ -239,6 +256,7 @@ func _strike() -> void:
 		_sound.hits.hit("axe", "wood", hit["position"], 1.0)
 	else:
 		_sound.hits.hit_ground("pick", hit["position"], 1.0)
+		_net.inventory_action.rpc_id(1, Net.ACT_MINE, 0, 0, 0, hit["position"])
 
 
 func _caption() -> String:
@@ -251,6 +269,8 @@ func _caption() -> String:
 
 	if _is_placeable():
 		text += "   (left click: place; green = under cover, yellow = open)"
+	elif _is_torch():
+		text += "   (lights the way while held)"
 	elif _is_axe():
 		text += "   (left click: swing)"
 	elif _is_spear():
@@ -262,7 +282,7 @@ func _caption() -> String:
 func _show_model() -> void:
 	var number: int = held_number() if _inv != null else 0
 
-	if not _is_spear() and not _is_axe():
+	if not _is_spear() and not _is_axe() and not _is_torch() and not _is_knife():
 		number = 0
 
 	if number == _shown_number:
@@ -275,9 +295,70 @@ func _show_model() -> void:
 		_model = null
 
 	if number != 0:
-		_model = _make_spear_model() if _is_spear() else _make_axe_model()
+		_model = _make_spear_model() if _is_spear() else (_make_torch_model() if _is_torch() else (_make_knife_model() if _is_knife() else _make_axe_model()))
 		_camera.add_child(_model)
 		_model.position = REST
+
+
+# A torch in hand: a stick with a glowing head and one warm light (only while it is held).
+func _make_torch_model() -> Node3D:
+	var torch: Node3D = Node3D.new()
+	var stick: MeshInstance3D = MeshInstance3D.new()
+	var rod: CylinderMesh = CylinderMesh.new()
+	rod.top_radius = 0.025
+	rod.bottom_radius = 0.03
+	rod.height = 0.6
+	var wood: StandardMaterial3D = StandardMaterial3D.new()
+	wood.albedo_color = Color(0.4, 0.27, 0.14)
+	rod.material = wood
+	stick.mesh = rod
+	torch.add_child(stick)
+	var flame: MeshInstance3D = MeshInstance3D.new()
+	var cone: CylinderMesh = CylinderMesh.new()
+	cone.top_radius = 0.0
+	cone.bottom_radius = 0.07
+	cone.height = 0.22
+	var glow: StandardMaterial3D = StandardMaterial3D.new()
+	glow.albedo_color = Color(1.0, 0.6, 0.2)
+	glow.emission_enabled = true
+	glow.emission = Color(1.0, 0.5, 0.1)
+	glow.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	cone.material = glow
+	flame.mesh = cone
+	flame.position = Vector3(0.0, 0.4, 0.0)
+	torch.add_child(flame)
+	var light: OmniLight3D = OmniLight3D.new()
+	light.name = "Light"
+	light.light_color = Color(1.0, 0.65, 0.3)
+	light.omni_range = float(_inv.table.entry(held_id()).get("light_m", 9.0))
+	light.shadow_enabled = false
+	light.position = Vector3(0.0, 0.55, 0.0)
+	torch.add_child(light)
+	return torch
+
+
+func _make_knife_model() -> Node3D:
+	var knife: Node3D = Node3D.new()
+	var handle: MeshInstance3D = MeshInstance3D.new()
+	var rod: CylinderMesh = CylinderMesh.new()
+	rod.top_radius = 0.02
+	rod.bottom_radius = 0.02
+	rod.height = 0.16
+	var wood: StandardMaterial3D = StandardMaterial3D.new()
+	wood.albedo_color = Color(0.4, 0.27, 0.14)
+	rod.material = wood
+	handle.mesh = rod
+	knife.add_child(handle)
+	var blade: MeshInstance3D = MeshInstance3D.new()
+	var edge: BoxMesh = BoxMesh.new()
+	edge.size = Vector3(0.015, 0.14, 0.05)
+	var flint: StandardMaterial3D = StandardMaterial3D.new()
+	flint.albedo_color = Color(0.5, 0.5, 0.52)
+	edge.material = flint
+	blade.mesh = edge
+	blade.position = Vector3(0.0, 0.15, 0.0)
+	knife.add_child(blade)
+	return knife
 
 
 func _make_axe_model() -> Node3D:

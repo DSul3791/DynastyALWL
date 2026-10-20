@@ -60,6 +60,7 @@ const ACT_PICKUP := 2     # a = world item id
 const ACT_ADMIN_GIVE := 3 # a = item number, count (admin tool; tests only)
 const ACT_CRAFT := 4      # a = recipe number (data/items/recipes.json)
 const ACT_PLACE := 6      # a = slot of a placeable item, at = where (a campfire kit becomes a fire)
+const ACT_MINE := 8       # at = the point the axe struck; on bare rock the server gives stone
 const ACT_THROW := 5      # a = slot, at = aim direction (the server starts the throw from the player)
 
 

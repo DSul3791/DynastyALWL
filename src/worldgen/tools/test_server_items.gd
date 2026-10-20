@@ -33,8 +33,9 @@ func _init() -> void:
 	DirAccess.make_dir_recursive_absolute("user://test_server_items_b")
 	DirAccess.make_dir_recursive_absolute("user://test_server_items_c")
 	DirAccess.make_dir_recursive_absolute("user://test_server_items_d")
+	DirAccess.make_dir_recursive_absolute("user://test_server_items_e")
 
-	for suffix in ["", "_b", "_c", "_d"]:
+	for suffix in ["", "_b", "_c", "_d", "_e"]:
 		for file in DirAccess.get_files_at(dir + suffix):
 			DirAccess.remove_absolute(dir + suffix + "/" + file)
 
@@ -210,6 +211,33 @@ func _init() -> void:
 			fires_left += 1
 
 	check(fires_left == 0, "a dead fire is cleared away")
+
+	# Mining rock with the axe.
+	var m = make("user://test_server_items_e")
+	m.ground_height = func(x, z): return 10.0
+	m.rock_at = func(x, z): return x > 0.0
+	m.peer_connected_hello(1, "abcdef123456")
+	m.report_position(1, Vector3(5.0, 10.0, 0.0))
+	var rock_stone: int = m.table.number_of("stone")
+	m.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(m.inventory_of(1).count_of(rock_stone) == 0, "no axe, no stone")
+	m.action(1, Net.ACT_ADMIN_GIVE, m.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
+	m.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(m.inventory_of(1).count_of(rock_stone) == 1, "axe on rock gives a stone")
+	m.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(m.inventory_of(1).count_of(rock_stone) == 1, "blows too close together give nothing")
+
+	for n in range(10):
+		m._last_mine.clear()
+		m.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+
+	check(m.inventory_of(1).count_of(rock_stone) == ItemsScript.MINE_STONES_PER_CELL, "a patch gives only a few stones")
+	m.report_position(1, Vector3(-5.0, 10.0, 0.0))
+	m.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(-6.0, 10.0, 0.0))
+	check(m.inventory_of(1).count_of(rock_stone) == ItemsScript.MINE_STONES_PER_CELL, "soil gives no stone")
+	m.report_position(1, Vector3(5.0, 10.0, 0.0))
+	m.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(30.0, 10.0, 0.0))
+	check(m.inventory_of(1).count_of(rock_stone) == ItemsScript.MINE_STONES_PER_CELL, "out of reach gives nothing")
 
 	print("server item tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

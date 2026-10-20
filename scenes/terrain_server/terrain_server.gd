@@ -167,6 +167,14 @@ func _ready() -> void:
 	items.world_seed = int(settings.master_seed)
 	items.rain_now = func(): return float(weather.get("rain", 0.0))
 	items.cover_at = _cover_at
+	items.rock_at = func(x, z):
+		var tile_data = generator.get_tile(generator.tile_of(x, z))
+
+		if tile_data.placeholder:
+			return false
+
+		var h: float = float(generator.surface_height(x, z))
+		return generator._surface_material(tile_data, x, z, h) >= Layout.MATERIAL_ROCK
 	items.setup(ItemTableScript.load_default(), store_dir)
 	spawn = _spawn_point(world_dir)
 	_world_dir = world_dir

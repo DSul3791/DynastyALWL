@@ -32,6 +32,11 @@ const THROW_GRAVITY := 9.8
 const THROW_MAX_S := 6.0
 const THROW_COOLDOWN_MS := 500
 const EYE_HEIGHT := 1.5
+const MINE_REACH_M := 4.5
+const MINE_COOLDOWN_MS := 700
+const MINE_CELL_M := 8.0                 # one outcrop patch
+const MINE_STONES_PER_CELL := 6          # stones a patch gives before it is spent...
+const MINE_REGROW_S := 300.0             # ...and one comes back this often (real seconds)
 const PLACE_REACH_M := 6.0
 const FIRE_BURN_S := 900.0               # real seconds a fire burns before it goes out
 const FIRE_OUT_S := 300.0                # a burnt-out or rained-out fire stays this long
@@ -49,6 +54,7 @@ var send_world_items: Callable # (peer, added Array, removed PackedInt32Array)
 var ground_height: Callable    # (x, z) -> ground height in metres, or NAN; set by the server scene
 var world_seed: int = 0
 var rain_now: Callable         # () -> rain strength 0 to 1 over the world now; set by the server scene
+var rock_at: Callable          # (x, z) -> true when bare rock shows at the surface there (no soil cover); set by the server scene
 var cover_at: Callable         # (position) -> 0.0 open or 1.0 under a tree's crown (Cover.at, or its stand-in)
 
 var _dir: String = ""
@@ -64,6 +70,8 @@ var _dirty: bool = false
 var _drops: Dictionary = {}
 var _flights: Array = []            # thrown things in the air: {number, pos, vel, age}
 var _last_throw: Dictionary = {}    # peer -> msec
+var _last_mine: Dictionary = {}     # peer -> msec
+var _mined: Dictionary = {}         # Vector2i patch -> {taken, since msec}
 var _taken: Dictionary = {}         # scatter key int -> true: loose items already picked up (stay gone)
 var _cells_done: Dictionary = {}    # Vector2i scatter cell -> true while its items are laid out
 
@@ -97,6 +105,7 @@ func peer_left(peer: int) -> void:
 	_peer_pos.erase(peer)
 	_known.erase(peer)
 	_last_throw.erase(peer)
+	_last_mine.erase(peer)
 
 
 func report_position(peer: int, position: Vector3) -> void:
@@ -179,6 +188,8 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_drop(peer, inv, a, count, at)
 	elif kind == Net.ACT_PICKUP:
 		_pickup(peer, inv, a)
+	elif kind == Net.ACT_MINE:
+		_mine(peer, inv, at)
 	elif kind == Net.ACT_PLACE:
 		_place(peer, inv, a, at)
 	elif kind == Net.ACT_THROW:
@@ -323,6 +334,49 @@ func _fly(delta: float) -> void:
 
 			drop_in_world(int(flight["number"]), 1, spot)
 			_flights.erase(flight)
+
+
+# The stone axe used as a pick (Dave: no stone pickaxe): a blow on bare rock gives a stone. The
+# server checks the axe, the reach, the pace and that rock really shows there, and each 8 m patch
+# of outcrop gives only a few stones before it needs time to recover. No ground is dug.
+func _mine(peer: int, inv, at: Vector3) -> void:
+	if not _peer_pos.has(peer) or not rock_at.is_valid() or _peer_pos[peer].distance_to(at) > MINE_REACH_M:
+		return
+
+	var has_axe: bool = false
+
+	for slot in range(8):
+		if inv.numbers[slot] != 0 and str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", "")) == "axe":
+			has_axe = true
+
+	var now: int = Time.get_ticks_msec()
+
+	if not has_axe or now - int(_last_mine.get(peer, -100000)) < MINE_COOLDOWN_MS or not bool(rock_at.call(at.x, at.z)):
+		return
+
+	_last_mine[peer] = now
+	var patch: Vector2i = Vector2i(int(floor(at.x / MINE_CELL_M)), int(floor(at.z / MINE_CELL_M)))
+	var state: Dictionary = _mined.get(patch, {"taken": 0, "since": now})
+	var regrown: int = int((now - int(state["since"])) / (MINE_REGROW_S * 1000.0))
+	state["taken"] = maxi(int(state["taken"]) - regrown, 0)
+
+	if regrown > 0:
+		state["since"] = now
+
+	if int(state["taken"]) >= MINE_STONES_PER_CELL:
+		_mined[patch] = state
+		return
+
+	state["taken"] = int(state["taken"]) + 1
+	_mined[patch] = state
+	var before: Array = _snapshot(inv)
+	var left: int = inv.add(table.number_of("stone"), 1)
+
+	if left > 0:
+		drop_in_world(table.number_of("stone"), left, _peer_pos[peer])
+
+	_send_changes(peer, inv, before)
+	_dirty = true
 
 
 # A placeable item (the campfire kit) becomes a fire on the ground in front of the player.
