@@ -97,7 +97,7 @@ void vertex() {
 		float age = mod(trample_now - (trod.r * 255.0 + trod.g * 255.0 * 256.0) + 65536.0, 65536.0);
 		flat_down = 1.0 - smoothstep(0.0, 300.0, age);
 	}
-	VERTEX.y *= 1.0 - 0.85 * flat_down;
+	VERTEX.y *= 1.0 - 0.6 * flat_down;
 	VERTEX *= fade;
 	blade_color = INSTANCE_CUSTOM.rgb * (1.0 - 0.12 * flat_down);
 }

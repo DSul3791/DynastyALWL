@@ -56,7 +56,7 @@ const FaintEffectScript := preload("res://src/client/faint_effect.gd")
 const FallMistScript := preload("res://src/client/fall_mist.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 281
+const BUILD := 282
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -2206,8 +2206,12 @@ func _process(delta: float) -> void:
 		var tg: int = Probe.start()
 		grass.update(body.global_position)
 
-		if body.is_on_floor() and (body.velocity.x != 0.0 or body.velocity.z != 0.0):
-			grass.stamp(body.global_position)
+		# Stamped behind the player, out of view, so no grass is seen dropping flat in front of the camera
+		# (owner, 2026-10-20: "popping in and out of existence right in front of me").
+		var walk: Vector3 = Vector3(body.velocity.x, 0.0, body.velocity.z)
+
+		if body.is_on_floor() and walk.length() > 0.5:
+			grass.stamp(body.global_position - walk.normalized() * 1.3)
 		Probe.stop("grass", tg)
 
 	if _bake.running and now >= _bake_check_msec:

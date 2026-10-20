@@ -13,7 +13,7 @@ extends RefCounted
 
 const SIZE := 256
 const RECOVER_S := 300.0
-const RADIUS_M := 1.1
+const RADIUS_M := 0.8
 var upload_msec: int = 100              # 200 on Low (set_trample_rate in grass_view.gd)
 
 var texture: ImageTexture = null
