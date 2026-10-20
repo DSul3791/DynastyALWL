@@ -43,14 +43,16 @@ const RAIN_SHADER := """
 shader_type spatial;
 render_mode unshaded, cull_disabled, blend_mix;
 uniform vec4 streak : source_color = vec4(0.78, 0.84, 0.95, 0.42);
-uniform sampler2D canopy : filter_nearest, hint_default_black;
+uniform sampler2D canopy : filter_linear, hint_default_black;
 uniform vec3 canopy_box = vec3(0.0, 0.0, 128.0);   // map corner x, z and its width in metres
 
 void vertex() {
 	vec3 o = MODEL_MATRIX[3].xyz;
 	vec2 uv = (o.xz - canopy_box.xy) / canopy_box.z;
-	if (uv.x > 0.0 && uv.x < 1.0 && uv.y > 0.0 && uv.y < 1.0 && textureLod(canopy, uv, 0.0).r > 0.5) {
-		VERTEX *= 0.0;
+	if (uv.x > 0.0 && uv.x < 1.0 && uv.y > 0.0 && uv.y < 1.0) {
+		// A crown is a roof: no streak falls under it, and the edge fades over about a metre so
+		// the rain does not pop as the player steps in and out.
+		VERTEX *= 1.0 - smoothstep(0.2, 0.8, textureLod(canopy, uv, 0.0).r);
 	}
 }
 
