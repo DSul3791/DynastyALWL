@@ -25,6 +25,7 @@ SLOTS = [
     ("thunder", "weather", "weather_sounds.gd: a mid-distance thunder roll", "2 to 3 rolling thunder claps, 5 to 9 s", 1),
     ("thunder_near", "weather", "weather_sounds.gd: a close strike (under 500 m): sharp crack and thud", "2 to 3 close, sharp thunder cracks, 2 to 4 s", 2),
     ("thunder_far", "weather", "weather_sounds.gd: a far strike (over 1800 m): a low grumble", "2 to 3 distant low rumbles, 8 to 12 s", 2),
+    ("rain_drip", "weather", "weather_sounds.gd: a drop falling from a leaf near you, under trees in rain", "3 to 4 single drops falling from leaves onto leaves or ground, 0.3 s", 3),
     ("water_brook", "water", "water_sounds.gd: a fast shallow stream, positional loop", "A babbling brook loop, seamless", 1),
     ("water_river", "water", "water_sounds.gd: a wide slow river, positional loop", "A broad river flow loop, seamless", 1),
     ("water_pond", "water", "water_sounds.gd: gentle lapping at a pond shore", "A calm lake shore lapping loop, seamless", 2),

@@ -81,6 +81,14 @@
    "priority": 2
   },
   {
+   "name": "rain_drip",
+   "state": "generated",
+   "variants": 4,
+   "used_in": "weather_sounds.gd: a drop falling from a leaf near you, under trees in rain",
+   "to_supply": "3 to 4 single drops falling from leaves onto leaves or ground, 0.3 s",
+   "priority": 3
+  },
+  {
    "name": "water_brook",
    "state": "generated",
    "variants": 1,
