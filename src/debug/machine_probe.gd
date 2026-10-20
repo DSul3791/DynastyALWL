@@ -23,6 +23,8 @@ var _cpu: Array = []
 var _draws: Array = []
 var _rows: Array = []
 var _start_quality: int = 2
+var _start_yaw: float = 0.0
+var _hud_was_visible: bool = true
 var _head: String = ""
 
 
@@ -55,12 +57,14 @@ func toggle() -> void:
 		return
 
 	_start_quality = _client.quality
+	_start_yaw = _client.body.rotation.y
 	_rows = []
 	_head = "%s, %s, %s, %d MB RAM\nwindow %dx%d, 3D %dx%d, vsync %s" % [
 		RenderingServer.get_video_adapter_name(), RenderingServer.get_current_rendering_driver_name(),
 		OS.get_processor_name(), int(OS.get_memory_info().get("physical", 0)) / 1048576,
 		get_window().size.x, get_window().size.y, int(_client.display.BASE.x * _client._render_scale), int(_client.display.BASE.y * _client._render_scale),
 		["on", "adaptive", "off"][clampi([DisplayServer.VSYNC_ENABLED, DisplayServer.VSYNC_ADAPTIVE, DisplayServer.VSYNC_DISABLED].find(DisplayServer.window_get_vsync_mode()), 0, 2)]]
+	_hud_was_visible = _client.hud.visible
 	_client.hud.visible = false
 	_begin_tier(0)
 	set_process(true)
@@ -150,6 +154,8 @@ func _finish(completed: bool) -> void:
 	set_process(false)
 	_client.quality = _start_quality
 	_client._apply_quality()
+	_client.body.rotation.y = _start_yaw    # position, quality and the saved settings are as they were
+	_client.hud.visible = _hud_was_visible
 	_show("\n" + ("Done. Saved to user://machine_run.txt (press Esc > Advanced > Measure again to close)" if completed else "Stopped."))
 
 	if completed:
