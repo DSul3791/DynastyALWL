@@ -194,7 +194,14 @@ const IMPOSTOR_M := [100.0, 150.0, 180.0, 250.0]
 const IMPOSTOR_TILE_PX := [Vector2i(64, 128), Vector2i(128, 256), Vector2i(128, 256), Vector2i(128, 256)]   # one view; the atlas holds two
 const MAX_DROPS_PER_UPDATE := 2
 const SHADOW_M := [0.0, 45.0, 60.0, 120.0]   # full-detail trees cast shadows only this near (64 m cells; the sun's shadow range is a render setting)
-const CELL_M := 64.0       # trees choose casting shadows per cell of this size inside a chunk
+const TIER_FAR := 0
+const TIER_FULL := 1
+const TIER_IMPOSTOR := 2
+const TIER_MID := 3
+const CELL_M := 64.0       # trees choose their tier (full or mid model, shadows) per cell of this size inside a chunk
+const FULL_MIN_M := 30.0   # full-detail trees reach at least this far, even where there are no shadows (Low)
+const MID_MIN_TRIANGLES := 500   # trees with fewer triangles than this keep their full model at every near distance
+const MID_LOD_SCALE_MIN := 25.0  # ImporterMesh.generate_lods merge angle (degrees)
 const FAR_SHADOWS := [false, false, false, true]   # far-model trees cast shadows only at Ultra (shadow range is 100 m at High)
 
 var chunk_m: float = 256.0
@@ -220,6 +227,9 @@ var _labels: Dictionary = {}           # species id -> name with a note on its m
 var _chunks: Dictionary = {}           # Vector2i -> {"items", "level", "node"}
 var _serial: int = 0                   # numbers each chunk plan, so an outdated plan is skipped
 var _tasks: Array = []                 # WorkerThreadPool tasks making chunk plans
+var _mid_wanted: Array = []            # [species id, variant, full mesh] still to be simplified (see _decimate_task)
+var _mid_ready: Array = []             # [species id, variant, [surface arrays], [materials]] from the worker, built into meshes in apply_built
+var _mid_task: int = -1
 var _built: Array = []                 # finished plans: [chunk, serial, level, plan]
 var _built_mutex: Mutex = Mutex.new()
 var _trunk_shapes: Dictionary = {}     # radius in cm -> CylinderShape3D
@@ -364,6 +374,12 @@ func setup(tables, tile_rules: Dictionary) -> void:
 				near_meshes.append(TreeBuilder.build(entry, reference, v, false, _tree_materials))
 				far_meshes.append(TreeBuilder.build(entry, reference, v, true, _tree_materials))
 
+		# The mid model starts as the full model; _decimate_task swaps in the simplified one when ready.
+		var mid_meshes: Array = near_meshes.duplicate()
+		if kind == KIND_TREE and built:
+			for v in range(near_meshes.size()):
+				_mid_wanted.append([int(entry["id"]), v, near_meshes[v]])
+
 		var c: Array = entry["color"]
 		_species[int(entry["id"])] = {
 			"kind": kind,
@@ -375,6 +391,7 @@ func setup(tables, tile_rules: Dictionary) -> void:
 			"hardwood": str(entry["shape"]) == "broadleaf" or entry.has("autumn_colors"),
 			"tinted": built,
 			"near": near_meshes,
+			"mid": mid_meshes,
 			"far": far_meshes,
 			"shape": shape,
 			"glows": entry.has("glow") or entry.has("leaf_glow"),
@@ -403,6 +420,8 @@ func setup(tables, tile_rules: Dictionary) -> void:
 			var yc: Array = entry["young_color"]
 			_species[int(entry["id"])]["young_tint"] = _plant_tint(entry, yc)
 			_species[int(entry["id"])]["young_m"] = entry.get("young_m", [4.0, 15.0])
+
+	_start_mid_task()
 
 
 func _make_tree_materials() -> void:
@@ -958,9 +977,12 @@ func _level(chunk: Vector2i, position: Vector3) -> int:
 		if distance <= near_m[kind]:
 			level |= 16 << kind
 
-	# Full-detail trees cast shadows only near the player: one bit per 64 m cell of the chunk (bits 32 up).
-	if (level & 16) != 0 and shadow_m > 0.0 and distance <= shadow_m:
+	# Trees choose their model per 64 m cell of the chunk, not per chunk (a chunk is 256 m wide, so
+	# one near corner used to give the whole chunk full models): two bits per cell from bit 32 up,
+	# TIER_FAR 0, TIER_FULL 1 (casts shadows), TIER_IMPOSTOR 2, TIER_MID 3.
+	if (level & 1) != 0:
 		var cells: int = int(chunk_m / CELL_M)
+		var full_m: float = maxf(shadow_m, FULL_MIN_M)
 		var x0: float = float(chunk.x) * chunk_m
 		var z0: float = float(chunk.y) * chunk_m
 
@@ -968,13 +990,17 @@ func _level(chunk: Vector2i, position: Vector3) -> int:
 			for cx in range(cells):
 				var dx: float = maxf(maxf(x0 + float(cx) * CELL_M - position.x, position.x - (x0 + float(cx + 1) * CELL_M)), 0.0)
 				var dz: float = maxf(maxf(z0 + float(cz) * CELL_M - position.z, position.z - (z0 + float(cz + 1) * CELL_M)), 0.0)
+				var d: float = sqrt(dx * dx + dz * dz)
+				var tier: int = TIER_FAR
 
-				if dx * dx + dz * dz <= shadow_m * shadow_m:
-					level |= 1 << (32 + cz * cells + cx)
+				if d <= full_m:
+					tier = TIER_FULL
+				elif d <= near_m[0]:
+					tier = TIER_MID
+				elif not _impostors.is_empty() and d > impostor_m:
+					tier = TIER_IMPOSTOR
 
-	# Trees far away are impostors (64), once their images exist.
-	if not _impostors.is_empty() and distance > impostor_m:
-		level |= 64
+				level |= tier << (32 + 2 * (cz * cells + cx))
 
 	return level
 
@@ -1017,6 +1043,10 @@ func apply_built(budget_usec: int = 3000) -> void:
 			still.append(task)
 
 	_tasks = still
+
+	if _mid_task != -1 and not _mid_ready.is_empty():
+		_apply_mid(1)
+
 	_built_mutex.lock()
 	var arrived: Array = _built
 	_built = []
@@ -1074,6 +1104,10 @@ func finish_tasks() -> void:
 
 	_tasks = []
 
+	if _mid_task != -1:
+		WorkerThreadPool.wait_for_task_completion(_mid_task)
+		_mid_task = -1
+
 
 # The drawing of a chunk at a level, as plain data (safe on a worker thread): per group of
 # one species, part and model a MultiMesh buffer; trunk colliders; glow lights.
@@ -1100,17 +1134,18 @@ func _plan(items: Dictionary, level: int) -> Dictionary:
 			variant = variant % half + (half if float(items["heights"][n]) < float(info["young_below"]) else 0)
 		var is_near: int = 1 if (int(info["kind"]) != KIND_PLANT and (level & (16 << int(info["kind"]))) != 0) else 0
 
-		if (level & 64) != 0 and int(info["kind"]) == KIND_TREE and _impostors.has(species_id):
-			is_near = 2
-			variant = 0
-		elif is_near == 1 and int(info["kind"]) == KIND_TREE:
-			# Full model: tier 1 casts a shadow (cell within shadow_m of the player), tier 3 does not.
+		if int(info["kind"]) == KIND_TREE:
+			# The model of this tree's 64 m cell (see _level): far 0, full 1, impostor 2, mid 3.
 			var cells: int = int(chunk_m / CELL_M)
 			var cx: int = posmod(int(floor(p.x / CELL_M)), cells)
 			var cz: int = posmod(int(floor(p.z / CELL_M)), cells)
+			is_near = (level >> (32 + 2 * (cz * cells + cx))) & 3
 
-			if (level & (1 << (32 + cz * cells + cx))) == 0:
-				is_near = 3
+			if is_near == TIER_IMPOSTOR:
+				if _impostors.has(species_id):
+					variant = 0
+				else:
+					is_near = TIER_FAR
 
 		var key: Array = [species_id, int(floor(p.x / part_m)), int(floor(p.z / part_m)), variant, is_near]
 
@@ -1245,7 +1280,7 @@ func _apply_step(job: Dictionary) -> bool:
 	var info: Dictionary = _species[key[0]]
 	var multimesh: MultiMesh = MultiMesh.new()
 	multimesh.transform_format = MultiMesh.TRANSFORM_3D
-	multimesh.mesh = _impostors[key[0]]["mesh"] if key[4] == 2 and _impostors.has(key[0]) else (info["near"] if key[4] == 1 or key[4] == 3 else info["far"])[key[3]]
+	multimesh.mesh = _impostors[key[0]]["mesh"] if key[4] == 2 and _impostors.has(key[0]) else (info["near"] if key[4] == 1 else (info["mid"] if key[4] == 3 else info["far"]))[key[3]]
 	multimesh.use_custom_data = bool(info["tinted"])
 	multimesh.instance_count = int(draw_plan[1])
 	multimesh.buffer = draw_plan[2]
@@ -1259,6 +1294,79 @@ func _apply_step(job: Dictionary) -> bool:
 	node.add_child(draw)
 	instances += int(draw_plan[1])
 	return int(job["draw"]) >= draws.size()
+
+
+# The mid model of each variant: the full model with its triangles cut to about a third by mesh
+# simplification (Godot's meshoptimizer, ImporterMesh.generate_lods), done once at startup.
+# Variants with few triangles keep the full model.
+# Simplified mid models (Godot's meshoptimizer, ImporterMesh.generate_lods, about a third of the
+# triangles) for trees, made on a worker thread so the start-up does not wait for them; the
+# main thread builds the meshes one or two per frame (apply_built) and swaps them into the
+# species. Draws planned before a swap keep the full model, later ones use the mid model.
+func _start_mid_task() -> void:
+	if _mid_wanted.is_empty() or _mid_task != -1:
+		return
+
+	_mid_task = WorkerThreadPool.add_task(_decimate_task.bind(_mid_wanted), false, "flora mid models")
+	_mid_wanted = []
+
+
+func _decimate_task(wanted: Array) -> void:
+	for item in wanted:
+		var mesh: ArrayMesh = item[2]
+		var triangles: int = 0
+		var arrays_list: Array = []
+		var materials: Array = []
+
+		for surface in range(mesh.get_surface_count()):
+			var arrays: Array = mesh.surface_get_arrays(surface)
+			triangles += (arrays[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3
+			arrays_list.append(arrays)
+			materials.append(mesh.surface_get_material(surface))
+
+		if triangles < MID_MIN_TRIANGLES:
+			continue
+
+		var importer: ImporterMesh = ImporterMesh.new()
+
+		for surface in range(arrays_list.size()):
+			importer.add_surface(Mesh.PRIMITIVE_TRIANGLES, arrays_list[surface], [], {}, materials[surface], "")
+
+		importer.generate_lods(MID_LOD_SCALE_MIN, 60.0, [])
+		var out_arrays: Array = []
+
+		for surface in range(importer.get_surface_count()):
+			var arrays: Array = importer.get_surface_arrays(surface)
+
+			if importer.get_surface_lod_count(surface) > 0:
+				arrays[Mesh.ARRAY_INDEX] = importer.get_surface_lod_indices(surface, 0)
+
+			out_arrays.append(arrays)
+
+		_built_mutex.lock()
+		_mid_ready.append([item[0], item[1], out_arrays, materials])
+		_built_mutex.unlock()
+
+
+func _apply_mid(limit: int) -> void:
+	_built_mutex.lock()
+	var ready: Array = _mid_ready.slice(0, limit)
+	_mid_ready = _mid_ready.slice(limit)
+	_built_mutex.unlock()
+
+	for item in ready:
+		var info: Dictionary = _species.get(item[0], {})
+
+		if info.is_empty():
+			continue
+
+		var out: ArrayMesh = ArrayMesh.new()
+
+		for surface in range(item[2].size()):
+			out.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, item[2][surface])
+			out.surface_set_material(surface, item[3][surface])
+
+		info["mid"][item[1]] = out
 
 
 # One shared trunk shape per radius (to the centimetre).
