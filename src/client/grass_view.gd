@@ -27,7 +27,33 @@ const LAYERS := [
 	{"name": "cover", "texture": "ground_cover", "width": 0.6, "height": 0.0, "per_point": 6, "reach": 0.6, "quads": 0, "wind": 0.0, "backlight": 0.0},
 	{"name": "short", "texture": "grass_short", "width": 0.55, "height": 0.34, "per_point": 8, "reach": 0.7, "quads": 2, "wind": 1.0, "backlight": 0.0},
 	{"name": "tall", "texture": "grass_tall", "width": 0.42, "height": 0.7, "per_point": 3, "reach": 1.0, "quads": 2, "wind": 1.4, "backlight": 0.35},
+	# Forest floor under tree crowns (look only, nothing is stored, synced or pickable; section 24 of
+	# ART_DIRECTION.md): fallen leaves and dead branches. Drawn within litter_m of the player.
+	{"name": "leaves", "texture": "litter", "width": 0.9, "height": 0.0, "per_point": 2, "reach": 1.0, "quads": 0, "wind": 0.0, "backlight": 0.0, "litter": true},
+	{"name": "branches", "texture": "", "width": 1.0, "height": 0.0, "per_point": 0.35, "reach": 1.0, "quads": 0, "wind": 0.0, "backlight": 0.0, "litter": true, "branch": true},
 ]
+const GRASS_LAYERS := 3                  # the first layers are grass; the rest are forest litter
+
+# Dead branches: a thin weathered stick with one side twig, lying along x from 0 to 1.
+const BRANCH_SHADER := """
+shader_type spatial;
+render_mode diffuse_lambert, specular_disabled;
+uniform float fade_start = 12.0;
+uniform float fade_end = 18.0;
+varying vec3 wood;
+
+void vertex() {
+	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	float fade = 1.0 - smoothstep(fade_start, fade_end, length(wp - CAMERA_POSITION_WORLD));
+	VERTEX *= fade;
+	wood = INSTANCE_CUSTOM.rgb;
+}
+
+void fragment() {
+	ALBEDO = wood;
+	ROUGHNESS = 1.0;
+}
+"""
 
 const SHADER := """
 shader_type spatial;
@@ -71,6 +97,9 @@ var points_per_side: int = 4
 var density: float = 1.0                 # share of each layer's per_point cards drawn (quality)
 var tufts: int = 0                       # cards drawn now
 var cells_built: int = 0
+var litter_m: float = 0.0                # forest litter drawn this far (0 off), set by the client per quality
+var litter_density: float = 0.0          # share of each litter layer's per_point drawn
+var litter_cards: int = 0                # leaf cards and branches drawn now
 
 var _terrain: Node3D
 var _flora
@@ -107,7 +136,17 @@ func setup(terrain: Node3D, flora, tables) -> void:
 	var shader: Shader = Shader.new()
 	shader.code = SHADER
 
+	var branch_shader: Shader = Shader.new()
+	branch_shader.code = BRANCH_SHADER
+
 	for layer in LAYERS:
+		if layer.get("branch", false):
+			_meshes.append(_make_branch())
+			var wood: ShaderMaterial = ShaderMaterial.new()
+			wood.shader = branch_shader
+			_materials.append(wood)
+			continue
+
 		_meshes.append(_make_cards(float(layer["width"]), float(layer["height"]), int(layer["quads"])))
 		var material: ShaderMaterial = ShaderMaterial.new()
 		material.shader = shader
@@ -133,7 +172,7 @@ func grass_at(x: float, z: float, soil: int) -> Vector2:
 # The wind sways the grass with the same gusts the sound stage plays
 # (strength about 0 calm to 1.6 for a strong gust high up).
 func set_wind(strength: float) -> void:
-	for n in range(_materials.size()):
+	for n in range(GRASS_LAYERS):
 		_materials[n].set_shader_parameter("wind_strength", 0.12 * float(LAYERS[n]["wind"]) * clampf(0.6 + 0.5 * strength, 0.6, 1.4))
 
 
@@ -161,12 +200,26 @@ func set_radius(meters: float) -> void:
 	radius_m = meters
 	enabled = meters > 0.0
 
-	for n in range(_materials.size()):
+	for n in range(GRASS_LAYERS):
 		var reach: float = meters * float(LAYERS[n]["reach"])
 		_materials[n].set_shader_parameter("fade_start", maxf(reach - 8.0 * float(LAYERS[n]["reach"]), 1.0))
 		_materials[n].set_shader_parameter("fade_end", maxf(reach, 2.0))
 
 	if not enabled:
+		_clear_all()
+
+
+# Forest litter range and amount per quality (0 meters or 0 density: none). A change rebuilds the cells.
+func set_litter(meters: float, amount: float) -> void:
+	var changed: bool = not is_equal_approx(meters, litter_m) or not is_equal_approx(amount, litter_density)
+	litter_m = meters
+	litter_density = amount
+
+	for n in range(GRASS_LAYERS, LAYERS.size()):
+		_materials[n].set_shader_parameter("fade_start", maxf(meters - 5.0, 1.0))
+		_materials[n].set_shader_parameter("fade_end", maxf(meters, 2.0))
+
+	if changed and enabled:
 		_clear_all()
 
 
@@ -208,13 +261,57 @@ static func _make_cards(width: float, height: float, quads: int) -> ArrayMesh:
 	return mesh
 
 
+# A dead branch lying along +x from 0 to 1 (three-sided, tapered) with a side twig at 0.55.
+static func _make_branch() -> ArrayMesh:
+	var vertices: PackedVector3Array = PackedVector3Array()
+	var normals: PackedVector3Array = PackedVector3Array()
+	var indices: PackedInt32Array = PackedInt32Array()
+	var limbs: Array = [
+		[Vector3(0.0, 0.03, 0.0), Vector3(1.0, 0.03, 0.0), 0.035, 0.012],
+		[Vector3(0.55, 0.03, 0.0), Vector3(0.9, 0.08, 0.26), 0.02, 0.006],
+	]
+
+	for limb in limbs:
+		var from: Vector3 = limb[0]
+		var to: Vector3 = limb[1]
+		var axis: Vector3 = (to - from).normalized()
+		var side: Vector3 = axis.cross(Vector3.UP).normalized()
+		var up: Vector3 = side.cross(axis).normalized()
+		var first: int = vertices.size()
+
+		for end in range(2):
+			var centre: Vector3 = from if end == 0 else to
+			var radius: float = float(limb[2]) if end == 0 else float(limb[3])
+
+			for k in range(3):
+				var a: float = TAU * float(k) / 3.0
+				var out: Vector3 = side * cos(a) + up * sin(a)
+				vertices.append(centre + out * radius)
+				normals.append(out)
+
+		for k in range(3):
+			var k2: int = (k + 1) % 3
+			indices.append_array([first + k, first + k2, first + 3 + k2, first + k, first + 3 + k2, first + 3 + k])
+
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+	arrays[Mesh.ARRAY_NORMAL] = normals
+	arrays[Mesh.ARRAY_INDEX] = indices
+	var mesh: ArrayMesh = ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return mesh
+
+
 func _free_cell_nodes(entry: Dictionary) -> void:
 	for node in entry.get("nodes", []):
 		node.queue_free()
 
 	tufts -= int(entry.get("count", 0))
+	litter_cards -= int(entry.get("litter", 0))
 	entry["nodes"] = []
 	entry["count"] = 0
+	entry["litter"] = 0
 
 
 func _clear_all() -> void:
@@ -224,6 +321,7 @@ func _clear_all() -> void:
 	_cells.clear()
 	_pending.clear()
 	tufts = 0
+	litter_cards = 0
 
 
 # Call from the client's physics step with the player's position.
@@ -308,12 +406,17 @@ func _build(cell: Vector2i) -> int:
 	# the 3 x 4 matrix) and 4 of custom colour each (about half the cost of building Transform3D and
 	# Color objects first).
 	var buffers: Array = []
-	var counts: Array = [0, 0, 0]
+	var counts: Array = []
+	# Cells are built once, as they come into grass range, so litter is made for all of them and the
+	# engine culls the ones beyond litter_m (visibility_range_end below).
+	var litter_here: bool = litter_m > 0.0 and litter_density > 0.0
 
 	for layer in range(LAYERS.size()):
 		var cap: PackedFloat32Array = PackedFloat32Array()
-		cap.resize(points_per_side * points_per_side * (int(ceil(float(LAYERS[layer]["per_point"]) * density)) + 1) * 16)
+		var share: float = litter_density if layer >= GRASS_LAYERS else density
+		cap.resize(points_per_side * points_per_side * (int(ceil(float(LAYERS[layer]["per_point"]) * share)) + 1) * 16)
 		buffers.append(cap)
+		counts.append(0)
 
 	var rays: int = 0
 	var missed: int = 0
@@ -341,6 +444,9 @@ func _build(cell: Vector2i) -> int:
 			if not is_nan(water) and point.y < water + 0.3:
 				continue
 
+			if litter_here and _flora.cover.covers(Vector3(x, point.y + 1.0, z)):
+				_put_litter(buffers, counts, rng, point, spacing)
+
 			var soil: int = _grass_soil(tool, point - hit["normal"] * 0.4)
 
 			if soil < 0:
@@ -358,7 +464,7 @@ func _build(cell: Vector2i) -> int:
 			green = green.lerp(Color(0.68, 0.64, 0.30), warm * 0.55)
 			var meadow: float = _patch.get_noise_2d(x, z)
 
-			for layer in range(LAYERS.size()):
+			for layer in range(GRASS_LAYERS):
 				var want: float = float(LAYERS[layer]["per_point"]) * density
 				var count: int = int(want) + (1 if rng.randf() < want - floorf(want) else 0)
 				var chance: float = thick
@@ -433,13 +539,69 @@ func _build(cell: Vector2i) -> int:
 		node.multimesh = multi
 		node.material_override = _materials[layer]
 		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		node.custom_aabb = AABB(Vector3(float(cell.x) * CELL_M, _center.y - 150.0, float(cell.y) * CELL_M), Vector3(CELL_M, 300.0, CELL_M))
+		if layer >= GRASS_LAYERS:
+			node.visibility_range_end = litter_m + CELL_M
+			node.visibility_range_end_margin = 2.0
+
+		node.custom_aabb = AABB(Vector3(float(cell.x) * CELL_M - 1.0, _center.y - 150.0, float(cell.y) * CELL_M), Vector3(CELL_M, 300.0, CELL_M))
 		add_child(node)
 		entry["nodes"].append(node)
-		entry["count"] += count
-		tufts += count
+
+		if layer >= GRASS_LAYERS:
+			entry["litter"] = int(entry.get("litter", 0)) + count
+			litter_cards += count
+		else:
+			entry["count"] += count
+			tufts += count
 
 	return rays
+
+
+# One ground sample under a crown: leaf cards and, now and then, a dead branch (layers GRASS_LAYERS on).
+func _put_litter(buffers: Array, counts: Array, rng: RandomNumberGenerator, point: Vector3, spacing: float) -> void:
+	for layer in range(GRASS_LAYERS, LAYERS.size()):
+		var want: float = float(LAYERS[layer]["per_point"]) * litter_density
+		var count: int = int(want) + (1 if rng.randf() < want - floorf(want) else 0)
+		var branch: bool = LAYERS[layer].get("branch", false)
+
+		for k in range(count):
+			var ox: float = point.x + rng.randf_range(-0.5, 0.5) * spacing * 0.95
+			var oz: float = point.z + rng.randf_range(-0.5, 0.5) * spacing * 0.95
+			var yaw: float = rng.randf() * TAU
+			var c: float = cos(yaw)
+			var s: float = sin(yaw)
+			var along: float = rng.randf_range(0.45, 1.3) if branch else rng.randf_range(0.8, 1.3)
+			var across: float = rng.randf_range(0.8, 1.4) if branch else along
+			var shade: float = rng.randf_range(0.75, 1.1)
+			var buffer: PackedFloat32Array = buffers[layer]
+			var o: int = int(counts[layer]) * 16
+			counts[layer] = int(counts[layer]) + 1
+			buffer[o] = c * along
+			buffer[o + 1] = 0.0
+			buffer[o + 2] = s * across
+			buffer[o + 3] = ox
+			buffer[o + 4] = 0.0
+			buffer[o + 5] = 1.0
+			buffer[o + 6] = 0.0
+			# Leaf cards lie a hair apart so overlapping ones do not flicker.
+			buffer[o + 7] = point.y - 0.03 + (0.0 if branch else rng.randf() * 0.025)
+			buffer[o + 8] = -s * along
+			buffer[o + 9] = 0.0
+			buffer[o + 10] = c * across
+			buffer[o + 11] = oz
+
+			if branch:
+				# Weathered grey-brown wood, dark and thin, unlike the pale sticks of loose world items.
+				buffer[o + 12] = 0.2 * shade
+				buffer[o + 13] = 0.15 * shade
+				buffer[o + 14] = 0.11 * shade
+			else:
+				buffer[o + 12] = shade
+				buffer[o + 13] = shade * rng.randf_range(0.9, 1.05)
+				buffer[o + 14] = shade * rng.randf_range(0.85, 1.0)
+
+			buffer[o + 15] = 1.0
+			buffers[layer] = buffer
 
 
 # Share of the grass that holds at a spot of the given slope: full on level ground, thinning

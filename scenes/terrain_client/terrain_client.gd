@@ -86,6 +86,8 @@ const QUALITY_NAMES := ["Low", "Medium", "High", "Ultra"]
 const QUALITY_VIEW := [768, 1280, 2048, 2048]
 const QUALITY_FLORA := [0.4, 0.7, 1.0, 1.0]
 const QUALITY_GRASS_M := [14.0, 24.0, 34.0, 48.0]       # grass drawn this far around the player
+const QUALITY_LITTER_M := [10.0, 18.0, 26.0, 34.0]       # forest litter (leaves, dead branches) under tree crowns, drawn this far
+const QUALITY_LITTER_AMOUNT := [0.3, 1.0, 1.5, 2.0]      # share of the litter cards per ground sample (Low: a small fraction, no branches below 0.35 chance scale)
 const QUALITY_GRASS_POINTS := [3, 5, 6, 7]               # ground samples per 6 m cell side
 const QUALITY_GRASS_DENSITY := [0.68, 2.6, 3.0, 3.4]     # cards per ground sample, times the layers' own counts
 const QUALITY_SHADOW_M := [0.0, 45.0, 60.0, 120.0]    # 0 = no shadows
@@ -1194,6 +1196,7 @@ func _apply_quality() -> void:
 	grass.points_per_side = QUALITY_GRASS_POINTS[quality]
 	grass.density = QUALITY_GRASS_DENSITY[quality]
 	grass.set_radius(QUALITY_GRASS_M[quality])
+	grass.set_litter(QUALITY_LITTER_M[quality], QUALITY_LITTER_AMOUNT[quality])
 	if fall_mist != null:
 		fall_mist.set_quality(quality)
 
