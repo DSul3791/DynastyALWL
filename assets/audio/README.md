@@ -166,3 +166,6 @@ The river loop sounded like ocean surf (a wide low rumble and a broad wash). `ma
 
 ## Fire sounds (build 149)
 `fire_sounds.gd`, made by `make_fire.py` into `assets/audio/fire/`; recordings in `recorded/fire/` win. Hook: `sound.fire.set_fires([{id, at, size 0..1, lit, open}])` (size crossfades `fire_small` and `fire_large`; `lit` turning on plays `fire_light_N`, off plays `fire_out_N`; `open` true adds the `fire_rain` sizzle while it rains), plus `light(at)` and `put_out(at)`. Nearest 3/5/8 fires by tier play, none past 35 m. The rain sizzle is sparse snaps, no steady hiss bed. Esc > Settings "Sound test: fire", `--fire` headless.
+
+## Volume sliders (build 151)
+Esc > Settings has four sliders: Master, Effects (Foley bus: steps, tools, items, fire, town), Ambient (Wind, Nature, Weather buses) and Interface. They replace the old stepped "Sound volume" button; the Wind, Nature and Steps step buttons stay as fine tuning and multiply with them. Saved in `user://sound_settings.cfg` (`[levels]`), applied at start. `sound.set_level(name, 0..1)`; `--levels` headless sets, prints bus levels and resets.

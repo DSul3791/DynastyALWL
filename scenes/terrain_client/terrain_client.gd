@@ -51,7 +51,7 @@ const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 const GpuProbeScript := preload("res://src/debug/gpu_probe.gd")
 const WeatherLookScript := preload("res://src/client/weather_look.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 149
+const BUILD := 151
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -171,6 +171,7 @@ var test_flood: bool = false
 var test_gear: bool = false
 var test_spear_sounds: bool = false
 var test_fire: bool = false
+var test_levels: bool = false
 var _test_fire_at: int = 0
 var _test_fire_step: int = 0
 var _sound_fire_at: int = -1
@@ -308,6 +309,8 @@ func _ready() -> void:
 			test_flood = true
 		elif argument == "--gear":
 			test_gear = true
+		elif argument == "--levels":
+			test_levels = true
 		elif argument == "--fire":
 			test_fire = true
 		elif argument == "--spear-sounds":
@@ -1134,9 +1137,10 @@ func _build_menu(layer: CanvasLayer) -> void:
 		_apply_render_scale()
 		_save_display()
 		_report_display())
-	_menu_button(settings, "Sound volume: change", func():
-		var share: float = sound.step_volume()
-		_menu_note.text = "Sound is off" if share <= 0.0 else "Sound volume %d %%" % roundi(share * 100.0))
+	for level in [["master", "Master volume"], ["effects", "Effects volume (steps, tools, items, fire)"], ["ambient", "Ambient volume (wind, nature, weather)"], ["interface", "Interface volume"]]:
+		_menu_slider(settings, level[1], float(sound.levels[level[0]]), func(value: float):
+			sound.set_level(level[0], value)
+			_menu_note.text = "%s %d %%" % [level[1].get_slice(" (", 0), roundi(value * 100.0)])
 	for group in ["wind", "nature", "steps"]:
 		_menu_button(settings, "%s volume: change" % group.capitalize(), func():
 			var share: float = sound.mix_step(group)
@@ -1257,6 +1261,22 @@ func _build_menu(layer: CanvasLayer) -> void:
 	_menu_note.custom_minimum_size = Vector2(380.0, 0.0)
 	column.add_child(_menu_note)
 	_show_menu_page("main")
+
+
+# A labelled slider row for the menu (0 to 1); `changed` gets each new value.
+func _menu_slider(parent: VBoxContainer, text: String, value: float, changed: Callable) -> void:
+	var label: Label = Label.new()
+	label.text = text
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	parent.add_child(label)
+	var slider: HSlider = HSlider.new()
+	slider.min_value = 0.0
+	slider.max_value = 1.0
+	slider.step = 0.05
+	slider.value = value
+	slider.custom_minimum_size = Vector2(300.0, 24.0)
+	slider.value_changed.connect(changed)
+	parent.add_child(slider)
 
 
 func _menu_page(parent: VBoxContainer, page_name: String) -> VBoxContainer:
@@ -1832,6 +1852,25 @@ func _process(delta: float) -> void:
 		else:
 			test_creatures = false
 			sound.creatures.wild = true                              # then the natural far calls run on their own
+
+	# Headless check: the volume sliders change the buses and reset.
+	if test_levels and now - connected_msec > 18000:
+		test_levels = false
+		var report: String = ""
+
+		for setting in [["master", 0.5], ["effects", 0.0], ["ambient", 0.25], ["interface", 0.8]]:
+			sound.set_level(setting[0], setting[1])
+
+		for bus_name in ["Master", "Foley", "Wind", "Nature", "Weather", "Interface"]:
+			var index: int = AudioServer.get_bus_index(bus_name)
+			report += " %s %.1f dB%s;" % [bus_name, AudioServer.get_bus_volume_db(index), " muted" if AudioServer.is_bus_mute(index) else ""]
+
+		print("Terrain client: levels set:%s" % report)
+
+		for name in sound.levels:
+			sound.set_level(name, 1.0)
+
+		print("Terrain client: levels back to 100 %%: %s" % str(sound.levels))
 
 	# Headless check: place, light, grow, rain on, put out, light, remove.
 	if test_fire and now - connected_msec > 18000 and now >= _test_fire_at:

@@ -106,6 +106,7 @@ var wind_strength: float = 0.0          # the wind loudness measure now (HUD)
 var exposure: float = 0.0               # -1 valley floor .. +1 ridge or hilltop (height against the ground around)
 var gust: float = 0.0                   # 0 calm .. 1 strongest gust
 var volume_index: int = 0
+var levels: Dictionary = {"master": 1.0, "effects": 1.0, "ambient": 1.0, "interface": 1.0}   # Esc > Settings sliders, 0 to 1
 var mix_index: Dictionary = {"wind": 0, "nature": 0, "steps": 0}   # per group, into VOLUME_STEPS
 var tier: int = 2                       # quality index (0 Low); set_quality()
 var voice_cap: int = 96                 # preset["voices"]
@@ -531,14 +532,39 @@ func mix_step(group: String) -> float:
 	return float(VOLUME_STEPS[int(mix_index[group])])
 
 
-func _apply_mix(group: String) -> void:
-	var share: float = VOLUME_STEPS[int(mix_index[group])]
+func _apply_mix(_group: String = "") -> void:
+	_apply_buses()
 
-	for bus_name in MIX_GROUPS[group]:
+
+# Esc > Settings sliders (build 151): master, effects (footsteps, tools, items, fire, town), ambient
+# (wind, nature, weather) and interface, each 0 to 1, saved in the same file as the mixer steps.
+# A bus plays at its slider times its mixer step (wind, nature, steps) and Master also times the
+# old stepped volume. 0 mutes the bus.
+func set_level(name: String, value: float) -> void:
+	if not levels.has(name):
+		return
+
+	levels[name] = clampf(value, 0.0, 1.0)
+	_apply_buses()
+	_save_settings()
+
+
+func _apply_buses() -> void:
+	var shares: Dictionary = {
+		"Master": float(levels["master"]) * float(VOLUME_STEPS[volume_index]),
+		"Foley": float(levels["effects"]) * float(VOLUME_STEPS[int(mix_index["steps"])]),
+		"Wind": float(levels["ambient"]) * float(VOLUME_STEPS[int(mix_index["wind"])]),
+		"Nature": float(levels["ambient"]) * float(VOLUME_STEPS[int(mix_index["nature"])]),
+		"Weather": float(levels["ambient"]) * float(VOLUME_STEPS[int(mix_index["nature"])]),
+		"Interface": float(levels["interface"]),
+	}
+
+	for bus_name in shares:
 		var index: int = AudioServer.get_bus_index(bus_name)
 
 		if index >= 0:
-			AudioServer.set_bus_mute(index, share <= 0.0)
+			var share: float = shares[bus_name]
+			AudioServer.set_bus_mute(index, share <= 0.001)
 			AudioServer.set_bus_volume_db(index, linear_to_db(maxf(share, 0.001)))
 
 
@@ -549,8 +575,10 @@ func _load_settings() -> void:
 		for group in MIX_GROUPS:
 			mix_index[group] = clampi(int(file.get_value("mixer", group, 0)), 0, VOLUME_STEPS.size() - 1)
 
-	for group in MIX_GROUPS:
-		_apply_mix(group)
+		for name in levels:
+			levels[name] = clampf(float(file.get_value("levels", name, 1.0)), 0.0, 1.0)
+
+	_apply_buses()
 
 
 func _save_settings() -> void:
@@ -559,16 +587,17 @@ func _save_settings() -> void:
 	for group in MIX_GROUPS:
 		file.set_value("mixer", group, int(mix_index[group]))
 
+	for name in levels:
+		file.set_value("levels", name, float(levels[name]))
+
 	file.save(SETTINGS_PATH)
 
 
 # Esc > Settings "Sound volume": 100, 75, 50, 25 % and off. Returns the new share.
 func step_volume() -> float:
 	volume_index = (volume_index + 1) % VOLUME_STEPS.size()
-	var share: float = VOLUME_STEPS[volume_index]
-	AudioServer.set_bus_mute(0, share <= 0.0)
-	AudioServer.set_bus_volume_db(0, linear_to_db(maxf(share, 0.001)))
-	return share
+	_apply_buses()
+	return VOLUME_STEPS[volume_index]
 
 
 # Tree trunks within `radius` metres (their colliders, which exist near the
