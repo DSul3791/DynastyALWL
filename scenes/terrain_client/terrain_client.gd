@@ -34,7 +34,7 @@ const CompassScript := preload("res://src/client/admin_compass.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 100
+const BUILD := 96
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -179,6 +179,8 @@ var _flora_asked: Dictionary = {}     # chunk -> true asked or held in full, fal
 var _flora_check_msec: int = 0
 var link = null                       # direct block line (block_link.gd)
 var _water_dirty: bool = false        # the server said the water moved; not asked for yet
+var _water_inbox: Dictionary = {}     # chunk -> newest water bytes, rebuilt a few per frame
+const WATER_APPLY_USEC := 2000        # each water chunk costs ~2 ms; all at once was a hitch every second
 var _water_asked_msec: int = 0
 var _flora_chunks: int = 0
 var _flora_bytes: int = 0
@@ -545,9 +547,23 @@ func _send_water_request(now: int) -> void:
 
 func _on_water_received(chunk: Vector2i, water: PackedByteArray) -> void:
 	if flora != null:
+		_water_inbox[chunk] = water
+
+
+# Rebuilds received water chunks within a small time budget (at least one a frame).
+func _apply_water_inbox() -> void:
+	var start: int = Time.get_ticks_usec()
+
+	while not _water_inbox.is_empty() and flora != null:
+		var chunk: Vector2i = _water_inbox.keys()[0]
+		var water: PackedByteArray = _water_inbox[chunk]
+		_water_inbox.erase(chunk)
 		var t: int = Probe.start()
 		flora.set_water(chunk, WaterGridScript.decode(water))
 		Probe.stop("water in", t)
+
+		if Time.get_ticks_usec() - start >= WATER_APPLY_USEC:
+			return
 
 
 func _on_flora_cut(chunk: Vector2i, id: int) -> void:
@@ -1192,6 +1208,7 @@ func _update_bob(delta: float) -> void:
 
 func _process(delta: float) -> void:
 	_step_player(delta)
+	_apply_water_inbox()
 
 	if _water_label != null and _water_label.text != "" and Time.get_ticks_msec() > _water_label_until_msec:
 		_water_label.text = ""
@@ -1348,6 +1365,7 @@ func _process(delta: float) -> void:
 	var vp: RID = get_viewport().get_viewport_rid()
 	hud.text += "\nlast step: " + sound.last_step
 	hud.text += "\nnature: forest %.1f meadow %.1f water %.1f high %.1f, last %s" % [sound.ambient.weights["forest"], sound.ambient.weights["meadow"], sound.ambient.weights["water"], sound.ambient.weights["highland"], sound.ambient.last_call]
+	hud.text += "\nwater sounds: " + sound.water.summary
 	hud.text += "\nframe work: cpu %.1f ms, gpu %.1f ms, vsync %s, draws %d" % [
 		RenderingServer.viewport_get_measured_render_time_cpu(vp) + RenderingServer.get_frame_setup_time_cpu(),
 		RenderingServer.viewport_get_measured_render_time_gpu(vp),
@@ -1379,6 +1397,7 @@ func _process(delta: float) -> void:
 				flora.water_chunks, flora.water_cells
 			])
 			print("Terrain client: grass %d tufts in %d cells (radius %.0f m)" % [grass.tufts, grass.cells_built, grass.radius_m])
+			print("Terrain client: water sounds: %s" % sound.water.summary)
 			print("Terrain client: nature calls %s, zones %s" % [str(sound.ambient.calls_played), str(sound.ambient.weights)])
 			print("Terrain client: sound: footsteps %s, grass swishes %d, last ground %s, gust %.2f" % [str(sound.steps_played), sound.swishes_played, sound.surface, sound.gust])
 			print("Terrain client: blocks waited for %d times, %.0f ms on average, worst %d ms; at most %d loader threads waiting at once; %d blocks came on the block line" % [stream.waits, float(stream.wait_msec_total) / maxf(float(stream.waits), 1.0), stream.wait_msec_worst, stream.most_waiting, link.blocks_in])

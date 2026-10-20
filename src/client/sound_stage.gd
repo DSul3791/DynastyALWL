@@ -18,6 +18,7 @@ extends Node
 
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const AmbientScript := preload("res://src/client/ambient_life.gd")
+const WaterSoundsScript := preload("res://src/client/water_sounds.gd")
 const AUDIO_DIR := "res://assets/audio/"
 const RECORDED_DIR := "res://assets/audio/recorded/"
 const VOICES := 6                       # footstep and swish players, reused in turn
@@ -42,7 +43,7 @@ const DAMP_M := 0.03                    # shallower film at the waterline: a dam
 const SWIM_M := 1.3                     # deeper than this: no footsteps
 # Walk quiet, jog a little louder, run loud (owner 2026-10-19: build 47's run
 # level was a bit too loud for running).
-const GAIT_DB := [-22.0, -16.0, -10.0]   # walk, jog, run (owner 2026-10-20: still far too loud; clear steps of 6 dB)
+const GAIT_DB := [-25.0, -19.0, -13.0]   # walk, jog, run (owner 2026-10-20: a little quieter again, 3 dB down)
 const GAIT_PITCH := [1.0, 1.03, 1.06]
 const VOLUME_STEPS := [1.0, 0.75, 0.5, 0.25, 0.0]
 
@@ -76,6 +77,7 @@ var _shelter_msec: int = 0
 var _air_time: float = 0.0
 var _rng := RandomNumberGenerator.new()
 var ambient                             # AmbientLife: birds, crickets, frogs by zone
+var water                               # WaterSounds: brooks, rivers, pond shores, waterfalls
 var _sphere: PhysicsShapeQueryParameters3D
 
 
@@ -115,6 +117,10 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	ambient.name = "Ambient"
 	add_child(ambient)
 	ambient.setup(self, _terrain, _flora, _grass)
+	water = WaterSoundsScript.new()
+	water.name = "Water"
+	add_child(water)
+	water.setup(_flora)
 
 	if _wind_low.stream != null:
 		_wind_low.play()
@@ -126,6 +132,7 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 # Each frame: wind loudness and colour, landing thumps, the underwater muffle.
 func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool) -> void:
 	ambient.update(delta, body, flying)
+	water.update(delta, body, underwater)
 	_time += delta
 	gust = clampf(0.5 + 0.8 * _gust_noise.get_noise_1d(_time), 0.0, 1.0)
 	var position: Vector3 = body.global_position
