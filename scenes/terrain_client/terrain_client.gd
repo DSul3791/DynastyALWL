@@ -180,6 +180,7 @@ var test_spear_sounds: bool = false
 var test_fire: bool = false
 var test_fire_world: bool = false      # --fire-world: a fake world row goes through states 8, 9, 1, 9, 8 (loaded, lit, rained out, emptied)
 var _fire_world_step: int = 0
+var test_load_all_sounds: bool = false # --load-all-sounds: load every sound file once and report the memory (job 52 audit)
 var _fire_sync_left: float = 0.0
 var _tree_sync_left: float = 0.0
 var _item_sync_left: float = 0.0
@@ -363,6 +364,8 @@ func _ready() -> void:
 			test_levels = true
 		elif argument == "--fire":
 			test_fire = true
+		elif argument == "--load-all-sounds":
+			test_load_all_sounds = true
 		elif argument == "--fire-world":
 			test_fire_world = true
 		elif argument == "--spear-sounds":
@@ -2181,6 +2184,26 @@ func _process(delta: float) -> void:
 
 		if _test_fire_step >= 7:
 			test_fire = false
+
+	# Memory audit: every sound file loaded once, counted against the tier's cap (assets/audio/README.md "Sound memory").
+	if test_load_all_sounds and now - connected_msec > 12000:
+		test_load_all_sounds = false
+		var before: int = OS.get_static_memory_usage()
+		var count: int = 0
+		var stack: Array = ["res://assets/audio/"]
+
+		while not stack.is_empty():
+			var dir: String = stack.pop_back()
+
+			for sub in DirAccess.get_directories_at(dir):
+				stack.append(dir + sub + "/")
+
+			for file in DirAccess.get_files_at(dir):
+				if file.ends_with(".ogg") or file.ends_with(".wav"):
+					var stream: AudioStream = sound.load_for_audit(dir, file.get_basename())
+					count += 1 if stream != null else 0
+
+		print("Terrain client: sound memory audit: %d files loaded, %s, static memory +%.1f MB" % [count, sound.audit_text(), float(OS.get_static_memory_usage() - before) / 1048576.0])
 
 	# Headless check: the lit and loaded cues from world-row state changes (Items fire states 8 empty, 9 loaded, 1 lit).
 	if test_fire_world and now - connected_msec > 18000 and now >= _test_fire_at:

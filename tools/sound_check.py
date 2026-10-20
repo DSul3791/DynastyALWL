@@ -65,6 +65,10 @@ SCENARIOS = [
         ("lit heard", r"fire world: \d+ fuel, " + NUM + r" lit", 1, 1),
         ("put out heard", r"fire world: \d+ fuel, \d+ lit, " + NUM + r" out", 1, 2),
     ]),
+    ("memory", ["--load-all-sounds", "--quality=0"], 3000, [
+        ("every file loads", r"sound memory audit: " + NUM + r" files", 400, 2000),
+        ("under the Low cap", r"MB read from disk, " + NUM + r" refused", 0, 0),
+    ]),
     ("felling", ["--chop"], 7000, [
         ("trees fell", r"tree sounds: " + NUM + r" falls", 1, 10),
     ]),

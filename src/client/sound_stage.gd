@@ -970,6 +970,15 @@ static func _find(folder: String, name: String) -> Array:
 
 # The imported sound, or else straight from the file (headless runs have no imports).
 # Takes name.ogg, or name.wav for a recording dropped in as it came.
+# Memory audit (--load-all-sounds): loads one file the way a layer would, counting it against the cap.
+func load_for_audit(folder: String, name: String) -> AudioStream:
+	return _load(folder, name)
+
+
+func audit_text() -> String:
+	return "%.1f MB read from disk, %d refused (cap %d MB at %s)" % [float(loaded_bytes) / 1048576.0, refused_loads, int(preset["memory_mb"]), Presets.NAMES[tier]]
+
+
 static func _load(folder: String, name: String) -> AudioStream:
 	for extension in ["ogg", "wav"]:
 		var path: String = folder + name + "." + extension
