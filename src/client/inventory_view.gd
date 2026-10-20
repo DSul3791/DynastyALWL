@@ -13,6 +13,7 @@ const Net := preload("res://src/stream/terrain_net.gd")
 const KEY_FILE := "user://player_key.txt"
 const PICKUP_M := 3.0
 const COLUMNS := 6
+const MAX_FIRE_LIGHTS := 3
 
 var open: bool = false
 var table
@@ -130,6 +131,7 @@ func _process(_delta: float) -> void:
 		return
 
 	_prompt_next_msec = now + 200
+	_update_fire_lights()
 	var near: Array = _nearest()
 	_prompt.text = "" if near[0] == 0 else "E: pick up %s x%d" % [table.name_of(near[1]), near[2]]
 
@@ -141,6 +143,9 @@ func _nearest() -> Array:
 	var best_d: float = PICKUP_M
 
 	for id in _world:
+		if _world[id]["state"] != 0:
+			continue
+
 		var d: float = here.distance_to(_world[id]["pos"])
 
 		if d <= best_d:
@@ -148,6 +153,22 @@ func _nearest() -> Array:
 			best = [id, _world[id]["number"], _world[id]["count"]]
 
 	return best
+
+
+func _update_fire_lights() -> void:
+	var here: Vector3 = _player_position.call()
+	var lit: Array = []
+
+	for id in _world:
+		if _world[id]["light"] != null:
+			lit.append([here.distance_to(_world[id]["pos"]), _world[id]["light"]])
+
+	lit.sort_custom(func(a, b): return a[0] < b[0])
+
+	for n in lit.size():
+		var light: OmniLight3D = lit[n][1]
+		light.visible = n < MAX_FIRE_LIGHTS
+		light.light_energy = 1.6 + 0.35 * sin(float(Time.get_ticks_msec()) * 0.013 + float(n))
 
 
 func _on_full(bytes: PackedByteArray) -> void:
@@ -174,16 +195,94 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 	for row in added:
 		var id: int = row[0]
+		var state: int = int(row[4]) if row.size() > 4 else 0
 
 		if _world.has(id):
 			_world[id]["count"] = row[2]
-			continue
 
-		var node: MeshInstance3D = MeshInstance3D.new()
-		node.mesh = _mesh_for(row[1])
-		node.position = row[3] + Vector3(0.0, 0.12, 0.0)
+			if _world[id]["state"] == state:
+				continue
+
+			_world[id]["node"].queue_free()
+			_world.erase(id)
+
+		var node: Node3D
+		var light: OmniLight3D = null
+
+		if state == 0:
+			var box: MeshInstance3D = MeshInstance3D.new()
+			box.mesh = _mesh_for(row[1])
+			node = box
+			node.position = row[3] + Vector3(0.0, 0.12, 0.0)
+		else:
+			node = _make_fire(state == 1)
+			node.position = row[3]
+			light = node.get_node_or_null("Light")
+
 		_root.add_child(node)
-		_world[id] = {"node": node, "number": row[1], "count": row[2], "pos": row[3]}
+		_world[id] = {"node": node, "number": row[1], "count": row[2], "pos": row[3], "state": state, "light": light}
+
+
+# A campfire: a ring of stones, charred sticks and, while lit, a flame and a warm light.
+# Only the nearest MAX_FIRE_LIGHTS lit fires keep their light on (cost cap at every quality).
+func _make_fire(lit: bool) -> Node3D:
+	var fire: Node3D = Node3D.new()
+	var stone_material: StandardMaterial3D = StandardMaterial3D.new()
+	stone_material.albedo_color = Color(0.42, 0.42, 0.44)
+
+	for n in range(7):
+		var stone: MeshInstance3D = MeshInstance3D.new()
+		var mesh: SphereMesh = SphereMesh.new()
+		mesh.radius = 0.13
+		mesh.height = 0.2
+		mesh.material = stone_material
+		stone.mesh = mesh
+		var angle: float = TAU * float(n) / 7.0
+		stone.position = Vector3(cos(angle) * 0.42, 0.08, sin(angle) * 0.42)
+		fire.add_child(stone)
+
+	var log_mesh: CylinderMesh = CylinderMesh.new()
+	log_mesh.top_radius = 0.05
+	log_mesh.bottom_radius = 0.05
+	log_mesh.height = 0.7
+	var char_material: StandardMaterial3D = StandardMaterial3D.new()
+	char_material.albedo_color = Color(0.12, 0.09, 0.07) if not lit else Color(0.25, 0.15, 0.08)
+	log_mesh.material = char_material
+
+	for n in range(3):
+		var stick: MeshInstance3D = MeshInstance3D.new()
+		stick.mesh = log_mesh
+		stick.rotation = Vector3(deg_to_rad(90.0), 0.0, deg_to_rad(60.0 * float(n)))
+		stick.position = Vector3(0.0, 0.1, 0.0)
+		fire.add_child(stick)
+
+	if lit:
+		var flame: MeshInstance3D = MeshInstance3D.new()
+		var cone: CylinderMesh = CylinderMesh.new()
+		cone.top_radius = 0.0
+		cone.bottom_radius = 0.2
+		cone.height = 0.7
+		var glow: StandardMaterial3D = StandardMaterial3D.new()
+		glow.albedo_color = Color(1.0, 0.55, 0.15)
+		glow.emission_enabled = true
+		glow.emission = Color(1.0, 0.5, 0.1)
+		glow.emission_energy_multiplier = 2.0
+		glow.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		cone.material = glow
+		flame.mesh = cone
+		flame.position = Vector3(0.0, 0.45, 0.0)
+		fire.add_child(flame)
+		var light: OmniLight3D = OmniLight3D.new()
+		light.name = "Light"
+		light.light_color = Color(1.0, 0.62, 0.3)
+		light.omni_range = 12.0
+		light.light_energy = 1.6
+		light.shadow_enabled = false
+		light.position = Vector3(0.0, 0.8, 0.0)
+		light.visible = false
+		fire.add_child(light)
+
+	return fire
 
 
 func _mesh_for(number: int) -> Mesh:

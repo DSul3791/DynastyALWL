@@ -59,6 +59,7 @@ const ACT_DROP := 1       # a = slot, count = how many, at = where it lands
 const ACT_PICKUP := 2     # a = world item id
 const ACT_ADMIN_GIVE := 3 # a = item number, count (admin tool; tests only)
 const ACT_CRAFT := 4      # a = recipe number (data/items/recipes.json)
+const ACT_PLACE := 6      # a = slot of a placeable item, at = where (a campfire kit becomes a fire)
 const ACT_THROW := 5      # a = slot, at = aim direction (the server starts the throw from the player)
 
 
@@ -181,7 +182,7 @@ func inventory_slots(bytes: PackedByteArray) -> void:
 	inventory_slots_received.emit(bytes)
 
 
-# added: [[id, item number, count, position], ...]; removed: ids
+# added: [[id, item number, count, position, state], ...] (state 0 item, 1 lit fire, 2 burnt-out fire); removed: ids
 @rpc("authority", "call_remote", "reliable")
 func world_items(added: Array, removed: PackedInt32Array) -> void:
 	world_items_received.emit(added, removed)

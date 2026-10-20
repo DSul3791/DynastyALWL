@@ -32,6 +32,13 @@ const THROW_GRAVITY := 9.8
 const THROW_MAX_S := 6.0
 const THROW_COOLDOWN_MS := 500
 const EYE_HEIGHT := 1.5
+const PLACE_REACH_M := 6.0
+const FIRE_BURN_S := 900.0               # real seconds a fire burns before it goes out
+const FIRE_OUT_S := 300.0                # a burnt-out or rained-out fire stays this long
+const FIRE_MIN_GAP_M := 2.0
+const FIRES_PER_CHUNK := 8
+const RAIN_PUTS_OUT := 0.2               # open fires go out when the rain is at least this strong
+const COVER_RECHECK_S := 30.0
 
 var table
 var recipes
@@ -41,6 +48,8 @@ var send_slots: Callable       # (peer, bytes)
 var send_world_items: Callable # (peer, added Array, removed PackedInt32Array)
 var ground_height: Callable    # (x, z) -> ground height in metres, or NAN; set by the server scene
 var world_seed: int = 0
+var rain_now: Callable         # () -> rain strength 0 to 1 over the world now; set by the server scene
+var cover_at: Callable         # (position) -> 0.0 open or 1.0 under a tree's crown (Cover.at, or its stand-in)
 
 var _dir: String = ""
 var _inventories: Dictionary = {}   # key String -> Inventory
@@ -170,6 +179,8 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_drop(peer, inv, a, count, at)
 	elif kind == Net.ACT_PICKUP:
 		_pickup(peer, inv, a)
+	elif kind == Net.ACT_PLACE:
+		_place(peer, inv, a, at)
 	elif kind == Net.ACT_THROW:
 		_throw(peer, inv, a, at)
 	elif kind == Net.ACT_CRAFT:
@@ -187,9 +198,10 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 
 func tick(delta: float) -> void:
 	_fly(delta)
+	_fires(delta)
 
 	for id in _items.keys():
-		if _items[id].has("scatter"):
+		if _items[id].has("scatter") or _items[id].has("fire") and int(_items[id]["fire"]["state"]) == 1:
 			continue
 
 		_items[id]["left"] -= delta
@@ -231,7 +243,7 @@ func save() -> void:
 		if it.has("scatter"):
 			continue
 
-		items.append([int(it["number"]), int(it["count"]), it["pos"].x, it["pos"].y, it["pos"].z, it["left"]])
+		items.append([int(it["number"]), int(it["count"]), it["pos"].x, it["pos"].y, it["pos"].z, it["left"], int(it["fire"]["state"]) if it.has("fire") else 0, float(it["fire"]["burn_left"]) if it.has("fire") else 0.0])
 
 	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys()})
 
@@ -313,10 +325,73 @@ func _fly(delta: float) -> void:
 			_flights.erase(flight)
 
 
+# A placeable item (the campfire kit) becomes a fire on the ground in front of the player.
+func _place(peer: int, inv, slot: int, at: Vector3) -> void:
+	if slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or not _peer_pos.has(peer):
+		return
+
+	var number: int = inv.numbers[slot]
+
+	if table.id_of(number) != "campfire_kit" or _peer_pos[peer].distance_to(at) > PLACE_REACH_M:
+		return
+
+	var ground: float = float(ground_height.call(at.x, at.z)) if ground_height.is_valid() else at.y
+
+	if is_nan(ground) or absf(ground - at.y) > 1.0 or ground < 1.0:
+		return
+
+	var spot: Vector3 = Vector3(at.x, ground, at.z)
+	var chunk_fires: int = 0
+
+	for id in _items:
+		if _items[id].has("fire"):
+			if _items[id]["pos"].distance_to(spot) < FIRE_MIN_GAP_M:
+				return
+
+			if _chunk_of(_items[id]["pos"]) == _chunk_of(spot):
+				chunk_fires += 1
+
+	if chunk_fires >= FIRES_PER_CHUNK:
+		return
+
+	inv.take_from_slot(slot, 1)
+	var covered: bool = cover_at.is_valid() and float(cover_at.call(spot)) > 0.5
+	_items[_next_id] = {"number": number, "count": 1, "pos": spot, "left": 1.0e9, "fire": {"state": 1, "burn_left": FIRE_BURN_S, "covered": covered, "recheck": COVER_RECHECK_S}}
+	_next_id += 1
+
+
+# Fires burn down; open fires are put out by rain (Dave, 2026-10-20), covered ones are not.
+func _fires(delta: float) -> void:
+	var raining: bool = rain_now.is_valid() and float(rain_now.call()) >= RAIN_PUTS_OUT
+
+	for id in _items.keys():
+		var it: Dictionary = _items[id]
+
+		if not it.has("fire"):
+			continue
+
+		var fire: Dictionary = it["fire"]
+
+		if int(fire["state"]) != 1:
+			continue
+
+		fire["burn_left"] -= delta
+		fire["recheck"] -= delta
+
+		if fire["recheck"] <= 0.0:
+			fire["recheck"] = COVER_RECHECK_S
+			fire["covered"] = cover_at.is_valid() and float(cover_at.call(it["pos"])) > 0.5
+
+		if fire["burn_left"] <= 0.0 or (raining and not fire["covered"]):
+			fire["state"] = 2
+			it["left"] = FIRE_OUT_S
+			_dirty = true
+
+
 func _pickup(peer: int, inv, id: int) -> void:
 	var it: Dictionary = _items.get(id, {})
 
-	if it.is_empty() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(it["pos"]) > PICKUP_M + 2.0:
+	if it.is_empty() or it.has("fire") or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(it["pos"]) > PICKUP_M + 2.0:
 		return
 
 	var left: int = inv.add(int(it["number"]), int(it["count"]))
@@ -347,9 +422,12 @@ func _sync_world_items() -> void:
 			if it["pos"].distance_to(here) <= NEAR_M:
 				near[id] = true
 
-				if not known.has(id) or known[id] != it["count"]:
-					added.append([id, int(it["number"]), int(it["count"]), it["pos"]])
-					known[id] = it["count"]
+				var state: int = int(it["fire"]["state"]) if it.has("fire") else 0
+				var signature: int = int(it["count"]) + 1000 * state
+
+				if not known.has(id) or known[id] != signature:
+					added.append([id, int(it["number"]), int(it["count"]), it["pos"], state])
+					known[id] = signature
 
 		for id in known.keys():
 			if not near.has(id):
@@ -418,7 +496,12 @@ func _load_world_items() -> void:
 		_taken[int(key)] = true
 
 	for row in parsed["items"]:
-		_items[_next_id] = {"number": int(row[0]), "count": int(row[1]), "pos": Vector3(row[2], row[3], row[4]), "left": float(row[5])}
+		var entry: Dictionary = {"number": int(row[0]), "count": int(row[1]), "pos": Vector3(row[2], row[3], row[4]), "left": float(row[5])}
+
+		if row.size() > 7 and int(row[6]) != 0:
+			entry["fire"] = {"state": int(row[6]), "burn_left": float(row[7]), "covered": false, "recheck": 0.0}
+
+		_items[_next_id] = entry
 		_next_id += 1
 
 

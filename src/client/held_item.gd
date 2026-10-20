@@ -33,12 +33,18 @@ var _sound                                # SoundStage (hit sounds)
 var _tree_near: Callable                  # (point) -> true when a tree trunk stands there
 var _swing_t: float = -1.0
 var _swing_hit: bool = false
+var _cover_at: Callable                   # (point) -> true when under a tree's crown
+var _blueprint: MeshInstance3D
+var _blueprint_at: Vector3 = Vector3.ZERO
+var _blueprint_ok: bool = false
+var _blueprint_next_msec: int = 0
 
 const SWING_S := 0.55
 const REACH_M := 3.0
 
 
-func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hud_layer: CanvasLayer, ground_below: Callable, sound_stage = null, tree_near: Callable = Callable()) -> void:
+func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hud_layer: CanvasLayer, ground_below: Callable, sound_stage = null, tree_near: Callable = Callable(), cover_at: Callable = Callable()) -> void:
+	_cover_at = cover_at
 	_sound = sound_stage
 	_tree_near = tree_near
 	_inv = inventory_view
@@ -75,12 +81,22 @@ func _is_spear() -> bool:
 	return str(_inv.table.entry(held_id()).get("weapon_class", "")) == "spear"
 
 
+func _is_placeable() -> bool:
+	return str(_inv.table.entry(held_id()).get("kind", "")) == "placeable"
+
+
 func _is_axe() -> bool:
 	return str(_inv.table.entry(held_id()).get("tool_class", "")) == "axe"
 
 
 # A mouse button while playing. Returns true when it was used here.
 func mouse_button(button: int, pressed: bool) -> bool:
+	if _is_placeable():
+		if button == MOUSE_BUTTON_LEFT and pressed and _blueprint_ok:
+			_net.inventory_action.rpc_id(1, Net.ACT_PLACE, held_slot, 0, 0, _blueprint_at)
+
+		return button == MOUSE_BUTTON_LEFT
+
 	if _is_axe():
 		if button == MOUSE_BUTTON_LEFT and pressed and _swing_t < 0.0:
 			_swing_t = 0.0
@@ -119,6 +135,7 @@ func _throw() -> void:
 
 
 func _process(delta: float) -> void:
+	_update_blueprint()
 	_show_model()
 	_label.text = _caption()
 
@@ -163,6 +180,51 @@ func _process(delta: float) -> void:
 			_flights.erase(flight)
 
 
+# The placement ghost for a held campfire: a ring on the ground where it would go, yellow in the open
+# and green under a tree's crown (Dave, 2026-10-20: fires under cover survive rain, open ones go out).
+func _update_blueprint() -> void:
+	if not _is_placeable():
+		if _blueprint != null:
+			_blueprint.visible = false
+
+		_blueprint_ok = false
+		return
+
+	var now: int = Time.get_ticks_msec()
+
+	if now < _blueprint_next_msec:
+		return
+
+	_blueprint_next_msec = now + 100
+
+	if _blueprint == null:
+		_blueprint = MeshInstance3D.new()
+		var ring: CylinderMesh = CylinderMesh.new()
+		ring.top_radius = 0.6
+		ring.bottom_radius = 0.6
+		ring.height = 0.06
+		var material: StandardMaterial3D = StandardMaterial3D.new()
+		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		ring.material = material
+		_blueprint.mesh = ring
+		_root.add_child(_blueprint)
+
+	var from: Vector3 = _camera.global_position
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - _camera.global_transform.basis.z * 5.0)
+	var hit: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(query)
+	_blueprint.visible = not hit.is_empty()
+	_blueprint_ok = not hit.is_empty()
+
+	if hit.is_empty():
+		return
+
+	_blueprint_at = hit["position"]
+	_blueprint.global_position = _blueprint_at + Vector3(0.0, 0.04, 0.0)
+	var covered: bool = _cover_at.is_valid() and _cover_at.call(_blueprint_at)
+	(_blueprint.mesh.material as StandardMaterial3D).albedo_color = Color(0.3, 0.9, 0.3, 0.55) if covered else Color(0.95, 0.85, 0.2, 0.55)
+
+
 # The blow lands: what is in reach decides the sound. (Chopping trees and digging stone come with
 # tree-fall and the harvest of ground; for now the axe only swings and sounds.)
 func _strike() -> void:
@@ -187,7 +249,9 @@ func _caption() -> String:
 
 	var text: String = _inv.table.name_of(number)
 
-	if _is_axe():
+	if _is_placeable():
+		text += "   (left click: place; green = under cover, yellow = open)"
+	elif _is_axe():
 		text += "   (left click: swing)"
 	elif _is_spear():
 		text += "   (left click: jab; hold right click to aim, then left click to throw)"
@@ -300,3 +364,29 @@ func run_test() -> void:
 	var swung: bool = mouse_button(MOUSE_BUTTON_LEFT, true)
 	await get_tree().create_timer(1.0).timeout
 	print("Spear test: holding %s, swung %s, last hit sound '%s'" % [held_id(), swung, _sound.hits.last_hit if _sound != null else "none"])
+	_net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("campfire_kit"), 0, 1, Vector3.ZERO)
+	await get_tree().create_timer(1.0).timeout
+	var kit_slot: int = -1
+
+	for slot in range(inv_slots()):
+		if _inv.inventory.numbers[slot] == table.number_of("campfire_kit"):
+			kit_slot = slot
+
+	var feet: Vector3 = _inv._player_position.call()
+	var ground: float = _ground_below.call(feet)
+	var spot: Vector3 = Vector3(feet.x + 2.0, _ground_below.call(feet + Vector3(2.0, 0.0, 0.0)), feet.z)
+	_net.inventory_action.rpc_id(1, Net.ACT_PLACE, kit_slot, 0, 0, spot)
+	await get_tree().create_timer(3.0).timeout
+	var lit: int = 0
+	var states: Array = []
+
+	for id in _inv._world:
+		if _inv._world[id]["state"] != 0:
+			lit += 1
+			states.append(_inv._world[id]["state"])
+
+	print("Spear test: campfire kit slot %d, ground %s, fires in view %d, states %s" % [kit_slot, str(ground), lit, str(states)])
+
+
+func inv_slots() -> int:
+	return _inv.inventory.SLOTS

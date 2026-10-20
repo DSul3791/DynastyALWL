@@ -40,6 +40,7 @@ const Probe := preload("res://src/debug/frame_probe.gd")
 const CompassScript := preload("res://src/client/admin_compass.gd")
 const InventoryViewScript := preload("res://src/client/inventory_view.gd")
 const HeldItemScript := preload("res://src/client/held_item.gd")
+const CoverStandIn := preload("res://src/shared/cover_standin.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
 const WeatherScript := preload("res://src/shared/weather.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
@@ -524,7 +525,7 @@ func _on_welcome(info: Dictionary) -> void:
 	held = HeldItemScript.new()
 	held.name = "Held"
 	add_child(held)
-	held.setup(items, net, camera, root, layer, _ground_below, sound, _tree_trunk_near)
+	held.setup(items, net, camera, root, layer, _ground_below, sound, _tree_trunk_near, _cover_here)
 
 	if test_items:
 		items.run_test()
@@ -829,6 +830,24 @@ func _update_anchor(now: int, delta: float) -> void:
 
 	if _viewer != null:
 		_viewer.global_position = _anchor
+
+
+# Stand-in for Cover.at (src/shared/cover_standin.gd): is the point under a loaded tree's crown?
+func _cover_here(point: Vector3) -> bool:
+	var size: float = flora.chunk_m
+	var home: Vector2i = Vector2i(int(floor(point.x / size)), int(floor(point.z / size)))
+
+	for dz in [-1, 0, 1]:
+		for dx in [-1, 0, 1]:
+			var chunk: Vector2i = home + Vector2i(dx, dz)
+
+			if flora._chunks.has(chunk):
+				var held_items: Dictionary = flora._chunks[chunk]["items"]
+
+				if CoverStandIn.at(point, held_items["ids"], held_items["positions"]) > 0.5:
+					return true
+
+	return false
 
 
 # True when a tree trunk stands within 1.3 m (flat distance) of the point.

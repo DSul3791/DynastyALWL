@@ -32,9 +32,11 @@ func _init() -> void:
 	DirAccess.make_dir_recursive_absolute(dir)
 	DirAccess.make_dir_recursive_absolute("user://test_server_items_b")
 	DirAccess.make_dir_recursive_absolute("user://test_server_items_c")
+	DirAccess.make_dir_recursive_absolute("user://test_server_items_d")
 
-	for f in DirAccess.get_files_at(dir):
-		DirAccess.remove_absolute(dir + "/" + f)
+	for suffix in ["", "_b", "_c", "_d"]:
+		for file in DirAccess.get_files_at(dir + suffix):
+			DirAccess.remove_absolute(dir + suffix + "/" + file)
 
 	var items = make(dir)
 	var stone: int = items.table.number_of("stone")
@@ -154,6 +156,60 @@ func _init() -> void:
 			landed = t._items[k]["pos"]
 
 	check(landed.x > 10.0 and absf(landed.y - 10.0) < 0.01, "spear landed ahead on the ground")
+
+	# Fires.
+	var f = make("user://test_server_items_d")
+	f.ground_height = func(x, z): return 10.0
+	var rain: Array = [0.0]
+	f.rain_now = func(): return rain[0]
+	f.cover_at = func(p): return 1.0 if p.x > 100.0 else 0.0
+	f.peer_connected_hello(1, "abcdef123456")
+	f.report_position(1, Vector3(0.0, 10.0, 0.0))
+	var kit: int = f.table.number_of("campfire_kit")
+	f.action(1, Net.ACT_ADMIN_GIVE, kit, 0, 3, Vector3.ZERO)
+	f.action(1, Net.ACT_PLACE, 0, 0, 0, Vector3(50.0, 10.0, 0.0))
+	check(f.world_item_count() == 0, "too far to place")
+	f.action(1, Net.ACT_PLACE, 0, 0, 0, Vector3(3.0, 14.0, 0.0))
+	check(f.world_item_count() == 0, "not on the ground")
+	f.action(1, Net.ACT_PLACE, 0, 0, 0, Vector3(3.0, 10.0, 0.0))
+	check(f.world_item_count() == 1 and f.inventory_of(1).count_of(kit) == 2, "fire placed, kit used")
+	f.action(1, Net.ACT_PLACE, 1, 0, 0, Vector3(3.5, 10.0, 0.0))
+	check(f.world_item_count() == 1, "no second fire within 2 m")
+	f.report_position(1, Vector3(120.0, 10.0, 0.0))
+	f.action(1, Net.ACT_PLACE, 1, 0, 0, Vector3(123.0, 10.0, 0.0))
+	check(f.world_item_count() == 2, "covered fire placed")
+	var open_id: int = 0
+	var covered_id: int = 0
+
+	for k in f._items:
+		if f._items[k]["pos"].x < 100.0:
+			open_id = k
+		else:
+			covered_id = k
+
+	f.action(1, Net.ACT_PICKUP, open_id, 0, 0, Vector3.ZERO)
+	check(f._items.has(open_id), "a fire cannot be picked up")
+	f.tick(10.0)
+	check(f._items[open_id]["fire"]["state"] == 1 and f._items[covered_id]["fire"]["state"] == 1, "dry weather: both burn")
+	rain[0] = 0.6
+	f.tick(1.0)
+	check(f._items[open_id]["fire"]["state"] == 2, "rain puts out the open fire")
+	check(f._items[covered_id]["fire"]["state"] == 1, "the covered fire survives rain")
+	rain[0] = 0.0
+	for n in range(int(ItemsScript.FIRE_BURN_S / 10.0) + 1):
+		f.tick(10.0)
+
+	check(f._items[covered_id]["fire"]["state"] == 2, "a fire burns out in time")
+	for n in range(int(ItemsScript.FIRE_OUT_S / 10.0) + 2):
+		f.tick(10.0)
+
+	var fires_left: int = 0
+
+	for k in f._items:
+		if f._items[k].has("fire"):
+			fires_left += 1
+
+	check(fires_left == 0, "a dead fire is cleared away")
 
 	print("server item tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
