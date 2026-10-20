@@ -54,7 +54,7 @@ Input rules (Dave):
 
 ## Planned / not decided
 
-- Stances (Dave, 2026-10-20, decided, keys not built): sit, lie down and crouch each get a key. The Items thread picks the keys and must record them here. Note X is already the admin dig key, so stances must not use X (or the dig tool moves). C and Z are free.
+- Stances (Dave, 2026-10-20, decided, build 229 Ground thread, not built yet): C = crouch, X = sit, Z = lie down, all toggles; any movement key stands you up. No movement while sitting or lying. Admin dig moves from X to Ctrl+X (the table row for X changes when it lands).
 
 - Spear (Dave, 2026-10-20, decided, not built): normal attack keys jab; hold right click to raise and aim a throw, left click throws, release right click returns to normal stance.
 
