@@ -304,8 +304,17 @@ func _build(cell: Vector2i) -> int:
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = hash(cell)
 	var spacing: float = CELL_M / float(points_per_side)
-	var transforms: Array = [[], [], []]
-	var colors: Array = [[], [], []]
+	# Cards are written straight into one MultiMesh buffer per layer: 12 floats of transform (rows of
+	# the 3 x 4 matrix) and 4 of custom colour each (about half the cost of building Transform3D and
+	# Color objects first).
+	var buffers: Array = []
+	var counts: Array = [0, 0, 0]
+
+	for layer in range(LAYERS.size()):
+		var cap: PackedFloat32Array = PackedFloat32Array()
+		cap.resize(points_per_side * points_per_side * (int(ceil(float(LAYERS[layer]["per_point"]) * density)) + 1) * 16)
+		buffers.append(cap)
+
 	var rays: int = 0
 	var missed: int = 0
 
@@ -364,14 +373,35 @@ func _build(cell: Vector2i) -> int:
 					if rng.randf() > chance:
 						continue
 
-					var at: Vector3 = point + Vector3(rng.randf_range(-0.5, 0.5) * spacing, 0.0, rng.randf_range(-0.5, 0.5) * spacing) * 0.95
+					var ox: float = point.x + rng.randf_range(-0.5, 0.5) * spacing * 0.95
+					var oz: float = point.z + rng.randf_range(-0.5, 0.5) * spacing * 0.95
 					var size: float = rng.randf_range(0.75, 1.15)
-					var basis: Basis = Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(size, size * rng.randf_range(0.8, 1.15), size))
-					transforms[layer].append(Transform3D(basis, at - Vector3(0.0, 0.03, 0.0)))
+					var yaw: float = rng.randf() * TAU
+					var sy: float = size * rng.randf_range(0.8, 1.15)
+					var cy: float = cos(yaw) * size
+					var sny: float = sin(yaw) * size
 					var shade: float = rng.randf_range(0.82, 1.15)
-					var tone: Color = green
+					var buffer: PackedFloat32Array = buffers[layer]
+					var o: int = int(counts[layer]) * 16
+					counts[layer] = int(counts[layer]) + 1
+					buffer[o] = cy
+					buffer[o + 1] = 0.0
+					buffer[o + 2] = sny
+					buffer[o + 3] = ox
+					buffer[o + 4] = 0.0
+					buffer[o + 5] = sy
+					buffer[o + 6] = 0.0
+					buffer[o + 7] = point.y - 0.03
+					buffer[o + 8] = -sny
+					buffer[o + 9] = 0.0
+					buffer[o + 10] = cy
+					buffer[o + 11] = oz
 					# A slight hue shift per card keeps a field from looking stamped.
-					colors[layer].append(Color(tone.r * shade * rng.randf_range(0.93, 1.07), tone.g * shade, tone.b * shade * rng.randf_range(0.9, 1.1)))
+					buffer[o + 12] = green.r * shade * rng.randf_range(0.93, 1.07)
+					buffer[o + 13] = green.g * shade
+					buffer[o + 14] = green.b * shade * rng.randf_range(0.9, 1.1)
+					buffer[o + 15] = 1.0
+					buffers[layer] = buffer
 
 	var entry: Dictionary = _cells[cell]
 	entry["busy"] = false
@@ -385,42 +415,18 @@ func _build(cell: Vector2i) -> int:
 	cells_built += 1
 
 	for layer in range(LAYERS.size()):
-		var list: Array = transforms[layer]
+		var count: int = int(counts[layer])
 
-		if list.is_empty():
+		if count == 0:
 			continue
 
 		var multi: MultiMesh = MultiMesh.new()
 		multi.transform_format = MultiMesh.TRANSFORM_3D
 		multi.use_custom_data = true
 		multi.mesh = _meshes[layer]
-		multi.instance_count = list.size()
-		# One buffer upload instead of two calls per card: 12 floats of transform (rows of the 3 x 4
-		# matrix) and 4 of custom colour each.
-		var buffer: PackedFloat32Array = PackedFloat32Array()
-		buffer.resize(list.size() * 16)
-
-		for n in range(list.size()):
-			var t: Transform3D = list[n]
-			var c: Color = colors[layer][n]
-			var o: int = n * 16
-			buffer[o] = t.basis.x.x
-			buffer[o + 1] = t.basis.y.x
-			buffer[o + 2] = t.basis.z.x
-			buffer[o + 3] = t.origin.x
-			buffer[o + 4] = t.basis.x.y
-			buffer[o + 5] = t.basis.y.y
-			buffer[o + 6] = t.basis.z.y
-			buffer[o + 7] = t.origin.y
-			buffer[o + 8] = t.basis.x.z
-			buffer[o + 9] = t.basis.y.z
-			buffer[o + 10] = t.basis.z.z
-			buffer[o + 11] = t.origin.z
-			buffer[o + 12] = c.r
-			buffer[o + 13] = c.g
-			buffer[o + 14] = c.b
-			buffer[o + 15] = c.a
-
+		multi.instance_count = count
+		var buffer: PackedFloat32Array = buffers[layer]
+		buffer.resize(count * 16)
 		multi.buffer = buffer
 
 		var node: MultiMeshInstance3D = MultiMeshInstance3D.new()
@@ -430,8 +436,8 @@ func _build(cell: Vector2i) -> int:
 		node.custom_aabb = AABB(Vector3(float(cell.x) * CELL_M, _center.y - 150.0, float(cell.y) * CELL_M), Vector3(CELL_M, 300.0, CELL_M))
 		add_child(node)
 		entry["nodes"].append(node)
-		entry["count"] += list.size()
-		tufts += list.size()
+		entry["count"] += count
+		tufts += count
 
 	return rays
 

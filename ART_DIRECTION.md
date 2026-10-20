@@ -188,3 +188,6 @@ GPU: grass is alpha-scissor cards and "grass off" saved about 0 ms in Dave's tab
 ## 22. Low priority: drifting air debris (idea from Dave, 2026-10-20, not to build now)
 
 Pollen, seeds and dust drifting through the air, for realism and to show the wind direction for hunting on land. None at sea unless close to an island. Plan: a small GPUParticles3D around the camera like the rain and snow in `weather_look.gd`, fed by the same world wind vector the sound and the grass sway use, so all three agree; density by season (pollen in spring and summer, seeds in autumn), nearby flora and time of day; off or very sparse at Low; faded by distance from the shore (needs a shore distance from the ground or sea, no new network data). Cost to state when built: particle count per tier and the F8 line.
+
+
+Grass doubled again (build 228): Medium/High/Ultra density 2.6/3.0/3.4 cards per sample, Low unchanged at 0.68. Cards are packed straight into the MultiMesh buffer (no per-card Transform3D/Color objects): microbench 120k cards 191 ms old way vs 111 ms new. Memory 64 B per card.
