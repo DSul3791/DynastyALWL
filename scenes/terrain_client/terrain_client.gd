@@ -49,7 +49,7 @@ const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 const GpuProbeScript := preload("res://src/debug/gpu_probe.gd")
 const WeatherLookScript := preload("res://src/client/weather_look.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 158
+const BUILD := 161
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -1993,7 +1993,7 @@ func _process(delta: float) -> void:
 
 	var win: Vector2i = get_window().size
 	hud.text += "\n3D %dx%d 16:9 in window %dx%d (scale %.2f)%s, %s, %s" % [int(display.BASE.x * _render_scale), int(display.BASE.y * _render_scale), win.x, win.y, _render_scale, " (embedded: editor owns the window)" if display.embedded() else "", RenderingServer.get_video_adapter_name(), RenderingServer.get_current_rendering_driver_name()]
-	hud.text += "\nGPU breakdown: Ctrl+Shift+G or Esc > Advanced; table shows bottom left, and is in the log and user://gpu_probe.txt"
+	hud.text += "\nGPU breakdown: Ctrl+Shift+G or Esc > Advanced; table shows top left (this text hides while it is up; press again to close), and is in the log and user://gpu_probe.txt"
 	hud.text += "\nlast step: " + sound.last_step
 	hud.text += "\nsound budget: " + sound.budget_text()
 	hud.text += "\n" + sound.wind_text()

@@ -23,8 +23,7 @@ func setup(client) -> void:
 	_client = client
 	var layer: CanvasLayer = CanvasLayer.new()
 	_label = Label.new()
-	_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
-	_label.position += Vector2(10.0, -330.0)
+	_label.position = Vector2(20.0, 20.0)
 	_label.add_theme_font_size_override("font_size", 16)
 	_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	_label.add_theme_constant_override("outline_size", 4)
@@ -33,9 +32,16 @@ func setup(client) -> void:
 	set_process(false)
 
 
+# Starts the probe; while it runs, stops it; with the finished table up, closes it.
+# The debug text is hidden while the table is up so every row fits on the screen.
 func toggle() -> void:
 	if _at >= 0:
 		_finish(false)
+		return
+
+	if _label.text != "":
+		_label.text = ""
+		_client.hud.visible = true
 		return
 
 	_steps = [
@@ -126,7 +132,8 @@ func _show(done: bool) -> void:
 		else:
 			text += "%-26s %5.1f ms  (saves %.1f)\n" % [_results[n][0], gpu, float(_results[0][1]) - gpu]
 
-	_label.text = text
+	_label.text = text + "(press Ctrl+Shift+G again to close this table)"
+	_client.hud.visible = false
 
 
 func _finish(completed: bool) -> void:
