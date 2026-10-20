@@ -97,6 +97,12 @@ SCENARIOS = [
         ("a tick per changed slot", r"ui sounds: " + NUM + r" hotbar ticks", 3, 3),
         ("tick is the hotbar cue", r"last (hotbar_tick_\d)", 0, 1, "text"),
     ]),
+    ("audit_night_rain", ["--hour=23", "--season=autumn", "--weather=rain", "--nature-fast", "--walk"], 9000, [
+        ("under the Low voice cap", r"sounds \d+/24 playing \(peak " + NUM, 1, 24),
+    ]),
+    ("audit_worst", ["--hour=21", "--season=autumn", "--weather=storm", "--distant", "--nature-fast", "--cave=0.6", "--fire-world", "--creatures", "--walk"], 9000, [
+        ("under the Low voice cap", r"sounds \d+/24 playing \(peak " + NUM, 1, 24),
+    ]),
     ("felling", ["--chop"], 7000, [
         ("trees fell", r"tree sounds: " + NUM + r" falls", 1, 10),
     ]),

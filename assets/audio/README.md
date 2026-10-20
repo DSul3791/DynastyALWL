@@ -316,3 +316,12 @@ Already covered by `item_sounds.gd` on the Interface bus: `inv_open`/`inv_close`
 ## Gaps pass (job 61)
 
 `/mnt/project-files/tech/SOUND_GAPS.md` lists every CONTROLS.md input and ACT_* kind with its sound and status. Filled in this pass: the jump push-off (a soft step at takeoff in `terrain_client`; only the landing had a sound). Still open and noted there: an axe or pick swing that misses, a rejected-action cue (needs a server reject event), the raise-to-aim of a spear, fall damage (no damage system).
+
+## Audio re-audit at Low after jobs 55 to 62 (job 60, 2026-10-20)
+
+Measured with `tools/sound_check.py` (Low tier, voice cap 24, 150 MB memory cap), head after build 243:
+- All 503 files loaded once: 10.1 MB read from disk, 0 refused; fully decoded it would be about 95 MB, still under the 150 MB cap (`--load-all-sounds`).
+- Walk at night in rain (hour 23, autumn, nature calls fast): peak 16 of 24 voices, 6.6 MB loaded.
+- Worst case I can stage (hour 21, storm, far thunder, cave 0.6, a lit fire and merged hearths, creature calls, walking): peak 24 of 24, 7.5 MB loaded, 0 refused. The cap is reached and the shedding keeps it there (optional one-shots stop first, never loops or danger cues).
+- New since the last audit: waterfall base (+1 voice only near a fall), lake laps (at most 2 short one-shots), stance and UI cues (one-shots), merged distant fires and falls (fewer voices). Nothing adds a permanent loop.
+- Scenarios `audit_night_rain` and `audit_worst` keep the numbers checked (peak must stay at or under 24).
