@@ -53,3 +53,31 @@ more) that loop cleanly.
 
 Keep the loudness of each set roughly even; the game sets each surface's
 overall level in `src/client/sound_stage.gd` (`SURFACE_DB`).
+
+## Nature calls (ambient layer)
+
+Placeholders are made by `make_ambient.py` into `ambient/`. Recordings go in
+`recorded/ambient/` as `name_0.ogg`, `name_1.ogg` ... (3 to 5 variants each; `.ogg` only;
+mono, one call per file, trimmed tight, 0.3 to 3 s). The game prefers them over the
+placeholders. What each name is and where it plays:
+
+| Name | Call | Zone |
+|---|---|---|
+| `bird_whistle` | clear 2 to 4 note songbird whistle (thrush, finch) | forest, meadow, highland |
+| `bird_feebee` | two-note "fee-bee" (chickadee, titmouse) | forest |
+| `bird_trill` | a rapid trill (sparrow, junco) | meadow, forest |
+| `bird_chirp` | short chirps (sparrow, wren) | meadow, water edge, forest |
+| `crow_caw` | 2 or 3 caws (crow or raven) | forest, highland |
+| `woodpecker` | one drumming burst | forest |
+| `owl_hoot` | a barred owl or great horned owl hoot (night only) | forest |
+| `hawk_screech` | red-tailed hawk scream | highland |
+| `cricket_chirp` | a field cricket or katydid chirp run (sounds at night as well) | meadow, water edge |
+| `frog_croak` | a green frog or bullfrog croak (sparse in autumn) | water edge |
+| `tree_frog_peep` | spring peeper or gray tree frog peeps | water edge, forest |
+| `fish_plop` | a small fish or a frog hitting the water | water edge |
+| `bed_forest`, `bed_meadow`, `bed_water`, `bed_highland` | OPTIONAL quiet loops (30 s or longer, seamless, `.ogg`): forest leaf-and-insect hush, meadow insects, a gentle stream, high wind | per zone |
+
+Where to look (CC0 only): Freesound with the license filter "Creative Commons 0", searching the
+names above plus "forest ambience", "meadow insects", "stream gentle"; Kenney has none.
+Cut a single call from a longer field recording in Audacity and export it as its own file.
+Eastern North American species suit the setting (autumn forest, ponds, ridge).
