@@ -41,6 +41,10 @@ SCENARIOS = [
         ("rain level", r"weather rain rain " + NUM, 0.5, 1.0),
         ("footsteps played", r"footsteps (\{[^}]*\})", 8, 1000, "sum"),
     ]),
+    ("snow_hush", ["--weather=snow"], 6000, [
+        ("hush builds", r"snow hush " + NUM, 0.3, 1.0),
+        ("nature bus lower", r"snow hush [\d.]+ \(nature bus " + NUM, -20, -1.0),
+    ]),
     ("rain_stone", ["--weather=rain", "--rain-ground=stone"], 5000, [
         ("stone weight", r"rain ground stone \(weights \{ \"stone\": " + NUM, 0.95, 1.0),
     ]),

@@ -69,6 +69,7 @@ const WET_RISE_SEC := 25.0              # rain from 0.25: dry to soaked in this 
 const WET_DRY_SEC := 240.0
 const SNOW_RISE_SEC := 60.0
 const SNOW_MELT_SEC := 120.0            # above MELT_C
+const HUSH_EASE_SEC := 4.0              # the snow hush follows the snow over this long
 const SNOW_STAY_SEC := 900.0            # below it, snow stays a long while
 const MELT_C := 1.0
 const COVER_EVERY_SEC := 0.4
@@ -88,6 +89,7 @@ var calls: float = 1.0
 var frogs: float = 1.0                  # share of frog calls in this weather (can top 1 in light rain)
 var thunders_played: int = 0
 var ground_wet: float = 0.0             # 0 dry .. 1 soaked: puddle splashes, mud
+var snow_hush: float = 0.0             # 0..1 the quiet of snow: lying snow 0.8, plus 0.2 while it falls; eased over 4 s (sound_stage dulls wind, nature and steps by it)
 var ground_snow: float = 0.0            # 0 bare .. 1 snow lies: footsteps crunch
 var drips_played: int = 0
 var temp_c: float = 10.0
@@ -270,6 +272,9 @@ func _ground(delta: float) -> void:
 		ground_snow = move_toward(ground_snow, 1.0, delta / SNOW_RISE_SEC)
 	else:
 		ground_snow = move_toward(ground_snow, 0.0, delta / (SNOW_MELT_SEC if temp_c > MELT_C else SNOW_STAY_SEC))
+
+	var falling: float = 0.2 if kind == "snow" or kind == "blizzard" else 0.0
+	snow_hush = move_toward(snow_hush, minf(0.8 * ground_snow + falling, 1.0), delta / HUSH_EASE_SEC)
 
 
 # Under trees in rain: now and then a drop falls from a leaf nearby.

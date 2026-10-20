@@ -411,6 +411,11 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	_wind_gust.volume_db = linear_to_db(0.0025 + 0.012 * pow(strength, 1.6))
 	_wind_filter.cutoff_hz = lerpf(1500.0, 7000.0, clampf(strength - 0.2 * _shelter, 0.0, 1.0)) * (1.0 + 0.25 * exposure)   # whistles on a ridge, hushed in a valley
 	_muffle.cutoff_hz = 500.0 if underwater else 20000.0
+	_wind_filter.cutoff_hz *= 1.0 - SNOW_HUSH_WIND_CUT * weather.snow_hush
+
+	if absf(weather.snow_hush - _hush_applied) > 0.02:
+		_hush_applied = weather.snow_hush
+		_apply_buses()
 
 	if _grass != null:
 		_grass.set_wind(strength)
@@ -618,7 +623,7 @@ func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: Str
 	var recorded: bool = _recorded.has(name + "_" + foot) or _recorded.has(name)
 	var pitch: float = GAIT_PITCH[gait] * _rng.randf_range(0.96, 1.04) * tune[1]
 	last_step = "%s (soil %d, water %.2f m, %s)" % [surface, soil, depth, name + "_" + foot if recorded else name + " generated"]
-	_play(name, float(SURFACE_DB.get(surface, FLOOR_SURFACES.get(surface, -9.0))) + float(tune[0]) + GAIT_DB[gait] + boost_db + _rng.randf_range(-1.5, 1.0), pitch, foot)
+	_play(name, float(SURFACE_DB.get(surface, FLOOR_SURFACES.get(surface, -9.0))) + float(tune[0]) + GAIT_DB[gait] + boost_db + SNOW_HUSH_STEP_DB * _hush_applied + _rng.randf_range(-1.5, 1.0), pitch, foot)
 	steps_played[surface] = int(steps_played.get(surface, 0)) + 1
 	gear.step(gait, boost_db, surface)
 
@@ -656,6 +661,14 @@ func set_level(name: String, value: float) -> void:
 	_save_settings()
 
 
+# Snow hush (job 51): at full hush wind is 3 dB and nature 4 dB quieter, the wind filter closes 30 percent and
+# steps lose 3 dB (snow steps are already the soft crunch). Eases with `weather.snow_hush` (4 s).
+const SNOW_HUSH_BUS_DB := {"Wind": -3.0, "Nature": -4.0}
+const SNOW_HUSH_STEP_DB := -3.0
+const SNOW_HUSH_WIND_CUT := 0.3
+var _hush_applied: float = 0.0
+
+
 func _apply_buses() -> void:
 	var shares: Dictionary = {
 		"Master": float(levels["master"]) * float(VOLUME_STEPS[volume_index]),
@@ -672,7 +685,7 @@ func _apply_buses() -> void:
 		if index >= 0:
 			var share: float = shares[bus_name]
 			AudioServer.set_bus_mute(index, share <= 0.001)
-			AudioServer.set_bus_volume_db(index, linear_to_db(maxf(share, 0.001)))
+			AudioServer.set_bus_volume_db(index, linear_to_db(maxf(share, 0.001)) + float(SNOW_HUSH_BUS_DB.get(bus_name, 0.0)) * _hush_applied)
 
 
 # Sound files are loaded the first time a layer needs them, which cost 5 to 20 ms frames (first rain, first

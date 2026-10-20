@@ -263,3 +263,7 @@ Licence note: Dave's supplied recordings are from Pixabay (royalty-free, Pixabay
 ## "What is that sound?" list (job 49)
 
 Esc > Settings > Debug details (F3) now has a `sounds heard (N):` block under the sound budget: the 8 loudest sounds playing, each with its file name, distance (`here` for flat loops such as wind and rain), level in dB at the source, and recorded or generated (`loop` for weather beds). Sorted by level minus 6 dB per doubling of distance. Built by `sound_stage.heard_text(body, limit)`; weather beds come from `weather_sounds.active_loops()`. Dave can read the name off the screen when a sound bothers him and tell me the file. The headless final report prints it as `sounds heard`, and the storm scenario checks it.
+
+## Snowfall hush (job 51)
+
+`weather_sounds.snow_hush` (0 to 1) = 0.8 x snow lying + 0.2 while it snows, eased over 4 s (so it lingers while the snow lies, fades as it melts). `sound_stage` applies it: Wind bus -3 dB and Nature bus -4 dB at full hush (`SNOW_HUSH_BUS_DB`, in `_apply_buses`, only re-applied when it moves 0.02), the wind low-pass closes 30 percent, footsteps lose 3 dB. Cost: nothing per frame beyond one multiply. `sound_check.py --only snow_hush` (snow weather: hush rises, Nature bus drops); HUD final report line `snow hush`.
