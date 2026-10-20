@@ -729,6 +729,14 @@
    "priority": 2
   },
   {
+   "name": "breath_heave",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "breath_sounds.gd: the great chest heave when over-exerted (exertion over 1)",
+   "to_supply": "3 huge, loud chest-heaving breaths of someone at their limit, 1.3 s",
+   "priority": 2
+  },
+  {
    "name": "heartbeat",
    "state": "generated",
    "variants": 3,

@@ -38,6 +38,7 @@ const RISE_PER_SEC := {"walk": 0.0, "jog": 0.045, "run": 0.07, "swim": 0.05}   #
 const CEILING := {"walk": 0.2, "jog": 0.62, "run": 2.0, "swim": 0.75}   # running never plateaus: it keeps climbing past 1 (over-exerted)
 const EXERTION_MAX := 2.0
 const OVER := 1.0                       # from here: racing heart, chest heaves
+const OVER_SPAN := 0.4                  # over to fainting (data/items/exertion.json faint_at 1.4): the intensity climbs over this much
 const HEART_GONE_SEC := 3.0             # the heartbeat after the vision is gone
 const WAKE_SEC := 4.0                   # the world sound returns this slowly after a faint
 const MUTE_RATE := 0.8                  # world_mute follows its target at this much per second (fade out about 1.3 s)
@@ -103,6 +104,9 @@ func set_body(value: float, new_state: String, faint_progress: float = 0.0) -> v
 	state = state if state in ["normal", "over", "fainting", "fainted", "waking"] else "normal"
 	_faint = clampf(faint_progress, 0.0, 1.0)
 
+	if state == "fainted" or state == "fainting":
+		exertion = maxf(exertion, 1.2)       # the heart is still racing in a faint, whatever strain the server holds
+
 
 func clear_exertion() -> void:
 	_external_until = 0
@@ -135,7 +139,7 @@ func follow_body(delta: float, body: CharacterBody3D, flying: bool, swimming: bo
 		exertion = maxf(exertion - DRAIN_PER_SEC * delta, 0.0)
 
 
-# A scripted run of the stages for the sound test and --faint: over-exertion climbs to 1.8, forced slow-down
+# A scripted run of the stages for the sound test and --faint: over-exertion climbs to 1.4, forced slow-down
 # (held), faint with the vision going over 2.5 s, 3 s of heartbeat alone then silence, waking with the heart racing
 # and settling over 10 s. 25 s in all; peak_mute and demo_min_gain record what was reached.
 var _demo_t: float = -1.0
@@ -156,15 +160,15 @@ func _run_demo(delta: float) -> void:
 	var t: float = _demo_t
 
 	if t < 6.0:
-		set_body(lerpf(0.9, 1.8, t / 6.0), "over")
+		set_body(lerpf(0.9, 1.4, t / 6.0), "over_exerted")
 	elif t < 9.0:
-		set_body(1.8 - 0.1 * (t - 6.0), "over")
+		set_body(1.4 - 0.02 * (t - 6.0), "over_exerted")
 	elif t < 11.5:
-		set_body(1.5, "fainted", (t - 9.0) / 2.5)
+		set_body(1.0, "fainted", (t - 9.0) / 2.5)
 	elif t < 17.0:
-		set_body(1.5, "fainted", 1.0)
+		set_body(1.0, "fainted", 1.0)
 	elif t < 27.0:
-		set_body(lerpf(1.5, 0.3, (t - 17.0) / 10.0), "waking")
+		set_body(lerpf(1.1, 0.3, (t - 17.0) / 10.0), "waking")
 	else:
 		_demo_t = -1.0
 		demo_done = true
@@ -209,10 +213,15 @@ func update(delta: float, underwater: bool) -> void:
 		if _beat_left <= 0.0:
 			var bpm: float = _bpm()
 			_beat_left = 60.0 / bpm
-			var over: float = clampf(exertion - OVER, 0.0, OVER - 0.0)
+			var over: float = _over()
 			var level: float = lerpf(-34.0, -20.0, clampf((exertion - HEART_FROM) / (OVER - HEART_FROM), 0.0, 1.0)) + 12.0 * over
 			_play(_heart, "heartbeat", level + linear_to_db(maxf(_heart_gain, 0.001)), 1.0 + 0.1 * clampf(exertion, 0.0, EXERTION_MAX))
 			beats_played += 1
+
+
+# 0 at the start of over-exertion to 1 at the faint point.
+func _over() -> float:
+	return clampf((exertion - OVER) / OVER_SPAN, 0.0, 1.0)
 
 
 # Beats per minute: 60 at HEART_FROM up to 170 at exertion 1, racing on to 220 at EXERTION_MAX.
@@ -220,7 +229,7 @@ func _bpm() -> float:
 	if exertion <= OVER:
 		return lerpf(60.0, 170.0, clampf((exertion - HEART_FROM) / (OVER - HEART_FROM), 0.0, 1.0))
 
-	return lerpf(170.0, 220.0, clampf(exertion - OVER, 0.0, 1.0))
+	return lerpf(170.0, 220.0, _over())
 
 
 func _breathe(delta: float) -> void:
@@ -236,7 +245,7 @@ func _breathe(delta: float) -> void:
 		return
 
 	var t: float = clampf((exertion - QUIET) / (OVER - QUIET), 0.0, 1.0)
-	var cycle: float = lerpf(4.2, 0.9, t) - 0.25 * clampf(exertion - OVER, 0.0, 1.0)
+	var cycle: float = lerpf(4.2, 0.9, t) - 0.25 * _over()
 	_breath_left = cycle * _rng.randf_range(0.92, 1.08)
 
 	if exertion >= OVER:
@@ -266,7 +275,7 @@ func _fade_world(delta: float) -> void:
 
 func _level_db() -> float:
 	var db: float = lerpf(-38.0, -14.0, clampf((exertion - QUIET) / (OVER - QUIET), 0.0, 1.0))
-	return db + 10.0 * clampf(exertion - OVER, 0.0, 1.0)                # heaves reach -4 dB at the limit
+	return db + 10.0 * _over()                # heaves reach -4 dB at the limit
 
 
 func _play(player: AudioStreamPlayer, name: String, db: float, pitch: float) -> void:

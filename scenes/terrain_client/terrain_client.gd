@@ -1722,6 +1722,12 @@ func _step_player(delta: float) -> void:
 	_move_player(delta)
 	Probe.stop("player move", t)
 	var ts: int = Probe.start()
+	# The real exertion from Items (strain climbs past 1 to over-exertion, faint and waking, server-owned); the
+	# stand-in body estimate only runs without it and in the sound tests.
+	if items != null and not test_exertion and not test_faint and sound.breath._demo_t < 0.0:
+		var shown: Array = items.faint_state()
+		sound.breath.set_body(items.strain, shown[0], shown[1])
+
 	sound.update(delta, body, flying, underwater)
 	_item_sync_left -= delta
 

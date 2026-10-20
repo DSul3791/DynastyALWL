@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **178 slots: 17 recorded, 152 generated placeholders, 9 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **179 slots: 17 recorded, 153 generated placeholders, 9 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -23,6 +23,7 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 2 | `bird_trill` | generated | 3 | ambient_life.gd: meadow bird, by day | 2 to 3 trilling songs, about 1 s |
 | 2 | `bird_whistle` | generated | 3 | ambient_life.gd: forest bird, by day | 2 to 4 clear songbird whistles, 1 to 2 s |
 | 2 | `breath_gasp` | generated | 3 | breath_sounds.gd: ragged hard breathing at severe exertion | 3 hard gasping breaths of an exhausted runner, 0.7 s |
+| 2 | `breath_heave` | generated | 3 | breath_sounds.gd: the great chest heave when over-exerted (exertion over 1) | 3 huge, loud chest-heaving breaths of someone at their limit, 1.3 s |
 | 2 | `breath_in` | generated | 3 | breath_sounds.gd: breathing in, from moderate exertion | 3 soft breaths in through the mouth, 0.8 s |
 | 2 | `breath_out` | generated | 3 | breath_sounds.gd: breathing out | 3 soft breaths out, 0.9 s |
 | 2 | `cave_drip` | generated | 5 | cave_sounds.gd: water drops in caves and tunnels | 3 to 6 single water drips in a stone room, 1 to 2 s each |
