@@ -587,8 +587,11 @@ func _lod_of(cell: Vector2i, held: int) -> int:
 	var d: float = centre.distance_to(Vector2(_center.x, _center.z))
 	var near_end: float = clampf(radius_m * 0.35, 14.0, 26.0)
 	var far_start: float = radius_m * 0.65
-	var slack_near: float = LOD_HYSTERESIS_M if held == 1 else (-LOD_HYSTERESIS_M if held == 0 else 0.0)
-	var slack_far: float = LOD_HYSTERESIS_M if held == 2 else (-LOD_HYSTERESIS_M if held == 1 else 0.0)
+	# A cell keeps its band until it is LOD_HYSTERESIS_M past the boundary (builds up to 282 had this
+	# backwards, so a cell within 3 m of a boundary flipped between two bands at every rescan and the grass
+	# popped there; owner: "popping in and out of existence right in front of me").
+	var slack_near: float = LOD_HYSTERESIS_M if held == 0 else (-LOD_HYSTERESIS_M if held >= 1 else 0.0)
+	var slack_far: float = -LOD_HYSTERESIS_M if held == 2 else (LOD_HYSTERESIS_M if held >= 0 else 0.0)
 
 	if d < near_end + slack_near:
 		return 0
