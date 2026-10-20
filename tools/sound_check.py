@@ -69,6 +69,12 @@ SCENARIOS = [
         ("every file loads", r"sound memory audit: " + NUM + r" files", 400, 2000),
         ("under the Low cap", r"MB read from disk, " + NUM + r" refused", 0, 0),
     ]),
+    ("faint", ["--faint"], 6500, [
+        ("world goes silent", r"faint run: world muted to " + NUM, 0.99, 1.0),
+        ("heart fades away", r"heart gain down to " + NUM, 0, 0.01),
+        ("heaves played", r"gain down to [\d.]+, " + NUM + r" heaves", 3, 200),
+        ("run completes", r"done (true)", 0, 1, "text"),
+    ]),
     ("felling", ["--chop"], 7000, [
         ("trees fell", r"tree sounds: " + NUM + r" falls", 1, 10),
     ]),

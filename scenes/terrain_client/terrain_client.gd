@@ -184,6 +184,7 @@ var test_spear_sounds: bool = false
 var test_fire: bool = false
 var test_fire_world: bool = false      # --fire-world: a fake world row goes through states 8, 9, 1, 9, 8 (loaded, lit, rained out, emptied)
 var _fire_world_step: int = 0
+var test_faint: bool = false           # --faint: the scripted over-exertion, faint and waking run (breath_sounds.demo)
 var test_load_all_sounds: bool = false # --load-all-sounds: load every sound file once and report the memory (job 52 audit)
 var _fire_sync_left: float = 0.0
 var _tree_sync_left: float = 0.0
@@ -372,6 +373,8 @@ func _ready() -> void:
 			test_levels = true
 		elif argument == "--fire":
 			test_fire = true
+		elif argument == "--faint":
+			test_faint = true
 		elif argument == "--load-all-sounds":
 			test_load_all_sounds = true
 		elif argument == "--fire-world":
@@ -1324,10 +1327,14 @@ func _build_menu(layer: CanvasLayer) -> void:
 		_sound_fire_at = (_sound_fire_at + 1) % 7
 		_menu_note.text = _fire_test_step(_sound_fire_at, body.global_position + -camera.global_transform.basis.z * 3.0) + " (press again for the next)")
 	_menu_button(settings, "Sound test: exertion", func():
-		_sound_exertion_at = (_sound_exertion_at + 1) % 5
-		var levels: Array = [0.0, 0.35, 0.6, 0.9, 1.0]
-		var notes: Array = ["Rested: silent", "Light exertion: soft slow breaths", "Hard exertion: clear quick breaths, heartbeat starts", "Severe exertion: gasps and a strong heartbeat", "Exhausted: fastest gasps (then it follows your running again)"]
-		sound.breath.set_exertion(levels[_sound_exertion_at])
+		_sound_exertion_at = (_sound_exertion_at + 1) % 7
+		var levels: Array = [0.0, 0.35, 0.6, 0.9, 1.0, 1.6]
+		var notes: Array = ["Rested: silent", "Light exertion: soft slow breaths", "Hard exertion: clear quick breaths, heartbeat starts", "Severe exertion: gasps and a strong heartbeat", "Exhausted: fastest gasps (then it follows your running again)", "Over-exerted: racing heart, great chest heaves", "Faint demo, 27 s: over-exertion, forced slow-down, faint (world fades, only the heart, gone in 3 s), waking with the heart racing"]
+
+		if _sound_exertion_at == 6:
+			sound.breath.demo()
+		else:
+			sound.breath.set_exertion(levels[_sound_exertion_at])
 		_menu_note.text = "%s (press again for the next)" % notes[_sound_exertion_at])
 	_menu_button(settings, "Sound test: interior", func():
 		_sound_interior_at = (_sound_interior_at + 1) % 5
@@ -2267,6 +2274,11 @@ func _process(delta: float) -> void:
 		if _test_fire_step >= 7:
 			test_fire = false
 
+	# Faint run: 27 s of over-exertion, faint and waking; the final report says how far the world fell silent.
+	if test_faint and now - connected_msec > 18000 and not sound.breath.demo_done:
+		if sound.breath.state == "normal" and sound.breath.exertion == 0.0 and not sound.breath._demo_t >= 0.0:
+			sound.breath.demo()
+
 	# Memory audit: every sound file loaded once, counted against the tier's cap (assets/audio/README.md "Sound memory").
 	if test_load_all_sounds and now - connected_msec > 12000:
 		test_load_all_sounds = false
@@ -2439,6 +2451,7 @@ func _process(delta: float) -> void:
 			print("Terrain client: water sounds: %s (%d falls known)" % [sound.water.summary, flora.fall_list().size()])
 			print("Terrain client: nature calls %s, zones %s" % [str(sound.ambient.calls_played), str(sound.ambient.weights)])
 			print("Terrain client: tree sounds: %d falls, %d stump sprays, last %s" % [sound.trees.falls_played, sound.trees.chips_played, sound.trees.last])
+			print("Terrain client: faint run: world muted to %.2f, heart gain down to %.2f, %d heaves, %d heartbeats, done %s" % [sound.breath.peak_mute, sound.breath.demo_min_gain, sound.breath.heaves_played, sound.breath.beats_played, str(sound.breath.demo_done)])
 			print("Terrain client: fire world: %d fuel, %d lit, %d out" % [sound.fire.fuel_played, sound.fire.lit_played, sound.fire.out_played])
 			print("Terrain client: fire sounds: %d lit, %d put out, %d loops, last %s" % [sound.fire.lit_played, sound.fire.out_played, sound.fire.loops_playing, sound.fire.last])
 			print("Terrain client: item sounds %d, last %s" % [sound.itemfx.played, sound.itemfx.last])
@@ -2504,7 +2517,7 @@ func _debug_text(avg_ms: float, worst_ms: float) -> String:
 	text += "\nsound budget: " + sound.budget_text()
 	text += "\n" + sound.heard_text(body)
 	text += "\n" + sound.wind_text()
-	text += "\nexertion %.2f: %d breaths, %d heartbeats, last %s" % [sound.breath.exertion, sound.breath.breaths_played, sound.breath.beats_played, sound.breath.last]
+	text += "\nexertion %.2f (%s): %d breaths, %d heartbeats, last %s" % [sound.breath.exertion, sound.breath.state, sound.breath.breaths_played, sound.breath.beats_played, sound.breath.last]
 	text += "\ntree sounds: %d falls, %d sprays, last %s" % [sound.trees.falls_played, sound.trees.chips_played, sound.trees.last]
 	text += "\nfire sounds: %d loops, %d lit, %d put out, last %s" % [sound.fire.loops_playing, sound.fire.lit_played, sound.fire.out_played, sound.fire.last]
 	text += "\nitem sounds: %d, last %s" % [sound.itemfx.played, sound.itemfx.last]

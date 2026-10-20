@@ -413,8 +413,9 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	_muffle.cutoff_hz = 500.0 if underwater else 20000.0
 	_wind_filter.cutoff_hz *= 1.0 - SNOW_HUSH_WIND_CUT * weather.snow_hush
 
-	if absf(weather.snow_hush - _hush_applied) > 0.02:
+	if absf(weather.snow_hush - _hush_applied) > 0.02 or absf(breath.world_mute - _faint_applied) > 0.02 or (breath.world_mute == 0.0 and _faint_applied != 0.0):
 		_hush_applied = weather.snow_hush
+		_faint_applied = breath.world_mute
 		_apply_buses()
 
 	if _grass != null:
@@ -668,6 +669,11 @@ const SNOW_HUSH_STEP_DB := -3.0
 const SNOW_HUSH_WIND_CUT := 0.3
 var _hush_applied: float = 0.0
 
+# A faint (breath.world_mute 0..1): these buses fade to silence, the "Body" bus (heartbeat) stays.
+const FAINT_BUSES := ["Wind", "Foley", "Nature", "Weather", "Interface"]
+const FAINT_BUS_DB := -60.0
+var _faint_applied: float = 0.0
+
 
 func _apply_buses() -> void:
 	var shares: Dictionary = {
@@ -677,6 +683,7 @@ func _apply_buses() -> void:
 		"Nature": float(levels["ambient"]) * float(VOLUME_STEPS[int(mix_index["nature"])]),
 		"Weather": float(levels["ambient"]) * float(VOLUME_STEPS[int(mix_index["nature"])]),
 		"Interface": float(levels["interface"]),
+		"Body": float(levels["effects"]) * float(VOLUME_STEPS[int(mix_index["steps"])]),
 	}
 
 	for bus_name in shares:
@@ -685,7 +692,7 @@ func _apply_buses() -> void:
 		if index >= 0:
 			var share: float = shares[bus_name]
 			AudioServer.set_bus_mute(index, share <= 0.001)
-			AudioServer.set_bus_volume_db(index, linear_to_db(maxf(share, 0.001)) + float(SNOW_HUSH_BUS_DB.get(bus_name, 0.0)) * _hush_applied)
+			AudioServer.set_bus_volume_db(index, linear_to_db(maxf(share, 0.001)) + float(SNOW_HUSH_BUS_DB.get(bus_name, 0.0)) * _hush_applied + (FAINT_BUS_DB if bus_name in FAINT_BUSES else 0.0) * _faint_applied)
 
 
 # Sound files are loaded the first time a layer needs them, which cost 5 to 20 ms frames (first rain, first

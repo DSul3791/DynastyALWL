@@ -1,9 +1,9 @@
 """Makes placeholder body sounds for src/client/breath_sounds.gd.
 
 Run: python3 assets/audio/make_body.py   (needs numpy and ffmpeg)
-Writes assets/audio/body/ (3 variants each): breath_in_N (a soft intake of air, 0.8 s),
+Writes assets/audio/body/ (3 variants each): breath_heave_N (the great chest heave of over-exertion, 1.3 s), breath_in_N (a soft intake of air, 0.8 s),
 breath_out_N (a soft release, 0.9 s), breath_gasp_N (a hard, ragged gulp of air for severe
-exertion, 0.7 s) and heartbeat_N (a lub-dub, 0.4 s). Recordings go in assets/audio/recorded/body/
+exertion, 0.7 s) and heartbeat_N (a lub-dub, 0.4 s, thin: nothing deep under about 70 Hz). Recordings go in assets/audio/recorded/body/
 under the same names; the game prefers them.
 """
 import os
@@ -71,25 +71,41 @@ def gasp(rng):
 def heartbeat(rng):
     out = np.zeros(int(0.45 * SR))
 
-    for at, f0, level in ((0.0, rng.uniform(52, 62), 1.0), (0.17, rng.uniform(44, 52), 0.7)):
-        n = int(0.16 * SR)
+    # Dave, 2026-10-20: too bassy and deep. Higher pitch (about 80 Hz, was 55) with a second harmonic and a short
+    # decay, so the low end is thin.
+    for at, f0, level in ((0.0, rng.uniform(78, 92), 1.0), (0.17, rng.uniform(66, 76), 0.7)):
+        n = int(0.14 * SR)
         t = np.arange(n) / SR
-        thump = np.sin(2 * np.pi * np.cumsum(f0 * (1.0 + 0.5 * np.exp(-t / 0.03))) / SR) * np.exp(-t / 0.05) * np.minimum(t / 0.004, 1.0)
+        phase = 2 * np.pi * np.cumsum(f0 * (1.0 + 0.5 * np.exp(-t / 0.03))) / SR
+        thump = (np.sin(phase) + 0.55 * np.sin(2 * phase)) * np.exp(-t / 0.04) * np.minimum(t / 0.004, 1.0)
         add(out, thump * level, at)
 
     return finish(out, 0.8, 0.05)
 
 
+def heave(rng):
+    """The great chest heave of over-exertion: a long, loud, rough, wide breath with a chesty voice under it."""
+    n = int(1.3 * SR)
+    t = np.arange(n) / SR
+    x = air(rng, 1.3, rng.uniform(800, 1100), 1.8, 0.3, 0.55)
+    rough = 0.6 + 0.4 * np.sin(2 * np.pi * rng.uniform(26, 38) * t)
+    voice = noise(rng, n, lambda f: band(f, 300, 1.0) * lowpass(f, 800)) * env(n, 0.25, 0.4)
+    voice /= np.max(np.abs(voice)) + 1e-9
+    return finish(x * rough + 0.4 * voice, 0.9, 0.12)
+
+
 def main():
     rng = np.random.default_rng(20261029)
+    rng_heave = np.random.default_rng(20261120)    # its own stream, so the older breath sounds stay as they were
 
     for v in range(VARIANTS):
         write_ogg("breath_in_%d" % v, breath_in(rng))
         write_ogg("breath_out_%d" % v, breath_out(rng))
         write_ogg("breath_gasp_%d" % v, gasp(rng))
         write_ogg("heartbeat_%d" % v, heartbeat(rng))
+        write_ogg("breath_heave_%d" % v, heave(rng_heave))
 
-    print("Wrote %d body sounds to %s" % (VARIANTS * 4, OUT))
+    print("Wrote %d body sounds to %s" % (VARIANTS * 5, OUT))
 
 
 if __name__ == "__main__":

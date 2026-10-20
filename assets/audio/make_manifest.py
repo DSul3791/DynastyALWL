@@ -106,6 +106,7 @@ SLOTS = [
     ("breath_in", "body", "breath_sounds.gd: breathing in, from moderate exertion", "3 soft breaths in through the mouth, 0.8 s", 2),
     ("breath_out", "body", "breath_sounds.gd: breathing out", "3 soft breaths out, 0.9 s", 2),
     ("breath_gasp", "body", "breath_sounds.gd: ragged hard breathing at severe exertion", "3 hard gasping breaths of an exhausted runner, 0.7 s", 2),
+    ("breath_heave", "body", "breath_sounds.gd: the great chest heave when over-exerted (exertion over 1)", "3 huge, loud chest-heaving breaths of someone at their limit, 1.3 s", 2),
     ("heartbeat", "body", "breath_sounds.gd: the player's own heartbeat when exerted (lub-dub)", "3 heartbeat lub-dubs, 0.4 s, no room tone", 3),
     ("tree_creak", "trees", "tree_sounds.gd: a felled tree groans as it starts to go (when its trunk appears)", "3 tree trunk creaks and groans before falling, 1 to 2 s", 2),
     ("tree_leaves", "trees", "tree_sounds.gd: the crown rushing down through the air", "3 branches and leaves rushing as a tree falls, about 1 s", 3),
