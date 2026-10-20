@@ -46,7 +46,7 @@ const GitStamp := preload("res://src/debug/git_stamp.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 const GpuProbeScript := preload("res://src/debug/gpu_probe.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 140
+const BUILD := 142
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -502,7 +502,7 @@ func _on_welcome(info: Dictionary) -> void:
 	held = HeldItemScript.new()
 	held.name = "Held"
 	add_child(held)
-	held.setup(items, net, camera, root, layer, _ground_below)
+	held.setup(items, net, camera, root, layer, _ground_below, sound, _tree_trunk_near)
 
 	if test_items:
 		items.run_test()
@@ -806,6 +806,18 @@ func _update_anchor(now: int, delta: float) -> void:
 
 	if _viewer != null:
 		_viewer.global_position = _anchor
+
+
+# True when a tree trunk stands within 1.3 m (flat distance) of the point.
+func _tree_trunk_near(point: Vector3) -> bool:
+	for chunk in flora._chunks:
+		var held_items: Dictionary = flora._chunks[chunk]["items"]
+
+		for n in range(held_items["ids"].size()):
+			if flora._species.get(held_items["ids"][n] >> 16, {}).get("kind", 2) == 0 and Vector2(held_items["positions"][n].x - point.x, held_items["positions"][n].z - point.z).length() < 1.3:
+				return true
+
+	return false
 
 
 # E with nothing on the ground in reach: ask to gather the nearest plant or shrub within 2.5 m.

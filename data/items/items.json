@@ -9,7 +9,7 @@
 		"plant_fibre": {"number": 3, "name": "Plant fibre", "kind": "material", "stack": 40, "look_alikes": []},
 		"log":         {"number": 4, "name": "Log", "kind": "material", "stack": 5, "look_alikes": []},
 		"cordage":     {"number": 5, "name": "Cordage", "kind": "material", "stack": 20, "look_alikes": []},
-		"stone_axe":   {"number": 6, "name": "Stone axe", "kind": "tool", "stack": 1, "chop": 1.0, "dig": 1.0, "durability": 100, "look_alikes": []},
+		"stone_axe":   {"number": 6, "name": "Stone axe", "kind": "tool", "tool_class": "axe", "tier": 1, "stack": 1, "chop": 1.0, "dig": 1.0, "durability": 100, "look_alikes": []},
 		"spear":       {"number": 7, "name": "Stone spear", "kind": "weapon", "weapon_class": "spear", "tier": 2, "stack": 1, "damage": 8.0, "throw_damage": 6.0, "durability": 80, "look_alikes": []},
 		"campfire_kit": {"number": 8, "name": "Campfire", "kind": "placeable", "stack": 1, "look_alikes": []},
 		"wooden_spear": {"number": 10, "name": "Wooden spear", "kind": "weapon", "weapon_class": "spear", "tier": 1, "stack": 1, "damage": 6.0, "throw_damage": 5.0, "durability": 40, "look_alikes": []},

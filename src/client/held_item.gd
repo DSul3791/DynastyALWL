@@ -29,9 +29,18 @@ var _label: Label
 var _jab_t: float = -1.0
 var _flights: Array = []                  # local visuals of spears this player threw: {node, vel, age}
 var _shown_number: int = 0
+var _sound                                # SoundStage (hit sounds)
+var _tree_near: Callable                  # (point) -> true when a tree trunk stands there
+var _swing_t: float = -1.0
+var _swing_hit: bool = false
+
+const SWING_S := 0.55
+const REACH_M := 3.0
 
 
-func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hud_layer: CanvasLayer, ground_below: Callable) -> void:
+func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hud_layer: CanvasLayer, ground_below: Callable, sound_stage = null, tree_near: Callable = Callable()) -> void:
+	_sound = sound_stage
+	_tree_near = tree_near
 	_inv = inventory_view
 	_net = terrain_net
 	_camera = camera
@@ -66,8 +75,19 @@ func _is_spear() -> bool:
 	return str(_inv.table.entry(held_id()).get("weapon_class", "")) == "spear"
 
 
+func _is_axe() -> bool:
+	return str(_inv.table.entry(held_id()).get("tool_class", "")) == "axe"
+
+
 # A mouse button while playing. Returns true when it was used here.
 func mouse_button(button: int, pressed: bool) -> bool:
+	if _is_axe():
+		if button == MOUSE_BUTTON_LEFT and pressed and _swing_t < 0.0:
+			_swing_t = 0.0
+			_swing_hit = false
+
+		return button == MOUSE_BUTTON_LEFT
+
 	if not _is_spear():
 		aiming = false
 		return false
@@ -102,7 +122,22 @@ func _process(delta: float) -> void:
 	_show_model()
 	_label.text = _caption()
 
-	if _model != null:
+	if _swing_t >= 0.0:
+		_swing_t += delta
+
+		if not _swing_hit and _swing_t >= SWING_S * 0.5:
+			_swing_hit = true
+			_strike()
+
+		if _swing_t >= SWING_S:
+			_swing_t = -1.0
+
+	if _model != null and _is_axe():
+		var u: float = clampf(_swing_t / SWING_S, 0.0, 1.0) if _swing_t >= 0.0 else 0.0
+		var arc: float = sin(u * PI)
+		_model.position = _model.position.lerp(REST + Vector3(-0.1 * arc, -0.15 * arc, -0.2 * arc), clampf(delta * 20.0, 0.0, 1.0))
+		_model.rotation.x = lerpf(_model.rotation.x, deg_to_rad(70.0) * (1.0 - 2.0 * u) if _swing_t >= 0.0 else deg_to_rad(20.0), clampf(delta * 20.0, 0.0, 1.0))
+	elif _model != null:
 		var target: Vector3 = AIMED if aiming else REST
 		var offset: Vector3 = target
 
@@ -128,6 +163,22 @@ func _process(delta: float) -> void:
 			_flights.erase(flight)
 
 
+# The blow lands: what is in reach decides the sound. (Chopping trees and digging stone come with
+# tree-fall and the harvest of ground; for now the axe only swings and sounds.)
+func _strike() -> void:
+	var from: Vector3 = _camera.global_position
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - _camera.global_transform.basis.z * REACH_M)
+	var hit: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(query)
+
+	if hit.is_empty() or _sound == null:
+		return
+
+	if _tree_near.is_valid() and _tree_near.call(hit["position"]):
+		_sound.hits.hit("axe", "wood", hit["position"], 1.0)
+	else:
+		_sound.hits.hit_ground("pick", hit["position"], 1.0)
+
+
 func _caption() -> String:
 	var number: int = held_number()
 
@@ -136,7 +187,9 @@ func _caption() -> String:
 
 	var text: String = _inv.table.name_of(number)
 
-	if _is_spear():
+	if _is_axe():
+		text += "   (left click: swing)"
+	elif _is_spear():
 		text += "   (left click: jab; hold right click to aim, then left click to throw)"
 
 	return text
@@ -145,7 +198,7 @@ func _caption() -> String:
 func _show_model() -> void:
 	var number: int = held_number() if _inv != null else 0
 
-	if not _is_spear():
+	if not _is_spear() and not _is_axe():
 		number = 0
 
 	if number == _shown_number:
@@ -158,9 +211,33 @@ func _show_model() -> void:
 		_model = null
 
 	if number != 0:
-		_model = _make_spear_model()
+		_model = _make_spear_model() if _is_spear() else _make_axe_model()
 		_camera.add_child(_model)
 		_model.position = REST
+
+
+func _make_axe_model() -> Node3D:
+	var axe: Node3D = Node3D.new()
+	var handle: MeshInstance3D = MeshInstance3D.new()
+	var rod: CylinderMesh = CylinderMesh.new()
+	rod.top_radius = 0.02
+	rod.bottom_radius = 0.025
+	rod.height = 0.7
+	var wood: StandardMaterial3D = StandardMaterial3D.new()
+	wood.albedo_color = Color(0.45, 0.3, 0.16)
+	rod.material = wood
+	handle.mesh = rod
+	axe.add_child(handle)
+	var head: MeshInstance3D = MeshInstance3D.new()
+	var block: BoxMesh = BoxMesh.new()
+	block.size = Vector3(0.05, 0.14, 0.2)
+	var stone: StandardMaterial3D = StandardMaterial3D.new()
+	stone.albedo_color = Color(0.5, 0.5, 0.52)
+	block.material = stone
+	head.mesh = block
+	head.position = Vector3(0.0, 0.32, -0.06)
+	axe.add_child(head)
+	return axe
 
 
 func _make_spear_model() -> Node3D:
@@ -213,3 +290,13 @@ func run_test() -> void:
 	mouse_button(MOUSE_BUTTON_LEFT, true)
 	await get_tree().create_timer(5.0).timeout
 	print("Spear test: jab %s, aimed %s, still aiming %s, spears in pack %d, things on ground %d" % [jabbed, aimed, aiming, _inv.inventory.count_of(table.number_of("wooden_spear")), _inv._world.size()])
+	_net.inventory_action.rpc_id(1, Net.ACT_CRAFT, 2, 0, 0, Vector3.ZERO)
+	await get_tree().create_timer(1.0).timeout
+
+	for slot in range(8):
+		if _inv.inventory.numbers[slot] == table.number_of("stone_axe"):
+			select(slot)
+
+	var swung: bool = mouse_button(MOUSE_BUTTON_LEFT, true)
+	await get_tree().create_timer(1.0).timeout
+	print("Spear test: holding %s, swung %s, last hit sound '%s'" % [held_id(), swung, _sound.hits.last_hit if _sound != null else "none"])
