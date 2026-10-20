@@ -43,6 +43,7 @@ const HeldItemScript := preload("res://src/client/held_item.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
 const WeatherScript := preload("res://src/shared/weather.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
+const StatusIconsScript := preload("res://src/client/status_icons.gd")
 const DebugHudScript := preload("res://src/client/debug_hud.gd")
 const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
@@ -133,7 +134,7 @@ var _tint: ColorRect
 var _aim_msec: int = 0
 var _aim_pos: Vector3 = Vector3.ZERO
 var _mode_label: Label
-var _brain_icon: TextureRect         # shown while inspection mode is on
+var status_icons                      # StatusIcons: the symbol row (brain, house, ...); other threads add with status_icons.add_icon
 var test_water_step: bool = false   # headless check: press + twice 12 s in
 var _water_label: Label             # the water flow rate readout, shown for 3 seconds after + or -
 var _water_label_until_msec: int = 0
@@ -585,22 +586,10 @@ func _welcome_body(info: Dictionary) -> void:
 	_water_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
 	_water_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(_water_label)
-	_brain_icon = TextureRect.new()
-	_brain_icon.texture = _load_brain_icon()
-	_brain_icon.anchor_left = 0.5
-	_brain_icon.anchor_right = 0.5
-	_brain_icon.anchor_top = 0.2
-	_brain_icon.anchor_bottom = 0.2
-	_brain_icon.offset_left = -44.0
-	_brain_icon.offset_right = 44.0
-	_brain_icon.offset_top = -44.0
-	_brain_icon.offset_bottom = 44.0
-	_brain_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_brain_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_brain_icon.modulate = Color(1.0, 1.0, 1.0, 0.85)
-	_brain_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_brain_icon.visible = inspecting
-	layer.add_child(_brain_icon)
+	status_icons = StatusIconsScript.new()
+	layer.add_child(status_icons)
+	status_icons.add_icon("inspection", _load_brain_icon(), func() -> bool: return inspecting, 0.85)
+	status_icons.add_icon("cover", StatusIconsScript.house_texture(), func() -> bool: return under_cover > 0.0)
 	_build_menu(layer)
 	hud = Label.new()
 	hud.position = Vector2(12.0, 12.0)
@@ -1648,7 +1637,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			_last_w_msec = now
 		elif event.keycode == KEY_SLASH:
 			inspecting = not inspecting
-			_brain_icon.visible = inspecting
+			status_icons.tick(0.0, true)
 			sound.ui.play("ui_on" if inspecting else "ui_off")
 
 			if not inspecting:
@@ -2294,6 +2283,7 @@ func _process(delta: float) -> void:
 		total_ms += ms
 
 	var avg_ms: float = total_ms / maxf(float(_frame_ms.size()), 1.0)
+	status_icons.tick(delta)
 	_note_last_sound()
 	hud.text = "build %d (%s)  %d fps  %s (F2)\nx %.0f  y %.1f  z %.0f\nlast sound: %s" % [BUILD, _commit, Engine.get_frames_per_second(), QUALITY_NAMES[quality], body.global_position.x, body.global_position.y, body.global_position.z, _last_sound]
 
