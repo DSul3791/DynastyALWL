@@ -17,6 +17,16 @@
 			"state": 6,
 			"cap_per_chunk": 8,
 			"slots": 12
+		},
+		"chopping_block": {
+			"kit": "chopping_block_kit",
+			"item": "chopping_block",
+			"state": 7,
+			"cap_per_chunk": 4,
+			"use": "split_log",
+			"logs_to_firewood": 4,
+			"use_pace_ms": 600,
+			"use_reach_m": 3.0
 		}
 	}
 }

@@ -7,7 +7,7 @@ extends SceneTree
 
 const DATA := "res://data/items/"
 # Items the code itself hands out (felling a trunk, the admin give, placing a fire) and so need no drop entry.
-const CODE_SOURCES := ["stone", "stick", "log", "bark", "leaves", "seed_bundle"]
+const CODE_SOURCES := ["stone", "stick", "log", "bark", "leaves", "seed_bundle", "firewood"]
 
 var errors: int = 0
 var warnings: int = 0

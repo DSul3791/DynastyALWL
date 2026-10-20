@@ -48,3 +48,7 @@ Both are placed from kits (structures.json): left click with the kit held, yaw f
 ## First chest is woven (Dave, 2026-10-20)
 
 There are no boards without a saw mill, so the first storage chest is a woven basket chest: 10 sticks + 4 twine, 12 slots, item ids unchanged (`chest_kit`, `chest`; names "Woven chest kit" and "Woven chest"; material wicker). Taking an empty one down returns the kit. A plank chest (more slots, wood, boards plus nails or twine) is a later item with its own id after the saw mill. Art: the model should read as wicker, pale twigs bound with twine, a lid band of darker twine; Sounds: material is wicker, not wood.
+
+## Chopping block (build 202)
+
+Kit from 1 log (recipe 15), placed like the other structures (cap 4 per 256 m chunk, state 7, saved in the same world_items rows). E within 3 m with a usable axe turns one log into 4 firewood (item 26, stack 40, 300 s of fuel; V burns firewood, then sticks, then logs); hold E repeats every 0.6 s; each split wears the axe one use (ACT_USE_STRUCT 17). Saw mill (lumber) waits for the building design.

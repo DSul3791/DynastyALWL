@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability.",
-	"next_number": 24,
+	"next_number": 27,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -239,6 +239,29 @@
 			"slots": 12,
 			"material": "wicker",
 			"note": "First chest: woven twine and sticks (no boards without a sawmill). A plank chest (more slots, wood) comes after the saw mill under its own id."
+		},
+		"chopping_block_kit": {
+			"number": 24,
+			"name": "Chopping block",
+			"kind": "placeable",
+			"stack": 1,
+			"look_alikes": [],
+			"footprint_x": 0.7,
+			"footprint_z": 0.7
+		},
+		"chopping_block": {
+			"number": 25,
+			"name": "Chopping block (set)",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"firewood": {
+			"number": 26,
+			"name": "Firewood",
+			"kind": "material",
+			"stack": 40,
+			"look_alikes": []
 		}
 	}
 }

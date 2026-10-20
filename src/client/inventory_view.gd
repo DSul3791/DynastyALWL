@@ -32,6 +32,7 @@ var _selected: int = -1
 var _prompt: Label
 var cover_index                        # the client's Cover.Index: lean-to roofs are added to it
 var tool_event: Callable               # ("broke" | "repaired") when a tool in the pack wears out or is mended (sounds)
+var _block_next_msec: int = 0
 var chest_event: Callable              # ("open" | "close" | "put" | "take", position) for the chest sounds
 var chest_mode: bool = false           # the panel on screen is a chest, not the pack and recipes
 var chest_inv                          # contents of the open chest (Inventory), from the server
@@ -131,6 +132,11 @@ func pick_up_nearest() -> bool:
 		net.inventory_action.rpc_id(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)
 		return true
 
+	if _world[id]["state"] == 7 and not Input.is_key_pressed(KEY_SHIFT):
+		net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO)
+		_block_next_msec = Time.get_ticks_msec() + 600
+		return true
+
 	net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 	return true
 
@@ -178,10 +184,27 @@ func _process(_delta: float) -> void:
 	if near[0] == 0 and fire != 0:
 		_prompt.text = "C: roast food    V: add wood" if _world[fire]["state"] == 1 else "V: add wood to relight"
 	elif near[0] == 0 and struct_id != 0:
-		_prompt.text = "E: open chest    Shift+E: take it down (empty only)" if _world[struct_id]["state"] == 6 else "E: take down %s" % table.name_of(_world[struct_id]["number"]).to_lower()
+		var st: int = _world[struct_id]["state"]
+		_prompt.text = "E: open chest    Shift+E: take it down (empty only)" if st == 6 else ("E: split a log into firewood (hold E to keep going, needs an axe)    Shift+E: take it down" if st == 7 else "E: take down %s" % table.name_of(_world[struct_id]["number"]).to_lower())
 	elif near[0] == 0:
 		_prompt.text = plant_hint
 
+
+
+# Holding E beside a chopping block keeps splitting logs at the server's pace. True when one is in reach.
+func hold_use() -> bool:
+	var id: int = _nearest_struct()
+
+	if id == 0 or _world[id]["state"] != 7:
+		return false
+
+	var now: int = Time.get_ticks_msec()
+
+	if now >= _block_next_msec:
+		_block_next_msec = now + 600
+		net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO)
+
+	return true
 
 
 # The id of the nearest placed structure (lean-to, chest) within 3 m, 0 when none.
@@ -535,7 +558,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 		if state >= 5:
 			var yaw: float = deg_to_rad(float(row[5].get("yaw", 0.0))) if row.size() > 5 else 0.0
-			node = _make_leanto() if state == 5 else _make_chest()
+			node = _make_leanto() if state == 5 else (_make_chest() if state == 6 else _make_block())
 			node.position = row[3]
 			node.rotation.y = yaw
 			_root.add_child(node)
@@ -617,6 +640,34 @@ func _make_leanto() -> Node3D:
 	back.mesh = back_mesh
 	back.position = Vector3(0.0, 0.45, -0.9)
 	root.add_child(back)
+	return root
+
+
+# A chopping block: a stump stood on end with a chopped top and an axe cut across it.
+func _make_block() -> Node3D:
+	var root: Node3D = Node3D.new()
+	var wood: StandardMaterial3D = StandardMaterial3D.new()
+	wood.albedo_color = Color(0.4, 0.28, 0.16)
+	var top: StandardMaterial3D = StandardMaterial3D.new()
+	top.albedo_color = Color(0.62, 0.48, 0.3)
+	var body: MeshInstance3D = MeshInstance3D.new()
+	var body_mesh: CylinderMesh = CylinderMesh.new()
+	body_mesh.top_radius = 0.3
+	body_mesh.bottom_radius = 0.34
+	body_mesh.height = 0.55
+	body_mesh.material = wood
+	body.mesh = body_mesh
+	body.position = Vector3(0.0, 0.275, 0.0)
+	root.add_child(body)
+	var face: MeshInstance3D = MeshInstance3D.new()
+	var face_mesh: CylinderMesh = CylinderMesh.new()
+	face_mesh.top_radius = 0.29
+	face_mesh.bottom_radius = 0.29
+	face_mesh.height = 0.02
+	face_mesh.material = top
+	face.mesh = face_mesh
+	face.position = Vector3(0.0, 0.56, 0.0)
+	root.add_child(face)
 	return root
 
 

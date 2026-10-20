@@ -65,6 +65,10 @@ func update(delta: float, e_down: bool) -> void:
 
 	if _sweep_left <= 0.0:
 		_sweep_left = SWEEP_EVERY_S
+
+		if _items.hold_use():
+			return
+
 		var found: Array = _candidates(SWEEP_RADIUS_M)
 
 		for c in found:

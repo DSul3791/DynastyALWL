@@ -106,6 +106,7 @@ var _structures: Dictionary = {}    # structures.json: kind -> definition
 var _struct_gap_m: float = 2.5
 var _chests: Dictionary = {}        # structure uid -> Inventory (server-owned contents, chests.json)
 var _next_uid: int = 1
+var _last_use: Dictionary = {}      # peer -> msec of the last structure use
 const CHEST_REACH_M := 4.0
 var _slow_in: float = 0.0
 const SLOW_TICK_S := 0.25
@@ -177,6 +178,7 @@ func peer_left(peer: int) -> void:
 	_last_hit.erase(peer)
 	_last_cook.erase(peer)
 	_last_gather.erase(peer)
+	_last_use.erase(peer)
 	_last_process.erase(peer)
 
 
@@ -264,6 +266,8 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_hit(peer, inv, a, Vector2i(b, count))
 	elif kind == Net.ACT_CHEST_OPEN or kind == Net.ACT_CHEST_PUT or kind == Net.ACT_CHEST_TAKE:
 		_chest_action(peer, inv, kind, a, b, count)
+	elif kind == Net.ACT_USE_STRUCT:
+		_use_struct(peer, inv, a)
 	elif kind == Net.ACT_REPAIR:
 		_repair(peer, inv, a)
 	elif kind == Net.ACT_FUEL:
@@ -1310,7 +1314,7 @@ func _fuel(peer: int, inv, id: int) -> void:
 	if int(fire["state"]) == 2 and raining and not bool(fire["covered"]):
 		return
 
-	for wood in ["stick", "log"]:
+	for wood in _cooking.get("fuel_order", ["stick", "log"]):
 		var number: int = table.number_of(wood)
 
 		if inv.has(number, 1):
@@ -1453,6 +1457,46 @@ func _take_down(peer: int, inv, id: int) -> void:
 
 	_chests.erase(int(it["struct"].get("uid", 0)))
 	_items.erase(id)
+	_dirty = true
+
+
+# E at a chopping block: one log becomes firewood; the axe wears one use. The server checks the reach,
+# a log in the pack, a usable axe on the hotbar and the pace.
+func _use_struct(peer: int, inv, id: int) -> void:
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or not it.has("struct") or not _peer_pos.has(peer):
+		return
+
+	var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
+
+	if str(def.get("use", "")) != "split_log" or _peer_pos[peer].distance_to(it["pos"]) > float(def.get("use_reach_m", 3.0)):
+		return
+
+	var now: int = Time.get_ticks_msec()
+
+	if now - int(_last_use.get(peer, -100000)) < int(def.get("use_pace_ms", 600)):
+		return
+
+	var log_n: int = table.number_of("log")
+
+	if not _has_tool(inv, "axe"):
+		_say(peer, "You need an axe to split wood.")
+		return
+
+	if not inv.has(log_n, 1):
+		_say(peer, "You need a log to split.")
+		return
+
+	_last_use[peer] = now
+	inv.remove(log_n, 1)
+	var wood: int = table.number_of("firewood")
+	var left: int = inv.add(wood, int(def.get("logs_to_firewood", 4)))
+
+	if left > 0:
+		drop_in_world(wood, left, _peer_pos[peer])
+
+	_wear_tool(peer, inv, "axe")
 	_dirty = true
 
 

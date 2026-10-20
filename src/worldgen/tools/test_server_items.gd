@@ -589,5 +589,43 @@ func _init() -> void:
 	ch2.action(1, Net.ACT_PICKUP, chest2, 0, 0, Vector3.ZERO)
 	check(not ch2._items.has(chest2) and ch2.inventory_of(1).count_of(ch2.table.number_of("chest_kit")) == 1 and ch2._chests.is_empty(), "an empty chest comes down and gives the kit back")
 
+	# Chopping block.
+	var bd: String = "user://test_server_items_block"
+	DirAccess.make_dir_recursive_absolute(bd)
+
+	for file in DirAccess.get_files_at(bd):
+		DirAccess.remove_absolute(bd + "/" + file)
+
+	var cb = make(bd)
+	cb.ground_height = func(x, z): return 10.0
+	var notes: Array = []
+	cb.send_notice = func(_p, text): notes.append(text)
+	cb.peer_connected_hello(1, "abcdef123456")
+	cb.report_position(1, Vector3(0.0, 10.0, 0.0))
+	cb.action(1, Net.ACT_ADMIN_GIVE, cb.table.number_of("chopping_block_kit"), 0, 1, Vector3.ZERO)
+	cb.action(1, Net.ACT_PLACE, cb.inventory_of(1).numbers.find(cb.table.number_of("chopping_block_kit")), 0, 0, Vector3(2.0, 10.0, 0.0))
+	var block_id: int = 0
+
+	for k in cb._items:
+		if cb._items[k].has("struct"):
+			block_id = k
+
+	check(block_id != 0, "a chopping block is placed")
+	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, 0, Vector3.ZERO)
+	check(notes.size() == 1, "no axe: told so")
+	cb.action(1, Net.ACT_ADMIN_GIVE, cb.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
+	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, 0, Vector3.ZERO)
+	check(notes.size() == 2, "no log: told so")
+	cb.action(1, Net.ACT_ADMIN_GIVE, cb.table.number_of("log"), 0, 2, Vector3.ZERO)
+	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, 0, Vector3.ZERO)
+	var firewood_n: int = cb.table.number_of("firewood")
+	check(cb.inventory_of(1).count_of(firewood_n) == 4 and cb.inventory_of(1).count_of(cb.table.number_of("log")) == 1, "one log makes four firewood")
+	check(cb.inventory_of(1).wear[cb.inventory_of(1).numbers.find(cb.table.number_of("stone_axe"))] == 1, "and wears the axe one use")
+	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, 0, Vector3.ZERO)
+	check(cb.inventory_of(1).count_of(firewood_n) == 4, "the pace limit holds")
+	cb._last_use.clear()
+	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, 0, Vector3.ZERO)
+	check(cb.inventory_of(1).count_of(firewood_n) == 8, "the second log splits too")
+
 	print("server item tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

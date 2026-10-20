@@ -19,7 +19,13 @@
 	"pace_ms": 1200,
 	"fuel": {
 		"stick": 120.0,
-		"log": 600.0
+		"log": 600.0,
+		"firewood": 300.0
 	},
-	"max_burn_s": 3600.0
+	"max_burn_s": 3600.0,
+	"fuel_order": [
+		"firewood",
+		"stick",
+		"log"
+	]
 }
