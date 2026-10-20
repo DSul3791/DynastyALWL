@@ -236,6 +236,9 @@ var connected_msec: int = 0
 var settled_msec: int = 0
 var world: Dictionary = {}
 var _budget_check_msec: int = 0
+var _cache_task: int = -1               # WorkerThreadPool task doing the cache flush and size check
+var _cache_tile: Vector2i = Vector2i.ZERO
+var _cache_removed: int = 0
 var _report_msec: int = 0
 var dig_applied: int = 0
 var flora                             # FloraView
@@ -1933,15 +1936,23 @@ func _process(delta: float) -> void:
 		_aim_pos = here
 
 	if now >= _budget_check_msec:
+		# Writing the pending blocks and counting the cache folder's size are disk work (on a
+		# slow disk, tens to hundreds of ms): a worker thread does it, one run at a time.
 		_budget_check_msec = now + 15000
-		var tc: int = Probe.start()
-		cache.flush()
-		var p: Vector3 = body.global_position
-		var removed: int = cache.enforce_budget(cache.tile_of_block(Vector3i(int(floor(p.x / 16.0)), 0, int(floor(p.z / 16.0))), 0))
-		Probe.stop("cache upkeep", tc)
 
-		if removed > 0:
-			print("Terrain client: cache over %d MB, removed %d far tiles" % [cache_mb, removed])
+		if _cache_task >= 0 and not WorkerThreadPool.is_task_completed(_cache_task):
+			_budget_check_msec = now + 2000
+		else:
+			if _cache_task >= 0:
+				WorkerThreadPool.wait_for_task_completion(_cache_task)
+
+				if _cache_removed > 0:
+					print("Terrain client: cache over %d MB, removed %d far tiles" % [cache_mb, _cache_removed])
+
+			var p: Vector3 = body.global_position
+			_cache_tile = cache.tile_of_block(Vector3i(int(floor(p.x / 16.0)), 0, int(floor(p.z / 16.0))), 0)
+			_cache_removed = 0
+			_cache_task = WorkerThreadPool.add_task(_cache_upkeep)
 
 	settled_msec = stream.last_load_msec - connected_msec
 
@@ -2664,13 +2675,28 @@ func _finish(code: int) -> void:
 	if stream != null:
 		stream.close()
 
+	_finish_cache_task()
+
 	if cache != null:
 		cache.flush()
 
 	get_tree().quit(code)
 
 
+# Worker thread: writes pending blocks and keeps the cache folder inside its size limit.
+func _cache_upkeep() -> void:
+	cache.flush()
+	_cache_removed = cache.enforce_budget(_cache_tile)
+
+
+func _finish_cache_task() -> void:
+	if _cache_task >= 0:
+		WorkerThreadPool.wait_for_task_completion(_cache_task)
+		_cache_task = -1
+
+
 func _exit_tree() -> void:
+	_finish_cache_task()
 	_drain_incoming()
 	if stream != null:
 		stream.close()

@@ -184,8 +184,12 @@ func save_block(buffer: VoxelBuffer, block: Vector3i, lod: int) -> void:
 	_stream_for(tile_of_block(block, lod)).save_voxel_block(buffer, block, lod)
 
 
-# Writes pending blocks to disk.
+# Writes pending blocks to disk. CACHE_SLOW_MS (a test setting) adds that many ms to each flush, to
+# try a slow disk.
 func flush() -> void:
+	if OS.has_environment("CACHE_SLOW_MS"):
+		OS.delay_msec(int(OS.get_environment("CACHE_SLOW_MS")))
+
 	_mutex.lock()
 	var streams: Array = _streams.values()
 	_mutex.unlock()
