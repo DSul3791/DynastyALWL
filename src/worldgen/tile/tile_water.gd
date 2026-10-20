@@ -537,6 +537,9 @@ func _carve_guides(rivers: Array) -> void:
 		_bench(carved, centre, radius_here + pond_shore, level, wall_fade)
 		_stamp_pond(carved, centre, radius_here, level - pond_depth, level, start_km2 / cell_km2, best_flow, max_rim_range + 4.0, wall_fade, pond_shore)
 
+	# The land with its pond benches, before any river or brook is cut (brooks follow it,
+	# pond rims are restored no higher than it).
+	var bench_land: PackedFloat32Array = carved.duplicate()
 	var ponds_placed: Array = []          # [centre, rim height] of every head pond so far
 	river_cells = 0
 
@@ -602,7 +605,10 @@ func _carve_guides(rivers: Array) -> void:
 				continue
 
 			usable[k] = 1
-			low_values[k] = _bilinear(heights, point) - depth
+			# Measured on the land with its pond benches (owner report 2026-10-20: a river
+			# measured on the ground under a bench cut a slot back through the bench, so the
+			# pond's stream ran in a trench instead of over the edge).
+			low_values[k] = _bilinear(bench_land, point) - depth
 
 		# Lowest value over a trailing window, taken only over usable points.
 		var step_m: float = 4.0
@@ -667,6 +673,14 @@ func _carve_guides(rivers: Array) -> void:
 
 			if usable[up_k] == 1 and usable[down_k] == 1 and down_k > up_k:
 				var face: float = (low_values[up_k] - low_values[down_k]) / (float(down_k - up_k) * step_m)
+
+				# Owner report (2026-10-20): a stream leaving a pond on a cliff top ran in a slot cut
+				# into the top instead of going over the edge, because the face measured over
+				# six steps was gentler than the cliff itself. The steepest single step counts too.
+				for near_k in range(maxi(k - 1, 0), mini(k + 1, count - 1)):
+					if usable[near_k] == 1 and usable[near_k + 1] == 1:
+						face = maxf(face, (low_values[near_k] - low_values[near_k + 1]) / step_m)
+
 				bank_here = maxf(slope, face * 1.25)
 
 			_stamp_at(carved, points[k], widths[k], depths[k], bed, bank_here, strength, best_flow)
@@ -791,7 +805,7 @@ func _carve_guides(rivers: Array) -> void:
 			for point in paths[h]:
 				path.append(Vector2(point) / spacing_m - Vector2(float(_origin_sx), float(_origin_sz)))
 
-			_cut_brook_path(carved, centre, float(pond.get("radius", pond_radius)), float(pond["level"]), path, float(head_levels[h]) - brook_depth, brook_width * brook_scale, brook_depth, slope, start_km2 / cell_km2, best_flow)
+			_cut_brook_path(carved, bench_land, centre, float(pond.get("radius", pond_radius)), float(pond["level"]), path, float(head_levels[h]) - brook_depth, brook_width * brook_scale, brook_depth, slope, start_km2 / cell_km2, best_flow)
 
 	# Owner report (2026-10-20): gorges end in odd protruding edges: knobs and spurs of the
 	# old ground left standing between the stamps of the bed and the banks. On cut ground
@@ -825,17 +839,20 @@ func _carve_guides(rivers: Array) -> void:
 	# brook's own starting bed, so every way out leaves at that height.
 	for pond in _world_ponds:
 		var centre: Vector2 = Vector2(pond["centre"]) / spacing_m - Vector2(float(_origin_sx), float(_origin_sz))
-		_seal_pond_rim(carved, centre, float(pond.get("radius", pond_radius)), float(pond["level"]) - 1.5, pond_shore)
+		_seal_pond_rim(carved, bench_land, centre, float(pond.get("radius", pond_radius)), float(pond["level"]) - 1.5, pond_shore)
 
 	for placed in ponds_placed:
-		_seal_pond_rim(carved, placed[0], placed[2], placed[1] - 1.5, pond_shore)
+		_seal_pond_rim(carved, PackedFloat32Array(), placed[0], placed[2], placed[1] - 1.5, pond_shore)
 
 	heights = carved
 	longest_river_m = longest
 
 
-# Raises the ground from a pond's edge out across its shore to at least `lip`.
-func _seal_pond_rim(carved: PackedFloat32Array, centre: Vector2, radius_m: float, lip: float, shore_m: float) -> void:
+# Raises the ground from a pond's edge out across its shore to at least `lip`, but never
+# above the land before the rivers were cut (`land`): ground past the edge of the pond's
+# flat, over a cliff, is left alone instead of being built up into a wall (owner report
+# 2026-10-20: green fingers standing up around the top of a waterfall).
+func _seal_pond_rim(carved: PackedFloat32Array, land: PackedFloat32Array, centre: Vector2, radius_m: float, lip: float, shore_m: float) -> void:
 	var reach_cells: float = (radius_m + shore_m) / spacing_m + 1.0
 
 	for nr in range(maxi(int(ceil(centre.y - reach_cells)), 0), mini(int(floor(centre.y + reach_cells)), samples - 1) + 1):
@@ -843,7 +860,8 @@ func _seal_pond_rim(carved: PackedFloat32Array, centre: Vector2, radius_m: float
 			var distance: float = Vector2(float(nc), float(nr)).distance_to(centre) * spacing_m
 
 			if distance >= radius_m and distance <= radius_m + shore_m and _ocean[nr * samples + nc] != 1:
-				carved[nr * samples + nc] = maxf(carved[nr * samples + nc], lip)
+				var k: int = nr * samples + nc
+				carved[k] = maxf(carved[k], lip if land.is_empty() else minf(lip, land[k]))
 
 
 # Where a head pond fits around `centre` (sample coordinates): a pond whose rim varies by at most max_rim_range on the natural ground
@@ -895,7 +913,7 @@ func _pond_fit(carved: PackedFloat32Array, centre: Vector2, pond_radius: float, 
 # from just under the lip to the head (it depends only on the path, so every tile cuts the
 # same brook); where the land dips below that it runs on the land.
 func _cut_brook_path(
-	carved: PackedFloat32Array, pond_centre: Vector2, radius_m: float, rim: float, path: PackedVector2Array,
+	carved: PackedFloat32Array, land: PackedFloat32Array, pond_centre: Vector2, radius_m: float, rim: float, path: PackedVector2Array,
 	head_bed: float, width: float, depth: float, slope: float, strength: float, best_flow: PackedFloat32Array
 ) -> void:
 	var start_bed: float = rim - 1.5
@@ -928,7 +946,13 @@ func _cut_brook_path(
 			if point.x < -reach or point.y < -reach or point.x > float(samples - 1) + reach or point.y > float(samples - 1) + reach:
 				continue
 
-			_stamp_at(carved, point, width, depth, lerpf(start_bed, end_bed, along), slope, strength, best_flow)
+			# Owner report (2026-10-20): the brook ran in a slot cut straight through the edge
+			# of the pond's plateau instead of going over the cliff. Its bed is never more than
+			# its own depth under the land, so it crosses the flat in a shallow channel and
+			# falls down the face as a waterfall.
+			var bed: float = lerpf(start_bed, end_bed, along)
+			bed = maxf(bed, minf(_bilinear(land, point) - depth, start_bed))
+			_stamp_at(carved, point, width, depth, bed, slope, strength, best_flow)
 
 		done += length
 

@@ -16,6 +16,9 @@ var origin_sx: int = 0               # world sample index of sample 0 (east) and
 var origin_sz: int = 0               # of row 0 (south), in 8 m samples
 var heights: PackedFloat32Array = PackedFloat32Array()
 var valley_guides: Array = []        # world rivers near the frame (RiverNetwork.guides_in): the land is shaped into valleys around them
+var rock = null                      # optional TileGeology prepared for this frame (prepare_frame): ledges follow its rock layers
+var defer_strata: bool = false       # build_frame leaves the rock beds for add_strata (the baker runs it after erosion)
+var _detail_scale: PackedFloat32Array = PackedFloat32Array()
 
 var _settings
 var _elevation
@@ -117,9 +120,21 @@ func build_frame(origin_x: int, origin_z: int, count: int) -> void:
 		for i in range(samples):
 			heights[out + i] = w0 * line_0[i] + w1 * line_1[i] + w2 * line_2[i] + w3 * line_3[i]
 
-	var detail_scale: PackedFloat32Array = _shape_valleys()
-	_add_detail(detail_scale)
-	_add_strata(detail_scale)
+	_detail_scale = _shape_valleys()
+	_add_detail(_detail_scale)
+
+	if not defer_strata:
+		add_strata()
+
+
+# Rock beds: ledges and cliffs where hard beds crop out. With `rock` set (a TileGeology
+# prepared for this frame) the beds are the real rock layers; without, synthetic beds.
+# The baker defers this until after erosion, so ledges show where erosion left the rock.
+func add_strata() -> void:
+	if rock != null:
+		_add_rock_beds(_detail_scale)
+	else:
+		_add_strata(_detail_scale)
 
 
 # Owner (2026-10-19): rivers run at the bottom of real valleys. Around every world river
@@ -449,3 +464,163 @@ func _noise_field(purpose: String, wavelength_m: float) -> PackedFloat32Array:
 		field[index] = float(data[index]) / 127.5 - 1.0
 
 	return field
+
+
+# Owner (2026-10-20): the land is made from its rock. Where a bed of hard rock (sandstone,
+# limestone, basalt ...) crops out it stands as a ledge or cliff with a flat bench on top,
+# and soft beds between wear into gentle slopes. Same remap as _add_strata, but the beds
+# are the real layers of TileGeology at each sample's height: a thick hard layer is split
+# into beds about bed_m thick, and how strongly a rock forms ledges comes from
+# rock.ledges. Granite and other massive rock (bodies, base rock) stays rounded. Where
+# provinces meet the layers jump, so the change is blended across the border.
+func _add_rock_beds(detail_scale: PackedFloat32Array) -> void:
+	if not _rules.has("strata") or not _rules.has("rock"):
+		return
+
+	var rules: Dictionary = _rules["strata"]
+	var ledges: Dictionary = _rules["rock"]["ledges"]
+	var bed: float = float(rules["bed_m"])
+	var talus: float = float(rules["talus_part"])
+	var cliff: float = float(rules["cliff_part"])
+	var talus_rate: float = float(rules["talus_steepen"])
+	var bench_rate: float = float(rules["bench_flatten"])
+	var cliff_rate: float = (1.0 - talus * talus_rate - (1.0 - talus - cliff) * bench_rate) / cliff
+	var land_from: float = float(rules["land_from_m"])
+	var land_full: float = float(rules["land_full_m"])
+	var seed_value: int = SeedUtil.purpose_seed(_settings.master_seed, "strata_beds", 0)
+	var total: int = samples * samples
+	var ledge_of: Dictionary = {}
+
+	for name in ledges.keys():
+		ledge_of[name] = float(ledges[name])
+
+	var ledge_by_id: PackedFloat32Array = PackedFloat32Array()
+	ledge_by_id.resize(256)
+
+	for id in range(256):
+		ledge_by_id[id] = float(ledge_of.get(rock.rock_name(id), 0.0))
+
+	var delta: PackedFloat32Array = PackedFloat32Array()
+	delta.resize(total)
+	# The beds are found on a softened copy of the land: a cliff steepens the slope several
+	# times over, so on the raw land every small bump of the detail noise near a bed's edge
+	# would stand up as a spike.
+	var smooth: PackedFloat32Array = _box_blur(heights, int(rules.get("bed_smooth_samples", 1)))
+
+	for index in range(total):
+		var h: float = smooth[index]
+
+		if h <= land_from:
+			continue
+
+		var strength: float = smoothstep(land_from, land_full, h)
+
+		if not detail_scale.is_empty():
+			strength *= detail_scale[index]
+
+		if strength <= 0.0:
+			continue
+
+		var layer: Vector4 = rock.layer_at(index, h)
+		var ledge: float = ledge_by_id[int(layer.x)]
+		var thickness: float = layer.z - layer.y
+
+		if ledge <= 0.0 or thickness <= 1.0 or thickness > 600.0:
+			continue
+
+		var beds_in_layer: int = maxi(int(round(thickness / bed)), 1)
+		var sub: float = thickness / float(beds_in_layer)
+		var position: float = (h - layer.y) / sub
+		var bed_index: int = clampi(int(floor(position)), 0, beds_in_layer - 1)
+		var t: float = clampf(position - float(bed_index), 0.0, 1.0)
+		# Each bed its own strength: some low ledges, some tall cliffs.
+		strength *= ledge * (0.4 + 0.6 * _bed_hash(int(layer.w) * 31 + bed_index, seed_value))
+		var rise: float
+
+		if t < talus:
+			rise = t * talus_rate
+		elif t < talus + cliff:
+			rise = talus * talus_rate + (t - talus) * cliff_rate
+		else:
+			rise = talus * talus_rate + cliff * cliff_rate + (t - talus - cliff) * bench_rate
+
+		delta[index] = (rise - t) * sub * strength
+
+	# Blend across province borders (the layers jump there): a box blur of the change on
+	# samples within `reach` of a border, in two passes.
+	var reach: int = int(rules.get("border_blend_samples", 4))
+	var province: PackedByteArray = rock.province
+	var near_border: PackedByteArray = PackedByteArray()
+	near_border.resize(total)
+
+	for j in range(samples):
+		for i in range(samples):
+			var index: int = j * samples + i
+			var p: int = province[index]
+
+			for step in [Vector2i(reach, 0), Vector2i(-reach, 0), Vector2i(0, reach), Vector2i(0, -reach)]:
+				var ni: int = clampi(i + step.x, 0, samples - 1)
+				var nj: int = clampi(j + step.y, 0, samples - 1)
+
+				if province[nj * samples + ni] != p:
+					near_border[index] = 1
+					break
+
+	for axis in range(2):
+		var before: PackedFloat32Array = delta.duplicate()
+
+		for j in range(samples):
+			for i in range(samples):
+				var index: int = j * samples + i
+
+				if near_border[index] == 0:
+					continue
+
+				var sum: float = 0.0
+				var count: int = 0
+
+				for k in range(-reach, reach + 1):
+					var ni: int = i + (k if axis == 0 else 0)
+					var nj: int = j + (k if axis == 1 else 0)
+
+					if ni < 0 or nj < 0 or ni >= samples or nj >= samples:
+						continue
+
+					sum += before[nj * samples + ni]
+					count += 1
+
+				delta[index] = sum / float(count)
+
+	for index in range(total):
+		if delta[index] != 0.0:
+			heights[index] += delta[index]
+
+
+# A box blur of `field` (samples x samples) over (2 radius + 1) squared, two passes.
+func _box_blur(field: PackedFloat32Array, radius: int) -> PackedFloat32Array:
+	if radius <= 0:
+		return field.duplicate()
+
+	var out: PackedFloat32Array = field.duplicate()
+
+	for axis in range(2):
+		var source: PackedFloat32Array = out.duplicate()
+
+		for j in range(samples):
+			for i in range(samples):
+				var sum: float = 0.0
+				var count: int = 0
+
+				for k in range(-radius, radius + 1):
+					var ni: int = i + (k if axis == 0 else 0)
+					var nj: int = j + (k if axis == 1 else 0)
+
+					if ni < 0 or nj < 0 or ni >= samples or nj >= samples:
+						continue
+
+					sum += source[nj * samples + ni]
+					count += 1
+
+				out[j * samples + i] = sum / float(count)
+
+	return out

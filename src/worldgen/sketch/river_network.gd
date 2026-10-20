@@ -43,6 +43,10 @@ var _area_cells: PackedFloat32Array = PackedFloat32Array()
 var _waves: Array = []             # meander waves: [kx, kz, phase, dx, dz, amplitude]
 var _heights: PackedFloat32Array = PackedFloat32Array()   # the world elevation (meters)
 var _filled: PackedFloat32Array = PackedFloat32Array()    # elevation with basins filled (water runs down it)
+var _valley_cells: Dictionary = {}   # Vector2i -> [[chain, x, z, level, floor half, wall half]] (place_ponds)
+var _valley_cell_m: float = 480.0
+var _edge_clear_m: float = 60.0       # how far past a pond's shore the ground may not fall away
+var _search_m: float = 480.0          # how far around a pond's best spot to look for flat ground clear of edges
 var valley_snap_m: float = 72.0      # how far a river may slide sideways into the bottom of its valley
 var meander_flat_slope: float = 0.02   # the meander is at full strength on ground flatter than this
 var meander_steep_slope: float = 0.08  # and gone on ground steeper than this (owner 2026-10-19: no sideways wiggle on slopes)
@@ -429,7 +433,8 @@ static func _cubic(t: float) -> PackedFloat32Array:
 # then builds the plateau), then moves back from the edge of that flat by up to setback_m.
 # Heads that end up close together share a pond. Worked out once for the world, so every
 # tile that touches a pond makes exactly the same one. Call after build().
-func place_ponds(rules: Dictionary) -> void:
+func place_ponds(rules: Dictionary, valley_rules: Dictionary = {}) -> void:
+	_build_valley_index(valley_rules)
 	var radius: float = float(rules.get("head_pond_diameter_m", 70.0)) * 0.5
 	var shore: float = float(rules.get("head_pond_shore_m", 40.0))
 	var back: float = float(rules.get("head_pond_back_m", 30.0))
@@ -465,7 +470,7 @@ func place_ponds(rules: Dictionary) -> void:
 		# Owner (2026-10-19): the pond goes on the first flat ground above the head, not on
 		# a summit far above it.
 		while climbed <= search_m and smooth_height(spot.x, spot.y) - head_height <= climb_max:
-			var score: float = _pond_score(spot, radius, shore, rim_range)
+			var score: float = _pond_score(spot, radius, shore, rim_range, c)
 
 			if score <= 0.0:
 				found = true
@@ -487,6 +492,18 @@ func place_ponds(rules: Dictionary) -> void:
 
 		path = path.slice(0, best_at + 1)
 		spot = path[path.size() - 1]
+
+		# Owner (2026-10-20): a pond is never left with one side cut off by a valley wall.
+		# When the fall line found no flat ground clear of every drop, look around the best
+		# spot (nearest first) for one, no higher than the climb allows.
+		if not found:
+			var around: Vector2 = _search_around(spot, radius, shore, rim_range, c, head_height + climb_max)
+
+			if around.x != INF:
+				found = true
+				spot = around
+				path.append(spot)
+
 		var pond_radius: float = radius
 
 		# Owner (2026-10-19): ponds vary from the smallest size up to small lakes. Each pond
@@ -496,7 +513,7 @@ func place_ponds(rules: Dictionary) -> void:
 			var draw: float = _hash01(spot)
 			var wanted: float = lerpf(radius, radius_max, draw * draw)
 
-			while pond_radius + 5.0 <= wanted and _pond_score(spot, pond_radius + 5.0, shore, rim_range) <= 0.0:
+			while pond_radius + 5.0 <= wanted and _pond_score(spot, pond_radius + 5.0, shore, rim_range, c) <= 0.0:
 				pond_radius += 5.0
 
 		# Back from the edge of the flat, so the stream crosses it before dropping.
@@ -504,7 +521,7 @@ func place_ponds(rules: Dictionary) -> void:
 			var away: Vector2 = (spot - path[maxi(path.size() - 2, 0)]).normalized()
 			var moved: float = 0.0
 
-			while moved < setback_m and _pond_score(spot + away * 8.0, pond_radius, shore, rim_range) <= 0.0:
+			while moved < setback_m and _pond_score(spot + away * 8.0, pond_radius, shore, rim_range, c) <= 0.0:
 				spot += away * 8.0
 				moved += 8.0
 
@@ -540,23 +557,139 @@ static func _hash01(point: Vector2) -> float:
 
 
 # How far a spot is from fitting a pond: 0 or less when the rim (and, at up to twice the
-# range, the shore's outer edge) is flat enough on the smooth land.
-func _pond_score(spot: Vector2, radius: float, shore: float, rim_range: float) -> float:
+# range, the shore's outer edge) is flat enough. Measured on the land as the tiles will
+# shape it into valleys (owner report 2026-10-20: a pond on smooth land sat at the top of
+# a valley wall the tile then cut, so one side of it hung over a cliff), and the ground a
+# little beyond the shore may not fall away more than four times the range: the flat is
+# back from any edge, blended into the hillside. `own` is the pond's own river, whose
+# valley is where the pond drains and is left out.
+func _pond_score(spot: Vector2, radius: float, shore: float, rim_range: float, own: int = -1) -> float:
+	# The smooth land first (cheap); the valley-shaped land only for spots that pass it.
+	var smooth_score: float = _ring_score(spot, radius, shore, rim_range, own, false)
+
+	if smooth_score > 0.0 or _valley_cells.is_empty():
+		return smooth_score
+
+	return _ring_score(spot, radius, shore, rim_range, own, true)
+
+
+func _ring_score(spot: Vector2, radius: float, shore: float, rim_range: float, own: int, shaped: bool) -> float:
 	var low: float = INF
 	var high: float = -INF
 	var outer_low: float = INF
 	var outer_high: float = -INF
+	var edge_low: float = INF
+	var rim: Array = []
 
 	for r in range(16):
 		var direction: Vector2 = Vector2(cos(TAU * float(r) / 16.0), sin(TAU * float(r) / 16.0))
-		var h: float = smooth_height(spot.x + direction.x * radius, spot.y + direction.y * radius)
+		var a: Vector2 = spot + direction * radius
+		var b: Vector2 = spot + direction * (radius + shore)
+		var h: float = shaped_height(a.x, a.y, own) if shaped else smooth_height(a.x, a.y)
+		var o: float = shaped_height(b.x, b.y, own) if shaped else smooth_height(b.x, b.y)
 		low = minf(low, h)
 		high = maxf(high, h)
-		var o: float = smooth_height(spot.x + direction.x * (radius + shore), spot.y + direction.y * (radius + shore))
+		rim.append(h)
 		outer_low = minf(outer_low, o)
 		outer_high = maxf(outer_high, o)
 
-	return maxf((high - low) - rim_range, (outer_high - outer_low) - 2.0 * rim_range)
+		if shaped:
+			var e: Vector2 = spot + direction * (radius + shore + _edge_clear_m)
+			edge_low = minf(edge_low, shaped_height(e.x, e.y, own))
+
+	var score: float = maxf((high - low) - rim_range, (outer_high - outer_low) - 2.0 * rim_range)
+
+	if shaped:
+		rim.sort()
+		var middle: float = (float(rim[7]) + float(rim[8])) * 0.5
+		score = maxf(score, (middle - edge_low) - 4.0 * rim_range)
+
+	return score
+
+
+# The nearest spot within _search_m of `from` (rings 32 m apart, 24 directions) where a
+# pond fits and whose land is no higher than `highest`, or (INF, INF).
+func _search_around(from: Vector2, radius: float, shore: float, rim_range: float, own: int, highest: float) -> Vector2:
+	for ring in range(1, int(_search_m / 32.0) + 1):
+		for r in range(24):
+			var angle: float = TAU * float(r) / 24.0
+			var spot: Vector2 = from + Vector2(cos(angle), sin(angle)) * 32.0 * float(ring)
+
+			if smooth_height(spot.x, spot.y) <= highest and _pond_score(spot, radius, shore, rim_range, own) <= 0.0:
+				return spot
+
+	return Vector2(INF, INF)
+
+
+# The land as a tile shapes it into valleys (TileHeight._shape_valleys, here from the world
+# river chains at their own points instead of a 32 m grid): lowered toward the nearest
+# river's level, fully on its floor and less up its walls. Leaves out chain `skip`.
+func shaped_height(x: float, z: float, skip: int = -1) -> float:
+	var h: float = smooth_height(x, z)
+
+	if _valley_cells.is_empty():
+		return h
+
+	var best_d2: float = INF
+	var best: Vector3 = Vector3.ZERO      # level, floor half width, wall half width
+	var cx: int = int(floor(x / _valley_cell_m))
+	var cz: int = int(floor(z / _valley_cell_m))
+
+	for gz in range(cz - 1, cz + 2):
+		for gx in range(cx - 1, cx + 2):
+			var key: Vector2i = Vector2i(gx, gz)
+
+			if not _valley_cells.has(key):
+				continue
+
+			for entry in _valley_cells[key]:
+				if int(entry[0]) == skip:
+					continue
+
+				var dx: float = float(entry[1]) - x
+				var dz: float = float(entry[2]) - z
+				var d2: float = dx * dx + dz * dz
+
+				if d2 < float(entry[5]) * float(entry[5]) and d2 < best_d2:
+					best_d2 = d2
+					best = Vector3(float(entry[3]), float(entry[4]), float(entry[5]))
+
+	if best_d2 == INF or h <= best.x:
+		return h
+
+	return best.x + (h - best.x) * smoothstep(best.y, best.z, sqrt(best_d2))
+
+
+func _build_valley_index(valley_rules: Dictionary) -> void:
+	_valley_cells = {}
+
+	if valley_rules.is_empty():
+		return
+
+	var floor_base: float = float(valley_rules["floor_half_m"])
+	var floor_scale: float = float(valley_rules["floor_half_per_sqrt_km2"])
+	var wall_base: float = float(valley_rules["half_width_m"])
+	var wall_scale: float = float(valley_rules["half_width_per_sqrt_km2"])
+	var wall_max: float = float(valley_rules["half_width_max_m"])
+	_valley_cell_m = wall_max
+
+	for c in range(chains.size()):
+		var points: PackedVector2Array = chains[c]["points"]
+		var areas: PackedFloat32Array = chains[c]["areas"]
+		var levels: PackedFloat32Array = chains[c]["levels"]
+
+		for k in range(points.size()):
+			var point: Vector2 = _meandered(points[k])
+			var root: float = sqrt(maxf(areas[k], 0.0))
+			var wall: float = minf(wall_base + wall_scale * root, wall_max)
+			var floor_half: float = minf(floor_base + floor_scale * root, wall * 0.5)
+			var level: float = minf(levels[k], smooth_height(point.x, point.y))
+			var key: Vector2i = Vector2i(int(floor(point.x / _valley_cell_m)), int(floor(point.y / _valley_cell_m)))
+
+			if not _valley_cells.has(key):
+				_valley_cells[key] = []
+
+			_valley_cells[key].append([c, point.x, point.y, level, floor_half, wall])
 
 
 func _rim_median(spot: Vector2, radius: float) -> float:

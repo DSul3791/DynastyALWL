@@ -60,7 +60,7 @@ func setup(world_directory: String, elevation_cell_m: float = 0.0) -> String:
 	river_network = RiverNetworkScript.new()
 	river_network.build(elevation, float(tile_rules["water"]["river_start_km2"]))
 	river_network.set_meander(tile_rules["water"].get("network_meander", []), SeedUtil.rng_for(settings.master_seed, "river_meander"))
-	river_network.place_ponds(tile_rules["water"])
+	river_network.place_ponds(tile_rules["water"], tile_rules.get("valleys", {}))
 	tables = TableSetScript.new()
 	var table_problems: Array = tables.load_directory()
 
@@ -150,6 +150,12 @@ func bake(tile: Vector2i) -> Dictionary:
 	if tile_rules.has("valleys"):
 		frame_height.valley_guides = river_network.guides_in(frame_rect.grow(float(tile_rules["valleys"]["half_width_max_m"])), 4.0)
 
+	# The rock under the frame (positions only), so erosion and ledges follow the real layers.
+	var frame_rock = TileGeologyScript.new()
+	frame_rock.setup(settings, tile_rules, tables, elevation, sketch)
+	frame_rock.prepare_frame(float(origin_sx) * float(settings.map_spacing_m), float(origin_sz) * float(settings.map_spacing_m), n)
+	frame_height.rock = frame_rock
+	frame_height.defer_strata = true
 	frame_height.build_frame(origin_sx, origin_sz, n)
 	timings["height"] = Time.get_ticks_msec() - clock
 	var raw_heights: PackedFloat32Array = crop(frame_height.heights, n, core)
@@ -162,9 +168,13 @@ func bake(tile: Vector2i) -> Dictionary:
 	core_height.heights = raw_heights
 	var erosion = TileErosionScript.new()
 	erosion.setup(settings, tile_rules)
-	erosion.build(core_height)
+	erosion.build(core_height, frame_rock, margin, n)
 	frame_height.heights = paste(frame_height.heights, n, erosion.heights, core)
 	timings["erosion"] = Time.get_ticks_msec() - clock
+	clock = Time.get_ticks_msec()
+	frame_height.add_strata()
+	erosion.heights = crop(frame_height.heights, n, core)
+	timings["ledges"] = Time.get_ticks_msec() - clock
 
 	clock = Time.get_ticks_msec()
 	var starter: Dictionary = starter_info(tile)

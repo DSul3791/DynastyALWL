@@ -11,6 +11,13 @@ extends RefCounted
 # the change fades in over the next `edge_fade_m`, so neighboring tiles
 # (and the margin each tile builds around itself) see identical ground along
 # the edge; sea cells are never changed and land stays land.
+#
+# Owner (2026-10-20): the land is made from its rock. With a TileGeology for the frame
+# (build's `rock`), each coarse point erodes as fast as the rock at its current height
+# allows: soft rock (shale, coal, chalk) wears down and its slopes soften quickly, hard
+# rock (sandstone, limestone, basalt, granite) stands. As the ground comes down it cuts
+# into new beds, so hard caps are left as hills and plateaus. The rivers carved later
+# (TileWater) ignore the rock: they go wherever the water flows.
 
 var samples: int = 0
 var heights: PackedFloat32Array = PackedFloat32Array()
@@ -19,14 +26,18 @@ var highest_fill_m: float = 0.0
 
 var _settings
 var _rules: Dictionary = {}
+var _hardness: Dictionary = {}       # rock name -> 0 (soft) .. 1 (hard), tile_rules rock.hardness
 
 
 func setup(settings, rules: Dictionary) -> void:
 	_settings = settings
 	_rules = rules["erosion"]
+	_hardness = rules.get("rock", {}).get("hardness", {})
 
 
-func build(height_map) -> void:
+# `rock` (optional): a TileGeology prepared for the frame this tile sits in, `margin`
+# samples beyond the tile on every side, `frame_samples` per side.
+func build(height_map, rock = null, margin: int = 0, frame_samples: int = 0) -> void:
 	samples = height_map.samples
 	var fine: PackedFloat32Array = height_map.heights
 	var spacing: float = height_map.spacing_m
@@ -59,8 +70,31 @@ func build(height_map) -> void:
 		if start[index] <= 0.0:
 			sea[index] = 1
 
-	for _iteration in range(int(_rules["iterations"])):
-		_erode_once(current, sea, coarse, dx)
+	# How easily each coarse point wears away (1 = the plain rate everywhere).
+	var erodibility: PackedFloat32Array = PackedFloat32Array()
+	erodibility.resize(coarse * coarse)
+	erodibility.fill(1.0)
+	var by_id: PackedFloat32Array = PackedFloat32Array()
+	var refresh: int = maxi(int(_rules.get("rock_refresh_iterations", 5)), 1)
+
+	if rock != null and not _hardness.is_empty():
+		var soft: float = float(_rules.get("soft_rate", 1.0))
+		var hard: float = float(_rules.get("hard_rate", 1.0))
+		by_id.resize(256)
+
+		for id in range(256):
+			var name: String = rock.rock_name(id)
+			by_id[id] = soft * pow(hard / soft, float(_hardness.get(name, 0.5)))
+
+	for iteration in range(int(_rules["iterations"])):
+		if not by_id.is_empty() and iteration % refresh == 0:
+			for row in range(coarse):
+				for column in range(coarse):
+					var index: int = row * coarse + column
+					var frame_index: int = (mini(row * step, samples - 1) + margin) * frame_samples + mini(column * step, samples - 1) + margin
+					erodibility[index] = by_id[int(rock.layer_at(frame_index, current[index]).x)]
+
+		_erode_once(current, sea, coarse, dx, erodibility)
 
 	# Change per coarse point, faded toward the tile edges.
 	var fade_cells: float = float(_rules["edge_fade_m"]) / dx
@@ -121,7 +155,7 @@ func build(height_map) -> void:
 
 
 # One erosion step on the coarse grid.
-func _erode_once(h: PackedFloat32Array, sea: PackedByteArray, size: int, dx: float) -> void:
+func _erode_once(h: PackedFloat32Array, sea: PackedByteArray, size: int, dx: float, erodibility: PackedFloat32Array) -> void:
 	var total: int = size * size
 	var receiver: PackedInt32Array = PackedInt32Array()
 	var order: PackedInt32Array = _drainage(h, sea, size, receiver)
@@ -156,7 +190,7 @@ func _erode_once(h: PackedFloat32Array, sea: PackedByteArray, size: int, dx: flo
 		if absi(down - index) != 1 and absi(down - index) != size:
 			distance = dx * 1.4142
 
-		var f: float = k_value * pow(area[index], exponent) / distance
+		var f: float = k_value * erodibility[index] * pow(area[index], exponent) / distance
 		h[index] = (h[index] + f * h[down]) / (1.0 + f)
 
 	# Diffusion on land (4 neighbors), explicit and gentle.
@@ -178,7 +212,7 @@ func _erode_once(h: PackedFloat32Array, sea: PackedByteArray, size: int, dx: flo
 				before[index - 1] + before[index + 1] + before[index - size] + before[index + size]
 				- 4.0 * before[index]
 			)
-			h[index] = maxf(before[index] + rate * laplacian, 0.05)
+			h[index] = maxf(before[index] + rate * erodibility[index] * laplacian, 0.05)
 
 
 # Drainage: fill pits (priority flood) with a tiny slope so every land cell
