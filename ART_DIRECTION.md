@@ -81,7 +81,7 @@ Every step gets a before-and-after render (cloud software rendering, `cloud-rend
 
 ## 5. Realism over storybook
 
-**[Decided] (owner, 2026-10-20: "to me the picture is right")** The picture is near-photoreal, while the earlier direction (DESIGN_IDEAS Section 1) said "the world looks like the best of old fantasy book illustrations" with slightly cartoonish characters. The picture wins. The world aims for natural, realistic materials and light with warm, rich colour, and "storybook" lives in the colour and mood rather than in painted shapes. The character style stays open until characters are built.
+**[Decided] (owner, 2026-10-20: "to me the picture is right")** The picture is near-photoreal, while the earlier direction (DESIGN_IDEAS Section 1) said "the world looks like the best of old fantasy book illustrations" with slightly cartoonish characters. The picture wins. The world aims for natural, realistic materials and light with warm, rich colour, and "storybook" lives in the colour and mood rather than in painted shapes. The character style is decided in section 10.
 
 ## 6. Time of day (owner feedback on build 66, 2026-10-20)
 
@@ -103,3 +103,7 @@ Target look: green meadow at the foot of a hill; as the slope grows the grass fa
 ## 9. Weather looks take zone, season and town spirit as inputs (owner, 2026-10-20)
 
 Weather is set by the north-south zone, every zone has seasons, dry zones stay dry and polar zones get snow instead of rain. A town's area is also shaped by its town spirit: high spirit gives mostly sun and warm, gentle, occasional nightly rain; low spirit gives heavy storms, lightning, blizzards, multi-day rain and very little sun. Sky, light, fog, rain, snow and wet-ground looks (and their sounds) should read three inputs: zone, season, spirit. Nothing built yet; `look_settings.gd` and `sky_clouds.gd` are where they will plug in.
+
+## 10. Character look (owner decision, 2026-10-20)
+
+**[Decided]** Characters are slightly stylised: heroic proportions and a hint of cartoon, not realistic, and lighter on older machines (a lower triangle and texture budget than the target picture's character, which was realistic). The world around them stays realistic. This unblocks character model work (Art queue item 7); the budget per character (triangles, bones, texture size, per tier) still goes through the asset budget table with Technical direction before any model is made.
