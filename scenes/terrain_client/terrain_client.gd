@@ -33,7 +33,7 @@ const Probe := preload("res://src/debug/frame_probe.gd")
 const CompassScript := preload("res://src/client/admin_compass.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 81
+const BUILD := 70
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -942,23 +942,27 @@ func _inspect_target() -> String:
 	return _ground_name(point - hit["normal"] * 0.4)
 
 
-# The ore, rock or soil at a point in the ground, as this character knows it.
+# The ore, rock or soil at a point in the ground, as this character knows it. Owner
+# (2026-10-20): the label must match what the player sees. Ore sits in the resource channel
+# all the way up to the surface, but under soil cover (grass, dirt, mud: the material
+# channel is a soil, not rock) the ore is buried and must not be named; only ore in bare rock
+# (material is rock) is exposed.
 func _ground_name(point: Vector3) -> String:
 	var tool: VoxelTool = terrain.get_voxel_tool()
 	var cell: Vector3i = Vector3i(point.floor())
+	tool.channel = Layout.CHANNEL_MATERIAL
+	var material: int = tool.get_voxel(cell)
+
+	if material < Layout.MATERIAL_ROCK:
+		return _known_from_table("soils", "s", material)
+
 	tool.channel = Layout.CHANNEL_RESOURCE
 	var resource: int = tool.get_voxel(cell)
 
 	if resource > 0:
 		return _known_from_table("resources", "o", resource)
 
-	tool.channel = Layout.CHANNEL_MATERIAL
-	var material: int = tool.get_voxel(cell)
-
-	if material >= Layout.MATERIAL_ROCK:
-		return _known_from_table("rocks", "r", material - Layout.MATERIAL_ROCK)
-
-	return _known_from_table("soils", "s", material)
+	return _known_from_table("rocks", "r", material - Layout.MATERIAL_ROCK)
 
 
 func _known_from_table(table: String, prefix: String, id: int) -> String:

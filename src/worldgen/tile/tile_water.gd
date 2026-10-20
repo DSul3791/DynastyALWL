@@ -862,7 +862,7 @@ func _carve_guides(rivers: Array) -> void:
 # the water's edge, and below a gentle fall from there outward: a river leaving the pond
 # starts at the pond's sill and runs smoothly down from it, never behind a ridge.
 func _guard_shore(centre: Vector2, radius_m: float, lip: float, shore_m: float) -> void:
-	var fall: float = float(_rules.get("head_pond_outlet_fall", 0.1))
+	var fall: float = float(_rules.get("head_pond_outlet_fall", 0.25))
 	var reach_cells: float = (radius_m + shore_m) / spacing_m + 1.0
 
 	for nr in range(maxi(int(ceil(centre.y - reach_cells)), 0), mini(int(floor(centre.y + reach_cells)), samples - 1) + 1):
@@ -944,6 +944,8 @@ func _cut_brook_path(
 ) -> void:
 	var start_bed: float = rim - 1.5
 	var end_bed: float = minf(head_bed, start_bed)
+	var outlet_min_width: float = float(_rules.get("head_pond_outlet_width_m", 24.0))
+	var outlet_blend: float = maxf(float(_rules.get("head_pond_outlet_blend_m", 60.0)), 1.0)
 	var reach: float = (width * 0.5 + (depth + 1.0) / slope) / spacing_m + 1.0
 	var total: float = 0.0
 
@@ -978,7 +980,14 @@ func _cut_brook_path(
 			# falls down the face as a waterfall.
 			var bed: float = lerpf(start_bed, end_bed, along)
 			bed = maxf(bed, minf(_bilinear(land, point) - depth, start_bed))
-			_stamp_at(carved, point, width, depth, bed, slope, strength, best_flow)
+
+			# Owner report (2026-10-20): the outlet showed a half bridge of land across it.
+			# Leaving the pond the channel is at least outlet_min_width_m across (a whole
+			# river's width, not a one-cell trickle), narrowing to the brook's own width
+			# over outlet_blend_m.
+			var from_edge: float = maxf(point.distance_to(pond_centre) * spacing_m - radius_m, 0.0)
+			var open_width: float = lerpf(maxf(width, outlet_min_width), width, clampf(from_edge / outlet_blend, 0.0, 1.0))
+			_stamp_at(carved, point, open_width, depth, bed, slope, strength, best_flow)
 
 		done += length
 

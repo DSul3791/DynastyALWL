@@ -181,11 +181,15 @@ void fragment() {
 	// Foam follows the water speed (about the square root of the slope): riffles on ordinary
 	// streams already show some, fast water much more.
 	float speed = sqrt(steep);
-	float foam = streaks * smoothstep(mix(0.2, 0.05, rough), mix(0.55, 0.3, rough), speed) * step(0.001, steep);
+	// Owner (2026-10-20): foam only behind rocks, on corners, over falls and down rapids; calm
+	// ponds and slow straight reaches have none. So the carried foam needs fast water (rapids
+	// and falls), the white water more so, and the line along a shore only where the water
+	// runs (a bank or rock in fast water), barely at all on still water.
+	float foam = streaks * smoothstep(mix(0.5, 0.3, rough), mix(0.85, 0.6, rough), speed) * step(0.001, steep);
 	// White water breaking on the fastest stretches when the flow is high.
 	float white = running && rough > 0.001 ? mix(ripples(p * 1.7 - velocity * phase0 * cycle * 1.7 / scale), ripples(p * 1.7 + 5.0 - velocity * phase1 * cycle * 1.7 / scale), blend) : 0.0;
-	foam = max(foam, smoothstep(0.5, 0.75, white) * rough * smoothstep(0.1, 0.4, speed));
-	foam = max(foam, shore_foam * 0.8);
+	foam = max(foam, smoothstep(0.5, 0.75, white) * rough * smoothstep(0.4, 0.7, speed));
+	foam = max(foam, shore_foam * 0.8 * smoothstep(0.25, 0.55, speed));
 	foam *= 1.0 / (1.0 + distance_m / 120.0);
 
 	vec3 water = mix(mix(shallow_color, deep_color, murk), mud_color * mix(1.0, 0.7, murk), mud);
