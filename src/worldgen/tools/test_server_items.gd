@@ -102,14 +102,21 @@ func _init() -> void:
 	var g = make("user://test_server_items_b")
 	g.ground_height = func(x, z): return 20.0 + x * 0.1
 	g.world_seed = 5
+	var clock: Array = [1000.0]
+	g.game_seconds = func(): return clock[0]
+	g.season_now = func(): return "summer"
 	g.peer_connected_hello(1, "abcdef123456")
 	g.report_position(1, Vector3(500.0, 70.0, 500.0))
-	check(g.gather(1, "flax", "plant", 77, Vector3(501.0, 70.0, 500.0)), "flax can be gathered")
+	check(g.gather(1, "flax", "plant", "0,0,77", 77, Vector3(501.0, 70.0, 500.0)), "flax can be gathered")
 	check(g.inventory_of(1).count_of(g.table.number_of("plant_fibre")) >= 2, "flax gives fibre")
-	check(g.gather(1, "hazel", "shrub", 78, Vector3(501.0, 70.0, 500.0)), "shrubs give sticks")
+	check(g.gather(1, "hazel", "shrub", "0,0,78", 78, Vector3(501.0, 70.0, 500.0)), "shrubs give sticks")
 	check(g.inventory_of(1).count_of(g.table.number_of("stick")) >= 1, "got sticks")
-	check(not g.gather(1, "dandelion", "plant", 79, Vector3(501.0, 70.0, 500.0)), "no drop entry, no gather")
-	check(not g.gather(1, "flax", "plant", 80, Vector3(520.0, 70.0, 500.0)), "too far to gather")
+	check(g.gather(1, "dandelion", "plant", "0,0,79", 79, Vector3(501.0, 70.0, 500.0)), "dandelion gives its leaves, roots or flowers in season")
+	check(g.inventory_of(1).count_of(g.table.number_of("dandelion_leaves")) + g.inventory_of(1).count_of(g.table.number_of("dandelion_roots")) + g.inventory_of(1).count_of(g.table.number_of("dandelion_flowers")) >= 1, "got a dandelion yield")
+	check(not g.gather(1, "flax", "plant", "0,0,77", 77, Vector3(501.0, 70.0, 500.0)), "a picked plant is bare until it regrows")
+	clock[0] += ItemsScript.REGROW_GAME_S + 1.0
+	check(g.gather(1, "flax", "plant", "0,0,77", 77, Vector3(501.0, 70.0, 500.0)), "and bears again after 3 game days")
+	check(not g.gather(1, "flax", "plant", "0,0,80", 80, Vector3(520.0, 70.0, 500.0)), "too far to gather")
 	g.tick(2.0)
 	var loose: int = g.world_item_count()
 	check(loose > 0, "loose stones and sticks are laid out around the player")

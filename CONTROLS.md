@@ -26,7 +26,7 @@ Tracks what the controls are now and what is planned. Update it whenever a contr
 | Left click | Use the held item (spear: jab; stone axe: swing, with the hit sound of what it strikes, and a blow on bare rock gives a stone; a held torch lights the way) |
 | Right click (hold) | Spear: aim a throw; then left click throws. Letting go returns to the normal stance |
 | Left click with a campfire kit held | Place the fire where the ring shows: yellow ring = open ground (rain puts the fire out), green = under a tree's crown (the fire survives rain) |
-| E | Pick up the nearest item on the ground within 3 m; with nothing there, gather the nearest plant or shrub within 2.5 m (flax, nettle and reeds give fibre, shrubs give sticks) |
+| E | Pick up the nearest item on the ground within 3 m; with nothing there, pick from the nearest plant or shrub within 2.5 m (fibre, sticks and, in season, its berries, leaves, roots or nuts; the plant stays and bears again after 3 game days) |
 | ] | Admin test tool: give 10 each of stone, stick, plant fibre and log |
 
 Gait rules:

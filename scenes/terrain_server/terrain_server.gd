@@ -167,6 +167,8 @@ func _ready() -> void:
 	items.world_seed = int(settings.master_seed)
 	items.rain_now = func(): return float(weather.get("rain", 0.0))
 	items.cover_at = _cover_at
+	items.game_seconds = func(): return game_clock.seconds
+	items.season_now = func(): return game_clock.season()
 	items.rock_at = func(x, z):
 		var tile_data = generator.get_tile(generator.tile_of(x, z))
 
@@ -476,7 +478,7 @@ func _cover_at(point: Vector3) -> float:
 
 
 func _on_cut_flora_requested(peer_id: int, chunk: Vector2i, id: int) -> void:
-	# Gathering (E): a plant or shrub gives what drops.json says, and only then is it removed.
+	# Gathering (E): a plant or shrub is picked: it gives what drops.json and its season allow and then rests.
 	# Trees are felled, not gathered (tree-fall comes later).
 	var home: Vector2i = flora.placer.normalize(chunk)
 	var all: Dictionary = flora.placer.chunk_items(home)
@@ -486,12 +488,8 @@ func _on_cut_flora_requested(peer_id: int, chunk: Vector2i, id: int) -> void:
 	if at < 0 or species.is_empty() or int(species["kind"]) == PlacerScript.KIND_TREE:
 		return
 
-	if not items.gather(peer_id, str(species["name"]), PlacerScript.KINDS[int(species["kind"])], id, all["positions"][at]):
-		return
-
-	if flora.cut(chunk, id):
-		net.flora_cut.rpc(chunk, id)
-		print("Cut flora item %d in chunk %s" % [id, str(chunk)])
+	# The plant stays; it is picked bare for a while (server_items.gd).
+	items.gather(peer_id, str(species["name"]), PlacerScript.KINDS[int(species["kind"])], "%d,%d,%d" % [home.x, home.y, id], id, all["positions"][at])
 
 
 func _on_dig_requested(_peer_id: int, center: Vector3, radius: float) -> void:

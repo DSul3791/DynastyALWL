@@ -4,6 +4,7 @@ extends RefCounted
 # Shared by server and client. Numbers are stable save ids; names are for code.
 
 const PATH := "res://data/items/items.json"
+const GATHERED_PATH := "res://data/items/gathered.json"   # one plain material per flora yield (tools/gen_gathered_items.py)
 
 var _by_id: Dictionary = {}        # String id -> entry (with "id" added)
 var _by_number: Dictionary = {}    # int number -> entry
@@ -12,6 +13,7 @@ var _by_number: Dictionary = {}    # int number -> entry
 static func load_default():
 	var table = load("res://src/shared/item_table.gd").new()
 	table.load_file(PATH)
+	table.load_file(GATHERED_PATH)
 	return table
 
 

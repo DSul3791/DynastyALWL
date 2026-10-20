@@ -23,6 +23,7 @@ const DROP_REACH_M := 6.0                # a drop lands at most this far from wh
 const SYNC_EVERY_S := 1.0
 const SAVE_EVERY_S := 30.0
 const DROPS_PATH := "res://data/items/drops.json"
+const REGROW_GAME_S := 3.0 * 86400.0     # a picked plant bears again after 3 game days
 const GATHER_M := 5.0                    # how far from the plant a gather request may come
 const SCATTER_RADIUS_M := 96.0           # loose stones and sticks are laid out this far around players
 const SCATTER_DROP_M := 250.0            # and taken away again beyond this (picked-up ones stay gone)
@@ -55,6 +56,8 @@ var ground_height: Callable    # (x, z) -> ground height in metres, or NAN; set 
 var world_seed: int = 0
 var rain_now: Callable         # () -> rain strength 0 to 1 over the world now; set by the server scene
 var rock_at: Callable          # (x, z) -> true when bare rock shows at the surface there (no soil cover); set by the server scene
+var game_seconds: Callable      # () -> game clock seconds
+var season_now: Callable        # () -> "spring" | "summer" | "autumn" | "winter"
 var cover_at: Callable         # (position) -> 0.0 open or 1.0 under a tree's crown (Cover.at, or its stand-in)
 
 var _dir: String = ""
@@ -68,6 +71,8 @@ var _sync_in: float = 0.0
 var _save_in: float = SAVE_EVERY_S
 var _dirty: bool = false
 var _drops: Dictionary = {}
+var _flora_by_name: Dictionary = {}   # flora table rows by species name (yields, seasons)
+var _picked: Dictionary = {}          # "cx,cz,id" -> game seconds when last picked
 var _flights: Array = []            # thrown things in the air: {number, pos, vel, age}
 var _last_throw: Dictionary = {}    # peer -> msec
 var _last_mine: Dictionary = {}     # peer -> msec
@@ -84,6 +89,11 @@ func setup(item_table, store_dir: String) -> void:
 	_load_world_items()
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(DROPS_PATH))
 	_drops = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+	var flora_table: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/tables/flora.json"))
+
+	if typeof(flora_table) == TYPE_DICTIONARY:
+		for entry in flora_table["entries"]:
+			_flora_by_name[str(entry["name"])] = entry
 
 
 func peer_connected_hello(peer: int, key: String) -> void:
@@ -240,6 +250,12 @@ func save() -> void:
 		return
 
 	_dirty = false
+	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
+
+	for key in _picked.keys():
+		if now_s - float(_picked[key]) >= REGROW_GAME_S:
+			_picked.erase(key)
+
 	var invs: Dictionary = {}
 
 	for key in _inventories:
@@ -256,27 +272,49 @@ func save() -> void:
 
 		items.append([int(it["number"]), int(it["count"]), it["pos"].x, it["pos"].y, it["pos"].z, it["left"], int(it["fire"]["state"]) if it.has("fire") else 0, float(it["fire"]["burn_left"]) if it.has("fire") else 0.0])
 
-	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys()})
+	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked})
 
 
-# Gathering a plant or shrub: what it gives, from drops.json (deterministic from the flora id).
-# Returns false when it gives nothing, the player is not near it, or they have no inventory;
-# the caller removes the plant only when this returns true.
-func gather(peer: int, species_name: String, kind: String, flora_id: int, plant_position: Vector3) -> bool:
+# Picking from a plant or shrub by hand. The plant stays where it is and is picked bare for
+# REGROW_GAME_S of game time. It gives what drops.json says (fibre, sticks) and one of its
+# natural yields (berries, leaves, roots...) when that is in season (flora table).
+# Returns false when it gives nothing, the player is not near it, or it is not ready.
+func gather(peer: int, species_name: String, kind: String, flora_key: String, flora_id: int, plant_position: Vector3) -> bool:
 	if not _peer_pos.has(peer) or _peer_pos[peer].distance_to(plant_position) > GATHER_M:
 		return false
 
-	var rows: Array = _drops.get("by_species", {}).get(species_name, _drops.get("by_kind", {}).get(kind, []))
+	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
 
-	if rows.is_empty():
+	if now_s - float(_picked.get(flora_key, -1.0e12)) < REGROW_GAME_S:
 		return false
 
+	var rows: Array = _drops.get("by_species", {}).get(species_name, _drops.get("by_kind", {}).get(kind, []))
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
-	rng.seed = hash(flora_id) ^ 0x5bd1e995
+	rng.seed = hash(flora_id) ^ int(now_s / REGROW_GAME_S) ^ 0x5bd1e995
+	var entry: Dictionary = _flora_by_name.get(species_name, {})
+	var natural: String = ""
+
+	if not entry.is_empty() and not entry["yields"].is_empty():
+		var seasons: Array = entry["season"]
+		var season: String = str(season_now.call()) if season_now.is_valid() else "all"
+
+		if seasons.has("all") or seasons.has(season):
+			natural = str(entry["yields"][rng.randi_range(0, entry["yields"].size() - 1)])
+
+			if table.number_of(natural) == 0:
+				natural = ""
+
+	if rows.is_empty() and natural == "":
+		return false
 
 	for row in rows:
 		give(peer, table.number_of(str(row[0])), rng.randi_range(int(row[1]), int(row[2])))
 
+	if natural != "":
+		give(peer, table.number_of(natural), rng.randi_range(1, 3))
+
+	_picked[flora_key] = now_s
+	_dirty = true
 	return true
 
 
@@ -545,6 +583,8 @@ func _load_world_items() -> void:
 		return
 
 	_next_id = int(parsed.get("next_id", 1))
+
+	_picked = parsed.get("picked", {})
 
 	for key in parsed.get("taken", []):
 		_taken[int(key)] = true

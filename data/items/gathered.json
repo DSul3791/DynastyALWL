@@ -1,0 +1,1240 @@
+{
+	"table": "gathered_items",
+	"format_version": 1,
+	"note": "Generated from data/tables/flora.json yields by tools/gen_gathered_items.py. Numbers start at 1000 and are append-only: re-running only adds new yields. Each yield becomes a plain material until food, herb and potion systems give them effects.",
+	"next_number": 1176,
+	"items": {
+		"acorns": {
+			"number": 1000,
+			"name": "Acorns",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"aloe_gel": {
+			"number": 1001,
+			"name": "Aloe gel",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"amadou": {
+			"number": 1002,
+			"name": "Amadou",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"angelica_roots": {
+			"number": 1003,
+			"name": "Angelica roots",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"angelica_stems": {
+			"number": 1004,
+			"name": "Angelica stems",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"arnica_flowers": {
+			"number": 1005,
+			"name": "Arnica flowers",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"banana_leaves": {
+			"number": 1006,
+			"name": "Banana leaves",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"bananas": {
+			"number": 1007,
+			"name": "Bananas",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"bark": {
+			"number": 1008,
+			"name": "Bark",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"bedding": {
+			"number": 1009,
+			"name": "Bedding",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"beechnuts": {
+			"number": 1010,
+			"name": "Beechnuts",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"belladonna_berries": {
+			"number": 1011,
+			"name": "Belladonna berries",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"belladonna_leaves": {
+			"number": 1012,
+			"name": "Belladonna leaves",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"birch_bark": {
+			"number": 1013,
+			"name": "Birch bark",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"blackberries": {
+			"number": 1014,
+			"name": "Blackberries",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"blueberries": {
+			"number": 1015,
+			"name": "Blueberries",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"brinebells": {
+			"number": 1016,
+			"name": "Brinebells",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"burdock_roots": {
+			"number": 1017,
+			"name": "Burdock roots",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"burrs": {
+			"number": 1018,
+			"name": "Burrs",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"cactus_pads": {
+			"number": 1019,
+			"name": "Cactus pads",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"chamomile_flowers": {
+			"number": 1020,
+			"name": "Chamomile flowers",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"chanterelles": {
+			"number": 1021,
+			"name": "Chanterelles",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"charcoal_wood": {
+			"number": 1022,
+			"name": "Charcoal wood",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"cherries": {
+			"number": 1023,
+			"name": "Cherries",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"cherry_wood": {
+			"number": 1024,
+			"name": "Cherry wood",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"chestnuts": {
+			"number": 1025,
+			"name": "Chestnuts",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"cinderfoot_caps": {
+			"number": 1026,
+			"name": "Cinderfoot caps",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"cloudberries": {
+			"number": 1027,
+			"name": "Cloudberries",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"coconuts": {
+			"number": 1028,
+			"name": "Coconuts",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"comfrey_leaves": {
+			"number": 1029,
+			"name": "Comfrey leaves",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"comfrey_roots": {
+			"number": 1030,
+			"name": "Comfrey roots",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"crab_apples": {
+			"number": 1031,
+			"name": "Crab apples",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"cranberries": {
+			"number": 1032,
+			"name": "Cranberries",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"crowberries": {
+			"number": 1033,
+			"name": "Crowberries",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"dandelion_flowers": {
+			"number": 1034,
+			"name": "Dandelion flowers",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"dandelion_leaves": {
+			"number": 1035,
+			"name": "Dandelion leaves",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"dandelion_roots": {
+			"number": 1036,
+			"name": "Dandelion roots",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"dates": {
+			"number": 1037,
+			"name": "Dates",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"drakethorn_berries": {
+			"number": 1038,
+			"name": "Drakethorn berries",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"duskmallow_flowers": {
+			"number": 1039,
+			"name": "Duskmallow flowers",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"duskmallow_roots": {
+			"number": 1040,
+			"name": "Duskmallow roots",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"dye": {
+			"number": 1041,
+			"name": "Dye",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"echo_moss": {
+			"number": 1042,
+			"name": "Echo moss",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"elderberries": {
+			"number": 1043,
+			"name": "Elderberries",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"elderflowers": {
+			"number": 1044,
+			"name": "Elderflowers",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"emberroots": {
+			"number": 1045,
+			"name": "Emberroots",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"everember_needles": {
+			"number": 1046,
+			"name": "Everember needles",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"everember_sap": {
+			"number": 1047,
+			"name": "Everember sap",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"everember_wood": {
+			"number": 1048,
+			"name": "Everember wood",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"feverfew": {
+			"number": 1049,
+			"name": "Feverfew",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"fibre": {
+			"number": 1050,
+			"name": "Fibre",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"fiddleheads": {
+			"number": 1051,
+			"name": "Fiddleheads",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"fine_wood": {
+			"number": 1052,
+			"name": "Fine wood",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"fly_agaric_caps": {
+			"number": 1053,
+			"name": "Fly agaric caps",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"fodder": {
+			"number": 1054,
+			"name": "Fodder",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"food": {
+			"number": 1055,
+			"name": "Food",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"foxglove_leaves": {
+			"number": 1056,
+			"name": "Foxglove leaves",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"frostglass_petals": {
+			"number": 1057,
+			"name": "Frostglass petals",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"gloaming_star": {
+			"number": 1058,
+			"name": "Gloaming star",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"gloomthistle_down": {
+			"number": 1059,
+			"name": "Gloomthistle down",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"gloomthistle_heads": {
+			"number": 1060,
+			"name": "Gloomthistle heads",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"greens": {
+			"number": 1061,
+			"name": "Greens",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"gum": {
+			"number": 1062,
+			"name": "Gum",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"hagwillow_bark": {
+			"number": 1063,
+			"name": "Hagwillow bark",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"hagwillow_withies": {
+			"number": 1064,
+			"name": "Hagwillow withies",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"hard_wood": {
+			"number": 1065,
+			"name": "Hard wood",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"hardwood": {
+			"number": 1066,
+			"name": "Hardwood",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"haws": {
+			"number": 1067,
+			"name": "Haws",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"hawthorn_blossom": {
+			"number": 1068,
+			"name": "Hawthorn blossom",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"hazelnuts": {
+			"number": 1069,
+			"name": "Hazelnuts",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"hearthwood_logs": {
+			"number": 1070,
+			"name": "Hearthwood logs",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"heartroots": {
+			"number": 1071,
+			"name": "Heartroots",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"henbane_leaves": {
+			"number": 1072,
+			"name": "Henbane leaves",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"henbane_seeds": {
+			"number": 1073,
+			"name": "Henbane seeds",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"herbs": {
+			"number": 1074,
+			"name": "Herbs",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"honey_flowers": {
+			"number": 1075,
+			"name": "Honey flowers",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"honeyspindle_nectar": {
+			"number": 1076,
+			"name": "Honeyspindle nectar",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"honeyspindle_pods": {
+			"number": 1077,
+			"name": "Honeyspindle pods",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"hushfern_fronds": {
+			"number": 1078,
+			"name": "Hushfern fronds",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"juniper_berries": {
+			"number": 1079,
+			"name": "Juniper berries",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"kindling": {
+			"number": 1080,
+			"name": "Kindling",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"lantern_dew": {
+			"number": 1081,
+			"name": "Lantern dew",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"lavender_flowers": {
+			"number": 1082,
+			"name": "Lavender flowers",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"leaves": {
+			"number": 1083,
+			"name": "Leaves",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"lingonberries": {
+			"number": 1084,
+			"name": "Lingonberries",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"linseed": {
+			"number": 1085,
+			"name": "Linseed",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"lumencap_caps": {
+			"number": 1086,
+			"name": "Lumencap caps",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"marjoram": {
+			"number": 1087,
+			"name": "Marjoram",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"marrowroots": {
+			"number": 1088,
+			"name": "Marrowroots",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"meadowsweet_flowers": {
+			"number": 1089,
+			"name": "Meadowsweet flowers",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"mint": {
+			"number": 1090,
+			"name": "Mint",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"mirrorbark_bark": {
+			"number": 1091,
+			"name": "Mirrorbark bark",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"mirrorbark_wood": {
+			"number": 1092,
+			"name": "Mirrorbark wood",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"mirrorcap_caps": {
+			"number": 1093,
+			"name": "Mirrorcap caps",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"morels": {
+			"number": 1094,
+			"name": "Morels",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"mournbloom_petals": {
+			"number": 1095,
+			"name": "Mournbloom petals",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"mugwort": {
+			"number": 1096,
+			"name": "Mugwort",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"nightcrown_blooms": {
+			"number": 1097,
+			"name": "Nightcrown blooms",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"oil": {
+			"number": 1098,
+			"name": "Oil",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"owlpetals": {
+			"number": 1099,
+			"name": "Owlpetals",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"palm_fronds": {
+			"number": 1100,
+			"name": "Palm fronds",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"palm_wood": {
+			"number": 1101,
+			"name": "Palm wood",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"pilgrims_cup_pitchers": {
+			"number": 1102,
+			"name": "Pilgrims cup pitchers",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"pilgrims_cup_water": {
+			"number": 1103,
+			"name": "Pilgrims cup water",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"pine_tar": {
+			"number": 1104,
+			"name": "Pine tar",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"plantain_leaves": {
+			"number": 1105,
+			"name": "Plantain leaves",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"poles": {
+			"number": 1106,
+			"name": "Poles",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"porcini": {
+			"number": 1107,
+			"name": "Porcini",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"potash": {
+			"number": 1108,
+			"name": "Potash",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"prickly_pears": {
+			"number": 1109,
+			"name": "Prickly pears",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"puffball": {
+			"number": 1110,
+			"name": "Puffball",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"quenchbell_heads": {
+			"number": 1111,
+			"name": "Quenchbell heads",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"raspberries": {
+			"number": 1112,
+			"name": "Raspberries",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"raspberry_leaves": {
+			"number": 1113,
+			"name": "Raspberry leaves",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"reed_stems": {
+			"number": 1114,
+			"name": "Reed stems",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"resin": {
+			"number": 1115,
+			"name": "Resin",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"rimecap_caps": {
+			"number": 1116,
+			"name": "Rimecap caps",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"riverbraid_stems": {
+			"number": 1117,
+			"name": "Riverbraid stems",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"rose_hips": {
+			"number": 1118,
+			"name": "Rose hips",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"rose_petals": {
+			"number": 1119,
+			"name": "Rose petals",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"rosemary": {
+			"number": 1120,
+			"name": "Rosemary",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"rowan_berries": {
+			"number": 1121,
+			"name": "Rowan berries",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"sage": {
+			"number": 1122,
+			"name": "Sage",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"samphire": {
+			"number": 1123,
+			"name": "Samphire",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"sap": {
+			"number": 1124,
+			"name": "Sap",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"sea_buckthorn_berries": {
+			"number": 1125,
+			"name": "Sea buckthorn berries",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"seeds": {
+			"number": 1126,
+			"name": "Seeds",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"sevenyear_blossoms": {
+			"number": 1127,
+			"name": "Sevenyear blossoms",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"sevenyear_bulbs": {
+			"number": 1128,
+			"name": "Sevenyear bulbs",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"sleetberries": {
+			"number": 1129,
+			"name": "Sleetberries",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"sloes": {
+			"number": 1130,
+			"name": "Sloes",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"softwood": {
+			"number": 1131,
+			"name": "Softwood",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"sorrel_leaves": {
+			"number": 1132,
+			"name": "Sorrel leaves",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"spines": {
+			"number": 1133,
+			"name": "Spines",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"st_johns_wort": {
+			"number": 1134,
+			"name": "St johns wort",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"staunchmoss": {
+			"number": 1135,
+			"name": "Staunchmoss",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"stillwater_petals": {
+			"number": 1136,
+			"name": "Stillwater petals",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"stillwater_seeds": {
+			"number": 1137,
+			"name": "Stillwater seeds",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"stormreed_stalks": {
+			"number": 1138,
+			"name": "Stormreed stalks",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"straw": {
+			"number": 1139,
+			"name": "Straw",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"strawberries": {
+			"number": 1140,
+			"name": "Strawberries",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"stuffing": {
+			"number": 1141,
+			"name": "Stuffing",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"sunberries": {
+			"number": 1142,
+			"name": "Sunberries",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"sunsilver_leaves": {
+			"number": 1143,
+			"name": "Sunsilver leaves",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"tanglewort_vines": {
+			"number": 1144,
+			"name": "Tanglewort vines",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"tannin_bark": {
+			"number": 1145,
+			"name": "Tannin bark",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"thatch": {
+			"number": 1146,
+			"name": "Thatch",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"thorny_canes": {
+			"number": 1147,
+			"name": "Thorny canes",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"thorny_wood": {
+			"number": 1148,
+			"name": "Thorny wood",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"thyme": {
+			"number": 1149,
+			"name": "Thyme",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"tidecrown_pearls": {
+			"number": 1150,
+			"name": "Tidecrown pearls",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"tideglass_fronds": {
+			"number": 1151,
+			"name": "Tideglass fronds",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"timber": {
+			"number": 1152,
+			"name": "Timber",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"tinder": {
+			"number": 1153,
+			"name": "Tinder",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"tinder_fungus": {
+			"number": 1154,
+			"name": "Tinder fungus",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"truthsage_leaves": {
+			"number": 1155,
+			"name": "Truthsage leaves",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"valerian_roots": {
+			"number": 1156,
+			"name": "Valerian roots",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"walnut_husks": {
+			"number": 1157,
+			"name": "Walnut husks",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"walnuts": {
+			"number": 1158,
+			"name": "Walnuts",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"wardpine_resin": {
+			"number": 1159,
+			"name": "Wardpine resin",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"wardpine_wood": {
+			"number": 1160,
+			"name": "Wardpine wood",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"water": {
+			"number": 1161,
+			"name": "Water",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"watercress": {
+			"number": 1162,
+			"name": "Watercress",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"whisperfern_fronds": {
+			"number": 1163,
+			"name": "Whisperfern fronds",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"wild_carrot_roots": {
+			"number": 1164,
+			"name": "Wild carrot roots",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"wild_garlic_bulbs": {
+			"number": 1165,
+			"name": "Wild garlic bulbs",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"wild_garlic_leaves": {
+			"number": 1166,
+			"name": "Wild garlic leaves",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"wild_pears": {
+			"number": 1167,
+			"name": "Wild pears",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"willow_bark": {
+			"number": 1168,
+			"name": "Willow bark",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"wispbloom_heads": {
+			"number": 1169,
+			"name": "Wispbloom heads",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"withies": {
+			"number": 1170,
+			"name": "Withies",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"witness_bark": {
+			"number": 1171,
+			"name": "Witness bark",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"witness_leaves": {
+			"number": 1172,
+			"name": "Witness leaves",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"wolfsbane_roots": {
+			"number": 1173,
+			"name": "Wolfsbane roots",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"wood": {
+			"number": 1174,
+			"name": "Wood",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"yarrow": {
+			"number": 1175,
+			"name": "Yarrow",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		}
+	}
+}
