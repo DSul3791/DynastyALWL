@@ -1066,10 +1066,16 @@ func _unhandled_input(event: InputEvent) -> void:
 			body.velocity = Vector3.ZERO
 
 
-func _physics_process(delta: float) -> void:
+# Owner (2026-10-20): movement felt jerky. The game draws about 30 frames a second but
+# physics ticked 60 times a second, so a drawn frame covered 1, 2 or 3 ticks (per-frame
+# speed 6 to 58 m/s at an 11 m/s jog). The player now moves once per drawn frame by the
+# real frame time (called first thing in _process), so every frame moves by the same
+# amount of time that passed since the last one.
+func _step_player(delta: float) -> void:
 	if body == null:
 		return
 
+	delta = minf(delta, 0.1)
 	var t: int = Probe.start()
 	_move_player(delta)
 	Probe.stop("player move", t)
@@ -1185,6 +1191,8 @@ func _update_bob(delta: float) -> void:
 
 
 func _process(delta: float) -> void:
+	_step_player(delta)
+
 	if _water_label != null and _water_label.text != "" and Time.get_ticks_msec() > _water_label_until_msec:
 		_water_label.text = ""
 
