@@ -126,6 +126,16 @@ func apply_state(state: Dictionary) -> void:
 		set_weather("clear", 1.0)
 
 
+func voices_playing() -> int:
+	var count: int = _pending.size()
+
+	for name in _loops:
+		if _loops[name].playing and not _loops[name].stream_paused:
+			count += 1
+
+	return count
+
+
 func update(delta: float, body: CharacterBody3D, underwater: bool) -> void:
 	var target: Dictionary = KINDS[kind]
 	var step: float = FADE_PER_SEC * delta

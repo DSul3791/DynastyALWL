@@ -22,6 +22,11 @@ const WeatherScript := preload("res://src/client/weather_sounds.gd")
 const WaterSoundsScript := preload("res://src/client/water_sounds.gd")
 const AUDIO_DIR := "res://assets/audio/"
 const RECORDED_DIR := "res://assets/audio/recorded/"
+# Audio budget per quality tier Low, Mid, High (ARCHITECTURE_BUDGET.md section 9).
+const TIER_NAMES := ["Low", "Mid", "High"]
+const TIER_VOICES := [24, 48, 96]       # sounds playing at once, all layers together
+const TIER_NATURE_CALLS := [4, 6, 8]    # of those, bird/frog calls and flushes at once
+const TIER_MEMORY_MB := [150, 300, 600] # loaded sound files (Ogg stays compressed; WAV is whole)
 const VOICES := 6                       # footstep and swish players, reused in turn
 const FEET_M := 0.9                     # player origin to the soles (capsule half height)
 
@@ -56,6 +61,15 @@ var _pending: String = ""
 var last_step: String = ""              # for the HUD: ground, soil id, water depth, file played
 var gust: float = 0.0                   # 0 calm .. 1 strongest gust
 var volume_index: int = 0
+var tier: int = 2                       # quality index (0 Low); set_quality()
+var voice_cap: int = 96                 # TIER_VOICES[tier]
+var voices_peak: int = 0                # most sounds playing together so far (HUD)
+var _voice_count: int = 0               # sounds playing at the last count
+var _count_left: float = 0.0
+static var loaded_bytes: int = 0        # sound files read from disk so far (each counted once)
+static var _loaded_paths: Dictionary = {}
+static var memory_cap_bytes: int = 600 * 1048576
+static var refused_loads: int = 0
 
 var _terrain: VoxelLodTerrain
 var _flora
@@ -137,6 +151,13 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 
 # Each frame: wind loudness and colour, landing thumps, the underwater muffle.
 func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool) -> void:
+	_count_left -= delta
+
+	if _count_left <= 0.0:
+		_count_left = 0.25
+		_voice_count = voices_playing()
+		voices_peak = maxi(voices_peak, _voice_count)
+
 	ambient.update(delta, body, flying)
 	water.update(delta, body, underwater)
 	weather.update(delta, body, underwater)
@@ -173,6 +194,34 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 			footstep(body, 2, 4.0)
 
 		_air_time = 0.0
+
+
+# Sets the audio budget for a quality tier (0 Low, 1 Mid, 2 High).
+func set_quality(quality: int) -> void:
+	tier = clampi(quality, 0, TIER_VOICES.size() - 1)
+	voice_cap = TIER_VOICES[tier]
+	memory_cap_bytes = TIER_MEMORY_MB[tier] * 1048576
+	ambient.max_voices = TIER_NATURE_CALLS[tier]
+
+
+# Every sound playing right now, all layers (the budget counts these).
+func voices_playing() -> int:
+	var count: int = 0
+
+	for player in [_wind_low, _wind_gust] + _voices:
+		if player.playing:
+			count += 1
+
+	return count + ambient.voices_playing() + water.voices_playing() + weather.voices_playing()
+
+
+# True while another optional sound (a call, a flush) fits in the voice budget.
+func has_room() -> bool:
+	return _voice_count < voice_cap
+
+
+func budget_text() -> String:
+	return "sounds %d/%d playing (peak %d), %.1f/%d MB loaded (%s)" % [_voice_count, voice_cap, voices_peak, float(loaded_bytes) / 1048576.0, TIER_MEMORY_MB[tier], TIER_NAMES[tier]]
 
 
 # One footfall at gait 0 walk, 1 jog, 2 run; `boost_db` makes it louder (landings).
@@ -370,6 +419,17 @@ static func _find(folder: String, name: String) -> Array:
 static func _load(folder: String, name: String) -> AudioStream:
 	for extension in ["ogg", "wav"]:
 		var path: String = folder + name + "." + extension
+
+		if not _loaded_paths.has(path) and loaded_bytes >= memory_cap_bytes and (ResourceLoader.exists(path) or FileAccess.file_exists(path)):
+			refused_loads += 1                                       # over the tier's memory budget
+			return null
+
+		if not _loaded_paths.has(path) and FileAccess.file_exists(path):
+			_loaded_paths[path] = true
+			var file: FileAccess = FileAccess.open(path, FileAccess.READ)
+
+			if file != null:
+				loaded_bytes += file.get_length()
 
 		if ResourceLoader.exists(path):
 			var imported: AudioStream = load(path) as AudioStream

@@ -78,6 +78,16 @@ func setup(flora) -> void:
 		_variants(str(KINDS[kind]["file"]))
 
 
+func voices_playing() -> int:
+	var count: int = 0
+
+	for slot in _slots:
+		if slot["player"].playing:
+			count += 1
+
+	return count
+
+
 func update(delta: float, body: CharacterBody3D, underwater: bool) -> void:
 	_scan_left -= delta
 

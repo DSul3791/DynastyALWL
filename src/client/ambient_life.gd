@@ -11,7 +11,7 @@ extends Node
 # - Each call in EVENTS has its own timer. When it comes due it plays only if
 #   the zones it belongs to are present (chance = zone weight), the time of
 #   day and season allow it, no other call played in the last MIN_GAP_SEC and
-#   fewer than MAX_VOICES are playing. Then it is placed in 3D: birds up in the
+#   fewer than max_voices (the quality tier) and the whole sound stage is within its voice budget. Then it is placed in 3D: birds up in the
 #   trees, crickets and frogs on the ground, frogs and fish at the water.
 # - Running scares wildlife: calls come about half as often above RUN_SCARE_MS.
 # - Crow alarm: a crow scolds from the trees when the player keeps running
@@ -35,7 +35,6 @@ const RECORDED_DIR := "res://assets/audio/recorded/ambient/"
 
 const SCAN_SEC := 1.5
 const MIN_GAP_SEC := 3.0               # no two calls closer than this
-const MAX_VOICES := 4                  # calls playing at once
 const RUN_SCARE_MS := 8.0
 const TRUNK_RADIUS := 45.0
 const TRUNKS_FOR_FOREST := 28.0        # collider shapes in that radius for a full forest
@@ -92,6 +91,7 @@ var conditions: Dictionary = {"hour": 14.0, "season": "autumn", "weather": "clea
 var weights: Dictionary = {"forest": 0.0, "meadow": 0.0, "water": 0.0, "highland": 0.0}
 var calls_played: Dictionary = {}       # call name -> count (for the headless check)
 var last_call: String = ""
+var max_voices: int = 4                 # calls and flushes playing at once (the quality tier sets it)
 var weather_calls: float = 1.0          # share of calls still made in this weather (weather_sounds.gd)
 var weather_wet: float = 0.0            # 0 to 1: rain, which frogs like
 var clock_runs: bool = false            # true: this layer advances conditions["hour"] itself (no game clock yet)
@@ -185,7 +185,7 @@ func update(delta: float, body: CharacterBody3D, flying: bool) -> void:
 
 		_next[name] = _rng.randf_range(float(event["every"][0]), float(event["every"][1]))
 
-		if _since_call * time_scale < MIN_GAP_SEC or _voices.size() >= MAX_VOICES:
+		if _since_call * time_scale < MIN_GAP_SEC or _voices.size() >= max_voices or not _stage.has_room():
 			continue
 
 		_try(event, body)
@@ -315,6 +315,10 @@ func _hour_ok(event: Dictionary) -> bool:
 
 
 # A due call: plays when the zones, hour and season allow it.
+func voices_playing() -> int:
+	return _voices.size()
+
+
 func _try(event: Dictionary, body: CharacterBody3D) -> void:
 	if not _hour_ok(event):
 		return
