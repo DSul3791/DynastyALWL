@@ -86,8 +86,10 @@ func tap() -> void:
 			_pick(c)
 			return
 
-	if not found.is_empty():
-		_items.show_notice("%s: %s" % [found[0]["name"], found[0]["reason"]])
+	for c in found:
+		if not _is_nothing(c):
+			_items.show_notice("%s: %s" % [c["name"], c["reason"]])
+			return
 
 
 func _pick(c: Dictionary) -> void:
@@ -96,6 +98,11 @@ func _pick(c: Dictionary) -> void:
 	_picked_until[c["key"]] = _client.game_clock.seconds + REGROW_GAME_S
 	_items.clear_prompt()
 	_hint_left = 0.0
+
+
+# "Nothing to pick" (out of season, no yield) is not worth a prompt: only say why when a tool is missing.
+func _is_nothing(c: Dictionary) -> bool:
+	return str(c["reason"]).begins_with("nothing to pick")
 
 
 func _hint() -> String:
@@ -108,7 +115,11 @@ func _hint() -> String:
 		if c["ok"]:
 			return "Press E to harvest %s    (hold E: pick everything within 2 m)" % c["name"]
 
-	return "%s: %s" % [found[0]["name"], found[0]["reason"]]
+	for c in found:
+		if not _is_nothing(c):
+			return "%s: %s" % [c["name"], c["reason"]]
+
+	return ""
 
 
 # Plants and shrubs within `radius` of the player, nearest first, each with what picking it would do.

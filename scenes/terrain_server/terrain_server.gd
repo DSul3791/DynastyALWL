@@ -586,8 +586,11 @@ func _on_cut_flora_requested(peer_id: int, chunk: Vector2i, id: int) -> void:
 	if at < 0 or species.is_empty() or int(species["kind"]) == PlacerScript.KIND_TREE:
 		return
 
-	# The plant stays; it is picked bare for a while (server_items.gd).
-	items.gather(peer_id, str(species["name"]), PlacerScript.KINDS[int(species["kind"])], "%d,%d,%d" % [home.x, home.y, id], id, all["positions"][at])
+	# Dave 2026-10-20: a picked plant disappears from the world, like a picked stone. Only a pick that gave
+	# something removes it (server_items.gd); one that gave nothing leaves the plant alone.
+	if items.gather(peer_id, str(species["name"]), PlacerScript.KINDS[int(species["kind"])], "%d,%d,%d" % [home.x, home.y, id], id, all["positions"][at]):
+		if flora.cut(chunk, id):
+			net.flora_cut.rpc(chunk, id)
 
 
 func _on_dig_requested(_peer_id: int, center: Vector3, radius: float) -> void:
