@@ -175,6 +175,7 @@ var test_flood: bool = false
 var test_gear: bool = false
 var test_spear_sounds: bool = false
 var test_fire: bool = false
+var _fire_sync_left: float = 0.0
 var test_levels: bool = false
 var _test_fire_at: int = 0
 var _test_fire_step: int = 0
@@ -1590,6 +1591,13 @@ func _step_player(delta: float) -> void:
 	var ts: int = Probe.start()
 	sound.update(delta, body, flying, underwater)
 	sound.itemfx.watch(items)
+	_fire_sync_left -= delta
+
+	if _fire_sync_left <= 0.0 and items != null:
+		_fire_sync_left = 1.0
+
+		if not test_fire and not sound.fire.manual_active():
+			sound.fire.sync_world(items._world, _cover_here)
 	Probe.stop("sound", ts)
 
 
@@ -1707,6 +1715,7 @@ func _update_bob(delta: float) -> void:
 
 # One step of the fire sound test (button and --fire): returns what it did.
 func _fire_test_step(step: int, at: Vector3) -> String:
+	sound.fire.hold_manual(12.0)
 	var fire := {"id": 1, "at": at, "size": 0.3, "lit": true, "open": true}
 	var note: String = ""
 
@@ -2036,7 +2045,7 @@ func _process(delta: float) -> void:
 			print("Terrain client: grass %d tufts in %d cells (radius %.0f m)" % [grass.tufts, grass.cells_built, grass.radius_m])
 			print("Terrain client: water sounds: %s" % sound.water.summary)
 			print("Terrain client: nature calls %s, zones %s" % [str(sound.ambient.calls_played), str(sound.ambient.weights)])
-			print("Terrain client: fire sounds: %d lit, %d put out, last %s" % [sound.fire.lit_played, sound.fire.out_played, sound.fire.last])
+			print("Terrain client: fire sounds: %d lit, %d put out, %d loops, last %s" % [sound.fire.lit_played, sound.fire.out_played, sound.fire.loops_playing, sound.fire.last])
 			print("Terrain client: item sounds %d, last %s" % [sound.itemfx.played, sound.itemfx.last])
 			print("Terrain client: spear sounds %s, last %s" % [str(sound.spear.played), sound.spear.last])
 			print("Terrain client: interior sounds: %d objects, %d creaks, last %s" % [sound.interior.objects_played, sound.interior.creaks_played, sound.interior.last])

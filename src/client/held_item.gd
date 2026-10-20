@@ -126,6 +126,9 @@ func mouse_button(button: int, pressed: bool) -> bool:
 		elif _jab_t < 0.0:
 			_jab_t = 0.0
 
+			if _sound != null:
+				_sound.spear.jab(_camera.global_position - _camera.global_transform.basis.z)
+
 		return true
 
 	return false
@@ -140,6 +143,29 @@ func _throw() -> void:
 	node.global_position = _camera.global_position + direction * 0.8
 	node.look_at(node.global_position + direction, Vector3.UP)
 	_flights.append({"node": node, "vel": direction * THROW_SPEED, "age": 0.0})
+
+	if _sound != null:
+		var landing: Vector3 = _predict_landing(node.global_position, direction * THROW_SPEED)
+		var material: String = "wood" if _tree_near.is_valid() and _tree_near.call(landing) else "soil"
+		_sound.spear.throw(node.global_position, landing, THROW_SPEED, material)
+
+
+# Where a thrown spear comes down: the same flight as _process steps it (gravity, ground below), for the sound.
+func _predict_landing(from: Vector3, velocity: Vector3) -> Vector3:
+	var at: Vector3 = from
+	var v: Vector3 = velocity
+	var t: float = 0.0
+
+	while t < 6.0:
+		v.y -= THROW_GRAVITY * 0.05
+		at += v * 0.05
+		t += 0.05
+		var ground: float = _ground_below.call(at)
+
+		if not is_nan(ground) and at.y <= ground:
+			break
+
+	return at
 
 
 func _process(delta: float) -> void:
