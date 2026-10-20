@@ -86,6 +86,7 @@ var cut_tree: Callable         # (chunk Vector2i, id) -> true when the standing 
 var rock_at: Callable          # (x, z) -> true when bare rock shows at the surface there (no soil cover); set by the server scene
 var game_seconds: Callable      # () -> game clock seconds
 var season_now: Callable        # () -> "spring" | "summer" | "autumn" | "winter"
+var send_craft_queue: Callable   # (peer, [[recipe, crafts left], ...], ms left on the first)
 var send_strain: Callable       # (peer, strain in thousandths, state 0 normal 1 over 2 fainted 3 waking, fade in thousandths, stance)
 var send_vitals: Callable       # (peer, hunger percent, health, weight in tenths of a kg)
 var send_chest: Callable        # (peer, world id, bytes) a chest's contents to the player who opened it
@@ -114,6 +115,9 @@ var _carry_cfg: Dictionary = {}
 var _exertion_cfg: Dictionary = {}
 var _strain: Dictionary = {}        # peer -> {s: strain, state: 0..3, t: seconds in the state}
 var _strain_sent: Dictionary = {}
+var _craft_queues: Dictionary = {}    # player key -> {entries: [[recipe, crafts left], ...], elapsed: seconds on the first}
+const CRAFT_QUEUE_ENTRIES := 10
+const CRAFT_QUEUE_MAX_COUNT := 20
 var _stance: Dictionary = {}        # peer -> 0 stand, 1 crouch, 2 sit, 3 lie
 var _moving: Dictionary = {}        # peer -> smoothed 0..1, 1 while walking about
 var _vitals: Dictionary = {}        # player key -> {hunger, health} floats
@@ -164,6 +168,7 @@ func setup(item_table, store_dir: String) -> void:
 	var exertion_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/exertion.json"))
 	_exertion_cfg = exertion_parsed if typeof(exertion_parsed) == TYPE_DICTIONARY else {}
 	_load_vitals()
+	_load_craft_queues()
 	_load_inventories()
 	_load_chests()
 	_load_world_items()
@@ -203,6 +208,7 @@ func peer_connected_hello(peer: int, key: String) -> void:
 
 	_vitals_sent.erase(peer)
 	_sync_vitals(peer, true)
+	_sync_craft_queue(peer)
 
 
 func peer_left(peer: int) -> void:
@@ -339,6 +345,10 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_throw(peer, inv, a, at)
 	elif kind == Net.ACT_CRAFT:
 		recipes.craft(a, inv)
+	elif kind == Net.ACT_CRAFT_QUEUE:
+		_queue_craft(peer, inv, a, count)
+	elif kind == Net.ACT_CRAFT_CANCEL:
+		_cancel_craft(peer, a)
 	elif kind == Net.ACT_ADMIN_GIVE:
 		if table.id_of(a) != "":
 			var left: int = inv.add(a, clampi(count, 1, 100))
@@ -361,6 +371,7 @@ func tick(delta: float) -> void:
 		_rot(spent)
 		_fires(spent)
 		_vitals_tick(spent)
+		_craft_tick(spent)
 
 		for id in _items.keys():
 			if _items[id].has("scatter") or float(_items[id]["left"]) > 1.0e8:
@@ -420,6 +431,7 @@ func save() -> void:
 	_save_trees()
 	_save_chests()
 	_save_vitals()
+	_save_craft_queues()
 	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked})
 
 
@@ -1801,6 +1813,172 @@ func _vitals_tick(spent: float) -> void:
 
 		_sync_vitals(peer, false)
 		_strain_tick(peer, spent)
+
+
+# --- Crafting queue (Dave 2026-10-20, like Ark) ---
+# Crafts line up per player and run one after another while the player is connected, screen open or not.
+# Ingredients are taken when queued and refunded in full when an entry is cancelled (the running one too).
+func _queue_of(peer: int) -> Dictionary:
+	var key: String = str(_peer_key.get(peer, ""))
+
+	if key == "":
+		return {}
+
+	if not _craft_queues.has(key):
+		_craft_queues[key] = {"entries": [], "elapsed": 0.0}
+
+	return _craft_queues[key]
+
+
+func _queue_craft(peer: int, inv, recipe_number: int, count: int) -> void:
+	var queue: Dictionary = _queue_of(peer)
+	var recipe: Dictionary = recipes.recipe(recipe_number)
+
+	if queue.is_empty() or recipe.is_empty() or not bool(recipe["known"]):
+		return
+
+	var entries: Array = queue["entries"]
+	var merge: bool = not entries.is_empty() and int(entries[entries.size() - 1][0]) == recipe_number
+
+	if entries.size() >= CRAFT_QUEUE_ENTRIES and not merge:
+		_say(peer, "The crafting queue is full")
+		return
+
+	var taken: int = 0
+
+	for n in range(clampi(count, 1, CRAFT_QUEUE_MAX_COUNT)):
+		if not recipes.can_make(recipe_number, inv):
+			break
+
+		for need in recipe["needs"]:
+			inv.remove(need[0], need[1])
+
+		taken += 1
+
+	if taken == 0:
+		_say(peer, "You do not have what that needs")
+		return
+
+	if merge:
+		entries[entries.size() - 1][1] = mini(int(entries[entries.size() - 1][1]) + taken, CRAFT_QUEUE_MAX_COUNT)
+	else:
+		entries.append([recipe_number, taken])
+
+	_dirty = true
+	_sync_craft_queue(peer)
+
+
+func _refund_entry(peer: int, entry: Array) -> void:
+	var recipe: Dictionary = recipes.recipe(int(entry[0]))
+
+	for need in recipe.get("needs", []):
+		give(peer, int(need[0]), int(need[1]) * int(entry[1]))
+
+
+func _cancel_craft(peer: int, index: int) -> void:
+	var queue: Dictionary = _queue_of(peer)
+
+	if queue.is_empty() or index < 0 or index >= queue["entries"].size():
+		return
+
+	var entry: Array = queue["entries"][index]
+	queue["entries"].remove_at(index)
+
+	if index == 0:
+		queue["elapsed"] = 0.0
+
+	_refund_entry(peer, entry)
+	_dirty = true
+	_sync_craft_queue(peer)
+
+
+func _craft_tick(spent: float) -> void:
+	for peer in _peer_key:
+		var queue: Dictionary = _craft_queues.get(_peer_key[peer], {})
+
+		if queue.is_empty() or queue["entries"].is_empty():
+			continue
+
+		var head: Array = queue["entries"][0]
+		var recipe: Dictionary = recipes.recipe(int(head[0]))
+		queue["elapsed"] = float(queue["elapsed"]) + spent
+
+		if float(queue["elapsed"]) < float(recipe.get("craft_s", 3.0)):
+			continue
+
+		queue["elapsed"] = 0.0
+		var inv = inventory_of(peer)
+
+		# A kept tool that is no longer there stops the craft: the entry is refunded.
+		var tools_ok: bool = inv != null
+
+		for keep in recipe.get("keeps", []):
+			tools_ok = tools_ok and inv.has(keep[0], keep[1])
+
+		if not tools_ok:
+			queue["entries"].remove_at(0)
+			_refund_entry(peer, head)
+			_say(peer, "%s was cancelled: a tool is missing" % str(recipe.get("name", "That")))
+		else:
+			give(peer, int(recipe["gives"][0]), int(recipe["gives"][1]))
+			head[1] = int(head[1]) - 1
+
+			if int(head[1]) <= 0:
+				queue["entries"].remove_at(0)
+
+		_dirty = true
+		_sync_craft_queue(peer)
+
+
+func _sync_craft_queue(peer: int) -> void:
+	if not send_craft_queue.is_valid():
+		return
+
+	var queue: Dictionary = _craft_queues.get(_peer_key.get(peer, ""), {})
+	var entries: Array = queue.get("entries", [])
+	var left_ms: int = 0
+
+	if not entries.is_empty():
+		var craft_s: float = float(recipes.recipe(int(entries[0][0])).get("craft_s", 3.0))
+		left_ms = int(maxf(craft_s - float(queue["elapsed"]), 0.0) * 1000.0)
+
+	send_craft_queue.call(peer, entries.duplicate(true), left_ms)
+
+
+func craft_queue_of(peer: int) -> Array:
+	return _craft_queues.get(_peer_key.get(peer, ""), {}).get("entries", [])
+
+
+func _save_craft_queues() -> void:
+	var rows: Dictionary = {}
+
+	for key in _craft_queues:
+		if not _craft_queues[key]["entries"].is_empty():
+			rows[key] = _craft_queues[key]
+
+	_write_atomic("craft_queues.json", {"version": 1, "players": rows})
+
+
+func _load_craft_queues() -> void:
+	var parsed: Variant = _read_json_version("craft_queues.json", 1)
+
+	if parsed == null:
+		return
+
+	for key in parsed.get("players", {}):
+		var row: Dictionary = parsed["players"][key]
+		var entries: Array = []
+
+		for entry in row.get("entries", []):
+			var recipe: Dictionary = recipes.recipe(int(entry[0]))
+
+			if recipe.is_empty():
+				# A recipe that no longer exists: hand back what was paid, if the pack has room.
+				continue
+
+			entries.append([int(entry[0]), clampi(int(entry[1]), 1, CRAFT_QUEUE_MAX_COUNT)])
+
+		_craft_queues[str(key)] = {"entries": entries, "elapsed": float(row.get("elapsed", 0.0))}
 
 
 # Over-exertion (data/items/exertion.json): strain climbs with effort above rest and falls below it. Over

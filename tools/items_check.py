@@ -62,6 +62,9 @@ CLIENTS = [
     ("eat", ["--eat"], 3000, [
         ("food is edible", r"edible slot 0 (true)", None, None),
         ("roast eaten", r"roasts left " + NUM, 1, 1),
+        ("craft queue shows the entry", r"Queue test: entries 1, fibre \d+ -> \d+, buttons shown " + NUM, 1, 1),
+        ("cancel empties the queue and refunds", r"after cancel entries " + NUM + r", fibre", 0, 0),
+        ("queue strip hides again", r"queue strip hidden (true)", None, None),
     ]),
 ]
 

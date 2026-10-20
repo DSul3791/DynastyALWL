@@ -72,9 +72,12 @@ var _vitals_back: Control
 var _vitals_warning: Label
 var _weight_label: Label
 var plant_hint: String = ""            # set by the harvest prompt (harvest.gd)
-var _crafting: int = 0                # recipe being made (0 none)
-var _craft_done_msec: int = 0
-var _craft_label: Label
+var _crafting: int = 0                # recipe at the head of the server's queue (0 none); the work sounds follow it
+var craft_entries: Array = []          # the server's crafting queue: [[recipe, crafts left], ...], head first
+var _craft_head_end_msec: int = 0      # when the head craft finishes (from the server's time left)
+var _queue_box: VBoxContainer
+var _queue_head_button: Button
+var _queue_next_msec: int = 0
 var _world: Dictionary = {}        # id -> {node, number, count, pos}
 var _prompt_next_msec: int = 0
 var _notice_until_msec: int = 0
@@ -98,6 +101,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.chest_received.connect(_on_chest)
 	net.vitals_received.connect(_on_vitals)
 	net.strain_received.connect(_on_strain)
+	net.craft_queue_received.connect(_on_craft_queue)
 	var exertion_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/exertion.json"))
 	_exertion_cfg = exertion_parsed if typeof(exertion_parsed) == TYPE_DICTIONARY else {}
 	_vitals_cfg = VitalsRules.load_config()
@@ -345,21 +349,9 @@ func _process(_delta: float) -> void:
 	if _strain_note != null:
 		_strain_note.text = "You are exhausted: slow down" if strain_state == 1 else ""
 
-	if _crafting != 0:
-		if now >= _craft_done_msec:
-			var done: int = _crafting
-			net.inventory_action.rpc_id(1, Net.ACT_CRAFT, done, 0, 0, Vector3.ZERO)
-			_crafting = 0
-
-			# The server's answer rewrites the inventory; the next craft starts once the pack shows the result.
-			if _craft_queue > 0:
-				_craft_queue -= 1
-				get_tree().create_timer(0.3).timeout.connect(func(): _start_craft(done))
-
-			if is_instance_valid(_craft_label):
-				_craft_label.text = ""
-		elif is_instance_valid(_craft_label):
-			_craft_label.text = "Making... %.0f s" % ceilf(float(_craft_done_msec - now) / 1000.0)
+	if _queue_head_button != null and now >= _queue_next_msec:
+		_queue_next_msec = now + 250
+		_queue_head_button.text = _queue_text(0)
 
 	if now < _prompt_next_msec:
 		return
@@ -1236,7 +1228,6 @@ var _qty: int = 1
 var knowledge                          # InspectionKnowledge (set by the client): item names follow what the character knows
 var max_lights: Callable               # () -> how many fire lights the quality tier allows
 var is_inspecting: Callable            # () -> true while inspection mode is on
-var _craft_queue: int = 0             # crafts still to do after the one running
 var _slot_scroll: ScrollContainer
 
 
@@ -1345,6 +1336,9 @@ func _build_panel() -> void:
 	list_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	list_scroll.size_flags_stretch_ratio = 1.6
 	left.add_child(list_scroll)
+	_queue_box = VBoxContainer.new()
+	_queue_box.visible = false
+	left.add_child(_queue_box)
 	_recipe_list = VBoxContainer.new()
 	_recipe_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	list_scroll.add_child(_recipe_list)
@@ -1498,27 +1492,78 @@ func _select_recipe(number: int) -> void:
 	_refresh()
 
 
-# Craft the chosen recipe `quantity` times, one at a time (each takes its craft_s).
+# Queue the chosen recipe `quantity` times. The server takes the ingredients now and makes the crafts in order.
 func _craft_selected() -> void:
-	if _crafting != 0 or _selected_recipe == 0 or not recipes.can_make(_selected_recipe, inventory):
+	if _selected_recipe == 0:
 		return
 
-	_craft_queue = int(_quantity.value) - 1 if _quantity != null else 0
-	_start_craft(_selected_recipe)
+	_start_craft(_selected_recipe, int(_quantity.value) if _quantity != null else 1)
 
 
-func _start_craft(number: int) -> void:
-	if _crafting != 0 or not recipes.can_make(number, inventory):
+func _start_craft(number: int, count: int = 1) -> void:
+	if not recipes.can_make(number, inventory):
 		return
 
 	for item in recipes.recipe(number).get("identify", []):
 		if knowledge != null and not knowledge.is_known("i%d" % item):
 			_on_notice("You are not sure what %s really is. Hover it in inspection mode (/) before you use it." % table.name_of(item).to_lower())
-			_craft_queue = 0
 			return
 
-	_crafting = number
-	_craft_done_msec = Time.get_ticks_msec() + int(recipes.recipe(number)["craft_s"] * 1000.0)
+	net.inventory_action.rpc_id(1, Net.ACT_CRAFT_QUEUE, number, 0, count, Vector3.ZERO)
+
+
+func _on_craft_queue(entries: Array, left_ms: int) -> void:
+	craft_entries = entries
+	_crafting = int(entries[0][0]) if not entries.is_empty() else 0
+	_craft_head_end_msec = Time.get_ticks_msec() + left_ms
+	_rebuild_queue()
+
+
+func _queue_text(index: int) -> String:
+	var entry: Array = craft_entries[index]
+	var text: String = str(recipes.recipe(int(entry[0])).get("name", "?"))
+
+	if int(entry[1]) > 1:
+		text += "  x%d" % int(entry[1])
+
+	if index == 0:
+		text += "   %.0f s" % ceilf(maxf(float(_craft_head_end_msec - Time.get_ticks_msec()) / 1000.0, 0.0))
+
+	return text
+
+
+# One button per queued craft; pressing it cancels the entry and the server hands back what it cost.
+func _rebuild_queue() -> void:
+	if _queue_box == null:
+		return
+
+	for child in _queue_box.get_children():
+		child.queue_free()
+
+	_queue_head_button = null
+
+	if craft_entries.is_empty():
+		_queue_box.visible = false
+		return
+
+	_queue_box.visible = true
+	var title: Label = Label.new()
+	title.text = "Crafting queue  (press one to cancel it)"
+	_style(title, BODY_PX - 4)
+	_queue_box.add_child(title)
+
+	for i in craft_entries.size():
+		var button: Button = Button.new()
+		button.text = _queue_text(i)
+		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		button.clip_text = true
+		_style(button, BODY_PX - 4)
+		var index: int = i
+		button.pressed.connect(func(): net.inventory_action.rpc_id(1, Net.ACT_CRAFT_CANCEL, index, 0, 0, Vector3.ZERO))
+		_queue_box.add_child(button)
+
+		if i == 0:
+			_queue_head_button = button
 
 
 func _repair_selected() -> void:
@@ -1786,14 +1831,11 @@ func _refresh_detail() -> void:
 	row.add_child(_quantity)
 	var make: Button = Button.new()
 	make.text = "Craft  (%.0f s)" % float(r["craft_s"])
-	make.disabled = not recipes.can_make(_selected_recipe, inventory) or _crafting != 0
+	make.disabled = not recipes.can_make(_selected_recipe, inventory)
 	make.custom_minimum_size = Vector2(_px(240), _px(64))
 	_style(make, BODY_PX)
 	make.pressed.connect(_craft_selected)
 	row.add_child(make)
-	_craft_label = Label.new()
-	_style(_craft_label, BODY_PX)
-	_detail.add_child(_craft_label)
 
 
 # Headless check (--items): give, drop, pick up, and print what the server says.
@@ -2063,6 +2105,20 @@ func run_eat_test(client) -> void:
 			names.append(table.name_of(inventory.numbers[slot]) if inventory.numbers[slot] != 0 else "-")
 
 		print("Sort test: mode %d first four: %s" % [mode, ", ".join(names)])
+
+	# Crafting queue: three cordage line up, the screen shows the entry, pressing it cancels and refunds.
+	var fibre: int = table.number_of("plant_fibre")
+	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, fibre, 0, 12, Vector3.ZERO)
+	await get_tree().create_timer(1.0).timeout
+	var fibre_before: int = inventory.count_of(fibre)
+	_selected_recipe = 1
+	_craft_selected()
+	await get_tree().create_timer(1.0).timeout
+	var shown: int = _queue_box.get_child_count() - 1 if _queue_box.visible else 0
+	print("Queue test: entries %d, fibre %d -> %d, buttons shown %d, head \"%s\"" % [craft_entries.size(), fibre_before, inventory.count_of(fibre), shown, _queue_head_button.text if _queue_head_button != null else ""])
+	_queue_head_button.pressed.emit()
+	await get_tree().create_timer(1.0).timeout
+	print("Queue test: after cancel entries %d, fibre %d, queue strip hidden %s" % [craft_entries.size(), inventory.count_of(fibre), str(not _queue_box.visible)])
 
 
 # Headless check (--chest): place a chest, open it, put stones in, take them out.

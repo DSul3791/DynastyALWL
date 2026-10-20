@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 21
+const PROTOCOL_VERSION := 22
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -50,6 +50,7 @@ signal water_received(chunk: Vector2i, water: PackedByteArray)
 signal notice_received(text: String)
 signal chest_received(id: int, bytes: PackedByteArray)
 signal vitals_received(hunger: int, health: int, weight_dkg: int)
+signal craft_queue_received(entries: Array, left_ms: int)
 signal strain_received(strain_pm: int, state: int, fade_pm: int, stance: int)
 signal hello_requested(peer_id: int, player_key: String)
 signal inventory_action_requested(peer_id: int, kind: int, a: int, b: int, count: int, at: Vector3)
@@ -68,6 +69,8 @@ const ACT_MINE := 8       # at = the point the axe struck; on bare rock the serv
 const ACT_HIT := 7        # a = tree id, b = flora chunk x, count = flora chunk z: one axe blow on a standing tree
 const ACT_PROCESS := 9    # a = world item id of a felled trunk: one axe blow on it gives branches, leaves, bark, logs
 const ACT_SPLIT := 10     # a = slot, count = how many go to the first empty slot
+const ACT_CRAFT_CANCEL := 22 # a = queue entry index (as last sent): cancel it and get its ingredients back
+const ACT_CRAFT_QUEUE := 21  # a = recipe number, count = how many (1 to 20): queue crafts; ingredients are taken now
 const ACT_STANCE := 20     # a = wanted stance: 0 stand, 1 crouch, 2 sit, 3 lie; the server answers in strain()
 const ACT_LIGHT := 19      # a = fire world id: light a loaded fire (uses tinder from the pack, see cooking.json)
 const ACT_EAT := 18        # a = pack slot: eat the food or apply the medicine in it (data/items/vitals.json)
@@ -205,6 +208,13 @@ func inventory_slots(bytes: PackedByteArray) -> void:
 @rpc("authority", "call_remote", "reliable")
 func world_items(added: Array, removed: PackedInt32Array) -> void:
 	world_items_received.emit(added, removed)
+
+
+# The player's crafting queue (server side, keeps running with the screen closed): entries [[recipe number, crafts
+# left], ...] head first, and the milliseconds left on the head craft. Sent on every change and at hello.
+@rpc("authority", "call_remote", "reliable")
+func craft_queue(entries: Array, left_ms: int) -> void:
+	craft_queue_received.emit(entries, left_ms)
 
 
 # Over-exertion (data/items/exertion.json): strain in thousandths (1000 = over-exerted), state 0 normal,

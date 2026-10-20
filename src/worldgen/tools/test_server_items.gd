@@ -771,5 +771,46 @@ func _init() -> void:
 	sa.action(1, Net.ACT_STANCE, 0, 0, 0, Vector3.ZERO)
 	check(sa.stance_of(1) == 3, "a fainted player cannot choose a stance")
 
+	# Crafting queue: ingredients taken when queued, crafts run on the tick, cancel refunds, caps, restart.
+	var qd: String = "user://test_server_items_queue"
+	DirAccess.make_dir_recursive_absolute(qd)
+	var cq = make(qd)
+	var queue_seen: Array = []
+	cq.send_craft_queue = func(_p, entries, left_ms): queue_seen.append([entries, left_ms])
+	cq.send_vitals = func(_p, _h, _he, _w): pass
+	cq.peer_connected_hello(1, "queuekey0001")
+	var fibre: int = cq.table.number_of("plant_fibre")
+	var cord: int = cq.table.number_of("cordage")
+	cq.give(1, fibre, 30)
+	cq.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 4, Vector3.ZERO)
+	check(cq.inventory_of(1).count_of(fibre) == 18, "queueing 4 cordage takes 12 fibre now (%d left)" % cq.inventory_of(1).count_of(fibre))
+	check(cq.craft_queue_of(1) == [[1, 4]], "queue holds one entry of 4")
+	cq.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 2, Vector3.ZERO)
+	check(cq.craft_queue_of(1) == [[1, 6]], "queueing the same recipe again merges")
+	cq.action(1, Net.ACT_CRAFT_QUEUE, 99, 0, 1, Vector3.ZERO)
+	cq.action(1, Net.ACT_CRAFT_QUEUE, 16, 0, 1, Vector3.ZERO)
+	check(cq.craft_queue_of(1).size() == 1, "unknown recipes are refused")
+
+	for n in range(4 * 2 + 1):
+		cq._craft_tick(0.25)
+
+	check(cq.inventory_of(1).count_of(cord) == 1 and cq.craft_queue_of(1) == [[1, 5]], "one cordage after its 2 s (%d)" % cq.inventory_of(1).count_of(cord))
+	cq._save_craft_queues()
+	var cq2 = make(qd)
+	cq2.send_vitals = func(_p, _h, _he, _w): pass
+	cq2.peer_connected_hello(1, "queuekey0001")
+	check(cq2.craft_queue_of(1) == [[1, 5]], "the queue survives a restart")
+	cq.action(1, Net.ACT_CRAFT_CANCEL, 5, 0, 0, Vector3.ZERO)
+	check(cq.craft_queue_of(1).size() == 1, "cancelling a bad index does nothing")
+	cq.action(1, Net.ACT_CRAFT_CANCEL, 0, 0, 0, Vector3.ZERO)
+	check(cq.craft_queue_of(1).is_empty() and cq.inventory_of(1).count_of(fibre) == 27, "cancel refunds the whole unfinished entry (%d fibre)" % cq.inventory_of(1).count_of(fibre))
+	check(not queue_seen.is_empty(), "the queue is sent to the player")
+	cq.give(1, fibre, 100)
+
+	for n in range(14):
+		cq.action(1, Net.ACT_CRAFT_QUEUE, 1 if n % 2 == 0 else 7, 0, 1, Vector3.ZERO)
+
+	check(cq.craft_queue_of(1).size() <= 10, "queue is capped at 10 entries (%d)" % cq.craft_queue_of(1).size())
+
 	print("server item tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

@@ -2308,7 +2308,7 @@ func _process(delta: float) -> void:
 		for at in [[2.0, 1], [6.0, 2], [11.0, 4]]:
 			if before < at[0] and _test_craft_t >= at[0]:
 				items._start_craft(at[1])
-				print("Terrain client: craft %d started, can_make %s, crafting %d" % [at[1], items.recipes.can_make(at[1], items.inventory), items._crafting])
+				print("Terrain client: craft %d started, can_make %s, queue %d" % [at[1], items.recipes.can_make(at[1], items.inventory), items.craft_entries.size()])
 
 		for at in [5.0, 10.0, 16.0]:
 			if before < at and _test_craft_t >= at:

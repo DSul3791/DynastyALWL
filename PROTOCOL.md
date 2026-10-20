@@ -1,4 +1,4 @@
-# Protocol (PROTOCOL_VERSION 21, src/stream/terrain_net.gd)
+# Protocol (PROTOCOL_VERSION 22, src/stream/terrain_net.gd)
 
 Kept current by whoever changes the wire: add the row, bump PROTOCOL_VERSION to the next free number (pull first and read terrain_net.gd), and note the build.
 
@@ -28,6 +28,7 @@ Kept current by whoever changes the wire: add the row, bump PROTOCOL_VERSION to 
 | inventory_full | server to client | reliable | bytes: PackedByteArray | 10 |
 | inventory_slots | server to client | reliable | bytes: PackedByteArray | 10 |
 | world_items | server to client | reliable | added: Array, removed: PackedInt32Array | 10 |
+| craft_queue | server to client | reliable | entries: Array of [recipe number, crafts left], head first; left_ms: int (time left on the head craft) | 22 |
 | strain | server to client | reliable | strain_pm: int, state: int, fade_pm: int, stance: int | 20 |
 | vitals | server to client | reliable | hunger: int, health: int, weight_dkg: int | 18 |
 | chest_contents | server to client | reliable | id: int, bytes: PackedByteArray | 15 |
@@ -58,6 +59,8 @@ Kept current by whoever changes the wire: add the row, bump PROTOCOL_VERSION to 
 | 18 | ACT_EAT | a = pack slot: eat the food or apply the medicine in it (data/items/vitals.json) | 18 |
 | 19 | ACT_LIGHT | a = fire world id: light a loaded fire (uses tinder from the pack, see cooking.json) | 19 |
 | 20 | ACT_STANCE | a = wanted stance: 0 stand, 1 crouch, 2 sit, 3 lie; the server answers in strain() | 21 |
+| 21 | ACT_CRAFT_QUEUE | a = recipe number, count = how many (1 to 20); the server takes the ingredients now and crafts in order, screen open or not; max 10 entries per player | 22 |
+| 22 | ACT_CRAFT_CANCEL | a = queue entry index as last sent; cancels it, the server hands back the ingredients of its unfinished crafts | 22 |
 
 ## World-item row states (world_items)
 
@@ -69,6 +72,7 @@ inventories.json version 2 (reads 1), world_items.json version 1, chests.json ve
 
 ## Notes by version
 
+- 22: crafting queue: ACT_CRAFT_QUEUE, ACT_CRAFT_CANCEL, craft_queue(); saved server side in craft_queues.json (version 1, atomic, .bad fallback; the head's progress is kept; runs only while the player is connected).
 - 21: ACT_STANCE; strain() gains the confirmed stance.
 - 20: strain(strain_pm, state, fade_pm) for over-exertion and fainting.
 - 19: ACT_LIGHT; fire states 8 and 9.
