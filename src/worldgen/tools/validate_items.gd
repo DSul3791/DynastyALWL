@@ -62,6 +62,9 @@ func _init() -> void:
 			if int(entry.get("stack", 1)) < 1:
 				fail("%s: '%s' stack below 1" % [pair[1], id])
 
+			if entry.has("value") and int(entry["value"]) < 0:
+				fail("%s: '%s' has a negative value" % [pair[1], id])
+
 			if String(entry.get("name", "")) == "":
 				fail("%s: '%s' has no name" % [pair[1], id])
 
