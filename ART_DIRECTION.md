@@ -1,0 +1,84 @@
+# Art direction
+
+What the world should look like, and how we get there on the minimum machine (GTX/RTX 1050-class, 8 GB RAM, 30 fps; ARCHITECTURE_BUDGET.md). Owned by the "Art direction" project thread. Started 2026-10-20 from the owner's target picture.
+
+**Labels:** *[Decided]* owner decision, *[Proposed]* waiting on the owner, *[Measured]* seen in our build.
+
+## 1. The target picture (owner, 2026-10-20)
+
+**[Decided]** "Everything in it is how I envision our world looking": the trees, the grass, the ground and the brook, possibly the character. That level of detail, running on older medium machines.
+
+The picture: a sunny autumn clearing. A small clear brook (about 1.5 m wide, ankle deep) runs between grassy banks toward the camera; tall golden reeds and long grass on the right, a lush meadow on the left; a thatched log hut and fences in the middle; grey granite cliffs with moss behind; birches and aspens in gold, tall thin pines on the skyline, a big broadleaf trunk framing the right side; a man in a red leather tunic on a log pile, holding a staff.
+
+Source copy: `/mnt/project-files/uploads/hearth/6f55bce5-d10a-4d6c-b733-66e0ad3196d7` (1200 x 675 PNG).
+
+## 2. What makes it look good, per element, in rendering terms
+
+### 2.1 Light and atmosphere (the biggest single reason it looks real)
+- **Strong warm sun against a blue sky fill.** Sunlit grass is almost yellow-white, shadows are cool blue-green, never black. That is a bright warm sun (about 1.0 to 1.3 energy, slightly orange) plus ambient light taken from the sky, not a flat grey ambient.
+- **Filmic tone mapping.** Highlights roll off softly (sunlit grass tips, rock faces) instead of clipping, and mid-tones keep their colour. This is a tone mapper (AgX or ACES), not extra saturation.
+- **Contact shadow / ambient occlusion everywhere things meet:** under grass at the base, inside tree crowns, where the bank meets the water, under the log pile, in cliff cracks. It is what makes objects sit on the ground.
+- **Aerial perspective.** The distant pines and cliffs are lighter and bluer than the near ones. A light height-and-distance haze in the sky colour.
+- **Soft shadows with a long reach.** Tree shadows fall across the meadow and are soft at their far end.
+
+### 2.2 Grass
+- **Full coverage.** In the meadow the soil is not visible at all; grass covers it to the horizon of the clearing. Near the camera there are hundreds of blades per square metre.
+- **Colour comes from the blades, not the ground:** dark green at the base, yellow-green to straw at the tips, so every clump has a gradient, and the field has big patches (lush green on the left, dry gold on the right).
+- **Mixed species:** fine meadow grass, tall seed-headed grass, golden reed clumps (about 1 m) near the wet ground, ferns under the trees, a few tiny flowers.
+- **The far field is not grass at all.** Beyond about 30 m it is the ground texture painted in the same colours, so you never see where the cards stop.
+- **Lit like a soft mass:** blades take the ground's lighting with a slight see-through glow when the sun is behind them.
+
+### 2.3 Ground
+- **Real material textures, not noise colour:** brown forest litter with needles and small sticks under the trees (right), gravel with pebbles on the path (bottom right), dark wet soil on the bank, mossy turf on rock tops.
+- **Clear borders between materials** that follow the land (path edge, bank edge, edge of the tree shade), blended by height so pebbles poke through soil rather than fading like a gradient.
+- **Small objects on the ground:** pebbles, sticks, a fallen log, stones on the bank edge.
+
+### 2.4 The brook
+- **Clear water: you see the bed.** Rounded pale pebbles and stones under the water, dark gaps between them. The water is nearly invisible where shallow and tints amber/teal only a little with depth.
+- **Reflection by viewing angle (Fresnel):** near the camera you look through it; farther up the brook it mirrors the bright sky and trees.
+- **Small moving ripples** flowing with the current that bend what you see underneath.
+- **The banks make it:** a steep 20 to 40 cm cut bank, dark wet soil and moss at the waterline, grass hanging over the edge. The brook sits *in* the ground.
+- **Scale:** this is a small stream, much smaller than our 20 m rivers. It is the kind of water that should run from springs and through towns.
+
+### 2.5 Trees
+- **Leaves read as clusters, not single cards.** Each card is a photo-like spray of many small leaves with holes between them, so crowns are lacy at the edge and dense inside.
+- **Crowns are shaded as one soft volume:** dark inside, bright on the sun side, with light glowing through the leaves on the edge (birch and aspen gold glows). That is normals pointing out from the crown centre plus crown ambient occlusion plus back-light translucency.
+- **Bark has depth:** the big trunk on the right shows deep furrows and moss at the base (a normal map plus a moss tint at the bottom).
+- **Pines are tall, thin, bare low down,** with a small open crown high up (Scots pine style) and you see sky through them.
+- **Distance:** far trees are simple but keep their silhouette and colour; nothing pops.
+
+### 2.6 Rock
+- **Big grey granite faces with cracks and ledges,** moss and grass on every flat top, lighter where the sun hits, darker blue in cracks. A rock texture projected from the sides (triplanar) with moss on up-facing surfaces.
+
+### 2.7 Character and buildings
+- **Character:** realistic proportions, layered clothes (leather tunic, cloth sash, bracers, boots), rich material detail. This is more realistic than "heroic with a hint of cartoon" (see the open question in Section 5).
+- **Buildings:** log and thatch with mossy thatch, real wood grain. Not in scope yet; noted for later.
+
+## 3. Where our build is today (owner screenshots builds 50 to 61)
+
+| Element | Today | Gap to the picture |
+|---|---|---|
+| Light | Sun with shadows, flat white ambient at 0.45, linear tone mapping, no ambient occlusion, light fog | Flat and grey; shadows lack colour; nothing sits on the ground |
+| Grass | Three layers of cards, sparse tufts, ground shows through, 14 to 48 m | Far too thin; colour is in the ground, not the blades |
+| Ground | One colour per soil plus value noise (no textures) | Smooth plastic look, no litter, gravel or pebbles |
+| Water | Opaque grey animated surface, rivers 20 m wide | Not clear, no bed visible, no small brooks |
+| Trees | Procedural, single leaf cards visible as stripes, flat-lit crowns | Need cluster cards, crown shading, translucency, bark normals |
+| Rock | Grey noise with strata bands | Needs real rock texture and moss tops |
+
+## 4. How to get there on the minimum machine: ranked plan
+
+Ranked by how much closer each step gets us per millisecond of frame time on a 1050. Each step says what Low does (ARCHITECTURE_BUDGET rule).
+
+1. **Light and post (biggest win, nearly free).** AgX tone mapping, ambient light from the sky, a warmer brighter sun, slightly blue shadows, SSAO on Medium and up (half resolution), a little glow on High, height haze for aerial perspective. *Cost:* tone mapping and sky ambient about 0 ms; SSAO about 1 to 2 ms on a 1050 at half res. *Low:* tone mapping and sky light only, no SSAO.
+2. **Ground material textures.** A set of 6 to 8 tileable materials (meadow soil, forest litter, gravel/pebbles, wet bank soil/mud, streambed pebbles, granite, moss, sand) in one texture array, each colour + normal + roughness/height packed, blended by height, side-projected only on steep faces, and a far-distance colour so the tiling never shows. *Cost:* about 1 ms; 20 to 40 MB of video memory at 1K. *Low:* 512 px textures, no height blend. *Textures:* the cloud cannot download texture libraries (proxy blocks ambientCG and Poly Haven, checked 2026-10-20), so either we generate them procedurally in the cloud or the owner downloads CC0 sets on his machine and commits them.
+3. **Grass that covers the ground.** Many more, denser clumps near the player using alpha-to-coverage cards (smooth edges, no shimmer), colour gradient per blade, a few species (meadow, tall seed grass, reed, fern, flowers) in one atlas, the ground texture tinted to the same grass colour so the far field matches, base darkening for contact shadow. *Cost:* the most expensive step (overdraw); the grass radius and density per tier carry the cost. *Low:* about 15 m radius, fewer bigger clumps; the matching ground colour does most of the work.
+4. **Trees.** Leaf cluster cards (sprays of leaves with alpha) instead of single leaves, normals bent out from the crown centre, crown ambient occlusion baked into vertex colour, back-light translucency, bark normal maps with moss at the base, and far trees as impostor cards. *Cost:* fewer, bigger cards lower the triangle count; impostors cut far cost. *Low:* impostors from closer in.
+5. **Clear water and brooks.** A water shader that shows the bed: depth-based colour and clarity, sky reflection by angle, flowing ripples that bend the view, foam at rocks, wet dark banks; small brooks generated from springs (owned by the water/terrain thread). *Cost:* about 0.5 to 1 ms (screen texture + depth). *Low:* sky reflection and depth tint without refraction.
+6. **Rock and small details.** Granite texture with moss on tops (part of step 2), scattered pebbles, sticks and boulder meshes near the player.
+7. **Characters and buildings.** Later, when they exist.
+
+Every step gets a before-and-after render (cloud software rendering, `cloud-rendering` memory) and a frame-time check in the owner's playtest.
+
+## 5. Open question for the owner
+
+**[Proposed]** The picture is near-photoreal, while the earlier direction (DESIGN_IDEAS Section 1) said "the world looks like the best of old fantasy book illustrations" with slightly cartoonish characters. Recommended: the picture wins. The world aims for natural, realistic materials and light with warm, rich colour, and "storybook" lives in the colour and mood rather than in painted shapes. The character style stays open until characters are built.
