@@ -641,6 +641,22 @@
    "priority": 2
   },
   {
+   "name": "flame_torch",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "flame_sounds.gd: the torch in the hand (loop, louder when running and in wind)",
+   "to_supply": "a held torch burning, close to the ear, 10 s loop",
+   "priority": 2
+  },
+  {
+   "name": "flame_lantern",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "flame_sounds.gd: a lantern in the hand (quiet loop)",
+   "to_supply": "a lantern flame behind glass, 10 s loop",
+   "priority": 3
+  },
+  {
    "name": "fire_light",
    "state": "generated",
    "variants": 3,

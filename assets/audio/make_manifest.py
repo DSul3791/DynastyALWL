@@ -95,6 +95,8 @@ SLOTS = [
     ("fire_small", "fire", "fire_sounds.gd: a small fire or embers (loop; crossfades with fire_large by size)", "a quiet campfire loop, soft crackle, 10 to 15 s", 2),
     ("fire_large", "fire", "fire_sounds.gd: a big fire (loop)", "a bonfire loop with roar, crackle and pops, 10 to 15 s", 2),
     ("fire_rain", "fire", "fire_sounds.gd: rain falling on an open fire (loop, only when raining)", "rain sizzling on a campfire, 10 s loop", 2),
+    ("flame_torch", "fire", "flame_sounds.gd: the torch in the hand (loop, louder when running and in wind)", "a held torch burning, close to the ear, 10 s loop", 2),
+    ("flame_lantern", "fire", "flame_sounds.gd: a lantern in the hand (quiet loop)", "a lantern flame behind glass, 10 s loop", 3),
     ("fire_light", "fire", "fire_sounds.gd: a fire catches (one-shot)", "3 fire-lighting sounds: strike and soft whoomph, 1 to 2 s", 2),
     ("fire_out", "fire", "fire_sounds.gd: a fire put out (one-shot)", "3 water or rain extinguishing a fire, hiss and steam, 2 to 3 s", 2),
     ("breath_in", "body", "breath_sounds.gd: breathing in, from moderate exertion", "3 soft breaths in through the mouth, 0.8 s", 2),

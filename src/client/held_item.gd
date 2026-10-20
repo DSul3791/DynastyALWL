@@ -179,6 +179,12 @@ func _predict_landing(from: Vector3, velocity: Vector3) -> Vector3:
 
 func _process(delta: float) -> void:
 	_update_blueprint()
+
+	if _sound != null:
+		var flame_kind: String = str(_inv.table.entry(held_id()).get("tool_class", ""))
+		var sheltered: bool = _cover_at.is_valid() and bool(_cover_at.call(_camera.global_position))
+		_sound.flame.set_held(flame_kind if flame_kind in ["torch", "lantern"] else "", not sheltered)
+
 	_show_model()
 	_label.text = _caption()
 

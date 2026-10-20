@@ -3,7 +3,7 @@
 Run: python3 assets/audio/make_fire.py   (needs numpy and ffmpeg)
 Writes assets/audio/fire/: seamless loops fire_small (a few embers: quiet, sparse snaps),
 fire_large (a bonfire: low roar, many crackles, pops), fire_rain (rain falling on an open fire:
-sparse sharp sizzles, no steady hiss bed), and one-shots fire_light_N (a strike and soft whoomph
+sparse sharp sizzles, no steady hiss bed), flame_torch (a held torch: soft quick flutter), flame_lantern (a hushed steady burn), and one-shots fire_light_N (a strike and soft whoomph
 as it catches) and fire_out_N (a hiss that fades, steam). Recordings go in assets/audio/recorded/fire/
 under the same names; the game prefers them.
 """
@@ -17,7 +17,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from make_sounds import SR, add, band, highpass, lowpass  # noqa: E402
-from make_water import normalize, shaped_noise, slow_swell  # noqa: E402
+from make_water import flow, normalize, shaped_noise, slow_swell  # noqa: E402
 
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fire")
 
@@ -73,6 +73,21 @@ def rain_on_fire(rng, n):
     return normalize(x * slow_swell(rng, n, 0.25, (2, 5, 8)), 0.1)
 
 
+def torch(rng, n):
+    """A held torch: a soft, quick flutter of flame with small snaps (a fast, uneven 'fwup', never regular)."""
+    flutter = flow(rng, n, 120, 1800, 0.5)
+    mod = np.abs(shaped_noise(rng, n, lambda f: (f < 9.0) * (f > 1.5) * 1.0))
+    mod = mod / (np.max(mod) + 1e-9)
+    x = flutter * (0.45 + 0.55 * mod) + snaps(rng, n, 7, 1500, 4000, 0.004, 0.35)
+    return normalize(x, 0.1) * 1.2
+
+
+def lantern(rng, n):
+    """A lantern flame behind glass: a faint, steady, hushed burn with the odd tiny tick."""
+    x = flow(rng, n, 200, 2400, 0.7) + snaps(rng, n, 2, 2000, 4500, 0.003, 0.25)
+    return normalize(x, 0.08)
+
+
 def light(rng):
     n = int(1.6 * SR)
     t = np.arange(n) / SR
@@ -104,12 +119,14 @@ def main():
     write_ogg("fire_small", small(rng, 12 * SR))
     write_ogg("fire_large", large(rng, 14 * SR))
     write_ogg("fire_rain", rain_on_fire(rng, 12 * SR))
+    write_ogg("flame_torch", torch(rng, 10 * SR))
+    write_ogg("flame_lantern", lantern(rng, 10 * SR))
 
     for v in range(3):
         write_ogg("fire_light_%d" % v, light(rng))
         write_ogg("fire_out_%d" % v, put_out(rng))
 
-    print("Wrote 9 fire sounds to %s" % OUT)
+    print("Wrote 11 fire sounds to %s" % OUT)
 
 
 if __name__ == "__main__":

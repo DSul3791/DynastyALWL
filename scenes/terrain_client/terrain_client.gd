@@ -178,6 +178,8 @@ var test_fire: bool = false
 var _fire_sync_left: float = 0.0
 var _tree_sync_left: float = 0.0
 var test_levels: bool = false
+var test_flame: bool = false
+var _test_flame_t: float = -1.0
 var test_exertion: bool = false
 var _test_exertion_t: float = -1.0
 var _sound_exertion_at: int = -1
@@ -320,6 +322,8 @@ func _ready() -> void:
 			test_gear = true
 		elif argument == "--exertion":
 			test_exertion = true
+		elif argument == "--flame":
+			test_flame = true
 		elif argument == "--levels":
 			test_levels = true
 		elif argument == "--fire":
@@ -1919,6 +1923,32 @@ func _process(delta: float) -> void:
 			sound.breath.set_exertion(levels[step])
 			if fmod(_test_exertion_t, 5.0) < get_process_delta_time():
 				print("Terrain client: exertion %.2f: %d breaths, %d heartbeats so far" % [levels[step], sound.breath.breaths_played, sound.breath.beats_played])
+
+	# Headless check: hold a real torch, then rain on it, then put it away.
+	if test_flame and now - connected_msec > 18000:
+		if _test_flame_t < 0.0:
+			_test_flame_t = 0.0
+			net.inventory_action.rpc_id(1, NetScript.ACT_ADMIN_GIVE, items.table.number_of("torch"), 0, 1, Vector3.ZERO)
+
+		var before: float = _test_flame_t
+		_test_flame_t += get_process_delta_time()
+
+		if before < 2.0 and _test_flame_t >= 2.0:
+			for slot in range(8):
+				if items.inventory.numbers[slot] == items.table.number_of("torch"):
+					held.select(slot)
+
+		if before < 5.0 and _test_flame_t >= 5.0:
+			print("Terrain client: flame held '%s', loops %d, last %s" % [sound.flame.held, sound.flame._loops.size(), sound.flame.last])
+			sound.weather.set_weather("rain", 1.0)
+
+		if before < 9.0 and _test_flame_t >= 9.0:
+			print("Terrain client: flame in rain: loops %s" % str(sound.flame._loops.keys()))
+			held.select(7)
+
+		if before < 12.0 and _test_flame_t >= 12.0:
+			print("Terrain client: flame put away: held '%s', loops %d" % [sound.flame.held, sound.flame._loops.size()])
+			test_flame = false
 
 	# Headless check: the volume sliders change the buses and reset.
 	if test_levels and now - connected_msec > 18000:
