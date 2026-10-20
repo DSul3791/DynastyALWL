@@ -36,6 +36,12 @@ extends RefCounted
 # slope, altitude and water still apply). "fixed" adds groves by hand. "young_share" and "young_height_m"
 # make that share of a species young, with heights from the young range.
 #
+# Slopes (owner, 2026-10-20, ART_DIRECTION.md section 8): hardwoods thin out gradually as the
+# ground steepens toward hills and mountains; conifers there grow lower; species with "montane"
+# (the firs) add dense low patches on steep and ridge ground (stand cells that no circle uses);
+# species with "ledge" may stand, stunted, on a flat ledge (fine surface slope under 0.3) of ground
+# steeper than their limit. Cell numbers and species ids are unchanged, so removals stay valid.
+#
 # Item ID: species ID << 16 | grid cell index, unique within its chunk and
 # stable: "item N in chunk C" is what a removal records.
 #
@@ -152,6 +158,10 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 			# much (birch, alder, pines, fruit trees): canopy "dense" or "light".
 			"dense": str(entry.get("canopy", "dense")) == "dense",
 			"tolerant": bool(entry.get("shade_tolerant", false)),
+			# Hardy species that may grow, stunted, on the flat ledges of ground too steep for them (owner, 2026-10-20).
+			"ledge": bool(entry.get("ledge", false)),
+			# Species whose low, dense evergreen patches take over toward hill and mountain slopes (needs "stand").
+			"montane": bool(entry.get("montane", false)),
 		}
 
 		if entry.has("stand"):
@@ -325,9 +335,15 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 
 				# Evergreens hold the ridges and dry heights; hardwoods take the valleys
 				# and fields and crowd the evergreens out (80/20 either way).
+				var slope: float = _slope_at(data, x, z)
+				var steep: float = smoothstep(STEEP_FROM, STEEP_TO, slope)
+
 				if item["kind"] == KIND_TREE and item["shape"] in ["conifer", "broadleaf"] and groves.is_empty():
 					var ridge: float = _ridge_factor(data, x, z, y)
 					var mult: float = lerpf(0.25, 1.0, ridge) if item["shape"] == "conifer" else lerpf(1.0, 0.25, ridge)
+
+					if item["shape"] == "broadleaf":
+						mult = minf(mult, lerpf(1.0, 0.05, steep))      # hardwoods give way on the slopes
 
 					if rng_pick(x, z, species_id) >= mult:
 						continue
@@ -341,6 +357,12 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 					var spread: float = lerpf(0.62, 1.12, rng_pick(x + 7.0, z + 3.0, species_id)) if item["kind"] == KIND_TREE and not item.has("young_share") else 1.0
 					height = lerpf(item["height_min"], item["height_max"], size) * spread
 
+				if slope > item["max_slope"]:
+					# A ledge on ground too steep for the species: stunted.
+					height = lerpf(item["height_min"] * 0.2, item["height_min"] * 0.6, size) if item["kind"] == KIND_TREE else height * 0.7
+				elif item["kind"] == KIND_TREE and item["shape"] == "conifer":
+					height *= lerpf(1.0, 0.4, steep)       # evergreens grow lower toward the slopes
+
 				found.append([_tier(item, height), species_id, cz * count + cx, x, y, z, height, yaw, 0.0])
 
 		# Dense stands (birch, alder, young firs, hazel clumps): extra plants packed close
@@ -349,6 +371,7 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 			var stand: Dictionary = item["stand"]
 			var spacing: float = stand["spacing_m"]
 			var per_row: int = int(ceil(chunk_m / spacing))
+			var stand_used: Dictionary = {}     # stand cell index -> true, so the slope patches below never repeat one
 
 			for st in _groves_near(item, stand, _stand_seed, species_id, origin):
 				var c: Vector2 = st[0]
@@ -386,7 +409,11 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 							continue
 
 						var height: float = lerpf(item["height_min"], item["height_max"], size) * lerpf(stand["height_min"], stand["height_max"], rng.randf())
+						stand_used[index] = true
 						found.append([_tier(item, height), species_id, STAND_BASE + index, x, y, z, height, yaw, spacing])
+
+			if item["montane"]:
+				_montane_cells(item, data, chunk, origin, species_id, rng, found, stand_used)
 
 	# Landmark trees first, then grown trees, young trees, shrubs and plants;
 	# within a tier by species and cell, so the result never changes.
@@ -434,6 +461,12 @@ const TIER_YOUNG := 2
 const TIER_SHRUB := 3
 const TIER_PLANT := 4
 const STAND_BASE := 49152   # stand cells' item numbers start here (main grid cells stay below)
+const STEEP_FROM := 0.20    # ground slope (rise over run) where hardwoods start to thin
+const STEEP_TO := 0.60      # and where they are nearly gone
+const LEDGE_MAX_SLOPE := 0.30   # a ledge: the surface within 1.5 m is flatter than this
+const LEDGE_CHANCE := 0.3       # share of ledge spots that grow something
+const MONTANE_PATCH_M := 30.0   # size of the squares that are or are not a low evergreen patch
+const MONTANE_PATCH_SHARE := 0.4
 const MIN_TREE_GAP := 1.8   # trees never closer than 6 ft (owner, 2026-10-18)
 const SHRUB_TRUNK_GAP := 1.0   # a shrub tucks in under a tree, but not against its trunk
 
@@ -449,6 +482,75 @@ func _tier(item: Dictionary, height: float) -> int:
 		return TIER_FIRST
 
 	return TIER_YOUNG if height < float(item["young_below"]) else TIER_GROWN
+
+
+# Low, dense evergreen patches on steep and ridge ground (see the header): walks the species'
+# stand cells in 12 m squares, skipping squares that are not hilly, and adds the cells that no
+# stand circle already used. Heights 1 to 3 m ("low to the ground").
+func _montane_cells(item: Dictionary, data, chunk: Vector2i, origin: Vector2, species_id: int, rng: RandomNumberGenerator, found: Array, stand_used: Dictionary) -> void:
+	var stand: Dictionary = item["stand"]
+	var spacing: float = stand["spacing_m"]
+	var per_row: int = int(ceil(chunk_m / spacing))
+	var block: int = maxi(int(ceil(12.0 / spacing)), 1)
+	var fill: float = float(stand["fill"])
+	var per_biome: PackedFloat32Array = item["per_biome"]
+
+	for bz in range(0, per_row, block):
+		for bx in range(0, per_row, block):
+			var mx: float = origin.x + (float(bx) + float(block) * 0.5) * spacing
+			var mz: float = origin.y + (float(bz) + float(block) * 0.5) * spacing
+			var steep: float = smoothstep(STEEP_FROM, STEEP_TO, _slope_at(data, mx, mz))
+			var hill: float = maxf(steep, 0.5 * _ridge_factor(data, mx, mz, data.height_at(mx, mz)))
+
+			if hill < 0.12:
+				continue
+
+			var patch: float = rng_pick(floorf(mx / MONTANE_PATCH_M) * MONTANE_PATCH_M, floorf(mz / MONTANE_PATCH_M) * MONTANE_PATCH_M, species_id + 31)
+
+			if patch >= MONTANE_PATCH_SHARE:
+				continue
+
+			var share: float = 0.5 * fill * smoothstep(0.12, 0.45, hill)
+
+			for cz in range(bz, mini(bz + block, per_row)):
+				for cx in range(bx, mini(bx + block, per_row)):
+					var index: int = cz * per_row + cx
+
+					if stand_used.has(index):
+						continue
+
+					rng.seed = _mix(data.flora_seed, chunk.x * 65536 + chunk.y, species_id, STAND_BASE + index)
+					var x: float = origin.x + (float(cx) + rng.randf_range(0.15, 0.85)) * spacing
+					var z: float = origin.y + (float(cz) + rng.randf_range(0.15, 0.85)) * spacing
+					var keep: float = rng.randf()
+					var size: float = rng.randf()
+					var yaw: float = rng.randf() * TAU
+
+					if x >= origin.x + chunk_m or z >= origin.y + chunk_m or keep >= share:
+						continue
+
+					var k: int = data.nearest(x, z)
+
+					if per_biome[data.biome[k]] <= 0.0 or keep >= share * _soil_growth[data.soil[k]]:
+						continue
+
+					var y: float = _ground_ok(item, data, k, x, z)
+
+					if is_nan(y):
+						continue
+
+					var height: float = lerpf(0.9, 3.2, size)
+					found.append([_tier(item, height), species_id, STAND_BASE + index, x, y, z, height, yaw, spacing])
+
+
+# Ground slope (rise over run) from the tile's height map, over 4 m.
+func _slope_at(data, x: float, z: float) -> float:
+	return Vector2(data.height_at(x + 2.0, z) - data.height_at(x - 2.0, z), data.height_at(x, z + 2.0) - data.height_at(x, z - 2.0)).length() / 4.0
+
+
+# Slope of the real surface within 1.5 m: small on a ledge or outcrop top even on a steep face.
+func _fine_slope(x: float, z: float) -> float:
+	return Vector2(generator.surface_height(x + 1.5, z) - generator.surface_height(x - 1.5, z), generator.surface_height(x, z + 1.5) - generator.surface_height(x, z - 1.5)).length() / 3.0
 
 
 # The ground checks every spot must pass; the ground height, or NAN.
@@ -468,10 +570,12 @@ func _ground_ok(item: Dictionary, data, k: int, x: float, z: float) -> float:
 	if item["kind"] != KIND_PLANT and _near_water(data, x, z):
 		return NAN
 
-	var slope: float = Vector2(data.height_at(x + 2.0, z) - data.height_at(x - 2.0, z), data.height_at(x, z + 2.0) - data.height_at(x, z - 2.0)).length() / 4.0
+	var slope: float = _slope_at(data, x, z)
 
 	if slope > item["max_slope"]:
-		return NAN
+		# Only hardy species, only on a flat ledge, and only some of the spots.
+		if not item["ledge"] or rng_pick(x + 17.0, z + 23.0, item["id"]) >= LEDGE_CHANCE or _fine_slope(x, z) > LEDGE_MAX_SLOPE:
+			return NAN
 
 	var y: float = generator.surface_height(x, z)
 
