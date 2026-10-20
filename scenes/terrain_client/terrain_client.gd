@@ -56,7 +56,7 @@ const FaintEffectScript := preload("res://src/client/faint_effect.gd")
 const FallMistScript := preload("res://src/client/fall_mist.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 278
+const BUILD := 280
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -1219,6 +1219,7 @@ func _apply_quality() -> void:
 	grass.set_radius(QUALITY_GRASS_M[quality])
 	if terrain != null:
 		GroundMaterialScript.set_grass_far(terrain.material as ShaderMaterial, QUALITY_GRASS_M[quality])
+	grass.set_trample_rate(200 if quality == 0 else 100)   # the trample map upload: 5 Hz at Low, 10 Hz above
 	grass.set_litter(QUALITY_LITTER_M[quality], QUALITY_LITTER_AMOUNT[quality])
 	grass.set_shore(QUALITY_SHORE_M[quality], QUALITY_SHORE_AMOUNT[quality])
 	if fall_mist != null:

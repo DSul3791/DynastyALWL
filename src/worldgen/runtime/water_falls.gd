@@ -294,21 +294,68 @@ static func decode_from(buffer: StreamPeerBuffer) -> Array:
 
 # ---------------------------------------------------------------- drawing
 
+# The curtain (owner, 2026-10-20: "that doesn't look like water going over the falls"). One shared
+# material, no per-frame CPU work. The mesh carries per vertex: r = how far down the fall (0 lip,
+# 1 foot), g = width / 25 m, b = a seed per fall, a = fall length / 100 m. Long streaks scroll
+# down at falling speed (three noise strands of different size and speed), thin spots let the rock
+# show, the sides fray, the lip and the foot are white and break up, and the water goes whiter
+# (aerated) the further it has fallen. Lit like the ground (diffuse only), so it darkens at night.
+# Cost: 5 value noises per pixel (3 on Low), no screen or depth read.
 const FALL_SHADER := "
 shader_type spatial;
-render_mode unshaded, cull_disabled, depth_draw_never, blend_mix;
+render_mode blend_mix, cull_disabled, depth_draw_never, shadows_disabled, specular_disabled, diffuse_lambert_wrap;
 
-uniform vec3 deep_color : source_color = vec3(0.42, 0.62, 0.78);
-uniform vec3 foam_color : source_color = vec3(0.96, 0.98, 1.0);
+uniform vec3 deep_color : source_color = vec3(0.20, 0.40, 0.45);   // the river's teal, a little lighter
+uniform vec3 foam_color : source_color = vec3(0.93, 0.96, 0.98);
+uniform float detail = 1.0;      // 0 on Low: two strands, one edge noise
+
+float hash(vec2 p) {
+	vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+	p3 += dot(p3, p3.yzx + 33.33);
+	return fract((p3.x + p3.y) * p3.z);
+}
+
+float vnoise(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	vec2 u = f * f * (3.0 - 2.0 * f);
+	return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+}
 
 void fragment() {
-	float edge = smoothstep(0.0, 0.2, UV.x) * smoothstep(1.0, 0.8, UV.x);
-	float lines = 0.5 + 0.5 * sin(UV.x * 52.0 + sin(UV.y * 1.3 - TIME * 3.0) * 1.8);
-	float thin = 0.5 + 0.5 * sin(UV.x * 117.0 - sin(UV.y * 2.1 - TIME * 5.0) * 2.4);
-	float band = smoothstep(0.35, 1.0, 0.5 + 0.5 * sin(UV.y * 1.6 - TIME * 6.0 + UV.x * 4.0));
-	float foam = clamp(0.45 + 0.3 * lines + 0.15 * thin + 0.25 * band, 0.0, 1.0);
-	ALBEDO = mix(deep_color, foam_color, foam);
-	ALPHA = edge * (0.7 + 0.25 * foam);
+	float w = COLOR.g * 25.0;
+	float xm = UV.x * w;                 // metres across
+	float ym = UV.y * 6.0;               // metres down
+	float len = COLOR.a * 100.0;
+	float down_m = COLOR.r * len;        // metres fallen
+	float foot_m = len - down_m;
+	float seed = COLOR.b * 57.0;
+
+	float streak = vnoise(vec2(xm * 1.8 + seed, (ym - TIME * 7.0) * 0.10)) * 0.55
+		+ vnoise(vec2(xm * 4.3 - seed, (ym - TIME * 10.5) * 0.16)) * 0.45;
+	if (detail > 0.5) {
+		streak = streak * 0.82 + vnoise(vec2(xm * 9.0 + seed, (ym - TIME * 13.0) * 0.35)) * 0.18;
+	}
+	float strand = smoothstep(0.42, 0.7, streak);
+
+	// Frayed sides: the water reaches in and out along the drop.
+	float dist = min(xm, w - xm);
+	float reach = 0.3 + 1.5 * vnoise(vec2(ym * 0.25 - TIME * 2.0, seed));
+	if (detail > 0.5) {
+		reach += 0.6 * vnoise(vec2(ym * 0.9 - TIME * 3.0, seed + 9.0));
+	}
+	float edge = smoothstep(0.0, 0.9, dist - reach);
+
+	float lip = exp(-down_m * 0.35);                    // white where it leaves the rock
+	float foot = smoothstep(5.0, 0.0, foot_m);          // and where it lands
+	float air = clamp(0.3 + down_m * 0.04, 0.0, 0.75);   // whiter the further it falls
+	float white = clamp(strand * 0.9 + air * 0.6 + lip + foot * 0.9, 0.0, 1.0);
+
+	ALBEDO = mix(deep_color, foam_color, white);
+	// Thin spots show the rock; the foot breaks up into mist.
+	float body = mix(0.3, 0.92, clamp(0.25 + streak * 1.1, 0.0, 1.0));
+	ALPHA = clamp(edge * max(body, lip * 0.9) * (1.0 - foot * 0.25 * (1.0 - strand)), 0.0, 1.0);
+	ROUGHNESS = 1.0;
 }
 "
 
@@ -345,7 +392,7 @@ void fragment() {
 	float churn = 0.5 + 0.5 * sin(angle * 9.0 + TIME * 5.0 + r * 14.0) * sin(angle * 5.0 - TIME * 3.0 + r * 9.0);
 	float boil = smoothstep(0.55, 0.0, r) * (0.55 + 0.45 * churn);
 	float ripple = 0.5 + 0.5 * sin(r * 34.0 - TIME * 9.0 * (1.2 - r));
-	float rings = smoothstep(1.0, 0.25, r) * smoothstep(0.35, 0.8, ripple) * 0.45;
+	float rings = smoothstep(1.0, 0.25, r) * smoothstep(0.35, 0.8, ripple) * 0.22;
 	float streak = smoothstep(0.9, 0.3, r) * (0.5 + 0.5 * sin(angle * 23.0 + r * 5.0)) * 0.25;
 	float foam = clamp(boil + rings + streak, 0.0, 1.0);
 	ALBEDO = mix(vec3(0.7, 0.82, 0.9), vec3(1.0), foam);
@@ -389,6 +436,7 @@ static func build_mesh(falls: Array, cap: int) -> ArrayMesh:
 	var vertices: PackedVector3Array = PackedVector3Array()
 	var normals: PackedVector3Array = PackedVector3Array()
 	var uvs: PackedVector2Array = PackedVector2Array()
+	var colors: PackedColorArray = PackedColorArray()
 	var indices: PackedInt32Array = PackedInt32Array()
 	var splash_vertices: PackedVector3Array = PackedVector3Array()
 	var splash_uvs: PackedVector2Array = PackedVector2Array()
@@ -415,6 +463,15 @@ static func build_mesh(falls: Array, cap: int) -> ArrayMesh:
 
 		heading = heading.normalized()
 		var first: int = vertices.size()
+		var total: float = 0.0
+
+		for k in range(1, points.size()):
+			total += points[k].distance_to(points[k - 1])
+
+		total = maxf(total, 0.01)
+		var phase: float = fposmod(points[0].x * 0.37 + points[0].z * 0.61, 1.0)
+		var lip_y: float = points[0].y
+		var foot_y: float = points[points.size() - 1].y
 
 		for k in range(points.size()):
 			var tangent: Vector3 = points[mini(k + 1, points.size() - 1)] - points[maxi(k - 1, 0)]
@@ -433,12 +490,19 @@ static func build_mesh(falls: Array, cap: int) -> ArrayMesh:
 			if k > 0:
 				along += points[k].distance_to(points[k - 1])
 
-			vertices.append(points[k] - across * half)
-			vertices.append(points[k] + across * half)
+			# The water leaves the lip with some speed and arcs out from the face, coming back
+			# to the foot (a free fall goes out with the square root of the drop).
+			var out: float = minf(0.55 * sqrt(maxf(lip_y - points[k].y, 0.0)), 1.8) * smoothstep(0.0, 4.0, points[k].y - foot_y)
+			var centre: Vector3 = points[k] + heading * out
+			var tint: Color = Color(along / total, width * grow / 25.0, phase, minf(total / 100.0, 1.0))
+			vertices.append(centre - across * half)
+			vertices.append(centre + across * half)
 			normals.append(normal)
 			normals.append(normal)
 			uvs.append(Vector2(0.0, along / 6.0))
 			uvs.append(Vector2(1.0, along / 6.0))
+			colors.append(tint)
+			colors.append(tint)
 
 		for k in range(points.size() - 1):
 			var a: int = first + k * 2
@@ -473,6 +537,7 @@ static func build_mesh(falls: Array, cap: int) -> ArrayMesh:
 	arrays[Mesh.ARRAY_VERTEX] = vertices
 	arrays[Mesh.ARRAY_NORMAL] = normals
 	arrays[Mesh.ARRAY_TEX_UV] = uvs
+	arrays[Mesh.ARRAY_COLOR] = colors
 	arrays[Mesh.ARRAY_INDEX] = indices
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 

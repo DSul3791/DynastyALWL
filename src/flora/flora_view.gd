@@ -311,6 +311,8 @@ func _on_impostors(meshes: Dictionary) -> void:
 func set_water_quality(quality: int) -> void:
 	fall_cap = FALL_CAP[clampi(quality, 0, FALL_CAP.size() - 1)]
 	WaterMaterial.apply_quality(_water_material, quality)
+	if _fall_material != null:
+		_fall_material.set_shader_parameter("detail", 1.0 if quality >= 1 else 0.0)
 	water_ease = quality >= 1
 
 

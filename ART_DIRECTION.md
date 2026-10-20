@@ -244,3 +244,11 @@ Owner (2026-10-20): the grass reaches the horizon, and walked grass is stomped f
 - Trampling (`grass_trample.gd`, read in the grass vertex shader): a 256 x 256 toroidal RGB8 map, 1.1 m radius stamps at the player's feet while walking on the floor, the time of the stamp in two 8 bit channels. The shader shrinks each blade card's height by how recently it was stamped and recovers over 300 s (`RECOVER_S`), so no CPU work per frame. Cost: one vertex texture fetch per card, about 5 us per stamp, an upload of 192 KB at most 10 times a second only when a stamp landed.
 - Only the local player stamps for now. Other players and creatures are not on the client yet; `grass.stamp(position)` is the hook for them.
 - If the 1050 run shows trampling over about 0.1 ms CPU or visible cost, turn it off at Low.
+
+## 29. Waterfall curtain (job 280)
+
+Owner (2026-10-20): "that doesn't look like water going over the falls". Look only, in `water_falls.gd` (`FALL_SHADER`, `build_mesh`) and `flora_view.gd` (`set_water_quality` sets `detail`); no wire format or fall finding change.
+- The ribbon mesh now carries vertex COLOR: r how far down the fall (0 lip, 1 foot), g width / 25 m, b a seed per fall, a fall length / 100 m. The shader works in metres from these: three scrolling noise strands (fast, long vertical streaks), thin spots that let the rock show, sides that fray, white foam at the lip and at the foot, whiter the further it has fallen, teal like the river above.
+- Geometry: from the lip the curtain arcs out from the face by 0.55 x sqrt(drop) up to 1.8 m and comes back to the foot (a free fall). Diffuse-lit (`diffuse_lambert_wrap`, no specular) so it darkens at night; the old shader was unshaded and glowed.
+- Cost: 5 value noises per pixel (3 on Low, `detail` 0), no screen or depth read, one shared material, no per-frame CPU. Check the GPU table at a fall at Low and High.
+- Not changed yet: the splash sprite and the plunge pool foam shader (rings toned down to 0.22) and the mist cards at the foot.
