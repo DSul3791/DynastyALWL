@@ -23,6 +23,9 @@ const VSYNC_NAMES := ["on", "adaptive", "off"]
 var size_index: int = DEFAULT_SIZE
 var fullscreen: bool = false
 var vsync_index: int = 0
+const TEXT_SCALES := [0.7, 0.85, 1.0, 1.2]
+const TEXT_NAMES := ["small", "medium", "large", "extra large"]
+var text_index: int = 1                  # size of the crafting and inventory screen's text (default a little smaller)
 var quality: int = -1                    # -1: not saved yet (the game's default)
 
 
@@ -36,6 +39,7 @@ func load_saved() -> void:
 	fullscreen = bool(file.get_value("display", "fullscreen", false))
 	vsync_index = clampi(int(file.get_value("display", "vsync", 0)), 0, VSYNC_MODES.size() - 1)
 	quality = int(file.get_value("display", "quality", -1))
+	text_index = clampi(int(file.get_value("display", "text", 1)), 0, TEXT_SCALES.size() - 1)
 
 
 func save() -> void:
@@ -44,6 +48,7 @@ func save() -> void:
 	file.set_value("display", "fullscreen", fullscreen)
 	file.set_value("display", "vsync", vsync_index)
 	file.set_value("display", "quality", quality)
+	file.set_value("display", "text", text_index)
 	file.save(PATH)
 
 
@@ -53,6 +58,7 @@ func reset() -> void:
 	fullscreen = false
 	vsync_index = 0
 	quality = -1
+	text_index = 1
 
 
 # True when the game runs inside the editor's Game tab: the editor owns that window, so a script

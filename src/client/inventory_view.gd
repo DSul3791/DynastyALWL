@@ -1129,8 +1129,26 @@ var _craft_queue: int = 0             # crafts still to do after the one running
 var _slot_scroll: ScrollContainer
 
 
+var text_step: Callable = Callable()   # (direction -1 or 1): the owner changes and saves the text size
+var text_scale: float = 0.85           # crafting and inventory text size (Esc > Settings, saved in display_settings.cfg)
+
+
+# Resizes the crafting and inventory screen's text: the panel is rebuilt at the new size.
+func set_text_scale(scale: float) -> void:
+	text_scale = scale
+
+	if _panel != null:
+		var was_open: bool = open
+		_panel.queue_free()
+		_panel = null
+
+		if was_open:
+			_build_panel()
+			_refresh()
+
+
 func _px(size: int) -> int:
-	return int(round(float(size) * maxf(_layer.get_viewport().get_visible_rect().size.y / 1080.0, 0.5)))
+	return int(round(float(size) * text_scale * maxf(_layer.get_viewport().get_visible_rect().size.y / 1080.0, 0.5)))
 
 
 func _style(control: Control, size: int) -> void:
@@ -1142,10 +1160,10 @@ func _build_panel() -> void:
 		return
 
 	_panel = PanelContainer.new()
-	_panel.anchor_left = 0.125
-	_panel.anchor_right = 0.875
-	_panel.anchor_top = 0.1
-	_panel.anchor_bottom = 0.9
+	_panel.anchor_left = 0.05
+	_panel.anchor_right = 0.95
+	_panel.anchor_top = 0.05
+	_panel.anchor_bottom = 0.95
 	var back: StyleBoxFlat = StyleBoxFlat.new()
 	back.bg_color = Color(0.07, 0.07, 0.08, 0.93)
 	back.set_corner_radius_all(10)
@@ -1161,6 +1179,15 @@ func _build_panel() -> void:
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_style(title, TITLE_PX)
 	top.add_child(title)
+
+	# Text size buttons (Dave 2026-10-20); terrain_client keeps and saves the choice.
+	for step in [[-1, "Text -"], [1, "Text +"]]:
+		var size_button: Button = Button.new()
+		size_button.text = step[1]
+		_style(size_button, BODY_PX - 6)
+		size_button.pressed.connect(func(): text_step.call(step[0]) if text_step.is_valid() else null)
+		top.add_child(size_button)
+
 	_search = LineEdit.new()
 	_search.placeholder_text = "Search recipes and items"
 	_search.custom_minimum_size = Vector2(_px(560), 0.0)
@@ -1454,7 +1481,7 @@ func _refresh() -> void:
 		entry.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		entry.custom_minimum_size = Vector2(0.0, _px(64))
 		entry.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		entry.modulate = Color.WHITE if makeable else Color(1.0, 1.0, 1.0, 0.38)
+		entry.modulate = Color(0.55, 1.0, 0.55) if makeable else Color(0.55, 0.55, 0.55, 0.6)
 		entry.flat = r["number"] != _selected_recipe
 		_style(entry, BODY_PX)
 		entry.pressed.connect(_select_recipe.bind(r["number"]))

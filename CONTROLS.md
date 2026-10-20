@@ -68,3 +68,4 @@ Input rules (Dave):
 - Carrying: no key; the inventory panel shows "Carrying x of y kg". A heavy pack slows walking, jogging and running; flying is unaffected.
 - Rest (Ground adds the keys: C crouch, X sit, Z lie, all toggles; any movement key stands you up): sitting or lying brings exertion down to 0, lying fastest; standing under a heavy pack only rests it to about half. Over-exerted: speed capped, no sprint; keep pushing and you faint, then wake slowly.
 - Picking a plant or shrub now removes it from the world (like a stone); out-of-season or empty plants show no prompt at all.
+| Text - / Text + (crafting screen, click) | Smaller or larger text on the crafting and inventory screen (small, medium (default), large, extra large); saved with the display settings. Esc > Settings > "Crafting screen text size" cycles it too. Craftable recipes are green, the rest greyed out |

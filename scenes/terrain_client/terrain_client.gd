@@ -647,6 +647,11 @@ func _welcome_body(info: Dictionary) -> void:
 	items.is_inspecting = func(): return inspecting
 	items.stance_event = _on_stance_from_server
 	items.cover_index = flora.cover
+	items.text_scale = display.TEXT_SCALES[display.text_index]
+	items.text_step = func(direction):
+		display.text_index = clampi(display.text_index + direction, 0, display.TEXT_SCALES.size() - 1)
+		_save_display()
+		items.set_text_scale(display.TEXT_SCALES[display.text_index])
 	items.eat_event = func(item_id): sound.itemfx.eat(item_id)
 	items.fuel_event = func(): sound.itemfx.fuel_pressed()
 	items.strain_event = func(strain, _state, _fade):
@@ -1266,8 +1271,14 @@ func _build_menu(layer: CanvasLayer) -> void:
 		_apply_render_scale()
 		_save_display()
 		_report_display())
+	_menu_button(settings, "Crafting screen text size: change", func():
+		display.text_index = (display.text_index + 1) % display.TEXT_SCALES.size()
+		items.set_text_scale(display.TEXT_SCALES[display.text_index])
+		_save_display()
+		_menu_note.text = "Crafting screen text: %s (saved)" % display.TEXT_NAMES[display.text_index])
 	_menu_button(settings, "Reset display to default", func():
 		display.reset()
+		items.set_text_scale(display.TEXT_SCALES[display.text_index])
 		quality = 2
 		display.apply(get_window())
 		_apply_quality()
