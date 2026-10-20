@@ -135,6 +135,12 @@ SCENARIOS = [
         ("none in rain", r"rain " + NUM + r", playing", 0, 0.05),
         ("the loop plays", r"playing " + NUM, 1, 1),
     ]),
+    ("reject", ["--reject-test"], 3500, [
+        ("first refusal knocks", r"reject check: first (true)", 0, 1, "text"),
+        ("held key does not nag", r"held key (false)", 0, 1, "text"),
+        ("one played", r"played " + NUM + r", last", 1, 1),
+        ("generated knock", r"last (item_reject_\d) \(generated\)", 0, 1, "text"),
+    ]),
     ("stance", ["--stance"], 6000, [
         ("posture changes heard", r"stance check: " + NUM + r" changes", 6, 6),
         ("last is the rise", r"last (stance_rise)", 0, 1, "text"),

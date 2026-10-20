@@ -26,7 +26,7 @@ const GENERATED_DIR := "res://assets/audio/items/"
 const RECORDED_DIR := "res://assets/audio/recorded/items/"
 const CRAFT_DIR := "res://assets/audio/crafting/"
 const CRAFT_RECORDED_DIR := "res://assets/audio/recorded/crafting/"
-const NAMES := {"item_pickup": -17.0, "item_drop": -17.0, "inv_open": -20.0, "inv_close": -21.0, "item_swap": -20.0, "craft_done": -16.0, "hotbar_tick": -26.0, "craft_start": -22.0}
+const NAMES := {"item_pickup": -17.0, "item_drop": -17.0, "inv_open": -20.0, "inv_close": -21.0, "item_swap": -20.0, "craft_done": -16.0, "hotbar_tick": -26.0, "craft_start": -22.0, "item_reject": -24.0}
 const MIN_GAP_MSEC := 60
 const WORK_DB := -18.0
 const WORK_TYPES := {"cordage": "twine", "stone_axe": "knap", "stone_knife": "knap", "wooden_spear": "carve", "spear": "bind", "torch": "bind", "campfire": "stack"}
@@ -83,6 +83,31 @@ func setup(_stage) -> void:
 
 
 # A hotbar slot chosen (0 to 7): a quiet tick, a touch higher for the higher slots.
+# THE CALL POINT for refused actions (Items job 62 sends the server's reject event: too far, no tool, pack full):
+#   sound.itemfx.reject("far" | "no_tool" | "full_pack" | anything else)
+# A soft double knock; the reason only changes the pitch a little ("far" higher, "full_pack" lower) so repeats differ.
+# Rate limited to one per REJECT_GAP_MSEC so a held key never nags. Returns whether it played.
+const REJECT_GAP_MSEC := 600
+const REJECT_PITCH := {"far": 1.08, "no_tool": 1.0, "full_pack": 0.9}
+var rejects_played: int = 0
+var _last_reject_msec: int = -100000
+
+
+func reject(reason: String = "") -> bool:
+	var now: int = Time.get_ticks_msec()
+
+	if now - _last_reject_msec < REJECT_GAP_MSEC:
+		return false
+
+	_last_reject_msec = now
+
+	if not play("item_reject", float(REJECT_PITCH.get(reason, 1.0))):
+		return false
+
+	rejects_played += 1
+	return true
+
+
 func hotbar(slot: int) -> void:
 	hotbar_played += 1
 	play("hotbar_tick", 0.94 + 0.02 * float(clampi(slot, 0, 7)))

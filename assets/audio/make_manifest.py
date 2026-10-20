@@ -83,6 +83,7 @@ SLOTS = [
     ("wolf_growl", "creatures", "creature_sounds.gd: a wolf's growl (alert, threat)", "2 to 3 wolf growls and snarls, 1 to 2 s", 3),
     ("bear_growl", "creatures", "creature_sounds.gd: a bear's growl (idle, alert)", "2 to 3 low bear growls, 1 to 2 s", 3),
     ("bear_roar", "creatures", "creature_sounds.gd: a bear's roar (threat), the danger cue", "2 to 3 bear roars, 1 to 2 s", 2),
+    ("item_reject", "items", "item_sounds.gd: an action was refused (too far, no tool, pack full), a soft double knock", "a soft refusal knock, 0.2 s", 3),
     ("insect_bed", "insects", "insect_bed.gd: quiet summer insect chirring over meadows and water on warm days (loop)", "a 15 to 30 s seamless loop of many small insects, nothing rhythmic", 2),
     ("hit_swing", "hits", "hit_sounds.gd: a tool swung through the air, hit or miss", "3 tool whooshes, 0.5 s", 3),
     ("wet_squelch", "stepfx", "step_fx.gd: wet shoes squelch under steps for 20 s after wading", "4 short wet squelches, 0.22 s", 4),

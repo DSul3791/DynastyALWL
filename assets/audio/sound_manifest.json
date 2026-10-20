@@ -545,6 +545,14 @@
    "priority": 2
   },
   {
+   "name": "item_reject",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "item_sounds.gd: an action was refused (too far, no tool, pack full), a soft double knock",
+   "to_supply": "a soft refusal knock, 0.2 s",
+   "priority": 3
+  },
+  {
    "name": "insect_bed",
    "state": "generated",
    "variants": 2,
