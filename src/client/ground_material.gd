@@ -80,9 +80,19 @@ void fragment() {
 
 	float slope = 1.0 - clamp(world_normal.y, 0.0, 1.0);
 	float rock_mask = smoothstep(0.3, 0.6, slope);
+	// Grass and soil hold on a hillside only up to a point (owner, 2026-10-20: real slopes
+	// lose their cover in patches and keep it on ledges): the cover thins as the slope grows,
+	// with noise so it breaks up in patches; flat ledges keep theirs because their own surface
+	// is flat. grass_view.gd uses the same rule to place the grass.
+	float cover_noise = 0.6 * vnoise(world_pos * 0.45) + 0.4 * vnoise(world_pos * 1.6 + 5.0);
+	float cover = 1.0 - smoothstep(0.14, 0.42, slope + (cover_noise - 0.5) * 0.24);
+	float bare = (1.0 - stone) * (1.0 - cover);
+	rock_mask = max(rock_mask, bare);
 	// Steep faces: stone turns toward grey rock, soil toward darker bare earth.
 	vec3 steep_tint = mix(vec3(0.40, 0.31, 0.21), vec3(0.42, 0.40, 0.38), stone);
 	color = mix(color, color * 0.7 + steep_tint * 0.15, rock_mask);
+	// Where the cover has failed the stone beneath shows through.
+	color = mix(color, vec3(0.22, 0.205, 0.185), bare * 0.8);
 
 	// Detail: broad noise for patches, painted textures for the surface up close. The
 	// texture fades out with distance so far ground stays calm and cheap.

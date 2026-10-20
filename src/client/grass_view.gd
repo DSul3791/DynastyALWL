@@ -13,7 +13,9 @@ const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const CELL_M := 6.0
 const RAYS_PER_FRAME := 40
 const RETRY_MSEC := 1500
-const MIN_SLOPE_Y := 0.80                # surface normal y; steeper is bare
+const MIN_SLOPE_Y := 0.58                # surface normal y; steeper is bare rock
+const COVER_FROM := 0.14                 # slope (1 - normal y) where grass starts to thin
+const COVER_TO := 0.42                   # slope where it is gone, except in patches and on ledges
 const TUFTS_PER_POINT := 3
 
 # Soil ids that carry grass, with how thick (0 to 1).
@@ -74,6 +76,7 @@ var _meshes: Array = []                  # one card mesh per layer
 var _materials: Array = []               # one material per layer
 var _patch := FastNoiseLite.new()        # where tall grass grows
 var _tint := FastNoiseLite.new()         # greener and yellower patches
+var _cover := FastNoiseLite.new()        # breaks the grass up into patches on slopes
 var _cells: Dictionary = {}              # Vector2i -> {"nodes", "retry", "busy", "built", "count"}
 var _pending: Array = []                 # cells waiting for rays, nearest first
 var _scan_msec: int = 0
@@ -94,6 +97,8 @@ func setup(terrain: Node3D, flora, tables) -> void:
 	_patch.frequency = 0.035
 	_tint.seed = 77
 	_tint.frequency = 0.08
+	_cover.seed = 113
+	_cover.frequency = 0.45
 	var shader: Shader = Shader.new()
 	shader.code = SHADER
 
@@ -318,7 +323,11 @@ func _build(cell: Vector2i) -> int:
 			if soil < 0:
 				continue
 
-			var thick: float = float(GRASS_SOILS[soil])
+			var thick: float = float(GRASS_SOILS[soil]) * _cover_at(x, z, hit["normal"].y)
+
+			if thick < 0.04:
+				continue
+
 			var base: Color = _soil_color.get(soil, Color(0.3, 0.4, 0.2))
 			var green: Color = Color(0.46, 0.58, 0.28).lerp(base, 0.2)
 			# Patches: yellower where the tint noise is high; tall grass where the patch noise is.
@@ -387,6 +396,16 @@ func _build(cell: Vector2i) -> int:
 		tufts += list.size()
 
 	return rays
+
+
+# Share of the grass that holds at a spot of the given slope: full on level ground, thinning
+# toward steep faces in patches, nothing on rock. The ground shader fades the soil colour by
+# the same rule (ground_material.gd), so grass and green ground agree; a ledge has a level
+# surface of its own, so it keeps its grass on a steep face.
+func _cover_at(x: float, z: float, normal_y: float) -> float:
+	var slope: float = 1.0 - clampf(normal_y, 0.0, 1.0)
+	var noise: float = _cover.get_noise_2d(x, z) * 0.5 + 0.5
+	return 1.0 - smoothstep(COVER_FROM, COVER_TO, slope + (noise - 0.5) * 0.24)
 
 
 # The soil id at a point if it carries grass, else -1 (rock, ore, sand, snow...).
