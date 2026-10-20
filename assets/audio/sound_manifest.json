@@ -545,6 +545,14 @@
    "priority": 2
   },
   {
+   "name": "insect_bed",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "insect_bed.gd: quiet summer insect chirring over meadows and water on warm days (loop)",
+   "to_supply": "a 15 to 30 s seamless loop of many small insects, nothing rhythmic",
+   "priority": 2
+  },
+  {
    "name": "hit_swing",
    "state": "generated",
    "variants": 3,

@@ -200,6 +200,7 @@ var test_landing: bool = false         # --landing: drops of 1, 3 and 7 m throug
 var _hurts: Array = []
 var test_stepfx: bool = false          # --stepfx: wade, then dry steps: squelch and cloth layers
 var test_swing: bool = false           # --swing-test: tool whooshes (job 71)
+var test_insects: bool = false         # --insect-test: summer insect bed levels by season and hour (job 72)
 var test_stance: bool = false          # --stance: stand, crouch, sit, lie and rise in turn (job 56)
 var _stance_step: int = 0
 var _lake_start_msec: int = 0
@@ -405,6 +406,8 @@ func _ready() -> void:
 			test_lake = true
 		elif argument == "--stance":
 			test_stance = true
+		elif argument == "--insect-test":
+			test_insects = true
 		elif argument == "--swing-test":
 			test_swing = true
 		elif argument == "--stepfx":
@@ -2538,6 +2541,27 @@ func _process(delta: float) -> void:
 			heard.append(sound.hits.swing(tool, body.global_position + Vector3(0.0, 1.0, -0.6)))
 
 		print("Terrain client: swing check: %d swings, unknown tool %s, last %s" % [sound.hits.swings_played - before, str(sound.hits.swing("sword", body.global_position)), sound.hits.last_swing])
+
+	if test_insects and now - connected_msec > 18000 and now >= _test_fire_at:
+		_test_fire_at = now + 10000000
+		var amb = sound.ambient
+		amb.weights = {"forest": 0.0, "meadow": 1.0, "water": 0.0, "highland": 0.0}
+		var levels: Array = []
+		sound.weather.rain = 0.0
+		sound.wind_strength = 0.3
+		sound.cave.enclosure = 0.0
+
+		for combo in [["summer", 13.0], ["summer", 2.0], ["winter", 13.0], ["spring", 13.0], ["summer", 5.7], ["summer", 20.8]]:
+			amb.set_conditions(float(combo[1]), str(combo[0]), "clear")
+			levels.append("%.2f" % sound.insects.target())
+
+		amb.set_conditions(13.0, "summer", "clear")
+		sound.weather.rain = 1.0
+		levels.append("%.2f" % sound.insects.target())
+		sound.weather.rain = 0.0
+		sound.insects.level = 0.9
+		sound.insects.update(0.1)
+		print("Terrain client: insect check: summer noon %s, summer 2h %s, winter noon %s, spring noon %s, sunrise edge %s, sunset edge %s, rain %s, playing %d" % (levels + [sound.insects.voices_playing()]))
 
 	# Stance sounds: crouch, stand, sit, stand, lie (and sit for 20 s to hear settles), stand.
 	if test_stance and now - connected_msec > 18000 and now >= _test_fire_at:

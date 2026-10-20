@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **194 slots: 18 recorded, 167 generated placeholders, 9 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **195 slots: 18 recorded, 168 generated placeholders, 9 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -47,6 +47,7 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 2 | `hit_axe_wood` | generated | 3 | hit_sounds.gd: an axe blow on wood (felling, chopping) | 3 axe chops into a log or tree |
 | 2 | `hit_hammer_wood` | generated | 3 | hit_sounds.gd: a hammer blow on wood (building) | 3 hammer knocks on timber, or nails driven |
 | 2 | `hit_pick_stone` | generated | 3 | hit_sounds.gd: a pickaxe blow on rock (mining) | 3 pickaxe strikes on rock |
+| 2 | `insect_bed` | generated | 2 | insect_bed.gd: quiet summer insect chirring over meadows and water on warm days (loop) | a 15 to 30 s seamless loop of many small insects, nothing rhythmic |
 | 2 | `interior_rain_roof` | generated | 1 | interior_sounds.gd: rain on a roof heard from inside (loop) | Rain on a wooden or thatched roof from inside, seamless |
 | 2 | `inv_close` | generated | 3 | item_sounds.gd: the inventory closed | 3 leather pouch flaps closing |
 | 2 | `inv_open` | generated | 3 | item_sounds.gd: the inventory opened (I) | 3 leather pouch or satchel flaps opening |

@@ -125,6 +125,16 @@ SCENARIOS = [
         ("unknown tool is silent", r"unknown tool (false)", 0, 1, "text"),
         ("generated whoosh", r"last spade swing (hit_swing_\d) \(generated\)", 0, 1, "text"),
     ]),
+    ("insects", ["--insect-test"], 3500, [
+        ("summer noon loud", r"summer noon " + NUM, 0.6, 1.0),
+        ("silent at night", r"summer 2h " + NUM, 0, 0),
+        ("silent in winter", r"winter noon " + NUM, 0, 0),
+        ("thin in spring", r"spring noon " + NUM, 0.2, 0.5),
+        ("none at sunrise edge", r"sunrise edge " + NUM, 0, 0.2),
+        ("fades by sunset", r"sunset edge " + NUM, 0, 0.5),
+        ("none in rain", r"rain " + NUM + r", playing", 0, 0.05),
+        ("the loop plays", r"playing " + NUM, 1, 1),
+    ]),
     ("stance", ["--stance"], 6000, [
         ("posture changes heard", r"stance check: " + NUM + r" changes", 6, 6),
         ("last is the rise", r"last (stance_rise)", 0, 1, "text"),

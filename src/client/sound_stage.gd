@@ -28,6 +28,7 @@ const UiScript := preload("res://src/client/ui_sounds.gd")
 const EmitterScript := preload("res://src/client/emitters.gd")
 const CreatureScript := preload("res://src/client/creature_sounds.gd")
 const GearScript := preload("res://src/client/gear_sounds.gd")
+const InsectScript := preload("res://src/client/insect_bed.gd")
 const StepFxScript := preload("res://src/client/step_fx.gd")
 const LandingScript := preload("res://src/client/landing_sounds.gd")
 const StanceScript := preload("res://src/client/stance_sounds.gd")
@@ -181,6 +182,7 @@ var spear                               # SpearSounds: jab, throw, flight, hits 
 var interior                            # InteriorSounds: inside a building, doors, chests, furniture (set_inside, object)
 var stance                              # StanceSounds: crouch, sit, lie, rise and settle cloth sounds (set_stance); crouching softens steps
 var gear                                # GearSounds: armour and clothing layers on the footsteps (set_worn, step_at)
+var insects                             # InsectBed: summer insect chirring over meadows and water edges
 var stepfx                              # StepFx: wet-shoe squelch and cloth rustle under footsteps
 var landing                             # LandingSounds: thud and hard landing by fall height; signal hurt is the fall damage hook
 var emitters                            # Emitters: sounds for server-owned entities (emit, sync); sound/EMITTER_API.md
@@ -304,6 +306,10 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	creatures.name = "Creatures"
 	add_child(creatures)
 	creatures.setup(self)
+	insects = InsectScript.new()
+	insects.name = "Insects"
+	add_child(insects)
+	insects.setup(self)
 	stepfx = StepFxScript.new()
 	stepfx.name = "StepFx"
 	add_child(stepfx)
@@ -395,6 +401,7 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 
 	ambient.update(delta, body, flying)
 	water.update(delta, body, underwater)
+	insects.update(delta, underwater)
 	weather.update(delta, body, underwater)
 	dig.update(delta)
 	cave.update(delta, body, flying)
@@ -570,7 +577,7 @@ func voices_playing() -> int:
 		if is_instance_valid(player) and player.playing:
 			count += 1
 
-	return count + weather.voices_playing() + swim.voices_playing() + interior.voices_playing() + treewind.voices_playing() + workshop.loops_playing
+	return count + weather.voices_playing() + swim.voices_playing() + interior.voices_playing() + treewind.voices_playing() + workshop.loops_playing + insects.voices_playing()
 
 
 # True while another optional sound (a call, a flush) fits in the voice budget.
