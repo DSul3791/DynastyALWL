@@ -71,6 +71,16 @@ func step(gait: int, boost_db: float, surface: String) -> void:
 	steps_played += 1
 
 
+# The body layers worn rustle or clink once as the wearer changes posture (stance_sounds.gd): at most two, heaviest first.
+func shift(volume_db: float) -> void:
+	var body_layers: int = 0
+
+	for layer in BODY:
+		if layer in worn and body_layers < MAX_BODY_LAYERS:
+			body_layers += 1
+			_play(layer, float(LAYER_DB[layer]) + volume_db - float(LAYER_DB["cloth"]) - 6.0, null)
+
+
 # One footfall of another character wearing `layers`, heard from `at` (positional).
 func step_at(layers: Array, at: Vector3, gait: int = 0, surface: String = "dirt") -> void:
 	var body_layers: int = 0

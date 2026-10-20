@@ -4,7 +4,7 @@
 	"recipes": {
 		"cordage": {
 			"number": 1,
-			"name": "Twist twine",
+			"name": "Twine",
 			"needs": [
 				[
 					"plant_fibre",
@@ -20,7 +20,7 @@
 		},
 		"stone_axe": {
 			"number": 2,
-			"name": "Bind a stone axe (also the pick)",
+			"name": "Stone axe",
 			"needs": [
 				[
 					"stone",
@@ -40,7 +40,7 @@
 		},
 		"wooden_spear": {
 			"number": 5,
-			"name": "Sharpen a wooden spear",
+			"name": "Wooden spear",
 			"needs": [
 				[
 					"stick",
@@ -62,7 +62,7 @@
 		},
 		"spear": {
 			"number": 3,
-			"name": "Make a stone spear",
+			"name": "Stone spear",
 			"needs": [
 				[
 					"stone",
@@ -86,7 +86,7 @@
 		},
 		"stone_knife": {
 			"number": 6,
-			"name": "Chip a stone knife",
+			"name": "Stone knife",
 			"needs": [
 				[
 					"stone",
@@ -106,7 +106,7 @@
 		},
 		"torch": {
 			"number": 7,
-			"name": "Bind a torch",
+			"name": "Basic torch",
 			"needs": [
 				[
 					"stick",
@@ -126,7 +126,7 @@
 		},
 		"campfire": {
 			"number": 4,
-			"name": "Lay a campfire",
+			"name": "Campfire",
 			"needs": [
 				[
 					"stick",
@@ -146,7 +146,7 @@
 		},
 		"poultice_plantain": {
 			"number": 8,
-			"name": "Pound a plantain poultice",
+			"name": "Plantain poultice",
 			"needs": [
 				[
 					"plantain_leaves",
@@ -165,7 +165,7 @@
 		},
 		"poultice_comfrey": {
 			"number": 9,
-			"name": "Pound a comfrey poultice",
+			"name": "Comfrey poultice",
 			"needs": [
 				[
 					"comfrey_leaves",
@@ -184,7 +184,7 @@
 		},
 		"bandage_plantain": {
 			"number": 10,
-			"name": "Bind a leaf bandage",
+			"name": "Leaf bandage",
 			"needs": [
 				[
 					"plantain_leaves",
@@ -207,7 +207,7 @@
 		},
 		"bandage_staunchmoss": {
 			"number": 11,
-			"name": "Bind a mossy bandage",
+			"name": "Mossy bandage",
 			"needs": [
 				[
 					"staunchmoss",
@@ -230,7 +230,7 @@
 		},
 		"wooden_spade": {
 			"number": 12,
-			"name": "Shape a wooden spade",
+			"name": "Wooden spade",
 			"needs": [
 				[
 					"stick",
@@ -252,7 +252,7 @@
 		},
 		"lean_to_kit": {
 			"number": 13,
-			"name": "Bind a lean-to",
+			"name": "Small shelter",
 			"needs": [
 				[
 					"stick",
@@ -276,7 +276,7 @@
 		},
 		"chest_kit": {
 			"number": 14,
-			"name": "Weave a storage chest",
+			"name": "Woven chest",
 			"needs": [
 				[
 					"stick",
@@ -296,7 +296,7 @@
 		},
 		"chopping_block_kit": {
 			"number": 15,
-			"name": "Stand a log up as a chopping block",
+			"name": "Chopping block",
 			"needs": [
 				[
 					"log",
@@ -312,7 +312,7 @@
 		},
 		"lumber": {
 			"number": 16,
-			"name": "Saw a log into lumber",
+			"name": "Lumber",
 			"needs": [
 				[
 					"log",
@@ -329,7 +329,7 @@
 		},
 		"plank_chest_kit": {
 			"number": 17,
-			"name": "Build a plank chest",
+			"name": "Plank chest",
 			"needs": [
 				[
 					"lumber",

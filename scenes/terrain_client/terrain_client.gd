@@ -54,7 +54,7 @@ const GpuProbeScript := preload("res://src/debug/gpu_probe.gd")
 const WeatherLookScript := preload("res://src/client/weather_look.gd")
 const FaintEffectScript := preload("res://src/client/faint_effect.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 232
+const BUILD := 240
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -185,6 +185,10 @@ var test_spear_sounds: bool = false
 var test_fire: bool = false
 var test_fire_world: bool = false      # --fire-world: a fake world row goes through states 8, 9, 1, 9, 8 (loaded, lit, rained out, emptied)
 var _fire_world_step: int = 0
+var test_stance: bool = false          # --stance: stand, crouch, sit, lie and rise in turn (job 56)
+var _stance_step: int = 0
+var test_merge: bool = false           # --merge-check: far fires and far falls share voices (job 53)
+var _merge_step: int = 0
 var test_faint: bool = false           # --faint: the scripted over-exertion, faint and waking run (breath_sounds.demo)
 var test_load_all_sounds: bool = false # --load-all-sounds: load every sound file once and report the memory (job 52 audit)
 var _fire_sync_left: float = 0.0
@@ -375,6 +379,10 @@ func _ready() -> void:
 			test_levels = true
 		elif argument == "--fire":
 			test_fire = true
+		elif argument == "--stance":
+			test_stance = true
+		elif argument == "--merge-check":
+			test_merge = true
 		elif argument == "--faint":
 			test_faint = true
 		elif argument == "--load-all-sounds":
@@ -551,6 +559,7 @@ func _welcome_body(info: Dictionary) -> void:
 	sound.ground_below = _ground_below
 	var t4: int = Probe.start()
 	sound.setup(terrain, flora, grass)
+	stance.changed.connect(func(new_stance: int): sound.stance.set_stance(["stand", "crouch", "sit", "lie"][clampi(new_stance, 0, 3)]))
 	Probe.stop("welcome: sound setup", t4)
 
 	for argument in OS.get_cmdline_user_args():
@@ -643,6 +652,11 @@ func _welcome_body(info: Dictionary) -> void:
 	items.is_inspecting = func(): return inspecting
 	items.stance_event = _on_stance_from_server
 	items.cover_index = flora.cover
+	items.text_scale = display.TEXT_SCALES[display.text_index]
+	items.text_step = func(direction):
+		display.text_index = clampi(display.text_index + direction, 0, display.TEXT_SCALES.size() - 1)
+		_save_display()
+		items.set_text_scale(display.TEXT_SCALES[display.text_index])
 	items.eat_event = func(item_id): sound.itemfx.eat(item_id)
 	items.fuel_event = func(): sound.itemfx.fuel_pressed()
 	items.strain_event = func(strain, _state, _fade):
@@ -1262,8 +1276,14 @@ func _build_menu(layer: CanvasLayer) -> void:
 		_apply_render_scale()
 		_save_display()
 		_report_display())
+	_menu_button(settings, "Crafting screen text size: change", func():
+		display.text_index = (display.text_index + 1) % display.TEXT_SCALES.size()
+		items.set_text_scale(display.TEXT_SCALES[display.text_index])
+		_save_display()
+		_menu_note.text = "Crafting screen text: %s (saved)" % display.TEXT_NAMES[display.text_index])
 	_menu_button(settings, "Reset display to default", func():
 		display.reset()
+		items.set_text_scale(display.TEXT_SCALES[display.text_index])
 		quality = 2
 		display.apply(get_window())
 		_apply_quality()
@@ -2304,6 +2324,49 @@ func _process(delta: float) -> void:
 		if _test_fire_step >= 7:
 			test_fire = false
 
+	# Stance sounds: crouch, stand, sit, stand, lie (and sit for 20 s to hear settles), stand.
+	if test_stance and now - connected_msec > 18000 and now >= _test_fire_at:
+		_test_fire_at = now + 1500
+		var order: Array = ["crouch", "stand", "sit", "stand", "lie", "stand"]
+
+		if _stance_step < order.size():
+			sound.gear.set_worn(["cloth", "plate"])
+			sound.stance.set_stance(order[_stance_step])
+			_stance_step += 1
+		elif _stance_step == order.size():
+			print("Terrain client: stance check: %d changes, %d settles, crouch step %.0f dB, last %s" % [sound.stance.changes_played, sound.stance.settles_played, sound.stance.step_db(), sound.stance.last])
+			_stance_step += 1
+
+	# Distant fires and falls merge: one near fire and six far hearths, five far falls in a valley.
+	if test_merge and now - connected_msec > 18000:
+		sound.fire.hold_manual(60.0)
+		var base: Vector3 = body.global_position
+
+		if _merge_step == 0:
+			var list: Array = [{"id": 1, "at": base + Vector3(5.0, 0.0, 0.0), "size": 0.5, "lit": true, "open": true}]
+
+			for n in range(6):
+				list.append({"id": 10 + n, "at": base + Vector3(27.0 + float(n % 3) * 3.0, 0.0, float(n / 3) * 3.0), "size": 0.5, "lit": true, "open": true})
+
+			sound.fire.set_fires(list)
+			var falls: Array = []
+
+			for n in range(5):
+				falls.append({"kind": "fall", "at": base + Vector3(150.0 + float(n) * 8.0, 0.0, 0.0), "distance": 150.0 + float(n) * 8.0, "drop": 6.0, "speed": -1.0, "width": 4.0, "score": 0.6})
+
+			falls.append({"kind": "fall", "at": base + Vector3(60.0, 0.0, 0.0), "distance": 60.0, "drop": 6.0, "speed": -1.0, "width": 4.0, "score": 0.3})
+			var out: Array = sound.water._merge_far_falls(falls, base)
+			print("Terrain client: merge check: falls 6 -> %d voices, %d merged, widest %.0f" % [out.size(), sound.water.merged_falls, out.reduce(func(m, f): return maxf(m, float(f["width"])), 0.0)])
+
+		if _merge_step == 0:
+			sound.water._pick_base([{"kind": "fall", "at": base + Vector3(10.0, 0.0, 0.0), "distance": 10.0, "drop": 8.0, "width": 8.0}])
+
+		if _merge_step == 120:
+			print("Terrain client: fall base: playing %s at %.1f dB (target %.1f), drop %.0f m" % [str(sound.water._base.playing), sound.water._base.volume_db, sound.water._base_db, sound.water.base_fall_drop])
+			print("Terrain client: merge check: fires 7 -> %d loops, %d merged" % [sound.fire._loops.size(), sound.fire.merged_fires])
+
+		_merge_step += 1
+
 	# Faint run: 27 s of over-exertion, faint and waking; the final report says how far the world fell silent.
 	if test_faint and now - connected_msec > 18000 and not sound.breath.demo_done:
 		if sound.breath.state == "normal" and sound.breath.exertion == 0.0 and not sound.breath._demo_t >= 0.0:
@@ -2600,7 +2663,11 @@ func _walk_step() -> void:
 
 	match _walk_phase:
 		0:
-			if connected_msec > 0 and now - connected_msec > 15000:
+			# Wait for ground under the drop point (headless ground sometimes loads late: the walk then never landed
+			# and the sound checks saw 0 footsteps), but not past 45 s.
+			var drop_at: Vector3 = body.global_position + Vector3(0.0, 0.0, 40.0)
+
+			if connected_msec > 0 and now - connected_msec > 15000 and (not is_nan(_ground_below(drop_at)) or now - connected_msec > 45000):
 				flying = false
 				# Away from the spawn, where earlier --dig checks leave a hole.
 				body.global_position += Vector3(0.0, 0.0, 40.0)

@@ -47,7 +47,7 @@ Both are placed from kits (structures.json): left click with the kit held, yaw f
 
 ## First chest is woven (Dave, 2026-10-20)
 
-There are no boards without a saw mill, so the first storage chest is a woven basket chest: 10 sticks + 4 twine, 12 slots, item ids unchanged (`chest_kit`, `chest`; names "Woven chest kit" and "Woven chest"; material wicker). Taking an empty one down returns the kit. A plank chest (more slots, wood, boards plus nails or twine) is a later item with its own id after the saw mill. Art: the model should read as wicker, pale twigs bound with twine, a lid band of darker twine; Sounds: material is wicker, not wood.
+There are no boards without a saw mill, so the first storage chest is a woven basket chest: 10 sticks + 4 twine, 12 slots, item ids unchanged (`chest_kit`, `chest`; names "Woven chest" (kit and placed); material wicker). Taking an empty one down returns the kit. A plank chest (more slots, wood, boards plus nails or twine) is a later item with its own id after the saw mill. Art: the model should read as wicker, pale twigs bound with twine, a lid band of darker twine; Sounds: material is wicker, not wood.
 
 ## Chopping block (build 202)
 
@@ -68,3 +68,6 @@ ACT_STANCE (20, a = 0 stand, 1 crouch, 2 sit, 3 lie); the server's answer is the
 
 Regression: python3 tools/items_check.py runs the item unit tests and the headless client scenarios (chest, gather, lean-to, eat); exit 1 on any failure.
 Placeholders for the saw mill era (job 28, data only): lumber (27), plank chest kit (28) and plank chest (29, 20 slots, structure plank_chest, row state 6 like the woven chest), recipes marked known false with a station (saw_mill, workbench) until those exist. No client art or station code yet.
+
+## Naming rule (Dave 2026-10-20)
+Item and recipe names are the plain item name only, with no verb: "Basic torch", "Wooden spear", "Stone axe", "Campfire", "Small shelter", "Stone knife", "Wooden spade", "Comfrey poultice". Never "Bind a...", "Carve a...", "Chip a...", "Pound a...", "Make a...". The crafting list and its detail heading show just that name. Ids do not change.

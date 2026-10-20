@@ -44,7 +44,7 @@ static func chunk_levels(generator, origin: Vector2, chunk_m: float) -> Dictiona
 		var vel: PackedFloat32Array = _velocities(generator, data, origin, count, spacing, levels)
 		var fall_grid: PackedFloat32Array = _fall_grid(generator, data, origin, count, spacing, levels)
 		var fall_vel: PackedFloat32Array = vel if data.fall_levels.is_empty() else _velocities(generator, data, origin, count, spacing, fall_grid)
-		var falls: Array = FallsScript.find(generator, origin, count, spacing, fall_grid, fall_vel, func(x: float, z: float) -> float: return _fine_ground(generator, x, z))
+		var falls: Array = FallsScript.find(generator, origin, count, spacing, fall_grid, fall_vel, func(x: float, z: float) -> float: return _fine_ground(generator, x, z), PackedFloat32Array() if data.fall_levels.is_empty() else levels, vel)
 		return {"count": count, "spacing": spacing, "levels": levels, "wet": wet, "edge": edge, "fine": _fine_cells(generator, origin, count, spacing, levels, edge), "vel": vel, "falls": falls}
 
 	var closed: PackedFloat32Array = levels.duplicate()

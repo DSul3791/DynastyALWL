@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **179 slots: 17 recorded, 153 generated placeholders, 9 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **185 slots: 17 recorded, 159 generated placeholders, 9 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -75,6 +75,7 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 2 | `treewind_leaves` | generated | 1 | tree_wind.gd: wind in summer and spring leaves (loop) | A seamless loop of wind in green broadleaf trees, 20 s or more |
 | 2 | `treewind_pine` | generated | 1 | tree_wind.gd: wind through conifers, a soft needle hiss (loop, level follows wind and conifer count) | A seamless loop of wind in pines, 20 s or more, steady, no gusts |
 | 2 | `water_fall` | generated | 1 | water_sounds.gd: a waterfall roar | A waterfall loop, seamless |
+| 2 | `water_fall_base` | generated | 1 | water_sounds.gd: the close spray and churn where a fall lands (within 60 m) | A close waterfall base loop: hiss and splash, steady, seamless, no bubbles |
 | 2 | `water_pond` | generated | 1 | water_sounds.gd: gentle lapping at a pond shore | A calm lake shore lapping loop, seamless |
 | 2 | `wind_storm` | generated | 1 | weather_sounds.gd: gale howl in storms and blizzards | A howling gale loop, seamless |
 | 2 | `wolf_howl` | generated | 2 | creature_sounds.gd: a wolf's howl (idle), far away at night | 2 to 3 long wolf howls, 3 to 6 s, single wolf and a pack |
@@ -136,6 +137,10 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 3 | `spear_hit_stone` | generated | 3 | spear_sounds.gd: a spear striking stone | 3 spear tips hitting rock, clack and scrape |
 | 3 | `spear_jab` | generated | 3 | spear_sounds.gd: a spear thrust through the air | 3 spear thrust whooshes, 0.3 s |
 | 3 | `spear_throw` | generated | 3 | spear_sounds.gd: the heave and release of a thrown spear | 3 spear throw whooshes with effort, 0.7 s |
+| 3 | `stance_crouch` | generated | 3 | stance_sounds.gd: cloth rustle crouching down | 3 soft cloth rustles of crouching down, 0.45 s |
+| 3 | `stance_lie` | generated | 3 | stance_sounds.gd: lying down on the ground | 3 lying-down slides and thuds, 1 s |
+| 3 | `stance_rise` | generated | 3 | stance_sounds.gd: getting up | 3 getting-up rustles, 0.7 s |
+| 3 | `stance_sit` | generated | 3 | stance_sounds.gd: sitting down, rustle and a soft weight | 3 sitting-down rustles with a soft thud, 0.7 s |
 | 3 | `stomach_growl` | generated | 2 | item_sounds.gd watch_vitals(): a hungry stomach, every 50 to 110 s at 15 percent hunger or less (twice as often when starving) | 2 recordings of a stomach growling, 1.5 s |
 | 3 | `stump_chips` | generated | 3 | tree_sounds.gd: wood chips and a last crack as the stump is left | 3 wood chip sprays and cracks, 0.5 s |
 | 3 | `swim_dive` | generated | 3 | swim_sounds.gd: the head goes under | 3 bubbling gulps of going under, 1 s |
@@ -162,6 +167,7 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 4 | `interior_room` | generated | 1 | interior_sounds.gd: the room tone while inside a building (loop) | A quiet indoor room tone loop, seamless |
 | 4 | `rabbit_squeak` | generated | 2 | creature_sounds.gd: a rabbit's distress squeal (threat) | 2 to 3 short rabbit squeals |
 | 4 | `rabbit_thump` | generated | 2 | creature_sounds.gd: a rabbit's warning foot thump (idle, alert) | 2 to 3 rabbit hind-foot thumps, a double knock |
+| 4 | `stance_settle` | generated | 3 | stance_sounds.gd: a tiny shift while sitting or lying | 3 tiny cloth shifts, 0.3 s |
 | 4 | `ui_click` | generated | 2 | ui_sounds.gd: every menu button pressed | 2 to 3 very soft, short interface ticks |
 | 4 | `ui_off` | generated | 2 | ui_sounds.gd: a toggle switched off | 2 short falling two-note cues, quiet |
 | 4 | `ui_on` | generated | 2 | ui_sounds.gd: a toggle switched on (inspection mode) | 2 short rising two-note cues, quiet |

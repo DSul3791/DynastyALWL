@@ -34,6 +34,8 @@ const NEW_FIRE_SETTLE_MSEC := 6000      # fires seen in the first seconds were l
 const NEW_FIRE_NEAR_M := 6.0
 const FIRE_SIZE := 0.5                  # size of a world campfire until fires have a burn time
 const FADE_DB_PER_SEC := 30.0
+const MERGE_M := 18.0                   # fires farther than this and near each other share one loop
+const CLUSTER_M := 15.0
 
 var loops_playing: int = 0              # HUD
 var lit_played: int = 0
@@ -41,6 +43,7 @@ var out_played: int = 0
 var cook_played: int = 0
 var fuel_played: int = 0
 var last: String = ""
+var merged_fires: int = 0              # fires folded into a neighbour's loop at the last scan (HUD, check)
 
 var _stage                              # SoundStage (weather.rain)
 var _fires: Array = []
@@ -206,6 +209,7 @@ func _scan(body: CharacterBody3D) -> void:
 			near.append({"fire": fire, "distance": distance})
 
 	near.sort_custom(func(a, b): return a["distance"] < b["distance"])
+	near = _merge_far(near)
 	var wanted: Dictionary = {}
 
 	for entry in near.slice(0, int(_stage.preset["town_loops"])):
@@ -236,6 +240,56 @@ func _scan(body: CharacterBody3D) -> void:
 	for id in _loops:
 		if not wanted.has(id):
 			_loops[id]["gone"] = true
+
+
+# Fires beyond MERGE_M that stand within CLUSTER_M of each other are one crackle (job 53): one loop at their centre,
+# bigger the more fires there are (a town's far hearths hum together instead of taking all the loops). Lit if any is.
+func _merge_far(near: Array) -> Array:
+	merged_fires = 0
+	var kept: Array = []
+	var clusters: Array = []
+
+	for entry in near:
+		if float(entry["distance"]) <= MERGE_M:
+			kept.append(entry)
+			continue
+
+		var joined: bool = false
+
+		for cluster in clusters:
+			if cluster["seed"].distance_to(entry["fire"]["at"]) <= CLUSTER_M:
+				cluster["members"].append(entry)
+				joined = true
+				break
+
+		if not joined:
+			clusters.append({"seed": entry["fire"]["at"], "members": [entry]})
+
+	for cluster in clusters:
+		var members: Array = cluster["members"]
+
+		if members.size() == 1:
+			kept.append(members[0])
+			continue
+
+		var centre: Vector3 = Vector3.ZERO
+		var lit: bool = false
+		var open: bool = false
+		var nearest: float = INF
+
+		for entry in members:
+			centre += entry["fire"]["at"]
+			lit = lit or bool(entry["fire"].get("lit", true))
+			open = open or bool(entry["fire"].get("open", true))
+			nearest = minf(nearest, float(entry["distance"]))
+
+		centre /= float(members.size())
+		var id: String = "far_%d_%d" % [roundi(cluster["seed"].x / CLUSTER_M), roundi(cluster["seed"].z / CLUSTER_M)]
+		kept.append({"fire": {"id": id, "at": centre, "size": minf(0.5 + 0.12 * float(members.size() - 1), 1.0), "lit": lit, "open": open}, "distance": nearest})
+		merged_fires += members.size() - 1
+
+	kept.sort_custom(func(a, b): return a["distance"] < b["distance"])
+	return kept
 
 
 func _loop_player(name: String, at: Vector3) -> AudioStreamPlayer3D:

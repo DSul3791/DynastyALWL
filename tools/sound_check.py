@@ -31,10 +31,10 @@ NUM = r"(-?\d+(?:\.\d+)?)"
 
 # name, client flags, frames, checks
 SCENARIOS = [
-    ("walk", ["--walk"], 6000, [
+    ("walk", ["--walk"], 9000, [
         ("footsteps played", r"footsteps (\{[^}]*\})", 8, 1000, "sum"),
     ]),
-    ("floor", ["--walk", "--floor=plank"], 6000, [
+    ("floor", ["--walk", "--floor=plank"], 9000, [
         ("plank steps", r"footsteps \{ \"plank\": " + NUM, 8, 1000),
     ]),
     ("rain", ["--weather=rain", "--walk"], 9000, [
@@ -74,6 +74,18 @@ SCENARIOS = [
         ("heart fades away", r"heart gain down to " + NUM, 0, 0.01),
         ("heaves played", r"gain down to [\d.]+, " + NUM + r" heaves", 3, 200),
         ("run completes", r"done (true)", 0, 1, "text"),
+    ]),
+    ("merge", ["--merge-check"], 3500, [
+        ("falls share a voice", r"falls 6 -> " + NUM + r" voices", 2, 2),
+        ("fall width adds up", r"voices, \d+ merged, widest " + NUM, 20, 20),
+        ("far fires share a loop", r"fires 7 -> " + NUM + r" loops", 2, 2),
+        ("fall base plays near a fall", r"fall base: playing (true)", 0, 1, "text"),
+        ("fall base level", r"fall base: playing true at " + NUM + r" dB", -30, -5),
+        ("five hearths merged", r"loops, " + NUM + r" merged", 5, 5),
+    ]),
+    ("stance", ["--stance"], 6000, [
+        ("posture changes heard", r"stance check: " + NUM + r" changes", 6, 6),
+        ("last is the rise", r"last (stance_rise)", 0, 1, "text"),
     ]),
     ("felling", ["--chop"], 7000, [
         ("trees fell", r"tree sounds: " + NUM + r" falls", 1, 10),
