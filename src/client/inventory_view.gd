@@ -99,6 +99,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	_exertion_cfg = exertion_parsed if typeof(exertion_parsed) == TYPE_DICTIONARY else {}
 	_vitals_cfg = VitalsRules.load_config()
 	_carry_cfg = CarryRules.load_config()
+	_register_builtin_interactables()
 	_build_vitals_hud()
 	_prompt = Label.new()
 	_prompt.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -170,57 +171,128 @@ func clear_prompt() -> void:
 	_prompt_next_msec = Time.get_ticks_msec() + 400
 
 
-# E is the one interaction key. Pressing it acts on the nearest thing at once, except at a fire,
-# a chest or a lean-to where a tap and a hold (HOLD_E_S) do different things, decided in
-# release_e / the frame loop.
+# --- One interaction registry (Technical direction, 2026-10-20) ---
+# E is the one interaction key. Everything E can act on registers a probe with a priority (lowest first);
+# the first probe that finds something decides the single centre-screen prompt and what E does.
+# A probe returns {} or {"prompt": text, "tap": Callable, "hold": Callable (optional)}. With a "hold",
+# a tap acts on release and a hold (HOLD_E_S) does the other thing; without one the tap acts at once.
 const HOLD_E_S: float = 0.6
 var fuel_event: Callable = Callable()
-var _e_target: int = 0
+var _interactables: Array = []
+var _e_active: Dictionary = {}
 var _e_start_msec: int = 0
 
 
-func press_e() -> bool:
-	if _nearest()[0] != 0:
+func register_interactable(interactable_name: String, priority: int, probe: Callable) -> void:
+	_interactables.append({"name": interactable_name, "priority": priority, "probe": probe})
+	_interactables.sort_custom(func(x, y): return int(x["priority"]) < int(y["priority"]))
+
+
+func current_interaction() -> Dictionary:
+	for entry in _interactables:
+		var found: Dictionary = entry["probe"].call()
+
+		if not found.is_empty():
+			return found
+
+	return {}
+
+
+func _register_builtin_interactables() -> void:
+	register_interactable("pickup", 10, _probe_pickup)
+	register_interactable("fire", 20, _probe_fire)
+	register_interactable("structure", 30, _probe_structure)
+
+
+func _probe_pickup() -> Dictionary:
+	var near: Array = _nearest()
+
+	if near[0] == 0:
+		return {}
+
+	return {"prompt": "Press E to pick up %s x%d" % [table.name_of(near[1]), near[2]], "tap": func():
 		clear_prompt()
-		return pick_up_nearest()
+		pick_up_nearest()}
 
-	var fire: int = _nearest_fire()
-	var st_id: int = _nearest_struct()
 
-	if fire != 0:
-		_e_target = fire
-	elif st_id != 0 and _world[st_id]["state"] != 7:
-		_e_target = st_id
+func _probe_fire() -> Dictionary:
+	var id: int = _nearest_fire()
+
+	if id == 0:
+		return {}
+
+	var state: int = _world[id]["state"]
+	var found: Dictionary = {"prompt": _fire_prompt(state), "tap": func():
+		if state == 9:
+			net.inventory_action.rpc_id(1, Net.ACT_LIGHT, id, 0, 0, Vector3.ZERO)
+		else:
+			fuel_nearest()
+
+			if fuel_event.is_valid():
+				fuel_event.call()}
+
+	if state == 1:
+		found["hold"] = cook_nearest
+	elif state == 9:
+		found["hold"] = fuel_nearest
+
+	return found
+
+
+func _probe_structure() -> Dictionary:
+	var id: int = _nearest_struct()
+
+	if id == 0:
+		return {}
+
+	var state: int = _world[id]["state"]
+	var take_down: Callable = func():
+		clear_prompt()
+		net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
+
+	if state == 6:
+		return {"prompt": "Press E to open the chest    (hold E: take it down, empty only)", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO), "hold": take_down}
+
+	if state == 7:
+		return {"prompt": "Press E to split a log into firewood    (hold E to keep going, needs an axe; Shift+E: take it down)", "tap": pick_up_nearest}
+
+	return {"prompt": "Hold E to take down the %s" % table.name_of(_world[id]["number"]).to_lower(), "tap": func(): show_notice("Hold E to take it down"), "hold": take_down}
+
+
+func press_e() -> bool:
+	var found: Dictionary = current_interaction()
+
+	if found.is_empty():
+		return false
+
+	if found.has("hold"):
+		_e_active = found
+		_e_start_msec = Time.get_ticks_msec()
 	else:
-		return pick_up_nearest()
+		found["tap"].call()
 
-	_e_start_msec = Time.get_ticks_msec()
 	return true
 
 
 func release_e() -> void:
-	if _e_target == 0:
+	if _e_active.is_empty():
 		return
 
-	var id: int = _e_target
-	_e_target = 0
+	var found: Dictionary = _e_active
+	_e_active = {}
+	found["tap"].call()
 
-	if not _world.has(id):
+
+func _hold_e_check() -> void:
+	if _e_active.is_empty() or not Input.is_key_pressed(KEY_E):
 		return
 
-	var state: int = _world[id]["state"]
+	if Time.get_ticks_msec() - _e_start_msec < int(HOLD_E_S * 1000.0):
+		return
 
-	if state == 9:
-		net.inventory_action.rpc_id(1, Net.ACT_LIGHT, id, 0, 0, Vector3.ZERO)
-	elif state == 1 or state == 8:
-		fuel_nearest()
-
-		if fuel_event.is_valid():
-			fuel_event.call()
-	elif state == 6:
-		net.inventory_action.rpc_id(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)
-	else:
-		show_notice("Hold E to take it down")
+	var found: Dictionary = _e_active
+	_e_active = {}
+	found["hold"].call()
 
 
 # What E will do at a fire (Dave 2026-10-20): empty -> add firewood, loaded -> light, burning -> more wood.
@@ -232,32 +304,6 @@ func _fire_prompt(state: int) -> String:
 		return "Press E to light    (needs plant fibre; hold E: add more wood)"
 
 	return "Press E to add wood    (hold E: roast food)"
-
-
-func _hold_e_check() -> void:
-	if _e_target == 0 or not Input.is_key_pressed(KEY_E):
-		return
-
-	if Time.get_ticks_msec() - _e_start_msec < int(HOLD_E_S * 1000.0):
-		return
-
-	var id: int = _e_target
-	_e_target = 0
-
-	if not _world.has(id):
-		return
-
-	var state: int = _world[id]["state"]
-
-	if state == 1:
-		cook_nearest()
-	elif state == 9:
-		fuel_nearest()
-	elif state == 8:
-		pass
-	else:
-		clear_prompt()
-		net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 
 
 # True when something lay within reach and the server was asked for it.
@@ -321,19 +367,7 @@ func _process(_delta: float) -> void:
 
 	if now < _notice_until_msec:
 		return
-	var near: Array = _nearest()
-	var fire: int = _nearest_fire()
-	_prompt.text = "" if near[0] == 0 else "Press E to pick up %s x%d" % [table.name_of(near[1]), near[2]]
-
-	var struct_id: int = _nearest_struct()
-
-	if near[0] == 0 and fire != 0:
-		_prompt.text = _fire_prompt(_world[fire]["state"])
-	elif near[0] == 0 and struct_id != 0:
-		var st: int = _world[struct_id]["state"]
-		_prompt.text = "Press E to open the chest    (hold E: take it down, empty only)" if st == 6 else ("Press E to split a log into firewood    (hold E to keep going, needs an axe; Shift+E: take it down)" if st == 7 else "Hold E to take down the %s" % table.name_of(_world[struct_id]["number"]).to_lower())
-	elif near[0] == 0:
-		_prompt.text = plant_hint
+	_prompt.text = str(current_interaction().get("prompt", ""))
 
 
 

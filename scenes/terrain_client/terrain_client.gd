@@ -652,6 +652,8 @@ func _welcome_body(info: Dictionary) -> void:
 	items.tool_event = func(what): sound.placed.tool_break(body.global_position) if what == "broke" else sound.placed.tool_repair(body.global_position)
 	harvest = HarvestScript.new()
 	harvest.setup(self, items, net)
+	items.register_interactable("plant", 40, func():
+		return {} if items.plant_hint == "" else {"prompt": items.plant_hint, "tap": harvest.tap})
 	held = HeldItemScript.new()
 	held.name = "Held"
 	add_child(held)
@@ -1704,8 +1706,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.keycode >= KEY_1 and event.keycode <= KEY_8 and held != null:
 			held.select(event.keycode - KEY_1)
 		elif event.keycode == KEY_E and items != null:
-			if not items.press_e():
-				harvest.tap()
+			items.press_e()
 		elif event.keycode == KEY_BRACKETRIGHT and items != null:
 			items.admin_give_test_set()
 		elif event.keycode == KEY_J and _jitter_test != null:
