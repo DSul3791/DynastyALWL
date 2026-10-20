@@ -774,6 +774,10 @@ func _init() -> void:
 	# Crafting queue: ingredients taken when queued, crafts run on the tick, cancel refunds, caps, restart.
 	var qd: String = "user://test_server_items_queue"
 	DirAccess.make_dir_recursive_absolute(qd)
+
+	for file in DirAccess.get_files_at(qd):
+		DirAccess.remove_absolute(qd + "/" + file)
+
 	var cq = make(qd)
 	var queue_seen: Array = []
 	cq.send_craft_queue = func(_p, entries, left_ms): queue_seen.append([entries, left_ms])
