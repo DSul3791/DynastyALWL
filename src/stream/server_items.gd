@@ -107,6 +107,8 @@ var _struct_gap_m: float = 2.5
 var _chests: Dictionary = {}        # structure uid -> Inventory (server-owned contents, chests.json)
 var _next_uid: int = 1
 const CHEST_REACH_M := 4.0
+var _slow_in: float = 0.0
+const SLOW_TICK_S := 0.25
 var gather_pace_ms: int = GATHER_PACE_MS
 var _last_gather: Dictionary = {}   # peer -> msec
 var _last_cook: Dictionary = {}     # peer -> msec
@@ -293,18 +295,24 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 
 func tick(delta: float) -> void:
 	_fly(delta)
-	_rot(delta)
-	_fires(delta)
+	_slow_in += delta
 
-	for id in _items.keys():
-		if _items[id].has("scatter") or _items[id].has("fire") and int(_items[id]["fire"]["state"]) == 1:
-			continue
+	# Fires and item lifetimes only need about 4 looks a second (TD note 2026-10-20: 1.5 ms a frame at 1300 records).
+	if _slow_in >= SLOW_TICK_S:
+		var spent: float = _slow_in
+		_slow_in = 0.0
+		_rot(spent)
+		_fires(spent)
 
-		_items[id]["left"] -= delta
+		for id in _items.keys():
+			if _items[id].has("scatter") or float(_items[id]["left"]) > 1.0e8:
+				continue
 
-		if _items[id]["left"] <= 0.0:
-			_items.erase(id)
-			_dirty = true
+			_items[id]["left"] -= spent
+
+			if _items[id]["left"] <= 0.0:
+				_items.erase(id)
+				_dirty = true
 
 	_sync_in -= delta
 
