@@ -34,6 +34,8 @@ const SPEED_FLOOR := 0.15
 const SPEED_DB_PER_OCTAVE := 5.0        # per doubling of the current speed
 const ROWS_PER_FRAME := 2               # of the 17 scan rows
 const SEPARATION_M := 36.0
+const FALL_MERGE_M := 100.0              # falls farther than this and within FALL_CLUSTER_M of each other share one voice
+const FALL_CLUSTER_M := 120.0
 const FALL_DROP_M := 1.0                # surface drop between neighbouring squares
 const POND_AROUND := 16
 const RIVER_AROUND := 8
@@ -54,6 +56,7 @@ const KINDS := {
 
 var sources: Array = []                 # what is playing now: [{kind, distance}] for the HUD
 var summary: String = ""
+var merged_falls: int = 0               # falls folded into another's voice at the last choice (HUD, check)
 
 var _flora
 var _slots: Array = []                  # {player, kind, target, fade}
@@ -267,7 +270,62 @@ func _fall_candidates(origin: Vector3) -> Array:
 			found.append({"kind": "fall", "at": at, "distance": distance, "drop": float(fall["top"].y) - base.y, "speed": -1.0,
 				"width": float(fall["width"]), "score": distance / float(KINDS["fall"]["reach"])})
 
-	return found
+	return _merge_far_falls(found, origin)
+
+
+# Falls beyond FALL_MERGE_M that lie within FALL_CLUSTER_M of each other are one distant roar (job 53): one voice at
+# their width-weighted centre, as wide as all of them together (a few dB louder), so a valley of falls takes one of the
+# MAX_SOURCES slots, not all of them. Near falls stay single.
+func _merge_far_falls(found: Array, origin: Vector3) -> Array:
+	merged_falls = 0
+	var near: Array = []
+	var far: Array = []
+
+	for fall in found:
+		if float(fall["distance"]) > FALL_MERGE_M:
+			far.append(fall)
+		else:
+			near.append(fall)
+
+	far.sort_custom(func(a, b): return a["distance"] < b["distance"])
+	var clusters: Array = []
+
+	for fall in far:
+		var joined: bool = false
+
+		for cluster in clusters:
+			if Vector2(cluster["seed"].x - fall["at"].x, cluster["seed"].z - fall["at"].z).length() <= FALL_CLUSTER_M:
+				cluster["members"].append(fall)
+				joined = true
+				break
+
+		if not joined:
+			clusters.append({"seed": fall["at"], "members": [fall]})
+
+	for cluster in clusters:
+		var members: Array = cluster["members"]
+
+		if members.size() == 1:
+			near.append(members[0])
+			continue
+
+		var total: float = 0.0
+		var centre: Vector3 = Vector3.ZERO
+		var drop: float = 0.0
+
+		for fall in members:
+			var w: float = maxf(float(fall["width"]), 0.5)
+			total += w
+			centre += fall["at"] * w
+			drop = maxf(drop, float(fall["drop"]))
+
+		centre /= total
+		var distance: float = Vector2(centre.x - origin.x, centre.z - origin.z).length()
+		near.append({"kind": "fall", "at": centre, "distance": distance, "drop": drop, "speed": -1.0, "width": total,
+			"score": distance / float(KINDS["fall"]["reach"]), "merged": members.size()})
+		merged_falls += members.size() - 1
+
+	return near
 
 
 func _assign(chosen: Array, origin: Vector3) -> void:

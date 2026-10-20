@@ -185,6 +185,8 @@ var test_spear_sounds: bool = false
 var test_fire: bool = false
 var test_fire_world: bool = false      # --fire-world: a fake world row goes through states 8, 9, 1, 9, 8 (loaded, lit, rained out, emptied)
 var _fire_world_step: int = 0
+var test_merge: bool = false           # --merge-check: far fires and far falls share voices (job 53)
+var _merge_step: int = 0
 var test_faint: bool = false           # --faint: the scripted over-exertion, faint and waking run (breath_sounds.demo)
 var test_load_all_sounds: bool = false # --load-all-sounds: load every sound file once and report the memory (job 52 audit)
 var _fire_sync_left: float = 0.0
@@ -375,6 +377,8 @@ func _ready() -> void:
 			test_levels = true
 		elif argument == "--fire":
 			test_fire = true
+		elif argument == "--merge-check":
+			test_merge = true
 		elif argument == "--faint":
 			test_faint = true
 		elif argument == "--load-all-sounds":
@@ -2303,6 +2307,32 @@ func _process(delta: float) -> void:
 
 		if _test_fire_step >= 7:
 			test_fire = false
+
+	# Distant fires and falls merge: one near fire and six far hearths, five far falls in a valley.
+	if test_merge and now - connected_msec > 18000:
+		sound.fire.hold_manual(60.0)
+		var base: Vector3 = body.global_position
+
+		if _merge_step == 0:
+			var list: Array = [{"id": 1, "at": base + Vector3(5.0, 0.0, 0.0), "size": 0.5, "lit": true, "open": true}]
+
+			for n in range(6):
+				list.append({"id": 10 + n, "at": base + Vector3(27.0 + float(n % 3) * 3.0, 0.0, float(n / 3) * 3.0), "size": 0.5, "lit": true, "open": true})
+
+			sound.fire.set_fires(list)
+			var falls: Array = []
+
+			for n in range(5):
+				falls.append({"kind": "fall", "at": base + Vector3(150.0 + float(n) * 8.0, 0.0, 0.0), "distance": 150.0 + float(n) * 8.0, "drop": 6.0, "speed": -1.0, "width": 4.0, "score": 0.6})
+
+			falls.append({"kind": "fall", "at": base + Vector3(60.0, 0.0, 0.0), "distance": 60.0, "drop": 6.0, "speed": -1.0, "width": 4.0, "score": 0.3})
+			var out: Array = sound.water._merge_far_falls(falls, base)
+			print("Terrain client: merge check: falls 6 -> %d voices, %d merged, widest %.0f" % [out.size(), sound.water.merged_falls, out.reduce(func(m, f): return maxf(m, float(f["width"])), 0.0)])
+
+		if _merge_step == 120:
+			print("Terrain client: merge check: fires 7 -> %d loops, %d merged" % [sound.fire._loops.size(), sound.fire.merged_fires])
+
+		_merge_step += 1
 
 	# Faint run: 27 s of over-exertion, faint and waking; the final report says how far the world fell silent.
 	if test_faint and now - connected_msec > 18000 and not sound.breath.demo_done:

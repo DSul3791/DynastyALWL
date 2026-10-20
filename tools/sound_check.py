@@ -75,6 +75,12 @@ SCENARIOS = [
         ("heaves played", r"gain down to [\d.]+, " + NUM + r" heaves", 3, 200),
         ("run completes", r"done (true)", 0, 1, "text"),
     ]),
+    ("merge", ["--merge-check"], 3500, [
+        ("falls share a voice", r"falls 6 -> " + NUM + r" voices", 2, 2),
+        ("fall width adds up", r"voices, \d+ merged, widest " + NUM, 20, 20),
+        ("far fires share a loop", r"fires 7 -> " + NUM + r" loops", 2, 2),
+        ("five hearths merged", r"loops, " + NUM + r" merged", 5, 5),
+    ]),
     ("felling", ["--chop"], 7000, [
         ("trees fell", r"tree sounds: " + NUM + r" falls", 1, 10),
     ]),
