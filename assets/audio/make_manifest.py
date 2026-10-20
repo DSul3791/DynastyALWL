@@ -66,6 +66,10 @@ SLOTS = [
     ("hit_spade_wood", "hits", "hit_sounds.gd: a spade strike on wood", "3 spade knocks and scrapes on wood", 4),
     ("hit_spade_stone", "hits", "hit_sounds.gd: a spade scraping on stone", "3 spade scrapes on stone", 4),
     ("hit_spade_soil", "hits", "hit_sounds.gd: a spade strike into soil", "3 spade thuds into earth", 3),
+    ("town_bell", "town", "town_sounds.gd: a tower bell tolling the hour or on call (ring_bell)", "2 to 3 bell strikes with a long ring, 4 to 6 s each", 3),
+    ("town_hammering", "town", "town_sounds.gd: a smith or builder working nearby (loop)", "A seamless loop of hammer on anvil, 8 to 15 s", 2),
+    ("town_fire", "town", "town_sounds.gd: a hearth or forge fire (loop)", "A seamless crackling fire loop", 2),
+    ("town_crowd", "town", "town_sounds.gd: a busy square murmur (loop)", "A seamless crowd murmur loop, no clear words", 3),
     ("dig_water", "dig", "dig_sounds.gd: water pouring into a new hole", "3 water splashing into a pit", 3),
 ]
 
@@ -78,12 +82,8 @@ STEPS = [
     ("water", "wading in water"),
 ]
 
-# Slots planned but not yet built (job 15): listed so the owner can supply them early.
+# Slots planned but not yet built: listed so the owner can supply them early.
 PLANNED = [
-    ("town_bell", "a town bell tolling by position", "1 to 2 bell strikes with long ring"),
-    ("town_hammering", "a smith or builder working nearby", "a loop or 3 to 4 short hammering runs"),
-    ("town_fire", "fire crackle at hearths and forges", "a seamless fire crackle loop"),
-    ("town_crowd", "a crowd murmur in a busy square", "a seamless murmur loop, no clear words"),
 ]
 
 EXT = ("ogg", "wav")
@@ -146,9 +146,10 @@ def main():
     lines += ["", "## Footsteps (recorded left and right, `step_<ground>_<left|right>_N`)", "", "| Slot | State | Files | Ground |", "|---|---|---|---|"]
     for s in steps:
         lines.append("| `%s` | %s | %d | %s |" % (s["name"], s["state"], s["variants"], s["used_in"]))
-    lines += ["", "## Planned (hooks come with job 15; supplying them early is fine)", "", "| Slot | Where it will play | What to supply |", "|---|---|---|"]
-    for n, w, s in PLANNED:
-        lines.append("| `%s` | %s | %s |" % (n, w, s))
+    if PLANNED:
+        lines += ["", "## Planned (hooks come later; supplying them early is fine)", "", "| Slot | Where it will play | What to supply |", "|---|---|---|"]
+        for n, w, s in PLANNED:
+            lines.append("| `%s` | %s | %s |" % (n, w, s))
     with open(os.path.join(HERE, "SOUND_PACK.md"), "w") as f:
         f.write("\n".join(lines) + "\n")
     print("Manifest: %d slots, %d recorded, %d generated, %d empty" % (total, recorded, generated, empty))

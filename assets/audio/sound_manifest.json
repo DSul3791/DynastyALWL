@@ -409,6 +409,38 @@
    "priority": 3
   },
   {
+   "name": "town_bell",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "town_sounds.gd: a tower bell tolling the hour or on call (ring_bell)",
+   "to_supply": "2 to 3 bell strikes with a long ring, 4 to 6 s each",
+   "priority": 3
+  },
+  {
+   "name": "town_hammering",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "town_sounds.gd: a smith or builder working nearby (loop)",
+   "to_supply": "A seamless loop of hammer on anvil, 8 to 15 s",
+   "priority": 2
+  },
+  {
+   "name": "town_fire",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "town_sounds.gd: a hearth or forge fire (loop)",
+   "to_supply": "A seamless crackling fire loop",
+   "priority": 2
+  },
+  {
+   "name": "town_crowd",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "town_sounds.gd: a busy square murmur (loop)",
+   "to_supply": "A seamless crowd murmur loop, no clear words",
+   "priority": 3
+  },
+  {
    "name": "dig_water",
    "state": "generated",
    "variants": 3,
@@ -485,26 +517,5 @@
    "used_in": "wading in water"
   }
  ],
- "planned": [
-  {
-   "name": "town_bell",
-   "used_in": "a town bell tolling by position",
-   "to_supply": "1 to 2 bell strikes with long ring"
-  },
-  {
-   "name": "town_hammering",
-   "used_in": "a smith or builder working nearby",
-   "to_supply": "a loop or 3 to 4 short hammering runs"
-  },
-  {
-   "name": "town_fire",
-   "used_in": "fire crackle at hearths and forges",
-   "to_supply": "a seamless fire crackle loop"
-  },
-  {
-   "name": "town_crowd",
-   "used_in": "a crowd murmur in a busy square",
-   "to_supply": "a seamless murmur loop, no clear words"
-  }
- ]
+ "planned": []
 }

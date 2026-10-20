@@ -22,6 +22,7 @@ const WeatherScript := preload("res://src/client/weather_sounds.gd")
 const DigScript := preload("res://src/client/dig_sounds.gd")
 const CaveScript := preload("res://src/client/cave_sounds.gd")
 const HitScript := preload("res://src/client/hit_sounds.gd")
+const TownScript := preload("res://src/client/town_sounds.gd")
 const OcclusionScript := preload("res://src/client/sound_occlusion.gd")
 const WaterSoundsScript := preload("res://src/client/water_sounds.gd")
 const AUDIO_DIR := "res://assets/audio/"
@@ -133,6 +134,7 @@ var water                               # WaterSounds: brooks, rivers, pond shor
 var weather                             # WeatherSounds: rain, gale, thunder, snow hush (set_weather)
 var occlusion                           # SoundOcclusion: hills and forest muffle distant sounds
 var hits                                # HitSounds: axe, pick, hammer, spade on wood, stone, soil (hit, hit_ground)
+var town                                # TownSounds: fire, hammering, crowd, bell hooks (set_sources, ring_bell)
 var cave                                # CaveSounds: reverb, muffling and drips under rock
 var dig                                 # DigSounds: the sound of what is dug (dug(center, radius, listener))
 var _sphere: PhysicsShapeQueryParameters3D
@@ -189,6 +191,10 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	dig.name = "Dig"
 	add_child(dig)
 	dig.setup(self)
+	town = TownScript.new()
+	town.name = "Town"
+	add_child(town)
+	town.setup(self)
 	hits = HitScript.new()
 	hits.name = "Hits"
 	add_child(hits)
@@ -256,6 +262,7 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	weather.update(delta, body, underwater)
 	dig.update(delta)
 	cave.update(delta, body, flying)
+	town.update(delta, body)
 	occlusion.update(delta, body, flying)
 	_time += delta
 	gust = clampf(0.5 + 0.8 * _gust_noise.get_noise_1d(_time), 0.0, 1.0)
@@ -305,6 +312,7 @@ func set_quality(quality: int) -> void:
 	memory_cap_bytes = TIER_MEMORY_MB[tier] * 1048576
 	ambient.max_voices = TIER_NATURE_CALLS[tier]
 	cave.set_tier(tier)
+	town.set_tier(tier)
 
 
 # Every sound playing right now, all layers (the budget counts these).

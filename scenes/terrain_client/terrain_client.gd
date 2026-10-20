@@ -39,7 +39,7 @@ const GitStamp := preload("res://src/debug/git_stamp.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 const GpuProbeScript := preload("res://src/debug/gpu_probe.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 126
+const BUILD := 124
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -195,6 +195,7 @@ var weather: Dictionary = {}          # the weather here and now (WeatherScript.
 var _weather_next_msec: int = 0
 var game_clock = GameClockScript.new()   # copy of the server's game clock, set at the welcome
 var _sound_test_at: int = -1          # Esc > Settings "Sound test time"; -1 follows the game clock
+var _sound_town_on: bool = false
 var _sound_hit_at: int = -1
 var _sound_weather_at: int = -1         # Esc > Settings "Sound test weather"; -1 follows the weather state
 var _water_dirty: bool = false        # the server said the water moved; not asked for yet
@@ -1006,6 +1007,20 @@ func _build_menu(layer: CanvasLayer) -> void:
 			sound.ambient.conditions["hour"] = pick[1]
 
 		_menu_note.text = "Nature sounds now play as: %s (a test setting; the sky does not follow)" % pick[0])
+	_menu_button(settings, "Sound test: town sounds", func():
+		_sound_town_on = not _sound_town_on
+		var here: Vector3 = body.global_position
+		sound.town.set_sources([
+			{"id": 1, "kind": "fire", "at": here + Vector3(6, 0, 0), "strength": 1.0},
+			{"id": 2, "kind": "hammering", "at": here + Vector3(0, 0, 25), "strength": 1.0},
+			{"id": 3, "kind": "crowd", "at": here + Vector3(-20, 0, 0), "strength": 1.0},
+			{"id": 4, "kind": "bell", "at": here + Vector3(0, 20, -60), "strength": 1.0},
+		] if _sound_town_on else [])
+
+		if _sound_town_on:
+			sound.town.ring_bell(here + Vector3(0, 20, -60), 3)
+
+		_menu_note.text = "Town sounds %s (a test: a fire, a smith, a crowd and a bell placed around you)" % ("on" if _sound_town_on else "off"))
 	_menu_button(settings, "Sound test: tool hit", func():
 		_sound_hit_at = (_sound_hit_at + 1) % (sound.hits.TOOLS.size() * sound.hits.MATERIALS.size())
 		var tool: String = sound.hits.TOOLS[_sound_hit_at / sound.hits.MATERIALS.size()]
@@ -1604,6 +1619,7 @@ func _process(delta: float) -> void:
 	hud.text += "\nlast step: " + sound.last_step
 	hud.text += "\nsound budget: " + sound.budget_text()
 	hud.text += "\n" + sound.wind_text()
+	hud.text += "\ntown sounds: %d loops, %d bell strikes" % [sound.town.loops_playing, sound.town.bells_rung]
 	hud.text += "\nmuffled sounds: %d filtered, %d behind hills" % [sound.occlusion.filtered, sound.occlusion.occluded]
 	hud.text += "\ncave: enclosure %.2f, drips %d" % [sound.cave.enclosure, sound.cave.drips_played]
 	hud.text += "\nlast dig sound: %s" % sound.dig.last_dig
@@ -1643,6 +1659,7 @@ func _process(delta: float) -> void:
 			print("Terrain client: grass %d tufts in %d cells (radius %.0f m)" % [grass.tufts, grass.cells_built, grass.radius_m])
 			print("Terrain client: water sounds: %s" % sound.water.summary)
 			print("Terrain client: nature calls %s, zones %s" % [str(sound.ambient.calls_played), str(sound.ambient.weights)])
+			print("Terrain client: town sounds %d loops, %d bells" % [sound.town.loops_playing, sound.town.bells_rung])
 			print("Terrain client: tool hits %d, last %s" % [sound.hits.hits_played, sound.hits.last_hit])
 			print("Terrain client: muffled sounds: %d filtered, %d behind hills" % [sound.occlusion.filtered, sound.occlusion.occluded])
 			print("Terrain client: cave enclosure %.2f, drips %d" % [sound.cave.enclosure, sound.cave.drips_played])
