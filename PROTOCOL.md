@@ -1,0 +1,79 @@
+# Protocol (PROTOCOL_VERSION 21, src/stream/terrain_net.gd)
+
+Kept current by whoever changes the wire: add the row, bump PROTOCOL_VERSION to the next free number (pull first and read terrain_net.gd), and note the build.
+
+## Messages (RPCs)
+
+| Message | Direction | Reliability | Arguments | Since |
+|---|---|---|---|---|
+| welcome | server to client | reliable | info: Dictionary | 2 |
+| request_blocks | client to server | reliable | keys: PackedInt32Array, urgent: int | 2 |
+| deliver_blocks | server to client | reliable | keys: PackedInt32Array, payloads: Array | 2 |
+| tile_changed | server to client | reliable | tile: Vector2i, revision: int | 2 |
+| dig | client to server | reliable | center: Vector3, radius: float | 2 |
+| dug | server to client | reliable | center: Vector3, radius: float | 2 |
+| request_flora | client to server | reliable | chunks: PackedInt32Array | 3 |
+| deliver_flora | server to client | reliable | chunk: Vector2i, bytes: PackedByteArray, water: PackedByteArray, full: bool | 3 |
+| cut_flora | client to server | reliable | chunk: Vector2i, id: int | 3 |
+| flora_cut | server to client | reliable | chunk: Vector2i, id: int | 3 |
+| report_position | client to server | unreliable_ordered | position: Vector3, velocity: Vector3 | 5 |
+| step_water_rate | client to server | reliable | direction: int | 6 |
+| water_rate | server to client | reliable | rate: float, busy: bool, spring_m3_s: float | 6 |
+| water_changed | server to client | reliable | - | 6 |
+| ground_reset | server to client | reliable | tiles_stamp: String, starter_stamp: String | 8 |
+| request_water | client to server | reliable | chunks: PackedInt32Array | 6 |
+| deliver_water | server to client | reliable | chunk: Vector2i, water: PackedByteArray | 6 |
+| hello | client to server | reliable | player_key: String | 10 |
+| inventory_action | client to server | reliable | kind: int, a: int, b: int, count: int, at: Vector3 | 10 |
+| inventory_full | server to client | reliable | bytes: PackedByteArray | 10 |
+| inventory_slots | server to client | reliable | bytes: PackedByteArray | 10 |
+| world_items | server to client | reliable | added: Array, removed: PackedInt32Array | 10 |
+| strain | server to client | reliable | strain_pm: int, state: int, fade_pm: int, stance: int | 20 |
+| vitals | server to client | reliable | hunger: int, health: int, weight_dkg: int | 18 |
+| chest_contents | server to client | reliable | id: int, bytes: PackedByteArray | 15 |
+| notice | server to client | reliable | text: String | 12 |
+
+## Inventory action kinds (inventory_action(kind, a, b, count, at))
+
+| Kind | Name | Meaning | Since |
+|---|---|---|---|
+| 0 | ACT_MOVE | a = from slot, b = to slot | 10 |
+| 1 | ACT_DROP | a = slot, count = how many, at = where it lands | 10 |
+| 2 | ACT_PICKUP | a = world item id | 10 |
+| 3 | ACT_ADMIN_GIVE | a = item number, count (admin tool; tests only) | 10 |
+| 4 | ACT_CRAFT | a = recipe number (data/items/recipes.json) | 10 |
+| 5 | ACT_THROW | a = slot, at = aim direction (the server starts the throw from the player) | 10 |
+| 6 | ACT_PLACE | a = slot of a placeable item, at = where (a campfire kit becomes a fire) | 10 |
+| 7 | ACT_HIT | a = tree id, b = flora chunk x, count = flora chunk z: one axe blow on a standing tree | 12 |
+| 8 | ACT_MINE | at = the point the axe struck; on bare rock the server gives stone | 10 |
+| 9 | ACT_PROCESS | a = world item id of a felled trunk: one axe blow on it gives branches, leaves, bark, logs | 13 |
+| 10 | ACT_SPLIT | a = slot, count = how many go to the first empty slot | 13 |
+| 11 | ACT_FUEL | a = fire world id: burn one stick (or a log) in the fire | 13 |
+| 12 | ACT_COOK | a = fire world id: roast one raw forage item at the fire | 13 |
+| 13 | ACT_REPAIR | a = slot of a worn or broken tool: spend its repair materials, win back half its durability | 13 |
+| 14 | ACT_CHEST_OPEN | a = chest world id: the server answers with chest_contents | 15 |
+| 15 | ACT_CHEST_PUT | a = pack slot, b = chest world id, count = how many to put in | 15 |
+| 16 | ACT_CHEST_TAKE | a = chest slot, b = chest world id, count = how many to take out | 15 |
+| 17 | ACT_USE_STRUCT | a = structure world id: use it (a chopping block splits one log into firewood) | 16 |
+| 18 | ACT_EAT | a = pack slot: eat the food or apply the medicine in it (data/items/vitals.json) | 18 |
+| 19 | ACT_LIGHT | a = fire world id: light a loaded fire (uses tinder from the pack, see cooking.json) | 19 |
+| 20 | ACT_STANCE | a = wanted stance: 0 stand, 1 crouch, 2 sit, 3 lie; the server answers in strain() | 21 |
+
+## World-item row states (world_items)
+
+0 item, 1 lit fire, 2 out fire (retired in 19, old saves map to 8 or 9), 3 felled trunk, 4 stump, 5 lean-to, 6 chest, 7 chopping block, 8 empty laid fire (ashes), 9 loaded unlit fire.
+
+## Save formats
+
+inventories.json version 2 (reads 1), world_items.json version 1, chests.json version 1, vitals.json version 1, tree_states.json. All are written atomically; an unusable file is kept as .bad.
+
+## Notes by version
+
+- 21: ACT_STANCE; strain() gains the confirmed stance.
+- 20: strain(strain_pm, state, fade_pm) for over-exertion and fainting.
+- 19: ACT_LIGHT; fire states 8 and 9.
+- 18: ACT_EAT; vitals(hunger, health, weight_dkg).
+- 17: chopping block (ACT_USE_STRUCT, state 7).
+- 16: storage chest (ACT_CHEST_*, chest_contents, state 6).
+- 15: lean-to (state 5, ACT_PLACE carries yaw in count).
+- 14: tool wear (9-byte slot updates, ACT_REPAIR).
