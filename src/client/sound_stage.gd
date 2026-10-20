@@ -24,6 +24,7 @@ const CaveScript := preload("res://src/client/cave_sounds.gd")
 const HitScript := preload("res://src/client/hit_sounds.gd")
 const TownScript := preload("res://src/client/town_sounds.gd")
 const SwimScript := preload("res://src/client/swim_sounds.gd")
+const UiScript := preload("res://src/client/ui_sounds.gd")
 const OcclusionScript := preload("res://src/client/sound_occlusion.gd")
 const WaterSoundsScript := preload("res://src/client/water_sounds.gd")
 const AUDIO_DIR := "res://assets/audio/"
@@ -141,6 +142,7 @@ var water                               # WaterSounds: brooks, rivers, pond shor
 var weather                             # WeatherSounds: rain, gale, thunder, snow hush (set_weather)
 var occlusion                           # SoundOcclusion: hills and forest muffle distant sounds
 var hits                                # HitSounds: axe, pick, hammer, spade on wood, stone, soil (hit, hit_ground)
+var ui                                  # UiSounds: menu click, toggle and quality cues (play(name))
 var swim                                # SwimSounds: splash, strokes, diving, the hum under water (driven by the body)
 var town                                # TownSounds: fire, hammering, crowd, bell hooks (set_sources, ring_bell)
 var cave                                # CaveSounds: reverb, muffling and drips under rock
@@ -203,6 +205,10 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	town.name = "Town"
 	add_child(town)
 	town.setup(self)
+	ui = UiScript.new()
+	ui.name = "Ui"
+	add_child(ui)
+	ui.setup(self)
 	swim = SwimScript.new()
 	swim.name = "Swim"
 	add_child(swim)

@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **74 slots: 17 recorded, 53 generated placeholders, 4 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **78 slots: 17 recorded, 57 generated placeholders, 4 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -66,6 +66,10 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 4 | `hit_pick_wood` | generated | 3 | hit_sounds.gd: a pickaxe blow on wood | 3 pick strikes into wood |
 | 4 | `hit_spade_stone` | generated | 3 | hit_sounds.gd: a spade scraping on stone | 3 spade scrapes on stone |
 | 4 | `hit_spade_wood` | generated | 3 | hit_sounds.gd: a spade strike on wood | 3 spade knocks and scrapes on wood |
+| 4 | `ui_click` | generated | 2 | ui_sounds.gd: every menu button pressed | 2 to 3 very soft, short interface ticks |
+| 4 | `ui_off` | generated | 2 | ui_sounds.gd: a toggle switched off | 2 short falling two-note cues, quiet |
+| 4 | `ui_on` | generated | 2 | ui_sounds.gd: a toggle switched on (inspection mode) | 2 short rising two-note cues, quiet |
+| 4 | `ui_quality` | generated | 2 | ui_sounds.gd: the quality tier changed (F2 or the menu) | 2 soft settled chimes, 0.5 s |
 | 5 | `crow_alarm` | recorded | 3 | ambient_life.gd: alarm(at): a crow scolds when the player runs through crow country, and the danger warning hook | have: Dave's angry crow |
 | 5 | `crow_caw` | recorded | 7 | ambient_life.gd: forest and highland, by day | have: Dave's crow calls |
 | 5 | `fish_splash` | recorded | 3 | ambient_life.gd: a fish jumps at the water edge, rare | have: Dave's fish jumping clip, played whole |

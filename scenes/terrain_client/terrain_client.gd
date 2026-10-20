@@ -17,6 +17,7 @@ extends Node
 #                     stopping after 30 s to check the ground then loads under the player;
 #                     prints when each detail level of the block under the stop point loaded
 #   --swim            with --frames: 20 s in, play a scripted swim (splash, strokes, dive, surface)
+#   --ui              with --frames: 18 s in, play the interface cues one every 0.5 s
 #   --dig             with --frames: 20 s in, ask the server to dig a hole under the spawn
 #   --water-step      with --frames: 12 s in, press + twice (the server re-settles the water)
 #   --cut             with --frames: 25 s in, ask the server to cut the tree nearest the spawn
@@ -40,7 +41,7 @@ const GitStamp := preload("res://src/debug/git_stamp.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 const GpuProbeScript := preload("res://src/debug/gpu_probe.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 125
+const BUILD := 130
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -155,6 +156,10 @@ var _walk_dir: Vector3 = Vector3.ZERO
 var _walk_stats: Dictionary = {}
 var test_dig: bool = false
 var test_swim: bool = false
+var test_ui: bool = false
+var _quality_cued: int = -1
+var _test_ui_next: int = 0
+var _test_ui_step: int = 0
 var cache_mb: int = 0                 # 0 = by quality preset; --cache-mb= overrides
 var cache_mb_from_quality: bool = false
 var clear_cache: bool = false         # --clear-cache wipes the saved ground before starting
@@ -261,6 +266,8 @@ func _ready() -> void:
 			test_cut = true
 		elif argument == "--swim":
 			test_swim = true
+		elif argument == "--ui":
+			test_ui = true
 
 	net.welcome_received.connect(_on_welcome)
 	net.blocks_received.connect(_on_blocks)
@@ -811,6 +818,11 @@ func _make_player(root: Node3D, start: Vector3) -> void:
 # and shadows.
 func _apply_quality() -> void:
 	if sound != null and sound.ambient != null:
+		if _quality_cued >= 0 and _quality_cued != quality:
+			sound.ui.play("ui_quality")
+
+		_quality_cued = quality
+
 		sound.set_quality(quality)
 
 	var view: int = QUALITY_VIEW[quality]
@@ -1082,6 +1094,7 @@ func _menu_button(parent: VBoxContainer, text: String, action: Callable) -> void
 	button.custom_minimum_size = Vector2(380.0, 52.0)
 	button.add_theme_font_size_override("font_size", 26)
 	button.pressed.connect(action)
+	button.pressed.connect(func(): sound.ui.play("ui_click") if sound != null else null)   # after the action: a cue it plays itself wins
 	parent.add_child(button)
 
 
@@ -1304,6 +1317,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.keycode == KEY_SLASH:
 			inspecting = not inspecting
 			_brain_icon.visible = inspecting
+			sound.ui.play("ui_on" if inspecting else "ui_off")
 
 			if not inspecting:
 				_inspect_label.text = ""
@@ -1563,6 +1577,16 @@ func _process(delta: float) -> void:
 		test_cut = false
 		_cut_nearest_tree()
 
+	# Headless check: the interface cues in turn.
+	if test_ui and now - connected_msec > 18000 and now >= _test_ui_next:
+		_test_ui_next = now + 500
+		var cues: Array = ["ui_click", "ui_on", "ui_off", "ui_quality"]
+		sound.ui.play(cues[_test_ui_step % cues.size()])
+		_test_ui_step += 1
+
+		if _test_ui_step >= 8:
+			test_ui = false
+
 	# Headless check: a scripted swim (jump in, strokes, dive, surface).
 	if test_swim and now - connected_msec > 20000:
 		test_swim = false
@@ -1674,6 +1698,7 @@ func _process(delta: float) -> void:
 			print("Terrain client: grass %d tufts in %d cells (radius %.0f m)" % [grass.tufts, grass.cells_built, grass.radius_m])
 			print("Terrain client: water sounds: %s" % sound.water.summary)
 			print("Terrain client: nature calls %s, zones %s" % [str(sound.ambient.calls_played), str(sound.ambient.weights)])
+			print("Terrain client: interface sounds %d played, last %s" % [sound.ui.played, sound.ui.last])
 			print("Terrain client: swim sounds %d splashes, %d strokes, %d dives, %d surfacings, last %s" % [sound.swim.splashes, sound.swim.strokes, sound.swim.dives, sound.swim.surfaces, sound.swim.last])
 			print("Terrain client: town sounds %d loops, %d bells" % [sound.town.loops_playing, sound.town.bells_rung])
 			print("Terrain client: tool hits %d, last %s" % [sound.hits.hits_played, sound.hits.last_hit])

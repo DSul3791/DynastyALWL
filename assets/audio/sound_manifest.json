@@ -417,6 +417,38 @@
    "priority": 3
   },
   {
+   "name": "ui_click",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "ui_sounds.gd: every menu button pressed",
+   "to_supply": "2 to 3 very soft, short interface ticks",
+   "priority": 4
+  },
+  {
+   "name": "ui_on",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "ui_sounds.gd: a toggle switched on (inspection mode)",
+   "to_supply": "2 short rising two-note cues, quiet",
+   "priority": 4
+  },
+  {
+   "name": "ui_off",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "ui_sounds.gd: a toggle switched off",
+   "to_supply": "2 short falling two-note cues, quiet",
+   "priority": 4
+  },
+  {
+   "name": "ui_quality",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "ui_sounds.gd: the quality tier changed (F2 or the menu)",
+   "to_supply": "2 soft settled chimes, 0.5 s",
+   "priority": 4
+  },
+  {
    "name": "swim_splash_small",
    "state": "generated",
    "variants": 3,
