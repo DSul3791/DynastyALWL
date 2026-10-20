@@ -972,5 +972,8 @@ func _exit_tree() -> void:
 	if water_live != null:
 		water_live.stop()
 
+	if store != null and OS.has_environment("BLOCKTIME"):
+		print(store.timing_report())
+
 	if store != null:
 		store.flush()

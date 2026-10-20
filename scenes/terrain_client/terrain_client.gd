@@ -50,7 +50,7 @@ const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 const GpuProbeScript := preload("res://src/debug/gpu_probe.gd")
 const WeatherLookScript := preload("res://src/client/weather_look.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 209
+const BUILD := 211
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -116,6 +116,7 @@ var camera: Camera3D
 var hud: Label
 var debug_hud = DebugHudScript.new()   # F3 or Esc > Settings: the long list of diagnostic lines; threads add lines with debug_hud.add_line(name, callable)
 var _last_sound: String = ""
+var _quality_buttons: Array = []         # Esc > Settings, one per tier; the active one is marked
 var _last_sound_seen: Dictionary = {}
 var compass                         # temporary admin compass (AdminCompass)
 var sea: MeshInstance3D
@@ -535,8 +536,15 @@ func _welcome_body(info: Dictionary) -> void:
 	if test_gear:
 		sound.gear.set_worn(["plate", "cloth", "iron"])
 	var t5: int = Probe.start()
+	debug_hud.add_line("quality tier", func() -> String:
+		return "tier %s: ground view %d, flora view trees %.0f shrubs %.0f plants %.0f m, impostors from %.0f m, shadows %.0f m, grass %d m density %.2f" % [
+			QUALITY_NAMES[quality], terrain.view_distance, flora.view_m[0], flora.view_m[1], flora.view_m[2], flora.impostor_m,
+			float(QUALITY_SHADOW_M[quality]), int(grass.radius_m), grass.density])
 	_make_environment(root)
 	_apply_quality()
+
+	if OS.get_cmdline_user_args().has("--print-tier"):
+		print("Terrain client: ", debug_hud.text())
 	Probe.stop("welcome: environment", t5)
 	get_window().size_changed.connect(_apply_render_scale)
 	RenderingServer.viewport_set_measure_render_time(get_viewport().get_viewport_rid(), true)
@@ -1041,6 +1049,9 @@ func _make_player(root: Node3D, start: Vector3) -> void:
 # Applies the current quality preset to ground view distance, flora distances
 # and shadows.
 func _apply_quality() -> void:
+	for n in range(_quality_buttons.size()):
+		_quality_buttons[n].text = QUALITY_NAMES[n] + ("  (active)" if n == quality else "")
+
 	if sound != null and sound.ambient != null:
 		if _quality_cued >= 0 and _quality_cued != quality:
 			sound.ui.play("ui_quality")
@@ -1201,11 +1212,12 @@ func _build_menu(layer: CanvasLayer) -> void:
 
 	for n in range(QUALITY_NAMES.size()):
 		var index: int = n
-		_menu_button(settings, QUALITY_NAMES[n], func():
+		var tier_button: Button = _menu_button(settings, QUALITY_NAMES[n], func():
 			quality = index
 			_apply_quality()
 			_save_display()
-			_menu_note.text = "Quality: %s" % QUALITY_NAMES[index])
+			_menu_note.text = "Quality: %s (saved; the HUD shows it after the build number)" % QUALITY_NAMES[index])
+		_quality_buttons.append(tier_button)
 
 	_menu_button(settings, "Debug details (F3): on or off", func():
 		debug_hud.enabled = not debug_hud.enabled
@@ -1394,7 +1406,7 @@ func _menu_page(parent: VBoxContainer, page_name: String) -> VBoxContainer:
 	return page
 
 
-func _menu_button(parent: VBoxContainer, text: String, action: Callable) -> void:
+func _menu_button(parent: VBoxContainer, text: String, action: Callable) -> Button:
 	var button: Button = Button.new()
 	button.text = text
 	button.custom_minimum_size = Vector2(380.0, 52.0)
@@ -1402,6 +1414,7 @@ func _menu_button(parent: VBoxContainer, text: String, action: Callable) -> void
 	button.pressed.connect(action)
 	button.pressed.connect(func(): sound.ui.play("ui_click") if sound != null else null)   # after the action: a cue it plays itself wins
 	parent.add_child(button)
+	return button
 
 
 func _show_menu_page(page_name: String) -> void:
@@ -2282,7 +2295,7 @@ func _process(delta: float) -> void:
 
 	var avg_ms: float = total_ms / maxf(float(_frame_ms.size()), 1.0)
 	_note_last_sound()
-	hud.text = "build %d (%s)  %d fps\nx %.0f  y %.1f  z %.0f\nlast sound: %s" % [BUILD, _commit, Engine.get_frames_per_second(), body.global_position.x, body.global_position.y, body.global_position.z, _last_sound]
+	hud.text = "build %d (%s)  %d fps  %s (F2)\nx %.0f  y %.1f  z %.0f\nlast sound: %s" % [BUILD, _commit, Engine.get_frames_per_second(), QUALITY_NAMES[quality], body.global_position.x, body.global_position.y, body.global_position.z, _last_sound]
 
 	if debug_hud.enabled:
 		hud.text += "\n" + _debug_text(avg_ms, worst_ms)

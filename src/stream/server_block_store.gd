@@ -42,6 +42,8 @@ var _generation: int = 0
 var _cache: VoxelStreamSQLite
 var _edits: VoxelStreamSQLite
 var _mutex: Mutex = Mutex.new()
+var _timing_on: bool = OS.has_environment("BLOCKTIME")
+var _timing: Dictionary = {}            # piece -> [calls, microseconds]; printed at exit when BLOCKTIME is set
 var _edit_mutex: Mutex = Mutex.new()
 
 
@@ -209,12 +211,23 @@ func load_block(buffer: VoxelBuffer, block: Vector3i, lod: int) -> void:
 		return
 
 	var failed_before: int = generator.failed_tiles
+	var t0: int = Time.get_ticks_usec()
 	generator.generate(buffer, block * (BLOCK_SIZE << lod), lod)
+	var t1: int = Time.get_ticks_usec()
+	if _timing_on:
+		_time("generate lod %d" % lod, t1 - t0)
 
 	# A block built from a stand-in tile, or one that fails the check, is served this
 	# once but never saved, so a bad build cannot become permanent.
-	if generator.failed_tiles == failed_before and _is_sane(buffer, block, lod):
+	var sane: bool = generator.failed_tiles == failed_before and _is_sane(buffer, block, lod)
+	var t2: int = Time.get_ticks_usec()
+	if _timing_on:
+		_time("sanity check", t2 - t1)
+
+	if sane:
 		cache.save_voxel_block(buffer, block, lod)
+		if _timing_on:
+			_time("save to sqlite", Time.get_ticks_usec() - t2)
 	elif generator.failed_tiles == failed_before:
 		generator.generate(buffer, block * (BLOCK_SIZE << lod), lod)
 
@@ -281,7 +294,11 @@ func block_bytes(block: Vector3i, lod: int) -> PackedByteArray:
 	var buffer: VoxelBuffer = Layout.make_buffer(BLOCK_SIZE)
 	load_block(buffer, block, lod)
 	hide_buried_ore(buffer, hide_ore_depth_m * float(1 << lod))
-	return VoxelBlockSerializer.serialize_to_byte_array(buffer, VoxelBlockSerializer.COMPRESSION_ZSTD)
+	var t0: int = Time.get_ticks_usec()
+	var bytes: PackedByteArray = VoxelBlockSerializer.serialize_to_byte_array(buffer, VoxelBlockSerializer.COMPRESSION_ZSTD)
+	if _timing_on:
+		_time("serialize zstd", Time.get_ticks_usec() - t0)
+	return bytes
 
 
 static func hide_buried_ore(buffer: VoxelBuffer, depth: float) -> void:
@@ -357,6 +374,24 @@ func dig_sphere(center: Vector3, radius: float) -> Array:
 func flush() -> void:
 	_cache.flush()
 	_edits.flush()
+
+
+func _time(piece: String, usec: int) -> void:
+	_mutex.lock()
+	var entry: Array = _timing.get(piece, [0, 0])
+	entry[0] += 1
+	entry[1] += usec
+	_timing[piece] = entry
+	_mutex.unlock()
+
+
+func timing_report() -> String:
+	var lines: PackedStringArray = PackedStringArray()
+
+	for piece in _timing:
+		lines.append("  %-16s %6d calls  avg %7.2f ms" % [piece, _timing[piece][0], float(_timing[piece][1]) / 1000.0 / float(maxi(_timing[piece][0], 1))])
+
+	return "block timing:\n" + "\n".join(lines)
 
 
 func _count(kind: String) -> void:
