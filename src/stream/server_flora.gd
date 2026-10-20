@@ -20,6 +20,7 @@ const MEMORY_CHUNKS := 2048
 const COVER_CHUNKS := 1500            # chunks kept in the cover index (oldest dropped first)
 
 var placer
+var dynamic: Callable                       # (home chunk) -> flora-style items of saplings and grown trees, {} when none (server_items.gd)
 var chunks_made: int = 0
 var memory_hits: int = 0
 
@@ -74,6 +75,16 @@ func chunk_bytes(chunk: Vector2i, full: bool = true) -> PackedByteArray:
 		return bytes
 
 	var items: Dictionary = PlacerScript.without(placer.chunk_items(home, not full), removed)
+
+	if dynamic.is_valid():
+		var extra: Dictionary = dynamic.call(home)
+
+		if not extra.is_empty():
+			items = items.duplicate()
+
+			for key in items:
+				items[key] = items[key].duplicate()
+				items[key].append_array(extra[key])
 	bytes = PlacerScript.encode(items, placer.chunk_origin(home))
 	_mutex.lock()
 	_fill_cover(home, items)
@@ -105,6 +116,15 @@ func covered(pos: Vector3) -> bool:
 	var yes: bool = CoverScript.at(pos, cover) > 0.0
 	_mutex.unlock()
 	return yes
+
+
+# Forgets one chunk's packed flora (its saplings or trees changed); it is made again when asked for.
+func invalidate(chunk: Vector2i) -> void:
+	var home: Vector2i = placer.normalize(chunk)
+	_mutex.lock()
+	_memory.erase(Vector3i(home.x, home.y, 1))
+	_memory.erase(Vector3i(home.x, home.y, 0))
+	_mutex.unlock()
 
 
 # Forgets every made chunk (the tile files changed).

@@ -35,8 +35,9 @@ func _init() -> void:
 	DirAccess.make_dir_recursive_absolute("user://test_server_items_d")
 	DirAccess.make_dir_recursive_absolute("user://test_server_items_e")
 	DirAccess.make_dir_recursive_absolute("user://test_server_items_f")
+	DirAccess.make_dir_recursive_absolute("user://test_server_items_g")
 
-	for suffix in ["", "_b", "_c", "_d", "_e", "_f"]:
+	for suffix in ["", "_b", "_c", "_d", "_e", "_f", "_g"]:
 		for file in DirAccess.get_files_at(dir + suffix):
 			DirAccess.remove_absolute(dir + suffix + "/" + file)
 
@@ -338,6 +339,47 @@ func _init() -> void:
 			left += 1
 
 	check(left == 0, "trunk and stump rot after 168 game days")
+
+	# Saplings.
+	var q = make("user://test_server_items_g")
+	q.ground_height = func(x, z): return 10.0
+	q.world_seed = 3
+	var qclock: Array = [0.0]
+	q.game_seconds = func(): return qclock[0]
+	var refreshed: Array = []
+	q.flora_changed = func(chunk): refreshed.append(chunk)
+	q.standing_near = func(name, pos, radius): return [pos + Vector3(10.0, 0.0, 0.0)] if name == "oak" else []
+	var planted: int = 0
+
+	for n in range(40):
+		var stump: Dictionary = {"pos": Vector3(100.0 + float(n) * 3.0, 10.0, 100.0), "tree": {"species": "oak", "chunk": [0, 0], "state": 4}}
+		q._maybe_sapling(stump)
+
+	planted = q._saplings.size()
+	check(planted > 5 and planted < 35, "about half of the rotted stumps leave a sapling (%d of 40)" % planted)
+	check(not refreshed.is_empty(), "the chunk is refreshed when a sapling comes")
+	var none: int = q._saplings.size()
+	q._maybe_sapling({"pos": Vector3(500.0, 10.0, 500.0), "tree": {"species": "birch", "chunk": [1, 1], "state": 4}})
+	check(q._saplings.size() == none, "no standing tree of that species near, no sapling")
+	q._items[q._next_id] = {"number": 0, "count": 1, "pos": Vector3(1.0, 10.0, 1.0), "left": 1.0e9, "tree": {"state": 3, "chunk": [0, 0], "species": "oak", "yaw": 0.0, "length": 5.0, "radius": 0.2, "felled_at": 0.0}}
+	var with_trunk: int = q._saplings.size()
+
+	for n in range(30):
+		q._maybe_sapling({"pos": Vector3(100.0 + float(n) * 3.0, 10.0, 130.0), "tree": {"species": "oak", "chunk": [0, 0], "state": 4}})
+
+	check(q._saplings.size() == with_trunk, "nothing respawns while a trunk lies in the chunk")
+	var items0: Dictionary = q.dynamic_items(Vector2i(0, 0))
+	check(not items0.is_empty() and items0["ids"].size() > 0, "saplings are listed as flora items")
+	check(items0["heights"][0] < 2.0, "a new sapling is small")
+	qclock[0] = ItemsScript.SAPLING_GROWN_S + 10.0
+	var grown: Dictionary = q.dynamic_items(Vector2i(0, 0))
+	check(grown["heights"][0] > 5.0, "after 12 game days it is a full tree")
+	var info: Dictionary = q.dynamic_tree_info(Vector2i(0, 0), grown["ids"][0])
+	check(not info.is_empty() and info["name"] == "oak", "a grown tree can be felled")
+	check(q.remove_dynamic(Vector2i(0, 0), grown["ids"][0]), "and removed as a record")
+	q.save()
+	var q2 = make("user://test_server_items_g")
+	check(q2._saplings.size() == q._saplings.size(), "saplings survive a restart")
 
 	print("server item tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

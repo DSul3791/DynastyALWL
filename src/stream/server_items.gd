@@ -39,6 +39,13 @@ const CHOP_RESET_MS := 60000             # a half-chopped tree heals after this 
 const TRUNKS_PER_CHUNK := 32             # felled trunks (and as many stumps) lying in one flora chunk
 const ROT_GAME_S := 168.0 * 86400.0      # a trunk or stump rots away after a real week (168 game days)
 const TREE_SAVE_VERSION := 1
+const SAPLING_YOUNG_S := 3.0 * 86400.0   # game seconds until a sapling is a young tree
+const SAPLING_GROWN_S := 12.0 * 86400.0  # ...and until it is a full grown tree (can be felled)
+const SAPLINGS_PER_CHUNK := 64
+const RESPAWN_RADIUS_M := 25.0           # a sapling comes only near a standing tree of the same species
+const RESPAWN_PLACE_M := 6.0
+const RESPAWN_CHANCE := 0.5              # per rotted-away stump, rolled once from the seed and the spot
+const FLORA_CHUNK_M := 256.0
 const PROCESS_REACH_M := 4.0
 const PROCESS_COOLDOWN_MS := 450
 const MINE_REACH_M := 4.5
@@ -64,6 +71,8 @@ var ground_height: Callable    # (x, z) -> ground height in metres, or NAN; set 
 var world_seed: int = 0
 var rain_now: Callable         # () -> rain strength 0 to 1 over the world now; set by the server scene
 var send_notice: Callable      # (peer, text)
+var standing_near: Callable    # (species name, position, radius) -> [position] of the nearest standing tree of that species, or []
+var flora_changed: Callable    # (chunk Vector2i) -> a chunk's saplings or trees changed: refresh the server cache and the clients near it
 var tree_info: Callable        # (chunk Vector2i, id) -> {name, position, height, trunk} of a standing tree, or {}
 var cut_tree: Callable         # (chunk Vector2i, id) -> true when the standing tree was removed (and clients told)
 var rock_at: Callable          # (x, z) -> true when bare rock shows at the surface there (no soil cover); set by the server scene
@@ -91,6 +100,8 @@ var _last_hit: Dictionary = {}      # peer -> msec
 var _last_process: Dictionary = {}  # peer -> msec
 var _chops: Dictionary = {}         # "cx,cz,id" -> {hits, msec}
 var _rot_in: float = 60.0
+var _saplings: Array = []           # {slot, chunk [cx, cz], species (flora id), pos, planted_at}
+var _flora_by_id: Dictionary = {}
 var _mined: Dictionary = {}         # Vector2i patch -> {taken, since msec}
 var _taken: Dictionary = {}         # scatter key int -> true: loose items already picked up (stay gone)
 var _cells_done: Dictionary = {}    # Vector2i scatter cell -> true while its items are laid out
@@ -110,6 +121,7 @@ func setup(item_table, store_dir: String) -> void:
 	if typeof(flora_table) == TYPE_DICTIONARY:
 		for entry in flora_table["entries"]:
 			_flora_by_name[str(entry["name"])] = entry
+			_flora_by_id[int(entry["id"])] = entry
 
 
 func peer_connected_hello(peer: int, key: String) -> void:
@@ -835,9 +847,13 @@ func _rot(delta: float) -> void:
 	var now_s: float = float(game_seconds.call())
 
 	for id in _items.keys():
-		if _items[id].has("tree") and now_s - float(_items[id]["tree"]["felled_at"]) >= ROT_GAME_S:
+		if _items.has(id) and _items[id].has("tree") and now_s - float(_items[id]["tree"]["felled_at"]) >= ROT_GAME_S:
+			var rotted: Dictionary = _items[id]
 			_items.erase(id)
 			_dirty = true
+
+			if int(rotted["tree"]["state"]) == 4:
+				_maybe_sapling(rotted)
 
 	var stale: Array = []
 	var now_ms: int = Time.get_ticks_msec()
@@ -858,7 +874,12 @@ func _save_trees() -> void:
 			var it: Dictionary = _items[id]
 			rows.append({"pos": [it["pos"].x, it["pos"].y, it["pos"].z], "tree": it["tree"]})
 
-	_write_atomic("tree_states.json", {"version": TREE_SAVE_VERSION, "trees": rows})
+	var plants: Array = []
+
+	for sapling in _saplings:
+		plants.append({"slot": sapling["slot"], "chunk": sapling["chunk"], "species": sapling["species"], "pos": {"x": sapling["pos"].x, "y": sapling["pos"].y, "z": sapling["pos"].z}, "planted_at": sapling["planted_at"]})
+
+	_write_atomic("tree_states.json", {"version": TREE_SAVE_VERSION, "trees": rows, "saplings": plants})
 
 
 func _load_trees() -> void:
@@ -866,6 +887,9 @@ func _load_trees() -> void:
 
 	if parsed == null:
 		return
+
+	for sapling in parsed.get("saplings", []):
+		_saplings.append({"slot": int(sapling["slot"]), "chunk": [int(sapling["chunk"][0]), int(sapling["chunk"][1])], "species": int(sapling["species"]), "pos": Vector3(sapling["pos"]["x"], sapling["pos"]["y"], sapling["pos"]["z"]), "planted_at": float(sapling["planted_at"])})
 
 	for row in parsed["trees"]:
 		var tree: Dictionary = row["tree"]
@@ -928,3 +952,135 @@ func _process_trunk(peer: int, inv, id: int) -> void:
 			_items.erase(id)
 
 	_dirty = true
+
+
+# A stump has rotted away: maybe a sapling grows near a standing tree of the same species. Nothing
+# comes while any felled trunk still lies in the chunk. The dice come from the seed and the spot,
+# so a restart gives the same answer.
+func _maybe_sapling(stump: Dictionary) -> void:
+	if not standing_near.is_valid() or not ground_height.is_valid():
+		return
+
+	var tree: Dictionary = stump["tree"]
+	var chunk: Vector2i = Vector2i(int(tree["chunk"][0]), int(tree["chunk"][1]))
+
+	if _trees_in_chunk(chunk) > 0:
+		return
+
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = hash(Vector3i(int(stump["pos"].x), int(stump["pos"].z), world_seed))
+
+	if rng.randf() > RESPAWN_CHANCE:
+		return
+
+	var near: Array = standing_near.call(str(tree["species"]), stump["pos"], RESPAWN_RADIUS_M)
+
+	if near.is_empty():
+		return
+
+	var angle: float = rng.randf() * TAU
+	var spot: Vector3 = near[0] + Vector3(cos(angle), 0.0, sin(angle)) * rng.randf_range(2.0, RESPAWN_PLACE_M)
+	var ground: float = float(ground_height.call(spot.x, spot.z))
+	var species_entry: Dictionary = _flora_by_name.get(str(tree["species"]), {})
+
+	if is_nan(ground) or ground < 1.0 or species_entry.is_empty():
+		return
+
+	var home: Vector2i = Vector2i(int(floor(spot.x / FLORA_CHUNK_M)), int(floor(spot.z / FLORA_CHUNK_M)))
+	var used: Dictionary = {}
+
+	for sapling in _saplings:
+		if sapling["chunk"] == [home.x, home.y]:
+			used[sapling["slot"]] = true
+
+	if used.size() >= SAPLINGS_PER_CHUNK:
+		return
+
+	var slot: int = 0
+
+	while used.has(slot):
+		slot += 1
+
+	spot.y = ground
+	_saplings.append({"slot": slot, "chunk": [home.x, home.y], "species": int(species_entry["id"]), "pos": spot, "planted_at": float(game_seconds.call()) if game_seconds.is_valid() else 0.0})
+	_dirty = true
+
+	if flora_changed.is_valid():
+		flora_changed.call(home)
+
+
+# Saplings and grown trees of a flora chunk as flora items (ids, positions, heights, yaws), the
+# way the placer lists trees, so the flora view and the cover index treat them as trees. The
+# size comes from the age now (computed here, nothing runs per frame). {} when there are none.
+func dynamic_items(home: Vector2i) -> Dictionary:
+	var result: Dictionary = {}
+	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
+
+	for sapling in _saplings:
+		if sapling["chunk"] != [home.x, home.y]:
+			continue
+
+		if result.is_empty():
+			result = {"ids": PackedInt32Array(), "positions": PackedVector3Array(), "heights": PackedFloat32Array(), "yaws": PackedFloat32Array()}
+
+		result["ids"].append((int(sapling["species"]) << 16) | (0xFFFF - int(sapling["slot"])))
+		result["positions"].append(sapling["pos"])
+		result["heights"].append(_sapling_height(sapling, now_s))
+		result["yaws"].append(float(hash(sapling["pos"]) % 628) / 100.0)
+
+	return result
+
+
+func _sapling_height(sapling: Dictionary, now_s: float) -> float:
+	var entry: Dictionary = _flora_by_id.get(int(sapling["species"]), {})
+	var full: float = float(entry["height_m"][0]) if not entry.is_empty() else 8.0
+	var age: float = now_s - float(sapling["planted_at"])
+
+	if age >= SAPLING_GROWN_S:
+		return full
+
+	if age >= SAPLING_YOUNG_S:
+		return full * lerpf(0.4, 0.9, (age - SAPLING_YOUNG_S) / (SAPLING_GROWN_S - SAPLING_YOUNG_S))
+
+	return maxf(full * 0.4 * age / SAPLING_YOUNG_S, 0.5)
+
+
+# A grown tree of the dynamic kind as tree_info answers for placer trees, or {} (saplings and
+# young trees cannot be felled, and there is no such id).
+func dynamic_tree_info(home: Vector2i, id: int) -> Dictionary:
+	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
+
+	for sapling in _saplings:
+		if sapling["chunk"] == [home.x, home.y] and ((int(sapling["species"]) << 16) | (0xFFFF - int(sapling["slot"]))) == id:
+			if now_s - float(sapling["planted_at"]) < SAPLING_GROWN_S:
+				return {}
+
+			var entry: Dictionary = _flora_by_id.get(int(sapling["species"]), {})
+			return {"name": str(entry.get("name", "")), "position": sapling["pos"], "height": _sapling_height(sapling, now_s), "trunk": float(entry.get("trunk_m", 0.4)), "dynamic": true}
+
+	return {}
+
+
+# A grown dynamic tree was felled: the record goes. True if there was one.
+func remove_dynamic(home: Vector2i, id: int) -> bool:
+	for sapling in _saplings:
+		if sapling["chunk"] == [home.x, home.y] and ((int(sapling["species"]) << 16) | (0xFFFF - int(sapling["slot"]))) == id:
+			_saplings.erase(sapling)
+			_dirty = true
+
+			if flora_changed.is_valid():
+				flora_changed.call(home)
+
+			return true
+
+	return false
+
+
+func peers_near(position: Vector3, radius: float) -> Array:
+	var out: Array = []
+
+	for peer in _peer_pos:
+		if _peer_pos[peer].distance_to(position) <= radius:
+			out.append(peer)
+
+	return out

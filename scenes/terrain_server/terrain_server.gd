@@ -168,6 +168,9 @@ func _ready() -> void:
 	items.rain_now = func(): return float(weather.get("rain", 0.0))
 	items.cover_at = _cover_at
 	items.tree_info = _tree_info
+	items.standing_near = _standing_near
+	items.flora_changed = _flora_changed
+	flora.dynamic = func(home): return items.dynamic_items(home)
 	items.cut_tree = _cut_tree
 	items.send_notice = func(peer, text): net.notice.rpc_id(peer, text)
 	items.game_seconds = func(): return game_clock.seconds
@@ -497,18 +500,65 @@ func _tree_info(chunk: Vector2i, id: int) -> Dictionary:
 	var at: int = all["ids"].find(id)
 	var species: Dictionary = flora.placer._by_id.get(id >> 16, {})
 
-	if at < 0 or species.is_empty() or int(species["kind"]) != PlacerScript.KIND_TREE or flora.removed_in(home).has(id):
+	if at < 0:
+		return items.dynamic_tree_info(home, id)
+
+	if species.is_empty() or int(species["kind"]) != PlacerScript.KIND_TREE or flora.removed_in(home).has(id):
 		return {}
 
 	return {"name": str(species["name"]), "position": all["positions"][at], "height": float(all["heights"][at]), "trunk": float(species["trunk"])}
 
 
 func _cut_tree(chunk: Vector2i, id: int) -> bool:
+	var home: Vector2i = flora.placer.normalize(chunk)
+
+	if items.remove_dynamic(home, id):
+		net.flora_cut.rpc(chunk, id)
+		return true
+
 	if not flora.cut(chunk, id):
 		return false
 
 	net.flora_cut.rpc(chunk, id)
 	return true
+
+
+# The nearest standing tree of a species within `radius` of a point (placer trees only): [position] or [].
+func _standing_near(species_name: String, point: Vector3, radius: float) -> Array:
+	var size: float = flora.placer.chunk_m
+	var home: Vector2i = Vector2i(int(floor(point.x / size)), int(floor(point.z / size)))
+	var best: Array = []
+
+	for dz in [-1, 0, 1]:
+		for dx in [-1, 0, 1]:
+			var chunk: Vector2i = flora.placer.normalize(home + Vector2i(dx, dz))
+			var trees: Dictionary = flora.placer.chunk_items(chunk, true)
+			var gone: Array = flora.removed_in(chunk)
+
+			for n in range(trees["ids"].size()):
+				var species: Dictionary = flora.placer._by_id.get(trees["ids"][n] >> 16, {})
+
+				if species.is_empty() or str(species["name"]) != species_name or gone.has(trees["ids"][n]):
+					continue
+
+				var d: float = Vector2(trees["positions"][n].x - point.x, trees["positions"][n].z - point.z).length()
+
+				if d <= radius and (best.is_empty() or d < best[0]):
+					best = [d, trees["positions"][n]]
+
+	return [] if best.is_empty() else [best[1]]
+
+
+# Saplings or grown trees of a chunk changed: drop the packed copy, refill the cover index and
+# send the chunk again to the players near it.
+func _flora_changed(chunk: Vector2i) -> void:
+	flora.invalidate(chunk)
+	flora.chunk_bytes(chunk, false)
+	var origin: Vector2 = flora.placer.chunk_origin(chunk)
+	var centre: Vector3 = Vector3(origin.x + flora.placer.chunk_m * 0.5, 0.0, origin.y + flora.placer.chunk_m * 0.5)
+
+	for peer in items.peers_near(centre, 600.0):
+		net.deliver_flora.rpc_id(peer, chunk, flora.chunk_bytes(chunk, true), flora.water_bytes(chunk), true)
 
 
 func _on_cut_flora_requested(peer_id: int, chunk: Vector2i, id: int) -> void:
