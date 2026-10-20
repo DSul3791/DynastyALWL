@@ -24,7 +24,7 @@ func setup(client) -> void:
 	var layer: CanvasLayer = CanvasLayer.new()
 	_label = Label.new()
 	_label.position = Vector2(20.0, 20.0)
-	_label.add_theme_font_size_override("font_size", 16)
+	_label.add_theme_font_size_override("font_size", 28)
 	_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	_label.add_theme_constant_override("outline_size", 4)
 	layer.add_child(_label)

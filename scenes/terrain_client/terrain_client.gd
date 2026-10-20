@@ -110,6 +110,10 @@ var terrain: VoxelLodTerrain
 var body: CharacterBody3D
 var camera: Camera3D
 var hud: Label
+var debug_details: bool = false      # F3 or Esc > Settings: the long list of diagnostic lines
+var debug_lines: Array = []          # Callables returning a String; any thread can append, see _debug_text
+var _last_sound: String = ""
+var _last_sound_seen: Dictionary = {}
 var compass                         # temporary admin compass (AdminCompass)
 var sea: MeshInstance3D
 var flying: bool = false
@@ -518,8 +522,11 @@ func _on_welcome(info: Dictionary) -> void:
 	_build_menu(layer)
 	hud = Label.new()
 	hud.position = Vector2(12.0, 12.0)
-	hud.add_theme_font_size_override("font_size", 30)
-	hud.add_theme_constant_override("outline_size", 6)
+	hud.add_theme_font_size_override("font_size", 52)
+	hud.add_theme_constant_override("outline_size", 8)
+	hud.add_theme_constant_override("shadow_offset_x", 3)
+	hud.add_theme_constant_override("shadow_offset_y", 3)
+	hud.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.6))
 	hud.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
 	layer.add_child(hud)
 	compass = CompassScript.new()
@@ -1101,6 +1108,9 @@ func _build_menu(layer: CanvasLayer) -> void:
 			_save_display()
 			_menu_note.text = "Quality: %s" % QUALITY_NAMES[index])
 
+	_menu_button(settings, "Debug details (F3): on or off", func():
+		debug_details = not debug_details
+		_menu_note.text = "Debug details %s" % ("on" if debug_details else "off"))
 	_menu_button(settings, "VSync: change", func():
 		display.vsync_index = (display.vsync_index + 1) % display.VSYNC_MODES.size()
 		display.apply(get_window())
@@ -1542,6 +1552,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			_jitter_test.next_spot()
 		elif event.keycode == KEY_G and event.ctrl_pressed and event.shift_pressed:
 			_gpu_probe.toggle()
+		elif event.keycode == KEY_F3:
+			debug_details = not debug_details
 		elif event.keycode == KEY_F2:
 			quality = (quality + 1) % QUALITY_NAMES.size()
 			_apply_quality()
@@ -1978,45 +1990,11 @@ func _process(delta: float) -> void:
 		total_ms += ms
 
 	var avg_ms: float = total_ms / maxf(float(_frame_ms.size()), 1.0)
-	hud.text = "build %d (%s)  %d fps  avg %.1f ms  worst %.1f ms  quality %s (F2)\nmem %.0f MB\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders, grass %d\nx %.0f  y %.1f  z %.0f" % [
-		BUILD, _commit,
-		Engine.get_frames_per_second(), avg_ms, worst_ms, QUALITY_NAMES[quality],
-		float(OS.get_static_memory_usage()) / 1048576.0,
-		stream.blocks_received, float(stream.bytes_received) / 1048576.0, cache.hits, flora.instances, flora.colliders, grass.tufts,
-		body.global_position.x, body.global_position.y, body.global_position.z
-	]
+	_note_last_sound()
+	hud.text = "build %d (%s)  %d fps\nx %.0f  y %.1f  z %.0f\nlast sound: %s" % [BUILD, _commit, Engine.get_frames_per_second(), body.global_position.x, body.global_position.y, body.global_position.z, _last_sound]
 
-	var vp: RID = get_viewport().get_viewport_rid()
-	hud.text += "\ngame time: year %d, day %d (%s), %02d:%02d" % [game_clock.year() + 1, game_clock.day_of_year() + 1, game_clock.season(), int(game_clock.hour()), int(fposmod(game_clock.hour(), 1.0) * 60.0)]
-	if not weather.is_empty():
-		hud.text += "\nweather: rain %.2f snow %.2f storm %.2f sun %.2f wind %.2f, %.0f C, %s" % [weather["rain"], weather["snow"], weather["storm"], weather["sun"], weather["wind"], weather["temp_c"], "under cover" if under_cover > 0.0 else "open"]
-
-	var win: Vector2i = get_window().size
-	hud.text += "\n3D %dx%d 16:9 in window %dx%d (scale %.2f)%s, %s, %s" % [int(display.BASE.x * _render_scale), int(display.BASE.y * _render_scale), win.x, win.y, _render_scale, " (embedded: editor owns the window)" if display.embedded() else "", RenderingServer.get_video_adapter_name(), RenderingServer.get_current_rendering_driver_name()]
-	hud.text += "\nGPU breakdown: Ctrl+Shift+G or Esc > Advanced; table shows top left (this text hides while it is up; press again to close), and is in the log and user://gpu_probe.txt"
-	hud.text += "\nlast step: " + sound.last_step
-	hud.text += "\nsound budget: " + sound.budget_text()
-	hud.text += "\n" + sound.wind_text()
-	hud.text += "\nfire sounds: %d loops, %d lit, %d put out, last %s" % [sound.fire.loops_playing, sound.fire.lit_played, sound.fire.out_played, sound.fire.last]
-	hud.text += "\nitem sounds: %d, last %s" % [sound.itemfx.played, sound.itemfx.last]
-	hud.text += "\nspear sounds: %s, last %s" % [str(sound.spear.played), sound.spear.last]
-	hud.text += "\ninterior: %.2f inside (%s), %d objects, %d creaks, last %s" % [sound.interior.amount, sound.interior.kind, sound.interior.objects_played, sound.interior.creaks_played, sound.interior.last]
-	hud.text += "\ngear: worn %s, %d steps, last %s" % [str(sound.gear.worn), sound.gear.steps_played, sound.gear.last]
-	hud.text += "\ncreature calls: %s, last %s" % [str(sound.creatures.calls_played), sound.creatures.last]
-	hud.text += "\nswim sounds: %d splashes, %d strokes, %d dives, %d surfacings, last %s" % [sound.swim.splashes, sound.swim.strokes, sound.swim.dives, sound.swim.surfaces, sound.swim.last]
-	hud.text += "\ntown sounds: %d loops, %d bell strikes" % [sound.town.loops_playing, sound.town.bells_rung]
-	hud.text += "\nmuffled sounds: %d filtered, %d behind hills" % [sound.occlusion.filtered, sound.occlusion.occluded]
-	hud.text += "\ncave: enclosure %.2f, drips %d" % [sound.cave.enclosure, sound.cave.drips_played]
-	hud.text += "\nlast dig sound: %s" % sound.dig.last_dig
-	hud.text += "\nweather sounds follow: %s" % ("the TEST button (press it until it says follow the world)" if _sound_weather_at >= 0 else "the world weather above")
-	hud.text += "\nweather sounds: %s (rain %.1f, wind %.1f, thunder %d), ground wet %.2f snow %.2f, %s, drips %d" % [sound.weather.kind, sound.weather.rain, sound.weather.wind, sound.weather.thunders_played, sound.weather.ground_wet, sound.weather.ground_snow, "under canopy" if sound.weather.covered > 0.5 else "in the open", sound.weather.drips_played]
-	hud.text += "\nnature (%02d:%02d %s): forest %.1f meadow %.1f water %.1f high %.1f, last %s" % [int(sound.ambient.conditions["hour"]), int(fposmod(float(sound.ambient.conditions["hour"]), 1.0) * 60.0), sound.ambient.conditions["season"], sound.ambient.weights["forest"], sound.ambient.weights["meadow"], sound.ambient.weights["water"], sound.ambient.weights["highland"], sound.ambient.last_call]
-	hud.text += "\nwater sounds: " + sound.water.summary
-	hud.text += "\nframe work: cpu %.1f ms, gpu %.1f ms, vsync %s, draws %d" % [
-		RenderingServer.viewport_get_measured_render_time_cpu(vp) + RenderingServer.get_frame_setup_time_cpu(),
-		RenderingServer.viewport_get_measured_render_time_gpu(vp),
-		["on", "adaptive", "off"][clampi([DisplayServer.VSYNC_ENABLED, DisplayServer.VSYNC_ADAPTIVE, DisplayServer.VSYNC_DISABLED].find(DisplayServer.window_get_vsync_mode()), 0, 2)],
-		int(RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME))]
+	if debug_details:
+		hud.text += "\n" + _debug_text(avg_ms, worst_ms)
 
 	if _bake_status != "":
 		hud.text += "\n" + _bake_status
@@ -2073,6 +2051,73 @@ func _process(delta: float) -> void:
 
 # Headless walking check (--walk): lands on the ground, walks east without
 # falling through, and is stopped by a tree trunk.
+
+# Debug details (Dave 2026-10-20: the default HUD is only build, position and the last sound).
+# Any thread that wants a diagnostic line on screen appends a Callable returning a String to
+# debug_lines (for example in its setup); it is only called while Debug details is on (F3, or
+# Esc > Settings).
+func _debug_text(avg_ms: float, worst_ms: float) -> String:
+	var text: String = "avg %.1f ms  worst %.1f ms  quality %s (F2)\nmem %.0f MB\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders, grass %d" % [
+		avg_ms, worst_ms, QUALITY_NAMES[quality],
+		float(OS.get_static_memory_usage()) / 1048576.0,
+		stream.blocks_received, float(stream.bytes_received) / 1048576.0, cache.hits, flora.instances, flora.colliders, grass.tufts
+	]
+
+	var vp: RID = get_viewport().get_viewport_rid()
+	text += "\ngame time: year %d, day %d (%s), %02d:%02d" % [game_clock.year() + 1, game_clock.day_of_year() + 1, game_clock.season(), int(game_clock.hour()), int(fposmod(game_clock.hour(), 1.0) * 60.0)]
+	if not weather.is_empty():
+		text += "\nweather: rain %.2f snow %.2f storm %.2f sun %.2f wind %.2f, %.0f C, %s" % [weather["rain"], weather["snow"], weather["storm"], weather["sun"], weather["wind"], weather["temp_c"], "under cover" if under_cover > 0.0 else "open"]
+
+	var win: Vector2i = get_window().size
+	text += "\n3D %dx%d 16:9 in window %dx%d (scale %.2f)%s, %s, %s" % [int(display.BASE.x * _render_scale), int(display.BASE.y * _render_scale), win.x, win.y, _render_scale, " (embedded: editor owns the window)" if display.embedded() else "", RenderingServer.get_video_adapter_name(), RenderingServer.get_current_rendering_driver_name()]
+	text += "\nGPU breakdown: Ctrl+Shift+G or Esc > Advanced; table shows top left, press again to close; also in the log and user://gpu_probe.txt"
+	text += "\nlast step: " + sound.last_step
+	text += "\nsound budget: " + sound.budget_text()
+	text += "\n" + sound.wind_text()
+	text += "\nfire sounds: %d loops, %d lit, %d put out, last %s" % [sound.fire.loops_playing, sound.fire.lit_played, sound.fire.out_played, sound.fire.last]
+	text += "\nitem sounds: %d, last %s" % [sound.itemfx.played, sound.itemfx.last]
+	text += "\nspear sounds: %s, last %s" % [str(sound.spear.played), sound.spear.last]
+	text += "\ninterior: %.2f inside (%s), %d objects, %d creaks, last %s" % [sound.interior.amount, sound.interior.kind, sound.interior.objects_played, sound.interior.creaks_played, sound.interior.last]
+	text += "\ngear: worn %s, %d steps, last %s" % [str(sound.gear.worn), sound.gear.steps_played, sound.gear.last]
+	text += "\ncreature calls: %s, last %s" % [str(sound.creatures.calls_played), sound.creatures.last]
+	text += "\nswim sounds: %d splashes, %d strokes, %d dives, %d surfacings, last %s" % [sound.swim.splashes, sound.swim.strokes, sound.swim.dives, sound.swim.surfaces, sound.swim.last]
+	text += "\ntown sounds: %d loops, %d bell strikes" % [sound.town.loops_playing, sound.town.bells_rung]
+	text += "\nmuffled sounds: %d filtered, %d behind hills" % [sound.occlusion.filtered, sound.occlusion.occluded]
+	text += "\ncave: enclosure %.2f, drips %d" % [sound.cave.enclosure, sound.cave.drips_played]
+	text += "\nlast dig sound: %s" % sound.dig.last_dig
+	text += "\nweather sounds follow: %s" % ("the TEST button (press it until it says follow the world)" if _sound_weather_at >= 0 else "the world weather above")
+	text += "\nweather sounds: %s (rain %.1f, wind %.1f, thunder %d), ground wet %.2f snow %.2f, %s, drips %d" % [sound.weather.kind, sound.weather.rain, sound.weather.wind, sound.weather.thunders_played, sound.weather.ground_wet, sound.weather.ground_snow, "under canopy" if sound.weather.covered > 0.5 else "in the open", sound.weather.drips_played]
+	text += "\nnature (%02d:%02d %s): forest %.1f meadow %.1f water %.1f high %.1f, last %s" % [int(sound.ambient.conditions["hour"]), int(fposmod(float(sound.ambient.conditions["hour"]), 1.0) * 60.0), sound.ambient.conditions["season"], sound.ambient.weights["forest"], sound.ambient.weights["meadow"], sound.ambient.weights["water"], sound.ambient.weights["highland"], sound.ambient.last_call]
+	text += "\nwater sounds: " + sound.water.summary
+	text += "\nframe work: cpu %.1f ms, gpu %.1f ms, vsync %s, draws %d" % [
+		RenderingServer.viewport_get_measured_render_time_cpu(vp) + RenderingServer.get_frame_setup_time_cpu(),
+		RenderingServer.viewport_get_measured_render_time_gpu(vp),
+		["on", "adaptive", "off"][clampi([DisplayServer.VSYNC_ENABLED, DisplayServer.VSYNC_ADAPTIVE, DisplayServer.VSYNC_DISABLED].find(DisplayServer.window_get_vsync_mode()), 0, 2)],
+		int(RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME))]
+
+	for extra in debug_lines:
+		text += "\n" + str(extra.call())
+
+	return text
+
+
+# The one-line "last sound": whichever sound source's last-played text changed most recently.
+func _note_last_sound() -> void:
+	var sources: Array = [
+		["step", sound.last_step], ["fire", sound.fire.last], ["item", sound.itemfx.last], ["spear", sound.spear.last],
+		["interior", sound.interior.last], ["gear", sound.gear.last], ["creature", sound.creatures.last], ["swim", sound.swim.last],
+		["dig", sound.dig.last_dig], ["nature", sound.ambient.last_call],
+	]
+
+	for n in range(sources.size()):
+		var now: String = str(sources[n][1])
+
+		if now != "" and now != _last_sound_seen.get(sources[n][0], ""):
+			_last_sound = "%s: %s" % [sources[n][0], now]
+
+		_last_sound_seen[sources[n][0]] = now
+
+
 func _walk_step() -> void:
 	var now: int = Time.get_ticks_msec()
 
