@@ -35,6 +35,8 @@ var _craft_done_msec: int = 0
 var _craft_label: Label
 var _world: Dictionary = {}        # id -> {node, number, count, pos}
 var _prompt_next_msec: int = 0
+var _notice_until_msec: int = 0
+var _collide: Array = []              # [node, StaticBody3D] trunks whose collider is on only near the player
 var _meshes: Dictionary = {}       # item number -> Mesh
 
 
@@ -50,6 +52,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.inventory_full_received.connect(_on_full)
 	net.inventory_slots_received.connect(_on_slots)
 	net.world_items_received.connect(_on_world_items)
+	net.notice_received.connect(_on_notice)
 	_prompt = Label.new()
 	_prompt.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -132,6 +135,10 @@ func _process(_delta: float) -> void:
 
 	_prompt_next_msec = now + 200
 	_update_fire_lights()
+	_update_trunk_colliders()
+
+	if now < _notice_until_msec:
+		return
 	var near: Array = _nearest()
 	_prompt.text = "" if near[0] == 0 else "E: pick up %s x%d" % [table.name_of(near[1]), near[2]]
 
@@ -153,6 +160,66 @@ func _nearest() -> Array:
 			best = [id, _world[id]["number"], _world[id]["count"]]
 
 	return best
+
+
+func _on_notice(text: String) -> void:
+	_prompt.text = text
+	_notice_until_msec = Time.get_ticks_msec() + 4000
+
+
+# Trunks are solid, but only the ones near the player keep a collider (cost cap).
+func _update_trunk_colliders() -> void:
+	var here: Vector3 = _player_position.call()
+
+	for pair in _collide:
+		if is_instance_valid(pair[0]):
+			pair[1].collision_layer = 1 if pair[0].global_position.distance_to(here) < 40.0 else 0
+
+
+# A felled trunk (lying along `yaw`, falling over when it first appears) or a stump.
+func _make_felled(trunk: bool, extra: Dictionary) -> Node3D:
+	var root: Node3D = Node3D.new()
+	var radius: float = float(extra.get("radius", 0.3))
+	var length: float = float(extra.get("length", 8.0))
+	var bark: StandardMaterial3D = StandardMaterial3D.new()
+	bark.albedo_color = Color(0.32, 0.23, 0.15)
+	var mesh_node: MeshInstance3D = MeshInstance3D.new()
+	var cyl: CylinderMesh = CylinderMesh.new()
+	cyl.top_radius = radius * (0.55 if trunk else 0.95)
+	cyl.bottom_radius = radius
+	cyl.height = length if trunk else maxf(radius * 1.2, 0.5)
+	cyl.material = bark
+	mesh_node.mesh = cyl
+	root.add_child(mesh_node)
+
+	if not trunk:
+		mesh_node.position = Vector3(0.0, cyl.height * 0.5, 0.0)
+		return root
+
+	# Hinge at the stump: pivot turns from upright to lying, over about 1.5 s.
+	root.rotation.y = float(extra.get("yaw", 0.0))
+	var pivot: Node3D = Node3D.new()
+	root.add_child(pivot)
+	root.remove_child(mesh_node)
+	pivot.add_child(mesh_node)
+	mesh_node.position = Vector3(0.0, length * 0.5, 0.0)
+	var lie: float = deg_to_rad(90.0)
+	pivot.rotation.x = 0.0
+	var tween: Tween = pivot.create_tween()
+	tween.tween_property(pivot, "rotation:x", lie, 1.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	var body: StaticBody3D = StaticBody3D.new()
+	body.collision_layer = 0
+	var shape: CollisionShape3D = CollisionShape3D.new()
+	var capsule: CapsuleShape3D = CapsuleShape3D.new()
+	capsule.radius = radius * 0.8
+	capsule.height = length
+	shape.shape = capsule
+	shape.rotation.x = lie
+	shape.position = Vector3(0.0, radius, length * 0.5)
+	body.add_child(shape)
+	root.add_child(body)
+	_collide.append([root, body])
+	return root
 
 
 func _update_fire_lights() -> void:
@@ -208,6 +275,14 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 		var node: Node3D
 		var light: OmniLight3D = null
+
+		if state >= 3:
+			var extra: Dictionary = row[5] if row.size() > 5 else {}
+			node = _make_felled(state == 3, extra)
+			node.position = row[3]
+			_root.add_child(node)
+			_world[id] = {"node": node, "number": 0, "count": 1, "pos": row[3], "state": state, "light": null}
+			continue
 
 		if state == 0:
 			var box: MeshInstance3D = MeshInstance3D.new()
@@ -455,3 +530,51 @@ func run_gather_test(client) -> void:
 	client._gather_nearest()
 	await get_tree().create_timer(2.0).timeout
 	print("Gather test: sticks %d -> %d; loose things in view %d" % [before, inventory.count_of(sticks), _world.size()])
+
+
+# Headless check (--chop): stand by the nearest tree with an axe and chop it down.
+func run_chop_test(client) -> void:
+	await get_tree().create_timer(6.0).timeout
+	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
+	var here: Vector3 = _player_position.call()
+	var best: Array = []
+
+	for chunk in client.flora._chunks:
+		var held: Dictionary = client.flora._chunks[chunk]["items"]
+
+		for n in range(held["ids"].size()):
+			if client.flora._species.get(held["ids"][n] >> 16, {}).get("kind", 2) == 0:
+				var d: float = held["positions"][n].distance_to(here)
+
+				if best.is_empty() or d < best[0]:
+					best = [d, chunk, held["ids"][n], held["positions"][n]]
+
+	if best.is_empty():
+		print("Chop test: no tree loaded")
+		return
+
+	client.body.global_position = best[3] + Vector3(1.5, 1.0, 0.0)
+	client.body.velocity = Vector3.ZERO
+	await get_tree().create_timer(3.0).timeout
+	var blows: int = 0
+
+	for n in range(60):
+		net.inventory_action.rpc_id(1, Net.ACT_HIT, best[2], best[1].x, best[1].y, Vector3.ZERO)
+		blows += 1
+		await get_tree().create_timer(0.45).timeout
+		var states: Array = []
+
+		for id in _world:
+			if _world[id]["state"] >= 3:
+				states.append(_world[id]["state"])
+
+		if not states.is_empty():
+			break
+
+	var kinds: Array = []
+
+	for id in _world:
+		if _world[id]["state"] >= 3:
+			kinds.append(_world[id]["state"])
+
+	print("Chop test: %d blows, felled states in view %s" % [blows, str(kinds)])

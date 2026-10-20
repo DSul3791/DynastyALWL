@@ -34,8 +34,9 @@ func _init() -> void:
 	DirAccess.make_dir_recursive_absolute("user://test_server_items_c")
 	DirAccess.make_dir_recursive_absolute("user://test_server_items_d")
 	DirAccess.make_dir_recursive_absolute("user://test_server_items_e")
+	DirAccess.make_dir_recursive_absolute("user://test_server_items_f")
 
-	for suffix in ["", "_b", "_c", "_d", "_e"]:
+	for suffix in ["", "_b", "_c", "_d", "_e", "_f"]:
 		for file in DirAccess.get_files_at(dir + suffix):
 			DirAccess.remove_absolute(dir + suffix + "/" + file)
 
@@ -245,6 +246,68 @@ func _init() -> void:
 	m.report_position(1, Vector3(5.0, 10.0, 0.0))
 	m.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(30.0, 10.0, 0.0))
 	check(m.inventory_of(1).count_of(rock_stone) == ItemsScript.MINE_STONES_PER_CELL, "out of reach gives nothing")
+
+	# Felling.
+	var w = make("user://test_server_items_f")
+	w.ground_height = func(x, z): return 10.0
+	var standing: Dictionary = {7: true, 8: true}
+	var felled_log: Array = []
+	var notices: Array = []
+	var gs: Array = [5000.0]
+	w.game_seconds = func(): return gs[0]
+	w.tree_info = func(chunk, id): return {"name": "oak", "position": Vector3(10.0, 10.0, 0.0), "height": 18.0, "trunk": 0.1} if standing.has(id) else {}
+	w.cut_tree = func(chunk, id): standing.erase(id); felled_log.append(id); return true
+	w.send_notice = func(peer, text): notices.append(text)
+	w.peer_connected_hello(1, "abcdef123456")
+	w.report_position(1, Vector3(8.0, 10.0, 0.0))
+	w.action(1, Net.ACT_HIT, 7, 0, 0, Vector3.ZERO)
+	check(felled_log.is_empty() and w.inventory_of(1).count_of(w.table.number_of("stone_axe")) == 0, "no axe, no chopping")
+	w.action(1, Net.ACT_ADMIN_GIVE, w.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
+
+	for n in range(3):
+		w._last_hit.clear()
+		w.action(1, Net.ACT_HIT, 7, 0, 0, Vector3.ZERO)
+
+	check(felled_log.is_empty(), "a tree does not fall at the first blows")
+
+	for n in range(10):
+		w._last_hit.clear()
+		w.action(1, Net.ACT_HIT, 7, 0, 0, Vector3.ZERO)
+
+	check(felled_log == [7], "enough blows fell it once")
+	var trunks: int = 0
+	var stumps: int = 0
+
+	for k in w._items:
+		if w._items[k].has("tree"):
+			if w._items[k]["tree"]["state"] == 3:
+				trunks += 1
+			else:
+				stumps += 1
+
+	check(trunks == 1 and stumps == 1, "a trunk and a stump lie where it stood")
+	w.report_position(1, Vector3(100.0, 10.0, 0.0))
+	w._last_hit.clear()
+	w.action(1, Net.ACT_HIT, 8, 0, 0, Vector3.ZERO)
+	check(felled_log == [7] and standing.has(8), "too far to chop")
+	w.save()
+	var w2 = make("user://test_server_items_f")
+	var back: int = 0
+
+	for k in w2._items:
+		if w2._items[k].has("tree"):
+			back += 1
+
+	check(back == 2, "trunk and stump survive a restart")
+	gs[0] += ItemsScript.ROT_GAME_S + 100.0
+	w.tick(61.0)
+	var left: int = 0
+
+	for k in w._items:
+		if w._items[k].has("tree"):
+			left += 1
+
+	check(left == 0, "trunk and stump rot after 168 game days")
 
 	print("server item tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 10
+const PROTOCOL_VERSION := 12
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -47,6 +47,7 @@ signal water_changed_received()
 signal ground_reset_received(tiles_stamp: String, starter_stamp: String)
 signal water_requested(peer_id: int, chunks: PackedInt32Array)
 signal water_received(chunk: Vector2i, water: PackedByteArray)
+signal notice_received(text: String)
 signal hello_requested(peer_id: int, player_key: String)
 signal inventory_action_requested(peer_id: int, kind: int, a: int, b: int, count: int, at: Vector3)
 signal inventory_full_received(bytes: PackedByteArray)
@@ -61,6 +62,7 @@ const ACT_ADMIN_GIVE := 3 # a = item number, count (admin tool; tests only)
 const ACT_CRAFT := 4      # a = recipe number (data/items/recipes.json)
 const ACT_PLACE := 6      # a = slot of a placeable item, at = where (a campfire kit becomes a fire)
 const ACT_MINE := 8       # at = the point the axe struck; on bare rock the server gives stone
+const ACT_HIT := 7        # a = tree id, b = flora chunk x, count = flora chunk z: one axe blow on a standing tree
 const ACT_THROW := 5      # a = slot, at = aim direction (the server starts the throw from the player)
 
 
@@ -183,7 +185,14 @@ func inventory_slots(bytes: PackedByteArray) -> void:
 	inventory_slots_received.emit(bytes)
 
 
-# added: [[id, item number, count, position, state], ...] (state 0 item, 1 lit fire, 2 burnt-out fire); removed: ids
+# added: [[id, item number, count, position, state, extra], ...] (state 0 item, 1 lit fire, 2 burnt-out fire,
+# 3 felled trunk, 4 stump; extra: Dictionary with species, yaw, length, radius for states 3 and 4); removed: ids
 @rpc("authority", "call_remote", "reliable")
 func world_items(added: Array, removed: PackedInt32Array) -> void:
 	world_items_received.emit(added, removed)
+
+
+# A short message for the player ("too many trunks lie here", and so on).
+@rpc("authority", "call_remote", "reliable")
+func notice(text: String) -> void:
+	notice_received.emit(text)

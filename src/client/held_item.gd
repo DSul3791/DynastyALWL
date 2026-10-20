@@ -30,7 +30,7 @@ var _jab_t: float = -1.0
 var _flights: Array = []                  # local visuals of spears this player threw: {node, vel, age}
 var _shown_number: int = 0
 var _sound                                # SoundStage (hit sounds)
-var _tree_near: Callable                  # (point) -> true when a tree trunk stands there
+var _tree_near: Callable                  # (point) -> [chunk, id] of the tree trunk standing there, or []
 var _swing_t: float = -1.0
 var _swing_hit: bool = false
 var _cover_at: Callable                   # (point) -> true when under a tree's crown
@@ -252,8 +252,11 @@ func _strike() -> void:
 	if hit.is_empty() or _sound == null:
 		return
 
-	if _tree_near.is_valid() and _tree_near.call(hit["position"]):
+	var tree: Array = _tree_near.call(hit["position"]) if _tree_near.is_valid() else []
+
+	if not tree.is_empty():
 		_sound.hits.hit("axe", "wood", hit["position"], 1.0)
+		_net.inventory_action.rpc_id(1, Net.ACT_HIT, tree[1], tree[0].x, tree[0].y, Vector3.ZERO)
 	else:
 		_sound.hits.hit_ground("pick", hit["position"], 1.0)
 		_net.inventory_action.rpc_id(1, Net.ACT_MINE, 0, 0, 0, hit["position"])

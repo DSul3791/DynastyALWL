@@ -167,6 +167,9 @@ func _ready() -> void:
 	items.world_seed = int(settings.master_seed)
 	items.rain_now = func(): return float(weather.get("rain", 0.0))
 	items.cover_at = _cover_at
+	items.tree_info = _tree_info
+	items.cut_tree = _cut_tree
+	items.send_notice = func(peer, text): net.notice.rpc_id(peer, text)
 	items.game_seconds = func(): return game_clock.seconds
 	items.season_now = func(): return game_clock.season()
 	items.rock_at = func(x, z):
@@ -475,6 +478,37 @@ func _cover_at(point: Vector3) -> float:
 			flora.chunk_bytes(home + Vector2i(dx, dz), false)
 
 	return 1.0 if flora.covered(point) else 0.0
+
+
+# A standing tree for the axe: {name, position, height, trunk}, or {} when there is none (cut already,
+# not a tree, no such id). The last few chunks' items are kept so a run of blows works them out once.
+var _tree_cache: Dictionary = {}
+
+func _tree_info(chunk: Vector2i, id: int) -> Dictionary:
+	var home: Vector2i = flora.placer.normalize(chunk)
+
+	if not _tree_cache.has(home):
+		if _tree_cache.size() > 6:
+			_tree_cache.erase(_tree_cache.keys()[0])
+
+		_tree_cache[home] = flora.placer.chunk_items(home)
+
+	var all: Dictionary = _tree_cache[home]
+	var at: int = all["ids"].find(id)
+	var species: Dictionary = flora.placer._by_id.get(id >> 16, {})
+
+	if at < 0 or species.is_empty() or int(species["kind"]) != PlacerScript.KIND_TREE or flora.removed_in(home).has(id):
+		return {}
+
+	return {"name": str(species["name"]), "position": all["positions"][at], "height": float(all["heights"][at]), "trunk": float(species["trunk"])}
+
+
+func _cut_tree(chunk: Vector2i, id: int) -> bool:
+	if not flora.cut(chunk, id):
+		return false
+
+	net.flora_cut.rpc(chunk, id)
+	return true
 
 
 func _on_cut_flora_requested(peer_id: int, chunk: Vector2i, id: int) -> void:

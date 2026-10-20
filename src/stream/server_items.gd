@@ -33,6 +33,12 @@ const THROW_GRAVITY := 9.8
 const THROW_MAX_S := 6.0
 const THROW_COOLDOWN_MS := 500
 const EYE_HEIGHT := 1.5
+const HIT_REACH_M := 3.5                 # from the trunk's edge
+const HIT_COOLDOWN_MS := 400
+const CHOP_RESET_MS := 60000             # a half-chopped tree heals after this long untouched
+const TRUNKS_PER_CHUNK := 32             # felled trunks (and as many stumps) lying in one flora chunk
+const ROT_GAME_S := 168.0 * 86400.0      # a trunk or stump rots away after a real week (168 game days)
+const TREE_SAVE_VERSION := 1
 const MINE_REACH_M := 4.5
 const MINE_COOLDOWN_MS := 700
 const MINE_CELL_M := 8.0                 # one outcrop patch
@@ -55,6 +61,9 @@ var send_world_items: Callable # (peer, added Array, removed PackedInt32Array)
 var ground_height: Callable    # (x, z) -> ground height in metres, or NAN; set by the server scene
 var world_seed: int = 0
 var rain_now: Callable         # () -> rain strength 0 to 1 over the world now; set by the server scene
+var send_notice: Callable      # (peer, text)
+var tree_info: Callable        # (chunk Vector2i, id) -> {name, position, height, trunk} of a standing tree, or {}
+var cut_tree: Callable         # (chunk Vector2i, id) -> true when the standing tree was removed (and clients told)
 var rock_at: Callable          # (x, z) -> true when bare rock shows at the surface there (no soil cover); set by the server scene
 var game_seconds: Callable      # () -> game clock seconds
 var season_now: Callable        # () -> "spring" | "summer" | "autumn" | "winter"
@@ -76,6 +85,9 @@ var _picked: Dictionary = {}          # "cx,cz,id" -> game seconds when last pic
 var _flights: Array = []            # thrown things in the air: {number, pos, vel, age}
 var _last_throw: Dictionary = {}    # peer -> msec
 var _last_mine: Dictionary = {}     # peer -> msec
+var _last_hit: Dictionary = {}      # peer -> msec
+var _chops: Dictionary = {}         # "cx,cz,id" -> {hits, msec}
+var _rot_in: float = 60.0
 var _mined: Dictionary = {}         # Vector2i patch -> {taken, since msec}
 var _taken: Dictionary = {}         # scatter key int -> true: loose items already picked up (stay gone)
 var _cells_done: Dictionary = {}    # Vector2i scatter cell -> true while its items are laid out
@@ -87,6 +99,7 @@ func setup(item_table, store_dir: String) -> void:
 	_dir = store_dir
 	_load_inventories()
 	_load_world_items()
+	_load_trees()
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(DROPS_PATH))
 	_drops = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
 	var flora_table: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/tables/flora.json"))
@@ -116,6 +129,7 @@ func peer_left(peer: int) -> void:
 	_known.erase(peer)
 	_last_throw.erase(peer)
 	_last_mine.erase(peer)
+	_last_hit.erase(peer)
 
 
 func report_position(peer: int, position: Vector3) -> void:
@@ -198,6 +212,8 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_drop(peer, inv, a, count, at)
 	elif kind == Net.ACT_PICKUP:
 		_pickup(peer, inv, a)
+	elif kind == Net.ACT_HIT:
+		_hit(peer, inv, a, Vector2i(b, count))
 	elif kind == Net.ACT_MINE:
 		_mine(peer, inv, at)
 	elif kind == Net.ACT_PLACE:
@@ -219,6 +235,7 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 
 func tick(delta: float) -> void:
 	_fly(delta)
+	_rot(delta)
 	_fires(delta)
 
 	for id in _items.keys():
@@ -267,11 +284,12 @@ func save() -> void:
 	for id in _items:
 		var it: Dictionary = _items[id]
 
-		if it.has("scatter"):
+		if it.has("scatter") or it.has("tree"):
 			continue
 
 		items.append([int(it["number"]), int(it["count"]), it["pos"].x, it["pos"].y, it["pos"].z, it["left"], int(it["fire"]["state"]) if it.has("fire") else 0, float(it["fire"]["burn_left"]) if it.has("fire") else 0.0])
 
+	_save_trees()
 	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked})
 
 
@@ -483,7 +501,7 @@ func _fires(delta: float) -> void:
 func _pickup(peer: int, inv, id: int) -> void:
 	var it: Dictionary = _items.get(id, {})
 
-	if it.is_empty() or it.has("fire") or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(it["pos"]) > PICKUP_M + 2.0:
+	if it.is_empty() or it.has("fire") or it.has("tree") or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(it["pos"]) > PICKUP_M + 2.0:
 		return
 
 	var left: int = inv.add(int(it["number"]), int(it["count"]))
@@ -514,11 +532,11 @@ func _sync_world_items() -> void:
 			if it["pos"].distance_to(here) <= NEAR_M:
 				near[id] = true
 
-				var state: int = int(it["fire"]["state"]) if it.has("fire") else 0
+				var state: int = int(it["fire"]["state"]) if it.has("fire") else (int(it["tree"]["state"]) if it.has("tree") else 0)
 				var signature: int = int(it["count"]) + 1000 * state
 
 				if not known.has(id) or known[id] != signature:
-					added.append([id, int(it["number"]), int(it["count"]), it["pos"], state])
+					added.append([id, int(it["number"]), int(it["count"]), it["pos"], state, it["tree"] if it.has("tree") else {}])
 					known[id] = signature
 
 		for id in known.keys():
@@ -601,6 +619,10 @@ func _load_world_items() -> void:
 
 # The parsed dictionary, or null when there is no file or it cannot be used (then it is kept as .bad).
 func _read_json(name: String) -> Variant:
+	return _read_json_version(name, VERSION)
+
+
+func _read_json_version(name: String, version: int) -> Variant:
 	var path: String = _dir + "/" + name
 
 	if not FileAccess.file_exists(path):
@@ -608,7 +630,7 @@ func _read_json(name: String) -> Variant:
 
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
 
-	if typeof(parsed) != TYPE_DICTIONARY or int(parsed.get("version", 0)) != VERSION:
+	if typeof(parsed) != TYPE_DICTIONARY or int(parsed.get("version", 0)) != version:
 		push_error("server items: %s is not usable; kept as %s.bad" % [path, path])
 		DirAccess.rename_absolute(path, path + ".bad")
 		return null
@@ -709,4 +731,139 @@ func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 			continue
 
 		_items[_next_id] = {"number": table.number_of(kinds[n]), "count": 1, "pos": Vector3(x, y, z), "left": 1.0e9, "scatter": key}
+		_next_id += 1
+
+
+# One axe blow on a standing tree. Enough blows fell it: the standing tree is removed, and a trunk
+# and a stump lie there (records in _items with a "tree" entry, saved in tree_states.json).
+func _hit(peer: int, inv, tree_id: int, chunk: Vector2i) -> void:
+	if not _peer_pos.has(peer) or not tree_info.is_valid() or not cut_tree.is_valid():
+		return
+
+	var now: int = Time.get_ticks_msec()
+
+	if now - int(_last_hit.get(peer, -100000)) < HIT_COOLDOWN_MS or not _has_tool(inv, "axe"):
+		return
+
+	var info: Dictionary = tree_info.call(chunk, tree_id)
+
+	if info.is_empty():
+		return
+
+	var spot: Vector3 = info["position"]
+	var flat: float = Vector2(_peer_pos[peer].x - spot.x, _peer_pos[peer].z - spot.z).length()
+
+	if flat > HIT_REACH_M + float(info["trunk"]):
+		return
+
+	_last_hit[peer] = now
+	var key: String = "%d,%d,%d" % [chunk.x, chunk.y, tree_id]
+	var chop: Dictionary = _chops.get(key, {"hits": 0, "msec": now})
+
+	if now - int(chop["msec"]) > CHOP_RESET_MS:
+		chop["hits"] = 0
+
+	chop["hits"] = int(chop["hits"]) + 1
+	chop["msec"] = now
+	_chops[key] = chop
+	var needed: int = clampi(int(4.0 + float(info["trunk"]) * 30.0), 4, 40)
+
+	if int(chop["hits"]) < needed:
+		return
+
+	if _trees_in_chunk(chunk) >= TRUNKS_PER_CHUNK:
+		if send_notice.is_valid():
+			send_notice.call(peer, "Too many felled trunks lie here. Clear some away first.")
+
+		return
+
+	if not bool(cut_tree.call(chunk, tree_id)):
+		return
+
+	_chops.erase(key)
+	var away: Vector2 = Vector2(spot.x - _peer_pos[peer].x, spot.z - _peer_pos[peer].z)
+	var yaw: float = atan2(away.x, away.y) if away.length() > 0.01 else 0.0
+	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
+	var base: Dictionary = {"species": str(info["name"]), "yaw": yaw, "length": float(info["height"]), "radius": maxf(float(info["trunk"]), 0.1), "felled_at": now_s}
+	var trunk: Dictionary = base.duplicate()
+	trunk["state"] = 3
+	trunk["chunk"] = [chunk.x, chunk.y]
+	var stump: Dictionary = base.duplicate()
+	stump["state"] = 4
+	stump["chunk"] = [chunk.x, chunk.y]
+	_items[_next_id] = {"number": 0, "count": 1, "pos": spot, "left": 1.0e9, "tree": trunk}
+	_next_id += 1
+	_items[_next_id] = {"number": 0, "count": 1, "pos": spot, "left": 1.0e9, "tree": stump}
+	_next_id += 1
+	_dirty = true
+
+
+func _has_tool(inv, tool_class: String) -> bool:
+	for slot in range(8):
+		if inv.numbers[slot] != 0 and str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", "")) == tool_class:
+			return true
+
+	return false
+
+
+func _trees_in_chunk(chunk: Vector2i) -> int:
+	var count: int = 0
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if it.has("tree") and int(it["tree"]["state"]) == 3 and it["tree"]["chunk"] == [chunk.x, chunk.y]:
+			count += 1
+
+	return count
+
+
+# Trunks and stumps rot away after 168 game days (the game clock only runs while the server does).
+func _rot(delta: float) -> void:
+	_rot_in -= delta
+
+	if _rot_in > 0.0 or not game_seconds.is_valid():
+		return
+
+	_rot_in = 60.0
+	var now_s: float = float(game_seconds.call())
+
+	for id in _items.keys():
+		if _items[id].has("tree") and now_s - float(_items[id]["tree"]["felled_at"]) >= ROT_GAME_S:
+			_items.erase(id)
+			_dirty = true
+
+	var stale: Array = []
+	var now_ms: int = Time.get_ticks_msec()
+
+	for key in _chops:
+		if now_ms - int(_chops[key]["msec"]) > CHOP_RESET_MS:
+			stale.append(key)
+
+	for key in stale:
+		_chops.erase(key)
+
+
+func _save_trees() -> void:
+	var rows: Array = []
+
+	for id in _items:
+		if _items[id].has("tree"):
+			var it: Dictionary = _items[id]
+			rows.append({"pos": [it["pos"].x, it["pos"].y, it["pos"].z], "tree": it["tree"]})
+
+	_write_atomic("tree_states.json", {"version": TREE_SAVE_VERSION, "trees": rows})
+
+
+func _load_trees() -> void:
+	var parsed: Variant = _read_json_version("tree_states.json", TREE_SAVE_VERSION)
+
+	if parsed == null:
+		return
+
+	for row in parsed["trees"]:
+		var tree: Dictionary = row["tree"]
+		tree["state"] = int(tree["state"])
+		tree["chunk"] = [int(tree["chunk"][0]), int(tree["chunk"][1])]
+		_items[_next_id] = {"number": 0, "count": 1, "pos": Vector3(row["pos"][0], row["pos"][1], row["pos"][2]), "left": 1.0e9, "tree": tree}
 		_next_id += 1

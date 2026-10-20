@@ -49,7 +49,7 @@ const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 const GpuProbeScript := preload("res://src/debug/gpu_probe.gd")
 const WeatherLookScript := preload("res://src/client/weather_look.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 164
+const BUILD := 156
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -188,6 +188,7 @@ var _sound_gear_at: int = -1
 var test_items: bool = false
 var test_gather: bool = false
 var test_spear: bool = false
+var test_chop: bool = false
 var test_creatures: bool = false
 var _test_creature_at: int = 0
 var _test_creature_step: int = 0
@@ -324,6 +325,8 @@ func _ready() -> void:
 			test_gather = true
 		elif argument == "--spear":
 			test_spear = true
+		elif argument == "--chop":
+			test_chop = true
 		elif argument == "--creatures":
 			test_creatures = true
 
@@ -548,6 +551,9 @@ func _on_welcome(info: Dictionary) -> void:
 
 	if test_spear:
 		held.run_test()
+
+	if test_chop:
+		items.run_chop_test(self)
 	print("Terrain client: welcome after %d ms; world %s; spawn %s; cache %s (%d MB)" % [
 		connected_msec - started_msec, str(info["world_name"]), str(info["spawn"]), cache_dir, cache_mb
 	])
@@ -850,16 +856,16 @@ func _cover_here(point: Vector3) -> bool:
 	return CoverScript.at(point, flora.cover) > 0.0
 
 
-# True when a tree trunk stands within 1.3 m (flat distance) of the point.
-func _tree_trunk_near(point: Vector3) -> bool:
+# [chunk, id] of the standing tree whose trunk is within 1.3 m (flat distance) of the point, else [].
+func _tree_trunk_near(point: Vector3) -> Array:
 	for chunk in flora._chunks:
 		var held_items: Dictionary = flora._chunks[chunk]["items"]
 
 		for n in range(held_items["ids"].size()):
 			if flora._species.get(held_items["ids"][n] >> 16, {}).get("kind", 2) == 0 and Vector2(held_items["positions"][n].x - point.x, held_items["positions"][n].z - point.z).length() < 1.3:
-				return true
+				return [chunk, held_items["ids"][n]]
 
-	return false
+	return []
 
 
 # E with nothing on the ground in reach: ask to gather the nearest plant or shrub within 2.5 m.
