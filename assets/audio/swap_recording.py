@@ -43,8 +43,19 @@ SILENCE_DB = -50.0
 PAD_S = 0.02
 
 
-def decode(path):
-    raw = subprocess.run(["ffmpeg", "-nostdin", "-loglevel", "error", "-i", path, "-ac", "1", "-ar", str(SR), "-f", "f32le", "-"],
+# EQ presets (ffmpeg filters) learned from Dave's brook recording (2026-10-20): the raw file read as "constant wind" because of
+# low rumble and too little pebble sparkle. Applied automatically to the water slots; --preset none turns it off.
+PRESETS = {
+    "water": "highpass=f=260,equalizer=f=4500:t=q:w=1:g=5",
+    "water_wide": "highpass=f=120,equalizer=f=4500:t=q:w=1:g=3",
+}
+SLOT_PRESET = {"water_brook": "water", "water_river": "water_wide", "water_fall": "water_wide"}
+PRESET_RMS_DB = {"water": -23.8}      # active RMS aimed for when the placeholder level is not the right target
+
+
+def decode(path, af=None):
+    cmd = ["ffmpeg", "-nostdin", "-loglevel", "error", "-i", path] + (["-af", af] if af else []) + ["-ac", "1", "-ar", str(SR), "-f", "f32le", "-"]
+    raw = subprocess.run(cmd,
                          capture_output=True, check=True).stdout
     return np.frombuffer(raw, dtype=np.float32).astype(np.float64)
 
@@ -127,6 +138,13 @@ def target_rms(slot, group):
     return float(np.median(values)) if values else DEFAULT_RMS_DB
 
 
+def band_db(x, lo, hi):
+    """Level (dB, relative to full scale RMS) of the part of x between lo and hi Hz."""
+    spec = np.abs(np.fft.rfft(x)) / max(len(x), 1)
+    freq = np.fft.rfftfreq(len(x), 1.0 / SR)
+    return 10 * np.log10(np.sum(spec[(freq >= lo) & (freq < hi)] ** 2) * 2 + 1e-12)
+
+
 def write_ogg(path, x):
     data = (np.clip(x, -1, 1) * 32767).astype(np.int16)
 
@@ -150,6 +168,7 @@ def main():
     ap.add_argument("--start", type=float, help="seconds to cut from the start (else silence is trimmed)")
     ap.add_argument("--end", type=float, help="seconds to cut the end at")
     ap.add_argument("--db", type=float, help="active RMS level to set, dB (default: the placeholder's)")
+    ap.add_argument("--preset", choices=sorted(PRESETS) + ["none"], help="EQ preset (default: water slots get a water preset)")
     ap.add_argument("--replace", action="store_true", help="remove the slot's existing recordings first")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--no-check", action="store_true", help="skip make_manifest and validate_pack afterwards")
@@ -166,7 +185,9 @@ def main():
         sys.exit("Unknown slot %r: use a name from make_manifest.py (python3 assets/audio/make_manifest.py lists them in sound_manifest.json)" % args.slot)
 
     group, is_step = found
-    x = decode(args.input)
+    preset = args.preset or SLOT_PRESET.get(args.slot, "none")
+    raw = decode(args.input)
+    x = decode(args.input, PRESETS[preset]) if preset != "none" else raw
     original = len(x) / SR
     x = trim(x, args.start, args.end)
 
@@ -181,7 +202,7 @@ def main():
         warnings.append("%.1f s is long for %s; consider --end" % (seconds, "a loop" if args.loop else "a one-shot"))
 
     rms_before = active_rms(x)
-    target = args.db if args.db is not None else target_rms(args.slot, group)
+    target = args.db if args.db is not None else PRESET_RMS_DB.get(preset, target_rms(args.slot, group))
     gain = 10 ** ((target - rms_before) / 20)
     peak = np.max(np.abs(x)) * gain
 
@@ -195,6 +216,9 @@ def main():
     taken = [int(m.group(1)) for f in existing for m in [re.match(r"^.*_(\d+)\.", f)] if m]
     number = 0 if args.replace else (max(taken) + 1 if taken else 0)
     out_path = os.path.join(folder, "%s_%d.ogg" % (args.slot, number))
+    if preset != "none":
+        print("preset %s (%s)\n  before: active RMS %.1f dB, peak %.1f dB, low band (<260 Hz) %.1f dB, 4-5 kHz band %.1f dB" % (
+            preset, PRESETS[preset], active_rms(raw), 20 * np.log10(np.max(np.abs(raw)) + 1e-9), band_db(raw, 20, 260), band_db(raw, 4000, 5000)))
     print("%s -> %s: %.1f s of %.1f s kept%s, level %.1f -> %.1f dB active RMS, peak %.1f dB" % (
         os.path.basename(args.input), os.path.relpath(out_path, HERE), seconds, original, ", looped" if args.loop else "",
         rms_before, active_rms(x), 20 * np.log10(np.max(np.abs(x)) + 1e-9)))

@@ -207,6 +207,7 @@ var test_stepfx: bool = false          # --stepfx: wade, then dry steps: squelch
 var test_swing: bool = false           # --swing-test: tool whooshes (job 71)
 var test_insects: bool = false         # --insect-test: summer insect bed levels by season and hour (job 72)
 var _lake_calm_laps: int = 0
+var test_flush: bool = false           # --flush-test: variety of the bird take-off sounds (Dave 2026-10-20)
 var test_reject: bool = false          # --reject-test: refused-action cue and its rate limit (job 73)
 var test_step_levels: bool = false     # --step-levels: the step loudness table loads and can be overridden (job 76)
 var test_night: bool = false           # --night-test: owl answers, the night insect bed, wolves by season (job 77)
@@ -420,6 +421,8 @@ func _ready() -> void:
 			test_night = true
 		elif argument == "--step-levels":
 			test_step_levels = true
+		elif argument == "--flush-test":
+			test_flush = true
 		elif argument == "--reject-test":
 			test_reject = true
 		elif argument == "--insect-test":
@@ -2607,12 +2610,42 @@ func _process(delta: float) -> void:
 			levels.append("%.2f" % sound.insects.target())
 
 		amb.set_conditions(13.0, "summer", "clear")
+		amb.weights = {"forest": 0.0, "meadow": 0.0, "water": 1.0, "highland": 0.0}
+		var lake_noon: String = "%.2f" % sound.insects.target()
+		var lake_cricket: bool = amb._water_day()
+		amb.set_conditions(2.0, "summer", "clear")
+		var lake_night: String = "%.2f" % sound.insects.target()
+		amb.set_conditions(13.0, "summer", "clear")
+		amb.weights = {"forest": 0.0, "meadow": 1.0, "water": 0.0, "highland": 0.0}
 		sound.weather.rain = 1.0
 		levels.append("%.2f" % sound.insects.target())
 		sound.weather.rain = 0.0
 		sound.insects.level = 0.9
 		sound.insects.update(0.1)
-		print("Terrain client: insect check: summer noon %s, summer 2h %s, winter noon %s, spring noon %s, sunrise edge %s, sunset edge %s, rain %s, playing %d" % (levels + [sound.insects.voices_playing()]))
+		print("Terrain client: insect check: summer noon %s, summer 2h %s, winter noon %s, spring noon %s, sunrise edge %s, sunset edge %s, rain %s, playing %d, lake noon %s, lake 2h %s, lake day %s" % (levels + [sound.insects.voices_playing(), lake_noon, lake_night, str(lake_cricket)]))
+
+	if test_flush and now - connected_msec > 18000 and now >= _test_fire_at:
+		_test_fire_at = now + 10000000
+		var amb = sound.ambient
+		var files: Dictionary = {}
+		var sizes: Dictionary = {"small": 0, "medium": 0, "large": 0}
+		var repeats: int = 0
+		var previous: String = ""
+
+		for n in 300:
+			amb.flush(body.global_position + Vector3(20.0, 2.0, 0.0), 0.0)
+			var file: String = amb.last_file
+			files[file] = int(files.get(file, 0)) + 1
+			sizes[file.get_slice("_", 1)] = int(sizes.get(file.get_slice("_", 1), 0)) + 1
+			repeats += 1 if file == previous else 0
+			previous = file
+			var flier = amb._fliers.pop_back()
+			amb._voices.erase(flier["player"])
+			flier["player"].queue_free()
+
+		var crow: bool = amb.flush(body.global_position + Vector3(20.0, 2.0, 0.0), 0.0, "large")
+		var crow_file: String = amb.last_file
+		print("Terrain client: flush check: %d flushes, small %d, medium %d, large %d, files used %d, repeats %d, crow file %s, source %s" % [300, sizes["small"], sizes["medium"], sizes["large"], files.size(), repeats, crow_file, amb._source.get("wing_small", "?")])
 
 	if test_reject and now - connected_msec > 18000 and now >= _test_fire_at:
 		_test_fire_at = now + 10000000

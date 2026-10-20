@@ -56,6 +56,7 @@ const DARK_BEFORE := 0.5               # dark from this long before sunrise to t
 const GAME_HOURS_PER_SEC := 24.0 / 3600.0   # game clock: 24 game hours per real hour
 const FLUSH_DB := -7.0
 const FLUSH_CHANCE := 0.12             # per scan while running in forest or meadow by day
+const FLUSH_SIZES := {"small": 0.55, "medium": 0.3, "large": 0.15}      # share of take-offs by bird size
 const FLUSH_COOLDOWN_SEC := 25.0
 const FLUSH_FLY_SEC := [1.6, 3.2]
 const FLUSH_FLY_M := [25.0, 60.0]
@@ -71,7 +72,7 @@ const ALARM_CHANCE := 0.15             # per scan while that holds
 # between first light and nightfall; night: only in the dark (both follow the season's sunrise
 # and sunset, SUN). chorus: how strongly the dawn chorus (and a little at dusk) speeds its
 # tries. night_rate: tries come this many times as often at night. dusk: the same around
-# sunset (crickets and frogs start up). seasons: season -> chance multiplier (default 1).
+# sunset (crickets and frogs start up). dark_at_water: not heard at water in full daylight. seasons: season -> chance multiplier (default 1).
 const EVENTS := [
 	{"name": "bird_whistle", "zones": {"forest": 1.0, "meadow": 0.5, "highland": 0.3}, "every": [14, 34], "dist": [20, 75], "height": [4, 14], "db": -10.0, "day": true, "chorus": 1.0, "seasons": {"winter": 0.25, "spring": 1.0}},
 	{"name": "bird_feebee", "zones": {"forest": 1.0, "meadow": 0.3}, "every": [18, 40], "dist": [20, 70], "height": [4, 12], "db": -11.0, "day": true, "chorus": 1.0, "seasons": {"winter": 0.25, "spring": 1.0}},
@@ -81,9 +82,9 @@ const EVENTS := [
 	{"name": "woodpecker", "zones": {"forest": 1.0}, "every": [40, 100], "dist": [25, 80], "height": [2, 10], "db": -5.0, "day": true, "seasons": {"winter": 0.6}},
 	{"name": "owl_hoot", "zones": {"forest": 1.0, "meadow": 0.3}, "every": [30, 70], "dist": [40, 110], "height": [5, 14], "db": -13.0, "night": true, "answer": 0.45, "seasons": {"winter": 1.2, "spring": 1.3, "summer": 0.7, "autumn": 1.0}},
 	{"name": "hawk_screech", "zones": {"highland": 1.0}, "every": [60, 150], "dist": [120, 300], "height": [50, 110], "db": -4.0, "hours": [9, 17], "seasons": {"winter": 0.6}},
-	{"name": "cricket_chirp", "zones": {"meadow": 1.0, "water": 0.4}, "every": [22, 55], "dist": [5, 28], "height": [0, 0], "db": -16.0, "night_rate": 5.0, "dusk": 2.0, "seasons": {"autumn": 0.9, "summer": 1.0, "spring": 0.3, "winter": 0.0}},
-	{"name": "frog_croak", "zones": {"water": 1.0}, "every": [40, 90], "dist": [6, 24], "height": [0, 0], "db": -18.0, "wet": true, "water": true, "night_rate": 3.0, "dusk": 2.0, "seasons": {"autumn": 0.3, "summer": 1.0, "spring": 1.0, "winter": 0.0}},
-	{"name": "tree_frog_peep", "zones": {"water": 0.8, "forest": 0.2}, "every": [16, 40], "dist": [4, 28], "height": [0, 3], "db": -14.0, "wet": true, "night_rate": 3.0, "dusk": 2.0, "seasons": {"autumn": 0.2, "summer": 1.0, "spring": 1.0, "winter": 0.0}},
+	{"name": "cricket_chirp", "zones": {"meadow": 1.0, "water": 0.4}, "every": [22, 55], "dist": [5, 28], "height": [0, 0], "db": -16.0, "night_rate": 5.0, "dusk": 2.0, "dark_at_water": true, "seasons": {"autumn": 0.9, "summer": 1.0, "spring": 0.3, "winter": 0.0}},
+	{"name": "frog_croak", "zones": {"water": 1.0}, "every": [40, 90], "dist": [6, 24], "height": [0, 0], "db": -18.0, "wet": true, "water": true, "night_rate": 3.0, "dusk": 2.0, "dark_at_water": true, "seasons": {"autumn": 0.3, "summer": 1.0, "spring": 1.0, "winter": 0.0}},
+	{"name": "tree_frog_peep", "zones": {"water": 0.8, "forest": 0.2}, "every": [16, 40], "dist": [4, 28], "height": [0, 3], "db": -14.0, "wet": true, "night_rate": 3.0, "dusk": 2.0, "dark_at_water": true, "seasons": {"autumn": 0.2, "summer": 1.0, "spring": 1.0, "winter": 0.0}},
 	{"name": "fish_splash", "zones": {"water": 1.0}, "every": [60, 150], "dist": [6, 22], "height": [0, 0], "db": -10.0, "water": true},
 ]
 const ZONES := ["forest", "meadow", "water", "highland"]
@@ -92,6 +93,7 @@ var conditions: Dictionary = {"hour": 14.0, "season": "autumn", "weather": "clea
 var weights: Dictionary = {"forest": 0.0, "meadow": 0.0, "water": 0.0, "highland": 0.0}
 var calls_played: Dictionary = {}       # call name -> count (for the headless check)
 var last_call: String = ""
+var _last_pick: Dictionary = {}          # call name -> variant played last (no immediate repeat)
 var last_file: String = ""              # the file last played, e.g. fish_splash_2
 var _source: Dictionary = {}            # call name -> "recorded" or "generated"
 var max_voices: int = 4                 # calls and flushes playing at once (the quality tier sets it)
@@ -333,6 +335,13 @@ func _rate(event: Dictionary) -> float:
 	return rate
 
 
+# Full daylight: from sunrise to an hour before sunset (frogs and crickets start up at dusk).
+func _water_day() -> bool:
+	var sun: Array = _sun()
+	var hour: float = float(conditions["hour"])
+	return hour >= float(sun[0]) and hour < float(sun[1]) - 1.0
+
+
 func _hour_ok(event: Dictionary) -> bool:
 	if event.get("day", false) and _is_night():
 		return false
@@ -361,6 +370,9 @@ func _try(event: Dictionary, body: CharacterBody3D) -> void:
 	var fit: float = 0.0
 
 	for zone in event["zones"]:
+		if zone == "water" and event.get("dark_at_water", false) and _water_day():
+			continue                                            # at a lake by day: leaves, wind, a fish, a bird (Dave 2026-10-20)
+
 		fit = maxf(fit, float(event["zones"][zone]) * float(weights[zone]))
 
 	var season: float = float(event.get("seasons", {}).get(str(conditions["season"]), 1.0))
@@ -400,7 +412,7 @@ func alarm(at: Vector3) -> bool:
 		return false
 
 	_play("crow_alarm", list, at, ALARM_DB).set_meta("keep", true)     # a danger cue: never shed
-	flush(at + Vector3(0.0, 1.0, 0.0), 0.35)
+	flush(at + Vector3(0.0, 1.0, 0.0), 0.35, "large")
 	_alarm_wait = ALARM_COOLDOWN_SEC
 	last_call = "crow_alarm"
 	calls_played["crow_alarm"] = int(calls_played.get("crow_alarm", 0)) + 1
@@ -458,24 +470,44 @@ func _maybe_flush(body: CharacterBody3D) -> void:
 
 # A bird (or a few) bursts out of cover at `at` and flies off: wing beats that move and fade.
 # `delay` waits before it starts (a crow takes off after it calls).
-func flush(at: Vector3, delay: float = 0.0) -> bool:
-	var list: Array = _variants("wing_flap")
+# `size` is the bird: "small" (finch), "medium" (pigeon) or "large" (crow); "" picks by FLUSH_SIZES. Each size has its own
+# take-off bursts (make_wings.py): quick flaps for small birds, slow heavy ones only for big birds.
+func flush(at: Vector3, delay: float = 0.0, size: String = "") -> bool:
+	if size == "":
+		size = _flush_size()
+
+	var name: String = "wing_" + size
+	var list: Array = _variants(name)
 
 	if list.is_empty():
 		return false
 
-	var player: AudioStreamPlayer3D = _play("wing_flap", list, at, FLUSH_DB)
+	var player: AudioStreamPlayer3D = _play(name, list, at, FLUSH_DB)
 	_flush_wait = FLUSH_COOLDOWN_SEC
 	var angle: float = _rng.randf() * TAU
 	var away: Vector3 = Vector3(cos(angle), 0.0, sin(angle)) * _rng.randf_range(float(FLUSH_FLY_M[0]), float(FLUSH_FLY_M[1]))
 	var dur: float = _rng.randf_range(float(FLUSH_FLY_SEC[0]), float(FLUSH_FLY_SEC[1]))
 	_fliers.append({"player": player, "from": at, "to": at + away + Vector3(0.0, _rng.randf_range(4.0, 12.0), 0.0), "t": -delay, "dur": dur})
 	calls_played["wing_flap"] = int(calls_played.get("wing_flap", 0)) + 1
+	calls_played[name] = int(calls_played.get(name, 0)) + 1
 
 	if delay > 0.0:
 		player.stream_paused = true
 
 	return true
+
+
+# Which bird: small ones are the commonest in cover, crows the rarest.
+func _flush_size() -> String:
+	var roll: float = _rng.randf()
+
+	for size in FLUSH_SIZES:
+		roll -= float(FLUSH_SIZES[size])
+
+		if roll < 0.0:
+			return size
+
+	return "small"
 
 
 func _move_fliers(delta: float) -> void:
@@ -500,6 +532,11 @@ func _move_fliers(delta: float) -> void:
 func _play(name: String, list: Array, at: Vector3, db: float) -> AudioStreamPlayer3D:
 	var player: AudioStreamPlayer3D = AudioStreamPlayer3D.new()
 	var pick: int = _rng.randi_range(0, list.size() - 1)
+
+	if list.size() > 1 and pick == int(_last_pick.get(name, -1)):         # never the same file twice running
+		pick = (pick + 1 + _rng.randi_range(0, list.size() - 2)) % list.size()
+
+	_last_pick[name] = pick
 	player.stream = list[pick]
 	last_file = "%s_%d" % [name, pick]
 	player.bus = "Nature"

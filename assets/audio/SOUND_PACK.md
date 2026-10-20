@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **197 slots: 18 recorded, 170 generated placeholders, 9 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **200 slots: 18 recorded, 173 generated placeholders, 9 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -159,6 +159,7 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 3 | `town_bell` | generated | 3 | town_sounds.gd: a tower bell tolling the hour or on call (ring_bell) | 2 to 3 bell strikes with a long ring, 4 to 6 s each |
 | 3 | `town_crowd` | generated | 1 | town_sounds.gd: a busy square murmur (loop) | A seamless crowd murmur loop, no clear words |
 | 3 | `tree_leaves` | generated | 3 | tree_sounds.gd: the crown rushing down through the air | 3 branches and leaves rushing as a tree falls, about 1 s |
+| 3 | `wing_grain` | recorded | 3 | make_wings.py: single flaps cut from Dave's recording; the take-offs are built from them (not played directly) | have: Dave's recording |
 | 3 | `wolf_growl` | generated | 2 | creature_sounds.gd: a wolf's growl (alert, threat) | 2 to 3 wolf growls and snarls, 1 to 2 s |
 | 3 | `woodpecker` | generated | 3 | ambient_life.gd: forest, by day | 2 to 3 woodpecker drumming runs, about 1 s |
 | 4 | `cloth_walk` | generated | 4 | step_fx.gd: soft clothes rustle under every step | 4 soft cloth swishes, 0.25 s |
@@ -184,11 +185,13 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 4 | `ui_on` | generated | 2 | ui_sounds.gd: a toggle switched on (inspection mode) | 2 short rising two-note cues, quiet |
 | 4 | `ui_quality` | generated | 2 | ui_sounds.gd: the quality tier changed (F2 or the menu) | 2 soft settled chimes, 0.5 s |
 | 4 | `wet_squelch` | generated | 4 | step_fx.gd: wet shoes squelch under steps for 20 s after wading | 4 short wet squelches, 0.22 s |
+| 4 | `wing_large` | generated | 4 | ambient_life.gd: flush(at, delay, 'large'): a crow or hawk takes off, 3 to 4 heavy flaps a second | made from Dave's wing flap recording (make_wings.py) |
+| 4 | `wing_medium` | generated | 4 | ambient_life.gd: flush(at, delay, 'medium'): a pigeon or thrush bursts out, 5 to 7 flaps a second | made from Dave's wing flap recording (make_wings.py); a real pigeon take-off wins |
+| 4 | `wing_small` | generated | 4 | ambient_life.gd: flush(at, delay, 'small'): a finch bursts out of cover, 9 to 12 quick flaps | made from Dave's wing flap recording (make_wings.py); a real finch or sparrow take-off wins |
 | 5 | `crow_alarm` | recorded | 3 | ambient_life.gd: alarm(at): a crow scolds when the player runs through crow country, and the danger warning hook | have: Dave's angry crow |
 | 5 | `crow_caw` | recorded | 7 | ambient_life.gd: forest and highland, by day | have: Dave's crow calls |
 | 5 | `fish_splash` | recorded | 3 | ambient_life.gd: a fish jumps at the water edge, rare | have: Dave's fish jumping clip, played whole |
 | 5 | `tree_frog_peep` | recorded | 6 | ambient_life.gd: water edge and forest, spring to autumn | have: Dave's frogs (short peeps) |
-| 5 | `wing_flap` | recorded | 5 | ambient_life.gd: flush(at): a bird bursts out of cover and flies off | have: Dave's wing flaps |
 
 ## Footsteps (recorded left and right, `step_<ground>_<left|right>_N`)
 

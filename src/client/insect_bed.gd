@@ -20,6 +20,7 @@ const RECORDED_DIR := "res://assets/audio/recorded/insects/"
 const BED_DB := -24.0                   # at full level
 const SEASON := {"summer": 1.0, "spring": 0.35, "autumn": 0.35, "winter": 0.0}
 const ZONE := {"meadow": 1.0, "water": 0.5, "forest": 0.35, "highland": 0.0}
+const WATER_DAY := 0.0                  # share of the water-edge hum kept by day (Dave: at a lake only leaves, wind, a fish, a bird)
 const NIGHT_SHARE := {"summer": 0.5, "spring": 0.15, "autumn": 0.2, "winter": 0.0}   # warm nights keep a lower, slower chirring
 const NIGHT_PITCH := 0.78
 const EASE_HOURS := 1.0
@@ -52,14 +53,15 @@ func target(underwater: bool = false) -> float:
 
 	var ambient = _stage.ambient
 	var zone: float = 0.0
-
-	for name in ZONE:
-		zone = maxf(zone, float(ambient.weights.get(name, 0.0)) * float(ZONE[name]))
-
 	var season: float = float(SEASON.get(str(ambient.conditions["season"]), 0.0))
 	var sun: Array = ambient._sun()
 	var hour: float = float(ambient.conditions["hour"])
 	var day: float = clampf((hour - (float(sun[0]) + 0.5)) / EASE_HOURS, 0.0, 1.0) * clampf((float(sun[1]) - hour) / EASE_HOURS, 0.0, 1.0)
+
+	for name in ZONE:
+		var share: float = float(ZONE[name]) * (lerpf(1.0, WATER_DAY, day) if name == "water" else 1.0)
+		zone = maxf(zone, float(ambient.weights.get(name, 0.0)) * share)
+
 	var weather: float = clampf(1.0 - float(_stage.weather.rain) * 1.6, 0.0, 1.0)
 	var calm: float = clampf(1.0 - (float(_stage.wind_strength) - 0.6) * 1.2, 0.2, 1.0)
 	var places: float = (1.0 - float(_stage.cave.enclosure)) * (0.1 if underwater else 1.0)

@@ -402,3 +402,17 @@ Step levels are now data: `data/sound/step_levels.json` (surface_db, floor_db, g
 - The insect bed (`insect_bed.gd`) has a quiet low-pitched night mix: summer 50% of day level, autumn 20%, spring 15%, winter none; pitch x0.78 at night.
 - Voice cap: night storm worst case peaks at 20 of 24 voices (scenario `audit_worst`); `night` scenario checks the factors.
 
+## Water preset for recordings (job 79)
+
+`swap_recording.py` now applies an EQ preset to water slots, learned from Dave's brook: `water_brook` gets a 260 Hz high-pass and +5 dB around 4.5 kHz and is set to -23.8 dB active RMS; `water_river` and `water_fall` get a gentler 120 Hz high-pass and +3 dB, at the placeholder's level. `--preset none` turns it off, `--preset water|water_wide` forces one. A run prints a before/after table (active RMS, peak, level below 260 Hz and in the 4-5 kHz band). The peak is still limited to -1 dB, so a spiky file lands a little under the aimed level and the run says so.
+
+## Bird take-offs (Dave 2026-10-20: "all the low slow one", "not a natural one since")
+
+What was wrong: `wing_flap_0..4` were one slow big-bird take-off (about 2.5 flaps a second, a 50 to 90 Hz thump as its strongest part) played at five speeds, picked at random with repeats, with only +-5% pitch. Three of five were the slow original (0.6 to 0.9 flaps a second), the fast two were the same flaps sped up, so every flush read as the same heavy bird.
+Now: `make_wings.py` cuts the three single flaps out of Dave's recording (`recorded/ambient/wing_grain_N`) and builds bursts: small (9-12 flaps a second, grain pitched up 1.7-2.1x, low end cut at 320 Hz), medium (5.5-7.5 a second, 1.2-1.5x, 220 Hz), large (3-4 a second, as recorded, 140 Hz). Every flap is a different grain with its own pitch, level and timing, the take-off starts uneven and slow, builds over two flaps and falls away. 4 bursts per size (`ambient/wing_<size>_N`). `flush(at, delay, size)` picks small 55%, medium 30%, large 15% (the crow alarm always large); `_play` never repeats a file twice running. Check: `sound_check.py --only flush`.
+Not heard by ear. Three flaps is a thin base: a clean recording of a small bird (finch, sparrow) bursting out of a bush, and one of a pigeon clapping off, would replace the stretched grains. Drop them in as `recorded/ambient/wing_small_N` / `wing_medium_N`.
+
+## Lake edge by day (Dave 2026-10-20)
+
+At a lake in full daylight (sunrise to an hour before sunset) the only sounds are wind, leaves, the occasional fish jump and the occasional bird (and the rare lap in wind). The insect bed's water-edge share is 0 by day (`WATER_DAY`), and crickets, frogs and tree frogs carry `dark_at_water`. Night and dusk are as designed. Checks: `sound_check.py --only insects,lake`.
+
