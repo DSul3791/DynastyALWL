@@ -16,8 +16,8 @@ extends Node
 # How the weather is meant to be chosen (owner, 2026-10-20, not built): by zone north to
 # south, then season (dry zones stay dry, polar zones snow instead of rain), then the town
 # spirit modifier (high spirit: mostly sun and light, warm nightly rain; low spirit: heavy
-# storms, lightning, blizzards, days of rain, little sun). Until a town spirit exists it is a
-# constant: TOWN_SPIRIT_PLACEHOLDER. pick() sketches the odds for that system to replace.
+# storms, lightning, blizzards, days of rain, little sun), all in src/shared/weather.gd, a
+# constant. The world's own weather (src/shared/weather.gd) now decides it; the client passes it to apply_state().
 #
 # Rain is quieter and duller where trees shelter you, with a patter on leaves instead; the
 # water loop swells near ponds and rivers. Sounds: generated in assets/audio/weather/
@@ -29,7 +29,6 @@ const RECORDED_DIR := "res://assets/audio/recorded/weather/"
 
 signal lightning(at: Vector3, distance_m: float)
 
-const TOWN_SPIRIT_PLACEHOLDER := 0.7    # 0 (storms) to 1 (sun); the real value comes from the town
 const FADE_PER_SEC := 0.15              # about 7 s from none to full
 const THUNDER_EVERY := [14.0, 45.0]
 const SPEED_OF_SOUND := 343.0
@@ -108,20 +107,23 @@ func set_weather(new_kind: String, new_intensity: float = 1.0) -> void:
 	intensity = clampf(new_intensity, 0.0, 1.0)
 
 
-# A rough odds table for the future weather system (not used by the game yet): zone is
-# 0 (south, warm) to 1 (north, polar), season "spring".."winter", spirit 0 to 1, roll 0 to 1.
-static func pick(zone: float, season: String, spirit: float, roll: float) -> String:
-	var cold: bool = zone > 0.75 or (season == "winter" and zone > 0.4)
-	var storm: float = clampf(0.5 - spirit * 0.45, 0.02, 0.5)                # low spirit: more heavy weather
-	var wet_share: float = clampf(0.3 - spirit * 0.18, 0.05, 0.3) + (0.1 if season in ["spring", "autumn"] else 0.0)
+# Plays the world's weather state (src/shared/weather.gd: rain, snow, storm, wind, each 0 to 1).
+func apply_state(state: Dictionary) -> void:
+	var snow: float = float(state.get("snow", 0.0))
+	var storm: float = float(state.get("storm", 0.0))
+	var rain_level: float = float(state.get("rain", 0.0))
+	var gale: float = float(state.get("wind", 0.0))
 
-	if roll < storm * 0.5:
-		return "blizzard" if cold else "storm"
-
-	if roll < storm * 0.5 + wet_share:
-		return "snow" if cold else ("rain" if spirit < 0.5 else "drizzle")
-
-	return "fog" if roll > 0.95 and season in ["autumn", "winter"] else "clear"
+	if snow > 0.1:
+		set_weather("blizzard" if snow > 0.5 and gale > 0.7 else "snow", clampf(snow * 1.5, 0.3, 1.0))
+	elif storm > 0.4 and rain_level > 0.3:
+		set_weather("storm", clampf(storm, 0.4, 1.0))
+	elif rain_level > 0.5:
+		set_weather("rain", clampf(rain_level, 0.5, 1.0))
+	elif rain_level > 0.08:
+		set_weather("drizzle", clampf(rain_level * 2.5, 0.3, 1.0))
+	else:
+		set_weather("clear", 1.0)
 
 
 func update(delta: float, body: CharacterBody3D, underwater: bool) -> void:

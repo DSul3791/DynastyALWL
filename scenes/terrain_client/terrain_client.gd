@@ -507,6 +507,9 @@ func _update_weather() -> void:
 	var group: String = WeatherScript.zone_group(world.get("zones", []), int(world.get("equator_row", 0)), row)
 	weather = WeatherScript.state(int(world.get("master_seed", 0)), game_clock.seconds, group, _anchor.y, 0.0)
 
+	if _sound_weather_at < 0 and sound != null and sound.weather != null:
+		sound.weather.apply_state(weather)
+
 
 func _on_water_rate(rate: float, busy: bool, spring_m3_s: float) -> void:
 	# 1 m3 is about 264.17 US gallons.
@@ -849,9 +852,15 @@ func _build_menu(layer: CanvasLayer) -> void:
 		_menu_note.text = "Nature sounds now play as: %s (a test setting; the sky does not follow)" % pick[0])
 	_menu_button(settings, "Sound test weather: change", func():
 		var kinds: Array = sound.weather.KINDS.keys()
-		_sound_weather_at = (_sound_weather_at + 1) % kinds.size()
+		_sound_weather_at += 1
+
+		if _sound_weather_at >= kinds.size():
+			_sound_weather_at = -1
+			_menu_note.text = "Weather sounds follow the game's weather"
+			return
+
 		sound.weather.set_weather(kinds[_sound_weather_at], 1.0)
-		_menu_note.text = "Weather sounds now play: %s (a test setting; sky and ground do not follow)" % kinds[_sound_weather_at])
+		_menu_note.text = "Weather sounds now play: %s (a test setting; sky and ground do not follow). Press again until it follows the game's weather." % kinds[_sound_weather_at])
 	_menu_button(settings, "Back", func(): _show_menu_page("main"))
 
 	var advanced: VBoxContainer = _menu_page(column, "advanced")
