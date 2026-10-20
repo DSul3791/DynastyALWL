@@ -946,6 +946,14 @@ func _build_menu(layer: CanvasLayer) -> void:
 		_apply_render_scale()
 		_save_display()
 		_menu_note.text = "3D resolution %s (the highest is 1920x1080).%s" % [display.size_text(), " Fullscreen windowed stretches it to the screen." if display.fullscreen else ""])
+	_menu_button(settings, "Reset display to default", func():
+		display.reset()
+		quality = 2
+		RenderScale.cap = display.size()
+		display.apply(get_window())
+		_apply_quality()
+		_save_display()
+		_menu_note.text = "Display reset: High, windowed 1920x1080, VSync on.")
 	_menu_button(settings, "Window: windowed or fullscreen windowed", func():
 		display.fullscreen = not display.fullscreen
 		display.apply(get_window())

@@ -11,7 +11,7 @@ const TARGET_MPIX := [1.0, 2.1, 2.1, 3.7]     # 3D megapixels per tier: Low abou
 const MIN_SCALE := 0.5
 
 # Largest 3D picture drawn, whatever the window size (Esc > Settings > Resolution; 1920x1080 at most).
-static var cap: Vector2i = Vector2i(1920, 1080)
+static var cap: Vector2i = Vector2i(1920, 1080)   # not applied at Ultra, which has its own budget
 static var override_scale: float = 0.0        # > 0: a manual setting (Esc > Settings) wins over the tier
 
 
@@ -21,7 +21,7 @@ static func scale_for(window_size: Vector2i, quality: int) -> float:
 
 	var mpix: float = float(window_size.x) * float(window_size.y) / 1000000.0
 	var target: float = float(TARGET_MPIX[clampi(quality, 0, TARGET_MPIX.size() - 1)])
-	var limit: float = minf(minf(float(cap.x) / float(maxi(window_size.x, 1)), float(cap.y) / float(maxi(window_size.y, 1))), 1.0)
+	var limit: float = 1.0 if quality >= 3 else minf(minf(float(cap.x) / float(maxi(window_size.x, 1)), float(cap.y) / float(maxi(window_size.y, 1))), 1.0)
 
 	if mpix <= target:
 		return limit

@@ -43,6 +43,14 @@ func save() -> void:
 	file.save(PATH)
 
 
+# Back to the first-run choices (the game puts the quality back to High).
+func reset() -> void:
+	size_index = DEFAULT_SIZE
+	fullscreen = false
+	vsync_index = 0
+	quality = -1
+
+
 func size() -> Vector2i:
 	return SIZES[size_index]
 
