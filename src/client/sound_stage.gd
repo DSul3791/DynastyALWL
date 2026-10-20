@@ -18,6 +18,7 @@ extends Node
 
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const AUDIO_DIR := "res://assets/audio/"
+const RECORDED_DIR := "res://assets/audio/recorded/"
 const VOICES := 6                       # footstep and swish players, reused in turn
 const FEET_M := 0.9                     # player origin to the soles (capsule half height)
 
@@ -30,8 +31,9 @@ const SOIL_SURFACE := {
 	16: "mud",
 }
 const SURFACE_DB := {
-	"grass": -9.0, "dirt": -10.0, "sand": -8.0, "gravel": -9.0, "stone": -8.0,
+	"grass": -15.0, "dirt": -10.0, "sand": -8.0, "gravel": -9.0, "stone": -8.0,
 	"leaves": -6.0, "mud": -10.0, "snow": -11.0, "water": -10.0,
+	"grass_tall": -14.0, "bushes": -13.0,
 }
 const GRASS_MIN := 0.35                 # grass thickness from which a step sounds like grass
 const WATER_STEP_M := 0.12              # water above the soles that turns steps into splashes
@@ -40,7 +42,7 @@ const SWIM_M := 1.3                     # deeper than this: no footsteps
 # Walk quiet, jog a little louder, run loud (owner 2026-10-19: build 47's run
 # level was a bit too loud for running).
 const GAIT_DB := [-11.0, -6.5, -3.0]     # walk, jog, run
-const BRUSH_GAIT_DB := [-5.0, -2.5, 0.0]
+const BRUSH_GAIT_DB := [-9.0, -4.5, -1.0]
 const GAIT_PITCH := [1.0, 1.03, 1.06]
 const VOLUME_STEPS := [1.0, 0.75, 0.5, 0.25, 0.0]
 
@@ -56,6 +58,7 @@ var _grass
 var _tool: VoxelTool
 var _streams: Dictionary = {}           # sound name -> Array of AudioStream variants
 var _last_variant: Dictionary = {}
+var _recorded: Dictionary = {}          # sound names that come from assets/audio/recorded/
 var _voices: Array = []
 var _next_voice: int = 0
 var _wind_low: AudioStreamPlayer
@@ -127,8 +130,9 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	var strength: float = clampf(0.35 + 0.65 * gust + 0.4 * height - 0.45 * _shelter + rush, 0.05, 1.6)
 	# A calm day (owner, 2026-10-19: the first version sounded like a storm by the sea).
 	# Owner 2026-10-19, twice: still a windstorm. Now a faint breeze that only rises a little in gusts.
-	_wind_low.volume_db = linear_to_db(0.008 + 0.025 * strength)
-	_wind_gust.volume_db = linear_to_db(0.004 + 0.025 * pow(strength, 1.6))
+	# Build 51: the low layer still sounded like surf nearby; it is lower again.
+	_wind_low.volume_db = linear_to_db(0.004 + 0.012 * strength)
+	_wind_gust.volume_db = linear_to_db(0.003 + 0.02 * pow(strength, 1.6))
 	_wind_filter.cutoff_hz = lerpf(1500.0, 7000.0, clampf(strength - 0.2 * _shelter, 0.0, 1.0))
 	_muffle.cutoff_hz = 500.0 if underwater else 20000.0
 
@@ -146,7 +150,8 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 
 
 # One footfall at gait 0 walk, 1 jog, 2 run; `boost_db` makes it louder (landings).
-func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0) -> void:
+# `foot` is "left" or "right" (recorded sets have one of each).
+func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: String = "left") -> void:
 	var feet: Vector3 = body.global_position - Vector3(0.0, FEET_M, 0.0)
 	var water: float = _flora.water_surface_at(feet.x, feet.z)
 
@@ -175,20 +180,30 @@ func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0) -> void:
 		thick = 0.0
 	elif soil < 0 or soil >= Layout.MATERIAL_ROCK:
 		surface = "stone"
+	elif _in_bush(feet):
+		surface = "bushes"
 	elif thick >= GRASS_MIN and soil != 8:
-		surface = "grass"
+		surface = "grass_tall" if tall > 0.35 else "grass"
 	else:
 		surface = str(SOIL_SURFACE.get(soil, "dirt"))
 
-	var pitch: float = GAIT_PITCH[gait] * _rng.randf_range(0.93, 1.07)
-	_play("step_" + surface, float(SURFACE_DB.get(surface, -9.0)) + GAIT_DB[gait] + boost_db + _rng.randf_range(-1.5, 1.0), pitch)
+	# Sets without their own sounds borrow one (generated grass for tall grass and bushes).
+	var name: String = "step_" + surface
+
+	if _variants(name).is_empty() and _variants(name + "_" + foot).is_empty():
+		name = "step_grass"
+
+	var recorded: bool = _recorded.has(name + "_" + foot) or _recorded.has(name)
+	var pitch: float = GAIT_PITCH[gait] * _rng.randf_range(0.96, 1.04)
+	_play(name, float(SURFACE_DB.get(surface, -9.0)) + GAIT_DB[gait] + boost_db + _rng.randf_range(-1.5, 1.0), pitch, foot)
 	steps_played[surface] = int(steps_played.get(surface, 0)) + 1
 
-	if thick > 0.15:
+	# Recorded grass and bush steps already carry the swish of the blades.
+	if thick > 0.15 and not (recorded and surface in ["grass", "grass_tall", "bushes"]):
 		# Blades brushing the boots: louder in thick and tall grass and at speed.
-		var name: String = "grass_brush_tall" if tall > 0.35 else "grass_brush"
+		var brush: String = "grass_brush_tall" if tall > 0.35 else "grass_brush"
 		var amount: float = clampf(thick * (0.6 + 0.6 * tall), 0.0, 1.0)
-		_play(name, linear_to_db(0.06 + 0.2 * amount) + BRUSH_GAIT_DB[gait], _rng.randf_range(0.9, 1.1) * (1.0 + 0.05 * gait))
+		_play(brush, linear_to_db(0.06 + 0.2 * amount) + BRUSH_GAIT_DB[gait], _rng.randf_range(0.9, 1.1) * (1.0 + 0.05 * gait))
 		swishes_played += 1
 
 
@@ -235,8 +250,18 @@ func _ground_under(feet: Vector3) -> int:
 	return -1
 
 
-func _play(name: String, volume_db: float, pitch: float) -> void:
-	var list: Array = _variants(name)
+# A shrub within reach of the feet (walking through a bush).
+func _in_bush(feet: Vector3) -> bool:
+	var id: int = _flora.species_near(feet, 0.9)
+	return id >= 0 and int(_flora._species.get(id, {}).get("kind", -1)) == _flora.KIND_SHRUB
+
+
+# Plays a variant of `name`; with `foot`, the foot's own set (name_left_N) when there is one.
+func _play(name: String, volume_db: float, pitch: float, foot: String = "") -> void:
+	var list: Array = _variants(name + "_" + foot) if foot != "" else []
+
+	if list.is_empty():
+		list = _variants(name)
 
 	if list.is_empty():
 		return
@@ -265,44 +290,57 @@ func _player(bus: String, name: String) -> AudioStreamPlayer:
 	return player
 
 
-# Every variant of a sound: name.ogg, or name_0.ogg, name_1.ogg ...
+# Every variant of a sound: name.ogg, or name_0.ogg, name_1.ogg ... Real
+# recordings in assets/audio/recorded/ win over the generated ones in
+# assets/audio/ (assets/audio/README.md says where to get them).
 func _variants(name: String) -> Array:
 	if _streams.has(name):
 		return _streams[name]
 
-	var list: Array = []
-	var single: AudioStream = _load(name)
+	var list: Array = _find(RECORDED_DIR, name)
 
-	if single != null:
-		list.append(single)
+	if list.is_empty():
+		list = _find(AUDIO_DIR, name)
 	else:
-		var n: int = 0
-
-		while true:
-			var stream: AudioStream = _load("%s_%d" % [name, n])
-
-			if stream == null:
-				break
-
-			list.append(stream)
-			n += 1
+		_recorded[name] = true
 
 	_streams[name] = list
 	return list
 
 
+static func _find(folder: String, name: String) -> Array:
+	var single: AudioStream = _load(folder, name)
+
+	if single != null:
+		return [single]
+
+	var list: Array = []
+
+	while true:
+		var stream: AudioStream = _load(folder, "%s_%d" % [name, list.size()])
+
+		if stream == null:
+			break
+
+		list.append(stream)
+
+	return list
+
+
 # The imported sound, or else straight from the file (headless runs have no imports).
-static func _load(name: String) -> AudioStream:
-	var path: String = AUDIO_DIR + name + ".ogg"
+# Takes name.ogg, or name.wav for a recording dropped in as it came.
+static func _load(folder: String, name: String) -> AudioStream:
+	for extension in ["ogg", "wav"]:
+		var path: String = folder + name + "." + extension
 
-	if ResourceLoader.exists(path):
-		var imported: AudioStream = load(path) as AudioStream
+		if ResourceLoader.exists(path):
+			var imported: AudioStream = load(path) as AudioStream
 
-		if imported != null:
-			return imported
+			if imported != null:
+				return imported
 
-	if FileAccess.file_exists(path):
-		return AudioStreamOggVorbis.load_from_file(path)
+		if FileAccess.file_exists(path):
+			return AudioStreamOggVorbis.load_from_file(path) if extension == "ogg" else AudioStreamWAV.load_from_file(path)
 
 	return null
 

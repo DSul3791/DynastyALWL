@@ -84,9 +84,11 @@ def thump(rng, length, f0, decay, click_cut=1200.0):
     t = np.arange(n) / SR
     f = f0 * (1.0 + 0.6 * np.exp(-t / 0.012))
     tone = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t / decay)
+    thud = noise(rng, n, lambda fr: lowpass(fr, f0 * 2.5, 2) * highpass(fr, 35)) * env(n, 0.002, decay)
+    thud /= np.max(np.abs(thud)) + 1e-9
     click = noise(rng, n, lambda fr: lowpass(fr, click_cut, 2) * highpass(fr, 60)) * env(n, 0.001, 0.012)
     click /= np.max(np.abs(click)) + 1e-9
-    return tone + 0.7 * click
+    return 0.35 * tone + 0.8 * thud + 0.6 * click
 
 
 def grains(rng, n, count, start, spread, make, decay_share=0.4):
@@ -209,22 +211,17 @@ def step_leaves(rng):
 
 
 def step_mud(rng):
-    out, toe = step_base(rng, 0.5, 60, 0.04, heel=0.9, toe=0.2, click_cut=450)
+    # Only shaped noise: tonal squelches read as a tin roof and a cartoon jump.
+    out, toe = step_base(rng, 0.45, 60, 0.035, heel=0.8, toe=0.25, click_cut=400)
     n = len(out)
-    t = np.arange(n) / SR
-    sweep_f = 110 + 160 * np.exp(-t / 0.05)
-    squelch = np.sin(2 * np.pi * np.cumsum(sweep_f) / SR) * env(n, 0.006, 0.05)
-    squelch *= 0.6 + 0.4 * noise(rng, n, lambda f: lowpass(f, 60, 1)) / 0.05
-    wet = noise(rng, n, lambda f: lowpass(f, 500, 2) * highpass(f, 70)) * env(n, 0.003, 0.06)
-    lift_at = toe + rng.uniform(0.12, 0.18)
-    m = int(0.09 * SR)
-    tt = np.arange(m) / SR
-    suck = np.sin(2 * np.pi * np.cumsum(300 + 700 * tt / tt[-1]) / SR) * np.hanning(m)
-    pop = ping(rng.uniform(500, 800), 0.006, 0.03)
-    add(out, 0.25 * suck, lift_at)
-    add(out, 0.35 * pop, lift_at + 0.085)
+    wet = noise(rng, n, lambda f: band(f, 450, 1.0) * lowpass(f, 1500, 3)) * env(n, 0.008, 0.06)
     wet /= np.max(np.abs(wet)) + 1e-9
-    return finish(out / 2.0 + 0.35 * squelch / (np.max(np.abs(squelch)) + 1e-9) + 0.3 * wet)
+    lift_at = toe + rng.uniform(0.1, 0.15)
+    m = int(0.12 * SR)
+    lift = noise(rng, m, lambda f: band(f, 700, 1.0) * lowpass(f, 2000, 3)) * np.hanning(m)
+    lift /= np.max(np.abs(lift)) + 1e-9
+    add(out, 0.12 * lift, lift_at)
+    return finish(out / 2.0 + 0.25 * wet)
 
 
 def step_snow(rng):
@@ -241,21 +238,17 @@ def step_snow(rng):
 
 
 def step_water(rng):
-    # Short and dry: long tails and many ringing bubbles sounded like a tunnel.
-    n = int(0.32 * SR)
+    # A boot through shallow water: a soft splash in and a smaller one as the
+    # foot lifts, all shaped noise (bubbles and ringing sounded strange).
+    n = int(0.45 * SR)
     out = np.zeros(n)
-    splash = noise(rng, n, lambda f: band(f, 2200, 1.4) * highpass(f, 300)) * env(n, 0.004, 0.035)
-    slosh = noise(rng, n, lambda f: lowpass(f, 900, 2) * highpass(f, 80)) * env(n, 0.015, 0.06)
-    splash /= np.max(np.abs(splash)) + 1e-9
-    slosh /= np.max(np.abs(slosh)) + 1e-9
-    out += 0.8 * splash + 0.4 * slosh
-    for _ in range(rng.integers(2, 4)):
-        f0 = rng.uniform(700, 1500)
-        d = rng.uniform(0.004, 0.008)
-        m = int(d * 5 * SR)
-        tt = np.arange(m) / SR
-        bubble = np.sin(2 * np.pi * np.cumsum(f0 * (1 + 3.0 * tt)) / SR) * np.exp(-tt / d)
-        add(out, rng.uniform(0.05, 0.12) * bubble, rng.uniform(0.02, 0.12))
+    for at, amp, decay in ((0.0, 1.0, 0.07), (rng.uniform(0.14, 0.2), 0.45, 0.06)):
+        m = int(0.25 * SR)
+        splash = noise(rng, m, lambda f: band(f, 1100, 1.4) * lowpass(f, 3500, 2) * highpass(f, 150)) * env(m, 0.012, decay)
+        body = noise(rng, m, lambda f: lowpass(f, 400, 2) * highpass(f, 60)) * env(m, 0.01, decay * 0.8)
+        splash /= np.max(np.abs(splash)) + 1e-9
+        body /= np.max(np.abs(body)) + 1e-9
+        add(out, amp * (0.8 * splash + 0.5 * body), at)
     return finish(out)
 
 

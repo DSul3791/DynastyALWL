@@ -30,7 +30,7 @@ const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")
 const CompassScript := preload("res://src/client/admin_compass.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 50
+const BUILD := 52
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const KnowledgeScript := preload("res://src/client/inspection_knowledge.gd")
@@ -1114,7 +1114,7 @@ func _update_bob(delta: float) -> void:
 		_bob_phase = fposmod(_bob_phase + delta * pace / float(STEP_M[gait]) * TAU, 2.0 * TAU)
 
 		if floor(before / TAU) != floor(_bob_phase / TAU):
-			sound.footstep(body, gait)
+			sound.footstep(body, gait, 0.0, "left" if _bob_phase < TAU else "right")
 
 	var dip: float = 0.5 * (1.0 + cos(_bob_phase))            # 1 at a footfall, 0 mid-stride
 	var side: float = cos(_bob_phase * 0.5)                   # +1 left foot, -1 right foot
