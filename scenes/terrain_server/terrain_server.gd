@@ -163,6 +163,8 @@ func _ready() -> void:
 	items.send_full = func(peer, bytes): net.inventory_full.rpc_id(peer, bytes)
 	items.send_slots = func(peer, bytes): net.inventory_slots.rpc_id(peer, bytes)
 	items.send_world_items = func(peer, added, removed): net.world_items.rpc_id(peer, added, removed)
+	items.ground_height = func(x, z): return generator.surface_height(x, z)
+	items.world_seed = int(settings.master_seed)
 	items.setup(ItemTableScript.load_default(), store_dir)
 	spawn = _spawn_point(world_dir)
 	_world_dir = world_dir
@@ -450,7 +452,20 @@ func _poll_water() -> void:
 			net.water_rate.rpc(water_live.rate, false, water_live.rate * WATER_BASE_RATE)
 
 
-func _on_cut_flora_requested(_peer_id: int, chunk: Vector2i, id: int) -> void:
+func _on_cut_flora_requested(peer_id: int, chunk: Vector2i, id: int) -> void:
+	# Gathering (E): a plant or shrub gives what drops.json says, and only then is it removed.
+	# Trees are felled, not gathered (tree-fall comes later).
+	var home: Vector2i = flora.placer.normalize(chunk)
+	var all: Dictionary = flora.placer.chunk_items(home)
+	var at: int = all["ids"].find(id)
+	var species: Dictionary = flora.placer._by_id.get(id >> 16, {})
+
+	if at < 0 or species.is_empty() or int(species["kind"]) == PlacerScript.KIND_TREE:
+		return
+
+	if not items.gather(peer_id, str(species["name"]), PlacerScript.KINDS[int(species["kind"])], id, all["positions"][at]):
+		return
+
 	if flora.cut(chunk, id):
 		net.flora_cut.rpc(chunk, id)
 		print("Cut flora item %d in chunk %s" % [id, str(chunk)])

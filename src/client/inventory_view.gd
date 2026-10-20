@@ -91,11 +91,15 @@ func close() -> void:
 		toggle()
 
 
-func pick_up_nearest() -> void:
+# True when something lay within reach and the server was asked for it.
+func pick_up_nearest() -> bool:
 	var id: int = _nearest()[0]
 
-	if id != 0:
-		net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
+	if id == 0:
+		return false
+
+	net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
+	return true
 
 
 # Admin test tool: a starter set so the panel and pick-up can be tried before harvesting exists.
@@ -264,3 +268,35 @@ func run_test() -> void:
 	pick_up_nearest()
 	await get_tree().create_timer(1.0).timeout
 	print("Items test: after pick up, stone %d, %d on the ground" % [inventory.count_of(table.number_of("stone")), _world.size()])
+
+
+# Headless check (--gather): stand next to the nearest shrub or plant that drops something and gather it.
+func run_gather_test(client) -> void:
+	await get_tree().create_timer(6.0).timeout
+	var best: Array = []
+	var here: Vector3 = _player_position.call()
+
+	for chunk in client.flora._chunks:
+		var held: Dictionary = client.flora._chunks[chunk]["items"]
+
+		for n in range(held["ids"].size()):
+			var sid: int = held["ids"][n] >> 16
+
+			if client.flora._species.get(sid, {}).get("kind", 0) == 1:
+				var d: float = held["positions"][n].distance_to(here)
+
+				if best.is_empty() or d < best[0]:
+					best = [d, held["positions"][n]]
+
+	if best.is_empty():
+		print("Gather test: no shrub loaded")
+		return
+
+	client.body.global_position = best[1] + Vector3(0.5, 1.0, 0.0)
+	client.body.velocity = Vector3.ZERO
+	await get_tree().create_timer(3.0).timeout
+	var sticks: int = table.number_of("stick")
+	var before: int = inventory.count_of(sticks)
+	client._gather_nearest()
+	await get_tree().create_timer(2.0).timeout
+	print("Gather test: sticks %d -> %d; loose things in view %d" % [before, inventory.count_of(sticks), _world.size()])

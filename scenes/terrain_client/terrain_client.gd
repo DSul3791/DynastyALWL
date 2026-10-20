@@ -44,7 +44,7 @@ const GitStamp := preload("res://src/debug/git_stamp.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 const GpuProbeScript := preload("res://src/debug/gpu_probe.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 135
+const BUILD := 137
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -162,6 +162,7 @@ var test_swim: bool = false
 var test_ui: bool = false
 var test_flood: bool = false
 var test_items: bool = false
+var test_gather: bool = false
 var test_creatures: bool = false
 var _test_creature_at: int = 0
 var _test_creature_step: int = 0
@@ -282,6 +283,8 @@ func _ready() -> void:
 			test_flood = true
 		elif argument == "--items":
 			test_items = true
+		elif argument == "--gather":
+			test_gather = true
 		elif argument == "--creatures":
 			test_creatures = true
 
@@ -486,6 +489,9 @@ func _on_welcome(info: Dictionary) -> void:
 
 	if test_items:
 		items.run_test()
+
+	if test_gather:
+		items.run_gather_test(self)
 	print("Terrain client: welcome after %d ms; world %s; spawn %s; cache %s (%d MB)" % [
 		connected_msec - started_msec, str(info["world_name"]), str(info["spawn"]), cache_dir, cache_mb
 	])
@@ -780,6 +786,28 @@ func _update_anchor(now: int, delta: float) -> void:
 
 	if _viewer != null:
 		_viewer.global_position = _anchor
+
+
+# E with nothing on the ground in reach: ask to gather the nearest plant or shrub within 2.5 m.
+# The server decides whether it gives anything (data/items/drops.json) and removes it.
+func _gather_nearest() -> void:
+	var here: Vector3 = body.global_position
+	var best: Array = []
+
+	for chunk in flora._chunks:
+		var held: Dictionary = flora._chunks[chunk]["items"]
+
+		for n in range(held["ids"].size()):
+			if flora._species.get(held["ids"][n] >> 16, {}).get("kind", 0) == 0:
+				continue
+
+			var d: float = Vector2(held["positions"][n].x - here.x, held["positions"][n].z - here.z).length()
+
+			if d <= 2.5 and (best.is_empty() or d < best[0]):
+				best = [d, chunk, held["ids"][n]]
+
+	if not best.is_empty():
+		net.cut_flora.rpc_id(1, best[1], best[2])
 
 
 # Headless check: cut the tree nearest the spawn.
@@ -1371,7 +1399,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.keycode == KEY_X:
 			_admin_dig()
 		elif event.keycode == KEY_E and items != null:
-			items.pick_up_nearest()
+			if not items.pick_up_nearest():
+				_gather_nearest()
 		elif event.keycode == KEY_BRACKETRIGHT and items != null:
 			items.admin_give_test_set()
 		elif event.keycode == KEY_J and _jitter_test != null:

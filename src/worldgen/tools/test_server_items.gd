@@ -30,6 +30,7 @@ func make(dir: String):
 func _init() -> void:
 	var dir: String = "user://test_server_items"
 	DirAccess.make_dir_recursive_absolute(dir)
+	DirAccess.make_dir_recursive_absolute("user://test_server_items_b")
 
 	for f in DirAccess.get_files_at(dir):
 		DirAccess.remove_absolute(dir + "/" + f)
@@ -92,6 +93,42 @@ func _init() -> void:
 	var third = make(dir)
 	third.peer_connected_hello(1, "abcdef123456")
 	check(third.inventory_of(1).count_of(stone) == 0 and FileAccess.file_exists(dir + "/inventories.json.bad"), "corrupt save is set aside")
+
+	# Gathering and loose items.
+	var g = make("user://test_server_items_b")
+	g.ground_height = func(x, z): return 20.0 + x * 0.1
+	g.world_seed = 5
+	g.peer_connected_hello(1, "abcdef123456")
+	g.report_position(1, Vector3(500.0, 70.0, 500.0))
+	check(g.gather(1, "flax", "plant", 77, Vector3(501.0, 70.0, 500.0)), "flax can be gathered")
+	check(g.inventory_of(1).count_of(g.table.number_of("plant_fibre")) >= 2, "flax gives fibre")
+	check(g.gather(1, "hazel", "shrub", 78, Vector3(501.0, 70.0, 500.0)), "shrubs give sticks")
+	check(g.inventory_of(1).count_of(g.table.number_of("stick")) >= 1, "got sticks")
+	check(not g.gather(1, "dandelion", "plant", 79, Vector3(501.0, 70.0, 500.0)), "no drop entry, no gather")
+	check(not g.gather(1, "flax", "plant", 80, Vector3(520.0, 70.0, 500.0)), "too far to gather")
+	g.tick(2.0)
+	var loose: int = g.world_item_count()
+	check(loose > 0, "loose stones and sticks are laid out around the player")
+	g._cells_done.clear()
+	g._items.clear()
+	g._scatter_around_players()
+	check(g.world_item_count() == loose or g.world_item_count() <= loose + 8, "same cells lay out the same things")
+	var first: int = g._items.keys()[0]
+	var spot: Vector3 = g._items[first]["pos"]
+	g.report_position(1, spot)
+	g.action(1, Net.ACT_PICKUP, first, 0, 0, Vector3.ZERO)
+	check(not g._items.has(first), "loose item picked up")
+	g._cells_done.clear()
+	g._items.clear()
+	g._scatter_around_players()
+	g.tick(0.0)
+	var again_here: bool = false
+
+	for other in g._items:
+		if g._items[other]["pos"].distance_to(spot) < 0.001:
+			again_here = true
+
+	check(not again_here, "a picked-up loose item does not come back")
 
 	print("server item tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

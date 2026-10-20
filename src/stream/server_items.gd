@@ -21,12 +21,19 @@ const PICKUP_M := 3.0
 const DROP_REACH_M := 6.0                # a drop lands at most this far from where the server last saw the player
 const SYNC_EVERY_S := 1.0
 const SAVE_EVERY_S := 30.0
+const DROPS_PATH := "res://data/items/drops.json"
+const GATHER_M := 5.0                    # how far from the plant a gather request may come
+const SCATTER_RADIUS_M := 96.0           # loose stones and sticks are laid out this far around players
+const SCATTER_DROP_M := 250.0            # and taken away again beyond this (picked-up ones stay gone)
+const SCATTER_CELLS_PER_TICK := 8
 
 var table
 # Set by the server scene: how to talk to one peer.
 var send_full: Callable        # (peer, bytes)
 var send_slots: Callable       # (peer, bytes)
 var send_world_items: Callable # (peer, added Array, removed PackedInt32Array)
+var ground_height: Callable    # (x, z) -> ground height in metres, or NAN; set by the server scene
+var world_seed: int = 0
 
 var _dir: String = ""
 var _inventories: Dictionary = {}   # key String -> Inventory
@@ -38,6 +45,9 @@ var _known: Dictionary = {}         # peer -> {id: true} world items the peer wa
 var _sync_in: float = 0.0
 var _save_in: float = SAVE_EVERY_S
 var _dirty: bool = false
+var _drops: Dictionary = {}
+var _taken: Dictionary = {}         # scatter key int -> true: loose items already picked up (stay gone)
+var _cells_done: Dictionary = {}    # Vector2i scatter cell -> true while its items are laid out
 
 
 func setup(item_table, store_dir: String) -> void:
@@ -45,6 +55,8 @@ func setup(item_table, store_dir: String) -> void:
 	_dir = store_dir
 	_load_inventories()
 	_load_world_items()
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(DROPS_PATH))
+	_drops = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
 
 
 func peer_connected_hello(peer: int, key: String) -> void:
@@ -121,7 +133,7 @@ func drop_in_world(number: int, count: int, position: Vector3) -> bool:
 	var here: int = 0
 
 	for id in _items:
-		if _chunk_of(_items[id]["pos"]) == chunk:
+		if not _items[id].has("scatter") and _chunk_of(_items[id]["pos"]) == chunk:
 			here += 1
 
 	if here >= MAX_WORLD_ITEMS_PER_CHUNK:
@@ -160,6 +172,9 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 
 func tick(delta: float) -> void:
 	for id in _items.keys():
+		if _items[id].has("scatter"):
+			continue
+
 		_items[id]["left"] -= delta
 
 		if _items[id]["left"] <= 0.0:
@@ -170,6 +185,7 @@ func tick(delta: float) -> void:
 
 	if _sync_in <= 0.0:
 		_sync_in = SYNC_EVERY_S
+		_scatter_around_players()
 		_sync_world_items()
 
 	_save_in -= delta
@@ -194,9 +210,34 @@ func save() -> void:
 
 	for id in _items:
 		var it: Dictionary = _items[id]
+
+		if it.has("scatter"):
+			continue
+
 		items.append([int(it["number"]), int(it["count"]), it["pos"].x, it["pos"].y, it["pos"].z, it["left"]])
 
-	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items})
+	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys()})
+
+
+# Gathering a plant or shrub: what it gives, from drops.json (deterministic from the flora id).
+# Returns false when it gives nothing, the player is not near it, or they have no inventory;
+# the caller removes the plant only when this returns true.
+func gather(peer: int, species_name: String, kind: String, flora_id: int, plant_position: Vector3) -> bool:
+	if not _peer_pos.has(peer) or _peer_pos[peer].distance_to(plant_position) > GATHER_M:
+		return false
+
+	var rows: Array = _drops.get("by_species", {}).get(species_name, _drops.get("by_kind", {}).get(kind, []))
+
+	if rows.is_empty():
+		return false
+
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = hash(flora_id) ^ 0x5bd1e995
+
+	for row in rows:
+		give(peer, table.number_of(str(row[0])), rng.randi_range(int(row[1]), int(row[2])))
+
+	return true
 
 
 func world_item_count() -> int:
@@ -227,6 +268,9 @@ func _pickup(peer: int, inv, id: int) -> void:
 	var left: int = inv.add(int(it["number"]), int(it["count"]))
 
 	if left == 0:
+		if it.has("scatter"):
+			_taken[it["scatter"]] = true
+
 		_items.erase(id)
 	else:
 		it["count"] = left
@@ -316,6 +360,9 @@ func _load_world_items() -> void:
 
 	_next_id = int(parsed.get("next_id", 1))
 
+	for key in parsed.get("taken", []):
+		_taken[int(key)] = true
+
 	for row in parsed["items"]:
 		_items[_next_id] = {"number": int(row[0]), "count": int(row[1]), "pos": Vector3(row[2], row[3], row[4]), "left": float(row[5])}
 		_next_id += 1
@@ -349,3 +396,86 @@ func _write_atomic(name: String, data: Dictionary) -> void:
 	file.store_string(JSON.stringify(data))
 	file.close()
 	DirAccess.rename_absolute(path + ".tmp", path)
+
+
+# Loose stones and fallen sticks lie about the ground (Dave, 2026-10-20: more stones near rock
+# and on slopes). Laid out cell by cell around players from the world seed, so the same cell
+# always has the same things; picked-up ones are remembered in _taken.
+func _scatter_around_players() -> void:
+	if not ground_height.is_valid():
+		return
+
+	var cfg: Dictionary = _drops.get("ground_scatter", {})
+	var cell_m: float = float(cfg.get("cell_m", 32.0))
+	var budget: int = SCATTER_CELLS_PER_TICK
+
+	for peer in _peer_pos:
+		var here: Vector3 = _peer_pos[peer]
+		var reach: int = int(ceil(SCATTER_RADIUS_M / cell_m))
+		var home: Vector2i = Vector2i(int(floor(here.x / cell_m)), int(floor(here.z / cell_m)))
+
+		for dz in range(-reach, reach + 1):
+			for dx in range(-reach, reach + 1):
+				var cell: Vector2i = home + Vector2i(dx, dz)
+
+				if budget > 0 and not _cells_done.has(cell) and Vector2(dx, dz).length() * cell_m <= SCATTER_RADIUS_M:
+					_cells_done[cell] = true
+					_lay_out_cell(cell, cell_m, cfg)
+					budget -= 1
+
+	# Take away loose things far from every player (they come back when someone returns).
+	for id in _items.keys():
+		var it: Dictionary = _items[id]
+
+		if not it.has("scatter"):
+			continue
+
+		var far: bool = true
+
+		for peer in _peer_pos:
+			if _peer_pos[peer].distance_to(it["pos"]) < SCATTER_DROP_M:
+				far = false
+				break
+
+		if far:
+			_cells_done.erase(Vector2i(int(floor(it["pos"].x / cell_m)), int(floor(it["pos"].z / cell_m))))
+			_items.erase(id)
+
+
+func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = hash(Vector3i(cell.x, cell.y, world_seed))
+	var centre: Vector2 = (Vector2(cell) + Vector2(0.5, 0.5)) * cell_m
+	var h0: float = float(ground_height.call(centre.x, centre.y))
+	var h1: float = float(ground_height.call(centre.x + 4.0, centre.y))
+	var h2: float = float(ground_height.call(centre.x, centre.y + 4.0))
+
+	if is_nan(h0) or is_nan(h1) or is_nan(h2) or h0 < 1.0:
+		return
+
+	var slope: float = (absf(h1 - h0) + absf(h2 - h0)) / 4.0
+	var stones: int = mini(int(rng.randf() * (float(cfg.get("stones_flat", 0.5)) + slope * float(cfg.get("stones_per_slope", 3.0))) * 2.0), int(cfg.get("stones_max", 4)))
+	var sticks: int = mini(int(rng.randf() * 3.0), int(cfg.get("sticks_max", 2)))
+	var kinds: Array = []
+
+	for n in stones:
+		kinds.append("stone")
+
+	for n in sticks:
+		kinds.append("stick")
+
+	for n in kinds.size():
+		var key: int = ((cell.x & 0xfffff) << 24) | ((cell.y & 0xfffff) << 4) | n
+
+		if _taken.has(key):
+			continue
+
+		var x: float = (float(cell.x) + rng.randf()) * cell_m
+		var z: float = (float(cell.y) + rng.randf()) * cell_m
+		var y: float = float(ground_height.call(x, z))
+
+		if is_nan(y) or y < 1.0:
+			continue
+
+		_items[_next_id] = {"number": table.number_of(kinds[n]), "count": 1, "pos": Vector3(x, y, z), "left": 1.0e9, "scatter": key}
+		_next_id += 1

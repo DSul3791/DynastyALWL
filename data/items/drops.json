@@ -1,0 +1,21 @@
+{
+	"note": "What gathering gives. by_species wins over by_kind; each entry is [item id, min, max]. A plant or shrub with no entry here cannot be gathered yet (food and herb items come with the gatherer, cook and potion work). Trees are felled, not gathered (tree-fall comes later).",
+	"by_species": {
+		"flax":        [["plant_fibre", 2, 4]],
+		"tall_grass":  [["plant_fibre", 1, 3]],
+		"nettle":      [["plant_fibre", 1, 2]],
+		"reeds":       [["plant_fibre", 2, 3]],
+		"riverbraid":  [["plant_fibre", 2, 3]],
+		"tanglewort":  [["plant_fibre", 1, 2]]
+	},
+	"by_kind": {
+		"shrub": [["stick", 1, 3]]
+	},
+	"ground_scatter": {
+		"cell_m": 32.0,
+		"stones_flat": 0.5,
+		"stones_per_slope": 3.0,
+		"stones_max": 4,
+		"sticks_max": 2
+	}
+}
