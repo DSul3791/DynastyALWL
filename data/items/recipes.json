@@ -1,6 +1,6 @@
 {
 	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist).",
-	"next_number": 14,
+	"next_number": 15,
 	"recipes": {
 		"cordage": {
 			"number": 1,
@@ -269,6 +269,26 @@
 			],
 			"gives": [
 				"lean_to_kit",
+				1
+			],
+			"craft_s": 8.0,
+			"known": true
+		},
+		"chest_kit": {
+			"number": 14,
+			"name": "Build a storage chest",
+			"needs": [
+				[
+					"log",
+					4
+				],
+				[
+					"cordage",
+					2
+				]
+			],
+			"gives": [
+				"chest_kit",
 				1
 			],
 			"craft_s": 8.0,

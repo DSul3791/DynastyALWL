@@ -208,6 +208,7 @@ var _sound_gear_at: int = -1
 var test_items: bool = false
 var test_gather: bool = false
 var test_leanto: bool = false
+var test_chest: bool = false
 var test_spear: bool = false
 var test_chop: bool = false
 var test_creatures: bool = false
@@ -359,6 +360,8 @@ func _ready() -> void:
 			test_interior = true
 		elif argument == "--items":
 			test_items = true
+		elif argument == "--chest":
+			test_chest = true
 		elif argument == "--leanto":
 			test_leanto = true
 		elif argument == "--gather":
@@ -603,6 +606,7 @@ func _welcome_body(info: Dictionary) -> void:
 	items.max_lights = func(): return [1, 2, 3, 3][clampi(quality, 0, 3)]
 	items.is_inspecting = func(): return inspecting
 	items.cover_index = flora.cover
+	items.chest_event = func(what, at): sound.placed.chest(what == "open", at) if what in ["open", "close"] else sound.placed.container(what == "put", at)
 	items.tool_event = func(what): sound.placed.tool_break(body.global_position) if what == "broke" else sound.placed.tool_repair(body.global_position)
 	harvest = HarvestScript.new()
 	harvest.setup(self, items, net)
@@ -620,6 +624,9 @@ func _welcome_body(info: Dictionary) -> void:
 
 	if test_leanto:
 		items.run_leanto_test(self)
+
+	if test_chest:
+		items.run_chest_test(self)
 
 	if test_spear:
 		held.run_test()

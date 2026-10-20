@@ -521,5 +521,57 @@ func _init() -> void:
 	lt2.action(1, Net.ACT_PICKUP, shelter, 0, 0, Vector3.ZERO)
 	check(lt2.world_item_count() == 5 and lt2.inventory_of(1).count_of(lt2.table.number_of("lean_to_kit")) == 3, "taking it down gives the kit back")
 
+	# Storage chest.
+	var cd: String = "user://test_server_items_chest"
+	DirAccess.make_dir_recursive_absolute(cd)
+
+	for file in DirAccess.get_files_at(cd):
+		DirAccess.remove_absolute(cd + "/" + file)
+
+	var ch = make(cd)
+	ch.ground_height = func(x, z): return 10.0
+	var sent: Array = []
+	ch.send_chest = func(p, id, bytes): sent.append([p, id, bytes])
+	ch.peer_connected_hello(1, "abcdef123456")
+	ch.peer_connected_hello(2, "fedcba654321")
+	ch.report_position(1, Vector3(0.0, 10.0, 0.0))
+	ch.report_position(2, Vector3(200.0, 10.0, 0.0))
+	var chest_kit: int = ch.table.number_of("chest_kit")
+	var stones_n: int = ch.table.number_of("stone")
+	ch.action(1, Net.ACT_ADMIN_GIVE, chest_kit, 0, 1, Vector3.ZERO)
+	ch.action(1, Net.ACT_ADMIN_GIVE, stones_n, 0, 10, Vector3.ZERO)
+	ch.action(1, Net.ACT_PLACE, ch.inventory_of(1).numbers.find(chest_kit), 0, 0, Vector3(2.0, 10.0, 0.0))
+	var chest_id: int = 0
+
+	for k in ch._items:
+		if ch._items[k].has("struct"):
+			chest_id = k
+
+	check(chest_id != 0, "a chest is placed")
+	ch.action(2, Net.ACT_CHEST_OPEN, chest_id, 0, 0, Vector3.ZERO)
+	check(sent.is_empty(), "too far from the chest to open it")
+	ch.action(1, Net.ACT_CHEST_OPEN, chest_id, 0, 0, Vector3.ZERO)
+	check(sent.size() == 1 and sent[0][0] == 1, "opening sends the contents to the opener only")
+	var chest_stone_slot: int = ch.inventory_of(1).numbers.find(stones_n)
+	ch.action(1, Net.ACT_CHEST_PUT, chest_stone_slot, chest_id, 6, Vector3.ZERO)
+	check(ch.inventory_of(1).count_of(stones_n) == 4 and ch._chests[1].count_of(stones_n) == 6, "putting stones in moves them")
+	ch.action(1, Net.ACT_PICKUP, chest_id, 0, 0, Vector3.ZERO)
+	check(ch._items.has(chest_id), "a chest with things in it cannot be taken down")
+	ch.save()
+	var ch2 = make(cd)
+	ch2.peer_connected_hello(1, "abcdef123456")
+	ch2.report_position(1, Vector3(0.0, 10.0, 0.0))
+	var chest2: int = 0
+
+	for k in ch2._items:
+		if ch2._items[k].has("struct"):
+			chest2 = k
+
+	check(ch2._chests.size() == 1 and ch2._chests[1].count_of(stones_n) == 6, "chest contents survive a restart")
+	ch2.action(1, Net.ACT_CHEST_TAKE, ch2._chests[1].numbers.find(stones_n), chest2, 6, Vector3.ZERO)
+	check(ch2.inventory_of(1).count_of(stones_n) == 10 and ch2._chests[1].count_of(stones_n) == 0, "taking the stones out moves them back")
+	ch2.action(1, Net.ACT_PICKUP, chest2, 0, 0, Vector3.ZERO)
+	check(not ch2._items.has(chest2) and ch2.inventory_of(1).count_of(ch2.table.number_of("chest_kit")) == 1 and ch2._chests.is_empty(), "an empty chest comes down and gives the kit back")
+
 	print("server item tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

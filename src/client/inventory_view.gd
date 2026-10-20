@@ -32,6 +32,13 @@ var _selected: int = -1
 var _prompt: Label
 var cover_index                        # the client's Cover.Index: lean-to roofs are added to it
 var tool_event: Callable               # ("broke" | "repaired") when a tool in the pack wears out or is mended (sounds)
+var chest_event: Callable              # ("open" | "close" | "put" | "take", position) for the chest sounds
+var chest_mode: bool = false           # the panel on screen is a chest, not the pack and recipes
+var chest_inv                          # contents of the open chest (Inventory), from the server
+var chest_id: int = 0
+var _chest_panel: PanelContainer
+var _chest_buttons: Array = []
+var _pack_buttons: Array = []
 var plant_hint: String = ""            # set by the harvest prompt (harvest.gd)
 var _crafting: int = 0                # recipe being made (0 none)
 var _craft_done_msec: int = 0
@@ -56,6 +63,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.inventory_slots_received.connect(_on_slots)
 	net.world_items_received.connect(_on_world_items)
 	net.notice_received.connect(_on_notice)
+	net.chest_received.connect(_on_chest)
 	_prompt = Label.new()
 	_prompt.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -87,6 +95,10 @@ func _player_key() -> String:
 
 
 func toggle() -> void:
+	if chest_mode:
+		_close_chest()
+		return
+
 	open = not open
 
 	if open:
@@ -114,6 +126,10 @@ func pick_up_nearest() -> bool:
 
 	if id == 0:
 		return false
+
+	if _world[id]["state"] == 6 and not Input.is_key_pressed(KEY_SHIFT):
+		net.inventory_action.rpc_id(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)
+		return true
 
 	net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 	return true
@@ -162,7 +178,7 @@ func _process(_delta: float) -> void:
 	if near[0] == 0 and fire != 0:
 		_prompt.text = "C: roast food    V: add wood" if _world[fire]["state"] == 1 else "V: add wood to relight"
 	elif near[0] == 0 and struct_id != 0:
-		_prompt.text = "E: take down %s" % table.name_of(_world[struct_id]["number"]).to_lower()
+		_prompt.text = "E: open chest    Shift+E: take it down (empty only)" if _world[struct_id]["state"] == 6 else "E: take down %s" % table.name_of(_world[struct_id]["number"]).to_lower()
 	elif near[0] == 0:
 		_prompt.text = plant_hint
 
@@ -382,6 +398,116 @@ func _on_slots(bytes: PackedByteArray) -> void:
 					tool_event.call("repaired")
 
 	_refresh()
+	_refresh_chest()
+
+
+# --- The chest screen: the chest on the left, the pack on the right; a click moves a whole stack ---
+
+func _on_chest(id: int, bytes: PackedByteArray) -> void:
+	if chest_inv == null:
+		chest_inv = InventoryScript.new(table)
+
+	chest_inv.from_bytes(bytes)
+	chest_id = id
+
+	if not chest_mode:
+		chest_mode = true
+		open = true
+		_build_panel()
+		_panel.visible = false
+		_build_chest_panel()
+		_chest_panel.visible = true
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+		if chest_event.is_valid() and _world.has(id):
+			chest_event.call("open", _world[id]["pos"])
+
+	_refresh_chest()
+
+
+func _close_chest() -> void:
+	if chest_event.is_valid() and _world.has(chest_id):
+		chest_event.call("close", _world[chest_id]["pos"])
+
+	chest_mode = false
+	open = false
+
+	if _chest_panel != null:
+		_chest_panel.visible = false
+
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+
+func _build_chest_panel() -> void:
+	if _chest_panel != null:
+		return
+
+	_chest_panel = PanelContainer.new()
+	_chest_panel.anchor_left = 0.125
+	_chest_panel.anchor_right = 0.875
+	_chest_panel.anchor_top = 0.1
+	_chest_panel.anchor_bottom = 0.9
+	var columns: HBoxContainer = HBoxContainer.new()
+	columns.add_theme_constant_override("separation", _px(24))
+	_chest_panel.add_child(columns)
+
+	for side in ["Storage chest  (click a stack to take it)", "Your pack  (click a stack to put it in)"]:
+		var box: VBoxContainer = VBoxContainer.new()
+		box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		columns.add_child(box)
+		var title: Label = Label.new()
+		title.text = side
+		_style(title, TITLE_PX)
+		box.add_child(title)
+		var scroll: ScrollContainer = ScrollContainer.new()
+		scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		box.add_child(scroll)
+		var grid: GridContainer = GridContainer.new()
+		grid.columns = 4
+		grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		grid.add_theme_constant_override("h_separation", _px(8))
+		grid.add_theme_constant_override("v_separation", _px(8))
+		scroll.add_child(grid)
+		var chest_side: bool = _chest_buttons.is_empty()
+
+		for i in inventory.SLOTS:
+			var button: Button = Button.new()
+			button.custom_minimum_size = Vector2(0.0, _px(88))
+			button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			button.clip_text = true
+			_style(button, BODY_PX - 4)
+			button.pressed.connect(_on_chest_slot.bind(chest_side, i))
+			grid.add_child(button)
+			(_chest_buttons if chest_side else _pack_buttons).append(button)
+
+	_layer.add_child(_chest_panel)
+
+
+func _on_chest_slot(chest_side: bool, slot: int) -> void:
+	if chest_side:
+		if chest_inv.numbers[slot] != 0:
+			net.inventory_action.rpc_id(1, Net.ACT_CHEST_TAKE, slot, chest_id, chest_inv.counts[slot], Vector3.ZERO)
+
+			if chest_event.is_valid() and _world.has(chest_id):
+				chest_event.call("take", _world[chest_id]["pos"])
+	elif inventory.numbers[slot] != 0:
+		net.inventory_action.rpc_id(1, Net.ACT_CHEST_PUT, slot, chest_id, inventory.counts[slot], Vector3.ZERO)
+
+		if chest_event.is_valid() and _world.has(chest_id):
+			chest_event.call("put", _world[chest_id]["pos"])
+
+
+func _refresh_chest() -> void:
+	if not chest_mode or _chest_panel == null:
+		return
+
+	for i in inventory.SLOTS:
+		for pair in [[_chest_buttons, chest_inv], [_pack_buttons, inventory]]:
+			var button: Button = pair[0][i]
+			var source = pair[1]
+			var number: int = source.numbers[i]
+			button.text = "" if number == 0 else "%s\nx%d" % [table.name_of(number), source.counts[i]]
+			button.tooltip_text = _tooltip(number, source.counts[i])
 
 
 func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
@@ -1060,6 +1186,33 @@ func run_leanto_test(client) -> void:
 
 	var under: Vector3 = spot + Vector3(0.0, 1.0, 0.0)
 	print("Lean-to test: %d lean-to rows in view, cover under it %s, in the open %s" % [seen, str(CoverScript.at(under, cover_index)), str(CoverScript.at(under + Vector3(8.0, 0.0, 0.0), cover_index))])
+
+
+# Headless check (--chest): place a chest, open it, put stones in, take them out.
+func run_chest_test(client) -> void:
+	await get_tree().create_timer(6.0).timeout
+	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("chest_kit"), 0, 1, Vector3.ZERO)
+	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("stone"), 0, 10, Vector3.ZERO)
+	await get_tree().create_timer(1.0).timeout
+	var here: Vector3 = _player_position.call()
+	var spot: Vector3 = Vector3(here.x + 2.0, float(_ground_below.call(here + Vector3(2.0, 0.0, 0.0))), here.z)
+	net.inventory_action.rpc_id(1, Net.ACT_PLACE, inventory.numbers.find(table.number_of("chest_kit")), 0, 0, spot)
+	await get_tree().create_timer(2.0).timeout
+	var id: int = 0
+
+	for k in _world:
+		if _world[k]["state"] == 6:
+			id = k
+
+	net.inventory_action.rpc_id(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)
+	await get_tree().create_timer(1.0).timeout
+	var stone: int = table.number_of("stone")
+	net.inventory_action.rpc_id(1, Net.ACT_CHEST_PUT, inventory.numbers.find(stone), id, 7, Vector3.ZERO)
+	await get_tree().create_timer(1.0).timeout
+	print("Chest test: chest row %d, screen open %s, stones in chest %d, in pack %d" % [id, str(chest_mode), chest_inv.count_of(stone) if chest_inv != null else -1, inventory.count_of(stone)])
+	net.inventory_action.rpc_id(1, Net.ACT_CHEST_TAKE, chest_inv.numbers.find(stone), id, 7, Vector3.ZERO)
+	await get_tree().create_timer(1.0).timeout
+	print("Chest test: after taking out, stones in chest %d, in pack %d" % [chest_inv.count_of(stone), inventory.count_of(stone)])
 
 
 # Headless check (--chop): stand by the nearest tree with an axe and chop it down.

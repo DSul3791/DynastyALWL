@@ -85,6 +85,7 @@ var cut_tree: Callable         # (chunk Vector2i, id) -> true when the standing 
 var rock_at: Callable          # (x, z) -> true when bare rock shows at the surface there (no soil cover); set by the server scene
 var game_seconds: Callable      # () -> game clock seconds
 var season_now: Callable        # () -> "spring" | "summer" | "autumn" | "winter"
+var send_chest: Callable        # (peer, world id, bytes) a chest's contents to the player who opened it
 var roof_add: Callable          # (roof Array from Cover.box_roof) -> key; the server's cover index gets the lean-to's roof
 var roof_remove: Callable       # (key)
 var cover_at: Callable         # (position) -> 0.0 open or 1.0 under a tree's crown (Cover.at, or its stand-in)
@@ -103,6 +104,9 @@ var _drops: Dictionary = {}
 var _cooking: Dictionary = {}
 var _structures: Dictionary = {}    # structures.json: kind -> definition
 var _struct_gap_m: float = 2.5
+var _chests: Dictionary = {}        # structure uid -> Inventory (server-owned contents, chests.json)
+var _next_uid: int = 1
+const CHEST_REACH_M := 4.0
 var gather_pace_ms: int = GATHER_PACE_MS
 var _last_gather: Dictionary = {}   # peer -> msec
 var _last_cook: Dictionary = {}     # peer -> msec
@@ -133,6 +137,7 @@ func setup(item_table, store_dir: String) -> void:
 		_struct_gap_m = float(structures.get("gap_m", 2.5))
 
 	_load_inventories()
+	_load_chests()
 	_load_world_items()
 	_load_trees()
 	var cooking: Variant = JSON.parse_string(FileAccess.get_file_as_string(COOKING_PATH))
@@ -255,6 +260,8 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_pickup(peer, inv, a)
 	elif kind == Net.ACT_HIT:
 		_hit(peer, inv, a, Vector2i(b, count))
+	elif kind == Net.ACT_CHEST_OPEN or kind == Net.ACT_CHEST_PUT or kind == Net.ACT_CHEST_TAKE:
+		_chest_action(peer, inv, kind, a, b, count)
 	elif kind == Net.ACT_REPAIR:
 		_repair(peer, inv, a)
 	elif kind == Net.ACT_FUEL:
@@ -339,12 +346,13 @@ func save() -> void:
 			continue
 
 		if it.has("struct"):
-			items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int(_structures.get(str(it["struct"]["kind"]), {}).get("state", 5)), float(it["struct"]["yaw"]), 0, str(it["struct"]["kind"])])
+			items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int(_structures.get(str(it["struct"]["kind"]), {}).get("state", 5)), float(it["struct"]["yaw"]), 0, str(it["struct"]["kind"]), int(it["struct"].get("uid", 0))])
 			continue
 
 		items.append([int(it["number"]), int(it["count"]), it["pos"].x, it["pos"].y, it["pos"].z, it["left"], int(it["fire"]["state"]) if it.has("fire") else 0, float(it["fire"]["burn_left"]) if it.has("fire") else 0.0, int(it.get("wear", 0))])
 
 	_save_trees()
+	_save_chests()
 	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked})
 
 
@@ -716,6 +724,14 @@ func _load_world_items() -> void:
 
 		if row.size() > 9 and int(row[6]) >= 5:
 			entry["struct"] = {"kind": str(row[9]), "yaw": float(row[7])}
+
+			if row.size() > 10 and int(row[10]) > 0:
+				entry["struct"]["uid"] = int(row[10])
+				_next_uid = maxi(_next_uid, int(row[10]) + 1)
+
+				if not _chests.has(int(row[10])):
+					_chests[int(row[10])] = InventoryScript.new(table)
+
 			_items[_next_id] = entry
 			_next_id += 1
 			continue
@@ -1376,6 +1392,12 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 
 	inv.take_from_slot(slot, 1)
 	var entry: Dictionary = {"number": table.number_of(str(def["item"])), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": str(def["kind"]), "yaw": float(posmod(yaw_deg, 360))}}
+
+	if int(def.get("slots", 0)) > 0:
+		entry["struct"]["uid"] = _next_uid
+		_chests[_next_uid] = InventoryScript.new(table)
+		_next_uid += 1
+
 	_items[_next_id] = entry
 	_next_id += 1
 	_add_roof(entry)
@@ -1421,9 +1443,84 @@ func _take_down(peer: int, inv, id: int) -> void:
 	if it["struct"].has("roof") and roof_remove.is_valid():
 		roof_remove.call(int(it["struct"]["roof"]))
 
+	_chests.erase(int(it["struct"].get("uid", 0)))
 	_items.erase(id)
 	_dirty = true
 
 
-func _struct_empty(_id: int) -> bool:
+func _struct_empty(id: int) -> bool:
+	var chest = _chests.get(int(_items.get(id, {}).get("struct", {}).get("uid", 0)))
+
+	if chest == null:
+		return true
+
+	for slot in range(chest.SLOTS):
+		if chest.numbers[slot] != 0:
+			return false
+
 	return true
+
+
+# --- Chest contents: server-owned; the actor gets the full 30 slots after every open, put and take ---
+
+func _chest_of(peer: int, id: int):
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or not it.has("struct") or not it["struct"].has("uid") or not _peer_pos.has(peer):
+		return null
+
+	if _peer_pos[peer].distance_to(it["pos"]) > CHEST_REACH_M:
+		return null
+
+	return _chests.get(int(it["struct"]["uid"]))
+
+
+func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int) -> void:
+	if kind == Net.ACT_CHEST_OPEN:
+		id = a
+
+	var chest = _chest_of(peer, id)
+
+	if chest == null:
+		return
+
+	if kind == Net.ACT_CHEST_PUT and a >= 0 and a < inv.SLOTS and inv.numbers[a] != 0 and count > 0:
+		var number: int = inv.numbers[a]
+		var held_wear: int = inv.wear[a]
+		var amount: int = mini(count, inv.counts[a])
+		var left: int = chest.add(number, amount, held_wear)
+		inv.take_from_slot(a, amount - left)
+		_dirty = true
+	elif kind == Net.ACT_CHEST_TAKE and a >= 0 and a < chest.SLOTS and chest.numbers[a] != 0 and count > 0:
+		var number: int = chest.numbers[a]
+		var held_wear: int = chest.wear[a]
+		var amount: int = mini(count, chest.counts[a])
+		var left: int = inv.add(number, amount, held_wear)
+		chest.take_from_slot(a, amount - left)
+		_dirty = true
+
+	if send_chest.is_valid():
+		send_chest.call(peer, id, chest.to_bytes())
+
+
+func _save_chests() -> void:
+	var rows: Dictionary = {}
+
+	for uid in _chests:
+		rows[str(uid)] = _chests[uid].to_json_array()
+
+	_write_atomic("chests.json", {"version": 1, "next_uid": _next_uid, "chests": rows})
+
+
+func _load_chests() -> void:
+	var parsed: Variant = _read_json_version("chests.json", 1)
+
+	if parsed == null:
+		return
+
+	_next_uid = int(parsed.get("next_uid", 1))
+
+	for key in parsed.get("chests", {}):
+		var chest = InventoryScript.new(table)
+		chest.from_json_array(parsed["chests"][key])
+		_chests[int(key)] = chest
