@@ -35,6 +35,9 @@ const BlockLinkScript := preload("res://src/stream/block_link_server.gd")
 
 const MAX_BATCH_BYTES := 192 * 1024
 const MAX_QUEUE_PER_PEER := 20000
+const WeatherScript := preload("res://src/shared/weather.gd")
+const WEATHER_SWELL := 2.0              # steady heavy rain makes the springs run this much stronger (x3 in all)
+const WEATHER_LAG_S := 600.0            # real seconds the rivers take to follow the rain (runoff reaches them slowly)
 const WATER_BASE_RATE := 10.0           # m3 per second at each spring (about 158,000 US gallons a minute); the + and - keys scale it
 const IDLE_LODS := 4                   # detail levels the idle builder keeps ahead of players
 const IDLE_RADIUS_BLOCKS := 12         # circle around each player, in blocks of that level
@@ -44,6 +47,10 @@ var generator
 var store
 var flora
 var _water_updates: int = 0
+var weather: Dictionary = {}           # the weather at the water tile now (WeatherScript.state), refreshed every second
+var _weather_next_msec: int = 0
+var _swell: float = 0.0
+var _weather_bucket: int = -1
 var water_live                         # the starter tile's running water, tuned with + and - on the client
 var _world_dir: String = ""
 var _bake_running: bool = false        # a tile bake is writing the tile files (store.baking)
@@ -374,6 +381,29 @@ func _on_water_requested(peer_id: int, chunks: PackedInt32Array) -> void:
 		net.deliver_water.rpc_id(peer_id, chunk, flora.water_bytes(chunk))
 
 
+# The weather over the starter tile (zone from its row, season and time from the game clock,
+# town spirit a neutral placeholder until it exists) swells the rivers: rain feeds the springs,
+# lagged because runoff takes time (snow just piles up).
+func _update_weather() -> void:
+	var now: int = Time.get_ticks_msec()
+
+	if now < _weather_next_msec or water_live == null:
+		return
+
+	_weather_next_msec = now + 1000
+	var row: int = 4
+	var game_s: float = WeatherScript.game_seconds(Time.get_unix_time_from_system())
+	weather = WeatherScript.state(settings.master_seed, game_s, settings.get_zone_group_for_row(row), 0.0, 0.0)
+	var bucket: int = int(float(weather["rain"]) * 4.0) + 10 * int(float(weather["snow"]) * 4.0)
+
+	if bucket != _weather_bucket:
+		_weather_bucket = bucket
+		print("server: weather %s, rain %.2f snow %.2f storm %.2f, %.0f C, rivers x%.2f" % [weather["season"], weather["rain"], weather["snow"], weather["storm"], weather["temp_c"], water_live.runoff])
+
+	_swell += (float(weather["rain"]) - _swell) * (1.0 - exp(-1.0 / WEATHER_LAG_S))
+	water_live.set_runoff(1.0 + WEATHER_SWELL * _swell)
+
+
 # New levels from the water thread: swap them into the tile and tell clients.
 func _poll_water() -> void:
 	if water_live == null:
@@ -426,6 +456,7 @@ func _process(_delta: float) -> void:
 		return
 
 	_poll_water()
+	_update_weather()
 
 	# Send what the workers made, batched per peer.
 	_done_mutex.lock()
