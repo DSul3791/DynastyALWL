@@ -1,0 +1,15 @@
+{
+	"note": "Placed structures (Dave 2026-10-20: lean-to and storage chest are the first buildables). Placed like the campfire kit with ACT_PLACE (count = yaw in degrees). state is the world-item row state clients draw it by (5 lean-to, 6 chest). cap_per_chunk counts one 256 m chunk. A lean-to is a roof for the Cover index: a box of half_x by half_z around its spot, from 0.5 m below the ground to height above it.",
+	"gap_m": 2.5,
+	"structures": {
+		"lean_to": {
+			"kit": "lean_to_kit",
+			"item": "lean_to",
+			"state": 5,
+			"cap_per_chunk": 6,
+			"half_x": 1.1,
+			"half_z": 0.95,
+			"height": 2.1
+		}
+	}
+}

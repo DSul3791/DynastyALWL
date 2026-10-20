@@ -167,6 +167,9 @@ func _ready() -> void:
 	items.world_seed = int(settings.master_seed)
 	items.rain_now = func(): return float(weather.get("rain", 0.0))
 	items.cover_at = _cover_at
+	items.roof_add = func(roof): return flora.add_roof(roof)
+	items.roof_remove = func(key): flora.remove_roof(key)
+	items.register_roofs()
 	items.tree_info = _tree_info
 	items.standing_near = _standing_near
 	items.flora_changed = _flora_changed

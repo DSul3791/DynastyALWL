@@ -10,6 +10,7 @@ const InventoryScript := preload("res://src/shared/inventory.gd")
 const RecipeTableScript := preload("res://src/shared/recipe_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
+const CoverScript := preload("res://src/shared/cover.gd")
 const KEY_FILE := "user://player_key.txt"
 const PICKUP_M := 3.0
 const COLUMNS := 6
@@ -29,6 +30,8 @@ var _grid: GridContainer
 var _buttons: Array = []
 var _selected: int = -1
 var _prompt: Label
+var cover_index                        # the client's Cover.Index: lean-to roofs are added to it
+var tool_event: Callable               # ("broke" | "repaired") when a tool in the pack wears out or is mended (sounds)
 var plant_hint: String = ""            # set by the harvest prompt (harvest.gd)
 var _crafting: int = 0                # recipe being made (0 none)
 var _craft_done_msec: int = 0
@@ -107,6 +110,9 @@ func pick_up_nearest() -> bool:
 	var id: int = _nearest()[0]
 
 	if id == 0:
+		id = _nearest_struct()
+
+	if id == 0:
 		return false
 
 	net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
@@ -151,11 +157,29 @@ func _process(_delta: float) -> void:
 	var fire: int = _nearest_fire()
 	_prompt.text = "" if near[0] == 0 else "E: pick up %s x%d" % [table.name_of(near[1]), near[2]]
 
+	var struct_id: int = _nearest_struct()
+
 	if near[0] == 0 and fire != 0:
 		_prompt.text = "C: roast food    V: add wood" if _world[fire]["state"] == 1 else "V: add wood to relight"
+	elif near[0] == 0 and struct_id != 0:
+		_prompt.text = "E: take down %s" % table.name_of(_world[struct_id]["number"]).to_lower()
 	elif near[0] == 0:
 		_prompt.text = plant_hint
 
+
+
+# The id of the nearest placed structure (lean-to, chest) within 3 m, 0 when none.
+func _nearest_struct() -> int:
+	var here: Vector3 = _player_position.call()
+	var best: int = 0
+	var best_d: float = 3.0
+
+	for id in _world:
+		if _world[id]["state"] >= 5 and here.distance_to(_world[id]["pos"]) <= best_d:
+			best_d = here.distance_to(_world[id]["pos"])
+			best = id
+
+	return best
 
 
 # The id of the nearest fire (lit or out) within 3 m, 0 when none.
@@ -344,18 +368,25 @@ func _on_slots(bytes: PackedByteArray) -> void:
 		var slot: int = bytes[at]
 
 		if slot < inventory.SLOTS:
+			var was_broken: bool = is_broken(slot)
+			var was_wear: int = inventory.wear[slot]
+			var was_number: int = inventory.numbers[slot]
 			inventory.numbers[slot] = bytes.decode_u32(at + 1)
 			inventory.counts[slot] = bytes.decode_u16(at + 5)
 			inventory.wear[slot] = bytes.decode_u16(at + 7)
+
+			if tool_event.is_valid() and inventory.numbers[slot] == was_number and was_number != 0:
+				if is_broken(slot) and not was_broken:
+					tool_event.call("broke")
+				elif inventory.wear[slot] < was_wear:
+					tool_event.call("repaired")
 
 	_refresh()
 
 
 func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 	for id in removed:
-		if _world.has(id):
-			_world[id]["node"].queue_free()
-			_world.erase(id)
+		_forget(id)
 
 	for row in added:
 		var id: int = row[0]
@@ -367,11 +398,24 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			if _world[id]["state"] == state:
 				continue
 
-			_world[id]["node"].queue_free()
-			_world.erase(id)
+			_forget(id)
 
 		var node: Node3D
 		var light: OmniLight3D = null
+
+		if state >= 5:
+			var yaw: float = deg_to_rad(float(row[5].get("yaw", 0.0))) if row.size() > 5 else 0.0
+			node = _make_leanto() if state == 5 else _make_chest()
+			node.position = row[3]
+			node.rotation.y = yaw
+			_root.add_child(node)
+			var roof_key: int = -1
+
+			if state == 5 and cover_index != null:
+				roof_key = cover_index.add_roof(CoverScript.box_roof(Vector2(row[3].x, row[3].z), 1.1, 0.95, yaw, row[3].y - 0.5, row[3].y + 2.1))
+
+			_world[id] = {"node": node, "number": row[1], "count": 1, "pos": row[3], "state": state, "light": null, "roof": roof_key}
+			continue
 
 		if state >= 3:
 			var extra: Dictionary = row[5] if row.size() > 5 else {}
@@ -393,6 +437,81 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 		_root.add_child(node)
 		_world[id] = {"node": node, "number": row[1], "count": row[2], "pos": row[3], "state": state, "light": light}
+
+
+# Removes a world row's node and, for a lean-to, its roof in the cover index.
+func _forget(id: int) -> void:
+	if not _world.has(id):
+		return
+
+	var entry: Dictionary = _world[id]
+
+	if int(entry.get("roof", -1)) >= 0 and cover_index != null:
+		cover_index.remove_roof(int(entry["roof"]))
+
+	entry["node"].queue_free()
+	_world.erase(id)
+
+
+# A lean-to shelter: a slanted roof of branches and leaves on two front poles, open at the front (+Z).
+func _make_leanto() -> Node3D:
+	var root: Node3D = Node3D.new()
+	var wood: StandardMaterial3D = StandardMaterial3D.new()
+	wood.albedo_color = Color(0.36, 0.25, 0.14)
+	var leaf: StandardMaterial3D = StandardMaterial3D.new()
+	leaf.albedo_color = Color(0.22, 0.34, 0.14)
+
+	for x in [-1.0, 1.0]:
+		var pole: MeshInstance3D = MeshInstance3D.new()
+		var mesh: CylinderMesh = CylinderMesh.new()
+		mesh.top_radius = 0.06
+		mesh.bottom_radius = 0.07
+		mesh.height = 2.0
+		mesh.material = wood
+		pole.mesh = mesh
+		pole.position = Vector3(x, 1.0, 0.85)
+		root.add_child(pole)
+
+	var roof: MeshInstance3D = MeshInstance3D.new()
+	var roof_mesh: BoxMesh = BoxMesh.new()
+	roof_mesh.size = Vector3(2.5, 0.1, 2.3)
+	roof_mesh.material = leaf
+	roof.mesh = roof_mesh
+	roof.position = Vector3(0.0, 1.45, 0.0)
+	roof.rotation.x = atan2(1.3, 1.9)       # high at the front, low at the back
+	root.add_child(roof)
+	var back: MeshInstance3D = MeshInstance3D.new()
+	var back_mesh: BoxMesh = BoxMesh.new()
+	back_mesh.size = Vector3(2.3, 0.9, 0.08)
+	back_mesh.material = leaf
+	back.mesh = back_mesh
+	back.position = Vector3(0.0, 0.45, -0.9)
+	root.add_child(back)
+	return root
+
+
+# A storage chest: a wooden box with a lid band.
+func _make_chest() -> Node3D:
+	var root: Node3D = Node3D.new()
+	var wood: StandardMaterial3D = StandardMaterial3D.new()
+	wood.albedo_color = Color(0.45, 0.3, 0.16)
+	var band: StandardMaterial3D = StandardMaterial3D.new()
+	band.albedo_color = Color(0.22, 0.2, 0.2)
+	var body: MeshInstance3D = MeshInstance3D.new()
+	var body_mesh: BoxMesh = BoxMesh.new()
+	body_mesh.size = Vector3(0.9, 0.55, 0.55)
+	body_mesh.material = wood
+	body.mesh = body_mesh
+	body.position = Vector3(0.0, 0.275, 0.0)
+	root.add_child(body)
+	var lid: MeshInstance3D = MeshInstance3D.new()
+	var lid_mesh: BoxMesh = BoxMesh.new()
+	lid_mesh.size = Vector3(0.94, 0.08, 0.6)
+	lid_mesh.material = band
+	lid.mesh = lid_mesh
+	lid.position = Vector3(0.0, 0.58, 0.0)
+	root.add_child(lid)
+	return root
 
 
 # A campfire: a ring of stones, charred sticks and, while lit, a flame and a warm light.
@@ -920,6 +1039,27 @@ func run_gather_test(client) -> void:
 	client.harvest.update(0.3, true)
 	await get_tree().create_timer(1.5).timeout
 	print("Gather test: sweep, sticks %d -> %d (a picked-bare shrub is skipped); prompt \"%s\"" % [after_tap, inventory.count_of(sticks), plant_hint])
+
+
+# Headless check (--leanto): place a lean-to ahead of the player and look for its row and its roof.
+func run_leanto_test(client) -> void:
+	await get_tree().create_timer(6.0).timeout
+	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("lean_to_kit"), 0, 1, Vector3.ZERO)
+	await get_tree().create_timer(1.0).timeout
+	var here: Vector3 = _player_position.call()
+	var ground: float = float(_ground_below.call(here + Vector3(2.0, 0.0, 0.0)))
+	var spot: Vector3 = Vector3(here.x + 2.0, ground, here.z)
+	var slot: int = inventory.numbers.find(table.number_of("lean_to_kit"))
+	net.inventory_action.rpc_id(1, Net.ACT_PLACE, slot, 0, 0, spot)
+	await get_tree().create_timer(2.0).timeout
+	var seen: int = 0
+
+	for id in _world:
+		if _world[id]["state"] == 5:
+			seen += 1
+
+	var under: Vector3 = spot + Vector3(0.0, 1.0, 0.0)
+	print("Lean-to test: %d lean-to rows in view, cover under it %s, in the open %s" % [seen, str(CoverScript.at(under, cover_index)), str(CoverScript.at(under + Vector3(8.0, 0.0, 0.0), cover_index))])
 
 
 # Headless check (--chop): stand by the nearest tree with an axe and chop it down.

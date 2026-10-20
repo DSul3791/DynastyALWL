@@ -39,6 +39,7 @@ var _cover_at: Callable                   # (point) -> true when under a tree's 
 var _blueprint: MeshInstance3D
 var _blueprint_at: Vector3 = Vector3.ZERO
 var _blueprint_ok: bool = false
+var _blueprint_shape: Vector2 = Vector2(-1.0, -1.0)
 var _blueprint_next_msec: int = 0
 
 const SWING_S := 0.55
@@ -111,7 +112,7 @@ func _is_axe() -> bool:
 func mouse_button(button: int, pressed: bool) -> bool:
 	if _is_placeable():
 		if button == MOUSE_BUTTON_LEFT and pressed and _blueprint_ok:
-			_net.inventory_action.rpc_id(1, Net.ACT_PLACE, held_slot, 0, 0, _blueprint_at)
+			_net.inventory_action.rpc_id(1, Net.ACT_PLACE, held_slot, 0, posmod(int(round(rad_to_deg(_camera.global_rotation.y))), 360), _blueprint_at)
 
 		return button == MOUSE_BUTTON_LEFT
 
@@ -258,18 +259,31 @@ func _update_blueprint() -> void:
 
 	_blueprint_next_msec = now + 100
 
-	if _blueprint == null:
-		_blueprint = MeshInstance3D.new()
-		var ring: CylinderMesh = CylinderMesh.new()
-		ring.top_radius = 0.6
-		ring.bottom_radius = 0.6
-		ring.height = 0.06
+	# The ghost's shape follows the held kit: a ring for a fire, a footprint box for a structure.
+	var footprint: Vector2 = Vector2(float(_inv.table.entry(held_id()).get("footprint_x", 0.0)), float(_inv.table.entry(held_id()).get("footprint_z", 0.0)))
+
+	if _blueprint == null or _blueprint_shape != footprint:
+		if _blueprint == null:
+			_blueprint = MeshInstance3D.new()
+			_root.add_child(_blueprint)
+
+		_blueprint_shape = footprint
 		var material: StandardMaterial3D = StandardMaterial3D.new()
 		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		ring.material = material
-		_blueprint.mesh = ring
-		_root.add_child(_blueprint)
+
+		if footprint == Vector2.ZERO:
+			var ring: CylinderMesh = CylinderMesh.new()
+			ring.top_radius = 0.6
+			ring.bottom_radius = 0.6
+			ring.height = 0.06
+			ring.material = material
+			_blueprint.mesh = ring
+		else:
+			var slab: BoxMesh = BoxMesh.new()
+			slab.size = Vector3(footprint.x, 0.06, footprint.y)
+			slab.material = material
+			_blueprint.mesh = slab
 
 	var from: Vector3 = _camera.global_position
 	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - _camera.global_transform.basis.z * 5.0)
@@ -282,7 +296,8 @@ func _update_blueprint() -> void:
 
 	_blueprint_at = hit["position"]
 	_blueprint.global_position = _blueprint_at + Vector3(0.0, 0.04, 0.0)
-	var covered: bool = _cover_at.is_valid() and _cover_at.call(_blueprint_at)
+	_blueprint.rotation.y = _camera.global_rotation.y
+	var covered: bool = footprint != Vector2.ZERO or (_cover_at.is_valid() and _cover_at.call(_blueprint_at))
 	(_blueprint.mesh.material as StandardMaterial3D).albedo_color = Color(0.3, 0.9, 0.3, 0.55) if covered else Color(0.95, 0.85, 0.2, 0.55)
 
 
@@ -319,7 +334,7 @@ func _caption() -> String:
 	var text: String = _inv.table.name_of(number)
 
 	if _is_placeable():
-		text += "   (left click: place; green = under cover, yellow = open)"
+		text += "   (left click: place; green = under cover, yellow = open)" if _blueprint_shape == Vector2.ZERO else "   (left click: place, it faces you)"
 	elif _is_torch():
 		text += "   (lights the way while held)"
 	elif _is_axe():

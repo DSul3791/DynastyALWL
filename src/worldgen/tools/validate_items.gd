@@ -214,6 +214,15 @@ func _init() -> void:
 		if not obtainable.has(String(recipes[rid].get("gives", [""])[0])):
 			fail("recipe '%s' can never be made (an ingredient has no source)" % rid)
 
+	# Placed forms of structures come from taking the kit out (structures.json).
+	var structures: Dictionary = _read("structures.json").get("structures", {})
+
+	for kind in structures:
+		var def: Dictionary = structures[kind]
+		want_item.call(String(def.get("kit", "")), "structures.json %s kit" % kind)
+		want_item.call(String(def.get("item", "")), "structures.json %s item" % kind)
+		obtainable[String(def.get("item", ""))] = true
+
 	# Core items nothing produces or uses; the campfire kit is placed, not found.
 	for id in items_file.get("items", {}):
 		if not obtainable.has(id) and not String(id).ends_with("_kit"):

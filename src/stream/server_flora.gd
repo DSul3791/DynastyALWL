@@ -118,6 +118,20 @@ func covered(pos: Vector3) -> bool:
 	return yes
 
 
+# Roofs (lean-tos) live in the same cover index as the tree crowns.
+func add_roof(roof: Array) -> int:
+	_mutex.lock()
+	var key: int = cover.add_roof(roof)
+	_mutex.unlock()
+	return key
+
+
+func remove_roof(key: int) -> void:
+	_mutex.lock()
+	cover.remove_roof(key)
+	_mutex.unlock()
+
+
 # Forgets one chunk's packed flora (its saplings or trees changed); it is made again when asked for.
 func invalidate(chunk: Vector2i) -> void:
 	var home: Vector2i = placer.normalize(chunk)

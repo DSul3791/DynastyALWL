@@ -11,6 +11,7 @@ extends RefCounted
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const RecipeTableScript := preload("res://src/shared/recipe_table.gd")
 const InventoryScript := preload("res://src/shared/inventory.gd")
+const CoverScript := preload("res://src/shared/cover.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
 const VERSION := 1
@@ -59,6 +60,7 @@ const MINE_CELL_M := 8.0                 # one outcrop patch
 const MINE_STONES_PER_CELL := 6          # stones a patch gives before it is spent...
 const MINE_REGROW_S := 300.0             # ...and one comes back this often (real seconds)
 const PLACE_REACH_M := 6.0
+const STRUCTURES_PATH := "res://data/items/structures.json"
 const FIRE_BURN_S := 900.0               # real seconds a fire burns before it goes out
 const FIRE_OUT_S := 300.0                # a burnt-out or rained-out fire stays this long
 const FIRE_MIN_GAP_M := 2.0
@@ -83,6 +85,8 @@ var cut_tree: Callable         # (chunk Vector2i, id) -> true when the standing 
 var rock_at: Callable          # (x, z) -> true when bare rock shows at the surface there (no soil cover); set by the server scene
 var game_seconds: Callable      # () -> game clock seconds
 var season_now: Callable        # () -> "spring" | "summer" | "autumn" | "winter"
+var roof_add: Callable          # (roof Array from Cover.box_roof) -> key; the server's cover index gets the lean-to's roof
+var roof_remove: Callable       # (key)
 var cover_at: Callable         # (position) -> 0.0 open or 1.0 under a tree's crown (Cover.at, or its stand-in)
 
 var _dir: String = ""
@@ -97,6 +101,8 @@ var _save_in: float = SAVE_EVERY_S
 var _dirty: bool = false
 var _drops: Dictionary = {}
 var _cooking: Dictionary = {}
+var _structures: Dictionary = {}    # structures.json: kind -> definition
+var _struct_gap_m: float = 2.5
 var gather_pace_ms: int = GATHER_PACE_MS
 var _last_gather: Dictionary = {}   # peer -> msec
 var _last_cook: Dictionary = {}     # peer -> msec
@@ -120,6 +126,12 @@ func setup(item_table, store_dir: String) -> void:
 	table = item_table
 	recipes = RecipeTableScript.load_default(item_table)
 	_dir = store_dir
+	var structures: Variant = JSON.parse_string(FileAccess.get_file_as_string(STRUCTURES_PATH))
+
+	if typeof(structures) == TYPE_DICTIONARY:
+		_structures = structures.get("structures", {})
+		_struct_gap_m = float(structures.get("gap_m", 2.5))
+
 	_load_inventories()
 	_load_world_items()
 	_load_trees()
@@ -256,7 +268,7 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 	elif kind == Net.ACT_MINE:
 		_mine(peer, inv, at)
 	elif kind == Net.ACT_PLACE:
-		_place(peer, inv, a, at)
+		_place(peer, inv, a, at, count)
 	elif kind == Net.ACT_THROW:
 		_throw(peer, inv, a, at)
 	elif kind == Net.ACT_CRAFT:
@@ -324,6 +336,10 @@ func save() -> void:
 		var it: Dictionary = _items[id]
 
 		if it.has("scatter") or it.has("tree"):
+			continue
+
+		if it.has("struct"):
+			items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int(_structures.get(str(it["struct"]["kind"]), {}).get("state", 5)), float(it["struct"]["yaw"]), 0, str(it["struct"]["kind"])])
 			continue
 
 		items.append([int(it["number"]), int(it["count"]), it["pos"].x, it["pos"].y, it["pos"].z, it["left"], int(it["fire"]["state"]) if it.has("fire") else 0, float(it["fire"]["burn_left"]) if it.has("fire") else 0.0, int(it.get("wear", 0))])
@@ -510,13 +526,15 @@ func _mine(peer: int, inv, at: Vector3) -> void:
 
 
 # A placeable item (the campfire kit) becomes a fire on the ground in front of the player.
-func _place(peer: int, inv, slot: int, at: Vector3) -> void:
+func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0) -> void:
 	if slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or not _peer_pos.has(peer):
 		return
 
 	var number: int = inv.numbers[slot]
 
-	if table.id_of(number) != "campfire_kit" or _peer_pos[peer].distance_to(at) > PLACE_REACH_M:
+	var kit_id: String = table.id_of(number)
+
+	if _peer_pos[peer].distance_to(at) > PLACE_REACH_M or (kit_id != "campfire_kit" and _structure_of_kit(kit_id).is_empty()):
 		return
 
 	var ground: float = float(ground_height.call(at.x, at.z)) if ground_height.is_valid() else at.y
@@ -525,6 +543,11 @@ func _place(peer: int, inv, slot: int, at: Vector3) -> void:
 		return
 
 	var spot: Vector3 = Vector3(at.x, ground, at.z)
+
+	if kit_id != "campfire_kit":
+		_place_structure(peer, inv, slot, spot, yaw_deg, _structure_of_kit(kit_id))
+		return
+
 	var chunk_fires: int = 0
 
 	for id in _items:
@@ -534,6 +557,8 @@ func _place(peer: int, inv, slot: int, at: Vector3) -> void:
 
 			if _chunk_of(_items[id]["pos"]) == _chunk_of(spot):
 				chunk_fires += 1
+		elif _items[id].has("struct") and _items[id]["pos"].distance_to(spot) < _struct_gap_m:
+			return
 
 	if chunk_fires >= FIRES_PER_CHUNK:
 		return
@@ -575,6 +600,10 @@ func _fires(delta: float) -> void:
 func _pickup(peer: int, inv, id: int) -> void:
 	var it: Dictionary = _items.get(id, {})
 
+	if it.has("struct"):
+		_take_down(peer, inv, id)
+		return
+
 	if it.is_empty() or it.has("fire") or it.has("tree") or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(it["pos"]) > PICKUP_M + 2.0:
 		return
 
@@ -606,11 +635,11 @@ func _sync_world_items() -> void:
 			if it["pos"].distance_to(here) <= NEAR_M:
 				near[id] = true
 
-				var state: int = int(it["fire"]["state"]) if it.has("fire") else (int(it["tree"]["state"]) if it.has("tree") else 0)
+				var state: int = int(it["fire"]["state"]) if it.has("fire") else (int(it["tree"]["state"]) if it.has("tree") else (int(_structures.get(str(it["struct"]["kind"]), {}).get("state", 5)) if it.has("struct") else 0))
 				var signature: int = int(it["count"]) + 1000 * state
 
 				if not known.has(id) or known[id] != signature:
-					added.append([id, int(it["number"]), int(it["count"]), it["pos"], state, it["tree"] if it.has("tree") else {}])
+					added.append([id, int(it["number"]), int(it["count"]), it["pos"], state, it["tree"] if it.has("tree") else ({"yaw": float(it["struct"]["yaw"])} if it.has("struct") else {})])
 					known[id] = signature
 
 		for id in known.keys():
@@ -684,6 +713,12 @@ func _load_world_items() -> void:
 
 	for row in parsed["items"]:
 		var entry: Dictionary = {"number": int(row[0]), "count": int(row[1]), "pos": Vector3(row[2], row[3], row[4]), "left": float(row[5])}
+
+		if row.size() > 9 and int(row[6]) >= 5:
+			entry["struct"] = {"kind": str(row[9]), "yaw": float(row[7])}
+			_items[_next_id] = entry
+			_next_id += 1
+			continue
 
 		if row.size() > 8:
 			entry["wear"] = int(row[8])
@@ -1308,3 +1343,87 @@ func _fire_in_reach(peer: int, id: int) -> Dictionary:
 		return {}
 
 	return it["fire"]
+
+
+# --- Placed structures (data/items/structures.json): lean-to shelter now, storage chest next ---
+
+func _structure_of_kit(kit_id: String) -> Dictionary:
+	for kind in _structures:
+		if str(_structures[kind]["kit"]) == kit_id:
+			var def: Dictionary = _structures[kind].duplicate()
+			def["kind"] = kind
+			return def
+
+	return {}
+
+
+func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, def: Dictionary) -> void:
+	var here_chunk: Vector2i = _chunk_of(spot)
+	var of_kind: int = 0
+
+	for id in _items:
+		var other: Dictionary = _items[id]
+
+		if other["pos"].distance_to(spot) < _struct_gap_m and (other.has("struct") or other.has("fire")):
+			return
+
+		if other.has("struct") and str(other["struct"]["kind"]) == str(def["kind"]) and _chunk_of(other["pos"]) == here_chunk:
+			of_kind += 1
+
+	if of_kind >= int(def["cap_per_chunk"]):
+		_say(peer, "Too many of these stand here already.")
+		return
+
+	inv.take_from_slot(slot, 1)
+	var entry: Dictionary = {"number": table.number_of(str(def["item"])), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": str(def["kind"]), "yaw": float(posmod(yaw_deg, 360))}}
+	_items[_next_id] = entry
+	_next_id += 1
+	_add_roof(entry)
+	_dirty = true
+
+
+# The structure's roof joins the cover index (both ends do the same on seeing the structure).
+func _add_roof(entry: Dictionary) -> void:
+	var def: Dictionary = _structures.get(str(entry["struct"]["kind"]), {})
+
+	if def.is_empty() or not def.has("height") or not roof_add.is_valid() or entry["struct"].has("roof"):
+		return
+
+	var box: Array = CoverScript.box_roof(Vector2(entry["pos"].x, entry["pos"].z), float(def["half_x"]), float(def["half_z"]), deg_to_rad(float(entry["struct"]["yaw"])), entry["pos"].y - 0.5, entry["pos"].y + float(def["height"]))
+	entry["struct"]["roof"] = int(roof_add.call(box))
+
+
+# After loading a save and wiring roof_add: put every saved structure's roof in the cover index.
+func register_roofs() -> void:
+	for id in _items:
+		if _items[id].has("struct"):
+			_add_roof(_items[id])
+
+
+# Taking a structure down (E near it) gives its kit back. A chest with things in it cannot be taken down.
+func _take_down(peer: int, inv, id: int) -> void:
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(it["pos"]) > PICKUP_M + 2.0:
+		return
+
+	var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
+
+	if def.is_empty() or not _struct_empty(id):
+		_say(peer, "Empty it first.")
+		return
+
+	var kit: int = table.number_of(str(def["kit"]))
+
+	if inv.add(kit, 1) > 0:
+		return
+
+	if it["struct"].has("roof") and roof_remove.is_valid():
+		roof_remove.call(int(it["struct"]["roof"]))
+
+	_items.erase(id)
+	_dirty = true
+
+
+func _struct_empty(_id: int) -> bool:
+	return true
