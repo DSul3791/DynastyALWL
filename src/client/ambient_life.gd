@@ -1,0 +1,309 @@
+extends Node
+
+# The nature layer of the sound stage (client only; DESIGN_IDEAS "Nature ambience"):
+# the occasional bird call, a cricket, a frog, a woodpecker, whatever suits the
+# place the player is in. Cheap on purpose:
+#
+# - Every SCAN_SEC seconds it measures how much of each zone the player is in
+#   (forest, meadow, water edge, highland) from the tree trunk colliders near
+#   the player, the soil and grass under the feet, the water squares around
+#   them and the height. Nothing else is looked at.
+# - Each call in EVENTS has its own timer. When it comes due it plays only if
+#   the zones it belongs to are present (chance = zone weight), the time of
+#   day and season allow it, no other call played in the last MIN_GAP_SEC and
+#   fewer than MAX_VOICES are playing. Then it is placed in 3D: birds up in the
+#   trees, crickets and frogs on the ground, frogs and fish at the water.
+# - Running scares wildlife: calls come about half as often above RUN_SCARE_MS.
+# - Optional loops `bed_<zone>.ogg` (a quiet forest or stream background) fade in
+#   with the zone weight when a file exists; none ship yet.
+#
+# No day, season or weather clock exists yet: `conditions` holds the values it
+# will take (hour 0 to 24, season, weather) and today stays on a fall afternoon.
+# Sounds: generated placeholders in assets/audio/ambient/ (make_ambient.py),
+# recordings in assets/audio/recorded/ambient/ win. Names are in EVENTS.
+
+const SoundStage := preload("res://src/client/sound_stage.gd")
+const GENERATED_DIR := "res://assets/audio/ambient/"
+const RECORDED_DIR := "res://assets/audio/recorded/ambient/"
+
+const SCAN_SEC := 1.5
+const MIN_GAP_SEC := 3.0               # no two calls closer than this
+const MAX_VOICES := 4                  # calls playing at once
+const RUN_SCARE_MS := 8.0
+const TRUNK_RADIUS := 45.0
+const TRUNKS_FOR_FOREST := 28.0        # collider shapes in that radius for a full forest
+const WATER_RINGS := [6.0, 16.0, 32.0, 55.0]
+const WATER_FULL_M := 8.0              # water this close counts as full water-edge weight
+const WATER_NONE_M := 55.0
+const HIGH_FROM_M := 60.0              # height where the highland starts to count
+const HIGH_FULL_M := 130.0
+const BED_DB := -26.0
+
+# name: sound file base name (name_N.ogg). zones: zone -> how well the call fits it (0 to 1).
+# every: seconds between tries. dist: metres from the player. height: metres above the ground
+# (birds in the trees). water: placed at a water square. db: loudness at the source.
+# hours: [from, to] it may be heard (wraps past midnight). night_rate: tries come this many
+# times as often at night. seasons: season -> chance multiplier (default 1).
+const EVENTS := [
+	{"name": "bird_whistle", "zones": {"forest": 1.0, "meadow": 0.5, "highland": 0.3}, "every": [14, 34], "dist": [20, 75], "height": [4, 14], "db": -10.0, "hours": [5, 20]},
+	{"name": "bird_feebee", "zones": {"forest": 1.0, "meadow": 0.3}, "every": [18, 40], "dist": [20, 70], "height": [4, 12], "db": -11.0, "hours": [5, 20]},
+	{"name": "bird_trill", "zones": {"meadow": 1.0, "forest": 0.4}, "every": [20, 45], "dist": [15, 60], "height": [1, 8], "db": -12.0, "hours": [5, 20]},
+	{"name": "bird_chirp", "zones": {"meadow": 1.0, "water": 0.7, "forest": 0.5}, "every": [9, 22], "dist": [8, 45], "height": [0, 5], "db": -12.0, "hours": [5, 20]},
+	{"name": "crow_caw", "zones": {"forest": 0.6, "highland": 0.8, "meadow": 0.3}, "every": [45, 110], "dist": [60, 160], "height": [6, 18], "db": -8.0, "hours": [6, 19]},
+	{"name": "woodpecker", "zones": {"forest": 1.0}, "every": [40, 100], "dist": [25, 80], "height": [2, 10], "db": -8.0, "hours": [6, 18]},
+	{"name": "owl_hoot", "zones": {"forest": 1.0}, "every": [30, 70], "dist": [40, 110], "height": [5, 14], "db": -8.0, "hours": [20, 5]},
+	{"name": "hawk_screech", "zones": {"highland": 1.0}, "every": [60, 150], "dist": [120, 300], "height": [50, 110], "db": -4.0, "hours": [8, 18]},
+	{"name": "cricket_chirp", "zones": {"meadow": 1.0, "water": 0.4}, "every": [22, 55], "dist": [5, 28], "height": [0, 0], "db": -16.0, "night_rate": 5.0, "seasons": {"autumn": 0.9, "summer": 1.0, "spring": 0.3, "winter": 0.0}},
+	{"name": "frog_croak", "zones": {"water": 1.0}, "every": [14, 36], "dist": [3, 22], "height": [0, 0], "db": -11.0, "water": true, "night_rate": 3.0, "seasons": {"autumn": 0.3, "summer": 1.0, "spring": 1.0, "winter": 0.0}},
+	{"name": "tree_frog_peep", "zones": {"water": 0.8, "forest": 0.2}, "every": [16, 40], "dist": [4, 28], "height": [0, 3], "db": -14.0, "night_rate": 3.0, "seasons": {"autumn": 0.2, "summer": 1.0, "spring": 1.0, "winter": 0.0}},
+	{"name": "fish_plop", "zones": {"water": 1.0}, "every": [20, 55], "dist": [3, 20], "height": [0, 0], "db": -12.0, "water": true},
+]
+const ZONES := ["forest", "meadow", "water", "highland"]
+
+var conditions: Dictionary = {"hour": 14.0, "season": "autumn", "weather": "clear"}
+var weights: Dictionary = {"forest": 0.0, "meadow": 0.0, "water": 0.0, "highland": 0.0}
+var calls_played: Dictionary = {}       # call name -> count (for the headless check)
+var last_call: String = ""
+var time_scale: float = 1.0             # >1 speeds the timers (--nature-fast, headless checks)
+
+var _stage                              # SoundStage (ground lookup)
+var _flora
+var _terrain: Node3D
+var _grass
+var _rng := RandomNumberGenerator.new()
+var _scan_left: float = 0.0
+var _next: Dictionary = {}              # call name -> seconds until it is tried
+var _since_call: float = MIN_GAP_SEC
+var _voices: Array = []                 # AudioStreamPlayer3D now playing
+var _streams: Dictionary = {}
+var _wet_points: Array = []             # [Vector3] water squares found by the last scan
+var _sphere: PhysicsShapeQueryParameters3D
+var _beds: Dictionary = {}              # zone -> AudioStreamPlayer
+var _speed: float = 0.0
+
+
+func setup(stage, terrain: Node3D, flora, grass) -> void:
+	_stage = stage
+	_terrain = terrain
+	_flora = flora
+	_grass = grass
+	_rng.randomize()
+
+	if "--nature-fast" in OS.get_cmdline_user_args():
+		time_scale = 25.0
+
+	for event in EVENTS:
+		_next[event["name"]] = _rng.randf_range(float(event["every"][0]), float(event["every"][1])) * 0.5
+
+	for zone in ZONES:
+		var list: Array = _variants("bed_" + zone)
+
+		if not list.is_empty() and list[0] is AudioStreamOggVorbis:
+			list[0].loop = true
+			var bed: AudioStreamPlayer = AudioStreamPlayer.new()
+			bed.stream = list[0]
+			bed.bus = "Nature"
+			bed.volume_db = -80.0
+			add_child(bed)
+			bed.play()
+			_beds[zone] = bed
+
+
+func update(delta: float, body: CharacterBody3D, flying: bool) -> void:
+	_speed = Vector2(body.velocity.x, body.velocity.z).length()
+	_scan_left -= delta
+
+	if _scan_left <= 0.0:
+		_scan_left = SCAN_SEC
+		_scan(body)
+
+	for zone in _beds:
+		var target: float = linear_to_db(maxf(float(weights[zone]), 0.0001)) + BED_DB
+		_beds[zone].volume_db = lerpf(_beds[zone].volume_db, maxf(target, -80.0), clampf(delta * 1.5, 0.0, 1.0))
+
+	_since_call += delta
+	_voices = _voices.filter(func(v): return is_instance_valid(v) and v.playing)
+	var step: float = delta * time_scale
+
+	for event in EVENTS:
+		var name: String = event["name"]
+		_next[name] = float(_next[name]) - step * (float(event.get("night_rate", 1.0)) if _is_night() else 1.0)
+
+		if float(_next[name]) > 0.0:
+			continue
+
+		_next[name] = _rng.randf_range(float(event["every"][0]), float(event["every"][1]))
+
+		if _since_call * time_scale < MIN_GAP_SEC or _voices.size() >= MAX_VOICES:
+			continue
+
+		_try(event, body)
+
+
+# The share of each zone around the player, smoothed so the mix changes gently.
+func _scan(body: CharacterBody3D) -> void:
+	var position: Vector3 = body.global_position
+	var feet: Vector3 = position - Vector3(0.0, 0.9, 0.0)
+	var target: Dictionary = {"forest": 0.0, "meadow": 0.0, "water": 0.0, "highland": 0.0}
+
+	target["forest"] = clampf(float(_trunks(body)) / TRUNKS_FOR_FOREST, 0.0, 1.0)
+	var soil: int = _stage.ground_at(feet)
+	var thick: float = 0.0
+
+	if _grass != null and soil >= 0:
+		thick = _grass.grass_at(feet.x, feet.z, soil).x
+
+	target["meadow"] = (1.0 - target["forest"]) * clampf(0.2 + thick, 0.0, 1.0)
+	target["highland"] = clampf((position.y - HIGH_FROM_M) / (HIGH_FULL_M - HIGH_FROM_M), 0.0, 1.0)
+	_wet_points.clear()
+	var nearest: float = WATER_NONE_M + 1.0
+
+	for ring in WATER_RINGS:
+		for k in range(8):
+			var angle: float = TAU * float(k) / 8.0 + float(ring) * 0.3
+			var x: float = feet.x + cos(angle) * ring
+			var z: float = feet.z + sin(angle) * ring
+			var level: float = _flora.water_surface_at(x, z)
+
+			if not is_nan(level):
+				_wet_points.append(Vector3(x, level, z))
+				nearest = minf(nearest, ring)
+
+	var here: float = _flora.water_surface_at(feet.x, feet.z)
+
+	if not is_nan(here):
+		nearest = 0.0
+
+	target["water"] = clampf(1.0 - (nearest - WATER_FULL_M) / (WATER_NONE_M - WATER_FULL_M), 0.0, 1.0)
+
+	for zone in ZONES:
+		weights[zone] = lerpf(float(weights[zone]), float(target[zone]), 0.4)
+
+
+func _trunks(body: CharacterBody3D) -> int:
+	if _sphere == null:
+		_sphere = PhysicsShapeQueryParameters3D.new()
+		var shape: SphereShape3D = SphereShape3D.new()
+		shape.radius = TRUNK_RADIUS
+		_sphere.shape = shape
+
+	_sphere.transform = Transform3D(Basis.IDENTITY, body.global_position)
+	_sphere.exclude = [body.get_rid()]
+	var count: int = 0
+
+	for hit in body.get_world_3d().direct_space_state.intersect_shape(_sphere, 64):
+		if hit["collider"] != null and hit["collider"].has_meta("species_ids"):
+			count += 1
+
+	return count
+
+
+func _is_night() -> bool:
+	var hour: float = float(conditions["hour"])
+	return hour < 6.0 or hour >= 19.0
+
+
+func _hour_ok(event: Dictionary) -> bool:
+	if not event.has("hours"):
+		return true
+
+	var hour: float = float(conditions["hour"])
+	var from: float = float(event["hours"][0])
+	var to: float = float(event["hours"][1])
+	return (hour >= from and hour < to) if from < to else (hour >= from or hour < to)
+
+
+# A due call: plays when the zones, hour and season allow it.
+func _try(event: Dictionary, body: CharacterBody3D) -> void:
+	if not _hour_ok(event):
+		return
+
+	var fit: float = 0.0
+
+	for zone in event["zones"]:
+		fit = maxf(fit, float(event["zones"][zone]) * float(weights[zone]))
+
+	var season: float = float(event.get("seasons", {}).get(str(conditions["season"]), 1.0))
+	var scare: float = 0.5 if _speed > RUN_SCARE_MS else 1.0
+
+	if _rng.randf() > fit * season * scare:
+		return
+
+	var list: Array = _variants(event["name"])
+
+	if list.is_empty():
+		return
+
+	var at: Vector3 = _place(event, body)
+
+	if is_nan(at.x):
+		return
+
+	var player: AudioStreamPlayer3D = AudioStreamPlayer3D.new()
+	player.stream = list[_rng.randi_range(0, list.size() - 1)]
+	player.bus = "Nature"
+	player.volume_db = float(event["db"]) + _rng.randf_range(-2.0, 1.0)
+	player.pitch_scale = _rng.randf_range(0.95, 1.05)
+	player.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
+	player.unit_size = 12.0
+	player.max_distance = 400.0
+	player.attenuation_filter_cutoff_hz = 9000.0
+	add_child(player)
+	player.global_position = at
+	player.finished.connect(player.queue_free)
+	player.play()
+	_voices.append(player)
+	_since_call = 0.0
+	last_call = "%s %.0f m" % [event["name"], at.distance_to(body.global_position)]
+	calls_played[event["name"]] = int(calls_played.get(event["name"], 0)) + 1
+
+
+# Where the call comes from: a water square for frogs and fish, else a random
+# direction at the call's distance, on the ground plus the call's height.
+func _place(event: Dictionary, body: CharacterBody3D) -> Vector3:
+	if event.get("water", false):
+		if _wet_points.is_empty():
+			return Vector3(NAN, 0.0, 0.0)
+
+		var p: Vector3 = _wet_points[_rng.randi_range(0, _wet_points.size() - 1)]
+		return p + Vector3(_rng.randf_range(-2.0, 2.0), 0.0, _rng.randf_range(-2.0, 2.0))
+
+	var distance: float = _rng.randf_range(float(event["dist"][0]), float(event["dist"][1]))
+	var angle: float = _rng.randf() * TAU
+	var origin: Vector3 = body.global_position
+	var x: float = origin.x + cos(angle) * distance
+	var z: float = origin.z + sin(angle) * distance
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(Vector3(x, origin.y + 80.0, z), Vector3(x, origin.y - 120.0, z))
+	var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(query)
+
+	if hit.is_empty():
+		return Vector3(NAN, 0.0, 0.0)
+
+	var height: float = _rng.randf_range(float(event["height"][0]), float(event["height"][1]))
+	return Vector3(x, float(hit["position"].y) + height, z)
+
+
+func _variants(name: String) -> Array:
+	if _streams.has(name):
+		return _streams[name]
+
+	var list: Array = SoundStage._find(RECORDED_DIR, name)
+
+	if list.is_empty():
+		list = SoundStage._find(GENERATED_DIR, name)
+
+	_streams[name] = list
+	return list
+
+
+func _exit_tree() -> void:
+	for voice in _voices:
+		if is_instance_valid(voice):
+			voice.stop()
+			voice.stream = null
+
+	for bed in _beds.values():
+		bed.stop()
+		bed.stream = null
+
+	_streams.clear()

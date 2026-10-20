@@ -34,3 +34,4 @@ godot_path.txt
 # Godot import settings for the generated sounds: each machine writes its own
 # (they differ between Windows and the Linux cloud build), so they are not tracked.
 assets/audio/**/*.import
+__pycache__/

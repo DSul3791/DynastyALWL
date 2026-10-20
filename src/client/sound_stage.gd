@@ -17,6 +17,7 @@ extends Node
 # replace them under the same names (name_N.ogg; every variant found is used).
 
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
+const AmbientScript := preload("res://src/client/ambient_life.gd")
 const AUDIO_DIR := "res://assets/audio/"
 const RECORDED_DIR := "res://assets/audio/recorded/"
 const VOICES := 6                       # footstep and swish players, reused in turn
@@ -74,6 +75,7 @@ var _shelter_target: float = 0.0
 var _shelter_msec: int = 0
 var _air_time: float = 0.0
 var _rng := RandomNumberGenerator.new()
+var ambient                             # AmbientLife: birds, crickets, frogs by zone
 var _sphere: PhysicsShapeQueryParameters3D
 
 
@@ -91,6 +93,7 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	_wind_filter.cutoff_hz = 4000.0
 	AudioServer.add_bus_effect(wind_bus, _wind_filter)
 	_make_bus("Foley")
+	_make_bus("Nature")
 	_muffle = AudioEffectLowPassFilter.new()
 	_muffle.cutoff_hz = 20000.0
 	AudioServer.add_bus_effect(0, _muffle)
@@ -108,6 +111,11 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 		add_child(voice)
 		_voices.append(voice)
 
+	ambient = AmbientScript.new()
+	ambient.name = "Ambient"
+	add_child(ambient)
+	ambient.setup(self, _terrain, _flora, _grass)
+
 	if _wind_low.stream != null:
 		_wind_low.play()
 
@@ -117,6 +125,7 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 
 # Each frame: wind loudness and colour, landing thumps, the underwater muffle.
 func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool) -> void:
+	ambient.update(delta, body, flying)
 	_time += delta
 	gust = clampf(0.5 + 0.8 * _gust_noise.get_noise_1d(_time), 0.0, 1.0)
 	var position: Vector3 = body.global_position
@@ -249,6 +258,10 @@ func _trunks_near(body: CharacterBody3D, radius: float) -> int:
 
 # The draw-material id under the soles: a soil id, MATERIAL_ROCK + rock id for
 # bare rock, or -1 when the ground is not loaded.
+func ground_at(feet: Vector3) -> int:
+	return _ground_under(feet)
+
+
 func _ground_under(feet: Vector3) -> int:
 	_tool.channel = Layout.CHANNEL_MATERIAL
 
@@ -377,7 +390,7 @@ func _exit_tree() -> void:
 
 	_streams.clear()
 
-	for name in ["Wind", "Foley"]:
+	for name in ["Wind", "Foley", "Nature"]:
 		var index: int = AudioServer.get_bus_index(name)
 
 		if index >= 0:
