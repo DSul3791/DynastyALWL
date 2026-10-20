@@ -223,8 +223,11 @@ static func _trunk(acc: Acc, rng: RandomNumberGenerator, height: float, base_r: 
 			var b: int = a + 1
 			var d: int = a + sides + 1
 			var e: int = d + 1
-			acc.tri(a, d, b)
-			acc.tri(b, d, e)
+			# Clockwise seen from outside: Godot draws these as front faces, so the trunk is
+			# solid from outside (it was wound the other way, so only its inside showed and
+			# the base looked hollow; owner, 2026-10-20).
+			acc.tri(a, b, d)
+			acc.tri(b, e, d)
 
 	return centers
 
@@ -254,8 +257,8 @@ static func _branch(acc: Acc, from: Vector3, to: Vector3, r0: float, r1: float, 
 
 	for s in range(sides):
 		var a: int = first + s
-		acc.tri(a, a + sides + 1, a + 1)
-		acc.tri(a + 1, a + sides + 1, a + sides + 2)
+		acc.tri(a, a + 1, a + sides + 1)
+		acc.tri(a + 1, a + sides + 2, a + sides + 1)
 
 
 # A clump of leaves: crossed cards at `at`; normals point away from `crown_center`.
