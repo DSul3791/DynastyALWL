@@ -202,6 +202,10 @@ var _tree_materials: Dictionary = {}       # TreeBuilder materials (bark, broad,
 
 # Owner (2026-10-19): rivers and ponds stay clear up to flow x1 and turn muddy brown
 # above it, like runoff after rain (fully brown from about x8). The sea stays clear.
+func water_material() -> Material:
+	return _water_material
+
+
 func set_water_quality(quality: int) -> void:
 	WaterMaterial.apply_quality(_water_material, quality)
 
@@ -485,7 +489,7 @@ func set_water(chunk: Vector2i, water: Dictionary) -> void:
 	entry["grid"] = water
 
 	if int(water.get("wet", 0)) > 0:
-		var mesh: ArrayMesh = WaterGridScript.build_mesh(water, _water_material)
+		var mesh: ArrayMesh = water["mesh"] if water.has("mesh") else WaterGridScript.build_mesh(water, _water_material)
 
 		if mesh.get_surface_count() > 0:
 			var draw: MeshInstance3D = MeshInstance3D.new()
@@ -498,6 +502,8 @@ func set_water(chunk: Vector2i, water: Dictionary) -> void:
 			water_cells += mesh.surface_get_array_index_len(0) / 6
 
 
+# A water grid may carry its drawing already built under "mesh" (made on a worker
+# thread by the client, see terrain_client.gd _decode_in).
 # Sets a chunk's items (as from FloraPlacer.chunk_items or decode).
 func set_chunk(chunk: Vector2i, items: Dictionary, position: Vector3, water: Dictionary = {}, full: bool = true) -> void:
 	drop_chunk(chunk)
@@ -505,7 +511,7 @@ func set_chunk(chunk: Vector2i, items: Dictionary, position: Vector3, water: Dic
 	_chunks[chunk] = entry
 
 	if int(water.get("wet", 0)) > 0:
-		var mesh: ArrayMesh = WaterGridScript.build_mesh(water, _water_material)
+		var mesh: ArrayMesh = water["mesh"] if water.has("mesh") else WaterGridScript.build_mesh(water, _water_material)
 
 		if mesh.get_surface_count() > 0:
 			var draw: MeshInstance3D = MeshInstance3D.new()

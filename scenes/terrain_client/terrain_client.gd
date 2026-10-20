@@ -66,6 +66,7 @@ const QUALITY_GRASS_POINTS := [2, 3, 4, 5]               # ground samples per 6 
 const QUALITY_SHADOW_M := [0.0, 60.0, 100.0, 250.0]    # 0 = no shadows
 const QUALITY_CACHE_MB := [1024, 4096, 10240, 10240]    # ground cache limit on disk
 const FLY_SPEED := 30.0
+const INCOMING_USEC := 3000           # most time a frame puts arrived chunks in the scene (one at least)
 const WATER_HOLD_MSEC := 2000        # water refreshes wait this long while ground loads
 const STILL_MSEC := 3000              # flying: ground loads again after staying still this long
 const WALK_SPEED := 6.0
@@ -178,6 +179,9 @@ var test_cut: bool = false
 var _flora_asked: Dictionary = {}     # chunk -> true asked or held in full, false trees only
 var _flora_check_msec: int = 0
 var link = null                       # direct block line (block_link.gd)
+var _in_queue: Array = []             # chunks from the server being unpacked, in arrival order
+var _in_mutex: Mutex = Mutex.new()
+var _in_generation: int = 0           # raised when the plants are dropped (a bake): older chunks are ignored
 var _water_dirty: bool = false        # the server said the water moved; not asked for yet
 var _water_asked_msec: int = 0
 var _flora_chunks: int = 0
@@ -470,16 +474,95 @@ func _on_flora(chunk: Vector2i, bytes: PackedByteArray, water: PackedByteArray, 
 	_flora_chunks += 1
 	_flora_bytes += bytes.size() + water.size()
 	_flora_done_msec = Time.get_ticks_msec() - connected_msec
-	var t: int = Probe.start()
-	var items: Dictionary = PlacerScript.decode(bytes, Vector2(chunk) * flora.chunk_m)
-	var water_cells: Dictionary = WaterGridScript.decode(water)
-	Probe.stop("flora decode", t)
-	t = Probe.start()
-	if flora.has_chunk(chunk):
-		flora.replace_items(chunk, items, _anchor, full)
+	_queue_in({"kind": "flora", "chunk": chunk, "bytes": bytes, "water": water, "full": full})
+
+
+# Owner (2026-10-20, 100 ms frames while ground and plants load): chunks from the server are
+# unpacked and their water drawing built on a worker thread, and put in the scene in arrival
+# order within INCOMING_USEC a frame (at least one). Decoding and building them on the main
+# thread cost up to 16 ms and 23 ms a call, several in one frame after a water update.
+func _queue_in(job: Dictionary) -> void:
+	# Every key is set before the task starts: adding a key while the worker writes the
+	# result would race on the dictionary.
+	job["done"] = false
+	job["result"] = null
+	job["task"] = -1
+	job["gen"] = _in_generation
+	job["chunk_m"] = flora.chunk_m
+	_in_queue.append(job)
+	var material: Material = flora.water_material()
+	job["task"] = WorkerThreadPool.add_task(_decode_in.bind(job, material))
+
+
+func _decode_in(job: Dictionary, material: Material) -> void:
+	var result: Dictionary = {}
+
+	if job["kind"] == "flora":
+		result["items"] = PlacerScript.decode(job["bytes"], Vector2(job["chunk"]) * float(job["chunk_m"]))
+		result["grid"] = WaterGridScript.decode(job["water"])
 	else:
-		flora.set_chunk(chunk, items, _anchor, water_cells, full)
-	Probe.stop("flora chunk in", t)
+		result["grid"] = WaterGridScript.decode(job["water"])
+
+	var grid: Dictionary = result["grid"]
+
+	if int(grid.get("wet", 0)) > 0:
+		grid["mesh"] = WaterGridScript.build_mesh(grid, material)
+
+	_in_mutex.lock()
+	job["result"] = result
+	job["done"] = true
+	_in_mutex.unlock()
+
+
+# On exit: lets the unpacking tasks finish (they would run into the engine shutting down).
+func _drain_incoming() -> void:
+	for job in _in_queue:
+		if int(job["task"]) >= 0:
+			WorkerThreadPool.wait_for_task_completion(job["task"])
+
+	_in_queue.clear()
+
+
+func _apply_incoming() -> void:
+	var started: int = Time.get_ticks_usec()
+	var applied: int = 0
+
+	while not _in_queue.is_empty():
+		_in_mutex.lock()
+		var job: Dictionary = _in_queue[0]
+		var done: bool = job["done"]
+		_in_mutex.unlock()
+
+		if not done or (applied > 0 and Time.get_ticks_usec() - started > INCOMING_USEC):
+			break
+
+		_in_queue.pop_front()
+
+		if flora == null or int(job["gen"]) != _in_generation:
+			continue
+
+		applied += 1
+		var chunk: Vector2i = job["chunk"]
+		var result: Dictionary = job["result"]
+
+		if job["kind"] == "flora":
+			var t: int = Probe.start()
+			var full: bool = job["full"]
+
+			if not full and flora.holds_full(chunk):
+				Probe.stop("flora chunk in", t)
+				continue
+
+			if flora.has_chunk(chunk):
+				flora.replace_items(chunk, result["items"], _anchor, full)
+			else:
+				flora.set_chunk(chunk, result["items"], _anchor, result["grid"], full)
+
+			Probe.stop("flora chunk in", t)
+		else:
+			var tw: int = Probe.start()
+			flora.set_water(chunk, result["grid"])
+			Probe.stop("water in", tw)
 
 
 func _on_water_rate(rate: float, busy: bool, spring_m3_s: float) -> void:
@@ -545,9 +628,7 @@ func _send_water_request(now: int) -> void:
 
 func _on_water_received(chunk: Vector2i, water: PackedByteArray) -> void:
 	if flora != null:
-		var t: int = Probe.start()
-		flora.set_water(chunk, WaterGridScript.decode(water))
-		Probe.stop("water in", t)
+		_queue_in({"kind": "water", "chunk": chunk, "water": water})
 
 
 func _on_flora_cut(chunk: Vector2i, id: int) -> void:
@@ -864,6 +945,8 @@ func _on_ground_reset(tiles_stamp: String, starter_stamp: String) -> void:
 	world["starter_stamp"] = starter_stamp
 	_reload_ground()
 
+	_in_generation += 1
+
 	if flora != null:
 		for chunk in flora.held_chunks():
 			flora.drop_chunk(chunk)
@@ -1132,7 +1215,9 @@ func _move_player(delta: float) -> void:
 		# already fell below it is lifted back to the surface.
 		# Without ground to land on yet, glide level instead of falling or
 		# standing frozen: the ground appears as collision loads.
+		var tq: int = Probe.start()
 		waiting_for_ground = not _ground_ready()
+		Probe.stop("p ground_ready", tq)
 
 		if test_walk and _walk_phase == 2:
 			_slowest_frame = maxf(_slowest_frame, delta)
@@ -1149,14 +1234,18 @@ func _move_player(delta: float) -> void:
 			velocity.y = 7.0
 
 		body.velocity = velocity
+		var tm: int = Probe.start()
 		body.move_and_slide()
+		Probe.stop("p slide", tm)
 
 		if body.is_on_floor():
 			_floor_msec = Time.get_ticks_msec()
 		elif Time.get_ticks_msec() - _floor_msec > 1200 and _under_the_ground():
 			rescued += 1
 
+		var tb: int = Probe.start()
 		_update_bob(delta)
+		Probe.stop("p bob", tb)
 
 	if flying:
 		_bob_amount = 0.0
@@ -1249,6 +1338,7 @@ func _process(delta: float) -> void:
 	settled_msec = stream.last_load_msec - connected_msec
 
 	_send_water_request(now)
+	_apply_incoming()
 
 	if now >= _flora_check_msec:
 		_flora_check_msec = now + 500
@@ -1564,6 +1654,8 @@ func _walk_report() -> void:
 
 
 func _finish(code: int) -> void:
+	_drain_incoming()
+
 	if link != null:
 		link.close()
 
@@ -1577,5 +1669,6 @@ func _finish(code: int) -> void:
 
 
 func _exit_tree() -> void:
+	_drain_incoming()
 	if stream != null:
 		stream.close()

@@ -23,6 +23,10 @@ static func start() -> int:
 
 static func stop(name: String, started: int) -> void:
 	var used: int = Time.get_ticks_usec() - started
+
+	if used > 2500 and OS.has_environment("SPIKES"):
+		print("SPIKE %s %.1f ms at %d" % [name, float(used) / 1000.0, Time.get_ticks_msec()])
+
 	var entry: Array = _totals.get(name, [0, 0, 0])
 	entry[0] += 1
 	entry[1] += used

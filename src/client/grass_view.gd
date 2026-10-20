@@ -79,6 +79,7 @@ var _tint := FastNoiseLite.new()         # greener and yellower patches
 var _cover := FastNoiseLite.new()        # breaks the grass up into patches on slopes
 var _cells: Dictionary = {}              # Vector2i -> {"nodes", "retry", "busy", "built", "count"}
 var _pending: Array = []                 # cells waiting for rays, nearest first
+var _scan_cell: Vector2i = Vector2i(1 << 30, 1 << 30)
 var _scan_msec: int = 0
 var _center: Vector3 = Vector3.ZERO
 var enabled: bool = true
@@ -228,8 +229,13 @@ func update(position: Vector3) -> void:
 	_center = position
 	var now: int = Time.get_ticks_msec()
 
-	if now - _scan_msec > 400:
+	# Owner (2026-10-20, pauses while walking): the scan listed and sorted every cell in range
+	# every 0.4 s. Now only when the player is in another cell, or every 1.5 s to retry cells.
+	var here_cell: Vector2i = Vector2i(int(floor(position.x / CELL_M)), int(floor(position.z / CELL_M)))
+
+	if here_cell != _scan_cell or now - _scan_msec > 1500:
 		_scan_msec = now
+		_scan_cell = here_cell
 		_rescan(position, now)
 
 	var rays: int = RAYS_PER_FRAME
@@ -270,8 +276,11 @@ func _rescan(position: Vector3, now: int) -> void:
 			_pending.append(cell)
 
 	var near: Vector2 = Vector2(position.x, position.z) / CELL_M
-	_pending.sort_custom(func(a, b):
-		return (Vector2(a) + Vector2(0.5, 0.5)).distance_squared_to(near) < (Vector2(b) + Vector2(0.5, 0.5)).distance_squared_to(near))
+
+	if _pending.size() > 1:
+		_pending.sort_custom(func(a, b):
+			return (Vector2(a) + Vector2(0.5, 0.5)).distance_squared_to(near) < (Vector2(b) + Vector2(0.5, 0.5)).distance_squared_to(near))
+
 	var keep: Dictionary = {}
 
 	for cell in wanted:

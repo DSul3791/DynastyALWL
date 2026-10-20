@@ -45,6 +45,11 @@ const SWIM_M := 1.3                     # deeper than this: no footsteps
 const GAIT_DB := [-22.0, -16.0, -10.0]   # walk, jog, run (owner 2026-10-20: still far too loud; clear steps of 6 dB)
 const GAIT_PITCH := [1.0, 1.03, 1.06]
 const VOLUME_STEPS := [1.0, 0.75, 0.5, 0.25, 0.0]
+# Owner (2026-10-20, a slight pause about once a second while moving): the shelter count
+# was a sphere query of up to 64 trunks every second (3 to 10 ms a call). The wind shelter
+# moves slowly, so it is asked for less often and stops counting at 16 trunks (14 is full shelter).
+const SHELTER_MSEC := 2500
+const SHELTER_HITS := 16
 
 var steps_played: Dictionary = {}       # surface -> count (for the headless walk check)
 var swishes_played: int = 0
@@ -132,7 +137,7 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	var now: int = Time.get_ticks_msec()
 
 	if now >= _shelter_msec:
-		_shelter_msec = now + 1000
+		_shelter_msec = now + SHELTER_MSEC
 		_shelter_target = clampf(float(_trunks_near(body, 18.0)) / 14.0, 0.0, 1.0)
 
 	_shelter = move_toward(_shelter, _shelter_target, delta * 0.5)
@@ -249,7 +254,7 @@ func _trunks_near(body: CharacterBody3D, radius: float) -> int:
 	_sphere.exclude = [body.get_rid()]
 	var count: int = 0
 
-	for hit in body.get_world_3d().direct_space_state.intersect_shape(_sphere, 64):
+	for hit in body.get_world_3d().direct_space_state.intersect_shape(_sphere, SHELTER_HITS):
 		if hit["collider"] != null and hit["collider"].has_meta("species_ids"):
 			count += 1
 
