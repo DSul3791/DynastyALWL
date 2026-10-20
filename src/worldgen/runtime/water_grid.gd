@@ -9,6 +9,9 @@ extends RefCounted
 # Static helpers only; thread safe.
 
 
+const FallsScript := preload("res://src/worldgen/runtime/water_falls.gd")
+
+
 # Water levels for the chunk with corner `origin` (wrapped coordinates):
 # {"count": points per side, "spacing": m, "levels": PackedFloat32Array}.
 static func chunk_levels(generator, origin: Vector2, chunk_m: float) -> Dictionary:
@@ -38,7 +41,9 @@ static func chunk_levels(generator, origin: Vector2, chunk_m: float) -> Dictiona
 	# water gets a finer surface laid on the real ground (_fine_cells).
 	if not data.sim_levels.is_empty():
 		var edge: PackedFloat32Array = _shore_levels(generator, data, origin, count, spacing, levels)
-		return {"count": count, "spacing": spacing, "levels": levels, "wet": wet, "edge": edge, "fine": _fine_cells(generator, origin, count, spacing, levels, edge), "vel": _velocities(generator, data, origin, count, spacing, levels)}
+		var vel: PackedFloat32Array = _velocities(generator, data, origin, count, spacing, levels)
+		var falls: Array = FallsScript.find(generator, origin, count, spacing, levels, vel, func(x: float, z: float) -> float: return _fine_ground(generator, x, z))
+		return {"count": count, "spacing": spacing, "levels": levels, "wet": wet, "edge": edge, "fine": _fine_cells(generator, origin, count, spacing, levels, edge), "vel": vel, "falls": falls}
 
 	var closed: PackedFloat32Array = levels.duplicate()
 
@@ -443,6 +448,10 @@ static func encode(grid: Dictionary) -> PackedByteArray:
 				buffer.put_8(clampi(int(round(vel[n * 2] * 10.0)), -127, 127))
 				buffer.put_8(clampi(int(round(vel[n * 2 + 1] * 10.0)), -127, 127))
 
+	# Version 3: the fall columns (water_falls.gd), only after a velocity trailer.
+	if vel.size() == levels.size() * 2:
+		FallsScript.encode_into(buffer, grid.get("falls", []))
+
 	var raw: PackedByteArray = buffer.data_array
 	var packed: PackedByteArray = PackedByteArray()
 	packed.resize(4)
@@ -492,16 +501,25 @@ static func decode(bytes: PackedByteArray) -> Dictionary:
 			fine[cell] = heights
 
 	var vel: PackedFloat32Array = PackedFloat32Array()
+	var falls: Array = []
 
-	if buffer.get_available_bytes() >= 1 and buffer.get_u8() == VEL_MARK:
-		vel.resize(count * count * 2)
+	# Trailers, each led by a mark byte: the current, then the fall columns.
+	while buffer.get_available_bytes() >= 1:
+		var mark: int = buffer.get_u8()
 
-		for n in range(count * count):
-			if not is_nan(levels[n]):
-				vel[n * 2] = float(buffer.get_8()) / 10.0
-				vel[n * 2 + 1] = float(buffer.get_8()) / 10.0
+		if mark == VEL_MARK:
+			vel.resize(count * count * 2)
 
-	return {"count": count, "spacing": spacing, "levels": levels, "wet": wet, "edge": edge, "fine": fine, "vel": vel}
+			for n in range(count * count):
+				if not is_nan(levels[n]):
+					vel[n * 2] = float(buffer.get_8()) / 10.0
+					vel[n * 2 + 1] = float(buffer.get_8()) / 10.0
+		elif mark == FallsScript.FALL_MARK:
+			falls = FallsScript.decode_from(buffer)
+		else:
+			break
+
+	return {"count": count, "spacing": spacing, "levels": levels, "wet": wet, "edge": edge, "fine": fine, "vel": vel, "falls": falls}
 
 
 # A water mesh for a chunk: one smooth surface over the grid. Wet points

@@ -20,6 +20,7 @@ extends Node3D
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const TreeBuilder := preload("res://src/flora/tree_builder.gd")
 const TreeImpostor := preload("res://src/flora/tree_impostor.gd")
+const WaterFallsScript := preload("res://src/worldgen/runtime/water_falls.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
 const KIND_TREE := 0
@@ -226,6 +227,14 @@ var _trunk_material: StandardMaterial3D
 var _softwood_material: StandardMaterial3D   # conifer trunks: dark brown
 var _hardwood_material: StandardMaterial3D   # broadleaf trunks: gray
 var _water_material: ShaderMaterial
+var _fall_material: ShaderMaterial
+var _splash_material: ShaderMaterial
+var _foam_material: ShaderMaterial
+# Falls drawn per water chunk, by quality (Low, Medium, High, Ultra); farther than FALL_VIEW_M none.
+const FALL_CAP := [2, 4, 8, 12]
+const FALL_VIEW_M := 350.0
+var fall_cap: int = 4
+var falls_drawn: int = 0
 var _tree_materials: Dictionary = {}       # TreeBuilder materials (bark, broad, conifer, palm)
 var _impostors: Dictionary = {}            # species id -> {"mesh", "material"}; replaced whole when a capture finishes
 var _impostor_tile: Vector2i = Vector2i.ZERO   # tile size of the finished (or running) capture
@@ -282,6 +291,7 @@ func _on_impostors(meshes: Dictionary) -> void:
 
 
 func set_water_quality(quality: int) -> void:
+	fall_cap = FALL_CAP[clampi(quality, 0, FALL_CAP.size() - 1)]
 	WaterMaterial.apply_quality(_water_material, quality)
 	water_ease = quality >= 1
 
@@ -316,6 +326,9 @@ func setup(tables, tile_rules: Dictionary) -> void:
 	_hardwood_material.albedo_color = Color(0.5, 0.5, 0.5)
 	_hardwood_material.roughness = 1.0
 	_water_material = WaterMaterial.make()     # the same look as the sea (src/client/water_material.gd)
+	_fall_material = WaterFallsScript.make_fall_material()
+	_splash_material = WaterFallsScript.make_splash_material()
+	_foam_material = WaterFallsScript.make_foam_material()
 
 	for entry in tables.get_entries("flora"):
 		if entry.get("retired", false):
@@ -634,6 +647,61 @@ func _draw_water(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void:
 			water_chunks += 1
 			water_cells += mesh.surface_get_array_index_len(0) / 6
 
+	_draw_falls(chunk, entry, water)
+
+
+# The chunk's fall columns (water_falls.gd): kept while the same mesh is still the right one.
+func _draw_falls(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void:
+	var mesh: ArrayMesh = water.get("falls_mesh")
+
+	if mesh == null and not water.get("falls", []).is_empty():
+		mesh = WaterFallsScript.build_mesh(water["falls"], fall_cap)
+
+	var old: MeshInstance3D = entry.get("falls")
+
+	if old != null and old.mesh == mesh:
+		return
+
+	if old != null:
+		falls_drawn -= old.mesh.get_surface_count()
+		old.queue_free()
+		entry["falls"] = null
+
+	if mesh == null or mesh.get_surface_count() == 0:
+		return
+
+	var draw: MeshInstance3D = MeshInstance3D.new()
+	draw.mesh = mesh
+	draw.position = Vector3(float(chunk.x) * chunk_m, 0.0, float(chunk.y) * chunk_m)
+	draw.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	draw.extra_cull_margin = 30.0
+	draw.visibility_range_end = FALL_VIEW_M
+	draw.set_surface_override_material(0, _fall_material)
+
+	if mesh.get_surface_count() > 1:
+		draw.set_surface_override_material(1, _splash_material)
+		draw.set_surface_override_material(2, _foam_material)
+
+	add_child(draw)
+	entry["falls"] = draw
+	falls_drawn += mesh.get_surface_count()
+
+
+# Every fall in the held chunks, for other systems (mist, wet rock and moss on the walls,
+# sound): [{"id": int, "top": Vector3, "base": Vector3, "pool": float, "flow": m3/s, "width": m}] in
+# world coordinates; the id is stable while the fall's chunk is held and its water unchanged.
+func fall_list() -> Array:
+	var list: Array = []
+
+	for chunk in _chunks:
+		for n in range(_chunks[chunk].get("grid", {}).get("falls", []).size()):
+			var fall: Dictionary = _chunks[chunk]["grid"]["falls"][n]
+			var points: PackedVector3Array = fall["points"]
+			var corner: Vector3 = Vector3(float(chunk.x) * chunk_m, 0.0, float(chunk.y) * chunk_m)
+			list.append({"id": (chunk.x * 73856093) ^ (chunk.y * 19349663) ^ (n * 83492791), "top": points[0] + corner, "base": points[points.size() - 1] + corner, "pool": float(fall.get("pool", points[points.size() - 1].y)), "flow": float(fall["flow"]), "width": float(fall["width"])})
+
+	return list
+
 
 # A water grid may carry its drawing already built under "mesh" (made on a worker
 # thread by the client, see terrain_client.gd _decode_in).
@@ -658,6 +726,7 @@ func set_chunk(chunk: Vector2i, items: Dictionary, position: Vector3, water: Dic
 			water_chunks += 1
 			water_cells += mesh.surface_get_array_index_len(0) / 6
 
+	_draw_falls(chunk, entry, water)
 	_refresh(chunk, position)
 
 
@@ -766,6 +835,12 @@ func drop_chunk(chunk: Vector2i) -> void:
 		water_chunks -= 1
 		water_cells -= water.mesh.surface_get_array_index_len(0) / 6
 		water.queue_free()
+
+	var falls: MeshInstance3D = entry.get("falls")
+
+	if falls != null:
+		falls_drawn -= falls.mesh.get_surface_count()
+		falls.queue_free()
 
 	_chunks.erase(chunk)
 

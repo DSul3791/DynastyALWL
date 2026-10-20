@@ -50,7 +50,7 @@ const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 const GpuProbeScript := preload("res://src/debug/gpu_probe.gd")
 const WeatherLookScript := preload("res://src/client/weather_look.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 156
+const BUILD := 154
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -61,6 +61,8 @@ const CacheScript := preload("res://src/stream/client_block_cache.gd")
 const NetScript := preload("res://src/stream/terrain_net.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
+const WaterVolume := preload("res://src/shared/water_volume.gd")
+const WaterFallsScript := preload("res://src/worldgen/runtime/water_falls.gd")
 const FloraViewScript := preload("res://src/flora/flora_view.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const TileBakeScript := preload("res://src/admin/tile_bake_launcher.gd")
@@ -640,6 +642,9 @@ func _decode_in(job: Dictionary, material: Material) -> void:
 
 	if int(grid.get("wet", 0)) > 0:
 		grid["mesh"] = WaterGridScript.build_mesh(grid, material)
+
+		if not grid.get("falls", []).is_empty():
+			grid["falls_mesh"] = WaterFallsScript.build_mesh(grid["falls"], flora.fall_cap)
 
 	_in_mutex.lock()
 	job["result"] = result
@@ -2026,6 +2031,7 @@ func _process(delta: float) -> void:
 				_flora_chunks, float(_flora_bytes) / 1048576.0, _flora_done_msec, flora.item_count(), flora.instances, flora.colliders, _flora_cuts,
 				flora.water_chunks, flora.water_cells
 			])
+			print("Terrain client: fall columns: %d meshes drawn (cap %d per chunk)" % [flora.falls_drawn, flora.fall_cap])
 			print("Terrain client: cover index %d tree crowns in %d chunks" % [flora.cover.trees, flora.cover.chunk_count()])
 			print("Terrain client: grass %d tufts in %d cells (radius %.0f m)" % [grass.tufts, grass.cells_built, grass.radius_m])
 			print("Terrain client: water sounds: %s" % sound.water.summary)
@@ -2236,9 +2242,6 @@ func _under_the_ground() -> bool:
 	return true
 
 
-const UNDERWATER_MIN_DEPTH_M := 0.4   # water this shallow under the camera is a film, not a body to dive in
-
-
 # Blue tint and thick blue fog while the camera is below the sea or a lake.
 func _update_underwater() -> void:
 	var eye: Vector3 = camera.global_position
@@ -2250,8 +2253,7 @@ func _update_underwater() -> void:
 	var under: bool = eye.y < 0.0
 
 	if not under and not is_nan(surface) and eye.y < surface:
-		var ground: float = _ground_below(eye)
-		under = is_nan(ground) or surface - ground > UNDERWATER_MIN_DEPTH_M
+		under = WaterVolume.submerged(eye.y, surface, _ground_below(eye))
 
 	if under == underwater:
 		return

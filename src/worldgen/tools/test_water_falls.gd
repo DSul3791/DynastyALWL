@@ -1,0 +1,79 @@
+extends SceneTree
+
+# Fall columns (water_falls.gd): finding them in a level grid, the wire format and the mesh.
+#   godot --headless --path . --script res://src/worldgen/tools/test_water_falls.gd
+
+const FallsScript := preload("res://src/worldgen/runtime/water_falls.gd")
+const GridScript := preload("res://src/worldgen/runtime/water_grid.gd")
+
+var failures: int = 0
+
+
+func _check(ok: bool, what: String) -> void:
+	if not ok:
+		failures += 1
+		print("FAIL ", what)
+
+
+func _init() -> void:
+	var count: int = 12
+	var levels: PackedFloat32Array = PackedFloat32Array()
+	levels.resize(count * count)
+	levels.fill(NAN)
+	var vel: PackedFloat32Array = PackedFloat32Array()
+	vel.resize(count * count * 2)
+
+	# A channel along row 5: flat at 100 m, a 12 m drop over three points, flat at 88 m.
+	for i in range(count):
+		var level: float = 100.0 if i < 4 else (100.0 - float(i - 3) * 4.0 if i < 7 else 88.0)
+		levels[5 * count + i] = level
+		vel[(5 * count + i) * 2] = 6.0
+
+	var bed: Callable = func(x: float, z: float) -> float: return levels[5 * 12 + clampi(int(round(x / 8.0)), 0, 11)] - 0.5
+	var falls: Array = FallsScript.find(null, Vector2.ZERO, count, 8.0, levels, vel, bed)
+	_check(falls.size() == 1, "one fall found (%d)" % falls.size())
+
+	if falls.size() == 1:
+		var fall: Dictionary = falls[0]
+		var points: PackedVector3Array = fall["points"]
+		_check(points.size() >= 6, "resampled polyline (%d points)" % points.size())
+		_check(float(fall["drop"]) > 0.5, "the fall drops")
+		_check(float(fall["width"]) >= FallsScript.WIDTH_MIN_M and float(fall["width"]) <= FallsScript.WIDTH_MAX_M, "width in limits (%.1f)" % float(fall["width"]))
+
+		for n in range(1, points.size()):
+			_check(points[n].y <= points[n - 1].y + 0.0001, "never rises (%d)" % n)
+
+		# Wire round trip.
+		var buffer: StreamPeerBuffer = StreamPeerBuffer.new()
+		FallsScript.encode_into(buffer, falls)
+		buffer.seek(0)
+		_check(buffer.get_u8() == FallsScript.FALL_MARK, "mark byte")
+		var back: Array = FallsScript.decode_from(buffer)
+		_check(back.size() == 1 and back[0]["points"].size() == points.size(), "round trip count")
+		_check(absf(back[0]["points"][0].x - points[0].x) < 0.06 and absf(back[0]["points"][0].y - points[0].y) < 0.03, "round trip position")
+		_check(absf(float(back[0]["width"]) - float(fall["width"])) < 0.06, "round trip width")
+
+		var mesh: ArrayMesh = FallsScript.build_mesh(back, 4)
+		_check(mesh.get_surface_count() == 3, "ribbon, splash and foam surfaces (%d)" % mesh.get_surface_count())
+		_check(FallsScript.build_mesh(back, 0).get_surface_count() == 0, "cap 0 draws nothing")
+
+	# More flow, a wider ribbon.
+	var wide_vel: PackedFloat32Array = vel.duplicate()
+
+	for n in range(wide_vel.size()):
+		wide_vel[n] *= 1.0
+
+	var strong: Array = FallsScript.find(null, Vector2.ZERO, count, 8.0, levels, vel, func(x: float, z: float) -> float: return levels[5 * 12 + clampi(int(round(x / 8.0)), 0, 11)] - 1.5)
+	var weak: Array = FallsScript.find(null, Vector2.ZERO, count, 8.0, levels, vel, func(x: float, z: float) -> float: return levels[5 * 12 + clampi(int(round(x / 8.0)), 0, 11)] - 0.1)
+	_check(strong.size() == 1 and weak.size() == 1 and float(strong[0]["flow"]) > float(weak[0]["flow"]), "deeper water carries more flow")
+
+	# A chunk grid with falls survives encode and decode with its levels.
+	var grid: Dictionary = {"count": count, "spacing": 8.0, "levels": levels, "wet": 20, "vel": vel, "falls": falls}
+	var decoded: Dictionary = GridScript.decode(GridScript.encode(grid))
+	_check(decoded["falls"].size() == falls.size(), "grid carries its falls")
+	_check(decoded["vel"].size() == vel.size(), "grid still carries the current")
+	var plain: Dictionary = {"count": count, "spacing": 8.0, "levels": levels, "wet": 20, "vel": vel}
+	_check(GridScript.decode(GridScript.encode(plain))["falls"].is_empty(), "no falls trailer when none")
+
+	print("water falls: %d failures" % failures)
+	quit(1 if failures > 0 else 0)
