@@ -20,12 +20,17 @@ const SPLASH_PER_WIDTH := 3.0     # splash quad size over the ribbon width
 const POINTS_MAX := 400
 const START_DEPTH_MAX_M := 2.0    # a chain starting in deeper water is a pond, not a fall
 const GROUND_DROP_MIN_M := 2.0    # and the ground must fall this much along it
-const MERGE_MIN_POINTS := 4       # a side chain shorter than this that joins another is dropped
+const MERGE_MIN_POINTS := 4
+const START_SPEED_M_S := 0.3      # with thin water in the levels, a fall starts in water running at least this fast       # a side chain shorter than this that joins another is dropped
 
 
 # Falls in a chunk's levels: [{"width": m, "flow": m3/s, "points": PackedVector3Array}], points
 # relative to the chunk corner (x, absolute y, z), tallest first.
-static func find(generator, origin: Vector2, count: int, spacing: float, levels: PackedFloat32Array, vel: PackedFloat32Array, ground: Callable) -> Array:
+# `drawn` and `drawn_vel` (optional): the levels and current actually drawn, when `levels`
+# also holds thin water that is not drawn (water_live._fall_levels). A fall must then start
+# in drawn, running water: owner report (2026-10-20, build 232): thin films left on a pond's
+# bank (rain, sloshing) made rows of fall ribbons down the bank into the pond.
+static func find(generator, origin: Vector2, count: int, spacing: float, levels: PackedFloat32Array, vel: PackedFloat32Array, ground: Callable, drawn: PackedFloat32Array = PackedFloat32Array(), drawn_vel: PackedFloat32Array = PackedFloat32Array()) -> Array:
 	var link: PackedInt32Array = PackedInt32Array()
 	link.resize(count * count)
 	link.fill(-1)
@@ -100,6 +105,9 @@ static func find(generator, origin: Vector2, count: int, spacing: float, levels:
 		if levels[p] - float(ground.call(top_x, top_z)) > START_DEPTH_MAX_M:
 			continue
 
+		if drawn.size() == levels.size() and not _fed(p, count, drawn, drawn_vel):
+			continue
+
 		if float(ground.call(top_x, top_z)) - float(ground.call(bottom_x, bottom_z)) < GROUND_DROP_MIN_M:
 			continue
 
@@ -140,6 +148,31 @@ static func find(generator, origin: Vector2, count: int, spacing: float, levels:
 
 	falls.sort_custom(func(a, b): return float(a["drop"]) > float(b["drop"]))
 	return falls
+
+
+# Whether point p (the top of a fall) is drawn running water or lies beside some: the lip of
+# a fall is itself a steep cell whose thin water is not drawn, with the river just above it.
+static func _fed(p: int, count: int, drawn: PackedFloat32Array, drawn_vel: PackedFloat32Array) -> bool:
+	var i: int = p % count
+	var j: int = p / count
+
+	for dj in range(-1, 2):
+		for di in range(-1, 2):
+			var ii: int = i + di
+			var jj: int = j + dj
+
+			if ii < 0 or jj < 0 or ii >= count or jj >= count:
+				continue
+
+			var q: int = jj * count + ii
+
+			if is_nan(drawn[q]):
+				continue
+
+			if drawn_vel.size() != drawn.size() * 2 or Vector2(drawn_vel[q * 2], drawn_vel[q * 2 + 1]).length() >= START_SPEED_M_S:
+				return true
+
+	return false
 
 
 # The water carried: one 8 m cell holds depth x speed x 8 m; the middle of the chain's values.

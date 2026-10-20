@@ -114,4 +114,20 @@ func _test_thin_fall() -> void:
 	_check(is_nan(levels[5 * count + 5]), "thin water on the cliff face is not drawn")
 	_check(FallsScript.find(null, Vector2.ZERO, count, 8.0, levels, vel, bed).is_empty(), "the drawn levels alone make no fall")
 	var fall_levels: PackedFloat32Array = WaterLive._fall_levels(sim, levels, channel)
-	_check(FallsScript.find(null, Vector2.ZERO, count, 8.0, fall_levels, vel, bed).size() == 1, "a film down a cliff makes a fall")
+	var still: PackedFloat32Array = vel.duplicate()
+
+	for i in range(count):
+		vel[(5 * count + i) * 2] = 2.0
+
+	_check(FallsScript.find(null, Vector2.ZERO, count, 8.0, fall_levels, vel, bed, levels, vel).size() == 1, "a film down a cliff below a running river makes a fall")
+	_check(FallsScript.find(null, Vector2.ZERO, count, 8.0, fall_levels, vel, bed, levels, still).is_empty(), "no fall out of still water (a pond's bank)")
+
+	# Owner report (2026-10-20, build 232): films left on a pond's bank made rows of fall ribbons.
+	# Thin water down a bank with no drawn water at its top is no fall.
+	var bank: PackedFloat32Array = fall_levels.duplicate()
+	var bank_drawn: PackedFloat32Array = levels.duplicate()
+
+	for i in range(3):
+		bank_drawn[5 * count + i] = NAN
+
+	_check(FallsScript.find(null, Vector2.ZERO, count, 8.0, bank, vel, bed, bank_drawn, vel).is_empty(), "thin water down a bank with nothing drawn above it is no fall")
