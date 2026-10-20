@@ -86,6 +86,15 @@ func _init() -> void:
 		if not all.has(id):
 			fail("%s: unknown item '%s'" % [where, id])
 
+	for id in items_file.get("items", {}):
+		var item: Dictionary = items_file["items"][id]
+
+		if item.has("durability") and (int(item["durability"]) < 1 or item.get("repair", []).is_empty()):
+			fail("items.json: '%s' has durability but no repair materials" % id)
+
+		for row in item.get("repair", []):
+			want_item.call(String(row[0]), "items.json %s repair" % id)
+
 	for group in ["by_species", "by_kind"]:
 		for key in drops.get(group, {}):
 			if group == "by_species" and not species.has(key):
@@ -204,6 +213,15 @@ func _init() -> void:
 	for rid in recipes:
 		if not obtainable.has(String(recipes[rid].get("gives", [""])[0])):
 			fail("recipe '%s' can never be made (an ingredient has no source)" % rid)
+
+	# Placed forms of structures come from taking the kit out (structures.json).
+	var structures: Dictionary = _read("structures.json").get("structures", {})
+
+	for kind in structures:
+		var def: Dictionary = structures[kind]
+		want_item.call(String(def.get("kit", "")), "structures.json %s kit" % kind)
+		want_item.call(String(def.get("item", "")), "structures.json %s item" % kind)
+		obtainable[String(def.get("item", ""))] = true
 
 	# Core items nothing produces or uses; the campfire kit is placed, not found.
 	for id in items_file.get("items", {}):

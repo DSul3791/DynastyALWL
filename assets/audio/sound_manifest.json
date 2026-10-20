@@ -1015,6 +1015,142 @@
    "used_in": "dig_sounds.gd: water pouring into a new hole",
    "to_supply": "3 water splashing into a pit",
    "priority": 3
+  },
+  {
+   "name": "treewind_pine",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "tree_wind.gd: wind through conifers, a soft needle hiss (loop, level follows wind and conifer count)",
+   "to_supply": "A seamless loop of wind in pines, 20 s or more, steady, no gusts",
+   "priority": 2
+  },
+  {
+   "name": "treewind_leaves",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "tree_wind.gd: wind in summer and spring leaves (loop)",
+   "to_supply": "A seamless loop of wind in green broadleaf trees, 20 s or more",
+   "priority": 2
+  },
+  {
+   "name": "treewind_dry",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "tree_wind.gd: wind in dry autumn leaves (loop)",
+   "to_supply": "A seamless loop of wind in dry crackling leaves",
+   "priority": 2
+  },
+  {
+   "name": "treewind_bare",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "tree_wind.gd: wind in bare winter branches, creaks (loop)",
+   "to_supply": "A seamless loop of wind in bare branches with soft creaks",
+   "priority": 2
+  },
+  {
+   "name": "cook_sizzle",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "fire_sounds.gd cook(): food laid on the embers (heard when a roast appears in the bag at a fire)",
+   "to_supply": "2 to 3 recordings of meat or food sizzling on embers, 3 s",
+   "priority": 2
+  },
+  {
+   "name": "fire_fuel",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "fire_sounds.gd fuel(): a stick or log laid on a fire (V key)",
+   "to_supply": "2 recordings of wood put on a fire with a flare of crackles, 1 s",
+   "priority": 2
+  },
+  {
+   "name": "eat_crunch",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "item_sounds.gd eat(): a crisp bite and chews (roast, nuts, roots)",
+   "to_supply": "2 to 3 recordings of biting and chewing something crisp, 1 s",
+   "priority": 3
+  },
+  {
+   "name": "eat_soft",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "item_sounds.gd eat(): soft chewing (berries, greens)",
+   "to_supply": "2 to 3 recordings of chewing something soft, 1 s",
+   "priority": 3
+  },
+  {
+   "name": "drink_gulp",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "item_sounds.gd eat(\"drink\"): two swallows",
+   "to_supply": "2 recordings of drinking and swallowing, 1 s",
+   "priority": 3
+  },
+  {
+   "name": "place_leanto",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "placed_sounds.gd: a lean-to set up (hook place(\"leanto\"); also heard from a world row of item id lean_to)",
+   "to_supply": "2 to 3 recordings of planting poles and laying brush, 1 s",
+   "priority": 2
+  },
+  {
+   "name": "place_chest",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "placed_sounds.gd: a chest set down",
+   "to_supply": "2 to 3 recordings of a heavy wooden box put on the ground",
+   "priority": 2
+  },
+  {
+   "name": "place_thump",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "placed_sounds.gd: any other thing set on the ground",
+   "to_supply": "2 short dull thumps on soil",
+   "priority": 3
+  },
+  {
+   "name": "pickup_placed",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "placed_sounds.gd: a placed thing picked up again",
+   "to_supply": "2 recordings of dragging and lifting a wooden thing",
+   "priority": 3
+  },
+  {
+   "name": "container_put",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "placed_sounds.gd: something put into a chest",
+   "to_supply": "2 short wood clacks with a little rustle",
+   "priority": 2
+  },
+  {
+   "name": "container_take",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "placed_sounds.gd: something taken out of a chest",
+   "to_supply": "2 short rustles and a wood clack",
+   "priority": 2
+  },
+  {
+   "name": "tool_break",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "placed_sounds.gd: a tool breaks with the last of its wear",
+   "to_supply": "2 to 3 sharp wood or stone cracks with splinters",
+   "priority": 2
+  },
+  {
+   "name": "tool_repair",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "placed_sounds.gd: a tool mended (about 2 s)",
+   "to_supply": "2 recordings of scraping, tapping and binding a tool, 2 s",
+   "priority": 3
   }
  ],
  "steps": [

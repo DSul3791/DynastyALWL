@@ -47,6 +47,10 @@ static func frame(delta: float) -> void:
 		for name in _this_frame:
 			parts[name] = float(_this_frame[name]) / 1000.0
 
+		# Performance monitors are for the frame that just ended: script work, physics step.
+		parts["~script process"] = Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
+		parts["~physics step"] = Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
+		parts["~at frame"] = float(_frames)
 		_slow.append([ms, parts])
 		_slow.sort_custom(func(a, b): return a[0] > b[0])
 
@@ -83,7 +87,7 @@ static func report() -> String:
 		keys.sort_custom(func(a, b): return parts[a] > parts[b])
 
 		for name in keys:
-			text.append("%s %.1f" % [name, parts[name]])
+			text.append("%s %.1f" % [name, parts[name]] if name != "~at frame" else "frame no. %d" % int(parts[name]))
 
 		lines.append("  slow frame %.0f ms: %s" % [slow[0], ", ".join(text) if not text.is_empty() else "(nothing measured: engine work)"])
 

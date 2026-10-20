@@ -142,6 +142,23 @@ SLOTS = [
     ("town_fire", "town", "town_sounds.gd: a hearth or forge fire (loop)", "A seamless crackling fire loop", 2),
     ("town_crowd", "town", "town_sounds.gd: a busy square murmur (loop)", "A seamless crowd murmur loop, no clear words", 3),
     ("dig_water", "dig", "dig_sounds.gd: water pouring into a new hole", "3 water splashing into a pit", 3),
+    ("treewind_pine", "treewind", "tree_wind.gd: wind through conifers, a soft needle hiss (loop, level follows wind and conifer count)", "A seamless loop of wind in pines, 20 s or more, steady, no gusts", 2),
+    ("treewind_leaves", "treewind", "tree_wind.gd: wind in summer and spring leaves (loop)", "A seamless loop of wind in green broadleaf trees, 20 s or more", 2),
+    ("treewind_dry", "treewind", "tree_wind.gd: wind in dry autumn leaves (loop)", "A seamless loop of wind in dry crackling leaves", 2),
+    ("treewind_bare", "treewind", "tree_wind.gd: wind in bare winter branches, creaks (loop)", "A seamless loop of wind in bare branches with soft creaks", 2),
+    ("cook_sizzle", "cooking", "fire_sounds.gd cook(): food laid on the embers (heard when a roast appears in the bag at a fire)", "2 to 3 recordings of meat or food sizzling on embers, 3 s", 2),
+    ("fire_fuel", "cooking", "fire_sounds.gd fuel(): a stick or log laid on a fire (V key)", "2 recordings of wood put on a fire with a flare of crackles, 1 s", 2),
+    ("eat_crunch", "cooking", "item_sounds.gd eat(): a crisp bite and chews (roast, nuts, roots)", "2 to 3 recordings of biting and chewing something crisp, 1 s", 3),
+    ("eat_soft", "cooking", "item_sounds.gd eat(): soft chewing (berries, greens)", "2 to 3 recordings of chewing something soft, 1 s", 3),
+    ("drink_gulp", "cooking", "item_sounds.gd eat(\"drink\"): two swallows", "2 recordings of drinking and swallowing, 1 s", 3),
+    ("place_leanto", "placed", "placed_sounds.gd: a lean-to set up (hook place(\"leanto\"); also heard from a world row of item id lean_to)", "2 to 3 recordings of planting poles and laying brush, 1 s", 2),
+    ("place_chest", "placed", "placed_sounds.gd: a chest set down", "2 to 3 recordings of a heavy wooden box put on the ground", 2),
+    ("place_thump", "placed", "placed_sounds.gd: any other thing set on the ground", "2 short dull thumps on soil", 3),
+    ("pickup_placed", "placed", "placed_sounds.gd: a placed thing picked up again", "2 recordings of dragging and lifting a wooden thing", 3),
+    ("container_put", "placed", "placed_sounds.gd: something put into a chest", "2 short wood clacks with a little rustle", 2),
+    ("container_take", "placed", "placed_sounds.gd: something taken out of a chest", "2 short rustles and a wood clack", 2),
+    ("tool_break", "placed", "placed_sounds.gd: a tool breaks with the last of its wear", "2 to 3 sharp wood or stone cracks with splinters", 2),
+    ("tool_repair", "placed", "placed_sounds.gd: a tool mended (about 2 s)", "2 recordings of scraping, tapping and binding a tool, 2 s", 3),
 ]
 
 # Footstep sets: (surface, where it plays). Left and right files: step_<surface>_<left|right>_N in recorded/.

@@ -11,6 +11,8 @@ extends Node
 #       "open" true plays a sizzle loop on top while it rains (weather.rain), louder with more rain.
 #   sound.fire.light(at)        the lighting sound once, at a position
 #   sound.fire.put_out(at)      the put-out hiss once (rain or water on a fire)
+#   sound.fire.cook(at)         food laid on the embers sizzles (item_sounds hears a roast appear in the bag)
+#   sound.fire.fuel(at)         a stick or log laid on the fire (item_sounds hears V use up wood)
 #
 # Only the nearest preset["town_loops"] fires play (Low 3, Mid 5, High 8), none beyond REACH_M.
 # Sounds: generated in assets/audio/fire/ (make_fire.py); recordings in assets/audio/recorded/fire/ win.
@@ -18,6 +20,8 @@ extends Node
 const SoundStage := preload("res://src/client/sound_stage.gd")
 const GENERATED_DIR := "res://assets/audio/fire/"
 const RECORDED_DIR := "res://assets/audio/recorded/fire/"
+const COOKING_DIR := "res://assets/audio/cooking/"            # cook_sizzle, fire_fuel (make_cooking.py)
+const COOKING_RECORDED_DIR := "res://assets/audio/recorded/cooking/"
 
 const REACH_M := 35.0
 const UNIT_SIZE := 4.0
@@ -34,6 +38,8 @@ const FADE_DB_PER_SEC := 30.0
 var loops_playing: int = 0              # HUD
 var lit_played: int = 0
 var out_played: int = 0
+var cook_played: int = 0
+var fuel_played: int = 0
 var last: String = ""
 
 var _stage                              # SoundStage (weather.rain)
@@ -116,6 +122,16 @@ func light(at: Vector3) -> void:
 func put_out(at: Vector3) -> void:
 	_one_shot("fire_out", at)
 	out_played += 1
+
+
+func cook(at: Vector3) -> void:
+	_one_shot("cook_sizzle", at)
+	cook_played += 1
+
+
+func fuel(at: Vector3) -> void:
+	_one_shot("fire_fuel", at)
+	fuel_played += 1
 
 
 func update(delta: float, body: CharacterBody3D) -> void:
@@ -255,10 +271,11 @@ func _variants(name: String) -> Array:
 	if _streams.has(name):
 		return _streams[name]
 
-	var list: Array = SoundStage._find(RECORDED_DIR, name)
+	var cooking: bool = name in ["cook_sizzle", "fire_fuel"]
+	var list: Array = SoundStage._find(COOKING_RECORDED_DIR if cooking else RECORDED_DIR, name)
 
 	if list.is_empty():
-		list = SoundStage._find(GENERATED_DIR, name)
+		list = SoundStage._find(COOKING_DIR if cooking else GENERATED_DIR, name)
 
 	_streams[name] = list
 	return list

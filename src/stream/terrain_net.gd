@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 13
+const PROTOCOL_VERSION := 16
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -48,6 +48,7 @@ signal ground_reset_received(tiles_stamp: String, starter_stamp: String)
 signal water_requested(peer_id: int, chunks: PackedInt32Array)
 signal water_received(chunk: Vector2i, water: PackedByteArray)
 signal notice_received(text: String)
+signal chest_received(id: int, bytes: PackedByteArray)
 signal hello_requested(peer_id: int, player_key: String)
 signal inventory_action_requested(peer_id: int, kind: int, a: int, b: int, count: int, at: Vector3)
 signal inventory_full_received(bytes: PackedByteArray)
@@ -65,6 +66,10 @@ const ACT_MINE := 8       # at = the point the axe struck; on bare rock the serv
 const ACT_HIT := 7        # a = tree id, b = flora chunk x, count = flora chunk z: one axe blow on a standing tree
 const ACT_PROCESS := 9    # a = world item id of a felled trunk: one axe blow on it gives branches, leaves, bark, logs
 const ACT_SPLIT := 10     # a = slot, count = how many go to the first empty slot
+const ACT_CHEST_OPEN := 14 # a = chest world id: the server answers with chest_contents
+const ACT_CHEST_PUT := 15  # a = pack slot, b = chest world id, count = how many to put in
+const ACT_CHEST_TAKE := 16 # a = chest slot, b = chest world id, count = how many to take out
+const ACT_REPAIR := 13    # a = slot of a worn or broken tool: spend its repair materials, win back half its durability
 const ACT_FUEL := 11      # a = fire world id: burn one stick (or a log) in the fire
 const ACT_COOK := 12      # a = fire world id: roast one raw forage item at the fire
 const ACT_THROW := 5      # a = slot, at = aim direction (the server starts the throw from the player)
@@ -194,6 +199,12 @@ func inventory_slots(bytes: PackedByteArray) -> void:
 @rpc("authority", "call_remote", "reliable")
 func world_items(added: Array, removed: PackedInt32Array) -> void:
 	world_items_received.emit(added, removed)
+
+
+# The contents of a chest the player opened (30 slots in the inventory byte format).
+@rpc("authority", "call_remote", "reliable")
+func chest_contents(id: int, bytes: PackedByteArray) -> void:
+	chest_received.emit(id, bytes)
 
 
 # A short message for the player ("too many trunks lie here", and so on).

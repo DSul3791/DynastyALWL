@@ -50,7 +50,7 @@ const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 const GpuProbeScript := preload("res://src/debug/gpu_probe.gd")
 const WeatherLookScript := preload("res://src/client/weather_look.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 190
+const BUILD := 200
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -69,6 +69,7 @@ const TileBakeScript := preload("res://src/admin/tile_bake_launcher.gd")
 const GrassViewScript := preload("res://src/client/grass_view.gd")
 const SoundStageScript := preload("res://src/client/sound_stage.gd")
 const GroundMaterialScript := preload("res://src/client/ground_material.gd")
+const HarvestScript := preload("res://src/client/harvest.gd")
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 
 const VIEW_DISTANCE := 2048
@@ -81,7 +82,7 @@ const QUALITY_VIEW := [768, 1280, 2048, 2048]
 const QUALITY_FLORA := [0.4, 0.7, 1.0, 1.0]
 const QUALITY_GRASS_M := [14.0, 24.0, 34.0, 48.0]       # grass drawn this far around the player
 const QUALITY_GRASS_POINTS := [3, 5, 6, 7]               # ground samples per 6 m cell side
-const QUALITY_GRASS_DENSITY := [0.45, 0.65, 0.75, 0.85]     # cards per ground sample, times the layers' own counts
+const QUALITY_GRASS_DENSITY := [0.68, 1.3, 1.5, 1.7]     # cards per ground sample, times the layers' own counts
 const QUALITY_SHADOW_M := [0.0, 45.0, 60.0, 120.0]    # 0 = no shadows
 const QUALITY_CACHE_MB := [1024, 4096, 10240, 10240]    # ground cache limit on disk
 const FLY_SPEED := 30.0
@@ -179,6 +180,13 @@ var _fire_sync_left: float = 0.0
 var _tree_sync_left: float = 0.0
 var _item_sync_left: float = 0.0
 var test_levels: bool = false
+var test_placed: bool = false
+var test_cooking: bool = false
+var test_treewind: bool = false
+var _test_treewind_t: float = -1.0
+var test_wear: bool = false
+var _test_wear_t: float = -1.0
+var test_distant: bool = false
 var test_craft_sounds: bool = false
 var _test_craft_t: float = -1.0
 var test_flame: bool = false
@@ -199,6 +207,8 @@ var _sound_interior_at: int = -1
 var _sound_gear_at: int = -1
 var test_items: bool = false
 var test_gather: bool = false
+var test_leanto: bool = false
+var test_chest: bool = false
 var test_spear: bool = false
 var test_chop: bool = false
 var test_creatures: bool = false
@@ -221,6 +231,7 @@ var _report_msec: int = 0
 var dig_applied: int = 0
 var flora                             # FloraView
 var items                             # InventoryView: inventory panel (I), pick-up (E)
+var harvest                           # Harvest: E prompt, tap to pick, hold to sweep
 var held                              # HeldItem: hotbar keys 1 to 8, spear jab and throw
 var grass                             # GrassView
 var sound                             # SoundStage: wind, footsteps, grass swish
@@ -329,6 +340,16 @@ func _ready() -> void:
 			test_flame = true
 		elif argument == "--craft-sounds":
 			test_craft_sounds = true
+		elif argument == "--distant":
+			test_distant = true
+		elif argument == "--wear-sounds":
+			test_wear = true
+		elif argument == "--treewind":
+			test_treewind = true
+		elif argument == "--cooking":
+			test_cooking = true
+		elif argument == "--placed":
+			test_placed = true
 		elif argument == "--levels":
 			test_levels = true
 		elif argument == "--fire":
@@ -339,6 +360,10 @@ func _ready() -> void:
 			test_interior = true
 		elif argument == "--items":
 			test_items = true
+		elif argument == "--chest":
+			test_chest = true
+		elif argument == "--leanto":
+			test_leanto = true
 		elif argument == "--gather":
 			test_gather = true
 		elif argument == "--spear":
@@ -395,6 +420,12 @@ func _on_connection_failed() -> void:
 
 
 func _on_welcome(info: Dictionary) -> void:
+	var tw: int = Probe.start()
+	_welcome_body(info)
+	Probe.stop("welcome", tw)
+
+
+func _welcome_body(info: Dictionary) -> void:
 	if int(info.get("protocol", 0)) != NetScript.PROTOCOL_VERSION:
 		push_error("Terrain client: server speaks protocol %s, this client %d" % [str(info.get("protocol")), NetScript.PROTOCOL_VERSION])
 		_finish(1)
@@ -436,8 +467,10 @@ func _on_welcome(info: Dictionary) -> void:
 	var root: Node3D = Node3D.new()
 	root.name = "World"
 	add_child(root)
+	var t1: int = Probe.start()
 	_tables = TableSetScript.new()
 	_tables.load_directory()
+	Probe.stop("welcome: tables", t1)
 	terrain = VoxelLodTerrain.new()
 	terrain.format = Layout.make_format()
 	terrain.stream = stream
@@ -452,13 +485,17 @@ func _on_welcome(info: Dictionary) -> void:
 	# Not the clipbox streaming system (tried in build 61): it loads the fine ground under the
 	# player first, but makes no collision until every coarser level is loaded too, so the
 	# player had no ground to stand on for most of a minute (owner, 2026-10-20).
+	var t2: int = Probe.start()
 	terrain.material = GroundMaterialScript.make(_tables, quality)
+	Probe.stop("welcome: ground material", t2)
 	_ground_quality = quality
 	root.add_child(terrain)
 	_make_player(root, info["spawn"] + Vector3(0.0, 28.0, 0.0))
 	flora = FloraViewScript.new()
 	flora.name = "Flora"
+	var t3: int = Probe.start()
 	flora.setup(_tables, TileHeightScript.load_rules("res://worlds/base_world/plan/tile_rules.json", []))
+	Probe.stop("welcome: flora setup", t3)
 	root.add_child(flora)
 	_flora_view_full = flora.view_m.duplicate()
 	_flora_near_full = flora.near_m.duplicate()
@@ -480,7 +517,9 @@ func _on_welcome(info: Dictionary) -> void:
 	sound.name = "Sound"
 	root.add_child(sound)
 	sound.ground_below = _ground_below
+	var t4: int = Probe.start()
 	sound.setup(terrain, flora, grass)
+	Probe.stop("welcome: sound setup", t4)
 
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--floor="):
@@ -488,8 +527,10 @@ func _on_welcome(info: Dictionary) -> void:
 
 	if test_gear:
 		sound.gear.set_worn(["plate", "cloth", "iron"])
+	var t5: int = Probe.start()
 	_make_environment(root)
 	_apply_quality()
+	Probe.stop("welcome: environment", t5)
 	get_window().size_changed.connect(_apply_render_scale)
 	RenderingServer.viewport_set_measure_render_time(get_viewport().get_viewport_rid(), true)
 	var layer: CanvasLayer = CanvasLayer.new()
@@ -564,6 +605,11 @@ func _on_welcome(info: Dictionary) -> void:
 	items.knowledge = knowledge
 	items.max_lights = func(): return [1, 2, 3, 3][clampi(quality, 0, 3)]
 	items.is_inspecting = func(): return inspecting
+	items.cover_index = flora.cover
+	items.chest_event = func(what, at): sound.placed.chest(what == "open", at) if what in ["open", "close"] else sound.placed.container(what == "put", at)
+	items.tool_event = func(what): sound.placed.tool_break(body.global_position) if what == "broke" else sound.placed.tool_repair(body.global_position)
+	harvest = HarvestScript.new()
+	harvest.setup(self, items, net)
 	held = HeldItemScript.new()
 	held.name = "Held"
 	add_child(held)
@@ -575,6 +621,12 @@ func _on_welcome(info: Dictionary) -> void:
 
 	if test_gather:
 		items.run_gather_test(self)
+
+	if test_leanto:
+		items.run_leanto_test(self)
+
+	if test_chest:
+		items.run_chest_test(self)
 
 	if test_spear:
 		held.run_test()
@@ -1589,9 +1641,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			items.cook_nearest()
 		elif event.keycode == KEY_V and items != null:
 			items.fuel_nearest()
+			sound.itemfx.fuel_pressed()
 		elif event.keycode == KEY_E and items != null:
 			if not items.pick_up_nearest():
-				_gather_nearest()
+				harvest.tap()
 		elif event.keycode == KEY_BRACKETRIGHT and items != null:
 			items.admin_give_test_set()
 		elif event.keycode == KEY_J and _jitter_test != null:
@@ -1637,6 +1690,8 @@ func _step_player(delta: float) -> void:
 
 		if not test_fire and not sound.fire.manual_active():
 			sound.fire.sync_world(items._world, _cover_here)
+
+		sound.placed.watch_world(items._world, body.global_position, items.table)
 
 	_tree_sync_left -= delta
 
@@ -1799,6 +1854,9 @@ func _fire_test_step(step: int, at: Vector3) -> String:
 
 func _process(delta: float) -> void:
 	_step_player(delta)
+
+	if harvest != null:
+		harvest.update(delta, Input.is_key_pressed(KEY_E) and not items.open)
 	game_clock.tick()
 	_update_weather()
 
@@ -1985,6 +2043,79 @@ func _process(delta: float) -> void:
 
 		if _test_craft_t > 16.5:
 			test_craft_sounds = false
+
+	# Headless check: strikes at 300, 1000 and 2500 m take the plain, mid and far thunder buses with a scaled, capped delay.
+	if test_distant and now - connected_msec > 18000:
+		test_distant = false
+
+		for metres in [300.0, 1000.0, 2500.0]:
+			sound.weather.strike(metres)
+			print("Terrain client: thunder %s" % sound.weather.last_thunder)
+
+	# Headless check: an axe in the bag is worn out client-side, then mended; the tool break and repair sounds follow.
+	if test_wear and now - connected_msec > 18000:
+		if _test_wear_t < 0.0:
+			_test_wear_t = 0.0
+			net.inventory_action.rpc_id(1, NetScript.ACT_ADMIN_GIVE, items.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
+
+		var before_wear: float = _test_wear_t
+		_test_wear_t += get_process_delta_time()
+		var axe_slot: int = items.inventory.numbers.find(items.table.number_of("stone_axe"))
+
+		if before_wear < 3.0 and _test_wear_t >= 3.0 and axe_slot >= 0:
+			items.inventory.wear[axe_slot] = int(items.table.entry("stone_axe").get("durability", 40))
+
+		if before_wear < 5.0 and _test_wear_t >= 5.0 and axe_slot >= 0:
+			items.inventory.wear[axe_slot] = 0
+
+		if _test_wear_t > 7.0:
+			test_wear = false
+			print("Terrain client: wear sounds %s, last %s" % [str(sound.placed.played), sound.placed.last])
+
+	# Headless check: the tree counts around the player and the wind-in-trees loops they start.
+	if test_treewind and now - connected_msec > 18000:
+		var before_tw: float = _test_treewind_t
+		_test_treewind_t = maxf(_test_treewind_t, 0.0) + get_process_delta_time()
+
+		for at in [4.0, 12.0, 20.0]:
+			if before_tw < at and _test_treewind_t >= at:
+				print("Terrain client: tree wind: conifer %.2f, broadleaf %.2f, wind %.2f, playing %s" % [sound.treewind._density["conifer"], sound.treewind._density["broadleaf"], sound.wind_strength, sound.treewind.summary])
+
+		if _test_treewind_t > 20.5:
+			test_treewind = false
+
+	# Headless check: the cooking and eating sounds play (sizzle and fuel at a spot beside the player, then each way of eating).
+	if test_cooking and now - connected_msec > 18000:
+		test_cooking = false
+		var spot: Vector3 = body.global_position + Vector3(1.5, 0.0, 0.0)
+		sound.fire.cook(spot)
+		sound.fire.fuel(spot)
+
+		for kind in ["crunch", "soft", "drink", "roast_forage", "berries"]:
+			sound.itemfx.eat(kind)
+
+		print("Terrain client: cooking sounds: sizzle %d, fuel %d, eaten %d, last fire %s, last item %s" % [sound.fire.cook_played, sound.fire.fuel_played, sound.itemfx.eat_played, sound.fire.last, sound.itemfx.last])
+
+	# Headless check: every placed-thing hook once, then a synthetic chest row appears and vanishes beside the player.
+	if test_placed and now - connected_msec > 18000:
+		test_placed = false
+		var here: Vector3 = body.global_position + Vector3(2.0, 0.0, 0.0)
+		sound.placed.place("leanto", here)
+		sound.placed.place("chest", here)
+		sound.placed.place("stone", here)
+		sound.placed.pick_up(here)
+		sound.placed.container(true, here)
+		sound.placed.container(false, here)
+		sound.placed.tool_break(here)
+		sound.placed.tool_repair(here)
+		var stub := GDScript.new()
+		stub.source_code = "extends RefCounted\nfunc id_of(_n):\n\treturn \"chest\"\n"
+		stub.reload()
+		var fake = stub.new()
+		sound.placed.watch_world({}, here, fake)
+		sound.placed.watch_world({7: {"number": 1, "pos": here}}, here, fake)
+		sound.placed.watch_world({}, here, fake)
+		print("Terrain client: placed sounds %s, last %s" % [str(sound.placed.played), sound.placed.last])
 
 	# Headless check: the volume sliders change the buses and reset.
 	if test_levels and now - connected_msec > 18000:
@@ -2240,7 +2371,7 @@ func _debug_text(avg_ms: float, worst_ms: float) -> String:
 # The one-line "last sound": whichever sound source's last-played text changed most recently.
 func _note_last_sound() -> void:
 	var sources: Array = [
-		["step", sound.last_step], ["breath", sound.breath.last], ["fire", sound.fire.last], ["tree", sound.trees.last], ["item", sound.itemfx.last], ["spear", sound.spear.last],
+		["step", sound.last_step], ["breath", sound.breath.last], ["fire", sound.fire.last], ["tree", sound.trees.last], ["item", sound.itemfx.last], ["spear", sound.spear.last], ["placed", sound.placed.last],
 		["interior", sound.interior.last], ["gear", sound.gear.last], ["creature", sound.creatures.last], ["swim", sound.swim.last],
 		["dig", sound.dig.last_dig], ["nature", sound.ambient.last_call],
 	]

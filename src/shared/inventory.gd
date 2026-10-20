@@ -5,21 +5,23 @@ extends RefCounted
 # use the same rules. Number 0 means an empty slot.
 
 const SLOTS := 30
-const FORMAT := 1
+const FORMAT := 2               # 2 added wear per slot
 
 var table
 var numbers: PackedInt32Array = PackedInt32Array()
 var counts: PackedInt32Array = PackedInt32Array()
+var wear: PackedInt32Array = PackedInt32Array()      # uses spent so far, tools only (stack 1); 0 for anything else
 
 
 func _init(item_table = null) -> void:
 	table = item_table
 	numbers.resize(SLOTS)
 	counts.resize(SLOTS)
+	wear.resize(SLOTS)
 
 
 # Add as many as fit (fills partial stacks first). Returns how many were left over.
-func add(number: int, count: int) -> int:
+func add(number: int, count: int, item_wear: int = 0) -> int:
 	if number <= 0 or count <= 0 or table == null:
 		return count
 
@@ -37,6 +39,7 @@ func add(number: int, count: int) -> int:
 			var put: int = mini(left, stack)
 			numbers[i] = number
 			counts[i] = put
+			wear[i] = item_wear
 			left -= put
 
 	return left
@@ -71,6 +74,7 @@ func remove(number: int, count: int) -> bool:
 
 			if counts[i] == 0:
 				numbers[i] = 0
+				wear[i] = 0
 
 	return true
 
@@ -82,12 +86,14 @@ func take_from_slot(slot: int, count: int) -> Dictionary:
 
 	var take: int = mini(count, counts[slot])
 	var number: int = numbers[slot]
+	var item_wear: int = wear[slot]
 	counts[slot] -= take
 
 	if counts[slot] == 0:
 		numbers[slot] = 0
+		wear[slot] = 0
 
-	return {"number": number, "count": take}
+	return {"number": number, "count": take, "wear": item_wear}
 
 
 # Move a slot onto another: merge when the same item, else swap.
@@ -103,46 +109,53 @@ func move(from_slot: int, to_slot: int) -> void:
 
 		if counts[from_slot] == 0:
 			numbers[from_slot] = 0
+			wear[from_slot] = 0
 
 		return
 
 	var n: int = numbers[to_slot]
 	var c: int = counts[to_slot]
+	var w: int = wear[to_slot]
 	numbers[to_slot] = numbers[from_slot]
 	counts[to_slot] = counts[from_slot]
+	wear[to_slot] = wear[from_slot]
 	numbers[from_slot] = n
 	counts[from_slot] = c
+	wear[from_slot] = w
 
 
 func to_bytes() -> PackedByteArray:
 	var out: PackedByteArray = PackedByteArray()
-	out.resize(1 + SLOTS * 6)
+	out.resize(1 + SLOTS * 8)
 	out[0] = FORMAT
 
 	for i in SLOTS:
-		out.encode_u32(1 + i * 6, numbers[i])
-		out.encode_u16(1 + i * 6 + 4, counts[i])
+		out.encode_u32(1 + i * 8, numbers[i])
+		out.encode_u16(1 + i * 8 + 4, counts[i])
+		out.encode_u16(1 + i * 8 + 6, mini(wear[i], 65535))
 
 	return out
 
 
 func from_bytes(bytes: PackedByteArray) -> bool:
-	if bytes.size() != 1 + SLOTS * 6 or bytes[0] != FORMAT:
+	if bytes.size() != 1 + SLOTS * 8 or bytes[0] != FORMAT:
 		return false
 
 	for i in SLOTS:
-		numbers[i] = bytes.decode_u32(1 + i * 6)
-		counts[i] = bytes.decode_u16(1 + i * 6 + 4)
+		numbers[i] = bytes.decode_u32(1 + i * 8)
+		counts[i] = bytes.decode_u16(1 + i * 8 + 4)
+		wear[i] = bytes.decode_u16(1 + i * 8 + 6)
 
 	return true
 
 
-# JSON form for the server save file: [[number, count], ...] with empty slots as [0, 0].
+# JSON form for the server save file: [[number, count, wear], ...] with empty slots as [0, 0, 0]. Version 1
+# saves had [number, count] only; they load with zero wear.
 func to_json_array() -> Array:
 	var out: Array = []
 
 	for i in SLOTS:
-		out.append([numbers[i], counts[i]])
+		out.append([numbers[i], counts[i], wear[i]])
 
 	return out
 
@@ -151,3 +164,4 @@ func from_json_array(data: Array) -> void:
 	for i in mini(SLOTS, data.size()):
 		numbers[i] = int(data[i][0])
 		counts[i] = int(data[i][1])
+		wear[i] = int(data[i][2]) if data[i].size() > 2 else 0

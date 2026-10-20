@@ -39,11 +39,17 @@ const POND_AROUND := 16
 const RIVER_AROUND := 8
 
 # kind: loop name, loudness at the source (dB), how far it carries (m) for choosing sources
+# A fall carries far: its player hears out to FALL_MAX_M, a bigger unit size keeps it audible, and the
+# distance low-pass (the player's own attenuation filter) takes the top off with range.
+const FALL_MAX_M := 300.0
+const FALL_UNIT := 26.0
+const FALL_FILTER_HZ := 2200.0
+
 const KINDS := {
 	"brook": {"file": "water_brook", "db": -15.0, "reach": 45.0},
 	"river": {"file": "water_river", "db": -22.0, "reach": 50.0},
 	"pond": {"file": "water_pond", "db": -17.0, "reach": 35.0},
-	"fall": {"file": "water_fall", "db": -14.0, "reach": 70.0},
+	"fall": {"file": "water_fall", "db": -14.0, "reach": 260.0},
 }
 
 var sources: Array = []                 # what is playing now: [{kind, distance}] for the HUD
@@ -317,6 +323,10 @@ func _assign(chosen: Array, origin: Vector3) -> void:
 
 		var player: AudioStreamPlayer3D = slot["player"]
 		player.stream = list[0]
+		var far: bool = candidate["kind"] == "fall"
+		player.max_distance = FALL_MAX_M if far else 140.0
+		player.unit_size = FALL_UNIT if far else 10.0
+		player.attenuation_filter_cutoff_hz = FALL_FILTER_HZ if far else 9000.0
 		player.global_position = candidate["at"]
 		player.volume_db = -80.0
 		slot["kind"] = candidate["kind"]

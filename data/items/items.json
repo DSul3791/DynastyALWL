@@ -1,8 +1,8 @@
 {
 	"table": "items",
 	"format_version": 1,
-	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode.",
-	"next_number": 20,
+	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability.",
+	"next_number": 24,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -48,8 +48,18 @@
 			"stack": 1,
 			"chop": 1.0,
 			"dig": 1.0,
-			"durability": 100,
-			"look_alikes": []
+			"durability": 200,
+			"look_alikes": [],
+			"repair": [
+				[
+					"stick",
+					1
+				],
+				[
+					"cordage",
+					1
+				]
+			]
 		},
 		"spear": {
 			"number": 7,
@@ -60,8 +70,18 @@
 			"stack": 1,
 			"damage": 8.0,
 			"throw_damage": 6.0,
-			"durability": 80,
-			"look_alikes": []
+			"durability": 100,
+			"look_alikes": [],
+			"repair": [
+				[
+					"stone",
+					1
+				],
+				[
+					"cordage",
+					1
+				]
+			]
 		},
 		"campfire_kit": {
 			"number": 8,
@@ -80,7 +100,13 @@
 			"damage": 6.0,
 			"throw_damage": 5.0,
 			"durability": 40,
-			"look_alikes": []
+			"look_alikes": [],
+			"repair": [
+				[
+					"stick",
+					1
+				]
+			]
 		},
 		"stone_knife": {
 			"number": 11,
@@ -90,8 +116,18 @@
 			"tier": 1,
 			"stack": 1,
 			"cut": 1.0,
-			"durability": 80,
-			"look_alikes": []
+			"durability": 120,
+			"look_alikes": [],
+			"repair": [
+				[
+					"stone",
+					1
+				],
+				[
+					"cordage",
+					1
+				]
+			]
 		},
 		"torch": {
 			"number": 12,
@@ -159,6 +195,45 @@
 			"name": "Wooden spade",
 			"kind": "tool",
 			"tool_class": "spade",
+			"stack": 1,
+			"look_alikes": [],
+			"durability": 150,
+			"repair": [
+				[
+					"stick",
+					1
+				]
+			]
+		},
+		"lean_to_kit": {
+			"number": 20,
+			"name": "Lean-to kit",
+			"kind": "placeable",
+			"stack": 1,
+			"look_alikes": [],
+			"footprint_x": 2.4,
+			"footprint_z": 2.1
+		},
+		"lean_to": {
+			"number": 21,
+			"name": "Lean-to shelter",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"chest_kit": {
+			"number": 22,
+			"name": "Chest kit",
+			"kind": "placeable",
+			"stack": 1,
+			"look_alikes": [],
+			"footprint_x": 1.0,
+			"footprint_z": 0.6
+		},
+		"chest": {
+			"number": 23,
+			"name": "Storage chest",
+			"kind": "structure",
 			"stack": 1,
 			"look_alikes": []
 		}

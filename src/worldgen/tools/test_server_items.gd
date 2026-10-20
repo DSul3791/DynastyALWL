@@ -105,6 +105,7 @@ func _init() -> void:
 	var g = make("user://test_server_items_b")
 	g.ground_height = func(x, z): return 20.0 + x * 0.1
 	g.world_seed = 5
+	g.gather_pace_ms = 0
 	var clock: Array = [1000.0]
 	g.game_seconds = func(): return clock[0]
 	g.season_now = func(): return "summer"
@@ -121,6 +122,7 @@ func _init() -> void:
 	check(not g.gather(1, "wolfsbane", "plant", "0,0,90", 90, Vector3(501.0, 70.0, 500.0)) and noticed.size() == 1, "roots by hand give nothing and the player is told to get a spade")
 	g.action(1, Net.ACT_ADMIN_GIVE, g.table.number_of("wooden_spade"), 0, 1, Vector3.ZERO)
 	check(g.gather(1, "wolfsbane", "plant", "0,0,90", 90, Vector3(501.0, 70.0, 500.0)) and g.inventory_of(1).count_of(g.table.number_of("wolfsbane_roots")) >= 1, "with a spade the roots come up")
+	check(g.inventory_of(1).wear[g.inventory_of(1).numbers.find(g.table.number_of("wooden_spade"))] == 1, "picking roots wears the spade one use")
 	check(g.gather(1, "comfrey", "plant", "0,0,91", 91, Vector3(501.0, 70.0, 500.0)), "comfrey still gives by hand")
 	check(not g.gather(1, "flax", "plant", "0,0,77", 77, Vector3(501.0, 70.0, 500.0)), "a picked plant is bare until it regrows")
 	clock[0] += ItemsScript.REGROW_GAME_S + 1.0
@@ -414,6 +416,162 @@ func _init() -> void:
 	sp.action(1, Net.ACT_SPLIT, 0, 0, 6, Vector3.ZERO)
 	sp.action(1, Net.ACT_SPLIT, 0, 0, 0, Vector3.ZERO)
 	check(sp.inventory_of(1).counts[0] == 6 and sp.inventory_of(1).count_of(stone) == 10, "cannot split everything or nothing")
+
+	# Tool wear.
+	var wd: String = "user://test_server_items_wear"
+	DirAccess.make_dir_recursive_absolute(wd)
+	var v1: FileAccess = FileAccess.open(wd + "/inventories.json", FileAccess.WRITE)
+	v1.store_string(JSON.stringify({"version": 1, "inventories": {"abcdef123456": [[6, 1], [2, 5]] + range(28).map(func(_n): return [0, 0])}}))
+	v1.close()
+	DirAccess.remove_absolute(wd + "/world_items.json")
+	var wr = make(wd)
+	wr.ground_height = func(x, z): return 10.0
+	wr.peer_connected_hello(1, "abcdef123456")
+	var axe_n: int = wr.table.number_of("stone_axe")
+	check(wr.inventory_of(1).count_of(axe_n) == 1 and wr.inventory_of(1).wear[0] == 0, "a version 1 save loads with zero wear")
+	var durability: int = int(wr.table.entry("stone_axe")["durability"])
+	wr.report_position(1, Vector3(0.0, 10.0, 0.0))
+	wr.rock_at = func(x, z): return true
+	wr._mined.clear()
+
+	for n in range(3):
+		wr._last_mine.clear()
+		wr.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(1.0, 10.0, 0.0))
+
+	check(wr.inventory_of(1).wear[0] == 3, "each effective blow wears the axe one use (%d)" % wr.inventory_of(1).wear[0])
+	wr.inventory_of(1).wear[0] = durability - 1
+	wr._last_mine.clear()
+	wr._mined.clear()
+	wr.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(1.0, 10.0, 0.0))
+	check(wr._is_broken(axe_n, wr.inventory_of(1).wear[0]), "the last use breaks it")
+	var stones_before: int = wr.inventory_of(1).count_of(wr.table.number_of("stone"))
+	wr._last_mine.clear()
+	wr.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(1.0, 10.0, 0.0))
+	check(wr.inventory_of(1).count_of(wr.table.number_of("stone")) == stones_before, "a broken axe does nothing")
+	wr.action(1, Net.ACT_REPAIR, 0, 0, 0, Vector3.ZERO)
+	check(wr.inventory_of(1).wear[0] == durability, "no materials, no repair")
+	wr.action(1, Net.ACT_ADMIN_GIVE, wr.table.number_of("cordage"), 0, 1, Vector3.ZERO)
+	wr.action(1, Net.ACT_REPAIR, 0, 0, 0, Vector3.ZERO)
+	check(wr.inventory_of(1).wear[0] == durability - durability / 2 and wr.inventory_of(1).count_of(wr.table.number_of("cordage")) == 0, "a repair spends materials and wins back half")
+	wr.action(1, Net.ACT_DROP, 0, 0, 1, Vector3(0.5, 10.0, 0.0))
+	var dropped: int = 0
+
+	for k in wr._items:
+		if wr._items[k]["number"] == axe_n:
+			dropped = k
+
+	check(dropped != 0 and wr._items[dropped]["wear"] == durability - durability / 2, "a dropped tool keeps its wear")
+	wr.action(1, Net.ACT_PICKUP, dropped, 0, 0, Vector3.ZERO)
+	check(wr.inventory_of(1).count_of(axe_n) == 1 and wr.inventory_of(1).wear[wr.inventory_of(1).numbers.find(axe_n)] == durability - durability / 2, "and gets it back on pickup")
+	wr.save()
+	var wr2 = make(wd)
+	wr2.peer_connected_hello(1, "abcdef123456")
+	check(wr2.inventory_of(1).wear[wr2.inventory_of(1).numbers.find(axe_n)] == durability - durability / 2, "wear survives a restart")
+	var round_trip = load("res://src/shared/inventory.gd").new(wr2.table)
+	round_trip.from_bytes(wr2.inventory_of(1).to_bytes())
+	check(round_trip.wear == wr2.inventory_of(1).wear, "wear travels in the slot bytes")
+
+	# Lean-to.
+	var ld: String = "user://test_server_items_leanto"
+	DirAccess.make_dir_recursive_absolute(ld)
+
+	for file in DirAccess.get_files_at(ld):
+		DirAccess.remove_absolute(ld + "/" + file)
+
+	var lt = make(ld)
+	lt.ground_height = func(x, z): return 10.0
+	var roofs: Dictionary = {}
+	var roof_next: Array = [1]
+	lt.roof_add = func(roof):
+		roofs[roof_next[0]] = roof
+		roof_next[0] += 1
+		return roof_next[0] - 1
+	lt.roof_remove = func(key): roofs.erase(key)
+	lt.peer_connected_hello(1, "abcdef123456")
+	lt.report_position(1, Vector3(0.0, 10.0, 0.0))
+	var lean_kit: int = lt.table.number_of("lean_to_kit")
+	lt.action(1, Net.ACT_ADMIN_GIVE, lean_kit, 0, 8, Vector3.ZERO)
+	lt.action(1, Net.ACT_PLACE, 0, 0, 90, Vector3(3.0, 10.0, 0.0))
+	check(lt.world_item_count() == 1 and roofs.size() == 1 and lt.inventory_of(1).count_of(lean_kit) == 7, "a lean-to is placed and registers its roof")
+	var roof: Array = roofs[1]
+	check(absf(roof[5] - PI * 0.5) < 0.01 and roof[6] < 10.0 and roof[7] > 11.0, "the roof is a yawed box from just under the ground to 2 m up")
+	lt.action(1, Net.ACT_PLACE, lt.inventory_of(1).numbers.find(lean_kit), 0, 0, Vector3(4.0, 10.0, 0.0))
+	check(lt.world_item_count() == 1, "not within 2.5 m of another structure")
+
+	for n in range(8):
+		lt.report_position(1, Vector3(10.0 + float(n) * 4.0, 10.0, 0.0))
+		lt.action(1, Net.ACT_PLACE, lt.inventory_of(1).numbers.find(lean_kit), 0, 0, Vector3(10.0 + float(n) * 4.0 + 1.0, 10.0, 0.0))
+
+	check(lt.world_item_count() == 6, "six lean-tos fit in a chunk (%d)" % lt.world_item_count())
+	lt.save()
+	var lt2 = make(ld)
+	var roofs2: Array = []
+	lt2.roof_add = func(r): roofs2.append(r); return roofs2.size()
+	lt2.register_roofs()
+	check(lt2.world_item_count() == 6 and roofs2.size() == 6, "lean-tos and their roofs come back after a restart")
+	lt2.peer_connected_hello(1, "abcdef123456")
+	lt2.report_position(1, Vector3(3.0, 10.0, 0.0))
+	var shelter: int = 0
+
+	for k in lt2._items:
+		if lt2._items[k].has("struct") and absf(lt2._items[k]["pos"].x - 3.0) < 0.1:
+			shelter = k
+
+	lt2.roof_remove = func(key): roofs2.clear()
+	lt2.action(1, Net.ACT_PICKUP, shelter, 0, 0, Vector3.ZERO)
+	check(lt2.world_item_count() == 5 and lt2.inventory_of(1).count_of(lt2.table.number_of("lean_to_kit")) == 3, "taking it down gives the kit back")
+
+	# Storage chest.
+	var cd: String = "user://test_server_items_chest"
+	DirAccess.make_dir_recursive_absolute(cd)
+
+	for file in DirAccess.get_files_at(cd):
+		DirAccess.remove_absolute(cd + "/" + file)
+
+	var ch = make(cd)
+	ch.ground_height = func(x, z): return 10.0
+	var sent: Array = []
+	ch.send_chest = func(p, id, bytes): sent.append([p, id, bytes])
+	ch.peer_connected_hello(1, "abcdef123456")
+	ch.peer_connected_hello(2, "fedcba654321")
+	ch.report_position(1, Vector3(0.0, 10.0, 0.0))
+	ch.report_position(2, Vector3(200.0, 10.0, 0.0))
+	var chest_kit: int = ch.table.number_of("chest_kit")
+	var stones_n: int = ch.table.number_of("stone")
+	ch.action(1, Net.ACT_ADMIN_GIVE, chest_kit, 0, 1, Vector3.ZERO)
+	ch.action(1, Net.ACT_ADMIN_GIVE, stones_n, 0, 10, Vector3.ZERO)
+	ch.action(1, Net.ACT_PLACE, ch.inventory_of(1).numbers.find(chest_kit), 0, 0, Vector3(2.0, 10.0, 0.0))
+	var chest_id: int = 0
+
+	for k in ch._items:
+		if ch._items[k].has("struct"):
+			chest_id = k
+
+	check(chest_id != 0, "a chest is placed")
+	ch.action(2, Net.ACT_CHEST_OPEN, chest_id, 0, 0, Vector3.ZERO)
+	check(sent.is_empty(), "too far from the chest to open it")
+	ch.action(1, Net.ACT_CHEST_OPEN, chest_id, 0, 0, Vector3.ZERO)
+	check(sent.size() == 1 and sent[0][0] == 1, "opening sends the contents to the opener only")
+	var chest_stone_slot: int = ch.inventory_of(1).numbers.find(stones_n)
+	ch.action(1, Net.ACT_CHEST_PUT, chest_stone_slot, chest_id, 6, Vector3.ZERO)
+	check(ch.inventory_of(1).count_of(stones_n) == 4 and ch._chests[1].count_of(stones_n) == 6, "putting stones in moves them")
+	ch.action(1, Net.ACT_PICKUP, chest_id, 0, 0, Vector3.ZERO)
+	check(ch._items.has(chest_id), "a chest with things in it cannot be taken down")
+	ch.save()
+	var ch2 = make(cd)
+	ch2.peer_connected_hello(1, "abcdef123456")
+	ch2.report_position(1, Vector3(0.0, 10.0, 0.0))
+	var chest2: int = 0
+
+	for k in ch2._items:
+		if ch2._items[k].has("struct"):
+			chest2 = k
+
+	check(ch2._chests.size() == 1 and ch2._chests[1].count_of(stones_n) == 6, "chest contents survive a restart")
+	ch2.action(1, Net.ACT_CHEST_TAKE, ch2._chests[1].numbers.find(stones_n), chest2, 6, Vector3.ZERO)
+	check(ch2.inventory_of(1).count_of(stones_n) == 10 and ch2._chests[1].count_of(stones_n) == 0, "taking the stones out moves them back")
+	ch2.action(1, Net.ACT_PICKUP, chest2, 0, 0, Vector3.ZERO)
+	check(not ch2._items.has(chest2) and ch2.inventory_of(1).count_of(ch2.table.number_of("chest_kit")) == 1 and ch2._chests.is_empty(), "an empty chest comes down and gives the kit back")
 
 	print("server item tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

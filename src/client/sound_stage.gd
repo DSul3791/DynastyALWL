@@ -29,6 +29,8 @@ const CreatureScript := preload("res://src/client/creature_sounds.gd")
 const GearScript := preload("res://src/client/gear_sounds.gd")
 const InteriorScript := preload("res://src/client/interior_sounds.gd")
 const SpearScript := preload("res://src/client/spear_sounds.gd")
+const PlacedScript := preload("res://src/client/placed_sounds.gd")
+const TreeWindScript := preload("res://src/client/tree_wind.gd")
 const FlameScript := preload("res://src/client/flame_sounds.gd")
 const BreathScript := preload("res://src/client/breath_sounds.gd")
 const TreeScript := preload("res://src/client/tree_sounds.gd")
@@ -164,6 +166,8 @@ var trees                               # TreeSounds: felling (watch the world r
 var fire                                # FireSounds: campfire loops by size, lit, put out, rain sizzle (set_fires)
 var ground_below: Callable = Callable()   # terrain_client sets this: ground height under a point (NAN when not loaded)
 var itemfx                              # ItemSounds: inventory cues (watch(items) every frame)
+var treewind                            # TreeWind: pine hiss, leaf rustle, dry autumn leaves, bare winter branches by the trees near the player
+var placed                              # PlacedSounds: lean-to and chest place/pick up, container, tool break and repair (hooks, watch_world)
 var spear                               # SpearSounds: jab, throw, flight, hits on wood, stone, soil, flesh
 var interior                            # InteriorSounds: inside a building, doors, chests, furniture (set_inside, object)
 var gear                                # GearSounds: armour and clothing layers on the footsteps (set_worn, step_at)
@@ -255,6 +259,14 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	spear.name = "Spear"
 	add_child(spear)
 	spear.setup(self)
+	placed = PlacedScript.new()
+	placed.name = "Placed"
+	add_child(placed)
+	placed.setup(self)
+	treewind = TreeWindScript.new()
+	treewind.name = "TreeWind"
+	add_child(treewind)
+	treewind.setup(self)
 	interior = InteriorScript.new()
 	interior.name = "Interior"
 	add_child(interior)
@@ -352,6 +364,7 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	interior.update(delta)
 	spear.update(delta)
 	fire.update(delta, body)
+	treewind.update(delta, body)
 	trees.update(delta)
 	breath.follow_body(delta, body, flying, swim.swimming)
 	breath.update(delta, underwater)
@@ -448,7 +461,7 @@ func voices_playing() -> int:
 		if is_instance_valid(player) and player.playing:
 			count += 1
 
-	return count + weather.voices_playing() + swim.voices_playing() + interior.voices_playing()
+	return count + weather.voices_playing() + swim.voices_playing() + interior.voices_playing() + treewind.voices_playing()
 
 
 # True while another optional sound (a call, a flush) fits in the voice budget.
@@ -917,7 +930,7 @@ func _exit_tree() -> void:
 
 	_streams.clear()
 
-	for name in ["Wind", "Foley", "Nature", "Weather"]:
+	for name in ["Wind", "Foley", "Nature", "WeatherMid", "WeatherFar", "Weather"]:
 		var index: int = AudioServer.get_bus_index(name)
 
 		if index >= 0:

@@ -11,9 +11,11 @@ extends RefCounted
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const RecipeTableScript := preload("res://src/shared/recipe_table.gd")
 const InventoryScript := preload("res://src/shared/inventory.gd")
+const CoverScript := preload("res://src/shared/cover.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
 const VERSION := 1
+const INVENTORY_VERSION := 2            # 2 added wear per slot; version 1 files load with zero wear
 const MAX_WORLD_ITEMS_PER_CHUNK := 64    # chunks are 256 m
 const WORLD_ITEM_LIFETIME_S := 1200.0    # real seconds until a dropped item despawns
 const CHUNK_M := 256.0
@@ -50,12 +52,15 @@ const PROCESS_REACH_M := 4.0
 const PROCESS_COOLDOWN_MS := 450
 const FIRE_USE_M := 3.5
 const COOKING_PATH := "res://data/items/cooking.json"
+const GatherRules := preload("res://src/shared/gather_rules.gd")
+const GATHER_PACE_MS := 80              # at most about 12 picks a second per player (hold-E sweep)
 const MINE_REACH_M := 4.5
 const MINE_COOLDOWN_MS := 700
 const MINE_CELL_M := 8.0                 # one outcrop patch
 const MINE_STONES_PER_CELL := 6          # stones a patch gives before it is spent...
 const MINE_REGROW_S := 300.0             # ...and one comes back this often (real seconds)
 const PLACE_REACH_M := 6.0
+const STRUCTURES_PATH := "res://data/items/structures.json"
 const FIRE_BURN_S := 900.0               # real seconds a fire burns before it goes out
 const FIRE_OUT_S := 300.0                # a burnt-out or rained-out fire stays this long
 const FIRE_MIN_GAP_M := 2.0
@@ -80,6 +85,9 @@ var cut_tree: Callable         # (chunk Vector2i, id) -> true when the standing 
 var rock_at: Callable          # (x, z) -> true when bare rock shows at the surface there (no soil cover); set by the server scene
 var game_seconds: Callable      # () -> game clock seconds
 var season_now: Callable        # () -> "spring" | "summer" | "autumn" | "winter"
+var send_chest: Callable        # (peer, world id, bytes) a chest's contents to the player who opened it
+var roof_add: Callable          # (roof Array from Cover.box_roof) -> key; the server's cover index gets the lean-to's roof
+var roof_remove: Callable       # (key)
 var cover_at: Callable         # (position) -> 0.0 open or 1.0 under a tree's crown (Cover.at, or its stand-in)
 
 var _dir: String = ""
@@ -94,6 +102,13 @@ var _save_in: float = SAVE_EVERY_S
 var _dirty: bool = false
 var _drops: Dictionary = {}
 var _cooking: Dictionary = {}
+var _structures: Dictionary = {}    # structures.json: kind -> definition
+var _struct_gap_m: float = 2.5
+var _chests: Dictionary = {}        # structure uid -> Inventory (server-owned contents, chests.json)
+var _next_uid: int = 1
+const CHEST_REACH_M := 4.0
+var gather_pace_ms: int = GATHER_PACE_MS
+var _last_gather: Dictionary = {}   # peer -> msec
 var _last_cook: Dictionary = {}     # peer -> msec
 var _flora_by_name: Dictionary = {}   # flora table rows by species name (yields, seasons)
 var _picked: Dictionary = {}          # "cx,cz,id" -> game seconds when last picked
@@ -115,7 +130,14 @@ func setup(item_table, store_dir: String) -> void:
 	table = item_table
 	recipes = RecipeTableScript.load_default(item_table)
 	_dir = store_dir
+	var structures: Variant = JSON.parse_string(FileAccess.get_file_as_string(STRUCTURES_PATH))
+
+	if typeof(structures) == TYPE_DICTIONARY:
+		_structures = structures.get("structures", {})
+		_struct_gap_m = float(structures.get("gap_m", 2.5))
+
 	_load_inventories()
+	_load_chests()
 	_load_world_items()
 	_load_trees()
 	var cooking: Variant = JSON.parse_string(FileAccess.get_file_as_string(COOKING_PATH))
@@ -152,6 +174,7 @@ func peer_left(peer: int) -> void:
 	_last_mine.erase(peer)
 	_last_hit.erase(peer)
 	_last_cook.erase(peer)
+	_last_gather.erase(peer)
 	_last_process.erase(peer)
 
 
@@ -201,7 +224,7 @@ func take(peer: int, number: int, count: int) -> bool:
 
 
 # Puts a stack on the ground. False when the chunk is full.
-func drop_in_world(number: int, count: int, position: Vector3) -> bool:
+func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 0) -> bool:
 	if count <= 0 or number <= 0:
 		return false
 
@@ -215,7 +238,7 @@ func drop_in_world(number: int, count: int, position: Vector3) -> bool:
 	if here >= MAX_WORLD_ITEMS_PER_CHUNK:
 		return false
 
-	_items[_next_id] = {"number": number, "count": count, "pos": position, "left": WORLD_ITEM_LIFETIME_S}
+	_items[_next_id] = {"number": number, "count": count, "pos": position, "left": WORLD_ITEM_LIFETIME_S, "wear": item_wear}
 	_next_id += 1
 	_dirty = true
 	return true
@@ -237,6 +260,10 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_pickup(peer, inv, a)
 	elif kind == Net.ACT_HIT:
 		_hit(peer, inv, a, Vector2i(b, count))
+	elif kind == Net.ACT_CHEST_OPEN or kind == Net.ACT_CHEST_PUT or kind == Net.ACT_CHEST_TAKE:
+		_chest_action(peer, inv, kind, a, b, count)
+	elif kind == Net.ACT_REPAIR:
+		_repair(peer, inv, a)
 	elif kind == Net.ACT_FUEL:
 		_fuel(peer, inv, a)
 	elif kind == Net.ACT_COOK:
@@ -248,7 +275,7 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 	elif kind == Net.ACT_MINE:
 		_mine(peer, inv, at)
 	elif kind == Net.ACT_PLACE:
-		_place(peer, inv, a, at)
+		_place(peer, inv, a, at, count)
 	elif kind == Net.ACT_THROW:
 		_throw(peer, inv, a, at)
 	elif kind == Net.ACT_CRAFT:
@@ -309,7 +336,7 @@ func save() -> void:
 	for key in _inventories:
 		invs[key] = _inventories[key].to_json_array()
 
-	_write_atomic("inventories.json", {"version": VERSION, "inventories": invs})
+	_write_atomic("inventories.json", {"version": INVENTORY_VERSION, "inventories": invs})
 	var items: Array = []
 
 	for id in _items:
@@ -318,9 +345,14 @@ func save() -> void:
 		if it.has("scatter") or it.has("tree"):
 			continue
 
-		items.append([int(it["number"]), int(it["count"]), it["pos"].x, it["pos"].y, it["pos"].z, it["left"], int(it["fire"]["state"]) if it.has("fire") else 0, float(it["fire"]["burn_left"]) if it.has("fire") else 0.0])
+		if it.has("struct"):
+			items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int(_structures.get(str(it["struct"]["kind"]), {}).get("state", 5)), float(it["struct"]["yaw"]), 0, str(it["struct"]["kind"]), int(it["struct"].get("uid", 0))])
+			continue
+
+		items.append([int(it["number"]), int(it["count"]), it["pos"].x, it["pos"].y, it["pos"].z, it["left"], int(it["fire"]["state"]) if it.has("fire") else 0, float(it["fire"]["burn_left"]) if it.has("fire") else 0.0, int(it.get("wear", 0))])
 
 	_save_trees()
+	_save_chests()
 	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked})
 
 
@@ -332,6 +364,12 @@ func gather(peer: int, species_name: String, kind: String, flora_key: String, fl
 	if not _peer_pos.has(peer) or _peer_pos[peer].distance_to(plant_position) > GATHER_M:
 		return false
 
+	var tick: int = Time.get_ticks_msec()
+
+	if tick - int(_last_gather.get(peer, -100000)) < gather_pace_ms:
+		return false
+
+	_last_gather[peer] = tick
 	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
 
 	if now_s - float(_picked.get(flora_key, -1.0e12)) < REGROW_GAME_S:
@@ -365,6 +403,10 @@ func gather(peer: int, species_name: String, kind: String, flora_key: String, fl
 
 			if not usable.is_empty():
 				natural = usable[rng.randi_range(0, usable.size() - 1)]
+				var used_class: String = _tool_for(natural)
+
+				if used_class != "":
+					_wear_tool(peer, inv, used_class)
 			elif rows.is_empty() and missing != "":
 				_say(peer, "You need a %s for that." % str(_drops.get("tool_rules", {}).get("tool_names", {}).get(missing, missing)))
 
@@ -382,16 +424,8 @@ func gather(peer: int, species_name: String, kind: String, flora_key: String, fl
 	return true
 
 
-# The tool class a natural yield needs ("" = by hand), from drops.json tool_rules.
 func _tool_for(item_id: String) -> String:
-	var suffixes: Dictionary = _drops.get("tool_rules", {}).get("suffixes", {})
-
-	for tool_class in suffixes:
-		for suffix in suffixes[tool_class]:
-			if item_id.ends_with(str(suffix)):
-				return str(tool_class)
-
-	return ""
+	return GatherRules.tool_for(item_id, _drops)
 
 
 func _say(peer: int, text: String) -> void:
@@ -412,7 +446,7 @@ func _drop(peer: int, inv, slot: int, count: int, at: Vector3) -> void:
 	var number: int = inv.numbers[slot]
 	var amount: int = mini(count, inv.counts[slot])
 
-	if not drop_in_world(number, amount, spot):
+	if not drop_in_world(number, amount, spot, inv.wear[slot]):
 		return
 
 	inv.take_from_slot(slot, amount)
@@ -432,10 +466,14 @@ func _throw(peer: int, inv, slot: int, direction: Vector3) -> void:
 	if str(table.entry(table.id_of(inv.numbers[slot])).get("kind", "")) != "weapon":
 		return
 
+	if _is_broken(inv.numbers[slot], inv.wear[slot]):
+		return
+
 	_last_throw[peer] = now
 	var number: int = inv.numbers[slot]
+	var spent: int = inv.wear[slot] + 1
 	inv.take_from_slot(slot, 1)
-	_flights.append({"number": number, "pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": direction.normalized() * THROW_SPEED, "age": 0.0})
+	_flights.append({"number": number, "wear": spent, "pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": direction.normalized() * THROW_SPEED, "age": 0.0})
 
 
 func _fly(delta: float) -> void:
@@ -451,7 +489,7 @@ func _fly(delta: float) -> void:
 			if not is_nan(ground):
 				spot.y = maxf(ground, spot.y) if flight["age"] >= THROW_MAX_S else ground
 
-			drop_in_world(int(flight["number"]), 1, spot)
+			drop_in_world(int(flight["number"]), 1, spot, int(flight.get("wear", 0)))
 			_flights.erase(flight)
 
 
@@ -462,11 +500,7 @@ func _mine(peer: int, inv, at: Vector3) -> void:
 	if not _peer_pos.has(peer) or not rock_at.is_valid() or _peer_pos[peer].distance_to(at) > MINE_REACH_M:
 		return
 
-	var has_axe: bool = false
-
-	for slot in range(8):
-		if inv.numbers[slot] != 0 and str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", "")) == "axe":
-			has_axe = true
+	var has_axe: bool = _has_tool(inv, "axe")
 
 	var now: int = Time.get_ticks_msec()
 
@@ -474,6 +508,7 @@ func _mine(peer: int, inv, at: Vector3) -> void:
 		return
 
 	_last_mine[peer] = now
+	_wear_tool(peer, inv, "axe")
 	var patch: Vector2i = Vector2i(int(floor(at.x / MINE_CELL_M)), int(floor(at.z / MINE_CELL_M)))
 	var state: Dictionary = _mined.get(patch, {"taken": 0, "since": now})
 	var regrown: int = int((now - int(state["since"])) / (MINE_REGROW_S * 1000.0))
@@ -499,13 +534,15 @@ func _mine(peer: int, inv, at: Vector3) -> void:
 
 
 # A placeable item (the campfire kit) becomes a fire on the ground in front of the player.
-func _place(peer: int, inv, slot: int, at: Vector3) -> void:
+func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0) -> void:
 	if slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or not _peer_pos.has(peer):
 		return
 
 	var number: int = inv.numbers[slot]
 
-	if table.id_of(number) != "campfire_kit" or _peer_pos[peer].distance_to(at) > PLACE_REACH_M:
+	var kit_id: String = table.id_of(number)
+
+	if _peer_pos[peer].distance_to(at) > PLACE_REACH_M or (kit_id != "campfire_kit" and _structure_of_kit(kit_id).is_empty()):
 		return
 
 	var ground: float = float(ground_height.call(at.x, at.z)) if ground_height.is_valid() else at.y
@@ -514,6 +551,11 @@ func _place(peer: int, inv, slot: int, at: Vector3) -> void:
 		return
 
 	var spot: Vector3 = Vector3(at.x, ground, at.z)
+
+	if kit_id != "campfire_kit":
+		_place_structure(peer, inv, slot, spot, yaw_deg, _structure_of_kit(kit_id))
+		return
+
 	var chunk_fires: int = 0
 
 	for id in _items:
@@ -523,6 +565,8 @@ func _place(peer: int, inv, slot: int, at: Vector3) -> void:
 
 			if _chunk_of(_items[id]["pos"]) == _chunk_of(spot):
 				chunk_fires += 1
+		elif _items[id].has("struct") and _items[id]["pos"].distance_to(spot) < _struct_gap_m:
+			return
 
 	if chunk_fires >= FIRES_PER_CHUNK:
 		return
@@ -564,10 +608,14 @@ func _fires(delta: float) -> void:
 func _pickup(peer: int, inv, id: int) -> void:
 	var it: Dictionary = _items.get(id, {})
 
+	if it.has("struct"):
+		_take_down(peer, inv, id)
+		return
+
 	if it.is_empty() or it.has("fire") or it.has("tree") or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(it["pos"]) > PICKUP_M + 2.0:
 		return
 
-	var left: int = inv.add(int(it["number"]), int(it["count"]))
+	var left: int = inv.add(int(it["number"]), int(it["count"]), int(it.get("wear", 0)))
 
 	if left == 0:
 		if it.has("scatter"):
@@ -595,11 +643,11 @@ func _sync_world_items() -> void:
 			if it["pos"].distance_to(here) <= NEAR_M:
 				near[id] = true
 
-				var state: int = int(it["fire"]["state"]) if it.has("fire") else (int(it["tree"]["state"]) if it.has("tree") else 0)
+				var state: int = int(it["fire"]["state"]) if it.has("fire") else (int(it["tree"]["state"]) if it.has("tree") else (int(_structures.get(str(it["struct"]["kind"]), {}).get("state", 5)) if it.has("struct") else 0))
 				var signature: int = int(it["count"]) + 1000 * state
 
 				if not known.has(id) or known[id] != signature:
-					added.append([id, int(it["number"]), int(it["count"]), it["pos"], state, it["tree"] if it.has("tree") else {}])
+					added.append([id, int(it["number"]), int(it["count"]), it["pos"], state, it["tree"] if it.has("tree") else ({"yaw": float(it["struct"]["yaw"])} if it.has("struct") else {})])
 					known[id] = signature
 
 		for id in known.keys():
@@ -615,19 +663,20 @@ func _send_changes(peer: int, inv, before: Array) -> void:
 	var out: PackedByteArray = PackedByteArray()
 
 	for i in inv.SLOTS:
-		if inv.numbers[i] != before[0][i] or inv.counts[i] != before[1][i]:
+		if inv.numbers[i] != before[0][i] or inv.counts[i] != before[1][i] or inv.wear[i] != before[2][i]:
 			var at: int = out.size()
-			out.resize(at + 7)
+			out.resize(at + 9)
 			out[at] = i
 			out.encode_u32(at + 1, inv.numbers[i])
 			out.encode_u16(at + 5, inv.counts[i])
+			out.encode_u16(at + 7, mini(inv.wear[i], 65535))
 
 	if not out.is_empty():
 		send_slots.call(peer, out)
 
 
 func _snapshot(inv) -> Array:
-	return [inv.numbers.duplicate(), inv.counts.duplicate()]
+	return [inv.numbers.duplicate(), inv.counts.duplicate(), inv.wear.duplicate()]
 
 
 func _chunk_of(p: Vector3) -> Vector2i:
@@ -646,7 +695,7 @@ func _valid_key(key: String) -> bool:
 
 
 func _load_inventories() -> void:
-	var parsed: Variant = _read_json("inventories.json")
+	var parsed: Variant = _read_json_version("inventories.json", INVENTORY_VERSION, 1)
 
 	if parsed == null:
 		return
@@ -673,6 +722,23 @@ func _load_world_items() -> void:
 	for row in parsed["items"]:
 		var entry: Dictionary = {"number": int(row[0]), "count": int(row[1]), "pos": Vector3(row[2], row[3], row[4]), "left": float(row[5])}
 
+		if row.size() > 9 and int(row[6]) >= 5:
+			entry["struct"] = {"kind": str(row[9]), "yaw": float(row[7])}
+
+			if row.size() > 10 and int(row[10]) > 0:
+				entry["struct"]["uid"] = int(row[10])
+				_next_uid = maxi(_next_uid, int(row[10]) + 1)
+
+				if not _chests.has(int(row[10])):
+					_chests[int(row[10])] = InventoryScript.new(table)
+
+			_items[_next_id] = entry
+			_next_id += 1
+			continue
+
+		if row.size() > 8:
+			entry["wear"] = int(row[8])
+
 		if row.size() > 7 and int(row[6]) != 0:
 			entry["fire"] = {"state": int(row[6]), "burn_left": float(row[7]), "covered": false, "recheck": 0.0}
 
@@ -685,7 +751,7 @@ func _read_json(name: String) -> Variant:
 	return _read_json_version(name, VERSION)
 
 
-func _read_json_version(name: String, version: int) -> Variant:
+func _read_json_version(name: String, version: int, oldest: int = -1) -> Variant:
 	var path: String = _dir + "/" + name
 
 	if not FileAccess.file_exists(path):
@@ -693,7 +759,7 @@ func _read_json_version(name: String, version: int) -> Variant:
 
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
 
-	if typeof(parsed) != TYPE_DICTIONARY or int(parsed.get("version", 0)) != version:
+	if typeof(parsed) != TYPE_DICTIONARY or int(parsed.get("version", 0)) > version or int(parsed.get("version", 0)) < (version if oldest < 0 else oldest):
 		push_error("server items: %s is not usable; kept as %s.bad" % [path, path])
 		DirAccess.rename_absolute(path, path + ".bad")
 		return null
@@ -820,6 +886,7 @@ func _hit(peer: int, inv, tree_id: int, chunk: Vector2i) -> void:
 		return
 
 	_last_hit[peer] = now
+	_wear_tool(peer, inv, "axe")
 	var key: String = "%d,%d,%d" % [chunk.x, chunk.y, tree_id]
 	var chop: Dictionary = _chops.get(key, {"hits": 0, "msec": now})
 
@@ -862,11 +929,77 @@ func _hit(peer: int, inv, tree_id: int, chunk: Vector2i) -> void:
 
 
 func _has_tool(inv, tool_class: String) -> bool:
-	for slot in range(8):
-		if inv.numbers[slot] != 0 and str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", "")) == tool_class:
-			return true
+	return _tool_slot(inv, tool_class) >= 0
 
-	return false
+
+# The hotbar slot of a usable (not broken) tool of this class, or -1.
+func _tool_slot(inv, tool_class: String) -> int:
+	for slot in range(8):
+		if inv.numbers[slot] != 0 and str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", "")) == tool_class and not _is_broken(inv.numbers[slot], inv.wear[slot]):
+			return slot
+
+	return -1
+
+
+# Worn out: durability is the number of uses a tool lasts (items.json); items without it never wear.
+func _is_broken(number: int, item_wear: int) -> bool:
+	var durability: int = int(table.entry(table.id_of(number)).get("durability", 0))
+	return durability > 0 and item_wear >= durability
+
+
+# One use spent on the first usable tool of this class on the hotbar; tells the player when it breaks.
+func _wear_tool(peer: int, inv, tool_class: String) -> void:
+	var slot: int = _tool_slot(inv, tool_class)
+
+	if slot < 0 or int(table.entry(table.id_of(inv.numbers[slot])).get("durability", 0)) <= 0:
+		return
+
+	var before: Array = _snapshot(inv)
+	inv.wear[slot] += 1
+	_dirty = true
+
+	if _is_broken(inv.numbers[slot], inv.wear[slot]):
+		_say(peer, "Your %s broke. Repair it with new materials." % table.name_of(inv.numbers[slot]).to_lower())
+
+	_send_changes(peer, inv, before)
+
+
+# Repair (ACT_REPAIR): the slot's tool, worn or broken, takes the repair materials from items.json
+# ("repair": [[item, count], ...]) and wins back half its durability.
+func _repair(peer: int, inv, slot: int) -> void:
+	if slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or inv.wear[slot] <= 0:
+		return
+
+	var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
+	var costs: Array = entry.get("repair", [])
+
+	if costs.is_empty():
+		return
+
+	# The tool's own slot must not be spent as material.
+	var held_number: int = inv.numbers[slot]
+
+	for cost in costs:
+		var number: int = table.number_of(str(cost[0]))
+		var have: int = inv.count_of(number) - (inv.counts[slot] if number == held_number else 0)
+
+		if number == 0 or have < int(cost[1]):
+			_say(peer, "Repair needs %s." % _repair_text(costs))
+			return
+
+	for cost in costs:
+		inv.remove(table.number_of(str(cost[0])), int(cost[1]))
+
+	inv.wear[slot] = maxi(0, inv.wear[slot] - int(entry.get("durability", 0)) / 2)
+
+
+func _repair_text(costs: Array) -> String:
+	var parts: PackedStringArray = PackedStringArray()
+
+	for cost in costs:
+		parts.append("%d %s" % [int(cost[1]), table.name_of(table.number_of(str(cost[0]))).to_lower()])
+
+	return ", ".join(parts)
 
 
 func _trees_in_chunk(chunk: Vector2i) -> int:
@@ -969,6 +1102,7 @@ func _process_trunk(peer: int, inv, id: int) -> void:
 		return
 
 	_last_process[peer] = now
+	_wear_tool(peer, inv, "axe")
 
 	if not tree.has("logs_left"):
 		tree["logs_left"] = clampi(int(float(tree["length"]) / float(cfg.get("log_length_m", 2.5)) * clampf(float(tree["radius"]) * 2.5, 0.5, 2.0)), 1, int(cfg.get("max_logs", 12)))
@@ -1225,3 +1359,168 @@ func _fire_in_reach(peer: int, id: int) -> Dictionary:
 		return {}
 
 	return it["fire"]
+
+
+# --- Placed structures (data/items/structures.json): lean-to shelter now, storage chest next ---
+
+func _structure_of_kit(kit_id: String) -> Dictionary:
+	for kind in _structures:
+		if str(_structures[kind]["kit"]) == kit_id:
+			var def: Dictionary = _structures[kind].duplicate()
+			def["kind"] = kind
+			return def
+
+	return {}
+
+
+func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, def: Dictionary) -> void:
+	var here_chunk: Vector2i = _chunk_of(spot)
+	var of_kind: int = 0
+
+	for id in _items:
+		var other: Dictionary = _items[id]
+
+		if other["pos"].distance_to(spot) < _struct_gap_m and (other.has("struct") or other.has("fire")):
+			return
+
+		if other.has("struct") and str(other["struct"]["kind"]) == str(def["kind"]) and _chunk_of(other["pos"]) == here_chunk:
+			of_kind += 1
+
+	if of_kind >= int(def["cap_per_chunk"]):
+		_say(peer, "Too many of these stand here already.")
+		return
+
+	inv.take_from_slot(slot, 1)
+	var entry: Dictionary = {"number": table.number_of(str(def["item"])), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": str(def["kind"]), "yaw": float(posmod(yaw_deg, 360))}}
+
+	if int(def.get("slots", 0)) > 0:
+		entry["struct"]["uid"] = _next_uid
+		_chests[_next_uid] = InventoryScript.new(table)
+		_next_uid += 1
+
+	_items[_next_id] = entry
+	_next_id += 1
+	_add_roof(entry)
+	_dirty = true
+
+
+# The structure's roof joins the cover index (both ends do the same on seeing the structure).
+func _add_roof(entry: Dictionary) -> void:
+	var def: Dictionary = _structures.get(str(entry["struct"]["kind"]), {})
+
+	if def.is_empty() or not def.has("height") or not roof_add.is_valid() or entry["struct"].has("roof"):
+		return
+
+	var box: Array = CoverScript.box_roof(Vector2(entry["pos"].x, entry["pos"].z), float(def["half_x"]), float(def["half_z"]), deg_to_rad(float(entry["struct"]["yaw"])), entry["pos"].y - 0.5, entry["pos"].y + float(def["height"]))
+	entry["struct"]["roof"] = int(roof_add.call(box))
+
+
+# After loading a save and wiring roof_add: put every saved structure's roof in the cover index.
+func register_roofs() -> void:
+	for id in _items:
+		if _items[id].has("struct"):
+			_add_roof(_items[id])
+
+
+# Taking a structure down (E near it) gives its kit back. A chest with things in it cannot be taken down.
+func _take_down(peer: int, inv, id: int) -> void:
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(it["pos"]) > PICKUP_M + 2.0:
+		return
+
+	var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
+
+	if def.is_empty() or not _struct_empty(id):
+		_say(peer, "Empty it first.")
+		return
+
+	var kit: int = table.number_of(str(def["kit"]))
+
+	if inv.add(kit, 1) > 0:
+		return
+
+	if it["struct"].has("roof") and roof_remove.is_valid():
+		roof_remove.call(int(it["struct"]["roof"]))
+
+	_chests.erase(int(it["struct"].get("uid", 0)))
+	_items.erase(id)
+	_dirty = true
+
+
+func _struct_empty(id: int) -> bool:
+	var chest = _chests.get(int(_items.get(id, {}).get("struct", {}).get("uid", 0)))
+
+	if chest == null:
+		return true
+
+	for slot in range(chest.SLOTS):
+		if chest.numbers[slot] != 0:
+			return false
+
+	return true
+
+
+# --- Chest contents: server-owned; the actor gets the full 30 slots after every open, put and take ---
+
+func _chest_of(peer: int, id: int):
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or not it.has("struct") or not it["struct"].has("uid") or not _peer_pos.has(peer):
+		return null
+
+	if _peer_pos[peer].distance_to(it["pos"]) > CHEST_REACH_M:
+		return null
+
+	return _chests.get(int(it["struct"]["uid"]))
+
+
+func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int) -> void:
+	if kind == Net.ACT_CHEST_OPEN:
+		id = a
+
+	var chest = _chest_of(peer, id)
+
+	if chest == null:
+		return
+
+	if kind == Net.ACT_CHEST_PUT and a >= 0 and a < inv.SLOTS and inv.numbers[a] != 0 and count > 0:
+		var number: int = inv.numbers[a]
+		var held_wear: int = inv.wear[a]
+		var amount: int = mini(count, inv.counts[a])
+		var left: int = chest.add(number, amount, held_wear)
+		inv.take_from_slot(a, amount - left)
+		_dirty = true
+	elif kind == Net.ACT_CHEST_TAKE and a >= 0 and a < chest.SLOTS and chest.numbers[a] != 0 and count > 0:
+		var number: int = chest.numbers[a]
+		var held_wear: int = chest.wear[a]
+		var amount: int = mini(count, chest.counts[a])
+		var left: int = inv.add(number, amount, held_wear)
+		chest.take_from_slot(a, amount - left)
+		_dirty = true
+
+	if send_chest.is_valid():
+		send_chest.call(peer, id, chest.to_bytes())
+
+
+func _save_chests() -> void:
+	var rows: Dictionary = {}
+
+	for uid in _chests:
+		rows[str(uid)] = _chests[uid].to_json_array()
+
+	_write_atomic("chests.json", {"version": 1, "next_uid": _next_uid, "chests": rows})
+
+
+func _load_chests() -> void:
+	var parsed: Variant = _read_json_version("chests.json", 1)
+
+	if parsed == null:
+		return
+
+	_next_uid = int(parsed.get("next_uid", 1))
+
+	for key in parsed.get("chests", {}):
+		var chest = InventoryScript.new(table)
+		chest.from_json_array(parsed["chests"][key])
+		_chests[int(key)] = chest

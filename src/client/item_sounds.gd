@@ -12,6 +12,10 @@ extends Node
 # a name prefix), else "knap". A new recipe only needs a "sound" field to get the right work sound.
 # Cues: item_pickup (stacks grew), item_drop (stacks shrank), inv_open, inv_close, item_swap (slots
 # rearranged), craft_done (a craft finished: the inventory's crafting number went back to 0).
+# Cooking and eating: a roast that appears in the bag sizzles at the nearest fire (sound.fire.cook); wood
+# used up within FUEL_WINDOW_MSEC of fuel_pressed() (the V key at a fire) plays sound.fire.fuel there.
+#   sound.itemfx.eat("crunch")    eating: "crunch" (roast, nuts, roots), "soft" (berries, greens), "drink"
+# Eating has no action yet: the Items thread calls eat() when it adds one (EAT_KINDS maps item ids).
 # Sounds: generated in assets/audio/items/ (make_items.py); recordings in assets/audio/recorded/items/ win.
 
 const SoundStage := preload("res://src/client/sound_stage.gd")
@@ -23,6 +27,11 @@ const NAMES := {"item_pickup": -17.0, "item_drop": -17.0, "inv_open": -20.0, "in
 const MIN_GAP_MSEC := 60
 const WORK_DB := -18.0
 const WORK_TYPES := {"cordage": "twine", "stone_axe": "knap", "stone_knife": "knap", "wooden_spear": "carve", "spear": "bind", "torch": "bind", "campfire": "stack"}
+const EAT := {"crunch": ["eat_crunch", -15.0], "soft": ["eat_soft", -17.0], "drink": ["drink_gulp", -16.0]}
+const EAT_KINDS := {"roast_forage": "crunch", "tree_roots": "crunch", "seed_bundle": "crunch"}   # by item id; other food is soft
+const COOKING_DIR := "res://assets/audio/cooking/"
+const COOKING_RECORDED_DIR := "res://assets/audio/recorded/cooking/"
+const FUEL_WINDOW_MSEC := 1500
 const WORK_PREFIXES := {"poultice": "pound", "bandage": "wrap"}
 
 var played: int = 0
@@ -38,6 +47,13 @@ var _numbers: PackedInt32Array = PackedInt32Array()
 var _was_crafting: int = 0
 var _work: AudioStreamPlayer
 var work_played: int = 0
+var eat_played: int = 0
+var _mouth: AudioStreamPlayer
+var _fuel_msec: int = -100000
+var _was_broken: Array = []
+var _was_numbers: PackedInt32Array = PackedInt32Array()
+var _was_wear: PackedInt32Array = PackedInt32Array()
+var _counts_by_number: Dictionary = {}  # item number -> count in the bag, last watch
 var last_work: String = ""
 
 
@@ -50,6 +66,9 @@ func setup(_stage) -> void:
 	_work = AudioStreamPlayer.new()
 	_work.bus = "Foley"
 	add_child(_work)
+	_mouth = AudioStreamPlayer.new()
+	_mouth.bus = "Foley"
+	add_child(_mouth)
 
 
 func watch(items) -> void:
@@ -87,6 +106,88 @@ func watch(items) -> void:
 		play("craft_done")
 
 	_was_crafting = crafting
+	_watch_fire(items, inv)
+	_watch_wear(items, inv)
+
+
+# A tool that became broken since the last look snaps (sound.placed.tool_break); a slot of the same tool whose
+# wear dropped was repaired (sound.placed.tool_repair), both at the player.
+func _watch_wear(items, inv) -> void:
+	var broken: Array = []
+
+	for slot in range(inv.numbers.size()):
+		broken.append(items.is_broken(slot))
+
+	if not _was_broken.is_empty() and items._player_position.is_valid():
+		var here: Vector3 = items._player_position.call()
+
+		for slot in range(inv.numbers.size()):
+			if broken[slot] and not _was_broken[slot] and _was_numbers[slot] == inv.numbers[slot]:
+				get_parent().placed.tool_break(here)
+			elif inv.numbers[slot] != 0 and _was_numbers[slot] == inv.numbers[slot] and inv.wear[slot] < _was_wear[slot]:
+				get_parent().placed.tool_repair(here)
+
+	_was_broken = broken
+	_was_numbers = inv.numbers.duplicate()
+	_was_wear = inv.wear.duplicate()
+
+
+# The V key at a fire: wood used up in the next moments was laid on it.
+func fuel_pressed() -> void:
+	_fuel_msec = Time.get_ticks_msec()
+
+
+# Eating: "crunch", "soft" or "drink", or an item id (EAT_KINDS, else soft).
+func eat(kind: String) -> bool:
+	var entry: Array = EAT.get(kind, EAT.get(EAT_KINDS.get(kind, "soft")))
+	var list: Array = _variants(str(entry[0]))
+
+	if list.is_empty():
+		return false
+
+	var pick: int = _rng.randi_range(0, list.size() - 1)
+	_mouth.stream = list[pick]
+	_mouth.volume_db = float(entry[1]) + _rng.randf_range(-1.0, 1.0)
+	_mouth.pitch_scale = _rng.randf_range(0.95, 1.05)
+	_mouth.play()
+	eat_played += 1
+	last = "%s_%d (%s)" % [entry[0], pick, SoundStage.tag(list[pick])]
+	return true
+
+
+# A roast that appeared, or wood that went into a fire, sounds at the nearest fire.
+func _watch_fire(items, inv) -> void:
+	var counts: Dictionary = {}
+
+	for n in range(inv.numbers.size()):
+		counts[inv.numbers[n]] = int(counts.get(inv.numbers[n], 0)) + int(inv.counts[n])
+
+	if not _counts_by_number.is_empty() and items.has_method("_nearest_fire"):
+		var roast: int = items.table.number_of("roast_forage")
+		var wood: Array = [items.table.number_of("stick"), items.table.number_of("log")]
+		var cooked: bool = int(counts.get(roast, 0)) > int(_counts_by_number.get(roast, 0))
+		var fuelled: bool = false
+
+		if Time.get_ticks_msec() - _fuel_msec < FUEL_WINDOW_MSEC:
+			for number in wood:
+				fuelled = fuelled or int(counts.get(number, 0)) < int(_counts_by_number.get(number, 0))
+
+		if cooked or fuelled:
+			var fire: int = items._nearest_fire()
+
+			if fire != 0 and items._world.has(fire):
+				if cooked:
+					_stage_fire().cook(items._world[fire]["pos"])
+
+				if fuelled:
+					_fuel_msec = -100000
+					_stage_fire().fuel(items._world[fire]["pos"])
+
+	_counts_by_number = counts
+
+
+func _stage_fire():
+	return get_parent().fire
 
 
 func work_type(recipe: Dictionary) -> String:
@@ -155,10 +256,11 @@ func _variants(name: String) -> Array:
 		return _streams[name]
 
 	var crafting: bool = name.begins_with("craft_") and name != "craft_done"
-	var list: Array = SoundStage._find(CRAFT_RECORDED_DIR if crafting else RECORDED_DIR, name)
+	var eating: bool = name.begins_with("eat_") or name == "drink_gulp"
+	var list: Array = SoundStage._find(CRAFT_RECORDED_DIR if crafting else (COOKING_RECORDED_DIR if eating else RECORDED_DIR), name)
 
 	if list.is_empty():
-		list = SoundStage._find(CRAFT_DIR if crafting else GENERATED_DIR, name)
+		list = SoundStage._find(CRAFT_DIR if crafting else (COOKING_DIR if eating else GENERATED_DIR), name)
 
 	_streams[name] = list
 	return list
