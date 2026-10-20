@@ -36,6 +36,7 @@ const WaterSoundsScript := preload("res://src/client/water_sounds.gd")
 const AUDIO_DIR := "res://assets/audio/"
 const RECORDED_DIR := "res://assets/audio/recorded/"
 # Audio budget per quality tier Low, Mid, High (ARCHITECTURE_BUDGET.md section 9).
+const CoverScript := preload("res://src/shared/cover.gd")
 const Presets := preload("res://src/client/sound_presets.gd")   # the per-tier mixer limits (voices, memory, layers)
 const VOICES := 6                       # footstep and swish players, reused in turn
 const FEET_M := 0.9                     # player origin to the soles (capsule half height)
@@ -67,7 +68,6 @@ const ORE_METAL := [2, 3, 4, 5, 6, 7, 8, 9, 15, 17, 18, 19, 20, 21, 22, 23, 24, 
 # Soils with their own character: [dB, pitch] on top of their surface (data/tables/soils.json).
 const SOIL_TUNE := {3: [-1.0, 0.95], 4: [0.0, 0.97], 12: [2.0, 1.1], 13: [0.0, 1.06], 14: [-3.0, 0.9]}
 const RAIN_SOAK := 0.5                  # ground wetness from which loose dirt and leaves turn to wet mud steps
-const COVER_TRUNK_M := 4.5              # a trunk this near counts as standing under a canopy (until Cover.at exists)
 const SNOW_COVER := 0.35                # snow on the ground from which steps crunch
 const PUDDLE_WET := 0.6                 # ground wetness from which steps on firm ground splash
 const SNOW_SURFACES := ["grass", "grass_tall", "dirt", "leaves", "sand", "gravel", "bushes", "mud"]
@@ -161,7 +161,6 @@ var town                                # TownSounds: fire, hammering, crowd, be
 var cave                                # CaveSounds: reverb, muffling and drips under rock
 var dig                                 # DigSounds: the sound of what is dug (dug(center, radius, listener))
 var _sphere: PhysicsShapeQueryParameters3D
-var _cover_sphere: PhysicsShapeQueryParameters3D
 
 
 func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
@@ -621,23 +620,13 @@ func _trunks_near(body: CharacterBody3D, radius: float) -> int:
 
 
 # 1.0 when the player stands under a tree's canopy, else 0.0 (owner 2026-10-20: any spot under a canopy
-# counts, any tree). A stand-in until the shared Cover.at query exists (tech/COVER_QUERY.md): a tree
-# trunk within COVER_TRUNK_M. When src/shared/cover.gd lands, call it here and nowhere else.
+# counts, any tree): the shared Cover.at query (src/shared/cover.gd, tech/COVER_QUERY.md) on the flora's
+# crown index. Rain, leaf drips and a dry ground all read this one function.
 func under_cover(body: CharacterBody3D) -> float:
-	if _cover_sphere == null:
-		_cover_sphere = PhysicsShapeQueryParameters3D.new()
-		var shape: SphereShape3D = SphereShape3D.new()
-		shape.radius = COVER_TRUNK_M
-		_cover_sphere.shape = shape
+	if _flora == null or _flora.get("cover") == null:
+		return 0.0
 
-	_cover_sphere.transform = Transform3D(Basis.IDENTITY, body.global_position)
-	_cover_sphere.exclude = [body.get_rid()]
-
-	for hit in body.get_world_3d().direct_space_state.intersect_shape(_cover_sphere, 4):
-		if hit["collider"] != null and hit["collider"].has_meta("species_ids"):
-			return 1.0
-
-	return 0.0
+	return CoverScript.at(body.global_position, _flora.cover)
 
 
 # The draw-material id under the soles: a soil id, MATERIAL_ROCK + rock id for
