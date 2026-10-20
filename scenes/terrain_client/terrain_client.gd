@@ -32,10 +32,11 @@ const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")
 const CompassScript := preload("res://src/client/admin_compass.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
+const WeatherScript := preload("res://src/shared/weather.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 105
+const BUILD := 106
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -179,6 +180,8 @@ var test_cut: bool = false
 var _flora_asked: Dictionary = {}     # chunk -> true asked or held in full, false trees only
 var _flora_check_msec: int = 0
 var link = null                       # direct block line (block_link.gd)
+var weather: Dictionary = {}          # the weather here and now (WeatherScript.state): the same on every client, no network traffic; rendering and sounds read it
+var _weather_next_msec: int = 0
 var game_clock = GameClockScript.new()   # copy of the server's game clock, set at the welcome
 var _sound_test_at: int = -1          # Esc > Settings "Sound test time"; -1 follows the game clock
 var _water_dirty: bool = false        # the server said the water moved; not asked for yet
@@ -486,6 +489,22 @@ func _on_flora(chunk: Vector2i, bytes: PackedByteArray, water: PackedByteArray, 
 	else:
 		flora.set_chunk(chunk, items, _anchor, water_cells, full)
 	Probe.stop("flora chunk in", t)
+
+
+# Weather from the game clock, the world seed, the zone of the tile the player is in and their
+# altitude (town spirit is a neutral placeholder until it exists). Once a second; it is only a
+# few noise lookups.
+func _update_weather() -> void:
+	var now: int = Time.get_ticks_msec()
+
+	if now < _weather_next_msec or world.is_empty():
+		return
+
+	_weather_next_msec = now + 1000
+	var tile_m: float = float(world.get("tile_size_m", 15360))
+	var row: int = int(floor(_anchor.z / tile_m))
+	var group: String = WeatherScript.zone_group(world.get("zones", []), int(world.get("equator_row", 0)), row)
+	weather = WeatherScript.state(int(world.get("master_seed", 0)), game_clock.seconds, group, _anchor.y, 0.0)
 
 
 func _on_water_rate(rate: float, busy: bool, spring_m3_s: float) -> void:
@@ -1230,6 +1249,7 @@ func _process(delta: float) -> void:
 	_step_player(delta)
 	_apply_water_inbox()
 	game_clock.advance(delta)
+	_update_weather()
 
 	if _sound_test_at < 0 and sound != null and sound.ambient != null:
 		sound.ambient.set_conditions(game_clock.hour(), game_clock.season())
@@ -1388,6 +1408,9 @@ func _process(delta: float) -> void:
 
 	var vp: RID = get_viewport().get_viewport_rid()
 	hud.text += "\ngame time: year %d, day %d (%s), %02d:%02d" % [game_clock.year() + 1, game_clock.day_of_year() + 1, game_clock.season(), int(game_clock.hour()), int(fposmod(game_clock.hour(), 1.0) * 60.0)]
+	if not weather.is_empty():
+		hud.text += "\nweather: rain %.2f snow %.2f storm %.2f sun %.2f wind %.2f, %.0f C" % [weather["rain"], weather["snow"], weather["storm"], weather["sun"], weather["wind"], weather["temp_c"]]
+
 	hud.text += "\nlast step: " + sound.last_step
 	hud.text += "\nnature (%02d:%02d %s): forest %.1f meadow %.1f water %.1f high %.1f, last %s" % [int(sound.ambient.conditions["hour"]), int(fposmod(float(sound.ambient.conditions["hour"]), 1.0) * 60.0), sound.ambient.conditions["season"], sound.ambient.weights["forest"], sound.ambient.weights["meadow"], sound.ambient.weights["water"], sound.ambient.weights["highland"], sound.ambient.last_call]
 	hud.text += "\nwater sounds: " + sound.water.summary

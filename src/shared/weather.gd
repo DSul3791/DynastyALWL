@@ -1,7 +1,7 @@
 extends RefCounted
 
 # Weather (DESIGN_IDEAS 4.2, owner decisions 2026-10-20): a pure function of the world seed,
-# the game clock, the zone (north to south), the altitude and a town-spirit modifier. Nothing
+# the game clock (game_clock.gd, passed as its `seconds`), the zone (north to south), the altitude and a town-spirit modifier. Nothing
 # is stored or sent: the server and every client get the same answer from the same inputs.
 #
 # Zone sets the climate (dry zones stay dry, polar zones get snow), the season swings it,
@@ -11,8 +11,7 @@ extends RefCounted
 #
 # Static helpers only; thread safe.
 
-const GAME_HOURS_PER_REAL_HOUR := 24.0     # the game clock (ambient_life.gd): one game day is a real hour
-const YEAR_DAYS := 112.0                   # placeholder year: four seasons of 28 game days (28 real hours each)
+const GameClockScript := preload("res://src/shared/game_clock.gd")   # the one time source; callers pass its `seconds`
 const FRONT_HOURS := 12.0                  # game hours between weather fronts (the noise grid step)
 const NIGHT_FROM := 21.0
 const NIGHT_TO := 5.0
@@ -25,35 +24,40 @@ const ZONES := {
 	"arctic": {"wet": 0.34, "temp": -9.0, "swing": 14.0},
 }
 
-const SEASONS := ["winter", "spring", "summer", "autumn"]
-
-
-# The game time in seconds for a real (unix) time in seconds.
-static func game_seconds(real_unix_s: float) -> float:
-	return real_unix_s * GAME_HOURS_PER_REAL_HOUR
-
-
-# The year's phase, 0..1: 0 is the middle of winter, 0.5 the middle of summer.
+# The year's phase, 0..1: spring starts at 0, high summer is about 0.375, winter's middle 0.875.
 static func year_phase(game_s: float) -> float:
-	return fposmod(game_s / 86400.0, YEAR_DAYS) / YEAR_DAYS
+	var days: float = float(GameClockScript.DAYS_PER_YEAR)
+	return fposmod(game_s / GameClockScript.SECONDS_PER_DAY, days) / days
 
 
 static func season_of(game_s: float) -> String:
-	return SEASONS[int(fposmod(year_phase(game_s) + 0.125, 1.0) * 4.0) % 4]
+	return GameClockScript.SEASON_NAMES[int(year_phase(game_s) * 4.0) % 4]
 
 
 # Hour of the game day, 0..24.
 static func hour_of(game_s: float) -> float:
-	return fposmod(game_s / 3600.0, 24.0)
+	return fposmod(game_s, GameClockScript.SECONDS_PER_DAY) / 3600.0
+
+
+# The zone group of a tile row from the world's zone list ([[group, max_abs_row], ...], nearest
+# the equator first), as the server sends it in the welcome.
+static func zone_group(zones: Array, equator_row: int, tile_row: int) -> String:
+	var abs_row: int = absi(tile_row - equator_row)
+
+	for zone in zones:
+		if abs_row <= int(zone[1]):
+			return str(zone[0])
+
+	return str(zones[zones.size() - 1][0]) if not zones.is_empty() else "temperate"
 
 
 # {"rain", "snow", "storm", "cloud", "sun", "wind" (all 0..1), "temp_c", "season"}.
 static func state(seed_value: int, game_s: float, zone_group: String, altitude_m: float = 0.0, spirit: float = 0.0) -> Dictionary:
 	var zone: Dictionary = ZONES.get(zone_group, ZONES["temperate"])
 	var phase: float = year_phase(game_s)
-	var temp: float = float(zone["temp"]) - float(zone["swing"]) * cos(TAU * phase) - maxf(altitude_m, 0.0) * 0.0065
+	var temp: float = float(zone["temp"]) + float(zone["swing"]) * cos(TAU * (phase - 0.375)) - maxf(altitude_m, 0.0) * 0.0065
 	# Wetter in autumn and winter, a little drier in high summer.
-	var wet: float = float(zone["wet"]) * (1.0 + 0.2 * cos(TAU * (phase - 0.85)))
+	var wet: float = float(zone["wet"]) * (1.0 + 0.2 * cos(TAU * (phase - 0.75)))
 	var front: float = _noise(seed_value, 1, game_s / (FRONT_HOURS * 3600.0))
 	var need: float = 1.0 - clampf(wet, 0.0, 0.95)
 	var precip: float = smoothstep(need, need + 0.3, front)

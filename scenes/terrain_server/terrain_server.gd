@@ -250,6 +250,8 @@ func _on_peer_connected(peer_id: int) -> void:
 		"starter_stamp": _starter_stamp(),
 		"block_port": _link_port,
 		"game_seconds": game_clock.seconds,
+		"zones": settings.zones.map(func(zone): return [str(zone["group"]), int(zone["max_abs_row"])]),
+		"equator_row": settings.equator_tile_row,
 	})
 
 
@@ -397,7 +399,7 @@ func _update_weather() -> void:
 
 	_weather_next_msec = now + 1000
 	var row: int = 4
-	var game_s: float = WeatherScript.game_seconds(Time.get_unix_time_from_system())
+	var game_s: float = game_clock.seconds
 	weather = WeatherScript.state(settings.master_seed, game_s, settings.get_zone_group_for_row(row), 0.0, 0.0)
 	var bucket: int = int(float(weather["rain"]) * 4.0) + 10 * int(float(weather["snow"]) * 4.0)
 

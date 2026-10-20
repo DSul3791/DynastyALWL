@@ -66,10 +66,10 @@ func _init() -> void:
 	check(winter["snow"] > 0.0 and winter["rain"] == 0.0, "arctic winter is snow only")
 
 	# Seasons: summer warmer than winter, winter is phase 0.
-	var cold: float = float(Weather.state(1, 0.0, "temperate")["temp_c"])
-	var warm: float = float(Weather.state(1, Weather.YEAR_DAYS * 0.5 * 86400.0, "temperate")["temp_c"])
+	var cold: float = float(Weather.state(1, 0.875 * 365.0 * 86400.0, "temperate")["temp_c"])
+	var warm: float = float(Weather.state(1, 0.375 * 365.0 * 86400.0, "temperate")["temp_c"])
 	check(warm > cold + 15.0, "summer %.1f warmer than winter %.1f" % [warm, cold])
-	check(Weather.season_of(0.0) == "winter" and Weather.season_of(Weather.YEAR_DAYS * 0.5 * 86400.0) == "summer", "season names")
+	check(Weather.season_of(0.0) == "spring" and Weather.season_of(0.375 * 365.0 * 86400.0) == "summer" and Weather.season_of(0.875 * 365.0 * 86400.0) == "winter", "season names")
 
 	# Town spirit.
 	var high: Dictionary = survey("temperate", 1.0, 40.0)
