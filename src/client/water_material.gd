@@ -16,8 +16,8 @@ uniform vec3 foam_color : source_color = vec3(0.78, 0.82, 0.80);
 uniform vec3 mud_color : source_color = vec3(0.36, 0.27, 0.16);
 uniform float rough = 0.0;           // 0 calm, 1 raging (flow rate above x1, set by the client)
 uniform float mud = 0.0;             // 0 clear, 1 brown flood water (rivers and ponds above x1, set by the client)
-uniform float clarity_m = 0.45;      // water this thick hides about two thirds of what is behind it
-uniform float edge_alpha = 0.35;     // the thinnest water
+uniform float clarity_m = 1.1;       // water this thick hides about two thirds of what is behind it (clear brook water: the bed shows)
+uniform float edge_alpha = 0.12;     // the thinnest water
 uniform float fastest_m_s = 2.5;     // drawn speed of the steepest running water
 uniform vec3 sky_top : source_color = vec3(0.33, 0.47, 0.68);         // the sky shader's colours (sky_clouds.gd)
 uniform vec3 sky_horizon : source_color = vec3(0.63, 0.68, 0.75);
@@ -29,8 +29,12 @@ uniform float coverage = 0.53;
 uniform float softness = 0.2;
 uniform vec2 wind_m_s = vec2(9.0, 4.0);
 uniform float refraction = 1.0;      // 0 (Low quality): see-through by blending; 1: the bottom bends under the ripples
+#ifdef SCENE_READS
+// Reading the depth or the screen makes Forward+ copy the whole frame, so Low quality
+// (no SCENE_READS) leaves them out: the sky colour and the depth tint come from the vertices.
 uniform sampler2D depth_texture : hint_depth_texture, filter_nearest;
 uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
+#endif
 
 varying float sheet_alpha;
 varying vec2 flow;                   // downhill direction times 0..1 steepness (0 for lakes and the sea)
@@ -117,10 +121,14 @@ vec2 ripple_slope(vec2 p) {
 }
 
 void fragment() {
+#ifdef SCENE_READS
 	float scene = texture(depth_texture, SCREEN_UV).r;
 	vec4 behind = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, scene, 1.0);
 	behind.xyz /= behind.w;
 	float through = max(VERTEX.z - behind.z, 0.0);   // meters of water along the view ray
+#else
+	float through = mix(0.1, 1.6, sheet_alpha);      // no depth read at Low: the sheet's edge fade stands in
+#endif
 	float murk = 1.0 - exp(-through / (clarity_m * (1.0 - 0.7 * mud)));
 
 	// Running water (owner, 2026-10-19): ripples carried downstream at a speed that grows
@@ -196,6 +204,7 @@ void fragment() {
 	vec3 foam_tint = mix(foam_color, mud_color * 1.6, mud * 0.6);
 	float body_alpha = mix(edge_alpha, 0.97, murk);
 
+#ifdef SCENE_READS
 	if (refraction > 0.5) {
 		// Refraction (step 2): look through the water at the scene behind it, pushed sideways
 		// by the ripples; only where what is seen there really lies behind the water.
@@ -205,13 +214,27 @@ void fragment() {
 		bent_behind.xyz /= bent_behind.w;
 		bent_uv = bent_behind.z < VERTEX.z ? bent_uv : SCREEN_UV;
 		vec3 below = textureLod(screen_texture, bent_uv, 0.0).rgb;
+		// The bed seen through the water: red light is absorbed first, so it greens and
+		// darkens with depth (Beer-Lambert), and bright caustic lines from the ripples
+		// play on it where the water is shallow (the look of the reference brook).
+		float bed_m = min(through, 6.0);
+		below *= exp(-bed_m * vec3(0.55, 0.16, 0.10) * (1.0 + 2.0 * mud));
+		float caustic_fade = (1.0 - smoothstep(0.4, 1.8, bed_m)) * (1.0 - mud) / (1.0 + distance_m / 25.0);
+		if (caustic_fade > 0.01) {
+			vec2 cp = local / 0.9 + vec2(drift * 0.09, drift * 0.06);
+			float c1 = 1.0 - abs(noise(cp) * 2.0 - 1.0);
+			float c2 = 1.0 - abs(noise(cp * 1.7 - vec2(drift * 0.12, 3.0)) * 2.0 - 1.0);
+			below += vec3(1.0, 0.95, 0.8) * pow(c1 * c2, 5.0) * 0.9 * caustic_fade;
+		}
 		vec3 seen = mix(below, water, body_alpha);
 		seen = mix(seen, sky, fresnel * 0.8);
 		// The lighting adds the sun glint on top; keep the body itself unlit-looking.
 		ALBEDO = mix(seen * 0.6, foam_tint, foam * 0.85);
 		EMISSION = seen * 0.4 * (1.0 - foam);
 		ALPHA = sheet_alpha;
-	} else {
+	} else
+#endif
+	{
 		ALBEDO = mix(mix(water, sky, fresnel * 0.8), foam_tint, foam * 0.85);
 		ALPHA = max(max(body_alpha, fresnel * 0.8), foam * 0.9) * sheet_alpha;
 	}
@@ -220,20 +243,28 @@ void fragment() {
 }
 """
 
-static var _shader: Shader = null
+static var _shader: Shader = null        # Medium and up: reads the scene behind the water
+static var _shader_low: Shader = null    # Low: no screen or depth copy
 
 
 static func make() -> ShaderMaterial:
 	if _shader == null:
 		_shader = Shader.new()
-		_shader.code = SHADER
+		_shader.code = "#define SCENE_READS\n" + SHADER
+		_shader_low = Shader.new()
+		_shader_low.code = SHADER
 
 	var material: ShaderMaterial = ShaderMaterial.new()
 	material.shader = _shader
 	return material
 
 
-# Quality (F2): Low blends the water over the ground; Medium and up bend the view through it.
+# Quality (F2): Low is the cheap variant (no depth or screen read, blended by vertex alpha);
+# Medium and up bend the view through the ripples.
 static func apply_quality(material: ShaderMaterial, quality: int) -> void:
 	if material != null:
+		if _shader == null:
+			make()
+
+		material.shader = _shader if quality >= 1 else _shader_low
 		material.set_shader_parameter("refraction", 1.0 if quality >= 1 else 0.0)
