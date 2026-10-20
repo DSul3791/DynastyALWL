@@ -83,7 +83,7 @@ const EVENTS := [
 	{"name": "cricket_chirp", "zones": {"meadow": 1.0, "water": 0.4}, "every": [22, 55], "dist": [5, 28], "height": [0, 0], "db": -16.0, "night_rate": 5.0, "dusk": 2.0, "seasons": {"autumn": 0.9, "summer": 1.0, "spring": 0.3, "winter": 0.0}},
 	{"name": "frog_croak", "zones": {"water": 1.0}, "every": [40, 90], "dist": [6, 24], "height": [0, 0], "db": -18.0, "wet": true, "water": true, "night_rate": 3.0, "dusk": 2.0, "seasons": {"autumn": 0.3, "summer": 1.0, "spring": 1.0, "winter": 0.0}},
 	{"name": "tree_frog_peep", "zones": {"water": 0.8, "forest": 0.2}, "every": [16, 40], "dist": [4, 28], "height": [0, 3], "db": -14.0, "wet": true, "night_rate": 3.0, "dusk": 2.0, "seasons": {"autumn": 0.2, "summer": 1.0, "spring": 1.0, "winter": 0.0}},
-	{"name": "fish_plop", "zones": {"water": 1.0}, "every": [60, 150], "dist": [6, 22], "height": [0, 0], "db": -20.0, "water": true},
+	{"name": "fish_plop", "zones": {"water": 1.0}, "every": [60, 150], "dist": [6, 22], "height": [0, 0], "db": -12.0, "water": true},
 ]
 const ZONES := ["forest", "meadow", "water", "highland"]
 
@@ -91,6 +91,8 @@ var conditions: Dictionary = {"hour": 14.0, "season": "autumn", "weather": "clea
 var weights: Dictionary = {"forest": 0.0, "meadow": 0.0, "water": 0.0, "highland": 0.0}
 var calls_played: Dictionary = {}       # call name -> count (for the headless check)
 var last_call: String = ""
+var last_file: String = ""              # the file last played, e.g. fish_plop_2
+var _source: Dictionary = {}            # call name -> "recorded" or "generated"
 var max_voices: int = 4                 # calls and flushes playing at once (the quality tier sets it)
 var weather_calls: float = 1.0          # share of calls still made in this weather (weather_sounds.gd)
 var weather_wet: float = 0.0            # 0 to 1: rain, which frogs like
@@ -346,8 +348,8 @@ func _try(event: Dictionary, body: CharacterBody3D) -> void:
 	if is_nan(at.x):
 		return
 
-	_play(list, at, float(event["db"]))
-	last_call = "%s %.0f m" % [event["name"], at.distance_to(body.global_position)]
+	_play(event["name"], list, at, float(event["db"]))
+	last_call = "%s %.0f m (%s)" % [last_file, at.distance_to(body.global_position), _source.get(event["name"], "?")]
 	calls_played[event["name"]] = int(calls_played.get(event["name"], 0)) + 1
 
 
@@ -359,7 +361,7 @@ func alarm(at: Vector3) -> bool:
 	if list.is_empty():
 		return false
 
-	_play(list, at, ALARM_DB)
+	_play("crow_alarm", list, at, ALARM_DB)
 	flush(at + Vector3(0.0, 1.0, 0.0), 0.35)
 	_alarm_wait = ALARM_COOLDOWN_SEC
 	last_call = "crow_alarm"
@@ -405,7 +407,7 @@ func flush(at: Vector3, delay: float = 0.0) -> bool:
 	if list.is_empty():
 		return false
 
-	var player: AudioStreamPlayer3D = _play(list, at, FLUSH_DB)
+	var player: AudioStreamPlayer3D = _play("wing_flap", list, at, FLUSH_DB)
 	_flush_wait = FLUSH_COOLDOWN_SEC
 	var angle: float = _rng.randf() * TAU
 	var away: Vector3 = Vector3(cos(angle), 0.0, sin(angle)) * _rng.randf_range(float(FLUSH_FLY_M[0]), float(FLUSH_FLY_M[1]))
@@ -438,9 +440,11 @@ func _move_fliers(delta: float) -> void:
 		player.global_position = flier["from"].lerp(flier["to"], k)
 
 
-func _play(list: Array, at: Vector3, db: float) -> AudioStreamPlayer3D:
+func _play(name: String, list: Array, at: Vector3, db: float) -> AudioStreamPlayer3D:
 	var player: AudioStreamPlayer3D = AudioStreamPlayer3D.new()
-	player.stream = list[_rng.randi_range(0, list.size() - 1)]
+	var pick: int = _rng.randi_range(0, list.size() - 1)
+	player.stream = list[pick]
+	last_file = "%s_%d" % [name, pick]
 	player.bus = "Nature"
 	player.volume_db = db + _rng.randf_range(-2.0, 1.0)
 	player.pitch_scale = _rng.randf_range(0.95, 1.05)
@@ -487,9 +491,11 @@ func _variants(name: String) -> Array:
 		return _streams[name]
 
 	var list: Array = SoundStage._find(RECORDED_DIR, name)
+	_source[name] = "recorded"
 
 	if list.is_empty():
 		list = SoundStage._find(GENERATED_DIR, name)
+		_source[name] = "generated"
 
 	_streams[name] = list
 	return list

@@ -92,12 +92,18 @@ func set_tier(tier: int) -> void:
 	_tier = tier
 
 
-func update(delta: float, body: CharacterBody3D) -> void:
+func update(delta: float, body: CharacterBody3D, flying: bool = false) -> void:
 	_scan_left -= delta
 
 	if _scan_left <= 0.0:
 		_scan_left = SCAN_SEC
-		_target = forced if forced >= 0.0 else _measure(body)
+
+		if forced >= 0.0:
+			_target = forced
+		elif flying:
+			_target = 0.0                                       # no rays while flying (admin look-around)
+		else:
+			_target = _measure(body)
 
 	enclosure = move_toward(enclosure, _target, EASE_PER_SEC * delta)
 	_apply()
