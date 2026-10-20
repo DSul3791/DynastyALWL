@@ -53,6 +53,21 @@ func _init() -> void:
 	index.remove_chunk(Vector2i(1, 0))
 	check(index.trees == 0, "index empty again (%d)" % index.trees)
 
+	# Roofs: a yawed box spanning several cells and a disc.
+	var roof_index = Cover.Index.new()
+	var box: int = roof_index.add_roof(Cover.box_roof(Vector2(500.0, 500.0), 20.0, 3.0, PI * 0.5, 10.0, 14.0))
+	check(Cover.at(Vector3(500.0, 12.0, 515.0), roof_index) == 1.0, "under a turned box, far along its length")
+	check(Cover.at(Vector3(505.0, 12.0, 515.0), roof_index) == 0.0, "beside the box")
+	check(Cover.at(Vector3(500.0, 15.0, 500.0), roof_index) == 0.0, "standing on the roof is not covered")
+	check(Cover.at(Vector3(500.0, 9.0, 500.0), roof_index) == 0.0, "below the roof floor is open")
+	var disc: int = roof_index.add_roof(Cover.disc_roof(Vector2(0.0, 0.0), 6.0, 0.0, 5.0))
+	check(Cover.at(Vector3(4.0, 2.0, 0.0), roof_index) == 1.0, "under the disc")
+	check(roof_index.roofs_near(0.0, 0.0, 5.0).size() == 1, "roofs near")
+	roof_index.remove_roof(box)
+	check(Cover.at(Vector3(500.0, 12.0, 515.0), roof_index) == 0.0, "removed box opens the ground")
+	roof_index.remove_roof(disc)
+	check(roof_index.roof_count() == 0, "roofs gone")
+
 	# Cost: 25k trees in a chunk-sized spread, 10k queries.
 	var many: Array = []
 
