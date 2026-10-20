@@ -548,6 +548,8 @@ func _on_welcome(info: Dictionary) -> void:
 	items.name = "Items"
 	add_child(items)
 	items.setup(net, layer, root, func(): return body.global_position, _ground_below)
+	items.knowledge = knowledge
+	items.is_inspecting = func(): return inspecting
 	held = HeldItemScript.new()
 	held.name = "Held"
 	add_child(held)

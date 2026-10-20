@@ -36,8 +36,9 @@ func _init() -> void:
 	DirAccess.make_dir_recursive_absolute("user://test_server_items_e")
 	DirAccess.make_dir_recursive_absolute("user://test_server_items_f")
 	DirAccess.make_dir_recursive_absolute("user://test_server_items_g")
+	DirAccess.make_dir_recursive_absolute("user://test_server_items_h")
 
-	for suffix in ["", "_b", "_c", "_d", "_e", "_f", "_g"]:
+	for suffix in ["", "_b", "_c", "_d", "_e", "_f", "_g", "_h"]:
 		for file in DirAccess.get_files_at(dir + suffix):
 			DirAccess.remove_absolute(dir + suffix + "/" + file)
 
@@ -380,6 +381,16 @@ func _init() -> void:
 	q.save()
 	var q2 = make("user://test_server_items_g")
 	check(q2._saplings.size() == q._saplings.size(), "saplings survive a restart")
+
+	# Splitting stacks.
+	var sp = make("user://test_server_items_h")
+	sp.peer_connected_hello(1, "abcdef123456")
+	sp.action(1, Net.ACT_ADMIN_GIVE, stone, 0, 10, Vector3.ZERO)
+	sp.action(1, Net.ACT_SPLIT, 0, 0, 4, Vector3.ZERO)
+	check(sp.inventory_of(1).counts[0] == 6 and sp.inventory_of(1).counts[1] == 4 and sp.inventory_of(1).numbers[1] == stone, "split moves a part to the next empty slot")
+	sp.action(1, Net.ACT_SPLIT, 0, 0, 6, Vector3.ZERO)
+	sp.action(1, Net.ACT_SPLIT, 0, 0, 0, Vector3.ZERO)
+	check(sp.inventory_of(1).counts[0] == 6 and sp.inventory_of(1).count_of(stone) == 10, "cannot split everything or nothing")
 
 	print("server item tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

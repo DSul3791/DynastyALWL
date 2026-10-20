@@ -9,6 +9,7 @@ extends Node
 
 const Net := preload("res://src/stream/terrain_net.gd")
 
+const HOTBAR_FILE := "user://hotbar.txt"      # the chosen hotbar slot is remembered between sessions
 const REST := Vector3(0.38, -0.32, -0.55)       # model offset from the camera
 const AIMED := Vector3(0.28, -0.12, -0.35)
 const JAB_REACH := 0.7
@@ -46,6 +47,10 @@ const REACH_M := 3.0
 func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hud_layer: CanvasLayer, ground_below: Callable, sound_stage = null, tree_near: Callable = Callable(), cover_at: Callable = Callable()) -> void:
 	_cover_at = cover_at
 	_sound = sound_stage
+
+	if FileAccess.file_exists(HOTBAR_FILE):
+		held_slot = clampi(int(FileAccess.get_file_as_string(HOTBAR_FILE)), 0, 7)
+
 	_tree_near = tree_near
 	_inv = inventory_view
 	_net = terrain_net
@@ -67,6 +72,10 @@ func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hu
 func select(slot: int) -> void:
 	held_slot = clampi(slot, 0, 7)
 	aiming = false
+	var file: FileAccess = FileAccess.open(HOTBAR_FILE, FileAccess.WRITE)
+
+	if file != null:
+		file.store_string(str(held_slot))
 
 
 func held_number() -> int:

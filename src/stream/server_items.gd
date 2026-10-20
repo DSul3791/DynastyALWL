@@ -230,6 +230,8 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_pickup(peer, inv, a)
 	elif kind == Net.ACT_HIT:
 		_hit(peer, inv, a, Vector2i(b, count))
+	elif kind == Net.ACT_SPLIT:
+		_split(inv, a, count)
 	elif kind == Net.ACT_PROCESS:
 		_process_trunk(peer, inv, a)
 	elif kind == Net.ACT_MINE:
@@ -1084,3 +1086,16 @@ func peers_near(position: Vector3, radius: float) -> Array:
 			out.append(peer)
 
 	return out
+
+
+# Splits `count` off a stack into the first empty slot (the stack keeps at least one).
+func _split(inv, slot: int, count: int) -> void:
+	if slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or count < 1 or count >= inv.counts[slot]:
+		return
+
+	for target in range(inv.SLOTS):
+		if inv.numbers[target] == 0:
+			inv.numbers[target] = inv.numbers[slot]
+			inv.counts[target] = count
+			inv.counts[slot] -= count
+			return

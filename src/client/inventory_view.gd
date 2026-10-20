@@ -411,6 +411,8 @@ var _detail: VBoxContainer
 var _selected_recipe: int = 0
 var _quantity: SpinBox
 var _qty: int = 1
+var knowledge                          # InspectionKnowledge (set by the client): item names follow what the character knows
+var is_inspecting: Callable            # () -> true while inspection mode is on
 var _craft_queue: int = 0             # crafts still to do after the one running
 var _slot_scroll: ScrollContainer
 
@@ -512,6 +514,12 @@ func _build_panel() -> void:
 	row.add_theme_constant_override("separation", _px(12))
 	right.add_child(row)
 
+	var split: Button = Button.new()
+	split.text = "Split half"
+	_style(split, BODY_PX)
+	split.pressed.connect(_split_selected)
+	row.add_child(split)
+
 	for whole in [true, false]:
 		var drop: Button = Button.new()
 		drop.text = "Drop stack" if whole else "Drop one"
@@ -557,6 +565,29 @@ func _start_craft(number: int) -> void:
 	_craft_done_msec = Time.get_ticks_msec() + int(recipes.recipe(number)["craft_s"] * 1000.0)
 
 
+func _split_selected() -> void:
+	if _selected < 0 or inventory.counts[_selected] < 2:
+		return
+
+	net.inventory_action.rpc_id(1, Net.ACT_SPLIT, _selected, 0, inventory.counts[_selected] / 2, Vector3.ZERO)
+	_selected = -1
+
+
+# Hover text for a slot. In inspection mode the name follows what the character knows (the truth,
+# "Unknown", or a sticky wrong guess drawn from the item's look-alike list); otherwise it is the plain name.
+func _tooltip(number: int, count: int) -> String:
+	if number == 0:
+		return ""
+
+	var entry: Dictionary = table.entry(table.id_of(number))
+	var name: String = table.name_of(number)
+
+	if knowledge != null and is_inspecting.is_valid() and bool(is_inspecting.call()):
+		name = knowledge.reveal("i%d" % number, name, int(entry.get("familiarity", 100)), "horticulture", entry.get("look_alikes", []))
+
+	return "%s x%d\n%s, stacks to %d" % [name, count, str(entry.get("kind", "item")), table.stack_of(number)]
+
+
 func _drop_selected(whole: bool) -> void:
 	if _selected < 0 or inventory.numbers[_selected] == 0:
 		return
@@ -596,6 +627,7 @@ func _refresh() -> void:
 		button.text = "" if number == 0 else "%s\nx%d" % [table.name_of(number), inventory.counts[i]]
 		button.modulate = Color(1.0, 0.9, 0.5) if i == _selected else Color.WHITE
 		button.visible = filter == "" or (number != 0 and _matches(table.name_of(number), filter))
+		button.tooltip_text = _tooltip(number, inventory.counts[i])
 
 	# Recipes: makeable first, then the rest, each alphabetical.
 	for child in _recipe_list.get_children():
