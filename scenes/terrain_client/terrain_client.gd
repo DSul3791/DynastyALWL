@@ -182,6 +182,8 @@ var _item_sync_left: float = 0.0
 var test_levels: bool = false
 var test_placed: bool = false
 var test_cooking: bool = false
+var test_treewind: bool = false
+var _test_treewind_t: float = -1.0
 var test_wear: bool = false
 var _test_wear_t: float = -1.0
 var test_distant: bool = false
@@ -340,6 +342,8 @@ func _ready() -> void:
 			test_distant = true
 		elif argument == "--wear-sounds":
 			test_wear = true
+		elif argument == "--treewind":
+			test_treewind = true
 		elif argument == "--cooking":
 			test_cooking = true
 		elif argument == "--placed":
@@ -2052,6 +2056,18 @@ func _process(delta: float) -> void:
 		if _test_wear_t > 7.0:
 			test_wear = false
 			print("Terrain client: wear sounds %s, last %s" % [str(sound.placed.played), sound.placed.last])
+
+	# Headless check: the tree counts around the player and the wind-in-trees loops they start.
+	if test_treewind and now - connected_msec > 18000:
+		var before_tw: float = _test_treewind_t
+		_test_treewind_t = maxf(_test_treewind_t, 0.0) + get_process_delta_time()
+
+		for at in [4.0, 12.0, 20.0]:
+			if before_tw < at and _test_treewind_t >= at:
+				print("Terrain client: tree wind: conifer %.2f, broadleaf %.2f, wind %.2f, playing %s" % [sound.treewind._density["conifer"], sound.treewind._density["broadleaf"], sound.wind_strength, sound.treewind.summary])
+
+		if _test_treewind_t > 20.5:
+			test_treewind = false
 
 	# Headless check: the cooking and eating sounds play (sizzle and fuel at a spot beside the player, then each way of eating).
 	if test_cooking and now - connected_msec > 18000:

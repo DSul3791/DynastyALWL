@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **156 slots: 17 recorded, 130 generated placeholders, 9 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **160 slots: 17 recorded, 134 generated placeholders, 9 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -63,6 +63,10 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 2 | `town_fire` | generated | 1 | town_sounds.gd: a hearth or forge fire (loop) | A seamless crackling fire loop |
 | 2 | `town_hammering` | generated | 1 | town_sounds.gd: a smith or builder working nearby (loop) | A seamless loop of hammer on anvil, 8 to 15 s |
 | 2 | `tree_creak` | generated | 3 | tree_sounds.gd: a felled tree groans as it starts to go (when its trunk appears) | 3 tree trunk creaks and groans before falling, 1 to 2 s |
+| 2 | `treewind_bare` | generated | 1 | tree_wind.gd: wind in bare winter branches, creaks (loop) | A seamless loop of wind in bare branches with soft creaks |
+| 2 | `treewind_dry` | generated | 1 | tree_wind.gd: wind in dry autumn leaves (loop) | A seamless loop of wind in dry crackling leaves |
+| 2 | `treewind_leaves` | generated | 1 | tree_wind.gd: wind in summer and spring leaves (loop) | A seamless loop of wind in green broadleaf trees, 20 s or more |
+| 2 | `treewind_pine` | generated | 1 | tree_wind.gd: wind through conifers, a soft needle hiss (loop, level follows wind and conifer count) | A seamless loop of wind in pines, 20 s or more, steady, no gusts |
 | 2 | `water_fall` | generated | 1 | water_sounds.gd: a waterfall roar | A waterfall loop, seamless |
 | 2 | `water_pond` | generated | 1 | water_sounds.gd: gentle lapping at a pond shore | A calm lake shore lapping loop, seamless |
 | 2 | `wind_storm` | generated | 1 | weather_sounds.gd: gale howl in storms and blizzards | A howling gale loop, seamless |

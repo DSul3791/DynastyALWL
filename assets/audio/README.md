@@ -227,3 +227,8 @@ Checked what exists: the campfire already had its crackle, lighting, put-out and
 New: `cook_sizzle` plays at the nearest fire when a roast_forage appears in the bag (the C key), `fire_fuel` when stick or log count drops within 1.5 s of the V key. `sound.itemfx.eat("crunch"|"soft"|"drink"|item id)` is the hook for eating: crunch for roast_forage, tree_roots, seed_bundle, soft for anything else. Items thread: call it when an eat action exists (EAT_KINDS in item_sounds.gd). A cooking pot would add a `pot_simmer` loop later.
 Tool wear (Items build 195, no extra Items work): a tool slot that becomes broken plays `tool_break`, a slot whose wear drops plays `tool_repair`, both at the player.
 Generated placeholders: `assets/audio/cooking/` (make_cooking.py), recordings in `assets/audio/recorded/cooking/` win. Tests: `--cooking`, `--wear-sounds`.
+
+## Wind in trees (build 197)
+
+`src/client/tree_wind.gd` (`sound.treewind`): the trees within 45 m (flora chunk tree lists, read 300 a frame every 4 s) are counted as conifers and broadleaf, weighted by nearness. Four loops on the Wind bus: `treewind_pine` (any conifer stand), `treewind_leaves` (broadleaf, spring and summer), `treewind_dry` (broadleaf, autumn), `treewind_bare` (broadleaf, winter creaks). Level = a full stand (22 weighted trees) in a full wind is -24 dB, falling with fewer trees and a calmer day; +3 dB under a canopy. Season comes from the ambient clock (`--tree-season=winter` forces it for tests). Low plays only the loudest loop. Nothing plays in open country. Test: `--treewind` (prints counts and levels).
+Generated placeholders: `assets/audio/treewind/` (make_treewind.py); recordings in `assets/audio/recorded/treewind/` win.

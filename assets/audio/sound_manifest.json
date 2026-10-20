@@ -1017,6 +1017,38 @@
    "priority": 3
   },
   {
+   "name": "treewind_pine",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "tree_wind.gd: wind through conifers, a soft needle hiss (loop, level follows wind and conifer count)",
+   "to_supply": "A seamless loop of wind in pines, 20 s or more, steady, no gusts",
+   "priority": 2
+  },
+  {
+   "name": "treewind_leaves",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "tree_wind.gd: wind in summer and spring leaves (loop)",
+   "to_supply": "A seamless loop of wind in green broadleaf trees, 20 s or more",
+   "priority": 2
+  },
+  {
+   "name": "treewind_dry",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "tree_wind.gd: wind in dry autumn leaves (loop)",
+   "to_supply": "A seamless loop of wind in dry crackling leaves",
+   "priority": 2
+  },
+  {
+   "name": "treewind_bare",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "tree_wind.gd: wind in bare winter branches, creaks (loop)",
+   "to_supply": "A seamless loop of wind in bare branches with soft creaks",
+   "priority": 2
+  },
+  {
    "name": "cook_sizzle",
    "state": "generated",
    "variants": 2,
