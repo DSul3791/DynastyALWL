@@ -49,7 +49,7 @@ const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 const GpuProbeScript := preload("res://src/debug/gpu_probe.gd")
 const WeatherLookScript := preload("res://src/client/weather_look.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 160
+const BUILD := 164
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -79,7 +79,7 @@ const QUALITY_FLORA := [0.4, 0.7, 1.0, 1.0]
 const QUALITY_GRASS_M := [14.0, 24.0, 34.0, 48.0]       # grass drawn this far around the player
 const QUALITY_GRASS_POINTS := [3, 5, 6, 7]               # ground samples per 6 m cell side
 const QUALITY_GRASS_DENSITY := [0.45, 0.65, 0.75, 0.85]     # cards per ground sample, times the layers' own counts
-const QUALITY_SHADOW_M := [0.0, 60.0, 100.0, 250.0]    # 0 = no shadows
+const QUALITY_SHADOW_M := [0.0, 45.0, 60.0, 120.0]    # 0 = no shadows
 const QUALITY_CACHE_MB := [1024, 4096, 10240, 10240]    # ground cache limit on disk
 const FLY_SPEED := 30.0
 const INCOMING_USEC := 3000           # most time a frame puts arrived chunks in the scene (one at least)

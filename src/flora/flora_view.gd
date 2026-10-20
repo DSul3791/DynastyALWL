@@ -191,6 +191,8 @@ const SHAPES_PER_BODY := 64  # trunk colliders per body
 # crossed quads (tree_impostor.gd) reaches view_m (180, 315, 450 m). Switch distances pulled closer 2026-10-20 (flora cost plan step 2). By quality: Low, Medium, High, Ultra.
 const IMPOSTOR_M := [100.0, 150.0, 180.0, 250.0]
 const IMPOSTOR_TILE_PX := [Vector2i(64, 128), Vector2i(128, 256), Vector2i(128, 256), Vector2i(128, 256)]   # one view; the atlas holds two
+const SHADOW_M := [0.0, 45.0, 60.0, 120.0]   # full-detail trees cast shadows only this near (64 m cells; the sun's shadow range is a render setting)
+const CELL_M := 64.0       # trees choose casting shadows per cell of this size inside a chunk
 const FAR_SHADOWS := [false, false, false, true]   # far-model trees cast shadows only at Ultra (shadow range is 100 m at High)
 
 var chunk_m: float = 256.0
@@ -200,6 +202,7 @@ var near_m: PackedFloat32Array = PackedFloat32Array([260.0, 110.0, 0.0])   # ful
 var canopy_version: int = 0           # counts changes to the held trees (the canopy map redraws on it)
 var impostor_m: float = 300.0          # trees beyond this are drawn as impostors (set by set_quality)
 var far_shadows: bool = false
+var shadow_m: float = 60.0
 var instances: int = 0                 # items drawn now
 var colliders: int = 0                 # trunk colliders now
 var water_chunks: int = 0              # chunks with water drawn
@@ -241,6 +244,7 @@ func set_quality(quality: int) -> void:
 	quality = clampi(quality, 0, IMPOSTOR_M.size() - 1)
 	impostor_m = IMPOSTOR_M[quality]
 	far_shadows = FAR_SHADOWS[quality]
+	shadow_m = SHADOW_M[quality]
 	var tile: Vector2i = IMPOSTOR_TILE_PX[quality]
 
 	if tile != _impostor_tile and TreeImpostor.can_render():
@@ -875,6 +879,20 @@ func _level(chunk: Vector2i, position: Vector3) -> int:
 		if distance <= near_m[kind]:
 			level |= 16 << kind
 
+	# Full-detail trees cast shadows only near the player: one bit per 64 m cell of the chunk (bits 32 up).
+	if (level & 16) != 0 and shadow_m > 0.0 and distance <= shadow_m:
+		var cells: int = int(chunk_m / CELL_M)
+		var x0: float = float(chunk.x) * chunk_m
+		var z0: float = float(chunk.y) * chunk_m
+
+		for cz in range(cells):
+			for cx in range(cells):
+				var dx: float = maxf(maxf(x0 + float(cx) * CELL_M - position.x, position.x - (x0 + float(cx + 1) * CELL_M)), 0.0)
+				var dz: float = maxf(maxf(z0 + float(cz) * CELL_M - position.z, position.z - (z0 + float(cz + 1) * CELL_M)), 0.0)
+
+				if dx * dx + dz * dz <= shadow_m * shadow_m:
+					level |= 1 << (32 + cz * cells + cx)
+
 	# Trees far away are impostors (64), once their images exist.
 	if not _impostors.is_empty() and distance > impostor_m:
 		level |= 64
@@ -1006,6 +1024,14 @@ func _plan(items: Dictionary, level: int) -> Dictionary:
 		if (level & 64) != 0 and int(info["kind"]) == KIND_TREE and _impostors.has(species_id):
 			is_near = 2
 			variant = 0
+		elif is_near == 1 and int(info["kind"]) == KIND_TREE:
+			# Full model: tier 1 casts a shadow (cell within shadow_m of the player), tier 3 does not.
+			var cells: int = int(chunk_m / CELL_M)
+			var cx: int = posmod(int(floor(p.x / CELL_M)), cells)
+			var cz: int = posmod(int(floor(p.z / CELL_M)), cells)
+
+			if (level & (1 << (32 + cz * cells + cx))) == 0:
+				is_near = 3
 
 		var key: Array = [species_id, int(floor(p.x / part_m)), int(floor(p.z / part_m)), variant, is_near]
 
@@ -1140,7 +1166,7 @@ func _apply_step(job: Dictionary) -> bool:
 	var info: Dictionary = _species[key[0]]
 	var multimesh: MultiMesh = MultiMesh.new()
 	multimesh.transform_format = MultiMesh.TRANSFORM_3D
-	multimesh.mesh = _impostors[key[0]]["mesh"] if key[4] == 2 and _impostors.has(key[0]) else (info["near"] if key[4] == 1 else info["far"])[key[3]]
+	multimesh.mesh = _impostors[key[0]]["mesh"] if key[4] == 2 and _impostors.has(key[0]) else (info["near"] if key[4] == 1 or key[4] == 3 else info["far"])[key[3]]
 	multimesh.use_custom_data = bool(info["tinted"])
 	multimesh.instance_count = int(draw_plan[1])
 	multimesh.buffer = draw_plan[2]
