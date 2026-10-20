@@ -71,3 +71,7 @@ Placeholders for the saw mill era (job 28, data only): lumber (27), plank chest 
 
 ## Naming rule (Dave 2026-10-20)
 Item and recipe names are the plain item name only, with no verb: "Basic torch", "Wooden spear", "Stone axe", "Campfire", "Small shelter", "Stone knife", "Wooden spade", "Comfrey poultice". Never "Bind a...", "Carve a...", "Chip a...", "Pound a...", "Make a...". The crafting list and its detail heading show just that name. Ids do not change.
+
+## Real pickup meshes and natural scatter (2026-10-20)
+- Dave's `assets/natural_pickups/*.glb` (3 smooth stones, 3 rough stones, 3 forest sticks, 3 driftwood; metres, Y up, contact at Y=0, vertex colours, 970 to 1,700 triangles each) are the shapes of loose stones and sticks. The client picks one by world id (`_natural_mesh`), turns, scales, tilts and part-buries it (`_dress_natural`). One shared mesh per variant, import-made LODs, hidden beyond 45 m (stones) and 70 m (sticks), no shadow casting. Missing files fall back to the procedural shapes. Driftwood is imported but not placed yet (waits for a server water-bank query).
+- Server scatter (`_scatter_spot`, odds in `data/items/drops.json` ground_scatter): counts unchanged. Sticks prefer spots under tree crowns (`cover_at`) and avoid bare rock; stones prefer slopes, bare rock (`rock_at`) and hollows at the foot of a rise; some of each stay in open ground.
