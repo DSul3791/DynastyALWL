@@ -19,6 +19,7 @@ extends Node
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const AmbientScript := preload("res://src/client/ambient_life.gd")
 const WeatherScript := preload("res://src/client/weather_sounds.gd")
+const DigScript := preload("res://src/client/dig_sounds.gd")
 const WaterSoundsScript := preload("res://src/client/water_sounds.gd")
 const AUDIO_DIR := "res://assets/audio/"
 const RECORDED_DIR := "res://assets/audio/recorded/"
@@ -112,6 +113,7 @@ var _rng := RandomNumberGenerator.new()
 var ambient                             # AmbientLife: birds, crickets, frogs by zone
 var water                               # WaterSounds: brooks, rivers, pond shores, waterfalls
 var weather                             # WeatherSounds: rain, gale, thunder, snow hush (set_weather)
+var dig                                 # DigSounds: the sound of what is dug (dug(center, radius, listener))
 var _sphere: PhysicsShapeQueryParameters3D
 
 
@@ -160,6 +162,10 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	weather.name = "Weather"
 	add_child(weather)
 	weather.setup(self, ambient)
+	dig = DigScript.new()
+	dig.name = "Dig"
+	add_child(dig)
+	dig.setup(self)
 
 	_load_settings()
 
@@ -182,6 +188,7 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	ambient.update(delta, body, flying)
 	water.update(delta, body, underwater)
 	weather.update(delta, body, underwater)
+	dig.update(delta)
 	_time += delta
 	gust = clampf(0.5 + 0.8 * _gust_noise.get_noise_1d(_time), 0.0, 1.0)
 	var position: Vector3 = body.global_position
@@ -396,6 +403,25 @@ func _trunks_near(body: CharacterBody3D, radius: float) -> int:
 # bare rock, or -1 when the ground is not loaded.
 func ground_at(feet: Vector3) -> int:
 	return _ground_under(feet)
+
+
+# The soil or rock id (CHANNEL_MATERIAL) at a point, -1 where the ground is not loaded.
+func material_at(point: Vector3) -> int:
+	_tool.channel = Layout.CHANNEL_MATERIAL
+	var cell: Vector3i = Vector3i(point.floor())
+	return _tool.get_voxel(cell) if _tool.is_area_editable(AABB(Vector3(cell), Vector3.ONE)) else -1
+
+
+# The ore id (CHANNEL_RESOURCE) at a point, 0 when none.
+func resource_at(point: Vector3) -> int:
+	_tool.channel = Layout.CHANNEL_RESOURCE
+	var cell: Vector3i = Vector3i(point.floor())
+	return _tool.get_voxel(cell) if _tool.is_area_editable(AABB(Vector3(cell), Vector3.ONE)) else 0
+
+
+# The water surface height above a point (NAN when there is no water there).
+func water_level_at(point: Vector3) -> float:
+	return _flora.water_surface_at(point.x, point.z)
 
 
 # The ore id showing in the rock under the soles, 0 when none.
