@@ -221,7 +221,7 @@ Waterfalls are now heard out to 260 m (was 70): wider range, a bigger unit size 
 `src/client/placed_sounds.gd` (`sound.placed`), hooks until the Items thread's lean-to, chest and tool wear exist: `place("leanto"|"chest"|other, at)`, `pick_up(at)`, `chest(open, at)` (the interior chest sounds), `container(put, at)`, `tool_break(at)`, `tool_repair(at)`. `watch_world` (about 1 Hz from terrain_client) already hears world rows whose item id is in `PLACED` (lean_to, chest): a new one within 40 m plays place, a vanished one pick_up; rows streamed in from afar are silent.
 Generated placeholders: `assets/audio/placed/` (make_placed.py); recordings in `assets/audio/recorded/placed/` win. Test: `--placed` (headless prints each hook's count). Items thread: when lean-to or chest items exist, add their ids to `PLACED` if they differ, and call `container`, `chest`, `tool_break`, `tool_repair` at the matching events.
 
-## Cooking and eating (build 195)
+## Cooking and eating (build 196)
 
 Checked what exists: the campfire already had its crackle, lighting, put-out and rain-sizzle sounds, but nothing played when food was roasted, wood added, or anything eaten (there is no eating action yet, and no cooking pot).
 New: `cook_sizzle` plays at the nearest fire when a roast_forage appears in the bag (the C key), `fire_fuel` when stick or log count drops within 1.5 s of the V key. `sound.itemfx.eat("crunch"|"soft"|"drink"|item id)` is the hook for eating: crunch for roast_forage, tree_roots, seed_bundle, soft for anything else. Items thread: call it when an eat action exists (EAT_KINDS in item_sounds.gd). A cooking pot would add a `pot_simmer` loop later.
