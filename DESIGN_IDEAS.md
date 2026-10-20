@@ -2045,3 +2045,5 @@ Nothing here is committed. It follows `GENERATOR_V2_PLAN.md`, ordered by what af
 8. Game systems on top of that foundation: harvesting, building and blueprints, characters and aging, NPCs, towns, law and recognition, fire, then production, threats, trade and banking. A small first playable slice has to be chosen first.
 
 Most gameplay systems in Sections 5 to 13 live in the server layer and can be added later without rebaking terrain.
+
+Boulder aprons at slope bases (parked 2026-10-20, owner: gravel slope looks good enough for now): boulders sometimes make the very base of a slope, sometimes sand and gravel. Gravel and sand are in (build 155); boulders are not built. Revisit when asked.
