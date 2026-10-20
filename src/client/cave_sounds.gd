@@ -31,6 +31,7 @@ const DROP_DB := {"Wind": -18.0, "Weather": -14.0, "Nature": -8.0}
 
 var enclosure: float = 0.0              # smoothed 0 to 1 (HUD)
 var drips_played: int = 0
+var interior_floor: float = 0.0        # a building sets this (interior_sounds.gd): enclosure never below it, no drips from it
 var forced: float = -1.0                # --cave=0..1 forces it (headless checks), -1 measures
 
 var _stage                              # SoundStage (tier, voice room)
@@ -105,7 +106,7 @@ func update(delta: float, body: CharacterBody3D, flying: bool = false) -> void:
 		else:
 			_target = _measure(body)
 
-	enclosure = move_toward(enclosure, _target, EASE_PER_SEC * delta)
+	enclosure = move_toward(enclosure, maxf(_target, interior_floor), EASE_PER_SEC * delta)
 	_apply()
 	_drip(delta, body)
 

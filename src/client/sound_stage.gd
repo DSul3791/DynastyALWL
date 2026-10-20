@@ -27,6 +27,7 @@ const SwimScript := preload("res://src/client/swim_sounds.gd")
 const UiScript := preload("res://src/client/ui_sounds.gd")
 const CreatureScript := preload("res://src/client/creature_sounds.gd")
 const GearScript := preload("res://src/client/gear_sounds.gd")
+const InteriorScript := preload("res://src/client/interior_sounds.gd")
 const OcclusionScript := preload("res://src/client/sound_occlusion.gd")
 const WaterSoundsScript := preload("res://src/client/water_sounds.gd")
 const AUDIO_DIR := "res://assets/audio/"
@@ -144,6 +145,7 @@ var water                               # WaterSounds: brooks, rivers, pond shor
 var weather                             # WeatherSounds: rain, gale, thunder, snow hush (set_weather)
 var occlusion                           # SoundOcclusion: hills and forest muffle distant sounds
 var hits                                # HitSounds: axe, pick, hammer, spade on wood, stone, soil (hit, hit_ground)
+var interior                            # InteriorSounds: inside a building, doors, chests, furniture (set_inside, object)
 var gear                                # GearSounds: armour and clothing layers on the footsteps (set_worn, step_at)
 var creatures                           # CreatureSounds: deer, rabbit, fox, wolf, bear calls (call_at, call_in_zone; wild = natural far calls)
 var ui                                  # UiSounds: menu click, toggle and quality cues (play(name))
@@ -210,6 +212,10 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	town.name = "Town"
 	add_child(town)
 	town.setup(self)
+	interior = InteriorScript.new()
+	interior.name = "Interior"
+	add_child(interior)
+	interior.setup(self)
 	gear = GearScript.new()
 	gear.name = "Gear"
 	add_child(gear)
@@ -299,6 +305,7 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	town.update(delta, body)
 	swim.update(delta, body, flying, underwater)
 	creatures.update(delta)
+	interior.update(delta)
 	occlusion.update(delta, body, flying)
 	_time += delta
 	gust = clampf(0.5 + 0.8 * _gust_noise.get_noise_1d(_time), 0.0, 1.0)
@@ -390,7 +397,7 @@ func voices_playing() -> int:
 		if is_instance_valid(player) and player.playing:
 			count += 1
 
-	return count + weather.voices_playing() + swim.voices_playing()
+	return count + weather.voices_playing() + swim.voices_playing() + interior.voices_playing()
 
 
 # True while another optional sound (a call, a flush) fits in the voice budget.

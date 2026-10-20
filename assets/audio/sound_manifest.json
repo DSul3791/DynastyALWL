@@ -545,6 +545,78 @@
    "priority": 3
   },
   {
+   "name": "interior_room",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "interior_sounds.gd: the room tone while inside a building (loop)",
+   "to_supply": "A quiet indoor room tone loop, seamless",
+   "priority": 4
+  },
+  {
+   "name": "interior_rain_roof",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "interior_sounds.gd: rain on a roof heard from inside (loop)",
+   "to_supply": "Rain on a wooden or thatched roof from inside, seamless",
+   "priority": 2
+  },
+  {
+   "name": "interior_creak",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "interior_sounds.gd: timbers creaking now and then inside",
+   "to_supply": "2 to 3 wood creaks, 0.5 to 1 s",
+   "priority": 4
+  },
+  {
+   "name": "door_open",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "interior_sounds.gd: a door opens (object)",
+   "to_supply": "2 to 3 wooden door opens with latch and hinge creak",
+   "priority": 3
+  },
+  {
+   "name": "door_close",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "interior_sounds.gd: a door closes (object)",
+   "to_supply": "2 to 3 wooden door closes with a thud and latch",
+   "priority": 3
+  },
+  {
+   "name": "door_knock",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "interior_sounds.gd: knocking on a door (object)",
+   "to_supply": "2 to 3 triple knocks on wood",
+   "priority": 4
+  },
+  {
+   "name": "chest_open",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "interior_sounds.gd: a chest opens (object)",
+   "to_supply": "2 to 3 wooden chest lid opens with a creak",
+   "priority": 3
+  },
+  {
+   "name": "chest_close",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "interior_sounds.gd: a chest closes (object)",
+   "to_supply": "2 to 3 chest lid thuds",
+   "priority": 3
+  },
+  {
+   "name": "furniture_drag",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "interior_sounds.gd: furniture dragged on a floor (object)",
+   "to_supply": "2 to 3 wooden furniture scrapes, 1 s",
+   "priority": 4
+  },
+  {
    "name": "ui_click",
    "state": "generated",
    "variants": 2,

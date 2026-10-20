@@ -197,7 +197,7 @@ func update(delta: float, body: CharacterBody3D, underwater: bool) -> void:
 
 	if _cover_in <= 0.0:
 		_cover_in = COVER_EVERY_SEC
-		_cover_target = 1.0 if forced_cover else _stage.under_cover(body)
+		_cover_target = 1.0 if forced_cover or _stage.interior.amount > 0.5 else _stage.under_cover(body)
 
 	covered = move_toward(covered, _cover_target, delta / 1.5)
 	var cover: float = covered

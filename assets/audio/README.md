@@ -151,3 +151,6 @@ Frogs: normal in clear, 1.6x in drizzle, 1.2x in rain, silent in storms, snow an
 
 ## Gear sounds (build 138)
 `gear_sounds.gd`, made by `make_gear.py` into `assets/audio/gear/`; recordings in `recorded/gear/` win. Names (`_N` variants): `gear_cloth`, `gear_leather`, `gear_chain`, `gear_plate`, `gear_hobnail`, `gear_iron`. They play on top of each footstep for whatever the player wears (hooks only until equipment exists).
+
+## Interior sounds (build 141)
+`interior_sounds.gd`, made by `make_interior.py` into `assets/audio/interior/`; recordings in `recorded/interior/` win. Loops: `interior_room`, `interior_rain_roof`. One-shots (`_N` variants): `interior_creak`, `door_open`, `door_close`, `door_knock`, `chest_open`, `chest_close`, `furniture_drag`. Hooks only until buildings exist.

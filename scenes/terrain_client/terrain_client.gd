@@ -18,6 +18,7 @@ extends Node
 #                     prints when each detail level of the block under the stop point loaded
 #   --swim            with --frames: 20 s in, play a scripted swim (splash, strokes, dive, surface)
 #   --creatures       with --frames: 18 s in, play every creature call in every mood, then calls by zone
+#   --interior        with --frames: 18 s in, go inside and use a door, a chest and furniture
 #   --gear            with --frames: wear plate and iron boots from the start (checks the gear layers on the walk)
 #   --flood           with --frames: 18 s in, start 80 tool hits at once and check the voice cap sheds the farthest and quietest
 #   --ui              with --frames: 18 s in, play the interface cues one every 0.5 s
@@ -46,7 +47,7 @@ const GitStamp := preload("res://src/debug/git_stamp.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 const GpuProbeScript := preload("res://src/debug/gpu_probe.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 142
+const BUILD := 141
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -164,6 +165,10 @@ var test_swim: bool = false
 var test_ui: bool = false
 var test_flood: bool = false
 var test_gear: bool = false
+var test_interior: bool = false
+var _test_interior_step: int = 0
+var _test_interior_at: int = 0
+var _sound_interior_at: int = -1
 var _sound_gear_at: int = -1
 var test_items: bool = false
 var test_gather: bool = false
@@ -289,6 +294,8 @@ func _ready() -> void:
 			test_flood = true
 		elif argument == "--gear":
 			test_gear = true
+		elif argument == "--interior":
+			test_interior = true
 		elif argument == "--items":
 			test_items = true
 		elif argument == "--gather":
@@ -1130,6 +1137,21 @@ func _build_menu(layer: CanvasLayer) -> void:
 		var distance: float = (float(sound.creatures.KINDS[kind]["dist"][0]) + float(sound.creatures.KINDS[kind]["dist"][1])) * 0.5
 		var played: bool = sound.creatures.call_nearby(kind, mood, distance)
 		_menu_note.text = "Creature call: %s, %s, about %.0f m away%s (press again for the next)" % [kind, mood, distance, "" if played else " (did not play)"])
+	_menu_button(settings, "Sound test: interior", func():
+		_sound_interior_at = (_sound_interior_at + 1) % 5
+		var here: Vector3 = body.global_position + -camera.global_transform.basis.z * 2.0
+		var step: int = _sound_interior_at
+		var notes: Array = ["Inside a house (press again: door open, door close, chest, then back outside)", "Door opens", "Door closes", "Chest opens", "Back outside"]
+		var objects: Array = ["", "door_open", "door_close", "chest_open", ""]
+
+		if step == 0:
+			sound.interior.set_inside(1.0, "house")
+		elif step == 4:
+			sound.interior.set_inside(0.0)
+		else:
+			sound.interior.object(objects[step], here)
+
+		_menu_note.text = notes[step])
 	_menu_button(settings, "Sound test: gear", func():
 		var sets: Array = [[], ["cloth"], ["leather", "hobnail"], ["chain", "iron"], ["plate", "iron"]]
 		_sound_gear_at = (_sound_gear_at + 1) % sets.size()
@@ -1712,6 +1734,24 @@ func _process(delta: float) -> void:
 			test_creatures = false
 			sound.creatures.wild = true                              # then the natural far calls run on their own
 
+	# Headless check: step inside, use each object, step back out.
+	if test_interior and now - connected_msec > 18000 and now >= _test_interior_at:
+		_test_interior_at = now + 600
+		var names: Array = sound.interior.OBJECTS.keys()
+
+		if _test_interior_step == 0:
+			sound.interior.set_inside(1.0, "house")
+
+		if _test_interior_step < names.size():
+			sound.interior.object(names[_test_interior_step], body.global_position + Vector3(2.0, 0.0, 1.0), 1.0)
+
+		_test_interior_step += 1
+
+		if _test_interior_step > names.size() + 6:
+			test_interior = false
+			print("Terrain client: interior check: amount %.2f, enclosure %.2f, covered %.1f" % [sound.interior.amount, sound.cave.enclosure, sound.weather.covered])
+			sound.interior.set_inside(0.0)
+
 	# Headless check: more sounds than the tier's voice cap, then the shedding.
 	if test_flood and now - connected_msec > 18000:
 		test_flood = false
@@ -1802,6 +1842,7 @@ func _process(delta: float) -> void:
 	hud.text += "\nlast step: " + sound.last_step
 	hud.text += "\nsound budget: " + sound.budget_text()
 	hud.text += "\n" + sound.wind_text()
+	hud.text += "\ninterior: %.2f inside (%s), %d objects, %d creaks, last %s" % [sound.interior.amount, sound.interior.kind, sound.interior.objects_played, sound.interior.creaks_played, sound.interior.last]
 	hud.text += "\ngear: worn %s, %d steps, last %s" % [str(sound.gear.worn), sound.gear.steps_played, sound.gear.last]
 	hud.text += "\ncreature calls: %s, last %s" % [str(sound.creatures.calls_played), sound.creatures.last]
 	hud.text += "\nswim sounds: %d splashes, %d strokes, %d dives, %d surfacings, last %s" % [sound.swim.splashes, sound.swim.strokes, sound.swim.dives, sound.swim.surfaces, sound.swim.last]
@@ -1846,6 +1887,7 @@ func _process(delta: float) -> void:
 			print("Terrain client: grass %d tufts in %d cells (radius %.0f m)" % [grass.tufts, grass.cells_built, grass.radius_m])
 			print("Terrain client: water sounds: %s" % sound.water.summary)
 			print("Terrain client: nature calls %s, zones %s" % [str(sound.ambient.calls_played), str(sound.ambient.weights)])
+			print("Terrain client: interior sounds: %d objects, %d creaks, last %s" % [sound.interior.objects_played, sound.interior.creaks_played, sound.interior.last])
 			print("Terrain client: gear: worn %s, %d steps, last %s" % [str(sound.gear.worn), sound.gear.steps_played, sound.gear.last])
 			print("Terrain client: creature calls %s, last %s" % [str(sound.creatures.calls_played), sound.creatures.last])
 			print("Terrain client: sounds shed over the cap: %d" % sound.shed_count)
