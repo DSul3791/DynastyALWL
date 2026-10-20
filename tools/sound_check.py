@@ -94,6 +94,13 @@ SCENARIOS = [
         ("all cells run", r"sweep done: " + NUM + r" cells", 32, 32),
         ("peak under the Low cap", r"sweep done: \d+ cells, peak " + NUM + r" of", 1, 24),
     ]),
+    ("emitters", ["--emitter-test"], 3500, [
+        ("threat call plays", r"creature wolf (true)", 0, 1, "text"),
+        ("rate limit 4 per second", r"burst " + NUM + r" of 6 played, " + NUM + r" dropped", 4, 4),
+        ("unknown stays silent", r"unknown (false)", 0, 1, "text"),
+        ("far loops merge", r"17 rows -> " + NUM + r" loops, " + NUM + r" merged", 3, 3),
+        ("merged count", r"loops, " + NUM + r" merged", 13, 13),
+    ]),
     ("stance", ["--stance"], 6000, [
         ("posture changes heard", r"stance check: " + NUM + r" changes", 6, 6),
         ("last is the rise", r"last (stance_rise)", 0, 1, "text"),

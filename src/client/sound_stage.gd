@@ -25,6 +25,7 @@ const HitScript := preload("res://src/client/hit_sounds.gd")
 const TownScript := preload("res://src/client/town_sounds.gd")
 const SwimScript := preload("res://src/client/swim_sounds.gd")
 const UiScript := preload("res://src/client/ui_sounds.gd")
+const EmitterScript := preload("res://src/client/emitters.gd")
 const CreatureScript := preload("res://src/client/creature_sounds.gd")
 const GearScript := preload("res://src/client/gear_sounds.gd")
 const StanceScript := preload("res://src/client/stance_sounds.gd")
@@ -177,6 +178,7 @@ var spear                               # SpearSounds: jab, throw, flight, hits 
 var interior                            # InteriorSounds: inside a building, doors, chests, furniture (set_inside, object)
 var stance                              # StanceSounds: crouch, sit, lie, rise and settle cloth sounds (set_stance); crouching softens steps
 var gear                                # GearSounds: armour and clothing layers on the footsteps (set_worn, step_at)
+var emitters                            # Emitters: sounds for server-owned entities (emit, sync); sound/EMITTER_API.md
 var creatures                           # CreatureSounds: deer, rabbit, fox, wolf, bear calls (call_at, call_in_zone; wild = natural far calls)
 var ui                                  # UiSounds: menu click, toggle and quality cues (play(name))
 var swim                                # SwimSounds: splash, strokes, diving, the hum under water (driven by the body)
@@ -297,6 +299,10 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	creatures.name = "Creatures"
 	add_child(creatures)
 	creatures.setup(self)
+	emitters = EmitterScript.new()
+	emitters.name = "Emitters"
+	add_child(emitters)
+	emitters.setup(self)
 	ui = UiScript.new()
 	ui.name = "Ui"
 	add_child(ui)
@@ -448,6 +454,7 @@ func set_quality(quality: int) -> void:
 	cave.set_tier(tier)
 	town.set_tier(tier)
 	creatures.set_tier(tier)
+	emitters.set_tier(tier)
 
 
 # Over the voice cap (loops and steps always play, so optional sounds can pile up): cuts the one-shot

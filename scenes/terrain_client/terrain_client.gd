@@ -194,6 +194,7 @@ var test_sweep: bool = false           # --sweep: 8 hours x 4 seasons, calls and
 var _sweep_step: int = -1
 var _sweep_peak: int = 0
 var _sweep_max: int = 0
+var test_emitters: bool = false        # --emitter-test: fake server events and loops through sound.emitters (job 65)
 var test_stance: bool = false          # --stance: stand, crouch, sit, lie and rise in turn (job 56)
 var _stance_step: int = 0
 var _lake_start_msec: int = 0
@@ -399,6 +400,8 @@ func _ready() -> void:
 			test_lake = true
 		elif argument == "--stance":
 			test_stance = true
+		elif argument == "--emitter-test":
+			test_emitters = true
 		elif argument == "--sweep":
 			test_sweep = true
 		elif argument == "--voice-priority":
@@ -2446,6 +2449,30 @@ func _process(delta: float) -> void:
 
 	if test_sweep:
 		_sweep_peak = maxi(_sweep_peak, sound.voices_playing())
+
+	if test_emitters and now - connected_msec > 18000 and now >= _test_fire_at:
+		_test_fire_at = now + 10000000
+		var here: Vector3 = body.global_position
+		var em = sound.emitters
+		var wolf: bool = em.emit("wolf", "call_threat", here + Vector3(60.0, 0.0, 0.0), 1.0, 7)
+		var deer: bool = em.emit("deer", "call_idle", here + Vector3(30.0, 0.0, 0.0), 1.0, 8)
+		var burst: int = 0
+
+		for k in range(6):
+			if em.emit("hum", "tick", here + Vector3(8.0, 0.0, 0.0), 1.0, 9):
+				burst += 1
+
+		var nothing: bool = em.emit("ghost", "moan", here, 1.0, 10)
+		var rows: Array = [{"id": 1, "kind": "hum", "loop": "hum", "at": here + Vector3(5.0, 0.0, 0.0)}, {"id": 2, "kind": "hum", "loop": "hum", "at": here + Vector3(0.0, 0.0, 6.0)}]
+
+		for k in range(12):
+			rows.append({"id": 100 + k, "kind": "hum", "loop": "hum", "at": here + Vector3(30.0 + float(k), 0.0, 0.0)})
+
+		for k in range(3):
+			rows.append({"id": 200 + k, "kind": "hum", "loop": "hum", "at": here + Vector3(0.0, 0.0, -35.0 - float(k))})
+
+		em.sync(rows)
+		print("Terrain client: emitter test: creature wolf %s deer %s, burst %d of 6 played, %d dropped, unknown %s, 17 rows -> %d loops, %d merged" % [str(wolf), str(deer), burst, em.dropped_rate, str(nothing), em.loops_playing(), em.merged_loops])
 
 	# Stance sounds: crouch, stand, sit, stand, lie (and sit for 20 s to hear settles), stand.
 	if test_stance and now - connected_msec > 18000 and now >= _test_fire_at:
