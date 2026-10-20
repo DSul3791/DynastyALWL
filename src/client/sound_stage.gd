@@ -20,6 +20,7 @@ const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const AmbientScript := preload("res://src/client/ambient_life.gd")
 const WeatherScript := preload("res://src/client/weather_sounds.gd")
 const DigScript := preload("res://src/client/dig_sounds.gd")
+const CaveScript := preload("res://src/client/cave_sounds.gd")
 const WaterSoundsScript := preload("res://src/client/water_sounds.gd")
 const AUDIO_DIR := "res://assets/audio/"
 const RECORDED_DIR := "res://assets/audio/recorded/"
@@ -118,6 +119,7 @@ var _rng := RandomNumberGenerator.new()
 var ambient                             # AmbientLife: birds, crickets, frogs by zone
 var water                               # WaterSounds: brooks, rivers, pond shores, waterfalls
 var weather                             # WeatherSounds: rain, gale, thunder, snow hush (set_weather)
+var cave                                # CaveSounds: reverb, muffling and drips under rock
 var dig                                 # DigSounds: the sound of what is dug (dug(center, radius, listener))
 var _sphere: PhysicsShapeQueryParameters3D
 
@@ -171,6 +173,10 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	dig.name = "Dig"
 	add_child(dig)
 	dig.setup(self)
+	cave = CaveScript.new()
+	cave.name = "Cave"
+	add_child(cave)
+	cave.setup(self)
 
 	_load_settings()
 
@@ -194,6 +200,7 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	water.update(delta, body, underwater)
 	weather.update(delta, body, underwater)
 	dig.update(delta)
+	cave.update(delta, body)
 	_time += delta
 	gust = clampf(0.5 + 0.8 * _gust_noise.get_noise_1d(_time), 0.0, 1.0)
 	var position: Vector3 = body.global_position
@@ -235,6 +242,7 @@ func set_quality(quality: int) -> void:
 	voice_cap = TIER_VOICES[tier]
 	memory_cap_bytes = TIER_MEMORY_MB[tier] * 1048576
 	ambient.max_voices = TIER_NATURE_CALLS[tier]
+	cave.set_tier(tier)
 
 
 # Every sound playing right now, all layers (the budget counts these).
