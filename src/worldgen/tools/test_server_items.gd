@@ -889,5 +889,38 @@ func _init() -> void:
 	check(stick_cover > 280, "sticks lie mostly under tree cover (%d of 400, 200 if random)" % stick_cover)
 	check(stone_slope > 280, "stones lie mostly on the slope (%d of 400, 200 if random)" % stone_slope)
 
+	# Fall damage and refusal events (job 62).
+	DirAccess.make_dir_recursive_absolute(qd + "_fall")
+
+	for file in DirAccess.get_files_at(qd + "_fall"):
+		DirAccess.remove_absolute(qd + "_fall/" + file)
+
+	var fl = make(qd + "_fall")
+	var rejects: Array = []
+	fl.send_reject = func(_p, reason): rejects.append(reason)
+	fl.send_vitals = func(_p, _h, _he, _w): pass
+	fl.peer_connected_hello(1, "fallkey00001")
+	fl.report_position(1, Vector3(0.0, 10.0, 0.0))
+	fl.action(1, Net.ACT_FALL, 500, 0, 0, Vector3.ZERO)
+	check(float(fl.vitals_of(1)["health"]) == 100.0, "a 5 m drop does no damage")
+	fl.action(1, Net.ACT_FALL, 1000, 0, 0, Vector3.ZERO)
+	check(absf(float(fl.vitals_of(1)["health"]) - 68.0) < 0.01, "a 10 m drop costs 32 health (%.1f left)" % float(fl.vitals_of(1)["health"]))
+	fl.action(1, Net.ACT_FALL, 1000, 0, 0, Vector3.ZERO)
+	check(absf(float(fl.vitals_of(1)["health"]) - 68.0) < 0.01, "a second report within 2 s is ignored")
+	fl._last_fall.clear()
+	fl.action(1, Net.ACT_FALL, 5000, 0, 0, Vector3.ZERO)
+	check(float(fl.vitals_of(1)["health"]) == 1.0, "a huge drop never kills (health stays at 1)")
+	fl._strain_tick(1, 0.25)
+	check(int(fl.strain_of(1)["state"]) == 2, "a drop of 12 m or more makes the player faint")
+	fl.action(1, Net.ACT_PICKUP, 99999, 0, 0, Vector3.ZERO)
+	check(rejects.is_empty(), "no refusal event for an item that is not there")
+	fl.drop_in_world(fl.table.number_of("stone"), 1, Vector3(40.0, 10.0, 0.0))
+	var far_id: int = fl._items.keys()[0]
+	fl.action(1, Net.ACT_PICKUP, far_id, 0, 0, Vector3.ZERO)
+	check(rejects == [0], "a pickup out of reach is refused as too far (%s)" % str(rejects))
+	fl.rock_at = func(x, z): return true
+	fl.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(2.0, 10.0, 0.0))
+	check(rejects == [0, 1], "mining without an axe is refused as no tool (%s)" % str(rejects))
+
 	print("server item tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 22
+const PROTOCOL_VERSION := 23
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -50,6 +50,7 @@ signal water_received(chunk: Vector2i, water: PackedByteArray)
 signal notice_received(text: String)
 signal chest_received(id: int, bytes: PackedByteArray)
 signal vitals_received(hunger: int, health: int, weight_dkg: int)
+signal reject_received(reason: int)
 signal craft_queue_received(entries: Array, left_ms: int)
 signal strain_received(strain_pm: int, state: int, fade_pm: int, stance: int)
 signal hello_requested(peer_id: int, player_key: String)
@@ -69,6 +70,7 @@ const ACT_MINE := 8       # at = the point the axe struck; on bare rock the serv
 const ACT_HIT := 7        # a = tree id, b = flora chunk x, count = flora chunk z: one axe blow on a standing tree
 const ACT_PROCESS := 9    # a = world item id of a felled trunk: one axe blow on it gives branches, leaves, bark, logs
 const ACT_SPLIT := 10     # a = slot, count = how many go to the first empty slot
+const ACT_FALL := 23          # a = the drop in centimetres the client landed from (only sent from the sound threshold, 6 m); the server decides the damage
 const ACT_CRAFT_CANCEL := 22 # a = queue entry index (as last sent): cancel it and get its ingredients back
 const ACT_CRAFT_QUEUE := 21  # a = recipe number, count = how many (1 to 20): queue crafts; ingredients are taken now
 const ACT_STANCE := 20     # a = wanted stance: 0 stand, 1 crouch, 2 sit, 3 lie; the server answers in strain()
@@ -208,6 +210,12 @@ func inventory_slots(bytes: PackedByteArray) -> void:
 @rpc("authority", "call_remote", "reliable")
 func world_items(added: Array, removed: PackedInt32Array) -> void:
 	world_items_received.emit(added, removed)
+
+
+# An action the server refused, so the client can play a cue: 0 too far, 1 no tool, 2 pack full (too heavy), 3 other.
+@rpc("authority", "call_remote", "reliable")
+func reject(reason: int) -> void:
+	reject_received.emit(reason)
 
 
 # The player's crafting queue (server side, keeps running with the screen closed): entries [[recipe number, crafts

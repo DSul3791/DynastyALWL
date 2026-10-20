@@ -63,6 +63,7 @@ var strain_state: int = 0
 var strain_fade: float = 0.0
 var stance_confirmed: int = 0                # the server's answer: 0 stand, 1 crouch, 2 sit, 3 lie (fainting forces 3)
 var stance_event: Callable = Callable()      # (stance) when the server confirms or changes it
+var reject_event: Callable = Callable()   # ("far" | "no_tool" | "full_pack" | "other") when the server refused an action
 var strain_event: Callable = Callable()   # (strain, state, fade) whenever the server sends a change
 var _strain_note: Label
 var _eat_item: String = ""
@@ -102,6 +103,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.vitals_received.connect(_on_vitals)
 	net.strain_received.connect(_on_strain)
 	net.craft_queue_received.connect(_on_craft_queue)
+	net.reject_received.connect(func(reason): reject_event.call(["far", "no_tool", "full_pack", "other"][clampi(reason, 0, 3)]) if reject_event.is_valid() else null)
 	var exertion_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/exertion.json"))
 	_exertion_cfg = exertion_parsed if typeof(exertion_parsed) == TYPE_DICTIONARY else {}
 	_vitals_cfg = VitalsRules.load_config()
@@ -1592,6 +1594,11 @@ func _start_craft(number: int, count: int = 1) -> void:
 			return
 
 	net.inventory_action.rpc_id(1, Net.ACT_CRAFT_QUEUE, number, 0, count, Vector3.ZERO)
+
+
+# A hard landing (sound.landing.hurt): tell the server how far it was; the server decides the damage.
+func report_fall(drop_m: float, _severity: float = 0.0) -> void:
+	net.inventory_action.rpc_id(1, Net.ACT_FALL, int(round(drop_m * 100.0)), 0, 0, Vector3.ZERO)
 
 
 func _on_craft_queue(entries: Array, left_ms: int) -> void:

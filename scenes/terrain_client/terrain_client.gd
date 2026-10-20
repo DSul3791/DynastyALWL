@@ -744,6 +744,8 @@ func _welcome_body(info: Dictionary) -> void:
 		items.set_text_scale(display.TEXT_SCALES[display.text_index])
 	items.eat_event = func(item_id): sound.itemfx.eat(item_id)
 	items.fuel_event = func(): sound.itemfx.fuel_pressed()
+	items.reject_event = func(reason): sound.itemfx.reject(reason)
+	sound.landing.hurt.connect(items.report_fall)
 	items.strain_event = func(strain, _state, _fade):
 		var shown: Array = items.faint_state()
 		faint.set_state(shown[0], strain, shown[1])

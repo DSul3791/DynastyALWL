@@ -86,6 +86,7 @@ var cut_tree: Callable         # (chunk Vector2i, id) -> true when the standing 
 var rock_at: Callable          # (x, z) -> true when bare rock shows at the surface there (no soil cover); set by the server scene
 var game_seconds: Callable      # () -> game clock seconds
 var season_now: Callable        # () -> "spring" | "summer" | "autumn" | "winter"
+var send_reject: Callable        # (peer, reason 0 too far, 1 no tool, 2 pack full, 3 other)
 var send_craft_queue: Callable   # (peer, [[recipe, crafts left], ...], ms left on the first)
 var send_strain: Callable       # (peer, strain in thousandths, state 0 normal 1 over 2 fainted 3 waking, fade in thousandths, stance)
 var send_vitals: Callable       # (peer, hunger percent, health, weight in tenths of a kg)
@@ -115,6 +116,7 @@ var _carry_cfg: Dictionary = {}
 var _exertion_cfg: Dictionary = {}
 var _strain: Dictionary = {}        # peer -> {s: strain, state: 0..3, t: seconds in the state}
 var _strain_sent: Dictionary = {}
+var _last_fall: Dictionary = {}       # peer -> msec of its last accepted fall report
 var _craft_queues: Dictionary = {}    # player key -> {entries: [[recipe, crafts left], ...], elapsed: seconds on the first}
 const QUEUE_ACT_GAP_MS := 100          # queue and cancel requests closer together than this from one player are ignored
 var _last_queue_act: Dictionary = {}   # peer -> msec of its last accepted queue or cancel request
@@ -347,6 +349,8 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_throw(peer, inv, a, at)
 	elif kind == Net.ACT_CRAFT:
 		recipes.craft(a, inv)
+	elif kind == Net.ACT_FALL:
+		_fall(peer, a)
 	elif kind == Net.ACT_CRAFT_QUEUE or kind == Net.ACT_CRAFT_CANCEL:
 		var now: int = Time.get_ticks_msec()
 
@@ -502,6 +506,7 @@ func gather(peer: int, species_name: String, kind: String, flora_key: String, fl
 					_wear_tool(peer, inv, used_class)
 			elif rows.is_empty() and missing != "":
 				_say(peer, "You need a %s for that." % str(_drops.get("tool_rules", {}).get("tool_names", {}).get(missing, missing)))
+				_reject(peer, 1)
 
 	if rows.is_empty() and natural == "":
 		return false
@@ -519,6 +524,11 @@ func gather(peer: int, species_name: String, kind: String, flora_key: String, fl
 
 func _tool_for(item_id: String) -> String:
 	return GatherRules.tool_for(item_id, _drops)
+
+
+func _reject(peer: int, reason: int) -> void:
+	if send_reject.is_valid():
+		send_reject.call(peer, reason)
 
 
 func _say(peer: int, text: String) -> void:
@@ -590,10 +600,17 @@ func _fly(delta: float) -> void:
 # server checks the axe, the reach, the pace and that rock really shows there, and each 8 m patch
 # of outcrop gives only a few stones before it needs time to recover. No ground is dug.
 func _mine(peer: int, inv, at: Vector3) -> void:
-	if not _peer_pos.has(peer) or not rock_at.is_valid() or _peer_pos[peer].distance_to(at) > MINE_REACH_M:
+	if not _peer_pos.has(peer) or not rock_at.is_valid():
+		return
+
+	if _peer_pos[peer].distance_to(at) > MINE_REACH_M:
+		_reject(peer, 0)
 		return
 
 	var has_axe: bool = _has_tool(inv, "axe")
+
+	if not has_axe:
+		_reject(peer, 1)
 
 	var now: int = Time.get_ticks_msec()
 
@@ -709,13 +726,18 @@ func _pickup(peer: int, inv, id: int) -> void:
 		_take_down(peer, inv, id)
 		return
 
-	if it.is_empty() or it.has("fire") or it.has("tree") or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(it["pos"]) > PICKUP_M + 2.0:
+	if it.is_empty() or it.has("fire") or it.has("tree") or not _peer_pos.has(peer):
+		return
+
+	if _peer_pos[peer].distance_to(it["pos"]) > PICKUP_M + 2.0:
+		_reject(peer, 0)
 		return
 
 	var fits: int = _fit(peer, inv, int(it["number"]), int(it["count"]))
 
 	if fits == 0:
 		_say(peer, "Too heavy to carry any more")
+		_reject(peer, 2)
 		return
 
 	var left: int = inv.add(int(it["number"]), fits, int(it.get("wear", 0))) + (int(it["count"]) - fits)
@@ -1028,7 +1050,11 @@ func _hit(peer: int, inv, tree_id: int, chunk: Vector2i) -> void:
 
 	var now: int = Time.get_ticks_msec()
 
-	if now - int(_last_hit.get(peer, -100000)) < HIT_COOLDOWN_MS or not _has_tool(inv, "axe"):
+	if now - int(_last_hit.get(peer, -100000)) < HIT_COOLDOWN_MS:
+		return
+
+	if not _has_tool(inv, "axe"):
+		_reject(peer, 1)
 		return
 
 	var info: Dictionary = tree_info.call(chunk, tree_id)
@@ -1040,6 +1066,7 @@ func _hit(peer: int, inv, tree_id: int, chunk: Vector2i) -> void:
 	var flat: float = Vector2(_peer_pos[peer].x - spot.x, _peer_pos[peer].z - spot.z).length()
 
 	if flat > HIT_REACH_M + float(info["trunk"]):
+		_reject(peer, 0)
 		return
 
 	_last_hit[peer] = now
@@ -1870,6 +1897,34 @@ func _vitals_tick(spent: float) -> void:
 
 		_sync_vitals(peer, false)
 		_strain_tick(peer, spent)
+
+
+# --- Fall damage (job 62) ---
+# The client reports a landing from at least the sound threshold; the server turns the drop into damage (data/items/vitals.json
+# "fall"): nothing under safe_m, per_m health per metre beyond it, a faint from faint_m. Health never goes below 1 (nothing kills yet).
+# A client that stays silent only spares itself; reports are limited to one per 2 s and a drop is capped at 60 m.
+func _fall(peer: int, centimetres: int) -> void:
+	var cfg: Dictionary = _vitals_cfg.get("fall", {})
+	var v: Dictionary = vitals_of(peer)
+	var now: int = Time.get_ticks_msec()
+
+	if cfg.is_empty() or v.is_empty() or now - int(_last_fall.get(peer, -100000)) < 2000:
+		return
+
+	var drop: float = clampf(float(centimetres) / 100.0, 0.0, 60.0)
+	var damage: float = maxf(drop - float(cfg.get("safe_m", 6.0)), 0.0) * float(cfg.get("per_m", 8.0))
+
+	if damage <= 0.0:
+		return
+
+	_last_fall[peer] = now
+	v["health"] = maxf(float(v["health"]) - damage, 1.0)
+	_say(peer, "The fall hurt")
+
+	if drop >= float(cfg.get("faint_m", 12.0)) and not _exertion_cfg.is_empty():
+		_strain[peer] = {"s": float(_exertion_cfg.get("faint_at", 1.4)) + 0.05, "state": 1, "t": 0.0}
+
+	_sync_vitals(peer, true)
 
 
 # --- Crafting queue (Dave 2026-10-20, like Ark) ---
