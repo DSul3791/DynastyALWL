@@ -50,8 +50,9 @@ const GitStamp := preload("res://src/debug/git_stamp.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 const GpuProbeScript := preload("res://src/debug/gpu_probe.gd")
 const WeatherLookScript := preload("res://src/client/weather_look.gd")
+const FaintEffectScript := preload("res://src/client/faint_effect.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 221
+const BUILD := 225
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -242,6 +243,7 @@ var items                             # InventoryView: inventory panel (I), pick
 var harvest                           # Harvest: E prompt, tap to pick, hold to sweep
 var held                              # HeldItem: hotbar keys 1 to 8, spear jab and throw
 var grass                             # GrassView
+var faint                             # FaintEffect: tunnel vision, blur and black-out (set_state)
 var sound                             # SoundStage: wind, footsteps, grass swish
 var _commit: String = GitStamp.short_commit()   # which checkout is running
 var _render_scale: float = 1.0            # 3D resolution scale now (render_scale.gd)
@@ -564,6 +566,9 @@ func _welcome_body(info: Dictionary) -> void:
 	_tint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tint.visible = false
 	layer.add_child(_tint)
+	faint = FaintEffectScript.new()
+	add_child(faint)
+	faint.setup(layer)      # over-exertion and fainting picture (faint.set_state), hidden while normal
 	_mode_label = Label.new()
 	_mode_label.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_mode_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
