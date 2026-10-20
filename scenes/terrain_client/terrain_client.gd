@@ -43,6 +43,7 @@ const HeldItemScript := preload("res://src/client/held_item.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
 const WeatherScript := preload("res://src/shared/weather.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
+const DebugHudScript := preload("res://src/client/debug_hud.gd")
 const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
@@ -110,8 +111,7 @@ var terrain: VoxelLodTerrain
 var body: CharacterBody3D
 var camera: Camera3D
 var hud: Label
-var debug_details: bool = false      # F3 or Esc > Settings: the long list of diagnostic lines
-var debug_lines: Array = []          # Callables returning a String; any thread can append, see _debug_text
+var debug_hud = DebugHudScript.new()   # F3 or Esc > Settings: the long list of diagnostic lines; threads add lines with debug_hud.add_line(name, callable)
 var _last_sound: String = ""
 var _last_sound_seen: Dictionary = {}
 var compass                         # temporary admin compass (AdminCompass)
@@ -1115,8 +1115,8 @@ func _build_menu(layer: CanvasLayer) -> void:
 			_menu_note.text = "Quality: %s" % QUALITY_NAMES[index])
 
 	_menu_button(settings, "Debug details (F3): on or off", func():
-		debug_details = not debug_details
-		_menu_note.text = "Debug details %s" % ("on" if debug_details else "off"))
+		debug_hud.enabled = not debug_hud.enabled
+		_menu_note.text = "Debug details %s" % ("on" if debug_hud.enabled else "off"))
 	_menu_button(settings, "VSync: change", func():
 		display.vsync_index = (display.vsync_index + 1) % display.VSYNC_MODES.size()
 		display.apply(get_window())
@@ -1559,7 +1559,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.keycode == KEY_G and event.ctrl_pressed and event.shift_pressed:
 			_gpu_probe.toggle()
 		elif event.keycode == KEY_F3:
-			debug_details = not debug_details
+			debug_hud.enabled = not debug_hud.enabled
 		elif event.keycode == KEY_F2:
 			quality = (quality + 1) % QUALITY_NAMES.size()
 			_apply_quality()
@@ -1999,7 +1999,7 @@ func _process(delta: float) -> void:
 	_note_last_sound()
 	hud.text = "build %d (%s)  %d fps\nx %.0f  y %.1f  z %.0f\nlast sound: %s" % [BUILD, _commit, Engine.get_frames_per_second(), body.global_position.x, body.global_position.y, body.global_position.z, _last_sound]
 
-	if debug_details:
+	if debug_hud.enabled:
 		hud.text += "\n" + _debug_text(avg_ms, worst_ms)
 
 	if _bake_status != "":
@@ -2059,9 +2059,9 @@ func _process(delta: float) -> void:
 # falling through, and is stopped by a tree trunk.
 
 # Debug details (Dave 2026-10-20: the default HUD is only build, position and the last sound).
-# Any thread that wants a diagnostic line on screen appends a Callable returning a String to
-# debug_lines (for example in its setup); it is only called while Debug details is on (F3, or
-# Esc > Settings).
+# Any thread that wants a diagnostic line on screen registers a Callable returning a String with
+# debug_hud (debug_hud.add_line(name, callable), see src/client/debug_hud.gd); it is only called
+# while Debug details is on (F3, or Esc > Settings).
 func _debug_text(avg_ms: float, worst_ms: float) -> String:
 	var text: String = "avg %.1f ms  worst %.1f ms  quality %s (F2)\nmem %.0f MB\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders, grass %d" % [
 		avg_ms, worst_ms, QUALITY_NAMES[quality],
@@ -2101,8 +2101,10 @@ func _debug_text(avg_ms: float, worst_ms: float) -> String:
 		["on", "adaptive", "off"][clampi([DisplayServer.VSYNC_ENABLED, DisplayServer.VSYNC_ADAPTIVE, DisplayServer.VSYNC_DISABLED].find(DisplayServer.window_get_vsync_mode()), 0, 2)],
 		int(RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME))]
 
-	for extra in debug_lines:
-		text += "\n" + str(extra.call())
+	var extra: String = debug_hud.text()
+
+	if extra != "":
+		text += "\n" + extra
 
 	return text
 
