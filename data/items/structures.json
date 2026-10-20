@@ -27,6 +27,13 @@
 			"logs_to_firewood": 4,
 			"use_pace_ms": 600,
 			"use_reach_m": 3.0
+		},
+		"plank_chest": {
+			"kit": "plank_chest_kit",
+			"item": "plank_chest",
+			"state": 6,
+			"cap_per_chunk": 8,
+			"slots": 20
 		}
 	}
 }

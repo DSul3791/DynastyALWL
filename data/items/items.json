@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability.",
-	"next_number": 27,
+	"next_number": 30,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -262,6 +262,33 @@
 			"kind": "material",
 			"stack": 40,
 			"look_alikes": []
+		},
+		"lumber": {
+			"number": 27,
+			"name": "Lumber",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"note": "Sawn boards. Placeholder until the saw mill exists (Dave 2026-10-20: logs become lumber at a saw mill)."
+		},
+		"plank_chest_kit": {
+			"number": 28,
+			"name": "Plank chest kit",
+			"kind": "placeable",
+			"stack": 1,
+			"look_alikes": [],
+			"footprint_x": 0.9,
+			"footprint_z": 0.6
+		},
+		"plank_chest": {
+			"number": 29,
+			"name": "Plank chest",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": [],
+			"slots": 20,
+			"material": "planks",
+			"note": "Comes after the saw mill. Same row state as the woven chest (6); Art gives it a plank look."
 		}
 	}
 }

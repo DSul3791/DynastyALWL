@@ -21,7 +21,9 @@
 		"lean_to_kit": 4.0,
 		"chest_kit": 3.0,
 		"chopping_block_kit": 8.0,
-		"torch": 0.5
+		"torch": 0.5,
+		"lumber": 3.0,
+		"plank_chest_kit": 14.0
 	},
 	"by_suffix": {
 		"berries": 0.05,
