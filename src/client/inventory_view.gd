@@ -930,6 +930,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			box.mesh = _mesh_for(row[1])
 			node = box
 			node.position = row[3] + Vector3(0.0, 0.12, 0.0)
+			_dress_item(node, int(row[1]), int(row[0]))
 		else:
 			node = _make_fire(state == 1, state == 9)
 			node.position = row[3]
@@ -1121,16 +1122,102 @@ func _make_fire(lit: bool, loaded: bool = false) -> Node3D:
 	return fire
 
 
+# Loose items on the ground (Dave 2026-10-20: a stick must not look like a green box). One shared mesh per item
+# kind; each lying item is turned and scaled a little by its world id (_dress_item), so no per-frame cost.
 func _mesh_for(number: int) -> Mesh:
 	if not _meshes.has(number):
-		var mesh: BoxMesh = BoxMesh.new()
-		mesh.size = Vector3(0.28, 0.2, 0.28)
+		var id: String = table.id_of(number)
 		var material: StandardMaterial3D = StandardMaterial3D.new()
-		material.albedo_color = Color.from_hsv(fmod(float(number) * 0.137, 1.0), 0.5, 0.8)
-		mesh.material = material
+		material.roughness = 1.0
+		var mesh: Mesh
+
+		if id == "stick" or id == "plant_fibre" or id == "firewood" or id == "log":
+			var dims: Array = {"stick": [0.6, 0.02, 0.011, 0.07], "plant_fibre": [0.3, 0.012, 0.006, 0.05], "firewood": [0.4, 0.05, 0.045, 0.01], "log": [1.0, 0.13, 0.11, 0.02]}[id]
+			material.albedo_color = {"stick": Color(0.38, 0.27, 0.17), "plant_fibre": Color(0.72, 0.68, 0.45), "firewood": Color(0.5, 0.36, 0.22), "log": Color(0.33, 0.24, 0.16)}[id]
+			mesh = _branch_mesh(float(dims[0]), float(dims[1]), float(dims[2]), float(dims[3]))
+		elif id == "stone":
+			var rock: SphereMesh = SphereMesh.new()
+			rock.radius = 0.11
+			rock.height = 0.15
+			rock.radial_segments = 8
+			rock.rings = 4
+			material.albedo_color = Color(0.47, 0.46, 0.44)
+			mesh = rock
+		elif str(table.entry(id).get("kind", "")) in ["placeable", "structure", "tool", "weapon"]:
+			var crate: BoxMesh = BoxMesh.new()
+			crate.size = Vector3(0.3, 0.12, 0.2)
+			material.albedo_color = Color(0.45, 0.33, 0.2)
+			mesh = crate
+		else:
+			# Plant parts, food and the rest: a small soft lump tinted by item.
+			var lump: SphereMesh = SphereMesh.new()
+			lump.radius = 0.08
+			lump.height = 0.1
+			lump.radial_segments = 8
+			lump.rings = 4
+			material.albedo_color = Color.from_hsv(fmod(float(number) * 0.137, 1.0), 0.45, 0.7)
+			mesh = lump
+
+		if mesh is PrimitiveMesh:
+			mesh.material = material
+		else:
+			(mesh as ArrayMesh).surface_set_material(0, material)
+
 		_meshes[number] = mesh
 
 	return _meshes[number]
+
+
+# A thin tapered, slightly bent branch lying along X (six sides, four segments), r0 at the base, r1 at the tip.
+func _branch_mesh(length: float, r0: float, r1: float, bend: float) -> ArrayMesh:
+	var tool: SurfaceTool = SurfaceTool.new()
+	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var segments: int = 4
+	var sides: int = 6
+	var rings: Array = []
+
+	for s in range(segments + 1):
+		var t: float = float(s) / float(segments)
+		var centre: Vector3 = Vector3((t - 0.5) * length, sin(t * PI) * bend, sin(t * PI * 1.3) * bend * 0.5)
+		var radius: float = lerpf(r0, r1, t)
+		var ring: Array = []
+
+		for k in range(sides):
+			var a: float = TAU * float(k) / float(sides)
+			ring.append(centre + Vector3(0.0, cos(a) * radius, sin(a) * radius))
+
+		rings.append(ring)
+
+	for s in range(segments):
+		for k in range(sides):
+			var n: int = (k + 1) % sides
+			var a0: Vector3 = rings[s][k]
+			var b0: Vector3 = rings[s][n]
+			var a1: Vector3 = rings[s + 1][k]
+			var b1: Vector3 = rings[s + 1][n]
+
+			for tri in [[a0, a1, b0], [b0, a1, b1]]:
+				for v in tri:
+					tool.add_vertex(v)
+
+	tool.generate_normals()
+	return tool.commit()
+
+
+# Turns and scales a lying item by its world id so a heap of them does not look stamped. Sticks and logs lie flat,
+# stones sit a little in the ground.
+func _dress_item(node: Node3D, number: int, world_id: int) -> void:
+	var id: String = table.id_of(number)
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = world_id * 2654435761 + 17
+	node.rotation = Vector3(0.0, rng.randf_range(0.0, TAU), 0.0)
+
+	if id == "stick" or id == "plant_fibre" or id == "firewood" or id == "log":
+		node.scale = Vector3(rng.randf_range(0.7, 1.3), 1.0, 1.0)
+		node.position.y -= 0.08 if id != "log" else 0.0
+	elif id == "stone":
+		node.scale = Vector3(rng.randf_range(0.8, 1.3), rng.randf_range(0.7, 1.1), rng.randf_range(0.8, 1.3))
+		node.position.y -= 0.07
 
 
 # The crafting and inventory screen, laid out like Ark's (Dave, 2026-10-20): recipes on the left,
@@ -1779,6 +1866,10 @@ func run_gather_test(client) -> void:
 	client.harvest.update(0.3, true)
 	await get_tree().create_timer(1.5).timeout
 	print("Gather test: sweep, sticks %d -> %d (a picked-bare shrub is skipped); prompt \"%s\"" % [after_tap, inventory.count_of(sticks), plant_hint])
+
+	for look in ["stick", "stone", "log", "plant_fibre", "roast_forage"]:
+		var shape: Mesh = _mesh_for(table.number_of(look))
+		print("Item look: %s is a %s, %.2f x %.2f x %.2f m" % [look, shape.get_class(), shape.get_aabb().size.x, shape.get_aabb().size.y, shape.get_aabb().size.z])
 
 
 # Headless check (--quickkeys): D drops, S splits and E eats the stack under the mouse.
