@@ -18,7 +18,6 @@ const SoundStage := preload("res://src/client/sound_stage.gd")
 const GENERATED_DIR := "res://assets/audio/town/"
 const RECORDED_DIR := "res://assets/audio/recorded/town/"
 
-const TIER_LOOPS := [3, 5, 8]
 const KINDS := {
 	"fire": {"file": "town_fire", "db": -12.0, "reach": 30.0, "unit": 4.0},
 	"hammering": {"file": "town_hammering", "db": -10.0, "reach": 70.0, "unit": 8.0},
@@ -51,7 +50,7 @@ func setup(stage) -> void:
 
 
 func set_tier(new_tier: int) -> void:
-	tier = clampi(new_tier, 0, TIER_LOOPS.size() - 1)
+	tier = new_tier
 
 
 func set_sources(sources: Array) -> void:
@@ -114,7 +113,7 @@ func _scan(body: CharacterBody3D) -> void:
 	near.sort_custom(func(a, b): return a["distance"] < b["distance"])
 	var wanted: Dictionary = {}
 
-	for entry in near.slice(0, TIER_LOOPS[tier]):
+	for entry in near.slice(0, int(_stage.preset["town_loops"])):
 		wanted[entry["source"]["id"]] = entry["source"]
 
 	for id in wanted:

@@ -31,10 +31,7 @@ const WaterSoundsScript := preload("res://src/client/water_sounds.gd")
 const AUDIO_DIR := "res://assets/audio/"
 const RECORDED_DIR := "res://assets/audio/recorded/"
 # Audio budget per quality tier Low, Mid, High (ARCHITECTURE_BUDGET.md section 9).
-const TIER_NAMES := ["Low", "Mid", "High"]
-const TIER_VOICES := [24, 48, 96]       # sounds playing at once, all layers together
-const TIER_NATURE_CALLS := [4, 6, 8]    # of those, bird/frog calls and flushes at once
-const TIER_MEMORY_MB := [150, 300, 600] # loaded sound files (Ogg stays compressed; WAV is whole)
+const Presets := preload("res://src/client/sound_presets.gd")   # the per-tier mixer limits (voices, memory, layers)
 const VOICES := 6                       # footstep and swish players, reused in turn
 const FEET_M := 0.9                     # player origin to the soles (capsule half height)
 
@@ -106,7 +103,9 @@ var gust: float = 0.0                   # 0 calm .. 1 strongest gust
 var volume_index: int = 0
 var mix_index: Dictionary = {"wind": 0, "nature": 0, "steps": 0}   # per group, into VOLUME_STEPS
 var tier: int = 2                       # quality index (0 Low); set_quality()
-var voice_cap: int = 96                 # TIER_VOICES[tier]
+var voice_cap: int = 96                 # preset["voices"]
+var preset: Dictionary = Presets.row(2) # this tier's mixer row (sound_presets.gd); layers read their limits here
+var shed_count: int = 0                 # sounds cut to stay inside the voice cap (farthest and quietest first)
 var voices_peak: int = 0                # most sounds playing together so far (HUD)
 var _voice_count: int = 0               # sounds playing at the last count
 var _count_left: float = 0.0
@@ -253,7 +252,7 @@ func _sample_exposure(delta: float, body: CharacterBody3D, flying: bool) -> void
 	_ring_frames += 1
 
 	if _ring_frames % EXPOSURE_EVERY_FRAMES == 0:
-		var points: int = 4 if tier == 0 else 8
+		var points: int = int(preset["exposure_points"])
 		_ring_at = (_ring_at + 1) % points
 		var angle: float = TAU * float(_ring_at) / float(points)
 		var at: Vector3 = body.global_position + Vector3(cos(angle), 0.0, sin(angle)) * EXPOSURE_RING_M
@@ -282,6 +281,9 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 		_count_left = 0.25
 		_voice_count = voices_playing()
 		voices_peak = maxi(voices_peak, _voice_count)
+
+		if _voice_count > voice_cap:
+			_shed(body, _voice_count - voice_cap)
 
 	ambient.update(delta, body, flying)
 	water.update(delta, body, underwater)
@@ -335,13 +337,38 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 
 # Sets the audio budget for a quality tier (0 Low, 1 Mid, 2 High).
 func set_quality(quality: int) -> void:
-	tier = clampi(quality, 0, TIER_VOICES.size() - 1)
-	voice_cap = TIER_VOICES[tier]
-	memory_cap_bytes = TIER_MEMORY_MB[tier] * 1048576
-	ambient.max_voices = TIER_NATURE_CALLS[tier]
+	tier = clampi(quality, 0, Presets.ROWS.size() - 1)
+	preset = Presets.row(tier)
+	voice_cap = int(preset["voices"])
+	memory_cap_bytes = int(preset["memory_mb"]) * 1048576
+	ambient.max_voices = int(preset["nature_calls"])
 	cave.set_tier(tier)
 	town.set_tier(tier)
 	creatures.set_tier(tier)
+
+
+# Over the voice cap (loops and steps always play, so optional sounds can pile up): cuts the one-shot
+# 3D sounds with the lowest priority, the farthest and quietest first, `count` of them. Danger cues
+# (a threat call, the crow alarm) carry the meta "keep" and are never cut.
+func _shed(body: CharacterBody3D, count: int) -> void:
+	var candidates: Array = []
+
+	for player in get_tree().get_nodes_in_group("world_sounds"):
+		if not is_instance_valid(player) or not player.playing or player.has_meta("keep"):
+			continue
+
+		if player.stream is AudioStreamOggVorbis and player.stream.loop:
+			continue
+
+		var distance: float = player.global_position.distance_to(body.global_position)
+		candidates.append([distance - player.volume_db * 4.0, player])         # far and quiet sorts last
+
+	candidates.sort_custom(func(a, b): return a[0] > b[0])
+
+	for n in range(mini(count, candidates.size())):
+		candidates[n][1].stop()
+		candidates[n][1].queue_free()
+		shed_count += 1
 
 
 # Every sound playing right now, all layers (the budget counts these).
@@ -352,7 +379,12 @@ func voices_playing() -> int:
 		if player.playing:
 			count += 1
 
-	return count + ambient.voices_playing() + water.voices_playing() + weather.voices_playing() + swim.voices_playing() + creatures.voices_playing()
+	# Every positioned sound is in the group world_sounds (calls, water, town, tools, digging, creatures, drips).
+	for player in get_tree().get_nodes_in_group("world_sounds"):
+		if is_instance_valid(player) and player.playing:
+			count += 1
+
+	return count + weather.voices_playing() + swim.voices_playing()
 
 
 # True while another optional sound (a call, a flush) fits in the voice budget.
@@ -365,7 +397,7 @@ func wind_text() -> String:
 
 
 func budget_text() -> String:
-	return "sounds %d/%d playing (peak %d), %.1f/%d MB loaded (%s)" % [_voice_count, voice_cap, voices_peak, float(loaded_bytes) / 1048576.0, TIER_MEMORY_MB[tier], TIER_NAMES[tier]]
+	return "sounds %d/%d playing (peak %d), %.1f/%d MB loaded (%s)" % [_voice_count, voice_cap, voices_peak, float(loaded_bytes) / 1048576.0, int(preset["memory_mb"]), Presets.NAMES[tier]]
 
 
 # One footfall at gait 0 walk, 1 jog, 2 run; `boost_db` makes it louder (landings).

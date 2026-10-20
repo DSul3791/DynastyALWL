@@ -119,7 +119,7 @@ func _measure(body: CharacterBody3D) -> float:
 		return 0.0                                               # open sky (or trees only)
 
 	var ceiling: float = clampf(1.0 - (up - 2.0) / (UP_M - 2.0), 0.0, 1.0)
-	var rays: int = 4 if _tier == 0 else 8
+	var rays: int = int(_stage.preset["cave_rays"])
 	var near: float = 0.0
 
 	for k in range(rays):
@@ -158,7 +158,7 @@ func _apply() -> void:
 		_lowpass[bus_name].cutoff_hz = lerpf(20000.0, MUFFLE_HZ, enclosure)
 		_amplify[bus_name].volume_db = float(DROP_DB[bus_name]) * enclosure
 
-	var on: bool = _tier > 0 and enclosure > REVERB_FROM
+	var on: bool = bool(_stage.preset["cave_reverb"]) and enclosure > REVERB_FROM
 
 	for entry in _reverb_bus:
 		AudioServer.set_bus_effect_enabled(entry[0], entry[1], on)

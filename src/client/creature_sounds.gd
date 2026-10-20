@@ -38,7 +38,6 @@ const KINDS := {
 		"zones": {"forest": 1.0, "highland": 0.6}, "hours": [6.0, 20.0], "every": [420.0, 900.0], "cutoff": 5000.0},
 }
 const BIRD_IDLE := ["bird_whistle", "bird_feebee", "bird_trill", "bird_chirp"]
-const TIER_VOICES := [2, 3, 4]
 
 var tier: int = 2
 var wild: bool = false                  # natural far calls on its own
@@ -58,7 +57,7 @@ func setup(stage) -> void:
 
 
 func set_tier(new_tier: int) -> void:
-	tier = clampi(new_tier, 0, TIER_VOICES.size() - 1)
+	tier = new_tier
 
 
 # The kinds that live in a zone (forest, meadow, water, highland), commonest first.
@@ -94,7 +93,7 @@ func call_at(kind: String, at: Vector3, mood: String = "idle") -> bool:
 
 	_prune()
 
-	if mood != "threat" and (_voices.size() >= TIER_VOICES[tier] or not _stage.has_room()):
+	if mood != "threat" and (_voices.size() >= int(_stage.preset["creature_voices"]) or not _stage.has_room()):
 		return false
 
 	var name: String = str(info["calls"].get(mood, info["calls"]["idle"]))
@@ -115,6 +114,10 @@ func call_at(kind: String, at: Vector3, mood: String = "idle") -> bool:
 	player.attenuation_filter_cutoff_hz = float(info["cutoff"])
 	add_child(player)
 	player.add_to_group("world_sounds")
+
+	if mood == "threat":
+		player.set_meta("keep", true)                            # a danger cue: never shed
+
 	player.global_position = at
 	player.finished.connect(player.queue_free)
 	player.play()

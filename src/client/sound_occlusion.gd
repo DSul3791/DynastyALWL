@@ -71,7 +71,7 @@ func _scan(body: CharacterBody3D, flying: bool) -> void:
 		if distance > NEAR_M and not flying:
 			cutoff *= lerpf(1.0, FOREST_FLOOR, forest * clampf(distance / FOREST_FULL_M, 0.0, 1.0))
 
-			if _stage.tier > 0:
+			if _stage.preset["occlusion_rays"]:
 				var hit = _tool.raycast(head, to / distance, distance)
 
 				if hit != null and hit.distance < distance - MARGIN_M:

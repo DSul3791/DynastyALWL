@@ -361,7 +361,7 @@ func alarm(at: Vector3) -> bool:
 	if list.is_empty():
 		return false
 
-	_play("crow_alarm", list, at, ALARM_DB)
+	_play("crow_alarm", list, at, ALARM_DB).set_meta("keep", true)     # a danger cue: never shed
 	flush(at + Vector3(0.0, 1.0, 0.0), 0.35)
 	_alarm_wait = ALARM_COOLDOWN_SEC
 	last_call = "crow_alarm"

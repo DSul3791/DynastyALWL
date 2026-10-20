@@ -18,6 +18,7 @@ extends Node
 #                     prints when each detail level of the block under the stop point loaded
 #   --swim            with --frames: 20 s in, play a scripted swim (splash, strokes, dive, surface)
 #   --creatures       with --frames: 18 s in, play every creature call in every mood, then calls by zone
+#   --flood           with --frames: 18 s in, start 80 tool hits at once and check the voice cap sheds the farthest and quietest
 #   --ui              with --frames: 18 s in, play the interface cues one every 0.5 s
 #   --dig             with --frames: 20 s in, ask the server to dig a hole under the spawn
 #   --water-step      with --frames: 12 s in, press + twice (the server re-settles the water)
@@ -43,7 +44,7 @@ const GitStamp := preload("res://src/debug/git_stamp.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 const GpuProbeScript := preload("res://src/debug/gpu_probe.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 134
+const BUILD := 135
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -159,6 +160,7 @@ var _walk_stats: Dictionary = {}
 var test_dig: bool = false
 var test_swim: bool = false
 var test_ui: bool = false
+var test_flood: bool = false
 var test_items: bool = false
 var test_creatures: bool = false
 var _test_creature_at: int = 0
@@ -276,6 +278,8 @@ func _ready() -> void:
 			test_swim = true
 		elif argument == "--ui":
 			test_ui = true
+		elif argument == "--flood":
+			test_flood = true
 		elif argument == "--items":
 			test_items = true
 		elif argument == "--creatures":
@@ -1638,6 +1642,17 @@ func _process(delta: float) -> void:
 			test_creatures = false
 			sound.creatures.wild = true                              # then the natural far calls run on their own
 
+	# Headless check: more sounds than the tier's voice cap, then the shedding.
+	if test_flood and now - connected_msec > 18000:
+		test_flood = false
+
+		for n in range(80):
+			sound.hits.hit("axe", "wood", body.global_position + Vector3(float(n % 20) * 5.0 + 3.0, 0.0, float(n / 20) * 10.0), 1.0)
+
+		var before: int = sound.voices_playing()
+		sound._shed(body, maxi(before - sound.voice_cap, 0))
+		print("Terrain client: flood: %d playing before (cap %d, tier %s), shed %d, %d playing right after" % [before, sound.voice_cap, sound.Presets.NAMES[sound.tier], sound.shed_count, sound.voices_playing()])
+
 	# Headless check: the interface cues in turn.
 	if test_ui and now - connected_msec > 18000 and now >= _test_ui_next:
 		_test_ui_next = now + 500
@@ -1761,6 +1776,7 @@ func _process(delta: float) -> void:
 			print("Terrain client: water sounds: %s" % sound.water.summary)
 			print("Terrain client: nature calls %s, zones %s" % [str(sound.ambient.calls_played), str(sound.ambient.weights)])
 			print("Terrain client: creature calls %s, last %s" % [str(sound.creatures.calls_played), sound.creatures.last])
+			print("Terrain client: sounds shed over the cap: %d" % sound.shed_count)
 			print("Terrain client: interface sounds %d played, last %s" % [sound.ui.played, sound.ui.last])
 			print("Terrain client: swim sounds %d splashes, %d strokes, %d dives, %d surfacings, last %s" % [sound.swim.splashes, sound.swim.strokes, sound.swim.dives, sound.swim.surfaces, sound.swim.last])
 			print("Terrain client: town sounds %d loops, %d bells" % [sound.town.loops_playing, sound.town.bells_rung])
