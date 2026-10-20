@@ -25,7 +25,7 @@ var fullscreen: bool = false
 var vsync_index: int = 0
 const TEXT_SCALES := [0.7, 0.85, 1.0, 1.2]
 const TEXT_NAMES := ["small", "medium", "large", "extra large"]
-const SORT_NAMES := ["Unsorted", "Name", "Weight", "Value"]
+const SORT_NAMES := ["Unsorted", "Name", "Weight (ascending)", "Weight (descending)", "Value (ascending)", "Value (descending)"]
 var sort_index: int = 0                  # inventory sort: unsorted (order picked up), name, weight, value
 var text_index: int = 1                  # size of the crafting and inventory screen's text (default a little smaller)
 var quality: int = -1                    # -1: not saved yet (the game's default)
@@ -42,7 +42,13 @@ func load_saved() -> void:
 	vsync_index = clampi(int(file.get_value("display", "vsync", 0)), 0, VSYNC_MODES.size() - 1)
 	quality = int(file.get_value("display", "quality", -1))
 	text_index = clampi(int(file.get_value("display", "text", 1)), 0, TEXT_SCALES.size() - 1)
-	sort_index = clampi(int(file.get_value("display", "sort", 0)), 0, SORT_NAMES.size() - 1)
+	# Saved choices from before the six-way list: 2 weight and 3 value were highest first; they map to descending.
+	var saved_sort: int = int(file.get_value("display", "sort", 0))
+	var sort_version: int = int(file.get_value("display", "sort_version", 1))
+	sort_index = clampi(saved_sort, 0, SORT_NAMES.size() - 1)
+
+	if sort_version < 2:
+		sort_index = {0: 0, 1: 1, 2: 3, 3: 5}.get(saved_sort, 0)
 
 
 func save() -> void:
@@ -53,6 +59,7 @@ func save() -> void:
 	file.set_value("display", "quality", quality)
 	file.set_value("display", "text", text_index)
 	file.set_value("display", "sort", sort_index)
+	file.set_value("display", "sort_version", 2)
 	file.save(PATH)
 
 

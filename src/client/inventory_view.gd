@@ -32,6 +32,7 @@ var _grid: GridContainer
 var _buttons: Array = []
 var _selected: int = -1
 var _hover: int = -1                   # pack slot under the mouse (quick keys act on it, else on the selected slot)
+var _chest_last: Array = []            # the last chest-screen slot the mouse was on (the Transfer button uses it)
 var _chest_hover: Array = []           # [chest side (bool), slot] under the mouse in the chest screen
 var _prompt: Label
 var cover_index                        # the client's Cover.Index: lean-to roofs are added to it
@@ -801,7 +802,11 @@ func _build_chest_panel() -> void:
 	_chest_panel.anchor_bottom = 0.9
 	var columns: HBoxContainer = HBoxContainer.new()
 	columns.add_theme_constant_override("separation", _px(24))
-	_chest_panel.add_child(columns)
+	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	var chest_outer: VBoxContainer = VBoxContainer.new()
+	chest_outer.add_theme_constant_override("separation", _px(10))
+	_chest_panel.add_child(chest_outer)
+	chest_outer.add_child(columns)
 
 	for side in ["Woven chest  (click a stack to take it)", "Your pack  (click a stack to put it in)"]:
 		var box: VBoxContainer = VBoxContainer.new()
@@ -829,11 +834,22 @@ func _build_chest_panel() -> void:
 			button.clip_text = true
 			_style(button, BODY_PX - 4)
 			button.pressed.connect(_on_chest_slot.bind(chest_side, i))
-			button.mouse_entered.connect(func(): _chest_hover = [chest_side, i])
+			button.mouse_entered.connect(func():
+				_chest_hover = [chest_side, i]
+				_chest_last = [chest_side, i])
 			button.mouse_exited.connect(func(): _chest_hover = [] if _chest_hover == [chest_side, i] else _chest_hover)
 			grid.add_child(button)
 			(_chest_buttons if chest_side else _pack_buttons).append(button)
 
+	var transfer: Button = Button.new()
+	transfer.text = "Transfer (T)"
+	transfer.tooltip_text = "Move the last stack you pointed at between your pack and the container (clicking a stack does the same)"
+	_style(transfer, BODY_PX)
+	transfer.pressed.connect(func():
+		if _chest_last.size() == 2:
+			_on_chest_slot(bool(_chest_last[0]), int(_chest_last[1])))
+	transfer.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	chest_outer.add_child(transfer)
 	_layer.add_child(_chest_panel)
 
 
@@ -1187,6 +1203,7 @@ func _build_panel() -> void:
 	_panel.anchor_right = 0.95
 	_panel.anchor_top = 0.05
 	_panel.anchor_bottom = 0.95
+	_panel.clip_contents = true   # the window keeps its size whatever the text size; contents scroll or wrap
 	var back: StyleBoxFlat = StyleBoxFlat.new()
 	back.bg_color = Color(0.07, 0.07, 0.08, 0.93)
 	back.set_corner_radius_all(10)
@@ -1200,6 +1217,8 @@ func _build_panel() -> void:
 	var title: Label = Label.new()
 	title.text = "Crafting and inventory"
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.size_flags_stretch_ratio = 1.4
+	title.clip_text = true
 	_style(title, TITLE_PX)
 	top.add_child(title)
 
@@ -1213,7 +1232,9 @@ func _build_panel() -> void:
 
 	_search = LineEdit.new()
 	_search.placeholder_text = "Search recipes and items"
-	_search.custom_minimum_size = Vector2(_px(560), 0.0)
+	_search.custom_minimum_size = Vector2(_px(120), 0.0)
+	_search.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_search.size_flags_stretch_ratio = 1.0
 	_search.clear_button_enabled = true
 	_style(_search, BODY_PX)
 	_search.text_changed.connect(func(_text): _refresh())
@@ -1235,12 +1256,21 @@ func _build_panel() -> void:
 	var list_scroll: ScrollContainer = ScrollContainer.new()
 	list_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	list_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	list_scroll.size_flags_stretch_ratio = 1.6
 	left.add_child(list_scroll)
 	_recipe_list = VBoxContainer.new()
 	_recipe_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	list_scroll.add_child(_recipe_list)
+
+	# The chosen recipe's detail scrolls in its own area so it never overlaps the recipe list.
+	var detail_scroll: ScrollContainer = ScrollContainer.new()
+	detail_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	detail_scroll.size_flags_stretch_ratio = 1.0
+	detail_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	left.add_child(detail_scroll)
 	_detail = VBoxContainer.new()
-	left.add_child(_detail)
+	_detail.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	detail_scroll.add_child(_detail)
 
 	# Right: the inventory slots.
 	var right: VBoxContainer = VBoxContainer.new()
@@ -1254,11 +1284,12 @@ func _build_panel() -> void:
 	_weight_label = Label.new()
 	_style(_weight_label, BODY_PX - 6)
 	_weight_label.text = "Body weight %.1f kg" % weight_kg
+	_weight_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	right.add_child(_weight_label)
 	_sort_menu = OptionButton.new()
 	_style(_sort_menu, BODY_PX - 6)
 
-	for sort_name in ["Sort: unsorted (picked up order)", "Sort: name", "Sort: weight (heaviest first)", "Sort: value (highest first)"]:
+	for sort_name in ["Sort: unsorted (picked up order)", "Sort: name", "Sort: weight (ascending)", "Sort: weight (descending)", "Sort: value (ascending)", "Sort: value (descending)"]:
 		_sort_menu.add_item(sort_name)
 
 	_sort_menu.select(sort_index)
@@ -1301,40 +1332,19 @@ func _build_panel() -> void:
 		bar.visible = false
 		button.add_child(bar)
 
-	var row: HBoxContainer = HBoxContainer.new()
-	row.add_theme_constant_override("separation", _px(12))
+	var row: HFlowContainer = HFlowContainer.new()   # wraps onto a second line when the text is large
+	row.add_theme_constant_override("h_separation", _px(12))
+	row.add_theme_constant_override("v_separation", _px(6))
 	right.add_child(row)
 
-	var split: Button = Button.new()
-	split.text = "Split half"
-	_style(split, BODY_PX)
-	split.pressed.connect(_split_selected)
-	row.add_child(split)
-
-	var eat: Button = Button.new()
-	eat.text = "Eat / use"
-	_style(eat, BODY_PX)
-	eat.pressed.connect(func(): eat_slot(_selected))
-	row.add_child(eat)
-
-	var repair: Button = Button.new()
-	repair.text = "Repair"
-	_style(repair, BODY_PX)
-	repair.pressed.connect(_repair_selected)
-	row.add_child(repair)
-
-	for whole in [true, false]:
-		var drop: Button = Button.new()
-		drop.text = "Drop stack" if whole else "Drop one"
-		_style(drop, BODY_PX)
-		drop.pressed.connect(_drop_selected.bind(whole))
-		row.add_child(drop)
-
-	var hint: Label = Label.new()
-	hint.text = "Quick keys on the slot under the mouse:  E use    R drop (Shift+R one)    S split    T transfer (when a container is open)"
-	hint.modulate = Color(1.0, 1.0, 1.0, 0.75)
-	_style(hint, BODY_PX - 8)
-	right.add_child(hint)
+	# One row; each button carries its key (the same keys work on the slot under the mouse).
+	for spec in [["Split (S)", "Split the selected stack in half", _split_selected], ["Drop (D)", "Drop the whole stack. Shift+D drops one", _drop_selected.bind(true)], ["Use (E)", "Eat the food or apply the medicine", func(): eat_slot(_selected)], ["Repair (R)", "Repair a worn tool with its materials", _repair_selected]]:
+		var action: Button = Button.new()
+		action.text = spec[0]
+		action.tooltip_text = spec[1]
+		_style(action, BODY_PX)
+		action.pressed.connect(spec[2])
+		row.add_child(action)
 
 	_layer.add_child(_panel)
 
@@ -1344,8 +1354,8 @@ func screen_open() -> bool:
 	return open or chest_mode
 
 
-# Quick keys while the screen is open: E use (eat or apply), R drop (Shift+R one), S split, T transfer between the
-# pack and an open container. They act on the slot under the mouse, else the selected slot. True when the key
+# Quick keys while the screen is open: E use (eat or apply), D drop (Shift+D one), S split, R repair, T transfer
+# between the pack and an open container. They act on the slot under the mouse, else the selected slot. True when the key
 # was one of them (the caller then skips its other bindings). Outside this screen E is the interact key.
 func quick_key(event: InputEventKey) -> bool:
 	var slot: int = _hover if _hover >= 0 else _selected
@@ -1356,10 +1366,16 @@ func quick_key(event: InputEventKey) -> bool:
 				eat_slot(slot)
 
 			return true
-		KEY_R:
+		KEY_D:
 			if slot >= 0 and not chest_mode:
 				_selected = slot
 				_drop_selected(not event.shift_pressed)
+
+			return true
+		KEY_R:
+			if slot >= 0 and not chest_mode:
+				_selected = slot
+				_repair_selected()
 
 			return true
 		KEY_S:
@@ -1523,8 +1539,12 @@ func _arrange_slots() -> void:
 			1:
 				return table.name_of(number).to_lower()
 			2:
-				return -CarryRules.weight_of(table.id_of(number), cfg) * float(count)
+				return CarryRules.weight_of(table.id_of(number), cfg) * float(count)
 			3:
+				return -CarryRules.weight_of(table.id_of(number), cfg) * float(count)
+			4:
+				return table.value_of(number) * count
+			5:
 				return -table.value_of(number) * count
 
 		return int(_first_seen.get(number, 0))
@@ -1761,7 +1781,7 @@ func run_gather_test(client) -> void:
 	print("Gather test: sweep, sticks %d -> %d (a picked-bare shrub is skipped); prompt \"%s\"" % [after_tap, inventory.count_of(sticks), plant_hint])
 
 
-# Headless check (--quickkeys): R drops, S splits and E eats the stack under the mouse.
+# Headless check (--quickkeys): D drops, S splits and E eats the stack under the mouse.
 func run_quickkey_test(client) -> void:
 	await get_tree().create_timer(6.0).timeout
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("stone"), 0, 6, Vector3.ZERO)
@@ -1785,9 +1805,9 @@ func run_quickkey_test(client) -> void:
 	await get_tree().create_timer(1.0).timeout
 	print("Quick key test: S handled %s, stacks of stone %d -> %d" % [str(handled), 1, _stone_stacks(stone)])
 	_hover = inventory.numbers.find(stone)
-	press.call(KEY_R, true)
+	press.call(KEY_D, true)
 	await get_tree().create_timer(1.0).timeout
-	print("Quick key test: Shift+R dropped one, stones %d -> %d" % [before, inventory.count_of(stone)])
+	print("Quick key test: Shift+D dropped one, stones %d -> %d" % [before, inventory.count_of(stone)])
 	_hover = inventory.numbers.find(roast)
 	var roasts: int = inventory.count_of(roast)
 	press.call(KEY_E)
@@ -1813,6 +1833,8 @@ func run_text_test(client) -> void:
 	toggle()
 	var valid: bool = true
 	var filled_ok: bool = true
+	var sizes: Dictionary = {}
+	var fits: bool = true
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("stone"), 0, 3, Vector3.ZERO)
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("stick"), 0, 3, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout
@@ -1832,6 +1854,10 @@ func run_text_test(client) -> void:
 		await get_tree().process_frame
 		_refresh()
 		await get_tree().process_frame
+		await get_tree().process_frame
+		sizes[snappedf(_panel.size.x, 1.0) * 10000 + snappedf(_panel.size.y, 1.0)] = text_scale
+		var need: Vector2 = _panel.get_combined_minimum_size()
+		fits = fits and need.x <= _panel.size.x + 1.0 and need.y <= _panel.size.y + 1.0
 
 		for button in _buttons:
 			valid = valid and is_instance_valid(button)
@@ -1841,11 +1867,11 @@ func run_text_test(client) -> void:
 			if inventory.numbers[slot] != 0 and valid and _buttons[slot].text == "":
 				filled_ok = false
 
-		for mode in [1, 2, 3, 0]:
+		for mode in [1, 2, 3, 4, 5, 0]:
 			sort_index = mode
 			_arrange_slots()
 
-	print("Text test: scale %.2f, %d slot buttons, all valid %s, every item shown %s, panel open %s" % [text_scale, _buttons.size(), str(valid), str(filled_ok), str(open)])
+	print("Text test: scale %.2f, %d slot buttons, all valid %s, every item shown %s, panel open %s, window sizes seen %d, contents fit %s" % [text_scale, _buttons.size(), str(valid), str(filled_ok), str(open), sizes.size(), str(fits)])
 
 
 # Headless check (--plantpick): pick several plants (kind 2, flowers and herbs) and see whether each one is gone
@@ -1936,7 +1962,7 @@ func run_eat_test(client) -> void:
 	await get_tree().create_timer(1.0).timeout
 	toggle()
 
-	for mode in [1, 2, 3, 0]:
+	for mode in [1, 2, 3, 4, 5, 0]:
 		sort_index = mode
 		_arrange_slots()
 		var names: Array = []

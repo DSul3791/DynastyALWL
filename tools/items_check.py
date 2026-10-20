@@ -34,7 +34,7 @@ UNITS = [
 CLIENTS = [
     ("chest", ["--chest"], 2500, [
         ("chest screen opens", r"screen open (true)", None, None),
-        ("stones taken out", r"in pack " + NUM + r"\s*$", 10, 10),
+        ("stones taken out", r"after taking out, stones in chest \d+, in pack " + NUM, 10, 10),
     ]),
     ("gather", ["--gather"], 2500, [
         ("harvest prompt shown", r"prompt \"(Press E to harvest [^\"]*)\"", None, None),
@@ -50,11 +50,13 @@ CLIENTS = [
     ("texttest", ["--texttest"], 3000, [
         ("slot buttons stay valid", r"all valid (true)", None, None),
         ("every item still shown", r"every item shown (true)", None, None),
+        ("window size never changes", r"window sizes seen " + NUM, 1, 1),
+        ("contents fit the window", r"contents fit (true)", None, None),
         ("30 slot buttons", r"scale [\d.]+, " + NUM + r" slot buttons", 30, 30),
     ]),
     ("quickkeys", ["--quickkeys"], 3500, [
         ("S splits the stack", r"stacks of stone 1 -> " + NUM, 2, 2),
-        ("Shift+R drops one", r"Shift\+R dropped one, stones \d+ -> " + NUM, 5, 5),
+        ("Shift+D drops one", r"Shift\+D dropped one, stones \d+ -> " + NUM, 5, 5),
         ("E eats", r"E ate, roasts \d+ -> " + NUM, 1, 1),
     ]),
     ("eat", ["--eat"], 3000, [
