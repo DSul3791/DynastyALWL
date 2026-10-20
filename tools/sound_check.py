@@ -90,6 +90,10 @@ SCENARIOS = [
         ("own sounds all kept", r"own kept " + NUM + r" of 2", 2, 2),
         ("ambience cut first", r"ambience left " + NUM + r" of 6", 0, 0),
     ]),
+    ("sweep", ["--sweep", "--nature-fast", "--walk"], 14000, [
+        ("all cells run", r"sweep done: " + NUM + r" cells", 32, 32),
+        ("peak under the Low cap", r"sweep done: \d+ cells, peak " + NUM + r" of", 1, 24),
+    ]),
     ("stance", ["--stance"], 6000, [
         ("posture changes heard", r"stance check: " + NUM + r" changes", 6, 6),
         ("last is the rise", r"last (stance_rise)", 0, 1, "text"),

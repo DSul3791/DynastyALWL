@@ -337,3 +337,7 @@ Already there from job 38: lean-to, chest and chopping block set down and taken 
 ## Voice priority at the cap (job 64)
 
 Over the voice cap (Low 24) `sound_stage._shed` cuts one-shot world sounds in this order: far ambience first (Nature, Weather, Wind buses), then other world sounds, farthest and quietest first; the player's own actions (a Foley sound within 4 m: gear, hits, harvest, tools) go last. Danger cues keep the meta `keep` and are never cut. The player's own footsteps, breath, heartbeat and the interface are not in the group `world_sounds`, so they are never candidates. `sound_check.py --only voice_priority` fills the stage with 6 far ambience and 2 own sounds (plus 2 other) and sheds 6: all 6 ambience go, both own sounds stay.
+
+## Season and clock sweep (job 66)
+
+`sound_check.py --only sweep` runs `--sweep` (with `--nature-fast`): one client, 4 seasons x 8 hours (every 3 h), clear weather, 2 s per cell, printing nature calls and peak voices per cell. Result at Low (build 256), saved in `/mnt/project-files/sound/SWEEP.md`: no cell silent for long, no cell above 15 voices (cap 24); summer and the 21:00 cells are busiest, winter quietest (6 to 9 voices). The scenario fails if the sweep stops early or the peak passes the cap.

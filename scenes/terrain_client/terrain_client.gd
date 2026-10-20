@@ -190,6 +190,10 @@ var test_ui_sounds: bool = false       # --ui-sounds: hotbar ticks and the chest
 var _ui_step: int = 0
 var test_lake: bool = false            # --lake: soft laps from stand-in still-water squares (job 62)
 var test_voice_priority: bool = false  # --voice-priority: shed order at the voice cap (job 64)
+var test_sweep: bool = false           # --sweep: 8 hours x 4 seasons, calls and voices per cell (job 66)
+var _sweep_step: int = -1
+var _sweep_peak: int = 0
+var _sweep_max: int = 0
 var test_stance: bool = false          # --stance: stand, crouch, sit, lie and rise in turn (job 56)
 var _stance_step: int = 0
 var _lake_start_msec: int = 0
@@ -394,6 +398,8 @@ func _ready() -> void:
 			test_lake = true
 		elif argument == "--stance":
 			test_stance = true
+		elif argument == "--sweep":
+			test_sweep = true
 		elif argument == "--voice-priority":
 			test_voice_priority = true
 		elif argument == "--merge-check":
@@ -2396,6 +2402,38 @@ func _process(delta: float) -> void:
 	if test_voice_priority and now - connected_msec > 18000 and now >= _test_fire_at:
 		_test_fire_at = now + 10000000
 		print("Terrain client: voice priority: " + sound.test_priority(body))
+
+	# Season and clock sweep: each cell is two seconds at the fast nature clock (--nature-fast).
+	if test_sweep and now - connected_msec > 18000 and now >= _test_fire_at:
+		_test_fire_at = now + 2000
+		var seasons: Array = ["spring", "summer", "autumn", "winter"]
+		var cells: int = seasons.size() * 8
+
+		if _sweep_step >= 0 and _sweep_step <= cells:
+			var done: int = _sweep_step - 1
+
+			if done >= 0:
+				var total: int = 0
+
+				for kind in sound.ambient.calls_played:
+					total += int(sound.ambient.calls_played[kind])
+
+				_sweep_max = maxi(_sweep_max, _sweep_peak)
+				print("Terrain client: sweep cell %s %02d:00 calls %d voices %d  %s" % [seasons[done / 8], (done % 8) * 3, total, _sweep_peak, str(sound.ambient.calls_played)])
+
+		if _sweep_step < cells:
+			_sweep_step += 1
+
+			if _sweep_step < cells:
+				sound.ambient.set_conditions(float((_sweep_step % 8) * 3), seasons[_sweep_step / 8], "clear")
+				sound.ambient.calls_played = {}
+				_sweep_peak = 0
+		elif _sweep_step == cells:
+			_sweep_step += 1
+			print("Terrain client: sweep done: %d cells, peak %d of %d voices, shed %d" % [cells, _sweep_max, sound.voice_cap, sound.shed_count])
+
+	if test_sweep:
+		_sweep_peak = maxi(_sweep_peak, sound.voices_playing())
 
 	# Stance sounds: crouch, stand, sit, stand, lie (and sit for 20 s to hear settles), stand.
 	if test_stance and now - connected_msec > 18000 and now >= _test_fire_at:
