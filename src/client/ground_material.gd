@@ -114,11 +114,19 @@ void fragment() {
 		int index = clamp(int(material_indices[n] + 0.5), 0, 63);
 		lw[clamp(int(layer_of[index] + 0.5), 0, 5)] += material_weights[n] / total;
 	}
-	// Steep faces are drawn as rock.
+	// Slopes that lose their cover turn to loose ground first (owner, 2026-10-20): gravel, or sand
+	// and gravel where the rock is soft or the patch is dry (broad noise picks), and only the
+	// steepest faces show bare cracked rock.
+	float face = smoothstep(0.46, 0.7, slope);
+	float scree = rock_mask * (1.0 - face);
+	float sandy = smoothstep(0.35, 0.65, vnoise(world_pos * 0.017 + 3.0)) * (1.0 - stone * 0.6);
 	for (int k = 0; k < 5; k++) {
 		lw[k] *= 1.0 - rock_mask;
 	}
-	lw[5] = mix(lw[5], 1.0, rock_mask);
+	lw[2] += scree * (1.0 - 0.55 * sandy);
+	lw[4] += scree * 0.55 * sandy;
+	lw[5] = mix(lw[5] * (1.0 - scree), 1.0, face * rock_mask);
+	color = mix(color, mix(vec3(0.27, 0.25, 0.22), vec3(0.40, 0.34, 0.24), sandy), scree * 0.5);
 
 	vec3 tw = vec3(0.0, 1.0, 0.0);
 	if (triplanar && world_normal.y < 0.93) {

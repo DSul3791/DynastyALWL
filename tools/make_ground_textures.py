@@ -157,14 +157,23 @@ def layer_litter(size, rng):
 
 
 def layer_gravel(size, rng):
-    f1, f2, nid = voronoi(size, 16, rng, warp=0.25)
-    dome = np.clip(1.0 - f1 / 0.62, 0.0, 1.0)
-    dome = np.sqrt(dome)                                  # rounded pebbles
-    edge = np.clip((f2 - f1) / 0.18, 0.0, 1.0)            # dark gaps between stones
-    tone = 0.45 + 0.55 * nid                              # each pebble its own brightness
-    grit = fbm(size, 120, 2, rng)
-    height = normalize(dome * edge)
-    detail = normalize((0.25 + 0.75 * edge) * (0.55 + 0.45 * tone) * (0.85 + 0.3 * grit) * (0.6 + 0.4 * dome))
+    # Loose gravel (owner, 2026-10-20: "gravel and boulders ... sometimes more like sand and
+    # gravel"): pebbles of three sizes dropped on a bed of coarse sand, bigger stones sparse and
+    # the rest filled by smaller ones, so it reads as scattered rubble, not a tiled cobble sheet.
+    height = 0.12 * fbm(size, 90, 2, rng)
+    shade = 0.62 + 0.3 * fbm(size, 150, 2, rng)             # the sand between the stones
+    for cells, keep, radius, lift in ((46, 0.85, 0.55, 0.30), (19, 0.5, 0.58, 0.5), (8, 0.2, 0.6, 0.75)):
+        f1, f2, nid = voronoi(size, cells, rng, warp=0.35)
+        present = nid > (1.0 - keep)
+        dome = np.sqrt(np.clip(1.0 - f1 / radius, 0.0, 1.0)) * present
+        rim = np.clip((f2 - f1) / 0.14, 0.0, 1.0)
+        tone = 0.5 + 0.5 * ((nid * 7.31) % 1.0)             # each stone its own brightness
+        top = dome * lift * (0.5 + 0.5 * rim)
+        over = top > height
+        height = np.where(over, top, height)
+        shade = np.where(over & (dome > 0.05), 0.35 + 0.65 * tone * (0.75 + 0.25 * rim), shade)
+    height = normalize(height)
+    detail = normalize(0.55 * shade + 0.45 * height)
     return detail, height, 3.0
 
 
