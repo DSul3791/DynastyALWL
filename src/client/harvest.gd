@@ -94,6 +94,8 @@ func _pick(c: Dictionary) -> void:
 	_net.cut_flora.rpc_id(1, c["chunk"], c["id"])
 	_client.sound.harvestfx.pick(_flora_by_id.get(int(c["id"]) >> 16, {}), c["pos"])
 	_picked_until[c["key"]] = _client.game_clock.seconds + REGROW_GAME_S
+	_items.clear_prompt()
+	_hint_left = 0.0
 
 
 func _hint() -> String:
@@ -153,10 +155,11 @@ func _candidates(radius: float) -> Array:
 			var verdict: Dictionary
 			var name: String = str(row.get("display", row.get("name", "plant")))
 
+			# Picked plants say nothing at all until they bear again.
 			if float(_picked_until.get(key, -1.0)) > now_s:
-				verdict = {"ok": false, "reason": "already picked, it will bear again"}
-			else:
-				verdict = GatherRules.check(row, "shrub" if kind == 1 else "plant", _drops, season, has_tool, exists)
+				continue
+
+			verdict = GatherRules.check(row, "shrub" if kind == 1 else "plant", _drops, season, has_tool, exists)
 
 			out.append({"d": d, "pos": p, "chunk": chunk, "id": id, "key": key, "name": name, "ok": verdict["ok"], "reason": verdict["reason"]})
 

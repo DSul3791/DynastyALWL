@@ -212,15 +212,19 @@ func _init() -> void:
 	check(f._items[open_id]["fire"]["state"] == 1 and f._items[covered_id]["fire"]["state"] == 1, "dry weather: both burn")
 	rain[0] = 0.6
 	f.tick(1.0)
-	check(f._items[open_id]["fire"]["state"] == 2, "rain puts out the open fire")
+	check(f._items[open_id]["fire"]["state"] == 9, "rain puts out the open fire (loaded, unlit)")
 	check(f._items[covered_id]["fire"]["state"] == 1, "the covered fire survives rain")
 	f.report_position(1, Vector3(2.0, 10.0, 0.0))
 	f.action(1, Net.ACT_ADMIN_GIVE, f.table.number_of("stick"), 0, 3, Vector3.ZERO)
 	f.action(1, Net.ACT_FUEL, open_id, 0, 0, Vector3.ZERO)
-	check(f._items[open_id]["fire"]["state"] == 2 and f.inventory_of(1).count_of(f.table.number_of("stick")) == 3, "feeding an open fire in rain does nothing")
+	f.action(1, Net.ACT_ADMIN_GIVE, f.table.number_of("plant_fibre"), 0, 1, Vector3.ZERO)
+	f.action(1, Net.ACT_LIGHT, open_id, 0, 0, Vector3.ZERO)
+	check(f._items[open_id]["fire"]["state"] == 9 and f.inventory_of(1).count_of(f.table.number_of("plant_fibre")) == 1, "rain will not let an open fire light")
 	rain[0] = 0.0
+	f.action(1, Net.ACT_LIGHT, open_id, 0, 0, Vector3.ZERO)
+	check(f._items[open_id]["fire"]["state"] == 1 and f.inventory_of(1).count_of(f.table.number_of("plant_fibre")) == 0, "tinder lights it once the rain stops")
 	f.action(1, Net.ACT_FUEL, open_id, 0, 0, Vector3.ZERO)
-	check(f._items[open_id]["fire"]["state"] == 1 and f.inventory_of(1).count_of(f.table.number_of("stick")) == 2, "a stick relights it once the rain stops")
+	check(f.inventory_of(1).count_of(f.table.number_of("stick")) == 1, "a lit fire takes another stick")
 	var berries: int = f.table.number_of("blueberries") if f.table.has_id("blueberries") else 0
 	f.action(1, Net.ACT_ADMIN_GIVE, berries, 0, 2, Vector3.ZERO)
 	f.action(1, Net.ACT_COOK, open_id, 0, 0, Vector3.ZERO)
@@ -234,7 +238,7 @@ func _init() -> void:
 	for n in range(int(ItemsScript.FIRE_BURN_S / 10.0) + 20):
 		f.tick(10.0)
 
-	check(f._items[covered_id]["fire"]["state"] == 2, "a fire burns out in time")
+	check(f._items[covered_id]["fire"]["state"] == 8, "a fire burns out in time")
 	for n in range(int(ItemsScript.FIRE_OUT_S / 10.0) + 2):
 		f.tick(10.0)
 

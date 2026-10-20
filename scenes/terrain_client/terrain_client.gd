@@ -611,6 +611,7 @@ func _welcome_body(info: Dictionary) -> void:
 	items.is_inspecting = func(): return inspecting
 	items.cover_index = flora.cover
 	items.eat_event = func(item_id): sound.itemfx.eat(item_id)
+	items.fuel_event = func(): sound.itemfx.fuel_pressed()
 	items.chest_event = func(what, at): sound.placed.chest(what == "open", at) if what in ["open", "close"] else sound.placed.container(what == "put", at)
 	items.tool_event = func(what): sound.placed.tool_break(body.global_position) if what == "broke" else sound.placed.tool_repair(body.global_position)
 	harvest = HarvestScript.new()
@@ -1627,6 +1628,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		pass
 	elif event is InputEventMouseButton and event.pressed:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	elif event is InputEventKey and not event.pressed and event.keycode == KEY_E and items != null:
+		items.release_e()
 	elif event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_W:
 			var now: int = Time.get_ticks_msec()
@@ -1650,13 +1653,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			_admin_dig()
 		elif event.keycode >= KEY_1 and event.keycode <= KEY_8 and held != null:
 			held.select(event.keycode - KEY_1)
-		elif event.keycode == KEY_C and items != null:
-			items.cook_nearest()
-		elif event.keycode == KEY_V and items != null:
-			items.fuel_nearest()
-			sound.itemfx.fuel_pressed()
 		elif event.keycode == KEY_E and items != null:
-			if not items.pick_up_nearest():
+			if not items.press_e():
 				harvest.tap()
 		elif event.keycode == KEY_BRACKETRIGHT and items != null:
 			items.admin_give_test_set()

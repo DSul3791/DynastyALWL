@@ -28,9 +28,10 @@ Tracks what the controls are now and what is planned. Update it whenever a contr
 | Right click (hold) | Spear: aim a throw; then left click throws. Letting go returns to the normal stance |
 | Left click with a campfire kit held | Place the fire where the ring shows: yellow ring = open ground (rain puts the fire out), green = under a tree's crown (the fire survives rain) |
 | Left click with a lean-to kit held | Place the lean-to where the ghost shows; its open front faces you. E near it takes it down (kit back). Anyone under its roof counts as under cover (fires survive rain) |
-| E at a chest | Opens the chest screen: click a stack on the left to take it, a stack in your pack on the right to put it in. Shift+E takes an empty chest down. Esc or I closes |
-| E at a chopping block | Splits one log into 4 firewood (needs an axe on the hotbar and wears it); hold E to keep splitting every 0.6 s. Shift+E takes the block down. V at a fire burns firewood first, then sticks, then logs |
-| C / V (near a fire) | C roasts one raw forage item at a lit fire; V adds a stick or log (also relights a fire the rain put out, if it is now sheltered or the rain has stopped) |
+| E at a chest | Opens the chest screen: click a stack on the left to take it, a stack in your pack on the right to put it in. Hold E (0.6 s) takes an empty chest down. Esc or I closes |
+| E at a chopping block | Splits one log into 4 firewood (needs an axe on the hotbar and wears it); hold E to keep splitting every 0.6 s. Shift+E takes the block down. E at a fire burns firewood first, then sticks, then logs |
+| E at a fire | Burning: tap E adds fuel (firewood, then sticks, then logs), hold E (0.6 s) roasts one raw forage item. Burnt-out or rained-out: Press E to add firewood, then Press E to light (uses one plant fibre as tinder; open fires will not light in rain). A placed campfire (10 stones and 20 sticks) starts lit with 20 sticks of fuel: a stick burns 2 game minutes, firewood 30, a log 2 game hours (1 game minute = 2.5 real seconds) |
+| E at a lean-to | Hold E (0.6 s) takes it down |
 | E | Pick up the nearest item on the ground within 3 m; with nothing there, harvest the nearest pickable plant or shrub within 2.5 m (the prompt "Press E to harvest" shows when it will work, or why not, e.g. needs spade). Hold E: keeps picking every pickable plant within 2 m, about 5 a second, until nothing is left or you let go. Roots and bulbs need a spade, bark, gum and sap a stone knife, wood an axe; a picked plant bears again after 3 game days |
 | ] | Admin test tool: give 10 each of stone, stick, plant fibre and log |
 

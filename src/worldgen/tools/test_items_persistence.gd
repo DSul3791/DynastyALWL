@@ -78,6 +78,20 @@ func _init() -> void:
 	var w = make(dir)
 	check(w.world_item_count() == 0, "a save from a newer version is not read")
 
+	# An old save (protocol 18) holds an out fire as state 2: empty ashes when no wood is left, loaded when some is.
+	var old = FileAccess.open(dir + "/world_items.json", FileAccess.WRITE)
+	var fire_number: int = ItemTableScript.load_default().number_of("campfire_kit")
+	old.store_string(JSON.stringify({"version": 1, "next_id": 10, "items": [[fire_number, 1, 5.0, 10.0, 5.0, 100.0, 2, 0.0, 0], [fire_number, 1, 50.0, 10.0, 5.0, 100.0, 2, 300.0, 0]]}))
+	old.close()
+	var o = make(dir)
+	var states: Array = []
+
+	for k in o._items:
+		states.append(int(o._items[k]["fire"]["state"]))
+
+	states.sort()
+	check(states == [8, 9], "old out fires load as empty (8) or loaded (9): %s" % str(states))
+
 	# Stress: 1000 drops over 4 chunks hit the 64 per chunk cap.
 	var sd: String = "user://test_persist_b"
 	wipe(sd)

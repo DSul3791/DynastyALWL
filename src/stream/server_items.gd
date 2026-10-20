@@ -61,7 +61,8 @@ const MINE_STONES_PER_CELL := 6          # stones a patch gives before it is spe
 const MINE_REGROW_S := 300.0             # ...and one comes back this often (real seconds)
 const PLACE_REACH_M := 6.0
 const STRUCTURES_PATH := "res://data/items/structures.json"
-const FIRE_BURN_S := 900.0               # real seconds a fire burns before it goes out
+const FIRE_BURN_S := 100.0               # real seconds a fresh campfire burns (20 sticks, cooking.json start_burn_game_s)
+const FIRE_LAID_S := 1800.0             # a laid fire (empty 8, or loaded and unlit 9) waits this long for the player
 const FIRE_OUT_S := 300.0                # a burnt-out or rained-out fire stays this long
 const FIRE_MIN_GAP_M := 2.0
 const FIRES_PER_CHUNK := 8
@@ -304,6 +305,8 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_repair(peer, inv, a)
 	elif kind == Net.ACT_FUEL:
 		_fuel(peer, inv, a)
+	elif kind == Net.ACT_LIGHT:
+		_light(peer, inv, a)
 	elif kind == Net.ACT_COOK:
 		_cook(peer, inv, a)
 	elif kind == Net.ACT_SPLIT:
@@ -619,7 +622,7 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0) -> void:
 
 	inv.take_from_slot(slot, 1)
 	var covered: bool = cover_at.is_valid() and float(cover_at.call(spot)) > 0.5
-	_items[_next_id] = {"number": number, "count": 1, "pos": spot, "left": 1.0e9, "fire": {"state": 1, "burn_left": FIRE_BURN_S, "covered": covered, "recheck": COVER_RECHECK_S}}
+	_items[_next_id] = {"number": number, "count": 1, "pos": spot, "left": 1.0e9, "fire": {"state": 1, "burn_left": float(_cooking.get("start_burn_game_s", 2400.0)) / GAME_RATE, "covered": covered, "recheck": COVER_RECHECK_S}}
 	_next_id += 1
 
 
@@ -645,9 +648,13 @@ func _fires(delta: float) -> void:
 			fire["recheck"] = COVER_RECHECK_S
 			fire["covered"] = cover_at.is_valid() and float(cover_at.call(it["pos"])) > 0.5
 
-		if fire["burn_left"] <= 0.0 or (raining and not fire["covered"]):
-			fire["state"] = 2
+		if fire["burn_left"] <= 0.0:
+			fire["state"] = 8
 			it["left"] = FIRE_OUT_S
+			_dirty = true
+		elif raining and not fire["covered"]:
+			fire["state"] = 9
+			it["left"] = FIRE_LAID_S
 			_dirty = true
 
 
@@ -786,7 +793,12 @@ func _load_world_items() -> void:
 			entry["wear"] = int(row[8])
 
 		if row.size() > 7 and int(row[6]) != 0:
-			entry["fire"] = {"state": int(row[6]), "burn_left": float(row[7]), "covered": false, "recheck": 0.0}
+			var saved_state: int = int(row[6])
+
+			if saved_state == 2:   # before protocol 19: an out fire is empty ashes, or loaded when it still has wood
+				saved_state = 9 if float(row[7]) > 0.0 else 8
+
+			entry["fire"] = {"state": saved_state, "burn_left": float(row[7]), "covered": false, "recheck": 0.0}
 
 		_items[_next_id] = entry
 		_next_id += 1
@@ -1335,7 +1347,7 @@ func _split(inv, slot: int, count: int) -> void:
 			return
 
 
-# Wood on the fire: a stick or a log adds burning time (up to max_burn_s). A fire the rain put out
+# Wood on the fire: a stick or a log adds burning time (up to max_burn_game_s). A fire the rain put out
 # lights again when fed where rain no longer reaches it (covered, or the rain has stopped).
 func _fuel(peer: int, inv, id: int) -> void:
 	var fire: Dictionary = _fire_in_reach(peer, id)
@@ -1344,23 +1356,46 @@ func _fuel(peer: int, inv, id: int) -> void:
 		return
 
 	var fuel: Dictionary = _cooking.get("fuel", {})
-	var raining: bool = rain_now.is_valid() and float(rain_now.call()) >= RAIN_PUTS_OUT
-
-	if int(fire["state"]) == 2 and raining and not bool(fire["covered"]):
-		return
 
 	for wood in _cooking.get("fuel_order", ["stick", "log"]):
 		var number: int = table.number_of(wood)
 
 		if inv.has(number, 1):
 			inv.remove(number, 1)
-			fire["burn_left"] = minf(float(fire["burn_left"]) + float(fuel.get(wood, 120.0)), float(_cooking.get("max_burn_s", 3600.0)))
+			fire["burn_left"] = minf(float(fire["burn_left"]) + float(fuel.get(wood, 120.0)) / GAME_RATE, float(_cooking.get("max_burn_game_s", 43200.0)) / GAME_RATE)
 
-			if int(fire["state"]) == 2:
-				fire["state"] = 1
-				_items[id]["left"] = 1.0e9
+			# Wood laid in an unlit fire only loads it; Press E to light comes next (ACT_LIGHT).
+			if int(fire["state"]) == 8:
+				fire["state"] = 9
+				_items[id]["left"] = FIRE_LAID_S
 
 			return
+
+
+# Lighting a loaded fire (Dave 2026-10-20): bare hands, one tinder item from the pack (cooking.json
+# "tinder"). Open fires will not take while it rains.
+func _light(peer: int, inv, id: int) -> void:
+	var fire: Dictionary = _fire_in_reach(peer, id)
+
+	if fire.is_empty() or int(fire["state"]) != 9 or float(fire["burn_left"]) <= 0.0:
+		return
+
+	var raining: bool = rain_now.is_valid() and float(rain_now.call()) >= RAIN_PUTS_OUT
+
+	if raining and not bool(fire["covered"]):
+		_say(peer, "The rain will not let it light. Move it under cover.")
+		return
+
+	var tinder: String = str(_cooking.get("tinder", "plant_fibre"))
+
+	if not inv.has(table.number_of(tinder), 1):
+		_say(peer, "Needs %s to light" % table.name_of(table.number_of(tinder)).to_lower())
+		return
+
+	inv.remove(table.number_of(tinder), 1)
+	fire["state"] = 1
+	_items[id]["left"] = 1.0e9
+	_dirty = true
 
 
 # Roasting at a lit fire: one raw forage item (cookable_suffixes in cooking.json) becomes Roasted forage.

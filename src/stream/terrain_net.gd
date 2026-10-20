@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 18
+const PROTOCOL_VERSION := 19
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -67,6 +67,7 @@ const ACT_MINE := 8       # at = the point the axe struck; on bare rock the serv
 const ACT_HIT := 7        # a = tree id, b = flora chunk x, count = flora chunk z: one axe blow on a standing tree
 const ACT_PROCESS := 9    # a = world item id of a felled trunk: one axe blow on it gives branches, leaves, bark, logs
 const ACT_SPLIT := 10     # a = slot, count = how many go to the first empty slot
+const ACT_LIGHT := 19      # a = fire world id: light a loaded fire (uses tinder from the pack, see cooking.json)
 const ACT_EAT := 18        # a = pack slot: eat the food or apply the medicine in it (data/items/vitals.json)
 const ACT_USE_STRUCT := 17  # a = structure world id: use it (a chopping block splits one log into firewood)
 const ACT_CHEST_OPEN := 14 # a = chest world id: the server answers with chest_contents

@@ -83,8 +83,8 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	_prompt = Label.new()
 	_prompt.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_prompt.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
-	_prompt.offset_bottom = -120.0
+	_prompt.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_prompt.offset_top = 90.0   # just below the crosshair
 	_prompt.add_theme_font_size_override("font_size", 30)
 	_prompt.add_theme_constant_override("outline_size", 6)
 	_prompt.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
@@ -133,6 +133,102 @@ func close() -> void:
 		toggle()
 
 
+func clear_prompt() -> void:
+	_prompt.text = ""
+	_notice_until_msec = 0
+	_prompt_next_msec = Time.get_ticks_msec() + 400
+
+
+# E is the one interaction key. Pressing it acts on the nearest thing at once, except at a fire,
+# a chest or a lean-to where a tap and a hold (HOLD_E_S) do different things, decided in
+# release_e / the frame loop.
+const HOLD_E_S: float = 0.6
+var fuel_event: Callable = Callable()
+var _e_target: int = 0
+var _e_start_msec: int = 0
+
+
+func press_e() -> bool:
+	if _nearest()[0] != 0:
+		clear_prompt()
+		return pick_up_nearest()
+
+	var fire: int = _nearest_fire()
+	var st_id: int = _nearest_struct()
+
+	if fire != 0:
+		_e_target = fire
+	elif st_id != 0 and _world[st_id]["state"] != 7:
+		_e_target = st_id
+	else:
+		return pick_up_nearest()
+
+	_e_start_msec = Time.get_ticks_msec()
+	return true
+
+
+func release_e() -> void:
+	if _e_target == 0:
+		return
+
+	var id: int = _e_target
+	_e_target = 0
+
+	if not _world.has(id):
+		return
+
+	var state: int = _world[id]["state"]
+
+	if state == 9:
+		net.inventory_action.rpc_id(1, Net.ACT_LIGHT, id, 0, 0, Vector3.ZERO)
+	elif state == 1 or state == 8:
+		fuel_nearest()
+
+		if fuel_event.is_valid():
+			fuel_event.call()
+	elif state == 6:
+		net.inventory_action.rpc_id(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)
+	else:
+		show_notice("Hold E to take it down")
+
+
+# What E will do at a fire (Dave 2026-10-20): empty -> add firewood, loaded -> light, burning -> more wood.
+func _fire_prompt(state: int) -> String:
+	if state == 8:
+		return "Press E to add firewood"
+
+	if state == 9:
+		return "Press E to light    (needs plant fibre; hold E: add more wood)"
+
+	return "Press E to add wood    (hold E: roast food)"
+
+
+func _hold_e_check() -> void:
+	if _e_target == 0 or not Input.is_key_pressed(KEY_E):
+		return
+
+	if Time.get_ticks_msec() - _e_start_msec < int(HOLD_E_S * 1000.0):
+		return
+
+	var id: int = _e_target
+	_e_target = 0
+
+	if not _world.has(id):
+		return
+
+	var state: int = _world[id]["state"]
+
+	if state == 1:
+		cook_nearest()
+	elif state == 9:
+		fuel_nearest()
+	elif state == 8:
+		pass
+	else:
+		clear_prompt()
+		net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
+
+
 # True when something lay within reach and the server was asked for it.
 func pick_up_nearest() -> bool:
 	var id: int = _nearest()[0]
@@ -164,6 +260,7 @@ func admin_give_test_set() -> void:
 
 func _process(_delta: float) -> void:
 	var now: int = Time.get_ticks_msec()
+	_hold_e_check()
 
 	if _crafting != 0:
 		if now >= _craft_done_msec:
@@ -192,15 +289,15 @@ func _process(_delta: float) -> void:
 		return
 	var near: Array = _nearest()
 	var fire: int = _nearest_fire()
-	_prompt.text = "" if near[0] == 0 else "E: pick up %s x%d" % [table.name_of(near[1]), near[2]]
+	_prompt.text = "" if near[0] == 0 else "Press E to pick up %s x%d" % [table.name_of(near[1]), near[2]]
 
 	var struct_id: int = _nearest_struct()
 
 	if near[0] == 0 and fire != 0:
-		_prompt.text = "C: roast food    V: add wood" if _world[fire]["state"] == 1 else "V: add wood to relight"
+		_prompt.text = _fire_prompt(_world[fire]["state"])
 	elif near[0] == 0 and struct_id != 0:
 		var st: int = _world[struct_id]["state"]
-		_prompt.text = "E: open chest    Shift+E: take it down (empty only)" if st == 6 else ("E: split a log into firewood (hold E to keep going, needs an axe)    Shift+E: take it down" if st == 7 else "E: take down %s" % table.name_of(_world[struct_id]["number"]).to_lower())
+		_prompt.text = "Press E to open the chest    (hold E: take it down, empty only)" if st == 6 else ("Press E to split a log into firewood    (hold E to keep going, needs an axe; Shift+E: take it down)" if st == 7 else "Hold E to take down the %s" % table.name_of(_world[struct_id]["number"]).to_lower())
 	elif near[0] == 0:
 		_prompt.text = plant_hint
 
@@ -243,7 +340,7 @@ func _nearest_fire() -> int:
 	var best_d: float = 3.0
 
 	for id in _world:
-		if _world[id]["state"] in [1, 2] and here.distance_to(_world[id]["pos"]) <= best_d:
+		if _world[id]["state"] in [1, 8, 9] and here.distance_to(_world[id]["pos"]) <= best_d:
 			best_d = here.distance_to(_world[id]["pos"])
 			best = id
 
@@ -686,7 +783,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			node = box
 			node.position = row[3] + Vector3(0.0, 0.12, 0.0)
 		else:
-			node = _make_fire(state == 1)
+			node = _make_fire(state == 1, state == 9)
 			node.position = row[3]
 			light = node.get_node_or_null("Light")
 
@@ -799,7 +896,7 @@ func _make_chest() -> Node3D:
 
 # A campfire: a ring of stones, charred sticks and, while lit, a flame and a warm light.
 # Only the nearest MAX_FIRE_LIGHTS lit fires keep their light on (cost cap at every quality).
-func _make_fire(lit: bool) -> Node3D:
+func _make_fire(lit: bool, loaded: bool = false) -> Node3D:
 	var fire: Node3D = Node3D.new()
 	var stone_material: StandardMaterial3D = StandardMaterial3D.new()
 	stone_material.albedo_color = Color(0.42, 0.42, 0.44)
@@ -829,6 +926,23 @@ func _make_fire(lit: bool) -> Node3D:
 		stick.rotation = Vector3(deg_to_rad(90.0), 0.0, deg_to_rad(60.0 * float(n)))
 		stick.position = Vector3(0.0, 0.1, 0.0)
 		fire.add_child(stick)
+
+	# A loaded, unlit fire: pale wood leaned together over the ring.
+	if loaded:
+		var wood_mesh: CylinderMesh = CylinderMesh.new()
+		wood_mesh.top_radius = 0.04
+		wood_mesh.bottom_radius = 0.05
+		wood_mesh.height = 0.6
+		var wood_material: StandardMaterial3D = StandardMaterial3D.new()
+		wood_material.albedo_color = Color(0.55, 0.4, 0.24)
+		wood_mesh.material = wood_material
+
+		for n in range(4):
+			var piece: MeshInstance3D = MeshInstance3D.new()
+			piece.mesh = wood_mesh
+			piece.rotation = Vector3(deg_to_rad(25.0), deg_to_rad(90.0 * float(n)), 0.0)
+			piece.position = Vector3(0.0, 0.3, 0.0)
+			fire.add_child(piece)
 
 	if lit:
 		var flame: MeshInstance3D = MeshInstance3D.new()

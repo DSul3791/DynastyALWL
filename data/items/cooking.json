@@ -16,13 +16,16 @@
 		"acorns"
 	],
 	"gives": "roast_forage",
+	"tinder": "plant_fibre",
 	"pace_ms": 1200,
+	"fuel_note": "Burn times in GAME seconds (clock is 24:1): a stick 2 game minutes, firewood 30, a log 2 game hours. A placed campfire starts lit with 20 sticks of fuel.",
 	"fuel": {
 		"stick": 120.0,
-		"log": 600.0,
-		"firewood": 300.0
+		"log": 7200.0,
+		"firewood": 1800.0
 	},
-	"max_burn_s": 3600.0,
+	"start_burn_game_s": 2400.0,
+	"max_burn_game_s": 43200.0,
 	"fuel_order": [
 		"firewood",
 		"stick",
