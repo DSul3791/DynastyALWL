@@ -35,7 +35,6 @@ const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const BlockLinkScript := preload("res://src/stream/block_link_server.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
-const CoverScript := preload("res://src/shared/cover_standin.gd")
 
 const MAX_BATCH_BYTES := 192 * 1024
 const MAX_QUEUE_PER_PEER := 20000
@@ -455,37 +454,17 @@ func _poll_water() -> void:
 			net.water_rate.rpc(water_live.rate, false, water_live.rate * WATER_BASE_RATE)
 
 
-# Stand-in for Cover.at (see src/shared/cover_standin.gd): is the point under a tree's crown?
-# Looks at the flora chunk of the point and any neighbour within 12 m, trees that were cut excluded.
+# Cover.at for a fire: makes sure the flora chunk of the spot (and the neighbours whose crowns
+# reach into it) is in the server's cover index, then asks it.
 func _cover_at(point: Vector3) -> float:
-	var home: Vector2i = flora.placer.normalize(Vector2i(int(floor(point.x / flora.placer.chunk_m)), int(floor(point.z / flora.placer.chunk_m))))
+	var size: float = flora.placer.chunk_m
+	var home: Vector2i = Vector2i(int(floor(point.x / size)), int(floor(point.z / size)))
 
 	for dz in [-1, 0, 1]:
 		for dx in [-1, 0, 1]:
-			var chunk: Vector2i = flora.placer.normalize(home + Vector2i(dx, dz))
-			var origin: Vector2 = flora.placer.chunk_origin(chunk)
+			flora.chunk_bytes(home + Vector2i(dx, dz), false)
 
-			if dx != 0 or dz != 0:
-				# Skip neighbours more than 12 m from the point.
-				var nearest: Vector2 = Vector2(clampf(point.x, origin.x, origin.x + flora.placer.chunk_m), clampf(point.z, origin.y, origin.y + flora.placer.chunk_m))
-
-				if nearest.distance_to(Vector2(point.x, point.z)) > 12.0:
-					continue
-
-			var trees: Dictionary = flora.placer.chunk_items(chunk, true)
-			var gone: Array = flora.removed_in(chunk)
-			var ids: PackedInt32Array = PackedInt32Array()
-			var positions: PackedVector3Array = PackedVector3Array()
-
-			for n in range(trees["ids"].size()):
-				if not gone.has(trees["ids"][n]):
-					ids.append(trees["ids"][n])
-					positions.append(trees["positions"][n])
-
-			if CoverScript.at(point, ids, positions) > 0.5:
-				return 1.0
-
-	return 0.0
+	return 1.0 if flora.covered(point) else 0.0
 
 
 func _on_cut_flora_requested(peer_id: int, chunk: Vector2i, id: int) -> void:
