@@ -1,9 +1,9 @@
 extends RefCounted
 
-# The item table (data/tables/items.json): item ids, numbers, stack sizes.
+# The item table (data/items/items.json): item ids, numbers, stack sizes.
 # Shared by server and client. Numbers are stable save ids; names are for code.
 
-const PATH := "res://data/tables/items.json"
+const PATH := "res://data/items/items.json"
 
 var _by_id: Dictionary = {}        # String id -> entry (with "id" added)
 var _by_number: Dictionary = {}    # int number -> entry

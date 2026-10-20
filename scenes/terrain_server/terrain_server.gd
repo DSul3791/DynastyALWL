@@ -33,6 +33,8 @@ const FloraStoreScript := preload("res://src/stream/server_flora.gd")
 const WaterLiveScript := preload("res://src/water/water_live.gd")
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const BlockLinkScript := preload("res://src/stream/block_link_server.gd")
+const ItemTableScript := preload("res://src/shared/item_table.gd")
+const ItemsScript := preload("res://src/stream/server_items.gd")
 
 const MAX_BATCH_BYTES := 192 * 1024
 const MAX_QUEUE_PER_PEER := 20000
@@ -47,6 +49,7 @@ const IDLE_MAX_DONE := 400000          # remembered built blocks (skips re-check
 var generator
 var store
 var flora
+var items                              # ServerItems: inventories and world items
 var _water_updates: int = 0
 var weather: Dictionary = {}           # the weather at the water tile now (WeatherScript.state), refreshed every second
 var _weather_next_msec: int = 0
@@ -156,6 +159,11 @@ func _ready() -> void:
 	placer.setup(generator, tables, rules)
 	flora = FloraStoreScript.new()
 	flora.setup(placer, store_dir)
+	items = ItemsScript.new()
+	items.send_full = func(peer, bytes): net.inventory_full.rpc_id(peer, bytes)
+	items.send_slots = func(peer, bytes): net.inventory_slots.rpc_id(peer, bytes)
+	items.send_world_items = func(peer, added, removed): net.world_items.rpc_id(peer, added, removed)
+	items.setup(ItemTableScript.load_default(), store_dir)
 	spawn = _spawn_point(world_dir)
 	_world_dir = world_dir
 	_start_water()
@@ -186,6 +194,8 @@ func _ready() -> void:
 	net.position_reported.connect(_on_position_reported)
 	net.water_rate_requested.connect(_on_water_rate_requested)
 	net.water_requested.connect(_on_water_requested)
+	net.hello_requested.connect(func(peer, key): items.peer_connected_hello(peer, key))
+	net.inventory_action_requested.connect(func(peer, kind, a, b, count, at): items.action(peer, kind, a, b, count, at))
 	_report_at_msec = Time.get_ticks_msec() + 10000
 
 	for n in range(_max_running):
@@ -285,6 +295,7 @@ func _starter_stamp() -> String:
 # along their heading the higher and faster they are. Blocks nearest this
 # point are made first.
 func _on_position_reported(peer_id: int, position: Vector3, velocity: Vector3) -> void:
+	items.report_position(peer_id, position)
 	var height: float = maxf(position.y - generator.surface_height(position.x, position.z), 0.0)
 	var descent: float = maxf(-velocity.y, 10.0)
 	var seconds: float = minf(height / descent, 8.0)
@@ -307,6 +318,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 		peer_id, int(info.get("blocks", 0)), float(info.get("bytes", 0)) / 1048576.0, float(info.get("flora_bytes", 0)) / 1048576.0
 	])
 	_peers.erase(peer_id)
+	items.peer_left(peer_id)
 
 	if _link != null:
 		_link.drop(peer_id)
@@ -469,6 +481,7 @@ func _process(delta: float) -> void:
 
 	_poll_water()
 	_update_weather()
+	items.tick(delta)
 
 	# Send what the workers made, batched per peer.
 	_done_mutex.lock()
@@ -811,6 +824,10 @@ func _save_game_clock() -> void:
 
 func _exit_tree() -> void:
 	_save_game_clock()
+
+	if items != null:
+		items.save()
+
 	_queue_mutex.lock()
 	_stopping = true
 	_queue_mutex.unlock()
