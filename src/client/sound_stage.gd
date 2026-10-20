@@ -32,6 +32,7 @@ const SpearScript := preload("res://src/client/spear_sounds.gd")
 const PlacedScript := preload("res://src/client/placed_sounds.gd")
 const TreeWindScript := preload("res://src/client/tree_wind.gd")
 const HarvestFxScript := preload("res://src/client/harvest_sounds.gd")
+const WorkshopScript := preload("res://src/client/workshop_sounds.gd")
 const FlameScript := preload("res://src/client/flame_sounds.gd")
 const BreathScript := preload("res://src/client/breath_sounds.gd")
 const TreeScript := preload("res://src/client/tree_sounds.gd")
@@ -167,6 +168,7 @@ var trees                               # TreeSounds: felling (watch the world r
 var fire                                # FireSounds: campfire loops by size, lit, put out, rain sizzle (set_fires)
 var ground_below: Callable = Callable()   # terrain_client sets this: ground height under a point (NAN when not loaded)
 var itemfx                              # ItemSounds: inventory cues (watch(items) every frame)
+var workshop                            # WorkshopSounds: chopping block, plank drop and saw mill loops (hooks until workshops exist)
 var harvestfx                           # HarvestSounds: plant picks (twist, pull, pluck, snap, snip) and the plant rustling; harvest.gd calls pick(row, at)
 var treewind                            # TreeWind: pine hiss, leaf rustle, dry autumn leaves, bare winter branches by the trees near the player
 var placed                              # PlacedSounds: lean-to and chest place/pick up, container, tool break and repair (hooks, watch_world)
@@ -273,6 +275,10 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	harvestfx.name = "HarvestFx"
 	add_child(harvestfx)
 	harvestfx.setup(self)
+	workshop = WorkshopScript.new()
+	workshop.name = "Workshop"
+	add_child(workshop)
+	workshop.setup(self)
 	interior = InteriorScript.new()
 	interior.name = "Interior"
 	add_child(interior)
@@ -371,6 +377,7 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	spear.update(delta)
 	fire.update(delta, body)
 	treewind.update(delta, body)
+	workshop.update(delta, body)
 	trees.update(delta)
 	breath.follow_body(delta, body, flying, swim.swimming)
 	breath.update(delta, underwater)
@@ -467,7 +474,7 @@ func voices_playing() -> int:
 		if is_instance_valid(player) and player.playing:
 			count += 1
 
-	return count + weather.voices_playing() + swim.voices_playing() + interior.voices_playing() + treewind.voices_playing()
+	return count + weather.voices_playing() + swim.voices_playing() + interior.voices_playing() + treewind.voices_playing() + workshop.loops_playing
 
 
 # True while another optional sound (a call, a flush) fits in the voice budget.

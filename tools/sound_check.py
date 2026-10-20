@@ -61,6 +61,13 @@ SCENARIOS = [
     ("placed", ["--placed"], 4500, [
         ("hooks played", r"placed sounds (\{[^}]*\})", 8, 20, "sum"),
     ]),
+    ("workshop", ["--workshop"], 5500, [
+        ("chop, split and plank", r"workshop sounds (\{[^}]*\})", 3, 3, "sum"),
+        ("saw loop plays", r"saw loops " + NUM + r", last", 1, 1),
+    ]),
+    ("wear", ["--wear-sounds"], 4500, [
+        ("tool break and repair", r"wear sounds (\{[^}]*\})", 2, 2, "sum"),
+    ]),
     ("cooking", ["--cooking"], 4500, [
         ("eaten", r"eaten " + NUM, 5, 5),
         ("sizzle", r"sizzle " + NUM, 1, 1),

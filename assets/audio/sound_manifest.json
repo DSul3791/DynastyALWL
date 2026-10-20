@@ -1017,6 +1017,38 @@
    "priority": 3
   },
   {
+   "name": "chop_split",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "workshop_sounds.gd: a log split into firewood at the chopping block (heard when a log is traded for firewood beside a block)",
+   "to_supply": "3 recordings of an axe splitting a log on a block, 0.8 s",
+   "priority": 2
+  },
+  {
+   "name": "chop_thock",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "workshop_sounds.gd chop(at, false): an axe stroke on the block that does not split",
+   "to_supply": "3 recordings of an axe biting wood, 0.3 s",
+   "priority": 3
+  },
+  {
+   "name": "plank_drop",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "workshop_sounds.gd plank_drop(at): a sawn plank landing on its stack (hook until the saw mill exists)",
+   "to_supply": "2 recordings of a plank dropped on a plank stack, 0.5 s",
+   "priority": 3
+  },
+  {
+   "name": "saw_mill",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "workshop_sounds.gd set_saws: a running saw mill (hook until it exists, loop)",
+   "to_supply": "A seamless loop of a saw mill running, blade rasp and frame, 10 s or more",
+   "priority": 3
+  },
+  {
    "name": "pick_pluck",
    "state": "generated",
    "variants": 3,

@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **167 slots: 17 recorded, 141 generated placeholders, 9 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **171 slots: 17 recorded, 145 generated placeholders, 9 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -26,6 +26,7 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 2 | `breath_in` | generated | 3 | breath_sounds.gd: breathing in, from moderate exertion | 3 soft breaths in through the mouth, 0.8 s |
 | 2 | `breath_out` | generated | 3 | breath_sounds.gd: breathing out | 3 soft breaths out, 0.9 s |
 | 2 | `cave_drip` | generated | 5 | cave_sounds.gd: water drops in caves and tunnels | 3 to 6 single water drips in a stone room, 1 to 2 s each |
+| 2 | `chop_split` | generated | 3 | workshop_sounds.gd: a log split into firewood at the chopping block (heard when a log is traded for firewood beside a block) | 3 recordings of an axe splitting a log on a block, 0.8 s |
 | 2 | `container_put` | generated | 2 | placed_sounds.gd: something put into a chest | 2 short wood clacks with a little rustle |
 | 2 | `container_take` | generated | 2 | placed_sounds.gd: something taken out of a chest | 2 short rustles and a wood clack |
 | 2 | `cook_sizzle` | generated | 2 | fire_sounds.gd cook(): food laid on the embers (heard when a roast appears in the bag at a fire) | 2 to 3 recordings of meat or food sizzling on embers, 3 s |
@@ -84,6 +85,7 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 3 | `bird_feebee` | generated | 3 | ambient_life.gd: forest bird, by day | 2 chickadee-style two-note calls |
 | 3 | `chest_close` | generated | 2 | interior_sounds.gd: a chest closes (object) | 2 to 3 chest lid thuds |
 | 3 | `chest_open` | generated | 2 | interior_sounds.gd: a chest opens (object) | 2 to 3 wooden chest lid opens with a creak |
+| 3 | `chop_thock` | generated | 3 | workshop_sounds.gd chop(at, false): an axe stroke on the block that does not split | 3 recordings of an axe biting wood, 0.3 s |
 | 3 | `craft_bind` | generated | 2 | item_sounds.gd: crafting work sound (binding with cord: spear, torch), plays for the length of the craft | 2 to 3 recordings of tying cord around a pole, 4 s |
 | 3 | `craft_carve` | generated | 2 | item_sounds.gd: crafting work sound (scraping a point on wood: wooden spear), plays for the length of the craft | 2 to 3 recordings of scraping wood with a stone, 4 s |
 | 3 | `craft_knap` | generated | 2 | item_sounds.gd: crafting work sound (chipping stone: stone axe, knife), plays for the length of the craft | 2 to 3 recordings of knapping flint, stone on stone, 4 s |
@@ -116,10 +118,12 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 3 | `hit_spade_soil` | generated | 3 | hit_sounds.gd: a spade strike into soil | 3 spade thuds into earth |
 | 3 | `pickup_placed` | generated | 2 | placed_sounds.gd: a placed thing picked up again | 2 recordings of dragging and lifting a wooden thing |
 | 3 | `place_thump` | generated | 2 | placed_sounds.gd: any other thing set on the ground | 2 short dull thumps on soil |
+| 3 | `plank_drop` | generated | 2 | workshop_sounds.gd plank_drop(at): a sawn plank landing on its stack (hook until the saw mill exists) | 2 recordings of a plank dropped on a plank stack, 0.5 s |
 | 3 | `plant_rustle_leaves` | generated | 2 | harvest_sounds.gd: leaves and shrub shaking when picked | 2 recordings of shaking a leafy plant, 1 s |
 | 3 | `plant_rustle_reeds` | generated | 2 | harvest_sounds.gd: reeds and grass swishing when picked | 2 recordings of shaking reeds or tall grass, 1 s |
 | 3 | `rain_drip` | generated | 4 | weather_sounds.gd: a drop falling from a leaf near you, under trees in rain | 3 to 4 single drops falling from leaves onto leaves or ground, 0.3 s |
 | 3 | `rain_water` | generated | 1 | weather_sounds.gd: rain falling on ponds and rivers near the player | Rain on a lake surface loop, seamless |
+| 3 | `saw_mill` | generated | 1 | workshop_sounds.gd set_saws: a running saw mill (hook until it exists, loop) | A seamless loop of a saw mill running, blade rasp and frame, 10 s or more |
 | 3 | `spear_flight` | generated | 3 | spear_sounds.gd: a thrown spear whistling through the air (moves along the path) | 3 thin air whistles of a spear in flight, 1 to 2 s |
 | 3 | `spear_hit_soil` | generated | 3 | spear_sounds.gd: a spear sticking into earth | 3 spear thuds into dirt |
 | 3 | `spear_hit_stone` | generated | 3 | spear_sounds.gd: a spear striking stone | 3 spear tips hitting rock, clack and scrape |

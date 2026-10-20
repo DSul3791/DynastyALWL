@@ -10,7 +10,7 @@ extends Node
 #   sound.placed.container(true, at)        something put into a container (false: taken out)
 #   sound.placed.tool_break(at)             a tool snaps with the last of its wear
 #   sound.placed.tool_repair(at)            a tool mended (a 2 s work sound at the player)
-#   sound.placed.watch_world(world, here, table)   about once a second: a world row of a PLACED item id
+#   sound.placed.watch_world(world, here)  about once a second: a world row of state 5 to 7 (lean-to, chest, chopping block)
 #                                           that appears near the player plays place, one that vanishes near
 #                                           the player plays pick_up (rows streamed in from afar are silent)
 #
@@ -24,8 +24,8 @@ const NAMES := {
 	"place_leanto": -7.0, "place_chest": -6.0, "place_thump": -10.0, "pickup_placed": -10.0,
 	"container_put": -11.0, "container_take": -12.0, "tool_break": -4.0, "tool_repair": -12.0,
 }
-# Item ids (data/items/items.json) that count as placed things, and the place sound each makes.
-const PLACED := {"lean_to": "leanto", "leanto": "leanto", "chest": "chest", "storage_chest": "chest"}
+# World row states of placed structures (Items thread: 5 lean-to, 6 chest, 7 chopping block) and the place sound each makes.
+const STATE_KIND := {5: "leanto", 6: "chest", 7: "thump"}
 const NEAR_M := 40.0                    # rows closer than this are heard appearing or vanishing
 const MAX_DISTANCE_M := 120.0
 
@@ -68,15 +68,14 @@ func tool_repair(at: Vector3) -> bool:
 	return _once("tool_repair", at)
 
 
-func watch_world(world: Dictionary, here: Vector3, table) -> void:
+func watch_world(world: Dictionary, here: Vector3) -> void:
 	var seen: Dictionary = {}
 
 	for id in world:
 		var row: Dictionary = world[id]
-		var item: String = table.id_of(int(row["number"])) if table != null else ""
 
-		if PLACED.has(item):
-			seen[id] = [PLACED[item], row["pos"]]
+		if STATE_KIND.has(int(row["state"])):
+			seen[id] = [STATE_KIND[int(row["state"])], row["pos"]]
 
 	if _primed:
 		for id in seen:

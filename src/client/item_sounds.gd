@@ -50,9 +50,6 @@ var work_played: int = 0
 var eat_played: int = 0
 var _mouth: AudioStreamPlayer
 var _fuel_msec: int = -100000
-var _was_broken: Array = []
-var _was_numbers: PackedInt32Array = PackedInt32Array()
-var _was_wear: PackedInt32Array = PackedInt32Array()
 var _counts_by_number: Dictionary = {}  # item number -> count in the bag, last watch
 var last_work: String = ""
 
@@ -107,29 +104,30 @@ func watch(items) -> void:
 
 	_was_crafting = crafting
 	_watch_fire(items, inv)
-	_watch_wear(items, inv)
 
 
-# A tool that became broken since the last look snaps (sound.placed.tool_break); a slot of the same tool whose
-# wear dropped was repaired (sound.placed.tool_repair), both at the player.
-func _watch_wear(items, inv) -> void:
-	var broken: Array = []
+# A log gone and firewood come in at the same moment (the server split one at the chopping block): the block
+# nearest the player rings with the split.
+func _watch_block(items, counts: Dictionary) -> void:
+	var log_n: int = items.table.number_of("log")
+	var wood_n: int = items.table.number_of("firewood")
 
-	for slot in range(inv.numbers.size()):
-		broken.append(items.is_broken(slot))
+	if int(counts.get(log_n, 0)) >= int(_counts_by_number.get(log_n, 0)) or int(counts.get(wood_n, 0)) <= int(_counts_by_number.get(wood_n, 0)):
+		return
 
-	if not _was_broken.is_empty() and items._player_position.is_valid():
-		var here: Vector3 = items._player_position.call()
+	var here: Vector3 = items._player_position.call()
+	var best: Vector3 = here
+	var best_d: float = 5.0
 
-		for slot in range(inv.numbers.size()):
-			if broken[slot] and not _was_broken[slot] and _was_numbers[slot] == inv.numbers[slot]:
-				get_parent().placed.tool_break(here)
-			elif inv.numbers[slot] != 0 and _was_numbers[slot] == inv.numbers[slot] and inv.wear[slot] < _was_wear[slot]:
-				get_parent().placed.tool_repair(here)
+	for id in items._world:
+		var row: Dictionary = items._world[id]
 
-	_was_broken = broken
-	_was_numbers = inv.numbers.duplicate()
-	_was_wear = inv.wear.duplicate()
+		if int(row["state"]) == 7 and here.distance_to(row["pos"]) < best_d:
+			best_d = here.distance_to(row["pos"])
+			best = row["pos"]
+
+	if best_d < 5.0:
+		get_parent().workshop.chop(best, true)
 
 
 # The V key at a fire: wood used up in the next moments was laid on it.
@@ -161,6 +159,9 @@ func _watch_fire(items, inv) -> void:
 
 	for n in range(inv.numbers.size()):
 		counts[inv.numbers[n]] = int(counts.get(inv.numbers[n], 0)) + int(inv.counts[n])
+
+	if not _counts_by_number.is_empty():
+		_watch_block(items, counts)
 
 	if not _counts_by_number.is_empty() and items.has_method("_nearest_fire"):
 		var roast: int = items.table.number_of("roast_forage")

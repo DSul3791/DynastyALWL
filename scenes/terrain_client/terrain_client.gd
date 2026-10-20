@@ -182,6 +182,8 @@ var _item_sync_left: float = 0.0
 var test_levels: bool = false
 var test_placed: bool = false
 var test_cooking: bool = false
+var test_workshop: bool = false
+var _test_workshop_t: float = -1.0
 var test_treewind: bool = false
 var _test_treewind_t: float = -1.0
 var test_wear: bool = false
@@ -347,6 +349,8 @@ func _ready() -> void:
 			test_wear = true
 		elif argument == "--treewind":
 			test_treewind = true
+		elif argument == "--workshop":
+			test_workshop = true
 		elif argument == "--cooking":
 			test_cooking = true
 		elif argument == "--placed":
@@ -1698,7 +1702,7 @@ func _step_player(delta: float) -> void:
 		if not test_fire and not sound.fire.manual_active():
 			sound.fire.sync_world(items._world, _cover_here)
 
-		sound.placed.watch_world(items._world, body.global_position, items.table)
+		sound.placed.watch_world(items._world, body.global_position)
 
 	_tree_sync_left -= delta
 
@@ -2070,10 +2074,10 @@ func _process(delta: float) -> void:
 		var axe_slot: int = items.inventory.numbers.find(items.table.number_of("stone_axe"))
 
 		if before_wear < 3.0 and _test_wear_t >= 3.0 and axe_slot >= 0:
-			items.inventory.wear[axe_slot] = int(items.table.entry("stone_axe").get("durability", 40))
+			items.tool_event.call("broke")
 
 		if before_wear < 5.0 and _test_wear_t >= 5.0 and axe_slot >= 0:
-			items.inventory.wear[axe_slot] = 0
+			items.tool_event.call("repaired")
 
 		if _test_wear_t > 7.0:
 			test_wear = false
@@ -2090,6 +2094,26 @@ func _process(delta: float) -> void:
 
 		if _test_treewind_t > 20.5:
 			test_treewind = false
+
+	# Headless check: a chopping block, a plank drop and two saw mills (one running, one idle) beside the player.
+	if test_workshop and now - connected_msec > 18000:
+		var before_ws: float = _test_workshop_t
+		_test_workshop_t = maxf(_test_workshop_t, 0.0) + get_process_delta_time()
+		var at_ws: Vector3 = body.global_position + Vector3(4.0, 0.0, 0.0)
+
+		if before_ws < 1.0 and _test_workshop_t >= 1.0:
+			sound.workshop.chop(at_ws, false)
+			sound.workshop.chop(at_ws, true)
+			sound.workshop.plank_drop(at_ws)
+			sound.workshop.set_saws([{"id": 1, "at": at_ws, "running": true}, {"id": 2, "at": at_ws + Vector3(0.0, 0.0, 5.0), "running": false}])
+
+		if before_ws < 4.0 and _test_workshop_t >= 4.0:
+			print("Terrain client: workshop sounds %s, saw loops %d, last %s" % [str(sound.workshop.played), sound.workshop.loops_playing, sound.workshop.last])
+			sound.workshop.set_saws([])
+
+		if before_ws < 9.0 and _test_workshop_t >= 9.0:
+			print("Terrain client: workshop saw loops after stop %d" % sound.workshop.loops_playing)
+			test_workshop = false
 
 	# Headless check: the cooking and eating sounds play (sizzle and fuel at a spot beside the player, then each way of eating).
 	if test_cooking and now - connected_msec > 18000:
@@ -2115,13 +2139,9 @@ func _process(delta: float) -> void:
 		sound.placed.container(false, here)
 		sound.placed.tool_break(here)
 		sound.placed.tool_repair(here)
-		var stub := GDScript.new()
-		stub.source_code = "extends RefCounted\nfunc id_of(_n):\n\treturn \"chest\"\n"
-		stub.reload()
-		var fake = stub.new()
-		sound.placed.watch_world({}, here, fake)
-		sound.placed.watch_world({7: {"number": 1, "pos": here}}, here, fake)
-		sound.placed.watch_world({}, here, fake)
+		sound.placed.watch_world({}, here)
+		sound.placed.watch_world({7: {"state": 6, "pos": here}}, here)
+		sound.placed.watch_world({}, here)
 		print("Terrain client: placed sounds %s, last %s" % [str(sound.placed.played), sound.placed.last])
 
 	# Headless check: the volume sliders change the buses and reset.
