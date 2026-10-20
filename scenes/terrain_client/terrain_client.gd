@@ -43,6 +43,7 @@ const HeldItemScript := preload("res://src/client/held_item.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
 const WeatherScript := preload("res://src/shared/weather.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
+const StanceScript := preload("res://src/client/stance.gd")
 const StatusIconsScript := preload("res://src/client/status_icons.gd")
 const DebugHudScript := preload("res://src/client/debug_hud.gd")
 const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
@@ -125,6 +126,8 @@ var sea: MeshInstance3D
 var flying: bool = false
 var underwater: bool = false
 var _ground_quality: int = -1       # quality the ground texture array was built for
+var stance = StanceScript.new()       # standing, crouching (C), sitting (X), lying (Z); client.stance.stance and its `changed` signal
+var _shape: CollisionShape3D          # the player's collision capsule (resized by stance)
 var jogging: bool = false             # double-tapped W; ends when W is released
 var running: bool = false             # Shift held with W
 var _last_w_msec: int = -1000
@@ -1031,6 +1034,7 @@ func _make_player(root: Node3D, start: Vector3) -> void:
 	capsule.radius = 0.35
 	capsule.height = 1.8
 	shape.shape = capsule
+	_shape = shape
 	body.add_child(shape)
 	root.add_child(body)
 	body.global_position = start
@@ -1667,8 +1671,14 @@ func _unhandled_input(event: InputEvent) -> void:
 			net.step_water_rate.rpc_id(1, 1)
 		elif event.keycode == KEY_MINUS or event.keycode == KEY_KP_SUBTRACT:
 			net.step_water_rate.rpc_id(1, -1)
-		elif event.keycode == KEY_X:
+		elif event.keycode == KEY_X and event.ctrl_pressed:
 			_admin_dig()
+		elif event.keycode == KEY_C and not flying:
+			_set_stance(StanceScript.CROUCH, true)
+		elif event.keycode == KEY_X and not flying:
+			_set_stance(StanceScript.SIT, true)
+		elif event.keycode == KEY_Z and not flying:
+			_set_stance(StanceScript.LIE, true)
 		elif event.keycode >= KEY_1 and event.keycode <= KEY_8 and held != null:
 			held.select(event.keycode - KEY_1)
 		elif event.keycode == KEY_E and items != null:
@@ -1733,6 +1743,34 @@ func _step_player(delta: float) -> void:
 	Probe.stop("sound", ts)
 
 
+# Changes the stance (a toggle when `toggle`); standing up is refused under a low roof.
+func _set_stance(wanted: int, toggle: bool = false) -> void:
+	var target: int = StanceScript.STAND if toggle and stance.stance == wanted else wanted
+
+	if target < stance.stance and not _room_to_rise(target):
+		_menu_note.text = "Not enough room to stand up here"
+		return
+
+	if stance.set_stance(target):
+		stance.apply_shape(_shape)
+		status_icons.tick(0.0, true)
+		# The server side (Items: exertion recovery, protocol) listens to stance.changed, or reads
+		# stance.stance; nothing is sent from here until that interface exists.
+
+
+# True when a capsule of the taller stance fits where the player is.
+func _room_to_rise(target: int) -> bool:
+	var taller: CapsuleShape3D = CapsuleShape3D.new()
+	taller.radius = 0.33
+	taller.height = float(StanceScript.SHAPE_HEIGHT[target])
+	var query: PhysicsShapeQueryParameters3D = PhysicsShapeQueryParameters3D.new()
+	query.shape = taller
+	var feet_y: float = body.global_position.y - float(StanceScript.SHAPE_HEIGHT[StanceScript.STAND]) * 0.5
+	query.transform = Transform3D(Basis.IDENTITY, Vector3(body.global_position.x, feet_y + float(StanceScript.SHAPE_HEIGHT[target]) * 0.5 + 0.05, body.global_position.z))
+	query.exclude = [body.get_rid()]
+	return get_viewport().world_3d.direct_space_state.intersect_shape(query, 1).is_empty()
+
+
 func _move_player(delta: float) -> void:
 	if menu_open:
 		body.velocity = Vector3.ZERO
@@ -1744,6 +1782,13 @@ func _move_player(delta: float) -> void:
 		float(Input.is_key_pressed(KEY_S)) - float(Input.is_key_pressed(KEY_W))
 	)
 	var direction: Vector3 = body.global_transform.basis * input
+
+	# Any movement key stands the player up from sitting or lying; those stances do not move.
+	if input != Vector3.ZERO or Input.is_key_pressed(KEY_SPACE):
+		if stance.stance >= StanceScript.SIT:
+			_set_stance(StanceScript.STAND)
+
+	stance.step(delta)
 
 	if test_walk:
 		_walk_step()
@@ -1762,6 +1807,11 @@ func _move_player(delta: float) -> void:
 	if strain_cap != 0.0:
 		jogging = false
 	var pace: float = RUN_SPEED if running else (JOG_SPEED if jogging else WALK_SPEED)
+
+	if not flying and stance.stance != StanceScript.STAND:
+		running = false
+		jogging = false
+		pace = WALK_SPEED * float(StanceScript.SPEED[stance.stance])
 
 	if items != null and not flying:
 		pace *= items.speed_factor()
@@ -1830,6 +1880,9 @@ func _move_player(delta: float) -> void:
 		camera.position = Vector3(0.0, 0.7, 0.0)
 		camera.rotation.z = 0.0
 
+		if stance.stance != StanceScript.STAND:
+			_set_stance(StanceScript.STAND)
+
 	sea.global_position = Vector3(body.global_position.x, 0.0, body.global_position.z)
 	_update_underwater()
 
@@ -1852,7 +1905,7 @@ func _update_bob(delta: float) -> void:
 
 	var dip: float = 0.5 * (1.0 + cos(_bob_phase))            # 1 at a footfall, 0 mid-stride
 	var side: float = cos(_bob_phase * 0.5)                   # +1 left foot, -1 right foot
-	camera.position.y = 0.7 - float(BOB_M[gait]) * dip * _bob_amount
+	camera.position.y = stance.eye_y - float(BOB_M[gait]) * dip * _bob_amount
 	camera.position.x = -float(SWAY_M[gait]) * side * _bob_amount
 	camera.rotation.z = deg_to_rad(float(SWAY_DEG[gait])) * side * _bob_amount
 
