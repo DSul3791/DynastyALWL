@@ -36,3 +36,7 @@ All item lights are `OmniLight3D` with `shadow_enabled = false`. Per-frame cost 
 | High / Ultra | 3 | 1 | 4 |
 
 Fires are server records (8 per 256 m chunk); only the nearest few get a light, the rest are drawn as flame meshes. The held torch is one light with a flicker set from the clock (no timer, no allocation). No GPU timings: the cloud has no graphics, so Dave's F8 tables decide whether Low needs a lower cap. A lantern (when it exists) uses the same single held light, so the table does not change.
+
+## Tool wear (build 195, protocol 14)
+
+Dave 2026-10-20: tools wear out slowly and are repaired with materials. `durability` (uses) and `repair` (materials) are in items.json: stone axe 200 (1 stick + 1 twine), wooden spade 150 (1 stick), stone knife 120 (1 stone + 1 twine), stone spear 100 (1 stone + 1 twine), wooden spear 40 (1 stick). Wear is a number per inventory slot (`Inventory.wear`, 8 bytes per slot on the wire, `[number, count, wear]` in inventories.json version 2; version 1 files load with zero wear). The server adds one use per effective blow (tree hit, trunk blow, mining a stone, picking something that needs the tool, a throw). At full wear the tool is Broken: `_has_tool` skips it, the client treats it as no tool. The Repair button (ACT_REPAIR 13) spends the materials and wins back half the durability, also for a broken tool. A dropped, thrown or picked-up tool keeps its wear. The slot shows a green-to-red condition bar and a percent; the tooltip lists the repair cost.
