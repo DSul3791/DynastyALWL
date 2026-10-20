@@ -24,9 +24,9 @@ const GRASS_SOILS := {3: 0.9, 4: 0.5, 5: 1.0, 6: 0.7, 7: 1.0, 8: 0.6, 9: 0.3}
 # The three layers, from the ground up. "reach" is the share of the grass
 # radius the layer is drawn to; "per_point" is how many cards per ground sample.
 const LAYERS := [
-	{"name": "cover", "texture": "ground_cover", "width": 0.6, "height": 0.0, "per_point": 6, "reach": 0.6, "quads": 0, "wind": 0.0, "backlight": 0.0},
-	{"name": "short", "texture": "grass_short", "width": 0.55, "height": 0.34, "per_point": 8, "reach": 0.7, "quads": 2, "wind": 1.0, "backlight": 0.0},
-	{"name": "tall", "texture": "grass_tall", "width": 0.42, "height": 0.7, "per_point": 3, "reach": 1.0, "quads": 2, "wind": 1.4, "backlight": 0.35},
+	{"name": "cover", "texture": "ground_cover", "width": 0.6, "height": 0.0, "per_point": 6, "reach": 0.4, "quads": 0, "wind": 0.0, "backlight": 0.0},
+	{"name": "short", "texture": "grass_short", "width": 0.55, "height": 0.34, "per_point": 8, "reach": 0.85, "quads": 2, "wind": 1.0, "backlight": 0.0},
+	{"name": "tall", "texture": "grass_tall", "width": 0.7, "height": 0.95, "per_point": 3, "reach": 1.0, "quads": 2, "wind": 1.4, "backlight": 0.35},
 	# Forest floor under tree crowns (look only, nothing is stored, synced or pickable; section 24 of
 	# ART_DIRECTION.md): fallen leaves and dead branches. Drawn within litter_m of the player.
 	{"name": "leaves", "texture": "litter", "width": 0.9, "height": 0.0, "per_point": 2, "reach": 1.0, "quads": 0, "wind": 0.0, "backlight": 0.0, "litter": true},
@@ -36,6 +36,14 @@ const LAYERS := [
 	{"name": "pebbles", "texture": "", "width": 1.0, "height": 0.0, "per_point": 4, "reach": 1.0, "quads": 0, "wind": 0.0, "backlight": 0.0, "shore": true, "pebble": true},
 	{"name": "reeds", "texture": "grass_tall", "width": 0.5, "height": 1.5, "per_point": 0.8, "reach": 1.0, "quads": 3, "wind": 1.0, "backlight": 0.35, "shore": true, "reed": true},
 ]
+# Distance bands (owner, 2026-10-20: grass 3 ft tall and everywhere, visible tens of metres out). A cell is
+# built at one of three levels of detail by its distance from the player and rebuilt, the old cards swapped
+# for the new in the same frame, when the player moves it into another band: 0 full samples, 1 half the
+# samples per side with cards 1.5 times as wide, 2 two samples per side with cards 2.1 times as wide (no
+# ground-cover cards beyond band 0).
+const LOD_SCALE := [1.0, 1.5, 2.1]
+const CLOSURE_OFFSETS := [Vector2(0.0, 0.0), Vector2(4.0, 0.0), Vector2(-4.0, 0.0), Vector2(0.0, 4.0), Vector2(0.0, -4.0), Vector2(3.0, 3.0), Vector2(-3.0, -3.0)]
+const LOD_HYSTERESIS_M := 3.0
 const GRASS_LAYERS := 3                  # the first layers are grass; then forest litter, then the shore
 const LITTER_END := 5                    # layers GRASS_LAYERS to LITTER_END - 1 are litter, the rest shore
 
@@ -210,7 +218,8 @@ func set_radius(meters: float) -> void:
 
 	for n in range(GRASS_LAYERS):
 		var reach: float = meters * float(LAYERS[n]["reach"])
-		_materials[n].set_shader_parameter("fade_start", maxf(reach - 8.0 * float(LAYERS[n]["reach"]), 1.0))
+		# The cards shrink to nothing over the last 12 m (no pop at the edge).
+		_materials[n].set_shader_parameter("fade_start", maxf(reach - 12.0, 1.0))
 		_materials[n].set_shader_parameter("fade_end", maxf(reach, 2.0))
 
 	if not enabled:
@@ -414,6 +423,25 @@ func update(position: Vector3) -> void:
 		rays -= _build(cell)
 
 
+# The band of a cell: near_end and far_start grow with the grass radius (about 14 to 26 m, and 65 percent of it).
+func _lod_of(cell: Vector2i, held: int) -> int:
+	var centre: Vector2 = (Vector2(cell) + Vector2(0.5, 0.5)) * CELL_M
+	var d: float = centre.distance_to(Vector2(_center.x, _center.z))
+	var near_end: float = clampf(radius_m * 0.35, 14.0, 26.0)
+	var far_start: float = radius_m * 0.65
+	var slack_near: float = LOD_HYSTERESIS_M if held == 1 else (-LOD_HYSTERESIS_M if held == 0 else 0.0)
+	var slack_far: float = LOD_HYSTERESIS_M if held == 2 else (-LOD_HYSTERESIS_M if held == 1 else 0.0)
+
+	if d < near_end + slack_near:
+		return 0
+
+	return 1 if d < far_start + slack_far else 2
+
+
+func _lod_points(lod: int) -> int:
+	return [points_per_side, maxi(2, int(round(points_per_side * 0.5))), 2][lod]
+
+
 func _rescan(position: Vector3, now: int) -> void:
 	var cx: int = int(floor(position.x / CELL_M))
 	var cz: int = int(floor(position.z / CELL_M))
@@ -439,6 +467,10 @@ func _rescan(position: Vector3, now: int) -> void:
 		elif not entry["built"] and not entry["busy"] and now >= int(entry["retry"]):
 			entry["busy"] = true
 			_pending.append(cell)
+		elif entry["built"] and not entry["busy"] and _lod_of(cell, int(entry.get("lod", 0))) != int(entry.get("lod", 0)):
+			entry["busy"] = true
+			entry["built"] = true
+			_pending.append(cell)
 
 	var near: Vector2 = Vector2(position.x, position.z) / CELL_M
 
@@ -463,7 +495,11 @@ func _build(cell: Vector2i) -> int:
 	var tool: VoxelTool = _terrain.get_voxel_tool()
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = hash(cell)
-	var spacing: float = CELL_M / float(points_per_side)
+	var entry: Dictionary = _cells[cell]
+	var lod: int = _lod_of(cell, int(entry.get("lod", 0)) if entry["built"] else -1)
+	var pps: int = _lod_points(lod)
+	var width_scale: float = float(LOD_SCALE[lod])
+	var spacing: float = CELL_M / float(pps)
 	# Cards are written straight into one MultiMesh buffer per layer: 12 floats of transform (rows of
 	# the 3 x 4 matrix) and 4 of custom colour each (about half the cost of building Transform3D and
 	# Color objects first).
@@ -477,15 +513,15 @@ func _build(cell: Vector2i) -> int:
 	for layer in range(LAYERS.size()):
 		var cap: PackedFloat32Array = PackedFloat32Array()
 		var share: float = density if layer < GRASS_LAYERS else (litter_density if layer < LITTER_END else shore_density)
-		cap.resize(points_per_side * points_per_side * (int(ceil(float(LAYERS[layer]["per_point"]) * share)) + 1) * 16)
+		cap.resize(pps * pps * (int(ceil(float(LAYERS[layer]["per_point"]) * share)) + 1) * 16)
 		buffers.append(cap)
 		counts.append(0)
 
 	var rays: int = 0
 	var missed: int = 0
 
-	for j in range(points_per_side):
-		for i in range(points_per_side):
+	for j in range(pps):
+		for i in range(pps):
 			var x: float = float(cell.x) * CELL_M + (float(i) + rng.randf()) * spacing
 			var z: float = float(cell.y) * CELL_M + (float(j) + rng.randf()) * spacing
 			var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(Vector3(x, _center.y + 80.0, z), Vector3(x, _center.y - 120.0, z))
@@ -519,6 +555,9 @@ func _build(cell: Vector2i) -> int:
 				continue
 
 			var thick: float = float(GRASS_SOILS[soil]) * _cover_at(x, z, hit["normal"].y)
+			# Owner (2026-10-20): in a closed forest the litter and shade under the trees stop the grass; in
+			# open fields and sparse trees it grows right up to and under them. Closure thins it gradually.
+			thick *= 1.0 - 0.95 * smoothstep(0.4, 0.9, _closure(x, point.y, z))
 
 			if thick < 0.04:
 				continue
@@ -531,6 +570,9 @@ func _build(cell: Vector2i) -> int:
 			var meadow: float = _patch.get_noise_2d(x, z)
 
 			for layer in range(GRASS_LAYERS):
+				if layer == 0 and lod > 0:
+					continue
+
 				var want: float = float(LAYERS[layer]["per_point"]) * density
 				var count: int = int(want) + (1 if rng.randf() < want - floorf(want) else 0)
 				var chance: float = thick
@@ -550,8 +592,8 @@ func _build(cell: Vector2i) -> int:
 					var size: float = rng.randf_range(0.75, 1.15)
 					var yaw: float = rng.randf() * TAU
 					var sy: float = size * rng.randf_range(0.8, 1.15)
-					var cy: float = cos(yaw) * size
-					var sny: float = sin(yaw) * size
+					var cy: float = cos(yaw) * size * width_scale
+					var sny: float = sin(yaw) * size * width_scale
 					var shade: float = rng.randf_range(0.82, 1.15)
 					var buffer: PackedFloat32Array = buffers[layer]
 					var o: int = int(counts[layer]) * 16
@@ -575,7 +617,6 @@ func _build(cell: Vector2i) -> int:
 					buffer[o + 15] = 1.0
 					buffers[layer] = buffer
 
-	var entry: Dictionary = _cells[cell]
 	entry["busy"] = false
 
 	if missed * 2 > rays:
@@ -584,7 +625,9 @@ func _build(cell: Vector2i) -> int:
 		return rays
 
 	entry["built"] = true
+	entry["lod"] = lod
 	cells_built += 1
+	_free_cell_nodes(entry)      # a rebuilt cell swaps its cards in the same frame
 
 	for layer in range(LAYERS.size()):
 		var count: int = int(counts[layer])
@@ -747,6 +790,18 @@ func _put_litter(buffers: Array, counts: Array, rng: RandomNumberGenerator, poin
 
 			buffer[o + 15] = 1.0
 			buffers[layer] = buffer
+
+
+# How closed the canopy is around a spot, 0 (open field) to 1 (every sample under a crown): seven points
+# within 4 m, tested against the shared cover index. Scattered trees give about 0.15 to 0.3, a forest 1.
+func _closure(x: float, y: float, z: float) -> float:
+	var covered: int = 0
+
+	for d in CLOSURE_OFFSETS:
+		if _flora.cover.covers(Vector3(x + d.x, y + 1.0, z + d.y)):
+			covered += 1
+
+	return float(covered) / float(CLOSURE_OFFSETS.size())
 
 
 # Share of the grass that holds at a spot of the given slope: full on level ground, thinning
