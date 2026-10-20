@@ -26,6 +26,8 @@ uniform float tile_m = 3.0;             // metres one texture tile covers
 uniform bool triplanar = true;          // Low skips the side projections
 uniform float wet = 0.0;                // 0 dry, 1 soaked by rain: darker and glossier (weather_look.gd)
 uniform float snow = 0.0;               // 0 bare, 1 snow lies on level ground (weather_look.gd)
+uniform vec4 fall_zone[3];              // nearest waterfalls: base x, z, spray radius, strength 0..1 (set_falls)
+uniform vec2 fall_height[3];            // their base and top height; the walls are damp up to the top
 uniform sampler2D canopy : filter_linear, hint_default_black;   // where trees shelter the ground (canopy_map.gd)
 uniform vec3 canopy_box = vec3(0.0, 0.0, 128.0);                // its corner x, z and width in metres
 varying vec3 world_pos;
@@ -167,6 +169,26 @@ void fragment() {
 	// Sea bed and shallows: wet, muddy.
 	color = mix(vec3(0.07, 0.065, 0.05), color, smoothstep(-3.0, 0.0, world_pos.y));
 
+	// Waterfall base (owner, 2026-10-20): the spray keeps the rock and ground around a fall wet:
+	// darker, glossy, with moss and ferny green on the walls and down the banks.
+	float damp = 0.0;
+	for (int f = 0; f < 3; f++) {
+		float zone_r = fall_zone[f].z;
+		if (zone_r > 0.0) {
+			float spray = 1.0 - smoothstep(0.3 * zone_r, zone_r, distance(world_pos.xz, fall_zone[f].xy));
+			float up = 1.0 - smoothstep(fall_height[f].y, fall_height[f].y + 5.0, world_pos.y);
+			float down = smoothstep(fall_height[f].x - 4.0, fall_height[f].x, world_pos.y);
+			damp = max(damp, spray * up * down * fall_zone[f].w);
+		}
+	}
+	if (damp > 0.0) {
+		float moss_n = vnoise(world_pos * vec3(0.9, 0.6, 0.9)) * 0.65 + vnoise(world_pos * 3.1) * 0.35;
+		float moss = damp * smoothstep(0.35, 0.65, moss_n) * (0.55 + 0.45 * rock_mask);
+		vec3 moss_color = mix(vec3(0.05, 0.12, 0.04), vec3(0.11, 0.2, 0.06), vnoise(world_pos * 1.7));
+		color *= 1.0 - 0.38 * damp;
+		color = mix(color, moss_color, moss * 0.8);
+	}
+
 	// Light touches on the surface: the texture's bump on the normal near the eye.
 	NORMAL = normalize(NORMAL + (VIEW_MATRIX * vec4(slope_push.x, 0.0, slope_push.y, 0.0)).xyz * 0.6 * closeness);
 
@@ -184,7 +206,7 @@ void fragment() {
 	color = mix(color, vec3(0.88, 0.9, 0.94), lying);
 	ALBEDO = color;
 	// Mud is wet: a little sheen.
-	ROUGHNESS = mix(mix(0.92, 0.55, mud), 0.38, soak * 0.7 * (1.0 - lying));
+	ROUGHNESS = mix(mix(0.92, 0.55, mud), 0.38, max(soak * 0.7 * (1.0 - lying), damp * 0.8));
 }
 """
 
@@ -288,3 +310,39 @@ static func _put(colors: PackedVector3Array, index: int, entry: Dictionary) -> v
 		return
 
 	colors[index] = Vector3(float(rgb[0]), float(rgb[1]), float(rgb[2]))
+
+
+# Feeds the three nearest waterfalls to the ground shader (flora.fall_list(): top, base, flow, width).
+# Spray radius grows with the flow; the moisture is the same at every quality tier (a few ALU ops).
+static func set_falls(material: ShaderMaterial, falls: Array, at: Vector3) -> void:
+	if material == null:
+		return
+
+	var near: Array = []
+
+	for fall in falls:
+		var base: Vector3 = fall["base"]
+		var d: float = Vector2(base.x - at.x, base.z - at.z).length()
+
+		if d < 220.0:
+			near.append([d, fall])
+
+	near.sort_custom(func(a, b): return a[0] < b[0])
+	var zones: PackedVector4Array = PackedVector4Array()
+	var heights: PackedVector2Array = PackedVector2Array()
+
+	for n in range(3):
+		if n < near.size():
+			var fall: Dictionary = near[n][1]
+			var base: Vector3 = fall["base"]
+			var top: Vector3 = fall["top"]
+			var flow: float = float(fall["flow"])
+			var radius: float = clampf(14.0 + 5.0 * sqrt(maxf(flow, 0.0)) + 0.4 * float(fall["width"]), 14.0, 40.0)
+			zones.append(Vector4(base.x, base.z, radius, clampf(0.5 + 0.5 * flow / 20.0, 0.5, 1.0)))
+			heights.append(Vector2(base.y, top.y))
+		else:
+			zones.append(Vector4(0.0, 0.0, 0.0, 0.0))
+			heights.append(Vector2(0.0, 0.0))
+
+	material.set_shader_parameter("fall_zone", zones)
+	material.set_shader_parameter("fall_height", heights)

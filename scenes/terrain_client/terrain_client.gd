@@ -53,8 +53,9 @@ const MachineProbeScript := preload("res://src/debug/machine_probe.gd")
 const GpuProbeScript := preload("res://src/debug/gpu_probe.gd")
 const WeatherLookScript := preload("res://src/client/weather_look.gd")
 const FaintEffectScript := preload("res://src/client/faint_effect.gd")
+const FallMistScript := preload("res://src/client/fall_mist.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 246
+const BUILD := 236
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -256,6 +257,7 @@ var _cache_removed: int = 0
 var _report_msec: int = 0
 var dig_applied: int = 0
 var flora                             # FloraView
+var fall_mist                         # FallMist: spray at the foot of the nearest waterfalls
 var items                             # InventoryView: inventory panel (I), pick-up (E)
 var harvest                           # Harvest: E prompt, tap to pick, hold to sweep
 var held                              # HeldItem: hotbar keys 1 to 8, spear jab and throw
@@ -545,6 +547,10 @@ func _welcome_body(info: Dictionary) -> void:
 	flora.setup(_tables, TileHeightScript.load_rules("res://worlds/base_world/plan/tile_rules.json", []))
 	Probe.stop("welcome: flora setup", t3)
 	root.add_child(flora)
+	fall_mist = FallMistScript.new()
+	fall_mist.name = "FallMist"
+	fall_mist.setup(quality)
+	root.add_child(fall_mist)
 	_flora_view_full = flora.view_m.duplicate()
 	_flora_near_full = flora.near_m.duplicate()
 	grass = GrassViewScript.new()
@@ -961,6 +967,11 @@ func _on_flora_cut(chunk: Vector2i, id: int) -> void:
 # are asked for with their trees only, near ones in full (owner, 2026-10-19).
 func _update_flora() -> void:
 	var p: Vector3 = _anchor
+	var falls: Array = flora.fall_list()
+	GroundMaterialScript.set_falls(terrain.material as ShaderMaterial, falls, p)
+
+	if fall_mist != null:
+		fall_mist.update(falls, p)
 
 	for chunk in flora.update(p):
 		_flora_asked.erase(chunk)
@@ -1139,6 +1150,9 @@ func _apply_quality() -> void:
 	grass.points_per_side = QUALITY_GRASS_POINTS[quality]
 	grass.density = QUALITY_GRASS_DENSITY[quality]
 	grass.set_radius(QUALITY_GRASS_M[quality])
+	if fall_mist != null:
+		fall_mist.set_quality(quality)
+
 	if _environment != null:
 		SkyClouds.set_quality(_environment.sky, quality)
 
