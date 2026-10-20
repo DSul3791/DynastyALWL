@@ -328,16 +328,21 @@ def wind_loop(rng, seconds, layer):
 # ---------------------------------------------------------------- main
 
 def main():
+    """Writes the wind loops. Pass --placeholders to also write generated
+    footsteps and grass brush sounds (no longer used: recordings in recorded/
+    cover every ground)."""
+    import sys
     rng = np.random.default_rng(20261019)
     made = []
-    for name, make in SURFACES.items():
-        for v in range(VARIANTS):
-            write_ogg("step_%s_%d" % (name, v), make(rng))
-            made.append("step_%s_%d" % (name, v))
-    for v in range(4):
-        write_ogg("grass_brush_%d" % v, brush(rng, rng.uniform(0.38, 0.5), 1400, 0.3))
-        write_ogg("grass_brush_tall_%d" % v, brush(rng, rng.uniform(0.6, 0.8), 1100, 0.5))
-        made += ["grass_brush_%d" % v, "grass_brush_tall_%d" % v]
+    if "--placeholders" in sys.argv:
+        for name, make in SURFACES.items():
+            for v in range(VARIANTS):
+                write_ogg("step_%s_%d" % (name, v), make(rng))
+                made.append("step_%s_%d" % (name, v))
+        for v in range(4):
+            write_ogg("grass_brush_%d" % v, brush(rng, rng.uniform(0.38, 0.5), 1400, 0.3))
+            write_ogg("grass_brush_tall_%d" % v, brush(rng, rng.uniform(0.6, 0.8), 1100, 0.5))
+            made += ["grass_brush_%d" % v, "grass_brush_tall_%d" % v]
     write_ogg("wind_low", wind_loop(rng, 60.0, "low"), 3)
     write_ogg("wind_gust", wind_loop(rng, 47.0, "gust"), 3)
     made += ["wind_low", "wind_gust"]

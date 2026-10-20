@@ -42,13 +42,15 @@ const SWIM_M := 1.3                     # deeper than this: no footsteps
 # Walk quiet, jog a little louder, run loud (owner 2026-10-19: build 47's run
 # level was a bit too loud for running).
 const GAIT_DB := [-11.0, -6.5, -3.0]     # walk, jog, run
-const BRUSH_GAIT_DB := [-9.0, -4.5, -1.0]
 const GAIT_PITCH := [1.0, 1.03, 1.06]
 const VOLUME_STEPS := [1.0, 0.75, 0.5, 0.25, 0.0]
 
 var steps_played: Dictionary = {}       # surface -> count (for the headless walk check)
 var swishes_played: int = 0
 var surface: String = ""                # what the feet were last on
+var _stable: String = ""                # the surface being sounded (changes only after two steps)
+var _pending: String = ""
+var last_step: String = ""              # for the HUD: ground, soil id, water depth, file played
 var gust: float = 0.0                   # 0 calm .. 1 strongest gust
 var volume_index: int = 0
 
@@ -187,6 +189,19 @@ func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: Str
 	else:
 		surface = str(SOIL_SURFACE.get(soil, "dirt"))
 
+	# Steady ground: a different surface must show on two steps in a row before the sound
+	# changes, so one odd sample (a bush, a patch edge) never flips it back and forth.
+	if _stable == "":
+		_stable = surface
+	elif surface == _stable:
+		_pending = ""
+	elif surface == _pending:
+		_stable = surface
+		_pending = ""
+	else:
+		_pending = surface
+
+	surface = _stable
 	# Sets without their own sounds borrow one (generated grass for tall grass and bushes).
 	var name: String = "step_" + surface
 
@@ -195,16 +210,11 @@ func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: Str
 
 	var recorded: bool = _recorded.has(name + "_" + foot) or _recorded.has(name)
 	var pitch: float = GAIT_PITCH[gait] * _rng.randf_range(0.96, 1.04)
+	last_step = "%s (soil %d, water %.2f m, %s)" % [surface, soil, depth, name + "_" + foot if recorded else name + " generated"]
 	_play(name, float(SURFACE_DB.get(surface, -9.0)) + GAIT_DB[gait] + boost_db + _rng.randf_range(-1.5, 1.0), pitch, foot)
 	steps_played[surface] = int(steps_played.get(surface, 0)) + 1
 
-	# Recorded grass and bush steps already carry the swish of the blades.
-	if thick > 0.15 and not (recorded and surface in ["grass", "grass_tall", "bushes"]):
-		# Blades brushing the boots: louder in thick and tall grass and at speed.
-		var brush: String = "grass_brush_tall" if tall > 0.35 else "grass_brush"
-		var amount: float = clampf(thick * (0.6 + 0.6 * tall), 0.0, 1.0)
-		_play(brush, linear_to_db(0.06 + 0.2 * amount) + BRUSH_GAIT_DB[gait], _rng.randf_range(0.9, 1.1) * (1.0 + 0.05 * gait))
-		swishes_played += 1
+	# The recorded grass, tall grass and bush steps carry the swish of the blades themselves.
 
 
 # Esc > Settings "Sound volume": 100, 75, 50, 25 % and off. Returns the new share.

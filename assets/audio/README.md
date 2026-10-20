@@ -1,6 +1,6 @@
 # Sounds
 
-The `.ogg` files here are made in code by `make_sounds.py` (placeholders). Real
+The wind loops here are made in code by `make_sounds.py` (placeholders; `--placeholders` also writes generated footsteps, no longer used). Real
 recordings go in `recorded/` under the same names, and the game uses them
 instead of the generated ones. `make_sounds.py` never touches `recorded/`.
 
@@ -16,7 +16,7 @@ Build 52 uses the owner's own recordings (Dynasty_Footsteps_Left_Right.zip) for
 `step_grass`, `step_grass_tall`, `step_bushes`, `step_sand`, `step_stone` and
 `step_gravel` (rocky), and (second pack, Dynasty_Footsteps_Dirt_Leaves_Mud_Snow_Water.zip)
 `step_dirt`, `step_leaves`, `step_mud`, `step_snow` and `step_water`. Every ground has recorded steps now;
-only the wind and the grass brush are still generated.
+only the wind is still generated (no separate grass swish: the recorded steps carry it).
 
 | Name | What it is |
 |---|---|

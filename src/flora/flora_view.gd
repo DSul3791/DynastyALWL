@@ -550,7 +550,7 @@ func water_level_at(x: float, z: float) -> float:
 
 # The water surface at a point for footsteps: the wet corners of the square,
 # blended by distance (bilinear weights over the wet corners only), NAN when
-# none is wet. Unlike water_level_at (the highest wet corner, which the
+# half the square or less is wet. Unlike water_level_at (the highest wet corner, which the
 # underwater check needs), it does not lift a dry bank to the level of
 # higher water beside it.
 func water_surface_at(x: float, z: float) -> float:
@@ -583,7 +583,8 @@ func water_surface_at(x: float, z: float) -> float:
 		total += level * w
 		weight += w
 
-	return total / weight if weight > 0.0 else NAN
+	# One wet corner up to 8 m away is not water under the feet: need more than half the square wet.
+	return total / weight if weight > 0.5 else NAN
 
 
 func drop_chunk(chunk: Vector2i) -> void:
