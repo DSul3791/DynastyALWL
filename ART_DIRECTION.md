@@ -81,7 +81,7 @@ Every step gets a before-and-after render (cloud software rendering, `cloud-rend
 
 ## 5. Realism over storybook
 
-**[Decided] (owner, 2026-10-20: "to me the picture is right")** The picture is near-photoreal, while the earlier direction (DESIGN_IDEAS Section 1) said "the world looks like the best of old fantasy book illustrations" with slightly cartoonish characters. The picture wins. The world aims for natural, realistic materials and light with warm, rich colour, and "storybook" lives in the colour and mood rather than in painted shapes. The character style stays open until characters are built.
+**[Decided] (owner, 2026-10-20: "to me the picture is right")** The picture is near-photoreal, while the earlier direction (DESIGN_IDEAS Section 1) said "the world looks like the best of old fantasy book illustrations" with slightly cartoonish characters. The picture wins. The world aims for natural, realistic materials and light with warm, rich colour, and "storybook" lives in the colour and mood rather than in painted shapes. The character style is decided in section 10.
 
 ## 6. Time of day (owner feedback on build 66, 2026-10-20)
 
@@ -99,3 +99,40 @@ Target look: green meadow at the foot of a hill; as the slope grows the grass fa
 
 - **Built (build 86, client only):** soil colour and grass cover thin with slope and break up in noise patches (`ground_material.gd` and `grass_view.gd` use the same rule: full cover under slope 0.14, gone by 0.42, where slope is 1 minus the surface normal's y). Where it fails the stone shows through with the rock texture. A ledge has a level surface of its own, so it keeps its green. Cost: one extra noise sample in the ground shader and a cheap check in grass placement; nothing extra at Low.
 - **Built (build 90, server flora placer, approved by Technical direction with the item ids kept):** `flora_placer.gd` thins hardwoods with slope (down to 5% of normal by slope 0.6), makes conifers grow lower on slopes (down to 40% height), adds dense low (1 to 3 m) fir and spruce patches (`"montane": true` in `flora.json`, in 30 m patches, 40% of the squares, on steep and ridge ground, built from the species' own stand cells that no circle uses), and lets hardy species (`"ledge": true`: pines, firs, spruce, juniper, rowan, gorse, rosemary, dwarf birch, sleetberry) stand stunted on flat ledges (surface within 1.5 m flatter than 0.3) of ground steeper than their limit, 30% of such spots. Measured on 49 chunks around spawn: hardwoods on slopes over 0.4 fell from 256 to 110; conifers on slopes over 0.4 rose from 238 to 1224 with mean height falling from 17 m to 3.4 m. Tests 881 passed, flight check 3 slow frames (baseline 19), placer time about 20% higher (server only). Cost at Low: client draws more but smaller conifers on slopes and fewer big hardwoods; no new client work.
+
+## 9. Weather looks take zone, season and town spirit as inputs (owner, 2026-10-20)
+
+Weather is set by the north-south zone, every zone has seasons, dry zones stay dry and polar zones get snow instead of rain. A town's area is also shaped by its town spirit: high spirit gives mostly sun and warm, gentle, occasional nightly rain; low spirit gives heavy storms, lightning, blizzards, multi-day rain and very little sun. Sky, light, fog, rain, snow and wet-ground looks (and their sounds) should read three inputs: zone, season, spirit. Nothing built yet; `look_settings.gd` and `sky_clouds.gd` are where they will plug in.
+
+## 10. Character look (owner decision, 2026-10-20)
+
+**[Decided]** Characters are slightly stylised: heroic proportions and a hint of cartoon, not realistic, and lighter on older machines (a lower triangle and texture budget than the target picture's character, which was realistic). The world around them stays realistic. This unblocks character model work (Art queue item 7); the budget per character (triangles, bones, texture size, per tier) still goes through the asset budget table with Technical direction before any model is made.
+
+## 11. Forest floor objects (owner decision, 2026-10-20)
+
+**[Decided]** First: fallen branches and leaf litter on the forest floor. Later: reeds, driftwood, pebbles and the rest of the Stage 7 list. Built in Art queue item 5 (rock and small details); the litter texture layer from step 2 already covers the base look.
+
+## 12. Dense grass (step 3, build 97)
+
+New painted card textures from `tools/make_grass_textures.py` (fine tapered blades, dark root to light tip, tall grass with seed heads, ground cover as blades splayed flat). More cards: 4 cover, 4 short, 2 tall per ground sample, and more ground samples per tier (3, 4, 5, 6 per 6 m side, was 2, 3, 4, 5). Blades have back-light so the sun glows through them. The ground shader tints grassy ground (`lw[0] * cover`) to the same meadow green so no dark soil shows between tufts and far ground matches near.
+**Cost per tier** (cards, estimated from the cloud test clearing and radius; real frame time still needs a playtest): Low about 1.3 k cards at 14 m (was about 0.6 k), Medium about 6 k at 24 m, High about 20 k at 34 m (22 k in the test clearing), Ultra about 55 k at 48 m. Low stays at 14 m. Alpha-to-coverage was not used: it needs MSAA, which Low cannot afford; Medium and up smooth the card edges with TAA.
+Renders: `art/grass_before.png`, `art/grass_after.png`.
+
+## 13. Tree crowns and bark (step 4, build 100)
+
+What changed (client look only, no model or save format change):
+- Foliage shader: crown undersides are darker (normal facing down, up to 40%), and every patch of leaves gets its own tone (fixed per UV cell, 12%), so a crown reads as clusters instead of one smooth lump. Back-light and bent normals unchanged.
+- Bark: `tools/make_bark_textures.py` makes `bark.png` (thin furrows running up the trunk) and `bark_smooth.png`; RGB is the near-neutral colour (species tint multiplies it), alpha is the height. The bark shader darkens furrows, lightens ridges and adds damp moss to the bottom metre of the trunk.
+- Rounded tree base: fixed earlier (triangle winding in `_trunk` and `_branch`).
+- Before/after: /mnt/project-files/art/crowns_oak_before_after.png
+
+Cost at Low: no new textures, no new draws. About 6 extra shader operations per leaf pixel and 4 per bark pixel; one extra varying. Not measurable in the cloud (stills only), to be confirmed in Dave's frame probe.
+
+Still open for step 4: far-tree impostors (LOD format needs Technical direction approval, joint with Ground loading item 6).
+
+## 14. Denser grass, round two (build 102, Dave: "we need much more grass")
+
+Findings: grass is already built once per 6 m ground cell (one MultiMesh per layer per cell, kept until the cell leaves the radius, no per-frame rebuild or buffer rewrite) and each layer shares ONE clump mesh and ONE material for all cells. Shadows are already off for grass. So the cost is GPU fill and shading, not CPU or re-uploads. Dave's High screenshot: cpu 1.7 ms, gpu 28.3 ms, 11,929 grass cards.
+Changes: smaller, more numerous cards (cover 6, short 8, tall 3 per ground sample before the quality factor; short cards 2 crossed quads instead of 3, 0.55 by 0.34 m), fuller textures (70 blades per short card, 120 per cover card), quality density factor (Low 0.45, Medium 0.65, High 0.75, Ultra 0.85), more ground samples (Medium 5, High 6, Ultra 7 per 6 m side), short layer drawn to 70% of the radius (was 85%), cover layer to 60% (was 50%). Shader: diffuse_lambert instead of burley, back-light only on tall grass.
+Test clearing cards at High: 55,000 at density 1.0 (build 97: 22,000); shipped at 0.75, about 41,000.
+Measuring: F8 in game (GPU probe) lists GPU ms with grass off, trees off, ground off, sea off, shadows off, SSAO off, glow off, fog off and AA off. Real per-tier cost needs that table from Dave's machine; the cloud only renders stills.

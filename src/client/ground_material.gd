@@ -141,6 +141,10 @@ void fragment() {
 		slope_push += b * tw.y * layer_strength[k] * lw[k];
 	}
 	color *= 1.0 + detail * closeness;
+	// Grassy ground takes the colour of the grass drawn on it (grass_view.gd), so the meadow reads
+	// as one green carpet near and far, and no dark soil shows between the blades.
+	vec3 meadow = mix(vec3(0.15, 0.25, 0.07), vec3(0.22, 0.27, 0.08), large) * (0.85 + 0.3 * medium);
+	color = mix(color, meadow, 0.8 * lw[0] * cover);
 	// Broad patches of dry and lush, so wide fields are not one flat color.
 	color *= mix(vec3(1.06, 1.0, 0.86), vec3(0.92, 1.04, 0.94), large);
 

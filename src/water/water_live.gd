@@ -22,6 +22,7 @@ const START_PUBLISH_TICKS := 40
 
 var data
 var rate: float = 1.0
+var runoff: float = 1.0          # rain makes the springs run stronger (the server sets it from the weather, WEATHER_RUNOFF)
 var busy: bool = false
 
 var _generator
@@ -80,6 +81,18 @@ func dig(center: Vector3, radius: float) -> void:
 	_mutex.unlock()
 
 
+# Rain swells the rivers: the springs run `value` times stronger (1 is dry weather). Wakes the
+# water when it moves enough to matter, so the rivers follow it.
+func set_runoff(value: float) -> void:
+	_mutex.lock()
+
+	if absf(value - runoff) > 0.02:
+		_budget = maxf(_budget, RUN_SECONDS)
+
+	runoff = value
+	_mutex.unlock()
+
+
 # New drawing levels from the water thread, or empty when there is nothing new.
 func take_levels() -> PackedFloat32Array:
 	_mutex.lock()
@@ -105,7 +118,7 @@ func _run() -> void:
 		_mutex.lock()
 		var quit: bool = _quit
 		var run: bool = _budget > 0.0
-		var multiplier: float = rate
+		var multiplier: float = rate * runoff
 		var digs: Array = _digs
 		_digs = []
 

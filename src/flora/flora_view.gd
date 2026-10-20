@@ -47,6 +47,7 @@ uniform vec3 glow : source_color = vec3(0.0);
 varying vec3 tint;
 varying float glow_amount;
 varying vec3 view_normal;
+varying float crown_up;
 
 void vertex() {
 	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
@@ -54,6 +55,7 @@ void vertex() {
 	float bend = max(VERTEX.y, 0.0) * sway;
 	VERTEX.x += gust * bend;
 	VERTEX.z += gust * bend * 0.6;
+	crown_up = normalize(MODEL_NORMAL_MATRIX * NORMAL).y;
 	VERTEX += vec3(sin(TIME * 3.7 + wp.x * 1.7 + VERTEX.y), 0.0, cos(TIME * 3.1 + wp.z * 1.3 + VERTEX.y)) * flutter * COLOR.a;
 	tint = INSTANCE_CUSTOM.rgb;
 	glow_amount = INSTANCE_CUSTOM.a;
@@ -67,7 +69,12 @@ void fragment() {
 	}
 	// Light every card the same from both sides, using the crown's soft normals.
 	NORMAL = view_normal;
-	ALBEDO = t.rgb * COLOR.rgb * tint;
+	// Crown shading: undersides sit in the crown's own shadow, and each patch of leaves
+	// gets its own tone so a crown reads as clusters, not one smooth lump.
+	float under = mix(0.6, 1.0, smoothstep(-0.7, 0.5, crown_up));
+	vec2 cell = floor(UV * 7.0);
+	float speck = 0.88 + 0.24 * fract(sin(dot(cell, vec2(12.9898, 78.233))) * 43758.5453);
+	ALBEDO = t.rgb * COLOR.rgb * tint * under * speck;
 	BACKLIGHT = ALBEDO * backlight;
 	ROUGHNESS = 1.0;
 	EMISSION = glow * glow_amount * (0.6 + 0.4 * t.r);
@@ -79,9 +86,11 @@ shader_type spatial;
 render_mode diffuse_burley, specular_disabled;
 uniform sampler2D bark : source_color, filter_linear_mipmap, repeat_enable;
 uniform float sway = 0.004;
+varying float base_h;
 
 void vertex() {
 	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	base_h = VERTEX.y;
 	float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
 	float bend = max(VERTEX.y, 0.0) * sway;
 	VERTEX.x += gust * bend;
@@ -89,7 +98,12 @@ void vertex() {
 }
 
 void fragment() {
-	ALBEDO = texture(bark, UV).rgb * COLOR.rgb * 1.8;
+	vec4 t = texture(bark, UV);
+	vec3 c = t.rgb * COLOR.rgb * 1.8;
+	c *= mix(0.72, 1.12, t.a);                                       // furrows darker, ridges lighter
+	float moss = (1.0 - smoothstep(0.1, 1.1, base_h)) * (0.35 + 0.65 * (1.0 - t.a));   // damp moss at the foot
+	c = mix(c, c * vec3(0.55, 0.75, 0.32), moss * 0.6);
+	ALBEDO = c;
 	ROUGHNESS = 1.0;
 }
 """
@@ -208,6 +222,7 @@ func water_material() -> Material:
 
 func set_water_quality(quality: int) -> void:
 	WaterMaterial.apply_quality(_water_material, quality)
+	water_ease = quality >= 1
 
 
 func set_flow_rate(rate: float) -> void:
@@ -471,13 +486,61 @@ func held_chunks() -> Array:
 	return _chunks.keys()
 
 
-# Redraws only a held chunk's water (the simulated water moved).
+const EASE_STEPS := 3                  # a moved water surface reaches its new level in this many redraws
+const EASE_STEP_MSEC := 150
+const EASE_MIN_M := 0.02              # levels that moved less than this just jump
+var water_ease: bool = true           # off at Low: a chunk's water jumps to the new level (set by the quality setting)
+var _ease: Dictionary = {}            # chunk -> {"old", "new", "step", "next_msec"}
+
+
+# Redraws only a held chunk's water (the simulated water moved). Owner (2026-10-20): the water
+# eases to its new levels over a few redraws instead of jumping; only chunks whose levels
+# moved are redrawn more than once, and nothing runs while the water is still.
 func set_water(chunk: Vector2i, water: Dictionary) -> void:
 	var entry: Dictionary = _chunks.get(chunk, {})
 
 	if entry.is_empty():
 		return
 
+	_ease.erase(chunk)
+	var old: Dictionary = entry.get("grid", {})
+
+	if water_ease and WaterGridScript.moved(old, water, EASE_MIN_M):
+		_ease[chunk] = {"old": old, "new": water, "step": 1, "next_msec": Time.get_ticks_msec() + EASE_STEP_MSEC}
+		_draw_water(chunk, entry, WaterGridScript.blend(old, water, 1.0 / float(EASE_STEPS)))
+		return
+
+	_draw_water(chunk, entry, water)
+
+
+func _ease_water() -> void:
+	var now: int = Time.get_ticks_msec()
+
+	for chunk in _ease.keys():
+		var job: Dictionary = _ease[chunk]
+		var entry: Dictionary = _chunks.get(chunk, {})
+
+		if entry.is_empty():
+			_ease.erase(chunk)
+			continue
+
+		if now < int(job["next_msec"]):
+			continue
+
+		job["step"] = int(job["step"]) + 1
+		job["next_msec"] = now + EASE_STEP_MSEC
+
+		if int(job["step"]) >= EASE_STEPS:
+			_ease.erase(chunk)
+			_draw_water(chunk, entry, job["new"])
+		else:
+			_draw_water(chunk, entry, WaterGridScript.blend(job["old"], job["new"], float(job["step"]) / float(EASE_STEPS)))
+
+		# One chunk's mesh per frame keeps the cost flat.
+		return
+
+
+func _draw_water(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void:
 	var old: MeshInstance3D = entry.get("water")
 
 	if old != null:
@@ -594,6 +657,7 @@ func water_surface_at(x: float, z: float) -> float:
 
 
 func drop_chunk(chunk: Vector2i) -> void:
+	_ease.erase(chunk)
 	var entry: Dictionary = _chunks.get(chunk, {})
 
 	if entry.is_empty():
@@ -665,6 +729,9 @@ func remove_item(chunk: Vector2i, id: int, position: Vector3) -> void:
 # chunks dropped.
 func update(position: Vector3) -> Array:
 	var dropped: Array = []
+
+	if not _ease.is_empty():
+		_ease_water()
 
 	for chunk in _chunks.keys():
 		if _distance(chunk, position) > view_m[KIND_TREE] + 2.0 * chunk_m:

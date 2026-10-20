@@ -1,0 +1,335 @@
+extends Node
+
+# Water you can hear (client only; queue job "water sounds"). Four kinds, each a
+# seamless loop: brook (narrow, babbling), river (wide, a soft broad rush), pond
+# (a lake or pond shore, slow lapping) and waterfall (a steep drop, a heavy roar).
+#
+# Every SCAN_SEC seconds the water squares (8 m grid, the same lookups the water
+# drawing and the footsteps use) around the player are read into a small grid.
+# A wet square is sorted by how much water lies around it and how steeply the
+# surface drops: a drop of FALL_DROP_M or more between neighbours is a waterfall,
+# 16 or more wet squares in the 5 x 5 around it a pond, 8 or more a river, else a
+# brook. The nearest square of each kind becomes a source, with a second one of
+# the same kind at least SEPARATION_M further along when there is room, and the
+# best MAX_SOURCES sources are played from 3D positions. Sources glide to new
+# positions and fade in and out, so nothing pops while the player walks. Steep
+# brooks babble louder. Cost: 289 squares read every 1.5 s, three rows a frame, and at most
+# MAX_SOURCES looping voices.
+#
+# The sea (waves) is not here yet: it needs the distance to the shore.
+# Sounds: generated placeholders in assets/audio/water/ (make_water.py);
+# recordings in assets/audio/recorded/water/ with the same names win.
+
+const SoundStage := preload("res://src/client/sound_stage.gd")
+const GENERATED_DIR := "res://assets/audio/water/"
+const RECORDED_DIR := "res://assets/audio/recorded/water/"
+
+const SCAN_SEC := 1.5
+const SPACING_M := 8.0
+const HALF := 8                         # squares each way: 8 x 8 m = 64 m reach
+const MAX_SOURCES := 4
+const ROWS_PER_FRAME := 3               # of the 17 scan rows
+const SEPARATION_M := 36.0
+const FALL_DROP_M := 1.0                # surface drop between neighbouring squares
+const POND_AROUND := 16
+const RIVER_AROUND := 8
+
+# kind: loop name, loudness at the source (dB), how far it carries (m) for choosing sources
+const KINDS := {
+	"brook": {"file": "water_brook", "db": -8.0, "reach": 45.0},
+	"river": {"file": "water_river", "db": -9.0, "reach": 60.0},
+	"pond": {"file": "water_pond", "db": -12.0, "reach": 35.0},
+	"fall": {"file": "water_fall", "db": -5.0, "reach": 70.0},
+}
+
+var sources: Array = []                 # what is playing now: [{kind, distance}] for the HUD
+var summary: String = ""
+
+var _flora
+var _slots: Array = []                  # {player, kind, target, fade}
+var _streams: Dictionary = {}
+var _scan_left: float = 0.0
+var _rng := RandomNumberGenerator.new()
+var _row: int = -1                      # next scan row to read, -1 between scans
+var _level: PackedFloat32Array = PackedFloat32Array()
+var _origin: Vector3 = Vector3.ZERO
+var _cx: float = 0.0
+var _cz: float = 0.0
+var _candidates: Array = []
+
+
+func setup(flora) -> void:
+	_flora = flora
+	_rng.randomize()
+
+	for n in range(MAX_SOURCES):
+		var player: AudioStreamPlayer3D = AudioStreamPlayer3D.new()
+		player.bus = "Nature"
+		player.volume_db = -80.0
+		player.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
+		player.unit_size = 10.0
+		player.max_distance = 140.0
+		player.attenuation_filter_cutoff_hz = 9000.0
+		add_child(player)
+		_slots.append({"player": player, "kind": "", "target": Vector3.ZERO, "fade": -80.0})
+
+	# Loads the loops now, so the first river met doesn't stall a frame reading a file.
+	for kind in KINDS:
+		_variants(str(KINDS[kind]["file"]))
+
+
+func voices_playing() -> int:
+	var count: int = 0
+
+	for slot in _slots:
+		if slot["player"].playing:
+			count += 1
+
+	return count
+
+
+func update(delta: float, body: CharacterBody3D, underwater: bool) -> void:
+	_scan_left -= delta
+
+	if _row < 0 and _scan_left <= 0.0:
+		_scan_left = SCAN_SEC
+		_start_scan(body.global_position)
+
+	# Steps through the scan a few rows a frame: first reading the water, then sorting it.
+	if _row >= 0:
+		var count: int = HALF * 2 + 1
+
+		if _row < count:
+			_read_rows(ROWS_PER_FRAME)
+		elif _row < count * 2:
+			for r in range(ROWS_PER_FRAME):
+				if _row < count * 2:
+					_classify_row(_row - count)
+					_row += 1
+		else:
+			_row = -1
+			_choose()
+
+	for slot in _slots:
+		var player: AudioStreamPlayer3D = slot["player"]
+
+		if slot["kind"] == "":
+			continue
+
+		player.global_position = player.global_position.lerp(slot["target"], clampf(delta * 3.0, 0.0, 1.0))
+		var db: float = float(slot["fade"])
+		player.volume_db = lerpf(player.volume_db, db, clampf(delta * 2.0, 0.0, 1.0))
+
+		if db <= -60.0 and player.volume_db < -55.0:
+			player.stop()
+			slot["kind"] = ""
+
+
+# A scan reads the squares a few rows per frame (no frame pays for all of it),
+# then sorts the wet ones and gives each source slot its job.
+func _start_scan(origin: Vector3) -> void:
+	var count: int = HALF * 2 + 1
+	_origin = origin
+	_cx = floorf(origin.x / SPACING_M) * SPACING_M + SPACING_M * 0.5
+	_cz = floorf(origin.z / SPACING_M) * SPACING_M + SPACING_M * 0.5
+	_level.resize(count * count)
+	_row = 0
+
+
+func _read_rows(rows: int) -> void:
+	var count: int = HALF * 2 + 1
+
+	for r in range(rows):
+		if _row >= count:
+			return
+
+		var j: int = _row
+
+		for i in range(count):
+			_level[j * count + i] = _flora.water_surface_at(_cx + float(i - HALF) * SPACING_M, _cz + float(j - HALF) * SPACING_M)
+
+		_row += 1
+
+
+func _classify_row(j: int) -> void:
+	var count: int = HALF * 2 + 1
+	var level: PackedFloat32Array = _level
+	var origin: Vector3 = _origin
+	var cx: float = _cx
+	var cz: float = _cz
+
+	if j == 0:
+		_candidates.clear()
+
+	for i in range(count):
+		var here: float = level[j * count + i]
+
+		if is_nan(here):
+			continue
+
+		var around: int = 0
+
+		for dj in range(-2, 3):
+			for di in range(-2, 3):
+				var ni: int = i + di
+				var nj: int = j + dj
+
+				if ni >= 0 and nj >= 0 and ni < count and nj < count and not is_nan(level[nj * count + ni]):
+					around += 1
+
+		var drop: float = 0.0
+
+		for step in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var ni: int = i + step.x
+			var nj: int = j + step.y
+
+			if ni >= 0 and nj >= 0 and ni < count and nj < count and not is_nan(level[nj * count + ni]):
+				drop = maxf(drop, absf(here - level[nj * count + ni]))
+
+		var kind: String = "brook"
+
+		if drop >= FALL_DROP_M:
+			kind = "fall"
+		elif around >= POND_AROUND:
+			kind = "pond"
+		elif around >= RIVER_AROUND:
+			kind = "river"
+
+		var at: Vector3 = Vector3(cx + float(i - HALF) * SPACING_M, here, cz + float(j - HALF) * SPACING_M)
+		var distance: float = Vector2(at.x - origin.x, at.z - origin.z).length()
+
+		if distance <= float(KINDS[kind]["reach"]):
+			_candidates.append({"kind": kind, "at": at, "distance": distance, "drop": drop, "score": distance / float(KINDS[kind]["reach"])})
+
+
+
+func _choose() -> void:
+	var candidates: Array = _candidates
+	candidates.sort_custom(func(a, b): return a["score"] < b["score"])
+	var chosen: Array = []
+
+	for candidate in candidates:
+		if chosen.size() >= MAX_SOURCES:
+			break
+
+		var apart: bool = true
+
+		for other in chosen:
+			if other["kind"] == candidate["kind"] and Vector2(other["at"].x - candidate["at"].x, other["at"].z - candidate["at"].z).length() < SEPARATION_M:
+				apart = false
+				break
+
+		if apart:
+			chosen.append(candidate)
+
+	_assign(chosen, _origin)
+
+
+func _assign(chosen: Array, origin: Vector3) -> void:
+	var used: Array = []
+	var pending: Array = []
+
+	# Keep a slot on a source of the same kind that is still close to it, so it glides, not jumps.
+	for candidate in chosen:
+		var best: int = -1
+		var best_distance: float = SEPARATION_M * 0.9
+
+		for n in range(_slots.size()):
+			var slot: Dictionary = _slots[n]
+
+			if n in used or slot["kind"] != candidate["kind"]:
+				continue
+
+			var d: float = Vector2(slot["target"].x - candidate["at"].x, slot["target"].z - candidate["at"].z).length()
+
+			if d < best_distance:
+				best_distance = d
+				best = n
+
+		if best >= 0:
+			used.append(best)
+			_aim(_slots[best], candidate, origin)
+		else:
+			pending.append(candidate)
+
+	for candidate in pending:
+		var free: int = -1
+
+		for n in range(_slots.size()):
+			if n not in used and _slots[n]["kind"] == "":
+				free = n
+				break
+
+		if free < 0:
+			for n in range(_slots.size()):
+				if n not in used:
+					free = n
+					break
+
+		if free < 0:
+			break
+
+		used.append(free)
+		var slot: Dictionary = _slots[free]
+		var list: Array = _variants(str(KINDS[candidate["kind"]]["file"]))
+
+		if list.is_empty():
+			continue
+
+		var player: AudioStreamPlayer3D = slot["player"]
+		player.stream = list[0]
+		player.global_position = candidate["at"]
+		player.volume_db = -80.0
+		slot["kind"] = candidate["kind"]
+		_aim(slot, candidate, origin)
+		player.play(_rng.randf() * 8.0)
+
+	for n in range(_slots.size()):
+		if n not in used and _slots[n]["kind"] != "":
+			_slots[n]["fade"] = -80.0
+
+	sources.clear()
+	var parts: PackedStringArray = PackedStringArray()
+
+	for slot in _slots:
+		if slot["kind"] != "" and slot["fade"] > -60.0:
+			var d: float = Vector2(slot["target"].x - origin.x, slot["target"].z - origin.z).length()
+			sources.append({"kind": slot["kind"], "distance": d})
+			parts.append("%s %.0f m" % [slot["kind"], d])
+
+	summary = ", ".join(parts) if not parts.is_empty() else "none"
+
+
+func _aim(slot: Dictionary, candidate: Dictionary, origin: Vector3) -> void:
+	slot["target"] = candidate["at"]
+	var db: float = float(KINDS[candidate["kind"]]["db"])
+
+	if candidate["kind"] == "brook":
+		db += clampf(float(candidate["drop"]) / 0.5, 0.0, 1.0) * 5.0     # steeper babbles louder
+
+	slot["fade"] = db
+
+
+func _variants(name: String) -> Array:
+	if _streams.has(name):
+		return _streams[name]
+
+	var list: Array = SoundStage._find(RECORDED_DIR, name)
+
+	if list.is_empty():
+		list = SoundStage._find(GENERATED_DIR, name)
+
+	for stream in list:
+		if stream is AudioStreamOggVorbis:
+			stream.loop = true
+
+	_streams[name] = list
+	return list
+
+
+func _exit_tree() -> void:
+	for slot in _slots:
+		slot["player"].stop()
+		slot["player"].stream = null
+
+	_streams.clear()

@@ -38,7 +38,7 @@ static func chunk_levels(generator, origin: Vector2, chunk_m: float) -> Dictiona
 	# water gets a finer surface laid on the real ground (_fine_cells).
 	if not data.sim_levels.is_empty():
 		var edge: PackedFloat32Array = _shore_levels(generator, data, origin, count, spacing, levels)
-		return {"count": count, "spacing": spacing, "levels": levels, "wet": wet, "edge": edge, "fine": _fine_cells(generator, origin, count, spacing, levels, edge)}
+		return {"count": count, "spacing": spacing, "levels": levels, "wet": wet, "edge": edge, "fine": _fine_cells(generator, origin, count, spacing, levels, edge), "vel": _velocities(generator, data, origin, count, spacing, levels)}
 
 	var closed: PackedFloat32Array = levels.duplicate()
 
@@ -54,6 +54,121 @@ static func chunk_levels(generator, origin: Vector2, chunk_m: float) -> Dictiona
 	levels = closed
 
 	return {"count": count, "spacing": spacing, "levels": levels, "wet": wet}
+
+
+const MANNING_N := 0.035        # the water sim's bed roughness (water_sim.gd), so the speed drawn is the speed it runs at
+const SPEED_MAX_M_S := 12.0
+const VEL_MARK := 0xF1          # after the fine cells in an encoded chunk: two s8 (0.1 m/s) per wet point
+const FLOW_FASTEST_M_S := 2.5   # the water shader's fastest drawn speed (fastest_m_s)
+
+
+# The current at each wet point, m/s as x, z pairs (0 on dry points): the speed the water
+# sim's own friction law gives for the depth and the surface slope there (steady flow,
+# Manning), pointing downhill. Owner (2026-10-20): ripples and foam follow the true current.
+static func _velocities(generator, data, origin: Vector2, count: int, spacing: float, levels: PackedFloat32Array) -> PackedFloat32Array:
+	var vel: PackedFloat32Array = PackedFloat32Array()
+	vel.resize(count * count * 2)
+
+	for j in range(count):
+		for i in range(count):
+			var level: float = levels[j * count + i]
+
+			if is_nan(level):
+				continue
+
+			var gx: float = 0.0
+			var gz: float = 0.0
+			var used: int = 0
+
+			for dj in range(-1, 2):
+				for di in range(-1, 2):
+					var ii: int = i + di
+					var jj: int = j + dj
+
+					if ii < 0 or jj < 0 or ii >= count or jj >= count or is_nan(levels[jj * count + ii]):
+						continue
+
+					gx += _slope_along(levels, ii, jj, 1, 0, count, spacing)
+					gz += _slope_along(levels, ii, jj, 0, 1, count, spacing)
+					used += 1
+
+			if used == 0:
+				continue
+
+			gx /= float(used)
+			gz /= float(used)
+			var slope: float = sqrt(gx * gx + gz * gz)
+
+			if slope < 0.00001:
+				continue
+
+			var x: float = origin.x + float(i) * spacing
+			var z: float = origin.y + float(j) * spacing
+			var source = data if (x < data.x0 + float(data.samples - 1) * spacing and z < data.z0 + float(data.samples - 1) * spacing) else generator.get_tile(generator.tile_of(x, z))
+			var depth: float = 0.2 if source.placeholder else maxf(level - source.heights[source.nearest(x, z)], 0.05)
+			var speed: float = minf(pow(depth, 2.0 / 3.0) * sqrt(slope) / MANNING_N, SPEED_MAX_M_S)
+			vel[(j * count + i) * 2] = -gx / slope * speed
+			vel[(j * count + i) * 2 + 1] = -gz / slope * speed
+
+	return vel
+
+
+# A grid part-way from `old` to `new` (t 0..1), for easing the drawn water between server
+# updates: levels and fine heights move where both have water, anything new just appears.
+static func blend(old: Dictionary, new: Dictionary, t: float) -> Dictionary:
+	if int(old.get("count", -1)) != int(new.get("count", -2)) or int(old.get("wet", 0)) == 0 or int(new.get("wet", 0)) == 0:
+		return new
+
+	var levels: PackedFloat32Array = (new["levels"] as PackedFloat32Array).duplicate()
+	var old_levels: PackedFloat32Array = old["levels"]
+
+	for n in range(levels.size()):
+		if not is_nan(levels[n]) and not is_nan(old_levels[n]):
+			levels[n] = lerpf(old_levels[n], levels[n], t)
+
+	var result: Dictionary = new.duplicate()
+	result["levels"] = levels
+	var edge: PackedFloat32Array = new.get("edge", PackedFloat32Array())
+	var old_edge: PackedFloat32Array = old.get("edge", PackedFloat32Array())
+
+	if not edge.is_empty() and old_edge.size() == edge.size():
+		edge = edge.duplicate()
+
+		for n in range(edge.size()):
+			if not is_nan(edge[n]) and not is_nan(old_edge[n]):
+				edge[n] = lerpf(old_edge[n], edge[n], t)
+
+		result["edge"] = edge
+
+	var fine: Dictionary = {}
+	var old_fine: Dictionary = old.get("fine", {})
+
+	for cell in new.get("fine", {}):
+		var heights: PackedFloat32Array = (new["fine"][cell] as PackedFloat32Array).duplicate()
+
+		if old_fine.has(cell) and old_fine[cell].size() == heights.size():
+			for n in range(heights.size()):
+				heights[n] = lerpf(old_fine[cell][n], heights[n], t)
+
+		fine[cell] = heights
+
+	result["fine"] = fine
+	return result
+
+
+# Whether two grids' levels differ anywhere by more than `limit` metres (so easing is worth it).
+static func moved(old: Dictionary, new: Dictionary, limit: float) -> bool:
+	if int(old.get("count", -1)) != int(new.get("count", -2)) or int(old.get("wet", 0)) == 0 or int(new.get("wet", 0)) == 0:
+		return false
+
+	var a: PackedFloat32Array = old["levels"]
+	var b: PackedFloat32Array = new["levels"]
+
+	for n in range(a.size()):
+		if not is_nan(a[n]) and not is_nan(b[n]) and absf(a[n] - b[n]) > limit:
+			return true
+
+	return false
 
 
 # The inland water level at one point (NAN when dry).
@@ -316,6 +431,18 @@ static func encode(grid: Dictionary) -> PackedByteArray:
 		for h in fine[cell]:
 			buffer.put_32(int(round(h * 100.0)))
 
+	# Version 2: the current at each wet point (old chunks without it decode with an empty
+	# "vel", and the water is then drawn from the surface slope).
+	var vel: PackedFloat32Array = grid.get("vel", PackedFloat32Array())
+
+	if vel.size() == levels.size() * 2:
+		buffer.put_u8(VEL_MARK)
+
+		for n in range(levels.size()):
+			if not is_nan(levels[n]):
+				buffer.put_8(clampi(int(round(vel[n * 2] * 10.0)), -127, 127))
+				buffer.put_8(clampi(int(round(vel[n * 2 + 1] * 10.0)), -127, 127))
+
 	var raw: PackedByteArray = buffer.data_array
 	var packed: PackedByteArray = PackedByteArray()
 	packed.resize(4)
@@ -364,7 +491,17 @@ static func decode(bytes: PackedByteArray) -> Dictionary:
 
 			fine[cell] = heights
 
-	return {"count": count, "spacing": spacing, "levels": levels, "wet": wet, "edge": edge, "fine": fine}
+	var vel: PackedFloat32Array = PackedFloat32Array()
+
+	if buffer.get_available_bytes() >= 1 and buffer.get_u8() == VEL_MARK:
+		vel.resize(count * count * 2)
+
+		for n in range(count * count):
+			if not is_nan(levels[n]):
+				vel[n * 2] = float(buffer.get_8()) / 10.0
+				vel[n * 2 + 1] = float(buffer.get_8()) / 10.0
+
+	return {"count": count, "spacing": spacing, "levels": levels, "wet": wet, "edge": edge, "fine": fine, "vel": vel}
 
 
 # A water mesh for a chunk: one smooth surface over the grid. Wet points
@@ -380,7 +517,10 @@ const FLOW_SLOPE_FULL := 0.05   # a surface slope this steep is drawn as the fas
 
 # The vertex colour for a point: downhill direction and steepness of the water surface
 # around grid point (i, j), from the levels on either side.
-static func _flow_color(levels: PackedFloat32Array, i: int, j: int, count: int, spacing: float, alpha: float) -> Color:
+static func _flow_color(levels: PackedFloat32Array, i: int, j: int, count: int, spacing: float, alpha: float, vel: PackedFloat32Array = PackedFloat32Array()) -> Color:
+	if not vel.is_empty():
+		return _current_color(levels, vel, i, j, count, alpha)
+
 	# Averaged over the 3 x 3 points around, so the flow turns smoothly from square to
 	# square (owner, 2026-10-19: sharp changes drew zigzags and square seams in the ripples).
 	var gx: float = 0.0
@@ -407,6 +547,39 @@ static func _flow_color(levels: PackedFloat32Array, i: int, j: int, count: int, 
 	return Color(0.5 + clampf(-gx * scale, -0.5, 0.5), 0.5 + clampf(-gz * scale, -0.5, 0.5), 0.0, alpha)
 
 
+# The vertex colour from the server's current: the mean over the 3 x 3 wet points around, as a
+# direction and a "steepness" the shader turns back into the speed (speed = fastest * sqrt(steep)).
+static func _current_color(levels: PackedFloat32Array, vel: PackedFloat32Array, i: int, j: int, count: int, alpha: float) -> Color:
+	var vx: float = 0.0
+	var vz: float = 0.0
+	var used: int = 0
+
+	for dj in range(-1, 2):
+		for di in range(-1, 2):
+			var ii: int = i + di
+			var jj: int = j + dj
+
+			if ii < 0 or jj < 0 or ii >= count or jj >= count or is_nan(levels[jj * count + ii]):
+				continue
+
+			vx += vel[(jj * count + ii) * 2]
+			vz += vel[(jj * count + ii) * 2 + 1]
+			used += 1
+
+	if used == 0:
+		return Color(0.5, 0.5, 0.0, alpha)
+
+	vx /= float(used)
+	vz /= float(used)
+	var speed: float = sqrt(vx * vx + vz * vz)
+
+	if speed < 0.001:
+		return Color(0.5, 0.5, 0.0, alpha)
+
+	var steep: float = clampf(pow(speed / FLOW_FASTEST_M_S, 2.0), 0.0, 1.0)
+	return Color(0.5 + vx / speed * steep * 0.5, 0.5 + vz / speed * steep * 0.5, 0.0, alpha)
+
+
 static func _slope_along(levels: PackedFloat32Array, i: int, j: int, di: int, dj: int, count: int, spacing: float) -> float:
 	var here: float = levels[j * count + i] if i >= 0 and j >= 0 and i < count and j < count else NAN
 	var ahead: float = levels[(j + dj) * count + i + di] if i + di < count and j + dj < count else NAN
@@ -430,6 +603,7 @@ static func build_mesh(grid: Dictionary, material: Material) -> ArrayMesh:
 	var levels: PackedFloat32Array = grid["levels"]
 	var fine: Dictionary = grid.get("fine", {})
 	var edge: PackedFloat32Array = grid.get("edge", PackedFloat32Array())
+	var vel: PackedFloat32Array = grid.get("vel", PackedFloat32Array())
 	var height: PackedFloat32Array = PackedFloat32Array()
 	height.resize(count * count)
 	height.fill(NAN)
@@ -487,7 +661,7 @@ static func build_mesh(grid: Dictionary, material: Material) -> ArrayMesh:
 				continue
 
 			if fine.has(j * count + i):
-				_add_fine_cell(_seal_fine_edges(fine, i, j, count, height), i, j, spacing, levels, edge, count, vertices, normals, colors, indices)
+				_add_fine_cell(_seal_fine_edges(fine, i, j, count, height), i, j, spacing, levels, edge, count, vertices, normals, colors, indices, vel)
 				continue
 
 			var ids: Array = []
@@ -512,7 +686,7 @@ static func build_mesh(grid: Dictionary, material: Material) -> ArrayMesh:
 
 					vertices.append(Vector3(float(c % count) * spacing, level, float(c / count) * spacing))
 					normals.append(Vector3.UP)
-					colors.append(_flow_color(levels, c % count, c / count, count, spacing, 1.0 if not is_nan(levels[c]) or _is_shore(edge, c) else 0.0))
+					colors.append(_flow_color(levels, c % count, c / count, count, spacing, 1.0 if not is_nan(levels[c]) or _is_shore(edge, c) else 0.0, vel))
 
 				ids.append(slot[c])
 
@@ -588,7 +762,7 @@ static func _is_shore(edge: PackedFloat32Array, n: int) -> bool:
 
 # A running-water cell drawn from its fine heights: own vertices, normals from the
 # surface slope, alpha blended from the wet corners (the sheet fades out toward a dry one).
-static func _add_fine_cell(heights: PackedFloat32Array, i: int, j: int, spacing: float, levels: PackedFloat32Array, edge: PackedFloat32Array, count: int, vertices: PackedVector3Array, normals: PackedVector3Array, colors: PackedColorArray, indices: PackedInt32Array) -> void:
+static func _add_fine_cell(heights: PackedFloat32Array, i: int, j: int, spacing: float, levels: PackedFloat32Array, edge: PackedFloat32Array, count: int, vertices: PackedVector3Array, normals: PackedVector3Array, colors: PackedColorArray, indices: PackedInt32Array, vel: PackedFloat32Array = PackedFloat32Array()) -> void:
 	var side: int = FINE_SUB + 1
 	var step: float = spacing / float(FINE_SUB)
 	var w00: float = 0.0 if is_nan(levels[j * count + i]) and not _is_shore(edge, j * count + i) else 1.0
@@ -597,8 +771,8 @@ static func _add_fine_cell(heights: PackedFloat32Array, i: int, j: int, spacing:
 	var w11: float = 0.0 if is_nan(levels[(j + 1) * count + i + 1]) and not _is_shore(edge, (j + 1) * count + i + 1) else 1.0
 	var first: int = vertices.size()
 	var flow: Array = [
-		_flow_color(levels, i, j, count, spacing, 1.0), _flow_color(levels, i + 1, j, count, spacing, 1.0),
-		_flow_color(levels, i, j + 1, count, spacing, 1.0), _flow_color(levels, i + 1, j + 1, count, spacing, 1.0),
+		_flow_color(levels, i, j, count, spacing, 1.0, vel), _flow_color(levels, i + 1, j, count, spacing, 1.0, vel),
+		_flow_color(levels, i, j + 1, count, spacing, 1.0, vel), _flow_color(levels, i + 1, j + 1, count, spacing, 1.0, vel),
 	]
 
 	for b in range(side):

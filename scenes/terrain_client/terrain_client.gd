@@ -31,10 +31,14 @@ extends Node
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")
 const CompassScript := preload("res://src/client/admin_compass.gd")
+const GameClockScript := preload("res://src/shared/game_clock.gd")
+const WeatherScript := preload("res://src/shared/weather.gd")
+const RenderScale := preload("res://src/client/render_scale.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
+const GpuProbeScript := preload("res://src/debug/gpu_probe.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 94
+const BUILD := 114
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -62,7 +66,8 @@ const QUALITY_NAMES := ["Low", "Medium", "High", "Ultra"]
 const QUALITY_VIEW := [768, 1280, 2048, 2048]
 const QUALITY_FLORA := [0.4, 0.7, 1.0, 1.0]
 const QUALITY_GRASS_M := [14.0, 24.0, 34.0, 48.0]       # grass drawn this far around the player
-const QUALITY_GRASS_POINTS := [2, 3, 4, 5]               # ground samples per 6 m cell side
+const QUALITY_GRASS_POINTS := [3, 5, 6, 7]               # ground samples per 6 m cell side
+const QUALITY_GRASS_DENSITY := [0.45, 0.65, 0.75, 0.85]     # cards per ground sample, times the layers' own counts
 const QUALITY_SHADOW_M := [0.0, 60.0, 100.0, 250.0]    # 0 = no shadows
 const QUALITY_CACHE_MB := [1024, 4096, 10240, 10240]    # ground cache limit on disk
 const FLY_SPEED := 30.0
@@ -162,7 +167,9 @@ var flora                             # FloraView
 var grass                             # GrassView
 var sound                             # SoundStage: wind, footsteps, grass swish
 var _commit: String = GitStamp.short_commit()   # which checkout is running
+var _render_scale: float = 1.0            # 3D resolution scale now (render_scale.gd)
 var _jitter_test                      # float-precision test, J or Esc > Advanced
+var _gpu_probe                        # GPU cost per piece of the scene, F8
 var _bake = TileBakeScript.new()      # admin: background tile bake
 var _bake_check_msec: int = 0
 var _bake_status: String = ""
@@ -182,6 +189,11 @@ var link = null                       # direct block line (block_link.gd)
 var _in_queue: Array = []             # chunks from the server being unpacked, in arrival order
 var _in_mutex: Mutex = Mutex.new()
 var _in_generation: int = 0           # raised when the plants are dropped (a bake): older chunks are ignored
+var weather: Dictionary = {}          # the weather here and now (WeatherScript.state): the same on every client, no network traffic; rendering and sounds read it
+var _weather_next_msec: int = 0
+var game_clock = GameClockScript.new()   # copy of the server's game clock, set at the welcome
+var _sound_test_at: int = -1          # Esc > Settings "Sound test time"; -1 follows the game clock
+var _sound_weather_at: int = -1         # Esc > Settings "Sound test weather"; -1 follows the weather state
 var _water_dirty: bool = false        # the server said the water moved; not asked for yet
 var _water_asked_msec: int = 0
 var _flora_chunks: int = 0
@@ -288,6 +300,7 @@ func _on_welcome(info: Dictionary) -> void:
 		return
 
 	world = info
+	game_clock.sync(float(info.get("game_seconds", game_clock.seconds)))
 	connected_msec = Time.get_ticks_msec()
 
 	if cache_dir == "":
@@ -355,12 +368,16 @@ func _on_welcome(info: Dictionary) -> void:
 	_jitter_test = JitterTestScript.new()
 	add_child(_jitter_test)
 	_jitter_test.setup(self)
+	_gpu_probe = GpuProbeScript.new()
+	add_child(_gpu_probe)
+	_gpu_probe.setup(self)
 	sound = SoundStageScript.new()
 	sound.name = "Sound"
 	root.add_child(sound)
 	sound.setup(terrain, flora, grass)
 	_make_environment(root)
 	_apply_quality()
+	get_window().size_changed.connect(_apply_render_scale)
 	RenderingServer.viewport_set_measure_render_time(get_viewport().get_viewport_rid(), true)
 	var layer: CanvasLayer = CanvasLayer.new()
 	add_child(layer)
@@ -452,6 +469,9 @@ func _on_tile_changed(tile: Vector2i, revision: int) -> void:
 func _on_dug(center: Vector3, radius: float) -> void:
 	if terrain == null:
 		return
+
+	if sound != null and sound.dig != null and body != null:
+		sound.dig.dug(center, radius, body.global_position)        # before the ground changes: it hears what was there
 
 	var tool: VoxelTool = terrain.get_voxel_tool()
 	tool.channel = VoxelBuffer.CHANNEL_SDF
@@ -563,6 +583,25 @@ func _apply_incoming() -> void:
 			var tw: int = Probe.start()
 			flora.set_water(chunk, result["grid"])
 			Probe.stop("water in", tw)
+
+
+# Weather from the game clock, the world seed, the zone of the tile the player is in and their
+# altitude (town spirit is a neutral placeholder until it exists). Once a second; it is only a
+# few noise lookups.
+func _update_weather() -> void:
+	var now: int = Time.get_ticks_msec()
+
+	if now < _weather_next_msec or world.is_empty():
+		return
+
+	_weather_next_msec = now + 1000
+	var tile_m: float = float(world.get("tile_size_m", 15360))
+	var row: int = int(floor(_anchor.z / tile_m))
+	var group: String = WeatherScript.zone_group(world.get("zones", []), int(world.get("equator_row", 0)), row)
+	weather = WeatherScript.state(int(world.get("master_seed", 0)), game_clock.seconds, group, _anchor.y, 0.0)
+
+	if _sound_weather_at < 0 and sound != null and sound.weather != null:
+		sound.weather.apply_state(weather)
 
 
 func _on_water_rate(rate: float, busy: bool, spring_m3_s: float) -> void:
@@ -756,6 +795,9 @@ func _make_player(root: Node3D, start: Vector3) -> void:
 # Applies the current quality preset to ground view distance, flora distances
 # and shadows.
 func _apply_quality() -> void:
+	if sound != null and sound.ambient != null:
+		sound.set_quality(quality)
+
 	var view: int = QUALITY_VIEW[quality]
 	terrain.view_distance = view
 
@@ -773,6 +815,7 @@ func _apply_quality() -> void:
 		flora.near_m[n] = _flora_near_full[n] * float(QUALITY_FLORA[quality])
 
 	grass.points_per_side = QUALITY_GRASS_POINTS[quality]
+	grass.density = QUALITY_GRASS_DENSITY[quality]
 	grass.set_radius(QUALITY_GRASS_M[quality])
 	if _environment != null:
 		SkyClouds.set_quality(_environment.sky, quality)
@@ -786,6 +829,10 @@ func _apply_quality() -> void:
 	if _sun != null:
 		_sun.shadow_enabled = float(QUALITY_SHADOW_M[quality]) > 0.0
 		_sun.directional_shadow_max_distance = maxf(float(QUALITY_SHADOW_M[quality]), 1.0)
+		# Two cascades instead of four at Medium and High: every cascade draws the casters again
+		# (Godot's own shadow docs), and 100 m of range does not need four. A smaller shadow map at Medium.
+		_sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS if quality >= 3 else DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+		RenderingServer.directional_shadow_atlas_set_size(2048 if quality <= 1 else 4096, true)
 
 	if terrain != null and quality != _ground_quality:
 		_ground_quality = quality
@@ -793,7 +840,16 @@ func _apply_quality() -> void:
 
 	if _environment != null:
 		LookSettings.apply(_environment, _sun, get_viewport(), quality)
+		_apply_render_scale()
 		_environment.fog_density = 0.05 if underwater else LookSettings.FOG_DENSITY
+
+
+# 3D resolution follows the tier's pixel budget (render_scale.gd) and the window size.
+func _apply_render_scale() -> void:
+	if DisplayServer.get_name() == "headless":
+		return
+
+	_render_scale = RenderScale.apply(get_viewport(), get_window().size, quality)
 
 
 # The thinking-brain icon, a white outline with a gray inside. Loaded as an
@@ -872,6 +928,37 @@ func _build_menu(layer: CanvasLayer) -> void:
 	_menu_button(settings, "Sound volume: change", func():
 		var share: float = sound.step_volume()
 		_menu_note.text = "Sound is off" if share <= 0.0 else "Sound volume %d %%" % roundi(share * 100.0))
+	for group in ["wind", "nature", "steps"]:
+		_menu_button(settings, "%s volume: change" % group.capitalize(), func():
+			var share: float = sound.mix_step(group)
+			_menu_note.text = "%s sounds are off" % group.capitalize() if share <= 0.0 else "%s volume %d %%" % [group.capitalize(), roundi(share * 100.0)])
+	_menu_button(settings, "Sound test time: change", func():
+		var order: Array = [["day", 14.0, "autumn"], ["dawn", 6.0, "autumn"], ["dusk", 18.4, "autumn"], ["night", 23.0, "autumn"], ["winter day", 12.0, "winter"], ["summer dawn", 5.0, "summer"], ["spring night", 22.0, "spring"], ["clock runs", -1.0, "autumn"], ["world clock", -2.0, ""]]
+		_sound_test_at = (_sound_test_at + 1) % order.size()
+		var pick: Array = order[_sound_test_at]
+		if float(pick[1]) == -2.0:
+			_sound_test_at = -1
+			_menu_note.text = "Nature sounds follow the world clock again."
+			return
+
+		sound.ambient.conditions["season"] = pick[2]
+		sound.ambient.clock_runs = float(pick[1]) == -1.0
+
+		if float(pick[1]) >= 0.0:
+			sound.ambient.conditions["hour"] = pick[1]
+
+		_menu_note.text = "Nature sounds now play as: %s (a test setting; the sky does not follow)" % pick[0])
+	_menu_button(settings, "Sound test weather: change", func():
+		var kinds: Array = sound.weather.KINDS.keys()
+		_sound_weather_at += 1
+
+		if _sound_weather_at >= kinds.size():
+			_sound_weather_at = -1
+			_menu_note.text = "Weather sounds follow the game's weather"
+			return
+
+		sound.weather.set_weather(kinds[_sound_weather_at], 1.0)
+		_menu_note.text = "Weather sounds now play: %s (a test setting; sky and ground do not follow). Press again until it follows the game's weather." % kinds[_sound_weather_at])
 	_menu_button(settings, "Back", func(): _show_menu_page("main"))
 
 	var advanced: VBoxContainer = _menu_page(column, "advanced")
@@ -1141,6 +1228,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			_admin_dig()
 		elif event.keycode == KEY_J and _jitter_test != null:
 			_jitter_test.next_spot()
+		elif event.keycode == KEY_F8:
+			_gpu_probe.toggle()
 		elif event.keycode == KEY_F2:
 			quality = (quality + 1) % QUALITY_NAMES.size()
 			_apply_quality()
@@ -1281,6 +1370,11 @@ func _update_bob(delta: float) -> void:
 
 func _process(delta: float) -> void:
 	_step_player(delta)
+	game_clock.tick()
+	_update_weather()
+
+	if _sound_test_at < 0 and sound != null and sound.ambient != null:
+		sound.ambient.set_conditions(game_clock.hour(), game_clock.season())
 
 	if _water_label != null and _water_label.text != "" and Time.get_ticks_msec() > _water_label_until_msec:
 		_water_label.text = ""
@@ -1436,8 +1530,18 @@ func _process(delta: float) -> void:
 	]
 
 	var vp: RID = get_viewport().get_viewport_rid()
+	hud.text += "\ngame time: year %d, day %d (%s), %02d:%02d" % [game_clock.year() + 1, game_clock.day_of_year() + 1, game_clock.season(), int(game_clock.hour()), int(fposmod(game_clock.hour(), 1.0) * 60.0)]
+	if not weather.is_empty():
+		hud.text += "\nweather: rain %.2f snow %.2f storm %.2f sun %.2f wind %.2f, %.0f C" % [weather["rain"], weather["snow"], weather["storm"], weather["sun"], weather["wind"], weather["temp_c"]]
+
+	var win: Vector2i = get_window().size
+	hud.text += "\n3D %dx%d of window %dx%d (scale %.2f), %s, %s" % [int(win.x * _render_scale), int(win.y * _render_scale), win.x, win.y, _render_scale, RenderingServer.get_video_adapter_name(), RenderingServer.get_current_rendering_driver_name()]
 	hud.text += "\nlast step: " + sound.last_step
-	hud.text += "\nnature: forest %.1f meadow %.1f water %.1f high %.1f, last %s" % [sound.ambient.weights["forest"], sound.ambient.weights["meadow"], sound.ambient.weights["water"], sound.ambient.weights["highland"], sound.ambient.last_call]
+	hud.text += "\nsound budget: " + sound.budget_text()
+	hud.text += "\nlast dig sound: %s" % sound.dig.last_dig
+	hud.text += "\nweather sounds: %s (rain %.1f, wind %.1f, thunder %d)" % [sound.weather.kind, sound.weather.rain, sound.weather.wind, sound.weather.thunders_played]
+	hud.text += "\nnature (%02d:%02d %s): forest %.1f meadow %.1f water %.1f high %.1f, last %s" % [int(sound.ambient.conditions["hour"]), int(fposmod(float(sound.ambient.conditions["hour"]), 1.0) * 60.0), sound.ambient.conditions["season"], sound.ambient.weights["forest"], sound.ambient.weights["meadow"], sound.ambient.weights["water"], sound.ambient.weights["highland"], sound.ambient.last_call]
+	hud.text += "\nwater sounds: " + sound.water.summary
 	hud.text += "\nframe work: cpu %.1f ms, gpu %.1f ms, vsync %s, draws %d" % [
 		RenderingServer.viewport_get_measured_render_time_cpu(vp) + RenderingServer.get_frame_setup_time_cpu(),
 		RenderingServer.viewport_get_measured_render_time_gpu(vp),
@@ -1469,7 +1573,11 @@ func _process(delta: float) -> void:
 				flora.water_chunks, flora.water_cells
 			])
 			print("Terrain client: grass %d tufts in %d cells (radius %.0f m)" % [grass.tufts, grass.cells_built, grass.radius_m])
+			print("Terrain client: water sounds: %s" % sound.water.summary)
 			print("Terrain client: nature calls %s, zones %s" % [str(sound.ambient.calls_played), str(sound.ambient.weights)])
+			print("Terrain client: dig sounds %s, last %s" % [str(sound.dig.digs_played), sound.dig.last_dig])
+			print("Terrain client: sound budget: %s, %d loads refused" % [sound.budget_text(), sound.refused_loads])
+			print("Terrain client: weather %s rain %.2f wind %.2f calls %.2f thunders %d" % [sound.weather.kind, sound.weather.rain, sound.weather.wind, sound.weather.calls, sound.weather.thunders_played])
 			print("Terrain client: sound: footsteps %s, grass swishes %d, last ground %s, gust %.2f" % [str(sound.steps_played), sound.swishes_played, sound.surface, sound.gust])
 			print("Terrain client: blocks waited for %d times, %.0f ms on average, worst %d ms; at most %d loader threads waiting at once; %d blocks came on the block line" % [stream.waits, float(stream.wait_msec_total) / maxf(float(stream.waits), 1.0), stream.wait_msec_worst, stream.most_waiting, link.blocks_in])
 			print(Probe.report())

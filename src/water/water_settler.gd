@@ -10,6 +10,7 @@ const RIVER := 3
 const LAKE := 2
 const HEAD_RADIUS := 10           # cells (80 m): a river cell this high among the river cells around it is a head
 const PLATEAU_SEARCH := 15        # cells (120 m) to look for flat high ground near a head
+const POND_FULL_FLOW_M := 125.0   # a head pond this wide or smaller gets the base spring flow
 const PLATEAU_RANGE_M := 3.0      # height range on the ring that counts as flat
 
 
@@ -69,10 +70,44 @@ static func build(data, rate: float, generator, seed_painted: bool = true):
 			continue
 
 		placed.append(spot)
-		sim.add_spring(spot.x, spot.y, rate)
+		# Owner (2026-10-20): one spring per pond, its flow growing with the pond (1x up to
+		# POND_FULL_FLOW_M across, then in step with the diameter).
+		var factor: float = 1.0 if seed_painted and _pond_near(data, head, side).x < 0 else flow_factor(_pond_diameter_m(data, spot, side))
+		sim.add_spring(spot.x, spot.y, rate * factor)
 
 	sim.wake_all_wet()
 	return sim
+
+
+# Spring flow for a pond of this diameter, as a multiple of the base spring: 1 up to
+# POND_FULL_FLOW_M, then in step with the diameter. The generator sizes the brook from
+# the same number.
+static func flow_factor(diameter_m: float, full_m: float = POND_FULL_FLOW_M) -> float:
+	return maxf(diameter_m / full_m, 1.0)
+
+
+# The pond's width around a spot inside it: the median of eight rays out to dry ground
+# (the ray that runs up the brook is just one of the eight).
+static func _pond_diameter_m(data, spot: Vector2i, side: int) -> float:
+	var lengths: Array = []
+
+	for r in range(8):
+		var angle: float = TAU * float(r) / 8.0
+		var steps: int = 0
+
+		while steps < 40:
+			var i: int = spot.x + int(round(cos(angle) * float(steps + 1)))
+			var j: int = spot.y + int(round(sin(angle) * float(steps + 1)))
+
+			if i < 0 or j < 0 or i >= side or j >= side or data.water_class[j * side + i] == 0:
+				break
+
+			steps += 1
+
+		lengths.append(float(steps))
+
+	lengths.sort()
+	return (lengths[3] + lengths[4]) * data.spacing_m
 
 
 # River cells that are the highest river cell around them.

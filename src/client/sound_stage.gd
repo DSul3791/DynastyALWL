@@ -18,8 +18,16 @@ extends Node
 
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const AmbientScript := preload("res://src/client/ambient_life.gd")
+const WeatherScript := preload("res://src/client/weather_sounds.gd")
+const DigScript := preload("res://src/client/dig_sounds.gd")
+const WaterSoundsScript := preload("res://src/client/water_sounds.gd")
 const AUDIO_DIR := "res://assets/audio/"
 const RECORDED_DIR := "res://assets/audio/recorded/"
+# Audio budget per quality tier Low, Mid, High (ARCHITECTURE_BUDGET.md section 9).
+const TIER_NAMES := ["Low", "Mid", "High"]
+const TIER_VOICES := [24, 48, 96]       # sounds playing at once, all layers together
+const TIER_NATURE_CALLS := [4, 6, 8]    # of those, bird/frog calls and flushes at once
+const TIER_MEMORY_MB := [150, 300, 600] # loaded sound files (Ogg stays compressed; WAV is whole)
 const VOICES := 6                       # footstep and swish players, reused in turn
 const FEET_M := 0.9                     # player origin to the soles (capsule half height)
 
@@ -36,13 +44,30 @@ const SURFACE_DB := {
 	"leaves": -6.0, "mud": -10.0, "snow": -11.0, "water": -10.0,
 	"grass_tall": -14.0, "bushes": -13.0,
 }
+# Exposed rock under the soles (rock id = material - MATERIAL_ROCK; data/tables/rocks.json):
+# [surface, dB, pitch]. Soft rock scuffs like loose ground, dense hard rock rings a little.
+const ROCK_STEP := {
+	1: ["gravel", -2.0, 0.95], 2: ["gravel", -1.0, 1.0], 3: ["stone", -1.0, 1.0], 4: ["stone", -4.0, 0.88],
+	5: ["stone", 1.0, 1.03], 6: ["stone", 0.0, 1.05], 7: ["stone", 1.0, 1.02], 8: ["gravel", -3.0, 0.98],
+	9: ["stone", 1.0, 1.05], 10: ["sand", -4.0, 0.95], 11: ["gravel", -3.0, 0.92],
+}
+# Ore showing in that rock (data/tables/resources.json ids): metals and gems ring, coal is dull,
+# salt crunches, clay is sticky.
+const ORE_STEP := {1: ["stone", -3.0, 0.9], 10: ["sand", 0.0, 1.05], 12: ["mud", 0.0, 1.0], 29: ["mud", -2.0, 0.9]}
+const ORE_METAL := [2, 3, 4, 5, 6, 7, 8, 9, 15, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27]
+# Soils with their own character: [dB, pitch] on top of their surface (data/tables/soils.json).
+const SOIL_TUNE := {3: [-1.0, 0.95], 4: [0.0, 0.97], 12: [2.0, 1.1], 13: [0.0, 1.06], 14: [-3.0, 0.9]}
+const RAIN_SOAK := 0.5                  # rain level from which loose dirt and leaves turn to wet mud steps
+# Esc > Settings mixer groups: name -> the buses it sets. Shares step through VOLUME_STEPS.
+const MIX_GROUPS := {"wind": ["Wind"], "nature": ["Nature", "Weather"], "steps": ["Foley"]}
+const SETTINGS_PATH := "user://sound_settings.cfg"
 const GRASS_MIN := 0.35                 # grass thickness from which a step sounds like grass
 const WATER_STEP_M := 0.12              # water above the soles that turns steps into splashes
 const DAMP_M := 0.03                    # shallower film at the waterline: a damp, muddy step
 const SWIM_M := 1.3                     # deeper than this: no footsteps
 # Walk quiet, jog a little louder, run loud (owner 2026-10-19: build 47's run
 # level was a bit too loud for running).
-const GAIT_DB := [-22.0, -16.0, -10.0]   # walk, jog, run (owner 2026-10-20: still far too loud; clear steps of 6 dB)
+const GAIT_DB := [-25.0, -19.0, -13.0]   # walk, jog, run (owner 2026-10-20: a little quieter again, 3 dB down)
 const GAIT_PITCH := [1.0, 1.03, 1.06]
 const VOLUME_STEPS := [1.0, 0.75, 0.5, 0.25, 0.0]
 # Owner (2026-10-20, a slight pause about once a second while moving): the shelter count
@@ -59,6 +84,16 @@ var _pending: String = ""
 var last_step: String = ""              # for the HUD: ground, soil id, water depth, file played
 var gust: float = 0.0                   # 0 calm .. 1 strongest gust
 var volume_index: int = 0
+var mix_index: Dictionary = {"wind": 0, "nature": 0, "steps": 0}   # per group, into VOLUME_STEPS
+var tier: int = 2                       # quality index (0 Low); set_quality()
+var voice_cap: int = 96                 # TIER_VOICES[tier]
+var voices_peak: int = 0                # most sounds playing together so far (HUD)
+var _voice_count: int = 0               # sounds playing at the last count
+var _count_left: float = 0.0
+static var loaded_bytes: int = 0        # sound files read from disk so far (each counted once)
+static var _loaded_paths: Dictionary = {}
+static var memory_cap_bytes: int = 600 * 1048576
+static var refused_loads: int = 0
 
 var _terrain: VoxelLodTerrain
 var _flora
@@ -81,6 +116,9 @@ var _shelter_msec: int = 0
 var _air_time: float = 0.0
 var _rng := RandomNumberGenerator.new()
 var ambient                             # AmbientLife: birds, crickets, frogs by zone
+var water                               # WaterSounds: brooks, rivers, pond shores, waterfalls
+var weather                             # WeatherSounds: rain, gale, thunder, snow hush (set_weather)
+var dig                                 # DigSounds: the sound of what is dug (dug(center, radius, listener))
 var _sphere: PhysicsShapeQueryParameters3D
 
 
@@ -99,6 +137,7 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	AudioServer.add_bus_effect(wind_bus, _wind_filter)
 	_make_bus("Foley")
 	_make_bus("Nature")
+	_make_bus("Weather")
 	_muffle = AudioEffectLowPassFilter.new()
 	_muffle.cutoff_hz = 20000.0
 	AudioServer.add_bus_effect(0, _muffle)
@@ -120,6 +159,20 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	ambient.name = "Ambient"
 	add_child(ambient)
 	ambient.setup(self, _terrain, _flora, _grass)
+	water = WaterSoundsScript.new()
+	water.name = "Water"
+	add_child(water)
+	water.setup(_flora)
+	weather = WeatherScript.new()
+	weather.name = "Weather"
+	add_child(weather)
+	weather.setup(self, ambient)
+	dig = DigScript.new()
+	dig.name = "Dig"
+	add_child(dig)
+	dig.setup(self)
+
+	_load_settings()
 
 	if _wind_low.stream != null:
 		_wind_low.play()
@@ -130,7 +183,17 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 
 # Each frame: wind loudness and colour, landing thumps, the underwater muffle.
 func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool) -> void:
+	_count_left -= delta
+
+	if _count_left <= 0.0:
+		_count_left = 0.25
+		_voice_count = voices_playing()
+		voices_peak = maxi(voices_peak, _voice_count)
+
 	ambient.update(delta, body, flying)
+	water.update(delta, body, underwater)
+	weather.update(delta, body, underwater)
+	dig.update(delta)
 	_time += delta
 	gust = clampf(0.5 + 0.8 * _gust_noise.get_noise_1d(_time), 0.0, 1.0)
 	var position: Vector3 = body.global_position
@@ -143,7 +206,7 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	_shelter = move_toward(_shelter, _shelter_target, delta * 0.5)
 	var height: float = clampf((position.y - 10.0) / 300.0, 0.0, 1.0)   # higher is windier
 	var rush: float = clampf(body.velocity.length() / 80.0, 0.0, 1.0) if flying else 0.0
-	var strength: float = clampf(0.35 + 0.65 * gust + 0.4 * height - 0.45 * _shelter + rush, 0.05, 1.6)
+	var strength: float = clampf(0.35 + 0.65 * gust + 0.4 * height - 0.45 * _shelter + rush + 0.7 * weather.wind, 0.05, 1.6)
 	# A calm day (owner, 2026-10-19: the first version sounded like a storm by the sea).
 	# Owner 2026-10-19, twice: still a windstorm. Now a faint breeze that only rises a little in gusts.
 	# Build 51: the low layer still sounded like surf nearby; it is lower again.
@@ -166,6 +229,34 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 		_air_time = 0.0
 
 
+# Sets the audio budget for a quality tier (0 Low, 1 Mid, 2 High).
+func set_quality(quality: int) -> void:
+	tier = clampi(quality, 0, TIER_VOICES.size() - 1)
+	voice_cap = TIER_VOICES[tier]
+	memory_cap_bytes = TIER_MEMORY_MB[tier] * 1048576
+	ambient.max_voices = TIER_NATURE_CALLS[tier]
+
+
+# Every sound playing right now, all layers (the budget counts these).
+func voices_playing() -> int:
+	var count: int = 0
+
+	for player in [_wind_low, _wind_gust] + _voices:
+		if player.playing:
+			count += 1
+
+	return count + ambient.voices_playing() + water.voices_playing() + weather.voices_playing()
+
+
+# True while another optional sound (a call, a flush) fits in the voice budget.
+func has_room() -> bool:
+	return _voice_count < voice_cap
+
+
+func budget_text() -> String:
+	return "sounds %d/%d playing (peak %d), %.1f/%d MB loaded (%s)" % [_voice_count, voice_cap, voices_peak, float(loaded_bytes) / 1048576.0, TIER_MEMORY_MB[tier], TIER_NAMES[tier]]
+
+
 # One footfall at gait 0 walk, 1 jog, 2 run; `boost_db` makes it louder (landings).
 # `foot` is "left" or "right" (recorded sets have one of each).
 func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: String = "left") -> void:
@@ -181,6 +272,7 @@ func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: Str
 		return
 
 	var soil: int = _ground_under(feet)
+	var tune: Array = [0.0, 1.0]                                 # dB and pitch for this ground's character
 	var thick: float = 0.0
 	var tall: float = 0.0
 
@@ -195,14 +287,25 @@ func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: Str
 	elif depth > DAMP_M:
 		surface = "mud"                                          # wet ground at the waterline
 		thick = 0.0
-	elif soil < 0 or soil >= Layout.MATERIAL_ROCK:
+	elif soil < 0:
 		surface = "stone"
+	elif soil >= Layout.MATERIAL_ROCK:
+		var rock: Array = ROCK_STEP.get(soil - Layout.MATERIAL_ROCK, ["stone", 0.0, 1.0])
+		var ore: int = _ore_under(feet)
+		var found: Array = ORE_STEP.get(ore, ["stone", 1.0, 1.07] if ore in ORE_METAL else rock)
+		surface = found[0]
+		tune = [found[1], found[2]]
 	elif _in_bush(feet):
 		surface = "bushes"
 	elif thick >= GRASS_MIN and soil != 8:
 		surface = "grass_tall" if tall > 0.35 else "grass"
 	else:
 		surface = str(SOIL_SURFACE.get(soil, "dirt"))
+		tune = SOIL_TUNE.get(soil, [0.0, 1.0])
+
+		if surface in ["dirt", "leaves"] and weather != null and weather.rain >= RAIN_SOAK:
+			surface = "mud"                                      # soaked ground
+			tune = [-2.0, 1.0]
 
 	# Steady ground: a different surface must show on two steps in a row before the sound
 	# changes, so one odd sample (a bush, a patch edge) never flips it back and forth.
@@ -224,12 +327,52 @@ func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: Str
 		name = "step_grass"
 
 	var recorded: bool = _recorded.has(name + "_" + foot) or _recorded.has(name)
-	var pitch: float = GAIT_PITCH[gait] * _rng.randf_range(0.96, 1.04)
+	var pitch: float = GAIT_PITCH[gait] * _rng.randf_range(0.96, 1.04) * tune[1]
 	last_step = "%s (soil %d, water %.2f m, %s)" % [surface, soil, depth, name + "_" + foot if recorded else name + " generated"]
-	_play(name, float(SURFACE_DB.get(surface, -9.0)) + GAIT_DB[gait] + boost_db + _rng.randf_range(-1.5, 1.0), pitch, foot)
+	_play(name, float(SURFACE_DB.get(surface, -9.0)) + float(tune[0]) + GAIT_DB[gait] + boost_db + _rng.randf_range(-1.5, 1.0), pitch, foot)
 	steps_played[surface] = int(steps_played.get(surface, 0)) + 1
 
 	# The recorded grass, tall grass and bush steps carry the swish of the blades themselves.
+
+
+# Esc > Settings mixer: steps one group (wind, nature, steps) through 100, 75, 50, 25 % and off.
+# Returns the new share. Saved for the next run.
+func mix_step(group: String) -> float:
+	mix_index[group] = (int(mix_index[group]) + 1) % VOLUME_STEPS.size()
+	_apply_mix(group)
+	_save_settings()
+	return float(VOLUME_STEPS[int(mix_index[group])])
+
+
+func _apply_mix(group: String) -> void:
+	var share: float = VOLUME_STEPS[int(mix_index[group])]
+
+	for bus_name in MIX_GROUPS[group]:
+		var index: int = AudioServer.get_bus_index(bus_name)
+
+		if index >= 0:
+			AudioServer.set_bus_mute(index, share <= 0.0)
+			AudioServer.set_bus_volume_db(index, linear_to_db(maxf(share, 0.001)))
+
+
+func _load_settings() -> void:
+	var file: ConfigFile = ConfigFile.new()
+
+	if file.load(SETTINGS_PATH) == OK:
+		for group in MIX_GROUPS:
+			mix_index[group] = clampi(int(file.get_value("mixer", group, 0)), 0, VOLUME_STEPS.size() - 1)
+
+	for group in MIX_GROUPS:
+		_apply_mix(group)
+
+
+func _save_settings() -> void:
+	var file: ConfigFile = ConfigFile.new()
+
+	for group in MIX_GROUPS:
+		file.set_value("mixer", group, int(mix_index[group]))
+
+	file.save(SETTINGS_PATH)
 
 
 # Esc > Settings "Sound volume": 100, 75, 50, 25 % and off. Returns the new share.
@@ -265,6 +408,41 @@ func _trunks_near(body: CharacterBody3D, radius: float) -> int:
 # bare rock, or -1 when the ground is not loaded.
 func ground_at(feet: Vector3) -> int:
 	return _ground_under(feet)
+
+
+# The soil or rock id (CHANNEL_MATERIAL) at a point, -1 where the ground is not loaded.
+func material_at(point: Vector3) -> int:
+	_tool.channel = Layout.CHANNEL_MATERIAL
+	var cell: Vector3i = Vector3i(point.floor())
+	return _tool.get_voxel(cell) if _tool.is_area_editable(AABB(Vector3(cell), Vector3.ONE)) else -1
+
+
+# The ore id (CHANNEL_RESOURCE) at a point, 0 when none.
+func resource_at(point: Vector3) -> int:
+	_tool.channel = Layout.CHANNEL_RESOURCE
+	var cell: Vector3i = Vector3i(point.floor())
+	return _tool.get_voxel(cell) if _tool.is_area_editable(AABB(Vector3(cell), Vector3.ONE)) else 0
+
+
+# The water surface height above a point (NAN when there is no water there).
+func water_level_at(point: Vector3) -> float:
+	return _flora.water_surface_at(point.x, point.z)
+
+
+# The ore id showing in the rock under the soles, 0 when none.
+func _ore_under(feet: Vector3) -> int:
+	_tool.channel = Layout.CHANNEL_RESOURCE
+
+	for drop in [0.3, 0.8]:
+		var cell: Vector3i = Vector3i((feet - Vector3(0.0, drop, 0.0)).floor())
+
+		if _tool.is_area_editable(AABB(Vector3(cell), Vector3.ONE)):
+			var ore: int = _tool.get_voxel(cell)
+
+			if ore > 0:
+				return ore
+
+	return 0
 
 
 func _ground_under(feet: Vector3) -> int:
@@ -362,6 +540,17 @@ static func _load(folder: String, name: String) -> AudioStream:
 	for extension in ["ogg", "wav"]:
 		var path: String = folder + name + "." + extension
 
+		if not _loaded_paths.has(path) and loaded_bytes >= memory_cap_bytes and (ResourceLoader.exists(path) or FileAccess.file_exists(path)):
+			refused_loads += 1                                       # over the tier's memory budget
+			return null
+
+		if not _loaded_paths.has(path) and FileAccess.file_exists(path):
+			_loaded_paths[path] = true
+			var file: FileAccess = FileAccess.open(path, FileAccess.READ)
+
+			if file != null:
+				loaded_bytes += file.get_length()
+
 		if ResourceLoader.exists(path):
 			var imported: AudioStream = load(path) as AudioStream
 
@@ -395,7 +584,7 @@ func _exit_tree() -> void:
 
 	_streams.clear()
 
-	for name in ["Wind", "Foley", "Nature"]:
+	for name in ["Wind", "Foley", "Nature", "Weather"]:
 		var index: int = AudioServer.get_bus_index(name)
 
 		if index >= 0:
