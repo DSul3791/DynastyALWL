@@ -34,7 +34,7 @@ const CompassScript := preload("res://src/client/admin_compass.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 96
+const BUILD := 103
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -178,6 +178,7 @@ var test_cut: bool = false
 var _flora_asked: Dictionary = {}     # chunk -> true asked or held in full, false trees only
 var _flora_check_msec: int = 0
 var link = null                       # direct block line (block_link.gd)
+var _sound_test_at: int = 0           # Esc > Settings "Sound test time" (until the game clock exists)
 var _water_dirty: bool = false        # the server said the water moved; not asked for yet
 var _water_inbox: Dictionary = {}     # chunk -> newest water bytes, rebuilt a few per frame
 const WATER_APPLY_USEC := 2000        # each water chunk costs ~2 ms; all at once was a hitch every second
@@ -807,6 +808,17 @@ func _build_menu(layer: CanvasLayer) -> void:
 	_menu_button(settings, "Sound volume: change", func():
 		var share: float = sound.step_volume()
 		_menu_note.text = "Sound is off" if share <= 0.0 else "Sound volume %d %%" % roundi(share * 100.0))
+	_menu_button(settings, "Sound test time: change", func():
+		var order: Array = [["day", 14.0, "autumn"], ["dawn", 6.0, "autumn"], ["dusk", 18.4, "autumn"], ["night", 23.0, "autumn"], ["winter day", 12.0, "winter"], ["summer dawn", 5.0, "summer"], ["spring night", 22.0, "spring"], ["clock runs", -1.0, "autumn"]]
+		_sound_test_at = (_sound_test_at + 1) % order.size()
+		var pick: Array = order[_sound_test_at]
+		sound.ambient.conditions["season"] = pick[2]
+		sound.ambient.clock_runs = float(pick[1]) < 0.0
+
+		if float(pick[1]) >= 0.0:
+			sound.ambient.conditions["hour"] = pick[1]
+
+		_menu_note.text = "Nature sounds now play as: %s (a test setting; the sky does not follow)" % pick[0])
 	_menu_button(settings, "Back", func(): _show_menu_page("main"))
 
 	var advanced: VBoxContainer = _menu_page(column, "advanced")
@@ -1364,7 +1376,7 @@ func _process(delta: float) -> void:
 
 	var vp: RID = get_viewport().get_viewport_rid()
 	hud.text += "\nlast step: " + sound.last_step
-	hud.text += "\nnature: forest %.1f meadow %.1f water %.1f high %.1f, last %s" % [sound.ambient.weights["forest"], sound.ambient.weights["meadow"], sound.ambient.weights["water"], sound.ambient.weights["highland"], sound.ambient.last_call]
+	hud.text += "\nnature (%02d:%02d %s): forest %.1f meadow %.1f water %.1f high %.1f, last %s" % [int(sound.ambient.conditions["hour"]), int(fposmod(float(sound.ambient.conditions["hour"]), 1.0) * 60.0), sound.ambient.conditions["season"], sound.ambient.weights["forest"], sound.ambient.weights["meadow"], sound.ambient.weights["water"], sound.ambient.weights["highland"], sound.ambient.last_call]
 	hud.text += "\nwater sounds: " + sound.water.summary
 	hud.text += "\nframe work: cpu %.1f ms, gpu %.1f ms, vsync %s, draws %d" % [
 		RenderingServer.viewport_get_measured_render_time_cpu(vp) + RenderingServer.get_frame_setup_time_cpu(),

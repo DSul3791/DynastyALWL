@@ -42,6 +42,15 @@ const WATER_NONE_M := 55.0
 const HIGH_FROM_M := 60.0              # height where the highland starts to count
 const HIGH_FULL_M := 130.0
 const BED_DB := -26.0
+# season -> [sunrise, sunset] in game hours (24 h day; a game day is one real hour)
+const SUN := {"spring": [6.0, 19.5], "summer": [5.0, 21.0], "autumn": [6.5, 18.5], "winter": [7.5, 16.5]}
+const CHORUS_BEFORE := 0.8             # the dawn chorus swells this long before sunrise...
+const CHORUS_AFTER := 1.6              # ...and fades this long after it
+const CHORUS_RATE := 3.5               # tries come this many times as often at the peak
+const DUSK_BEFORE := 1.0               # dusk swell: this long before sunset...
+const DUSK_AFTER := 0.75               # ...and after
+const DARK_BEFORE := 0.5               # dark from this long before sunrise to this long after sunset
+const GAME_HOURS_PER_SEC := 24.0 / 3600.0   # game clock: 24 game hours per real hour
 const ALARM_DB := -6.0
 const ALARM_COOLDOWN_SEC := 90.0
 const ALARM_RUN_SEC := 2.0             # running this long in crow country can set one off
@@ -50,20 +59,23 @@ const ALARM_CHANCE := 0.15             # per scan while that holds
 # name: sound file base name (name_N.ogg). zones: zone -> how well the call fits it (0 to 1).
 # every: seconds between tries. dist: metres from the player. height: metres above the ground
 # (birds in the trees). water: placed at a water square. db: loudness at the source.
-# hours: [from, to] it may be heard (wraps past midnight). night_rate: tries come this many
-# times as often at night. seasons: season -> chance multiplier (default 1).
+# hours: [from, to] fixed clock hours it may be heard (wraps past midnight). day: heard only
+# between first light and nightfall; night: only in the dark (both follow the season's sunrise
+# and sunset, SUN). chorus: how strongly the dawn chorus (and a little at dusk) speeds its
+# tries. night_rate: tries come this many times as often at night. dusk: the same around
+# sunset (crickets and frogs start up). seasons: season -> chance multiplier (default 1).
 const EVENTS := [
-	{"name": "bird_whistle", "zones": {"forest": 1.0, "meadow": 0.5, "highland": 0.3}, "every": [14, 34], "dist": [20, 75], "height": [4, 14], "db": -10.0, "hours": [5, 20]},
-	{"name": "bird_feebee", "zones": {"forest": 1.0, "meadow": 0.3}, "every": [18, 40], "dist": [20, 70], "height": [4, 12], "db": -11.0, "hours": [5, 20]},
-	{"name": "bird_trill", "zones": {"meadow": 1.0, "forest": 0.4}, "every": [20, 45], "dist": [15, 60], "height": [1, 8], "db": -12.0, "hours": [5, 20]},
-	{"name": "bird_chirp", "zones": {"meadow": 1.0, "water": 0.7, "forest": 0.5}, "every": [9, 22], "dist": [8, 45], "height": [0, 5], "db": -12.0, "hours": [5, 20]},
-	{"name": "crow_caw", "zones": {"forest": 0.6, "highland": 0.8, "meadow": 0.3}, "every": [45, 110], "dist": [60, 160], "height": [6, 18], "db": -8.0, "hours": [6, 19]},
-	{"name": "woodpecker", "zones": {"forest": 1.0}, "every": [40, 100], "dist": [25, 80], "height": [2, 10], "db": -8.0, "hours": [6, 18]},
-	{"name": "owl_hoot", "zones": {"forest": 1.0}, "every": [30, 70], "dist": [40, 110], "height": [5, 14], "db": -8.0, "hours": [20, 5]},
-	{"name": "hawk_screech", "zones": {"highland": 1.0}, "every": [60, 150], "dist": [120, 300], "height": [50, 110], "db": -4.0, "hours": [8, 18]},
-	{"name": "cricket_chirp", "zones": {"meadow": 1.0, "water": 0.4}, "every": [22, 55], "dist": [5, 28], "height": [0, 0], "db": -16.0, "night_rate": 5.0, "seasons": {"autumn": 0.9, "summer": 1.0, "spring": 0.3, "winter": 0.0}},
-	{"name": "frog_croak", "zones": {"water": 1.0}, "every": [40, 90], "dist": [6, 24], "height": [0, 0], "db": -18.0, "water": true, "night_rate": 3.0, "seasons": {"autumn": 0.3, "summer": 1.0, "spring": 1.0, "winter": 0.0}},
-	{"name": "tree_frog_peep", "zones": {"water": 0.8, "forest": 0.2}, "every": [16, 40], "dist": [4, 28], "height": [0, 3], "db": -14.0, "night_rate": 3.0, "seasons": {"autumn": 0.2, "summer": 1.0, "spring": 1.0, "winter": 0.0}},
+	{"name": "bird_whistle", "zones": {"forest": 1.0, "meadow": 0.5, "highland": 0.3}, "every": [14, 34], "dist": [20, 75], "height": [4, 14], "db": -10.0, "day": true, "chorus": 1.0, "seasons": {"winter": 0.25, "spring": 1.0}},
+	{"name": "bird_feebee", "zones": {"forest": 1.0, "meadow": 0.3}, "every": [18, 40], "dist": [20, 70], "height": [4, 12], "db": -11.0, "day": true, "chorus": 1.0, "seasons": {"winter": 0.25, "spring": 1.0}},
+	{"name": "bird_trill", "zones": {"meadow": 1.0, "forest": 0.4}, "every": [20, 45], "dist": [15, 60], "height": [1, 8], "db": -12.0, "day": true, "chorus": 1.0, "seasons": {"winter": 0.25, "spring": 1.0}},
+	{"name": "bird_chirp", "zones": {"meadow": 1.0, "water": 0.7, "forest": 0.5}, "every": [9, 22], "dist": [8, 45], "height": [0, 5], "db": -12.0, "day": true, "chorus": 1.0, "seasons": {"winter": 0.25, "spring": 1.0}},
+	{"name": "crow_caw", "zones": {"forest": 0.6, "highland": 0.8, "meadow": 0.3}, "every": [45, 110], "dist": [60, 160], "height": [6, 18], "db": -8.0, "day": true, "chorus": 0.5},
+	{"name": "woodpecker", "zones": {"forest": 1.0}, "every": [40, 100], "dist": [25, 80], "height": [2, 10], "db": -8.0, "day": true, "seasons": {"winter": 0.6}},
+	{"name": "owl_hoot", "zones": {"forest": 1.0}, "every": [30, 70], "dist": [40, 110], "height": [5, 14], "db": -8.0, "night": true},
+	{"name": "hawk_screech", "zones": {"highland": 1.0}, "every": [60, 150], "dist": [120, 300], "height": [50, 110], "db": -4.0, "hours": [9, 17], "seasons": {"winter": 0.6}},
+	{"name": "cricket_chirp", "zones": {"meadow": 1.0, "water": 0.4}, "every": [22, 55], "dist": [5, 28], "height": [0, 0], "db": -16.0, "night_rate": 5.0, "dusk": 2.0, "seasons": {"autumn": 0.9, "summer": 1.0, "spring": 0.3, "winter": 0.0}},
+	{"name": "frog_croak", "zones": {"water": 1.0}, "every": [40, 90], "dist": [6, 24], "height": [0, 0], "db": -18.0, "water": true, "night_rate": 3.0, "dusk": 2.0, "seasons": {"autumn": 0.3, "summer": 1.0, "spring": 1.0, "winter": 0.0}},
+	{"name": "tree_frog_peep", "zones": {"water": 0.8, "forest": 0.2}, "every": [16, 40], "dist": [4, 28], "height": [0, 3], "db": -14.0, "night_rate": 3.0, "dusk": 2.0, "seasons": {"autumn": 0.2, "summer": 1.0, "spring": 1.0, "winter": 0.0}},
 	{"name": "fish_plop", "zones": {"water": 1.0}, "every": [60, 150], "dist": [6, 22], "height": [0, 0], "db": -20.0, "water": true},
 ]
 const ZONES := ["forest", "meadow", "water", "highland"]
@@ -72,6 +84,7 @@ var conditions: Dictionary = {"hour": 14.0, "season": "autumn", "weather": "clea
 var weights: Dictionary = {"forest": 0.0, "meadow": 0.0, "water": 0.0, "highland": 0.0}
 var calls_played: Dictionary = {}       # call name -> count (for the headless check)
 var last_call: String = ""
+var clock_runs: bool = false            # true: this layer advances conditions["hour"] itself (no game clock yet)
 var time_scale: float = 1.0             # >1 speeds the timers (--nature-fast, headless checks)
 
 var _stage                              # SoundStage (ground lookup)
@@ -99,8 +112,15 @@ func setup(stage, terrain: Node3D, flora, grass) -> void:
 	_grass = grass
 	_rng.randomize()
 
-	if "--nature-fast" in OS.get_cmdline_user_args():
-		time_scale = 25.0
+	for arg in OS.get_cmdline_user_args():
+		if arg == "--nature-fast":
+			time_scale = 25.0
+		elif arg == "--clock":
+			clock_runs = true
+		elif arg.begins_with("--hour="):
+			conditions["hour"] = float(arg.get_slice("=", 1))
+		elif arg.begins_with("--season="):
+			conditions["season"] = arg.get_slice("=", 1)
 
 	for event in EVENTS:
 		_next[event["name"]] = _rng.randf_range(float(event["every"][0]), float(event["every"][1])) * 0.5
@@ -134,13 +154,16 @@ func update(delta: float, body: CharacterBody3D, flying: bool) -> void:
 		var target: float = linear_to_db(maxf(float(weights[zone]), 0.0001)) + BED_DB
 		_beds[zone].volume_db = lerpf(_beds[zone].volume_db, maxf(target, -80.0), clampf(delta * 1.5, 0.0, 1.0))
 
+	if clock_runs:
+		conditions["hour"] = fposmod(float(conditions["hour"]) + delta * GAME_HOURS_PER_SEC, 24.0)
+
 	_since_call += delta
 	_voices = _voices.filter(func(v): return is_instance_valid(v) and v.playing)
 	var step: float = delta * time_scale
 
 	for event in EVENTS:
 		var name: String = event["name"]
-		_next[name] = float(_next[name]) - step * (float(event.get("night_rate", 1.0)) if _is_night() else 1.0)
+		_next[name] = float(_next[name]) - step * _rate(event)
 
 		if float(_next[name]) > 0.0:
 			continue
@@ -211,12 +234,62 @@ func _trunks(body: CharacterBody3D) -> int:
 	return count
 
 
+# Called by whatever owns the game clock (the single time source) when it exists.
+func set_conditions(hour: float, season: String, weather: String = "clear") -> void:
+	conditions["hour"] = hour
+	conditions["season"] = season
+	conditions["weather"] = weather
+	clock_runs = false
+
+
+func _sun() -> Array:
+	return SUN.get(str(conditions["season"]), SUN["autumn"])
+
+
 func _is_night() -> bool:
 	var hour: float = float(conditions["hour"])
-	return hour < 6.0 or hour >= 19.0
+	var sun: Array = _sun()
+	return hour < float(sun[0]) - DARK_BEFORE or hour >= float(sun[1]) + DARK_BEFORE
+
+
+# 0 to 1 bump: rises over `before`, falls over `after`, around `at` (hours; wraps midnight).
+func _swell(at: float, before: float, after: float) -> float:
+	var d: float = fposmod(float(conditions["hour"]) - at + 12.0, 24.0) - 12.0
+
+	if d < -before or d > after:
+		return 0.0
+
+	return smoothstep(0.0, 1.0, 1.0 + d / before) if d < 0.0 else smoothstep(0.0, 1.0, 1.0 - d / after)
+
+
+# How many times faster than normal this call's timer runs right now.
+func _rate(event: Dictionary) -> float:
+	var sun: Array = _sun()
+	var rate: float = 1.0
+	var chorus: float = float(event.get("chorus", 0.0))
+
+	if chorus > 0.0:
+		rate += (CHORUS_RATE - 1.0) * chorus * _swell(float(sun[0]), CHORUS_BEFORE, CHORUS_AFTER)
+		rate += (CHORUS_RATE - 1.0) * 0.4 * chorus * _swell(float(sun[1]), DUSK_BEFORE, DUSK_AFTER)
+
+	if _is_night():
+		rate *= float(event.get("night_rate", 1.0))
+
+	var dusk: float = float(event.get("dusk", 1.0))
+
+	if dusk > 1.0:
+		rate *= 1.0 + (dusk - 1.0) * _swell(float(sun[1]), DUSK_BEFORE, DUSK_AFTER)
+
+	return rate
 
 
 func _hour_ok(event: Dictionary) -> bool:
+	if event.get("day", false) and _is_night():
+		return false
+
+	if event.get("night", false) and not _is_night():
+		return false
+
 	if not event.has("hours"):
 		return true
 
