@@ -397,9 +397,73 @@ func _models_task(entries: Array) -> void:
 				near_meshes.append(TreeBuilder.build(entry, reference, v, false, _tree_materials))
 				far_meshes.append(TreeBuilder.build(entry, reference, v, true, _tree_materials))
 
+			_override_models(str(entry["name"]), near_meshes, far_meshes)
+
 		_models_mutex.lock()
 		_models_ready[int(entry["id"])] = [near_meshes, far_meshes]
 		_models_mutex.unlock()
+
+
+# Owner-made models (2026-10-20): a glb named like the species in user://tree_meshes/ or
+# res://assets/tree_meshes/ replaces the procedural near models (<name>.glb, objects <name>_v0 ..)
+# and/or far models (<name>_far.glb, objects <name>_v0_far ..), as exported by
+# tools/export_tree_meshes.gd. Anything missing or unreadable keeps the procedural model; nothing
+# here touches saves or the protocol. Runs on the worker thread.
+const MODEL_DIRS := ["user://tree_meshes/", "res://assets/tree_meshes/"]
+
+
+func _override_models(species: String, near_meshes: Array, far_meshes: Array) -> void:
+	for far in [false, true]:
+		var meshes: Array = far_meshes if far else near_meshes
+		var suffix: String = "_far" if far else ""
+
+		for dir in MODEL_DIRS:
+			var path: String = "%s%s%s.glb" % [dir, species, suffix]
+
+			if not FileAccess.file_exists(path):
+				continue
+
+			var document: GLTFDocument = GLTFDocument.new()
+			var state: GLTFState = GLTFState.new()
+
+			if document.append_from_file(path, state) != OK:
+				push_warning("tree mesh %s could not be read, using the built-in model" % path)
+				continue
+
+			var root: Node = document.generate_scene(state)
+
+			if root == null:
+				continue
+
+			for v in range(meshes.size()):
+				var node: Node = root.find_child("%s_v%d%s" % [species, v, suffix], true, false)
+
+				if node is MeshInstance3D and (node as MeshInstance3D).mesh is ArrayMesh:
+					var mesh: ArrayMesh = (node as MeshInstance3D).mesh
+					_use_game_materials(mesh)
+					meshes[v] = mesh
+
+			root.free()
+			break
+
+
+# The glb carries plain stand-in materials named after the game's (bark, leaves ...): put the
+# game's own shaders back so wind, back-light and moss still work.
+func _use_game_materials(mesh: ArrayMesh) -> void:
+	for s in range(mesh.get_surface_count()):
+		var material: Material = mesh.surface_get_material(s)
+
+		if material == null:
+			continue
+
+		# The importer renames a material that shares a name with an object ("oak" becomes "oak2").
+		var key: String = material.resource_name
+
+		while not _tree_materials.has(key) and not key.is_empty() and key[key.length() - 1].is_valid_int():
+			key = key.substr(0, key.length() - 1)
+
+		if _tree_materials.has(key):
+			mesh.surface_set_material(s, _tree_materials[key])
 
 
 # Builds every queued species now (tools and the preview, which have no frame budget).
