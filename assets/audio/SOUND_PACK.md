@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **110 slots: 17 recorded, 89 generated placeholders, 4 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **116 slots: 17 recorded, 95 generated placeholders, 4 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -10,6 +10,7 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 |---|---|---|---|---|---|
 | 1 | `bird_chirp` | generated | 3 | ambient_life.gd: meadow, water-edge and forest, the most frequent call | 3 to 5 short sparrow-like chirps, 0.5 s |
 | 1 | `cricket_chirp` | generated | 3 | ambient_life.gd: meadow and water edge at dusk and night, summer and autumn | 2 to 3 cricket chirps runs, 2 s (one species) |
+| 1 | `item_swap` | generated | 3 | item_sounds.gd: items moved between slots | 3 short slide and tap cues |
 | 1 | `rain_heavy` | generated | 1 | weather_sounds.gd: heavy rain and storm loop | A heavy downpour loop, seamless |
 | 1 | `rain_light` | generated | 1 | weather_sounds.gd: drizzle and light rain loop | A light rain on open ground loop, seamless |
 | 1 | `thunder` | generated | 3 | weather_sounds.gd: a mid-distance thunder roll | 2 to 3 rolling thunder claps, 5 to 9 s |
@@ -21,6 +22,7 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 2 | `bird_trill` | generated | 3 | ambient_life.gd: meadow bird, by day | 2 to 3 trilling songs, about 1 s |
 | 2 | `bird_whistle` | generated | 3 | ambient_life.gd: forest bird, by day | 2 to 4 clear songbird whistles, 1 to 2 s |
 | 2 | `cave_drip` | generated | 5 | cave_sounds.gd: water drops in caves and tunnels | 3 to 6 single water drips in a stone room, 1 to 2 s each |
+| 2 | `craft_done` | generated | 3 | item_sounds.gd: a craft finished | 3 wooden knock and small chime cues |
 | 2 | `dig_rock` | generated | 3 | dig_sounds.gd: breaking rock | 3 pickaxe on rock or rock breaking sounds |
 | 2 | `dig_soil` | generated | 3 | dig_sounds.gd: digging dirt and humus | 3 spade or shovel scoops into earth |
 | 2 | `gear_chain` | generated | 3 | gear_sounds.gd: mail jingling on a step | 3 chainmail jingles, 0.4 s |
@@ -29,6 +31,10 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 2 | `hit_hammer_wood` | generated | 3 | hit_sounds.gd: a hammer blow on wood (building) | 3 hammer knocks on timber, or nails driven |
 | 2 | `hit_pick_stone` | generated | 3 | hit_sounds.gd: a pickaxe blow on rock (mining) | 3 pickaxe strikes on rock |
 | 2 | `interior_rain_roof` | generated | 1 | interior_sounds.gd: rain on a roof heard from inside (loop) | Rain on a wooden or thatched roof from inside, seamless |
+| 2 | `inv_close` | generated | 3 | item_sounds.gd: the inventory closed | 3 leather pouch flaps closing |
+| 2 | `inv_open` | generated | 3 | item_sounds.gd: the inventory opened (I) | 3 leather pouch or satchel flaps opening |
+| 2 | `item_drop` | generated | 3 | item_sounds.gd: stacks in the inventory shrank (dropped) | 3 dull thuds of setting an item down |
+| 2 | `item_pickup` | generated | 3 | item_sounds.gd: stacks in the inventory grew (picked up, harvested) | 3 soft scoop and rustle cues of picking something up |
 | 2 | `owl_hoot` | generated | 3 | ambient_life.gd: forest at night | 2 to 3 owl hoots (tawny or barred), 2 to 3 s |
 | 2 | `rain_leaves` | generated | 1 | weather_sounds.gd: rain pattering on leaves under trees | Rain on forest canopy loop, seamless |
 | 2 | `spear_hit_flesh` | generated | 3 | spear_sounds.gd: a spear hitting flesh | 3 wet heavy thumps of a spear hitting an animal or body |

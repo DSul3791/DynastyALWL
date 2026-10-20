@@ -160,3 +160,6 @@ The river loop sounded like ocean surf (a wide low rumble and a broad wash). `ma
 
 ## Spear sounds (build 144)
 `spear_sounds.gd`, made by `make_spear.py` into `assets/audio/spear/`; recordings in `recorded/spear/` win. Names (`_N` variants): `spear_jab`, `spear_throw`, `spear_flight` (moved along the path), `spear_hit_wood`, `spear_hit_stone`, `spear_hit_soil`, `spear_hit_flesh`. Hooks only until a weapon system exists.
+
+## Item sounds (build 148)
+`item_sounds.gd`, made by `make_items.py` into `assets/audio/items/`; recordings in `recorded/items/` win. It watches the inventory (no hooks in Items' code): `item_pickup_N` when stacks grow, `item_drop_N` when they shrink, `item_swap_N` when slots are rearranged, `inv_open_N` and `inv_close_N` with the I panel, `craft_done_N` when a craft finishes. Quiet, on the Interface bus. Several changes in one moment play one cue (60 ms gap).

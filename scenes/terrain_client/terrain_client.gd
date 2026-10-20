@@ -49,7 +49,7 @@ const GitStamp := preload("res://src/debug/git_stamp.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 const GpuProbeScript := preload("res://src/debug/gpu_probe.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 145
+const BUILD := 148
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -1519,6 +1519,7 @@ func _step_player(delta: float) -> void:
 	Probe.stop("player move", t)
 	var ts: int = Probe.start()
 	sound.update(delta, body, flying, underwater)
+	sound.itemfx.watch(items)
 	Probe.stop("sound", ts)
 
 
@@ -1883,6 +1884,7 @@ func _process(delta: float) -> void:
 	hud.text += "\nlast step: " + sound.last_step
 	hud.text += "\nsound budget: " + sound.budget_text()
 	hud.text += "\n" + sound.wind_text()
+	hud.text += "\nitem sounds: %d, last %s" % [sound.itemfx.played, sound.itemfx.last]
 	hud.text += "\nspear sounds: %s, last %s" % [str(sound.spear.played), sound.spear.last]
 	hud.text += "\ninterior: %.2f inside (%s), %d objects, %d creaks, last %s" % [sound.interior.amount, sound.interior.kind, sound.interior.objects_played, sound.interior.creaks_played, sound.interior.last]
 	hud.text += "\ngear: worn %s, %d steps, last %s" % [str(sound.gear.worn), sound.gear.steps_played, sound.gear.last]
@@ -1930,6 +1932,7 @@ func _process(delta: float) -> void:
 			print("Terrain client: grass %d tufts in %d cells (radius %.0f m)" % [grass.tufts, grass.cells_built, grass.radius_m])
 			print("Terrain client: water sounds: %s" % sound.water.summary)
 			print("Terrain client: nature calls %s, zones %s" % [str(sound.ambient.calls_played), str(sound.ambient.weights)])
+			print("Terrain client: item sounds %d, last %s" % [sound.itemfx.played, sound.itemfx.last])
 			print("Terrain client: spear sounds %s, last %s" % [str(sound.spear.played), sound.spear.last])
 			print("Terrain client: interior sounds: %d objects, %d creaks, last %s" % [sound.interior.objects_played, sound.interior.creaks_played, sound.interior.last])
 			print("Terrain client: gear: worn %s, %d steps, last %s" % [str(sound.gear.worn), sound.gear.steps_played, sound.gear.last])

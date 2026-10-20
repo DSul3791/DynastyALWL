@@ -29,6 +29,7 @@ const CreatureScript := preload("res://src/client/creature_sounds.gd")
 const GearScript := preload("res://src/client/gear_sounds.gd")
 const InteriorScript := preload("res://src/client/interior_sounds.gd")
 const SpearScript := preload("res://src/client/spear_sounds.gd")
+const ItemScript := preload("res://src/client/item_sounds.gd")
 const OcclusionScript := preload("res://src/client/sound_occlusion.gd")
 const WaterSoundsScript := preload("res://src/client/water_sounds.gd")
 const AUDIO_DIR := "res://assets/audio/"
@@ -146,6 +147,7 @@ var water                               # WaterSounds: brooks, rivers, pond shor
 var weather                             # WeatherSounds: rain, gale, thunder, snow hush (set_weather)
 var occlusion                           # SoundOcclusion: hills and forest muffle distant sounds
 var hits                                # HitSounds: axe, pick, hammer, spade on wood, stone, soil (hit, hit_ground)
+var itemfx                              # ItemSounds: inventory cues (watch(items) every frame)
 var spear                               # SpearSounds: jab, throw, flight, hits on wood, stone, soil, flesh
 var interior                            # InteriorSounds: inside a building, doors, chests, furniture (set_inside, object)
 var gear                                # GearSounds: armour and clothing layers on the footsteps (set_worn, step_at)
@@ -214,6 +216,10 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	town.name = "Town"
 	add_child(town)
 	town.setup(self)
+	itemfx = ItemScript.new()
+	itemfx.name = "ItemFx"
+	add_child(itemfx)
+	itemfx.setup(self)
 	spear = SpearScript.new()
 	spear.name = "Spear"
 	add_child(spear)

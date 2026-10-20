@@ -617,6 +617,54 @@
    "priority": 4
   },
   {
+   "name": "item_pickup",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "item_sounds.gd: stacks in the inventory grew (picked up, harvested)",
+   "to_supply": "3 soft scoop and rustle cues of picking something up",
+   "priority": 2
+  },
+  {
+   "name": "item_drop",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "item_sounds.gd: stacks in the inventory shrank (dropped)",
+   "to_supply": "3 dull thuds of setting an item down",
+   "priority": 2
+  },
+  {
+   "name": "inv_open",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "item_sounds.gd: the inventory opened (I)",
+   "to_supply": "3 leather pouch or satchel flaps opening",
+   "priority": 2
+  },
+  {
+   "name": "inv_close",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "item_sounds.gd: the inventory closed",
+   "to_supply": "3 leather pouch flaps closing",
+   "priority": 2
+  },
+  {
+   "name": "item_swap",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "item_sounds.gd: items moved between slots",
+   "to_supply": "3 short slide and tap cues",
+   "priority": 1
+  },
+  {
+   "name": "craft_done",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "item_sounds.gd: a craft finished",
+   "to_supply": "3 wooden knock and small chime cues",
+   "priority": 2
+  },
+  {
    "name": "spear_jab",
    "state": "generated",
    "variants": 3,
