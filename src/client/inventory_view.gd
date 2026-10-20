@@ -7,6 +7,7 @@ extends Node
 
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const InventoryScript := preload("res://src/shared/inventory.gd")
+const RecipeTableScript := preload("res://src/shared/recipe_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
 const KEY_FILE := "user://player_key.txt"
@@ -16,6 +17,7 @@ const COLUMNS := 6
 var open: bool = false
 var table
 var inventory
+var recipes
 var net
 var _layer: CanvasLayer
 var _root: Node3D
@@ -26,6 +28,10 @@ var _grid: GridContainer
 var _buttons: Array = []
 var _selected: int = -1
 var _prompt: Label
+var _craft_buttons: Dictionary = {}   # recipe number -> Button
+var _crafting: int = 0                # recipe being made (0 none)
+var _craft_done_msec: int = 0
+var _craft_label: Label
 var _world: Dictionary = {}        # id -> {node, number, count, pos}
 var _prompt_next_msec: int = 0
 var _meshes: Dictionary = {}       # item number -> Mesh
@@ -39,6 +45,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	_ground_below = ground_below
 	table = ItemTableScript.load_default()
 	inventory = InventoryScript.new(table)
+	recipes = RecipeTableScript.load_default(table)
 	net.inventory_full_received.connect(_on_full)
 	net.inventory_slots_received.connect(_on_slots)
 	net.world_items_received.connect(_on_world_items)
@@ -110,6 +117,14 @@ func admin_give_test_set() -> void:
 
 func _process(_delta: float) -> void:
 	var now: int = Time.get_ticks_msec()
+
+	if _crafting != 0:
+		if now >= _craft_done_msec:
+			net.inventory_action.rpc_id(1, Net.ACT_CRAFT, _crafting, 0, 0, Vector3.ZERO)
+			_crafting = 0
+			_craft_label.text = ""
+		elif _craft_label != null:
+			_craft_label.text = "Making... %.0f s" % ceilf(float(_craft_done_msec - now) / 1000.0)
 
 	if now < _prompt_next_msec:
 		return
@@ -207,6 +222,29 @@ func _build_panel() -> void:
 		_grid.add_child(button)
 		_buttons.append(button)
 
+	var craft_title: Label = Label.new()
+	craft_title.text = "Make by hand"
+	box.add_child(craft_title)
+
+	for number in recipes.numbers():
+		var r: Dictionary = recipes.recipe(number)
+
+		if not r["known"]:
+			continue
+
+		var needs: Array = []
+
+		for need in r["needs"]:
+			needs.append("%d %s" % [need[1], table.name_of(need[0])])
+
+		var make: Button = Button.new()
+		make.text = "%s   (%s)" % [r["name"], ", ".join(needs)]
+		make.pressed.connect(_start_craft.bind(number))
+		box.add_child(make)
+		_craft_buttons[number] = make
+
+	_craft_label = Label.new()
+	box.add_child(_craft_label)
 	var row: HBoxContainer = HBoxContainer.new()
 	box.add_child(row)
 	var drop: Button = Button.new()
@@ -233,6 +271,14 @@ func _on_slot_pressed(slot: int) -> void:
 	_refresh()
 
 
+func _start_craft(number: int) -> void:
+	if _crafting != 0 or not recipes.can_make(number, inventory):
+		return
+
+	_crafting = number
+	_craft_done_msec = Time.get_ticks_msec() + int(recipes.recipe(number)["craft_s"] * 1000.0)
+
+
 func _drop_selected(whole: bool) -> void:
 	if _selected < 0 or inventory.numbers[_selected] == 0:
 		return
@@ -254,6 +300,9 @@ func _refresh() -> void:
 		button.text = "" if number == 0 else "%s\nx%d" % [table.name_of(number), inventory.counts[i]]
 		button.modulate = Color(1.0, 0.9, 0.5) if i == _selected else Color.WHITE
 
+	for number in _craft_buttons:
+		_craft_buttons[number].disabled = not recipes.can_make(number, inventory)
+
 
 # Headless check (--items): give, drop, pick up, and print what the server says.
 func run_test() -> void:
@@ -268,6 +317,10 @@ func run_test() -> void:
 	pick_up_nearest()
 	await get_tree().create_timer(1.0).timeout
 	print("Items test: after pick up, stone %d, %d on the ground" % [inventory.count_of(table.number_of("stone")), _world.size()])
+	net.inventory_action.rpc_id(1, Net.ACT_CRAFT, 1, 0, 0, Vector3.ZERO)
+	net.inventory_action.rpc_id(1, Net.ACT_CRAFT, 2, 0, 0, Vector3.ZERO)
+	await get_tree().create_timer(1.0).timeout
+	print("Items test: crafted, cordage %d, stone axe %d, fibre %d" % [inventory.count_of(table.number_of("cordage")), inventory.count_of(table.number_of("stone_axe")), inventory.count_of(table.number_of("plant_fibre"))])
 
 
 # Headless check (--gather): stand next to the nearest shrub or plant that drops something and gather it.

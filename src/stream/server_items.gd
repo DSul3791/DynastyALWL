@@ -9,6 +9,7 @@ extends RefCounted
 # Until accounts exist an inventory is filed under the key the client made for itself.
 
 const ItemTableScript := preload("res://src/shared/item_table.gd")
+const RecipeTableScript := preload("res://src/shared/recipe_table.gd")
 const InventoryScript := preload("res://src/shared/inventory.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
@@ -28,6 +29,7 @@ const SCATTER_DROP_M := 250.0            # and taken away again beyond this (pic
 const SCATTER_CELLS_PER_TICK := 8
 
 var table
+var recipes
 # Set by the server scene: how to talk to one peer.
 var send_full: Callable        # (peer, bytes)
 var send_slots: Callable       # (peer, bytes)
@@ -52,6 +54,7 @@ var _cells_done: Dictionary = {}    # Vector2i scatter cell -> true while its it
 
 func setup(item_table, store_dir: String) -> void:
 	table = item_table
+	recipes = RecipeTableScript.load_default(item_table)
 	_dir = store_dir
 	_load_inventories()
 	_load_world_items()
@@ -159,6 +162,8 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_drop(peer, inv, a, count, at)
 	elif kind == Net.ACT_PICKUP:
 		_pickup(peer, inv, a)
+	elif kind == Net.ACT_CRAFT:
+		recipes.craft(a, inv)
 	elif kind == Net.ACT_ADMIN_GIVE:
 		if table.id_of(a) != "":
 			var left: int = inv.add(a, clampi(count, 1, 100))
