@@ -48,8 +48,9 @@ const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 const GpuProbeScript := preload("res://src/debug/gpu_probe.gd")
+const WeatherLookScript := preload("res://src/client/weather_look.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 148
+const BUILD := 131
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -206,6 +207,7 @@ var _commit: String = GitStamp.short_commit()   # which checkout is running
 var _render_scale: float = 1.0            # 3D resolution scale now (render_scale.gd)
 var _jitter_test                      # float-precision test, J or Esc > Advanced
 var _gpu_probe                        # GPU cost per piece of the scene, F8
+var weather_look                      # WeatherLook: clouds, rain, snow, fog, lightning from `weather`
 var _bake = TileBakeScript.new()      # admin: background tile bake
 var _bake_check_msec: int = 0
 var _bake_status: String = ""
@@ -438,6 +440,10 @@ func _on_welcome(info: Dictionary) -> void:
 	_gpu_probe = GpuProbeScript.new()
 	add_child(_gpu_probe)
 	_gpu_probe.setup(self)
+	weather_look = WeatherLookScript.new()
+	add_child(weather_look)
+	weather_look.setup(self)
+	weather_look.set_quality(quality)
 	sound = SoundStageScript.new()
 	sound.name = "Sound"
 	root.add_child(sound)
@@ -942,6 +948,8 @@ func _apply_quality() -> void:
 		flora.near_m[n] = _flora_near_full[n] * float(QUALITY_FLORA[quality])
 
 	flora.set_quality(quality)
+	if weather_look != null:
+		weather_look.set_quality(quality)
 	grass.points_per_side = QUALITY_GRASS_POINTS[quality]
 	grass.density = QUALITY_GRASS_DENSITY[quality]
 	grass.set_radius(QUALITY_GRASS_M[quality])
@@ -1201,7 +1209,7 @@ func _build_menu(layer: CanvasLayer) -> void:
 			return
 
 		sound.weather.set_weather(kinds[_sound_weather_at], 1.0)
-		_menu_note.text = "Weather sounds now play: %s (a test setting; sky and ground do not follow). Press again until it follows the game's weather." % kinds[_sound_weather_at])
+		_menu_note.text = "Weather sounds now play: %s (a test setting; the sky, ground, rain and snow follow it too). Press again until it follows the game's weather." % kinds[_sound_weather_at])
 	_menu_button(settings, "Back", func(): _show_menu_page("main"))
 
 	var advanced: VBoxContainer = _menu_page(column, "advanced")

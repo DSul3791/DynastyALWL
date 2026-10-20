@@ -197,6 +197,7 @@ var chunk_m: float = 256.0
 var view_m: PackedFloat32Array = PackedFloat32Array([900.0, 300.0, 120.0])
 var collision_m: float = 160.0
 var near_m: PackedFloat32Array = PackedFloat32Array([260.0, 110.0, 0.0])   # full-detail model out to this distance (tree, shrub)
+var canopy_version: int = 0           # counts changes to the held trees (the canopy map redraws on it)
 var impostor_m: float = 300.0          # trees beyond this are drawn as impostors (set by set_quality)
 var far_shadows: bool = false
 var instances: int = 0                 # items drawn now
@@ -358,6 +359,7 @@ func setup(tables, tile_rules: Dictionary) -> void:
 			"near": near_meshes,
 			"far": far_meshes,
 			"shape": shape,
+			"crown": float(entry.get("crown_m", 0.0)),
 			"glows": entry.has("glow") or entry.has("leaf_glow"),
 			"tint": _plant_tint(entry, c),
 		}
@@ -635,6 +637,7 @@ func _draw_water(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void:
 # Sets a chunk's items (as from FloraPlacer.chunk_items or decode).
 func set_chunk(chunk: Vector2i, items: Dictionary, position: Vector3, water: Dictionary = {}, full: bool = true) -> void:
 	drop_chunk(chunk)
+	canopy_version += 1
 	var entry: Dictionary = {"items": items, "level": -1, "node": null, "water": null, "grid": water, "full": full}
 	_chunks[chunk] = entry
 	CoverScript.add_chunk(cover, chunk, items, _cover_info)
@@ -751,6 +754,7 @@ func drop_chunk(chunk: Vector2i) -> void:
 	if entry.is_empty():
 		return
 
+	canopy_version += 1
 	_clear_node(entry)
 	cover.remove_chunk(chunk)
 	var water: MeshInstance3D = entry.get("water")
@@ -786,6 +790,7 @@ func replace_items(chunk: Vector2i, items: Dictionary, position: Vector3, full: 
 	if entry.is_empty():
 		return
 
+	canopy_version += 1
 	entry["items"] = items
 	entry["full"] = full
 	entry["level"] = -1
@@ -805,6 +810,8 @@ func remove_item(chunk: Vector2i, id: int, position: Vector3) -> void:
 
 	if index < 0:
 		return
+
+	canopy_version += 1
 
 	for key in ["ids", "positions", "heights", "yaws"]:
 		items[key].remove_at(index)
@@ -832,6 +839,39 @@ func update(position: Vector3) -> Array:
 			_refresh(chunk, position)
 
 	return dropped
+
+
+# The crowns of the held trees within radius_m of (x, z), as [x, z, canopy radius]: the crown
+# diameter of the species scaled by the tree's height (owner Q8, 2026-10-20: anywhere under it
+# counts as cover). The canopy map (src/client/canopy_map.gd) is drawn from this.
+func canopy_discs(x: float, z: float, radius_m: float) -> Array:
+	var out: Array = []
+
+	for chunk in _chunks:
+		var low: Vector2 = Vector2(float(chunk.x), float(chunk.y)) * chunk_m
+
+		if x + radius_m < low.x or x - radius_m > low.x + chunk_m or z + radius_m < low.y or z - radius_m > low.y + chunk_m:
+			continue
+
+		var items: Dictionary = _chunks[chunk]["items"]
+		var ids: PackedInt32Array = items["ids"]
+		var positions: PackedVector3Array = items["positions"]
+		var heights: PackedFloat32Array = items["heights"]
+
+		for n in range(ids.size()):
+			var info: Dictionary = _species.get(ids[n] >> 16, {})
+
+			if info.is_empty() or int(info["kind"]) != KIND_TREE or float(info["crown"]) <= 0.0:
+				continue
+
+			var p: Vector3 = positions[n]
+
+			if absf(p.x - x) > radius_m or absf(p.z - z) > radius_m:
+				continue
+
+			out.append([p.x, p.z, 0.5 * float(info["crown"]) * float(heights[n]) / float(info["height"])])
+
+	return out
 
 
 func item_count() -> int:

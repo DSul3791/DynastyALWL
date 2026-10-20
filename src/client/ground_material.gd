@@ -24,6 +24,10 @@ uniform float layer_mean[6];
 uniform float layer_strength[6];
 uniform float tile_m = 3.0;             // metres one texture tile covers
 uniform bool triplanar = true;          // Low skips the side projections
+uniform float wet = 0.0;                // 0 dry, 1 soaked by rain: darker and glossier (weather_look.gd)
+uniform float snow = 0.0;               // 0 bare, 1 snow lies on level ground (weather_look.gd)
+uniform sampler2D canopy : filter_linear, hint_default_black;   // where trees shelter the ground (canopy_map.gd)
+uniform vec3 canopy_box = vec3(0.0, 0.0, 128.0);                // its corner x, z and width in metres
 varying vec3 world_pos;
 varying vec3 world_normal;
 varying vec4 material_indices;
@@ -158,9 +162,21 @@ void fragment() {
 	// Light touches on the surface: the texture's bump on the normal near the eye.
 	NORMAL = normalize(NORMAL + (VIEW_MATRIX * vec4(slope_push.x, 0.0, slope_push.y, 0.0)).xyz * 0.6 * closeness);
 
+	// Weather: rain darkens the ground and gives it a sheen, snow whitens level ground above the sea.
+	float shelter = 0.0;
+	if (wet + snow > 0.01) {
+		vec2 cuv = (world_pos.xz - canopy_box.xy) / canopy_box.z;
+		if (cuv.x > 0.0 && cuv.x < 1.0 && cuv.y > 0.0 && cuv.y < 1.0) {
+			shelter = texture(canopy, cuv).r;      // under a crown the rain and the snow do not reach the ground
+		}
+	}
+	float soak = wet * (1.0 - shelter);
+	color *= 1.0 - 0.35 * soak * (1.0 - snow);
+	float lying = snow * (1.0 - 0.75 * shelter) * smoothstep(0.62, 0.9, world_normal.y) * smoothstep(0.0, 1.0, world_pos.y) * (1.0 - 0.6 * rock_mask);
+	color = mix(color, vec3(0.88, 0.9, 0.94), lying);
 	ALBEDO = color;
 	// Mud is wet: a little sheen.
-	ROUGHNESS = mix(0.92, 0.55, mud);
+	ROUGHNESS = mix(mix(0.92, 0.55, mud), 0.38, soak * 0.7 * (1.0 - lying));
 }
 """
 

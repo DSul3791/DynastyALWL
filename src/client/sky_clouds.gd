@@ -30,6 +30,8 @@ uniform vec2 wind_m_s = vec2(9.0, 4.0);  // drift of the cloud layer (east, sout
 uniform float cirrus_amount = 0.3;
 uniform float sun_angle_max = 0.52;      // glow around the sun (radians)
 uniform float sun_curve = 0.15;
+uniform float gloom = 0.0;               // 0 clear, 1 storm: sky and clouds turn dark grey (weather_look.gd)
+uniform float flash = 0.0;               // lightning: lights the clouds from within (weather_look.gd)
 
 // No sine in the hash: stays exact for large coordinates.
 float hash(vec2 p) {
@@ -144,14 +146,23 @@ vec4 clouds(vec3 dir, vec3 eye, int octaves, int light_samples, bool cirrus, flo
 	return vec4(mix(result.rgb, color, alpha), result.a + alpha * (1.0 - result.a));
 }
 
+// Weather grading: grey and darker with gloom (weather_look.gd uses the same formula for the
+// fog), and a lightning flash that lights the clouds far more than the open sky.
+vec3 weather_grade(vec3 c, float cover) {
+	float grey = (c.r + c.g + c.b) / 3.0 * (1.0 - 0.6 * gloom);
+	c = mix(c, vec3(grey), 0.85 * gloom);
+	c += flash * vec3(0.55, 0.6, 0.85) * (0.15 + 1.2 * cover);
+	return c;
+}
+
 void sky() {
 	if (AT_CUBEMAP_PASS) {
 		// Ambient light and reflections: a cheap, still cloud cover.
 		vec4 c = clouds(EYEDIR, POSITION, 3, 1, false, 0.01);
-		COLOR = mix(base_sky(EYEDIR, true), c.rgb, c.a);
+		COLOR = weather_grade(mix(base_sky(EYEDIR, true), c.rgb, c.a), c.a);
 	} else {
 		vec4 c = clouds(EYEDIR, POSITION, OCTAVES, LIGHT_SAMPLES, CIRRUS, 0.001);
-		COLOR = mix(base_sky(EYEDIR, true), c.rgb, c.a);
+		COLOR = weather_grade(mix(base_sky(EYEDIR, true), c.rgb, c.a), c.a);
 	}
 }
 """
