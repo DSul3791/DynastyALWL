@@ -1,5 +1,5 @@
 {
-	"note": "Strain / over-exertion (Dave 2026-10-20). strain climbs with no hard limit while effort (movement speed, tool work and heavy loads, 0 to 1+) is above rest_effort, and falls when below it. Walking is sustainable; running is not. State 0 normal; at over_on the player is OVER-EXERTED (speed cap, no sprint) until strain falls under over_off; past faint_at the player FAINTS (movement locked) for faint_s seconds, vision fades over the first vision_frac of that time and the heartbeat over the rest; then WAKING for wake_s while the heart still races, strain restarts at wake_strain and falls at wake_fall_mult of the normal pace until it is under over_off. Thresholds scale with body weight (heavier tires sooner) and a fitness factor (placeholder 1.0 until fitness exists). No death.",
+	"note": "Strain / over-exertion (Dave 2026-10-20). strain climbs with no hard limit while effort (movement speed, tool work and heavy loads, 0 to 1+) is above rest_effort, and falls when below it. Walking is sustainable; running is not. State 0 normal; at over_on the player is OVER-EXERTED (speed cap, no sprint) until strain falls under over_off; past faint_at the player FAINTS (movement locked) for faint_s seconds, vision fades over the first vision_frac of that time and the heartbeat over the rest; then WAKING for wake_s while the heart still races, strain restarts at wake_strain and falls at wake_fall_mult of the normal pace until it is under over_off. Stance: standing or crouching under a heavy load only rests strain down to stand_load_floor x the load ratio (to about 50 percent at the comfortable limit, less when light); sitting and lying have no floor and recover sit_fall_mult / lie_fall_mult times faster, so strain reaches 0. A sitting or lying player who moves faster than stand_up_speed_mps stands up. Thresholds scale with body weight (heavier tires sooner) and a fitness factor (placeholder 1.0 until fitness exists). No death.",
 	"rest_effort": 0.52,
 	"rise_per_s": 0.023,
 	"fall_per_s": 0.05,
@@ -13,5 +13,9 @@
 	"wake_fall_mult": 0.4,
 	"over_speed_mps": 3.0,
 	"reference_body_kg": 75.0,
-	"fitness": 1.0
+	"fitness": 1.0,
+	"stand_load_floor": 0.5,
+	"sit_fall_mult": 2.0,
+	"lie_fall_mult": 3.0,
+	"stand_up_speed_mps": 1.5
 }

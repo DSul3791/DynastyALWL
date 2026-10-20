@@ -177,7 +177,7 @@ func _ready() -> void:
 	items.cut_tree = _cut_tree
 	items.send_notice = func(peer, text): net.notice.rpc_id(peer, text)
 	items.send_vitals = func(peer, hunger, health, weight): net.vitals.rpc_id(peer, hunger, health, weight)
-	items.send_strain = func(peer, strain_pm, state, fade_pm): net.strain.rpc_id(peer, strain_pm, state, fade_pm)
+	items.send_strain = func(peer, strain_pm, state, fade_pm, stance): net.strain.rpc_id(peer, strain_pm, state, fade_pm, stance)
 	items.send_chest = func(peer, id, bytes): net.chest_contents.rpc_id(peer, id, bytes)
 	items.game_seconds = func(): return game_clock.seconds
 	items.season_now = func(): return game_clock.season()

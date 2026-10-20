@@ -58,6 +58,8 @@ var _exertion_cfg: Dictionary = {}
 var strain: float = 0.0
 var strain_state: int = 0
 var strain_fade: float = 0.0
+var stance_confirmed: int = 0                # the server's answer: 0 stand, 1 crouch, 2 sit, 3 lie (fainting forces 3)
+var stance_event: Callable = Callable()      # (stance) when the server confirms or changes it
 var strain_event: Callable = Callable()   # (strain, state, fade) whenever the server sends a change
 var _strain_note: Label
 var _eat_item: String = ""
@@ -640,13 +642,22 @@ func _load_text() -> String:
 	return "Carrying %.1f kg of %.0f kg comfortable%s" % [load_kg, comfort, state]
 
 
-func _on_strain(strain_pm: int, state: int, fade_pm: int) -> void:
+func _on_strain(strain_pm: int, state: int, fade_pm: int, stance: int) -> void:
 	strain = float(strain_pm) / 1000.0
 	strain_state = state
 	strain_fade = float(fade_pm) / 1000.0
+	stance_confirmed = stance
+
+	if stance_event.is_valid():
+		stance_event.call(stance)
 
 	if strain_event.is_valid():
 		strain_event.call(strain, state, strain_fade)
+
+
+# Ask the server for a stance (0 stand, 1 crouch, 2 sit, 3 lie). It answers through stance_confirmed / stance_event.
+func request_stance(wanted: int) -> void:
+	net.inventory_action.rpc_id(1, Net.ACT_STANCE, wanted, 0, 0, Vector3.ZERO)
 
 
 # Movement the over-exertion allows: -1 none (fainted or waking), else a speed cap in m/s (0 = no cap).

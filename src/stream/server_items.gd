@@ -86,7 +86,7 @@ var cut_tree: Callable         # (chunk Vector2i, id) -> true when the standing 
 var rock_at: Callable          # (x, z) -> true when bare rock shows at the surface there (no soil cover); set by the server scene
 var game_seconds: Callable      # () -> game clock seconds
 var season_now: Callable        # () -> "spring" | "summer" | "autumn" | "winter"
-var send_strain: Callable       # (peer, strain in thousandths, state 0 normal 1 over 2 fainted 3 waking, fade in thousandths)
+var send_strain: Callable       # (peer, strain in thousandths, state 0 normal 1 over 2 fainted 3 waking, fade in thousandths, stance)
 var send_vitals: Callable       # (peer, hunger percent, health, weight in tenths of a kg)
 var send_chest: Callable        # (peer, world id, bytes) a chest's contents to the player who opened it
 var roof_add: Callable          # (roof Array from Cover.box_roof) -> key; the server's cover index gets the lean-to's roof
@@ -114,6 +114,8 @@ var _carry_cfg: Dictionary = {}
 var _exertion_cfg: Dictionary = {}
 var _strain: Dictionary = {}        # peer -> {s: strain, state: 0..3, t: seconds in the state}
 var _strain_sent: Dictionary = {}
+var _stance: Dictionary = {}        # peer -> 0 stand, 1 crouch, 2 sit, 3 lie
+var _moving: Dictionary = {}        # peer -> smoothed 0..1, 1 while walking about
 var _vitals: Dictionary = {}        # player key -> {hunger, health} floats
 var _vitals_sent: Dictionary = {}   # peer -> [hunger, health] last whole points sent
 var _exertion: Dictionary = {}      # peer -> smoothed 0..1 from movement
@@ -220,6 +222,8 @@ func peer_left(peer: int) -> void:
 	_vitals_sent.erase(peer)
 	_strain.erase(peer)
 	_strain_sent.erase(peer)
+	_stance.erase(peer)
+	_moving.erase(peer)
 	_last_process.erase(peer)
 
 
@@ -317,6 +321,8 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_repair(peer, inv, a)
 	elif kind == Net.ACT_FUEL:
 		_fuel(peer, inv, a)
+	elif kind == Net.ACT_STANCE:
+		_set_stance(peer, a)
 	elif kind == Net.ACT_LIGHT:
 		_light(peer, inv, a)
 	elif kind == Net.ACT_COOK:
@@ -1714,13 +1720,36 @@ func effort_of(peer: int) -> float:
 	if Time.get_ticks_msec() < int(_work_until.get(peer, 0)):
 		level = maxf(level, 0.6)
 
-	# A heavy pack is work: up to load_exertion more at a full comfortable load.
+	# A heavy pack is work for anyone on the move, even at a crawl: load_effort x ratio^power added.
 	if not _carry_cfg.is_empty():
-		var body: float = float(vitals_of(peer).get("weight", 75.0))
-		var ratio: float = carried_kg_of(peer) / maxf(CarryRules.comfort_kg(body, _carry_cfg), 1.0)
-		level = level * (1.0 + float(_carry_cfg.get("load_exertion", 0.3)) * minf(ratio, 2.0))
+		level += float(_moving.get(peer, 0.0)) * float(_carry_cfg.get("load_effort", 0.45)) * pow(_load_ratio(peer), float(_carry_cfg.get("load_effort_power", 1.5)))
 
 	return level
+
+
+# Carried weight over the comfortable load, 0 to 2 and a bit.
+func _load_ratio(peer: int) -> float:
+	if _carry_cfg.is_empty():
+		return 0.0
+
+	var body: float = float(vitals_of(peer).get("weight", 75.0))
+	return minf(carried_kg_of(peer) / maxf(CarryRules.comfort_kg(body, _carry_cfg), 1.0), 2.5)
+
+
+# Stance changes (0 stand, 1 crouch, 2 sit, 3 lie). Fainted or waking players cannot choose; the answer
+# (the confirmed stance) goes back in the next strain message.
+func _set_stance(peer: int, wanted: int) -> void:
+	if wanted < 0 or wanted > 3 or not _peer_key.has(peer):
+		return
+
+	if int(_strain.get(peer, {}).get("state", 0)) < 2:
+		_stance[peer] = wanted
+
+	_strain_sent.erase(peer)
+
+
+func stance_of(peer: int) -> int:
+	return int(_stance.get(peer, 0))
 
 
 func _note_motion(peer: int, position: Vector3) -> void:
@@ -1732,6 +1761,12 @@ func _note_motion(peer: int, position: Vector3) -> void:
 		var speed: float = Vector2(position.x - last[0].x, position.z - last[0].z).length() / dt
 		var target: float = clampf((speed - 1.0) / 10.0, 0.0, 1.0)      # standing 0, walking 0.5, running 1
 		_exertion[peer] = lerpf(float(_exertion.get(peer, 0.0)), target, clampf(dt * 0.25, 0.0, 1.0))
+		_moving[peer] = lerpf(float(_moving.get(peer, 0.0)), 1.0 if speed > 0.4 else 0.0, clampf(dt * 1.0, 0.0, 1.0))
+
+		# Walking off stands a sitting or lying player up.
+		if int(_stance.get(peer, 0)) >= 2 and speed > float(_exertion_cfg.get("stand_up_speed_mps", 1.5)) and int(_strain.get(peer, {}).get("state", 0)) < 2:
+			_stance[peer] = 0
+			_strain_sent.erase(peer)
 
 	_motion[peer] = [position, now]
 
@@ -1804,7 +1839,19 @@ func _strain_tick(peer: int, spent: float) -> void:
 		if diff < 0.0 and bool(st.get("after_faint", false)):
 			rate *= float(cfg.get("wake_fall_mult", 0.4))
 
+		var stance: int = int(_stance.get(peer, 0))
+
+		if diff < 0.0 and stance == 2:
+			rate *= float(cfg.get("sit_fall_mult", 2.0))
+		elif diff < 0.0 and stance == 3:
+			rate *= float(cfg.get("lie_fall_mult", 3.0))
+
+		var before: float = strain
 		strain = maxf(strain + diff * rate * spent, 0.0)
+
+		# Standing under a heavy load only rests down to a floor (about half at the limit); sitting or lying has none.
+		if diff < 0.0 and stance < 2:
+			strain = maxf(strain, minf(before, float(cfg.get("stand_load_floor", 0.5)) * minf(_load_ratio(peer), 1.0)))
 
 		if state == 0 and strain >= float(cfg.get("over_on", 1.0)) * scale:
 			state = 1
@@ -1815,6 +1862,7 @@ func _strain_tick(peer: int, spent: float) -> void:
 		if state == 1 and strain >= float(cfg.get("faint_at", 1.4)) * scale:
 			state = 2
 			st["t"] = 0.0
+			_stance[peer] = 3
 
 	st["s"] = strain
 	st["state"] = state
@@ -1825,11 +1873,11 @@ func _strain_tick(peer: int, spent: float) -> void:
 	elif state == 3:
 		fade = 1.0 - clampf(float(st["t"]) / float(cfg.get("wake_s", 12.0)), 0.0, 1.0)
 
-	var points: Array = [int(strain * 50.0) * 20, state, int(fade * 20.0) * 50]
+	var points: Array = [int(strain * 50.0) * 20, state, int(fade * 20.0) * 50, int(_stance.get(peer, 0))]
 
 	if send_strain.is_valid() and _strain_sent.get(peer, []) != points:
 		_strain_sent[peer] = points
-		send_strain.call(peer, points[0], points[1], points[2])
+		send_strain.call(peer, points[0], points[1], points[2], points[3])
 
 
 func strain_of(peer: int) -> Dictionary:

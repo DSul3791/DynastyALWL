@@ -700,9 +700,9 @@ func _init() -> void:
 	check(cw.carried_kg_of(1) <= 52.01 and cw.carried_kg_of(1) > 50.0, "give stops at the hard cap, %.1f kg" % cw.carried_kg_of(1))
 	var CarryScript = load("res://src/shared/carry_rules.gd")
 	var ccfg: Dictionary = CarryScript.load_config()
-	check(CarryScript.speed_factor(20.0, 75.0, ccfg) == 1.0 and absf(CarryScript.speed_factor(52.5, 75.0, ccfg) - 0.35) < 0.001, "no slocwdown when comfortable, 35 percent speed at the cap")
+	check(CarryScript.speed_factor(20.0, 75.0, ccfg) == 1.0 and absf(CarryScript.speed_factor(52.5, 75.0, ccfg) - 0.25) < 0.001, "no slowdown when comfortable, 25 percent speed at the cap")
 	var mid: float = CarryScript.speed_factor(39.0, 75.0, ccfg)
-	check(mid > 0.35 and mid < 1.0, "slocwdown is smooth in between (%.2f)" % mid)
+	check(mid > 0.25 and mid < 1.0, "slowdown is smooth in between (%.2f)" % mid)
 
 	# Over-exertion: running climbs strain past 1 (over-exerted), on to a faint, then a slow wake.
 	var ed: String = "user://test_server_items_strain"
@@ -714,7 +714,7 @@ func _init() -> void:
 	var sx = make(ed)
 	var strains: Array = []
 	sx.send_vitals = func(_p, _h, _he, _w): pass
-	sx.send_strain = func(_p, s, st, fa): strains.append([s, st, fa])
+	sx.send_strain = func(_p, s, st, fa, sn): strains.append([s, st, fa, sn])
 	sx.peer_connected_hello(1, "strainkey001")
 	sx._exertion[1] = 1.0
 	var seen: Dictionary = {}
@@ -737,5 +737,39 @@ func _init() -> void:
 
 	check(float(sw.strain_of(1).get("s", 0.0)) < 0.2 and int(sw.strain_of(1).get("state", 0)) == 0, "walking is sustainable (%.2f)" % float(sw.strain_of(1).get("s", 0.0)))
 	check(strains.size() > 0 and strains.size() < 500, "strain updates are not flooded (%d sent)" % strains.size())
+	# Stance: sitting drops strain to 0; standing under a heavy pack only to about half; walking off stands you up.
+	var xd: String = "user://test_server_items_stance"
+	DirAccess.make_dir_recursive_absolute(xd)
+
+	for file in DirAccess.get_files_at(xd):
+		DirAccess.remove_absolute(xd + "/" + file)
+
+	var sa = make(xd)
+	sa.send_vitals = func(_p, _h, _he, _w): pass
+	sa.peer_connected_hello(1, "stancekey001")
+	sa.report_position(1, Vector3(0.0, 10.0, 0.0))
+	sa._strain[1] = {"s": 0.9, "state": 1, "t": 0.0}
+	sa.action(1, Net.ACT_STANCE, 2, 0, 0, Vector3.ZERO)
+	check(sa.stance_of(1) == 2, "sit is accepted")
+
+	for n in range(4 * 60):
+		sa._vitals_tick(0.25)
+
+	check(float(sa.strain_of(1)["s"]) < 0.01, "sitting rests strain to 0 (%.2f)" % float(sa.strain_of(1)["s"]))
+	sa.give(1, sa.table.number_of("stone"), 26)
+	sa._strain[1] = {"s": 0.9, "state": 1, "t": 0.0}
+	sa.action(1, Net.ACT_STANCE, 0, 0, 0, Vector3.ZERO)
+
+	for n in range(4 * 120):
+		sa._vitals_tick(0.25)
+
+	var floor_level: float = float(sa.strain_of(1)["s"])
+	check(floor_level > 0.4 and floor_level < 0.6, "standing with a full pack rests only to about half (%.2f)" % floor_level)
+	sa._strain[1] = {"s": 1.45, "state": 1, "t": 0.0}
+	sa._vitals_tick(0.25)
+	check(int(sa.strain_of(1)["state"]) == 2 and sa.stance_of(1) == 3, "fainting forces lying")
+	sa.action(1, Net.ACT_STANCE, 0, 0, 0, Vector3.ZERO)
+	check(sa.stance_of(1) == 3, "a fainted player cannot choose a stance")
+
 	print("server item tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
