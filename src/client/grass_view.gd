@@ -24,9 +24,9 @@ const GRASS_SOILS := {3: 0.9, 4: 0.5, 5: 1.0, 6: 0.7, 7: 1.0, 8: 0.6, 9: 0.3}
 # The three layers, from the ground up. "reach" is the share of the grass
 # radius the layer is drawn to; "per_point" is how many cards per ground sample.
 const LAYERS := [
-	{"name": "cover", "texture": "ground_cover", "width": 0.7, "height": 0.0, "per_point": 5, "reach": 0.45, "quads": 0, "wind": 0.0},
-	{"name": "short", "texture": "grass_short", "width": 0.60, "height": 0.40, "per_point": 3, "reach": 0.85, "quads": 3, "wind": 1.0},
-	{"name": "tall", "texture": "grass_tall", "width": 0.45, "height": 0.75, "per_point": 1, "reach": 1.0, "quads": 2, "wind": 1.4},
+	{"name": "cover", "texture": "ground_cover", "width": 0.7, "height": 0.0, "per_point": 4, "reach": 0.5, "quads": 0, "wind": 0.0},
+	{"name": "short", "texture": "grass_short", "width": 0.70, "height": 0.40, "per_point": 4, "reach": 0.85, "quads": 3, "wind": 1.0},
+	{"name": "tall", "texture": "grass_tall", "width": 0.50, "height": 0.75, "per_point": 2, "reach": 1.0, "quads": 2, "wind": 1.4},
 ]
 
 const SHADER := """
@@ -58,7 +58,9 @@ void fragment() {
 	}
 	// Light every card as if it faced up, front or back, so the ground's lighting carries over.
 	NORMAL = normalize((VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
-	ALBEDO = t.rgb * blade_color * mix(0.8, 1.1, tip);
+	// The painted card already shades root to tip; a little more here, and light that shows through the blades.
+	ALBEDO = t.rgb * blade_color * mix(0.85, 1.05, tip);
+	BACKLIGHT = ALBEDO * 0.35;
 	ROUGHNESS = 1.0;
 }
 """

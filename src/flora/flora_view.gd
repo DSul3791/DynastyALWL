@@ -47,6 +47,7 @@ uniform vec3 glow : source_color = vec3(0.0);
 varying vec3 tint;
 varying float glow_amount;
 varying vec3 view_normal;
+varying float crown_up;
 
 void vertex() {
 	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
@@ -54,6 +55,7 @@ void vertex() {
 	float bend = max(VERTEX.y, 0.0) * sway;
 	VERTEX.x += gust * bend;
 	VERTEX.z += gust * bend * 0.6;
+	crown_up = normalize(MODEL_NORMAL_MATRIX * NORMAL).y;
 	VERTEX += vec3(sin(TIME * 3.7 + wp.x * 1.7 + VERTEX.y), 0.0, cos(TIME * 3.1 + wp.z * 1.3 + VERTEX.y)) * flutter * COLOR.a;
 	tint = INSTANCE_CUSTOM.rgb;
 	glow_amount = INSTANCE_CUSTOM.a;
@@ -67,7 +69,12 @@ void fragment() {
 	}
 	// Light every card the same from both sides, using the crown's soft normals.
 	NORMAL = view_normal;
-	ALBEDO = t.rgb * COLOR.rgb * tint;
+	// Crown shading: undersides sit in the crown's own shadow, and each patch of leaves
+	// gets its own tone so a crown reads as clusters, not one smooth lump.
+	float under = mix(0.6, 1.0, smoothstep(-0.7, 0.5, crown_up));
+	vec2 cell = floor(UV * 7.0);
+	float speck = 0.88 + 0.24 * fract(sin(dot(cell, vec2(12.9898, 78.233))) * 43758.5453);
+	ALBEDO = t.rgb * COLOR.rgb * tint * under * speck;
 	BACKLIGHT = ALBEDO * backlight;
 	ROUGHNESS = 1.0;
 	EMISSION = glow * glow_amount * (0.6 + 0.4 * t.r);
@@ -79,9 +86,11 @@ shader_type spatial;
 render_mode diffuse_burley, specular_disabled;
 uniform sampler2D bark : source_color, filter_linear_mipmap, repeat_enable;
 uniform float sway = 0.004;
+varying float base_h;
 
 void vertex() {
 	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	base_h = VERTEX.y;
 	float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
 	float bend = max(VERTEX.y, 0.0) * sway;
 	VERTEX.x += gust * bend;
@@ -89,7 +98,12 @@ void vertex() {
 }
 
 void fragment() {
-	ALBEDO = texture(bark, UV).rgb * COLOR.rgb * 1.8;
+	vec4 t = texture(bark, UV);
+	vec3 c = t.rgb * COLOR.rgb * 1.8;
+	c *= mix(0.72, 1.12, t.a);                                       // furrows darker, ridges lighter
+	float moss = (1.0 - smoothstep(0.1, 1.1, base_h)) * (0.35 + 0.65 * (1.0 - t.a));   // damp moss at the foot
+	c = mix(c, c * vec3(0.55, 0.75, 0.32), moss * 0.6);
+	ALBEDO = c;
 	ROUGHNESS = 1.0;
 }
 """

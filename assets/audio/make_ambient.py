@@ -166,20 +166,23 @@ def cricket(rng):
 
 
 def frog_croak(rng):
-    out = np.zeros(int(2.0 * SR))
+    """A low, rough "gunk" or bullfrog-like croak: a buzzy pulse train under a nasal formant."""
+    out = np.zeros(int(2.4 * SR))
     at = 0.03
-    f = rng.uniform(240, 330)
     for _ in range(rng.integers(1, 3)):
-        pulses = rng.integers(5, 10)
-        for p in range(pulses):
-            m = int(0.04 * SR)
-            tt = np.arange(m) / SR
-            x = np.sin(2 * np.pi * f * tt) + 0.5 * np.sin(2 * np.pi * 2 * f * tt) + 0.3 * np.sin(2 * np.pi * 3 * f * tt)
-            x *= np.sin(np.pi * tt / tt[-1]) ** 2
-            hump = np.sin(np.pi * (p + 0.5) / pulses) ** 0.7
-            add(out, x * hump, at + p * 0.048)
-        at += pulses * 0.048 + rng.uniform(0.25, 0.5)
-    return finish(shape(out[:int((at + 0.1) * SR)], lowpass(freqs(len(out[:int((at + 0.1) * SR)])), 1800, 2)))
+        dur = rng.uniform(0.35, 0.7)
+        n = int(dur * SR)
+        t = np.arange(n) / SR
+        f0 = rng.uniform(95, 140) * (1.0 - 0.08 * t / dur)
+        phase = np.cumsum(f0) / SR
+        buzz = (phase % 1.0 < 0.18).astype(float)                 # narrow glottal-like pulses
+        buzz *= 1.0 + 0.35 * rng.standard_normal(n)              # roughness
+        f = freqs(n)
+        x = shape(buzz, band(f, rng.uniform(380, 520), 0.7) + 0.6 * band(f, rng.uniform(900, 1200), 0.6) + 0.3 * lowpass(f, 250, 2))
+        x *= np.minimum(t / 0.03, 1.0) * np.minimum((dur - t) / 0.08, 1.0)
+        add(out, x / (np.max(np.abs(x)) + 1e-9), at)
+        at += dur + rng.uniform(0.2, 0.45)
+    return finish(out[:int((at + 0.1) * SR)], 0.7)
 
 
 def tree_frog_peep(rng):
@@ -193,12 +196,26 @@ def tree_frog_peep(rng):
 
 
 def fish_plop(rng):
-    n = int(0.4 * SR)
-    t = np.arange(n) / SR
-    f = 250 + 700 * np.exp(-t / 0.035)
-    x = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t / 0.06)
-    x += 0.4 * noise(rng, n, lambda fr: band(fr, 1600, 1.0)) * env(n, 0.002, 0.02) * 4
-    return finish(x)
+    """A small splash at the surface: a soft wet burst, a short rising bubble, then a few drips."""
+    n = int(0.7 * SR)
+    out = np.zeros(n)
+    m = int(0.12 * SR)
+    burst = noise(rng, m, lambda f: lowpass(f, 2500, 2) * highpass(f, 200, 2)) * env(m, 0.002, 0.03)
+    add(out, burst / (np.max(np.abs(burst)) + 1e-9) * 0.8, 0.0)
+    m = int(0.08 * SR)
+    t = np.arange(m) / SR
+    f0 = rng.uniform(450, 700)
+    bubble = np.sin(2 * np.pi * np.cumsum(f0 * (1.0 + 0.8 * t / 0.08)) / SR) * np.exp(-t / 0.02)
+    add(out, bubble * 0.6, 0.01)
+    at = 0.12
+    for _ in range(rng.integers(2, 5)):
+        m = int(0.03 * SR)
+        t = np.arange(m) / SR
+        f1 = rng.uniform(900, 1600)
+        drip = np.sin(2 * np.pi * np.cumsum(f1 * (1.0 + 0.5 * t / 0.03)) / SR) * np.exp(-t / 0.008)
+        add(out, drip * rng.uniform(0.1, 0.25), at)
+        at += rng.uniform(0.06, 0.15)
+    return finish(shape(out, lowpass(freqs(n), 4000, 2)), 0.6)
 
 
 SOUNDS = {

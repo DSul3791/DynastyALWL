@@ -62,7 +62,7 @@ const QUALITY_NAMES := ["Low", "Medium", "High", "Ultra"]
 const QUALITY_VIEW := [768, 1280, 2048, 2048]
 const QUALITY_FLORA := [0.4, 0.7, 1.0, 1.0]
 const QUALITY_GRASS_M := [14.0, 24.0, 34.0, 48.0]       # grass drawn this far around the player
-const QUALITY_GRASS_POINTS := [2, 3, 4, 5]               # ground samples per 6 m cell side
+const QUALITY_GRASS_POINTS := [3, 4, 5, 6]               # ground samples per 6 m cell side
 const QUALITY_SHADOW_M := [0.0, 60.0, 100.0, 250.0]    # 0 = no shadows
 const QUALITY_CACHE_MB := [1024, 4096, 10240, 10240]    # ground cache limit on disk
 const FLY_SPEED := 30.0
@@ -178,7 +178,10 @@ var test_cut: bool = false
 var _flora_asked: Dictionary = {}     # chunk -> true asked or held in full, false trees only
 var _flora_check_msec: int = 0
 var link = null                       # direct block line (block_link.gd)
+var _sound_test_at: int = 0           # Esc > Settings "Sound test time" (until the game clock exists)
 var _water_dirty: bool = false        # the server said the water moved; not asked for yet
+var _water_inbox: Dictionary = {}     # chunk -> newest water bytes, rebuilt a few per frame
+const WATER_APPLY_USEC := 2000        # each water chunk costs ~2 ms; all at once was a hitch every second
 var _water_asked_msec: int = 0
 var _flora_chunks: int = 0
 var _flora_bytes: int = 0
@@ -545,9 +548,23 @@ func _send_water_request(now: int) -> void:
 
 func _on_water_received(chunk: Vector2i, water: PackedByteArray) -> void:
 	if flora != null:
+		_water_inbox[chunk] = water
+
+
+# Rebuilds received water chunks within a small time budget (at least one a frame).
+func _apply_water_inbox() -> void:
+	var start: int = Time.get_ticks_usec()
+
+	while not _water_inbox.is_empty() and flora != null:
+		var chunk: Vector2i = _water_inbox.keys()[0]
+		var water: PackedByteArray = _water_inbox[chunk]
+		_water_inbox.erase(chunk)
 		var t: int = Probe.start()
 		flora.set_water(chunk, WaterGridScript.decode(water))
 		Probe.stop("water in", t)
+
+		if Time.get_ticks_usec() - start >= WATER_APPLY_USEC:
+			return
 
 
 func _on_flora_cut(chunk: Vector2i, id: int) -> void:
@@ -791,6 +808,17 @@ func _build_menu(layer: CanvasLayer) -> void:
 	_menu_button(settings, "Sound volume: change", func():
 		var share: float = sound.step_volume()
 		_menu_note.text = "Sound is off" if share <= 0.0 else "Sound volume %d %%" % roundi(share * 100.0))
+	_menu_button(settings, "Sound test time: change", func():
+		var order: Array = [["day", 14.0, "autumn"], ["dawn", 6.0, "autumn"], ["dusk", 18.4, "autumn"], ["night", 23.0, "autumn"], ["winter day", 12.0, "winter"], ["summer dawn", 5.0, "summer"], ["spring night", 22.0, "spring"], ["clock runs", -1.0, "autumn"]]
+		_sound_test_at = (_sound_test_at + 1) % order.size()
+		var pick: Array = order[_sound_test_at]
+		sound.ambient.conditions["season"] = pick[2]
+		sound.ambient.clock_runs = float(pick[1]) < 0.0
+
+		if float(pick[1]) >= 0.0:
+			sound.ambient.conditions["hour"] = pick[1]
+
+		_menu_note.text = "Nature sounds now play as: %s (a test setting; the sky does not follow)" % pick[0])
 	_menu_button(settings, "Back", func(): _show_menu_page("main"))
 
 	var advanced: VBoxContainer = _menu_page(column, "advanced")
@@ -1192,6 +1220,7 @@ func _update_bob(delta: float) -> void:
 
 func _process(delta: float) -> void:
 	_step_player(delta)
+	_apply_water_inbox()
 
 	if _water_label != null and _water_label.text != "" and Time.get_ticks_msec() > _water_label_until_msec:
 		_water_label.text = ""
@@ -1347,7 +1376,8 @@ func _process(delta: float) -> void:
 
 	var vp: RID = get_viewport().get_viewport_rid()
 	hud.text += "\nlast step: " + sound.last_step
-	hud.text += "\nnature: forest %.1f meadow %.1f water %.1f high %.1f, last %s" % [sound.ambient.weights["forest"], sound.ambient.weights["meadow"], sound.ambient.weights["water"], sound.ambient.weights["highland"], sound.ambient.last_call]
+	hud.text += "\nnature (%02d:%02d %s): forest %.1f meadow %.1f water %.1f high %.1f, last %s" % [int(sound.ambient.conditions["hour"]), int(fposmod(float(sound.ambient.conditions["hour"]), 1.0) * 60.0), sound.ambient.conditions["season"], sound.ambient.weights["forest"], sound.ambient.weights["meadow"], sound.ambient.weights["water"], sound.ambient.weights["highland"], sound.ambient.last_call]
+	hud.text += "\nwater sounds: " + sound.water.summary
 	hud.text += "\nframe work: cpu %.1f ms, gpu %.1f ms, vsync %s, draws %d" % [
 		RenderingServer.viewport_get_measured_render_time_cpu(vp) + RenderingServer.get_frame_setup_time_cpu(),
 		RenderingServer.viewport_get_measured_render_time_gpu(vp),
@@ -1379,6 +1409,7 @@ func _process(delta: float) -> void:
 				flora.water_chunks, flora.water_cells
 			])
 			print("Terrain client: grass %d tufts in %d cells (radius %.0f m)" % [grass.tufts, grass.cells_built, grass.radius_m])
+			print("Terrain client: water sounds: %s" % sound.water.summary)
 			print("Terrain client: nature calls %s, zones %s" % [str(sound.ambient.calls_played), str(sound.ambient.weights)])
 			print("Terrain client: sound: footsteps %s, grass swishes %d, last ground %s, gust %.2f" % [str(sound.steps_played), sound.swishes_played, sound.surface, sound.gust])
 			print("Terrain client: blocks waited for %d times, %.0f ms on average, worst %d ms; at most %d loader threads waiting at once; %d blocks came on the block line" % [stream.waits, float(stream.wait_msec_total) / maxf(float(stream.waits), 1.0), stream.wait_msec_worst, stream.most_waiting, link.blocks_in])
