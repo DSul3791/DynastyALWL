@@ -42,7 +42,9 @@ static func chunk_levels(generator, origin: Vector2, chunk_m: float) -> Dictiona
 	if not data.sim_levels.is_empty():
 		var edge: PackedFloat32Array = _shore_levels(generator, data, origin, count, spacing, levels)
 		var vel: PackedFloat32Array = _velocities(generator, data, origin, count, spacing, levels)
-		var falls: Array = FallsScript.find(generator, origin, count, spacing, levels, vel, func(x: float, z: float) -> float: return _fine_ground(generator, x, z))
+		var fall_grid: PackedFloat32Array = _fall_grid(generator, data, origin, count, spacing, levels)
+		var fall_vel: PackedFloat32Array = vel if data.fall_levels.is_empty() else _velocities(generator, data, origin, count, spacing, fall_grid)
+		var falls: Array = FallsScript.find(generator, origin, count, spacing, fall_grid, fall_vel, func(x: float, z: float) -> float: return _fine_ground(generator, x, z))
 		return {"count": count, "spacing": spacing, "levels": levels, "wet": wet, "edge": edge, "fine": _fine_cells(generator, origin, count, spacing, levels, edge), "vel": vel, "falls": falls}
 
 	var closed: PackedFloat32Array = levels.duplicate()
@@ -174,6 +176,35 @@ static func moved(old: Dictionary, new: Dictionary, limit: float) -> bool:
 			return true
 
 	return false
+
+
+# The levels the fall finder works on: the drawn levels plus thin running water on the
+# baked channels (TileTerrainData.fall_levels), so a film down a cliff still makes a fall.
+static func _fall_grid(generator, data, origin: Vector2, count: int, spacing: float, levels: PackedFloat32Array) -> PackedFloat32Array:
+	if data.fall_levels.size() != data.samples * data.samples:
+		return levels
+
+	var grid: PackedFloat32Array = levels.duplicate()
+
+	for j in range(count):
+		for i in range(count):
+			var p: int = j * count + i
+
+			if not is_nan(grid[p]):
+				continue
+
+			var x: float = origin.x + float(i) * spacing
+			var z: float = origin.y + float(j) * spacing
+
+			if x >= data.x0 + float(data.samples - 1) * spacing or z >= data.z0 + float(data.samples - 1) * spacing:
+				continue
+
+			var k: int = data.nearest(x, z)
+
+			if data.heights[k] > 0.0:
+				grid[p] = data.fall_levels[k]
+
+	return grid
 
 
 # The inland water level at one point (NAN when dry).

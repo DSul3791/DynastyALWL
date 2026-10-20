@@ -24,6 +24,7 @@ const START_PUBLISH_TICKS := 40
 # WET_M 0.12 m, STEEP_WET_M 0.6 m on drops), so the lip and the fall showed as dry dirt.
 # On the baked channel (brook, river, fall) any water this deep is drawn.
 const CHANNEL_WET_M := 0.01
+const FALL_FILM_M := 0.02        # thin water on a baked channel this deep counts for finding falls
 const CHANNEL_POOL_M := 0.5      # drawn water this deep beside a film cell is a pond or pool
 const CHANNEL_BANK_M := 1.0      # a film cell no more than this above drawn water beside it is the bank, not the fall
 
@@ -40,6 +41,8 @@ var _mutex: Mutex = Mutex.new()
 var _budget: float = 0.0          # simulated seconds left to run
 var _quit: bool = false
 var _pending: PackedFloat32Array = PackedFloat32Array()
+var _pending_falls: PackedFloat32Array = PackedFloat32Array()
+var fall_levels: PackedFloat32Array = PackedFloat32Array()   # set by take_levels, see _fall_levels
 var _ticks: int = 0
 var _dry_start: bool = false
 var _digs: Array = []              # [center, radius] waiting for the water thread
@@ -105,6 +108,9 @@ func take_levels() -> PackedFloat32Array:
 	_mutex.lock()
 	var levels: PackedFloat32Array = _pending
 	_pending = PackedFloat32Array()
+
+	if not levels.is_empty():
+		fall_levels = _pending_falls
 	_mutex.unlock()
 	return levels
 
@@ -160,8 +166,10 @@ func _run() -> void:
 		if since >= (START_PUBLISH_TICKS if _dry_start else PUBLISH_TICKS) or _budget <= 0.0:
 			since = 0
 			var levels: PackedFloat32Array = sim.level_map()
+			var falls: PackedFloat32Array = _fall_levels(sim, levels, channel)
 			_mutex.lock()
 			_pending = levels
+			_pending_falls = falls
 			_mutex.unlock()
 
 
@@ -198,3 +206,23 @@ static func _show_channel(sim, levels: PackedFloat32Array, channel: PackedInt32A
 			levels[k] = level
 
 	return levels
+
+
+# Owner report (2026-10-20, build 200): no water went over pond B's cliff, though the river
+# ran at its foot. A spring's flow down a cliff is only about 10 cm thick, and thin water on
+# a steep drop is not drawn (water_sim.gd STEEP_WET_M), so the fall finder saw no wet points
+# on the face and made no fall. For the fall finder only, the drawn levels plus the thin
+# water on the baked channels: the falls are drawn as ribbons, so this never puts a film on
+# a bank.
+static func _fall_levels(sim, levels: PackedFloat32Array, channel: PackedInt32Array) -> PackedFloat32Array:
+	if levels.size() != sim.ground.size():
+		return levels
+
+	var depth: PackedFloat32Array = sim.get_depth()
+	var out: PackedFloat32Array = levels.duplicate()
+
+	for k in channel:
+		if is_nan(out[k]) and depth[k] >= FALL_FILM_M:
+			out[k] = sim.ground[k] + depth[k]
+
+	return out

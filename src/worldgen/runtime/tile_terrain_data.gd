@@ -30,6 +30,9 @@ var heights: PackedFloat32Array = PackedFloat32Array()
 # Settled simulated water level per sample (NAN dry); empty when the tile has no
 # settled water file, in which case the painted water classes are drawn instead.
 var sim_levels: PackedFloat32Array = PackedFloat32Array()
+# sim_levels plus the thin water on the baked channels that is not drawn (a film down a
+# cliff face): only the fall finder (water_falls.gd) reads it. Empty when not running.
+var fall_levels: PackedFloat32Array = PackedFloat32Array()
 var cover: PackedByteArray = PackedByteArray()          # raw x 0.25 m
 var province: PackedByteArray = PackedByteArray()
 var layer_offset: PackedInt32Array = PackedInt32Array()  # raw x 0.1 m

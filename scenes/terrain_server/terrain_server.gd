@@ -465,6 +465,7 @@ func _poll_water() -> void:
 
 	if not levels.is_empty():
 		water_live.data.sim_levels = levels
+		water_live.data.fall_levels = water_live.fall_levels
 		_water_updates += 1
 
 		if _water_updates == 1 or _water_updates % 10 == 0:

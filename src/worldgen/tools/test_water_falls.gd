@@ -5,6 +5,8 @@ extends SceneTree
 
 const FallsScript := preload("res://src/worldgen/runtime/water_falls.gd")
 const GridScript := preload("res://src/worldgen/runtime/water_grid.gd")
+const WaterSim := preload("res://src/water/water_sim.gd")
+const WaterLive := preload("res://src/water/water_live.gd")
 
 var failures: int = 0
 
@@ -75,5 +77,41 @@ func _init() -> void:
 	var plain: Dictionary = {"count": count, "spacing": 8.0, "levels": levels, "wet": 20, "vel": vel}
 	_check(GridScript.decode(GridScript.encode(plain))["falls"].is_empty(), "no falls trailer when none")
 
+	_test_thin_fall()
+
 	print("water falls: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
+
+
+# Owner report (2026-10-20, build 200): no water went over pond B's cliff. A spring's flow down
+# a cliff is a film about 10 cm thick, hidden by the steep draw rule, so the drawn levels have
+# no fall. The fall finder's levels (WaterLive._fall_levels) count that film.
+func _test_thin_fall() -> void:
+	var count: int = 12
+	var ground: PackedFloat32Array = PackedFloat32Array()
+	ground.resize(count * count)
+	var depth: PackedFloat32Array = PackedFloat32Array()
+	depth.resize(count * count)
+	var channel: PackedInt32Array = PackedInt32Array()
+
+	for j in range(count):
+		for i in range(count):
+			var k: int = j * count + i
+			ground[k] = 100.0 if i < 4 else (100.0 - float(i - 3) * 10.0 if i < 7 else 70.0)
+			ground[k] += 0.0 if j == 5 else 2.0
+
+			if j == 5:
+				depth[k] = 0.3 if i < 3 or i > 7 else 0.1
+				channel.append(k)
+
+	var sim = WaterSim.new()
+	sim.setup(count, 8.0, ground)
+	sim.set_depth(depth)
+	var levels: PackedFloat32Array = sim.level_map()
+	var bed: Callable = func(x: float, z: float) -> float: return ground[clampi(int(round(z / 8.0)), 0, count - 1) * count + clampi(int(round(x / 8.0)), 0, count - 1)]
+	var vel: PackedFloat32Array = PackedFloat32Array()
+	vel.resize(count * count * 2)
+	_check(is_nan(levels[5 * count + 5]), "thin water on the cliff face is not drawn")
+	_check(FallsScript.find(null, Vector2.ZERO, count, 8.0, levels, vel, bed).is_empty(), "the drawn levels alone make no fall")
+	var fall_levels: PackedFloat32Array = WaterLive._fall_levels(sim, levels, channel)
+	_check(FallsScript.find(null, Vector2.ZERO, count, 8.0, fall_levels, vel, bed).size() == 1, "a film down a cliff makes a fall")
