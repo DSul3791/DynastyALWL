@@ -2252,6 +2252,10 @@ func _process(delta: float) -> void:
 		_test_wear_t += get_process_delta_time()
 		var axe_slot: int = items.inventory.numbers.find(items.table.number_of("stone_axe"))
 
+		if before_wear < 1.5 and _test_wear_t >= 1.5 and axe_slot >= 0:
+			var life: int = int(items.table.entry("stone_axe").get("durability", 0))
+			items.inventory.wear[axe_slot] = int(float(life) * 0.85)      # condition 0.15: under the warning line
+
 		if before_wear < 3.0 and _test_wear_t >= 3.0 and axe_slot >= 0:
 			items.tool_event.call("broke")
 
@@ -2373,7 +2377,7 @@ func _process(delta: float) -> void:
 			_lake_start_msec = now
 		elif now - _lake_start_msec > 20000 and test_lake:
 			test_lake = false
-			print("Terrain client: lake laps: %d laps in 20 s, last %s" % [sound.water.laps_played, sound.water.last_lap])
+			print("Terrain client: lake laps: %d laps in 20 s, last %s; brook loop %s" % [sound.water.laps_played, sound.water.last_lap, sound.water.brook_tag()])
 			sound.water.test_shore = []
 
 	# Stance sounds: crouch, stand, sit, stand, lie (and sit for 20 s to hear settles), stand.

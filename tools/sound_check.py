@@ -91,6 +91,7 @@ SCENARIOS = [
     ]),
     ("lake", ["--lake"], 9000, [
         ("soft laps, not a steady bed", r"lake laps: " + NUM + r" laps", 2, 8),
+        ("brook is Dave's recording", r"brook loop (recorded)", 0, 1, "text"),
         ("laps are the slowed fish splash", r"last (lake_lap_\d)", 0, 1, "text"),
     ]),
     ("ui_sounds", ["--ui-sounds"], 6000, [
@@ -120,7 +121,7 @@ SCENARIOS = [
         ("saw loop plays", r"saw loops " + NUM + r", last", 1, 1),
     ]),
     ("wear", ["--wear-sounds"], 4500, [
-        ("tool break and repair", r"wear sounds (\{[^}]*\})", 2, 2, "sum"),
+        ("tool warning, break and repair", r"wear sounds (\{[^}]*\})", 3, 3, "sum"),
     ]),
     ("cooking", ["--cooking"], 4500, [
         ("eaten or healed", r"eaten " + NUM, 7, 7),

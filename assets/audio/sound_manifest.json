@@ -122,7 +122,7 @@
   },
   {
    "name": "water_brook",
-   "state": "generated",
+   "state": "recorded",
    "variants": 1,
    "used_in": "water_sounds.gd: a fast shallow stream, positional loop",
    "to_supply": "A babbling brook loop, seamless",
@@ -1367,6 +1367,14 @@
    "used_in": "placed_sounds.gd: a tool breaks with the last of its wear",
    "to_supply": "2 to 3 sharp wood or stone cracks with splinters",
    "priority": 2
+  },
+  {
+   "name": "tool_warn",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "placed_sounds.gd: a worn tool complaining before it breaks (under 20 percent condition)",
+   "to_supply": "3 small dry cracks and creaks of a tool at its limit, 0.4 s",
+   "priority": 3
   },
   {
    "name": "tool_repair",

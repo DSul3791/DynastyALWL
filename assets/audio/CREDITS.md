@@ -17,3 +17,4 @@ Supplied recordings:
 | Crow calls (`recorded/ambient/crow_caw*`) | Dave (supplied) | Pixabay (a page labelled "free sounds"; page URL TODO, Dave did not give it) | Pixabay-Content-License | none required (verify the Pixabay terms before release) |
 | Angry crow (`recorded/ambient/crow_alarm*`) | Dave (supplied) | Pixabay (a page labelled "free sounds"; page URL TODO, Dave did not give it) | Pixabay-Content-License | none required (verify the Pixabay terms before release) |
 | Bird wing flaps (`recorded/ambient/wing_flap*`) | Dave (supplied) | Pixabay (a page labelled "free sounds"; page URL TODO, Dave did not give it) | Pixabay-Content-License | none required (verify the Pixabay terms before release) |
+| water_brook (`recorded/water/water_brook*`) | Dave (supplied) | Pixabay (file name freesound_community-babbling-brook-99-56381; page URL TODO) | Pixabay-Content-License | none required (verify the Pixabay terms before release) |

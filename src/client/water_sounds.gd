@@ -64,7 +64,7 @@ const FALL_UNIT := 26.0
 const FALL_FILTER_HZ := 2200.0
 
 const KINDS := {
-	"brook": {"file": "water_brook", "db": -15.0, "reach": 45.0},
+	"brook": {"file": "water_brook", "db": -10.0, "reach": 45.0},   # -10: Dave's recording (build 244) is 5 dB quieter than the placeholder it replaced
 	"river": {"file": "water_river", "db": -22.0, "reach": 50.0},
 	"pond": {"file": "water_pond", "db": -17.0, "reach": 35.0},
 	"fall": {"file": "water_fall", "db": -14.0, "reach": 260.0},
@@ -239,6 +239,12 @@ func _laps(delta: float, here: Vector3, underwater: bool) -> void:
 	player.play()
 	laps_played += 1
 	last_lap = "lake_lap_%d %.0f m (%s)" % [pick, near, SoundStage.tag(list[pick])]
+
+
+# Which kind of file the brook loop is (HUD, checks): "recorded" once a real recording is in.
+func brook_tag() -> String:
+	var list: Array = _variants(str(KINDS["brook"]["file"]))
+	return SoundStage.tag(list[0]) if not list.is_empty() else "none"
 
 
 func _lap_variants() -> Array:

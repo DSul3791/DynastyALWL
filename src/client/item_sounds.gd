@@ -117,6 +117,8 @@ func watch(items) -> void:
 		_was_chest = bool(items.chest_mode)
 		play("inv_open" if _was_chest else "inv_close")               # the chest screen, besides the chest's own creak (placed_sounds)
 
+	_watch_wear(items, inv)
+
 	var crafting: int = int(items.get("_crafting"))
 
 	if _was_crafting == 0 and crafting != 0:
@@ -133,6 +135,30 @@ func watch(items) -> void:
 
 # A log gone and firewood come in at the same moment (the server split one at the chopping block): the block
 # nearest the player rings with the split.
+# A tool in the pack wearing under WARN_CONDITION (same tool in the slot as last time) complains once, the warning
+# before it breaks. Condition 1 new down to 0 broken (items.condition).
+const WARN_CONDITION := 0.2
+var _condition: Dictionary = {}         # slot -> [item number, condition] last watch
+var warns_played: int = 0
+
+
+func _watch_wear(items, inv) -> void:
+	for slot in range(inv.numbers.size()):
+		var number: int = inv.numbers[slot]
+
+		if number == 0 or int(items.table.entry(items.table.id_of(number)).get("durability", 0)) <= 0:
+			_condition.erase(slot)
+			continue
+
+		var now_condition: float = items.condition(slot)
+		var before: Array = _condition.get(slot, [])
+		_condition[slot] = [number, now_condition]
+
+		if before.size() == 2 and before[0] == number and float(before[1]) > WARN_CONDITION and now_condition <= WARN_CONDITION and now_condition > 0.0:
+			if get_parent().placed.tool_warn(items._player_position.call()):
+				warns_played += 1
+
+
 func _watch_block(items, counts: Dictionary) -> void:
 	var log_n: int = items.table.number_of("log")
 	var wood_n: int = items.table.number_of("firewood")

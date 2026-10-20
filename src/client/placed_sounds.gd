@@ -9,8 +9,9 @@ extends Node
 #   sound.placed.chest(true, at)            a chest opened (false: closed); the interior's chest sounds
 #   sound.placed.container(true, at)        something put into a container (false: taken out)
 #   sound.placed.tool_break(at)             a tool snaps with the last of its wear
+#   sound.placed.tool_warn(at)              a tool in the pack drops under 20 percent condition (item_sounds.watch hears it)
 #   sound.placed.tool_repair(at)            a tool mended (a 2 s work sound at the player)
-#   sound.placed.watch_world(world, here)  about once a second: a world row of state 5 to 7 (lean-to, chest, chopping block)
+#   sound.placed.watch_world(world, here)  about once a second: a world row of state 5 to 7 (lean-to, chest, chopping block) or a fire (1, 8, 9)
 #                                           that appears near the player plays place, one that vanishes near
 #                                           the player plays pick_up (rows streamed in from afar are silent)
 #
@@ -22,10 +23,10 @@ const RECORDED_DIR := "res://assets/audio/recorded/placed/"
 
 const NAMES := {
 	"place_leanto": -7.0, "place_chest": -6.0, "place_thump": -10.0, "pickup_placed": -10.0,
-	"container_put": -11.0, "container_take": -12.0, "tool_break": -4.0, "tool_repair": -12.0,
+	"container_put": -11.0, "container_take": -12.0, "tool_break": -4.0, "tool_repair": -12.0, "tool_warn": -10.0,
 }
 # World row states of placed structures (Items thread: 5 lean-to, 6 chest, 7 chopping block) and the place sound each makes.
-const STATE_KIND := {5: "leanto", 6: "chest", 7: "thump"}
+const STATE_KIND := {5: "leanto", 6: "chest", 7: "thump", 1: "thump", 8: "thump", 9: "thump"}   # 1, 8, 9: a campfire set down (lit, empty or loaded)
 const NEAR_M := 40.0                    # rows closer than this are heard appearing or vanishing
 const MAX_DISTANCE_M := 120.0
 
@@ -62,6 +63,10 @@ func container(put: bool, at: Vector3) -> bool:
 
 func tool_break(at: Vector3) -> bool:
 	return _once("tool_break", at)
+
+
+func tool_warn(at: Vector3) -> bool:
+	return _once("tool_warn", at)
 
 
 func tool_repair(at: Vector3) -> bool:

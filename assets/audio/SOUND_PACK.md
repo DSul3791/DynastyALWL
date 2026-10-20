@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **188 slots: 17 recorded, 162 generated placeholders, 9 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **189 slots: 18 recorded, 162 generated placeholders, 9 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -16,7 +16,7 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 1 | `rain_light` | generated | 1 | weather_sounds.gd: drizzle and light rain loop | A light rain on open ground loop, seamless |
 | 1 | `thunder` | generated | 3 | weather_sounds.gd: a mid-distance thunder roll | 2 to 3 rolling thunder claps, 5 to 9 s |
 | 1 | `tree_crash` | generated | 3 | tree_sounds.gd: the tree hits the ground (1.5 s after it starts to fall) | 3 big tree crashes: snapping branches and a deep thud, 2 to 3 s |
-| 1 | `water_brook` | generated | 1 | water_sounds.gd: a fast shallow stream, positional loop | A babbling brook loop, seamless |
+| 1 | `water_brook` | recorded | 1 | water_sounds.gd: a fast shallow stream, positional loop | A babbling brook loop, seamless |
 | 1 | `water_river` | generated | 1 | water_sounds.gd: a wide slow river, positional loop | A broad river flow loop, seamless |
 | 1 | `wind_gust` | generated | 1 | sound_stage.gd: the swelling gust layer on top of the bed | A leaf-and-grass rustling wind loop with soft swells, seamless |
 | 1 | `wind_low` | generated | 1 | sound_stage.gd: the steady wind bed, louder with height and open ground, softer in trees | A calm open-field wind loop, 20 s or more, seamless, no gusts (low rumble layer) |
@@ -149,6 +149,7 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 3 | `swim_surface` | generated | 3 | swim_sounds.gd: the head comes out of the water | 3 breaths and running water on surfacing, 1 s |
 | 3 | `swim_under` | generated | 1 | swim_sounds.gd: the hum of being underwater (loop while the eyes are under) | A muffled underwater ambience loop, seamless |
 | 3 | `tool_repair` | generated | 2 | placed_sounds.gd: a tool mended (about 2 s) | 2 recordings of scraping, tapping and binding a tool, 2 s |
+| 3 | `tool_warn` | generated | 2 | placed_sounds.gd: a worn tool complaining before it breaks (under 20 percent condition) | 3 small dry cracks and creaks of a tool at its limit, 0.4 s |
 | 3 | `town_bell` | generated | 3 | town_sounds.gd: a tower bell tolling the hour or on call (ring_bell) | 2 to 3 bell strikes with a long ring, 4 to 6 s each |
 | 3 | `town_crowd` | generated | 1 | town_sounds.gd: a busy square murmur (loop) | A seamless crowd murmur loop, no clear words |
 | 3 | `tree_leaves` | generated | 3 | tree_sounds.gd: the crown rushing down through the air | 3 branches and leaves rushing as a tree falls, about 1 s |

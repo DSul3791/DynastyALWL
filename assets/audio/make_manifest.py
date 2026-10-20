@@ -186,6 +186,7 @@ SLOTS = [
     ("container_put", "placed", "placed_sounds.gd: something put into a chest", "2 short wood clacks with a little rustle", 2),
     ("container_take", "placed", "placed_sounds.gd: something taken out of a chest", "2 short rustles and a wood clack", 2),
     ("tool_break", "placed", "placed_sounds.gd: a tool breaks with the last of its wear", "2 to 3 sharp wood or stone cracks with splinters", 2),
+    ("tool_warn", "placed", "placed_sounds.gd: a worn tool complaining before it breaks (under 20 percent condition)", "3 small dry cracks and creaks of a tool at its limit, 0.4 s", 3),
     ("tool_repair", "placed", "placed_sounds.gd: a tool mended (about 2 s)", "2 recordings of scraping, tapping and binding a tool, 2 s", 3),
 ]
 

@@ -127,8 +127,22 @@ def tool_repair(rng):
     return finish(out)
 
 
+def tool_warn(rng):
+    """A worn tool complaining: a small dry crack and a short creak, much gentler than the break."""
+    out = np.zeros(int(0.4 * SR))
+    crack = noise(rng, int(0.03 * SR), lambda f: highpass(f, 900) * lowpass(f, 5000)) * env(int(0.03 * SR), 0.0004, 0.008)
+    add(out, crack / (np.max(np.abs(crack)) + 1e-9) * 0.7, 0.0)
+    add(out, knock(rng, rng.uniform(110, 150), 0.02, 1100, 0.45), 0.003)
+    m = int(0.18 * SR)
+    t = np.arange(m) / SR
+    f = rng.uniform(420, 560) * (1.0 + 0.2 * t / t[-1])
+    creak = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.sin(np.pi * t / t[-1]) ** 2 * 0.25
+    add(out, creak, 0.08)
+    return finish(out, 0.6)
+
+
 ONE_SHOTS = {"place_leanto": place_leanto, "place_chest": place_chest, "place_thump": place_thump, "pickup_placed": pickup_placed,
-             "container_put": container_put, "container_take": container_take, "tool_break": tool_break, "tool_repair": tool_repair}
+             "container_put": container_put, "container_take": container_take, "tool_break": tool_break, "tool_repair": tool_repair, "tool_warn": tool_warn}
 
 
 def main():

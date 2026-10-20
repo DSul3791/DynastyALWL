@@ -325,3 +325,11 @@ Measured with `tools/sound_check.py` (Low tier, voice cap 24, 150 MB memory cap)
 - Worst case I can stage (hour 21, storm, far thunder, cave 0.6, a lit fire and merged hearths, creature calls, walking): peak 24 of 24, 7.5 MB loaded, 0 refused. The cap is reached and the shedding keeps it there (optional one-shots stop first, never loops or danger cues).
 - New since the last audit: waterfall base (+1 voice only near a fall), lake laps (at most 2 short one-shots), stance and UI cues (one-shots), merged distant fires and falls (fewer voices). Nothing adds a permanent loop.
 - Scenarios `audit_night_rain` and `audit_worst` keep the numbers checked (peak must stay at or under 24).
+
+## Dave's brook recording (job 59, 2026-10-20)
+
+Dave sent `freesound_community-babbling-brook-99-56381.mp3` ("this is what a gentle babbling brook sounds like", Pixabay, page URL TODO). It is 91 s, very quiet (mean -47 dB) and very steady; `swap_recording.py --loop --replace --start 38 --end 62` cut the steadiest 23 s (window chosen from the per-second level: spread under 2 dB), made it loop without a click and raised it to the placeholder's level, giving `recorded/water/water_brook_0.ogg`. The peak limit (-1 dB) leaves it about 5 dB quieter than the placeholder, so the brook kind in `water_sounds.gd` went from -15 to -10 dB. Used by: brook sources only (small streams and brooks, squares with few wet neighbours and a current), including brooks that turn into falls' approach reaches. Rivers (`water_river`), falls (`water_fall`, `water_fall_base`) and the lake laps keep their own sounds. The credits row says Pixabay-Content-License. `sound_check.py --only lake` reports `brook loop recorded`.
+
+## Structure and tool sounds (job 63)
+
+Already there from job 38: lean-to, chest and chopping block set down and taken up, chest open/put/take, tool break and repair. Added: a worn tool complains once (`tool_warn`, `placed.tool_warn`) when its condition drops under 20 percent (`item_sounds._watch_wear`, any tool in the pack, same tool in the slot as last time), before the break; and a campfire set down (a fire row, states 1, 8 or 9, appearing near the player) plays the thump of stones set down like the chopping block (`STATE_KIND`). `--wear-sounds` now checks warning, break and repair (3 sounds).
