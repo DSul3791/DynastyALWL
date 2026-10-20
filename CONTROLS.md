@@ -1,6 +1,6 @@
 # Controls
 
-Tracks what the controls are now and what is planned. Update it whenever a control changes.
+The single complete list of every input (keyboard, mouse, held versus tap, context prompts). Dave's rule (2026-10-20): any change that adds or changes an input updates this file in the same push. `python3 tools/check_controls.py` fails if a key or mouse button bound in code is missing from the first column of the tables below; run it before every push.
 
 ## Now (terrain client, build 23)
 
@@ -33,6 +33,7 @@ Tracks what the controls are now and what is planned. Update it whenever a contr
 | E at a fire | Burning: tap E adds fuel (firewood, then sticks, then logs), hold E (0.6 s) roasts one raw forage item. Burnt-out or rained-out: Press E to add firewood, then Press E to light (uses one plant fibre as tinder; open fires will not light in rain). A placed campfire (10 stones and 20 sticks) starts lit with 20 sticks of fuel: a stick burns 2 game minutes, firewood 30, a log 2 game hours (1 game minute = 2.5 real seconds) |
 | E at a lean-to | Hold E (0.6 s) takes it down |
 | E | Pick up the nearest item on the ground within 3 m; with nothing there, harvest the nearest pickable plant or shrub within 2.5 m (the prompt "Press E to harvest" shows when it will work, or why not, e.g. needs spade). Hold E: keeps picking every pickable plant within 2 m, about 5 a second, until nothing is left or you let go. Roots and bulbs need a spade, bark, gum and sap a stone knife, wood an axe; a picked plant bears again after 3 game days |
+| Right click (tap) with food or medicine held | Eat it / apply it (hunger and health bars at the bottom left). The inventory panel's "Eat / use" button does the same for the selected slot |
 | ] | Admin test tool: give 10 each of stone, stick, plant fibre and log |
 
 Gait rules:
@@ -43,12 +44,21 @@ Gait rules:
 - Flying is an admin look-around tool (noclip). Shift multiplies flying speed.
 - Temporary admin compass (2026-10-19): a strip at the top of the screen scrolls as you turn, N, NE, E, SE, S, SW, W, NW with a tick every 10 degrees and the exact heading under the red pointer (north is -z, east is +x).
 
+Other scenes: the terrain preview scene (admin look-around, scenes/terrain_preview) uses W A S D, Space, Ctrl, Shift and G like the client; it has no gameplay inputs.
+
+Input rules (Dave):
+- E is the standard interaction key. The centre-screen prompt ("Press E to ...") shows when it will work or why not, and vanishes on pick, with no message after picking. Tap E acts once, hold E (0.6 s) repeats or does the heavier action (sweep harvest, take a structure down).
+- Shift+E is the safe take-down variant at the chopping block (plain E uses it).
+- Left click uses the held item; right click is the secondary (aim a throw, eat/apply).
+- Effect symbols (brain, ghosted house, more later) sit side by side in one row at the top, recentred.
+
 ## Planned / not decided
+
+- Stances (Dave, 2026-10-20, decided, keys not built): sit, lie down and crouch each get a key. The Items thread picks the keys and must record them here. Note X is already the admin dig key, so stances must not use X (or the dig tool moves). C and Z are free.
 
 - Spear (Dave, 2026-10-20, decided, not built): normal attack keys jab; hold right click to raise and aim a throw, left click throws, release right click returns to normal stance.
 
 - Dave's other two "things" from the old design (not yet given).
 - Potions, horses and dragons will move much faster than running; ground loading is built to keep up.
 
-- Right click with a held food or medicine item: eat it / apply it (hunger and health bars at the bottom left). The inventory panel's "Eat / use" button does the same for the selected slot.
 - Carrying: no key; the inventory panel shows "Carrying x of y kg". A heavy pack slows walking, jogging and running; flying is unaffected.
