@@ -34,11 +34,12 @@ const CompassScript := preload("res://src/client/admin_compass.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
 const WeatherScript := preload("res://src/shared/weather.gd")
 const RenderScale := preload("res://src/client/render_scale.gd")
+const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 const GpuProbeScript := preload("res://src/debug/gpu_probe.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 114
+const BUILD := 115
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -176,6 +177,7 @@ var _bake_status: String = ""
 var _bake_alert_until: int = 0
 var _bake_alert_at: Vector3 = Vector3.ZERO   # where the player stood when the finished notice came up
 var _bake_done_note: String = ""          # the bake's own finished message, shown once the ground reloads
+var display = DisplaySettingsScript.new()   # saved window, VSync and quality choices
 var quality: int = 2                  # index into QUALITY_NAMES; High is the default
 var _flora_view_full: PackedFloat32Array = PackedFloat32Array()
 var _flora_near_full: PackedFloat32Array = PackedFloat32Array()
@@ -207,6 +209,13 @@ var _wait_until_msec: int = 0
 
 func _ready() -> void:
 	net = $TerrainNet
+	display.load_saved()
+
+	if display.quality >= 0:
+		quality = clampi(display.quality, 0, QUALITY_NAMES.size() - 1)
+
+	RenderScale.cap = display.size()
+	display.apply(get_window())
 	var host: String = "127.0.0.1"
 	var port: int = 24600
 
@@ -844,6 +853,12 @@ func _apply_quality() -> void:
 		_environment.fog_density = 0.05 if underwater else LookSettings.FOG_DENSITY
 
 
+# Saves the window, VSync and quality choices (display_settings.gd).
+func _save_display() -> void:
+	display.quality = quality
+	display.save()
+
+
 # 3D resolution follows the tier's pixel budget (render_scale.gd) and the window size.
 func _apply_render_scale() -> void:
 	if DisplayServer.get_name() == "headless":
@@ -916,15 +931,27 @@ func _build_menu(layer: CanvasLayer) -> void:
 		_menu_button(settings, QUALITY_NAMES[n], func():
 			quality = index
 			_apply_quality()
+			_save_display()
 			_menu_note.text = "Quality: %s" % QUALITY_NAMES[index])
 
 	_menu_button(settings, "VSync: change", func():
-		var order: Array = [DisplayServer.VSYNC_ENABLED, DisplayServer.VSYNC_ADAPTIVE, DisplayServer.VSYNC_DISABLED]
-		var names: Array = ["on", "adaptive", "off"]
-		var at: int = order.find(DisplayServer.window_get_vsync_mode())
-		at = (at + 1) % order.size()
-		DisplayServer.window_set_vsync_mode(order[at])
-		_menu_note.text = "VSync is now %s. On snaps to 60 or 30; adaptive avoids the halving; off shows the true speed." % names[at])
+		display.vsync_index = (display.vsync_index + 1) % display.VSYNC_MODES.size()
+		display.apply(get_window())
+		_save_display()
+		_menu_note.text = "VSync is now %s. On snaps to 60 or 30; adaptive avoids the halving; off shows the true speed." % display.VSYNC_NAMES[display.vsync_index])
+	_menu_button(settings, "Resolution: change", func():
+		display.size_index = (display.size_index + 1) % display.SIZES.size()
+		RenderScale.cap = display.size()
+		display.apply(get_window())
+		_apply_render_scale()
+		_save_display()
+		_menu_note.text = "3D resolution %s (the highest is 1920x1080).%s" % [display.size_text(), " Fullscreen windowed stretches it to the screen." if display.fullscreen else ""])
+	_menu_button(settings, "Window: windowed or fullscreen windowed", func():
+		display.fullscreen = not display.fullscreen
+		display.apply(get_window())
+		_apply_render_scale()
+		_save_display()
+		_menu_note.text = "Fullscreen windowed: the 3D picture stays at %s and is stretched to the screen." % display.size_text() if display.fullscreen else "Windowed, %s." % display.size_text())
 	_menu_button(settings, "Sound volume: change", func():
 		var share: float = sound.step_volume()
 		_menu_note.text = "Sound is off" if share <= 0.0 else "Sound volume %d %%" % roundi(share * 100.0))
@@ -1233,6 +1260,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.keycode == KEY_F2:
 			quality = (quality + 1) % QUALITY_NAMES.size()
 			_apply_quality()
+			_save_display()
 		elif event.keycode == KEY_G or event.keycode == KEY_F:
 			flying = not flying
 			body.velocity = Vector3.ZERO

@@ -10,6 +10,8 @@ extends RefCounted
 const TARGET_MPIX := [1.0, 2.1, 2.1, 3.7]     # 3D megapixels per tier: Low about 720p, Medium and High 1080p, Ultra about 1440p
 const MIN_SCALE := 0.5
 
+# Largest 3D picture drawn, whatever the window size (Esc > Settings > Resolution; 1920x1080 at most).
+static var cap: Vector2i = Vector2i(1920, 1080)
 static var override_scale: float = 0.0        # > 0: a manual setting (Esc > Settings) wins over the tier
 
 
@@ -19,11 +21,12 @@ static func scale_for(window_size: Vector2i, quality: int) -> float:
 
 	var mpix: float = float(window_size.x) * float(window_size.y) / 1000000.0
 	var target: float = float(TARGET_MPIX[clampi(quality, 0, TARGET_MPIX.size() - 1)])
+	var limit: float = minf(minf(float(cap.x) / float(maxi(window_size.x, 1)), float(cap.y) / float(maxi(window_size.y, 1))), 1.0)
 
 	if mpix <= target:
-		return 1.0
+		return limit
 
-	return clampf(sqrt(target / mpix), MIN_SCALE, 1.0)
+	return clampf(minf(sqrt(target / mpix), limit), 0.25, 1.0)
 
 
 static func apply(viewport: Viewport, window_size: Vector2i, quality: int) -> float:
