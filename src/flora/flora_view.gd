@@ -205,6 +205,10 @@ const TIER_IMPOSTOR := 2
 const TIER_MID := 3
 const CELL_M := 64.0       # trees choose their tier (full or mid model, shadows) per cell of this size inside a chunk
 const FULL_MIN_M := 30.0   # full-detail trees reach at least this far, even where there are no shadows (Low)
+const CONTACT_M := 30.0    # full models cast the sun shadow only this near; farther full trees cast it from their far model
+const TIER_FULL_LIT := 4   # plan keys only: a full model that does not cast (its shadow is the proxy's)
+const TIER_PROXY := 5      # plan keys only: the far model drawn into the sun's shadow pass alone
+const PROXY_BIT := 7       # level bits 7 and up: one per 64 m cell, set where a full-model cell is past CONTACT_M
 const MID_MIN_TRIANGLES := 500   # trees with fewer triangles than this keep their full model at every near distance
 const MID_LOD_SCALE_MIN := 25.0  # ImporterMesh.generate_lods merge angle (degrees)
 const FAR_SHADOWS := [false, false, false, true]   # far-model trees cast shadows only at Ultra (shadow range is 100 m at High)
@@ -1081,6 +1085,9 @@ func _level(chunk: Vector2i, position: Vector3) -> int:
 
 				if d <= full_m:
 					tier = TIER_FULL
+
+					if shadow_m > CONTACT_M and d > CONTACT_M:
+						level |= 1 << (PROXY_BIT + cz * cells + cx)
 				elif d <= near_m[0]:
 					tier = TIER_MID
 				elif not _impostors.is_empty() and d > impostor_m:
@@ -1228,6 +1235,7 @@ func _plan(items: Dictionary, level: int) -> Dictionary:
 			# First half of the variants mature, second half young (beech).
 			var half: int = int(info["near"].size()) / 2
 			variant = variant % half + (half if float(items["heights"][n]) < float(info["young_below"]) else 0)
+		var proxy: bool = false
 		var is_near: int = 1 if (int(info["kind"]) != KIND_PLANT and (level & (16 << int(info["kind"]))) != 0) else 0
 
 		if int(info["kind"]) == KIND_TREE:
@@ -1236,6 +1244,10 @@ func _plan(items: Dictionary, level: int) -> Dictionary:
 			var cx: int = posmod(int(floor(p.x / CELL_M)), cells)
 			var cz: int = posmod(int(floor(p.z / CELL_M)), cells)
 			is_near = (level >> (32 + 2 * (cz * cells + cx))) & 3
+
+			if is_near == TIER_FULL and ((level >> (PROXY_BIT + cz * cells + cx)) & 1) != 0:
+				proxy = true
+				is_near = TIER_FULL_LIT
 
 			if is_near == TIER_IMPOSTOR:
 				if _impostors.has(species_id):
@@ -1249,6 +1261,14 @@ func _plan(items: Dictionary, level: int) -> Dictionary:
 			groups[key] = PackedInt32Array()
 
 		groups[key].append(n)
+
+		if proxy:
+			var proxy_key: Array = [species_id, key[1], key[2], variant, TIER_PROXY]
+
+			if not groups.has(proxy_key):
+				groups[proxy_key] = PackedInt32Array()
+
+			groups[proxy_key].append(n)
 
 		if (level & 8) != 0 and int(info["kind"]) != KIND_PLANT and float(info["trunk"]) >= 0.1:
 			var scale: float = float(items["heights"][n]) / float(info["height"])
@@ -1376,19 +1396,21 @@ func _apply_step(job: Dictionary) -> bool:
 	var info: Dictionary = _species[key[0]]
 	var multimesh: MultiMesh = MultiMesh.new()
 	multimesh.transform_format = MultiMesh.TRANSFORM_3D
-	multimesh.mesh = _impostors[key[0]]["mesh"] if key[4] == 2 and _impostors.has(key[0]) else (info["near"] if key[4] == 1 else (info["mid"] if key[4] == 3 else info["far"]))[key[3]]
+	var proxy_pass: bool = key[4] == TIER_PROXY
+	var models: Array = info["near"] if (key[4] == TIER_FULL or key[4] == TIER_FULL_LIT) else (info["mid"] if key[4] == TIER_MID else info["far"])
+	multimesh.mesh = _impostors[key[0]]["mesh"] if key[4] == TIER_IMPOSTOR and _impostors.has(key[0]) else models[key[3] % models.size()]
 	multimesh.use_custom_data = bool(info["tinted"])
 	multimesh.instance_count = int(draw_plan[1])
 	multimesh.buffer = draw_plan[2]
 	var draw: MultiMeshInstance3D = MultiMeshInstance3D.new()
 	draw.multimesh = multimesh
 	draw.visibility_range_end = view_m[info["kind"]] + 0.7 * PART_M[info["kind"]]
-	var casts: bool = info["kind"] == KIND_TREE and (key[4] == 1 or (key[4] == 0 and far_shadows))
-	draw.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if casts else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var casts: bool = info["kind"] == KIND_TREE and (key[4] == TIER_FULL or proxy_pass or (key[4] == TIER_FAR and far_shadows))
+	draw.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY if proxy_pass else (GeometryInstance3D.SHADOW_CASTING_SETTING_ON if casts else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF)
 	draw.set_meta("kind", int(info["kind"]))      # for the GPU probe (src/debug/gpu_probe.gd)
 	draw.set_meta("casts", casts)
 	node.add_child(draw)
-	instances += int(draw_plan[1])
+	instances += 0 if proxy_pass else int(draw_plan[1])
 	return int(job["draw"]) >= draws.size()
 
 
@@ -1499,7 +1521,7 @@ static func _drawn_count(node: Node3D) -> int:
 	var total: int = 0
 
 	for child in node.get_children():
-		if child is MultiMeshInstance3D:
+		if child is MultiMeshInstance3D and child.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY:
 			total += child.multimesh.instance_count
 
 	return total
