@@ -202,6 +202,13 @@ func _ready() -> void:
 		return
 
 	multiplayer.multiplayer_peer = peer
+	# Build the flora of the spawn's chunk once here, before any other thread exists. Start-up
+	# crash (owner thread bug, build 204): about 1 start in 10 to 20 a worker thread died in the
+	# flora placer (flora_placer.gd patch_at, signal 11) right after the first client connected,
+	# when several workers made their first flora chunk at the same moment. Not reproduced here
+	# in 90 starts; this makes the first call of every placer function happen on one thread.
+	flora.chunk_bytes(Vector2i(int(floor(spawn.x / placer.chunk_m)), int(floor(spawn.z / placer.chunk_m))), true)
+	flora.chunk_bytes(Vector2i(int(floor(spawn.x / placer.chunk_m)) + 1, int(floor(spawn.z / placer.chunk_m))), false)
 	_link = BlockLinkScript.new()
 	_link.on_request = _on_blocks_requested
 	_link.is_peer = _is_connected_peer
