@@ -104,7 +104,7 @@ func _is_knife() -> bool:
 
 
 func _is_axe() -> bool:
-	return str(_inv.table.entry(held_id()).get("tool_class", "")) == "axe"
+	return str(_inv.table.entry(held_id()).get("tool_class", "")) == "axe" and not _inv.is_broken(held_slot)
 
 
 # A mouse button while playing. Returns true when it was used here.

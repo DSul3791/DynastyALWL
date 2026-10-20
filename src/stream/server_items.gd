@@ -14,6 +14,7 @@ const InventoryScript := preload("res://src/shared/inventory.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
 const VERSION := 1
+const INVENTORY_VERSION := 2            # 2 added wear per slot; version 1 files load with zero wear
 const MAX_WORLD_ITEMS_PER_CHUNK := 64    # chunks are 256 m
 const WORLD_ITEM_LIFETIME_S := 1200.0    # real seconds until a dropped item despawns
 const CHUNK_M := 256.0
@@ -206,7 +207,7 @@ func take(peer: int, number: int, count: int) -> bool:
 
 
 # Puts a stack on the ground. False when the chunk is full.
-func drop_in_world(number: int, count: int, position: Vector3) -> bool:
+func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 0) -> bool:
 	if count <= 0 or number <= 0:
 		return false
 
@@ -220,7 +221,7 @@ func drop_in_world(number: int, count: int, position: Vector3) -> bool:
 	if here >= MAX_WORLD_ITEMS_PER_CHUNK:
 		return false
 
-	_items[_next_id] = {"number": number, "count": count, "pos": position, "left": WORLD_ITEM_LIFETIME_S}
+	_items[_next_id] = {"number": number, "count": count, "pos": position, "left": WORLD_ITEM_LIFETIME_S, "wear": item_wear}
 	_next_id += 1
 	_dirty = true
 	return true
@@ -242,6 +243,8 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_pickup(peer, inv, a)
 	elif kind == Net.ACT_HIT:
 		_hit(peer, inv, a, Vector2i(b, count))
+	elif kind == Net.ACT_REPAIR:
+		_repair(peer, inv, a)
 	elif kind == Net.ACT_FUEL:
 		_fuel(peer, inv, a)
 	elif kind == Net.ACT_COOK:
@@ -314,7 +317,7 @@ func save() -> void:
 	for key in _inventories:
 		invs[key] = _inventories[key].to_json_array()
 
-	_write_atomic("inventories.json", {"version": VERSION, "inventories": invs})
+	_write_atomic("inventories.json", {"version": INVENTORY_VERSION, "inventories": invs})
 	var items: Array = []
 
 	for id in _items:
@@ -323,7 +326,7 @@ func save() -> void:
 		if it.has("scatter") or it.has("tree"):
 			continue
 
-		items.append([int(it["number"]), int(it["count"]), it["pos"].x, it["pos"].y, it["pos"].z, it["left"], int(it["fire"]["state"]) if it.has("fire") else 0, float(it["fire"]["burn_left"]) if it.has("fire") else 0.0])
+		items.append([int(it["number"]), int(it["count"]), it["pos"].x, it["pos"].y, it["pos"].z, it["left"], int(it["fire"]["state"]) if it.has("fire") else 0, float(it["fire"]["burn_left"]) if it.has("fire") else 0.0, int(it.get("wear", 0))])
 
 	_save_trees()
 	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked})
@@ -376,6 +379,10 @@ func gather(peer: int, species_name: String, kind: String, flora_key: String, fl
 
 			if not usable.is_empty():
 				natural = usable[rng.randi_range(0, usable.size() - 1)]
+				var used_class: String = _tool_for(natural)
+
+				if used_class != "":
+					_wear_tool(peer, inv, used_class)
 			elif rows.is_empty() and missing != "":
 				_say(peer, "You need a %s for that." % str(_drops.get("tool_rules", {}).get("tool_names", {}).get(missing, missing)))
 
@@ -415,7 +422,7 @@ func _drop(peer: int, inv, slot: int, count: int, at: Vector3) -> void:
 	var number: int = inv.numbers[slot]
 	var amount: int = mini(count, inv.counts[slot])
 
-	if not drop_in_world(number, amount, spot):
+	if not drop_in_world(number, amount, spot, inv.wear[slot]):
 		return
 
 	inv.take_from_slot(slot, amount)
@@ -435,10 +442,14 @@ func _throw(peer: int, inv, slot: int, direction: Vector3) -> void:
 	if str(table.entry(table.id_of(inv.numbers[slot])).get("kind", "")) != "weapon":
 		return
 
+	if _is_broken(inv.numbers[slot], inv.wear[slot]):
+		return
+
 	_last_throw[peer] = now
 	var number: int = inv.numbers[slot]
+	var spent: int = inv.wear[slot] + 1
 	inv.take_from_slot(slot, 1)
-	_flights.append({"number": number, "pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": direction.normalized() * THROW_SPEED, "age": 0.0})
+	_flights.append({"number": number, "wear": spent, "pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": direction.normalized() * THROW_SPEED, "age": 0.0})
 
 
 func _fly(delta: float) -> void:
@@ -454,7 +465,7 @@ func _fly(delta: float) -> void:
 			if not is_nan(ground):
 				spot.y = maxf(ground, spot.y) if flight["age"] >= THROW_MAX_S else ground
 
-			drop_in_world(int(flight["number"]), 1, spot)
+			drop_in_world(int(flight["number"]), 1, spot, int(flight.get("wear", 0)))
 			_flights.erase(flight)
 
 
@@ -465,11 +476,7 @@ func _mine(peer: int, inv, at: Vector3) -> void:
 	if not _peer_pos.has(peer) or not rock_at.is_valid() or _peer_pos[peer].distance_to(at) > MINE_REACH_M:
 		return
 
-	var has_axe: bool = false
-
-	for slot in range(8):
-		if inv.numbers[slot] != 0 and str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", "")) == "axe":
-			has_axe = true
+	var has_axe: bool = _has_tool(inv, "axe")
 
 	var now: int = Time.get_ticks_msec()
 
@@ -477,6 +484,7 @@ func _mine(peer: int, inv, at: Vector3) -> void:
 		return
 
 	_last_mine[peer] = now
+	_wear_tool(peer, inv, "axe")
 	var patch: Vector2i = Vector2i(int(floor(at.x / MINE_CELL_M)), int(floor(at.z / MINE_CELL_M)))
 	var state: Dictionary = _mined.get(patch, {"taken": 0, "since": now})
 	var regrown: int = int((now - int(state["since"])) / (MINE_REGROW_S * 1000.0))
@@ -570,7 +578,7 @@ func _pickup(peer: int, inv, id: int) -> void:
 	if it.is_empty() or it.has("fire") or it.has("tree") or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(it["pos"]) > PICKUP_M + 2.0:
 		return
 
-	var left: int = inv.add(int(it["number"]), int(it["count"]))
+	var left: int = inv.add(int(it["number"]), int(it["count"]), int(it.get("wear", 0)))
 
 	if left == 0:
 		if it.has("scatter"):
@@ -618,19 +626,20 @@ func _send_changes(peer: int, inv, before: Array) -> void:
 	var out: PackedByteArray = PackedByteArray()
 
 	for i in inv.SLOTS:
-		if inv.numbers[i] != before[0][i] or inv.counts[i] != before[1][i]:
+		if inv.numbers[i] != before[0][i] or inv.counts[i] != before[1][i] or inv.wear[i] != before[2][i]:
 			var at: int = out.size()
-			out.resize(at + 7)
+			out.resize(at + 9)
 			out[at] = i
 			out.encode_u32(at + 1, inv.numbers[i])
 			out.encode_u16(at + 5, inv.counts[i])
+			out.encode_u16(at + 7, mini(inv.wear[i], 65535))
 
 	if not out.is_empty():
 		send_slots.call(peer, out)
 
 
 func _snapshot(inv) -> Array:
-	return [inv.numbers.duplicate(), inv.counts.duplicate()]
+	return [inv.numbers.duplicate(), inv.counts.duplicate(), inv.wear.duplicate()]
 
 
 func _chunk_of(p: Vector3) -> Vector2i:
@@ -649,7 +658,7 @@ func _valid_key(key: String) -> bool:
 
 
 func _load_inventories() -> void:
-	var parsed: Variant = _read_json("inventories.json")
+	var parsed: Variant = _read_json_version("inventories.json", INVENTORY_VERSION, 1)
 
 	if parsed == null:
 		return
@@ -676,6 +685,9 @@ func _load_world_items() -> void:
 	for row in parsed["items"]:
 		var entry: Dictionary = {"number": int(row[0]), "count": int(row[1]), "pos": Vector3(row[2], row[3], row[4]), "left": float(row[5])}
 
+		if row.size() > 8:
+			entry["wear"] = int(row[8])
+
 		if row.size() > 7 and int(row[6]) != 0:
 			entry["fire"] = {"state": int(row[6]), "burn_left": float(row[7]), "covered": false, "recheck": 0.0}
 
@@ -688,7 +700,7 @@ func _read_json(name: String) -> Variant:
 	return _read_json_version(name, VERSION)
 
 
-func _read_json_version(name: String, version: int) -> Variant:
+func _read_json_version(name: String, version: int, oldest: int = -1) -> Variant:
 	var path: String = _dir + "/" + name
 
 	if not FileAccess.file_exists(path):
@@ -696,7 +708,7 @@ func _read_json_version(name: String, version: int) -> Variant:
 
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
 
-	if typeof(parsed) != TYPE_DICTIONARY or int(parsed.get("version", 0)) != version:
+	if typeof(parsed) != TYPE_DICTIONARY or int(parsed.get("version", 0)) > version or int(parsed.get("version", 0)) < (version if oldest < 0 else oldest):
 		push_error("server items: %s is not usable; kept as %s.bad" % [path, path])
 		DirAccess.rename_absolute(path, path + ".bad")
 		return null
@@ -823,6 +835,7 @@ func _hit(peer: int, inv, tree_id: int, chunk: Vector2i) -> void:
 		return
 
 	_last_hit[peer] = now
+	_wear_tool(peer, inv, "axe")
 	var key: String = "%d,%d,%d" % [chunk.x, chunk.y, tree_id]
 	var chop: Dictionary = _chops.get(key, {"hits": 0, "msec": now})
 
@@ -865,11 +878,77 @@ func _hit(peer: int, inv, tree_id: int, chunk: Vector2i) -> void:
 
 
 func _has_tool(inv, tool_class: String) -> bool:
-	for slot in range(8):
-		if inv.numbers[slot] != 0 and str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", "")) == tool_class:
-			return true
+	return _tool_slot(inv, tool_class) >= 0
 
-	return false
+
+# The hotbar slot of a usable (not broken) tool of this class, or -1.
+func _tool_slot(inv, tool_class: String) -> int:
+	for slot in range(8):
+		if inv.numbers[slot] != 0 and str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", "")) == tool_class and not _is_broken(inv.numbers[slot], inv.wear[slot]):
+			return slot
+
+	return -1
+
+
+# Worn out: durability is the number of uses a tool lasts (items.json); items without it never wear.
+func _is_broken(number: int, item_wear: int) -> bool:
+	var durability: int = int(table.entry(table.id_of(number)).get("durability", 0))
+	return durability > 0 and item_wear >= durability
+
+
+# One use spent on the first usable tool of this class on the hotbar; tells the player when it breaks.
+func _wear_tool(peer: int, inv, tool_class: String) -> void:
+	var slot: int = _tool_slot(inv, tool_class)
+
+	if slot < 0 or int(table.entry(table.id_of(inv.numbers[slot])).get("durability", 0)) <= 0:
+		return
+
+	var before: Array = _snapshot(inv)
+	inv.wear[slot] += 1
+	_dirty = true
+
+	if _is_broken(inv.numbers[slot], inv.wear[slot]):
+		_say(peer, "Your %s broke. Repair it with new materials." % table.name_of(inv.numbers[slot]).to_lower())
+
+	_send_changes(peer, inv, before)
+
+
+# Repair (ACT_REPAIR): the slot's tool, worn or broken, takes the repair materials from items.json
+# ("repair": [[item, count], ...]) and wins back half its durability.
+func _repair(peer: int, inv, slot: int) -> void:
+	if slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or inv.wear[slot] <= 0:
+		return
+
+	var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
+	var costs: Array = entry.get("repair", [])
+
+	if costs.is_empty():
+		return
+
+	# The tool's own slot must not be spent as material.
+	var held_number: int = inv.numbers[slot]
+
+	for cost in costs:
+		var number: int = table.number_of(str(cost[0]))
+		var have: int = inv.count_of(number) - (inv.counts[slot] if number == held_number else 0)
+
+		if number == 0 or have < int(cost[1]):
+			_say(peer, "Repair needs %s." % _repair_text(costs))
+			return
+
+	for cost in costs:
+		inv.remove(table.number_of(str(cost[0])), int(cost[1]))
+
+	inv.wear[slot] = maxi(0, inv.wear[slot] - int(entry.get("durability", 0)) / 2)
+
+
+func _repair_text(costs: Array) -> String:
+	var parts: PackedStringArray = PackedStringArray()
+
+	for cost in costs:
+		parts.append("%d %s" % [int(cost[1]), table.name_of(table.number_of(str(cost[0]))).to_lower()])
+
+	return ", ".join(parts)
 
 
 func _trees_in_chunk(chunk: Vector2i) -> int:
@@ -972,6 +1051,7 @@ func _process_trunk(peer: int, inv, id: int) -> void:
 		return
 
 	_last_process[peer] = now
+	_wear_tool(peer, inv, "axe")
 
 	if not tree.has("logs_left"):
 		tree["logs_left"] = clampi(int(float(tree["length"]) / float(cfg.get("log_length_m", 2.5)) * clampf(float(tree["radius"]) * 2.5, 0.5, 2.0)), 1, int(cfg.get("max_logs", 12)))

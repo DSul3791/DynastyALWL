@@ -122,6 +122,7 @@ func _init() -> void:
 	check(not g.gather(1, "wolfsbane", "plant", "0,0,90", 90, Vector3(501.0, 70.0, 500.0)) and noticed.size() == 1, "roots by hand give nothing and the player is told to get a spade")
 	g.action(1, Net.ACT_ADMIN_GIVE, g.table.number_of("wooden_spade"), 0, 1, Vector3.ZERO)
 	check(g.gather(1, "wolfsbane", "plant", "0,0,90", 90, Vector3(501.0, 70.0, 500.0)) and g.inventory_of(1).count_of(g.table.number_of("wolfsbane_roots")) >= 1, "with a spade the roots come up")
+	check(g.inventory_of(1).wear[g.inventory_of(1).numbers.find(g.table.number_of("wooden_spade"))] == 1, "picking roots wears the spade one use")
 	check(g.gather(1, "comfrey", "plant", "0,0,91", 91, Vector3(501.0, 70.0, 500.0)), "comfrey still gives by hand")
 	check(not g.gather(1, "flax", "plant", "0,0,77", 77, Vector3(501.0, 70.0, 500.0)), "a picked plant is bare until it regrows")
 	clock[0] += ItemsScript.REGROW_GAME_S + 1.0
@@ -415,6 +416,60 @@ func _init() -> void:
 	sp.action(1, Net.ACT_SPLIT, 0, 0, 6, Vector3.ZERO)
 	sp.action(1, Net.ACT_SPLIT, 0, 0, 0, Vector3.ZERO)
 	check(sp.inventory_of(1).counts[0] == 6 and sp.inventory_of(1).count_of(stone) == 10, "cannot split everything or nothing")
+
+	# Tool wear.
+	var wd: String = "user://test_server_items_wear"
+	DirAccess.make_dir_recursive_absolute(wd)
+	var v1: FileAccess = FileAccess.open(wd + "/inventories.json", FileAccess.WRITE)
+	v1.store_string(JSON.stringify({"version": 1, "inventories": {"abcdef123456": [[6, 1], [2, 5]] + range(28).map(func(_n): return [0, 0])}}))
+	v1.close()
+	DirAccess.remove_absolute(wd + "/world_items.json")
+	var wr = make(wd)
+	wr.ground_height = func(x, z): return 10.0
+	wr.peer_connected_hello(1, "abcdef123456")
+	var axe_n: int = wr.table.number_of("stone_axe")
+	check(wr.inventory_of(1).count_of(axe_n) == 1 and wr.inventory_of(1).wear[0] == 0, "a version 1 save loads with zero wear")
+	var durability: int = int(wr.table.entry("stone_axe")["durability"])
+	wr.report_position(1, Vector3(0.0, 10.0, 0.0))
+	wr.rock_at = func(x, z): return true
+	wr._mined.clear()
+
+	for n in range(3):
+		wr._last_mine.clear()
+		wr.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(1.0, 10.0, 0.0))
+
+	check(wr.inventory_of(1).wear[0] == 3, "each effective blow wears the axe one use (%d)" % wr.inventory_of(1).wear[0])
+	wr.inventory_of(1).wear[0] = durability - 1
+	wr._last_mine.clear()
+	wr._mined.clear()
+	wr.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(1.0, 10.0, 0.0))
+	check(wr._is_broken(axe_n, wr.inventory_of(1).wear[0]), "the last use breaks it")
+	var stones_before: int = wr.inventory_of(1).count_of(wr.table.number_of("stone"))
+	wr._last_mine.clear()
+	wr.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(1.0, 10.0, 0.0))
+	check(wr.inventory_of(1).count_of(wr.table.number_of("stone")) == stones_before, "a broken axe does nothing")
+	wr.action(1, Net.ACT_REPAIR, 0, 0, 0, Vector3.ZERO)
+	check(wr.inventory_of(1).wear[0] == durability, "no materials, no repair")
+	wr.action(1, Net.ACT_ADMIN_GIVE, wr.table.number_of("cordage"), 0, 1, Vector3.ZERO)
+	wr.action(1, Net.ACT_REPAIR, 0, 0, 0, Vector3.ZERO)
+	check(wr.inventory_of(1).wear[0] == durability - durability / 2 and wr.inventory_of(1).count_of(wr.table.number_of("cordage")) == 0, "a repair spends materials and wins back half")
+	wr.action(1, Net.ACT_DROP, 0, 0, 1, Vector3(0.5, 10.0, 0.0))
+	var dropped: int = 0
+
+	for k in wr._items:
+		if wr._items[k]["number"] == axe_n:
+			dropped = k
+
+	check(dropped != 0 and wr._items[dropped]["wear"] == durability - durability / 2, "a dropped tool keeps its wear")
+	wr.action(1, Net.ACT_PICKUP, dropped, 0, 0, Vector3.ZERO)
+	check(wr.inventory_of(1).count_of(axe_n) == 1 and wr.inventory_of(1).wear[wr.inventory_of(1).numbers.find(axe_n)] == durability - durability / 2, "and gets it back on pickup")
+	wr.save()
+	var wr2 = make(wd)
+	wr2.peer_connected_hello(1, "abcdef123456")
+	check(wr2.inventory_of(1).wear[wr2.inventory_of(1).numbers.find(axe_n)] == durability - durability / 2, "wear survives a restart")
+	var round_trip = load("res://src/shared/inventory.gd").new(wr2.table)
+	round_trip.from_bytes(wr2.inventory_of(1).to_bytes())
+	check(round_trip.wear == wr2.inventory_of(1).wear, "wear travels in the slot bytes")
 
 	print("server item tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

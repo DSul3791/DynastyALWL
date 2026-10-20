@@ -228,10 +228,20 @@ func show_notice(text: String) -> void:
 	_on_notice(text)
 
 
+# Condition of the item in a slot: 1.0 new down to 0.0 broken; 1.0 for items that do not wear.
+func condition(slot: int) -> float:
+	var durability: int = int(table.entry(table.id_of(inventory.numbers[slot])).get("durability", 0))
+	return 1.0 if durability <= 0 else clampf(1.0 - float(inventory.wear[slot]) / float(durability), 0.0, 1.0)
+
+
+func is_broken(slot: int) -> bool:
+	return inventory.numbers[slot] != 0 and int(table.entry(table.id_of(inventory.numbers[slot])).get("durability", 0)) > 0 and condition(slot) <= 0.0
+
+
 # Is a tool of this class on the hotbar (slots 1 to 8), the way the server checks it?
 func has_tool_class(tool_class: String) -> bool:
 	for slot in range(8):
-		if inventory.numbers[slot] != 0 and str(table.entry(table.id_of(inventory.numbers[slot])).get("tool_class", "")) == tool_class:
+		if inventory.numbers[slot] != 0 and str(table.entry(table.id_of(inventory.numbers[slot])).get("tool_class", "")) == tool_class and not is_broken(slot):
 			return true
 
 	return false
@@ -330,12 +340,13 @@ func _on_full(bytes: PackedByteArray) -> void:
 
 
 func _on_slots(bytes: PackedByteArray) -> void:
-	for at in range(0, bytes.size() - 6, 7):
+	for at in range(0, bytes.size() - 8, 9):
 		var slot: int = bytes[at]
 
 		if slot < inventory.SLOTS:
 			inventory.numbers[slot] = bytes.decode_u32(at + 1)
 			inventory.counts[slot] = bytes.decode_u16(at + 5)
+			inventory.wear[slot] = bytes.decode_u16(at + 7)
 
 	_refresh()
 
@@ -570,6 +581,15 @@ func _build_panel() -> void:
 		button.pressed.connect(_on_slot_pressed.bind(i))
 		_grid.add_child(button)
 		_buttons.append(button)
+		var bar: ColorRect = ColorRect.new()          # condition bar along the bottom of a worn tool's slot
+		bar.name = "Condition"
+		bar.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+		bar.offset_top = -_px(8)
+		bar.offset_left = _px(4)
+		bar.offset_bottom = -_px(3)
+		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bar.visible = false
+		button.add_child(bar)
 
 	var row: HBoxContainer = HBoxContainer.new()
 	row.add_theme_constant_override("separation", _px(12))
@@ -580,6 +600,12 @@ func _build_panel() -> void:
 	_style(split, BODY_PX)
 	split.pressed.connect(_split_selected)
 	row.add_child(split)
+
+	var repair: Button = Button.new()
+	repair.text = "Repair"
+	_style(repair, BODY_PX)
+	repair.pressed.connect(_repair_selected)
+	row.add_child(repair)
 
 	for whole in [true, false]:
 		var drop: Button = Button.new()
@@ -632,6 +658,13 @@ func _start_craft(number: int) -> void:
 	_craft_done_msec = Time.get_ticks_msec() + int(recipes.recipe(number)["craft_s"] * 1000.0)
 
 
+func _repair_selected() -> void:
+	if _selected < 0 or inventory.wear[_selected] <= 0:
+		return
+
+	net.inventory_action.rpc_id(1, Net.ACT_REPAIR, _selected, 0, 0, Vector3.ZERO)
+
+
 func _split_selected() -> void:
 	if _selected < 0 or inventory.counts[_selected] < 2:
 		return
@@ -661,7 +694,18 @@ func _tooltip(number: int, count: int) -> String:
 	var entry: Dictionary = table.entry(table.id_of(number))
 	var name: String = _item_label(number)
 
-	return "%s x%d\n%s, stacks to %d" % [name, count, str(entry.get("kind", "item")), table.stack_of(number)]
+	var text: String = "%s x%d\n%s, stacks to %d" % [name, count, str(entry.get("kind", "item")), table.stack_of(number)]
+
+	if int(entry.get("durability", 0)) > 0:
+		text += "\nlasts %d uses; repair: " % int(entry["durability"])
+		var parts: PackedStringArray = PackedStringArray()
+
+		for cost in entry.get("repair", []):
+			parts.append("%d %s" % [int(cost[1]), table.name_of(table.number_of(str(cost[0]))).to_lower()])
+
+		text += ", ".join(parts)
+
+	return text
 
 
 func _drop_selected(whole: bool) -> void:
@@ -701,6 +745,17 @@ func _refresh() -> void:
 		var button: Button = _buttons[i]
 		var number: int = inventory.numbers[i]
 		button.text = "" if number == 0 else "%s\nx%d" % [_item_label(number), inventory.counts[i]]
+		var bar: ColorRect = button.get_node("Condition")
+		var worn: bool = number != 0 and int(table.entry(table.id_of(number)).get("durability", 0)) > 0 and inventory.wear[i] > 0
+		bar.visible = worn
+
+		if worn:
+			var c: float = condition(i)
+			bar.anchor_right = maxf(c, 0.04)
+			bar.color = Color(0.85, 0.2, 0.15) if c <= 0.0 else Color(1.0 - c, 0.2 + 0.7 * c, 0.15)
+			bar.anchor_left = 0.0
+			bar.offset_right = -_px(4)
+			button.text += "   BROKEN" if is_broken(i) else "   %d%%" % int(c * 100.0)
 		button.modulate = Color(1.0, 0.9, 0.5) if i == _selected else Color.WHITE
 		button.visible = filter == "" or (number != 0 and _matches(table.name_of(number), filter))
 		button.tooltip_text = _tooltip(number, inventory.counts[i])

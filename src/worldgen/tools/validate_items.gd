@@ -86,6 +86,15 @@ func _init() -> void:
 		if not all.has(id):
 			fail("%s: unknown item '%s'" % [where, id])
 
+	for id in items_file.get("items", {}):
+		var item: Dictionary = items_file["items"][id]
+
+		if item.has("durability") and (int(item["durability"]) < 1 or item.get("repair", []).is_empty()):
+			fail("items.json: '%s' has durability but no repair materials" % id)
+
+		for row in item.get("repair", []):
+			want_item.call(String(row[0]), "items.json %s repair" % id)
+
 	for group in ["by_species", "by_kind"]:
 		for key in drops.get(group, {}):
 			if group == "by_species" and not species.has(key):
