@@ -15,7 +15,9 @@ extends RefCounted
 
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
+const CoverScript := preload("res://src/shared/cover.gd")
 const MEMORY_CHUNKS := 2048
+const COVER_CHUNKS := 1500            # chunks kept in the cover index (oldest dropped first)
 
 var placer
 var chunks_made: int = 0
@@ -26,6 +28,8 @@ var _removed: Dictionary = {}          # Vector2i chunk -> {item id: true}
 var _memory: Dictionary = {}           # Vector3i (chunk x, z, 1 full / 0 trees only) -> PackedByteArray
 var _water: Dictionary = {}            # Vector2i chunk -> PackedByteArray (cleared when the water moves)
 var _mutex: Mutex = Mutex.new()
+var cover = CoverScript.Index.new()    # tree crowns of the chunks made so far (Cover.at; read it under cover_lock)
+var _cover_order: Array = []           # chunks in the index, oldest first
 
 
 func setup(flora_placer, store_dir: String) -> void:
@@ -72,6 +76,7 @@ func chunk_bytes(chunk: Vector2i, full: bool = true) -> PackedByteArray:
 	var items: Dictionary = PlacerScript.without(placer.chunk_items(home, not full), removed)
 	bytes = PlacerScript.encode(items, placer.chunk_origin(home))
 	_mutex.lock()
+	_fill_cover(home, items)
 	chunks_made += 1
 	_memory[key] = bytes
 
@@ -80,6 +85,26 @@ func chunk_bytes(chunk: Vector2i, full: bool = true) -> PackedByteArray:
 
 	_mutex.unlock()
 	return bytes
+
+
+# Puts a chunk's tree crowns in the cover index (called with the mutex held).
+func _fill_cover(home: Vector2i, items: Dictionary) -> void:
+	CoverScript.add_chunk(cover, home, items, func(species_id: int) -> Array:
+		var item: Dictionary = placer.species_by_id(species_id)
+		return [] if item.is_empty() else [int(item["kind"]), float(item["crown"]), float(item["height_ref"])])
+	_cover_order.erase(home)
+	_cover_order.append(home)
+
+	while _cover_order.size() > COVER_CHUNKS:
+		cover.remove_chunk(_cover_order.pop_front())
+
+
+# Whether a spot is under a tree's canopy (Cover.at on the server's index).
+func covered(pos: Vector3) -> bool:
+	_mutex.lock()
+	var yes: bool = CoverScript.at(pos, cover) > 0.0
+	_mutex.unlock()
+	return yes
 
 
 # Forgets every made chunk (the tile files changed).
@@ -135,6 +160,7 @@ func cut(chunk: Vector2i, id: int) -> bool:
 		_removed[home] = {}
 
 	_removed[home][id] = true
+	cover.remove_item(home, id)
 	_memory.erase(Vector3i(home.x, home.y, 1))
 	_memory.erase(Vector3i(home.x, home.y, 0))
 	var copy: Dictionary = {}

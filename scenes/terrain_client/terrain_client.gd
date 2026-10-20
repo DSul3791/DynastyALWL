@@ -41,6 +41,7 @@ const InventoryViewScript := preload("res://src/client/inventory_view.gd")
 const HeldItemScript := preload("res://src/client/held_item.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
 const WeatherScript := preload("res://src/shared/weather.gd")
+const CoverScript := preload("res://src/shared/cover.gd")
 const RenderScale := preload("res://src/client/render_scale.gd")
 const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
@@ -220,6 +221,7 @@ var link = null                       # direct block line (block_link.gd)
 var _in_queue: Array = []             # chunks from the server being unpacked, in arrival order
 var _in_mutex: Mutex = Mutex.new()
 var _in_generation: int = 0           # raised when the plants are dropped (a bake): older chunks are ignored
+var under_cover: float = 0.0          # 1 under a tree's canopy, else 0 (Cover.at at the player, once a second)
 var weather: Dictionary = {}          # the weather here and now (WeatherScript.state): the same on every client, no network traffic; rendering and sounds read it
 var _weather_next_msec: int = 0
 var game_clock = GameClockScript.new()   # copy of the server's game clock, set at the welcome
@@ -676,6 +678,7 @@ func _update_weather() -> void:
 	var tile_m: float = float(world.get("tile_size_m", 15360))
 	var row: int = int(floor(_anchor.z / tile_m))
 	var group: String = WeatherScript.zone_group(world.get("zones", []), int(world.get("equator_row", 0)), row)
+	under_cover = CoverScript.at(_anchor, flora.cover) if flora != null else 0.0
 	weather = WeatherScript.state(int(world.get("master_seed", 0)), game_clock.seconds, group, _anchor.y, 0.0)
 
 	if _sound_weather_at < 0 and sound != null and sound.weather != null:
@@ -1835,7 +1838,7 @@ func _process(delta: float) -> void:
 	var vp: RID = get_viewport().get_viewport_rid()
 	hud.text += "\ngame time: year %d, day %d (%s), %02d:%02d" % [game_clock.year() + 1, game_clock.day_of_year() + 1, game_clock.season(), int(game_clock.hour()), int(fposmod(game_clock.hour(), 1.0) * 60.0)]
 	if not weather.is_empty():
-		hud.text += "\nweather: rain %.2f snow %.2f storm %.2f sun %.2f wind %.2f, %.0f C" % [weather["rain"], weather["snow"], weather["storm"], weather["sun"], weather["wind"], weather["temp_c"]]
+		hud.text += "\nweather: rain %.2f snow %.2f storm %.2f sun %.2f wind %.2f, %.0f C, %s" % [weather["rain"], weather["snow"], weather["storm"], weather["sun"], weather["wind"], weather["temp_c"], "under cover" if under_cover > 0.0 else "open"]
 
 	var win: Vector2i = get_window().size
 	hud.text += "\n3D %dx%d of window %dx%d (scale %.2f)%s, %s, %s" % [int(win.x * _render_scale), int(win.y * _render_scale), win.x, win.y, _render_scale, " (embedded: editor owns the window)" if display.embedded() else "", RenderingServer.get_video_adapter_name(), RenderingServer.get_current_rendering_driver_name()]
@@ -1884,6 +1887,7 @@ func _process(delta: float) -> void:
 				_flora_chunks, float(_flora_bytes) / 1048576.0, _flora_done_msec, flora.item_count(), flora.instances, flora.colliders, _flora_cuts,
 				flora.water_chunks, flora.water_cells
 			])
+			print("Terrain client: cover index %d tree crowns in %d chunks" % [flora.cover.trees, flora.cover.chunk_count()])
 			print("Terrain client: grass %d tufts in %d cells (radius %.0f m)" % [grass.tufts, grass.cells_built, grass.radius_m])
 			print("Terrain client: water sounds: %s" % sound.water.summary)
 			print("Terrain client: nature calls %s, zones %s" % [str(sound.ambient.calls_played), str(sound.ambient.weights)])

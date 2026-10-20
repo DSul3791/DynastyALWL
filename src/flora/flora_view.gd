@@ -21,6 +21,7 @@ const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const TreeBuilder := preload("res://src/flora/tree_builder.gd")
 const TreeImpostor := preload("res://src/flora/tree_impostor.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
+const CoverScript := preload("res://src/shared/cover.gd")
 const KIND_TREE := 0
 const KIND_SHRUB := 1
 const KIND_PLANT := 2
@@ -203,6 +204,7 @@ var colliders: int = 0                 # trunk colliders now
 var water_chunks: int = 0              # chunks with water drawn
 var water_cells: int = 0
 
+var cover = CoverScript.Index.new()   # tree crowns of the chunks held (Cover.at(pos, cover)): rain, sun and fire shelter
 var _species: Dictionary = {}          # species id -> {"kind", "mesh", "trunk", "height"}
 var _familiarity: Dictionary = {}      # species id -> base chance (percent) of knowing it on sight
 var _display: Dictionary = {}          # species id -> display name
@@ -348,6 +350,7 @@ func setup(tables, tile_rules: Dictionary) -> void:
 			"kind": kind,
 			"height": reference,
 			"trunk": float(entry["trunk_m"]),
+			"crown": float(entry["crown_m"]),
 			# Hardwoods, and any species with autumn colors of its own (the
 			# wardpine), take an autumn tint.
 			"hardwood": str(entry["shape"]) == "broadleaf" or entry.has("autumn_colors"),
@@ -549,6 +552,12 @@ var water_ease: bool = true           # off at Low: a chunk's water jumps to the
 var _ease: Dictionary = {}            # chunk -> {"old", "new", "step", "next_msec"}
 
 
+# Species facts for the cover query: [kind, crown_m, reference height], empty when unknown.
+func _cover_info(species_id: int) -> Array:
+	var info: Dictionary = _species.get(species_id, {})
+	return [] if info.is_empty() else [int(info["kind"]), float(info.get("crown", 0.0)), float(info["height"])]
+
+
 # Redraws only a held chunk's water (the simulated water moved). Owner (2026-10-20): the water
 # eases to its new levels over a few redraws instead of jumping; only chunks whose levels
 # moved are redrawn more than once, and nothing runs while the water is still.
@@ -628,6 +637,7 @@ func set_chunk(chunk: Vector2i, items: Dictionary, position: Vector3, water: Dic
 	drop_chunk(chunk)
 	var entry: Dictionary = {"items": items, "level": -1, "node": null, "water": null, "grid": water, "full": full}
 	_chunks[chunk] = entry
+	CoverScript.add_chunk(cover, chunk, items, _cover_info)
 
 	if int(water.get("wet", 0)) > 0:
 		var mesh: ArrayMesh = water["mesh"] if water.has("mesh") else WaterGridScript.build_mesh(water, _water_material)
@@ -742,6 +752,7 @@ func drop_chunk(chunk: Vector2i) -> void:
 		return
 
 	_clear_node(entry)
+	cover.remove_chunk(chunk)
 	var water: MeshInstance3D = entry.get("water")
 
 	if water != null:
@@ -797,6 +808,8 @@ func remove_item(chunk: Vector2i, id: int, position: Vector3) -> void:
 
 	for key in ["ids", "positions", "heights", "yaws"]:
 		items[key].remove_at(index)
+
+	cover.remove_item(chunk, id)
 
 	entry["level"] = -1
 	entry.erase("building")
