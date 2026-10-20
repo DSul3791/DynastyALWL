@@ -394,3 +394,11 @@ Builds 210/214 already made rain softer under cover (crowns and Cover roofs). Ne
 ## Footstep loudness table (job 76)
 
 Step levels are now data: `data/sound/step_levels.json` (surface_db, floor_db, gait_db, gait_pitch, optional `surface_gait_db` extra per surface and gait, puddle_db). Edit and restart; a missing or broken file falls back to the built-in numbers (`sound_stage.gd` constants, same values, nothing changed by ear). Final level = surface + gait + extra, then soil/rock/ore tune, crouch -6, snow hush up to -3 and about -1.5 to +1 random. `python3 tools/step_levels.py --md` writes the table to `/mnt/project-files/sound/STEP_LEVELS.md` (walk -40 on grass to -31 on leaves, run -28 to -19; 9 dB between the quietest and loudest walks). All step recordings sit within 0.6 dB of each other (`LOUDNESS.md`), so the table is the whole balance. Test: `sound_check.py --only step_levels` (the file loads, a tweaked file changes a level, a broken file changes nothing).
+
+## Night ambience (job 77)
+
+- Owl hoots are sometimes answered: 45% of hoots queue a second, softer, slightly lower hoot 3-6 s later from the opposite side (`ambient_life.gd`, `_answers`). Owls call most in winter and spring.
+- Natural far creature calls are now on by default (`creature_sounds.gd`, `wild`). Wolves call most in winter (x1.6), least in summer (x0.4); foxes follow a milder curve.
+- The insect bed (`insect_bed.gd`) has a quiet low-pitched night mix: summer 50% of day level, autumn 20%, spring 15%, winter none; pitch x0.78 at night.
+- Voice cap: night storm worst case peaks at 20 of 24 voices (scenario `audit_worst`); `night` scenario checks the factors.
+

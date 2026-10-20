@@ -79,7 +79,7 @@ const EVENTS := [
 	{"name": "bird_chirp", "zones": {"meadow": 1.0, "water": 0.7, "forest": 0.5}, "every": [9, 22], "dist": [8, 45], "height": [0, 5], "db": -12.0, "day": true, "chorus": 1.0, "seasons": {"winter": 0.25, "spring": 1.0}},
 	{"name": "crow_caw", "zones": {"forest": 0.6, "highland": 0.8, "meadow": 0.3}, "every": [45, 110], "dist": [60, 160], "height": [6, 18], "db": -8.0, "day": true, "chorus": 0.5},
 	{"name": "woodpecker", "zones": {"forest": 1.0}, "every": [40, 100], "dist": [25, 80], "height": [2, 10], "db": -5.0, "day": true, "seasons": {"winter": 0.6}},
-	{"name": "owl_hoot", "zones": {"forest": 1.0}, "every": [30, 70], "dist": [40, 110], "height": [5, 14], "db": -13.0, "night": true},
+	{"name": "owl_hoot", "zones": {"forest": 1.0, "meadow": 0.3}, "every": [30, 70], "dist": [40, 110], "height": [5, 14], "db": -13.0, "night": true, "answer": 0.45, "seasons": {"winter": 1.2, "spring": 1.3, "summer": 0.7, "autumn": 1.0}},
 	{"name": "hawk_screech", "zones": {"highland": 1.0}, "every": [60, 150], "dist": [120, 300], "height": [50, 110], "db": -4.0, "hours": [9, 17], "seasons": {"winter": 0.6}},
 	{"name": "cricket_chirp", "zones": {"meadow": 1.0, "water": 0.4}, "every": [22, 55], "dist": [5, 28], "height": [0, 0], "db": -16.0, "night_rate": 5.0, "dusk": 2.0, "seasons": {"autumn": 0.9, "summer": 1.0, "spring": 0.3, "winter": 0.0}},
 	{"name": "frog_croak", "zones": {"water": 1.0}, "every": [40, 90], "dist": [6, 24], "height": [0, 0], "db": -18.0, "wet": true, "water": true, "night_rate": 3.0, "dusk": 2.0, "seasons": {"autumn": 0.3, "summer": 1.0, "spring": 1.0, "winter": 0.0}},
@@ -119,6 +119,9 @@ var _running_sec: float = 0.0
 var _flush_wait: float = 0.0
 var _fliers: Array = []                 # [{player, from, to, t, dur}] birds flying off
 var _alarm_wait: float = 0.0
+var _answers: Array = []                # owl answers waiting: [{left, name, at, db}]
+var answers_played: int = 0
+const ANSWER_SEC := [3.0, 6.0]
 
 
 func setup(stage, terrain: Node3D, flora, grass) -> void:
@@ -187,6 +190,7 @@ func update(delta: float, body: CharacterBody3D, flying: bool) -> void:
 	_event_acc = 0.0
 	_voices = _voices.filter(func(v): return is_instance_valid(v) and v.playing)
 	var step: float = tick * time_scale
+	_play_answers(step)
 
 	for event in EVENTS:
 		var name: String = event["name"]
@@ -201,6 +205,25 @@ func update(delta: float, body: CharacterBody3D, flying: bool) -> void:
 			continue
 
 		_try(event, body)
+
+
+func _play_answers(step: float) -> void:
+	for n in range(_answers.size() - 1, -1, -1):
+		_answers[n]["left"] = float(_answers[n]["left"]) - step
+
+		if float(_answers[n]["left"]) > 0.0:
+			continue
+
+		var answer: Dictionary = _answers[n]
+		_answers.remove_at(n)
+		var list: Array = _variants(str(answer["name"]))
+
+		if list.is_empty() or _voices.size() >= max_voices or not _stage.has_room():
+			continue
+
+		var player: AudioStreamPlayer3D = _play(str(answer["name"]), list, answer["at"], float(answer["db"]))
+		player.pitch_scale *= 0.9
+		answers_played += 1
 
 
 # The share of each zone around the player, smoothed so the mix changes gently.
@@ -361,6 +384,11 @@ func _try(event: Dictionary, body: CharacterBody3D) -> void:
 	_play(event["name"], list, at, float(event["db"]))
 	last_call = "%s %.0f m (%s)" % [last_file, at.distance_to(body.global_position), _source.get(event["name"], "?")]
 	calls_played[event["name"]] = int(calls_played.get(event["name"], 0)) + 1
+
+	# An owl is sometimes answered a few seconds later from the other side, a little quieter and lower.
+	if _rng.randf() < float(event.get("answer", 0.0)) * weather:
+		var other: Vector3 = body.global_position + (body.global_position - at).limit_length(float(event["dist"][1]))
+		_answers.append({"left": _rng.randf_range(ANSWER_SEC[0], ANSWER_SEC[1]), "name": event["name"], "at": Vector3(other.x, at.y, other.z), "db": float(event["db"]) - 4.0})
 
 
 # A crow scolds from the trees near `at`: the warning hook for danger (and for a player

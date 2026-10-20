@@ -56,7 +56,7 @@ const FaintEffectScript := preload("res://src/client/faint_effect.gd")
 const FallMistScript := preload("res://src/client/fall_mist.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 276
+const BUILD := 277
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -209,6 +209,7 @@ var test_insects: bool = false         # --insect-test: summer insect bed levels
 var _lake_calm_laps: int = 0
 var test_reject: bool = false          # --reject-test: refused-action cue and its rate limit (job 73)
 var test_step_levels: bool = false     # --step-levels: the step loudness table loads and can be overridden (job 76)
+var test_night: bool = false           # --night-test: owl answers, the night insect bed, wolves by season (job 77)
 var test_stance: bool = false          # --stance: stand, crouch, sit, lie and rise in turn (job 56)
 var _stance_step: int = 0
 var _lake_start_msec: int = 0
@@ -415,6 +416,8 @@ func _ready() -> void:
 			test_lake = true
 		elif argument == "--stance":
 			test_stance = true
+		elif argument == "--night-test":
+			test_night = true
 		elif argument == "--step-levels":
 			test_step_levels = true
 		elif argument == "--reject-test":
@@ -2623,6 +2626,27 @@ func _process(delta: float) -> void:
 		broken.close()
 		sound._load_step_levels("user://step_levels_test.json")
 		print("Terrain client: step levels: source %s, grass walk %.1f, stone run %.1f, plank walk %.1f, tweaked grass walk %.1f, after a broken file %.1f" % [source, grass_walk, stone_run, plank_walk, tweaked, sound.step_level_db("grass", 0)])
+
+	if test_night and now - connected_msec > 18000 and now >= _test_fire_at:
+		_test_fire_at = now + 10000000
+		var amb = sound.ambient
+		amb.weights = {"forest": 0.0, "meadow": 1.0, "water": 0.0, "highland": 0.0}
+		sound.weather.rain = 0.0
+		sound.wind_strength = 0.3
+		sound.cave.enclosure = 0.0
+		var night_levels: Array = []
+
+		for combo in [["summer", 2.0], ["spring", 2.0], ["winter", 2.0], ["summer", 13.0]]:
+			amb.set_conditions(float(combo[1]), str(combo[0]), "clear")
+			night_levels.append("%.2f" % sound.insects.target())
+
+		amb.set_conditions(2.0, "winter", "clear")
+		var wolf_winter: float = sound.creatures.season_factor("wolf")
+		amb.set_conditions(2.0, "summer", "clear")
+		var wolf_summer: float = sound.creatures.season_factor("wolf")
+		amb._answers.append({"left": 0.0, "name": "owl_hoot", "at": body.global_position + Vector3(40.0, 0.0, 0.0), "db": -17.0})
+		amb._play_answers(1.0)
+		print("Terrain client: night check: insects summer %s, spring %s, winter %s, day %s; wolf factor winter %.1f summer %.1f; owl answers %d; wild %s" % [night_levels[0], night_levels[1], night_levels[2], night_levels[3], wolf_winter, wolf_summer, amb.answers_played, str(sound.creatures.wild)])
 
 	# Stance sounds: crouch, stand, sit, stand, lie (and sit for 20 s to hear settles), stand.
 	if test_stance and now - connected_msec > 18000 and now >= _test_fire_at:

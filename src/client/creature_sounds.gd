@@ -31,16 +31,16 @@ const KINDS := {
 	"rabbit": {"calls": {"idle": "rabbit_thump", "alert": "rabbit_thump", "threat": "rabbit_squeak"}, "db": -14.0, "dist": [6.0, 25.0], "reach": 45.0, "unit": 3.0,
 		"zones": {"meadow": 1.0, "forest": 0.3}, "hours": [5.0, 21.0], "every": [300.0, 700.0], "cutoff": 6000.0},
 	"fox": {"calls": {"idle": "fox_bark", "alert": "fox_bark", "threat": "fox_scream"}, "db": -8.0, "dist": [40.0, 170.0], "reach": 320.0, "unit": 12.0,
-		"zones": {"forest": 1.0, "meadow": 0.6, "highland": 0.3}, "hours": [20.0, 5.0], "every": [200.0, 500.0], "cutoff": 8000.0},
+		"zones": {"forest": 1.0, "meadow": 0.6, "highland": 0.3}, "hours": [20.0, 5.0], "every": [200.0, 500.0], "cutoff": 8000.0, "seasons": {"winter": 1.3, "autumn": 1.0, "spring": 1.0, "summer": 0.8}},
 	"wolf": {"calls": {"idle": "wolf_howl", "alert": "wolf_growl", "threat": "wolf_growl"}, "db": -5.0, "dist": [150.0, 520.0], "reach": 950.0, "unit": 40.0,
-		"zones": {"highland": 1.0, "forest": 0.6, "meadow": 0.2}, "hours": [21.0, 5.0], "every": [240.0, 600.0], "cutoff": 6000.0},
+		"zones": {"highland": 1.0, "forest": 0.6, "meadow": 0.2}, "hours": [21.0, 5.0], "every": [240.0, 600.0], "cutoff": 6000.0, "seasons": {"winter": 1.6, "autumn": 1.0, "spring": 0.7, "summer": 0.4}},
 	"bear": {"calls": {"idle": "bear_growl", "alert": "bear_growl", "threat": "bear_roar"}, "db": -4.0, "dist": [30.0, 130.0], "reach": 320.0, "unit": 15.0,
 		"zones": {"forest": 1.0, "highland": 0.6}, "hours": [6.0, 20.0], "every": [420.0, 900.0], "cutoff": 5000.0},
 }
 const BIRD_IDLE := ["bird_whistle", "bird_feebee", "bird_trill", "bird_chirp"]
 
 var tier: int = 2
-var wild: bool = false                  # natural far calls on its own
+var wild: bool = true                   # natural far calls on their own (Dave Q6: birds and small game plus wolf and bear); false silences them
 var calls_played: Dictionary = {}       # kind -> count
 var last: String = ""                   # kind, mood, file and distance for the HUD
 
@@ -205,8 +205,13 @@ func update(delta: float) -> void:
 		var hours: Array = KINDS[kind]["hours"]
 		var open: bool = hour >= float(hours[0]) and hour < float(hours[1]) if float(hours[0]) < float(hours[1]) else hour >= float(hours[0]) or hour < float(hours[1])
 
-		if open and _rng.randf() < float(KINDS[kind]["zones"].get(zone, 0.0)) * _stage.ambient.weather_calls:
+		if open and _rng.randf() < float(KINDS[kind]["zones"].get(zone, 0.0)) * _stage.ambient.weather_calls * season_factor(kind):
 			call_nearby(kind, "idle")
+
+
+# How much the season favours this kind's natural calls (wolves howl most in winter), 1 when the table says nothing.
+func season_factor(kind: String) -> float:
+	return float(KINDS[kind].get("seasons", {}).get(str(_stage.ambient.conditions["season"]), 1.0))
 
 
 func _main_zone() -> String:

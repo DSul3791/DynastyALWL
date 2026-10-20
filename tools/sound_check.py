@@ -159,6 +159,16 @@ SCENARIOS = [
         ("a tweaked file changes the level", r"tweaked grass walk " + NUM, -53, -53),
         ("a broken file changes nothing", r"after a broken file " + NUM, -53, -53),
     ]),
+    ("night", ["--night-test"], 3500, [
+        ("summer night bed", r"insects summer " + NUM, 0.35, 0.65),
+        ("spring night bed thin", r"spring " + NUM + r", winter", 0.05, 0.25),
+        ("winter night silent", r"winter " + NUM + r", day", 0, 0),
+        ("day bed full", r"day " + NUM + r"; wolf", 0.6, 1.0),
+        ("wolves howl more in winter", r"factor winter " + NUM, 1.5, 1.7),
+        ("and less in summer", r"summer " + NUM + r"; owl", 0.3, 0.5),
+        ("an owl is answered", r"owl answers " + NUM, 1, 1),
+        ("natural far calls are on", r"wild (true)", 0, 1, "text"),
+    ]),
     ("stance", ["--stance"], 6000, [
         ("posture changes heard", r"stance check: " + NUM + r" changes", 6, 6),
         ("last is the rise", r"last (stance_rise)", 0, 1, "text"),
