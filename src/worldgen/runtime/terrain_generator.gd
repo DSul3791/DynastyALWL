@@ -680,8 +680,22 @@ func _ores_touching(column_tile: Array, box: AABB) -> Dictionary:
 
 
 # Ore runs of one column. Ore only replaces solid voxels.
-func _fill_ore_column(buffer: VoxelBuffer, data, ore_set: Dictionary, i: int, k: int, x: float, z: float, h: float, oy: float, sf: float, ny: int, origin: Vector3i) -> void:
+func _fill_ore_column(buffer: VoxelBuffer, data, ore_set: Dictionary, i: int, k: int, x: float, z: float, h_ground: float, oy: float, sf: float, ny: int, origin: Vector3i) -> void:
 	var point: Vector2 = Vector2(x, z)
+
+	# Owner (2026-10-20): ore under soil stays hidden. Where loose cover (dirt, mud, humus) lies
+	# over the rock, ore stops a cap below the surface (at least ore_cap.min_m, and the full
+	# cover); bare rock keeps its ore showing, and in a small hashed share of small cells
+	# (ore_cap.node_share) the ore is left exposed as a node, its top voxels turned to rock so
+	# what is seen matches the label.
+	var cap_rules: Dictionary = _rules.get("ore_cap", {})
+	var cover: float = data.cover_at(x, z)
+	var node_cell: float = maxf(float(cap_rules.get("node_cell_m", 24.0)), 1.0)
+	var exposed: bool = cover <= 0.0 or _hash01(int(floor(x / node_cell)), 0, int(floor(z / node_cell)), 7121) < float(cap_rules.get("node_share", 0.04))
+	var h: float = h_ground
+
+	if not exposed:
+		h = h_ground - maxf(maxf(cover, float(cap_rules.get("min_m", 1.5))), sf)
 
 	for pair in ore_set["shapes"]:
 		if pair[0] != data:
@@ -727,8 +741,18 @@ func _fill_ore_column(buffer: VoxelBuffer, data, ore_set: Dictionary, i: int, k:
 
 			for n in range(polyline.size() - 1):
 				if Geometry2D.get_closest_point_to_segment(point, polyline[n], polyline[n + 1]).distance_to(point) <= 0.5 * width:
-					_fill_run(buffer, id, h - float(ore.get("thickness_m", 1.0)), h, i, k, oy, sf, ny, Layout.CHANNEL_RESOURCE)
+					_fill_run(buffer, id, h_ground - float(ore.get("thickness_m", 1.0)), h_ground, i, k, oy, sf, ny, Layout.CHANNEL_RESOURCE)
 					break
+
+	# An exposed node on covered ground: the ore's top voxels turn to rock (the host rock
+	# below the cover), so the ground shows an outcrop instead of grass over ore.
+	if exposed and cover > 0.0:
+		var j_top: int = mini(int(floor((h_ground - oy) / sf)), ny - 1)
+
+		if j_top >= 0 and buffer.get_voxel(i, j_top, k, Layout.CHANNEL_RESOURCE) > 0:
+			var j_bed: int = clampi(int(floor((h_ground - cover - oy) / sf)), 0, ny - 1)
+			var host_rock: int = buffer.get_voxel(i, j_bed, k, Layout.CHANNEL_ROCK)
+			buffer.fill_area(Layout.MATERIAL_ROCK + host_rock, Vector3i(i, maxi(j_bed, 0), k), Vector3i(i + 1, j_top + 1, k + 1), Layout.CHANNEL_MATERIAL)
 
 	var by_province: Dictionary = ore_set["layers"].get(data.tile, {})
 
@@ -741,7 +765,7 @@ func _fill_ore_column(buffer: VoxelBuffer, data, ore_set: Dictionary, i: int, k:
 		return
 
 	var top: float = data.prov_datum[p] + data.offset_at(x, z)
-	var yb: float = h - data.cover_at(x, z)
+	var yb: float = h_ground - cover
 
 	for ore in by_province[p]:
 		_layer_column(buffer, ore, top, yb, i, k, oy, sf, ny, origin)

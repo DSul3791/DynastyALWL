@@ -78,6 +78,12 @@
 		"hard_rate": 0.1,
 		"rock_refresh_iterations": 5
 	},
+	"ore_cap": {
+		"note": "Owner (2026-10-20): ore under soil stays hidden. Where loose cover lies over rock, ore stops at least min_m (and the whole cover) below the surface; bare rock keeps its ore showing. In node_share of node_cell_m squares the ore is left exposed as a node (its top voxels turn to the host rock). terrain_generator.gd _fill_ore_column.",
+		"min_m": 1.5,
+		"node_share": 0.04,
+		"node_cell_m": 24
+	},
 	"rock": {
 		"note": "Owner (2026-10-20): the land is made from its rock. hardness 0 (wears away fast) to 1 (stands): used by erosion. ledges 0 (none) to 1 (strong): how strongly an outcropping bed of that rock stands as a ledge or cliff with a bench on top (tile_height.gd _add_rock_beds, after erosion). Granite is hard but massive, so it makes rounded domes and knobs, not ledges.",
 		"hardness": {"sediment": 0.05, "shale": 0.15, "coal": 0.15, "tuff": 0.3, "chalk": 0.35, "slate": 0.6, "sandstone": 0.65, "limestone": 0.7, "marble": 0.8, "basalt": 0.85, "granite": 0.95},
