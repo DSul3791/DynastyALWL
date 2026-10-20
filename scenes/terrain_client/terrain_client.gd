@@ -2345,6 +2345,7 @@ func _process(delta: float) -> void:
 			print("Terrain client: cave enclosure %.2f, drips %d" % [sound.cave.enclosure, sound.cave.drips_played])
 			print("Terrain client: dig sounds %s, last %s" % [str(sound.dig.digs_played), sound.dig.last_dig])
 			print("Terrain client: ", sound.wind_text())
+			print("Terrain client: ", sound.heard_text(body).replace("\n", " | "))
 			print("Terrain client: sound budget: %s, %d loads refused" % [sound.budget_text(), sound.refused_loads])
 			print("Terrain client: rain ground %s (weights %s)" % [sound.weather.ground_class, str(sound.weather._ground_w)])
 			print("Terrain client: weather %s rain %.2f wind %.2f calls %.2f thunders %d; ground wet %.2f snow %.2f, covered %.1f, puddle splashes %d, leaf drips %d" % [sound.weather.kind, sound.weather.rain, sound.weather.wind, sound.weather.calls, sound.weather.thunders_played, sound.weather.ground_wet, sound.weather.ground_snow, sound.weather.covered, sound.puddles_played, sound.weather.drips_played])
@@ -2380,6 +2381,7 @@ func _debug_text(avg_ms: float, worst_ms: float) -> String:
 	text += "\nGPU breakdown: Ctrl+Shift+G or Esc > Advanced; table shows top left, press again to close; also in the log and user://gpu_probe.txt"
 	text += "\nlast step: " + sound.last_step
 	text += "\nsound budget: " + sound.budget_text()
+	text += "\n" + sound.heard_text(body)
 	text += "\n" + sound.wind_text()
 	text += "\nexertion %.2f: %d breaths, %d heartbeats, last %s" % [sound.breath.exertion, sound.breath.breaths_played, sound.breath.beats_played, sound.breath.last]
 	text += "\ntree sounds: %d falls, %d sprays, last %s" % [sound.trees.falls_played, sound.trees.chips_played, sound.trees.last]

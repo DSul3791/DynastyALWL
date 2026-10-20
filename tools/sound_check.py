@@ -49,6 +49,7 @@ SCENARIOS = [
     ]),
     ("storm", ["--weather=storm", "--distant"], 5000, [
         ("storm weather", r"weather storm rain " + NUM, 0.9, 1.0),
+        ("heard list names sounds", r"sounds heard \(" + NUM + r"\)", 2, 40),
         ("far thunder takes the far bus", r"thunder (thunder_far 2500 m, WeatherFar)", 0, 1, "text"),
     ]),
     ("fire", ["--fire"], 5000, [

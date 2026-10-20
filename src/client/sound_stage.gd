@@ -482,6 +482,40 @@ func has_room() -> bool:
 	return _voice_count < voice_cap
 
 
+# The loudest sounds playing now, for the "what is that sound" Debug details list: one line per sound with
+# its file name (recorded or generated), distance (flat sounds say "here") and level in dB at the source.
+# Sorted loudest first (level minus 6 dB per doubling of distance from 2 m), at most `limit` lines.
+func heard_text(body: CharacterBody3D, limit: int = 8) -> String:
+	var rows: Array = []
+
+	for player in [_wind_low, _wind_gust]:
+		if player.playing and player.stream != null:
+			rows.append([player.stream.resource_path.get_file().get_basename(), -1.0, player.volume_db, tag(player.stream)])
+
+	for entry in weather.active_loops():
+		rows.append([entry[0], -1.0, entry[1], "loop"])
+
+	for player in get_tree().get_nodes_in_group("world_sounds"):
+		if not is_instance_valid(player) or not player.playing or player.stream == null:
+			continue
+
+		var distance: float = player.global_position.distance_to(body.global_position)
+		rows.append([player.stream.resource_path.get_file().get_basename(), distance, player.volume_db, tag(player.stream)])
+
+	for row in rows:
+		var d: float = maxf(float(row[1]), 2.0) if float(row[1]) >= 0.0 else 2.0
+		row.append(float(row[2]) - 6.0 * log(d / 2.0) / log(2.0))
+
+	rows.sort_custom(func(a, b): return a[4] > b[4])
+	var lines: PackedStringArray = []
+
+	for n in range(mini(limit, rows.size())):
+		var row: Array = rows[n]
+		lines.append("  %s %s %.0f dB %s" % [row[0], "here" if float(row[1]) < 0.0 else "%.0f m" % float(row[1]), float(row[2]), row[3]])
+
+	return "sounds heard (%d):\n%s" % [rows.size(), "\n".join(lines)]
+
+
 func wind_text() -> String:
 	return "wind %.2f (world %.2f, exposure %+.2f: -1 valley, +1 ridge)" % [wind_strength, weather.world_wind, exposure]
 

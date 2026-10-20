@@ -188,6 +188,17 @@ func apply_state(state: Dictionary) -> void:
 		set_weather("clear", 1.0)
 
 
+# Looping weather beds that are audible: [[name, volume_db]] (for the "what is that sound" list).
+func active_loops() -> Array:
+	var list: Array = []
+
+	for name in _loops:
+		if _loops[name].playing and not _loops[name].stream_paused and _loops[name].volume_db > -60.0:
+			list.append([name, _loops[name].volume_db])
+
+	return list
+
+
 func voices_playing() -> int:
 	var count: int = _pending.size()
 
