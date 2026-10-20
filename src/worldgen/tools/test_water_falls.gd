@@ -25,9 +25,9 @@ func _init() -> void:
 	var vel: PackedFloat32Array = PackedFloat32Array()
 	vel.resize(count * count * 2)
 
-	# A channel along row 5: flat at 100 m, a 12 m drop over three points, flat at 88 m.
+	# A channel along row 5: flat at 100 m, a 24 m drop over three points, flat at 76 m.
 	for i in range(count):
-		var level: float = 100.0 if i < 4 else (100.0 - float(i - 3) * 4.0 if i < 7 else 88.0)
+		var level: float = 100.0 if i < 4 else (100.0 - float(i - 3) * 8.0 if i < 7 else 76.0)
 		levels[5 * count + i] = level
 		vel[(5 * count + i) * 2] = 6.0
 
@@ -76,6 +76,15 @@ func _init() -> void:
 	_check(decoded["vel"].size() == vel.size(), "grid still carries the current")
 	var plain: Dictionary = {"count": count, "spacing": 8.0, "levels": levels, "wet": 20, "vel": vel}
 	_check(GridScript.decode(GridScript.encode(plain))["falls"].is_empty(), "no falls trailer when none")
+
+	# Owner report (2026-10-20, build 232): a ribbon ran down the sloping ground above a cliff.
+	# A run falling 4 m every 8 m (about 27 degrees) is a cascade, not a fall.
+	var cascade: PackedFloat32Array = levels.duplicate()
+
+	for i in range(count):
+		cascade[5 * count + i] = 100.0 - float(i) * 4.0
+
+	_check(FallsScript.find(null, Vector2.ZERO, count, 8.0, cascade, vel, bed).is_empty(), "a cascade is no fall")
 
 	_test_thin_fall()
 

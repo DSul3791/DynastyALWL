@@ -9,6 +9,11 @@ extends RefCounted
 
 const FALL_MARK := 0xF2           # trailer in an encoded water chunk (after the velocity trailer)
 const FALL_DROP_M := 3.0          # a wet neighbour this much lower makes a link of a fall
+# Owner report (2026-10-20, build 232): one ribbon ran from near the pond across the sloping
+# ground at the top of the cliff and on down it. A link is a fall only where the water drops
+# at least this steeply (rise over run, about 37 degrees); a gentler steep run is a cascade.
+const FALL_SLOPE_MIN := 0.75
+const FED_REACH := 8              # points searched upstream for the running water a fall starts from
 const STEP_M := 2.0               # the polyline is resampled this often along a fall
 const LIFT_M := 0.35              # the ribbon rides this far over the real ground
 const WIDTH_PER_ROOT_M3S := 0.6   # width = this * sqrt(flow m3/s), within the limits below
@@ -67,7 +72,7 @@ static func find(generator, origin: Vector2, count: int, spacing: float, levels:
 
 					var drop: float = here - other
 
-					if drop >= best_drop:
+					if drop >= best_drop and drop >= FALL_SLOPE_MIN * spacing * Vector2(float(di), float(dj)).length():
 						best_drop = drop
 						best = jj * count + ii
 
@@ -105,7 +110,7 @@ static func find(generator, origin: Vector2, count: int, spacing: float, levels:
 		if levels[p] - float(ground.call(top_x, top_z)) > START_DEPTH_MAX_M:
 			continue
 
-		if drawn.size() == levels.size() and not _fed(p, count, drawn, drawn_vel):
+		if drawn.size() == levels.size() and not _fed(p, count, levels, drawn, drawn_vel):
 			continue
 
 		if float(ground.call(top_x, top_z)) - float(ground.call(bottom_x, bottom_z)) < GROUND_DROP_MIN_M:
@@ -150,27 +155,44 @@ static func find(generator, origin: Vector2, count: int, spacing: float, levels:
 	return falls
 
 
-# Whether point p (the top of a fall) is drawn running water or lies beside some: the lip of
-# a fall is itself a steep cell whose thin water is not drawn, with the river just above it.
-static func _fed(p: int, count: int, drawn: PackedFloat32Array, drawn_vel: PackedFloat32Array) -> bool:
-	var i: int = p % count
-	var j: int = p / count
+# Whether point p (the top of a fall) is fed by drawn running water: it is such water, or
+# going up from it through the levels (thin water too, rising every step) within FED_REACH
+# points there is some. A cascade's thin water above a fall is not drawn, so the river can
+# be a few points back; a film on a pond's bank has only dry ground or still water above it.
+static func _fed(p: int, count: int, levels: PackedFloat32Array, drawn: PackedFloat32Array, drawn_vel: PackedFloat32Array) -> bool:
+	var frontier: Array = [p]
+	var seen: Dictionary = {p: true}
 
-	for dj in range(-1, 2):
-		for di in range(-1, 2):
-			var ii: int = i + di
-			var jj: int = j + dj
+	for hop in range(FED_REACH + 1):
+		var next: Array = []
 
-			if ii < 0 or jj < 0 or ii >= count or jj >= count:
-				continue
-
-			var q: int = jj * count + ii
-
-			if is_nan(drawn[q]):
-				continue
-
-			if drawn_vel.size() != drawn.size() * 2 or Vector2(drawn_vel[q * 2], drawn_vel[q * 2 + 1]).length() >= START_SPEED_M_S:
+		for q in frontier:
+			if not is_nan(drawn[q]) and (drawn_vel.size() != drawn.size() * 2 or Vector2(drawn_vel[q * 2], drawn_vel[q * 2 + 1]).length() >= START_SPEED_M_S):
 				return true
+
+			var i: int = q % count
+			var j: int = q / count
+
+			for dj in range(-1, 2):
+				for di in range(-1, 2):
+					var ii: int = i + di
+					var jj: int = j + dj
+
+					if ii < 0 or jj < 0 or ii >= count or jj >= count:
+						continue
+
+					var r: int = jj * count + ii
+
+					if seen.has(r) or is_nan(levels[r]) or levels[r] <= levels[q]:
+						continue
+
+					seen[r] = true
+					next.append(r)
+
+		frontier = next
+
+		if frontier.is_empty():
+			break
 
 	return false
 
