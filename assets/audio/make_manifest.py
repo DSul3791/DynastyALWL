@@ -130,6 +130,8 @@ SLOTS = [
     ("item_drop", "items", "item_sounds.gd: stacks in the inventory shrank (dropped)", "3 dull thuds of setting an item down", 2),
     ("inv_open", "items", "item_sounds.gd: the inventory opened (I)", "3 leather pouch or satchel flaps opening", 2),
     ("inv_close", "items", "item_sounds.gd: the inventory closed", "3 leather pouch flaps closing", 2),
+    ("hotbar_tick", "items", "item_sounds.gd: a hotbar slot chosen (number keys)", "3 short quiet dry wooden ticks, 0.07 s", 4),
+    ("craft_start", "items", "item_sounds.gd: a craft begins", "3 soft two-part clicks of setting materials down, 0.15 s", 4),
     ("item_swap", "items", "item_sounds.gd: items moved between slots", "3 short slide and tap cues", 1),
     ("craft_done", "items", "item_sounds.gd: a craft finished", "3 wooden knock and small chime cues", 2),
     ("spear_jab", "spear", "spear_sounds.gd: a spear thrust through the air", "3 spear thrust whooshes, 0.3 s", 3),

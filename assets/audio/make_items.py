@@ -99,8 +99,25 @@ def craft_done(rng):
     return finish(out, 0.55)
 
 
+def hotbar_tick(rng):
+    """Choosing a hotbar slot: one short dry wooden tick, quiet."""
+    out = np.zeros(int(0.07 * SR))
+    add(out, burst(rng, 0.05, rng.uniform(1700, 2300), 1.0, 0.001, 0.012) * 0.6, 0.0)
+    add(out, thump(rng.uniform(300, 420), 0.04, 0.01) * 0.4, 0.0)
+    return finish(out, 0.4)
+
+
+def craft_start(rng):
+    """Starting a craft: a soft two-part click, like setting the materials down."""
+    out = np.zeros(int(0.16 * SR))
+    add(out, burst(rng, 0.05, rng.uniform(1300, 1800), 1.1, 0.002, 0.015) * 0.6, 0.0)
+    add(out, thump(rng.uniform(200, 280), 0.07, 0.02) * 0.5, 0.06)
+    return finish(out, 0.45)
+
+
 def main():
     rng = np.random.default_rng(20261026)
+    rng_ui = np.random.default_rng(20261124)      # its own stream: the older item sounds stay as they were
 
     for v in range(VARIANTS):
         write_ogg("item_pickup_%d" % v, pickup(rng))
@@ -109,8 +126,10 @@ def main():
         write_ogg("inv_close_%d" % v, pouch(rng, False))
         write_ogg("item_swap_%d" % v, swap(rng))
         write_ogg("craft_done_%d" % v, craft_done(rng))
+        write_ogg("hotbar_tick_%d" % v, hotbar_tick(rng_ui))
+        write_ogg("craft_start_%d" % v, craft_start(rng_ui))
 
-    print("Wrote %d item sounds to %s" % (VARIANTS * 6, OUT))
+    print("Wrote %d item sounds to %s" % (VARIANTS * 8, OUT))
 
 
 if __name__ == "__main__":

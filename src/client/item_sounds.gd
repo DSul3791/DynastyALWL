@@ -12,6 +12,9 @@ extends Node
 # a name prefix), else "knap". A new recipe only needs a "sound" field to get the right work sound.
 # Cues: item_pickup (stacks grew), item_drop (stacks shrank), inv_open, inv_close, item_swap (slots
 # rearranged), craft_done (a craft finished: the inventory's crafting number went back to 0).
+# Also: hotbar_tick (a hotbar slot chosen, `hotbar(slot)` from held_item.select, pitch rises a little with the slot),
+# craft_start (a craft begins) and the inventory open/close cue for the chest screen. All on the Interface bus,
+# short and quiet; the world's sounds keep running while a panel is open.
 # Cooking and eating: a roast that appears in the bag sizzles at the nearest fire (sound.fire.cook); wood
 # used up within FUEL_WINDOW_MSEC of fuel_pressed() (the V key at a fire) plays sound.fire.fuel there.
 #   sound.itemfx.eat("crunch")    eating: "crunch" (roast, nuts, roots), "soft" (berries, greens), "drink"
@@ -23,7 +26,7 @@ const GENERATED_DIR := "res://assets/audio/items/"
 const RECORDED_DIR := "res://assets/audio/recorded/items/"
 const CRAFT_DIR := "res://assets/audio/crafting/"
 const CRAFT_RECORDED_DIR := "res://assets/audio/recorded/crafting/"
-const NAMES := {"item_pickup": -17.0, "item_drop": -17.0, "inv_open": -20.0, "inv_close": -21.0, "item_swap": -20.0, "craft_done": -16.0}
+const NAMES := {"item_pickup": -17.0, "item_drop": -17.0, "inv_open": -20.0, "inv_close": -21.0, "item_swap": -20.0, "craft_done": -16.0, "hotbar_tick": -26.0, "craft_start": -22.0}
 const MIN_GAP_MSEC := 60
 const WORK_DB := -18.0
 const WORK_TYPES := {"cordage": "twine", "stone_axe": "knap", "stone_knife": "knap", "wooden_spear": "carve", "spear": "bind", "torch": "bind", "campfire": "stack"}
@@ -49,6 +52,8 @@ var _player: AudioStreamPlayer
 var _last_msec: int = -1000
 var _rng := RandomNumberGenerator.new()
 var _was_open: bool = false
+var _was_chest: bool = false
+var hotbar_played: int = 0
 var _total: int = -1
 var _numbers: PackedInt32Array = PackedInt32Array()
 var _was_crafting: int = 0
@@ -77,6 +82,12 @@ func setup(_stage) -> void:
 	add_child(_mouth)
 
 
+# A hotbar slot chosen (0 to 7): a quiet tick, a touch higher for the higher slots.
+func hotbar(slot: int) -> void:
+	hotbar_played += 1
+	play("hotbar_tick", 0.94 + 0.02 * float(clampi(slot, 0, 7)))
+
+
 func watch(items) -> void:
 	if items == null or items.inventory == null:
 		return
@@ -102,9 +113,14 @@ func watch(items) -> void:
 		_was_open = items.open
 		play("inv_open" if items.open else "inv_close")
 
+	if bool(items.chest_mode) != _was_chest:
+		_was_chest = bool(items.chest_mode)
+		play("inv_open" if _was_chest else "inv_close")               # the chest screen, besides the chest's own creak (placed_sounds)
+
 	var crafting: int = int(items.get("_crafting"))
 
 	if _was_crafting == 0 and crafting != 0:
+		play("craft_start")
 		_start_work(items, crafting)
 
 	if _was_crafting != 0 and crafting == 0:
@@ -286,7 +302,7 @@ func _start_work(items, number: int) -> void:
 	last = last_work
 
 
-func play(name: String) -> bool:
+func play(name: String, pitch: float = 1.0) -> bool:
 	if not NAMES.has(name):
 		return false
 
@@ -304,7 +320,7 @@ func play(name: String) -> bool:
 	var pick: int = _rng.randi_range(0, list.size() - 1)
 	_player.stream = list[pick]
 	_player.volume_db = float(NAMES[name]) + _rng.randf_range(-1.0, 1.0)
-	_player.pitch_scale = _rng.randf_range(0.96, 1.04)
+	_player.pitch_scale = pitch * _rng.randf_range(0.96, 1.04)
 	_player.play()
 	played += 1
 	last = "%s_%d (%s)" % [name, pick, SoundStage.tag(list[pick])]

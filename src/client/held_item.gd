@@ -72,6 +72,9 @@ func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hu
 
 
 func select(slot: int) -> void:
+	if _sound != null and clampi(slot, 0, 7) != held_slot:
+		_sound.itemfx.hotbar(clampi(slot, 0, 7))
+
 	held_slot = clampi(slot, 0, 7)
 	aiming = false
 	var file: FileAccess = FileAccess.open(HOTBAR_FILE, FileAccess.WRITE)

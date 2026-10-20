@@ -185,6 +185,8 @@ var test_spear_sounds: bool = false
 var test_fire: bool = false
 var test_fire_world: bool = false      # --fire-world: a fake world row goes through states 8, 9, 1, 9, 8 (loaded, lit, rained out, emptied)
 var _fire_world_step: int = 0
+var test_ui_sounds: bool = false       # --ui-sounds: hotbar ticks and the chest screen cue (job 58)
+var _ui_step: int = 0
 var test_lake: bool = false            # --lake: soft laps from stand-in still-water squares (job 62)
 var test_stance: bool = false          # --stance: stand, crouch, sit, lie and rise in turn (job 56)
 var _stance_step: int = 0
@@ -381,6 +383,8 @@ func _ready() -> void:
 			test_levels = true
 		elif argument == "--fire":
 			test_fire = true
+		elif argument == "--ui-sounds":
+			test_ui_sounds = true
 		elif argument == "--lake":
 			test_lake = true
 		elif argument == "--stance":
@@ -2327,6 +2331,18 @@ func _process(delta: float) -> void:
 
 		if _test_fire_step >= 7:
 			test_fire = false
+
+	# Hotbar ticks: slot 2, the same slot again (silent), slot 5, back to 0.
+	if test_ui_sounds and now - connected_msec > 18000 and now >= _test_fire_at:
+		_test_fire_at = now + 700
+		var picks: Array = [2, 2, 5, 0]
+
+		if _ui_step < picks.size():
+			held.select(picks[_ui_step])
+			_ui_step += 1
+		elif _ui_step == picks.size():
+			print("Terrain client: ui sounds: %d hotbar ticks, last %s" % [sound.itemfx.hotbar_played, sound.itemfx.last])
+			_ui_step += 1
 
 	# Lake laps: still-water squares 8 to 14 m away for 30 s; the report counts the laps.
 	if test_lake and now - connected_msec > 18000:

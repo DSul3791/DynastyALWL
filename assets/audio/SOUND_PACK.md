@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **186 slots: 17 recorded, 160 generated placeholders, 9 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **188 slots: 17 recorded, 162 generated placeholders, 9 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -154,6 +154,7 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 3 | `tree_leaves` | generated | 3 | tree_sounds.gd: the crown rushing down through the air | 3 branches and leaves rushing as a tree falls, about 1 s |
 | 3 | `wolf_growl` | generated | 2 | creature_sounds.gd: a wolf's growl (alert, threat) | 2 to 3 wolf growls and snarls, 1 to 2 s |
 | 3 | `woodpecker` | generated | 3 | ambient_life.gd: forest, by day | 2 to 3 woodpecker drumming runs, about 1 s |
+| 4 | `craft_start` | generated | 3 | item_sounds.gd: a craft begins | 3 soft two-part clicks of setting materials down, 0.15 s |
 | 4 | `door_knock` | generated | 2 | interior_sounds.gd: knocking on a door (object) | 2 to 3 triple knocks on wood |
 | 4 | `frog_croak` | recorded | 6 | ambient_life.gd: ponds and rivers, spring to autumn, more at night and in rain | have: Dave's frogs (mostly small trillers); a deep bullfrog croak is still missing |
 | 4 | `furniture_drag` | generated | 2 | interior_sounds.gd: furniture dragged on a floor (object) | 2 to 3 wooden furniture scrapes, 1 s |
@@ -164,6 +165,7 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 4 | `hit_pick_wood` | generated | 3 | hit_sounds.gd: a pickaxe blow on wood | 3 pick strikes into wood |
 | 4 | `hit_spade_stone` | generated | 3 | hit_sounds.gd: a spade scraping on stone | 3 spade scrapes on stone |
 | 4 | `hit_spade_wood` | generated | 3 | hit_sounds.gd: a spade strike on wood | 3 spade knocks and scrapes on wood |
+| 4 | `hotbar_tick` | generated | 3 | item_sounds.gd: a hotbar slot chosen (number keys) | 3 short quiet dry wooden ticks, 0.07 s |
 | 4 | `interior_creak` | generated | 2 | interior_sounds.gd: timbers creaking now and then inside | 2 to 3 wood creaks, 0.5 to 1 s |
 | 4 | `interior_room` | generated | 1 | interior_sounds.gd: the room tone while inside a building (loop) | A quiet indoor room tone loop, seamless |
 | 4 | `rabbit_squeak` | generated | 2 | creature_sounds.gd: a rabbit's distress squeal (threat) | 2 to 3 short rabbit squeals |

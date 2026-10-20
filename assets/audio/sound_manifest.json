@@ -921,6 +921,22 @@
    "priority": 2
   },
   {
+   "name": "hotbar_tick",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "item_sounds.gd: a hotbar slot chosen (number keys)",
+   "to_supply": "3 short quiet dry wooden ticks, 0.07 s",
+   "priority": 4
+  },
+  {
+   "name": "craft_start",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "item_sounds.gd: a craft begins",
+   "to_supply": "3 soft two-part clicks of setting materials down, 0.15 s",
+   "priority": 4
+  },
+  {
    "name": "item_swap",
    "state": "generated",
    "variants": 3,
