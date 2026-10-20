@@ -4,12 +4,16 @@ extends RefCounted
 # resolution (16:9 sizes, 1920x1080 the highest), windowed or fullscreen windowed, VSync
 # and the quality tier. Esc > Settings changes them; the file is user://display_settings.cfg.
 #
-# The resolution is the size the 3D picture is drawn at. Windowed, the window has that size.
+# The resolution is the size the 3D picture is drawn at, always exactly that size and 16:9.
 # Fullscreen windowed (Godot's Window.MODE_FULLSCREEN: a borderless window the size of the
-# screen, not exclusive fullscreen) keeps the 3D picture at that size and stretches it to the
-# screen, so a 4K screen still draws 1920x1080 (render_scale.gd caps the 3D scale);
-# menus and text are drawn at the screen's own size, so they stay sharp.
+# screen, not exclusive fullscreen) stretches it to the screen.
 
+# The game is drawn on a fixed 2880x1620 canvas (the project's base size, so the menus and HUD
+# keep their layout) that is scaled to the window keeping 16:9, with bars where the window is
+# a different shape (Window content scale mode "viewport", aspect "keep"). The 3D picture is
+# rendered at a fixed share of that canvas, so 1920x1080 is always 1920x1080 whatever the
+# window shape, then scaled to the window with the canvas.
+const BASE := Vector2i(2880, 1620)
 const PATH := "user://display_settings.cfg"
 const SIZES := [Vector2i(1280, 720), Vector2i(1366, 768), Vector2i(1600, 900), Vector2i(1920, 1080)]
 const DEFAULT_SIZE := 3                  # 1920x1080
@@ -57,6 +61,19 @@ static func embedded() -> bool:
 	return Engine.has_method("is_embedded_in_editor") and Engine.is_embedded_in_editor()
 
 
+# The 3D picture size for a quality tier: the chosen resolution; Low at most 1280x720
+# (about 1 megapixel); Ultra a third larger, at most 2560x1440.
+func render_size(quality_tier: int) -> Vector2i:
+	var width: float = float(size().x)
+
+	if quality_tier <= 0:
+		width = minf(width, 1280.0)
+	elif quality_tier >= 3:
+		width = minf(width * 4.0 / 3.0, 2560.0)
+
+	return Vector2i(roundi(width), roundi(width * 9.0 / 16.0))
+
+
 func size() -> Vector2i:
 	return SIZES[size_index]
 
@@ -71,6 +88,9 @@ func apply(window: Window) -> void:
 		return
 
 	DisplayServer.window_set_vsync_mode(VSYNC_MODES[vsync_index])
+	window.content_scale_mode = Window.CONTENT_SCALE_MODE_VIEWPORT
+	window.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP
+	window.content_scale_size = BASE
 
 	if fullscreen:
 		window.mode = Window.MODE_FULLSCREEN

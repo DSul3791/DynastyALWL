@@ -43,7 +43,6 @@ const HeldItemScript := preload("res://src/client/held_item.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
 const WeatherScript := preload("res://src/shared/weather.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
-const RenderScale := preload("res://src/client/render_scale.gd")
 const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
@@ -211,7 +210,7 @@ var sound                             # SoundStage: wind, footsteps, grass swish
 var _commit: String = GitStamp.short_commit()   # which checkout is running
 var _render_scale: float = 1.0            # 3D resolution scale now (render_scale.gd)
 var _jitter_test                      # float-precision test, J or Esc > Advanced
-var _gpu_probe                        # GPU cost per piece of the scene, F8
+var _gpu_probe                        # GPU cost per piece of the scene, Ctrl+Shift+G
 var weather_look                      # WeatherLook: clouds, rain, snow, fog, lightning from `weather`
 var _bake = TileBakeScript.new()      # admin: background tile bake
 var _bake_check_msec: int = 0
@@ -259,7 +258,6 @@ func _ready() -> void:
 	if display.quality >= 0:
 		quality = clampi(display.quality, 0, QUALITY_NAMES.size() - 1)
 
-	RenderScale.cap = display.size()
 	display.apply(get_window())
 	var host: String = "127.0.0.1"
 	var port: int = 24600
@@ -1001,7 +999,7 @@ func _report_display(prefix: String = "") -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	var win: Vector2i = get_window().size
-	var render: Vector2i = Vector2i(Vector2(win) * _render_scale)
+	var render: Vector2i = Vector2i(Vector2(display.BASE) * _render_scale)
 	var text: String = "%s3D picture %dx%d" % [prefix, render.x, render.y]
 
 	if display.embedded():
@@ -1022,12 +1020,18 @@ func _save_display() -> void:
 	display.save()
 
 
-# 3D resolution follows the tier's pixel budget (render_scale.gd) and the window size.
+# The 3D picture is the chosen size (Low at most 720p, Ultra a third larger), always 16:9.
 func _apply_render_scale() -> void:
 	if DisplayServer.get_name() == "headless":
 		return
 
-	_render_scale = RenderScale.apply(get_viewport(), get_window().size, quality)
+	# Owner (2026-10-20): the 3D picture is always the chosen size, 16:9, whatever shape the
+	# window or the editor's Game tab has (display_settings.gd): a share of the fixed 2880x1620
+	# canvas, scaled to the window with bars. Taller or smaller than the window is fine.
+	_render_scale = float(display.render_size(quality).x) / float(display.BASE.x)
+	var viewport: Viewport = get_viewport()
+	viewport.scaling_3d_mode = Viewport.SCALING_3D_MODE_FSR if _render_scale < 0.99 else Viewport.SCALING_3D_MODE_BILINEAR
+	viewport.scaling_3d_scale = _render_scale
 
 
 # The thinking-brain icon, a white outline with a gray inside. Loaded as an
@@ -1104,7 +1108,6 @@ func _build_menu(layer: CanvasLayer) -> void:
 		_menu_note.text = "VSync is now %s. On snaps to 60 or 30; adaptive avoids the halving; off shows the true speed." % display.VSYNC_NAMES[display.vsync_index])
 	_menu_button(settings, "Resolution: change", func():
 		display.size_index = (display.size_index + 1) % display.SIZES.size()
-		RenderScale.cap = display.size()
 		display.apply(get_window())
 		_apply_render_scale()
 		_save_display()
@@ -1112,7 +1115,6 @@ func _build_menu(layer: CanvasLayer) -> void:
 	_menu_button(settings, "Reset display to default", func():
 		display.reset()
 		quality = 2
-		RenderScale.cap = display.size()
 		display.apply(get_window())
 		_apply_quality()
 		_save_display()
@@ -1239,6 +1241,9 @@ func _build_menu(layer: CanvasLayer) -> void:
 	_menu_button(advanced, "Jitter test (next spot, or J)", func():
 		_jitter_test.next_spot()
 		_set_menu(false))
+	_menu_button(advanced, "GPU breakdown (stand still; or Ctrl+Shift+G)", func():
+		_set_menu(false)
+		_gpu_probe.toggle())
 	_menu_button(advanced, "Back", func(): _show_menu_page("main"))
 
 	_menu_note = Label.new()
@@ -1535,7 +1540,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			items.admin_give_test_set()
 		elif event.keycode == KEY_J and _jitter_test != null:
 			_jitter_test.next_spot()
-		elif event.keycode == KEY_F8:
+		elif event.keycode == KEY_G and event.ctrl_pressed and event.shift_pressed:
 			_gpu_probe.toggle()
 		elif event.keycode == KEY_F2:
 			quality = (quality + 1) % QUALITY_NAMES.size()
@@ -1987,7 +1992,8 @@ func _process(delta: float) -> void:
 		hud.text += "\nweather: rain %.2f snow %.2f storm %.2f sun %.2f wind %.2f, %.0f C, %s" % [weather["rain"], weather["snow"], weather["storm"], weather["sun"], weather["wind"], weather["temp_c"], "under cover" if under_cover > 0.0 else "open"]
 
 	var win: Vector2i = get_window().size
-	hud.text += "\n3D %dx%d of window %dx%d (scale %.2f)%s, %s, %s" % [int(win.x * _render_scale), int(win.y * _render_scale), win.x, win.y, _render_scale, " (embedded: editor owns the window)" if display.embedded() else "", RenderingServer.get_video_adapter_name(), RenderingServer.get_current_rendering_driver_name()]
+	hud.text += "\n3D %dx%d 16:9 in window %dx%d (scale %.2f)%s, %s, %s" % [int(display.BASE.x * _render_scale), int(display.BASE.y * _render_scale), win.x, win.y, _render_scale, " (embedded: editor owns the window)" if display.embedded() else "", RenderingServer.get_video_adapter_name(), RenderingServer.get_current_rendering_driver_name()]
+	hud.text += "\nGPU breakdown: Ctrl+Shift+G or Esc > Advanced; table shows bottom left, and is in the log and user://gpu_probe.txt"
 	hud.text += "\nlast step: " + sound.last_step
 	hud.text += "\nsound budget: " + sound.budget_text()
 	hud.text += "\n" + sound.wind_text()

@@ -1,10 +1,10 @@
 extends Node
-# GPU cost probe (Art direction, 2026-10-20). Press F8 while standing still in the scene you
+# GPU cost probe (Art direction, 2026-10-20). Press Ctrl+Shift+G (or Esc > Advanced > GPU breakdown) while standing still in the scene you
 # want to measure. It switches one thing off at a time (grass, trees and shrubs, ground, sea,
 # sun shadows, SSAO, glow, fog, anti-aliasing), averages the GPU time over 40 frames for each
 # and shows the table at the bottom left; the same table is printed to the log and saved to
 # user://gpu_probe.txt. The saving next to each line is what that piece costs in this spot.
-# Nothing runs until F8 is pressed.
+# Nothing runs until it is started.
 
 const WARMUP := 20
 const MEASURE := 40
@@ -115,7 +115,7 @@ func _process(_delta: float) -> void:
 
 func _show(done: bool) -> void:
 	var win: Vector2i = get_window().size
-	var text: String = "GPU probe (F8)%s\n" % ("" if done else ", keep still: step %d of %d" % [_results.size() + 1, _steps.size()])
+	var text: String = "GPU probe (Ctrl+Shift+G)%s\n" % ("" if done else ", keep still: step %d of %d" % [_results.size() + 1, _steps.size()])
 	text += "%s, %s, window %dx%d, 3D scale %.2f, quality %s\n" % [RenderingServer.get_video_adapter_name(), RenderingServer.get_current_rendering_driver_name(), win.x, win.y, _client._render_scale, _client.QUALITY_NAMES[_client.quality]]
 
 	for n in range(_results.size()):
