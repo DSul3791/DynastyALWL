@@ -37,6 +37,7 @@ var longest_river_m: float = 0.0
 var max_bed_rise_m: float = 0.0       # largest climb of any river bed toward the sea (0: none)
 var ponds_made: int = 0               # head ponds stamped
 var largest_pond_m: float = 0.0       # widest head pond stamped (meters across)
+var _guard: PackedFloat32Array = PackedFloat32Array()   # per sample: no river or brook cuts below this (pond shores)
 var _world_ponds: Array = []          # head ponds from the world river network (RiverNetwork.ponds_in), world meters
 var ponds_moved: int = 0              # of those, ponds moved up off a steep head onto flat ground
 var heads_straightened: int = 0       # steep river heads re-routed straight down the slope
@@ -540,6 +541,19 @@ func _carve_guides(rivers: Array) -> void:
 	# The land with its pond benches, before any river or brook is cut (brooks follow it,
 	# pond rims are restored no higher than it).
 	var bench_land: PackedFloat32Array = carved.duplicate()
+
+	# Owner (2026-10-20): the ponds are made first and the rivers cut last, but a river may
+	# never reshape a pond. Across each pond's shore the ground is guarded: rivers and
+	# brooks cut through it no lower than just under the pond's lip (the outlet notch), so
+	# the pond keeps its own outline and holds its water.
+	_guard = PackedFloat32Array()
+	_guard.resize(samples * samples)
+	_guard.fill(-INF)
+
+	for pond in _world_ponds:
+		var centre: Vector2 = Vector2(pond["centre"]) / spacing_m - Vector2(float(_origin_sx), float(_origin_sz))
+		_guard_shore(centre, float(pond.get("radius", pond_radius)), float(pond["level"]) - 1.5, pond_shore)
+
 	var ponds_placed: Array = []          # [centre, rim height] of every head pond so far
 	river_cells = 0
 
@@ -818,7 +832,7 @@ func _carve_guides(rivers: Array) -> void:
 			for nc in range(1, samples - 1):
 				var k: int = nr * samples + nc
 
-				if water_class[k] != 0 or _ocean[k] == 1:
+				if water_class[k] != 0 or _ocean[k] == 1 or _guard[k] > -INF:
 					continue
 
 				var sum_h: float = 0.0
@@ -837,15 +851,27 @@ func _carve_guides(rivers: Array) -> void:
 	# and a river bed passing by (or leaving at the head's depth) cut the pond's rim down to
 	# its floor, so it drained. The shore ring is raised back to just under the lip, the
 	# brook's own starting bed, so every way out leaves at that height.
-	for pond in _world_ponds:
-		var centre: Vector2 = Vector2(pond["centre"]) / spacing_m - Vector2(float(_origin_sx), float(_origin_sz))
-		_seal_pond_rim(carved, bench_land, centre, float(pond.get("radius", pond_radius)), float(pond["level"]) - 1.5, pond_shore)
-
 	for placed in ponds_placed:
 		_seal_pond_rim(carved, PackedFloat32Array(), placed[0], placed[2], placed[1] - 1.5, pond_shore)
 
 	heights = carved
 	longest_river_m = longest
+
+
+# Marks a pond's shore (from its edge out across the shore) so no cut goes below `lip` at
+# the water's edge, and below a gentle fall from there outward: a river leaving the pond
+# starts at the pond's sill and runs smoothly down from it, never behind a ridge.
+func _guard_shore(centre: Vector2, radius_m: float, lip: float, shore_m: float) -> void:
+	var fall: float = float(_rules.get("head_pond_outlet_fall", 0.1))
+	var reach_cells: float = (radius_m + shore_m) / spacing_m + 1.0
+
+	for nr in range(maxi(int(ceil(centre.y - reach_cells)), 0), mini(int(floor(centre.y + reach_cells)), samples - 1) + 1):
+		for nc in range(maxi(int(ceil(centre.x - reach_cells)), 0), mini(int(floor(centre.x + reach_cells)), samples - 1) + 1):
+			var distance: float = Vector2(float(nc), float(nr)).distance_to(centre) * spacing_m
+
+			if distance >= radius_m and distance <= radius_m + shore_m:
+				var k: int = nr * samples + nc
+				_guard[k] = maxf(_guard[k], lip - (distance - radius_m) * fall)
 
 
 # Raises the ground from a pond's edge out across its shore to at least `lip`, but never
@@ -1167,6 +1193,9 @@ func _stamp_at(
 			# A pond is a bowl: deepest in the middle, rising to the water level at its edge.
 			if bowl > 0.0 and distance < width * 0.5:
 				floor_height = bed + bowl * pow(distance / (width * 0.5), 2.0)
+
+			if not _guard.is_empty():
+				floor_height = maxf(floor_height, _guard[target])
 
 			carved[target] = minf(carved[target], floor_height)
 
