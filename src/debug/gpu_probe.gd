@@ -47,7 +47,12 @@ func toggle() -> void:
 	_steps = [
 		["everything on", Callable()],
 		["grass off", func(on): _client.grass.visible = on],
-		["trees, shrubs, plants off", func(on): _client.flora.visible = on],
+		["trees off", func(on): _flora_kind(0, on)],
+		["shrubs off", func(on): _flora_kind(1, on)],
+		["plants off", func(on): _flora_kind(2, on)],
+		["trees beyond 100 m off", func(on): _flora_far(100.0, on)],
+		["trees beyond 200 m off", func(on): _flora_far(200.0, on)],
+		["tree shadows off", func(on): _flora_shadows(on)],
 		["ground off", func(on): _client.terrain.visible = on],
 		["sea off", func(on): if _client.sea != null: _client.sea.visible = on],
 		["sun shadows off", func(on): _client._sun.shadow_enabled = on],
@@ -70,6 +75,48 @@ func toggle() -> void:
 	_at = -1
 	_next_step()
 	set_process(true)
+
+
+# Every flora draw (one MultiMesh per chunk part and species) with its kind tag.
+func _flora_draws() -> Array:
+	var found: Array = []
+	var pending: Array = [_client.flora]
+
+	while not pending.is_empty():
+		var node: Node = pending.pop_back()
+
+		for child in node.get_children():
+			if child is MultiMeshInstance3D and child.has_meta("kind"):
+				found.append(child)
+			else:
+				pending.append(child)
+
+	return found
+
+
+func _flora_kind(kind: int, on: bool) -> void:
+	for draw in _flora_draws():
+		if int(draw.get_meta("kind")) == kind:
+			draw.visible = on
+
+
+# Trees whose chunk part is farther than metres from the player (the part's centre, so the
+# cut is as coarse as the parts).
+func _flora_far(metres: float, on: bool) -> void:
+	var here: Vector3 = _client.body.global_position
+
+	for draw in _flora_draws():
+		if int(draw.get_meta("kind")) != 0:
+			continue
+
+		var centre: Vector3 = draw.global_transform * draw.get_aabb().get_center()
+		draw.visible = on or centre.distance_to(here) <= metres
+
+
+func _flora_shadows(on: bool) -> void:
+	for draw in _flora_draws():
+		if int(draw.get_meta("kind")) == 0:
+			draw.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if (on and bool(draw.get_meta("casts"))) else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 
 func _scale(on: bool, value: float) -> void:
@@ -142,6 +189,11 @@ func _finish(completed: bool) -> void:
 
 	_client.grass.visible = _saved.get("grass", true)
 	_client.flora.visible = _saved.get("flora", true)
+	_flora_kind(0, true)
+	_flora_kind(1, true)
+	_flora_kind(2, true)
+	_flora_far(0.0, true)
+	_flora_shadows(true)
 	_client.terrain.visible = _saved.get("terrain", true)
 	_client._sun.shadow_enabled = _saved.get("shadow", true)
 	_client._environment.ssao_enabled = _saved.get("ssao", false)

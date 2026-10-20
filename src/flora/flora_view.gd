@@ -1250,6 +1250,8 @@ func _apply_step(job: Dictionary) -> bool:
 	draw.visibility_range_end = view_m[info["kind"]] + 0.7 * PART_M[info["kind"]]
 	var casts: bool = info["kind"] == KIND_TREE and (key[4] == 1 or (key[4] == 0 and far_shadows))
 	draw.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if casts else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	draw.set_meta("kind", int(info["kind"]))      # for the GPU probe (src/debug/gpu_probe.gd)
+	draw.set_meta("casts", casts)
 	node.add_child(draw)
 	instances += int(draw_plan[1])
 	return int(job["draw"]) >= draws.size()
