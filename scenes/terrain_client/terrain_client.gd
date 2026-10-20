@@ -33,7 +33,7 @@ const Probe := preload("res://src/debug/frame_probe.gd")
 const CompassScript := preload("res://src/client/admin_compass.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 79
+const BUILD := 84
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -96,6 +96,7 @@ var compass                         # temporary admin compass (AdminCompass)
 var sea: MeshInstance3D
 var flying: bool = false
 var underwater: bool = false
+var _ground_quality: int = -1       # quality the ground texture array was built for
 var jogging: bool = false             # double-tapped W; ends when W is released
 var running: bool = false             # Shift held with W
 var _last_w_msec: int = -1000
@@ -331,7 +332,8 @@ func _on_welcome(info: Dictionary) -> void:
 	# Not the clipbox streaming system (tried in build 61): it loads the fine ground under the
 	# player first, but makes no collision until every coarser level is loaded too, so the
 	# player had no ground to stand on for most of a minute (owner, 2026-10-20).
-	terrain.material = GroundMaterialScript.make(_tables)
+	terrain.material = GroundMaterialScript.make(_tables, quality)
+	_ground_quality = quality
 	root.add_child(terrain)
 	_make_player(root, info["spawn"] + Vector3(0.0, 28.0, 0.0))
 	flora = FloraViewScript.new()
@@ -701,6 +703,10 @@ func _apply_quality() -> void:
 	if _sun != null:
 		_sun.shadow_enabled = float(QUALITY_SHADOW_M[quality]) > 0.0
 		_sun.directional_shadow_max_distance = maxf(float(QUALITY_SHADOW_M[quality]), 1.0)
+
+	if terrain != null and quality != _ground_quality:
+		_ground_quality = quality
+		GroundMaterialScript.apply_quality(terrain.material as ShaderMaterial, quality)
 
 	if _environment != null:
 		LookSettings.apply(_environment, _sun, get_viewport(), quality)
