@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **131 slots: 17 recorded, 110 generated placeholders, 4 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **138 slots: 17 recorded, 117 generated placeholders, 4 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -68,6 +68,13 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 3 | `bird_feebee` | generated | 3 | ambient_life.gd: forest bird, by day | 2 chickadee-style two-note calls |
 | 3 | `chest_close` | generated | 2 | interior_sounds.gd: a chest closes (object) | 2 to 3 chest lid thuds |
 | 3 | `chest_open` | generated | 2 | interior_sounds.gd: a chest opens (object) | 2 to 3 wooden chest lid opens with a creak |
+| 3 | `craft_bind` | generated | 2 | item_sounds.gd: crafting work sound (binding with cord: spear, torch), plays for the length of the craft | 2 to 3 recordings of tying cord around a pole, 4 s |
+| 3 | `craft_carve` | generated | 2 | item_sounds.gd: crafting work sound (scraping a point on wood: wooden spear), plays for the length of the craft | 2 to 3 recordings of scraping wood with a stone, 4 s |
+| 3 | `craft_knap` | generated | 2 | item_sounds.gd: crafting work sound (chipping stone: stone axe, knife), plays for the length of the craft | 2 to 3 recordings of knapping flint, stone on stone, 4 s |
+| 3 | `craft_pound` | generated | 2 | item_sounds.gd: crafting work sound (pounding leaves: poultices), plays for the length of the craft | 2 to 3 recordings of pounding leaves with a stone, 4 s |
+| 3 | `craft_stack` | generated | 2 | item_sounds.gd: crafting work sound (laying sticks and stones: campfire), plays for the length of the craft | 2 to 3 recordings of stacking sticks and stones, 4 s |
+| 3 | `craft_twine` | generated | 2 | item_sounds.gd: crafting work sound (twisting fibre into cord), plays for the length of the craft | 2 to 3 recordings of twisting plant fibre or rope, 4 s |
+| 3 | `craft_wrap` | generated | 2 | item_sounds.gd: crafting work sound (wrapping a bandage), plays for the length of the craft | 2 to 3 recordings of wrapping a cloth or leaf bandage, 4 s |
 | 3 | `deer_grunt` | generated | 2 | creature_sounds.gd: a deer's low grunt (idle) | 2 to 3 low deer grunts or contact calls, 0.3 to 0.8 s |
 | 3 | `deer_snort` | generated | 2 | creature_sounds.gd: a deer's alarm snort (alert, threat) | 2 to 3 deer alarm snorts, 0.3 s |
 | 3 | `dig_clay` | generated | 3 | dig_sounds.gd: digging clay, mud and peat | 3 wet sticky digs |

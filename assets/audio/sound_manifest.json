@@ -737,6 +737,62 @@
    "priority": 3
   },
   {
+   "name": "craft_twine",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "item_sounds.gd: crafting work sound (twisting fibre into cord), plays for the length of the craft",
+   "to_supply": "2 to 3 recordings of twisting plant fibre or rope, 4 s",
+   "priority": 3
+  },
+  {
+   "name": "craft_knap",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "item_sounds.gd: crafting work sound (chipping stone: stone axe, knife), plays for the length of the craft",
+   "to_supply": "2 to 3 recordings of knapping flint, stone on stone, 4 s",
+   "priority": 3
+  },
+  {
+   "name": "craft_bind",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "item_sounds.gd: crafting work sound (binding with cord: spear, torch), plays for the length of the craft",
+   "to_supply": "2 to 3 recordings of tying cord around a pole, 4 s",
+   "priority": 3
+  },
+  {
+   "name": "craft_carve",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "item_sounds.gd: crafting work sound (scraping a point on wood: wooden spear), plays for the length of the craft",
+   "to_supply": "2 to 3 recordings of scraping wood with a stone, 4 s",
+   "priority": 3
+  },
+  {
+   "name": "craft_stack",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "item_sounds.gd: crafting work sound (laying sticks and stones: campfire), plays for the length of the craft",
+   "to_supply": "2 to 3 recordings of stacking sticks and stones, 4 s",
+   "priority": 3
+  },
+  {
+   "name": "craft_pound",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "item_sounds.gd: crafting work sound (pounding leaves: poultices), plays for the length of the craft",
+   "to_supply": "2 to 3 recordings of pounding leaves with a stone, 4 s",
+   "priority": 3
+  },
+  {
+   "name": "craft_wrap",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "item_sounds.gd: crafting work sound (wrapping a bandage), plays for the length of the craft",
+   "to_supply": "2 to 3 recordings of wrapping a cloth or leaf bandage, 4 s",
+   "priority": 3
+  },
+  {
    "name": "item_pickup",
    "state": "generated",
    "variants": 3,

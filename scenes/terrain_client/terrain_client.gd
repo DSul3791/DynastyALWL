@@ -179,6 +179,8 @@ var _fire_sync_left: float = 0.0
 var _tree_sync_left: float = 0.0
 var _item_sync_left: float = 0.0
 var test_levels: bool = false
+var test_craft_sounds: bool = false
+var _test_craft_t: float = -1.0
 var test_flame: bool = false
 var _test_flame_t: float = -1.0
 var test_exertion: bool = false
@@ -325,6 +327,8 @@ func _ready() -> void:
 			test_exertion = true
 		elif argument == "--flame":
 			test_flame = true
+		elif argument == "--craft-sounds":
+			test_craft_sounds = true
 		elif argument == "--levels":
 			test_levels = true
 		elif argument == "--fire":
@@ -1955,6 +1959,27 @@ func _process(delta: float) -> void:
 		if before < 12.0 and _test_flame_t >= 12.0:
 			print("Terrain client: flame put away: held '%s', loops %d" % [sound.flame.held, sound.flame._loops.size()])
 			test_flame = false
+
+	# Headless check: make cordage (twine), a stone axe (knap) and a campfire (stack) through the panel's craft timer.
+	if test_craft_sounds and now - connected_msec > 18000:
+		if _test_craft_t < 0.0:
+			_test_craft_t = 0.0
+			items.admin_give_test_set()
+
+		var before: float = _test_craft_t
+		_test_craft_t += get_process_delta_time()
+
+		for at in [[2.0, 1], [6.0, 2], [11.0, 4]]:
+			if before < at[0] and _test_craft_t >= at[0]:
+				items._start_craft(at[1])
+				print("Terrain client: craft %d started, can_make %s, crafting %d" % [at[1], items.recipes.can_make(at[1], items.inventory), items._crafting])
+
+		for at in [5.0, 10.0, 16.0]:
+			if before < at and _test_craft_t >= at:
+				print("Terrain client: craft work sounds %d, last %s" % [sound.itemfx.work_played, sound.itemfx.last_work])
+
+		if _test_craft_t > 16.5:
+			test_craft_sounds = false
 
 	# Headless check: the volume sliders change the buses and reset.
 	if test_levels and now - connected_msec > 18000:
