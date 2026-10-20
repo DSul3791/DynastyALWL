@@ -13,6 +13,7 @@ const SWEEP_RADIUS_M := 2.0
 const SWEEP_AFTER_S := 0.35         # E held this long starts the sweep
 const SWEEP_EVERY_S := 0.2          # then one pick per step (5 a second)
 const REGROW_GAME_S := 3.0 * 86400.0
+const RETRY_GAME_S := 72.0              # about 3 real seconds: a pick the server refused can be tried again
 const CHUNK_M := 256.0
 
 var _client
@@ -95,7 +96,7 @@ func tap() -> void:
 func _pick(c: Dictionary) -> void:
 	_net.cut_flora.rpc_id(1, c["chunk"], c["id"])
 	_client.sound.harvestfx.pick(_flora_by_id.get(int(c["id"]) >> 16, {}), c["pos"])
-	_picked_until[c["key"]] = _client.game_clock.seconds + REGROW_GAME_S
+	_picked_until[c["key"]] = _client.game_clock.seconds + RETRY_GAME_S   # until the server's answer removes the plant
 	_items.clear_prompt()
 	_hint_left = 0.0
 

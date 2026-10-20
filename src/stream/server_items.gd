@@ -427,6 +427,12 @@ func save() -> void:
 # REGROW_GAME_S of game time. It gives what drops.json says (fibre, sticks) and one of its
 # natural yields (berries, leaves, roots...) when that is in season (flora table).
 # Returns false when it gives nothing, the player is not near it, or it is not ready.
+# True while a plant picked bare under the old regrow rule is still on the list (server_items keeps it for 3 game days).
+func was_picked(flora_key: String) -> bool:
+	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
+	return now_s - float(_picked.get(flora_key, -1.0e12)) < REGROW_GAME_S
+
+
 func gather(peer: int, species_name: String, kind: String, flora_key: String, flora_id: int, plant_position: Vector3) -> bool:
 	if not _peer_pos.has(peer) or _peer_pos[peer].distance_to(plant_position) > GATHER_M:
 		return false

@@ -40,6 +40,10 @@ CLIENTS = [
         ("harvest prompt shown", r"prompt \"(Press E to harvest [^\"]*)\"", None, None),
         ("sticks gathered", r"sticks 0 -> " + NUM, 1, 100),
     ]),
+    ("plantpick", ["--plantpick"], 6000, [
+        ("plants were picked", r"tried (\d+), gone", 3, 20),
+        ("none left standing", r"still standing (\d+)", 0, 0),
+    ]),
     ("leanto", ["--leanto"], 4000, [
         ("roof gives cover", r"cover under it " + NUM, 0.9, 1.0),
     ]),

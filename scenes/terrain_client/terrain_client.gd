@@ -231,6 +231,7 @@ var test_gather: bool = false
 var test_leanto: bool = false
 var test_chest: bool = false
 var test_eat: bool = false
+var test_plantpick: bool = false
 var test_spear: bool = false
 var test_chop: bool = false
 var test_creatures: bool = false
@@ -403,6 +404,8 @@ func _ready() -> void:
 			test_interior = true
 		elif argument == "--items":
 			test_items = true
+		elif argument == "--plantpick":
+			test_plantpick = true
 		elif argument == "--eat":
 			test_eat = true
 		elif argument == "--chest":
@@ -696,6 +699,9 @@ func _welcome_body(info: Dictionary) -> void:
 
 	if test_eat:
 		items.run_eat_test(self)
+
+	if test_plantpick:
+		items.run_plant_test(self)
 
 	if test_spear:
 		held.run_test()

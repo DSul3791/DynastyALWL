@@ -1614,6 +1614,53 @@ func run_gather_test(client) -> void:
 	print("Gather test: sweep, sticks %d -> %d (a picked-bare shrub is skipped); prompt \"%s\"" % [after_tap, inventory.count_of(sticks), plant_hint])
 
 
+# Headless check (--plantpick): pick several plants (kind 2, flowers and herbs) and see whether each one is gone
+# from the client's flora afterwards.
+func run_plant_test(client) -> void:
+	await get_tree().create_timer(6.0).timeout
+	var spots: Array = []
+	var here: Vector3 = _player_position.call()
+
+	for chunk in client.flora._chunks:
+		var held: Dictionary = client.flora._chunks[chunk]["items"]
+
+		for n in range(held["ids"].size()):
+			if client.flora._species.get(held["ids"][n] >> 16, {}).get("kind", 0) == 2:
+				spots.append([held["positions"][n].distance_to(here), held["positions"][n], held["ids"][n], chunk])
+
+	spots.sort_custom(func(a, b): return a[0] < b[0])
+	var tried: int = 0
+	var gone: int = 0
+	var skipped: int = 0
+
+	for spot in spots.slice(0, 40):
+		if tried >= 8:
+			break
+
+		client.body.global_position = spot[1] + Vector3(0.4, 1.0, 0.0)
+		client.body.velocity = Vector3.ZERO
+		await get_tree().create_timer(1.2).timeout
+		var picked: bool = false
+
+		for c in client.harvest._candidates(2.5):
+			if int(c["id"]) == int(spot[2]) and c["ok"]:
+				picked = true
+
+		if not picked:
+			skipped += 1
+			continue
+
+		client.harvest._pick(client.harvest._candidates(2.5).filter(func(c): return int(c["id"]) == int(spot[2]))[0])
+		tried += 1
+		await get_tree().create_timer(1.0).timeout
+		var held_now: Dictionary = client.flora._chunks.get(spot[3], {}).get("items", {})
+		var still: bool = held_now.has("ids") and held_now["ids"].find(spot[2]) >= 0
+		print("Plant test: %s %s" % [client.harvest._flora_by_id.get(int(spot[2]) >> 16, {}).get("name", "?"), "STILL THERE" if still else "gone"])
+		gone += 0 if still else 1
+
+	print("Plant test: tried %d, gone %d, still standing %d, skipped (nothing pickable) %d" % [tried, gone, tried - gone, skipped])
+
+
 # Headless check (--leanto): place a lean-to ahead of the player and look for its row and its roof.
 func run_leanto_test(client) -> void:
 	await get_tree().create_timer(6.0).timeout

@@ -588,9 +588,13 @@ func _on_cut_flora_requested(peer_id: int, chunk: Vector2i, id: int) -> void:
 
 	# Dave 2026-10-20: a picked plant disappears from the world, like a picked stone. Only a pick that gave
 	# something removes it (server_items.gd); one that gave nothing leaves the plant alone.
-	if items.gather(peer_id, str(species["name"]), PlacerScript.KINDS[int(species["kind"])], "%d,%d,%d" % [home.x, home.y, id], id, all["positions"][at]):
-		if flora.cut(chunk, id):
-			net.flora_cut.rpc(chunk, id)
+	var key: String = "%d,%d,%d" % [home.x, home.y, id]
+
+	# A plant picked bare before this rule (still in the saved "picked" list) goes now, giving nothing.
+	var gave: bool = items.was_picked(key) or items.gather(peer_id, str(species["name"]), PlacerScript.KINDS[int(species["kind"])], key, id, all["positions"][at])
+
+	if gave and flora.cut(chunk, id):
+		net.flora_cut.rpc(chunk, id)
 
 
 func _on_dig_requested(_peer_id: int, center: Vector3, radius: float) -> void:
