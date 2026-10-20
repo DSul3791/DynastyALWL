@@ -180,6 +180,7 @@ var _fire_sync_left: float = 0.0
 var _tree_sync_left: float = 0.0
 var _item_sync_left: float = 0.0
 var test_levels: bool = false
+var test_placed: bool = false
 var test_distant: bool = false
 var test_craft_sounds: bool = false
 var _test_craft_t: float = -1.0
@@ -334,6 +335,8 @@ func _ready() -> void:
 			test_craft_sounds = true
 		elif argument == "--distant":
 			test_distant = true
+		elif argument == "--placed":
+			test_placed = true
 		elif argument == "--levels":
 			test_levels = true
 		elif argument == "--fire":
@@ -1645,6 +1648,8 @@ func _step_player(delta: float) -> void:
 		if not test_fire and not sound.fire.manual_active():
 			sound.fire.sync_world(items._world, _cover_here)
 
+		sound.placed.watch_world(items._world, body.global_position, items.table)
+
 	_tree_sync_left -= delta
 
 	if _tree_sync_left <= 0.0 and items != null:
@@ -2004,6 +2009,27 @@ func _process(delta: float) -> void:
 			sound.weather.strike(metres)
 			print("Terrain client: thunder %s" % sound.weather.last_thunder)
 
+	# Headless check: every placed-thing hook once, then a synthetic chest row appears and vanishes beside the player.
+	if test_placed and now - connected_msec > 18000:
+		test_placed = false
+		var here: Vector3 = body.global_position + Vector3(2.0, 0.0, 0.0)
+		sound.placed.place("leanto", here)
+		sound.placed.place("chest", here)
+		sound.placed.place("stone", here)
+		sound.placed.pick_up(here)
+		sound.placed.container(true, here)
+		sound.placed.container(false, here)
+		sound.placed.tool_break(here)
+		sound.placed.tool_repair(here)
+		var stub := GDScript.new()
+		stub.source_code = "extends RefCounted\nfunc id_of(_n):\n\treturn \"chest\"\n"
+		stub.reload()
+		var fake = stub.new()
+		sound.placed.watch_world({}, here, fake)
+		sound.placed.watch_world({7: {"number": 1, "pos": here}}, here, fake)
+		sound.placed.watch_world({}, here, fake)
+		print("Terrain client: placed sounds %s, last %s" % [str(sound.placed.played), sound.placed.last])
+
 	# Headless check: the volume sliders change the buses and reset.
 	if test_levels and now - connected_msec > 18000:
 		test_levels = false
@@ -2258,7 +2284,7 @@ func _debug_text(avg_ms: float, worst_ms: float) -> String:
 # The one-line "last sound": whichever sound source's last-played text changed most recently.
 func _note_last_sound() -> void:
 	var sources: Array = [
-		["step", sound.last_step], ["breath", sound.breath.last], ["fire", sound.fire.last], ["tree", sound.trees.last], ["item", sound.itemfx.last], ["spear", sound.spear.last],
+		["step", sound.last_step], ["breath", sound.breath.last], ["fire", sound.fire.last], ["tree", sound.trees.last], ["item", sound.itemfx.last], ["spear", sound.spear.last], ["placed", sound.placed.last],
 		["interior", sound.interior.last], ["gear", sound.gear.last], ["creature", sound.creatures.last], ["swim", sound.swim.last],
 		["dig", sound.dig.last_dig], ["nature", sound.ambient.last_call],
 	]

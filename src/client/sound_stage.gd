@@ -29,6 +29,7 @@ const CreatureScript := preload("res://src/client/creature_sounds.gd")
 const GearScript := preload("res://src/client/gear_sounds.gd")
 const InteriorScript := preload("res://src/client/interior_sounds.gd")
 const SpearScript := preload("res://src/client/spear_sounds.gd")
+const PlacedScript := preload("res://src/client/placed_sounds.gd")
 const FlameScript := preload("res://src/client/flame_sounds.gd")
 const BreathScript := preload("res://src/client/breath_sounds.gd")
 const TreeScript := preload("res://src/client/tree_sounds.gd")
@@ -164,6 +165,7 @@ var trees                               # TreeSounds: felling (watch the world r
 var fire                                # FireSounds: campfire loops by size, lit, put out, rain sizzle (set_fires)
 var ground_below: Callable = Callable()   # terrain_client sets this: ground height under a point (NAN when not loaded)
 var itemfx                              # ItemSounds: inventory cues (watch(items) every frame)
+var placed                              # PlacedSounds: lean-to and chest place/pick up, container, tool break and repair (hooks, watch_world)
 var spear                               # SpearSounds: jab, throw, flight, hits on wood, stone, soil, flesh
 var interior                            # InteriorSounds: inside a building, doors, chests, furniture (set_inside, object)
 var gear                                # GearSounds: armour and clothing layers on the footsteps (set_worn, step_at)
@@ -255,6 +257,10 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	spear.name = "Spear"
 	add_child(spear)
 	spear.setup(self)
+	placed = PlacedScript.new()
+	placed.name = "Placed"
+	add_child(placed)
+	placed.setup(self)
 	interior = InteriorScript.new()
 	interior.name = "Interior"
 	add_child(interior)

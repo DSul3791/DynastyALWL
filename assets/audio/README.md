@@ -215,3 +215,8 @@ Generated placeholders: `assets/audio/floors/step_<surface>_N.ogg` (make_floors.
 
 Thunder: the wait after the flash is the real travel time halved, capped at 4 s (a strike 2.5 km away is heard 3.6 s later). Strikes over 600 m play on a low-passed bus (WeatherMid, 1.6 kHz), over 1800 m darker still (WeatherFar, 450 Hz). Both buses feed Weather, so the mixer and cave muffling still apply. Test: `--distant` (headless prints three strikes, their bus and delay).
 Waterfalls are now heard out to 260 m (was 70): wider range, a bigger unit size so they stay faintly audible, and the player's own distance low-pass (2.2 kHz) so far falls rumble without hiss. Not yet checked live: stand 150 to 250 m from a fall with F3 on and read the water line.
+
+## Placed things, containers and tools (build 194)
+
+`src/client/placed_sounds.gd` (`sound.placed`), hooks until the Items thread's lean-to, chest and tool wear exist: `place("leanto"|"chest"|other, at)`, `pick_up(at)`, `chest(open, at)` (the interior chest sounds), `container(put, at)`, `tool_break(at)`, `tool_repair(at)`. `watch_world` (about 1 Hz from terrain_client) already hears world rows whose item id is in `PLACED` (lean_to, chest): a new one within 40 m plays place, a vanished one pick_up; rows streamed in from afar are silent.
+Generated placeholders: `assets/audio/placed/` (make_placed.py); recordings in `assets/audio/recorded/placed/` win. Test: `--placed` (headless prints each hook's count). Items thread: when lean-to or chest items exist, add their ids to `PLACED` if they differ, and call `container`, `chest`, `tool_break`, `tool_repair` at the matching events.

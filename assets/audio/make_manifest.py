@@ -142,6 +142,14 @@ SLOTS = [
     ("town_fire", "town", "town_sounds.gd: a hearth or forge fire (loop)", "A seamless crackling fire loop", 2),
     ("town_crowd", "town", "town_sounds.gd: a busy square murmur (loop)", "A seamless crowd murmur loop, no clear words", 3),
     ("dig_water", "dig", "dig_sounds.gd: water pouring into a new hole", "3 water splashing into a pit", 3),
+    ("place_leanto", "placed", "placed_sounds.gd: a lean-to set up (hook place(\"leanto\"); also heard from a world row of item id lean_to)", "2 to 3 recordings of planting poles and laying brush, 1 s", 2),
+    ("place_chest", "placed", "placed_sounds.gd: a chest set down", "2 to 3 recordings of a heavy wooden box put on the ground", 2),
+    ("place_thump", "placed", "placed_sounds.gd: any other thing set on the ground", "2 short dull thumps on soil", 3),
+    ("pickup_placed", "placed", "placed_sounds.gd: a placed thing picked up again", "2 recordings of dragging and lifting a wooden thing", 3),
+    ("container_put", "placed", "placed_sounds.gd: something put into a chest", "2 short wood clacks with a little rustle", 2),
+    ("container_take", "placed", "placed_sounds.gd: something taken out of a chest", "2 short rustles and a wood clack", 2),
+    ("tool_break", "placed", "placed_sounds.gd: a tool breaks with the last of its wear", "2 to 3 sharp wood or stone cracks with splinters", 2),
+    ("tool_repair", "placed", "placed_sounds.gd: a tool mended (about 2 s)", "2 recordings of scraping, tapping and binding a tool, 2 s", 3),
 ]
 
 # Footstep sets: (surface, where it plays). Left and right files: step_<surface>_<left|right>_N in recorded/.

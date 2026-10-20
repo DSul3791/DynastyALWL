@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **143 slots: 17 recorded, 117 generated placeholders, 9 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **151 slots: 17 recorded, 125 generated placeholders, 9 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -26,6 +26,8 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 2 | `breath_in` | generated | 3 | breath_sounds.gd: breathing in, from moderate exertion | 3 soft breaths in through the mouth, 0.8 s |
 | 2 | `breath_out` | generated | 3 | breath_sounds.gd: breathing out | 3 soft breaths out, 0.9 s |
 | 2 | `cave_drip` | generated | 5 | cave_sounds.gd: water drops in caves and tunnels | 3 to 6 single water drips in a stone room, 1 to 2 s each |
+| 2 | `container_put` | generated | 2 | placed_sounds.gd: something put into a chest | 2 short wood clacks with a little rustle |
+| 2 | `container_take` | generated | 2 | placed_sounds.gd: something taken out of a chest | 2 short rustles and a wood clack |
 | 2 | `craft_done` | generated | 3 | item_sounds.gd: a craft finished | 3 wooden knock and small chime cues |
 | 2 | `dig_rock` | generated | 3 | dig_sounds.gd: breaking rock | 3 pickaxe on rock or rock breaking sounds |
 | 2 | `dig_soil` | generated | 3 | dig_sounds.gd: digging dirt and humus | 3 spade or shovel scoops into earth |
@@ -46,6 +48,8 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 2 | `item_drop` | generated | 3 | item_sounds.gd: stacks in the inventory shrank (dropped) | 3 dull thuds of setting an item down |
 | 2 | `item_pickup` | generated | 3 | item_sounds.gd: stacks in the inventory grew (picked up, harvested) | 3 soft scoop and rustle cues of picking something up |
 | 2 | `owl_hoot` | generated | 3 | ambient_life.gd: forest at night | 2 to 3 owl hoots (tawny or barred), 2 to 3 s |
+| 2 | `place_chest` | generated | 2 | placed_sounds.gd: a chest set down | 2 to 3 recordings of a heavy wooden box put on the ground |
+| 2 | `place_leanto` | generated | 2 | placed_sounds.gd: a lean-to set up (hook place("leanto"); also heard from a world row of item id lean_to) | 2 to 3 recordings of planting poles and laying brush, 1 s |
 | 2 | `rain_leaves` | generated | 1 | weather_sounds.gd: rain pattering on leaves under trees | Rain on forest canopy loop, seamless |
 | 2 | `spear_hit_flesh` | generated | 3 | spear_sounds.gd: a spear hitting flesh | 3 wet heavy thumps of a spear hitting an animal or body |
 | 2 | `spear_hit_wood` | generated | 3 | spear_sounds.gd: a spear sticking into wood (the shaft quivers) | 3 spear thunks into a tree or board with shaft vibration |
@@ -53,6 +57,7 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 2 | `swim_splash_small` | generated | 3 | swim_sounds.gd: the body enters water slowly (under 4 m/s) | 3 small body-into-water splashes, 0.5 to 1 s |
 | 2 | `thunder_far` | generated | 3 | weather_sounds.gd: a far strike (over 1800 m): a low grumble | 2 to 3 distant low rumbles, 8 to 12 s |
 | 2 | `thunder_near` | generated | 3 | weather_sounds.gd: a close strike (under 500 m): sharp crack and thud | 2 to 3 close, sharp thunder cracks, 2 to 4 s |
+| 2 | `tool_break` | generated | 2 | placed_sounds.gd: a tool breaks with the last of its wear | 2 to 3 sharp wood or stone cracks with splinters |
 | 2 | `town_fire` | generated | 1 | town_sounds.gd: a hearth or forge fire (loop) | A seamless crackling fire loop |
 | 2 | `town_hammering` | generated | 1 | town_sounds.gd: a smith or builder working nearby (loop) | A seamless loop of hammer on anvil, 8 to 15 s |
 | 2 | `tree_creak` | generated | 3 | tree_sounds.gd: a felled tree groans as it starts to go (when its trunk appears) | 3 tree trunk creaks and groans before falling, 1 to 2 s |
@@ -95,6 +100,8 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 3 | `hit_hammer_stone` | generated | 3 | hit_sounds.gd: a hammer blow on stone (chiselling, smithing) | 3 hammer clanks on stone |
 | 3 | `hit_pick_soil` | generated | 3 | hit_sounds.gd: a pickaxe blow on soil | 3 pick strikes into hard earth |
 | 3 | `hit_spade_soil` | generated | 3 | hit_sounds.gd: a spade strike into soil | 3 spade thuds into earth |
+| 3 | `pickup_placed` | generated | 2 | placed_sounds.gd: a placed thing picked up again | 2 recordings of dragging and lifting a wooden thing |
+| 3 | `place_thump` | generated | 2 | placed_sounds.gd: any other thing set on the ground | 2 short dull thumps on soil |
 | 3 | `rain_drip` | generated | 4 | weather_sounds.gd: a drop falling from a leaf near you, under trees in rain | 3 to 4 single drops falling from leaves onto leaves or ground, 0.3 s |
 | 3 | `rain_water` | generated | 1 | weather_sounds.gd: rain falling on ponds and rivers near the player | Rain on a lake surface loop, seamless |
 | 3 | `spear_flight` | generated | 3 | spear_sounds.gd: a thrown spear whistling through the air (moves along the path) | 3 thin air whistles of a spear in flight, 1 to 2 s |
@@ -107,6 +114,7 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 3 | `swim_stroke` | generated | 3 | swim_sounds.gd: an arm stroke while swimming, one every 0.6 to 1.4 s | 3 breaststroke or crawl arm pulls through water, 0.5 s |
 | 3 | `swim_surface` | generated | 3 | swim_sounds.gd: the head comes out of the water | 3 breaths and running water on surfacing, 1 s |
 | 3 | `swim_under` | generated | 1 | swim_sounds.gd: the hum of being underwater (loop while the eyes are under) | A muffled underwater ambience loop, seamless |
+| 3 | `tool_repair` | generated | 2 | placed_sounds.gd: a tool mended (about 2 s) | 2 recordings of scraping, tapping and binding a tool, 2 s |
 | 3 | `town_bell` | generated | 3 | town_sounds.gd: a tower bell tolling the hour or on call (ring_bell) | 2 to 3 bell strikes with a long ring, 4 to 6 s each |
 | 3 | `town_crowd` | generated | 1 | town_sounds.gd: a busy square murmur (loop) | A seamless crowd murmur loop, no clear words |
 | 3 | `tree_leaves` | generated | 3 | tree_sounds.gd: the crown rushing down through the air | 3 branches and leaves rushing as a tree falls, about 1 s |
