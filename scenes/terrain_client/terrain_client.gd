@@ -178,6 +178,8 @@ var test_flood: bool = false
 var test_gear: bool = false
 var test_spear_sounds: bool = false
 var test_fire: bool = false
+var test_fire_world: bool = false      # --fire-world: a fake world row goes through states 8, 9, 1, 9, 8 (loaded, lit, rained out, emptied)
+var _fire_world_step: int = 0
 var _fire_sync_left: float = 0.0
 var _tree_sync_left: float = 0.0
 var _item_sync_left: float = 0.0
@@ -361,6 +363,8 @@ func _ready() -> void:
 			test_levels = true
 		elif argument == "--fire":
 			test_fire = true
+		elif argument == "--fire-world":
+			test_fire_world = true
 		elif argument == "--spear-sounds":
 			test_spear_sounds = true
 		elif argument == "--interior":
@@ -1698,9 +1702,9 @@ func _step_player(delta: float) -> void:
 	_fire_sync_left -= delta
 
 	if _fire_sync_left <= 0.0 and items != null:
-		_fire_sync_left = 1.0
+		_fire_sync_left = 0.25
 
-		if not test_fire and not sound.fire.manual_active():
+		if not test_fire and not test_fire_world and not sound.fire.manual_active():
 			sound.fire.sync_world(items._world, _cover_here)
 
 		sound.placed.watch_world(items._world, body.global_position)
@@ -2175,6 +2179,15 @@ func _process(delta: float) -> void:
 		if _test_fire_step >= 7:
 			test_fire = false
 
+	# Headless check: the lit and loaded cues from world-row state changes (Items fire states 8 empty, 9 loaded, 1 lit).
+	if test_fire_world and now - connected_msec > 18000 and now >= _test_fire_at:
+		_test_fire_at = now + 1200
+		var seq: Array = [8, 8, 9, 1, 9, 8]
+
+		if _fire_world_step < seq.size():
+			sound.fire.sync_world({77: {"state": seq[_fire_world_step], "pos": body.global_position + Vector3(3.0, 0.0, 0.0)}})
+			_fire_world_step += 1
+
 	# Headless check: a jab, then a throw into each material.
 	if test_spear_sounds and now - connected_msec > 18000 and now >= _test_spear_at:
 		_test_spear_at = now + 1500
@@ -2318,6 +2331,7 @@ func _process(delta: float) -> void:
 			print("Terrain client: water sounds: %s (%d falls known)" % [sound.water.summary, flora.fall_list().size()])
 			print("Terrain client: nature calls %s, zones %s" % [str(sound.ambient.calls_played), str(sound.ambient.weights)])
 			print("Terrain client: tree sounds: %d falls, %d stump sprays, last %s" % [sound.trees.falls_played, sound.trees.chips_played, sound.trees.last])
+			print("Terrain client: fire world: %d fuel, %d lit, %d out" % [sound.fire.fuel_played, sound.fire.lit_played, sound.fire.out_played])
 			print("Terrain client: fire sounds: %d lit, %d put out, %d loops, last %s" % [sound.fire.lit_played, sound.fire.out_played, sound.fire.loops_playing, sound.fire.last])
 			print("Terrain client: item sounds %d, last %s" % [sound.itemfx.played, sound.itemfx.last])
 			var kinds: Dictionary = {}

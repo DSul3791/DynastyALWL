@@ -98,19 +98,36 @@ func set_fires(fires: Array) -> void:
 # The campfires the Items thread keeps (inventory_view `_world`: rows with state 0 item, 1 lit fire,
 # 2 burnt-out fire): call about once a second. Size is a fixed middle value until fires have a burn
 # time; a fire is "open" when the cover query says the sky reaches it.
+# Item world row states that are fires: 1 lit, 2 burnt out (old saves), 8 empty (ashes), 9 loaded but unlit.
+const FIRE_STATES := [1, 2, 8, 9]
+const FUEL_HEARD_M := 25.0
+const FUEL_DEDUP_MSEC := 1500
+var _world_states: Dictionary = {}      # fire id -> last seen row state
+var _last_fuel_msec: int = -100000
+
+
 func sync_world(world: Dictionary, cover_at: Callable = Callable()) -> void:
 	var fires: Array = []
+	var states: Dictionary = {}
 
 	for id in world:
 		var row: Dictionary = world[id]
 
-		if int(row["state"]) == 0:
+		if not int(row["state"]) in FIRE_STATES:
 			continue
 
 		var at: Vector3 = row["pos"]
+		states[id] = int(row["state"])
+
+		# Wood laid on an empty fire (8 to 9) by someone else, or seen from the bag path too late: the bag path
+		# plays its own cue within FUEL_DEDUP_MSEC, so only a laying nobody here pressed is voiced.
+		if int(_world_states.get(id, 9)) == 8 and int(row["state"]) == 9 and _here.distance_to(at) < FUEL_HEARD_M \
+				and Time.get_ticks_msec() - _last_fuel_msec > FUEL_DEDUP_MSEC:
+			fuel(at)
 		fires.append({"id": id, "at": at, "size": FIRE_SIZE, "lit": int(row["state"]) == 1,
 			"open": not (cover_at.is_valid() and bool(cover_at.call(at)))})
 
+	_world_states = states
 	set_fires(fires)
 
 
@@ -130,6 +147,7 @@ func cook(at: Vector3) -> void:
 
 
 func fuel(at: Vector3) -> void:
+	_last_fuel_msec = Time.get_ticks_msec()
 	_one_shot("fire_fuel", at)
 	fuel_played += 1
 

@@ -60,6 +60,11 @@ SCENARIOS = [
         ("fires lit", r"fire sounds: " + NUM + r" lit", 1, 10),
         ("fires put out", r"fire sounds: \d+ lit, " + NUM + r" put out", 1, 10),
     ]),
+    ("fire_world", ["--fire-world"], 5000, [
+        ("laid wood heard", r"fire world: " + NUM + r" fuel", 1, 1),
+        ("lit heard", r"fire world: \d+ fuel, " + NUM + r" lit", 1, 1),
+        ("put out heard", r"fire world: \d+ fuel, \d+ lit, " + NUM + r" out", 1, 2),
+    ]),
     ("felling", ["--chop"], 7000, [
         ("trees fell", r"tree sounds: " + NUM + r" falls", 1, 10),
     ]),

@@ -267,3 +267,7 @@ Esc > Settings > Debug details (F3) now has a `sounds heard (N):` block under th
 ## Snowfall hush (job 51)
 
 `weather_sounds.snow_hush` (0 to 1) = 0.8 x snow lying + 0.2 while it snows, eased over 4 s (so it lingers while the snow lies, fades as it melts). `sound_stage` applies it: Wind bus -3 dB and Nature bus -4 dB at full hush (`SNOW_HUSH_BUS_DB`, in `_apply_buses`, only re-applied when it moves 0.02), the wind low-pass closes 30 percent, footsteps lose 3 dB. Cost: nothing per frame beyond one multiply. `sound_check.py --only snow_hush` (snow weather: hush rises, Nature bus drops); HUD final report line `snow hush`.
+
+## Fire lighting and loading from Items' events (job 48)
+
+Items protocol 19 fire rows: state 8 empty (ashes), 9 loaded but unlit, 1 lit. `fire_sounds.sync_world` (now every 0.25 s) takes only fire rows (`FIRE_STATES` 1, 2, 8, 9; before it counted every non-item row) and: a row going 9 to 1 (E to light, ACT_LIGHT) plays `fire_light` and starts the loop; 1 to 8 or 9 (burnt out, rained out) plays `fire_out`; 8 to 9 within 25 m plays `fire_fuel`, unless the bag path already played it in the last 1.5 s (your own V press through `item_sounds.fuel_pressed`, wood leaving the bag). `--fire-world` runs a fake row through 8, 8, 9, 1, 9, 8 (`tools/sound_check.py --only fire_world`: 1 fuel, 1 lit, 1 out).
