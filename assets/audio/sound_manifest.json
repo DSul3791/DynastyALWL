@@ -313,6 +313,102 @@
    "priority": 3
   },
   {
+   "name": "hit_axe_wood",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: an axe blow on wood (felling, chopping)",
+   "to_supply": "3 axe chops into a log or tree",
+   "priority": 2
+  },
+  {
+   "name": "hit_axe_stone",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: an axe blow on stone",
+   "to_supply": "3 axe strikes on rock",
+   "priority": 4
+  },
+  {
+   "name": "hit_axe_soil",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: an axe blow on soil",
+   "to_supply": "3 axe thuds into earth",
+   "priority": 4
+  },
+  {
+   "name": "hit_pick_wood",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: a pickaxe blow on wood",
+   "to_supply": "3 pick strikes into wood",
+   "priority": 4
+  },
+  {
+   "name": "hit_pick_stone",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: a pickaxe blow on rock (mining)",
+   "to_supply": "3 pickaxe strikes on rock",
+   "priority": 2
+  },
+  {
+   "name": "hit_pick_soil",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: a pickaxe blow on soil",
+   "to_supply": "3 pick strikes into hard earth",
+   "priority": 3
+  },
+  {
+   "name": "hit_hammer_wood",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: a hammer blow on wood (building)",
+   "to_supply": "3 hammer knocks on timber, or nails driven",
+   "priority": 2
+  },
+  {
+   "name": "hit_hammer_stone",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: a hammer blow on stone (chiselling, smithing)",
+   "to_supply": "3 hammer clanks on stone",
+   "priority": 3
+  },
+  {
+   "name": "hit_hammer_soil",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: a hammer blow on soil (driving stakes)",
+   "to_supply": "3 mallet thumps into earth",
+   "priority": 4
+  },
+  {
+   "name": "hit_spade_wood",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: a spade strike on wood",
+   "to_supply": "3 spade knocks and scrapes on wood",
+   "priority": 4
+  },
+  {
+   "name": "hit_spade_stone",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: a spade scraping on stone",
+   "to_supply": "3 spade scrapes on stone",
+   "priority": 4
+  },
+  {
+   "name": "hit_spade_soil",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: a spade strike into soil",
+   "to_supply": "3 spade thuds into earth",
+   "priority": 3
+  },
+  {
    "name": "dig_water",
    "state": "generated",
    "variants": 3,
@@ -390,26 +486,6 @@
   }
  ],
  "planned": [
-  {
-   "name": "hit_axe_wood / hit_axe_stone / hit_axe_soil",
-   "used_in": "axe blows on wood (felling), stone and soil",
-   "to_supply": "2 to 3 each, 0.3 to 0.6 s"
-  },
-  {
-   "name": "hit_pick_wood / hit_pick_stone / hit_pick_soil",
-   "used_in": "pickaxe blows",
-   "to_supply": "2 to 3 each"
-  },
-  {
-   "name": "hit_hammer_wood / hit_hammer_stone / hit_hammer_soil",
-   "used_in": "hammer blows (building, chiselling)",
-   "to_supply": "2 to 3 each"
-  },
-  {
-   "name": "hit_spade_wood / hit_spade_stone / hit_spade_soil",
-   "used_in": "spade strikes and scrapes",
-   "to_supply": "2 to 3 each"
-  },
   {
    "name": "town_bell",
    "used_in": "a town bell tolling by position",

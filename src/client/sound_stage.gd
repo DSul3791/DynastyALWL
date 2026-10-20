@@ -21,6 +21,7 @@ const AmbientScript := preload("res://src/client/ambient_life.gd")
 const WeatherScript := preload("res://src/client/weather_sounds.gd")
 const DigScript := preload("res://src/client/dig_sounds.gd")
 const CaveScript := preload("res://src/client/cave_sounds.gd")
+const HitScript := preload("res://src/client/hit_sounds.gd")
 const OcclusionScript := preload("res://src/client/sound_occlusion.gd")
 const WaterSoundsScript := preload("res://src/client/water_sounds.gd")
 const AUDIO_DIR := "res://assets/audio/"
@@ -131,6 +132,7 @@ var ambient                             # AmbientLife: birds, crickets, frogs by
 var water                               # WaterSounds: brooks, rivers, pond shores, waterfalls
 var weather                             # WeatherSounds: rain, gale, thunder, snow hush (set_weather)
 var occlusion                           # SoundOcclusion: hills and forest muffle distant sounds
+var hits                                # HitSounds: axe, pick, hammer, spade on wood, stone, soil (hit, hit_ground)
 var cave                                # CaveSounds: reverb, muffling and drips under rock
 var dig                                 # DigSounds: the sound of what is dug (dug(center, radius, listener))
 var _sphere: PhysicsShapeQueryParameters3D
@@ -187,6 +189,10 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	dig.name = "Dig"
 	add_child(dig)
 	dig.setup(self)
+	hits = HitScript.new()
+	hits.name = "Hits"
+	add_child(hits)
+	hits.setup(self)
 	cave = CaveScript.new()
 	cave.name = "Cave"
 	add_child(cave)

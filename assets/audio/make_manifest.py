@@ -54,6 +54,18 @@ SLOTS = [
     ("dig_gravel", "dig", "dig_sounds.gd: digging gravel", "3 gravel shovelling sounds", 3),
     ("dig_rock", "dig", "dig_sounds.gd: breaking rock", "3 pickaxe on rock or rock breaking sounds", 2),
     ("dig_ore", "dig", "dig_sounds.gd: digging out ore (metal clink on rock)", "3 pick on ore sounds", 3),
+    ("hit_axe_wood", "hits", "hit_sounds.gd: an axe blow on wood (felling, chopping)", "3 axe chops into a log or tree", 2),
+    ("hit_axe_stone", "hits", "hit_sounds.gd: an axe blow on stone", "3 axe strikes on rock", 4),
+    ("hit_axe_soil", "hits", "hit_sounds.gd: an axe blow on soil", "3 axe thuds into earth", 4),
+    ("hit_pick_wood", "hits", "hit_sounds.gd: a pickaxe blow on wood", "3 pick strikes into wood", 4),
+    ("hit_pick_stone", "hits", "hit_sounds.gd: a pickaxe blow on rock (mining)", "3 pickaxe strikes on rock", 2),
+    ("hit_pick_soil", "hits", "hit_sounds.gd: a pickaxe blow on soil", "3 pick strikes into hard earth", 3),
+    ("hit_hammer_wood", "hits", "hit_sounds.gd: a hammer blow on wood (building)", "3 hammer knocks on timber, or nails driven", 2),
+    ("hit_hammer_stone", "hits", "hit_sounds.gd: a hammer blow on stone (chiselling, smithing)", "3 hammer clanks on stone", 3),
+    ("hit_hammer_soil", "hits", "hit_sounds.gd: a hammer blow on soil (driving stakes)", "3 mallet thumps into earth", 4),
+    ("hit_spade_wood", "hits", "hit_sounds.gd: a spade strike on wood", "3 spade knocks and scrapes on wood", 4),
+    ("hit_spade_stone", "hits", "hit_sounds.gd: a spade scraping on stone", "3 spade scrapes on stone", 4),
+    ("hit_spade_soil", "hits", "hit_sounds.gd: a spade strike into soil", "3 spade thuds into earth", 3),
     ("dig_water", "dig", "dig_sounds.gd: water pouring into a new hole", "3 water splashing into a pit", 3),
 ]
 
@@ -66,12 +78,8 @@ STEPS = [
     ("water", "wading in water"),
 ]
 
-# Slots planned but not yet built (jobs 14 and 15): listed so the owner can supply them early.
+# Slots planned but not yet built (job 15): listed so the owner can supply them early.
 PLANNED = [
-    ("hit_axe_wood / hit_axe_stone / hit_axe_soil", "axe blows on wood (felling), stone and soil", "2 to 3 each, 0.3 to 0.6 s"),
-    ("hit_pick_wood / hit_pick_stone / hit_pick_soil", "pickaxe blows", "2 to 3 each"),
-    ("hit_hammer_wood / hit_hammer_stone / hit_hammer_soil", "hammer blows (building, chiselling)", "2 to 3 each"),
-    ("hit_spade_wood / hit_spade_stone / hit_spade_soil", "spade strikes and scrapes", "2 to 3 each"),
     ("town_bell", "a town bell tolling by position", "1 to 2 bell strikes with long ring"),
     ("town_hammering", "a smith or builder working nearby", "a loop or 3 to 4 short hammering runs"),
     ("town_fire", "fire crackle at hearths and forges", "a seamless fire crackle loop"),
@@ -138,7 +146,7 @@ def main():
     lines += ["", "## Footsteps (recorded left and right, `step_<ground>_<left|right>_N`)", "", "| Slot | State | Files | Ground |", "|---|---|---|---|"]
     for s in steps:
         lines.append("| `%s` | %s | %d | %s |" % (s["name"], s["state"], s["variants"], s["used_in"]))
-    lines += ["", "## Planned (hooks come with jobs 14 and 15; supplying them early is fine)", "", "| Slot | Where it will play | What to supply |", "|---|---|---|"]
+    lines += ["", "## Planned (hooks come with job 15; supplying them early is fine)", "", "| Slot | Where it will play | What to supply |", "|---|---|---|"]
     for n, w, s in PLANNED:
         lines.append("| `%s` | %s | %s |" % (n, w, s))
     with open(os.path.join(HERE, "SOUND_PACK.md"), "w") as f:

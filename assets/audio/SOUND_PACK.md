@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **51 slots: 17 recorded, 30 generated placeholders, 4 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **63 slots: 17 recorded, 42 generated placeholders, 4 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -22,6 +22,9 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 2 | `cave_drip` | generated | 5 | cave_sounds.gd: water drops in caves and tunnels | 3 to 6 single water drips in a stone room, 1 to 2 s each |
 | 2 | `dig_rock` | generated | 3 | dig_sounds.gd: breaking rock | 3 pickaxe on rock or rock breaking sounds |
 | 2 | `dig_soil` | generated | 3 | dig_sounds.gd: digging dirt and humus | 3 spade or shovel scoops into earth |
+| 2 | `hit_axe_wood` | generated | 3 | hit_sounds.gd: an axe blow on wood (felling, chopping) | 3 axe chops into a log or tree |
+| 2 | `hit_hammer_wood` | generated | 3 | hit_sounds.gd: a hammer blow on wood (building) | 3 hammer knocks on timber, or nails driven |
+| 2 | `hit_pick_stone` | generated | 3 | hit_sounds.gd: a pickaxe blow on rock (mining) | 3 pickaxe strikes on rock |
 | 2 | `owl_hoot` | generated | 3 | ambient_life.gd: forest at night | 2 to 3 owl hoots (tawny or barred), 2 to 3 s |
 | 2 | `rain_leaves` | generated | 1 | weather_sounds.gd: rain pattering on leaves under trees | Rain on forest canopy loop, seamless |
 | 2 | `thunder_far` | generated | 3 | weather_sounds.gd: a far strike (over 1800 m): a low grumble | 2 to 3 distant low rumbles, 8 to 12 s |
@@ -40,9 +43,18 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 3 | `dig_sand` | generated | 3 | dig_sounds.gd: digging sand and snow | 3 sand shovelling sounds |
 | 3 | `dig_water` | generated | 3 | dig_sounds.gd: water pouring into a new hole | 3 water splashing into a pit |
 | 3 | `hawk_screech` | generated | 3 | ambient_life.gd: highland, by day | 2 to 3 hawk screeches |
+| 3 | `hit_hammer_stone` | generated | 3 | hit_sounds.gd: a hammer blow on stone (chiselling, smithing) | 3 hammer clanks on stone |
+| 3 | `hit_pick_soil` | generated | 3 | hit_sounds.gd: a pickaxe blow on soil | 3 pick strikes into hard earth |
+| 3 | `hit_spade_soil` | generated | 3 | hit_sounds.gd: a spade strike into soil | 3 spade thuds into earth |
 | 3 | `rain_water` | generated | 1 | weather_sounds.gd: rain falling on ponds and rivers near the player | Rain on a lake surface loop, seamless |
 | 3 | `woodpecker` | generated | 3 | ambient_life.gd: forest, by day | 2 to 3 woodpecker drumming runs, about 1 s |
 | 4 | `frog_croak` | recorded | 6 | ambient_life.gd: ponds and rivers, spring to autumn, more at night and in rain | have: Dave's frogs (mostly small trillers); a deep bullfrog croak is still missing |
+| 4 | `hit_axe_soil` | generated | 3 | hit_sounds.gd: an axe blow on soil | 3 axe thuds into earth |
+| 4 | `hit_axe_stone` | generated | 3 | hit_sounds.gd: an axe blow on stone | 3 axe strikes on rock |
+| 4 | `hit_hammer_soil` | generated | 3 | hit_sounds.gd: a hammer blow on soil (driving stakes) | 3 mallet thumps into earth |
+| 4 | `hit_pick_wood` | generated | 3 | hit_sounds.gd: a pickaxe blow on wood | 3 pick strikes into wood |
+| 4 | `hit_spade_stone` | generated | 3 | hit_sounds.gd: a spade scraping on stone | 3 spade scrapes on stone |
+| 4 | `hit_spade_wood` | generated | 3 | hit_sounds.gd: a spade strike on wood | 3 spade knocks and scrapes on wood |
 | 5 | `crow_alarm` | recorded | 3 | ambient_life.gd: alarm(at): a crow scolds when the player runs through crow country, and the danger warning hook | have: Dave's angry crow |
 | 5 | `crow_caw` | recorded | 7 | ambient_life.gd: forest and highland, by day | have: Dave's crow calls |
 | 5 | `fish_splash` | recorded | 3 | ambient_life.gd: a fish jumps at the water edge, rare | have: Dave's fish jumping clip, played whole |
@@ -65,14 +77,10 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | `step_gravel` | recorded | 6 | gravel, soft rock |
 | `step_water` | recorded | 6 | wading in water |
 
-## Planned (hooks come with jobs 14 and 15; supplying them early is fine)
+## Planned (hooks come with job 15; supplying them early is fine)
 
 | Slot | Where it will play | What to supply |
 |---|---|---|
-| `hit_axe_wood / hit_axe_stone / hit_axe_soil` | axe blows on wood (felling), stone and soil | 2 to 3 each, 0.3 to 0.6 s |
-| `hit_pick_wood / hit_pick_stone / hit_pick_soil` | pickaxe blows | 2 to 3 each |
-| `hit_hammer_wood / hit_hammer_stone / hit_hammer_soil` | hammer blows (building, chiselling) | 2 to 3 each |
-| `hit_spade_wood / hit_spade_stone / hit_spade_soil` | spade strikes and scrapes | 2 to 3 each |
 | `town_bell` | a town bell tolling by position | 1 to 2 bell strikes with long ring |
 | `town_hammering` | a smith or builder working nearby | a loop or 3 to 4 short hammering runs |
 | `town_fire` | fire crackle at hearths and forges | a seamless fire crackle loop |
