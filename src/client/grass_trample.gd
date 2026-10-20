@@ -14,7 +14,7 @@ extends RefCounted
 const SIZE := 256
 const RECOVER_S := 300.0
 const RADIUS_M := 1.1
-const UPLOAD_MSEC := 100
+var upload_msec: int = 100              # 200 on Low (set_trample_rate in grass_view.gd)
 
 var texture: ImageTexture = null
 
@@ -84,14 +84,14 @@ func _move_window(tx: int, tz: int) -> void:
 		_tz = tz
 
 
-# Call every frame: uploads the map at most ten times a second, and only when something changed.
+# Call every frame: uploads the map at most ten times a second (five on Low), and only when something changed.
 func flush() -> void:
 	if not _dirty:
 		return
 
 	var now: int = Time.get_ticks_msec()
 
-	if now - _upload_msec < UPLOAD_MSEC:
+	if now - _upload_msec < upload_msec:
 		return
 
 	_upload_msec = now

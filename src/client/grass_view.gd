@@ -253,6 +253,11 @@ func set_radius(meters: float) -> void:
 
 
 # Forest litter range and amount per quality (0 meters or 0 density: none). A change rebuilds the cells.
+func set_trample_rate(msec: int) -> void:
+	if _trample != null:
+		_trample.upload_msec = msec
+
+
 func set_litter(meters: float, amount: float) -> void:
 	var changed: bool = not is_equal_approx(meters, litter_m) or not is_equal_approx(amount, litter_density)
 	litter_m = meters
