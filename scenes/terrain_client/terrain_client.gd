@@ -1693,6 +1693,7 @@ func _step_player(delta: float) -> void:
 	if _item_sync_left <= 0.0:
 		_item_sync_left = 0.1
 		sound.itemfx.watch(items)
+		sound.itemfx.watch_vitals(items.hunger, 0.1)
 
 	_fire_sync_left -= delta
 
@@ -2122,10 +2123,12 @@ func _process(delta: float) -> void:
 		sound.fire.cook(spot)
 		sound.fire.fuel(spot)
 
-		for kind in ["crunch", "soft", "drink", "roast_forage", "berries"]:
+		for kind in ["crunch", "soft", "drink", "roast_forage", "raspberries", "poultice_plantain", "bandage_plantain"]:
 			sound.itemfx.eat(kind)
 
-		print("Terrain client: cooking sounds: sizzle %d, fuel %d, eaten %d, last fire %s, last item %s" % [sound.fire.cook_played, sound.fire.fuel_played, sound.itemfx.eat_played, sound.fire.last, sound.itemfx.last])
+		sound.itemfx.watch_vitals(10, 200.0)
+
+		print("Terrain client: cooking sounds: sizzle %d, fuel %d, eaten %d, growls %d, last fire %s, last item %s" % [sound.fire.cook_played, sound.fire.fuel_played, sound.itemfx.eat_played, sound.itemfx.growls_played, sound.fire.last, sound.itemfx.last])
 
 	# Headless check: every placed-thing hook once, then a synthetic chest row appears and vanishes beside the player.
 	if test_placed and now - connected_msec > 18000:

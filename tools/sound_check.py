@@ -69,7 +69,8 @@ SCENARIOS = [
         ("tool break and repair", r"wear sounds (\{[^}]*\})", 2, 2, "sum"),
     ]),
     ("cooking", ["--cooking"], 4500, [
-        ("eaten", r"eaten " + NUM, 5, 5),
+        ("eaten or healed", r"eaten " + NUM, 7, 7),
+        ("stomach growl", r"growls " + NUM, 1, 1),
         ("sizzle", r"sizzle " + NUM, 1, 1),
     ]),
     ("harvest", ["--gather"], 4500, [

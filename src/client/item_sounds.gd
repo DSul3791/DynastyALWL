@@ -27,8 +27,15 @@ const NAMES := {"item_pickup": -17.0, "item_drop": -17.0, "inv_open": -20.0, "in
 const MIN_GAP_MSEC := 60
 const WORK_DB := -18.0
 const WORK_TYPES := {"cordage": "twine", "stone_axe": "knap", "stone_knife": "knap", "wooden_spear": "carve", "spear": "bind", "torch": "bind", "campfire": "stack"}
-const EAT := {"crunch": ["eat_crunch", -15.0], "soft": ["eat_soft", -17.0], "drink": ["drink_gulp", -16.0]}
+const EAT := {"crunch": ["eat_crunch", -15.0], "soft": ["eat_soft", -17.0], "drink": ["drink_gulp", -16.0],
+	"poultice": ["heal_poultice", -16.0], "bandage": ["heal_bandage", -16.0]}
 const EAT_KINDS := {"roast_forage": "crunch", "tree_roots": "crunch", "seed_bundle": "crunch"}   # by item id; other food is soft
+# An item id ending in one of these is crunchy (nuts, roots, hard fruit); "sap" is drunk; poultices and bandages heal.
+const CRUNCHY := ["nuts", "roots", "bulbs", "apples", "pears", "acorns", "chestnuts", "walnuts", "hazelnuts", "beechnuts", "coconuts", "dates", "roast_forage"]
+const DRINKS := ["sap", "water"]
+const GROWL_DB := -20.0
+const GROWL_EVERY_SEC := [50.0, 110.0]  # while hungry (hunger at or under growl_from); starving growls twice as often
+const GROWL_FROM := 15
 const COOKING_DIR := "res://assets/audio/cooking/"
 const COOKING_RECORDED_DIR := "res://assets/audio/recorded/cooking/"
 const FUEL_WINDOW_MSEC := 1500
@@ -48,6 +55,8 @@ var _was_crafting: int = 0
 var _work: AudioStreamPlayer
 var work_played: int = 0
 var eat_played: int = 0
+var growls_played: int = 0
+var _growl_left: float = 60.0
 var _mouth: AudioStreamPlayer
 var _fuel_msec: int = -100000
 var _counts_by_number: Dictionary = {}  # item number -> count in the bag, last watch
@@ -130,14 +139,64 @@ func _watch_block(items, counts: Dictionary) -> void:
 		get_parent().workshop.chop(best, true)
 
 
+# A hungry stomach growls now and then (hunger 0 to 100, the Items thread's `hunger`): every 50 to 110 s at or
+# under 15 percent, twice as often when starving; quiet, at the player, never while swimming or the like.
+func watch_vitals(hunger: int, delta: float) -> void:
+	if hunger > GROWL_FROM:
+		_growl_left = _rng.randf_range(float(GROWL_EVERY_SEC[0]), float(GROWL_EVERY_SEC[1]))
+		return
+
+	_growl_left -= delta * (2.0 if hunger <= 0 else 1.0)
+
+	if _growl_left > 0.0:
+		return
+
+	_growl_left = _rng.randf_range(float(GROWL_EVERY_SEC[0]), float(GROWL_EVERY_SEC[1]))
+	var list: Array = _variants("stomach_growl")
+
+	if list.is_empty():
+		return
+
+	var pick: int = _rng.randi_range(0, list.size() - 1)
+	_mouth.stream = list[pick]
+	_mouth.volume_db = GROWL_DB + _rng.randf_range(-1.0, 1.0)
+	_mouth.pitch_scale = _rng.randf_range(0.95, 1.05)
+	_mouth.play()
+	growls_played += 1
+	last = "stomach_growl_%d (%s)" % [pick, SoundStage.tag(list[pick])]
+
+
 # The V key at a fire: wood used up in the next moments was laid on it.
 func fuel_pressed() -> void:
 	_fuel_msec = Time.get_ticks_msec()
 
 
-# Eating: "crunch", "soft" or "drink", or an item id (EAT_KINDS, else soft).
+# The eating kind of an item id: "poultice", "bandage", "drink", "crunch" or "soft".
+static func eat_kind(item_id: String) -> String:
+	if item_id.begins_with("poultice"):
+		return "poultice"
+
+	if item_id.begins_with("bandage"):
+		return "bandage"
+
+	if EAT_KINDS.has(item_id):
+		return str(EAT_KINDS[item_id])
+
+	for word in DRINKS:
+		if item_id.ends_with(word):
+			return "drink"
+
+	for word in CRUNCHY:
+		if item_id.ends_with(word):
+			return "crunch"
+
+	return "soft"
+
+
+# Eating or applying: "crunch", "soft", "drink", "poultice", "bandage", or an item id (the Items thread calls
+# this from `eat_event` when the server confirms the food or medicine took effect).
 func eat(kind: String) -> bool:
-	var entry: Array = EAT.get(kind, EAT.get(EAT_KINDS.get(kind, "soft")))
+	var entry: Array = EAT.get(kind, EAT.get(eat_kind(kind)))
 	var list: Array = _variants(str(entry[0]))
 
 	if list.is_empty():
@@ -257,7 +316,7 @@ func _variants(name: String) -> Array:
 		return _streams[name]
 
 	var crafting: bool = name.begins_with("craft_") and name != "craft_done"
-	var eating: bool = name.begins_with("eat_") or name == "drink_gulp"
+	var eating: bool = name.begins_with("eat_") or name == "drink_gulp" or name.begins_with("heal_") or name == "stomach_growl"
 	var list: Array = SoundStage._find(CRAFT_RECORDED_DIR if crafting else (COOKING_RECORDED_DIR if eating else RECORDED_DIR), name)
 
 	if list.is_empty():

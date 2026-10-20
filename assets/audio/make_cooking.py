@@ -7,6 +7,9 @@ Writes assets/audio/cooking/ (2 or 3 variants each):
   eat_crunch    a crisp bite and a few chews (roast forage, nuts, roots), 1.2 s
   eat_soft      soft chewing (berries, greens, mushrooms), 1.0 s
   drink_gulp    two swallows, 0.9 s
+  heal_poultice a wet leaf poultice pressed onto skin: soft pats and a squelch, 0.8 s
+  heal_bandage  a bandage wrapped round: cloth rustle and a tug, 0.9 s
+  stomach_growl a hungry stomach: a low gurgling rumble, 1.6 s
 Recordings go in assets/audio/recorded/cooking/ under the same names; the game prefers them.
 """
 import os
@@ -119,7 +122,42 @@ def drink_gulp(rng):
     return finish(out, 0.6)
 
 
-SOUNDS = {"cook_sizzle": (cook_sizzle, 2), "fire_fuel": (fire_fuel, 2), "eat_crunch": (eat_crunch, 3), "eat_soft": (eat_soft, 3), "drink_gulp": (drink_gulp, 2)}
+def heal_poultice(rng):
+    out = np.zeros(int(0.8 * SR))
+
+    for at in (0.0, 0.18, 0.34):
+        add(out, thump(rng, 0.1, rng.uniform(90, 130), 0.02, 500) * rng.uniform(0.5, 0.9), at)
+
+    wet = noise(rng, int(0.3 * SR), lambda f: band(f, 700, 1.2) * lowpass(f, 1800, 2)) * env(int(0.3 * SR), 0.03, 0.08)
+    add(out, wet / (np.max(np.abs(wet)) + 1e-9) * 0.5, 0.05)
+    return finish(out, 0.6)
+
+
+def heal_bandage(rng):
+    out = np.zeros(int(0.9 * SR))
+
+    for at in (0.0, 0.3):
+        cloth = noise(rng, int(0.3 * SR), lambda f: band(f, 2000, 1.3) * highpass(f, 600)) * env(int(0.3 * SR), 0.08, 0.1)
+        add(out, cloth / (np.max(np.abs(cloth)) + 1e-9) * 0.5, at)
+
+    add(out, thump(rng, 0.06, 140, 0.012, 900) * 0.4, 0.62)
+    return finish(out, 0.55)
+
+
+def stomach_growl(rng):
+    n = int(1.6 * SR)
+    t = np.arange(n) / SR
+    low = noise(rng, n, lambda f: band(f, 110, 0.9) * lowpass(f, 300, 3))
+    low /= np.max(np.abs(low)) + 1e-9
+    wobble = 0.5 + 0.5 * np.sin(2 * np.pi * rng.uniform(6, 11) * t + rng.uniform(0, 6))
+    swell = np.sin(np.pi * t / 1.6) ** 2
+    gurgle = noise(rng, n, lambda f: band(f, 380, 1.0) * lowpass(f, 800, 2))
+    gurgle /= np.max(np.abs(gurgle)) + 1e-9
+    return finish(low * swell * (0.4 + 0.6 * wobble) + 0.35 * gurgle * swell * wobble ** 2, 0.6)
+
+
+SOUNDS = {"cook_sizzle": (cook_sizzle, 2), "fire_fuel": (fire_fuel, 2), "eat_crunch": (eat_crunch, 3), "eat_soft": (eat_soft, 3), "drink_gulp": (drink_gulp, 2),
+          "heal_poultice": (heal_poultice, 2), "heal_bandage": (heal_bandage, 2), "stomach_growl": (stomach_growl, 2)}
 
 
 def main():

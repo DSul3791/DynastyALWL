@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **171 slots: 17 recorded, 145 generated placeholders, 9 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **174 slots: 17 recorded, 148 generated placeholders, 9 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -112,6 +112,8 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 3 | `gear_iron` | generated | 3 | gear_sounds.gd: iron-shod boots clanging on a step | 3 iron boot clangs, 0.4 s |
 | 3 | `gear_leather` | generated | 3 | gear_sounds.gd: leather armour or straps creaking on a step | 3 leather creaks, 0.3 s |
 | 3 | `hawk_screech` | generated | 3 | ambient_life.gd: highland, by day | 2 to 3 hawk screeches |
+| 3 | `heal_bandage` | generated | 2 | item_sounds.gd eat(): a bandage applied | 2 recordings of wrapping a cloth bandage, 1 s |
+| 3 | `heal_poultice` | generated | 2 | item_sounds.gd eat(): a poultice applied (Items eat_event, confirmed by the server) | 2 recordings of pressing a wet leaf pack onto skin, 0.8 s |
 | 3 | `heartbeat` | generated | 3 | breath_sounds.gd: the player's own heartbeat when exerted (lub-dub) | 3 heartbeat lub-dubs, 0.4 s, no room tone |
 | 3 | `hit_hammer_stone` | generated | 3 | hit_sounds.gd: a hammer blow on stone (chiselling, smithing) | 3 hammer clanks on stone |
 | 3 | `hit_pick_soil` | generated | 3 | hit_sounds.gd: a pickaxe blow on soil | 3 pick strikes into hard earth |
@@ -129,6 +131,7 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 3 | `spear_hit_stone` | generated | 3 | spear_sounds.gd: a spear striking stone | 3 spear tips hitting rock, clack and scrape |
 | 3 | `spear_jab` | generated | 3 | spear_sounds.gd: a spear thrust through the air | 3 spear thrust whooshes, 0.3 s |
 | 3 | `spear_throw` | generated | 3 | spear_sounds.gd: the heave and release of a thrown spear | 3 spear throw whooshes with effort, 0.7 s |
+| 3 | `stomach_growl` | generated | 2 | item_sounds.gd watch_vitals(): a hungry stomach, every 50 to 110 s at 15 percent hunger or less (twice as often when starving) | 2 recordings of a stomach growling, 1.5 s |
 | 3 | `stump_chips` | generated | 3 | tree_sounds.gd: wood chips and a last crack as the stump is left | 3 wood chip sprays and cracks, 0.5 s |
 | 3 | `swim_dive` | generated | 3 | swim_sounds.gd: the head goes under | 3 bubbling gulps of going under, 1 s |
 | 3 | `swim_stroke` | generated | 3 | swim_sounds.gd: an arm stroke while swimming, one every 0.6 to 1.4 s | 3 breaststroke or crawl arm pulls through water, 0.5 s |
