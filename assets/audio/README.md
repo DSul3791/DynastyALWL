@@ -14,7 +14,9 @@ tall grass fall back to grass).
 
 Build 52 uses the owner's own recordings (Dynasty_Footsteps_Left_Right.zip) for
 `step_grass`, `step_grass_tall`, `step_bushes`, `step_sand`, `step_stone` and
-`step_gravel` (rocky). Still generated: dirt, leaves, mud, snow, water.
+`step_gravel` (rocky), and (second pack, Dynasty_Footsteps_Dirt_Leaves_Mud_Snow_Water.zip)
+`step_dirt`, `step_leaves`, `step_mud`, `step_snow` and `step_water`. Every ground has recorded steps now;
+only the wind and the grass brush are still generated.
 
 | Name | What it is |
 |---|---|
