@@ -14,7 +14,8 @@ extends Node
 #   --frames=N        headless check: run N frames, print what arrived, quit
 #   --move=M          with --frames: fly east at M m/s, 20 m above the ground
 #   --fly             with --move: in flying mode (no ground is built while moving),
-#                     stopping after 30 s to check the ground then loads under the player
+#                     stopping after 30 s to check the ground then loads under the player;
+#                     prints when each detail level of the block under the stop point loaded
 #   --dig             with --frames: 20 s in, ask the server to dig a hole under the spawn
 #   --water-step      with --frames: 12 s in, press + twice (the server re-settles the water)
 #   --cut             with --frames: 25 s in, ask the server to cut the tree nearest the spawn
@@ -30,7 +31,7 @@ const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")
 const CompassScript := preload("res://src/client/admin_compass.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 60
+const BUILD := 61
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const KnowledgeScript := preload("res://src/client/inspection_knowledge.gd")
@@ -60,6 +61,7 @@ const QUALITY_GRASS_POINTS := [2, 3, 4, 5]               # ground samples per 6 
 const QUALITY_SHADOW_M := [0.0, 60.0, 100.0, 250.0]    # 0 = no shadows
 const QUALITY_CACHE_MB := [1024, 4096, 10240, 10240]    # ground cache limit on disk
 const FLY_SPEED := 30.0
+const WATER_HOLD_MSEC := 2000        # water refreshes wait this long while ground loads
 const STILL_MSEC := 3000              # flying: ground loads again after staying still this long
 const WALK_SPEED := 6.0
 const FAST := 3.0                     # flying: Shift multiplier
@@ -121,6 +123,7 @@ var pitch: float = 0.0
 var frames_left: int = -1
 var test_speed: float = 0.0
 var test_fly: bool = false
+var _fly_stop_msec: int = 0           # --fly check: when the flight stopped (0 = not yet)
 var _anchor: Vector3 = Vector3.ZERO    # where the ground and plants are loaded around (the viewer)
 var _anchor_set: bool = false
 var _last_pos: Vector3 = Vector3.ZERO
@@ -166,6 +169,8 @@ var _frame_ms: Array = []             # recent frame times for the HUD readout
 var test_cut: bool = false
 var _flora_asked: Dictionary = {}     # chunk -> true asked or held in full, false trees only
 var _flora_check_msec: int = 0
+var _water_dirty: bool = false        # the server said the water moved; not asked for yet
+var _water_asked_msec: int = 0
 var _flora_chunks: int = 0
 var _flora_bytes: int = 0
 var _flora_cuts: int = 0
@@ -313,6 +318,12 @@ func _on_welcome(info: Dictionary) -> void:
 	terrain.mesh_block_size = 32
 	terrain.generate_collisions = true
 	terrain.collision_lod_count = 4
+	# Owner (2026-10-20): after flying somewhere new the ground under the player took half a
+	# minute. The old octree system loads every level coarse to fine (the whole 15 km
+	# coarsest ring first), one server round trip per missing block; clipbox loads the
+	# nearest fine ground first (0.1 s instead of 30 s in the cloud fly check). The far
+	# view now fills in last.
+	terrain.streaming_system = VoxelLodTerrain.STREAMING_SYSTEM_CLIPBOX
 	terrain.material = GroundMaterialScript.make(_tables)
 	root.add_child(terrain)
 	_make_player(root, info["spawn"] + Vector3(0.0, 28.0, 0.0))
@@ -492,9 +503,21 @@ func _thousands(value: int) -> String:
 
 # The server's water moved: ask again for the water of every flora chunk held.
 func _on_water_changed() -> void:
-	if flora == null:
+	_water_dirty = true
+
+
+# Asks again for the water of the chunks held. While ground is still loading this waits up
+# to WATER_HOLD_MSEC: each answer costs the server main-thread time and shares the line with
+# the ground blocks, and the server says the water moved about twice a second.
+func _send_water_request(now: int) -> void:
+	if not _water_dirty or flora == null:
 		return
 
+	if stream.pending() > 0 and now - _water_asked_msec < WATER_HOLD_MSEC:
+		return
+
+	_water_dirty = false
+	_water_asked_msec = now
 	var chunks: PackedInt32Array = PackedInt32Array()
 
 	for chunk in flora.held_chunks():
@@ -624,8 +647,10 @@ func _make_player(root: Node3D, start: Vector3) -> void:
 	viewer.view_distance = VIEW_DISTANCE
 	viewer.requires_collisions = true
 	# Placed by _update_anchor, not carried by the player (owner 2026-10-19: no new ground
-	# while flying).
+	# while flying). Starts at the player: left at the world origin for the first frame,
+	# Voxel Tools queued about a thousand far blocks around (0, 0) that were loaded first.
 	viewer.top_level = true
+	viewer.position = start
 	body.add_child(viewer)
 	_viewer = viewer
 
@@ -1052,6 +1077,9 @@ func _move_player(delta: float) -> void:
 
 			if Time.get_ticks_msec() - connected_msec > 30000:
 				test_speed = 0.0
+				_fly_stop_msec = Time.get_ticks_msec()
+				stream.watch_xz = Vector2(body.global_position.x, body.global_position.z)
+				stream.watch_on = true
 
 		body.global_position.x += test_speed * delta
 	elif flying:
@@ -1181,6 +1209,8 @@ func _process(delta: float) -> void:
 
 	settled_msec = stream.last_load_msec - connected_msec
 
+	_send_water_request(now)
+
 	if now >= _flora_check_msec:
 		_flora_check_msec = now + 500
 		var tf: int = Probe.start()
@@ -1291,6 +1321,14 @@ func _process(delta: float) -> void:
 		frames_left -= 1
 
 		if frames_left == 0:
+			if test_fly and _fly_stop_msec > 0:
+				for lod in range(6):
+					print("Terrain client: under the stop point, LOD %d first asked %s, loaded %s (ms after stopping)" % [
+						lod,
+						str(stream.watch_asked[lod] - _fly_stop_msec) if stream.watch_asked.has(lod) else "never",
+						str(stream.watch_loaded[lod] - _fly_stop_msec) if stream.watch_loaded.has(lod) else "never",
+					])
+
 			print("Terrain client: last block asked for %d ms after the welcome; %d blocks loaded; %d from the server (%.2f MB, %.0f bytes each), %d from the cache, %d cache misses, %d timeouts, %d still waiting, %d prefetched blocks used" % [
 				settled_msec, stream.loads, stream.blocks_received, float(stream.bytes_received) / 1048576.0,
 				float(stream.bytes_received) / maxf(float(stream.blocks_received), 1.0), cache.hits, cache.misses, stream.timeouts, stream.pending(), stream.prefetch_used

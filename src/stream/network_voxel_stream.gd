@@ -42,6 +42,10 @@ var _answers: Dictionary = {}         # Vector4i -> PackedByteArray
 var _waiting: Dictionary = {}         # Vector4i -> true
 var _closing: bool = false
 var paused: bool = false              # main thread: requests are held (flying), so waits do not time out
+var watch_on: bool = false            # headless --fly check: note when the column under watch_xz loads
+var watch_xz: Vector2 = Vector2.ZERO
+var watch_asked: Dictionary = {}      # lod -> msec Voxel Tools first asked for a block of that column
+var watch_loaded: Dictionary = {}     # lod -> msec the first block of that column was loaded
 
 
 func _get_used_channels_mask() -> int:
@@ -49,6 +53,34 @@ func _get_used_channels_mask() -> int:
 
 
 func _load_voxel_block(out_buffer: VoxelBuffer, block: Vector3i, lod: int) -> int:
+	if not watch_on:
+		return _load(out_buffer, block, lod)
+
+	var size: float = float(16 << lod)
+	var watched: bool = block.x == int(floor(watch_xz.x / size)) and block.z == int(floor(watch_xz.y / size))
+
+	if watched:
+		_mutex.lock()
+
+		if not watch_asked.has(lod):
+			watch_asked[lod] = Time.get_ticks_msec()
+
+		_mutex.unlock()
+
+	var result: int = _load(out_buffer, block, lod)
+
+	if watched and result == RESULT_BLOCK_FOUND:
+		_mutex.lock()
+
+		if not watch_loaded.has(lod):
+			watch_loaded[lod] = Time.get_ticks_msec()
+
+		_mutex.unlock()
+
+	return result
+
+
+func _load(out_buffer: VoxelBuffer, block: Vector3i, lod: int) -> int:
 	var key: Vector4i = Vector4i(block.x, block.y, block.z, lod)
 	_mutex.lock()
 	loads += 1
