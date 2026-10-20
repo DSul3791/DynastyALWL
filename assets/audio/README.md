@@ -300,3 +300,11 @@ Under the far roar (`water_fall`, audible to 260 m), the nearest single fall wit
 ## Lake and pond shores lap softly (Dave 2026-10-20)
 
 Standing by a lake played river rushing. Now: a still-water square (current under `STILL_MPS` 0.35 m/s with water around it) is a lake or pond; water with a current is a river however wide (the old rule called wide fast rivers ponds and lake shore squares rivers). A lake has no rushing bed: every 3 to 8 s one soft lap (`lake_lap_N`, `make_lake.py`: Dave's fish splash recordings slowed to 0.62, low-passed at 2.4 kHz, softened, 2.4 s) plays 3D from one of the nearest 4 still-water squares within 35 m, at most 2 at once, none under water. Rivers, brooks and falls are unchanged. Real recordings of lapping go in `recorded/water/lake_lap_N`. The old `water_pond` loop is no longer played. HUD water line: `lake shore N squares, M laps`. `--lake` runs stand-in squares for 20 s (`sound_check.py --only lake`). The lake/river edge changes by the measured current per 8 m square, so a river mouth that slows into a bay turns from rush to laps.
+
+## Exertion audio gaps checked against Items' strain states (job 57)
+
+The chain normal, over_exerted, fainting, fainted, waking was run end to end with the real state names (`--faint`, `sound_check.py --only faint`). Findings and fixes:
+- Fainting and fainted: no breathing is heard while fainted (checked: 0 breaths), the heart keeps racing at no less than 1.2 and fades 3 s after the vision is gone.
+- Waking: the world's sound used to return on a fixed 4 s ramp; it now follows the blackness still left (`strain_fade` through `faint_state()`), so the world comes back with Art's vision (checked: mute 0.49 halfway through the wake). The heart and heaves follow the real strain as it settles (`wake_strain` 1.1 on).
+- Sitting and lying: the server drains strain faster, and the breathing and heart ease with the value, so nothing extra is needed; they stop under `QUIET` 0.25 (breath) and `HEART_FROM` 0.55 (heart).
+- Open, to tune by ear: the old stand-in scale (jog 0.62, run climbing on) was written before the real strain existed; the thresholds `QUIET` 0.25, `HEART_FROM` 0.55 and `OVER` 1.0 follow `data/items/exertion.json` (over_on 1.0, faint_at 1.4) and may need nudging once Dave runs with the real values.

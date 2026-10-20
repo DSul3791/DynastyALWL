@@ -146,6 +146,10 @@ var _demo_t: float = -1.0
 var peak_mute: float = 0.0
 var demo_min_gain: float = 1.0
 var demo_done: bool = false
+var breaths_at_faint: int = 0
+var _demo_prev: String = ""
+var fainted_breaths: int = 0             # breaths heard while fainted (must stay 0)
+var wake_mute_mid: float = -1.0          # the world mute halfway through waking (between 0 and 1: the world returns with the vision)
 
 
 func demo() -> void:
@@ -164,17 +168,27 @@ func _run_demo(delta: float) -> void:
 	elif t < 9.0:
 		set_body(1.4 - 0.02 * (t - 6.0), "over_exerted")
 	elif t < 11.5:
-		set_body(1.0, "fainted", (t - 9.0) / 2.5)
+		set_body(1.0, "fainting", (t - 9.0) / 2.5)
 	elif t < 17.0:
 		set_body(1.0, "fainted", 1.0)
 	elif t < 27.0:
-		set_body(lerpf(1.1, 0.3, (t - 17.0) / 10.0), "waking")
+		set_body(lerpf(1.1, 0.3, (t - 17.0) / 10.0), "waking", 1.0 - (t - 17.0) / 10.0)
+		if t > 21.9 and t < 22.1:
+			wake_mute_mid = world_mute
 	else:
 		_demo_t = -1.0
 		demo_done = true
 		clear_exertion()
 		exertion = 0.0
 		state = "normal"
+
+	if state == "fainted" and _demo_prev != "fainted":
+		breaths_at_faint = breaths_played
+
+	_demo_prev = state
+
+	if state == "fainted":
+		fainted_breaths = breaths_played - breaths_at_faint
 
 	peak_mute = maxf(peak_mute, world_mute)
 	demo_min_gain = minf(demo_min_gain, _heart_gain)
@@ -267,7 +281,7 @@ func _fade_world(delta: float) -> void:
 	if state == "fainted" or state == "fainting":
 		target = maxf(_faint, 0.0)                                          # out with the vision (client.faint.blackout)
 	elif state == "waking":
-		target = 0.0
+		target = _faint                                                     # the blackness still left (Items strain_fade, Art's fade)
 
 	var rate: float = MUTE_RATE if target > world_mute else 1.0 / WAKE_SEC
 	world_mute = move_toward(world_mute, target, rate * delta)

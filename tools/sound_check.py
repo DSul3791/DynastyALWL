@@ -74,6 +74,8 @@ SCENARIOS = [
         ("heart fades away", r"heart gain down to " + NUM, 0, 0.01),
         ("heaves played", r"gain down to [\d.]+, " + NUM + r" heaves", 3, 200),
         ("run completes", r"done (true)", 0, 1, "text"),
+        ("no breathing while fainted", r"breaths while fainted " + NUM, 0, 0),
+        ("world returns with the vision", r"wake mute " + NUM, 0.1, 0.9),
     ]),
     ("merge", ["--merge-check"], 3500, [
         ("falls share a voice", r"falls 6 -> " + NUM + r" voices", 2, 2),
