@@ -29,6 +29,7 @@ const CreatureScript := preload("res://src/client/creature_sounds.gd")
 const GearScript := preload("res://src/client/gear_sounds.gd")
 const InteriorScript := preload("res://src/client/interior_sounds.gd")
 const SpearScript := preload("res://src/client/spear_sounds.gd")
+const FireScript := preload("res://src/client/fire_sounds.gd")
 const ItemScript := preload("res://src/client/item_sounds.gd")
 const OcclusionScript := preload("res://src/client/sound_occlusion.gd")
 const WaterSoundsScript := preload("res://src/client/water_sounds.gd")
@@ -147,6 +148,7 @@ var water                               # WaterSounds: brooks, rivers, pond shor
 var weather                             # WeatherSounds: rain, gale, thunder, snow hush (set_weather)
 var occlusion                           # SoundOcclusion: hills and forest muffle distant sounds
 var hits                                # HitSounds: axe, pick, hammer, spade on wood, stone, soil (hit, hit_ground)
+var fire                                # FireSounds: campfire loops by size, lit, put out, rain sizzle (set_fires)
 var itemfx                              # ItemSounds: inventory cues (watch(items) every frame)
 var spear                               # SpearSounds: jab, throw, flight, hits on wood, stone, soil, flesh
 var interior                            # InteriorSounds: inside a building, doors, chests, furniture (set_inside, object)
@@ -216,6 +218,10 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	town.name = "Town"
 	add_child(town)
 	town.setup(self)
+	fire = FireScript.new()
+	fire.name = "Fire"
+	add_child(fire)
+	fire.setup(self)
 	itemfx = ItemScript.new()
 	itemfx.name = "ItemFx"
 	add_child(itemfx)
@@ -319,6 +325,7 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	creatures.update(delta)
 	interior.update(delta)
 	spear.update(delta)
+	fire.update(delta, body)
 	occlusion.update(delta, body, flying)
 	_time += delta
 	gust = clampf(0.5 + 0.8 * _gust_noise.get_noise_1d(_time), 0.0, 1.0)

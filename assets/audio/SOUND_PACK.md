@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **116 slots: 17 recorded, 95 generated placeholders, 4 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **121 slots: 17 recorded, 100 generated placeholders, 4 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -25,6 +25,11 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 2 | `craft_done` | generated | 3 | item_sounds.gd: a craft finished | 3 wooden knock and small chime cues |
 | 2 | `dig_rock` | generated | 3 | dig_sounds.gd: breaking rock | 3 pickaxe on rock or rock breaking sounds |
 | 2 | `dig_soil` | generated | 3 | dig_sounds.gd: digging dirt and humus | 3 spade or shovel scoops into earth |
+| 2 | `fire_large` | generated | 1 | fire_sounds.gd: a big fire (loop) | a bonfire loop with roar, crackle and pops, 10 to 15 s |
+| 2 | `fire_light` | generated | 3 | fire_sounds.gd: a fire catches (one-shot) | 3 fire-lighting sounds: strike and soft whoomph, 1 to 2 s |
+| 2 | `fire_out` | generated | 3 | fire_sounds.gd: a fire put out (one-shot) | 3 water or rain extinguishing a fire, hiss and steam, 2 to 3 s |
+| 2 | `fire_rain` | generated | 1 | fire_sounds.gd: rain falling on an open fire (loop, only when raining) | rain sizzling on a campfire, 10 s loop |
+| 2 | `fire_small` | generated | 1 | fire_sounds.gd: a small fire or embers (loop; crossfades with fire_large by size) | a quiet campfire loop, soft crackle, 10 to 15 s |
 | 2 | `gear_chain` | generated | 3 | gear_sounds.gd: mail jingling on a step | 3 chainmail jingles, 0.4 s |
 | 2 | `gear_plate` | generated | 3 | gear_sounds.gd: plate armour clanking on a step | 3 plate armour clanks, 0.4 s |
 | 2 | `hit_axe_wood` | generated | 3 | hit_sounds.gd: an axe blow on wood (felling, chopping) | 3 axe chops into a log or tree |

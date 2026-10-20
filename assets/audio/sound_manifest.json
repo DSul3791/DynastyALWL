@@ -617,6 +617,46 @@
    "priority": 4
   },
   {
+   "name": "fire_small",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "fire_sounds.gd: a small fire or embers (loop; crossfades with fire_large by size)",
+   "to_supply": "a quiet campfire loop, soft crackle, 10 to 15 s",
+   "priority": 2
+  },
+  {
+   "name": "fire_large",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "fire_sounds.gd: a big fire (loop)",
+   "to_supply": "a bonfire loop with roar, crackle and pops, 10 to 15 s",
+   "priority": 2
+  },
+  {
+   "name": "fire_rain",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "fire_sounds.gd: rain falling on an open fire (loop, only when raining)",
+   "to_supply": "rain sizzling on a campfire, 10 s loop",
+   "priority": 2
+  },
+  {
+   "name": "fire_light",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "fire_sounds.gd: a fire catches (one-shot)",
+   "to_supply": "3 fire-lighting sounds: strike and soft whoomph, 1 to 2 s",
+   "priority": 2
+  },
+  {
+   "name": "fire_out",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "fire_sounds.gd: a fire put out (one-shot)",
+   "to_supply": "3 water or rain extinguishing a fire, hiss and steam, 2 to 3 s",
+   "priority": 2
+  },
+  {
    "name": "item_pickup",
    "state": "generated",
    "variants": 3,

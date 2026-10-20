@@ -51,7 +51,7 @@ const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 const GpuProbeScript := preload("res://src/debug/gpu_probe.gd")
 const WeatherLookScript := preload("res://src/client/weather_look.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 131
+const BUILD := 149
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -170,6 +170,10 @@ var test_ui: bool = false
 var test_flood: bool = false
 var test_gear: bool = false
 var test_spear_sounds: bool = false
+var test_fire: bool = false
+var _test_fire_at: int = 0
+var _test_fire_step: int = 0
+var _sound_fire_at: int = -1
 var _test_spear_step: int = 0
 var _test_spear_at: int = 0
 var _sound_spear_at: int = -1
@@ -304,6 +308,8 @@ func _ready() -> void:
 			test_flood = true
 		elif argument == "--gear":
 			test_gear = true
+		elif argument == "--fire":
+			test_fire = true
 		elif argument == "--spear-sounds":
 			test_spear_sounds = true
 		elif argument == "--interior":
@@ -1189,6 +1195,9 @@ func _build_menu(layer: CanvasLayer) -> void:
 		else:
 			sound.spear.hit("wood", eye + ahead * 2.0, 1.0)
 			_menu_note.text = "Spear hits wood two metres ahead")
+	_menu_button(settings, "Sound test: fire", func():
+		_sound_fire_at = (_sound_fire_at + 1) % 7
+		_menu_note.text = _fire_test_step(_sound_fire_at, body.global_position + -camera.global_transform.basis.z * 3.0) + " (press again for the next)")
 	_menu_button(settings, "Sound test: interior", func():
 		_sound_interior_at = (_sound_interior_at + 1) % 5
 		var here: Vector3 = body.global_position + -camera.global_transform.basis.z * 2.0
@@ -1662,6 +1671,43 @@ func _update_bob(delta: float) -> void:
 	camera.rotation.z = deg_to_rad(float(SWAY_DEG[gait])) * side * _bob_amount
 
 
+# One step of the fire sound test (button and --fire): returns what it did.
+func _fire_test_step(step: int, at: Vector3) -> String:
+	var fire := {"id": 1, "at": at, "size": 0.3, "lit": true, "open": true}
+	var note: String = ""
+
+	if step == 0:
+		fire["lit"] = false
+		sound.weather.set_weather("clear", 1.0)
+		sound.fire.set_fires([fire])
+		note = "Unlit fire placed three metres ahead (silent)"
+	elif step == 1:
+		sound.fire.set_fires([fire])
+		note = "Fire lit: small embers"
+	elif step == 2:
+		fire["size"] = 1.0
+		sound.fire.set_fires([fire])
+		note = "Fire grows to a bonfire"
+	elif step == 3:
+		fire["size"] = 1.0
+		sound.weather.set_weather("rain", 1.0)
+		sound.fire.set_fires([fire])
+		note = "Rain starts on the open fire (sizzle)"
+	elif step == 4:
+		fire["lit"] = false
+		sound.fire.set_fires([fire])
+		note = "Fire put out (hiss)"
+	elif step == 5:
+		sound.weather.set_weather("clear", 1.0)
+		sound.fire.set_fires([fire])
+		note = "Fire lit again, rain gone"
+	else:
+		sound.fire.set_fires([])
+		note = "Fire removed (fades)"
+
+	return note
+
+
 func _process(delta: float) -> void:
 	_step_player(delta)
 	game_clock.tick()
@@ -1787,6 +1833,15 @@ func _process(delta: float) -> void:
 			test_creatures = false
 			sound.creatures.wild = true                              # then the natural far calls run on their own
 
+	# Headless check: place, light, grow, rain on, put out, light, remove.
+	if test_fire and now - connected_msec > 18000 and now >= _test_fire_at:
+		_test_fire_at = now + 1200
+		print("Terrain client: fire step %d: %s" % [_test_fire_step, _fire_test_step(_test_fire_step, body.global_position + Vector3(3.0, 0.0, 0.0))])
+		_test_fire_step += 1
+
+		if _test_fire_step >= 7:
+			test_fire = false
+
 	# Headless check: a jab, then a throw into each material.
 	if test_spear_sounds and now - connected_msec > 18000 and now >= _test_spear_at:
 		_test_spear_at = now + 1500
@@ -1911,6 +1966,7 @@ func _process(delta: float) -> void:
 	hud.text += "\nlast step: " + sound.last_step
 	hud.text += "\nsound budget: " + sound.budget_text()
 	hud.text += "\n" + sound.wind_text()
+	hud.text += "\nfire sounds: %d loops, %d lit, %d put out, last %s" % [sound.fire.loops_playing, sound.fire.lit_played, sound.fire.out_played, sound.fire.last]
 	hud.text += "\nitem sounds: %d, last %s" % [sound.itemfx.played, sound.itemfx.last]
 	hud.text += "\nspear sounds: %s, last %s" % [str(sound.spear.played), sound.spear.last]
 	hud.text += "\ninterior: %.2f inside (%s), %d objects, %d creaks, last %s" % [sound.interior.amount, sound.interior.kind, sound.interior.objects_played, sound.interior.creaks_played, sound.interior.last]
@@ -1959,6 +2015,7 @@ func _process(delta: float) -> void:
 			print("Terrain client: grass %d tufts in %d cells (radius %.0f m)" % [grass.tufts, grass.cells_built, grass.radius_m])
 			print("Terrain client: water sounds: %s" % sound.water.summary)
 			print("Terrain client: nature calls %s, zones %s" % [str(sound.ambient.calls_played), str(sound.ambient.weights)])
+			print("Terrain client: fire sounds: %d lit, %d put out, last %s" % [sound.fire.lit_played, sound.fire.out_played, sound.fire.last])
 			print("Terrain client: item sounds %d, last %s" % [sound.itemfx.played, sound.itemfx.last])
 			print("Terrain client: spear sounds %s, last %s" % [str(sound.spear.played), sound.spear.last])
 			print("Terrain client: interior sounds: %d objects, %d creaks, last %s" % [sound.interior.objects_played, sound.interior.creaks_played, sound.interior.last])

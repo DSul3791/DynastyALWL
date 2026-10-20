@@ -163,3 +163,6 @@ The river loop sounded like ocean surf (a wide low rumble and a broad wash). `ma
 
 ## Item sounds (build 148)
 `item_sounds.gd`, made by `make_items.py` into `assets/audio/items/`; recordings in `recorded/items/` win. It watches the inventory (no hooks in Items' code): `item_pickup_N` when stacks grow, `item_drop_N` when they shrink, `item_swap_N` when slots are rearranged, `inv_open_N` and `inv_close_N` with the I panel, `craft_done_N` when a craft finishes. Quiet, on the Interface bus. Several changes in one moment play one cue (60 ms gap).
+
+## Fire sounds (build 149)
+`fire_sounds.gd`, made by `make_fire.py` into `assets/audio/fire/`; recordings in `recorded/fire/` win. Hook: `sound.fire.set_fires([{id, at, size 0..1, lit, open}])` (size crossfades `fire_small` and `fire_large`; `lit` turning on plays `fire_light_N`, off plays `fire_out_N`; `open` true adds the `fire_rain` sizzle while it rains), plus `light(at)` and `put_out(at)`. Nearest 3/5/8 fires by tier play, none past 35 m. The rain sizzle is sparse snaps, no steady hiss bed. Esc > Settings "Sound test: fire", `--fire` headless.
