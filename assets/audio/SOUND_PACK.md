@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **78 slots: 17 recorded, 57 generated placeholders, 4 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **88 slots: 17 recorded, 67 generated placeholders, 4 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -17,6 +17,7 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 1 | `water_river` | generated | 1 | water_sounds.gd: a wide slow river, positional loop | A broad river flow loop, seamless |
 | 1 | `wind_gust` | generated | 1 | sound_stage.gd: the swelling gust layer on top of the bed | A leaf-and-grass rustling wind loop with soft swells, seamless |
 | 1 | `wind_low` | generated | 1 | sound_stage.gd: the steady wind bed, louder with height and open ground, softer in trees | A calm open-field wind loop, 20 s or more, seamless, no gusts (low rumble layer) |
+| 2 | `bear_roar` | generated | 2 | creature_sounds.gd: a bear's roar (threat), the danger cue | 2 to 3 bear roars, 1 to 2 s |
 | 2 | `bird_trill` | generated | 3 | ambient_life.gd: meadow bird, by day | 2 to 3 trilling songs, about 1 s |
 | 2 | `bird_whistle` | generated | 3 | ambient_life.gd: forest bird, by day | 2 to 4 clear songbird whistles, 1 to 2 s |
 | 2 | `cave_drip` | generated | 5 | cave_sounds.gd: water drops in caves and tunnels | 3 to 6 single water drips in a stone room, 1 to 2 s each |
@@ -36,16 +37,22 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 2 | `water_fall` | generated | 1 | water_sounds.gd: a waterfall roar | A waterfall loop, seamless |
 | 2 | `water_pond` | generated | 1 | water_sounds.gd: gentle lapping at a pond shore | A calm lake shore lapping loop, seamless |
 | 2 | `wind_storm` | generated | 1 | weather_sounds.gd: gale howl in storms and blizzards | A howling gale loop, seamless |
+| 2 | `wolf_howl` | generated | 2 | creature_sounds.gd: a wolf's howl (idle), far away at night | 2 to 3 long wolf howls, 3 to 6 s, single wolf and a pack |
+| 3 | `bear_growl` | generated | 2 | creature_sounds.gd: a bear's growl (idle, alert) | 2 to 3 low bear growls, 1 to 2 s |
 | 3 | `bed_forest` | empty | 0 | ambient_life.gd (optional bed): a quiet forest background that fades in with forest cover | A quiet forest background loop, 30 s or more, no clear single calls |
 | 3 | `bed_highland` | empty | 0 | ambient_life.gd (optional bed): highland wind and space | A thin high-altitude background loop |
 | 3 | `bed_meadow` | empty | 0 | ambient_life.gd (optional bed): a meadow background | A meadow background loop (insects, distant birds), seamless |
 | 3 | `bed_water` | empty | 0 | ambient_life.gd (optional bed): a water-edge background | A quiet marsh or lake edge background loop |
 | 3 | `bird_feebee` | generated | 3 | ambient_life.gd: forest bird, by day | 2 chickadee-style two-note calls |
+| 3 | `deer_grunt` | generated | 2 | creature_sounds.gd: a deer's low grunt (idle) | 2 to 3 low deer grunts or contact calls, 0.3 to 0.8 s |
+| 3 | `deer_snort` | generated | 2 | creature_sounds.gd: a deer's alarm snort (alert, threat) | 2 to 3 deer alarm snorts, 0.3 s |
 | 3 | `dig_clay` | generated | 3 | dig_sounds.gd: digging clay, mud and peat | 3 wet sticky digs |
 | 3 | `dig_gravel` | generated | 3 | dig_sounds.gd: digging gravel | 3 gravel shovelling sounds |
 | 3 | `dig_ore` | generated | 3 | dig_sounds.gd: digging out ore (metal clink on rock) | 3 pick on ore sounds |
 | 3 | `dig_sand` | generated | 3 | dig_sounds.gd: digging sand and snow | 3 sand shovelling sounds |
 | 3 | `dig_water` | generated | 3 | dig_sounds.gd: water pouring into a new hole | 3 water splashing into a pit |
+| 3 | `fox_bark` | generated | 2 | creature_sounds.gd: a fox's bark (idle, alert), a night sound | 2 to 3 red fox barks, 1 to 3 per clip |
+| 3 | `fox_scream` | generated | 2 | creature_sounds.gd: a vixen's scream (threat), a night sound | 2 to 3 red fox screams, about 1 s |
 | 3 | `hawk_screech` | generated | 3 | ambient_life.gd: highland, by day | 2 to 3 hawk screeches |
 | 3 | `hit_hammer_stone` | generated | 3 | hit_sounds.gd: a hammer blow on stone (chiselling, smithing) | 3 hammer clanks on stone |
 | 3 | `hit_pick_soil` | generated | 3 | hit_sounds.gd: a pickaxe blow on soil | 3 pick strikes into hard earth |
@@ -58,6 +65,7 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 3 | `swim_under` | generated | 1 | swim_sounds.gd: the hum of being underwater (loop while the eyes are under) | A muffled underwater ambience loop, seamless |
 | 3 | `town_bell` | generated | 3 | town_sounds.gd: a tower bell tolling the hour or on call (ring_bell) | 2 to 3 bell strikes with a long ring, 4 to 6 s each |
 | 3 | `town_crowd` | generated | 1 | town_sounds.gd: a busy square murmur (loop) | A seamless crowd murmur loop, no clear words |
+| 3 | `wolf_growl` | generated | 2 | creature_sounds.gd: a wolf's growl (alert, threat) | 2 to 3 wolf growls and snarls, 1 to 2 s |
 | 3 | `woodpecker` | generated | 3 | ambient_life.gd: forest, by day | 2 to 3 woodpecker drumming runs, about 1 s |
 | 4 | `frog_croak` | recorded | 6 | ambient_life.gd: ponds and rivers, spring to autumn, more at night and in rain | have: Dave's frogs (mostly small trillers); a deep bullfrog croak is still missing |
 | 4 | `hit_axe_soil` | generated | 3 | hit_sounds.gd: an axe blow on soil | 3 axe thuds into earth |
@@ -66,6 +74,8 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 4 | `hit_pick_wood` | generated | 3 | hit_sounds.gd: a pickaxe blow on wood | 3 pick strikes into wood |
 | 4 | `hit_spade_stone` | generated | 3 | hit_sounds.gd: a spade scraping on stone | 3 spade scrapes on stone |
 | 4 | `hit_spade_wood` | generated | 3 | hit_sounds.gd: a spade strike on wood | 3 spade knocks and scrapes on wood |
+| 4 | `rabbit_squeak` | generated | 2 | creature_sounds.gd: a rabbit's distress squeal (threat) | 2 to 3 short rabbit squeals |
+| 4 | `rabbit_thump` | generated | 2 | creature_sounds.gd: a rabbit's warning foot thump (idle, alert) | 2 to 3 rabbit hind-foot thumps, a double knock |
 | 4 | `ui_click` | generated | 2 | ui_sounds.gd: every menu button pressed | 2 to 3 very soft, short interface ticks |
 | 4 | `ui_off` | generated | 2 | ui_sounds.gd: a toggle switched off | 2 short falling two-note cues, quiet |
 | 4 | `ui_on` | generated | 2 | ui_sounds.gd: a toggle switched on (inspection mode) | 2 short rising two-note cues, quiet |

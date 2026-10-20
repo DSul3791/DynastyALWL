@@ -17,6 +17,7 @@ extends Node
 #                     stopping after 30 s to check the ground then loads under the player;
 #                     prints when each detail level of the block under the stop point loaded
 #   --swim            with --frames: 20 s in, play a scripted swim (splash, strokes, dive, surface)
+#   --creatures       with --frames: 18 s in, play every creature call in every mood, then calls by zone
 #   --ui              with --frames: 18 s in, play the interface cues one every 0.5 s
 #   --dig             with --frames: 20 s in, ask the server to dig a hole under the spawn
 #   --water-step      with --frames: 12 s in, press + twice (the server re-settles the water)
@@ -41,7 +42,7 @@ const GitStamp := preload("res://src/debug/git_stamp.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 const GpuProbeScript := preload("res://src/debug/gpu_probe.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 130
+const BUILD := 132
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -157,6 +158,10 @@ var _walk_stats: Dictionary = {}
 var test_dig: bool = false
 var test_swim: bool = false
 var test_ui: bool = false
+var test_creatures: bool = false
+var _test_creature_at: int = 0
+var _test_creature_step: int = 0
+var _sound_creature_at: int = -1
 var _quality_cued: int = -1
 var _test_ui_next: int = 0
 var _test_ui_step: int = 0
@@ -268,6 +273,8 @@ func _ready() -> void:
 			test_swim = true
 		elif argument == "--ui":
 			test_ui = true
+		elif argument == "--creatures":
+			test_creatures = true
 
 	net.welcome_received.connect(_on_welcome)
 	net.blocks_received.connect(_on_blocks)
@@ -1038,6 +1045,15 @@ func _build_menu(layer: CanvasLayer) -> void:
 			sound.town.ring_bell(here + Vector3(0, 20, -60), 3)
 
 		_menu_note.text = "Town sounds %s (a test: a fire, a smith, a crowd and a bell placed around you)" % ("on" if _sound_town_on else "off"))
+	_menu_button(settings, "Sound test: creature calls", func():
+		var kinds: Array = sound.creatures.KINDS.keys()
+		var moods: Array = ["idle", "alert", "threat"]
+		_sound_creature_at = (_sound_creature_at + 1) % (kinds.size() * moods.size())
+		var kind: String = kinds[_sound_creature_at / moods.size()]
+		var mood: String = moods[_sound_creature_at % moods.size()]
+		var distance: float = (float(sound.creatures.KINDS[kind]["dist"][0]) + float(sound.creatures.KINDS[kind]["dist"][1])) * 0.5
+		var played: bool = sound.creatures.call_nearby(kind, mood, distance)
+		_menu_note.text = "Creature call: %s, %s, about %.0f m away%s (press again for the next)" % [kind, mood, distance, "" if played else " (did not play)"])
 	_menu_button(settings, "Sound test: swimming", func():
 		sound.swim.demo()
 		_menu_note.text = "A scripted swim: a splash, strokes, going under, surfacing (10 s; a test of the sounds)")
@@ -1577,6 +1593,24 @@ func _process(delta: float) -> void:
 		test_cut = false
 		_cut_nearest_tree()
 
+	# Headless check: every creature call in every mood, then by zone.
+	if test_creatures and now - connected_msec > 18000 and now >= _test_creature_at:
+		_test_creature_at = now + 400
+		var kinds: Array = sound.creatures.KINDS.keys() + ["bird"]
+		var moods: Array = ["idle", "alert", "threat"]
+		var step: int = _test_creature_step
+		_test_creature_step += 1
+
+		if step < kinds.size() * moods.size():
+			var kind: String = kinds[step / moods.size()]
+			var at: Vector3 = body.global_position + Vector3(30.0, 2.0, 0.0)
+			print("Terrain client: creature test %s %s -> %s" % [kind, moods[step % moods.size()], sound.creatures.call_at(kind, at, moods[step % moods.size()])])
+		elif step < kinds.size() * moods.size() + 8:
+			print("Terrain client: creature zone test -> %s" % sound.creatures.call_in_zone(["forest", "meadow", "highland", "water"][step % 4], "idle"))
+		else:
+			test_creatures = false
+			sound.creatures.wild = true                              # then the natural far calls run on their own
+
 	# Headless check: the interface cues in turn.
 	if test_ui and now - connected_msec > 18000 and now >= _test_ui_next:
 		_test_ui_next = now + 500
@@ -1656,13 +1690,14 @@ func _process(delta: float) -> void:
 	hud.text += "\nlast step: " + sound.last_step
 	hud.text += "\nsound budget: " + sound.budget_text()
 	hud.text += "\n" + sound.wind_text()
+	hud.text += "\ncreature calls: %s, last %s" % [str(sound.creatures.calls_played), sound.creatures.last]
 	hud.text += "\nswim sounds: %d splashes, %d strokes, %d dives, %d surfacings, last %s" % [sound.swim.splashes, sound.swim.strokes, sound.swim.dives, sound.swim.surfaces, sound.swim.last]
 	hud.text += "\ntown sounds: %d loops, %d bell strikes" % [sound.town.loops_playing, sound.town.bells_rung]
 	hud.text += "\nmuffled sounds: %d filtered, %d behind hills" % [sound.occlusion.filtered, sound.occlusion.occluded]
 	hud.text += "\ncave: enclosure %.2f, drips %d" % [sound.cave.enclosure, sound.cave.drips_played]
 	hud.text += "\nlast dig sound: %s" % sound.dig.last_dig
 	hud.text += "\nweather sounds follow: %s" % ("the TEST button (press it until it says follow the world)" if _sound_weather_at >= 0 else "the world weather above")
-	hud.text += "\nweather sounds: %s (rain %.1f, wind %.1f, thunder %d), ground wet %.2f snow %.2f, drips %d" % [sound.weather.kind, sound.weather.rain, sound.weather.wind, sound.weather.thunders_played, sound.weather.ground_wet, sound.weather.ground_snow, sound.weather.drips_played]
+	hud.text += "\nweather sounds: %s (rain %.1f, wind %.1f, thunder %d), ground wet %.2f snow %.2f, %s, drips %d" % [sound.weather.kind, sound.weather.rain, sound.weather.wind, sound.weather.thunders_played, sound.weather.ground_wet, sound.weather.ground_snow, "under canopy" if sound.weather.covered > 0.5 else "in the open", sound.weather.drips_played]
 	hud.text += "\nnature (%02d:%02d %s): forest %.1f meadow %.1f water %.1f high %.1f, last %s" % [int(sound.ambient.conditions["hour"]), int(fposmod(float(sound.ambient.conditions["hour"]), 1.0) * 60.0), sound.ambient.conditions["season"], sound.ambient.weights["forest"], sound.ambient.weights["meadow"], sound.ambient.weights["water"], sound.ambient.weights["highland"], sound.ambient.last_call]
 	hud.text += "\nwater sounds: " + sound.water.summary
 	hud.text += "\nframe work: cpu %.1f ms, gpu %.1f ms, vsync %s, draws %d" % [
@@ -1698,6 +1733,7 @@ func _process(delta: float) -> void:
 			print("Terrain client: grass %d tufts in %d cells (radius %.0f m)" % [grass.tufts, grass.cells_built, grass.radius_m])
 			print("Terrain client: water sounds: %s" % sound.water.summary)
 			print("Terrain client: nature calls %s, zones %s" % [str(sound.ambient.calls_played), str(sound.ambient.weights)])
+			print("Terrain client: creature calls %s, last %s" % [str(sound.creatures.calls_played), sound.creatures.last])
 			print("Terrain client: interface sounds %d played, last %s" % [sound.ui.played, sound.ui.last])
 			print("Terrain client: swim sounds %d splashes, %d strokes, %d dives, %d surfacings, last %s" % [sound.swim.splashes, sound.swim.strokes, sound.swim.dives, sound.swim.surfaces, sound.swim.last])
 			print("Terrain client: town sounds %d loops, %d bells" % [sound.town.loops_playing, sound.town.bells_rung])
@@ -1707,7 +1743,7 @@ func _process(delta: float) -> void:
 			print("Terrain client: dig sounds %s, last %s" % [str(sound.dig.digs_played), sound.dig.last_dig])
 			print("Terrain client: ", sound.wind_text())
 			print("Terrain client: sound budget: %s, %d loads refused" % [sound.budget_text(), sound.refused_loads])
-			print("Terrain client: weather %s rain %.2f wind %.2f calls %.2f thunders %d; ground wet %.2f snow %.2f, puddle splashes %d, leaf drips %d" % [sound.weather.kind, sound.weather.rain, sound.weather.wind, sound.weather.calls, sound.weather.thunders_played, sound.weather.ground_wet, sound.weather.ground_snow, sound.puddles_played, sound.weather.drips_played])
+			print("Terrain client: weather %s rain %.2f wind %.2f calls %.2f thunders %d; ground wet %.2f snow %.2f, covered %.1f, puddle splashes %d, leaf drips %d" % [sound.weather.kind, sound.weather.rain, sound.weather.wind, sound.weather.calls, sound.weather.thunders_played, sound.weather.ground_wet, sound.weather.ground_snow, sound.weather.covered, sound.puddles_played, sound.weather.drips_played])
 			print("Terrain client: sound: footsteps %s, grass swishes %d, last ground %s, gust %.2f" % [str(sound.steps_played), sound.swishes_played, sound.surface, sound.gust])
 			print("Terrain client: blocks waited for %d times, %.0f ms on average, worst %d ms; at most %d loader threads waiting at once; %d blocks came on the block line" % [stream.waits, float(stream.wait_msec_total) / maxf(float(stream.waits), 1.0), stream.wait_msec_worst, stream.most_waiting, link.blocks_in])
 			print(Probe.report())

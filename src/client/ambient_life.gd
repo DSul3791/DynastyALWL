@@ -369,6 +369,25 @@ func alarm(at: Vector3) -> bool:
 	return true
 
 
+# Plays one of the calls in EVENTS at a place now (a hook: the creature system says a bird there called).
+func call_named(name: String, at: Vector3) -> bool:
+	var list: Array = _variants(name)
+
+	if list.is_empty():
+		return false
+
+	var db: float = -10.0
+
+	for event in EVENTS:
+		if event["name"] == name:
+			db = float(event["db"])
+
+	_play(name, list, at, db)
+	last_call = name
+	calls_played[name] = int(calls_played.get(name, 0)) + 1
+	return true
+
+
 func _maybe_scare_crows(body: CharacterBody3D) -> void:
 	var crows: float = maxf(float(weights["forest"]), float(weights["highland"]))
 
@@ -424,7 +443,7 @@ func flush(at: Vector3, delay: float = 0.0) -> bool:
 func _move_fliers(delta: float) -> void:
 	for n in range(_fliers.size() - 1, -1, -1):
 		var flier: Dictionary = _fliers[n]
-		var player: AudioStreamPlayer3D = flier["player"]
+		var player = flier["player"]                             # untyped: it may already be freed
 
 		if not is_instance_valid(player) or not player.playing:
 			_fliers.remove_at(n)

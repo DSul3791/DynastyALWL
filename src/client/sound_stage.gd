@@ -25,6 +25,7 @@ const HitScript := preload("res://src/client/hit_sounds.gd")
 const TownScript := preload("res://src/client/town_sounds.gd")
 const SwimScript := preload("res://src/client/swim_sounds.gd")
 const UiScript := preload("res://src/client/ui_sounds.gd")
+const CreatureScript := preload("res://src/client/creature_sounds.gd")
 const OcclusionScript := preload("res://src/client/sound_occlusion.gd")
 const WaterSoundsScript := preload("res://src/client/water_sounds.gd")
 const AUDIO_DIR := "res://assets/audio/"
@@ -64,6 +65,7 @@ const ORE_METAL := [2, 3, 4, 5, 6, 7, 8, 9, 15, 17, 18, 19, 20, 21, 22, 23, 24, 
 # Soils with their own character: [dB, pitch] on top of their surface (data/tables/soils.json).
 const SOIL_TUNE := {3: [-1.0, 0.95], 4: [0.0, 0.97], 12: [2.0, 1.1], 13: [0.0, 1.06], 14: [-3.0, 0.9]}
 const RAIN_SOAK := 0.5                  # ground wetness from which loose dirt and leaves turn to wet mud steps
+const COVER_TRUNK_M := 4.5              # a trunk this near counts as standing under a canopy (until Cover.at exists)
 const SNOW_COVER := 0.35                # snow on the ground from which steps crunch
 const PUDDLE_WET := 0.6                 # ground wetness from which steps on firm ground splash
 const SNOW_SURFACES := ["grass", "grass_tall", "dirt", "leaves", "sand", "gravel", "bushes", "mud"]
@@ -142,12 +144,14 @@ var water                               # WaterSounds: brooks, rivers, pond shor
 var weather                             # WeatherSounds: rain, gale, thunder, snow hush (set_weather)
 var occlusion                           # SoundOcclusion: hills and forest muffle distant sounds
 var hits                                # HitSounds: axe, pick, hammer, spade on wood, stone, soil (hit, hit_ground)
+var creatures                           # CreatureSounds: deer, rabbit, fox, wolf, bear calls (call_at, call_in_zone; wild = natural far calls)
 var ui                                  # UiSounds: menu click, toggle and quality cues (play(name))
 var swim                                # SwimSounds: splash, strokes, diving, the hum under water (driven by the body)
 var town                                # TownSounds: fire, hammering, crowd, bell hooks (set_sources, ring_bell)
 var cave                                # CaveSounds: reverb, muffling and drips under rock
 var dig                                 # DigSounds: the sound of what is dug (dug(center, radius, listener))
 var _sphere: PhysicsShapeQueryParameters3D
+var _cover_sphere: PhysicsShapeQueryParameters3D
 
 
 func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
@@ -205,6 +209,10 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	town.name = "Town"
 	add_child(town)
 	town.setup(self)
+	creatures = CreatureScript.new()
+	creatures.name = "Creatures"
+	add_child(creatures)
+	creatures.setup(self)
 	ui = UiScript.new()
 	ui.name = "Ui"
 	add_child(ui)
@@ -282,6 +290,7 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	cave.update(delta, body, flying)
 	town.update(delta, body)
 	swim.update(delta, body, flying, underwater)
+	creatures.update(delta)
 	occlusion.update(delta, body, flying)
 	_time += delta
 	gust = clampf(0.5 + 0.8 * _gust_noise.get_noise_1d(_time), 0.0, 1.0)
@@ -332,6 +341,7 @@ func set_quality(quality: int) -> void:
 	ambient.max_voices = TIER_NATURE_CALLS[tier]
 	cave.set_tier(tier)
 	town.set_tier(tier)
+	creatures.set_tier(tier)
 
 
 # Every sound playing right now, all layers (the budget counts these).
@@ -342,7 +352,7 @@ func voices_playing() -> int:
 		if player.playing:
 			count += 1
 
-	return count + ambient.voices_playing() + water.voices_playing() + weather.voices_playing() + swim.voices_playing()
+	return count + ambient.voices_playing() + water.voices_playing() + weather.voices_playing() + swim.voices_playing() + creatures.voices_playing()
 
 
 # True while another optional sound (a call, a flush) fits in the voice budget.
@@ -513,6 +523,26 @@ func _trunks_near(body: CharacterBody3D, radius: float) -> int:
 			count += 1
 
 	return count
+
+
+# 1.0 when the player stands under a tree's canopy, else 0.0 (owner 2026-10-20: any spot under a canopy
+# counts, any tree). A stand-in until the shared Cover.at query exists (tech/COVER_QUERY.md): a tree
+# trunk within COVER_TRUNK_M. When src/shared/cover.gd lands, call it here and nowhere else.
+func under_cover(body: CharacterBody3D) -> float:
+	if _cover_sphere == null:
+		_cover_sphere = PhysicsShapeQueryParameters3D.new()
+		var shape: SphereShape3D = SphereShape3D.new()
+		shape.radius = COVER_TRUNK_M
+		_cover_sphere.shape = shape
+
+	_cover_sphere.transform = Transform3D(Basis.IDENTITY, body.global_position)
+	_cover_sphere.exclude = [body.get_rid()]
+
+	for hit in body.get_world_3d().direct_space_state.intersect_shape(_cover_sphere, 4):
+		if hit["collider"] != null and hit["collider"].has_meta("species_ids"):
+			return 1.0
+
+	return 0.0
 
 
 # The draw-material id under the soles: a soil id, MATERIAL_ROCK + rock id for

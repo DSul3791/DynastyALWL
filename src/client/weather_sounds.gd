@@ -61,9 +61,12 @@ const SNOW_RISE_SEC := 60.0
 const SNOW_MELT_SEC := 120.0            # above MELT_C
 const SNOW_STAY_SEC := 900.0            # below it, snow stays a long while
 const MELT_C := 1.0
+const COVER_EVERY_SEC := 0.4
+const DRY_UNDER_SEC := 4.0               # under a canopy the ground dries this fast
 const DRIP_DB := -22.0
 const DRIP_EVERY := [0.5, 2.2]          # seconds between drips under trees at full rain
 
+var forced_cover: bool = false          # --covered on the command line: always under a canopy (headless check)
 var forced: bool = false                # --weather=KIND on the command line: the world weather is ignored
 var kind: String = "clear"
 var intensity: float = 1.0
@@ -77,6 +80,7 @@ var ground_wet: float = 0.0             # 0 dry .. 1 soaked: puddle splashes, mu
 var ground_snow: float = 0.0            # 0 bare .. 1 snow lies: footsteps crunch
 var drips_played: int = 0
 var temp_c: float = 10.0
+var covered: float = 0.0                # 0 open, 1 under a canopy (smoothed); the ground there stays dry
 var last_thunder: String = ""
 var world_wind: float = 0.35            # the world's wind (0.15 calm to 1 storm), smoothed: sets the wind sound
 var storm_level: float = 1.0            # the world's storm value (0 to 1) behind the current kind
@@ -89,6 +93,8 @@ var _loops: Dictionary = {}             # name -> AudioStreamPlayer
 var _streams: Dictionary = {}
 var _thunder_in: float = 20.0
 var _pending: Array = []                # [seconds left, AudioStreamPlayer, stream] thunder waiting for its delay
+var _cover_in: float = 0.0
+var _cover_target: float = 0.0
 var _drip_in: float = 1.0
 var _under: float = 1.0                 # 0 underwater, 1 in the air, smoothed
 
@@ -100,6 +106,9 @@ func setup(stage, ambient) -> void:
 	SoundStage._make_bus("Weather")
 
 	for arg in OS.get_cmdline_user_args():
+		if arg == "--covered":
+			forced_cover = true
+
 		if arg.begins_with("--weather="):
 			forced = true
 			set_weather(arg.get_slice("=", 1), 1.0)
@@ -184,12 +193,19 @@ func update(delta: float, body: CharacterBody3D, underwater: bool) -> void:
 	_under = move_toward(_under, 0.12 if underwater else 1.0, delta * 3.0)
 	_ambient.weather_calls = calls
 	_ambient.weather_frogs = frogs
-	var cover: float = float(_ambient.weights["forest"])
+	_cover_in -= delta
+
+	if _cover_in <= 0.0:
+		_cover_in = COVER_EVERY_SEC
+		_cover_target = 1.0 if forced_cover else _stage.under_cover(body)
+
+	covered = move_toward(covered, _cover_target, delta / 1.5)
+	var cover: float = covered
 	var water: float = float(_ambient.weights["water"])
 	var heavy: float = smoothstep(0.4, 0.9, rain)
 	var light: float = minf(rain * 2.0, 1.0) * (1.0 - 0.6 * heavy)
-	_loop("rain_light", light * (1.0 - 0.5 * cover))
-	_loop("rain_heavy", heavy * (1.0 - 0.5 * cover))
+	_loop("rain_light", light * (1.0 - 0.7 * cover))
+	_loop("rain_heavy", heavy * (1.0 - 0.7 * cover))
 	_loop("rain_leaves", minf(rain * 1.6, 1.0) * cover)
 	_loop("rain_water", minf(rain * 1.6, 1.0) * water)
 	_loop("wind_storm", clampf(wind - 0.2, 0.0, 1.0) / 0.8)
@@ -200,7 +216,9 @@ func update(delta: float, body: CharacterBody3D, underwater: bool) -> void:
 
 # The ground soaks and dries, snow settles and melts (slowly; a test kind forces temperature to cold).
 func _ground(delta: float) -> void:
-	if rain >= 0.25:
+	if covered > 0.5:
+		ground_wet = move_toward(ground_wet, 0.0, delta / DRY_UNDER_SEC)         # the canopy keeps the ground dry
+	elif rain >= 0.25:
 		ground_wet = move_toward(ground_wet, minf(rain * 1.5, 1.0), delta / WET_RISE_SEC)
 	else:
 		ground_wet = move_toward(ground_wet, 0.0, delta / WET_DRY_SEC)
@@ -213,7 +231,7 @@ func _ground(delta: float) -> void:
 
 # Under trees in rain: now and then a drop falls from a leaf nearby.
 func _drips(delta: float, body: CharacterBody3D, cover: float) -> void:
-	if rain < 0.15 or cover < 0.3 or not _stage.has_room():
+	if rain < 0.15 or cover < 0.5 or not _stage.has_room():
 		return
 
 	_drip_in -= delta * _ambient.time_scale
