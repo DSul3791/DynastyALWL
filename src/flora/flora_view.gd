@@ -192,6 +192,7 @@ const SHAPES_PER_BODY := 64  # trunk colliders per body
 # crossed quads (tree_impostor.gd) reaches view_m (180, 315, 450 m). Switch distances pulled closer 2026-10-20 (flora cost plan step 2). By quality: Low, Medium, High, Ultra.
 const IMPOSTOR_M := [100.0, 150.0, 180.0, 250.0]
 const IMPOSTOR_TILE_PX := [Vector2i(64, 128), Vector2i(128, 256), Vector2i(128, 256), Vector2i(128, 256)]   # one view; the atlas holds two
+const MAX_DROPS_PER_UPDATE := 2
 const SHADOW_M := [0.0, 45.0, 60.0, 120.0]   # full-detail trees cast shadows only this near (64 m cells; the sun's shadow range is a render setting)
 const CELL_M := 64.0       # trees choose casting shadows per cell of this size inside a chunk
 const FAR_SHADOWS := [false, false, false, true]   # far-model trees cast shadows only at Ultra (shadow range is 100 m at High)
@@ -911,8 +912,11 @@ func update(position: Vector3) -> Array:
 
 	for chunk in _chunks.keys():
 		if _distance(chunk, position) > view_m[KIND_TREE] + 2.0 * chunk_m:
-			drop_chunk(chunk)
-			dropped.append(chunk)
+			# Freeing a chunk's draws and colliders costs up to 30 ms (build 176 probe), so a few
+			# at a time; the rest go on the next update. They are out of view range meanwhile.
+			if dropped.size() < MAX_DROPS_PER_UPDATE:
+				drop_chunk(chunk)
+				dropped.append(chunk)
 		else:
 			_refresh(chunk, position)
 

@@ -410,6 +410,12 @@ func _on_connection_failed() -> void:
 
 
 func _on_welcome(info: Dictionary) -> void:
+	var tw: int = Probe.start()
+	_welcome_body(info)
+	Probe.stop("welcome", tw)
+
+
+func _welcome_body(info: Dictionary) -> void:
 	if int(info.get("protocol", 0)) != NetScript.PROTOCOL_VERSION:
 		push_error("Terrain client: server speaks protocol %s, this client %d" % [str(info.get("protocol")), NetScript.PROTOCOL_VERSION])
 		_finish(1)
@@ -451,8 +457,10 @@ func _on_welcome(info: Dictionary) -> void:
 	var root: Node3D = Node3D.new()
 	root.name = "World"
 	add_child(root)
+	var t1: int = Probe.start()
 	_tables = TableSetScript.new()
 	_tables.load_directory()
+	Probe.stop("welcome: tables", t1)
 	terrain = VoxelLodTerrain.new()
 	terrain.format = Layout.make_format()
 	terrain.stream = stream
@@ -467,13 +475,17 @@ func _on_welcome(info: Dictionary) -> void:
 	# Not the clipbox streaming system (tried in build 61): it loads the fine ground under the
 	# player first, but makes no collision until every coarser level is loaded too, so the
 	# player had no ground to stand on for most of a minute (owner, 2026-10-20).
+	var t2: int = Probe.start()
 	terrain.material = GroundMaterialScript.make(_tables, quality)
+	Probe.stop("welcome: ground material", t2)
 	_ground_quality = quality
 	root.add_child(terrain)
 	_make_player(root, info["spawn"] + Vector3(0.0, 28.0, 0.0))
 	flora = FloraViewScript.new()
 	flora.name = "Flora"
+	var t3: int = Probe.start()
 	flora.setup(_tables, TileHeightScript.load_rules("res://worlds/base_world/plan/tile_rules.json", []))
+	Probe.stop("welcome: flora setup", t3)
 	root.add_child(flora)
 	_flora_view_full = flora.view_m.duplicate()
 	_flora_near_full = flora.near_m.duplicate()
@@ -495,7 +507,9 @@ func _on_welcome(info: Dictionary) -> void:
 	sound.name = "Sound"
 	root.add_child(sound)
 	sound.ground_below = _ground_below
+	var t4: int = Probe.start()
 	sound.setup(terrain, flora, grass)
+	Probe.stop("welcome: sound setup", t4)
 
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--floor="):
@@ -503,8 +517,10 @@ func _on_welcome(info: Dictionary) -> void:
 
 	if test_gear:
 		sound.gear.set_worn(["plate", "cloth", "iron"])
+	var t5: int = Probe.start()
 	_make_environment(root)
 	_apply_quality()
+	Probe.stop("welcome: environment", t5)
 	get_window().size_changed.connect(_apply_render_scale)
 	RenderingServer.viewport_set_measure_render_time(get_viewport().get_viewport_rid(), true)
 	var layer: CanvasLayer = CanvasLayer.new()
