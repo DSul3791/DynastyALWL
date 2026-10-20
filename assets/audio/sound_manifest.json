@@ -409,6 +409,54 @@
    "priority": 3
   },
   {
+   "name": "swim_splash_small",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "swim_sounds.gd: the body enters water slowly (under 4 m/s)",
+   "to_supply": "3 small body-into-water splashes, 0.5 to 1 s",
+   "priority": 2
+  },
+  {
+   "name": "swim_splash_big",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "swim_sounds.gd: a jump or fall into water (4 m/s and up)",
+   "to_supply": "3 big splashes of a person falling in, 1 to 2 s",
+   "priority": 2
+  },
+  {
+   "name": "swim_stroke",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "swim_sounds.gd: an arm stroke while swimming, one every 0.6 to 1.4 s",
+   "to_supply": "3 breaststroke or crawl arm pulls through water, 0.5 s",
+   "priority": 3
+  },
+  {
+   "name": "swim_dive",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "swim_sounds.gd: the head goes under",
+   "to_supply": "3 bubbling gulps of going under, 1 s",
+   "priority": 3
+  },
+  {
+   "name": "swim_surface",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "swim_sounds.gd: the head comes out of the water",
+   "to_supply": "3 breaths and running water on surfacing, 1 s",
+   "priority": 3
+  },
+  {
+   "name": "swim_under",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "swim_sounds.gd: the hum of being underwater (loop while the eyes are under)",
+   "to_supply": "A muffled underwater ambience loop, seamless",
+   "priority": 3
+  },
+  {
    "name": "town_bell",
    "state": "generated",
    "variants": 3,

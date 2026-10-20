@@ -23,6 +23,7 @@ const DigScript := preload("res://src/client/dig_sounds.gd")
 const CaveScript := preload("res://src/client/cave_sounds.gd")
 const HitScript := preload("res://src/client/hit_sounds.gd")
 const TownScript := preload("res://src/client/town_sounds.gd")
+const SwimScript := preload("res://src/client/swim_sounds.gd")
 const OcclusionScript := preload("res://src/client/sound_occlusion.gd")
 const WaterSoundsScript := preload("res://src/client/water_sounds.gd")
 const AUDIO_DIR := "res://assets/audio/"
@@ -134,6 +135,7 @@ var water                               # WaterSounds: brooks, rivers, pond shor
 var weather                             # WeatherSounds: rain, gale, thunder, snow hush (set_weather)
 var occlusion                           # SoundOcclusion: hills and forest muffle distant sounds
 var hits                                # HitSounds: axe, pick, hammer, spade on wood, stone, soil (hit, hit_ground)
+var swim                                # SwimSounds: splash, strokes, diving, the hum under water (driven by the body)
 var town                                # TownSounds: fire, hammering, crowd, bell hooks (set_sources, ring_bell)
 var cave                                # CaveSounds: reverb, muffling and drips under rock
 var dig                                 # DigSounds: the sound of what is dug (dug(center, radius, listener))
@@ -195,6 +197,10 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	town.name = "Town"
 	add_child(town)
 	town.setup(self)
+	swim = SwimScript.new()
+	swim.name = "Swim"
+	add_child(swim)
+	swim.setup(self)
 	hits = HitScript.new()
 	hits.name = "Hits"
 	add_child(hits)
@@ -263,6 +269,7 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	dig.update(delta)
 	cave.update(delta, body, flying)
 	town.update(delta, body)
+	swim.update(delta, body, flying, underwater)
 	occlusion.update(delta, body, flying)
 	_time += delta
 	gust = clampf(0.5 + 0.8 * _gust_noise.get_noise_1d(_time), 0.0, 1.0)
@@ -323,7 +330,7 @@ func voices_playing() -> int:
 		if player.playing:
 			count += 1
 
-	return count + ambient.voices_playing() + water.voices_playing() + weather.voices_playing()
+	return count + ambient.voices_playing() + water.voices_playing() + weather.voices_playing() + swim.voices_playing()
 
 
 # True while another optional sound (a call, a flush) fits in the voice budget.

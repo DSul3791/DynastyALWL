@@ -16,6 +16,7 @@ extends Node
 #   --fly             with --move: in flying mode (no ground is built while moving),
 #                     stopping after 30 s to check the ground then loads under the player;
 #                     prints when each detail level of the block under the stop point loaded
+#   --swim            with --frames: 20 s in, play a scripted swim (splash, strokes, dive, surface)
 #   --dig             with --frames: 20 s in, ask the server to dig a hole under the spawn
 #   --water-step      with --frames: 12 s in, press + twice (the server re-settles the water)
 #   --cut             with --frames: 25 s in, ask the server to cut the tree nearest the spawn
@@ -39,7 +40,7 @@ const GitStamp := preload("res://src/debug/git_stamp.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 const GpuProbeScript := preload("res://src/debug/gpu_probe.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 128
+const BUILD := 127
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -153,6 +154,7 @@ var _walk_msec: int = 0
 var _walk_dir: Vector3 = Vector3.ZERO
 var _walk_stats: Dictionary = {}
 var test_dig: bool = false
+var test_swim: bool = false
 var cache_mb: int = 0                 # 0 = by quality preset; --cache-mb= overrides
 var cache_mb_from_quality: bool = false
 var clear_cache: bool = false         # --clear-cache wipes the saved ground before starting
@@ -257,6 +259,8 @@ func _ready() -> void:
 			test_dig = true
 		elif argument == "--cut":
 			test_cut = true
+		elif argument == "--swim":
+			test_swim = true
 
 	net.welcome_received.connect(_on_welcome)
 	net.blocks_received.connect(_on_blocks)
@@ -1021,6 +1025,9 @@ func _build_menu(layer: CanvasLayer) -> void:
 			sound.town.ring_bell(here + Vector3(0, 20, -60), 3)
 
 		_menu_note.text = "Town sounds %s (a test: a fire, a smith, a crowd and a bell placed around you)" % ("on" if _sound_town_on else "off"))
+	_menu_button(settings, "Sound test: swimming", func():
+		sound.swim.demo()
+		_menu_note.text = "A scripted swim: a splash, strokes, going under, surfacing (10 s; a test of the sounds)")
 	_menu_button(settings, "Sound test: tool hit", func():
 		_sound_hit_at = (_sound_hit_at + 1) % (sound.hits.TOOLS.size() * sound.hits.MATERIALS.size())
 		var tool: String = sound.hits.TOOLS[_sound_hit_at / sound.hits.MATERIALS.size()]
@@ -1555,6 +1562,11 @@ func _process(delta: float) -> void:
 		test_cut = false
 		_cut_nearest_tree()
 
+	# Headless check: a scripted swim (jump in, strokes, dive, surface).
+	if test_swim and now - connected_msec > 20000:
+		test_swim = false
+		sound.swim.demo()
+
 	# Headless check: dig under the spawn once the ground around it is in.
 	if test_dig and now - connected_msec > 20000:
 		test_dig = false
@@ -1619,10 +1631,12 @@ func _process(delta: float) -> void:
 	hud.text += "\nlast step: " + sound.last_step
 	hud.text += "\nsound budget: " + sound.budget_text()
 	hud.text += "\n" + sound.wind_text()
+	hud.text += "\nswim sounds: %d splashes, %d strokes, %d dives, %d surfacings, last %s" % [sound.swim.splashes, sound.swim.strokes, sound.swim.dives, sound.swim.surfaces, sound.swim.last]
 	hud.text += "\ntown sounds: %d loops, %d bell strikes" % [sound.town.loops_playing, sound.town.bells_rung]
 	hud.text += "\nmuffled sounds: %d filtered, %d behind hills" % [sound.occlusion.filtered, sound.occlusion.occluded]
 	hud.text += "\ncave: enclosure %.2f, drips %d" % [sound.cave.enclosure, sound.cave.drips_played]
 	hud.text += "\nlast dig sound: %s" % sound.dig.last_dig
+	hud.text += "\nweather sounds follow: %s" % ("the TEST button (press it until it says follow the world)" if _sound_weather_at >= 0 else "the world weather above")
 	hud.text += "\nweather sounds: %s (rain %.1f, wind %.1f, thunder %d)" % [sound.weather.kind, sound.weather.rain, sound.weather.wind, sound.weather.thunders_played]
 	hud.text += "\nnature (%02d:%02d %s): forest %.1f meadow %.1f water %.1f high %.1f, last %s" % [int(sound.ambient.conditions["hour"]), int(fposmod(float(sound.ambient.conditions["hour"]), 1.0) * 60.0), sound.ambient.conditions["season"], sound.ambient.weights["forest"], sound.ambient.weights["meadow"], sound.ambient.weights["water"], sound.ambient.weights["highland"], sound.ambient.last_call]
 	hud.text += "\nwater sounds: " + sound.water.summary
@@ -1659,6 +1673,7 @@ func _process(delta: float) -> void:
 			print("Terrain client: grass %d tufts in %d cells (radius %.0f m)" % [grass.tufts, grass.cells_built, grass.radius_m])
 			print("Terrain client: water sounds: %s" % sound.water.summary)
 			print("Terrain client: nature calls %s, zones %s" % [str(sound.ambient.calls_played), str(sound.ambient.weights)])
+			print("Terrain client: swim sounds %d splashes, %d strokes, %d dives, %d surfacings, last %s" % [sound.swim.splashes, sound.swim.strokes, sound.swim.dives, sound.swim.surfaces, sound.swim.last])
 			print("Terrain client: town sounds %d loops, %d bells" % [sound.town.loops_playing, sound.town.bells_rung])
 			print("Terrain client: tool hits %d, last %s" % [sound.hits.hits_played, sound.hits.last_hit])
 			print("Terrain client: muffled sounds: %d filtered, %d behind hills" % [sound.occlusion.filtered, sound.occlusion.occluded])

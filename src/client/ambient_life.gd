@@ -95,7 +95,7 @@ var last_file: String = ""              # the file last played, e.g. fish_splash
 var _source: Dictionary = {}            # call name -> "recorded" or "generated"
 var max_voices: int = 4                 # calls and flushes playing at once (the quality tier sets it)
 var weather_calls: float = 1.0          # share of calls still made in this weather (weather_sounds.gd)
-var weather_wet: float = 0.0            # 0 to 1: rain, which frogs like
+var weather_frogs: float = 1.0          # share of frog calls in this weather: more in light rain, none in storms
 var clock_runs: bool = false            # true: this layer advances conditions["hour"] itself (no game clock yet)
 var time_scale: float = 1.0             # >1 speeds the timers (--nature-fast, headless checks)
 
@@ -333,7 +333,7 @@ func _try(event: Dictionary, body: CharacterBody3D) -> void:
 	var season: float = float(event.get("seasons", {}).get(str(conditions["season"]), 1.0))
 	var scare: float = 0.5 if _speed > RUN_SCARE_MS else 1.0
 
-	var weather: float = weather_calls * (1.0 + weather_wet if event.get("wet", false) else 1.0)
+	var weather: float = weather_frogs if event.get("wet", false) else weather_calls
 
 	if _rng.randf() > fit * season * scare * weather:
 		return

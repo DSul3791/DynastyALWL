@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **67 slots: 17 recorded, 46 generated placeholders, 4 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **73 slots: 17 recorded, 52 generated placeholders, 4 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -27,6 +27,8 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 2 | `hit_pick_stone` | generated | 3 | hit_sounds.gd: a pickaxe blow on rock (mining) | 3 pickaxe strikes on rock |
 | 2 | `owl_hoot` | generated | 3 | ambient_life.gd: forest at night | 2 to 3 owl hoots (tawny or barred), 2 to 3 s |
 | 2 | `rain_leaves` | generated | 1 | weather_sounds.gd: rain pattering on leaves under trees | Rain on forest canopy loop, seamless |
+| 2 | `swim_splash_big` | generated | 3 | swim_sounds.gd: a jump or fall into water (4 m/s and up) | 3 big splashes of a person falling in, 1 to 2 s |
+| 2 | `swim_splash_small` | generated | 3 | swim_sounds.gd: the body enters water slowly (under 4 m/s) | 3 small body-into-water splashes, 0.5 to 1 s |
 | 2 | `thunder_far` | generated | 3 | weather_sounds.gd: a far strike (over 1800 m): a low grumble | 2 to 3 distant low rumbles, 8 to 12 s |
 | 2 | `thunder_near` | generated | 3 | weather_sounds.gd: a close strike (under 500 m): sharp crack and thud | 2 to 3 close, sharp thunder cracks, 2 to 4 s |
 | 2 | `town_fire` | generated | 1 | town_sounds.gd: a hearth or forge fire (loop) | A seamless crackling fire loop |
@@ -49,6 +51,10 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 3 | `hit_pick_soil` | generated | 3 | hit_sounds.gd: a pickaxe blow on soil | 3 pick strikes into hard earth |
 | 3 | `hit_spade_soil` | generated | 3 | hit_sounds.gd: a spade strike into soil | 3 spade thuds into earth |
 | 3 | `rain_water` | generated | 1 | weather_sounds.gd: rain falling on ponds and rivers near the player | Rain on a lake surface loop, seamless |
+| 3 | `swim_dive` | generated | 3 | swim_sounds.gd: the head goes under | 3 bubbling gulps of going under, 1 s |
+| 3 | `swim_stroke` | generated | 3 | swim_sounds.gd: an arm stroke while swimming, one every 0.6 to 1.4 s | 3 breaststroke or crawl arm pulls through water, 0.5 s |
+| 3 | `swim_surface` | generated | 3 | swim_sounds.gd: the head comes out of the water | 3 breaths and running water on surfacing, 1 s |
+| 3 | `swim_under` | generated | 1 | swim_sounds.gd: the hum of being underwater (loop while the eyes are under) | A muffled underwater ambience loop, seamless |
 | 3 | `town_bell` | generated | 3 | town_sounds.gd: a tower bell tolling the hour or on call (ring_bell) | 2 to 3 bell strikes with a long ring, 4 to 6 s each |
 | 3 | `town_crowd` | generated | 1 | town_sounds.gd: a busy square murmur (loop) | A seamless crowd murmur loop, no clear words |
 | 3 | `woodpecker` | generated | 3 | ambient_life.gd: forest, by day | 2 to 3 woodpecker drumming runs, about 1 s |
