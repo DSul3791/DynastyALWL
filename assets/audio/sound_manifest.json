@@ -145,6 +145,14 @@
    "priority": 2
   },
   {
+   "name": "lake_lap",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "water_sounds.gd: a soft lap on a still lake or pond shore (random one-shots, no loop)",
+   "to_supply": "3 soft water laps like a slowed, softened fish splash, 2 to 3 s; or a real recording of a lake lapping",
+   "priority": 1
+  },
+  {
    "name": "water_fall_base",
    "state": "generated",
    "variants": 1,

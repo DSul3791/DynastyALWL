@@ -87,6 +87,10 @@ SCENARIOS = [
         ("posture changes heard", r"stance check: " + NUM + r" changes", 6, 6),
         ("last is the rise", r"last (stance_rise)", 0, 1, "text"),
     ]),
+    ("lake", ["--lake"], 9000, [
+        ("soft laps, not a steady bed", r"lake laps: " + NUM + r" laps", 2, 8),
+        ("laps are the slowed fish splash", r"last (lake_lap_\d)", 0, 1, "text"),
+    ]),
     ("felling", ["--chop"], 7000, [
         ("trees fell", r"tree sounds: " + NUM + r" falls", 1, 10),
     ]),

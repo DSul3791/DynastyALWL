@@ -33,6 +33,7 @@ SLOTS = [
     ("water_brook", "water", "water_sounds.gd: a fast shallow stream, positional loop", "A babbling brook loop, seamless", 1),
     ("water_river", "water", "water_sounds.gd: a wide slow river, positional loop", "A broad river flow loop, seamless", 1),
     ("water_pond", "water", "water_sounds.gd: gentle lapping at a pond shore", "A calm lake shore lapping loop, seamless", 2),
+    ("lake_lap", "water", "water_sounds.gd: a soft lap on a still lake or pond shore (random one-shots, no loop)", "3 soft water laps like a slowed, softened fish splash, 2 to 3 s; or a real recording of a lake lapping", 1),
     ("water_fall_base", "water", "water_sounds.gd: the close spray and churn where a fall lands (within 60 m)", "A close waterfall base loop: hiss and splash, steady, seamless, no bubbles", 2),
     ("water_fall", "water", "water_sounds.gd: a waterfall roar", "A waterfall loop, seamless", 2),
     ("bird_whistle", "ambient", "ambient_life.gd: forest bird, by day", "2 to 4 clear songbird whistles, 1 to 2 s", 2),

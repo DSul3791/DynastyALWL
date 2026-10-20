@@ -185,8 +185,10 @@ var test_spear_sounds: bool = false
 var test_fire: bool = false
 var test_fire_world: bool = false      # --fire-world: a fake world row goes through states 8, 9, 1, 9, 8 (loaded, lit, rained out, emptied)
 var _fire_world_step: int = 0
+var test_lake: bool = false            # --lake: soft laps from stand-in still-water squares (job 62)
 var test_stance: bool = false          # --stance: stand, crouch, sit, lie and rise in turn (job 56)
 var _stance_step: int = 0
+var _lake_start_msec: int = 0
 var test_merge: bool = false           # --merge-check: far fires and far falls share voices (job 53)
 var _merge_step: int = 0
 var test_faint: bool = false           # --faint: the scripted over-exertion, faint and waking run (breath_sounds.demo)
@@ -379,6 +381,8 @@ func _ready() -> void:
 			test_levels = true
 		elif argument == "--fire":
 			test_fire = true
+		elif argument == "--lake":
+			test_lake = true
 		elif argument == "--stance":
 			test_stance = true
 		elif argument == "--merge-check":
@@ -2323,6 +2327,17 @@ func _process(delta: float) -> void:
 
 		if _test_fire_step >= 7:
 			test_fire = false
+
+	# Lake laps: still-water squares 8 to 14 m away for 30 s; the report counts the laps.
+	if test_lake and now - connected_msec > 18000:
+		if sound.water.test_shore.is_empty():
+			var at: Vector3 = body.global_position
+			sound.water.test_shore = [{"at": at + Vector3(8.0, -1.0, 0.0)}, {"at": at + Vector3(-10.0, -1.0, 6.0)}, {"at": at + Vector3(0.0, -1.0, -14.0)}]
+			_lake_start_msec = now
+		elif now - _lake_start_msec > 20000 and test_lake:
+			test_lake = false
+			print("Terrain client: lake laps: %d laps in 20 s, last %s" % [sound.water.laps_played, sound.water.last_lap])
+			sound.water.test_shore = []
 
 	# Stance sounds: crouch, stand, sit, stand, lie (and sit for 20 s to hear settles), stand.
 	if test_stance and now - connected_msec > 18000 and now >= _test_fire_at:

@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **185 slots: 17 recorded, 159 generated placeholders, 9 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **186 slots: 17 recorded, 160 generated placeholders, 9 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -11,6 +11,7 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 1 | `bird_chirp` | generated | 3 | ambient_life.gd: meadow, water-edge and forest, the most frequent call | 3 to 5 short sparrow-like chirps, 0.5 s |
 | 1 | `cricket_chirp` | generated | 3 | ambient_life.gd: meadow and water edge at dusk and night, summer and autumn | 2 to 3 cricket chirps runs, 2 s (one species) |
 | 1 | `item_swap` | generated | 3 | item_sounds.gd: items moved between slots | 3 short slide and tap cues |
+| 1 | `lake_lap` | generated | 3 | water_sounds.gd: a soft lap on a still lake or pond shore (random one-shots, no loop) | 3 soft water laps like a slowed, softened fish splash, 2 to 3 s; or a real recording of a lake lapping |
 | 1 | `rain_heavy` | generated | 1 | weather_sounds.gd: heavy rain and storm loop | A heavy downpour loop, seamless |
 | 1 | `rain_light` | generated | 1 | weather_sounds.gd: drizzle and light rain loop | A light rain on open ground loop, seamless |
 | 1 | `thunder` | generated | 3 | weather_sounds.gd: a mid-distance thunder roll | 2 to 3 rolling thunder claps, 5 to 9 s |

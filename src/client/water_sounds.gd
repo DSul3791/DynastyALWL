@@ -40,11 +40,20 @@ const FALL_CLUSTER_M := 120.0
 # The base of a fall (job 55): a close hiss and splash under the roar, only within BASE_REACH_M of the landing
 # point. Level from the fall: +3 dB per doubling of width (4 m reference) and +2 dB per doubling of the drop (4 m),
 # the flow through the width. One loop at most, a few dB softer with distance by its own attenuation.
+# Lake and pond shores (Dave 2026-10-20): no rushing bed; every LAP_EVERY seconds a soft lap, a slowed and softened fish
+# splash (make_lake.py), from a random still-water square within LAP_SPREAD_M. At most LAP_VOICES at once; none under water.
+const LAP_SQUARES := 10
+const LAP_EVERY := [3.0, 8.0]
+const LAP_DB := -22.0
+const LAP_VOICES := 2
+const LAP_REACH_M := 35.0
+
 const BASE_REACH_M := 60.0
 const BASE_DB := -12.0
 const BASE_FILE := "water_fall_base"
 const FALL_DROP_M := 1.0                # surface drop between neighbouring squares
 const POND_AROUND := 16
+const STILL_MPS := 0.35                 # current under this is still water (a lake or pond), over it a river
 const RIVER_AROUND := 8
 
 # kind: loop name, loudness at the source (dB), how far it carries (m) for choosing sources
@@ -70,6 +79,11 @@ var _base: AudioStreamPlayer3D          # the fall-base hiss and splash, one loo
 var _base_target: Vector3 = Vector3.ZERO
 var _base_db: float = -80.0
 var base_fall_drop: float = 0.0         # HUD: drop height of the fall the base sound sits at, 0 when none
+var _shore: Array = []                  # the nearest still-water squares (lake/pond), where laps happen
+var _lap_left: float = 2.0
+var laps_played: int = 0
+var test_shore: Array = []              # --lake: stand-in still-water squares [{at}] (the headless spawn has no lake)
+var last_lap: String = ""
 var _slots: Array = []                  # {player, kind, target, fade}
 var _streams: Dictionary = {}
 var _scan_left: float = 0.0
@@ -120,6 +134,7 @@ func setup(flora, terrain: VoxelLodTerrain = null) -> void:
 		_variants(str(KINDS[kind]["file"]))
 
 	_variants(BASE_FILE)
+	_lap_variants()
 
 
 func voices_playing() -> int:
@@ -155,6 +170,7 @@ func update(delta: float, body: CharacterBody3D, underwater: bool) -> void:
 			_choose()
 
 	_update_base(delta)
+	_laps(delta, body.global_position, underwater)
 
 	for slot in _slots:
 		var player: AudioStreamPlayer3D = slot["player"]
@@ -170,6 +186,72 @@ func update(delta: float, body: CharacterBody3D, underwater: bool) -> void:
 		if db <= -60.0 and player.volume_db < -55.0:
 			player.stop()
 			slot["kind"] = ""
+
+
+func _laps(delta: float, here: Vector3, underwater: bool) -> void:
+	_lap_left -= delta
+
+	if _lap_left > 0.0:
+		return
+
+	_lap_left = _rng.randf_range(float(LAP_EVERY[0]), float(LAP_EVERY[1]))
+
+	var shore: Array = test_shore if not test_shore.is_empty() else _shore
+
+	if shore.is_empty() or underwater or not get_parent().has_room():
+		return
+
+	var live: int = 0
+
+	for child in get_children():
+		if child is AudioStreamPlayer3D and child.has_meta("lap") and child.playing:
+			live += 1
+
+	if live >= LAP_VOICES:
+		return
+
+	var list: Array = _lap_variants()
+
+	if list.is_empty():
+		return
+
+	var square: Dictionary = shore[_rng.randi_range(0, mini(shore.size(), 4) - 1)]
+	var near: float = Vector2(square["at"].x - here.x, square["at"].z - here.z).length()
+
+	if near > LAP_REACH_M:
+		return
+
+	var pick: int = _rng.randi_range(0, list.size() - 1)
+	var player: AudioStreamPlayer3D = AudioStreamPlayer3D.new()
+	player.stream = list[pick]
+	player.bus = "Nature"
+	player.volume_db = LAP_DB + _rng.randf_range(-4.0, 1.5)
+	player.pitch_scale = _rng.randf_range(0.9, 1.1)
+	player.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
+	player.unit_size = 4.0
+	player.max_distance = LAP_REACH_M * 1.5
+	player.attenuation_filter_cutoff_hz = 6000.0
+	player.set_meta("lap", true)
+	add_child(player)
+	player.add_to_group("world_sounds")
+	player.global_position = square["at"] + Vector3(_rng.randf_range(-3.0, 3.0), 0.0, _rng.randf_range(-3.0, 3.0))
+	player.finished.connect(player.queue_free)
+	player.play()
+	laps_played += 1
+	last_lap = "lake_lap_%d %.0f m (%s)" % [pick, near, SoundStage.tag(list[pick])]
+
+
+func _lap_variants() -> Array:
+	if _streams.has("lake_lap"):
+		return _streams["lake_lap"]
+
+	var list: Array = SoundStage._find(RECORDED_DIR, "lake_lap")
+
+	if list.is_empty():
+		list = SoundStage._find(GENERATED_DIR, "lake_lap")
+
+	_streams["lake_lap"] = list
+	return list
 
 
 func _update_base(delta: float) -> void:
@@ -260,9 +342,16 @@ func _classify_row(j: int) -> void:
 				drop = maxf(drop, absf(here - level[nj * count + ni]))
 
 		var kind: String = "brook"
+		var flow_mps: float = _speed[j * count + i]
 
 		# Waterfalls come from the water chunk's fall columns (_fall_candidates); a steep reach on the grid is rapids.
-		if around >= POND_AROUND:
+		# Still water with enough water around it is a lake or pond (soft lapping, Dave 2026-10-20: a lake shore played
+		# river rush because shore squares have few wet neighbours); water with a current is a river however wide.
+		if flow_mps >= 0.0 and flow_mps < STILL_MPS and around >= RIVER_AROUND:
+			kind = "pond"
+		elif flow_mps >= STILL_MPS and around >= RIVER_AROUND:
+			kind = "river"
+		elif around >= POND_AROUND:
 			kind = "pond"
 		elif around >= RIVER_AROUND:
 			kind = "river"
@@ -280,8 +369,15 @@ func _choose() -> void:
 	candidates.append_array(_fall_candidates(_origin))
 	candidates.sort_custom(func(a, b): return a["score"] < b["score"])
 	var chosen: Array = []
+	_shore.clear()
 
 	for candidate in candidates:
+		if candidate["kind"] == "pond":
+			if _shore.size() < LAP_SQUARES:
+				_shore.append(candidate)
+
+			continue
+
 		if chosen.size() >= MAX_SOURCES:
 			break
 
@@ -455,6 +551,9 @@ func _assign(chosen: Array, origin: Vector3) -> void:
 			parts.append("%s %.0f m %s" % [slot["kind"], d, slot.get("tuned", "")])
 
 	summary = ", ".join(parts) if not parts.is_empty() else "none"
+
+	if not _shore.is_empty():
+		summary += ", lake shore %d squares, %d laps (last %s)" % [_shore.size(), laps_played, last_lap]
 
 
 # The nearest single fall within BASE_REACH_M gets the close hiss and splash.
