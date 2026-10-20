@@ -65,3 +65,5 @@ RPC strain(strain_pm, state, fade_pm), sent only on change. Client reads (invent
 
 ### Stance and rest (protocol 21)
 ACT_STANCE (20, a = 0 stand, 1 crouch, 2 sit, 3 lie); the server's answer is the new last field of strain(). Fainting forces lying and a fainted or waking player cannot choose; walking off faster than 1.5 m/s stands a sitting or lying player up. Strain rests faster sitting (x2) and lying (x3) with no floor, so it reaches 0; standing or crouching under a heavy pack only rests down to about half (floor 0.5 x load ratio). A pack adds load_effort x ratio^1.5 to the effort of anyone moving, even at the crawl a full pack allows (min speed 25 percent), so a pack at the limit tires you quickly. Client: items.request_stance(s), items.stance_confirmed, items.stance_event (Ground owns keys C crouch, X sit, Z lie and the camera height).
+
+Regression: python3 tools/items_check.py runs the item unit tests and the headless client scenarios (chest, gather, lean-to, eat); exit 1 on any failure.

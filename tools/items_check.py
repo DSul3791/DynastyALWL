@@ -1,0 +1,120 @@
+#!/usr/bin/env python3
+"""Headless regression check for items, crafting, fire, chests, hunger and exertion.
+
+Run: python3 tools/items_check.py [--only NAME[,NAME]] [--godot PATH] [--list] [--verbose]
+
+Two kinds of step. UNIT steps run a headless GDScript test from src/worldgen/tools and need its last
+line to report 0 failures (tool gating, wear and repair, chest put/take, placement caps, felling to
+firewood, save and reload, hunger, carrying, exertion, stance). CLIENT steps start a fresh server (own
+port and store), run the client headless with the step's test flag and check the lines it prints.
+Exit status 1 when anything fails. Needs the Godot binary (default /root/bin/godot, or $GODOT).
+To add a step: add a row to UNITS or CLIENTS. A client check is (label, regex with ONE capture group,
+min, max); the group is read as a number, or use a regex that simply must match (min=max=None).
+"""
+import os
+import re
+import subprocess
+import sys
+import tempfile
+import time
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+GODOT = os.environ.get("GODOT", "/root/bin/godot")
+PORT_BASE = 7950
+NUM = r"(-?\d+(?:\.\d+)?)"
+
+UNITS = [
+    ("validate_items", "src/worldgen/tools/validate_items.gd"),
+    ("inventory", "src/worldgen/tools/test_inventory.gd"),
+    ("server_items", "src/worldgen/tools/test_server_items.gd"),
+    ("persistence", "src/worldgen/tools/test_items_persistence.gd"),
+]
+
+# name, client flags, frames, checks
+CLIENTS = [
+    ("chest", ["--chest"], 2500, [
+        ("chest screen opens", r"screen open (true)", None, None),
+        ("stones taken out", r"in pack " + NUM + r"\s*$", 10, 10),
+    ]),
+    ("gather", ["--gather"], 2500, [
+        ("harvest prompt shown", r"prompt \"(Press E to harvest [^\"]*)\"", None, None),
+        ("sticks gathered", r"sticks 0 -> " + NUM, 1, 100),
+    ]),
+    ("leanto", ["--leanto"], 4000, [
+        ("roof gives cover", r"cover under it " + NUM, 0.9, 1.0),
+    ]),
+    ("eat", ["--eat"], 3000, [
+        ("food is edible", r"edible slot 0 (true)", None, None),
+        ("roast eaten", r"roasts left " + NUM, 1, 1),
+    ]),
+]
+
+
+def run_unit(name, path, godot, verbose):
+    out = subprocess.run([godot, "--headless", "--path", ROOT, "-s", "res://" + path], capture_output=True, text=True, timeout=600).stdout
+    if verbose:
+        print(out)
+    for line in out.splitlines():
+        if "FAIL" in line:
+            print("   ", line)
+    found = re.findall(r"(\d+) (?:failures|errors)", out)
+    return bool(found) and all(n == "0" for n in found), "%s failures or errors" % (found[-1] if found else "no result")
+
+
+def run_client(index, flags, frames, checks, godot, verbose):
+    port = PORT_BASE + index
+    store = tempfile.mkdtemp(prefix="items_check_")
+    server = subprocess.Popen([godot, "--headless", "--path", ROOT, "res://scenes/terrain_server/terrain_server.tscn", "--", "--port=%d" % port, "--store=" + store], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        time.sleep(40)
+        out = subprocess.run([godot, "--headless", "--path", ROOT, "res://scenes/terrain_client/terrain_client.tscn", "--", "--server=127.0.0.1", "--port=%d" % port, "--frames=%d" % frames] + flags, capture_output=True, text=True, timeout=400).stdout
+    finally:
+        server.kill()
+    if verbose:
+        print(out)
+    if "SCRIPT ERROR" in out:
+        print("    script error in the client output")
+        return False, "script error"
+    problems = []
+    for label, pattern, low, high in checks:
+        matches = list(re.finditer(pattern, out, re.M))
+        match = matches[-1] if matches else None
+        if not match:
+            problems.append(label + ": no match")
+        elif low is not None:
+            value = float(match.group(1))
+            if not (low <= value <= high):
+                problems.append("%s: %s outside %s..%s" % (label, value, low, high))
+    return not problems, "; ".join(problems) or "ok"
+
+
+def main():
+    args = sys.argv[1:]
+    godot = GODOT
+    only = None
+    verbose = "--verbose" in args
+    if "--godot" in args:
+        godot = args[args.index("--godot") + 1]
+    if "--only" in args:
+        only = set(args[args.index("--only") + 1].split(","))
+    if "--list" in args:
+        print("\n".join([n for n, _ in UNITS] + [c[0] for c in CLIENTS]))
+        return 0
+    failed = 0
+    for name, path in UNITS:
+        if only and name not in only:
+            continue
+        ok, note = run_unit(name, path, godot, verbose)
+        print("%-16s %s  %s" % (name, "PASS" if ok else "FAIL", note))
+        failed += 0 if ok else 1
+    for index, (name, flags, frames, checks) in enumerate(CLIENTS):
+        if only and name not in only:
+            continue
+        ok, note = run_client(index, flags, frames, checks, godot, verbose)
+        print("%-16s %s  %s" % (name, "PASS" if ok else "FAIL", note))
+        failed += 0 if ok else 1
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
