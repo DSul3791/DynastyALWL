@@ -175,17 +175,24 @@ static func _pond_near(data, head: Vector2i, side: int) -> Vector2i:
 
 			# Head ponds are 35 m across now (owner, 2026-10-19), older tiles have 240, 120 or
 			# 60 m ones: try a ring just inside each size.
+			# Owner report (2026-10-20, an empty head pond): the pond's own outlet notch is lower
+			# than the walls, so one or two ring points (one side) may miss, as long as none
+			# lies below the floor; a gorge always drops away below it downstream.
 			for ring in [14.0, 7.0, 3.0, 2.0]:
-				var all_higher: bool = true
+				var misses: int = 0
 
 				for r in range(8):
 					var angle: float = TAU * float(r) / 8.0
+					var h: float = data.heights[(j + int(round(sin(angle) * ring))) * side + i + int(round(cos(angle) * ring))]
 
-					if data.heights[(j + int(round(sin(angle) * ring))) * side + i + int(round(cos(angle) * ring))] < floor_here + 5.0:
-						all_higher = false
+					if h < floor_here - 0.5:
+						misses = 8
 						break
 
-				if all_higher:
+					if h < floor_here + 5.0:
+						misses += 1
+
+				if misses <= 2:
 					inside = true
 					break
 

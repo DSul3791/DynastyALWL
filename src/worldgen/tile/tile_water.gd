@@ -741,7 +741,7 @@ func _carve_guides(rivers: Array) -> void:
 								break
 
 						if not shared:
-							ponds_placed.append([centre, rim_low])
+							ponds_placed.append([centre, rim_low, radius_here])
 							_bench(carved, centre, radius_here + pond_shore, rim_low, wall_fade)
 							ponds_made += 1
 							ponds_moved += 1 if climbed > 0.0 else 0
@@ -793,8 +793,31 @@ func _carve_guides(rivers: Array) -> void:
 
 			_cut_brook_path(carved, centre, float(pond.get("radius", pond_radius)), float(pond["level"]), path, float(head_levels[h]) - brook_depth, brook_width * brook_scale, brook_depth, slope, start_km2 / cell_km2, best_flow)
 
+	# Owner report (2026-10-20, an empty head pond): the rivers are cut after their ponds,
+	# and a river bed passing by (or leaving at the head's depth) cut the pond's rim down to
+	# its floor, so it drained. The shore ring is raised back to just under the lip, the
+	# brook's own starting bed, so every way out leaves at that height.
+	for pond in _world_ponds:
+		var centre: Vector2 = Vector2(pond["centre"]) / spacing_m - Vector2(float(_origin_sx), float(_origin_sz))
+		_seal_pond_rim(carved, centre, float(pond.get("radius", pond_radius)), float(pond["level"]) - 1.5, pond_shore)
+
+	for placed in ponds_placed:
+		_seal_pond_rim(carved, placed[0], placed[2], placed[1] - 1.5, pond_shore)
+
 	heights = carved
 	longest_river_m = longest
+
+
+# Raises the ground from a pond's edge out across its shore to at least `lip`.
+func _seal_pond_rim(carved: PackedFloat32Array, centre: Vector2, radius_m: float, lip: float, shore_m: float) -> void:
+	var reach_cells: float = (radius_m + shore_m) / spacing_m + 1.0
+
+	for nr in range(maxi(int(ceil(centre.y - reach_cells)), 0), mini(int(floor(centre.y + reach_cells)), samples - 1) + 1):
+		for nc in range(maxi(int(ceil(centre.x - reach_cells)), 0), mini(int(floor(centre.x + reach_cells)), samples - 1) + 1):
+			var distance: float = Vector2(float(nc), float(nr)).distance_to(centre) * spacing_m
+
+			if distance >= radius_m and distance <= radius_m + shore_m and _ocean[nr * samples + nc] != 1:
+				carved[nr * samples + nc] = maxf(carved[nr * samples + nc], lip)
 
 
 # Where a head pond fits around `centre` (sample coordinates): a pond whose rim varies by at most max_rim_range on the natural ground
