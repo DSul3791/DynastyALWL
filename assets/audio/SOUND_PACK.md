@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **191 slots: 18 recorded, 164 generated placeholders, 9 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **193 slots: 18 recorded, 166 generated placeholders, 9 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -157,6 +157,7 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 3 | `tree_leaves` | generated | 3 | tree_sounds.gd: the crown rushing down through the air | 3 branches and leaves rushing as a tree falls, about 1 s |
 | 3 | `wolf_growl` | generated | 2 | creature_sounds.gd: a wolf's growl (alert, threat) | 2 to 3 wolf growls and snarls, 1 to 2 s |
 | 3 | `woodpecker` | generated | 3 | ambient_life.gd: forest, by day | 2 to 3 woodpecker drumming runs, about 1 s |
+| 4 | `cloth_walk` | generated | 4 | step_fx.gd: soft clothes rustle under every step | 4 soft cloth swishes, 0.25 s |
 | 4 | `craft_start` | generated | 3 | item_sounds.gd: a craft begins | 3 soft two-part clicks of setting materials down, 0.15 s |
 | 4 | `door_knock` | generated | 2 | interior_sounds.gd: knocking on a door (object) | 2 to 3 triple knocks on wood |
 | 4 | `frog_croak` | recorded | 6 | ambient_life.gd: ponds and rivers, spring to autumn, more at night and in rain | have: Dave's frogs (mostly small trillers); a deep bullfrog croak is still missing |
@@ -178,6 +179,7 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 4 | `ui_off` | generated | 2 | ui_sounds.gd: a toggle switched off | 2 short falling two-note cues, quiet |
 | 4 | `ui_on` | generated | 2 | ui_sounds.gd: a toggle switched on (inspection mode) | 2 short rising two-note cues, quiet |
 | 4 | `ui_quality` | generated | 2 | ui_sounds.gd: the quality tier changed (F2 or the menu) | 2 soft settled chimes, 0.5 s |
+| 4 | `wet_squelch` | generated | 4 | step_fx.gd: wet shoes squelch under steps for 20 s after wading | 4 short wet squelches, 0.22 s |
 | 5 | `crow_alarm` | recorded | 3 | ambient_life.gd: alarm(at): a crow scolds when the player runs through crow country, and the danger warning hook | have: Dave's angry crow |
 | 5 | `crow_caw` | recorded | 7 | ambient_life.gd: forest and highland, by day | have: Dave's crow calls |
 | 5 | `fish_splash` | recorded | 3 | ambient_life.gd: a fish jumps at the water edge, rare | have: Dave's fish jumping clip, played whole |

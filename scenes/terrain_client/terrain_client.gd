@@ -198,6 +198,7 @@ var test_emitters: bool = false        # --emitter-test: fake server events and 
 var test_mix_levels: bool = false      # --mix-levels: per-bus peak table over the run (job 67)
 var test_landing: bool = false         # --landing: drops of 1, 3 and 7 m through sound.landing (job 68)
 var _hurts: Array = []
+var test_stepfx: bool = false          # --stepfx: wade, then dry steps: squelch and cloth layers
 var test_stance: bool = false          # --stance: stand, crouch, sit, lie and rise in turn (job 56)
 var _stance_step: int = 0
 var _lake_start_msec: int = 0
@@ -403,6 +404,8 @@ func _ready() -> void:
 			test_lake = true
 		elif argument == "--stance":
 			test_stance = true
+		elif argument == "--stepfx":
+			test_stepfx = true
 		elif argument == "--landing":
 			test_landing = true
 		elif argument == "--mix-levels":
@@ -2501,6 +2504,27 @@ func _process(delta: float) -> void:
 
 		var counts: Dictionary = sound.landing.landings
 		print("Terrain client: landing check: step %d thud %d hard %d, %d hurt signals, severity %.2f, last %s" % [int(counts.get("step", 0)), int(counts.get("thud", 0)), int(counts.get("hard", 0)), _hurts.size(), float(_hurts[0][1]) if not _hurts.is_empty() else -1.0, sound.landing.last])
+
+	if test_stepfx and now - connected_msec > 18000 and now >= _test_fire_at:
+		_test_fire_at = now + 10000000
+		var fx = sound.stepfx
+		fx.step(1, -35.0, "water", 0.4)
+		var wet_start: float = fx.wetness
+		var before: int = fx.squelches
+
+		for k in range(10):
+			fx.step(0, -35.0, "dirt", 0.0)
+
+		var squelched: int = fx.squelches - before
+		fx.update(10.0)
+		var half: float = fx.wetness
+		fx.update(15.0)
+		var dry_before: int = fx.squelches
+
+		for k in range(10):
+			fx.step(0, -35.0, "dirt", 0.0)
+
+		print("Terrain client: stepfx check: wet %.2f, %d squelches in 10 steps, wetness after 10 s %.2f, after 25 s %.2f, %d squelches when dry, %d cloth steps, last %s" % [wet_start, squelched, half, fx.wetness, fx.squelches - dry_before, fx.cloth_steps, fx.last])
 
 	# Stance sounds: crouch, stand, sit, stand, lie (and sit for 20 s to hear settles), stand.
 	if test_stance and now - connected_msec > 18000 and now >= _test_fire_at:

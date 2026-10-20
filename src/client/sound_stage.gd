@@ -28,6 +28,7 @@ const UiScript := preload("res://src/client/ui_sounds.gd")
 const EmitterScript := preload("res://src/client/emitters.gd")
 const CreatureScript := preload("res://src/client/creature_sounds.gd")
 const GearScript := preload("res://src/client/gear_sounds.gd")
+const StepFxScript := preload("res://src/client/step_fx.gd")
 const LandingScript := preload("res://src/client/landing_sounds.gd")
 const StanceScript := preload("res://src/client/stance_sounds.gd")
 const InteriorScript := preload("res://src/client/interior_sounds.gd")
@@ -180,6 +181,7 @@ var spear                               # SpearSounds: jab, throw, flight, hits 
 var interior                            # InteriorSounds: inside a building, doors, chests, furniture (set_inside, object)
 var stance                              # StanceSounds: crouch, sit, lie, rise and settle cloth sounds (set_stance); crouching softens steps
 var gear                                # GearSounds: armour and clothing layers on the footsteps (set_worn, step_at)
+var stepfx                              # StepFx: wet-shoe squelch and cloth rustle under footsteps
 var landing                             # LandingSounds: thud and hard landing by fall height; signal hurt is the fall damage hook
 var emitters                            # Emitters: sounds for server-owned entities (emit, sync); sound/EMITTER_API.md
 var creatures                           # CreatureSounds: deer, rabbit, fox, wolf, bear calls (call_at, call_in_zone; wild = natural far calls)
@@ -302,6 +304,10 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	creatures.name = "Creatures"
 	add_child(creatures)
 	creatures.setup(self)
+	stepfx = StepFxScript.new()
+	stepfx.name = "StepFx"
+	add_child(stepfx)
+	stepfx.setup(self)
 	landing = LandingScript.new()
 	landing.name = "Landing"
 	add_child(landing)
@@ -404,6 +410,7 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	breath.follow_body(delta, body, flying, swim.swimming)
 	breath.update(delta, underwater)
 	stance.update(delta)
+	stepfx.update(delta)
 	flame.update(delta, body)
 	occlusion.update(delta, body, flying)
 	_warm_one(delta)
@@ -708,9 +715,11 @@ func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: Str
 	var recorded: bool = _recorded.has(name + "_" + foot) or _recorded.has(name)
 	var pitch: float = GAIT_PITCH[gait] * _rng.randf_range(0.96, 1.04) * tune[1]
 	last_step = "%s (soil %d, water %.2f m, %s)" % [surface, soil, depth, name + "_" + foot if recorded else name + " generated"]
-	_play(name, float(SURFACE_DB.get(surface, FLOOR_SURFACES.get(surface, -9.0))) + float(tune[0]) + GAIT_DB[gait] + boost_db + SNOW_HUSH_STEP_DB * _hush_applied + _rng.randf_range(-1.5, 1.0), pitch, foot)
+	var step_db: float = float(SURFACE_DB.get(surface, FLOOR_SURFACES.get(surface, -9.0))) + float(tune[0]) + GAIT_DB[gait] + boost_db + SNOW_HUSH_STEP_DB * _hush_applied + _rng.randf_range(-1.5, 1.0)
+	_play(name, step_db, pitch, foot)
 	steps_played[surface] = int(steps_played.get(surface, 0)) + 1
 	gear.step(gait, boost_db, surface)
+	stepfx.step(gait, step_db, surface, depth)
 
 	# Wet ground: a puddle splash joins most steps on grass, stone, gravel and sand.
 	if weather != null and weather.ground_wet >= PUDDLE_WET and surface in PUDDLE_SURFACES and _rng.randf() < weather.ground_wet * 0.7:

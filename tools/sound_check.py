@@ -112,6 +112,14 @@ SCENARIOS = [
         ("fall damage hook fires once", r", " + NUM + r" hurt signals", 1, 1),
         ("hard landing plays the hard sound", r"last hard from 7.0 m (land_hard_\d) \(generated\)", 0, 1, "text"),
     ]),
+    ("stepfx", ["--stepfx"], 3500, [
+        ("shoes wet after wading", r"stepfx check: wet " + NUM, 1, 1),
+        ("squelches while wet", r" " + NUM + r" squelches in 10 steps", 4, 10),
+        ("half dry after 10 s", r"after 10 s " + NUM, 0.4, 0.6),
+        ("dry after 25 s", r"after 25 s " + NUM, 0, 0),
+        ("no squelch when dry", r", " + NUM + r" squelches when dry", 0, 0),
+        ("cloth on dry steps", r", " + NUM + r" cloth steps", 15, 25),
+    ]),
     ("stance", ["--stance"], 6000, [
         ("posture changes heard", r"stance check: " + NUM + r" changes", 6, 6),
         ("last is the rise", r"last (stance_rise)", 0, 1, "text"),

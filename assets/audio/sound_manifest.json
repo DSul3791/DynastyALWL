@@ -545,6 +545,22 @@
    "priority": 2
   },
   {
+   "name": "wet_squelch",
+   "state": "generated",
+   "variants": 4,
+   "used_in": "step_fx.gd: wet shoes squelch under steps for 20 s after wading",
+   "to_supply": "4 short wet squelches, 0.22 s",
+   "priority": 4
+  },
+  {
+   "name": "cloth_walk",
+   "state": "generated",
+   "variants": 4,
+   "used_in": "step_fx.gd: soft clothes rustle under every step",
+   "to_supply": "4 soft cloth swishes, 0.25 s",
+   "priority": 4
+  },
+  {
    "name": "land_thud",
    "state": "generated",
    "variants": 3,
