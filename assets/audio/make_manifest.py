@@ -83,6 +83,8 @@ SLOTS = [
     ("wolf_growl", "creatures", "creature_sounds.gd: a wolf's growl (alert, threat)", "2 to 3 wolf growls and snarls, 1 to 2 s", 3),
     ("bear_growl", "creatures", "creature_sounds.gd: a bear's growl (idle, alert)", "2 to 3 low bear growls, 1 to 2 s", 3),
     ("bear_roar", "creatures", "creature_sounds.gd: a bear's roar (threat), the danger cue", "2 to 3 bear roars, 1 to 2 s", 2),
+    ("land_thud", "landing", "landing_sounds.gd: landing from 2.5 to 5 m, body weight and a breath knocked out", "3 landing thuds, 0.5 s", 3),
+    ("land_hard", "landing", "landing_sounds.gd: landing from 5 m and more, heavy impact, gear rattle and a grunt", "3 hard landings, 0.9 s", 3),
     ("stance_crouch", "stance", "stance_sounds.gd: cloth rustle crouching down", "3 soft cloth rustles of crouching down, 0.45 s", 3),
     ("stance_sit", "stance", "stance_sounds.gd: sitting down, rustle and a soft weight", "3 sitting-down rustles with a soft thud, 0.7 s", 3),
     ("stance_lie", "stance", "stance_sounds.gd: lying down on the ground", "3 lying-down slides and thuds, 1 s", 3),

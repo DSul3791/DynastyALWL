@@ -196,6 +196,8 @@ var _sweep_peak: int = 0
 var _sweep_max: int = 0
 var test_emitters: bool = false        # --emitter-test: fake server events and loops through sound.emitters (job 65)
 var test_mix_levels: bool = false      # --mix-levels: per-bus peak table over the run (job 67)
+var test_landing: bool = false         # --landing: drops of 1, 3 and 7 m through sound.landing (job 68)
+var _hurts: Array = []
 var test_stance: bool = false          # --stance: stand, crouch, sit, lie and rise in turn (job 56)
 var _stance_step: int = 0
 var _lake_start_msec: int = 0
@@ -401,6 +403,8 @@ func _ready() -> void:
 			test_lake = true
 		elif argument == "--stance":
 			test_stance = true
+		elif argument == "--landing":
+			test_landing = true
 		elif argument == "--mix-levels":
 			test_mix_levels = true
 		elif argument == "--emitter-test":
@@ -2484,6 +2488,19 @@ func _process(delta: float) -> void:
 			test_mix_levels = false
 			sound.track_peaks = false
 			print("Terrain client: mix levels: " + sound.mix_table())
+
+	if test_landing and now - connected_msec > 18000 and now >= _test_fire_at:
+		_test_fire_at = now + 10000000
+		sound.landing.hurt.connect(func(drop, severity): _hurts.append([drop, severity]))
+
+		sound.landing.landings = {}
+		_hurts = []
+
+		for drop in [1.0, 3.0, 7.0]:
+			sound.landing.land(body, drop)
+
+		var counts: Dictionary = sound.landing.landings
+		print("Terrain client: landing check: step %d thud %d hard %d, %d hurt signals, severity %.2f, last %s" % [int(counts.get("step", 0)), int(counts.get("thud", 0)), int(counts.get("hard", 0)), _hurts.size(), float(_hurts[0][1]) if not _hurts.is_empty() else -1.0, sound.landing.last])
 
 	# Stance sounds: crouch, stand, sit, stand, lie (and sit for 20 s to hear settles), stand.
 	if test_stance and now - connected_msec > 18000 and now >= _test_fire_at:

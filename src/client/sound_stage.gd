@@ -28,6 +28,7 @@ const UiScript := preload("res://src/client/ui_sounds.gd")
 const EmitterScript := preload("res://src/client/emitters.gd")
 const CreatureScript := preload("res://src/client/creature_sounds.gd")
 const GearScript := preload("res://src/client/gear_sounds.gd")
+const LandingScript := preload("res://src/client/landing_sounds.gd")
 const StanceScript := preload("res://src/client/stance_sounds.gd")
 const InteriorScript := preload("res://src/client/interior_sounds.gd")
 const SpearScript := preload("res://src/client/spear_sounds.gd")
@@ -158,6 +159,7 @@ var _shelter: float = 0.0               # 0 open .. 1 deep in the trees
 var _shelter_target: float = 0.0
 var _shelter_msec: int = 0
 var _air_time: float = 0.0
+var _air_top: float = 0.0              # highest point of the current fall (landing_sounds.gd)
 var _rng := RandomNumberGenerator.new()
 var ambient                             # AmbientLife: birds, crickets, frogs by zone
 var water                               # WaterSounds: brooks, rivers, pond shores, waterfalls
@@ -178,6 +180,7 @@ var spear                               # SpearSounds: jab, throw, flight, hits 
 var interior                            # InteriorSounds: inside a building, doors, chests, furniture (set_inside, object)
 var stance                              # StanceSounds: crouch, sit, lie, rise and settle cloth sounds (set_stance); crouching softens steps
 var gear                                # GearSounds: armour and clothing layers on the footsteps (set_worn, step_at)
+var landing                             # LandingSounds: thud and hard landing by fall height; signal hurt is the fall damage hook
 var emitters                            # Emitters: sounds for server-owned entities (emit, sync); sound/EMITTER_API.md
 var creatures                           # CreatureSounds: deer, rabbit, fox, wolf, bear calls (call_at, call_in_zone; wild = natural far calls)
 var ui                                  # UiSounds: menu click, toggle and quality cues (play(name))
@@ -299,6 +302,10 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	creatures.name = "Creatures"
 	add_child(creatures)
 	creatures.setup(self)
+	landing = LandingScript.new()
+	landing.name = "Landing"
+	add_child(landing)
+	landing.setup(self)
 	emitters = EmitterScript.new()
 	emitters.name = "Emitters"
 	add_child(emitters)
@@ -439,10 +446,14 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 
 	# A landing after a short fall sounds like a heavy step.
 	if flying or not body.is_on_floor():
+		if _air_time == 0.0:
+			_air_top = body.global_position.y
+
+		_air_top = maxf(_air_top, body.global_position.y)
 		_air_time += delta
 	else:
 		if _air_time > 0.45:
-			footstep(body, 2, 4.0)
+			landing.land(body, _air_top - body.global_position.y)
 
 		_air_time = 0.0
 

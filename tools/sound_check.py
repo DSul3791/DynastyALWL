@@ -105,6 +105,13 @@ SCENARIOS = [
     ("mix", ["--hour=21", "--season=autumn", "--weather=storm", "--distant", "--nature-fast", "--cave=0.6", "--fire-world", "--creatures", "--walk", "--ui-sounds", "--mix-levels"], 14000, [
         ("Master never clips", r"mix levels: Master peak " + NUM + r" mean", -200, 0.0),
     ]),
+    ("landing", ["--landing"], 3500, [
+        ("a step landing", r"landing check: step " + NUM, 1, 1),
+        ("a thud landing", r" thud " + NUM, 1, 1),
+        ("a hard landing", r" hard " + NUM + r",", 1, 1),
+        ("fall damage hook fires once", r", " + NUM + r" hurt signals", 1, 1),
+        ("hard landing plays the hard sound", r"last hard from 7.0 m (land_hard_\d) \(generated\)", 0, 1, "text"),
+    ]),
     ("stance", ["--stance"], 6000, [
         ("posture changes heard", r"stance check: " + NUM + r" changes", 6, 6),
         ("last is the rise", r"last (stance_rise)", 0, 1, "text"),

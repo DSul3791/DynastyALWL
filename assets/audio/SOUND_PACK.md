@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **189 slots: 18 recorded, 162 generated placeholders, 9 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **191 slots: 18 recorded, 164 generated placeholders, 9 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -121,6 +121,8 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 3 | `hit_hammer_stone` | generated | 3 | hit_sounds.gd: a hammer blow on stone (chiselling, smithing) | 3 hammer clanks on stone |
 | 3 | `hit_pick_soil` | generated | 3 | hit_sounds.gd: a pickaxe blow on soil | 3 pick strikes into hard earth |
 | 3 | `hit_spade_soil` | generated | 3 | hit_sounds.gd: a spade strike into soil | 3 spade thuds into earth |
+| 3 | `land_hard` | generated | 3 | landing_sounds.gd: landing from 5 m and more, heavy impact, gear rattle and a grunt | 3 hard landings, 0.9 s |
+| 3 | `land_thud` | generated | 3 | landing_sounds.gd: landing from 2.5 to 5 m, body weight and a breath knocked out | 3 landing thuds, 0.5 s |
 | 3 | `pickup_placed` | generated | 2 | placed_sounds.gd: a placed thing picked up again | 2 recordings of dragging and lifting a wooden thing |
 | 3 | `place_thump` | generated | 2 | placed_sounds.gd: any other thing set on the ground | 2 short dull thumps on soil |
 | 3 | `plank_drop` | generated | 2 | workshop_sounds.gd plank_drop(at): a sawn plank landing on its stack (hook until the saw mill exists) | 2 recordings of a plank dropped on a plank stack, 0.5 s |

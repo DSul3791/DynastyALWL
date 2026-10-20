@@ -545,6 +545,22 @@
    "priority": 2
   },
   {
+   "name": "land_thud",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "landing_sounds.gd: landing from 2.5 to 5 m, body weight and a breath knocked out",
+   "to_supply": "3 landing thuds, 0.5 s",
+   "priority": 3
+  },
+  {
+   "name": "land_hard",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "landing_sounds.gd: landing from 5 m and more, heavy impact, gear rattle and a grunt",
+   "to_supply": "3 hard landings, 0.9 s",
+   "priority": 3
+  },
+  {
    "name": "stance_crouch",
    "state": "generated",
    "variants": 3,
