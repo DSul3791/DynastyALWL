@@ -497,6 +497,54 @@
    "priority": 2
   },
   {
+   "name": "gear_cloth",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "gear_sounds.gd: clothes rustling on a step",
+   "to_supply": "3 soft cloth rustles, 0.2 s, from walking in a tunic or cloak",
+   "priority": 3
+  },
+  {
+   "name": "gear_leather",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "gear_sounds.gd: leather armour or straps creaking on a step",
+   "to_supply": "3 leather creaks, 0.3 s",
+   "priority": 3
+  },
+  {
+   "name": "gear_chain",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "gear_sounds.gd: mail jingling on a step",
+   "to_supply": "3 chainmail jingles, 0.4 s",
+   "priority": 2
+  },
+  {
+   "name": "gear_plate",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "gear_sounds.gd: plate armour clanking on a step",
+   "to_supply": "3 plate armour clanks, 0.4 s",
+   "priority": 2
+  },
+  {
+   "name": "gear_hobnail",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "gear_sounds.gd: hobnailed boots clicking on a step (loud on stone, dull on soft ground)",
+   "to_supply": "3 hobnail boot clicks, 0.1 s",
+   "priority": 4
+  },
+  {
+   "name": "gear_iron",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "gear_sounds.gd: iron-shod boots clanging on a step",
+   "to_supply": "3 iron boot clangs, 0.4 s",
+   "priority": 3
+  },
+  {
    "name": "ui_click",
    "state": "generated",
    "variants": 2,

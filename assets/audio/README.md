@@ -148,3 +148,6 @@ Frogs: normal in clear, 1.6x in drizzle, 1.2x in rain, silent in storms, snow an
 
 ## Creature calls (build 132)
 `creature_sounds.gd`, made by `make_creatures.py` into `assets/audio/creatures/`; recordings in `recorded/creatures/` win. Names (each with `_N` variants): `deer_grunt`, `deer_snort`, `rabbit_thump`, `rabbit_squeak`, `fox_bark`, `fox_scream`, `wolf_howl`, `wolf_growl`, `bear_growl`, `bear_roar`. Birds use the ambient set (`bird_*`, `crow_alarm`). All of it is placeholder synthesis; real recordings matter most for the wolf howl and the bear (see SOUND_PACK.md).
+
+## Gear sounds (build 138)
+`gear_sounds.gd`, made by `make_gear.py` into `assets/audio/gear/`; recordings in `recorded/gear/` win. Names (`_N` variants): `gear_cloth`, `gear_leather`, `gear_chain`, `gear_plate`, `gear_hobnail`, `gear_iron`. They play on top of each footstep for whatever the player wears (hooks only until equipment exists).
