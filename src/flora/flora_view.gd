@@ -19,6 +19,7 @@ extends Node3D
 
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const TreeBuilder := preload("res://src/flora/tree_builder.gd")
+const TreeImpostor := preload("res://src/flora/tree_impostor.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const KIND_TREE := 0
 const KIND_SHRUB := 1
@@ -184,11 +185,19 @@ const GLOW_CELL_M := 24.0   # one glow light per this square of a glowing grove
 const GLOW_LIGHTS := 24     # at most this many glow lights per chunk
 const PART_M := [256.0, 128.0, 128.0]
 const SHAPES_PER_BODY := 64  # trunk colliders per body
+# Tree distances. The full model reaches near_m (tile rules, times the client's quality factor
+# 0.4 / 0.7 / 1.0 / 1.0: 60, 105, 150 m), the cheaper far model reaches IMPOSTOR_M, and beyond it a pair of
+# crossed quads (tree_impostor.gd) reaches view_m (180, 315, 450 m). By quality: Low, Medium, High, Ultra.
+const IMPOSTOR_M := [120.0, 210.0, 300.0, 300.0]
+const IMPOSTOR_TILE_PX := [Vector2i(64, 128), Vector2i(128, 256), Vector2i(128, 256), Vector2i(128, 256)]   # one view; the atlas holds two
+const FAR_SHADOWS := [false, false, false, true]   # far-model trees cast shadows only at Ultra (shadow range is 100 m at High)
 
 var chunk_m: float = 256.0
 var view_m: PackedFloat32Array = PackedFloat32Array([900.0, 300.0, 120.0])
 var collision_m: float = 160.0
 var near_m: PackedFloat32Array = PackedFloat32Array([260.0, 110.0, 0.0])   # full-detail model out to this distance (tree, shrub)
+var impostor_m: float = 300.0          # trees beyond this are drawn as impostors (set by set_quality)
+var far_shadows: bool = false
 var instances: int = 0                 # items drawn now
 var colliders: int = 0                 # trunk colliders now
 var water_chunks: int = 0              # chunks with water drawn
@@ -212,12 +221,57 @@ var _softwood_material: StandardMaterial3D   # conifer trunks: dark brown
 var _hardwood_material: StandardMaterial3D   # broadleaf trunks: gray
 var _water_material: ShaderMaterial
 var _tree_materials: Dictionary = {}       # TreeBuilder materials (bark, broad, conifer, palm)
+var _impostors: Dictionary = {}            # species id -> {"mesh", "material"}; replaced whole when a capture finishes
+var _impostor_tile: Vector2i = Vector2i.ZERO   # tile size of the finished (or running) capture
+var _impostor_node: Node
 
 
 # Owner (2026-10-19): rivers and ponds stay clear up to flow x1 and turn muddy brown
 # above it, like runoff after rain (fully brown from about x8). The sea stays clear.
 func water_material() -> Material:
 	return _water_material
+
+
+# Quality (F2): the distance where trees turn into impostors, their shadows, and the size of
+# the impostor images (rendered once; again when the size changes). Safe to call again.
+func set_quality(quality: int) -> void:
+	quality = clampi(quality, 0, IMPOSTOR_M.size() - 1)
+	impostor_m = IMPOSTOR_M[quality]
+	far_shadows = FAR_SHADOWS[quality]
+	var tile: Vector2i = IMPOSTOR_TILE_PX[quality]
+
+	if tile != _impostor_tile and TreeImpostor.can_render():
+		_impostor_tile = tile
+		_capture_impostors(tile)
+
+
+func _capture_impostors(tile: Vector2i) -> void:
+	if _impostor_node == null:
+		_impostor_node = TreeImpostor.new()
+		add_child(_impostor_node)
+		_impostor_node.finished.connect(_on_impostors)
+
+	if _impostor_node._running:
+		_impostor_tile = Vector2i.ZERO     # busy: try again at the next set_quality
+		return
+
+	var wanted: Dictionary = {}
+
+	for id in _species:
+		var info: Dictionary = _species[id]
+
+		if int(info["kind"]) != KIND_TREE or not bool(info["tinted"]) or bool(info["glows"]):
+			continue
+
+		wanted[id] = {"mesh": info["far"][0]}     # the far model, so the two tiers match
+
+	_impostor_node.start(wanted, tile)
+
+
+# A finished capture replaces the images; chunks redraw on their next update (the level bit).
+func _on_impostors(meshes: Dictionary) -> void:
+	if not meshes.is_empty():
+		_impostors = meshes
 
 
 func set_water_quality(quality: int) -> void:
@@ -300,6 +354,8 @@ func setup(tables, tile_rules: Dictionary) -> void:
 			"tinted": built,
 			"near": near_meshes,
 			"far": far_meshes,
+			"shape": shape,
+			"glows": entry.has("glow") or entry.has("leaf_glow"),
 			"tint": _plant_tint(entry, c),
 		}
 
@@ -776,7 +832,7 @@ func item_count() -> int:
 
 # ---------------------------------------------------------------- drawing
 
-# Level bits: 1 trees, 2 shrubs, 4 plants, 8 colliders.
+# Level bits: 1 trees, 2 shrubs, 4 plants, 8 colliders, 16 and 32 full models, 64 tree impostors.
 func _level(chunk: Vector2i, position: Vector3) -> int:
 	var distance: float = _distance(chunk, position)
 	var level: int = 0
@@ -792,6 +848,10 @@ func _level(chunk: Vector2i, position: Vector3) -> int:
 	for kind in range(2):
 		if distance <= near_m[kind]:
 			level |= 16 << kind
+
+	# Trees far away are impostors (64), once their images exist.
+	if not _impostors.is_empty() and distance > impostor_m:
+		level |= 64
 
 	return level
 
@@ -916,6 +976,11 @@ func _plan(items: Dictionary, level: int) -> Dictionary:
 			var half: int = int(info["near"].size()) / 2
 			variant = variant % half + (half if float(items["heights"][n]) < float(info["young_below"]) else 0)
 		var is_near: int = 1 if (int(info["kind"]) != KIND_PLANT and (level & (16 << int(info["kind"]))) != 0) else 0
+
+		if (level & 64) != 0 and int(info["kind"]) == KIND_TREE and _impostors.has(species_id):
+			is_near = 2
+			variant = 0
+
 		var key: Array = [species_id, int(floor(p.x / part_m)), int(floor(p.z / part_m)), variant, is_near]
 
 		if not groups.has(key):
@@ -1049,14 +1114,15 @@ func _apply_step(job: Dictionary) -> bool:
 	var info: Dictionary = _species[key[0]]
 	var multimesh: MultiMesh = MultiMesh.new()
 	multimesh.transform_format = MultiMesh.TRANSFORM_3D
-	multimesh.mesh = (info["near"] if key[4] == 1 else info["far"])[key[3]]
+	multimesh.mesh = _impostors[key[0]]["mesh"] if key[4] == 2 and _impostors.has(key[0]) else (info["near"] if key[4] == 1 else info["far"])[key[3]]
 	multimesh.use_custom_data = bool(info["tinted"])
 	multimesh.instance_count = int(draw_plan[1])
 	multimesh.buffer = draw_plan[2]
 	var draw: MultiMeshInstance3D = MultiMeshInstance3D.new()
 	draw.multimesh = multimesh
 	draw.visibility_range_end = view_m[info["kind"]] + 0.7 * PART_M[info["kind"]]
-	draw.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if info["kind"] == KIND_TREE else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var casts: bool = info["kind"] == KIND_TREE and (key[4] == 1 or (key[4] == 0 and far_shadows))
+	draw.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if casts else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	node.add_child(draw)
 	instances += int(draw_plan[1])
 	return int(job["draw"]) >= draws.size()

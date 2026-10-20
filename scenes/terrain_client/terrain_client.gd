@@ -40,7 +40,7 @@ const GitStamp := preload("res://src/debug/git_stamp.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 const GpuProbeScript := preload("res://src/debug/gpu_probe.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 129
+const BUILD := 125
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -829,6 +829,7 @@ func _apply_quality() -> void:
 	for n in range(_flora_near_full.size()):
 		flora.near_m[n] = _flora_near_full[n] * float(QUALITY_FLORA[quality])
 
+	flora.set_quality(quality)
 	grass.points_per_side = QUALITY_GRASS_POINTS[quality]
 	grass.density = QUALITY_GRASS_DENSITY[quality]
 	grass.set_radius(QUALITY_GRASS_M[quality])
