@@ -545,6 +545,14 @@
    "priority": 2
   },
   {
+   "name": "hit_swing",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: a tool swung through the air, hit or miss",
+   "to_supply": "3 tool whooshes, 0.5 s",
+   "priority": 3
+  },
+  {
    "name": "wet_squelch",
    "state": "generated",
    "variants": 4,

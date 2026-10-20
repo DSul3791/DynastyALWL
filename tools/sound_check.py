@@ -120,6 +120,11 @@ SCENARIOS = [
         ("no squelch when dry", r", " + NUM + r" squelches when dry", 0, 0),
         ("cloth on dry steps", r", " + NUM + r" cloth steps", 15, 25),
     ]),
+    ("swing", ["--swing-test"], 3500, [
+        ("one whoosh per tool", r"swing check: " + NUM + r" swings", 4, 4),
+        ("unknown tool is silent", r"unknown tool (false)", 0, 1, "text"),
+        ("generated whoosh", r"last spade swing (hit_swing_\d) \(generated\)", 0, 1, "text"),
+    ]),
     ("stance", ["--stance"], 6000, [
         ("posture changes heard", r"stance check: " + NUM + r" changes", 6, 6),
         ("last is the rise", r"last (stance_rise)", 0, 1, "text"),

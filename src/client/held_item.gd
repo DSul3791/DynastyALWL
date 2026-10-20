@@ -128,6 +128,9 @@ func mouse_button(button: int, pressed: bool) -> bool:
 			_swing_t = 0.0
 			_swing_hit = false
 
+			if _sound != null:
+				_sound.hits.swing("axe", _camera.global_position - _camera.global_transform.basis.z * 0.6)
+
 		return button == MOUSE_BUTTON_LEFT
 
 	if not _is_spear():

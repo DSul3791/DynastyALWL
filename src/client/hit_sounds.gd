@@ -5,6 +5,7 @@ extends Node
 # `hit_<tool>_<material>_N`. There is no tool system yet, so this is only the hook:
 #
 #   sound.hits.hit("axe", "wood", position, strength)       one strike at a place (strength 0 to 1)
+#   sound.hits.swing("axe", position)                       the whoosh of a swing, hit or miss
 #   sound.hits.hit_ground("spade", position, strength)       material from the ground under the point
 #
 # `strength` is how hard the blow was (a full swing 1, a tap 0.3): it sets loudness and pitch a little.
@@ -19,8 +20,13 @@ const TOOLS := ["axe", "pick", "hammer", "spade"]
 const MATERIALS := ["wood", "stone", "soil"]
 const BASE_DB := -4.0                   # a full blow at the source
 const MAX_DISTANCE_M := 120.0
+const SWING_DB := -14.0
+const SWING_TOOL_DB := {"axe": 0.0, "pick": 1.0, "hammer": 2.0, "spade": -1.0}
+const SWING_TOOL_PITCH := {"axe": 1.0, "pick": 0.92, "hammer": 0.85, "spade": 1.08}
 
 var hits_played: int = 0
+var swings_played: int = 0
+var last_swing: String = ""
 var last_hit: String = ""               # tool, material and file, for the HUD and checks
 
 var _stage                              # SoundStage (ground lookups, voice budget)
@@ -62,6 +68,36 @@ func hit(tool: String, material: String, at: Vector3, strength: float = 1.0) -> 
 	player.play()
 	hits_played += 1
 	last_hit = "%s_%d (%s)" % [name, pick, SoundStage.tag(list[pick])]
+	return true
+
+
+# A tool swung through the air (every swing, hit or miss; the blow itself sounds on top if it lands). The whoosh
+# peaks 0.27 s in, where held_item.gd's blow lands. Heavier tools sound lower and a little louder.
+func swing(tool: String, at: Vector3) -> bool:
+	if tool not in TOOLS or not _stage.has_room():
+		return false
+
+	var list: Array = _variants("hit_swing")
+
+	if list.is_empty():
+		return false
+
+	var pick: int = _rng.randi_range(0, list.size() - 1)
+	var player: AudioStreamPlayer3D = AudioStreamPlayer3D.new()
+	player.stream = list[pick]
+	player.bus = "Foley"
+	player.volume_db = SWING_DB + float(SWING_TOOL_DB.get(tool, 0.0)) + _rng.randf_range(-1.0, 1.0)
+	player.pitch_scale = float(SWING_TOOL_PITCH.get(tool, 1.0)) * _rng.randf_range(0.96, 1.04)
+	player.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
+	player.unit_size = 4.0
+	player.max_distance = 60.0
+	add_child(player)
+	player.add_to_group("world_sounds")
+	player.global_position = at
+	player.finished.connect(player.queue_free)
+	player.play()
+	swings_played += 1
+	last_swing = "%s swing %s_%d (%s)" % [tool, "hit_swing", pick, SoundStage.tag(list[pick])]
 	return true
 
 
