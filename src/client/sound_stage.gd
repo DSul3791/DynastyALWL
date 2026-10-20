@@ -18,6 +18,7 @@ extends Node
 
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const AmbientScript := preload("res://src/client/ambient_life.gd")
+const WeatherScript := preload("res://src/client/weather_sounds.gd")
 const WaterSoundsScript := preload("res://src/client/water_sounds.gd")
 const AUDIO_DIR := "res://assets/audio/"
 const RECORDED_DIR := "res://assets/audio/recorded/"
@@ -78,6 +79,7 @@ var _air_time: float = 0.0
 var _rng := RandomNumberGenerator.new()
 var ambient                             # AmbientLife: birds, crickets, frogs by zone
 var water                               # WaterSounds: brooks, rivers, pond shores, waterfalls
+var weather                             # WeatherSounds: rain, gale, thunder, snow hush (set_weather)
 var _sphere: PhysicsShapeQueryParameters3D
 
 
@@ -121,6 +123,10 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	water.name = "Water"
 	add_child(water)
 	water.setup(_flora)
+	weather = WeatherScript.new()
+	weather.name = "Weather"
+	add_child(weather)
+	weather.setup(self, ambient)
 
 	if _wind_low.stream != null:
 		_wind_low.play()
@@ -133,6 +139,7 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool) -> void:
 	ambient.update(delta, body, flying)
 	water.update(delta, body, underwater)
+	weather.update(delta, body, underwater)
 	_time += delta
 	gust = clampf(0.5 + 0.8 * _gust_noise.get_noise_1d(_time), 0.0, 1.0)
 	var position: Vector3 = body.global_position
@@ -145,7 +152,7 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	_shelter = move_toward(_shelter, _shelter_target, delta * 0.5)
 	var height: float = clampf((position.y - 10.0) / 300.0, 0.0, 1.0)   # higher is windier
 	var rush: float = clampf(body.velocity.length() / 80.0, 0.0, 1.0) if flying else 0.0
-	var strength: float = clampf(0.35 + 0.65 * gust + 0.4 * height - 0.45 * _shelter + rush, 0.05, 1.6)
+	var strength: float = clampf(0.35 + 0.65 * gust + 0.4 * height - 0.45 * _shelter + rush + 0.7 * weather.wind, 0.05, 1.6)
 	# A calm day (owner, 2026-10-19: the first version sounded like a storm by the sea).
 	# Owner 2026-10-19, twice: still a windstorm. Now a faint breeze that only rises a little in gusts.
 	# Build 51: the low layer still sounded like surf nearby; it is lower again.
@@ -397,7 +404,7 @@ func _exit_tree() -> void:
 
 	_streams.clear()
 
-	for name in ["Wind", "Foley", "Nature"]:
+	for name in ["Wind", "Foley", "Nature", "Weather"]:
 		var index: int = AudioServer.get_bus_index(name)
 
 		if index >= 0:

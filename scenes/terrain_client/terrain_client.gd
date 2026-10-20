@@ -36,7 +36,7 @@ const WeatherScript := preload("res://src/shared/weather.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 107
+const BUILD := 104
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -184,6 +184,7 @@ var weather: Dictionary = {}          # the weather here and now (WeatherScript.
 var _weather_next_msec: int = 0
 var game_clock = GameClockScript.new()   # copy of the server's game clock, set at the welcome
 var _sound_test_at: int = -1          # Esc > Settings "Sound test time"; -1 follows the game clock
+var _sound_weather_at: int = -1         # Esc > Settings "Sound test weather"; -1 follows the weather state
 var _water_dirty: bool = false        # the server said the water moved; not asked for yet
 var _water_inbox: Dictionary = {}     # chunk -> newest water bytes, rebuilt a few per frame
 const WATER_APPLY_USEC := 2000        # each water chunk costs ~2 ms; all at once was a hitch every second
@@ -846,6 +847,11 @@ func _build_menu(layer: CanvasLayer) -> void:
 			sound.ambient.conditions["hour"] = pick[1]
 
 		_menu_note.text = "Nature sounds now play as: %s (a test setting; the sky does not follow)" % pick[0])
+	_menu_button(settings, "Sound test weather: change", func():
+		var kinds: Array = sound.weather.KINDS.keys()
+		_sound_weather_at = (_sound_weather_at + 1) % kinds.size()
+		sound.weather.set_weather(kinds[_sound_weather_at], 1.0)
+		_menu_note.text = "Weather sounds now play: %s (a test setting; sky and ground do not follow)" % kinds[_sound_weather_at])
 	_menu_button(settings, "Back", func(): _show_menu_page("main"))
 
 	var advanced: VBoxContainer = _menu_page(column, "advanced")
@@ -1412,6 +1418,7 @@ func _process(delta: float) -> void:
 		hud.text += "\nweather: rain %.2f snow %.2f storm %.2f sun %.2f wind %.2f, %.0f C" % [weather["rain"], weather["snow"], weather["storm"], weather["sun"], weather["wind"], weather["temp_c"]]
 
 	hud.text += "\nlast step: " + sound.last_step
+	hud.text += "\nweather sounds: %s (rain %.1f, wind %.1f, thunder %d)" % [sound.weather.kind, sound.weather.rain, sound.weather.wind, sound.weather.thunders_played]
 	hud.text += "\nnature (%02d:%02d %s): forest %.1f meadow %.1f water %.1f high %.1f, last %s" % [int(sound.ambient.conditions["hour"]), int(fposmod(float(sound.ambient.conditions["hour"]), 1.0) * 60.0), sound.ambient.conditions["season"], sound.ambient.weights["forest"], sound.ambient.weights["meadow"], sound.ambient.weights["water"], sound.ambient.weights["highland"], sound.ambient.last_call]
 	hud.text += "\nwater sounds: " + sound.water.summary
 	hud.text += "\nframe work: cpu %.1f ms, gpu %.1f ms, vsync %s, draws %d" % [
@@ -1447,6 +1454,7 @@ func _process(delta: float) -> void:
 			print("Terrain client: grass %d tufts in %d cells (radius %.0f m)" % [grass.tufts, grass.cells_built, grass.radius_m])
 			print("Terrain client: water sounds: %s" % sound.water.summary)
 			print("Terrain client: nature calls %s, zones %s" % [str(sound.ambient.calls_played), str(sound.ambient.weights)])
+			print("Terrain client: weather %s rain %.2f wind %.2f calls %.2f thunders %d" % [sound.weather.kind, sound.weather.rain, sound.weather.wind, sound.weather.calls, sound.weather.thunders_played])
 			print("Terrain client: sound: footsteps %s, grass swishes %d, last ground %s, gust %.2f" % [str(sound.steps_played), sound.swishes_played, sound.surface, sound.gust])
 			print("Terrain client: blocks waited for %d times, %.0f ms on average, worst %d ms; at most %d loader threads waiting at once; %d blocks came on the block line" % [stream.waits, float(stream.wait_msec_total) / maxf(float(stream.waits), 1.0), stream.wait_msec_worst, stream.most_waiting, link.blocks_in])
 			print(Probe.report())
