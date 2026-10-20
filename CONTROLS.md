@@ -22,6 +22,7 @@ The single complete list of every input (keyboard, mouse, held versus tap, conte
 | Ctrl+X | Admin: dig a 2 m hole where the crosshair meets the ground (up to 80 m away). Water flows into holes that open toward it (testing digging against the water) |
 | F2 | Cycle quality: Low, Medium, High, Ultra (Low is the minimum machine) |
 | F3 | Debug details on or off (the long diagnostic list; default HUD is only build, position, last sound). Also Esc > Settings. Threads add lines with `debug_hud.add_line(name, callable)`. |
+| Esc > Advanced > Measure this machine | About 1 minute: stands still and slowly turns at Low, Medium and High and shows fps, 1% low, worst frame, CPU and GPU ms, draw calls and video memory per tier; saved to machine_run.txt in the game data folder. Press it again to stop or to close the table |
 | Ctrl+Shift+G | GPU probe: stand still, press once; after about 20 s it lists what each piece (grass, trees, ground, sea, shadows, SSAO, glow, fog, anti-aliasing) costs in GPU ms; also saved to gpu_probe.txt in the game data folder |
 | J | Float jitter test: fly to the next far-from-origin spot (admin test, build 68) |
 | Esc | Options menu: Resume, Settings (quality, Resolution 1280x720 to 1920x1080, Window: windowed or fullscreen windowed, VSync, sound volume 100/75/50/25 % or off), Advanced (Clear saved ground, which takes effect at once), Quit game. Esc again resumes |

@@ -49,6 +49,7 @@ const DebugHudScript := preload("res://src/client/debug_hud.gd")
 const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
+const MachineProbeScript := preload("res://src/debug/machine_probe.gd")
 const GpuProbeScript := preload("res://src/debug/gpu_probe.gd")
 const WeatherLookScript := preload("res://src/client/weather_look.gd")
 const FaintEffectScript := preload("res://src/client/faint_effect.gd")
@@ -255,6 +256,7 @@ var sound                             # SoundStage: wind, footsteps, grass swish
 var _commit: String = GitStamp.short_commit()   # which checkout is running
 var _render_scale: float = 1.0            # 3D resolution scale now (render_scale.gd)
 var _jitter_test                      # float-precision test, J or Esc > Advanced
+var _machine_probe                    # "Measure this machine" run for the minimum-spec test (Esc > Advanced)
 var _gpu_probe                        # GPU cost per piece of the scene, Ctrl+Shift+G
 var weather_look                      # WeatherLook: clouds, rain, snow, fog, lightning from `weather`
 var _bake = TileBakeScript.new()      # admin: background tile bake
@@ -533,6 +535,9 @@ func _welcome_body(info: Dictionary) -> void:
 	_jitter_test = JitterTestScript.new()
 	add_child(_jitter_test)
 	_jitter_test.setup(self)
+	_machine_probe = MachineProbeScript.new()
+	add_child(_machine_probe)
+	_machine_probe.setup(self)
 	_gpu_probe = GpuProbeScript.new()
 	add_child(_gpu_probe)
 	_gpu_probe.setup(self)
@@ -555,6 +560,12 @@ func _welcome_body(info: Dictionary) -> void:
 	if test_gear:
 		sound.gear.set_worn(["plate", "cloth", "iron"])
 	var t5: int = Probe.start()
+	debug_hud.add_line("video memory", func() -> String:
+		return "video memory %.0f MB (textures %.0f, buffers %.0f), objects %d, nodes %d (orphans %d), script memory %.0f MB, primitives %d" % [
+			Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0, Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED) / 1048576.0,
+			Performance.get_monitor(Performance.RENDER_BUFFER_MEM_USED) / 1048576.0, int(Performance.get_monitor(Performance.OBJECT_COUNT)),
+			int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)), int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT)),
+			Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0, int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME))])
 	debug_hud.add_line("quality tier", func() -> String:
 		return "tier %s: ground view %d, flora view trees %.0f shrubs %.0f plants %.0f m, impostors from %.0f m, shadows %.0f m, grass %d m density %.2f" % [
 			QUALITY_NAMES[quality], terrain.view_distance, flora.view_m[0], flora.view_m[1], flora.view_m[2], flora.impostor_m,
@@ -630,6 +641,7 @@ func _welcome_body(info: Dictionary) -> void:
 	items.knowledge = knowledge
 	items.max_lights = func(): return [1, 2, 3, 3][clampi(quality, 0, 3)]
 	items.is_inspecting = func(): return inspecting
+	items.stance_event = _on_stance_from_server
 	items.cover_index = flora.cover
 	items.eat_event = func(item_id): sound.itemfx.eat(item_id)
 	items.fuel_event = func(): sound.itemfx.fuel_pressed()
@@ -1390,6 +1402,9 @@ func _build_menu(layer: CanvasLayer) -> void:
 	_menu_button(advanced, "GPU breakdown (stand still; or Ctrl+Shift+G)", func():
 		_set_menu(false)
 		_gpu_probe.toggle())
+	_menu_button(advanced, "Measure this machine (about 1 min)", func():
+		_set_menu(false)
+		_machine_probe.toggle())
 	_menu_button(advanced, "Back", func(): _show_menu_page("main"))
 
 	_menu_note = Label.new()
@@ -1767,8 +1782,16 @@ func _set_stance(wanted: int, toggle: bool = false) -> void:
 	if stance.set_stance(target):
 		stance.apply_shape(_shape)
 		status_icons.tick(0.0, true)
-		# The server side (Items: exertion recovery, protocol) listens to stance.changed, or reads
-		# stance.stance; nothing is sent from here until that interface exists.
+
+		if items != null:
+			items.request_stance(stance.stance)   # the server: sitting and lying bring exertion down
+
+
+# The server's answer (or its own change: fainting forces lying, walking off stands you up).
+func _on_stance_from_server(confirmed: int) -> void:
+	if confirmed != stance.stance and stance.set_stance(confirmed):
+		stance.apply_shape(_shape)
+		status_icons.tick(0.0, true)
 
 
 # True when a capsule of the taller stance fits where the player is.
