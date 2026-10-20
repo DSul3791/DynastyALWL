@@ -63,6 +63,7 @@ const ACT_CRAFT := 4      # a = recipe number (data/items/recipes.json)
 const ACT_PLACE := 6      # a = slot of a placeable item, at = where (a campfire kit becomes a fire)
 const ACT_MINE := 8       # at = the point the axe struck; on bare rock the server gives stone
 const ACT_HIT := 7        # a = tree id, b = flora chunk x, count = flora chunk z: one axe blow on a standing tree
+const ACT_PROCESS := 9    # a = world item id of a felled trunk: one axe blow on it gives branches, leaves, bark, logs
 const ACT_THROW := 5      # a = slot, at = aim direction (the server starts the throw from the player)
 
 

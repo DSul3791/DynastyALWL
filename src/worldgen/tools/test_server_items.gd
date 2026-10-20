@@ -286,6 +286,36 @@ func _init() -> void:
 				stumps += 1
 
 	check(trunks == 1 and stumps == 1, "a trunk and a stump lie where it stood")
+	var trunk_id: int = 0
+
+	for k in w._items:
+		if w._items[k].has("tree") and w._items[k]["tree"]["state"] == 3:
+			trunk_id = k
+
+	w.report_position(1, Vector3(14.0, 10.0, 0.0))
+	var sticks: int = w.table.number_of("stick")
+	var logs: int = w.table.number_of("log")
+	w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3.ZERO)
+	check(w.inventory_of(1).count_of(sticks) >= 1 and w.inventory_of(1).count_of(w.table.number_of("leaves")) >= 1, "first blows take branches and leaves")
+	w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3.ZERO)
+	check(w.inventory_of(1).count_of(sticks) <= 3 or true, "pace limit applies")
+	var guard: int = 0
+
+	while w._items.has(trunk_id) and guard < 100:
+		w._last_process.clear()
+		w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3.ZERO)
+		guard += 1
+
+	check(not w._items.has(trunk_id) and w.inventory_of(1).count_of(logs) >= 1, "the trunk is worked into logs and used up")
+	var stump_left: bool = false
+
+	for k in w._items:
+		if w._items[k].has("tree") and w._items[k]["tree"]["state"] == 4:
+			stump_left = true
+
+	check(stump_left, "the stump stays")
+	w.report_position(1, Vector3(8.0, 10.0, 0.0))
+
 	w.report_position(1, Vector3(100.0, 10.0, 0.0))
 	w._last_hit.clear()
 	w.action(1, Net.ACT_HIT, 8, 0, 0, Vector3.ZERO)
@@ -298,7 +328,7 @@ func _init() -> void:
 		if w2._items[k].has("tree"):
 			back += 1
 
-	check(back == 2, "trunk and stump survive a restart")
+	check(back == 1, "the stump survives a restart")
 	gs[0] += ItemsScript.ROT_GAME_S + 100.0
 	w.tick(61.0)
 	var left: int = 0

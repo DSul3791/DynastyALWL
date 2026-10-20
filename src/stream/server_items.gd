@@ -39,6 +39,8 @@ const CHOP_RESET_MS := 60000             # a half-chopped tree heals after this 
 const TRUNKS_PER_CHUNK := 32             # felled trunks (and as many stumps) lying in one flora chunk
 const ROT_GAME_S := 168.0 * 86400.0      # a trunk or stump rots away after a real week (168 game days)
 const TREE_SAVE_VERSION := 1
+const PROCESS_REACH_M := 4.0
+const PROCESS_COOLDOWN_MS := 450
 const MINE_REACH_M := 4.5
 const MINE_COOLDOWN_MS := 700
 const MINE_CELL_M := 8.0                 # one outcrop patch
@@ -86,6 +88,7 @@ var _flights: Array = []            # thrown things in the air: {number, pos, ve
 var _last_throw: Dictionary = {}    # peer -> msec
 var _last_mine: Dictionary = {}     # peer -> msec
 var _last_hit: Dictionary = {}      # peer -> msec
+var _last_process: Dictionary = {}  # peer -> msec
 var _chops: Dictionary = {}         # "cx,cz,id" -> {hits, msec}
 var _rot_in: float = 60.0
 var _mined: Dictionary = {}         # Vector2i patch -> {taken, since msec}
@@ -130,6 +133,7 @@ func peer_left(peer: int) -> void:
 	_last_throw.erase(peer)
 	_last_mine.erase(peer)
 	_last_hit.erase(peer)
+	_last_process.erase(peer)
 
 
 func report_position(peer: int, position: Vector3) -> void:
@@ -214,6 +218,8 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_pickup(peer, inv, a)
 	elif kind == Net.ACT_HIT:
 		_hit(peer, inv, a, Vector2i(b, count))
+	elif kind == Net.ACT_PROCESS:
+		_process_trunk(peer, inv, a)
 	elif kind == Net.ACT_MINE:
 		_mine(peer, inv, at)
 	elif kind == Net.ACT_PLACE:
@@ -867,3 +873,58 @@ func _load_trees() -> void:
 		tree["chunk"] = [int(tree["chunk"][0]), int(tree["chunk"][1])]
 		_items[_next_id] = {"number": 0, "count": 1, "pos": Vector3(row["pos"][0], row["pos"][1], row["pos"][2]), "left": 1.0e9, "tree": tree}
 		_next_id += 1
+
+
+# One axe blow on a felled trunk (drops.json "trunk"): branches and leaves first, then logs with some
+# bark and now and then seeds. The server checks the axe, the pace and that the player stands at the
+# trunk (distance to its line). The trunk is used up when its logs are gone; the stump stays.
+func _process_trunk(peer: int, inv, id: int) -> void:
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or not it.has("tree") or int(it["tree"]["state"]) != 3 or not _peer_pos.has(peer) or not _has_tool(inv, "axe"):
+		return
+
+	var tree: Dictionary = it["tree"]
+	var cfg: Dictionary = _drops.get("trunk", {})
+	var along: Vector3 = Vector3(sin(float(tree["yaw"])), 0.0, cos(float(tree["yaw"])))
+	var from_base: Vector3 = _peer_pos[peer] - it["pos"]
+	var t: float = clampf(from_base.dot(along), 0.0, float(tree["length"]))
+	var nearest: Vector3 = it["pos"] + along * t
+
+	if Vector2(_peer_pos[peer].x - nearest.x, _peer_pos[peer].z - nearest.z).length() > PROCESS_REACH_M + float(tree["radius"]):
+		return
+
+	var now: int = Time.get_ticks_msec()
+
+	if now - int(_last_process.get(peer, -100000)) < PROCESS_COOLDOWN_MS:
+		return
+
+	_last_process[peer] = now
+
+	if not tree.has("logs_left"):
+		tree["logs_left"] = clampi(int(float(tree["length"]) / float(cfg.get("log_length_m", 2.5)) * clampf(float(tree["radius"]) * 2.5, 0.5, 2.0)), 1, int(cfg.get("max_logs", 12)))
+		tree["blows"] = 0
+
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = hash(id) ^ (int(tree["blows"]) * 7919)
+	var blows: int = int(tree["blows"])
+	tree["blows"] = blows + 1
+
+	if blows < int(cfg.get("branch_blows", 3)):
+		for row in cfg.get("branch", []):
+			give(peer, table.number_of(str(row[0])), rng.randi_range(int(row[1]), int(row[2])))
+	else:
+		if (blows - int(cfg.get("branch_blows", 3))) % int(cfg.get("blows_per_log", 3)) == 2:
+			give(peer, table.number_of("log"), 1)
+			tree["logs_left"] = int(tree["logs_left"]) - 1
+
+		if rng.randf() < float(cfg.get("bark_chance", 0.3)):
+			give(peer, table.number_of("bark"), 1)
+
+		if rng.randf() < float(cfg.get("seed_chance", 0.15)):
+			give(peer, table.number_of("seed_bundle"), 1)
+
+		if int(tree["logs_left"]) <= 0:
+			_items.erase(id)
+
+	_dirty = true

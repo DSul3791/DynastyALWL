@@ -169,6 +169,25 @@ func _nearest() -> Array:
 	return best
 
 
+# The id of the felled trunk lying within 1.5 m of a point (the axe struck it), 0 when none.
+func felled_trunk_near(point: Vector3) -> int:
+	for id in _world:
+		var entry: Dictionary = _world[id]
+
+		if entry["state"] == 3 and is_instance_valid(entry["node"]):
+			var extra: Dictionary = entry.get("extra", {})
+			var yaw: float = float(extra.get("yaw", 0.0))
+			var length: float = float(extra.get("length", 8.0))
+			var along: Vector3 = Vector3(sin(yaw), 0.0, cos(yaw))
+			var t: float = clampf((point - entry["pos"]).dot(along), 0.0, length)
+			var nearest: Vector3 = entry["pos"] + along * t
+
+			if Vector2(point.x - nearest.x, point.z - nearest.z).length() < 1.5 + float(extra.get("radius", 0.3)):
+				return id
+
+	return 0
+
+
 func _on_notice(text: String) -> void:
 	_prompt.text = text
 	_notice_until_msec = Time.get_ticks_msec() + 4000
@@ -288,7 +307,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			node = _make_felled(state == 3, extra)
 			node.position = row[3]
 			_root.add_child(node)
-			_world[id] = {"node": node, "number": 0, "count": 1, "pos": row[3], "state": state, "light": null}
+			_world[id] = {"node": node, "number": 0, "count": 1, "pos": row[3], "state": state, "light": null, "extra": extra}
 			continue
 
 		if state == 0:
