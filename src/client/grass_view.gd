@@ -36,6 +36,9 @@ const LAYERS := [
 	# water, and reeds where still water meets the land. Drawn within shore_m of the player.
 	{"name": "pebbles", "texture": "", "width": 1.0, "height": 0.0, "per_point": 4, "reach": 1.0, "quads": 0, "wind": 0.0, "backlight": 0.0, "shore": true, "pebble": true},
 	{"name": "reeds", "texture": "grass_tall", "width": 0.5, "height": 1.5, "per_point": 0.8, "reach": 1.0, "quads": 3, "wind": 1.0, "backlight": 0.35, "shore": true, "reed": true},
+	# Boulders (section 31): granite lumps on slopes, mossy on top and on their north side, clustered
+	# at the base of slopes and along banks. Drawn within shore_m with the shore layers.
+	{"name": "boulders", "texture": "", "width": 1.0, "height": 0.0, "per_point": 0.1, "reach": 1.0, "quads": 0, "wind": 0.0, "backlight": 0.0, "shore": true, "boulder": true},
 ]
 # Distance bands (owner, 2026-10-20: grass 3 ft tall and everywhere, visible tens of metres out). A cell is
 # built at one of three levels of detail by its distance from the player and rebuilt, the old cards swapped
@@ -46,6 +49,7 @@ const LOD_SCALE := [1.0, 1.5, 2.1]
 const CLOSURE_OFFSETS := [Vector2(0.0, 0.0), Vector2(4.0, 0.0), Vector2(-4.0, 0.0), Vector2(0.0, 4.0), Vector2(0.0, -4.0), Vector2(3.0, 3.0), Vector2(-3.0, -3.0)]
 const LOD_HYSTERESIS_M := 3.0
 const GRASS_LAYERS := 3                  # the first layers are grass; then forest litter, then the shore
+const BOULDER_LAYER := 7                 # index of the boulders layer in LAYERS
 const LITTER_END := 5                    # layers GRASS_LAYERS to LITTER_END - 1 are litter, the rest shore
 
 # Dead branches: a thin weathered stick with one side twig, lying along x from 0 to 1.
@@ -65,6 +69,41 @@ void vertex() {
 
 void fragment() {
 	ALBEDO = wood;
+	ROUGHNESS = 1.0;
+}
+"""
+
+# Boulders: grey granite with moss on the tops and the north side (north is -z); custom a is how mossy
+# this rock is (damp ground, shade), custom rgb the stone colour.
+const BOULDER_SHADER := """
+shader_type spatial;
+render_mode diffuse_lambert, specular_disabled;
+uniform float fade_start = 12.0;
+uniform float fade_end = 18.0;
+uniform vec3 moss_color : source_color = vec3(0.17, 0.27, 0.10);
+varying vec3 stone;
+varying vec3 world_normal;
+varying float mossy;
+varying vec3 world_pos;
+
+void vertex() {
+	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	float fade = 1.0 - smoothstep(fade_start, fade_end, length(wp - CAMERA_POSITION_WORLD));
+	world_normal = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
+	VERTEX *= fade;
+	stone = INSTANCE_CUSTOM.rgb;
+	mossy = INSTANCE_CUSTOM.a;
+	world_pos = wp;
+}
+
+void fragment() {
+	// Mottle the stone with a soft pattern and lay moss where the face looks up or north, in patches.
+	float mottle = 0.5 + 0.25 * sin(world_pos.x * 5.3 + world_pos.z * 3.1) * sin(world_pos.y * 7.7 + world_pos.x * 2.3) + 0.25 * sin(world_pos.z * 11.0 - world_pos.y * 4.0);
+	float up = clamp(world_normal.y * 1.1, 0.0, 1.0);
+	float north = clamp(-world_normal.z * 0.9, 0.0, 1.0);
+	float moss = max(up, north * 0.7) * mossy * (0.6 + 0.8 * mottle);
+	moss = smoothstep(0.2, 0.55, moss);
+	ALBEDO = mix(stone * (0.85 + 0.3 * mottle), moss_color * (0.8 + 0.4 * mottle), moss);
 	ROUGHNESS = 1.0;
 }
 """
@@ -168,7 +207,17 @@ func setup(terrain: Node3D, flora, tables) -> void:
 	var branch_shader: Shader = Shader.new()
 	branch_shader.code = BRANCH_SHADER
 
+	var boulder_shader: Shader = Shader.new()
+	boulder_shader.code = BOULDER_SHADER
+
 	for layer in LAYERS:
+		if layer.get("boulder", false):
+			_meshes.append(_make_boulder())
+			var rock: ShaderMaterial = ShaderMaterial.new()
+			rock.shader = boulder_shader
+			_materials.append(rock)
+			continue
+
 		if layer.get("branch", false) or layer.get("pebble", false):
 			_meshes.append(_make_branch() if layer.get("branch", false) else _make_pebble())
 			var wood: ShaderMaterial = ShaderMaterial.new()
@@ -187,7 +236,7 @@ func setup(terrain: Node3D, flora, tables) -> void:
 	_trample = TrampleScript.new()
 
 	for n in range(_materials.size()):
-		if not LAYERS[n].get("branch", false) and not LAYERS[n].get("pebble", false):
+		if not _is_solid(n):
 			_materials[n].set_shader_parameter("trample", _trample.texture)
 
 	set_radius(radius_m)
@@ -323,6 +372,78 @@ func set_shore(meters: float, amount: float) -> void:
 		_clear_all()
 
 
+# Layers drawn as small solid meshes (branches, pebbles, boulders) rather than grass cards.
+static func _is_solid(layer: int) -> bool:
+	return LAYERS[layer].get("branch", false) or LAYERS[layer].get("pebble", false) or LAYERS[layer].get("boulder", false)
+
+
+# A boulder: an icosphere split once (80 faces), each vertex pushed in or out, the bottom flattened,
+# flat shaded, 1 m across before the per-card scale.
+static func _make_boulder() -> ArrayMesh:
+	var t: float = (1.0 + sqrt(5.0)) * 0.5
+	var base: Array = [Vector3(-1, t, 0), Vector3(1, t, 0), Vector3(-1, -t, 0), Vector3(1, -t, 0), Vector3(0, -1, t), Vector3(0, 1, t), Vector3(0, -1, -t), Vector3(0, 1, -t), Vector3(t, 0, -1), Vector3(t, 0, 1), Vector3(-t, 0, -1), Vector3(-t, 0, 1)]
+	var faces: Array = [0, 11, 5, 0, 5, 1, 0, 1, 7, 0, 7, 10, 0, 10, 11, 1, 5, 9, 5, 11, 4, 11, 10, 2, 10, 7, 6, 7, 1, 8, 3, 9, 4, 3, 4, 2, 3, 2, 6, 3, 6, 8, 3, 8, 9, 4, 9, 5, 2, 4, 11, 6, 2, 10, 8, 6, 7, 9, 8, 1]
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 31
+	var points: Array = []
+
+	for v in base:
+		points.append((v as Vector3).normalized())
+
+	var middles: Dictionary = {}
+	var triangles: Array = []
+
+	for f in range(0, faces.size(), 3):
+		var ids: Array = [faces[f], faces[f + 1], faces[f + 2]]
+		var mid: Array = []
+
+		for e in range(3):
+			var a: int = ids[e]
+			var b: int = ids[(e + 1) % 3]
+			var key: int = mini(a, b) * 100 + maxi(a, b)
+
+			if not middles.has(key):
+				middles[key] = points.size()
+				points.append(((points[a] as Vector3) + (points[b] as Vector3)).normalized())
+
+			mid.append(middles[key])
+
+		triangles.append_array([ids[0], mid[0], mid[2], ids[1], mid[1], mid[0], ids[2], mid[2], mid[1], mid[0], mid[1], mid[2]])
+
+	var shaped: Array = []
+
+	for p in points:
+		var d: Vector3 = p as Vector3
+		var r: float = rng.randf_range(0.42, 0.56)
+		var q: Vector3 = d * r
+		# Wider than tall, flat underneath so it sits in the ground.
+		q.y = maxf(q.y * 0.7, -0.12)
+		shaped.append(q)
+
+	var vertices: PackedVector3Array = PackedVector3Array()
+	var normals: PackedVector3Array = PackedVector3Array()
+	var indices: PackedInt32Array = PackedInt32Array()
+
+	for f in range(0, triangles.size(), 3):
+		var a: Vector3 = shaped[triangles[f]]
+		var b: Vector3 = shaped[triangles[f + 1]]
+		var c: Vector3 = shaped[triangles[f + 2]]
+		var n: Vector3 = (b - a).cross(c - a).normalized()
+		var first: int = vertices.size()
+		vertices.append_array([a + Vector3(0.0, 0.12, 0.0), b + Vector3(0.0, 0.12, 0.0), c + Vector3(0.0, 0.12, 0.0)])
+		normals.append_array([n, n, n])
+		indices.append_array([first, first + 2, first + 1])   # Godot draws clockwise faces as the front
+
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+	arrays[Mesh.ARRAY_NORMAL] = normals
+	arrays[Mesh.ARRAY_INDEX] = indices
+	var mesh: ArrayMesh = ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return mesh
+
+
 # A pebble: a rounded lump (a twelve-point solid, jittered per vertex, flattened), 1 m across before the
 # per-card scale.
 static func _make_pebble() -> ArrayMesh:
@@ -348,7 +469,7 @@ static func _make_pebble() -> ArrayMesh:
 		var first: int = vertices.size()
 		vertices.append_array([a + Vector3(0.0, 0.2, 0.0), b + Vector3(0.0, 0.2, 0.0), c + Vector3(0.0, 0.2, 0.0)])
 		normals.append_array([n, n, n])
-		indices.append_array([first, first + 1, first + 2])
+		indices.append_array([first, first + 2, first + 1])   # Godot draws clockwise faces as the front
 
 	var arrays: Array = []
 	arrays.resize(Mesh.ARRAY_MAX)
@@ -437,7 +558,7 @@ func update(position: Vector3) -> void:
 	var clock: float = TrampleScript.now_s()
 
 	for n in range(_materials.size()):
-		if not LAYERS[n].get("branch", false) and not LAYERS[n].get("pebble", false):
+		if not _is_solid(n):
 			_materials[n].set_shader_parameter("trample_now", clock)
 
 	# Owner (2026-10-20, pauses while walking): the scan listed and sorted every cell in range
@@ -466,8 +587,11 @@ func _lod_of(cell: Vector2i, held: int) -> int:
 	var d: float = centre.distance_to(Vector2(_center.x, _center.z))
 	var near_end: float = clampf(radius_m * 0.35, 14.0, 26.0)
 	var far_start: float = radius_m * 0.65
-	var slack_near: float = LOD_HYSTERESIS_M if held == 1 else (-LOD_HYSTERESIS_M if held == 0 else 0.0)
-	var slack_far: float = LOD_HYSTERESIS_M if held == 2 else (-LOD_HYSTERESIS_M if held == 1 else 0.0)
+	# A cell keeps its band until it is LOD_HYSTERESIS_M past the boundary (builds up to 282 had this
+	# backwards, so a cell within 3 m of a boundary flipped between two bands at every rescan and the grass
+	# popped there; owner: "popping in and out of existence right in front of me").
+	var slack_near: float = LOD_HYSTERESIS_M if held == 0 else (-LOD_HYSTERESIS_M if held >= 1 else 0.0)
+	var slack_far: float = -LOD_HYSTERESIS_M if held == 2 else (LOD_HYSTERESIS_M if held >= 0 else 0.0)
 
 	if d < near_end + slack_near:
 		return 0
@@ -579,6 +703,7 @@ func _build(cell: Vector2i) -> int:
 
 			if shore_here:
 				_put_shore(buffers, counts, rng, point, spacing, water)
+				_put_boulders(buffers, counts, rng, point, spacing, hit["normal"].y, water)
 
 			if not is_nan(water) and point.y < water + 0.3:
 				continue
@@ -733,6 +858,9 @@ func _put_shore(buffers: Array, counts: Array, rng: RandomNumberGenerator, point
 		return
 
 	for layer in range(LITTER_END, LAYERS.size()):
+		if LAYERS[layer].get("boulder", false):
+			continue
+
 		var reed: bool = LAYERS[layer].get("reed", false)
 
 		if reed and not (still and depth < 0.4 and (depth >= 0.0 or edge < 0.6)):
@@ -780,6 +908,62 @@ func _put_shore(buffers: Array, counts: Array, rng: RandomNumberGenerator, point
 
 			buffer[o + 15] = 1.0
 			buffers[layer] = buffer
+
+
+# One ground sample on a slope or by water: now and then a boulder, in clusters (the patch noise), more
+# on the steeper ground and at the foot of a slope, half buried, mossy where it is damp or shaded.
+func _put_boulders(buffers: Array, counts: Array, rng: RandomNumberGenerator, point: Vector3, spacing: float, normal_y: float, water: float) -> void:
+	var slope: float = 1.0 - clampf(normal_y, 0.0, 1.0)
+	var near_water: bool = not is_nan(water)
+	var by_slope: float = smoothstep(0.1, 0.3, slope)
+	var chance: float = maxf(by_slope, 0.25 if near_water else 0.0)
+
+	if chance <= 0.0:
+		return
+
+	# Clusters: boulders gather where the patch noise is high and are absent elsewhere.
+	var cluster: float = smoothstep(0.1, 0.5, _patch.get_noise_2d(point.x * 1.7 + 311.0, point.z * 1.7))
+
+	if cluster <= 0.0:
+		return
+
+	var layer: int = BOULDER_LAYER
+	var want: float = float(LAYERS[layer]["per_point"]) * shore_density * chance * cluster * 4.0
+	var count: int = int(want) + (1 if rng.randf() < want - floorf(want) else 0)
+
+	for k in range(count):
+		var ox: float = point.x + rng.randf_range(-0.5, 0.5) * spacing * 0.95
+		var oz: float = point.z + rng.randf_range(-0.5, 0.5) * spacing * 0.95
+		var yaw: float = rng.randf() * TAU
+		var c: float = cos(yaw)
+		var s: float = sin(yaw)
+		var size: float = rng.randf_range(0.35, 1.2) * rng.randf_range(0.6, 1.0)
+		size = maxf(size, 0.3)
+		var tall: float = size * rng.randf_range(0.65, 1.1)
+		var shade: float = rng.randf_range(0.85, 1.1)
+		var mossy: float = clampf(0.35 + 0.5 * (cluster - 0.3) + (0.3 if near_water else 0.0) + rng.randf_range(-0.2, 0.2), 0.0, 1.0)
+		var buffer: PackedFloat32Array = buffers[layer]
+		var o: int = int(counts[layer]) * 16
+		counts[layer] = int(counts[layer]) + 1
+		buffer[o] = c * size
+		buffer[o + 1] = 0.0
+		buffer[o + 2] = s * size
+		buffer[o + 3] = ox
+		buffer[o + 4] = 0.0
+		buffer[o + 5] = tall
+		buffer[o + 6] = 0.0
+		buffer[o + 7] = point.y - 0.2 * tall
+		buffer[o + 8] = -s * size
+		buffer[o + 9] = 0.0
+		buffer[o + 10] = c * size
+		buffer[o + 11] = oz
+		# Granite: pale grey, a little warmer or bluer per rock.
+		var warm: float = rng.randf()
+		buffer[o + 12] = (0.33 + 0.06 * warm) * shade
+		buffer[o + 13] = (0.32 + 0.04 * warm) * shade
+		buffer[o + 14] = (0.30 + 0.02 * warm) * shade
+		buffer[o + 15] = mossy
+		buffers[layer] = buffer
 
 
 # One ground sample under a crown: leaf cards and, now and then, a dead branch (layers GRASS_LAYERS on).

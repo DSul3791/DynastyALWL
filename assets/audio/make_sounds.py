@@ -123,8 +123,14 @@ def finish(x, peak=0.9):
     return x * (peak / (np.max(np.abs(x)) + 1e-9))
 
 
+def soft_limit(x, knee=0.65, ceiling=0.8):
+    """Rounds peaks above `knee` toward `ceiling` (tanh), so a loop never goes flat-topped or clips after Vorbis overshoot."""
+    a = np.abs(x)
+    return np.where(a > knee, np.sign(x) * (knee + (ceiling - knee) * np.tanh((a - knee) / (ceiling - knee))), x)
+
+
 def write_ogg(name, x, quality=4):
-    data = (np.clip(x, -1, 1) * 32767).astype(np.int16)
+    data = (np.clip(soft_limit(x), -1, 1) * 32767).astype(np.int16)
     with tempfile.TemporaryDirectory() as tmp:
         wav = os.path.join(tmp, "s.wav")
         with wave.open(wav, "wb") as w:
