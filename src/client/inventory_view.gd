@@ -1245,7 +1245,7 @@ func _tooltip(number: int, count: int) -> String:
 	var kcal: int = VitalsRules.food_value(table.id_of(number), _vitals_cfg)
 	var heal: int = VitalsRules.heal_value(table.id_of(number), _vitals_cfg)
 
- 	if not _carry_cfg.is_empty():
+	if not _carry_cfg.is_empty():
 		text += "\n%.2f kg each" % CarryRules.weight_of(table.id_of(number), _carry_cfg)
 
 	if kcal > 0:
