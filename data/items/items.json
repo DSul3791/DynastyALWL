@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode.",
-	"next_number": 18,
+	"next_number": 20,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -146,6 +146,21 @@
 			"stack": 10,
 			"look_alikes": [],
 			"note": "Placeholder: stops bleeding once health exists."
+		},
+		"tree_roots": {
+			"number": 18,
+			"name": "Roots",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": []
+		},
+		"wooden_spade": {
+			"number": 19,
+			"name": "Wooden spade",
+			"kind": "tool",
+			"tool_class": "spade",
+			"stack": 1,
+			"look_alikes": []
 		}
 	}
 }

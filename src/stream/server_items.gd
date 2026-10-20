@@ -348,10 +348,25 @@ func gather(peer: int, species_name: String, kind: String, flora_key: String, fl
 		var season: String = str(season_now.call()) if season_now.is_valid() else "all"
 
 		if seasons.has("all") or seasons.has(season):
-			natural = str(entry["yields"][rng.randi_range(0, entry["yields"].size() - 1)])
+			var usable: Array = []
+			var missing: String = ""
+			var inv = inventory_of(peer)
 
-			if table.number_of(natural) == 0:
-				natural = ""
+			for candidate in entry["yields"]:
+				var needed: String = _tool_for(str(candidate))
+
+				if table.number_of(str(candidate)) == 0:
+					continue
+
+				if needed == "" or (inv != null and _has_tool(inv, needed)):
+					usable.append(str(candidate))
+				else:
+					missing = needed
+
+			if not usable.is_empty():
+				natural = usable[rng.randi_range(0, usable.size() - 1)]
+			elif rows.is_empty() and missing != "":
+				_say(peer, "You need a %s for that." % str(_drops.get("tool_rules", {}).get("tool_names", {}).get(missing, missing)))
 
 	if rows.is_empty() and natural == "":
 		return false
@@ -365,6 +380,23 @@ func gather(peer: int, species_name: String, kind: String, flora_key: String, fl
 	_picked[flora_key] = now_s
 	_dirty = true
 	return true
+
+
+# The tool class a natural yield needs ("" = by hand), from drops.json tool_rules.
+func _tool_for(item_id: String) -> String:
+	var suffixes: Dictionary = _drops.get("tool_rules", {}).get("suffixes", {})
+
+	for tool_class in suffixes:
+		for suffix in suffixes[tool_class]:
+			if item_id.ends_with(str(suffix)):
+				return str(tool_class)
+
+	return ""
+
+
+func _say(peer: int, text: String) -> void:
+	if send_notice.is_valid():
+		send_notice.call(peer, text)
 
 
 func world_item_count() -> int:
@@ -959,9 +991,19 @@ func _process_trunk(peer: int, inv, id: int) -> void:
 			give(peer, table.number_of("bark"), 1)
 
 		if rng.randf() < float(cfg.get("seed_chance", 0.15)):
-			give(peer, table.number_of("seed_bundle"), 1)
+			var own: Array = cfg.get("by_species", {}).get(str(tree.get("species", "")), [])
+
+			if own.is_empty():
+				give(peer, table.number_of("seed_bundle"), 1)
+			else:
+				give(peer, table.number_of(str(own[0][0])), rng.randi_range(int(own[0][1]), int(own[0][2])))
 
 		if int(tree["logs_left"]) <= 0:
+			var roots: Array = cfg.get("roots", [])
+
+			if not roots.is_empty():
+				give(peer, table.number_of(str(roots[0])), rng.randi_range(int(roots[1]), int(roots[2])))
+
 			_items.erase(id)
 
 	_dirty = true

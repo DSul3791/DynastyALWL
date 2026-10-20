@@ -116,6 +116,12 @@ func _init() -> void:
 	check(g.inventory_of(1).count_of(g.table.number_of("stick")) >= 1, "got sticks")
 	check(g.gather(1, "dandelion", "plant", "0,0,79", 79, Vector3(501.0, 70.0, 500.0)), "dandelion gives its leaves, roots or flowers in season")
 	check(g.inventory_of(1).count_of(g.table.number_of("dandelion_leaves")) + g.inventory_of(1).count_of(g.table.number_of("dandelion_roots")) + g.inventory_of(1).count_of(g.table.number_of("dandelion_flowers")) >= 1, "got a dandelion yield")
+	var noticed: Array = []
+	g.send_notice = func(_p, text): noticed.append(text)
+	check(not g.gather(1, "wolfsbane", "plant", "0,0,90", 90, Vector3(501.0, 70.0, 500.0)) and noticed.size() == 1, "roots by hand give nothing and the player is told to get a spade")
+	g.action(1, Net.ACT_ADMIN_GIVE, g.table.number_of("wooden_spade"), 0, 1, Vector3.ZERO)
+	check(g.gather(1, "wolfsbane", "plant", "0,0,90", 90, Vector3(501.0, 70.0, 500.0)) and g.inventory_of(1).count_of(g.table.number_of("wolfsbane_roots")) >= 1, "with a spade the roots come up")
+	check(g.gather(1, "comfrey", "plant", "0,0,91", 91, Vector3(501.0, 70.0, 500.0)), "comfrey still gives by hand")
 	check(not g.gather(1, "flax", "plant", "0,0,77", 77, Vector3(501.0, 70.0, 500.0)), "a picked plant is bare until it regrows")
 	clock[0] += ItemsScript.REGROW_GAME_S + 1.0
 	check(g.gather(1, "flax", "plant", "0,0,77", 77, Vector3(501.0, 70.0, 500.0)), "and bears again after 3 game days")
@@ -325,6 +331,7 @@ func _init() -> void:
 		guard += 1
 
 	check(not w._items.has(trunk_id) and w.inventory_of(1).count_of(logs) >= 1, "the trunk is worked into logs and used up")
+	check(w.inventory_of(1).count_of(w.table.number_of("tree_roots")) >= 1, "the root ball comes up with the last log")
 	var stump_left: bool = false
 
 	for k in w._items:

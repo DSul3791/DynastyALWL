@@ -89,7 +89,7 @@
 		"sticks_max": 2
 	},
 	"trunk": {
-		"note": "Working a felled trunk with the axe, one blow at a time: first the branches and leaves come off, then logs, with some bark and now and then seeds. The trunk is used up when its logs are gone.",
+		"note": "Working a felled trunk with the axe, one blow at a time: first the branches and leaves come off, then logs, with some bark and now and then seeds. The trunk is used up when its logs are gone. When the last log is gone the root ball comes up (roots). The seed roll gives the species' own fruit or nut from by_species when it has one, else a seed bundle.",
 		"branch_blows": 3,
 		"branch": [
 			[
@@ -107,6 +107,132 @@
 		"seed_chance": 0.15,
 		"blows_per_log": 3,
 		"log_length_m": 2.5,
-		"max_logs": 12
+		"max_logs": 12,
+		"roots": [
+			"tree_roots",
+			1,
+			3
+		],
+		"by_species": {
+			"oak": [
+				[
+					"acorns",
+					1,
+					3
+				]
+			],
+			"beech": [
+				[
+					"beechnuts",
+					1,
+					3
+				]
+			],
+			"walnut": [
+				[
+					"walnuts",
+					1,
+					3
+				]
+			],
+			"sweet_chestnut": [
+				[
+					"chestnuts",
+					1,
+					3
+				]
+			],
+			"wild_apple": [
+				[
+					"crab_apples",
+					1,
+					3
+				]
+			],
+			"wild_pear": [
+				[
+					"wild_pears",
+					1,
+					3
+				]
+			],
+			"wild_cherry": [
+				[
+					"cherries",
+					1,
+					3
+				]
+			],
+			"rowan": [
+				[
+					"rowan_berries",
+					1,
+					3
+				]
+			],
+			"scots_pine": [
+				[
+					"resin",
+					1,
+					2
+				]
+			],
+			"spruce": [
+				[
+					"resin",
+					1,
+					2
+				]
+			],
+			"balsam_fir": [
+				[
+					"resin",
+					1,
+					2
+				]
+			],
+			"coconut_palm": [
+				[
+					"coconuts",
+					1,
+					2
+				]
+			],
+			"date_palm": [
+				[
+					"dates",
+					1,
+					3
+				]
+			]
+		}
+	},
+	"tool_rules": {
+		"note": "Natural yields of a picked plant need a tool when their item id ends with one of these words (Dave 2026-10-20: roots and bulbs need a spade, bark, gum, sap and resin a stone knife, wood an axe; berries, leaves, flowers and herbs are by hand). The tool must be in the pack. Fixed drops above (fibre, sticks) are always by hand.",
+		"suffixes": {
+			"axe": [
+				"wood",
+				"withies",
+				"timber"
+			],
+			"knife": [
+				"bark",
+				"gum",
+				"sap",
+				"resin",
+				"oil",
+				"tar"
+			],
+			"spade": [
+				"roots",
+				"bulbs",
+				"tubers"
+			]
+		},
+		"tool_names": {
+			"axe": "stone axe",
+			"knife": "stone knife",
+			"spade": "spade"
+		}
 	}
 }

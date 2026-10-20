@@ -99,6 +99,20 @@ func _init() -> void:
 
 				obtainable[String(row[0])] = true
 
+	var trunk: Dictionary = drops.get("trunk", {})
+
+	if trunk.has("roots"):
+		want_item.call(String(trunk["roots"][0]), "drops.json trunk.roots")
+		obtainable[String(trunk["roots"][0])] = true
+
+	for species_name in trunk.get("by_species", {}):
+		if not species.has(species_name):
+			fail("drops.json trunk.by_species: unknown flora species '%s'" % species_name)
+
+		for row in trunk["by_species"][species_name]:
+			want_item.call(String(row[0]), "drops.json trunk.by_species.%s" % species_name)
+			obtainable[String(row[0])] = true
+
 	for row in drops.get("trunk", {}).get("branch", []):
 		want_item.call(String(row[0]), "drops.json trunk.branch")
 		obtainable[String(row[0])] = true
