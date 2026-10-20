@@ -191,3 +191,5 @@ Pollen, seeds and dust drifting through the air, for realism and to show the win
 
 
 Grass doubled again (build 228): Medium/High/Ultra density 2.6/3.0/3.4 cards per sample, Low unchanged at 0.68. Cards are packed straight into the MultiMesh buffer (no per-card Transform3D/Color objects): microbench 120k cards 191 ms old way vs 111 ms new. Memory 64 B per card.
+
+Flora setup spread (build 233): `FloraView.setup` now only reads the rules and makes materials, then queues the species; `apply_built` builds them within a 4 ms budget per frame (`_setup_step`), and chunk planning waits until all are built (`_setup_done`, then crowns of chunks that arrived early are added to the cover index). Tools without a frame loop call `finish_setup()`. Cloud flight check: welcome stall for flora setup 63 ms.

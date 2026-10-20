@@ -227,6 +227,10 @@ var _labels: Dictionary = {}           # species id -> name with a note on its m
 var _chunks: Dictionary = {}           # Vector2i -> {"items", "level", "node"}
 var _serial: int = 0                   # numbers each chunk plan, so an outdated plan is skipped
 var _tasks: Array = []                 # WorkerThreadPool tasks making chunk plans
+var _setup_queue: Array = []           # species entries still to build (see _setup_step)
+var _setup_next: int = 0
+var _setup_total: int = 0
+var _setup_done: bool = false
 var _mid_wanted: Array = []            # [species id, variant, full mesh] still to be simplified (see _decimate_task)
 var _mid_ready: Array = []             # [species id, variant, [surface arrays], [materials]] from the worker, built into meshes in apply_built
 var _mid_task: int = -1
@@ -341,87 +345,122 @@ func setup(tables, tile_rules: Dictionary) -> void:
 	_splash_material = WaterFallsScript.make_splash_material()
 	_foam_material = WaterFallsScript.make_foam_material()
 
-	for entry in tables.get_entries("flora"):
-		if entry.get("retired", false):
-			continue
+	_setup_queue = tables.get_entries("flora").filter(func(entry): return not entry.get("retired", false))
+	_setup_total = _setup_queue.size()
+	_setup_step(0)
 
-		var height: Array = entry["height_m"]
-		var reference: float = 0.5 * (float(height[0]) + float(height[1]))
-		_labels[int(entry["id"])] = _label_for(entry)
-		_familiarity[int(entry["id"])] = int(entry.get("familiarity", 50))
-		_alikes[int(entry["id"])] = entry.get("look_alikes", [])
-		_slugs[int(entry["id"])] = str(entry["name"])
-		_display[int(entry["id"])] = str(entry.get("display", entry.get("name", "")))
-		var kind: int = KINDS.find(str(entry["kind"]))
-		var near_meshes: Array = []
-		var far_meshes: Array = []
 
-		var shape: String = str(entry["shape"])
-		var built: bool = kind != KIND_PLANT or shape in ["grass", "reed", "fern", "flower", "shrub", "cactus"]
+# Builds every queued species now (tools and the preview, which have no frame budget).
+func finish_setup() -> void:
+	_setup_step(1 << 40)
 
-		if not built:
-			var plain: ArrayMesh = _make_mesh(entry, reference)
-			near_meshes = [plain]
-			far_meshes = [plain]
-		elif kind == KIND_PLANT:
-			# Small plants: two variants, one model at every distance.
-			for v in range(2):
-				var model: ArrayMesh = TreeBuilder.build(entry, reference, v, false, _tree_materials)
-				near_meshes.append(model)
-				far_meshes.append(model)
-		else:
-			for v in range(TreeBuilder.VARIANTS):
-				near_meshes.append(TreeBuilder.build(entry, reference, v, false, _tree_materials))
-				far_meshes.append(TreeBuilder.build(entry, reference, v, true, _tree_materials))
 
-		# The mid model starts as the full model; _decimate_task swaps in the simplified one when ready.
-		var mid_meshes: Array = near_meshes.duplicate()
-		if kind == KIND_TREE and built:
-			for v in range(near_meshes.size()):
-				_mid_wanted.append([int(entry["id"]), v, near_meshes[v]])
+# Builds queued species until budget_usec is spent (at least one). Returns true once all are built.
+func _setup_step(budget_usec: int = 4000) -> bool:
+	var start: int = Time.get_ticks_usec()
 
-		var c: Array = entry["color"]
-		_species[int(entry["id"])] = {
-			"kind": kind,
-			"height": reference,
-			"trunk": float(entry["trunk_m"]),
-			"crown": float(entry["crown_m"]),
-			# Hardwoods, and any species with autumn colors of its own (the
-			# wardpine), take an autumn tint.
-			"hardwood": str(entry["shape"]) == "broadleaf" or entry.has("autumn_colors"),
-			"tinted": built,
-			"near": near_meshes,
-			"mid": mid_meshes,
-			"far": far_meshes,
-			"shape": shape,
-			"glows": entry.has("glow") or entry.has("leaf_glow"),
-			"tint": _plant_tint(entry, c),
-		}
+	while _setup_next < _setup_queue.size():
+		_setup_entry(_setup_queue[_setup_next])
+		_setup_next += 1
 
-		if entry.has("young_below_m"):
-			_species[int(entry["id"])]["young_below"] = float(entry["young_below_m"])
+		if Time.get_ticks_usec() - start >= budget_usec:
+			break
 
-		if entry.has("leaf_glow"):
-			_species[int(entry["id"])]["leaf_glow"] = true
+	if _setup_next < _setup_queue.size():
+		return false
 
-		if entry.has("glow"):
-			var g: Array = entry["glow"]
-			_species[int(entry["id"])]["glow"] = Color(float(g[0]), float(g[1]), float(g[2]))
-			_species[int(entry["id"])]["glow_energy"] = float(entry.get("glow_energy", 2.0))
-			_species[int(entry["id"])]["glow_height"] = float(entry.get("glow_height", 0.0))   # light height, fraction of the tree
+	if not _setup_done:
+		_setup_done = true
+		_setup_queue = []
+		_start_mid_task()
 
-		if entry.has("autumn_colors"):
-			var palette: Array[Color] = []
-			for ac in entry["autumn_colors"]:
-				palette.append(Color(float(ac[0]), float(ac[1]), float(ac[2])))
-			_species[int(entry["id"])]["autumn"] = palette
+		# Chunks that arrived before their species were built had no crowns in the cover index.
+		for chunk in _chunks.keys():
+			CoverScript.add_chunk(cover, chunk, _chunks[chunk]["items"], _cover_info)
 
-		if entry.has("young_color"):
-			var yc: Array = entry["young_color"]
-			_species[int(entry["id"])]["young_tint"] = _plant_tint(entry, yc)
-			_species[int(entry["id"])]["young_m"] = entry.get("young_m", [4.0, 15.0])
+		canopy_version += 1
 
-	_start_mid_task()
+	return true
+
+
+# Builds one species (models and look table). setup queues them; _setup_step does a few per frame
+# so the welcome does not stall on all of them at once (build 233).
+func _setup_entry(entry: Dictionary) -> void:
+	var height: Array = entry["height_m"]
+	var reference: float = 0.5 * (float(height[0]) + float(height[1]))
+	_labels[int(entry["id"])] = _label_for(entry)
+	_familiarity[int(entry["id"])] = int(entry.get("familiarity", 50))
+	_alikes[int(entry["id"])] = entry.get("look_alikes", [])
+	_slugs[int(entry["id"])] = str(entry["name"])
+	_display[int(entry["id"])] = str(entry.get("display", entry.get("name", "")))
+	var kind: int = KINDS.find(str(entry["kind"]))
+	var near_meshes: Array = []
+	var far_meshes: Array = []
+
+	var shape: String = str(entry["shape"])
+	var built: bool = kind != KIND_PLANT or shape in ["grass", "reed", "fern", "flower", "shrub", "cactus"]
+
+	if not built:
+		var plain: ArrayMesh = _make_mesh(entry, reference)
+		near_meshes = [plain]
+		far_meshes = [plain]
+	elif kind == KIND_PLANT:
+		# Small plants: two variants, one model at every distance.
+		for v in range(2):
+			var model: ArrayMesh = TreeBuilder.build(entry, reference, v, false, _tree_materials)
+			near_meshes.append(model)
+			far_meshes.append(model)
+	else:
+		for v in range(TreeBuilder.VARIANTS):
+			near_meshes.append(TreeBuilder.build(entry, reference, v, false, _tree_materials))
+			far_meshes.append(TreeBuilder.build(entry, reference, v, true, _tree_materials))
+
+	# The mid model starts as the full model; _decimate_task swaps in the simplified one when ready.
+	var mid_meshes: Array = near_meshes.duplicate()
+	if kind == KIND_TREE and built:
+		for v in range(near_meshes.size()):
+			_mid_wanted.append([int(entry["id"]), v, near_meshes[v]])
+
+	var c: Array = entry["color"]
+	_species[int(entry["id"])] = {
+		"kind": kind,
+		"height": reference,
+		"trunk": float(entry["trunk_m"]),
+		"crown": float(entry["crown_m"]),
+		# Hardwoods, and any species with autumn colors of its own (the
+		# wardpine), take an autumn tint.
+		"hardwood": str(entry["shape"]) == "broadleaf" or entry.has("autumn_colors"),
+		"tinted": built,
+		"near": near_meshes,
+		"mid": mid_meshes,
+		"far": far_meshes,
+		"shape": shape,
+		"glows": entry.has("glow") or entry.has("leaf_glow"),
+		"tint": _plant_tint(entry, c),
+	}
+
+	if entry.has("young_below_m"):
+		_species[int(entry["id"])]["young_below"] = float(entry["young_below_m"])
+
+	if entry.has("leaf_glow"):
+		_species[int(entry["id"])]["leaf_glow"] = true
+
+	if entry.has("glow"):
+		var g: Array = entry["glow"]
+		_species[int(entry["id"])]["glow"] = Color(float(g[0]), float(g[1]), float(g[2]))
+		_species[int(entry["id"])]["glow_energy"] = float(entry.get("glow_energy", 2.0))
+		_species[int(entry["id"])]["glow_height"] = float(entry.get("glow_height", 0.0))   # light height, fraction of the tree
+
+	if entry.has("autumn_colors"):
+		var palette: Array[Color] = []
+		for ac in entry["autumn_colors"]:
+			palette.append(Color(float(ac[0]), float(ac[1]), float(ac[2])))
+		_species[int(entry["id"])]["autumn"] = palette
+
+	if entry.has("young_color"):
+		var yc: Array = entry["young_color"]
+		_species[int(entry["id"])]["young_tint"] = _plant_tint(entry, yc)
+		_species[int(entry["id"])]["young_m"] = entry.get("young_m", [4.0, 15.0])
 
 
 func _make_tree_materials() -> void:
@@ -1010,6 +1049,9 @@ func _level(chunk: Vector2i, position: Vector3) -> int:
 # a chunk is worked out on a worker thread (_plan) and only the finished pieces are put in
 # the scene on the main thread (apply_built, called every frame).
 func _refresh(chunk: Vector2i, position: Vector3) -> void:
+	if not _setup_done:
+		return
+
 	var entry: Dictionary = _chunks[chunk]
 	var level: int = _level(chunk, position)
 
@@ -1034,6 +1076,9 @@ func _plan_task(chunk: Vector2i, serial: int, level: int, items: Dictionary) -> 
 # (always some progress). Call every frame. A chunk keeps its old drawing until the new
 # one is complete, so nothing blinks out.
 func apply_built(budget_usec: int = 3000) -> void:
+	if not _setup_done:
+		_setup_step()
+
 	var still: Array = []
 
 	for task in _tasks:

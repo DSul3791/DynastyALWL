@@ -109,6 +109,7 @@ func _ready() -> void:
 	flora = FloraViewScript.new()
 	flora.name = "Flora"
 	flora.setup(tables, rules)
+	flora.finish_setup()
 	add_child(flora)
 	_make_environment()
 	_make_hud()
