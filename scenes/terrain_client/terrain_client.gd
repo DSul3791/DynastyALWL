@@ -33,7 +33,7 @@ const Probe := preload("res://src/debug/frame_probe.gd")
 const CompassScript := preload("res://src/client/admin_compass.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 80
+const BUILD := 81
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -69,14 +69,14 @@ const WATER_HOLD_MSEC := 2000        # water refreshes wait this long while grou
 const STILL_MSEC := 3000              # flying: ground loads again after staying still this long
 const WALK_SPEED := 6.0
 const FAST := 3.0                     # flying: Shift multiplier
-const JOG_SPEED := 11.0
-const RUN_SPEED := 18.0
+const JOG_SPEED := 8.5
+const RUN_SPEED := 11.0
 # Walking camera (all tuning is here; each list is [walk, jog, run]). A footfall
 # is the lowest point of the bob and the far end of the sway: left foot, camera
 # down and leaning left; midway it rises back to the middle; right foot, down
 # and leaning right. The bob therefore repeats every step and the sway every
 # two steps.
-const STEP_M := [3.0, 4.2, 6.0]          # metres per step: longer strides when faster
+const STEP_M := [3.0, 3.6, 4.2]          # metres per step: longer strides when faster (about 2.0, 2.4 and 2.6 steps a second)
 const BOB_M := [0.040, 0.052, 0.064]     # how far the camera dips at a footfall
 const SWAY_M := [0.012, 0.016, 0.020]    # sideways shift at a footfall
 const SWAY_DEG := [0.10, 0.13, 0.16]     # roll toward the stepping side at a footfall
