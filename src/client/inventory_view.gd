@@ -297,6 +297,17 @@ func _update_fire_lights() -> void:
 		light.light_energy = 1.6 + 0.35 * sin(float(Time.get_ticks_msec()) * 0.013 + float(n))
 
 
+# Is a fire light that is switched on within `radius` of the point?
+func fire_light_near(point: Vector3, radius: float) -> bool:
+	for id in _world:
+		var light: OmniLight3D = _world[id]["light"]
+
+		if light != null and light.visible and point.distance_to(_world[id]["pos"]) <= radius:
+			return true
+
+	return false
+
+
 func _on_full(bytes: PackedByteArray) -> void:
 	inventory.from_bytes(bytes)
 	_refresh()

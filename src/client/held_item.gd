@@ -25,6 +25,7 @@ var _net
 var _camera: Camera3D
 var _root: Node3D
 var _ground_below: Callable
+var held_light_budget: Callable          # () -> true when the held light may be on beside a nearby fire light (not at Low)
 var _model: Node3D
 var _label: Label
 var _jab_t: float = -1.0
@@ -202,6 +203,8 @@ func _process(delta: float) -> void:
 		var flicker: OmniLight3D = _model.get_node_or_null("Light")
 
 		if flicker != null:
+			# Own light: one, shadowless. At Low it gives way to a fire light within 8 m, so no more than one lamp lights the same spot.
+			flicker.visible = not held_light_budget.is_valid() or held_light_budget.call() or not _inv.fire_light_near(_camera.global_position, 8.0)
 			flicker.light_energy = 1.4 + 0.3 * sin(float(Time.get_ticks_msec()) * 0.017)
 
 		_model.position = _model.position.lerp(REST, clampf(delta * 14.0, 0.0, 1.0))

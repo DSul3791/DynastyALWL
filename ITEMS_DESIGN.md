@@ -24,3 +24,15 @@ Short note for Technical direction approval before code. Stats are placeholders 
 ## Cost at Low
 - Server: a dictionary per player and one small file; no per-frame work.
 - Client: inventory panel is built when opened (I key) and hidden otherwise; world items within 30 m are a few meshes (one MultiMesh if over 50). No change to the render budget.
+
+## Light budget (job 20, 2026-10-20)
+
+All item lights are `OmniLight3D` with `shadow_enabled = false`. Per-frame cost is the number of lit lights that reach the screen.
+
+| Tier | Fire lights (nearest first) | Held light | Most item lights at once |
+|------|----------------------------|-----------|--------------------------|
+| Low | 1 | 1, but off while a fire light is within 8 m | 1 near a fire, 2 apart from one |
+| Medium | 2 | 1 | 3 |
+| High / Ultra | 3 | 1 | 4 |
+
+Fires are server records (8 per 256 m chunk); only the nearest few get a light, the rest are drawn as flame meshes. The held torch is one light with a flicker set from the clock (no timer, no allocation). No GPU timings: the cloud has no graphics, so Dave's F8 tables decide whether Low needs a lower cap. A lantern (when it exists) uses the same single held light, so the table does not change.

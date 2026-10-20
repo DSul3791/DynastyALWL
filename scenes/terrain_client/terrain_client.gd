@@ -564,6 +564,7 @@ func _on_welcome(info: Dictionary) -> void:
 	held.name = "Held"
 	add_child(held)
 	held.setup(items, net, camera, root, layer, _ground_below, sound, _tree_trunk_near, _cover_here)
+	held.held_light_budget = func(): return quality >= 1
 
 	if test_items:
 		items.run_test()
