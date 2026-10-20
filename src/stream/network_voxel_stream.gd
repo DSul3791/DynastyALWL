@@ -13,6 +13,11 @@ extends VoxelStreamScript
 # as prefetch. Prefetched blocks wait in memory (`_spare`) until Voxel
 # Tools asks for them, then go to the disk cache like any other.
 #
+# When the direct block line is up (`link`, block_link.gd), a miss is sent from the
+# loader thread at once and the waiting loader reads the answers itself, so a miss
+# no longer waits for a client frame at each end; otherwise the main thread
+# sends the queue over ENet as before.
+#
 # The client never saves blocks of its own: the server owns the terrain.
 
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
@@ -42,6 +47,8 @@ var _answers: Dictionary = {}         # Vector4i -> PackedByteArray
 var _waiting: Dictionary = {}         # Vector4i -> true
 var _closing: bool = false
 var paused: bool = false              # main thread: requests are held (flying), so waits do not time out
+var only_urgent: bool = false         # main thread: a bake runs, no prefetch is asked for
+var link = null                       # BlockLink: when ready, misses are asked for straight from the loader thread
 var watch_on: bool = false            # headless --fly check: note when the column under watch_xz loads
 var watch_xz: Vector2 = Vector2.ZERO
 var watch_asked: Dictionary = {}      # lod -> msec Voxel Tools first asked for a block of that column
@@ -116,7 +123,13 @@ func _load(out_buffer: VoxelBuffer, block: Vector3i, lod: int) -> int:
 						_prefetch.append_array(PackedInt32Array([near.x, near.y, near.z, lod]))
 
 	most_waiting = maxi(most_waiting, _waiting.size())
+	var direct: bool = link != null and not paused and link.ready()
+	var send: Array = _take_locked() if direct else []
 	_mutex.unlock()
+
+	if direct and not link.send_request(send[0], send[1]):
+		_put_back(send)
+
 	var started: int = Time.get_ticks_msec()
 	var bytes: PackedByteArray = PackedByteArray()
 
@@ -139,7 +152,10 @@ func _load(out_buffer: VoxelBuffer, block: Vector3i, lod: int) -> int:
 		if not bytes.is_empty() or closing:
 			break
 
-		OS.delay_msec(2)
+		if link != null:
+			link.pump()
+
+		OS.delay_msec(1 if link != null and link.ready() else 2)
 
 	_mutex.lock()
 	var waited: int = Time.get_ticks_msec() - started
@@ -205,13 +221,37 @@ func _save_voxel_block(_buffer: VoxelBuffer, _block: Vector3i, _lod: int) -> voi
 # emptied. Returns [keys, number of urgent keys].
 func take_requests() -> Array:
 	_mutex.lock()
+	var taken: Array = _take_locked()
+	_mutex.unlock()
+	return taken
+
+
+# Empties the queues (mutex held): [keys, number of urgent keys]. While only_urgent,
+# prefetch keys are dropped and may be asked for again later.
+func _take_locked() -> Array:
 	var keys: PackedInt32Array = _outbox
 	var urgent: int = _outbox.size() / 4
-	keys.append_array(_prefetch)
+
+	if only_urgent:
+		for k in range(0, _prefetch.size(), 4):
+			_asked.erase(Vector4i(_prefetch[k], _prefetch[k + 1], _prefetch[k + 2], _prefetch[k + 3]))
+	else:
+		keys.append_array(_prefetch)
+
 	_outbox = PackedInt32Array()
 	_prefetch = PackedInt32Array()
-	_mutex.unlock()
 	return [keys, urgent]
+
+
+# Requests the block line could not send go back in the queues for the game connection.
+func _put_back(taken: Array) -> void:
+	var keys: PackedInt32Array = taken[0]
+	_mutex.lock()
+	var outbox: PackedInt32Array = keys.slice(0, taken[1] * 4)
+	outbox.append_array(_outbox)
+	_outbox = outbox
+	_prefetch.append_array(keys.slice(taken[1] * 4))
+	_mutex.unlock()
 
 
 # Main thread: blocks from the server.

@@ -31,6 +31,7 @@ const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const FloraStoreScript := preload("res://src/stream/server_flora.gd")
 const WaterLiveScript := preload("res://src/water/water_live.gd")
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
+const BlockLinkScript := preload("res://src/stream/block_link_server.gd")
 
 const MAX_BATCH_BYTES := 192 * 1024
 const MAX_QUEUE_PER_PEER := 20000
@@ -58,6 +59,9 @@ var _queue_mutex: Mutex = Mutex.new()  # guards the five above
 var _work: Semaphore = Semaphore.new() # one post per queued item
 var _workers: Array = []               # Threads making blocks
 var _stopping: bool = false
+var _link = null                     # direct block line (block_link_server.gd); its port is the game port + 1
+var _link_port: int = 0
+var _connected_peers: Dictionary = {} # peer id -> true, read by the block line's thread (queue mutex)
 var _max_running: int = 3
 var _done: Array = []                  # [peer, key, bytes]
 var _done_mutex: Mutex = Mutex.new()
@@ -154,6 +158,14 @@ func _ready() -> void:
 		return
 
 	multiplayer.multiplayer_peer = peer
+	_link = BlockLinkScript.new()
+	_link.on_request = _on_blocks_requested
+	_link.is_peer = _is_connected_peer
+	_link_port = _link.start(port + 1)
+
+	if _link_port == 0:
+		print("Terrain server: no block line (port %d is taken); blocks go over the game connection" % (port + 1))
+
 	multiplayer.peer_connected.connect(_on_peer_connected)
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
 	net.blocks_requested.connect(_on_blocks_requested)
@@ -209,6 +221,9 @@ func _spawn_point(world_dir: String) -> Vector3:
 func _on_peer_connected(peer_id: int) -> void:
 	_never_joined = false
 	_peers[peer_id] = {"blocks": 0, "bytes": 0, "since": Time.get_ticks_msec()}
+	_queue_mutex.lock()
+	_connected_peers[peer_id] = true
+	_queue_mutex.unlock()
 	print("Client %d connected" % peer_id)
 	net.welcome.rpc_id(peer_id, {
 		"protocol": NetScript.PROTOCOL_VERSION,
@@ -222,6 +237,7 @@ func _on_peer_connected(peer_id: int) -> void:
 		"terrain_version": Layout.TERRAIN_VERSION,
 		"tiles_stamp": store.tiles_stamp,
 		"starter_stamp": _starter_stamp(),
+		"block_port": _link_port,
 	})
 
 
@@ -264,13 +280,25 @@ func _on_position_reported(peer_id: int, position: Vector3, velocity: Vector3) -
 	_queue_mutex.unlock()
 
 
+func _is_connected_peer(peer_id: int) -> bool:
+	_queue_mutex.lock()
+	var known: bool = _connected_peers.has(peer_id)
+	_queue_mutex.unlock()
+	return known
+
+
 func _on_peer_disconnected(peer_id: int) -> void:
 	var info: Dictionary = _peers.get(peer_id, {})
 	print("Client %d left after %d blocks, %.1f MB; flora %.1f MB" % [
 		peer_id, int(info.get("blocks", 0)), float(info.get("bytes", 0)) / 1048576.0, float(info.get("flora_bytes", 0)) / 1048576.0
 	])
 	_peers.erase(peer_id)
+
+	if _link != null:
+		_link.drop(peer_id)
+
 	_queue_mutex.lock()
+	_connected_peers.erase(peer_id)
 	_idle_anchor.erase(peer_id)
 	_aim.erase(peer_id)
 	_queue = _queue.filter(func(item): return item[0] != peer_id)
@@ -484,6 +512,9 @@ func _process(_delta: float) -> void:
 			queued[0], queued[1], store.blocks_generated, store.cache_hits, store.edit_hits, flora.chunks_made, flora.memory_hits, _idle_built, store.bad_blocks, generator.failed_tiles
 		])
 
+		if _link != null and _link.blocks_out > 0:
+			print("server: %d blocks sent on the block line (%.1f MB)" % [_link.blocks_out, float(_link.bytes_out) / 1048576.0])
+
 	if _quit_when_empty and _quit_at_msec < 0:
 		if not _peers.is_empty():
 			_empty_since_msec = 0
@@ -551,6 +582,14 @@ func _worker_loop() -> void:
 		check.resize(4)
 		check.encode_u32(0, hash(bytes) & 0xffffffff)
 		bytes.append_array(check)           # the client verifies this before using the block
+
+		# Straight down the block line when this player has one (no wait for the main thread).
+		if _link.send(item[0], key, bytes):
+			_queue_mutex.lock()
+			_queued.erase(item)
+			_queue_mutex.unlock()
+			continue
+
 		_done_mutex.lock()
 		_done.append([item[0], key, bytes])
 		_done_mutex.unlock()
@@ -715,6 +754,9 @@ func _exit_tree() -> void:
 
 	for thread in _idle_workers:
 		thread.wait_to_finish()
+
+	if _link != null:
+		_link.stop()
 
 	if water_live != null:
 		water_live.stop()

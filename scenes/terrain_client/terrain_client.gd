@@ -21,6 +21,7 @@ extends Node
 #   --cut             with --frames: 25 s in, ask the server to cut the tree nearest the spawn
 #   --walk            with --frames: 15 s in, drop to the ground, walk east for 30 s, then
 #                     walk into the nearest tree, and print what happened
+#   --no-block-line   blocks over the game connection only (no direct block line)
 #   --wait=S          keep trying to connect for S seconds (the "play" launcher
 #                     uses 120 while its own server starts)
 #
@@ -36,6 +37,7 @@ const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const KnowledgeScript := preload("res://src/client/inspection_knowledge.gd")
 const StreamScript := preload("res://src/stream/network_voxel_stream.gd")
+const BlockLinkScript := preload("res://src/stream/block_link.gd")
 const CacheScript := preload("res://src/stream/client_block_cache.gd")
 const NetScript := preload("res://src/stream/terrain_net.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
@@ -169,6 +171,7 @@ var _frame_ms: Array = []             # recent frame times for the HUD readout
 var test_cut: bool = false
 var _flora_asked: Dictionary = {}     # chunk -> true asked or held in full, false trees only
 var _flora_check_msec: int = 0
+var link = null                       # direct block line (block_link.gd)
 var _water_dirty: bool = false        # the server said the water moved; not asked for yet
 var _water_asked_msec: int = 0
 var _flora_chunks: int = 0
@@ -302,6 +305,10 @@ func _on_welcome(info: Dictionary) -> void:
 		print("Terrain client: first run, copied the starter ground for the spawn (%d tile)" % seeded)
 	stream = StreamScript.new()
 	stream.cache = cache
+	link = BlockLinkScript.new()
+	link.stream = stream
+	link.open(_host, 0 if OS.get_cmdline_user_args().has("--no-block-line") else int(info.get("block_port", 0)), multiplayer.get_unique_id())
+	stream.link = link
 	var root: Node3D = Node3D.new()
 	root.name = "World"
 	add_child(root)
@@ -856,6 +863,8 @@ func _reload_ground() -> void:
 	stream.close()
 	stream = StreamScript.new()
 	stream.cache = cache
+	stream.link = link
+	link.stream = stream
 	terrain.stream = stream
 	cache.seed_starter("res://worlds/base_world/starter_cache", str(world.get("starter_stamp", "")))
 
@@ -1169,15 +1178,13 @@ func _process(delta: float) -> void:
 		_ask_clear_cache()
 
 	_update_anchor(Time.get_ticks_msec(), delta)
-	var wanted: Array = [PackedInt32Array(), 0] if _building_paused else stream.take_requests()
-
 	# Owner (2026-10-19): while a bake runs, ask only for the ground the game is waiting on
 	# right now, not the extra ground around it (it is all thrown away when the bake ends).
-	if _bake.running and wanted[1] * 4 < wanted[0].size():
-		stream.forget_prefetch()
-		wanted[0] = wanted[0].slice(0, wanted[1] * 4)
+	stream.only_urgent = _bake.running
+	link.pump()
+	var wanted: Array = [PackedInt32Array(), 0] if _building_paused else stream.take_requests()
 
-	if not wanted[0].is_empty():
+	if not wanted[0].is_empty() and not link.send_request(wanted[0], wanted[1]):
 		net.request_blocks.rpc_id(1, wanted[0], wanted[1])
 
 	var now: int = Time.get_ticks_msec()
@@ -1337,7 +1344,7 @@ func _process(delta: float) -> void:
 			])
 			print("Terrain client: grass %d tufts in %d cells (radius %.0f m)" % [grass.tufts, grass.cells_built, grass.radius_m])
 			print("Terrain client: sound: footsteps %s, grass swishes %d, last ground %s, gust %.2f" % [str(sound.steps_played), sound.swishes_played, sound.surface, sound.gust])
-			print("Terrain client: blocks waited for %d times, %.0f ms on average, worst %d ms; at most %d loader threads waiting at once" % [stream.waits, float(stream.wait_msec_total) / maxf(float(stream.waits), 1.0), stream.wait_msec_worst, stream.most_waiting])
+			print("Terrain client: blocks waited for %d times, %.0f ms on average, worst %d ms; at most %d loader threads waiting at once; %d blocks came on the block line" % [stream.waits, float(stream.wait_msec_total) / maxf(float(stream.waits), 1.0), stream.wait_msec_worst, stream.most_waiting, link.blocks_in])
 			print(Probe.report())
 			var probe: Vector3i = Vector3i((Vector3(world["spawn"]) + Vector3(0.0, -3.0, 0.0)).round())
 			print("Terrain client: ground value 3 m under the spawn %.2f (above 0 is open)" % terrain.get_voxel_tool().get_voxel_f(probe))
@@ -1520,6 +1527,9 @@ func _walk_report() -> void:
 
 
 func _finish(code: int) -> void:
+	if link != null:
+		link.close()
+
 	if stream != null:
 		stream.close()
 
