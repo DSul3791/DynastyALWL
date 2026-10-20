@@ -312,3 +312,7 @@ The chain normal, over_exerted, fainting, fainted, waking was run end to end wit
 ## Controls and inventory sounds (job 58)
 
 Already covered by `item_sounds.gd` on the Interface bus: `inv_open`/`inv_close` (I panel), `item_pickup`, `item_drop`, `item_swap`, `craft_done`. Added: `hotbar_tick` when a hotbar slot is chosen (`held_item.select` calls `sound.itemfx.hotbar(slot)` only when the slot changes; pitch rises 2 percent per slot), `craft_start` when a craft begins (before the work sound), and the same `inv_open`/`inv_close` cue when the chest screen opens or closes (besides the chest's own creak from `placed_sounds`). Everything stays short and quiet on the one Interface bus; world sounds keep running while a panel is open (no muting rule). `--ui-sounds` (`sound_check.py --only ui_sounds`): 3 ticks for 4 selections with one repeated slot.
+
+## Gaps pass (job 61)
+
+`/mnt/project-files/tech/SOUND_GAPS.md` lists every CONTROLS.md input and ACT_* kind with its sound and status. Filled in this pass: the jump push-off (a soft step at takeoff in `terrain_client`; only the landing had a sound). Still open and noted there: an axe or pick swing that misses, a rejected-action cue (needs a server reject event), the raise-to-aim of a spear, fall damage (no damage system).

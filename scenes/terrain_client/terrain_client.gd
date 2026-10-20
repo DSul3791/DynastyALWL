@@ -1925,6 +1925,7 @@ func _move_player(delta: float) -> void:
 
 		if body.is_on_floor() and Input.is_key_pressed(KEY_SPACE) and strain_cap >= 0.0:
 			velocity.y = 7.0
+			sound.footstep(body, 1, -3.0, "right")        # the push off the ground (job 61: a jump had no sound, only the landing)
 
 		body.velocity = velocity
 		var tm: int = Probe.start()
