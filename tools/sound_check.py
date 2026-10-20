@@ -85,6 +85,11 @@ SCENARIOS = [
         ("fall base level", r"fall base: playing true at " + NUM + r" dB", -30, -5),
         ("five hearths merged", r"loops, " + NUM + r" merged", 5, 5),
     ]),
+    ("voice_priority", ["--voice-priority"], 3000, [
+        ("six cut", r"voice priority: shed " + NUM + r" of 10", 6, 6),
+        ("own sounds all kept", r"own kept " + NUM + r" of 2", 2, 2),
+        ("ambience cut first", r"ambience left " + NUM + r" of 6", 0, 0),
+    ]),
     ("stance", ["--stance"], 6000, [
         ("posture changes heard", r"stance check: " + NUM + r" changes", 6, 6),
         ("last is the rise", r"last (stance_rise)", 0, 1, "text"),

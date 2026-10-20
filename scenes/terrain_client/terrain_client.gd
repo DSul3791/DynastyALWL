@@ -189,6 +189,7 @@ var _fire_world_step: int = 0
 var test_ui_sounds: bool = false       # --ui-sounds: hotbar ticks and the chest screen cue (job 58)
 var _ui_step: int = 0
 var test_lake: bool = false            # --lake: soft laps from stand-in still-water squares (job 62)
+var test_voice_priority: bool = false  # --voice-priority: shed order at the voice cap (job 64)
 var test_stance: bool = false          # --stance: stand, crouch, sit, lie and rise in turn (job 56)
 var _stance_step: int = 0
 var _lake_start_msec: int = 0
@@ -392,6 +393,8 @@ func _ready() -> void:
 			test_lake = true
 		elif argument == "--stance":
 			test_stance = true
+		elif argument == "--voice-priority":
+			test_voice_priority = true
 		elif argument == "--merge-check":
 			test_merge = true
 		elif argument == "--faint":
@@ -2379,6 +2382,10 @@ func _process(delta: float) -> void:
 			test_lake = false
 			print("Terrain client: lake laps: %d laps in 20 s, last %s; brook loop %s" % [sound.water.laps_played, sound.water.last_lap, sound.water.brook_tag()])
 			sound.water.test_shore = []
+
+	if test_voice_priority and now - connected_msec > 18000 and now >= _test_fire_at:
+		_test_fire_at = now + 10000000
+		print("Terrain client: voice priority: " + sound.test_priority(body))
 
 	# Stance sounds: crouch, stand, sit, stand, lie (and sit for 20 s to hear settles), stand.
 	if test_stance and now - connected_msec > 18000 and now >= _test_fire_at:

@@ -451,8 +451,14 @@ func set_quality(quality: int) -> void:
 
 
 # Over the voice cap (loops and steps always play, so optional sounds can pile up): cuts the one-shot
-# 3D sounds with the lowest priority, the farthest and quietest first, `count` of them. Danger cues
-# (a threat call, the crow alarm) carry the meta "keep" and are never cut.
+# 3D sounds with the lowest priority, `count` of them. Order: far ambience first (Nature, Weather and
+# Wind buses), then other world sounds, farthest and quietest first; the player's own actions (any
+# Foley sound within OWN_M of the player: gear, hits, harvest, tools) go last. Danger cues (a threat
+# call, the crow alarm) carry the meta "keep" and are never cut. The player's own footsteps, breath,
+# heartbeat and the interface are not in the group world_sounds, so they are never candidates.
+const OWN_M := 4.0
+const AMBIENT_BUSES := ["Nature", "Weather", "Wind"]
+
 func _shed(body: CharacterBody3D, count: int) -> void:
 	var candidates: Array = []
 
@@ -463,8 +469,7 @@ func _shed(body: CharacterBody3D, count: int) -> void:
 		if player.stream is AudioStreamOggVorbis and player.stream.loop:
 			continue
 
-		var distance: float = player.global_position.distance_to(body.global_position)
-		candidates.append([distance - player.volume_db * 4.0, player])         # far and quiet sorts last
+		candidates.append([_shed_rank(player, body), player])
 
 	candidates.sort_custom(func(a, b): return a[0] > b[0])
 
@@ -472,6 +477,56 @@ func _shed(body: CharacterBody3D, count: int) -> void:
 		candidates[n][1].stop()
 		candidates[n][1].queue_free()
 		shed_count += 1
+
+
+# Higher rank is cut sooner.
+func _shed_rank(player: AudioStreamPlayer3D, body: CharacterBody3D) -> float:
+	var distance: float = player.global_position.distance_to(body.global_position)
+	var rank: float = distance - player.volume_db * 4.0              # far and quiet sorts last
+	var bus: String = String(player.bus)
+
+	if bus in AMBIENT_BUSES:
+		rank += 1000.0
+	elif bus == "Foley" and distance < OWN_M:
+		rank -= 1000.0
+
+	return rank
+
+
+# Headless check (--voice-priority): fills the stage with far ambience and the player's own sounds,
+# lowers the cap under what is playing and reports what survived the shed.
+func test_priority(body: CharacterBody3D) -> String:
+	var made: Array = []
+
+	for k in range(10):
+		var player: AudioStreamPlayer3D = AudioStreamPlayer3D.new()
+		player.stream = AudioStreamGenerator.new()
+		player.bus = "Nature" if k < 6 else "Foley"
+		var own: bool = k >= 8
+		add_child(player)
+		player.add_to_group("world_sounds")
+		player.global_position = body.global_position + Vector3(1.5 if own else 400.0 + k, 0.0, 0.0)
+		player.volume_db = -20.0 if own else -6.0                       # the own sounds are the quiet ones
+		player.play()
+		made.append(player)
+
+	var before: int = shed_count
+	_shed(body, 6)
+	var alive_own: int = 0
+	var alive_ambient: int = 0
+
+	for k in range(made.size()):
+		if is_instance_valid(made[k]) and not made[k].is_queued_for_deletion():
+			if k >= 8:
+				alive_own += 1
+			elif k < 6:
+				alive_ambient += 1
+
+	for player in made:
+		if is_instance_valid(player):
+			player.queue_free()
+
+	return "shed %d of 10, own kept %d of 2, ambience left %d of 6" % [shed_count - before, alive_own, alive_ambient]
 
 
 # Every sound playing right now, all layers (the budget counts these).

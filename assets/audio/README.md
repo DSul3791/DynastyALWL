@@ -333,3 +333,7 @@ Dave sent `freesound_community-babbling-brook-99-56381.mp3` ("this is what a gen
 ## Structure and tool sounds (job 63)
 
 Already there from job 38: lean-to, chest and chopping block set down and taken up, chest open/put/take, tool break and repair. Added: a worn tool complains once (`tool_warn`, `placed.tool_warn`) when its condition drops under 20 percent (`item_sounds._watch_wear`, any tool in the pack, same tool in the slot as last time), before the break; and a campfire set down (a fire row, states 1, 8 or 9, appearing near the player) plays the thump of stones set down like the chopping block (`STATE_KIND`). `--wear-sounds` now checks warning, break and repair (3 sounds).
+
+## Voice priority at the cap (job 64)
+
+Over the voice cap (Low 24) `sound_stage._shed` cuts one-shot world sounds in this order: far ambience first (Nature, Weather, Wind buses), then other world sounds, farthest and quietest first; the player's own actions (a Foley sound within 4 m: gear, hits, harvest, tools) go last. Danger cues keep the meta `keep` and are never cut. The player's own footsteps, breath, heartbeat and the interface are not in the group `world_sounds`, so they are never candidates. `sound_check.py --only voice_priority` fills the stage with 6 far ambience and 2 own sounds (plus 2 other) and sheds 6: all 6 ambience go, both own sounds stay.
