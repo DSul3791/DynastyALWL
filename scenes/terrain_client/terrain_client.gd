@@ -233,6 +233,7 @@ var test_gather: bool = false
 var test_leanto: bool = false
 var test_chest: bool = false
 var test_eat: bool = false
+var test_texttest: bool = false
 var test_plantpick: bool = false
 var test_spear: bool = false
 var test_chop: bool = false
@@ -411,6 +412,8 @@ func _ready() -> void:
 			test_items = true
 		elif argument == "--plantpick":
 			test_plantpick = true
+		elif argument == "--texttest":
+			test_texttest = true
 		elif argument == "--eat":
 			test_eat = true
 		elif argument == "--chest":
@@ -673,6 +676,10 @@ func _welcome_body(info: Dictionary) -> void:
 	items.stance_event = _on_stance_from_server
 	items.cover_index = flora.cover
 	items.text_scale = display.TEXT_SCALES[display.text_index]
+	items.sort_index = display.sort_index
+	items.sort_changed = func(index):
+		display.sort_index = index
+		_save_display()
 	items.text_step = func(direction):
 		display.text_index = clampi(display.text_index + direction, 0, display.TEXT_SCALES.size() - 1)
 		_save_display()
@@ -708,6 +715,9 @@ func _welcome_body(info: Dictionary) -> void:
 
 	if test_eat:
 		items.run_eat_test(self)
+
+	if test_texttest:
+		items.run_text_test(self)
 
 	if test_plantpick:
 		items.run_plant_test(self)

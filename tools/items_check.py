@@ -47,6 +47,11 @@ CLIENTS = [
     ("leanto", ["--leanto"], 4000, [
         ("roof gives cover", r"cover under it " + NUM, 0.9, 1.0),
     ]),
+    ("texttest", ["--texttest"], 3000, [
+        ("slot buttons stay valid", r"all valid (true)", None, None),
+        ("every item still shown", r"every item shown (true)", None, None),
+        ("30 slot buttons", r"scale [\d.]+, " + NUM + r" slot buttons", 30, 30),
+    ]),
     ("eat", ["--eat"], 3000, [
         ("food is edible", r"edible slot 0 (true)", None, None),
         ("roast eaten", r"roasts left " + NUM, 1, 1),

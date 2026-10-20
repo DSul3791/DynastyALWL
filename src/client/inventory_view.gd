@@ -785,6 +785,10 @@ func _close_chest() -> void:
 
 
 func _build_chest_panel() -> void:
+	if _chest_panel == null:
+		_chest_buttons.clear()
+		_pack_buttons.clear()
+
 	if _chest_panel != null:
 		return
 
@@ -1129,6 +1133,11 @@ var _craft_queue: int = 0             # crafts still to do after the one running
 var _slot_scroll: ScrollContainer
 
 
+var sort_index: int = 0                # 0 unsorted (order picked up), 1 name, 2 weight, 3 value
+var sort_changed: Callable = Callable()   # (index): the owner saves the choice
+var _first_seen: Dictionary = {}       # item number -> order it was first picked up (while held)
+var _seen_counter: int = 0
+var _sort_menu: OptionButton
 var text_step: Callable = Callable()   # (direction -1 or 1): the owner changes and saves the text size
 var text_scale: float = 0.85           # crafting and inventory text size (Esc > Settings, saved in display_settings.cfg)
 
@@ -1137,10 +1146,18 @@ var text_scale: float = 0.85           # crafting and inventory text size (Esc >
 func set_text_scale(scale: float) -> void:
 	text_scale = scale
 
+	# The chest screen is rebuilt on its next opening at the new size.
+	if _chest_panel != null:
+		_chest_panel.queue_free()
+		_chest_panel = null
+		_chest_buttons.clear()
+		_pack_buttons.clear()
+
 	if _panel != null:
 		var was_open: bool = open
 		_panel.queue_free()
 		_panel = null
+		_buttons.clear()
 
 		if was_open:
 			_build_panel()
@@ -1158,6 +1175,8 @@ func _style(control: Control, size: int) -> void:
 func _build_panel() -> void:
 	if _panel != null:
 		return
+
+	_buttons.clear()   # a rebuilt panel starts with a fresh list; never keep freed buttons
 
 	_panel = PanelContainer.new()
 	_panel.anchor_left = 0.05
@@ -1232,6 +1251,20 @@ func _build_panel() -> void:
 	_style(_weight_label, BODY_PX - 6)
 	_weight_label.text = "Body weight %.1f kg" % weight_kg
 	right.add_child(_weight_label)
+	_sort_menu = OptionButton.new()
+	_style(_sort_menu, BODY_PX - 6)
+
+	for sort_name in ["Sort: unsorted (picked up order)", "Sort: name", "Sort: weight (heaviest first)", "Sort: value (highest first)"]:
+		_sort_menu.add_item(sort_name)
+
+	_sort_menu.select(sort_index)
+	_sort_menu.item_selected.connect(func(index):
+		sort_index = index
+		_arrange_slots()
+
+		if sort_changed.is_valid():
+			sort_changed.call(index))
+	right.add_child(_sort_menu)
 	_slot_scroll = ScrollContainer.new()
 	_slot_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_slot_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -1423,9 +1456,73 @@ func _recipe_matches(r: Dictionary, filter: String) -> bool:
 	return false
 
 
+# The slot buttons keep their slot (clicks, moves and the hotbar are unchanged); only where they sit in the grid
+# changes. Empty slots go last. Unsorted is the order the item kinds were picked up in.
+func _arrange_slots() -> void:
+	if _panel == null or _buttons.is_empty():
+		return
+
+	var order: Array = range(inventory.SLOTS)
+	var cfg: Dictionary = _carry_cfg
+
+	var key: Callable = func(slot: int) -> Variant:
+		var number: int = inventory.numbers[slot]
+		var count: int = inventory.counts[slot]
+
+		match sort_index:
+			1:
+				return table.name_of(number).to_lower()
+			2:
+				return -CarryRules.weight_of(table.id_of(number), cfg) * float(count)
+			3:
+				return -table.value_of(number) * count
+
+		return int(_first_seen.get(number, 0))
+
+	order.sort_custom(func(a, b):
+		var empty_a: bool = inventory.numbers[a] == 0
+		var empty_b: bool = inventory.numbers[b] == 0
+
+		if empty_a != empty_b:
+			return empty_b
+
+		if empty_a:
+			return a < b
+
+		var ka: Variant = key.call(a)
+		var kb: Variant = key.call(b)
+		return a < b if ka == kb else ka < kb)
+
+	for position in range(order.size()):
+		_grid.move_child(_buttons[order[position]], position)
+
+
+# Remembers the order item kinds first appeared in the pack (for the unsorted view).
+func _note_acquired() -> void:
+	var present: Dictionary = {}
+
+	for slot in range(inventory.SLOTS):
+		var number: int = inventory.numbers[slot]
+
+		if number != 0:
+			present[number] = true
+
+			if not _first_seen.has(number):
+				_seen_counter += 1
+				_first_seen[number] = _seen_counter
+
+	for number in _first_seen.keys():
+		if not present.has(number):
+			_first_seen.erase(number)
+
+
 func _refresh() -> void:
 	if _panel == null:
+		_note_acquired()
 		return
+
+	_note_acquired()
+	_arrange_slots()
 
 	if _weight_label != null:
 		_weight_label.text = _load_text() + "\nBody weight %.1f kg   (hunger %d%%, health %d)" % [weight_kg, hunger, health]
@@ -1614,6 +1711,48 @@ func run_gather_test(client) -> void:
 	print("Gather test: sweep, sticks %d -> %d (a picked-bare shrub is skipped); prompt \"%s\"" % [after_tap, inventory.count_of(sticks), plant_hint])
 
 
+# Headless check (--texttest): press Text - and Text + several times with the screen open; nothing may
+# touch a freed button.
+func run_text_test(client) -> void:
+	await get_tree().create_timer(6.0).timeout
+	toggle()
+	var valid: bool = true
+	var filled_ok: bool = true
+	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("stone"), 0, 3, Vector3.ZERO)
+	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("stick"), 0, 3, Vector3.ZERO)
+	await get_tree().create_timer(1.0).timeout
+
+	for direction in [-1, -1, -1, 1, 1, 1, 1, -1, -1, -1, 1]:
+		text_step.call(direction)
+
+		# Right after the press (before any frame passes): the list must hold only the new, shown buttons.
+		valid = valid and _buttons.size() == inventory.SLOTS
+
+		for slot in range(mini(_buttons.size(), inventory.SLOTS)):
+			valid = valid and is_instance_valid(_buttons[slot]) and _buttons[slot].get_parent() == _grid
+
+			if inventory.numbers[slot] != 0 and _buttons[slot].text == "":
+				filled_ok = false
+
+		await get_tree().process_frame
+		_refresh()
+		await get_tree().process_frame
+
+		for button in _buttons:
+			valid = valid and is_instance_valid(button)
+
+		# Every slot that holds something must show it after each press.
+		for slot in range(inventory.SLOTS):
+			if inventory.numbers[slot] != 0 and valid and _buttons[slot].text == "":
+				filled_ok = false
+
+		for mode in [1, 2, 3, 0]:
+			sort_index = mode
+			_arrange_slots()
+
+	print("Text test: scale %.2f, %d slot buttons, all valid %s, every item shown %s, panel open %s" % [text_scale, _buttons.size(), str(valid), str(filled_ok), str(open)])
+
+
 # Headless check (--plantpick): pick several plants (kind 2, flowers and herbs) and see whether each one is gone
 # from the client's flora afterwards.
 func run_plant_test(client) -> void:
@@ -1695,6 +1834,23 @@ func run_eat_test(client) -> void:
 	eat_slot(inventory.numbers.find(table.number_of("poultice")))
 	await get_tree().create_timer(1.0).timeout
 	print("Eat test: poultice left %d, health %d" % [inventory.count_of(table.number_of("poultice")), health])
+
+	# Sort view: the grid order follows the choice while every button keeps its own slot.
+	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("stone"), 0, 3, Vector3.ZERO)
+	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("log"), 0, 1, Vector3.ZERO)
+	await get_tree().create_timer(1.0).timeout
+	toggle()
+
+	for mode in [1, 2, 3, 0]:
+		sort_index = mode
+		_arrange_slots()
+		var names: Array = []
+
+		for position in range(4):
+			var slot: int = _buttons.find(_grid.get_child(position))
+			names.append(table.name_of(inventory.numbers[slot]) if inventory.numbers[slot] != 0 else "-")
+
+		print("Sort test: mode %d first four: %s" % [mode, ", ".join(names)])
 
 
 # Headless check (--chest): place a chest, open it, put stones in, take them out.

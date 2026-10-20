@@ -59,5 +59,10 @@ func name_of(number: int) -> String:
 	return String(_by_number.get(number, {}).get("name", "Unknown"))
 
 
+# Placeholder price of one item (items.json "value"; 2 when it has none).
+func value_of(number: int) -> int:
+	return int(_by_number.get(number, {}).get("value", 2))
+
+
 func ids() -> Array:
 	return _by_id.keys()
