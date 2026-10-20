@@ -48,6 +48,19 @@ var health: int = 100
 var weight_kg: float = 75.0
 var _vitals_cfg: Dictionary = {}
 var _carry_cfg: Dictionary = {}
+var _exertion_cfg: Dictionary = {}
+
+# Over-exertion from the server (data/items/exertion.json). Sounds and Art read these:
+#   strain       0 and up, 1.0 = over-exerted (no ceiling)
+#   strain_state 0 normal, 1 over-exerted (speed capped, no sprint), 2 fainted, 3 waking
+#   strain_fade  0..1: fainted, how much of the faint is gone (vision fades over the first
+#                vision_frac, then the heartbeat); waking, how much of the blackness is left
+var strain: float = 0.0
+var strain_state: int = 0
+var strain_fade: float = 0.0
+var strain_event: Callable = Callable()   # (strain, state, fade) whenever the server sends a change
+var _black: ColorRect
+var _strain_note: Label
 var _eat_item: String = ""
 var _hunger_bar: ColorRect
 var _health_bar: ColorRect
@@ -80,6 +93,9 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.notice_received.connect(_on_notice)
 	net.chest_received.connect(_on_chest)
 	net.vitals_received.connect(_on_vitals)
+	net.strain_received.connect(_on_strain)
+	var exertion_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/exertion.json"))
+	_exertion_cfg = exertion_parsed if typeof(exertion_parsed) == TYPE_DICTIONARY else {}
 	_vitals_cfg = VitalsRules.load_config()
 	_carry_cfg = CarryRules.load_config()
 	_build_vitals_hud()
@@ -93,6 +109,23 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	_prompt.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
 	_prompt.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_layer.add_child(_prompt)
+	_black = ColorRect.new()
+	_black.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_black.color = Color(0.0, 0.0, 0.0, 0.0)
+	_black.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_black.z_index = 100
+	_layer.add_child(_black)
+	_strain_note = Label.new()
+	_strain_note.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_strain_note.offset_top = 120.0
+	_strain_note.offset_left = -300.0
+	_strain_note.offset_right = 300.0
+	_strain_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_strain_note.add_theme_font_size_override("font_size", 28)
+	_strain_note.add_theme_constant_override("outline_size", 6)
+	_strain_note.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
+	_strain_note.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_layer.add_child(_strain_note)
 	net.hello.rpc_id(1, _player_key())
 
 
@@ -261,9 +294,13 @@ func admin_give_test_set() -> void:
 		net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of(id), 0, 10, Vector3.ZERO)
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	var now: int = Time.get_ticks_msec()
 	_hold_e_check()
+
+	if _black != null:
+		_black.color.a = lerpf(_black.color.a, blackness(), clampf(delta * 6.0, 0.0, 1.0))
+		_strain_note.text = "You are exhausted: slow down" if strain_state == 1 else ""
 
 	if _crafting != 0:
 		if now >= _craft_done_msec:
@@ -609,6 +646,34 @@ func _load_text() -> String:
 	var comfort: float = CarryRules.comfort_kg(weight_kg, _carry_cfg)
 	var state: String = "" if load_kg <= comfort else ("   (heavy: you move slower)" if load_kg < CarryRules.cap_kg(weight_kg, _carry_cfg) else "   (at the limit)")
 	return "Carrying %.1f kg of %.0f kg comfortable%s" % [load_kg, comfort, state]
+
+
+func _on_strain(strain_pm: int, state: int, fade_pm: int) -> void:
+	strain = float(strain_pm) / 1000.0
+	strain_state = state
+	strain_fade = float(fade_pm) / 1000.0
+
+	if strain_event.is_valid():
+		strain_event.call(strain, state, strain_fade)
+
+
+# Movement the over-exertion allows: -1 none (fainted or waking), else a speed cap in m/s (0 = no cap).
+func move_cap() -> float:
+	if strain_state >= 2:
+		return -1.0
+
+	return float(_exertion_cfg.get("over_speed_mps", 3.0)) if strain_state == 1 else 0.0
+
+
+# How black the screen is, 0 to 1: vision fades over the first vision_frac of a faint, and returns as one wakes.
+func blackness() -> float:
+	if strain_state == 2:
+		return clampf(strain_fade / float(_exertion_cfg.get("vision_frac", 0.625)), 0.0, 1.0)
+
+	if strain_state == 3:
+		return clampf(strain_fade * 1.4, 0.0, 1.0)
+
+	return 0.0
 
 
 func _on_vitals(new_hunger: int, new_health: int, weight_dkg: int) -> void:

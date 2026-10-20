@@ -1709,6 +1709,7 @@ func _step_player(delta: float) -> void:
 		_item_sync_left = 0.1
 		sound.itemfx.watch(items)
 		sound.itemfx.watch_vitals(items.hunger, 0.1)
+		sound.breath.set_exertion(items.strain)   # the server's real strain replaces the stand-in
 
 	_fire_sync_left -= delta
 
@@ -1746,17 +1747,26 @@ func _move_player(delta: float) -> void:
 		direction = _walk_dir
 	var fast: float = FAST if Input.is_key_pressed(KEY_SHIFT) else 1.0
 	var forward: bool = Input.is_key_pressed(KEY_W)
+	var strain_cap: float = items.move_cap() if items != null and not flying else 0.0
 
 	# Gaits (CONTROLS.md): walk is plain WASD, jog is a double-tap of W, run is
 	# Shift with W. Letting go of W ends both.
 	if not forward:
 		jogging = false
 
-	running = forward and Input.is_key_pressed(KEY_SHIFT)
+	running = forward and Input.is_key_pressed(KEY_SHIFT) and strain_cap == 0.0
+
+	if strain_cap != 0.0:
+		jogging = false
 	var pace: float = RUN_SPEED if running else (JOG_SPEED if jogging else WALK_SPEED)
 
 	if items != null and not flying:
 		pace *= items.speed_factor()
+
+		if strain_cap > 0.0:
+			pace = minf(pace, strain_cap)
+		elif strain_cap < 0.0:
+			pace = 0.0   # fainted or waking: no control
 
 	if test_speed > 0.0 and frames_left > 0:
 		if test_fly:
@@ -1795,7 +1805,7 @@ func _move_player(delta: float) -> void:
 		else:
 			velocity.y = body.velocity.y - GRAVITY * delta
 
-		if body.is_on_floor() and Input.is_key_pressed(KEY_SPACE):
+		if body.is_on_floor() and Input.is_key_pressed(KEY_SPACE) and strain_cap >= 0.0:
 			velocity.y = 7.0
 
 		body.velocity = velocity

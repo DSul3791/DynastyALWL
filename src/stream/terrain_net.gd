@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 19
+const PROTOCOL_VERSION := 20
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -50,6 +50,7 @@ signal water_received(chunk: Vector2i, water: PackedByteArray)
 signal notice_received(text: String)
 signal chest_received(id: int, bytes: PackedByteArray)
 signal vitals_received(hunger: int, health: int, weight_dkg: int)
+signal strain_received(strain_pm: int, state: int, fade_pm: int)
 signal hello_requested(peer_id: int, player_key: String)
 signal inventory_action_requested(peer_id: int, kind: int, a: int, b: int, count: int, at: Vector3)
 signal inventory_full_received(bytes: PackedByteArray)
@@ -203,6 +204,14 @@ func inventory_slots(bytes: PackedByteArray) -> void:
 @rpc("authority", "call_remote", "reliable")
 func world_items(added: Array, removed: PackedInt32Array) -> void:
 	world_items_received.emit(added, removed)
+
+
+# Over-exertion (data/items/exertion.json): strain in thousandths (1000 = over-exerted), state 0 normal,
+# 1 over-exerted, 2 fainted, 3 waking, fade in thousandths of the faint or wake time gone (state 2: 0 to 1000
+# as vision then heartbeat fade out; state 3: 1000 down to 0 as they return).
+@rpc("authority", "call_remote", "reliable")
+func strain(strain_pm: int, state: int, fade_pm: int) -> void:
+	strain_received.emit(strain_pm, state, fade_pm)
 
 
 # The player's hunger (stomach percent), health (points 0 to 100) and body weight (tenths of a kg) (at hello, after eating, and when a point changes).

@@ -86,6 +86,7 @@ var cut_tree: Callable         # (chunk Vector2i, id) -> true when the standing 
 var rock_at: Callable          # (x, z) -> true when bare rock shows at the surface there (no soil cover); set by the server scene
 var game_seconds: Callable      # () -> game clock seconds
 var season_now: Callable        # () -> "spring" | "summer" | "autumn" | "winter"
+var send_strain: Callable       # (peer, strain in thousandths, state 0 normal 1 over 2 fainted 3 waking, fade in thousandths)
 var send_vitals: Callable       # (peer, hunger percent, health, weight in tenths of a kg)
 var send_chest: Callable        # (peer, world id, bytes) a chest's contents to the player who opened it
 var roof_add: Callable          # (roof Array from Cover.box_roof) -> key; the server's cover index gets the lean-to's roof
@@ -110,6 +111,9 @@ var _chests: Dictionary = {}        # structure uid -> Inventory (server-owned c
 var _next_uid: int = 1
 var _vitals_cfg: Dictionary = {}
 var _carry_cfg: Dictionary = {}
+var _exertion_cfg: Dictionary = {}
+var _strain: Dictionary = {}        # peer -> {s: strain, state: 0..3, t: seconds in the state}
+var _strain_sent: Dictionary = {}
 var _vitals: Dictionary = {}        # player key -> {hunger, health} floats
 var _vitals_sent: Dictionary = {}   # peer -> [hunger, health] last whole points sent
 var _exertion: Dictionary = {}      # peer -> smoothed 0..1 from movement
@@ -155,6 +159,8 @@ func setup(item_table, store_dir: String) -> void:
 
 	_vitals_cfg = VitalsRules.load_config()
 	_carry_cfg = CarryRules.load_config()
+	var exertion_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/exertion.json"))
+	_exertion_cfg = exertion_parsed if typeof(exertion_parsed) == TYPE_DICTIONARY else {}
 	_load_vitals()
 	_load_inventories()
 	_load_chests()
@@ -212,6 +218,8 @@ func peer_left(peer: int) -> void:
 	_motion.erase(peer)
 	_work_until.erase(peer)
 	_vitals_sent.erase(peer)
+	_strain.erase(peer)
+	_strain_sent.erase(peer)
 	_last_process.erase(peer)
 
 
@@ -1693,6 +1701,14 @@ func _new_vitals() -> Dictionary:
 
 # How hard the player is working, 0 to 1: movement speed from position reports, lifted by recent tool work.
 func exertion_of(peer: int) -> float:
+	if int(_strain.get(peer, {}).get("state", 0)) >= 2:
+		return 0.0
+
+	return minf(effort_of(peer), 1.0)
+
+
+# The same without the ceiling (a heavy pack can push it past 1): what strain builds on.
+func effort_of(peer: int) -> float:
 	var level: float = float(_exertion.get(peer, 0.0))
 
 	if Time.get_ticks_msec() < int(_work_until.get(peer, 0)):
@@ -1702,7 +1718,7 @@ func exertion_of(peer: int) -> float:
 	if not _carry_cfg.is_empty():
 		var body: float = float(vitals_of(peer).get("weight", 75.0))
 		var ratio: float = carried_kg_of(peer) / maxf(CarryRules.comfort_kg(body, _carry_cfg), 1.0)
-		level = minf(level * (1.0 + float(_carry_cfg.get("load_exertion", 0.3)) * minf(ratio, 2.0)), 1.0)
+		level = level * (1.0 + float(_carry_cfg.get("load_exertion", 0.3)) * minf(ratio, 2.0))
 
 	return level
 
@@ -1743,6 +1759,81 @@ func _vitals_tick(spent: float) -> void:
 			v["health"] = clampf(float(v["health"]) + float(_vitals_cfg.get("health_regen_per_s", 0.05)) * spent, 0.0, health_max)
 
 		_sync_vitals(peer, false)
+		_strain_tick(peer, spent)
+
+
+# Over-exertion (data/items/exertion.json): strain climbs with effort above rest and falls below it. Over
+# over_on the player is over-exerted (the client caps speed); past faint_at they faint, then wake slowly.
+func _strain_tick(peer: int, spent: float) -> void:
+	if _exertion_cfg.is_empty():
+		return
+
+	var st: Dictionary = _strain.get(peer, {})
+
+	if st.is_empty():
+		st = {"s": 0.0, "state": 0, "t": 0.0}
+		_strain[peer] = st
+
+	var cfg: Dictionary = _exertion_cfg
+	var body: float = float(vitals_of(peer).get("weight", 75.0))
+	var scale: float = pow(float(cfg.get("reference_body_kg", 75.0)) / maxf(body, 20.0), 0.5) * float(cfg.get("fitness", 1.0))
+	var state: int = int(st["state"])
+	var strain: float = float(st["s"])
+	st["t"] = float(st["t"]) + spent
+
+	if state == 2:
+		if float(st["t"]) >= float(cfg.get("faint_s", 8.0)):
+			state = 3
+			st["t"] = 0.0
+			st["after_faint"] = true
+			strain = float(cfg.get("wake_strain", 1.1))
+	elif state == 3:
+		strain = maxf(strain - float(cfg.get("rest_effort", 0.52)) * float(cfg.get("fall_per_s", 0.05)) * float(cfg.get("wake_fall_mult", 0.4)) * spent, 0.0)
+
+		if float(st["t"]) >= float(cfg.get("wake_s", 12.0)):
+			state = 1 if strain >= float(cfg.get("over_off", 0.75)) * scale else 0
+
+			if state == 0:
+				st["after_faint"] = false
+			st["t"] = 0.0
+	else:
+		var diff: float = effort_of(peer) - float(cfg.get("rest_effort", 0.52))
+		var rate: float = float(cfg.get("rise_per_s", 0.02)) if diff > 0.0 else float(cfg.get("fall_per_s", 0.05))
+
+		# Slower to come down while still racing after a faint.
+		if diff < 0.0 and bool(st.get("after_faint", false)):
+			rate *= float(cfg.get("wake_fall_mult", 0.4))
+
+		strain = maxf(strain + diff * rate * spent, 0.0)
+
+		if state == 0 and strain >= float(cfg.get("over_on", 1.0)) * scale:
+			state = 1
+		elif state == 1 and strain < float(cfg.get("over_off", 0.75)) * scale:
+			state = 0
+			st["after_faint"] = false
+
+		if state == 1 and strain >= float(cfg.get("faint_at", 1.4)) * scale:
+			state = 2
+			st["t"] = 0.0
+
+	st["s"] = strain
+	st["state"] = state
+	var fade: float = 0.0
+
+	if state == 2:
+		fade = clampf(float(st["t"]) / float(cfg.get("faint_s", 8.0)), 0.0, 1.0)
+	elif state == 3:
+		fade = 1.0 - clampf(float(st["t"]) / float(cfg.get("wake_s", 12.0)), 0.0, 1.0)
+
+	var points: Array = [int(strain * 50.0) * 20, state, int(fade * 20.0) * 50]
+
+	if send_strain.is_valid() and _strain_sent.get(peer, []) != points:
+		_strain_sent[peer] = points
+		send_strain.call(peer, points[0], points[1], points[2])
+
+
+func strain_of(peer: int) -> Dictionary:
+	return _strain.get(peer, {})
 
 
 func _vitals_points(v: Dictionary) -> Array:

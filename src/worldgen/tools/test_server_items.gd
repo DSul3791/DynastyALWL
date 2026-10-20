@@ -704,5 +704,38 @@ func _init() -> void:
 	var mid: float = CarryScript.speed_factor(39.0, 75.0, ccfg)
 	check(mid > 0.35 and mid < 1.0, "slocwdown is smooth in between (%.2f)" % mid)
 
+	# Over-exertion: running climbs strain past 1 (over-exerted), on to a faint, then a slow wake.
+	var ed: String = "user://test_server_items_strain"
+	DirAccess.make_dir_recursive_absolute(ed)
+
+	for file in DirAccess.get_files_at(ed):
+		DirAccess.remove_absolute(ed + "/" + file)
+
+	var sx = make(ed)
+	var strains: Array = []
+	sx.send_vitals = func(_p, _h, _he, _w): pass
+	sx.send_strain = func(_p, s, st, fa): strains.append([s, st, fa])
+	sx.peer_connected_hello(1, "strainkey001")
+	sx._exertion[1] = 1.0
+	var seen: Dictionary = {}
+
+	for n in range(4 * 400):
+		sx._exertion[1] = 1.0 if int(sx.strain_of(1).get("state", 0)) < 2 else 0.0
+		sx._vitals_tick(0.25)
+		seen[int(sx.strain_of(1).get("state", 0))] = true
+
+	check(seen.has(1) and seen.has(2) and seen.has(3), "running without rest goes over-exerted, faints and wakes: %s" % str(seen.keys()))
+	sx._exertion[1] = 0.5
+	var st_walk: float = float(sx.strain_of(1).get("s", 0.0))
+	var sw = make(ed)
+	sw.send_vitals = func(_p, _h, _he, _w): pass
+	sw.peer_connected_hello(1, "strainkey002")
+	sw._exertion[1] = 0.5
+
+	for n in range(4 * 1200):
+		sw._vitals_tick(0.25)
+
+	check(float(sw.strain_of(1).get("s", 0.0)) < 0.2 and int(sw.strain_of(1).get("state", 0)) == 0, "walking is sustainable (%.2f)" % float(sw.strain_of(1).get("s", 0.0)))
+	check(strains.size() > 0 and strains.size() < 500, "strain updates are not flooded (%d sent)" % strains.size())
 	print("server item tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
