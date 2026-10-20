@@ -51,6 +51,12 @@ func reset() -> void:
 	quality = -1
 
 
+# True when the game runs inside the editor's Game tab: the editor owns that window, so a script
+# cannot resize it or make it fullscreen (only the 3D picture size can change).
+static func embedded() -> bool:
+	return Engine.has_method("is_embedded_in_editor") and Engine.is_embedded_in_editor()
+
+
 func size() -> Vector2i:
 	return SIZES[size_index]
 

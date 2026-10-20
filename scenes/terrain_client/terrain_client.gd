@@ -853,6 +853,28 @@ func _apply_quality() -> void:
 		_environment.fog_density = 0.05 if underwater else LookSettings.FOG_DENSITY
 
 
+# Tells what the display setting really did, a moment later when the window had time to change:
+# the window size the system gave us and the 3D size drawn. Inside the editor's Game tab the
+# editor owns the window, so only the 3D size changes.
+func _report_display(prefix: String = "") -> void:
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var win: Vector2i = get_window().size
+	var render: Vector2i = Vector2i(Vector2(win) * _render_scale)
+	var text: String = "%s3D picture %dx%d" % [prefix, render.x, render.y]
+
+	if display.embedded():
+		text += " (window %dx%d). The game runs inside the editor, which owns the window: it cannot be resized or made fullscreen from here, only the 3D size changes. Run it standalone to resize the window." % [win.x, win.y]
+	elif display.fullscreen:
+		text += " in a fullscreen windowed screen of %dx%d." % [win.x, win.y]
+	elif win != display.size():
+		text += ". The system kept the window at %dx%d (asked for %s)." % [win.x, win.y, display.size_text()]
+	else:
+		text += ", window %dx%d." % [win.x, win.y]
+
+	_menu_note.text = text
+
+
 # Saves the window, VSync and quality choices (display_settings.gd).
 func _save_display() -> void:
 	display.quality = quality
@@ -945,7 +967,7 @@ func _build_menu(layer: CanvasLayer) -> void:
 		display.apply(get_window())
 		_apply_render_scale()
 		_save_display()
-		_menu_note.text = "3D resolution %s (the highest is 1920x1080).%s" % [display.size_text(), " Fullscreen windowed stretches it to the screen." if display.fullscreen else ""])
+		_report_display())
 	_menu_button(settings, "Reset display to default", func():
 		display.reset()
 		quality = 2
@@ -953,13 +975,13 @@ func _build_menu(layer: CanvasLayer) -> void:
 		display.apply(get_window())
 		_apply_quality()
 		_save_display()
-		_menu_note.text = "Display reset: High, windowed 1920x1080, VSync on.")
+		_report_display("Display reset: High, windowed 1920x1080, VSync on. "))
 	_menu_button(settings, "Window: windowed or fullscreen windowed", func():
 		display.fullscreen = not display.fullscreen
 		display.apply(get_window())
 		_apply_render_scale()
 		_save_display()
-		_menu_note.text = "Fullscreen windowed: the 3D picture stays at %s and is stretched to the screen." % display.size_text() if display.fullscreen else "Windowed, %s." % display.size_text())
+		_report_display())
 	_menu_button(settings, "Sound volume: change", func():
 		var share: float = sound.step_volume()
 		_menu_note.text = "Sound is off" if share <= 0.0 else "Sound volume %d %%" % roundi(share * 100.0))
@@ -1571,7 +1593,7 @@ func _process(delta: float) -> void:
 		hud.text += "\nweather: rain %.2f snow %.2f storm %.2f sun %.2f wind %.2f, %.0f C" % [weather["rain"], weather["snow"], weather["storm"], weather["sun"], weather["wind"], weather["temp_c"]]
 
 	var win: Vector2i = get_window().size
-	hud.text += "\n3D %dx%d of window %dx%d (scale %.2f), %s, %s" % [int(win.x * _render_scale), int(win.y * _render_scale), win.x, win.y, _render_scale, RenderingServer.get_video_adapter_name(), RenderingServer.get_current_rendering_driver_name()]
+	hud.text += "\n3D %dx%d of window %dx%d (scale %.2f)%s, %s, %s" % [int(win.x * _render_scale), int(win.y * _render_scale), win.x, win.y, _render_scale, " (embedded: editor owns the window)" if display.embedded() else "", RenderingServer.get_video_adapter_name(), RenderingServer.get_current_rendering_driver_name()]
 	hud.text += "\nlast step: " + sound.last_step
 	hud.text += "\nsound budget: " + sound.budget_text()
 	hud.text += "\ncave: enclosure %.2f, drips %d" % [sound.cave.enclosure, sound.cave.drips_played]
