@@ -917,7 +917,7 @@ func _exit_tree() -> void:
 
 	_streams.clear()
 
-	for name in ["Wind", "Foley", "Nature", "Weather"]:
+	for name in ["Wind", "Foley", "Nature", "WeatherMid", "WeatherFar", "Weather"]:
 		var index: int = AudioServer.get_bus_index(name)
 
 		if index >= 0:

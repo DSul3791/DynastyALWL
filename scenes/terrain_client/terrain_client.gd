@@ -179,6 +179,7 @@ var _fire_sync_left: float = 0.0
 var _tree_sync_left: float = 0.0
 var _item_sync_left: float = 0.0
 var test_levels: bool = false
+var test_distant: bool = false
 var test_craft_sounds: bool = false
 var _test_craft_t: float = -1.0
 var test_flame: bool = false
@@ -329,6 +330,8 @@ func _ready() -> void:
 			test_flame = true
 		elif argument == "--craft-sounds":
 			test_craft_sounds = true
+		elif argument == "--distant":
+			test_distant = true
 		elif argument == "--levels":
 			test_levels = true
 		elif argument == "--fire":
@@ -1985,6 +1988,14 @@ func _process(delta: float) -> void:
 
 		if _test_craft_t > 16.5:
 			test_craft_sounds = false
+
+	# Headless check: strikes at 300, 1000 and 2500 m take the plain, mid and far thunder buses with a scaled, capped delay.
+	if test_distant and now - connected_msec > 18000:
+		test_distant = false
+
+		for metres in [300.0, 1000.0, 2500.0]:
+			sound.weather.strike(metres)
+			print("Terrain client: thunder %s" % sound.weather.last_thunder)
 
 	# Headless check: the volume sliders change the buses and reset.
 	if test_levels and now - connected_msec > 18000:

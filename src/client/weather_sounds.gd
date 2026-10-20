@@ -36,7 +36,11 @@ const FADE_PER_SEC := 0.15              # about 7 s from none to full
 const THUNDER_EVERY := [14.0, 45.0]     # at the full storm value; a weaker storm waits longer
 const THUNDER_NEAR_M := 500.0           # closer than this: sharp crack and thud
 const THUNDER_FAR_M := 1800.0           # farther than this: a low grumble
-const THUNDER_MAX_DELAY_SEC := 10.0
+const THUNDER_MAX_DELAY_SEC := 4.0       # the light-to-sound wait is shortened so a far strike still feels connected
+const THUNDER_DELAY_SCALE := 0.5         # of the real travel time, then capped
+# Distant thunder is dulled by the air: past these distances it plays on a bus with a low-pass,
+# the farther the darker (name, from metres, cutoff Hz). Near strikes use the plain Weather bus.
+const THUNDER_BUSES := [["WeatherFar", 1800.0, 450.0], ["WeatherMid", 600.0, 1600.0]]
 const SPEED_OF_SOUND := 343.0
 
 # kind: rain (0 to 1), wind (0 to 1), hush (0 to 1, quiets the nature layer), thunder (0 or 1),
@@ -332,7 +336,7 @@ func strike(distance_m: float, angle: float = -1.0) -> bool:
 
 	var voice: AudioStreamPlayer = AudioStreamPlayer.new()
 	voice.stream = list[_rng.randi_range(0, list.size() - 1)]
-	voice.bus = "Weather"
+	voice.bus = _thunder_bus(distance_m)
 	voice.volume_db = THUNDER_DB - distance_m / 400.0 + (3.0 if distance_m < THUNDER_NEAR_M else 0.0) + _rng.randf_range(-2.0, 1.0)
 	voice.pitch_scale = _rng.randf_range(0.9, 1.1)
 	add_child(voice)
@@ -342,10 +346,33 @@ func strike(distance_m: float, angle: float = -1.0) -> bool:
 		angle = _rng.randf() * TAU
 
 	lightning.emit(Vector3(cos(angle) * distance_m, 0.0, sin(angle) * distance_m), distance_m)
-	_pending.append([minf(distance_m / SPEED_OF_SOUND, THUNDER_MAX_DELAY_SEC), voice])
+	_pending.append([thunder_delay(distance_m), voice])
 	thunders_played += 1
-	last_thunder = "%s %.0f m" % [sound_name, distance_m]
+	last_thunder = "%s %.0f m, %s, heard in %.1f s" % [sound_name, distance_m, voice.bus, thunder_delay(distance_m)]
 	return true
+
+
+# Seconds between the flash and the thunder for a strike this far away.
+func thunder_delay(distance_m: float) -> float:
+	return minf(distance_m / SPEED_OF_SOUND * THUNDER_DELAY_SCALE, THUNDER_MAX_DELAY_SEC)
+
+
+# The bus a strike this far away plays on: a low-passed child of Weather for distant ones.
+func _thunder_bus(distance_m: float) -> String:
+	for entry in THUNDER_BUSES:
+		if distance_m >= float(entry[1]):
+			var bus_name: String = str(entry[0])
+
+			if AudioServer.get_bus_index(bus_name) < 0:
+				var index: int = SoundStage._make_bus(bus_name)
+				AudioServer.set_bus_send(index, "Weather")
+				var low: AudioEffectLowPassFilter = AudioEffectLowPassFilter.new()
+				low.cutoff_hz = float(entry[2])
+				AudioServer.add_bus_effect(index, low)
+
+			return bus_name
+
+	return "Weather"
 
 
 func _variants(name: String) -> Array:

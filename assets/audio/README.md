@@ -210,3 +210,8 @@ Generated placeholders: `assets/audio/crafting/craft_<type>_N.ogg` (make_craftin
 
 Hooks for the building system, no building needed yet. `sound.set_floor("plank")` (also "slab" stone slabs, "carpet", "thatch", "path" gravel path; "" back on natural ground) makes steps use that floor; or set `sound.floor_under` to a Callable(feet Vector3) -> floor name for a per-step query. Floors do not apply in water; snow lies on a path but not indoors, puddles splash on path and slab.
 Generated placeholders: `assets/audio/floors/step_<surface>_N.ogg` (make_floors.py). Recordings go in `assets/audio/recorded/` as `step_plank_left_N` / `step_plank_right_N` and win, like the ground sets. Test: `--walk --floor=plank` (headless prints the footstep counts).
+
+## Distant sounds (build 192)
+
+Thunder: the wait after the flash is the real travel time halved, capped at 4 s (a strike 2.5 km away is heard 3.6 s later). Strikes over 600 m play on a low-passed bus (WeatherMid, 1.6 kHz), over 1800 m darker still (WeatherFar, 450 Hz). Both buses feed Weather, so the mixer and cave muffling still apply. Test: `--distant` (headless prints three strikes, their bus and delay).
+Waterfalls are now heard out to 260 m (was 70): wider range, a bigger unit size so they stay faintly audible, and the player's own distance low-pass (2.2 kHz) so far falls rumble without hiss. Not yet checked live: stand 150 to 250 m from a fall with F3 on and read the water line.
