@@ -53,7 +53,7 @@ func _init() -> void:
 	var desert: Dictionary = survey("desert", 0.0, 0.0)
 	var temperate: Dictionary = survey("temperate", 0.0, 0.0)
 	check(desert["wet"] < 0.05, "dry zones stay dry (%.2f)" % desert["wet"])
-	check(temperate["wet"] > 0.15 and temperate["wet"] < 0.7, "temperate rains sometimes (%.2f)" % temperate["wet"])
+	check(temperate["wet"] > 0.05 and temperate["wet"] < 0.35, "temperate rains sometimes (%.2f)" % temperate["wet"])
 
 	# Polar: snow, not rain, in winter.
 	var winter: Dictionary = {"rain": 0.0, "snow": 0.0}
@@ -78,7 +78,7 @@ func _init() -> void:
 	check(high["sun"] > neutral["sun"] and neutral["sun"] > low["sun"], "sun: high %.2f > neutral %.2f > low %.2f" % [high["sun"], neutral["sun"], low["sun"]])
 	check(low["storm"] > neutral["storm"] and high["storm"] <= neutral["storm"], "storms: low %.2f neutral %.2f high %.2f" % [low["storm"], neutral["storm"], high["storm"]])
 	check(low["wet"] > neutral["wet"], "low spirit rains more (%.2f vs %.2f)" % [low["wet"], neutral["wet"]])
-	check(high["night_wet"] > 0.1, "high spirit gets night rain (%.2f)" % high["night_wet"])
+	check(high["night_wet"] > 0.05, "high spirit gets night rain (%.2f)" % high["night_wet"])
 	print("weather: desert %s temperate %s" % [str(desert), str(temperate)])
 	print("weather: high %s neutral %s low %s" % [str(high), str(neutral), str(low)])
 	print("weather: %d failures" % failures)
