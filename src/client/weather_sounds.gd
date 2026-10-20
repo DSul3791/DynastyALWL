@@ -63,8 +63,10 @@ var calls: float = 1.0
 var wet: float = 0.0
 var thunders_played: int = 0
 var last_thunder: String = ""
+var world_wind: float = 0.35            # the world's wind (0.15 calm to 1 storm), smoothed: sets the wind sound
 var storm_level: float = 1.0            # the world's storm value (0 to 1) behind the current kind
 
+var _wind_target: float = 0.35
 var _stage                              # SoundStage
 var _ambient                            # AmbientLife (zone weights)
 var _rng := RandomNumberGenerator.new()
@@ -122,6 +124,7 @@ func apply_state(state: Dictionary) -> void:
 		return
 
 	storm_level = float(state.get("storm", 0.0))
+	_wind_target = float(state.get("wind", 0.35))
 	var snow: float = float(state.get("snow", 0.0))
 	var storm: float = float(state.get("storm", 0.0))
 	var rain_level: float = float(state.get("rain", 0.0))
@@ -152,6 +155,7 @@ func voices_playing() -> int:
 func update(delta: float, body: CharacterBody3D, underwater: bool) -> void:
 	var target: Dictionary = KINDS[kind]
 	var step: float = FADE_PER_SEC * delta
+	world_wind = move_toward(world_wind, maxf(_wind_target, wind) if forced else _wind_target, 0.1 * delta)
 	rain = move_toward(rain, float(target["rain"]) * intensity, step)
 	wind = move_toward(wind, float(target["wind"]) * intensity, step)
 	hush = move_toward(hush, float(target["hush"]) * intensity, step)

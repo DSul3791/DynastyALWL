@@ -39,7 +39,7 @@ const GitStamp := preload("res://src/debug/git_stamp.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 const GpuProbeScript := preload("res://src/debug/gpu_probe.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 120
+const BUILD := 121
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -1574,6 +1574,7 @@ func _process(delta: float) -> void:
 	hud.text += "\n3D %dx%d of window %dx%d (scale %.2f), %s, %s" % [int(win.x * _render_scale), int(win.y * _render_scale), win.x, win.y, _render_scale, RenderingServer.get_video_adapter_name(), RenderingServer.get_current_rendering_driver_name()]
 	hud.text += "\nlast step: " + sound.last_step
 	hud.text += "\nsound budget: " + sound.budget_text()
+	hud.text += "\n" + sound.wind_text()
 	hud.text += "\nmuffled sounds: %d filtered, %d behind hills" % [sound.occlusion.filtered, sound.occlusion.occluded]
 	hud.text += "\ncave: enclosure %.2f, drips %d" % [sound.cave.enclosure, sound.cave.drips_played]
 	hud.text += "\nlast dig sound: %s" % sound.dig.last_dig
@@ -1616,6 +1617,7 @@ func _process(delta: float) -> void:
 			print("Terrain client: muffled sounds: %d filtered, %d behind hills" % [sound.occlusion.filtered, sound.occlusion.occluded])
 			print("Terrain client: cave enclosure %.2f, drips %d" % [sound.cave.enclosure, sound.cave.drips_played])
 			print("Terrain client: dig sounds %s, last %s" % [str(sound.dig.digs_played), sound.dig.last_dig])
+			print("Terrain client: ", sound.wind_text())
 			print("Terrain client: sound budget: %s, %d loads refused" % [sound.budget_text(), sound.refused_loads])
 			print("Terrain client: weather %s rain %.2f wind %.2f calls %.2f thunders %d" % [sound.weather.kind, sound.weather.rain, sound.weather.wind, sound.weather.calls, sound.weather.thunders_played])
 			print("Terrain client: sound: footsteps %s, grass swishes %d, last ground %s, gust %.2f" % [str(sound.steps_played), sound.swishes_played, sound.surface, sound.gust])

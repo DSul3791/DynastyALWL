@@ -63,6 +63,10 @@ const RAIN_SOAK := 0.5                  # rain level from which loose dirt and l
 # Esc > Settings mixer groups: name -> the buses it sets. Shares step through VOLUME_STEPS.
 const MIX_GROUPS := {"wind": ["Wind"], "nature": ["Nature", "Weather"], "steps": ["Foley"]}
 const SETTINGS_PATH := "user://sound_settings.cfg"
+const EXPOSURE_RING_M := 70.0           # ground is read on this ring around the player
+const EXPOSURE_FULL_M := 40.0           # this far above or below the ring's average is a full ridge or valley
+const EXPOSURE_GAIN := 0.45             # ridge wind is this much stronger (valley this much weaker)
+const EXPOSURE_EVERY_FRAMES := 6        # one ring point per this many frames
 const GRASS_MIN := 0.35                 # grass thickness from which a step sounds like grass
 const WATER_STEP_M := 0.12              # water above the soles that turns steps into splashes
 const DAMP_M := 0.03                    # shallower film at the waterline: a damp, muddy step
@@ -84,6 +88,8 @@ var surface: String = ""                # what the feet were last on
 var _stable: String = ""                # the surface being sounded (changes only after two steps)
 var _pending: String = ""
 var last_step: String = ""              # for the HUD: ground, soil id, water depth, file played
+var wind_strength: float = 0.0          # the wind loudness measure now (HUD)
+var exposure: float = 0.0               # -1 valley floor .. +1 ridge or hilltop (height against the ground around)
 var gust: float = 0.0                   # 0 calm .. 1 strongest gust
 var volume_index: int = 0
 var mix_index: Dictionary = {"wind": 0, "nature": 0, "steps": 0}   # per group, into VOLUME_STEPS
@@ -101,6 +107,10 @@ var _terrain: VoxelLodTerrain
 var _flora
 var _grass
 var _tool: VoxelTool
+var _height_tool: VoxelTool             # ray tool for the ground height ring (exposure)
+var _ring_frames: int = 0
+var _ring_at: int = 0
+var _ring_heights: Dictionary = {}      # ring point -> ground height there
 var _streams: Dictionary = {}           # sound name -> Array of AudioStream variants
 var _last_variant: Dictionary = {}
 var _recorded: Dictionary = {}          # sound names that come from assets/audio/recorded/
@@ -131,6 +141,8 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	_flora = flora
 	_grass = grass
 	_tool = terrain.get_voxel_tool()
+	_height_tool = terrain.get_voxel_tool()
+	_height_tool.channel = VoxelBuffer.CHANNEL_SDF
 	_rng.randomize()
 	_gust_noise.seed = 9
 	_gust_noise.frequency = 0.02
@@ -193,6 +205,37 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 		_wind_gust.play(_rng.randf() * 20.0)
 
 
+# Samples the ground height on a ring around the player, one point every few frames, and
+# eases `exposure` toward how far the player stands above (+) or below (-) its average.
+func _sample_exposure(delta: float, body: CharacterBody3D, flying: bool) -> void:
+	if flying:
+		exposure = move_toward(exposure, 0.0, delta * 0.3)
+		return
+
+	_ring_frames += 1
+
+	if _ring_frames % EXPOSURE_EVERY_FRAMES == 0:
+		var points: int = 4 if tier == 0 else 8
+		_ring_at = (_ring_at + 1) % points
+		var angle: float = TAU * float(_ring_at) / float(points)
+		var at: Vector3 = body.global_position + Vector3(cos(angle), 0.0, sin(angle)) * EXPOSURE_RING_M
+		var hit = _height_tool.raycast(at + Vector3(0.0, 120.0, 0.0), Vector3.DOWN, 400.0)
+
+		if hit != null:
+			_ring_heights[_ring_at] = at.y + 120.0 - float(hit.distance)
+
+	var total: float = 0.0
+	var count: int = 0
+
+	for value in _ring_heights.values():
+		total += float(value)
+		count += 1
+
+	if count >= 3:
+		var target: float = clampf((body.global_position.y - total / float(count)) / EXPOSURE_FULL_M, -1.0, 1.0)
+		exposure = move_toward(exposure, target, delta * 0.3)
+
+
 # Each frame: wind loudness and colour, landing thumps, the underwater muffle.
 func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool) -> void:
 	_count_left -= delta
@@ -220,14 +263,20 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	_shelter = move_toward(_shelter, _shelter_target, delta * 0.5)
 	var height: float = clampf((position.y - 10.0) / 300.0, 0.0, 1.0)   # higher is windier
 	var rush: float = clampf(body.velocity.length() / 80.0, 0.0, 1.0) if flying else 0.0
-	var strength: float = clampf(0.35 + 0.65 * gust + 0.4 * height - 0.45 * _shelter + rush + 0.7 * weather.wind, 0.05, 1.6)
+	_sample_exposure(delta, body, flying)
+	# The world's wind (src/shared/weather.gd, 0.15 calm to 1 storm) sets the mean and how much
+	# the gusts add; a ridge or hilltop is windier than the valley floor (exposure -1 to +1).
+	var wind: float = weather.world_wind
+	var open: float = 1.0 + EXPOSURE_GAIN * exposure
+	var strength: float = clampf((0.25 + 0.55 * wind + (0.3 + 0.5 * wind) * gust) * open + 0.2 * height - 0.45 * _shelter + rush, 0.05, 1.6)
 	# A calm day (owner, 2026-10-19: the first version sounded like a storm by the sea).
 	# Owner 2026-10-19, twice: still a windstorm. Now a faint breeze that only rises a little in gusts.
 	# Build 51: the low layer still sounded like surf nearby; it is lower again.
+	wind_strength = strength
 	# Build 79: still like a river; lower again and the loops now have deep lulls between the swells.
 	_wind_low.volume_db = linear_to_db(0.0035 + 0.006 * strength)
 	_wind_gust.volume_db = linear_to_db(0.0025 + 0.012 * pow(strength, 1.6))
-	_wind_filter.cutoff_hz = lerpf(1500.0, 7000.0, clampf(strength - 0.2 * _shelter, 0.0, 1.0))
+	_wind_filter.cutoff_hz = lerpf(1500.0, 7000.0, clampf(strength - 0.2 * _shelter, 0.0, 1.0)) * (1.0 + 0.25 * exposure)   # whistles on a ridge, hushed in a valley
 	_muffle.cutoff_hz = 500.0 if underwater else 20000.0
 
 	if _grass != null:
@@ -266,6 +315,10 @@ func voices_playing() -> int:
 # True while another optional sound (a call, a flush) fits in the voice budget.
 func has_room() -> bool:
 	return _voice_count < voice_cap
+
+
+func wind_text() -> String:
+	return "wind %.2f (world %.2f, exposure %+.2f: -1 valley, +1 ridge)" % [wind_strength, weather.world_wind, exposure]
 
 
 func budget_text() -> String:
