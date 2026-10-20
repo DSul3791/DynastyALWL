@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **121 slots: 17 recorded, 100 generated placeholders, 4 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **125 slots: 17 recorded, 104 generated placeholders, 4 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -14,6 +14,7 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 1 | `rain_heavy` | generated | 1 | weather_sounds.gd: heavy rain and storm loop | A heavy downpour loop, seamless |
 | 1 | `rain_light` | generated | 1 | weather_sounds.gd: drizzle and light rain loop | A light rain on open ground loop, seamless |
 | 1 | `thunder` | generated | 3 | weather_sounds.gd: a mid-distance thunder roll | 2 to 3 rolling thunder claps, 5 to 9 s |
+| 1 | `tree_crash` | generated | 3 | tree_sounds.gd: the tree hits the ground (1.5 s after it starts to fall) | 3 big tree crashes: snapping branches and a deep thud, 2 to 3 s |
 | 1 | `water_brook` | generated | 1 | water_sounds.gd: a fast shallow stream, positional loop | A babbling brook loop, seamless |
 | 1 | `water_river` | generated | 1 | water_sounds.gd: a wide slow river, positional loop | A broad river flow loop, seamless |
 | 1 | `wind_gust` | generated | 1 | sound_stage.gd: the swelling gust layer on top of the bed | A leaf-and-grass rustling wind loop with soft swells, seamless |
@@ -50,6 +51,7 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 2 | `thunder_near` | generated | 3 | weather_sounds.gd: a close strike (under 500 m): sharp crack and thud | 2 to 3 close, sharp thunder cracks, 2 to 4 s |
 | 2 | `town_fire` | generated | 1 | town_sounds.gd: a hearth or forge fire (loop) | A seamless crackling fire loop |
 | 2 | `town_hammering` | generated | 1 | town_sounds.gd: a smith or builder working nearby (loop) | A seamless loop of hammer on anvil, 8 to 15 s |
+| 2 | `tree_creak` | generated | 3 | tree_sounds.gd: a felled tree groans as it starts to go (when its trunk appears) | 3 tree trunk creaks and groans before falling, 1 to 2 s |
 | 2 | `water_fall` | generated | 1 | water_sounds.gd: a waterfall roar | A waterfall loop, seamless |
 | 2 | `water_pond` | generated | 1 | water_sounds.gd: gentle lapping at a pond shore | A calm lake shore lapping loop, seamless |
 | 2 | `wind_storm` | generated | 1 | weather_sounds.gd: gale howl in storms and blizzards | A howling gale loop, seamless |
@@ -87,12 +89,14 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 3 | `spear_hit_stone` | generated | 3 | spear_sounds.gd: a spear striking stone | 3 spear tips hitting rock, clack and scrape |
 | 3 | `spear_jab` | generated | 3 | spear_sounds.gd: a spear thrust through the air | 3 spear thrust whooshes, 0.3 s |
 | 3 | `spear_throw` | generated | 3 | spear_sounds.gd: the heave and release of a thrown spear | 3 spear throw whooshes with effort, 0.7 s |
+| 3 | `stump_chips` | generated | 3 | tree_sounds.gd: wood chips and a last crack as the stump is left | 3 wood chip sprays and cracks, 0.5 s |
 | 3 | `swim_dive` | generated | 3 | swim_sounds.gd: the head goes under | 3 bubbling gulps of going under, 1 s |
 | 3 | `swim_stroke` | generated | 3 | swim_sounds.gd: an arm stroke while swimming, one every 0.6 to 1.4 s | 3 breaststroke or crawl arm pulls through water, 0.5 s |
 | 3 | `swim_surface` | generated | 3 | swim_sounds.gd: the head comes out of the water | 3 breaths and running water on surfacing, 1 s |
 | 3 | `swim_under` | generated | 1 | swim_sounds.gd: the hum of being underwater (loop while the eyes are under) | A muffled underwater ambience loop, seamless |
 | 3 | `town_bell` | generated | 3 | town_sounds.gd: a tower bell tolling the hour or on call (ring_bell) | 2 to 3 bell strikes with a long ring, 4 to 6 s each |
 | 3 | `town_crowd` | generated | 1 | town_sounds.gd: a busy square murmur (loop) | A seamless crowd murmur loop, no clear words |
+| 3 | `tree_leaves` | generated | 3 | tree_sounds.gd: the crown rushing down through the air | 3 branches and leaves rushing as a tree falls, about 1 s |
 | 3 | `wolf_growl` | generated | 2 | creature_sounds.gd: a wolf's growl (alert, threat) | 2 to 3 wolf growls and snarls, 1 to 2 s |
 | 3 | `woodpecker` | generated | 3 | ambient_life.gd: forest, by day | 2 to 3 woodpecker drumming runs, about 1 s |
 | 4 | `door_knock` | generated | 2 | interior_sounds.gd: knocking on a door (object) | 2 to 3 triple knocks on wood |

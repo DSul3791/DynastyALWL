@@ -657,6 +657,38 @@
    "priority": 2
   },
   {
+   "name": "tree_creak",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "tree_sounds.gd: a felled tree groans as it starts to go (when its trunk appears)",
+   "to_supply": "3 tree trunk creaks and groans before falling, 1 to 2 s",
+   "priority": 2
+  },
+  {
+   "name": "tree_leaves",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "tree_sounds.gd: the crown rushing down through the air",
+   "to_supply": "3 branches and leaves rushing as a tree falls, about 1 s",
+   "priority": 3
+  },
+  {
+   "name": "tree_crash",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "tree_sounds.gd: the tree hits the ground (1.5 s after it starts to fall)",
+   "to_supply": "3 big tree crashes: snapping branches and a deep thud, 2 to 3 s",
+   "priority": 1
+  },
+  {
+   "name": "stump_chips",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "tree_sounds.gd: wood chips and a last crack as the stump is left",
+   "to_supply": "3 wood chip sprays and cracks, 0.5 s",
+   "priority": 3
+  },
+  {
    "name": "item_pickup",
    "state": "generated",
    "variants": 3,

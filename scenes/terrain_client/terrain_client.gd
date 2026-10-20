@@ -176,6 +176,7 @@ var test_gear: bool = false
 var test_spear_sounds: bool = false
 var test_fire: bool = false
 var _fire_sync_left: float = 0.0
+var _tree_sync_left: float = 0.0
 var test_levels: bool = false
 var _test_fire_at: int = 0
 var _test_fire_step: int = 0
@@ -1599,6 +1600,13 @@ func _step_player(delta: float) -> void:
 
 		if not test_fire and not sound.fire.manual_active():
 			sound.fire.sync_world(items._world, _cover_here)
+
+	_tree_sync_left -= delta
+
+	if _tree_sync_left <= 0.0 and items != null:
+		_tree_sync_left = 0.25
+		sound.trees.watch(items._world)
+
 	Probe.stop("sound", ts)
 
 
@@ -2046,6 +2054,7 @@ func _process(delta: float) -> void:
 			print("Terrain client: grass %d tufts in %d cells (radius %.0f m)" % [grass.tufts, grass.cells_built, grass.radius_m])
 			print("Terrain client: water sounds: %s (%d falls known)" % [sound.water.summary, flora.fall_list().size()])
 			print("Terrain client: nature calls %s, zones %s" % [str(sound.ambient.calls_played), str(sound.ambient.weights)])
+			print("Terrain client: tree sounds: %d falls, %d stump sprays, last %s" % [sound.trees.falls_played, sound.trees.chips_played, sound.trees.last])
 			print("Terrain client: fire sounds: %d lit, %d put out, %d loops, last %s" % [sound.fire.lit_played, sound.fire.out_played, sound.fire.loops_playing, sound.fire.last])
 			print("Terrain client: item sounds %d, last %s" % [sound.itemfx.played, sound.itemfx.last])
 			print("Terrain client: spear sounds %s, last %s" % [str(sound.spear.played), sound.spear.last])
@@ -2096,6 +2105,7 @@ func _debug_text(avg_ms: float, worst_ms: float) -> String:
 	text += "\nlast step: " + sound.last_step
 	text += "\nsound budget: " + sound.budget_text()
 	text += "\n" + sound.wind_text()
+	text += "\ntree sounds: %d falls, %d sprays, last %s" % [sound.trees.falls_played, sound.trees.chips_played, sound.trees.last]
 	text += "\nfire sounds: %d loops, %d lit, %d put out, last %s" % [sound.fire.loops_playing, sound.fire.lit_played, sound.fire.out_played, sound.fire.last]
 	text += "\nitem sounds: %d, last %s" % [sound.itemfx.played, sound.itemfx.last]
 	text += "\nspear sounds: %s, last %s" % [str(sound.spear.played), sound.spear.last]
@@ -2128,7 +2138,7 @@ func _debug_text(avg_ms: float, worst_ms: float) -> String:
 # The one-line "last sound": whichever sound source's last-played text changed most recently.
 func _note_last_sound() -> void:
 	var sources: Array = [
-		["step", sound.last_step], ["fire", sound.fire.last], ["item", sound.itemfx.last], ["spear", sound.spear.last],
+		["step", sound.last_step], ["fire", sound.fire.last], ["tree", sound.trees.last], ["item", sound.itemfx.last], ["spear", sound.spear.last],
 		["interior", sound.interior.last], ["gear", sound.gear.last], ["creature", sound.creatures.last], ["swim", sound.swim.last],
 		["dig", sound.dig.last_dig], ["nature", sound.ambient.last_call],
 	]
