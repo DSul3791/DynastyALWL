@@ -31,8 +31,13 @@ const LAYERS := [
 	# ART_DIRECTION.md): fallen leaves and dead branches. Drawn within litter_m of the player.
 	{"name": "leaves", "texture": "litter", "width": 0.9, "height": 0.0, "per_point": 2, "reach": 1.0, "quads": 0, "wind": 0.0, "backlight": 0.0, "litter": true},
 	{"name": "branches", "texture": "", "width": 1.0, "height": 0.0, "per_point": 0.35, "reach": 1.0, "quads": 0, "wind": 0.0, "backlight": 0.0, "litter": true, "branch": true},
+	# Shore (ART_DIRECTION.md section 26): pebbles on the banks and on the shallow bed seen through clear
+	# water, and reeds where still water meets the land. Drawn within shore_m of the player.
+	{"name": "pebbles", "texture": "", "width": 1.0, "height": 0.0, "per_point": 4, "reach": 1.0, "quads": 0, "wind": 0.0, "backlight": 0.0, "shore": true, "pebble": true},
+	{"name": "reeds", "texture": "grass_tall", "width": 0.5, "height": 1.5, "per_point": 0.8, "reach": 1.0, "quads": 3, "wind": 1.0, "backlight": 0.35, "shore": true, "reed": true},
 ]
-const GRASS_LAYERS := 3                  # the first layers are grass; the rest are forest litter
+const GRASS_LAYERS := 3                  # the first layers are grass; then forest litter, then the shore
+const LITTER_END := 5                    # layers GRASS_LAYERS to LITTER_END - 1 are litter, the rest shore
 
 # Dead branches: a thin weathered stick with one side twig, lying along x from 0 to 1.
 const BRANCH_SHADER := """
@@ -100,6 +105,9 @@ var cells_built: int = 0
 var litter_m: float = 0.0                # forest litter drawn this far (0 off), set by the client per quality
 var litter_density: float = 0.0          # share of each litter layer's per_point drawn
 var litter_cards: int = 0                # leaf cards and branches drawn now
+var shore_m: float = 0.0                 # pebbles and reeds drawn this far (0 off)
+var shore_density: float = 0.0
+var shore_cards: int = 0                 # pebbles and reeds drawn now
 
 var _terrain: Node3D
 var _flora
@@ -140,8 +148,8 @@ func setup(terrain: Node3D, flora, tables) -> void:
 	branch_shader.code = BRANCH_SHADER
 
 	for layer in LAYERS:
-		if layer.get("branch", false):
-			_meshes.append(_make_branch())
+		if layer.get("branch", false) or layer.get("pebble", false):
+			_meshes.append(_make_branch() if layer.get("branch", false) else _make_pebble())
 			var wood: ShaderMaterial = ShaderMaterial.new()
 			wood.shader = branch_shader
 			_materials.append(wood)
@@ -215,7 +223,7 @@ func set_litter(meters: float, amount: float) -> void:
 	litter_m = meters
 	litter_density = amount
 
-	for n in range(GRASS_LAYERS, LAYERS.size()):
+	for n in range(GRASS_LAYERS, LITTER_END):
 		_materials[n].set_shader_parameter("fade_start", maxf(meters - 5.0, 1.0))
 		_materials[n].set_shader_parameter("fade_end", maxf(meters, 2.0))
 
@@ -255,6 +263,57 @@ static func _make_cards(width: float, height: float, quads: int) -> ArrayMesh:
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX] = vertices
 	arrays[Mesh.ARRAY_TEX_UV] = uvs
+	arrays[Mesh.ARRAY_INDEX] = indices
+	var mesh: ArrayMesh = ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return mesh
+
+
+# Shore range and amount per quality (0 meters or 0 density: none). A change rebuilds the cells.
+func set_shore(meters: float, amount: float) -> void:
+	var changed: bool = not is_equal_approx(meters, shore_m) or not is_equal_approx(amount, shore_density)
+	shore_m = meters
+	shore_density = amount
+
+	for n in range(LITTER_END, LAYERS.size()):
+		_materials[n].set_shader_parameter("fade_start", maxf(meters - 5.0, 1.0))
+		_materials[n].set_shader_parameter("fade_end", maxf(meters, 2.0))
+
+	if changed and enabled:
+		_clear_all()
+
+
+# A pebble: a rounded lump (a twelve-point solid, jittered per vertex, flattened), 1 m across before the
+# per-card scale.
+static func _make_pebble() -> ArrayMesh:
+	var t: float = (1.0 + sqrt(5.0)) * 0.5
+	var base: Array = [Vector3(-1, t, 0), Vector3(1, t, 0), Vector3(-1, -t, 0), Vector3(1, -t, 0), Vector3(0, -1, t), Vector3(0, 1, t), Vector3(0, -1, -t), Vector3(0, 1, -t), Vector3(t, 0, -1), Vector3(t, 0, 1), Vector3(-t, 0, -1), Vector3(-t, 0, 1)]
+	var faces: Array = [0, 11, 5, 0, 5, 1, 0, 1, 7, 0, 7, 10, 0, 10, 11, 1, 5, 9, 5, 11, 4, 11, 10, 2, 10, 7, 6, 7, 1, 8, 3, 9, 4, 3, 4, 2, 3, 2, 6, 3, 6, 8, 3, 8, 9, 4, 9, 5, 2, 4, 11, 6, 2, 10, 8, 6, 7, 9, 8, 1]
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 7
+	var vertices: PackedVector3Array = PackedVector3Array()
+	var normals: PackedVector3Array = PackedVector3Array()
+	var indices: PackedInt32Array = PackedInt32Array()
+	var flat: PackedVector3Array = PackedVector3Array()
+
+	for v in base:
+		var d: Vector3 = (v as Vector3).normalized() * rng.randf_range(0.42, 0.55)
+		flat.append(Vector3(d.x, d.y * 0.55, d.z))
+
+	for f in range(0, faces.size(), 3):
+		var a: Vector3 = flat[faces[f]]
+		var b: Vector3 = flat[faces[f + 1]]
+		var c: Vector3 = flat[faces[f + 2]]
+		var n: Vector3 = (b - a).cross(c - a).normalized()
+		var first: int = vertices.size()
+		vertices.append_array([a + Vector3(0.0, 0.2, 0.0), b + Vector3(0.0, 0.2, 0.0), c + Vector3(0.0, 0.2, 0.0)])
+		normals.append_array([n, n, n])
+		indices.append_array([first, first + 1, first + 2])
+
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+	arrays[Mesh.ARRAY_NORMAL] = normals
 	arrays[Mesh.ARRAY_INDEX] = indices
 	var mesh: ArrayMesh = ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
@@ -309,9 +368,11 @@ func _free_cell_nodes(entry: Dictionary) -> void:
 
 	tufts -= int(entry.get("count", 0))
 	litter_cards -= int(entry.get("litter", 0))
+	shore_cards -= int(entry.get("shore", 0))
 	entry["nodes"] = []
 	entry["count"] = 0
 	entry["litter"] = 0
+	entry["shore"] = 0
 
 
 func _clear_all() -> void:
@@ -322,6 +383,7 @@ func _clear_all() -> void:
 	_pending.clear()
 	tufts = 0
 	litter_cards = 0
+	shore_cards = 0
 
 
 # Call from the client's physics step with the player's position.
@@ -410,10 +472,11 @@ func _build(cell: Vector2i) -> int:
 	# Cells are built once, as they come into grass range, so litter is made for all of them and the
 	# engine culls the ones beyond litter_m (visibility_range_end below).
 	var litter_here: bool = litter_m > 0.0 and litter_density > 0.0
+	var shore_here: bool = shore_m > 0.0 and shore_density > 0.0
 
 	for layer in range(LAYERS.size()):
 		var cap: PackedFloat32Array = PackedFloat32Array()
-		var share: float = litter_density if layer >= GRASS_LAYERS else density
+		var share: float = density if layer < GRASS_LAYERS else (litter_density if layer < LITTER_END else shore_density)
 		cap.resize(points_per_side * points_per_side * (int(ceil(float(LAYERS[layer]["per_point"]) * share)) + 1) * 16)
 		buffers.append(cap)
 		counts.append(0)
@@ -440,6 +503,9 @@ func _build(cell: Vector2i) -> int:
 
 			var point: Vector3 = hit["position"]
 			var water: float = _flora.water_level_at(x, z)
+
+			if shore_here:
+				_put_shore(buffers, counts, rng, point, spacing, water)
 
 			if not is_nan(water) and point.y < water + 0.3:
 				continue
@@ -540,14 +606,17 @@ func _build(cell: Vector2i) -> int:
 		node.material_override = _materials[layer]
 		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		if layer >= GRASS_LAYERS:
-			node.visibility_range_end = litter_m + CELL_M
+			node.visibility_range_end = (litter_m if layer < LITTER_END else shore_m) + CELL_M
 			node.visibility_range_end_margin = 2.0
 
 		node.custom_aabb = AABB(Vector3(float(cell.x) * CELL_M - 1.0, _center.y - 150.0, float(cell.y) * CELL_M), Vector3(CELL_M, 300.0, CELL_M))
 		add_child(node)
 		entry["nodes"].append(node)
 
-		if layer >= GRASS_LAYERS:
+		if layer >= LITTER_END:
+			entry["shore"] = int(entry.get("shore", 0)) + count
+			shore_cards += count
+		elif layer >= GRASS_LAYERS:
 			entry["litter"] = int(entry.get("litter", 0)) + count
 			litter_cards += count
 		else:
@@ -557,9 +626,85 @@ func _build(cell: Vector2i) -> int:
 	return rays
 
 
+# One ground sample at the water's edge (water is the surface level here or NAN): pebbles on the dry bank
+# and on the shallow bed under clear water, reeds along still water only (ponds and lakes, not the current).
+func _put_shore(buffers: Array, counts: Array, rng: RandomNumberGenerator, point: Vector3, spacing: float, water: float) -> void:
+	var depth: float = -1.0           # metres of water over the ground here; negative: dry
+	var edge: float = -1.0            # how far above the nearest water the dry ground lies; negative: no water near
+
+	if not is_nan(water):
+		depth = water - point.y
+	else:
+		edge = 99.0
+
+		for d in [Vector2(2.5, 0.0), Vector2(-2.5, 0.0), Vector2(0.0, 2.5), Vector2(0.0, -2.5)]:
+			var near: float = _flora.water_level_at(point.x + d.x, point.z + d.y)
+
+			if not is_nan(near):
+				edge = minf(edge, point.y - near)
+
+		if edge > 1.0:
+			return
+
+	var still: bool = _flora.water_speed_at(point.x, point.z) < 0.35
+	var bank: float = 1.0 - clampf(edge / 1.0, 0.0, 1.0) if depth < 0.0 else 1.0 - clampf(depth / 0.9, 0.0, 1.0)
+
+	if bank <= 0.0:
+		return
+
+	for layer in range(LITTER_END, LAYERS.size()):
+		var reed: bool = LAYERS[layer].get("reed", false)
+
+		if reed and not (still and depth < 0.4 and (depth >= 0.0 or edge < 0.6)):
+			continue
+
+		var want: float = float(LAYERS[layer]["per_point"]) * shore_density * (1.0 if reed else bank)
+		var count: int = int(want) + (1 if rng.randf() < want - floorf(want) else 0)
+
+		for k in range(count):
+			var ox: float = point.x + rng.randf_range(-0.5, 0.5) * spacing * 0.95
+			var oz: float = point.z + rng.randf_range(-0.5, 0.5) * spacing * 0.95
+			var yaw: float = rng.randf() * TAU
+			var c: float = cos(yaw)
+			var s: float = sin(yaw)
+			var size: float = rng.randf_range(0.5, 1.3) if reed else rng.randf_range(0.07, 0.22)
+			var tall: float = size * rng.randf_range(0.8, 1.2) if reed else size * rng.randf_range(0.5, 1.0)
+			var shade: float = rng.randf_range(0.8, 1.1)
+			var buffer: PackedFloat32Array = buffers[layer]
+			var o: int = int(counts[layer]) * 16
+			counts[layer] = int(counts[layer]) + 1
+			buffer[o] = c * size
+			buffer[o + 1] = 0.0
+			buffer[o + 2] = s * size
+			buffer[o + 3] = ox
+			buffer[o + 4] = 0.0
+			buffer[o + 5] = tall
+			buffer[o + 6] = 0.0
+			buffer[o + 7] = point.y - 0.04
+			buffer[o + 8] = -s * size
+			buffer[o + 9] = 0.0
+			buffer[o + 10] = c * size
+			buffer[o + 11] = oz
+
+			if reed:
+				buffer[o + 12] = 0.62 * shade
+				buffer[o + 13] = 0.68 * shade
+				buffer[o + 14] = 0.36 * shade
+			else:
+				# Rounded river stones: pale grey, warm grey and brown, darker where wet.
+				var wet: float = 0.8 if depth >= 0.0 else 1.0
+				var warm: float = rng.randf()
+				buffer[o + 12] = (0.42 + 0.14 * warm) * shade * wet
+				buffer[o + 13] = (0.4 + 0.1 * warm) * shade * wet
+				buffer[o + 14] = (0.37 + 0.04 * warm) * shade * wet
+
+			buffer[o + 15] = 1.0
+			buffers[layer] = buffer
+
+
 # One ground sample under a crown: leaf cards and, now and then, a dead branch (layers GRASS_LAYERS on).
 func _put_litter(buffers: Array, counts: Array, rng: RandomNumberGenerator, point: Vector3, spacing: float) -> void:
-	for layer in range(GRASS_LAYERS, LAYERS.size()):
+	for layer in range(GRASS_LAYERS, LITTER_END):
 		var want: float = float(LAYERS[layer]["per_point"]) * litter_density
 		var count: int = int(want) + (1 if rng.randf() < want - floorf(want) else 0)
 		var branch: bool = LAYERS[layer].get("branch", false)
