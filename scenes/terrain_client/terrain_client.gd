@@ -31,7 +31,7 @@ const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")
 const CompassScript := preload("res://src/client/admin_compass.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 62
+const BUILD := 63
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const KnowledgeScript := preload("res://src/client/inspection_knowledge.gd")
@@ -318,12 +318,9 @@ func _on_welcome(info: Dictionary) -> void:
 	terrain.mesh_block_size = 32
 	terrain.generate_collisions = true
 	terrain.collision_lod_count = 4
-	# Owner (2026-10-20): after flying somewhere new the ground under the player took half a
-	# minute. The old octree system loads every level coarse to fine (the whole 15 km
-	# coarsest ring first), one server round trip per missing block; clipbox loads the
-	# nearest fine ground first (0.1 s instead of 30 s in the cloud fly check). The far
-	# view now fills in last.
-	terrain.streaming_system = VoxelLodTerrain.STREAMING_SYSTEM_CLIPBOX
+	# Not the clipbox streaming system (tried in build 61): it loads the fine ground under the
+	# player first, but makes no collision until every coarser level is loaded too, so the
+	# player had no ground to stand on for most of a minute (owner, 2026-10-20).
 	terrain.material = GroundMaterialScript.make(_tables)
 	root.add_child(terrain)
 	_make_player(root, info["spawn"] + Vector3(0.0, 28.0, 0.0))
