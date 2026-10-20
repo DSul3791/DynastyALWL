@@ -56,7 +56,7 @@ const FaintEffectScript := preload("res://src/client/faint_effect.gd")
 const FallMistScript := preload("res://src/client/fall_mist.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 291
+const BUILD := 296
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
@@ -94,7 +94,7 @@ const QUALITY_SHORE_M := [8.0, 20.0, 30.0, 40.0]         # shore pebbles and ree
 const QUALITY_SHORE_AMOUNT := [0.3, 1.0, 1.5, 2.0]       # share of the shore cards per ground sample (Low: a few pebbles, reeds off below 1.0 per sample)
 const QUALITY_GRASS_POINTS := [5, 5, 6, 7]               # ground samples per 6 m cell side
 const QUALITY_GRASS_DENSITY := [1.0, 2.6, 3.0, 3.4]     # cards per ground sample, times the layers' own counts
-const QUALITY_SHADOW_M := [0.0, 45.0, 60.0, 120.0]    # 0 = no shadows
+const QUALITY_SHADOW_M := [0.0, 45.0, 60.0, 90.0]    # 0 = no shadows
 const QUALITY_CACHE_MB := [1024, 4096, 10240, 10240]    # ground cache limit on disk
 const FLY_SPEED := 30.0
 const INCOMING_USEC := 3000           # most time a frame puts arrived chunks in the scene (one at least)

@@ -195,10 +195,10 @@ const SHAPES_PER_BODY := 64  # trunk colliders per body
 # Tree distances. The full model reaches near_m (tile rules, times the client's quality factor
 # 0.4 / 0.7 / 1.0 / 1.0: 60, 105, 150 m), the cheaper far model reaches IMPOSTOR_M, and beyond it a pair of
 # crossed quads (tree_impostor.gd) reaches view_m (180, 315, 450 m). Switch distances pulled closer 2026-10-20 (flora cost plan step 2). By quality: Low, Medium, High, Ultra.
-const IMPOSTOR_M := [100.0, 150.0, 180.0, 250.0]
+const IMPOSTOR_M := [100.0, 150.0, 180.0, 210.0]
 const IMPOSTOR_TILE_PX := [Vector2i(64, 128), Vector2i(128, 256), Vector2i(128, 256), Vector2i(128, 256)]   # one view; the atlas holds two
 const MAX_DROPS_PER_UPDATE := 2
-const SHADOW_M := [0.0, 45.0, 60.0, 120.0]   # full-detail trees cast shadows only this near (64 m cells; the sun's shadow range is a render setting)
+const SHADOW_M := [0.0, 45.0, 60.0, 90.0]   # full-detail trees cast shadows only this near (64 m cells; the sun's shadow range is a render setting)
 const TIER_FAR := 0
 const TIER_FULL := 1
 const TIER_IMPOSTOR := 2
