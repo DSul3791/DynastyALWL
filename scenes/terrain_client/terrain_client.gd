@@ -54,6 +54,7 @@ const GpuProbeScript := preload("res://src/debug/gpu_probe.gd")
 const WeatherLookScript := preload("res://src/client/weather_look.gd")
 const FaintEffectScript := preload("res://src/client/faint_effect.gd")
 const FallMistScript := preload("res://src/client/fall_mist.gd")
+const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
 const BUILD := 267
 const WaterMaterial := preload("res://src/client/water_material.gd")
@@ -276,6 +277,7 @@ var _report_msec: int = 0
 var dig_applied: int = 0
 var flora                             # FloraView
 var fall_mist                         # FallMist: spray at the foot of the nearest waterfalls
+var fall_growth                       # FallGrowth: ferns around the foot of the nearest waterfall
 var items                             # InventoryView: inventory panel (I), pick-up (E)
 var harvest                           # Harvest: E prompt, tap to pick, hold to sweep
 var held                              # HeldItem: hotbar keys 1 to 8, spear jab and throw
@@ -591,6 +593,10 @@ func _welcome_body(info: Dictionary) -> void:
 	fall_mist.name = "FallMist"
 	fall_mist.setup(quality)
 	root.add_child(fall_mist)
+	fall_growth = FallGrowthScript.new()
+	fall_growth.name = "FallGrowth"
+	fall_growth.setup(terrain, flora, quality)
+	root.add_child(fall_growth)
 	_flora_view_full = flora.view_m.duplicate()
 	_flora_near_full = flora.near_m.duplicate()
 	grass = GrassViewScript.new()
@@ -1023,6 +1029,9 @@ func _update_flora() -> void:
 	if fall_mist != null:
 		fall_mist.update(falls, p)
 
+	if fall_growth != null:
+		fall_growth.update(falls, p)
+
 	for chunk in flora.update(p):
 		_flora_asked.erase(chunk)
 
@@ -1203,6 +1212,8 @@ func _apply_quality() -> void:
 	grass.set_litter(QUALITY_LITTER_M[quality], QUALITY_LITTER_AMOUNT[quality])
 	if fall_mist != null:
 		fall_mist.set_quality(quality)
+	if fall_growth != null:
+		fall_growth.set_quality(quality)
 
 	if _environment != null:
 		SkyClouds.set_quality(_environment.sky, quality)
