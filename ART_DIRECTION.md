@@ -252,3 +252,10 @@ Owner (2026-10-20): "that doesn't look like water going over the falls". Look on
 - Geometry: from the lip the curtain arcs out from the face by 0.55 x sqrt(drop) up to 1.8 m and comes back to the foot (a free fall). Diffuse-lit (`diffuse_lambert_wrap`, no specular) so it darkens at night; the old shader was unshaded and glowed.
 - Cost: 5 value noises per pixel (3 on Low, `detail` 0), no screen or depth read, one shared material, no per-frame CPU. Check the GPU table at a fall at Low and High.
 - Not changed yet: the splash sprite and the plunge pool foam shader (rings toned down to 0.22) and the mist cards at the foot.
+
+## 30. Rain and storm darkening, storm water (jobs 283 and the rain fix)
+
+Owner (2026-10-20): "the weather still doesn't get darker when it rains"; ocean and land water darker and dirtier in a big storm.
+- What was wrong (`weather_look.gd`): light rain barely raised the cloud cover (`cloud_cover` only followed the weather's own cloud value), the sun dipped to about 40 percent and the ambient light only to 0.87. The ambient light comes from the sky's lighting cubemap, which is drawn once and not redrawn as the weather changes, so it stayed a bright clear sky. Nothing touched exposure or colour.
+- Now: any rain or snow forces heavy overcast (cover 0.6 rising to 1 with the rain, `wet_sky`); sun energy goes to about 5 percent at full cover (`SUN_ENERGY * lerp(0.05, 1, 1 - 1.25 * cover)`); ambient energy 1.0 to 0.4 by `_dark`; exposure 1.1 to 0.95 and saturation 1.12 to 0.72 by `_dark`; `gloom` stronger (clouds and fog colour). `_dark` = 0.5 cover + 0.35 rain + 0.15 snow + 0.35 storm. All eased by the existing 8 s front ease. Only lightning (`flash_level`) lights a big storm up. Cost: a few environment values per frame.
+- Storm water (`water_material.gd`, uniform `storm`, `weather_look._update_water_murk`): darker grey-brown, clarity down by 65 percent, a little more foam, from the weather's storm plus a quarter of the rain, lagged separately: land water rises over 6 min and clears over 15 min, the sea 2 and 6 min. About 6 ALU per water pixel.

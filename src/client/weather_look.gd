@@ -87,6 +87,7 @@ var _flash_scale: float = 1.0
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var flash_level: float = 0.0            # 0..1, for the HUD and tests
 var gloom: float = 0.0
+var _dark: float = 0.0                  # 0 bright .. 1 stormy: sun, ambient light, exposure and colour follow it
 var cloud_cover: float = 0.0
 var strikes_seen: int = 0
 
@@ -266,8 +267,13 @@ func _process(delta: float) -> void:
 	var rain: float = float(_s["rain"])
 	var snow: float = float(_s["snow"])
 	var storm: float = float(_s["storm"])
-	cloud_cover = clampf(maxf(float(_s["cloud"]), maxf(rain, maxf(snow * 0.9, storm))), 0.0, 1.0)
-	gloom = clampf(0.3 * cloud_cover + 0.35 * rain + 0.2 * snow + 0.55 * storm, 0.0, 1.0)
+	# Any rain or snow means heavy cloud (owner, 2026-10-20: "the weather still doesn't get darker when it
+	# rains"): the old cover barely moved in light rain and the sky's lighting cubemap is drawn once, so
+	# the sun and the ambient light below carry the darkening.
+	var wet_sky: float = smoothstep(0.02, 0.2, maxf(rain, snow))
+	cloud_cover = clampf(maxf(float(_s["cloud"]), maxf(wet_sky * (0.6 + 0.4 * maxf(rain, snow * 0.9)), storm)), 0.0, 1.0)
+	gloom = clampf(0.3 * cloud_cover + 0.45 * rain + 0.2 * snow + 0.6 * storm, 0.0, 1.0)
+	_dark = clampf(0.5 * cloud_cover + 0.35 * rain + 0.15 * snow + 0.35 * storm, 0.0, 1.0)
 
 	_update_water_murk(delta, storm, rain)
 
@@ -291,12 +297,15 @@ func _process(delta: float) -> void:
 		sky_material.set_shader_parameter("flash", flash_level)
 
 	# Light: the sun fades behind cloud, the sky's own light dims a little, lightning jumps both.
-	var sun_amount: float = clampf(1.0 - cloud_cover * 1.1, 0.0, 1.0)
+	var sun_amount: float = clampf(1.0 - cloud_cover * 1.25, 0.0, 1.0)
 
 	if _client._sun != null:
-		_client._sun.light_energy = LookSettings.SUN_ENERGY * lerpf(0.2, 1.0, sun_amount) + flash_level * 1.2
+		_client._sun.light_energy = LookSettings.SUN_ENERGY * lerpf(0.05, 1.0, sun_amount) + flash_level * 1.2
 
-	environment.ambient_light_energy = lerpf(1.0, 0.75, gloom) + flash_level * 2.0
+	environment.ambient_light_energy = lerpf(1.0, 0.4, _dark) + flash_level * 2.0
+	# The whole picture goes dimmer and greyer with the weather.
+	environment.tonemap_exposure = lerpf(1.1, 0.95, _dark)
+	environment.adjustment_saturation = lerpf(1.12, 0.72, _dark)
 
 	if not _client.underwater:
 		var thick: float = 1.0 + 5.0 * rain + 4.0 * snow + 3.0 * storm + 12.0 * float(_s["fog"])
