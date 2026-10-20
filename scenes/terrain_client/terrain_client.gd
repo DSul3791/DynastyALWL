@@ -237,6 +237,7 @@ var test_gather: bool = false
 var test_leanto: bool = false
 var test_chest: bool = false
 var test_eat: bool = false
+var test_quickkeys: bool = false
 var test_texttest: bool = false
 var test_plantpick: bool = false
 var test_spear: bool = false
@@ -420,6 +421,8 @@ func _ready() -> void:
 			test_plantpick = true
 		elif argument == "--texttest":
 			test_texttest = true
+		elif argument == "--quickkeys":
+			test_quickkeys = true
 		elif argument == "--eat":
 			test_eat = true
 		elif argument == "--chest":
@@ -721,6 +724,9 @@ func _welcome_body(info: Dictionary) -> void:
 
 	if test_eat:
 		items.run_eat_test(self)
+
+	if test_quickkeys:
+		items.run_quickkey_test(self)
 
 	if test_texttest:
 		items.run_text_test(self)
@@ -1730,7 +1736,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		items.toggle()
 		return
 
-	if items != null and items.open:
+	if items != null and items.screen_open():
+		if event is InputEventKey and event.pressed and not event.echo:
+			items.quick_key(event)
+
 		return
 
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
@@ -1885,6 +1894,9 @@ func _move_player(delta: float) -> void:
 		0.0,
 		float(Input.is_key_pressed(KEY_S)) - float(Input.is_key_pressed(KEY_W))
 	)
+	if items != null and items.screen_open():
+		input = Vector3.ZERO   # the inventory's quick keys (S split) are not walking
+
 	var direction: Vector3 = body.global_transform.basis * input
 
 	# Any movement key stands the player up from sitting or lying; those stances do not move.

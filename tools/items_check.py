@@ -52,6 +52,11 @@ CLIENTS = [
         ("every item still shown", r"every item shown (true)", None, None),
         ("30 slot buttons", r"scale [\d.]+, " + NUM + r" slot buttons", 30, 30),
     ]),
+    ("quickkeys", ["--quickkeys"], 3500, [
+        ("S splits the stack", r"stacks of stone 1 -> " + NUM, 2, 2),
+        ("Shift+R drops one", r"Shift\+R dropped one, stones \d+ -> " + NUM, 5, 5),
+        ("E eats", r"E ate, roasts \d+ -> " + NUM, 1, 1),
+    ]),
     ("eat", ["--eat"], 3000, [
         ("food is edible", r"edible slot 0 (true)", None, None),
         ("roast eaten", r"roasts left " + NUM, 1, 1),

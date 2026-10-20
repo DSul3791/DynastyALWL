@@ -31,6 +31,8 @@ var _panel: PanelContainer
 var _grid: GridContainer
 var _buttons: Array = []
 var _selected: int = -1
+var _hover: int = -1                   # pack slot under the mouse (quick keys act on it, else on the selected slot)
+var _chest_hover: Array = []           # [chest side (bool), slot] under the mouse in the chest screen
 var _prompt: Label
 var cover_index                        # the client's Cover.Index: lean-to roofs are added to it
 var tool_event: Callable               # ("broke" | "repaired") when a tool in the pack wears out or is mended (sounds)
@@ -827,6 +829,8 @@ func _build_chest_panel() -> void:
 			button.clip_text = true
 			_style(button, BODY_PX - 4)
 			button.pressed.connect(_on_chest_slot.bind(chest_side, i))
+			button.mouse_entered.connect(func(): _chest_hover = [chest_side, i])
+			button.mouse_exited.connect(func(): _chest_hover = [] if _chest_hover == [chest_side, i] else _chest_hover)
 			grid.add_child(button)
 			(_chest_buttons if chest_side else _pack_buttons).append(button)
 
@@ -1283,6 +1287,8 @@ func _build_panel() -> void:
 		button.clip_text = true
 		_style(button, BODY_PX - 4)
 		button.pressed.connect(_on_slot_pressed.bind(i))
+		button.mouse_entered.connect(func(): _hover = i)
+		button.mouse_exited.connect(func(): _hover = -1 if _hover == i else _hover)
 		_grid.add_child(button)
 		_buttons.append(button)
 		var bar: ColorRect = ColorRect.new()          # condition bar along the bottom of a worn tool's slot
@@ -1324,7 +1330,51 @@ func _build_panel() -> void:
 		drop.pressed.connect(_drop_selected.bind(whole))
 		row.add_child(drop)
 
+	var hint: Label = Label.new()
+	hint.text = "Quick keys on the slot under the mouse:  E use    R drop (Shift+R one)    S split    T transfer (when a container is open)"
+	hint.modulate = Color(1.0, 1.0, 1.0, 0.75)
+	_style(hint, BODY_PX - 8)
+	right.add_child(hint)
+
 	_layer.add_child(_panel)
+
+
+# True while the crafting and inventory screen or a chest screen is on screen.
+func screen_open() -> bool:
+	return open or chest_mode
+
+
+# Quick keys while the screen is open: E use (eat or apply), R drop (Shift+R one), S split, T transfer between the
+# pack and an open container. They act on the slot under the mouse, else the selected slot. True when the key
+# was one of them (the caller then skips its other bindings). Outside this screen E is the interact key.
+func quick_key(event: InputEventKey) -> bool:
+	var slot: int = _hover if _hover >= 0 else _selected
+
+	match event.keycode:
+		KEY_E:
+			if slot >= 0 and not chest_mode:
+				eat_slot(slot)
+
+			return true
+		KEY_R:
+			if slot >= 0 and not chest_mode:
+				_selected = slot
+				_drop_selected(not event.shift_pressed)
+
+			return true
+		KEY_S:
+			if slot >= 0 and not chest_mode:
+				_selected = slot
+				_split_selected()
+
+			return true
+		KEY_T:
+			if chest_mode and _chest_hover.size() == 2:
+				_on_chest_slot(bool(_chest_hover[0]), int(_chest_hover[1]))
+
+			return true
+
+	return false
 
 
 func _on_slot_pressed(slot: int) -> void:
@@ -1711,6 +1761,51 @@ func run_gather_test(client) -> void:
 	print("Gather test: sweep, sticks %d -> %d (a picked-bare shrub is skipped); prompt \"%s\"" % [after_tap, inventory.count_of(sticks), plant_hint])
 
 
+# Headless check (--quickkeys): R drops, S splits and E eats the stack under the mouse.
+func run_quickkey_test(client) -> void:
+	await get_tree().create_timer(6.0).timeout
+	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("stone"), 0, 6, Vector3.ZERO)
+	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("roast_forage"), 0, 2, Vector3.ZERO)
+	await get_tree().create_timer(1.0).timeout
+	toggle()
+	var stone: int = table.number_of("stone")
+	var roast: int = table.number_of("roast_forage")
+	var slot: int = inventory.numbers.find(stone)
+	var before: int = inventory.count_of(stone)
+	_hover = slot
+
+	var press: Callable = func(code: int, shift: bool = false) -> bool:
+		var event: InputEventKey = InputEventKey.new()
+		event.keycode = code
+		event.shift_pressed = shift
+		event.pressed = true
+		return quick_key(event)
+
+	var handled: bool = press.call(KEY_S)
+	await get_tree().create_timer(1.0).timeout
+	print("Quick key test: S handled %s, stacks of stone %d -> %d" % [str(handled), 1, _stone_stacks(stone)])
+	_hover = inventory.numbers.find(stone)
+	press.call(KEY_R, true)
+	await get_tree().create_timer(1.0).timeout
+	print("Quick key test: Shift+R dropped one, stones %d -> %d" % [before, inventory.count_of(stone)])
+	_hover = inventory.numbers.find(roast)
+	var roasts: int = inventory.count_of(roast)
+	press.call(KEY_E)
+	await get_tree().create_timer(1.0).timeout
+	print("Quick key test: E ate, roasts %d -> %d" % [roasts, inventory.count_of(roast)])
+	print("Quick key test: T outside a container handled %s, nothing moved" % str(press.call(KEY_T)))
+
+
+func _stone_stacks(number: int) -> int:
+	var stacks: int = 0
+
+	for slot in range(inventory.SLOTS):
+		if inventory.numbers[slot] == number:
+			stacks += 1
+
+	return stacks
+
+
 # Headless check (--texttest): press Text - and Text + several times with the screen open; nothing may
 # touch a freed button.
 func run_text_test(client) -> void:
@@ -1878,6 +1973,16 @@ func run_chest_test(client) -> void:
 	net.inventory_action.rpc_id(1, Net.ACT_CHEST_TAKE, chest_inv.numbers.find(stone), id, 7, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout
 	print("Chest test: after taking out, stones in chest %d, in pack %d" % [chest_inv.count_of(stone), inventory.count_of(stone)])
+
+	# Quick key T moves the hovered pack stack into the open chest.
+	var stone_slot: int = inventory.numbers.find(stone)
+	_chest_hover = [false, stone_slot]
+	var press: InputEventKey = InputEventKey.new()
+	press.keycode = KEY_T
+	press.pressed = true
+	quick_key(press)
+	await get_tree().create_timer(1.0).timeout
+	print("Chest test: quick key T, stones in chest %d, in pack %d" % [chest_inv.count_of(stone), inventory.count_of(stone)])
 
 
 # Headless check (--chop): stand by the nearest tree with an axe and chop it down.
