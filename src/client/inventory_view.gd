@@ -59,7 +59,6 @@ var strain: float = 0.0
 var strain_state: int = 0
 var strain_fade: float = 0.0
 var strain_event: Callable = Callable()   # (strain, state, fade) whenever the server sends a change
-var _black: ColorRect
 var _strain_note: Label
 var _eat_item: String = ""
 var _hunger_bar: ColorRect
@@ -109,12 +108,6 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	_prompt.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
 	_prompt.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_layer.add_child(_prompt)
-	_black = ColorRect.new()
-	_black.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_black.color = Color(0.0, 0.0, 0.0, 0.0)
-	_black.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_black.z_index = 100
-	_layer.add_child(_black)
 	_strain_note = Label.new()
 	_strain_note.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	_strain_note.offset_top = 120.0
@@ -294,12 +287,11 @@ func admin_give_test_set() -> void:
 		net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of(id), 0, 10, Vector3.ZERO)
 
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	var now: int = Time.get_ticks_msec()
 	_hold_e_check()
 
-	if _black != null:
-		_black.color.a = lerpf(_black.color.a, blackness(), clampf(delta * 6.0, 0.0, 1.0))
+	if _strain_note != null:
 		_strain_note.text = "You are exhausted: slow down" if strain_state == 1 else ""
 
 	if _crafting != 0:
@@ -665,15 +657,17 @@ func move_cap() -> float:
 	return float(_exertion_cfg.get("over_speed_mps", 3.0)) if strain_state == 1 else 0.0
 
 
-# How black the screen is, 0 to 1: vision fades over the first vision_frac of a faint, and returns as one wakes.
-func blackness() -> float:
+# The picture's state name and progress for faint.set_state (Art's faint_effect.gd): vision fades over the
+# first vision_frac of a faint ("fainting", progress 0 to 1), then "fainted" holds black while only the heart is heard.
+func faint_state() -> Array:
 	if strain_state == 2:
-		return clampf(strain_fade / float(_exertion_cfg.get("vision_frac", 0.625)), 0.0, 1.0)
+		var vision: float = clampf(strain_fade / float(_exertion_cfg.get("vision_frac", 0.625)), 0.0, 1.0)
+		return ["fainting" if vision < 1.0 else "fainted", vision]
 
 	if strain_state == 3:
-		return clampf(strain_fade * 1.4, 0.0, 1.0)
+		return ["waking", strain_fade]
 
-	return 0.0
+	return ["over_exerted" if strain_state == 1 else "normal", 0.0]
 
 
 func _on_vitals(new_hunger: int, new_health: int, weight_dkg: int) -> void:

@@ -627,6 +627,9 @@ func _welcome_body(info: Dictionary) -> void:
 	items.cover_index = flora.cover
 	items.eat_event = func(item_id): sound.itemfx.eat(item_id)
 	items.fuel_event = func(): sound.itemfx.fuel_pressed()
+	items.strain_event = func(strain, _state, _fade):
+		var shown: Array = items.faint_state()
+		faint.set_state(shown[0], strain, shown[1])
 	items.chest_event = func(what, at): sound.placed.chest(what == "open", at) if what in ["open", "close"] else sound.placed.container(what == "put", at)
 	items.tool_event = func(what): sound.placed.tool_break(body.global_position) if what == "broke" else sound.placed.tool_repair(body.global_position)
 	harvest = HarvestScript.new()
