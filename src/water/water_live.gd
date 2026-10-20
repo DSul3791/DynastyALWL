@@ -24,7 +24,8 @@ const START_PUBLISH_TICKS := 40
 # WET_M 0.12 m, STEEP_WET_M 0.6 m on drops), so the lip and the fall showed as dry dirt.
 # On the baked channel (brook, river, fall) any water this deep is drawn.
 const CHANNEL_WET_M := 0.01
-const CHANNEL_LIFT_M := 0.12     # drawn this far above the bed so a film shows over it
+const CHANNEL_POOL_M := 0.5      # drawn water this deep beside a film cell is a pond or pool
+const CHANNEL_BANK_M := 1.0      # a film cell no more than this above drawn water beside it is the bank, not the fall
 
 var data
 var rate: float = 1.0
@@ -164,15 +165,36 @@ func _run() -> void:
 			_mutex.unlock()
 
 
-# Draws thin running water on the channel cells the sim's own draw rules leave out.
+# Draws thin running water on the channel cells the sim's own draw rules leave out, at the
+# water's true level. Owner report (2026-10-20, build 145): films on a pond's rim cells
+# (sloshing a few cm) drawn above the pond climbed its bank like a wall, so a film is skipped
+# where its bed is within CHANNEL_BANK_M of the drawn water beside it; a cell further above
+# (the fall face, or the ramp below a lip) is drawn.
 static func _show_channel(sim, levels: PackedFloat32Array, channel: PackedInt32Array) -> PackedFloat32Array:
 	if levels.size() != sim.ground.size():
 		return levels
 
 	var depth: PackedFloat32Array = sim.get_depth()
+	var side: int = int(sqrt(float(levels.size())))
+	var drawn: PackedFloat32Array = levels.duplicate()
 
 	for k in channel:
-		if is_nan(levels[k]) and depth[k] >= CHANNEL_WET_M:
-			levels[k] = sim.ground[k] + maxf(depth[k], CHANNEL_LIFT_M)
+		if not is_nan(levels[k]) or depth[k] < CHANNEL_WET_M:
+			continue
+
+		var level: float = sim.ground[k] + depth[k]
+		var climbs: bool = false
+		var column: int = k % side
+
+		for n in [k - 1, k + 1, k - side, k + side, k - side - 1, k - side + 1, k + side - 1, k + side + 1]:
+			if n < 0 or n >= levels.size() or absi(n % side - column) > 1:
+				continue
+
+			if not is_nan(drawn[n]) and depth[n] >= CHANNEL_POOL_M and sim.ground[k] <= drawn[n] + CHANNEL_BANK_M:
+				climbs = true
+				break
+
+		if not climbs:
+			levels[k] = level
 
 	return levels

@@ -2177,11 +2177,22 @@ func _under_the_ground() -> bool:
 	return true
 
 
+const UNDERWATER_MIN_DEPTH_M := 0.4   # water this shallow under the camera is a film, not a body to dive in
+
+
 # Blue tint and thick blue fog while the camera is below the sea or a lake.
 func _update_underwater() -> void:
 	var eye: Vector3 = camera.global_position
-	var surface: float = flora.water_level_at(eye.x, eye.z)
-	var under: bool = eye.y < 0.0 or (not is_nan(surface) and eye.y < surface)
+	# Owner report (2026-10-20, build 145): beside a cliff gorge with a thin film of water the
+	# view turned blue with nothing drawn. The highest wet corner of an 8 m square (water_level_at)
+	# is the top of the film, tens of m above the eye. Now the blended surface at the eye's own
+	# spot, and the water there must be deeper than a film.
+	var surface: float = flora.water_surface_at(eye.x, eye.z) if eye.y >= 0.0 else NAN
+	var under: bool = eye.y < 0.0
+
+	if not under and not is_nan(surface) and eye.y < surface:
+		var ground: float = _ground_below(eye)
+		under = is_nan(ground) or surface - ground > UNDERWATER_MIN_DEPTH_M
 
 	if under == underwater:
 		return
