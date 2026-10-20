@@ -18,7 +18,7 @@ func check(ok: bool, what: String) -> void:
 
 func _init() -> void:
 	var table = ItemTable.new()
-	check(table.load_file(ItemTable.PATH), "table loads")
+	check(table.load_file(ItemTable.PATH) and table.load_file(ItemTable.GATHERED_PATH), "table loads")
 	var stone: int = table.number_of("stone")
 	var axe: int = table.number_of("stone_axe")
 	check(stone == 1 and table.id_of(1) == "stone", "stone is number 1")
@@ -62,6 +62,12 @@ func _init() -> void:
 	check(recipes.craft(1, crafter) and recipes.craft(1, crafter), "twist cordage twice")
 	check(crafter.count_of(table.number_of("cordage")) == 2 and crafter.count_of(table.number_of("plant_fibre")) == 1, "fibre used, cordage made")
 	check(not recipes.craft(3, crafter), "stone spear needs stones and a stick")
+	var herbs = Inventory.new(table)
+	herbs.add(table.number_of("plantain_leaves"), 4)
+	herbs.add(table.number_of("plant_fibre"), 2)
+	check(recipes.craft(8, herbs) and herbs.count_of(table.number_of("poultice")) == 1 and herbs.count_of(table.number_of("plantain_leaves")) == 1, "plantain poultice takes 3 leaves")
+	check(recipes.craft(10, herbs) and herbs.count_of(table.number_of("bandage")) == 1 and herbs.count_of(table.number_of("plant_fibre")) == 0, "leaf bandage takes 1 leaf and 2 fibre")
+	check(recipes.recipe(8)["identify"] == [table.number_of("plantain_leaves")], "poultice asks for the herb to be identified")
 	crafter.add(table.number_of("stick"), 3)
 	crafter.add(table.number_of("stone"), 3)
 	check(recipes.craft(5, crafter) and crafter.count_of(table.number_of("wooden_spear")) == 1, "wooden spear made")

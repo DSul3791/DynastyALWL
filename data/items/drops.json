@@ -42,6 +42,34 @@
 				1,
 				2
 			]
+		],
+		"plantain": [
+			[
+				"plantain_leaves",
+				2,
+				4
+			]
+		],
+		"comfrey": [
+			[
+				"comfrey_leaves",
+				2,
+				3
+			]
+		],
+		"yarrow": [
+			[
+				"yarrow",
+				1,
+				3
+			]
+		],
+		"staunchmoss": [
+			[
+				"staunchmoss",
+				1,
+				2
+			]
 		]
 	},
 	"by_kind": {

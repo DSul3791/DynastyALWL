@@ -146,6 +146,9 @@ func _init() -> void:
 
 		recipe_numbers[n] = rid
 
+		for id in r.get("identify", []):
+			want_item.call(String(id), "recipe '%s' identify" % rid)
+
 		for list in ["needs", "keeps"]:
 			for row in r.get(list, []):
 				want_item.call(String(row[0]), "recipe '%s' %s" % [rid, list])

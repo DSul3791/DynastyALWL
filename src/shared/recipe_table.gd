@@ -33,8 +33,13 @@ func load_file(path: String, item_table) -> bool:
 		for keep in row.get("keeps", []):
 			keeps.append([item_table.number_of(str(keep[0])), int(keep[1])])
 
+		var identify: Array = []
+
+		for need in row.get("identify", []):
+			identify.append(item_table.number_of(str(need)))
+
 		var entry: Dictionary = {
-			"number": int(row["number"]), "id": id, "name": str(row["name"]), "needs": needs, "keeps": keeps,
+			"number": int(row["number"]), "id": id, "name": str(row["name"]), "needs": needs, "keeps": keeps, "identify": identify,
 			"gives": [item_table.number_of(str(row["gives"][0])), int(row["gives"][1])],
 			"craft_s": float(row.get("craft_s", 3.0)), "known": bool(row.get("known", false)),
 		}

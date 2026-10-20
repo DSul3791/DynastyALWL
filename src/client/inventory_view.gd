@@ -595,6 +595,12 @@ func _start_craft(number: int) -> void:
 	if _crafting != 0 or not recipes.can_make(number, inventory):
 		return
 
+	for item in recipes.recipe(number).get("identify", []):
+		if knowledge != null and not knowledge.is_known("i%d" % item):
+			_on_notice("You are not sure what %s really is. Hover it in inspection mode (/) before you use it." % table.name_of(item).to_lower())
+			_craft_queue = 0
+			return
+
 	_crafting = number
 	_craft_done_msec = Time.get_ticks_msec() + int(recipes.recipe(number)["craft_s"] * 1000.0)
 
@@ -609,15 +615,24 @@ func _split_selected() -> void:
 
 # Hover text for a slot. In inspection mode the name follows what the character knows (the truth,
 # "Unknown", or a sticky wrong guess drawn from the item's look-alike list); otherwise it is the plain name.
+# The item's name as this character sees it: plain, or in inspection mode the truth, "Unknown" or a
+# sticky wrong guess drawn from the look-alike list. Items with no look-alikes are always known.
+func _item_label(number: int) -> String:
+	var name: String = table.name_of(number)
+	var entry: Dictionary = table.entry(table.id_of(number))
+
+	if knowledge != null and is_inspecting.is_valid() and bool(is_inspecting.call()) and not entry.get("look_alikes", []).is_empty():
+		return knowledge.reveal("i%d" % number, name, int(entry.get("familiarity", 100)), "horticulture", entry.get("look_alikes", []))
+
+	return name
+
+
 func _tooltip(number: int, count: int) -> String:
 	if number == 0:
 		return ""
 
 	var entry: Dictionary = table.entry(table.id_of(number))
-	var name: String = table.name_of(number)
-
-	if knowledge != null and is_inspecting.is_valid() and bool(is_inspecting.call()):
-		name = knowledge.reveal("i%d" % number, name, int(entry.get("familiarity", 100)), "horticulture", entry.get("look_alikes", []))
+	var name: String = _item_label(number)
 
 	return "%s x%d\n%s, stacks to %d" % [name, count, str(entry.get("kind", "item")), table.stack_of(number)]
 
@@ -658,7 +673,7 @@ func _refresh() -> void:
 	for i in inventory.SLOTS:
 		var button: Button = _buttons[i]
 		var number: int = inventory.numbers[i]
-		button.text = "" if number == 0 else "%s\nx%d" % [table.name_of(number), inventory.counts[i]]
+		button.text = "" if number == 0 else "%s\nx%d" % [_item_label(number), inventory.counts[i]]
 		button.modulate = Color(1.0, 0.9, 0.5) if i == _selected else Color.WHITE
 		button.visible = filter == "" or (number != 0 and _matches(table.name_of(number), filter))
 		button.tooltip_text = _tooltip(number, inventory.counts[i])
@@ -722,7 +737,7 @@ func _refresh_detail() -> void:
 		var kept: bool = r["keeps"].has(need)
 		var have: int = inventory.count_of(need[0])
 		var line: Label = Label.new()
-		line.text = "%s   %d / %d%s" % [table.name_of(need[0]), have, need[1], "  (kept)" if kept else ""]
+		line.text = "%s   %d / %d%s" % [_item_label(need[0]), have, need[1], "  (kept)" if kept else ""]
 		line.modulate = Color(0.6, 1.0, 0.6) if have >= need[1] else Color(1.0, 0.55, 0.5)
 		_style(line, BODY_PX)
 		_detail.add_child(line)

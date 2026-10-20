@@ -73,6 +73,11 @@ func reveal(key: String, true_label: String, familiarity: int, skill: String, gu
 	return "Might be %s" % guess
 
 
+# Does the character know this thing for certain (no roll, no change)? Used to gate using herbs.
+func is_known(key: String) -> bool:
+	return admin or _notebook.get(key, {}).get("state", "") == "known"
+
+
 # Puts right a wrong belief (a teacher, a book, a reference): the thing is now known.
 func correct(key: String) -> void:
 	_notebook[key] = {"state": "known"}
