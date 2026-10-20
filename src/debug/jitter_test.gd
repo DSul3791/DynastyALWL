@@ -1,6 +1,6 @@
 extends Node
 # Float-precision test (Technical direction, 2026-10-20). Esc > Advanced > "Jitter test"
-# or F9 flies the player to the next test spot far from the world origin and shows a
+# or J flies the player to the next test spot far from the world origin and shows a
 # readout plus a row of thin posts 1 cm apart in front of the camera. Far from the
 # origin 32-bit floats get coarse; if the posts shimmer, swap places or the view
 # wobbles while you stand still or turn, the world needs a floating origin.
@@ -26,7 +26,12 @@ func setup(client) -> void:
 	_client = client
 	var layer: CanvasLayer = CanvasLayer.new()
 	_label = Label.new()
-	_label.position = Vector2(16.0, 120.0)
+	# Bottom left, clear of the HUD lines at the top left.
+	_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
+	_label.offset_left = 16.0
+	_label.offset_top = -150.0
+	_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	_label.add_theme_constant_override("outline_size", 6)
 	_label.add_theme_font_size_override("font_size", 20)
 	_label.visible = false
 	layer.add_child(_label)
@@ -81,5 +86,5 @@ func _process(_delta: float) -> void:
 	var err: Vector3 = _client.camera.global_position - (p + Vector3(0.0, 0.7, 0.0))
 	_worst = maxf(_worst, err.length())
 	_samples += 1
-	_label.text = "Jitter test: %s  (F9 next spot)\npos %.0f, %.0f, %.0f\nfloat step here: %.2f mm\ncamera offset error: now %.2f mm, worst %.2f mm\nWatch the red posts (1 cm gaps): shimmer or swapping places = jitter" % [
+	_label.text = "Jitter test: %s  (J next spot)\npos %.0f, %.0f, %.0f\nfloat step here: %.2f mm\ncamera offset error: now %.2f mm, worst %.2f mm\nWatch the red posts (1 cm gaps): shimmer or swapping places = jitter" % [
 		SPOTS[_at][0], p.x, p.y, p.z, ulp * 1000.0, err.length() * 1000.0, _worst * 1000.0]

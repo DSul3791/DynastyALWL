@@ -18,7 +18,7 @@ Tracks what the controls are now and what is planned. Update it whenever a contr
 | + / - (also numpad) | Raise or lower how much every spring pours, by about 10 % per press (tuning tool, x0.5 to x20; above x1 rivers and ponds turn muddy brown). Shows "Water flow rate: x1.21 = 12.1 m3/s per spring (191,800 gal/min)" for 3 seconds. The water then runs by real physics for two simulated hours ("running...") and redraws as it moves |
 | X | Admin: dig a 2 m hole where the crosshair meets the ground (up to 80 m away). Water flows into holes that open toward it (testing digging against the water) |
 | F2 | Cycle quality: Low, Medium, High, Ultra (Low is the minimum machine) |
-| F9 | Float jitter test: fly to the next far-from-origin spot (admin test, build 67) |
+| J | Float jitter test: fly to the next far-from-origin spot (admin test, build 68) |
 | Esc | Options menu: Resume, Settings (quality, VSync, sound volume 100/75/50/25 % or off), Advanced (Clear saved ground, which takes effect at once), Quit game. Esc again resumes |
 
 Gait rules:

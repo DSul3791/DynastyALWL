@@ -33,7 +33,7 @@ const Probe := preload("res://src/debug/frame_probe.gd")
 const CompassScript := preload("res://src/client/admin_compass.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 67
+const BUILD := 68
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -158,7 +158,7 @@ var dig_applied: int = 0
 var flora                             # FloraView
 var grass                             # GrassView
 var sound                             # SoundStage: wind, footsteps, grass swish
-var _jitter_test                      # float-precision test, F9 or Esc > Advanced
+var _jitter_test                      # float-precision test, J or Esc > Advanced
 var _bake = TileBakeScript.new()      # admin: background tile bake
 var _bake_check_msec: int = 0
 var _bake_status: String = ""
@@ -791,7 +791,7 @@ func _build_menu(layer: CanvasLayer) -> void:
 	_menu_button(advanced, "Admin: Bake starter tiles", func():
 		var problem: String = _bake.start()
 		_menu_note.text = "Baking the starter tiles in the background (about 5 to 10 minutes). The game stays usable; the result shows here." if problem == "" else problem)
-	_menu_button(advanced, "Jitter test (next spot, or F9)", func():
+	_menu_button(advanced, "Jitter test (next spot, or J)", func():
 		_jitter_test.next_spot()
 		_set_menu(false))
 	_menu_button(advanced, "Back", func(): _show_menu_page("main"))
@@ -1044,7 +1044,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			net.step_water_rate.rpc_id(1, -1)
 		elif event.keycode == KEY_X:
 			_admin_dig()
-		elif event.keycode == KEY_F9 and _jitter_test != null:
+		elif event.keycode == KEY_J and _jitter_test != null:
 			_jitter_test.next_spot()
 		elif event.keycode == KEY_F2:
 			quality = (quality + 1) % QUALITY_NAMES.size()
