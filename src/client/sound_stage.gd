@@ -41,7 +41,7 @@ const DAMP_M := 0.03                    # shallower film at the waterline: a dam
 const SWIM_M := 1.3                     # deeper than this: no footsteps
 # Walk quiet, jog a little louder, run loud (owner 2026-10-19: build 47's run
 # level was a bit too loud for running).
-const GAIT_DB := [-11.0, -6.5, -3.0]     # walk, jog, run
+const GAIT_DB := [-22.0, -16.0, -10.0]   # walk, jog, run (owner 2026-10-20: still far too loud; clear steps of 6 dB)
 const GAIT_PITCH := [1.0, 1.03, 1.06]
 const VOLUME_STEPS := [1.0, 0.75, 0.5, 0.25, 0.0]
 

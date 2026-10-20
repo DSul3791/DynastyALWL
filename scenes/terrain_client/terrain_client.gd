@@ -33,7 +33,7 @@ const Probe := preload("res://src/debug/frame_probe.gd")
 const CompassScript := preload("res://src/client/admin_compass.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 84
+const BUILD := 80
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -77,9 +77,9 @@ const RUN_SPEED := 18.0
 # and leaning right. The bob therefore repeats every step and the sway every
 # two steps.
 const STEP_M := [3.0, 4.2, 6.0]          # metres per step: longer strides when faster
-const BOB_M := [0.030, 0.042, 0.055]     # how far the camera dips at a footfall
-const SWAY_M := [0.020, 0.026, 0.032]    # sideways shift at a footfall
-const SWAY_DEG := [0.16, 0.20, 0.24]     # roll toward the stepping side at a footfall
+const BOB_M := [0.040, 0.052, 0.064]     # how far the camera dips at a footfall
+const SWAY_M := [0.012, 0.016, 0.020]    # sideways shift at a footfall
+const SWAY_DEG := [0.10, 0.13, 0.16]     # roll toward the stepping side at a footfall
 const DOUBLE_TAP_MSEC := 300          # second W press within this starts jogging
 const GRAVITY := 20.0
 const MOUSE_SENSITIVITY := 0.002
