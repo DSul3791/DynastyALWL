@@ -53,6 +53,7 @@ def main():
     errors, warnings, notes = [], [], []
     slot_names = {name for name, *_ in mm.SLOTS}
     step_names = {"step_%s_%s" % (surface, side) for surface, _ in mm.STEPS for side in ("left", "right")}
+    step_names |= {"step_%s" % surface for surface, _ in mm.STEPS}   # generated sets (floors/) have no left/right
     files = sound_files()
 
     for name, group, where, supply, priority in mm.SLOTS:
