@@ -316,6 +316,12 @@ func set_water_quality(quality: int) -> void:
 	water_ease = quality >= 1
 
 
+# Storm murk of the land water (weather_look.gd), 0 clear .. 1 big storm.
+func set_storm_murk(amount: float) -> void:
+	if _water_material != null:
+		_water_material.set_shader_parameter("storm", amount)
+
+
 func set_flow_rate(rate: float) -> void:
 	if _water_material != null:
 		_water_material.set_shader_parameter("mud", clampf(log(maxf(rate, 1.0)) / log(8.0), 0.0, 1.0))

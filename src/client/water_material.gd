@@ -15,6 +15,8 @@ uniform vec3 deep_color : source_color = vec3(0.04, 0.17, 0.24);
 uniform vec3 foam_color : source_color = vec3(0.78, 0.82, 0.80);
 uniform vec3 mud_color : source_color = vec3(0.36, 0.27, 0.16);
 uniform float rough = 0.0;           // 0 calm, 1 raging (flow rate above x1, set by the client)
+uniform float storm = 0.0;           // 0 calm, 1 big storm: darker, dirtier, murkier, a little more foam (weather_look.gd, lagged)
+uniform vec3 storm_color : source_color = vec3(0.13, 0.12, 0.09);
 uniform float mud = 0.0;             // 0 clear, 1 brown flood water (rivers and ponds above x1, set by the client)
 uniform float clarity_m = 1.1;       // water this thick hides about two thirds of what is behind it (clear brook water: the bed shows)
 uniform float edge_alpha = 0.12;     // the thinnest water
@@ -129,7 +131,7 @@ void fragment() {
 #else
 	float through = mix(0.1, 1.6, sheet_alpha);      // no depth read at Low: the sheet's edge fade stands in
 #endif
-	float murk = 1.0 - exp(-through / (clarity_m * (1.0 - 0.7 * mud)));
+	float murk = 1.0 - exp(-through / (clarity_m * (1.0 - 0.7 * mud) * (1.0 - 0.65 * storm)));
 
 	// Running water (owner, 2026-10-19): ripples carried downstream at a speed that grows
 	// with the slope (about as the square root, as in real channels); two copies half a
@@ -201,7 +203,9 @@ void fragment() {
 	foam *= 1.0 / (1.0 + distance_m / 120.0);
 
 	vec3 water = mix(mix(shallow_color, deep_color, murk), mud_color * mix(1.0, 0.7, murk), mud);
-	vec3 foam_tint = mix(foam_color, mud_color * 1.6, mud * 0.6);
+	water = mix(water, storm_color * mix(1.0, 0.6, murk), storm * 0.65);   // storm: dark grey-brown churned water
+	foam *= 1.0 + 0.5 * storm;
+	vec3 foam_tint = mix(foam_color, mud_color * 1.6, clamp(mud * 0.6 + storm * 0.35, 0.0, 1.0));
 	float body_alpha = mix(edge_alpha, 0.97, murk);
 
 #ifdef SCENE_READS

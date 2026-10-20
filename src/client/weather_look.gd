@@ -224,6 +224,35 @@ func _target() -> Dictionary:
 	return out
 
 
+# Owner (2026-10-20): in a big storm the ocean and all land water turn darker and dirtier, then
+# clear again. Land water lags the weather far more than the sea (rivers stay muddy after the rain).
+# Real seconds to rise and to clear; the water material takes one uniform (water_material.gd, storm).
+const LAND_MURK_RISE_S := 360.0
+const LAND_MURK_CLEAR_S := 900.0
+const SEA_MURK_RISE_S := 120.0
+const SEA_MURK_CLEAR_S := 360.0
+var land_murk: float = 0.0
+var sea_murk: float = 0.0
+
+
+func _update_water_murk(delta: float, storm: float, rain: float) -> void:
+	var want: float = clampf(storm + 0.25 * rain, 0.0, 1.0)
+	var land: float = move_toward(land_murk, want, delta / (LAND_MURK_RISE_S if want > land_murk else LAND_MURK_CLEAR_S))
+	var sea: float = move_toward(sea_murk, want, delta / (SEA_MURK_RISE_S if want > sea_murk else SEA_MURK_CLEAR_S))
+
+	if absf(land - land_murk) > 0.0005 and _client.flora != null:
+		_client.flora.set_storm_murk(land)
+
+	if absf(sea - sea_murk) > 0.0005 and _client.sea != null:
+		var material: ShaderMaterial = _client.sea.material_override as ShaderMaterial
+
+		if material != null:
+			material.set_shader_parameter("storm", sea)
+
+	land_murk = land
+	sea_murk = sea
+
+
 func _process(delta: float) -> void:
 	if _client == null or _client._environment == null or _client.camera == null or _client.terrain == null:
 		return
@@ -239,6 +268,8 @@ func _process(delta: float) -> void:
 	var storm: float = float(_s["storm"])
 	cloud_cover = clampf(maxf(float(_s["cloud"]), maxf(rain, maxf(snow * 0.9, storm))), 0.0, 1.0)
 	gloom = clampf(0.3 * cloud_cover + 0.35 * rain + 0.2 * snow + 0.55 * storm, 0.0, 1.0)
+
+	_update_water_murk(delta, storm, rain)
 
 	if _flash_t >= 0.0:
 		_flash_t += delta
