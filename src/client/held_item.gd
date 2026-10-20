@@ -110,6 +110,10 @@ func _is_axe() -> bool:
 
 # A mouse button while playing. Returns true when it was used here.
 func mouse_button(button: int, pressed: bool) -> bool:
+	if button == MOUSE_BUTTON_RIGHT and pressed and _inv.edible_slot(held_slot):
+		_inv.eat_slot(held_slot)
+		return true
+
 	if _is_placeable():
 		if button == MOUSE_BUTTON_LEFT and pressed and _blueprint_ok:
 			_net.inventory_action.rpc_id(1, Net.ACT_PLACE, held_slot, 0, posmod(int(round(rad_to_deg(_camera.global_rotation.y))), 360), _blueprint_at)

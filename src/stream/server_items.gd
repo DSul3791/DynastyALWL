@@ -85,6 +85,7 @@ var cut_tree: Callable         # (chunk Vector2i, id) -> true when the standing 
 var rock_at: Callable          # (x, z) -> true when bare rock shows at the surface there (no soil cover); set by the server scene
 var game_seconds: Callable      # () -> game clock seconds
 var season_now: Callable        # () -> "spring" | "summer" | "autumn" | "winter"
+var send_vitals: Callable       # (peer, hunger percent, health, weight in tenths of a kg)
 var send_chest: Callable        # (peer, world id, bytes) a chest's contents to the player who opened it
 var roof_add: Callable          # (roof Array from Cover.box_roof) -> key; the server's cover index gets the lean-to's roof
 var roof_remove: Callable       # (key)
@@ -106,8 +107,18 @@ var _structures: Dictionary = {}    # structures.json: kind -> definition
 var _struct_gap_m: float = 2.5
 var _chests: Dictionary = {}        # structure uid -> Inventory (server-owned contents, chests.json)
 var _next_uid: int = 1
+var _vitals_cfg: Dictionary = {}
+var _vitals: Dictionary = {}        # player key -> {hunger, health} floats
+var _vitals_sent: Dictionary = {}   # peer -> [hunger, health] last whole points sent
+var _exertion: Dictionary = {}      # peer -> smoothed 0..1 from movement
+var _motion: Dictionary = {}        # peer -> [last position, msec]
+var _work_until: Dictionary = {}    # peer -> msec until which tool work counts as effort
+var _last_eat: Dictionary = {}      # peer -> msec
+var _unfit: Dictionary = {}         # item id -> true: yields of poisonous plants never feed anyone
 var _last_use: Dictionary = {}      # peer -> msec of the last structure use
 const CHEST_REACH_M := 4.0
+const VitalsRules := preload("res://src/shared/vitals_rules.gd")
+const GAME_RATE := 24.0                 # game seconds per real second
 var _slow_in: float = 0.0
 const SLOW_TICK_S := 0.25
 var gather_pace_ms: int = GATHER_PACE_MS
@@ -139,6 +150,8 @@ func setup(item_table, store_dir: String) -> void:
 		_structures = structures.get("structures", {})
 		_struct_gap_m = float(structures.get("gap_m", 2.5))
 
+	_vitals_cfg = VitalsRules.load_config()
+	_load_vitals()
 	_load_inventories()
 	_load_chests()
 	_load_world_items()
@@ -154,6 +167,10 @@ func setup(item_table, store_dir: String) -> void:
 			_flora_by_name[str(entry["name"])] = entry
 			_flora_by_id[int(entry["id"])] = entry
 
+			if (entry.get("uses", []) as Array).has("poison"):
+				for yield_id in entry.get("yields", []):
+					_unfit[str(yield_id)] = true
+
 
 func peer_connected_hello(peer: int, key: String) -> void:
 	if not _valid_key(key):
@@ -168,6 +185,13 @@ func peer_connected_hello(peer: int, key: String) -> void:
 	_known[peer] = {}
 	send_full.call(peer, _inventories[key].to_bytes())
 
+	if not _vitals.has(key):
+		_vitals[key] = _new_vitals()
+		_dirty = true
+
+	_vitals_sent.erase(peer)
+	_sync_vitals(peer, true)
+
 
 func peer_left(peer: int) -> void:
 	_peer_key.erase(peer)
@@ -179,12 +203,18 @@ func peer_left(peer: int) -> void:
 	_last_cook.erase(peer)
 	_last_gather.erase(peer)
 	_last_use.erase(peer)
+	_last_eat.erase(peer)
+	_exertion.erase(peer)
+	_motion.erase(peer)
+	_work_until.erase(peer)
+	_vitals_sent.erase(peer)
 	_last_process.erase(peer)
 
 
 func report_position(peer: int, position: Vector3) -> void:
 	if _peer_key.has(peer):
 		_peer_pos[peer] = position
+		_note_motion(peer, position)
 
 
 func inventory_of(peer: int):
@@ -268,6 +298,8 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_chest_action(peer, inv, kind, a, b, count)
 	elif kind == Net.ACT_USE_STRUCT:
 		_use_struct(peer, inv, a)
+	elif kind == Net.ACT_EAT:
+		_eat(peer, inv, a)
 	elif kind == Net.ACT_REPAIR:
 		_repair(peer, inv, a)
 	elif kind == Net.ACT_FUEL:
@@ -307,6 +339,7 @@ func tick(delta: float) -> void:
 		_slow_in = 0.0
 		_rot(spent)
 		_fires(spent)
+		_vitals_tick(spent)
 
 		for id in _items.keys():
 			if _items[id].has("scatter") or float(_items[id]["left"]) > 1.0e8:
@@ -365,6 +398,7 @@ func save() -> void:
 
 	_save_trees()
 	_save_chests()
+	_save_vitals()
 	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked})
 
 
@@ -966,6 +1000,7 @@ func _wear_tool(peer: int, inv, tool_class: String) -> void:
 	if slot < 0 or int(table.entry(table.id_of(inv.numbers[slot])).get("durability", 0)) <= 0:
 		return
 
+	_work_until[peer] = Time.get_ticks_msec() + 5000
 	var before: Array = _snapshot(inv)
 	inv.wear[slot] += 1
 	_dirty = true
@@ -1581,3 +1616,149 @@ func _load_chests() -> void:
 		var chest = InventoryScript.new(table)
 		chest.from_json_array(parsed["chests"][key])
 		_chests[int(key)] = chest
+
+
+# --- Hunger, health and body weight (data/items/vitals.json; Dave 2026-10-20) ---
+# An energy balance: a stomach (kcal) is burnt down by rest metabolism plus work; an empty stomach
+# burns body weight, a surplus beyond a full one adds it. The player sees hunger as the stomach's
+# share in percent, health in points and weight in tenths of a kilo.
+
+func vitals_of(peer: int) -> Dictionary:
+	return _vitals.get(_peer_key.get(peer, ""), {})
+
+
+func _new_vitals() -> Dictionary:
+	return {"fed": float(_vitals_cfg.get("stomach_cap_kcal", 2400)), "weight": float(_vitals_cfg.get("start_weight_kg", 75)), "health": float(_vitals_cfg.get("health_max", 100))}
+
+
+# How hard the player is working, 0 to 1: movement speed from position reports, lifted by recent tool work.
+func exertion_of(peer: int) -> float:
+	var level: float = float(_exertion.get(peer, 0.0))
+
+	if Time.get_ticks_msec() < int(_work_until.get(peer, 0)):
+		level = maxf(level, 0.6)
+
+	return level
+
+
+func _note_motion(peer: int, position: Vector3) -> void:
+	var now: int = Time.get_ticks_msec()
+	var last: Array = _motion.get(peer, [])
+
+	if not last.is_empty() and now > int(last[1]):
+		var dt: float = float(now - int(last[1])) / 1000.0
+		var speed: float = Vector2(position.x - last[0].x, position.z - last[0].z).length() / dt
+		var target: float = clampf((speed - 1.0) / 10.0, 0.0, 1.0)      # standing 0, walking 0.5, running 1
+		_exertion[peer] = lerpf(float(_exertion.get(peer, 0.0)), target, clampf(dt * 0.25, 0.0, 1.0))
+
+	_motion[peer] = [position, now]
+
+
+func _vitals_tick(spent: float) -> void:
+	var cap: float = float(_vitals_cfg.get("stomach_cap_kcal", 2400))
+	var health_max: float = float(_vitals_cfg.get("health_max", 100))
+	var game_s: float = spent * GAME_RATE
+
+	for peer in _peer_key:
+		var v: Dictionary = _vitals.get(_peer_key[peer], {})
+
+		if v.is_empty():
+			continue
+
+		var burn_per_day: float = float(_vitals_cfg.get("rest_kcal_per_kg_day", 22)) * float(v["weight"]) + float(_vitals_cfg.get("work_kcal_day", 1500)) * exertion_of(peer)
+		var burn: float = burn_per_day * game_s / 86400.0
+		v["fed"] = float(v["fed"]) - burn
+
+		if float(v["fed"]) < 0.0:
+			# Empty: the shortfall comes off the body.
+			v["weight"] = clampf(float(v["weight"]) + float(v["fed"]) / float(_vitals_cfg.get("kcal_per_kg", 7700)), float(_vitals_cfg.get("min_weight_kg", 40)), float(_vitals_cfg.get("max_weight_kg", 150)))
+			v["fed"] = 0.0
+		else:
+			v["health"] = clampf(float(v["health"]) + float(_vitals_cfg.get("health_regen_per_s", 0.05)) * spent, 0.0, health_max)
+
+		_sync_vitals(peer, false)
+
+
+func _vitals_points(v: Dictionary) -> Array:
+	var cap: float = float(_vitals_cfg.get("stomach_cap_kcal", 2400))
+	return [int(ceil(clampf(float(v["fed"]) / cap, 0.0, 1.0) * 100.0)), int(floor(float(v["health"]))), int(round(float(v["weight"]) * 10.0))]
+
+
+func _sync_vitals(peer: int, force: bool) -> void:
+	var v: Dictionary = vitals_of(peer)
+
+	if v.is_empty() or not send_vitals.is_valid():
+		return
+
+	var now_points: Array = _vitals_points(v)
+
+	if force or _vitals_sent.get(peer, []) != now_points:
+		_vitals_sent[peer] = now_points
+		send_vitals.call(peer, now_points[0], now_points[1], now_points[2])
+		_dirty = true
+
+
+func _eat(peer: int, inv, slot: int) -> void:
+	var v: Dictionary = vitals_of(peer)
+
+	if v.is_empty() or slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0:
+		return
+
+	var now: int = Time.get_ticks_msec()
+
+	if now - int(_last_eat.get(peer, -100000)) < int(_vitals_cfg.get("eat_pace_ms", 800)):
+		return
+
+	var item_id: String = table.id_of(inv.numbers[slot])
+
+	if _unfit.has(item_id):
+		_last_eat[peer] = now
+		_say(peer, "It tastes bitter and wrong. You spit it out.")
+		return
+
+	var kcal: int = VitalsRules.food_value(item_id, _vitals_cfg)
+	var heal: int = VitalsRules.heal_value(item_id, _vitals_cfg)
+
+	if kcal <= 0 and heal <= 0:
+		_say(peer, "You cannot eat that.")
+		return
+
+	var cap: float = float(_vitals_cfg.get("stomach_cap_kcal", 2400))
+	var limit: float = cap * (1.0 + float(_vitals_cfg.get("overeat_allowance", 0.25)))
+
+	if kcal > 0 and heal <= 0 and float(v["fed"]) >= limit - 1.0:
+		_say(peer, "You cannot eat another bite.")
+		return
+
+	if heal > 0 and kcal <= 0 and float(v["health"]) >= float(_vitals_cfg.get("health_max", 100)) - 0.5:
+		_say(peer, "You are not hurt.")
+		return
+
+	_last_eat[peer] = now
+	inv.take_from_slot(slot, 1)
+	var total: float = float(v["fed"]) + float(kcal)
+
+	if total > cap:
+		# Beyond a full stomach the surplus goes to the body.
+		v["weight"] = clampf(float(v["weight"]) + (total - cap) * float(_vitals_cfg.get("gain_efficiency", 0.8)) / float(_vitals_cfg.get("kcal_per_kg", 7700)), float(_vitals_cfg.get("min_weight_kg", 40)), float(_vitals_cfg.get("max_weight_kg", 150)))
+		total = cap
+
+	v["fed"] = total
+	v["health"] = clampf(float(v["health"]) + float(heal), 0.0, float(_vitals_cfg.get("health_max", 100)))
+	_sync_vitals(peer, true)
+
+
+func _save_vitals() -> void:
+	_write_atomic("vitals.json", {"version": 1, "players": _vitals})
+
+
+func _load_vitals() -> void:
+	var parsed: Variant = _read_json_version("vitals.json", 1)
+
+	if parsed == null:
+		return
+
+	for key in parsed.get("players", {}):
+		var row: Dictionary = parsed["players"][key]
+		var fresh: Dictionary = _new_vitals()
+		_vitals[str(key)] = {"fed": float(row.get("fed", fresh["fed"])), "weight": float(row.get("weight", fresh["weight"])), "health": float(row.get("health", fresh["health"]))}

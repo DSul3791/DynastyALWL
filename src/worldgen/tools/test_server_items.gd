@@ -627,5 +627,57 @@ func _init() -> void:
 	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, 0, Vector3.ZERO)
 	check(cb.inventory_of(1).count_of(firewood_n) == 8, "the second log splits too")
 
+	# Hunger, health and weight.
+	var vd: String = "user://test_server_items_vitals"
+	DirAccess.make_dir_recursive_absolute(vd)
+
+	for file in DirAccess.get_files_at(vd):
+		DirAccess.remove_absolute(vd + "/" + file)
+
+	var vt = make(vd)
+	var vsent: Array = []
+	vt.send_vitals = func(p, hunger, health, weight): vsent.append([hunger, health, weight])
+	var vnotes: Array = []
+	vt.send_notice = func(_p, text): vnotes.append(text)
+	vt.peer_connected_hello(1, "abcdef123456")
+	check(vsent.size() == 1 and vsent[0] == [100, 100, 750], "hello sends full hunger, full health, 75 kg")
+	vt._exertion[1] = 0.4
+	vt._vitals_cfg["eat_pace_ms"] = 0
+
+	for n in range(360):
+		vt.tick(10.0)
+
+	var fed_after_hour: float = float(vt.vitals_of(1)["fed"])
+	check(fed_after_hour > 0.0 and absf(float(vt.vitals_of(1)["weight"]) - 75.0) < 0.001, "a full stomach lasts a whole game day (1 real hour) at ordinary work (%.0f kcal left)" % fed_after_hour)
+
+	for n in range(60):
+		vt.tick(10.0)
+
+	check(float(vt.vitals_of(1)["fed"]) == 0.0 and float(vt.vitals_of(1)["weight"]) < 75.0, "then the body starts burning itself")
+	check(vt.vitals_of(1)["health"] >= 99.0, "hunger alone never hurts")
+	var food_n: int = vt.table.number_of("roast_forage")
+	vt.action(1, Net.ACT_ADMIN_GIVE, food_n, 0, 30, Vector3.ZERO)
+	vt.action(1, Net.ACT_EAT, vt.inventory_of(1).numbers.find(food_n), 0, 0, Vector3.ZERO)
+	check(vt.inventory_of(1).count_of(food_n) == 29 and float(vt.vitals_of(1)["fed"]) == 400.0, "eating takes one item and fills the stomach by its kcal")
+	vt.action(1, Net.ACT_ADMIN_GIVE, vt.table.number_of("belladonna_berries"), 0, 2, Vector3.ZERO)
+	vt.action(1, Net.ACT_EAT, vt.inventory_of(1).numbers.find(vt.table.number_of("belladonna_berries")), 0, 0, Vector3.ZERO)
+	check(vt.inventory_of(1).count_of(vt.table.number_of("belladonna_berries")) == 2 and vnotes.size() > 0, "poison berries are spat out and kept")
+	var weight_before: float = float(vt.vitals_of(1)["weight"])
+	vt._exertion[1] = 0.0
+
+	for n in range(14):
+		vt.action(1, Net.ACT_EAT, vt.inventory_of(1).numbers.find(food_n), 0, 0, Vector3.ZERO)
+
+	check(float(vt.vitals_of(1)["weight"]) > weight_before, "many meals at no work add weight")
+	check(float(vt.vitals_of(1)["fed"]) <= 2400.0, "the stomach never holds more than its cap")
+	vt.vitals_of(1)["health"] = 50.0
+	vt.action(1, Net.ACT_ADMIN_GIVE, vt.table.number_of("poultice"), 0, 1, Vector3.ZERO)
+	vt.action(1, Net.ACT_EAT, vt.inventory_of(1).numbers.find(vt.table.number_of("poultice")), 0, 0, Vector3.ZERO)
+	check(vt.vitals_of(1)["health"] == 80.0, "a poultice restores 30 health")
+	vt.save()
+	var vt2 = make(vd)
+	vt2.peer_connected_hello(1, "abcdef123456")
+	check(absf(float(vt2.vitals_of(1)["weight"]) - float(vt.vitals_of(1)["weight"])) < 0.001, "weight survives a restart")
+
 	print("server item tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

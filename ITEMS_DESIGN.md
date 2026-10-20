@@ -52,3 +52,6 @@ There are no boards without a saw mill, so the first storage chest is a woven ba
 ## Chopping block (build 202)
 
 Kit from 1 log (recipe 15), placed like the other structures (cap 4 per 256 m chunk, state 7, saved in the same world_items rows). E within 3 m with a usable axe turns one log into 4 firewood (item 26, stack 40, 300 s of fuel; V burns firewood, then sticks, then logs); hold E repeats every 0.6 s; each split wears the axe one use (ACT_USE_STRUCT 17). Saw mill (lumber) waits for the building design.
+
+## Hunger, health and body weight (protocol 18)
+Server-owned and saved per player (vitals.json). Energy balance: a stomach holds up to 2400 kcal; the daily need comes from body weight and exertion; surplus or deficit moves a slow body weight (7700 kcal per kg). A full stomach lasts about 1.07 game days (about 64 real minutes at the 24:1 clock) at ordinary work, longer at rest. No death from hunger: at zero only a warning and slower health recovery. Food kcal and heal values live in data/items/vitals.json. Eat: ACT_EAT (18). RPC vitals(hunger, health, weight_dkg). Events for Sounds: eat and heal via sound.itemfx.eat(item_id).

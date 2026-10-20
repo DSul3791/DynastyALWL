@@ -176,6 +176,7 @@ func _ready() -> void:
 	flora.dynamic = func(home): return items.dynamic_items(home)
 	items.cut_tree = _cut_tree
 	items.send_notice = func(peer, text): net.notice.rpc_id(peer, text)
+	items.send_vitals = func(peer, hunger, health, weight): net.vitals.rpc_id(peer, hunger, health, weight)
 	items.send_chest = func(peer, id, bytes): net.chest_contents.rpc_id(peer, id, bytes)
 	items.game_seconds = func(): return game_clock.seconds
 	items.season_now = func(): return game_clock.season()

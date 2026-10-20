@@ -50,7 +50,7 @@ const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 const GpuProbeScript := preload("res://src/debug/gpu_probe.gd")
 const WeatherLookScript := preload("res://src/client/weather_look.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 205
+const BUILD := 206
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -209,6 +209,7 @@ var test_items: bool = false
 var test_gather: bool = false
 var test_leanto: bool = false
 var test_chest: bool = false
+var test_eat: bool = false
 var test_spear: bool = false
 var test_chop: bool = false
 var test_creatures: bool = false
@@ -360,6 +361,8 @@ func _ready() -> void:
 			test_interior = true
 		elif argument == "--items":
 			test_items = true
+		elif argument == "--eat":
+			test_eat = true
 		elif argument == "--chest":
 			test_chest = true
 		elif argument == "--leanto":
@@ -606,6 +609,7 @@ func _welcome_body(info: Dictionary) -> void:
 	items.max_lights = func(): return [1, 2, 3, 3][clampi(quality, 0, 3)]
 	items.is_inspecting = func(): return inspecting
 	items.cover_index = flora.cover
+	items.eat_event = func(item_id): sound.itemfx.eat(item_id)
 	items.chest_event = func(what, at): sound.placed.chest(what == "open", at) if what in ["open", "close"] else sound.placed.container(what == "put", at)
 	items.tool_event = func(what): sound.placed.tool_break(body.global_position) if what == "broke" else sound.placed.tool_repair(body.global_position)
 	harvest = HarvestScript.new()
@@ -627,6 +631,9 @@ func _welcome_body(info: Dictionary) -> void:
 
 	if test_chest:
 		items.run_chest_test(self)
+
+	if test_eat:
+		items.run_eat_test(self)
 
 	if test_spear:
 		held.run_test()

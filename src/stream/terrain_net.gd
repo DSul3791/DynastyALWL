@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 17
+const PROTOCOL_VERSION := 18
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -49,6 +49,7 @@ signal water_requested(peer_id: int, chunks: PackedInt32Array)
 signal water_received(chunk: Vector2i, water: PackedByteArray)
 signal notice_received(text: String)
 signal chest_received(id: int, bytes: PackedByteArray)
+signal vitals_received(hunger: int, health: int, weight_dkg: int)
 signal hello_requested(peer_id: int, player_key: String)
 signal inventory_action_requested(peer_id: int, kind: int, a: int, b: int, count: int, at: Vector3)
 signal inventory_full_received(bytes: PackedByteArray)
@@ -66,6 +67,7 @@ const ACT_MINE := 8       # at = the point the axe struck; on bare rock the serv
 const ACT_HIT := 7        # a = tree id, b = flora chunk x, count = flora chunk z: one axe blow on a standing tree
 const ACT_PROCESS := 9    # a = world item id of a felled trunk: one axe blow on it gives branches, leaves, bark, logs
 const ACT_SPLIT := 10     # a = slot, count = how many go to the first empty slot
+const ACT_EAT := 18        # a = pack slot: eat the food or apply the medicine in it (data/items/vitals.json)
 const ACT_USE_STRUCT := 17  # a = structure world id: use it (a chopping block splits one log into firewood)
 const ACT_CHEST_OPEN := 14 # a = chest world id: the server answers with chest_contents
 const ACT_CHEST_PUT := 15  # a = pack slot, b = chest world id, count = how many to put in
@@ -200,6 +202,12 @@ func inventory_slots(bytes: PackedByteArray) -> void:
 @rpc("authority", "call_remote", "reliable")
 func world_items(added: Array, removed: PackedInt32Array) -> void:
 	world_items_received.emit(added, removed)
+
+
+# The player's hunger (stomach percent), health (points 0 to 100) and body weight (tenths of a kg) (at hello, after eating, and when a point changes).
+@rpc("authority", "call_remote", "reliable")
+func vitals(hunger: int, health: int, weight_dkg: int) -> void:
+	vitals_received.emit(hunger, health, weight_dkg)
 
 
 # The contents of a chest the player opened (30 slots in the inventory byte format).

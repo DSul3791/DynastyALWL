@@ -10,6 +10,7 @@ const InventoryScript := preload("res://src/shared/inventory.gd")
 const RecipeTableScript := preload("res://src/shared/recipe_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
+const VitalsRules := preload("res://src/shared/vitals_rules.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
 const KEY_FILE := "user://player_key.txt"
 const PICKUP_M := 3.0
@@ -40,6 +41,17 @@ var chest_id: int = 0
 var _chest_panel: PanelContainer
 var _chest_buttons: Array = []
 var _pack_buttons: Array = []
+var eat_event: Callable                # (item id) when something eaten or applied takes effect (sounds)
+var hunger: int = 100                  # stomach, percent
+var health: int = 100
+var weight_kg: float = 75.0
+var _vitals_cfg: Dictionary = {}
+var _eat_item: String = ""
+var _hunger_bar: ColorRect
+var _health_bar: ColorRect
+var _vitals_back: Control
+var _vitals_warning: Label
+var _weight_label: Label
 var plant_hint: String = ""            # set by the harvest prompt (harvest.gd)
 var _crafting: int = 0                # recipe being made (0 none)
 var _craft_done_msec: int = 0
@@ -65,6 +77,9 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.world_items_received.connect(_on_world_items)
 	net.notice_received.connect(_on_notice)
 	net.chest_received.connect(_on_chest)
+	net.vitals_received.connect(_on_vitals)
+	_vitals_cfg = VitalsRules.load_config()
+	_build_vitals_hud()
 	_prompt = Label.new()
 	_prompt.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -425,6 +440,93 @@ func _on_slots(bytes: PackedByteArray) -> void:
 
 
 # --- The chest screen: the chest on the left, the pack on the right; a click moves a whole stack ---
+
+# --- Hunger and health HUD, eating ---
+
+func _build_vitals_hud() -> void:
+	_vitals_back = Control.new()
+	_vitals_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_vitals_back.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	_layer.add_child(_vitals_back)
+	_hunger_bar = _make_bar(Color(0.9, 0.65, 0.2))
+	_health_bar = _make_bar(Color(0.85, 0.2, 0.2))
+	_vitals_warning = Label.new()
+	_vitals_warning.add_theme_font_size_override("font_size", 22)
+	_vitals_warning.add_theme_constant_override("outline_size", 5)
+	_vitals_warning.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
+	_vitals_warning.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_vitals_back.add_child(_vitals_warning)
+	_place_vitals()
+
+
+func _make_bar(color: Color) -> ColorRect:
+	var back: ColorRect = ColorRect.new()
+	back.color = Color(0.0, 0.0, 0.0, 0.5)
+	back.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_vitals_back.add_child(back)
+	var fill: ColorRect = ColorRect.new()
+	fill.color = color
+	fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	back.add_child(fill)
+	return fill
+
+
+func _place_vitals() -> void:
+	var scale: float = maxf(_layer.get_viewport().get_visible_rect().size.y / 1080.0, 0.5)
+	var width: float = 240.0 * scale
+	var height: float = 14.0 * scale
+	var origin: Vector2 = Vector2(24.0 * scale, -(170.0 * scale))
+	_vitals_back.position = origin
+
+	for pair in [[_hunger_bar, hunger, 0.0], [_health_bar, health, 1.0]]:
+		var fill: ColorRect = pair[0]
+		var back: Control = fill.get_parent()
+		back.position = Vector2(0.0, float(pair[2]) * (height + 6.0 * scale))
+		back.size = Vector2(width, height)
+		fill.position = Vector2(1.0, 1.0)
+		fill.size = Vector2(maxf((width - 2.0) * float(pair[1]) / 100.0, 0.0), height - 2.0)
+
+	_vitals_warning.position = Vector2(0.0, 2.0 * (height + 6.0 * scale))
+	var warn: int = int(_vitals_cfg.get("warn_hunger", 15))
+	_vitals_warning.text = "You are starving: you recover slowly" if hunger <= 0 else ("You are hungry" if hunger <= warn else "")
+
+	if _weight_label != null:
+		_weight_label.text = "Body weight %.1f kg   (hunger %d%%, health %d)" % [weight_kg, hunger, health]
+
+
+func _on_vitals(new_hunger: int, new_health: int, weight_dkg: int) -> void:
+	var ate: bool = new_hunger > hunger + 3 or new_health > health + 8
+
+	if ate and _eat_item != "" and eat_event.is_valid():
+		eat_event.call(_eat_item)
+		_eat_item = ""
+
+	hunger = new_hunger
+	health = new_health
+	weight_kg = float(weight_dkg) / 10.0
+	_place_vitals()
+
+
+# Can this item be eaten or applied (food or medicine in data/items/vitals.json)?
+func edible_slot(slot: int) -> bool:
+	return slot >= 0 and slot < inventory.SLOTS and inventory.numbers[slot] != 0 and VitalsRules.edible(table.id_of(inventory.numbers[slot]), _vitals_cfg)
+
+
+# Eat the food or apply the medicine in a pack slot. Herbs that look like something else must be identified first.
+func eat_slot(slot: int) -> void:
+	if not edible_slot(slot):
+		return
+
+	var number: int = inventory.numbers[slot]
+	var entry: Dictionary = table.entry(table.id_of(number))
+
+	if knowledge != null and not entry.get("look_alikes", []).is_empty() and not knowledge.is_known("i%d" % number):
+		_on_notice("You are not sure what %s really is. Hover it in inspection mode (/) before you use it." % table.name_of(number).to_lower())
+		return
+
+	_eat_item = table.id_of(number)
+	net.inventory_action.rpc_id(1, Net.ACT_EAT, slot, 0, 0, Vector3.ZERO)
+
 
 func _on_chest(id: int, bytes: PackedByteArray) -> void:
 	if chest_inv == null:
@@ -861,6 +963,10 @@ func _build_panel() -> void:
 	right_title.text = "Inventory"
 	_style(right_title, TITLE_PX - 6)
 	right.add_child(right_title)
+	_weight_label = Label.new()
+	_style(_weight_label, BODY_PX - 6)
+	_weight_label.text = "Body weight %.1f kg" % weight_kg
+	right.add_child(_weight_label)
 	_slot_scroll = ScrollContainer.new()
 	_slot_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_slot_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -900,6 +1006,12 @@ func _build_panel() -> void:
 	_style(split, BODY_PX)
 	split.pressed.connect(_split_selected)
 	row.add_child(split)
+
+	var eat: Button = Button.new()
+	eat.text = "Eat / use"
+	_style(eat, BODY_PX)
+	eat.pressed.connect(func(): eat_slot(_selected))
+	row.add_child(eat)
 
 	var repair: Button = Button.new()
 	repair.text = "Repair"
@@ -995,6 +1107,15 @@ func _tooltip(number: int, count: int) -> String:
 	var name: String = _item_label(number)
 
 	var text: String = "%s x%d\n%s, stacks to %d" % [name, count, str(entry.get("kind", "item")), table.stack_of(number)]
+
+	var kcal: int = VitalsRules.food_value(table.id_of(number), _vitals_cfg)
+	var heal: int = VitalsRules.heal_value(table.id_of(number), _vitals_cfg)
+
+	if kcal > 0:
+		text += "\n%d kcal  (right click when held, or Eat / use)" % kcal
+
+	if heal > 0:
+		text += "\nrestores %d health  (right click when held, or Eat / use)" % heal
 
 	if int(entry.get("durability", 0)) > 0:
 		text += "\nlasts %d uses; repair: " % int(entry["durability"])
@@ -1241,6 +1362,21 @@ func run_leanto_test(client) -> void:
 
 	var under: Vector3 = spot + Vector3(0.0, 1.0, 0.0)
 	print("Lean-to test: %d lean-to rows in view, cover under it %s, in the open %s" % [seen, str(CoverScript.at(under, cover_index)), str(CoverScript.at(under + Vector3(8.0, 0.0, 0.0), cover_index))])
+
+
+# Headless check (--eat): eat a roast and apply a poultice.
+func run_eat_test(client) -> void:
+	await get_tree().create_timer(6.0).timeout
+	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("roast_forage"), 0, 2, Vector3.ZERO)
+	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("poultice"), 0, 1, Vector3.ZERO)
+	await get_tree().create_timer(1.0).timeout
+	print("Eat test: start hunger %d health %d weight %.1f; edible slot 0 %s" % [hunger, health, weight_kg, str(edible_slot(0))])
+	eat_slot(inventory.numbers.find(table.number_of("roast_forage")))
+	await get_tree().create_timer(1.0).timeout
+	print("Eat test: after a roast, hunger %d, roasts left %d" % [hunger, inventory.count_of(table.number_of("roast_forage"))])
+	eat_slot(inventory.numbers.find(table.number_of("poultice")))
+	await get_tree().create_timer(1.0).timeout
+	print("Eat test: poultice left %d, health %d" % [inventory.count_of(table.number_of("poultice")), health])
 
 
 # Headless check (--chest): place a chest, open it, put stones in, take them out.
