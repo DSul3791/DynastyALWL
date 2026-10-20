@@ -432,7 +432,7 @@ func _carve_rivers(level: PackedInt32Array, parent: PackedInt32Array, ocean: Pac
 
 		var area_km2: float = flow[index] * cell_km2
 		var width: float = width_base + width_scale * sqrt(area_km2)
-		var depth: float = depth_base + depth_scale * width
+		var depth: float = _stream_depth(depth_base + depth_scale * width, width)
 		var surface_here: float = float(level[index]) / 10.0
 		var bed: float = minf(surface_here, heights[index]) - depth
 		river_cells += 1
@@ -594,7 +594,7 @@ func _carve_guides(rivers: Array) -> void:
 		for k in range(count):
 			var point: Vector2 = points[k]
 			var width: float = width_base + width_scale * sqrt(maxf(areas[k], start_km2))
-			var depth: float = depth_base + depth_scale * width
+			var depth: float = _stream_depth(depth_base + depth_scale * width, width)
 
 			if k > 0:
 				along += points[k].distance_to(points[k - 1]) * spacing_m
@@ -812,6 +812,7 @@ func _carve_guides(rivers: Array) -> void:
 		var paths: Array = pond["paths"]
 		var brook_size: float = clampf((float(pond.get("radius", pond_radius)) - pond_radius) / maxf(pond_radius_max - pond_radius, 1.0), 0.0, 1.0)
 		var brook_scale: float = lerpf(maxf(taper_min, 0.6), 1.0, brook_size)
+		brook_depth = _stream_depth(brook_depth, brook_width * brook_scale)
 
 		for h in range(heads.size()):
 			var path: PackedVector2Array = PackedVector2Array()
@@ -934,6 +935,15 @@ func _pond_fit(carved: PackedFloat32Array, centre: Vector2, pond_radius: float, 
 	return {}
 
 
+# Owner (2026-10-20): no stream is shallower than its own water. Depth is at least the
+# flow depth over a crest of this width at the spring's greatest flow (base rate times the
+# top flow key, Q = 1.7 W h^1.5), plus a freeboard, and never under a minimum.
+func _stream_depth(depth: float, width: float) -> float:
+	var q_max: float = float(_rules.get("spring_base_m3s", 3.0)) * float(_rules.get("spring_rate_max", 20.0))
+	var flow_depth: float = pow(q_max / (1.7 * maxf(width, 1.0)), 2.0 / 3.0)
+	return maxf(depth, maxf(float(_rules.get("stream_min_depth_m", 3.0)), flow_depth + float(_rules.get("stream_freeboard_m", 1.5))))
+
+
 # A brook from a world head pond's lip down to its river head, along `path` (pond end
 # first, sample coordinates: the fall line the pond was found along). Its bed falls evenly
 # from just under the lip to the head (it depends only on the path, so every tile cuts the
@@ -948,6 +958,7 @@ func _cut_brook_path(
 	var outlet_blend: float = maxf(float(_rules.get("head_pond_outlet_blend_m", 60.0)), 1.0)
 	var reach: float = (width * 0.5 + (depth + 1.0) / slope) / spacing_m + 1.0
 	var total: float = 0.0
+	var last_bed: float = start_bed
 
 	for k in range(path.size() - 1):
 		total += path[k].distance_to(path[k + 1])
@@ -980,6 +991,9 @@ func _cut_brook_path(
 			# falls down the face as a waterfall.
 			var bed: float = lerpf(start_bed, end_bed, along)
 			bed = maxf(bed, minf(_bilinear(land, point) - depth, start_bed))
+			# A brook never climbs: its bed only falls from the pond, so water cannot pool in it.
+			bed = minf(bed, last_bed)
+			last_bed = bed
 
 			# Owner report (2026-10-20): the outlet showed a half bridge of land across it.
 			# Leaving the pond the channel is at least outlet_min_width_m across (a whole
