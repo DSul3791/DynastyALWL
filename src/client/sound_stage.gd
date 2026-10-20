@@ -104,6 +104,16 @@ const SWIM_M := 1.3                     # deeper than this: no footsteps
 # level was a bit too loud for running).
 const GAIT_DB := [-25.0, -19.0, -13.0]   # walk, jog, run (owner 2026-10-20: a little quieter again, 3 dB down)
 const GAIT_PITCH := [1.0, 1.03, 1.06]
+# Step loudness can be tweaked without code: data/sound/step_levels.json overrides SURFACE_DB, FLOOR_SURFACES values,
+# GAIT_DB, GAIT_PITCH and PUDDLE_DB at start (job 76). The constants stay as the built-in fallback.
+const STEP_LEVELS_PATH := "res://data/sound/step_levels.json"
+var surface_db: Dictionary = SURFACE_DB.duplicate()
+var floor_db: Dictionary = FLOOR_SURFACES.duplicate()
+var gait_db: Array = GAIT_DB.duplicate()
+var gait_pitch: Array = GAIT_PITCH.duplicate()
+var surface_gait_db: Dictionary = {}     # surface -> [walk, jog, run] extra dB
+var puddle_db: float = PUDDLE_DB
+var step_levels_source: String = "built-in"
 const VOLUME_STEPS := [1.0, 0.75, 0.5, 0.25, 0.0]
 # Owner (2026-10-20, a slight pause about once a second while moving): the shelter count
 # was a sphere query of up to 64 trunks every second (3 to 10 ms a call). The wind shelter
@@ -196,6 +206,7 @@ var _sphere: PhysicsShapeQueryParameters3D
 
 
 func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
+	_load_step_levels()
 	_terrain = terrain
 	_flora = flora
 	_grass = grass
@@ -720,9 +731,9 @@ func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: Str
 		name = "step_grass"
 
 	var recorded: bool = _recorded.has(name + "_" + foot) or _recorded.has(name)
-	var pitch: float = GAIT_PITCH[gait] * _rng.randf_range(0.96, 1.04) * tune[1]
+	var pitch: float = float(gait_pitch[gait]) * _rng.randf_range(0.96, 1.04) * tune[1]
 	last_step = "%s (soil %d, water %.2f m, %s)" % [surface, soil, depth, name + "_" + foot if recorded else name + " generated"]
-	var step_db: float = float(SURFACE_DB.get(surface, FLOOR_SURFACES.get(surface, -9.0))) + float(tune[0]) + GAIT_DB[gait] + boost_db + SNOW_HUSH_STEP_DB * _hush_applied + _rng.randf_range(-1.5, 1.0)
+	var step_db: float = step_level_db(surface, gait) + float(tune[0]) + boost_db + SNOW_HUSH_STEP_DB * _hush_applied + _rng.randf_range(-1.5, 1.0)
 	_play(name, step_db, pitch, foot)
 	steps_played[surface] = int(steps_played.get(surface, 0)) + 1
 	gear.step(gait, boost_db, surface)
@@ -731,9 +742,50 @@ func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: Str
 	# Wet ground: a puddle splash joins most steps on grass, stone, gravel and sand.
 	if weather != null and weather.ground_wet >= PUDDLE_WET and surface in PUDDLE_SURFACES and _rng.randf() < weather.ground_wet * 0.7:
 		puddles_played += 1
-		_play("step_water", PUDDLE_DB + GAIT_DB[gait] - float(GAIT_DB[0]) + _rng.randf_range(-2.0, 1.0), _rng.randf_range(0.95, 1.15) * GAIT_PITCH[gait], foot)
+		_play("step_water", puddle_db + float(gait_db[gait]) - float(gait_db[0]) + _rng.randf_range(-2.0, 1.0), _rng.randf_range(0.95, 1.15) * float(gait_pitch[gait]), foot)
 
 	# The recorded grass, tall grass and bush steps carry the swish of the blades themselves.
+
+
+# Reads data/sound/step_levels.json over the built-in numbers; a missing or broken file leaves them as they were.
+func _load_step_levels(path: String = STEP_LEVELS_PATH) -> void:
+	if not FileAccess.file_exists(path):
+		return
+
+	var data = JSON.parse_string(FileAccess.get_file_as_string(path))
+
+	if not data is Dictionary:
+		push_warning("step_levels.json is not a table; using the built-in step levels")
+		return
+
+	for key in ["surface_db", "floor_db"]:
+		if data.get(key) is Dictionary:
+			var target: Dictionary = surface_db if key == "surface_db" else floor_db
+
+			for name in data[key]:
+				target[str(name)] = float(data[key][name])
+
+	if data.get("gait_db") is Array and data["gait_db"].size() == 3:
+		gait_db = data["gait_db"].map(func(v): return float(v))
+
+	if data.get("gait_pitch") is Array and data["gait_pitch"].size() == 3:
+		gait_pitch = data["gait_pitch"].map(func(v): return float(v))
+
+	if data.get("surface_gait_db") is Dictionary:
+		surface_gait_db = data["surface_gait_db"].duplicate()
+
+	if data.has("puddle_db"):
+		puddle_db = float(data["puddle_db"])
+
+	step_levels_source = "data/sound/step_levels.json"
+
+
+# The level of one step (before boosts, tune and randomness): surface or built floor plus gait plus the table's extra.
+func step_level_db(surface: String, gait: int) -> float:
+	var g: int = clampi(gait, 0, 2)
+	var base: float = float(surface_db.get(surface, floor_db.get(surface, -9.0)))
+	var extra: Array = surface_gait_db.get(surface, [0.0, 0.0, 0.0])
+	return base + float(gait_db[g]) + float(extra[g] if extra.size() == 3 else 0.0)
 
 
 # Esc > Settings mixer: steps one group (wind, nature, steps) through 100, 75, 50, 25 % and off.

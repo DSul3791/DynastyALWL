@@ -208,6 +208,7 @@ var test_swing: bool = false           # --swing-test: tool whooshes (job 71)
 var test_insects: bool = false         # --insect-test: summer insect bed levels by season and hour (job 72)
 var _lake_calm_laps: int = 0
 var test_reject: bool = false          # --reject-test: refused-action cue and its rate limit (job 73)
+var test_step_levels: bool = false     # --step-levels: the step loudness table loads and can be overridden (job 76)
 var test_stance: bool = false          # --stance: stand, crouch, sit, lie and rise in turn (job 56)
 var _stance_step: int = 0
 var _lake_start_msec: int = 0
@@ -414,6 +415,8 @@ func _ready() -> void:
 			test_lake = true
 		elif argument == "--stance":
 			test_stance = true
+		elif argument == "--step-levels":
+			test_step_levels = true
 		elif argument == "--reject-test":
 			test_reject = true
 		elif argument == "--insect-test":
@@ -2603,6 +2606,23 @@ func _process(delta: float) -> void:
 		var first: bool = sound.itemfx.reject("far")
 		var again: bool = sound.itemfx.reject("far")
 		print("Terrain client: reject check: first %s, held key %s, played %d, last %s" % [str(first), str(again), sound.itemfx.rejects_played, sound.itemfx.last])
+
+	if test_step_levels and now - connected_msec > 18000 and now >= _test_fire_at:
+		_test_fire_at = now + 10000000
+		var grass_walk: float = sound.step_level_db("grass", 0)
+		var stone_run: float = sound.step_level_db("stone", 2)
+		var plank_walk: float = sound.step_level_db("plank", 0)
+		var source: String = sound.step_levels_source
+		var custom := FileAccess.open("user://step_levels_test.json", FileAccess.WRITE)
+		custom.store_string('{"surface_db": {"grass": -30.0}, "surface_gait_db": {"grass": [2.0, 0.0, 0.0]}}')
+		custom.close()
+		sound._load_step_levels("user://step_levels_test.json")
+		var tweaked: float = sound.step_level_db("grass", 0)
+		var broken := FileAccess.open("user://step_levels_test.json", FileAccess.WRITE)
+		broken.store_string("not json at all")
+		broken.close()
+		sound._load_step_levels("user://step_levels_test.json")
+		print("Terrain client: step levels: source %s, grass walk %.1f, stone run %.1f, plank walk %.1f, tweaked grass walk %.1f, after a broken file %.1f" % [source, grass_walk, stone_run, plank_walk, tweaked, sound.step_level_db("grass", 0)])
 
 	# Stance sounds: crouch, stand, sit, stand, lie (and sit for 20 s to hear settles), stand.
 	if test_stance and now - connected_msec > 18000 and now >= _test_fire_at:

@@ -151,6 +151,14 @@ SCENARIOS = [
         ("one played", r"played " + NUM + r", last", 1, 1),
         ("generated knock", r"last (item_reject_\d) \(generated\)", 0, 1, "text"),
     ]),
+    ("step_levels", ["--step-levels"], 3500, [
+        ("file is read", r"step levels: source (data/sound/step_levels.json)", 0, 1, "text"),
+        ("grass walk", r"grass walk " + NUM + r", stone", -40, -40),
+        ("stone run", r"stone run " + NUM, -21, -21),
+        ("plank walk", r"plank walk " + NUM, -34, -34),
+        ("a tweaked file changes the level", r"tweaked grass walk " + NUM, -53, -53),
+        ("a broken file changes nothing", r"after a broken file " + NUM, -53, -53),
+    ]),
     ("stance", ["--stance"], 6000, [
         ("posture changes heard", r"stance check: " + NUM + r" changes", 6, 6),
         ("last is the rise", r"last (stance_rise)", 0, 1, "text"),
