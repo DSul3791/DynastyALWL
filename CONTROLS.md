@@ -22,7 +22,7 @@ Tracks what the controls are now and what is planned. Update it whenever a contr
 | Ctrl+Shift+G | GPU probe: stand still, press once; after about 20 s it lists what each piece (grass, trees, ground, sea, shadows, SSAO, glow, fog, anti-aliasing) costs in GPU ms; also saved to gpu_probe.txt in the game data folder |
 | J | Float jitter test: fly to the next far-from-origin spot (admin test, build 68) |
 | Esc | Options menu: Resume, Settings (quality, Resolution 1280x720 to 1920x1080, Window: windowed or fullscreen windowed, VSync, sound volume 100/75/50/25 % or off), Advanced (Clear saved ground, which takes effect at once), Quit game. Esc again resumes |
-| I | Open or close the inventory (click a slot, then another to move; Drop stack / Drop one; "Make by hand" lists the crafts: cordage, stone axe, spear, campfire). Esc closes it first |
+| I | Open or close the crafting and inventory screen (about 3/4 of the screen): recipes on the left (the ones you can make now lit and on top, the rest greyed out, each alphabetical), inventory on the right, one search box filtering both; pick a recipe to see what it needs (have / need), choose how many and press Craft. Click a slot, then another, to move; Drop stack / Drop one. Esc closes it first |
 | 1 to 8 | Hold what is in inventory slot 1 to 8 (the first row) |
 | Left click | Use the held item (spear: jab; stone axe: swing, with the hit sound of what it strikes, and a blow on bare rock gives a stone; a held torch lights the way; on a tree trunk, repeated blows fell the tree into a trunk and a stump) |
 | Right click (hold) | Spear: aim a throw; then left click throws. Letting go returns to the normal stance |

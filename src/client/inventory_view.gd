@@ -29,7 +29,6 @@ var _grid: GridContainer
 var _buttons: Array = []
 var _selected: int = -1
 var _prompt: Label
-var _craft_buttons: Dictionary = {}   # recipe number -> Button
 var _crafting: int = 0                # recipe being made (0 none)
 var _craft_done_msec: int = 0
 var _craft_label: Label
@@ -124,10 +123,18 @@ func _process(_delta: float) -> void:
 
 	if _crafting != 0:
 		if now >= _craft_done_msec:
-			net.inventory_action.rpc_id(1, Net.ACT_CRAFT, _crafting, 0, 0, Vector3.ZERO)
+			var done: int = _crafting
+			net.inventory_action.rpc_id(1, Net.ACT_CRAFT, done, 0, 0, Vector3.ZERO)
 			_crafting = 0
-			_craft_label.text = ""
-		elif _craft_label != null:
+
+			# The server's answer rewrites the inventory; the next craft starts once the pack shows the result.
+			if _craft_queue > 0:
+				_craft_queue -= 1
+				get_tree().create_timer(0.3).timeout.connect(func(): _start_craft(done))
+
+			if is_instance_valid(_craft_label):
+				_craft_label.text = ""
+		elif is_instance_valid(_craft_label):
 			_craft_label.text = "Making... %.0f s" % ceilf(float(_craft_done_msec - now) / 1000.0)
 
 	if now < _prompt_next_msec:
@@ -372,66 +379,127 @@ func _mesh_for(number: int) -> Mesh:
 	return _meshes[number]
 
 
+# The crafting and inventory screen, laid out like Ark's (Dave, 2026-10-20): recipes on the left,
+# the inventory on the right, one search box filtering both. Recipes you can make now are lit and
+# sit at the top; the rest are greyed out below, each group alphabetical. About 3/4 of the screen,
+# with text sized for a 55 inch 4K TV at 1080p: sizes scale with the window height (1080 = 1.0).
+const BODY_PX := 30
+const TITLE_PX := 40
+
+var _search: LineEdit
+var _recipe_list: VBoxContainer
+var _detail: VBoxContainer
+var _selected_recipe: int = 0
+var _quantity: SpinBox
+var _qty: int = 1
+var _craft_queue: int = 0             # crafts still to do after the one running
+var _slot_scroll: ScrollContainer
+
+
+func _px(size: int) -> int:
+	return int(round(float(size) * maxf(_layer.get_viewport().get_visible_rect().size.y / 1080.0, 0.5)))
+
+
+func _style(control: Control, size: int) -> void:
+	control.add_theme_font_size_override("font_size", _px(size))
+
+
 func _build_panel() -> void:
 	if _panel != null:
 		return
 
 	_panel = PanelContainer.new()
-	_panel.set_anchors_preset(Control.PRESET_CENTER)
-	_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
+	_panel.anchor_left = 0.125
+	_panel.anchor_right = 0.875
+	_panel.anchor_top = 0.1
+	_panel.anchor_bottom = 0.9
+	var back: StyleBoxFlat = StyleBoxFlat.new()
+	back.bg_color = Color(0.07, 0.07, 0.08, 0.93)
+	back.set_corner_radius_all(10)
+	back.set_content_margin_all(_px(18))
+	_panel.add_theme_stylebox_override("panel", back)
 	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", _px(10))
 	_panel.add_child(box)
+	var top: HBoxContainer = HBoxContainer.new()
+	box.add_child(top)
 	var title: Label = Label.new()
-	title.text = "Inventory   (click a slot, then another to move; Drop sends the selected stack to the ground)"
-	box.add_child(title)
+	title.text = "Crafting and inventory"
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_style(title, TITLE_PX)
+	top.add_child(title)
+	_search = LineEdit.new()
+	_search.placeholder_text = "Search recipes and items"
+	_search.custom_minimum_size = Vector2(_px(560), 0.0)
+	_search.clear_button_enabled = true
+	_style(_search, BODY_PX)
+	_search.text_changed.connect(func(_text): _refresh())
+	top.add_child(_search)
+	var columns: HBoxContainer = HBoxContainer.new()
+	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	columns.add_theme_constant_override("separation", _px(24))
+	box.add_child(columns)
+
+	# Left: recipes, then the chosen recipe's needs and the Craft button.
+	var left: VBoxContainer = VBoxContainer.new()
+	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	left.size_flags_stretch_ratio = 1.0
+	columns.add_child(left)
+	var left_title: Label = Label.new()
+	left_title.text = "Make"
+	_style(left_title, TITLE_PX - 6)
+	left.add_child(left_title)
+	var list_scroll: ScrollContainer = ScrollContainer.new()
+	list_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	list_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	left.add_child(list_scroll)
+	_recipe_list = VBoxContainer.new()
+	_recipe_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	list_scroll.add_child(_recipe_list)
+	_detail = VBoxContainer.new()
+	left.add_child(_detail)
+
+	# Right: the inventory slots.
+	var right: VBoxContainer = VBoxContainer.new()
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right.size_flags_stretch_ratio = 1.0
+	columns.add_child(right)
+	var right_title: Label = Label.new()
+	right_title.text = "Inventory"
+	_style(right_title, TITLE_PX - 6)
+	right.add_child(right_title)
+	_slot_scroll = ScrollContainer.new()
+	_slot_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_slot_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	right.add_child(_slot_scroll)
 	_grid = GridContainer.new()
-	_grid.columns = COLUMNS
-	box.add_child(_grid)
+	_grid.columns = 4
+	_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_grid.add_theme_constant_override("h_separation", _px(8))
+	_grid.add_theme_constant_override("v_separation", _px(8))
+	_slot_scroll.add_child(_grid)
 
 	for i in inventory.SLOTS:
 		var button: Button = Button.new()
-		button.custom_minimum_size = Vector2(110.0, 64.0)
+		button.custom_minimum_size = Vector2(0.0, _px(88))
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.clip_text = true
+		_style(button, BODY_PX - 4)
 		button.pressed.connect(_on_slot_pressed.bind(i))
 		_grid.add_child(button)
 		_buttons.append(button)
 
-	var craft_title: Label = Label.new()
-	craft_title.text = "Make by hand"
-	box.add_child(craft_title)
-
-	for number in recipes.numbers():
-		var r: Dictionary = recipes.recipe(number)
-
-		if not r["known"]:
-			continue
-
-		var needs: Array = []
-
-		for need in r["needs"]:
-			needs.append("%d %s" % [need[1], table.name_of(need[0])])
-
-		for keep in r["keeps"]:
-			needs.append("%d %s, kept" % [keep[1], table.name_of(keep[0])])
-
-		var make: Button = Button.new()
-		make.text = "%s   (%s)" % [r["name"], ", ".join(needs)]
-		make.pressed.connect(_start_craft.bind(number))
-		box.add_child(make)
-		_craft_buttons[number] = make
-
-	_craft_label = Label.new()
-	box.add_child(_craft_label)
 	var row: HBoxContainer = HBoxContainer.new()
-	box.add_child(row)
-	var drop: Button = Button.new()
-	drop.text = "Drop stack"
-	drop.pressed.connect(_drop_selected.bind(true))
-	row.add_child(drop)
-	var drop_one: Button = Button.new()
-	drop_one.text = "Drop one"
-	drop_one.pressed.connect(_drop_selected.bind(false))
-	row.add_child(drop_one)
+	row.add_theme_constant_override("separation", _px(12))
+	right.add_child(row)
+
+	for whole in [true, false]:
+		var drop: Button = Button.new()
+		drop.text = "Drop stack" if whole else "Drop one"
+		_style(drop, BODY_PX)
+		drop.pressed.connect(_drop_selected.bind(whole))
+		row.add_child(drop)
+
 	_layer.add_child(_panel)
 
 
@@ -446,6 +514,20 @@ func _on_slot_pressed(slot: int) -> void:
 		_selected = -1
 
 	_refresh()
+
+
+func _select_recipe(number: int) -> void:
+	_selected_recipe = number
+	_refresh()
+
+
+# Craft the chosen recipe `quantity` times, one at a time (each takes its craft_s).
+func _craft_selected() -> void:
+	if _crafting != 0 or _selected_recipe == 0 or not recipes.can_make(_selected_recipe, inventory):
+		return
+
+	_craft_queue = int(_quantity.value) - 1 if _quantity != null else 0
+	_start_craft(_selected_recipe)
 
 
 func _start_craft(number: int) -> void:
@@ -467,18 +549,123 @@ func _drop_selected(whole: bool) -> void:
 	_selected = -1
 
 
+func _matches(text: String, filter: String) -> bool:
+	return filter == "" or text.to_lower().contains(filter)
+
+
+func _recipe_matches(r: Dictionary, filter: String) -> bool:
+	if _matches(str(r["name"]), filter) or _matches(table.name_of(r["gives"][0]), filter):
+		return true
+
+	for need in r["needs"] + r["keeps"]:
+		if _matches(table.name_of(need[0]), filter):
+			return true
+
+	return false
+
+
 func _refresh() -> void:
 	if _panel == null:
 		return
 
+	var filter: String = _search.text.strip_edges().to_lower() if _search != null else ""
+
+	# Inventory slots: with a search, only slots that match; otherwise every slot.
 	for i in inventory.SLOTS:
 		var button: Button = _buttons[i]
 		var number: int = inventory.numbers[i]
 		button.text = "" if number == 0 else "%s\nx%d" % [table.name_of(number), inventory.counts[i]]
 		button.modulate = Color(1.0, 0.9, 0.5) if i == _selected else Color.WHITE
+		button.visible = filter == "" or (number != 0 and _matches(table.name_of(number), filter))
 
-	for number in _craft_buttons:
-		_craft_buttons[number].disabled = not recipes.can_make(number, inventory)
+	# Recipes: makeable first, then the rest, each alphabetical.
+	for child in _recipe_list.get_children():
+		child.queue_free()
+
+	var can: Array = []
+	var cannot: Array = []
+
+	for number in recipes.numbers():
+		var r: Dictionary = recipes.recipe(number)
+
+		if not r["known"] or not _recipe_matches(r, filter):
+			continue
+
+		(can if recipes.can_make(number, inventory) else cannot).append(r)
+
+	var by_name: Callable = func(a, b): return str(a["name"]) < str(b["name"])
+	can.sort_custom(by_name)
+	cannot.sort_custom(by_name)
+
+	if _selected_recipe == 0 or recipes.recipe(_selected_recipe).is_empty():
+		_selected_recipe = can[0]["number"] if not can.is_empty() else (cannot[0]["number"] if not cannot.is_empty() else 0)
+
+	for r in can + cannot:
+		var makeable: bool = recipes.can_make(r["number"], inventory)
+		var entry: Button = Button.new()
+		entry.text = str(r["name"])
+		entry.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		entry.custom_minimum_size = Vector2(0.0, _px(64))
+		entry.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		entry.modulate = Color.WHITE if makeable else Color(1.0, 1.0, 1.0, 0.38)
+		entry.flat = r["number"] != _selected_recipe
+		_style(entry, BODY_PX)
+		entry.pressed.connect(_select_recipe.bind(r["number"]))
+		_recipe_list.add_child(entry)
+
+	_refresh_detail()
+
+
+# The chosen recipe: what it needs (have / need), how many, and the Craft button.
+func _refresh_detail() -> void:
+	for child in _detail.get_children():
+		child.queue_free()
+
+	_quantity = null
+	var r: Dictionary = recipes.recipe(_selected_recipe)
+
+	if r.is_empty():
+		return
+
+	var heading: Label = Label.new()
+	heading.text = "%s  ->  %s" % [r["name"], table.name_of(r["gives"][0])]
+	heading.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_style(heading, BODY_PX)
+	_detail.add_child(heading)
+
+	for need in r["needs"] + r["keeps"]:
+		var kept: bool = r["keeps"].has(need)
+		var have: int = inventory.count_of(need[0])
+		var line: Label = Label.new()
+		line.text = "%s   %d / %d%s" % [table.name_of(need[0]), have, need[1], "  (kept)" if kept else ""]
+		line.modulate = Color(0.6, 1.0, 0.6) if have >= need[1] else Color(1.0, 0.55, 0.5)
+		_style(line, BODY_PX)
+		_detail.add_child(line)
+
+	var row: HBoxContainer = HBoxContainer.new()
+	row.add_theme_constant_override("separation", _px(12))
+	_detail.add_child(row)
+	var times: Label = Label.new()
+	times.text = "How many:"
+	_style(times, BODY_PX)
+	row.add_child(times)
+	_quantity = SpinBox.new()
+	_quantity.min_value = 1
+	_quantity.max_value = 20
+	_quantity.value = _qty
+	_quantity.value_changed.connect(func(v): _qty = int(v))
+	_quantity.get_line_edit().add_theme_font_size_override("font_size", _px(BODY_PX))
+	row.add_child(_quantity)
+	var make: Button = Button.new()
+	make.text = "Craft  (%.0f s)" % float(r["craft_s"])
+	make.disabled = not recipes.can_make(_selected_recipe, inventory) or _crafting != 0
+	make.custom_minimum_size = Vector2(_px(240), _px(64))
+	_style(make, BODY_PX)
+	make.pressed.connect(_craft_selected)
+	row.add_child(make)
+	_craft_label = Label.new()
+	_style(_craft_label, BODY_PX)
+	_detail.add_child(_craft_label)
 
 
 # Headless check (--items): give, drop, pick up, and print what the server says.
@@ -497,6 +684,19 @@ func run_test() -> void:
 	net.inventory_action.rpc_id(1, Net.ACT_CRAFT, 1, 0, 0, Vector3.ZERO)
 	net.inventory_action.rpc_id(1, Net.ACT_CRAFT, 2, 0, 0, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout
+	toggle()
+	_search.text = "stone"
+	_refresh()
+	var shown: int = 0
+
+	for child in _recipe_list.get_children():
+		if not child.is_queued_for_deletion():
+			shown += 1
+
+	print("Items test: panel open, recipes shown for 'stone' %d, selected %d" % [shown, _selected_recipe])
+	_search.text = ""
+	_refresh()
+	toggle()
 	print("Items test: crafted, cordage %d, stone axe %d, fibre %d" % [inventory.count_of(table.number_of("cordage")), inventory.count_of(table.number_of("stone_axe")), inventory.count_of(table.number_of("plant_fibre"))])
 
 
