@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **138 slots: 17 recorded, 117 generated placeholders, 4 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **143 slots: 17 recorded, 117 generated placeholders, 9 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -151,3 +151,8 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | `step_stone` | recorded | 6 | rock, outcrops, ore, ice |
 | `step_gravel` | recorded | 6 | gravel, soft rock |
 | `step_water` | recorded | 6 | wading in water |
+| `step_plank` | empty | 0 | built wooden floor (sound.set_floor, generated placeholder in floors/) |
+| `step_slab` | empty | 0 | built stone slab floor |
+| `step_carpet` | empty | 0 | built carpeted floor |
+| `step_thatch` | empty | 0 | built thatch floor |
+| `step_path` | empty | 0 | gravel path laid by builders |

@@ -1083,6 +1083,36 @@
    "state": "recorded",
    "variants": 6,
    "used_in": "wading in water"
+  },
+  {
+   "name": "step_plank",
+   "state": "empty",
+   "variants": 0,
+   "used_in": "built wooden floor (sound.set_floor, generated placeholder in floors/)"
+  },
+  {
+   "name": "step_slab",
+   "state": "empty",
+   "variants": 0,
+   "used_in": "built stone slab floor"
+  },
+  {
+   "name": "step_carpet",
+   "state": "empty",
+   "variants": 0,
+   "used_in": "built carpeted floor"
+  },
+  {
+   "name": "step_thatch",
+   "state": "empty",
+   "variants": 0,
+   "used_in": "built thatch floor"
+  },
+  {
+   "name": "step_path",
+   "state": "empty",
+   "variants": 0,
+   "used_in": "gravel path laid by builders"
   }
  ],
  "planned": []

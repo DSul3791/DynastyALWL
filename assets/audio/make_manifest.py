@@ -151,6 +151,9 @@ STEPS = [
     ("mud", "mud, peat, wet ground, soaked ground in rain"), ("sand", "sand, beach, salt flat, ash"),
     ("snow", "snow"), ("stone", "rock, outcrops, ore, ice"), ("gravel", "gravel, soft rock"),
     ("water", "wading in water"),
+    ("plank", "built wooden floor (sound.set_floor, generated placeholder in floors/)"),
+    ("slab", "built stone slab floor"), ("carpet", "built carpeted floor"), ("thatch", "built thatch floor"),
+    ("path", "gravel path laid by builders"),
 ]
 
 # Slots planned but not yet built: listed so the owner can supply them early.

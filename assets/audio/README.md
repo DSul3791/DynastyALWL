@@ -205,3 +205,8 @@ Technical direction measured `sound.update` at 0.46 ms average, worst 11.4 ms (h
 
 While a craft runs (the panel's craft timer) a work sound plays on the Foley bus and stops when it ends, then `craft_done`. The type comes from the recipe: a `"sound"` field in recipes.json if present, else by recipe id: cordage = twine, stone_axe / stone_knife = knap, wooden_spear = carve, spear / torch = bind, campfire = stack, poultice_* = pound, bandage_* = wrap, anything else = knap.
 Generated placeholders: `assets/audio/crafting/craft_<type>_N.ogg` (make_crafting.py). Recordings go in `assets/audio/recorded/crafting/` under the same names and win. Test: `--craft-sounds` (headless prints the last work sound).
+
+## Built-floor footsteps (build 184)
+
+Hooks for the building system, no building needed yet. `sound.set_floor("plank")` (also "slab" stone slabs, "carpet", "thatch", "path" gravel path; "" back on natural ground) makes steps use that floor; or set `sound.floor_under` to a Callable(feet Vector3) -> floor name for a per-step query. Floors do not apply in water; snow lies on a path but not indoors, puddles splash on path and slab.
+Generated placeholders: `assets/audio/floors/step_<surface>_N.ogg` (make_floors.py). Recordings go in `assets/audio/recorded/` as `step_plank_left_N` / `step_plank_right_N` and win, like the ground sets. Test: `--walk --floor=plank` (headless prints the footstep counts).

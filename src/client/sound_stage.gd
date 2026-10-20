@@ -37,6 +37,7 @@ const ItemScript := preload("res://src/client/item_sounds.gd")
 const OcclusionScript := preload("res://src/client/sound_occlusion.gd")
 const WaterSoundsScript := preload("res://src/client/water_sounds.gd")
 const AUDIO_DIR := "res://assets/audio/"
+const FLOORS_DIR := "res://assets/audio/floors/"   # generated built-floor steps (make_floors.py)
 const RECORDED_DIR := "res://assets/audio/recorded/"
 # Audio budget per quality tier Low, Mid, High (ARCHITECTURE_BUDGET.md section 9).
 const WaterVolume := preload("res://src/shared/water_volume.gd")
@@ -74,8 +75,10 @@ const SOIL_TUNE := {3: [-1.0, 0.95], 4: [0.0, 0.97], 12: [2.0, 1.1], 13: [0.0, 1
 const RAIN_SOAK := 0.5                  # ground wetness from which loose dirt and leaves turn to wet mud steps
 const SNOW_COVER := 0.35                # snow on the ground from which steps crunch
 const PUDDLE_WET := 0.6                 # ground wetness from which steps on firm ground splash
-const SNOW_SURFACES := ["grass", "grass_tall", "dirt", "leaves", "sand", "gravel", "bushes", "mud"]
-const PUDDLE_SURFACES := ["grass", "grass_tall", "stone", "gravel", "sand", "bushes"]
+const SNOW_SURFACES := ["grass", "grass_tall", "dirt", "leaves", "sand", "gravel", "bushes", "mud", "path"]
+# Built floors (hooks for the building system): plank, slab (stone slabs), carpet, thatch, path (a gravel path).
+const FLOOR_SURFACES := {"plank": -9.0, "slab": -8.0, "carpet": -13.0, "thatch": -11.0, "path": -9.0}
+const PUDDLE_SURFACES := ["grass", "grass_tall", "stone", "gravel", "sand", "bushes", "path", "slab"]
 const PUDDLE_DB := -13.0
 # Esc > Settings mixer groups: name -> the buses it sets. Shares step through VOLUME_STEPS.
 const MIX_GROUPS := {"wind": ["Wind"], "nature": ["Nature", "Weather"], "steps": ["Foley"]}
@@ -105,6 +108,8 @@ var puddles_played: int = 0
 var surface: String = ""                # what the feet were last on
 var _stable: String = ""                # the surface being sounded (changes only after two steps)
 var _pending: String = ""
+var floor_surface: String = ""          # a built floor under the feet (set_floor), "" for natural ground
+var floor_under: Callable               # optional: (feet Vector3) -> floor surface name or "" (the building system sets it)
 var last_step: String = ""              # for the HUD: ground, soil id, water depth, file played
 var wind_strength: float = 0.0          # the wind loudness measure now (HUD)
 var exposure: float = 0.0               # -1 valley floor .. +1 ridge or hilltop (height against the ground around)
@@ -459,6 +464,12 @@ func budget_text() -> String:
 	return "sounds %d/%d playing (peak %d), %.1f/%d MB loaded (%s)" % [_voice_count, voice_cap, voices_peak, float(loaded_bytes) / 1048576.0, int(preset["memory_mb"]), Presets.NAMES[tier]]
 
 
+# Hook for the building system: the built floor the player stands on ("plank", "slab", "carpet", "thatch",
+# "path"), "" back on natural ground. Or set `floor_under` to a Callable(feet) -> name for a per-step query.
+func set_floor(name: String) -> void:
+	floor_surface = name if FLOOR_SURFACES.has(name) else ""
+
+
 # One footfall at gait 0 walk, 1 jog, 2 run; `boost_db` makes it louder (landings).
 # `foot` is "left" or "right" (recorded sets have one of each).
 func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: String = "left") -> void:
@@ -509,6 +520,17 @@ func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: Str
 			surface = "mud"                                      # soaked ground
 			tune = [-2.0, 1.0]
 
+	# A built floor under the soles replaces the ground (not in water).
+	var built: String = floor_surface
+
+	if built == "" and floor_under.is_valid():
+		built = str(floor_under.call(feet))
+
+	if built != "" and FLOOR_SURFACES.has(built) and depth <= DAMP_M:
+		surface = built
+		tune = [0.0, 1.0]
+		thick = 0.0
+
 	# Snow lying on the ground (it fell, and has not melted): any loose ground crunches.
 	if weather != null and weather.ground_snow >= SNOW_COVER and surface in SNOW_SURFACES:
 		surface = "snow"
@@ -536,7 +558,7 @@ func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: Str
 	var recorded: bool = _recorded.has(name + "_" + foot) or _recorded.has(name)
 	var pitch: float = GAIT_PITCH[gait] * _rng.randf_range(0.96, 1.04) * tune[1]
 	last_step = "%s (soil %d, water %.2f m, %s)" % [surface, soil, depth, name + "_" + foot if recorded else name + " generated"]
-	_play(name, float(SURFACE_DB.get(surface, -9.0)) + float(tune[0]) + GAIT_DB[gait] + boost_db + _rng.randf_range(-1.5, 1.0), pitch, foot)
+	_play(name, float(SURFACE_DB.get(surface, FLOOR_SURFACES.get(surface, -9.0))) + float(tune[0]) + GAIT_DB[gait] + boost_db + _rng.randf_range(-1.5, 1.0), pitch, foot)
 	steps_played[surface] = int(steps_played.get(surface, 0)) + 1
 	gear.step(gait, boost_db, surface)
 
@@ -811,6 +833,9 @@ func _variants(name: String) -> Array:
 
 	if list.is_empty():
 		list = _find(AUDIO_DIR, name)
+
+		if list.is_empty() and name.begins_with("step_"):
+			list = _find(FLOORS_DIR, name)
 	else:
 		_recorded[name] = true
 

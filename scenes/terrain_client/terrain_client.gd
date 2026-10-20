@@ -482,6 +482,10 @@ func _on_welcome(info: Dictionary) -> void:
 	sound.ground_below = _ground_below
 	sound.setup(terrain, flora, grass)
 
+	for argument in OS.get_cmdline_user_args():
+		if argument.begins_with("--floor="):
+			sound.set_floor(argument.get_slice("=", 1))
+
 	if test_gear:
 		sound.gear.set_worn(["plate", "cloth", "iron"])
 	_make_environment(root)
