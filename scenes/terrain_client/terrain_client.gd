@@ -39,7 +39,7 @@ const GitStamp := preload("res://src/debug/git_stamp.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 const GpuProbeScript := preload("res://src/debug/gpu_probe.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 118
+const BUILD := 126
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -864,7 +864,7 @@ func _report_display(prefix: String = "") -> void:
 	var text: String = "%s3D picture %dx%d" % [prefix, render.x, render.y]
 
 	if display.embedded():
-		text += " (window %dx%d). The game runs inside the editor, which owns the window: it cannot be resized or made fullscreen from here, only the 3D size changes. Run it standalone to resize the window." % [win.x, win.y]
+		text += " (window %dx%d). The game runs inside the editor, which owns the window: it cannot be resized or made fullscreen from here, only the 3D size changes. To change the real window size, resize the Game tab or turn embedding off (Project > Run without embedding)." % [win.x, win.y]
 	elif display.fullscreen:
 		text += " in a fullscreen windowed screen of %dx%d." % [win.x, win.y]
 	elif win != display.size():
