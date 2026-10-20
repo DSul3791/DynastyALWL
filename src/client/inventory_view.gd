@@ -237,6 +237,9 @@ func _build_panel() -> void:
 		for need in r["needs"]:
 			needs.append("%d %s" % [need[1], table.name_of(need[0])])
 
+		for keep in r["keeps"]:
+			needs.append("%d %s, kept" % [keep[1], table.name_of(keep[0])])
+
 		var make: Button = Button.new()
 		make.text = "%s   (%s)" % [r["name"], ", ".join(needs)]
 		make.pressed.connect(_start_craft.bind(number))

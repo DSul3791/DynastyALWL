@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode.",
-	"next_number": 10,
+	"next_number": 11,
 	"items": {
 		"stone":       {"number": 1, "name": "Stone", "kind": "material", "stack": 20, "look_alikes": []},
 		"stick":       {"number": 2, "name": "Stick", "kind": "material", "stack": 40, "look_alikes": []},
@@ -10,8 +10,9 @@
 		"log":         {"number": 4, "name": "Log", "kind": "material", "stack": 5, "look_alikes": []},
 		"cordage":     {"number": 5, "name": "Cordage", "kind": "material", "stack": 20, "look_alikes": []},
 		"stone_axe":   {"number": 6, "name": "Stone axe", "kind": "tool", "stack": 1, "chop": 1.0, "dig": 1.0, "durability": 100, "look_alikes": []},
-		"spear":       {"number": 7, "name": "Spear", "kind": "weapon", "stack": 1, "damage": 8.0, "throw_damage": 6.0, "durability": 80, "look_alikes": []},
+		"spear":       {"number": 7, "name": "Stone spear", "kind": "weapon", "weapon_class": "spear", "tier": 2, "stack": 1, "damage": 8.0, "throw_damage": 6.0, "durability": 80, "look_alikes": []},
 		"campfire_kit": {"number": 8, "name": "Campfire", "kind": "placeable", "stack": 1, "look_alikes": []},
+		"wooden_spear": {"number": 10, "name": "Wooden spear", "kind": "weapon", "weapon_class": "spear", "tier": 1, "stack": 1, "damage": 6.0, "throw_damage": 5.0, "durability": 40, "look_alikes": []},
 		"seed_bundle": {"number": 9, "name": "Seeds", "kind": "material", "stack": 40, "look_alikes": []}
 	}
 }

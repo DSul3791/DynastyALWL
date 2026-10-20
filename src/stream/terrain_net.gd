@@ -59,6 +59,7 @@ const ACT_DROP := 1       # a = slot, count = how many, at = where it lands
 const ACT_PICKUP := 2     # a = world item id
 const ACT_ADMIN_GIVE := 3 # a = item number, count (admin tool; tests only)
 const ACT_CRAFT := 4      # a = recipe number (data/items/recipes.json)
+const ACT_THROW := 5      # a = slot, at = aim direction (the server starts the throw from the player)
 
 
 @rpc("authority", "call_remote", "reliable")

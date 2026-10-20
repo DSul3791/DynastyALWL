@@ -28,8 +28,13 @@ func load_file(path: String, item_table) -> bool:
 		for need in row["needs"]:
 			needs.append([item_table.number_of(str(need[0])), int(need[1])])
 
+		var keeps: Array = []
+
+		for keep in row.get("keeps", []):
+			keeps.append([item_table.number_of(str(keep[0])), int(keep[1])])
+
 		var entry: Dictionary = {
-			"number": int(row["number"]), "id": id, "name": str(row["name"]), "needs": needs,
+			"number": int(row["number"]), "id": id, "name": str(row["name"]), "needs": needs, "keeps": keeps,
 			"gives": [item_table.number_of(str(row["gives"][0])), int(row["gives"][1])],
 			"craft_s": float(row.get("craft_s", 3.0)), "known": bool(row.get("known", false)),
 		}
@@ -54,7 +59,7 @@ func can_make(number: int, inventory) -> bool:
 	if r.is_empty():
 		return false
 
-	for need in r["needs"]:
+	for need in r["needs"] + r["keeps"]:
 		if not inventory.has(need[0], need[1]):
 			return false
 

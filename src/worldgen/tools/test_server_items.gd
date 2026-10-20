@@ -31,6 +31,7 @@ func _init() -> void:
 	var dir: String = "user://test_server_items"
 	DirAccess.make_dir_recursive_absolute(dir)
 	DirAccess.make_dir_recursive_absolute("user://test_server_items_b")
+	DirAccess.make_dir_recursive_absolute("user://test_server_items_c")
 
 	for f in DirAccess.get_files_at(dir):
 		DirAccess.remove_absolute(dir + "/" + f)
@@ -129,6 +130,30 @@ func _init() -> void:
 			again_here = true
 
 	check(not again_here, "a picked-up loose item does not come back")
+
+	# Throwing.
+	var t = make("user://test_server_items_c")
+	t.ground_height = func(x, z): return 10.0
+	t.peer_connected_hello(1, "abcdef123456")
+	t.report_position(1, Vector3(0.0, 10.0, 0.0))
+	var spear: int = t.table.number_of("spear")
+	t.action(1, Net.ACT_ADMIN_GIVE, spear, 0, 1, Vector3.ZERO)
+	t.action(1, Net.ACT_ADMIN_GIVE, stone, 0, 1, Vector3.ZERO)
+	var stone_slot: int = 1
+	t.action(1, Net.ACT_THROW, stone_slot, 0, 0, Vector3(1.0, 0.3, 0.0))
+	check(t.inventory_of(1).count_of(stone) == 1 and t._flights.is_empty(), "a stone is not a throwing weapon")
+	t.action(1, Net.ACT_THROW, 0, 0, 0, Vector3(1.0, 0.3, 0.0))
+	check(t.inventory_of(1).count_of(spear) == 0 and t._flights.size() == 1, "spear leaves the inventory")
+	for n in range(400):
+		t.tick(0.02)
+	check(t._flights.is_empty() and t.world_item_count() >= 1, "spear came down as a world item")
+	var landed: Vector3 = Vector3.ZERO
+
+	for k in t._items:
+		if t._items[k]["number"] == spear:
+			landed = t._items[k]["pos"]
+
+	check(landed.x > 10.0 and absf(landed.y - 10.0) < 0.01, "spear landed ahead on the ground")
 
 	print("server item tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

@@ -1,10 +1,11 @@
 {
-	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'known' true means every character knows it from day one.",
-	"next_number": 5,
+	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one.",
+	"next_number": 6,
 	"recipes": {
-		"cordage":    {"number": 1, "name": "Twist cordage", "needs": [["plant_fibre", 3]], "gives": ["cordage", 1], "craft_s": 2.0, "known": true},
+		"cordage":    {"number": 1, "name": "Twist twine", "needs": [["plant_fibre", 3]], "gives": ["cordage", 1], "craft_s": 2.0, "known": true},
 		"stone_axe":  {"number": 2, "name": "Bind a stone axe (also the pick)", "needs": [["stone", 2], ["stick", 1]], "gives": ["stone_axe", 1], "craft_s": 4.0, "known": true},
-		"spear":      {"number": 3, "name": "Make a spear", "needs": [["stick", 2], ["cordage", 1]], "gives": ["spear", 1], "craft_s": 4.0, "known": true},
+		"wooden_spear": {"number": 5, "name": "Sharpen a wooden spear", "needs": [["stick", 1]], "keeps": [["stone", 1]], "gives": ["wooden_spear", 1], "craft_s": 3.0, "known": true},
+		"spear":      {"number": 3, "name": "Make a stone spear", "needs": [["stone", 2], ["stick", 1], ["cordage", 1]], "gives": ["spear", 1], "craft_s": 4.0, "known": true},
 		"campfire":   {"number": 4, "name": "Lay a campfire", "needs": [["stick", 6], ["stone", 4]], "gives": ["campfire_kit", 1], "craft_s": 3.0, "known": true}
 	}
 }

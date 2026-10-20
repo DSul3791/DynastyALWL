@@ -37,6 +37,7 @@ const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")
 const CompassScript := preload("res://src/client/admin_compass.gd")
 const InventoryViewScript := preload("res://src/client/inventory_view.gd")
+const HeldItemScript := preload("res://src/client/held_item.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
 const WeatherScript := preload("res://src/shared/weather.gd")
 const RenderScale := preload("res://src/client/render_scale.gd")
@@ -45,7 +46,7 @@ const GitStamp := preload("res://src/debug/git_stamp.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 const GpuProbeScript := preload("res://src/debug/gpu_probe.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 138
+const BUILD := 140
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -166,6 +167,7 @@ var test_gear: bool = false
 var _sound_gear_at: int = -1
 var test_items: bool = false
 var test_gather: bool = false
+var test_spear: bool = false
 var test_creatures: bool = false
 var _test_creature_at: int = 0
 var _test_creature_step: int = 0
@@ -186,6 +188,7 @@ var _report_msec: int = 0
 var dig_applied: int = 0
 var flora                             # FloraView
 var items                             # InventoryView: inventory panel (I), pick-up (E)
+var held                              # HeldItem: hotbar keys 1 to 8, spear jab and throw
 var grass                             # GrassView
 var sound                             # SoundStage: wind, footsteps, grass swish
 var _commit: String = GitStamp.short_commit()   # which checkout is running
@@ -290,6 +293,8 @@ func _ready() -> void:
 			test_items = true
 		elif argument == "--gather":
 			test_gather = true
+		elif argument == "--spear":
+			test_spear = true
 		elif argument == "--creatures":
 			test_creatures = true
 
@@ -494,12 +499,19 @@ func _on_welcome(info: Dictionary) -> void:
 	items.name = "Items"
 	add_child(items)
 	items.setup(net, layer, root, func(): return body.global_position, _ground_below)
+	held = HeldItemScript.new()
+	held.name = "Held"
+	add_child(held)
+	held.setup(items, net, camera, root, layer, _ground_below)
 
 	if test_items:
 		items.run_test()
 
 	if test_gather:
 		items.run_gather_test(self)
+
+	if test_spear:
+		held.run_test()
 	print("Terrain client: welcome after %d ms; world %s; spawn %s; cache %s (%d MB)" % [
 		connected_msec - started_msec, str(info["world_name"]), str(info["spawn"]), cache_dir, cache_mb
 	])
@@ -1388,6 +1400,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		body.rotate_y(-event.relative.x * MOUSE_SENSITIVITY)
 		pitch = clampf(pitch - event.relative.y * MOUSE_SENSITIVITY, -1.5, 1.5)
 		camera.rotation.x = pitch
+	elif event is InputEventMouseButton and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and held != null and held.mouse_button(event.button_index, event.pressed):
+		pass
 	elif event is InputEventMouseButton and event.pressed:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	elif event is InputEventKey and event.pressed and not event.echo:
@@ -1411,6 +1425,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			net.step_water_rate.rpc_id(1, -1)
 		elif event.keycode == KEY_X:
 			_admin_dig()
+		elif event.keycode >= KEY_1 and event.keycode <= KEY_8 and held != null:
+			held.select(event.keycode - KEY_1)
 		elif event.keycode == KEY_E and items != null:
 			if not items.pick_up_nearest():
 				_gather_nearest()

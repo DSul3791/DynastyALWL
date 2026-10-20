@@ -27,6 +27,11 @@ const GATHER_M := 5.0                    # how far from the plant a gather reque
 const SCATTER_RADIUS_M := 96.0           # loose stones and sticks are laid out this far around players
 const SCATTER_DROP_M := 250.0            # and taken away again beyond this (picked-up ones stay gone)
 const SCATTER_CELLS_PER_TICK := 8
+const THROW_SPEED := 24.0                # m/s
+const THROW_GRAVITY := 9.8
+const THROW_MAX_S := 6.0
+const THROW_COOLDOWN_MS := 500
+const EYE_HEIGHT := 1.5
 
 var table
 var recipes
@@ -48,6 +53,8 @@ var _sync_in: float = 0.0
 var _save_in: float = SAVE_EVERY_S
 var _dirty: bool = false
 var _drops: Dictionary = {}
+var _flights: Array = []            # thrown things in the air: {number, pos, vel, age}
+var _last_throw: Dictionary = {}    # peer -> msec
 var _taken: Dictionary = {}         # scatter key int -> true: loose items already picked up (stay gone)
 var _cells_done: Dictionary = {}    # Vector2i scatter cell -> true while its items are laid out
 
@@ -80,6 +87,7 @@ func peer_left(peer: int) -> void:
 	_peer_key.erase(peer)
 	_peer_pos.erase(peer)
 	_known.erase(peer)
+	_last_throw.erase(peer)
 
 
 func report_position(peer: int, position: Vector3) -> void:
@@ -162,6 +170,8 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_drop(peer, inv, a, count, at)
 	elif kind == Net.ACT_PICKUP:
 		_pickup(peer, inv, a)
+	elif kind == Net.ACT_THROW:
+		_throw(peer, inv, a, at)
 	elif kind == Net.ACT_CRAFT:
 		recipes.craft(a, inv)
 	elif kind == Net.ACT_ADMIN_GIVE:
@@ -176,6 +186,8 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 
 
 func tick(delta: float) -> void:
+	_fly(delta)
+
 	for id in _items.keys():
 		if _items[id].has("scatter"):
 			continue
@@ -262,6 +274,43 @@ func _drop(peer: int, inv, slot: int, count: int, at: Vector3) -> void:
 		return
 
 	inv.take_from_slot(slot, amount)
+
+
+# A thrown weapon leaves the inventory and flies; where it comes down it lies as a world item.
+# Only items marked as weapons can be thrown. Nothing can be hit yet (no creatures).
+func _throw(peer: int, inv, slot: int, direction: Vector3) -> void:
+	if slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or not _peer_pos.has(peer) or direction.length() < 0.1:
+		return
+
+	var now: int = Time.get_ticks_msec()
+
+	if now - int(_last_throw.get(peer, -100000)) < THROW_COOLDOWN_MS:
+		return
+
+	if str(table.entry(table.id_of(inv.numbers[slot])).get("kind", "")) != "weapon":
+		return
+
+	_last_throw[peer] = now
+	var number: int = inv.numbers[slot]
+	inv.take_from_slot(slot, 1)
+	_flights.append({"number": number, "pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": direction.normalized() * THROW_SPEED, "age": 0.0})
+
+
+func _fly(delta: float) -> void:
+	for flight in _flights.duplicate():
+		flight["vel"].y -= THROW_GRAVITY * delta
+		flight["pos"] += flight["vel"] * delta
+		flight["age"] += delta
+		var ground: float = float(ground_height.call(flight["pos"].x, flight["pos"].z)) if ground_height.is_valid() else -1000000.0
+
+		if (not is_nan(ground) and flight["pos"].y <= ground) or flight["age"] >= THROW_MAX_S:
+			var spot: Vector3 = flight["pos"]
+
+			if not is_nan(ground):
+				spot.y = maxf(ground, spot.y) if flight["age"] >= THROW_MAX_S else ground
+
+			drop_in_world(int(flight["number"]), 1, spot)
+			_flights.erase(flight)
 
 
 func _pickup(peer: int, inv, id: int) -> void:
