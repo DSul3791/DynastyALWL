@@ -71,6 +71,7 @@ func setup(flora) -> void:
 		player.max_distance = 140.0
 		player.attenuation_filter_cutoff_hz = 9000.0
 		add_child(player)
+		player.add_to_group("world_sounds")
 		_slots.append({"player": player, "kind": "", "target": Vector3.ZERO, "fade": -80.0})
 
 	# Loads the loops now, so the first river met doesn't stall a frame reading a file.

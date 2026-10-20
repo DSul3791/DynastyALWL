@@ -21,6 +21,7 @@ const AmbientScript := preload("res://src/client/ambient_life.gd")
 const WeatherScript := preload("res://src/client/weather_sounds.gd")
 const DigScript := preload("res://src/client/dig_sounds.gd")
 const CaveScript := preload("res://src/client/cave_sounds.gd")
+const OcclusionScript := preload("res://src/client/sound_occlusion.gd")
 const WaterSoundsScript := preload("res://src/client/water_sounds.gd")
 const AUDIO_DIR := "res://assets/audio/"
 const RECORDED_DIR := "res://assets/audio/recorded/"
@@ -119,6 +120,7 @@ var _rng := RandomNumberGenerator.new()
 var ambient                             # AmbientLife: birds, crickets, frogs by zone
 var water                               # WaterSounds: brooks, rivers, pond shores, waterfalls
 var weather                             # WeatherSounds: rain, gale, thunder, snow hush (set_weather)
+var occlusion                           # SoundOcclusion: hills and forest muffle distant sounds
 var cave                                # CaveSounds: reverb, muffling and drips under rock
 var dig                                 # DigSounds: the sound of what is dug (dug(center, radius, listener))
 var _sphere: PhysicsShapeQueryParameters3D
@@ -177,6 +179,10 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	cave.name = "Cave"
 	add_child(cave)
 	cave.setup(self)
+	occlusion = OcclusionScript.new()
+	occlusion.name = "Occlusion"
+	add_child(occlusion)
+	occlusion.setup(self, _terrain)
 
 	_load_settings()
 
@@ -201,6 +207,7 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	weather.update(delta, body, underwater)
 	dig.update(delta)
 	cave.update(delta, body, flying)
+	occlusion.update(delta, body, flying)
 	_time += delta
 	gust = clampf(0.5 + 0.8 * _gust_noise.get_noise_1d(_time), 0.0, 1.0)
 	var position: Vector3 = body.global_position

@@ -83,7 +83,7 @@ const EVENTS := [
 	{"name": "cricket_chirp", "zones": {"meadow": 1.0, "water": 0.4}, "every": [22, 55], "dist": [5, 28], "height": [0, 0], "db": -16.0, "night_rate": 5.0, "dusk": 2.0, "seasons": {"autumn": 0.9, "summer": 1.0, "spring": 0.3, "winter": 0.0}},
 	{"name": "frog_croak", "zones": {"water": 1.0}, "every": [40, 90], "dist": [6, 24], "height": [0, 0], "db": -18.0, "wet": true, "water": true, "night_rate": 3.0, "dusk": 2.0, "seasons": {"autumn": 0.3, "summer": 1.0, "spring": 1.0, "winter": 0.0}},
 	{"name": "tree_frog_peep", "zones": {"water": 0.8, "forest": 0.2}, "every": [16, 40], "dist": [4, 28], "height": [0, 3], "db": -14.0, "wet": true, "night_rate": 3.0, "dusk": 2.0, "seasons": {"autumn": 0.2, "summer": 1.0, "spring": 1.0, "winter": 0.0}},
-	{"name": "fish_plop", "zones": {"water": 1.0}, "every": [60, 150], "dist": [6, 22], "height": [0, 0], "db": -12.0, "water": true},
+	{"name": "fish_splash", "zones": {"water": 1.0}, "every": [60, 150], "dist": [6, 22], "height": [0, 0], "db": -10.0, "water": true},
 ]
 const ZONES := ["forest", "meadow", "water", "highland"]
 
@@ -91,7 +91,7 @@ var conditions: Dictionary = {"hour": 14.0, "season": "autumn", "weather": "clea
 var weights: Dictionary = {"forest": 0.0, "meadow": 0.0, "water": 0.0, "highland": 0.0}
 var calls_played: Dictionary = {}       # call name -> count (for the headless check)
 var last_call: String = ""
-var last_file: String = ""              # the file last played, e.g. fish_plop_2
+var last_file: String = ""              # the file last played, e.g. fish_splash_2
 var _source: Dictionary = {}            # call name -> "recorded" or "generated"
 var max_voices: int = 4                 # calls and flushes playing at once (the quality tier sets it)
 var weather_calls: float = 1.0          # share of calls still made in this weather (weather_sounds.gd)
@@ -453,6 +453,7 @@ func _play(name: String, list: Array, at: Vector3, db: float) -> AudioStreamPlay
 	player.max_distance = 400.0
 	player.attenuation_filter_cutoff_hz = 9000.0
 	add_child(player)
+	player.add_to_group("world_sounds")
 	player.global_position = at
 	player.finished.connect(player.queue_free)
 	player.play()
