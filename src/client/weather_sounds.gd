@@ -47,6 +47,7 @@ const KINDS := {
 const LOOP_DB := {"rain_light": -14.0, "rain_heavy": -13.0, "rain_leaves": -15.0, "rain_water": -17.0, "wind_storm": -18.0}
 const THUNDER_DB := -4.0
 
+var forced: bool = false                # --weather=KIND on the command line: the world weather is ignored
 var kind: String = "clear"
 var intensity: float = 1.0
 var rain: float = 0.0                   # smoothed levels the sound stage and HUD read
@@ -75,6 +76,7 @@ func setup(stage, ambient) -> void:
 
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--weather="):
+			forced = true
 			set_weather(arg.get_slice("=", 1), 1.0)
 			rain = float(KINDS[kind]["rain"]) * intensity
 			wind = float(KINDS[kind]["wind"]) * intensity
@@ -109,6 +111,9 @@ func set_weather(new_kind: String, new_intensity: float = 1.0) -> void:
 
 # Plays the world's weather state (src/shared/weather.gd: rain, snow, storm, wind, each 0 to 1).
 func apply_state(state: Dictionary) -> void:
+	if forced:
+		return
+
 	var snow: float = float(state.get("snow", 0.0))
 	var storm: float = float(state.get("storm", 0.0))
 	var rain_level: float = float(state.get("rain", 0.0))

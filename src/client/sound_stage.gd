@@ -43,6 +43,23 @@ const SURFACE_DB := {
 	"leaves": -6.0, "mud": -10.0, "snow": -11.0, "water": -10.0,
 	"grass_tall": -14.0, "bushes": -13.0,
 }
+# Exposed rock under the soles (rock id = material - MATERIAL_ROCK; data/tables/rocks.json):
+# [surface, dB, pitch]. Soft rock scuffs like loose ground, dense hard rock rings a little.
+const ROCK_STEP := {
+	1: ["gravel", -2.0, 0.95], 2: ["gravel", -1.0, 1.0], 3: ["stone", -1.0, 1.0], 4: ["stone", -4.0, 0.88],
+	5: ["stone", 1.0, 1.03], 6: ["stone", 0.0, 1.05], 7: ["stone", 1.0, 1.02], 8: ["gravel", -3.0, 0.98],
+	9: ["stone", 1.0, 1.05], 10: ["sand", -4.0, 0.95], 11: ["gravel", -3.0, 0.92],
+}
+# Ore showing in that rock (data/tables/resources.json ids): metals and gems ring, coal is dull,
+# salt crunches, clay is sticky.
+const ORE_STEP := {1: ["stone", -3.0, 0.9], 10: ["sand", 0.0, 1.05], 12: ["mud", 0.0, 1.0], 29: ["mud", -2.0, 0.9]}
+const ORE_METAL := [2, 3, 4, 5, 6, 7, 8, 9, 15, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27]
+# Soils with their own character: [dB, pitch] on top of their surface (data/tables/soils.json).
+const SOIL_TUNE := {3: [-1.0, 0.95], 4: [0.0, 0.97], 12: [2.0, 1.1], 13: [0.0, 1.06], 14: [-3.0, 0.9]}
+const RAIN_SOAK := 0.5                  # rain level from which loose dirt and leaves turn to wet mud steps
+# Esc > Settings mixer groups: name -> the buses it sets. Shares step through VOLUME_STEPS.
+const MIX_GROUPS := {"wind": ["Wind"], "nature": ["Nature", "Weather"], "steps": ["Foley"]}
+const SETTINGS_PATH := "user://sound_settings.cfg"
 const GRASS_MIN := 0.35                 # grass thickness from which a step sounds like grass
 const WATER_STEP_M := 0.12              # water above the soles that turns steps into splashes
 const DAMP_M := 0.03                    # shallower film at the waterline: a damp, muddy step
@@ -61,6 +78,7 @@ var _pending: String = ""
 var last_step: String = ""              # for the HUD: ground, soil id, water depth, file played
 var gust: float = 0.0                   # 0 calm .. 1 strongest gust
 var volume_index: int = 0
+var mix_index: Dictionary = {"wind": 0, "nature": 0, "steps": 0}   # per group, into VOLUME_STEPS
 var tier: int = 2                       # quality index (0 Low); set_quality()
 var voice_cap: int = 96                 # TIER_VOICES[tier]
 var voices_peak: int = 0                # most sounds playing together so far (HUD)
@@ -112,6 +130,7 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	AudioServer.add_bus_effect(wind_bus, _wind_filter)
 	_make_bus("Foley")
 	_make_bus("Nature")
+	_make_bus("Weather")
 	_muffle = AudioEffectLowPassFilter.new()
 	_muffle.cutoff_hz = 20000.0
 	AudioServer.add_bus_effect(0, _muffle)
@@ -141,6 +160,8 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	weather.name = "Weather"
 	add_child(weather)
 	weather.setup(self, ambient)
+
+	_load_settings()
 
 	if _wind_low.stream != null:
 		_wind_low.play()
@@ -239,6 +260,7 @@ func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: Str
 		return
 
 	var soil: int = _ground_under(feet)
+	var tune: Array = [0.0, 1.0]                                 # dB and pitch for this ground's character
 	var thick: float = 0.0
 	var tall: float = 0.0
 
@@ -253,14 +275,25 @@ func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: Str
 	elif depth > DAMP_M:
 		surface = "mud"                                          # wet ground at the waterline
 		thick = 0.0
-	elif soil < 0 or soil >= Layout.MATERIAL_ROCK:
+	elif soil < 0:
 		surface = "stone"
+	elif soil >= Layout.MATERIAL_ROCK:
+		var rock: Array = ROCK_STEP.get(soil - Layout.MATERIAL_ROCK, ["stone", 0.0, 1.0])
+		var ore: int = _ore_under(feet)
+		var found: Array = ORE_STEP.get(ore, ["stone", 1.0, 1.07] if ore in ORE_METAL else rock)
+		surface = found[0]
+		tune = [found[1], found[2]]
 	elif _in_bush(feet):
 		surface = "bushes"
 	elif thick >= GRASS_MIN and soil != 8:
 		surface = "grass_tall" if tall > 0.35 else "grass"
 	else:
 		surface = str(SOIL_SURFACE.get(soil, "dirt"))
+		tune = SOIL_TUNE.get(soil, [0.0, 1.0])
+
+		if surface in ["dirt", "leaves"] and weather != null and weather.rain >= RAIN_SOAK:
+			surface = "mud"                                      # soaked ground
+			tune = [-2.0, 1.0]
 
 	# Steady ground: a different surface must show on two steps in a row before the sound
 	# changes, so one odd sample (a bush, a patch edge) never flips it back and forth.
@@ -282,12 +315,52 @@ func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: Str
 		name = "step_grass"
 
 	var recorded: bool = _recorded.has(name + "_" + foot) or _recorded.has(name)
-	var pitch: float = GAIT_PITCH[gait] * _rng.randf_range(0.96, 1.04)
+	var pitch: float = GAIT_PITCH[gait] * _rng.randf_range(0.96, 1.04) * tune[1]
 	last_step = "%s (soil %d, water %.2f m, %s)" % [surface, soil, depth, name + "_" + foot if recorded else name + " generated"]
-	_play(name, float(SURFACE_DB.get(surface, -9.0)) + GAIT_DB[gait] + boost_db + _rng.randf_range(-1.5, 1.0), pitch, foot)
+	_play(name, float(SURFACE_DB.get(surface, -9.0)) + float(tune[0]) + GAIT_DB[gait] + boost_db + _rng.randf_range(-1.5, 1.0), pitch, foot)
 	steps_played[surface] = int(steps_played.get(surface, 0)) + 1
 
 	# The recorded grass, tall grass and bush steps carry the swish of the blades themselves.
+
+
+# Esc > Settings mixer: steps one group (wind, nature, steps) through 100, 75, 50, 25 % and off.
+# Returns the new share. Saved for the next run.
+func mix_step(group: String) -> float:
+	mix_index[group] = (int(mix_index[group]) + 1) % VOLUME_STEPS.size()
+	_apply_mix(group)
+	_save_settings()
+	return float(VOLUME_STEPS[int(mix_index[group])])
+
+
+func _apply_mix(group: String) -> void:
+	var share: float = VOLUME_STEPS[int(mix_index[group])]
+
+	for bus_name in MIX_GROUPS[group]:
+		var index: int = AudioServer.get_bus_index(bus_name)
+
+		if index >= 0:
+			AudioServer.set_bus_mute(index, share <= 0.0)
+			AudioServer.set_bus_volume_db(index, linear_to_db(maxf(share, 0.001)))
+
+
+func _load_settings() -> void:
+	var file: ConfigFile = ConfigFile.new()
+
+	if file.load(SETTINGS_PATH) == OK:
+		for group in MIX_GROUPS:
+			mix_index[group] = clampi(int(file.get_value("mixer", group, 0)), 0, VOLUME_STEPS.size() - 1)
+
+	for group in MIX_GROUPS:
+		_apply_mix(group)
+
+
+func _save_settings() -> void:
+	var file: ConfigFile = ConfigFile.new()
+
+	for group in MIX_GROUPS:
+		file.set_value("mixer", group, int(mix_index[group]))
+
+	file.save(SETTINGS_PATH)
 
 
 # Esc > Settings "Sound volume": 100, 75, 50, 25 % and off. Returns the new share.
@@ -323,6 +396,22 @@ func _trunks_near(body: CharacterBody3D, radius: float) -> int:
 # bare rock, or -1 when the ground is not loaded.
 func ground_at(feet: Vector3) -> int:
 	return _ground_under(feet)
+
+
+# The ore id showing in the rock under the soles, 0 when none.
+func _ore_under(feet: Vector3) -> int:
+	_tool.channel = Layout.CHANNEL_RESOURCE
+
+	for drop in [0.3, 0.8]:
+		var cell: Vector3i = Vector3i((feet - Vector3(0.0, drop, 0.0)).floor())
+
+		if _tool.is_area_editable(AABB(Vector3(cell), Vector3.ONE)):
+			var ore: int = _tool.get_voxel(cell)
+
+			if ore > 0:
+				return ore
+
+	return 0
 
 
 func _ground_under(feet: Vector3) -> int:

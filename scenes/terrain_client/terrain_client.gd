@@ -36,7 +36,7 @@ const WeatherScript := preload("res://src/shared/weather.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 108
+const BUILD := 109
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -837,6 +837,10 @@ func _build_menu(layer: CanvasLayer) -> void:
 	_menu_button(settings, "Sound volume: change", func():
 		var share: float = sound.step_volume()
 		_menu_note.text = "Sound is off" if share <= 0.0 else "Sound volume %d %%" % roundi(share * 100.0))
+	for group in ["wind", "nature", "steps"]:
+		_menu_button(settings, "%s volume: change" % group.capitalize(), func():
+			var share: float = sound.mix_step(group)
+			_menu_note.text = "%s sounds are off" % group.capitalize() if share <= 0.0 else "%s volume %d %%" % [group.capitalize(), roundi(share * 100.0)])
 	_menu_button(settings, "Sound test time: change", func():
 		var order: Array = [["day", 14.0, "autumn"], ["dawn", 6.0, "autumn"], ["dusk", 18.4, "autumn"], ["night", 23.0, "autumn"], ["winter day", 12.0, "winter"], ["summer dawn", 5.0, "summer"], ["spring night", 22.0, "spring"], ["clock runs", -1.0, "autumn"], ["world clock", -2.0, ""]]
 		_sound_test_at = (_sound_test_at + 1) % order.size()
