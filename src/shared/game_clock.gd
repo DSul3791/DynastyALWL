@@ -15,6 +15,24 @@ const START_SECONDS := (30.0 * 24.0 + 8.0) * 3600.0
 var seconds: float = START_SECONDS    # game seconds since the world began
 
 
+var _sync_seconds: float = 0.0
+var _sync_msec: int = -1
+
+
+# Clients: take the server's value once, then follow the machine's own tick counter, so
+# a slow or paused frame never makes the copy drift from the server.
+func sync(server_seconds: float) -> void:
+	seconds = server_seconds
+	_sync_seconds = server_seconds
+	_sync_msec = Time.get_ticks_msec()
+
+
+func tick() -> void:
+	if _sync_msec >= 0:
+		seconds = _sync_seconds + float(Time.get_ticks_msec() - _sync_msec) / 1000.0 * RATIO
+
+
+# Server: the counter advances by the frame time.
 func advance(real_seconds: float) -> void:
 	seconds += real_seconds * RATIO
 

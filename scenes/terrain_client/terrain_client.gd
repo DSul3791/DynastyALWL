@@ -36,7 +36,7 @@ const WeatherScript := preload("res://src/shared/weather.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 106
+const BUILD := 107
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -292,7 +292,7 @@ func _on_welcome(info: Dictionary) -> void:
 		return
 
 	world = info
-	game_clock.seconds = float(info.get("game_seconds", game_clock.seconds))
+	game_clock.sync(float(info.get("game_seconds", game_clock.seconds)))
 	connected_msec = Time.get_ticks_msec()
 
 	if cache_dir == "":
@@ -1248,7 +1248,7 @@ func _update_bob(delta: float) -> void:
 func _process(delta: float) -> void:
 	_step_player(delta)
 	_apply_water_inbox()
-	game_clock.advance(delta)
+	game_clock.tick()
 	_update_weather()
 
 	if _sound_test_at < 0 and sound != null and sound.ambient != null:
