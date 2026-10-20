@@ -2047,3 +2047,5 @@ Nothing here is committed. It follows `GENERATOR_V2_PLAN.md`, ordered by what af
 Most gameplay systems in Sections 5 to 13 live in the server layer and can be added later without rebaking terrain.
 
 Boulder aprons at slope bases (parked 2026-10-20, owner: gravel slope looks good enough for now): boulders sometimes make the very base of a slope, sometimes sand and gravel. Gravel and sand are in (build 155); boulders are not built. Revisit when asked.
+
+Forest floor polish (noted 2026-10-20, owner: "good for now"): the ground texture shows pale herringbone or chevron patches that read as repeating stamps on the right of forest views; the leaf litter leans too red and looks the same everywhere (vary by species of the tree above: needles under firs, colour by hardwood); grass tufts look sparse and bright against the dense dark streaks of the forest litter texture. Revisit when asked.
