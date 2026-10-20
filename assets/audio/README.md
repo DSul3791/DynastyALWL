@@ -345,3 +345,18 @@ Over the voice cap (Low 24) `sound_stage._shed` cuts one-shot world sounds in th
 ## Emitters for server-owned things (job 65)
 
 `src/client/emitters.gd` (`sound.emitters`) is the client half of `/mnt/project-files/sound/EMITTER_API.md`; the protocol half (`sound_event`, `sound_loop`) waits for the first server-owned entity. `emit(kind, event, position, power, entity_id)` plays a one-shot: creature kinds with `call_idle|call_alert|call_threat` go to `creature_sounds.gd`, anything else plays its row in the `events` table (`register_event` adds rows; spec = folder, name, db, reach, unit, bus, keep). `sync(rows)` runs loops from entity rows (`loops` table, `register_loop`): one voice per entity within 18 m, farther ones of the same loop within 15 m share one voice, 3 dB louder per doubling, capped by the tier's `town_loops` (3 at Low). Rate limits: 4 events per entity and 60 in all per second. Unknown kind or event: one warning, silent. Events obey the voice cap and shed priority. Test: `sound_check.py --only emitters` (fake events: threat call plays, burst of 6 gives 4, unknown silent, 17 rows give 3 voices with 13 merged). The test rows use a placeholder kind `hum` (fire sounds).
+
+## Mixer loudness pass (job 67)
+
+`sound_check.py --only mix` runs the worst staged case (storm at 21:00, cave, creatures, fires, walking, UI sounds) with `--mix-levels`: after 20 s it tracks each bus's output peak (`AudioServer.get_bus_peak_volume_*`) for 30 s. Headless the mixer does run, so the numbers are real digital levels, not ears. Build 258, Low, all sliders at 100 percent:
+
+| bus | peak dB | mean while sounding dB |
+|---|---|---|
+| Master | -10.7 | -22.7 |
+| Weather (storm rain, thunder) | -10.8 | -23.9 |
+| Nature | -12.3 | -36.4 |
+| Foley (steps, fire, tools) | -13.9 | -31.9 |
+| Wind | -44.3 | -52.7 |
+| Interface, Body | not reached in this run (UI cues are -26 dB or quieter; the heartbeat peaks about -12 dB in `--faint`) |
+
+Safe maximum: Master peaks 10.7 dB under full scale in the loudest case, so nothing clips and the sliders (all at most 100 percent, no boost) need no change. Wind is 33 dB under the storm, which is intended (wind is a bed; rain and thunder carry a storm). No bus sliders were added. The `--ui-sounds` peak line is deliberately left out of the table until a run measures Interface alone. The voice-count check in `sound_check.py` now allows 2 over the cap (`VOICE_SCAN_SLACK`) because the cap is enforced every 0.25 s.

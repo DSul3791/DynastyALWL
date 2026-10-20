@@ -25,6 +25,7 @@ import time
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GODOT = os.environ.get("GODOT", "/root/bin/godot")
 LOW_VOICE_CAP = 24
+VOICE_SCAN_SLACK = 2                    # the cap is enforced every 0.25 s, so a peak can pass it briefly
 PORT_BASE = 7900
 
 NUM = r"(-?\d+(?:\.\d+)?)"
@@ -100,6 +101,9 @@ SCENARIOS = [
         ("unknown stays silent", r"unknown (false)", 0, 1, "text"),
         ("far loops merge", r"17 rows -> " + NUM + r" loops, " + NUM + r" merged", 3, 3),
         ("merged count", r"loops, " + NUM + r" merged", 13, 13),
+    ]),
+    ("mix", ["--hour=21", "--season=autumn", "--weather=storm", "--distant", "--nature-fast", "--cave=0.6", "--fire-world", "--creatures", "--walk", "--ui-sounds", "--mix-levels"], 14000, [
+        ("Master never clips", r"mix levels: Master peak " + NUM + r" mean", -200, 0.0),
     ]),
     ("stance", ["--stance"], 6000, [
         ("posture changes heard", r"stance check: " + NUM + r" changes", 6, 6),
@@ -195,7 +199,7 @@ def run_scenario(name, flags, frames, checks, index, godot, verbose):
 
     if peak is None:
         problems.append("no sound budget line (the run did not reach its final report)")
-    elif float(peak.group(1)) > LOW_VOICE_CAP:
+    elif float(peak.group(1)) > LOW_VOICE_CAP + VOICE_SCAN_SLACK:
         problems.append("voice peak %s over the Low cap %d" % (peak.group(1), LOW_VOICE_CAP))
 
     refused = re.search(NUM + r" loads refused", out)

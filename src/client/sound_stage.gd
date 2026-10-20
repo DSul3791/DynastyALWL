@@ -377,6 +377,9 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 		if _voice_count > voice_cap:
 			_shed(body, _voice_count - voice_cap)
 
+	if track_peaks:
+		_track_peaks()
+
 	ambient.update(delta, body, flying)
 	water.update(delta, body, underwater)
 	weather.update(delta, body, underwater)
@@ -713,6 +716,39 @@ func mix_step(group: String) -> float:
 	_apply_mix(group)
 	_save_settings()
 	return float(VOLUME_STEPS[int(mix_index[group])])
+
+
+# Headless loudness table (job 67, --mix-levels): the highest peak seen on each bus since tracking began.
+const MIX_BUSES := ["Master", "Wind", "Foley", "Nature", "Weather", "Interface", "Body"]
+var track_peaks: bool = false
+var bus_peaks: Dictionary = {}          # bus -> highest peak in dB
+var bus_sums: Dictionary = {}           # bus -> [sum of peak dB while above -60, samples]
+
+
+func _track_peaks() -> void:
+	for bus_name in MIX_BUSES:
+		var index: int = AudioServer.get_bus_index(bus_name)
+
+		if index < 0:
+			continue
+
+		var peak: float = maxf(AudioServer.get_bus_peak_volume_left_db(index, 0), AudioServer.get_bus_peak_volume_right_db(index, 0))
+		bus_peaks[bus_name] = maxf(float(bus_peaks.get(bus_name, -200.0)), peak)
+
+		if peak > -60.0:
+			var sums: Array = bus_sums.get(bus_name, [0.0, 0])
+			bus_sums[bus_name] = [float(sums[0]) + peak, int(sums[1]) + 1]
+
+
+func mix_table() -> String:
+	var parts: Array = []
+
+	for bus_name in MIX_BUSES:
+		var sums: Array = bus_sums.get(bus_name, [0.0, 0])
+		var mean: float = float(sums[0]) / float(sums[1]) if int(sums[1]) > 0 else -99.0
+		parts.append("%s peak %.1f mean %.1f" % [bus_name, float(bus_peaks.get(bus_name, -99.0)), mean])
+
+	return "; ".join(parts)
 
 
 func _apply_mix(_group: String = "") -> void:

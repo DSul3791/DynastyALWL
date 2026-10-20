@@ -195,6 +195,7 @@ var _sweep_step: int = -1
 var _sweep_peak: int = 0
 var _sweep_max: int = 0
 var test_emitters: bool = false        # --emitter-test: fake server events and loops through sound.emitters (job 65)
+var test_mix_levels: bool = false      # --mix-levels: per-bus peak table over the run (job 67)
 var test_stance: bool = false          # --stance: stand, crouch, sit, lie and rise in turn (job 56)
 var _stance_step: int = 0
 var _lake_start_msec: int = 0
@@ -400,6 +401,8 @@ func _ready() -> void:
 			test_lake = true
 		elif argument == "--stance":
 			test_stance = true
+		elif argument == "--mix-levels":
+			test_mix_levels = true
 		elif argument == "--emitter-test":
 			test_emitters = true
 		elif argument == "--sweep":
@@ -2473,6 +2476,14 @@ func _process(delta: float) -> void:
 
 		em.sync(rows)
 		print("Terrain client: emitter test: creature wolf %s deer %s, burst %d of 6 played, %d dropped, unknown %s, 17 rows -> %d loops, %d merged" % [str(wolf), str(deer), burst, em.dropped_rate, str(nothing), em.loops_playing(), em.merged_loops])
+
+	if test_mix_levels:
+		sound.track_peaks = now - connected_msec > 20000
+
+		if now - connected_msec > 50000 and test_mix_levels:
+			test_mix_levels = false
+			sound.track_peaks = false
+			print("Terrain client: mix levels: " + sound.mix_table())
 
 	# Stance sounds: crouch, stand, sit, stand, lie (and sit for 20 s to hear settles), stand.
 	if test_stance and now - connected_msec > 18000 and now >= _test_fire_at:
