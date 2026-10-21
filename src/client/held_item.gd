@@ -620,7 +620,7 @@ func _make_kit_model() -> Node3D:
 
 	# The bigger stations in the hand: a log bench is a short beam on trestles, the forge a block of stone with a bar of iron on it,
 	# the blacksmithy a rolled plan under a timber peg (the heavy parts are delivered where it is raised).
-	if id == "log_workbench_kit" or id == "stone_forge_kit" or id == "blacksmithy_kit":
+	if id == "log_workbench_kit" or id == "stone_forge_kit" or id == "blacksmithy_kit" or id == "large_forge_kit" or id == "master_forge_kit":
 		var body: MeshInstance3D = MeshInstance3D.new()
 		var lump: BoxMesh = BoxMesh.new()
 		lump.size = Vector3(0.3, 0.07, 0.14) if id == "log_workbench_kit" else (Vector3(0.18, 0.14, 0.14) if id == "stone_forge_kit" else Vector3(0.26, 0.04, 0.2))
@@ -629,8 +629,8 @@ func _make_kit_model() -> Node3D:
 		node.add_child(body)
 		var mark: MeshInstance3D = MeshInstance3D.new()
 		var bar: BoxMesh = BoxMesh.new()
-		bar.size = Vector3(0.2, 0.04, 0.05) if id != "blacksmithy_kit" else Vector3(0.03, 0.14, 0.03)
-		bar.material = _kit_material(Color(0.2, 0.2, 0.22) if id != "blacksmithy_kit" else Color(0.4, 0.28, 0.17))
+		bar.size = Vector3(0.2, 0.04, 0.05) if id != "blacksmithy_kit" and id != "large_forge_kit" and id != "master_forge_kit" else Vector3(0.03, 0.14, 0.03)
+		bar.material = _kit_material(Color(0.2, 0.2, 0.22) if id != "blacksmithy_kit" and id != "large_forge_kit" and id != "master_forge_kit" else Color(0.4, 0.28, 0.17) if id != "master_forge_kit" else Color(0.75, 0.6, 0.2))
 		mark.mesh = bar
 		mark.position = Vector3(0.0, 0.08, 0.0)
 		node.add_child(mark)

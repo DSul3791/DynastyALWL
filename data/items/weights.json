@@ -172,7 +172,11 @@
 		"stone_forge_kit": 45.0,
 		"stone_forge": 45.0,
 		"blacksmithy_kit": 40.0,
-		"blacksmithy": 40.0
+		"blacksmithy": 40.0,
+		"large_forge_kit": 60.0,
+		"large_forge": 60.0,
+		"master_forge_kit": 80.0,
+		"master_forge": 80.0
 	},
 	"by_suffix": {
 		"berries": 0.05,

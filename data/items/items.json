@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = placeholder price of one item in coins (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 92,
+	"next_number": 96,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -983,8 +983,8 @@
 		},
 		"stone_forge_kit": {
 			"number": 87,
-			"name": "Stone forge",
-			"description": "A stone hearth with an anvil block and leather bellows, with a bench beside it. It lets you work metal.",
+			"name": "Basic Forge",
+			"description": "A clay and rough stone dome forge under a log roof, ready to raise.",
 			"kind": "placeable",
 			"stack": 1,
 			"value": 120,
@@ -992,16 +992,16 @@
 		},
 		"stone_forge": {
 			"number": 88,
-			"name": "Stone forge",
-			"description": "A stone forge with an anvil, bellows and a bench. Stand near it to work metal and make bench goods.",
+			"name": "Basic Forge",
+			"description": "A clay and rough stone forge under a log lean-to. Stand near it to work metal.",
 			"kind": "structure",
 			"stack": 1,
 			"look_alikes": []
 		},
 		"blacksmithy_kit": {
 			"number": 89,
-			"name": "Masonry forge",
-			"description": "A big forge staked out and ready to raise: stone hearth, chimney, anvil, bellows and quench trough.",
+			"name": "Medium Forge",
+			"description": "A dressed stone forge with a stepped hood and iron straps, ready to raise.",
 			"kind": "placeable",
 			"stack": 1,
 			"value": 600,
@@ -1009,8 +1009,8 @@
 		},
 		"blacksmithy": {
 			"number": 90,
-			"name": "Masonry forge",
-			"description": "A masonry forge of stone and iron: hearth, chimney, anvil, bellows and quench trough.",
+			"name": "Medium Forge",
+			"description": "A dressed stone forge with a stepped hood and iron straps.",
 			"kind": "structure",
 			"stack": 1,
 			"look_alikes": []
@@ -1019,6 +1019,40 @@
 			"number": 91,
 			"name": "Carcass",
 			"description": "A freshly killed animal. Work it with a knife for meat, hide and bones.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"large_forge_kit": {
+			"number": 92,
+			"name": "Large Forge",
+			"description": "A big arched forge with a riveted iron frame, ready to raise.",
+			"kind": "placeable",
+			"stack": 1,
+			"value": 900,
+			"look_alikes": []
+		},
+		"large_forge": {
+			"number": 93,
+			"name": "Large Forge",
+			"description": "A big arched forge with a riveted iron frame and a brick-lined firebox.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"master_forge_kit": {
+			"number": 94,
+			"name": "Master Forge",
+			"description": "An ornate black iron and gold forge set with red gems, ready to raise.",
+			"kind": "placeable",
+			"stack": 1,
+			"value": 3000,
+			"look_alikes": []
+		},
+		"master_forge": {
+			"number": 95,
+			"name": "Master Forge",
+			"description": "An ornate black iron and gold forge set with red gems, always glowing.",
 			"kind": "structure",
 			"stack": 1,
 			"look_alikes": []

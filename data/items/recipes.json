@@ -1004,7 +1004,7 @@
 		},
 		"stone_forge_kit": {
 			"number": 50,
-			"name": "Stone forge",
+			"name": "Basic Forge",
 			"needs": [
 				[
 					"stone",
@@ -1030,7 +1030,7 @@
 		},
 		"blacksmithy_kit": {
 			"number": 51,
-			"name": "Masonry forge",
+			"name": "Medium Forge",
 			"needs": [
 				[
 					"stone",

@@ -1264,7 +1264,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 		if state >= 5:
 			var yaw: float = deg_to_rad(float(row[5].get("yaw", 0.0))) if row.size() > 5 else 0.0
-			node = _make_leanto() if state == 5 else (_make_chest() if state == 6 else (_make_remains(float(row[5].get("age", 0.0)) if row.size() > 5 else 0.0) if (state == 11 or state == 12) else (_make_bench() if state == 13 else (_make_rack() if state == 14 else (_make_vice() if state == 15 else (_make_log_bench() if state == 16 else (_make_forge() if state == 17 else (_make_smithy() if state == 18 else (_make_carcass(str(row[5].get("sp", "")) if row.size() > 5 else "") if state == 19 else _make_block())))))))))
+			node = _make_leanto() if state == 5 else (_make_chest() if state == 6 else (_make_remains(float(row[5].get("age", 0.0)) if row.size() > 5 else 0.0) if (state == 11 or state == 12) else (_make_bench() if state == 13 else (_make_rack() if state == 14 else (_make_vice() if state == 15 else (_make_log_bench() if state == 16 else (_make_forge() if state == 17 else (_make_smithy() if state == 18 else (_make_big_forge(state) if (state == 20 or state == 21) else (_make_carcass(str(row[5].get("sp", "")) if row.size() > 5 else "") if state == 19 else _make_block()))))))))))
 			node.position = row[3] - Vector3(0.0, SINK_M * float(row[5].get("age", 0.0)), 0.0) if (state == 11 or state == 12) and row.size() > 5 else row[3]
 			node.rotation.y = yaw
 			_root.add_child(node)
@@ -1310,7 +1310,7 @@ func placed_rows() -> Array:
 	for id in _world:
 		var state: int = int(_world[id]["state"])
 
-		if state == 1 or state == 5 or state == 6 or state == 7 or state == 8 or state == 9 or state == 13 or state == 14 or state == 15 or state == 16 or state == 17 or state == 18:
+		if state == 1 or state == 5 or state == 6 or state == 7 or state == 8 or state == 9 or state == 13 or state == 14 or state == 15 or state == 16 or state == 17 or state == 18 or state == 20 or state == 21:
 			rows.append({"pos": _world[id]["pos"], "state": state})
 
 	return rows
@@ -1509,12 +1509,40 @@ func _make_log_bench() -> Node3D:
 
 # Large: a stone hearth with a hooded chimney, an anvil on a stump, a bellows of leather and wood, and a plank bench alongside.
 func _make_forge() -> Node3D:
-	return BuildingLook.stone_forge()
+	var model: Node3D = _forge_glb("forge_basic")
+	return model if model != null else BuildingLook.stone_forge()
 
 
-# Epic: the masonry forge (4.2 x 3 m, no roof), drawn in building_look.gd.
+# The Medium Forge (the old Masonry forge, id blacksmithy), drawn in building_look.gd; a model of Dave's in assets/stations wins.
 func _make_smithy() -> Node3D:
-	return BuildingLook.masonry_forge()
+	var model: Node3D = _forge_glb("forge_medium")
+	return model if model != null else BuildingLook.masonry_forge()
+
+
+# Large Forge (state 20) and Master Forge (state 21): Dave's models in assets/stations when present, else the Medium Forge scaled
+# up as a stand-in until they arrive.
+func _make_big_forge(state: int) -> Node3D:
+	var file: String = "forge_large" if state == 20 else "forge_master"
+	var model: Node3D = _forge_glb(file)
+
+	if model != null:
+		return model
+
+	var stand_in: Node3D = BuildingLook.masonry_forge()
+	stand_in.scale = Vector3.ONE * (1.2 if state == 20 else 1.45)
+	return stand_in
+
+
+# Dave's forge meshes (.glb, metres, pivot at the footprint centre on the ground, front toward -Z; spec in STATION_TIERS_DESIGN.md).
+# Returns null when the file is not there yet. Found by the exact name forge_basic, forge_medium, forge_large or forge_master.
+func _forge_glb(file: String) -> Node3D:
+	var path: String = "res://assets/stations/%s.glb" % file
+
+	if not ResourceLoader.exists(path):
+		return null
+
+	var scene: Variant = load(path)
+	return (scene as PackedScene).instantiate() as Node3D if scene is PackedScene else null
 
 
 # Is a placed station of this kind within its reach? Display only (the server decides): greys recipes that need one.
@@ -2688,7 +2716,7 @@ func _add_admin_builds() -> void:
 	head.modulate = Color(1.0, 0.8, 0.4)
 	_recipe_list.add_child(head)
 
-	for id in ["workbench_kit", "log_workbench_kit", "stone_forge_kit", "blacksmithy_kit"]:
+	for id in ["workbench_kit", "log_workbench_kit", "stone_forge_kit", "blacksmithy_kit", "large_forge_kit", "master_forge_kit"]:
 		var number: int = table.number_of(id)
 
 		if number == 0:

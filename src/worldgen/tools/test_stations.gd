@@ -110,11 +110,11 @@ func _init() -> void:
 	tiers.setup(ItemTableScript.load_default(), dir2)
 	tiers.peer_connected_hello(1, "tier-key-000001")
 	tiers.report_position(1, Vector3(0.0, 10.0, 0.0))
-	var spots: Array = [Vector3(3.0, 10.0, 0.0), Vector3(200.0, 10.0, 0.0), Vector3(400.0, 10.0, 0.0)]
-	var kits: Array = ["log_workbench_kit", "stone_forge_kit", "blacksmithy_kit"]
-	var want: Array = [[2, 0], [3, 1], [4, 2]]
+	var spots: Array = [Vector3(3.0, 10.0, 0.0), Vector3(200.0, 10.0, 0.0), Vector3(400.0, 10.0, 0.0), Vector3(600.0, 10.0, 0.0), Vector3(800.0, 10.0, 0.0)]
+	var kits: Array = ["log_workbench_kit", "stone_forge_kit", "blacksmithy_kit", "large_forge_kit", "master_forge_kit"]
+	var want: Array = [[2, 0], [3, 1], [4, 2], [4, 3], [4, 4]]
 
-	for n in 3:
+	for n in 5:
 		var kit_number: int = tiers.table.number_of(kits[n])
 		check(kit_number > 0, "%s is an item" % kits[n])
 		tiers.report_position(1, spots[n] - Vector3(2.0, 0.0, 0.0))
