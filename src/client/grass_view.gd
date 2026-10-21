@@ -185,6 +185,9 @@ var cells_built: int = 0
 var cleared: Array = []                  # Vector3 spots of placed items: no grass or litter within clear_m (set_cleared)
 var clear_m: float = 5.0
 var clear_edge_m: float = 1.5
+var trunks: Array = []                   # felled trunks lying on the grass: [ax, az, bx, bz, radius at a, radius at b] (set_trunks)
+var trunk_margin_m: float = 0.3
+var trunk_squash: float = 0.15           # a blade under or beside a trunk keeps this share of its height
 var litter_m: float = 0.0                # forest litter drawn this far (0 off), set by the client per quality
 var litter_density: float = 0.0          # share of each litter layer's per_point drawn
 var litter_cap: int = 1 << 30            # hard limit on leaf cards and branches drawn at once (Technical direction: Low 3k, Medium 20k, High 40k, Ultra 60k)
@@ -747,6 +750,48 @@ func _cleared_at(x: float, z: float) -> bool:
 	return false
 
 
+# Felled trunks (Dave 2026-10-21): the grass under a lying trunk and trunk_margin_m out on each side is pressed flat (kept low, below
+# the trunk's surface) for as long as the trunk lies there. The strip follows the trunk's real line, not a circle.
+func set_trunks(list: Array, margin: float, squash: float) -> void:
+	var changed: Array = []
+
+	for t in list:
+		if not trunks.has(t):
+			changed.append(t)
+
+	for t in trunks:
+		if not list.has(t):
+			changed.append(t)
+
+	trunks = list
+	trunk_margin_m = margin
+	trunk_squash = squash
+
+	for t in changed:
+		var reach: float = maxf(t[4], t[5]) + margin + 1.0
+		var cells: Array = []
+
+		for cz in range(int(floor((minf(t[1], t[3]) - reach) / CELL_M)), int(floor((maxf(t[1], t[3]) + reach) / CELL_M)) + 1):
+			for cx in range(int(floor((minf(t[0], t[2]) - reach) / CELL_M)), int(floor((maxf(t[0], t[2]) + reach) / CELL_M)) + 1):
+				cells.append(Vector2i(cx, cz))
+
+		_edits.push_front([Time.get_ticks_msec() + 50, cells])
+
+
+# Is (x, z) under or within the margin of a lying trunk?
+func _flat_at(x: float, z: float) -> bool:
+	for t in trunks:
+		var a: Vector2 = Vector2(t[0], t[1])
+		var ab: Vector2 = Vector2(t[2], t[3]) - a
+		var along: float = clampf((Vector2(x, z) - a).dot(ab) / maxf(ab.length_squared(), 0.0001), 0.0, 1.0)
+		var d: float = (Vector2(x, z) - (a + ab * along)).length()
+
+		if d < lerpf(t[4], t[5], along) + trunk_margin_m:
+			return true
+
+	return false
+
+
 func ground_changed(center: Vector3, radius: float) -> void:
 	var reach: float = radius + 1.0
 	var x0: int = int(floor((center.x - reach) / CELL_M))
@@ -1066,6 +1111,9 @@ func _build(cell: Vector2i) -> int:
 					var size: float = rng.randf_range(0.75, 1.15)
 					var yaw: float = rng.randf() * TAU
 					var sy: float = size * rng.randf_range(0.8, 1.15)
+
+					if not trunks.is_empty() and _flat_at(ox, oz):
+						sy *= trunk_squash
 					var cy: float = cos(yaw) * size * width_scale
 					var sny: float = sin(yaw) * size * width_scale
 					var shade: float = rng.randf_range(0.82, 1.15)

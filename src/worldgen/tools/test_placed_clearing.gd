@@ -50,5 +50,13 @@ func _init() -> void:
 	check(inside == 2000, "everything inside the radius minus the edge is cleared (%d of 2000)" % inside)
 	check(outside == 2000, "nothing outside the radius is cleared (%d of 2000)" % outside)
 	check(edge_cleared > 300 and edge_cleared < 1700, "the edge thins out, half cleared at its middle (%d of %d)" % [edge_cleared, edge_total])
+	# A felled trunk: flat under it and 0.3 m out each side along its line, not beyond its ends or further out.
+	grass.trunks = [[10.0, 10.0, 10.0, 18.0, 0.4, 0.2]]
+	grass.trunk_margin_m = float(cfg.get("trunk_margin_m", 0.3))
+	check(grass._flat_at(10.0, 14.0), "grass under the trunk is flat")
+	check(grass._flat_at(10.6, 11.0), "grass 0.2 m beside the thick end is flat")
+	check(grass._flat_at(10.0 - 0.45, 17.9), "grass at the margin of the thin end is flat")
+	check(not grass._flat_at(11.2, 14.0), "grass 1.2 m out is not")
+	check(not grass._flat_at(10.0, 19.5), "grass past the end is not")
 	print("test_placed_clearing: ", "PASS" if failures == 0 else "%d failures" % failures)
 	quit(1 if failures > 0 else 0)

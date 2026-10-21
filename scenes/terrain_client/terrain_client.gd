@@ -65,7 +65,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 549
+const BUILD := 550
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -1079,10 +1079,22 @@ func _sync_cleared() -> void:
 		_cleared_cfg = parsed if parsed is Dictionary else {"radius_m": 5.0, "edge_m": 1.5}
 
 	var spots: Array = []
+	var lying: Array = []
 	var key: int = 0
 
 	for id in items._world:
 		var row: Dictionary = items._world[id]
+
+		if int(row.get("state", 0)) == 3:
+			# A felled trunk lies from the stump along its yaw (inventory_view._make_felled): the grass under it is pressed flat.
+			var extra: Dictionary = row.get("extra", {})
+			var at: Vector3 = row["pos"]
+			var yaw: float = float(extra.get("yaw", 0.0))
+			var length: float = float(extra.get("length", 8.0))
+			var r: float = float(extra.get("radius", 0.3))
+			lying.append([snappedf(at.x, 0.01), snappedf(at.z, 0.01), snappedf(at.x + sin(yaw) * length, 0.01), snappedf(at.z + cos(yaw) * length, 0.01), r, r * 0.55])
+			key = key ^ hash(Vector2(at.x, at.z)) ^ int(id) ^ int(length * 10.0)
+			continue
 
 		if int(row.get("state", 0)) in CLEARING_NOT:
 			continue
@@ -1097,6 +1109,7 @@ func _sync_cleared() -> void:
 	_cleared_key = key
 	var radius: float = float(_cleared_cfg.get("radius_m", 5.0))
 	grass.set_cleared(spots, radius, float(_cleared_cfg.get("edge_m", 1.5)))
+	grass.set_trunks(lying, float(_cleared_cfg.get("trunk_margin_m", 0.3)), float(_cleared_cfg.get("trunk_squash", 0.15)))
 	flora.set_cleared(spots, radius)
 
 
