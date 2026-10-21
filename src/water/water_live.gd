@@ -17,6 +17,8 @@ const RATE_MAX := 40.0           # owner (2026-10-19): higher than 5x, for flood
 # Owner (2026-10-20): at x1 the rivers broke into patches on the way down and wandered; at x10
 # they reach the ocean whole. Every pond's spring starts at x10.
 const DEFAULT_RATE := 10.0
+const CPU_DUTY := 0.5             # share of one core the water thread may use (it sleeps the rest)
+const CPU_DUTY_STORM := 0.33      # the same at x20 (twice the start flow), when each step costs most
 const PUBLISH_TICKS := 15
 # The water moves in real seconds now (water_sim.gd), so these are simulated time.
 const RUN_SECONDS := 7200.0       # simulated time to run after each change (rivers settle to the new flow), then the water rests
@@ -153,6 +155,8 @@ func _run() -> void:
 			OS.delay_msec(100)
 			continue
 
+		var tick_start: int = Time.get_ticks_usec()
+
 		for hole in digs:
 			var cells: int = sim.dig(hole[0], hole[1], Vector2(data.x0, data.z0))
 			print("water: a dig at %s lowered %d water squares" % [str(hole[0]), cells])
@@ -174,6 +178,13 @@ func _run() -> void:
 			_pending = levels
 			_pending_falls = falls
 			_mutex.unlock()
+
+		# Technical direction (2026-10-20): the water thread shares the PC with the client, so
+		# it sleeps in proportion to the work it did and uses at most CPU_DUTY of one core
+		# (CPU_DUTY_STORM at the x20 storm), running slower than real time when it must.
+		var duty: float = lerpf(CPU_DUTY, CPU_DUTY_STORM, clampf((multiplier / DEFAULT_RATE - 1.0), 0.0, 1.0))
+		var busy_us: int = Time.get_ticks_usec() - tick_start
+		OS.delay_usec(int(float(busy_us) * (1.0 / duty - 1.0)))
 
 
 # Draws thin running water on the channel cells the sim's own draw rules leave out, at the

@@ -79,6 +79,8 @@ func _init() -> void:
 	check(low["storm"] > neutral["storm"] and high["storm"] <= neutral["storm"], "storms: low %.2f neutral %.2f high %.2f" % [low["storm"], neutral["storm"], high["storm"]])
 	check(low["wet"] > neutral["wet"], "low spirit rains more (%.2f vs %.2f)" % [low["wet"], neutral["wet"]])
 	check(high["night_wet"] > 0.05, "high spirit gets night rain (%.2f)" % high["night_wet"])
+	# Rivers: dry weather is the start flow, steady rain x1.6, a big storm the whole x2.
+	check(is_equal_approx(Weather.river_push({"rain": 0.0, "storm": 0.0}), 0.0) and is_equal_approx(Weather.river_push({"rain": 1.0, "storm": 0.0}), 0.6) and is_equal_approx(Weather.river_push({"rain": 1.0, "storm": 1.0}), 1.0), "river push: dry 0, heavy rain 0.6, storm 1")
 	print("weather: desert %s temperate %s" % [str(desert), str(temperate)])
 	print("weather: high %s neutral %s low %s" % [str(high), str(neutral), str(low)])
 	print("weather: %d failures" % failures)

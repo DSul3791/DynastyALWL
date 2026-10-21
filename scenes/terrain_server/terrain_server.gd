@@ -39,8 +39,8 @@ const ItemsScript := preload("res://src/stream/server_items.gd")
 const MAX_BATCH_BYTES := 192 * 1024
 const MAX_QUEUE_PER_PEER := 20000
 const WeatherScript := preload("res://src/shared/weather.gd")
-const WEATHER_SWELL := 2.0              # steady heavy rain makes the springs run this much stronger (x3 in all)
-const WEATHER_LAG_S := 600.0            # real seconds the rivers take to follow the rain (runoff reaches them slowly)
+const WEATHER_SWELL := 1.0              # a big storm makes every spring run this much stronger (x2 in all: the x10 start flow becomes x20; Dave 2026-10-20)
+const WEATHER_LAG_S := 600.0            # real seconds the rivers take to follow the weather (about ten minutes to swell, as long to recede)
 const WATER_BASE_RATE := 10.0           # m3 per second at each spring (about 158,000 US gallons a minute); the + and - keys scale it
 const IDLE_LODS := 4                   # detail levels the idle builder keeps ahead of players
 const IDLE_RADIUS_BLOCKS := 12         # circle around each player, in blocks of that level
@@ -452,9 +452,9 @@ func _update_weather() -> void:
 
 	if bucket != _weather_bucket:
 		_weather_bucket = bucket
-		print("server: weather %s, rain %.2f snow %.2f storm %.2f, %.0f C, rivers x%.2f" % [weather["season"], weather["rain"], weather["snow"], weather["storm"], weather["temp_c"], water_live.runoff])
+		print("server: weather %s, rain %.2f snow %.2f storm %.2f, %.0f C, rivers x%.2f of the start flow" % [weather["season"], weather["rain"], weather["snow"], weather["storm"], weather["temp_c"], water_live.runoff])
 
-	_swell += (float(weather["rain"]) - _swell) * (1.0 - exp(-1.0 / WEATHER_LAG_S))
+	_swell += (WeatherScript.river_push(weather) - _swell) * (1.0 - exp(-1.0 / WEATHER_LAG_S))
 	water_live.set_runoff(1.0 + WEATHER_SWELL * _swell)
 
 

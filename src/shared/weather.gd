@@ -51,6 +51,16 @@ static func zone_group(zones: Array, equator_row: int, tile_row: int) -> String:
 	return str(zones[zones.size() - 1][0]) if not zones.is_empty() else "temperate"
 
 
+# How hard the weather pushes the rivers, 0 (dry) to 1 (a big storm). Owner (2026-10-20, Dave):
+# in a big storm the flow rises from the x10 start flow to x20. Steady heavy rain alone gets
+# 0.6 (x16); only a storm gets the whole way. The server lags this over several real minutes.
+const RIVER_RAIN_SHARE := 0.6
+
+
+static func river_push(state: Dictionary) -> float:
+	return clampf(maxf(float(state.get("rain", 0.0)) * RIVER_RAIN_SHARE, float(state.get("storm", 0.0))), 0.0, 1.0)
+
+
 # {"rain", "snow", "storm", "cloud", "sun", "wind" (all 0..1), "temp_c", "season"}.
 static func state(seed_value: int, game_s: float, zone_group: String, altitude_m: float = 0.0, spirit: float = 0.0) -> Dictionary:
 	var zone: Dictionary = ZONES.get(zone_group, ZONES["temperate"])
