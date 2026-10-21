@@ -40,6 +40,7 @@ static func chunk_levels(generator, origin: Vector2, chunk_m: float) -> Dictiona
 	# Settled simulated water is already continuous: no hole closing. Running
 	# water gets a finer surface laid on the real ground (_fine_cells).
 	if not data.sim_levels.is_empty():
+		_flatten_lakes(generator, data, origin, count, spacing, levels)
 		var still: PackedFloat32Array = _calm_still_water(count, spacing, levels)
 		var sea_near: PackedFloat32Array = _ease_into_sea(generator, data, origin, count, spacing, levels, still)
 		var edge: PackedFloat32Array = _shore_levels(generator, data, origin, count, spacing, levels)
@@ -148,6 +149,79 @@ static func _window(levels: PackedFloat32Array, i: int, j: int, count: int, spac
 	var gz: float = (south / float(ns) - north / float(nn)) / span if ns > 0 and nn > 0 else 0.0
 	var cells: float = float((2 * CALM_RADIUS + 1) * (2 * CALM_RADIUS + 1))
 	return [gx, gz, sum / float(maxi(n, 1)), hi - lo, float(n) / cells]
+
+
+# Dave (2026-10-21, "the water is still crazy"): a lake that is filling or being fed hard has sloshing and piled
+# water, so its drawn surface stood in jagged shards above the lake. A lake is flat: every connected body of wet
+# cells that sit on baked lake ground (water class 2, at least LAKE_MIN_CELLS of them) is drawn at its median level,
+# whatever the sim's cells say. Rivers and ponds' outlets are not lake class and keep their own levels.
+const LAKE_CLASS := 2
+const LAKE_MIN_CELLS := 8
+
+
+static func _flatten_lakes(generator, data, origin: Vector2, count: int, spacing: float, levels: PackedFloat32Array) -> void:
+	var lake: PackedByteArray = PackedByteArray()
+	lake.resize(count * count)
+	var any: bool = false
+
+	for j in range(count):
+		for i in range(count):
+			if is_nan(levels[j * count + i]):
+				continue
+
+			var x: float = origin.x + float(i) * spacing
+			var z: float = origin.y + float(j) * spacing
+			var source = data if (x < data.x0 + float(data.samples - 1) * spacing and z < data.z0 + float(data.samples - 1) * spacing) else generator.get_tile(generator.tile_of(x, z))
+
+			if not source.placeholder and source.water_class[source.nearest(x, z)] == LAKE_CLASS:
+				lake[j * count + i] = 1
+				any = true
+
+	if not any:
+		return
+
+	var seen: PackedByteArray = PackedByteArray()
+	seen.resize(count * count)
+
+	for start in range(count * count):
+		if lake[start] == 0 or seen[start] == 1:
+			continue
+
+		var members: PackedInt32Array = PackedInt32Array([start])
+		seen[start] = 1
+		var head: int = 0
+
+		while head < members.size():
+			var n: int = members[head]
+			head += 1
+
+			for dj in range(-1, 2):
+				for di in range(-1, 2):
+					var ii: int = n % count + di
+					var jj: int = n / count + dj
+
+					if ii < 0 or jj < 0 or ii >= count or jj >= count:
+						continue
+
+					var m: int = jj * count + ii
+
+					if lake[m] == 1 and seen[m] == 0:
+						seen[m] = 1
+						members.append(m)
+
+		if members.size() < LAKE_MIN_CELLS:
+			continue
+
+		var values: PackedFloat32Array = PackedFloat32Array()
+
+		for n in members:
+			values.append(levels[n])
+
+		values.sort()
+		var median: float = values[values.size() / 2]
+
+		for n in members:
+			levels[n] = median
 
 
 # Standing water draws flat (owner 2026-10-21: "the water is all rough in the pond"): where
