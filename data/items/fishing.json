@@ -9,7 +9,7 @@
 	"cooldown_s": 2.0,
 	"move_cancel_m": 6.0,
 	"base_chance": 0.55,
-	"bait_mult": 1.5,
+	"bait_mult": 1.3,
 	"bait": [
 		"berries",
 		"raw_meat",
@@ -42,7 +42,7 @@
 	"stock_base": 4,
 	"stock_extra": 8,
 	"stock_max": 12,
-	"regrow_s": 3600.0,
+	"regrow_s": 900.0,
 	"types": [
 		"stream",
 		"pond",
