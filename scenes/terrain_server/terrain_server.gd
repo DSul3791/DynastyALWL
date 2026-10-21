@@ -48,6 +48,8 @@ const MAX_QUEUE_PER_PEER := 20000
 const WeatherScript := preload("res://src/shared/weather.gd")
 const IceScript := preload("res://src/shared/ice.gd")
 const WEATHER_SWELL := 1.0              # a big storm makes every spring run this much stronger (x2 in all: the x10 start flow becomes x20; Dave 2026-10-20)
+const DRY_SHRINK := 0.7                 # full dry heat takes this share off the spring flow (a trickle is left); the floor below
+const RUNOFF_FLOOR := 0.2               # rivers never shrink below this share of the start flow
 const WEATHER_LAG_S := 600.0            # real seconds the rivers take to follow the weather (about ten minutes to swell, as long to recede)
 const WATER_BASE_RATE := 10.0           # m3 per second at each spring (about 158,000 US gallons a minute); the + and - keys scale it
 const IDLE_LODS := 4                   # detail levels the idle builder keeps ahead of players
@@ -70,6 +72,7 @@ var _water_updates: int = 0
 var weather: Dictionary = {}           # the weather at the water tile now (WeatherScript.state), refreshed every second
 var _weather_next_msec: int = 0
 var _swell: float = 0.0
+var _dry: float = 0.0
 var _weather_bucket: int = -1
 var _wet_centre: int = 0               # wet squares on the starter tile at the last update (the log line)
 var water_live                         # the starter tile's running water, tuned with + and - on the client
@@ -595,7 +598,8 @@ func _update_weather() -> void:
 		print("server: weather %s, rain %.2f snow %.2f storm %.2f, %.0f C, rivers x%.2f of the start flow" % [weather["season"], weather["rain"], weather["snow"], weather["storm"], weather["temp_c"], water_live.runoff])
 
 	_swell += (WeatherScript.river_push(weather) - _swell) * (1.0 - exp(-1.0 / WEATHER_LAG_S))
-	water_live.set_runoff(1.0 + WEATHER_SWELL * _swell)
+	_dry += (WeatherScript.river_dry(weather) - _dry) * (1.0 - exp(-1.0 / WEATHER_LAG_S))
+	water_live.set_runoff(maxf(1.0 + WEATHER_SWELL * _swell - DRY_SHRINK * _dry, RUNOFF_FLOOR))
 
 
 # New levels from the water thread: swap them into the tile and tell clients.

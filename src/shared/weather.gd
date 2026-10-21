@@ -61,6 +61,17 @@ static func river_push(state: Dictionary) -> float:
 	return clampf(maxf(float(state.get("rain", 0.0)) * RIVER_RAIN_SHARE, float(state.get("storm", 0.0))), 0.0, 1.0)
 
 
+# Dry heat shrinks the rivers (Dave 2026-10-21: a hot spell dries them to a small smooth trickle, never off):
+# 0 up to DRY_FROM_C, 1 from DRY_FULL_C, none while it rains.
+const DRY_FROM_C := 22.0
+const DRY_FULL_C := 32.0
+
+
+static func river_dry(state: Dictionary) -> float:
+	var heat: float = clampf((float(state.get("temp_c", 15.0)) - DRY_FROM_C) / (DRY_FULL_C - DRY_FROM_C), 0.0, 1.0)
+	return heat * (1.0 - clampf(maxf(float(state.get("rain", 0.0)) * 2.0, float(state.get("storm", 0.0))), 0.0, 1.0))
+
+
 # Air temperature (C) from the season (no day/night swing, no weather): zone mean and seasonal swing,
 # cooler with altitude. The same number Weather.state reports as temp_c.
 static func temp_at(game_s: float, zone_group: String, altitude_m: float = 0.0) -> float:
