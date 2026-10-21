@@ -13,7 +13,7 @@ const DATA := "res://data/items/"
 const VERB_FIRST_WORDS := ["make", "carve", "chisel", "bind", "craft", "build", "tie", "knap", "twist", "weave", "split", "place", "roast", "cook", "dig", "cut", "sharpen", "light", "pick", "gather", "get", "use", "create", "forge", "fashion", "shape", "stack", "lay", "set", "form"]
 const CODE_SOURCES := ["stone", "stick", "log", "bark", "leaves", "seed_bundle", "firewood", "driftwood"]
 
-const MAX_INGREDIENTS := 3   # raise when recipes with four or more ingredients arrive (the craft screen must show the extra rows)
+const MAX_INGREDIENTS := 6   # the craft screen lists every ingredient in a scrolling detail area and the server crafts any count (test_server_items); raise further here only
 
 var errors: int = 0
 var warnings: int = 0

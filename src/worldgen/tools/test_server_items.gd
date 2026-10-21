@@ -1911,5 +1911,37 @@ func _init() -> void:
 		var reloaded = make(bld)
 		check(int(reloaded._boulder_left.get(bo._items[worked]["scatter"], -1)) == 5, "what is left of a worked boulder is saved")
 
+	# A recipe with six ingredients works end to end (Dave: the more ingredients the better the item; the limit is one constant).
+	var qd6: String = qd + "_six"
+	DirAccess.make_dir_recursive_absolute(qd6)
+
+	for file6 in DirAccess.get_files_at(qd6):
+		DirAccess.remove_absolute(qd6 + "/" + file6)
+
+	var sx6 = make(qd6)
+	sx6.send_craft_queue = func(_p, _e, _l): pass
+	sx6.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	sx6.peer_connected_hello(1, "sixkey000001")
+	var cord6: int = sx6.table.number_of("cordage")
+	var six_file: String = qd6 + "/six.json"
+	var six: FileAccess = FileAccess.open(six_file, FileAccess.WRITE)
+	six.store_string(JSON.stringify({"recipes": {"six_test": {"number": 900, "name": "Six test", "needs": [["stone", 1], ["stick", 1], ["plant_fibre", 1], ["bark", 1], ["leaves", 1], ["firewood", 1]], "gives": ["cordage", 1], "craft_s": 1.0, "known": true}}}))
+	six.close()
+	sx6.recipes.load_file(six_file, sx6.table)
+	check(sx6.recipes.recipe(900).get("needs", []).size() == 6, "a six-ingredient recipe loads")
+
+	for id6 in ["stone", "stick", "plant_fibre", "bark", "leaves", "firewood"]:
+		sx6.give(1, sx6.table.number_of(id6), 2)
+
+	var cord6b: int = sx6.inventory_of(1).count_of(cord6)
+	sx6._last_queue_act.clear()
+	sx6.action(1, Net.ACT_CRAFT_QUEUE, 900, 0, 1, Vector3.ZERO)
+	check(sx6.inventory_of(1).count_of(sx6.table.number_of("bark")) == 1 and sx6.inventory_of(1).count_of(sx6.table.number_of("firewood")) == 1, "queueing it takes all six ingredients")
+
+	for n in 40:
+		sx6._craft_tick(0.25)
+
+	check(sx6.inventory_of(1).count_of(cord6) > cord6b, "the six-ingredient craft completes")
+
 	print("server item tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
