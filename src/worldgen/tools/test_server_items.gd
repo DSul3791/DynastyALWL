@@ -1304,6 +1304,7 @@ func _init() -> void:
 	var sleeper: Array = [0.0, 0.0]      # cover, rain
 	var down_time = func(sl, asleep: bool) -> float:
 		sl._strain[1] = {"s": 0.9, "state": 1, "t": 0.0}
+		sl.vitals_of(1)["energy"] = 60.0   # a character with full energy cannot sleep (nap rules below)
 		sl.action(1, Net.ACT_STANCE, 3, 0, 0, Vector3.ZERO)
 
 		if asleep:
@@ -1352,11 +1353,29 @@ func _init() -> void:
 	sl._strain_tick(1, 0.25)
 	check(sl.sleeping_of(1), "rain does not wake one under a roof")
 	sl._strain[1] = {"s": 0.0, "state": 0, "t": 0.0}
+	sl.vitals_of(1)["energy"] = 100.0
 
 	for n in range(4 * 12):
 		sl._strain_tick(1, 0.25)
 
 	check(not sl.sleeping_of(1), "fully rested for 10 s ends the sleep")
+
+	# Dave 2026-10-21: full energy and exertion at or under 75 percent: "you can't sleep"; over 75 percent: a nap of about 10 s.
+	sl.action(1, Net.ACT_STANCE, 3, 0, 0, Vector3.ZERO)
+	sl._strain[1] = {"s": 0.5, "state": 0, "t": 0.0}
+	sl.action(1, Net.ACT_SLEEP, 1, 0, 0, Vector3.ZERO)
+	check(not sl.sleeping_of(1), "with full energy and exertion at 50 percent you cannot sleep")
+	sl._strain[1] = {"s": 1.2, "state": 1, "t": 0.0}
+	sl.action(1, Net.ACT_SLEEP, 1, 0, 0, Vector3.ZERO)
+	check(sl.sleeping_of(1), "with full energy and exertion over 75 percent a nap is allowed")
+	var nap_s: float = 0.0
+
+	while sl.sleeping_of(1) and nap_s < 60.0:
+		sl._vitals_tick(0.25)
+		nap_s += 0.25
+
+	check(nap_s >= 8.0 and nap_s <= 13.0 and float(sl.strain_of(1)["s"]) <= 0.3, "the nap takes about 10 s and brings exertion back down (%.1f s, strain %.2f)" % [nap_s, float(sl.strain_of(1)["s"])])
+	sl.action(1, Net.ACT_STANCE, 0, 0, 0, Vector3.ZERO)
 	# Dave 2026-10-21: fade_smooth fade, slowing heart, wake timer, wake by itself only with full energy and no exertion, early wake keeps energy.
 	var body_log: Array = []
 	var strain_log: Array = []

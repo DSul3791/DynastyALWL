@@ -3081,11 +3081,31 @@ func _sleep(peer: int, want: int) -> void:
 		_say(peer, "Rain falls on you: find cover to sleep")
 		return
 
+	# Dave 2026-10-21: with full energy you cannot sleep, unless exertion is high: then a short nap brings it down fast.
+	var nap: Dictionary = _sleep_cfg.get("nap", {})
+	var strain_now: float = float(_strain.get(peer, {}).get("s", 0.0))
+	var exertion_share: float = strain_now / maxf(float(_exertion_cfg.get("over_on", 1.0)), 0.01)
+	var napping: bool = false
+
+	if not nap.is_empty() and energy_of(peer) >= float(nap.get("energy_full", 99.0)):
+		if exertion_share <= float(nap.get("exertion_min", 0.75)):
+			_say(peer, str(nap.get("say_rested", "You are well rested, you really can't sleep right now")))
+			return
+
+		napping = true
+
 	_asleep[peer] = {"rested": 0.0, "t": 0.0}
+
+	if napping:
+		var end_strain: float = float(nap.get("exertion_end", 0.25)) * float(_exertion_cfg.get("over_on", 1.0))
+		_asleep[peer]["nap"] = true
+		_asleep[peer]["nap_end"] = end_strain
+		_asleep[peer]["nap_rate"] = maxf(strain_now - end_strain, 0.0) / maxf(float(nap.get("target_s", 10.0)), 1.0)
+
 	_waking.erase(peer)
 	_strain_sent.erase(peer)
 	_note_shelter(peer)
-	_say(peer, "You fall asleep")
+	_say(peer, "You lie down for a nap" if napping else "You fall asleep")
 
 
 # Dave 2026-10-21: a dead character comes back at the last shelter they slept in. Sleeping within SHELTER_NOTE_M of a standing
@@ -3170,6 +3190,10 @@ func _end_sleep(peer: int) -> bool:
 func sleep_eta(peer: int) -> float:
 	if not _asleep.has(peer):
 		return 0.0
+
+	if bool(_asleep[peer].get("nap", false)):
+		var left: float = maxf(float(_strain.get(peer, {}).get("s", 0.0)) - float(_asleep[peer]["nap_end"]), 0.0)
+		return left / maxf(float(_asleep[peer]["nap_rate"]), 0.001)
 
 	var rec: Dictionary = _energy_cfg.get("recover_per_game_hour", {})
 	var rate: float = float(rec.get("sleep", 12.5)) if _forced_sleep(peer) else lerpf(float(rec.get("lie", 8.3)), float(rec.get("sleep", 12.5)), clampf(_sleep_quality(peer), 0.0, 1.0))
@@ -5022,7 +5046,10 @@ func _strain_tick(peer: int, spent: float) -> void:
 			var rest: Dictionary = _asleep[peer]
 			rest["rested"] = float(rest["rested"]) + spent if strain <= 0.0 else 0.0
 
-			if float(rest["rested"]) >= float(_sleep_cfg.get("rested_s", 1.5)) and energy_of(peer) >= 99.9:
+			if bool(rest.get("nap", false)):
+				if strain <= float(rest["nap_end"]) + 0.001:
+					_wake(peer, "You wake refreshed")
+			elif float(rest["rested"]) >= float(_sleep_cfg.get("rested_s", 1.5)) and energy_of(peer) >= 99.9:
 				_wake(peer, "You wake rested")
 
 	if state == 2:
@@ -5058,6 +5085,10 @@ func _strain_tick(peer: int, spent: float) -> void:
 
 		var before: float = strain
 		strain = maxf(strain + diff * rate * spent, 0.0)
+
+		# A nap drops exertion fast, on a straight line to its end value in nap.target_s seconds.
+		if _asleep.has(peer) and bool(_asleep[peer].get("nap", false)):
+			strain = maxf(before - float(_asleep[peer]["nap_rate"]) * spent, float(_asleep[peer]["nap_end"]))
 
 		# Standing under a heavy load only rests down to a floor (about half at the limit); sitting or lying has none.
 		if diff < 0.0 and stance < 2:

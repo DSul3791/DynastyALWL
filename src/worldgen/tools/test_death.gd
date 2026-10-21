@@ -166,6 +166,7 @@ func _init() -> void:
 	check(home._shelter_near(Vector3(302.0, 7.0, 300.0)) >= 0, "the lean-to stands")
 	home.report_position(1, Vector3(302.0, 7.0, 300.0))
 	home._stance[1] = 3
+	home.vitals_of(1)["energy"] = 50.0
 	home._sleep(1, 1)
 	check(home.sleeping_of(1), "slept near the lean-to")
 	home.report_position(1, Vector3(400.0, 12.0, 400.0))
