@@ -2412,9 +2412,16 @@ func run_strain_test(client) -> void:
 		await get_tree().create_timer(0.5).timeout
 		waited += 0.5
 
+	# Ground can take a while to load, so the scripted walk starts late: time the 25 s from the first steps.
+	var spawn_pos: Vector3 = client.body.global_position
+	waited = 0.0
+
+	while Vector2(client.body.global_position.x - spawn_pos.x, client.body.global_position.z - spawn_pos.z).length() < 5.0 and waited < 90.0:
+		await get_tree().create_timer(0.5).timeout
+		waited += 0.5
+
 	var start_strain: float = strain
 	var start_pos: Vector3 = client.body.global_position
-	var covered_total: float = 0.0
 	await get_tree().create_timer(25.0).timeout
 	var covered: float = Vector2(client.body.global_position.x - start_pos.x, client.body.global_position.z - start_pos.z).length()
 	print("Strain test: ran %.0f m in 25 s, strain %.2f -> %.2f, state %d" % [covered, start_strain, strain, strain_state])

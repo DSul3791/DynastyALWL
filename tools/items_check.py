@@ -61,7 +61,7 @@ CLIENTS = [
         ("arriving does not hurt", r"health " + NUM + r", strain state", 100, 100),
         ("and does not faint", r"strain state " + NUM, 0, 0),
     ]),
-    ("strainrun", ["--walk", "--runspeed=24", "--strainrun"], 6000, [
+    ("strainrun", ["--walk", "--runspeed=24", "--strainrun"], 9000, [
         ("the body really ran", r"Strain test: ran " + NUM + " m", 150, 400),
         ("running raises the strain the server sends", r"strain [\d.]+ -> " + NUM, 0.08, 3.0),
         ("normal pace is full speed, no cap", r"0: pace x1.0 cap 0.0 \|", None, None),
