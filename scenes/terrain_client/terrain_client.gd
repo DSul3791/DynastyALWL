@@ -65,7 +65,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 539
+const BUILD := 540
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -2196,7 +2196,7 @@ func _ground_check_step(now: int) -> void:
 
 	_check_next_msec = now + GROUND_CHECK_EVERY_MSEC
 
-	if _building_paused or flying or is_finite(_check_pending.x):
+	if _building_paused or is_finite(_check_pending.x):
 		_check_pending = Vector2(NAN, NAN)
 		return
 
@@ -2239,6 +2239,13 @@ func _ground_check_compare(x: float, z: float, server_y: float) -> void:
 		_check_dump_msec = Time.get_ticks_msec()
 		_check_dump_at = inside
 		_dump_ground_here(inside)
+
+		# A picture of what Dave sees at that moment, next to the log (user://ground_mismatch_N.png).
+		if DisplayServer.get_name() != "headless":
+			var image: Image = get_viewport().get_texture().get_image()
+
+			if image != null:
+				image.save_png("user://ground_mismatch_%d.png" % check_mismatches)
 
 
 func _ground_check_log(text: String) -> void:
