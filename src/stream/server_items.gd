@@ -3098,6 +3098,22 @@ func _sync_breath(peer: int, tenths: int) -> void:
 		send_breath.call(peer, tenths)
 
 
+# Effort (0 to 1) for a ground speed: straight lines through exertion.json effort_by_speed ([speed m/s, effort] pairs).
+func _effort_at_speed(speed: float) -> float:
+	var anchors: Array = _exertion_cfg.get("effort_by_speed", [[0.2, 0.0], [1.4, 0.5], [3.2, 0.75], [6.0, 1.0]])
+
+	if speed <= float(anchors[0][0]):
+		return float(anchors[0][1])
+
+	for n in range(1, anchors.size()):
+		if speed <= float(anchors[n][0]):
+			var from: Array = anchors[n - 1]
+			var to: Array = anchors[n]
+			return lerpf(float(from[1]), float(to[1]), (speed - float(from[0])) / (float(to[0]) - float(from[0])))
+
+	return float(anchors[anchors.size() - 1][1])
+
+
 func _note_motion(peer: int, position: Vector3) -> void:
 	var now: int = Time.get_ticks_msec()
 	var last: Array = _motion.get(peer, [])
@@ -3106,7 +3122,7 @@ func _note_motion(peer: int, position: Vector3) -> void:
 		var dt: float = float(now - int(last[1])) / 1000.0
 		var speed: float = Vector2(position.x - last[0].x, position.z - last[0].z).length() / dt
 		_speed3[peer] = lerpf(float(_speed3.get(peer, 0.0)), Vector3(position.x - last[0].x, position.y - last[0].y, position.z - last[0].z).length() / dt, clampf(dt * 2.0, 0.0, 1.0))
-		var target: float = clampf((speed - 1.0) / 10.0, 0.0, 1.0)      # standing 0, walking 0.5, running 1
+		var target: float = _effort_at_speed(speed)                      # standing 0, walking 0.5, jogging 0.75, running 1 (data)
 
 		if bool(_swimming.get(peer, false)):
 			target = SwimRules.effort(speed)                              # strokes and treading water are work

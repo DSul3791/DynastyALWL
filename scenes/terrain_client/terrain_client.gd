@@ -64,7 +64,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 485
+const BUILD := 486
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
@@ -119,16 +119,18 @@ const STAGE_LODS := 1                # after a stop high up only this many detai
 const STAGE_MIN_HEIGHT_M := 40.0      # staged only when the player is this far above the ground
 const STAGE_STEP_MIN_MSEC := 600
 const STILL_MSEC := 3000              # flying: ground loads again after staying still this long
-const WALK_SPEED := 6.0
+# Natural speeds (Dave 2026-10-21, Tyler Report 13): walk, jog and run in m/s. The ONE place to tune them; the server
+# reads effort from data/items/exertion.json effort_by_speed, so change those anchors to the same numbers.
+const WALK_SPEED := 1.4
 const FAST := 3.0                     # flying: Shift multiplier
-const JOG_SPEED := 8.5
-const RUN_SPEED := 11.0
+const JOG_SPEED := 3.2
+const RUN_SPEED := 6.0
 # Walking camera (all tuning is here; each list is [walk, jog, run]). A footfall
 # is the lowest point of the bob and the far end of the sway: left foot, camera
 # down and leaning left; midway it rises back to the middle; right foot, down
 # and leaning right. The bob therefore repeats every step and the sway every
 # two steps.
-const STEP_M := [3.0, 3.6, 4.2]          # metres per step: longer strides when faster (about 2.0, 2.4 and 2.6 steps a second)
+const STEP_M := [0.75, 1.2, 2.0]         # metres per step: longer strides when faster (about 1.9, 2.7 and 3.0 steps a second at the natural speeds)
 const BOB_M := [0.040, 0.052, 0.064]     # how far the camera dips at a footfall
 const SWAY_M := [0.012, 0.016, 0.020]    # sideways shift at a footfall
 const SWAY_DEG := [0.10, 0.13, 0.16]     # roll toward the stepping side at a footfall
