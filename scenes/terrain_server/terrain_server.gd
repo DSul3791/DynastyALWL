@@ -67,6 +67,8 @@ var items                              # ServerItems: inventories and world item
 var npcs                               # ServerNpcs: classic NPCs (protocol 45)
 var admin                              # ServerAdmin: who may place markers and NPCs
 var dialogue                           # ServerDialogue: talking to NPCs
+var _npc_sent_ms: Dictionary = {}
+var _animal_sent_ms: Dictionary = {}
 var _npc_sent: Dictionary = {}         # peer -> signature of the NPC rows last sent
 var _npc_send_t: float = 0.0
 var _water_updates: int = 0
@@ -897,15 +899,21 @@ func _send_npcs(delta: float) -> void:
 		var rows: Array = npcs.rows_near(at)
 		var signature: String = str(rows)
 
-		if _npc_sent.get(peer, "") != signature:
+		# The rows ride an unreliable channel and an idle crowd never changes, so a lost first packet (or one that came before the
+		# client had built its NPC view) was never sent again: Dave's Ctrl+N saw "roster 2, drawn 0". Resend unchanged rows every 2 s.
+		var now_ms: int = Time.get_ticks_msec()
+
+		if _npc_sent.get(peer, "") != signature or now_ms - int(_npc_sent_ms.get(peer, 0)) > 2000:
 			_npc_sent[peer] = signature
+			_npc_sent_ms[peer] = now_ms
 			net.npcs.rpc_id(peer, rows)
 
 		var beasts: Array = animals.rows_near(at)
 		var sig: String = str(beasts)
 
-		if _animal_sent.get(peer, "") != sig:
+		if _animal_sent.get(peer, "") != sig or now_ms - int(_animal_sent_ms.get(peer, 0)) > 2000:
 			_animal_sent[peer] = sig
+			_animal_sent_ms[peer] = now_ms
 			net.animals.rpc_id(peer, beasts)
 
 		var trail: PackedVector3Array = animals.blood_near(at)
