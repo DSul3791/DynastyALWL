@@ -21,7 +21,7 @@ const AIMED := Vector3(0.28, -0.12, -0.35)
 const ARMS_POS := Vector3(0.0, -0.1, -0.15)
 const ARMS_PITCH_DEG := 50.0
 const TOOL_TILT_DEG := 20.0
-const GRIP_ALONG_Y := {"axe": 0.25, "torch": 0.25, "knife": 0.05}   # model +Y runs handle to head: the grip's distance from the model origin
+const GRIP_ALONG_Y := {"axe": 0.25, "torch": 0.25, "knife": 0.05, "other": 0.3}   # model +Y runs handle to head: the grip's distance from the model origin
 const SPEAR_GRIP_Z := 0.3
 const JAB_REACH := 0.7
 const JAB_S := 0.28
@@ -138,6 +138,11 @@ func select(slot: int) -> void:
 	holding = true
 	aiming = false
 	_inv.refresh_hotbar()
+	var number: int = _inv.inventory.numbers[held_slot]
+
+	if number != 0 and not is_holdable(number):
+		_inv._on_notice("%s cannot be held in the hand (Use or Eat it from the inventory)" % _inv.table.name_of(number))
+
 	var file: FileAccess = FileAccess.open(HOTBAR_FILE, FileAccess.WRITE)
 
 	if file != null:
@@ -168,8 +173,23 @@ func _is_knife() -> bool:
 	return str(_inv.table.entry(held_id()).get("tool_class", "")) == "knife"
 
 
+# Any other tool or weapon (spade, and every tool added later) is held too: it has a generic model and plays the "use" arm
+# animation on left click, so nothing silently fails to be held.
+func _is_other_tool() -> bool:
+	var kind: String = str(_inv.table.entry(held_id()).get("kind", ""))
+	return kind in ["tool", "weapon"] and not _is_spear() and not _is_torch() and not _is_knife() and not _is_axe()
+
+
+func is_holdable(number: int) -> bool:
+	if number == 0:
+		return false
+
+	var entry: Dictionary = _inv.table.entry(_inv.table.id_of(number))
+	return str(entry.get("kind", "")) in ["tool", "weapon", "placeable"] or _inv.edible_slot(held_slot)
+
+
 func _is_axe() -> bool:
-	return str(_inv.table.entry(held_id()).get("tool_class", "")) == "axe" and not _inv.is_broken(held_slot)
+	return str(_inv.table.entry(held_id()).get("tool_class", "")) in ["axe", "pick"] and not _inv.is_broken(held_slot)
 
 
 # A mouse button while playing. Returns true when it was used here.
@@ -192,6 +212,13 @@ func mouse_button(button: int, pressed: bool) -> bool:
 
 			if _sound != null:
 				_sound.hits.swing("axe", _camera.global_position - _camera.global_transform.basis.z * 0.6)
+
+		return button == MOUSE_BUTTON_LEFT
+
+	if _is_other_tool():
+		if button == MOUSE_BUTTON_LEFT and pressed:
+			_arm_play("use", 0.6)
+			_inv._on_notice(_other_tool_hint())
 
 		return button == MOUSE_BUTTON_LEFT
 
@@ -418,6 +445,14 @@ func _strike() -> void:
 		_net.inventory_action.rpc_id(1, Net.ACT_MINE, 0, 0, 0, hit["position"])
 
 
+func _other_tool_hint() -> String:
+	match str(_inv.table.entry(held_id()).get("tool_class", "")):
+		"spade":
+			return "The spade digs roots and bulbs: press E at a plant. Digging the ground is not built yet."
+
+	return "%s: nothing to use it on yet" % _inv.table.name_of(held_number())
+
+
 func _caption() -> String:
 	var number: int = held_number()
 
@@ -434,6 +469,8 @@ func _caption() -> String:
 		text += "   (left click: swing)"
 	elif _is_spear():
 		text += "   (left click: jab; hold right click to aim, then left click to throw)"
+	elif _is_other_tool():
+		text += "   (in hand)"
 
 	return text
 
@@ -441,7 +478,7 @@ func _caption() -> String:
 func _show_model() -> void:
 	var number: int = held_number() if _inv != null else 0
 
-	if not _is_spear() and not _is_axe() and not _is_torch() and not _is_knife():
+	if not _is_spear() and not _is_axe() and not _is_torch() and not _is_knife() and not _is_other_tool():
 		number = 0
 
 	if number == _shown_number:
@@ -454,7 +491,7 @@ func _show_model() -> void:
 		_model = null
 
 	if number != 0:
-		_model = _make_spear_model() if _is_spear() else (_make_torch_model() if _is_torch() else (_make_knife_model() if _is_knife() else _make_axe_model()))
+		_model = _make_spear_model() if _is_spear() else (_make_torch_model() if _is_torch() else (_make_knife_model() if _is_knife() else (_make_other_model() if _is_other_tool() else _make_axe_model())))
 		_mount_model()
 
 
@@ -462,7 +499,7 @@ func _show_model() -> void:
 # Falls back to the old spot in front of the camera when there are no arms.
 func _mount_model() -> void:
 	_mounted = _arms != null
-	var kind: String = "spear" if _is_spear() else ("torch" if _is_torch() else ("knife" if _is_knife() else "axe"))
+	var kind: String = "spear" if _is_spear() else ("torch" if _is_torch() else ("knife" if _is_knife() else ("axe" if _is_axe() else "other")))
 
 	if not _mounted:
 		_camera.add_child(_model)
@@ -480,6 +517,32 @@ func _mount_model() -> void:
 
 	_model.basis = tilt * turn
 	_model.position = tilt * grip
+
+
+# Any other tool: a handle with a flat blade (a spade) or a plain head, until the tool has its own model.
+func _make_other_model() -> Node3D:
+	var tool_class: String = str(_inv.table.entry(held_id()).get("tool_class", ""))
+	var node: Node3D = Node3D.new()
+	var handle: MeshInstance3D = MeshInstance3D.new()
+	var rod: CylinderMesh = CylinderMesh.new()
+	rod.top_radius = 0.02
+	rod.bottom_radius = 0.025
+	rod.height = 0.9 if tool_class == "spade" else 0.6
+	var wood: StandardMaterial3D = StandardMaterial3D.new()
+	wood.albedo_color = Color(0.45, 0.3, 0.16)
+	rod.material = wood
+	handle.mesh = rod
+	node.add_child(handle)
+	var head: MeshInstance3D = MeshInstance3D.new()
+	var block: BoxMesh = BoxMesh.new()
+	block.size = Vector3(0.16, 0.22, 0.025) if tool_class == "spade" else Vector3(0.06, 0.1, 0.1)
+	var metal: StandardMaterial3D = StandardMaterial3D.new()
+	metal.albedo_color = Color(0.5, 0.42, 0.3) if tool_class == "spade" else Color(0.5, 0.5, 0.52)
+	block.material = metal
+	head.mesh = block
+	head.position = Vector3(0.0, rod.height * 0.5 + (0.0 if tool_class == "spade" else 0.0), 0.0)
+	node.add_child(head)
+	return node
 
 
 # A torch in hand: a stick with a glowing head and one warm light (only while it is held).

@@ -95,7 +95,7 @@ CLIENTS = [
         ("Shift+D drops one", r"Shift\+D dropped one, stones \d+ -> " + NUM, 5, 5),
         ("E eats", r"E ate, roasts \d+ -> " + NUM, 1, 1),
     ]),
-    ("eat", ["--eat"], 3000, [
+    ("eat", ["--eat"], 7000, [
         ("food is edible", r"edible slot 0 (true)", None, None),
         ("roast eaten", r"roasts left " + NUM, 1, 1),
         ("craft queue shows the entry", r"Queue test: entries 1, fibre \d+ -> \d+, buttons shown " + NUM, 1, 1),
@@ -103,6 +103,7 @@ CLIENTS = [
         ("queue strip hides again", r"queue strip hidden (true)", None, None),
         ("Use holds a tool", r"matches (true)\), strip boxes 10", None, None),
         ("the axe is drawn in the arms' hand", r"Arms test: axe model in the right hand (true), arms shown true", None, None),
+        ("every tool and weapon can be held and has a model", r"Tools test: (\d+) tools and weapons, held \1, with a model \1", None, None),
         ("Use again puts it away", r"Use again, hand slot " + NUM, -1, -1),
         ("a tool deep in the pack moves to the hotbar and is held", r"Use moved it to slot \d+ and holds it \((true)\), on hotbar true", None, None),
     ]),

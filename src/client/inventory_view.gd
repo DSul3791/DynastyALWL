@@ -2748,7 +2748,38 @@ func run_eat_test(client) -> void:
 	eat_slot(20)
 	await get_tree().create_timer(1.0).timeout
 	var moved_to: int = held_slot_now.call()
+	equip_requested.call(moved_to)   # empty hands again
 	print("Hotbar test: axe parked in slot 20, Use moved it to slot %d and holds it (%s), on hotbar %s" % [moved_to, str(moved_to >= 0 and inventory.numbers[moved_to] == axe), str(moved_to >= 0 and moved_to < 10)])
+
+	# Every tool and weapon in the table can be held from the hotbar, with a model, and does something on left click.
+	var tool_ids: Array = []
+
+	for id in table._by_id:
+		if str(table._by_id[id].get("kind", "")) in ["tool", "weapon"] and not bool(table._by_id[id].get("future", false)):
+			tool_ids.append(id)
+
+	var held_ok: int = 0
+	var modelled: int = 0
+
+	for id in tool_ids:
+		net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of(id), 0, 1, Vector3.ZERO)
+		await get_tree().create_timer(0.6).timeout
+		var tool_slot: int = inventory.numbers.find(table.number_of(id))
+
+		if tool_slot >= 10:
+			move_slot(tool_slot, 9)
+			await get_tree().create_timer(0.6).timeout
+			tool_slot = 9
+
+		client.held.select(tool_slot)
+		await get_tree().create_timer(0.3).timeout
+		held_ok += 1 if client.held.held_id() == id else 0
+		modelled += 1 if client.held._model != null else 0
+
+		if client.held.held_id() != id or client.held._model == null:
+			print("Tools test: NOT held or no model: %s" % id)
+
+	print("Tools test: %d tools and weapons, held %d, with a model %d" % [tool_ids.size(), held_ok, modelled])
 
 
 # Headless check (--chest): place a chest, open it, put stones in, take them out.
