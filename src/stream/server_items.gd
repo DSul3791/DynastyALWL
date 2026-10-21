@@ -152,6 +152,12 @@ var _luck_cfg: Dictionary = {}
 var _fitness_cfg: Dictionary = {}
 var send_energy: Callable       # (peer, energy percent 0..100)
 var _energy_cfg: Dictionary = {}    # data/items/energy.json
+var _death_cfg: Dictionary = {}     # data/items/death.json
+var respawn_point: Vector3 = Vector3.ZERO   # where a dead character comes back; set by the server scene
+var send_died: Callable             # (peer, cause String, respawn point Vector3)
+var unix_now: Callable              # () -> real unix seconds (tests stand in a clock); unset: the system clock
+var _death_cause: Dictionary = {}   # peer -> what is draining health to zero (drowning, ...)
+var _remains_check_in: float = 0.0
 var _energy_sent: Dictionary = {}
 var _sleep_cfg: Dictionary = {}     # data/items/sleep.json
 var _asleep: Dictionary = {}        # peer -> true while asleep (a lying player who held Z); {rested: seconds with no strain}
@@ -218,6 +224,8 @@ func setup(item_table, store_dir: String) -> void:
 	_fitness_cfg = _load_fitness_config()
 	var energy_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/energy.json"))
 	_energy_cfg = energy_parsed if typeof(energy_parsed) == TYPE_DICTIONARY else {}
+	var death_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/death.json"))
+	_death_cfg = death_parsed if typeof(death_parsed) == TYPE_DICTIONARY else {}
 	var sleep_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/sleep.json"))
 	_sleep_cfg = sleep_parsed if typeof(sleep_parsed) == TYPE_DICTIONARY else {}
 	var dig_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/digging.json"))
@@ -463,6 +471,7 @@ func tick(delta: float) -> void:
 		_fires(spent)
 		_vitals_tick(spent)
 		_craft_tick(spent)
+		_remains_tick(spent)
 
 		for id in _items.keys():
 			if _items[id].has("scatter") or float(_items[id]["left"]) > 1.0e8:
@@ -514,7 +523,7 @@ func save() -> void:
 			continue
 
 		if it.has("struct"):
-			items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int(_structures.get(str(it["struct"]["kind"]), {}).get("state", 5)), float(it["struct"]["yaw"]), 0, str(it["struct"]["kind"]), int(it["struct"].get("uid", 0))])
+			items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int(_structures.get(str(it["struct"]["kind"]), {}).get("state", 5)), float(it["struct"]["yaw"]), 0, str(it["struct"]["kind"]), int(it["struct"].get("uid", 0)), str(it["struct"].get("owner", "")), float(it["struct"].get("born", 0.0)), bool(it["struct"].get("cave", false))])
 			continue
 
 		items.append([int(it["number"]), int(it["count"]), it["pos"].x, it["pos"].y, it["pos"].z, it["left"], int(it["fire"]["state"]) if it.has("fire") else 0, float(it["fire"]["burn_left"]) if it.has("fire") else 0.0, int(it.get("wear", 0))])
@@ -1078,11 +1087,11 @@ func _sync_world_items() -> void:
 			if it["pos"].distance_to(here) <= NEAR_M:
 				near[id] = true
 
-				var state: int = int(it["fire"]["state"]) if it.has("fire") else (int(it["tree"]["state"]) if it.has("tree") else (int(_structures.get(str(it["struct"]["kind"]), {}).get("state", 5)) if it.has("struct") else (BOULDER_STATE if it.has("boulder") else 0)))
+				var state: int = int(it["fire"]["state"]) if it.has("fire") else (int(it["tree"]["state"]) if it.has("tree") else (_struct_state(it) if it.has("struct") else (BOULDER_STATE if it.has("boulder") else 0)))
 				var signature: int = int(it["count"]) + 1000 * state
 
 				if not known.has(id) or known[id] != signature:
-					added.append([id, int(it["number"]), int(it["count"]), it["pos"], state, it["tree"] if it.has("tree") else ({"yaw": float(it["struct"]["yaw"])} if it.has("struct") else (it["boulder"] if it.has("boulder") else {}))])
+					added.append([id, int(it["number"]), int(it["count"]), it["pos"], state, it["tree"] if it.has("tree") else ({"yaw": float(it["struct"]["yaw"]), "age": _remains_age(it)} if it.has("struct") else (it["boulder"] if it.has("boulder") else {}))])
 					known[id] = signature
 
 		for id in known.keys():
@@ -1169,6 +1178,11 @@ func _load_world_items() -> void:
 
 				if not _chests.has(int(row[10])):
 					_chests[int(row[10])] = InventoryScript.new(table)
+
+			if row.size() > 12 and str(row[9]) == "remains":
+				entry["struct"]["owner"] = str(row[11])
+				entry["struct"]["born"] = float(row[12])
+				entry["struct"]["cave"] = row.size() > 13 and bool(row[13])
 
 			_items[_next_id] = entry
 			_next_id += 1
@@ -2180,7 +2194,10 @@ func _take_down(peer: int, inv, id: int) -> void:
 
 	var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
 
-	if def.is_empty() or not _struct_empty(id):
+	if def.is_empty() or str(def.get("kit", "")) == "":
+		return
+
+	if not _struct_empty(id):
 		_say(peer, "Empty it first.")
 		return
 
@@ -2261,6 +2278,10 @@ func _chest_of(peer: int, id: int):
 	if _peer_pos[peer].distance_to(it["pos"]) > CHEST_REACH_M:
 		return null
 
+	if str(it["struct"]["kind"]) == "remains" and not _may_open_remains(peer, it):
+		_say(peer, "These remains are not yours to open yet.")
+		return null
+
 	var chest = _chests.get(int(it["struct"]["uid"]))
 
 	if chest != null:
@@ -2278,7 +2299,9 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int) -> vo
 	if chest == null:
 		return
 
-	if kind == Net.ACT_CHEST_PUT and a >= 0 and a < inv.SLOTS and inv.numbers[a] != 0 and count > 0:
+	if kind == Net.ACT_CHEST_PUT and bool(_structures.get(str(_items.get(id, {}).get("struct", {}).get("kind", "")), {}).get("take_only", false)):
+		_reject(peer, 3)
+	elif kind == Net.ACT_CHEST_PUT and a >= 0 and a < inv.SLOTS and inv.numbers[a] != 0 and count > 0:
 		var number: int = inv.numbers[a]
 		var held_wear: int = inv.wear[a]
 		var amount: int = mini(count, inv.counts[a])
@@ -2656,8 +2679,128 @@ func _vitals_tick(spent: float) -> void:
 
 		_energy_tick(peer, v, spent, game_s)
 		_breath_tick(peer, v, spent)
+
+		if float(v["health"]) <= 0.0 and kill(peer, str(_death_cause.get(peer, "drowning"))):
+			continue
+
 		_sync_vitals(peer, false)
 		_strain_tick(peer, spent)
+
+
+# --- Death and remains (Dave: DESIGN_IDEAS.md 6.1; data/items/death.json) ---
+# A character whose health reaches zero dies: the whole pack goes onto a remains record where they fell (server-owned,
+# a chest with no lid that only the owner may open for the first day), their vitals start over, and they are put back at
+# the spawn point. Luck, fitness and skills are kept; placed things stay where they are.
+
+func _unix() -> float:
+	return float(unix_now.call()) if unix_now.is_valid() else Time.get_unix_time_from_system()
+
+
+func _remains_age(it: Dictionary) -> float:
+	if str(it["struct"]["kind"]) != "remains":
+		return 0.0
+
+	return clampf((_unix() - float(it["struct"].get("born", 0.0))) / maxf(float(_death_cfg.get("gone_s", 604800)), 1.0), 0.0, 1.0)
+
+
+# Row state clients draw by: 11 fresh remains (day 1, owner only), 12 once anyone may take the gear.
+func _struct_state(it: Dictionary) -> int:
+	var state: int = int(_structures.get(str(it["struct"]["kind"]), {}).get("state", 5))
+
+	if state == 11 and _unix() - float(it["struct"].get("born", 0.0)) >= float(_death_cfg.get("owner_only_s", 86400)):
+		return 12
+
+	return state
+
+
+func _may_open_remains(peer: int, it: Dictionary) -> bool:
+	return str(it["struct"].get("owner", "")) == str(_peer_key.get(peer, "?")) or _unix() - float(it["struct"].get("born", 0.0)) >= float(_death_cfg.get("owner_only_s", 86400))
+
+
+func remains_ids() -> Array:
+	var out: Array = []
+
+	for id in _items:
+		if _items[id].has("struct") and str(_items[id]["struct"]["kind"]) == "remains":
+			out.append(id)
+
+	return out
+
+
+# The character dies. Returns false when there is nobody to kill (no such player, no position yet, death switched off).
+func kill(peer: int, cause: String) -> bool:
+	var key: String = str(_peer_key.get(peer, ""))
+	var inv = inventory_of(peer)
+
+	if key == "" or inv == null or not _peer_pos.has(peer) or _death_cfg.is_empty() or not _structures.has("remains"):
+		return false
+
+	var pos: Vector3 = _peer_pos[peer]
+	var ground: float = float(ground_height.call(pos.x, pos.z)) if ground_height.is_valid() else NAN
+	var cave: bool = not is_nan(ground) and pos.y < ground - 1.5   # underground: keep the spot, the surface above is not theirs
+	var spot: Vector3 = pos if (is_nan(ground) or cave) else Vector3(pos.x, ground, pos.z)
+	var uid: int = _next_uid
+	_next_uid += 1
+	var chest = InventoryScript.new(table)
+	chest.from_json_array(inv.to_json_array())
+	_chests[uid] = chest
+	_items[_next_id] = {"number": table.number_of("remains"), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": "remains", "yaw": float(randi() % 360), "uid": uid, "owner": key, "born": _unix(), "cave": cave}}   # luck-exempt: a body's facing
+	_next_id += 1
+	inv.from_json_array(InventoryScript.new(table).to_json_array())
+	send_full.call(peer, inv.to_bytes())
+
+	# Start over: vitals, strain, sleep, breath. Luck, fitness and skills live in characters.json and stay.
+	_vitals[key] = _new_vitals()
+	_strain.erase(peer)
+	_strain_sent.erase(peer)
+	_asleep.erase(peer)
+	_breath.erase(peer)
+	_head_under.erase(peer)
+	_exertion[peer] = 0.0
+	_stance[peer] = 0
+	_work_until.erase(peer)
+	_death_cause.erase(peer)
+	_energy_sent.erase(peer)
+	_peer_pos[peer] = respawn_point
+	_motion.erase(peer)
+	_sync_breath(peer, -1)
+	_sync_vitals(peer, true)
+	_dirty = true
+
+	if send_died.is_valid():
+		send_died.call(peer, cause, respawn_point)
+
+	return true
+
+
+# Once in a while: clean up remains that have run their seven days and put the others back on the surface when the ground
+# under them has changed (digging, a fill). The record never moves anywhere else; the sinking is only a drawing offset.
+func _remains_tick(spent: float) -> void:
+	_remains_check_in -= spent
+
+	if _remains_check_in > 0.0 or _death_cfg.is_empty():
+		return
+
+	_remains_check_in = float(_death_cfg.get("recheck_s", 30))
+	var gone_s: float = float(_death_cfg.get("gone_s", 604800))
+
+	for id in remains_ids():
+		var it: Dictionary = _items[id]
+
+		if _unix() - float(it["struct"].get("born", 0.0)) >= gone_s:
+			_chests.erase(int(it["struct"].get("uid", 0)))
+			_items.erase(id)
+			_dirty = true
+			continue
+
+		if bool(it["struct"].get("cave", false)) or not ground_height.is_valid():
+			continue
+
+		var ground: float = float(ground_height.call(it["pos"].x, it["pos"].z))
+
+		if not is_nan(ground) and absf(ground - it["pos"].y) > 0.25:
+			it["pos"].y = ground
+			_dirty = true
 
 
 # --- Fall damage (job 62) ---

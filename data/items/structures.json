@@ -46,6 +46,17 @@
 			"slots": 20,
 			"max_kg": 150,
 			"who": "anyone"
+		},
+		"remains": {
+			"kit": "",
+			"item": "remains",
+			"state": 11,
+			"footprint_x": 1.8,
+			"footprint_z": 0.7,
+			"cap_per_chunk": 50,
+			"slots": 30,
+			"who": "owner",
+			"take_only": true
 		}
 	},
 	"campfire": {

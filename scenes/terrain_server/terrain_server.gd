@@ -183,6 +183,7 @@ func _ready() -> void:
 	items.send_notice = func(peer, text): net.notice.rpc_id(peer, text)
 	items.send_breath = func(peer, tenths): net.breath.rpc_id(peer, tenths)
 	items.send_energy = func(peer, percent): net.energy.rpc_id(peer, percent)
+	items.send_died = func(peer, cause, point): net.died.rpc_id(peer, cause, point)
 	items.send_vitals = func(peer, hunger, health, weight, thirst, luck, fitness): net.vitals.rpc_id(peer, hunger, health, weight, thirst, luck, fitness)
 	items.water_near = func(pos, reach):
 		var tile_data = generator.get_tile(generator.tile_of(pos.x, pos.z))
@@ -231,6 +232,7 @@ func _ready() -> void:
 	items.dig_support = func(base, radius, depth): return TreeSupport.solid_share(store.ops.edits_near(base, radius + depth), base, radius, depth)
 	items.setup(ItemTableScript.load_default(), store_dir)
 	spawn = _spawn_point(world_dir)
+	items.respawn_point = spawn
 	_world_dir = world_dir
 	_start_water()
 

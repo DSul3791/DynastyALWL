@@ -546,6 +546,7 @@ func _ready() -> void:
 	net.water_rate_received.connect(_on_water_rate)
 	net.water_changed_received.connect(_on_water_changed)
 	net.ground_reset_received.connect(_on_ground_reset)
+	net.died_received.connect(_on_died)
 	net.water_received.connect(_on_water_received)
 	_host = host
 	_port = port
@@ -975,6 +976,18 @@ func _arrive_on_ground() -> void:
 
 	arrival_protect_until_msec = Time.get_ticks_msec() + ARRIVAL_PROTECT_MS
 	sound.forget_fall(body)
+
+
+# The character died (protocol 34): the server already holds the remains and the reset vitals; put the body back at the spawn
+# high up and let it settle on the ground the way a first arrival does (no fall, a few seconds of protection).
+func _on_died(_cause: String, spawn_point: Vector3) -> void:
+	if body == null:
+		return
+
+	body.global_position = spawn_point + Vector3(0.0, 28.0, 0.0)
+	body.velocity = Vector3.ZERO
+	_was_waiting = true
+	arrival_protect_until_msec = Time.get_ticks_msec() + 10000
 
 
 func _on_flora(chunk: Vector2i, bytes: PackedByteArray, water: PackedByteArray, full: bool) -> void:

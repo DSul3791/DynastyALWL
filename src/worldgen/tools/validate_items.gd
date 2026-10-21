@@ -327,7 +327,11 @@ func _init() -> void:
 
 	for kind in structures:
 		var def: Dictionary = structures[kind]
-		want_item.call(String(def.get("kit", "")), "structures.json %s kit" % kind)
+
+		if not bool(def.get("take_only", false)):   # remains have no kit: nobody takes them down
+			want_item.call(String(def.get("kit", "")), "structures.json %s kit" % kind)
+
+
 		want_item.call(String(def.get("item", "")), "structures.json %s item" % kind)
 
 		if float(def.get("footprint_x", 0.0)) <= 0.0 or float(def.get("footprint_z", 0.0)) <= 0.0:
@@ -339,7 +343,7 @@ func _init() -> void:
 		if def.has("max_kg") and float(def.get("max_kg", 0.0)) <= 0.0:
 			fail("structures.json %s: max_kg must be above 0" % kind)
 
-		if String(def.get("who", "anyone")) != "anyone":
+		if String(def.get("who", "anyone")) != "anyone" and not (bool(def.get("take_only", false)) and String(def.get("who")) == "owner"):   # remains: owner first day
 			fail("structures.json %s: who is '%s' but only \"anyone\" is built (owner and town wait for ownership)" % [kind, def.get("who")])
 		obtainable[String(def.get("item", ""))] = true
 

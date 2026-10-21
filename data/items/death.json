@@ -1,0 +1,9 @@
+{
+	"note": "Death and remains (DESIGN_IDEAS.md 6.1, Dave). Real seconds. Day 1 only the owner may open the remains; from day 2 anyone; the remains and what is left on them are cleaned up when gone_s has passed (day 8). The record is a position on the surface, never lost: the server puts it back on the ground when the ground under it has changed. sink_m is only a visual offset the client applies as the body decays. A character who dies is back at the spawn point after respawn_delay_s with health, food, water, energy and weight at their start values; luck, fitness and skills are kept; placed things stay. Nothing kills yet except running out of air (vitals.json breath can_die).",
+	"owner_only_s": 86400,
+	"gone_s": 604800,
+	"respawn_delay_s": 4,
+	"sink_m": 0.35,
+	"per_chunk_cap": 50,
+	"recheck_s": 30
+}

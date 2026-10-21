@@ -883,12 +883,14 @@ func _init() -> void:
 
 	check(float(vt.vitals_of(1)["health"]) < health_before - 10.0 and vnotes.has("You are out of air"), "out of air costs health (6 a second) and says so")
 
+	vt.report_position(1, Vector3(50.0, 5.0, 50.0))
 	for n in range(60):
 		vt.tick(1.0)
 
-	check(float(vt.vitals_of(1)["health"]) == 1.0, "drowning stops at 1 health until there is a death rule")
+	check(vt.remains_ids().size() == 1 and float(vt.vitals_of(1)["health"]) > 90.0, "[%d remains, health %.0f] drowning to zero health kills: remains left, vitals start over" % [vt.remains_ids().size(), float(vt.vitals_of(1)["health"])])
 	vt.set_head_under(1, false)
 	vt.tick(1.0)
+	vt.vitals_of(1)["fed"] = 0.0   # the death above started the vitals over
 	var food_n: int = vt.table.number_of("roast_forage")
 	vt.action(1, Net.ACT_ADMIN_GIVE, food_n, 0, 30, Vector3.ZERO)
 	vt.action(1, Net.ACT_EAT, vt.inventory_of(1).numbers.find(food_n), 0, 0, Vector3.ZERO)

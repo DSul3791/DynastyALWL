@@ -76,6 +76,9 @@ var strain_state: int = 0
 var strain_fade: float = 0.0
 var stance_confirmed: int = 0                # the server's answer: 0 stand, 1 crouch, 2 sit, 3 lie (fainting forces 3)
 var stance_event: Callable = Callable()      # (stance) when the server confirms or changes it
+const SINK_M := 0.35                        # most the remains sink into the ground by day 7 (death.json sink_m)
+const DEATH_FADE_S := 4.0                   # black, then waking, after a death (death.json respawn_delay_s)
+var _death_msec: int = 0                    # when the last death arrived, 0 when none is being shown
 var energy: int = 100                       # the Energy pool, percent (job 95)
 var forced_sleep: bool = false               # collapsed from exhaustion: asleep and cannot wake until rested (bit 8 of the stance)
 var asleep: bool = false                     # the server says this character sleeps (bit 4 of the stance it sends, job 86)
@@ -125,6 +128,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.chest_received.connect(_on_chest)
 	net.vitals_received.connect(_on_vitals)
 	net.energy_received.connect(_on_energy)
+	net.died_received.connect(_on_died)
 	net.breath_received.connect(func(deciseconds: int) -> void: breath_ds = deciseconds)
 	net.strain_received.connect(_on_strain)
 	net.craft_queue_received.connect(_on_craft_queue)
@@ -382,6 +386,9 @@ func _probe_structure() -> Dictionary:
 	var take_down: Callable = func():
 		clear_prompt()
 		net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
+
+	if state >= 11:
+		return {"prompt": "Press E to search the remains", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)}
 
 	if state == 6:
 		return {"prompt": "Press E to open the chest    (hold E: take it down, empty only)", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO), "hold": take_down}
@@ -861,6 +868,17 @@ func blackout_level() -> float:
 # The picture's state name and progress for faint.set_state (Art's faint_effect.gd): vision fades over the
 # first vision_frac of a faint ("fainting", progress 0 to 1), then "fainted" holds black while only the heart is heard.
 func faint_state() -> Array:
+	if _death_msec > 0:
+		var t: float = float(Time.get_ticks_msec() - _death_msec) / (DEATH_FADE_S * 1000.0)
+
+		if t < 0.25:
+			return ["fainted", 1.0]
+
+		if t < 1.0:
+			return ["waking", 1.0 - (t - 0.25) / 0.75]
+
+		_death_msec = 0
+
 	if asleep and strain_state < 2:
 		return ["sleeping", 1.0]
 
@@ -1174,8 +1192,8 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 		if state >= 5:
 			var yaw: float = deg_to_rad(float(row[5].get("yaw", 0.0))) if row.size() > 5 else 0.0
-			node = _make_leanto() if state == 5 else (_make_chest() if state == 6 else _make_block())
-			node.position = row[3]
+			node = _make_leanto() if state == 5 else (_make_chest() if state == 6 else (_make_remains(float(row[5].get("age", 0.0)) if row.size() > 5 else 0.0) if state >= 11 else _make_block()))
+			node.position = row[3] - Vector3(0.0, SINK_M * float(row[5].get("age", 0.0)), 0.0) if state >= 11 and row.size() > 5 else row[3]
 			node.rotation.y = yaw
 			_root.add_child(node)
 			var roof_key: int = -1
@@ -1315,6 +1333,30 @@ func _make_block() -> Node3D:
 
 func _make_chest() -> Node3D:
 	return BuildingLook.chest()
+
+
+# Remains (protocol 34, placeholder look until Art draws it): a low dark body and its pack, greying to bone over the seven days.
+# `age` is 0 fresh to 1 gone; the server sends it when the row is first seen or changes state.
+func _make_remains(age: float) -> Node3D:
+	var root: Node3D = Node3D.new()
+	var material: StandardMaterial3D = StandardMaterial3D.new()
+	material.roughness = 1.0
+	material.albedo_color = Color(0.22, 0.17, 0.14).lerp(Color(0.8, 0.77, 0.68), clampf(age, 0.0, 1.0))
+	var body: MeshInstance3D = MeshInstance3D.new()
+	var box: BoxMesh = BoxMesh.new()
+	box.size = Vector3(1.7, 0.16, 0.5)
+	body.mesh = box
+	body.material_override = material
+	body.position = Vector3(0.0, 0.08, 0.0)
+	root.add_child(body)
+	var pack: MeshInstance3D = MeshInstance3D.new()
+	var pack_box: BoxMesh = BoxMesh.new()
+	pack_box.size = Vector3(0.4, 0.28, 0.5)
+	pack.mesh = pack_box
+	pack.material_override = material
+	pack.position = Vector3(0.1, 0.3, 0.0)
+	root.add_child(pack)
+	return root
 
 
 # Only the nearest MAX_FIRE_LIGHTS lit fires keep their light on (cost cap at every quality).
@@ -1624,6 +1666,12 @@ func _build_bars_row() -> HBoxContainer:
 
 	_update_panel_bars()
 	return row
+
+
+# The character died (protocol 34): a message and a fade out and in over death.json respawn_delay_s. The terrain client moves the body.
+func _on_died(cause: String, _spawn: Vector3) -> void:
+	_death_msec = Time.get_ticks_msec()
+	show_notice("You died: %s" % cause)
 
 
 func _on_energy(percent: int) -> void:
