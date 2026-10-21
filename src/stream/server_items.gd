@@ -1109,7 +1109,8 @@ func _lay_out_bank_stones(cell: Vector2i, cell_m: float, cfg: Dictionary, rng: R
 		if _taken.has(key):
 			continue
 
-		_items[_next_id] = {"number": table.number_of("stone"), "count": 1, "pos": spot, "left": 1.0e9, "scatter": key}
+		var driftwood: bool = rng.randf() < float(bank.get("driftwood", 0.12))   # luck-exempt: seeded world layout
+		_items[_next_id] = {"number": table.number_of("driftwood" if driftwood else "stone"), "count": 1, "pos": spot, "left": 1.0e9, "scatter": key}
 		_next_id += 1
 
 

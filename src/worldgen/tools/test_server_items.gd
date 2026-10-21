@@ -1052,6 +1052,26 @@ func _init() -> void:
 	check(in_water == 0, "bank stones are never put in the water")
 	check(sc.world_item_count() - bank_before <= 4 * (6 + int(bank_cfg["stones_max"]) + int(bank_cfg["sticks_max"])), "bank stones stay within the per-cell limit")
 
+	# Driftwood on the banks: a share of the bank spots, a real item that burns.
+	bank_cfg["bank"]["driftwood"] = 1.0
+	var wood_n: int = sc.table.number_of("driftwood")
+	var wood_before: int = 0
+
+	for bid in sc._items:
+		wood_before += 1 if sc._items[bid]["number"] == wood_n else 0
+
+	for cz in range(5, 9):
+		sc._lay_out_cell(Vector2i(3, cz), 32.0, bank_cfg)
+
+	var wood_after: int = 0
+
+	for bid in sc._items:
+		wood_after += 1 if sc._items[bid]["number"] == wood_n else 0
+
+	bank_cfg["bank"]["driftwood"] = 0.12
+	check(wood_n != 0 and wood_after >= wood_before + 8, "bank spots can hold driftwood (%d new)" % (wood_after - wood_before))
+	check(float(sc._cooking["fuel"].get("driftwood", 0.0)) > float(sc._cooking["fuel"]["stick"]) and sc._cooking["fuel_order"].has("driftwood"), "driftwood is fuel, longer than a stick")
+
 	# Fall damage and refusal events (job 62).
 	DirAccess.make_dir_recursive_absolute(qd + "_fall")
 

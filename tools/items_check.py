@@ -48,6 +48,7 @@ CLIENTS = [
         ("stones stand out (1 m and up, three times the old size)", r"Natural size: stone lies " + NUM + " to", 0.9, 1.8),
         ("sticks stand out (2.4 m and up, three times the old size)", r"Natural size: stick lies " + NUM + " to", 2.3, 4.8),
         ("sticks use the real meshes", r"Natural look: stick uses " + NUM + " real meshes", 3, 3),
+        ("driftwood uses the real meshes", r"Natural look: driftwood uses " + NUM + " real meshes", 3, 3),
     ]),
     ("plantpick", ["--plantpick"], 6000, [
         ("plants were picked", r"tried (\d+), gone", 3, 20),

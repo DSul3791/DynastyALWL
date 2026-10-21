@@ -1221,9 +1221,9 @@ func _mesh_for(number: int) -> Mesh:
 		material.roughness = 1.0
 		var mesh: Mesh
 
-		if id == "stick" or id == "plant_fibre" or id == "firewood" or id == "log":
-			var dims: Array = {"stick": [0.6, 0.02, 0.011, 0.07], "plant_fibre": [0.3, 0.012, 0.006, 0.05], "firewood": [0.4, 0.05, 0.045, 0.01], "log": [1.0, 0.13, 0.11, 0.02]}[id]
-			material.albedo_color = {"stick": Color(0.38, 0.27, 0.17), "plant_fibre": Color(0.72, 0.68, 0.45), "firewood": Color(0.5, 0.36, 0.22), "log": Color(0.33, 0.24, 0.16)}[id]
+		if id == "stick" or id == "plant_fibre" or id == "firewood" or id == "log" or id == "driftwood":
+			var dims: Array = {"driftwood": [0.9, 0.06, 0.05, 0.01], "stick": [0.6, 0.02, 0.011, 0.07], "plant_fibre": [0.3, 0.012, 0.006, 0.05], "firewood": [0.4, 0.05, 0.045, 0.01], "log": [1.0, 0.13, 0.11, 0.02]}[id]
+			material.albedo_color = {"stick": Color(0.38, 0.27, 0.17), "plant_fibre": Color(0.72, 0.68, 0.45), "firewood": Color(0.5, 0.36, 0.22), "driftwood": Color(0.62, 0.58, 0.5), "log": Color(0.33, 0.24, 0.16)}[id]
 			mesh = _branch_mesh(float(dims[0]), float(dims[1]), float(dims[2]), float(dims[3]))
 		elif id == "stone":
 			var rock: SphereMesh = SphereMesh.new()
@@ -1307,7 +1307,7 @@ func _dress_item(node: Node3D, number: int, world_id: int, natural: bool = false
 
 	node.rotation = Vector3(0.0, rng.randf_range(0.0, TAU), 0.0)
 
-	if id == "stick" or id == "plant_fibre" or id == "firewood" or id == "log":
+	if id == "stick" or id == "plant_fibre" or id == "firewood" or id == "log" or id == "driftwood":
 		node.scale = Vector3(rng.randf_range(0.7, 1.3), 1.0, 1.0)
 		node.position.y -= 0.08 if id != "log" else 0.0
 	elif id == "stone":
@@ -1384,6 +1384,8 @@ func _natural_mesh(number: int, world_id: int) -> Mesh:
 		group = "stone_smooth" if pick % 100 < 55 else "stone_rough"
 	elif id == "stick":
 		group = "stick"
+	elif id == "driftwood":
+		group = "driftwood"
 	else:
 		return null
 
@@ -2166,7 +2168,7 @@ func run_gather_test(client) -> void:
 		var shape: Mesh = _mesh_for(table.number_of(look))
 		print("Item look: %s is a %s, %.2f x %.2f x %.2f m" % [look, shape.get_class(), shape.get_aabb().size.x, shape.get_aabb().size.y, shape.get_aabb().size.z])
 
-	for look in ["stick", "stone"]:
+	for look in ["stick", "stone", "driftwood"]:
 		var seen: Dictionary = {}
 
 		for world_id in range(1, 40):

@@ -11,6 +11,7 @@
 		"stick": 0.15,
 		"log": 15.0,
 		"firewood": 1.5,
+		"driftwood": 2.0,
 		"plant_fibre": 0.02,
 		"tree_roots": 0.6,
 		"seed_bundle": 0.02,
