@@ -215,19 +215,40 @@ func load_block(buffer: VoxelBuffer, block: Vector3i, lod: int) -> void:
 		ops.apply(buffer, block)
 
 
+# Real ground is never a whole block of distance exactly 0 (a buffer nobody filled reads that way): 27 spread voxels, 20 at zero.
+static func looks_zeroed(buffer: VoxelBuffer) -> bool:
+	var size: Vector3i = buffer.get_size()
+	var zero: int = 0
+
+	for k in range(3):
+		for j in range(3):
+			for i in range(3):
+				if absf(buffer.get_voxel_f(1 + i * (size.x - 3) / 2, 1 + j * (size.y - 3) / 2, 1 + k * (size.z - 3) / 2, Layout.CHANNEL_SDF)) < 0.0005:
+					zero += 1
+
+	return zero >= 20
+
+
 func _load_base(buffer: VoxelBuffer, block: Vector3i, lod: int) -> void:
 	if _edits.load_voxel_block(buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND:
-		_count("edit")
-		return
+		if not looks_zeroed(buffer):
+			_count("edit")
+			return
+
+		_count("zeroed_edit")
+		print("server: ZEROED BLOCK %s LOD %d from the saved edits (generating it again)" % [str(block), lod])
 
 	var cache: VoxelStreamSQLite = _cache
 
 	if cache.load_voxel_block(buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND:
 		# A saved copy is checked again on the way out (2026-10-21, a solid block floating over the lake): one that
 		# fails is dropped and made again below.
-		if _is_sane(buffer, block, lod):
+		if _is_sane(buffer, block, lod) and not looks_zeroed(buffer):
 			_count("cache")
 			return
+
+		if looks_zeroed(buffer):
+			print("server: ZEROED BLOCK %s LOD %d from the generated-ground cache (generating it again)" % [str(block), lod])
 
 		_count("cache_dropped")
 
@@ -240,7 +261,7 @@ func _load_base(buffer: VoxelBuffer, block: Vector3i, lod: int) -> void:
 
 	# A block built from a stand-in tile, or one that fails the check, is served this
 	# once but never saved, so a bad build cannot become permanent.
-	var sane: bool = generator.failed_tiles == failed_before and _is_sane(buffer, block, lod)
+	var sane: bool = generator.failed_tiles == failed_before and _is_sane(buffer, block, lod) and not looks_zeroed(buffer)
 	var t2: int = Time.get_ticks_usec()
 	if _timing_on:
 		_time("sanity check", t2 - t1)
@@ -351,6 +372,9 @@ func _cell_text(buffer: VoxelBuffer, local: Vector3i) -> String:
 func block_bytes(block: Vector3i, lod: int) -> PackedByteArray:
 	var buffer: VoxelBuffer = Layout.make_buffer(BLOCK_SIZE)
 	load_block(buffer, block, lod)
+	if looks_zeroed(buffer):
+		print("server: ZEROED BLOCK %s LOD %d after generating; serving it anyway (failed tile loads %d)" % [str(block), lod, generator.failed_tiles])
+
 	hide_buried_ore(buffer, hide_ore_depth_m * float(1 << lod))
 	var t0: int = Time.get_ticks_usec()
 	var bytes: PackedByteArray = VoxelBlockSerializer.serialize_to_byte_array(buffer, VoxelBlockSerializer.COMPRESSION_ZSTD)
