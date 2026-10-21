@@ -87,6 +87,9 @@ func _material(color: Color) -> StandardMaterial3D:
 		var m: StandardMaterial3D = StandardMaterial3D.new()
 		m.albedo_color = color
 		m.roughness = 1.0
+		m.emission_enabled = true               # a little self-light so they can be seen on a dark night (until the real characters arrive)
+		m.emission = color
+		m.emission_energy_multiplier = 0.25
 		_cloth[key] = m
 
 	return _cloth[key]
@@ -118,7 +121,8 @@ func _make_body(id: String) -> Node3D:
 	var label: Label3D = Label3D.new()
 	label.text = str(info.get("name", id))
 	label.font_size = 48
-	label.pixel_size = 0.005
+	label.pixel_size = 0.008
+	label.no_depth_test = true
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	label.position = Vector3(0.0, 2.05, 0.0)
 	label.modulate = Color(1.0, 0.95, 0.8)

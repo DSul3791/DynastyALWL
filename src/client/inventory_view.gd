@@ -635,6 +635,24 @@ func _nearest(view_only: bool = false) -> Array:
 
 
 # The id of the felled trunk lying within 1.5 m of a point (the axe struck it), 0 when none.
+# The nearest carcass within 3 m of a point (the knife works it), or 0.
+func carcass_near(point: Vector3) -> int:
+	var best: int = 0
+	var best_d: float = 3.2
+
+	for id in _world:
+		var entry: Dictionary = _world[id]
+
+		if entry["state"] == 19 and is_instance_valid(entry["node"]):
+			var d: float = point.distance_to(entry["pos"])
+
+			if d < best_d:
+				best_d = d
+				best = id
+
+	return best
+
+
 func felled_trunk_near(point: Vector3) -> int:
 	for id in _world:
 		var entry: Dictionary = _world[id]
@@ -1246,7 +1264,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 		if state >= 5:
 			var yaw: float = deg_to_rad(float(row[5].get("yaw", 0.0))) if row.size() > 5 else 0.0
-			node = _make_leanto() if state == 5 else (_make_chest() if state == 6 else (_make_remains(float(row[5].get("age", 0.0)) if row.size() > 5 else 0.0) if (state == 11 or state == 12) else (_make_bench() if state == 13 else (_make_rack() if state == 14 else (_make_vice() if state == 15 else (_make_log_bench() if state == 16 else (_make_forge() if state == 17 else (_make_smithy() if state == 18 else _make_block()))))))))
+			node = _make_leanto() if state == 5 else (_make_chest() if state == 6 else (_make_remains(float(row[5].get("age", 0.0)) if row.size() > 5 else 0.0) if (state == 11 or state == 12) else (_make_bench() if state == 13 else (_make_rack() if state == 14 else (_make_vice() if state == 15 else (_make_log_bench() if state == 16 else (_make_forge() if state == 17 else (_make_smithy() if state == 18 else (_make_carcass(str(row[5].get("sp", "")) if row.size() > 5 else "") if state == 19 else _make_block())))))))))
 			node.position = row[3] - Vector3(0.0, SINK_M * float(row[5].get("age", 0.0)), 0.0) if (state == 11 or state == 12) and row.size() > 5 else row[3]
 			node.rotation.y = yaw
 			_root.add_child(node)
@@ -1548,6 +1566,27 @@ func _make_chest() -> Node3D:
 
 # Remains (protocol 34, placeholder look until Art draws it): a low dark body and its pack, greying to bone over the seven days.
 # `age` is 0 fresh to 1 gone; the server sends it when the row is first seen or changes state.
+# A dead animal lying on its side: a brown ellipsoid sized by species (rabbit 0.45 m).
+func _make_carcass(species: String) -> Node3D:
+	var root: Node3D = Node3D.new()
+	var length: float = 0.45 if species == "rabbit" else 1.2
+	var material: StandardMaterial3D = StandardMaterial3D.new()
+	material.roughness = 1.0
+	material.albedo_color = Color(0.4, 0.31, 0.22)
+	var body: MeshInstance3D = MeshInstance3D.new()
+	var ball: SphereMesh = SphereMesh.new()
+	ball.radius = 0.5
+	ball.height = 1.0
+	ball.radial_segments = 8
+	ball.rings = 4
+	body.mesh = ball
+	body.material_override = material
+	body.scale = Vector3(length * 0.5, length * 0.28, length)
+	body.position = Vector3(0.0, length * 0.14, 0.0)
+	root.add_child(body)
+	return root
+
+
 func _make_remains(age: float) -> Node3D:
 	var root: Node3D = Node3D.new()
 	var material: StandardMaterial3D = StandardMaterial3D.new()

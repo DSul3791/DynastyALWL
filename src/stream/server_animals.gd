@@ -10,17 +10,20 @@ const Steering := preload("res://src/shared/steering.gd")
 const GRAZE := 0
 const HOP := 1
 const FLEE := 2
+const STAGGER := 4              # a quarter of the animals are looked at each tick
 
 var cfg: Dictionary = {}
 var animals: Dictionary = {}       # id int -> {id, sp, num, pos Vector3, heading, state, target Vector3, timer, acc, home}
 var ground_height: Callable        # (x, z) -> height
 var blocked: Callable              # (x, z) -> bool (deep water)
 var player_positions: Callable     # () -> Array of Vector3
+var died: Callable                 # (species, position, source peer) when an animal is killed
 var ticks_run: int = 0
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 var _next_id: int = 1
 var _spawn_acc: float = 0.0
+var _tick_no: int = 0
 
 
 func setup() -> void:
@@ -49,8 +52,46 @@ func spawn(sp: String, x: float, z: float) -> int:
 	_next_id += 1
 	var pos: Vector3 = Vector3(x, y, z)
 	animals[id] = {"id": id, "sp": sp, "num": int(def.get("number", 0)), "pos": pos, "heading": rng.randf() * TAU, "state": GRAZE,   # luck-exempt: which way a new animal faces
-		"target": pos, "timer": _graze_time(def), "acc": 0.0, "home": pos}
+		"target": pos, "timer": _graze_time(def), "acc": 0.0, "home": pos, "hp": float(def.get("health", 5.0))}
 	return id
+
+
+# The one damage hook for animals (spears now, traps and others later): returns true when it killed. A hurt animal bolts.
+func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spear") -> bool:
+	if not animals.has(id) or amount <= 0.0:
+		return false
+
+	var a: Dictionary = animals[id]
+	a["hp"] -= amount
+
+	if a["hp"] <= 0.0:
+		animals.erase(id)
+
+		if died.is_valid():
+			died.call(a["sp"], a["pos"], source_peer)
+
+		return true
+
+	a["state"] = FLEE
+	a["target"] = a["pos"] + Vector3(cos(a["heading"] + PI), 0.0, sin(a["heading"] + PI)) * float(species_def(a["sp"]).get("flee_run_m", 25.0))
+	return false
+
+
+# The animal a jab from `origin` along `dir` reaches: nearest within reach and about 35 degrees of the aim; 0 for none.
+func target_along(origin: Vector3, dir: Vector3, reach: float) -> int:
+	var flat: Vector2 = Vector2(dir.x, dir.z).normalized()
+	var best: int = 0
+	var best_d: float = reach
+
+	for id in animals:
+		var to: Vector2 = Vector2(animals[id]["pos"].x - origin.x, animals[id]["pos"].z - origin.z)
+		var d: float = to.length()
+
+		if d <= best_d and (d < 0.6 or to.normalized().dot(flat) > 0.82) and absf(animals[id]["pos"].y - origin.y) < 3.5:
+			best_d = d
+			best = id
+
+	return best
 
 
 func _graze_time(def: Dictionary) -> float:
@@ -64,10 +105,26 @@ func tick(delta: float) -> void:
 	var near_m: float = float(cfg.get("near_m", 60.0))
 	var mid_m: float = float(cfg.get("mid_m", 120.0))
 	var despawn_m: float = float(cfg.get("despawn_m", 300.0))
+	var budget_us: int = int(float(cfg.get("tick_budget_ms", 1.0)) * 1000.0)
+	var started: int = Time.get_ticks_usec()
 	var gone: Array = []
+	_tick_no += 1
+	var ids: Array = animals.keys()
+	var count: int = ids.size()
 
-	for id in animals:
+	# A quarter of the animals per tick (id mod 4), each one's elapsed time kept in acc so its step still gets the true dt; if the
+	# tick's AI budget runs out the rest wait for the next one (the rotating start keeps that fair).
+	for k in count:
+		var id: int = int(ids[(k + _tick_no * 7) % count])
 		var a: Dictionary = animals[id]
+		a["acc"] += delta
+
+		if (id + _tick_no) % STAGGER != 0:
+			continue
+
+		if k > 0 and Time.get_ticks_usec() - started > budget_us:
+			continue   # out of budget: this one waits (its acc keeps growing, so its next step is longer, not lost)
+
 		var near_d: float = INF
 		var near_p: Vector3 = Vector3.INF
 
@@ -83,15 +140,15 @@ func tick(delta: float) -> void:
 			continue
 
 		if near_d > active_r:
+			a["acc"] = 0.0
 			continue   # frozen: nothing runs until a player comes within active_radius_m
 
 		var hz: float = float(cfg.get("hz_near", 10.0)) if near_d <= near_m else (float(cfg.get("hz_mid", 3.0)) if near_d <= mid_m else float(cfg.get("hz_far", 0.5)))
-		a["acc"] += delta
 
 		if a["acc"] < 1.0 / hz:
 			continue
 
-		var dt: float = a["acc"]
+		var dt: float = minf(a["acc"], 1.0)
 		a["acc"] = 0.0
 		_step(a, dt, near_d, near_p)
 

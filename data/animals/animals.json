@@ -1,5 +1,5 @@
 {
-	"note": "Animals, step B (Radar; Steve-approved plan 2026-10-21, design items/ANIMALS_DESIGN.md): one species, the rabbit. Server-owned records, no physics; they walk with the shared steering module (src/shared/steering.gd). Each player keeps up to target_per_player of a species within active_radius_m; new ones appear spawn_min_m to spawn_max_m from the player (out of sight) and never within never_within_m of any player; none are saved. Beyond active_radius_m from every player an animal is frozen (not ticked); beyond despawn_m it is dropped. Tick rates by distance to the nearest player: hz_near within near_m, hz_mid within mid_m, hz_far beyond. Caps: per_player_cap animals counted near one player, server_cap in all. Rabbit: grazes, hops a few metres, bolts away from a player within spook_m until safe_m, then settles. No hunting yet (damage and carcass come next).",
+	"note": "Animals, step B (Radar; Steve-approved plan 2026-10-21, design items/ANIMALS_DESIGN.md): one species, the rabbit. Server-owned records, no physics; they walk with the shared steering module (src/shared/steering.gd). Each player keeps up to target_per_player of a species within active_radius_m; new ones appear spawn_min_m to spawn_max_m from the player (out of sight) and never within never_within_m of any player; none are saved. Beyond active_radius_m from every player an animal is frozen (not ticked); beyond despawn_m it is dropped. Tick rates by distance to the nearest player: hz_near within near_m, hz_mid within mid_m, hz_far beyond. AI work per server tick is capped at tick_budget_ms (a quarter of the animals are looked at each tick, the rest wait). Caps: per_player_cap animals counted near one player, server_cap in all. Rabbit: grazes, hops a few metres, bolts away from a player within spook_m until safe_m, then settles. No hunting yet (damage and carcass come next).",
 	"active_radius_m": 200.0,
 	"despawn_m": 300.0,
 	"near_m": 60.0,
@@ -8,6 +8,7 @@
 	"hz_mid": 3.0,
 	"hz_far": 0.5,
 	"send_radius_m": 120.0,
+	"tick_budget_ms": 1.0,
 	"spawn_min_m": 150.0,
 	"spawn_max_m": 250.0,
 	"never_within_m": 60.0,
@@ -19,6 +20,7 @@
 			"number": 1,
 			"name": "Rabbit",
 			"target_per_player": 6,
+			"health": 5.0,
 			"walk_mps": 1.5,
 			"flee_mps": 7.5,
 			"spook_m": 14.0,

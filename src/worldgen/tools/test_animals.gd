@@ -7,6 +7,9 @@ extends SceneTree
 
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
 const NpcsScript := preload("res://src/stream/server_npcs.gd")
+const ItemsScript := preload("res://src/stream/server_items.gd")
+const ItemTableScript := preload("res://src/shared/item_table.gd")
+const Net := preload("res://src/stream/terrain_net.gd")
 
 var failures: int = 0
 
@@ -62,15 +65,16 @@ func _init() -> void:
 	check(hops > 0 and Vector2(a.animals[one]["pos"].x - 30.0, a.animals[one]["pos"].z).length() <= 7.0, "it hops now and then but stays near its spot")
 
 	# A player walking up makes it bolt away.
-	players[0] = Vector3(20.0, 10.0, 0.0)
-	var before: float = Vector2(a.animals[one]["pos"].x - 20.0, a.animals[one]["pos"].z).length()
+	var spot: Vector3 = a.animals[one]["pos"]
+	players[0] = Vector3(spot.x - 10.0, 10.0, spot.z)
+	var before: float = 10.0
 
-	for n in 10:
+	for n in 30:
 		a.tick(0.05)
 
 	check(a.animals[one]["state"] == AnimalsScript.FLEE, "a player within 14 m makes it bolt")
 	run(a, 4.0)
-	var after: float = Vector2(a.animals[one]["pos"].x - 20.0, a.animals[one]["pos"].z).length()
+	var after: float = Vector2(a.animals[one]["pos"].x - players[0].x, a.animals[one]["pos"].z - players[0].z).length()
 	check(after > before + 15.0, "and it runs away (%.1f m -> %.1f m)" % [before, after])
 	run(a, 10.0)
 	check(a.animals[one]["state"] != AnimalsScript.FLEE, "once safe it settles again")
@@ -89,7 +93,7 @@ func _init() -> void:
 	run(a, 2.0)
 	check(a.animals.has(one) and a.animals[one]["pos"] == probe, "an animal over 200 m from everyone is frozen")
 	players[0] = Vector3(2000.0, 10.0, 0.0)
-	a.tick(0.05)
+	run(a, 1.0)
 	check(not a.animals.has(one), "beyond 300 m it is dropped")
 
 	# Water: no rabbit appears in it.
@@ -102,6 +106,7 @@ func _init() -> void:
 
 	check(in_water == 0, "none spawn in deep water")
 
+	_hunting()
 	_stress()
 	print("animal tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
@@ -139,9 +144,8 @@ func _stress() -> void:
 		a.tick(0.05)
 		npcs.tick(0.05)
 
-		if step % 5 == 0:   # the server sends rows about four times a second
-			for p in players:
-				bytes += var_to_bytes(a.rows_near(p)).size()
+		for n in range(step % 5, 20, 5):   # the server sends each player rows about four times a second, a fifth of the players per tick
+			bytes += var_to_bytes(a.rows_near(players[n])).size()
 
 		times.append(float(Time.get_ticks_usec() - t0) / 1000.0)
 
@@ -172,9 +176,8 @@ func _stress() -> void:
 		var t0: int = Time.get_ticks_usec()
 		crowd.tick(0.05)
 
-		if step % 5 == 0:
-			for p in players:
-				crowd.rows_near(p)
+		for n in range(step % 5, 20, 5):
+			crowd.rows_near(players[n])
 
 		crowd_times.append(float(Time.get_ticks_usec() - t0) / 1000.0)
 
@@ -187,3 +190,82 @@ func _stress() -> void:
 	cavg /= float(crowd_times.size())
 	print("animals stress cap: %d animals all near, tick avg %.3f ms, worst %.3f ms" % [crowd.animals.size(), cavg, crowd_times[crowd_times.size() - 1]])
 	check(cavg < 2.0, "even 150 animals all near stay under 2 ms on average (%.3f)" % cavg)
+
+
+# The damage hook and the carcass (step A): a spear jab kills a rabbit, a carcass appears, a knife works it in four blows.
+func _hunting() -> void:
+	var dir: String = "user://test_animals"
+	DirAccess.make_dir_recursive_absolute(dir)
+
+	for file in DirAccess.get_files_at(dir):
+		DirAccess.remove_absolute(dir + "/" + file)
+
+	var players: Array = [Vector3(0.0, 10.0, 0.0)]
+	var zoo = make(players)
+	var items = ItemsScript.new()
+	items.send_full = func(_p, _b): pass
+	items.send_slots = func(_p, _b): pass
+	items.send_world_items = func(_p, _a, _r): pass
+	items.ground_height = func(_x, _z): return 10.0
+	items.setup(ItemTableScript.load_default(), dir)
+	items.peer_connected_hello(1, "hunter-key-0001")
+	items.report_position(1, Vector3(0.0, 10.0, 0.0))
+	zoo.died = func(sp, pos, _p): items.make_carcass(sp, pos)
+	items.hit_animal = func(peer, origin, aim, reach, amount) -> bool:
+		var target: int = zoo.target_along(origin, aim, reach)
+		return target != 0 and (zoo.damage(target, amount, peer, "spear") or true)
+	var spear: int = items.table.number_of("wooden_spear")
+	var knife: int = items.table.number_of("stone_knife")
+	items.give(1, spear, 1)
+	items.give(1, knife, 1)
+	var inv = items.inventory_of(1)
+	var spear_slot: int = -1
+	var knife_slot: int = -1
+
+	for n in inv.SLOTS:
+		spear_slot = n if inv.numbers[n] == spear else spear_slot
+		knife_slot = n if inv.numbers[n] == knife else knife_slot
+
+	var rabbit: int = zoo.spawn("rabbit", 2.0, 0.0)
+	items.action(1, Net.ACT_STRIKE, spear_slot, 0, 0, Vector3(-1.0, 0.0, 0.0))
+	check(zoo.animals.has(rabbit), "a jab the wrong way misses")
+	items._last_strike.erase(1)
+	items.action(1, Net.ACT_STRIKE, spear_slot, 0, 0, Vector3(1.0, 0.0, 0.0))
+	check(not zoo.animals.has(rabbit), "a spear jab kills the rabbit in front (damage 6, rabbit health 5)")
+	var carcass: int = 0
+
+	for id in items._items:
+		carcass = id if items._items[id].has("struct") and str(items._items[id]["struct"]["kind"]) == "carcass" else carcass
+
+	check(carcass != 0, "the dead rabbit leaves a carcass")
+	var far: int = zoo.spawn("rabbit", 20.0, 0.0)
+	items._last_strike.erase(1)
+	items.action(1, Net.ACT_STRIKE, spear_slot, 0, 0, Vector3(1.0, 0.0, 0.0))
+	check(zoo.animals.has(far), "a rabbit 20 m away is out of reach (and the jab is paced)")
+
+	# The knife: four blows give the rolled parts, then the carcass is gone; no knife in hand-reach, no parts.
+	var meat0: int = items.count_for(1, "raw_meat")
+	var held_before: int = items.count_for(1, "hide")
+	items.action(1, Net.ACT_PROCESS, carcass, 0, 0, Vector3.ZERO)
+	check(items._items.has(carcass), "one blow does not finish it")
+
+	for n in 5:
+		items._last_process.erase(1)
+		items.action(1, Net.ACT_PROCESS, carcass, 0, 0, Vector3.ZERO)
+
+	check(not items._items.has(carcass), "four blows finish the carcass")
+	check(items.count_for(1, "raw_meat") >= meat0 + 1 and items.count_for(1, "hide") == held_before + 1 and items.count_for(1, "bone") >= 1, "it gave meat, a hide and bones (carcass.json)")
+	var test_one: int = items.make_carcass("rabbit", Vector3(3.0, 10.0, 0.0))
+	check(test_one != 0 and items.make_carcass("dragon", Vector3.ZERO) == 0, "the admin test carcass works for a known species only")
+	items.save()
+	var again = ItemsScript.new()
+	again.send_full = func(_p, _b): pass
+	again.send_slots = func(_p, _b): pass
+	again.send_world_items = func(_p, _a, _r): pass
+	again.setup(ItemTableScript.load_default(), dir)
+	var kept: int = 0
+
+	for id in again._items:
+		kept += 1 if again._items[id].has("struct") and str(again._items[id]["struct"]["kind"]) == "carcass" else 0
+
+	check(kept == 0, "carcasses are not saved")

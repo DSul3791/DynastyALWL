@@ -51,6 +51,10 @@ const RESPAWN_PLACE_M := 6.0
 const RESPAWN_CHANCE := 0.5              # per rotted-away stump, rolled once from the seed and the spot
 const FLORA_CHUNK_M := 256.0
 const PROCESS_REACH_M := 4.0
+const JAB_REACH_M := 3.0
+const STRIKE_COOLDOWN_MS := 600
+const CARCASS_REACH_M := 3.0
+const CARCASS_LIFE_S := 7200.0          # 2 game days of real time
 const PROCESS_COOLDOWN_MS := 450
 const FIRE_USE_M := 3.5
 const COOKING_PATH := "res://data/items/cooking.json"
@@ -159,6 +163,9 @@ var _fitness_cfg: Dictionary = {}
 var send_energy: Callable       # (peer, energy percent 0..100)
 var _energy_cfg: Dictionary = {}    # data/items/energy.json
 var _death_cfg: Dictionary = {}     # data/items/death.json
+var hit_animal: Callable            # (peer, origin, direction, reach, damage) -> bool: set by the server, hits the animal in front
+var _last_strike: Dictionary = {}
+var _carcass_cfg: Dictionary = {}   # data/items/carcass.json
 var _sick_cfg: Dictionary = {}      # data/items/sickness.json
 var send_thought: Callable          # (peer, line id, text, kind): the inner voice
 var send_remains: Callable          # (peer, rows [[position Vector3, seconds left], ...]): the owner's remains that still hold gear
@@ -263,6 +270,8 @@ func setup(item_table, store_dir: String) -> void:
 	_warmth_cfg = warmth_parsed if typeof(warmth_parsed) == TYPE_DICTIONARY else {}
 	var sick_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/sickness.json"))
 	_sick_cfg = sick_parsed if typeof(sick_parsed) == TYPE_DICTIONARY else {}
+	var carcass_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/carcass.json"))
+	_carcass_cfg = carcass_parsed if typeof(carcass_parsed) == TYPE_DICTIONARY else {}
 	var death_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/death.json"))
 	_death_cfg = death_parsed if typeof(death_parsed) == TYPE_DICTIONARY else {}
 	var sleep_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/sleep.json"))
@@ -497,6 +506,8 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_place(peer, inv, a, at, count)
 	elif kind == Net.ACT_THROW:
 		_throw(peer, inv, a, at)
+	elif kind == Net.ACT_STRIKE:
+		_strike(peer, inv, a, at)
 	elif kind == Net.ACT_CRAFT:
 		recipes.craft(a, inv)
 	elif kind == Net.ACT_FALL:
@@ -588,6 +599,9 @@ func save() -> void:
 		var it: Dictionary = _items[id]
 
 		if it.has("scatter") or it.has("tree"):
+			continue
+
+		if it.has("struct") and bool(it["struct"].get("transient", false)):
 			continue
 
 		if it.has("struct"):
@@ -872,6 +886,86 @@ func _drop(peer: int, inv, slot: int, count: int, at: Vector3) -> void:
 
 # A thrown weapon leaves the inventory and flies; where it comes down it lies as a world item.
 # Only items marked as weapons can be thrown. Nothing can be hit yet (no creatures).
+# One jab with a weapon (items.json "damage"): hits the animal in front within JAB_REACH_M through the animal hook.
+func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
+	if slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or not _peer_pos.has(peer) or direction.length() < 0.1 or not hit_animal.is_valid():
+		return
+
+	var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
+
+	if str(entry.get("kind", "")) != "weapon" or _is_broken(inv.numbers[slot], inv.wear[slot]) or float(entry.get("damage", 0.0)) <= 0.0:
+		return
+
+	var now: int = Time.get_ticks_msec()
+
+	if now - int(_last_strike.get(peer, -100000)) < STRIKE_COOLDOWN_MS:
+		return
+
+	_last_strike[peer] = now
+	var hit: bool = bool(hit_animal.call(peer, _peer_pos[peer] + Vector3(0.0, 1.4, 0.0), direction, JAB_REACH_M, float(entry["damage"])))
+
+	if hit:
+		_wear_slot(peer, inv, slot, "strike")
+
+
+# A carcass where an animal died (and for the admin test carcass): a struct the player works with a knife. Not saved, rots in 2 game days.
+func make_carcass(species: String, pos: Vector3) -> int:
+	if not _carcass_cfg.get("species", {}).has(species) or not _structures.has("carcass"):
+		return 0
+
+	var ground: float = float(ground_height.call(pos.x, pos.z)) if ground_height.is_valid() else pos.y
+	var spot: Vector3 = Vector3(pos.x, ground if not is_nan(ground) else pos.y, pos.z)
+	var id: int = _next_id
+	_next_id += 1
+	_items[id] = {"number": table.number_of("carcass"), "count": 1, "pos": spot, "left": CARCASS_LIFE_S, "struct": {"kind": "carcass", "yaw": float(hash(id) % 360), "species": species, "blows": 0, "transient": true}}
+	return id
+
+
+# One knife blow on a carcass (data/items/carcass.json): the parts are rolled once (luck applies) and handed out over the blows.
+func _process_carcass(peer: int, inv, id: int) -> void:
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or not _peer_pos.has(peer) or str(it.get("struct", {}).get("kind", "")) != "carcass" or not _has_tool(inv, str(_carcass_cfg.get("tool_class", "knife"))):
+		return
+
+	if _peer_pos[peer].distance_to(it["pos"]) > CARCASS_REACH_M:
+		return
+
+	var now: int = Time.get_ticks_msec()
+
+	if now - int(_last_process.get(peer, -100000)) < PROCESS_COOLDOWN_MS:
+		return
+
+	_last_process[peer] = now
+	var st: Dictionary = it["struct"]
+	var blows_total: int = int(_carcass_cfg.get("blows", 4))
+	_wear_tool(peer, inv, str(_carcass_cfg.get("tool_class", "knife")), "carcass")
+
+	if not st.has("parts"):
+		var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+		rng.seed = hash(id) ^ 0x2f6b
+		st["parts"] = []
+
+		for row in _carcass_cfg.get("species", {}).get(str(st["species"]), {}).get("parts", []):
+			st["parts"].append([str(row[0]), roll_amount(peer, rng, int(row[1]), int(row[2]))])
+
+	var left_blows: int = maxi(blows_total - int(st["blows"]), 1)
+
+	for part in st["parts"]:
+		var share: int = ceili(float(part[1]) / float(left_blows))
+
+		if share > 0:
+			give(peer, table.number_of(str(part[0])), share)
+			part[1] = int(part[1]) - share
+
+	st["blows"] = int(st["blows"]) + 1
+
+	if int(st["blows"]) >= blows_total:
+		_items.erase(id)
+
+	_dirty = true
+
+
 func _throw(peer: int, inv, slot: int, direction: Vector3) -> void:
 	if slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or not _peer_pos.has(peer) or direction.length() < 0.1:
 		return
@@ -1296,7 +1390,7 @@ func _sync_world_items() -> void:
 				var signature: int = int(it["count"]) + 1000 * state + 100000 * int(it["number"])
 
 				if not known.has(id) or known[id] != signature:
-					added.append([id, int(it["number"]), int(it["count"]), it["pos"], state, it["tree"] if it.has("tree") else ({"yaw": float(it["struct"]["yaw"]), "age": _remains_age(it)} if it.has("struct") else (it["boulder"] if it.has("boulder") else {}))])
+					added.append([id, int(it["number"]), int(it["count"]), it["pos"], state, it["tree"] if it.has("tree") else ({"yaw": float(it["struct"]["yaw"]), "age": _remains_age(it), "sp": str(it["struct"].get("species", ""))} if it.has("struct") else (it["boulder"] if it.has("boulder") else {}))])
 					known[id] = signature
 
 		for id in known.keys():
@@ -2035,6 +2129,10 @@ func _load_trees() -> void:
 # trunk (distance to its line). The trunk is used up when its logs are gone; the stump stays.
 func _process_trunk(peer: int, inv, id: int) -> void:
 	var it: Dictionary = _items.get(id, {})
+
+	if str(it.get("struct", {}).get("kind", "")) == "carcass":
+		_process_carcass(peer, inv, id)
+		return
 
 	if it.is_empty() or not it.has("tree") or int(it["tree"]["state"]) != 3 or not _peer_pos.has(peer) or not _has_tool(inv, "axe"):
 		return

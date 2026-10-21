@@ -134,6 +134,16 @@
 			"tier": "epic",
 			"reach_m": 6.0,
 			"addon_reach_m": 5.0
+		},
+		"carcass": {
+			"kit": "",
+			"item": "carcass",
+			"state": 19,
+			"footprint_x": 1.0,
+			"footprint_z": 0.6,
+			"cap_per_chunk": 50,
+			"take_only": true,
+			"reach_m": 3.0
 		}
 	},
 	"campfire": {

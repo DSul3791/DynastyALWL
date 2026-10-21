@@ -64,7 +64,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 475
+const BUILD := 476
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
@@ -1034,9 +1034,12 @@ func _go_to_npc() -> void:
 
 	if near.is_empty():
 		if items != null:
-			items.show_notice("No NPC within 120 m. Hob works near x 53334 z 68482.")
+			items.show_notice("No NPC drawn (roster %d, drawn %d). You are at x %.0f z %.0f; Hob stands at x 53304 z 68431." % [_npc_view.roster.size(), _npc_view.drawn_count(), body.global_position.x, body.global_position.z])
 
 		return
+
+	if items != null:
+		items.show_notice("Next to %s (roster %d, drawn %d)" % [str(near["name"]), _npc_view.roster.size(), _npc_view.drawn_count()])
 
 	body.global_position = near["pos"] + Vector3(2.0, 1.5, 0.0)
 
@@ -3914,6 +3917,10 @@ func _process(delta: float) -> void:
 			print("Terrain client: rain ground %s (weights %s)" % [sound.weather.ground_class, str(sound.weather._ground_w)])
 			print("Terrain client: weather %s rain %.2f wind %.2f calls %.2f thunders %d; ground wet %.2f snow %.2f, covered %.1f, puddle splashes %d, leaf drips %d, roofed %.1f, loops %s" % [sound.weather.kind, sound.weather.rain, sound.weather.wind, sound.weather.calls, sound.weather.thunders_played, sound.weather.ground_wet, sound.weather.ground_snow, sound.weather.covered, sound.puddles_played, sound.weather.drips_played, sound.weather.roofed, str(sound.weather.active_loops().map(func(entry): return entry[0]))])
 			print("Terrain client: sound: footsteps %s, grass swishes %d, last ground %s, gust %.2f" % [str(sound.steps_played), sound.swishes_played, sound.surface, sound.gust])
+			if _npc_view != null:
+				var near_npc: Dictionary = _npc_view.nearest(body.global_position, 100000.0)
+				print("Terrain client: npcs drawn %d (roster %d), nearest %s, player at %.0f %.0f" % [_npc_view.drawn_count(), _npc_view.roster.size(), str(near_npc.get("name", "none")) + (" %.1f m away" % Vector2(near_npc["pos"].x - body.global_position.x, near_npc["pos"].z - body.global_position.z).length() if not near_npc.is_empty() else ""), body.global_position.x, body.global_position.z])
+
 			print("Terrain client: blocks waited for %d times, %.0f ms on average, worst %d ms; at most %d loader threads waiting at once; %d blocks came on the block line" % [stream.waits, float(stream.wait_msec_total) / maxf(float(stream.waits), 1.0), stream.wait_msec_worst, stream.most_waiting, link.blocks_in])
 			print(Probe.report())
 			var probe: Vector3i = Vector3i((Vector3(world["spawn"]) + Vector3(0.0, -3.0, 0.0)).round())

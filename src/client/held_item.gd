@@ -239,6 +239,17 @@ func mouse_button(button: int, pressed: bool) -> bool:
 
 		return button == MOUSE_BUTTON_LEFT
 
+	if _is_knife():
+		if button == MOUSE_BUTTON_LEFT and pressed:
+			var carcass: int = _inv.carcass_near(_camera.global_position)
+
+			if carcass != 0:
+				_arm_play("use", 0.6)
+				_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, carcass, 0, 0, Vector3.ZERO)
+				return true
+
+		return false
+
 	if not _is_spear():
 		aiming = false
 		return false
@@ -254,6 +265,7 @@ func mouse_button(button: int, pressed: bool) -> bool:
 			_jab_t = 0.0
 			_arm_play("jab", JAB_S)
 			_net.inventory_action.rpc_id(1, Net.ACT_FISH, held_slot, 0, 0, _camera.global_position - _camera.global_transform.basis.z * 2.5 - Vector3(0.0, 1.2, 0.0))
+			_net.inventory_action.rpc_id(1, Net.ACT_STRIKE, held_slot, 0, 0, -_camera.global_transform.basis.z)
 
 			if _sound != null:
 				_sound.spear.jab(_camera.global_position - _camera.global_transform.basis.z)

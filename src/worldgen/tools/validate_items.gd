@@ -8,7 +8,7 @@ const SkillWebCheck := preload("res://src/shared/skill_web.gd")
 # Exit code 1 when there are errors (warnings do not fail it).
 
 const DATA := "res://data/items/"
-# Items the code itself hands out (felling a trunk, the admin give, placing a fire) and so need no drop entry.
+# Items the code itself hands out (a carcass is made when an animal dies; felling a trunk, the admin give, placing a fire) and so need no drop entry.
 # Names of items and recipes are plain nouns (Dave 2026-10-20): "Basic torch", "Stone axe", never "Carve a ..." or "Make a ...".
 const VERB_FIRST_WORDS := ["make", "carve", "chisel", "bind", "craft", "build", "tie", "knap", "twist", "weave", "split", "place", "roast", "cook", "dig", "cut", "sharpen", "light", "pick", "gather", "get", "use", "create", "forge", "fashion", "shape", "stack", "lay", "set", "form"]
 const CODE_SOURCES := ["stone", "stick", "log", "bark", "leaves", "seed_bundle", "firewood", "driftwood"]

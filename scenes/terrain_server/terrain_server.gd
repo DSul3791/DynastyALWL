@@ -61,6 +61,7 @@ var store
 var flora
 var animals                            # ServerAnimals: wildlife around the players (rabbits)
 var _animal_sent: Dictionary = {}
+var _send_round: int = 0
 var identity = IdentityScript.new()      # who a peer is (src/stream/identity_provider.gd): the swap point for real logins
 var items                              # ServerItems: inventories and world items
 var npcs                               # ServerNpcs: classic NPCs (protocol 45)
@@ -276,6 +277,10 @@ func _ready() -> void:
 	animals.blocked = npcs.blocked
 	animals.player_positions = npcs.player_positions
 	animals.setup()
+	animals.died = func(sp, pos, _peer): items.make_carcass(sp, pos)
+	items.hit_animal = func(peer, origin, dir, reach, amount) -> bool:
+		var target: int = animals.target_along(origin, dir, reach)
+		return target != 0 and (animals.damage(target, amount, peer, "spear") or true)
 	dialogue = DialogueScript.new()
 	dialogue.items = items
 	dialogue.npcs = npcs
@@ -849,12 +854,16 @@ func _fill_ground(center: Vector3, radius: float, material: int) -> bool:
 func _send_npcs(delta: float) -> void:
 	_npc_send_t += delta
 
-	if _npc_send_t < 0.25:
+	if _npc_send_t < 0.05:
 		return
 
 	_npc_send_t = 0.0
+	_send_round += 1
+	var peers: Array = items.peer_ids()
 
-	for peer in items.peer_ids():
+	# Each player is looked at about four times a second, a fifth of them per pass, so the work never lands on one tick.
+	for n in range(_send_round % 5, peers.size(), 5):
+		var peer: int = int(peers[n])
 		var at: Variant = items.position_of(peer)
 
 		if at == null:
@@ -887,6 +896,8 @@ func _on_admin_place(peer: int, kind: String, pos: Vector3, arg: String) -> void
 		npcs.place_npc(arg, pos.x, pos.z)
 	elif kind == "animal":
 		animals.spawn(arg, pos.x, pos.z)
+	elif kind == "carcass":
+		items.make_carcass(arg, pos)
 
 
 func _process(delta: float) -> void:
