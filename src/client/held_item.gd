@@ -177,7 +177,7 @@ func _is_knife() -> bool:
 # animation on left click, so nothing silently fails to be held.
 func _is_other_tool() -> bool:
 	var kind: String = str(_inv.table.entry(held_id()).get("kind", ""))
-	return kind in ["tool", "weapon"] and not _is_spear() and not _is_torch() and not _is_knife() and not _is_axe()
+	return kind in ["tool", "weapon", "container"] and not _is_spear() and not _is_torch() and not _is_knife() and not _is_axe()
 
 
 func is_holdable(number: int) -> bool:
@@ -185,7 +185,7 @@ func is_holdable(number: int) -> bool:
 		return false
 
 	var entry: Dictionary = _inv.table.entry(_inv.table.id_of(number))
-	return str(entry.get("kind", "")) in ["tool", "weapon", "placeable"] or _inv.edible_slot(held_slot)
+	return str(entry.get("kind", "")) in ["tool", "weapon", "placeable", "container"] or _inv.edible_slot(held_slot)
 
 
 func _is_axe() -> bool:
@@ -560,8 +560,29 @@ func _mount_model() -> void:
 	_model.position = tilt * grip
 
 
+# A water container: a plain drum, wider for the bigger ones, until Art draws them (job 89).
+func _make_container_model() -> Node3D:
+	var id: String = held_id()
+	var cap: float = float(_inv.table.entry(id).get("capacity_ml", 500))
+	var node: Node3D = Node3D.new()
+	var body: MeshInstance3D = MeshInstance3D.new()
+	var drum: CylinderMesh = CylinderMesh.new()
+	drum.top_radius = 0.05 + 0.025 * pow(cap / 1000.0, 0.5)
+	drum.bottom_radius = drum.top_radius * 0.85
+	drum.height = 0.08 + 0.05 * pow(cap / 1000.0, 0.5)
+	var skin: StandardMaterial3D = StandardMaterial3D.new()
+	skin.albedo_color = Color(0.62, 0.38, 0.24) if id == "clay_pot" else (Color(0.55, 0.42, 0.3) if id == "waterskin" else Color(0.5, 0.36, 0.2))
+	drum.material = skin
+	body.mesh = drum
+	node.add_child(body)
+	return node
+
+
 # Any other tool: a handle with a flat blade (a spade) or a plain head, until the tool has its own model.
 func _make_other_model() -> Node3D:
+	if str(_inv.table.entry(held_id()).get("kind", "")) == "container":
+		return _make_container_model()
+
 	var tool_class: String = str(_inv.table.entry(held_id()).get("tool_class", ""))
 	var node: Node3D = Node3D.new()
 	var handle: MeshInstance3D = MeshInstance3D.new()

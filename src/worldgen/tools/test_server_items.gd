@@ -1129,6 +1129,46 @@ func _init() -> void:
 	sl.vitals_of(1)["health"] = hp
 	sl._vitals_tick(10.0)
 	check(asleep_gain > (float(sl.vitals_of(1)["health"]) - hp) * 1.8, "sleep heals about twice as fast (%.2f against %.2f)" % [asleep_gain, float(sl.vitals_of(1)["health"]) - hp])
+	# Water containers (job 89): the water is kept in the slot's wear field (ml); E at water fills the held one, Use drinks from it.
+	sl.water_near = func(_p, _r): return true
+	var bowl: int = sl.table.number_of("wooden_bowl")
+	var bucket_n: int = sl.table.number_of("bucket")
+	sl.action(1, Net.ACT_ADMIN_GIVE, bowl, 0, 1, Vector3.ZERO)
+	sl.action(1, Net.ACT_ADMIN_GIVE, bucket_n, 0, 1, Vector3.ZERO)
+	var inv_c = sl.inventory_of(1)
+	var bowl_slot: int = inv_c.numbers.find(bowl)
+	var bucket_slot: int = inv_c.numbers.find(bucket_n)
+	var kg_empty: float = sl.carried_kg_of(1)
+	sl._last_drink.clear()
+	sl.action(1, Net.ACT_DRINK, bowl_slot, 0, 0, Vector3.ZERO)
+	check(inv_c.wear[bowl_slot] == 300, "one press fills the 300 ml bowl (capped at capacity)")
+	sl._last_drink.clear()
+	sl.action(1, Net.ACT_DRINK, bucket_slot, 0, 0, Vector3.ZERO)
+	check(inv_c.wear[bucket_slot] == 500, "one press puts fill_ml into the bucket")
+	check(absf(sl.carried_kg_of(1) - kg_empty - 0.8) < 0.01, "the water in containers is carried weight (0.8 L is 0.8 kg)")
+	sl.vitals_of(1)["wet"] = 500.0
+	sl._last_drink.clear()
+	sl._last_eat.clear()
+	sl.action(1, Net.ACT_EAT, bowl_slot, 0, 0, Vector3.ZERO)
+	check(inv_c.wear[bowl_slot] == 0 and float(sl.vitals_of(1)["wet"]) == 800.0, "Use drinks a mouthful from the container into thirst")
+	sl.action(1, Net.ACT_EAT, bowl_slot, 0, 0, Vector3.ZERO)
+	check(inv_c.wear[bowl_slot] == 0, "an empty container gives nothing")
+	sl.vitals_of(1)["wet"] = 2400.0
+	sl._last_drink.clear()
+	sl.action(1, Net.ACT_EAT, bucket_slot, 0, 0, Vector3.ZERO)
+	check(inv_c.wear[bucket_slot] == 500, "a full body drinks nothing from the bucket")
+	sl._last_drink.clear()
+	sl.action(1, Net.ACT_DRINK, -1, 0, 0, Vector3.ZERO)
+	check(inv_c.wear[bucket_slot] == 500, "E at the water with nothing held changes no container")
+	sl.action(1, Net.ACT_DROP, bucket_slot, 0, 1, Vector3(0.0, 10.0, 0.0))
+	var dropped_fill: int = -1
+
+	for it in sl._items.values():
+		if int(it.get("number", 0)) == bucket_n:
+			dropped_fill = int(it.get("wear", -1))
+
+	check(dropped_fill == 500, "a dropped bucket keeps its water (%d)" % dropped_fill)
+
 	# Blackout is smooth and depends on the overshoot: right at the threshold it takes about slow_s, a long way over it about fast_s.
 	var seconds_to_black: Array = []
 	var smooth: bool = true
@@ -1407,6 +1447,15 @@ func _init() -> void:
 	check(float(fl.vitals_of(1)["health"]) == 1.0, "a huge drop never kills (health stays at 1)")
 	fl._strain_tick(1, 0.25)
 	check(int(fl.strain_of(1)["state"]) == 2, "a drop of 12 m or more makes the player faint")
+	# Jumping skill (Dave 2026-10-21): level 2 doubles the safe height and halves the damage per metre beyond.
+	fl.skill_level = func(_p, skill): return 2.0 if skill == "jumping" else 1.0
+	fl.vitals_of(1)["health"] = 100.0
+	fl._last_fall.clear()
+	fl.action(1, Net.ACT_FALL, 1000, 0, 0, Vector3.ZERO)
+	check(float(fl.vitals_of(1)["health"]) == 100.0, "a good jumper drops 10 m unhurt")
+	fl._last_fall.clear()
+	fl.action(1, Net.ACT_FALL, 1600, 0, 0, Vector3.ZERO)
+	check(absf(float(fl.vitals_of(1)["health"]) - 84.0) < 0.01, "and takes half the damage per metre beyond (16 m: 4 m over x 4 = 16, %.1f left)" % float(fl.vitals_of(1)["health"]))
 	fl.action(1, Net.ACT_PICKUP, 99999, 0, 0, Vector3.ZERO)
 	check(rejects.is_empty(), "no refusal event for an item that is not there")
 	fl.drop_in_world(fl.table.number_of("stone"), 1, Vector3(40.0, 10.0, 0.0))

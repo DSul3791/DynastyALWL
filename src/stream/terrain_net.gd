@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 30
+const PROTOCOL_VERSION := 31
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -72,7 +72,7 @@ const ACT_HIT := 7        # a = tree id, b = flora chunk x, count = flora chunk 
 const HIT_BOULDER := -1000000   # the b of an ACT_HIT that strikes a boulder, not a tree
 const ACT_PROCESS := 9    # a = world item id of a felled trunk: one axe blow on it gives branches, leaves, bark, logs
 const ACT_SPLIT := 10     # a = slot, count = how many go to the first empty slot
-const ACT_DRINK := 24         # no arguments: drink from the water at the player's feet (the server checks water within reach)
+const ACT_DRINK := 24         # a = pack slot of a water container in hand, or -1: with a container that has room, fill it from the water at the player's feet; otherwise drink a mouthful (the server checks water within reach)
 const ACT_FALL := 23          # a = the drop in centimetres the client landed from (only sent from the sound threshold, 6 m); the server decides the damage
 const ACT_CRAFT_CANCEL := 22 # a = queue entry index (as last sent): cancel it and get its ingredients back
 const ACT_CRAFT_QUEUE := 21  # a = recipe number, count = how many (1 to 20): queue crafts; ingredients are taken now

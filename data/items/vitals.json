@@ -5,7 +5,7 @@
 	"fall": {"safe_m": 6.0, "per_m": 8.0, "faint_m": 12.0},
 	"warn_hunger": 15,
 	"warn_thirst": 15,
-	"thirst": {"cap_ml": 2400, "rest_ml_day": 1000, "work_ml_day": 1200, "drink_ml": 300, "drink_pace_ms": 900, "reach_m": 3.0},
+	"thirst": {"cap_ml": 2400, "rest_ml_day": 1000, "work_ml_day": 1200, "drink_ml": 300, "fill_ml": 500, "drink_pace_ms": 900, "reach_m": 3.0},
 	"drink": {"by_id": {}, "by_suffix": {}},
 	"eat_pace_ms": 800,
 	"food": {

@@ -29,7 +29,12 @@ static func carried_kg(inventory, table, cfg: Dictionary) -> float:
 
 	for slot in range(inventory.usable):
 		if inventory.numbers[slot] != 0:
-			total += weight_of(table.id_of(inventory.numbers[slot]), cfg) * float(inventory.counts[slot])
+			var id: String = table.id_of(inventory.numbers[slot])
+			total += weight_of(id, cfg) * float(inventory.counts[slot])
+
+			# A container carries its water in the wear field (millilitres); a litre weighs a kilogram.
+			if int(table.entry(id).get("capacity_ml", 0)) > 0:
+				total += float(inventory.wear[slot]) / 1000.0
 
 	return total
 

@@ -383,7 +383,7 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 	elif kind == Net.ACT_EAT:
 		_eat(peer, inv, a)
 	elif kind == Net.ACT_DRINK:
-		_drink_water(peer)
+		_drink_water(peer, a, inv)
 	elif kind == Net.ACT_REPAIR:
 		_repair(peer, inv, a)
 	elif kind == Net.ACT_FUEL:
@@ -2517,7 +2517,11 @@ func _fall(peer: int, centimetres: int) -> void:
 		return
 
 	var drop: float = clampf(float(centimetres) / 100.0, 0.0, 60.0)
-	var damage: float = maxf(drop - float(cfg.get("safe_m", 6.0)), 0.0) * float(cfg.get("per_m", 8.0))
+	# The jumping skill (Dave 2026-10-21): a better jumper can drop further unhurt and takes less damage per metre beyond.
+	# skill_factor is 1.0 until the skill system exists; it never makes a fall worse than the base numbers.
+	var jump: float = maxf(skill_factor(peer, "fall"), 1.0)
+	var safe_m: float = float(cfg.get("safe_m", 6.0)) * jump
+	var damage: float = maxf(drop - safe_m, 0.0) * float(cfg.get("per_m", 8.0)) / jump
 
 	if damage <= 0.0:
 		return
@@ -2527,7 +2531,7 @@ func _fall(peer: int, centimetres: int) -> void:
 	_say(peer, "The fall hurt")
 	_asleep.erase(peer)
 
-	if drop >= float(cfg.get("faint_m", 12.0)) and not _exertion_cfg.is_empty():
+	if drop >= float(cfg.get("faint_m", 12.0)) * jump and not _exertion_cfg.is_empty():
 		_strain[peer] = {"s": float(_exertion_cfg.get("faint_at", 1.4)) + 0.05, "state": 1, "t": 0.0, "black": 1.0}
 
 	_sync_vitals(peer, true)
@@ -2867,10 +2871,46 @@ func _sync_vitals(peer: int, force: bool) -> void:
 		_dirty = true
 
 
+func _container_cap(number: int) -> int:
+	return int(table.entry(table.id_of(number)).get("capacity_ml", 0)) if number > 0 else 0
+
+
+# Use on a water container: one mouthful (thirst.drink_ml) out of what it holds.
+func _drink_from_container(peer: int, inv, slot: int, v: Dictionary) -> void:
+	var thirst: Dictionary = _vitals_cfg.get("thirst", {})
+	var now: int = Time.get_ticks_msec()
+
+	if now - int(_last_drink.get(peer, -100000)) < int(thirst.get("drink_pace_ms", 900)):
+		return
+
+	if inv.wear[slot] <= 0:
+		_say(peer, "It is empty.")
+		return
+
+	var cap: float = float(thirst.get("cap_ml", 2400))
+
+	if float(v["wet"]) >= cap - 1.0:
+		_say(peer, "You have had enough water.")
+		return
+
+	_last_drink[peer] = now
+	var sip: int = mini(int(thirst.get("drink_ml", 300)), inv.wear[slot])
+	var before: Array = _snapshot(inv)
+	inv.wear[slot] -= sip
+	v["wet"] = minf(float(v["wet"]) + float(sip), cap)
+	_send_changes(peer, inv, before)
+	_sync_vitals(peer, true)
+	_dirty = true
+
+
 func _eat(peer: int, inv, slot: int) -> void:
 	var v: Dictionary = vitals_of(peer)
 
 	if v.is_empty() or slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0:
+		return
+
+	if _container_cap(inv.numbers[slot]) > 0:
+		_drink_from_container(peer, inv, slot, v)
 		return
 
 	var now: int = Time.get_ticks_msec()
@@ -3024,7 +3064,7 @@ func _load_characters() -> void:
 
 
 # Drink from the water at the player's feet (ACT_DRINK): one mouthful of thirst.drink_ml, paced like eating. The scene's water_near says whether water lies within reach.
-func _drink_water(peer: int) -> void:
+func _drink_water(peer: int, slot: int = -1, inv = null) -> void:
 	var v: Dictionary = vitals_of(peer)
 
 	if v.is_empty() or not _peer_pos.has(peer):
@@ -3039,6 +3079,18 @@ func _drink_water(peer: int) -> void:
 	if not water_near.is_valid() or not bool(water_near.call(_peer_pos[peer], float(thirst.get("reach_m", 3.0)))):
 		_reject(peer, 0)
 		return
+
+	# A water container in hand with room is filled instead (job 89); a full one lets you drink from the water as before.
+	if inv != null and slot >= 0 and slot < inv.SLOTS and inv.numbers[slot] != 0:
+		var room: int = _container_cap(inv.numbers[slot]) - inv.wear[slot]
+
+		if _container_cap(inv.numbers[slot]) > 0 and room > 0:
+			_last_drink[peer] = now
+			var before_fill: Array = _snapshot(inv)
+			inv.wear[slot] += mini(int(thirst.get("fill_ml", 500)), room)
+			_send_changes(peer, inv, before_fill)
+			_dirty = true
+			return
 
 	var cap: float = float(thirst.get("cap_ml", 2400))
 

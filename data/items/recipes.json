@@ -1,6 +1,6 @@
 {
 	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist).",
-	"next_number": 20,
+	"next_number": 24,
 	"recipes": {
 		"cordage": {
 			"number": 1,
@@ -389,6 +389,78 @@
 			"craft_s": 12.0,
 			"known": false,
 			"station": "forge"
+		},
+		"wooden_bowl": {
+			"number": 20,
+			"name": "Wooden bowl",
+			"needs": [
+				[
+					"firewood",
+					1
+				]
+			],
+			"gives": [
+				"wooden_bowl",
+				1
+			],
+			"craft_s": 6.0,
+			"known": true
+		},
+		"clay_pot": {
+			"number": 21,
+			"name": "Clay pot",
+			"needs": [
+				[
+					"clay",
+					6
+				]
+			],
+			"gives": [
+				"clay_pot",
+				1
+			],
+			"craft_s": 12.0,
+			"known": true
+		},
+		"bucket": {
+			"number": 22,
+			"name": "Bucket",
+			"needs": [
+				[
+					"lumber",
+					6
+				],
+				[
+					"cordage",
+					2
+				]
+			],
+			"gives": [
+				"bucket",
+				1
+			],
+			"craft_s": 10.0,
+			"known": false
+		},
+		"waterskin": {
+			"number": 23,
+			"name": "Waterskin",
+			"needs": [
+				[
+					"hide",
+					2
+				],
+				[
+					"cordage",
+					1
+				]
+			],
+			"gives": [
+				"waterskin",
+				1
+			],
+			"craft_s": 8.0,
+			"known": false
 		}
 	}
 }

@@ -6,6 +6,7 @@
 		"work_trunk": {"skill": "woodcutting", "effect": "speed"},
 		"split_log": {"skill": "woodcutting", "effect": "speed"},
 		"mine_rock": {"skill": "mining", "effect": "speed"},
+		"fall": {"skill": "jumping", "effect": "toughness"},
 		"craft": {"skill": "crafting", "effect": "speed"}
 	}
 }

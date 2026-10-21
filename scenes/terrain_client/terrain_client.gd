@@ -818,7 +818,12 @@ func _welcome_body(info: Dictionary) -> void:
 	harvest = HarvestScript.new()
 	harvest.setup(self, items, net)
 	items.register_interactable("drink", 35, func():
+		if _water_ahead() and items.held_container_has_room():
+			return {"prompt": "Press E to fill", "tap": items.drink}
+
 		return {"prompt": "Press E to drink", "tap": items.drink} if items.thirst < 100 and _water_ahead() else {})
+	items.register_interactable("drink_held", 36, func():
+		return {"prompt": "Press E to drink", "tap": func(): items.eat_slot(items.held_container_slot())} if items.thirst < 100 and items.held_container_has_water() else {})
 	items.register_interactable("plant", 40, func():
 		return {} if items.plant_hint == "" else {"prompt": items.plant_hint, "tap": harvest.tap})
 	held = HeldItemScript.new()
@@ -2145,6 +2150,9 @@ func _step_player(delta: float) -> void:
 		sound.breath.set_body(items.strain, shown[0], shown[1])
 
 	var tsd: int = Probe.start()
+	if swimming:
+		sound.forget_fall(body)   # landing in deep water breaks the fall: no height is carried on to the shore
+
 	sound.update(delta, body, flying, underwater)
 	Probe.stop("sound", tsd)
 

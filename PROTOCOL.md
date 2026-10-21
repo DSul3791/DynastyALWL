@@ -1,4 +1,4 @@
-# Protocol (PROTOCOL_VERSION 30, src/stream/terrain_net.gd)
+# Protocol (PROTOCOL_VERSION 31, src/stream/terrain_net.gd)
 
 Kept current by whoever changes the wire: add the row, bump PROTOCOL_VERSION to the next free number (pull first and read terrain_net.gd), and note the build.
 
@@ -63,7 +63,7 @@ Kept current by whoever changes the wire: add the row, bump PROTOCOL_VERSION to 
 | 20 | ACT_STANCE | a = wanted stance: 0 stand, 1 crouch, 2 sit, 3 lie; the server answers in strain() | 21 |
 | 21 | ACT_CRAFT_QUEUE | a = recipe number, count = how many (1 to 20); the server takes the ingredients now and crafts in order, screen open or not; max 10 entries per player | 22 |
 | 22 | ACT_CRAFT_CANCEL | a = queue entry index as last sent; cancels it, the server hands back the ingredients of its unfinished crafts | 22 |
-| 24 | ACT_DRINK | no arguments: drink one mouthful (vitals.json thirst.drink_ml) from water within thirst.reach_m of the player's feet; refused with reject(0) when no water is near, paced by drink_pace_ms | 24 |
+| 24 | ACT_DRINK | a = pack slot of a water container in hand, or -1 (before protocol 31 it had no argument): with a container that has room, E at the water fills it by thirst.fill_ml (500) per press; otherwise drinks one mouthful (thirst.drink_ml) from water within thirst.reach_m of the player's feet; refused with reject(0) when no water is near, paced by drink_pace_ms | 31 |
 | 26 | ACT_SLEEP | a = 1 fall asleep, 0 wake. Needs the player lying (stance 3), not fainted, and no rain reaching them (open ground, rain over 0.2); otherwise ignored (a notice says why). Sleep ends on any stance change, a fall hit, rain on an open sleeper, or 10 s of zero exertion. The server tells everyone with strain(): bit 4 (+4) of the stance field = asleep | 29 |
 | 25 | ACT_DIG | at = the ground point under the crosshair: one spade dig (0.9 m sphere, 0.25 m below the point); needs a whole spade (tool class spade) in the pack, point within 4.5 m of the player, one per 0.7 s; refused with reject(0 too far, 1 no spade). The server logs the hole (digs.dat) and answers everyone with dug() and tile_changed() | 28 |
 | 27 | ACT_FILL | at = the ground point under the crosshair: one spade fill (0.9 m sphere, 0.1 m above the point, one shovelful of soil, sand, gravel, clay or stone from the pack, digging.json fill order); needs a spade, reach 4.5 m, one per 0.7 s (shared with digs); refused with reject(0 too far, 1 no spade), a notice when the pack has nothing to fill with. The server saves it in digs.dat (DIGS2 fill record), tells everyone with filled() and tile_changed(), the water thread raises its ground, shrubs and plants in the sphere are removed | 30 |
@@ -99,4 +99,5 @@ digs.dat version 2 (DIGS2: seq, kind dig/fill, material, x y z radius, 24 bytes 
 - 16: storage chest (ACT_CHEST_*, chest_contents, state 6).
 - 15: lean-to (state 5, ACT_PLACE carries yaw in count).
 - 14: tool wear (9-byte slot updates, ACT_REPAIR).
+- 31: water containers. ACT_DRINK takes a = the held container's pack slot or -1. A container (items.json `capacity_ml`, kind container) keeps its water in the slot's existing `wear` field in millilitres, so slot rows and inventories.json are unchanged (an old save reads 0 = empty). Use (ACT_EAT) on a container drinks a mouthful from it. Carried weight counts 1 kg per litre inside. data/items/vitals.json thirst.fill_ml.
 - 30: ACT_FILL (27) and filled(): spade fills saved as DIGS2 fill records. Digs and fills also remove shrubs and plants standing in the sphere (flora_cut).

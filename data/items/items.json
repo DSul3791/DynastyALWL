@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = placeholder price of one item in coins (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 39,
+	"next_number": 44,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -449,6 +449,57 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1
+		},
+		"wooden_bowl": {
+			"number": 39,
+			"name": "Wooden bowl",
+			"description": "A bowl hollowed from a bolt of wood. Carries a little water.",
+			"kind": "container",
+			"stack": 1,
+			"capacity_ml": 300,
+			"look_alikes": [],
+			"value": 3
+		},
+		"clay_pot": {
+			"number": 40,
+			"name": "Clay pot",
+			"description": "A fired pot of clay. Holds three litres of water.",
+			"kind": "container",
+			"stack": 1,
+			"capacity_ml": 3000,
+			"look_alikes": [],
+			"value": 3
+		},
+		"bucket": {
+			"number": 41,
+			"name": "Bucket",
+			"description": "A wooden bucket bound with cord. Holds eight litres of water.",
+			"kind": "container",
+			"stack": 1,
+			"capacity_ml": 8000,
+			"look_alikes": [],
+			"value": 3
+		},
+		"waterskin": {
+			"number": 42,
+			"name": "Waterskin",
+			"description": "A skin bag sewn shut. Holds a day's drink and little weight.",
+			"kind": "container",
+			"stack": 1,
+			"capacity_ml": 1500,
+			"future": true,
+			"look_alikes": [],
+			"value": 3
+		},
+		"hide": {
+			"number": 43,
+			"name": "Hide",
+			"description": "A raw animal skin.",
+			"kind": "material",
+			"stack": 10,
+			"future": true,
+			"look_alikes": [],
+			"value": 3
 		}
 	}
 }

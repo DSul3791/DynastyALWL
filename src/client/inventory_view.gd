@@ -722,7 +722,7 @@ func _on_slots(bytes: PackedByteArray) -> void:
 			if tool_event.is_valid() and inventory.numbers[slot] == was_number and was_number != 0:
 				if is_broken(slot) and not was_broken:
 					tool_event.call("broke")
-				elif inventory.wear[slot] < was_wear:
+				elif inventory.wear[slot] < was_wear and int(table.entry(table.id_of(was_number)).get("durability", 0)) > 0:
 					tool_event.call("repaired")
 
 	_refresh()
@@ -896,7 +896,35 @@ func _on_vitals(new_hunger: int, new_health: int, weight_dkg: int, new_thirst: i
 # Drink from the water at your feet (E at the water's edge; the server checks the water and paces the mouthfuls).
 func drink() -> void:
 	_drink_msec = Time.get_ticks_msec()
-	net.inventory_action.rpc_id(1, Net.ACT_DRINK, 0, 0, 0, Vector3.ZERO)
+	net.inventory_action.rpc_id(1, Net.ACT_DRINK, held_container_slot(), 0, 0, Vector3.ZERO)
+
+
+# Water containers (job 89): the container's water is kept in its slot's wear field (millilitres).
+func container_cap(slot: int) -> int:
+	if slot < 0 or slot >= inventory.SLOTS or inventory.numbers[slot] == 0:
+		return 0
+
+	return int(table.entry(table.id_of(inventory.numbers[slot])).get("capacity_ml", 0))
+
+
+# The hotbar slot of the container in hand, or -1.
+func held_container_slot() -> int:
+	var slot: int = int(held_slot_now.call()) if held_slot_now.is_valid() else -1
+	return slot if container_cap(slot) > 0 else -1
+
+
+func held_container_has_room() -> bool:
+	var slot: int = held_container_slot()
+	return slot >= 0 and inventory.wear[slot] < container_cap(slot)
+
+
+func held_container_has_water() -> bool:
+	var slot: int = held_container_slot()
+	return slot >= 0 and inventory.wear[slot] > 0
+
+
+func _litres(ml: int) -> String:
+	return "%.1f L" % (float(ml) / 1000.0) if ml >= 100 else "%d ml" % ml
 
 
 # Can this item be eaten or applied (food or medicine in data/items/vitals.json)?
@@ -909,7 +937,7 @@ func equippable_slot(slot: int) -> bool:
 		return false
 
 	var entry: Dictionary = table.entry(table.id_of(inventory.numbers[slot]))
-	return entry.has("tool_class") or entry.has("weapon_class") or str(entry.get("kind", "")) in ["tool", "weapon", "placeable"]
+	return entry.has("tool_class") or entry.has("weapon_class") or str(entry.get("kind", "")) in ["tool", "weapon", "placeable", "container"]
 
 
 # Hold a tool: from the hotbar slots straight away; from the rest of the pack it first moves into a free hotbar slot
@@ -952,12 +980,18 @@ func refresh_hotbar() -> void:
 
 
 func hotbar_tip(slot: int) -> String:
-	return _tooltip(inventory.numbers[slot], inventory.counts[slot]) if inventory.numbers[slot] != 0 else "Drag an item here from the inventory. Key %s holds it." % ("0" if slot == 9 else str(slot + 1))
+	return _tooltip(inventory.numbers[slot], inventory.counts[slot], inventory.wear[slot]) if inventory.numbers[slot] != 0 else "Drag an item here from the inventory. Key %s holds it." % ("0" if slot == 9 else str(slot + 1))
 
 
 # Eat the food or apply the medicine in a pack slot. Herbs that look like something else must be identified first.
 func eat_slot(slot: int) -> void:
-	# Use on a tool, weapon or kit holds it in the hand (and again puts it away); on food or medicine it eats or applies it.
+	# Use on a tool, weapon or kit holds it in the hand (and again puts it away); on food or medicine it eats or applies it;
+	# on a water container that holds water it takes a mouthful.
+	if container_cap(slot) > 0 and inventory.wear[slot] > 0:
+		_drink_msec = Time.get_ticks_msec()
+		net.inventory_action.rpc_id(1, Net.ACT_EAT, slot, 0, 0, Vector3.ZERO)
+		return
+
 	if not edible_slot(slot):
 		if equippable_slot(slot) and equip_requested.is_valid():
 			equip_with_move(slot)
@@ -1105,7 +1139,7 @@ func _refresh_chest() -> void:
 			var source = pair[1]
 			var number: int = source.numbers[i]
 			button.text = "" if number == 0 else "%s\nx%d" % [table.name_of(number), source.counts[i]]
-			button.tooltip_text = _tooltip(number, source.counts[i])
+			button.tooltip_text = _tooltip(number, source.counts[i], source.wear[i])
 
 
 func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
@@ -2117,7 +2151,7 @@ func _item_label(number: int) -> String:
 	return name
 
 
-func _tooltip(number: int, count: int) -> String:
+func _tooltip(number: int, count: int, fill_ml: int = 0) -> String:
 	if number == 0:
 		return ""
 
@@ -2126,6 +2160,9 @@ func _tooltip(number: int, count: int) -> String:
 
 	var text: String = "%s x%d\n%s, stacks to %d" % [name, count, str(entry.get("kind", "item")), table.stack_of(number)]
 	text += "\n%s" % str(entry.get("description", "A plant material you gathered."))
+
+	if int(entry.get("capacity_ml", 0)) > 0:
+		text += "\nHolds %s of %s. Use (E) drinks from it; at the water, E fills it." % [_litres(fill_ml), _litres(int(entry["capacity_ml"]))]
 
 	var kcal: int = VitalsRules.food_value(table.id_of(number), _vitals_cfg)
 	var heal: int = VitalsRules.heal_value(table.id_of(number), _vitals_cfg)
@@ -2273,7 +2310,10 @@ func _refresh() -> void:
 			button.text += "   BROKEN" if is_broken(i) else "   %d%%" % int(c * 100.0)
 		button.modulate = Color(1.0, 0.9, 0.5) if i == _selected else Color.WHITE
 		button.visible = filter == "" or (number != 0 and _matches(table.name_of(number), filter))
-		button.tooltip_text = _tooltip(number, inventory.counts[i])
+		button.tooltip_text = _tooltip(number, inventory.counts[i], inventory.wear[i])
+
+		if number != 0 and container_cap(i) > 0:
+			button.text += "   %s" % _litres(inventory.wear[i])
 
 	# Recipes: makeable first, then the rest, each alphabetical.
 	for child in _recipe_list.get_children():
