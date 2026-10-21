@@ -27,6 +27,18 @@ func _init() -> void:
 	check(Rules.blocked(cfg, "campfire_kit", Vector3(1.5, 10, 0), rows) == "close" and Rules.blocked(cfg, "campfire_kit", Vector3(2.5, 10, 0), rows) == "", "a fire needs 2 m from another fire")
 	check(Rules.blocked(cfg, "campfire_kit", Vector3(2.2, 10, 0), [{"pos": Vector3(0, 10, 0), "state": 6}]) == "close", "a fire too near a structure is blocked")
 
+	# Slope (design 10.1): the ghost is red until the ground is a reasonable shape.
+	var flat: Callable = func(_x, _z): return 10.0
+	var ramp: Callable = func(x, _z): return 10.0 + 0.5 * x   # rises 0.5 m per metre along x
+	var hole: Callable = func(x, _z): return NAN
+	check(Rules.steep(cfg, "lean_to_kit", Vector3(0, 10, 0), 0.0, flat) == "", "flat ground takes a lean-to")
+	check(Rules.steep(cfg, "lean_to_kit", Vector3(0, 10, 0), 0.0, ramp) == "steep", "a lean-to on a 50 percent slope is red (rise 1.2 m over 2.4 m)")
+	check(Rules.steep(cfg, "campfire_kit", Vector3(0, 10, 0), 0.0, ramp) == "steep", "a campfire on the same slope is red (rise 0.8 m over 1.6 m, limit 0.6)")
+	check(Rules.steep(cfg, "chest_kit", Vector3(0, 10, 0), 0.0, func(x, _z): return 10.0 + 0.2 * x) == "", "a gentle slope is fine")
+	check(Rules.steep(cfg, "lean_to_kit", Vector3(0, 10, 0), PI * 0.5, func(_x, z): return 10.0 + 0.5 * z) == "steep", "turning the lean-to turns its footprint (the slope runs along z)")
+	check(Rules.steep(cfg, "lean_to_kit", Vector3(0, 10, 0), 0.0, hole) == "", "unknown ground never blocks by itself")
+	check(Rules.reason_text("steep") != "" and Rules.reason_text("open") == "", "red states have a reason in words")
+
 	var crowded: Array = []
 
 	for n in range(8):

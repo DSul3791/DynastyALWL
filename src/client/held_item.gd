@@ -55,7 +55,7 @@ var _blueprint: MeshInstance3D
 var _blueprint_at: Vector3 = Vector3.ZERO
 var _blueprint_ok: bool = false
 var _placement: Dictionary = {}              # structures.json: footprints, gaps, caps (shared with the server's rules)
-var blueprint_state: String = ""            # what the ghost shows now: "open", "covered", "close" or "crowded" (tests read it)
+var blueprint_state: String = ""            # what the ghost shows now: "open", "covered", "close", "crowded" or "steep" (tests read it)
 var _blueprint_shape: Vector2 = Vector2(-1.0, -1.0)
 var _blueprint_next_msec: int = 0
 
@@ -443,10 +443,18 @@ func _update_blueprint() -> void:
 	blueprint_state = PlacementRules.blocked(_placement, held_id(), _blueprint_at, _inv.placed_rows())
 
 	if blueprint_state == "":
+		var ground_at: Vector3 = _blueprint_at
+		var probe: Callable = func(x: float, z: float) -> float:
+			var ray: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(Vector3(x, ground_at.y + 3.0, z), Vector3(x, ground_at.y - 3.0, z))
+			var found: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(ray)
+			return float(found["position"].y) if not found.is_empty() else NAN
+		blueprint_state = PlacementRules.steep(_placement, held_id(), _blueprint_at, _camera.global_rotation.y, probe)
+
+	if blueprint_state == "":
 		var covered: bool = footprint != Vector2.ZERO or (_cover_at.is_valid() and _cover_at.call(_blueprint_at))
 		blueprint_state = "covered" if covered else "open"
 
-	var blocked: bool = blueprint_state == "close" or blueprint_state == "crowded"
+	var blocked: bool = blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep"
 	_blueprint_ok = _blueprint_ok and not blocked
 	(_blueprint.mesh.material as StandardMaterial3D).albedo_color = Color(0.9, 0.2, 0.2, 0.55) if blocked else (Color(0.3, 0.9, 0.3, 0.55) if blueprint_state == "covered" else Color(0.95, 0.85, 0.2, 0.55))
 
@@ -524,7 +532,9 @@ func _caption() -> String:
 
 	var text: String = _inv.table.name_of(number)
 
-	if _is_placeable():
+	if _is_placeable() and PlacementRules.reason_text(blueprint_state) != "":
+		text += "   (red: %s)" % PlacementRules.reason_text(blueprint_state)
+	elif _is_placeable():
 		text += "   (left click: place; green = under cover, yellow = open)" if _blueprint_shape == Vector2.ZERO else "   (left click: place, it faces you)"
 	elif _is_torch():
 		text += "   (lights the way while held)"

@@ -1,5 +1,5 @@
 {
-	"note": "Placed structures (Dave 2026-10-20: lean-to and storage chest are the first buildables). Placed like the campfire kit with ACT_PLACE (count = yaw in degrees). state is the world-item row state clients draw it by (5 lean-to, 6 chest). cap_per_chunk counts one 256 m chunk. A lean-to is a roof for the Cover index: a box of half_x by half_z around its spot, from 0.5 m below the ground to height above it. A structure with slots is a container: its contents are server-owned (chests.json) and sent only to the player who opens it. Container rules (data): slots is how many stacks it holds, max_kg the most weight it takes (weights.json kilograms; a put that would pass it puts what fits and the rest stays in the pack), who is who may open it (only \"anyone\" for now; \"owner\" and \"town\" come with ownership). The take side is limited by the player's own carry cap. footprint_x and footprint_z are the ghost's size in metres (the client draws it as the player holds the kit; red when blocked, from src/shared/placement_rules.gd). campfire is the fire kit's own gap between fires and cap per chunk (a fire is not a structure row). Station add-ons (Tyler, Valheim style): a structure with addon_of names the station it improves. A station's level is 1 plus the number of different add-on kinds within its addon_reach_m; recipes with station_level above that need more add-ons.",
+	"note": "Placed structures (Dave 2026-10-20: lean-to and storage chest are the first buildables). Placed like the campfire kit with ACT_PLACE (count = yaw in degrees). state is the world-item row state clients draw it by (5 lean-to, 6 chest). cap_per_chunk counts one 256 m chunk. A lean-to is a roof for the Cover index: a box of half_x by half_z around its spot, from 0.5 m below the ground to height above it. A structure with slots is a container: its contents are server-owned (chests.json) and sent only to the player who opens it. Container rules (data): slots is how many stacks it holds, max_kg the most weight it takes (weights.json kilograms; a put that would pass it puts what fits and the rest stays in the pack), who is who may open it (only \"anyone\" for now; \"owner\" and \"town\" come with ownership). The take side is limited by the player's own carry cap. footprint_x and footprint_z are the ghost's size in metres (the client draws it as the player holds the kit; red when blocked, from src/shared/placement_rules.gd). campfire is the fire kit's own gap between fires and cap per chunk (a fire is not a structure row). Station add-ons (Tyler, Valheim style): a structure with addon_of names the station it improves. A station's level is 1 plus the number of different add-on kinds within its addon_reach_m; recipes with station_level above that need more add-ons. Placement slope (build 505, design 10.1): max_rise_m is how much higher the highest of five ground samples across the footprint (middle and corners, turned by the placing yaw; a ring of 0.8 m for the campfire) may be than the lowest; a kit over the limit shows a red ghost with the reason and the server refuses it. A structure may set its own max_rise_m.",
 	"gap_m": 2.5,
 	"structures": {
 		"lean_to": {
@@ -180,6 +180,8 @@
 	},
 	"campfire": {
 		"gap_m": 2.0,
-		"cap_per_chunk": 8
-	}
+		"cap_per_chunk": 8,
+		"max_rise_m": 0.6
+	},
+	"max_rise_m": 1.0
 }

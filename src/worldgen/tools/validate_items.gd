@@ -330,6 +330,11 @@ func _init() -> void:
 		recipe_numbers[n] = rid
 		_check_name(String(r.get("name", "")), "recipes.json: recipe '%s'" % rid)
 
+		# Hand-craft rule (DESIGN_IDEAS 5.3, decided): at most two ingredients, no station. A recipe that breaks it is a warning,
+		# not an error: the design owner decides whether it moves to a bench or the rule bends.
+		if String(r.get("station", "")) == "" and bool(r.get("known", false)) and r.get("needs", []).size() > 2:
+			warn("recipes.json %s: a hand recipe with %d ingredients (rule: at most two)" % [rid, r["needs"].size()])
+
 		for id in r.get("identify", []):
 			want_item.call(String(id), "recipe '%s' identify" % rid)
 

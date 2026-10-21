@@ -101,7 +101,12 @@ func _init() -> void:
 	pass_time(6.0, 0.2)
 	check(count("campfire_kit") == 1, "a campfire kit is made by hand")
 
-	# Make camp.
+	# Make camp: not on a steep bank (the server refuses it), then on level ground.
+	var level: Callable = items.ground_height
+	items.ground_height = func(x, _z): return 10.0 + 0.5 * (x - 2.0)
+	items.action(1, Net.ACT_PLACE, slot_of("campfire_kit"), 0, 0, Vector3(2.0, 10.0, 0.0))
+	check(count("campfire_kit") == 1, "a campfire on a steep bank is refused")
+	items.ground_height = level
 	items.action(1, Net.ACT_PLACE, slot_of("campfire_kit"), 0, 0, Vector3(2.0, 10.0, 0.0))
 	var fire: int = 0
 

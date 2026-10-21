@@ -43,6 +43,7 @@ UNITS = [
     ("forge_models", "src/worldgen/tools/test_forge_models.gd"),
     ("soak", "src/worldgen/tools/soak_server.gd"),
     ("new_player_day", "src/worldgen/tools/test_new_player_day.gd"),
+    ("placement_rules", "src/worldgen/tools/test_placement_rules.gd"),
     ("save_compat", "src/worldgen/tools/test_save_compat.gd"),
     ("first_hour", "src/worldgen/tools/test_first_hour.gd"),
 ]

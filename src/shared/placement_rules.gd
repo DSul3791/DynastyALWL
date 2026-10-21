@@ -74,3 +74,52 @@ static func blocked(cfg: Dictionary, kit_id: String, spot: Vector3, rows: Array)
 
 	var cap: int = fires_per_chunk(cfg) if def.is_empty() else int(def.get("cap_per_chunk", 99))
 	return "crowded" if same >= cap else ""
+
+
+# Why a spot is red in words (the ghost's caption; the server says it too when it refuses).
+static func reason_text(state: String) -> String:
+	match state:
+		"close":
+			return "too close to another fire or building"
+		"crowded":
+			return "too many of these here already"
+		"steep":
+			return "the ground is too steep here"
+
+	return ""
+
+
+# "steep" when the ground under the kit is not level enough to stand it on, else "" (design 10.1: the outline is red until the
+# terrain is a reasonable shape; leveling comes with blueprints later). The ground is sampled at the middle and the corners of the
+# footprint turned by `yaw` (radians, the camera's), or on a ring of 0.8 m for a campfire; `height` is Callable(x, z) -> float
+# (NAN where unknown). The allowed rise from lowest to highest sample is "max_rise_m" of the structure, else of the file.
+static func steep(cfg: Dictionary, kit_id: String, spot: Vector3, yaw: float, height: Callable) -> String:
+	var def: Dictionary = structure_of_kit(cfg, kit_id)
+	var offsets: Array = [Vector2.ZERO]
+
+	if def.is_empty():
+		var r: float = 0.8
+
+		for corner in [Vector2(r, 0.0), Vector2(-r, 0.0), Vector2(0.0, r), Vector2(0.0, -r)]:
+			offsets.append(corner)
+	else:
+		var hx: float = float(def.get("footprint_x", 1.0)) * 0.5
+		var hz: float = float(def.get("footprint_z", 1.0)) * 0.5
+
+		for corner in [Vector2(hx, hz), Vector2(-hx, hz), Vector2(hx, -hz), Vector2(-hx, -hz)]:
+			offsets.append(Vector2(corner.x * cos(yaw) + corner.y * sin(yaw), -corner.x * sin(yaw) + corner.y * cos(yaw)))
+
+	var low: float = INF
+	var high: float = -INF
+
+	for o in offsets:
+		var h: float = float(height.call(spot.x + o.x, spot.z + o.y))
+
+		if is_nan(h):
+			continue
+
+		low = minf(low, h)
+		high = maxf(high, h)
+
+	var limit: float = float(def.get("max_rise_m", cfg.get("campfire", {}).get("max_rise_m", 0.6) if def.is_empty() else cfg.get("max_rise_m", 1.0)))
+	return "steep" if high - low > limit else ""

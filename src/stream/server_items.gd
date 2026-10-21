@@ -61,6 +61,7 @@ const COOKING_PATH := "res://data/items/cooking.json"
 const GatherRules := preload("res://src/shared/gather_rules.gd")
 const SkillRules := preload("res://src/shared/skill_rules.gd")
 const SkillWeb := preload("res://src/shared/skill_web.gd")
+const PlacementRules := preload("res://src/shared/placement_rules.gd")
 const GATHER_PACE_MS := 80              # at most about 12 picks a second per player (hold-E sweep)
 const MINE_REACH_M := 4.5
 const MINE_COOLDOWN_MS := 700
@@ -140,6 +141,7 @@ var _drops: Dictionary = {}
 var _cooking: Dictionary = {}
 var _structures: Dictionary = {}    # structures.json: kind -> definition
 var _struct_gap_m: float = 2.5
+var _structures_cfg: Dictionary = {}   # the whole structures.json, for the shared placement rules
 var _fire_gap_m: float = FIRE_MIN_GAP_M
 var _fires_per_chunk: int = FIRES_PER_CHUNK
 var _chests: Dictionary = {}        # structure uid -> Inventory (server-owned contents, chests.json)
@@ -254,6 +256,7 @@ func setup(item_table, store_dir: String) -> void:
 	var structures: Variant = JSON.parse_string(FileAccess.get_file_as_string(STRUCTURES_PATH))
 
 	if typeof(structures) == TYPE_DICTIONARY:
+		_structures_cfg = structures
 		_structures = structures.get("structures", {})
 		_struct_gap_m = float(structures.get("gap_m", 2.5))
 		_fire_gap_m = float(structures.get("campfire", {}).get("gap_m", FIRE_MIN_GAP_M))
@@ -1318,6 +1321,10 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0) -> void:
 		return
 
 	var spot: Vector3 = Vector3(at.x, ground, at.z)
+
+	if ground_height.is_valid() and PlacementRules.steep(_structures_cfg, kit_id, spot, deg_to_rad(float(yaw_deg)), func(x, z): return float(ground_height.call(x, z))) == "steep":
+		_say(peer, "The ground is too steep there.")
+		return
 
 	if kit_id != "campfire_kit":
 		_place_structure(peer, inv, slot, spot, yaw_deg, _structure_of_kit(kit_id))
