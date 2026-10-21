@@ -1278,6 +1278,9 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			node.position = row[3]
 			light = node.get_node_or_null("Light")
 
+		if light == null:
+			light = node.get_node_or_null("Light")   # the forges glow
+
 		_root.add_child(node)
 		_world[id] = {"node": node, "number": row[1], "count": row[2], "pos": row[3], "state": state, "light": light}
 
