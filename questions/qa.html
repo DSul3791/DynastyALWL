@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dynasty Questions</title>
+<style>
+:root{--bg:#fff;--fg:#111;--card:#f1f1f1;--acc:#1a5fb4;--err:#b00020}
+@media(prefers-color-scheme:dark){:root{--bg:#161616;--fg:#eee;--card:#262626;--acc:#6aa9ff;--err:#ff6b7a}}
+body{background:var(--bg);color:var(--fg);font:22px/1.4 system-ui,sans-serif;margin:0;padding:16px;max-width:760px;margin:auto}
+.q{background:var(--card);border-radius:12px;padding:16px;margin:16px 0}
+.q h2{font-size:24px;margin:0 0 12px}
+label{display:block;padding:10px 4px}
+input[type=radio]{transform:scale(1.6);margin-right:14px}
+textarea,input[type=password]{width:100%;font-size:22px;box-sizing:border-box;padding:8px}
+button{font-size:22px;padding:12px 24px;margin-top:10px;border:0;border-radius:8px;background:var(--acc);color:#fff}
+.err{color:var(--err)}.msg{margin-top:8px}
+</style></head><body>
+<h1>Questions</h1>
+<div id="tok" hidden><p>Paste your GitHub token (once):</p><input id="t" type="password"><br><button onclick="saveTok()">Remember</button></div>
+<div id="list">Loading...</div>
+<p><button onclick="load()">Refresh</button> <button onclick="forget()">Forget token</button></p>
+<script>
+const REPO="DSul3791/DynastyALWL",BR="claude/generator-v2",QF="questions/QUESTIONS.md",AF="questions/ANSWERS.md";
+const api=p=>`https://api.github.com/repos/${REPO}/contents/${p}`;
+const tok=()=>{try{return localStorage.getItem("ghtok")||""}catch(e){return ""}};
+function saveTok(){try{localStorage.setItem("ghtok",document.getElementById("t").value.trim())}catch(e){}load()}
+function forget(){try{localStorage.removeItem("ghtok")}catch(e){}load()}
+const hdr=()=>({Authorization:"Bearer "+tok(),Accept:"application/vnd.github+json"});
+const b64d=s=>new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\n/g,"")),c=>c.charCodeAt(0)));
+const b64e=s=>{let b="";new TextEncoder().encode(s).forEach(c=>b+=String.fromCharCode(c));return btoa(b)};
+async function get(p){const r=await fetch(api(p)+"?ref="+BR+"&t="+Date.now(),{headers:hdr(),cache:"no-store"});
+  if(r.status==404)return{text:"",sha:null};if(!r.ok)throw new Error(p+": "+r.status);const j=await r.json();return{text:b64d(j.content),sha:j.sha}}
+async function put(p,text,sha,msg){const body={message:msg,content:b64e(text),branch:BR};if(sha)body.sha=sha;
+  const r=await fetch(api(p),{method:"PUT",headers:hdr(),body:JSON.stringify(body)});
+  if(r.status==409||r.status==422)return false;if(!r.ok)throw new Error(p+": "+r.status);return true}
+function parse(t){const out=[];let c=null;
+  for(const line of t.split("\n")){
+    if(line.startsWith("## ")){const h=line.slice(3),i=h.indexOf("|");
+      c={id:(i<0?h:h.slice(0,i)).trim(),text:(i<0?"":h.slice(i+1)).trim(),choices:[],isText:false,raw:[line]};out.push(c)}
+    else if(c){c.raw.push(line);const s=line.trim();if(s.startsWith("- "))c.choices.push(s.slice(2).trim());else if(s=="[text]")c.isText=true}}
+  return out}
+function esc(s){const d=document.createElement("div");d.textContent=s;return d.innerHTML}
+async function load(){
+  const L=document.getElementById("list");document.getElementById("tok").hidden=!!tok();
+  if(!tok()){L.textContent="";return}
+  try{const {text}=await get(QF);const qs=parse(text);
+    if(!qs.length){L.textContent="No questions right now.";return}
+    L.innerHTML=qs.map((q,n)=>{
+      let body;
+      if(q.choices.length)body=q.choices.map(c=>`<label><input type=radio name=q${n} value="${esc(c).replace(/"/g,"&quot;")}">${esc(c)}</label>`).join("");
+      else if(q.isText)body=`<textarea id=ta${n} rows=3></textarea>`;
+      else return `<div class=q><h2>${esc(q.text||q.id)}</h2><p class=err>Error: question "${esc(q.id)}" has no choices and is not marked [text]. Ask the thread that wrote it to fix it.</p></div>`;
+      return `<div class=q id=box${n}><h2>${esc(q.text||q.id)}</h2>${body}<button onclick="save(${n},'${q.id.replace(/'/g,"")}')">Save</button><div class=msg id=m${n}></div></div>`}).join("");
+  }catch(e){L.innerHTML=`<p class=err>${esc(e.message)}. Check the token.</p>`}}
+async function save(n,id){
+  const m=document.getElementById("m"+n);let ans;
+  const ta=document.getElementById("ta"+n);
+  if(ta)ans=ta.value.trim();else{const r=document.querySelector(`input[name=q${n}]:checked`);ans=r&&r.value}
+  if(!ans){m.textContent="Pick or type an answer first.";return}
+  m.textContent="Saving...";
+  try{
+    let q;
+    for(let k=0;k<5;k++){ // append answer
+      const f=await q_get(id);q=f.q;if(!q){m.textContent="Already gone.";load();return}
+      const a=await get(AF);
+      const entry=`## ${q.id} | ${q.text}\nAnswer: ${ans.replace(/\n/g," / ")}\nAnswered: ${new Date().toISOString().slice(0,16).replace("T"," ")} UTC\n\n`;
+      if(await put(AF,(a.text&&!a.text.endsWith("\n")?a.text+"\n":a.text||"# Answers\n\n")+entry,a.sha,"Answer: "+id))break;
+      if(k==4)throw new Error("conflict, try again")}
+    for(let k=0;k<5;k++){ // remove question
+      const f=await q_get(id);if(!f.q)break;
+      const rest=parse(f.text).filter(x=>x.id!=id);
+      const head=f.text.split("\n").findIndex(l=>l.startsWith("## "));
+      const pre=head<0?"":f.text.split("\n").slice(0,head).join("\n");
+      const nt=(pre?pre+"\n":"")+rest.map(x=>x.raw.join("\n").replace(/\n+$/,"")).join("\n\n")+(rest.length?"\n":"");
+      if(await put(QF,nt,f.sha,"Answered, removed: "+id))break;
+      if(k==4)throw new Error("conflict removing, try again")}
+    document.getElementById("box"+n).innerHTML="<h2>Saved. Thank you.</h2>";
+  }catch(e){m.innerHTML=`<span class=err>${esc(e.message)}</span>`}}
+async function q_get(id){const f=await get(QF);return{text:f.text,sha:f.sha,q:parse(f.text).find(x=>x.id==id)}}
+load();
+</script></body></html>

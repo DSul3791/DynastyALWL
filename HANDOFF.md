@@ -2,6 +2,8 @@
 
 Read this first in a new conversation. It is the short master summary; the details are in the files named below.
 
+**Questions for Dave:** add real multiple-choice (or short text) questions to `questions/QUESTIONS.md`, format and rules in `questions/README.md`; answers land in `questions/ANSWERS.md`. No tasks, only questions.
+
 ## First task
 
 Steps 14, 15 and 16 first versions are done (2026-10-16): the runtime terrain generator, runtime trees and plants, a walk-and-fly preview, and a terrain server that streams blocks and flora to a client with a disk cache. Step 18 is done for the inner starters: 36 tiles baked and kept in `/mnt/project-files/tiles/base_world/` (copy them into `worlds/base_world/tiles/`). Step 17 (the owner's machine test) waits for the playtest. **Flora (owner, 2026-10-16):** flora must be rich in edible and useful plants, enough for a gathering, cooking and potion-making livelihood; the table has 83 species with yields, season, rarity, uses and properties (`DESIGN_IDEAS.md` Section 4.3). **Scope (owner, 2026-10-16): one starter town for testing.** Work only on the starter tile (3,4) and its eight neighbors until the game runs with terrain and flora; leave the other inner starters as baked and do not extend them. Next for that: draw rivers and lakes, color the ground by soil and rock, and a one-step "host and play" launch. Step 19 (retiring the old pipeline) is deferred until after the first playtest. The owner does nothing on his own computer until the game is playable, so frame-rate checks wait for the first playtest. See the step 14 and 16 notes in `GENERATOR_V2_PLAN.md`.
