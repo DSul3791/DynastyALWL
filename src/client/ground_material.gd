@@ -107,7 +107,7 @@ void fragment() {
 	float closeness = 1.0 - smoothstep(60.0, 260.0, dist);
 	float large = vnoise(world_pos * 0.012);
 	float medium = vnoise(world_pos * 0.31) * 0.6 + vnoise(world_pos * 0.9 + 7.0) * 0.4;
-	color *= 1.0 + (medium - 0.5) * 0.35;
+	color *= 1.0 + (medium - 0.5) * 0.35 * (1.0 - 0.7 * smoothstep(100.0, 400.0, dist));
 
 	float lw[6];
 	for (int k = 0; k < 6; k++) {
@@ -175,7 +175,10 @@ void fragment() {
 
 	// Rock strata on steep faces: bands that wander with the surface.
 	float strata = vnoise(vec3(world_pos.x * 0.03, world_pos.y * 0.4 + large * 3.0, world_pos.z * 0.03));
-	color *= mix(1.0, 0.8 + 0.35 * strata, rock_mask);
+	// The bands are about 2.5 m thick, so from far away they alias into wavy ripples across a cliff
+	// (owner screenshot, build 393): they fade out with distance and are a little gentler near.
+	float strata_fade = 1.0 - smoothstep(60.0, 220.0, dist);
+	color *= mix(1.0, 0.86 + 0.28 * strata, rock_mask * strata_fade);
 
 	// Sea bed and shallows: wet, muddy.
 	color = mix(vec3(0.07, 0.065, 0.05), color, smoothstep(-3.0, 0.0, world_pos.y));
