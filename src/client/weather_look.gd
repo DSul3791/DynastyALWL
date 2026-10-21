@@ -108,6 +108,8 @@ var strikes_seen: int = 0
 
 
 const FrameProbe := preload("res://src/debug/frame_probe.gd")
+const WindCueScript := preload("res://src/client/wind_cue.gd")
+var wind_cue                            # WindCue: drifting specks that show the wind heading (off at Low)
 
 func setup(client) -> void:
 	_client = client
@@ -117,6 +119,9 @@ func setup(client) -> void:
 	_snow = _make_snow()
 	add_child(_rain)
 	add_child(_snow)
+	wind_cue = WindCueScript.new()
+	add_child(wind_cue)
+	wind_cue.setup()
 	_bolt_material = StandardMaterial3D.new()
 	_bolt_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_bolt_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -140,6 +145,9 @@ func set_quality(quality: int) -> void:
 	_rain.amount = int(RAIN_AMOUNT[_quality])
 	_snow.amount = int(SNOW_AMOUNT[_quality])
 	(_snow.process_material as ParticleProcessMaterial).turbulence_enabled = _quality >= TURBULENCE_FROM
+
+	if wind_cue != null:
+		wind_cue.set_quality(_quality)
 
 
 func _make_rain() -> GPUParticles3D:
@@ -404,6 +412,7 @@ func _update_particles(rain: float, snow: float, wind: float) -> void:
 	var tilt: float = wind * 0.4
 	_rain.global_position = eye + Vector3(0.0, 12.0, 0.0)
 	_snow.global_position = eye + Vector3(0.0, 10.0, 0.0)
+	wind_cue.update(get_process_delta_time(), eye, _client.weather, rain, snow, under)
 	_rain.emitting = rain > 0.04 and not under
 	_snow.emitting = snow > 0.04 and not under
 	_rain.amount_ratio = clampf(rain, 0.05, 1.0)

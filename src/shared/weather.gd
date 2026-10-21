@@ -68,7 +68,9 @@ static func temp_at(game_s: float, zone_group: String, altitude_m: float = 0.0) 
 	return float(zone["temp"]) + float(zone["swing"]) * cos(TAU * (year_phase(game_s) - 0.375)) - maxf(altitude_m, 0.0) * 0.0065
 
 
-# {"rain", "snow", "storm", "cloud", "sun", "wind" (all 0..1), "temp_c", "season"}.
+# {"rain", "snow", "storm", "cloud", "sun", "wind" (all 0..1), "wind_dir" (radians), "temp_c", "season"}.
+# wind_dir is the way the wind blows TOWARD, as an angle in the ground plane: direction = (cos, sin) on (x, z). It turns slowly
+# (a new heading about every 20 game hours) and swings further in a storm; same on server and client, nothing saved.
 static func state(seed_value: int, game_s: float, zone_group: String, altitude_m: float = 0.0, spirit: float = 0.0) -> Dictionary:
 	var zone: Dictionary = ZONES.get(zone_group, ZONES["temperate"])
 	var phase: float = year_phase(game_s)
@@ -105,6 +107,7 @@ static func state(seed_value: int, game_s: float, zone_group: String, altitude_m
 		"cloud": cloud,
 		"sun": clampf(1.0 - cloud * 1.1, 0.0, 1.0),
 		"wind": clampf(0.15 + 0.45 * _noise(seed_value, 3, game_s / (6.0 * 3600.0)) + 0.4 * storm, 0.0, 1.0),
+		"wind_dir": TAU * _noise(seed_value, 4, game_s / (20.0 * 3600.0)) + 0.8 * storm * (_noise(seed_value, 5, game_s / (2.0 * 3600.0)) - 0.5),
 		"temp_c": temp,
 		"season": season_of(game_s),
 	}

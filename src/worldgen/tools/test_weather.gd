@@ -48,6 +48,22 @@ func _init() -> void:
 	var a: Dictionary = Weather.state(777, 123456.0, "temperate")
 	var b: Dictionary = Weather.state(777, 123456.0, "temperate")
 	check(a == b, "same inputs, same weather")
+	# Wind direction: present, deterministic, finite, turns slowly (under 0.5 rad in 10 game minutes) and does turn over a day.
+	var dir_min: float = 1000.0
+	var dir_max: float = -1000.0
+	var worst_step: float = 0.0
+	var previous: float = float(Weather.state(777, 0.0, "temperate")["wind_dir"])
+
+	for m in range(1, 24 * 6 * 5):
+		var heading: float = float(Weather.state(777, float(m) * 600.0, "temperate")["wind_dir"])
+		check(is_finite(heading), "wind_dir finite")
+		worst_step = maxf(worst_step, absf(heading - previous))
+		dir_min = minf(dir_min, heading)
+		dir_max = maxf(dir_max, heading)
+		previous = heading
+
+	check(worst_step < 0.5, "wind_dir turns slowly (worst step %.3f rad per 10 game minutes)" % worst_step)
+	check(dir_max - dir_min > 1.0, "wind_dir changes over five days")
 	check(Weather.state(778, 123456.0, "temperate") != a or true, "seed is an input")
 
 	var desert: Dictionary = survey("desert", 0.0, 0.0)
