@@ -13,7 +13,7 @@ extends RefCounted
 const SUN_COLOR := Color(1.0, 0.92, 0.80)
 const SUN_ENERGY := 1.55
 const DAY_CYCLE := true      # the sun, moon and sky follow the game clock (day_cycle.gd); false keeps the old fixed afternoon
-const FOG_DENSITY := 0.0006          # clear air; the underwater fog replaces it while diving
+const FOG_DENSITY := 0.0009          # clear air; the underwater fog replaces it while diving
 const SSAO_FROM := 1                 # first quality level with contact shadows
 const GLOW_FROM := 2
 const TAA_FROM := 1
