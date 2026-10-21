@@ -1,0 +1,82 @@
+extends SceneTree
+
+# Animal senses (Radar, 2026-10-21, Tyler report 16): wind carries scent, a crouching player is noticed later, hills block sight,
+# and a bolting rabbit goes to ground in its burrow.
+#   godot --headless --path . --script res://src/worldgen/tools/test_animal_senses.gd
+
+const AnimalsScript := preload("res://src/stream/server_animals.gd")
+
+var failures: int = 0
+
+
+func check(ok: bool, what: String) -> void:
+	if not ok:
+		failures += 1
+		print("FAIL ", what)
+
+
+func make(players: Array, stances: Array, weather: Dictionary, ridge: bool):
+	var a = AnimalsScript.new()
+	a.ground_height = func(x, z): return 10.0 + (8.0 if ridge and absf(x - 15.0) < 3.0 else 0.0)
+	a.blocked = func(_x, _z): return false
+	a.player_positions = func(): return players
+	a.player_stances = func(): return stances
+	a.wind = func(): return weather
+	a.setup()
+	a.cfg["species"]["rabbit"]["target_per_player"] = 0
+	a.rng.seed = 3
+	return a
+
+
+# Does a grazing rabbit at the origin notice a player this many metres along the x axis within three seconds?
+func alerted(player_x: float, stance: int, weather: Dictionary, ridge: bool) -> bool:
+	var players: Array = [Vector3(player_x, 10.0, 0.0)]
+	var a = make(players, [stance], weather, ridge)
+	var id: int = a.spawn("rabbit", 0.0, 0.0)
+	a.animals[id]["timer"] = 100.0
+
+	for n in 60:
+		a.tick(0.05)
+
+	return a.animals[id]["state"] == AnimalsScript.ALERT
+
+
+func _init() -> void:
+	var calm: Dictionary = {"wind": 0.0, "wind_dir": 0.0}
+	var toward_x: Dictionary = {"wind": 1.0, "wind_dir": 0.0}   # blows toward +x
+	check(alerted(20.0, 0, calm, false), "calm, standing player at 20 m: the rabbit watches")
+	check(not alerted(30.0, 0, calm, false), "calm, standing player at 30 m: not noticed")
+	check(alerted(-30.0, 0, toward_x, false), "the rabbit downwind of the player smells them at 30 m")
+	check(not alerted(30.0, 0, toward_x, false), "the rabbit upwind of the player does not notice them at 30 m")
+	check(not alerted(20.0, 1, calm, false), "a crouching player at 20 m is not noticed")
+	check(alerted(13.0, 1, calm, false), "a crouching player at 13 m is")
+	check(not alerted(20.0, 0, calm, true), "a hill between them hides a player at 20 m")
+
+	# Burrow: the rabbit 10 m from its burrow, the player beyond it: it runs for the hole and goes to ground.
+	var players: Array = [Vector3(-90.0, 10.0, 0.0)]
+	var a = make(players, [0], calm, false)
+	var id: int = a.spawn("rabbit", 0.0, 0.0)
+	a.animals[id]["pos"] = Vector3(10.0, 10.0, 0.0)
+	a.animals[id]["timer"] = 100.0
+	players[0] = Vector3(20.0, 10.0, 0.0)   # 10 m behind it, inside spook_m
+	var hid: bool = false
+
+	for n in 400:
+		a.tick(0.05)
+
+		if a.animals[id]["state"] == AnimalsScript.HIDDEN:
+			hid = true
+			break
+
+	check(hid and a.animals[id]["pos"].distance_to(Vector3(0.0, 10.0, 0.0)) < 0.5, "a bolting rabbit with its burrow in reach goes to ground there")
+	check(a.rows_near(Vector3(0.0, 10.0, 0.0)).is_empty(), "a hidden rabbit is not sent")
+	check(a.target_along(Vector3(-1.0, 10.0, 0.0), Vector3(1.0, 0.0, 0.0), 3.0) == 0, "and cannot be speared")
+	players[0] = Vector3(-200.0, 10.0, 0.0)
+
+	for n in 1600:
+		a.tick(0.05)
+
+	check(a.animals.has(id) and a.animals[id]["state"] != AnimalsScript.HIDDEN, "it comes out once the player is gone")
+
+	print("animal senses: %d failures" % failures)
+	quit(1 if failures > 0 else 0)

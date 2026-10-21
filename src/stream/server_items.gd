@@ -3010,6 +3010,16 @@ func peer_positions() -> Array:
 	return _peer_pos.values()
 
 
+# Stances in the same order as peer_positions (0 stand, 1 crouch, 2 sit, 3 lie): wildlife notices a crouching player later.
+func peer_stances() -> Array:
+	var out: Array = []
+
+	for peer in _peer_pos:
+		out.append(int(_stance.get(peer, 0)))
+
+	return out
+
+
 # For the dialogue effects (authored lines only): how many of an item the pack holds, and give or take some.
 func count_for(peer: int, id: String) -> int:
 	var inv = inventory_of(peer)

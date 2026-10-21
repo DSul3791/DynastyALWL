@@ -11,6 +11,7 @@ const GRAZE := 0
 const HOP := 1
 const FLEE := 2
 const ALERT := 3
+const HIDDEN := 5               # in its burrow: never sent, never hunted
 const STAGGER := 4              # a quarter of the animals are looked at each tick
 
 var cfg: Dictionary = {}
@@ -18,6 +19,8 @@ var animals: Dictionary = {}       # id int -> {id, sp, num, pos Vector3, headin
 var ground_height: Callable        # (x, z) -> height
 var blocked: Callable              # (x, z) -> bool (deep water)
 var player_positions: Callable     # () -> Array of Vector3
+var player_stances: Callable       # () -> Array of stances in player_positions order (0 stand, 1 crouch, 2 sit, 3 lie)
+var wind: Callable                 # () -> the weather dictionary ("wind" 0..1 and "wind_dir" radians, the way it blows toward)
 var died: Callable                 # (species, position, source peer) when an animal is killed
 var ticks_run: int = 0
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -27,6 +30,8 @@ var _spawn_acc: float = 0.0
 var _tick_no: int = 0
 var _top_idx: int = 0
 var _next_herd: int = 1
+var _wind_s: float = 0.0
+var _wind_dir: Vector2 = Vector2.ZERO
 var _herds: Dictionary = {}       # herd id -> Array of animal ids (3 to 6 deer)
 
 
@@ -56,7 +61,7 @@ func spawn(sp: String, x: float, z: float) -> int:
 	_next_id += 1
 	var pos: Vector3 = Vector3(x, y, z)
 	animals[id] = {"id": id, "sp": sp, "num": int(def.get("number", 0)), "pos": pos, "heading": rng.randf() * TAU, "state": GRAZE,   # luck-exempt: which way a new animal faces
-		"target": pos, "timer": _graze_time(def), "acc": 0.0, "home": pos, "hp": float(def.get("health", 5.0)), "herd": 0, "alarm": -1.0, "burst": 0.0, "alert": 0.0}
+		"target": pos, "timer": _graze_time(def), "acc": 0.0, "home": pos, "hp": float(def.get("health", 5.0)), "herd": 0, "alarm": -1.0, "burst": 0.0, "alert": 0.0, "burrow": pos if float(def.get("burrow_m", 0.0)) > 0.0 else Vector3.INF, "to_burrow": false}
 	return id
 
 
@@ -88,6 +93,9 @@ func target_along(origin: Vector3, dir: Vector3, reach: float) -> int:
 	var best_d: float = reach
 
 	for id in animals:
+		if animals[id]["state"] == HIDDEN:
+			continue
+
 		var to: Vector2 = Vector2(animals[id]["pos"].x - origin.x, animals[id]["pos"].z - origin.z)
 		var d: float = to.length()
 
@@ -115,6 +123,10 @@ func tick(delta: float) -> void:
 	_tick_no += 1
 	var ids: Array = animals.keys()
 	var count: int = ids.size()
+	var stances: Array = player_stances.call() if player_stances.is_valid() else []
+	var weather: Dictionary = wind.call() if wind.is_valid() else {}
+	_wind_s = float(weather.get("wind", 0.0))
+	_wind_dir = Vector2.from_angle(float(weather.get("wind_dir", 0.0)))
 
 	# A quarter of the animals per tick (id mod 4), each one's elapsed time kept in acc so its step still gets the true dt; if the
 	# tick's AI budget runs out the rest wait for the next one (the rotating start keeps that fair).
@@ -131,13 +143,29 @@ func tick(delta: float) -> void:
 
 		var near_d: float = INF
 		var near_p: Vector3 = Vector3.INF
+		var seen_d: float = INF   # the distance as the animal perceives it: wind, stance and cover stretch or shrink it
+		var seen_p: Vector3 = Vector3.INF
+		var def_s: Dictionary = species_def(a["sp"])
+		var reach_m: float = maxf(float(def_s.get("alert_m", 0.0)), float(def_s.get("spook_m", 14.0))) * float(cfg.get("senses", {}).get("far_factor", 1.5))
 
-		for p in players:
+		for pi in players.size():
+			var p: Vector3 = players[pi]
 			var d: float = Vector2(p.x - a["pos"].x, p.z - a["pos"].z).length()
 
 			if d < near_d:
 				near_d = d
 				near_p = p
+
+			if d <= reach_m:
+				var sensed: float = d / _sense_factor(a, def_s, p, d, int(stances[pi]) if pi < stances.size() else 0)
+
+				if sensed < seen_d:
+					seen_d = sensed
+					seen_p = p
+
+		if seen_p == Vector3.INF:
+			seen_d = near_d
+			seen_p = near_p
 
 		if near_d > despawn_m:
 			gone.append(id)
@@ -154,7 +182,7 @@ func tick(delta: float) -> void:
 
 		var dt: float = minf(a["acc"], 1.0)
 		a["acc"] = 0.0
-		_step(a, dt, near_d, near_p)
+		_step(a, dt, near_d, near_p, seen_d, seen_p)
 
 	for id in gone:
 		animals.erase(id)
@@ -168,9 +196,21 @@ func tick(delta: float) -> void:
 		_top_up(players, _top_idx)
 
 
-func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3) -> void:
+func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: float, seen_p: Vector3) -> void:
 	ticks_run += 1
 	var def: Dictionary = species_def(a["sp"])
+
+	if a["state"] == HIDDEN:
+		a["timer"] -= dt
+
+		if a["timer"] <= 0.0:
+			if seen_d > float(def.get("spook_m", 14.0)) * 1.5:
+				a["state"] = GRAZE
+				a["timer"] = _graze_time(def)
+			else:
+				a["timer"] = 3.0   # a player is still close to the burrow: stay down a little longer
+
+		return
 
 	if a["alarm"] >= 0.0:
 		a["alarm"] -= dt
@@ -179,8 +219,8 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3) -> void:
 			a["alarm"] = -1.0
 			_bolt(a, near_p, def)
 
-	if near_d <= float(def.get("spook_m", 14.0)) and a["state"] != FLEE:
-		_bolt(a, near_p, def)
+	if seen_d <= float(def.get("spook_m", 14.0)) and a["state"] != FLEE:
+		_bolt(a, seen_p, def)
 
 		# The sentinel (the first to notice) alarms the herd: each mate follows after a short random moment.
 		if a["herd"] != 0:
@@ -195,22 +235,22 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3) -> void:
 	if a["state"] == ALERT:
 		a["alert"] -= dt
 
-		if near_d <= float(def.get("spook_m", 14.0)):
-			_bolt(a, near_p, def)
-		elif a["alert"] <= 0.0:
+		if seen_d <= float(def.get("spook_m", 14.0)):
+			_bolt(a, seen_p, def)
+		elif a["alert"] <= 0.0 or seen_d > alert_m * 1.3:
 			a["state"] = GRAZE
 			a["timer"] = _graze_time(def)
 
 		return
 
-	if a["state"] != FLEE and alert_m > 0.0 and near_d <= alert_m and a["alert"] <= 0.0 and near_d > float(def.get("spook_m", 14.0)):
+	if a["state"] != FLEE and alert_m > 0.0 and seen_d <= alert_m and a["alert"] <= 0.0 and seen_d > float(def.get("spook_m", 14.0)):
 		var span2: Array = def.get("alert_s", [1.0, 2.0])
 		a["state"] = ALERT
 		a["alert"] = rng.randf_range(float(span2[0]), float(span2[1]))   # luck-exempt: how long an animal watches
-		a["heading"] = atan2(near_p.z - a["pos"].z, near_p.x - a["pos"].x)
+		a["heading"] = atan2(seen_p.z - a["pos"].z, seen_p.x - a["pos"].x)
 		return
 
-	if a["state"] == GRAZE and near_d > alert_m:
+	if a["state"] == GRAZE and seen_d > alert_m:
 		a["alert"] = 0.0   # it forgets once the player is well away
 
 	if a["state"] == GRAZE:
@@ -242,6 +282,16 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3) -> void:
 		a["pos"] = r["pos"]
 		a["heading"] = r["heading"]
 
+	if a["state"] == FLEE and a["to_burrow"] and (r["arrived"] or not r["moved"]):
+		a["to_burrow"] = false
+
+		if r["arrived"]:
+			var hide: Array = def.get("hide_s", [20.0, 40.0])
+			a["state"] = HIDDEN
+			a["pos"] = a["burrow"]
+			a["timer"] = rng.randf_range(float(hide[0]), float(hide[1]))   # luck-exempt: how long an animal stays in its burrow
+			return
+
 	if r["arrived"] or not r["moved"]:
 		if a["state"] == FLEE and near_d < float(def.get("safe_m", 35.0)):
 			# Still too close: keep running away from the player.
@@ -251,6 +301,7 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3) -> void:
 				away = away.rotated(rng.randf_range(-1.2, 1.2))   # luck-exempt: which way a cornered animal breaks
 
 			a["target"] = a["pos"] + _zig(away, def) * float(def.get("zig_leg_m", float(def.get("flee_run_m", 25.0))))
+			_to_burrow(a, away, def)
 			return
 
 		if a["state"] == FLEE:
@@ -331,7 +382,7 @@ func rows_near(point: Vector3) -> Array:
 		var a: Dictionary = animals[id]
 		var d: float = Vector2(a["pos"].x - point.x, a["pos"].z - point.z).length()
 
-		if d <= radius:
+		if d <= radius and a["state"] != HIDDEN:
 			found.append([d, [id, a["num"], a["pos"], snappedf(a["heading"], 0.01), a["state"]]])
 
 	found.sort_custom(func(l, r): return l[0] < r[0])
@@ -353,6 +404,63 @@ func _bolt(a: Dictionary, from: Vector3, def: Dictionary) -> void:
 	a["burst"] = 0.0
 	a["alert"] = 0.0
 	a["target"] = a["pos"] + _zig(away, def) * float(def.get("zig_leg_m", float(def.get("flee_run_m", 25.0))))
+	_to_burrow(a, away, def)
+
+
+# A rabbit with its burrow in reach and away from the threat runs for it and goes to ground there.
+func _to_burrow(a: Dictionary, away: Vector2, def: Dictionary) -> void:
+	a["to_burrow"] = false
+
+	if a["burrow"] == Vector3.INF:
+		return
+
+	var to_b: Vector2 = Vector2(a["burrow"].x - a["pos"].x, a["burrow"].z - a["pos"].z)
+
+	if to_b.length() <= float(def.get("burrow_m", 0.0)) and (to_b.length() < 2.0 or to_b.normalized().dot(away) > 0.0):
+		a["target"] = a["burrow"]
+		a["to_burrow"] = true
+
+
+# How much farther or nearer a player seems to an animal: downwind of the player it smells them from farther off, upwind it does
+# not; a crouching or lying player is harder to see; with the ground in the way only scent and sound are left.
+func _sense_factor(a: Dictionary, def: Dictionary, p: Vector3, d: float, stance: int) -> float:
+	var sen: Dictionary = cfg.get("senses", {})
+	var f: float = 1.0
+
+	if _wind_s > 0.0 and d > 0.01:
+		var to_animal: Vector2 = Vector2(a["pos"].x - p.x, a["pos"].z - p.z) / d
+		f = maxf(1.0 + float(sen.get("scent_gain", 0.5)) * _wind_s * to_animal.dot(_wind_dir), 0.5)
+
+	if stance == 1:
+		f *= float(sen.get("crouch_factor", 0.6))
+	elif stance == 3:
+		f *= float(sen.get("lie_factor", 0.5))
+	elif stance == 2:
+		f *= float(sen.get("sit_factor", 0.8))
+
+	if d > float(sen.get("always_notice_m", 8.0)) and not _sees(a, def, p, d, stance == 1 or stance == 3):
+		f *= float(sen.get("blind_factor", 0.35))
+
+	return f
+
+
+# Line of sight over the ground only (trees do not block yet): the terrain along the line from the animal's eye to the player's.
+func _sees(a: Dictionary, def: Dictionary, p: Vector3, d: float, low: bool) -> bool:
+	if not ground_height.is_valid():
+		return true
+
+	var eye_a: float = a["pos"].y + float(def.get("eye_m", 0.5))
+	var eye_p: float = p.y + (1.0 if low else 1.6)
+	var n: int = clampi(int(d / float(cfg.get("senses", {}).get("los_step_m", 4.0))), 1, 24)
+
+	for i in range(1, n):
+		var t: float = float(i) / float(n)
+		var h: float = float(ground_height.call(lerpf(a["pos"].x, p.x, t), lerpf(a["pos"].z, p.z, t)))
+
+		if not is_nan(h) and h > lerpf(eye_a, eye_p, t) + 0.15:
+			return false
+
+	return true
 
 
 # One leg of a zigzag away from the threat: the away direction turned by up to zig_deg either way.

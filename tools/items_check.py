@@ -39,6 +39,7 @@ UNITS = [
     ("npcs", "src/worldgen/tools/test_npcs.gd"),
     ("dialogue", "src/worldgen/tools/test_dialogue.gd"),
     ("animals", "src/worldgen/tools/test_animals.gd"),
+    ("animal_senses", "src/worldgen/tools/test_animal_senses.gd"),
     ("first_hour", "src/worldgen/tools/test_first_hour.gd"),
 ]
 

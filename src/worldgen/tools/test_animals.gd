@@ -26,6 +26,7 @@ func make(players: Array):
 	a.blocked = func(x, z): return x > 5000.0 and x < 5050.0   # a strip of deep water
 	a.player_positions = func(): return players
 	a.setup()
+	a.cfg["species"]["rabbit"]["burrow_m"] = 0.0   # burrows are tested in test_animal_senses.gd
 	a.rng.seed = 7
 	return a
 
