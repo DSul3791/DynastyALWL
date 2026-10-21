@@ -65,7 +65,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 558
+const BUILD := 559
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -2560,6 +2560,11 @@ func _scroll_view(out: bool) -> void:
 
 
 # Each drawn frame: place the drawn camera, keep it out of walls and trunks, and show the ragdoll body.
+# The log on the shoulder: about two and a half metres of trunk (the species' real length is not sent; Radar's item data has the weight).
+const CARRY_LOG_LENGTH_M := 2.4
+const CARRY_LOG_RADIUS_M := 0.14
+
+
 func _update_view(delta: float) -> void:
 	if view_cam == null or body == null:
 		return
@@ -2591,6 +2596,7 @@ func _update_view(delta: float) -> void:
 
 	if held != null:
 		held.set_first_person(_view_now <= 0.5)
+		held.set_shoulder(items != null and items.shoulder_id != "" and _view_now <= 0.5, CARRY_LOG_LENGTH_M, CARRY_LOG_RADIUS_M)
 	_avatar.animation_player.active = _avatar.visible      # no animation cost in first person
 	# Feet on the ground whatever the stance (the capsule's bottom stays put; the body origin is its standing middle).
 	_avatar.position.y = -float(StanceScript.SHAPE_HEIGHT[StanceScript.STAND]) * 0.5
@@ -2607,10 +2613,18 @@ func _update_view(delta: float) -> void:
 			var run_from: float = 5.0 if current_clip != "run" else 4.4
 			clip = "run" if pace > run_from else ("jog" if pace > jog_from else "walk")
 
+		# A large log on the shoulder (Dave 2026-10-21): the carry clips replace idle and the gaits while standing.
+		var carrying: bool = items != null and items.shoulder_id != "" and stance.stance == StanceScript.STAND
+
+		if carrying:
+			clip = "carry_walk" if pace > 0.6 else "carry_idle"
+
+		_avatar.set_shoulder_log(CARRY_LOG_LENGTH_M if carrying else 0.0, CARRY_LOG_RADIUS_M)
+
 		if _avatar.current() != clip and not _avatar.is_one_shot_playing():
 			_avatar.play(clip, 1.0, 0.25)
 
-		_avatar.animation_player.speed_scale = clampf(pace / 1.4, 0.5, 1.7) if clip == "walk" else (clampf(pace / 3.2, 0.8, 1.6) if clip == "jog" else (clampf(pace / 6.0, 0.8, 2.0) if clip == "run" else 1.0))
+		_avatar.animation_player.speed_scale = clampf(pace / 1.1, 0.6, 1.5) if clip == "carry_walk" else clampf(pace / 1.4, 0.5, 1.7) if clip == "walk" else (clampf(pace / 3.2, 0.8, 1.6) if clip == "jog" else (clampf(pace / 6.0, 0.8, 2.0) if clip == "run" else 1.0))
 
 		# Lean into a slope: uphill by the slope angle (up to 25 degrees), downhill a little back (Tyler's table).
 		var tilt: float = 0.0

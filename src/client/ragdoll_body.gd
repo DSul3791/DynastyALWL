@@ -38,6 +38,11 @@ const BONES := [
 
 # The first-person model keeps only these (the chest is its root, at the node's origin).
 # Dave 2026-10-21: the left hand does not move in an attack or swing while it holds nothing; it stays at the idle pose at the side.
+const CARRY_ARM_R := Vector3(0.9, 0.0, 1.0)         # shoulder carry: tuned on stills (tools/ preview), arm up and over the log
+const CARRY_FOREARM_R := Vector3(2.0, 0.0, 0.0)
+const CARRY_HAND_R := Vector3(0.0, 0.0, 0.0)
+const CARRY_LOG_X := 0.18
+const CARRY_LOG_Y := 0.2
 const SWING_FP_S := 0.55                # the first-person chop: its keys below are in seconds of this
 const LEFT_REST_ARM := Vector3(0.0, 0.0, -0.07)
 const LEFT_REST_FOREARM := Vector3(0.12, 0.0, 0.0)
@@ -85,6 +90,7 @@ var hand_mount_r: Marker3D       # where the right hand holds a tool (see the RE
 var hand_mount_l: Marker3D
 var head_mount: Marker3D         # a hat, or a camera for a head cam: the middle of the head
 var _bones: Dictionary = {}      # name -> index
+var _log: MeshInstance3D         # the log on the shoulder (set_shoulder_log)
 
 
 func _init(arms: bool = false) -> void:
@@ -358,6 +364,8 @@ func _build_animations() -> void:
 	library.add_animation("lie", _loop(4.0, 8, _lie))
 	library.add_animation("swing", _once(0.7, 14, _swing))
 	library.add_animation("swing_fp", _once(SWING_FP_S, 22, _swing_fp))
+	library.add_animation("carry_idle", _loop(3.0, 12, func(p): return _carry(_idle(p), p, 0.5)))
+	library.add_animation("carry_walk", _loop(1.2, 16, func(p): return _carry(_gait(p, 0.38, 0.95, 0.3, 0.12, 0.2, 0.05, 0.05, 0.02, 0.03), p, 1.0)))
 	library.add_animation("jab", _once(0.5, 10, _jab))
 	library.add_animation("throw", _once(0.8, 16, _throw))
 	library.add_animation("use", _once(0.6, 12, _use))
@@ -547,6 +555,57 @@ static func _keys_t(t: float, keys: Array) -> float:
 		phased.append([float(k[0]) / SWING_FP_S, float(k[1])])
 
 	return _keys(phased, t / SWING_FP_S)
+
+
+# Carrying a large log on the right shoulder (Dave 2026-10-21, one at a time): the right arm up over the log steadying it, the left arm empty
+# at rest at the side, the body leaning a little forward under the weight and rolling slowly with each step. `weight` scales the sway
+# (idle 0.5, walking 1).
+func _carry(base: Dictionary, p: float, weight: float) -> Dictionary:
+	var pose: Dictionary = base.duplicate()
+	var roll: float = sin(TAU * p * (2.0 if weight > 0.7 else 1.0))
+	pose["arm_r"] = CARRY_ARM_R
+	pose["forearm_r"] = CARRY_FOREARM_R
+	pose["hand_r"] = CARRY_HAND_R
+	pose["arm_l"] = LEFT_REST_ARM
+	pose["forearm_l"] = LEFT_REST_FOREARM
+	var spine: Vector3 = pose.get("spine", Vector3.ZERO)
+	var chest: Vector3 = pose.get("chest", Vector3.ZERO)
+	pose["spine"] = Vector3(spine.x + 0.09, spine.y * 0.5, 0.05 + 0.03 * roll * weight)
+	pose["chest"] = Vector3(chest.x + 0.05, chest.y * 0.5, 0.03 * roll * weight)
+	return pose
+
+
+# A large log across the right shoulder: shown or hidden, `length` and `radius` in metres (the species' log).
+func set_shoulder_log(length: float, radius: float) -> void:
+	if arms_only or not _bones.has("chest"):
+		return
+
+	if length <= 0.0:
+		if _log != null:
+			_log.visible = false
+
+		return
+
+	if _log == null:
+		var attachment: BoneAttachment3D = BoneAttachment3D.new()
+		attachment.name = "Attach_ShoulderLog"
+		skeleton.add_child(attachment)
+		attachment.bone_name = "chest"
+		_log = MeshInstance3D.new()
+		var material: StandardMaterial3D = StandardMaterial3D.new()
+		material.albedo_color = Color(0.32, 0.23, 0.15)
+		_log.material_override = material
+		attachment.add_child(_log)
+
+	var cyl: CylinderMesh = _log.mesh as CylinderMesh if _log.mesh != null else CylinderMesh.new()
+	cyl.top_radius = radius * 0.8
+	cyl.bottom_radius = radius
+	cyl.height = length
+	cyl.radial_segments = 12
+	_log.mesh = cyl
+	_log.rotation = Vector3(PI * 0.5, 0.0, 0.0)           # lying along the body's front to back
+	_log.position = Vector3(CARRY_LOG_X, CARRY_LOG_Y, 0.15)
+	_log.visible = true
 
 
 # A thrust straight ahead from the shoulder (a spear).

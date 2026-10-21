@@ -28,6 +28,7 @@ const REST_DOWN_M := 0.3
 const REST_BACK_M := 0.05
 const REST_PITCH_DEG := 8.0
 const ARMS_FOLLOW_K := 9.0
+const SHOULDER_LOG_X := 0.5               # first person: the log's side of the body, metres right of the eye
 const GRIP_ALONG_Y := {"axe": 0.25, "torch": 0.25, "knife": 0.05, "other": 0.3, "kit": 0.0}   # model +Y runs handle to head: the grip's distance from the model origin
 const SPEAR_GRIP_Z := 0.3
 const JAB_REACH := 0.7
@@ -49,6 +50,7 @@ var held_light_budget: Callable          # () -> true when the held light may be
 var _model: Node3D
 var _arms                                 # first-person arms (Ragdoll.new(true)) on the camera; the held tool sits in its right hand
 var _stop_t: float = 0.0                  # hit stop left, seconds
+var _shoulder_log: MeshInstance3D          # the log across the shoulder (set_shoulder)
 var _arm_up: float = 0.0                  # 0 arms hang at the body's side, 1 raised to the camera pose (swing, jab, use, aim)
 var _mounted: bool = false                # the model is in the hand: the arm animations move it, not the offsets below
 var _label: Label
@@ -413,6 +415,37 @@ func _process_body(delta: float) -> void:
 		if flight["age"] > 6.0 or (not is_nan(ground) and flight["node"].global_position.y <= ground):
 			flight["node"].queue_free()
 			_flights.erase(flight)
+
+
+# The large log on the shoulder in first person (Dave 2026-10-21): across the right shoulder, fixed to the body (the way you face), so it
+# shows at the edge of the view and when you look down.
+func set_shoulder(on: bool, length: float, radius: float) -> void:
+	if not on:
+		if _shoulder_log != null:
+			_shoulder_log.visible = false
+
+		return
+
+	if _shoulder_log == null:
+		_shoulder_log = MeshInstance3D.new()
+		var cyl: CylinderMesh = CylinderMesh.new()
+		cyl.radial_segments = 12
+		var material: StandardMaterial3D = StandardMaterial3D.new()
+		material.albedo_color = Color(0.32, 0.23, 0.15)
+		cyl.material = material
+		_shoulder_log.mesh = cyl
+		_shoulder_log.top_level = true
+		_shoulder_log.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_camera.add_child(_shoulder_log)
+
+	var mesh: CylinderMesh = _shoulder_log.mesh as CylinderMesh
+	mesh.top_radius = radius * 0.8
+	mesh.bottom_radius = radius
+	mesh.height = length
+	_shoulder_log.visible = true
+	var yaw: Basis = Basis(Vector3.UP, _camera.global_rotation.y)
+	var at: Vector3 = _camera.global_position + yaw * Vector3(SHOULDER_LOG_X, -0.55, 0.0)
+	_shoulder_log.global_transform = Transform3D(yaw * Basis(Vector3.RIGHT, PI * 0.5 + 0.05), at)
 
 
 # The arms follow the body at rest and the camera while working: blends the two poses by _arm_up.
