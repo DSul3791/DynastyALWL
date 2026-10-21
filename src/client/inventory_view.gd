@@ -1902,7 +1902,9 @@ func world_item_name_near(point: Vector3, r: float) -> String:
 
 func _on_worn(numbers: PackedInt32Array) -> void:
 	worn = numbers
-	_refresh_weight()
+
+	if _weight_label != null:
+		_refresh_weight()
 
 	if _character != null:
 		_character.refresh()

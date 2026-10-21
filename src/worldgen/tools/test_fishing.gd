@@ -148,6 +148,22 @@ func _init() -> void:
 	check(fish_after > fish_before and fish_after - fish_before < 40, "40 spear strikes land some fish but not all (%d)" % (fish_after - fish_before))
 	check(items.inventory_of(1).wear[spear_slot] > before_wear, "a strike wears the spear")
 
+	# With a depth hook the spear works only in shallow water.
+	var depth: Array = [3.0]
+	items.water_depth_at = func(_p): return depth[0]
+	var wear_deep: int = items.inventory_of(1).wear[spear_slot]
+	items._last_fish.clear()
+	items.action(1, Net.ACT_FISH, spear_slot, 0, 0, Vector3(6.0, 10.0, 5.0))
+	check(items.inventory_of(1).wear[spear_slot] == wear_deep, "too deep for the spear")
+	depth[0] = 0.0
+	items._last_fish.clear()
+	items.action(1, Net.ACT_FISH, spear_slot, 0, 0, Vector3(6.0, 10.0, 5.0))
+	check(items.inventory_of(1).wear[spear_slot] == wear_deep, "dry bank, no strike")
+	depth[0] = 0.8
+	items._last_fish.clear()
+	items.action(1, Net.ACT_FISH, spear_slot, 0, 0, Vector3(6.0, 10.0, 5.0))
+	check(items.inventory_of(1).wear[spear_slot] > wear_deep, "shallow water takes the strike")
+
 	# Raw fish makes you sick; cooked fish is a different item.
 	check(items._cooking["raw_sick"]["by_id"].has("trout") and str(items._cooking["cooks_into"]["trout"]) == "roast_fish", "raw fish is raw_sick and cooks into roast fish")
 	print("fishing tests: %d failures" % failures)

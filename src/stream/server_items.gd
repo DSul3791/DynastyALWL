@@ -3810,8 +3810,11 @@ func _spear_fish(peer: int, inv, slot: int, at: Vector3, fishing: Dictionary) ->
 		_say(peer, str(cfg.get("say_ice", "")))
 		return
 
-	if water_depth_at.is_valid() and float(water_depth_at.call(at)) > float(cfg.get("max_depth_m", 1.5)):
-		return
+	if water_depth_at.is_valid():
+		var depth: float = float(water_depth_at.call(at))
+
+		if depth < 0.05 or depth > float(cfg.get("max_depth_m", 1.5)):
+			return
 
 	if float(_moving.get(peer, 0.0)) > float(cfg.get("still_below", 0.25)):
 		_say(peer, str(cfg.get("say_move", "")))
