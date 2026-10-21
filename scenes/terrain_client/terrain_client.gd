@@ -56,7 +56,7 @@ const FaintEffectScript := preload("res://src/client/faint_effect.gd")
 const FallMistScript := preload("res://src/client/fall_mist.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 310
+const BUILD := 311
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
@@ -89,6 +89,7 @@ const QUALITY_VIEW := [768, 1280, 2048, 2048]
 const QUALITY_FLORA := [0.4, 0.7, 1.0, 1.0]
 const QUALITY_GRASS_M := [40.0, 80.0, 120.0, 160.0]       # grass drawn this far around the player
 const QUALITY_LITTER_M := [10.0, 18.0, 26.0, 34.0]       # forest litter (leaves, dead branches) under tree crowns, drawn this far
+const QUALITY_LITTER_CAP := [3000, 20000, 40000, 60000]       # hard limit on litter cards drawn at once (nearest cells get them first)
 const QUALITY_LITTER_AMOUNT := [0.3, 1.0, 1.5, 2.0]      # share of the litter cards per ground sample (Low: a small fraction, no branches below 0.35 chance scale)
 const QUALITY_SHORE_M := [8.0, 20.0, 30.0, 40.0]         # shore pebbles and reeds drawn this far
 const QUALITY_SHORE_AMOUNT := [0.3, 1.0, 1.5, 2.0]       # share of the shore cards per ground sample (Low: a few pebbles, reeds off below 1.0 per sample)
@@ -1239,7 +1240,7 @@ func _apply_quality() -> void:
 	if terrain != null:
 		GroundMaterialScript.set_grass_far(terrain.material as ShaderMaterial, QUALITY_GRASS_M[quality])
 	grass.set_trample_rate(200 if quality == 0 else 100)   # the trample map upload: 5 Hz at Low, 10 Hz above
-	grass.set_litter(QUALITY_LITTER_M[quality], QUALITY_LITTER_AMOUNT[quality])
+	grass.set_litter(QUALITY_LITTER_M[quality], QUALITY_LITTER_AMOUNT[quality], QUALITY_LITTER_CAP[quality])
 	grass.set_shore(QUALITY_SHORE_M[quality], QUALITY_SHORE_AMOUNT[quality])
 	if fall_mist != null:
 		fall_mist.set_quality(quality)

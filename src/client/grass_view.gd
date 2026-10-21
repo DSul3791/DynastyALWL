@@ -13,7 +13,10 @@ const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const TrampleScript := preload("res://src/client/grass_trample.gd")
 const CELL_M := 6.0
 const RAYS_PER_FRAME := 40
-const RETRY_MSEC := 1500
+const BUILD_USEC := 5000                 # cells are built for at most this long a frame (at least one)
+const LOOKAHEAD_S := 1.5                 # the scan is centred this many seconds of movement ahead
+const RESCAN_MSEC := 800                 # the scan also repeats this often, to retry cells
+const RETRY_MSEC := 500
 const MIN_SLOPE_Y := 0.58                # surface normal y; steeper is bare rock
 const COVER_FROM := 0.14                 # slope (1 - normal y) where grass starts to thin
 const COVER_TO := 0.42                   # slope where it is gone, except in patches and on ledges
@@ -33,7 +36,7 @@ const GRASS_SOILS := {3: 0.9, 4: 0.5, 5: 1.0, 6: 0.7, 7: 1.0, 8: 0.6, 9: 0.3}
 # radius the layer is drawn to; "per_point" is how many cards per ground sample.
 const LAYERS := [
 	{"name": "cover", "texture": "ground_cover", "width": 0.6, "height": 0.0, "per_point": 6, "reach": 0.4, "quads": 0, "wind": 0.0, "backlight": 0.0},
-	{"name": "short", "texture": "grass_short", "width": 0.8, "height": 0.7, "per_point": 16, "reach": 0.85, "quads": 2, "wind": 1.0, "backlight": 0.0},
+	{"name": "short", "texture": "grass_short", "width": 0.8, "height": 0.7, "per_point": 16, "reach": 1.0, "quads": 2, "wind": 1.0, "backlight": 0.0},
 	{"name": "tall", "texture": "grass_tall", "width": 0.7, "height": 0.95, "per_point": 6, "reach": 1.0, "quads": 2, "wind": 1.4, "backlight": 0.35},
 	# Forest floor under tree crowns (look only, nothing is stored, synced or pickable; section 24 of
 	# ART_DIRECTION.md): fallen leaves and dead branches. Drawn within litter_m of the player.
@@ -176,6 +179,7 @@ var tufts: int = 0                       # cards drawn now
 var cells_built: int = 0
 var litter_m: float = 0.0                # forest litter drawn this far (0 off), set by the client per quality
 var litter_density: float = 0.0          # share of each litter layer's per_point drawn
+var litter_cap: int = 1 << 30            # hard limit on leaf cards and branches drawn at once (Technical direction: Low 3k, Medium 20k, High 40k, Ultra 60k)
 var litter_cards: int = 0                # leaf cards and branches drawn now
 var shore_m: float = 0.0                 # pebbles and reeds drawn this far (0 off)
 var shore_density: float = 0.0
@@ -202,10 +206,14 @@ var _scan_cx: int = 0
 var _scan_cz: int = 0
 var _scan_span: int = 0
 var _scan_at: Vector2 = Vector2.ZERO
+var _scan_extra: float = 0.0
 var _scan_now: int = 0
 var _scan_keep: Dictionary = {}
 const SCAN_ROWS_PER_FRAME := 4
 var _center: Vector3 = Vector3.ZERO
+var _last_position: Vector3 = Vector3.ZERO
+var _last_msec: int = 0
+var _velocity: Vector2 = Vector2.ZERO
 var enabled: bool = true
 
 
@@ -338,8 +346,9 @@ func set_trample_rate(msec: int) -> void:
 		_trample.upload_msec = msec
 
 
-func set_litter(meters: float, amount: float) -> void:
-	var changed: bool = not is_equal_approx(meters, litter_m) or not is_equal_approx(amount, litter_density)
+func set_litter(meters: float, amount: float, cap: int = 1 << 30) -> void:
+	var changed: bool = not is_equal_approx(meters, litter_m) or not is_equal_approx(amount, litter_density) or cap != litter_cap
+	litter_cap = cap
 	litter_m = meters
 	litter_density = amount
 
@@ -595,20 +604,32 @@ func update(position: Vector3) -> void:
 
 	# Owner (2026-10-20, pauses while walking): the scan listed and sorted every cell in range
 	# every 0.4 s. Now only when the player is in another cell, or every 1.5 s to retry cells.
-	var here_cell: Vector2i = Vector2i(int(floor(position.x / CELL_M)), int(floor(position.z / CELL_M)))
+	# Owner (2026-10-21, running): "the grass stops rendering while I am moving ... it pops into view as I step
+	# on it". Three causes: cells were built only between scans, and at a run a new scan starts every cell
+	# crossing so building was starved; the ray budget could not keep up with the cells that change band or
+	# come into reach at a run; and cells whose ground collision was not loaded waited 1.5 s. Now: building
+	# goes on during a scan, the budget grows while moving, the scan is centred a little ahead of the
+	# movement, and retries are quicker.
+	var moved: Vector3 = position - _last_position
+	var dt: float = maxf(float(now - _last_msec) / 1000.0, 0.001)
+	_last_position = position
+	_last_msec = now
+	var speed: float = clampf(Vector2(moved.x, moved.z).length() / dt, 0.0, 30.0)
+	_velocity = _velocity.lerp(Vector2(moved.x, moved.z) / dt if dt < 0.5 else Vector2.ZERO, 0.2)
+	var ahead: Vector3 = position + Vector3(_velocity.x, 0.0, _velocity.y) * LOOKAHEAD_S
+	var here_cell: Vector2i = Vector2i(int(floor(ahead.x / CELL_M)), int(floor(ahead.z / CELL_M)))
 
-	if not _scan_active and (here_cell != _scan_cell or now - _scan_msec > 1500):
+	if not _scan_active and (here_cell != _scan_cell or now - _scan_msec > RESCAN_MSEC):
 		_scan_msec = now
 		_scan_cell = here_cell
-		_rescan_begin(position, now)
+		_rescan_begin(ahead, now)
 
-	# The scan runs a few rows a frame (the whole 160 m reach is 2000 cells; one pass took about 30 ms),
-	# and cells are built only between scans, nearest first.
+	# The scan runs a few rows a frame (the whole 160 m reach is 2000 cells; one pass took about 30 ms).
 	if _scan_active:
 		_rescan_step()
-		return
 
-	var rays: int = RAYS_PER_FRAME
+	var rays: int = RAYS_PER_FRAME * (2 if speed > 2.5 and _pending.size() > 20 else 1)
+	var started: int = Time.get_ticks_usec()
 
 	while rays > 0 and not _pending.is_empty():
 		var cell: Vector2i = _pending.pop_front()
@@ -617,6 +638,9 @@ func update(position: Vector3) -> void:
 			continue
 
 		rays -= _build(cell)
+
+		if Time.get_ticks_usec() - started > BUILD_USEC:
+			break
 
 
 # The band of a cell by its distance: 0 near (full samples), 1 middle, 2 far, 3 very far (reach beyond 50 m).
@@ -647,8 +671,10 @@ func _lod_points(lod: int) -> int:
 func _rescan_begin(position: Vector3, now: int) -> void:
 	_scan_cx = int(floor(position.x / CELL_M))
 	_scan_cz = int(floor(position.z / CELL_M))
-	_scan_span = int(ceil((radius_m + CELL_M) / CELL_M))
 	_scan_at = Vector2(position.x, position.z)
+	# The scan is centred ahead of the player; its reach grows by that offset so nothing behind is dropped early.
+	_scan_extra = _scan_at.distance_to(Vector2(_center.x, _center.z))
+	_scan_span = int(ceil((radius_m + CELL_M + _scan_extra) / CELL_M))
 	_scan_row = -_scan_span
 	_scan_now = now
 	_scan_keep = {}
@@ -659,7 +685,7 @@ func _rescan_begin(position: Vector3, now: int) -> void:
 # again; when the last row is done the queue is ordered nearest first and cells out of reach are freed.
 func _rescan_step() -> void:
 	var span: int = _scan_span
-	var limit: float = radius_m + CELL_M
+	var limit: float = radius_m + CELL_M + _scan_extra
 
 	for r in range(SCAN_ROWS_PER_FRAME):
 		if _scan_row > span:
@@ -696,7 +722,7 @@ func _rescan_step() -> void:
 
 	if _pending.size() > 1:
 		# Nearest first, in one pass: a bucket per cell ring (sorting 2000 cells with a lambda took about 30 ms).
-		var near: Vector2 = _scan_at / CELL_M
+		var near: Vector2 = Vector2(_center.x, _center.z) / CELL_M      # nearest the player first
 		var buckets: Array = []
 		buckets.resize(span + 2)
 
@@ -786,7 +812,7 @@ func _build(cell: Vector2i) -> int:
 			# and a floor so covered in leaves and twigs that no ground shows. `under` is 0 at the drip line, 1 at the trunk.
 			var under: float = _flora.cover.crown_depth(Vector3(x, point.y + 1.0, z))
 
-			if litter_here and under > 0.0:
+			if litter_here and under > 0.0 and litter_cards + int(counts[3]) + int(counts[4]) < litter_cap:
 				_put_litter(buffers, counts, rng, point, spacing, under)
 
 			var soil: int = _grass_soil(tool, point - hit["normal"] * 0.4)
@@ -819,11 +845,8 @@ func _build(cell: Vector2i) -> int:
 				if layer == 0 and lod > 0:
 					continue
 
-				# Beyond 50 m of reach only the tall grass is drawn in the far bands (three draws a cell
-				# become one), the short grass being lost in it at that distance.
-				if layer == 1 and big and lod >= 2:
-					continue
-
+				# Owner (2026-10-21): all the grass has the same draw distance, so the short grass is drawn in
+				# the far bands too (it used to stop at 85 percent of the reach and drop out of the far bands).
 				var want: float = float(LAYERS[layer]["per_point"]) * density * band_share * (1.0 + wet if layer == 2 else 1.0)
 				var count: int = int(want) + (1 if rng.randf() < want - floorf(want) else 0)
 				var chance: float = thick
