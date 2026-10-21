@@ -77,6 +77,8 @@ const FLOW_FASTEST_M_S := 2.5   # the water shader's fastest drawn speed (fastes
 const CALM_RADIUS := 3           # cells each way: the window that tells a still pond from a river (24 m)
 const CALM_SLOPE := 0.003        # a surface tilting less than this over the window is standing water
 const CALM_RANGE_M := 0.6        # ...and no wave taller than this in it (a cascade lip is not calmed)
+const STILL_REACH := 3           # a rim cell this close to a calm cell of a pond is standing water too
+const STILL_LEVEL_M := 0.15      # ...if its level is within this of the pond's
 const CALM_WET_SHARE := 0.6      # a window must be this wet (shore windows are part dry)
 
 
@@ -140,7 +142,22 @@ static func _window(levels: PackedFloat32Array, i: int, j: int, count: int, spac
 # Standing water draws flat (owner 2026-10-21: "the water is all rough in the pond"): where
 # the surface barely tilts across a whole window, every level in it becomes the window mean.
 static func _calm_still_water(count: int, spacing: float, levels: PackedFloat32Array) -> void:
-	var calmed: PackedFloat32Array = levels.duplicate()
+	var still: PackedFloat32Array = _still_levels(count, spacing, levels)
+
+	for n in range(levels.size()):
+		if not is_nan(still[n]):
+			levels[n] = still[n]
+
+
+# Where the water stands still: the level it should be drawn at (NAN elsewhere). The core is every wet cell whose window
+# (CALM_RADIUS) barely tilts and has no wave (the window mean). Owner (2026-10-21: lakes "look like moving water with
+# peaks"): a pond's rim is part dry in its window, so it was not calm and drew with the Manning speed of a river
+# (1 to 3 m/s) and its jittering shore level; a wet cell within STILL_REACH cells of a calm one, at about its level,
+# is still too, at that level. A river is only 2 or 3 cells wide, so it never has a calm core.
+static func _still_levels(count: int, spacing: float, levels: PackedFloat32Array) -> PackedFloat32Array:
+	var core: PackedFloat32Array = PackedFloat32Array()
+	core.resize(count * count)
+	core.fill(NAN)
 
 	for j in range(count):
 		for i in range(count):
@@ -150,15 +167,43 @@ static func _calm_still_water(count: int, spacing: float, levels: PackedFloat32A
 			var w: Array = _window(levels, i, j, count, spacing)
 
 			if w[4] >= CALM_WET_SHARE and w[3] < CALM_RANGE_M and sqrt(w[0] * w[0] + w[1] * w[1]) < CALM_SLOPE:
-				calmed[j * count + i] = w[2]
+				core[j * count + i] = w[2]
 
-	for n in range(levels.size()):
-		levels[n] = calmed[n]
+	var out: PackedFloat32Array = core.duplicate()
+
+	for j in range(count):
+		for i in range(count):
+			var level: float = levels[j * count + i]
+
+			if is_nan(level) or not is_nan(core[j * count + i]):
+				continue
+
+			var best: float = NAN
+			var best_gap: float = STILL_LEVEL_M
+
+			for dj in range(-STILL_REACH, STILL_REACH + 1):
+				for di in range(-STILL_REACH, STILL_REACH + 1):
+					var ii: int = i + di
+					var jj: int = j + dj
+
+					if ii < 0 or jj < 0 or ii >= count or jj >= count or is_nan(core[jj * count + ii]):
+						continue
+
+					var gap: float = absf(core[jj * count + ii] - level)
+
+					if gap < best_gap:
+						best_gap = gap
+						best = core[jj * count + ii]
+
+			out[j * count + i] = best
+
+	return out
 
 
 static func _velocities(generator, data, origin: Vector2, count: int, spacing: float, levels: PackedFloat32Array) -> PackedFloat32Array:
 	var vel: PackedFloat32Array = PackedFloat32Array()
 	vel.resize(count * count * 2)
+	var still: PackedFloat32Array = _still_levels(count, spacing, levels)
 
 	for j in range(count):
 		for i in range(count):
@@ -198,6 +243,9 @@ static func _velocities(generator, data, origin: Vector2, count: int, spacing: f
 			var w: Array = _window(levels, i, j, count, spacing)
 
 			if w[4] >= CALM_WET_SHARE and sqrt(w[0] * w[0] + w[1] * w[1]) < CALM_SLOPE:
+				continue
+
+			if not is_nan(still[j * count + i]):
 				continue
 
 			var x: float = origin.x + float(i) * spacing
