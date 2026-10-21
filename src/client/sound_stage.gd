@@ -22,6 +22,7 @@ const WeatherScript := preload("res://src/client/weather_sounds.gd")
 const DigScript := preload("res://src/client/dig_sounds.gd")
 const CaveScript := preload("res://src/client/cave_sounds.gd")
 const SplashScript := preload("res://src/client/rain_splashes.gd")
+const IceScript := preload("res://src/client/ice_sounds.gd")
 const HitScript := preload("res://src/client/hit_sounds.gd")
 const TownScript := preload("res://src/client/town_sounds.gd")
 const SwimScript := preload("res://src/client/swim_sounds.gd")
@@ -67,7 +68,7 @@ const SOIL_SURFACE := {
 }
 const SURFACE_DB := {
 	"grass": -15.0, "dirt": -10.0, "sand": -8.0, "gravel": -9.0, "stone": -8.0,
-	"leaves": -6.0, "mud": -10.0, "snow": -11.0, "water": -10.0,
+	"leaves": -6.0, "mud": -10.0, "snow": -11.0, "ice": -9.0, "water": -10.0,
 	"grass_tall": -14.0, "bushes": -13.0,
 }
 # Exposed rock under the soles (rock id = material - MATERIAL_ROCK; data/tables/rocks.json):
@@ -202,6 +203,7 @@ var creatures                           # CreatureSounds: deer, rabbit, fox, wol
 var ui                                  # UiSounds: menu click, toggle and quality cues (play(name))
 var swim                                # SwimSounds: splash, strokes, diving, the hum under water (driven by the body)
 var town                                # TownSounds: fire, hammering, crowd, bell hooks (set_sources, ring_bell)
+var ice                                # IceSounds: frozen ponds (steps, cracks, groans)
 var splashes                           # RainSplashes: single rain drops near the player, by ground
 var cave                                # CaveSounds: reverb, muffling and drips under rock
 var dig                                 # DigSounds: the sound of what is dug (dug(center, radius, listener))
@@ -348,6 +350,10 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	splashes.name = "Splashes"
 	add_child(splashes)
 	splashes.setup(self)
+	ice = IceScript.new()
+	ice.name = "Ice"
+	add_child(ice)
+	ice.setup(self)
 	hits = HitScript.new()
 	hits.name = "Hits"
 	add_child(hits)
@@ -422,6 +428,7 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	insects.update(delta, underwater)
 	weather.update(delta, body, underwater)
 	splashes.update(delta, body, underwater)
+	ice.update(delta, body, underwater)
 	dig.update(delta)
 	cave.update(delta, body, flying)
 	town.update(delta, body)
@@ -677,7 +684,10 @@ func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: Str
 		thick = grass.x
 		tall = grass.y
 
-	if depth > WATER_STEP_M:
+	if depth > DAMP_M and ice.walkable():
+		surface = "ice"                                          # a frozen pond bears the step
+		thick = 0.0
+	elif depth > WATER_STEP_M:
 		surface = "water"
 		thick = 0.0
 	elif depth > DAMP_M:
@@ -745,7 +755,10 @@ func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: Str
 	_play(name, step_db, pitch, foot)
 	steps_played[surface] = int(steps_played.get(surface, 0)) + 1
 	gear.step(gait, boost_db, surface)
-	stepfx.step(gait, step_db, surface, depth)
+	stepfx.step(gait, step_db, surface, 0.0 if surface == "ice" else depth)
+
+	if surface == "ice":
+		ice.step(feet, gait, boost_db)
 
 	# Wet ground: a puddle splash joins most steps on grass, stone, gravel and sand.
 	if weather != null and weather.ground_wet >= PUDDLE_WET and surface in PUDDLE_SURFACES and _rng.randf() < weather.ground_wet * 0.7:

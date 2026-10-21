@@ -214,6 +214,9 @@ func _laps(delta: float, here: Vector3, underwater: bool) -> void:
 	var shore: Array = test_shore if not test_shore.is_empty() else _shore
 
 	# --lake squares are forced, and the spawn can sit in new simulated water: the test ignores the swim state.
+	if get_parent().weather.ice_cover >= 0.5:
+		return                                              # frozen over: no laps (ice_sounds.gd groans instead)
+
 	if shore.is_empty() or (underwater and test_shore.is_empty()) or not get_parent().has_room():
 		return
 
@@ -255,6 +258,15 @@ func _laps(delta: float, here: Vector3, underwater: bool) -> void:
 	player.play()
 	laps_played += 1
 	last_lap = "lake_lap_%d %.0f m (%s)" % [pick, near, SoundStage.tag(list[pick])]
+
+
+# True when a lake or pond shore is near (frozen ponds, ice_sounds.gd).
+func still_near() -> bool:
+	return not (test_shore if not test_shore.is_empty() else _shore).is_empty()
+
+
+func shore_squares() -> Array:
+	return test_shore if not test_shore.is_empty() else _shore
 
 
 # Which kind of file the brook loop is (HUD, checks): "recorded" once a real recording is in.

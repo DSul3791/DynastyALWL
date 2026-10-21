@@ -4,7 +4,8 @@ Run: python3 assets/audio/make_floors.py   (needs numpy and ffmpeg)
 Writes assets/audio/floors/step_<surface>_N (3 variants each):
   plank  hollow wooden boards: a dull knock and a short board creak   slab   stone slabs: a hard tap and a short ring
   carpet a muffled thud, almost no top                                 thatch dry straw: a soft crunchy rustle
-  path   packed gravel path: a firm crunch
+  path   packed gravel path: a firm crunch                             ice    a frozen pond: a hard tap, a hollow tock, a glassy ring
+(--only ice makes just that one.)
 Recordings go in assets/audio/recorded/ as step_<surface>_left_N / step_<surface>_right_N like the ground sets.
 """
 import os
@@ -90,13 +91,29 @@ def step_path(rng):
     return finish(out / 2.2 + 0.28 * crunch / (np.max(np.abs(crunch)) + 1e-9))
 
 
-SURFACES = {"plank": step_plank, "slab": step_slab, "carpet": step_carpet, "thatch": step_thatch, "path": step_path}
+def step_ice(rng):
+    # A boot on a frozen pond: a hard dry tap, a hollow low tock from the sheet under it, a faint glassy ring.
+    out, toe = step_base(rng, 0.45, rng.uniform(140, 170), 0.03, heel=0.5, toe=0.25, click_cut=2500)
+    m = int(0.05 * SR)
+    tap = noise(rng, m, lambda f: band(f, rng.uniform(2400, 3600), 0.8) * highpass(f, 900)) * env(m, 0.0005, 0.012)
+    tap /= np.max(np.abs(tap)) + 1e-9
+    mix = out / 3.0
+    add(mix, tap * 0.5, 0.0)
+    add(mix, ping(rng.uniform(2800, 4200), 0.09, 0.3) * 0.12, 0.004)
+    return finish(mix)
+
+
+SURFACES = {"plank": step_plank, "slab": step_slab, "carpet": step_carpet, "thatch": step_thatch, "path": step_path, "ice": step_ice}
 
 
 def main():
     rng = np.random.default_rng(20261021)
+    only = sys.argv[sys.argv.index("--only") + 1] if "--only" in sys.argv else ""
 
     for name, make in SURFACES.items():
+        if only and name != only:
+            continue
+
         for v in range(VARIANTS):
             write_ogg("step_%s_%d" % (name, v), make(rng))
 

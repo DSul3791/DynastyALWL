@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **213 slots: 18 recorded, 186 generated placeholders, 9 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **216 slots: 18 recorded, 188 generated placeholders, 10 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -47,6 +47,8 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 2 | `hit_axe_wood` | generated | 3 | hit_sounds.gd: an axe blow on wood (felling, chopping) | 3 axe chops into a log or tree |
 | 2 | `hit_hammer_wood` | generated | 3 | hit_sounds.gd: a hammer blow on wood (building) | 3 hammer knocks on timber, or nails driven |
 | 2 | `hit_pick_stone` | generated | 3 | hit_sounds.gd: a pickaxe blow on rock (mining) | 3 pickaxe strikes on rock |
+| 2 | `ice_crack` | generated | 3 | ice_sounds.gd: a sharp crack under a step on a frozen pond (more often running or landing) | 3 short ice cracks under a boot, with a glassy ring, 0.5 s |
+| 2 | `ice_groan` | generated | 3 | ice_sounds.gd: the frozen pond groans and pings from the shore, every 25 to 70 s | 3 recordings of pond ice settling in the cold (long low sweeps with pings), 2 to 4 s |
 | 2 | `insect_bed` | generated | 2 | insect_bed.gd: quiet summer insect chirring over meadows and water on warm days (loop) | a 15 to 30 s seamless loop of many small insects, nothing rhythmic |
 | 2 | `interior_rain_roof` | generated | 1 | interior_sounds.gd: rain on a roof heard from inside (loop) | Rain on a wooden or thatched roof from inside, seamless |
 | 2 | `inv_close` | generated | 3 | item_sounds.gd: the inventory closed | 3 leather pouch flaps closing |
@@ -218,7 +220,8 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | `step_mud` | recorded | 6 | mud, peat, wet ground, soaked ground in rain |
 | `step_sand` | recorded | 6 | sand, beach, salt flat, ash |
 | `step_snow` | recorded | 6 | snow |
-| `step_stone` | recorded | 6 | rock, outcrops, ore, ice |
+| `step_stone` | recorded | 6 | rock, outcrops, ore |
+| `step_ice` | empty | 0 | a frozen pond (generated placeholder in floors/) |
 | `step_gravel` | recorded | 6 | gravel, soft rock |
 | `step_water` | recorded | 6 | wading in water |
 | `step_plank` | empty | 0 | built wooden floor (sound.set_floor, generated placeholder in floors/) |

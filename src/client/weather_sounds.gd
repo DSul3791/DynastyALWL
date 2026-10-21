@@ -71,6 +71,9 @@ const SNOW_MELT_SEC := 120.0            # above MELT_C
 const HUSH_EASE_SEC := 4.0              # the snow hush follows the snow over this long
 const SNOW_STAY_SEC := 900.0            # below it, snow stays a long while
 const MELT_C := 1.0
+const ICE_C := -2.0                     # air this cold freezes still water
+const ICE_RISE_SEC := 900.0             # freezing over (real seconds, at that cold)
+const ICE_MELT_SEC := 300.0             # open again above MELT_C
 const COVER_EVERY_SEC := 0.4
 const DRY_UNDER_SEC := 4.0               # under a canopy the ground dries this fast
 const DRIP_DB := -22.0
@@ -92,6 +95,7 @@ var snow_hush: float = 0.0             # 0..1 the quiet of snow: lying snow 0.8,
 var ground_snow: float = 0.0            # 0 bare .. 1 snow lies: footsteps crunch
 var drips_played: int = 0
 var temp_c: float = 10.0
+var ice_cover: float = 0.0              # 0 open water .. 1 still water frozen over (ice_sounds.gd)
 var roofed: float = 0.0                 # 0 no roof overhead, 1 under a roof (lean-to and the like; smoothed): its rain is the roof patter, not leaves
 var covered: float = 0.0                # 0 open, 1 under a canopy (smoothed); the ground there stays dry
 var last_thunder: String = ""
@@ -308,6 +312,11 @@ func _ground(delta: float) -> void:
 		ground_snow = move_toward(ground_snow, 1.0, delta / SNOW_RISE_SEC)
 	else:
 		ground_snow = move_toward(ground_snow, 0.0, delta / (SNOW_MELT_SEC if temp_c > MELT_C else SNOW_STAY_SEC))
+
+	if temp_c <= ICE_C:
+		ice_cover = move_toward(ice_cover, 1.0, delta / ICE_RISE_SEC)
+	elif temp_c > MELT_C:
+		ice_cover = move_toward(ice_cover, 0.0, delta / ICE_MELT_SEC)
 
 	var falling: float = 0.2 if kind == "snow" or kind == "blizzard" else 0.0
 	snow_hush = move_toward(snow_hush, minf(0.8 * ground_snow + falling, 1.0), delta / HUSH_EASE_SEC)

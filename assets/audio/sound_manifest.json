@@ -225,6 +225,22 @@
    "priority": 5
   },
   {
+   "name": "ice_crack",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "ice_sounds.gd: a sharp crack under a step on a frozen pond (more often running or landing)",
+   "to_supply": "3 short ice cracks under a boot, with a glassy ring, 0.5 s",
+   "priority": 2
+  },
+  {
+   "name": "ice_groan",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "ice_sounds.gd: the frozen pond groans and pings from the shore, every 25 to 70 s",
+   "to_supply": "3 recordings of pond ice settling in the cold (long low sweeps with pings), 2 to 4 s",
+   "priority": 2
+  },
+  {
    "name": "rain_splash_stone",
    "state": "generated",
    "variants": 3,
@@ -1630,7 +1646,13 @@
    "name": "step_stone",
    "state": "recorded",
    "variants": 6,
-   "used_in": "rock, outcrops, ore, ice"
+   "used_in": "rock, outcrops, ore"
+  },
+  {
+   "name": "step_ice",
+   "state": "empty",
+   "variants": 0,
+   "used_in": "a frozen pond (generated placeholder in floors/)"
   },
   {
    "name": "step_gravel",

@@ -388,6 +388,9 @@ func _try(event: Dictionary, body: CharacterBody3D) -> void:
 	var fit: float = 0.0
 
 	for zone in event["zones"]:
+		if zone == "water" and event.get("water", false) and _stage.weather.ice_cover >= 0.5:
+			continue                                            # frozen pond: no fish, no frogs (ice_sounds.gd)
+
 		if zone == "water" and event.get("dark_at_water", false) and _water_day():
 			continue                                            # at a lake by day: leaves, wind, a fish, a bird (Dave 2026-10-20)
 

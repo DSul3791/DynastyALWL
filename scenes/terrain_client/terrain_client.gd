@@ -223,6 +223,9 @@ var test_night: bool = false           # --night-test: owl answers, the night in
 var test_stance: bool = false          # --stance: stand, crouch, sit, lie and rise in turn (job 56)
 var _stance_step: int = 0
 var _lake_start_msec: int = 0
+var test_ice: bool = false             # --ice-test: a frozen pond (job 88): groans, cracks, no laps, thaw
+var _ice_start_msec: int = 0
+var _ice_report: String = ""
 var test_merge: bool = false           # --merge-check: far fires and far falls share voices (job 53)
 var _merge_step: int = 0
 var test_faint: bool = false           # --faint: the scripted over-exertion, faint and waking run (breath_sounds.demo)
@@ -425,6 +428,8 @@ func _ready() -> void:
 			test_ui_sounds = true
 		elif argument == "--lake":
 			test_lake = true
+		elif argument == "--ice-test":
+			test_ice = true
 		elif argument == "--stance":
 			test_stance = true
 		elif argument == "--night-test":
@@ -2535,6 +2540,46 @@ func _process(delta: float) -> void:
 			var kept: int = water.quiet_near_lakes(lakes, flowing, at2).size()
 			print("Terrain client: lake laps: %d laps calm, %d laps windy, last %s; brook loop %s; kinds %s; flowing near lake kept %d of 3 (silenced %d)" % [_lake_calm_laps, water.laps_played - _lake_calm_laps, water.last_lap, water.brook_tag(), table, kept, water.lake_silenced])
 			water.test_shore = []
+
+	# Frozen pond (job 88): cold air, full ice cover and stand-in shore squares. Then groans come, no laps even in a gale,
+	# steps may crack; after the thaw the pond is open water again (no groans, laps allowed, steps splash).
+	if test_ice and now - connected_msec > 18000:
+		var water2 = sound.water
+		var weather2 = sound.weather
+		var ice = sound.ice
+
+		if water2.test_shore.is_empty():
+			var at3: Vector3 = body.global_position
+			water2.test_shore = [{"at": at3 + Vector3(8.0, -1.0, 0.0)}, {"at": at3 + Vector3(-10.0, -1.0, 6.0)}, {"at": at3 + Vector3(0.0, -1.0, -14.0)}]
+			water2.lap_scale = 0.1
+			water2.test_wind = 1.0
+			water2._lap_left = 0.5
+			weather2.temp_c = -8.0
+			weather2.ice_cover = 1.0
+			ice.groan_scale = 0.05
+			ice._groan_left = 0.5
+			_ice_start_msec = now
+		elif now - _ice_start_msec > 12000 and _ice_report == "":
+			var walk_frozen: bool = ice.walkable()
+			var groans: int = ice.groans_played
+			var laps: int = water2.laps_played
+
+			for k in range(40):
+				ice.step(body.global_position, 2, 1.0)
+				ice.test_release()
+
+			var cracks: int = ice.cracks_played
+			ice.test_release()
+			weather2.temp_c = 6.0
+			weather2.ice_cover = 0.0
+			water2._lap_left = 0.5
+			_ice_report = "%s %d %d %d %s" % [str(walk_frozen), groans, laps, cracks, ice.last]
+		elif now - _ice_start_msec > 20000 and test_ice:
+			test_ice = false
+			print("Terrain client: ice: frozen walkable %s, %d groans, %d laps, %d cracks in 40 hard steps, last %s; thaw walkable %s, %d new groans, %d new laps" % [
+				_ice_report.get_slice(" ", 0), int(_ice_report.get_slice(" ", 1)), int(_ice_report.get_slice(" ", 2)), int(_ice_report.get_slice(" ", 3)),
+				_ice_report.get_slice(" ", 4, ), str(ice.walkable()), ice.groans_played - int(_ice_report.get_slice(" ", 1)), water2.laps_played - int(_ice_report.get_slice(" ", 2))])
+			water2.test_shore = []
 
 	if test_voice_priority and now - connected_msec > 18000 and now >= _test_fire_at:
 		_test_fire_at = now + 10000000

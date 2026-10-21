@@ -244,6 +244,15 @@ SCENARIOS = [
         ("head pond with a spring current is a lake", r"kinds (pond pond river pond brook);", 0, 1, "text"),
         ("river and brook next to a lake stay silent, the far river plays", r"flowing near lake kept " + NUM + r" of 3", 1, 1),
     ]),
+    ("ice", ["--ice-test"], 9000, [
+        ("a frozen pond bears steps", r"frozen walkable (true)", 0, 1, "text"),
+        ("the ice groans from the shore", r" " + NUM + r" groans, ", 1, 8),
+        ("no laps on ice even in a gale", r", " + NUM + r" laps, ", 0, 0),
+        ("hard steps crack sometimes", r" " + NUM + r" cracks in 40", 5, 39),
+        ("sounds are the ice files", r"last (ice_crack_\d)", 0, 1, "text"),
+        ("after the thaw steps splash again", r"thaw walkable (false)", 0, 1, "text"),
+        ("the thawed pond laps again and no longer groans", r" " + NUM + r" new groans, \d+ new laps", 0, 0),
+    ]),
     ("ui_sounds", ["--ui-sounds"], 6000, [
         ("a tick per changed slot", r"ui sounds: " + NUM + r" hotbar ticks", 3, 3),
         ("tick is the hotbar cue", r"last (hotbar_tick_\d)", 0, 1, "text"),
