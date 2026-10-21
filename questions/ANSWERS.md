@@ -4,3 +4,7 @@
 Answer: None, a coffer cannot be raided
 Answered: 2026-10-21 23:15 UTC
 
+## coffer-place | Banking: where can a family coffer be placed?
+Answer: Only inside owned land
+Answered: 2026-10-21 23:15 UTC
+
