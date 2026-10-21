@@ -153,6 +153,12 @@ var _fitness_cfg: Dictionary = {}
 var send_energy: Callable       # (peer, energy percent 0..100)
 var _energy_cfg: Dictionary = {}    # data/items/energy.json
 var _death_cfg: Dictionary = {}     # data/items/death.json
+var _warmth_cfg: Dictionary = {}    # data/items/warmth.json
+var weather_now: Callable           # () -> the weather state (Weather.state: temp_c, wind, rain, snow, ...); set by the server scene
+var insulation_of: Callable         # (peer) -> 0..1 share of body heat clothes keep; unset until clothing exists
+var send_warmth: Callable           # (peer, warmth percent 0..100)
+var _warmth_sent: Dictionary = {}
+var _cold_level: Dictionary = {}    # peer -> 0 fine, 1 cold, 2 freezing (the message that was last shown)
 var _spoil_in: float = 0.0          # real seconds since the last spoilage step
 var _spoil_acc: Dictionary = {}     # place class -> unspent fraction of an age unit
 var respawn_point: Vector3 = Vector3.ZERO   # where a dead character comes back; set by the server scene
@@ -226,6 +232,8 @@ func setup(item_table, store_dir: String) -> void:
 	_fitness_cfg = _load_fitness_config()
 	var energy_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/energy.json"))
 	_energy_cfg = energy_parsed if typeof(energy_parsed) == TYPE_DICTIONARY else {}
+	var warmth_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/warmth.json"))
+	_warmth_cfg = warmth_parsed if typeof(warmth_parsed) == TYPE_DICTIONARY else {}
 	var death_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/death.json"))
 	_death_cfg = death_parsed if typeof(death_parsed) == TYPE_DICTIONARY else {}
 	var sleep_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/sleep.json"))
@@ -284,6 +292,7 @@ func peer_connected_hello(peer: int, key: String) -> void:
 	_vitals_sent.erase(peer)
 	_sync_vitals(peer, true)
 	_sync_energy(peer, true)
+	_sync_warmth(peer, true)
 	_sync_craft_queue(peer)
 
 
@@ -2383,7 +2392,7 @@ func vitals_of(peer: int) -> Dictionary:
 
 
 func _new_vitals() -> Dictionary:
-	return {"fed": float(_vitals_cfg.get("stomach_cap_kcal", 2400)), "weight": float(_vitals_cfg.get("start_weight_kg", 75)), "health": float(_vitals_cfg.get("health_max", 100)), "wet": float(_vitals_cfg.get("thirst", {}).get("cap_ml", 2400)), "energy": 100.0}
+	return {"fed": float(_vitals_cfg.get("stomach_cap_kcal", 2400)), "weight": float(_vitals_cfg.get("start_weight_kg", 75)), "health": float(_vitals_cfg.get("health_max", 100)), "wet": float(_vitals_cfg.get("thirst", {}).get("cap_ml", 2400)), "energy": 100.0, "warmth": 100.0}
 
 
 # How hard the player is working, 0 to 1: movement speed from position reports, lifted by recent tool work.
@@ -2400,6 +2409,11 @@ func effort_of(peer: int) -> float:
 
 	if Time.get_ticks_msec() < int(_work_until.get(peer, 0)):
 		level = maxf(level, 0.6)
+
+	# Shivering is work (data/items/warmth.json shiver_effort), more the colder.
+	if not _warmth_cfg.is_empty():
+		var cold_at: float = float(_warmth_cfg.get("cold_at", 40.0))
+		level += float(_warmth_cfg.get("shiver_effort", 0.15)) * maxf(cold_at - float(vitals_of(peer).get("warmth", 100.0)), 0.0) / maxf(cold_at, 1.0)
 
 	# A pack past 80 percent of the limit is work for anyone on the move, even at a crawl: load_effort x fraction^power added.
 	if not _carry_cfg.is_empty():
@@ -2672,7 +2686,9 @@ func _vitals_tick(spent: float) -> void:
 		var dry_per_day: float = float(thirst.get("rest_ml_day", 1000)) + float(thirst.get("work_ml_day", 1200)) * exertion_of(peer)
 		v["wet"] = maxf(float(v["wet"]) - dry_per_day * game_s / 86400.0, 0.0)
 
-		if float(v["fed"]) > 0.0 and float(v["wet"]) > 0.0:
+		_warmth_tick(peer, v, spent, game_s)
+
+		if float(v["fed"]) > 0.0 and float(v["wet"]) > 0.0 and float(v.get("warmth", 100.0)) >= float(_warmth_cfg.get("cold_at", 40.0)):
 			var regen: float = float(_vitals_cfg.get("health_regen_per_s", 0.05))
 
 			if _asleep.has(peer):
@@ -2688,6 +2704,85 @@ func _vitals_tick(spent: float) -> void:
 
 		_sync_vitals(peer, false)
 		_strain_tick(peer, spent)
+
+
+# --- Warmth (job 92; data/items/warmth.json) ---
+
+# The warmth the body is heading for here and now: 100 on a mild day, less as the cold stress grows.
+func warmth_target(peer: int) -> float:
+	var cfg: Dictionary = _warmth_cfg
+	var weather: Dictionary = weather_now.call() if weather_now.is_valid() else {}
+	var pos: Vector3 = _peer_pos.get(peer, Vector3.ZERO)
+	var covered: bool = cover_at.is_valid() and float(cover_at.call(pos)) > 0.5
+	var air: float = float(weather.get("temp_c", float(cfg.get("comfort_c", 15.0)))) - maxf(pos.y, 0.0) * float(cfg.get("lapse_c_per_m", 0.0065))
+	var wind: float = float(weather.get("wind", 0.0)) * (float(cfg.get("covered_wind_share", 0.3)) if covered else 1.0)
+	var feels: float = air - wind * float(cfg.get("wind_chill_c", 6.0))
+	var radius: float = float(cfg.get("fire_radius_m", 4.0))
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if it.has("fire") and int(it["fire"]["state"]) == 1 and it["pos"].distance_to(pos) <= radius:
+			feels += float(cfg.get("fire_c", 20.0))
+			break
+
+	var stress: float = maxf(float(cfg.get("comfort_c", 15.0)) - feels, 0.0)
+	var precip: float = maxf(float(weather.get("rain", 0.0)), float(weather.get("snow", 0.0)))
+
+	if precip > 0.05 and not covered:
+		stress *= 1.0 + (float(cfg.get("rain_mult", 1.5)) - 1.0) * minf(precip * 2.0, 1.0)
+
+	if bool(_swimming.get(peer, false)):
+		stress *= float(cfg.get("water_mult", 2.5))
+
+	var insulation: float = clampf(float(insulation_of.call(peer)) if insulation_of.is_valid() else 0.0, 0.0, float(cfg.get("max_insulation", 0.85)))
+	return clampf(100.0 - stress * float(cfg.get("gain", 3.0)) * (1.0 - insulation), 0.0, 100.0)
+
+
+func _warmth_tick(peer: int, v: Dictionary, spent: float, game_s: float) -> void:
+	if _warmth_cfg.is_empty():
+		return
+
+	var cfg: Dictionary = _warmth_cfg
+	var w: float = float(v.get("warmth", 100.0))
+	var target: float = warmth_target(peer)
+	var tau_h: float = float(cfg.get("tau_warm_h", 0.5)) if target > w else float(cfg.get("tau_cool_h", 3.0))
+	w += (target - w) * (1.0 - exp(-(game_s / 3600.0) / maxf(tau_h, 0.01)))
+	w = clampf(w, 0.0, 100.0)
+	v["warmth"] = w
+	var hurt_at: float = float(cfg.get("hurt_at", 20.0))
+
+	if w < hurt_at:
+		# Cold costs health, slowly, more the colder; like hunger it stops at 1.
+		v["health"] = maxf(float(v["health"]) - float(cfg.get("hurt_per_s", 0.15)) * spent * (hurt_at - w) / maxf(hurt_at, 1.0) * 2.0, 1.0)
+
+	# Messages with two levels each way, so a player on the edge is not nagged.
+	var level: int = int(_cold_level.get(peer, 0))
+
+	if level < 2 and w < hurt_at:
+		_cold_level[peer] = 2
+		_say(peer, str(cfg.get("say_freezing", "You are freezing")))
+	elif level == 0 and w < float(cfg.get("cold_at", 40.0)):
+		_cold_level[peer] = 1
+		_say(peer, str(cfg.get("say_cold", "You are getting cold")))
+	elif level == 2 and w >= float(cfg.get("hurt_clear", 32.0)):
+		_cold_level[peer] = 1
+	elif level == 1 and w >= float(cfg.get("cold_clear", 52.0)):
+		_cold_level[peer] = 0
+		_say(peer, str(cfg.get("say_warm", "You feel warm again")))
+
+	_sync_warmth(peer, false)
+
+
+func _sync_warmth(peer: int, force: bool) -> void:
+	if not send_warmth.is_valid():
+		return
+
+	var pct: int = int(ceil(clampf(float(vitals_of(peer).get("warmth", 100.0)), 0.0, 100.0)))
+
+	if force or int(_warmth_sent.get(peer, -1)) != pct:
+		_warmth_sent[peer] = pct
+		send_warmth.call(peer, pct)
 
 
 # --- Food spoilage (Dave: gentle; data/items/spoilage.json) ---
@@ -2872,6 +2967,8 @@ func kill(peer: int, cause: String) -> bool:
 	_work_until.erase(peer)
 	_death_cause.erase(peer)
 	_energy_sent.erase(peer)
+	_warmth_sent.erase(peer)
+	_cold_level.erase(peer)
 	_peer_pos[peer] = respawn_point
 	_motion.erase(peer)
 	_sync_breath(peer, -1)
@@ -3595,4 +3692,4 @@ func _load_vitals() -> void:
 	for key in parsed.get("players", {}):
 		var row: Dictionary = parsed["players"][key]
 		var fresh: Dictionary = _new_vitals()
-		_vitals[str(key)] = {"fed": float(row.get("fed", fresh["fed"])), "weight": float(row.get("weight", fresh["weight"])), "health": float(row.get("health", fresh["health"])), "wet": float(row.get("wet", fresh["wet"])), "energy": clampf(float(row.get("energy", 100.0)), 0.0, 100.0)}
+		_vitals[str(key)] = {"fed": float(row.get("fed", fresh["fed"])), "weight": float(row.get("weight", fresh["weight"])), "health": float(row.get("health", fresh["health"])), "wet": float(row.get("wet", fresh["wet"])), "energy": clampf(float(row.get("energy", 100.0)), 0.0, 100.0), "warmth": clampf(float(row.get("warmth", 100.0)), 0.0, 100.0)}

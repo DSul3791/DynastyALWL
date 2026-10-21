@@ -79,6 +79,7 @@ var stance_event: Callable = Callable()      # (stance) when the server confirms
 const SINK_M := 0.35                        # most the remains sink into the ground by day 7 (death.json sink_m)
 const DEATH_FADE_S := 4.0                   # black, then waking, after a death (death.json respawn_delay_s)
 var _death_msec: int = 0                    # when the last death arrived, 0 when none is being shown
+var warmth: int = 100                       # body warmth, percent (protocol 36)
 var energy: int = 100                       # the Energy pool, percent (job 95)
 var forced_sleep: bool = false               # collapsed from exhaustion: asleep and cannot wake until rested (bit 8 of the stance)
 var asleep: bool = false                     # the server says this character sleeps (bit 4 of the stance it sends, job 86)
@@ -128,6 +129,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.chest_received.connect(_on_chest)
 	net.vitals_received.connect(_on_vitals)
 	net.energy_received.connect(_on_energy)
+	net.warmth_received.connect(_on_warmth)
 	net.died_received.connect(_on_died)
 	net.breath_received.connect(func(deciseconds: int) -> void: breath_ds = deciseconds)
 	net.strain_received.connect(_on_strain)
@@ -1639,7 +1641,7 @@ func _build_bars_row() -> HBoxContainer:
 	row.add_theme_constant_override("separation", _px(28))
 	_panel_bars.clear()
 
-	for spec in [["Health", Color(0.85, 0.2, 0.2)], ["Exertion", Color(0.95, 0.8, 0.25)], ["Energy", Color(0.6, 0.45, 0.9)], ["Food", Color(0.9, 0.55, 0.2)], ["Water", Color(0.3, 0.6, 0.95)]]:
+	for spec in [["Health", Color(0.85, 0.2, 0.2)], ["Exertion", Color(0.95, 0.8, 0.25)], ["Energy", Color(0.6, 0.45, 0.9)], ["Warmth", Color(0.45, 0.8, 0.95)], ["Food", Color(0.9, 0.55, 0.2)], ["Water", Color(0.3, 0.6, 0.95)]]:
 		var cell: HBoxContainer = HBoxContainer.new()
 		cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		cell.add_theme_constant_override("separation", _px(10))
@@ -1674,6 +1676,14 @@ func _on_died(cause: String, _spawn: Vector3) -> void:
 	show_notice("You died: %s" % cause)
 
 
+func _on_warmth(percent: int) -> void:
+	warmth = percent
+	_update_panel_bars()
+
+	if _character != null:
+		_character.refresh()
+
+
 func _on_energy(percent: int) -> void:
 	energy = percent
 	_update_panel_bars()
@@ -1690,6 +1700,7 @@ func _update_panel_bars() -> void:
 	_panel_bars["Health"].value = float(health)
 	_panel_bars["Exertion"].value = clampf(strain / threshold, 0.0, 1.0) * 100.0
 	_panel_bars["Energy"].value = float(energy)
+	_panel_bars["Warmth"].value = float(warmth)
 	_panel_bars["Food"].value = float(hunger)
 	_panel_bars["Water"].value = float(thirst)
 

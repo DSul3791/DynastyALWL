@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 35
+const PROTOCOL_VERSION := 36
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -52,6 +52,7 @@ signal notice_received(text: String)
 signal chest_received(id: int, bytes: PackedByteArray)
 signal breath_received(deciseconds: int)
 signal energy_received(percent: int)
+signal warmth_received(percent: int)
 signal died_received(cause: String, spawn: Vector3)
 signal vitals_received(hunger: int, health: int, weight_dkg: int, thirst: int, luck: int, fitness: int)
 signal reject_received(reason: int)
@@ -259,6 +260,12 @@ func vitals(hunger: int, health: int, weight_dkg: int, thirst: int, luck: int, f
 @rpc("authority", "call_remote", "reliable")
 func died(cause: String, spawn: Vector3) -> void:
 	died_received.emit(cause, spawn)
+
+
+# Body warmth, 0 to 100 percent (protocol 36, data/items/warmth.json): at hello and whenever the whole percent changes.
+@rpc("authority", "call_remote", "reliable")
+func warmth(percent: int) -> void:
+	warmth_received.emit(percent)
 
 
 # The energy pool, 0 to 100 percent (job 95): at hello and whenever the whole percent changes.
