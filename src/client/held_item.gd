@@ -21,7 +21,7 @@ const AIMED := Vector3(0.28, -0.12, -0.35)
 const ARMS_POS := Vector3(0.0, -0.1, -0.15)
 const ARMS_PITCH_DEG := 50.0
 const TOOL_TILT_DEG := 20.0
-const GRIP_ALONG_Y := {"axe": 0.25, "torch": 0.25, "knife": 0.05, "other": 0.3}   # model +Y runs handle to head: the grip's distance from the model origin
+const GRIP_ALONG_Y := {"axe": 0.25, "torch": 0.25, "knife": 0.05, "other": 0.3, "kit": 0.0}   # model +Y runs handle to head: the grip's distance from the model origin
 const SPEAR_GRIP_Z := 0.3
 const JAB_REACH := 0.7
 const JAB_S := 0.28
@@ -519,7 +519,7 @@ func _caption() -> String:
 func _show_model() -> void:
 	var number: int = held_number() if _inv != null else 0
 
-	if not _is_spear() and not _is_axe() and not _is_torch() and not _is_knife() and not _is_other_tool():
+	if not _is_spear() and not _is_axe() and not _is_torch() and not _is_knife() and not _is_other_tool() and not _is_placeable():
 		number = 0
 
 	if number == _shown_number:
@@ -532,7 +532,7 @@ func _show_model() -> void:
 		_model = null
 
 	if number != 0:
-		_model = _make_spear_model() if _is_spear() else (_make_torch_model() if _is_torch() else (_make_knife_model() if _is_knife() else (_make_other_model() if _is_other_tool() else _make_axe_model())))
+		_model = _make_kit_model() if _is_placeable() else _make_spear_model() if _is_spear() else (_make_torch_model() if _is_torch() else (_make_knife_model() if _is_knife() else (_make_other_model() if _is_other_tool() else _make_axe_model())))
 		_mount_model()
 
 
@@ -540,7 +540,7 @@ func _show_model() -> void:
 # Falls back to the old spot in front of the camera when there are no arms.
 func _mount_model() -> void:
 	_mounted = _arms != null
-	var kind: String = "spear" if _is_spear() else ("torch" if _is_torch() else ("knife" if _is_knife() else ("axe" if _is_axe() else "other")))
+	var kind: String = "kit" if _is_placeable() else "spear" if _is_spear() else ("torch" if _is_torch() else ("knife" if _is_knife() else ("axe" if _is_axe() else "other")))
 
 	if not _mounted:
 		_camera.add_child(_model)
@@ -552,12 +552,87 @@ func _mount_model() -> void:
 	var turn: Basis = Basis.IDENTITY
 	var grip: Vector3 = Vector3(0.0, 0.0, -SPEAR_GRIP_Z)
 
-	if kind != "spear":
+	if kind == "kit":
+		grip = Vector3(0.0, -0.03, -0.14)   # carried in the palm, a little ahead of the hand
+	elif kind != "spear":
 		turn = Basis(Vector3.RIGHT, deg_to_rad(-90.0))   # +Y (handle to head) becomes -Z (along the fingers)
 		grip = Vector3(0.0, 0.0, -float(GRIP_ALONG_Y[kind]))
 
 	_model.basis = tilt * turn
 	_model.position = tilt * grip
+
+
+# A placeable kit in the hand (Items job 3 of refill 10): a small bundle the size of what it makes, shared meshes and materials,
+# no light, nothing per frame. Lean-to: a leafy bundle of sticks tied with cord; chests: a little box; campfire: sticks over stones;
+# chopping block: a short log. Art can swap these for finished models through the same hook (_make_kit_model).
+func _make_kit_model() -> Node3D:
+	var id: String = held_id()
+	var node: Node3D = Node3D.new()
+
+	if id == "chest_kit" or id == "plank_chest_kit":
+		var box: MeshInstance3D = MeshInstance3D.new()
+		var shape: BoxMesh = BoxMesh.new()
+		shape.size = Vector3(0.22, 0.14, 0.15)
+		shape.material = _kit_material(Color(0.55, 0.45, 0.28) if id == "chest_kit" else Color(0.5, 0.36, 0.22))
+		box.mesh = shape
+		node.add_child(box)
+		return node
+
+	if id == "chopping_block_kit":
+		var block: MeshInstance3D = MeshInstance3D.new()
+		var cyl: CylinderMesh = CylinderMesh.new()
+		cyl.top_radius = 0.1
+		cyl.bottom_radius = 0.11
+		cyl.height = 0.16
+		cyl.material = _kit_material(Color(0.4, 0.28, 0.17))
+		block.mesh = cyl
+		node.add_child(block)
+		return node
+
+	# Lean-to and campfire: a bundle of sticks across the hand; the lean-to is tied and leafy, the fire has stones at one end.
+	for n in 5:
+		var stick: MeshInstance3D = MeshInstance3D.new()
+		var rod: CylinderMesh = CylinderMesh.new()
+		rod.top_radius = 0.012
+		rod.bottom_radius = 0.016
+		rod.height = 0.34
+		rod.material = _kit_material(Color(0.4, 0.28, 0.16))
+		stick.mesh = rod
+		stick.rotation_degrees = Vector3(90.0, 0.0, 0.0)
+		stick.position = Vector3(0.025 * float(n - 2), 0.012 * float(n % 2), 0.0)
+		node.add_child(stick)
+
+	var extra: MeshInstance3D = MeshInstance3D.new()
+
+	if id == "lean_to_kit":
+		var leaves: BoxMesh = BoxMesh.new()
+		leaves.size = Vector3(0.16, 0.05, 0.12)
+		leaves.material = _kit_material(Color(0.27, 0.42, 0.2))
+		extra.mesh = leaves
+		extra.position = Vector3(0.0, 0.05, -0.05)
+	else:
+		var rock: SphereMesh = SphereMesh.new()
+		rock.radius = 0.045
+		rock.height = 0.07
+		rock.material = _kit_material(Color(0.47, 0.46, 0.44))
+		extra.mesh = rock
+		extra.position = Vector3(0.0, 0.0, 0.2)
+
+	node.add_child(extra)
+	return node
+
+
+var _kit_materials: Dictionary = {}
+
+
+func _kit_material(color: Color) -> StandardMaterial3D:
+	if not _kit_materials.has(color):
+		var material: StandardMaterial3D = StandardMaterial3D.new()
+		material.albedo_color = color
+		material.roughness = 1.0
+		_kit_materials[color] = material
+
+	return _kit_materials[color]
 
 
 # A water container: a plain drum, wider for the bigger ones, until Art draws them (job 89).
