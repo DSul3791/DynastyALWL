@@ -2420,7 +2420,7 @@ func _eat(peer: int, inv, slot: int) -> void:
 	var wet_cap: float = float(_vitals_cfg.get("thirst", {}).get("cap_ml", 2400))
 
 	if ml > 0 and kcal <= 0 and heal <= 0 and float(v["wet"]) >= wet_cap - 1.0:
-		_say(peer, "You are not thirsty.")
+		_say(peer, "You have had enough water.")
 		return
 
 	var cap: float = float(_vitals_cfg.get("stomach_cap_kcal", 2400))
@@ -2567,7 +2567,7 @@ func _drink_water(peer: int) -> void:
 	var cap: float = float(thirst.get("cap_ml", 2400))
 
 	if float(v["wet"]) >= cap - 1.0:
-		_say(peer, "You are not thirsty.")
+		_say(peer, "You have had enough water.")
 		return
 
 	_last_drink[peer] = now

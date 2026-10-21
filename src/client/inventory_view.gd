@@ -78,7 +78,7 @@ var held_slot_now: Callable = Callable()     # () -> the pack slot in hand, or -
 var hotbar_strip                              # HotbarStrip, set by the client
 var heart_bpm: Callable = Callable()   # () -> the heart rate now (the heartbeat sound's), set by the client
 var _character                         # CharacterScreen, built the first time Tab is pressed
-var _panel_bars: Dictionary = {}       # "Health", "Exertion", "Hunger", "Thirst" -> ProgressBar at the top of the inventory screen (the only bars in the game)
+var _panel_bars: Dictionary = {}       # "Health", "Exertion", "Food", "Water" -> ProgressBar at the top of the inventory screen (the only bars in the game)
 var _vitals_back: Control
 var _vitals_warning: Label
 var _weight_label: Label
@@ -750,12 +750,12 @@ func _place_vitals() -> void:
 	if hunger <= 0:
 		lines.append("You are starving: you recover slowly")
 	elif hunger <= warn:
-		lines.append("You are hungry")
+		lines.append("You are low on food")
 
 	if thirst <= 0:
 		lines.append("You are parched: you do not recover")
 	elif thirst <= warn_thirst:
-		lines.append("You are thirsty")
+		lines.append("You are low on water")
 
 	_vitals_warning.text = "\n".join(lines)
 
@@ -774,7 +774,7 @@ func speed_factor() -> float:
 
 
 func _refresh_weight() -> void:
-	_weight_label.text = _load_text() + "\nBody weight %.1f kg   (hunger %d%%, health %d)" % [weight_kg, hunger, health]
+	_weight_label.text = _load_text() + "\nBody weight %.1f kg   (food %d%%, health %d)" % [weight_kg, hunger, health]
 
 	if _carry_bar != null and not _carry_cfg.is_empty():
 		var fraction: float = CarryRules.bar_fraction(carried_kg(), weight_kg, _carry_cfg)
@@ -1617,7 +1617,7 @@ func _build_bars_row() -> HBoxContainer:
 	row.add_theme_constant_override("separation", _px(28))
 	_panel_bars.clear()
 
-	for spec in [["Health", Color(0.85, 0.2, 0.2)], ["Exertion", Color(0.95, 0.8, 0.25)], ["Hunger", Color(0.9, 0.55, 0.2)], ["Thirst", Color(0.3, 0.6, 0.95)]]:
+	for spec in [["Health", Color(0.85, 0.2, 0.2)], ["Exertion", Color(0.95, 0.8, 0.25)], ["Food", Color(0.9, 0.55, 0.2)], ["Water", Color(0.3, 0.6, 0.95)]]:
 		var cell: HBoxContainer = HBoxContainer.new()
 		cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		cell.add_theme_constant_override("separation", _px(10))
@@ -1653,8 +1653,8 @@ func _update_panel_bars() -> void:
 	var threshold: float = maxf(float(_exertion_cfg.get("faint_at", 1.4)), 0.1)
 	_panel_bars["Health"].value = float(health)
 	_panel_bars["Exertion"].value = clampf(strain / threshold, 0.0, 1.0) * 100.0
-	_panel_bars["Hunger"].value = float(hunger)
-	_panel_bars["Thirst"].value = float(thirst)
+	_panel_bars["Food"].value = float(hunger)
+	_panel_bars["Water"].value = float(thirst)
 
 
 func _style(control: Control, size: int) -> void:

@@ -112,7 +112,7 @@ func _build() -> void:
 	bars.add_theme_constant_override("separation", _px(12))
 	body.add_child(bars)
 
-	for spec in [["Health", Color(0.85, 0.2, 0.2)], ["Exertion", Color(0.95, 0.8, 0.25)], ["Hunger", Color(0.9, 0.55, 0.2)], ["Thirst", Color(0.3, 0.6, 0.95)]]:
+	for spec in [["Health", Color(0.85, 0.2, 0.2)], ["Exertion", Color(0.95, 0.8, 0.25)], ["Food", Color(0.9, 0.55, 0.2)], ["Water", Color(0.3, 0.6, 0.95)]]:
 		var row: HBoxContainer = HBoxContainer.new()
 		row.add_theme_constant_override("separation", _px(14))
 		var name_label: Label = _label(spec[0], BODY_PX)
@@ -169,7 +169,7 @@ func refresh() -> void:
 
 	var threshold: float = maxf(float(_items.exertion_threshold()), 0.1)
 	var exertion: float = clampf(float(_items.strain) / threshold, 0.0, 1.0) * 100.0
-	var values: Dictionary = {"Health": float(_items.health), "Exertion": exertion, "Hunger": float(_items.hunger), "Thirst": float(_items.thirst)}
+	var values: Dictionary = {"Health": float(_items.health), "Exertion": exertion, "Food": float(_items.hunger), "Water": float(_items.thirst)}
 
 	for key in _bars:
 		_bars[key][0].value = values[key]
