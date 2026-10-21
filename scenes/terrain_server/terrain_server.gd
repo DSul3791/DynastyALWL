@@ -21,6 +21,7 @@ extends Node
 
 const GameClockScript := preload("res://src/shared/game_clock.gd")
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
+const SwimScript := preload("res://src/shared/swim.gd")
 const StoreScript := preload("res://src/stream/server_block_store.gd")
 const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings.gd")
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
@@ -368,10 +369,27 @@ func _starter_stamp() -> String:
 	return "%d_%s" % [Layout.TERRAIN_VERSION, Layout.tile_stamp(generator.tiles_dir, Vector2i(3, 4))]
 
 
+# Whether a reported position is a swimmer's: deep sea (ground under 0, surface 0) or deep water in
+# the simulated tile, feet well under the surface (src/shared/swim.gd). The client swims by the same
+# rules; the server decides the exertion cost from this, so a client cannot opt out of it.
+func _swim_state(position: Vector3) -> bool:
+	var ground: float = generator.surface_height(position.x, position.z)
+	var surface: float = NAN
+
+	if ground <= 0.0:
+		surface = 0.0
+	elif water_live != null and generator.tile_of(position.x, position.z) == Vector2i(3, 4):
+		var level: float = water_live.data.sim_levels[water_live.data.nearest(position.x, position.z)] if not water_live.data.sim_levels.is_empty() else NAN
+		surface = level
+
+	return SwimScript.swimming(position.y, surface, ground)
+
+
 # Where the player will touch the ground: straight below if hovering, farther
 # along their heading the higher and faster they are. Blocks nearest this
 # point are made first.
 func _on_position_reported(peer_id: int, position: Vector3, velocity: Vector3) -> void:
+	items.set_swimming(peer_id, _swim_state(position))
 	items.report_position(peer_id, position)
 	var height: float = maxf(position.y - generator.surface_height(position.x, position.z), 0.0)
 	var descent: float = maxf(-velocity.y, 10.0)

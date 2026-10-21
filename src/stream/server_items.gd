@@ -13,6 +13,7 @@ const RecipeTableScript := preload("res://src/shared/recipe_table.gd")
 const LuckScript := preload("res://src/shared/luck.gd")
 const InventoryScript := preload("res://src/shared/inventory.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
+const SwimRules := preload("res://src/shared/swim.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
 const VERSION := 1
@@ -111,6 +112,7 @@ var cover_at: Callable         # (position) -> 0.0 open or 1.0 under a tree's cr
 var _dir: String = ""
 var _inventories: Dictionary = {}   # key String -> Inventory
 var _peer_key: Dictionary = {}      # peer -> key
+var _swimming: Dictionary = {}      # peer -> true while the server reads them as swimming
 var _peer_pos: Dictionary = {}      # peer -> Vector3 last reported
 var _items: Dictionary = {}         # id int -> {number, count, pos Vector3, left float}
 var _next_id: int = 1
@@ -260,6 +262,7 @@ func peer_connected_hello(peer: int, key: String) -> void:
 
 
 func peer_left(peer: int) -> void:
+	_swimming.erase(peer)
 	_peer_key.erase(peer)
 	_peer_pos.erase(peer)
 	_known.erase(peer)
@@ -2306,6 +2309,12 @@ func stance_of(peer: int) -> int:
 	return int(_stance.get(peer, 0))
 
 
+# The server's own reading of whether a player is swimming (from their position and the water there,
+# see terrain_server._swim_state): swimming is work whatever the client says.
+func set_swimming(peer: int, swimming: bool) -> void:
+	_swimming[peer] = swimming
+
+
 func _note_motion(peer: int, position: Vector3) -> void:
 	var now: int = Time.get_ticks_msec()
 	var last: Array = _motion.get(peer, [])
@@ -2314,6 +2323,9 @@ func _note_motion(peer: int, position: Vector3) -> void:
 		var dt: float = float(now - int(last[1])) / 1000.0
 		var speed: float = Vector2(position.x - last[0].x, position.z - last[0].z).length() / dt
 		var target: float = clampf((speed - 1.0) / 10.0, 0.0, 1.0)      # standing 0, walking 0.5, running 1
+
+		if bool(_swimming.get(peer, false)):
+			target = SwimRules.effort(speed)                              # strokes and treading water are work
 		_exertion[peer] = lerpf(float(_exertion.get(peer, 0.0)), target, clampf(dt * 0.25, 0.0, 1.0))
 		_moving[peer] = lerpf(float(_moving.get(peer, 0.0)), 1.0 if speed > 0.4 else 0.0, clampf(dt * 1.0, 0.0, 1.0))
 

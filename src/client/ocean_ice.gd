@@ -84,6 +84,8 @@ func _make(floe: Dictionary) -> Node3D:
 	var pos: Vector2 = floe["pos"]
 	var radius: float = float(floe["radius"])
 	var body: StaticBody3D = StaticBody3D.new()
+	body.collision_layer = 2          # the ice layer (see flora_view.gd)
+	body.collision_mask = 0
 	body.position = Vector3(pos.x, IceFloes.TOP_M - IceFloes.THICK_M * 0.5, pos.y)
 	body.rotation.y = float(floe["turn"])
 	var shape: CollisionShape3D = CollisionShape3D.new()
