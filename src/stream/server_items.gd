@@ -1053,6 +1053,53 @@ func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 		_items[_next_id] = {"number": table.number_of(kinds[n]), "count": 1, "pos": Vector3(x, y, z), "left": 1.0e9, "scatter": key}
 		_next_id += 1
 
+	_lay_out_bank_stones(cell, cell_m, cfg, rng, kinds.size())
+
+
+# Stones along the water's edge (Dave 2026-10-21: any rock put down is pickable, so Art's drawn pebbles and boulders became
+# real stones). A cell with water in or near it tries bank_tries spots; a dry spot within bank_reach_m of water takes a
+# stone with chance bank_chance, up to bank_max a cell. Item keys continue after the cell's own scatter (low four bits).
+func _lay_out_bank_stones(cell: Vector2i, cell_m: float, cfg: Dictionary, rng: RandomNumberGenerator, used: int) -> void:
+	var bank: Dictionary = cfg.get("bank", {})
+
+	if bank.is_empty() or not water_near.is_valid():
+		return
+
+	var centre: Vector3 = Vector3((float(cell.x) + 0.5) * cell_m, 0.0, (float(cell.y) + 0.5) * cell_m)
+
+	if not bool(water_near.call(centre, float(bank.get("cell_probe_m", 24.0)))):
+		return
+
+	var reach: float = float(bank.get("reach_m", 3.0))
+	var laid: int = 0
+
+	for attempt in range(int(bank.get("tries", 40))):
+		var x: float = (float(cell.x) + rng.randf()) * cell_m
+		var z: float = (float(cell.y) + rng.randf()) * cell_m
+		var y: float = float(ground_height.call(x, z))
+		var chance: float = rng.randf()
+
+		if is_nan(y) or y < 1.0 or chance > float(bank.get("chance", 0.5)):
+			continue
+
+		var spot: Vector3 = Vector3(x, y, z)
+
+		if bool(water_near.call(spot, 0.0)) or not bool(water_near.call(spot, reach)):
+			continue
+
+		var key: int = ((cell.x & 0xfffff) << 24) | ((cell.y & 0xfffff) << 4) | (used + laid)
+
+		if used + laid >= 15 or laid >= int(bank.get("max", 6)):
+			return
+
+		laid += 1
+
+		if _taken.has(key):
+			continue
+
+		_items[_next_id] = {"number": table.number_of("stone"), "count": 1, "pos": spot, "left": 1.0e9, "scatter": key}
+		_next_id += 1
+
 
 # Where in a cell a loose stone or stick lies (Dave 2026-10-20: place them appropriately). A few random spots are
 # tried and the first one the terrain "likes" is taken, so the counts stay as they were but the places are natural:

@@ -964,6 +964,33 @@ func _init() -> void:
 	check(stick_cover > 280, "sticks lie mostly under tree cover (%d of 400, 200 if random)" % stick_cover)
 	check(stone_slope > 280, "stones lie mostly on the slope (%d of 400, 200 if random)" % stone_slope)
 
+	# Bank stones: real pickable stones along the water's edge, none where there is no water.
+	sc.ground_height = func(x, z): return 10.0
+	sc.cover_at = func(p): return 0.0
+	var bank_cfg: Dictionary = sc._drops["ground_scatter"]
+	var band: Array = [false]
+	sc.water_near = func(pos, reach): return band[0] and pos.x + reach >= 100.0 and pos.x - reach <= 104.0
+	band[0] = true
+	var bank_before: int = sc.world_item_count()
+
+	for cz in range(1, 5):
+		sc._lay_out_cell(Vector2i(3, cz), 32.0, bank_cfg)
+
+	sc.water_near = func(pos, reach): return pos.x + reach >= 100.0 and pos.x - reach <= 104.0
+	var on_bank: int = 0
+	var in_water: int = 0
+
+	for bid in sc._items:
+		var it: Dictionary = sc._items[bid]
+
+		if it.has("scatter") and it["pos"].z >= 32.0 and it["number"] == sc.table.number_of("stone"):
+			on_bank += 1 if it["pos"].x > 96.9 and it["pos"].x < 107.1 else 0
+			in_water += 1 if it["pos"].x > 100.0 and it["pos"].x < 104.0 and it["scatter"] & 15 >= 6 else 0
+
+	check(on_bank >= 8, "four cells by a stream get stones along its banks (%d on the bank)" % on_bank)
+	check(in_water == 0, "bank stones are never put in the water")
+	check(sc.world_item_count() - bank_before <= 4 * (6 + int(bank_cfg["stones_max"]) + int(bank_cfg["sticks_max"])), "bank stones stay within the per-cell limit")
+
 	# Fall damage and refusal events (job 62).
 	DirAccess.make_dir_recursive_absolute(qd + "_fall")
 
