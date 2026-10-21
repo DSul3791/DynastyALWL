@@ -90,6 +90,7 @@ var flora_changed: Callable    # (chunk Vector2i) -> a chunk's saplings or trees
 var tree_info: Callable        # (chunk Vector2i, id) -> {name, position, height, trunk} of a standing tree, or {}
 var cut_tree: Callable         # (chunk Vector2i, id) -> true when the standing tree was removed (and clients told)
 var dig_ground: Callable         # (centre, radius) -> void: cut a hole in the ground and tell everyone; set by the server scene
+var ground_material: Callable   # (x, z) -> the surface material's name there ("loam", "clay", "sand", ... or "rock"); set by the server scene, feeds dig yields
 var rock_at: Callable          # (x, z) -> true when bare rock shows at the surface there (no soil cover); set by the server scene
 var game_seconds: Callable      # () -> game clock seconds
 var season_now: Callable        # () -> "spring" | "summer" | "autumn" | "winter"
@@ -139,6 +140,7 @@ var _moving: Dictionary = {}        # peer -> smoothed 0..1, 1 while walking abo
 var _characters: Dictionary = {}   # player key -> {luck: int}, rolled once at first sight and never changed (job 77)
 var _luck_cfg: Dictionary = {}
 var _fitness_cfg: Dictionary = {}
+var _dig_cfg: Dictionary = {}       # data/items/digging.json
 var _boulder_cfg: Dictionary = {}    # data/items/boulders.json
 var _boulder_left: Dictionary = {}   # boulder key -> rough stones still in it (absent = untouched), saved in world_items.json
 const BOULDER_KEY := 1 << 50
@@ -199,6 +201,8 @@ func setup(item_table, store_dir: String) -> void:
 	_vitals_cfg = VitalsRules.load_config()
 	_luck_cfg = LuckScript.load_config()
 	_fitness_cfg = _load_fitness_config()
+	var dig_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/digging.json"))
+	_dig_cfg = dig_parsed if typeof(dig_parsed) == TYPE_DICTIONARY else {}
 	var boulders_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/boulders.json"))
 	_boulder_cfg = boulders_parsed if typeof(boulders_parsed) == TYPE_DICTIONARY else {}
 	_carry_cfg = CarryRules.load_config()
@@ -688,7 +692,72 @@ func _dig(peer: int, inv, at: Vector3) -> void:
 	_last_dig[peer] = now
 	_wear_tool(peer, inv, "spade", "dig")
 	dig_ground.call(at - Vector3(0.0, DIG_DEPTH_M, 0.0), DIG_RADIUS_M)
+	_give_dig_yield(peer, at)
 	_dirty = true
+
+
+# What a dig brings up (data/items/digging.json): shovelfuls by the surface material at the hole, through luck, counted by weight.
+func _give_dig_yield(peer: int, at: Vector3) -> void:
+	if not ground_material.is_valid() or _dig_cfg.is_empty():
+		return
+
+	var material: String = str(ground_material.call(at.x, at.z))
+	var rows: Array = _dig_cfg.get("yield", {}).get(material, _dig_cfg.get("default", []))
+
+	for row in rows:
+		var number: int = table.number_of(str(row[0]))
+		var amount: int = roll_amount(peer, _fate_rng, int(row[1]), int(row[2]))
+
+		if number > 0 and amount > 0:
+			give(peer, number, amount)
+
+	var under: Array = _dig_cfg.get("under", {}).get(material, [])
+
+	if under.size() == 2 and roll_chance(peer, _fate_rng, float(under[1])):
+		var layer: int = table.number_of(str(under[0]))
+
+		if layer > 0:
+			give(peer, layer, 1)
+
+
+# What filling a hole uses up (digging.json "fill", in that order): takes up to `units` shovelfuls from the pack, returns how many
+# it got. The fill operation calls this and fills only as many units as it got. fill_units_of is the same count without taking.
+func take_fill(peer: int, units: int) -> int:
+	var inv = inventory_of(peer)
+
+	if inv == null or units <= 0:
+		return 0
+
+	var before: Array = _snapshot(inv)
+	var got: int = 0
+
+	for name in _dig_cfg.get("fill", []):
+		var number: int = table.number_of(str(name))
+		var take: int = mini(units - got, inv.count_of(number)) if number > 0 else 0
+
+		if take > 0 and inv.remove(number, take):
+			got += take
+
+		if got >= units:
+			break
+
+	if got > 0:
+		_send_changes(peer, inv, before)
+		_dirty = true
+
+	return got
+
+
+func fill_units_of(peer: int) -> int:
+	var inv = inventory_of(peer)
+	var total: int = 0
+
+	if inv != null:
+		for name in _dig_cfg.get("fill", []):
+			var number: int = table.number_of(str(name))
+			total += inv.count_of(number) if number > 0 else 0
+
+	return total
 
 
 func _mine(peer: int, inv, at: Vector3) -> void:

@@ -208,6 +208,19 @@ func _ready() -> void:
 
 		var h: float = float(generator.surface_height(x, z))
 		return generator._surface_material(tile_data, x, z, h) >= Layout.MATERIAL_ROCK
+	var soil_names: Dictionary = {}
+
+	for entry in tables.get_entries("soils"):
+		soil_names[int(entry["id"])] = str(entry["name"])
+
+	items.ground_material = func(x, z):
+		var tile_data = generator.get_tile(generator.tile_of(x, z))
+
+		if tile_data.placeholder:
+			return "rock"
+
+		var material: int = generator._surface_material(tile_data, x, z, float(generator.surface_height(x, z)))
+		return "rock" if material >= Layout.MATERIAL_ROCK else str(soil_names.get(material, "loam"))
 	items.setup(ItemTableScript.load_default(), store_dir)
 	spawn = _spawn_point(world_dir)
 	_world_dir = world_dir

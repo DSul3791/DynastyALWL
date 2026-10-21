@@ -312,6 +312,37 @@ func _init() -> void:
 	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(digs.size() == 2 and m.inventory_of(1).wear[spade_slot] == spade_wear + 1, "each dig wears the spade by one")
 
+	# Dig yields and fill (job 84): the ground's material decides what a dig brings up.
+	var soil_n: int = m.table.number_of("soil")
+	var clay_n: int = m.table.number_of("clay")
+	var sand_n: int = m.table.number_of("sand")
+	var held_stone: int = m.inventory_of(1).count_of(m.table.number_of("stone"))
+	check(m.inventory_of(1).count_of(soil_n) == 0, "no soil before any dig yield is wired")
+	var mat: Array = ["loam"]
+	m.ground_material = func(_x, _z): return mat[0]
+	m._last_dig.clear()
+	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(m.inventory_of(1).count_of(soil_n) >= 1 and m.inventory_of(1).count_of(soil_n) <= 3 and m.inventory_of(1).count_of(sand_n) == 0, "a dig in loam brings up soil, not sand")
+	mat[0] = "sand"
+	m._last_dig.clear()
+	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(m.inventory_of(1).count_of(sand_n) >= 1, "a dig in sand brings up sand")
+	mat[0] = "rock"
+	m._last_dig.clear()
+	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(m.inventory_of(1).count_of(m.table.number_of("stone")) > held_stone, "a dig in bare rock gives stone")
+	var have_fill: int = m.fill_units_of(1)
+	check(have_fill >= 3, "the pack holds fill after digs")
+	var took: int = m.take_fill(1, 2)
+	check(took == 2 and m.fill_units_of(1) == have_fill - 2, "take_fill uses up what it reports")
+	check(m.take_fill(1, 100000) == have_fill - 2 and m.fill_units_of(1) == 0, "take_fill never takes more than the pack holds")
+	check(m.take_fill(2, 1) == 0, "a peer with no pack fills nothing")
+	mat[0] = "clay"
+	m._last_dig.clear()
+	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(m.inventory_of(1).count_of(clay_n) >= 1, "a dig in clay brings up clay")
+	check(m.carried_kg_of(1) < 60.0, "digging cannot overfill the pack")
+
 	# Felling.
 	var w = make("user://test_server_items_f")
 	w.ground_height = func(x, z): return 10.0

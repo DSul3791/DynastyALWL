@@ -187,6 +187,35 @@ func _init() -> void:
 		want_item.call(String(row[0]), "drops.json trunk.branch")
 		obtainable[String(row[0])] = true
 
+	# Dig yields (job 84): every item named in digging.json exists and counts as obtainable; every material is a soil or "rock".
+	var digging: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/digging.json"))
+
+	if typeof(digging) == TYPE_DICTIONARY:
+		var soil_names: Dictionary = {"rock": true}
+		var soils_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/tables/soils.json"))
+
+		for soil_entry in soils_parsed.get("entries", []):
+			soil_names[String(soil_entry["name"])] = true
+
+		for material in digging.get("yield", {}):
+			if not soil_names.has(String(material)):
+				fail("digging.json yield: unknown ground material '%s'" % material)
+
+			for row in digging["yield"][material]:
+				want_item.call(String(row[0]), "digging.json yield.%s" % material)
+				obtainable[String(row[0])] = true
+
+		for row in digging.get("default", []):
+			want_item.call(String(row[0]), "digging.json default")
+			obtainable[String(row[0])] = true
+
+		for name in digging.get("fill", []):
+			want_item.call(String(name), "digging.json fill")
+
+		for material in digging.get("under", {}):
+			want_item.call(String(digging["under"][material][0]), "digging.json under.%s" % material)
+			obtainable[String(digging["under"][material][0])] = true
+
 	# Flora yields that the generated gathered items stand for (plain materials any gatherer may find in time).
 	var yields: Dictionary = {}
 

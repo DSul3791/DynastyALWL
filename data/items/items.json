@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = placeholder price of one item in coins (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 35,
+	"next_number": 39,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -413,6 +413,42 @@
 			],
 			"value": 300,
 			"future": true
+		},
+		"soil": {
+			"number": 35,
+			"name": "Soil",
+			"description": "A shovelful of dark earth, dug from the ground.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1
+		},
+		"clay": {
+			"number": 36,
+			"name": "Clay",
+			"description": "A heavy, sticky shovelful of clay.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1
+		},
+		"sand": {
+			"number": 37,
+			"name": "Sand",
+			"description": "A shovelful of sand.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1
+		},
+		"gravel": {
+			"number": 38,
+			"name": "Gravel",
+			"description": "A shovelful of small stones and grit.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1
 		}
 	}
 }
