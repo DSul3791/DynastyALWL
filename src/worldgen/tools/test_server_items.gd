@@ -103,12 +103,13 @@ func _init() -> void:
 
 	# Tool work is hard (Dave 2026-10-21): a swing of an axe holds effort at running level.
 	feed.give(9, feed.table.number_of("stone_axe") if feed.table.number_of("stone_axe") > 0 else feed.table.number_of("axe"), 1)
+	feed.inventory_of(9).move(feed.inventory_of(9).numbers.find(feed.table.number_of("stone_axe")), 0)   # tools only work from the hotbar
 	var swing_slot: int = feed._tool_slot(feed.inventory_of(9), "axe")
 	check(swing_slot >= 0 and feed.effort_of(9) < 0.3, "at rest before the swing")
 	feed._wear_slot(9, feed.inventory_of(9), swing_slot, "fell")
 	check(feed.effort_of(9) >= 1.0, "an axe swing is as hard as running (%.2f)" % feed.effort_of(9))
 
-	items.action(7, Net.ACT_DROP, 0, 0, 100, Vector3(100.0, 5.0, 150.0))
+	items.action(7, Net.ACT_DROP, items.inventory_of(7).numbers.find(stone), 0, 100, Vector3(100.0, 5.0, 150.0))
 	check(items.world_item_count() == 1 and items.inventory_of(7).count_of(stone) == 0, "drop takes at most what is there; far spot clamped to the player")
 
 	world_sent.clear()
