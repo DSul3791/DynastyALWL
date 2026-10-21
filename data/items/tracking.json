@@ -1,0 +1,6 @@
+{
+	"note": "Tracking (Dave 2026-10-21): trampled grass trails are part of tracking. Everyone's trails last base_minutes real minutes; a good Tracking skill makes them stay down longer on that player's own client only (the server does not change). Multiplier by Tracking skill: linear from 1.0 at skill 1 to at_100 at skill 100, through the table points below. Client reads InventoryView.trail_multiplier() (uses the effective level).",
+	"base_minutes": 5.0,
+	"points": [[1, 1.0], [25, 1.5], [50, 3.0], [75, 4.5], [100, 6.0]],
+	"species_reading": {"note": "Proposed, not built: Tracking 40 tells a track's species group (hoofed or clawed), 65 names the species, 90 also tells age and whether it was hurt.", "levels": [40, 65, 90]}
+}

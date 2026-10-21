@@ -84,6 +84,10 @@
 			"skill": "hunting",
 			"effect": "yield"
 		},
+		"track": {
+			"skill": "tracking",
+			"effect": "yield"
+		},
 		"dress_carcass": {
 			"skill": "hunting",
 			"effect": "yield"
@@ -451,6 +455,18 @@
 			},
 			"max_factor": 1.5,
 			"order": 13
+		},
+		"tracking": {
+			"name": "Tracking",
+			"parents": {
+				"hunting": 1.0
+			},
+			"traits": {
+				"perception": 0.6,
+				"memory": 0.4
+			},
+			"max_factor": 1.5,
+			"order": 1
 		}
 	},
 	"migration": {

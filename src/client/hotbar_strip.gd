@@ -60,6 +60,8 @@ func _build() -> void:
 		count.add_theme_font_size_override("font_size", _items.text_px(20))
 		count.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		box.add_child(count)
+		panel.mouse_entered.connect(func(): _items.hotbar_hover = slot)
+		panel.mouse_exited.connect(func(): _items.hotbar_hover = -1 if _items.hotbar_hover == slot else _items.hotbar_hover)
 		_row.add_child(panel)
 		_cells.append({"panel": panel, "name": name_label, "count": count})
 

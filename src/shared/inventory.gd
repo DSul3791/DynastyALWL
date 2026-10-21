@@ -11,6 +11,7 @@ var table
 var numbers: PackedInt32Array = PackedInt32Array()
 var counts: PackedInt32Array = PackedInt32Array()
 var usable: int = SLOTS               # slots in use: a small container only fills its first few
+var bag_from: int = 0                 # a player's pack: new items go to slots from here first, the hotbar (0 to 9) only when the bag is full
 var wear: PackedInt32Array = PackedInt32Array()      # uses spent so far, tools only (stack 1); 0 for anything else
 
 
@@ -52,13 +53,14 @@ func add(number: int, count: int, item_wear: int = 0) -> int:
 			counts[i] += put
 			left -= put
 
-	for i in usable:
-		if left > 0 and numbers[i] == 0:
-			var put: int = mini(left, stack)
-			numbers[i] = number
-			counts[i] = put
-			wear[i] = item_wear
-			left -= put
+	for pass_from in [bag_from, 0]:
+		for i in range(pass_from, usable):
+			if left > 0 and numbers[i] == 0:
+				var put: int = mini(left, stack)
+				numbers[i] = number
+				counts[i] = put
+				wear[i] = item_wear
+				left -= put
 
 	return left
 

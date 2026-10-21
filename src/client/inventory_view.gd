@@ -88,6 +88,9 @@ var _thought_label: Label
 var _thought_until_msec: int = 0
 var worn: PackedInt32Array = PackedInt32Array()   # item number per body slot (clothing.json order), 0 = nothing (protocol 40)
 var clothing_cfg: Dictionary = {}
+const TrackingScript := preload("res://src/shared/tracking.gd")
+var trail_mult: float = 1.0                 # Tracking skill -> trail life multiple, 1.0 to 6.0 (see _update_trail_mult)
+var _tracking_index: int = -1               # position of "tracking" in skills.json order, found once
 var _cooking_cfg: Dictionary = {}
 var _structures_cfg: Dictionary = {}
 var remains_marks: Array = []                # [[position, seconds left, msec received], ...] the owner's remains with gear (protocol 39)
@@ -1079,11 +1082,11 @@ func equippable_slot(slot: int) -> bool:
 		return false
 
 	var entry: Dictionary = table.entry(table.id_of(inventory.numbers[slot]))
-	return entry.has("tool_class") or entry.has("weapon_class") or str(entry.get("kind", "")) in ["tool", "weapon", "placeable", "container"]
+	return entry.has("tool_class") or entry.has("weapon_class") or str(entry.get("kind", "")) in ["tool", "weapon", "placeable", "container", "blueprint"]
 
 
-# Hold a tool: from the hotbar slots straight away; from the rest of the pack it first moves into a free hotbar slot
-# (or takes the place of what is in hand), so a slot key can pick it up again.
+# Hold a tool: from the hotbar slots straight away; from the rest of the pack it first moves into the first free hotbar slot
+# (never replacing anything: a full hotbar says so), so a slot key can pick it up again.
 func equip_with_move(slot: int) -> void:
 	var target: int = slot
 
@@ -1096,7 +1099,8 @@ func equip_with_move(slot: int) -> void:
 				break
 
 		if target < 0:
-			target = maxi(int(held_slot_now.call()), 0) if held_slot_now.is_valid() else 0
+			_on_notice("Your hotbar is full. Clear a slot first.")
+			return
 
 		move_slot(slot, target)
 
@@ -1116,13 +1120,29 @@ func move_slot(from_slot: int, to_slot: int) -> void:
 	_selected = -1
 
 
+# E over a hotbar slot (inventory open) puts it back in the first free pack slot after the hotbar.
+var hotbar_hover: int = -1
+
+
+func hotbar_to_pack(slot: int) -> void:
+	if slot < 0 or slot >= 10 or inventory.numbers[slot] == 0:
+		return
+
+	for candidate in range(10, inventory.SLOTS):
+		if inventory.numbers[candidate] == 0:
+			move_slot(slot, candidate)
+			return
+
+	_on_notice("Your inventory is full. Make room first.")
+
+
 func refresh_hotbar() -> void:
 	if hotbar_strip != null:
 		hotbar_strip.refresh()
 
 
 func hotbar_tip(slot: int) -> String:
-	return _tooltip(inventory.numbers[slot], inventory.counts[slot], inventory.wear[slot]) if inventory.numbers[slot] != 0 else "Drag an item here from the inventory. Key %s holds it." % ("0" if slot == 9 else str(slot + 1))
+	return _tooltip(inventory.numbers[slot], inventory.counts[slot], inventory.wear[slot]) + ("\nKeys: Use (E) moves it into the inventory" if open else "") if inventory.numbers[slot] != 0 else "Drag an item here from the inventory. Key %s holds it." % ("0" if slot == 9 else str(slot + 1))
 
 
 # Eat the food or apply the medicine in a pack slot. Herbs that look like something else must be identified first.
@@ -2089,6 +2109,7 @@ func _on_skills(attributes: PackedInt32Array, rows: Array) -> void:
 	strength = attributes[0] if attributes.size() > 0 else 0
 	memory = attributes[1] if attributes.size() > 1 else 0
 	skill_rows = rows
+	_update_trail_mult()
 
 	if _character != null:
 		_character.refresh()
@@ -2101,6 +2122,21 @@ func _on_thought(line_id: String, text: String, kind: String) -> void:
 
 	if thought_event.is_valid():
 		thought_event.call(line_id, kind)
+
+
+# Tracking (Dave 2026-10-21): how many times longer trampled grass trails stay down on THIS client (1.0 untrained, 6.0 at 100).
+# Mandy's trail drawing multiplies its trail lifetime by trail_mult (base 5 real minutes, data/items/tracking.json). It uses the
+# effective (working) level, so a rusty tracker sees less. Set whenever the skills message arrives.
+func _update_trail_mult() -> void:
+	if _tracking_index < 0:
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/skills.json"))
+		_tracking_index = (parsed.get("skills", {}) as Dictionary).keys().find("tracking") if typeof(parsed) == TYPE_DICTIONARY else -1
+
+	trail_mult = 1.0
+
+	for row in skill_rows:
+		if int(row[0]) == _tracking_index:
+			trail_mult = TrackingScript.multiplier(int(row[6]) if row.size() > 6 else int(row[1]))
 
 
 # Hours of sickness for eating this raw (cooking.json raw_sick), 0 when it is safe.
@@ -2231,8 +2267,8 @@ func _build_panel() -> void:
 	_panel.theme = _tooltip_theme()
 	_panel.anchor_left = 0.05
 	_panel.anchor_right = 0.95
-	_panel.anchor_top = 0.05
-	_panel.anchor_bottom = 0.95
+	_panel.anchor_top = 0.04
+	_panel.anchor_bottom = 0.89   # leaves the whole hotbar visible underneath (Dave)
 	_panel.clip_contents = true   # the window keeps its size whatever the text size; contents scroll or wrap
 	var back: StyleBoxFlat = StyleBoxFlat.new()
 	back.bg_color = Color(0.07, 0.07, 0.08, 0.93)
@@ -2419,6 +2455,10 @@ func quick_key(event: InputEventKey) -> bool:
 
 	match event.keycode:
 		KEY_E:
+			if hotbar_hover >= 0 and _hover < 0:
+				hotbar_to_pack(hotbar_hover)
+				return true
+
 			if slot >= 0 and not chest_mode:
 				eat_slot(slot)
 

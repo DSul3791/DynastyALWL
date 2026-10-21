@@ -338,6 +338,7 @@ func peer_connected_hello(peer: int, key: String) -> void:
 
 	if not _inventories.has(key):
 		_inventories[key] = InventoryScript.new(table)
+		_inventories[key].bag_from = 10
 		_dirty = true
 
 	_known[peer] = {}
@@ -990,6 +991,7 @@ func make_carcass(species: String, pos: Vector3, hunter: int = -1) -> int:
 
 	if hunter >= 0:
 		practice(hunter, "hunt", float(_carcass_cfg["species"][species].get("hunt_difficulty", 1.0)))
+		practice(hunter, "track", 0.5)   # following the game to the kill; Tracking also trains from the trail-reading event when it exists
 
 	var ground: float = float(ground_height.call(pos.x, pos.z)) if ground_height.is_valid() else pos.y
 	var spot: Vector3 = Vector3(pos.x, ground if not is_nan(ground) else pos.y, pos.z)
@@ -1572,6 +1574,7 @@ func _load_inventories() -> void:
 	for key in parsed["inventories"]:
 		var inv = InventoryScript.new(table)
 		inv.from_json_array(parsed["inventories"][key])
+		inv.bag_from = 10
 		_inventories[key] = inv
 
 

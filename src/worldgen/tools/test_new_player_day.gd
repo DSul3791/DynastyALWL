@@ -101,6 +101,10 @@ func _init() -> void:
 	pass_time(6.0, 0.2)
 	check(count("campfire_kit") == 1, "a campfire kit is made by hand")
 
+	# The player puts the knife and the spear on the hotbar (new items no longer land there by themselves).
+	items.action(1, Net.ACT_MOVE, slot_of("stone_knife"), 0, 0, Vector3.ZERO)
+	items.action(1, Net.ACT_MOVE, slot_of("wooden_spear"), 1, 0, Vector3.ZERO)
+
 	# Make camp: not on a steep bank (the server refuses it), then on level ground.
 	var level: Callable = items.ground_height
 	items.ground_height = func(x, _z): return 10.0 + 0.5 * (x - 2.0)
