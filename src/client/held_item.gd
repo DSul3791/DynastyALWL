@@ -606,6 +606,24 @@ func _make_kit_model() -> Node3D:
 		node.add_child(plank)
 		return node
 
+	# The bigger stations in the hand: a log bench is a short beam on trestles, the forge a block of stone with a bar of iron on it,
+	# the blacksmithy a rolled plan under a timber peg (the heavy parts are delivered where it is raised).
+	if id == "log_workbench_kit" or id == "stone_forge_kit" or id == "blacksmithy_kit":
+		var body: MeshInstance3D = MeshInstance3D.new()
+		var lump: BoxMesh = BoxMesh.new()
+		lump.size = Vector3(0.3, 0.07, 0.14) if id == "log_workbench_kit" else (Vector3(0.18, 0.14, 0.14) if id == "stone_forge_kit" else Vector3(0.26, 0.04, 0.2))
+		lump.material = _kit_material(Color(0.36, 0.26, 0.16) if id != "stone_forge_kit" else Color(0.45, 0.44, 0.42))
+		body.mesh = lump
+		node.add_child(body)
+		var mark: MeshInstance3D = MeshInstance3D.new()
+		var bar: BoxMesh = BoxMesh.new()
+		bar.size = Vector3(0.2, 0.04, 0.05) if id != "blacksmithy_kit" else Vector3(0.03, 0.14, 0.03)
+		bar.material = _kit_material(Color(0.2, 0.2, 0.22) if id != "blacksmithy_kit" else Color(0.4, 0.28, 0.17))
+		mark.mesh = bar
+		mark.position = Vector3(0.0, 0.08, 0.0)
+		node.add_child(mark)
+		return node
+
 	if id == "chopping_block_kit":
 		var block: MeshInstance3D = MeshInstance3D.new()
 		var cyl: CylinderMesh = CylinderMesh.new()

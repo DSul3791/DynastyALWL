@@ -93,5 +93,48 @@ func _init() -> void:
 	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(vice), 0, 0, Vector3(2.0, 10.0, -2.5))
 	check(items.station_near(1, "workbench", 3), "a vice as well makes it level 3")
 
+	# The four tiers (Dave 2026-10-21): camp bench 1, log workbench 2, stone forge 3 and a forge, blacksmithy 4 and a better forge.
+	var dir2: String = "user://test_stations_tiers"
+	DirAccess.make_dir_recursive_absolute(dir2)
+
+	for file in DirAccess.get_files_at(dir2):
+		DirAccess.remove_absolute(dir2 + "/" + file)
+
+	var tiers = ItemsScript.new()
+	tiers.send_full = func(_p, _b): pass
+	tiers.send_slots = func(_p, _b): pass
+	tiers.send_world_items = func(_p, _a, _r): pass
+	tiers.send_craft_queue = func(_p, _e, _l): pass
+	tiers.send_notice = func(_p, text): said.append(text)
+	tiers.ground_height = func(_x, _z): return 10.0
+	tiers.setup(ItemTableScript.load_default(), dir2)
+	tiers.peer_connected_hello(1, "tier-key-000001")
+	tiers.report_position(1, Vector3(0.0, 10.0, 0.0))
+	var spots: Array = [Vector3(3.0, 10.0, 0.0), Vector3(200.0, 10.0, 0.0), Vector3(400.0, 10.0, 0.0)]
+	var kits: Array = ["log_workbench_kit", "stone_forge_kit", "blacksmithy_kit"]
+	var want: Array = [[2, 0], [3, 1], [4, 2]]
+
+	for n in 3:
+		var kit_number: int = tiers.table.number_of(kits[n])
+		check(kit_number > 0, "%s is an item" % kits[n])
+		tiers.report_position(1, spots[n] - Vector3(2.0, 0.0, 0.0))
+		tiers.action(1, Net.ACT_ADMIN_GIVE, kit_number, 0, 1, Vector3.ZERO)
+		tiers.action(1, Net.ACT_PLACE, tiers.inventory_of(1).numbers.find(kit_number), 0, 0, spots[n])
+		check(tiers.inventory_of(1).count_of(kit_number) == 0, "%s places" % kits[n])
+		check(tiers.station_near(1, "workbench", int(want[n][0])), "%s gives workbench %d" % [kits[n], int(want[n][0])])
+		check(not tiers.station_near(1, "workbench", int(want[n][0]) + 1), "%s gives no more than %d" % [kits[n], int(want[n][0])])
+		check(tiers.station_near(1, "forge", int(want[n][1])) or int(want[n][1]) == 0, "%s forge %d" % [kits[n], int(want[n][1])])
+		check(int(want[n][1]) == 0 or not tiers.station_near(1, "forge", int(want[n][1]) + 1), "%s forge capped" % kits[n])
+
+	var steel: int = 0
+
+	for number in tiers.recipes.numbers():
+		if str(tiers.recipes.recipe(number)["id"]) == "steel_pickaxe":
+			steel = number
+
+	check(int(tiers.recipes.recipe(steel).get("station_level", 1)) == 2, "steel needs the better forge")
+	check(tiers.station_near(1, "forge", 2), "the blacksmithy forges steel")
+	check(tiers._shelter_near(Vector3(400.0, 10.0, 0.0)) >= 0, "the blacksmithy counts as a shelter")
+
 	print("station tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

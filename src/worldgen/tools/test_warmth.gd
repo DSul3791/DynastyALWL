@@ -9,7 +9,7 @@ const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 
 var failures: int = 0
-var weather: Dictionary = {"temp_c": 15.0, "wind": 0.0, "rain": 0.0, "snow": 0.0}
+var weather: Dictionary = {"temp_c": 20.0, "wind": 0.0, "rain": 0.0, "snow": 0.0}
 var said: Array = []
 var sent: Array = []
 
@@ -51,7 +51,7 @@ func _init() -> void:
 	run(items, 120)
 	check(float(items.vitals_of(1)["warmth"]) > 99.0, "a mild day leaves warmth alone")
 
-	weather = {"temp_c": -8.0, "wind": 0.6, "rain": 0.0, "snow": 0.0}
+	weather = {"temp_c": -3.0, "wind": 0.6, "rain": 0.0, "snow": 0.0}
 	check(items.warmth_target(1) < 30.0, "a cold windy day aims low (%.0f)" % items.warmth_target(1))
 	run(items, 400)
 	var w: float = float(items.vitals_of(1)["warmth"])
@@ -60,7 +60,7 @@ func _init() -> void:
 	check(said.has("You are getting cold"), "the cold message shows once")
 	check(said.count("You are getting cold") == 1, "and only once")
 
-	weather = {"temp_c": -18.0, "wind": 0.6, "rain": 0.0, "snow": 0.4}   # an arctic winter snowfall
+	weather = {"temp_c": -13.0, "wind": 0.6, "rain": 0.0, "snow": 0.4}   # an arctic winter snowfall
 	run(items, 1500)
 	check(float(items.vitals_of(1)["health"]) < 100.0 and float(items.vitals_of(1)["health"]) >= 1.0, "deep cold costs health")
 	check(said.has("You are freezing"), "the freezing message shows")
@@ -69,7 +69,7 @@ func _init() -> void:
 	check(float(items.vitals_of(1)["health"]) == 1.0, "cold stops at 1 health (like hunger)")
 
 	# Cover and a fire, on an ordinary cold day.
-	weather = {"temp_c": -8.0, "wind": 0.6, "rain": 0.0, "snow": 0.0}
+	weather = {"temp_c": -3.0, "wind": 0.6, "rain": 0.0, "snow": 0.0}
 	items.cover_at = func(_p): return 1.0
 	check(items.warmth_target(1) > 25.0, "cover cuts the wind (%.0f)" % items.warmth_target(1))
 	items.cover_at = Callable()

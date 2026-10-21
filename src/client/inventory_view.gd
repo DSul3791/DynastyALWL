@@ -1233,7 +1233,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 		if state >= 5:
 			var yaw: float = deg_to_rad(float(row[5].get("yaw", 0.0))) if row.size() > 5 else 0.0
-			node = _make_leanto() if state == 5 else (_make_chest() if state == 6 else (_make_remains(float(row[5].get("age", 0.0)) if row.size() > 5 else 0.0) if (state == 11 or state == 12) else (_make_bench() if state == 13 else (_make_rack() if state == 14 else (_make_vice() if state == 15 else _make_block())))))
+			node = _make_leanto() if state == 5 else (_make_chest() if state == 6 else (_make_remains(float(row[5].get("age", 0.0)) if row.size() > 5 else 0.0) if (state == 11 or state == 12) else (_make_bench() if state == 13 else (_make_rack() if state == 14 else (_make_vice() if state == 15 else (_make_log_bench() if state == 16 else (_make_forge() if state == 17 else (_make_smithy() if state == 18 else _make_block()))))))))
 			node.position = row[3] - Vector3(0.0, SINK_M * float(row[5].get("age", 0.0)), 0.0) if (state == 11 or state == 12) and row.size() > 5 else row[3]
 			node.rotation.y = yaw
 			_root.add_child(node)
@@ -1241,6 +1241,9 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 			if state == 5 and cover_index != null:
 				roof_key = cover_index.add_roof(CoverScript.box_roof(Vector2(row[3].x, row[3].z), 1.1, 0.95, yaw, row[3].y - 0.5, row[3].y + 2.1))
+			elif state == 18 and cover_index != null:
+				var hall: Dictionary = _structure_by_state(18)
+				roof_key = cover_index.add_roof(CoverScript.box_roof(Vector2(row[3].x, row[3].z), float(hall.get("half_x", 3.0)), float(hall.get("half_z", 2.5)), yaw, row[3].y - 0.5, row[3].y + float(hall.get("height", 3.2))))
 
 			_world[id] = {"node": node, "number": row[1], "count": 1, "pos": row[3], "state": state, "light": null, "roof": roof_key}
 			continue
@@ -1276,7 +1279,7 @@ func placed_rows() -> Array:
 	for id in _world:
 		var state: int = int(_world[id]["state"])
 
-		if state == 1 or state == 5 or state == 6 or state == 7 or state == 8 or state == 9 or state == 13 or state == 14 or state == 15:
+		if state == 1 or state == 5 or state == 6 or state == 7 or state == 8 or state == 9 or state == 13 or state == 14 or state == 15 or state == 16 or state == 17 or state == 18:
 			rows.append({"pos": _world[id]["pos"], "state": state})
 
 	return rows
@@ -1431,6 +1434,10 @@ func _station_label(r: Dictionary) -> String:
 		if str(_structures_cfg[kind].get("station", "")) == str(r.get("station", "")):
 			return table.name_of(table.number_of(str(_structures_cfg[kind].get("item", "")))).to_lower()
 
+	for kind in _structure_kinds():
+		if _structures_cfg[kind].get("also", {}).has(str(r.get("station", ""))):
+			return table.name_of(table.number_of(str(_structures_cfg[kind].get("item", "")))).to_lower()
+
 	return str(r.get("station", "")).replace("_", " ")
 
 
@@ -1464,6 +1471,101 @@ func _make_bench() -> Node3D:
 	return root
 
 
+# The bigger stations (placeholder looks until Art draws them; medieval log and timber, stone and iron, nothing modern).
+func _part(root: Node3D, size: Vector3, at: Vector3, color: Color, tilt: Vector3 = Vector3.ZERO) -> void:
+	var piece: MeshInstance3D = MeshInstance3D.new()
+	var box: BoxMesh = BoxMesh.new()
+	box.size = size
+	var material: StandardMaterial3D = StandardMaterial3D.new()
+	material.albedo_color = color
+	material.roughness = 1.0
+	piece.mesh = box
+	piece.material_override = material
+	piece.position = at
+	piece.rotation_degrees = tilt
+	root.add_child(piece)
+
+
+const LOG_COLOR := Color(0.33, 0.23, 0.14)
+const PLANK_COLOR := Color(0.45, 0.33, 0.2)
+const STONE_COLOR := Color(0.46, 0.45, 0.42)
+const IRON_COLOR := Color(0.16, 0.16, 0.18)
+
+
+# Medium: a thick hewn top on two log trestles, a rack of pegs at the back and a wooden vice at one end, about 2 by 1 m.
+func _make_log_bench() -> Node3D:
+	var root: Node3D = Node3D.new()
+	_part(root, Vector3(2.0, 0.14, 0.9), Vector3(0.0, 0.9, 0.0), PLANK_COLOR)
+
+	for x in [-0.8, 0.8]:
+		_part(root, Vector3(0.14, 0.85, 0.14), Vector3(x, 0.42, -0.3), LOG_COLOR)
+		_part(root, Vector3(0.14, 0.85, 0.14), Vector3(x, 0.42, 0.3), LOG_COLOR)
+		_part(root, Vector3(0.1, 0.1, 0.7), Vector3(x, 0.25, 0.0), LOG_COLOR)
+
+	_part(root, Vector3(1.8, 0.08, 0.06), Vector3(0.0, 1.5, -0.46), LOG_COLOR)
+	_part(root, Vector3(0.08, 0.7, 0.08), Vector3(-0.85, 1.15, -0.46), LOG_COLOR)
+	_part(root, Vector3(0.08, 0.7, 0.08), Vector3(0.85, 1.15, -0.46), LOG_COLOR)
+	_part(root, Vector3(0.3, 0.2, 0.2), Vector3(0.75, 1.07, 0.2), PLANK_COLOR)
+	return root
+
+
+# Large: a stone hearth with a hooded chimney, an anvil on a stump, a bellows of leather and wood, and a plank bench alongside.
+func _make_forge() -> Node3D:
+	var root: Node3D = Node3D.new()
+	_part(root, Vector3(1.4, 0.8, 1.2), Vector3(-0.8, 0.4, 0.0), STONE_COLOR)
+	_part(root, Vector3(1.0, 0.1, 0.8), Vector3(-0.8, 0.85, 0.0), Color(0.08, 0.06, 0.05))
+	_part(root, Vector3(0.9, 1.3, 0.5), Vector3(-0.8, 1.45, -0.35), STONE_COLOR)
+	_part(root, Vector3(0.4, 1.2, 0.4), Vector3(-0.8, 2.6, -0.35), STONE_COLOR)
+	_part(root, Vector3(0.5, 0.45, 0.3), Vector3(-0.8, 0.55, 0.78), Color(0.3, 0.2, 0.13))
+	_part(root, Vector3(0.45, 0.5, 0.45), Vector3(0.45, 0.25, 0.3), LOG_COLOR)
+	_part(root, Vector3(0.5, 0.14, 0.2), Vector3(0.45, 0.58, 0.3), IRON_COLOR)
+	_part(root, Vector3(1.0, 0.08, 0.6), Vector3(1.2, 0.86, -0.4), PLANK_COLOR)
+	_part(root, Vector3(0.09, 0.82, 0.09), Vector3(0.75, 0.41, -0.65), PLANK_COLOR)
+	_part(root, Vector3(0.09, 0.82, 0.09), Vector3(1.65, 0.41, -0.65), PLANK_COLOR)
+	_part(root, Vector3(0.09, 0.82, 0.09), Vector3(0.75, 0.41, -0.15), PLANK_COLOR)
+	_part(root, Vector3(0.09, 0.82, 0.09), Vector3(1.65, 0.41, -0.15), PLANK_COLOR)
+	return root
+
+
+# Epic: the whole smithy, about 6 by 5 m: a stone plinth, stone back and side walls, timber posts and a pitched plank roof,
+# the forge and chimney in the back wall, an anvil on a stump, a quench trough, a long bench with rack and vice.
+func _make_smithy() -> Node3D:
+	var root: Node3D = Node3D.new()
+	var hall: Dictionary = _structure_by_state(18)
+	var hx: float = float(hall.get("half_x", 3.0))
+	var hz: float = float(hall.get("half_z", 2.5))
+	_part(root, Vector3(hx * 2.0, 0.2, hz * 2.0), Vector3(0.0, 0.1, 0.0), STONE_COLOR)
+	_part(root, Vector3(hx * 2.0, 1.6, 0.35), Vector3(0.0, 1.0, -hz + 0.2), STONE_COLOR)
+	_part(root, Vector3(0.35, 1.6, hz * 2.0 - 0.4), Vector3(-hx + 0.2, 1.0, 0.0), STONE_COLOR)
+
+	for corner in [Vector2(hx - 0.15, -hz + 0.15), Vector2(hx - 0.15, hz - 0.15), Vector2(-hx + 0.15, hz - 0.15), Vector2(0.0, hz - 0.15)]:
+		_part(root, Vector3(0.28, 3.0, 0.28), Vector3(corner.x, 1.6, corner.y), LOG_COLOR)
+
+	for z in [-hz + 0.2, hz - 0.15]:
+		_part(root, Vector3(hx * 2.0, 0.25, 0.25), Vector3(0.0, 3.1, z), LOG_COLOR)
+
+	for side in [-1.0, 1.0]:
+		_part(root, Vector3(hx * 2.0 + 0.4, 0.12, hz * 1.05), Vector3(0.0, 3.55, side * hz * 0.5), Color(0.38, 0.28, 0.17), Vector3(side * 22.0, 0.0, 0.0))
+
+	_part(root, Vector3(1.4, 1.6, 0.9), Vector3(-1.2, 1.0, -hz + 0.7), STONE_COLOR)
+	_part(root, Vector3(0.8, 3.4, 0.5), Vector3(-1.2, 2.9, -hz + 0.5), STONE_COLOR)
+	_part(root, Vector3(1.0, 0.1, 0.7), Vector3(-1.2, 1.85, -hz + 0.75), Color(0.08, 0.06, 0.05))
+	_part(root, Vector3(0.5, 0.5, 0.35), Vector3(-2.3, 0.45, -hz + 0.9), Color(0.3, 0.2, 0.13))
+	_part(root, Vector3(0.5, 0.5, 0.5), Vector3(0.2, 0.45, -0.3), LOG_COLOR)
+	_part(root, Vector3(0.55, 0.15, 0.22), Vector3(0.2, 0.78, -0.3), IRON_COLOR)
+	_part(root, Vector3(1.0, 0.45, 0.5), Vector3(1.6, 0.4, -1.0), STONE_COLOR)
+	_part(root, Vector3(0.9, 0.05, 0.4), Vector3(1.6, 0.64, -1.0), Color(0.12, 0.2, 0.28))
+	_part(root, Vector3(1.8, 0.1, 0.8), Vector3(0.9, 0.9, 1.2), PLANK_COLOR)
+
+	for x in [0.1, 1.7]:
+		_part(root, Vector3(0.1, 0.85, 0.1), Vector3(x, 0.45, 0.9), PLANK_COLOR)
+		_part(root, Vector3(0.1, 0.85, 0.1), Vector3(x, 0.45, 1.5), PLANK_COLOR)
+
+	_part(root, Vector3(0.3, 0.2, 0.25), Vector3(1.65, 1.05, 1.2), PLANK_COLOR)
+	_part(root, Vector3(1.2, 0.08, 0.08), Vector3(-1.6, 1.8, hz - 0.3), LOG_COLOR)
+	return root
+
+
 # Is a placed station of this kind within its reach? Display only (the server decides): greys recipes that need one.
 func station_near(station: String, level: int = 1) -> bool:
 	var here: Vector3 = _player_position.call() if _player_position.is_valid() else Vector3.ZERO
@@ -1471,7 +1573,13 @@ func station_near(station: String, level: int = 1) -> bool:
 	for id in _world:
 		var def: Dictionary = _structure_by_state(int(_world[id]["state"]))
 
-		if not def.is_empty() and str(def.get("station", "")) == station and here.distance_to(_world[id]["pos"]) <= float(def.get("reach_m", 3.0)) and int(def.get("station_level", 1)) + _addons_near(id, station, float(def.get("addon_reach_m", 5.0))) >= level:
+		if def.is_empty() or here.distance_to(_world[id]["pos"]) > float(def.get("reach_m", 3.0)):
+			continue
+
+		if str(def.get("station", "")) == station and int(def.get("station_level", 1)) + _addons_near(id, station, float(def.get("addon_reach_m", 5.0))) >= level:
+			return true
+
+		if int(def.get("also", {}).get(station, 0)) >= level:
 			return true
 
 	return false

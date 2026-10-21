@@ -3,6 +3,7 @@
 	"gap_m": 2.5,
 	"structures": {
 		"lean_to": {
+			"shelter": true,
 			"kit": "lean_to_kit",
 			"item": "lean_to",
 			"state": 5,
@@ -68,7 +69,8 @@
 			"station": "workbench",
 			"station_level": 1,
 			"reach_m": 4.0,
-			"addon_reach_m": 5.0
+			"addon_reach_m": 5.0,
+			"tier": "small"
 		},
 		"tool_rack": {
 			"kit": "tool_rack_kit",
@@ -87,6 +89,55 @@
 			"footprint_z": 0.5,
 			"cap_per_chunk": 6,
 			"addon_of": "workbench"
+		},
+		"log_workbench": {
+			"kit": "log_workbench_kit",
+			"item": "log_workbench",
+			"state": 16,
+			"footprint_x": 2.0,
+			"footprint_z": 1.0,
+			"cap_per_chunk": 3,
+			"station": "workbench",
+			"station_level": 2,
+			"tier": "medium",
+			"reach_m": 4.5,
+			"addon_reach_m": 5.0
+		},
+		"stone_forge": {
+			"kit": "stone_forge_kit",
+			"item": "stone_forge",
+			"state": 17,
+			"footprint_x": 3.2,
+			"footprint_z": 2.0,
+			"cap_per_chunk": 2,
+			"station": "workbench",
+			"station_level": 3,
+			"also": {
+				"forge": 1
+			},
+			"tier": "large",
+			"reach_m": 5.0,
+			"addon_reach_m": 5.0
+		},
+		"blacksmithy": {
+			"kit": "blacksmithy_kit",
+			"item": "blacksmithy",
+			"state": 18,
+			"footprint_x": 6.0,
+			"footprint_z": 5.0,
+			"cap_per_chunk": 1,
+			"station": "workbench",
+			"station_level": 4,
+			"also": {
+				"forge": 2
+			},
+			"tier": "epic",
+			"reach_m": 6.0,
+			"addon_reach_m": 5.0,
+			"half_x": 3.0,
+			"half_z": 2.5,
+			"height": 3.2,
+			"shelter": true
 		}
 	},
 	"campfire": {

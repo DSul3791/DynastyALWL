@@ -2702,6 +2702,7 @@ func _energy_tick(peer: int, v: Dictionary, spent: float, game_s: float) -> void
 	if e <= 0.0 and not _forced_sleep(peer) and int(_strain.get(peer, {}).get("state", 0)) < 2:
 		_stance[peer] = 3
 		_asleep[peer] = {"rested": 0.0, "forced": true}
+		_note_shelter(peer)
 		_strain_sent.erase(peer)
 		_say(peer, "You collapse with exhaustion")
 	elif _forced_sleep(peer) and e >= float(_energy_cfg.get("forced", {}).get("wake_at", 100.0)):
@@ -2760,7 +2761,68 @@ func _sleep(peer: int, want: int) -> void:
 
 	_asleep[peer] = {"rested": 0.0}
 	_strain_sent.erase(peer)
+	_note_shelter(peer)
 	_say(peer, "You fall asleep")
+
+
+# Dave 2026-10-21: a dead character comes back at the last shelter they slept in. Sleeping within SHELTER_NOTE_M of a standing
+# shelter structure (structures.json "shelter", the lean-to) keeps its spot in the character row (characters.json "shelter").
+const SHELTER_NOTE_M := 3.0
+
+
+func _shelter_near(pos: Vector3) -> int:
+	var best: int = -1
+	var best_d: float = SHELTER_NOTE_M
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if not it.has("struct") or not bool(_structures.get(str(it["struct"]["kind"]), {}).get("shelter", false)):
+			continue
+
+		var d: float = Vector2(it["pos"].x - pos.x, it["pos"].z - pos.z).length()
+
+		if d < best_d:
+			best_d = d
+			best = id
+
+	return best
+
+
+func _note_shelter(peer: int) -> void:
+	if not _peer_pos.has(peer) or not _characters.has(_peer_key.get(peer, "")):
+		return
+
+	var id: int = _shelter_near(_peer_pos[peer])
+
+	if id < 0:
+		return
+
+	var p: Vector3 = _items[id]["pos"]
+	var row: Dictionary = _characters[_peer_key[peer]]
+
+	if row.get("shelter", []) != [p.x, p.y, p.z]:
+		row["shelter"] = [p.x, p.y, p.z]
+		_dirty = true
+
+
+# Where this character comes back: just in front of their last shelter if it still stands, else the world spawn.
+func respawn_for(peer: int) -> Vector3:
+	var saved: Array = _characters.get(_peer_key.get(peer, ""), {}).get("shelter", [])
+
+	if saved.size() != 3:
+		return respawn_point
+
+	var spot := Vector3(float(saved[0]), float(saved[1]), float(saved[2]))
+	var id: int = _shelter_near(spot)
+
+	if id < 0 or _items[id]["pos"].distance_to(spot) > 0.5:
+		return respawn_point
+
+	var def: Dictionary = _structures.get(str(_items[id]["struct"]["kind"]), {})
+	var yaw: float = deg_to_rad(float(_items[id]["struct"]["yaw"]))
+	var out: float = maxf(float(def.get("half_x", 1.0)), float(def.get("half_z", 1.0))) + 1.5
+	return spot + Vector3(cos(yaw), 0.0, sin(yaw)) * out
 
 
 func _wake(peer: int, why: String) -> void:
@@ -3448,14 +3510,18 @@ func kill(peer: int, cause: String) -> bool:
 	_cold_level.erase(peer)
 	_fishing.erase(peer)
 	_hole_blows.erase(peer)
-	_peer_pos[peer] = respawn_point
+	var back: Vector3 = respawn_for(peer)
+	_peer_pos[peer] = back
 	_motion.erase(peer)
 	_sync_breath(peer, -1)
 	_sync_vitals(peer, true)
 	_dirty = true
 
 	if send_died.is_valid():
-		send_died.call(peer, cause, respawn_point)
+		send_died.call(peer, cause, back)
+
+	if back != respawn_point:
+		_say(peer, "You come back at your shelter")
 
 	return true
 
@@ -3628,13 +3694,22 @@ func station_near(peer: int, station: String, level: int = 1) -> bool:
 
 		var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
 
-		if str(def.get("station", "")) != station or _peer_pos[peer].distance_to(it["pos"]) > float(def.get("reach_m", 3.0)) + 1.0:
+		if _peer_pos[peer].distance_to(it["pos"]) > float(def.get("reach_m", 3.0)) + 1.0:
 			continue
 
-		if int(def.get("station_level", 1)) + _addon_kinds(it, def, station) >= level:
+		if station_level_of(it, def, station) >= level:
 			return true
 
 	return false
+
+
+# What level this placed structure gives for a station (0 = none): its own station at station_level plus one per add-on kind
+# beside it, or an "also" station it carries whole (the large and epic stations are a forge and a bench in one; Dave 2026-10-21).
+func station_level_of(it: Dictionary, def: Dictionary, station: String) -> int:
+	if str(def.get("station", "")) == station:
+		return int(def.get("station_level", 1)) + _addon_kinds(it, def, station)
+
+	return int(def.get("also", {}).get(station, 0))
 
 
 # How many different add-on kinds (structures.json addon_of) stand within addon_reach_m of a station: each raises its level by one.
@@ -3979,6 +4054,10 @@ func _fish_tick() -> void:
 func _station_name(station: String) -> String:
 	for kind in _structures:
 		if str(_structures[kind].get("station", "")) == station:
+			return table.name_of(table.number_of(str(_structures[kind].get("item", "")))).to_lower()
+
+	for kind in _structures:
+		if _structures[kind].get("also", {}).has(station):
 			return table.name_of(table.number_of(str(_structures[kind].get("item", "")))).to_lower()
 
 	return station.replace("_", " ")
@@ -4603,6 +4682,7 @@ func _load_characters() -> void:
 			"strength": clampi(int(parsed["players"][key].get("strength", 0)), -10, 10),
 			"memory": clampi(int(parsed["players"][key].get("memory", 0)), -10, 10),
 			"worn": _clean_worn(parsed["players"][key].get("worn", [])),
+			"shelter": parsed["players"][key].get("shelter", []) if typeof(parsed["players"][key].get("shelter", [])) == TYPE_ARRAY else [],
 			"skills": parsed["players"][key].get("skills", {}) if typeof(parsed["players"][key].get("skills", {})) == TYPE_DICTIONARY else {},
 		}
 

@@ -148,5 +148,40 @@ func _init() -> void:
 
 	check(newest - oldest <= 20.0, "the oldest sets went first")
 
+	# Dave 2026-10-21: back at the last shelter slept in.
+	DirAccess.make_dir_recursive_absolute(dir + "_shelter")
+
+	for file in DirAccess.get_files_at(dir + "_shelter"):
+		DirAccess.remove_absolute(dir + "_shelter/" + file)
+
+	var home = make(dir + "_shelter")
+	home.peer_connected_hello(1, "shelter-key-0001")
+	home.report_position(1, Vector3(300.0, 7.0, 300.0))
+	home.kill(1, "drowning")
+	check(home._peer_pos[1] == home.respawn_point, "no shelter slept in yet: back at the spawn")
+	home.peer_connected_hello(1, "shelter-key-0001")
+	home.report_position(1, Vector3(300.0, 7.0, 300.0))
+	home.action(1, Net.ACT_ADMIN_GIVE, home.table.number_of("lean_to_kit"), 0, 1, Vector3.ZERO)
+	home.action(1, Net.ACT_PLACE, home.inventory_of(1).numbers.find(home.table.number_of("lean_to_kit")), 0, 0, Vector3(304.0, 7.0, 300.0))
+	check(home._shelter_near(Vector3(302.0, 7.0, 300.0)) >= 0, "the lean-to stands")
+	home.report_position(1, Vector3(302.0, 7.0, 300.0))
+	home._stance[1] = 3
+	home._sleep(1, 1)
+	check(home.sleeping_of(1), "slept near the lean-to")
+	home.report_position(1, Vector3(400.0, 12.0, 400.0))
+	home.kill(1, "drowning")
+	check(home._peer_pos[1].distance_to(Vector3(304.0, 7.0, 300.0)) < 5.5 and home._peer_pos[1] != home.respawn_point, "dead: back beside the lean-to (%s)" % str(home._peer_pos[1]))
+	home._dirty = true
+	home.save()
+	var reborn = make(dir + "_shelter")
+	reborn.peer_connected_hello(1, "shelter-key-0001")
+	check(reborn.respawn_for(1).distance_to(Vector3(304.0, 7.0, 300.0)) < 5.5, "the shelter survives a restart")
+
+	for sid in reborn._items.keys():
+		if reborn._items[sid].has("struct"):
+			reborn._items.erase(sid)
+
+	check(reborn.respawn_for(1) == reborn.respawn_point, "shelter taken down: back at the spawn")
+
 	print("death tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = placeholder price of one item in coins (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 85,
+	"next_number": 91,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -960,6 +960,57 @@
 			"number": 84,
 			"name": "Wooden vice",
 			"description": "A wooden vice. Beside a camp bench it raises the bench a level.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"log_workbench_kit": {
+			"number": 85,
+			"name": "Log workbench",
+			"description": "A heavy log bench with its own rack and vice, ready to set down.",
+			"kind": "placeable",
+			"stack": 1,
+			"value": 35,
+			"look_alikes": []
+		},
+		"log_workbench": {
+			"number": 86,
+			"name": "Log workbench",
+			"description": "A log workbench with its own rack and vice. Stand near it to make the things that need a work table.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"stone_forge_kit": {
+			"number": 87,
+			"name": "Stone forge",
+			"description": "A stone hearth with an anvil block and leather bellows, with a bench beside it. It lets you work metal.",
+			"kind": "placeable",
+			"stack": 1,
+			"value": 120,
+			"look_alikes": []
+		},
+		"stone_forge": {
+			"number": 88,
+			"name": "Stone forge",
+			"description": "A stone forge with an anvil, bellows and a bench. Stand near it to work metal and make bench goods.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"blacksmithy_kit": {
+			"number": 89,
+			"name": "Blacksmithy",
+			"description": "A smithy staked out and ready to raise: forge, anvil and bench under one roof.",
+			"kind": "placeable",
+			"stack": 1,
+			"value": 600,
+			"look_alikes": []
+		},
+		"blacksmithy": {
+			"number": 90,
+			"name": "Blacksmithy",
+			"description": "A blacksmithy of stone and timber: forge, anvil, trough and bench under a roof.",
 			"kind": "structure",
 			"stack": 1,
 			"look_alikes": []
