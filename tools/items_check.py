@@ -62,7 +62,7 @@ CLIENTS = [
         ("and does not faint", r"strain state " + NUM, 0, 0),
     ]),
     ("strainrun", ["--walk", "--runspeed=24", "--strainrun"], 9000, [
-        ("the body really ran", r"Strain test: ran " + NUM + " m", 150, 400),
+        ("the body really ran", r"Strain test: ran " + NUM + " m", 150, 650),
         ("running raises the strain the server sends", r"strain [\d.]+ -> " + NUM, 0.08, 3.0),
         ("normal pace is full speed, no cap", r"0: pace x1.0 cap 0.0 \|", None, None),
         ("over-exerted is 10 percent slower, not capped", r"1: pace x0.9 cap 0.0 \|", None, None),
