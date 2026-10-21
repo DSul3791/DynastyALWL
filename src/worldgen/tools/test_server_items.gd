@@ -956,5 +956,51 @@ func _init() -> void:
 
 	check(packed + on_floor == 500 and pk.inventory_of(1).count_of(rock) == packed and after_floor == on_floor and cap_rejects == [2], "a pickup at the weight cap takes nothing, doubles nothing and is refused as pack full (%d packed, %d on the ground, %s)" % [packed, on_floor, str(cap_rejects)])
 
+	# Lazy catch-up (job 66): stumps that rot and saplings that grow while nobody is there, computed on the next look.
+	var lazy_clock: Array = [0.0]
+	var lz = make(qd + "_lazy")
+	lz.game_seconds = func(): return float(lazy_clock[0])
+	lz.ground_height = func(x, z): return 10.0
+	lz.standing_near = func(_species, pos, _radius): return [pos + Vector3(3.0, 0.0, 0.0)]
+	var tree_name: String = ""
+
+	for flora_name in lz._flora_by_name:
+		if lz._flora_by_name[flora_name].has("height_m") and float(lz._flora_by_name[flora_name]["height_m"][0]) > 4.0:
+			tree_name = str(flora_name)
+			break
+
+	for n in range(40):
+		lz._items[lz._next_id] = {"number": 0, "count": 1, "pos": Vector3(float(n) * 300.0, 10.0, 5.0), "left": 1.0e9, "tree": {"state": 4, "chunk": [n, 0], "species": tree_name, "yaw": 0.0, "length": 5.0, "radius": 0.2, "felled_at": 0.0}}
+		lz._next_id += 1
+
+	var day_s: float = 86400.0
+	lazy_clock[0] = 7.0 * day_s
+	lz._rot_in = 0.0
+	lz._rot(0.1)
+	check(lz.rot_removed == 0 and lz._saplings.is_empty(), "nothing rots in 7 game days (%d removed)" % lz.rot_removed)
+	lazy_clock[0] = 170.0 * day_s   # the server was off, or nobody was near, for 170 game days
+	lz._rot_in = 0.0
+	lz._rot(0.1)
+	check(lz.rot_scanned == 40 and lz.rot_removed == 40, "one pass catches up every rotted stump: %d looked at, %d rotted" % [lz.rot_scanned, lz.rot_removed])
+	check(not lz._saplings.is_empty(), "some stumps seeded a sapling")
+	var aged: bool = true
+
+	for sapling in lz._saplings:
+		aged = aged and absf(float(sapling["planted_at"]) - 168.0 * day_s) < 1.0 and lz._sapling_height(sapling, lazy_clock[0]) > 0.5
+
+	check(aged, "a sapling seeded during the catch-up dates from when its stump rotted, so it has already grown (%d saplings)" % lz._saplings.size())
+	lz._rot_in = 0.0
+	lz._rot(0.1)
+	check(lz.rot_scanned == 0 and lz.rot_removed == 0, "a second pass has nothing left to do")
+	lz._saplings.clear()
+	lz._saplings.append({"slot": 0, "chunk": [0, 0], "species": int(lz._flora_by_name[tree_name]["id"]), "pos": Vector3(1.0, 10.0, 1.0), "planted_at": 0.0})
+	lazy_clock[0] = 7.0 * day_s
+	var young: float = lz._sapling_height(lz._saplings[0], lazy_clock[0])
+	var full_h: float = float(lz._flora_by_name[tree_name]["height_m"][0])
+	check(young > full_h * 0.4 and young < full_h * 0.9, "a sapling 7 game days offline is a young tree by the next look (%.1f of %.1f m)" % [young, full_h])
+	check(lz.dynamic_tree_info(Vector2i(0, 0), (int(lz._flora_by_name[tree_name]["id"]) << 16) | 0xFFFF).is_empty(), "and cannot be felled yet")
+	lazy_clock[0] = 13.0 * day_s
+	check(not lz.dynamic_tree_info(Vector2i(0, 0), (int(lz._flora_by_name[tree_name]["id"]) << 16) | 0xFFFF).is_empty(), "after 12 game days it is a full tree that can be felled")
+
 	print("server item tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

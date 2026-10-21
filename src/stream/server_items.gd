@@ -150,6 +150,8 @@ var _last_hit: Dictionary = {}      # peer -> msec
 var _last_process: Dictionary = {}  # peer -> msec
 var _chops: Dictionary = {}         # "cx,cz,id" -> {hits, msec}
 var _rot_in: float = 60.0
+var rot_scanned: int = 0              # felled records looked at in the last rot pass (the work done; the catch-up test reads it)
+var rot_removed: int = 0              # and how many rotted away in it
 var _saplings: Array = []           # {slot, chunk [cx, cz], species (flora id), pos, planted_at}
 var _flora_by_id: Dictionary = {}
 var _mined: Dictionary = {}         # Vector2i patch -> {taken, since msec}
@@ -1240,15 +1242,23 @@ func _rot(delta: float) -> void:
 
 	_rot_in = 60.0
 	var now_s: float = float(game_seconds.call())
+	rot_scanned = 0
+	rot_removed = 0
 
 	for id in _items.keys():
+		if _items.has(id) and _items[id].has("tree"):
+			rot_scanned += 1
+
 		if _items.has(id) and _items[id].has("tree") and now_s - float(_items[id]["tree"]["felled_at"]) >= ROT_GAME_S:
 			var rotted: Dictionary = _items[id]
 			_items.erase(id)
 			_dirty = true
+			rot_removed += 1
 
+			# Lazy catch-up: a stump that rotted while nobody was here seeds its sapling at the moment it rotted, so it has
+			# grown by the time we look (growth is computed from planted_at, nothing ticks).
 			if int(rotted["tree"]["state"]) == 4:
-				_maybe_sapling(rotted)
+				_maybe_sapling(rotted, float(rotted["tree"]["felled_at"]) + ROT_GAME_S)
 
 	var stale: Array = []
 	var now_ms: int = Time.get_ticks_msec()
@@ -1363,7 +1373,7 @@ func _process_trunk(peer: int, inv, id: int) -> void:
 # A stump has rotted away: maybe a sapling grows near a standing tree of the same species. Nothing
 # comes while any felled trunk still lies in the chunk. The dice come from the seed and the spot,
 # so a restart gives the same answer.
-func _maybe_sapling(stump: Dictionary) -> void:
+func _maybe_sapling(stump: Dictionary, planted_at: float = -1.0) -> void:
 	if not standing_near.is_valid() or not ground_height.is_valid():
 		return
 
@@ -1408,7 +1418,7 @@ func _maybe_sapling(stump: Dictionary) -> void:
 		slot += 1
 
 	spot.y = ground
-	_saplings.append({"slot": slot, "chunk": [home.x, home.y], "species": int(species_entry["id"]), "pos": spot, "planted_at": float(game_seconds.call()) if game_seconds.is_valid() else 0.0})
+	_saplings.append({"slot": slot, "chunk": [home.x, home.y], "species": int(species_entry["id"]), "pos": spot, "planted_at": planted_at if planted_at >= 0.0 else (float(game_seconds.call()) if game_seconds.is_valid() else 0.0)})
 	_dirty = true
 
 	if flora_changed.is_valid():
