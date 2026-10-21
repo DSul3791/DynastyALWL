@@ -153,10 +153,15 @@ static func _window(levels: PackedFloat32Array, i: int, j: int, count: int, spac
 
 # Dave (2026-10-21, "the water is still crazy"): a lake that is filling or being fed hard has sloshing and piled
 # water, so its drawn surface stood in jagged shards above the lake. A lake is flat: every connected body of wet
-# cells that sit on baked lake ground (water class 2, at least LAKE_MIN_CELLS of them) is drawn at its median level,
+# cells that sit on baked lake ground (water class 2) or are deeper than LAKE_DEEP_M (at least LAKE_MIN_CELLS of them) is drawn at its median level,
 # whatever the sim's cells say. Rivers and ponds' outlets are not lake class and keep their own levels.
+# The most the water surface may step between the corners of one 8 m cell and still be drawn as water.
+const STEP_MAX_M := 4.0
 const LAKE_CLASS := 2
+const LAKE_DEEP_M := 3.0
 const LAKE_MIN_CELLS := 8
+const LAKE_JOIN_M := 2.0
+const LAKE_JOIN_CELLS := 8
 
 
 static func _flatten_lakes(generator, data, origin: Vector2, count: int, spacing: float, levels: PackedFloat32Array) -> void:
@@ -173,7 +178,13 @@ static func _flatten_lakes(generator, data, origin: Vector2, count: int, spacing
 			var z: float = origin.y + float(j) * spacing
 			var source = data if (x < data.x0 + float(data.samples - 1) * spacing and z < data.z0 + float(data.samples - 1) * spacing) else generator.get_tile(generator.tile_of(x, z))
 
-			if not source.placeholder and source.water_class[source.nearest(x, z)] == LAKE_CLASS:
+			if source.placeholder:
+				continue
+
+			var at: int = source.nearest(x, z)
+
+			# Baked lake ground, or deep water (a head pond's bowl is river class but stands as still as a lake).
+			if source.water_class[at] == LAKE_CLASS or levels[j * count + i] - source.heights[at] >= LAKE_DEEP_M:
 				lake[j * count + i] = 1
 				any = true
 
@@ -222,6 +233,42 @@ static func _flatten_lakes(generator, data, origin: Vector2, count: int, spacing
 
 		for n in members:
 			levels[n] = median
+
+		# Water standing against the lake (a hole dug into the shore, a bay the sim has not smoothed) within LAKE_JOIN_M of
+		# the lake level, up to LAKE_JOIN_CELLS cells out, is part of the lake too. A river leaving it drops away and stops this.
+		var ring: PackedInt32Array = members.duplicate()
+		var reached: Dictionary = {}
+
+		for n in members:
+			reached[n] = 0
+
+		var next_at: int = 0
+
+		while next_at < ring.size():
+			var n: int = ring[next_at]
+			next_at += 1
+			var depth: int = int(reached[n])
+
+			if depth >= LAKE_JOIN_CELLS:
+				continue
+
+			for dj in range(-1, 2):
+				for di in range(-1, 2):
+					var ii: int = n % count + di
+					var jj: int = n / count + dj
+
+					if ii < 0 or jj < 0 or ii >= count or jj >= count:
+						continue
+
+					var m: int = jj * count + ii
+
+					if reached.has(m) or is_nan(levels[m]) or absf(levels[m] - median) > LAKE_JOIN_M:
+						continue
+
+					reached[m] = depth + 1
+					seen[m] = 1
+					levels[m] = median
+					ring.append(m)
 
 
 # Standing water draws flat (owner 2026-10-21: "the water is all rough in the pond"): where
@@ -1272,6 +1319,19 @@ static func build_mesh(grid: Dictionary, material: Material) -> ArrayMesh:
 					any_wet = true
 
 			if not any_wet:
+				continue
+
+			# A drop of more than STEP_MAX_M between a cell's corners is a fall (the fall ribbons draw it), never a
+			# slanted sheet of water: skipped, so no step in the levels shows as a wall of the water shader.
+			var low: float = INF
+			var high: float = -INF
+
+			for c in corners:
+				if not is_nan(height[c]):
+					low = minf(low, height[c])
+					high = maxf(high, height[c])
+
+			if high - low > STEP_MAX_M:
 				continue
 
 			if fine.has(j * count + i):
