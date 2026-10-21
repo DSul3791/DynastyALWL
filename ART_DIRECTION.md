@@ -369,3 +369,7 @@ Owner table (2026-10-21, tall grass at Ultra): nothing saved more than 0.9 ms an
 ## 48. Ragdoll sides (build 354)
 
 The rig had its sides swapped (the bone named left sat on +X, which is the right of a body facing -Z). Names now match the body: right is +X, the swing, jab and touch clips use the right arm, held tools go to hand_mount_r.
+
+## 49. Scenery boulders off (build 363)
+
+Items made boulders server-owned objects (build 361, drawn in inventory_view with GrassView._make_boulder, solid, shrinking as stones come out). SCENERY_BOULDERS in grass_view.gd is now false so there is one drawing path and no double boulders. Pebbles stay as decoration. Cost: the boulder layer no longer runs, a little less grass-cell work near water and slopes.
