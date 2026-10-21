@@ -1,8 +1,3 @@
-## coffer-place | Banking: where can a family coffer be placed?
-- Anywhere (a wilderness coffer is easy to raid)
-- Only inside owned land
-- Only inside a building with a roof
-
 ## coffer-access | Banking: who can open a family coffer?
 - Only the owner
 - Any family member
