@@ -102,6 +102,7 @@ func _init() -> void:
 
 		for cell in fine:
 			var i: int = cell % count
+			@warning_ignore("integer_division")
 			var j: int = cell / count
 			var corners: Array = [levels[cell], levels[cell + 1], levels[cell + count], levels[cell + count + 1]]
 			var all_wet: bool = corners.all(func(c): return not is_nan(c))
@@ -124,12 +125,14 @@ func _init() -> void:
 					old_over += 1 if flat > ground + 1.0 else 0
 					new_under += 1 if surface < ground else 0
 
+		@warning_ignore("integer_division")
 		print("chunk %d,%d: %d running cells, %d fine, levels %d ms cold / %d ms warm, %d bytes, %d triangles" % [
 			pick[1], pick[2], pick[0], fine.size(), cold_ms, warm_ms, bytes.size(), mesh.surface_get_array_index_len(0) / 3 if mesh.get_surface_count() > 0 else 0])
 
 	print("points inside wet running cells: %d" % samples)
 	print("old flat surface: %.1f%% under the ground (stripes), %.1f%% over 1 m above it" % [100.0 * old_under / maxf(samples, 1), 100.0 * old_over / maxf(samples, 1)])
 	print("new fine surface: %.1f%% under the ground" % [100.0 * new_under / maxf(samples, 1)])
+	@warning_ignore("integer_division")
 	print("average %d ms and %d bytes per chunk" % [total_ms / maxi(chunks_wanted, 1), total_bytes / maxi(chunks_wanted, 1)])
 	quit(0)
 

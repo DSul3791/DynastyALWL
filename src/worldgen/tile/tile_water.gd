@@ -108,6 +108,7 @@ func build(height_map, starter: Dictionary = {}, guides: Variant = null, world_p
 				_log("pass 2 done", clock)
 				var probes: PackedStringArray = PackedStringArray()
 
+				@warning_ignore("integer_division")
 				for k in [0, starter_path.size() / 4, starter_path.size() / 2, starter_path.size() * 3 / 4, starter_path.size() - 1]:
 					var point: Vector2 = starter_path[k]
 					var at: int = clampi(int(round(point.y)), 0, samples - 1) * samples + clampi(int(round(point.x)), 0, samples - 1)
@@ -214,6 +215,7 @@ func _find_ocean() -> PackedByteArray:
 	while not stack.is_empty():
 		var index: int = stack[stack.size() - 1]
 		stack.remove_at(stack.size() - 1)
+		@warning_ignore("integer_division")
 		var row: int = index / samples
 		var column: int = index % samples
 
@@ -266,6 +268,7 @@ func _flood(routed: PackedInt32Array, ocean: PackedByteArray, level: PackedInt32
 			level[index] = 0
 
 	for index in range(total):
+		@warning_ignore("integer_division")
 		var row: int = index / samples
 		var column: int = index % samples
 		var on_border: bool = row == 0 or column == 0 or row == samples - 1 or column == samples - 1
@@ -294,6 +297,7 @@ func _flood(routed: PackedInt32Array, ocean: PackedByteArray, level: PackedInt32
 			var index: int = head[slot]
 			head[slot] = next[index]
 			order.append(index)
+			@warning_ignore("integer_division")
 			var row: int = index / samples
 			var column: int = index % samples
 			var here: int = level[index]
@@ -365,6 +369,7 @@ func _resolve_pits(routed: PackedInt32Array, level: PackedInt32Array, ocean: Pac
 			var index: int = members[cursor]
 			cursor += 1
 			deepest = maxi(deepest, level[index] - routed[index])
+			@warning_ignore("integer_division")
 			var row: int = index / samples
 			var column: int = index % samples
 			min_column = mini(min_column, column)
@@ -1048,7 +1053,7 @@ func _seal_pond_rim(carved: PackedFloat32Array, land: PackedFloat32Array, centre
 # (owner, 2026-10-18/19: ponds sit on flat ground, never cut deep into a hillside), as
 # {"radius", "bench"} (bench: the height of the flat ground the pond is set in, the middle
 # of its rim), or empty when none fits.
-func _pond_fit(carved: PackedFloat32Array, centre: Vector2, pond_radius: float, wall_fade: float, max_rim_range: float, shore_m: float) -> Dictionary:
+func _pond_fit(_carved: PackedFloat32Array, centre: Vector2, pond_radius: float, wall_fade: float, max_rim_range: float, shore_m: float) -> Dictionary:
 	for scale in [1.0]:
 		var radius_here: float = pond_radius * scale
 		# Kept clear of the strip a neighbor tile also bakes (see _pond_keep_out), so a pond is
@@ -1836,6 +1841,7 @@ func _stamp(
 ) -> void:
 	var radius_m: float = width * 0.5 + (depth + 1.0) / slope
 	var radius_cells: int = int(ceil(radius_m / spacing_m))
+	@warning_ignore("integer_division")
 	var row: int = index / samples
 	var column: int = index % samples
 
@@ -1908,11 +1914,13 @@ func _bay_head_samples(starter: Dictionary) -> Vector2:
 # water to feed in at the source: {cell index: extra catchment cells}.
 func _cut_starter_river(source: int, starter: Dictionary, river_rules: Dictionary) -> Dictionary:
 	var step: int = maxi(int(round(float(river_rules["route_cell_m"]) / spacing_m)), 1)
+	@warning_ignore("integer_division")
 	var coarse: int = (samples - 1) / step + 1
 	var climb_cost: float = float(river_rules["climb_cost"])
 	var head: Vector2 = _bay_head_samples(starter)
 	var goal: Vector2i = Vector2i(int(round(head.x / float(step))), int(round(head.y / float(step))))
 	goal = Vector2i(clampi(goal.x, 0, coarse - 1), clampi(goal.y, 0, coarse - 1))
+	@warning_ignore("integer_division")
 	var start: Vector2i = Vector2i((source % samples) / step, (source / samples) / step)
 
 	# Walk the nearest land cell to the goal if the head sits in water.
@@ -1957,6 +1965,7 @@ func _cut_starter_river(source: int, starter: Dictionary, river_rules: Dictionar
 		if node == goal_node:
 			break
 
+		@warning_ignore("integer_division")
 		var row: int = node / coarse
 		var column: int = node % coarse
 		var here: float = heights[row * step * samples + column * step]
@@ -2075,6 +2084,7 @@ static func _heap_push(keys: PackedFloat32Array, nodes: PackedInt32Array, key: f
 	var child: int = keys.size() - 1
 
 	while child > 0:
+		@warning_ignore("integer_division")
 		var parent: int = (child - 1) / 2
 
 		if keys[parent] <= keys[child]:

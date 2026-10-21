@@ -106,6 +106,7 @@ func _draw(sim, side: int, path: String) -> void:
 
 	for sp in sim.springs:
 		var si: int = int(sp[0]) % side
+		@warning_ignore("integer_division")
 		var sj: int = int(sp[0]) / side
 
 		for dj in range(-3, 4):

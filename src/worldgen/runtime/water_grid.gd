@@ -217,6 +217,7 @@ static func _smooth_running(generator, data, origin: Vector2, count: int, spacin
 
 	for k in wet:
 		var ci: int = k % side - pad
+		@warning_ignore("integer_division")
 		var cj: int = k / side - pad
 		movable[k] = 1 if not (ci >= 0 and cj >= 0 and ci < count and cj < count and not is_nan(still[cj * count + ci])) else 0
 
@@ -226,6 +227,7 @@ static func _smooth_running(generator, data, origin: Vector2, count: int, spacin
 
 		for k in wet:
 			var i: int = k % side
+			@warning_ignore("integer_division")
 			var j: int = k / side
 
 			if movable[k] == 0 or i < lo or j < lo or i > side - 1 - lo or j > side - 1 - lo:
@@ -252,6 +254,7 @@ static func _smooth_running(generator, data, origin: Vector2, count: int, spacin
 
 	for k in wet:
 		var ci: int = k % side - pad
+		@warning_ignore("integer_division")
 		var cj: int = k / side - pad
 
 		if ci >= 0 and cj >= 0 and ci < count and cj < count:
@@ -350,6 +353,7 @@ static func _flatten_lakes(generator, data, origin: Vector2, count: int, spacing
 			for dj in range(-1, 2):
 				for di in range(-1, 2):
 					var ii: int = n % count + di
+					@warning_ignore("integer_division")
 					var jj: int = n / count + dj
 
 					if ii < 0 or jj < 0 or ii >= count or jj >= count:
@@ -370,6 +374,7 @@ static func _flatten_lakes(generator, data, origin: Vector2, count: int, spacing
 			values.append(levels[n])
 
 		values.sort()
+		@warning_ignore("integer_division")
 		var median: float = values[values.size() / 2]
 
 		for n in members:
@@ -396,6 +401,7 @@ static func _flatten_lakes(generator, data, origin: Vector2, count: int, spacing
 			for dj in range(-1, 2):
 				for di in range(-1, 2):
 					var ii: int = n % count + di
+					@warning_ignore("integer_division")
 					var jj: int = n / count + dj
 
 					if ii < 0 or jj < 0 or ii >= count or jj >= count:
@@ -420,6 +426,7 @@ static func _flatten_lakes(generator, data, origin: Vector2, count: int, spacing
 				for dj in range(-1, 2):
 					for di in range(-1, 2):
 						var ii: int = n % count + di
+						@warning_ignore("integer_division")
 						var jj: int = n / count + dj
 
 						if ii < 0 or jj < 0 or ii >= count or jj >= count:
@@ -536,6 +543,7 @@ static func _still_levels(count: int, spacing: float, levels: PackedFloat32Array
 			for dj in range(-1, 2):
 				for di in range(-1, 2):
 					var ii: int = n % count + di
+					@warning_ignore("integer_division")
 					var jj: int = n / count + dj
 
 					if ii < 0 or jj < 0 or ii >= count or jj >= count:
@@ -555,6 +563,7 @@ static func _still_levels(count: int, spacing: float, levels: PackedFloat32Array
 		values.sort()
 
 		if values[values.size() - 1] - values[0] <= STILL_BODY_M:
+			@warning_ignore("integer_division")
 			var median: float = values[values.size() / 2]
 
 			for n in members:

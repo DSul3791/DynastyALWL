@@ -172,6 +172,7 @@ static func _fed(p: int, count: int, levels: PackedFloat32Array, drawn: PackedFl
 				return true
 
 			var i: int = q % count
+			@warning_ignore("integer_division")
 			var j: int = q / count
 
 			for dj in range(-1, 2):

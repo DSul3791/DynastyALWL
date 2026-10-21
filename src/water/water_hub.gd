@@ -524,7 +524,9 @@ func _couple(a, b, ka: PackedInt32Array, kb: PackedInt32Array, dt: float) -> voi
 		if absf(move) < 0.00001:
 			continue
 
+		@warning_ignore("integer_division")
 		sa.add_water(ka[n] % side, ka[n] / side, -move)
+		@warning_ignore("integer_division")
 		sb.add_water(kb[n] % side, kb[n] / side, move)
 
 		crossed += absf(move) * width * width

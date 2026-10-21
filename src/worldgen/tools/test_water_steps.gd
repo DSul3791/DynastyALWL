@@ -19,10 +19,12 @@ func _mesh_span(levels: Array) -> Array:
 	var indices: PackedInt32Array = mesh.surface_get_arrays(0)[Mesh.ARRAY_INDEX]
 	var worst: float = 0.0
 
+	@warning_ignore("integer_division")
 	for t in range(indices.size() / 3):
 		var ys: Array = [vertices[indices[3 * t]].y, vertices[indices[3 * t + 1]].y, vertices[indices[3 * t + 2]].y]
 		worst = maxf(worst, maxf(ys.max() - ys.min(), 0.0))
 
+	@warning_ignore("integer_division")
 	return [indices.size() / 3, worst]
 
 

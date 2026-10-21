@@ -362,6 +362,7 @@ func step() -> float:
 	for a in range(count):
 		var k: int = _active[a]
 		var i: int = k % width
+		@warning_ignore("integer_division")
 		var j: int = k / width
 		var gk: float = ground[k]
 		var here: float = gk + depth[k]
@@ -446,6 +447,7 @@ func step() -> float:
 		for dj in range(-2, 3):
 			for di in range(-2, 3):
 				var ci: int = centre % side + di
+				@warning_ignore("integer_division")
 				var cj: int = centre / side + dj
 
 				if ci >= 0 and ci < side and cj >= 0 and cj < side and ground[cj * side + ci] > 0.0:
@@ -501,6 +503,7 @@ func _wake_inside(k: int, inside: bool) -> void:
 # No neighbour lies lower: the water has nowhere to run (a thin film on a slope still runs).
 func _is_stranded(k: int) -> bool:
 	var i: int = k % side
+	@warning_ignore("integer_division")
 	var j: int = k / side
 	var here: float = ground[k] + depth[k] - LEVEL_M
 
@@ -578,13 +581,14 @@ func _drawn_wet(k: int) -> bool:
 
 
 # Thin water from k in one direction reaches water deep enough to draw within two squares.
-func _reaches_wet(k: int, step: int) -> bool:
+func _reaches_wet(k: int, stride: int) -> bool:
 	var n: int = k
 
 	for hop in range(2):
-		var next: int = n + step
+		var next: int = n + stride
 
-		if next < 0 or next >= depth.size() or (absi(step) == 1 and next / side != n / side):
+		@warning_ignore("integer_division")
+		if next < 0 or next >= depth.size() or (absi(stride) == 1 and next / side != n / side):
 			return false
 
 		n = next
