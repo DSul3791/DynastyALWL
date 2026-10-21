@@ -78,3 +78,6 @@ Input rules (Dave):
 
 ## Swimming (build 377)
 In deep water (over about 1.3 m) you float at the surface and swim at 2 m/s (Shift: 3 m/s, tires you faster). Space swims up, Ctrl dives. Walking into a bank or ice edge less than about 1.1 m above the water pulls you out. Wading slows you in water over the knees. Under a floe or ice sheet you drift to open water; frozen in with no gap you come up through the ice. Swimming counts as work: the server prices it from your position.
+
+## Filling ground (build 378)
+With a spade in hand, right click fills the ground under the crosshair (one shovelful of soil, sand, gravel, clay or stone from the pack per fill, 0.9 m round, within 4.5 m). Fills are saved like digs and survive restarts and re-bakes; water rises or stops at them.

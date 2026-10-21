@@ -60,7 +60,7 @@ const FaintEffectScript := preload("res://src/client/faint_effect.gd")
 const FallMistScript := preload("res://src/client/fall_mist.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 377
+const BUILD := 378
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
@@ -539,6 +539,7 @@ func _ready() -> void:
 	net.blocks_received.connect(_on_blocks)
 	net.tile_changed_received.connect(_on_tile_changed)
 	net.dug_received.connect(_on_dug)
+	net.filled_received.connect(_on_filled)
 	net.flora_received.connect(_on_flora)
 	net.flora_cut_received.connect(_on_flora_cut)
 	net.water_rate_received.connect(_on_water_rate)
@@ -910,6 +911,20 @@ func _on_dug(center: Vector3, radius: float) -> void:
 	print("Terrain client: applied a %.1f m dig at %s; ground value there now %.2f (above 0 is open)" % [
 		radius, str(center), tool.get_voxel_f(Vector3i(center.round()))
 	])
+
+
+# A fill (a dam, a filled hole): the same sphere put back as ground, the grass under it buried.
+func _on_filled(center: Vector3, radius: float, _material: int) -> void:
+	if terrain == null:
+		return
+
+	var tool: VoxelTool = terrain.get_voxel_tool()
+	tool.channel = VoxelBuffer.CHANNEL_SDF
+	tool.mode = VoxelTool.MODE_ADD
+	tool.do_sphere(center, radius)
+
+	if grass != null:
+		grass.ground_changed(center, radius)
 
 
 # Water within a stride of the feet or a step or two ahead (where you look, flat): what the E-to-drink prompt needs.

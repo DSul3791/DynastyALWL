@@ -1,4 +1,4 @@
-# Protocol (PROTOCOL_VERSION 29, src/stream/terrain_net.gd)
+# Protocol (PROTOCOL_VERSION 30, src/stream/terrain_net.gd)
 
 Kept current by whoever changes the wire: add the row, bump PROTOCOL_VERSION to the next free number (pull first and read terrain_net.gd), and note the build.
 
@@ -12,6 +12,7 @@ Kept current by whoever changes the wire: add the row, bump PROTOCOL_VERSION to 
 | tile_changed | server to client | reliable | tile: Vector2i, revision: int | 2 |
 | dig | client to server | reliable | center: Vector3, radius: float | 2 |
 | dug | server to client | reliable | center: Vector3, radius: float | 2 |
+| filled | server to client | reliable | center: Vector3, radius: float, material: int (soil id) | 30 |
 | request_flora | client to server | reliable | chunks: PackedInt32Array | 3 |
 | deliver_flora | server to client | reliable | chunk: Vector2i, bytes: PackedByteArray, water: PackedByteArray, full: bool | 3 |
 | cut_flora | client to server | reliable | chunk: Vector2i, id: int | 3 |
@@ -65,6 +66,7 @@ Kept current by whoever changes the wire: add the row, bump PROTOCOL_VERSION to 
 | 24 | ACT_DRINK | no arguments: drink one mouthful (vitals.json thirst.drink_ml) from water within thirst.reach_m of the player's feet; refused with reject(0) when no water is near, paced by drink_pace_ms | 24 |
 | 26 | ACT_SLEEP | a = 1 fall asleep, 0 wake. Needs the player lying (stance 3), not fainted, and no rain reaching them (open ground, rain over 0.2); otherwise ignored (a notice says why). Sleep ends on any stance change, a fall hit, rain on an open sleeper, or 10 s of zero exertion. The server tells everyone with strain(): bit 4 (+4) of the stance field = asleep | 29 |
 | 25 | ACT_DIG | at = the ground point under the crosshair: one spade dig (0.9 m sphere, 0.25 m below the point); needs a whole spade (tool class spade) in the pack, point within 4.5 m of the player, one per 0.7 s; refused with reject(0 too far, 1 no spade). The server logs the hole (digs.dat) and answers everyone with dug() and tile_changed() | 28 |
+| 27 | ACT_FILL | at = the ground point under the crosshair: one spade fill (0.9 m sphere, 0.1 m above the point, one shovelful of soil, sand, gravel, clay or stone from the pack, digging.json fill order); needs a spade, reach 4.5 m, one per 0.7 s (shared with digs); refused with reject(0 too far, 1 no spade), a notice when the pack has nothing to fill with. The server saves it in digs.dat (DIGS2 fill record), tells everyone with filled() and tile_changed(), the water thread raises its ground, shrubs and plants in the sphere are removed | 30 |
 | 23 | ACT_FALL | a = drop in centimetres the client landed from (sent from 6 m up); the server turns it into health damage (vitals.json fall) and a faint from 12 m; limited to one per 2 s, drop capped at 60 m | 23 |
 
 ## World-item row states (world_items)
@@ -97,3 +99,4 @@ digs.dat version 2 (DIGS2: seq, kind dig/fill, material, x y z radius, 24 bytes 
 - 16: storage chest (ACT_CHEST_*, chest_contents, state 6).
 - 15: lean-to (state 5, ACT_PLACE carries yaw in count).
 - 14: tool wear (9-byte slot updates, ACT_REPAIR).
+- 30: ACT_FILL (27) and filled(): spade fills saved as DIGS2 fill records. Digs and fills also remove shrubs and plants standing in the sphere (flora_cut).

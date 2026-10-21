@@ -341,6 +341,25 @@ func _init() -> void:
 	m._last_dig.clear()
 	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(m.inventory_of(1).count_of(clay_n) >= 1, "a dig in clay brings up clay")
+
+	# Filling with the spade (ACT_FILL, saved edits step 3): spends a shovelful, makes a fill, hands it back if refused.
+	var fills: Array = []
+	var accept: Array = [true]
+	m.fill_ground = func(centre, radius, material): fills.append([centre, radius, material]); return accept[0]
+	m.take_fill(1, 100000)
+	m._last_dig.clear()
+	m.action(1, Net.ACT_FILL, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(fills.is_empty(), "nothing in the pack to fill with, no fill")
+	m.action(1, Net.ACT_ADMIN_GIVE, soil_n, 0, 3, Vector3.ZERO)
+	m._last_dig.clear()
+	m.action(1, Net.ACT_FILL, 0, 0, 0, Vector3(30.0, 10.0, 0.0))
+	check(fills.is_empty(), "a fill out of reach does nothing")
+	m.action(1, Net.ACT_FILL, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(fills.size() == 1 and int(fills[0][2]) == 5 and m.inventory_of(1).count_of(soil_n) == 2, "a fill spends one shovelful of soil and makes loam ground")
+	m._last_dig.clear()
+	accept[0] = false
+	m.action(1, Net.ACT_FILL, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(fills.size() == 2 and m.inventory_of(1).count_of(soil_n) == 2, "a fill that changed nothing gives the shovelful back")
 	check(m.carried_kg_of(1) < 60.0, "digging cannot overfill the pack")
 
 	# A dig the ground refuses (nothing changed) gives nothing.

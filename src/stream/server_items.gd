@@ -90,6 +90,7 @@ var standing_near: Callable    # (species name, position, radius) -> [position] 
 var flora_changed: Callable    # (chunk Vector2i) -> a chunk's saplings or trees changed: refresh the server cache and the clients near it
 var tree_info: Callable        # (chunk Vector2i, id) -> {name, position, height, trunk} of a standing tree, or {}
 var cut_tree: Callable         # (chunk Vector2i, id) -> true when the standing tree was removed (and clients told)
+var fill_ground: Callable        # (centre, radius, material) -> bool: add ground (a fill) and tell everyone; false when it changed nothing
 var dig_ground: Callable         # (centre, radius) -> void: cut a hole in the ground and tell everyone; set by the server scene
 var trees_near: Callable        # (point, radius) -> Array of [chunk Vector2i, id int]: standing placer trees whose root is that close; set by the server scene
 var dig_support: Callable       # (base, radius, depth) -> share 0..1 of the ground under a tree not dug away; set by the server scene
@@ -403,6 +404,8 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_mine(peer, inv, at)
 	elif kind == Net.ACT_DIG:
 		_dig(peer, inv, at)
+	elif kind == Net.ACT_FILL:
+		_fill(peer, inv, at)
 	elif kind == Net.ACT_PLACE:
 		_place(peer, inv, a, at, count)
 	elif kind == Net.ACT_THROW:
@@ -712,6 +715,72 @@ func _dig(peer: int, inv, at: Vector3) -> void:
 	_give_dig_yield(peer, at)
 	_fell_undermined(peer, at)
 	_dirty = true
+
+
+# One spade fill (ACT_FILL, saved edits step 3): a sphere of ground added at the point struck, using up one shovelful
+# from the pack (digging.json "fill", soil first). Same reach, spade and pace as a dig; a fill that changes nothing
+# hands the shovelful back.
+const FILL_RADIUS_M := 0.9
+const FILL_UP_M := 0.1         # the fill is centred this far above the point struck (it heaps a little)
+const FILL_SOIL := {"soil": 5, "sand": 1, "gravel": 2, "clay": 4, "stone": 9}   # the ground material each fill item makes (data/tables/soils.json ids)
+
+
+func _fill(peer: int, inv, at: Vector3) -> void:
+	if not _peer_pos.has(peer) or not fill_ground.is_valid():
+		return
+
+	if _peer_pos[peer].distance_to(at) > DIG_REACH_M:
+		_reject(peer, 0)
+		return
+
+	if not _has_tool(inv, "spade"):
+		_reject(peer, 1)
+		return
+
+	var now: int = Time.get_ticks_msec()
+
+	if now - int(_last_dig.get(peer, -100000)) < DIG_COOLDOWN_MS:
+		return
+
+	var material_item: String = ""
+
+	for name in _dig_cfg.get("fill", []):
+		var number: int = table.number_of(str(name))
+
+		if number > 0 and inv.count_of(number) > 0:
+			material_item = str(name)
+			break
+
+	if material_item == "":
+		_say(peer, "Nothing to fill with: dig some soil, sand or gravel first")
+		return
+
+	_last_dig[peer] = now
+
+	if take_fill_item(peer, material_item) < 1:
+		return
+
+	_wear_tool(peer, inv, "spade", "dig")
+	var done: Variant = fill_ground.call(at + Vector3(0.0, FILL_UP_M, 0.0), FILL_RADIUS_M, int(FILL_SOIL.get(material_item, 5)))
+
+	if typeof(done) == TYPE_BOOL and not bool(done):
+		give(peer, table.number_of(material_item), 1)
+
+	_dirty = true
+
+
+# Takes one shovelful of the named fill item; returns 1 or 0.
+func take_fill_item(peer: int, name: String) -> int:
+	var inv = inventory_of(peer)
+	var number: int = table.number_of(name)
+
+	if inv == null or number <= 0 or inv.count_of(number) < 1:
+		return 0
+
+	var before: Array = _snapshot(inv)
+	inv.remove(number, 1)
+	_send_changes(peer, inv, before)
+	return 1
 
 
 # Dig under trees (job 85, drops.json "dig_fell"): every standing tree near the new hole whose support is now thin enough falls

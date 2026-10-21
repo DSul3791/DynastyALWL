@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 29
+const PROTOCOL_VERSION := 30
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -36,6 +36,7 @@ signal blocks_received(keys: PackedInt32Array, payloads: Array)
 signal tile_changed_received(tile: Vector2i, revision: int)
 signal dig_requested(peer_id: int, center: Vector3, radius: float)
 signal dug_received(center: Vector3, radius: float)
+signal filled_received(center: Vector3, radius: float, material: int)
 signal flora_requested(peer_id: int, chunks: PackedInt32Array)
 signal flora_received(chunk: Vector2i, bytes: PackedByteArray, water: PackedByteArray, full: bool)
 signal position_reported(peer_id: int, position: Vector3, velocity: Vector3)
@@ -76,6 +77,7 @@ const ACT_FALL := 23          # a = the drop in centimetres the client landed fr
 const ACT_CRAFT_CANCEL := 22 # a = queue entry index (as last sent): cancel it and get its ingredients back
 const ACT_CRAFT_QUEUE := 21  # a = recipe number, count = how many (1 to 20): queue crafts; ingredients are taken now
 const ACT_SLEEP := 26      # a = 1 fall asleep (lying, held Z for 3 s), 0 wake; the sleeping flag comes back as bit 4 of the strain() stance
+const ACT_FILL := 27       # at = the ground point under the crosshair: one spade fill (spends a shovelful of soil, sand, gravel, clay or stone from the pack)
 const ACT_DIG := 25        # at = the ground point under the crosshair: one spade dig (server checks spade, reach, pace; DIGGING_DESIGN.md)
 const ACT_STANCE := 20     # a = wanted stance: 0 stand, 1 crouch, 2 sit, 3 lie; the server answers in strain()
 const ACT_LIGHT := 19      # a = fire world id: light a loaded fire (uses tinder from the pack, see cooking.json)
@@ -120,6 +122,11 @@ func dig(center: Vector3, radius: float) -> void:
 @rpc("authority", "call_remote", "reliable")
 func dug(center: Vector3, radius: float) -> void:
 	dug_received.emit(center, radius)
+
+
+@rpc("authority", "call_remote", "reliable")
+func filled(center: Vector3, radius: float, material: int) -> void:
+	filled_received.emit(center, radius, material)
 
 
 @rpc("any_peer", "call_remote", "reliable")

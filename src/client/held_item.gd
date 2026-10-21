@@ -216,6 +216,12 @@ func mouse_button(button: int, pressed: bool) -> bool:
 		return button == MOUSE_BUTTON_LEFT
 
 	if _is_other_tool():
+		# Right click with the spade fills (spends a shovelful from the pack).
+		if button == MOUSE_BUTTON_RIGHT and pressed and str(_inv.table.entry(held_id()).get("tool_class", "")) == "spade":
+			_arm_play("use", 0.6)
+			_fill_here()
+			return true
+
 		if button == MOUSE_BUTTON_LEFT and pressed:
 			_arm_play("use", 0.6)
 
@@ -467,10 +473,23 @@ func _dig_here() -> void:
 	_net.inventory_action.rpc_id(1, Net.ACT_DIG, held_slot, 0, 0, hit["position"])
 
 
+# A spade fill at the ground under the crosshair (right click): the server spends a shovelful and puts the ground back.
+func _fill_here() -> void:
+	var from: Vector3 = _camera.global_position
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - _camera.global_transform.basis.z * REACH_M)
+	var hit: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(query)
+
+	if hit.is_empty() or hit["collider"].has_meta("species_ids"):
+		_inv._on_notice("Nothing to fill there: aim the spade at the ground within reach")
+		return
+
+	_net.inventory_action.rpc_id(1, Net.ACT_FILL, held_slot, 0, 0, hit["position"])
+
+
 func _other_tool_hint() -> String:
 	match str(_inv.table.entry(held_id()).get("tool_class", "")):
 		"spade":
-			return "The spade digs roots and bulbs (press E at a plant) and digs the ground (left click at it)"
+			return "The spade digs roots and bulbs (press E at a plant) and digs the ground (left click at it) and fills it (right click, one shovelful)"
 
 	return "%s: nothing to use it on yet" % _inv.table.name_of(held_number())
 
