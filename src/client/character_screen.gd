@@ -242,41 +242,139 @@ func refresh() -> void:
 	for child in _skills_box.get_children():
 		child.queue_free()
 
-	if _items.skill_rows.is_empty():
-		var none: Label = _label("No skills yet. What you learn by doing will be listed here.", BODY_PX - 4)
-		none.modulate = Color(1.0, 1.0, 1.0, 0.7)
-		none.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		_skills_box.add_child(none)
-		return
-
-	var ids: Array = (_skills_cfg.get("skills", {}) as Dictionary).keys()
+	var defs: Dictionary = _skills_cfg.get("skills", {})
+	var ids: Array = defs.keys()
+	var by_id: Dictionary = {}
 
 	for row in _items.skill_rows:
 		var index: int = int(row[0])
 
-		if index < 0 or index >= ids.size():
-			continue
+		if index >= 0 and index < ids.size():
+			by_id[str(ids[index])] = row
 
+	ids = _family_order(defs)
+
+	# Everything practised or unlocked shows; skills still locked behind a need show greyed with what they wait for.
+	var any_row: bool = false
+
+	for id in ids:
+		var def: Dictionary = defs[id]
+		var row: Array = by_id.get(str(id), [])
+		var value: int = int(row[1]) if row.size() > 1 else 1
+		var effective: int = int(row[6]) if row.size() > 6 else value
+		var cap: int = int(row[3]) if row.size() > 3 else 25
+		var unmet: String = _unmet_need(def, by_id, defs)
+
+		if unmet != "" and row.is_empty() and bool(def.get("placeholder", false)):
+			continue   # coming-soon skills only appear once their first need is within reach of being listed
+
+		any_row = true
 		var line: HBoxContainer = HBoxContainer.new()
 		line.add_theme_constant_override("separation", _px(14))
-		var skill_name: Label = _label(str(_skills_cfg["skills"][ids[index]].get("name", ids[index])), BODY_PX)
-		skill_name.custom_minimum_size = Vector2(_px(200), 0.0)
+		var depth: int = _skill_depth(str(id), defs)
+		var indent: Control = Control.new()
+		indent.custom_minimum_size = Vector2(_px(28) * depth, 0.0)
+		line.add_child(indent)
+		var skill_name: Label = _label(str(def.get("name", id)), BODY_PX)
+		skill_name.custom_minimum_size = Vector2(_px(240), 0.0)
 		line.add_child(skill_name)
 		var level_bar: ProgressBar = ProgressBar.new()
 		level_bar.show_percentage = false
 		level_bar.max_value = 100.0
-		level_bar.value = float(row[1])
+		level_bar.value = float(effective)
 		level_bar.custom_minimum_size = Vector2(_px(260), _px(26))
 		level_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		level_bar.modulate = Color(1.0, 1.0, 1.0, 0.5) if unmet != "" else Color.WHITE
 		line.add_child(level_bar)
-		line.add_child(_label("%d" % int(row[1]), BODY_PX))
+		line.add_child(_label("%d / %d" % [effective, cap], BODY_PX))
 
-		if int(row[2]) == 1:
+		if unmet != "":
+			var locked: Label = _label("needs " + unmet, BODY_PX - 4)
+			locked.modulate = Color(0.75, 0.75, 0.75)
+			line.add_child(locked)
+		elif effective >= cap - 1 and cap < 100:
+			var wall: Label = _label("needs training to go further", BODY_PX - 4)
+			wall.modulate = Color(0.6, 0.85, 1.0)
+			line.add_child(wall)
+
+		if row.size() > 4 and int(row[4]) > 0:
+			var trained: Label = _label("trained %d" % int(row[4]), BODY_PX - 4)
+			trained.modulate = Color(0.6, 0.9, 0.6)
+			line.add_child(trained)
+
+		if row.size() > 5 and int(row[5]) == 1:
+			var today: Label = _label("practised today", BODY_PX - 4)
+			today.modulate = Color(0.9, 0.9, 0.6)
+			line.add_child(today)
+
+		if row.size() > 2 and int(row[2]) == 1:
 			var rusty: Label = _label("rusty", BODY_PX - 4)
 			rusty.modulate = Color(1.0, 0.8, 0.4)
 			line.add_child(rusty)
 
 		_skills_box.add_child(line)
+
+	if not any_row:
+		var none: Label = _label("No skills yet. What you learn by doing will be listed here.", BODY_PX - 4)
+		none.modulate = Color(1.0, 1.0, 1.0, 0.7)
+		none.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_skills_box.add_child(none)
+
+
+# Roots first, each followed by its descendants (a family tree read top down), in file order within a level.
+func _family_order(defs: Dictionary) -> Array:
+	var out: Array = []
+	var seen: Dictionary = {}
+
+	for id in defs:
+		if defs[id].get("parents", {}).is_empty():
+			_walk_family(str(id), defs, out, seen)
+
+	for id in defs:
+		_walk_family(str(id), defs, out, seen)
+
+	return out
+
+
+func _walk_family(id: String, defs: Dictionary, out: Array, seen: Dictionary) -> void:
+	if seen.has(id):
+		return
+
+	seen[id] = true
+	out.append(id)
+
+	for other in defs:
+		if not defs[other].get("parents", {}).is_empty() and str(defs[other]["parents"].keys()[0]) == id:
+			_walk_family(str(other), defs, out, seen)
+
+
+# The first unmet unlock need of a skill as "Swordplay 15" ("" when open), from the values the server sent.
+func _unmet_need(def: Dictionary, by_id: Dictionary, defs: Dictionary) -> String:
+	for need in def.get("needs", []):
+		var row: Array = by_id.get(str(need["skill"]), [])
+		var have: int = int(row[6]) if row.size() > 6 else 1
+
+		if have < int(need["value"]):
+			return "%s %d" % [str(defs.get(str(need["skill"]), {}).get("name", need["skill"])), int(need["value"])]
+
+	return ""
+
+
+# How many parents deep a skill sits (the family tree row), by its first parent.
+func _skill_depth(id: String, defs: Dictionary) -> int:
+	var depth: int = 0
+	var here: String = id
+
+	while depth < 8:
+		var parents: Dictionary = defs.get(here, {}).get("parents", {})
+
+		if parents.is_empty():
+			break
+
+		here = str(parents.keys()[0])
+		depth += 1
+
+	return depth
 
 
 # What you wear, one line per body slot with a button to take the piece off (Use on the item in the pack puts it on).

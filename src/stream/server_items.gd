@@ -828,9 +828,16 @@ func _sync_skills(peer: int, force: bool) -> void:
 	var index: int = 0
 
 	for id in _skills_cfg.get("skills", {}):
-		if records.has(id):
-			SkillRules.decay(_skills_cfg, records[id], now_s)
-			rows.append([index, int(round(SkillWeb.working(_skills_cfg, str(id), records))), 1 if SkillRules.rusty(_skills_cfg, records[id]) else 0])
+		var eff: float = SkillWeb.effective(_skills_cfg, str(id), records)
+
+		if records.has(id) or eff > 1.0:
+			if records.has(id):
+				SkillRules.decay(_skills_cfg, records[id], now_s)
+
+			var rec: Dictionary = records.get(id, {})
+			var today: int = 1 if int(rec.get("day", -1)) == int(now_s / 86400.0) and float(rec.get("dgain", 0.0)) > 0.0 else 0
+			# [index, working level, rusty, cap, own training level, practised today, effective value]
+			rows.append([index, int(round(SkillWeb.working(_skills_cfg, str(id), records))), 1 if rec.has("p") and SkillRules.rusty(_skills_cfg, rec) else 0, SkillWeb.cap_of(_skills_cfg, str(id), records), int(rec.get("t", 0)), today, int(floor(eff))])
 
 		index += 1
 
