@@ -279,6 +279,7 @@ func _ready() -> void:
 	animals.player_positions = npcs.player_positions
 	animals.player_stances = func(): return items.peer_stances()
 	animals.wind = func(): return weather
+	animals.canopy = func(point): return flora.covered(point)
 	animals.setup()
 	animals.died = func(sp, pos, _peer): items.make_carcass(sp, pos)
 	items.hit_animal = func(peer, origin, dir, reach, amount) -> bool:

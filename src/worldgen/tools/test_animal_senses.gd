@@ -97,5 +97,51 @@ func _init() -> void:
 	OS.delay_msec(5)
 	check(z.blood_near(far_players[0]).is_empty(), "the blood dries")
 
+	# Forest dims sight: a rabbit 20 m away is watched in the open but not through trees.
+	var zoo = make([Vector3(20.0, 10.0, 0.0)], [0], calm, false)
+	zoo.canopy = func(_p): return true
+	var rid: int = zoo.spawn("rabbit", 0.0, 0.0)
+	zoo.animals[rid]["timer"] = 100.0
+
+	for n in 60:
+		zoo.tick(0.05)
+
+	check(zoo.animals[rid]["state"] != AnimalsScript.ALERT, "a player 20 m off through trees is not noticed")
+
+	# Habitat: nothing is put on a cliff face, everything on flat ground; deer take the wooded spot when one turns up.
+	var cliff = make([Vector3(0.0, 10.0, 0.0)], [0], calm, false)
+	cliff.ground_height = func(x, z): return 10.0 + 3.0 * x
+	cliff.cfg["species"]["rabbit"]["target_per_player"] = 4
+	cliff.cfg["species"]["deer"]["target_per_player"] = 5
+	cliff.player_positions = func(): return [Vector3(0.0, 10.0, 0.0)]
+
+	for n in 400:
+		cliff.tick(0.05)
+
+	check(cliff.animals.is_empty(), "no animal is placed on a steep slope (%d)" % cliff.animals.size())
+	var flat = make([Vector3(0.0, 10.0, 0.0)], [0], calm, false)
+	flat.cfg["species"]["rabbit"]["target_per_player"] = 4
+	flat.cfg["species"]["deer"]["target_per_player"] = 0
+
+	for n in 400:
+		flat.tick(0.05)
+
+	check(flat.animals.size() == 4, "on flat ground the share appears (%d)" % flat.animals.size())
+	var wood = make([Vector3(0.0, 10.0, 0.0)], [0], calm, false)
+	wood.cfg["species"]["rabbit"]["target_per_player"] = 0
+	wood.cfg["species"]["deer"]["target_per_player"] = 1
+	wood.cfg["species"]["deer"]["herd"] = []
+	wood.canopy = func(point): return point.x > 0.0
+
+	for n in 400:
+		wood.tick(0.05)
+
+	var all_wooded: bool = not wood.animals.is_empty()
+
+	for id2 in wood.animals:
+		all_wooded = all_wooded and wood.animals[id2]["pos"].x > 0.0
+
+	check(all_wooded, "a deer settles where the trees are when it can")
+
 	print("animal senses: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

@@ -20,6 +20,7 @@ var ground_height: Callable        # (x, z) -> height
 var blocked: Callable              # (x, z) -> bool (deep water)
 var player_positions: Callable     # () -> Array of Vector3
 var player_stances: Callable       # () -> Array of stances in player_positions order (0 stand, 1 crouch, 2 sit, 3 lie)
+var canopy: Callable               # (Vector3) -> bool, whether a spot is under a tree crown (forest for sight and habitat)
 var wind: Callable                 # () -> the weather dictionary ("wind" 0..1 and "wind_dir" radians, the way it blows toward)
 var died: Callable                 # (species, position, source peer) when an animal is killed
 var ticks_run: int = 0
@@ -392,16 +393,35 @@ func _top_up(players: Array, only: int) -> void:
 			if have >= int(def.get("target_per_player", 6)) or all_near >= per_player or animals.size() >= int(cfg.get("server_cap", 150)):
 				continue
 
-			var angle: float = rng.randf() * TAU   # luck-exempt: where wildlife appears
-			var dist: float = rng.randf_range(float(cfg.get("spawn_min_m", 150.0)), float(cfg.get("spawn_max_m", 250.0)))   # luck-exempt: as above
-			var x: float = p.x + cos(angle) * dist
-			var z: float = p.z + sin(angle) * dist
-			var too_near: bool = false
+			# A few candidate spots; the first the species can live on wins, a forest animal takes a spot under trees if one turns up.
+			var x: float = 0.0
+			var z: float = 0.0
+			var best: float = -1.0
 
-			for q in players:
-				too_near = too_near or Vector2(q.x - x, q.z - z).length() < maxf(never, float(cfg.get("spawn_min_m", 150.0)) * 0.9)
+			for attempt in int(cfg.get("habitat_tries", 6)):
+				var angle: float = rng.randf() * TAU   # luck-exempt: where wildlife appears
+				var dist: float = rng.randf_range(float(cfg.get("spawn_min_m", 150.0)), float(cfg.get("spawn_max_m", 250.0)))   # luck-exempt: as above
+				var cx: float = p.x + cos(angle) * dist
+				var cz: float = p.z + sin(angle) * dist
+				var too_near: bool = false
 
-			if too_near or (blocked.is_valid() and bool(blocked.call(x, z))):
+				for q in players:
+					too_near = too_near or Vector2(q.x - cx, q.z - cz).length() < maxf(never, float(cfg.get("spawn_min_m", 150.0)) * 0.9)
+
+				if too_near or (blocked.is_valid() and bool(blocked.call(cx, cz))):
+					continue
+
+				var score: float = _habitat_score(def, cx, cz, p.y)
+
+				if score > best:
+					best = score
+					x = cx
+					z = cz
+
+					if score >= 2.0:
+						break
+
+			if best < 0.0:
 				continue
 
 			var herd: Array = def.get("herd", [])
@@ -421,6 +441,42 @@ func _top_up(players: Array, only: int) -> void:
 				if id != 0:
 					animals[id]["herd"] = hid
 					_herds[hid].append(id)
+
+
+# How well a spot suits a species: -1 when it cannot live there (too steep, a summit far above the player, at the water's edge),
+# 1 for open ground, 2 under trees for a species that likes forest ("forest": true in its habitat).
+func _habitat_score(def: Dictionary, x: float, z: float, player_y: float) -> float:
+	var hab: Dictionary = def.get("habitat", {})
+
+	if hab.is_empty() or not ground_height.is_valid():
+		return 1.0
+
+	var h: float = float(ground_height.call(x, z))
+
+	if is_nan(h) or h > player_y + float(hab.get("above_player_m", 250.0)):
+		return -1.0
+
+	var run: float = float(hab.get("slope_run_m", 6.0))
+	var steepest: float = 0.0
+
+	for d in [Vector2(run, 0.0), Vector2(-run, 0.0), Vector2(0.0, run), Vector2(0.0, -run)]:
+		var other: float = float(ground_height.call(x + d.x, z + d.y))
+		steepest = maxf(steepest, absf(other - h) / run if not is_nan(other) else 9.0)
+
+	if steepest > float(hab.get("slope_max", 0.6)):
+		return -1.0
+
+	var edge: float = float(hab.get("water_edge_m", 0.0))
+
+	if edge > 0.0 and blocked.is_valid():
+		for d in [Vector2(edge, 0.0), Vector2(-edge, 0.0), Vector2(0.0, edge), Vector2(0.0, -edge)]:
+			if bool(blocked.call(x + d.x, z + d.y)):
+				return -1.0
+
+	if bool(hab.get("forest", false)) and canopy.is_valid() and bool(canopy.call(Vector3(x, h, z))):
+		return 2.0
+
+	return 1.0
 
 
 # Rows [id, species number, position, heading radians, state] within send_radius_m of a point, nearest first, at most per_player_cap.
@@ -488,29 +544,42 @@ func _sense_factor(a: Dictionary, def: Dictionary, p: Vector3, d: float, stance:
 	elif stance == 2:
 		f *= float(sen.get("sit_factor", 0.8))
 
-	if d > float(sen.get("always_notice_m", 8.0)) and not _sees(a, def, p, d, stance == 1 or stance == 3):
-		f *= float(sen.get("blind_factor", 0.35))
+	if d > float(sen.get("always_notice_m", 8.0)):
+		var sight: float = _sight(a, def, p, d, stance == 1 or stance == 3)
+
+		if sight < 1.0:
+			f *= lerpf(float(sen.get("blind_factor", 0.35)), 1.0, sight)
 
 	return f
 
 
-# Line of sight over the ground only (trees do not block yet): the terrain along the line from the animal's eye to the player's.
-func _sees(a: Dictionary, def: Dictionary, p: Vector3, d: float, low: bool) -> bool:
+# How much of the player an animal can see, 0 to 1: 0 when the ground is in the way; otherwise less the more of the line runs under
+# tree crowns (trunks and undergrowth: forest_block is the loss in a line wholly under trees).
+func _sight(a: Dictionary, def: Dictionary, p: Vector3, d: float, low: bool) -> float:
 	if not ground_height.is_valid():
-		return true
+		return 1.0
 
+	var sen: Dictionary = cfg.get("senses", {})
 	var eye_a: float = a["pos"].y + float(def.get("eye_m", 0.5))
 	var eye_p: float = p.y + (1.0 if low else 1.6)
-	var n: int = clampi(int(d / float(cfg.get("senses", {}).get("los_step_m", 4.0))), 1, 24)
+	var n: int = clampi(int(d / float(sen.get("los_step_m", 4.0))), 1, 24)
+	var under: int = 0
+	var looked: int = 0
 
 	for i in range(1, n):
 		var t: float = float(i) / float(n)
-		var h: float = float(ground_height.call(lerpf(a["pos"].x, p.x, t), lerpf(a["pos"].z, p.z, t)))
+		var x: float = lerpf(a["pos"].x, p.x, t)
+		var z: float = lerpf(a["pos"].z, p.z, t)
+		var h: float = float(ground_height.call(x, z))
 
 		if not is_nan(h) and h > lerpf(eye_a, eye_p, t) + 0.15:
-			return false
+			return 0.0
 
-	return true
+		if canopy.is_valid() and i % 2 == 0:
+			looked += 1
+			under += 1 if bool(canopy.call(Vector3(x, h, z))) else 0
+
+	return 1.0 - float(sen.get("forest_block", 0.45)) * (float(under) / float(looked) if looked > 0 else 0.0)
 
 
 # One leg of a zigzag away from the threat: the away direction turned by up to zig_deg either way.
