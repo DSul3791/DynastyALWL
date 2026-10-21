@@ -209,6 +209,7 @@ var test_stepfx: bool = false          # --stepfx: wade, then dry steps: squelch
 var test_swing: bool = false           # --swing-test: tool whooshes (job 71)
 var test_insects: bool = false         # --insect-test: summer insect bed levels by season and hour (job 72)
 var _lake_calm_laps: int = 0
+var test_variety: bool = false         # --variety-test: bird kinds by season and hour, no repeats within a minute (job 92)
 var test_town: bool = false            # --town-sounds: a busy town around the player for the voice audit (job 87)
 var _test_town_bell: int = 0
 var test_meters: bool = false          # --meters-test: F3 sound meters (job 86)
@@ -430,6 +431,8 @@ func _ready() -> void:
 			test_night = true
 		elif argument == "--step-levels":
 			test_step_levels = true
+		elif argument == "--variety-test":
+			test_variety = true
 		elif argument == "--town-sounds":
 			test_town = true
 		elif argument == "--meters-test":
@@ -2672,6 +2675,56 @@ func _process(delta: float) -> void:
 		sound.insects.level = 0.9
 		sound.insects.update(0.1)
 		print("Terrain client: insect check: summer noon %s, summer 2h %s, winter noon %s, spring noon %s, sunrise edge %s, sunset edge %s, rain %s, playing %d, lake noon %s, lake 2h %s, lake day %s" % (levels + [sound.insects.voices_playing(), lake_noon, lake_night, str(lake_cricket)]))
+
+	if test_variety and now - connected_msec > 18000 and now >= _test_fire_at:
+		_test_fire_at = now + 10000000
+		var amb = sound.ambient
+		var events: Dictionary = {}
+
+		for event in amb.EVENTS:
+			events[event["name"]] = event
+
+		var ratios: Array = []
+
+		for hour in [6.5, 9.0, 13.0, 18.0]:
+			amb.set_conditions(hour, "spring", "clear")
+			ratios.append("%.1f" % amb._tod_factor(events["bird_whistle"]))
+
+		amb.set_conditions(13.0, "spring", "clear")
+		var crow_noon: float = amb._tod_factor(events["crow_caw"])
+		var seasons: Array = []
+
+		for season_name in ["spring", "summer", "autumn", "winter"]:
+			seasons.append("%.2f" % float(events["bird_trill"]["seasons"][season_name]))
+			seasons.append("%.2f" % float(events["crow_caw"]["seasons"][season_name]))
+
+		var repeats: int = 0
+		var run_repeats: int = 0
+		var last_pick: int = -1
+		var window: Array = []
+		amb._clock = 0.0
+
+		for n in 60:
+			amb._clock += 5.0
+			var pick: int = amb._pick_variant("variety_test", 20)
+			run_repeats += 1 if pick == last_pick else 0
+			last_pick = pick
+			window.append([amb._clock, pick])
+
+			for other in window:
+				if other != window[window.size() - 1] and int(other[1]) == pick and amb._clock - float(other[0]) < amb.REPEAT_SEC:
+					repeats += 1
+
+		var small_repeats: int = 0
+		last_pick = -1
+
+		for n in 40:
+			amb._clock += 5.0
+			var pick3: int = amb._pick_variant("variety_three", 3)
+			small_repeats += 1 if pick3 == last_pick else 0
+			last_pick = pick3
+
+		print("Terrain client: variety check: whistle by hour %s, crow at noon %.1f, trill/crow by season %s, repeats in a minute %d, back-to-back %d, back-to-back of 3 %d" % [",".join(ratios), crow_noon, ",".join(seasons), repeats, run_repeats, small_repeats])
 
 	if test_town and now - connected_msec > 18000 and now >= _test_town_bell:
 		_test_town_bell = now + 12000

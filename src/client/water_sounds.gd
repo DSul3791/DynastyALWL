@@ -213,7 +213,8 @@ func _laps(delta: float, here: Vector3, underwater: bool) -> void:
 
 	var shore: Array = test_shore if not test_shore.is_empty() else _shore
 
-	if shore.is_empty() or underwater or not get_parent().has_room():
+	# --lake squares are forced, and the spawn can sit in new simulated water: the test ignores the swim state.
+	if shore.is_empty() or (underwater and test_shore.is_empty()) or not get_parent().has_room():
 		return
 
 	var live: int = 0

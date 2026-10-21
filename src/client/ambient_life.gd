@@ -72,14 +72,17 @@ const ALARM_CHANCE := 0.15             # per scan while that holds
 # between first light and nightfall; night: only in the dark (both follow the season's sunrise
 # and sunset, SUN). chorus: how strongly the dawn chorus (and a little at dusk) speeds its
 # tries. night_rate: tries come this many times as often at night. dusk: the same around
-# sunset (crickets and frogs start up). dark_at_water: not heard at water in full daylight. seasons: season -> chance multiplier (default 1).
+# sunset (crickets and frogs start up). tod: a multiplier per time of day (dawn: sunrise -0.5 h to +2 h, morning: to 11:30,
+# midday: to 15:30, evening: to sunset +0.5 h), so song birds go quiet at midday. Bird calls here stand for kinds of bird: whistle = thrush-like
+# song (spring and summer, dawn), feebee = chickadee (all year), trill = lark or warbler (spring and summer), chirp = sparrow
+# (all year, by day), crow_caw, woodpecker (drumming in spring). dark_at_water: not heard at water in full daylight. seasons: season -> chance multiplier (default 1).
 const EVENTS := [
-	{"name": "bird_whistle", "zones": {"forest": 1.0, "meadow": 0.5, "highland": 0.3}, "every": [14, 34], "dist": [20, 75], "height": [4, 14], "db": -10.0, "day": true, "chorus": 1.0, "seasons": {"winter": 0.25, "spring": 1.0}},
-	{"name": "bird_feebee", "zones": {"forest": 1.0, "meadow": 0.3}, "every": [18, 40], "dist": [20, 70], "height": [4, 12], "db": -11.0, "day": true, "chorus": 1.0, "seasons": {"winter": 0.25, "spring": 1.0}},
-	{"name": "bird_trill", "zones": {"meadow": 1.0, "forest": 0.4}, "every": [20, 45], "dist": [15, 60], "height": [1, 8], "db": -12.0, "day": true, "chorus": 1.0, "seasons": {"winter": 0.25, "spring": 1.0}},
-	{"name": "bird_chirp", "zones": {"meadow": 1.0, "water": 0.7, "forest": 0.5}, "every": [9, 22], "dist": [8, 45], "height": [0, 5], "db": -12.0, "day": true, "chorus": 1.0, "seasons": {"winter": 0.25, "spring": 1.0}},
-	{"name": "crow_caw", "zones": {"forest": 0.6, "highland": 0.8, "meadow": 0.3}, "every": [45, 110], "dist": [60, 160], "height": [6, 18], "db": -8.0, "day": true, "chorus": 0.5},
-	{"name": "woodpecker", "zones": {"forest": 1.0}, "every": [40, 100], "dist": [25, 80], "height": [2, 10], "db": -5.0, "day": true, "seasons": {"winter": 0.6}},
+	{"name": "bird_whistle", "zones": {"forest": 1.0, "meadow": 0.5, "highland": 0.3}, "every": [14, 34], "dist": [20, 75], "height": [4, 14], "db": -10.0, "day": true, "chorus": 1.0, "seasons": {"spring": 1.0, "summer": 0.8, "autumn": 0.3, "winter": 0.05}, "tod": {"dawn": 1.0, "morning": 0.7, "midday": 0.2, "evening": 0.6}},
+	{"name": "bird_feebee", "zones": {"forest": 1.0, "meadow": 0.3}, "every": [18, 40], "dist": [20, 70], "height": [4, 12], "db": -11.0, "day": true, "chorus": 1.0, "seasons": {"spring": 0.9, "summer": 0.7, "autumn": 0.8, "winter": 0.7}, "tod": {"dawn": 0.6, "morning": 1.0, "midday": 0.5, "evening": 0.7}},
+	{"name": "bird_trill", "zones": {"meadow": 1.0, "forest": 0.4}, "every": [20, 45], "dist": [15, 60], "height": [1, 8], "db": -12.0, "day": true, "chorus": 1.0, "seasons": {"spring": 1.0, "summer": 0.9, "autumn": 0.1, "winter": 0.0}, "tod": {"dawn": 1.0, "morning": 0.8, "midday": 0.2, "evening": 0.5}},
+	{"name": "bird_chirp", "zones": {"meadow": 1.0, "water": 0.7, "forest": 0.5}, "every": [9, 22], "dist": [8, 45], "height": [0, 5], "db": -12.0, "day": true, "chorus": 1.0, "seasons": {"spring": 1.0, "summer": 0.9, "autumn": 0.7, "winter": 0.4}, "tod": {"dawn": 0.7, "morning": 1.0, "midday": 0.6, "evening": 0.9}},
+	{"name": "crow_caw", "zones": {"forest": 0.6, "highland": 0.8, "meadow": 0.3}, "every": [45, 110], "dist": [60, 160], "height": [6, 18], "db": -8.0, "day": true, "chorus": 0.5, "seasons": {"spring": 0.8, "summer": 0.7, "autumn": 1.1, "winter": 1.2}, "tod": {"dawn": 0.5, "morning": 0.9, "midday": 1.0, "evening": 0.8}},
+	{"name": "woodpecker", "zones": {"forest": 1.0}, "every": [40, 100], "dist": [25, 80], "height": [2, 10], "db": -5.0, "day": true, "seasons": {"spring": 1.2, "summer": 0.7, "autumn": 0.6, "winter": 0.5}, "tod": {"dawn": 0.5, "morning": 1.0, "midday": 0.5, "evening": 0.3}},
 	{"name": "owl_hoot", "zones": {"forest": 1.0, "meadow": 0.3}, "every": [30, 70], "dist": [40, 110], "height": [5, 14], "db": -13.0, "night": true, "answer": 0.45, "seasons": {"winter": 1.2, "spring": 1.3, "summer": 0.7, "autumn": 1.0}},
 	{"name": "hawk_screech", "zones": {"highland": 1.0}, "every": [60, 150], "dist": [120, 300], "height": [50, 110], "db": -4.0, "hours": [9, 17], "seasons": {"winter": 0.6}},
 	{"name": "cricket_chirp", "zones": {"meadow": 1.0, "water": 0.4}, "every": [22, 55], "dist": [5, 28], "height": [0, 0], "db": -16.0, "night_rate": 5.0, "dusk": 2.0, "dark_at_water": true, "seasons": {"autumn": 0.9, "summer": 1.0, "spring": 0.3, "winter": 0.0}},
@@ -93,6 +96,8 @@ var conditions: Dictionary = {"hour": 14.0, "season": "autumn", "weather": "clea
 var weights: Dictionary = {"forest": 0.0, "meadow": 0.0, "water": 0.0, "highland": 0.0}
 var calls_played: Dictionary = {}       # call name -> count (for the headless check)
 var last_call: String = ""
+var _heard: Dictionary = {}              # call name -> {variant: _clock when last played}
+var _clock: float = 0.0                 # nature seconds since start (real seconds x time_scale)
 var _last_pick: Dictionary = {}          # call name -> variant played last (no immediate repeat)
 var last_file: String = ""              # the file last played, e.g. fish_splash_2
 var _source: Dictionary = {}            # call name -> "recorded" or "generated"
@@ -124,6 +129,7 @@ var _alarm_wait: float = 0.0
 var _answers: Array = []                # owl answers waiting: [{left, name, at, db}]
 var answers_played: int = 0
 const ANSWER_SEC := [3.0, 6.0]
+const REPEAT_SEC := 60.0                # a call file is not played again within this long unless all its variants were
 
 
 func setup(stage, terrain: Node3D, flora, grass) -> void:
@@ -163,6 +169,7 @@ func setup(stage, terrain: Node3D, flora, grass) -> void:
 func update(delta: float, body: CharacterBody3D, flying: bool) -> void:
 	_speed = Vector2(body.velocity.x, body.velocity.z).length()
 	_running_sec = _running_sec + delta if _speed > RUN_SCARE_MS and not flying else 0.0
+	_clock += delta * time_scale
 	_alarm_wait -= delta * time_scale
 	_flush_wait -= delta * time_scale
 	_move_fliers(delta)
@@ -335,6 +342,17 @@ func _rate(event: Dictionary) -> float:
 	return rate
 
 
+# The event's multiplier for this time of day (1 when it has no "tod" table).
+func _tod_factor(event: Dictionary) -> float:
+	if not event.has("tod"):
+		return 1.0
+
+	var sun: Array = _sun()
+	var hour: float = float(conditions["hour"])
+	var part: String = "dawn" if hour < float(sun[0]) + 2.0 else ("morning" if hour < 11.5 else ("midday" if hour < 15.5 else "evening"))
+	return float(event["tod"].get(part, 1.0))
+
+
 # Full daylight: from sunrise to an hour before sunset (frogs and crickets start up at dusk).
 func _water_day() -> bool:
 	var sun: Array = _sun()
@@ -377,6 +395,7 @@ func _try(event: Dictionary, body: CharacterBody3D) -> void:
 
 	var season: float = float(event.get("seasons", {}).get(str(conditions["season"]), 1.0))
 	var scare: float = 0.5 if _speed > RUN_SCARE_MS else 1.0
+	scare *= _tod_factor(event)
 
 	var weather: float = weather_frogs if event.get("wet", false) else weather_calls
 
@@ -531,12 +550,7 @@ func _move_fliers(delta: float) -> void:
 
 func _play(name: String, list: Array, at: Vector3, db: float) -> AudioStreamPlayer3D:
 	var player: AudioStreamPlayer3D = AudioStreamPlayer3D.new()
-	var pick: int = _rng.randi_range(0, list.size() - 1)
-
-	if list.size() > 1 and pick == int(_last_pick.get(name, -1)):         # never the same file twice running
-		pick = (pick + 1 + _rng.randi_range(0, list.size() - 2)) % list.size()
-
-	_last_pick[name] = pick
+	var pick: int = _pick_variant(name, list.size())
 	player.stream = list[pick]
 	last_file = "%s_%d" % [name, pick]
 	player.bus = "Nature"
@@ -554,6 +568,35 @@ func _play(name: String, list: Array, at: Vector3, db: float) -> AudioStreamPlay
 	_voices.append(player)
 	_since_call = 0.0
 	return player
+
+
+# A variant of `name` that has not played in the last REPEAT_SEC (nature seconds, so it follows the fast test clock);
+# when all have, the one heard longest ago. Never the same file twice running.
+func _pick_variant(name: String, count: int) -> int:
+	var heard: Dictionary = _heard.get(name, {})
+	var fresh: Array = []
+	var oldest: int = 0
+	var oldest_at: float = INF
+
+	for k in range(count):
+		var at: float = float(heard.get(k, -INF))
+
+		if _clock - at >= REPEAT_SEC:
+			fresh.append(k)
+
+		if at < oldest_at:
+			oldest_at = at
+			oldest = k
+
+	var pick: int = fresh[_rng.randi_range(0, fresh.size() - 1)] if not fresh.is_empty() else oldest
+
+	if count > 1 and pick == int(_last_pick.get(name, -1)):
+		pick = (pick + 1) % count
+
+	_last_pick[name] = pick
+	heard[pick] = _clock
+	_heard[name] = heard
+	return pick
 
 
 # Where the call comes from: a water square for frogs and fish, else a random

@@ -457,3 +457,7 @@ New scenarios `audit_low_town`, `audit_high`, `audit_ultra` run the worst scene 
 
 `python3 tools/step_coverage.py [--md]` (also `sound_check.py --only steps_coverage`, in the full run) reads the soil, rock and ore tables, `SOIL_SURFACE`, `ROCK_STEP`, `ORE_STEP`, the floor list and every surface the footstep code assigns, and checks each one has a surface, left and right step files (recorded or generated) and a row in `data/sound/step_levels.json`; the three gaits come from `gait_db` and `gait_pitch`, so a surface with files and a loudness row covers walk, jog and run. Result (build 312): 16 soils, 11 rocks, 16 surfaces, 0 gaps. Table in /mnt/project-files/sound/STEP_COVERAGE.md. Notes, not gaps: silt, clay, loam and alluvium all play the dirt files (told apart only by `SOIL_TUNE` dB and pitch); plank, slab, carpet, thatch and path are generated placeholders (no recordings yet).
 
+
+## Bird and insect variety (job 92)
+
+Bird species (whistle, feebee, trill, chirp, crow, woodpecker) have `seasons` and `tod` (dawn, morning, midday, evening) tables in `ambient_life.gd` EVENTS; `_tod_factor` scales the call chance. `_pick_variant` avoids any variant heard in the last 60 game-clock seconds (`REPEAT_SEC`), falls back to the least recently heard, and never repeats back to back. Insect day hum gets a `warm` factor (weaker at dawn and dusk, full at midday) in `insect_bed.gd`. Check: `python3 tools/sound_check.py --only variety,insects,flush,night`. The `lake` check ignores the swim state, because the spawn now sits in simulated water.

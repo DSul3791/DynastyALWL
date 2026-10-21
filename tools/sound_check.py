@@ -148,6 +148,14 @@ SCENARIOS = [
         ("the lake still hums at night in summer", r"lake 2h " + NUM, 0.2, 0.7),
         ("lake counts as full daylight at noon", r"lake day (true)", 0, 1, "text"),
     ]),
+    ("variety", ["--variety-test"], 3500, [
+        ("song bird: dawn loud, midday quiet, evening middling", r"whistle by hour (1.0,0.7,0.2,0.6)", 0, 1, "text"),
+        ("crows are a midday bird", r"crow at noon " + NUM, 1.0, 1.0),
+        ("larks stop in autumn and winter, crows peak in winter", r"by season (1.00,0.80,0.90,0.70,0.10,1.10,0.00,1.20)", 0, 1, "text"),
+        ("no repeat within a minute with 20 variants", r"repeats in a minute " + NUM, 0, 0),
+        ("never the same file twice running", r"back-to-back " + NUM + r",", 0, 0),
+        ("also with only 3 variants", r"back-to-back of 3 " + NUM, 0, 0),
+    ]),
     ("meters", ["--meters-test"], 3500, [
         ("not built while Debug details is hidden", r"calls before " + NUM, 0, 0),
         ("title, 8 buses, latency line", r"calls before 0, " + NUM + r" lines", 10, 10),

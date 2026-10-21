@@ -67,7 +67,10 @@ func target(underwater: bool = false) -> float:
 	var places: float = (1.0 - float(_stage.cave.enclosure)) * (0.1 if underwater else 1.0)
 	var night: float = float(NIGHT_SHARE.get(str(ambient.conditions["season"]), 0.0))
 	_day = day
-	return clampf(zone * season * (day + (1.0 - day) * night / maxf(season, 0.01)) * weather * calm * places, 0.0, 1.0)
+	# warmth: the chirring builds through the morning to a peak at solar noon and eases again toward evening (0.55 at the edges)
+	var span: float = maxf(float(sun[1]) - float(sun[0]), 1.0)
+	var warm: float = 0.55 + 0.45 * sin(PI * clampf((hour - float(sun[0])) / span, 0.0, 1.0))
+	return clampf(zone * season * (day * warm + (1.0 - day) * night / maxf(season, 0.01)) * weather * calm * places, 0.0, 1.0)
 
 
 func update(delta: float, underwater: bool = false) -> void:
