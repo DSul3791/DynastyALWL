@@ -133,8 +133,7 @@ func _init() -> void:
 			steel = number
 
 	check(int(tiers.recipes.recipe(steel).get("station_level", 1)) == 2, "steel needs the better forge")
-	check(tiers.station_near(1, "forge", 2), "the blacksmithy forges steel")
-	check(tiers._shelter_near(Vector3(400.0, 10.0, 0.0)) >= 0, "the blacksmithy counts as a shelter")
+	check(tiers.station_near(1, "forge", 2), "the masonry forge forges steel")
 
 	print("station tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

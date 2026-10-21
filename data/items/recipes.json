@@ -1030,7 +1030,7 @@
 		},
 		"blacksmithy_kit": {
 			"number": 51,
-			"name": "Blacksmithy",
+			"name": "Masonry forge",
 			"needs": [
 				[
 					"stone",

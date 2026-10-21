@@ -516,7 +516,7 @@ func admin_give_test_set() -> void:
 	for id in ["stone", "stick", "plant_fibre", "log"]:
 		net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of(id), 0, 10, Vector3.ZERO)
 
-	# The bigger stations also need clay and hides (stone forge, blacksmithy).
+	# The bigger stations also need clay and hides (stone forge, masonry forge).
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("clay"), 0, 10, Vector3.ZERO)
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("hide"), 0, 4, Vector3.ZERO)
 
@@ -1254,9 +1254,6 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 			if state == 5 and cover_index != null:
 				roof_key = cover_index.add_roof(CoverScript.box_roof(Vector2(row[3].x, row[3].z), 1.1, 0.95, yaw, row[3].y - 0.5, row[3].y + 2.1))
-			elif state == 18 and cover_index != null:
-				var hall: Dictionary = _structure_by_state(18)
-				roof_key = cover_index.add_roof(CoverScript.box_roof(Vector2(row[3].x, row[3].z), float(hall.get("half_x", 3.0)), float(hall.get("half_z", 2.5)), yaw, row[3].y - 0.5, row[3].y + float(hall.get("height", 3.2))))
 
 			_world[id] = {"node": node, "number": row[1], "count": 1, "pos": row[3], "state": state, "light": null, "roof": roof_key}
 			continue
@@ -1543,39 +1540,25 @@ func _make_forge() -> Node3D:
 # Epic: the whole smithy, about 6 by 5 m: a stone plinth, stone back and side walls, timber posts and a pitched plank roof,
 # the forge and chimney in the back wall, an anvil on a stump, a quench trough, a long bench with rack and vice.
 func _make_smithy() -> Node3D:
+	# The masonry forge (tier 4): an open stone hearth with a tall chimney, anvil on a log block, bellows and a quench trough. No roof.
 	var root: Node3D = Node3D.new()
-	var hall: Dictionary = _structure_by_state(18)
-	var hx: float = float(hall.get("half_x", 3.0))
-	var hz: float = float(hall.get("half_z", 2.5))
-	_part(root, Vector3(hx * 2.0, 0.2, hz * 2.0), Vector3(0.0, 0.1, 0.0), STONE_COLOR)
-	_part(root, Vector3(hx * 2.0, 1.6, 0.35), Vector3(0.0, 1.0, -hz + 0.2), STONE_COLOR)
-	_part(root, Vector3(0.35, 1.6, hz * 2.0 - 0.4), Vector3(-hx + 0.2, 1.0, 0.0), STONE_COLOR)
+	_part(root, Vector3(4.2, 0.2, 3.0), Vector3(0.0, 0.1, 0.0), STONE_COLOR)
+	_part(root, Vector3(1.8, 1.2, 1.2), Vector3(-1.0, 0.8, -0.8), STONE_COLOR)
+	_part(root, Vector3(1.2, 0.12, 0.8), Vector3(-1.0, 1.45, -0.7), Color(0.08, 0.06, 0.05))
+	_part(root, Vector3(0.9, 3.6, 0.8), Vector3(-1.0, 2.0, -1.15), STONE_COLOR)
+	_part(root, Vector3(0.6, 0.5, 0.6), Vector3(-1.0, 4.0, -1.15), STONE_COLOR)
+	_part(root, Vector3(0.5, 0.5, 0.35), Vector3(-2.0, 0.45, -0.9), Color(0.3, 0.2, 0.13))
+	_part(root, Vector3(0.6, 0.6, 0.6), Vector3(0.6, 0.5, 0.2), LOG_COLOR)
+	_part(root, Vector3(0.7, 0.18, 0.28), Vector3(0.6, 0.9, 0.2), IRON_COLOR)
+	_part(root, Vector3(0.25, 0.1, 0.12), Vector3(1.0, 0.95, 0.2), IRON_COLOR)
+	_part(root, Vector3(1.1, 0.5, 0.55), Vector3(1.4, 0.45, -0.9), STONE_COLOR)
+	_part(root, Vector3(0.95, 0.05, 0.4), Vector3(1.4, 0.7, -0.9), Color(0.12, 0.2, 0.28))
+	_part(root, Vector3(1.6, 0.1, 0.7), Vector3(0.2, 0.85, 1.1), PLANK_COLOR)
 
-	for corner in [Vector2(hx - 0.15, -hz + 0.15), Vector2(hx - 0.15, hz - 0.15), Vector2(-hx + 0.15, hz - 0.15), Vector2(0.0, hz - 0.15)]:
-		_part(root, Vector3(0.28, 3.0, 0.28), Vector3(corner.x, 1.6, corner.y), LOG_COLOR)
+	for x in [-0.5, 0.9]:
+		_part(root, Vector3(0.1, 0.8, 0.1), Vector3(x, 0.45, 0.85), PLANK_COLOR)
+		_part(root, Vector3(0.1, 0.8, 0.1), Vector3(x, 0.45, 1.35), PLANK_COLOR)
 
-	for z in [-hz + 0.2, hz - 0.15]:
-		_part(root, Vector3(hx * 2.0, 0.25, 0.25), Vector3(0.0, 3.1, z), LOG_COLOR)
-
-	for side in [-1.0, 1.0]:
-		_part(root, Vector3(hx * 2.0 + 0.4, 0.12, hz * 1.05), Vector3(0.0, 3.55, side * hz * 0.5), Color(0.38, 0.28, 0.17), Vector3(side * 22.0, 0.0, 0.0))
-
-	_part(root, Vector3(1.4, 1.6, 0.9), Vector3(-1.2, 1.0, -hz + 0.7), STONE_COLOR)
-	_part(root, Vector3(0.8, 3.4, 0.5), Vector3(-1.2, 2.9, -hz + 0.5), STONE_COLOR)
-	_part(root, Vector3(1.0, 0.1, 0.7), Vector3(-1.2, 1.85, -hz + 0.75), Color(0.08, 0.06, 0.05))
-	_part(root, Vector3(0.5, 0.5, 0.35), Vector3(-2.3, 0.45, -hz + 0.9), Color(0.3, 0.2, 0.13))
-	_part(root, Vector3(0.5, 0.5, 0.5), Vector3(0.2, 0.45, -0.3), LOG_COLOR)
-	_part(root, Vector3(0.55, 0.15, 0.22), Vector3(0.2, 0.78, -0.3), IRON_COLOR)
-	_part(root, Vector3(1.0, 0.45, 0.5), Vector3(1.6, 0.4, -1.0), STONE_COLOR)
-	_part(root, Vector3(0.9, 0.05, 0.4), Vector3(1.6, 0.64, -1.0), Color(0.12, 0.2, 0.28))
-	_part(root, Vector3(1.8, 0.1, 0.8), Vector3(0.9, 0.9, 1.2), PLANK_COLOR)
-
-	for x in [0.1, 1.7]:
-		_part(root, Vector3(0.1, 0.85, 0.1), Vector3(x, 0.45, 0.9), PLANK_COLOR)
-		_part(root, Vector3(0.1, 0.85, 0.1), Vector3(x, 0.45, 1.5), PLANK_COLOR)
-
-	_part(root, Vector3(0.3, 0.2, 0.25), Vector3(1.65, 1.05, 1.2), PLANK_COLOR)
-	_part(root, Vector3(1.2, 0.08, 0.08), Vector3(-1.6, 1.8, hz - 0.3), LOG_COLOR)
 	return root
 
 
