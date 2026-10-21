@@ -41,9 +41,9 @@ static func chunk_levels(generator, origin: Vector2, chunk_m: float) -> Dictiona
 	# water gets a finer surface laid on the real ground (_fine_cells).
 	if not data.sim_levels.is_empty():
 		_ease_into_sea(generator, data, origin, count, spacing, levels)
-		_calm_still_water(count, spacing, levels)
+		var still: PackedFloat32Array = _calm_still_water(count, spacing, levels)
 		var edge: PackedFloat32Array = _shore_levels(generator, data, origin, count, spacing, levels)
-		var vel: PackedFloat32Array = _velocities(generator, data, origin, count, spacing, levels)
+		var vel: PackedFloat32Array = _velocities(generator, data, origin, count, spacing, levels, still)
 		var fall_grid: PackedFloat32Array = _fall_grid(generator, data, origin, count, spacing, levels)
 		var fall_vel: PackedFloat32Array = vel if data.fall_levels.is_empty() else _velocities(generator, data, origin, count, spacing, fall_grid)
 		var falls: Array = FallsScript.find(generator, origin, count, spacing, fall_grid, fall_vel, func(x: float, z: float) -> float: return _fine_ground(generator, x, z), PackedFloat32Array() if data.fall_levels.is_empty() else levels, vel)
@@ -141,12 +141,14 @@ static func _window(levels: PackedFloat32Array, i: int, j: int, count: int, spac
 
 # Standing water draws flat (owner 2026-10-21: "the water is all rough in the pond"): where
 # the surface barely tilts across a whole window, every level in it becomes the window mean.
-static func _calm_still_water(count: int, spacing: float, levels: PackedFloat32Array) -> void:
+static func _calm_still_water(count: int, spacing: float, levels: PackedFloat32Array) -> PackedFloat32Array:
 	var still: PackedFloat32Array = _still_levels(count, spacing, levels)
 
 	for n in range(levels.size()):
 		if not is_nan(still[n]):
 			levels[n] = still[n]
+
+	return still
 
 
 # Where the water stands still: the level it should be drawn at (NAN elsewhere). The core is every wet cell whose window
@@ -200,10 +202,10 @@ static func _still_levels(count: int, spacing: float, levels: PackedFloat32Array
 	return out
 
 
-static func _velocities(generator, data, origin: Vector2, count: int, spacing: float, levels: PackedFloat32Array) -> PackedFloat32Array:
+static func _velocities(generator, data, origin: Vector2, count: int, spacing: float, levels: PackedFloat32Array, known_still: PackedFloat32Array = PackedFloat32Array()) -> PackedFloat32Array:
 	var vel: PackedFloat32Array = PackedFloat32Array()
 	vel.resize(count * count * 2)
-	var still: PackedFloat32Array = _still_levels(count, spacing, levels)
+	var still: PackedFloat32Array = known_still if not known_still.is_empty() else _still_levels(count, spacing, levels)
 
 	for j in range(count):
 		for i in range(count):
