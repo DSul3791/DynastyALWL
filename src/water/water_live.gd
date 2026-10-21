@@ -31,6 +31,7 @@ const START_PUBLISH_TICKS := 40
 const CHANNEL_WET_M := 0.01
 const FALL_FILM_M := 0.02        # thin water on a baked channel this deep counts for finding falls
 const CHANNEL_POOL_M := 0.5      # drawn water this deep beside a film cell is a pond or pool
+const HOLD_M := 0.03             # drawn channel water stays drawn until it is thinner than this (hysteresis)
 const CHANNEL_BANK_M := 1.0      # a film cell no more than this above drawn water beside it is the bank, not the fall
 
 var data
@@ -137,6 +138,9 @@ func _run() -> void:
 		if data.water_class[k] != 0 and data.heights[k] > 0.0:
 			channel.append(k)
 
+	var held: PackedByteArray = PackedByteArray()
+	held.resize(channel.size())
+
 	while true:
 		_mutex.lock()
 		var quit: bool = _quit
@@ -173,6 +177,7 @@ func _run() -> void:
 		if since >= (START_PUBLISH_TICKS if _dry_start else PUBLISH_TICKS) or _budget <= 0.0:
 			since = 0
 			var levels: PackedFloat32Array = sim.level_map()
+			_hold_channel(sim, levels, channel, held)
 			var falls: PackedFloat32Array = _fall_levels(sim, levels, channel)
 			_mutex.lock()
 			_pending = levels
@@ -185,6 +190,25 @@ func _run() -> void:
 		var duty: float = lerpf(CPU_DUTY, CPU_DUTY_STORM, clampf((multiplier / DEFAULT_RATE - 1.0), 0.0, 1.0))
 		var busy_us: int = Time.get_ticks_usec() - tick_start
 		OS.delay_usec(int(float(busy_us) * (1.0 / duty - 1.0)))
+
+
+# Owner report (2026-10-21): near the ocean the rivers ran low and blotchy, patches flipping
+# between water and bank. A channel cell drawn last publish stays drawn, at its true level,
+# until its water is thinner than HOLD_M, so a shallow reach sloshing around the 12 cm draw
+# depth is a steady ribbon. `held` is 1 on the channel cells drawn last time (updated here).
+static func _hold_channel(sim, levels: PackedFloat32Array, channel: PackedInt32Array, held: PackedByteArray) -> void:
+	if levels.size() != sim.ground.size():
+		return
+
+	var depth: PackedFloat32Array = sim.get_depth()
+
+	for n in range(channel.size()):
+		var k: int = channel[n]
+
+		if is_nan(levels[k]) and held[n] == 1 and depth[k] >= HOLD_M and sim.ground[k] > 0.0 and not (depth[k] < sim.STEEP_WET_M and sim._is_steep(k)):
+			levels[k] = sim.ground[k] + depth[k]
+
+		held[n] = 0 if is_nan(levels[k]) else 1
 
 
 # Draws thin running water on the channel cells the sim's own draw rules leave out, at the
