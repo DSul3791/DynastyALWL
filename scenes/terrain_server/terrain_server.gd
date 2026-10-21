@@ -210,6 +210,9 @@ func _ready() -> void:
 				return true
 
 		return false
+	items.water_depth_at = func(pos: Vector3) -> float:
+		var water: Array = _water_at(pos)
+		return 0.0 if is_nan(water[0]) else maxf(float(water[0]) - float(water[1]), 0.0)
 	items.send_reject = func(peer, reason): net.reject.rpc_id(peer, reason)
 	items.send_craft_queue = func(peer, entries, left_ms): net.craft_queue.rpc_id(peer, entries, left_ms)
 	items.send_strain = func(peer, strain_pm, state, fade_pm, stance): net.strain.rpc_id(peer, strain_pm, state, fade_pm, stance)
