@@ -48,6 +48,38 @@
 			"z": 68431.0,
 			"slots": 1,
 			"yaw": -53
+		},
+		{
+			"id": "table_1",
+			"kind": "table",
+			"x": 53301.0,
+			"z": 68420.0,
+			"slots": 2,
+			"yaw": 0
+		},
+		{
+			"id": "square_1",
+			"kind": "square",
+			"x": 53301.0,
+			"z": 68433.0,
+			"slots": 3,
+			"yaw": 0
+		},
+		{
+			"id": "shelter_1",
+			"kind": "shelter",
+			"x": 53296.0,
+			"z": 68428.0,
+			"slots": 2,
+			"yaw": 0
+		},
+		{
+			"id": "shelter_2",
+			"kind": "shelter",
+			"x": 53306.0,
+			"z": 68428.0,
+			"slots": 2,
+			"yaw": 180
 		}
 	]
 }

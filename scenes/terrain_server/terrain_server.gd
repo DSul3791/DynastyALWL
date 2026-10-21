@@ -288,6 +288,7 @@ func _ready() -> void:
 		var water: Array = _water_at(Vector3(x, 0.0, z))
 		return not is_nan(water[0]) and float(water[0]) - float(water[1]) > 0.7
 	npcs.player_positions = func(): return items.peer_positions()
+	npcs.rain_now = func(): return float(weather.get("rain", 0.0))
 	npcs.setup(store_dir)
 	animals = AnimalsScript.new()
 	animals.ground_height = npcs.ground_height

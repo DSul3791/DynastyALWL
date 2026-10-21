@@ -15,6 +15,7 @@ var hour_now: Callable          # () -> hour of the game day, 0..24
 var ground_height: Callable     # (x, z) -> height
 var blocked: Callable           # (x, z) -> bool: water or anything an NPC may not enter (may be invalid)
 var player_positions: Callable  # () -> Array of Vector3
+var rain_now: Callable          # () -> rain strength 0..1 over the world (may be invalid: no rain)
 
 var cfg: Dictionary = {}
 static var test_hold_off: bool = false   # unit tests read the real day schedules
@@ -138,7 +139,13 @@ func package_of(npc: Dictionary, hour: float) -> String:
 	if table.size() != 24:
 		return ""
 
-	return str(table[int(floor(fposmod(hour + float(npc["jitter_h"]), 24.0))) % 24])
+	var planned: String = str(table[int(floor(fposmod(hour + float(npc["jitter_h"]), 24.0))) % 24])
+
+	# Rain sends outdoor packages to the nearest roofed marker; the day goes on when it stops.
+	if rain_now.is_valid() and float(rain_now.call()) >= float(cfg.get("shelter_rain", 0.35)) and cfg.get("shelter_from", []).has(planned):
+		return "shelter"
+
+	return planned
 
 
 # Run the NPCs a little: dormant ones (no player within active_radius_m) are not touched; the rest tick at their rate.
