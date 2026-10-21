@@ -12,3 +12,7 @@ Answered: 2026-10-21 23:15 UTC
 Answer: Only the owner
 Answered: 2026-10-21 23:16 UTC
 
+## coffer-atm | Banking: is there a fee to use coin from a faraway coffer for a big deal?
+Answer: Free
+Answered: 2026-10-21 23:16 UTC
+
