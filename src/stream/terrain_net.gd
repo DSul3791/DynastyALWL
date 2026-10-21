@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 45
+const PROTOCOL_VERSION := 46
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -57,6 +57,8 @@ signal remains_received(rows: Array)
 signal worn_received(numbers: PackedInt32Array)
 signal npc_roster_received(rows: Array)
 signal npcs_received(rows: Array)
+signal npc_talk_requested(peer_id: int, npc_id: String, choice: int)
+signal npc_say_received(npc_id: String, npc_name: String, text: String, voice_id: String, choices: PackedStringArray, ends: bool)
 signal admin_place_requested(peer_id: int, kind: String, pos: Vector3, arg: String)
 signal thought_received(line_id: String, text: String, kind: String)
 signal skills_received(attributes: PackedInt32Array, rows: Array)
@@ -299,6 +301,20 @@ func npc_roster(rows: Array) -> void:
 @rpc("authority", "call_remote", "unreliable")
 func npcs(rows: Array) -> void:
 	npcs_received.emit(rows)
+
+
+# Talking (protocol 45): the player asks to talk to an NPC (choice -1) or picks a choice by index; the server answers with the NPC's
+# line, the choices on offer and whether the talk ends. voice_id names the voice for text to voice (Mandy). Range, pace and every
+# effect are checked on the server.
+@rpc("any_peer", "call_remote", "reliable")
+func npc_talk(npc_id: String, choice: int) -> void:
+	if multiplayer.is_server():
+		npc_talk_requested.emit(multiplayer.get_remote_sender_id(), npc_id, choice)
+
+
+@rpc("authority", "call_remote", "reliable")
+func npc_say(npc_id: String, npc_name: String, text: String, voice_id: String, choices: PackedStringArray, ends: bool) -> void:
+	npc_say_received.emit(npc_id, npc_name, text, voice_id, choices, ends)
 
 
 # Admin placement (protocol 45): kind "marker" with arg "bed", "chair" or "post" adds a world marker at pos; kind "npc" with an

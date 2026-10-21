@@ -2852,6 +2852,39 @@ func peer_positions() -> Array:
 	return _peer_pos.values()
 
 
+# For the dialogue effects (authored lines only): how many of an item the pack holds, and give or take some.
+func count_for(peer: int, id: String) -> int:
+	var inv = inventory_of(peer)
+	return inv.count_of(table.number_of(id)) if inv != null and table.number_of(id) > 0 else 0
+
+
+func give_to(peer: int, id: String, count: int) -> void:
+	var inv = inventory_of(peer)
+
+	if inv == null or table.number_of(id) <= 0:
+		return
+
+	var before: Array = _snapshot(inv)
+	var left: int = inv.add(table.number_of(id), count)
+
+	if left > 0:
+		drop_in_world(table.number_of(id), left, _peer_pos.get(peer, Vector3.ZERO))
+
+	_send_changes(peer, inv, before)
+
+
+func take_from(peer: int, id: String, count: int) -> bool:
+	var inv = inventory_of(peer)
+
+	if inv == null or table.number_of(id) <= 0:
+		return false
+
+	var before: Array = _snapshot(inv)
+	var ok: bool = inv.remove(table.number_of(id), count)
+	_send_changes(peer, inv, before)
+	return ok
+
+
 func peer_ids() -> Array:
 	return _peer_pos.keys()
 

@@ -235,6 +235,9 @@ func toggle() -> void:
 
 
 func close() -> void:
+	if dialogue_open and dialogue_close.is_valid():
+		dialogue_close.call()
+
 	if open:
 		toggle()
 
@@ -2265,14 +2268,23 @@ func _build_panel() -> void:
 
 
 # True while the crafting and inventory screen or a chest screen is on screen.
+# An NPC talk (src/client/dialogue_view.gd) counts as a screen: it frees the mouse, stops walking, and Esc closes it.
+var dialogue_open: bool = false
+var dialogue_key: Callable = Callable()     # (event) -> bool: digit keys pick a choice
+var dialogue_close: Callable = Callable()
+
+
 func screen_open() -> bool:
-	return open or chest_mode or character_open()
+	return open or chest_mode or character_open() or dialogue_open
 
 
 # Quick keys while the screen is open: E use (eat or apply), D drop (Shift+D one), S split, R repair, T transfer
 # between the pack and an open container. They act on the slot under the mouse, else the selected slot. True when the key
 # was one of them (the caller then skips its other bindings). Outside this screen E is the interact key.
 func quick_key(event: InputEventKey) -> bool:
+	if dialogue_open and dialogue_key.is_valid():
+		return bool(dialogue_key.call(event))
+
 	var slot: int = _hover if _hover >= 0 else _selected
 
 	match event.keycode:

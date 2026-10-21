@@ -24,6 +24,7 @@ const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.g
 const SwimScript := preload("res://src/shared/swim.gd")
 const NpcsScript := preload("res://src/stream/server_npcs.gd")
 const AdminScript := preload("res://src/stream/server_admin.gd")
+const DialogueScript := preload("res://src/stream/server_dialogue.gd")
 const StoreScript := preload("res://src/stream/server_block_store.gd")
 const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings.gd")
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
@@ -57,6 +58,7 @@ var flora
 var items                              # ServerItems: inventories and world items
 var npcs                               # ServerNpcs: classic NPCs (protocol 45)
 var admin                              # ServerAdmin: who may place markers and NPCs
+var dialogue                           # ServerDialogue: talking to NPCs
 var _npc_sent: Dictionary = {}         # peer -> signature of the NPC rows last sent
 var _npc_send_t: float = 0.0
 var _water_updates: int = 0
@@ -251,6 +253,7 @@ func _ready() -> void:
 	items.setup(ItemTableScript.load_default(), store_dir)
 	admin = AdminScript.new()
 	admin.load_keys(["res://data/admin.json", store_dir + "/admin.json"])
+	admin.open_to_all = OS.get_cmdline_user_args().has("--open-admin")
 	npcs = NpcsScript.new()
 	npcs.hour_now = func(): return game_clock.hour()
 	npcs.ground_height = func(x, z): return generator.surface_height(x, z)
@@ -259,6 +262,12 @@ func _ready() -> void:
 		return not is_nan(water[0]) and float(water[0]) - float(water[1]) > 0.7
 	npcs.player_positions = func(): return items.peer_positions()
 	npcs.setup(store_dir)
+	dialogue = DialogueScript.new()
+	dialogue.items = items
+	dialogue.npcs = npcs
+	dialogue.hour_now = func(): return game_clock.hour()
+	dialogue.send_say = func(peer, id, npc_name, text, voice, choices, ends): net.npc_say.rpc_id(peer, id, npc_name, text, voice, choices, ends)
+	dialogue.setup(store_dir)
 	spawn = _spawn_point(world_dir)
 	items.respawn_point = spawn
 	_world_dir = world_dir
@@ -301,6 +310,7 @@ func _ready() -> void:
 		items.peer_connected_hello(peer, key)
 		net.npc_roster.rpc_id(peer, npcs.roster()))
 	net.admin_place_requested.connect(_on_admin_place)
+	net.npc_talk_requested.connect(func(peer, npc_id, choice): dialogue.talk(peer, npc_id, choice))
 	net.inventory_action_requested.connect(func(peer, kind, a, b, count, at): items.action(peer, kind, a, b, count, at))
 	_report_at_msec = Time.get_ticks_msec() + 10000
 
@@ -453,6 +463,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	])
 	_peers.erase(peer_id)
 	_npc_sent.erase(peer_id)
+	dialogue.peer_left(peer_id)
 	items.peer_left(peer_id)
 
 	if _link != null:
@@ -731,7 +742,11 @@ func _on_cut_flora_requested(peer_id: int, chunk: Vector2i, id: int) -> void:
 		net.flora_cut.rpc(chunk, id)
 
 
-func _on_dig_requested(_peer_id: int, center: Vector3, radius: float) -> void:
+func _on_dig_requested(peer_id: int, center: Vector3, radius: float) -> void:
+	if not admin.is_admin(items.key_of(peer_id)):
+		print("Admin dig refused for peer %d" % peer_id)
+		return
+
 	_dig_ground(center, radius)
 
 

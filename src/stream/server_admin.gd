@@ -4,6 +4,7 @@ extends RefCounted
 # never committed; data/admin.example.json shows the shape). With no file there are no admins and every admin RPC is refused.
 
 var _keys: Dictionary = {}
+var open_to_all: bool = false     # --open-admin on the server command line: every player is an admin (headless tests only)
 
 
 func load_keys(paths: Array = ["res://data/admin.json"]) -> void:
@@ -21,7 +22,7 @@ func load_keys(paths: Array = ["res://data/admin.json"]) -> void:
 
 
 func is_admin(key: String) -> bool:
-	return key != "" and _keys.has(key)
+	return open_to_all or (key != "" and _keys.has(key))
 
 
 func count() -> int:

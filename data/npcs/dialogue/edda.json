@@ -1,0 +1,95 @@
+{
+	"npc": "edda",
+	"note": "Edda the guard. See hob.json for the format.",
+	"barks": {
+		"greeting": [
+			"Halt. State your business.",
+			"Keep your hands where I can see them.",
+			"Evening, traveller."
+		],
+		"farewell": [
+			"Move along.",
+			"Stay out of trouble.",
+			"Watch the road."
+		],
+		"idle": [
+			"All quiet.",
+			"Hm. Nothing stirs.",
+			"Cold watch tonight."
+		],
+		"complaint": [
+			"I apologize, my head aches terribly.",
+			"Forgive me, I have not slept well.",
+			"My head throbs. Speak quickly.",
+			"I am unwell. Forgive my manner.",
+			"A sickness has taken me since dusk.",
+			"Not my best day, I am afraid.",
+			"The ache behind my eyes will not leave.",
+			"Pardon me. I can barely stand."
+		],
+		"cooldown": [
+			"Later. Please.",
+			"Leave me be a while."
+		]
+	},
+	"roots": [
+		{
+			"node": "post"
+		}
+	],
+	"nodes": {
+		"post": {
+			"text": "$greeting",
+			"choices": [
+				{
+					"text": "Is it safe here?",
+					"goto": "safe"
+				},
+				{
+					"text": "Where can I sleep?",
+					"goto": "sleep"
+				},
+				{
+					"text": "Goodbye.",
+					"goto": "bye"
+				}
+			]
+		},
+		"safe": {
+			"text": [
+				"Safe enough by day. Wolves hunt at night.",
+				"The hills are quiet. The woods are not."
+			],
+			"choices": [
+				{
+					"text": "Anything else?",
+					"goto": "post"
+				},
+				{
+					"text": "Goodbye.",
+					"goto": "bye"
+				}
+			]
+		},
+		"sleep": {
+			"text": [
+				"Build a lean-to near a fire. Warmth matters.",
+				"A lean-to keeps the rain off. Set one by the pond."
+			],
+			"choices": [
+				{
+					"text": "Anything else?",
+					"goto": "post"
+				},
+				{
+					"text": "Goodbye.",
+					"goto": "bye"
+				}
+			]
+		},
+		"bye": {
+			"text": "$farewell",
+			"end": true
+		}
+	}
+}

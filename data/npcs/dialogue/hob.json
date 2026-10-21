@@ -1,0 +1,212 @@
+{
+	"npc": "hob",
+	"note": "Hob the shopkeeper. Trees are data: nodes {text, choices[{text, goto, if}], effects, end}. text may be a string, an array (one is picked, none repeated within the last five) or a bark token $greeting / $farewell / $idle. A choice with goto 'end' or no goto ends the talk. Conditions: flag, flag_not, hour_between [from, to], has_item [id, n]. Effects: set_flag, clear_flag, give_item [id, n], take_item [id, n]. roots: the first whose condition holds starts the talk. Lines keep to short sentences (12 words) for the voice.",
+	"barks": {
+		"greeting": [
+			"Good day to you.",
+			"Well met, traveller.",
+			"Ah, a visitor. Welcome.",
+			"Come in, come in."
+		],
+		"farewell": [
+			"Safe roads to you.",
+			"Come again soon.",
+			"Mind the dark on your way.",
+			"Farewell, friend."
+		],
+		"idle": [
+			"Hm. Business is slow.",
+			"Another quiet day.",
+			"The wind smells of rain."
+		],
+		"complaint": [
+			"I apologize, I have had a headache all day.",
+			"Forgive me, my head is pounding.",
+			"I am not myself today, I fear.",
+			"Pardon me, I feel quite unwell.",
+			"My head swims. Please be brief.",
+			"I have had a dreadful ache since dawn.",
+			"Forgive my manners, I am poorly.",
+			"A fever, perhaps. I cannot think clearly."
+		],
+		"cooldown": [
+			"Please, later. My head.",
+			"Not now, I beg you."
+		]
+	},
+	"roots": [
+		{
+			"if": {
+				"flag": "met"
+			},
+			"node": "again"
+		},
+		{
+			"node": "first"
+		}
+	],
+	"nodes": {
+		"first": {
+			"text": [
+				"Welcome to my stall, stranger. I am Hob."
+			],
+			"effects": [
+				{
+					"set_flag": "met"
+				}
+			],
+			"choices": [
+				{
+					"text": "What do you sell?",
+					"goto": "wares"
+				},
+				{
+					"text": "Any news?",
+					"goto": "news"
+				},
+				{
+					"text": "Goodbye.",
+					"goto": "bye"
+				}
+			]
+		},
+		"again": {
+			"text": "$greeting",
+			"choices": [
+				{
+					"text": "What do you sell?",
+					"goto": "wares"
+				},
+				{
+					"text": "Any news?",
+					"goto": "news"
+				},
+				{
+					"text": "Can I help with anything?",
+					"goto": "quest_offer",
+					"if": {
+						"flag_not": [
+							"quest_firewood",
+							"quest_firewood_done"
+						]
+					}
+				},
+				{
+					"text": "I have your firewood.",
+					"goto": "quest_done",
+					"if": {
+						"flag": "quest_firewood",
+						"has_item": [
+							"firewood",
+							3
+						]
+					}
+				},
+				{
+					"text": "About the firewood...",
+					"goto": "quest_reminder",
+					"if": {
+						"flag": "quest_firewood",
+						"flag_not": "quest_firewood_done"
+					}
+				},
+				{
+					"text": "Goodbye.",
+					"goto": "bye"
+				}
+			]
+		},
+		"wares": {
+			"text": [
+				"I deal in tools, twine and trinkets. Trading opens soon.",
+				"Not much on the shelves yet. The carts are late."
+			],
+			"choices": [
+				{
+					"text": "Anything else?",
+					"goto": "again"
+				},
+				{
+					"text": "Goodbye.",
+					"goto": "bye"
+				}
+			]
+		},
+		"news": {
+			"text": [
+				"Wolves were heard in the hills. Keep a fire lit.",
+				"The pond freezes hard in winter. Fish through the ice."
+			],
+			"choices": [
+				{
+					"text": "Anything else?",
+					"goto": "again"
+				},
+				{
+					"text": "Goodbye.",
+					"goto": "bye"
+				}
+			]
+		},
+		"quest_offer": {
+			"text": "My hearth is cold. Bring me three bolts of firewood.",
+			"effects": [
+				{
+					"set_flag": "quest_firewood"
+				}
+			],
+			"choices": [
+				{
+					"text": "I will.",
+					"goto": "bye"
+				},
+				{
+					"text": "Not now.",
+					"goto": "bye"
+				}
+			]
+		},
+		"quest_reminder": {
+			"text": "Three bolts of firewood, split. I am grateful.",
+			"choices": [
+				{
+					"text": "On my way.",
+					"goto": "bye"
+				}
+			]
+		},
+		"quest_done": {
+			"text": "Splendid! Take this for your trouble.",
+			"effects": [
+				{
+					"take_item": [
+						"firewood",
+						3
+					]
+				},
+				{
+					"give_item": [
+						"roast_forage",
+						2
+					]
+				},
+				{
+					"set_flag": "quest_firewood_done"
+				},
+				{
+					"clear_flag": "quest_firewood"
+				}
+			],
+			"choices": [
+				{
+					"text": "Thank you.",
+					"goto": "bye"
+				}
+			]
+		},
+		"bye": {
+			"text": "$farewell",
+			"end": true
+		}
+	}
+}
