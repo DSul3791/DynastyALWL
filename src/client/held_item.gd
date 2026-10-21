@@ -578,6 +578,15 @@ func _make_kit_model() -> Node3D:
 		node.add_child(box)
 		return node
 
+	if id == "workbench_kit":
+		var plank: MeshInstance3D = MeshInstance3D.new()
+		var slab: BoxMesh = BoxMesh.new()
+		slab.size = Vector3(0.32, 0.05, 0.2)
+		slab.material = _kit_material(Color(0.45, 0.33, 0.2))
+		plank.mesh = slab
+		node.add_child(plank)
+		return node
+
 	if id == "chopping_block_kit":
 		var block: MeshInstance3D = MeshInstance3D.new()
 		var cyl: CylinderMesh = CylinderMesh.new()

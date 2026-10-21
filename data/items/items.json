@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = placeholder price of one item in coins (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 73,
+	"next_number": 75,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -844,6 +844,23 @@
 			"stack": 40,
 			"future": true,
 			"value": 1,
+			"look_alikes": []
+		},
+		"workbench_kit": {
+			"number": 73,
+			"name": "Camp bench",
+			"description": "Lashed sticks and a flat top: a work table for tools, packs and sewing. Set it down where you camp.",
+			"kind": "placeable",
+			"stack": 1,
+			"value": 30,
+			"look_alikes": []
+		},
+		"workbench": {
+			"number": 74,
+			"name": "Camp bench",
+			"description": "A camp bench. Stand near it to make the things that need a work table.",
+			"kind": "structure",
+			"stack": 1,
 			"look_alikes": []
 		}
 	}

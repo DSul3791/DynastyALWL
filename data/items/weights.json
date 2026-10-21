@@ -154,7 +154,9 @@
 		"roast_meat": 0.4,
 		"sinew": 0.02,
 		"animal_fat": 0.1,
-		"feather": 0.005
+		"feather": 0.005,
+		"workbench_kit": 12.0,
+		"workbench": 12.0
 	},
 	"by_suffix": {
 		"berries": 0.05,

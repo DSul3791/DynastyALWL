@@ -1,6 +1,6 @@
 {
-	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist).",
-	"next_number": 45,
+	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist). station: the recipe is made only near that placed station (structures.json station, reach_m with 1 m grace on the server); station_level (default 1) is the lowest level of the station it needs.",
+	"next_number": 46,
 	"recipes": {
 		"cordage": {
 			"number": 1,
@@ -516,7 +516,8 @@
 				1
 			],
 			"craft_s": 8.0,
-			"known": true
+			"known": true,
+			"station": "workbench"
 		},
 		"iron_spade": {
 			"number": 27,
@@ -592,7 +593,8 @@
 				1
 			],
 			"craft_s": 20.0,
-			"known": false
+			"known": false,
+			"station": "workbench"
 		},
 		"energy_bar": {
 			"number": 31,
@@ -788,7 +790,8 @@
 				1
 			],
 			"craft_s": 14.0,
-			"known": false
+			"known": false,
+			"station": "workbench"
 		},
 		"hide_boots": {
 			"number": 40,
@@ -808,7 +811,8 @@
 				1
 			],
 			"craft_s": 14.0,
-			"known": false
+			"known": false,
+			"station": "workbench"
 		},
 		"hide_hood": {
 			"number": 41,
@@ -868,7 +872,8 @@
 				1
 			],
 			"craft_s": 14.0,
-			"known": false
+			"known": false,
+			"station": "workbench"
 		},
 		"sinew_cord": {
 			"number": 44,
@@ -885,6 +890,26 @@
 			],
 			"craft_s": 6.0,
 			"known": false
+		},
+		"workbench_kit": {
+			"number": 45,
+			"name": "Camp bench",
+			"needs": [
+				[
+					"stick",
+					12
+				],
+				[
+					"cordage",
+					3
+				]
+			],
+			"gives": [
+				"workbench_kit",
+				1
+			],
+			"craft_s": 12.0,
+			"known": true
 		}
 	}
 }

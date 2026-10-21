@@ -160,6 +160,7 @@ var send_remains: Callable          # (peer, rows [[position Vector3, seconds le
 var _remains_sent: Dictionary = {}
 var send_worn: Callable             # (peer, PackedInt32Array of item numbers, one per body slot in clothing.json order)
 var _worn_sent: Dictionary = {}
+var _station_said: Dictionary = {}
 var _wear_carry: Dictionary = {}     # peer -> fraction of a wear point not yet charged (tool_care skill)
 var _clothing: Dictionary = {}
 var send_sick: Callable             # (peer, game hours of sickness left, rounded up; 0 = well)
@@ -3566,11 +3567,46 @@ func _queue_of(peer: int) -> Dictionary:
 	return _craft_queues[key]
 
 
+# Crafting stations (structures.json "station", "station_level", "reach_m"): a placed structure of that station within reach of the
+# player. The server measures the distance with 1 m of grace so lag never fails a craft; the client only displays (Tyler).
+func station_near(peer: int, station: String, level: int = 1) -> bool:
+	if not _peer_pos.has(peer):
+		return false
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if not it.has("struct"):
+			continue
+
+		var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
+
+		if str(def.get("station", "")) != station or int(def.get("station_level", 1)) < level:
+			continue
+
+		if _peer_pos[peer].distance_to(it["pos"]) <= float(def.get("reach_m", 3.0)) + 1.0:
+			return true
+
+	return false
+
+
+func _station_name(station: String) -> String:
+	for kind in _structures:
+		if str(_structures[kind].get("station", "")) == station:
+			return table.name_of(table.number_of(str(_structures[kind].get("item", "")))).to_lower()
+
+	return station.replace("_", " ")
+
+
 func _queue_craft(peer: int, inv, recipe_number: int, count: int) -> void:
 	var queue: Dictionary = _queue_of(peer)
 	var recipe: Dictionary = recipes.recipe(recipe_number)
 
 	if queue.is_empty() or recipe.is_empty() or not bool(recipe["known"]):
+		return
+
+	if str(recipe.get("station", "")) != "" and not station_near(peer, str(recipe["station"]), int(recipe.get("station_level", 1))):
+		_say(peer, "That needs a %s nearby" % _station_name(str(recipe["station"])))
 		return
 
 	var entries: Array = queue["entries"]
@@ -3644,6 +3680,14 @@ func _craft_tick(spent: float) -> void:
 			_say(peer, "A craft was cancelled: that recipe is gone")
 			_dirty = true
 			_sync_craft_queue(peer)
+			continue
+
+		# A station recipe only runs while you are near its station; step away and it waits (nothing is lost, cancel refunds).
+		if str(recipe.get("station", "")) != "" and not station_near(peer, str(recipe["station"]), int(recipe.get("station_level", 1))):
+			if Time.get_ticks_msec() - int(_station_said.get(peer, -100000)) > 8000:
+				_station_said[peer] = Time.get_ticks_msec()
+				_say(peer, "Your craft waits: go back to the %s" % _station_name(str(recipe["station"])))
+
 			continue
 
 		queue["elapsed"] = float(queue["elapsed"]) + spent

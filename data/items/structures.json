@@ -57,6 +57,17 @@
 			"slots": 30,
 			"who": "owner",
 			"take_only": true
+		},
+		"workbench": {
+			"kit": "workbench_kit",
+			"item": "workbench",
+			"state": 13,
+			"footprint_x": 1.5,
+			"footprint_z": 1.0,
+			"cap_per_chunk": 4,
+			"station": "workbench",
+			"station_level": 1,
+			"reach_m": 4.0
 		}
 	},
 	"campfire": {

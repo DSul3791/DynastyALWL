@@ -88,6 +88,7 @@ var _thought_until_msec: int = 0
 var worn: PackedInt32Array = PackedInt32Array()   # item number per body slot (clothing.json order), 0 = nothing (protocol 40)
 var clothing_cfg: Dictionary = {}
 var _cooking_cfg: Dictionary = {}
+var _structures_cfg: Dictionary = {}
 var remains_marks: Array = []                # [[position, seconds left, msec received], ...] the owner's remains with gear (protocol 39)
 var sick_hours: int = 0                      # game hours of sickness left, 0 = well (protocol 38)
 var _sick_label: Label
@@ -419,7 +420,7 @@ func _probe_structure() -> Dictionary:
 		clear_prompt()
 		net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 
-	if state >= 11:
+	if state == 11 or state == 12:
 		return {"prompt": "Press E to search the remains", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)}
 
 	if state == 6:
@@ -1232,8 +1233,8 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 		if state >= 5:
 			var yaw: float = deg_to_rad(float(row[5].get("yaw", 0.0))) if row.size() > 5 else 0.0
-			node = _make_leanto() if state == 5 else (_make_chest() if state == 6 else (_make_remains(float(row[5].get("age", 0.0)) if row.size() > 5 else 0.0) if state >= 11 else _make_block()))
-			node.position = row[3] - Vector3(0.0, SINK_M * float(row[5].get("age", 0.0)), 0.0) if state >= 11 and row.size() > 5 else row[3]
+			node = _make_leanto() if state == 5 else (_make_chest() if state == 6 else (_make_remains(float(row[5].get("age", 0.0)) if row.size() > 5 else 0.0) if (state == 11 or state == 12) else (_make_bench() if state == 13 else _make_block())))
+			node.position = row[3] - Vector3(0.0, SINK_M * float(row[5].get("age", 0.0)), 0.0) if (state == 11 or state == 12) and row.size() > 5 else row[3]
 			node.rotation.y = yaw
 			_root.add_child(node)
 			var roof_key: int = -1
@@ -1275,7 +1276,7 @@ func placed_rows() -> Array:
 	for id in _world:
 		var state: int = int(_world[id]["state"])
 
-		if state == 1 or state == 5 or state == 6 or state == 7 or state == 8 or state == 9:
+		if state == 1 or state == 5 or state == 6 or state == 7 or state == 8 or state == 9 or state == 13:
 			rows.append({"pos": _world[id]["pos"], "state": state})
 
 	return rows
@@ -1369,6 +1370,74 @@ func _make_leanto() -> Node3D:
 
 func _make_block() -> Node3D:
 	return BuildingLook.block()
+
+
+# A camp bench (placeholder look until Art draws it): a flat top on four legs, waist high, about 1.5 by 1 m.
+func _station_ok(r: Dictionary) -> bool:
+	return str(r.get("station", "")) == "" or station_near(str(r["station"]), int(r.get("station_level", 1)))
+
+
+func _station_label(r: Dictionary) -> String:
+	for kind in _structure_kinds():
+		if str(_structures_cfg[kind].get("station", "")) == str(r.get("station", "")):
+			return table.name_of(table.number_of(str(_structures_cfg[kind].get("item", "")))).to_lower()
+
+	return str(r.get("station", "")).replace("_", " ")
+
+
+func _structure_kinds() -> Array:
+	_structure_by_state(-1)
+	return _structures_cfg.keys()
+
+
+func _make_bench() -> Node3D:
+	var root: Node3D = Node3D.new()
+	var wood: StandardMaterial3D = StandardMaterial3D.new()
+	wood.albedo_color = Color(0.45, 0.33, 0.2)
+	wood.roughness = 1.0
+	var top: MeshInstance3D = MeshInstance3D.new()
+	var slab: BoxMesh = BoxMesh.new()
+	slab.size = Vector3(1.5, 0.08, 0.8)
+	top.mesh = slab
+	top.material_override = wood
+	top.position = Vector3(0.0, 0.86, 0.0)
+	root.add_child(top)
+
+	for corner in [Vector2(-0.65, -0.32), Vector2(0.65, -0.32), Vector2(-0.65, 0.32), Vector2(0.65, 0.32)]:
+		var leg: MeshInstance3D = MeshInstance3D.new()
+		var post: BoxMesh = BoxMesh.new()
+		post.size = Vector3(0.09, 0.82, 0.09)
+		leg.mesh = post
+		leg.material_override = wood
+		leg.position = Vector3(corner.x, 0.41, corner.y)
+		root.add_child(leg)
+
+	return root
+
+
+# Is a placed station of this kind within its reach? Display only (the server decides): greys recipes that need one.
+func station_near(station: String, level: int = 1) -> bool:
+	var here: Vector3 = _player_position.call() if _player_position.is_valid() else Vector3.ZERO
+
+	for id in _world:
+		var def: Dictionary = _structure_by_state(int(_world[id]["state"]))
+
+		if not def.is_empty() and str(def.get("station", "")) == station and int(def.get("station_level", 1)) >= level and here.distance_to(_world[id]["pos"]) <= float(def.get("reach_m", 3.0)):
+			return true
+
+	return false
+
+
+func _structure_by_state(state: int) -> Dictionary:
+	if _structures_cfg.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/structures.json"))
+		_structures_cfg = parsed.get("structures", {}) if typeof(parsed) == TYPE_DICTIONARY else {"none": {}}
+
+	for kind in _structures_cfg:
+		if int(_structures_cfg[kind].get("state", -1)) == state:
+			return _structures_cfg[kind]
+
+	return {}
 
 
 func _make_chest() -> Node3D:
@@ -2429,7 +2498,7 @@ func _refresh() -> void:
 		if not r["known"] or not _recipe_matches(r, filter):
 			continue
 
-		(can if recipes.can_make(number, inventory) else cannot).append(r)
+		(can if recipes.can_make(number, inventory) and _station_ok(r) else cannot).append(r)
 
 	var by_name: Callable = func(a, b): return str(a["name"]) < str(b["name"])
 	can.sort_custom(by_name)
@@ -2439,9 +2508,9 @@ func _refresh() -> void:
 		_selected_recipe = can[0]["number"] if not can.is_empty() else (cannot[0]["number"] if not cannot.is_empty() else 0)
 
 	for r in can + cannot:
-		var makeable: bool = recipes.can_make(r["number"], inventory)
+		var makeable: bool = recipes.can_make(r["number"], inventory) and _station_ok(r)
 		var entry: Button = Button.new()
-		entry.text = str(r["name"])
+		entry.text = str(r["name"]) + (("   (needs %s)" % _station_label(r)) if not _station_ok(r) else "")
 		entry.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		entry.custom_minimum_size = Vector2(0.0, _px(64))
 		entry.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -2471,6 +2540,13 @@ func _refresh_detail() -> void:
 	_style(heading, BODY_PX)
 	_detail.add_child(heading)
 
+	if str(r.get("station", "")) != "":
+		var where: Label = Label.new()
+		where.text = ("Made at a %s (you are near one)" if _station_ok(r) else "Needs a %s within reach") % _station_label(r)
+		where.modulate = Color(0.55, 1.0, 0.55) if _station_ok(r) else Color(1.0, 0.8, 0.4)
+		_style(where, BODY_PX)
+		_detail.add_child(where)
+
 	for need in r["needs"] + r["keeps"]:
 		var kept: bool = r["keeps"].has(need)
 		var have: int = inventory.count_of(need[0])
@@ -2496,7 +2572,7 @@ func _refresh_detail() -> void:
 	row.add_child(_quantity)
 	var make: Button = Button.new()
 	make.text = "Craft  (%.0f s)" % float(r["craft_s"])
-	make.disabled = not recipes.can_make(_selected_recipe, inventory)
+	make.disabled = not (recipes.can_make(_selected_recipe, inventory) and _station_ok(r))
 	make.custom_minimum_size = Vector2(_px(240), _px(64))
 	_style(make, BODY_PX)
 	make.pressed.connect(_craft_selected)

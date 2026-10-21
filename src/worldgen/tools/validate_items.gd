@@ -239,6 +239,19 @@ func _init() -> void:
 		if String(def.get("skill", "")) == "" or not String(def.get("effect", "")) in ["yield", "speed", "toughness"]:
 			fail("skills.json: action '%s' needs a skill name and an effect of yield, speed or toughness" % action)
 
+	# Stations: a recipe's station is a placed structure with that station, or one of the stations still to be built.
+	var stations: Dictionary = {"saw_mill": true, "forge": true}
+
+	for kind in _read("structures.json").get("structures", {}):
+		if String(_read("structures.json")["structures"][kind].get("station", "")) != "":
+			stations[String(_read("structures.json")["structures"][kind]["station"])] = true
+
+	for recipe_id in recipes_file.get("recipes", {}):
+		var station: String = String(recipes_file["recipes"][recipe_id].get("station", ""))
+
+		if station != "" and not stations.has(station):
+			fail("recipes.json %s: unknown station '%s'" % [recipe_id, station])
+
 	# Cooking.
 	want_item.call(String(cooking.get("gives", "")), "cooking.json gives")
 	obtainable[String(cooking.get("gives", ""))] = true

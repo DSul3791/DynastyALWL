@@ -106,7 +106,7 @@ for key, days in sorted(seen.items(), key=lambda kv: kv[1]):
     L.append("| %s | %.1f | %.0f min |" % (key.replace("_", " "), days, days * 60))
 L += ["", "Stale food feeds less: half fresh gives 75%% of its kcal. Eaten rotten: sick for %.0f game hours (see Sickness)." % sick["duration_h"], ""]
 cold_c = wrm["comfort_c"] - (100 - wrm["hurt_at"]) / wrm["gain"]
-L += ["## Warmth", "", "Cold starts to hurt health when the body's target warmth drops under %d, which on a still dry day is about %.0f C (comfort %.0f C, %.1f warmth points per degree). Wind chill up to %.0f C, rain or snow on you x%.1f, swimming x%.1f; a fire within %.0f m is worth +%.0f C; cover cuts wind to %.0f%%." % (wrm["hurt_at"], cold_c, wrm["comfort_c"], wrm["gain"], wrm["wind_chill_c"], wrm["rain_mult"], wrm["water_mult"], wrm["fire_radius_m"], wrm["fire_c"], wrm["covered_wind_share"] * 100), "", "Warmth moves toward its target with a time constant of %.0f game hours falling and %.1f rising; health drains at most %.2f per real second, never below 1." % (wrm["tau_cool_h"], wrm["tau_warm_h"], wrm["hurt_per_s"] * 2), ""]
+L += ["## Warmth", "", "Cold starts to hurt health when the body's target warmth drops under %d, which on a still dry day is about %.0f C (comfort %.0f C, %.1f warmth points per degree). Wind chill up to %.0f C, rain or snow on you x%.1f, swimming follows the water (see Swimming); a fire within %.0f m is worth +%.0f C; cover cuts wind to %.0f%%." % (wrm["hurt_at"], cold_c, wrm["comfort_c"], wrm["gain"], wrm["wind_chill_c"], wrm["rain_mult"], wrm["fire_radius_m"], wrm["fire_c"], wrm["covered_wind_share"] * 100), "", "Warmth moves toward its target with a time constant of %.0f game hours falling and %.1f rising; health drains at most %.2f per real second, never below 1." % (wrm["tau_cool_h"], wrm["tau_warm_h"], wrm["hurt_per_s"] * 2), ""]
 L += ["## Sickness", "", "Rotten food: sick %.0f game hours (%.0f real minutes), exertion floor %.0f%%, a symptom every %.0f s, %dx faster asleep. Medicine takes off %.0f hours." % (sick["duration_h"], sick["duration_h"] / 24.0 * 60, sick["exertion_floor"] * 100, sick["symptom_every_s"], sick["sleep_mult"], vit["medicines"]["medicine"]["cure_h"]), ""]
 sys_ = skl["system"]
 L += ["## Skills", "", "Practice per verified success is about %.1f x difficulty x (1 - level/100), with a %.0f s cooldown per skill and a soft cap of %.0f points per game day." % (sys_["gain_per_success"], sys_["cooldown_s"], sys_["day_cap"]), "", "| Skill | k | Level after 50 / 150 / 500 clean successes (average attributes) | Top effect |", "|---|---|---|---|"]
@@ -122,6 +122,34 @@ for sid, sk in skl["skills"].items():
         row.append("%d" % (10 + 90 * (1 - math.exp(-sk["k"] * p))))
     L.append("| %s | %.3f | %s | x%.2f |" % (sk["name"], sk["k"], " / ".join(row), sk["max_factor"]))
 L += ["", "Decay: after %.0f idle game days practice halves every %.0f days, never under %.0f%% of the best." % (sys_["grace_days"], sys_["half_life_days"], sys_["floor_share"] * 100), ""]
+
+# --- Survival day, all vitals together (Items refill 12) ---
+cook = load("cooking.json"); clo = load("items.json")["items"]
+def target(temp, wind, ins, rain=0.0, fire=False):
+    feels = temp - wind * wrm["wind_chill_c"] + (wrm["fire_c"] if fire else 0)
+    stress = max(wrm["comfort_c"] - feels, 0.0)
+    if rain > 0.05:
+        stress *= 1 + (wrm["rain_mult"] - 1) * min(rain * 2, 1)
+    return max(0.0, min(100.0, 100 - stress * wrm["gain"] * (1 - ins)))
+def hours_to_hurt(tgt):
+    if tgt >= wrm["hurt_at"]:
+        return None
+    return -wrm["tau_cool_h"] * math.log((wrm["hurt_at"] - tgt) / (100 - tgt))
+sets = [("naked", 0.0), ("grass set (skirt, cloak, sandals)", sum(clo[i]["warmth"] for i in ("grass_skirt", "grass_cloak", "fibre_sandals"))), ("hide set (cloak, boots, hood, mittens, leggings)", sum(clo[i]["warmth"] for i in ("hide_cloak", "hide_boots", "hide_hood", "hide_mittens", "hide_leggings")))]
+sets = [(n, min(v, wrm["max_insulation"])) for n, v in sets]
+temps = [("temperate summer 24 C", 24), ("temperate spring or autumn 10 C", 10), ("temperate winter -4 C", -4), ("arctic winter -23 C", -23)]
+L += ["## Survival day, all vitals together", "", "Warmth target in ordinary wind (0.4) on a dry day; the number in brackets is how many game hours until health starts to drain (target under %d), a dash if never. Weather has a seasonal temperature only (no day and night swing yet)." % wrm["hurt_at"], "", "| Where | " + " | ".join(n for n, _ in sets) + " |", "|---|" + "---|" * len(sets)]
+for name, t in temps:
+    cells = []
+    for _, ins in sets:
+        tg = target(t, 0.4, ins)
+        h = hours_to_hurt(tg)
+        cells.append("%.0f (%s)" % (tg, "-" if h is None else "%.1f h" % h))
+    L.append("| %s | %s |" % (name, " | ".join(cells)))
+L += ["", "Swimming (cold follows the water): " + "; ".join("%d C air gives %.0f C water and a warmth target of %.0f naked" % (a, max(wrm["water_base_c"] + wrm["water_follow"] * (a - wrm["water_base_c"]), 1.0), max(0, 100 - max(wrm["water_comfort_c"] - max(wrm["water_base_c"] + wrm["water_follow"] * (a - wrm["water_base_c"]), 1.0), 0) * wrm["water_gain"])) for a in (24, 10, -4)) + ". The body cools with a time constant of %.1f game hours in water (%.0f real minutes), so a cold swim is dangerous within about an hour." % (wrm["tau_water_h"], wrm["tau_water_h"] * 2.5), ""]
+cx = [(ck, sp) for ck, sp in (("roast forage", spo["by_id"]["roast_forage"]), ("roast meat", spo["by_id"]["roast_meat"]), ("raw meat", spo["by_id"]["raw_meat"]))]
+L += ["Cooking: a roast keeps %.1f times what the raw item had left, up to its own shelf life; roast forage up to %.0f game days, roast meat %.0f, raw meat %.0f. A hot meal adds %d warmth points when eaten (roast forage), tea %d. Raw meat, fiddleheads and beans make you sick for 12 to 24 hours, acorns and wild mushrooms for 6." % (cook["cooked_life_mult"], spo["by_id"]["roast_forage"] * mult / 24, spo["by_id"]["roast_meat"] * mult / 24, spo["by_id"]["raw_meat"] * mult / 24, cook["warms"]["roast_forage"], cook["warms"]["herbal_tea"]), ""]
+L += ["A game day, put together: food lasts 24 game hours of walking, water 36, energy %s (see Energy); cold is the only vital that can hurt a well-fed, rested character, and only in winter or in water without clothes. Sickness (6 to 24 hours at exertion 0.5) costs food and water but never health beyond what hunger already allows." % ("3 game days awake, then sleep"), ""]
 L += ["", "## What looks off", ""]
 L += ["- " + f for f in flags] or ["Nothing in these tables trips the checks (a day of food, a day of water, craft times under a minute, tools of 30+ uses)."]
 open(out_path, "w").write("\n".join(L) + "\n")
