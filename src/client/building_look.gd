@@ -914,25 +914,9 @@ static func stone_forge() -> Node3D:
 
 # --------------------------------------------------------------- hooks for Dave's own station meshes
 
-# data/items/station_models.json holds per-model hook points in the model's own space (metres, pivot at the footprint centre on
-# the ground, as the forge .glb spec says), keyed by the file name without extension:
-#   {"forge_large": {"fire": [x, y, z], "smoke": [x, y, z]}}
-# `fire` adds the flickering "Light" child that inventory_view.gd switches on near the player; `smoke` adds a thin smoke plume.
-# No entry: the model is returned as it is.
-static var _hooks: Dictionary = {}
-static var _hooks_loaded: bool = false
+# Hooks for Dave's forge models: the "Fire" and "Smoke" marker nodes in each .glb give the points (inventory_view.gd finds them).
 static var _smoke: ParticleProcessMaterial
 static var _smoke_mesh: QuadMesh
-
-
-static func _hook_config() -> Dictionary:
-	if not _hooks_loaded:
-		_hooks_loaded = true
-		var text: String = FileAccess.get_file_as_string("res://data/items/station_models.json")
-		var parsed: Variant = JSON.parse_string(text) if text != "" else null
-		_hooks = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
-
-	return _hooks
 
 
 static func _smoke_plume() -> GPUParticles3D:
@@ -964,35 +948,37 @@ static func _smoke_plume() -> GPUParticles3D:
 	return plume
 
 
-static func dress(key: String, model: Node3D) -> Node3D:
-	var entry: Variant = _hook_config().get(key, null)
-
-	if model == null or typeof(entry) != TYPE_DICTIONARY:
-		return model
-
-	return add_hooks(model, entry.get("fire", null), entry.get("smoke", null))
-
-
-# The flame light (a hidden "Light" child that inventory_view.gd switches on near the player) and a thin smoke plume at points in the
-# model's own space; either may be null to go without. Used by dress (station_models.json) and by the forge loader, which takes
-# the points from the Fire and Smoke empties in Dave's files.
 static func add_hooks(model: Node3D, fire: Variant, smoke: Variant) -> Node3D:
 	if fire != null and model.get_node_or_null("Light") == null:
-		var spot: Array = fire if typeof(fire) == TYPE_ARRAY else [fire.x, fire.y, fire.z]
+		var spot: Vector3 = Vector3(float(fire[0]), float(fire[1]), float(fire[2])) if typeof(fire) == TYPE_ARRAY else fire
 		var light: OmniLight3D = OmniLight3D.new()
 		light.name = "Light"
 		light.light_color = Color(1.0, 0.55, 0.25)
 		light.omni_range = 9.0
 		light.light_energy = 1.4
 		light.shadow_enabled = false
-		light.position = Vector3(float(spot[0]), float(spot[1]), float(spot[2]))
+		light.position = spot + Vector3(0.0, 0.25, 0.0)
 		light.visible = false
 		model.add_child(light)
 
+		# Dave's "Fire_Coals" is a flat untextured card; swap it for the shared coals and flame tongues at the fire marker.
+		var card: Node3D = model.find_child("Fire_Coals", true, false) as Node3D
+
+		if card != null:
+			card.visible = false
+
+		var flames: Node3D = Node3D.new()
+		flames.name = "Flames"
+		flames.position = spot
+		flames.scale = Vector3.ONE * 1.8
+		flames.add_child(_instance(_coals()))
+		flames.add_child(_instance(_flames()))
+		model.add_child(flames)
+
 	if smoke != null:
-		var at: Array = smoke if typeof(smoke) == TYPE_ARRAY else [smoke.x, smoke.y, smoke.z]
+		var at: Vector3 = Vector3(float(smoke[0]), float(smoke[1]), float(smoke[2])) if typeof(smoke) == TYPE_ARRAY else smoke
 		var plume: GPUParticles3D = _smoke_plume()
-		plume.position = Vector3(float(at[0]), float(at[1]), float(at[2]))
+		plume.position = at
 		model.add_child(plume)
 
 	return model
