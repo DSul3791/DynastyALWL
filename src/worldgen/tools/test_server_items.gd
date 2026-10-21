@@ -1122,6 +1122,23 @@ func _init() -> void:
 
 	var floor_level: float = float(sa.strain_of(1)["s"])
 	check(floor_level > 0.4 and floor_level < 0.6, "standing with a pack at the limit rests only to about half (%.2f)" % floor_level)
+	# Fitness trains slowly (fitness.json train): winded time adds points, rest takes them back, never below the base.
+	var tr = make(xd)
+	tr.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	tr.peer_connected_hello(1, "trainkey0001")
+	tr.set_fitness(1, 2)
+	check(tr.fitness_of(1) == 2, "fitness starts at its creation value")
+	tr._train_fitness(1, true, 1700.0)
+	check(tr.fitness_of(1) == 2, "just under a point of winded time changes nothing")
+	tr._train_fitness(1, true, 200.0)
+	check(tr.fitness_of(1) == 3, "30 minutes winded earns a point")
+	tr._train_fitness(1, true, 1.0e6)
+	check(tr.fitness_of(1) == 7, "training stops at max_gain (5) above the base")
+	tr._train_fitness(1, false, 14400.0 * 3.0)
+	check(tr.fitness_of(1) == 4, "rest takes points back slowly")
+	tr._train_fitness(1, false, 1.0e7)
+	check(tr.fitness_of(1) == 2, "and never below the creation value")
+
 	# Sleep (job 86): lying plus ACT_SLEEP rests faster, by place; rain on the open wakes; stance and rest end it.
 	var sleeper: Array = [0.0, 0.0]      # cover, rain
 	var down_time = func(sl, asleep: bool) -> float:

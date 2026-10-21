@@ -1,7 +1,8 @@
 {
-	"note": "Fitness (Dave 2026-10-21): a character attribute, a whole number min to max (-10 to +10), 0 an average adult, that directly sets how fast exertion rises during strenuous activity (running, climbing, tool work, heavy loads): the rise per second is multiplied by exp(-fitness x strength), so +10 fitness at strength 0.05 raises exertion at about 61 percent of the normal pace (winded after about 1.65 times as long) and -10 at about 165 percent. Falling (recovery) is not touched. It is stored with the character in characters.json like luck. New characters start at default. How fitness is trained over time is not decided: set_fitness() in server_items.gd is the hook. Set strength to 0 to switch fitness off.",
+	"note": "Fitness (Dave 2026-10-21): a character attribute, a whole number min to max (-10 to +10), 0 an average adult, that directly sets how fast exertion rises during strenuous activity (running, climbing, tool work, heavy loads): the rise per second is multiplied by exp(-fitness x strength), so +10 fitness at strength 0.05 raises exertion at about 61 percent of the normal pace (winded after about 1.65 times as long) and -10 at about 165 percent. Falling (recovery) is not touched. It is stored with the character in characters.json like luck. New characters start at default. Training (Dave 2026-10-21: starts fixed, trains slowly): the creation value is the base; every winded_s_per_point seconds spent over-exerted adds a point (up to max_gain above the base), and every decay_s_per_point seconds not winded takes one back, never below the base. set_fitness() sets the base and clears the training. Set strength to 0 to switch fitness off.",
 	"strength": 0.05,
 	"min": -10,
 	"max": 10,
-	"default": 0
+	"default": 0,
+	"train": {"winded_s_per_point": 1800, "decay_s_per_point": 14400, "max_gain": 5}
 }

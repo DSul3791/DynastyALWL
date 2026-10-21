@@ -263,7 +263,7 @@ func peer_connected_hello(peer: int, key: String) -> void:
 		_dirty = true
 
 	if not _characters.has(key):
-		_characters[key] = {"luck": _create_luck(), "fitness": _fitness_default()}
+		_characters[key] = {"luck": _create_luck(), "fitness": _fitness_default(), "train": 0.0}
 		_dirty = true
 
 	_vitals_sent.erase(peer)
@@ -2897,6 +2897,7 @@ func _strain_tick(peer: int, spent: float) -> void:
 
 	st["s"] = strain
 	st["state"] = state
+	_train_fitness(peer, state == 1, spent)
 	var fade: float = 0.0
 
 	if state <= 1:
@@ -3104,7 +3105,34 @@ func _fitness_default() -> int:
 
 
 func fitness_of(peer: int) -> int:
-	return int(_characters.get(_peer_key.get(peer, ""), {}).get("fitness", _fitness_default()))
+	var row: Dictionary = _characters.get(_peer_key.get(peer, ""), {})
+	return clampi(int(row.get("fitness", _fitness_default())) + int(floor(float(row.get("train", 0.0)))), _fitness_min(), _fitness_max())
+
+
+# Fitness trains slowly (Dave 2026-10-21, fitness.json "train"): time spent over-exerted adds to the character's training, a point
+# per winded_s_per_point seconds up to max_gain over the creation value; time not winded takes it back, a point per
+# decay_s_per_point seconds, never below the creation value. The whole-number change is sent to the client.
+func _train_fitness(peer: int, winded: bool, spent: float) -> void:
+	var cfg: Dictionary = _fitness_cfg.get("train", {})
+	var row: Dictionary = _characters.get(_peer_key.get(peer, ""), {})
+
+	if cfg.is_empty() or row.is_empty():
+		return
+
+	var before: int = fitness_of(peer)
+	var train: float = float(row.get("train", 0.0))
+
+	if winded:
+		train = minf(train + spent / maxf(float(cfg.get("winded_s_per_point", 1800.0)), 1.0), float(cfg.get("max_gain", 5)))
+	else:
+		train = maxf(train - spent / maxf(float(cfg.get("decay_s_per_point", 14400.0)), 1.0), 0.0)
+
+	row["train"] = train
+	_dirty = true
+
+	if fitness_of(peer) != before:
+		_vitals_sent.erase(peer)
+		_sync_vitals(peer, true)
 
 
 # The shared multiplier on the exertion rise: below 1 for the fit, above 1 for the unfit.
@@ -3120,6 +3148,7 @@ func set_fitness(peer: int, value: int) -> void:
 		return
 
 	_characters[key]["fitness"] = clampi(value, _fitness_min(), _fitness_max())
+	_characters[key]["train"] = 0.0
 	_dirty = true
 	_vitals_sent.erase(peer)
 	_sync_vitals(peer, true)
@@ -3135,6 +3164,7 @@ func _load_characters() -> void:
 		_characters[str(key)] = {
 			"luck": clampi(int(parsed["players"][key].get("luck", 0)), -LuckScript.MAX, LuckScript.MAX),
 			"fitness": clampi(int(parsed["players"][key].get("fitness", _fitness_default())), _fitness_min(), _fitness_max()),
+			"train": maxf(float(parsed["players"][key].get("train", 0.0)), 0.0),
 		}
 
 
