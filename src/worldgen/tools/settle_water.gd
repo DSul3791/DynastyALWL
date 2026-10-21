@@ -5,7 +5,7 @@ extends SceneTree
 # each river head (moved to flat high ground close by), runs the simulation, writes
 # worlds/base_world/water/tile_X_Z.water and a flood picture.
 #
-#   godot --headless --path . --script res://src/worldgen/tools/settle_water.gd -- --tile=3,4 [--ticks=600] [--rate=10] (m3/s per spring) [--picture=PATH]
+#   godot --headless --path . --script res://src/worldgen/tools/settle_water.gd -- --tile=3,4 [--ticks=600] [--rate=10] (m3/s per spring) [--multiplier=10] (the server's start flow rate, WaterLive.DEFAULT_RATE) [--picture=PATH]
 
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
 const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings.gd")
@@ -22,6 +22,7 @@ func _init() -> void:
 	var ticks: int = 600
 	var rate: float = 10.0
 	var picture: String = ""
+	var multiplier: float = 1.0
 
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--tile="):
@@ -31,6 +32,8 @@ func _init() -> void:
 			ticks = int(argument.trim_prefix("--ticks="))
 		elif argument.begins_with("--rate="):
 			rate = float(argument.trim_prefix("--rate="))
+		elif argument.begins_with("--multiplier="):
+			multiplier = float(argument.trim_prefix("--multiplier="))
 		elif argument.begins_with("--picture="):
 			picture = argument.trim_prefix("--picture=")
 
@@ -57,6 +60,7 @@ func _init() -> void:
 	var side: int = data.samples
 	var started: int = Time.get_ticks_msec()
 	var sim = WaterSettler.build(data, rate, generator)
+	sim.spring_multiplier = multiplier
 	var placed: int = sim.springs.size()
 	print("settle %s: %d cells, %d wet to start, %d springs, ready in %d ms" % [tile, side * side, sim.wet_cells(), placed, Time.get_ticks_msec() - started])
 	started = Time.get_ticks_msec()
