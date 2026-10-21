@@ -1,0 +1,12 @@
+{
+	"note": "Money (Dave 2026-10-21). Coins never lie in the pack as stacks: they live in the purse (characters.json `coins`, the whole purse as a number of COPPER) and the purse is shown as copper, bronze, silver and gold, richest first. Ladder: 1 bronze = 10 copper, 1 silver = 10 bronze, 1 gold = 10 silver. The `value` of every item in items.json is in COPPER, so a stone axe (20) is two bronze and an iron pickaxe (120) is a silver and two bronze. Giving an item named coin_* (dialogue give_item, rewards, admin give) pays into the purse and shows in the 'you got' feed as that coin. Price anchors and wages are in items/COINS.md.",
+	"ladder": [
+		{"id": "coin_gold", "name": "gold", "copper": 1000},
+		{"id": "coin_silver", "name": "silver", "copper": 100},
+		{"id": "coin_bronze", "name": "bronze", "copper": 10},
+		{"id": "coin_copper", "name": "copper", "copper": 1}
+	],
+	"weight_per_coin_kg": 0.0,
+	"max_copper": 100000000,
+	"sell_share": 0.5
+}

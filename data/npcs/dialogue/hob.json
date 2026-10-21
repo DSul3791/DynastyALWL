@@ -1,6 +1,6 @@
 {
 	"npc": "hob",
-	"note": "Hob the shopkeeper. Trees are data: nodes {text, choices[{text, goto, if}], effects, end}. text may be a string, an array (one is picked, none repeated within the last five) or a bark token $greeting / $farewell / $idle. A choice with goto 'end' or no goto ends the talk. Conditions: flag, flag_not, hour_between [from, to], has_item [id, n], can_train [skill, max_level, item, n] (item and n optional). Effects: set_flag, clear_flag, give_item [id, n], take_item [id, n], train_skill [skill, max_level, item, n]. roots: the first whose condition holds starts the talk. Lines keep to short sentences (12 words) for the voice.",
+	"note": "Hob the shopkeeper. Trees are data: nodes {text, choices[{text, goto, if}], effects, end}. text may be a string, an array (one is picked, none repeated within the last five) or a bark token $greeting / $farewell / $idle. A choice with goto 'end' or no goto ends the talk. Conditions: min_rep [points], rank [Stranger, Known, Friend, Trusted: this rank or better] (data/npcs/reputation.json), flag, flag_not, hour_between [from, to], has_item [id, n], can_train [skill, max_level, item, n] (item and n optional). Effects: add_rep [points], set_flag, clear_flag, give_item [id, n], take_item [id, n], train_skill [skill, max_level, item, n]. roots: the first whose condition holds starts the talk. Lines keep to short sentences (12 words) for the voice.",
 	"barks": {
 		"greeting": [
 			"Good day to you.",
@@ -51,6 +51,15 @@
 			"The shop opens at first light.",
 			"Stone and sticks fetch fair coin.",
 			"Mind the road to the lake at night."
+		],
+		"greeting_friend": [
+			"Ah, my friend! Come in.",
+			"Good to see you again, friend.",
+			"Welcome, welcome. The kettle is on."
+		],
+		"greeting_trusted": [
+			"There you are! My most trusted friend.",
+			"Come, sit. You are always welcome here."
 		]
 	},
 	"roots": [
@@ -142,6 +151,44 @@
 					}
 				},
 				{
+					"text": "Any more work?",
+					"goto": "quest2_offer",
+					"if": {
+						"min_rep": 1,
+						"flag_not": [
+							"quest_logs",
+							"quest_logs_done"
+						]
+					}
+				},
+				{
+					"text": "I have your logs.",
+					"goto": "quest2_done",
+					"if": {
+						"flag": "quest_logs",
+						"has_item": [
+							"log",
+							4
+						]
+					}
+				},
+				{
+					"text": "About the logs...",
+					"goto": "quest2_reminder",
+					"if": {
+						"flag": "quest_logs",
+						"flag_not": "quest_logs_done"
+					}
+				},
+				{
+					"text": "How are things between us?",
+					"goto": "friend_gift",
+					"if": {
+						"rank": "Friend",
+						"flag_not": "gift_friend"
+					}
+				},
+				{
 					"text": "Goodbye.",
 					"goto": "bye"
 				}
@@ -207,7 +254,7 @@
 			]
 		},
 		"quest_done": {
-			"text": "Splendid! Take this for your trouble.",
+			"text": "Splendid! Take this for your trouble: two roast meals and five copper.",
 			"effects": [
 				{
 					"take_item": [
@@ -226,6 +273,18 @@
 				},
 				{
 					"clear_flag": "quest_firewood"
+				},
+				{
+					"give_item": [
+						"coin_copper",
+						5
+					]
+				},
+				{
+					"add_rep": 1
+				},
+				{
+					"set_flag": "quest_firewood_paid"
 				}
 			],
 			"choices": [
@@ -254,6 +313,82 @@
 			"choices": [
 				{
 					"text": "Thank you.",
+					"goto": "bye"
+				}
+			]
+		},
+		"quest2_offer": {
+			"text": "Since you ask: bring me four logs. I will pay three bronze.",
+			"effects": [
+				{
+					"set_flag": "quest_logs"
+				}
+			],
+			"choices": [
+				{
+					"text": "I will.",
+					"goto": "bye"
+				},
+				{
+					"text": "Not now.",
+					"goto": "bye"
+				}
+			]
+		},
+		"quest2_done": {
+			"text": "Fine logs. Three bronze, as I said. You are a help.",
+			"effects": [
+				{
+					"take_item": [
+						"log",
+						4
+					]
+				},
+				{
+					"give_item": [
+						"coin_bronze",
+						3
+					]
+				},
+				{
+					"add_rep": 1
+				},
+				{
+					"set_flag": "quest_logs_done"
+				}
+			],
+			"choices": [
+				{
+					"text": "Glad to help.",
+					"goto": "bye"
+				}
+			]
+		},
+		"quest2_reminder": {
+			"text": "Four logs, and the pay is three bronze.",
+			"choices": [
+				{
+					"text": "On my way.",
+					"goto": "bye"
+				}
+			]
+		},
+		"friend_gift": {
+			"text": "You have been good to me. Take this knife, it was my father's.",
+			"effects": [
+				{
+					"give_item": [
+						"stone_knife",
+						1
+					]
+				},
+				{
+					"set_flag": "gift_friend"
+				}
+			],
+			"choices": [
+				{
+					"text": "Thank you, Hob.",
 					"goto": "bye"
 				}
 			]

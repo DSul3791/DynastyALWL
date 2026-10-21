@@ -110,6 +110,12 @@ var _panel_bars: Dictionary = {}       # "Health", "Exertion", "Food", "Water" -
 var _vitals_back: Control
 var _vitals_warning: Label
 var _weight_label: Label
+var _purse_label: Label
+var purse_copper: int = 0                      # the purse, in copper (protocol 61)
+var rep_names: PackedStringArray = PackedStringArray()   # NPCs this player has a reputation with, and the points
+var rep_points: PackedInt32Array = PackedInt32Array()
+var _coins_cfg: Dictionary = {}
+var _rep_cfg: Dictionary = {}
 var _carry_bar: ProgressBar              # carried weight against what you can carry: green, yellow from 70 percent, red from 80
 var plant_hint: String = ""            # set by the harvest prompt (harvest.gd)
 var _crafting: int = 0                # recipe at the head of the server's queue (0 none); the work sounds follow it
@@ -151,6 +157,12 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.worn_received.connect(_on_worn)
 	net.thought_received.connect(_on_thought)
 	net.skills_received.connect(_on_skills)
+	net.purse_received.connect(func(copper): purse_copper = copper; _refresh_purse())
+	net.reputation_received.connect(func(_ids, names, points): rep_names = names; rep_points = points)
+	var coins_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/coins.json"))
+	_coins_cfg = coins_parsed if typeof(coins_parsed) == TYPE_DICTIONARY else {}
+	var rep_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/npcs/reputation.json"))
+	_rep_cfg = rep_parsed if typeof(rep_parsed) == TYPE_DICTIONARY else {}
 	net.died_received.connect(_on_died)
 	net.breath_received.connect(func(deciseconds: int) -> void: breath_ds = deciseconds)
 	net.strain_received.connect(_on_strain)
@@ -868,6 +880,36 @@ var limp_share: float = 1.0   # server: a crippling injury slows the walker (pro
 
 func speed_factor() -> float:
 	return (CarryRules.speed_factor(carried_kg(), carry_body_kg(), _carry_cfg) if not _carry_cfg.is_empty() else 1.0) * limp_share
+
+
+# The purse as words, richest coin first: "2 silver, 3 bronze, 4 copper" (copper = items.json value unit).
+func coin_text(copper: int) -> String:
+	var parts: PackedStringArray = PackedStringArray()
+	var left: int = copper
+
+	for row in _coins_cfg.get("ladder", []):
+		var each: int = maxi(int(row["copper"]), 1)
+
+		if left >= each:
+			parts.append("%d %s" % [left / each, str(row["name"])])
+			left = left % each
+
+	return ", ".join(parts) if not parts.is_empty() else "nothing"
+
+
+func rank_word(points: int) -> String:
+	var word: String = "Stranger"
+
+	for row in _rep_cfg.get("ranks", []):
+		if points >= int(row["at"]):
+			word = str(row["name"])
+
+	return word
+
+
+func _refresh_purse() -> void:
+	if _purse_label != null:
+		_purse_label.text = "Purse: %s" % coin_text(purse_copper)
 
 
 func _refresh_weight() -> void:
@@ -2277,6 +2319,10 @@ func _build_panel() -> void:
 	_weight_label.text = "Body weight %.1f kg" % weight_kg
 	_weight_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	right.add_child(_weight_label)
+	_purse_label = Label.new()
+	_style(_purse_label, BODY_PX - 6)
+	right.add_child(_purse_label)
+	_refresh_purse()
 	_carry_bar = ProgressBar.new()
 	_carry_bar.show_percentage = false
 	_carry_bar.max_value = 100.0
@@ -2604,6 +2650,11 @@ func _tooltip(number: int, count: int, fill_ml: int = 0) -> String:
 	if table.shelf_units(number) > 0:
 		var f: float = table.freshness(number, fill_ml)
 		text += "\n%s (%d%% fresh). Spoils; keep it in a chest, in the cold or dry it." % [_freshness_word(f).capitalize(), int(f * 100.0)]
+
+	if int(entry.get("value", 0)) > 0 and str(entry.get("kind", "")) != "coin":
+		text += "\nWorth about %s" % coin_text(int(entry["value"]) * count) + (" (%s each)" % coin_text(int(entry["value"])) if count > 1 else "")
+
+	text += "\nKeys: Split (S), Drop (D), Use (E)"
 
 	if int(entry.get("durability", 0)) > 0:
 		text += "\nlasts %d uses; repair: " % int(entry["durability"])

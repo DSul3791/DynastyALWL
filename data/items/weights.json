@@ -8,6 +8,10 @@
 	"load_effort_power": 1.5,
 	"by_id": {
 		"aloe_gel": 0.1,
+		"coin_copper": 0.01,
+		"coin_bronze": 0.01,
+		"coin_silver": 0.01,
+		"coin_gold": 0.01,
 		"amadou": 0.03,
 		"angelica_stems": 0.05,
 		"bananas": 0.15,

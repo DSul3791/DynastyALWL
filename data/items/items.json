@@ -1,8 +1,8 @@
 {
 	"table": "items",
 	"format_version": 1,
-	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = placeholder price of one item in coins (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 96,
+	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
+	"next_number": 100,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -927,6 +927,46 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 12,
+			"look_alikes": [],
+			"future": true
+		},
+		"coin_copper": {
+			"number": 96,
+			"name": "Copper coin",
+			"description": "A small copper coin. The smallest money there is.",
+			"kind": "coin",
+			"stack": 999,
+			"value": 1,
+			"look_alikes": [],
+			"future": true
+		},
+		"coin_bronze": {
+			"number": 97,
+			"name": "Bronze coin",
+			"description": "A bronze coin, worth ten copper.",
+			"kind": "coin",
+			"stack": 999,
+			"value": 10,
+			"look_alikes": [],
+			"future": true
+		},
+		"coin_silver": {
+			"number": 98,
+			"name": "Silver coin",
+			"description": "A silver coin, worth ten bronze.",
+			"kind": "coin",
+			"stack": 999,
+			"value": 100,
+			"look_alikes": [],
+			"future": true
+		},
+		"coin_gold": {
+			"number": 99,
+			"name": "Gold coin",
+			"description": "A gold coin, worth ten silver.",
+			"kind": "coin",
+			"stack": 999,
+			"value": 1000,
 			"look_alikes": [],
 			"future": true
 		},

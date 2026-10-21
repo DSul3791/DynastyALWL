@@ -65,6 +65,14 @@ func test(cond: Dictionary, ctx: Dictionary) -> bool:
 
 			if not has.is_valid() or not bool(has.call(str(want[0]), int(want[1]))):
 				return false
+		elif key == "min_rep":
+			if int(ctx.get("rep", 0)) < int(want):
+				return false
+		elif key == "rank":
+			var reached: Callable = ctx.get("rank_reached", Callable())
+
+			if not reached.is_valid() or not bool(reached.call(str(want))):
+				return false
 		elif key == "can_train":
 			var can: Callable = ctx.get("can_train", Callable())
 
@@ -96,7 +104,9 @@ func _pick(options: Array, ctx: Dictionary) -> String:
 
 
 func bark(npc_id: String, kind: String, ctx: Dictionary) -> String:
-	var options: Array = trees.get(npc_id, {}).get("barks", {}).get(kind, [])
+	# A rank-specific bark (greeting_friend) is preferred once the player has earned the rank.
+	var ranked: Array = trees.get(npc_id, {}).get("barks", {}).get("%s_%s" % [kind, str(ctx.get("rank", "")).to_lower()], [])
+	var options: Array = ranked if not ranked.is_empty() else trees.get(npc_id, {}).get("barks", {}).get(kind, [])
 
 	if options.is_empty():
 		options = role_pools.get(str(roles.get(npc_id, "")), {}).get(kind, [])

@@ -38,7 +38,9 @@ func _init() -> void:
 	DirAccess.make_dir_recursive_absolute("user://test_server_items_g")
 	DirAccess.make_dir_recursive_absolute("user://test_server_items_h")
 
-	for suffix in ["", "_b", "_c", "_d", "_e", "_f", "_g", "_h"]:
+	DirAccess.make_dir_recursive_absolute("user://test_server_items_feed")
+
+	for suffix in ["", "_b", "_c", "_d", "_e", "_f", "_g", "_h", "_feed"]:
 		for file in DirAccess.get_files_at(dir + suffix):
 			DirAccess.remove_absolute(dir + suffix + "/" + file)
 
@@ -73,6 +75,31 @@ func _init() -> void:
 	gains.clear()
 	feed.action(9, Net.ACT_MOVE, 0, 20, 0, Vector3.ZERO)
 	check(gains.is_empty(), "moving a stack reports no gain (%s)" % str(gains))
+
+	# Money and reputation: coins pay into the purse as copper, richest coin first in the feed; reputation ranks and discounts.
+	var purse_seen: Array = []
+	feed.send_purse = func(_p, c): purse_seen.append(c)
+	gains.clear()
+	feed.give_to(9, "coin_silver", 2)
+	feed.give_to(9, "coin_copper", 7)
+	check(feed.coins_of(9) == 207 and purse_seen.back() == 207, "coins pay into the purse as copper (%d)" % feed.coins_of(9))
+	check(gains.size() == 2 and gains[0][1] == "coin_silver" and gains[0][2] == 2 and gains[1][1] == "coin_copper", "coins show in the feed as coins (%s)" % str(gains))
+	check(feed.purse_breakdown(1234) == [["coin_gold", 1], ["coin_silver", 2], ["coin_bronze", 3], ["coin_copper", 4]], "the purse shows gold, silver, bronze and copper")
+	check(feed.take_coins(9, 100) and feed.coins_of(9) == 107 and not feed.take_coins(9, 1000) and feed.coins_of(9) == 107, "paying takes coins, too little pays nothing")
+	check(feed.inventory_of(9).count_of(feed.table.number_of("coin_silver")) == 0, "coins never lie in the pack")
+	check(feed.rank_of(0) == "Stranger" and feed.rank_of(2) == "Known" and feed.rank_of(5) == "Friend" and feed.rank_of(12) == "Trusted", "rank words follow the score")
+	feed.add_rep(9, "hob", 1)
+	feed.add_rep(9, "hob", 1)
+	check(feed.rep_points(9, "hob") == 2 and feed.rank_of(2) == "Known" and feed.price_for(9, "hob", 10) == 10, "two points make Known, no discount yet")
+	feed.add_rep(9, "hob", 3)
+	check(feed.rank_reached(feed.rep_points(9, "hob"), "Friend") and feed.price_for(9, "hob", 10) == 9, "a Friend pays 10 percent less")
+	feed.add_rep(9, "hob", 500)
+	check(feed.rep_points(9, "hob") == 30, "reputation stops at the cap")
+	feed.save()
+	feed._finish_writer()
+	var feed2 = make("user://test_server_items_feed")
+	feed2.peer_connected_hello(9, "feedfeed1234")
+	check(feed2.coins_of(9) == 107 and feed2.rep_points(9, "hob") == 30, "the purse and reputation are saved with the character")
 
 	# Tool work is hard (Dave 2026-10-21): a swing of an axe holds effort at running level.
 	feed.give(9, feed.table.number_of("stone_axe") if feed.table.number_of("stone_axe") > 0 else feed.table.number_of("axe"), 1)

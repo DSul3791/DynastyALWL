@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 60
+const PROTOCOL_VERSION := 61
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -52,6 +52,8 @@ signal surface_received(x: float, z: float, y: float)
 signal dump_requested(peer_id: int, x: float, y: float, z: float)
 signal dump_received(text: String)
 signal water_received(chunk: Vector2i, water: PackedByteArray)
+signal purse_received(copper: int)
+signal reputation_received(ids: PackedStringArray, names: PackedStringArray, points: PackedInt32Array)
 signal item_received(item_id: String, count: int, source: String)
 signal notice_received(text: String)
 signal chest_received(id: int, bytes: PackedByteArray)
@@ -436,6 +438,18 @@ func chest_contents(id: int, bytes: PackedByteArray) -> void:
 @rpc("authority", "call_remote", "reliable")
 func item_gain(item_id: String, count: int, source: String) -> void:
 	item_received.emit(item_id, count, source)
+
+
+# The purse as a number of copper (protocol 61); the client shows it as copper, bronze, silver and gold.
+@rpc("authority", "call_remote", "reliable")
+func purse(copper: int) -> void:
+	purse_received.emit(copper)
+
+
+# Each NPC this player has a reputation with: ids, display names and points (protocol 61).
+@rpc("authority", "call_remote", "reliable")
+func reputation(ids: PackedStringArray, names: PackedStringArray, points: PackedInt32Array) -> void:
+	reputation_received.emit(ids, names, points)
 
 
 # A short message for the player ("too many trunks lie here", and so on).

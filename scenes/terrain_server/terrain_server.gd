@@ -186,6 +186,8 @@ func _ready() -> void:
 	items = ItemsScript.new()
 	items.send_full = func(peer, bytes): net.inventory_full.rpc_id(peer, bytes)
 	items.send_slots = func(peer, bytes): net.inventory_slots.rpc_id(peer, bytes)
+	items.send_purse = func(peer, copper): net.purse.rpc_id(peer, copper)
+	items.send_reputation = func(peer, ids, names, points): net.reputation.rpc_id(peer, ids, names, points)
 	items.send_received = func(peer, item_id, count, source): net.item_gain.rpc_id(peer, item_id, count, source)
 	items.send_world_items = func(peer, added, removed): net.world_items.rpc_id(peer, added, removed)
 	items.dig_ground = _dig_ground
@@ -298,6 +300,7 @@ func _ready() -> void:
 	dialogue = DialogueScript.new()
 	dialogue.items = items
 	dialogue.npcs = npcs
+	items.npc_name = func(id): return str(npcs.npcs.get(id, {}).get("name", id))
 	dialogue.hour_now = func(): return game_clock.hour()
 	dialogue.send_say = func(peer, id, npc_name, text, voice, choices, ends): net.npc_say.rpc_id(peer, id, npc_name, text, voice, choices, ends)
 	dialogue.setup(store_dir)

@@ -21,6 +21,7 @@ var _bpm_label: Label
 var _attributes: VBoxContainer
 var _skills_box: VBoxContainer
 var _skill_search: LineEdit
+var _rep_box: VBoxContainer
 var _lessons: Dictionary = {}                # skill id -> lesson lines "Hob: up to level 40, 3 stone"
 var _teachers: Dictionary = {}               # skill id -> NPC names whose dialogue offers a lesson in it (read from data/npcs/dialogue)
 var _remains_box: VBoxContainer
@@ -163,6 +164,10 @@ func _build() -> void:
 	_remains_box = VBoxContainer.new()
 	box.add_child(_remains_box)
 	box.add_child(HSeparator.new())
+	box.add_child(_label("Reputation", TITLE_PX - 6))
+	_rep_box = VBoxContainer.new()
+	box.add_child(_rep_box)
+	box.add_child(HSeparator.new())
 	box.add_child(_label("Skills", TITLE_PX - 6))
 	_skill_search = LineEdit.new()
 	_skill_search.placeholder_text = "Search skills"
@@ -192,6 +197,15 @@ func refresh() -> void:
 
 	for child in _attributes.get_children():
 		child.queue_free()
+
+	for child in _rep_box.get_children():
+		child.queue_free()
+
+	if _items.rep_names.is_empty():
+		_rep_box.add_child(_label("Nobody knows you yet. Do someone a favour.", BODY_PX - 6))
+
+	for i in _items.rep_names.size():
+		_rep_box.add_child(_label("%s: %s" % [_items.rep_names[i], _items.rank_word(int(_items.rep_points[i]))], BODY_PX - 4))
 
 	var rows: Array = [
 		["Luck", "%+d" % int(_items.luck) if int(_items.luck) != 0 else "0", "Fixed when the character was made; nudges every roll of chance."],

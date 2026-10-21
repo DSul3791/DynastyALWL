@@ -88,6 +88,10 @@ var recipes
 # Set by the server scene: how to talk to one peer.
 var send_full: Callable        # (peer, bytes)
 var send_slots: Callable       # (peer, bytes)
+var send_purse: Callable       # (peer, copper total): the purse (protocol 61)
+var send_reputation: Callable  # (peer, ids PackedStringArray, names PackedStringArray, points PackedInt32Array)
+var _coins_cfg: Dictionary = {}
+var _rep_cfg: Dictionary = {}
 var send_received: Callable    # (peer, item id, count, source): one call per item gained (protocol 60)
 const SRC_PICKUP := "pickup"
 const SRC_GATHER := "harvest"
@@ -299,6 +303,10 @@ func setup(item_table, store_dir: String) -> void:
 	_carry_cfg = CarryRules.load_config()
 	var exertion_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/exertion.json"))
 	_exertion_cfg = exertion_parsed if typeof(exertion_parsed) == TYPE_DICTIONARY else {}
+	var coins_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/coins.json"))
+	_coins_cfg = coins_parsed if typeof(coins_parsed) == TYPE_DICTIONARY else {}
+	var rep_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/npcs/reputation.json"))
+	_rep_cfg = rep_parsed if typeof(rep_parsed) == TYPE_DICTIONARY else {}
 	_load_vitals()
 	_load_characters()
 	_load_craft_queues()
@@ -352,6 +360,8 @@ func peer_connected_hello(peer: int, key: String) -> void:
 	_sync_limp(peer, true)
 	_sync_worn(peer, true)
 	_sync_skills(peer, true)
+	sync_purse(peer)
+	sync_reputation(peer)
 	_sync_craft_queue(peer)
 
 
@@ -3270,6 +3280,10 @@ func count_for(peer: int, id: String) -> int:
 
 
 func give_to(peer: int, id: String, count: int) -> void:
+	if id.begins_with("coin_"):
+		add_coins(peer, count * coin_copper(id), SRC_REWARD)
+		return
+
 	var inv = inventory_of(peer)
 
 	if inv == null or table.number_of(id) <= 0:
@@ -3285,6 +3299,146 @@ func give_to(peer: int, id: String, count: int) -> void:
 	_send_changes(peer, inv, before)
 	_gain_source = SRC_PICKUP
 	_dirty = true
+
+
+# --- money and reputation (Dave 2026-10-21; data/items/coins.json, data/npcs/reputation.json, items/COINS.md) ---
+
+func coin_copper(id: String) -> int:
+	for row in _coins_cfg.get("ladder", []):
+		if str(row["id"]) == id:
+			return int(row["copper"])
+
+	return 0
+
+
+# The purse as a number of copper. Coins are not item stacks: the purse is part of the character row.
+func coins_of(peer: int) -> int:
+	return maxi(int(_characters.get(_peer_key.get(peer, ""), {}).get("coins", 0)), 0)
+
+
+# The purse as [[coin item id, count], ...], richest first.
+func purse_breakdown(copper: int) -> Array:
+	var out: Array = []
+	var left: int = copper
+
+	for row in _coins_cfg.get("ladder", []):
+		var each: int = maxi(int(row["copper"]), 1)
+
+		if left >= each:
+			out.append([str(row["id"]), left / each])
+			left = left % each
+
+	return out
+
+
+# Pays copper into the purse and tells the feed what came (as coins, richest first).
+func add_coins(peer: int, copper: int, source: String = "pickup") -> void:
+	var key: String = _peer_key.get(peer, "")
+
+	if copper <= 0 or not _characters.has(key):
+		return
+
+	var cap: int = int(_coins_cfg.get("max_copper", 100000000))
+	var before: int = coins_of(peer)
+	var after: int = mini(before + copper, cap)
+	_characters[key]["coins"] = after
+	_dirty = true
+	sync_purse(peer)
+
+	if send_received.is_valid():
+		for row in purse_breakdown(after - before):
+			send_received.call(peer, row[0], row[1], source)
+
+
+# Takes copper out of the purse, all or nothing.
+func take_coins(peer: int, copper: int) -> bool:
+	var key: String = _peer_key.get(peer, "")
+
+	if copper < 0 or not _characters.has(key) or coins_of(peer) < copper:
+		return false
+
+	_characters[key]["coins"] = coins_of(peer) - copper
+	_dirty = true
+	sync_purse(peer)
+	return true
+
+
+func sync_purse(peer: int) -> void:
+	if send_purse.is_valid() and _characters.has(_peer_key.get(peer, "")):
+		send_purse.call(peer, coins_of(peer))
+
+
+func rep_points(peer: int, npc_id: String) -> int:
+	var rows: Dictionary = _characters.get(_peer_key.get(peer, ""), {}).get("rep", {})
+	return maxi(int(rows.get(npc_id, 0)), 0)
+
+
+# The rank word for a score: the highest rank whose `at` is not above it.
+func rank_of(points: int) -> String:
+	var word: String = "Stranger"
+
+	for row in _rep_cfg.get("ranks", []):
+		if points >= int(row["at"]):
+			word = str(row["name"])
+
+	return word
+
+
+# Whether `points` reaches the named rank (or better).
+func rank_reached(points: int, rank: String) -> bool:
+	for row in _rep_cfg.get("ranks", []):
+		if str(row["name"]) == rank:
+			return points >= int(row["at"])
+
+	return false
+
+
+# What an NPC charges this player: the base price scaled by the rank discount, never below 1 when it was above 0.
+func price_for(peer: int, npc_id: String, base: int) -> int:
+	if base <= 0:
+		return base
+
+	var mult: float = float(_rep_cfg.get("price_mult", {}).get(rank_of(rep_points(peer, npc_id)), 1.0))
+	return maxi(int(round(float(base) * mult)), 1)
+
+
+func add_rep(peer: int, npc_id: String, points: int) -> void:
+	var key: String = _peer_key.get(peer, "")
+
+	if not _characters.has(key) or points == 0 or npc_id == "":
+		return
+
+	if typeof(_characters[key].get("rep", null)) != TYPE_DICTIONARY:
+		_characters[key]["rep"] = {}
+
+	var before: int = rep_points(peer, npc_id)
+	var after: int = clampi(before + points, 0, int(_rep_cfg.get("max_points", 30)))
+	_characters[key]["rep"][npc_id] = after
+	_dirty = true
+	sync_reputation(peer)
+
+	if rank_of(after) != rank_of(before):
+		_say(peer, "You are now a %s of that person: %s." % [rank_of(after).to_lower(), npc_name.call(npc_id) if npc_name.is_valid() else npc_id])
+
+
+var npc_name: Callable   # (npc id) -> display name, wired by the server
+
+
+func sync_reputation(peer: int) -> void:
+	if not send_reputation.is_valid() or not _characters.has(_peer_key.get(peer, "")):
+		return
+
+	var ids: PackedStringArray = PackedStringArray()
+	var names: PackedStringArray = PackedStringArray()
+	var points: PackedInt32Array = PackedInt32Array()
+	var rows: Dictionary = _characters[_peer_key[peer]].get("rep", {})
+
+	for id in rows:
+		ids.append(str(id))
+		names.append(npc_name.call(str(id)) if npc_name.is_valid() else str(id))
+		points.append(int(rows[id]))
+
+	send_reputation.call(peer, ids, names, points)
 
 
 func take_from(peer: int, id: String, count: int) -> bool:
@@ -5312,6 +5466,8 @@ func _load_characters() -> void:
 			"dexterity": clampi(int(parsed["players"][key].get("dexterity", 0)), -10, 10),
 			"perception": clampi(int(parsed["players"][key].get("perception", 0)), -10, 10),
 			"charisma": clampi(int(parsed["players"][key].get("charisma", 0)), -10, 10),
+			"coins": maxi(int(parsed["players"][key].get("coins", 0)), 0),
+			"rep": parsed["players"][key].get("rep", {}) if typeof(parsed["players"][key].get("rep", {})) == TYPE_DICTIONARY else {},
 		}
 
 		if int(parsed["players"][key].get("skills_v", 1)) < 2:

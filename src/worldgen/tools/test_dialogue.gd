@@ -12,8 +12,8 @@ const SkillWebScript := preload("res://src/shared/skill_web.gd")
 const StaticProvider := preload("res://src/stream/static_provider.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
-const COND_KEYS := ["flag", "flag_not", "hour_between", "has_item", "can_train"]
-const EFFECT_KEYS := ["set_flag", "clear_flag", "give_item", "take_item", "train_skill"]
+const COND_KEYS := ["flag", "flag_not", "hour_between", "has_item", "can_train", "min_rep", "rank"]
+const EFFECT_KEYS := ["set_flag", "clear_flag", "give_item", "take_item", "train_skill", "add_rep"]
 const BARKS := ["greeting", "farewell", "idle", "complaint", "cooldown"]
 
 var failures: int = 0
@@ -196,6 +196,8 @@ func _init() -> void:
 	talk.talk(1, "hob", idx)
 	check(items.count_for(1, "firewood") == 0 and items.count_for(1, "roast_forage") == 2, "he takes three firewood and gives two roasted forage")
 	check(talk.flags_of("talk-key-000001", "hob").has("quest_firewood_done"), "the quest is marked done")
+	check(items.coins_of(1) == 5 and items.rep_points(1, "hob") == 1, "the reward also pays five copper and earns one reputation point")
+	check(items.price_for(1, "hob", 3) == 3, "a stranger or acquaintance pays the full price")
 	talk._last_msec.clear()
 	talk.talk(1, "hob", 0)
 	talk._last_msec.clear()
