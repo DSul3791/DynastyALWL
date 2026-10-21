@@ -358,6 +358,7 @@ static func _shore_levels(generator, data, origin: Vector2, count: int, spacing:
 const FINE_SUB := 4
 const FINE_SLOPE_M := 0.15     # wet corners differing more than this make a running-water cell
 const FILM_M := 0.04           # a running sheet sits this far over the ground
+const FINE_WALL_M := 3.0       # a cell with this much water at one corner and bank at another is a pond wall: flat surface
 const FINE_DEPTH_M := 1.5      # cells where all the water is deeper than this stay flat (no stripes there)
 
 static var _ground_cache: Dictionary = {}
