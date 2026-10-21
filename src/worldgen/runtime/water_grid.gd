@@ -40,6 +40,7 @@ static func chunk_levels(generator, origin: Vector2, chunk_m: float) -> Dictiona
 	# Settled simulated water is already continuous: no hole closing. Running
 	# water gets a finer surface laid on the real ground (_fine_cells).
 	if not data.sim_levels.is_empty():
+		_ease_into_sea(generator, data, origin, count, spacing, levels)
 		var edge: PackedFloat32Array = _shore_levels(generator, data, origin, count, spacing, levels)
 		var vel: PackedFloat32Array = _velocities(generator, data, origin, count, spacing, levels)
 		var fall_grid: PackedFloat32Array = _fall_grid(generator, data, origin, count, spacing, levels)
@@ -226,6 +227,63 @@ static func _level_at(generator, data, x: float, z: float, spacing: float) -> fl
 	return level if source.water_class[k] > 1 and not is_nan(level) else NAN
 
 
+# Owner report (2026-10-20): a river reached the ocean as water standing 1 to 3 m above it,
+# with a step at the last land square (the sim holds sea squares at 0 m, and a river bed
+# meeting 0 m still carries its flow depth). Within SEA_EASE_CELLS of the sea the drawn
+# river surface comes down to the sea in a gentle slope (at most SEA_EASE_SLOPE up from 0 m
+# per meter from the sea), never under the ground, so the river runs into the ocean as one
+# water. Drawing only: the simulation is unchanged.
+const SEA_EASE_CELLS := 6
+const SEA_EASE_SLOPE := 0.05
+const SEA_EASE_FILM_M := 0.1
+
+
+static func _ease_into_sea(generator, data, origin: Vector2, count: int, spacing: float, levels: PackedFloat32Array) -> void:
+	var reach: int = SEA_EASE_CELLS
+	var side: int = count + 2 * reach
+	var sea: PackedByteArray = PackedByteArray()
+	sea.resize(side * side)
+	var any_sea: bool = false
+
+	for j in range(side):
+		for i in range(side):
+			if _is_sea(generator, data, origin.x + float(i - reach) * spacing, origin.y + float(j - reach) * spacing, spacing):
+				sea[j * side + i] = 1
+				any_sea = true
+
+	if not any_sea:
+		return
+
+	for j in range(count):
+		for i in range(count):
+			var level: float = levels[j * count + i]
+
+			if is_nan(level) or level <= SEA_EASE_FILM_M:
+				continue
+
+			var nearest: float = INF
+
+			for dj in range(-reach, reach + 1):
+				for di in range(-reach, reach + 1):
+					if sea[(j + reach + dj) * side + i + reach + di] == 1:
+						nearest = minf(nearest, sqrt(float(di * di + dj * dj)))
+
+			if nearest == INF:
+				continue
+
+			var x: float = origin.x + float(i) * spacing
+			var z: float = origin.y + float(j) * spacing
+			var source = data if (x < data.x0 + float(data.samples - 1) * spacing and z < data.z0 + float(data.samples - 1) * spacing) else generator.get_tile(generator.tile_of(x, z))
+			var ground: float = 0.0 if source.placeholder else source.heights[source.nearest(x, z)]
+			levels[j * count + i] = minf(level, maxf(nearest * spacing * SEA_EASE_SLOPE, ground + SEA_EASE_FILM_M))
+
+
+# Sea under the 8 m point (x, z): ground at or below 0 m, as the water sim counts it.
+static func _is_sea(generator, data, x: float, z: float, spacing: float) -> bool:
+	var source = data if (x < data.x0 + float(data.samples - 1) * spacing and z < data.z0 + float(data.samples - 1) * spacing) else generator.get_tile(generator.tile_of(x, z))
+	return source.placeholder or source.heights[source.nearest(x, z)] <= 0.0
+
+
 # Owner report (2026-10-19): the water's edges stuck out in big square corners along the
 # 8 m cells. A dry point beside water now carries the water level on into the bank (the
 # mean of its wet neighbours), so the drawn surface runs flat into the rising ground and
@@ -234,6 +292,11 @@ static func _level_at(generator, data, x: float, z: float, spacing: float) -> fl
 # the sheet dips into the ground rather than floating. NAN where a point is wet or has
 # no wet neighbour.
 const SHORE_SINK_M := 0.3
+# Owner report (2026-10-20): the rivers stopped short of the ocean instead of running into it.
+# A sea point beside river water took the sinking rule above and pulled the river's sheet
+# down to the sea bed, so it ended in an edge. It now runs the sheet down to just under the
+# sea's surface (drawn as one plane at 0 m), so the two surfaces meet as one water.
+const SEA_TUCK_M := 0.05
 
 
 static func _shore_levels(generator, data, origin: Vector2, count: int, spacing: float, levels: PackedFloat32Array) -> PackedFloat32Array:
@@ -269,8 +332,16 @@ static func _shore_levels(generator, data, origin: Vector2, count: int, spacing:
 				continue
 
 			var level: float = total / float(wet)
-			var ground: float = _fine_ground(generator, origin.x + float(i) * spacing, origin.y + float(j) * spacing)
-			edge[j * count + i] = level if ground > level else ground - SHORE_SINK_M
+			var x: float = origin.x + float(i) * spacing
+			var z: float = origin.y + float(j) * spacing
+			var ground: float = _fine_ground(generator, x, z)
+
+			if ground > level:
+				edge[j * count + i] = level
+			elif _is_sea(generator, data, x, z, spacing):
+				edge[j * count + i] = minf(level, 0.0) - SEA_TUCK_M
+			else:
+				edge[j * count + i] = ground - SHORE_SINK_M
 
 	return edge
 

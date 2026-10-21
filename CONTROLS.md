@@ -15,7 +15,7 @@ The single complete list of every input (keyboard, mouse, held versus tap, conte
 | Ctrl | Go down (flying) |
 | G or F | Switch between walking and flying |
 | / (key with ? on it) | Inspection mode on or off (toggle). A brain icon shows near the top. Shows the name and key note of what the crosshair points at, in the middle of the screen: Oak, Beach sand, Coal, Hemlock (Toxic). What you see depends on what your character knows: it may say Unknown or Might be (a wrong guess). Flying (admin) always shows the truth |
-| + / - (also numpad) | Raise or lower how much every spring pours, by about 10 % per press (tuning tool, x0.5 to x20; above x1 rivers and ponds turn muddy brown). Shows "Water flow rate: x1.21 = 12.1 m3/s per spring (191,800 gal/min)" for 3 seconds. The water then runs by real physics for two simulated hours ("running...") and redraws as it moves |
+| + / - (also numpad) | Raise or lower how much every spring pours, by about 10 % per press (tuning tool, x0.5 to x40; every pond starts at x10 = 100 m3/s; above x10 rivers and ponds turn muddy brown). Shows "Water flow rate: x10.00 = 100.0 m3/s per spring (1,585,000 gal/min)" for 3 seconds. The water then runs by real physics for two simulated hours ("running...") and redraws as it moves |
 | C | Crouch (toggle): lower eye, slower; kept while moving |
 | X | Sit (toggle): lower still, no movement; any movement key stands you up. Resting drops exertion (the server side is Items') |
 | Z | Lie down (toggle): eye almost at the ground, no movement; any movement key stands you up |

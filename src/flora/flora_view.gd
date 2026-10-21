@@ -268,8 +268,12 @@ var _impostor_tile: Vector2i = Vector2i.ZERO   # tile size of the finished (or r
 var _impostor_node: Node
 
 
-# Owner (2026-10-19): rivers and ponds stay clear up to flow x1 and turn muddy brown
-# above it, like runoff after rain (fully brown from about x8). The sea stays clear.
+# Owner (2026-10-19): rivers and ponds stay clear up to the start flow and turn muddy brown
+# above it, like runoff after rain (fully brown from about 8 times it). The sea stays clear.
+# The start flow was x1 until 2026-10-20 and is x10 now.
+const START_FLOW_RATE := 10.0      # water_live.gd DEFAULT_RATE (the server's start rate)
+
+
 func water_material() -> Material:
 	return _water_material
 
@@ -332,9 +336,11 @@ func set_storm_murk(amount: float) -> void:
 
 
 func set_flow_rate(rate: float) -> void:
+	rate /= START_FLOW_RATE
+
 	if _water_material != null:
 		_water_material.set_shader_parameter("mud", clampf(log(maxf(rate, 1.0)) / log(8.0), 0.0, 1.0))
-		# Owner (2026-10-19): more flow looks more violent (raging from about x10).
+		# Owner (2026-10-19): more flow looks more violent (raging from about 10 times the start flow).
 		_water_material.set_shader_parameter("rough", clampf(log(maxf(rate, 1.0)) / log(10.0), 0.0, 1.0))
 
 
@@ -824,11 +830,19 @@ func _draw_water(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void:
 	_draw_falls(chunk, entry, water)
 
 
+# Owner (2026-10-20, Dave, builds 281 at x1 and x10): the fall ribbons drawn over the running
+# water looked fake, patchy and misaligned with the real water. At the x10 start flow the sim's
+# own water runs down the drops, so water over a drop is shown only by the water surface. The
+# fall finder still feeds the list below (sound, mist, spray, wet rock); only the ribbon
+# meshes, their splash and foam strips are not drawn. Set true to bring them back.
+const DRAW_FALL_RIBBONS := false
+
+
 # The chunk's fall columns (water_falls.gd): kept while the same mesh is still the right one.
 func _draw_falls(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void:
 	var mesh: ArrayMesh = water.get("falls_mesh")
 
-	if mesh == null and not water.get("falls", []).is_empty():
+	if mesh == null and DRAW_FALL_RIBBONS and not water.get("falls", []).is_empty():
 		mesh = WaterFallsScript.build_mesh(water["falls"], fall_cap)
 
 	var old: MeshInstance3D = entry.get("falls")

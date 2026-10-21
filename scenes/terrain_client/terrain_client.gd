@@ -885,7 +885,7 @@ func _decode_in(job: Dictionary, material: Material) -> void:
 	if int(grid.get("wet", 0)) > 0:
 		grid["mesh"] = WaterGridScript.build_mesh(grid, material)
 
-		if not grid.get("falls", []).is_empty():
+		if flora.DRAW_FALL_RIBBONS and not grid.get("falls", []).is_empty():
 			grid["falls_mesh"] = WaterFallsScript.build_mesh(grid["falls"], flora.fall_cap)
 
 	_in_mutex.lock()

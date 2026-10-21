@@ -13,7 +13,10 @@ const WaterStore := preload("res://src/water/water_store.gd")
 
 const RATE_STEP := 1.1            # each + or - key press changes the rate by about 10 %
 const RATE_MIN := 0.5            # owner (2026-10-19): 0.5x looks most like a brook and still keeps flowing
-const RATE_MAX := 20.0           # owner (2026-10-19): higher than 5x, for floods
+const RATE_MAX := 40.0           # owner (2026-10-19): higher than 5x, for floods; 4x the start rate since 2026-10-20
+# Owner (2026-10-20): at x1 the rivers broke into patches on the way down and wandered; at x10
+# they reach the ocean whole. Every pond's spring starts at x10.
+const DEFAULT_RATE := 10.0
 const PUBLISH_TICKS := 15
 # The water moves in real seconds now (water_sim.gd), so these are simulated time.
 const RUN_SECONDS := 7200.0       # simulated time to run after each change (rivers settle to the new flow), then the water rests
@@ -29,7 +32,7 @@ const CHANNEL_POOL_M := 0.5      # drawn water this deep beside a film cell is a
 const CHANNEL_BANK_M := 1.0      # a film cell no more than this above drawn water beside it is the bank, not the fall
 
 var data
-var rate: float = 1.0
+var rate: float = DEFAULT_RATE
 var runoff: float = 1.0          # rain makes the springs run stronger (the server sets it from the weather, WEATHER_RUNOFF)
 var busy: bool = false
 
