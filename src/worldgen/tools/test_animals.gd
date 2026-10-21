@@ -88,6 +88,31 @@ func _init() -> void:
 	run(a, 10.0)
 	check(a.animals[one]["state"] != AnimalsScript.FLEE, "once safe it settles again")
 
+	# Alert: a player 20 m away (inside alert_m 24, outside spook_m 14) makes a rabbit freeze and watch, not run.
+	var watcher_zoo = make([Vector3(0.0, 10.0, 0.0)])
+	watcher_zoo.cfg["species"]["rabbit"]["target_per_player"] = 0
+	var wr: int = watcher_zoo.spawn("rabbit", 20.0, 0.0)
+	run(watcher_zoo, 0.5)
+	check(watcher_zoo.animals[wr]["state"] == AnimalsScript.ALERT, "a rabbit 20 m from a player freezes and watches")
+	run(watcher_zoo, 3.0)
+	check(watcher_zoo.animals[wr]["state"] != AnimalsScript.FLEE, "and does not run while the player stays out of its bolt range")
+
+	# Burst then trot: a long chase slows the runner.
+	var chase_zoo = make([Vector3(0.0, 10.0, 0.0)])
+	chase_zoo.cfg["species"]["rabbit"]["target_per_player"] = 0
+	var cr: int = chase_zoo.spawn("rabbit", 5.0, 0.0)
+	chase_zoo.animals[cr]["state"] = AnimalsScript.FLEE
+	chase_zoo.animals[cr]["burst"] = 0.0
+	chase_zoo.animals[cr]["target"] = Vector3(300.0, 10.0, 0.0)
+	var p0: Vector3 = chase_zoo.animals[cr]["pos"]
+	run(chase_zoo, 2.0)
+	var sprint_m: float = chase_zoo.animals[cr]["pos"].distance_to(p0)
+	run(chase_zoo, 4.0)
+	var p1: Vector3 = chase_zoo.animals[cr]["pos"]
+	run(chase_zoo, 2.0)
+	var trot_m: float = chase_zoo.animals[cr]["pos"].distance_to(p1)
+	check(trot_m < sprint_m * 0.8, "after its burst a runner trots slower (%.1f m in 2 s sprinting, %.1f trotting)" % [sprint_m, trot_m])
+
 	# Deer: a herd of 3 to 6; the one that spots a player bolts first, the rest follow within about a second.
 	var deer_zoo = make([Vector3(0.0, 10.0, 0.0)])
 	deer_zoo.cfg["species"]["rabbit"]["target_per_player"] = 0

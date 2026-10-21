@@ -285,8 +285,10 @@ func refresh() -> void:
 		level_bar.custom_minimum_size = Vector2(_px(260), _px(26))
 		level_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		level_bar.modulate = Color(1.0, 1.0, 1.0, 0.5) if unmet != "" else Color.WHITE
-		line.add_child(level_bar)
-		line.add_child(_label("%d / %d" % [effective, cap], BODY_PX))
+		if unmet == "":
+			line.add_child(level_bar)   # a locked skill shows no bar (Tyler 16)
+
+		line.add_child(_label("%d / %d" % [effective, cap] if unmet == "" else "locked", BODY_PX))
 
 		if unmet != "":
 			var locked: Label = _label("needs " + unmet, BODY_PX - 4)

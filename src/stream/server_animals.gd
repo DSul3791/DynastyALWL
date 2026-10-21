@@ -10,6 +10,7 @@ const Steering := preload("res://src/shared/steering.gd")
 const GRAZE := 0
 const HOP := 1
 const FLEE := 2
+const ALERT := 3
 const STAGGER := 4              # a quarter of the animals are looked at each tick
 
 var cfg: Dictionary = {}
@@ -55,7 +56,7 @@ func spawn(sp: String, x: float, z: float) -> int:
 	_next_id += 1
 	var pos: Vector3 = Vector3(x, y, z)
 	animals[id] = {"id": id, "sp": sp, "num": int(def.get("number", 0)), "pos": pos, "heading": rng.randf() * TAU, "state": GRAZE,   # luck-exempt: which way a new animal faces
-		"target": pos, "timer": _graze_time(def), "acc": 0.0, "home": pos, "hp": float(def.get("health", 5.0)), "herd": 0, "alarm": -1.0}
+		"target": pos, "timer": _graze_time(def), "acc": 0.0, "home": pos, "hp": float(def.get("health", 5.0)), "herd": 0, "alarm": -1.0, "burst": 0.0, "alert": 0.0}
 	return id
 
 
@@ -189,8 +190,37 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3) -> void:
 				if mate_id != a["id"] and animals.has(mate_id) and animals[mate_id]["state"] != FLEE and animals[mate_id]["alarm"] < 0.0:
 					animals[mate_id]["alarm"] = rng.randf_range(float(span[0]), float(span[1]))   # luck-exempt: how fast a herd mate reacts
 
+	var alert_m: float = float(def.get("alert_m", 0.0))
+
+	if a["state"] == ALERT:
+		a["alert"] -= dt
+
+		if near_d <= float(def.get("spook_m", 14.0)):
+			_bolt(a, near_p, def)
+		elif a["alert"] <= 0.0:
+			a["state"] = GRAZE
+			a["timer"] = _graze_time(def)
+
+		return
+
+	if a["state"] != FLEE and alert_m > 0.0 and near_d <= alert_m and a["alert"] <= 0.0 and near_d > float(def.get("spook_m", 14.0)):
+		var span2: Array = def.get("alert_s", [1.0, 2.0])
+		a["state"] = ALERT
+		a["alert"] = rng.randf_range(float(span2[0]), float(span2[1]))   # luck-exempt: how long an animal watches
+		a["heading"] = atan2(near_p.z - a["pos"].z, near_p.x - a["pos"].x)
+		return
+
+	if a["state"] == GRAZE and near_d > alert_m:
+		a["alert"] = 0.0   # it forgets once the player is well away
+
 	if a["state"] == GRAZE:
 		a["timer"] -= dt
+
+		if a["herd"] != 0 and float(def.get("herd_pull_m", 0.0)) > 0.0:
+			var centre: Vector3 = _herd_centre(a["herd"])
+
+			if centre != Vector3.INF and a["home"].distance_to(centre) > float(def.get("herd_pull_m", 12.0)):
+				a["home"] = a["home"].lerp(centre, 0.5)
 
 		if a["timer"] <= 0.0:
 			var wander: float = float(def.get("wander_m", 6.0))
@@ -200,7 +230,12 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3) -> void:
 
 		return
 
-	var speed: float = float(def.get("flee_mps", 7.5)) if a["state"] == FLEE else float(def.get("walk_mps", 1.5))
+	var speed: float = float(def.get("walk_mps", 1.5))
+
+	if a["state"] == FLEE:
+		# Sprint for burst_s seconds, then trot: an animal cannot outrun a chase for ever.
+		a["burst"] += dt
+		speed = float(def.get("flee_mps", 7.5)) * (1.0 if a["burst"] <= float(def.get("burst_s", 3.0)) else float(def.get("trot_share", 0.5)))
 	var r: Dictionary = Steering.step(a["pos"], a["target"], speed, dt, ground_height, blocked, 0.4, a["heading"])
 
 	if r["moved"]:
@@ -215,7 +250,7 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3) -> void:
 			if not r["moved"]:
 				away = away.rotated(rng.randf_range(-1.2, 1.2))   # luck-exempt: which way a cornered animal breaks
 
-			a["target"] = a["pos"] + Vector3(away.x, 0.0, away.y) * float(def.get("flee_run_m", 25.0))
+			a["target"] = a["pos"] + _zig(away, def) * float(def.get("zig_leg_m", float(def.get("flee_run_m", 25.0))))
 			return
 
 		if a["state"] == FLEE:
@@ -315,4 +350,25 @@ func _bolt(a: Dictionary, from: Vector3, def: Dictionary) -> void:
 		away = Vector2.from_angle(a["heading"])
 
 	a["state"] = FLEE
-	a["target"] = a["pos"] + Vector3(away.x, 0.0, away.y) * float(def.get("flee_run_m", 25.0))
+	a["burst"] = 0.0
+	a["alert"] = 0.0
+	a["target"] = a["pos"] + _zig(away, def) * float(def.get("zig_leg_m", float(def.get("flee_run_m", 25.0))))
+
+
+# One leg of a zigzag away from the threat: the away direction turned by up to zig_deg either way.
+func _zig(away: Vector2, def: Dictionary) -> Vector3:
+	var turn: float = deg_to_rad(float(def.get("zig_deg", 0.0))) * rng.randf_range(-1.0, 1.0)   # luck-exempt: which way a fleeing animal jinks
+	var dir: Vector2 = away.rotated(turn)
+	return Vector3(dir.x, 0.0, dir.y)
+
+
+func _herd_centre(hid: int) -> Vector3:
+	var sum: Vector3 = Vector3.ZERO
+	var n: int = 0
+
+	for mate_id in _herds.get(hid, []):
+		if animals.has(mate_id):
+			sum += animals[mate_id]["pos"]
+			n += 1
+
+	return sum / float(n) if n > 0 else Vector3.INF

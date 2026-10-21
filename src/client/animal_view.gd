@@ -56,7 +56,7 @@ func _process(delta: float) -> void:
 		var rig: Node3D = node.get_node("Rig")
 		var rate: float = 9.0 if state == FLEE else 5.0
 		var big: bool = bool(b.get("deer", false))
-		var lift: float = ((0.06 if big else 0.22) if state == FLEE else (0.02 if big else 0.1)) * absf(sin(_t * (rate * (0.8 if big else 1.0)) + float(b["phase"]))) if state != GRAZE else 0.0
+		var lift: float = ((0.06 if big else 0.22) if state == FLEE else (0.02 if big else 0.1)) * absf(sin(_t * (rate * (0.8 if big else 1.0)) + float(b["phase"]))) if state != GRAZE and state != 3 else 0.0
 		rig.position.y = lerp(rig.position.y, lift, clampf(delta * 20.0, 0.0, 1.0))
 
 
