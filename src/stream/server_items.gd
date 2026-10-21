@@ -1309,7 +1309,7 @@ func _valid_key(key: String) -> bool:
 		return false
 
 	for ch in key:
-		if not (ch >= "0" and ch <= "9") and not (ch >= "a" and ch <= "z") and not (ch >= "A" and ch <= "Z") and ch != "-" and ch != "_":
+		if not (ch >= "0" and ch <= "9") and not (ch >= "a" and ch <= "z") and not (ch >= "A" and ch <= "Z") and ch != "-" and ch != "_" and ch != "'":
 			return false
 
 	return true

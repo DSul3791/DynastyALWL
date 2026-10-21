@@ -515,6 +515,10 @@ func admin_give_test_set() -> void:
 	for id in ["stone", "stick", "plant_fibre", "log"]:
 		net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of(id), 0, 10, Vector3.ZERO)
 
+	# The bigger stations also need clay and hides (stone forge, blacksmithy).
+	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("clay"), 0, 10, Vector3.ZERO)
+	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("hide"), 0, 4, Vector3.ZERO)
+
 
 func _process(_delta: float) -> void:
 	var t: int = FrameProbe.start()
