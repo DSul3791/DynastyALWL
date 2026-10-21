@@ -349,6 +349,8 @@ func dump_cell(x: float, y: float, z: float) -> String:
 	else:
 		lines.append("server: generated-ground cache: no copy of this block")
 
+	var near: Array = ops.edits_near(Vector3(x, y, z), 24.0)
+	lines.append("server: %d logged dig/fill operations within 24 m of this voxel%s" % [near.size(), "" if near.is_empty() else ": " + ", ".join(near.slice(0, 6).map(func(op): return "%s r%.1f at %s" % ["fill" if int(op[0]) == 1 else "dig", float(op[2]), str(Vector3(op[1]).round())]))])
 	var edited: VoxelBuffer = Layout.make_buffer(BLOCK_SIZE)
 
 	if _edits.load_voxel_block(edited, block, 0) == VoxelStream.RESULT_BLOCK_FOUND:

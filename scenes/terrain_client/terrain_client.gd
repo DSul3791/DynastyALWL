@@ -2113,7 +2113,7 @@ var _ground_line_msec: int = 0
 # the player is asked of the server (surface height from the generator) and the client's own ground there is found by
 # a ray from above; ground more than GROUND_CHECK_TOLERANCE_M above the server's is logged with the coordinates
 # (user://ground_mismatch.log), and the server's dump of that cell is logged next to it. --no-ground-check turns it off.
-const GROUND_CHECK_EVERY_MSEC := 4000
+const GROUND_CHECK_EVERY_MSEC := 1500
 const GROUND_CHECK_TOLERANCE_M := 3.0
 const GROUND_CHECK_RINGS := [6.0, 15.0, 30.0, 50.0, 80.0]
 var ground_check: bool = true
@@ -2226,6 +2226,10 @@ func _hole_probe_step(now: int) -> void:
 	_hole_samples += 1
 	_hole_missing_total += missing
 	_hole_max_count = maxi(_hole_max_count, missing)
+	var engine: Dictionary = VoxelEngine.get_stats()
+	var tasks: Dictionary = engine.get("tasks", {})
+	var pool: Dictionary = engine.get("thread_pools", {}).get("general", {})
+	print("Terrain client: engine tasks: streaming %d, meshing %d, generation %d, main thread %d; pool %d tasks on %d threads (%d active); blocks loaded %d, waiting %d, lod_count %d view %d" % [int(tasks.get("streaming", 0)), int(tasks.get("meshing", 0)), int(tasks.get("generation", 0)), int(tasks.get("main_thread", 0)), int(pool.get("tasks", 0)), int(pool.get("thread_count", 0)), int(pool.get("active_threads", 0)), stream.loads, stream.pending(), terrain.lod_count, terrain.view_distance])
 	print("Terrain client: holes %d of 49 at %s; worst so far: %d cells missing at once, one cell missing %.1f s (cell %s); average %.1f" % [missing, str(body.global_position.round()), _hole_max_count, float(_hole_worst_msec) / 1000.0, str(_hole_worst_cell * 50), float(_hole_missing_total) / float(_hole_samples)])
 
 
@@ -2244,6 +2248,20 @@ func _ground_check_step(now: int) -> void:
 	var angle: float = randf() * TAU
 	var x: float = snappedf(body.global_position.x + cos(angle) * ring, 0.5)
 	var z: float = snappedf(body.global_position.z + sin(angle) * ring, 0.5)
+
+	# Every other sample is looked for over water (the slabs in the lake): up to 12 tries within 100 m for a wet cell.
+	if _check_ring % 2 == 0 and flora != null:
+		for attempt in range(12):
+			var a: float = randf() * TAU
+			var r: float = 8.0 + randf() * 92.0
+			var wx: float = snappedf(body.global_position.x + cos(a) * r, 0.5)
+			var wz: float = snappedf(body.global_position.z + sin(a) * r, 0.5)
+
+			if not is_nan(flora.water_surface_at(wx, wz)):
+				x = wx
+				z = wz
+				break
+
 	_check_pending = Vector2(x, z)
 	net.request_surface.rpc_id(1, x, z)
 
