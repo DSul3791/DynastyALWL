@@ -200,7 +200,8 @@ func _process(_delta: float) -> void:
 
 func _show(done: bool) -> void:
 	var win: Vector2i = get_window().size
-	var text: String = "GPU probe (Ctrl+Shift+G)%s\n" % ("" if done else ", keep still: step %d of %d" % [_results.size() + 1, _steps.size()])
+	var text: String = "BUILD %d (%s)\n" % [_client.BUILD, _client._commit]
+	text += "GPU probe (Ctrl+Shift+G)%s\n" % ("" if done else ", keep still: step %d of %d" % [_results.size() + 1, _steps.size()])
 	text += "%s, %s, window %dx%d, 3D scale %.2f, quality %s\n" % [RenderingServer.get_video_adapter_name(), RenderingServer.get_current_rendering_driver_name(), win.x, win.y, _client._render_scale, _client.QUALITY_NAMES[_client.quality]]
 
 	# CPU side, so a frame that does not move with any switch below is recognised as CPU bound (owner table,
