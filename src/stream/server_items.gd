@@ -3203,6 +3203,7 @@ func kill(peer: int, cause: String) -> bool:
 	var ground: float = float(ground_height.call(pos.x, pos.z)) if ground_height.is_valid() else NAN
 	var cave: bool = not is_nan(ground) and pos.y < ground - 1.5   # underground: keep the spot, the surface above is not theirs
 	var spot: Vector3 = pos if (is_nan(ground) or cave) else Vector3(pos.x, ground, pos.z)
+	_trim_owner_remains(key)
 	var uid: int = _next_uid
 	_next_uid += 1
 	var chest = InventoryScript.new(table)
@@ -3240,6 +3241,33 @@ func kill(peer: int, cause: String) -> bool:
 		send_died.call(peer, cause, respawn_point)
 
 	return true
+
+
+# One character cannot litter the world: with per_owner_cap sets already out, the emptiest-then-oldest goes first to make room for the new one.
+func _trim_owner_remains(key: String) -> void:
+	var cap: int = int(_death_cfg.get("per_owner_cap", 5))
+	var mine: Array = []
+
+	for id in remains_ids():
+		if str(_items[id]["struct"].get("owner", "")) == key:
+			mine.append(id)
+
+	while mine.size() >= cap and cap > 0:
+		var drop: int = -1
+
+		for id in mine:
+			var chest = _chests.get(int(_items[id]["struct"].get("uid", 0)))
+			var empty: bool = chest == null or chest.is_empty()
+			var older: bool = drop < 0 or float(_items[id]["struct"].get("born", 0.0)) < float(_items[drop]["struct"].get("born", 0.0))
+			var drop_empty: bool = drop >= 0 and (_chests.get(int(_items[drop]["struct"].get("uid", 0))) == null or _chests[int(_items[drop]["struct"].get("uid", 0))].is_empty())
+
+			if drop < 0 or (empty and not drop_empty) or (empty == drop_empty and older):
+				drop = id
+
+		_chests.erase(int(_items[drop]["struct"].get("uid", 0)))
+		_items.erase(drop)
+		mine.erase(drop)
+		_dirty = true
 
 
 # The owner's death markers (protocol 39): every set of their remains that still holds something, with the seconds until it is cleaned up.

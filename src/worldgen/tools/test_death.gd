@@ -41,6 +41,7 @@ func make(dir: String):
 func _init() -> void:
 	var dir: String = "user://test_death"
 	DirAccess.make_dir_recursive_absolute(dir)
+	DirAccess.make_dir_recursive_absolute(dir + "_cap")
 
 	for file in DirAccess.get_files_at(dir):
 		DirAccess.remove_absolute(dir + "/" + file)
@@ -122,6 +123,30 @@ func _init() -> void:
 	second._remains_check_in = 0.0
 	second._remains_tick(1.0)
 	check(second.remains_ids().is_empty(), "remains are cleaned up after seven days")
+
+	# One character can leave only per_owner_cap sets of remains; the oldest goes first.
+	var third = make(dir + "_cap")
+	third.peer_connected_hello(1, "owner-key-0001")
+	third.report_position(1, Vector3(100.0, 12.0, 100.0))
+	third._death_cfg["per_owner_cap"] = 3
+
+	for n in 5:
+		clock += 10.0
+		third.report_position(1, Vector3(100.0, 12.0, 100.0))
+		third.inventory_of(1).add(third.table.number_of("stone"), 1)
+		third.kill(1, "drowning")
+
+	var left: Array = third.remains_ids()
+	check(left.size() == 3, "remains per owner are capped (%d)" % left.size())
+
+	var newest: float = 0.0
+	var oldest: float = 1.0e30
+
+	for rid in left:
+		newest = maxf(newest, float(third._items[rid]["struct"]["born"]))
+		oldest = minf(oldest, float(third._items[rid]["struct"]["born"]))
+
+	check(newest - oldest <= 20.0, "the oldest sets went first")
 
 	print("death tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

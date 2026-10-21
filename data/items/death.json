@@ -5,5 +5,6 @@
 	"respawn_delay_s": 4,
 	"sink_m": 0.35,
 	"per_chunk_cap": 50,
+	"per_owner_cap": 5,
 	"recheck_s": 30
 }
