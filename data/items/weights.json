@@ -141,7 +141,15 @@
 		"withies": 0.1,
 		"wooden_spade": 0.8,
 		"wooden_spear": 0.4,
-		"yarrow": 0.02
+		"yarrow": 0.02,
+		"grass_skirt": 0.2,
+		"grass_cloak": 0.5,
+		"fibre_sandals": 0.2,
+		"hide_cloak": 1.8,
+		"hide_boots": 0.9,
+		"hide_hood": 0.3,
+		"hide_mittens": 0.2,
+		"hide_leggings": 1.0
 	},
 	"by_suffix": {
 		"berries": 0.05,

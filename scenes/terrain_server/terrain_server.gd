@@ -185,6 +185,7 @@ func _ready() -> void:
 	items.send_energy = func(peer, percent): net.energy.rpc_id(peer, percent)
 	items.send_warmth = func(peer, percent): net.warmth.rpc_id(peer, percent)
 	items.send_sick = func(peer, hours): net.sick.rpc_id(peer, hours)
+	items.send_worn = func(peer, numbers): net.worn.rpc_id(peer, numbers)
 	items.send_remains = func(peer, rows): net.remains_marks.rpc_id(peer, rows)
 	items.send_thought = func(peer, line_id, text, kind): net.thought.rpc_id(peer, line_id, text, kind)
 	items.send_skills = func(peer, attributes, rows): net.skills.rpc_id(peer, attributes, rows)

@@ -1,6 +1,6 @@
 {
 	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist).",
-	"next_number": 36,
+	"next_number": 44,
 	"recipes": {
 		"cordage": {
 			"number": 1,
@@ -634,8 +634,241 @@
 			"craft_s": 4.0,
 			"known": true
 		},
-		"stomach_tea": {"number": 33, "name": "Stomach tea", "needs": [["mint", 2], ["chamomile_flowers", 2]], "keeps": [["wooden_bowl", 1]], "gives": ["stomach_tea", 1], "craft_s": 5.0, "known": true, "identify": ["mint", "chamomile_flowers"]},
-		"chamomile_tea": {"number": 34, "name": "Chamomile tea", "needs": [["chamomile_flowers", 3]], "keeps": [["wooden_bowl", 1]], "gives": ["chamomile_tea", 1], "craft_s": 5.0, "known": true, "identify": ["chamomile_flowers"]},
-		"willow_bark_tea": {"number": 35, "name": "Willow bark tea", "needs": [["willow_bark", 2]], "keeps": [["wooden_bowl", 1]], "gives": ["willow_bark_tea", 1], "craft_s": 5.0, "known": true, "identify": ["willow_bark"]}
+		"stomach_tea": {
+			"number": 33,
+			"name": "Stomach tea",
+			"needs": [
+				[
+					"mint",
+					2
+				],
+				[
+					"chamomile_flowers",
+					2
+				]
+			],
+			"keeps": [
+				[
+					"wooden_bowl",
+					1
+				]
+			],
+			"gives": [
+				"stomach_tea",
+				1
+			],
+			"craft_s": 5.0,
+			"known": true,
+			"identify": [
+				"mint",
+				"chamomile_flowers"
+			]
+		},
+		"chamomile_tea": {
+			"number": 34,
+			"name": "Chamomile tea",
+			"needs": [
+				[
+					"chamomile_flowers",
+					3
+				]
+			],
+			"keeps": [
+				[
+					"wooden_bowl",
+					1
+				]
+			],
+			"gives": [
+				"chamomile_tea",
+				1
+			],
+			"craft_s": 5.0,
+			"known": true,
+			"identify": [
+				"chamomile_flowers"
+			]
+		},
+		"willow_bark_tea": {
+			"number": 35,
+			"name": "Willow bark tea",
+			"needs": [
+				[
+					"willow_bark",
+					2
+				]
+			],
+			"keeps": [
+				[
+					"wooden_bowl",
+					1
+				]
+			],
+			"gives": [
+				"willow_bark_tea",
+				1
+			],
+			"craft_s": 5.0,
+			"known": true,
+			"identify": [
+				"willow_bark"
+			]
+		},
+		"grass_skirt": {
+			"number": 36,
+			"name": "Grass skirt",
+			"needs": [
+				[
+					"plant_fibre",
+					8
+				]
+			],
+			"gives": [
+				"grass_skirt",
+				1
+			],
+			"craft_s": 6.0,
+			"known": false
+		},
+		"grass_cloak": {
+			"number": 37,
+			"name": "Grass cloak",
+			"needs": [
+				[
+					"plant_fibre",
+					16
+				],
+				[
+					"cordage",
+					1
+				]
+			],
+			"gives": [
+				"grass_cloak",
+				1
+			],
+			"craft_s": 10.0,
+			"known": false
+		},
+		"fibre_sandals": {
+			"number": 38,
+			"name": "Fibre sandals",
+			"needs": [
+				[
+					"plant_fibre",
+					6
+				],
+				[
+					"cordage",
+					1
+				]
+			],
+			"gives": [
+				"fibre_sandals",
+				1
+			],
+			"craft_s": 8.0,
+			"known": false
+		},
+		"hide_cloak": {
+			"number": 39,
+			"name": "Hide cloak",
+			"needs": [
+				[
+					"hide",
+					3
+				],
+				[
+					"cordage",
+					2
+				]
+			],
+			"gives": [
+				"hide_cloak",
+				1
+			],
+			"craft_s": 14.0,
+			"known": false
+		},
+		"hide_boots": {
+			"number": 40,
+			"name": "Hide boots",
+			"needs": [
+				[
+					"hide",
+					2
+				],
+				[
+					"cordage",
+					2
+				]
+			],
+			"gives": [
+				"hide_boots",
+				1
+			],
+			"craft_s": 14.0,
+			"known": false
+		},
+		"hide_hood": {
+			"number": 41,
+			"name": "Hide hood",
+			"needs": [
+				[
+					"hide",
+					1
+				],
+				[
+					"cordage",
+					1
+				]
+			],
+			"gives": [
+				"hide_hood",
+				1
+			],
+			"craft_s": 8.0,
+			"known": false
+		},
+		"hide_mittens": {
+			"number": 42,
+			"name": "Hide mittens",
+			"needs": [
+				[
+					"hide",
+					1
+				],
+				[
+					"cordage",
+					1
+				]
+			],
+			"gives": [
+				"hide_mittens",
+				1
+			],
+			"craft_s": 8.0,
+			"known": false
+		},
+		"hide_leggings": {
+			"number": 43,
+			"name": "Hide leggings",
+			"needs": [
+				[
+					"hide",
+					3
+				],
+				[
+					"cordage",
+					2
+				]
+			],
+			"gives": [
+				"hide_leggings",
+				1
+			],
+			"craft_s": 14.0,
+			"known": false
+		}
 	}
 }

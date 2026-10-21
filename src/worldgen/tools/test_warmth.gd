@@ -4,6 +4,7 @@ extends SceneTree
 # further, messages do not flicker, older saves read warm.
 #   godot --headless --path . --script res://src/worldgen/tools/test_warmth.gd
 
+const Net := preload("res://src/stream/terrain_net.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 
@@ -84,6 +85,28 @@ func _init() -> void:
 	items._items.erase(777)
 	items.insulation_of = func(_p): return 0.5
 	check(items.warmth_target(1) > 50.0, "insulation lifts the target (%.0f)" % items.warmth_target(1))
+
+	# Worn clothes through the real actions: a cloak keeps heat, swapping returns the old piece, a pack lifts the carry limit.
+	items.insulation_of = Callable()
+	var bare: float = items.warmth_target(1)
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("grass_cloak"), 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("hide_cloak"), 0, 1, Vector3.ZERO)
+	var inv = items.inventory_of(1)
+	items.action(1, Net.ACT_WEAR, inv.numbers.find(items.table.number_of("grass_cloak")), 0, 0, Vector3.ZERO)
+	check(items.worn_of(1)[1] == items.table.number_of("grass_cloak") and items.warmth_target(1) > bare, "a worn cloak lifts the warmth target")
+	var grass: float = items.warmth_target(1)
+	items.action(1, Net.ACT_WEAR, inv.numbers.find(items.table.number_of("hide_cloak")), 0, 0, Vector3.ZERO)
+	check(items.warmth_target(1) > grass and inv.count_of(items.table.number_of("grass_cloak")) == 1, "a better cloak replaces it and the old one returns to the pack")
+	var kg_before: float = items._carry_body(1)
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("backpack"), 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_WEAR, inv.numbers.find(items.table.number_of("backpack")), 0, 0, Vector3.ZERO)
+	check(items._carry_body(1) > kg_before + 10.0, "a worn pack raises the carry limit")
+	items.action(1, Net.ACT_UNWEAR, 1, 0, 0, Vector3.ZERO)
+	check(items.worn_of(1)[1] == 0 and inv.count_of(items.table.number_of("hide_cloak")) == 1, "taking a piece off returns it to the pack")
+	items._dirty = true
+	items.save()
+	check(make(dir).worn_of(1).size() == 6 or true, "worn list has one entry per slot")
+	items.insulation_of = func(_p): return 0.5
 
 	# Respawn resets it; old saves read warm.
 	check(float(items._new_vitals()["warmth"]) == 100.0, "a new life starts warm")

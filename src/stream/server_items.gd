@@ -158,6 +158,9 @@ var _sick_cfg: Dictionary = {}      # data/items/sickness.json
 var send_thought: Callable          # (peer, line id, text, kind): the inner voice
 var send_remains: Callable          # (peer, rows [[position Vector3, seconds left], ...]): the owner's remains that still hold gear
 var _remains_sent: Dictionary = {}
+var send_worn: Callable             # (peer, PackedInt32Array of item numbers, one per body slot in clothing.json order)
+var _worn_sent: Dictionary = {}
+var _clothing: Dictionary = {}
 var send_sick: Callable             # (peer, game hours of sickness left, rounded up; 0 = well)
 var _sick_sent: Dictionary = {}
 var _last_dose: Dictionary = {}     # peer -> msec of the last medicine taken
@@ -310,6 +313,7 @@ func peer_connected_hello(peer: int, key: String) -> void:
 	_sync_warmth(peer, true)
 	_sync_remains(peer, true)
 	_sync_sick(peer, true)
+	_sync_worn(peer, true)
 	_sync_skills(peer, true)
 	_sync_craft_queue(peer)
 
@@ -318,6 +322,7 @@ func peer_left(peer: int) -> void:
 	_swimming.erase(peer)
 	_last_dose.erase(peer)
 	_remains_sent.erase(peer)
+	_worn_sent.erase(peer)
 	_skills_sent.erase(peer)
 	_skills_send_in.erase(peer)
 	_last_practice.erase(peer)
@@ -442,6 +447,10 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_eat(peer, inv, a)
 	elif kind == Net.ACT_DRINK:
 		_drink_water(peer, a, inv)
+	elif kind == Net.ACT_WEAR:
+		_wear(peer, inv, a)
+	elif kind == Net.ACT_UNWEAR:
+		_unwear(peer, inv, a)
 	elif kind == Net.ACT_REPAIR:
 		_repair(peer, inv, a)
 	elif kind == Net.ACT_FUEL:
@@ -2532,7 +2541,7 @@ func _fit(peer: int, inv, number: int, count: int) -> int:
 	if _carry_cfg.is_empty():
 		return count
 
-	var body: float = float(vitals_of(peer).get("weight", 75.0))
+	var body: float = _carry_body(peer)
 	return CarryRules.fit_count(table.id_of(number), count, CarryRules.carried_kg(inv, table, _carry_cfg), body, _carry_cfg)
 
 
@@ -2585,7 +2594,7 @@ func _load_ratio(peer: int) -> float:
 	if _carry_cfg.is_empty():
 		return 0.0
 
-	var body: float = float(vitals_of(peer).get("weight", 75.0))
+	var body: float = _carry_body(peer)
 	return CarryRules.load_fraction(carried_kg_of(peer), body, _carry_cfg)
 
 
@@ -2965,6 +2974,120 @@ func _symptom_count(peer: int) -> int:
 	return int(_symptoms_seen[peer])
 
 
+# --- Clothing and equipment (data/items/clothing.json; items of kind clothing or gear with a slot) ---
+
+func _clothing_slots() -> Array:
+	if _clothing.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/clothing.json"))
+		_clothing = parsed if typeof(parsed) == TYPE_DICTIONARY else {"slots": []}
+
+	return _clothing.get("slots", [])
+
+
+# The item numbers a character wears, one per body slot; old saves have none.
+func worn_of(peer: int) -> Array:
+	var row: Dictionary = _characters.get(_peer_key.get(peer, ""), {})
+	var list: Array = row.get("worn", [])
+	var out: Array = []
+
+	for i in _clothing_slots().size():
+		out.append(int(list[i]) if i < list.size() else 0)
+
+	return out
+
+
+func _clean_worn(raw: Variant) -> Array:
+	var out: Array = []
+	var slots: Array = _clothing_slots()
+
+	for i in slots.size():
+		var number: int = int(raw[i]) if typeof(raw) == TYPE_ARRAY and i < raw.size() else 0
+		out.append(number if number > 0 and table.id_of(number) != "" and str(table.entry(table.id_of(number)).get("slot", "")) == str(slots[i]) else 0)
+
+	return out
+
+
+# Share of body heat the worn pieces keep, 0..max_insulation (warmth.json). The `insulation_of` hook, when set, takes over.
+func insulation_worn(peer: int) -> float:
+	var total: float = 0.0
+
+	for number in worn_of(peer):
+		if number > 0:
+			total += float(table.entry(table.id_of(number)).get("warmth", 0.0))
+
+	return minf(total, float(_warmth_cfg.get("max_insulation", 0.85)))
+
+
+# Extra kilograms a worn pack lets the body carry.
+func carry_bonus_kg(peer: int) -> float:
+	var total: float = 0.0
+
+	for number in worn_of(peer):
+		if number > 0:
+			total += float(table.entry(table.id_of(number)).get("carry_bonus_kg", 0.0))
+
+	return total
+
+
+# The body weight the carry limit is worked out from: the real weight plus what the worn pack adds (cap = ratio x body).
+func _carry_body(peer: int) -> float:
+	var ratio: float = maxf(float(_carry_cfg.get("carry_kg_per_body_kg", 0.7)), 0.01)
+	return float(vitals_of(peer).get("weight", 75.0)) + carry_bonus_kg(peer) / ratio
+
+
+func _wear(peer: int, inv, slot: int) -> void:
+	if slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or not _characters.has(_peer_key.get(peer, "")):
+		return
+
+	var number: int = inv.numbers[slot]
+	var place: int = _clothing_slots().find(str(table.entry(table.id_of(number)).get("slot", "")))
+
+	if place < 0:
+		_say(peer, "You cannot wear that.")
+		return
+
+	var worn: Array = worn_of(peer)
+	var old: int = int(worn[place])
+	inv.take_from_slot(slot, 1)
+
+	if old > 0 and inv.add(old, 1) > 0:
+		inv.add(number, 1)
+		_reject(peer, 0)
+		return
+
+	worn[place] = number
+	_characters[_peer_key[peer]]["worn"] = worn
+	_dirty = true
+	_sync_worn(peer, true)
+
+
+func _unwear(peer: int, inv, place: int) -> void:
+	var worn: Array = worn_of(peer)
+
+	if place < 0 or place >= worn.size() or int(worn[place]) == 0 or not _characters.has(_peer_key.get(peer, "")):
+		return
+
+	if inv.add(int(worn[place]), 1) > 0:
+		_reject(peer, 0)
+		return
+
+	worn[place] = 0
+	_characters[_peer_key[peer]]["worn"] = worn
+	_dirty = true
+	_sync_worn(peer, true)
+
+
+func _sync_worn(peer: int, force: bool) -> void:
+	if not send_worn.is_valid() or not _peer_key.has(peer):
+		return
+
+	var numbers: PackedInt32Array = PackedInt32Array(worn_of(peer))
+
+	if force or _worn_sent.get(peer, PackedInt32Array()) != numbers:
+		_worn_sent[peer] = numbers
+		send_worn.call(peer, numbers)
+
+
 func _sync_sick(peer: int, force: bool) -> void:
 	if not send_sick.is_valid():
 		return
@@ -3005,7 +3128,7 @@ func warmth_target(peer: int) -> float:
 	if bool(_swimming.get(peer, false)):
 		stress *= float(cfg.get("water_mult", 2.5))
 
-	var insulation: float = clampf(float(insulation_of.call(peer)) if insulation_of.is_valid() else 0.0, 0.0, float(cfg.get("max_insulation", 0.85)))
+	var insulation: float = clampf(float(insulation_of.call(peer)) if insulation_of.is_valid() else insulation_worn(peer), 0.0, float(cfg.get("max_insulation", 0.85)))
 	return clampf(100.0 - stress * float(cfg.get("gain", 3.0)) * (1.0 - insulation), 0.0, 100.0)
 
 
@@ -4009,6 +4132,7 @@ func _load_characters() -> void:
 			"train": clampf(float(parsed["players"][key].get("train", 0.0)), -10.0, 10.0),
 			"strength": clampi(int(parsed["players"][key].get("strength", 0)), -10, 10),
 			"memory": clampi(int(parsed["players"][key].get("memory", 0)), -10, 10),
+			"worn": _clean_worn(parsed["players"][key].get("worn", [])),
 			"skills": parsed["players"][key].get("skills", {}) if typeof(parsed["players"][key].get("skills", {})) == TYPE_DICTIONARY else {},
 		}
 

@@ -85,6 +85,8 @@ var skill_rows: Array = []                  # [[skill index, working level, rust
 var thought_event: Callable = Callable()     # (line id, kind) when the inner voice speaks: Sounds plays inner_voice/<line id>.ogg if it exists
 var _thought_label: Label
 var _thought_until_msec: int = 0
+var worn: PackedInt32Array = PackedInt32Array()   # item number per body slot (clothing.json order), 0 = nothing (protocol 40)
+var clothing_cfg: Dictionary = {}
 var remains_marks: Array = []                # [[position, seconds left, msec received], ...] the owner's remains with gear (protocol 39)
 var sick_hours: int = 0                      # game hours of sickness left, 0 = well (protocol 38)
 var _sick_label: Label
@@ -141,6 +143,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.warmth_received.connect(_on_warmth)
 	net.sick_received.connect(_on_sick)
 	net.remains_received.connect(_on_remains_marks)
+	net.worn_received.connect(_on_worn)
 	net.thought_received.connect(_on_thought)
 	net.skills_received.connect(_on_skills)
 	net.died_received.connect(_on_died)
@@ -263,7 +266,7 @@ func exertion_threshold() -> float:
 
 
 func carry_limit_kg() -> float:
-	return CarryRules.cap_kg(weight_kg, _carry_cfg) if not _carry_cfg.is_empty() else 0.0
+	return CarryRules.cap_kg(carry_body_kg(), _carry_cfg) if not _carry_cfg.is_empty() else 0.0
 
 
 func character_open() -> bool:
@@ -823,22 +826,22 @@ func carried_kg() -> float:
 
 # Walking speed multiplier for the load: 1 when comfortable, easing down past it.
 func speed_factor() -> float:
-	return CarryRules.speed_factor(carried_kg(), weight_kg, _carry_cfg) if not _carry_cfg.is_empty() else 1.0
+	return CarryRules.speed_factor(carried_kg(), carry_body_kg(), _carry_cfg) if not _carry_cfg.is_empty() else 1.0
 
 
 func _refresh_weight() -> void:
 	_weight_label.text = _load_text() + "\nBody weight %.1f kg   (food %d%%, health %d)" % [weight_kg, hunger, health]
 
 	if _carry_bar != null and not _carry_cfg.is_empty():
-		var fraction: float = CarryRules.bar_fraction(carried_kg(), weight_kg, _carry_cfg)
+		var fraction: float = CarryRules.bar_fraction(carried_kg(), carry_body_kg(), _carry_cfg)
 		_carry_bar.value = fraction * 100.0
 		_carry_bar.get_theme_stylebox("fill").bg_color = CarryRules.bar_color(fraction)
 
 
 func _load_text() -> String:
 	var load_kg: float = carried_kg()
-	var free: float = CarryRules.comfort_kg(weight_kg, _carry_cfg)
-	var limit: float = CarryRules.cap_kg(weight_kg, _carry_cfg)
+	var free: float = CarryRules.comfort_kg(carry_body_kg(), _carry_cfg)
+	var limit: float = CarryRules.cap_kg(carry_body_kg(), _carry_cfg)
 	var state: String = "" if load_kg <= free else ("   (heavy: you move slower)" if load_kg < limit else "   (at the limit)")
 	return "Carrying %.1f kg of %.0f kg you can carry%s" % [load_kg, limit, state]
 
@@ -1041,6 +1044,11 @@ func hotbar_tip(slot: int) -> String:
 
 # Eat the food or apply the medicine in a pack slot. Herbs that look like something else must be identified first.
 func eat_slot(slot: int) -> void:
+	# Use on clothing or a pack puts it on.
+	if slot >= 0 and slot < inventory.SLOTS and inventory.numbers[slot] != 0 and clothing_slots().has(str(table.entry(table.id_of(inventory.numbers[slot])).get("slot", "-"))):
+		net.inventory_action.rpc_id(1, Net.ACT_WEAR, slot, 0, 0, Vector3.ZERO)
+		return
+
 	# Use on a tool, weapon or kit holds it in the hand (and again puts it away); on food or medicine it eats or applies it;
 	# on a water container that holds water it takes a mouthful.
 	if container_cap(slot) > 0 and inventory.wear[slot] > 0:
@@ -1725,6 +1733,33 @@ func _on_thought(line_id: String, text: String, kind: String) -> void:
 
 	if thought_event.is_valid():
 		thought_event.call(line_id, kind)
+
+
+func _on_worn(numbers: PackedInt32Array) -> void:
+	worn = numbers
+	_refresh_weight()
+
+	if _character != null:
+		_character.refresh()
+
+
+func clothing_slots() -> Array:
+	if clothing_cfg.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/clothing.json"))
+		clothing_cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {"slots": []}
+
+	return clothing_cfg.get("slots", [])
+
+
+# The body weight the carry limit is worked out from: the real weight plus what a worn pack adds (the server does the same).
+func carry_body_kg() -> float:
+	var bonus: float = 0.0
+
+	for number in worn:
+		if number > 0:
+			bonus += float(table.entry(table.id_of(number)).get("carry_bonus_kg", 0.0))
+
+	return weight_kg + bonus / maxf(float(_carry_cfg.get("carry_kg_per_body_kg", 0.7)), 0.01)
 
 
 func _on_remains_marks(rows: Array) -> void:

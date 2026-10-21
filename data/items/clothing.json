@@ -1,0 +1,5 @@
+{
+	"note": "Clothing and equipment (Items refill 11, job 92 design). What a character wears is one item number per body slot in this order, saved as `worn` in characters.json (old files read nothing worn) and sent as worn(numbers) (protocol 40). Use on a clothing or gear item in the pack puts it on (ACT_WEAR; the piece it replaces goes back to the pack); the Tab screen takes pieces off (ACT_UNWEAR). Items of kind clothing or gear carry `slot` (one of these), clothing `warmth` (the 0..1 share of body heat kept; the sum is capped by warmth.json max_insulation) and gear `carry_bonus_kg` (a worn backpack raises what the body can carry). Worn pieces stay on through death. Not built yet: wet_resist, heat (overheating in the desert zones), clothing wear, drawing it on the character model (Art).",
+	"slots": ["head", "body", "legs", "feet", "hands", "back"],
+	"labels": {"head": "Head", "body": "Body", "legs": "Legs", "feet": "Feet", "hands": "Hands", "back": "Back"}
+}

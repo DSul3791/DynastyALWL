@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 39
+const PROTOCOL_VERSION := 40
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -54,6 +54,7 @@ signal breath_received(deciseconds: int)
 signal energy_received(percent: int)
 signal sick_received(hours: int)
 signal remains_received(rows: Array)
+signal worn_received(numbers: PackedInt32Array)
 signal thought_received(line_id: String, text: String, kind: String)
 signal skills_received(attributes: PackedInt32Array, rows: Array)
 signal warmth_received(percent: int)
@@ -94,6 +95,8 @@ const ACT_USE_STRUCT := 17  # a = structure world id: use it (a chopping block s
 const ACT_CHEST_OPEN := 14 # a = chest world id: the server answers with chest_contents
 const ACT_CHEST_PUT := 15  # a = pack slot, b = chest world id, count = how many to put in
 const ACT_CHEST_TAKE := 16 # a = chest slot, b = chest world id, count = how many to take out
+const ACT_WEAR := 28      # a = pack slot: put on the clothing or gear in it (the piece it replaces goes to the pack)
+const ACT_UNWEAR := 29    # a = body slot index (data/items/clothing.json slots): take that piece off into the pack
 const ACT_REPAIR := 13    # a = slot of a worn or broken tool: spend its repair materials, win back half its durability
 const ACT_FUEL := 11      # a = fire world id: burn one stick (or a log) in the fire
 const ACT_COOK := 12      # a = fire world id: roast one raw forage item at the fire
@@ -272,6 +275,13 @@ func died(cause: String, spawn: Vector3) -> void:
 @rpc("authority", "call_remote", "reliable")
 func skills(attributes: PackedInt32Array, rows: Array) -> void:
 	skills_received.emit(attributes, rows)
+
+
+# What the character wears (protocol 40, data/items/clothing.json): one item number per body slot in the file's order
+# (head, body, legs, feet, hands, back), 0 = nothing. Sent at hello and when it changes.
+@rpc("authority", "call_remote", "reliable")
+func worn(numbers: PackedInt32Array) -> void:
+	worn_received.emit(numbers)
 
 
 # The owner's death markers (protocol 39): [[position Vector3, seconds until the remains are cleaned up], ...] for their remains

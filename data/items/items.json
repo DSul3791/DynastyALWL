@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = placeholder price of one item in coins (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 60,
+	"next_number": 68,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -612,13 +612,14 @@
 		"backpack": {
 			"number": 50,
 			"name": "Backpack",
-			"description": "A hide pack with straps. Adds carrying slots.",
+			"description": "A hide pack with straps. Worn on the back, it lets you carry more.",
 			"kind": "gear",
 			"stack": 1,
-			"slots_bonus": 10,
 			"value": 40,
 			"future": true,
-			"look_alikes": []
+			"look_alikes": [],
+			"slot": "back",
+			"carry_bonus_kg": 12
 		},
 		"energy_bar": {
 			"number": 51,
@@ -700,6 +701,99 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 6,
+			"look_alikes": []
+		},
+		"grass_skirt": {
+			"number": 60,
+			"name": "Grass skirt",
+			"description": "Woven grass hung from the waist. Barely warm, and it rots quickly.",
+			"kind": "clothing",
+			"slot": "legs",
+			"warmth": 0.05,
+			"stack": 1,
+			"value": 5,
+			"look_alikes": []
+		},
+		"grass_cloak": {
+			"number": 61,
+			"name": "Grass cloak",
+			"description": "A cloak of woven grass over the shoulders. Keeps a little wind off.",
+			"kind": "clothing",
+			"slot": "body",
+			"warmth": 0.12,
+			"stack": 1,
+			"value": 5,
+			"look_alikes": []
+		},
+		"fibre_sandals": {
+			"number": 62,
+			"name": "Fibre sandals",
+			"description": "Soles of twisted fibre tied to the foot.",
+			"kind": "clothing",
+			"slot": "feet",
+			"warmth": 0.04,
+			"stack": 1,
+			"value": 5,
+			"look_alikes": []
+		},
+		"hide_cloak": {
+			"number": 63,
+			"name": "Hide cloak",
+			"description": "A wrapped animal hide. Warm, and it sheds rain.",
+			"kind": "clothing",
+			"slot": "body",
+			"warmth": 0.3,
+			"stack": 1,
+			"future": true,
+			"value": 25,
+			"look_alikes": []
+		},
+		"hide_boots": {
+			"number": 64,
+			"name": "Hide boots",
+			"description": "Hide wrapped and stitched around the foot.",
+			"kind": "clothing",
+			"slot": "feet",
+			"warmth": 0.15,
+			"stack": 1,
+			"future": true,
+			"value": 20,
+			"look_alikes": []
+		},
+		"hide_hood": {
+			"number": 65,
+			"name": "Hide hood",
+			"description": "A close hood of hide with the hair turned in.",
+			"kind": "clothing",
+			"slot": "head",
+			"warmth": 0.1,
+			"stack": 1,
+			"future": true,
+			"value": 15,
+			"look_alikes": []
+		},
+		"hide_mittens": {
+			"number": 66,
+			"name": "Hide mittens",
+			"description": "Stitched hide mittens.",
+			"kind": "clothing",
+			"slot": "hands",
+			"warmth": 0.08,
+			"stack": 1,
+			"future": true,
+			"value": 12,
+			"look_alikes": []
+		},
+		"hide_leggings": {
+			"number": 67,
+			"name": "Hide leggings",
+			"description": "Hide tied around each leg.",
+			"kind": "clothing",
+			"slot": "legs",
+			"warmth": 0.12,
+			"stack": 1,
+			"future": true,
+			"value": 18,
 			"look_alikes": []
 		}
 	}

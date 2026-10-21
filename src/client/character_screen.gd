@@ -8,6 +8,7 @@ const HEART_REST_BPM := 60.0
 const BODY_PX := 30
 const TITLE_PX := 40
 const CarryRules := preload("res://src/shared/carry_rules.gd")
+const Net := preload("res://src/stream/terrain_net.gd")
 
 var open: bool = false
 
@@ -235,6 +236,7 @@ func refresh() -> void:
 	for child in _remains_box.get_children():
 		child.queue_free()
 
+	_add_worn_lines()
 	_add_remains_lines()
 
 	for child in _skills_box.get_children():
@@ -275,6 +277,34 @@ func refresh() -> void:
 			line.add_child(rusty)
 
 		_skills_box.add_child(line)
+
+
+# What you wear, one line per body slot with a button to take the piece off (Use on the item in the pack puts it on).
+func _add_worn_lines() -> void:
+	var slots: Array = _items.clothing_slots()
+
+	if slots.is_empty():
+		return
+
+	_remains_box.add_child(HSeparator.new())
+	_remains_box.add_child(_label("Wearing", TITLE_PX - 6))
+	var labels: Dictionary = _items.clothing_cfg.get("labels", {})
+
+	for i in slots.size():
+		var number: int = int(_items.worn[i]) if i < _items.worn.size() else 0
+		var line: HBoxContainer = HBoxContainer.new()
+		var name: Label = _label("%s: %s" % [labels.get(slots[i], str(slots[i])), _items.table.name_of(number) if number > 0 else "nothing"], BODY_PX)
+		name.custom_minimum_size = Vector2(_px(360), 0)
+		line.add_child(name)
+
+		if number > 0:
+			var off: Button = Button.new()
+			off.text = "Take off"
+			off.add_theme_font_size_override("font_size", BODY_PX)
+			off.pressed.connect(func() -> void: _items.net.inventory_action.rpc_id(1, Net.ACT_UNWEAR, i, 0, 0, Vector3.ZERO))
+			line.add_child(off)
+
+		_remains_box.add_child(line)
 
 
 # The death markers (DESIGN_IDEAS 6.1): each of your remains that still holds gear, with the way and distance to it and the
