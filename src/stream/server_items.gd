@@ -93,7 +93,7 @@ var _skills_cfg: Dictionary = {}
 var send_reject: Callable        # (peer, reason 0 too far, 1 no tool, 2 pack full, 3 other)
 var send_craft_queue: Callable   # (peer, [[recipe, crafts left], ...], ms left on the first)
 var send_strain: Callable       # (peer, strain in thousandths, state 0 normal 1 over 2 fainted 3 waking, fade in thousandths, stance)
-var send_vitals: Callable       # (peer, hunger percent, health, weight in tenths of a kg, thirst percent, luck)
+var send_vitals: Callable       # (peer, hunger percent, health, weight in tenths of a kg, thirst percent, luck, fitness)
 var water_near: Callable         # (position, reach in metres) -> true when water lies within reach of the position; set by the server scene (unset: no water anywhere)
 var send_chest: Callable        # (peer, world id, bytes) a chest's contents to the player who opened it
 var roof_add: Callable          # (roof Array from Cover.box_roof) -> key; the server's cover index gets the lean-to's roof
@@ -133,6 +133,7 @@ var _stance: Dictionary = {}        # peer -> 0 stand, 1 crouch, 2 sit, 3 lie
 var _moving: Dictionary = {}        # peer -> smoothed 0..1, 1 while walking about
 var _characters: Dictionary = {}   # player key -> {luck: int}, rolled once at first sight and never changed (job 77)
 var _luck_cfg: Dictionary = {}
+var _fitness_cfg: Dictionary = {}
 var _fate_rng: RandomNumberGenerator = RandomNumberGenerator.new()   # luck-exempt: the server's own fate stream, the fate() hook below
 var fate_counts: Dictionary = {}    # fate kind -> times rolled (what luck has touched)
 var _vitals: Dictionary = {}        # player key -> {hunger, health} floats
@@ -187,6 +188,7 @@ func setup(item_table, store_dir: String) -> void:
 	_skills_cfg = skills_parsed if typeof(skills_parsed) == TYPE_DICTIONARY else {}
 	_vitals_cfg = VitalsRules.load_config()
 	_luck_cfg = LuckScript.load_config()
+	_fitness_cfg = _load_fitness_config()
 	_carry_cfg = CarryRules.load_config()
 	var exertion_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/exertion.json"))
 	_exertion_cfg = exertion_parsed if typeof(exertion_parsed) == TYPE_DICTIONARY else {}
@@ -231,7 +233,7 @@ func peer_connected_hello(peer: int, key: String) -> void:
 		_dirty = true
 
 	if not _characters.has(key):
-		_characters[key] = {"luck": _create_luck()}
+		_characters[key] = {"luck": _create_luck(), "fitness": _fitness_default()}
 		_dirty = true
 
 	_vitals_sent.erase(peer)
@@ -1236,9 +1238,9 @@ func _has_tool(inv, tool_class: String) -> bool:
 	return _tool_slot(inv, tool_class) >= 0
 
 
-# The hotbar slot of a usable (not broken) tool of this class, or -1.
+# The hotbar slot (the first ten pack slots, keys 1 to 9 and 0) of a usable (not broken) tool of this class, or -1.
 func _tool_slot(inv, tool_class: String) -> int:
-	for slot in range(8):
+	for slot in range(10):
 		if inv.numbers[slot] != 0 and str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", "")) == tool_class and not _is_broken(inv.numbers[slot], inv.wear[slot]):
 			return slot
 
@@ -2293,7 +2295,7 @@ func _strain_tick(peer: int, spent: float) -> void:
 			st["t"] = 0.0
 	else:
 		var diff: float = effort_of(peer) - float(cfg.get("rest_effort", 0.52))
-		var rate: float = float(cfg.get("rise_per_s", 0.02)) if diff > 0.0 else float(cfg.get("fall_per_s", 0.05))
+		var rate: float = float(cfg.get("rise_per_s", 0.02)) * fitness_rise_mult(peer) if diff > 0.0 else float(cfg.get("fall_per_s", 0.05))
 
 		# Slower to come down while still racing after a faint.
 		if diff < 0.0 and bool(st.get("after_faint", false)):
@@ -2385,7 +2387,7 @@ func _sync_vitals(peer: int, force: bool) -> void:
 
 	if force or _vitals_sent.get(peer, []) != now_points:
 		_vitals_sent[peer] = now_points
-		send_vitals.call(peer, now_points[0], now_points[1], now_points[2], now_points[3], luck_of(peer))
+		send_vitals.call(peer, now_points[0], now_points[1], now_points[2], now_points[3], luck_of(peer), fitness_of(peer))
 		_dirty = true
 
 
@@ -2492,6 +2494,46 @@ func _save_characters() -> void:
 	_write_atomic("characters.json", {"version": 1, "players": _characters})
 
 
+# Fitness (Dave 2026-10-21), see data/items/fitness.json: scales how fast exertion rises, a whole number min..max.
+func _load_fitness_config() -> Dictionary:
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/fitness.json"))
+	return parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+
+
+func _fitness_min() -> int:
+	return int(_fitness_cfg.get("min", -10))
+
+
+func _fitness_max() -> int:
+	return int(_fitness_cfg.get("max", 10))
+
+
+func _fitness_default() -> int:
+	return clampi(int(_fitness_cfg.get("default", 0)), _fitness_min(), _fitness_max())
+
+
+func fitness_of(peer: int) -> int:
+	return int(_characters.get(_peer_key.get(peer, ""), {}).get("fitness", _fitness_default()))
+
+
+# The shared multiplier on the exertion rise: below 1 for the fit, above 1 for the unfit.
+func fitness_rise_mult(peer: int) -> float:
+	return exp(-float(fitness_of(peer)) * float(_fitness_cfg.get("strength", 0.05)))
+
+
+# Hook for training (not designed yet): set a character's fitness, clamped, saved with the character, sent to the client.
+func set_fitness(peer: int, value: int) -> void:
+	var key: String = _peer_key.get(peer, "")
+
+	if not _characters.has(key):
+		return
+
+	_characters[key]["fitness"] = clampi(value, _fitness_min(), _fitness_max())
+	_dirty = true
+	_vitals_sent.erase(peer)
+	_sync_vitals(peer, true)
+
+
 func _load_characters() -> void:
 	var parsed: Variant = _read_json_version("characters.json", 1)
 
@@ -2499,7 +2541,10 @@ func _load_characters() -> void:
 		return
 
 	for key in parsed.get("players", {}):
-		_characters[str(key)] = {"luck": clampi(int(parsed["players"][key].get("luck", 0)), -LuckScript.MAX, LuckScript.MAX)}
+		_characters[str(key)] = {
+			"luck": clampi(int(parsed["players"][key].get("luck", 0)), -LuckScript.MAX, LuckScript.MAX),
+			"fitness": clampi(int(parsed["players"][key].get("fitness", _fitness_default())), _fitness_min(), _fitness_max()),
+		}
 
 
 # Drink from the water at the player's feet (ACT_DRINK): one mouthful of thirst.drink_ml, paced like eating. The scene's water_near says whether water lies within reach.

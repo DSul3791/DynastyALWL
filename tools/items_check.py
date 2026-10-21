@@ -60,6 +60,9 @@ CLIENTS = [
     ("strainrun", ["--walk", "--runspeed=24", "--strainrun"], 6000, [
         ("the body really ran", r"Strain test: ran " + NUM + " m", 150, 400),
         ("running raises the strain the server sends", r"strain [\d.]+ -> " + NUM, 0.08, 3.0),
+        ("normal pace is full speed, no cap", r"0: pace x1.0 cap 0.0 \|", None, None),
+        ("over-exerted is 10 percent slower, not capped", r"1: pace x0.9 cap 0.0 \|", None, None),
+        ("fainted locks movement", r"2: pace x1.0 cap -1.0", None, None),
     ]),
     ("plantpick", ["--plantpick"], 6000, [
         ("plants were picked", r"tried (\d+), gone", 3, 20),
@@ -83,6 +86,7 @@ CLIENTS = [
         ("character screen: four bars", r"bars " + NUM + r", luck row", 4, 4),
         ("character screen: luck and skills listed", r"luck row (true), skills section (true)", None, None),
         ("character screen fonts at least 24 px", r"Character screen: .*smallest font " + NUM + " px", 24, 200),
+        ("carry bar on the inventory screen", r"carry bar (true)", None, None),
         ("character screen: heart beats at a rate", r"heart label '(\d+ bpm)'", None, None),
         ("30 slot buttons", r"scale [\d.]+, " + NUM + r" slot buttons", 30, 30),
     ]),
@@ -97,6 +101,9 @@ CLIENTS = [
         ("craft queue shows the entry", r"Queue test: entries 1, fibre \d+ -> \d+, buttons shown " + NUM, 1, 1),
         ("cancel empties the queue and refunds", r"after cancel entries " + NUM + r", fibre", 0, 0),
         ("queue strip hides again", r"queue strip hidden (true)", None, None),
+        ("Use holds a tool", r"matches (true)\), strip boxes 10", None, None),
+        ("Use again puts it away", r"Use again, hand slot " + NUM, -1, -1),
+        ("a tool deep in the pack moves to the hotbar and is held", r"Use moved it to slot \d+ and holds it \((true)\), on hotbar true", None, None),
     ]),
 ]
 

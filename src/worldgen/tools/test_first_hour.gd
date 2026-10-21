@@ -72,7 +72,7 @@ func _init() -> void:
 	items.send_full = func(_p, _b): pass
 	items.send_slots = func(_p, _b): pass
 	items.send_world_items = func(_p, _a, _r): pass
-	items.send_vitals = func(_p, _h, _he, _w, _t, _l): pass
+	items.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
 	items.send_notice = func(_p, _t): pass
 	items.ground_height = func(_x, _z): return 10.0
 	var standing: Dictionary = {7: true}
@@ -85,6 +85,7 @@ func _init() -> void:
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	items._vitals_cfg["eat_pace_ms"] = 0
 	items._vitals_cfg["thirst"]["drink_pace_ms"] = 0
+	items.vitals_of(1)["weight"] = 120.0   # real item weights: the whole first hour (36 sticks, 24 stones, then a log) needs a big frame
 	var start: Array = items._vitals_points(items.vitals_of(1))
 	check(start[0] == 100 and start[3] == 100 and count("stone") == 0, "a new character starts full and empty-handed")
 	note("arriving")

@@ -48,6 +48,7 @@ var _chest_buttons: Array = []
 var _pack_buttons: Array = []
 var eat_event: Callable                # (item id) when something eaten or applied takes effect (sounds)
 var hunger: int = 100                  # stomach, percent
+var fitness: int = 0                  # the character's fitness, -10 to 10: how slowly exertion rises (character screen)
 var luck: int = 0                     # the character's luck, -10 to 10, fixed (character screen)
 var thirst: int = 100                  # body water, percent (100 = full; 0 = parched)
 var health: int = 100
@@ -58,7 +59,7 @@ var _exertion_cfg: Dictionary = {}
 
 # Over-exertion from the server (data/items/exertion.json). Sounds and Art read these:
 #   strain       0 and up, 1.0 = over-exerted (no ceiling)
-#   strain_state 0 normal, 1 over-exerted (speed capped, no sprint), 2 fainted, 3 waking
+#   strain_state 0 normal, 1 over-exerted (10 percent slower, running on allowed), 2 fainted, 3 waking
 #   strain_fade  0..1: fainted, how much of the faint is gone (vision fades over the first
 #                vision_frac, then the heartbeat); waking, how much of the blackness is left
 var strain: float = 0.0
@@ -70,12 +71,16 @@ var reject_event: Callable = Callable()   # ("far" | "no_tool" | "full_pack" | "
 var strain_event: Callable = Callable()   # (strain, state, fade) whenever the server sends a change
 var _strain_note: Label
 var _eat_item: String = ""
+var equip_requested: Callable = Callable()   # (slot) -> hold that tool, or put it away (the client wires it to the held item)
+var held_slot_now: Callable = Callable()     # () -> the pack slot in hand, or -1 for empty hands
+var hotbar_strip                              # HotbarStrip, set by the client
 var heart_bpm: Callable = Callable()   # () -> the heart rate now (the heartbeat sound's), set by the client
 var _character                         # CharacterScreen, built the first time Tab is pressed
 var _panel_bars: Dictionary = {}       # "Health", "Exertion", "Hunger", "Thirst" -> ProgressBar at the top of the inventory screen (the only bars in the game)
 var _vitals_back: Control
 var _vitals_warning: Label
 var _weight_label: Label
+var _carry_bar: ProgressBar              # carried weight against what you can carry: green, yellow from 70 percent, red from 80
 var plant_hint: String = ""            # set by the harvest prompt (harvest.gd)
 var _crafting: int = 0                # recipe at the head of the server's queue (0 none); the work sounds follow it
 var craft_entries: Array = []          # the server's crafting queue: [[recipe, crafts left], ...], head first
@@ -581,9 +586,9 @@ func is_broken(slot: int) -> bool:
 	return inventory.numbers[slot] != 0 and int(table.entry(table.id_of(inventory.numbers[slot])).get("durability", 0)) > 0 and condition(slot) <= 0.0
 
 
-# Is a tool of this class on the hotbar (slots 1 to 8), the way the server checks it?
+# Is a tool of this class on the hotbar (slots 1 to 9 and 0), the way the server checks it?
 func has_tool_class(tool_class: String) -> bool:
-	for slot in range(8):
+	for slot in range(10):
 		if inventory.numbers[slot] != 0 and str(table.entry(table.id_of(inventory.numbers[slot])).get("tool_class", "")) == tool_class and not is_broken(slot):
 			return true
 
@@ -680,6 +685,7 @@ func fire_light_near(point: Vector3, radius: float) -> bool:
 func _on_full(bytes: PackedByteArray) -> void:
 	inventory.from_bytes(bytes)
 	_refresh()
+	refresh_hotbar()
 
 
 func _on_slots(bytes: PackedByteArray) -> void:
@@ -702,6 +708,7 @@ func _on_slots(bytes: PackedByteArray) -> void:
 
 	_refresh()
 	_refresh_chest()
+	refresh_hotbar()
 
 
 # --- The chest screen: the chest on the left, the pack on the right; a click moves a whole stack ---
@@ -743,7 +750,7 @@ func _place_vitals() -> void:
 	_vitals_warning.text = "\n".join(lines)
 
 	if _weight_label != null:
-		_weight_label.text = _load_text() + "\nBody weight %.1f kg   (hunger %d%%, health %d)" % [weight_kg, hunger, health]
+		_refresh_weight()
 
 
 # Kilograms in the pack (the server counts the same way).
@@ -754,6 +761,15 @@ func carried_kg() -> float:
 # Walking speed multiplier for the load: 1 when comfortable, easing down past it.
 func speed_factor() -> float:
 	return CarryRules.speed_factor(carried_kg(), weight_kg, _carry_cfg) if not _carry_cfg.is_empty() else 1.0
+
+
+func _refresh_weight() -> void:
+	_weight_label.text = _load_text() + "\nBody weight %.1f kg   (hunger %d%%, health %d)" % [weight_kg, hunger, health]
+
+	if _carry_bar != null and not _carry_cfg.is_empty():
+		var fraction: float = CarryRules.bar_fraction(carried_kg(), weight_kg, _carry_cfg)
+		_carry_bar.value = fraction * 100.0
+		_carry_bar.get_theme_stylebox("fill").bg_color = CarryRules.bar_color(fraction)
 
 
 func _load_text() -> String:
@@ -791,8 +807,14 @@ func move_cap() -> float:
 	if strain_state >= 2:
 		return -1.0
 
-	# Over-exerted: capped, and the blackout coming on slows the staggering further (smoothly, no steps).
-	return lerpf(float(_exertion_cfg.get("over_speed_mps", 3.0)), 0.8, clampf(strain_fade, 0.0, 1.0)) if strain_state == 1 else 0.0
+	# Over-exerted is only a slow-down (over_speed_factor, see over_pace_factor); running on is allowed until the blackout.
+	return 0.0
+
+
+# Over-exerted (Dave 2026-10-21): the pace is cut by about 10 percent but the player may keep running and keep pushing the
+# exertion up until they black out.
+func over_pace_factor() -> float:
+	return float(_exertion_cfg.get("over_speed_factor", 0.9)) if strain_state == 1 else 1.0
 
 
 # The blackout level, 0 to 1: rising while strain is over the faint threshold (slowly at the threshold, faster the further
@@ -819,7 +841,7 @@ func faint_state() -> Array:
 	return ["over_exerted" if strain_state == 1 else "normal", 0.0]
 
 
-func _on_vitals(new_hunger: int, new_health: int, weight_dkg: int, new_thirst: int, new_luck: int) -> void:
+func _on_vitals(new_hunger: int, new_health: int, weight_dkg: int, new_thirst: int, new_luck: int, new_fitness: int) -> void:
 	var ate: bool = new_hunger > hunger + 3 or new_health > health + 8
 
 	if ate and _eat_item != "" and eat_event.is_valid():
@@ -829,6 +851,7 @@ func _on_vitals(new_hunger: int, new_health: int, weight_dkg: int, new_thirst: i
 	hunger = new_hunger
 	thirst = new_thirst
 	luck = new_luck
+	fitness = new_fitness
 	health = new_health
 	weight_kg = float(weight_dkg) / 10.0
 	_place_vitals()
@@ -848,9 +871,64 @@ func edible_slot(slot: int) -> bool:
 	return slot >= 0 and slot < inventory.SLOTS and inventory.numbers[slot] != 0 and VitalsRules.edible(table.id_of(inventory.numbers[slot]), _vitals_cfg)
 
 
+func equippable_slot(slot: int) -> bool:
+	if slot < 0 or slot >= inventory.SLOTS or inventory.numbers[slot] == 0:
+		return false
+
+	var entry: Dictionary = table.entry(table.id_of(inventory.numbers[slot]))
+	return entry.has("tool_class") or entry.has("weapon_class") or str(entry.get("kind", "")) in ["tool", "weapon", "placeable"]
+
+
+# Hold a tool: from the hotbar slots straight away; from the rest of the pack it first moves into a free hotbar slot
+# (or takes the place of what is in hand), so a slot key can pick it up again.
+func equip_with_move(slot: int) -> void:
+	var target: int = slot
+
+	if slot >= 10:
+		target = -1
+
+		for candidate in range(10):
+			if inventory.numbers[candidate] == 0:
+				target = candidate
+				break
+
+		if target < 0:
+			target = maxi(int(held_slot_now.call()), 0) if held_slot_now.is_valid() else 0
+
+		move_slot(slot, target)
+
+		# The hand may already rest on that (empty) slot: then the moved tool is simply in hand, not toggled away.
+		if held_slot_now.is_valid() and int(held_slot_now.call()) == target:
+			return
+
+	equip_requested.call(target)
+
+
+# Move a stack to another pack slot (dragging, or Use on a tool).
+func move_slot(from_slot: int, to_slot: int) -> void:
+	if from_slot == to_slot or from_slot < 0 or to_slot < 0 or from_slot >= inventory.SLOTS or to_slot >= inventory.SLOTS:
+		return
+
+	net.inventory_action.rpc_id(1, Net.ACT_MOVE, from_slot, to_slot, 0, Vector3.ZERO)
+	_selected = -1
+
+
+func refresh_hotbar() -> void:
+	if hotbar_strip != null:
+		hotbar_strip.refresh()
+
+
+func hotbar_tip(slot: int) -> String:
+	return _tooltip(inventory.numbers[slot], inventory.counts[slot]) if inventory.numbers[slot] != 0 else "Drag an item here from the inventory. Key %s holds it." % ("0" if slot == 9 else str(slot + 1))
+
+
 # Eat the food or apply the medicine in a pack slot. Herbs that look like something else must be identified first.
 func eat_slot(slot: int) -> void:
+	# Use on a tool, weapon or kit holds it in the hand (and again puts it away); on food or medicine it eats or applies it.
 	if not edible_slot(slot):
+		if equippable_slot(slot) and equip_requested.is_valid():
+			equip_with_move(slot)
+
 		return
 
 	var number: int = inventory.numbers[slot]
@@ -1667,6 +1745,15 @@ func _build_panel() -> void:
 	_weight_label.text = "Body weight %.1f kg" % weight_kg
 	_weight_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	right.add_child(_weight_label)
+	_carry_bar = ProgressBar.new()
+	_carry_bar.show_percentage = false
+	_carry_bar.max_value = 100.0
+	_carry_bar.custom_minimum_size = Vector2(0.0, _px(22))
+	_carry_bar.add_theme_stylebox_override("fill", StyleBoxFlat.new())
+	var carry_empty: StyleBoxFlat = StyleBoxFlat.new()
+	carry_empty.bg_color = Color(0.0, 0.0, 0.0, 0.5)
+	_carry_bar.add_theme_stylebox_override("background", carry_empty)
+	right.add_child(_carry_bar)
 	_sort_menu = OptionButton.new()
 	_style(_sort_menu, BODY_PX - 6)
 
@@ -1701,6 +1788,7 @@ func _build_panel() -> void:
 		button.pressed.connect(_on_slot_pressed.bind(i))
 		button.mouse_entered.connect(func(): _hover = i)
 		button.mouse_exited.connect(func(): _hover = -1 if _hover == i else _hover)
+		button.set_drag_forwarding(_slot_drag.bind(i), _slot_can_drop.bind(i), _slot_drop.bind(i))
 		_grid.add_child(button)
 		_buttons.append(button)
 		var bar: ColorRect = ColorRect.new()          # condition bar along the bottom of a worn tool's slot
@@ -1719,7 +1807,7 @@ func _build_panel() -> void:
 	right.add_child(row)
 
 	# One row; each button carries its key (the same keys work on the slot under the mouse).
-	for spec in [["Split (S)", "Split the selected stack in half", _split_selected], ["Drop (D)", "Drop the whole stack. Shift+D drops one", _drop_selected.bind(true)], ["Use (E)", "Eat the food or apply the medicine", func(): eat_slot(_selected)], ["Repair (R)", "Repair a worn tool with its materials", _repair_selected]]:
+	for spec in [["Split (S)", "Split the selected stack in half", _split_selected], ["Drop (D)", "Drop the whole stack. Shift+D drops one", _drop_selected.bind(true)], ["Use (E)", "Eat the food, apply the medicine, or hold a tool in your hand (again to put it away)", func(): eat_slot(_selected)], ["Repair (R)", "Repair a worn tool with its materials", _repair_selected]]:
 		var action: Button = Button.new()
 		action.text = spec[0]
 		action.tooltip_text = spec[1]
@@ -1772,6 +1860,26 @@ func quick_key(event: InputEventKey) -> bool:
 			return true
 
 	return false
+
+
+# Dragging a stack from one slot to another (also onto the hotbar strip on screen).
+func _slot_drag(_at: Vector2, slot: int) -> Variant:
+	if inventory.numbers[slot] == 0:
+		return null
+
+	var preview: Label = Label.new()
+	preview.text = table.name_of(inventory.numbers[slot])
+	preview.add_theme_font_size_override("font_size", _px(BODY_PX - 4))
+	_buttons[slot].set_drag_preview(preview)
+	return {"slot": slot}
+
+
+func _slot_can_drop(_at: Vector2, data: Variant, _slot: int) -> bool:
+	return typeof(data) == TYPE_DICTIONARY and data.has("slot")
+
+
+func _slot_drop(_at: Vector2, data: Variant, slot: int) -> void:
+	move_slot(int(data["slot"]), slot)
 
 
 func _on_slot_pressed(slot: int) -> void:
@@ -1919,7 +2027,8 @@ func _tooltip(number: int, count: int) -> String:
 	var heal: int = VitalsRules.heal_value(table.id_of(number), _vitals_cfg)
 
 	if not _carry_cfg.is_empty():
-		text += "\n%.2f kg each" % CarryRules.weight_of(table.id_of(number), _carry_cfg)
+		var each_kg: float = CarryRules.weight_of(table.id_of(number), _carry_cfg)
+		text += "\n%s each" % (("%.0f g" % (each_kg * 1000.0)) if each_kg < 0.1 else ("%.2f kg" % each_kg))
 
 	if kcal > 0:
 		text += "\n%d kcal  (right click when held, or Eat / use)" % kcal
@@ -2038,7 +2147,7 @@ func _refresh() -> void:
 	_arrange_slots()
 
 	if _weight_label != null:
-		_weight_label.text = _load_text() + "\nBody weight %.1f kg   (hunger %d%%, health %d)" % [weight_kg, hunger, health]
+		_refresh_weight()
 
 	var filter: String = _search.text.strip_edges().to_lower() if _search != null else ""
 
@@ -2207,9 +2316,22 @@ func run_strain_test(client) -> void:
 
 	var start_strain: float = strain
 	var start_pos: Vector3 = client.body.global_position
+	var covered_total: float = 0.0
 	await get_tree().create_timer(25.0).timeout
 	var covered: float = Vector2(client.body.global_position.x - start_pos.x, client.body.global_position.z - start_pos.z).length()
 	print("Strain test: ran %.0f m in 25 s, strain %.2f -> %.2f, state %d" % [covered, start_strain, strain, strain_state])
+
+	# The server's walk from normal to over-exerted to blackout is proven in test_server_items; here the client's side of it:
+	# over-exerted is a 10 percent slow-down with no speed cap and running still allowed, fainted locks movement.
+	var real_state: int = strain_state
+	var factors: Array = []
+
+	for forced in [0, 1, 2]:
+		strain_state = forced
+		factors.append("%d: pace x%s cap %s" % [forced, str(snappedf(over_pace_factor(), 0.001)), str(move_cap())])
+
+	strain_state = real_state
+	print("Strain test: %s" % " | ".join(factors))
 
 
 func run_gather_test(client) -> void:
@@ -2478,6 +2600,7 @@ func _audit_text() -> void:
 		if not labels.has(key_label):
 			missing.append(key_label)
 
+	print("Audit: carry bar %s" % str(_carry_bar != null and _carry_bar.is_inside_tree()))
 	print("Audit: smallest font %d px (%s), tooltip font %d px, sort options %d, button labels %s, key buttons missing %s, panel bars %d, main-screen bars %d" % [smallest, smallest_name, tooltip_px, _sort_menu.item_count, str(labels), str(missing), _panel_bars.size(), (1 if _vitals_back.find_children("*", "ColorRect", true, false).size() > 0 else 0)])
 
 
@@ -2593,6 +2716,29 @@ func run_eat_test(client) -> void:
 	_queue_head_button.pressed.emit()
 	await get_tree().create_timer(1.0).timeout
 	print("Queue test: after cancel entries %d, fibre %d, queue strip hidden %s" % [craft_entries.size(), inventory.count_of(fibre), str(not _queue_box.visible)])
+
+	# Tools: Use holds a tool, again puts it away; a tool deep in the pack moves onto the hotbar first.
+	var axe: int = table.number_of("stone_axe")
+	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, axe, 0, 1, Vector3.ZERO)
+	await get_tree().create_timer(1.0).timeout
+	var axe_slot: int = inventory.numbers.find(axe)
+
+	if int(held_slot_now.call()) == axe_slot:
+		equip_requested.call(axe_slot)   # the saved hotbar slot can be this one: start with empty hands
+
+	eat_slot(axe_slot)
+	await get_tree().create_timer(0.5).timeout
+	var in_hand: int = held_slot_now.call() if held_slot_now.is_valid() else -2
+	print("Hotbar test: axe in slot %d, Use holds slot %d (matches %s), strip boxes %d" % [axe_slot, in_hand, str(in_hand == axe_slot), hotbar_strip._cells.size() if hotbar_strip != null else 0])
+	eat_slot(axe_slot)
+	await get_tree().create_timer(0.5).timeout
+	print("Hotbar test: Use again, hand slot %d (-1 = empty)" % [held_slot_now.call()])
+	net.inventory_action.rpc_id(1, Net.ACT_MOVE, axe_slot, 20, 0, Vector3.ZERO)
+	await get_tree().create_timer(1.0).timeout
+	eat_slot(20)
+	await get_tree().create_timer(1.0).timeout
+	var moved_to: int = held_slot_now.call()
+	print("Hotbar test: axe parked in slot 20, Use moved it to slot %d and holds it (%s), on hotbar %s" % [moved_to, str(moved_to >= 0 and inventory.numbers[moved_to] == axe), str(moved_to >= 0 and moved_to < 10)])
 
 
 # Headless check (--chest): place a chest, open it, put stones in, take them out.

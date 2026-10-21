@@ -70,6 +70,7 @@ const NetScript := preload("res://src/stream/terrain_net.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const WaterVolume := preload("res://src/shared/water_volume.gd")
+const HotbarStripScript := preload("res://src/client/hotbar_strip.gd")
 const WaterFallsScript := preload("res://src/worldgen/runtime/water_falls.gd")
 const FloraViewScript := preload("res://src/flora/flora_view.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
@@ -307,6 +308,7 @@ var fall_mist                         # FallMist: spray at the foot of the neare
 var fall_growth                       # FallGrowth: ferns around the foot of the nearest waterfall
 var items                             # InventoryView: inventory panel (I), pick-up (E)
 var harvest                           # Harvest: E prompt, tap to pick, hold to sweep
+var hotbar_strip                      # HotbarStrip: keys 1 to 0 on screen, drag items into the first ten slots
 var held                              # HeldItem: hotbar keys 1 to 8, spear jab and throw
 var grass                             # GrassView
 var faint                             # FaintEffect: tunnel vision, blur and black-out (set_state)
@@ -802,6 +804,11 @@ func _welcome_body(info: Dictionary) -> void:
 	add_child(held)
 	held.setup(items, net, camera, root, layer, _ground_below, sound, _tree_trunk_near, _cover_here)
 	held.held_light_budget = func(): return quality >= 1
+	items.equip_requested = func(slot): held.equip_toggle(slot)
+	items.held_slot_now = func(): return held.held_slot if held.holding else -1
+	hotbar_strip = HotbarStripScript.new()
+	hotbar_strip.setup(items, layer, held)
+	items.hotbar_strip = hotbar_strip
 
 	if test_items:
 		items.run_test()
@@ -2033,8 +2040,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			_set_stance(StanceScript.SIT, true)
 		elif event.keycode == KEY_Z and not flying:
 			_set_stance(StanceScript.LIE, true)
-		elif event.keycode >= KEY_1 and event.keycode <= KEY_8 and held != null:
-			held.select(event.keycode - KEY_1)
+		elif event.keycode >= KEY_1 and event.keycode <= KEY_9 and held != null:
+			held.press_slot(event.keycode - KEY_1)
+		elif event.keycode == KEY_0 and held != null:
+			held.press_slot(9)
 		elif event.keycode == KEY_E and items != null:
 			items.press_e()
 		elif event.keycode == KEY_BRACKETRIGHT and items != null:
@@ -2189,7 +2198,7 @@ func _move_player(delta: float) -> void:
 		pace = WALK_SPEED * float(StanceScript.SPEED[stance.stance])
 
 	if items != null and not flying:
-		pace *= items.speed_factor()
+		pace *= items.speed_factor() * items.over_pace_factor()
 
 		if strain_cap > 0.0:
 			pace = minf(pace, strain_cap)

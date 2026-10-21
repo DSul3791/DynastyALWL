@@ -1,6 +1,6 @@
 extends Node
 
-# What the player holds (hotbar keys 1 to 8 choose inventory slots 0 to 7) and how it is used.
+# What the player holds (hotbar keys 1 to 9 and 0 choose pack slots 0 to 9; the key again puts it away) and how it is used.
 # Client only; the server decides what happens (throws are server actions).
 #
 # Spear (Dave, 2026-10-20): held and jabbed by default with the normal attack key (left click).
@@ -19,6 +19,8 @@ const THROW_SPEED := 24.0
 const THROW_GRAVITY := 9.8
 
 var held_slot: int = 0
+var holding: bool = true                  # false after the held slot's key is pressed again: hands empty
+const HOTBAR_SLOTS := 10
 var aiming: bool = false
 
 var _inv                                  # InventoryView
@@ -55,7 +57,7 @@ func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hu
 	_placement = PlacementRules.load_config()
 
 	if FileAccess.file_exists(HOTBAR_FILE):
-		held_slot = clampi(int(FileAccess.get_file_as_string(HOTBAR_FILE)), 0, 7)
+		held_slot = clampi(int(FileAccess.get_file_as_string(HOTBAR_FILE)), 0, HOTBAR_SLOTS - 1)
 
 	_tree_near = tree_near
 	_inv = inventory_view
@@ -75,12 +77,34 @@ func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hu
 	hud_layer.add_child(_label)
 
 
-func select(slot: int) -> void:
-	if _sound != null and clampi(slot, 0, 7) != held_slot:
-		_sound.itemfx.hotbar(clampi(slot, 0, 7))
+# A hotbar key: hold that slot, or put it away when it is the one already held.
+func press_slot(slot: int) -> void:
+	if holding and slot == held_slot:
+		holding = false
+		aiming = false
+		_inv.refresh_hotbar()
 
-	held_slot = clampi(slot, 0, 7)
+		if _sound != null:
+			_sound.itemfx.hotbar(held_slot)
+
+		return
+
+	select(slot)
+
+
+# Use on a tool in the inventory: hold it, or put it away if it is already in hand.
+func equip_toggle(slot: int) -> void:
+	press_slot(clampi(slot, 0, HOTBAR_SLOTS - 1))
+
+
+func select(slot: int) -> void:
+	if _sound != null and (clampi(slot, 0, HOTBAR_SLOTS - 1) != held_slot or not holding):
+		_sound.itemfx.hotbar(clampi(slot, 0, HOTBAR_SLOTS - 1))
+
+	held_slot = clampi(slot, 0, HOTBAR_SLOTS - 1)
+	holding = true
 	aiming = false
+	_inv.refresh_hotbar()
 	var file: FileAccess = FileAccess.open(HOTBAR_FILE, FileAccess.WRITE)
 
 	if file != null:
@@ -88,7 +112,7 @@ func select(slot: int) -> void:
 
 
 func held_number() -> int:
-	return _inv.inventory.numbers[held_slot]
+	return _inv.inventory.numbers[held_slot] if holding else 0
 
 
 func held_id() -> String:
@@ -117,7 +141,7 @@ func _is_axe() -> bool:
 
 # A mouse button while playing. Returns true when it was used here.
 func mouse_button(button: int, pressed: bool) -> bool:
-	if button == MOUSE_BUTTON_RIGHT and pressed and _inv.edible_slot(held_slot):
+	if button == MOUSE_BUTTON_RIGHT and pressed and holding and _inv.edible_slot(held_slot):
 		_inv.eat_slot(held_slot)
 		return true
 
