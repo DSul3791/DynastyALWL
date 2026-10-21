@@ -12,6 +12,7 @@ const WALK := 1
 const SIT := 2
 const SLEEP := 3
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
+const BuildingLook := preload("res://src/client/building_look.gd")
 const FULL_M := 15.0
 const HALF_M := 40.0
 const QUARTER_M := 70.0
@@ -85,6 +86,8 @@ func _process(delta: float) -> void:
 		node.position = node.position.lerp(body["target"], clampf(delta * 6.0, 0.0, 1.0))
 		node.rotation.y = lerp_angle(node.rotation.y, -float(body["heading"]) - PI * 0.5, clampf(delta * 8.0, 0.0, 1.0))
 		var ragdoll: Node3D = node.get_node("Rig")
+		node.get_node("Chair").visible = state == SIT
+		node.get_node("Bed").visible = state == SLEEP
 		var pace: float = lerpf(float(body.get("pace", 0.0)), Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001), clampf(delta * 5.0, 0.0, 1.0))
 		body["pace"] = pace
 		var clip: String = "lie" if state == SLEEP else ("sit" if state == SIT else "idle")
@@ -125,6 +128,16 @@ func _make_body(id: String) -> Node3D:
 	ragdoll.dress(skin, Color(coat.r * shade, coat.g * shade, coat.b * shade), Color(trousers.r * shade, trousers.g * shade, trousers.b * shade))
 	ragdoll.animation_player.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
 	ragdoll.play("idle")
+	# The furniture they use goes with them (shown by state): a chair under a sitter, a bed under a sleeper. The markers are on the
+	# server; a permanent chair or bed would be a placed structure.
+	var chair: Node3D = BuildingLook.chair()
+	chair.name = "Chair"
+	chair.visible = false
+	root.add_child(chair)
+	var bed: Node3D = BuildingLook.bed()
+	bed.name = "Bed"
+	bed.visible = false
+	root.add_child(bed)
 	var label: Label3D = Label3D.new()
 	label.text = str(info.get("name", id))
 	label.font_size = 48

@@ -982,3 +982,72 @@ static func add_hooks(model: Node3D, fire: Variant, smoke: Variant) -> Node3D:
 		model.add_child(plume)
 
 	return model
+
+
+# --------------------------------------------------------------- chair and bed (where the NPCs sit and sleep)
+
+# A log and timber chair, seat 0.42 m high, about 0.5 m square, back 0.95 m, the person facing -Z (the way the sit pose faces).
+static func _chair_mesh() -> ArrayMesh:
+	if _cache.has("chair"):
+		return _cache["chair"]
+
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 51
+	var st: SurfaceTool = SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+
+	for x in [-0.21, 0.21]:
+		_tube(st, Vector3(x, 0.0, -0.31), Vector3(x, 0.4, -0.29), 0.04, 0.036, _tone(WOOD_DARK, rng, 0.1), 6, rng)
+		_tube(st, Vector3(x, 0.0, 0.17), Vector3(x, 1.0, 0.2), 0.04, 0.032, _tone(WOOD_DARK, rng, 0.1), 6, rng)
+		_tube(st, Vector3(x, 0.2, -0.3), Vector3(x, 0.2, 0.18), 0.022, 0.022, WOOD, 5, rng)
+
+	for n in range(4):
+		_box(st, Vector3(0.0, 0.43, -0.3 + 0.145 * float(n)), Vector3(0.52 + rng.randf_range(-0.02, 0.02), 0.045, 0.13), _tone(WOOD_PALE, rng, 0.08), rng.randf_range(-0.02, 0.02))
+
+	for k in range(3):
+		_box(st, Vector3(0.0, 0.62 + 0.16 * float(k), 0.185 + 0.01 * float(k)), Vector3(0.46, 0.09, 0.035), _tone(WOOD, rng, 0.08))
+
+	_tube(st, Vector3(-0.2, 0.2, -0.3), Vector3(0.2, 0.2, -0.3), 0.02, 0.02, WOOD, 5, rng)
+	return _finish_cached("chair", st, _solid_material())
+
+
+static func chair() -> Node3D:
+	var root: Node3D = Node3D.new()
+	root.add_child(_instance(_chair_mesh()))
+	return root
+
+
+# A plank bed with log rails, a straw tick and a coarse blanket, 0.95 x 2.0 m, 0.25 m high, the head (pillow) toward +Z where the
+# lie pose puts the head. The sleeper's origin is under the hips, so the bed is centred on z a little toward the feet.
+static func _bed_mesh() -> ArrayMesh:
+	if _cache.has("bed"):
+		return _cache["bed"]
+
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 52
+	var st: SurfaceTool = SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var length: float = 2.0
+	var width: float = 0.95
+
+	for x in [-1.0, 1.0]:
+		_tube(st, Vector3(x * width * 0.5, 0.16, -length * 0.5 - 0.05), Vector3(x * width * 0.5, 0.16, length * 0.5 - 0.05), 0.055, 0.055, _tone(WOOD_DARK, rng, 0.1), 7, rng)
+
+		for z in [-0.95, 0.9]:
+			_tube(st, Vector3(x * width * 0.5, 0.0, z), Vector3(x * width * 0.5, 0.26, z), 0.05, 0.045, _tone(WOOD_DARK, rng, 0.1), 6, rng)
+
+	for n in range(8):
+		_box(st, Vector3(0.0, 0.17, -0.93 + 0.25 * float(n)), Vector3(width - 0.04, 0.035, 0.22), _tone(WOOD_PALE, rng, 0.08), rng.randf_range(-0.015, 0.015))
+
+	_blob(st, Vector3(0.0, 0.25, -0.05), Vector3(0.42, 0.075, 0.95), Color(0.66, 0.55, 0.3), rng, 9, 3, 0.07)
+	_blob(st, Vector3(0.0, 0.3, -0.38), Vector3(0.4, 0.07, 0.6), Color(0.45, 0.2, 0.15), rng, 9, 3, 0.05)
+	_blob(st, Vector3(0.0, 0.31, 0.68), Vector3(0.24, 0.08, 0.15), Color(0.78, 0.74, 0.62), rng, 8, 3, 0.08)
+	_box(st, Vector3(0.0, 0.34, -length * 0.5 - 0.0), Vector3(width, 0.38, 0.06), _tone(WOOD_DARK, rng, 0.08))
+	_box(st, Vector3(0.0, 0.42, length * 0.5 - 0.05), Vector3(width, 0.5, 0.06), _tone(WOOD_DARK, rng, 0.08))
+	return _finish_cached("bed", st, _solid_material())
+
+
+static func bed() -> Node3D:
+	var root: Node3D = Node3D.new()
+	root.add_child(_instance(_bed_mesh()))
+	return root
