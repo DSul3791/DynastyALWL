@@ -345,6 +345,7 @@ func _ready() -> void:
 	net.admin_place_requested.connect(_on_admin_place)
 	net.npc_talk_requested.connect(func(peer, npc_id, choice): dialogue.talk(peer, npc_id, choice))
 	net.surface_requested.connect(_on_surface_requested)
+	net.dump_requested.connect(_on_dump_requested)
 	net.inventory_action_requested.connect(func(peer, kind, a, b, count, at): items.action(peer, kind, a, b, count, at))
 	_report_at_msec = Time.get_ticks_msec() + 10000
 
@@ -578,6 +579,20 @@ func _on_water_rate_requested(_peer_id: int, direction: int) -> void:
 
 
 # Protocol 45: the ground height under a point (a client that stopped high up streams the ground below first).
+# One dump a second per player (it generates a block).
+var _dump_last: Dictionary = {}
+
+
+func _on_dump_requested(peer_id: int, x: float, y: float, z: float) -> void:
+	var now: int = Time.get_ticks_msec()
+
+	if now - int(_dump_last.get(peer_id, -10000)) < 1000:
+		return
+
+	_dump_last[peer_id] = now
+	net.dump_result.rpc_id(peer_id, store.dump_cell(x, y, z))
+
+
 func _on_surface_requested(peer_id: int, x: float, z: float) -> void:
 	net.surface.rpc_id(peer_id, x, z, float(generator.surface_height(x, z)))
 

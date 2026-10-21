@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 55
+const PROTOCOL_VERSION := 56
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -49,6 +49,8 @@ signal ground_reset_received(tiles_stamp: String, starter_stamp: String)
 signal water_requested(peer_id: int, chunks: PackedInt32Array)
 signal surface_requested(peer_id: int, x: float, z: float)
 signal surface_received(x: float, z: float, y: float)
+signal dump_requested(peer_id: int, x: float, y: float, z: float)
+signal dump_received(text: String)
 signal water_received(chunk: Vector2i, water: PackedByteArray)
 signal notice_received(text: String)
 signal chest_received(id: int, bytes: PackedByteArray)
@@ -217,6 +219,18 @@ func request_water(chunks: PackedInt32Array) -> void:
 func request_surface(x: float, z: float) -> void:
 	if multiplayer.is_server() and is_finite(x) and is_finite(z):
 		surface_requested.emit(multiplayer.get_remote_sender_id(), x, z)
+
+
+# Protocol 56: what the server's stores hold for one voxel (debug button "Dump ground here").
+@rpc("any_peer", "call_remote", "reliable")
+func request_dump(x: float, y: float, z: float) -> void:
+	if multiplayer.is_server() and is_finite(x) and is_finite(y) and is_finite(z):
+		dump_requested.emit(multiplayer.get_remote_sender_id(), x, y, z)
+
+
+@rpc("authority", "call_remote", "reliable")
+func dump_result(text: String) -> void:
+	dump_received.emit(text)
 
 
 @rpc("authority", "call_remote", "reliable")

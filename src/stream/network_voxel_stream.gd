@@ -198,7 +198,13 @@ func _store(bytes: PackedByteArray, out_buffer: VoxelBuffer, block: Vector3i, lo
 		_note_bad(block, lod, "could not unpack")
 		return RESULT_ERROR
 
-	if cache != null:
+	# A stream that was closed (the ground was reset, or a tile was re-baked) must not write into the new cache: an
+	# answer in flight from before the reset would put old ground there for good.
+	_mutex.lock()
+	var closed: bool = _closing
+	_mutex.unlock()
+
+	if cache != null and not closed:
 		cache.save_block(out_buffer, block, lod)
 
 	return RESULT_BLOCK_FOUND

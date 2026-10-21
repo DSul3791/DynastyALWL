@@ -65,7 +65,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 508
+const BUILD := 509
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -186,6 +186,8 @@ var _inspect_label: Label            # what the player is looking at (inspection
 var inspecting: bool = false
 var test_clear: bool = false          # --test-clear: press Clear saved ground 12 s after the welcome
 var _test_clear_done: bool = false
+var test_dump: bool = false           # --dump-test: 14 s after the welcome dump the ground under the feet (prints the dump)
+var _test_dump_done: bool = false
 var menu_open: bool = false          # the Esc options menu
 var _menu: Control
 var _menu_pages: Dictionary = {}     # page name -> VBoxContainer
@@ -443,6 +445,8 @@ func _ready() -> void:
 			quality = clampi(int(argument.trim_prefix("--quality=")), 0, QUALITY_NAMES.size() - 1)
 		elif argument == "--test-clear":
 			test_clear = true
+		elif argument == "--dump-test":
+			test_dump = true
 		elif argument == "--inspect":
 			inspecting = true
 			test_inspect = true
@@ -586,6 +590,7 @@ func _ready() -> void:
 	net.died_received.connect(_on_died)
 	net.water_received.connect(_on_water_received)
 	net.surface_received.connect(_on_surface_received)
+	net.dump_received.connect(_on_dump_received)
 	_host = host
 	_port = port
 
@@ -1874,6 +1879,8 @@ func _build_menu(layer: CanvasLayer) -> void:
 	var advanced: VBoxContainer = _menu_page(column, "advanced")
 	_menu_button(advanced, "Clear saved ground", func():
 		_ask_clear_cache())
+	_menu_button(advanced, "Dump ground at the crosshair (and copy it)", func():
+		_dump_ground_here())
 	_menu_button(advanced, "Show my player key (and copy it)", func():
 		var key: String = items.player_key() if items != null else ""
 		DisplayServer.clipboard_set(key)
@@ -1957,6 +1964,58 @@ func _set_menu(open: bool) -> void:
 # "Clear saved ground": this client drops its own saved copy and reloads the
 # terrain. The server's own saved ground is the server's business (its
 # --clear-generated option); a client never clears it.
+# Debug (Dave 2026-10-21, a solid block standing in the lake that goes away with Clear saved ground): what this client
+# and the server's stores hold for the ground voxel the crosshair points at (Esc, Advanced, Dump ground; look at it first):
+# the dump aims where the screen centre pointed when the menu opened. The text is printed, shown and copied.
+var _dump_client: String = ""
+
+
+func _dump_ground_here(at: Vector3 = Vector3.INF) -> void:
+	var from: Vector3 = view_cam.global_position if view_cam != null else camera.global_position
+	var forward: Vector3 = -(view_cam if view_cam != null else camera).global_transform.basis.z
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from + forward * 400.0)
+	query.exclude = [body.get_rid()]
+	var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(query)
+
+	if at.is_finite():
+		hit = {"position": at, "normal": Vector3.UP}
+
+	if hit.is_empty():
+		_menu_note.text = "Nothing solid under the crosshair within 400 m: look at the odd ground and try again"
+		return
+
+	var inside: Vector3 = hit["position"] - hit["normal"] * 0.5
+	var voxel: Vector3i = Vector3i(floori(inside.x), floori(inside.y), floori(inside.z))
+	var lines: PackedStringArray = PackedStringArray()
+	lines.append("client: build %d, crosshair hit at (%.1f, %.1f, %.1f), voxel %s, normal %s" % [BUILD, hit["position"].x, hit["position"].y, hit["position"].z, str(voxel), str(hit["normal"])])
+	var tool: VoxelTool = terrain.get_voxel_tool()
+	lines.append("client: the terrain's voxel here: sdf %.2f (negative = solid)" % tool.get_voxel_f(voxel))
+	var block: Vector3i = Vector3i(floori(float(voxel.x) / 16.0), floori(float(voxel.y) / 16.0), floori(float(voxel.z) / 16.0))
+	var saved: VoxelBuffer = Layout.make_buffer(16)
+
+	if cache != null and cache.load_block(saved, block, 0):
+		var lx: int = voxel.x - block.x * 16
+		var ly: int = voxel.y - block.y * 16
+		var lz: int = voxel.z - block.z * 16
+		lines.append("client: saved copy of block %s: sdf %.2f, soil %d, rock %d" % [str(block), saved.get_voxel_f(lx, ly, lz, Layout.CHANNEL_SDF), saved.get_voxel(lx, ly, lz, Layout.CHANNEL_SOIL), saved.get_voxel(lx, ly, lz, Layout.CHANNEL_ROCK)])
+	else:
+		lines.append("client: no saved copy of block %s at LOD 0" % str(block))
+
+	lines.append("client: world tiles stamp %s, terrain version %s" % [str(world.get("tiles_stamp", "")), str(world.get("terrain_version", ""))])
+	_dump_client = "\n".join(lines)
+	net.request_dump.rpc_id(1, inside.x, inside.y, inside.z)
+	_menu_note.text = _dump_client + "\n(asking the server...)"
+
+
+func _on_dump_received(text: String) -> void:
+	var all: String = _dump_client + "\n" + text
+	print("Terrain client: ground dump\n" + all)
+	DisplayServer.clipboard_set(all)
+
+	if _menu_note != null:
+		_menu_note.text = all + "\n(copied to the clipboard)"
+
+
 func _ask_clear_cache() -> void:
 	_reload_ground()
 	_menu_note.text = "Done. The ground is reloading."
@@ -2811,6 +2870,10 @@ func _process(delta: float) -> void:
 
 	if stream == null:
 		return
+
+	if test_dump and not _test_dump_done and Time.get_ticks_msec() - connected_msec > 14000:
+		_test_dump_done = true
+		_dump_ground_here(body.global_position + Vector3(0.0, -1.0, 0.0))
 
 	if test_clear and not _test_clear_done and Time.get_ticks_msec() - connected_msec > 12000:
 		_test_clear_done = true

@@ -223,8 +223,13 @@ func _load_base(buffer: VoxelBuffer, block: Vector3i, lod: int) -> void:
 	var cache: VoxelStreamSQLite = _cache
 
 	if cache.load_voxel_block(buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND:
-		_count("cache")
-		return
+		# A saved copy is checked again on the way out (2026-10-21, a solid block floating over the lake): one that
+		# fails is dropped and made again below.
+		if _is_sane(buffer, block, lod):
+			_count("cache")
+			return
+
+		_count("cache_dropped")
 
 	var failed_before: int = generator.failed_tiles
 	var t0: int = Time.get_ticks_usec()
@@ -303,6 +308,43 @@ func _report_bad(block: Vector3i, lod: int, cx: int, layer: int, cz: int, y: flo
 	bad_blocks += 1
 	_mutex.unlock()
 	push_error("server: bad block %s at LOD %d: solid at column (%d, %d) layer %d, y %.1f, but the ground there is %.1f; not saved" % [str(block), lod, cx, cz, layer, y, h])
+
+
+# Debug (Dave 2026-10-21, a solid block standing in the lake that only a saved copy kept): what every store
+# holds for the voxel at (x, y, z) at LOD 0, as text for the client's "Dump ground here" button.
+func dump_cell(x: float, y: float, z: float) -> String:
+	var block: Vector3i = Vector3i(floori(x / float(BLOCK_SIZE)), floori(y / float(BLOCK_SIZE)), floori(z / float(BLOCK_SIZE)))
+	var local: Vector3i = Vector3i(floori(x) - block.x * BLOCK_SIZE, floori(y) - block.y * BLOCK_SIZE, floori(z) - block.z * BLOCK_SIZE)
+	var lines: PackedStringArray = PackedStringArray()
+	lines.append("server: voxel (%d, %d, %d), block %s, terrain version %d, tiles %s" % [floori(x), floori(y), floori(z), str(block), Layout.TERRAIN_VERSION, tiles_stamp])
+	lines.append("server: ground height here %.2f m (generator)" % float(generator.surface_height(x, z)))
+	var fresh: VoxelBuffer = Layout.make_buffer(BLOCK_SIZE)
+	generator.generate(fresh, block * BLOCK_SIZE, 0)
+	lines.append("server: freshly generated: " + _cell_text(fresh, local))
+	var cached: VoxelBuffer = Layout.make_buffer(BLOCK_SIZE)
+
+	if _cache.load_voxel_block(cached, block, 0) == VoxelStream.RESULT_BLOCK_FOUND:
+		lines.append("server: generated-ground cache: " + _cell_text(cached, local) + ("" if _is_sane(cached, block, 0) else "   <-- FAILS THE SANITY CHECK"))
+	else:
+		lines.append("server: generated-ground cache: no copy of this block")
+
+	var edited: VoxelBuffer = Layout.make_buffer(BLOCK_SIZE)
+
+	if _edits.load_voxel_block(edited, block, 0) == VoxelStream.RESULT_BLOCK_FOUND:
+		lines.append("server: saved edit of this block: " + _cell_text(edited, local))
+	else:
+		lines.append("server: no saved edit of this block")
+
+	return "\n".join(lines)
+
+
+func _cell_text(buffer: VoxelBuffer, local: Vector3i) -> String:
+	return "sdf %.2f (negative = solid), soil %d, rock %d, block %s" % [
+		buffer.get_voxel_f(local.x, local.y, local.z, Layout.CHANNEL_SDF),
+		buffer.get_voxel(local.x, local.y, local.z, Layout.CHANNEL_SOIL),
+		buffer.get_voxel(local.x, local.y, local.z, Layout.CHANNEL_ROCK),
+		"all one value" if buffer.is_uniform(Layout.CHANNEL_SDF) else "mixed",
+	]
 
 
 # The block as it is sent to clients: buried ore hidden, compressed.
