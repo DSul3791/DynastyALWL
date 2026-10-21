@@ -43,8 +43,11 @@ static func chunk_levels(generator, origin: Vector2, chunk_m: float) -> Dictiona
 		_flatten_lakes(generator, data, origin, count, spacing, levels)
 		var still: PackedFloat32Array = _calm_still_water(count, spacing, levels)
 		var sea_near: PackedFloat32Array = _ease_into_sea(generator, data, origin, count, spacing, levels, still)
+		_smooth_running(generator, data, origin, count, spacing, levels, still)
 		var edge: PackedFloat32Array = _shore_levels(generator, data, origin, count, spacing, levels)
 		var vel: PackedFloat32Array = _velocities(generator, data, origin, count, spacing, levels, still)
+
+		_smooth_current(vel, levels, count)
 
 		# The current dies away over the same reach, so the shader sees calm water at the sea.
 		if not sea_near.is_empty():
@@ -149,6 +152,144 @@ static func _window(levels: PackedFloat32Array, i: int, j: int, count: int, spac
 	var gz: float = (south / float(ns) - north / float(nn)) / span if ns > 0 and nn > 0 else 0.0
 	var cells: float = float((2 * CALM_RADIUS + 1) * (2 * CALM_RADIUS + 1))
 	return [gx, gz, sum / float(maxi(n, 1)), hi - lo, float(n) / cells]
+
+
+# Dave (2026-10-21, build 483, river near x 52882 z 68268): the river surface sat up on its sides and showed the 8 m
+# cells as squares with sharp corners. Running water (not still) is smoothed: each wet cell takes the weighted mean
+# (3x3, centre 4, sides 2, corners 1) of the wet cells within SMOOTH_STEP_M of it, twice, so a cross-section runs flat
+# and the surface falls gently along the flow; a fall (a step over SMOOTH_STEP_M) is not blurred. Water is never
+# added. Two cells of padding are read from outside the chunk so neighbouring chunks agree at their shared edge.
+const SMOOTH_PASSES := 2
+const SMOOTH_STEP_M := 1.0
+
+
+static func _smooth_running(generator, data, origin: Vector2, count: int, spacing: float, levels: PackedFloat32Array, still: PackedFloat32Array) -> void:
+	var pad: int = SMOOTH_PASSES
+	var side: int = count + 2 * pad
+	var field: PackedFloat32Array = PackedFloat32Array()
+	field.resize(side * side)
+	field.fill(NAN)
+	var wet: PackedInt32Array = PackedInt32Array()
+
+	for cj in range(count):
+		for ci in range(count):
+			var level: float = levels[cj * count + ci]
+
+			if not is_nan(level):
+				var k: int = (cj + pad) * side + ci + pad
+				field[k] = level
+				wet.append(k)
+
+	# The padding strips, read from the water outside the chunk, only next to wet cells inside it.
+	for strip in range(2 * pad):
+		var ring: int = strip if strip < pad else count + strip
+		var offset: int = ring - pad
+
+		for t in range(-pad, count + pad):
+			for horizontal in range(2):
+				var ci: int = t if horizontal == 0 else offset
+				var cj: int = offset if horizontal == 0 else t
+				var near_wet: bool = false
+
+				for dj in range(-pad, pad + 1):
+					for di in range(-pad, pad + 1):
+						var ni: int = ci + di
+						var nj: int = cj + dj
+
+						if ni >= 0 and nj >= 0 and ni < count and nj < count and not is_nan(levels[nj * count + ni]):
+							near_wet = true
+
+				if near_wet:
+					var level: float = _level_at(generator, data, origin.x + float(ci) * spacing, origin.y + float(cj) * spacing, spacing)
+
+					if not is_nan(level):
+						var k: int = (cj + pad) * side + ci + pad
+
+						if is_nan(field[k]):
+							field[k] = level
+							wet.append(k)
+
+	if wet.size() < 3:
+		return
+
+	var movable: PackedByteArray = PackedByteArray()
+	movable.resize(side * side)
+
+	for k in wet:
+		var ci: int = k % side - pad
+		var cj: int = k / side - pad
+		movable[k] = 1 if not (ci >= 0 and cj >= 0 and ci < count and cj < count and not is_nan(still[cj * count + ci])) else 0
+
+	for pass_number in range(SMOOTH_PASSES):
+		var lo: int = 1 + pass_number
+		var next: PackedFloat32Array = field.duplicate()
+
+		for k in wet:
+			var i: int = k % side
+			var j: int = k / side
+
+			if movable[k] == 0 or i < lo or j < lo or i > side - 1 - lo or j > side - 1 - lo:
+				continue
+
+			var here: float = field[k]
+			var total: float = 0.0
+			var weight: float = 0.0
+
+			for dj in range(-1, 2):
+				for di in range(-1, 2):
+					var other: float = field[k + dj * side + di]
+
+					if is_nan(other) or absf(other - here) > SMOOTH_STEP_M:
+						continue
+
+					var w: float = 4.0 if (di == 0 and dj == 0) else (2.0 if (di == 0 or dj == 0) else 1.0)
+					total += other * w
+					weight += w
+
+			next[k] = total / weight
+
+		field = next
+
+	for k in wet:
+		var ci: int = k % side - pad
+		var cj: int = k / side - pad
+
+		if ci >= 0 and cj >= 0 and ci < count and cj < count:
+			levels[cj * count + ci] = field[k]
+
+
+# The current's x, z pairs averaged over wet neighbours (once), so the flow tint does not change square by square.
+static func _smooth_current(vel: PackedFloat32Array, levels: PackedFloat32Array, count: int) -> void:
+	if vel.size() != count * count * 2:
+		return
+
+	var source: PackedFloat32Array = vel.duplicate()
+
+	for j in range(1, count - 1):
+		for i in range(1, count - 1):
+			var k: int = j * count + i
+
+			if is_nan(levels[k]):
+				continue
+
+			var sx: float = 0.0
+			var sz: float = 0.0
+			var weight: float = 0.0
+
+			for dj in range(-1, 2):
+				for di in range(-1, 2):
+					var m: int = k + dj * count + di
+
+					if is_nan(levels[m]):
+						continue
+
+					var w: float = 4.0 if (di == 0 and dj == 0) else (2.0 if (di == 0 or dj == 0) else 1.0)
+					sx += source[m * 2] * w
+					sz += source[m * 2 + 1] * w
+					weight += w
+
+			vel[k * 2] = sx / weight
+			vel[k * 2 + 1] = sz / weight
 
 
 # Dave (2026-10-21, "the water is still crazy"): a lake that is filling or being fed hard has sloshing and piled
