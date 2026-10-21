@@ -408,6 +408,12 @@ func _update_ground(rain: float, snow: float) -> void:
 		material.set_shader_parameter("wet", wet)
 		material.set_shader_parameter("snow", lying)
 		material.set_shader_parameter("canopy", canopy.texture)
+		# Moving cloud shadows on the ground: off at Low, weaker the more overcast (the sun is already dimmed then).
+		var drift: float = float(Time.get_ticks_msec()) / 1000.0
+		material.set_shader_parameter("cloud_shade", Vector4((1.0 - 0.8 * cloud_cover) if _quality >= 1 else 0.0, drift * 9.0, drift * 4.0, lerpf(0.62, 0.30, cloud_cover)))
+
+		if _client._sun != null:
+			material.set_shader_parameter("sun_toward", _client._sun.global_transform.basis.z.normalized())
 		material.set_shader_parameter("canopy_box", Vector3(canopy.origin.x, canopy.origin.y, canopy.METRES))
 
 	if _client.grass != null:

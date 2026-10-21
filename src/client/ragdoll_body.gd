@@ -2,7 +2,7 @@ extends Node3D
 
 # The plain ragdoll-type character (owner, 2026-10-21: "a simple ragdoll type character, no features, just a
 # body, head, arms, legs and hands"). One Skeleton3D with 17 bones, one skinned mesh of capsule and box limbs in
-# a neutral skin colour (about 1.8 m tall, about 1.5 thousand triangles, one draw call), an AnimationPlayer with the ten
+# a neutral skin colour (about 1.8 m tall, about 3.2 thousand triangles, one draw call), an AnimationPlayer with the ten
 # animations the game needs, and a mount on each hand for held tools. Built in code; nothing to import.
 #
 #   var body := RagdollBody.new()                 # full body (third person), feet at the node's origin, facing -Z
@@ -40,25 +40,35 @@ const BONES := [
 const ARM_BONES := ["chest", "arm_r", "forearm_r", "hand_r", "arm_l", "forearm_l", "hand_l"]
 
 # Shapes, each on one bone, in that bone's own space: bone, shape, centre, size, in arms only (the first person model).
-# capsule size = (radius, total height); sphere size = (radius, height); box size = (x, y, z).
+# capsule size = (radius, total height); ellipsoid size = (x, y, z radii); sphere size = (radius, height).
+# Rounded ragdoll (owner, 2026-10-21: "the blockiness rounded off, proper knees and elbows, hands as spheroids,
+# a head that is head shaped, no fine details"): ellipsoids for the torso, head, joints, hands and feet, capsules
+# for the limbs between them. Every shape follows one bone, so a bent joint closes over its own sphere.
 const PARTS := [
-	["hips", "box", Vector3(0.0, 0.0, 0.0), Vector3(0.36, 0.2, 0.2), false],
-	["spine", "box", Vector3(0.0, 0.08, 0.0), Vector3(0.34, 0.24, 0.2), false],
-	["chest", "box", Vector3(0.0, 0.1, 0.0), Vector3(0.4, 0.34, 0.22), false],
-	["neck", "capsule", Vector3(0.0, 0.03, 0.0), Vector3(0.05, 0.14, 0.0), false],
-	["head", "sphere", Vector3(0.0, 0.14, 0.0), Vector3(0.12, 0.27, 0.0), false],
-	["arm_r", "capsule", Vector3(0.0, -0.145, 0.0), Vector3(0.055, 0.34, 0.0), true],
-	["forearm_r", "capsule", Vector3(0.0, -0.13, 0.0), Vector3(0.05, 0.3, 0.0), true],
-	["hand_r", "box", Vector3(0.0, -0.05, 0.0), Vector3(0.08, 0.12, 0.045), true],
-	["arm_l", "capsule", Vector3(0.0, -0.145, 0.0), Vector3(0.055, 0.34, 0.0), true],
-	["forearm_l", "capsule", Vector3(0.0, -0.13, 0.0), Vector3(0.05, 0.3, 0.0), true],
-	["hand_l", "box", Vector3(0.0, -0.05, 0.0), Vector3(0.08, 0.12, 0.045), true],
-	["thigh_r", "capsule", Vector3(0.0, -0.22, 0.0), Vector3(0.08, 0.52, 0.0), false],
-	["shin_r", "capsule", Vector3(0.0, -0.2, 0.0), Vector3(0.065, 0.48, 0.0), false],
-	["foot_r", "box", Vector3(0.0, -0.035, -0.07), Vector3(0.1, 0.07, 0.26), false],
-	["thigh_l", "capsule", Vector3(0.0, -0.22, 0.0), Vector3(0.08, 0.52, 0.0), false],
-	["shin_l", "capsule", Vector3(0.0, -0.2, 0.0), Vector3(0.065, 0.48, 0.0), false],
-	["foot_l", "box", Vector3(0.0, -0.035, -0.07), Vector3(0.1, 0.07, 0.26), false],
+	["hips", "ellipsoid", Vector3(0.0, -0.01, 0.0), Vector3(0.19, 0.15, 0.13), false],
+	["spine", "ellipsoid", Vector3(0.0, 0.09, 0.0), Vector3(0.18, 0.17, 0.12), false],
+	["chest", "ellipsoid", Vector3(0.0, 0.1, 0.0), Vector3(0.2, 0.21, 0.125), false],
+	["neck", "capsule", Vector3(0.0, 0.03, 0.0), Vector3(0.05, 0.15, 0.0), false],
+	["head", "ellipsoid", Vector3(0.0, 0.15, 0.005), Vector3(0.1, 0.12, 0.115), false],
+	["head", "ellipsoid", Vector3(0.0, 0.07, -0.03), Vector3(0.08, 0.085, 0.085), false],
+	["arm_r", "ellipsoid", Vector3(0.0, 0.0, 0.0), Vector3(0.062, 0.062, 0.062), true],
+	["arm_r", "capsule", Vector3(0.0, -0.145, 0.0), Vector3(0.05, 0.3, 0.0), true],
+	["forearm_r", "ellipsoid", Vector3(0.0, 0.0, 0.0), Vector3(0.055, 0.055, 0.055), true],
+	["forearm_r", "capsule", Vector3(0.0, -0.13, 0.0), Vector3(0.045, 0.28, 0.0), true],
+	["hand_r", "ellipsoid", Vector3(0.0, -0.065, 0.0), Vector3(0.042, 0.075, 0.03), true],
+	["arm_l", "ellipsoid", Vector3(0.0, 0.0, 0.0), Vector3(0.062, 0.062, 0.062), true],
+	["arm_l", "capsule", Vector3(0.0, -0.145, 0.0), Vector3(0.05, 0.3, 0.0), true],
+	["forearm_l", "ellipsoid", Vector3(0.0, 0.0, 0.0), Vector3(0.055, 0.055, 0.055), true],
+	["forearm_l", "capsule", Vector3(0.0, -0.13, 0.0), Vector3(0.045, 0.28, 0.0), true],
+	["hand_l", "ellipsoid", Vector3(0.0, -0.065, 0.0), Vector3(0.042, 0.075, 0.03), true],
+	["thigh_r", "capsule", Vector3(0.0, -0.22, 0.0), Vector3(0.082, 0.5, 0.0), false],
+	["shin_r", "ellipsoid", Vector3(0.0, 0.0, 0.0), Vector3(0.07, 0.07, 0.07), false],
+	["shin_r", "capsule", Vector3(0.0, -0.2, 0.0), Vector3(0.06, 0.46, 0.0), false],
+	["foot_r", "ellipsoid", Vector3(0.0, -0.03, -0.06), Vector3(0.056, 0.04, 0.135), false],
+	["thigh_l", "capsule", Vector3(0.0, -0.22, 0.0), Vector3(0.082, 0.5, 0.0), false],
+	["shin_l", "ellipsoid", Vector3(0.0, 0.0, 0.0), Vector3(0.07, 0.07, 0.07), false],
+	["shin_l", "capsule", Vector3(0.0, -0.2, 0.0), Vector3(0.06, 0.46, 0.0), false],
+	["foot_l", "ellipsoid", Vector3(0.0, -0.03, -0.06), Vector3(0.056, 0.04, 0.135), false],
 ]
 
 const ANIMATIONS := ["idle", "walk", "run", "crouch", "sit", "lie", "swing", "jab", "throw", "use"]
@@ -149,8 +159,7 @@ func _build_mesh() -> void:
 		if not _bones.has(part[0]) or (arms_only and not part[4]):
 			continue
 
-		var shape: Mesh = _shape(part[1], part[3])
-		var arrays: Array = shape.get_mesh_arrays()
+		var arrays: Array = _shape_arrays(part[1], part[3])
 		var model: Transform3D = _global_rest(part[0]) * Transform3D(Basis.IDENTITY, part[2])
 		var first: int = vertices.size()
 		var source_vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
@@ -192,6 +201,31 @@ func _build_mesh() -> void:
 	skeleton.add_child(body_mesh)
 
 
+func _shape_arrays(kind: String, size: Vector3) -> Array:
+	if kind == "ellipsoid":
+		# A unit sphere stretched to the radii; the normals follow the stretch (divide, then renormalise).
+		var unit: SphereMesh = SphereMesh.new()
+		unit.radius = 1.0
+		unit.height = 2.0
+		var big: bool = maxf(size.x, maxf(size.y, size.z)) > 0.09
+		var round_head: bool = size.y > 0.1 and size.y < 0.13 and size.z > 0.1
+		unit.radial_segments = 14 if round_head else 10
+		unit.rings = 7 if round_head else 4
+		var arrays: Array = unit.get_mesh_arrays()
+		var points: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+		var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+
+		for i in range(points.size()):
+			points[i] = Vector3(points[i].x * size.x, points[i].y * size.y, points[i].z * size.z)
+			normals[i] = Vector3(normals[i].x / size.x, normals[i].y / size.y, normals[i].z / size.z).normalized()
+
+		arrays[Mesh.ARRAY_VERTEX] = points
+		arrays[Mesh.ARRAY_NORMAL] = normals
+		return arrays
+
+	return _shape(kind, size).get_mesh_arrays()
+
+
 func _shape(kind: String, size: Vector3) -> Mesh:
 	if kind == "box":
 		var box: BoxMesh = BoxMesh.new()
@@ -209,7 +243,7 @@ func _shape(kind: String, size: Vector3) -> Mesh:
 	var capsule: CapsuleMesh = CapsuleMesh.new()
 	capsule.radius = size.x
 	capsule.height = size.y
-	capsule.radial_segments = 8
+	capsule.radial_segments = 10
 	capsule.rings = 2
 	return capsule
 

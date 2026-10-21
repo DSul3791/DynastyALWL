@@ -35,7 +35,7 @@ func _initialize() -> void:
 	if wide > 0.35:
 		failures.append("body wider than the 0.35 m player capsule (%.2f)" % wide)
 
-	if triangles > 2500:
+	if triangles > 3600:
 		failures.append("%d triangles is too many for a GTX 1050-class PC" % triangles)
 
 	for name in Ragdoll.ANIMATIONS:

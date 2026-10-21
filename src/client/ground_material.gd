@@ -25,6 +25,8 @@ uniform float layer_strength[6];
 uniform float tile_m = 3.0;             // metres one texture tile covers
 uniform bool triplanar = true;          // Low skips the side projections
 uniform float wet = 0.0;                // 0 dry, 1 soaked by rain: darker and glossier (weather_look.gd)
+uniform vec4 cloud_shade = vec4(0.0, 0.0, 0.0, 0.5);   // moving cloud shadows (weather_look.gd): strength 0..1 (0 = off at Low), drift x, z, coverage
+uniform vec3 sun_toward = vec3(0.0, 1.0, 0.0);          // unit vector from the ground toward the sun
 uniform float snow = 0.0;               // 0 bare, 1 snow lies on level ground (weather_look.gd)
 uniform float grass_far = 40.0;         // where the drawn grass cards end (grass_view.gd radius); the ground carries the meadow beyond it
 uniform vec4 fall_zone[3];              // nearest waterfalls: base x, z, spray radius, strength 0..1 (set_falls)
@@ -180,6 +182,18 @@ void fragment() {
 	float strata_fade = 1.0 - smoothstep(60.0, 220.0, dist);
 	color *= mix(1.0, 0.86 + 0.28 * strata, rock_mask * strata_fade);
 
+	// Mountain macro look (Tyler, 2026-10-21: far rock was one smooth lilac blob once the detail faded):
+	// colour and shading that survive distance. Broad patches of warm, cool and rusty rock on steep faces, and
+	// creases (where the surface bends sharply) darkened so gullies and ridges read from far away.
+	float macro_a = vnoise(world_pos * vec3(0.006, 0.02, 0.006));
+	float macro_b = vnoise(world_pos * vec3(0.02, 0.05, 0.02) + 11.0);
+	vec3 rock_color = mix(vec3(0.24, 0.25, 0.27), vec3(0.30, 0.25, 0.20), smoothstep(0.3, 0.7, macro_a));
+	rock_color = mix(rock_color, vec3(0.34, 0.22, 0.15), smoothstep(0.62, 0.8, macro_b) * 0.5);
+	float steep_rock = rock_mask * smoothstep(0.35, 0.6, slope);
+	color = mix(color, rock_color * (0.8 + 0.5 * macro_b), steep_rock * 0.6);
+	float crease = clamp(length(fwidth(world_normal)) * 4.0, 0.0, 1.0);
+	color *= 1.0 - 0.3 * crease * rock_mask;
+
 	// Sea bed and shallows: wet, muddy.
 	color = mix(vec3(0.07, 0.065, 0.05), color, smoothstep(-3.0, 0.0, world_pos.y));
 
@@ -205,6 +219,15 @@ void fragment() {
 
 	// Light touches on the surface: the texture's bump on the normal near the eye.
 	NORMAL = normalize(NORMAL + (VIEW_MATRIX * vec4(slope_push.x, 0.0, slope_push.y, 0.0)).xyz * 0.6 * closeness);
+
+	// Cloud shadows (Tyler, 2026-10-21): the cloud layer's own noise shape, projected along the sun ray from the
+	// cloud layer 2 km up, drifting with the wind. A 15 to 30 percent light drop in patches, Medium and up.
+	if (cloud_shade.x > 0.001 && sun_toward.y > 0.05) {
+		vec2 on_layer = world_pos.xz + sun_toward.xz * (max(2000.0 - world_pos.y, 0.0) / sun_toward.y) + cloud_shade.yz;
+		float cn = vnoise(vec3(on_layer / 1800.0, 3.0)) * 0.6 + vnoise(vec3(on_layer / 700.0, 7.0)) * 0.3 + vnoise(vec3(on_layer / 260.0, 11.0)) * 0.1;
+		float patch = smoothstep(cloud_shade.w - 0.08, cloud_shade.w + 0.1, cn);
+		color *= 1.0 - 0.28 * patch * cloud_shade.x;
+	}
 
 	// Weather: rain darkens the ground and gives it a sheen, snow whitens level ground above the sea.
 	float shelter = 0.0;

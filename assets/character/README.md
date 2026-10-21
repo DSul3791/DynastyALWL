@@ -1,7 +1,7 @@
 # Ragdoll character
 
 The plain character (no features): body, head, arms, legs, hands. Built in code by `src/client/ragdoll_body.gd`,
-so there is nothing to import. About 1.86 m tall, 0.26 m half width (the player capsule is 0.35 m), about 1.5 thousand
+so there is nothing to import. About 1.86 m tall, 0.26 m half width (the player capsule is 0.35 m), about 3.2 thousand (rounded: ellipsoid torso, head, joints, hands and feet; capsule limbs)
 triangles in one skinned mesh (one draw call), 17 bones, one neutral skin colour. Check: `godot --headless --path . --script res://tools/check_ragdoll.gd`.
 
 ## Use
