@@ -18,6 +18,8 @@ var _bars: Dictionary = {}
 var _heart: Control
 var _bpm_label: Label
 var _attributes: VBoxContainer
+var _skills_box: VBoxContainer
+var _skills_cfg: Dictionary = {}              # data/items/skills.json: names and order of the skills
 var _phase: float = 0.0
 var _text_scale_built: float = -1.0
 
@@ -155,10 +157,10 @@ func _build() -> void:
 	box.add_child(_attributes)
 	box.add_child(HSeparator.new())
 	box.add_child(_label("Skills", TITLE_PX - 6))
-	var skills: Label = _label("No skills yet. What you learn by doing will be listed here.", BODY_PX - 4)
-	skills.modulate = Color(1.0, 1.0, 1.0, 0.7)
-	skills.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	box.add_child(skills)
+	_skills_box = VBoxContainer.new()
+	box.add_child(_skills_box)
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/skills.json"))
+	_skills_cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
 	_layer.add_child(_panel)
 
 
@@ -181,6 +183,8 @@ func refresh() -> void:
 	var rows: Array = [
 		["Luck", "%+d" % int(_items.luck) if int(_items.luck) != 0 else "0", "Fixed when the character was made; nudges every roll of chance."],
 		["Fitness", "%+d" % int(_items.fitness) if int(_items.fitness) != 0 else "0", "How slowly exertion builds when you run, climb or haul. Training it is not designed yet."],
+		["Strength", "%+d" % int(_items.strength) if int(_items.strength) != 0 else "0", "Helps woodcutting, mining, digging and jumping."],
+		["Memory", "%+d" % int(_items.memory) if int(_items.memory) != 0 else "0", "Helps foraging and crafting, and recognising things you inspect."],
 		["Body weight", "%.1f kg" % float(_items.weight_kg), ""],
 		["Can carry", "%.0f kg" % float(_items.carry_limit_kg()), ""],
 	]
@@ -223,6 +227,45 @@ func refresh() -> void:
 	var more: Label = _label("More attributes will appear here as they are designed.", BODY_PX - 6)
 	more.modulate = Color(1.0, 1.0, 1.0, 0.55)
 	_attributes.add_child(more)
+
+	for child in _skills_box.get_children():
+		child.queue_free()
+
+	if _items.skill_rows.is_empty():
+		var none: Label = _label("No skills yet. What you learn by doing will be listed here.", BODY_PX - 4)
+		none.modulate = Color(1.0, 1.0, 1.0, 0.7)
+		none.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_skills_box.add_child(none)
+		return
+
+	var ids: Array = (_skills_cfg.get("skills", {}) as Dictionary).keys()
+
+	for row in _items.skill_rows:
+		var index: int = int(row[0])
+
+		if index < 0 or index >= ids.size():
+			continue
+
+		var line: HBoxContainer = HBoxContainer.new()
+		line.add_theme_constant_override("separation", _px(14))
+		var skill_name: Label = _label(str(_skills_cfg["skills"][ids[index]].get("name", ids[index])), BODY_PX)
+		skill_name.custom_minimum_size = Vector2(_px(200), 0.0)
+		line.add_child(skill_name)
+		var level_bar: ProgressBar = ProgressBar.new()
+		level_bar.show_percentage = false
+		level_bar.max_value = 100.0
+		level_bar.value = float(row[1])
+		level_bar.custom_minimum_size = Vector2(_px(260), _px(26))
+		level_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		line.add_child(level_bar)
+		line.add_child(_label("%d" % int(row[1]), BODY_PX))
+
+		if int(row[2]) == 1:
+			var rusty: Label = _label("rusty", BODY_PX - 4)
+			rusty.modulate = Color(1.0, 0.8, 0.4)
+			line.add_child(rusty)
+
+		_skills_box.add_child(line)
 
 
 # Every frame while open: the heart beats at the heart rate the sound uses (60 at rest).

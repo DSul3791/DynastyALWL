@@ -79,6 +79,9 @@ var stance_event: Callable = Callable()      # (stance) when the server confirms
 const SINK_M := 0.35                        # most the remains sink into the ground by day 7 (death.json sink_m)
 const DEATH_FADE_S := 4.0                   # black, then waking, after a death (death.json respawn_delay_s)
 var _death_msec: int = 0                    # when the last death arrived, 0 when none is being shown
+var strength: int = 0                       # attributes the server sends with the skills (protocol 37)
+var memory: int = 0
+var skill_rows: Array = []                  # [[skill index, working level, rusty], ...] in skills.json order
 var warmth: int = 100                       # body warmth, percent (protocol 36)
 var energy: int = 100                       # the Energy pool, percent (job 95)
 var forced_sleep: bool = false               # collapsed from exhaustion: asleep and cannot wake until rested (bit 8 of the stance)
@@ -130,6 +133,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.vitals_received.connect(_on_vitals)
 	net.energy_received.connect(_on_energy)
 	net.warmth_received.connect(_on_warmth)
+	net.skills_received.connect(_on_skills)
 	net.died_received.connect(_on_died)
 	net.breath_received.connect(func(deciseconds: int) -> void: breath_ds = deciseconds)
 	net.strain_received.connect(_on_strain)
@@ -1674,6 +1678,15 @@ func _build_bars_row() -> HBoxContainer:
 func _on_died(cause: String, _spawn: Vector3) -> void:
 	_death_msec = Time.get_ticks_msec()
 	show_notice("You died: %s" % cause)
+
+
+func _on_skills(attributes: PackedInt32Array, rows: Array) -> void:
+	strength = attributes[0] if attributes.size() > 0 else 0
+	memory = attributes[1] if attributes.size() > 1 else 0
+	skill_rows = rows
+
+	if _character != null:
+		_character.refresh()
 
 
 func _on_warmth(percent: int) -> void:

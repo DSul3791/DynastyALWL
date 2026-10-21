@@ -30,6 +30,7 @@ UNITS = [
     ("death", "src/worldgen/tools/test_death.gd"),
     ("spoilage", "src/worldgen/tools/test_spoilage.gd"),
     ("warmth", "src/worldgen/tools/test_warmth.gd"),
+    ("skills", "src/worldgen/tools/test_skills.gd"),
     ("persistence", "src/worldgen/tools/test_items_persistence.gd"),
     ("drills", "src/worldgen/tools/test_persistence_drills.gd"),
     ("first_hour", "src/worldgen/tools/test_first_hour.gd"),

@@ -1,12 +1,158 @@
 {
-	"note": "Skill hooks (job 70). Every action that a skill will one day speed up or improve asks the server for a factor: skill_factor(peer, action) looks the action up here and asks the skill system for that skill's level. Today the skill system does not exist and every factor is 1.0, so nothing changes. 'effect' says what the factor scales: yield (how much a gather gives), speed (blows needed, cooldown or craft time shrink by the factor). Add an action here and call skill_factor from its code; do not hard-code skill names in code.",
+	"note": "Skills (job 87, approved protocol 37; Dave's design DESIGN_IDEAS 5.4). Two layers. ACTIONS (job 70 hooks): every action that a skill speeds up or improves asks skill_factor(peer, action); 'effect' says what the factor scales (yield, speed, toughness). SKILLS: each skill has an innate part (neutral_level plus attr_scale x the sum of weight x attribute, attributes run -10..10, so an average character sits at neutral_level and every factor is exactly 1.0), a trained part (books and teachers, none yet) and practice. Level = base + (100 - base) x (1 - exp(-k x practice)), smooth, so tuning is k per skill. Working level = own level + parent_weight x the group's level (groups are skills too: practice goes 80 percent to the skill and 20 percent to its parent). Factor = 1 + (max_factor - 1) x (working - neutral) / (100 - neutral), never below min_factor. Practice comes only from successes the server verified: gain = gain_per_success x difficulty x (1 - level/100), nothing for trivial work (difficulty under trivial_below), a cooldown per skill, and a soft cap per game day. An unused skill decays lazily (computed when next touched): after grace_days idle, practice halves every half_life_days, never below floor_share of the best it reached; practice regained below the peak counts regain_mult times. 'Rusty' shows when practice is under rusty_below of the peak. Gains involve no dice, so luck does not enter (luck still rolls the yields).",
 	"actions": {
-		"gather_plant": {"skill": "foraging", "effect": "yield"},
-		"fell_tree": {"skill": "woodcutting", "effect": "speed"},
-		"work_trunk": {"skill": "woodcutting", "effect": "speed"},
-		"split_log": {"skill": "woodcutting", "effect": "speed"},
-		"mine_rock": {"skill": "mining", "effect": "speed"},
-		"fall": {"skill": "jumping", "effect": "toughness"},
-		"craft": {"skill": "crafting", "effect": "speed"}
+		"gather_plant": {
+			"skill": "foraging",
+			"effect": "yield"
+		},
+		"fell_tree": {
+			"skill": "woodcutting",
+			"effect": "speed"
+		},
+		"work_trunk": {
+			"skill": "woodcutting",
+			"effect": "speed"
+		},
+		"split_log": {
+			"skill": "woodcutting",
+			"effect": "speed"
+		},
+		"mine_rock": {
+			"skill": "mining",
+			"effect": "speed",
+			"difficulty": 1.0
+		},
+		"fall": {
+			"skill": "jumping",
+			"effect": "toughness"
+		},
+		"craft": {
+			"skill": "crafting",
+			"effect": "speed"
+		},
+		"dig": {
+			"skill": "digging",
+			"effect": "yield"
+		}
+	},
+	"system": {
+		"neutral_level": 10,
+		"attr_scale": 1.5,
+		"parent_weight": 0.3,
+		"specific_share": 0.8,
+		"min_factor": 0.8,
+		"gain_per_success": 1.0,
+		"trivial_below": 0.2,
+		"cooldown_s": 2.0,
+		"day_cap": 40.0,
+		"grace_days": 7.0,
+		"half_life_days": 60.0,
+		"floor_share": 0.2,
+		"regain_mult": 3.0,
+		"rusty_below": 0.7,
+		"send_every_s": 5.0
+	},
+	"attributes": [
+		"strength",
+		"memory"
+	],
+	"skills": {
+		"gathering": {
+			"name": "Gathering",
+			"parent": "",
+			"k": 0.02,
+			"max_factor": 1.2
+		},
+		"woodwork": {
+			"name": "Woodwork",
+			"parent": "",
+			"k": 0.02,
+			"max_factor": 1.2
+		},
+		"stonework": {
+			"name": "Stonework",
+			"parent": "",
+			"k": 0.02,
+			"max_factor": 1.2
+		},
+		"earthwork": {
+			"name": "Earthwork",
+			"parent": "",
+			"k": 0.02,
+			"max_factor": 1.2
+		},
+		"athletics": {
+			"name": "Athletics",
+			"parent": "",
+			"k": 0.02,
+			"max_factor": 1.5
+		},
+		"trades": {
+			"name": "Trades",
+			"parent": "",
+			"k": 0.02,
+			"max_factor": 1.2
+		},
+		"foraging": {
+			"name": "Foraging",
+			"parent": "gathering",
+			"attrs": {
+				"memory": 0.6,
+				"fitness": 0.4
+			},
+			"k": 0.025,
+			"max_factor": 1.5
+		},
+		"woodcutting": {
+			"name": "Woodcutting",
+			"parent": "woodwork",
+			"attrs": {
+				"strength": 0.7,
+				"fitness": 0.3
+			},
+			"k": 0.025,
+			"max_factor": 2.0
+		},
+		"mining": {
+			"name": "Mining",
+			"parent": "stonework",
+			"attrs": {
+				"strength": 0.6,
+				"fitness": 0.4
+			},
+			"k": 0.025,
+			"max_factor": 2.0
+		},
+		"digging": {
+			"name": "Digging",
+			"parent": "earthwork",
+			"attrs": {
+				"strength": 0.6,
+				"fitness": 0.4
+			},
+			"k": 0.025,
+			"max_factor": 1.5
+		},
+		"jumping": {
+			"name": "Jumping",
+			"parent": "athletics",
+			"attrs": {
+				"strength": 0.5,
+				"fitness": 0.5
+			},
+			"k": 0.025,
+			"max_factor": 4.0
+		},
+		"crafting": {
+			"name": "Crafting",
+			"parent": "trades",
+			"attrs": {
+				"memory": 0.5,
+				"strength": 0.2,
+				"fitness": 0.3
+			},
+			"k": 0.025,
+			"max_factor": 1.67
+		}
 	}
 }

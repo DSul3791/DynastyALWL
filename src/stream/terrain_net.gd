@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 36
+const PROTOCOL_VERSION := 37
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -52,6 +52,7 @@ signal notice_received(text: String)
 signal chest_received(id: int, bytes: PackedByteArray)
 signal breath_received(deciseconds: int)
 signal energy_received(percent: int)
+signal skills_received(attributes: PackedInt32Array, rows: Array)
 signal warmth_received(percent: int)
 signal died_received(cause: String, spawn: Vector3)
 signal vitals_received(hunger: int, health: int, weight_dkg: int, thirst: int, luck: int, fitness: int)
@@ -260,6 +261,14 @@ func vitals(hunger: int, health: int, weight_dkg: int, thirst: int, luck: int, f
 @rpc("authority", "call_remote", "reliable")
 func died(cause: String, spawn: Vector3) -> void:
 	died_received.emit(cause, spawn)
+
+
+# The character's skills (protocol 37, data/items/skills.json): attributes [strength, memory] (-10..10) and one row
+# [skill index in the file's "skills" order, working level 0..100, rusty 0/1] for every skill the character has practised.
+# Sent at hello and when a level, attribute or rusty flag changes (at most every 5 s).
+@rpc("authority", "call_remote", "reliable")
+func skills(attributes: PackedInt32Array, rows: Array) -> void:
+	skills_received.emit(attributes, rows)
 
 
 # Body warmth, 0 to 100 percent (protocol 36, data/items/warmth.json): at hello and whenever the whole percent changes.

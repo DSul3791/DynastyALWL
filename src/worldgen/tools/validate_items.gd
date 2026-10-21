@@ -243,6 +243,24 @@ func _init() -> void:
 	want_item.call(String(cooking.get("gives", "")), "cooking.json gives")
 	obtainable[String(cooking.get("gives", ""))] = true
 
+	# Skills: every action names a skill, every skill's parent and attributes exist.
+	var skills_cfg: Dictionary = _read("skills.json")
+	var skill_defs: Dictionary = skills_cfg.get("skills", {})
+
+	for action in skills_cfg.get("actions", {}):
+		if not skill_defs.has(String(skills_cfg["actions"][action].get("skill", ""))):
+			fail("skills.json: action '%s' names an unknown skill" % action)
+
+	for skill in skill_defs:
+		var parent: String = String(skill_defs[skill].get("parent", ""))
+
+		if parent != "" and not skill_defs.has(parent):
+			fail("skills.json: skill '%s' has unknown parent '%s'" % [skill, parent])
+
+		for attribute in skill_defs[skill].get("attrs", {}):
+			if not (skills_cfg.get("attributes", []) as Array).has(attribute) and attribute != "fitness":
+				fail("skills.json: skill '%s' draws on unknown attribute '%s'" % [skill, attribute])
+
 	# Spoilage: every perishable name exists, and the rotten item is what rot makes.
 	var spoilage: Dictionary = _read("spoilage.json")
 	want_item.call(String(spoilage.get("rotten_item", "")), "spoilage.json rotten_item")

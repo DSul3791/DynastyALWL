@@ -55,6 +55,7 @@ const PROCESS_COOLDOWN_MS := 450
 const FIRE_USE_M := 3.5
 const COOKING_PATH := "res://data/items/cooking.json"
 const GatherRules := preload("res://src/shared/gather_rules.gd")
+const SkillRules := preload("res://src/shared/skill_rules.gd")
 const GATHER_PACE_MS := 80              # at most about 12 picks a second per player (hold-E sweep)
 const MINE_REACH_M := 4.5
 const MINE_COOLDOWN_MS := 700
@@ -153,6 +154,10 @@ var _fitness_cfg: Dictionary = {}
 var send_energy: Callable       # (peer, energy percent 0..100)
 var _energy_cfg: Dictionary = {}    # data/items/energy.json
 var _death_cfg: Dictionary = {}     # data/items/death.json
+var send_skills: Callable           # (peer, attributes PackedInt32Array [strength, memory], rows Array [[skill index, working level 0..100, rusty 0/1], ...])
+var _skills_sent: Dictionary = {}   # peer -> the rows last sent
+var _skills_send_in: Dictionary = {}   # peer -> msec before which no skills message goes out
+var _last_practice: Dictionary = {}   # peer -> {skill: msec of its last counted success}
 var _warmth_cfg: Dictionary = {}    # data/items/warmth.json
 var weather_now: Callable           # () -> the weather state (Weather.state: temp_c, wind, rain, snow, ...); set by the server scene
 var insulation_of: Callable         # (peer) -> 0..1 share of body heat clothes keep; unset until clothing exists
@@ -293,11 +298,15 @@ func peer_connected_hello(peer: int, key: String) -> void:
 	_sync_vitals(peer, true)
 	_sync_energy(peer, true)
 	_sync_warmth(peer, true)
+	_sync_skills(peer, true)
 	_sync_craft_queue(peer)
 
 
 func peer_left(peer: int) -> void:
 	_swimming.erase(peer)
+	_skills_sent.erase(peer)
+	_skills_send_in.erase(peer)
+	_last_practice.erase(peer)
 	_head_under.erase(peer)
 	_breath.erase(peer)
 	_breath_sent.erase(peer)
@@ -613,6 +622,7 @@ func gather(peer: int, species_name: String, kind: String, flora_key: String, fl
 		return false
 
 	var more: float = skill_factor(peer, "gather_plant")
+	practice(peer, "gather_plant")
 
 	for row in rows:
 		give(peer, table.number_of(str(row[0])), maxi(1, int(round(float(roll_amount(peer, rng, int(row[1]), int(row[2]))) * more))))
@@ -633,10 +643,120 @@ func _tool_for(item_id: String) -> String:
 func skill_factor(peer: int, action: String) -> float:
 	var def: Dictionary = _skills_cfg.get("actions", {}).get(action, {})
 
-	if def.is_empty() or not skill_level.is_valid():
+	if def.is_empty():
 		return 1.0
 
-	return clampf(float(skill_level.call(peer, str(def.get("skill", "")))), 0.25, 4.0)
+	if skill_level.is_valid():
+		return clampf(float(skill_level.call(peer, str(def.get("skill", "")))), 0.25, 4.0)
+
+	var skill: String = str(def.get("skill", ""))
+	return clampf(SkillRules.factor(_skills_cfg, skill, working_level(peer, skill)), 0.25, 4.0)
+
+
+# --- Skills (job 87, data/items/skills.json) ---
+# Practice comes only from successes the server verified, through practice(). Records live in the character record
+# (characters.json "skills"), attributes beside luck and fitness; an old character simply has none and is neutral.
+
+func attributes_of(peer: int) -> Dictionary:
+	var row: Dictionary = _characters.get(_peer_key.get(peer, ""), {})
+	return {"strength": float(row.get("strength", 0)), "memory": float(row.get("memory", 0)), "fitness": float(fitness_of(peer))}
+
+
+func set_attribute(peer: int, name: String, value: int) -> void:
+	if _characters.has(_peer_key.get(peer, "")) and (_skills_cfg.get("attributes", []) as Array).has(name):
+		_characters[_peer_key[peer]][name] = clampi(value, -10, 10)
+		_dirty = true
+		_sync_skills(peer, true)
+
+
+func _skill_records(peer: int) -> Dictionary:
+	var row: Dictionary = _characters.get(_peer_key.get(peer, ""), {})
+
+	if row.is_empty():
+		return {}
+
+	if not row.has("skills"):
+		row["skills"] = {}
+
+	return row["skills"]
+
+
+func working_level(peer: int, skill: String) -> float:
+	var records: Dictionary = _skill_records(peer)
+	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
+
+	for id in records:
+		SkillRules.decay(_skills_cfg, records[id], now_s)
+
+	return SkillRules.working(_skills_cfg, skill, attributes_of(peer), records)
+
+
+# One verified success at `action` (a skills.json action): practice for its skill (80 percent) and the parent group (20 percent).
+# Nothing for trivial work, a cooldown per skill, a soft cap per game day; returns the points the skill gained.
+func practice(peer: int, action: String, difficulty: float = 1.0) -> float:
+	var def: Dictionary = _skills_cfg.get("actions", {}).get(action, {})
+	var records: Dictionary = _skill_records(peer)
+
+	if def.is_empty() or not _characters.has(_peer_key.get(peer, "")):
+		return 0.0
+
+	var skill: String = str(def.get("skill", ""))
+	var system: Dictionary = _skills_cfg.get("system", {})
+	var now: int = Time.get_ticks_msec()
+	var last: Dictionary = _last_practice.get(peer, {})
+
+	if float(now - int(last.get(skill, -100000))) < float(system.get("cooldown_s", 2.0)) * 1000.0:
+		return 0.0
+
+	last[skill] = now
+	_last_practice[peer] = last
+	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
+	var attrs: Dictionary = attributes_of(peer)
+	var d: float = difficulty * float(def.get("difficulty", 1.0))
+	var share: float = float(system.get("specific_share", 0.8))
+	var gained: float = SkillRules.gain(_skills_cfg, skill, attrs, records, d, now_s, share)
+	var parent: String = str(_skills_cfg.get("skills", {}).get(skill, {}).get("parent", ""))
+
+	if parent != "":
+		SkillRules.gain(_skills_cfg, parent, attrs, records, d, now_s, 1.0 - share)
+
+	if gained > 0.0:
+		_dirty = true
+		_sync_skills(peer, false)
+
+	return gained
+
+
+func _sync_skills(peer: int, force: bool) -> void:
+	if not send_skills.is_valid() or not _characters.has(_peer_key.get(peer, "")):
+		return
+
+	var now: int = Time.get_ticks_msec()
+
+	if not force and now < int(_skills_send_in.get(peer, 0)):
+		return
+
+	var records: Dictionary = _skill_records(peer)
+	var attrs: Dictionary = attributes_of(peer)
+	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
+	var rows: Array = []
+	var index: int = 0
+
+	for id in _skills_cfg.get("skills", {}):
+		if records.has(id):
+			SkillRules.decay(_skills_cfg, records[id], now_s)
+			rows.append([index, int(round(SkillRules.working(_skills_cfg, str(id), attrs, records))), 1 if SkillRules.rusty(_skills_cfg, records[id]) else 0])
+
+		index += 1
+
+	var sent_key: Array = [int(attrs["strength"]), int(attrs["memory"]), rows]
+
+	if not force and _skills_sent.get(peer, []) == sent_key:
+		return
+
+	_skills_sent[peer] = sent_key
+	_skills_send_in[peer] = now + int(float(_skills_cfg.get("system", {}).get("send_every_s", 5.0)) * 1000.0)
+	send_skills.call(peer, PackedInt32Array([int(attrs["strength"]), int(attrs["memory"])]), rows)
 
 
 func _reject(peer: int, reason: int) -> void:
@@ -879,8 +999,9 @@ func _give_dig_yield(peer: int, at: Vector3, tier: int = 1) -> void:
 		var amount: int = roll_amount(peer, _fate_rng, int(row[1]), int(row[2]) + extra)
 
 		if number > 0 and amount > 0:
-			give(peer, number, amount)
+			give(peer, number, maxi(1, int(round(float(amount) * skill_factor(peer, "dig")))))
 
+	practice(peer, "dig")
 	var under: Array = _dig_cfg.get("under", {}).get(material, [])
 
 	if under.size() == 2 and roll_chance(peer, _fate_rng, float(under[1])):
@@ -966,6 +1087,7 @@ func _mine(peer: int, inv, at: Vector3) -> void:
 	_mined[patch] = state
 	var before: Array = _snapshot(inv)
 	var left: int = inv.add(table.number_of("stone"), 1)
+	practice(peer, "mine_rock")
 
 	if left > 0:
 		drop_in_world(table.number_of("stone"), left, _peer_pos[peer])
@@ -1637,6 +1759,7 @@ func _hit(peer: int, inv, tree_id: int, chunk: Vector2i) -> void:
 
 	_chops.erase(key)
 	_fell_record(chunk, info, Vector2(spot.x - _peer_pos[peer].x, spot.z - _peer_pos[peer].z))
+	practice(peer, "fell_tree", clampf(float(info["trunk"]) * 3.0, 0.4, 2.0))   # a thick trunk teaches more than a sapling
 
 
 # Cuts a standing tree and lays its trunk and stump down (the last axe blow and a dug-out tree both end here). `away` is the
@@ -1855,6 +1978,7 @@ func _process_trunk(peer: int, inv, id: int) -> void:
 
 	_last_process[peer] = now
 	_wear_tool(peer, inv, "axe", "trunk")
+	practice(peer, "work_trunk")
 
 	if not tree.has("logs_left"):
 		tree["logs_left"] = clampi(int(float(tree["length"]) / float(cfg.get("log_length_m", 2.5)) * clampf(float(tree["radius"]) * 2.5, 0.5, 2.0)), 1, int(cfg.get("max_logs", 12)))
@@ -2263,6 +2387,7 @@ func _use_struct(peer: int, inv, id: int) -> void:
 		drop_in_world(wood, left, _peer_pos[peer])
 
 	_wear_tool(peer, inv, "axe", "split")
+	practice(peer, "split_log")
 	_dirty = true
 
 
@@ -3034,6 +3159,7 @@ func _fall(peer: int, centimetres: int) -> void:
 		return
 
 	_last_fall[peer] = now
+	practice(peer, "fall", clampf(drop / maxf(safe_m, 1.0), 0.2, 2.0))
 	v["health"] = maxf(float(v["health"]) - damage, 1.0)
 	_say(peer, "The fall hurt")
 
@@ -3161,6 +3287,7 @@ func _craft_tick(spent: float) -> void:
 			_say(peer, "%s was cancelled: a tool is missing" % str(recipe.get("name", "That")))
 		else:
 			give(peer, int(recipe["gives"][0]), int(recipe["gives"][1]))
+			practice(peer, "craft", clampf(float(recipe.get("craft_s", 3.0)) / 3.0, 0.3, 2.0))   # a long craft teaches more than a quick one
 			head[1] = int(head[1]) - 1
 
 			if int(head[1]) <= 0:
@@ -3636,6 +3763,9 @@ func _load_characters() -> void:
 			"luck": clampi(int(parsed["players"][key].get("luck", 0)), -LuckScript.MAX, LuckScript.MAX),
 			"fitness": clampi(int(parsed["players"][key].get("fitness", _fitness_default())), _fitness_min(), _fitness_max()),
 			"train": clampf(float(parsed["players"][key].get("train", 0.0)), -10.0, 10.0),
+			"strength": clampi(int(parsed["players"][key].get("strength", 0)), -10, 10),
+			"memory": clampi(int(parsed["players"][key].get("memory", 0)), -10, 10),
+			"skills": parsed["players"][key].get("skills", {}) if typeof(parsed["players"][key].get("skills", {})) == TYPE_DICTIONARY else {},
 		}
 
 
