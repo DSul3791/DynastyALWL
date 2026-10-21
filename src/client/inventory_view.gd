@@ -1816,9 +1816,9 @@ func _mesh_for(number: int) -> Mesh:
 		material.roughness = 1.0
 		var mesh: Mesh
 
-		if id == "stick" or id == "plant_fibre" or id == "firewood" or id == "log" or id == "driftwood":
-			var dims: Array = {"driftwood": [0.9, 0.06, 0.05, 0.01], "stick": [0.6, 0.02, 0.011, 0.07], "plant_fibre": [0.3, 0.012, 0.006, 0.05], "firewood": [0.4, 0.05, 0.045, 0.01], "log": [1.0, 0.13, 0.11, 0.02]}[id]
-			material.albedo_color = {"stick": Color(0.38, 0.27, 0.17), "plant_fibre": Color(0.72, 0.68, 0.45), "firewood": Color(0.5, 0.36, 0.22), "driftwood": Color(0.62, 0.58, 0.5), "log": Color(0.33, 0.24, 0.16)}[id]
+		if id == "stick" or id == "plant_fibre" or id == "firewood" or id == "log" or id == "driftwood" or id.begins_with("log_"):
+			var dims: Array = {"driftwood": [0.9, 0.06, 0.05, 0.01], "stick": [0.6, 0.02, 0.011, 0.07], "plant_fibre": [0.3, 0.012, 0.006, 0.05], "firewood": [0.4, 0.05, 0.045, 0.01], "log": [1.0, 0.13, 0.11, 0.02]}.get(id, [2.5, 0.28, 0.22, 0.02])   # a species log is the full-size 2.5 m length
+			material.albedo_color = {"stick": Color(0.38, 0.27, 0.17), "plant_fibre": Color(0.72, 0.68, 0.45), "firewood": Color(0.5, 0.36, 0.22), "driftwood": Color(0.62, 0.58, 0.5), "log": Color(0.33, 0.24, 0.16)}.get(id, Color(0.33, 0.24, 0.16))
 			mesh = _branch_mesh(float(dims[0]), float(dims[1]), float(dims[2]), float(dims[3]))
 		elif id == "stone":
 			var rock: SphereMesh = SphereMesh.new()
@@ -1904,7 +1904,7 @@ func _dress_item(node: Node3D, number: int, world_id: int, natural: bool = false
 
 	if id == "stick" or id == "plant_fibre" or id == "firewood" or id == "log" or id == "driftwood":
 		node.scale = Vector3(rng.randf_range(0.7, 1.3), 1.0, 1.0)
-		node.position.y -= 0.08 if id != "log" else 0.0
+		node.position.y -= 0.08 if id != "log" and not id.begins_with("log_") else 0.0
 	elif id == "stone":
 		node.scale = Vector3(rng.randf_range(0.8, 1.3), rng.randf_range(0.7, 1.1), rng.randf_range(0.8, 1.3))
 		node.position.y -= 0.07
