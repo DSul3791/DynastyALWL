@@ -46,6 +46,7 @@ var _spare: Dictionary = {}           # Vector4i -> PackedByteArray, prefetched
 var _answers: Dictionary = {}         # Vector4i -> PackedByteArray
 var _waiting: Dictionary = {}         # Vector4i -> true
 var _closing: bool = false
+var zeroed_blocks: int = 0
 var paused: bool = false              # main thread: requests are held (flying), so waits do not time out
 var only_urgent: bool = false         # main thread: a bake runs, no prefetch is asked for
 var link = null                       # BlockLink: when ready, misses are asked for straight from the loader thread
@@ -140,7 +141,10 @@ func _load_inner(out_buffer: VoxelBuffer, block: Vector3i, lod: int) -> int:
 		return _store(spare, out_buffer, block, lod)
 
 	if cache != null and cache.load_block(out_buffer, block, lod):
-		return RESULT_BLOCK_FOUND
+		if not _looks_zeroed(out_buffer):
+			return RESULT_BLOCK_FOUND
+
+		_note_zeroed(block, lod, "saved copy", PackedByteArray())
 
 	_mutex.lock()
 
@@ -234,6 +238,12 @@ func _store(bytes: PackedByteArray, out_buffer: VoxelBuffer, block: Vector3i, lo
 		_note_bad(block, lod, "could not unpack")
 		return RESULT_ERROR
 
+	# Ground whose distances are all exactly zero is a box to the mesher (Dave, 2026-10-21: slabs half in the hillside
+	# where the server has plain air). Never cached, and asked for again.
+	if _looks_zeroed(out_buffer):
+		_note_zeroed(block, lod, "from the server", bytes)
+		return RESULT_ERROR
+
 	# A stream that was closed (the ground was reset, or a tile was re-baked) must not write into the new cache: an
 	# answer in flight from before the reset would put old ground there for good.
 	_mutex.lock()
@@ -244,6 +254,47 @@ func _store(bytes: PackedByteArray, out_buffer: VoxelBuffer, block: Vector3i, lo
 		cache.save_block(out_buffer, block, lod)
 
 	return RESULT_BLOCK_FOUND
+
+
+# Real ground is never a whole block of distance exactly 0: sample 27 spread voxels, 20 or more at zero means a zeroed block.
+func _looks_zeroed(buffer: VoxelBuffer) -> bool:
+	var size: Vector3i = buffer.get_size()
+	var zero: int = 0
+
+	for k in range(3):
+		for j in range(3):
+			for i in range(3):
+				var v: float = buffer.get_voxel_f(1 + i * (size.x - 3) / 2, 1 + j * (size.y - 3) / 2, 1 + k * (size.z - 3) / 2, Layout.CHANNEL_SDF)
+
+				if absf(v) < 0.0005:
+					zero += 1
+
+	return zero >= 20
+
+
+func _note_zeroed(block: Vector3i, lod: int, where: String, bytes: PackedByteArray) -> void:
+	_mutex.lock()
+	zeroed_blocks += 1
+	_asked.erase(Vector4i(block.x, block.y, block.z, lod))
+	var n: int = zeroed_blocks
+	_mutex.unlock()
+	var line: String = "client: ZEROED BLOCK %s at LOD %d (%s, %d bytes, hash %d); not used, asked for again" % [str(block), lod, where, bytes.size(), hash(bytes)]
+	push_warning(line)
+	print(line)
+	var file: FileAccess = FileAccess.open("user://ground_mismatch.log", FileAccess.READ_WRITE if FileAccess.file_exists("user://ground_mismatch.log") else FileAccess.WRITE)
+
+	if file != null:
+		file.seek_end()
+		file.store_line(Time.get_datetime_string_from_system(true) + " " + line)
+		file.close()
+
+	if n <= 20 and not bytes.is_empty():
+		DirAccess.make_dir_recursive_absolute("user://zeroed_blocks")
+		var dump: FileAccess = FileAccess.open("user://zeroed_blocks/%d_%d_%d_lod%d.bin" % [block.x, block.y, block.z, lod], FileAccess.WRITE)
+
+		if dump != null:
+			dump.store_buffer(bytes)
+			dump.close()
 
 
 # A block that arrived damaged or would not unpack is dropped, never cached; it is asked for again.

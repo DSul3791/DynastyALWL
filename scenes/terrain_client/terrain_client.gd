@@ -65,7 +65,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 518
+const BUILD := 519
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -761,7 +761,7 @@ func _welcome_body(info: Dictionary) -> void:
 	if test_gear:
 		sound.gear.set_worn(["plate", "cloth", "iron"])
 	var t5: int = Probe.start()
-	debug_hud.add_line("ground check", func() -> String: return "%d samples, %d mismatches, last %s" % [check_samples, check_mismatches, check_last])
+	debug_hud.add_line("ground check", func() -> String: return "%d samples, %d mismatches, %d zeroed blocks refused, last %s" % [check_samples, check_mismatches, stream.zeroed_blocks, check_last])
 	debug_hud.add_line("video memory", func() -> String:
 		return "video memory %.0f MB (textures %.0f, buffers %.0f), objects %d, nodes %d (orphans %d), script memory %.0f MB, primitives %d" % [
 			Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0, Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED) / 1048576.0,
