@@ -56,6 +56,7 @@ const FIRE_USE_M := 3.5
 const COOKING_PATH := "res://data/items/cooking.json"
 const GatherRules := preload("res://src/shared/gather_rules.gd")
 const SkillRules := preload("res://src/shared/skill_rules.gd")
+const SkillWeb := preload("res://src/shared/skill_web.gd")
 const GATHER_PACE_MS := 80              # at most about 12 picks a second per player (hold-E sweep)
 const MINE_REACH_M := 4.5
 const MINE_COOLDOWN_MS := 700
@@ -314,7 +315,7 @@ func peer_connected_hello(peer: int, key: String) -> void:
 		_dirty = true
 
 	if not _characters.has(key):
-		_characters[key] = {"luck": _create_luck(), "fitness": _fitness_default(), "train": 0.0}
+		_characters[key] = {"luck": _create_luck(), "fitness": _fitness_default(), "train": 0.0, "skills_v": 2}
 		_dirty = true
 
 	_vitals_sent.erase(peer)
@@ -511,7 +512,7 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 			else:
 				_cancel_craft(peer, a)
 	elif kind == Net.ACT_ADMIN_GIVE:
-		if table.id_of(a) != "":
+		if table.id_of(a) != "" and (not admin_ok.is_valid() or admin_ok.call(peer)):
 			var left: int = inv.add(a, clampi(count, 1, 100))
 
 			if left > 0:
@@ -519,6 +520,9 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 
 	_send_changes(peer, inv, before)
 	_dirty = true
+
+
+var admin_ok: Callable                  # set by the server: true when the peer may use admin gives
 
 
 func tick(delta: float) -> void:
@@ -693,7 +697,7 @@ func skill_factor(peer: int, action: String) -> float:
 		return clampf(float(skill_level.call(peer, str(def.get("skill", "")))), 0.25, 4.0)
 
 	var skill: String = str(def.get("skill", ""))
-	return clampf(SkillRules.factor(_skills_cfg, skill, working_level(peer, skill)), 0.25, 4.0)
+	return clampf(SkillWeb.factor(_skills_cfg, skill, working_level(peer, skill), attributes_of(peer)), 0.25, 4.0)
 
 
 # --- Skills (job 87, data/items/skills.json) ---
@@ -702,11 +706,12 @@ func skill_factor(peer: int, action: String) -> float:
 
 func attributes_of(peer: int) -> Dictionary:
 	var row: Dictionary = _characters.get(_peer_key.get(peer, ""), {})
-	return {"strength": float(row.get("strength", 0)), "memory": float(row.get("memory", 0)), "fitness": float(fitness_of(peer))}
+	return {"strength": float(row.get("strength", 0)), "memory": float(row.get("memory", 0)), "fitness": float(fitness_of(peer)),
+		"dexterity": float(row.get("dexterity", 0)), "perception": float(row.get("perception", 0)), "charisma": float(row.get("charisma", 0))}
 
 
 func set_attribute(peer: int, name: String, value: int) -> void:
-	if _characters.has(_peer_key.get(peer, "")) and (_skills_cfg.get("attributes", []) as Array).has(name):
+	if _characters.has(_peer_key.get(peer, "")) and (_skills_cfg.get("traits", []) as Array).has(name):
 		_characters[_peer_key[peer]][name] = clampi(value, -10, 10)
 		_dirty = true
 		_sync_skills(peer, true)
@@ -731,7 +736,7 @@ func working_level(peer: int, skill: String) -> float:
 	for id in records:
 		SkillRules.decay(_skills_cfg, records[id], now_s)
 
-	return SkillRules.working(_skills_cfg, skill, attributes_of(peer), records)
+	return SkillWeb.working(_skills_cfg, skill, records)
 
 
 # One verified success at `action` (a skills.json action): practice for its skill (80 percent) and the parent group (20 percent).
@@ -754,20 +759,43 @@ func practice(peer: int, action: String, difficulty: float = 1.0) -> float:
 	last[skill] = now
 	_last_practice[peer] = last
 	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
-	var attrs: Dictionary = attributes_of(peer)
 	var d: float = difficulty * float(def.get("difficulty", 1.0))
-	var share: float = float(system.get("specific_share", 0.8))
-	var gained: float = SkillRules.gain(_skills_cfg, skill, attrs, records, d, now_s, share)
-	var parent: String = str(_skills_cfg.get("skills", {}).get(skill, {}).get("parent", ""))
-
-	if parent != "":
-		SkillRules.gain(_skills_cfg, parent, attrs, records, d, now_s, 1.0 - share)
+	var gained: float = SkillWeb.practice(_skills_cfg, skill, attributes_of(peer), records, d, now_s)
 
 	if gained > 0.0:
 		_dirty = true
 		_sync_skills(peer, false)
 
 	return gained
+
+
+# Training level up (a trainer, a teacher or an admin calls this; the trainer action itself comes with the NPC step):
+# returns "" on success or why not. teacher_peer < 0 trains without a teacher (admin and tests).
+func train_skill(peer: int, skill: String, teacher_peer: int = -1) -> String:
+	var records: Dictionary = _skill_records(peer)
+
+	if records.is_empty() and not _characters.has(_peer_key.get(peer, "")):
+		return "no such character"
+
+	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
+	var teacher_value: float = -1.0
+	var teacher_level: int = 99
+
+	if teacher_peer >= 0:
+		if teacher_peer == peer or _peer_key.get(teacher_peer, "") == _peer_key.get(peer, "x"):
+			return "you cannot teach yourself"
+
+		var theirs: Dictionary = _skill_records(teacher_peer)
+		teacher_value = SkillWeb.effective(_skills_cfg, skill, theirs)
+		teacher_level = int(theirs.get(skill, {}).get("t", 0))
+
+	var problem: String = SkillWeb.train(_skills_cfg, skill, records, now_s, teacher_value, teacher_level)
+
+	if problem == "":
+		_dirty = true
+		_sync_skills(peer, true)
+
+	return problem
 
 
 func _sync_skills(peer: int, force: bool) -> void:
@@ -788,7 +816,7 @@ func _sync_skills(peer: int, force: bool) -> void:
 	for id in _skills_cfg.get("skills", {}):
 		if records.has(id):
 			SkillRules.decay(_skills_cfg, records[id], now_s)
-			rows.append([index, int(round(SkillRules.working(_skills_cfg, str(id), attrs, records))), 1 if SkillRules.rusty(_skills_cfg, records[id]) else 0])
+			rows.append([index, int(round(SkillWeb.working(_skills_cfg, str(id), records))), 1 if SkillRules.rusty(_skills_cfg, records[id]) else 0])
 
 		index += 1
 
@@ -4718,6 +4746,26 @@ func _fitness_cost(peer: int, points: float) -> void:
 		_sync_vitals(peer, true)
 
 
+# Protocol 37 skill records become web records (data/items/skills.json "migration"): once, with a copy of the old file kept as
+# characters.json.v1.bak the first time. `dry_run` only reports what would change.
+func migrate_old_skills(key: String, row: Dictionary, dry_run: bool = false) -> Array:
+	var report: Array = []
+	var old_block: Dictionary = row.get("skills", {}) if typeof(row.get("skills", {})) == TYPE_DICTIONARY else {}
+
+	if old_block.is_empty():
+		return report
+
+	if not dry_run and _dir != "" and not FileAccess.file_exists(_dir + "/characters.json.v1.bak") and FileAccess.file_exists(_dir + "/characters.json"):
+		DirAccess.copy_absolute(_dir + "/characters.json", _dir + "/characters.json.v1.bak")
+
+	var converted: Dictionary = SkillWeb.migrate_block(_skills_cfg, old_block, report)
+
+	if not dry_run and _characters.has(key):
+		_characters[key]["skills"] = converted
+
+	return report
+
+
 func _load_characters() -> void:
 	var parsed: Variant = _read_json_version("characters.json", 1)
 
@@ -4734,7 +4782,17 @@ func _load_characters() -> void:
 			"worn": _clean_worn(parsed["players"][key].get("worn", [])),
 			"shelter": parsed["players"][key].get("shelter", []) if typeof(parsed["players"][key].get("shelter", [])) == TYPE_ARRAY else [],
 			"skills": parsed["players"][key].get("skills", {}) if typeof(parsed["players"][key].get("skills", {})) == TYPE_DICTIONARY else {},
+			"dexterity": clampi(int(parsed["players"][key].get("dexterity", 0)), -10, 10),
+			"perception": clampi(int(parsed["players"][key].get("perception", 0)), -10, 10),
+			"charisma": clampi(int(parsed["players"][key].get("charisma", 0)), -10, 10),
 		}
+
+		if int(parsed["players"][key].get("skills_v", 1)) < 2:
+			migrate_old_skills(str(key), parsed["players"][key])
+			_characters[str(key)]["skills_v"] = 2
+			_dirty = true
+		else:
+			_characters[str(key)]["skills_v"] = 2
 
 
 # Drink from the water at the player's feet (ACT_DRINK): one mouthful of thirst.drink_ml, paced like eating. The scene's water_near says whether water lies within reach.

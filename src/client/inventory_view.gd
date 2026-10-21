@@ -10,6 +10,7 @@ const ItemTableScript := preload("res://src/shared/item_table.gd")
 const InventoryScript := preload("res://src/shared/inventory.gd")
 const RecipeTableScript := preload("res://src/shared/recipe_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const AdminScript := preload("res://src/stream/server_admin.gd")
 
 const VitalsRules := preload("res://src/shared/vitals_rules.gd")
 const CharacterScreenScript := preload("res://src/client/character_screen.gd")
@@ -2712,7 +2713,37 @@ func _refresh() -> void:
 		entry.pressed.connect(_select_recipe.bind(r["number"]))
 		_recipe_list.add_child(entry)
 
+	_add_admin_builds()
 	_refresh_detail()
+
+
+# The Admin heading at the bottom of the list: the four station kits, free and unlocked. Click one to get it; put it in a quick key
+# and it is the usual placement blueprint (left click places one). Shown while the admin check is off (local play) .
+func _add_admin_builds() -> void:
+	if AdminScript.check_enabled():
+		return
+
+	var head: Label = Label.new()
+	head.text = "Admin"
+	_style(head, BODY_PX)
+	head.modulate = Color(1.0, 0.8, 0.4)
+	_recipe_list.add_child(head)
+
+	for id in ["workbench_kit", "log_workbench_kit", "stone_forge_kit", "blacksmithy_kit"]:
+		var number: int = table.number_of(id)
+
+		if number == 0:
+			continue
+
+		var entry: Button = Button.new()
+		entry.text = table.name_of(number)
+		entry.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		entry.custom_minimum_size = Vector2(0.0, _px(64))
+		entry.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		entry.modulate = Color(1.0, 0.85, 0.5)
+		_style(entry, BODY_PX)
+		entry.pressed.connect(func(): net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, number, 0, 1, Vector3.ZERO))
+		_recipe_list.add_child(entry)
 
 
 # The chosen recipe: what it needs (have / need), how many, and the Craft button.

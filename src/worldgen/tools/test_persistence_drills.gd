@@ -157,6 +157,7 @@ func build_world(dir: String) -> Dictionary:
 		a.kill(3, "drill")
 	a.vitals_of(1)["sick"] = 5000.0
 	a._characters[KEY]["strength"] = 3
+	a._characters[KEY]["skills_v"] = 2
 	a._characters[KEY]["skills"] = {"mining": {"p": 12.5, "peak": 12.5, "last": 5.0}}
 	a._last_queue_act.clear()
 	a.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 3, Vector3.ZERO)

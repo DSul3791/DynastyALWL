@@ -1,5 +1,7 @@
 extends SceneTree
 
+const SkillWebCheck := preload("res://src/shared/skill_web.gd")
+
 # Item data validator: items.json, gathered.json, recipes.json, drops.json, cooking.json.
 # Checks numbers, unknown ids, orphan core items and recipes that can never be made.
 #   godot --headless --path . --script res://src/worldgen/tools/validate_items.gd
@@ -288,15 +290,8 @@ func _init() -> void:
 		if not skill_defs.has(String(skills_cfg["actions"][action].get("skill", ""))):
 			fail("skills.json: action '%s' names an unknown skill" % action)
 
-	for skill in skill_defs:
-		var parent: String = String(skill_defs[skill].get("parent", ""))
-
-		if parent != "" and not skill_defs.has(parent):
-			fail("skills.json: skill '%s' has unknown parent '%s'" % [skill, parent])
-
-		for attribute in skill_defs[skill].get("attrs", {}):
-			if not (skills_cfg.get("attributes", []) as Array).has(attribute) and attribute != "fitness":
-				fail("skills.json: skill '%s' draws on unknown attribute '%s'" % [skill, attribute])
+	for problem in SkillWebCheck.validate(skills_cfg):
+		fail("skills.json: %s" % str(problem))
 
 	# Spoilage: every perishable name exists, and the rotten item is what rot makes.
 	var spoilage: Dictionary = _read("spoilage.json")

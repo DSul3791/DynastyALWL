@@ -1,5 +1,43 @@
 {
-	"note": "Skills (job 87, approved protocol 37; Dave's design DESIGN_IDEAS 5.4). Two layers. ACTIONS (job 70 hooks): every action that a skill speeds up or improves asks skill_factor(peer, action); 'effect' says what the factor scales (yield, speed, toughness). SKILLS: each skill has an innate part (neutral_level plus attr_scale x the sum of weight x attribute, attributes run -10..10, so an average character sits at neutral_level and every factor is exactly 1.0), a trained part (books and teachers, none yet) and practice. Level = base + (100 - base) x (1 - exp(-k x practice)), smooth, so tuning is k per skill. Working level = own level + parent_weight x the group's level (groups are skills too: practice goes 80 percent to the skill and 20 percent to its parent). Factor = 1 + (max_factor - 1) x (working - neutral) / (100 - neutral), never below min_factor. Practice comes only from successes the server verified: gain = gain_per_success x difficulty x (1 - level/100), nothing for trivial work (difficulty under trivial_below), a cooldown per skill, and a soft cap per game day. An unused skill decays lazily (computed when next touched): after grace_days idle, practice halves every half_life_days, never below floor_share of the best it reached; practice regained below the peak counts regain_mult times. 'Rusty' shows when practice is under rusty_below of the peak. Gains involve no dice, so luck does not enter (luck still rolls the yields).",
+	"version": 2,
+	"note": "Skills web (Dave 2026-10-21; design items/SKILLS_WEB_DESIGN.md, approved by Steve). Every skill is 1 to 100; everyone starts at 1. A skill's practice (xp, 'p' in the record) maps to a value by value = 1 + ln(1 + xp/generation_mult^depth x (growth-1)/base_cost) / ln(growth), so the cost of the next point is base_cost x growth^(value-1) x generation_mult^depth (depth = generations below the trait roots). Untrained cap 25; each training level adds step (25): caps 25, 50, 75, 100. Training sets a family floor of cap+5 (30, 55, 80): a skill's effective value is max(own value, the floor from training of itself or any ancestor), read at use, never written into descendants; the first time a skill is practised below its floor its xp is lifted to the floor (lazy catch-up). Gain slows to zero in the last slow_last points under the cap; training gives train_speed per level. A skill with `needs` is locked until every entry {skill, value} holds (effective values); locked skills cannot be practised. parents: weighted links (side links welcome); practice goes specific_share to the skill and the rest up the parents, feed_ratio per generation; the working value adds parent_bonus x the weighted parents above 1. traits: weighted trait roots; they change learning speed (trait_speed per point) and effectiveness (trait_effect per point), never the cap. factor = 1 + (max_factor-1) x (working-1)/(max_value-1), times (1 + trait_effect x weighted trait points), never under min_factor: 1.0 exactly for a fresh average character. Decay is as before (lazy, floor at floor_share of the peak, regain x). The graph also drives the family-tree screen (depth = row, order = place among siblings). Every number is data so Dave can tune in playtest.",
+	"system": {
+		"max_value": 100,
+		"step": 25,
+		"floor_over_cap": 5,
+		"slow_last": 6,
+		"base_cost": 40.0,
+		"growth": 1.045,
+		"generation_mult": 1.5,
+		"train_speed": 1.2,
+		"gain_units": 7.0,
+		"trivial_below": 0.2,
+		"cooldown_s": 2.0,
+		"day_cap_units": 300.0,
+		"trait_speed": 0.01,
+		"trait_effect": 0.02,
+		"specific_share": 0.8,
+		"feed_ratio": 0.4,
+		"parent_bonus": 0.2,
+		"min_factor": 0.8,
+		"grace_days": 7.0,
+		"half_life_days": 60.0,
+		"floor_share": 0.2,
+		"regain_mult": 3.0,
+		"rusty_below": 0.7,
+		"train_near_cap": 5,
+		"train_cooldown_days": 3.0,
+		"teacher_margin": 10,
+		"send_every_s": 5.0
+	},
+	"traits": [
+		"strength",
+		"memory",
+		"fitness",
+		"dexterity",
+		"perception",
+		"charisma"
+	],
 	"actions": {
 		"gather_plant": {
 			"skill": "foraging",
@@ -43,134 +81,373 @@
 			"effect": "yield"
 		}
 	},
-	"system": {
-		"neutral_level": 10,
-		"attr_scale": 1.5,
-		"parent_weight": 0.3,
-		"specific_share": 0.8,
-		"min_factor": 0.8,
-		"gain_per_success": 1.0,
-		"trivial_below": 0.2,
-		"cooldown_s": 2.0,
-		"day_cap": 40.0,
-		"grace_days": 7.0,
-		"half_life_days": 60.0,
-		"floor_share": 0.2,
-		"regain_mult": 3.0,
-		"rusty_below": 0.7,
-		"send_every_s": 5.0
-	},
-	"attributes": [
-		"strength",
-		"memory"
-	],
 	"skills": {
 		"gathering": {
 			"name": "Gathering",
-			"parent": "",
-			"k": 0.02,
-			"max_factor": 1.2
+			"parents": {},
+			"traits": {
+				"memory": 0.5,
+				"perception": 0.5
+			},
+			"max_factor": 1.2,
+			"order": 1
 		},
 		"woodwork": {
 			"name": "Woodwork",
-			"parent": "",
-			"k": 0.02,
-			"max_factor": 1.2
+			"parents": {},
+			"traits": {
+				"strength": 0.6,
+				"dexterity": 0.4
+			},
+			"max_factor": 1.2,
+			"order": 2
 		},
 		"stonework": {
 			"name": "Stonework",
-			"parent": "",
-			"k": 0.02,
-			"max_factor": 1.2
-		},
-		"earthwork": {
-			"name": "Earthwork",
-			"parent": "",
-			"k": 0.02,
-			"max_factor": 1.2
-		},
-		"athletics": {
-			"name": "Athletics",
-			"parent": "",
-			"k": 0.02,
-			"max_factor": 1.5
-		},
-		"trades": {
-			"name": "Trades",
-			"parent": "",
-			"k": 0.02,
-			"max_factor": 1.2
-		},
-		"foraging": {
-			"name": "Foraging",
-			"parent": "gathering",
-			"attrs": {
-				"memory": 0.6,
-				"fitness": 0.4
-			},
-			"k": 0.025,
-			"max_factor": 1.5
-		},
-		"woodcutting": {
-			"name": "Woodcutting",
-			"parent": "woodwork",
-			"attrs": {
+			"parents": {},
+			"traits": {
 				"strength": 0.7,
 				"fitness": 0.3
 			},
-			"k": 0.025,
-			"max_factor": 2.0
+			"max_factor": 1.2,
+			"order": 3
+		},
+		"earthwork": {
+			"name": "Earthwork",
+			"parents": {},
+			"traits": {
+				"strength": 0.6,
+				"fitness": 0.4
+			},
+			"max_factor": 1.2,
+			"order": 4
+		},
+		"athletics": {
+			"name": "Athleticism",
+			"parents": {},
+			"traits": {
+				"fitness": 0.6,
+				"strength": 0.2,
+				"dexterity": 0.2
+			},
+			"max_factor": 1.5,
+			"order": 5
+		},
+		"trades": {
+			"name": "Trades",
+			"parents": {},
+			"traits": {
+				"dexterity": 0.5,
+				"memory": 0.5
+			},
+			"max_factor": 1.2,
+			"order": 6
+		},
+		"foraging": {
+			"name": "Foraging",
+			"parents": {
+				"gathering": 1.0
+			},
+			"traits": {
+				"memory": 0.6,
+				"fitness": 0.4
+			},
+			"max_factor": 1.5,
+			"order": 6
+		},
+		"woodcutting": {
+			"name": "Woodcutting",
+			"parents": {
+				"woodwork": 1.0
+			},
+			"traits": {
+				"strength": 0.7,
+				"fitness": 0.3
+			},
+			"max_factor": 2.0,
+			"order": 7
 		},
 		"mining": {
 			"name": "Mining",
-			"parent": "stonework",
-			"attrs": {
+			"parents": {
+				"stonework": 1.0
+			},
+			"traits": {
 				"strength": 0.6,
 				"fitness": 0.4
 			},
-			"k": 0.025,
-			"max_factor": 2.0
+			"max_factor": 2.0,
+			"order": 8
 		},
 		"digging": {
 			"name": "Digging",
-			"parent": "earthwork",
-			"attrs": {
+			"parents": {
+				"earthwork": 1.0
+			},
+			"traits": {
 				"strength": 0.6,
 				"fitness": 0.4
 			},
-			"k": 0.025,
-			"max_factor": 1.5
+			"max_factor": 1.5,
+			"order": 9
 		},
 		"jumping": {
 			"name": "Jumping",
-			"parent": "athletics",
-			"attrs": {
+			"parents": {
+				"athletics": 1.0
+			},
+			"traits": {
 				"strength": 0.5,
 				"fitness": 0.5
 			},
-			"k": 0.025,
-			"max_factor": 4.0
+			"max_factor": 4.0,
+			"order": 10
 		},
 		"crafting": {
 			"name": "Crafting",
-			"parent": "trades",
-			"attrs": {
+			"parents": {
+				"trades": 1.0
+			},
+			"traits": {
 				"memory": 0.5,
 				"strength": 0.2,
 				"fitness": 0.3
 			},
-			"k": 0.025,
-			"max_factor": 1.67
+			"max_factor": 1.67,
+			"order": 11
 		},
 		"fishing": {
 			"name": "Fishing",
-			"parent": "gathering",
-			"attrs": {
+			"parents": {
+				"gathering": 1.0
+			},
+			"traits": {
 				"memory": 0.5,
 				"fitness": 0.2
 			},
-			"k": 0.02,
-			"max_factor": 1.5
+			"max_factor": 1.5,
+			"order": 12
+		},
+		"fighting": {
+			"name": "Fighting",
+			"parents": {
+				"athletics": 1.0
+			},
+			"traits": {
+				"strength": 0.4,
+				"dexterity": 0.3,
+				"fitness": 0.3
+			},
+			"max_factor": 1.5,
+			"order": 1,
+			"needs": [
+				{
+					"skill": "athletics",
+					"value": 15
+				}
+			],
+			"placeholder": true
+		},
+		"swordplay": {
+			"name": "Swordplay",
+			"parents": {
+				"fighting": 1.0
+			},
+			"traits": {
+				"strength": 0.4,
+				"dexterity": 0.3,
+				"fitness": 0.3
+			},
+			"max_factor": 1.5,
+			"order": 1,
+			"needs": [
+				{
+					"skill": "fighting",
+					"value": 15
+				}
+			],
+			"placeholder": true
+		},
+		"knives": {
+			"name": "Knives",
+			"parents": {
+				"fighting": 1.0
+			},
+			"traits": {
+				"dexterity": 0.6,
+				"fitness": 0.4
+			},
+			"max_factor": 1.5,
+			"order": 2,
+			"needs": [
+				{
+					"skill": "fighting",
+					"value": 15
+				}
+			],
+			"placeholder": true
+		},
+		"daggers": {
+			"name": "Daggers",
+			"parents": {
+				"knives": 0.6,
+				"athletics": 0.4
+			},
+			"traits": {
+				"dexterity": 0.6,
+				"fitness": 0.4
+			},
+			"max_factor": 1.5,
+			"order": 1,
+			"needs": [
+				{
+					"skill": "knives",
+					"value": 15
+				}
+			],
+			"placeholder": true
+		},
+		"rapier": {
+			"name": "Rapier",
+			"parents": {
+				"swordplay": 0.6,
+				"athletics": 0.4
+			},
+			"traits": {
+				"dexterity": 0.6,
+				"fitness": 0.4
+			},
+			"max_factor": 1.5,
+			"order": 1,
+			"needs": [
+				{
+					"skill": "swordplay",
+					"value": 15
+				}
+			],
+			"placeholder": true
+		},
+		"broadswords": {
+			"name": "Broadswords",
+			"parents": {
+				"swordplay": 0.6,
+				"athletics": 0.4
+			},
+			"traits": {
+				"strength": 0.6,
+				"fitness": 0.4
+			},
+			"max_factor": 1.5,
+			"order": 2,
+			"needs": [
+				{
+					"skill": "swordplay",
+					"value": 15
+				}
+			],
+			"placeholder": true
+		},
+		"parry": {
+			"name": "Parry",
+			"parents": {
+				"rapier": 1.0
+			},
+			"traits": {
+				"dexterity": 0.6,
+				"perception": 0.4
+			},
+			"max_factor": 1.5,
+			"order": 1,
+			"needs": [
+				{
+					"skill": "rapier",
+					"value": 15
+				}
+			],
+			"placeholder": true
+		},
+		"strike": {
+			"name": "Strike",
+			"parents": {
+				"rapier": 1.0
+			},
+			"traits": {
+				"dexterity": 0.6,
+				"perception": 0.4
+			},
+			"max_factor": 1.5,
+			"order": 2,
+			"needs": [
+				{
+					"skill": "rapier",
+					"value": 15
+				}
+			],
+			"placeholder": true
+		},
+		"sweep": {
+			"name": "Sweep",
+			"parents": {
+				"rapier": 1.0
+			},
+			"traits": {
+				"dexterity": 0.6,
+				"perception": 0.4
+			},
+			"max_factor": 1.5,
+			"order": 3,
+			"needs": [
+				{
+					"skill": "rapier",
+					"value": 15
+				}
+			],
+			"placeholder": true
+		},
+		"rapier_master": {
+			"name": "Rapier master moves",
+			"parents": {
+				"rapier": 1.0
+			},
+			"traits": {
+				"dexterity": 0.5,
+				"perception": 0.5
+			},
+			"max_factor": 1.5,
+			"order": 4,
+			"needs": [
+				{
+					"skill": "parry",
+					"value": 65
+				},
+				{
+					"skill": "strike",
+					"value": 65
+				},
+				{
+					"skill": "sweep",
+					"value": 65
+				}
+			],
+			"placeholder": true
+		}
+	},
+	"migration": {
+		"note": "Protocol 37 records hold practice p with a per-skill k: fraction f = 1 - exp(-k p) of the way to the untrained cap, so value = 1 + (step-1) f (never above the cap). Old working levels, trained and innate parts are dropped; a new average character reads neutral.",
+		"k": {
+			"gathering": 0.02,
+			"woodwork": 0.02,
+			"stonework": 0.02,
+			"earthwork": 0.02,
+			"athletics": 0.02,
+			"trades": 0.02,
+			"foraging": 0.025,
+			"woodcutting": 0.025,
+			"mining": 0.025,
+			"digging": 0.025,
+			"jumping": 0.025,
+			"crafting": 0.025,
+			"fishing": 0.02
 		}
 	}
 }

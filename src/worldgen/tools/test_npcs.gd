@@ -139,7 +139,9 @@ func _init() -> void:
 
 	# Admin keys: nobody without data/admin.json.
 	var admin = AdminScript.new()
+	admin.enforce = true
 	admin.load_keys(["user://nope/admin.json"])
+	check(AdminScript.new().is_admin("anything") or AdminScript.check_enabled(), "with the check off everybody is an admin")
 	check(not admin.is_admin("anything") and not admin.is_admin("") and admin.count() == 0, "no admin file means no admins")
 	var f: FileAccess = FileAccess.open(dir + "/admin.json", FileAccess.WRITE)
 	f.store_string("{\"keys\": [\"key-one\"]}")
