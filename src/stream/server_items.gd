@@ -1734,6 +1734,15 @@ func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 	var slope: float = (absf(h1 - h0) + absf(h2 - h0)) / 4.0
 	var stones: int = mini(int(rng.randf() * (float(cfg.get("stones_flat", 0.5)) + slope * float(cfg.get("stones_per_slope", 3.0))) * 2.0), int(cfg.get("stones_max", 4)))   # luck-exempt: seeded world layout
 	var sticks: int = mini(int(rng.randf() * 3.0), int(cfg.get("sticks_max", 2)))   # luck-exempt: seeded world layout
+	var boost: Dictionary = cfg.get("spawn_boost", {})
+
+	# Near the spawn every cell holds extra stones and sticks (a new player's first campfire kit; drops.json spawn_boost).
+	if not boost.is_empty() and Vector2(centre.x - respawn_point.x, centre.y - respawn_point.z).length() <= float(boost.get("radius_m", 0.0)):
+		var more_stones: Array = boost.get("stones_add", [0, 0])
+		var more_sticks: Array = boost.get("sticks_add", [0, 0])
+		stones = mini(stones + rng.randi_range(int(more_stones[0]), int(more_stones[1])), int(boost.get("stones_max_boost", 4)))   # luck-exempt: seeded world layout
+		sticks = mini(sticks + rng.randi_range(int(more_sticks[0]), int(more_sticks[1])), int(boost.get("sticks_max_boost", 4)))   # luck-exempt: seeded world layout
+
 	var kinds: Array = []
 
 	for n in stones:

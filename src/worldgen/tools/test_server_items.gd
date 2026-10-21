@@ -1943,5 +1943,49 @@ func _init() -> void:
 
 	check(sx6.inventory_of(1).count_of(cord6) > cord6b, "the six-ingredient craft completes")
 
+	# Campfire friction (spawn_boost): a new player's surroundings hold a campfire kit's worth; far from spawn it stays sparse.
+	var qd8: String = "user://test_server_items_boost"
+	DirAccess.make_dir_recursive_absolute(qd8)
+
+	for file8 in DirAccess.get_files_at(qd8):
+		DirAccess.remove_absolute(qd8 + "/" + file8)
+
+	var bs = make(qd8)
+	bs.respawn_point = Vector3(0.0, 10.0, 0.0)
+	bs.ground_height = func(_x, _z): return 10.0
+	bs.peer_connected_hello(1, "boostkey0001")
+	bs.report_position(1, Vector3(16.0, 10.0, 16.0))
+
+	for n in 12:
+		bs._scatter_around_players()
+
+	var near_stones: int = 0
+	var near_sticks: int = 0
+
+	for id8 in bs._items:
+		var it8: Dictionary = bs._items[id8]
+
+		if it8.has("scatter") and it8["pos"].distance_to(Vector3(16.0, 10.0, 16.0)) <= 48.0:
+			near_stones += 1 if it8["number"] == bs.table.number_of("stone") else 0
+			near_sticks += 1 if it8["number"] == bs.table.number_of("stick") else 0
+
+	check(near_stones >= 10 and near_sticks >= 20, "within 48 m of spawn lie a campfire kit's worth (%d stones, %d sticks)" % [near_stones, near_sticks])
+	var far = make(qd8 + "_far")
+	far.respawn_point = Vector3(0.0, 10.0, 0.0)
+	far.ground_height = func(_x, _z): return 10.0
+	far.peer_connected_hello(1, "boostkey0002")
+	far.report_position(1, Vector3(5000.0, 10.0, 5000.0))
+
+	for n in 12:
+		far._scatter_around_players()
+
+	var far_total: int = 0
+
+	for id9 in far._items:
+		far_total += 1 if far._items[id9].has("scatter") and far._items[id9]["pos"].distance_to(Vector3(5016.0, 10.0, 5016.0)) <= 48.0 else 0
+
+	print("scatter within 48 m: spawn %d stones %d sticks; far %d things" % [near_stones, near_sticks, far_total])
+	check(far_total < near_stones + near_sticks, "far from spawn the scatter stays sparse (%d against %d)" % [far_total, near_stones + near_sticks])
+
 	print("server item tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
