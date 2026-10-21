@@ -16,3 +16,7 @@ Answered: 2026-10-21 23:16 UTC
 Answer: Free
 Answered: 2026-10-21 23:16 UTC
 
+## coffer-heir | Banking: when a character dies, what happens to their coffers?
+Answer: They pass to the heir
+Answered: 2026-10-21 23:17 UTC
+
