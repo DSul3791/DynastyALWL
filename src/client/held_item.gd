@@ -21,6 +21,13 @@ const AIMED := Vector3(0.28, -0.12, -0.35)
 const ARMS_POS := Vector3(0.0, -0.1, -0.15)
 const ARMS_PITCH_DEG := 50.0
 const TOOL_TILT_DEG := 20.0
+# Dave 2026-10-21: at rest the arms hang at the character's side, below the bottom of the screen, and the tool sits in the hand there,
+# fixed to the body (the way you face, not the way you look): look down and you see it. Swinging, jabbing, using or aiming brings the
+# arms up to the camera pose above and back. REST_* is the body pose: where the chest is under the eye and how far forward the arms hang.
+const REST_DOWN_M := 0.3
+const REST_BACK_M := 0.05
+const REST_PITCH_DEG := 8.0
+const ARMS_FOLLOW_K := 9.0
 const GRIP_ALONG_Y := {"axe": 0.25, "torch": 0.25, "knife": 0.05, "other": 0.3, "kit": 0.0}   # model +Y runs handle to head: the grip's distance from the model origin
 const SPEAR_GRIP_Z := 0.3
 const JAB_REACH := 0.7
@@ -41,6 +48,8 @@ var _ground_below: Callable
 var held_light_budget: Callable          # () -> true when the held light may be on beside a nearby fire light (not at Low)
 var _model: Node3D
 var _arms                                 # first-person arms (Ragdoll.new(true)) on the camera; the held tool sits in its right hand
+var _stop_t: float = 0.0                  # hit stop left, seconds
+var _arm_up: float = 0.0                  # 0 arms hang at the body's side, 1 raised to the camera pose (swing, jab, use, aim)
 var _mounted: bool = false                # the model is in the hand: the arm animations move it, not the offsets below
 var _label: Label
 var _jab_t: float = -1.0
@@ -60,6 +69,8 @@ var _blueprint_shape: Vector2 = Vector2(-1.0, -1.0)
 var _blueprint_next_msec: int = 0
 
 const SWING_S := 0.55
+const HIT_STOP_S := 0.045
+const HIT_AT := 0.636                      # share of the swing where the tool reaches the target (the swing_fp clip's impact key, 0.35 s of 0.55); the thump and the server's hit are this same tick
 const REACH_M := 3.0
 
 
@@ -196,10 +207,8 @@ func _is_axe() -> bool:
 func _start_swing() -> void:
 	_swing_t = 0.0
 	_swing_hit = false
-	_arm_play("swing", SWING_S)
+	_arm_play("swing_fp", SWING_S)
 
-	if _sound != null:
-		_sound.hits.swing("axe", _camera.global_position - _camera.global_transform.basis.z * 0.6)
 
 
 # A mouse button while playing. Returns true when it was used here.
@@ -331,16 +340,28 @@ func _process_body(delta: float) -> void:
 
 	_show_model()
 	_label.text = _caption()
+	_place_arms(delta)
 
 	if _arms != null and _arms.visible and _arms.current() != "idle" and not _arms.is_one_shot_playing():
 		_arms.play("idle")
 
-	if _swing_t >= 0.0:
+	# Hit stop: the animation freezes for a moment at the impact (Tyler Report 26), then goes on.
+	if _stop_t > 0.0:
+		_stop_t -= delta
+
+		if _stop_t <= 0.0 and _arms != null:
+			_arms.animation_player.speed_scale = 1.0
+
+	if _swing_t >= 0.0 and _stop_t <= 0.0:
 		_swing_t += delta
 
-		if not _swing_hit and _swing_t >= SWING_S * 0.5:
+		if not _swing_hit and _swing_t >= SWING_S * HIT_AT:
 			_swing_hit = true
 			_strike()
+			_stop_t = HIT_STOP_S
+
+			if _arms != null and _arms.visible:
+				_arms.animation_player.speed_scale = 0.0
 
 		if _swing_t >= SWING_S:
 			_swing_t = -1.0
@@ -392,6 +413,22 @@ func _process_body(delta: float) -> void:
 		if flight["age"] > 6.0 or (not is_nan(ground) and flight["node"].global_position.y <= ground):
 			flight["node"].queue_free()
 			_flights.erase(flight)
+
+
+# The arms follow the body at rest and the camera while working: blends the two poses by _arm_up.
+func _place_arms(delta: float) -> void:
+	if _arms == null or not _arms.visible:
+		return
+
+	var working: bool = _swing_t >= 0.0 or _jab_t >= 0.0 or aiming or _arms.is_one_shot_playing()
+	_arm_up = lerpf(_arm_up, 1.0 if working else 0.0, 1.0 - exp(-ARMS_FOLLOW_K * delta))
+	var eye: Transform3D = _camera.global_transform
+	var yaw: Basis = Basis(Vector3.UP, _camera.global_rotation.y)
+	var body_pose: Transform3D = Transform3D(yaw * Basis(Vector3.RIGHT, deg_to_rad(REST_PITCH_DEG)), eye.origin + Vector3(0.0, -REST_DOWN_M, 0.0) + yaw * Vector3(0.0, 0.0, REST_BACK_M))
+	var side: Transform3D = eye.affine_inverse() * body_pose
+	var up_pos: Vector3 = ARMS_POS
+	var up_basis: Basis = Basis(Vector3.RIGHT, deg_to_rad(ARMS_PITCH_DEG))
+	_arms.transform = Transform3D(Basis(side.basis.get_rotation_quaternion().slerp(up_basis.get_rotation_quaternion(), _arm_up)), side.origin.lerp(up_pos, _arm_up))
 
 
 # The placement ghost for a held campfire: a ring on the ground where it would go, yellow in the open

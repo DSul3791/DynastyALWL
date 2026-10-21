@@ -37,6 +37,10 @@ const BONES := [
 ]
 
 # The first-person model keeps only these (the chest is its root, at the node's origin).
+# Dave 2026-10-21: the left hand does not move in an attack or swing while it holds nothing; it stays at the idle pose at the side.
+const SWING_FP_S := 0.55                # the first-person chop: its keys below are in seconds of this
+const LEFT_REST_ARM := Vector3(0.0, 0.0, -0.07)
+const LEFT_REST_FOREARM := Vector3(0.12, 0.0, 0.0)
 const ARM_BONES := ["chest", "arm_r", "forearm_r", "hand_r", "arm_l", "forearm_l", "hand_l"]
 
 # Shapes, each on one bone, in that bone's own space: bone, shape, centre, size, in arms only (the first person model).
@@ -353,6 +357,7 @@ func _build_animations() -> void:
 	library.add_animation("sit", _loop(3.0, 8, _sit))
 	library.add_animation("lie", _loop(4.0, 8, _lie))
 	library.add_animation("swing", _once(0.7, 14, _swing))
+	library.add_animation("swing_fp", _once(SWING_FP_S, 22, _swing_fp))
 	library.add_animation("jab", _once(0.5, 10, _jab))
 	library.add_animation("throw", _once(0.8, 16, _throw))
 	library.add_animation("use", _once(0.6, 12, _use))
@@ -497,8 +502,8 @@ func _lie(p: float) -> Dictionary:
 
 
 # A chop (an axe or a pick), Dave 2026-10-21: the right arm swings the tool in a diagonal, up over the right shoulder and down across
-# the body to the left at the tree, the body twisting right then left and leaning back then into it; the left hand only steadies near
-# the handle (it follows a little, it does not swing). Arm x raises forward, z moves out (right arm) or across (negative); spine twist
+# the body to the left at the tree, the body twisting right then left and leaning back then into it; the left hand stays at rest at the side
+# (it holds nothing; Dave 2026-10-21). Arm x raises forward, z moves out (right arm) or across (negative); spine twist
 # y positive turns left, lean positive leans back.
 func _swing(p: float) -> Dictionary:
 	var arm: float = _keys([[0.0, 0.2], [0.12, 1.2], [0.35, 2.6], [0.55, 0.9], [0.72, 0.55], [1.0, 0.2]], p)
@@ -509,10 +514,39 @@ func _swing(p: float) -> Dictionary:
 	var steady: float = _keys([[0.0, 0.0], [0.12, 0.7], [0.35, 1.3], [0.55, 0.95], [0.72, 0.85], [1.0, 0.0]], p)
 	return {
 		"arm_r": Vector3(arm, 0.0, out), "forearm_r": Vector3(elbow, 0.0, 0.0),
-		"arm_l": Vector3(steady, 0.0, -0.4 * minf(steady, 1.0)), "forearm_l": Vector3(0.12 + 0.8 * minf(steady, 1.0), 0.0, 0.0),
+		"arm_l": LEFT_REST_ARM, "forearm_l": LEFT_REST_FOREARM,
 		"spine": Vector3(lean, twist, 0.0), "chest": Vector3(lean * 0.5, twist * 0.7, 0.0),
 		"hips_move": Vector3(0.0, -0.05 * maxf(lean * -1.0, 0.0), 0.0),
 	}
+
+
+# The first-person axe chop (Tyler Report 26, Dave 2026-10-21 "totally wrong"): a near-vertical diagonal, up over the shoulder and
+# down in front, the hand staying in view at the top. Backswing 0.22 s eased out, pause to 0.25, downswing eased in to the impact at
+# 0.35 s, a short recoil, recovery by 0.55. A wrist track (hand_r) cocks the head back (+) then flicks it forward and down (-) late; the body barely moves (under 8 degrees)
+# and the left arm stays at rest. The arms hang from a rig pitched 50 degrees (held_item.gd ARMS_PITCH_DEG), so the angles are relative to that.
+func _swing_fp(p: float) -> Dictionary:
+	var t: float = p * SWING_FP_S
+	var arm: float = _keys_t(t, [[0.0, 0.2], [0.22, 0.7], [0.25, 0.7], [0.31, 0.65], [0.35, 0.35], [0.39, 0.33], [0.47, 0.25], [0.55, 0.2]])
+	var out: float = _keys_t(t, [[0.0, 0.07], [0.22, 0.2], [0.25, 0.2], [0.35, -0.15], [0.39, -0.15], [0.55, 0.07]])
+	var elbow: float = _keys_t(t, [[0.0, 0.12], [0.22, 1.1], [0.25, 1.1], [0.31, 0.95], [0.35, 0.45], [0.39, 0.5], [0.47, 0.4], [0.55, 0.12]])
+	var wrist: float = _keys_t(t, [[0.0, 0.0], [0.22, 1.2], [0.25, 1.2], [0.31, 0.2], [0.35, -0.9], [0.39, -0.8], [0.47, -0.3], [0.55, 0.0]])
+	var lean: float = _keys_t(t, [[0.0, 0.0], [0.22, -0.07], [0.25, -0.07], [0.35, 0.12], [0.39, 0.12], [0.55, 0.0]])
+	var twist: float = _keys_t(t, [[0.0, 0.0], [0.22, -0.1], [0.25, -0.1], [0.35, 0.1], [0.39, 0.1], [0.55, 0.0]])
+	return {
+		"arm_r": Vector3(arm, 0.0, out), "forearm_r": Vector3(elbow, 0.0, 0.0), "hand_r": Vector3(wrist, 0.0, 0.0),
+		"arm_l": LEFT_REST_ARM, "forearm_l": LEFT_REST_FOREARM,
+		"spine": Vector3(lean, twist, 0.0), "chest": Vector3(lean * 0.5, twist * 0.7, 0.0),
+	}
+
+
+# _keys by seconds, with the easing in `_keys`.
+static func _keys_t(t: float, keys: Array) -> float:
+	var phased: Array = []
+
+	for k in keys:
+		phased.append([float(k[0]) / SWING_FP_S, float(k[1])])
+
+	return _keys(phased, t / SWING_FP_S)
 
 
 # A thrust straight ahead from the shoulder (a spear).
@@ -522,7 +556,7 @@ func _jab(p: float) -> Dictionary:
 	var twist: float = _keys([[0.0, 0.0], [0.4, 0.3], [0.55, -0.25], [1.0, 0.0]], p)
 	return {
 		"arm_r": Vector3(arm, 0.0, 0.07), "forearm_r": Vector3(elbow, 0.0, 0.0),
-		"arm_l": Vector3(0.8, 0.0, -0.2), "forearm_l": Vector3(0.9, 0.0, 0.0),
+		"arm_l": LEFT_REST_ARM, "forearm_l": LEFT_REST_FOREARM,
 		"spine": Vector3(0.0, twist, 0.0), "chest": Vector3(-0.1 * absf(twist), twist, 0.0),
 	}
 
@@ -536,7 +570,7 @@ func _throw(p: float) -> Dictionary:
 	var other: float = _keys([[0.0, 0.2], [0.45, 1.2], [0.6, 0.5], [1.0, 0.2]], p)
 	return {
 		"arm_r": Vector3(arm, 0.0, 0.1), "forearm_r": Vector3(elbow, 0.0, 0.0),
-		"arm_l": Vector3(other, 0.0, -0.2), "forearm_l": Vector3(0.3, 0.0, 0.0),
+		"arm_l": LEFT_REST_ARM, "forearm_l": LEFT_REST_FOREARM,
 		"spine": Vector3(lean, twist, 0.0), "chest": Vector3(lean * 0.5, twist * 0.6, 0.0),
 	}
 
@@ -547,6 +581,6 @@ func _use(p: float) -> Dictionary:
 	var elbow: float = _keys([[0.0, 0.12], [0.3, 0.7], [0.5, 0.45], [0.7, 0.7], [1.0, 0.12]], p)
 	return {
 		"arm_r": Vector3(arm, 0.0, 0.07), "forearm_r": Vector3(elbow, 0.0, 0.0),
-		"arm_l": Vector3(0.0, 0.0, -0.07), "forearm_l": Vector3(0.12, 0.0, 0.0),
+		"arm_l": LEFT_REST_ARM, "forearm_l": LEFT_REST_FOREARM,
 		"chest": Vector3(-0.08 * sin(PI * p), 0.0, 0.0), "head": Vector3(0.1 * sin(PI * p), 0.0, 0.0),
 	}
