@@ -571,14 +571,21 @@ func tick(delta: float) -> void:
 
 	_save_in -= delta
 
+	_reap_writer()
+
 	if _save_in <= 0.0:
 		_save_in = SAVE_EVERY_S
+		_async_writes = true
 		save()
+		_async_writes = false
+		_start_writer()
 
 
 func save() -> void:
 	if _dir == "" or not _dirty:
 		return
+
+	_finish_writer()   # an earlier background write finishes first, so files land in order
 
 	_dirty = false
 	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
@@ -1402,6 +1409,18 @@ func _pickup(peer: int, inv, id: int) -> void:
 
 
 func _sync_world_items() -> void:
+	# The records are filed into a NEAR_M grid once, so each player looks only at the nine cells around them instead of every
+	# record in the world (the soak test found 2 to 9 ms a second at 20 players and 500 records, growing with both).
+	var grid: Dictionary = {}
+
+	for id in _items:
+		var cell: Vector2i = Vector2i(int(floor(_items[id]["pos"].x / NEAR_M)), int(floor(_items[id]["pos"].z / NEAR_M)))
+
+		if not grid.has(cell):
+			grid[cell] = []
+
+		grid[cell].append(id)
+
 	for peer in _known:
 		if not _peer_pos.has(peer):
 			continue
@@ -1411,8 +1430,14 @@ func _sync_world_items() -> void:
 		var added: Array = []
 		var removed: PackedInt32Array = PackedInt32Array()
 		var near: Dictionary = {}
+		var home: Vector2i = Vector2i(int(floor(here.x / NEAR_M)), int(floor(here.z / NEAR_M)))
+		var candidates: Array = []
 
-		for id in _items:
+		for dx in range(-1, 2):
+			for dz in range(-1, 2):
+				candidates.append_array(grid.get(Vector2i(home.x + dx, home.y + dz), []))
+
+		for id in candidates:
 			var it: Dictionary = _items[id]
 
 			if it["pos"].distance_to(here) <= NEAR_M:
@@ -1574,19 +1599,66 @@ func _read_json_version(name: String, version: int, oldest: int = -1) -> Variant
 # and the file it replaces is first copied to .prev (the fallback when a file later turns out torn or damaged).
 func _write_atomic(name: String, data: Dictionary) -> void:
 	var path: String = _dir + "/" + name
+	var text: String = JSON.stringify(data)   # the snapshot is taken now, on the tick
+
+	if _async_writes:
+		_pending_writes.append([path, text])   # the files are written by the background writer (see _start_writer)
+		return
+
+	_finish_writer()
+	_write_file(path, text)
+
+
+# The disk part of a save: the text goes to .tmp, the file it replaces is copied to .prev, then .tmp is renamed over it.
+static func _write_file(path: String, text: String) -> void:
 	var file: FileAccess = FileAccess.open(path + ".tmp", FileAccess.WRITE)
 
 	if file == null:
 		push_error("server items: cannot write %s" % path)
 		return
 
-	file.store_string(JSON.stringify(data))
+	file.store_string(text)
 	file.close()
 
 	if FileAccess.file_exists(path):
 		DirAccess.copy_absolute(path, path + ".prev")
 
 	DirAccess.rename_absolute(path + ".tmp", path)
+
+
+# The autosave only serialises on the tick (about 3 ms at 500 records); the file writes (renames, copies) run on one short-lived
+# background thread, so the 20 Hz tick never waits for the disk. A save() from anywhere else (shutdown, tests) first waits for
+# that thread, so files always land in order.
+var _async_writes: bool = false
+var _pending_writes: Array = []
+var _writer: Thread = null
+
+
+func _start_writer() -> void:
+	if _pending_writes.is_empty():
+		return
+
+	var batch: Array = _pending_writes
+	_pending_writes = []
+	_writer = Thread.new()
+	_writer.start(_write_batch.bind(batch))
+
+
+static func _write_batch(batch: Array) -> void:
+	for row in batch:
+		_write_file(str(row[0]), str(row[1]))
+
+
+func _reap_writer() -> void:
+	if _writer != null and not _writer.is_alive():
+		_writer.wait_to_finish()
+		_writer = null
+
+
+func _finish_writer() -> void:
+	if _writer != null:
+		_writer.wait_to_finish()
+		_writer = null
 
 
 # Loose stones and fallen sticks lie about the ground (Dave, 2026-10-20: more stones near rock

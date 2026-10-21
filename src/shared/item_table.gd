@@ -77,7 +77,19 @@ func spoilage() -> Dictionary:
 	return _spoil
 
 
+var _shelf_cache: Dictionary = {}   # item number -> shelf life in units (the spoilage tick asks for every slot of every pack)
+
+
 func shelf_units(number: int) -> int:
+	if _shelf_cache.has(number):
+		return int(_shelf_cache[number])
+
+	var units: int = _shelf_units_uncached(number)
+	_shelf_cache[number] = units
+	return units
+
+
+func _shelf_units_uncached(number: int) -> int:
 	var cfg: Dictionary = spoilage()
 
 	if cfg.is_empty():

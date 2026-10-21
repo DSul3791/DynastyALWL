@@ -202,6 +202,23 @@ func _init() -> void:
 
 		print("soak: profile %s: %.3f ms per pass over %d players" % [fname, float(Time.get_ticks_usec() - t3) / 10000.0, items._peer_key.size()])
 
+	for fname in ["_save_trees", "_save_chests", "_save_vitals", "_save_characters", "_save_craft_queues"]:
+		var t5: int = Time.get_ticks_usec()
+		items.call(fname)
+		print("soak: save %s: %.2f ms" % [fname, float(Time.get_ticks_usec() - t5) / 1000.0])
+
+	items._async_writes = true
+	for fname in ["_save_trees", "_save_chests", "_save_vitals", "_save_characters", "_save_craft_queues"]:
+		var t7: int = Time.get_ticks_usec()
+		items.call(fname)
+		print("soak: serialise %s: %.2f ms" % [fname, float(Time.get_ticks_usec() - t7) / 1000.0])
+
+	items._pending_writes.clear()
+	items._async_writes = false
+	var t6: int = Time.get_ticks_usec()
+	items._dirty = true
+	items.save()
+	print("soak: whole save: %.2f ms" % [float(Time.get_ticks_usec() - t6) / 1000.0])
 	var steps: int = total.size()
 	var settled: Array = total.slice(steps / 2)
 	settled.sort()
