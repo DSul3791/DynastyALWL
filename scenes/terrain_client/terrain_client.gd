@@ -56,7 +56,7 @@ const FaintEffectScript := preload("res://src/client/faint_effect.gd")
 const FallMistScript := preload("res://src/client/fall_mist.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 336
+const BUILD := 341
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
@@ -873,6 +873,10 @@ func _on_dug(center: Vector3, radius: float) -> void:
 	tool.mode = VoxelTool.MODE_REMOVE
 	tool.do_sphere(center, radius)
 	dig_applied += 1
+
+	if grass != null:
+		grass.ground_changed(center, radius)
+
 	print("Terrain client: applied a %.1f m dig at %s; ground value there now %.2f (above 0 is open)" % [
 		radius, str(center), tool.get_voxel_f(Vector3i(center.round()))
 	])

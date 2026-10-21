@@ -27,7 +27,7 @@ const CROWN_LITTER_FROM := 0.05          # litter starts getting denser here
 const CROWN_LITTER_TO := 0.4             # ... and reaches its full depth here
 const LITTER_DEEP_LEAVES := 5.0          # leaf cards per sample at full depth, times the normal count
 const LITTER_DEEP_TWIGS := 4.0           # twigs likewise
-const SCENERY_PEBBLES := false           # owner (2026-10-21): any loose rock we put down must be pickable, so no decorative pebbles; Items scatters real stones
+const SCENERY_PEBBLES := true            # owner (2026-10-21): pebbles are decoration (not pickable, not harvestable, like a voxel texture); they vanish when the ground under them is dug (ground_changed)
 const SCENERY_BOULDERS := true           # owner (2026-10-21): boulders are not rocks: they stay as scenery, harvestable by the right tool later (Items)
 const SHORT_SOIL_LIFT := 1.9    # short grass: soil thickness times at most this, capped at 1 (0.5 becomes 0.95, 0.3 becomes 0.57)
 
@@ -213,6 +213,7 @@ var _scan_now: int = 0
 var _scan_keep: Dictionary = {}
 const SCAN_ROWS_PER_FRAME := 4
 var _center: Vector3 = Vector3.ZERO
+var _edits: Array = []                   # [when msec, cells] ground changes waiting for their collision before cells are redrawn
 var _last_position: Vector3 = Vector3.ZERO
 var _last_msec: int = 0
 var _velocity: Vector2 = Vector2.ZERO
@@ -591,9 +592,39 @@ func _clear_all() -> void:
 
 
 # Call from the client's physics step with the player's position.
+# The ground changed (a dig): the grass, litter and rocks standing there are redrawn from the new ground a
+# moment later, once its collision has caught up (owner, 2026-10-21: pebbles and grass should vanish when
+# anyone digs the voxel under them). Twice, the second time to catch a slow collision.
+func ground_changed(center: Vector3, radius: float) -> void:
+	var reach: float = radius + 1.0
+	var x0: int = int(floor((center.x - reach) / CELL_M))
+	var x1: int = int(floor((center.x + reach) / CELL_M))
+	var z0: int = int(floor((center.z - reach) / CELL_M))
+	var z1: int = int(floor((center.z + reach) / CELL_M))
+	var cells: Array = []
+
+	for cz in range(z0, z1 + 1):
+		for cx in range(x0, x1 + 1):
+			cells.append(Vector2i(cx, cz))
+
+	var now: int = Time.get_ticks_msec()
+	_edits.append([now + 600, cells])
+	_edits.append([now + 2500, cells])
+
+
 func update(position: Vector3) -> void:
 	if not enabled or _meshes.is_empty():
 		return
+
+	while not _edits.is_empty() and Time.get_ticks_msec() >= int(_edits[0][0]):
+		var due: Array = _edits.pop_front()
+
+		for cell in due[1]:
+			var entry = _cells.get(cell)
+
+			if entry != null and entry["built"] and not entry["busy"]:
+				entry["busy"] = true
+				_pending.push_front(cell)
 
 	_center = position
 	var now: int = Time.get_ticks_msec()

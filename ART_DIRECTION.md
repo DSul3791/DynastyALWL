@@ -322,3 +322,7 @@ Owner rule (2026-10-21): any rock mesh placed in the world must be pickable. gra
 ## 43. Boulders stay, pebbles go (build 336)
 
 Owner (2026-10-21): boulders are not rocks; they are boulders, harvestable by the right tool. So SCENERY_BOULDERS is true again in grass_view.gd (the mossy granite lumps near water and on slopes, section 32) and only the decorative pebbles stay off (SCENERY_PEBBLES false; loose rocks must be pickable, Items scatters them). Placement is client side and deterministic per 6 m cell (rng seed hash(cell)), from a ground ray, the patch noise and the water test, so the server cannot reproduce it. For harvesting Items would need the boulders as server entities; GrassView._make_boulder() (static, ArrayMesh, radius 1 unit, scaled 0.3 to 1.2 m, 0.65 to 1.1 tall, sunk 20 percent) is the mesh to reuse.
+
+## 44. Pebbles back, redrawn after digs (build 341)
+
+Owner (2026-10-21): pebbles are decoration, not pickable or harvestable, like a voxel texture; they should vanish if anyone digs the voxel under them. SCENERY_PEBBLES is true again. New `GrassView.ground_changed(center, radius)`, called from terrain_client `_on_dug`: the 6 m cells around a dig are redrawn 0.6 s and again 2.5 s later (once the ground collision has caught up), so grass, litter, pebbles and boulders over a dug hole are gone (before this nothing redrew a cell after an edit until it left reach or changed band). Boulders stay scenery (section 43). Only digs the client applies are covered; if building or other edits change the ground they need the same call.
