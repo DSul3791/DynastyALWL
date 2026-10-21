@@ -28,6 +28,7 @@ var _lines_written: int = 0
 var _logger: Logger
 var _next_state_msec: int = 0
 var _build: int = 0
+var _last_tick_msec: int = 0
 
 
 class BreadLogger extends Logger:
@@ -92,6 +93,11 @@ func event(text: String) -> void:
 # Call every frame with a function that makes the state text; writes it every 5 seconds.
 func tick(state: Callable) -> void:
 	var now: int = Time.get_ticks_msec()
+
+	if _last_tick_msec > 0 and now - _last_tick_msec > 1000:
+		event("STALL: the main thread did not run for %d ms" % (now - _last_tick_msec))
+
+	_last_tick_msec = now
 
 	if now < _next_state_msec:
 		return

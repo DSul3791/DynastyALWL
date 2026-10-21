@@ -66,7 +66,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 567
+const BUILD := 568
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -648,7 +648,11 @@ func _ready() -> void:
 	# Started by the "play" launcher, whose server may still be loading.
 	if AppConfig.get_command_line_value("role", "") == "play" and _wait_until_msec == 0:
 		_wait_until_msec = Time.get_ticks_msec() + 120000
-	multiplayer.server_disconnected.connect(func(): print("Terrain client: server left"); _finish(1))
+	multiplayer.server_disconnected.connect(func():
+		print("Terrain client: server left")
+		if crash_report != null:
+			crash_report.event("server left: the game quits (the server dropped this client, or ended)")
+		_finish(1))
 	multiplayer.connection_failed.connect(_on_connection_failed)
 	started_msec = Time.get_ticks_msec()
 	_connect()
