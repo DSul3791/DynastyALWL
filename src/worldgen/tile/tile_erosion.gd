@@ -99,8 +99,8 @@ func build(height_map, rock = null, margin: int = 0, frame_samples: int = 0) -> 
 
 	# Tyler (2026-10-21, M1): the far mountains were smooth mounds without drainage. A second, stronger
 	# run (more stream power, more steps) is blended in only on high ground (mountain.from_m to full_m) and
-	# not at all near the places that must not move (mountain.keep_clear: x, z, radius_m, fade_m), so the
-	# lowlands, rivers, ponds and the spawn keep their shape; the tile-edge fade below still applies.
+	# (no place-specific masks: Dave 2026-10-21), so the lowlands, rivers, ponds and bays keep their shape;
+	# the tile-edge fade below still applies.
 	var mountain: Dictionary = _rules.get("mountain", {})
 
 	if not mountain.is_empty():
@@ -121,13 +121,6 @@ func build(height_map, rock = null, margin: int = 0, frame_samples: int = 0) -> 
 			for column in range(coarse):
 				var index: int = row * coarse + column
 				var mask: float = smoothstep(float(mountain["from_m"]), float(mountain["full_m"]), start[index])
-				var wx: float = float(origin_sx + column * step) * spacing
-				var wz: float = float(origin_sz + row * step) * spacing
-
-				for clear in mountain.get("keep_clear", []):
-					var away: float = Vector2(wx - float(clear["x"]), wz - float(clear["z"])).length()
-					mask *= smoothstep(float(clear["radius_m"]), float(clear["radius_m"]) + float(clear["fade_m"]), away)
-
 				current[index] = lerpf(current[index], strong[index], mask)
 
 	# Change per coarse point, faded toward the tile edges.
