@@ -2481,7 +2481,7 @@ func run_strain_test(client) -> void:
 	var spawn_pos: Vector3 = client.body.global_position
 	waited = 0.0
 
-	while Vector2(client.body.global_position.x - spawn_pos.x, client.body.global_position.z - spawn_pos.z).length() < 5.0 and waited < 90.0:
+	while Vector2(client.body.global_position.x - spawn_pos.x, client.body.global_position.z - spawn_pos.z).length() < 40.0 and waited < 90.0:
 		await get_tree().create_timer(0.5).timeout
 		waited += 0.5
 
