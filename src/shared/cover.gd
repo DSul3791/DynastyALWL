@@ -16,6 +16,9 @@ const CELL_M := 16.0
 const KIND_TREE := 0
 const SIZE_MIN := 0.3                     # tree size scale limits, as the placer's spacing (young trees small)
 const SIZE_MAX := 1.2
+const SHELTER_AREA := 2.0                 # Dave 2026-10-21: rain came through the leaves, so the sheltered area is twice the crown disc
+const SHELTER_RADIUS := 1.41421356        # sqrt(SHELTER_AREA); crown_depth divides it out so grass and litter keep the true crown
+const RADIUS_CAP := 16.0                  # a crown must reach at most one cell beyond its own (the query looks one cell around)
 
 
 # Roof shapes (lean-tos and the like), added by the same code on client and server. A roof
@@ -59,7 +62,7 @@ static func add_chunk(index, chunk: Vector2i, items: Dictionary, info: Callable)
 		var height: float = float(heights[n])
 		var scale: float = clampf(height / maxf(float(row[2]), 0.1), SIZE_MIN, SIZE_MAX)
 		var p: Vector3 = positions[n]
-		trees.append([ids[n], p.x, p.z, float(row[1]) * 0.5 * scale, p.y + height])
+		trees.append([ids[n], p.x, p.z, minf(float(row[1]) * 0.5 * scale * SHELTER_RADIUS, RADIUS_CAP), p.y + height])
 
 	index.set_chunk(chunk, trees)
 
@@ -286,7 +289,7 @@ class Index:
 				for n in range(0, f.size(), 4):
 					var ox: float = pos.x - f[n]
 					var oz: float = pos.z - f[n + 1]
-					var r2: float = f[n + 2] * f[n + 2]
+					var r2: float = f[n + 2] * f[n + 2] / SHELTER_AREA
 
 					if ox * ox + oz * oz < r2 and pos.y <= f[n + 3]:
 						best = maxf(best, 1.0 - sqrt((ox * ox + oz * oz) / r2))

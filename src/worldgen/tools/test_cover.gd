@@ -28,10 +28,11 @@ func _init() -> void:
 	check(index.trees == 2, "only trees are indexed (%d)" % index.trees)
 	check(Cover.at(Vector3(100.0, 52.0, 100.0), index) == 1.0, "under the crown is covered")
 	check(Cover.at(Vector3(104.0, 52.0, 100.0), index) == 1.0, "inside the radius is covered")
-	check(Cover.at(Vector3(106.0, 52.0, 100.0), index) == 0.0, "outside the radius is open")
+	check(Cover.at(Vector3(106.5, 52.0, 100.0), index) == 1.0 and Cover.at(Vector3(107.2, 52.0, 100.0), index) == 0.0, "the sheltered area is twice the crown disc (radius 7.07 m for a 5 m crown)")
+	check(Cover.at(Vector3(108.0, 52.0, 100.0), index) == 0.0, "outside the radius is open")
 	check(Cover.at(Vector3(100.0, 80.0, 100.0), index) == 0.0, "above the treetop is open")
 	# The small tree (height 10 of 20): radius 5 * 0.5 = 2.5 m.
-	check(Cover.at(Vector3(132.0, 52.0, 100.0), index) == 1.0 and Cover.at(Vector3(133.0, 52.0, 100.0), index) == 0.0, "crown grows with the tree's size")
+	check(Cover.at(Vector3(133.0, 52.0, 100.0), index) == 1.0 and Cover.at(Vector3(134.0, 52.0, 100.0), index) == 0.0, "crown grows with the tree's size")
 	check(Cover.at(Vector3(200.0, 52.0, 200.0), index) == 0.0, "shrubs give no cover")
 	check(Cover.at(Vector3(100.0, 52.0, 100.0), null) == 0.0, "no index means open")
 
