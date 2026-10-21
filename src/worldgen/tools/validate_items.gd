@@ -33,6 +33,23 @@ func _read(file: String) -> Dictionary:
 	return parsed
 
 
+# Depth-first walk of the "made from" graph; a way back to an item on the current path is a cycle.
+func _walk(id: String, path: Array, edges: Dictionary, state: Dictionary) -> void:
+	if int(state.get(id, 0)) == 2:
+		return
+
+	if int(state.get(id, 0)) == 1:
+		fail("recipe cycle: %s" % " -> ".join(path + [id]))
+		return
+
+	state[id] = 1
+
+	for next in edges.get(id, []):
+		_walk(String(next), path + [id], edges, state)
+
+	state[id] = 2
+
+
 func _init() -> void:
 	var items_file: Dictionary = _read("items.json")
 	var gathered_file: Dictionary = _read("gathered.json")
@@ -136,9 +153,14 @@ func _init() -> void:
 		for y in entry.get("yields", []):
 			yields[String(y)] = true
 
+	var gatherable: Dictionary = {}   # plain materials a gatherer finds on flora (gathered.json items that are still a flora yield)
+
 	for id in gathered_file.get("items", {}):
 		if not yields.has(id):
 			warn("gathered.json: '%s' is no longer a flora yield" % id)
+		else:
+			gatherable[id] = true
+			obtainable[id] = true
 
 	# Cooking.
 	want_item.call(String(cooking.get("gives", "")), "cooking.json gives")
@@ -226,17 +248,95 @@ func _init() -> void:
 		want_item.call(String(def.get("item", "")), "structures.json %s item" % kind)
 		obtainable[String(def.get("item", ""))] = true
 
-	# Core items nothing produces or uses; the campfire kit is placed, not found.
+	# Recipe graph (job 72): every core item is gatherable, craftable from gatherables, or marked "future": true in items.json;
+	# no cycles; dead ends (obtainable materials nothing uses) are listed so Dave can see what still has no purpose.
+	var craftable: Dictionary = {}
+	var edges: Dictionary = {}   # item id -> the item ids it is made from (needs and keeps)
+
+	for rid in recipes:
+		var out: String = String(recipes[rid].get("gives", [""])[0])
+		craftable[out] = true
+
+		if not edges.has(out):
+			edges[out] = []
+
+		for list in ["needs", "keeps"]:
+			for row in recipes[rid].get(list, []):
+				edges[out].append(String(row[0]))
+
+	var state: Dictionary = {}   # id -> 1 on the walk, 2 done
+
+	for id in edges:
+		_walk(id, [], edges, state)
+
+	var future: Array = []
+	var placed_forms: Dictionary = {}
+
+	for kind in structures:
+		placed_forms[String(structures[kind].get("item", ""))] = true
+
 	for id in items_file.get("items", {}):
-		if not obtainable.has(id) and not String(id).ends_with("_kit"):
-			warn("orphan core item '%s' (no drop, no recipe gives it)" % id)
+		var entry: Dictionary = items_file["items"][id]
+		var is_future: bool = bool(entry.get("future", false))
 
-	var unused: int = 0
+		if is_future:
+			future.append(id)
 
-	for id in gathered_file.get("items", {}):
-		if not obtainable.has(id):
-			unused += 1
+		if not obtainable.has(id) and not String(id).ends_with("_kit") and not is_future:
+			fail("core item '%s' is not gatherable, not craftable and not marked \"future\": true" % id)
+		elif obtainable.has(id) and is_future:
+			warn("core item '%s' is marked future but can be obtained" % id)
 
-	print("items: %d core, %d gathered (%d not yet obtainable, waiting on herb and food systems), %d recipes" % [items_file.get("items", {}).size(), gathered_file.get("items", {}).size(), unused, recipes.size()])
+	var used: Dictionary = {}
+
+	for rid in recipes:
+		for list in ["needs", "keeps"]:
+			for row in recipes[rid].get(list, []):
+				used[String(row[0])] = true
+
+	for id in cooking.get("fuel", {}):
+		used[String(id)] = true
+
+	used[String(cooking.get("tinder", ""))] = true
+
+	for id in items_file.get("items", {}):
+		for row in items_file["items"][id].get("repair", []):
+			used[String(row[0])] = true
+
+	var food: Dictionary = _read("vitals.json").get("food", {})
+
+	for id in food.get("by_id", {}):
+		used[String(id)] = true
+
+	var dead_core: Array = []
+
+	for id in items_file.get("items", {}):
+		var entry: Dictionary = items_file["items"][id]
+
+		if String(entry.get("kind", "")) == "material" and obtainable.has(id) and not used.has(id):
+			dead_core.append(id)
+
+	if not dead_core.is_empty():
+		warn("dead-end materials (obtainable, no recipe, fuel or repair uses them): %s" % ", ".join(dead_core))
+
+	var edible_suffixes: Array = []
+
+	for suffix in food.get("by_suffix", {}):
+		edible_suffixes.append(String(suffix))
+
+	var gathered_unused: int = 0
+
+	for id in gatherable:
+		var eaten: bool = false
+
+		for suffix in edible_suffixes:
+			eaten = eaten or String(id).ends_with(suffix)
+
+		if not used.has(id) and not eaten:
+			gathered_unused += 1
+
+	print("graph: %d core items: %d gatherable plain materials feed %d craftable items; %d marked future (%s); %d gathered materials have no use yet" % [items_file.get("items", {}).size(), gatherable.size(), craftable.size(), future.size(), ", ".join(future), gathered_unused])
+
+	print("items: %d core, %d gathered, %d recipes" % [items_file.get("items", {}).size(), gathered_file.get("items", {}).size(), recipes.size()])
 	print("item validator: %d errors, %d warnings" % [errors, warnings])
 	quit(1 if errors > 0 else 0)
