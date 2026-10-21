@@ -1193,7 +1193,13 @@ func _refresh(chunk: Vector2i, position: Vector3) -> void:
 	_serial += 1
 	entry["building"] = level
 	entry["serial"] = _serial
-	var items: Dictionary = entry["items"].duplicate()     # packed arrays copy on write, so the worker never sees later removals
+	# The worker gets real copies of the arrays: remove_item (felling) changes the chunk's own arrays on the
+	# main thread while the worker reads, and sharing them crashed the worker (out of bounds in _plan, 2026-10-21).
+	var items: Dictionary = {}
+
+	for key in entry["items"]:
+		var value = entry["items"][key]
+		items[key] = value.duplicate() if (value is PackedInt32Array or value is PackedFloat32Array or value is PackedVector3Array) else value
 	_tasks.append(WorkerThreadPool.add_task(_plan_task.bind(chunk, _serial, level, items), false, "flora chunk"))
 
 
@@ -1297,8 +1303,10 @@ func _plan(items: Dictionary, level: int) -> Dictionary:
 	var groups: Dictionary = {}       # [species, part x, part z, variant, near] -> PackedInt32Array of indices
 	var shapes: Array = []            # [species, radius, position]
 	var lights: Array = []
+	# Never past the shortest of the item arrays (they change together; a mismatch must not crash the worker).
+	var count: int = mini(mini(ids.size(), items["positions"].size()), mini(items["heights"].size(), items["yaws"].size()))
 
-	for n in range(ids.size()):
+	for n in range(count):
 		var species_id: int = ids[n] >> 16
 		var info: Dictionary = _species.get(species_id, {})
 
@@ -1357,7 +1365,7 @@ func _plan(items: Dictionary, level: int) -> Dictionary:
 	if (level & 8) != 0:
 		var lit: Dictionary = {}
 
-		for n in range(ids.size()):
+		for n in range(count):
 			var info: Dictionary = _species.get(ids[n] >> 16, {})
 
 			if not info.has("glow") or lit.size() >= GLOW_LIGHTS:

@@ -310,3 +310,7 @@ Owner (2026-10-21): "the grass stops rendering while I am moving ... pops into v
 ## 40. River mouth (build 313)
 
 Owner rule: rivers run into the sea so they look like one body (brown is only a test colour). water_material.gd now fades the flood brown (`mud`) out of any water whose surface is within MOUTH_FROM_M (0.4 m) to MOUTH_TO_M (4.5 m) above sea level (0 m), so a river's colour is the sea's by the time it reaches it, with no edge or step; the sea itself is at 0 m and is unchanged. Where fresh meets salt (the middle of that height range) moving water gets a soft band of foam (`meet`, at most 45 percent). Storm colour and murk are shared by rivers and sea (same uniforms from weather_look.gd), so the storm look matches on both. Shader only; no tile data, no re-bake. Not checked on the real river mouth (needs Dave's build): look at where a river meets the ocean in calm and in a storm.
+
+## 41. Flora worker crash (build 317)
+
+Crash (owner, 2026-10-21): "Out of bounds get index '3424' (on base: 'PackedInt32Array')" in FloraView._plan on a worker thread. The worker was handed a shallow copy of a chunk's item arrays; `remove_item` (a tree felled) changes those arrays on the main thread while the worker reads them. Now `_refresh` gives the worker real copies of the packed arrays, and `_plan` never reads past the shortest of ids, positions, heights and yaws.
