@@ -182,6 +182,9 @@ var points_per_side: int = 4
 var density: float = 1.0                 # share of each layer's per_point cards drawn (quality)
 var tufts: int = 0                       # cards drawn now
 var cells_built: int = 0
+var cleared: Array = []                  # Vector3 spots of placed items: no grass or litter within clear_m (set_cleared)
+var clear_m: float = 5.0
+var clear_edge_m: float = 1.5
 var litter_m: float = 0.0                # forest litter drawn this far (0 off), set by the client per quality
 var litter_density: float = 0.0          # share of each litter layer's per_point drawn
 var litter_cap: int = 1 << 30            # hard limit on leaf cards and branches drawn at once (Technical direction: Low 3k, Medium 20k, High 40k, Ultra 60k)
@@ -698,6 +701,52 @@ func _clear_all() -> void:
 # The ground changed (a dig): the grass, litter and rocks standing there are redrawn from the new ground a
 # moment later, once its collision has caught up (owner, 2026-10-21: pebbles and grass should vanish when
 # anyone digs the voxel under them). Twice, the second time to catch a slow collision.
+# The placed things of the world (a fire, a bench, a chest...): no grass or litter within radius of any, thinning over the last edge_m.
+# The cells around a spot that was added or taken away are built again at once.
+func set_cleared(spots: Array, radius: float, edge: float) -> void:
+	var changed: Array = []
+
+	for spot in spots:
+		if not cleared.has(spot):
+			changed.append(spot)
+
+	for spot in cleared:
+		if not spots.has(spot):
+			changed.append(spot)
+
+	cleared = spots
+	clear_m = radius
+	clear_edge_m = edge
+
+	for spot in changed:
+		var reach: float = radius + 1.0
+		var cells: Array = []
+
+		for cz in range(int(floor((spot.z - reach) / CELL_M)), int(floor((spot.z + reach) / CELL_M)) + 1):
+			for cx in range(int(floor((spot.x - reach) / CELL_M)), int(floor((spot.x + reach) / CELL_M)) + 1):
+				cells.append(Vector2i(cx, cz))
+
+		_edits.push_front([Time.get_ticks_msec() + 50, cells])
+
+
+# Is (x, z) inside a placed item's circle (with the soft edge decided by a fixed scatter, so the same spot always gives the same answer).
+func _cleared_at(x: float, z: float) -> bool:
+	for spot in cleared:
+		var d: float = Vector2(x - spot.x, z - spot.z).length()
+
+		if d >= clear_m:
+			continue
+
+		var keep: float = smoothstep(clear_m - clear_edge_m, clear_m, d)
+
+		var scatter: float = fposmod(sin(floorf(x * 3.0) * 12.9898 + floorf(z * 3.0) * 78.233) * 43758.5453, 1.0)   # a fixed random number per third of a metre
+
+		if keep <= scatter:
+			return true
+
+	return false
+
+
 func ground_changed(center: Vector3, radius: float) -> void:
 	var reach: float = radius + 1.0
 	var x0: int = int(floor((center.x - reach) / CELL_M))
@@ -952,6 +1001,9 @@ func _build(cell: Vector2i) -> int:
 					_put_boulders(buffers, counts, rng, point, spacing, hit["normal"].y, water)
 
 			if not is_nan(water) and point.y < water + 0.3:
+				continue
+
+			if not cleared.is_empty() and _cleared_at(x, z):
 				continue
 
 			# Owner (2026-10-21): under a big crown almost no grass except at the edge of its canopy footprint,

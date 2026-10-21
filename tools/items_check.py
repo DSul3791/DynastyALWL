@@ -39,6 +39,7 @@ UNITS = [
     ("npcs", "src/worldgen/tools/test_npcs.gd"),
     ("npc view", "src/worldgen/tools/test_npc_view.gd"),
     ("faint smooth", "src/worldgen/tools/test_faint_smooth.gd"),
+    ("placed clearing", "src/worldgen/tools/test_placed_clearing.gd"),
     ("dialogue", "src/worldgen/tools/test_dialogue.gd"),
     ("animals", "src/worldgen/tools/test_animals.gd"),
     ("animal_senses", "src/worldgen/tools/test_animal_senses.gd"),

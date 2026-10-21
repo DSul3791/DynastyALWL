@@ -1,0 +1,5 @@
+{
+	"note": "Mandy (Dave 2026-10-21): anything placed in the world (fire, bench, chest, shelter, forge...) clears grass, leaf litter and small plants in a circle around it, at once, and they stay away while it stands. One number: the radius in metres. The outer 1.5 m thins out instead of ending in a sharp line.",
+	"radius_m": 5.0,
+	"edge_m": 1.5
+}

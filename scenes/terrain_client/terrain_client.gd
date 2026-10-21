@@ -65,7 +65,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 536
+const BUILD := 537
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -1056,6 +1056,45 @@ func _on_filled(center: Vector3, radius: float, _material: int) -> void:
 
 	if grass != null:
 		grass.ground_changed(center, radius)
+
+
+# Placed things clear the ground around them (data/look/placed_clearing.json): grass and litter in grass_view, shrubs and small plants in
+# flora_view. The spots are read from the world items the inventory view already holds (a fire, shelter, chest, bench, forge...; loose
+# sticks, felled trunks, boulders, remains and carcasses do not count). Updated when the set changes.
+const PLACED_CLEARING := "res://data/look/placed_clearing.json"
+const CLEARING_NOT := [0, 2, 3, 4, 10, 11, 12, 19]
+var _cleared_key: int = 0
+var _cleared_cfg: Dictionary = {}
+
+
+func _sync_cleared() -> void:
+	if items == null or grass == null or flora == null:
+		return
+
+	if _cleared_cfg.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(PLACED_CLEARING))
+		_cleared_cfg = parsed if parsed is Dictionary else {"radius_m": 5.0, "edge_m": 1.5}
+
+	var spots: Array = []
+	var key: int = 0
+
+	for id in items._world:
+		var row: Dictionary = items._world[id]
+
+		if int(row.get("state", 0)) in CLEARING_NOT:
+			continue
+
+		var pos: Vector3 = row["pos"]
+		spots.append(Vector3(snappedf(pos.x, 0.01), pos.y, snappedf(pos.z, 0.01)))
+		key = key ^ hash(Vector2(pos.x, pos.z)) ^ int(id)
+
+	if key == _cleared_key:
+		return
+
+	_cleared_key = key
+	var radius: float = float(_cleared_cfg.get("radius_m", 5.0))
+	grass.set_cleared(spots, radius, float(_cleared_cfg.get("edge_m", 1.5)))
+	flora.set_cleared(spots, radius)
 
 
 # Water within a stride of the feet or a step or two ahead (where you look, flat): what the E-to-drink prompt needs.
@@ -2675,6 +2714,7 @@ func _step_player(delta: float) -> void:
 		sound.itemfx.watch(items)
 		sound.itemfx.watch_vitals(items.hunger, 0.1)
 		sound.breath.set_exertion(items.strain)   # the server's real strain replaces the stand-in
+		_sync_cleared()
 
 	_fire_sync_left -= delta
 

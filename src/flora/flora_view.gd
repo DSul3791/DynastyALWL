@@ -268,6 +268,9 @@ var fall_cap: int = 4
 # Set by the client: whether any ground has arrived over a world point (network_voxel_stream.gd column_loaded). A chunk's plants and
 # fall ribbons stay hidden until the ground under its middle exists, so nothing floats over ground that is not built yet (Dave, build 483).
 var ground_ready: Callable = Callable()
+var cleared: Array = []               # Vector3 spots of placed items: shrubs and small plants within clear_m are not drawn (set_cleared)
+var clear_m: float = 5.0
+var _last_position: Vector3 = Vector3.ZERO
 var _ground_msec: int = 0
 var falls_drawn: int = 0
 var _tree_materials: Dictionary = {}       # TreeBuilder materials (bark, broad, conifer, palm)
@@ -969,6 +972,7 @@ func set_chunk(chunk: Vector2i, items: Dictionary, position: Vector3, water: Dic
 	canopy_version += 1
 	var entry: Dictionary = {"items": items, "level": -1, "node": null, "water": null, "grid": water, "full": full, "ground": _ground_here(chunk)}
 	_chunks[chunk] = entry
+	_filter_cleared(chunk, false)
 	CoverScript.add_chunk(cover, chunk, items, _cover_info)
 
 	if int(water.get("wet", 0)) > 0:
@@ -1137,6 +1141,7 @@ func replace_items(chunk: Vector2i, items: Dictionary, position: Vector3, full: 
 	entry["full"] = full
 	entry["level"] = -1
 	entry.erase("building")
+	_filter_cleared(chunk, false)
 	_refresh(chunk, position)
 
 
@@ -1163,6 +1168,48 @@ func remove_item(chunk: Vector2i, id: int, position: Vector3) -> void:
 	entry["level"] = -1
 	entry.erase("building")
 	_refresh(chunk, position)
+
+
+# The placed things of the world: no shrubs or small plants within radius of any of them (trees stay; felling is the server's).
+# Items already held are filtered now, and later chunks as they arrive.
+func set_cleared(spots: Array, radius: float) -> void:
+	cleared = spots
+	clear_m = radius
+
+	for chunk in _chunks.keys():
+		_filter_cleared(chunk, true)
+
+
+func _filter_cleared(chunk: Vector2i, redraw: bool) -> void:
+	var entry: Dictionary = _chunks.get(chunk, {})
+
+	if entry.is_empty() or cleared.is_empty():
+		return
+
+	var items: Dictionary = entry["items"]
+	var positions = items["positions"]
+	var ids = items["ids"]
+	var n: int = ids.size() - 1
+	var removed: bool = false
+
+	while n >= 0:
+		var species: Dictionary = _species.get(int(ids[n]) >> 16, {})
+
+		if not species.is_empty() and int(species["kind"]) != KIND_TREE:
+			for spot in cleared:
+				if Vector2(positions[n].x - spot.x, positions[n].z - spot.z).length() < clear_m:
+					for key in ["ids", "positions", "heights", "yaws"]:
+						items[key].remove_at(n)
+
+					removed = true
+					break
+
+		n -= 1
+
+	if removed and redraw:
+		entry["level"] = -1
+		entry.erase("building")
+		_refresh(chunk, _last_position)
 
 
 # Once a second: chunks still waiting for ground are asked again; the moment it is there their plants and ribbons are shown (and stay).
@@ -1197,6 +1244,7 @@ func _ground_here(chunk: Vector2i) -> bool:
 # chunks dropped.
 func update(position: Vector3) -> Array:
 	var dropped: Array = []
+	_last_position = position
 	_check_ground()
 
 	if not _ease.is_empty():
