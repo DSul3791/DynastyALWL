@@ -982,6 +982,10 @@ func _compute_cover(heights: PackedFloat32Array, water_class: PackedByteArray, s
 	var zero_tan: float = tan(deg_to_rad(float(rules["zero_slope_deg"])))
 	var flat: float = float(rules["flat_m"])
 	var noise_share: float = float(rules["noise"])
+	# Owner (2026-10-21, Dave): dirt caps on the lips and faces of the waterfalls. The river cells
+	# always carried river_m of cover, so every lip and face of a terraced fall was dirt over the rock.
+	# A cell beside a one-sample drop of cliff_m or more is bare rock, water or not.
+	var cliff_m: float = float(rules.get("cliff_m", 6.0))
 	var extra: Dictionary = {}
 
 	for pair in [["alluvium", "alluvium_m"], ["beach_sand", "beach_m"], ["peat", "peat_m"], ["sand", "sand_m"]]:
@@ -1011,8 +1015,17 @@ func _compute_cover(heights: PackedFloat32Array, water_class: PackedByteArray, s
 			var index: int = j * samples + i
 			var kind: int = water_class[index]
 			var depth: float = 0.0
+			var here: float = heights[index]
+			var cliff: bool = (
+				(i > 0 and absf(heights[index - 1] - here) >= cliff_m)
+				or (i < samples - 1 and absf(heights[index + 1] - here) >= cliff_m)
+				or (j > 0 and absf(heights[index - samples] - here) >= cliff_m)
+				or (j < samples - 1 and absf(heights[index + samples] - here) >= cliff_m)
+			)
 
-			if kind != 0:
+			if cliff and kind != OCEAN:
+				depth = 0.0
+			elif kind != 0:
 				depth = water_depth.get(kind, 2.0)
 			elif soil[index] != bare:
 				var gx: float
