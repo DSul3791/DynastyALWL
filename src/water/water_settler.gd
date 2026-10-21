@@ -147,7 +147,7 @@ static func _plateau_near(sim, head: Vector2i, side: int, data = null) -> Vector
 	var pond: Vector2i = _pond_near(data, head, side) if data != null else Vector2i(-1, -1)
 
 	if pond.x >= 0:
-		return pond
+		return _pond_middle(data, pond, side)
 
 	var best: Vector2i = head
 	var best_score: float = INF
@@ -187,6 +187,64 @@ static func _plateau_near(sim, head: Vector2i, side: int, data = null) -> Vector
 				best = Vector2i(i, j)
 
 	return best
+
+
+# Owner report (2026-10-21, build 333): a head pond was empty while its river ran. The spot
+# found next to the head can be in the pond's outlet lobe or the brook beside it, so the spring
+# poured into the channel below the pond and the pond never filled. The spring belongs in the
+# middle of the pond: from `spot`, the water cell furthest from dry ground (the shortest of
+# eight rays out to dry ground, the longest of these within POND_MIDDLE_SEARCH cells).
+const POND_MIDDLE_SEARCH := 26
+const POND_MIDDLE_RAY_MAX := 30
+
+
+static func _pond_middle(data, spot: Vector2i, side: int) -> Vector2i:
+	var best: Vector2i = spot
+	var best_reach: int = _dry_reach(data, spot, side)
+
+	for dj in range(-POND_MIDDLE_SEARCH, POND_MIDDLE_SEARCH + 1):
+		for di in range(-POND_MIDDLE_SEARCH, POND_MIDDLE_SEARCH + 1):
+			var i: int = spot.x + di
+			var j: int = spot.y + dj
+
+			if i < 12 or j < 12 or i >= side - 12 or j >= side - 12 or data.water_class[j * side + i] == 0:
+				continue
+
+			var reach: int = _dry_reach(data, Vector2i(i, j), side, best_reach)
+
+			if reach > best_reach:
+				best_reach = reach
+				best = Vector2i(i, j)
+
+	return best
+
+
+# Steps from `at` to dry ground along the shortest of eight rays (capped); stops early once it
+# is no better than `to_beat`.
+static func _dry_reach(data, at: Vector2i, side: int, to_beat: int = -1) -> int:
+	var shortest: int = POND_MIDDLE_RAY_MAX
+
+	for r in range(8):
+		var angle: float = TAU * float(r) / 8.0
+		var di: float = cos(angle)
+		var dj: float = sin(angle)
+		var steps: int = 0
+
+		while steps < shortest:
+			var i: int = at.x + int(round(di * float(steps + 1)))
+			var j: int = at.y + int(round(dj * float(steps + 1)))
+
+			if i < 0 or j < 0 or i >= side or j >= side or data.water_class[j * side + i] == 0:
+				break
+
+			steps += 1
+
+		shortest = mini(shortest, steps)
+
+		if shortest <= to_beat:
+			return shortest
+
+	return shortest
 
 
 # A spot inside the head pond near a river head (the spring pours in there, the pond fills
