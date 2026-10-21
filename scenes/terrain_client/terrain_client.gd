@@ -63,7 +63,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 456
+const BUILD := 457
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
@@ -1734,6 +1734,10 @@ func _build_menu(layer: CanvasLayer) -> void:
 	var advanced: VBoxContainer = _menu_page(column, "advanced")
 	_menu_button(advanced, "Clear saved ground", func():
 		_ask_clear_cache())
+	_menu_button(advanced, "Show my player key (and copy it)", func():
+		var key: String = items.player_key() if items != null else ""
+		DisplayServer.clipboard_set(key)
+		_menu_note.text = "Your player key (copied): %s\nPut it in data/admin.json as {\"keys\": [\"%s\"]}" % [key, key])
 	_menu_button(advanced, "Admin: Bake starter tiles", func():
 		var problem: String = _bake.start()
 		_menu_note.text = "Baking the starter tiles in the background (about 5 to 10 minutes). The game stays usable; the result shows here." if problem == "" else problem)

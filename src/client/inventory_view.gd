@@ -196,6 +196,11 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.hello.rpc_id(1, _player_key())
 
 
+# Public for the Esc > Advanced "Show my player key" button (admin.json lists these keys).
+func player_key() -> String:
+	return _player_key()
+
+
 func _player_key() -> String:
 	if FileAccess.file_exists(KEY_FILE):
 		var saved: String = FileAccess.get_file_as_string(KEY_FILE).strip_edges()
