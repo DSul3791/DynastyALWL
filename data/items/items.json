@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = placeholder price of one item in coins (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 44,
+	"next_number": 51,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -500,6 +500,125 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 3
+		},
+		"rope": {
+			"number": 44,
+			"name": "Rope",
+			"description": "Twisted cordage, strong enough to haul and to lash a frame.",
+			"kind": "material",
+			"stack": 20,
+			"value": 4,
+			"look_alikes": []
+		},
+		"stone_spade": {
+			"number": 45,
+			"name": "Stone spade",
+			"description": "A wooden spade shod with a flat stone blade. Digs deeper than bare wood and lasts longer.",
+			"kind": "tool",
+			"tool_class": "spade",
+			"material": "stone",
+			"tier": 2,
+			"stack": 1,
+			"durability": 300,
+			"repair": [
+				[
+					"stone",
+					1
+				],
+				[
+					"cordage",
+					1
+				]
+			],
+			"value": 30,
+			"look_alikes": []
+		},
+		"iron_spade": {
+			"number": 46,
+			"name": "Iron spade",
+			"description": "A spade with an iron blade.",
+			"kind": "tool",
+			"tool_class": "spade",
+			"material": "iron",
+			"tier": 3,
+			"stack": 1,
+			"durability": 1500,
+			"repair": [
+				[
+					"iron_ingot",
+					1
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"value": 90,
+			"future": true,
+			"look_alikes": []
+		},
+		"steel_spade": {
+			"number": 47,
+			"name": "Steel spade",
+			"description": "A spade with a steel blade.",
+			"kind": "tool",
+			"tool_class": "spade",
+			"material": "steel",
+			"tier": 4,
+			"stack": 1,
+			"durability": 3000,
+			"repair": [
+				[
+					"steel_ingot",
+					1
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"value": 140,
+			"future": true,
+			"look_alikes": []
+		},
+		"bone": {
+			"number": 48,
+			"name": "Bone",
+			"description": "A cleaned animal bone.",
+			"kind": "material",
+			"stack": 20,
+			"value": 2,
+			"future": true,
+			"look_alikes": []
+		},
+		"sewing_needle": {
+			"number": 49,
+			"name": "Sewing needle",
+			"description": "A needle carved from bone. For sewing hide and cloth.",
+			"kind": "tool",
+			"tool_class": "needle",
+			"stack": 1,
+			"durability": 60,
+			"repair": [
+				[
+					"bone",
+					1
+				]
+			],
+			"value": 8,
+			"future": true,
+			"look_alikes": []
+		},
+		"backpack": {
+			"number": 50,
+			"name": "Backpack",
+			"description": "A hide pack with straps. Adds carrying slots.",
+			"kind": "gear",
+			"stack": 1,
+			"slots_bonus": 10,
+			"value": 40,
+			"future": true,
+			"look_alikes": []
 		}
 	}
 }

@@ -1,6 +1,6 @@
 {
 	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist).",
-	"next_number": 24,
+	"next_number": 31,
 	"recipes": {
 		"cordage": {
 			"number": 1,
@@ -460,6 +460,138 @@
 				1
 			],
 			"craft_s": 8.0,
+			"known": false
+		},
+		"cordage_bark": {
+			"number": 24,
+			"name": "Bark twine",
+			"needs": [
+				[
+					"bark",
+					2
+				]
+			],
+			"gives": [
+				"cordage",
+				1
+			],
+			"craft_s": 3.0,
+			"known": true
+		},
+		"rope": {
+			"number": 25,
+			"name": "Rope",
+			"needs": [
+				[
+					"cordage",
+					4
+				]
+			],
+			"gives": [
+				"rope",
+				1
+			],
+			"craft_s": 5.0,
+			"known": true
+		},
+		"stone_spade": {
+			"number": 26,
+			"name": "Stone spade",
+			"needs": [
+				[
+					"wooden_spade",
+					1
+				],
+				[
+					"stone",
+					2
+				],
+				[
+					"cordage",
+					1
+				]
+			],
+			"gives": [
+				"stone_spade",
+				1
+			],
+			"craft_s": 8.0,
+			"known": true
+		},
+		"iron_spade": {
+			"number": 27,
+			"name": "Iron spade",
+			"needs": [
+				[
+					"iron_ingot",
+					2
+				],
+				[
+					"stick",
+					2
+				]
+			],
+			"gives": [
+				"iron_spade",
+				1
+			],
+			"craft_s": 10.0,
+			"known": false
+		},
+		"steel_spade": {
+			"number": 28,
+			"name": "Steel spade",
+			"needs": [
+				[
+					"steel_ingot",
+					2
+				],
+				[
+					"stick",
+					2
+				]
+			],
+			"gives": [
+				"steel_spade",
+				1
+			],
+			"craft_s": 12.0,
+			"known": false
+		},
+		"sewing_needle": {
+			"number": 29,
+			"name": "Sewing needle",
+			"needs": [
+				[
+					"bone",
+					1
+				]
+			],
+			"gives": [
+				"sewing_needle",
+				1
+			],
+			"craft_s": 6.0,
+			"known": false
+		},
+		"backpack": {
+			"number": 30,
+			"name": "Backpack",
+			"needs": [
+				[
+					"hide",
+					4
+				],
+				[
+					"rope",
+					1
+				]
+			],
+			"gives": [
+				"backpack",
+				1
+			],
+			"craft_s": 20.0,
 			"known": false
 		}
 	}

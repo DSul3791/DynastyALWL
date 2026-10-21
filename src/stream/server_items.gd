@@ -712,7 +712,7 @@ func _dig(peer: int, inv, at: Vector3) -> void:
 	if typeof(dug) == TYPE_BOOL and not bool(dug):
 		return
 
-	_give_dig_yield(peer, at)
+	_give_dig_yield(peer, at, _spade_tier(inv))
 	_fell_undermined(peer, at)
 	_dirty = true
 
@@ -824,7 +824,12 @@ func _fell_undermined(peer: int, at: Vector3) -> void:
 
 
 # What a dig brings up (data/items/digging.json): shovelfuls by the surface material at the hole, through luck, counted by weight.
-func _give_dig_yield(peer: int, at: Vector3) -> void:
+func _spade_tier(inv) -> int:
+	var slot: int = _tool_slot(inv, "spade")
+	return int(table.entry(table.id_of(inv.numbers[slot])).get("tier", 1)) if slot >= 0 else 1
+
+
+func _give_dig_yield(peer: int, at: Vector3, tier: int = 1) -> void:
 	if not ground_material.is_valid() or _dig_cfg.is_empty():
 		return
 
@@ -833,7 +838,8 @@ func _give_dig_yield(peer: int, at: Vector3) -> void:
 
 	for row in rows:
 		var number: int = table.number_of(str(row[0]))
-		var amount: int = roll_amount(peer, _fate_rng, int(row[1]), int(row[2]))
+		var extra: int = int(_dig_cfg.get("tier_extra", {}).get(str(tier), 0)) if int(row[2]) > int(row[1]) or int(row[2]) > 0 else 0
+		var amount: int = roll_amount(peer, _fate_rng, int(row[1]), int(row[2]) + extra)
 
 		if number > 0 and amount > 0:
 			give(peer, number, amount)

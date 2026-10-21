@@ -362,6 +362,21 @@ func _init() -> void:
 	check(fills.size() == 2 and m.inventory_of(1).count_of(soil_n) == 2, "a fill that changed nothing gives the shovelful back")
 	check(m.carried_kg_of(1) < 60.0, "digging cannot overfill the pack")
 
+	# The spade tier adds to the top of the dig roll (digging.json tier_extra).
+	m.action(1, Net.ACT_ADMIN_GIVE, m.table.number_of("stone_spade"), 0, 1, Vector3.ZERO)
+	check(m._spade_tier(m.inventory_of(1)) >= 1, "the spade tier is read from the tool in the pack")
+	var most: int = 0
+	mat[0] = "sand"
+
+	for tries in 40:
+		m._last_dig.clear()
+		var before_sand: int = m.inventory_of(1).count_of(sand_n)
+		m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+		most = maxi(most, m.inventory_of(1).count_of(sand_n) - before_sand)
+		m.take_fill(1, 100000)
+
+	check(most >= 1 and most <= 4, "a dig never exceeds the top of the roll plus the spade extra (%d)" % most)
+
 	# A dig the ground refuses (nothing changed) gives nothing.
 	var refuse: Array = [false]
 	m.dig_ground = func(centre, radius):
