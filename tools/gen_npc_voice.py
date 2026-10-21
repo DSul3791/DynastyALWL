@@ -3,21 +3,23 @@
 assets/audio/npc_voice/<voice_id>/<hash8>.ogg (mono Vorbis, level about -23 dBFS RMS, silence trimmed) and a manifest.json.
 
 Text is the trigger (Dave 2026-10-21): the client asks for a line by its text and voice details; the file name is the hash
-of those, so a prebaked line is only text that hits the cache sooner. Hash: first 8 hex of md5('k1|<voice_id>|<speed:.2f>|<pitch:.2f>|<text>')
-with the text trimmed and whitespace collapsed (npc_voice.gd does the same).
+of those, so a prebaked line is only text that hits the cache sooner. Hash: first 8 hex of md5('k2|<voice_id>|<speed:.2f>|<pitch:.2f>|<text>')
+with the text trimmed and whitespace collapsed (npc_voice.gd does the same). Pauses, per-phrase variation and voice blending: tools/npc_voice_render.py.
 
 Lines come from data/npcs/dialogue/<npc>.json: every bark (greeting, farewell, idle, complaint, cooldown, info) and every
 node text (a string or an array), for the NPC's voice_id (data/npcs/npcs.json "voice"), settings in data/npcs/voices.json (Kokoro voice, lang, speed, pitch).
 
   python3 tools/gen_npc_voice.py --model DIR [--only VOICE_ID] [--force]
 """
-import argparse, hashlib, json, os, re
+import argparse, hashlib, json, os, re, sys
 
 import numpy as np
 import soundfile as sf
 from kokoro_onnx import Kokoro
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from npc_voice_render import render_line   # the one render module (phrases, pauses, variation, blending), shared with live lines
 
 
 def norm(text):
@@ -52,7 +54,7 @@ def main():
     ap.add_argument("--force", action="store_true")
     args = ap.parse_args()
     sets = json.load(open(os.path.join(ROOT, "data/npcs/voices.json")))
-    sets.setdefault("model", "k1")
+    sets.setdefault("model", "k2")
     sets.setdefault("default", {"voice": "bm_george", "lang": "en-gb", "speed": 0.95, "pitch": 1.0})
     npcs = json.load(open(os.path.join(ROOT, "data/npcs/npcs.json")))["npcs"]
     kokoro = Kokoro(os.path.join(args.model, "kokoro-v1.0.onnx"), os.path.join(args.model, "voices-v1.0.bin"))
@@ -80,9 +82,8 @@ def main():
             out = os.path.join(out_dir, h + ".ogg")
 
             if not os.path.exists(out) or args.force:
-                samples, rate = kokoro.create(text, voice=spec["voice"], speed=spec["speed"], lang=spec["lang"])
-                samples = np.asarray(samples, dtype=np.float32)
-                loud = np.where(np.abs(samples) > 0.01)[0]
+                samples, rate = render_line(kokoro, spec, voice_id, text)
+                loud = np.where(np.abs(samples) > 0.003)[0]
 
                 if loud.size:
                     samples = samples[max(loud[0] - int(0.04 * rate), 0): loud[-1] + int(0.12 * rate)]

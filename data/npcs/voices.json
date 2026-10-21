@@ -1,17 +1,38 @@
 {
-	"note": "Text to voice for the NPCs (Dave: all voice is Kokoro, Apache 2.0). Keys are the voice ids the dialogue sends (npcs.json 'voice', or a dialogue file's 'voice'); every NPC voice must be listed here (test_dialogue checks). Same fields as data/items/inner_voice_sets.json: Kokoro voice id, lang, speed below 1 is slower. Mandy hooks the player through DialogueView.voice_line(voice_id, text). Mandy (2026-10-21): rendered by tools/gen_npc_voice.py into assets/audio/npc_voice/<voice_id>/<hash8>.ogg; optional pitch (playback, default 1.0); the file name is the first 8 hex of md5('k1|voice_id|speed|pitch|text'); distinct from the player's inner voices (george, michael, lewis, liam, emma, heart, isabella, sarah).",
+	"note": "Text to voice for the NPCs (Dave: all voice is Kokoro, Apache 2.0). Keys are the voice ids the dialogue sends (npcs.json 'voice', or a dialogue file's 'voice'); every NPC voice must be listed here (test_dialogue checks). Same fields as data/items/inner_voice_sets.json: Kokoro voice id, lang, speed below 1 is slower. Mandy hooks the player through DialogueView.voice_line(voice_id, text). Mandy (2026-10-21): rendered by tools/gen_npc_voice.py into assets/audio/npc_voice/<voice_id>/<hash8>.ogg; optional pitch (playback, default 1.0); the file name is the first 8 hex of md5('k1|voice_id|speed|pitch|text'); distinct from the player's inner voices (george, michael, lewis, liam, emma, heart, isabella, sarah). Build 518: model k2 = phrase-timed render (tools/npc_voice_render.py); optional blend [[kokoro voice, weight], ...] mixes two voices.",
 	"voices": {
 		"hob": {
 			"voice": "bm_daniel",
 			"lang": "en-gb",
 			"speed": 0.95,
-			"pitch": 1.0
+			"pitch": 1.0,
+			"blend": [
+				[
+					"bm_daniel",
+					0.7
+				],
+				[
+					"bm_george",
+					0.3
+				]
+			]
 		},
 		"edda": {
 			"voice": "bf_alice",
 			"lang": "en-gb",
 			"speed": 1.0,
-			"pitch": 1.0
+			"pitch": 1.0,
+			"blend": [
+				[
+					"bf_alice",
+					0.7
+				],
+				[
+					"bf_emma",
+					0.3
+				]
+			]
 		}
-	}
+	},
+	"model": "k2"
 }

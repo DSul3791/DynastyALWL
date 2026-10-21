@@ -3,7 +3,7 @@ extends Node
 # NPC speech (Dave 2026-10-21: "text is always the trigger, then we hand it the prebaked text or the AI text"). ONE entry point:
 #   speak(voice_id, text, at)   a line of text, who says it, and where (the NPC's position in the world)
 # The text is turned into a cache key from the voice details (data/npcs/voices.json: voice, speed, pitch) and the text itself,
-# the first 8 hex of md5("k1|voice_id|speed|pitch|text") with the text trimmed and whitespace collapsed (tools/gen_npc_voice.py
+# the first 8 hex of md5("k2|voice_id|speed|pitch|text") with the text trimmed and whitespace collapsed (tools/gen_npc_voice.py
 # makes the same names). A premade line is only text whose file is already in the pack, assets/audio/npc_voice/<voice_id>/<hash>.ogg;
 # a line made live lands in user://npc_voice/<voice_id>/<hash>.ogg and is found the same way next time. A line with no file
 # stays text: the chat box always shows it (dialogue_view.gd), speech is extra. `live_maker` is the hook for live synthesis
@@ -14,8 +14,9 @@ extends Node
 const PACK := "res://assets/audio/npc_voice/"
 const CACHE := "user://npc_voice/"
 const VOICES_PATH := "res://data/npcs/voices.json"
-const MODEL := "k1"
+const MODEL := "k2"
 const CONFIG := "user://npc_voice.cfg"
+const BUS := "NpcVoice"
 
 var enabled: bool = true
 var live_maker: Callable = Callable()
@@ -32,6 +33,7 @@ func _ready() -> void:
 	if config.load(CONFIG) == OK:
 		enabled = bool(config.get_value("voice", "enabled", true))
 
+	_make_bus()
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(VOICES_PATH))
 	_spec = parsed.get("voices", {}) if typeof(parsed) == TYPE_DICTIONARY else {}
 
@@ -79,6 +81,7 @@ func speak(voice_id: String, text: String, at: Variant = null) -> bool:
 		player.max_distance = 18.0
 		player.attenuation_filter_cutoff_hz = 6000.0
 		player.volume_db = 3.0
+		player.bus = BUS
 		add_child(player)
 		_players[voice_id] = player
 
@@ -106,3 +109,25 @@ func _find(voice_id: String, hash8: String) -> AudioStream:
 		return AudioStreamOggVorbis.load_from_file(cached)
 
 	return null
+
+
+# The voice bus: a little room (light reverb) and a rumble cut, so the voices sit in the world instead of sounding dry and close
+# (Tyler Report 24). Not baked into the recordings, so it can be tuned here.
+func _make_bus() -> void:
+	if AudioServer.get_bus_index(BUS) != -1:
+		return
+
+	AudioServer.add_bus()
+	var index: int = AudioServer.bus_count - 1
+	AudioServer.set_bus_name(index, BUS)
+	AudioServer.set_bus_send(index, "Master")
+	var cut: AudioEffectHighPassFilter = AudioEffectHighPassFilter.new()
+	cut.cutoff_hz = 110.0
+	AudioServer.add_bus_effect(index, cut)
+	var room: AudioEffectReverb = AudioEffectReverb.new()
+	room.room_size = 0.22
+	room.damping = 0.65
+	room.wet = 0.07
+	room.dry = 0.95
+	room.spread = 0.6
+	AudioServer.add_bus_effect(index, room)
