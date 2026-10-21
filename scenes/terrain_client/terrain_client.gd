@@ -65,7 +65,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 525
+const BUILD := 526
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -671,6 +671,7 @@ func _welcome_body(info: Dictionary) -> void:
 
 	cache.setup(cache_dir, info, info["revisions"], cache_mb)
 	var seeded: int = cache.seed_starter("res://worlds/base_world/starter_cache", str(world.get("starter_stamp", "")))
+	_starter_seeded = seeded
 
 	if seeded > 0:
 		cache.set_revisions(info["revisions"])
@@ -1720,8 +1721,16 @@ func _build_menu(layer: CanvasLayer) -> void:
 	var main: VBoxContainer = _menu_page(column, "main")
 	_menu_button(main, "Resume", func(): _set_menu(false))
 	_menu_button(main, "Settings", func(): _show_menu_page("settings"))
+	_menu_button(main, "Controls (every hotkey)", func(): _show_menu_page("controls"))
 	_menu_button(main, "Advanced", func(): _show_menu_page("advanced"))
 	_menu_button(main, "Quit game", func(): get_tree().quit())
+
+	var controls: VBoxContainer = _menu_page(column, "controls")
+	var controls_text: Label = Label.new()
+	controls_text.text = HELP_TEXT
+	controls_text.add_theme_font_size_override("font_size", 22)
+	controls.add_child(controls_text)
+	_menu_button(controls, "Back", func(): _show_menu_page("main"))
 
 	var settings: VBoxContainer = _menu_page(column, "settings")
 	var quality_title: Label = Label.new()
@@ -1984,6 +1993,9 @@ func _set_menu(open: bool) -> void:
 # and the server's stores hold for the ground voxel the crosshair points at (Esc, Advanced, Dump ground; look at it first):
 # the dump aims where the screen centre pointed when the menu opened. The text is printed, shown and copied.
 var _dump_client: String = ""
+var _starter_seeded: int = 0
+var _ground_line: String = ""
+var _ground_line_msec: int = 0
 # Ground self-check (Dave's floating block and tan slab in the lake, 2026-10-21): every few seconds one point near
 # the player is asked of the server (surface height from the generator) and the client's own ground there is found by
 # a ray from above; ground more than GROUND_CHECK_TOLERANCE_M above the server's is logged with the coordinates
@@ -2111,6 +2123,28 @@ func _ground_check_log(text: String) -> void:
 		file.seek_end()
 		file.store_line(text)
 		file.close()
+
+
+# Esc > Controls: every hotkey on one screen (CONTROLS.md has the full rules; keep this in step with it).
+const HELP_TEXT := """Move: W A S D   Jog: double-tap W   Run: Shift+W   Jump / fly up: Space   Fly down: Ctrl   Walk or fly: G or F
+Crouch C   Sit X   Lie down Z (hold Z 3 s to sleep)   Mouse wheel: third-person camera
+E: gather, drink, fill, talk, open (hold E for the long action)   Left click: use held item   Right click: aim or eat
+I: crafting and inventory   Tab: character screen   1 to 9, 0: hotbar   Split S, Drop D, Use E, Repair R, Transfer T (inventory)
+/: inspection mode   + and -: spring flow (tuning)
+F2: quality   F3: debug details   Ctrl+Shift+G: GPU probe table (press again to close)   J: jitter test
+Admin: Ctrl+N nearest NPC   Ctrl+R rabbit   Ctrl+X dig hole   ]: starter items   Esc > Advanced > Dump ground: crosshair ground report
+Esc: this menu"""
+
+
+# One line for screenshots: terrain version, tile stamp, starter ground, saved ground (size, hits, misses) and the guards' counts.
+func _ground_health_line() -> String:
+	var now: int = Time.get_ticks_msec()
+
+	if now - _ground_line_msec > 5000 and cache != null and stream != null:
+		_ground_line_msec = now
+		_ground_line = "ground: terrain v%s  tiles %s  starter %s  saved %.0f MB (%d hit, %d miss)  refused %d zeroed, %d bad  %d timeouts" % [str(world.get("terrain_version", "?")), str(world.get("tiles_stamp", "?")), ("seeded" if _starter_seeded > 0 else "none"), float(cache.size_bytes()) / 1048576.0, cache.hits, cache.misses, stream.zeroed_blocks, stream.bad_blocks, stream.timeouts]
+
+	return _ground_line
 
 
 func _ask_clear_cache() -> void:
@@ -4065,6 +4099,7 @@ func _process(delta: float) -> void:
 	status_icons.tick(delta)
 	_note_last_sound()
 	hud.text = "build %d (%s)  %d fps  %s (F2)\nx %.0f  y %.1f  z %.0f\nlast sound: %s" % [BUILD, _commit, Engine.get_frames_per_second(), QUALITY_NAMES[quality], body.global_position.x, body.global_position.y, body.global_position.z, _last_sound]
+	hud.text += "\n" + _ground_health_line()
 
 	if debug_hud.enabled:
 		hud.text += "\n" + _debug_text(avg_ms, worst_ms)

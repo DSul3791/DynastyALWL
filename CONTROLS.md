@@ -8,9 +8,9 @@ The single complete list of every input (keyboard, mouse, held versus tap, conte
 |---|---|
 | Mouse | Look around |
 | Wheel (mouse) | Scroll out (wheel down) from first person to third person: the camera moves up and back a little at each step (1.6 m to 7 m behind, 0.4 m a step); in third person scrolling out pulls further, scrolling in comes closer and, past the nearest step, back to first person. The distance is remembered between sessions (`user://view.txt`); you always start in first person. The camera pulls in when a wall, the ground or a trunk is in the way. Works while flying. A plain placeholder body is drawn until there is a real character. Only while the mouse is captured (menus and the inventory keep their own scrolling) |
-| W A S D | Walk (6 m/s) |
-| Double-tap W (within 0.30 s) | Jog (8.5 m/s) |
-| Shift + W | Run (11 m/s) |
+| W A S D | Walk (1.4 m/s) |
+| Double-tap W (within 0.30 s) | Jog (3.2 m/s) |
+| Shift + W | Run (6 m/s) |
 | (automatic) | Very slight camera bob and sway when moving on the ground, in step with the feet: down and leaning to the stepping side at each footfall, back up in between. Strides are longer when jogging (4.2 m) and running (6 m) than walking (3 m) |
 | Space | Jump (walking) or go up (flying) |
 | Ctrl | Go down (flying) |
@@ -32,7 +32,8 @@ The single complete list of every input (keyboard, mouse, held versus tap, conte
 | Esc > Advanced > Measure this machine | About 1 minute: stands still and slowly turns at Low, Medium and High and shows fps, 1% low, worst frame, CPU and GPU ms, draw calls and video memory per tier; saved to machine_run.txt in the game data folder. Press it again to stop or to close the table |
 | Ctrl+Shift+G | GPU probe: stand still, press once; after about 20 s it lists what each piece (grass, trees, ground, sea, shadows, SSAO, glow, fog, anti-aliasing) costs in GPU ms; also saved to gpu_probe.txt in the game data folder |
 | J | Float jitter test: fly to the next far-from-origin spot (admin test, build 68) |
-| Esc | Options menu: Resume, Settings (quality, Resolution 1280x720 to 1920x1080, Window: windowed or fullscreen windowed, VSync, sound volume 100/75/50/25 % or off), Advanced (Clear saved ground, which takes effect at once), Quit game. Esc again resumes |
+| Esc > Controls | One screen listing every hotkey (Dave 2026-10-21); keep its text (HELP_TEXT in terrain_client.gd) in step with this file |
+| Esc | Options menu: Resume, Controls (every hotkey), Settings (quality, Resolution 1280x720 to 1920x1080, Window: windowed or fullscreen windowed, VSync, sound volume 100/75/50/25 % or off), Advanced (Clear saved ground, which takes effect at once), Quit game. Esc again resumes |
 | I | Open or close the crafting and inventory screen (about 3/4 of the screen): recipes on the left (the ones you can make now lit and on top, the rest greyed out, each alphabetical), inventory on the right, one search box filtering both; pick a recipe to see what it needs (have / need), choose how many and press Craft: the crafts line up in a queue under the recipe list (name, count, time left on the first) and run on the server even with the screen closed. Click an entry in the queue to cancel it and get its ingredients back. Click a slot, then another, to move; Drop stack / Drop one. Esc closes it first |
 | 1 to 9, 0 | The hotbar: hold what is in pack slot 1 to 10 (the first ten slots, shown as a strip along the bottom of the screen with the held one lit). The same key again puts it away, empty hands. Drag an item from the inventory (or another slot) onto a hotbar box to put it there. Tools must be on the hotbar to work. In the inventory, Use (E) on a tool, weapon or kit holds it (moving it into a free hotbar slot first if it is deeper in the pack) and again puts it away |
 | Tab | Open or close the character screen: health, exertion, beating heart, food, water, attributes (luck) and skills. Esc closes it first |
