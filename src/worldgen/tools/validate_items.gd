@@ -296,6 +296,9 @@ func _init() -> void:
 		want_item.call(String(def.get("kit", "")), "structures.json %s kit" % kind)
 		want_item.call(String(def.get("item", "")), "structures.json %s item" % kind)
 
+		if float(def.get("footprint_x", 0.0)) <= 0.0 or float(def.get("footprint_z", 0.0)) <= 0.0:
+			fail("structures.json %s: footprint_x and footprint_z (the ghost's size in metres) are required" % kind)
+
 		if def.has("slots") and (int(def.get("slots", 0)) < 1 or int(def.get("slots", 0)) > 30):
 			fail("structures.json %s: slots must be 1 to 30" % kind)
 

@@ -65,7 +65,7 @@ const SKILLS_PATH := "res://data/items/skills.json"
 const FIRE_BURN_S := 100.0               # real seconds a fresh campfire burns (20 sticks, cooking.json start_burn_game_s)
 const FIRE_LAID_S := 1800.0             # a laid fire (empty 8, or loaded and unlit 9) waits this long for the player
 const FIRE_OUT_S := 300.0                # a burnt-out or rained-out fire stays this long
-const FIRE_MIN_GAP_M := 2.0
+const FIRE_MIN_GAP_M := 2.0               # fallbacks: structures.json "campfire" decides
 const FIRES_PER_CHUNK := 8
 const RAIN_PUTS_OUT := 0.2               # open fires go out when the rain is at least this strong
 const COVER_RECHECK_S := 30.0
@@ -112,6 +112,8 @@ var _drops: Dictionary = {}
 var _cooking: Dictionary = {}
 var _structures: Dictionary = {}    # structures.json: kind -> definition
 var _struct_gap_m: float = 2.5
+var _fire_gap_m: float = FIRE_MIN_GAP_M
+var _fires_per_chunk: int = FIRES_PER_CHUNK
 var _chests: Dictionary = {}        # structure uid -> Inventory (server-owned contents, chests.json)
 var _next_uid: int = 1
 var _vitals_cfg: Dictionary = {}
@@ -171,6 +173,8 @@ func setup(item_table, store_dir: String) -> void:
 	if typeof(structures) == TYPE_DICTIONARY:
 		_structures = structures.get("structures", {})
 		_struct_gap_m = float(structures.get("gap_m", 2.5))
+		_fire_gap_m = float(structures.get("campfire", {}).get("gap_m", FIRE_MIN_GAP_M))
+		_fires_per_chunk = int(structures.get("campfire", {}).get("cap_per_chunk", FIRES_PER_CHUNK))
 
 	var skills_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(SKILLS_PATH))
 	_skills_cfg = skills_parsed if typeof(skills_parsed) == TYPE_DICTIONARY else {}
@@ -700,7 +704,7 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0) -> void:
 
 	for id in _items:
 		if _items[id].has("fire"):
-			if _items[id]["pos"].distance_to(spot) < FIRE_MIN_GAP_M:
+			if _items[id]["pos"].distance_to(spot) < _fire_gap_m:
 				return
 
 			if _chunk_of(_items[id]["pos"]) == _chunk_of(spot):
@@ -708,7 +712,7 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0) -> void:
 		elif _items[id].has("struct") and _items[id]["pos"].distance_to(spot) < _struct_gap_m:
 			return
 
-	if chunk_fires >= FIRES_PER_CHUNK:
+	if chunk_fires >= _fires_per_chunk:
 		return
 
 	inv.take_from_slot(slot, 1)

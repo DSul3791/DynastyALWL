@@ -250,8 +250,6 @@
 			"kind": "placeable",
 			"stack": 1,
 			"look_alikes": [],
-			"footprint_x": 2.4,
-			"footprint_z": 2.1,
 			"value": 30
 		},
 		"lean_to": {
@@ -269,8 +267,6 @@
 			"kind": "placeable",
 			"stack": 1,
 			"look_alikes": [],
-			"footprint_x": 0.8,
-			"footprint_z": 0.6,
 			"value": 25
 		},
 		"chest": {
@@ -291,8 +287,6 @@
 			"kind": "placeable",
 			"stack": 1,
 			"look_alikes": [],
-			"footprint_x": 0.7,
-			"footprint_z": 0.7,
 			"value": 20
 		},
 		"chopping_block": {
@@ -329,8 +323,6 @@
 			"kind": "placeable",
 			"stack": 1,
 			"look_alikes": [],
-			"footprint_x": 0.9,
-			"footprint_z": 0.6,
 			"value": 60
 		},
 		"plank_chest": {

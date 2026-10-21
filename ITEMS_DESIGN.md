@@ -92,3 +92,7 @@ In structures.json each container has `slots` (stacks it holds), `max_kg` (weigh
 
 ## Skill hooks (job 70)
 data/items/skills.json maps each action (gather_plant, fell_tree, work_trunk, split_log, mine_rock, craft) to a skill and an effect (yield, or speed). The server asks `skill_factor(peer, action)`, which calls the `skill_level(peer, skill)` callable once the skill system provides it; until then it is 1.0 everywhere, so nothing changes. Factor is limited to 0.25 to 4. New skill-affected actions: add a row and call `skill_factor`.
+
+## Placement ghost and footprint table (jobs 69 and 76)
+
+Footprints (`footprint_x`, `footprint_z`) and the fire gap and cap now live in `data/items/structures.json`. `src/shared/placement_rules.gd` holds the one rule set: `blocked(cfg, kit_id, spot, rows)` returns "", "close" or "crowded". The ghost in `held_item.gd` uses it (yellow in the open, green under cover, red when blocked); the server reads the same numbers. `test_placement_rules.gd` checks that the ghost and the server agree for every kit across 60 spots within reach. Sounds and Water can read the same footprint table.

@@ -995,6 +995,19 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 		_world[id] = {"node": node, "number": row[1], "count": row[2], "pos": row[3], "state": state, "light": light}
 
 
+# Fires and structures standing in the world as {"pos", "state"} rows, for the placement ghost's blocked check.
+func placed_rows() -> Array:
+	var rows: Array = []
+
+	for id in _world:
+		var state: int = int(_world[id]["state"])
+
+		if state == 1 or state == 5 or state == 6 or state == 7 or state == 8 or state == 9:
+			rows.append({"pos": _world[id]["pos"], "state": state})
+
+	return rows
+
+
 # Removes a world row's node and, for a lean-to, its roof in the cover index.
 func _forget(id: int) -> void:
 	if not _world.has(id):

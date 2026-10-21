@@ -8,6 +8,7 @@ extends Node
 # the normal stance. The weapon is drawn as a simple first-person model until real art exists.
 
 const Net := preload("res://src/stream/terrain_net.gd")
+const PlacementRules := preload("res://src/shared/placement_rules.gd")
 
 const HOTBAR_FILE := "user://hotbar.txt"      # the chosen hotbar slot is remembered between sessions
 const REST := Vector3(0.38, -0.32, -0.55)       # model offset from the camera
@@ -39,6 +40,8 @@ var _cover_at: Callable                   # (point) -> true when under a tree's 
 var _blueprint: MeshInstance3D
 var _blueprint_at: Vector3 = Vector3.ZERO
 var _blueprint_ok: bool = false
+var _placement: Dictionary = {}              # structures.json: footprints, gaps, caps (shared with the server's rules)
+var blueprint_state: String = ""            # what the ghost shows now: "open", "covered", "close" or "crowded" (tests read it)
 var _blueprint_shape: Vector2 = Vector2(-1.0, -1.0)
 var _blueprint_next_msec: int = 0
 
@@ -49,6 +52,7 @@ const REACH_M := 3.0
 func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hud_layer: CanvasLayer, ground_below: Callable, sound_stage = null, tree_near: Callable = Callable(), cover_at: Callable = Callable()) -> void:
 	_cover_at = cover_at
 	_sound = sound_stage
+	_placement = PlacementRules.load_config()
 
 	if FileAccess.file_exists(HOTBAR_FILE):
 		held_slot = clampi(int(FileAccess.get_file_as_string(HOTBAR_FILE)), 0, 7)
@@ -270,7 +274,7 @@ func _update_blueprint() -> void:
 	_blueprint_next_msec = now + 100
 
 	# The ghost's shape follows the held kit: a ring for a fire, a footprint box for a structure.
-	var footprint: Vector2 = Vector2(float(_inv.table.entry(held_id()).get("footprint_x", 0.0)), float(_inv.table.entry(held_id()).get("footprint_z", 0.0)))
+	var footprint: Vector2 = PlacementRules.footprint(_placement, held_id())
 
 	if _blueprint == null or _blueprint_shape != footprint:
 		if _blueprint == null:
@@ -307,8 +311,15 @@ func _update_blueprint() -> void:
 	_blueprint_at = hit["position"]
 	_blueprint.global_position = _blueprint_at + Vector3(0.0, 0.04, 0.0)
 	_blueprint.rotation.y = _camera.global_rotation.y
-	var covered: bool = footprint != Vector2.ZERO or (_cover_at.is_valid() and _cover_at.call(_blueprint_at))
-	(_blueprint.mesh.material as StandardMaterial3D).albedo_color = Color(0.3, 0.9, 0.3, 0.55) if covered else Color(0.95, 0.85, 0.2, 0.55)
+	blueprint_state = PlacementRules.blocked(_placement, held_id(), _blueprint_at, _inv.placed_rows())
+
+	if blueprint_state == "":
+		var covered: bool = footprint != Vector2.ZERO or (_cover_at.is_valid() and _cover_at.call(_blueprint_at))
+		blueprint_state = "covered" if covered else "open"
+
+	var blocked: bool = blueprint_state == "close" or blueprint_state == "crowded"
+	_blueprint_ok = _blueprint_ok and not blocked
+	(_blueprint.mesh.material as StandardMaterial3D).albedo_color = Color(0.9, 0.2, 0.2, 0.55) if blocked else (Color(0.3, 0.9, 0.3, 0.55) if blueprint_state == "covered" else Color(0.95, 0.85, 0.2, 0.55))
 
 
 # The blow lands: what is in reach decides the sound. (Chopping trees and digging stone come with
