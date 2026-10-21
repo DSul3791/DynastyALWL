@@ -459,7 +459,7 @@ func generate(buffer: VoxelBuffer, origin: Vector3i, lod: int) -> void:
 
 			if lookups_shared and not data.placeholder:
 				sample = data.nearest(wx[i + 1], wz[k + 1])
-				soil_id = _ground_soil(data, sample, h)
+				soil_id = _ground_soil(data, sample, h, wx[i + 1], wz[k + 1])
 
 				if soil_id <= 0 or h >= oy:
 					cover_m = data.cover_at(wx[i + 1], wz[k + 1])
@@ -491,24 +491,68 @@ func _clay_under(soil: int, moisture: int) -> bool:
 # below the water line (owner, 2026-10-19: the baked gravel and silt drew the
 # beds and banks grey): mud on the bed, wet clay on the lower bank, alluvium
 # near and above the water line. Other cells keep their baked soil.
-func _ground_soil(data, sample: int, h: float) -> int:
+func _ground_soil(data, sample: int, h: float, x: float, z: float) -> int:
 	var soil: int = data.soil[sample]
-	var kind: int = data.water_class[sample]
 
-	if _mud < 0 or (kind != 2 and kind != 3):
+	if _mud < 0 or data.placeholder:
 		return soil
 
-	var level: float = data.water_surface[sample]
+	# Owner (2026-10-21, Tyler's finding): the bank bands followed the 8 m cells (square patches of
+	# baked bank soil, stepped mud/clay lines). The water line and the nearness of water are read
+	# bilinearly from the four samples around the column and the depth is jittered a little, so the
+	# bands run as soft, wandering curves.
+	var side: int = data.samples
+	var fx: float = clampf((x - data.x0) / data.spacing_m, 0.0, float(side - 1) - 0.001)
+	var fz: float = clampf((z - data.z0) / data.spacing_m, 0.0, float(side - 1) - 0.001)
+	var i0: int = int(fx)
+	var j0: int = int(fz)
+	var tx: float = fx - float(i0)
+	var tz: float = fz - float(j0)
+	var near: PackedByteArray = data.near_water()
+	var water_w: float = 0.0
+	var level_sum: float = 0.0
+	var near_w: float = 0.0
 
-	if is_nan(level):
+	for c in 4:
+		var wgt: float = (tx if (c & 1) == 1 else 1.0 - tx) * (tz if (c & 2) == 2 else 1.0 - tz)
+		var k: int = (j0 + (c >> 1)) * side + i0 + (c & 1)
+		near_w += wgt * float(near[k])
+		var kind: int = data.water_class[k]
+
+		if (kind == 2 or kind == 3) and not is_nan(data.water_surface[k]):
+			water_w += wgt
+			level_sum += wgt * data.water_surface[k]
+
+	if near_w <= 0.0:
 		return soil
 
-	var depth: float = level - h
+	var jitter: float = _value_noise(x / 2.5, z / 2.5)
+
+	if water_w <= 0.02:
+		# Dry bank beside the water: grassy, broken up along its edge.
+		return _alluvium if near_w > 0.9 * jitter else soil
+
+	var depth: float = level_sum / water_w - h + (jitter - 0.5) * 0.8
 
 	if depth > MUD_DEPTH_M:
 		return _mud
 
 	return _clay if depth > BANK_SOIL_M else _alluvium
+
+
+# Smooth value noise in 0..1 on a unit grid (deterministic, no seed needed for looks).
+static func _value_noise(x: float, z: float) -> float:
+	var xi: float = floorf(x)
+	var zi: float = floorf(z)
+	var u: float = x - xi
+	var v: float = z - zi
+	u = u * u * (3.0 - 2.0 * u)
+	v = v * v * (3.0 - 2.0 * v)
+	var a: float = _hash01(int(xi), 0, int(zi), 7)
+	var b: float = _hash01(int(xi) + 1, 0, int(zi), 7)
+	var c: float = _hash01(int(xi), 0, int(zi) + 1, 7)
+	var d: float = _hash01(int(xi) + 1, 0, int(zi) + 1, 7)
+	return lerpf(lerpf(a, b, u), lerpf(c, d, u), v)
 
 
 # What the top of a column looks like: its soil, else the rock at the
@@ -518,7 +562,7 @@ func _surface_material(data, x: float, z: float, h: float) -> int:
 		return Layout.MATERIAL_ROCK + Layout.ROCK_SEDIMENT
 
 	var sample: int = data.nearest(x, z)
-	var soil: int = _ground_soil(data, sample, h)
+	var soil: int = _ground_soil(data, sample, h, x, z)
 
 	if soil > 0:
 		return soil
@@ -558,7 +602,7 @@ func _fill_rock_column(buffer: VoxelBuffer, data, bodies: Array, i: int, k: int,
 
 	if j_surface > j_bed:
 		var lo: int = maxi(j_bed + 1, 0)
-		var soil: int = known_soil if known_soil >= 0 else _ground_soil(data, sample, h)
+		var soil: int = known_soil if known_soil >= 0 else _ground_soil(data, sample, h, x, z)
 		buffer.fill_area(Layout.ROCK_SEDIMENT, Vector3i(i, lo, k), Vector3i(i + 1, j_surface + 1, k + 1), Layout.CHANNEL_ROCK)
 		buffer.fill_area(soil, Vector3i(i, lo, k), Vector3i(i + 1, j_surface + 1, k + 1), Layout.CHANNEL_SOIL)
 

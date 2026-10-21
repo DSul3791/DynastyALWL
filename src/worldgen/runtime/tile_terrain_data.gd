@@ -38,6 +38,7 @@ var province: PackedByteArray = PackedByteArray()
 var layer_offset: PackedInt32Array = PackedInt32Array()  # raw x 0.1 m
 var soil: PackedByteArray = PackedByteArray()
 var water_class: PackedByteArray = PackedByteArray()
+var _near_water: PackedByteArray = PackedByteArray()
 var water_surface: PackedFloat32Array = PackedFloat32Array()   # NAN = no water above sea level
 var biome: PackedByteArray = PackedByteArray()
 var moisture: PackedByteArray = PackedByteArray()
@@ -294,6 +295,30 @@ func height_at(x: float, z: float) -> float:
 
 
 # Index of the nearest map sample.
+# 1 where the sample or any of its eight neighbours is lake, pond or river water (built once).
+func near_water() -> PackedByteArray:
+	if _near_water.size() == samples * samples:
+		return _near_water
+
+	_near_water = PackedByteArray()
+	_near_water.resize(samples * samples)
+
+	for j in samples:
+		for i in samples:
+			var hit: int = 0
+
+			for dj in range(maxi(j - 1, 0), mini(j + 2, samples)):
+				for di in range(maxi(i - 1, 0), mini(i + 2, samples)):
+					var kind: int = water_class[dj * samples + di]
+
+					if kind == 2 or kind == 3:
+						hit = 1
+
+			_near_water[j * samples + i] = hit
+
+	return _near_water
+
+
 func nearest(x: float, z: float) -> int:
 	var i: int = clampi(int(round((x - x0) / spacing_m)), 0, samples - 1)
 	var j: int = clampi(int(round((z - z0) / spacing_m)), 0, samples - 1)
