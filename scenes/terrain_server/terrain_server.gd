@@ -24,6 +24,7 @@ const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.g
 const SwimScript := preload("res://src/shared/swim.gd")
 const NpcsScript := preload("res://src/stream/server_npcs.gd")
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
+const TrailsScript := preload("res://src/stream/server_trails.gd")
 const IdentityScript := preload("res://src/stream/identity_provider.gd")
 const AdminScript := preload("res://src/stream/server_admin.gd")
 const DialogueScript := preload("res://src/stream/server_dialogue.gd")
@@ -60,6 +61,7 @@ const IDLE_MAX_DONE := 400000          # remembered built blocks (skips re-check
 var generator
 var store
 var flora
+var trails                             # ServerTrails: worn game trails the animals leave
 var animals                            # ServerAnimals: wildlife around the players (rabbits)
 var _animal_sent: Dictionary = {}
 var _send_round: int = 0
@@ -294,6 +296,10 @@ func _ready() -> void:
 	animals.wind = func(): return weather
 	animals.canopy = func(point): return flora.covered(point)
 	animals.setup()
+	trails = TrailsScript.new()
+	trails.game_seconds = func(): return game_clock.seconds
+	trails.setup(store_dir)
+	animals.trails = trails
 	animals.wolves.player_info = func(): return items.wolf_info()
 	animals.wolves.fires = func(): return items._lit_fires()
 	animals.wolves.hurt_player = func(peer, amount, lethal, cause): return items.hurt_player(peer, amount, lethal, cause, float(animals.cfg.get("wolves", {}).get("maim_hp", 25.0)))
@@ -537,6 +543,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	_peers.erase(peer_id)
 	_npc_sent.erase(peer_id)
 	_animal_sent.erase(peer_id)
+	trails.forget_peer(peer_id)
 	_blood_sent.erase(peer_id)
 	dialogue.peer_left(peer_id)
 	items.peer_left(peer_id)
@@ -946,6 +953,9 @@ func _send_npcs(delta: float) -> void:
 			_animal_sent_ms[peer] = now_ms
 			net.animals.rpc_id(peer, beasts)
 
+		for block in trails.updates_for(peer, at, now_ms):
+			net.trails.rpc_id(peer, block[0], block[1], block[2])
+
 		var trail: PackedVector3Array = animals.blood_near(at)
 		var trail_sig: int = hash(trail)
 
@@ -988,6 +998,7 @@ func _process(delta: float) -> void:
 	npcs.unwell = dialogue.router.is_unwell()
 	npcs.tick(delta)
 	animals.tick(delta)
+	trails.tick(delta)
 	_send_npcs(delta)
 
 	# Send what the workers made, batched per peer.
@@ -1331,6 +1342,9 @@ func _save_game_clock() -> void:
 
 func _exit_tree() -> void:
 	_save_game_clock()
+
+	if trails != null:
+		trails.save()
 
 	if items != null:
 		items.save()

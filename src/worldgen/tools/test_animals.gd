@@ -291,7 +291,7 @@ func _hunting() -> void:
 	var spear: int = items.table.number_of("wooden_spear")
 	var knife: int = items.table.number_of("stone_knife")
 	items.give(1, spear, 1)
-	items.give(1, knife, 1)
+	items.action(1, Net.ACT_ADMIN_GIVE, knife, 0, 1, Vector3.ZERO)   # tools sit on the hotbar (new items go to the bag)
 	var inv = items.inventory_of(1)
 	var spear_slot: int = -1
 	var knife_slot: int = -1

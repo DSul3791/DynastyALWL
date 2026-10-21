@@ -30,6 +30,7 @@ var canopy: Callable               # (Vector3) -> bool, whether a spot is under 
 var wind: Callable                 # () -> the weather dictionary ("wind" 0..1 and "wind_dir" radians, the way it blows toward)
 var died: Callable                 # (species, position, source peer) when an animal is killed
 var ticks_run: int = 0
+var trails = null                  # game trails (server_trails.gd): every step into a new cell wears the grass a little
 var flocks = null                  # bird flocks on water (server_flocks.gd)
 var water_level: Callable          # (x, z) -> water surface height, NAN on dry land (flocks float on it)
 var thieves = null                 # opportunists (fox; server_thieves.gd): smell loose food, creep up, take it and run
@@ -308,7 +309,13 @@ func tick(delta: float) -> void:
 		a["acc"] = 0.0
 		_step(a, dt, near_d, near_p, seen_d, seen_p)
 
+		if trails != null and int(a.get("state", 0)) != HIDDEN:
+			trails.note(id, str(a["sp"]), a["pos"])
+
 	for id in gone:
+		if trails != null:
+			trails.forget(id)
+
 		if animals[id].has("pack") and wolves != null and wolves.packs.has(animals[id]["pack"]):
 			wolves.packs[animals[id]["pack"]]["ids"].erase(id)
 

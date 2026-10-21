@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 64
+const PROTOCOL_VERSION := 65
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -56,6 +56,7 @@ signal shop_received(npc_id: String, title: String, ids: PackedStringArray, pay_
 signal trade_requested(peer_id: int, npc_id: String, kind: int, a: int, count: int)
 signal purse_received(copper: int)
 signal carry_received(item_id: String)
+signal trails_received(block_x: int, block_z: int, bytes: PackedByteArray)
 signal reputation_received(ids: PackedStringArray, names: PackedStringArray, points: PackedInt32Array)
 signal item_received(item_id: String, count: int, source: String)
 signal notice_received(text: String)
@@ -455,6 +456,14 @@ func shop(npc_id: String, title: String, ids: PackedStringArray, pay_milli: int,
 func trade(npc_id: String, kind: int, a: int, count: int) -> void:
 	if multiplayer.is_server():
 		trade_requested.emit(multiplayer.get_remote_sender_id(), npc_id, kind, a, count)
+
+
+# Game trails (protocol 65): one block of worn grass, compressed (src/shared/trail_codec.gd decode() gives {cell index: strength 0..1};
+# index = local_x + local_z * 64 from the block's south-west corner; block = 256 m, cell = 4 m, see data/animals/trails.json).
+# Sent for the 3 x 3 blocks around the player when they enter a block and when a block changes (at most every 30 s a block).
+@rpc("authority", "call_remote", "reliable")
+func trails(block_x: int, block_z: int, bytes: PackedByteArray) -> void:
+	trails_received.emit(block_x, block_z, bytes)
 
 
 # The large log on the shoulder (protocol 64): its item id, "" when nothing is carried. The client counts its weight in the load
