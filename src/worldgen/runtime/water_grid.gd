@@ -363,6 +363,7 @@ const FILM_M := 0.04           # a running sheet sits this far over the ground
 # the shader draws such a face as a falling sheet (water_material.gd `face`). No extra vertices.
 const FALL_SLOPE := 1.5        # rise over run from which a sheet point counts as on a fall face
 const FALL_STANDOFF_M := 0.45  # how far a fall-face point moves out from the wall
+const FINE_WALL_M := 3.0       # a cell with this much water at one corner and bank at another is a pond wall: flat surface
 const FINE_DEPTH_M := 1.5      # cells where all the water is deeper than this stay flat (no stripes there)
 
 static var _ground_cache: Dictionary = {}
@@ -421,6 +422,23 @@ static func _fine_cells(generator, origin: Vector2, count: int, spacing: float, 
 			if shallowest > FINE_DEPTH_M:
 				continue
 
+			# Owner report (2026-10-21, build 320, pond A at x10 flow): jagged spikes stood up out
+			# of a pond's far shore. The spring's sloshing made pond cells "running" (levels
+			# differ 0.15 m), and on a steep bowl wall the depth blended across a cell from deep
+			# water to the dry bank put the sheet metres above the real water. A cell holding
+			# deep water beside the bank is a pond wall: it keeps the flat surface.
+			var deepest: float = 0.0
+			var bank: bool = false
+
+			for n in range(4):
+				if is_nan(levels[corners[n]]):
+					bank = true
+				else:
+					deepest = maxf(deepest, d[n])
+
+			if bank and deepest > FINE_WALL_M:
+				continue
+
 			var heights: PackedFloat32Array = PackedFloat32Array()
 			heights.resize(side * side)
 
@@ -431,7 +449,8 @@ static func _fine_cells(generator, origin: Vector2, count: int, spacing: float, 
 					var u: float = float(a) / float(FINE_SUB)
 					var water: float = lerpf(lerpf(d[0], d[1], u), lerpf(d[2], d[3], u), v)
 					var ground: float = _fine_ground(generator, origin.x + float(i) * spacing + float(a) * step, origin.y + float(j) * spacing + float(b) * step)
-					heights[b * side + a] = ground + water + FILM_M
+					# Never above the highest water level of the cell: a running sheet lies between its corners' levels.
+					heights[b * side + a] = minf(ground + water + FILM_M, high + FILM_M)
 
 			fine[j * count + i] = heights
 
