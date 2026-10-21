@@ -65,7 +65,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 542
+const BUILD := 543
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -176,6 +176,7 @@ var _was_waiting: bool = false
 var arrival_protect_until_msec: int = 0   # no fall damage report until then (Dave 2026-10-21: arriving must not hurt)
 const ARRIVAL_HEIGHT_M := 0.5             # the body is set this far above the ground when the ground first appears
 const ARRIVAL_PROTECT_MS := 6000
+const FLY_LAND_PROTECT_MS := 60000   # Dave 2026-10-21: pressing G to land from flying hurts nothing for a minute
 var _tint: ColorRect
 var _aim_msec: int = 0
 var _aim_pos: Vector3 = Vector3.ZERO
@@ -2671,6 +2672,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.keycode == KEY_G or event.keycode == KEY_F:
 			flying = not flying
 			body.velocity = Vector3.ZERO
+
+			if not flying:
+				arrival_protect_until_msec = Time.get_ticks_msec() + FLY_LAND_PROTECT_MS
 
 
 # Owner (2026-10-20): movement felt jerky. The game draws about 30 frames a second but
