@@ -1431,6 +1431,7 @@ func _terrace(
 		var half_run: float = clampf(round(widths[used[from_a]] / spacing_m) * spacing_m, width_min, width_max) * 0.5
 
 		var foot_set: bool = false
+		var ramp: bool = single and top_bed - beds[used[last]] > float(_rules.get("chute_face_max_m", 90.0))
 
 		for j in range(steps):
 			var end_s: float = s0 + float(j + 1) * period + half_run
@@ -1459,6 +1460,11 @@ func _terrace(
 
 			if rel < half:
 				beds[k] = minf(beds[k], top_bed)
+			elif ramp:
+				# A very tall drop on a mountain side is one long chute at a constant gradient, not a
+				# wall (a 300 m wall would be a slot canyon): straight line from the lip to the foot.
+				var t: float = clampf((rel - half) / maxf(length - half, 1.0), 0.0, 1.0)
+				beds[k] = minf(beds[k], lerpf(top_bed, tread[0], t))
 			else:
 				var j: int = clampi(int(floor((rel - half) / period)), 0, steps - 1)
 				beds[k] = minf(beds[k], tread[j])
@@ -1469,7 +1475,7 @@ func _terrace(
 			if to_face > period * 0.5:
 				to_face = period - to_face
 
-			if to_face <= half + spacing_m:
+			if to_face <= half + spacing_m and not ramp:
 				banks[k] = maxf(banks[k], face_slope)
 
 	return flags

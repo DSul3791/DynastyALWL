@@ -131,6 +131,17 @@ func _init() -> void:
 	var reach_a: float = chutes[80 * SIDE + first_face + 24]
 	_check(pool_a < reach_a - 1.5, "plunge pool below the first chute (%.1f in the pool, %.1f on the reach)" % [pool_a, reach_a])
 
+	# A very tall drop (mountain side) is one long chute at a constant gradient, not a 300 m wall.
+	var tall: PackedFloat32Array = _carve(rules, 0.0, [[0, 600.0], [30, 600.0], [50, 200.0], [120, 200.0]])
+	var worst: float = 0.0
+
+	for i in range(10, 110):
+		worst = maxf(worst, tall[80 * SIDE + i] - tall[80 * SIDE + i + 1])
+		if OS.get_cmdline_user_args().has('--profile'):
+			print('tall ', i, ' ', tall[80 * SIDE + i])
+
+	_check(worst < 60.0, "a 400 m drop (land falls 20 m per sample) has no wall (largest single drop %.1f m)" % worst)
+
 	# A gentle slope is left alone.
 	var gentle: PackedFloat32Array = _carve(rules, 0.1)
 	_check(_faces(gentle, 8.0).is_empty(), "a gentle slope has no vertical faces")
