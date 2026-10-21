@@ -7,6 +7,7 @@ The single complete list of every input (keyboard, mouse, held versus tap, conte
 | Control | Action |
 |---|---|
 | Mouse | Look around |
+| Wheel (mouse) | Scroll out (wheel down) from first person to third person: the camera moves up and back a little at each step (1.6 m to 7 m behind, 0.4 m a step); in third person scrolling out pulls further, scrolling in comes closer and, past the nearest step, back to first person. The distance is remembered between sessions (`user://view.txt`); you always start in first person. The camera pulls in when a wall, the ground or a trunk is in the way. Works while flying. A plain placeholder body is drawn until there is a real character. Only while the mouse is captured (menus and the inventory keep their own scrolling) |
 | W A S D | Walk (6 m/s) |
 | Double-tap W (within 0.30 s) | Jog (8.5 m/s) |
 | Shift + W | Run (11 m/s) |
