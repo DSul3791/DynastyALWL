@@ -139,6 +139,9 @@ uniform sampler2D trample : filter_nearest, repeat_enable, hint_default_black;  
 uniform float trample_now = 0.0;
 uniform float recover_s = 300.0;        // data/look/grass_trample.json
 uniform float trample_squash = 0.75;
+uniform float trunk_squash = 0.2;       // the share of its height grass keeps under a trunk
+uniform vec4 trunk_a[6];                // felled trunks near: start x, z, end x, z
+uniform vec4 trunk_b[6];                // start radius, end radius, margin, edge softness (zero radius = unused)
 varying vec3 blade_color;
 varying float tip;
 
@@ -160,6 +163,24 @@ void vertex() {
 		flat_down = 1.0 - q * q;
 	}
 	VERTEX.y *= 1.0 - trample_squash * flat_down;
+	// A felled trunk presses the grass flat under it and along both sides, soft at the edge (Dave 2026-10-21).
+	vec2 root_xz = MODEL_MATRIX[3].xz;
+	float pressed = 0.0;
+	float inside = 0.0;
+	for (int i = 0; i < 6; i++) {
+		if (trunk_b[i].x > 0.0) {
+			vec2 a = trunk_a[i].xy;
+			vec2 ab = trunk_a[i].zw - a;
+			float along = clamp(dot(root_xz - a, ab) / max(dot(ab, ab), 0.0001), 0.0, 1.0);
+			float d = length(root_xz - (a + ab * along));
+			float reach = mix(trunk_b[i].x, trunk_b[i].y, along) + trunk_b[i].z;
+			pressed = max(pressed, 1.0 - smoothstep(reach, reach + trunk_b[i].w, d));
+			float body = mix(trunk_b[i].x, trunk_b[i].y, along);
+			inside = max(inside, 1.0 - smoothstep(body * 0.8, body * 1.15, d));   // no blade grows out of the log itself
+		}
+	}
+	VERTEX.y *= mix(1.0, trunk_squash, pressed);
+	VERTEX *= 1.0 - inside;
 	VERTEX *= fade;
 	blade_color = INSTANCE_CUSTOM.rgb * (1.0 - 0.12 * flat_down);
 }
@@ -191,7 +212,9 @@ var clear_m: float = 5.0
 var clear_edge_m: float = 1.5
 var trunks: Array = []                   # felled trunks lying on the grass: [ax, az, bx, bz, radius at a, radius at b] (set_trunks)
 var trunk_margin_m: float = 0.3
-var trunk_squash: float = 0.15           # a blade under or beside a trunk keeps this share of its height
+var _trunk_msec: int = -1
+const TRUNK_EDGE_M := 0.45             # how far past the margin the pressed grass rises back
+var trunk_squash: float = 0.2           # a blade under or beside a trunk keeps this share of its height
 var litter_m: float = 0.0                # forest litter drawn this far (0 off), set by the client per quality
 var litter_density: float = 0.0          # share of each litter layer's per_point drawn
 var litter_cap: int = 1 << 30            # hard limit on leaf cards and branches drawn at once (Technical direction: Low 3k, Medium 20k, High 40k, Ultra 60k)
@@ -782,29 +805,33 @@ func _cleared_at(x: float, z: float) -> bool:
 # Felled trunks (Dave 2026-10-21): the grass under a lying trunk and trunk_margin_m out on each side is pressed flat (kept low, below
 # the trunk's surface) for as long as the trunk lies there. The strip follows the trunk's real line, not a circle.
 func set_trunks(list: Array, margin: float, squash: float) -> void:
-	var changed: Array = []
-
-	for t in list:
-		if not trunks.has(t):
-			changed.append(t)
-
-	for t in trunks:
-		if not list.has(t):
-			changed.append(t)
-
 	trunks = list
 	trunk_margin_m = margin
 	trunk_squash = squash
+	_trunk_msec = 0       # pushed to the shader at the next update
 
-	for t in changed:
-		var reach: float = maxf(t[4], t[5]) + margin + 1.0
-		var cells: Array = []
 
-		for cz in range(int(floor((minf(t[1], t[3]) - reach) / CELL_M)), int(floor((maxf(t[1], t[3]) + reach) / CELL_M)) + 1):
-			for cx in range(int(floor((minf(t[0], t[2]) - reach) / CELL_M)), int(floor((maxf(t[0], t[2]) + reach) / CELL_M)) + 1):
-				cells.append(Vector2i(cx, cz))
+# The nearest six trunks go to the grass shader (the pressing is drawn per blade there, soft at the edge, so no cell is rebuilt).
+func _push_trunks(center: Vector3) -> void:
+	var near: Array = trunks.duplicate()
+	near.sort_custom(func(p, q): return Vector2(p[0] - center.x, p[1] - center.z).length_squared() < Vector2(q[0] - center.x, q[1] - center.z).length_squared())
+	var a: PackedVector4Array = PackedVector4Array()
+	var b: PackedVector4Array = PackedVector4Array()
 
-		_edits.push_front([Time.get_ticks_msec() + 50, cells])
+	for i in range(6):
+		if i < near.size():
+			var t: Array = near[i]
+			a.append(Vector4(t[0], t[1], t[2], t[3]))
+			b.append(Vector4(t[4], t[5], trunk_margin_m, TRUNK_EDGE_M))
+		else:
+			a.append(Vector4.ZERO)
+			b.append(Vector4.ZERO)
+
+	for n in range(_materials.size()):
+		if not _is_solid(n):
+			_materials[n].set_shader_parameter("trunk_a", a)
+			_materials[n].set_shader_parameter("trunk_b", b)
+			_materials[n].set_shader_parameter("trunk_squash", trunk_squash)
 
 
 # Is (x, z) under or within the margin of a lying trunk?
@@ -855,6 +882,11 @@ func update(position: Vector3) -> void:
 	_center = position
 	var now: int = Time.get_ticks_msec()
 	_trample.flush()
+
+	if _trunk_msec == 0 or (_trunk_msec > 0 and now >= _trunk_msec):
+		_trunk_msec = now + 1500
+		_push_trunks(position)
+
 	var clock: float = TrampleScript.now_s()
 
 	for n in range(_materials.size()):
@@ -1140,9 +1172,6 @@ func _build(cell: Vector2i) -> int:
 					var size: float = rng.randf_range(0.75, 1.15)
 					var yaw: float = rng.randf() * TAU
 					var sy: float = size * rng.randf_range(0.8, 1.15)
-
-					if not trunks.is_empty() and _flat_at(ox, oz):
-						sy *= trunk_squash
 					var cy: float = cos(yaw) * size * width_scale
 					var sny: float = sin(yaw) * size * width_scale
 					var shade: float = rng.randf_range(0.82, 1.15)

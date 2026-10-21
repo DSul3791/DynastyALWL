@@ -3,5 +3,5 @@
 	"radius_m": 5.0,
 	"edge_m": 1.5,
 	"trunk_margin_m": 0.3,
-	"trunk_squash": 0.15
+	"trunk_squash": 0.2
 }
