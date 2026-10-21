@@ -49,6 +49,12 @@ static func load_depth(path: String, side: int) -> PackedFloat32Array:
 
 	var count: int = file.get_32()
 	var raw_size: int = file.get_32()
+
+	if count == 0 or raw_size == 0:
+		var none: PackedFloat32Array = PackedFloat32Array()
+		none.resize(side * side)
+		return none
+
 	var raw: PackedByteArray = file.get_buffer(file.get_length() - file.get_position()).decompress(raw_size, FileAccess.COMPRESSION_ZSTD)
 	var buffer: StreamPeerBuffer = StreamPeerBuffer.new()
 	buffer.data_array = raw

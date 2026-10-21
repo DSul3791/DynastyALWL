@@ -82,6 +82,9 @@ var _blood_sent: Dictionary = {}       # peer -> hash of the blood trail last se
 var _swell: float = 0.0
 var _dry: float = 0.0
 var _weather_bucket: int = -1
+var _water_seen: Dictionary = {}        # tile -> msec a player was last in it (the live water set keeps a tile WATER_KEEP_MS after)
+var _water_live_next: int = 0
+var _water_live_last: Array = []
 var _wet_centre: int = 0               # wet squares on the starter tile at the last update (the log line)
 var water_live                         # the starter tile's running water, tuned with + and - on the client
 var _world_dir: String = ""
@@ -671,10 +674,46 @@ func _update_weather() -> void:
 	water_live.set_runoff(maxf(1.0 + WEATHER_SWELL * _swell - DRY_SHRINK * _dry, RUNOFF_FLOOR))
 
 
+# The water sim follows the players (tech/WATER_NINE_TILES_PLAN.md): the tiles they stand in, kept
+# WATER_KEEP_MS after they leave, newest first; with nobody connected the starter tile keeps running.
+const WATER_KEEP_MS := 120000
+
+
+func _update_water_live() -> void:
+	var now: int = Time.get_ticks_msec()
+
+	if now < _water_live_next:
+		return
+
+	_water_live_next = now + 2000
+
+	for position in items.peer_positions():
+		_water_seen[generator.tile_of(position.x, position.z)] = now
+
+	var tiles: Array = []
+
+	for tile in _water_seen.keys():
+		if now - int(_water_seen[tile]) > WATER_KEEP_MS:
+			_water_seen.erase(tile)
+		else:
+			tiles.append(tile)
+
+	tiles.sort_custom(func(a, b): return int(_water_seen[a]) > int(_water_seen[b]))
+
+	if tiles.is_empty():
+		tiles = [Vector2i(3, 4)]
+
+	if tiles != _water_live_last:
+		_water_live_last = tiles.duplicate()
+		water_live.set_live(tiles)
+
+
 # New levels from the water thread: swap them into the tile and tell clients.
 func _poll_water() -> void:
 	if water_live == null:
 		return
+
+	_update_water_live()
 
 	var updates: Array = water_live.take_updates()
 
