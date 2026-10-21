@@ -57,7 +57,8 @@ const FLASH_S := 0.9
 const RAIN_SHADER := """
 shader_type spatial;
 render_mode unshaded, cull_disabled, blend_mix;
-uniform vec4 streak : source_color = vec4(0.78, 0.84, 0.95, 0.42);
+uniform vec4 streak : source_color = vec4(0.78, 0.84, 0.95, 0.42);   // alpha is set by the rain's strength (fainter in drizzle)
+uniform vec2 size_scale = vec2(1.0, 1.0);                           // width and length: fine and short in drizzle, thick and long in a storm
 uniform sampler2D canopy : filter_linear, hint_default_black;
 uniform vec3 canopy_box = vec3(0.0, 0.0, 128.0);   // map corner x, z and its width in metres
 
@@ -69,6 +70,7 @@ void vertex() {
 		// the rain does not pop as the player steps in and out.
 		VERTEX *= 1.0 - smoothstep(0.2, 0.8, textureLod(canopy, uv, 0.0).r);
 	}
+	VERTEX *= vec3(size_scale.x, size_scale.y, size_scale.x);
 }
 
 void fragment() {
@@ -172,7 +174,7 @@ func _make_rain() -> GPUParticles3D:
 	process.particle_flag_align_y = true
 	particles.process_material = process
 	# Two crossed thin quads: a streak seen from any side.
-	var half: float = 0.008
+	var half: float = 0.005
 	var length: float = 0.6
 	var vertices: PackedVector3Array = PackedVector3Array([
 		Vector3(-half, 0.0, 0.0), Vector3(half, 0.0, 0.0), Vector3(half, length, 0.0), Vector3(-half, length, 0.0),
@@ -430,6 +432,10 @@ func _update_particles(rain: float, snow: float, wind: float) -> void:
 	_rain.emitting = rain > 0.04 and not under
 	_snow.emitting = snow > 0.04 and not under
 	_rain.amount_ratio = clampf(rain, 0.05, 1.0)
+	# Streak size and strength follow how hard it rains (and the storm): drizzle fine, short and faint; a storm long, thick and denser.
+	var hard: float = clampf(maxf(rain, float(_s.get("storm", 0.0))), 0.0, 1.0)
+	_rain_material.set_shader_parameter("size_scale", Vector2(lerpf(0.55, 1.7, hard), lerpf(0.5, 1.4, hard)))
+	_rain_material.set_shader_parameter("streak", Color(0.78, 0.84, 0.95, lerpf(0.10, 0.26, hard)))
 	_snow.amount_ratio = clampf(snow, 0.05, 1.0)
 
 	if _rain.emitting:

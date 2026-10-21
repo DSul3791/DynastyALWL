@@ -71,7 +71,7 @@ const PARTS := [
 	["foot_l", "ellipsoid", Vector3(0.0, -0.03, -0.06), Vector3(0.056, 0.04, 0.135), false],
 ]
 
-const ANIMATIONS := ["idle", "walk", "run", "crouch", "sit", "lie", "swing", "jab", "throw", "use"]
+const ANIMATIONS := ["idle", "walk", "jog", "run", "crouch", "sit", "lie", "swing", "jab", "throw", "use"]
 
 var arms_only: bool = false
 var skeleton: Skeleton3D
@@ -280,7 +280,8 @@ func _build_animations() -> void:
 	var library: AnimationLibrary = AnimationLibrary.new()
 	library.add_animation("idle", _loop(3.0, 12, _idle))
 	library.add_animation("walk", _loop(1.0, 16, _walk))
-	library.add_animation("run", _loop(0.6, 12, _run))
+	library.add_animation("jog", _loop(0.75, 16, _jog))
+	library.add_animation("run", _loop(0.62, 16, _run))
 	library.add_animation("crouch", _loop(2.0, 8, _crouch))
 	library.add_animation("sit", _loop(3.0, 8, _sit))
 	library.add_animation("lie", _loop(4.0, 8, _lie))
@@ -357,32 +358,37 @@ func _idle(p: float) -> Dictionary:
 	}
 
 
-func _walk(p: float) -> Dictionary:
+# Gait clips (Tyler's table, BEST_PRACTICES "Natural walk, jog, run"): knee swing peak about 60 / 95 / 110 degrees and 15 / 35 /
+# 45 degrees at foot plant, elbow 25 / 70 / 90 degrees, forward lean 2 / 6 / 10 degrees with the head level, shoulders turning
+# against the hips, the body rising twice a stride. Natural speeds (m/s) where the stride matches the ground: walk 1.4, jog 3.2,
+# run 6.0; terrain_client.gd scales the playback inside a limited range around them.
+func _gait(p: float, thigh: float, knee_swing: float, knee_plant: float, arm: float, elbow: float, lean: float, twist: float, bob: float, sink: float) -> Dictionary:
 	var s: float = sin(TAU * p)
 	var c: float = cos(TAU * p)
+	var swing_l: float = maxf(c, 0.0)
+	var swing_r: float = maxf(-c, 0.0)
 	return {
-		"thigh_l": Vector3(0.5 * s, 0.0, -0.0), "thigh_r": Vector3(-0.5 * s, 0.0, -0.0),
-		"shin_l": Vector3(-0.7 * maxf(c, 0.0), 0.0, 0.0), "shin_r": Vector3(-0.7 * maxf(-c, 0.0), 0.0, 0.0),
-		"foot_l": Vector3(0.15 * maxf(c, 0.0), 0.0, 0.0), "foot_r": Vector3(0.15 * maxf(-c, 0.0), 0.0, 0.0),
-		"arm_l": Vector3(-0.4 * s, 0.0, -0.05), "arm_r": Vector3(0.4 * s, 0.0, 0.05),
-		"forearm_l": Vector3(0.3, 0.0, 0.0), "forearm_r": Vector3(0.3, 0.0, 0.0),
-		"spine": Vector3(0.0, 0.07 * s, 0.0), "chest": Vector3(-0.05, -0.06 * s, 0.0),
-		"hips_move": Vector3(0.0, 0.025 * cos(2.0 * TAU * p), 0.0),
+		"thigh_l": Vector3(thigh * s, 0.0, 0.0), "thigh_r": Vector3(-thigh * s, 0.0, 0.0),
+		"shin_l": Vector3(-(knee_plant + (knee_swing - knee_plant) * swing_l), 0.0, 0.0), "shin_r": Vector3(-(knee_plant + (knee_swing - knee_plant) * swing_r), 0.0, 0.0),
+		"foot_l": Vector3(0.2 * swing_l, 0.0, 0.0), "foot_r": Vector3(0.2 * swing_r, 0.0, 0.0),
+		"arm_l": Vector3(-arm * s, 0.0, -0.06), "arm_r": Vector3(arm * s, 0.0, 0.06),
+		"forearm_l": Vector3(elbow + 0.25 * elbow * maxf(-s, 0.0), 0.0, 0.0), "forearm_r": Vector3(elbow + 0.25 * elbow * maxf(s, 0.0), 0.0, 0.0),
+		"hips": Vector3(0.0, -0.4 * twist * s, 0.0),
+		"spine": Vector3(-lean * 0.6, twist * s, 0.0), "chest": Vector3(-lean * 0.4, -0.3 * twist * s, 0.0), "head": Vector3(lean * 0.9, 0.0, 0.0),
+		"hips_move": Vector3(0.0, bob * cos(2.0 * TAU * p) - sink, 0.0),
 	}
+
+
+func _walk(p: float) -> Dictionary:
+	return _gait(p, 0.45, 1.05, 0.3, 0.5, 0.4, 0.035, 0.08, 0.02, 0.01)
+
+
+func _jog(p: float) -> Dictionary:
+	return _gait(p, 0.75, 1.65, 0.65, 0.8, 1.2, 0.1, 0.12, 0.03, 0.04)
 
 
 func _run(p: float) -> Dictionary:
-	var s: float = sin(TAU * p)
-	var c: float = cos(TAU * p)
-	return {
-		"thigh_l": Vector3(0.9 * s, 0.0, -0.0), "thigh_r": Vector3(-0.9 * s, 0.0, -0.0),
-		"shin_l": Vector3(-1.5 * maxf(c, 0.0), 0.0, 0.0), "shin_r": Vector3(-1.5 * maxf(-c, 0.0), 0.0, 0.0),
-		"foot_l": Vector3(0.3 * maxf(c, 0.0), 0.0, 0.0), "foot_r": Vector3(0.3 * maxf(-c, 0.0), 0.0, 0.0),
-		"arm_l": Vector3(-0.9 * s, 0.0, -0.1), "arm_r": Vector3(0.9 * s, 0.0, 0.1),
-		"forearm_l": Vector3(1.3, 0.0, 0.0), "forearm_r": Vector3(1.3, 0.0, 0.0),
-		"spine": Vector3(-0.15, 0.1 * s, 0.0), "chest": Vector3(-0.1, -0.12 * s, 0.0), "head": Vector3(0.12, 0.0, 0.0),
-		"hips_move": Vector3(0.0, 0.05 * cos(2.0 * TAU * p) - 0.03, 0.0),
-	}
+	return _gait(p, 1.0, 1.9, 0.75, 1.0, 1.5, 0.18, 0.16, 0.045, 0.07)
 
 
 func _crouch(p: float) -> Dictionary:

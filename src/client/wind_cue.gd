@@ -5,7 +5,8 @@ extends Node3D
 # fade out downwind (fade by distance from the camera, not by age), so they never hover. More wind: faster, more of them; a light breeze shows a handful. Slow shared gust wobble of the heading plus a random spread per speck. Colour
 # follows daylight (nothing glows at night). Cost: ONE GPUParticles3D, billboard quads, one tiny unshaded shader; off at Low,
 # 160 / 260 / 400 particles at Medium / High / Ultra. No turbulence: the GPU turbulence field overrides the velocity and made
-# the specks hover (the first version's bug); the natural look comes from the spread, the speed range and the gust wobble. Rain, snow, underwater and low altitude fade it out.
+# the specks hover (the first version's bug); the natural look comes from the spread, the speed range, the gust wobble and a
+# small sine wander of each speck in the vertex shader (slow sideways, up and down, along the wind). Rain, snow, underwater and low altitude fade it out.
 # No scripts per particle, nothing saved, nothing sent.
 
 const AMOUNT := [0, 160, 260, 400]
@@ -24,10 +25,10 @@ const RESTEP_SPEED := 0.15                    # speed (m/s) change that re-aims 
 
 # size scale, leaf aspect (1 = round), sink fraction of the speed, per season
 const SEASON_LOOK := {
-	"spring": {"scale": [0.8, 1.4], "aspect": 0.7, "sink": 0.06},
-	"summer": {"scale": [0.5, 0.9], "aspect": 1.0, "sink": 0.01},
-	"autumn": {"scale": [1.0, 1.7], "aspect": 0.5, "sink": 0.1},
-	"winter": {"scale": [0.4, 0.8], "aspect": 1.0, "sink": 0.02},
+	"spring": {"scale": [0.28, 0.5], "aspect": 0.7, "sink": 0.06},
+	"summer": {"scale": [0.18, 0.32], "aspect": 1.0, "sink": 0.01},
+	"autumn": {"scale": [0.35, 0.6], "aspect": 0.5, "sink": 0.1},
+	"winter": {"scale": [0.14, 0.28], "aspect": 1.0, "sink": 0.02},
 }
 
 const SEASON_COLOURS := {
@@ -45,17 +46,28 @@ uniform float light = 1.0;
 uniform float aspect = 1.0;
 uniform float fade_from = 18.0;
 uniform float fade_to = 30.0;
+uniform float wander_amount = 1.0;
 
 varying float spin;
 varying float age;
 
 void vertex() {
-	// Billboard facing the camera.
-	MODELVIEW_MATRIX = VIEW_MATRIX * mat4(INV_VIEW_MATRIX[0], INV_VIEW_MATRIX[1], INV_VIEW_MATRIX[2], MODEL_MATRIX[3]);
-	MODELVIEW_MATRIX = MODELVIEW_MATRIX * mat4(vec4(length(MODEL_MATRIX[0].xyz), 0.0, 0.0, 0.0), vec4(0.0, length(MODEL_MATRIX[1].xyz), 0.0, 0.0), vec4(0.0, 0.0, length(MODEL_MATRIX[2].xyz), 0.0), vec4(0.0, 0.0, 0.0, 1.0));
-	// Tumble: each speck turns at its own rate (hash of the instance), a leaf or petal flips as it goes.
 	float h = fract(sin(float(INSTANCE_ID) * 12.9898) * 43758.5453);
-	spin = h * 6.2832 + INSTANCE_CUSTOM.y * INSTANCE_CUSTOM.z * (1.0 + 3.0 * h);
+	float h2 = fract(h * 91.7 + 0.37);
+	float h3 = fract(h * 57.3 + 0.71);
+	float t = INSTANCE_CUSTOM.y * INSTANCE_CUSTOM.z;      // seconds since it was born
+	// Floating, not flying: a gentle wander round the straight line (slow sideways, up and down, and along the wind as a
+	// slight speed change), each speck with its own phases and rates.
+	vec3 wander = vec3(
+		sin(t * (0.9 + 0.8 * h) + h2 * 6.28) * 0.9 + sin(t * (0.35 + 0.3 * h3) + h * 6.28) * 0.6,
+		sin(t * (1.3 + 0.9 * h2) + h3 * 6.28) * 0.35,
+		sin(t * (0.8 + 0.7 * h3) + h * 6.28) * 0.9 + sin(t * (0.4 + 0.3 * h2) + h2 * 6.28) * 0.6) * wander_amount;
+	vec3 centre = MODEL_MATRIX[3].xyz + wander;
+	// Billboard facing the camera.
+	MODELVIEW_MATRIX = VIEW_MATRIX * mat4(INV_VIEW_MATRIX[0], INV_VIEW_MATRIX[1], INV_VIEW_MATRIX[2], vec4(centre, 1.0));
+	MODELVIEW_MATRIX = MODELVIEW_MATRIX * mat4(vec4(length(MODEL_MATRIX[0].xyz), 0.0, 0.0, 0.0), vec4(0.0, length(MODEL_MATRIX[1].xyz), 0.0, 0.0), vec4(0.0, 0.0, length(MODEL_MATRIX[2].xyz), 0.0), vec4(0.0, 0.0, 0.0, 1.0));
+	// A slow turn, each at its own rate.
+	spin = h * 6.2832 + t * (0.3 + 1.0 * h2);
 	age = INSTANCE_CUSTOM.y;
 }
 
@@ -155,6 +167,7 @@ func update(delta: float, eye: Vector3, state: Dictionary, rain: float, snow: fl
 
 	_particles.amount_ratio = clampf(ratio * _fade, 0.01, 1.0)
 	_shader_material.set_shader_parameter("light", clampf(daylight, 0.0, 1.0))
+	_shader_material.set_shader_parameter("wander_amount", lerpf(1.3, 0.8, wind))
 	var heading: float = gusty_heading(float(state.get("wind_dir", 0.0)), Time.get_unix_time_from_system())
 	var dir: Vector3 = Vector3(cos(heading), 0.0, sin(heading))
 	# Local +X of the emitter points downwind; the slab (thin in X) sits upwind of the camera.
@@ -195,7 +208,7 @@ static func _ramp(season: String) -> GradientTexture1D:
 	for i in range(count):
 		offsets.append(float(i) / float(count))
 		var c: Color = colours[i]
-		cols.append(Color(c.r, c.g, c.b, 0.8))
+		cols.append(Color(c.r, c.g, c.b, 0.45))
 
 	gradient.offsets = offsets
 	gradient.colors = cols

@@ -5,6 +5,7 @@ extends Node
 # optionally force the weather, wait for the ground and flora to stream in, save the 3D view as a PNG.
 #
 #   --shots="name:x,agl,z,yaw_deg,pitch_deg,hour[,weather];name2:..."   (weather: clear, storm, rain, snow)
+#   an 8th number (m/s) shows the third-person body walking at that speed, seen from the side (e.g. 4 = walk, 8 = run)
 #   agl is metres above the ground at x,z (a NEGATIVE y is an absolute height in metres instead): the runner first goes to 400 m above sea level there, waits until the
 #   ground under it has loaded, then drops to the ground height plus agl
 #   --shot-dir=DIR      where the PNGs go (default user://shots)
@@ -45,7 +46,7 @@ func setup(owner_client, args: Array) -> void:
 				var numbers: PackedStringArray = pieces[1].split(",", false)
 				shots.append({"name": pieces[0], "pos": Vector3(float(numbers[0]), float(numbers[1]), float(numbers[2])),
 					"yaw": float(numbers[3]), "pitch": float(numbers[4]), "hour": float(numbers[5]) if numbers.size() > 5 else 12.0,
-					"weather": numbers[6] if numbers.size() > 6 else ""})
+					"weather": numbers[6] if numbers.size() > 6 else "", "walk": float(numbers[7]) if numbers.size() > 7 else -1.0})
 		elif argument.begins_with("--shot-dir="):
 			dir = argument.trim_prefix("--shot-dir=")
 		elif argument == "--shot-cost":
@@ -79,7 +80,7 @@ func _process(_delta: float) -> void:
 		if client.held != null:
 			client.held.set_first_person(false)
 
-		if client._avatar != null:
+		if client._avatar != null and float(shots[_index]["walk"]) < 0.0:
 			client._avatar.visible = false
 
 	var now: int = Time.get_ticks_msec()
@@ -98,6 +99,7 @@ func _process(_delta: float) -> void:
 		return
 
 	var shot_pos: Vector3 = shots[_index]["pos"]
+	_side_view(float(shots[_index]["walk"]))
 
 	if not _placed:
 		var ground: float = _ground(shot_pos.x, shot_pos.z)
@@ -127,6 +129,20 @@ func _process(_delta: float) -> void:
 		print("shot runner: fall %d top %s base %s flow %.1f width %.1f" % [n, str(fall["top"]), str(fall["base"]), float(fall["flow"]), float(fall["width"])])
 
 	_cost_then_next(now)
+
+
+# A walking body from the side: the drawn camera 2.8 m to the body's left, level with its chest.
+func _side_view(walk: float) -> void:
+	client.debug_pace = walk
+
+	if walk < 0.0 or client._avatar == null or client.view_cam == null:
+		return
+
+	client.third_person = true
+	var origin: Vector3 = client._avatar.global_position + Vector3(0.0, 0.95, 0.0)
+	var left: Vector3 = client.body.global_transform.basis * Vector3(-1.0, 0.0, 0.0)
+	client.view_cam.global_position = origin + left * 2.8 + Vector3(0.0, 0.15, 0.0)
+	client.view_cam.look_at(origin, Vector3.UP)
 
 
 # What the frame draws, in the same units as the probe table (primitives include the shadow passes). With

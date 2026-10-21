@@ -473,17 +473,30 @@ static func build_mesh(falls: Array, cap: int) -> ArrayMesh:
 		var lip_y: float = points[0].y
 		var foot_y: float = points[points.size() - 1].y
 
+		# The way across, from the fall's own direction averaged over about 24 m of it: the grid chain zigzags by a
+		# cell, and across taken point by point twisted the ribbon into shards (Dave, build 458 stills). Over a
+		# near-vertical stretch the fall's overall heading is used.
+		var flat_run: PackedVector3Array = PackedVector3Array()
+		flat_run.resize(points.size())
+
+		for k in range(points.size()):
+			var sum: Vector3 = Vector3.ZERO
+
+			for m in range(maxi(k - 6, 0), mini(k + 6, points.size() - 1)):
+				var step: Vector3 = Vector3(points[m + 1].x - points[m].x, 0.0, points[m + 1].z - points[m].z)
+				sum += step
+
+			flat_run[k] = sum
+
 		for k in range(points.size()):
 			var tangent: Vector3 = points[mini(k + 1, points.size() - 1)] - points[maxi(k - 1, 0)]
-			var flat: Vector3 = Vector3(tangent.x, 0.0, tangent.z)
-
-			# Over a near-vertical drop the way across follows the fall's overall heading.
+			var flat: Vector3 = flat_run[k]
 			var across: Vector3 = Vector3(-heading.z, 0.0, heading.x)
 
-			if flat.length() > 0.5:
+			if flat.length() > 3.0:
 				across = Vector3(-flat.z, 0.0, flat.x).normalized()
 
-			var grow: float = 1.0 + 0.35 * float(k) / float(points.size() - 1)
+			var grow: float = 1.0 + 0.08 * float(k) / float(points.size() - 1)
 			var half: float = width * grow * 0.5
 			var normal: Vector3 = across.cross(tangent.normalized()).normalized() if tangent.length() > 0.01 else Vector3.UP
 

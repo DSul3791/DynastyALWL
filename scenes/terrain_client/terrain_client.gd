@@ -63,7 +63,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 464
+const BUILD := 465
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
@@ -2104,6 +2104,7 @@ const VIEW_CLEAR_M := 0.25             # how far short of a wall or trunk the ca
 
 var view_cam: Camera3D
 var third_person: bool = false
+var debug_pace: float = -1.0                              # shot runner only: pretend to move at this speed (m/s) so the walk animation plays
 var _view_m: float = 3.0
 var _view_now: float = 0.0             # the distance drawn now (eases out and in, and shortens when blocked)
 var _avatar                                               # the ragdoll body (src/client/ragdoll_body.gd), feet on the ground under the capsule
@@ -2175,17 +2176,21 @@ func _update_view(delta: float) -> void:
 	_avatar.position.y = -float(StanceScript.SHAPE_HEIGHT[StanceScript.STAND]) * 0.5
 
 	if _avatar.visible:
-		var pace: float = Vector2(body.velocity.x, body.velocity.z).length()
+		var pace: float = Vector2(body.velocity.x, body.velocity.z).length() if debug_pace < 0.0 else debug_pace
 		var clip: String = ["idle", "crouch", "sit", "lie"][stance.stance]
 
 		if stance.stance == StanceScript.STAND and pace > 0.6:
-			clip = "run" if pace > 7.0 else "walk"
+			# Walk, jog or run by the real speed, with a margin so the clip does not flicker at a limit; the playback speed keeps the
+			# stride on the ground (natural speeds 1.4, 3.2 and 6.0 m/s, see ragdoll_body.gd).
+			var current_clip: String = _avatar.current()
+			var jog_from: float = 2.2 if current_clip != "jog" and current_clip != "run" else 1.8
+			var run_from: float = 5.0 if current_clip != "run" else 4.4
+			clip = "run" if pace > run_from else ("jog" if pace > jog_from else "walk")
 
 		if _avatar.current() != clip and not _avatar.is_one_shot_playing():
-			_avatar.play(clip)
+			_avatar.play(clip, 1.0, 0.25)
 
-		# Feet keep up with the ground: about 1.6 m a walk cycle, 2.8 m a run cycle (0.6 s long).
-		_avatar.animation_player.speed_scale = clampf(pace / 1.6, 0.4, 5.0) if clip == "walk" else (clampf(pace * 0.6 / 2.8, 0.5, 3.0) if clip == "run" else 1.0)
+		_avatar.animation_player.speed_scale = clampf(pace / 1.4, 0.5, 1.7) if clip == "walk" else (clampf(pace / 3.2, 0.8, 1.6) if clip == "jog" else (clampf(pace / 6.0, 0.8, 2.0) if clip == "run" else 1.0))
 
 
 # The plain ragdoll character (owner, 2026-10-21): body, head, arms, legs and hands, no features.
