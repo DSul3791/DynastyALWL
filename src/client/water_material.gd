@@ -174,6 +174,10 @@ void fragment() {
 	bump *= 1.0 / (1.0 + distance_m / 35.0);
 	// The mesh's own normal tilts differently on each 8 m square; water is nearly flat, so
 	// lean it toward straight up to hide the square seams.
+	// A fall (build 325): the sheet's own normal is near horizontal on a drop. The face is a thick
+	// white-blue sheet with streaks running down it, whatever lies behind it.
+	vec3 face_normal = normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz);
+	float face = 1.0 - smoothstep(0.35, 0.8, face_normal.y);
 	vec3 up = normalize(mix((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz, vec3(0.0, 1.0, 0.0), 0.75));
 	vec3 normal_world = normalize(up - vec3(bump.x, 0.0, bump.y));
 	NORMAL = normalize((VIEW_MATRIX * vec4(normal_world, 0.0)).xyz);
@@ -214,12 +218,16 @@ void fragment() {
 	float meet = mouth_band * step(0.001, steep) * smoothstep(0.45, 0.75, ripples(local / 2.2 + vec2(drift * 0.1, -drift * 0.07)));
 	foam = max(foam, meet * 0.45);
 	foam *= 1.0 / (1.0 + distance_m / 120.0);
+	// Streaks running down the face of a fall, brighter near the lip and the foot.
+	float fall_streaks = face > 0.01 ? smoothstep(0.45, 0.8, ripples(vec2((world_pos.x + world_pos.z) * 1.7, world_pos.y * 0.22 + drift * 2.5))) : 0.0;
+	foam = max(foam, face * (0.35 + 0.5 * fall_streaks));
 
+	murk = max(murk, face * 0.55);
 	vec3 water = mix(mix(shallow_color, deep_color, murk), mud_color * mix(1.0, 0.7, murk), mud_here);
 	water = mix(water, storm_color * mix(1.0, 0.6, murk), storm * 0.65);   // storm: dark grey-brown churned water
 	foam *= 1.0 + 0.5 * storm;
 	vec3 foam_tint = mix(foam_color, mud_color * 1.6, clamp(mud_here * 0.6 + storm * 0.35, 0.0, 1.0));
-	float body_alpha = mix(edge_alpha, 0.97, murk);
+	float body_alpha = max(mix(edge_alpha, 0.97, murk), face * 0.85);
 
 #ifdef SCENE_READS
 	if (refraction > 0.5) {

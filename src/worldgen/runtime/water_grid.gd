@@ -358,6 +358,11 @@ static func _shore_levels(generator, data, origin: Vector2, count: int, spacing:
 const FINE_SUB := 4
 const FINE_SLOPE_M := 0.15     # wet corners differing more than this make a running-water cell
 const FILM_M := 0.04           # a running sheet sits this far over the ground
+# Sim-driven falls (owner, 2026-10-21, build 325): on a drop the sheet follows the ground, so a
+# thin film hid in the cliff face. Points on a steep face stand this far off it (downhill), and
+# the shader draws such a face as a falling sheet (water_material.gd `face`). No extra vertices.
+const FALL_SLOPE := 1.5        # rise over run from which a sheet point counts as on a fall face
+const FALL_STANDOFF_M := 0.45  # how far a fall-face point moves out from the wall
 const FINE_DEPTH_M := 1.5      # cells where all the water is deeper than this stay flat (no stripes there)
 
 static var _ground_cache: Dictionary = {}
@@ -882,6 +887,17 @@ static func _is_shore(edge: PackedFloat32Array, n: int) -> bool:
 
 # A running-water cell drawn from its fine heights: own vertices, normals from the
 # surface slope, alpha blended from the wet corners (the sheet fades out toward a dry one).
+# A sheet point on a steep face moves out downhill by FALL_STANDOFF_M (slope gx, gz = rise over run).
+static func _stand_off(point: Vector3, gx: float, gz: float) -> Vector3:
+	var slope: float = sqrt(gx * gx + gz * gz)
+
+	if slope < FALL_SLOPE:
+		return point
+
+	var out: float = FALL_STANDOFF_M * smoothstep(FALL_SLOPE, FALL_SLOPE * 2.0, slope) / slope
+	return point + Vector3(-gx * out, 0.0, -gz * out)
+
+
 static func _add_fine_cell(heights: PackedFloat32Array, i: int, j: int, spacing: float, levels: PackedFloat32Array, edge: PackedFloat32Array, count: int, vertices: PackedVector3Array, normals: PackedVector3Array, colors: PackedColorArray, indices: PackedInt32Array, vel: PackedFloat32Array = PackedFloat32Array()) -> void:
 	var side: int = FINE_SUB + 1
 	var step: float = spacing / float(FINE_SUB)
@@ -904,7 +920,7 @@ static func _add_fine_cell(heights: PackedFloat32Array, i: int, j: int, spacing:
 			var dz: float = heights[mini(b + 1, FINE_SUB) * side + a] - heights[maxi(b - 1, 0) * side + a]
 			var run_x: float = step * float(mini(a + 1, FINE_SUB) - maxi(a - 1, 0))
 			var run_z: float = step * float(mini(b + 1, FINE_SUB) - maxi(b - 1, 0))
-			vertices.append(Vector3(float(i) * spacing + float(a) * step, h, float(j) * spacing + float(b) * step))
+			vertices.append(_stand_off(Vector3(float(i) * spacing + float(a) * step, h, float(j) * spacing + float(b) * step), dx / run_x, dz / run_z))
 			normals.append(Vector3(-dx / run_x, 1.0, -dz / run_z).normalized())
 			var color: Color = (flow[0] as Color).lerp(flow[1], u).lerp((flow[2] as Color).lerp(flow[3], u), v)
 			color.a = lerpf(lerpf(w00, w10, u), lerpf(w01, w11, u), v)
