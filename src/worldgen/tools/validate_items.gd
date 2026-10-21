@@ -236,8 +236,8 @@ func _init() -> void:
 	for action in _read("skills.json").get("actions", {}):
 		var def: Dictionary = _read("skills.json")["actions"][action]
 
-		if String(def.get("skill", "")) == "" or not String(def.get("effect", "")) in ["yield", "speed"]:
-			fail("skills.json: action '%s' needs a skill name and an effect of yield or speed" % action)
+		if String(def.get("skill", "")) == "" or not String(def.get("effect", "")) in ["yield", "speed", "toughness"]:
+			fail("skills.json: action '%s' needs a skill name and an effect of yield, speed or toughness" % action)
 
 	# Cooking.
 	want_item.call(String(cooking.get("gives", "")), "cooking.json gives")
