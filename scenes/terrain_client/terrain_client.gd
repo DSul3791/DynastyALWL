@@ -735,6 +735,7 @@ func _welcome_body(info: Dictionary) -> void:
 	status_icons = StatusIconsScript.new()
 	layer.add_child(status_icons)
 	status_icons.add_icon("inspection", _load_brain_icon(), func() -> bool: return inspecting, 0.85)
+	status_icons.add_icon("thirst", StatusIconsScript.drop_texture(), func() -> bool: return items.thirst <= 15, 0.85)
 	status_icons.add_icon("cover", StatusIconsScript.house_texture(), func() -> bool: return under_cover > 0.0)
 	_build_menu(layer)
 	hud = Label.new()
@@ -778,6 +779,8 @@ func _welcome_body(info: Dictionary) -> void:
 	items.tool_event = func(what): sound.placed.tool_break(body.global_position) if what == "broke" else sound.placed.tool_repair(body.global_position)
 	harvest = HarvestScript.new()
 	harvest.setup(self, items, net)
+	items.register_interactable("drink", 35, func():
+		return {"prompt": "Press E to drink", "tap": items.drink} if items.thirst < 100 and _water_ahead() else {})
 	items.register_interactable("plant", 40, func():
 		return {} if items.plant_hint == "" else {"prompt": items.plant_hint, "tap": harvest.tap})
 	held = HeldItemScript.new()
@@ -855,6 +858,22 @@ func _on_dug(center: Vector3, radius: float) -> void:
 	print("Terrain client: applied a %.1f m dig at %s; ground value there now %.2f (above 0 is open)" % [
 		radius, str(center), tool.get_voxel_f(Vector3i(center.round()))
 	])
+
+
+# Water within a stride of the feet or a step or two ahead (where you look, flat): what the E-to-drink prompt needs.
+func _water_ahead() -> bool:
+	var forward: Vector3 = -camera.global_transform.basis.z
+	forward.y = 0.0
+	forward = forward.normalized() if forward.length() > 0.01 else Vector3.ZERO
+
+	for step in [0.0, 1.0, 2.0]:
+		var spot: Vector3 = body.global_position + forward * step
+		var surface: float = flora.water_surface_at(spot.x, spot.z)
+
+		if not is_nan(surface) and WaterVolume.depth(surface, _ground_below(spot)) >= WaterVolume.MIN_DEPTH_M:
+			return true
+
+	return false
 
 
 func _on_flora(chunk: Vector2i, bytes: PackedByteArray, water: PackedByteArray, full: bool) -> void:

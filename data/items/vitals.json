@@ -1,9 +1,12 @@
 {
-	"note": "Hunger, health and body weight as an energy balance (Dave 2026-10-20). A stomach holds up to stomach_cap_kcal; the body burns rest_kcal_per_kg_day x weight a day plus work_kcal_day x exertion (0 to 1, from how fast the player moves and tool work). A full stomach lasts at least one game day (24 game hours = 1 real hour at the 24:1 clock) at ordinary activity. When the stomach is empty the shortfall is burnt from the body: weight falls kcal/kcal_per_kg. Eating beyond a full stomach (up to overeat_allowance) turns the surplus into weight at gain_efficiency. Health recovers slowly while the stomach is not empty. Nothing here can kill. food = kcal per item: by_id wins over by_suffix (an item id that ends with the word). Plants whose flora uses include poison give nothing.",
+	"note": "Thirst (Dave 2026-10-21): hydration holds up to thirst.cap_ml; it falls rest_ml_day plus work_ml_day x exertion a game day, so a full body lasts at least one game day even at full exertion and needs one drink a day. A mouthful at the water edge gives drink_ml (the server checks water within reach_m of the feet); drink items give ml from the drink table. Empty thirst stops health recovering; nothing else yet. Hunger, health and body weight as an energy balance (Dave 2026-10-20). A stomach holds up to stomach_cap_kcal; the body burns rest_kcal_per_kg_day x weight a day plus work_kcal_day x exertion (0 to 1, from how fast the player moves and tool work). A full stomach lasts at least one game day (24 game hours = 1 real hour at the 24:1 clock) at ordinary activity. When the stomach is empty the shortfall is burnt from the body: weight falls kcal/kcal_per_kg. Eating beyond a full stomach (up to overeat_allowance) turns the surplus into weight at gain_efficiency. Health recovers slowly while the stomach is not empty. Nothing here can kill. food = kcal per item: by_id wins over by_suffix (an item id that ends with the word). Plants whose flora uses include poison give nothing.",
 	"health_max": 100,
 	"health_regen_per_s": 0.05,
 	"fall": {"safe_m": 6.0, "per_m": 8.0, "faint_m": 12.0},
 	"warn_hunger": 15,
+	"warn_thirst": 15,
+	"thirst": {"cap_ml": 2400, "rest_ml_day": 1000, "work_ml_day": 1200, "drink_ml": 300, "drink_pace_ms": 900, "reach_m": 3.0},
+	"drink": {"by_id": {}, "by_suffix": {}},
 	"eat_pace_ms": 800,
 	"food": {
 		"by_id": {

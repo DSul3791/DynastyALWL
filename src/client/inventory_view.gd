@@ -47,6 +47,7 @@ var _chest_buttons: Array = []
 var _pack_buttons: Array = []
 var eat_event: Callable                # (item id) when something eaten or applied takes effect (sounds)
 var hunger: int = 100                  # stomach, percent
+var thirst: int = 100                  # body water, percent (100 = full; 0 = parched)
 var health: int = 100
 var weight_kg: float = 75.0
 var _vitals_cfg: Dictionary = {}
@@ -68,6 +69,7 @@ var strain_event: Callable = Callable()   # (strain, state, fade) whenever the s
 var _strain_note: Label
 var _eat_item: String = ""
 var _hunger_bar: ColorRect
+var _thirst_bar: ColorRect
 var _health_bar: ColorRect
 var _vitals_back: Control
 var _vitals_warning: Label
@@ -672,6 +674,7 @@ func _build_vitals_hud() -> void:
 	_layer.add_child(_vitals_back)
 	_hunger_bar = _make_bar(Color(0.9, 0.65, 0.2))
 	_health_bar = _make_bar(Color(0.85, 0.2, 0.2))
+	_thirst_bar = _make_bar(Color(0.3, 0.6, 0.95))
 	_vitals_warning = Label.new()
 	_vitals_warning.add_theme_font_size_override("font_size", 22)
 	_vitals_warning.add_theme_constant_override("outline_size", 5)
@@ -700,7 +703,7 @@ func _place_vitals() -> void:
 	var origin: Vector2 = Vector2(24.0 * scale, -(170.0 * scale))
 	_vitals_back.position = origin
 
-	for pair in [[_hunger_bar, hunger, 0.0], [_health_bar, health, 1.0]]:
+	for pair in [[_hunger_bar, hunger, 0.0], [_health_bar, health, 1.0], [_thirst_bar, thirst, 2.0]]:
 		var fill: ColorRect = pair[0]
 		var back: Control = fill.get_parent()
 		back.position = Vector2(0.0, float(pair[2]) * (height + 6.0 * scale))
@@ -708,9 +711,22 @@ func _place_vitals() -> void:
 		fill.position = Vector2(1.0, 1.0)
 		fill.size = Vector2(maxf((width - 2.0) * float(pair[1]) / 100.0, 0.0), height - 2.0)
 
-	_vitals_warning.position = Vector2(0.0, 2.0 * (height + 6.0 * scale))
+	_vitals_warning.position = Vector2(0.0, 3.0 * (height + 6.0 * scale))
 	var warn: int = int(_vitals_cfg.get("warn_hunger", 15))
-	_vitals_warning.text = "You are starving: you recover slowly" if hunger <= 0 else ("You are hungry" if hunger <= warn else "")
+	var warn_thirst: int = int(_vitals_cfg.get("warn_thirst", 15))
+	var lines: Array = []
+
+	if hunger <= 0:
+		lines.append("You are starving: you recover slowly")
+	elif hunger <= warn:
+		lines.append("You are hungry")
+
+	if thirst <= 0:
+		lines.append("You are parched: you do not recover")
+	elif thirst <= warn_thirst:
+		lines.append("You are thirsty")
+
+	_vitals_warning.text = "\n".join(lines)
 
 	if _weight_label != null:
 		_weight_label.text = _load_text() + "\nBody weight %.1f kg   (hunger %d%%, health %d)" % [weight_kg, hunger, health]
@@ -772,7 +788,7 @@ func faint_state() -> Array:
 	return ["over_exerted" if strain_state == 1 else "normal", 0.0]
 
 
-func _on_vitals(new_hunger: int, new_health: int, weight_dkg: int) -> void:
+func _on_vitals(new_hunger: int, new_health: int, weight_dkg: int, new_thirst: int) -> void:
 	var ate: bool = new_hunger > hunger + 3 or new_health > health + 8
 
 	if ate and _eat_item != "" and eat_event.is_valid():
@@ -780,9 +796,15 @@ func _on_vitals(new_hunger: int, new_health: int, weight_dkg: int) -> void:
 		_eat_item = ""
 
 	hunger = new_hunger
+	thirst = new_thirst
 	health = new_health
 	weight_kg = float(weight_dkg) / 10.0
 	_place_vitals()
+
+
+# Drink from the water at your feet (E at the water's edge; the server checks the water and paces the mouthfuls).
+func drink() -> void:
+	net.inventory_action.rpc_id(1, Net.ACT_DRINK, 0, 0, 0, Vector3.ZERO)
 
 
 # Can this item be eaten or applied (food or medicine in data/items/vitals.json)?

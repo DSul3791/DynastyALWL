@@ -657,11 +657,11 @@ func _init() -> void:
 
 	var vt = make(vd)
 	var vsent: Array = []
-	vt.send_vitals = func(p, hunger, health, weight): vsent.append([hunger, health, weight])
+	vt.send_vitals = func(p, hunger, health, weight, thirst): vsent.append([hunger, health, weight, thirst])
 	var vnotes: Array = []
 	vt.send_notice = func(_p, text): vnotes.append(text)
 	vt.peer_connected_hello(1, "abcdef123456")
-	check(vsent.size() == 1 and vsent[0] == [100, 100, 750], "hello sends full hunger, full health, 75 kg")
+	check(vsent.size() == 1 and vsent[0] == [100, 100, 750, 100], "hello sends full hunger, full health, 75 kg, full thirst")
 	vt._exertion[1] = 0.4
 	vt._vitals_cfg["eat_pace_ms"] = 0
 
@@ -700,6 +700,64 @@ func _init() -> void:
 	vt2.peer_connected_hello(1, "abcdef123456")
 	check(absf(float(vt2.vitals_of(1)["weight"]) - float(vt.vitals_of(1)["weight"])) < 0.001, "weight survives a restart")
 
+	# Thirst (job 67): one drink a game day, water at the edge, no regeneration when parched.
+	var td: String = "user://test_server_items_thirst"
+	DirAccess.make_dir_recursive_absolute(td)
+
+	for file in DirAccess.get_files_at(td):
+		DirAccess.remove_absolute(td + "/" + file)
+
+	var th = make(td)
+	var tsent: Array = []
+	var thirst_rejects: Array = []
+	th.send_vitals = func(_p, hunger, health, weight, thirst): tsent.append(thirst)
+	th.send_reject = func(_p, reason): thirst_rejects.append(reason)
+	var nearby: Array = [false]
+	th.water_near = func(_pos, _reach): return nearby[0]
+	th.peer_connected_hello(1, "thirstkey0001")
+	th.report_position(1, Vector3(0.0, 10.0, 0.0))
+	th._vitals_cfg["eat_pace_ms"] = 0
+	th._vitals_cfg["thirst"]["drink_pace_ms"] = 0
+	th._exertion[1] = 1.0
+
+	for n in range(360):
+		th.tick(10.0)
+		th.vitals_of(1)["fed"] = 2400.0
+
+	check(float(th.vitals_of(1)["wet"]) > 0.0, "a full body lasts a whole game day even at full exertion (%.0f ml left)" % float(th.vitals_of(1)["wet"]))
+	th._exertion[1] = 0.0
+
+	for n in range(360):
+		th.tick(10.0)
+		th.vitals_of(1)["fed"] = 2400.0
+
+	check(float(th.vitals_of(1)["wet"]) == 0.0 and tsent.back() == 0, "with no drink for two days the body is parched (thirst sent as 0)")
+	th.vitals_of(1)["health"] = 50.0
+	th.tick(100.0)
+	check(float(th.vitals_of(1)["health"]) == 50.0, "a parched body does not recover health")
+	th.action(1, Net.ACT_DRINK, 0, 0, 0, Vector3.ZERO)
+	check(float(th.vitals_of(1)["wet"]) == 0.0 and thirst_rejects == [0], "no water within reach: no drink, refusal cue")
+	nearby[0] = true
+	th.action(1, Net.ACT_DRINK, 0, 0, 0, Vector3.ZERO)
+	check(float(th.vitals_of(1)["wet"]) == 300.0 and tsent.back() == 13, "a mouthful at the water edge gives 300 ml (13 percent)")
+
+	for n in range(12):
+		th.action(1, Net.ACT_DRINK, 0, 0, 0, Vector3.ZERO)
+
+	check(float(th.vitals_of(1)["wet"]) == 2400.0 and tsent.back() == 100, "drinking stops at a full body")
+	th.tick(1.0)
+	check(float(th.vitals_of(1)["health"]) > 50.0, "health recovers once the body has water")
+	th._vitals_cfg["drink"] = {"by_id": {"roast_forage": 200}, "by_suffix": {}}
+	th.vitals_of(1)["wet"] = 1000.0
+	var forage_n: int = th.table.number_of("roast_forage")
+	th.action(1, Net.ACT_ADMIN_GIVE, forage_n, 0, 2, Vector3.ZERO)
+	th.action(1, Net.ACT_EAT, th.inventory_of(1).numbers.find(forage_n), 0, 0, Vector3.ZERO)
+	check(float(th.vitals_of(1)["wet"]) == 1200.0, "a drink item (here a stand-in) adds its ml")
+	th.save()
+	var th2 = make(td)
+	th2.peer_connected_hello(1, "thirstkey0001")
+	check(float(th2.vitals_of(1)["wet"]) == float(th.vitals_of(1)["wet"]), "thirst survives a restart")
+
 	# Carrying weight: stones weigh 1 kg; a 75 kg player carries 26 kg comfortably and 52 kg at most.
 	var cwd: String = "user://test_server_items_carry"
 	DirAccess.make_dir_recursive_absolute(cwd)
@@ -708,7 +766,7 @@ func _init() -> void:
 		DirAccess.remove_absolute(cwd + "/" + file)
 
 	var cw = make(cwd)
-	cw.send_vitals = func(_p, _h, _he, _w): pass
+	cw.send_vitals = func(_p, _h, _he, _w, _t): pass
 	cw.peer_connected_hello(1, "carrykey0001")
 	cw.report_position(1, Vector3(0.0, 10.0, 0.0))
 	cw.give(1, cw.table.number_of("stone"), 20)
@@ -730,7 +788,7 @@ func _init() -> void:
 
 	var sx = make(ed)
 	var strains: Array = []
-	sx.send_vitals = func(_p, _h, _he, _w): pass
+	sx.send_vitals = func(_p, _h, _he, _w, _t): pass
 	sx.send_strain = func(_p, s, st, fa, sn): strains.append([s, st, fa, sn])
 	sx.peer_connected_hello(1, "strainkey001")
 	sx._exertion[1] = 1.0
@@ -745,7 +803,7 @@ func _init() -> void:
 	sx._exertion[1] = 0.5
 	var st_walk: float = float(sx.strain_of(1).get("s", 0.0))
 	var sw = make(ed)
-	sw.send_vitals = func(_p, _h, _he, _w): pass
+	sw.send_vitals = func(_p, _h, _he, _w, _t): pass
 	sw.peer_connected_hello(1, "strainkey002")
 	sw._exertion[1] = 0.5
 
@@ -762,7 +820,7 @@ func _init() -> void:
 		DirAccess.remove_absolute(xd + "/" + file)
 
 	var sa = make(xd)
-	sa.send_vitals = func(_p, _h, _he, _w): pass
+	sa.send_vitals = func(_p, _h, _he, _w, _t): pass
 	sa.peer_connected_hello(1, "stancekey001")
 	sa.report_position(1, Vector3(0.0, 10.0, 0.0))
 	sa._strain[1] = {"s": 0.9, "state": 1, "t": 0.0}
@@ -798,7 +856,7 @@ func _init() -> void:
 	var cq = make(qd)
 	var queue_seen: Array = []
 	cq.send_craft_queue = func(_p, entries, left_ms): queue_seen.append([entries, left_ms])
-	cq.send_vitals = func(_p, _h, _he, _w): pass
+	cq.send_vitals = func(_p, _h, _he, _w, _t): pass
 	cq.peer_connected_hello(1, "queuekey0001")
 	var fibre: int = cq.table.number_of("plant_fibre")
 	var cord: int = cq.table.number_of("cordage")
@@ -822,7 +880,7 @@ func _init() -> void:
 	check(cq.inventory_of(1).count_of(cord) == 1 and cq.craft_queue_of(1) == [[1, 5]], "one cordage after its 2 s (%d)" % cq.inventory_of(1).count_of(cord))
 	cq._save_craft_queues()
 	var cq2 = make(qd)
-	cq2.send_vitals = func(_p, _h, _he, _w): pass
+	cq2.send_vitals = func(_p, _h, _he, _w, _t): pass
 	cq2.peer_connected_hello(1, "queuekey0001")
 	check(cq2.craft_queue_of(1) == [[1, 5]], "the queue survives a restart")
 	cq._last_queue_act.clear()
@@ -853,7 +911,7 @@ func _init() -> void:
 
 	var rq = make(qd + "_full")
 	rq.send_craft_queue = func(_p, _e, _l): pass
-	rq.send_vitals = func(_p, _h, _he, _w): pass
+	rq.send_vitals = func(_p, _h, _he, _w, _t): pass
 	rq.peer_connected_hello(1, "queuekey0002")
 	rq.report_position(1, Vector3(0.0, 10.0, 0.0))
 	rq.give(1, fibre, 9)
@@ -862,7 +920,7 @@ func _init() -> void:
 	rq._save_craft_queues()
 	var rq2 = make(qd + "_full")
 	rq2.send_craft_queue = func(_p, _e, _l): pass
-	rq2.send_vitals = func(_p, _h, _he, _w): pass
+	rq2.send_vitals = func(_p, _h, _he, _w, _t): pass
 	rq2.peer_connected_hello(1, "queuekey0002")
 	rq2.report_position(1, Vector3(0.0, 10.0, 0.0))
 	check(float(rq2._craft_queues["queuekey0002"]["elapsed"]) == 1.5, "the running craft keeps its progress over a restart")
@@ -915,7 +973,7 @@ func _init() -> void:
 	var fl = make(qd + "_fall")
 	var rejects: Array = []
 	fl.send_reject = func(_p, reason): rejects.append(reason)
-	fl.send_vitals = func(_p, _h, _he, _w): pass
+	fl.send_vitals = func(_p, _h, _he, _w, _t): pass
 	fl.peer_connected_hello(1, "fallkey00001")
 	fl.report_position(1, Vector3(0.0, 10.0, 0.0))
 	fl.action(1, Net.ACT_FALL, 500, 0, 0, Vector3.ZERO)
@@ -943,7 +1001,7 @@ func _init() -> void:
 	var pk = make(qd + "_cap")
 	var cap_rejects: Array = []
 	pk.send_reject = func(_p, reason): cap_rejects.append(reason)
-	pk.send_vitals = func(_p, _h, _he, _w): pass
+	pk.send_vitals = func(_p, _h, _he, _w, _t): pass
 	pk.peer_connected_hello(1, "capkey000001")
 	pk.report_position(1, Vector3(0.0, 10.0, 0.0))
 	var rock: int = pk.table.number_of("stone")
@@ -1021,7 +1079,7 @@ func _init() -> void:
 	var box_rejects: Array = []
 	bx.send_reject = func(_p, reason): box_rejects.append(reason)
 	bx.send_chest = func(_p, _i, _b): pass
-	bx.send_vitals = func(_p, _h, _he, _w): pass
+	bx.send_vitals = func(_p, _h, _he, _w, _t): pass
 	bx.ground_height = func(x, z): return 10.0
 	bx.peer_connected_hello(1, "boxkey000001")
 	bx.report_position(1, Vector3(0.0, 10.0, 0.0))
@@ -1060,7 +1118,7 @@ func _init() -> void:
 
 	var sk = make(qd + "_skill")
 	sk.send_craft_queue = func(_p, _e, _l): pass
-	sk.send_vitals = func(_p, _h, _he, _w): pass
+	sk.send_vitals = func(_p, _h, _he, _w, _t): pass
 	sk.peer_connected_hello(1, "skillkey0001")
 	check(sk.skill_factor(1, "craft") == 1.0 and sk.skill_factor(1, "no_such_action") == 1.0, "with no skill system every factor is 1.0")
 	sk.skill_level = func(_peer, _skill): return 2.0

@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 23
+const PROTOCOL_VERSION := 24
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -49,7 +49,7 @@ signal water_requested(peer_id: int, chunks: PackedInt32Array)
 signal water_received(chunk: Vector2i, water: PackedByteArray)
 signal notice_received(text: String)
 signal chest_received(id: int, bytes: PackedByteArray)
-signal vitals_received(hunger: int, health: int, weight_dkg: int)
+signal vitals_received(hunger: int, health: int, weight_dkg: int, thirst: int)
 signal reject_received(reason: int)
 signal craft_queue_received(entries: Array, left_ms: int)
 signal strain_received(strain_pm: int, state: int, fade_pm: int, stance: int)
@@ -70,6 +70,7 @@ const ACT_MINE := 8       # at = the point the axe struck; on bare rock the serv
 const ACT_HIT := 7        # a = tree id, b = flora chunk x, count = flora chunk z: one axe blow on a standing tree
 const ACT_PROCESS := 9    # a = world item id of a felled trunk: one axe blow on it gives branches, leaves, bark, logs
 const ACT_SPLIT := 10     # a = slot, count = how many go to the first empty slot
+const ACT_DRINK := 24         # no arguments: drink from the water at the player's feet (the server checks water within reach)
 const ACT_FALL := 23          # a = the drop in centimetres the client landed from (only sent from the sound threshold, 6 m); the server decides the damage
 const ACT_CRAFT_CANCEL := 22 # a = queue entry index (as last sent): cancel it and get its ingredients back
 const ACT_CRAFT_QUEUE := 21  # a = recipe number, count = how many (1 to 20): queue crafts; ingredients are taken now
@@ -234,10 +235,10 @@ func strain(strain_pm: int, state: int, fade_pm: int, stance: int) -> void:
 	strain_received.emit(strain_pm, state, fade_pm, stance)
 
 
-# The player's hunger (stomach percent), health (points 0 to 100) and body weight (tenths of a kg) (at hello, after eating, and when a point changes).
+# The player's hunger (stomach percent), thirst (percent of a full body), health (points 0 to 100) and body weight (tenths of a kg) (at hello, after eating, and when a point changes).
 @rpc("authority", "call_remote", "reliable")
-func vitals(hunger: int, health: int, weight_dkg: int) -> void:
-	vitals_received.emit(hunger, health, weight_dkg)
+func vitals(hunger: int, health: int, weight_dkg: int, thirst: int) -> void:
+	vitals_received.emit(hunger, health, weight_dkg, thirst)
 
 
 # The contents of a chest the player opened (30 slots in the inventory byte format).

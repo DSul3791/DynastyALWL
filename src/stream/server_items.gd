@@ -92,7 +92,8 @@ var _skills_cfg: Dictionary = {}
 var send_reject: Callable        # (peer, reason 0 too far, 1 no tool, 2 pack full, 3 other)
 var send_craft_queue: Callable   # (peer, [[recipe, crafts left], ...], ms left on the first)
 var send_strain: Callable       # (peer, strain in thousandths, state 0 normal 1 over 2 fainted 3 waking, fade in thousandths, stance)
-var send_vitals: Callable       # (peer, hunger percent, health, weight in tenths of a kg)
+var send_vitals: Callable       # (peer, hunger percent, health, weight in tenths of a kg, thirst percent)
+var water_near: Callable         # (position, reach in metres) -> true when water lies within reach of the position; set by the server scene (unset: no water anywhere)
 var send_chest: Callable        # (peer, world id, bytes) a chest's contents to the player who opened it
 var roof_add: Callable          # (roof Array from Cover.box_roof) -> key; the server's cover index gets the lean-to's roof
 var roof_remove: Callable       # (key)
@@ -135,6 +136,7 @@ var _exertion: Dictionary = {}      # peer -> smoothed 0..1 from movement
 var _motion: Dictionary = {}        # peer -> [last position, msec]
 var _work_until: Dictionary = {}    # peer -> msec until which tool work counts as effort
 var _last_eat: Dictionary = {}      # peer -> msec
+var _last_drink: Dictionary = {}    # peer -> msec of the last mouthful at the water
 var _unfit: Dictionary = {}         # item id -> true: yields of poisonous plants never feed anyone
 var _last_use: Dictionary = {}      # peer -> msec of the last structure use
 const CHEST_REACH_M := 4.0
@@ -237,6 +239,7 @@ func peer_left(peer: int) -> void:
 	_last_gather.erase(peer)
 	_last_use.erase(peer)
 	_last_eat.erase(peer)
+	_last_drink.erase(peer)
 	_exertion.erase(peer)
 	_motion.erase(peer)
 	_work_until.erase(peer)
@@ -338,6 +341,8 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_use_struct(peer, inv, a)
 	elif kind == Net.ACT_EAT:
 		_eat(peer, inv, a)
+	elif kind == Net.ACT_DRINK:
+		_drink_water(peer)
 	elif kind == Net.ACT_REPAIR:
 		_repair(peer, inv, a)
 	elif kind == Net.ACT_FUEL:
@@ -1880,7 +1885,7 @@ func vitals_of(peer: int) -> Dictionary:
 
 
 func _new_vitals() -> Dictionary:
-	return {"fed": float(_vitals_cfg.get("stomach_cap_kcal", 2400)), "weight": float(_vitals_cfg.get("start_weight_kg", 75)), "health": float(_vitals_cfg.get("health_max", 100))}
+	return {"fed": float(_vitals_cfg.get("stomach_cap_kcal", 2400)), "weight": float(_vitals_cfg.get("start_weight_kg", 75)), "health": float(_vitals_cfg.get("health_max", 100)), "wet": float(_vitals_cfg.get("thirst", {}).get("cap_ml", 2400))}
 
 
 # How hard the player is working, 0 to 1: movement speed from position reports, lifted by recent tool work.
@@ -1968,7 +1973,12 @@ func _vitals_tick(spent: float) -> void:
 			# Empty: the shortfall comes off the body.
 			v["weight"] = clampf(float(v["weight"]) + float(v["fed"]) / float(_vitals_cfg.get("kcal_per_kg", 7700)), float(_vitals_cfg.get("min_weight_kg", 40)), float(_vitals_cfg.get("max_weight_kg", 150)))
 			v["fed"] = 0.0
-		else:
+
+		var thirst: Dictionary = _vitals_cfg.get("thirst", {})
+		var dry_per_day: float = float(thirst.get("rest_ml_day", 1000)) + float(thirst.get("work_ml_day", 1200)) * exertion_of(peer)
+		v["wet"] = maxf(float(v["wet"]) - dry_per_day * game_s / 86400.0, 0.0)
+
+		if float(v["fed"]) > 0.0 and float(v["wet"]) > 0.0:
 			v["health"] = clampf(float(v["health"]) + float(_vitals_cfg.get("health_regen_per_s", 0.05)) * spent, 0.0, health_max)
 
 		_sync_vitals(peer, false)
@@ -2275,7 +2285,8 @@ func strain_of(peer: int) -> Dictionary:
 
 func _vitals_points(v: Dictionary) -> Array:
 	var cap: float = float(_vitals_cfg.get("stomach_cap_kcal", 2400))
-	return [int(ceil(clampf(float(v["fed"]) / cap, 0.0, 1.0) * 100.0)), int(floor(float(v["health"]))), int(round(float(v["weight"]) * 10.0))]
+	var wet_cap: float = float(_vitals_cfg.get("thirst", {}).get("cap_ml", 2400))
+	return [int(ceil(clampf(float(v["fed"]) / cap, 0.0, 1.0) * 100.0)), int(floor(float(v["health"]))), int(round(float(v["weight"]) * 10.0)), int(ceil(clampf(float(v["wet"]) / wet_cap, 0.0, 1.0) * 100.0))]
 
 
 func _sync_vitals(peer: int, force: bool) -> void:
@@ -2288,7 +2299,7 @@ func _sync_vitals(peer: int, force: bool) -> void:
 
 	if force or _vitals_sent.get(peer, []) != now_points:
 		_vitals_sent[peer] = now_points
-		send_vitals.call(peer, now_points[0], now_points[1], now_points[2])
+		send_vitals.call(peer, now_points[0], now_points[1], now_points[2], now_points[3])
 		_dirty = true
 
 
@@ -2312,9 +2323,16 @@ func _eat(peer: int, inv, slot: int) -> void:
 
 	var kcal: int = VitalsRules.food_value(item_id, _vitals_cfg)
 	var heal: int = VitalsRules.heal_value(item_id, _vitals_cfg)
+	var ml: int = VitalsRules.drink_value(item_id, _vitals_cfg)
 
-	if kcal <= 0 and heal <= 0:
+	if kcal <= 0 and heal <= 0 and ml <= 0:
 		_say(peer, "You cannot eat that.")
+		return
+
+	var wet_cap: float = float(_vitals_cfg.get("thirst", {}).get("cap_ml", 2400))
+
+	if ml > 0 and kcal <= 0 and heal <= 0 and float(v["wet"]) >= wet_cap - 1.0:
+		_say(peer, "You are not thirsty.")
 		return
 
 	var cap: float = float(_vitals_cfg.get("stomach_cap_kcal", 2400))
@@ -2338,7 +2356,36 @@ func _eat(peer: int, inv, slot: int) -> void:
 		total = cap
 
 	v["fed"] = total
+	v["wet"] = minf(float(v["wet"]) + float(ml), wet_cap)
 	v["health"] = clampf(float(v["health"]) + float(heal), 0.0, float(_vitals_cfg.get("health_max", 100)))
+	_sync_vitals(peer, true)
+
+
+# Drink from the water at the player's feet (ACT_DRINK): one mouthful of thirst.drink_ml, paced like eating. The scene's water_near says whether water lies within reach.
+func _drink_water(peer: int) -> void:
+	var v: Dictionary = vitals_of(peer)
+
+	if v.is_empty() or not _peer_pos.has(peer):
+		return
+
+	var thirst: Dictionary = _vitals_cfg.get("thirst", {})
+	var now: int = Time.get_ticks_msec()
+
+	if now - int(_last_drink.get(peer, -100000)) < int(thirst.get("drink_pace_ms", 900)):
+		return
+
+	if not water_near.is_valid() or not bool(water_near.call(_peer_pos[peer], float(thirst.get("reach_m", 3.0)))):
+		_reject(peer, 0)
+		return
+
+	var cap: float = float(thirst.get("cap_ml", 2400))
+
+	if float(v["wet"]) >= cap - 1.0:
+		_say(peer, "You are not thirsty.")
+		return
+
+	_last_drink[peer] = now
+	v["wet"] = minf(float(v["wet"]) + float(thirst.get("drink_ml", 300)), cap)
 	_sync_vitals(peer, true)
 
 
@@ -2355,4 +2402,4 @@ func _load_vitals() -> void:
 	for key in parsed.get("players", {}):
 		var row: Dictionary = parsed["players"][key]
 		var fresh: Dictionary = _new_vitals()
-		_vitals[str(key)] = {"fed": float(row.get("fed", fresh["fed"])), "weight": float(row.get("weight", fresh["weight"])), "health": float(row.get("health", fresh["health"]))}
+		_vitals[str(key)] = {"fed": float(row.get("fed", fresh["fed"])), "weight": float(row.get("weight", fresh["weight"])), "health": float(row.get("health", fresh["health"])), "wet": float(row.get("wet", fresh["wet"]))}

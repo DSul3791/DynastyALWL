@@ -79,6 +79,27 @@ func tick(delta: float, force: bool = false) -> void:
 			node.visible = show_it
 
 
+# A white drop: a point on top over a round belly.
+static func drop_texture() -> Texture2D:
+	var n: int = 128
+	var image: Image = Image.create(n, n, false, Image.FORMAT_RGBA8)
+	image.fill(Color(1.0, 1.0, 1.0, 0.0))
+
+	for y in range(n):
+		for x in range(n):
+			var fx: float = float(x) / float(n) - 0.5
+			var fy: float = float(y) / float(n)
+			var inside: bool = Vector2(fx, fy - 0.64).length() <= 0.26
+
+			if fy >= 0.1 and fy < 0.64:
+				inside = inside or absf(fx) <= (fy - 0.1) / 0.54 * 0.26
+
+			if inside:
+				image.set_pixel(x, y, Color(1.0, 1.0, 1.0, 1.0))
+
+	return ImageTexture.create_from_image(image)
+
+
 # A white house, soft edged: a roof triangle over a body with a door cut out.
 static func house_texture() -> Texture2D:
 	var n: int = 128

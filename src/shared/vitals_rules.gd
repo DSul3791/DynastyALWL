@@ -30,5 +30,19 @@ static func heal_value(item_id: String, cfg: Dictionary) -> int:
 	return int(cfg.get("heal", {}).get(item_id, 0))
 
 
+# Millilitres one drink item gives (0 = not a drink).
+static func drink_value(item_id: String, cfg: Dictionary) -> int:
+	var drink: Dictionary = cfg.get("drink", {})
+
+	if drink.get("by_id", {}).has(item_id):
+		return int(drink["by_id"][item_id])
+
+	for suffix in drink.get("by_suffix", {}):
+		if item_id.ends_with(str(suffix)):
+			return int(drink["by_suffix"][suffix])
+
+	return 0
+
+
 static func edible(item_id: String, cfg: Dictionary) -> bool:
-	return food_value(item_id, cfg) > 0 or heal_value(item_id, cfg) > 0
+	return food_value(item_id, cfg) > 0 or heal_value(item_id, cfg) > 0 or drink_value(item_id, cfg) > 0

@@ -1,4 +1,4 @@
-# Protocol (PROTOCOL_VERSION 23, src/stream/terrain_net.gd)
+# Protocol (PROTOCOL_VERSION 24, src/stream/terrain_net.gd)
 
 Kept current by whoever changes the wire: add the row, bump PROTOCOL_VERSION to the next free number (pull first and read terrain_net.gd), and note the build.
 
@@ -62,6 +62,7 @@ Kept current by whoever changes the wire: add the row, bump PROTOCOL_VERSION to 
 | 20 | ACT_STANCE | a = wanted stance: 0 stand, 1 crouch, 2 sit, 3 lie; the server answers in strain() | 21 |
 | 21 | ACT_CRAFT_QUEUE | a = recipe number, count = how many (1 to 20); the server takes the ingredients now and crafts in order, screen open or not; max 10 entries per player | 22 |
 | 22 | ACT_CRAFT_CANCEL | a = queue entry index as last sent; cancels it, the server hands back the ingredients of its unfinished crafts | 22 |
+| 24 | ACT_DRINK | no arguments: drink one mouthful (vitals.json thirst.drink_ml) from water within thirst.reach_m of the player's feet; refused with reject(0) when no water is near, paced by drink_pace_ms | 24 |
 | 23 | ACT_FALL | a = drop in centimetres the client landed from (sent from 6 m up); the server turns it into health damage (vitals.json fall) and a faint from 12 m; limited to one per 2 s, drop capped at 60 m | 23 |
 
 ## World-item row states (world_items)
@@ -76,6 +77,7 @@ inventories.json version 2 (reads 1), world_items.json version 1, chests.json ve
 
 ## Notes by version
 
+- 24: vitals() gains a fourth field, thirst (percent of a full body, 100 = full); ACT_DRINK. Thirst is server-owned (data/items/vitals.json "thirst": cap_ml 2400, rest_ml_day 1000, work_ml_day 1200 x exertion, so a full body lasts a whole game day even at full exertion); empty thirst stops health recovering. Saved as "wet" (ml) in vitals.json; older saves start full.
 - 23: reject() (refused action: too far, no tool, pack full) for the client's refusal cue; ACT_FALL and server-side fall damage (data/items/vitals.json "fall": safe_m 6, per_m 8, faint_m 12; health never below 1).
 - 22: crafting queue: ACT_CRAFT_QUEUE, ACT_CRAFT_CANCEL, craft_queue(); saved server side in craft_queues.json (version 1, atomic, .bad fallback; the head's progress is kept; runs only while the player is connected).
 - 21: ACT_STANCE; strain() gains the confirmed stance.

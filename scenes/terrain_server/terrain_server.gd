@@ -176,7 +176,23 @@ func _ready() -> void:
 	flora.dynamic = func(home): return items.dynamic_items(home)
 	items.cut_tree = _cut_tree
 	items.send_notice = func(peer, text): net.notice.rpc_id(peer, text)
-	items.send_vitals = func(peer, hunger, health, weight): net.vitals.rpc_id(peer, hunger, health, weight)
+	items.send_vitals = func(peer, hunger, health, weight, thirst): net.vitals.rpc_id(peer, hunger, health, weight, thirst)
+	items.water_near = func(pos, reach):
+		var tile_data = generator.get_tile(generator.tile_of(pos.x, pos.z))
+
+		if tile_data.placeholder:
+			return false
+
+		for offset in [Vector2.ZERO, Vector2(reach, 0.0), Vector2(-reach, 0.0), Vector2(0.0, reach), Vector2(0.0, -reach)]:
+			var k: int = tile_data.nearest(pos.x + offset.x, pos.z + offset.y)
+
+			if not tile_data.sim_levels.is_empty():
+				if not is_nan(tile_data.sim_levels[k]):
+					return true
+			elif tile_data.water_class[k] > 1 and not is_nan(tile_data.water_surface[k]):
+				return true
+
+		return false
 	items.send_reject = func(peer, reason): net.reject.rpc_id(peer, reason)
 	items.send_craft_queue = func(peer, entries, left_ms): net.craft_queue.rpc_id(peer, entries, left_ms)
 	items.send_strain = func(peer, strain_pm, state, fade_pm, stance): net.strain.rpc_id(peer, strain_pm, state, fade_pm, stance)
