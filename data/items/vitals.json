@@ -3,6 +3,7 @@
 	"health_max": 100,
 	"health_regen_per_s": 0.05,
 	"fall": {"safe_m": 6.0, "per_m": 8.0, "faint_m": 12.0},
+	"breath": {"note": "Dave 2026-10-21: an oxygen symbol with a countdown (seconds) shows only with the head under water; the air lasts seconds at ordinary swimming pace, runs down rest_mult as fast resting or floating still (up to rest_speed m/s), hard_mult as fast swimming hard (from hard_speed m/s), and is full again the instant the head is above the surface. At zero the player loses drown_per_s health a second. can_die false: health stops at 1 until there is a death and respawn system.", "seconds": 60, "rest_mult": 0.5, "rest_speed": 0.5, "hard_mult": 1.6, "hard_speed": 2.6, "drown_per_s": 6.0, "can_die": false},
 	"warn_hunger": 15,
 	"warn_thirst": 15,
 	"thirst": {"cap_ml": 2400, "rest_ml_day": 1000, "work_ml_day": 1200, "drink_ml": 300, "fill_ml": 500, "drink_pace_ms": 900, "reach_m": 3.0},

@@ -23,6 +23,15 @@ func _init() -> void:
 	_check(not Swim.swimming(100.9, 100.0, 96.0), "standing on ice at the surface of deep water is not swimming")
 	_check(not Swim.swimming(98.0, NAN, 96.0), "no water, no swimming")
 
+	# Breath: the eyes under water deeper than a ford, and the drain pace against swimming speed.
+	_check(Swim.head_under(98.0, 100.0, 96.0), "diving 2 m down in 4 m of water: the head is under")
+	_check(not Swim.head_under(Swim.float_centre(100.0), 100.0, 96.0), "floating at the surface: the head is above the water")
+	_check(not Swim.head_under(99.2, 100.0, 99.2), "lying in a 0.8 m ford is not head under")
+	_check(not Swim.head_under(98.0, NAN, 96.0), "no water, no breath")
+	_check(Swim.breath_drain(0.1, 0.5, 0.5, 2.6, 1.6) == 0.5, "resting under water spends the air at half pace")
+	_check(Swim.breath_drain(2.0, 0.5, 0.5, 2.6, 1.6) == 1.0, "ordinary swimming spends it at the base pace")
+	_check(Swim.breath_drain(3.0, 0.5, 0.5, 2.6, 1.6) == 1.6, "swimming hard spends it faster")
+
 	# Buoyancy: below the float line the body rises, above it sinks, and it settles at the line.
 	var y: float = 97.5
 	var vy: float = 0.0

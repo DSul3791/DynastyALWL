@@ -843,6 +843,52 @@ func _init() -> void:
 
 	check(float(vt.vitals_of(1)["fed"]) == 0.0 and float(vt.vitals_of(1)["weight"]) < 75.0, "then the body starts burning itself")
 	check(vt.vitals_of(1)["health"] >= 99.0, "hunger alone never hurts")
+
+	# Breath (Dave 2026-10-21): 60 s at swimming pace, half as fast resting, faster swimming hard, full at the surface.
+	var air_sent: Array = []
+	vt.send_breath = func(_p, tenths): air_sent.append(tenths)
+	vt.set_head_under(1, true)
+	vt._speed3[1] = 2.0
+
+	for n in range(20):
+		vt.tick(1.0)
+
+	check(absf(vt.breath_of(1) - 40.0) < 1.5 and not air_sent.is_empty() and air_sent[-1] <= 420, "diving at swimming pace spends a second of air a second (%.1f s left)" % vt.breath_of(1))
+	vt._speed3[1] = 0.1
+
+	for n in range(20):
+		vt.tick(1.0)
+
+	check(absf(vt.breath_of(1) - 30.0) < 1.5, "resting under water spends it at half pace (%.1f s left)" % vt.breath_of(1))
+	vt._speed3[1] = 3.0
+
+	for n in range(10):
+		vt.tick(1.0)
+
+	check(absf(vt.breath_of(1) - 14.0) < 1.5, "swimming hard spends it faster (%.1f s left)" % vt.breath_of(1))
+	var health_before: float = float(vt.vitals_of(1)["health"])
+	check(health_before >= 99.0, "no damage while there is air")
+	vt.set_head_under(1, false)
+	vt.tick(1.0)
+	check(vt.breath_of(1) < 0.0 and air_sent[-1] == -1, "at the surface the air is full at once and the symbol hides")
+	vt.set_head_under(1, true)
+	vt._speed3[1] = 2.0
+	vt.tick(1.0)
+	check(vt.breath_of(1) > 58.0, "the next dive starts from a full 60 s")
+	vt._breath[1] = 1.0
+	vnotes.clear()
+
+	for n in range(4):
+		vt.tick(1.0)
+
+	check(float(vt.vitals_of(1)["health"]) < health_before - 10.0 and vnotes.has("You are out of air"), "out of air costs health (6 a second) and says so")
+
+	for n in range(60):
+		vt.tick(1.0)
+
+	check(float(vt.vitals_of(1)["health"]) == 1.0, "drowning stops at 1 health until there is a death rule")
+	vt.set_head_under(1, false)
+	vt.tick(1.0)
 	var food_n: int = vt.table.number_of("roast_forage")
 	vt.action(1, Net.ACT_ADMIN_GIVE, food_n, 0, 30, Vector3.ZERO)
 	vt.action(1, Net.ACT_EAT, vt.inventory_of(1).numbers.find(food_n), 0, 0, Vector3.ZERO)

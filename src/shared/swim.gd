@@ -32,6 +32,33 @@ static func swimming(centre_y: float, surface: float, ground: float) -> bool:
 	return WaterVolume.depth(surface, ground) >= SWIM_DEPTH_M and feet < surface - FEET_UNDER_M
 
 
+# Breath (Dave 2026-10-21): the air runs down only with the eyes under water. The eye sits this far
+# above the capsule's centre, and the water must be this deep over the ground (so lying in a shallow
+# ford does not count).
+const EYE_ABOVE_CENTRE_M := 0.7
+const HEAD_UNDER_DEPTH_M := 1.0
+
+
+# Head under water: the eyes below the surface of water deep enough to dive in.
+static func head_under(centre_y: float, surface: float, ground: float) -> bool:
+	if is_nan(surface):
+		return false
+
+	return WaterVolume.depth(surface, ground) >= HEAD_UNDER_DEPTH_M and centre_y + EYE_ABOVE_CENTRE_M < surface
+
+
+# How fast the air runs down against the one-per-second pace of ordinary swimming: slower resting
+# or floating still, faster swimming hard. `speed` is the swimmer's speed in m/s.
+static func breath_drain(speed: float, rest_speed: float, rest_mult: float, hard_speed: float, hard_mult: float) -> float:
+	if speed <= rest_speed:
+		return rest_mult
+
+	if speed >= hard_speed:
+		return hard_mult
+
+	return 1.0
+
+
 # Where the capsule's centre sits floating at the surface.
 static func float_centre(surface: float) -> float:
 	return surface + HEAD_ABOVE_M - BODY_HEIGHT_M * 0.5

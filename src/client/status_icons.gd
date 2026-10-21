@@ -100,6 +100,23 @@ static func drop_texture() -> Texture2D:
 	return ImageTexture.create_from_image(image)
 
 
+# A white bubble: a ring with a small highlight (oxygen).
+static func bubble_texture() -> Texture2D:
+	var n: int = 128
+	var image: Image = Image.create(n, n, false, Image.FORMAT_RGBA8)
+	image.fill(Color(1.0, 1.0, 1.0, 0.0))
+
+	for y in range(n):
+		for x in range(n):
+			var d: float = Vector2(float(x) / float(n) - 0.5, float(y) / float(n) - 0.5).length()
+			var hi: float = Vector2(float(x) / float(n) - 0.36, float(y) / float(n) - 0.34).length()
+
+			if (d <= 0.4 and d >= 0.32) or hi <= 0.06:
+				image.set_pixel(x, y, Color(1.0, 1.0, 1.0, 1.0))
+
+	return ImageTexture.create_from_image(image)
+
+
 # A white house, soft edged: a roof triangle over a body with a door cut out.
 static func house_texture() -> Texture2D:
 	var n: int = 128

@@ -103,6 +103,7 @@ var _skills_cfg: Dictionary = {}
 var send_reject: Callable        # (peer, reason 0 too far, 1 no tool, 2 pack full, 3 other)
 var send_craft_queue: Callable   # (peer, [[recipe, crafts left], ...], ms left on the first)
 var send_strain: Callable       # (peer, strain in thousandths, state 0 normal 1 over 2 fainted 3 waking, fade in thousandths, stance)
+var send_breath: Callable       # (peer, seconds of air left in tenths, or -1 when the head is above water)
 var send_vitals: Callable       # (peer, hunger percent, health, weight in tenths of a kg, thirst percent, luck, fitness)
 var water_near: Callable         # (position, reach in metres) -> true when water lies within reach of the position; set by the server scene (unset: no water anywhere)
 var send_chest: Callable        # (peer, world id, bytes) a chest's contents to the player who opened it
@@ -113,6 +114,10 @@ var cover_at: Callable         # (position) -> 0.0 open or 1.0 under a tree's cr
 var _dir: String = ""
 var _inventories: Dictionary = {}   # key String -> Inventory
 var _peer_key: Dictionary = {}      # peer -> key
+var _head_under: Dictionary = {}    # peer -> true while the server reads their head as under water
+var _breath: Dictionary = {}        # peer -> seconds of air left (only while the head is under water)
+var _breath_sent: Dictionary = {}   # peer -> tenths of a second last sent (-1 = hidden)
+var _speed3: Dictionary = {}        # peer -> smoothed speed in m/s, vertical included (the breath drain)
 var _swimming: Dictionary = {}      # peer -> true while the server reads them as swimming
 var _peer_pos: Dictionary = {}      # peer -> Vector3 last reported
 var _items: Dictionary = {}         # id int -> {number, count, pos Vector3, left float}
@@ -268,6 +273,10 @@ func peer_connected_hello(peer: int, key: String) -> void:
 
 func peer_left(peer: int) -> void:
 	_swimming.erase(peer)
+	_head_under.erase(peer)
+	_breath.erase(peer)
+	_breath_sent.erase(peer)
+	_speed3.erase(peer)
 	_peer_key.erase(peer)
 	_peer_pos.erase(peer)
 	_known.erase(peer)
@@ -2451,6 +2460,64 @@ func set_swimming(peer: int, swimming: bool) -> void:
 	_swimming[peer] = swimming
 
 
+# The server's own reading of whether a player's head is under water (terrain_server._head_under): the air runs down.
+func set_head_under(peer: int, under: bool) -> void:
+	_head_under[peer] = under
+
+
+# Air left in seconds, or -1 when the head is above water (for tests and the status line).
+func breath_of(peer: int) -> float:
+	return float(_breath.get(peer, -1.0))
+
+
+# One slow tick of breath (data/items/vitals.json "breath"): under water the air runs down, at the
+# surface it is full at once; with none left the health drains.
+func _breath_tick(peer: int, v: Dictionary, spent: float) -> void:
+	var cfg: Dictionary = _vitals_cfg.get("breath", {})
+
+	if cfg.is_empty():
+		return
+
+	var full: float = float(cfg.get("seconds", 60))
+
+	if not bool(_head_under.get(peer, false)):
+		if _breath.has(peer):
+			_breath.erase(peer)
+
+		_sync_breath(peer, -1)
+		return
+
+	var air: float = float(_breath.get(peer, full))
+	var drain: float = SwimRules.breath_drain(float(_speed3.get(peer, 0.0)), float(cfg.get("rest_speed", 0.5)), float(cfg.get("rest_mult", 0.5)), float(cfg.get("hard_speed", 2.6)), float(cfg.get("hard_mult", 1.6)))
+	air -= spent * drain
+
+	if air <= 0.0:
+		var was_out: bool = float(_breath.get(peer, full)) <= 0.0
+		air = 0.0
+		var floor_hp: float = 0.0 if bool(cfg.get("can_die", false)) else 1.0
+		v["health"] = maxf(float(v["health"]) - float(cfg.get("drown_per_s", 6.0)) * spent, floor_hp)
+		_asleep.erase(peer)
+
+		if not was_out:
+			_say(peer, "You are out of air")
+
+	_breath[peer] = air
+	_sync_breath(peer, int(ceil(air * 10.0)))
+
+
+func _sync_breath(peer: int, tenths: int) -> void:
+	# While diving, a change of half a second or more; the hide message once.
+	var last: int = int(_breath_sent.get(peer, -1))
+
+	if tenths == last or (tenths >= 0 and last >= 0 and absi(tenths - last) < 5 and tenths != 0):
+		return
+
+	_breath_sent[peer] = tenths
+
+	if send_breath.is_valid():
+		send_breath.call(peer, tenths)
+
+
 func _note_motion(peer: int, position: Vector3) -> void:
 	var now: int = Time.get_ticks_msec()
 	var last: Array = _motion.get(peer, [])
@@ -2458,6 +2525,7 @@ func _note_motion(peer: int, position: Vector3) -> void:
 	if not last.is_empty() and now > int(last[1]):
 		var dt: float = float(now - int(last[1])) / 1000.0
 		var speed: float = Vector2(position.x - last[0].x, position.z - last[0].z).length() / dt
+		_speed3[peer] = lerpf(float(_speed3.get(peer, 0.0)), Vector3(position.x - last[0].x, position.y - last[0].y, position.z - last[0].z).length() / dt, clampf(dt * 2.0, 0.0, 1.0))
 		var target: float = clampf((speed - 1.0) / 10.0, 0.0, 1.0)      # standing 0, walking 0.5, running 1
 
 		if bool(_swimming.get(peer, false)):
@@ -2506,6 +2574,7 @@ func _vitals_tick(spent: float) -> void:
 
 			v["health"] = clampf(float(v["health"]) + regen * spent, 0.0, health_max)
 
+		_breath_tick(peer, v, spent)
 		_sync_vitals(peer, false)
 		_strain_tick(peer, spent)
 

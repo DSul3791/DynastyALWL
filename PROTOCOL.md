@@ -1,4 +1,4 @@
-# Protocol (PROTOCOL_VERSION 31, src/stream/terrain_net.gd)
+# Protocol (PROTOCOL_VERSION 32, src/stream/terrain_net.gd)
 
 Kept current by whoever changes the wire: add the row, bump PROTOCOL_VERSION to the next free number (pull first and read terrain_net.gd), and note the build.
 
@@ -32,6 +32,7 @@ Kept current by whoever changes the wire: add the row, bump PROTOCOL_VERSION to 
 | reject | server to client | reliable | reason: int (0 too far, 1 no tool, 2 pack full, 3 other) | 23 |
 | craft_queue | server to client | reliable | entries: Array of [recipe number, crafts left], head first; left_ms: int (time left on the head craft) | 22 |
 | strain | server to client | reliable | strain_pm: int, state: int, fade_pm: int, stance: int | 20 |
+| breath | server to client | reliable | deciseconds: int (air left in tenths of a second under water; -1 = head above the surface, symbol hides). Sent when the air changes by half a second while diving, once on surfacing | 32 |
 | vitals | server to client | reliable | hunger: int, health: int, weight_dkg: int | 18 |
 | chest_contents | server to client | reliable | id: int, bytes: PackedByteArray | 15 |
 | notice | server to client | reliable | text: String | 12 |
@@ -99,5 +100,6 @@ digs.dat version 2 (DIGS2: seq, kind dig/fill, material, x y z radius, 24 bytes 
 - 16: storage chest (ACT_CHEST_*, chest_contents, state 6).
 - 15: lean-to (state 5, ACT_PLACE carries yaw in count).
 - 14: tool wear (9-byte slot updates, ACT_REPAIR).
+- 32: breath(deciseconds): the oxygen symbol (data/items/vitals.json "breath"). The server reads the head under water from the position report (swim.gd head_under), runs the air down (60 s at swimming pace, x0.5 resting, x1.6 swimming hard), resets it at the surface, and drains health once it is out. Not saved.
 - 31: water containers. ACT_DRINK takes a = the held container's pack slot or -1. A container (items.json `capacity_ml`, kind container) keeps its water in the slot's existing `wear` field in millilitres, so slot rows and inventories.json are unchanged (an old save reads 0 = empty). Use (ACT_EAT) on a container drinks a mouthful from it. Carried weight counts 1 kg per litre inside. data/items/vitals.json thirst.fill_ml.
 - 30: ACT_FILL (27) and filled(): spade fills saved as DIGS2 fill records. Digs and fills also remove shrubs and plants standing in the sphere (flora_cut).

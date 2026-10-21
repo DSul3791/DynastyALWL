@@ -180,6 +180,7 @@ func _ready() -> void:
 	flora.dynamic = func(home): return items.dynamic_items(home)
 	items.cut_tree = _cut_tree
 	items.send_notice = func(peer, text): net.notice.rpc_id(peer, text)
+	items.send_breath = func(peer, tenths): net.breath.rpc_id(peer, tenths)
 	items.send_vitals = func(peer, hunger, health, weight, thirst, luck, fitness): net.vitals.rpc_id(peer, hunger, health, weight, thirst, luck, fitness)
 	items.water_near = func(pos, reach):
 		var tile_data = generator.get_tile(generator.tile_of(pos.x, pos.z))
@@ -370,10 +371,10 @@ func _starter_stamp() -> String:
 	return "%d_%s" % [Layout.TERRAIN_VERSION, Layout.tile_stamp(generator.tiles_dir, Vector2i(3, 4))]
 
 
-# Whether a reported position is a swimmer's: deep sea (ground under 0, surface 0) or deep water in
-# the simulated tile, feet well under the surface (src/shared/swim.gd). The client swims by the same
-# rules; the server decides the exertion cost from this, so a client cannot opt out of it.
-func _swim_state(position: Vector3) -> bool:
+# Swimmer (deep water, feet well under the surface) and head-under (the breath runs down) come from a reported
+# position by src/shared/swim.gd; the client swims by the same rules, the server decides the cost.
+# [water surface (NAN if none), ground height] at a reported position: the sea at 0, or the simulated tile's water.
+func _water_at(position: Vector3) -> Array:
 	var ground: float = generator.surface_height(position.x, position.z)
 	var surface: float = NAN
 
@@ -383,14 +384,16 @@ func _swim_state(position: Vector3) -> bool:
 		var level: float = water_live.data.sim_levels[water_live.data.nearest(position.x, position.z)] if not water_live.data.sim_levels.is_empty() else NAN
 		surface = level
 
-	return SwimScript.swimming(position.y, surface, ground)
+	return [surface, ground]
 
 
 # Where the player will touch the ground: straight below if hovering, farther
 # along their heading the higher and faster they are. Blocks nearest this
 # point are made first.
 func _on_position_reported(peer_id: int, position: Vector3, velocity: Vector3) -> void:
-	items.set_swimming(peer_id, _swim_state(position))
+	var water: Array = _water_at(position)
+	items.set_swimming(peer_id, SwimScript.swimming(position.y, water[0], water[1]))
+	items.set_head_under(peer_id, SwimScript.head_under(position.y, water[0], water[1]))
 	items.report_position(peer_id, position)
 	var height: float = maxf(position.y - generator.surface_height(position.x, position.z), 0.0)
 	var descent: float = maxf(-velocity.y, 10.0)

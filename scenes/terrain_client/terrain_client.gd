@@ -132,6 +132,7 @@ var terrain: VoxelLodTerrain
 var body: CharacterBody3D
 var camera: Camera3D
 var hud: Label
+var _breath_label: Label             # the seconds of air left, shown with the oxygen symbol
 var debug_hud = DebugHudScript.new()   # F3 or Esc > Settings: the long list of diagnostic lines; threads add lines with debug_hud.add_line(name, callable)
 var _last_sound: String = ""
 var _quality_buttons: Array = []         # Esc > Settings, one per tier; the active one is marked
@@ -766,10 +767,25 @@ func _welcome_body(info: Dictionary) -> void:
 	_water_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
 	_water_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(_water_label)
+	# Oxygen countdown (Dave 2026-10-21): the seconds of air left, under the bubble symbol, only with the head under water.
+	_breath_label = Label.new()
+	_breath_label.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	_breath_label.anchor_top = 0.2
+	_breath_label.anchor_bottom = 0.2
+	_breath_label.offset_top = 52.0
+	_breath_label.offset_bottom = 112.0
+	_breath_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_breath_label.add_theme_font_size_override("font_size", 44)
+	_breath_label.add_theme_constant_override("outline_size", 8)
+	_breath_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
+	_breath_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_breath_label.visible = false
+	layer.add_child(_breath_label)
 	status_icons = StatusIconsScript.new()
 	layer.add_child(status_icons)
 	status_icons.add_icon("inspection", _load_brain_icon(), func() -> bool: return inspecting, 0.85)
 	status_icons.add_icon("thirst", StatusIconsScript.drop_texture(), func() -> bool: return items.thirst <= 15, 0.85)
+	status_icons.add_icon("oxygen", StatusIconsScript.bubble_texture(), func() -> bool: return items.breath_ds >= 0, 0.9)
 	status_icons.add_icon("cover", StatusIconsScript.house_texture(), func() -> bool: return under_cover > 0.0)
 	_build_menu(layer)
 	hud = Label.new()
@@ -3898,7 +3914,17 @@ func _under_the_ground() -> bool:
 
 
 # Blue tint and thick blue fog while the camera is below the sea or a lake.
+func _update_breath_label() -> void:
+	var air: int = items.breath_ds
+	_breath_label.visible = air >= 0
+
+	if air >= 0:
+		_breath_label.text = "%d" % int(ceil(float(air) / 10.0))
+		_breath_label.add_theme_color_override("font_color", Color(1.0, 0.45, 0.4) if air < 100 else Color.WHITE)
+
+
 func _update_underwater() -> void:
+	_update_breath_label()
 	var eye: Vector3 = camera.global_position
 	# Owner report (2026-10-20, build 145): beside a cliff gorge with a thin film of water the
 	# view turned blue with nothing drawn. The highest wet corner of an 8 m square (water_level_at)

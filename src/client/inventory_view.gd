@@ -59,6 +59,7 @@ var fitness: int = 0                  # the character's fitness, -10 to 10: how 
 var luck: int = 0                     # the character's luck, -10 to 10, fixed (character screen)
 var thirst: int = 100                  # body water, percent (100 = full; 0 = parched)
 var health: int = 100
+var breath_ds: int = -1                 # air left under water in tenths of a second; -1 = head above the surface (the oxygen symbol hides)
 var weight_kg: float = 75.0
 var _vitals_cfg: Dictionary = {}
 var _carry_cfg: Dictionary = {}
@@ -120,6 +121,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.notice_received.connect(_on_notice)
 	net.chest_received.connect(_on_chest)
 	net.vitals_received.connect(_on_vitals)
+	net.breath_received.connect(func(deciseconds: int) -> void: breath_ds = deciseconds)
 	net.strain_received.connect(_on_strain)
 	net.craft_queue_received.connect(_on_craft_queue)
 	net.reject_received.connect(_on_reject)
