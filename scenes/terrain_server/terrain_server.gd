@@ -32,7 +32,7 @@ const NetScript := preload("res://src/stream/terrain_net.gd")
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const FloraStoreScript := preload("res://src/stream/server_flora.gd")
-const WaterLiveScript := preload("res://src/water/water_live.gd")
+const WaterHubScript := preload("res://src/water/water_hub.gd")
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const BlockLinkScript := preload("res://src/stream/block_link_server.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
@@ -57,6 +57,7 @@ var weather: Dictionary = {}           # the weather at the water tile now (Weat
 var _weather_next_msec: int = 0
 var _swell: float = 0.0
 var _weather_bucket: int = -1
+var _wet_centre: int = 0               # wet squares on the starter tile at the last update (the log line)
 var water_live                         # the starter tile's running water, tuned with + and - on the client
 var _world_dir: String = ""
 var _bake_running: bool = false        # a tile bake is writing the tile files (store.baking)
@@ -347,16 +348,11 @@ func _start_water() -> void:
 		return
 
 	# Owner (2026-10-18): the world starts dry and the springs fill it, so the real water
-	# paths show; --settled-water starts from the baked water file instead.
+	# paths show; --settled-water starts from the baked water file instead. The hub runs the starter
+	# tile and the neighbours its rivers cross into (water/tile_X_Z.water per tile).
 	var dry_start: bool = not OS.get_cmdline_user_args().has("--settled-water")
-
-	if dry_start:
-		water_data.sim_levels = PackedFloat32Array()
-		water_data.sim_levels.resize(water_data.samples * water_data.samples)
-		water_data.sim_levels.fill(NAN)
-
-	water_live = WaterLiveScript.new()
-	water_live.setup(water_data, "%s/water/tile_%d_%d.water" % [_world_dir, water_tile.x, water_tile.y], WATER_BASE_RATE, generator, dry_start)
+	water_live = WaterHubScript.new()
+	water_live.setup(water_tile, "%s/water" % _world_dir, WATER_BASE_RATE, generator, dry_start)
 
 	# Saved digs and fills shape the water's ground again after every restart and re-bake.
 	for edit in store.ops.edits():
@@ -380,9 +376,11 @@ func _water_at(position: Vector3) -> Array:
 
 	if ground <= 0.0:
 		surface = 0.0
-	elif water_live != null and generator.tile_of(position.x, position.z) == Vector2i(3, 4):
-		var level: float = water_live.data.sim_levels[water_live.data.nearest(position.x, position.z)] if not water_live.data.sim_levels.is_empty() else NAN
-		surface = level
+	elif water_live != null:
+		var tile_data = water_live.data_of(generator.tile_of(position.x, position.z))
+
+		if tile_data != null and not tile_data.sim_levels.is_empty():
+			surface = tile_data.sim_levels[tile_data.nearest(position.x, position.z)]
 
 	return [surface, ground]
 
@@ -527,21 +525,29 @@ func _poll_water() -> void:
 	if water_live == null:
 		return
 
-	var levels: PackedFloat32Array = water_live.take_levels()
+	var updates: Array = water_live.take_updates()
 
-	if not levels.is_empty():
-		water_live.data.sim_levels = levels
-		water_live.data.fall_levels = water_live.fall_levels
+	if not updates.is_empty():
+		for update in updates:
+			var tile_data = water_live.data_of(update[0])
+
+			if tile_data == null:
+				continue
+
+			tile_data.sim_levels = update[1]
+			tile_data.fall_levels = update[2]
+
+			if update[0] == water_live.centre:
+				_wet_centre = 0
+
+				for level in update[1]:
+					if not is_nan(level):
+						_wet_centre += 1
+
 		_water_updates += 1
 
 		if _water_updates == 1 or _water_updates % 10 == 0:
-			var wet: int = 0
-
-			for level in levels:
-				if not is_nan(level):
-					wet += 1
-
-			print("server: water update %d, %d wet squares" % [_water_updates, wet])
+			print("server: water update %d (%d tiles), %d wet squares on the starter tile" % [_water_updates, updates.size(), _wet_centre])
 
 		flora.clear_water()
 		net.water_changed.rpc()

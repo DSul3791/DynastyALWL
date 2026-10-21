@@ -1,12 +1,12 @@
 extends RefCounted
 
-# The server's running water for one tile (DESIGN_IDEAS 6.18). Loads the settled water,
-# then keeps ticking on its own thread while the flow rate is being tuned, and hands the
-# main thread a fresh set of drawing levels every PUBLISH_TICKS ticks.
+# The server's running water for one tile (DESIGN_IDEAS 6.18). Loads the water, then the
+# WaterHub's single thread ticks it (begin, then tick) while the flow rate is being tuned, and
+# a fresh set of drawing levels is handed to the main thread every PUBLISH_TICKS ticks.
 #
 # The flow rate is one number for every spring (a multiplier on the baked rate); the
-# +/- keys step it by RATE_STEP. Runs only the tile it was given; the server swaps the
-# result into the tile's `sim_levels` and tells clients to redraw.
+# +/- keys step it by RATE_STEP (the hub holds it). The server swaps the result into the
+# tile's `sim_levels` and tells clients to redraw.
 
 const WaterSettler := preload("res://src/water/water_settler.gd")
 const WaterStore := preload("res://src/water/water_store.gd")
@@ -35,28 +35,32 @@ const HOLD_M := 0.03             # drawn channel water stays drawn until it is t
 const CHANNEL_BANK_M := 1.0      # a film cell no more than this above drawn water beside it is the bank, not the fall
 
 var data
-var rate: float = DEFAULT_RATE
-var runoff: float = 1.0          # rain makes the springs run stronger (the server sets it from the weather, WEATHER_RUNOFF)
+var sim = null                    # the tile's WaterSim, built by begin() on the water thread
+var tile: Vector2i = Vector2i.ZERO
 var busy: bool = false
+var rate: float = DEFAULT_RATE   # set by the hub (one flow rate for every tile)
+var runoff: float = 1.0          # likewise: rain makes the springs run stronger
 
 var _generator
 var _base_rate: float = 3.0
 var _path: String = ""
-var _thread: Thread = null
 var _mutex: Mutex = Mutex.new()
 var _budget: float = 0.0          # simulated seconds left to run
-var _quit: bool = false
 var _pending: PackedFloat32Array = PackedFloat32Array()
 var _pending_falls: PackedFloat32Array = PackedFloat32Array()
 var fall_levels: PackedFloat32Array = PackedFloat32Array()   # set by take_levels, see _fall_levels
-var _ticks: int = 0
 var _dry_start: bool = false
-var _digs: Array = []              # [center, radius] waiting for the water thread
+var _digs: Array = []              # [center, radius, filled] waiting for the water thread
+var _since: int = 0
+var _channel: PackedInt32Array = PackedInt32Array()
+var _held: PackedByteArray = PackedByteArray()
 
 
 # With dry_start the tile begins with no fresh water at all (only the sea): the springs
-# fill the ponds and the rivers run down on their own, so the real water paths show.
-func setup(tile_data, water_path: String, base_rate: float, tile_generator, dry_start: bool = false) -> void:
+# fill the ponds and the rivers run down on their own, so the real water paths show. The
+# tile only runs when the WaterHub (src/water/water_hub.gd) calls begin() and tick().
+func setup(tile_coord: Vector2i, tile_data, water_path: String, base_rate: float, tile_generator, dry_start: bool = false) -> void:
+	tile = tile_coord
 	_dry_start = dry_start
 
 	if dry_start:
@@ -66,27 +70,67 @@ func setup(tile_data, water_path: String, base_rate: float, tile_generator, dry_
 	_generator = tile_generator
 	_path = water_path
 	_base_rate = base_rate
-	_thread = Thread.new()
-	_thread.start(_run)
 
 
-func stop() -> void:
+# Builds the simulation (several seconds): the first thing the water thread does for a tile.
+# With `saved` depths (a tile unloaded earlier this session) it carries on from them.
+func begin(saved: PackedFloat32Array = PackedFloat32Array()) -> void:
+	sim = WaterSettler.build(data, _base_rate, _generator, not _dry_start)
+	print("water %s: running on the %s core, %d springs" % [str(tile), "C++" if sim.native() else "GDScript (the C++ add-on did not load)", sim.springs.size()])
+	var from_file: PackedFloat32Array = PackedFloat32Array()
+
+	if saved.is_empty() and not _dry_start:
+		from_file = WaterStore.load_depth(_path, data.samples)
+
+	var start: PackedFloat32Array = saved if not saved.is_empty() else from_file
+
+	if not start.is_empty():
+		sim.set_depth(start)
+		sim.wake_all_wet()
+
+	_since = 0
+	_channel = PackedInt32Array()
+
+	for k in range(data.water_class.size()):
+		if data.water_class[k] != 0 and data.heights[k] > 0.0:
+			_channel.append(k)
+
+	_held = PackedByteArray()
+	_held.resize(_channel.size())
+
+
+# Saves the water depths and drops the simulation (an unloaded tile). Returns the depths so the
+# hub can keep them for this session; the file in the world's water folder is the saved copy.
+func unload() -> PackedFloat32Array:
+	var depth: PackedFloat32Array = PackedFloat32Array()
+
+	if sim != null:
+		depth = sim.get_depth()
+		WaterStore.save(_path, data.samples, depth)
+		sim = null
+
+	return depth
+
+
+# Seconds of water simulated so far (the hub steps the tile furthest behind).
+func seconds() -> float:
+	return sim.seconds if sim != null else 0.0
+
+
+# Whether this tile has anything to run: time left in its budget, or a dig waiting.
+func wants_run() -> bool:
 	_mutex.lock()
-	_quit = true
+	var run: bool = _budget > 0.0 or not _digs.is_empty()
+	busy = run
 	_mutex.unlock()
-
-	if _thread != null and _thread.is_started():
-		_thread.wait_to_finish()
+	return run
 
 
-# Steps the rate up (+1) or down (-1) and sets the water running toward it.
-func step_rate(direction: int) -> float:
+# Gives the water more time to run (a flow change, a dig, rain).
+func wake(seconds_to_run: float = RUN_SECONDS) -> void:
 	_mutex.lock()
-	rate = clampf(rate * (RATE_STEP if direction > 0 else 1.0 / RATE_STEP), RATE_MIN, RATE_MAX)
-	_budget = maxf(_budget, RUN_SECONDS)
-	var now: float = rate
+	_budget = maxf(_budget, seconds_to_run)
 	_mutex.unlock()
-	return now
 
 
 # A player dug a hole: the water thread lowers its ground there and runs again.
@@ -106,18 +150,6 @@ func _edit(center: Vector3, radius: float, filled: bool) -> void:
 	_mutex.unlock()
 
 
-# Rain swells the rivers: the springs run `value` times stronger (1 is dry weather). Wakes the
-# water when it moves enough to matter, so the rivers follow it.
-func set_runoff(value: float) -> void:
-	_mutex.lock()
-
-	if absf(value - runoff) > 0.02:
-		_budget = maxf(_budget, RUN_SECONDS)
-
-	runoff = value
-	_mutex.unlock()
-
-
 # New drawing levels from the water thread, or empty when there is nothing new.
 func take_levels() -> PackedFloat32Array:
 	_mutex.lock()
@@ -130,77 +162,41 @@ func take_levels() -> PackedFloat32Array:
 	return levels
 
 
-func _run() -> void:
-	var sim = WaterSettler.build(data, _base_rate, _generator, not _dry_start)
-	print("water: running on the %s core" % ("C++" if sim.native() else "GDScript (the C++ add-on did not load)"))
-	print("water: %d springs at %s" % [sim.springs.size(), str(sim.springs.map(func(sp): return [int(sp[0]) % data.samples, int(sp[0]) / data.samples]))])
-	var saved: PackedFloat32Array = PackedFloat32Array() if _dry_start else WaterStore.load_depth(_path, data.samples)
+# One tick on the water thread at `multiplier` times the spring rate; publishes drawing levels
+# now and then. Returns the simulated seconds the tick covered.
+func tick(multiplier: float) -> float:
+	_mutex.lock()
+	var digs: Array = _digs
+	_digs = []
+	_mutex.unlock()
 
-	if not saved.is_empty():
-		sim.set_depth(saved)
-		sim.wake_all_wet()
+	for hole in digs:
+		if hole[2]:
+			print("water %s: a fill at %s raised %d water squares" % [str(tile), str(hole[0]), sim.fill(hole[0], hole[1], Vector2(data.x0, data.z0))])
+		else:
+			print("water %s: a dig at %s lowered %d water squares" % [str(tile), str(hole[0]), sim.dig(hole[0], hole[1], Vector2(data.x0, data.z0))])
 
-	var since: int = 0
-	var channel: PackedInt32Array = PackedInt32Array()
+	# The rate scales the springs only; the water itself moves by gravity and
+	# friction, so a low rate drains the rivers to a trickle (owner, 2026-10-19).
+	sim.spring_multiplier = multiplier
+	sim.step()
+	_mutex.lock()
+	_budget -= sim.dt
+	var out_of_time: bool = _budget <= 0.0
+	_mutex.unlock()
+	_since += 1
 
-	for k in range(data.water_class.size()):
-		if data.water_class[k] != 0 and data.heights[k] > 0.0:
-			channel.append(k)
-
-	var held: PackedByteArray = PackedByteArray()
-	held.resize(channel.size())
-
-	while true:
+	if _since >= (START_PUBLISH_TICKS if _dry_start else PUBLISH_TICKS) or out_of_time:
+		_since = 0
+		var levels: PackedFloat32Array = sim.level_map()
+		_hold_channel(sim, levels, _channel, _held)
+		var falls: PackedFloat32Array = _fall_levels(sim, levels, _channel)
 		_mutex.lock()
-		var quit: bool = _quit
-		var run: bool = _budget > 0.0
-		var multiplier: float = rate * runoff
-		var digs: Array = _digs
-		_digs = []
-
-		busy = run
+		_pending = levels
+		_pending_falls = falls
 		_mutex.unlock()
 
-		if quit:
-			return
-
-		if not run:
-			OS.delay_msec(100)
-			continue
-
-		var tick_start: int = Time.get_ticks_usec()
-
-		for hole in digs:
-			if hole[2]:
-				print("water: a fill at %s raised %d water squares" % [str(hole[0]), sim.fill(hole[0], hole[1], Vector2(data.x0, data.z0))])
-			else:
-				print("water: a dig at %s lowered %d water squares" % [str(hole[0]), sim.dig(hole[0], hole[1], Vector2(data.x0, data.z0))])
-
-		# The rate scales the springs only; the water itself moves by gravity and
-		# friction, so a low rate drains the rivers to a trickle (owner, 2026-10-19).
-		sim.spring_multiplier = multiplier
-		sim.step()
-		_mutex.lock()
-		_budget -= sim.dt
-		_mutex.unlock()
-		since += 1
-
-		if since >= (START_PUBLISH_TICKS if _dry_start else PUBLISH_TICKS) or _budget <= 0.0:
-			since = 0
-			var levels: PackedFloat32Array = sim.level_map()
-			_hold_channel(sim, levels, channel, held)
-			var falls: PackedFloat32Array = _fall_levels(sim, levels, channel)
-			_mutex.lock()
-			_pending = levels
-			_pending_falls = falls
-			_mutex.unlock()
-
-		# Technical direction (2026-10-20): the water thread shares the PC with the client, so
-		# it sleeps in proportion to the work it did and uses at most CPU_DUTY of one core
-		# (CPU_DUTY_STORM at the x20 storm), running slower than real time when it must.
-		var duty: float = lerpf(CPU_DUTY, CPU_DUTY_STORM, clampf((multiplier / DEFAULT_RATE - 1.0), 0.0, 1.0))
-		var busy_us: int = Time.get_ticks_usec() - tick_start
-		OS.delay_usec(int(float(busy_us) * (1.0 / duty - 1.0)))
+	return sim.dt
 
 
 # Owner report (2026-10-21): near the ocean the rivers ran low and blotchy, patches flipping
