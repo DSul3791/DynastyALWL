@@ -15,6 +15,7 @@ const SketchScript := preload("res://src/worldgen/sketch/world_sketch.gd")
 const ElevationScript := preload("res://src/worldgen/sketch/world_elevation.gd")
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 const TileErosionScript := preload("res://src/worldgen/tile/tile_erosion.gd")
+const TileScreeScript := preload("res://src/worldgen/tile/tile_scree.gd")
 const TileWaterScript := preload("res://src/worldgen/tile/tile_water.gd")
 const TileClimateScript := preload("res://src/worldgen/tile/tile_climate.gd")
 const TileGeologyScript := preload("res://src/worldgen/tile/tile_geology.gd")
@@ -175,8 +176,15 @@ func bake(tile: Vector2i) -> Dictionary:
 	timings["erosion"] = Time.get_ticks_msec() - clock
 	clock = Time.get_ticks_msec()
 	frame_height.add_strata()
-	erosion.heights = crop(frame_height.heights, n, core)
 	timings["ledges"] = Time.get_ticks_msec() - clock
+
+	# Scree aprons at the foot of steep faces (Tyler 9 B), on the whole frame so tiles agree along their edge.
+	clock = Time.get_ticks_msec()
+	var scree = TileScreeScript.new()
+	scree.setup(tile_rules.get("scree", {}))
+	frame_height.heights = scree.apply(frame_height.heights, n, frame_height.spacing_m, origin_sx, origin_sz)
+	erosion.heights = crop(frame_height.heights, n, core)
+	timings["scree"] = Time.get_ticks_msec() - clock
 
 	clock = Time.get_ticks_msec()
 	var starter: Dictionary = starter_info(tile)

@@ -89,6 +89,21 @@
 			"full_m": 200
 		}
 	},
+	"scree": {
+		"note": "Tyler (FINDINGS 9 B and 16 D, 2026-10-21): at the foot of every face steeper than cliff_deg the loose rock lies in a concave apron, top_deg against the face easing to toe_deg, height_share of the face height (at most max_height_m), length from the angles (min_length_m to max_length_m). It comes as fan tongues (tongue_min is the thinnest share between them, tongue_m the spacing along the face). Fill only (tile_scree.gd), after the ledges and before the rivers.",
+		"cliff_deg": 50,
+		"foot_max_deg": 42,
+		"top_deg": 33,
+		"toe_deg": 15,
+		"height_share": 0.3,
+		"max_height_m": 25,
+		"min_face_m": 5,
+		"min_length_m": 8,
+		"max_length_m": 64,
+		"min_land_m": 1.0,
+		"tongue_m": 90,
+		"tongue_min": 0.25
+	},
 	"ore_cap": {
 		"note": "Owner (2026-10-20): ore under soil stays hidden. Where loose cover lies over rock, ore stops at least min_m (and the whole cover) below the surface; bare rock keeps its ore showing. In node_share of node_cell_m squares the ore is left exposed as a node (its top voxels turn to the host rock). terrain_generator.gd _fill_ore_column.",
 		"min_m": 1.5,
