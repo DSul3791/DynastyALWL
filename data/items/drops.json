@@ -252,5 +252,27 @@
 			"knife": "stone knife",
 			"spade": "spade"
 		}
+	},
+	"dig_fell": {
+		"note": "Digging a tree down (Dave 2026-10-21, job 85). Enough ground dug from under a standing tree makes it fall as a trunk. The support is the disc under the trunk, radius support_r_per_trunk x the species' trunk_m + support_r_base, depth_m deep; the tree falls when the share of it not dug away (fills put it back) is under fall_below: conifers (shallow roots, a species name containing one of conifer_words) 0.45, other trees 0.35, trees with a trunk_m of big_trunk_m or more 0.25. Only trees within search_m of the dig are looked at. About 4 digs bring down a spruce, 6 a beech, 11 an oak. Set fall_below to 0 to switch it off.",
+		"support_r_per_trunk": 2.0,
+		"support_r_base": 1.0,
+		"depth_m": 1.0,
+		"search_m": 4.0,
+		"fall_below": {
+			"conifer": 0.45,
+			"default": 0.35,
+			"big": 0.25
+		},
+		"big_trunk_m": 0.55,
+		"conifer_words": [
+			"pine",
+			"spruce",
+			"fir",
+			"larch",
+			"cedar",
+			"cypress",
+			"hemlock"
+		]
 	}
 }

@@ -181,6 +181,19 @@ func edits() -> Array:
 	return list
 
 
+# The operations whose sphere comes within `radius` of a point, oldest first, as [kind, centre, radius] (tree support, job 85).
+func edits_near(point: Vector3, radius: float) -> Array:
+	var list: Array = []
+	_mutex.lock()
+
+	for n in range(count):
+		if _centres[n].distance_to(point) <= radius + _radii[n]:
+			list.append([int(_kinds[n]), _centres[n], _radii[n]])
+
+	_mutex.unlock()
+	return list
+
+
 # Applies the block's operations, oldest first, to `buffer` (the generated block).
 func apply(buffer: VoxelBuffer, block: Vector3i) -> void:
 	_mutex.lock()

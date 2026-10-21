@@ -90,6 +90,8 @@ var flora_changed: Callable    # (chunk Vector2i) -> a chunk's saplings or trees
 var tree_info: Callable        # (chunk Vector2i, id) -> {name, position, height, trunk} of a standing tree, or {}
 var cut_tree: Callable         # (chunk Vector2i, id) -> true when the standing tree was removed (and clients told)
 var dig_ground: Callable         # (centre, radius) -> void: cut a hole in the ground and tell everyone; set by the server scene
+var trees_near: Callable        # (point, radius) -> Array of [chunk Vector2i, id int]: standing placer trees whose root is that close; set by the server scene
+var dig_support: Callable       # (base, radius, depth) -> share 0..1 of the ground under a tree not dug away; set by the server scene
 var ground_material: Callable   # (x, z) -> the surface material's name there ("loam", "clay", "sand", ... or "rock"); set by the server scene, feeds dig yields
 var rock_at: Callable          # (x, z) -> true when bare rock shows at the surface there (no soil cover); set by the server scene
 var game_seconds: Callable      # () -> game clock seconds
@@ -691,9 +693,55 @@ func _dig(peer: int, inv, at: Vector3) -> void:
 
 	_last_dig[peer] = now
 	_wear_tool(peer, inv, "spade", "dig")
-	dig_ground.call(at - Vector3(0.0, DIG_DEPTH_M, 0.0), DIG_RADIUS_M)
+	var dug: Variant = dig_ground.call(at - Vector3(0.0, DIG_DEPTH_M, 0.0), DIG_RADIUS_M)
+
+	# The ground answers false when the dig changed nothing (a block is full, or the hole was already there): no yield, no fall.
+	if typeof(dug) == TYPE_BOOL and not bool(dug):
+		return
+
 	_give_dig_yield(peer, at)
+	_fell_undermined(peer, at)
 	_dirty = true
+
+
+# Dig under trees (job 85, drops.json "dig_fell"): every standing tree near the new hole whose support is now thin enough falls
+# as a trunk, away from the hole. The axe is still needed to work the trunk.
+func _fell_undermined(peer: int, at: Vector3) -> void:
+	var cfg: Dictionary = _drops.get("dig_fell", {})
+
+	if cfg.is_empty() or not trees_near.is_valid() or not dig_support.is_valid() or not tree_info.is_valid() or not cut_tree.is_valid():
+		return
+
+	for found in trees_near.call(at, float(cfg.get("search_m", 4.0))):
+		var chunk: Vector2i = found[0]
+		var info: Dictionary = tree_info.call(chunk, int(found[1]))
+
+		if info.is_empty():
+			continue
+
+		var trunk: float = float(info["trunk"])
+		var radius: float = float(cfg.get("support_r_per_trunk", 2.0)) * trunk + float(cfg.get("support_r_base", 1.0))
+		var share: float = float(dig_support.call(info["position"], radius, float(cfg.get("depth_m", 1.0))))
+		var limits: Dictionary = cfg.get("fall_below", {})
+		var limit: float = float(limits.get("default", 0.35))
+
+		for word in cfg.get("conifer_words", []):
+			if str(info["name"]).contains(str(word)):
+				limit = float(limits.get("conifer", 0.45))
+
+		if trunk >= float(cfg.get("big_trunk_m", 0.55)):
+			limit = minf(limit, float(limits.get("big", 0.25)))
+
+		if share >= limit:
+			continue
+
+		if _trees_in_chunk(chunk) >= TRUNKS_PER_CHUNK:
+			if send_notice.is_valid():
+				send_notice.call(peer, "Too many felled trunks lie here. Clear some away first.")
+
+			continue
+
+		_fell(chunk, int(found[1]), info, Vector2(info["position"].x - at.x, info["position"].z - at.z))
 
 
 # What a dig brings up (data/items/digging.json): shovelfuls by the surface material at the hole, through luck, counted by weight.
@@ -1461,7 +1509,20 @@ func _hit(peer: int, inv, tree_id: int, chunk: Vector2i) -> void:
 		return
 
 	_chops.erase(key)
-	var away: Vector2 = Vector2(spot.x - _peer_pos[peer].x, spot.z - _peer_pos[peer].z)
+	_fell_record(chunk, info, Vector2(spot.x - _peer_pos[peer].x, spot.z - _peer_pos[peer].z))
+
+
+# Cuts a standing tree and lays its trunk and stump down (the last axe blow and a dug-out tree both end here). `away` is the
+# direction it falls in.
+func _fell(chunk: Vector2i, tree_id: int, info: Dictionary, away: Vector2) -> void:
+	if not bool(cut_tree.call(chunk, tree_id)):
+		return
+
+	_fell_record(chunk, info, away)
+
+
+func _fell_record(chunk: Vector2i, info: Dictionary, away: Vector2) -> void:
+	var spot: Vector3 = info["position"]
 	var yaw: float = atan2(away.x, away.y) if away.length() > 0.01 else 0.0
 	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
 	var base: Dictionary = {"species": str(info["name"]), "yaw": yaw, "length": float(info["height"]), "radius": maxf(float(info["trunk"]), 0.1), "felled_at": now_s}

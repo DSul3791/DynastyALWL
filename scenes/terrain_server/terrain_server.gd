@@ -24,6 +24,7 @@ const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.g
 const StoreScript := preload("res://src/stream/server_block_store.gd")
 const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings.gd")
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
+const TreeSupport := preload("res://src/shared/tree_support.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 const NetScript := preload("res://src/stream/terrain_net.gd")
@@ -221,6 +222,8 @@ func _ready() -> void:
 
 		var material: int = generator._surface_material(tile_data, x, z, float(generator.surface_height(x, z)))
 		return "rock" if material >= Layout.MATERIAL_ROCK else str(soil_names.get(material, "loam"))
+	items.trees_near = _trees_near
+	items.dig_support = func(base, radius, depth): return TreeSupport.solid_share(store.ops.edits_near(base, radius + depth), base, radius, depth)
 	items.setup(ItemTableScript.load_default(), store_dir)
 	spawn = _spawn_point(world_dir)
 	_world_dir = world_dir
@@ -578,6 +581,30 @@ func _cut_tree(chunk: Vector2i, id: int) -> bool:
 	return true
 
 
+# Standing placer trees whose root lies within `radius` (flat) of a point, as [chunk, id] (dig under trees, job 85).
+func _trees_near(point: Vector3, radius: float) -> Array:
+	var size: float = flora.placer.chunk_m
+	var home: Vector2i = Vector2i(int(floor(point.x / size)), int(floor(point.z / size)))
+	var found: Array = []
+
+	for dz in [-1, 0, 1]:
+		for dx in [-1, 0, 1]:
+			var chunk: Vector2i = flora.placer.normalize(home + Vector2i(dx, dz))
+			var trees: Dictionary = flora.placer.chunk_items(chunk, true)
+			var gone: Array = flora.removed_in(chunk)
+
+			for n in range(trees["ids"].size()):
+				var species: Dictionary = flora.placer._by_id.get(trees["ids"][n] >> 16, {})
+
+				if species.is_empty() or int(species["kind"]) != PlacerScript.KIND_TREE or gone.has(trees["ids"][n]):
+					continue
+
+				if Vector2(trees["positions"][n].x - point.x, trees["positions"][n].z - point.z).length() <= radius:
+					found.append([chunk, trees["ids"][n]])
+
+	return found
+
+
 # The nearest standing tree of a species within `radius` of a point (placer trees only): [position] or [].
 func _standing_near(species_name: String, point: Vector3, radius: float) -> Array:
 	var size: float = flora.placer.chunk_m
@@ -642,7 +669,7 @@ func _on_dig_requested(_peer_id: int, center: Vector3, radius: float) -> void:
 	_dig_ground(center, radius)
 
 
-func _dig_ground(center: Vector3, radius: float) -> void:
+func _dig_ground(center: Vector3, radius: float) -> bool:
 	var tiles: Array = store.dig_sphere(center, radius)
 
 	for tile in tiles:
@@ -654,6 +681,7 @@ func _dig_ground(center: Vector3, radius: float) -> void:
 		water_live.dig(center, radius)
 
 	print("Dug a %.1f m sphere at %s; tiles %s" % [radius, str(center), str(tiles)])
+	return not tiles.is_empty()
 
 
 func _process(delta: float) -> void:

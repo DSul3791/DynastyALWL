@@ -343,6 +343,90 @@ func _init() -> void:
 	check(m.inventory_of(1).count_of(clay_n) >= 1, "a dig in clay brings up clay")
 	check(m.carried_kg_of(1) < 60.0, "digging cannot overfill the pack")
 
+	# A dig the ground refuses (nothing changed) gives nothing.
+	var refuse: Array = [false]
+	m.dig_ground = func(centre, radius):
+		digs.append([centre, radius])
+		return not refuse[0]
+	mat[0] = "loam"
+	var soil_before: int = m.inventory_of(1).count_of(soil_n)
+	refuse[0] = true
+	m._last_dig.clear()
+	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(m.inventory_of(1).count_of(soil_n) == soil_before, "a dig that changes nothing brings up nothing")
+	refuse[0] = false
+
+	# Dig under trees (job 85): the tree falls when what holds it up is thin enough, by species class.
+	var species: Array = ["beech", 0.4]
+	var share: Array = [0.5]
+	var up: Array = [true]
+	m.trees_near = func(_p, _r): return [[Vector2i(0, 0), 77]] if up[0] else []
+	m.tree_info = func(_c, _id): return {"name": species[0], "position": Vector3(7.0, 10.0, 0.0), "height": 20.0, "trunk": species[1]} if up[0] else {}
+	m.cut_tree = func(_c, _id):
+		up[0] = false
+		return true
+	m.dig_support = func(_b, _r, _d): return share[0]
+	var trunks_of = func() -> int:
+		var n: int = 0
+
+		for it in m._items.values():
+			if it.has("tree") and int(it["tree"]["state"]) == 3:
+				n += 1
+
+		return n
+
+	var base_trunks: int = trunks_of.call()
+	m._last_dig.clear()
+	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(up[0] and trunks_of.call() == base_trunks, "a tree with half its ground left stays up")
+	share[0] = 0.4
+	m._last_dig.clear()
+	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(up[0], "a beech holds at 40 percent")
+	species[0] = "spruce"
+	species[1] = 0.35
+	m._last_dig.clear()
+	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(not up[0] and trunks_of.call() == base_trunks + 1, "a spruce falls at 40 percent (shallow roots) and leaves a trunk")
+	up[0] = true
+	species[0] = "oak"
+	species[1] = 0.6
+	share[0] = 0.3
+	m._last_dig.clear()
+	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(up[0], "a big oak holds at 30 percent")
+	share[0] = 0.2
+	m._last_dig.clear()
+	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(not up[0] and trunks_of.call() == base_trunks + 2, "a big oak falls at 20 percent")
+	var trunk_dir: Dictionary = {}
+
+	for it in m._items.values():
+		if it.has("tree") and int(it["tree"]["state"]) == 3:
+			trunk_dir = it["tree"]
+
+	check(absf(float(trunk_dir["yaw"]) - atan2(1.0, 0.0)) < 0.01, "it falls away from the hole")
+	up[0] = true
+	refuse[0] = true
+	m._last_dig.clear()
+	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(up[0], "a refused dig fells nothing")
+
+	# The support maths: digs take ground away from under a tree, a fill puts it back.
+	var support = load("res://src/shared/tree_support.gd")
+	var root := Vector3(0.0, 10.0, 0.0)
+	var holes: Array = []
+	check(support.solid_share(holes, root, 1.8, 1.0) == 1.0, "untouched ground is fully solid")
+
+	for k in 6:
+		holes.append([0, Vector3(cos(float(k)) * 1.0, 9.75, sin(float(k)) * 1.0), 0.9])
+
+	var thin: float = support.solid_share(holes, root, 1.8, 1.0)
+	check(thin < 0.5 and thin > 0.0, "six digs around a beech leave under half (%.2f)" % thin)
+	holes.append([1, Vector3(0.0, 9.5, 0.0), 3.0])
+	check(support.solid_share(holes, root, 1.8, 1.0) == 1.0, "a big fill puts the support back")
+	check(support.solid_share([[0, Vector3(30.0, 9.75, 0.0), 0.9]], root, 1.8, 1.0) == 1.0, "a hole far away changes nothing")
+
 	# Felling.
 	var w = make("user://test_server_items_f")
 	w.ground_height = func(x, z): return 10.0
