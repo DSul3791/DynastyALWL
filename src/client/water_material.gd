@@ -38,6 +38,9 @@ uniform sampler2D depth_texture : hint_depth_texture, filter_nearest;
 uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
 #endif
 
+const float MOUTH_FROM_M = 0.4;        // surface this high above the sea or lower is the river mouth (all sea colour)
+const float MOUTH_TO_M = 4.5;          // and this high or more is fresh river water (brown flood colour allowed)
+
 varying float sheet_alpha;
 varying vec2 flow;                   // downhill direction times 0..1 steepness (0 for lakes and the sea)
 varying vec3 world_pos;
@@ -123,6 +126,13 @@ vec2 ripple_slope(vec2 p) {
 }
 
 void fragment() {
+	// River mouth (owner, 2026-10-21: rivers run into the sea as one body, brown is only a test colour): within
+	// a few metres of sea level (0 m) the flood brown fades out, so the river water takes the sea's colour
+	// with no edge or step, and where fresh meets salt a soft band of foam rides the water. The sea itself
+	// sits at 0 m (mouth 1, no band). Storm colour is shared by both, so the storm look matches.
+	float mouth = 1.0 - smoothstep(MOUTH_FROM_M, MOUTH_TO_M, world_pos.y);
+	float mud_here = mud * (1.0 - mouth);
+	float mouth_band = 4.0 * mouth * (1.0 - mouth);
 #ifdef SCENE_READS
 	float scene = texture(depth_texture, SCREEN_UV).r;
 	vec4 behind = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, scene, 1.0);
@@ -131,7 +141,7 @@ void fragment() {
 #else
 	float through = mix(0.1, 1.6, sheet_alpha);      // no depth read at Low: the sheet's edge fade stands in
 #endif
-	float murk = 1.0 - exp(-through / (clarity_m * (1.0 - 0.7 * mud) * (1.0 - 0.65 * storm)));
+	float murk = 1.0 - exp(-through / (clarity_m * (1.0 - 0.7 * mud_here) * (1.0 - 0.65 * storm)));
 
 	// Running water (owner, 2026-10-19): ripples carried downstream at a speed that grows
 	// with the slope (about as the square root, as in real channels); two copies half a
@@ -200,12 +210,15 @@ void fragment() {
 	float white = running && rough > 0.001 ? mix(ripples(p * 1.7 - velocity * phase0 * cycle * 1.7 / scale), ripples(p * 1.7 + 5.0 - velocity * phase1 * cycle * 1.7 / scale), blend) : 0.0;
 	foam = max(foam, smoothstep(0.5, 0.75, white) * rough * smoothstep(0.4, 0.7, speed));
 	foam = max(foam, shore_foam * 0.8 * smoothstep(0.25, 0.55, speed));
+	// Soft foam where the river's fresh water meets the sea (moving water only).
+	float meet = mouth_band * step(0.001, steep) * smoothstep(0.45, 0.75, ripples(local / 2.2 + vec2(drift * 0.1, -drift * 0.07)));
+	foam = max(foam, meet * 0.45);
 	foam *= 1.0 / (1.0 + distance_m / 120.0);
 
-	vec3 water = mix(mix(shallow_color, deep_color, murk), mud_color * mix(1.0, 0.7, murk), mud);
+	vec3 water = mix(mix(shallow_color, deep_color, murk), mud_color * mix(1.0, 0.7, murk), mud_here);
 	water = mix(water, storm_color * mix(1.0, 0.6, murk), storm * 0.65);   // storm: dark grey-brown churned water
 	foam *= 1.0 + 0.5 * storm;
-	vec3 foam_tint = mix(foam_color, mud_color * 1.6, clamp(mud * 0.6 + storm * 0.35, 0.0, 1.0));
+	vec3 foam_tint = mix(foam_color, mud_color * 1.6, clamp(mud_here * 0.6 + storm * 0.35, 0.0, 1.0));
 	float body_alpha = mix(edge_alpha, 0.97, murk);
 
 #ifdef SCENE_READS
@@ -222,8 +235,8 @@ void fragment() {
 		// darkens with depth (Beer-Lambert), and bright caustic lines from the ripples
 		// play on it where the water is shallow (the look of the reference brook).
 		float bed_m = min(through, 6.0);
-		below *= exp(-bed_m * vec3(0.55, 0.16, 0.10) * (1.0 + 2.0 * mud));
-		float caustic_fade = (1.0 - smoothstep(0.4, 1.8, bed_m)) * (1.0 - mud) / (1.0 + distance_m / 25.0);
+		below *= exp(-bed_m * vec3(0.55, 0.16, 0.10) * (1.0 + 2.0 * mud_here));
+		float caustic_fade = (1.0 - smoothstep(0.4, 1.8, bed_m)) * (1.0 - mud_here) / (1.0 + distance_m / 25.0);
 		if (caustic_fade > 0.01) {
 			vec2 cp = local / 0.9 + vec2(drift * 0.09, drift * 0.06);
 			float c1 = 1.0 - abs(noise(cp) * 2.0 - 1.0);
