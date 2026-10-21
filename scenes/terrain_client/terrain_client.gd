@@ -43,6 +43,8 @@ const HeldItemScript := preload("res://src/client/held_item.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
 const WeatherScript := preload("res://src/shared/weather.gd")
 const IceScript := preload("res://src/shared/ice.gd")
+const OceanIceScript := preload("res://src/client/ocean_ice.gd")
+const SwimScript := preload("res://src/shared/swim.gd")
 const ICE_POND_DEPTH_M := 3.0           # a typical pond's depth for its freezing speed
 const CoverScript := preload("res://src/shared/cover.gd")
 const StanceScript := preload("res://src/client/stance.gd")
@@ -58,7 +60,7 @@ const FaintEffectScript := preload("res://src/client/faint_effect.gd")
 const FallMistScript := preload("res://src/client/fall_mist.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 375
+const BUILD := 378
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
@@ -139,6 +141,9 @@ var sea: MeshInstance3D
 var flying: bool = false
 var underwater: bool = false
 var _ground_quality: int = -1       # quality the ground texture array was built for
+var _z_down_msec: int = -1             # when Z went down while lying (hold to sleep), -1 when not held
+var _z_slept: bool = false             # the hold already asked for sleep
+const SLEEP_HOLD_S := 3.0              # data/items/sleep.json hold_s
 var stance = StanceScript.new()       # standing, crouching (C), sitting (X), lying (Z); client.stance.stance and its `changed` signal
 var _shape: CollisionShape3D          # the player's collision capsule (resized by stance)
 var jogging: bool = false             # double-tapped W; ends when W is released
@@ -307,6 +312,11 @@ var _report_msec: int = 0
 var dig_applied: int = 0
 var test_dig_check: bool = false      # --dig-check: read the ground where --dig cut a hole in an earlier run (the hole must still be there)
 var flora                             # FloraView
+var ocean_ice                         # OceanIce (floes over a frozen sea)
+var swimming: bool = false            # in deep water, feet under the surface (src/shared/swim.gd)
+var _climb_until_msec: int = 0        # pulling out of the water onto a bank or floe until then
+var _under_ice_next_msec: int = 0
+var _ice_gap: Vector3 = Vector3.ZERO  # the way out from under a floe or ice sheet (zero when not under one)
 var fall_mist                         # FallMist: spray at the foot of the nearest waterfalls
 var fall_growth                       # FallGrowth: ferns around the foot of the nearest waterfall
 var items                             # InventoryView: inventory panel (I), pick-up (E)
@@ -529,6 +539,7 @@ func _ready() -> void:
 	net.blocks_received.connect(_on_blocks)
 	net.tile_changed_received.connect(_on_tile_changed)
 	net.dug_received.connect(_on_dug)
+	net.filled_received.connect(_on_filled)
 	net.flora_received.connect(_on_flora)
 	net.flora_cut_received.connect(_on_flora_cut)
 	net.water_rate_received.connect(_on_water_rate)
@@ -649,6 +660,11 @@ func _welcome_body(info: Dictionary) -> void:
 	flora.setup(_tables, TileHeightScript.load_rules("res://worlds/base_world/plan/tile_rules.json", []))
 	Probe.stop("welcome: flora setup", t3)
 	root.add_child(flora)
+	ocean_ice = OceanIceScript.new()
+	ocean_ice.name = "OceanIce"
+	ocean_ice.seed_value = int(info.get("master_seed", 0))
+	ocean_ice.ground_below = _ground_below
+	root.add_child(ocean_ice)
 	fall_mist = FallMistScript.new()
 	fall_mist.name = "FallMist"
 	fall_mist.setup(quality)
@@ -897,6 +913,20 @@ func _on_dug(center: Vector3, radius: float) -> void:
 	])
 
 
+# A fill (a dam, a filled hole): the same sphere put back as ground, the grass under it buried.
+func _on_filled(center: Vector3, radius: float, _material: int) -> void:
+	if terrain == null:
+		return
+
+	var tool: VoxelTool = terrain.get_voxel_tool()
+	tool.channel = VoxelBuffer.CHANNEL_SDF
+	tool.mode = VoxelTool.MODE_ADD
+	tool.do_sphere(center, radius)
+
+	if grass != null:
+		grass.ground_changed(center, radius)
+
+
 # Water within a stride of the feet or a step or two ahead (where you look, flat): what the E-to-drink prompt needs.
 func _water_ahead() -> bool:
 	var forward: Vector3 = -camera.global_transform.basis.z
@@ -1053,6 +1083,10 @@ func _update_weather() -> void:
 
 	if flora != null:
 		flora.set_ice_cover(ice_now)
+
+	if ocean_ice != null:
+		# Salt water freezes harder to start: the sea only shows floes once the ice is well on.
+		ocean_ice.update(_anchor, maxf(IceScript.cover(game_clock.seconds, group, 0.0, 12.0) * 1.0 - 0.05, 0.0))
 
 	if sound != null and sound.weather != null:
 		sound.weather.ice_cover = ice_now
@@ -1268,6 +1302,7 @@ func _cut_nearest_tree() -> void:
 
 func _make_player(root: Node3D, start: Vector3) -> void:
 	body = CharacterBody3D.new()
+	body.collision_mask = 3                # the ground (1) and ice sheets and floes (2)
 	var shape: CollisionShape3D = CollisionShape3D.new()
 	var capsule: CapsuleShape3D = CapsuleShape3D.new()
 	capsule.radius = 0.35
@@ -2058,7 +2093,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.keycode == KEY_X and not flying:
 			_set_stance(StanceScript.SIT, true)
 		elif event.keycode == KEY_Z and not flying:
-			_set_stance(StanceScript.LIE, true)
+			if stance.stance == StanceScript.LIE and items != null and not items.asleep:
+				_z_down_msec = Time.get_ticks_msec()   # lying: hold Z to sleep, tap to get up (decided on release, see _check_sleep_hold)
+				_z_slept = false
+			elif items != null and items.asleep:
+				items.request_sleep(0)
+			else:
+				_set_stance(StanceScript.LIE, true)
 		elif event.keycode >= KEY_1 and event.keycode <= KEY_9 and held != null:
 			held.press_slot(event.keycode - KEY_1)
 		elif event.keycode == KEY_0 and held != null:
@@ -2092,6 +2133,7 @@ func _step_player(delta: float) -> void:
 		return
 
 	delta = minf(delta, 0.1)
+	_check_sleep_hold()
 	var t: int = Probe.start()
 	_move_player(delta)
 	Probe.stop("player move", t)
@@ -2154,6 +2196,21 @@ func _set_stance(wanted: int, toggle: bool = false) -> void:
 
 
 # The server's answer (or its own change: fainting forces lying, walking off stands you up).
+# Lying and holding Z for sleep.json hold_s asks to sleep; letting go sooner gets you up like before.
+func _check_sleep_hold() -> void:
+	if _z_down_msec < 0:
+		return
+
+	if not Input.is_key_pressed(KEY_Z):
+		if not _z_slept:
+			_set_stance(StanceScript.LIE, true)
+
+		_z_down_msec = -1
+	elif not _z_slept and items != null and float(Time.get_ticks_msec() - _z_down_msec) / 1000.0 >= SLEEP_HOLD_S:
+		_z_slept = true
+		items.request_sleep(1)
+
+
 func _on_stance_from_server(confirmed: int) -> void:
 	if confirmed != stance.stance and stance.set_stance(confirmed):
 		stance.apply_shape(_shape)
@@ -2263,12 +2320,23 @@ func _move_player(delta: float) -> void:
 
 		_was_waiting = waiting_for_ground
 
+		var water: Dictionary = {} if waiting_for_ground else _water_here()
+		swimming = not water.is_empty() and SwimScript.swimming(body.global_position.y, float(water["surface"]), float(water["ground"]))
+
 		if waiting_for_ground:
 			velocity.y = 0.0
+		elif swimming:
+			velocity = _swim_velocity(velocity, direction, pace, fast > 1.0, strain_cap, float(water["surface"]), delta)
 		else:
 			velocity.y = body.velocity.y - GRAVITY * delta
 
-		if body.is_on_floor() and Input.is_key_pressed(KEY_SPACE) and strain_cap >= 0.0:
+			# Wading: water over the knees slows a walker.
+			if not water.is_empty() and body.is_on_floor():
+				var slow: float = SwimScript.wade_factor(WaterVolume.depth(float(water["surface"]), float(water["ground"])))
+				velocity.x *= slow
+				velocity.z *= slow
+
+		if not swimming and body.is_on_floor() and Input.is_key_pressed(KEY_SPACE) and strain_cap >= 0.0:
 			velocity.y = 7.0
 			sound.footstep(body, 1, -3.0, "right")        # the push off the ground (job 61: a jump had no sound, only the landing)
 
@@ -2296,6 +2364,117 @@ func _move_player(delta: float) -> void:
 
 	sea.global_position = Vector3(body.global_position.x, 0.0, body.global_position.z)
 	_update_underwater()
+
+
+# The water at the player: {"surface", "ground"} when they are in or over water deeper than a film
+# (a lake or river level from the water grid, or the sea at 0 m), else {}. One ray down, only when
+# water is near the player.
+func _water_here() -> Dictionary:
+	var here: Vector3 = body.global_position
+	var surface: float = flora.water_surface_at(here.x, here.z) if flora != null else NAN
+
+	if is_nan(surface) and here.y > 2.0:
+		return {}
+
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(here + Vector3(0.0, 0.5, 0.0), here + Vector3(0.0, -250.0, 0.0), 1)
+	query.exclude = [body.get_rid()]
+	var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(query)
+	var ground: float = float(hit["position"].y) if not hit.is_empty() else NAN
+
+	if is_nan(surface):
+		if is_nan(ground) or ground >= 0.0:
+			return {}
+
+		surface = 0.0
+
+	return {"surface": surface, "ground": ground}
+
+
+# The swimmer's velocity: strokes at the swim pace (never more than the walking pace the player's
+# load and strain allow), buoyancy and Space/Ctrl up and down, and the pull-out onto a bank or floe
+# edge (walking into a ledge up to CLIMB_MAX_M above the water climbs it).
+func _swim_velocity(wanted: Vector3, direction: Vector3, pace: float, hard: bool, strain_cap: float, surface: float, delta: float) -> Vector3:
+	var now: int = Time.get_ticks_msec()
+	var velocity: Vector3 = wanted
+	var horizontal: Vector3 = direction.normalized() * minf(pace, SwimScript.pace(hard)) if direction != Vector3.ZERO else Vector3.ZERO
+
+	if strain_cap < 0.0:
+		horizontal = Vector3.ZERO
+
+	var up: bool = Input.is_key_pressed(KEY_SPACE) and strain_cap >= 0.0
+	var down: bool = Input.is_key_pressed(KEY_CTRL) and strain_cap >= 0.0
+	velocity.x = horizontal.x
+	velocity.z = horizontal.z
+	velocity.y = SwimScript.vertical_speed(body.global_position.y, surface, body.velocity.y, up, down, delta)
+
+	# Under a floe or an ice sheet: with no stroke given, drift gently out to the nearest open water.
+	if now >= _under_ice_next_msec:
+		_under_ice_next_msec = now + 250
+		_ice_gap = _under_ice_way_out()
+
+	if _ice_gap != Vector3.ZERO:
+		velocity.y = minf(velocity.y, 0.0)
+
+		if horizontal == Vector3.ZERO:
+			velocity.x = _ice_gap.x * 2.0
+			velocity.z = _ice_gap.z * 2.0
+
+	# Pull-out: pressing on into a bank or floe edge a little above the water.
+	if now < _climb_until_msec:
+		velocity.y = SwimScript.CLIMB_SPEED
+		velocity.x = direction.normalized().x * 2.0
+		velocity.z = direction.normalized().z * 2.0
+	elif horizontal != Vector3.ZERO and body.is_on_wall() and _ledge_ahead(direction.normalized(), surface):
+		_climb_until_msec = now + 450
+
+	return velocity
+
+
+# Whether a ledge the swimmer can climb lies just ahead: solid ground whose top is within
+# CLIMB_MAX_M above the water, with room to stand.
+func _ledge_ahead(forward: Vector3, surface: float) -> bool:
+	var here: Vector3 = body.global_position
+	var ahead: Vector3 = here + forward * SwimScript.CLIMB_REACH_M
+	var top: Vector3 = Vector3(ahead.x, surface + SwimScript.CLIMB_MAX_M + 0.6, ahead.z)
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(top, top + Vector3(0.0, -2.0, 0.0), 3)
+	query.exclude = [body.get_rid()]
+	var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(query)
+
+	if hit.is_empty():
+		return false
+
+	var ledge: float = float(hit["position"].y)
+	return Vector3(hit["normal"]).y > 0.6 and ledge > surface - 0.3 and ledge <= surface + SwimScript.CLIMB_MAX_M
+
+
+# Unit vector (zero when not under ice) toward the nearest open water when a floe or an ice sheet is
+# overhead: looks straight up for a collider on the ice layer, then in 8 directions out to 28 m for a
+# spot with open sky above the water.
+func _under_ice_way_out() -> Vector3:
+	var here: Vector3 = body.global_position
+	var space: PhysicsDirectSpaceState3D = body.get_world_3d().direct_space_state
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(here + Vector3(0.0, 0.9, 0.0), here + Vector3(0.0, 4.0, 0.0), 2)
+
+	var overhead: Dictionary = space.intersect_ray(query)
+
+	if overhead.is_empty():
+		return Vector3.ZERO
+
+	for distance in [4.0, 8.0, 16.0, 28.0]:
+		for step in range(8):
+			var angle: float = float(step) * TAU / 8.0
+			var way: Vector3 = Vector3(cos(angle), 0.0, sin(angle))
+			var from: Vector3 = here + way * distance + Vector3(0.0, 0.9, 0.0)
+			var probe: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from + Vector3(0.0, 4.0, 0.0), 2)
+
+			if space.intersect_ray(probe).is_empty():
+				return way
+
+	# A frozen pond with no way out (frozen over while swimming under it): no stuck states, so the
+	# swimmer comes up through the ice onto it.
+	body.global_position.y = float(overhead["position"].y) + SwimScript.BODY_HEIGHT_M * 0.5 + 0.05
+	body.velocity = Vector3.ZERO
+	return Vector3.ZERO
 
 
 # A very small up-and-down camera bob while walking on the ground. Its speed

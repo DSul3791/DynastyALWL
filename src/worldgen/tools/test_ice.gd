@@ -4,6 +4,8 @@ extends SceneTree
 #   godot --headless --path . --script res://src/worldgen/tools/test_ice.gd
 
 const Ice := preload("res://src/shared/ice.gd")
+const IceFloes := preload("res://src/shared/ice_floes.gd")
+const OceanIce := preload("res://src/client/ocean_ice.gd")
 const WaterGrid := preload("res://src/worldgen/runtime/water_grid.gd")
 const Weather := preload("res://src/shared/weather.gd")
 
@@ -67,5 +69,37 @@ func _init() -> void:
 	var running: PackedFloat32Array = calm.duplicate()
 	running.fill(5.0)
 	_check(WaterGrid.ice_triangles({"count": count, "spacing": 8.0, "levels": pond, "wet": 256, "vel": running}).is_empty(), "running water gets no sheet")
+	# Ocean floes: deterministic, more and bigger with the cover, none when open.
+	_check(IceFloes.floes_near(7, 0.0, 0.0, 300.0, 0.05).is_empty(), "an open sea has no floes")
+	var few: Array = IceFloes.floes_near(7, 0.0, 0.0, 300.0, 0.3)
+	var many: Array = IceFloes.floes_near(7, 0.0, 0.0, 300.0, 1.0)
+	_check(not few.is_empty() and many.size() > few.size(), "a harder frozen sea has more floes (%d, then %d)" % [few.size(), many.size()])
+	_check(IceFloes.floes_near(7, 0.0, 0.0, 300.0, 0.3) == few, "floes are the same every time")
+	var inside: bool = true
+	var gap: bool = false
+
+	for entry in many:
+		var floe: Dictionary = entry[2]
+		var pos: Vector2 = floe["pos"]
+		inside = inside and floorf(pos.x / IceFloes.CELL_M) == float(entry[0]) and floorf(pos.y / IceFloes.CELL_M) == float(entry[1])
+
+	for cover_step in [0.3, 0.6]:
+		gap = gap or IceFloes.floes_near(7, 0.0, 0.0, 300.0, cover_step).size() < int(pow(2.0 * 300.0 / IceFloes.CELL_M + 1.0, 2.0))
+
+	_check(inside and gap, "each floe lies in its own cell and there is open water between")
+	var ocean = OceanIce.new()
+	ocean.seed_value = 7
+	ocean.ground_below = func(_p: Vector3) -> float: return -10.0
+	root.add_child(ocean)
+	ocean.update(Vector3.ZERO, 0.8)
+	_check(ocean.floe_count() > 0, "floes are made over deep sea (%d)" % ocean.floe_count())
+	ocean.update(Vector3.ZERO, 0.0)
+	_check(ocean.floe_count() == 0, "they melt away when the cover goes")
+	var land = OceanIce.new()
+	land.seed_value = 7
+	land.ground_below = func(_p: Vector3) -> float: return 30.0
+	root.add_child(land)
+	land.update(Vector3.ZERO, 0.8)
+	_check(land.floe_count() == 0, "no floes over land")
 	print("ice: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

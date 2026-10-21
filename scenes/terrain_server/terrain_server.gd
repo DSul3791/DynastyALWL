@@ -21,6 +21,7 @@ extends Node
 
 const GameClockScript := preload("res://src/shared/game_clock.gd")
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
+const SwimScript := preload("res://src/shared/swim.gd")
 const StoreScript := preload("res://src/stream/server_block_store.gd")
 const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings.gd")
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
@@ -165,6 +166,7 @@ func _ready() -> void:
 	items.send_slots = func(peer, bytes): net.inventory_slots.rpc_id(peer, bytes)
 	items.send_world_items = func(peer, added, removed): net.world_items.rpc_id(peer, added, removed)
 	items.dig_ground = _dig_ground
+	items.fill_ground = _fill_ground
 	items.ground_height = func(x, z): return generator.surface_height(x, z)
 	items.world_seed = int(settings.master_seed)
 	items.rain_now = func(): return float(weather.get("rain", 0.0))
@@ -368,10 +370,27 @@ func _starter_stamp() -> String:
 	return "%d_%s" % [Layout.TERRAIN_VERSION, Layout.tile_stamp(generator.tiles_dir, Vector2i(3, 4))]
 
 
+# Whether a reported position is a swimmer's: deep sea (ground under 0, surface 0) or deep water in
+# the simulated tile, feet well under the surface (src/shared/swim.gd). The client swims by the same
+# rules; the server decides the exertion cost from this, so a client cannot opt out of it.
+func _swim_state(position: Vector3) -> bool:
+	var ground: float = generator.surface_height(position.x, position.z)
+	var surface: float = NAN
+
+	if ground <= 0.0:
+		surface = 0.0
+	elif water_live != null and generator.tile_of(position.x, position.z) == Vector2i(3, 4):
+		var level: float = water_live.data.sim_levels[water_live.data.nearest(position.x, position.z)] if not water_live.data.sim_levels.is_empty() else NAN
+		surface = level
+
+	return SwimScript.swimming(position.y, surface, ground)
+
+
 # Where the player will touch the ground: straight below if hovering, farther
 # along their heading the higher and faster they are. Blocks nearest this
 # point are made first.
 func _on_position_reported(peer_id: int, position: Vector3, velocity: Vector3) -> void:
+	items.set_swimming(peer_id, _swim_state(position))
 	items.report_position(peer_id, position)
 	var height: float = maxf(position.y - generator.surface_height(position.x, position.z), 0.0)
 	var descent: float = maxf(-velocity.y, 10.0)
@@ -680,7 +699,54 @@ func _dig_ground(center: Vector3, radius: float) -> bool:
 	if water_live != null:
 		water_live.dig(center, radius)
 
+	if not tiles.is_empty():
+		_bury_plants(center, radius)
+
 	print("Dug a %.1f m sphere at %s; tiles %s" % [radius, str(center), str(tiles)])
+	return not tiles.is_empty()
+
+
+# Shrubs and plants (not trees: they fall, see server_items _fell_undermined) standing in a dug or filled
+# sphere are removed from the world, so nothing floats over a hole or stands buried in a fill (saved edits
+# step 2, flora cleanup). They stay gone like any picked plant.
+func _bury_plants(center: Vector3, radius: float) -> void:
+	var chunk_m: float = flora.placer.chunk_m
+	var home: Vector2i = Vector2i(int(floor(center.x / chunk_m)), int(floor(center.z / chunk_m)))
+
+	for dz in range(-1, 2):
+		for dx in range(-1, 2):
+			var chunk: Vector2i = flora.placer.normalize(home + Vector2i(dx, dz))
+			var all: Dictionary = flora.placer.chunk_items(chunk)
+
+			for n in range(all["ids"].size()):
+				var id: int = all["ids"][n]
+				var species: Dictionary = flora.placer._by_id.get(id >> 16, {})
+
+				if species.is_empty() or int(species["kind"]) == PlacerScript.KIND_TREE:
+					continue
+
+				var at: Vector3 = all["positions"][n]
+
+				if Vector2(at.x - center.x, at.z - center.z).length() <= radius and at.y >= center.y - radius and at.y <= center.y + radius + 0.5 and flora.cut(chunk, id):
+					net.flora_cut.rpc(chunk, id)
+
+
+# A spade fill: the sphere of ground is saved in the edit log (store.fill_sphere), the water thread raises its ground
+# there, and everyone is told. Returns false when nothing changed (the block holds its edit limit).
+func _fill_ground(center: Vector3, radius: float, material: int) -> bool:
+	var tiles: Array = store.fill_sphere(center, radius, material)
+
+	for tile in tiles:
+		net.tile_changed.rpc(tile, store.revision_of(tile))
+
+	if not tiles.is_empty():
+		net.filled.rpc(center, radius, material)
+		_bury_plants(center, radius)
+
+		if water_live != null:
+			water_live.fill(center, radius)
+
+	print("Filled a %.1f m sphere at %s; tiles %s" % [radius, str(center), str(tiles)])
 	return not tiles.is_empty()
 
 

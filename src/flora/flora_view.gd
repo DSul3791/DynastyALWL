@@ -845,6 +845,8 @@ func _draw_ice(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void:
 	var collision: CollisionShape3D = CollisionShape3D.new()
 	collision.shape = shape
 	var body: StaticBody3D = StaticBody3D.new()
+	body.collision_layer = 2        # the ice layer: a swimmer's ground ray (layer 1) does not see it
+	body.collision_mask = 0
 	body.add_child(collision)
 	body.position = Vector3(float(chunk.x) * chunk_m, 0.0, float(chunk.y) * chunk_m)
 	add_child(body)

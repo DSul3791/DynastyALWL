@@ -13,6 +13,7 @@ const RecipeTableScript := preload("res://src/shared/recipe_table.gd")
 const LuckScript := preload("res://src/shared/luck.gd")
 const InventoryScript := preload("res://src/shared/inventory.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
+const SwimRules := preload("res://src/shared/swim.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
 const VERSION := 1
@@ -89,6 +90,7 @@ var standing_near: Callable    # (species name, position, radius) -> [position] 
 var flora_changed: Callable    # (chunk Vector2i) -> a chunk's saplings or trees changed: refresh the server cache and the clients near it
 var tree_info: Callable        # (chunk Vector2i, id) -> {name, position, height, trunk} of a standing tree, or {}
 var cut_tree: Callable         # (chunk Vector2i, id) -> true when the standing tree was removed (and clients told)
+var fill_ground: Callable        # (centre, radius, material) -> bool: add ground (a fill) and tell everyone; false when it changed nothing
 var dig_ground: Callable         # (centre, radius) -> void: cut a hole in the ground and tell everyone; set by the server scene
 var trees_near: Callable        # (point, radius) -> Array of [chunk Vector2i, id int]: standing placer trees whose root is that close; set by the server scene
 var dig_support: Callable       # (base, radius, depth) -> share 0..1 of the ground under a tree not dug away; set by the server scene
@@ -111,6 +113,7 @@ var cover_at: Callable         # (position) -> 0.0 open or 1.0 under a tree's cr
 var _dir: String = ""
 var _inventories: Dictionary = {}   # key String -> Inventory
 var _peer_key: Dictionary = {}      # peer -> key
+var _swimming: Dictionary = {}      # peer -> true while the server reads them as swimming
 var _peer_pos: Dictionary = {}      # peer -> Vector3 last reported
 var _items: Dictionary = {}         # id int -> {number, count, pos Vector3, left float}
 var _next_id: int = 1
@@ -142,6 +145,8 @@ var _moving: Dictionary = {}        # peer -> smoothed 0..1, 1 while walking abo
 var _characters: Dictionary = {}   # player key -> {luck: int}, rolled once at first sight and never changed (job 77)
 var _luck_cfg: Dictionary = {}
 var _fitness_cfg: Dictionary = {}
+var _sleep_cfg: Dictionary = {}     # data/items/sleep.json
+var _asleep: Dictionary = {}        # peer -> true while asleep (a lying player who held Z); {rested: seconds with no strain}
 var _dig_cfg: Dictionary = {}       # data/items/digging.json
 var _boulder_cfg: Dictionary = {}    # data/items/boulders.json
 var _boulder_left: Dictionary = {}   # boulder key -> rough stones still in it (absent = untouched), saved in world_items.json
@@ -203,6 +208,8 @@ func setup(item_table, store_dir: String) -> void:
 	_vitals_cfg = VitalsRules.load_config()
 	_luck_cfg = LuckScript.load_config()
 	_fitness_cfg = _load_fitness_config()
+	var sleep_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/sleep.json"))
+	_sleep_cfg = sleep_parsed if typeof(sleep_parsed) == TYPE_DICTIONARY else {}
 	var dig_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/digging.json"))
 	_dig_cfg = dig_parsed if typeof(dig_parsed) == TYPE_DICTIONARY else {}
 	var boulders_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/boulders.json"))
@@ -260,6 +267,7 @@ func peer_connected_hello(peer: int, key: String) -> void:
 
 
 func peer_left(peer: int) -> void:
+	_swimming.erase(peer)
 	_peer_key.erase(peer)
 	_peer_pos.erase(peer)
 	_known.erase(peer)
@@ -279,6 +287,7 @@ func peer_left(peer: int) -> void:
 	_strain.erase(peer)
 	_strain_sent.erase(peer)
 	_stance.erase(peer)
+	_asleep.erase(peer)
 	_moving.erase(peer)
 	_last_process.erase(peer)
 
@@ -381,6 +390,8 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_fuel(peer, inv, a)
 	elif kind == Net.ACT_STANCE:
 		_set_stance(peer, a)
+	elif kind == Net.ACT_SLEEP:
+		_sleep(peer, a)
 	elif kind == Net.ACT_LIGHT:
 		_light(peer, inv, a)
 	elif kind == Net.ACT_COOK:
@@ -393,6 +404,8 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_mine(peer, inv, at)
 	elif kind == Net.ACT_DIG:
 		_dig(peer, inv, at)
+	elif kind == Net.ACT_FILL:
+		_fill(peer, inv, at)
 	elif kind == Net.ACT_PLACE:
 		_place(peer, inv, a, at, count)
 	elif kind == Net.ACT_THROW:
@@ -702,6 +715,72 @@ func _dig(peer: int, inv, at: Vector3) -> void:
 	_give_dig_yield(peer, at)
 	_fell_undermined(peer, at)
 	_dirty = true
+
+
+# One spade fill (ACT_FILL, saved edits step 3): a sphere of ground added at the point struck, using up one shovelful
+# from the pack (digging.json "fill", soil first). Same reach, spade and pace as a dig; a fill that changes nothing
+# hands the shovelful back.
+const FILL_RADIUS_M := 0.9
+const FILL_UP_M := 0.1         # the fill is centred this far above the point struck (it heaps a little)
+const FILL_SOIL := {"soil": 5, "sand": 1, "gravel": 2, "clay": 4, "stone": 9}   # the ground material each fill item makes (data/tables/soils.json ids)
+
+
+func _fill(peer: int, inv, at: Vector3) -> void:
+	if not _peer_pos.has(peer) or not fill_ground.is_valid():
+		return
+
+	if _peer_pos[peer].distance_to(at) > DIG_REACH_M:
+		_reject(peer, 0)
+		return
+
+	if not _has_tool(inv, "spade"):
+		_reject(peer, 1)
+		return
+
+	var now: int = Time.get_ticks_msec()
+
+	if now - int(_last_dig.get(peer, -100000)) < DIG_COOLDOWN_MS:
+		return
+
+	var material_item: String = ""
+
+	for name in _dig_cfg.get("fill", []):
+		var number: int = table.number_of(str(name))
+
+		if number > 0 and inv.count_of(number) > 0:
+			material_item = str(name)
+			break
+
+	if material_item == "":
+		_say(peer, "Nothing to fill with: dig some soil, sand or gravel first")
+		return
+
+	_last_dig[peer] = now
+
+	if take_fill_item(peer, material_item) < 1:
+		return
+
+	_wear_tool(peer, inv, "spade", "dig")
+	var done: Variant = fill_ground.call(at + Vector3(0.0, FILL_UP_M, 0.0), FILL_RADIUS_M, int(FILL_SOIL.get(material_item, 5)))
+
+	if typeof(done) == TYPE_BOOL and not bool(done):
+		give(peer, table.number_of(material_item), 1)
+
+	_dirty = true
+
+
+# Takes one shovelful of the named fill item; returns 1 or 0.
+func take_fill_item(peer: int, name: String) -> int:
+	var inv = inventory_of(peer)
+	var number: int = table.number_of(name)
+
+	if inv == null or number <= 0 or inv.count_of(number) < 1:
+		return 0
+
+	var before: Array = _snapshot(inv)
+	inv.remove(number, 1)
+	_send_changes(peer, inv, before)
+	return 1
 
 
 # Dig under trees (job 85, drops.json "dig_fell"): every standing tree near the new hole whose support is now thin enough falls
@@ -2299,11 +2378,71 @@ func _set_stance(peer: int, wanted: int) -> void:
 	if int(_strain.get(peer, {}).get("state", 0)) < 2:
 		_stance[peer] = wanted
 
+		if wanted != 3:
+			_asleep.erase(peer)
+
 	_strain_sent.erase(peer)
+
+
+# --- Sleep (job 86, data/items/sleep.json) ---
+func sleeping_of(peer: int) -> bool:
+	return _asleep.has(peer)
+
+
+# a = 1: fall asleep (lying, not fainted, not in rain on open ground); a = 0: wake.
+func _sleep(peer: int, want: int) -> void:
+	if not _peer_key.has(peer) or _sleep_cfg.is_empty():
+		return
+
+	if want == 0:
+		_wake(peer, "")
+		return
+
+	if _asleep.has(peer):
+		return
+
+	if int(_stance.get(peer, 0)) != 3 or int(_strain.get(peer, {}).get("state", 0)) >= 2:
+		return
+
+	if _sleep_quality(peer) < 0.0:
+		_say(peer, "Rain falls on you: find cover to sleep")
+		return
+
+	_asleep[peer] = {"rested": 0.0}
+	_strain_sent.erase(peer)
+	_say(peer, "You fall asleep")
+
+
+func _wake(peer: int, why: String) -> void:
+	if not _asleep.erase(peer):
+		return
+
+	_strain_sent.erase(peer)
+	_say(peer, why if why != "" else "You wake")
+
+
+# 1 under a roof or crown, the open-dry value in the open, -1 when rain reaches the sleeper (cannot sleep there).
+func _sleep_quality(peer: int) -> float:
+	var q: Dictionary = _sleep_cfg.get("quality", {})
+	var covered: bool = cover_at.is_valid() and _peer_pos.has(peer) and float(cover_at.call(_peer_pos[peer])) > 0.5
+
+	if covered:
+		return float(q.get("covered", 1.0))
+
+	if rain_now.is_valid() and float(rain_now.call()) >= float(_sleep_cfg.get("rain_wakes", 0.2)):
+		return -1.0
+
+	return float(q.get("open_dry", 0.6))
 
 
 func stance_of(peer: int) -> int:
 	return int(_stance.get(peer, 0))
+
+
+# The server's own reading of whether a player is swimming (from their position and the water there,
+# see terrain_server._swim_state): swimming is work whatever the client says.
+func set_swimming(peer: int, swimming: bool) -> void:
+	_swimming[peer] = swimming
 
 
 func _note_motion(peer: int, position: Vector3) -> void:
@@ -2314,12 +2453,16 @@ func _note_motion(peer: int, position: Vector3) -> void:
 		var dt: float = float(now - int(last[1])) / 1000.0
 		var speed: float = Vector2(position.x - last[0].x, position.z - last[0].z).length() / dt
 		var target: float = clampf((speed - 1.0) / 10.0, 0.0, 1.0)      # standing 0, walking 0.5, running 1
+
+		if bool(_swimming.get(peer, false)):
+			target = SwimRules.effort(speed)                              # strokes and treading water are work
 		_exertion[peer] = lerpf(float(_exertion.get(peer, 0.0)), target, clampf(dt * 0.25, 0.0, 1.0))
 		_moving[peer] = lerpf(float(_moving.get(peer, 0.0)), 1.0 if speed > 0.4 else 0.0, clampf(dt * 1.0, 0.0, 1.0))
 
 		# Walking off stands a sitting or lying player up.
 		if int(_stance.get(peer, 0)) >= 2 and speed > float(_exertion_cfg.get("stand_up_speed_mps", 1.5)) and int(_strain.get(peer, {}).get("state", 0)) < 2:
 			_stance[peer] = 0
+			_asleep.erase(peer)
 			_strain_sent.erase(peer)
 
 	_motion[peer] = [position, now]
@@ -2350,7 +2493,12 @@ func _vitals_tick(spent: float) -> void:
 		v["wet"] = maxf(float(v["wet"]) - dry_per_day * game_s / 86400.0, 0.0)
 
 		if float(v["fed"]) > 0.0 and float(v["wet"]) > 0.0:
-			v["health"] = clampf(float(v["health"]) + float(_vitals_cfg.get("health_regen_per_s", 0.05)) * spent, 0.0, health_max)
+			var regen: float = float(_vitals_cfg.get("health_regen_per_s", 0.05))
+
+			if _asleep.has(peer):
+				regen *= 1.0 + (float(_sleep_cfg.get("regen_mult", 2.0)) - 1.0) * maxf(_sleep_quality(peer), 0.0)
+
+			v["health"] = clampf(float(v["health"]) + regen * spent, 0.0, health_max)
 
 		_sync_vitals(peer, false)
 		_strain_tick(peer, spent)
@@ -2377,6 +2525,7 @@ func _fall(peer: int, centimetres: int) -> void:
 	_last_fall[peer] = now
 	v["health"] = maxf(float(v["health"]) - damage, 1.0)
 	_say(peer, "The fall hurt")
+	_asleep.erase(peer)
 
 	if drop >= float(cfg.get("faint_m", 12.0)) and not _exertion_cfg.is_empty():
 		_strain[peer] = {"s": float(_exertion_cfg.get("faint_at", 1.4)) + 0.05, "state": 1, "t": 0.0, "black": 1.0}
@@ -2586,6 +2735,24 @@ func _strain_tick(peer: int, spent: float) -> void:
 	var strain: float = float(st["s"])
 	st["t"] = float(st["t"]) + spent
 
+	# Sleep ends on its own: fainting, standing up, rain on an open sleeper, or rested for rested_s seconds.
+	var sleep_quality: float = 0.0
+
+	if _asleep.has(peer):
+		sleep_quality = _sleep_quality(peer)
+
+		if state >= 2 or int(_stance.get(peer, 0)) != 3:
+			_asleep.erase(peer)
+			_strain_sent.erase(peer)
+		elif sleep_quality < 0.0:
+			_wake(peer, "Rain woke you")
+		else:
+			var rest: Dictionary = _asleep[peer]
+			rest["rested"] = float(rest["rested"]) + spent if strain <= 0.0 else 0.0
+
+			if float(rest["rested"]) >= float(_sleep_cfg.get("rested_s", 10.0)):
+				_wake(peer, "You wake rested")
+
 	if state == 2:
 		if float(st["t"]) >= float(cfg.get("faint_s", 8.0)):
 			state = 3
@@ -2615,7 +2782,7 @@ func _strain_tick(peer: int, spent: float) -> void:
 		if diff < 0.0 and stance == 2:
 			rate *= float(cfg.get("sit_fall_mult", 2.0))
 		elif diff < 0.0 and stance == 3:
-			rate *= float(cfg.get("lie_fall_mult", 3.0))
+			rate *= float(cfg.get("lie_fall_mult", 3.0)) + (maxf(float(_sleep_cfg.get("strain_mult", 6.0)) - float(cfg.get("lie_fall_mult", 3.0)), 0.0) * sleep_quality if _asleep.has(peer) else 0.0)
 
 		var before: float = strain
 		strain = maxf(strain + diff * rate * spent, 0.0)
@@ -2661,7 +2828,7 @@ func _strain_tick(peer: int, spent: float) -> void:
 	elif state == 3:
 		fade = 1.0 - clampf(float(st["t"]) / float(cfg.get("wake_s", 12.0)), 0.0, 1.0)
 
-	var points: Array = [int(strain * 50.0) * 20, state, int(fade * 50.0) * 20, int(_stance.get(peer, 0))]
+	var points: Array = [int(strain * 50.0) * 20, state, int(fade * 50.0) * 20, int(_stance.get(peer, 0)) | (4 if _asleep.has(peer) else 0)]
 
 	if send_strain.is_valid() and _strain_sent.get(peer, []) != points:
 		_strain_sent[peer] = points

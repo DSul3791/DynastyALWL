@@ -19,7 +19,7 @@ The single complete list of every input (keyboard, mouse, held versus tap, conte
 | + / - (also numpad) | Raise or lower how much every spring pours, by about 10 % per press (tuning tool, x0.5 to x40; every pond starts at x10 = 100 m3/s; above x10 rivers and ponds turn muddy brown). Shows "Water flow rate: x10.00 = 100.0 m3/s per spring (1,585,000 gal/min)" for 3 seconds. The water then runs by real physics for two simulated hours ("running...") and redraws as it moves |
 | C | Crouch (toggle): lower eye, slower; kept while moving |
 | X | Sit (toggle): lower still, no movement; any movement key stands you up. Resting drops exertion (the server side is Items') |
-| Z | Lie down (toggle): eye almost at the ground, no movement; any movement key stands you up |
+| Z | Lie down (toggle): eye almost at the ground, no movement; any movement key stands you up. While lying, **hold Z for 3 seconds to sleep** (the screen dims to about 60% dark, "Hold Z to sleep" shows while lying): exertion falls up to twice as fast as lying and health heals up to twice as fast, best under a roof or tree crown, 60% of that on open dry ground. Rain that reaches you stops you sleeping and wakes you; a movement key, a hit or fall, or Z again wakes you; resting at zero exertion for 10 s wakes you rested. Tapping Z while lying still stands you up |
 | Ctrl+X | Admin: dig a 2 m hole where the crosshair meets the ground (up to 80 m away). Water flows into holes that open toward it (testing digging against the water) |
 | F2 | Cycle quality: Low, Medium, High, Ultra (Low is the minimum machine) |
 | F3 | Debug details on or off (the long diagnostic list; default HUD is only build, position, last sound). Also Esc > Settings. Threads add lines with `debug_hud.add_line(name, callable)`. |
@@ -75,3 +75,9 @@ Input rules (Dave):
 | Text - / Text + (crafting screen, click) | Smaller or larger text on the crafting and inventory screen (small, medium (default), large, extra large); saved with the display settings. Esc > Settings > "Crafting screen text size" cycles it too. Craftable recipes are green, the rest greyed out |
 | Sort drop-down (inventory, click) | Unsorted (order the item kinds were picked up), name, weight (ascending or descending) or value (ascending or descending). It only changes where the slots sit on screen; the choice is saved with the display settings. Values are placeholder prices in items.json |
 | E, D, S, R, T (inventory or chest screen open) | Quick keys on the slot under the mouse (else the selected slot), also on the buttons: Use (E) eats, applies a medicine, or holds a tool (a tool deep in the pack moves to a free hotbar slot first; pressing it again puts it away), Drop (D) drops the stack (Shift+D drops one), Split (S) halves the stack, Repair (R) repairs a worn tool, Transfer (T) moves the stack between your pack and an open container (chest screen only). Outside the screen E is the interact key and D and S are walking; while the screen is open WASD does not move you |
+
+## Swimming (build 377)
+In deep water (over about 1.3 m) you float at the surface and swim at 2 m/s (Shift: 3 m/s, tires you faster). Space swims up, Ctrl dives. Walking into a bank or ice edge less than about 1.1 m above the water pulls you out. Wading slows you in water over the knees. Under a floe or ice sheet you drift to open water; frozen in with no gap you come up through the ice. Swimming counts as work: the server prices it from your position.
+
+## Filling ground (build 378)
+With a spade in hand, right click fills the ground under the crosshair (one shovelful of soil, sand, gravel, clay or stone from the pack per fill, 0.9 m round, within 4.5 m). Fills are saved like digs and survive restarts and re-bakes; water rises or stops at them.
