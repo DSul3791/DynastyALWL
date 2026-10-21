@@ -46,6 +46,7 @@ const BreathScript := preload("res://src/client/breath_sounds.gd")
 const TreeScript := preload("res://src/client/tree_sounds.gd")
 const FireScript := preload("res://src/client/fire_sounds.gd")
 const ItemScript := preload("res://src/client/item_sounds.gd")
+const InnerVoiceScript := preload("res://src/client/inner_voice_sounds.gd")
 const AirBands := preload("res://src/client/air_bands.gd")
 const OcclusionScript := preload("res://src/client/sound_occlusion.gd")
 const WaterSoundsScript := preload("res://src/client/water_sounds.gd")
@@ -188,6 +189,7 @@ var trees                               # TreeSounds: felling (watch the world r
 var fire                                # FireSounds: campfire loops by size, lit, put out, rain sizzle (set_fires)
 var ground_below: Callable = Callable()   # terrain_client sets this: ground height under a point (NAN when not loaded)
 var itemfx                              # ItemSounds: inventory cues (watch(items) every frame)
+var inner                               # InnerVoiceSounds: the character's thoughts in the headset (speak(line_id, kind))
 var workshop                            # WorkshopSounds: chopping block, plank drop and saw mill loops (hooks until workshops exist)
 var harvestfx                           # HarvestSounds: plant picks (twist, pull, pluck, snap, snip) and the plant rustling; harvest.gd calls pick(row, at)
 var treewind                            # TreeWind: pine hiss, leaf rustle, dry autumn leaves, bare winter branches by the trees near the player
@@ -288,6 +290,10 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	itemfx.name = "ItemFx"
 	add_child(itemfx)
 	itemfx.setup(self)
+	inner = InnerVoiceScript.new()
+	inner.name = "InnerVoice"
+	add_child(inner)
+	inner.setup(self)
 	spear = SpearScript.new()
 	spear.name = "Spear"
 	add_child(spear)

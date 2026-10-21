@@ -60,7 +60,7 @@ const FaintEffectScript := preload("res://src/client/faint_effect.gd")
 const FallMistScript := preload("res://src/client/fall_mist.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 414
+const BUILD := 415
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
@@ -822,6 +822,7 @@ func _welcome_body(info: Dictionary) -> void:
 	items.boulder_budget = func(): return [24, 48, 80, 120][clampi(quality, 0, 3)]
 	items.fuel_event = func(): sound.itemfx.fuel_pressed()
 	items.reject_event = func(reason): sound.itemfx.reject(reason)
+	items.thought_event = func(line_id, kind): sound.inner.speak(line_id, kind)
 	items.heart_bpm = func(): return sound.breath.bpm_now
 	items.view_direction = func(): return -camera.global_transform.basis.z
 	sound.landing.hurt.connect(func(drop_m, severity):
