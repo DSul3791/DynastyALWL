@@ -43,6 +43,8 @@ SLOTS = [
     ("bird_chirp", "ambient", "ambient_life.gd: meadow, water-edge and forest, the most frequent call", "3 to 5 short sparrow-like chirps, 0.5 s", 1),
     ("crow_caw", "ambient", "ambient_life.gd: forest and highland, by day", "have: Dave's crow calls", 5),
     ("crow_alarm", "ambient", "ambient_life.gd: alarm(at): a crow scolds when the player runs through crow country, and the danger warning hook", "have: Dave's angry crow", 5),
+    ("wind_whistle", "windhole", "wind_structures.gd: wind whistling through a gap (under a lean-to roof, a door ajar), level by wind and enclosure", "Wind whistling through a gap or a window crack, thin wandering tone, seamless loop, 20 s", 2),
+    ("wind_hollow", "windhole", "wind_structures.gd: a low moan of wind across a cave mouth or big opening, half-enclosed only", "Wind moaning across a cave mouth, low, seamless loop, 20 s", 2),
     ("ice_crack", "ice", "ice_sounds.gd: a sharp crack under a step on a frozen pond (more often running or landing)", "3 short ice cracks under a boot, with a glassy ring, 0.5 s", 2),
     ("ice_groan", "ice", "ice_sounds.gd: the frozen pond groans and pings from the shore, every 25 to 70 s", "3 recordings of pond ice settling in the cold (long low sweeps with pings), 2 to 4 s", 2),
     ("rain_splash_stone", "splash", "rain_splashes.gd: a single rain drop landing on stone near the player (open sky only)", "A single raindrop landing on stone, close, 3 or 4 different drops", 3),

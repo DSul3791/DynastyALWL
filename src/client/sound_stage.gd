@@ -23,6 +23,7 @@ const DigScript := preload("res://src/client/dig_sounds.gd")
 const CaveScript := preload("res://src/client/cave_sounds.gd")
 const SplashScript := preload("res://src/client/rain_splashes.gd")
 const IceScript := preload("res://src/client/ice_sounds.gd")
+const WindHoleScript := preload("res://src/client/wind_structures.gd")
 const HitScript := preload("res://src/client/hit_sounds.gd")
 const TownScript := preload("res://src/client/town_sounds.gd")
 const SwimScript := preload("res://src/client/swim_sounds.gd")
@@ -203,6 +204,7 @@ var creatures                           # CreatureSounds: deer, rabbit, fox, wol
 var ui                                  # UiSounds: menu click, toggle and quality cues (play(name))
 var swim                                # SwimSounds: splash, strokes, diving, the hum under water (driven by the body)
 var town                                # TownSounds: fire, hammering, crowd, bell hooks (set_sources, ring_bell)
+var windhole                           # WindStructures: whistle through a lean-to gap, moan at a cave mouth
 var ice                                # IceSounds: frozen ponds (steps, cracks, groans)
 var splashes                           # RainSplashes: single rain drops near the player, by ground
 var cave                                # CaveSounds: reverb, muffling and drips under rock
@@ -354,6 +356,10 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	ice.name = "Ice"
 	add_child(ice)
 	ice.setup(self)
+	windhole = WindHoleScript.new()
+	windhole.name = "WindHole"
+	add_child(windhole)
+	windhole.setup(self)
 	hits = HitScript.new()
 	hits.name = "Hits"
 	add_child(hits)
@@ -429,6 +435,7 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	weather.update(delta, body, underwater)
 	splashes.update(delta, body, underwater)
 	ice.update(delta, body, underwater)
+	windhole.update(delta, underwater)
 	dig.update(delta)
 	cave.update(delta, body, flying)
 	town.update(delta, body)

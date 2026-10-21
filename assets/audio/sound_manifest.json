@@ -225,6 +225,22 @@
    "priority": 5
   },
   {
+   "name": "wind_whistle",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "wind_structures.gd: wind whistling through a gap (under a lean-to roof, a door ajar), level by wind and enclosure",
+   "to_supply": "Wind whistling through a gap or a window crack, thin wandering tone, seamless loop, 20 s",
+   "priority": 2
+  },
+  {
+   "name": "wind_hollow",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "wind_structures.gd: a low moan of wind across a cave mouth or big opening, half-enclosed only",
+   "to_supply": "Wind moaning across a cave mouth, low, seamless loop, 20 s",
+   "priority": 2
+  },
+  {
    "name": "ice_crack",
    "state": "generated",
    "variants": 3,

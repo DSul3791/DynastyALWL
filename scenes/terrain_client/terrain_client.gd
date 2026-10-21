@@ -223,6 +223,8 @@ var test_night: bool = false           # --night-test: owl answers, the night in
 var test_stance: bool = false          # --stance: stand, crouch, sit, lie and rise in turn (job 56)
 var _stance_step: int = 0
 var _lake_start_msec: int = 0
+var test_windhole: bool = false        # --wind-hole: wind through gaps (job 89): open, lean-to, cave mouth, tunnel, calm
+var _windhole_report: Array = []
 var test_ice: bool = false             # --ice-test: a frozen pond (job 88): groans, cracks, no laps, thaw
 var _ice_start_msec: int = 0
 var _ice_report: String = ""
@@ -428,6 +430,8 @@ func _ready() -> void:
 			test_ui_sounds = true
 		elif argument == "--lake":
 			test_lake = true
+		elif argument == "--wind-hole":
+			test_windhole = true
 		elif argument == "--ice-test":
 			test_ice = true
 		elif argument == "--stance":
@@ -2580,6 +2584,22 @@ func _process(delta: float) -> void:
 				_ice_report.get_slice(" ", 0), int(_ice_report.get_slice(" ", 1)), int(_ice_report.get_slice(" ", 2)), int(_ice_report.get_slice(" ", 3)),
 				_ice_report.get_slice(" ", 4, ), str(ice.walkable()), ice.groans_played - int(_ice_report.get_slice(" ", 1)), water2.laps_played - int(_ice_report.get_slice(" ", 2))])
 			water2.test_shore = []
+
+	# Wind in structures (job 89): five set-ups three seconds each; the report holds whistle and moan levels in dB (-80 stopped).
+	if test_windhole and now - connected_msec > 18000:
+		var hole = sound.windhole
+		var phases: Array = [Vector3(1.0, 0.0, 0.0), Vector3(1.0, 1.0, 0.0), Vector3(1.0, 0.0, 0.5), Vector3(1.0, 1.0, 1.0), Vector3(0.2, 1.0, 0.0)]
+		var step: int = int((now - connected_msec - 18000) / 3000)
+
+		if step < phases.size():
+			hole.test_inputs = phases[step]
+
+			if (now - connected_msec - 18000) % 3000 > 2500 and _windhole_report.size() == step:
+				_windhole_report.append("%.0f %.0f" % [hole.player_db("wind_whistle"), hole.player_db("wind_hollow")])
+		elif test_windhole:
+			test_windhole = false
+			hole.test_inputs = Vector3(-1.0, 0.0, 0.0)
+			print("Terrain client: wind hole: open %s, lean-to %s, mouth %s, tunnel %s, calm %s (whistle and moan dB, -80 off)" % _windhole_report)
 
 	if test_voice_priority and now - connected_msec > 18000 and now >= _test_fire_at:
 		_test_fire_at = now + 10000000

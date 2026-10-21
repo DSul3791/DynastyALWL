@@ -253,6 +253,13 @@ SCENARIOS = [
         ("after the thaw steps splash again", r"thaw walkable (false)", 0, 1, "text"),
         ("the thawed pond laps again and no longer groans", r" " + NUM + r" new groans, \d+ new laps", 0, 0),
     ]),
+    ("windhole", ["--wind-hole"], 9000, [
+        ("open air in a gale is silent", r"open (-?\d+) -?\d+,", -80, -80),
+        ("a lean-to whistles", r"lean-to (-?\d+) -?\d+,", -40, -10),
+        ("a cave mouth moans", r"mouth -?\d+ (-?\d+),", -40, -10),
+        ("a sealed tunnel is quiet", r"tunnel (-?\d+) (-?\d+),", -80, -80),
+        ("a calm day is quiet under a roof", r"calm (-?\d+) -?\d+ \(", -80, -80),
+    ]),
     ("ui_sounds", ["--ui-sounds"], 6000, [
         ("a tick per changed slot", r"ui sounds: " + NUM + r" hotbar ticks", 3, 3),
         ("tick is the hotbar cue", r"last (hotbar_tick_\d)", 0, 1, "text"),

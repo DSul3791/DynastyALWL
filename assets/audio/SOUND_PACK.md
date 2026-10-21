@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **216 slots: 18 recorded, 188 generated placeholders, 10 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **218 slots: 18 recorded, 190 generated placeholders, 10 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -82,7 +82,9 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 2 | `water_fall` | generated | 1 | water_sounds.gd: a waterfall roar | A waterfall loop, seamless |
 | 2 | `water_fall_base` | generated | 1 | water_sounds.gd: the close spray and churn where a fall lands (within 60 m) | A close waterfall base loop: hiss and splash, steady, seamless, no bubbles |
 | 2 | `water_pond` | generated | 1 | water_sounds.gd: gentle lapping at a pond shore | A calm lake shore lapping loop, seamless |
+| 2 | `wind_hollow` | generated | 1 | wind_structures.gd: a low moan of wind across a cave mouth or big opening, half-enclosed only | Wind moaning across a cave mouth, low, seamless loop, 20 s |
 | 2 | `wind_storm` | generated | 1 | weather_sounds.gd: gale howl in storms and blizzards | A howling gale loop, seamless |
+| 2 | `wind_whistle` | generated | 1 | wind_structures.gd: wind whistling through a gap (under a lean-to roof, a door ajar), level by wind and enclosure | Wind whistling through a gap or a window crack, thin wandering tone, seamless loop, 20 s |
 | 2 | `wolf_howl` | generated | 2 | creature_sounds.gd: a wolf's howl (idle), far away at night | 2 to 3 long wolf howls, 3 to 6 s, single wolf and a pack |
 | 3 | `bear_growl` | generated | 2 | creature_sounds.gd: a bear's growl (idle, alert) | 2 to 3 low bear growls, 1 to 2 s |
 | 3 | `bed_forest` | empty | 0 | ambient_life.gd (optional bed): a quiet forest background that fades in with forest cover | A quiet forest background loop, 30 s or more, no clear single calls |
