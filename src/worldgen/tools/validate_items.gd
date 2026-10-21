@@ -243,6 +243,14 @@ func _init() -> void:
 	want_item.call(String(cooking.get("gives", "")), "cooking.json gives")
 	obtainable[String(cooking.get("gives", ""))] = true
 
+	# Spoilage: every perishable name exists, and the rotten item is what rot makes.
+	var spoilage: Dictionary = _read("spoilage.json")
+	want_item.call(String(spoilage.get("rotten_item", "")), "spoilage.json rotten_item")
+	obtainable[String(spoilage.get("rotten_item", ""))] = true
+
+	for id in spoilage.get("by_id", {}):
+		want_item.call(String(id), "spoilage.json by_id")
+
 	for id in cooking.get("fuel", {}):
 		want_item.call(String(id), "cooking.json fuel")
 

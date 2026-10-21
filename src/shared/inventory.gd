@@ -22,6 +22,22 @@ func _init(item_table = null) -> void:
 
 
 # Add as many as fit (fills partial stacks first). Returns how many were left over.
+# Stacks of food only join when their ages are close (spoilage.json merge_gap of the shelf life); a join averages the age.
+func _mergeable(number: int, wear_a: int, wear_b: int) -> bool:
+	if table == null:
+		return true
+
+	var life: int = table.shelf_units(number)
+	return life == 0 or absi(wear_a - wear_b) <= int(float(life) * float(table.spoilage().get("merge_gap", 0.1)))
+
+
+func _joined_age(number: int, wear_a: int, count_a: int, wear_b: int, count_b: int) -> int:
+	if table == null or table.shelf_units(number) == 0:
+		return wear_a
+
+	return int(round(float(wear_a * count_a + wear_b * count_b) / float(maxi(count_a + count_b, 1))))
+
+
 func add(number: int, count: int, item_wear: int = 0) -> int:
 	if number <= 0 or count <= 0 or table == null:
 		return count
@@ -30,8 +46,9 @@ func add(number: int, count: int, item_wear: int = 0) -> int:
 	var left: int = count
 
 	for i in usable:
-		if left > 0 and numbers[i] == number and counts[i] < stack:
+		if left > 0 and numbers[i] == number and counts[i] < stack and _mergeable(number, wear[i], item_wear):
 			var put: int = mini(left, stack - counts[i])
+			wear[i] = _joined_age(number, wear[i], counts[i], item_wear, put)
 			counts[i] += put
 			left -= put
 
@@ -102,9 +119,10 @@ func move(from_slot: int, to_slot: int) -> void:
 	if from_slot == to_slot or from_slot < 0 or to_slot < 0 or from_slot >= SLOTS or to_slot >= SLOTS or numbers[from_slot] == 0:
 		return
 
-	if numbers[to_slot] == numbers[from_slot] and table != null:
+	if numbers[to_slot] == numbers[from_slot] and table != null and _mergeable(numbers[to_slot], wear[to_slot], wear[from_slot]):
 		var room: int = table.stack_of(numbers[to_slot]) - counts[to_slot]
 		var put: int = mini(room, counts[from_slot])
+		wear[to_slot] = _joined_age(numbers[to_slot], wear[to_slot], counts[to_slot], wear[from_slot], put)
 		counts[to_slot] += put
 		counts[from_slot] -= put
 

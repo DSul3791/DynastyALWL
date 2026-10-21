@@ -2065,6 +2065,10 @@ func _item_label(number: int) -> String:
 	return name
 
 
+func _freshness_word(f: float) -> String:
+	return "fresh" if f > 0.6 else ("going off" if f > 0.25 else "nearly rotten")
+
+
 func _tooltip(number: int, count: int, fill_ml: int = 0) -> String:
 	if number == 0:
 		return ""
@@ -2090,6 +2094,10 @@ func _tooltip(number: int, count: int, fill_ml: int = 0) -> String:
 
 	if heal > 0:
 		text += "\nrestores %d health  (right click when held, or Eat / use)" % heal
+
+	if table.shelf_units(number) > 0:
+		var f: float = table.freshness(number, fill_ml)
+		text += "\n%s (%d%% fresh). Spoils; keep it in a chest, in the cold or dry it." % [_freshness_word(f).capitalize(), int(f * 100.0)]
 
 	if int(entry.get("durability", 0)) > 0:
 		text += "\nlasts %d uses; repair: " % int(entry["durability"])
@@ -2213,9 +2221,17 @@ func _refresh() -> void:
 		button.text = "" if number == 0 else "%s\nx%d" % [_item_label(number), inventory.counts[i]]
 		var bar: ColorRect = button.get_node("Condition")
 		var worn: bool = number != 0 and int(table.entry(table.id_of(number)).get("durability", 0)) > 0 and inventory.wear[i] > 0
-		bar.visible = worn
+		var perishable: bool = number != 0 and table.shelf_units(number) > 0
+		bar.visible = worn or perishable
 
-		if worn:
+		if perishable:
+			var f: float = table.freshness(number, inventory.wear[i])
+			bar.anchor_right = maxf(f, 0.04)
+			bar.color = Color(0.85, 0.2, 0.15) if f <= 0.25 else (Color(0.9, 0.7, 0.2) if f <= 0.5 else Color(0.35, 0.8, 0.3))
+			bar.anchor_left = 0.0
+			bar.offset_right = -_px(4)
+			button.text += "   %s" % _freshness_word(f)
+		elif worn:
 			var c: float = condition(i)
 			bar.anchor_right = maxf(c, 0.04)
 			bar.color = Color(0.85, 0.2, 0.15) if c <= 0.0 else Color(1.0 - c, 0.2 + 0.7 * c, 0.15)

@@ -8,6 +8,8 @@ const GATHERED_PATH := "res://data/items/gathered.json"   # one plain material p
 
 var _by_id: Dictionary = {}        # String id -> entry (with "id" added)
 var _by_number: Dictionary = {}    # int number -> entry
+var _spoil: Dictionary = {}
+var _spoil_loaded: bool = false
 
 
 static func load_default():
@@ -62,6 +64,41 @@ func name_of(number: int) -> String:
 # Placeholder price of one item (items.json "value"; 2 when it has none).
 func value_of(number: int) -> int:
 	return int(_by_number.get(number, {}).get("value", 2))
+
+
+# Food spoilage (data/items/spoilage.json): the age a perishable stack keeps in its slot's wear field (tenths of a game hour)
+# at which it is rotten, or 0 when the item does not spoil.
+func spoilage() -> Dictionary:
+	if not _spoil_loaded:
+		_spoil_loaded = true
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/spoilage.json"))
+		_spoil = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+
+	return _spoil
+
+
+func shelf_units(number: int) -> int:
+	var cfg: Dictionary = spoilage()
+
+	if cfg.is_empty():
+		return 0
+
+	var id: String = id_of(number)
+	var hours: float = float(cfg.get("by_id", {}).get(id, 0.0))
+
+	if hours <= 0.0:
+		for suffix in cfg.get("by_suffix", {}):
+			if id.ends_with(str(suffix)):
+				hours = float(cfg["by_suffix"][suffix])
+				break
+
+	return 0 if hours <= 0.0 else maxi(int(round(hours * float(cfg.get("gentle_mult", 1)) / float(cfg.get("unit_h", 0.1)))), 1)
+
+
+# 1.0 fresh down to 0.0 rotten for a stack of `number` with the age `age_units`; 1.0 for anything that does not spoil.
+func freshness(number: int, age_units: int) -> float:
+	var life: int = shelf_units(number)
+	return 1.0 if life <= 0 else clampf(1.0 - float(age_units) / float(life), 0.0, 1.0)
 
 
 func ids() -> Array:

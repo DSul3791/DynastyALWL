@@ -28,6 +28,7 @@ UNITS = [
     ("inventory", "src/worldgen/tools/test_inventory.gd"),
     ("server_items", "src/worldgen/tools/test_server_items.gd"),
     ("death", "src/worldgen/tools/test_death.gd"),
+    ("spoilage", "src/worldgen/tools/test_spoilage.gd"),
     ("persistence", "src/worldgen/tools/test_items_persistence.gd"),
     ("drills", "src/worldgen/tools/test_persistence_drills.gd"),
     ("first_hour", "src/worldgen/tools/test_first_hour.gd"),

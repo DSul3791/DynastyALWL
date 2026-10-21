@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = placeholder price of one item in coins (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 55,
+	"next_number": 56,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -654,6 +654,15 @@
 			"description": "A fallen traveller and the pack they carried.",
 			"kind": "structure",
 			"stack": 1,
+			"look_alikes": []
+		},
+		"rotten_food": {
+			"number": 55,
+			"name": "Rotten food",
+			"description": "Food that has gone bad. Do not eat it.",
+			"kind": "material",
+			"stack": 200,
+			"value": 0,
 			"look_alikes": []
 		}
 	}

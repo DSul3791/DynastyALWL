@@ -153,6 +153,8 @@ var _fitness_cfg: Dictionary = {}
 var send_energy: Callable       # (peer, energy percent 0..100)
 var _energy_cfg: Dictionary = {}    # data/items/energy.json
 var _death_cfg: Dictionary = {}     # data/items/death.json
+var _spoil_in: float = 0.0          # real seconds since the last spoilage step
+var _spoil_acc: Dictionary = {}     # place class -> unspent fraction of an age unit
 var respawn_point: Vector3 = Vector3.ZERO   # where a dead character comes back; set by the server scene
 var send_died: Callable             # (peer, cause String, respawn point Vector3)
 var unix_now: Callable              # () -> real unix seconds (tests stand in a clock); unset: the system clock
@@ -472,6 +474,7 @@ func tick(delta: float) -> void:
 		_vitals_tick(spent)
 		_craft_tick(spent)
 		_remains_tick(spent)
+		_spoil_tick(spent)
 
 		for id in _items.keys():
 			if _items[id].has("scatter") or float(_items[id]["left"]) > 1.0e8:
@@ -1088,7 +1091,7 @@ func _sync_world_items() -> void:
 				near[id] = true
 
 				var state: int = int(it["fire"]["state"]) if it.has("fire") else (int(it["tree"]["state"]) if it.has("tree") else (_struct_state(it) if it.has("struct") else (BOULDER_STATE if it.has("boulder") else 0)))
-				var signature: int = int(it["count"]) + 1000 * state
+				var signature: int = int(it["count"]) + 1000 * state + 100000 * int(it["number"])
 
 				if not known.has(id) or known[id] != signature:
 					added.append([id, int(it["number"]), int(it["count"]), it["pos"], state, it["tree"] if it.has("tree") else ({"yaw": float(it["struct"]["yaw"]), "age": _remains_age(it)} if it.has("struct") else (it["boulder"] if it.has("boulder") else {}))])
@@ -2687,6 +2690,114 @@ func _vitals_tick(spent: float) -> void:
 		_strain_tick(peer, spent)
 
 
+# --- Food spoilage (Dave: gentle; data/items/spoilage.json) ---
+# Age lives in the slot's wear field (tenths of a game hour), so nothing about saves or the wire changes: old stacks read as
+# fresh. One slow step every tick_s ages every pack, chest, remains and loose item; a stack at its shelf life becomes rotten food.
+
+func _spoil_units(place: String, base_units: float, season_mult: float) -> int:
+	var cfg: Dictionary = table.spoilage()
+	var mult: float = float(cfg.get("place_mult", {}).get(place, 1.0)) * season_mult
+	_spoil_acc[place] = float(_spoil_acc.get(place, 0.0)) + base_units * mult
+	var whole: int = int(_spoil_acc[place])
+	_spoil_acc[place] -= float(whole)
+	return whole
+
+
+# Ages one inventory by `units`; true when anything changed.
+func _spoil_inventory(inv, units: int) -> bool:
+	var rotten: int = table.number_of(str(table.spoilage().get("rotten_item", "rotten_food")))
+	var changed: bool = false
+
+	for i in inv.SLOTS:
+		var life: int = table.shelf_units(inv.numbers[i])
+
+		if life <= 0:
+			continue
+
+		changed = true
+		inv.wear[i] = mini(inv.wear[i] + units, 65535)
+
+		if inv.wear[i] >= life:
+			inv.numbers[i] = rotten
+			inv.wear[i] = 0
+			inv.counts[i] = mini(inv.counts[i], table.stack_of(rotten))
+
+	return changed
+
+
+func _spoil_tick(spent: float) -> void:
+	var cfg: Dictionary = table.spoilage()
+
+	if cfg.is_empty():
+		return
+
+	_spoil_in += spent
+	var every: float = float(cfg.get("tick_s", 15))
+
+	if _spoil_in < every:
+		return
+
+	var steps: int = int(_spoil_in / every)
+	_spoil_in -= float(steps) * every
+	var base: float = float(steps) * every * GAME_RATE / 3600.0 / float(cfg.get("unit_h", 0.1))
+	var season_mult: float = float(cfg.get("season_mult", {}).get(str(season_now.call()), 1.0)) if season_now.is_valid() else 1.0
+	var pack_units: int = _spoil_units("pack", base, season_mult)
+	var peer_of_key: Dictionary = {}
+
+	for peer in _peer_key:
+		peer_of_key[_peer_key[peer]] = peer
+
+	if pack_units > 0:
+		for key in _inventories:
+			var peer: int = int(peer_of_key.get(key, 0))
+			var before: Array = _snapshot(_inventories[key]) if peer != 0 else []
+
+			if _spoil_inventory(_inventories[key], pack_units):
+				_dirty = true
+
+				if peer != 0:
+					_send_changes(peer, _inventories[key], before)
+
+	var kind_of_uid: Dictionary = {}
+
+	for id in _items:
+		if _items[id].has("struct") and _items[id]["struct"].has("uid"):
+			kind_of_uid[int(_items[id]["struct"]["uid"])] = str(_items[id]["struct"]["kind"])
+
+	var place_units: Dictionary = {}
+
+	for uid in _chests:
+		var kind: String = str(kind_of_uid.get(uid, "chest"))
+
+		if not place_units.has(kind):
+			place_units[kind] = _spoil_units(kind, base, season_mult)
+
+		if int(place_units[kind]) > 0 and _spoil_inventory(_chests[uid], int(place_units[kind])):
+			_dirty = true
+
+	var ground_units: int = _spoil_units("ground", base, season_mult)
+	var rotten_n: int = table.number_of(str(cfg.get("rotten_item", "rotten_food")))
+
+	if ground_units > 0:
+		for id in _items:
+			var it: Dictionary = _items[id]
+
+			if it.has("struct") or it.has("fire") or it.has("tree") or it.has("boulder"):
+				continue
+
+			var life: int = table.shelf_units(int(it["number"]))
+
+			if life <= 0:
+				continue
+
+			it["wear"] = int(it.get("wear", 0)) + ground_units
+			_dirty = true
+
+			if int(it["wear"]) >= life:
+				it["number"] = rotten_n
+				it["wear"] = 0
+
+
 # --- Death and remains (Dave: DESIGN_IDEAS.md 6.1; data/items/death.json) ---
 # A character whose health reaches zero dies: the whole pack goes onto a remains record where they fell (server-owned,
 # a chest with no lid that only the owner may open for the first day), their vitals start over, and they are put back at
@@ -3223,6 +3334,17 @@ func _eat(peer: int, inv, slot: int) -> void:
 		return
 
 	var item_id: String = table.id_of(inv.numbers[slot])
+	var spoil: Dictionary = table.spoilage()
+
+	if not spoil.is_empty() and item_id == str(spoil.get("rotten_item", "")):
+		_last_eat[peer] = now
+		inv.take_from_slot(slot, 1)
+		var sick: Dictionary = spoil.get("sick", {})
+		v["health"] = maxf(float(v["health"]) - float(sick.get("health", 10)), 1.0)
+		v["wet"] = maxf(float(v["wet"]) - float(sick.get("wet_ml", 300)), 0.0)
+		_say(peer, str(sick.get("say", "It was rotten.")))
+		_sync_vitals(peer, true)
+		return
 
 	if _unfit.has(item_id):
 		_last_eat[peer] = now
@@ -3261,6 +3383,7 @@ func _eat(peer: int, inv, slot: int) -> void:
 		return
 
 	_last_eat[peer] = now
+	kcal = int(round(float(kcal) * (0.5 + 0.5 * table.freshness(inv.numbers[slot], inv.wear[slot]))))   # stale food feeds less
 	inv.take_from_slot(slot, 1)
 	var total: float = float(v["fed"]) + float(kcal)
 

@@ -1,0 +1,13 @@
+{
+	"note": "Food spoilage (Dave 2026-10-21: gentle, 3 to 5 times longer than the strict table). A perishable stack keeps its age in its slot's wear field in tenths of a game hour (unit_h), 0 = fresh, so old saves read as fresh and nothing about the slot rows changes. Shelf life is in game hours (a game day is 24, one real hour), by item id or by id suffix (gathered berries end in 'berries'), multiplied by gentle_mult. Every tick_s real seconds the server ages every pack, chest, remains and loose item by its place multiplier times the season multiplier (a pack 1.0, a woven chest 0.8, a plank chest 0.6, the ground 1.5; winter slows it, summer speeds it). At full age a stack turns into rotten_food. Freshness 100 to 0 percent; eaten food gives kcal * (0.5 + 0.5 * freshness). Stacks only merge when their ages differ by less than merge_gap of the shelf life, and a merge averages the age. Temperature (Weather.temp_c) joins the multiplier with the warmth job.",
+	"unit_h": 0.1,
+	"gentle_mult": 4,
+	"tick_s": 15,
+	"merge_gap": 0.1,
+	"rotten_item": "rotten_food",
+	"sick": {"health": 10, "wet_ml": 300, "say": "It was rotten. Your stomach turns."},
+	"place_mult": {"pack": 1.0, "chest": 0.8, "plank_chest": 0.6, "remains": 1.0, "ground": 1.5},
+	"season_mult": {"spring": 1.0, "summer": 1.5, "autumn": 1.0, "winter": 0.5},
+	"by_id": {"roast_forage": 72, "seed_bundle": 720, "energy_bar": 720, "herbal_tea": 48},
+	"by_suffix": {"berries": 36, "greens": 24, "caps": 36, "morels": 36, "porcini": 36, "chanterelles": 36, "sap": 24, "pods": 120, "pears": 240, "apples": 240, "cherries": 120, "haws": 240, "hips": 240, "dates": 360, "coconuts": 480, "roots": 360, "bulbs": 360, "nuts": 720, "acorns": 720, "chestnuts": 720, "walnuts": 720, "beechnuts": 720, "hazelnuts": 720, "wheat": 1440}
+}
