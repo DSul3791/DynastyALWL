@@ -7,11 +7,13 @@ extends RefCounted
 
 const Steering := preload("res://src/shared/steering.gd")
 const WolvesScript := preload("res://src/stream/server_wolves.gd")
+const BigGameScript := preload("res://src/stream/server_big_game.gd")
 
 const GRAZE := 0
 const HOP := 1
 const FLEE := 2
 const ALERT := 3
+const WARN := 10                # big game standing its ground (head down), then 11 charge, 12 recover (server_big_game.gd)
 const HIDDEN := 5               # in its burrow: never sent, never hunted
 const STAGGER := 4              # a quarter of the animals are looked at each tick
 
@@ -25,6 +27,7 @@ var canopy: Callable               # (Vector3) -> bool, whether a spot is under 
 var wind: Callable                 # () -> the weather dictionary ("wind" 0..1 and "wind_dir" radians, the way it blows toward)
 var died: Callable                 # (species, position, source peer) when an animal is killed
 var ticks_run: int = 0
+var big_game = null                # defending big game (moose; server_big_game.gd): warn, dodgeable charge, recover
 var wolves = null                  # the pack brain (server_wolves.gd); wired by the server, tests may leave player_info unset
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
@@ -45,6 +48,8 @@ func setup() -> void:
 	rng.randomize()   # luck-exempt: world wildlife placement, no player outcome
 	wolves = WolvesScript.new()
 	wolves.host = self
+	big_game = BigGameScript.new()
+	big_game.host = self
 
 
 func species_def(sp: String) -> Dictionary:
@@ -68,6 +73,11 @@ func spawn(sp: String, x: float, z: float) -> int:
 	var pos: Vector3 = Vector3(x, y, z)
 	animals[id] = {"id": id, "sp": sp, "num": int(def.get("number", 0)), "pos": pos, "heading": rng.randf() * TAU, "state": GRAZE,   # luck-exempt: which way a new animal faces
 		"target": pos, "timer": _graze_time(def), "acc": 0.0, "home": pos, "hp": float(def.get("health", 5.0)), "herd": 0, "alarm": -1.0, "burst": 0.0, "alert": 0.0, "burrow": pos if float(def.get("burrow_m", 0.0)) > 0.0 else Vector3.INF, "to_burrow": false}
+
+	if def.has("defend"):
+		animals[id]["protective"] = rng.randf() < float(def.get("protective_share", 0.3))   # luck-exempt: whether this animal defends young
+		animals[id]["cool"] = 0.0
+
 	return id
 
 
@@ -141,6 +151,15 @@ func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spea
 	if a.has("pack"):
 		wolves.on_hit(a)   # a wolf does not bolt: its pack decides
 		return false
+
+	# Wounded big game with the hunter close stands and fights (after a short warning); a distant hunter it runs from.
+	var defend: Dictionary = species_def(a["sp"]).get("defend", {})
+
+	if not defend.is_empty():
+		for info in (big_game.player_info.call() if big_game.player_info.is_valid() else []):
+			if int(info["peer"]) == source_peer and Vector2(info["pos"].x - a["pos"].x, info["pos"].z - a["pos"].z).length() <= float(defend.get("provoked_m", 10.0)):
+				if big_game.warn(a, info["pos"], float(defend.get("provoked_warn_s", 0.8))):
+					return false
 
 	a["state"] = FLEE
 	a["target"] = a["pos"] + Vector3(cos(a["heading"] + PI), 0.0, sin(a["heading"] + PI)) * float(species_def(a["sp"]).get("flee_run_m", 25.0))
@@ -271,6 +290,13 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 	ticks_run += 1
 	var def: Dictionary = species_def(a["sp"])
 
+	if def.has("defend"):
+		big_game.cool_down(a, dt)
+
+		if big_game.handles(a):
+			big_game.step(a, dt)
+			return
+
 	# A wounded animal bleeds: it runs, rests and finally dies where it stands, at the end of its trail.
 	if a.get("wound", false):
 		a["hp"] -= float(cfg.get("blood", {}).get("bleed_hp_per_s", 0.0)) * dt
@@ -305,7 +331,13 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 			a["alarm"] = -1.0
 			_bolt(a, near_p, def)
 
-	if seen_d <= float(def.get("spook_m", 14.0)) and a["state"] != FLEE:
+	# A protective animal (defending young) does not bolt: it warns a player who comes too close, and only then charges.
+	var stands: bool = def.has("defend") and bool(a.get("protective", false)) and a["state"] != FLEE
+
+	if stands and seen_d <= float(def["defend"].get("warn_m", 20.0)):
+		if big_game.warn(a, seen_p):
+			return
+	elif seen_d <= float(def.get("spook_m", 14.0)) and a["state"] != FLEE and not stands:
 		_bolt(a, seen_p, def)
 
 		# The sentinel (the first to notice) alarms the herd: each mate follows after a short random moment.
@@ -383,6 +415,10 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 
 	if r["arrived"] or not r["moved"]:
 		if a["state"] == FLEE and near_d < float(def.get("safe_m", 35.0)):
+			# Big game cornered (it cannot get away and the player is right there) stands and fights: warn first, always.
+			if def.has("defend") and not r["moved"] and near_d <= float(def["defend"].get("corner_m", 7.0)) and big_game.warn(a, near_p, float(def["defend"].get("corner_warn_s", 1.2))):
+				return
+
 			# Still too close: keep running away from the player.
 			var away: Vector2 = Vector2(a["pos"].x - near_p.x, a["pos"].z - near_p.z).normalized()
 
@@ -428,6 +464,9 @@ func _top_up(players: Array, only: int) -> void:
 					all_near += 1
 					have += 1 if animals[id]["sp"] == sp else 0
 
+			if def.has("spawn_share") and rng.randf() > float(def["spawn_share"]):   # luck-exempt: rare species turn up on some top-ups only
+				continue
+
 			if have >= int(def.get("target_per_player", 6)) or all_near >= per_player or animals.size() >= int(cfg.get("server_cap", 150)):
 				continue
 
@@ -448,6 +487,11 @@ func _top_up(players: Array, only: int) -> void:
 
 				if too_near or (blocked.is_valid() and bool(blocked.call(cx, cz))):
 					continue
+
+				var keep_out: Array = def.get("exclude", [])
+
+				if keep_out.size() == 3 and Vector2(cx - float(keep_out[0]), cz - float(keep_out[1])).length() < float(keep_out[2]):
+					continue   # big game stays out of the starter tile
 
 				var score: float = _habitat_score(def, cx, cz, p.y)
 

@@ -127,6 +127,68 @@
 				"water_edge_m": 3.0,
 				"forest": true
 			}
+		},
+		"moose": {
+			"number": 4,
+			"name": "Moose",
+			"target_per_player": 1,
+			"spawn_share": 0.2,
+			"health": 90.0,
+			"walk_mps": 1.6,
+			"flee_mps": 10.0,
+			"spook_m": 28.0,
+			"safe_m": 70.0,
+			"graze_s": [
+				8.0,
+				25.0
+			],
+			"wander_m": 14.0,
+			"flee_run_m": 70.0,
+			"herd": [],
+			"alarm_s": [
+				0.3,
+				1.0
+			],
+			"alert_m": 55.0,
+			"alert_s": [
+				2.0,
+				4.0
+			],
+			"burst_s": 8.0,
+			"trot_share": 0.45,
+			"zig_deg": 10.0,
+			"zig_leg_m": 20.0,
+			"herd_pull_m": 0.0,
+			"eye_m": 2.0,
+			"protective_share": 0.3,
+			"exclude": [
+				53301.0,
+				68427.0,
+				1500.0
+			],
+			"habitat": {
+				"slope_max": 0.5,
+				"slope_run_m": 6.0,
+				"above_player_m": 250.0,
+				"water_edge_m": 3.0,
+				"forest": true
+			},
+			"defend": {
+				"warn_m": 20.0,
+				"warn_s": 2.2,
+				"charge_mps": 11.0,
+				"charge_m": 24.0,
+				"turn_rad_s": 0.25,
+				"hit_m": 2.2,
+				"damage": 25.0,
+				"recover_s": 5.0,
+				"calm_m": 24.0,
+				"cool_s": 30.0,
+				"corner_m": 7.0,
+				"corner_warn_s": 1.2,
+				"provoked_m": 10.0,
+				"provoked_warn_s": 0.8
+			}
 		}
 	},
 	"senses": {

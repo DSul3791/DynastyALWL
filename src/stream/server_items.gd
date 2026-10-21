@@ -3260,7 +3260,7 @@ func hurt_player(peer: int, amount: float, lethal: bool, cause: String, floor_hp
 
 	if not lethal and float(v["health"]) <= floor_hp:
 		v["health"] = minf(before, floor_hp)
-		_say(peer, "The wolves have crippled you. Get away while you can.")
+		_say(peer, "The wolves have crippled you. Get away while you can." if cause == "wolves" else "You are badly hurt. Get away while you can.")
 		v["limp"] = float(_vitals_cfg.get("limp", {}).get("seconds", 600.0))
 		_sync_limp(peer, false)
 		_sync_vitals(peer, true)

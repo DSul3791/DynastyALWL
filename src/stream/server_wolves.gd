@@ -286,7 +286,7 @@ func _prey_near(c: Vector3, r: float) -> int:
 	for id in host.animals:
 		var a: Dictionary = host.animals[id]
 
-		if a["sp"] != "deer" or a["state"] == host.HIDDEN:
+		if not (a["sp"] in ["deer", "moose"]) or a["state"] == host.HIDDEN:
 			continue
 
 		var d: float = Vector2(a["pos"].x - c.x, a["pos"].z - c.z).length()

@@ -24,6 +24,7 @@ func make(players: Array, stances: Array, weather: Dictionary, ridge: bool):
 	a.wind = func(): return weather
 	a.setup()
 	a.cfg["species"]["rabbit"]["target_per_player"] = 0
+	a.cfg["species"]["moose"]["target_per_player"] = 0
 	a.rng.seed = 3
 	return a
 

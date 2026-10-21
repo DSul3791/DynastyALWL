@@ -154,6 +154,37 @@
 					3
 				]
 			]
+		},
+		"moose": {
+			"size_kg": 350.0,
+			"parts": [
+				[
+					"raw_meat",
+					14,
+					20
+				],
+				[
+					"hide",
+					2,
+					3
+				],
+				[
+					"bone",
+					8,
+					12
+				],
+				[
+					"sinew",
+					5,
+					8
+				],
+				[
+					"animal_fat",
+					3,
+					6
+				]
+			],
+			"hunt_difficulty": 2.2
 		}
 	}
 }
