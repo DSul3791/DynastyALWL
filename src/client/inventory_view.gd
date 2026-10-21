@@ -1533,6 +1533,9 @@ func _make_big_forge(state: int) -> Node3D:
 	return stand_in
 
 
+var _forge_sizes: Dictionary = {}
+
+
 # Dave's forge meshes (assets/stations/forge_basic, forge_medium, forge_large, forge_master .glb). They arrive Z up with the fire
 # opening toward -Y and the middle of the base off the origin, so this stands them up (Y up, which leaves the opening toward +Z, the front
 # of every building here: placed with the camera yaw it faces the player who put it down), puts the
@@ -1558,7 +1561,10 @@ func _forge_glb(file: String) -> Node3D:
 	var root: Node3D = Node3D.new()
 	root.add_child(turned)
 	var box: AABB = _bounds_in(model, root)
-	turned.position = Vector3(-(box.position.x + box.size.x * 0.5), -box.position.y, -(box.position.z + box.size.z * 0.5))
+	var fit: float = _forge_scale(file)
+	turned.scale = Vector3.ONE * fit
+	turned.position = -Vector3(box.position.x + box.size.x * 0.5, box.position.y, box.position.z + box.size.z * 0.5) * fit
+	box = AABB(box.position * fit, box.size * fit)
 	var fire: Node3D = model.get_node_or_null("Fire") as Node3D
 	var smoke: Node3D = model.get_node_or_null("Smoke") as Node3D
 	var hook_fire: Variant = _local_to(fire, root) if fire != null else null
@@ -1571,7 +1577,18 @@ func _forge_glb(file: String) -> Node3D:
 	shape.position = Vector3(0.0, solid.size.y * 0.5, 0.0)
 	body.add_child(shape)
 	root.add_child(body)
-	return BuildingLook.add_hooks(root, hook_fire, hook_smoke)
+	return BuildingLook.add_hooks(root, hook_fire, hook_smoke, clampf(fit, 0.3, 1.0))
+
+
+# The uniform scale of a forge model as a share of the size Dave imported it at (data/stations/forge_sizes.json; 1 when missing).
+func _forge_scale(file: String) -> float:
+	if _forge_sizes.is_empty():
+		var text: String = FileAccess.get_file_as_string("res://data/stations/forge_sizes.json")
+		var parsed: Variant = JSON.parse_string(text) if not text.is_empty() else null
+		_forge_sizes = parsed if parsed is Dictionary else {"none": 0.0}
+
+	var share: float = float(_forge_sizes.get(file, 0.0))
+	return share if share > 0.0 else 1.0
 
 
 # The box of every mesh under `node`, in the space of `space` (a Node3D above it), without needing the tree.

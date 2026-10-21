@@ -1007,13 +1007,13 @@ static func _smoke_plume() -> GPUParticles3D:
 	return plume
 
 
-static func add_hooks(model: Node3D, fire: Variant, smoke: Variant) -> Node3D:
+static func add_hooks(model: Node3D, fire: Variant, smoke: Variant, fx_scale: float = 1.0) -> Node3D:
 	if fire != null and model.get_node_or_null("Light") == null:
 		var spot: Vector3 = Vector3(float(fire[0]), float(fire[1]), float(fire[2])) if typeof(fire) == TYPE_ARRAY else fire
 		var light: OmniLight3D = OmniLight3D.new()
 		light.name = "Light"
 		light.light_color = Color(1.0, 0.55, 0.25)
-		light.omni_range = 9.0
+		light.omni_range = 9.0 * maxf(fx_scale, 0.6)
 		light.light_energy = 1.4
 		light.shadow_enabled = false
 		light.position = spot + Vector3(0.0, 0.25, 0.0)
@@ -1029,7 +1029,7 @@ static func add_hooks(model: Node3D, fire: Variant, smoke: Variant) -> Node3D:
 		var flames: Node3D = Node3D.new()
 		flames.name = "Flames"
 		flames.position = spot
-		flames.scale = Vector3.ONE * 1.8
+		flames.scale = Vector3.ONE * 1.8 * fx_scale
 		flames.add_child(_instance(_coals()))
 		flames.add_child(_instance(_flames()))
 		model.add_child(flames)
@@ -1038,6 +1038,7 @@ static func add_hooks(model: Node3D, fire: Variant, smoke: Variant) -> Node3D:
 		var at: Vector3 = Vector3(float(smoke[0]), float(smoke[1]), float(smoke[2])) if typeof(smoke) == TYPE_ARRAY else smoke
 		var plume: GPUParticles3D = _smoke_plume()
 		plume.position = at
+		plume.scale = Vector3.ONE * fx_scale
 		model.add_child(plume)
 
 	return model
