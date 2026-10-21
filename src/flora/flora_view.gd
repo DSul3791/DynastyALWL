@@ -213,7 +213,7 @@ const TIER_PROXY := 5      # plan keys only: the far model drawn into the sun's 
 const PROXY_BIT := 7       # level bits 7 and up: one per 64 m cell, set where a full-model cell is past CONTACT_M
 const MID_MIN_TRIANGLES := 500   # trees with fewer triangles than this keep their full model at every near distance
 const MID_LOD_SCALE_MIN := 25.0  # ImporterMesh.generate_lods merge angle (degrees)
-const FAR_SHADOWS := [false, false, false, true]   # far-model trees cast shadows only at Ultra (shadow range is 100 m at High)
+const FAR_SHADOWS := [false, false, false, false]   # far-model trees cast no sun shadow (build 453: their shadows fall past the 90 m shadow range, and a part's whole MultiMesh is drawn into every cascade it touches)
 
 var chunk_m: float = 256.0
 var view_m: PackedFloat32Array = PackedFloat32Array([900.0, 300.0, 120.0])

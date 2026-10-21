@@ -61,7 +61,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 453
+const BUILD := 454
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
@@ -1446,7 +1446,8 @@ func _apply_quality() -> void:
 		_sun.directional_shadow_max_distance = maxf(float(QUALITY_SHADOW_M[quality]), 1.0)
 		# Two cascades instead of four at Medium and High: every cascade draws the casters again
 		# (Godot's own shadow docs), and 100 m of range does not need four. A smaller shadow map at Medium.
-		_sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS if quality >= 3 else DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+		_sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+		_sun.directional_shadow_split_1 = 0.3 if quality >= 3 else 0.1      # Ultra: two cascades (0 to 27 m, then to 90 m), not four (build 453)
 		RenderingServer.directional_shadow_atlas_set_size(2048 if quality <= 1 else 4096, true)
 
 	if terrain != null and quality != _ground_quality:
