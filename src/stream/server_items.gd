@@ -10,6 +10,7 @@ extends RefCounted
 
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const RecipeTableScript := preload("res://src/shared/recipe_table.gd")
+const LuckScript := preload("res://src/shared/luck.gd")
 const InventoryScript := preload("res://src/shared/inventory.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
@@ -130,6 +131,10 @@ const CRAFT_QUEUE_ENTRIES := 10
 const CRAFT_QUEUE_MAX_COUNT := 20
 var _stance: Dictionary = {}        # peer -> 0 stand, 1 crouch, 2 sit, 3 lie
 var _moving: Dictionary = {}        # peer -> smoothed 0..1, 1 while walking about
+var _characters: Dictionary = {}   # player key -> {luck: int}, rolled once at first sight and never changed (job 77)
+var _luck_cfg: Dictionary = {}
+var _fate_rng: RandomNumberGenerator = RandomNumberGenerator.new()   # luck-exempt: the server's own fate stream, the fate() hook below
+var fate_counts: Dictionary = {}    # fate kind -> times rolled (what luck has touched)
 var _vitals: Dictionary = {}        # player key -> {hunger, health} floats
 var _vitals_sent: Dictionary = {}   # peer -> [hunger, health] last whole points sent
 var _exertion: Dictionary = {}      # peer -> smoothed 0..1 from movement
@@ -181,10 +186,12 @@ func setup(item_table, store_dir: String) -> void:
 	var skills_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(SKILLS_PATH))
 	_skills_cfg = skills_parsed if typeof(skills_parsed) == TYPE_DICTIONARY else {}
 	_vitals_cfg = VitalsRules.load_config()
+	_luck_cfg = LuckScript.load_config()
 	_carry_cfg = CarryRules.load_config()
 	var exertion_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/exertion.json"))
 	_exertion_cfg = exertion_parsed if typeof(exertion_parsed) == TYPE_DICTIONARY else {}
 	_load_vitals()
+	_load_characters()
 	_load_craft_queues()
 	_load_inventories()
 	_load_chests()
@@ -221,6 +228,10 @@ func peer_connected_hello(peer: int, key: String) -> void:
 
 	if not _vitals.has(key):
 		_vitals[key] = _new_vitals()
+		_dirty = true
+
+	if not _characters.has(key):
+		_characters[key] = {"luck": _create_luck()}
 		_dirty = true
 
 	_vitals_sent.erase(peer)
@@ -459,6 +470,7 @@ func save() -> void:
 	_save_trees()
 	_save_chests()
 	_save_vitals()
+	_save_characters()
 	_save_craft_queues()
 	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked})
 
@@ -515,7 +527,7 @@ func gather(peer: int, species_name: String, kind: String, flora_key: String, fl
 					missing = needed
 
 			if not usable.is_empty():
-				natural = usable[rng.randi_range(0, usable.size() - 1)]
+				natural = usable[rng.randi_range(0, usable.size() - 1)]   # luck-exempt: which yield a plant bears, none better or worse
 				var used_class: String = _tool_for(natural)
 
 				if used_class != "":
@@ -530,10 +542,10 @@ func gather(peer: int, species_name: String, kind: String, flora_key: String, fl
 	var more: float = skill_factor(peer, "gather_plant")
 
 	for row in rows:
-		give(peer, table.number_of(str(row[0])), maxi(1, int(round(float(rng.randi_range(int(row[1]), int(row[2]))) * more))))
+		give(peer, table.number_of(str(row[0])), maxi(1, int(round(float(roll_amount(peer, rng, int(row[1]), int(row[2]))) * more))))
 
 	if natural != "":
-		give(peer, table.number_of(natural), maxi(1, int(round(float(rng.randi_range(1, 3)) * more))))
+		give(peer, table.number_of(natural), maxi(1, int(round(float(roll_amount(peer, rng, 1, 3)) * more))))
 
 	_picked[flora_key] = now_s
 	_dirty = true
@@ -1026,8 +1038,8 @@ func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 		return
 
 	var slope: float = (absf(h1 - h0) + absf(h2 - h0)) / 4.0
-	var stones: int = mini(int(rng.randf() * (float(cfg.get("stones_flat", 0.5)) + slope * float(cfg.get("stones_per_slope", 3.0))) * 2.0), int(cfg.get("stones_max", 4)))
-	var sticks: int = mini(int(rng.randf() * 3.0), int(cfg.get("sticks_max", 2)))
+	var stones: int = mini(int(rng.randf() * (float(cfg.get("stones_flat", 0.5)) + slope * float(cfg.get("stones_per_slope", 3.0))) * 2.0), int(cfg.get("stones_max", 4)))   # luck-exempt: seeded world layout
+	var sticks: int = mini(int(rng.randf() * 3.0), int(cfg.get("sticks_max", 2)))   # luck-exempt: seeded world layout
 	var kinds: Array = []
 
 	for n in stones:
@@ -1074,10 +1086,10 @@ func _lay_out_bank_stones(cell: Vector2i, cell_m: float, cfg: Dictionary, rng: R
 	var laid: int = 0
 
 	for attempt in range(int(bank.get("tries", 40))):
-		var x: float = (float(cell.x) + rng.randf()) * cell_m
-		var z: float = (float(cell.y) + rng.randf()) * cell_m
+		var x: float = (float(cell.x) + rng.randf()) * cell_m   # luck-exempt: seeded world layout
+		var z: float = (float(cell.y) + rng.randf()) * cell_m   # luck-exempt: seeded world layout
 		var y: float = float(ground_height.call(x, z))
-		var chance: float = rng.randf()
+		var chance: float = rng.randf()   # luck-exempt: seeded world layout
 
 		if is_nan(y) or y < 1.0 or chance > float(bank.get("chance", 0.5)):
 			continue
@@ -1111,8 +1123,8 @@ func _scatter_spot(rng: RandomNumberGenerator, cell: Vector2i, cell_m: float, st
 	var best: Vector3 = Vector3(0.0, NAN, 0.0)
 
 	for attempt in range(tries):
-		var x: float = (float(cell.x) + rng.randf()) * cell_m
-		var z: float = (float(cell.y) + rng.randf()) * cell_m
+		var x: float = (float(cell.x) + rng.randf()) * cell_m   # luck-exempt: seeded world layout
+		var z: float = (float(cell.y) + rng.randf()) * cell_m   # luck-exempt: seeded world layout
 		var y: float = float(ground_height.call(x, z))
 
 		if is_nan(y) or y < 1.0:
@@ -1143,7 +1155,7 @@ func _scatter_spot(rng: RandomNumberGenerator, cell: Vector2i, cell_m: float, st
 
 		best = spot
 
-		if like >= rng.randf():
+		if like >= rng.randf():   # luck-exempt: seeded world layout
 			return spot
 
 	return best
@@ -1416,28 +1428,28 @@ func _process_trunk(peer: int, inv, id: int) -> void:
 
 	if blows < int(cfg.get("branch_blows", 3)):
 		for row in cfg.get("branch", []):
-			give(peer, table.number_of(str(row[0])), rng.randi_range(int(row[1]), int(row[2])))
+			give(peer, table.number_of(str(row[0])), roll_amount(peer, rng, int(row[1]), int(row[2])))
 	else:
 		if (blows - int(cfg.get("branch_blows", 3))) % int(cfg.get("blows_per_log", 3)) == 2:
 			give(peer, table.number_of("log"), 1)
 			tree["logs_left"] = int(tree["logs_left"]) - 1
 
-		if rng.randf() < float(cfg.get("bark_chance", 0.3)):
+		if roll_chance(peer, rng, float(cfg.get("bark_chance", 0.3))):
 			give(peer, table.number_of("bark"), 1)
 
-		if rng.randf() < float(cfg.get("seed_chance", 0.15)):
+		if roll_chance(peer, rng, float(cfg.get("seed_chance", 0.15))):
 			var own: Array = cfg.get("by_species", {}).get(str(tree.get("species", "")), [])
 
 			if own.is_empty():
 				give(peer, table.number_of("seed_bundle"), 1)
 			else:
-				give(peer, table.number_of(str(own[0][0])), rng.randi_range(int(own[0][1]), int(own[0][2])))
+				give(peer, table.number_of(str(own[0][0])), roll_amount(peer, rng, int(own[0][1]), int(own[0][2])))
 
 		if int(tree["logs_left"]) <= 0:
 			var roots: Array = cfg.get("roots", [])
 
 			if not roots.is_empty():
-				give(peer, table.number_of(str(roots[0])), rng.randi_range(int(roots[1]), int(roots[2])))
+				give(peer, table.number_of(str(roots[0])), roll_amount(peer, rng, int(roots[1]), int(roots[2])))
 
 			_items.erase(id)
 
@@ -1460,7 +1472,7 @@ func _maybe_sapling(stump: Dictionary, planted_at: float = -1.0) -> void:
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = hash(Vector3i(int(stump["pos"].x), int(stump["pos"].z), world_seed))
 
-	if rng.randf() > RESPAWN_CHANCE:
+	if rng.randf() > RESPAWN_CHANCE:   # luck-exempt: world regrowth, no player
 		return
 
 	var near: Array = standing_near.call(str(tree["species"]), stump["pos"], RESPAWN_RADIUS_M)
@@ -1468,8 +1480,8 @@ func _maybe_sapling(stump: Dictionary, planted_at: float = -1.0) -> void:
 	if near.is_empty():
 		return
 
-	var angle: float = rng.randf() * TAU
-	var spot: Vector3 = near[0] + Vector3(cos(angle), 0.0, sin(angle)) * rng.randf_range(2.0, RESPAWN_PLACE_M)
+	var angle: float = rng.randf() * TAU   # luck-exempt: world regrowth, no player
+	var spot: Vector3 = near[0] + Vector3(cos(angle), 0.0, sin(angle)) * rng.randf_range(2.0, RESPAWN_PLACE_M)   # luck-exempt: world regrowth, no player
 	var ground: float = float(ground_height.call(spot.x, spot.z))
 	var species_entry: Dictionary = _flora_by_name.get(str(tree["species"]), {})
 
@@ -2406,6 +2418,61 @@ func _eat(peer: int, inv, slot: int) -> void:
 	v["wet"] = minf(float(v["wet"]) + float(ml), wet_cap)
 	v["health"] = clampf(float(v["health"]) + float(heal), 0.0, float(_vitals_cfg.get("health_max", 100)))
 	_sync_vitals(peer, true)
+
+
+# --- Luck (job 77) ---
+# Each character has a luck number, -10 to +10, rolled once when the server first sees the key (the creation screen will
+# send a chosen value instead) and stored in characters.json. Every server roll that a player takes part in goes through
+# roll_chance / roll_amount / fate so luck can nudge it (data/items/luck.json strength; 0 switches luck off).
+func luck_of(peer: int) -> int:
+	return int(_characters.get(_peer_key.get(peer, ""), {}).get("luck", 0))
+
+
+func _luck_strength() -> float:
+	return float(_luck_cfg.get("strength", 0.04))
+
+
+# The creation roll: the sum of dice rolls of -faces to +faces, centred on 0.
+func _create_luck() -> int:
+	var make: Dictionary = _luck_cfg.get("creation", {})
+	var total: int = 0
+
+	for n in int(make.get("dice", 2)):
+		total += _fate_rng.randi_range(-int(make.get("faces", 5)), int(make.get("faces", 5)))   # luck-exempt: the creation roll itself
+
+	return clampi(total, -LuckScript.MAX, LuckScript.MAX)
+
+
+# True with probability p, nudged by the peer's luck. `rng` is the caller's own stream (often seeded so a plant or a
+# trunk gives the same on every server run); the draw is taken from it so replay stays the same.
+func roll_chance(peer: int, rng: RandomNumberGenerator, p: float) -> bool:
+	return LuckScript.chance(rng.randf(), p, luck_of(peer), _luck_strength())   # luck-exempt: the draw that luck then nudges
+
+
+# A whole number from lo to hi, the top end likelier when lucky.
+func roll_amount(peer: int, rng: RandomNumberGenerator, lo: int, hi: int) -> int:
+	return LuckScript.amount(rng.randf(), lo, hi, luck_of(peer), _luck_strength())   # luck-exempt: the draw that luck then nudges
+
+
+# The hook for later fate events (a fall going well or badly, a fight, a rare thing in the world): true when fate favours
+# the peer with base probability p. Counted by kind so we can see what luck touches.
+func fate(peer: int, kind: String, p: float) -> bool:
+	fate_counts[kind] = int(fate_counts.get(kind, 0)) + 1
+	return LuckScript.chance(_fate_rng.randf(), p, luck_of(peer), _luck_strength())   # luck-exempt: the fate stream
+
+
+func _save_characters() -> void:
+	_write_atomic("characters.json", {"version": 1, "players": _characters})
+
+
+func _load_characters() -> void:
+	var parsed: Variant = _read_json_version("characters.json", 1)
+
+	if parsed == null:
+		return
+
+	for key in parsed.get("players", {}):
+		_characters[str(key)] = {"luck": clampi(int(parsed["players"][key].get("luck", 0)), -LuckScript.MAX, LuckScript.MAX)}
 
 
 # Drink from the water at the player's feet (ACT_DRINK): one mouthful of thirst.drink_ml, paced like eating. The scene's water_near says whether water lies within reach.

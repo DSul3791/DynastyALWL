@@ -129,6 +129,12 @@ def main():
         print("\n".join([n for n, _ in UNITS] + [c[0] for c in CLIENTS]))
         return 0
     failed = 0
+    if not only or "luck" in only:
+        luck = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "check_luck.py")], capture_output=True, text=True)
+        print("%-16s %s  %s" % ("luck_rolls", "PASS" if luck.returncode == 0 else "FAIL", luck.stdout.strip().splitlines()[-1]))
+        if luck.returncode != 0:
+            print(luck.stdout)
+        failed += 1 if luck.returncode else 0
     for name, path in UNITS:
         if only and name not in only:
             continue

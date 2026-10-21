@@ -10,7 +10,7 @@ const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
-const FILES := ["inventories.json", "world_items.json", "tree_states.json", "chests.json", "vitals.json", "craft_queues.json"]
+const FILES := ["inventories.json", "world_items.json", "tree_states.json", "chests.json", "vitals.json", "craft_queues.json", "characters.json"]
 const KEY := "drillkey00001"
 
 var failures: int = 0
@@ -63,7 +63,7 @@ func state_of(items) -> Dictionary:
 
 	return {
 		"pack": items.inventory_of(1).count_of(stone), "chest": chest_stones, "ground": ground_stones,
-		"trees": items.tree_row_count(), "queue": items.craft_queue_of(1), "weight": snappedf(float(items.vitals_of(1)["weight"]), 0.01),
+		"trees": items.tree_row_count(), "queue": items.craft_queue_of(1), "weight": snappedf(float(items.vitals_of(1)["weight"]), 0.01), "luck": items.luck_of(1),
 	}
 
 
@@ -86,6 +86,7 @@ func build_world(dir: String) -> Dictionary:
 	a._items[a._next_id] = {"number": 0, "count": 1, "pos": Vector3(5.0, 10.0, 5.0), "left": 1.0e9, "tree": {"state": 4, "chunk": [0, 0], "species": "oak", "yaw": 0.0, "length": 5.0, "radius": 0.2, "felled_at": 0.0}}
 	a._next_id += 1
 	a.vitals_of(1)["weight"] = 71.0
+	a._characters[KEY]["luck"] = 7
 	a.action(1, Net.ACT_ADMIN_GIVE, fibre, 0, 9, Vector3.ZERO)
 	a._last_queue_act.clear()
 	a.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 3, Vector3.ZERO)
@@ -156,7 +157,7 @@ func _init() -> void:
 		var expect: Dictionary = want.duplicate()
 		var gone: Array = {
 			"inventories.json": ["pack"], "world_items.json": ["ground"], "tree_states.json": ["trees"], "chests.json": ["chest"],
-			"vitals.json": ["weight"], "craft_queues.json": ["queue"],
+			"vitals.json": ["weight"], "craft_queues.json": ["queue"], "characters.json": ["luck"],
 		}[file]
 
 		for field in gone:

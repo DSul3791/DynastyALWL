@@ -964,6 +964,67 @@ func _init() -> void:
 	check(stick_cover > 280, "sticks lie mostly under tree cover (%d of 400, 200 if random)" % stick_cover)
 	check(stone_slope > 280, "stones lie mostly on the slope (%d of 400, 200 if random)" % stone_slope)
 
+	# Luck (job 77): stored per character, nudges every roll through one function.
+	var Luck = load("res://src/shared/luck.gd")
+	var lrng: RandomNumberGenerator = RandomNumberGenerator.new()
+	lrng.seed = 11
+	var hits: Array = [0, 0, 0]
+	var sums: Array = [0, 0, 0]
+
+	for n in range(6000):
+		var u: float = lrng.randf()
+
+		for k in range(3):
+			var luck: int = [-10, 0, 10][k]
+			hits[k] += 1 if Luck.chance(u, 0.5, luck, 0.04) else 0
+			sums[k] += Luck.amount(u, 1, 3, luck, 0.04)
+
+	check(hits[0] < hits[1] - 300 and hits[2] > hits[1] + 300 and absf(float(hits[1]) / 6000.0 - 0.5) < 0.02, "luck moves a 50 percent chance down and up and 0 is neutral (%s of 6000)" % str(hits))
+	check(sums[0] < sums[1] and sums[1] < sums[2] and Luck.amount(0.0, 1, 3, 10, 0.04) == 1 and Luck.amount(0.999999, 1, 3, -10, 0.04) <= 3, "luck moves the average of a 1 to 3 yield and keeps it in range (%s)" % str(sums))
+	check(not Luck.chance(0.99, 0.0, 10, 0.04) and Luck.chance(0.0, 1.0, -10, 0.04), "luck never makes the impossible possible or the certain doubtful")
+	var luck_dir: String = "user://test_server_items_luck"
+	DirAccess.make_dir_recursive_absolute(luck_dir)
+
+	for file in DirAccess.get_files_at(luck_dir):
+		DirAccess.remove_absolute(luck_dir + "/" + file)
+
+	var lk = make(luck_dir)
+	lk.peer_connected_hello(1, "luckkey000001")
+	lk.peer_connected_hello(2, "luckkey000002")
+	check(lk.luck_of(1) >= -10 and lk.luck_of(1) <= 10 and lk.luck_of(99) == 0, "a character gets luck from -10 to 10 at first sight; an unknown peer is neutral")
+	lk._characters["luckkey000001"]["luck"] = 9
+	lk._dirty = true
+	lk.save()
+	var lk2 = make(luck_dir)
+	lk2.peer_connected_hello(1, "luckkey000001")
+	lk2.peer_connected_hello(2, "luckkey000002")
+	check(lk2.luck_of(1) == 9 and lk2.luck_of(2) == lk.luck_of(2), "luck is stored with the character and survives a restart unchanged")
+	lk2.peer_left(1)
+	lk2.peer_connected_hello(1, "luckkey000001")
+	check(lk2.luck_of(1) == 9, "coming back does not re-roll luck")
+	var plain: RandomNumberGenerator = RandomNumberGenerator.new()
+	var same: RandomNumberGenerator = RandomNumberGenerator.new()
+	plain.seed = 3
+	same.seed = 3
+	lk2._characters["luckkey000001"]["luck"] = 0
+	var agree: int = 0
+
+	for n in range(200):
+		agree += 1 if (plain.randf() < 0.3) == lk2.roll_chance(1, same, 0.3) else 0
+
+	check(agree == 200, "with luck 0 a roll is exactly the plain random roll")
+	lk2._luck_cfg["strength"] = 0.0
+	lk2._characters["luckkey000001"]["luck"] = 10
+	plain.seed = 4
+	same.seed = 4
+	agree = 0
+
+	for n in range(200):
+		agree += 1 if (plain.randf() < 0.3) == lk2.roll_chance(1, same, 0.3) else 0
+
+	check(agree == 200, "strength 0 switches luck off")
+	check(lk2.fate(1, "test", 1.0) and int(lk2.fate_counts["test"]) == 1, "the fate hook rolls and counts by kind")
+
 	# Bank stones: real pickable stones along the water's edge, none where there is no water.
 	sc.ground_height = func(x, z): return 10.0
 	sc.cover_at = func(p): return 0.0

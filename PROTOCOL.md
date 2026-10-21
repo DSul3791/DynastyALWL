@@ -79,6 +79,7 @@ inventories.json version 2 (reads 1), world_items.json version 1, chests.json ve
 
 - 24: vitals() gains a fourth field, thirst (percent of a full body, 100 = full); ACT_DRINK. Thirst is server-owned (data/items/vitals.json "thirst": cap_ml 2400, rest_ml_day 1000, work_ml_day 1200 x exertion, so a full body lasts a whole game day even at full exertion); empty thirst stops health recovering. Saved as "wet" (ml) in vitals.json; older saves start full.
 - 23: reject() (refused action: too far, no tool, pack full) for the client's refusal cue; ACT_FALL and server-side fall damage (data/items/vitals.json "fall": safe_m 6, per_m 8, faint_m 12; health never below 1).
+- (no version) characters.json, version 1: {players: {key: {luck: -10..10}}}, rolled once at first hello and never changed; server side only. Every server roll goes through server_items roll_chance / roll_amount / fate (src/shared/luck.gd, data/items/luck.json); tools/check_luck.py fails on a raw random call that skips it.
 - 22: crafting queue: ACT_CRAFT_QUEUE, ACT_CRAFT_CANCEL, craft_queue(); saved server side in craft_queues.json (version 1, atomic, .bad fallback; the head's progress is kept; runs only while the player is connected).
 - 21: ACT_STANCE; strain() gains the confirmed stance.
 - 20: strain(strain_pm, state, fade_pm) for over-exertion and fainting.
