@@ -1537,29 +1537,9 @@ func _make_forge() -> Node3D:
 	return root
 
 
-# Epic: the whole smithy, about 6 by 5 m: a stone plinth, stone back and side walls, timber posts and a pitched plank roof,
-# the forge and chimney in the back wall, an anvil on a stump, a quench trough, a long bench with rack and vice.
+# Epic: the masonry forge (4.2 x 3 m, no roof), drawn in building_look.gd.
 func _make_smithy() -> Node3D:
-	# The masonry forge (tier 4): an open stone hearth with a tall chimney, anvil on a log block, bellows and a quench trough. No roof.
-	var root: Node3D = Node3D.new()
-	_part(root, Vector3(4.2, 0.2, 3.0), Vector3(0.0, 0.1, 0.0), STONE_COLOR)
-	_part(root, Vector3(1.8, 1.2, 1.2), Vector3(-1.0, 0.8, -0.8), STONE_COLOR)
-	_part(root, Vector3(1.2, 0.12, 0.8), Vector3(-1.0, 1.45, -0.7), Color(0.08, 0.06, 0.05))
-	_part(root, Vector3(0.9, 3.6, 0.8), Vector3(-1.0, 2.0, -1.15), STONE_COLOR)
-	_part(root, Vector3(0.6, 0.5, 0.6), Vector3(-1.0, 4.0, -1.15), STONE_COLOR)
-	_part(root, Vector3(0.5, 0.5, 0.35), Vector3(-2.0, 0.45, -0.9), Color(0.3, 0.2, 0.13))
-	_part(root, Vector3(0.6, 0.6, 0.6), Vector3(0.6, 0.5, 0.2), LOG_COLOR)
-	_part(root, Vector3(0.7, 0.18, 0.28), Vector3(0.6, 0.9, 0.2), IRON_COLOR)
-	_part(root, Vector3(0.25, 0.1, 0.12), Vector3(1.0, 0.95, 0.2), IRON_COLOR)
-	_part(root, Vector3(1.1, 0.5, 0.55), Vector3(1.4, 0.45, -0.9), STONE_COLOR)
-	_part(root, Vector3(0.95, 0.05, 0.4), Vector3(1.4, 0.7, -0.9), Color(0.12, 0.2, 0.28))
-	_part(root, Vector3(1.6, 0.1, 0.7), Vector3(0.2, 0.85, 1.1), PLANK_COLOR)
-
-	for x in [-0.5, 0.9]:
-		_part(root, Vector3(0.1, 0.8, 0.1), Vector3(x, 0.45, 0.85), PLANK_COLOR)
-		_part(root, Vector3(0.1, 0.8, 0.1), Vector3(x, 0.45, 1.35), PLANK_COLOR)
-
-	return root
+	return BuildingLook.masonry_forge()
 
 
 # Is a placed station of this kind within its reach? Display only (the server decides): greys recipes that need one.

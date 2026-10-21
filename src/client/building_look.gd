@@ -570,3 +570,170 @@ static func fire(lit: bool, loaded: bool = false) -> Node3D:
 		root.add_child(light)
 
 	return root
+
+
+# --------------------------------------------------------------- the masonry forge (station tier 4)
+
+const IRON := Color(0.15, 0.15, 0.17)
+const IRON_WARM := Color(0.24, 0.20, 0.18)
+const LEATHER := Color(0.34, 0.21, 0.12)
+const SOOT := Color(0.07, 0.06, 0.055)
+const STONE_DARK := Color(0.26, 0.25, 0.24)
+const STONE_PALE := Color(0.42, 0.40, 0.37)
+const STONE_FORGE := Color(0.34, 0.33, 0.31)
+
+
+# A wall of laid stones, `size` across, in courses about `course` tall: each course is a ring of uneven stones round the outside
+# (random lengths, a hair of yaw and depth), with a dark core inside so no gap shows through. A little narrower each course
+# by `taper` per metre of height (a chimney), tone varied stone by stone.
+static func _stone_stack(st: SurfaceTool, base: Vector3, size: Vector3, course: float, rng: RandomNumberGenerator, taper: float = 0.0) -> void:
+	var courses: int = maxi(1, int(round(size.y / course)))
+	var ch: float = size.y / float(courses)
+
+	for c in range(courses):
+		var shrink: float = taper * ch * float(c)
+		var w: float = size.x - shrink * 2.0
+		var d: float = size.z - shrink * 2.0
+		var y: float = base.y + ch * (float(c) + 0.5)
+		var thick: float = rng.randf_range(0.2, 0.26)
+		_box(st, Vector3(base.x, y, base.z), Vector3(maxf(w - thick, 0.1), ch * 0.96, maxf(d - thick, 0.1)), STONE_DARK)
+
+		# The four sides, stones end to end with an offset on odd courses (running bond).
+		for side in range(4):
+			var along_x: bool = side < 2
+			var length: float = w if along_x else d
+			var sign: float = 1.0 if side % 2 == 0 else -1.0
+			var cursor: float = -length * 0.5 + (rng.randf_range(0.0, 0.12) if c % 2 == 0 else 0.0)
+
+			while cursor < length * 0.5 - 0.05:
+				var run: float = minf(rng.randf_range(0.28, 0.55), length * 0.5 - cursor)
+				var mid: float = cursor + run * 0.5
+				var out: float = (d if along_x else w) * 0.5 - thick * 0.5 + rng.randf_range(-0.012, 0.02)
+				var tall: float = ch * rng.randf_range(0.9, 1.0)
+				var center: Vector3 = Vector3(base.x + (mid if along_x else out * sign), y + rng.randf_range(-0.015, 0.015), base.z + (out * sign if along_x else mid))
+				var dims: Vector3 = Vector3(run * 0.97, tall, thick) if along_x else Vector3(thick, tall, run * 0.97)
+				var tone: Color = _tone(STONE_PALE if rng.randf() < 0.25 else STONE_FORGE, rng, 0.16)
+				_box(st, center, dims, tone, rng.randf_range(-0.03, 0.03))
+				cursor += run
+
+
+# An anvil: waist and foot in iron, a flat face on top and a tapering horn out the front (+X).
+static func _anvil(st: SurfaceTool, at: Vector3, rng: RandomNumberGenerator) -> void:
+	_box(st, at + Vector3(0.0, 0.03, 0.0), Vector3(0.34, 0.06, 0.2), IRON)
+	_box(st, at + Vector3(0.0, 0.11, 0.0), Vector3(0.18, 0.1, 0.13), IRON_WARM)
+	_box(st, at + Vector3(0.0, 0.2, 0.0), Vector3(0.42, 0.09, 0.17), _tone(IRON, rng, 0.05))
+	_tube(st, at + Vector3(0.2, 0.2, 0.0), at + Vector3(0.42, 0.2, 0.0), 0.075, 0.015, IRON, 5, rng)
+	_box(st, at + Vector3(-0.23, 0.2, 0.0), Vector3(0.06, 0.07, 0.15), IRON_WARM)
+
+
+static func _masonry_forge_mesh() -> ArrayMesh:
+	if _cache.has("masonry_forge"):
+		return _cache["masonry_forge"]
+
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 18
+	var st: SurfaceTool = SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+
+	# The floor: flat fieldstones laid in a loose grid, 4.2 by 3.0 m, a little proud of the ground.
+	for gx in range(7):
+		for gz in range(5):
+			var w: float = 4.2 / 7.0
+			var d: float = 3.0 / 5.0
+			var at: Vector3 = Vector3(-2.1 + w * (float(gx) + 0.5) + rng.randf_range(-0.03, 0.03), 0.07 + rng.randf_range(-0.012, 0.015), -1.5 + d * (float(gz) + 0.5) + rng.randf_range(-0.03, 0.03))
+			_box(st, at, Vector3(w * 0.93, 0.14, d * 0.93), _tone(STONE_DARK if (gx + gz) % 3 == 0 else STONE_FORGE, rng, 0.12), rng.randf_range(-0.05, 0.05))
+
+	# The hearth: a squat stone block, an ash bed sunk into its top, and the chimney breast rising behind it, stepping in
+	# as a corbelled hood and then a tall stack (a narrowing stone stack, soot above the fire).
+	_stone_stack(st, Vector3(-1.0, 0.14, -0.8), Vector3(1.8, 1.2, 1.2), 0.2, rng)
+	_box(st, Vector3(-1.0, 1.36, -0.7), Vector3(1.2, 0.04, 0.8), SOOT)
+	_stone_stack(st, Vector3(-1.0, 1.34, -1.15), Vector3(1.4, 0.4, 0.5), 0.2, rng)
+
+	for step in range(3):
+		var inset: float = 0.1 * float(step)
+		_box(st, Vector3(-1.0, 1.9 + 0.22 * float(step), -1.12 + inset * 0.6), Vector3(1.6 - inset * 2.0, 0.22, 0.7 - inset * 1.2), _tone(STONE_FORGE, rng, 0.1))
+
+	_box(st, Vector3(-1.0, 1.55, -0.75), Vector3(1.2, 0.1, 0.1), WOOD_DARK)
+	_box(st, Vector3(-1.0, 1.53, -1.08), Vector3(0.9, 0.5, 0.06), SOOT)
+	_stone_stack(st, Vector3(-1.0, 2.3, -1.12), Vector3(1.0, 2.0, 0.7), 0.22, rng, 0.08)
+	_box(st, Vector3(-1.0, 4.35, -1.12), Vector3(0.5, 0.1, 0.4), STONE_DARK)
+
+	# An iron hook and tongs hanging from the hood beam, and a poker leaned in the corner.
+	_tube(st, Vector3(-1.45, 1.52, -0.74), Vector3(-1.45, 1.05, -0.74), 0.012, 0.012, IRON, 4, rng)
+	_tube(st, Vector3(-1.45, 1.05, -0.74), Vector3(-1.4, 0.86, -0.7), 0.01, 0.01, IRON, 4, rng)
+	_tube(st, Vector3(-1.78, 0.82, -0.5), Vector3(-1.64, 1.42, -1.0), 0.014, 0.014, IRON, 4, rng)
+
+	# The anvil on a log stump, the stump banded in iron.
+	var stump: Vector3 = Vector3(0.6, 0.0, 0.2)
+	_tube(st, stump + Vector3(0.0, 0.14, 0.0), stump + Vector3(0.0, 0.62, 0.0), 0.3, 0.27, _tone(WOOD_DARK, rng, 0.08), 9, rng)
+	_tube(st, stump + Vector3(0.0, 0.2, 0.0), stump + Vector3(0.0, 0.26, 0.0), 0.31, 0.31, IRON, 9)
+	_tube(st, stump + Vector3(0.0, 0.52, 0.0), stump + Vector3(0.0, 0.57, 0.0), 0.28, 0.28, IRON, 9)
+	_anvil(st, stump + Vector3(0.0, 0.62, 0.0), rng)
+	_box(st, stump + Vector3(-0.28, 0.0, -0.3) + Vector3(0.0, 0.2, 0.0), Vector3(0.1, 0.4, 0.1), WOOD_DARK)
+
+	# Bellows: two wooden boards with a pleated leather bag between, an iron nozzle laid toward the fire, on a post stand.
+	var bellows: Vector3 = Vector3(-2.0, 0.0, -0.9)
+	_box(st, bellows + Vector3(0.0, 0.2, 0.0), Vector3(0.1, 0.4, 0.5), WOOD_DARK)
+	_box(st, bellows + Vector3(0.0, 0.62, 0.0), Vector3(0.62, 0.05, 0.34), WOOD, -0.08)
+	_box(st, bellows + Vector3(0.0, 0.5, 0.0), Vector3(0.5, 0.05, 0.3), WOOD, -0.08)
+
+	for pleat in range(3):
+		_box(st, bellows + Vector3(0.0, 0.53 + 0.03 * float(pleat), 0.0), Vector3(0.46 + 0.02 * float(pleat % 2), 0.035, 0.28), _tone(LEATHER, rng, 0.1), -0.08)
+
+	_tube(st, bellows + Vector3(0.3, 0.55, 0.0), bellows + Vector3(0.85, 0.62, 0.1), 0.03, 0.018, IRON, 5, rng)
+	_tube(st, bellows + Vector3(-0.3, 0.64, 0.0), bellows + Vector3(-0.55, 0.85, 0.0), 0.02, 0.02, WOOD_PALE, 5, rng)
+
+	# The quench trough: a hollowed log with dark water in it, on two stone feet.
+	var trough: Vector3 = Vector3(1.4, 0.0, -0.9)
+	_box(st, trough + Vector3(0.0, 0.12, 0.0), Vector3(1.15, 0.2, 0.5), STONE_DARK)
+	_box(st, trough + Vector3(0.0, 0.43, -0.22), Vector3(1.1, 0.4, 0.1), WOOD_DARK)
+	_box(st, trough + Vector3(0.0, 0.43, 0.22), Vector3(1.1, 0.4, 0.1), WOOD_DARK)
+	_box(st, trough + Vector3(-0.52, 0.43, 0.0), Vector3(0.1, 0.4, 0.34), WOOD_DARK)
+	_box(st, trough + Vector3(0.52, 0.43, 0.0), Vector3(0.1, 0.4, 0.34), WOOD_DARK)
+	_box(st, trough + Vector3(0.0, 0.52, 0.0), Vector3(1.0, 0.04, 0.34), Color(0.1, 0.17, 0.22))
+	_tube(st, trough + Vector3(-0.55, 0.62, -0.26), trough + Vector3(0.55, 0.62, -0.26), 0.02, 0.02, IRON, 4, rng)
+
+	# The work bench: a thick plank top on four posts and a rail, with a hammer and a pair of tongs laid on it.
+	_box(st, Vector3(0.2, 0.9, 1.1), Vector3(1.6, 0.1, 0.7), _tone(WOOD, rng, 0.06))
+	_box(st, Vector3(0.2, 0.78, 1.1), Vector3(1.5, 0.1, 0.1), WOOD_DARK)
+
+	for x in [-0.55, 0.95]:
+		for z in [0.85, 1.35]:
+			_tube(st, Vector3(x, 0.0, z), Vector3(x, 0.86, z), 0.055, 0.05, WOOD_DARK, 5, rng)
+
+	_box(st, Vector3(-0.1, 0.99, 1.05), Vector3(0.3, 0.035, 0.035), WOOD, 0.4)
+	_box(st, Vector3(0.0, 1.01, 0.98), Vector3(0.06, 0.07, 0.04), IRON, 0.4)
+	_tube(st, Vector3(0.5, 0.97, 1.2), Vector3(0.82, 0.97, 1.08), 0.012, 0.012, IRON, 4, rng)
+	_tube(st, Vector3(0.5, 0.97, 1.16), Vector3(0.82, 0.97, 1.04), 0.012, 0.012, IRON, 4, rng)
+
+	# Wood stacked beside the hearth: split logs in a heap, ends toward the viewer.
+	for n in range(7):
+		var col: int = n % 4
+		var row: int = n / 4
+		var logp: Vector3 = Vector3(-1.95 + 0.17 * float(col) + 0.08 * float(row), 0.22 + 0.17 * float(row), 0.35)
+		_tube(st, logp, logp + Vector3(0.02, 0.0, 0.5), 0.075, 0.07, _tone(WOOD, rng, 0.14), 6, rng)
+
+	return _finish_cached("masonry_forge", st, _solid_material())
+
+
+static func _forge_coals() -> ArrayMesh:
+	if _cache.has("forge_coals"):
+		return _cache["forge_coals"]
+
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 19
+	var st: SurfaceTool = SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+
+	for n in range(14):
+		var at: Vector3 = Vector3(-1.0 + rng.randf_range(-0.45, 0.45), 1.4, -0.7 + rng.randf_range(-0.28, 0.28))
+		_blob(st, at, Vector3(0.07, 0.04, 0.06), Color.WHITE, rng, 6, 2, 0.15)
+
+	return _finish_cached("forge_coals", st, _coal_material())
+
+
+static func masonry_forge() -> Node3D:
+	var root: Node3D = Node3D.new()
+	root.add_child(_instance(_masonry_forge_mesh()))
+	root.add_child(_instance(_forge_coals()))
+	return root
