@@ -1,4 +1,5 @@
 extends Node
+const BuildingLook := preload("res://src/client/building_look.gd")
 
 # The client side of items: the inventory panel (I), things lying on the ground (E picks up
 # the nearest within reach) and the player key. The server owns all of it; this only shows
@@ -1299,172 +1300,22 @@ func _forget(id: int) -> void:
 	_world.erase(id)
 
 
-# A lean-to shelter: a slanted roof of branches and leaves on two front poles, open at the front (+Z).
+# The look of what is built lives in building_look.gd (Art direction); these keep the call sites and the "Light" child.
 func _make_leanto() -> Node3D:
-	var root: Node3D = Node3D.new()
-	var wood: StandardMaterial3D = StandardMaterial3D.new()
-	wood.albedo_color = Color(0.36, 0.25, 0.14)
-	var leaf: StandardMaterial3D = StandardMaterial3D.new()
-	leaf.albedo_color = Color(0.22, 0.34, 0.14)
-
-	for x in [-1.0, 1.0]:
-		var pole: MeshInstance3D = MeshInstance3D.new()
-		var mesh: CylinderMesh = CylinderMesh.new()
-		mesh.top_radius = 0.06
-		mesh.bottom_radius = 0.07
-		mesh.height = 2.0
-		mesh.material = wood
-		pole.mesh = mesh
-		pole.position = Vector3(x, 1.0, 0.85)
-		root.add_child(pole)
-
-	var roof: MeshInstance3D = MeshInstance3D.new()
-	var roof_mesh: BoxMesh = BoxMesh.new()
-	roof_mesh.size = Vector3(2.5, 0.1, 2.3)
-	roof_mesh.material = leaf
-	roof.mesh = roof_mesh
-	roof.position = Vector3(0.0, 1.45, 0.0)
-	roof.rotation.x = atan2(1.3, 1.9)       # high at the front, low at the back
-	root.add_child(roof)
-	var back: MeshInstance3D = MeshInstance3D.new()
-	var back_mesh: BoxMesh = BoxMesh.new()
-	back_mesh.size = Vector3(2.3, 0.9, 0.08)
-	back_mesh.material = leaf
-	back.mesh = back_mesh
-	back.position = Vector3(0.0, 0.45, -0.9)
-	root.add_child(back)
-	return root
+	return BuildingLook.leanto()
 
 
-# A chopping block: a stump stood on end with a chopped top and an axe cut across it.
 func _make_block() -> Node3D:
-	var root: Node3D = Node3D.new()
-	var wood: StandardMaterial3D = StandardMaterial3D.new()
-	wood.albedo_color = Color(0.4, 0.28, 0.16)
-	var top: StandardMaterial3D = StandardMaterial3D.new()
-	top.albedo_color = Color(0.62, 0.48, 0.3)
-	var body: MeshInstance3D = MeshInstance3D.new()
-	var body_mesh: CylinderMesh = CylinderMesh.new()
-	body_mesh.top_radius = 0.3
-	body_mesh.bottom_radius = 0.34
-	body_mesh.height = 0.55
-	body_mesh.material = wood
-	body.mesh = body_mesh
-	body.position = Vector3(0.0, 0.275, 0.0)
-	root.add_child(body)
-	var face: MeshInstance3D = MeshInstance3D.new()
-	var face_mesh: CylinderMesh = CylinderMesh.new()
-	face_mesh.top_radius = 0.29
-	face_mesh.bottom_radius = 0.29
-	face_mesh.height = 0.02
-	face_mesh.material = top
-	face.mesh = face_mesh
-	face.position = Vector3(0.0, 0.56, 0.0)
-	root.add_child(face)
-	return root
+	return BuildingLook.block()
 
 
-# A woven chest: a wicker basket box of twine and sticks with a lid band.
 func _make_chest() -> Node3D:
-	var root: Node3D = Node3D.new()
-	var wood: StandardMaterial3D = StandardMaterial3D.new()
-	wood.albedo_color = Color(0.62, 0.5, 0.28)      # wicker: pale woven twigs
-	var band: StandardMaterial3D = StandardMaterial3D.new()
-	band.albedo_color = Color(0.4, 0.3, 0.16)
-	var body: MeshInstance3D = MeshInstance3D.new()
-	var body_mesh: BoxMesh = BoxMesh.new()
-	body_mesh.size = Vector3(0.9, 0.55, 0.55)
-	body_mesh.material = wood
-	body.mesh = body_mesh
-	body.position = Vector3(0.0, 0.275, 0.0)
-	root.add_child(body)
-	var lid: MeshInstance3D = MeshInstance3D.new()
-	var lid_mesh: BoxMesh = BoxMesh.new()
-	lid_mesh.size = Vector3(0.94, 0.08, 0.6)
-	lid_mesh.material = band
-	lid.mesh = lid_mesh
-	lid.position = Vector3(0.0, 0.58, 0.0)
-	root.add_child(lid)
-	return root
+	return BuildingLook.chest()
 
 
-# A campfire: a ring of stones, charred sticks and, while lit, a flame and a warm light.
 # Only the nearest MAX_FIRE_LIGHTS lit fires keep their light on (cost cap at every quality).
 func _make_fire(lit: bool, loaded: bool = false) -> Node3D:
-	var fire: Node3D = Node3D.new()
-	var stone_material: StandardMaterial3D = StandardMaterial3D.new()
-	stone_material.albedo_color = Color(0.42, 0.42, 0.44)
-
-	for n in range(7):
-		var stone: MeshInstance3D = MeshInstance3D.new()
-		var mesh: SphereMesh = SphereMesh.new()
-		mesh.radius = 0.13
-		mesh.height = 0.2
-		mesh.material = stone_material
-		stone.mesh = mesh
-		var angle: float = TAU * float(n) / 7.0
-		stone.position = Vector3(cos(angle) * 0.42, 0.08, sin(angle) * 0.42)
-		fire.add_child(stone)
-
-	var log_mesh: CylinderMesh = CylinderMesh.new()
-	log_mesh.top_radius = 0.05
-	log_mesh.bottom_radius = 0.05
-	log_mesh.height = 0.7
-	var char_material: StandardMaterial3D = StandardMaterial3D.new()
-	char_material.albedo_color = Color(0.12, 0.09, 0.07) if not lit else Color(0.25, 0.15, 0.08)
-	log_mesh.material = char_material
-
-	for n in range(3):
-		var stick: MeshInstance3D = MeshInstance3D.new()
-		stick.mesh = log_mesh
-		stick.rotation = Vector3(deg_to_rad(90.0), 0.0, deg_to_rad(60.0 * float(n)))
-		stick.position = Vector3(0.0, 0.1, 0.0)
-		fire.add_child(stick)
-
-	# A loaded, unlit fire: pale wood leaned together over the ring.
-	if loaded:
-		var wood_mesh: CylinderMesh = CylinderMesh.new()
-		wood_mesh.top_radius = 0.04
-		wood_mesh.bottom_radius = 0.05
-		wood_mesh.height = 0.6
-		var wood_material: StandardMaterial3D = StandardMaterial3D.new()
-		wood_material.albedo_color = Color(0.55, 0.4, 0.24)
-		wood_mesh.material = wood_material
-
-		for n in range(4):
-			var piece: MeshInstance3D = MeshInstance3D.new()
-			piece.mesh = wood_mesh
-			piece.rotation = Vector3(deg_to_rad(25.0), deg_to_rad(90.0 * float(n)), 0.0)
-			piece.position = Vector3(0.0, 0.3, 0.0)
-			fire.add_child(piece)
-
-	if lit:
-		var flame: MeshInstance3D = MeshInstance3D.new()
-		var cone: CylinderMesh = CylinderMesh.new()
-		cone.top_radius = 0.0
-		cone.bottom_radius = 0.2
-		cone.height = 0.7
-		var glow: StandardMaterial3D = StandardMaterial3D.new()
-		glow.albedo_color = Color(1.0, 0.55, 0.15)
-		glow.emission_enabled = true
-		glow.emission = Color(1.0, 0.5, 0.1)
-		glow.emission_energy_multiplier = 2.0
-		glow.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		cone.material = glow
-		flame.mesh = cone
-		flame.position = Vector3(0.0, 0.45, 0.0)
-		fire.add_child(flame)
-		var light: OmniLight3D = OmniLight3D.new()
-		light.name = "Light"
-		light.light_color = Color(1.0, 0.62, 0.3)
-		light.omni_range = 12.0
-		light.light_energy = 1.6
-		light.shadow_enabled = false
-		light.position = Vector3(0.0, 0.8, 0.0)
-		light.visible = false
-		fire.add_child(light)
-
-	return fire
+	return BuildingLook.fire(lit, loaded)
 
 
 # Loose items on the ground (Dave 2026-10-20: a stick must not look like a green box). One shared mesh per item
