@@ -445,3 +445,7 @@ Rate: `6 x rain^1.3` drops a second, times (1 - covered) x (1 - roofed); none un
 
 Call points on `placed_sounds.gd`: `use(kind, opened, at, strength)` for door, gate, hatch and chest lid; `lock(locked, at)`, `knock(at)`; and `watch_open(world, here)` (wired beside `watch_world`) which plays `use()` when a world row of a kind listed in `open_kinds` flips its `"open"` field near the player. New generated sounds in `interior/`: `gate_open/close`, `hatch_open/close`, `latch_click` (2 variants each, `make_interior.py`). `interior.object` now asks `has_room()` first. Chest open/close was already wired from Items' `chest_event`; doors, gates and hatches wait for Items to add the structures. The facts Items has to send are in /mnt/project-files/sound/STRUCTURE_EVENTS.md. Check: `sound_check.py --only placed`.
 
+## F3 sound meters (job 86)
+
+Esc > Settings > Debug details (F3) now shows a `sound meters` block under the sound lines (`sound_stage.meters_text()`): one line per bus (Master, Wind, Foley, Nature, Weather, Interface, Body, World), a 20-cell bar from -60 to 0 dB, the peak now, the highest peak of the last 3 s (hold), `CLIPPING` when a peak is over -0.5 dB, and the audio output latency and mix rate. Cost: it is built only when Debug details is shown (the `_debug_text` call), one bus peak read per bus per call; zero otherwise. Check: `sound_check.py --only meters`.
+

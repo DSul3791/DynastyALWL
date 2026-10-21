@@ -148,6 +148,14 @@ SCENARIOS = [
         ("the lake still hums at night in summer", r"lake 2h " + NUM, 0.2, 0.7),
         ("lake counts as full daylight at noon", r"lake day (true)", 0, 1, "text"),
     ]),
+    ("meters", ["--meters-test"], 3500, [
+        ("not built while Debug details is hidden", r"calls before " + NUM, 0, 0),
+        ("title, 8 buses, latency line", r"calls before 0, " + NUM + r" lines", 10, 10),
+        ("Master and World are listed", r"Master line (true), World line (true)", 0, 1, "text"),
+        ("output latency shown", r"latency line (true)", 0, 1, "text"),
+        ("built once per call", r"calls after " + NUM, 2, 2),
+        ("stable size", r"repeat same size (true)", 0, 1, "text"),
+    ]),
     ("splash", ["--splash-test"], 3500, [
         ("a drop for each of the 8 grounds", r"splash check: " + NUM + r" grounds played", 8, 8),
         ("an unknown ground plays nothing", r"unknown (false)", 0, 1, "text"),

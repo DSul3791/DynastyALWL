@@ -827,6 +827,40 @@ func _track_peaks() -> void:
 			bus_sums[bus_name] = [float(sums[0]) + peak, int(sums[1]) + 1]
 
 
+# F3 meters (job 86): one line per bus, a bar from -60 to 0 dB, the peak now and the highest in the last HOLD_SEC. Built only when
+# Debug details is shown (terrain_client._debug_text), so it costs nothing otherwise: one bus peak read per bus per call.
+const METER_BUSES := ["Master", "Wind", "Foley", "Nature", "Weather", "Interface", "Body", "World"]
+const METER_CELLS := 20
+const HOLD_SEC := 3.0
+var meters_calls: int = 0
+var _meter_hold: Dictionary = {}        # bus -> [peak dB, msec when set]
+
+
+func meters_text() -> String:
+	meters_calls += 1
+	var now: int = Time.get_ticks_msec()
+	var lines: Array = ["sound meters (peak dB, bar -60..0, hold %d s):" % int(HOLD_SEC)]
+
+	for bus_name in METER_BUSES:
+		var index: int = AudioServer.get_bus_index(bus_name)
+
+		if index < 0:
+			continue
+
+		var peak: float = maxf(AudioServer.get_bus_peak_volume_left_db(index, 0), AudioServer.get_bus_peak_volume_right_db(index, 0))
+		var held: Array = _meter_hold.get(bus_name, [-200.0, now])
+
+		if peak >= float(held[0]) or float(now - int(held[1])) > HOLD_SEC * 1000.0:
+			held = [peak, now]
+
+		_meter_hold[bus_name] = held
+		var filled: int = clampi(int(round((clampf(peak, -60.0, 0.0) + 60.0) / 60.0 * METER_CELLS)), 0, METER_CELLS)
+		lines.append("  %-9s [%s%s] %6.1f  hold %6.1f%s" % [bus_name, "#".repeat(filled), ".".repeat(METER_CELLS - filled), maxf(peak, -99.9), maxf(float(held[0]), -99.9), "  CLIPPING" if peak > -0.5 else ""])
+
+	lines.append("  audio output latency %.0f ms, mix rate %d Hz" % [AudioServer.get_output_latency() * 1000.0, int(AudioServer.get_mix_rate())])
+	return "\n".join(lines)
+
+
 func mix_table() -> String:
 	var parts: Array = []
 

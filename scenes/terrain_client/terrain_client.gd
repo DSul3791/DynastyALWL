@@ -208,6 +208,7 @@ var test_stepfx: bool = false          # --stepfx: wade, then dry steps: squelch
 var test_swing: bool = false           # --swing-test: tool whooshes (job 71)
 var test_insects: bool = false         # --insect-test: summer insect bed levels by season and hour (job 72)
 var _lake_calm_laps: int = 0
+var test_meters: bool = false          # --meters-test: F3 sound meters (job 86)
 var test_splash: bool = false          # --splash-test: single rain drops per ground (job 83)
 var test_reverb: bool = false          # --reverb-test: the one cave reverb on bus World, by tier and enclosure (job 81)
 var test_air: bool = false             # --air-test: distance and cover dulling by band bus (job 82)
@@ -426,6 +427,8 @@ func _ready() -> void:
 			test_night = true
 		elif argument == "--step-levels":
 			test_step_levels = true
+		elif argument == "--meters-test":
+			test_meters = true
 		elif argument == "--splash-test":
 			test_splash = true
 		elif argument == "--reverb-test":
@@ -2664,6 +2667,14 @@ func _process(delta: float) -> void:
 		sound.insects.update(0.1)
 		print("Terrain client: insect check: summer noon %s, summer 2h %s, winter noon %s, spring noon %s, sunrise edge %s, sunset edge %s, rain %s, playing %d, lake noon %s, lake 2h %s, lake day %s" % (levels + [sound.insects.voices_playing(), lake_noon, lake_night, str(lake_cricket)]))
 
+	if test_meters and now - connected_msec > 18000 and now >= _test_fire_at:
+		_test_fire_at = now + 10000000
+		var before_calls: int = sound.meters_calls
+		var meter_text: String = sound.meters_text()
+		var meter_lines: int = meter_text.split("\n").size()
+		var second: String = sound.meters_text()
+		print("Terrain client: meters check: calls before %d, %d lines, Master line %s, World line %s, latency line %s, calls after %d, repeat same size %s" % [before_calls, meter_lines, str(meter_text.contains("Master")), str(meter_text.contains("World")), str(meter_text.contains("latency")), sound.meters_calls, str(second.split("\n").size() == meter_lines)])
+
 	if test_splash and now - connected_msec > 18000 and now >= _test_fire_at:
 		_test_fire_at = now + 10000000
 		var sp = sound.splashes
@@ -3160,6 +3171,7 @@ func _debug_text(avg_ms: float, worst_ms: float) -> String:
 	text += "\nlast step: " + sound.last_step
 	text += "\nsound budget: " + sound.budget_text()
 	text += "\n" + sound.heard_text(body)
+	text += "\n" + sound.meters_text()
 	text += "\n" + sound.wind_text()
 	text += "\nexertion %.2f (%s): %d breaths, %d heartbeats, last %s" % [sound.breath.exertion, sound.breath.state, sound.breath.breaths_played, sound.breath.beats_played, sound.breath.last]
 	text += "\ntree sounds: %d falls, %d sprays, last %s" % [sound.trees.falls_played, sound.trees.chips_played, sound.trees.last]
