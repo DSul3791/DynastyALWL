@@ -449,3 +449,7 @@ Call points on `placed_sounds.gd`: `use(kind, opened, at, strength)` for door, g
 
 Esc > Settings > Debug details (F3) now shows a `sound meters` block under the sound lines (`sound_stage.meters_text()`): one line per bus (Master, Wind, Foley, Nature, Weather, Interface, Body, World), a 20-cell bar from -60 to 0 dB, the peak now, the highest peak of the last 3 s (hold), `CLIPPING` when a peak is over -0.5 dB, and the audio output latency and mix rate. Cost: it is built only when Debug details is shown (the `_debug_text` call), one bus peak read per bus per call; zero otherwise. Check: `sound_check.py --only meters`.
 
+## Voice cap audit at High and Ultra (job 87)
+
+New scenarios `audit_low_town`, `audit_high`, `audit_ultra` run the worst scene (night storm, cave 0.6, fires, creatures) with a busy town (`--town-sounds`: 10 fire, hammering and crowd sources and a bell every 12 s). Peaks: Low 26 of 24 (19 steady; the cap is enforced every 0.25 s, so up to 2 over for an instant), High 31 of 96, Ultra 33 of 96. The checker reads the cap from `--quality=N` (24, 48, 96, 96). Table in /mnt/project-files/sound/VOICE_AUDIT.md.
+

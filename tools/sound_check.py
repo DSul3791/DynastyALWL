@@ -246,6 +246,16 @@ SCENARIOS = [
     ("audit_worst", ["--hour=21", "--season=autumn", "--weather=storm", "--distant", "--nature-fast", "--cave=0.6", "--fire-world", "--creatures", "--walk"], 9000, [
         ("under the Low voice cap", r"sounds \d+/24 playing \(peak " + NUM, 1, 24),
     ]),
+    ("audit_low_town", ["--hour=21", "--season=autumn", "--weather=storm", "--distant", "--nature-fast", "--cave=0.6", "--fire-world", "--creatures", "--town-sounds", "--walk"], 9000, [
+        ("worst scene plus a busy town, within the Low cap plus the 0.25 s scan slack", r"sounds \d+/24 playing \(peak " + NUM, 1, 26),
+    ]),
+    ("audit_high", ["--quality=2", "--hour=21", "--season=autumn", "--weather=storm", "--distant", "--nature-fast", "--cave=0.6", "--fire-world", "--creatures", "--town-sounds", "--walk"], 9000, [
+        ("under the High cap of 96", r"sounds \d+/96 playing \(peak " + NUM, 1, 96),
+        ("High uses its room (more than Low's 24)", r"sounds \d+/96 playing \(peak " + NUM, 20, 96),
+    ]),
+    ("audit_ultra", ["--quality=3", "--hour=21", "--season=autumn", "--weather=storm", "--distant", "--nature-fast", "--cave=0.6", "--fire-world", "--creatures", "--town-sounds", "--walk"], 9000, [
+        ("under the Ultra cap of 96", r"sounds \d+/96 playing \(peak " + NUM, 1, 96),
+    ]),
     ("felling", ["--chop"], 7000, [
         ("trees fell", r"tree sounds: " + NUM + r" falls", 1, 10),
     ]),
@@ -284,6 +294,17 @@ SCENARIOS = [
         ("a loop plays", r"tree wind: .* playing (\w+) ", 0, 0, "text"),
     ]),
 ]
+
+
+TIER_CAPS = [24, 48, 96, 96]            # Low, Medium, High, Ultra (sound_presets.gd)
+
+
+def tier_cap(flags):
+    for flag in flags:
+        if flag.startswith("--quality="):
+            return TIER_CAPS[min(int(flag.split("=")[1]), 3)]
+
+    return LOW_VOICE_CAP
 
 
 def numbers_in(text):
@@ -327,8 +348,8 @@ def run_scenario(name, flags, frames, checks, index, godot, verbose):
 
     if peak is None:
         problems.append("no sound budget line (the run did not reach its final report)")
-    elif float(peak.group(1)) > LOW_VOICE_CAP + VOICE_SCAN_SLACK:
-        problems.append("voice peak %s over the Low cap %d" % (peak.group(1), LOW_VOICE_CAP))
+    elif float(peak.group(1)) > tier_cap(flags) + VOICE_SCAN_SLACK:
+        problems.append("voice peak %s over the cap %d" % (peak.group(1), tier_cap(flags)))
 
     refused = re.search(NUM + r" loads refused", out)
 

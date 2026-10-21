@@ -209,6 +209,8 @@ var test_stepfx: bool = false          # --stepfx: wade, then dry steps: squelch
 var test_swing: bool = false           # --swing-test: tool whooshes (job 71)
 var test_insects: bool = false         # --insect-test: summer insect bed levels by season and hour (job 72)
 var _lake_calm_laps: int = 0
+var test_town: bool = false            # --town-sounds: a busy town around the player for the voice audit (job 87)
+var _test_town_bell: int = 0
 var test_meters: bool = false          # --meters-test: F3 sound meters (job 86)
 var test_splash: bool = false          # --splash-test: single rain drops per ground (job 83)
 var test_reverb: bool = false          # --reverb-test: the one cave reverb on bus World, by tier and enclosure (job 81)
@@ -428,6 +430,8 @@ func _ready() -> void:
 			test_night = true
 		elif argument == "--step-levels":
 			test_step_levels = true
+		elif argument == "--town-sounds":
+			test_town = true
 		elif argument == "--meters-test":
 			test_meters = true
 		elif argument == "--splash-test":
@@ -2667,6 +2671,19 @@ func _process(delta: float) -> void:
 		sound.insects.level = 0.9
 		sound.insects.update(0.1)
 		print("Terrain client: insect check: summer noon %s, summer 2h %s, winter noon %s, spring noon %s, sunrise edge %s, sunset edge %s, rain %s, playing %d, lake noon %s, lake 2h %s, lake day %s" % (levels + [sound.insects.voices_playing(), lake_noon, lake_night, str(lake_cricket)]))
+
+	if test_town and now - connected_msec > 18000 and now >= _test_town_bell:
+		_test_town_bell = now + 12000
+		var around: Vector3 = body.global_position
+		var rows: Array = []
+
+		for k in 10:
+			var angle: float = TAU * float(k) / 10.0
+			var kind: String = ["fire", "hammering", "crowd"][k % 3]
+			rows.append({"id": 100 + k, "kind": kind, "at": around + Vector3(cos(angle), 0.0, sin(angle)) * (8.0 + 4.0 * float(k)), "strength": 1.0})
+
+		sound.town.set_sources(rows)
+		sound.town.ring_bell(around + Vector3(0.0, 20.0, -60.0), 3)
 
 	if test_meters and now - connected_msec > 18000 and now >= _test_fire_at:
 		_test_fire_at = now + 10000000
