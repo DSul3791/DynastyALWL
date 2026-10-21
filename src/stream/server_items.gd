@@ -2847,6 +2847,23 @@ func _sleep_quality(peer: int) -> float:
 	return float(q.get("open_dry", 0.6))
 
 
+# Who is where and under which key: for the NPC runner and the admin check.
+func peer_positions() -> Array:
+	return _peer_pos.values()
+
+
+func peer_ids() -> Array:
+	return _peer_pos.keys()
+
+
+func position_of(peer: int) -> Variant:
+	return _peer_pos.get(peer, null)
+
+
+func key_of(peer: int) -> String:
+	return str(_peer_key.get(peer, ""))
+
+
 func stance_of(peer: int) -> int:
 	return int(_stance.get(peer, 0))
 

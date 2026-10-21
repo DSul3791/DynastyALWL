@@ -3304,7 +3304,13 @@ func run_chest_test(client) -> void:
 			id = k
 
 	net.inventory_action.rpc_id(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)
-	await get_tree().create_timer(1.0).timeout
+
+	for wait in 60:   # the cloud is slow: give the chest up to 6 s to open
+		if chest_inv != null:
+			break
+
+		await get_tree().create_timer(0.1).timeout
+
 	var stone: int = table.number_of("stone")
 	net.inventory_action.rpc_id(1, Net.ACT_CHEST_PUT, inventory.numbers.find(stone), id, 7, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout

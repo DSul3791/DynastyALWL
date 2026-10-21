@@ -35,3 +35,6 @@ godot_path.txt
 # (they differ between Windows and the Linux cloud build), so they are not tracked.
 assets/audio/**/*.import
 __pycache__/
+
+# Real admin keys never go in the repository (data/admin.example.json shows the shape)
+data/admin.json

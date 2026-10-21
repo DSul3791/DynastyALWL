@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 44
+const PROTOCOL_VERSION := 45
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -55,6 +55,9 @@ signal energy_received(percent: int)
 signal sick_received(hours: int)
 signal remains_received(rows: Array)
 signal worn_received(numbers: PackedInt32Array)
+signal npc_roster_received(rows: Array)
+signal npcs_received(rows: Array)
+signal admin_place_requested(peer_id: int, kind: String, pos: Vector3, arg: String)
 signal thought_received(line_id: String, text: String, kind: String)
 signal skills_received(attributes: PackedInt32Array, rows: Array)
 signal warmth_received(percent: int)
@@ -284,6 +287,26 @@ func skills(attributes: PackedInt32Array, rows: Array) -> void:
 @rpc("authority", "call_remote", "reliable")
 func worn(numbers: PackedInt32Array) -> void:
 	worn_received.emit(numbers)
+
+
+# Classic NPCs (protocol 45, data/npcs): the roster [[id, name, role, outfit], ...] at hello, then the NPCs within 120 m as
+# [[id, position, heading radians, state], ...] (state 0 stand, 1 walk, 2 sit, 3 sleep) about four times a second when something changed.
+@rpc("authority", "call_remote", "reliable")
+func npc_roster(rows: Array) -> void:
+	npc_roster_received.emit(rows)
+
+
+@rpc("authority", "call_remote", "unreliable")
+func npcs(rows: Array) -> void:
+	npcs_received.emit(rows)
+
+
+# Admin placement (protocol 45): kind "marker" with arg "bed", "chair" or "post" adds a world marker at pos; kind "npc" with an
+# NPC id as arg moves that NPC's home to pos. The server refuses anyone whose player key is not in data/admin.json.
+@rpc("any_peer", "call_remote", "reliable")
+func admin_place(kind: String, pos: Vector3, arg: String) -> void:
+	if multiplayer.is_server():
+		admin_place_requested.emit(multiplayer.get_remote_sender_id(), kind, pos, arg)
 
 
 # The owner's death markers (protocol 39): [[position Vector3, seconds until the remains are cleaned up], ...] for their remains

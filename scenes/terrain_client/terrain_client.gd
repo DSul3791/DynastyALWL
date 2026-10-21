@@ -39,6 +39,7 @@ const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")
 const CompassScript := preload("res://src/client/admin_compass.gd")
 const InventoryViewScript := preload("res://src/client/inventory_view.gd")
+const NpcViewScript := preload("res://src/client/npc_view.gd")
 const HeldItemScript := preload("res://src/client/held_item.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
 const WeatherScript := preload("res://src/shared/weather.gd")
@@ -61,7 +62,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 454
+const BUILD := 455
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
@@ -809,6 +810,11 @@ func _welcome_body(info: Dictionary) -> void:
 	layer.add_child(hud)
 	compass = CompassScript.new()
 	layer.add_child(compass)
+	var npc_view: Node3D = NpcViewScript.new()
+	npc_view.name = "Npcs"
+	add_child(npc_view)
+	net.npc_roster_received.connect(npc_view.on_roster)
+	net.npcs_received.connect(npc_view.on_rows)
 	items = InventoryViewScript.new()
 	items.name = "Items"
 	add_child(items)

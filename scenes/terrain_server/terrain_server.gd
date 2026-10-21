@@ -22,6 +22,8 @@ extends Node
 const GameClockScript := preload("res://src/shared/game_clock.gd")
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
 const SwimScript := preload("res://src/shared/swim.gd")
+const NpcsScript := preload("res://src/stream/server_npcs.gd")
+const AdminScript := preload("res://src/stream/server_admin.gd")
 const StoreScript := preload("res://src/stream/server_block_store.gd")
 const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings.gd")
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
@@ -53,6 +55,10 @@ var generator
 var store
 var flora
 var items                              # ServerItems: inventories and world items
+var npcs                               # ServerNpcs: classic NPCs (protocol 45)
+var admin                              # ServerAdmin: who may place markers and NPCs
+var _npc_sent: Dictionary = {}         # peer -> signature of the NPC rows last sent
+var _npc_send_t: float = 0.0
 var _water_updates: int = 0
 var weather: Dictionary = {}           # the weather at the water tile now (WeatherScript.state), refreshed every second
 var _weather_next_msec: int = 0
@@ -243,6 +249,16 @@ func _ready() -> void:
 	items.trees_near = _trees_near
 	items.dig_support = func(base, radius, depth): return TreeSupport.solid_share(store.ops.edits_near(base, radius + depth), base, radius, depth)
 	items.setup(ItemTableScript.load_default(), store_dir)
+	admin = AdminScript.new()
+	admin.load_keys(["res://data/admin.json", store_dir + "/admin.json"])
+	npcs = NpcsScript.new()
+	npcs.hour_now = func(): return game_clock.hour()
+	npcs.ground_height = func(x, z): return generator.surface_height(x, z)
+	npcs.blocked = func(x, z):
+		var water: Array = _water_at(Vector3(x, 0.0, z))
+		return not is_nan(water[0]) and float(water[0]) - float(water[1]) > 0.7
+	npcs.player_positions = func(): return items.peer_positions()
+	npcs.setup(store_dir)
 	spawn = _spawn_point(world_dir)
 	items.respawn_point = spawn
 	_world_dir = world_dir
@@ -281,7 +297,10 @@ func _ready() -> void:
 	net.position_reported.connect(_on_position_reported)
 	net.water_rate_requested.connect(_on_water_rate_requested)
 	net.water_requested.connect(_on_water_requested)
-	net.hello_requested.connect(func(peer, key): items.peer_connected_hello(peer, key))
+	net.hello_requested.connect(func(peer, key):
+		items.peer_connected_hello(peer, key)
+		net.npc_roster.rpc_id(peer, npcs.roster()))
+	net.admin_place_requested.connect(_on_admin_place)
 	net.inventory_action_requested.connect(func(peer, kind, a, b, count, at): items.action(peer, kind, a, b, count, at))
 	_report_at_msec = Time.get_ticks_msec() + 10000
 
@@ -433,6 +452,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 		peer_id, int(info.get("blocks", 0)), float(info.get("bytes", 0)) / 1048576.0, float(info.get("flora_bytes", 0)) / 1048576.0
 	])
 	_peers.erase(peer_id)
+	_npc_sent.erase(peer_id)
 	items.peer_left(peer_id)
 
 	if _link != null:
@@ -777,6 +797,41 @@ func _fill_ground(center: Vector3, radius: float, material: int) -> bool:
 	return not tiles.is_empty()
 
 
+# NPC rows to each player, about four times a second and only when something near them changed.
+func _send_npcs(delta: float) -> void:
+	_npc_send_t += delta
+
+	if _npc_send_t < 0.25:
+		return
+
+	_npc_send_t = 0.0
+
+	for peer in items.peer_ids():
+		var at: Variant = items.position_of(peer)
+
+		if at == null:
+			continue
+
+		var rows: Array = npcs.rows_near(at)
+		var signature: String = str(rows)
+
+		if _npc_sent.get(peer, "") != signature:
+			_npc_sent[peer] = signature
+			net.npcs.rpc_id(peer, rows)
+
+
+# Admin placement: only player keys listed in data/admin.json. Nobody is an admin when that file is absent.
+func _on_admin_place(peer: int, kind: String, pos: Vector3, arg: String) -> void:
+	if not admin.is_admin(items.key_of(peer)):
+		print("Admin RPC refused for peer %d" % peer)
+		return
+
+	if kind == "marker" and ["bed", "chair", "post"].has(arg):
+		print("Admin %d placed marker %s" % [peer, npcs.add_marker(arg, pos.x, pos.z)])
+	elif kind == "npc":
+		npcs.place_npc(arg, pos.x, pos.z)
+
+
 func _process(delta: float) -> void:
 	if store == null:
 		return
@@ -789,6 +844,8 @@ func _process(delta: float) -> void:
 	_poll_water()
 	_update_weather()
 	items.tick(delta)
+	npcs.tick(delta)
+	_send_npcs(delta)
 
 	# Send what the workers made, batched per peer.
 	_done_mutex.lock()

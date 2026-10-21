@@ -1,0 +1,53 @@
+{
+	"note": "World markers NPCs walk to (step A placeholders near the spawn; the admin tool moves them). kind: bed, chair, post. slots: how many NPCs may use it at once (two NPCs never share a chair). yaw in degrees is the way the NPC faces there.",
+	"markers": [
+		{
+			"id": "bed_1",
+			"kind": "bed",
+			"x": 53326.0,
+			"z": 68480.0,
+			"slots": 1,
+			"yaw": 90
+		},
+		{
+			"id": "bed_2",
+			"kind": "bed",
+			"x": 53330.0,
+			"z": 68476.0,
+			"slots": 1,
+			"yaw": 90
+		},
+		{
+			"id": "chair_1",
+			"kind": "chair",
+			"x": 53322.0,
+			"z": 68484.0,
+			"slots": 1,
+			"yaw": 180
+		},
+		{
+			"id": "chair_2",
+			"kind": "chair",
+			"x": 53328.0,
+			"z": 68486.0,
+			"slots": 1,
+			"yaw": 180
+		},
+		{
+			"id": "post_1",
+			"kind": "post",
+			"x": 53334.0,
+			"z": 68482.0,
+			"slots": 1,
+			"yaw": 270
+		},
+		{
+			"id": "post_2",
+			"kind": "post",
+			"x": 53336.0,
+			"z": 68488.0,
+			"slots": 1,
+			"yaw": 270
+		}
+	]
+}
