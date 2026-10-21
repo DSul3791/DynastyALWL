@@ -1,8 +1,3 @@
-## coffer-access | Banking: who can open a family coffer?
-- Only the owner
-- Any family member
-- Family members, but the head of the Dynasty can limit withdrawals
-
 ## coffer-heir | Banking: when a character dies, what happens to their coffers?
 - They pass to the heir
 - They pass to the Dynasty head
