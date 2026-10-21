@@ -36,7 +36,7 @@ The single complete list of every input (keyboard, mouse, held versus tap, conte
 | E at a chopping block | Splits one log into 4 firewood (needs an axe on the hotbar and wears it); hold E to keep splitting every 0.6 s. Shift+E takes the block down. E at a fire burns firewood first, then sticks, then logs |
 | E at a fire | Burning: tap E adds fuel (firewood, then sticks, then logs), hold E (0.6 s) roasts one raw forage item. Burnt-out or rained-out: Press E to add firewood, then Press E to light (uses one plant fibre as tinder; open fires will not light in rain). A placed campfire (10 stones and 20 sticks) starts lit with 20 sticks of fuel: a stick burns 2 game minutes, firewood 30, a log 2 game hours (1 game minute = 2.5 real seconds) |
 | E at a lean-to | Hold E (0.6 s) takes it down |
-| E | Pick up the nearest item on the ground within 3 m; with nothing there, harvest the nearest pickable plant or shrub within 2.5 m (the prompt "Press E to harvest" shows when it will work, or why not, e.g. needs spade). Hold E: keeps picking every pickable plant within 2 m, about 5 a second, until nothing is left or you let go. Roots and bulbs need a spade, bark, gum and sap a stone knife, wood an axe; a picked plant bears again after 3 game days |
+| E | Gather: the prompt only says "Press E to gather" (it never names the item) and shows only when something pickable lies in the general direction you look (a wide cone, about 70 degrees each side; anything within 0.8 m always counts). Tap E takes the nearest loose item in view within 3 m, or with none, the nearest pickable plant or shrub in view within 2.5 m. Hold E (after 0.35 s): takes one thing at a time, about 5 a second, from anything within 2 m around you whether or not you look at it, until nothing is left in reach or the pack is full (let go of E to try again). A missing tool or a full pack or too far gives the refusal cue and a short message, not a different prompt. Roots and bulbs need a spade, bark, gum and sap a stone knife, wood an axe; a picked plant bears again after 3 game days |
 | Right click (tap) with food or medicine held | Eat it / apply it (hunger and health bars at the bottom left). The inventory panel's "Eat / use" button does the same for the selected slot |
 | ] | Admin test tool: give 10 each of stone, stick, plant fibre and log |
 
@@ -51,7 +51,7 @@ Gait rules:
 Other scenes: the terrain preview scene (admin look-around, scenes/terrain_preview) uses W A S D, Space, Ctrl, Shift and G like the client; it has no gameplay inputs.
 
 Input rules (Dave):
-- E is the standard interaction key. The centre-screen prompt ("Press E to ...") shows when it will work or why not, and vanishes on pick, with no message after picking. Tap E acts once, hold E (0.6 s) repeats or does the heavier action (sweep harvest, take a structure down).
+- E is the standard interaction key. The centre-screen prompt ("Press E to ...") shows when it will work or why not, and vanishes on pick, with no message after picking. Tap E acts once, hold E (0.6 s) does the heavier action (take a structure down); holding E near loose items and plants keeps gathering one at a time.
 - Shift+E is the safe take-down variant at the chopping block (plain E uses it).
 - Left click uses the held item; right click is the secondary (aim a throw, eat/apply).
 - Effect symbols (brain, ghosted house, more later) sit side by side in one row at the top, recentred.

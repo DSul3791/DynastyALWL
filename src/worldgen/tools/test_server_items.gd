@@ -930,5 +930,31 @@ func _init() -> void:
 	fl.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(2.0, 10.0, 0.0))
 	check(rejects == [0, 1], "mining without an axe is refused as no tool (%s)" % str(rejects))
 
+	# Picking up at the weight cap: refused as pack full, nothing taken from the ground, nothing doubled.
+	var pk = make(qd + "_cap")
+	var cap_rejects: Array = []
+	pk.send_reject = func(_p, reason): cap_rejects.append(reason)
+	pk.send_vitals = func(_p, _h, _he, _w): pass
+	pk.peer_connected_hello(1, "capkey000001")
+	pk.report_position(1, Vector3(0.0, 10.0, 0.0))
+	var rock: int = pk.table.number_of("stone")
+	pk.give(1, rock, 500)
+	var packed: int = pk.inventory_of(1).count_of(rock)
+	var on_floor: int = 0
+
+	for floor_id in pk._items:
+		if int(pk._items[floor_id]["number"]) == rock:
+			on_floor += int(pk._items[floor_id]["count"])
+
+	var one_id: int = pk._items.keys()[0]
+	pk.action(1, Net.ACT_PICKUP, one_id, 0, 0, Vector3.ZERO)
+	var after_floor: int = 0
+
+	for floor_id in pk._items:
+		if int(pk._items[floor_id]["number"]) == rock:
+			after_floor += int(pk._items[floor_id]["count"])
+
+	check(packed + on_floor == 500 and pk.inventory_of(1).count_of(rock) == packed and after_floor == on_floor and cap_rejects == [2], "a pickup at the weight cap takes nothing, doubles nothing and is refused as pack full (%d packed, %d on the ground, %s)" % [packed, on_floor, str(cap_rejects)])
+
 	print("server item tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

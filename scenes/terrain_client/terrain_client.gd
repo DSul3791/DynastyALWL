@@ -757,6 +757,7 @@ func _welcome_body(info: Dictionary) -> void:
 	items.eat_event = func(item_id): sound.itemfx.eat(item_id)
 	items.fuel_event = func(): sound.itemfx.fuel_pressed()
 	items.reject_event = func(reason): sound.itemfx.reject(reason)
+	items.view_direction = func(): return -camera.global_transform.basis.z
 	sound.landing.hurt.connect(items.report_fall)
 	items.strain_event = func(strain, _state, _fade):
 		var shown: Array = items.faint_state()

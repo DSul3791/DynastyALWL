@@ -103,7 +103,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.vitals_received.connect(_on_vitals)
 	net.strain_received.connect(_on_strain)
 	net.craft_queue_received.connect(_on_craft_queue)
-	net.reject_received.connect(func(reason): reject_event.call(["far", "no_tool", "full_pack", "other"][clampi(reason, 0, 3)]) if reject_event.is_valid() else null)
+	net.reject_received.connect(_on_reject)
 	var exertion_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/exertion.json"))
 	_exertion_cfg = exertion_parsed if typeof(exertion_parsed) == TYPE_DICTIONARY else {}
 	_vitals_cfg = VitalsRules.load_config()
@@ -213,15 +213,75 @@ func _register_builtin_interactables() -> void:
 	register_interactable("structure", 30, _probe_structure)
 
 
+# Dave 2026-10-21: the prompt is only "Press E to gather", and only for what lies in the general direction you look.
+var view_direction: Callable = Callable()   # () -> where the camera looks; unset (tests) counts everything as in view
+const VIEW_COS := 0.35                       # about 70 degrees either side of the view direction
+const VIEW_ALWAYS_M := 0.8                   # and anything this close, whatever way you face
+var _sweep_blocked: bool = false
+var _sweep_asked: Dictionary = {}            # world id -> msec a held-E pick was asked for
+
+
+func in_view(point: Vector3) -> bool:
+	if not view_direction.is_valid():
+		return true
+
+	var to: Vector3 = point - _player_position.call()
+
+	if to.length() <= VIEW_ALWAYS_M:
+		return true
+
+	var forward: Vector3 = view_direction.call()
+	return forward.length() < 0.01 or to.normalized().dot(forward.normalized()) >= VIEW_COS
+
+
 func _probe_pickup() -> Dictionary:
-	var near: Array = _nearest()
+	var near: Array = _nearest(true)
 
 	if near[0] == 0:
 		return {}
 
-	return {"prompt": "Press E to pick up %s x%d" % [table.name_of(near[1]), near[2]], "tap": func():
+	var id: int = near[0]
+	return {"prompt": "Press E to gather", "tap": func():
 		clear_prompt()
-		pick_up_nearest()}
+		net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)}
+
+
+# Held E (harvest.gd steps this): the nearest loose item within 2 m, wherever you look, one at a time. 0 when none, when
+# the pack was refused as full (until E is let go), or for an item already asked for in the last 0.6 s.
+func sweep_target(radius: float) -> Array:
+	if _sweep_blocked:
+		return [0, 99.0]
+
+	var here: Vector3 = _player_position.call()
+	var now: int = Time.get_ticks_msec()
+	var best: Array = [0, radius + 1.0]
+
+	for id in _world:
+		if _world[id]["state"] != 0 or now - int(_sweep_asked.get(id, -100000)) < 600:
+			continue
+
+		var d: float = here.distance_to(_world[id]["pos"])
+
+		if d <= radius and d < float(best[1]):
+			best = [id, d]
+
+	return best
+
+
+func sweep_pick(id: int) -> void:
+	_sweep_asked[id] = Time.get_ticks_msec()
+	net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
+
+
+func sweep_reset() -> void:
+	_sweep_blocked = false
+	_sweep_asked.clear()
+
+
+# The refusal cue (a missing tool and the like), the same one the server's reject event plays.
+func refuse_cue(reason: String) -> void:
+	if reject_event.is_valid():
+		reject_event.call(reason)
 
 
 func _probe_fire() -> Dictionary:
@@ -427,13 +487,13 @@ func fuel_nearest() -> void:
 
 
 # [id, number, count] of the closest item within reach, or [0, 0, 0].
-func _nearest() -> Array:
+func _nearest(view_only: bool = false) -> Array:
 	var here: Vector3 = _player_position.call()
 	var best: Array = [0, 0, 0]
 	var best_d: float = PICKUP_M
 
 	for id in _world:
-		if _world[id]["state"] != 0:
+		if _world[id]["state"] != 0 or (view_only and not in_view(_world[id]["pos"])):
 			continue
 
 		var d: float = here.distance_to(_world[id]["pos"])
@@ -1231,8 +1291,17 @@ const PICKUP_FILES := {
 	"stick": ["stick_forest_01_twig", "stick_forest_02_snap", "stick_forest_03_crooked"],
 	"driftwood": ["driftwood_01_bleached", "driftwood_02_forked", "driftwood_03_long"],
 }
-const STONE_VIEW_M := 45.0
-const STICK_VIEW_M := 70.0
+const STONE_VIEW_M := 75.0
+const STICK_VIEW_M := 100.0
+# Dave 2026-10-21: big enough to stand out in the tall thick grass (about 0.9 m, nearly full cover). Stones come out about
+# 33 to 50 cm across and sticks about 0.8 to 1.5 m long; sticks rest on top of the grass (a lift), stones sit in the soil
+# but proud of the blades. A little extra brightness and a faint warm glow keep them readable in shade.
+const STONE_SCALE := Vector2(2.4, 3.4)
+const STICK_SCALE := Vector2(2.0, 2.7)
+const STONE_LIFT_M := 0.05
+const STICK_LIFT_M := 0.22
+const PICKUP_BRIGHT := 1.3
+const PICKUP_GLOW := Color(0.13, 0.11, 0.08)
 var _pickup_meshes: Dictionary = {}   # group -> Array of Mesh (empty when the files are not there)
 
 
@@ -1248,7 +1317,19 @@ func _pickup_group(group: String) -> Array:
 				var found: Array = instance.find_children("*", "MeshInstance3D", true, false)
 
 				if not found.is_empty():
-					meshes.append((found[0] as MeshInstance3D).mesh)
+					var mesh: Mesh = (found[0] as MeshInstance3D).mesh
+
+					for surface in mesh.get_surface_count():
+						var base: Material = mesh.surface_get_material(surface)
+
+						if base is StandardMaterial3D:
+							var lit: StandardMaterial3D = base.duplicate()
+							lit.albedo_color = Color(PICKUP_BRIGHT, PICKUP_BRIGHT, PICKUP_BRIGHT)
+							lit.emission_enabled = true
+							lit.emission = PICKUP_GLOW
+							mesh.surface_set_material(surface, lit)
+
+					meshes.append(mesh)
 
 				instance.free()
 
@@ -1281,17 +1362,17 @@ func _dress_natural(node: MeshInstance3D, id: String, rng: RandomNumberGenerator
 	node.position.y -= 0.12   # undo the placeholder lift: the real meshes rest on y = 0
 
 	if id == "stone":
-		var size: float = rng.randf_range(0.8, 1.45)
+		var size: float = rng.randf_range(STONE_SCALE.x, STONE_SCALE.y)
 		node.scale = Vector3(size * rng.randf_range(0.9, 1.15), size * rng.randf_range(0.75, 1.0), size * rng.randf_range(0.9, 1.15))
 		node.rotation = Vector3(rng.randf_range(-0.3, 0.3), rng.randf_range(0.0, TAU), rng.randf_range(-0.3, 0.3))
-		node.position.y -= height * node.scale.y * rng.randf_range(0.05, 0.4)
+		node.position.y += STONE_LIFT_M - height * node.scale.y * rng.randf_range(0.05, 0.4)
 		node.visibility_range_end = STONE_VIEW_M
 		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	else:
-		var size: float = rng.randf_range(0.75, 1.3)
+		var size: float = rng.randf_range(STICK_SCALE.x, STICK_SCALE.y)
 		node.scale = Vector3(size, size, size)
 		node.rotation = Vector3(rng.randf_range(-0.1, 0.1), rng.randf_range(0.0, TAU), rng.randf_range(-0.08, 0.08))
-		node.position.y -= rng.randf_range(0.0, 0.02)
+		node.position.y += STICK_LIFT_M - rng.randf_range(0.0, 0.03)
 		node.visibility_range_end = STICK_VIEW_M
 		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
@@ -1594,6 +1675,11 @@ func _start_craft(number: int, count: int = 1) -> void:
 			return
 
 	net.inventory_action.rpc_id(1, Net.ACT_CRAFT_QUEUE, number, 0, count, Vector3.ZERO)
+
+
+func _on_reject(reason: int) -> void:
+	_sweep_blocked = _sweep_blocked or reason == 2   # a full pack ends a held-E sweep until E is let go
+	refuse_cue(["far", "no_tool", "full_pack", "other"][clampi(reason, 0, 3)])
 
 
 # A hard landing (sound.landing.hurt): tell the server how far it was; the server decides the damage.
@@ -1962,6 +2048,8 @@ func run_test() -> void:
 # Headless check (--gather): stand next to the nearest shrub or plant that drops something and gather it.
 func run_gather_test(client) -> void:
 	await get_tree().create_timer(6.0).timeout
+	var real_view: Callable = view_direction
+	view_direction = Callable()   # the prompt checks below stand wherever the test camera happens to look
 	var best: Array = []
 	var here: Vector3 = _player_position.call()
 
@@ -1998,6 +2086,45 @@ func run_gather_test(client) -> void:
 	await get_tree().create_timer(1.5).timeout
 	print("Gather test: sweep, sticks %d -> %d (a picked-bare shrub is skipped); prompt \"%s\"" % [after_tap, inventory.count_of(sticks), plant_hint])
 
+	# Held E (Dave 2026-10-21): one item a step from anything within 2 m, in view or not; the prompt only for what you look toward.
+	client.body.global_position = here + Vector3(0.0, 1.0, 0.0)
+	client.body.velocity = Vector3.ZERO
+	await get_tree().create_timer(1.0).timeout
+	var spot: Vector3 = _player_position.call()
+	var stone_n: int = table.number_of("stone")
+	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, stone_n, 0, 4, Vector3.ZERO)
+	await get_tree().create_timer(0.6).timeout
+
+	for offset in [Vector3(1.4, 0.0, 0.0), Vector3(-1.4, 0.0, 0.0), Vector3(0.0, 0.0, 1.4), Vector3(0.0, 0.0, -1.4)]:
+		net.inventory_action.rpc_id(1, Net.ACT_DROP, inventory.numbers.find(stone_n), 0, 1, spot + offset)
+		await get_tree().create_timer(0.4).timeout
+
+	view_direction = func(): return Vector3(1.0, 0.0, 0.0)
+	var east_in: bool = in_view(spot + Vector3(1.4, 0.0, 0.0))
+	var west_in: bool = in_view(spot + Vector3(-1.4, 0.0, 0.0))
+	print("Hold test: looking east, stone to the east in view %s, stone to the west in view %s, prompt \"%s\"" % [str(east_in), str(west_in), str(_probe_pickup().get("prompt", ""))])
+	view_direction = Callable()
+	var held_before: int = inventory.count_of(stone_n)
+	var deltas: Array = []
+	for step in range(24):   # plants within 2 m that are nearer go first, so allow for them
+		client.harvest.update(0.4, true)   # one held-E step (the real per-frame update lets go between the test's calls)
+		await get_tree().create_timer(0.3).timeout
+		var now_count: int = inventory.count_of(stone_n)
+		deltas.append(now_count - held_before)
+		held_before = now_count
+
+	client.harvest.update(0.0, false)
+	print("Hold test: stones gained per held-E step %s" % str(deltas))
+	var most: int = 0
+	var total: int = 0
+
+	for gained in deltas:
+		most = maxi(most, gained)
+		total += gained
+
+	print("Hold test: most in one step %d, total %d, last two steps %d" % [most, total, deltas[deltas.size() - 1] + deltas[deltas.size() - 2]])
+	view_direction = real_view
+
 	for look in ["stick", "stone", "log", "plant_fibre", "roast_forage"]:
 		var shape: Mesh = _mesh_for(table.number_of(look))
 		print("Item look: %s is a %s, %.2f x %.2f x %.2f m" % [look, shape.get_class(), shape.get_aabb().size.x, shape.get_aabb().size.y, shape.get_aabb().size.z])
@@ -2017,6 +2144,29 @@ func run_gather_test(client) -> void:
 			sizes.append("%.2f m" % real.get_aabb().size.x)
 
 		print("Natural look: %s uses %d real meshes (%s)" % [look, seen.size(), ", ".join(sizes)])
+
+		var smallest: float = 99.0
+		var largest: float = 0.0
+		var lowest: float = 99.0
+		var highest: float = -99.0
+
+		for world_id in range(1, 40):
+			var dressed: MeshInstance3D = MeshInstance3D.new()
+			dressed.mesh = _natural_mesh(table.number_of(look), world_id)
+
+			if dressed.mesh == null:
+				continue
+
+			_dress_item(dressed, table.number_of(look), world_id, true)
+			var box: AABB = dressed.mesh.get_aabb()
+			var longest: float = maxf(box.size.x, maxf(box.size.z, box.size.y)) * maxf(dressed.scale.x, maxf(dressed.scale.y, dressed.scale.z))
+			smallest = minf(smallest, longest)
+			largest = maxf(largest, longest)
+			lowest = minf(lowest, dressed.position.y + 0.12)
+			highest = maxf(highest, dressed.position.y + 0.12)
+			dressed.free()
+
+		print("Natural size: %s lies %.2f to %.2f m long, centre %.2f to %.2f m above its spot" % [look, smallest, largest, lowest, highest])
 
 
 # Headless check (--quickkeys): D drops, S splits and E eats the stack under the mouse.

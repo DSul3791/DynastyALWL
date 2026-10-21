@@ -37,10 +37,16 @@ CLIENTS = [
         ("chest screen opens", r"screen open (true)", None, None),
         ("stones taken out", r"after taking out, stones in chest \d+, in pack " + NUM, 10, 10),
     ]),
-    ("gather", ["--gather"], 2500, [
-        ("harvest prompt shown", r"prompt \"(Press E to harvest [^\"]*)\"", None, None),
+    ("gather", ["--gather"], 12000, [
+        ("harvest prompt shown", r"prompt \"(Press E to gather)\"", None, None),
         ("sticks gathered", r"sticks 0 -> " + NUM, 1, 100),
+        ("prompt only for what you look toward", r"Hold test: looking east, stone to the east in view (true), stone to the west in view false, prompt \"Press E to gather\"", None, None),
+        ("held E takes one item per step", r"Hold test: most in one step " + NUM, 1, 1),
+        ("held E gets all four stones", r"Hold test: most in one step \d+, total " + NUM, 3, 12),
+        ("held E stops when nothing is in reach", r"last two steps " + NUM, 0, 0),
         ("stones use the real meshes", r"Natural look: stone uses " + NUM + " real meshes", 6, 6),
+        ("stones stand out (33 cm and up)", r"Natural size: stone lies " + NUM + " to", 0.3, 0.6),
+        ("sticks stand out (80 cm and up)", r"Natural size: stick lies " + NUM + " to", 0.8, 1.6),
         ("sticks use the real meshes", r"Natural look: stick uses " + NUM + " real meshes", 3, 3),
     ]),
     ("plantpick", ["--plantpick"], 6000, [

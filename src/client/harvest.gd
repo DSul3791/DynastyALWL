@@ -55,6 +55,7 @@ func update(delta: float, e_down: bool) -> void:
 	if not e_down:
 		_held_s = 0.0
 		_sweep_left = 0.0
+		_items.sweep_reset()
 		return
 
 	_held_s += delta
@@ -70,17 +71,26 @@ func update(delta: float, e_down: bool) -> void:
 		if _items.hold_use():
 			return
 
-		var found: Array = _candidates(SWEEP_RADIUS_M)
+		# One thing a step, the nearest of a loose item and a plant within 2 m, wherever you are looking.
+		var found: Array = _candidates(SWEEP_RADIUS_M, false)
+		var plant: Dictionary = {}
 
 		for c in found:
 			if c["ok"]:
-				_pick(c)
+				plant = c
 				break
+
+		var loose: Array = _items.sweep_target(SWEEP_RADIUS_M)
+
+		if int(loose[0]) != 0 and (plant.is_empty() or float(loose[1]) <= float(plant["d"])):
+			_items.sweep_pick(int(loose[0]))
+		elif not plant.is_empty():
+			_pick(plant)
 
 
 # E tapped with nothing on the ground in reach: pick the nearest pickable plant, or say why not.
 func tap() -> void:
-	var found: Array = _candidates(TAP_REACH_M)
+	var found: Array = _candidates(TAP_REACH_M, true)
 
 	for c in found:
 		if c["ok"]:
@@ -90,6 +100,7 @@ func tap() -> void:
 	for c in found:
 		if not _is_nothing(c):
 			_items.show_notice("%s: %s" % [c["name"], c["reason"]])
+			_items.refuse_cue("no_tool")
 			return
 
 
@@ -107,24 +118,21 @@ func _is_nothing(c: Dictionary) -> bool:
 
 
 func _hint() -> String:
-	var found: Array = _candidates(TAP_REACH_M)
+	var found: Array = _candidates(TAP_REACH_M, true)
 
 	if found.is_empty():
 		return ""
 
+	# Dave 2026-10-21: only "Press E to gather", no name and no "hold E". A missing tool is told after the press (message and cue).
 	for c in found:
-		if c["ok"]:
-			return "Press E to harvest %s    (hold E: pick everything within 2 m)" % c["name"]
-
-	for c in found:
-		if not _is_nothing(c):
-			return "%s: %s" % [c["name"], c["reason"]]
+		if c["ok"] or not _is_nothing(c):
+			return "Press E to gather"
 
 	return ""
 
 
 # Plants and shrubs within `radius` of the player, nearest first, each with what picking it would do.
-func _candidates(radius: float) -> Array:
+func _candidates(radius: float, view_only: bool = false) -> Array:
 	var here: Vector3 = _client.body.global_position
 	var out: Array = []
 	var chunks: Dictionary = {}
@@ -149,6 +157,9 @@ func _candidates(radius: float) -> Array:
 			var d: float = Vector2(p.x - here.x, p.z - here.z).length()
 
 			if d > radius:
+				continue
+
+			if view_only and not _items.in_view(p):
 				continue
 
 			var id: int = held["ids"][n]
