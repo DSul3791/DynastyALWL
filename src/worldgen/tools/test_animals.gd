@@ -42,7 +42,11 @@ func _init() -> void:
 
 	# Spawning: the player's share appears out of sight, never near.
 	run(a, 30.0)
-	var count: int = a.animals.size()
+	var count: int = 0
+
+	for id in a.animals:
+		count += 1 if a.animals[id]["sp"] == "rabbit" else 0
+
 	check(count == int(a.species_def("rabbit")["target_per_player"]), "the player's share of rabbits appears (%d)" % count)
 	var nearest: float = INF
 
@@ -51,7 +55,12 @@ func _init() -> void:
 
 	check(nearest >= 135.0, "they appear out of sight, at least 135 m away (%.0f)" % nearest)
 	run(a, 30.0)
-	check(a.animals.size() == count, "the share is kept, not exceeded")
+	var count2: int = 0
+
+	for id in a.animals:
+		count2 += 1 if a.animals[id]["sp"] == "rabbit" else 0
+
+	check(count2 == count, "the share is kept, not exceeded")
 
 	# Grazing rabbits hop a little around their spot.
 	var one: int = a.spawn("rabbit", 30.0, 0.0)
@@ -78,6 +87,42 @@ func _init() -> void:
 	check(after > before + 15.0, "and it runs away (%.1f m -> %.1f m)" % [before, after])
 	run(a, 10.0)
 	check(a.animals[one]["state"] != AnimalsScript.FLEE, "once safe it settles again")
+
+	# Deer: a herd of 3 to 6; the one that spots a player bolts first, the rest follow within about a second.
+	var deer_zoo = make([Vector3(0.0, 10.0, 0.0)])
+	deer_zoo.cfg["species"]["rabbit"]["target_per_player"] = 0
+	run(deer_zoo, 30.0)
+	var deer: Array = []
+
+	for id in deer_zoo.animals:
+		if deer_zoo.animals[id]["sp"] == "deer":
+			deer.append(id)
+
+	check(deer.size() >= 3 and deer.size() <= 6, "one herd of 3 to 6 deer appears (%d)" % deer.size())
+	var herd_id: int = int(deer_zoo.animals[deer[0]]["herd"])
+	var together: bool = true
+
+	for id in deer:
+		together = together and int(deer_zoo.animals[id]["herd"]) == herd_id and deer_zoo.animals[id]["pos"].distance_to(deer_zoo.animals[deer[0]]["pos"]) < 20.0
+
+	check(together, "they stand together")
+	var lead: Vector3 = deer_zoo.animals[deer[0]]["pos"]
+	var watcher: Array = deer_zoo.player_positions.call()
+	watcher[0] = Vector3(lead.x - 15.0, 10.0, lead.z)
+	run(deer_zoo, 0.5)
+	var fleeing: int = 0
+
+	for id in deer:
+		fleeing += 1 if deer_zoo.animals.has(id) and deer_zoo.animals[id]["state"] == AnimalsScript.FLEE else 0
+
+	check(fleeing >= 1, "a player within 30 m sets the sentinel running (%d)" % fleeing)
+	run(deer_zoo, 3.0)
+	fleeing = 0
+
+	for id in deer:
+		fleeing += 1 if deer_zoo.animals.has(id) and deer_zoo.animals[id]["state"] == AnimalsScript.FLEE else 0
+
+	check(fleeing == deer.size(), "and the whole herd follows (%d of %d)" % [fleeing, deer.size()])
 
 	# Rows: nearest first, capped, only within 120 m.
 	for n in 40:

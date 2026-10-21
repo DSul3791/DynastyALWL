@@ -24,6 +24,9 @@ var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _next_id: int = 1
 var _spawn_acc: float = 0.0
 var _tick_no: int = 0
+var _top_idx: int = 0
+var _next_herd: int = 1
+var _herds: Dictionary = {}       # herd id -> Array of animal ids (3 to 6 deer)
 
 
 func setup() -> void:
@@ -52,7 +55,7 @@ func spawn(sp: String, x: float, z: float) -> int:
 	_next_id += 1
 	var pos: Vector3 = Vector3(x, y, z)
 	animals[id] = {"id": id, "sp": sp, "num": int(def.get("number", 0)), "pos": pos, "heading": rng.randf() * TAU, "state": GRAZE,   # luck-exempt: which way a new animal faces
-		"target": pos, "timer": _graze_time(def), "acc": 0.0, "home": pos, "hp": float(def.get("health", 5.0))}
+		"target": pos, "timer": _graze_time(def), "acc": 0.0, "home": pos, "hp": float(def.get("health", 5.0)), "herd": 0, "alarm": -1.0}
 	return id
 
 
@@ -157,20 +160,34 @@ func tick(delta: float) -> void:
 
 	_spawn_acc += delta
 
-	if _spawn_acc >= float(cfg.get("spawn_every_s", 2.0)):
+	# One player's share is looked at per pass, so with 20 players each is still topped up every spawn_every_s but never in one tick.
+	if not players.is_empty() and _spawn_acc >= float(cfg.get("spawn_every_s", 2.0)) / float(players.size()):
 		_spawn_acc = 0.0
-		_top_up(players)
+		_top_idx = (_top_idx + 1) % players.size()
+		_top_up(players, _top_idx)
 
 
 func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3) -> void:
 	ticks_run += 1
 	var def: Dictionary = species_def(a["sp"])
 
+	if a["alarm"] >= 0.0:
+		a["alarm"] -= dt
+
+		if a["alarm"] < 0.0 and a["state"] != FLEE:
+			a["alarm"] = -1.0
+			_bolt(a, near_p, def)
+
 	if near_d <= float(def.get("spook_m", 14.0)) and a["state"] != FLEE:
-		var away: Vector2 = Vector2(a["pos"].x - near_p.x, a["pos"].z - near_p.z).normalized()
-		var run: float = float(def.get("flee_run_m", 25.0))
-		a["state"] = FLEE
-		a["target"] = a["pos"] + Vector3(away.x, 0.0, away.y) * run
+		_bolt(a, near_p, def)
+
+		# The sentinel (the first to notice) alarms the herd: each mate follows after a short random moment.
+		if a["herd"] != 0:
+			var span: Array = def.get("alarm_s", [0.2, 0.9])
+
+			for mate_id in _herds.get(a["herd"], []):
+				if mate_id != a["id"] and animals.has(mate_id) and animals[mate_id]["state"] != FLEE and animals[mate_id]["alarm"] < 0.0:
+					animals[mate_id]["alarm"] = rng.randf_range(float(span[0]), float(span[1]))   # luck-exempt: how fast a herd mate reacts
 
 	if a["state"] == GRAZE:
 		a["timer"] -= dt
@@ -209,11 +226,23 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3) -> void:
 
 
 # Keep each player's share topped up: new animals out of sight (spawn_min_m..spawn_max_m away), never near any player.
-func _top_up(players: Array) -> void:
+func _top_up(players: Array, only: int) -> void:
+	for hid in _herds.keys():
+		var alive: Array = []
+
+		for mate_id in _herds[hid]:
+			if animals.has(mate_id):
+				alive.append(mate_id)
+
+		if alive.is_empty():
+			_herds.erase(hid)
+		else:
+			_herds[hid] = alive
+
 	var per_player: int = int(cfg.get("per_player_cap", 30))
 	var never: float = float(cfg.get("never_within_m", 60.0))
 
-	for p in players:
+	for p in [players[only]]:
 		for sp in cfg.get("species", {}):
 			var def: Dictionary = species_def(sp)
 			var have: int = 0
@@ -239,7 +268,23 @@ func _top_up(players: Array) -> void:
 			if too_near or (blocked.is_valid() and bool(blocked.call(x, z))):
 				continue
 
-			spawn(sp, x, z)
+			var herd: Array = def.get("herd", [])
+
+			if herd.is_empty():
+				spawn(sp, x, z)
+				continue
+
+			var members: int = clampi(rng.randi_range(int(herd[0]), int(herd[1])), 1, maxi(per_player - all_near, 1))   # luck-exempt: how many deer in a herd
+			var hid: int = _next_herd
+			_next_herd += 1
+			_herds[hid] = []
+
+			for k in members:
+				var id: int = spawn(sp, x + rng.randf_range(-6.0, 6.0), z + rng.randf_range(-6.0, 6.0))   # luck-exempt: herd spread
+
+				if id != 0:
+					animals[id]["herd"] = hid
+					_herds[hid].append(id)
 
 
 # Rows [id, species number, position, heading radians, state] within send_radius_m of a point, nearest first, at most per_player_cap.
@@ -261,3 +306,13 @@ func rows_near(point: Vector3) -> Array:
 		rows.append(f[1])
 
 	return rows
+
+
+func _bolt(a: Dictionary, from: Vector3, def: Dictionary) -> void:
+	var away: Vector2 = Vector2(a["pos"].x - from.x, a["pos"].z - from.z).normalized()
+
+	if away == Vector2.ZERO:
+		away = Vector2.from_angle(a["heading"])
+
+	a["state"] = FLEE
+	a["target"] = a["pos"] + Vector3(away.x, 0.0, away.y) * float(def.get("flee_run_m", 25.0))
