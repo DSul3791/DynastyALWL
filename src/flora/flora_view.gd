@@ -23,6 +23,7 @@ const TreeImpostor := preload("res://src/flora/tree_impostor.gd")
 const WaterFallsScript := preload("res://src/worldgen/runtime/water_falls.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
+const IceScript := preload("res://src/shared/ice.gd")
 const KIND_TREE := 0
 const KIND_SHRUB := 1
 const KIND_PLANT := 2
@@ -803,6 +804,53 @@ func _ease_water() -> void:
 		return
 
 
+# The ice cover on still water (src/shared/ice.gd; the same number everywhere). From
+# Ice.WALK_COVER up, each chunk's pond and lake water gets a flat collider at the water level, so a
+# person walks on it and can never fall through (owner, 2026-10-21). Redrawn when it crosses that line.
+var ice_cover: float = 0.0
+var _ice_bears: bool = false
+
+
+func set_ice_cover(value: float) -> void:
+	ice_cover = value
+	var bears: bool = IceScript.bears(value)
+
+	if bears == _ice_bears:
+		return
+
+	_ice_bears = bears
+
+	for chunk in _chunks:
+		var entry: Dictionary = _chunks[chunk]
+		_draw_ice(chunk, entry, entry.get("grid", {}))
+
+
+func _draw_ice(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void:
+	var old: StaticBody3D = entry.get("ice")
+
+	if old != null:
+		old.queue_free()
+		entry["ice"] = null
+
+	if not _ice_bears or int(water.get("wet", 0)) == 0:
+		return
+
+	var triangles: PackedVector3Array = WaterGridScript.ice_triangles(water)
+
+	if triangles.is_empty():
+		return
+
+	var shape: ConcavePolygonShape3D = ConcavePolygonShape3D.new()
+	shape.set_faces(triangles)
+	var collision: CollisionShape3D = CollisionShape3D.new()
+	collision.shape = shape
+	var body: StaticBody3D = StaticBody3D.new()
+	body.add_child(collision)
+	body.position = Vector3(float(chunk.x) * chunk_m, 0.0, float(chunk.y) * chunk_m)
+	add_child(body)
+	entry["ice"] = body
+
+
 func _draw_water(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void:
 	var old: MeshInstance3D = entry.get("water")
 
@@ -827,6 +875,7 @@ func _draw_water(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void:
 			water_chunks += 1
 			water_cells += mesh.surface_get_array_index_len(0) / 6
 
+	_draw_ice(chunk, entry, water)
 	_draw_falls(chunk, entry, water)
 
 
@@ -914,6 +963,7 @@ func set_chunk(chunk: Vector2i, items: Dictionary, position: Vector3, water: Dic
 			water_chunks += 1
 			water_cells += mesh.surface_get_array_index_len(0) / 6
 
+	_draw_ice(chunk, entry, water)
 	_draw_falls(chunk, entry, water)
 	_refresh(chunk, position)
 
@@ -1029,6 +1079,11 @@ func drop_chunk(chunk: Vector2i) -> void:
 	if falls != null:
 		falls_drawn -= falls.mesh.get_surface_count()
 		falls.queue_free()
+
+	var ice: StaticBody3D = entry.get("ice")
+
+	if ice != null:
+		ice.queue_free()
 
 	_chunks.erase(chunk)
 

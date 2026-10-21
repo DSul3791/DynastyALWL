@@ -826,6 +826,102 @@ static func _slope_along(levels: PackedFloat32Array, i: int, j: int, di: int, dj
 	return 0.0
 
 
+const ICE_CALM_M_S := 0.15       # a pond cell: slower than this
+const ICE_FLAT_M := 0.05         # ...on a surface this flat across the cell
+const ICE_CORE := 2              # a pond's body: every point within this many cells all wet and calm (40 m wide)
+const ICE_REACH := 2             # the sheet reaches this far from the body, so it runs out to the shore
+
+
+# The ice sheet of a still water body as triangles (chunk coordinates, counter-clockwise from
+# above) at the water level: the quads whose four points are wet, flat and slow and that lie within
+# ICE_REACH of the body of a pond or lake. Rivers are narrower than ICE_CORE * 2 + 1 cells and
+# never freeze. Walkable ice for the client (a collider only; the sheet is drawn by the water).
+static func ice_triangles(grid: Dictionary) -> PackedVector3Array:
+	var triangles: PackedVector3Array = PackedVector3Array()
+	var count: int = int(grid.get("count", 0))
+
+	if count < 2 or int(grid.get("wet", 0)) == 0:
+		return triangles
+
+	var levels: PackedFloat32Array = grid["levels"]
+	var vel: PackedFloat32Array = grid.get("vel", PackedFloat32Array())
+	var spacing: float = float(grid["spacing"])
+	var calm: PackedByteArray = PackedByteArray()
+	calm.resize(count * count)
+
+	for n in range(count * count):
+		if is_nan(levels[n]):
+			continue
+
+		var still: bool = vel.size() < (n + 1) * 2 or Vector2(vel[n * 2], vel[n * 2 + 1]).length() <= ICE_CALM_M_S
+		calm[n] = 1 if still else 0
+
+	var core: PackedByteArray = PackedByteArray()
+	core.resize(count * count)
+
+	for j in range(count):
+		for i in range(count):
+			var all: bool = calm[j * count + i] == 1
+
+			for dj in range(-ICE_CORE, ICE_CORE + 1):
+				if not all:
+					break
+
+				for di in range(-ICE_CORE, ICE_CORE + 1):
+					var ii: int = i + di
+					var jj: int = j + dj
+
+					if ii < 0 or jj < 0 or ii >= count or jj >= count:
+						continue
+
+					if calm[jj * count + ii] == 0:
+						all = false
+						break
+
+			core[j * count + i] = 1 if all else 0
+
+	for j in range(count - 1):
+		for i in range(count - 1):
+			var a: int = j * count + i
+			var b: int = a + 1
+			var c: int = a + count
+			var d: int = c + 1
+
+			if calm[a] == 0 or calm[b] == 0 or calm[c] == 0 or calm[d] == 0:
+				continue
+
+			var top: float = maxf(maxf(levels[a], levels[b]), maxf(levels[c], levels[d]))
+			var bottom: float = minf(minf(levels[a], levels[b]), minf(levels[c], levels[d]))
+
+			if top - bottom > ICE_FLAT_M:
+				continue
+
+			var near: bool = false
+
+			for dj in range(-ICE_REACH, ICE_REACH + 2):
+				for di in range(-ICE_REACH, ICE_REACH + 2):
+					var ii: int = i + di
+					var jj: int = j + dj
+
+					if ii >= 0 and jj >= 0 and ii < count and jj < count and core[jj * count + ii] == 1:
+						near = true
+
+			if not near:
+				continue
+
+			var level: float = (top + bottom) * 0.5
+			var x0: float = float(i) * spacing
+			var z0: float = float(j) * spacing
+			triangles.append(Vector3(x0, level, z0))
+			triangles.append(Vector3(x0, level, z0 + spacing))
+			triangles.append(Vector3(x0 + spacing, level, z0))
+			triangles.append(Vector3(x0 + spacing, level, z0))
+			triangles.append(Vector3(x0, level, z0 + spacing))
+			triangles.append(Vector3(x0 + spacing, level, z0 + spacing))
+
+	return triangles
+
+
 static func build_mesh(grid: Dictionary, material: Material) -> ArrayMesh:
 	var count: int = int(grid["count"])
 	var spacing: float = float(grid["spacing"])

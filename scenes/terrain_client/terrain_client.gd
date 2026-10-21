@@ -42,6 +42,8 @@ const InventoryViewScript := preload("res://src/client/inventory_view.gd")
 const HeldItemScript := preload("res://src/client/held_item.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
 const WeatherScript := preload("res://src/shared/weather.gd")
+const IceScript := preload("res://src/shared/ice.gd")
+const ICE_POND_DEPTH_M := 3.0           # a typical pond's depth for its freezing speed
 const CoverScript := preload("res://src/shared/cover.gd")
 const StanceScript := preload("res://src/client/stance.gd")
 const StatusIconsScript := preload("res://src/client/status_icons.gd")
@@ -56,7 +58,7 @@ const FaintEffectScript := preload("res://src/client/faint_effect.gd")
 const FallMistScript := preload("res://src/client/fall_mist.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 371
+const BUILD := 375
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
@@ -1044,6 +1046,16 @@ func _update_weather() -> void:
 	var group: String = WeatherScript.zone_group(world.get("zones", []), int(world.get("equator_row", 0)), row)
 	under_cover = CoverScript.at(_anchor, flora.cover) if flora != null else 0.0
 	weather = WeatherScript.state(int(world.get("master_seed", 0)), game_clock.seconds, group, _anchor.y, 0.0)
+
+	# Ice on ponds and lakes: a pure function of the clock, zone and altitude (src/shared/ice.gd), so
+	# every client and the server agree with no traffic. Recomputed once a game minute.
+	var ice_now: float = IceScript.cover(game_clock.seconds, group, maxf(_anchor.y, 0.0), ICE_POND_DEPTH_M)
+
+	if flora != null:
+		flora.set_ice_cover(ice_now)
+
+	if sound != null and sound.weather != null:
+		sound.weather.ice_cover = ice_now
 
 	if _sound_weather_at < 0 and sound != null and sound.weather != null:
 		sound.weather.apply_state(weather)

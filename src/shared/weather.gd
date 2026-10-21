@@ -61,11 +61,18 @@ static func river_push(state: Dictionary) -> float:
 	return clampf(maxf(float(state.get("rain", 0.0)) * RIVER_RAIN_SHARE, float(state.get("storm", 0.0))), 0.0, 1.0)
 
 
+# Air temperature (C) from the season (no day/night swing, no weather): zone mean and seasonal swing,
+# cooler with altitude. The same number Weather.state reports as temp_c.
+static func temp_at(game_s: float, zone_group: String, altitude_m: float = 0.0) -> float:
+	var zone: Dictionary = ZONES.get(zone_group, ZONES["temperate"])
+	return float(zone["temp"]) + float(zone["swing"]) * cos(TAU * (year_phase(game_s) - 0.375)) - maxf(altitude_m, 0.0) * 0.0065
+
+
 # {"rain", "snow", "storm", "cloud", "sun", "wind" (all 0..1), "temp_c", "season"}.
 static func state(seed_value: int, game_s: float, zone_group: String, altitude_m: float = 0.0, spirit: float = 0.0) -> Dictionary:
 	var zone: Dictionary = ZONES.get(zone_group, ZONES["temperate"])
 	var phase: float = year_phase(game_s)
-	var temp: float = float(zone["temp"]) + float(zone["swing"]) * cos(TAU * (phase - 0.375)) - maxf(altitude_m, 0.0) * 0.0065
+	var temp: float = temp_at(game_s, zone_group, altitude_m)
 	# Wetter in autumn and winter, a little drier in high summer.
 	var wet: float = float(zone["wet"]) * (1.0 + 0.2 * cos(TAU * (phase - 0.75)))
 	var front: float = _noise(seed_value, 1, game_s / (FRONT_HOURS * 3600.0))

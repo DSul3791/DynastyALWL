@@ -313,11 +313,7 @@ func _ground(delta: float) -> void:
 	else:
 		ground_snow = move_toward(ground_snow, 0.0, delta / (SNOW_MELT_SEC if temp_c > MELT_C else SNOW_STAY_SEC))
 
-	if temp_c <= ICE_C:
-		ice_cover = move_toward(ice_cover, 1.0, delta / ICE_RISE_SEC)
-	elif temp_c > MELT_C:
-		ice_cover = move_toward(ice_cover, 0.0, delta / ICE_MELT_SEC)
-
+	# ice_cover is set by the client from Ice.cover (src/shared/ice.gd), the same number the walkable ice uses.
 	var falling: float = 0.2 if kind == "snow" or kind == "blizzard" else 0.0
 	snow_hush = move_toward(snow_hush, minf(0.8 * ground_snow + falling, 1.0), delta / HUSH_EASE_SEC)
 
