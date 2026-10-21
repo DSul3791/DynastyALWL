@@ -411,6 +411,49 @@ static func _flatten_lakes(generator, data, origin: Vector2, count: int, spacing
 					levels[m] = median
 					ring.append(m)
 
+		# Holes inside the lake (a cell the sim calls dry for a moment that sits below the lake level with water on most
+		# sides) are filled: they flickered between dirt and water. Two passes close one- and two-cell holes.
+		for pass_number in range(2):
+			var fill: PackedInt32Array = PackedInt32Array()
+
+			for n in ring:
+				for dj in range(-1, 2):
+					for di in range(-1, 2):
+						var ii: int = n % count + di
+						var jj: int = n / count + dj
+
+						if ii < 0 or jj < 0 or ii >= count or jj >= count:
+							continue
+
+						var m: int = jj * count + ii
+
+						if not is_nan(levels[m]) or fill.has(m):
+							continue
+
+						var around: int = 0
+
+						for ej in range(-1, 2):
+							for ei in range(-1, 2):
+								var oi: int = ii + ei
+								var oj: int = jj + ej
+
+								if (ei != 0 or ej != 0) and oi >= 0 and oj >= 0 and oi < count and oj < count and not is_nan(levels[oj * count + oi]) and absf(levels[oj * count + oi] - median) < 0.01:
+									around += 1
+
+						if around < 5:
+							continue
+
+						var x: float = origin.x + float(ii) * spacing
+						var z: float = origin.y + float(jj) * spacing
+						var source = data if (x < data.x0 + float(data.samples - 1) * spacing and z < data.z0 + float(data.samples - 1) * spacing) else generator.get_tile(generator.tile_of(x, z))
+
+						if not source.placeholder and source.heights[source.nearest(x, z)] < median - 0.1:
+							fill.append(m)
+
+			for m in fill:
+				levels[m] = median
+				ring.append(m)
+
 
 # Standing water draws flat (owner 2026-10-21: "the water is all rough in the pond"): where
 # the surface barely tilts across a whole window, every level in it becomes the window mean.
