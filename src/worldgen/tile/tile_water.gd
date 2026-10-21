@@ -1640,31 +1640,20 @@ func _join_pond(head: Vector2) -> Array:
 func _straight_to_lip(
 	points: PackedVector2Array, areas: PackedFloat32Array, centre: Vector2, radius_m: float, level: float, land: PackedFloat32Array
 ) -> Array:
-	var drop: float = float(_rules.get("straight_lip_drop_m", 5.0))
+	var drop: float = float(_rules.get("straight_lip_drop_m", 25.0))
 	var reach: float = float(_rules.get("straight_lip_max_m", 500.0))
 	var rise: float = float(_rules.get("straight_lip_rise_m", 14.0))
 	var lip_at: int = -1
 
-	# The pond's own bench height (the median ground on a ring just outside its water), not the
-	# world's nominal level, which the tile's detail can differ from by several metres.
-	var ring: Array = []
-
-	for r in range(16):
-		var on_ring: Vector2 = centre + Vector2(cos(TAU * float(r) / 16.0), sin(TAU * float(r) / 16.0)) * (radius_m + 6.0) / spacing_m
-
-		if on_ring.x >= 1.0 and on_ring.y >= 1.0 and on_ring.x <= float(samples - 2) and on_ring.y <= float(samples - 2):
-			ring.append(_bilinear(land, on_ring))
-
-	if ring.size() < 8:
-		return [points, areas]
-
-	ring.sort()
-	level = float(ring[ring.size() / 2])
+	# The pond's outlet sill: the ground where the river first leaves the pond (not the world's
+	# nominal level, nor the bench round the pond, which the tile's land can differ from by
+	# many metres). The lip is where the ground falls `drop` below that.
+	var sill: float = NAN
 
 	for k in range(points.size()):
 		var distance: float = points[k].distance_to(centre) * spacing_m
 
-		if distance < radius_m:
+		if distance < radius_m + 8.0:
 			continue
 
 		if distance > radius_m + reach:
@@ -1675,9 +1664,15 @@ func _straight_to_lip(
 		if p.x < 1.0 or p.y < 1.0 or p.x > float(samples - 2) or p.y > float(samples - 2):
 			break
 
-		if _bilinear(land, p) < level - drop:
+		if is_nan(sill):
+			sill = _bilinear(land, p)
+			level = sill
+			continue
+
+		if _bilinear(land, p) < sill - drop:
 			lip_at = k
 			break
+
 
 	if lip_at < 1:
 		return [points, areas]
