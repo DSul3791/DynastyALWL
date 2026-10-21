@@ -113,6 +113,12 @@ func _init() -> void:
 
 	while step < (radius + 300.0) / SPACING:
 		var point: Vector2 = centre + along * step
+
+		# Past the coast the river is the sea (the estuary sinks its last stretch under 0 m).
+		if water.heights[int(point.y) * SIDE + int(point.x)] <= 0.0:
+			step += 0.5
+			continue
+
 		var deepest: float = 0.0
 		var drawn: bool = false
 

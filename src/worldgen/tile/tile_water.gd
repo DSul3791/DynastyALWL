@@ -604,6 +604,7 @@ func _carve_guides(rivers: Array) -> void:
 		var widths: PackedFloat32Array = PackedFloat32Array()
 		var usable: PackedByteArray = PackedByteArray()
 		var beds: PackedFloat32Array = PackedFloat32Array()
+		var banks: PackedFloat32Array = PackedFloat32Array()
 		var is_source: bool = bool(river.get("source", false))
 		var along: float = 0.0
 		# Owner (2026-10-19): the stream out of a bigger pond starts bigger (a lake's outlet
@@ -616,6 +617,8 @@ func _carve_guides(rivers: Array) -> void:
 		low_values.resize(count)
 		beds.resize(count)
 		beds.fill(NAN)
+		banks.resize(count)
+		banks.fill(slope)
 		depths.resize(count)
 		widths.resize(count)
 		usable.resize(count)
@@ -730,7 +733,6 @@ func _carve_guides(rivers: Array) -> void:
 
 			last_bed = bed
 			last_along = run_length
-			var strength: float = areas[k] / cell_km2
 
 			# Water falling steeply spreads into a wider, shallower sheet.
 			if k + 2 < count and usable[k + 2] == 1:
@@ -764,6 +766,24 @@ func _carve_guides(rivers: Array) -> void:
 
 				bank_here = maxf(slope, face * 1.25)
 
+			banks[k] = bank_here
+
+		# Owner (2026-10-21, Dave): "we will have to fix the generator to make waterfalls flat
+		# and straight down until they hit the ground, and if there are cascading waterfalls it
+		# will require more than one." Steep stretches of bed become a staircase of flat treads
+		# and one-sample vertical faces (the water is drawn from the sim, no ribbon meshes).
+		var terraced: PackedByteArray = _terrace(points, usable, cumulative, beds, widths, banks)
+
+
+
+		for k in range(count):
+			if usable[k] == 0:
+				continue
+
+			var bed: float = beds[k]
+			var strength: float = areas[k] / cell_km2
+			var bank_here: float = banks[k]
+
 			# Owner (2026-10-20): a river stays cut to its full depth right to the edge of a ledge
 			# and pours over it; owner report (build 232/257): the river cut a chute down pond B's
 			# cliff from a rounded lip, the water spread there to a few cm and the fall started
@@ -773,7 +793,7 @@ func _carve_guides(rivers: Array) -> void:
 			var drop_ahead: bool = k + 2 < count and usable[k + 2] == 1 and low_values[k] - low_values[k + 2] > lip_drop
 			var drop_behind: bool = k >= 2 and usable[k - 2] == 1 and low_values[k - 2] - low_values[k] > lip_drop
 
-			if drop_ahead or drop_behind:
+			if (drop_ahead or drop_behind) and terraced[k] == 0:
 				if held == INF:
 					held = bed
 
@@ -884,7 +904,14 @@ func _carve_guides(rivers: Array) -> void:
 			elif not steep and run_start >= 0:
 				var drop: float = beds[run_start] - beds[k]
 
-				if drop >= fall_min_drop:
+				# A terraced step has its own flat tread below the face: no pool basin there (its banks
+				# reach back up the face and cut it into a slope).
+				var staircase: bool = false
+
+				for near in range(maxi(run_start - 2, 0), mini(k + 4, count)):
+					staircase = staircase or terraced[near] == 1
+
+				if drop >= fall_min_drop and not staircase:
 					var pool_width: float = clampf(widths[k] * 1.8 + 6.0, 10.0, 26.0)
 					_stamp_at(carved, points[k], pool_width, pool_depth, beds[k] - pool_depth * 0.9, slope, areas[k] / cell_km2, best_flow)
 					_wash_foot(carved, points[k], pool_width * 0.5 + float(_rules.get("fall_wash_m", 24.0)))
@@ -1293,6 +1320,134 @@ func _straighten_head(points: PackedVector2Array, areas: PackedFloat32Array) -> 
 
 	heads_straightened += 1
 	return [new_points, new_areas]
+
+
+# Owner (2026-10-21, Dave): waterfalls are flat, straight-down faces, and a cascade is several
+# of them. Where the bed falls faster than terrace_slope (30 cm per m) over terrace_window_m,
+# the stretch becomes a staircase: flat treads (the bed, cut level), and a vertical face at
+# the start of each step, one 8 m sample thick (the next tread's discs begin half a width
+# below the face, so the cut itself makes the wall). Steps are about terrace_drop_m high, and
+# never shorter than terrace_step_min_m (16 m of tread and the face), so a very steep slope
+# gets taller falls rather than none. The channel is a multiple of 8 m wide, 16 to 24 m, and
+# its banks stand near vertical beside the faces. `beds`, `widths` and `banks` are changed in
+# place; returns 1 for every point in a staircase. The tread bed is the lowest ground-cut of its
+# step (never above the river's own bed), so the staircase only ever cuts deeper.
+func _terrace(
+	points: PackedVector2Array, usable: PackedByteArray, along: PackedFloat32Array,
+	beds: PackedFloat32Array, widths: PackedFloat32Array, banks: PackedFloat32Array
+) -> PackedByteArray:
+	var flags: PackedByteArray = PackedByteArray()
+	flags.resize(points.size())
+	var slope_min: float = float(_rules.get("terrace_slope", 0.30))
+	var window_m: float = float(_rules.get("terrace_window_m", 32.0))
+	var drop_target: float = float(_rules.get("terrace_drop_m", 20.0))
+	var step_min: float = float(_rules.get("terrace_step_min_m", 24.0))
+	var run_min: float = float(_rules.get("terrace_run_min_m", 40.0))
+	var drop_min: float = float(_rules.get("terrace_drop_min_m", 8.0))
+	var wall_slope: float = float(_rules.get("terrace_bank", 2.0))
+	var face_slope: float = float(_rules.get("terrace_face_bank", 30.0))
+	var width_min: float = float(_rules.get("terrace_width_min_m", 16.0))
+	var width_max: float = float(_rules.get("terrace_width_max_m", 24.0))
+	var used: PackedInt32Array = PackedInt32Array()
+
+	for k in range(points.size()):
+		if usable[k] == 1 and not is_nan(beds[k]):
+			used.append(k)
+
+	var count: int = used.size()
+
+	if count < 3:
+		return flags
+
+	# Steepness of the bed over the next window_m at each used point, and where that window ends.
+	var steep: PackedByteArray = PackedByteArray()
+	steep.resize(count)
+	var ends: PackedInt32Array = PackedInt32Array()
+	ends.resize(count)
+	var far: int = 0
+
+	for a in range(count):
+		far = maxi(far, a)
+
+		while far < count - 1 and along[used[far]] - along[used[a]] < window_m:
+			far += 1
+
+		ends[a] = far
+		var run: float = along[used[far]] - along[used[a]]
+
+		if run >= window_m * 0.5 and (beds[used[a]] - beds[used[far]]) / run >= slope_min:
+			steep[a] = 1
+
+	var a: int = 0
+
+	while a < count:
+		if steep[a] == 0:
+			a += 1
+			continue
+
+		var b: int = a
+
+		while b + 1 < count and steep[b + 1] == 1:
+			b += 1
+
+		var last: int = ends[b]
+		var length: float = along[used[last]] - along[used[a]]
+		var drop: float = beds[used[a]] - beds[used[last]]
+		var from_a: int = a
+		a = b + 1
+
+		if length < run_min or drop < drop_min:
+			continue
+
+		var steps: int = maxi(int(round(drop / drop_target)), 1)
+
+		while steps > 1 and length / float(steps) < step_min:
+			steps -= 1
+
+		var period: float = length / float(steps)
+		var s0: float = along[used[from_a]]
+		var top_bed: float = beds[used[from_a]]
+		# The lowest bed of each step: the river's own bed where the step ends.
+		var tread: PackedFloat32Array = PackedFloat32Array()
+
+		var half_run: float = clampf(round(widths[used[from_a]] / spacing_m) * spacing_m, width_min, width_max) * 0.5
+
+		for j in range(steps):
+			var end_s: float = s0 + float(j + 1) * period + half_run
+			var end_bed: float = beds[used[last]]
+
+			for q in range(from_a, last + 1):
+				if along[used[q]] >= end_s - 0.01:
+					end_bed = beds[used[q]]
+					break
+
+			tread.append(minf(end_bed, top_bed))
+
+		for q in range(from_a, last + 1):
+			var k: int = used[q]
+			var width: float = clampf(round(widths[k] / spacing_m) * spacing_m, width_min, width_max)
+			widths[k] = width
+			var half: float = width * 0.5
+			var rel: float = along[k] - s0
+			flags[k] = 1
+			banks[k] = maxf(banks[k], wall_slope)
+
+			if rel < half:
+				beds[k] = minf(beds[k], top_bed)
+			else:
+				var j: int = clampi(int(floor((rel - half) / period)), 0, steps - 1)
+				beds[k] = minf(beds[k], tread[j])
+
+			# Near any face the walls beside the water stand almost straight up.
+			var to_face: float = fposmod(rel, period)
+
+			if to_face > period * 0.5:
+				to_face = period - to_face
+
+			if to_face <= half + spacing_m:
+				banks[k] = maxf(banks[k], face_slope)
+
+	return flags
 
 
 # Bilinear height at a position in sample coordinates (inside the frame).
