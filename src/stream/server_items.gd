@@ -88,6 +88,13 @@ var recipes
 # Set by the server scene: how to talk to one peer.
 var send_full: Callable        # (peer, bytes)
 var send_slots: Callable       # (peer, bytes)
+var send_received: Callable    # (peer, item id, count, source): one call per item gained (protocol 60)
+const SRC_PICKUP := "pickup"
+const SRC_GATHER := "harvest"
+const SRC_CRAFT := "craft"
+const SRC_REWARD := "quest"
+var _gain_source: String = SRC_PICKUP   # who is adding right now; callers set it around give()
+var _gain_quiet: bool = false        # wearing and taking off gear moves items without gaining any
 var send_world_items: Callable # (peer, added Array, removed PackedInt32Array)
 var ground_height: Callable    # (x, z) -> ground height in metres, or NAN; set by the server scene
 var world_seed: int = 0
@@ -412,7 +419,10 @@ func give(peer: int, number: int, count: int) -> int:
 	var before: Array = _snapshot(inv)
 	var fits: int = _fit(peer, inv, number, count)
 	var left: int = inv.add(number, fits) + (count - fits)
+	var was_src: String = _gain_source
+	_gain_source = SRC_GATHER if was_src == SRC_PICKUP else was_src
 	_send_changes(peer, inv, before)
+	_gain_source = was_src
 	_dirty = true
 
 	if left > 0:
@@ -488,9 +498,13 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 	elif kind == Net.ACT_FISH:
 		_fish(peer, inv, a, at)
 	elif kind == Net.ACT_WEAR:
+		_gain_quiet = true
 		_wear(peer, inv, a)
+		_gain_quiet = false
 	elif kind == Net.ACT_UNWEAR:
+		_gain_quiet = true
 		_unwear(peer, inv, a)
+		_gain_quiet = false
 	elif kind == Net.ACT_REPAIR:
 		_repair(peer, inv, a)
 	elif kind == Net.ACT_FUEL:
@@ -1482,6 +1496,9 @@ func _sync_world_items() -> void:
 func _send_changes(peer: int, inv, before: Array) -> void:
 	var out: PackedByteArray = PackedByteArray()
 
+	if not _gain_quiet and send_received.is_valid():
+		_report_gains(peer, inv, before)
+
 	for i in inv.SLOTS:
 		if inv.numbers[i] != before[0][i] or inv.counts[i] != before[1][i] or inv.wear[i] != before[2][i]:
 			var at: int = out.size()
@@ -1493,6 +1510,27 @@ func _send_changes(peer: int, inv, before: Array) -> void:
 
 	if not out.is_empty():
 		send_slots.call(peer, out)
+
+
+# Every item that is more numerous in the pack than before (all gains pass _send_changes): a pickup, harvest, craft output, reward.
+func _report_gains(peer: int, inv, before: Array) -> void:
+	var gained: Dictionary = {}
+
+	for i in inv.SLOTS:
+		var now_n: int = int(inv.numbers[i])
+
+		if now_n > 0:
+			gained[now_n] = int(gained.get(now_n, 0)) + int(inv.counts[i])
+
+	for i in inv.SLOTS:
+		var was_n: int = int(before[0][i])
+
+		if was_n > 0 and gained.has(was_n):
+			gained[was_n] = int(gained[was_n]) - int(before[1][i])
+
+	for number in gained:
+		if int(gained[number]) > 0:
+			send_received.call(peer, table.id_of(int(number)), int(gained[number]), _gain_source)
 
 
 func _snapshot(inv) -> Array:
@@ -3227,7 +3265,10 @@ func give_to(peer: int, id: String, count: int) -> void:
 	if left > 0:
 		drop_in_world(table.number_of(id), left, _peer_pos.get(peer, Vector3.ZERO))
 
+	_gain_source = SRC_REWARD
 	_send_changes(peer, inv, before)
+	_gain_source = SRC_PICKUP
+	_dirty = true
 
 
 func take_from(peer: int, id: String, count: int) -> bool:
@@ -4670,7 +4711,9 @@ func _craft_tick(spent: float) -> void:
 			_refund_entry(peer, head)
 			_say(peer, "%s was cancelled: a tool is missing" % str(recipe.get("name", "That")))
 		else:
+			_gain_source = SRC_CRAFT
 			give(peer, int(recipe["gives"][0]), int(recipe["gives"][1]))
+			_gain_source = SRC_PICKUP
 			practice(peer, "craft", clampf(float(recipe.get("craft_s", 3.0)) / 3.0, 0.3, 2.0))   # a long craft teaches more than a quick one
 			head[1] = int(head[1]) - 1
 

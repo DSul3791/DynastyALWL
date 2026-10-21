@@ -59,6 +59,21 @@ func _init() -> void:
 	items.action(7, Net.ACT_MOVE, -1, 400, 0, Vector3.ZERO)
 	check(items.inventory_of(7).count_of(stone) == 15 and items.world_item_count() == 0, "bad slots and counts change nothing")
 
+	# The pickup feed: every gain is reported once with its source; moving a stack reports nothing.
+	DirAccess.make_dir_recursive_absolute("user://test_server_items_feed")
+	var feed = make("user://test_server_items_feed")
+	feed.peer_connected_hello(9, "feedfeed1234")
+	var gains: Array = []
+	feed.send_received = func(p, id, n, src): gains.append([p, id, n, src])
+	feed.give_to(9, "firewood", 2)
+	check(gains == [[9, "firewood", 2, "quest"]], "a reward is reported once as a quest gain (%s)" % str(gains))
+	gains.clear()
+	feed.give(9, feed.table.number_of("stick"), 3)
+	check(gains == [[9, "stick", 3, "harvest"]], "a give is reported as a harvest gain (%s)" % str(gains))
+	gains.clear()
+	feed.action(9, Net.ACT_MOVE, 0, 20, 0, Vector3.ZERO)
+	check(gains.is_empty(), "moving a stack reports no gain (%s)" % str(gains))
+
 	items.action(7, Net.ACT_DROP, 0, 0, 100, Vector3(100.0, 5.0, 150.0))
 	check(items.world_item_count() == 1 and items.inventory_of(7).count_of(stone) == 0, "drop takes at most what is there; far spot clamped to the player")
 

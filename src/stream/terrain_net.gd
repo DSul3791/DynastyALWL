@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 59
+const PROTOCOL_VERSION := 60
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -52,6 +52,7 @@ signal surface_received(x: float, z: float, y: float)
 signal dump_requested(peer_id: int, x: float, y: float, z: float)
 signal dump_received(text: String)
 signal water_received(chunk: Vector2i, water: PackedByteArray)
+signal item_received(item_id: String, count: int, source: String)
 signal notice_received(text: String)
 signal chest_received(id: int, bytes: PackedByteArray)
 signal breath_received(deciseconds: int)
@@ -429,6 +430,12 @@ func breath(deciseconds: int) -> void:
 @rpc("authority", "call_remote", "reliable")
 func chest_contents(id: int, bytes: PackedByteArray) -> void:
 	chest_received.emit(id, bytes)
+
+
+# One item gain for the pickup feed (protocol 60): sent to the player who gained it. source: pickup, harvest, craft, quest.
+@rpc("authority", "call_remote", "reliable")
+func item_gain(item_id: String, count: int, source: String) -> void:
+	item_received.emit(item_id, count, source)
 
 
 # A short message for the player ("too many trunks lie here", and so on).

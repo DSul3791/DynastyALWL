@@ -186,6 +186,7 @@ func _ready() -> void:
 	items = ItemsScript.new()
 	items.send_full = func(peer, bytes): net.inventory_full.rpc_id(peer, bytes)
 	items.send_slots = func(peer, bytes): net.inventory_slots.rpc_id(peer, bytes)
+	items.send_received = func(peer, item_id, count, source): net.item_gain.rpc_id(peer, item_id, count, source)
 	items.send_world_items = func(peer, added, removed): net.world_items.rpc_id(peer, added, removed)
 	items.dig_ground = _dig_ground
 	items.fill_ground = _fill_ground
