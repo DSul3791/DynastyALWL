@@ -56,7 +56,7 @@ const FaintEffectScript := preload("res://src/client/faint_effect.gd")
 const FallMistScript := preload("res://src/client/fall_mist.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 329
+const BUILD := 333
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
@@ -2997,6 +2997,12 @@ func _process(delta: float) -> void:
 		var crow: bool = amb.flush(body.global_position + Vector3(20.0, 2.0, 0.0), 0.0, "large")
 		var crow_file: String = amb.last_file
 		print("Terrain client: flush check: %d flushes, small %d, medium %d, large %d, files used %d, repeats %d, crow file %s, source %s" % [300, sizes["small"], sizes["medium"], sizes["large"], files.size(), repeats, crow_file, amb._source.get("wing_small", "?")])
+		# Flying high above the forest (Dave 2026-10-21): no take-off, no alarm, no bird calls.
+		var low_before: float = amb.low_factor()
+		amb.forced_agl = 120.0
+		amb.agl_m = 120.0
+		print("Terrain client: high birds: low factor %.2f then %.2f, flush %s, alarm %s" % [low_before, amb.low_factor(), str(amb.flush(body.global_position + Vector3(20.0, 2.0, 0.0), 0.0)), str(amb.alarm(body.global_position + Vector3(20.0, 2.0, 0.0)))])
+		amb.forced_agl = -1.0
 
 	if test_reject and now - connected_msec > 18000 and now >= _test_fire_at:
 		_test_fire_at = now + 10000000
@@ -3262,7 +3268,7 @@ func _process(delta: float) -> void:
 			print("Terrain client: water sounds: %s (%d falls known)" % [sound.water.summary, flora.fall_list().size()])
 			print("Terrain client: nature calls %s, zones %s" % [str(sound.ambient.calls_played), str(sound.ambient.weights)])
 			print("Terrain client: tree sounds: %d falls, %d stump sprays, last %s" % [sound.trees.falls_played, sound.trees.chips_played, sound.trees.last])
-			print("Terrain client: faint run: world muted to %.2f, heart gain down to %.2f, %d heaves, %d heartbeats, done %s, breaths while fainted %d, wake mute %.2f" % [sound.breath.peak_mute, sound.breath.demo_min_gain, sound.breath.heaves_played, sound.breath.beats_played, str(sound.breath.demo_done), sound.breath.fainted_breaths, sound.breath.wake_mute_mid])
+			print("Terrain client: faint run: world muted to %.2f, heart gain down to %.2f, %d heaves, %d heartbeats, done %s, breaths while fainted %d, wake mute %.2f, bpm max %.0f, step %.2f" % [sound.breath.peak_mute, sound.breath.demo_min_gain, sound.breath.heaves_played, sound.breath.beats_played, str(sound.breath.demo_done), sound.breath.fainted_breaths, sound.breath.wake_mute_mid, sound.breath.bpm_max, sound.breath.bpm_step_max])
 			print("Terrain client: fire world: %d fuel, %d lit, %d out" % [sound.fire.fuel_played, sound.fire.lit_played, sound.fire.out_played])
 			print("Terrain client: fire sounds: %d lit, %d put out, %d loops, last %s" % [sound.fire.lit_played, sound.fire.out_played, sound.fire.loops_playing, sound.fire.last])
 			print("Terrain client: item sounds %d, last %s" % [sound.itemfx.played, sound.itemfx.last])

@@ -42,6 +42,11 @@ const TRUNKS_FOR_FOREST := 28.0        # collider shapes in that radius for a fu
 const WATER_RINGS := [6.0, 16.0, 32.0, 55.0]
 const WATER_FULL_M := 8.0              # water this close counts as full water-edge weight
 const WATER_NONE_M := 55.0
+# Birds live down among the trees (Dave 2026-10-21, flying at y 420 over a forest he heard startled wings): above
+# BIRD_MAX_AGL_M over the ground no take-off, alarm or call is played, and calls fade out over BIRD_FADE_M before it.
+const BIRD_MAX_AGL_M := 40.0
+const BIRD_FADE_M := 20.0
+const BIRDS_LOW := ["bird_whistle", "bird_feebee", "bird_trill", "bird_chirp", "crow_caw", "woodpecker", "owl_hoot"]
 const HIGH_FROM_M := 60.0              # height where the highland starts to count
 const HIGH_FULL_M := 130.0
 const BED_DB := -26.0
@@ -123,6 +128,8 @@ var _sphere: PhysicsShapeQueryParameters3D
 var _beds: Dictionary = {}              # zone -> AudioStreamPlayer
 var _speed: float = 0.0
 var _running_sec: float = 0.0
+var forced_agl: float = -1.0            # --high-birds: pretend this height above ground (headless check)
+var agl_m: float = 0.0                  # metres above the ground under the player at the last scan (999 when none within reach)
 var _flush_wait: float = 0.0
 var _fliers: Array = []                 # [{player, from, to, t, dur}] birds flying off
 var _alarm_wait: float = 0.0
@@ -242,6 +249,7 @@ func _scan(body: CharacterBody3D) -> void:
 	var target: Dictionary = {"forest": 0.0, "meadow": 0.0, "water": 0.0, "highland": 0.0}
 
 	target["forest"] = clampf(float(_trunks(body)) / TRUNKS_FOR_FOREST, 0.0, 1.0)
+	agl_m = _height_above_ground(body)
 	var soil: int = _stage.ground_at(feet)
 	var thick: float = 0.0
 
@@ -273,6 +281,25 @@ func _scan(body: CharacterBody3D) -> void:
 
 	for zone in ZONES:
 		weights[zone] = lerpf(float(weights[zone]), float(target[zone]), 0.4)
+
+
+# Height of the feet above the ground below (the terrain's own ground height); 0 when it is not loaded, so birds are not lost.
+func _height_above_ground(body: CharacterBody3D) -> float:
+	if forced_agl >= 0.0:
+		return forced_agl
+
+	var origin: Vector3 = body.global_position
+
+	if not _stage.ground_below.is_valid():
+		return 0.0
+
+	var ground: float = _stage.ground_below.call(origin)
+	return maxf(origin.y - ground - 0.9, 0.0) if not is_nan(ground) else 0.0
+
+
+# 1 down among the trees, fading to 0 between BIRD_MAX_AGL_M - BIRD_FADE_M and BIRD_MAX_AGL_M above the ground.
+func low_factor() -> float:
+	return clampf((BIRD_MAX_AGL_M - agl_m) / BIRD_FADE_M, 0.0, 1.0)
 
 
 func _trunks(body: CharacterBody3D) -> int:
@@ -396,6 +423,9 @@ func _try(event: Dictionary, body: CharacterBody3D) -> void:
 
 		fit = maxf(fit, float(event["zones"][zone]) * float(weights[zone]))
 
+	if event["name"] in BIRDS_LOW:
+		fit *= low_factor()
+
 	var season: float = float(event.get("seasons", {}).get(str(conditions["season"]), 1.0))
 	var scare: float = 0.5 if _speed > RUN_SCARE_MS else 1.0
 	scare *= _tod_factor(event)
@@ -428,6 +458,9 @@ func _try(event: Dictionary, body: CharacterBody3D) -> void:
 # A crow scolds from the trees near `at`: the warning hook for danger (and for a player
 # crashing through crow country). Returns false when no alarm sound exists.
 func alarm(at: Vector3) -> bool:
+	if agl_m > BIRD_MAX_AGL_M:
+		return false
+
 	var list: Array = _variants("crow_alarm")
 
 	if list.is_empty():
@@ -495,6 +528,9 @@ func _maybe_flush(body: CharacterBody3D) -> void:
 # `size` is the bird: "small" (finch), "medium" (pigeon) or "large" (crow); "" picks by FLUSH_SIZES. Each size has its own
 # take-off bursts (make_wings.py): quick flaps for small birds, slow heavy ones only for big birds.
 func flush(at: Vector3, delay: float = 0.0, size: String = "") -> bool:
+	if agl_m > BIRD_MAX_AGL_M:
+		return false                                            # birds only down among the trees
+
 	if size == "":
 		size = _flush_size()
 
