@@ -2814,7 +2814,7 @@ func _swim_velocity(wanted: Vector3, direction: Vector3, pace: float, hard: bool
 	var down: bool = Input.is_key_pressed(KEY_CTRL) and strain_cap >= 0.0
 	velocity.x = horizontal.x
 	velocity.z = horizontal.z
-	velocity.y = SwimScript.vertical_speed(body.global_position.y, surface, body.velocity.y, up, down, delta)
+	velocity.y = SwimScript.vertical_speed(body.global_position.y, surface, body.velocity.y, up, down, delta, items.breath_ds >= 0 and items.breath_ds < 100)
 
 	# Under a floe or an ice sheet: with no stroke given, drift gently out to the nearest open water.
 	if now >= _under_ice_next_msec:

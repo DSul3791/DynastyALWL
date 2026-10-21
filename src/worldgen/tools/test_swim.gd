@@ -50,6 +50,14 @@ func _init() -> void:
 		y += vy / 60.0
 
 	_check(absf(y - 97.0) < 0.01, "a diver who stops swimming stays put (no drift up, centre %.2f)" % y)
+	y = 97.0
+	vy = 0.0
+
+	for step in range(600):
+		vy = Swim.vertical_speed(y, 100.0, vy, false, false, 1.0 / 60.0, true)
+		y += vy / 60.0
+
+	_check(absf(y - Swim.float_centre(100.0)) < 0.05, "in the last seconds of air an idle diver drifts up to the surface (centre %.2f)" % y)
 	vy = 0.0
 	y = Swim.float_centre(100.0)
 

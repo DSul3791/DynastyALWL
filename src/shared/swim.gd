@@ -12,6 +12,7 @@ const BODY_HEIGHT_M := 1.8
 const SWIM_DEPTH_M := 1.3        # water this deep over the ground (as swim_sounds.gd SWIM_M): swimming, not wading
 const FEET_UNDER_M := 0.6        # feet at least this far under the surface: in the water (standing on ice at the surface is not)
 const HEAD_ABOVE_M := 0.25       # floating, the top of the head rides this far above the surface (water at the chin)
+const LOW_AIR_RISE_SPEED := 1.0  # m/s a swimmer with no input drifts up in the last seconds of air (never drowns idle)
 const SINK_SPEED := 0.9          # m/s the body settles down to the float line (walking into deep water: sink, head out)
 const WALK_SPEED := 2.0          # m/s swimming
 const FAST_SPEED := 3.0          # m/s swimming hard (Shift): costs more
@@ -73,12 +74,14 @@ static func wade_factor(depth: float) -> float:
 # The vertical speed while swimming: neutral buoyancy. A body above the float line sinks gently to
 # it (head out of the water); a body below it stays where it is (no drifting up after a dive).
 # Space swims up, Ctrl dives, and the speed eases there instead of jumping.
-static func vertical_speed(centre_y: float, surface: float, current: float, up: bool, down: bool, delta: float) -> float:
+static func vertical_speed(centre_y: float, surface: float, current: float, up: bool, down: bool, delta: float, low_air: bool = false) -> float:
 	var wish: float = 0.0
 	var above: float = centre_y - float_centre(surface)
 
 	if above > 0.0:
 		wish = -minf(SINK_SPEED, above * 3.0)
+	elif low_air and not down:
+		wish = minf(LOW_AIR_RISE_SPEED, -above * 3.0)
 
 	if up:
 		wish = VERTICAL_SPEED
