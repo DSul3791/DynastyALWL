@@ -8,6 +8,6 @@
 	"sick": {"health": 0, "wet_ml": 0},
 	"place_mult": {"pack": 1.0, "chest": 0.8, "plank_chest": 0.6, "remains": 1.0, "ground": 1.5},
 	"season_mult": {"spring": 1.0, "summer": 1.5, "autumn": 1.0, "winter": 0.5},
-	"by_id": {"roast_forage": 72, "seed_bundle": 720, "energy_bar": 720, "herbal_tea": 48, "stomach_tea": 48, "chamomile_tea": 48, "willow_bark_tea": 48},
+	"by_id": {"roast_forage": 144, "seed_bundle": 720, "energy_bar": 720, "herbal_tea": 48, "stomach_tea": 48, "chamomile_tea": 48, "willow_bark_tea": 48},
 	"by_suffix": {"berries": 36, "greens": 24, "caps": 36, "morels": 36, "porcini": 36, "chanterelles": 36, "sap": 24, "pods": 120, "pears": 240, "apples": 240, "cherries": 120, "haws": 240, "hips": 240, "dates": 360, "coconuts": 480, "roots": 360, "bulbs": 360, "nuts": 720, "acorns": 720, "chestnuts": 720, "walnuts": 720, "beechnuts": 720, "hazelnuts": 720, "wheat": 1440}
 }

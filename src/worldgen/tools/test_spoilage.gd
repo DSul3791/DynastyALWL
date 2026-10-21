@@ -21,7 +21,7 @@ func _init() -> void:
 	var table = ItemTableScript.load_default()
 	var roast: int = table.number_of("roast_forage")
 	var life: int = table.shelf_units(roast)
-	check(life == 2880, "roast forage lasts 72 h x 4 (gentle) = 2880 tenths (got %d)" % life)
+	check(life == 5760, "roast forage lasts 144 h x 4 (gentle) = 5760 tenths (got %d)" % life)
 	check(table.shelf_units(table.number_of("stone")) == 0 and table.freshness(table.number_of("stone"), 500) == 1.0, "stone does not spoil")
 	var berries: int = table.number_of("belladonna_berries")
 	check(table.shelf_units(berries) == 1440, "gathered berries match by suffix (36 h x 4)")

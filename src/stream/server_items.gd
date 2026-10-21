@@ -2244,13 +2244,25 @@ func _cook(peer: int, inv, id: int) -> void:
 	for slot in range(inv.SLOTS):
 		if inv.numbers[slot] != 0 and _cookable(table.id_of(inv.numbers[slot])):
 			_last_cook[peer] = now
-			inv.take_from_slot(slot, 1)
-			var left: int = inv.add(table.number_of(str(_cooking.get("gives", "roast_forage"))), 1)
+			var raw: Dictionary = inv.take_from_slot(slot, 1)
+			var cooked: int = table.number_of(str(_cooking.get("gives", "roast_forage")))
+			# Cooking keeps the age: the roast starts as stale as the raw item was, as a share of its own shelf life, less what the fire killed.
+			var share: float = 1.0 - table.freshness(int(raw["number"]), int(raw.get("wear", 0)))
+			var age: int = int(round(share * float(table.shelf_units(cooked)) * float(_cooking.get("age_carry", 0.5))))
+			var left: int = inv.add(cooked, 1, age)
 
 			if left > 0:
-				drop_in_world(table.number_of(str(_cooking.get("gives", "roast_forage"))), left, _peer_pos[peer])
+				drop_in_world(cooked, left, _peer_pos[peer])
 
 			return
+
+
+# A hot meal or a hot drink lifts body warmth a little (cooking.json "warms", warmth points); the warmth tick then pulls it back.
+func _warm_bite(v: Dictionary, item_id: String) -> void:
+	var gain: float = float(_cooking.get("warms", {}).get(item_id, 0.0))
+
+	if gain > 0.0:
+		v["warmth"] = minf(float(v.get("warmth", 100.0)) + gain, 100.0)
 
 
 func _cookable(item_id: String) -> bool:
@@ -3797,6 +3809,7 @@ func _eat(peer: int, inv, slot: int) -> void:
 			strength *= float(_sick_cfg.get("redose_share", 0.25))
 			_say(peer, str(_sick_cfg.get("say_too_soon", "")))
 
+		_warm_bite(v, item_id)
 		_last_dose[peer] = now
 		inv.take_from_slot(slot, 1)
 		v["sick"] = maxf(float(v["sick"]) - float(cure.get("cure_h", 12.0)) * 3600.0 * strength, 0.0)
@@ -3837,6 +3850,7 @@ func _eat(peer: int, inv, slot: int) -> void:
 		return
 
 	_last_eat[peer] = now
+	_warm_bite(v, item_id)
 	kcal = int(round(float(kcal) * (0.5 + 0.5 * table.freshness(inv.numbers[slot], inv.wear[slot]))))   # stale food feeds less
 	inv.take_from_slot(slot, 1)
 	var total: float = float(v["fed"]) + float(kcal)

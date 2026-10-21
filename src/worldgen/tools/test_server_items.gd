@@ -237,6 +237,34 @@ func _init() -> void:
 	f.action(1, Net.ACT_ADMIN_GIVE, berries, 0, 2, Vector3.ZERO)
 	f.action(1, Net.ACT_COOK, open_id, 0, 0, Vector3.ZERO)
 	check(f.inventory_of(1).count_of(f.table.number_of("roast_forage")) == 1 and f.inventory_of(1).count_of(berries) == 1, "a lit fire roasts one berry item")
+	# Cooking keeps the age: a half-stale berry roasts into a quarter-stale roast (age_carry 0.5), and a hot meal warms.
+	var ck_inv: Variant = f.inventory_of(1)
+	var ck_bslot: int = -1
+
+	for sl in range(ck_inv.SLOTS):
+		if ck_inv.numbers[sl] == berries:
+			ck_bslot = sl
+
+	ck_inv.wear[ck_bslot] = int(f.table.shelf_units(berries) / 2)
+	f._last_cook.clear()
+	f.action(1, Net.ACT_COOK, open_id, 0, 0, Vector3.ZERO)
+	var ck_roast_n: int = f.table.number_of("roast_forage")
+	var ck_aged: bool = false
+
+	for sl in range(ck_inv.SLOTS):
+		if ck_inv.numbers[sl] == ck_roast_n and ck_inv.wear[sl] > 0:
+			ck_aged = absf(float(ck_inv.wear[sl]) / float(f.table.shelf_units(ck_roast_n)) - 0.25) < 0.02
+
+	check(ck_aged, "a roast carries half the raw item's age")
+	f.vitals_of(1)["warmth"] = 50.0
+	f._last_eat.clear()
+
+	for sl in range(ck_inv.SLOTS):
+		if ck_inv.numbers[sl] == ck_roast_n:
+			f.action(1, Net.ACT_EAT, sl, 0, 0, Vector3.ZERO)
+			break
+
+	check(float(f.vitals_of(1)["warmth"]) >= 59.0, "a hot meal lifts warmth")
 	f.report_position(1, Vector3(40.0, 10.0, 0.0))
 	f._last_cook.clear()
 	f.action(1, Net.ACT_COOK, open_id, 0, 0, Vector3.ZERO)

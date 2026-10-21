@@ -1,5 +1,5 @@
 {
-	"note": "Cooking placeholder (until the cook and food systems exist): at a lit fire, one raw forage item becomes Roasted forage. A gathered item cooks when its id ends with one of these words.",
+	"note": "Cooked food (Items refill 11): a roast keeps the raw item's age as a share of its own shelf life times age_carry (the fire kills half the wear) and lasts longer than most raw foraged food (spoilage.json). A hot meal or drink adds the warms points to body warmth when eaten. Cooking placeholder (until the cook and food systems exist): at a lit fire, one raw forage item becomes Roasted forage. A gathered item cooks when its id ends with one of these words.",
 	"cookable_suffixes": [
 		"berries",
 		"nuts",
@@ -18,6 +18,8 @@
 	"gives": "roast_forage",
 	"tinder": "plant_fibre",
 	"pace_ms": 1200,
+	"age_carry": 0.5,
+	"warms": {"roast_forage": 10, "herbal_tea": 12, "stomach_tea": 12, "chamomile_tea": 12, "willow_bark_tea": 12},
 	"fuel_note": "Burn times in GAME seconds (clock is 24:1): a stick 2 game minutes, driftwood 15, firewood 30, a log 2 game hours. A placed campfire starts lit with 20 sticks of fuel.",
 	"fuel": {
 		"stick": 120.0,
