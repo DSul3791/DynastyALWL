@@ -1783,7 +1783,19 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int) -> vo
 		var number: int = inv.numbers[a]
 		var held_wear: int = inv.wear[a]
 		var amount: int = mini(count, inv.counts[a])
-		var left: int = chest.add(number, amount, held_wear)
+		var max_kg: float = float(_structures.get(str(_items.get(id, {}).get("struct", {}).get("kind", "")), {}).get("max_kg", 0.0))
+
+		# A container takes only so many kilograms (structures.json max_kg): put what fits, keep the rest.
+		if max_kg > 0.0 and not _carry_cfg.is_empty():
+			var each: float = maxf(CarryRules.weight_of(table.id_of(number), _carry_cfg), 0.001)
+			var room: float = max_kg - CarryRules.carried_kg(chest, table, _carry_cfg)
+			amount = clampi(int(floor(room / each + 0.0001)), 0, amount)
+
+			if amount == 0:
+				_say(peer, "It is too heavy for the chest")
+				_reject(peer, 2)
+
+		var left: int = chest.add(number, amount, held_wear) if amount > 0 else 0
 		inv.take_from_slot(a, amount - left)
 		_dirty = true
 	elif kind == Net.ACT_CHEST_TAKE and a >= 0 and a < chest.SLOTS and chest.numbers[a] != 0 and count > 0:

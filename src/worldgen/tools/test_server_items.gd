@@ -1002,5 +1002,46 @@ func _init() -> void:
 	lazy_clock[0] = 13.0 * day_s
 	check(not lz.dynamic_tree_info(Vector2i(0, 0), (int(lz._flora_by_name[tree_name]["id"]) << 16) | 0xFFFF).is_empty(), "after 12 game days it is a full tree that can be felled")
 
+	# Container rules as data (job 73): the woven chest takes 40 kg, and partial puts, full chests and full packs behave.
+	DirAccess.make_dir_recursive_absolute(qd + "_box")
+
+	for file in DirAccess.get_files_at(qd + "_box"):
+		DirAccess.remove_absolute(qd + "_box/" + file)
+
+	var bx = make(qd + "_box")
+	var box_rejects: Array = []
+	bx.send_reject = func(_p, reason): box_rejects.append(reason)
+	bx.send_chest = func(_p, _i, _b): pass
+	bx.send_vitals = func(_p, _h, _he, _w): pass
+	bx.ground_height = func(x, z): return 10.0
+	bx.peer_connected_hello(1, "boxkey000001")
+	bx.report_position(1, Vector3(0.0, 10.0, 0.0))
+	var box_stone: int = bx.table.number_of("stone")
+	var box_kit: int = bx.table.number_of("chest_kit")
+	bx.action(1, Net.ACT_ADMIN_GIVE, box_kit, 0, 1, Vector3.ZERO)
+	bx.action(1, Net.ACT_ADMIN_GIVE, box_stone, 0, 50, Vector3.ZERO)
+	bx.action(1, Net.ACT_PLACE, bx.inventory_of(1).numbers.find(box_kit), 0, 0, Vector3(2.0, 10.0, 0.0))
+	var box_id: int = 0
+
+	for k in bx._items:
+		if bx._items[k].has("struct"):
+			box_id = k
+
+	bx.action(1, Net.ACT_CHEST_OPEN, box_id, 0, 0, Vector3.ZERO)
+	var box = bx._chests[int(bx._items[box_id]["struct"]["uid"])]
+	var in_pack: int = bx.inventory_of(1).count_of(box_stone)
+
+	for slot_n in range(bx.inventory_of(1).SLOTS):
+		if bx.inventory_of(1).numbers[slot_n] == box_stone:
+			bx.action(1, Net.ACT_CHEST_PUT, slot_n, box_id, 20, Vector3.ZERO)
+	check(box.count_of(box_stone) == 40 and bx.inventory_of(1).count_of(box_stone) == in_pack - 40, "a put past the 40 kg limit puts what fits (%d in the chest, %d left in the pack)" % [box.count_of(box_stone), bx.inventory_of(1).count_of(box_stone)])
+	check(box_rejects == [2], "the stack that no longer fits is refused as too heavy (%s)" % str(box_rejects))
+	bx.action(1, Net.ACT_CHEST_PUT, bx.inventory_of(1).numbers.find(box_stone), box_id, 5, Vector3.ZERO)
+	check(box.count_of(box_stone) == 40 and box_rejects == [2, 2], "a full chest takes no more and refuses it as too heavy (%s)" % str(box_rejects))
+	bx.give(1, box_stone, 500)
+	var before_take: int = bx.inventory_of(1).count_of(box_stone)
+	bx.action(1, Net.ACT_CHEST_TAKE, box.numbers.find(box_stone), box_id, 20, Vector3.ZERO)
+	check(bx.inventory_of(1).count_of(box_stone) == before_take and box.count_of(box_stone) == 40, "a take into a pack at its weight cap moves nothing and loses nothing")
+
 	print("server item tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

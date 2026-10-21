@@ -1,5 +1,5 @@
 {
-	"note": "Placed structures (Dave 2026-10-20: lean-to and storage chest are the first buildables). Placed like the campfire kit with ACT_PLACE (count = yaw in degrees). state is the world-item row state clients draw it by (5 lean-to, 6 chest). cap_per_chunk counts one 256 m chunk. A lean-to is a roof for the Cover index: a box of half_x by half_z around its spot, from 0.5 m below the ground to height above it. A structure with slots is a container: its contents are server-owned (chests.json) and sent only to the player who opens it.",
+	"note": "Placed structures (Dave 2026-10-20: lean-to and storage chest are the first buildables). Placed like the campfire kit with ACT_PLACE (count = yaw in degrees). state is the world-item row state clients draw it by (5 lean-to, 6 chest). cap_per_chunk counts one 256 m chunk. A lean-to is a roof for the Cover index: a box of half_x by half_z around its spot, from 0.5 m below the ground to height above it. A structure with slots is a container: its contents are server-owned (chests.json) and sent only to the player who opens it. Container rules (data): slots is how many stacks it holds, max_kg the most weight it takes (weights.json kilograms; a put that would pass it puts what fits and the rest stays in the pack), who is who may open it (only \"anyone\" for now; \"owner\" and \"town\" come with ownership). The take side is limited by the player's own carry cap.",
 	"gap_m": 2.5,
 	"structures": {
 		"lean_to": {
@@ -16,7 +16,9 @@
 			"item": "chest",
 			"state": 6,
 			"cap_per_chunk": 8,
-			"slots": 12
+			"slots": 12,
+			"max_kg": 40,
+			"who": "anyone"
 		},
 		"chopping_block": {
 			"kit": "chopping_block_kit",
@@ -33,7 +35,9 @@
 			"item": "plank_chest",
 			"state": 6,
 			"cap_per_chunk": 8,
-			"slots": 20
+			"slots": 20,
+			"max_kg": 150,
+			"who": "anyone"
 		}
 	}
 }

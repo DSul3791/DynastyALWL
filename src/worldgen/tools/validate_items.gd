@@ -246,6 +246,15 @@ func _init() -> void:
 		var def: Dictionary = structures[kind]
 		want_item.call(String(def.get("kit", "")), "structures.json %s kit" % kind)
 		want_item.call(String(def.get("item", "")), "structures.json %s item" % kind)
+
+		if def.has("slots") and (int(def.get("slots", 0)) < 1 or int(def.get("slots", 0)) > 30):
+			fail("structures.json %s: slots must be 1 to 30" % kind)
+
+		if def.has("max_kg") and float(def.get("max_kg", 0.0)) <= 0.0:
+			fail("structures.json %s: max_kg must be above 0" % kind)
+
+		if String(def.get("who", "anyone")) != "anyone":
+			fail("structures.json %s: who is '%s' but only \"anyone\" is built (owner and town wait for ownership)" % [kind, def.get("who")])
 		obtainable[String(def.get("item", ""))] = true
 
 	# Recipe graph (job 72): every core item is gatherable, craftable from gatherables, or marked "future": true in items.json;

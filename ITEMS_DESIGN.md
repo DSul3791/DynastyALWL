@@ -86,3 +86,6 @@ Item and recipe names are the plain item name only, with no verb: "Basic torch",
 
 ## Lazy sapling growth and trunk rot (job 66)
 Nothing ticks per frame for either. A sapling's size is computed from `planted_at` whenever it is looked at (young at 3 game days, full tree and fellable at 12). Felled trunks and stumps rot in a pass every 60 s that looks only at felled records (`rot_scanned`, `rot_removed` count the work); after any gap (server off, nobody near) the first pass removes every stump past 168 game days, and a stump's sapling is dated from the moment it rotted (`felled_at + 168 days`), so it has grown by the time anyone sees it. Tested over 7 and 170 game days in test_server_items.gd.
+
+## Container rules (job 73)
+In structures.json each container has `slots` (stacks it holds), `max_kg` (weight it takes: woven chest 40 kg, plank chest 150 kg, placeholders) and `who` (only "anyone"; "owner" and "town" come with ownership). A put past the weight puts what fits (stack by stack) and refuses the rest with the pack-full cue; a full chest or a pack at its carry cap moves nothing and loses nothing (tests in test_server_items.gd). The validator checks the three fields.
