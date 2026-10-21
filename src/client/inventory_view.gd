@@ -46,6 +46,8 @@ var chest_id: int = 0
 var _chest_panel: PanelContainer
 var _chest_buttons: Array = []
 var _pack_buttons: Array = []
+const DRINK_WINDOW_MSEC := 3000        # a rise in thirst this soon after drink() is a mouthful at the water
+var _drink_msec: int = 0
 var eat_event: Callable                # (item id) when something eaten or applied takes effect (sounds)
 var hunger: int = 100                  # stomach, percent
 var fitness: int = 0                  # the character's fitness, -10 to 10: how slowly exertion rises (character screen)
@@ -856,6 +858,10 @@ func _on_vitals(new_hunger: int, new_health: int, weight_dkg: int, new_thirst: i
 		eat_event.call(_eat_item)
 		_eat_item = ""
 
+	# A mouthful at the water's edge (drink()) took effect: the gulp sound (Dave 2026-10-21: no sound when drinking).
+	if new_thirst > thirst and _drink_msec > 0 and Time.get_ticks_msec() - _drink_msec < DRINK_WINDOW_MSEC and eat_event.is_valid():
+		eat_event.call("drink")
+
 	hunger = new_hunger
 	thirst = new_thirst
 	luck = new_luck
@@ -871,6 +877,7 @@ func _on_vitals(new_hunger: int, new_health: int, weight_dkg: int, new_thirst: i
 
 # Drink from the water at your feet (E at the water's edge; the server checks the water and paces the mouthfuls).
 func drink() -> void:
+	_drink_msec = Time.get_ticks_msec()
 	net.inventory_action.rpc_id(1, Net.ACT_DRINK, 0, 0, 0, Vector3.ZERO)
 
 

@@ -2636,6 +2636,14 @@ func _process(delta: float) -> void:
 			sound.itemfx.eat(kind)
 
 		sound.itemfx.watch_vitals(10, 200.0)
+		# A mouthful at the water's edge (Dave 2026-10-21): E sends the drink, the server raises thirst, the gulp plays; a rise without E is silent.
+		items.thirst = 50
+		var before_drink: int = sound.itemfx.eat_played
+		items._on_vitals(items.hunger, items.health, int(items.weight_kg * 10.0), 60, items.luck, items.fitness)
+		var silent_rise: int = sound.itemfx.eat_played - before_drink
+		items._drink_msec = Time.get_ticks_msec()
+		items._on_vitals(items.hunger, items.health, int(items.weight_kg * 10.0), 70, items.luck, items.fitness)
+		print("Terrain client: drink check: %d gulps without E, %d gulp after E, last %s" % [silent_rise, sound.itemfx.eat_played - before_drink - silent_rise, sound.itemfx.last])
 
 		print("Terrain client: cooking sounds: sizzle %d, fuel %d, eaten %d, growls %d, last fire %s, last item %s" % [sound.fire.cook_played, sound.fire.fuel_played, sound.itemfx.eat_played, sound.itemfx.growls_played, sound.fire.last, sound.itemfx.last])
 

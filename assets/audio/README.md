@@ -481,3 +481,7 @@ Dave flew at y 420 over a forest and heard startled wings. `ambient_life.gd` now
 ## Heartbeat curve (fix, 2026-10-21)
 
 Dave: the heart should speed up smoothly with how far exertion goes past the blackout threshold, about 175 bpm right at it and 200 at the peak. `breath_sounds.gd` `_bpm()`: 60 bpm at exertion 0.55 rising to 175 at `FAINT_AT` 1.4, on to 200 at `EXERTION_MAX` 2.0; fainting or fainted counts as at least 1.4. `bpm_now` eases toward it at 40 bpm per second, so there are no steps (and it eases back on waking). Check: `faint` scenario (bpm max, biggest step per frame).
+
+## Drinking at the water (fix, 2026-10-21)
+
+E at the water's edge sent the drink but nothing played. `inventory_view.gd` `_on_vitals`: when thirst rises within `DRINK_WINDOW_MSEC` (3 s) of `drink()`, it calls `eat_event("drink")` (the `drink_gulp` swallows). The server accepts a mouthful every `drink_pace_ms`, so a held E gulps at that pace; a refused drink or full stomach is silent. Check: `cooking` scenario (drink check line).
