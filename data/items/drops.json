@@ -94,7 +94,8 @@
 		"stone_rock": 0.4,
 		"stick_open": 0.12,
 		"stick_tree": 0.88,
-		"stick_on_rock": 0.3
+		"stick_on_rock": 0.3,
+		"bank": {"note": "Pickable stones along the water's edge, in place of the drawn pebbles and boulders (Dave 2026-10-21): in a cell with water within cell_probe_m, tries spots and puts a stone on a dry one within reach_m of water with the given chance, up to max a cell.", "cell_probe_m": 24.0, "reach_m": 3.0, "tries": 60, "chance": 0.5, "max": 6}
 	},
 	"trunk": {
 		"note": "Working a felled trunk with the axe, one blow at a time: first the branches and leaves come off, then logs, with some bark and now and then seeds. The trunk is used up when its logs are gone. When the last log is gone the root ball comes up (roots). The seed roll gives the species' own fruit or nut from by_species when it has one, else a seed bundle.",
