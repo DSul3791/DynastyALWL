@@ -88,7 +88,7 @@ func _init() -> void:
 	items.action(1, Net.ACT_ADMIN_GIVE, stone, 0, 1, Vector3.ZERO)
 	items.action(1, Net.ACT_CHEST_PUT, items.inventory_of(1).numbers.find(stone), id, 1, Vector3.ZERO)
 	check(items.inventory_of(1).count_of(stone) == 1, "nothing can be put on remains")
-	items.action(1, Net.ACT_CHEST_TAKE, 10, id, 15, Vector3.ZERO)
+	items.action(1, Net.ACT_CHEST_TAKE, 0, id, 15, Vector3.ZERO)
 	check(items.inventory_of(1).count_of(stone) == 16, "the owner takes the pack back")
 	check(marks.back()[1].is_empty(), "taking everything clears the marker")
 	items.action(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)

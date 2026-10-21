@@ -561,7 +561,10 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 				_cancel_craft(peer, a)
 	elif kind == Net.ACT_ADMIN_GIVE:
 		if table.id_of(a) != "" and (not admin_ok.is_valid() or admin_ok.call(peer)):
+			var bag_was: int = inv.bag_from
+			inv.bag_from = 0   # an admin give fills from the first slot (tests and the admin tool); player pickups keep to the bag
 			var left: int = inv.add(a, clampi(count, 1, 100))
+			inv.bag_from = bag_was
 
 			if left > 0:
 				drop_in_world(a, left, _peer_pos.get(peer, Vector3.ZERO))

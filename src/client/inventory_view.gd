@@ -753,9 +753,11 @@ func _make_felled(trunk: bool, extra: Dictionary) -> Node3D:
 	pivot.add_child(mesh_node)
 	mesh_node.position = Vector3(0.0, length * 0.5, 0.0)
 	var lie: float = deg_to_rad(90.0)
+	pivot.position.y = radius   # the axis rides one butt radius up, so the log rests ON the ground instead of sunk in it (collision is at this height)
 	pivot.rotation.x = 0.0
 	var tween: Tween = pivot.create_tween()
-	tween.tween_property(pivot, "rotation:x", lie, 1.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	# The trunk tapers to 55 percent at the top: dip the far end by the lost radius so it lies on the ground along its whole length.
+	tween.tween_property(pivot, "rotation:x", lie + asin(clampf(radius * 0.45 / maxf(length, 0.5), 0.0, 0.5)), 1.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	var body: StaticBody3D = StaticBody3D.new()
 	body.collision_layer = 0
 	var shape: CollisionShape3D = CollisionShape3D.new()

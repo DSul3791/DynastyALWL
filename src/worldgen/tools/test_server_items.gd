@@ -1949,7 +1949,7 @@ func _init() -> void:
 	bo._last_hit.clear()
 	bo.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, 0, Vector3.ZERO)
 	check(bo_rejects == [1] and int(bo._items[900001]["count"]) == small_total, "no pick or axe on the hotbar: refused (no tool), nothing taken (%s)" % str(bo_rejects))
-	bo.give(1, bo.table.number_of("iron_pickaxe"), 1)
+	bo.action(1, Net.ACT_ADMIN_GIVE, bo.table.number_of("iron_pickaxe"), 0, 1, Vector3.ZERO)
 	var stone_id: int = bo.table.number_of("stone")
 
 	for n in range(10):
@@ -1961,7 +1961,7 @@ func _init() -> void:
 	check(int(bo.inventory_of(1).wear[pick_slot]) == 10, "every blow wears the pick (%d)" % int(bo.inventory_of(1).wear[pick_slot]))
 	bo.inventory_of(1).numbers[pick_slot] = 0
 	bo.inventory_of(1).counts[pick_slot] = 0
-	bo.give(1, bo.table.number_of("stone_axe"), 1)
+	bo.action(1, Net.ACT_ADMIN_GIVE, bo.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
 
 	for n in range(9):
 		bo._last_hit.clear()
@@ -1987,7 +1987,7 @@ func _init() -> void:
 	for fortune in [10, -10]:
 		bo._characters["boulderkey01"]["luck"] = fortune
 		bo.inventory_of(1).numbers[bo.inventory_of(1).numbers.find(bo.table.number_of("stone_axe"))] = 0
-		bo.give(1, bo.table.number_of("iron_pickaxe"), 1)
+		bo.action(1, Net.ACT_ADMIN_GIVE, bo.table.number_of("iron_pickaxe"), 0, 1, Vector3.ZERO)
 		bo._items[900002] = {"number": 0, "count": 3000, "pos": Vector3(5.0, 11.5, 6.0), "left": 1.0e9, "scatter": bo.BOULDER_KEY | 9, "boulder": {"radius": 1.0, "yaw": 0.0, "total": 3000}}
 		var taken: int = 0
 
