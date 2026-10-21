@@ -32,16 +32,24 @@ func _init() -> void:
 	_check(Swim.breath_drain(2.0, 0.5, 0.5, 2.6, 1.6) == 1.0, "ordinary swimming spends it at the base pace")
 	_check(Swim.breath_drain(3.0, 0.5, 0.5, 2.6, 1.6) == 1.6, "swimming hard spends it faster")
 
-	# Buoyancy: below the float line the body rises, above it sinks, and it settles at the line.
-	var y: float = 97.5
+	# Buoyancy: above the float line the body sinks to it (head out) and settles; below it stays put.
+	var y: float = 100.0
 	var vy: float = 0.0
 
 	for step in range(600):
 		vy = Swim.vertical_speed(y, 100.0, vy, false, false, 1.0 / 60.0)
 		y += vy / 60.0
 
-	_check(absf(y - Swim.float_centre(100.0)) < 0.05, "a swimmer floats up to the surface and stays (centre %.2f, float line %.2f)" % [y, Swim.float_centre(100.0)])
+	_check(absf(y - Swim.float_centre(100.0)) < 0.05, "a swimmer sinks to head-out depth and stays (centre %.2f, float line %.2f)" % [y, Swim.float_centre(100.0)])
 	_check(y + 0.9 > 100.0 and y - 0.9 < 100.0, "floating, the head is above the water and the feet under it")
+	y = 97.0
+	vy = 0.0
+
+	for step in range(300):
+		vy = Swim.vertical_speed(y, 100.0, vy, false, false, 1.0 / 60.0)
+		y += vy / 60.0
+
+	_check(absf(y - 97.0) < 0.01, "a diver who stops swimming stays put (no drift up, centre %.2f)" % y)
 	vy = 0.0
 	y = Swim.float_centre(100.0)
 
