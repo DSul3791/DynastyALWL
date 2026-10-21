@@ -27,6 +27,8 @@ extends Node
 const LookSettings := preload("res://src/client/look_settings.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const CanopyMapScript := preload("res://src/client/canopy_map.gd")
+const DayCycleScript := preload("res://src/client/day_cycle.gd")
+const WaterMaterial := preload("res://src/client/water_material.gd")
 
 signal flash_started(at_world: Vector3, distance_m: float)
 
@@ -38,6 +40,8 @@ const EXPOSURE_CLEAR := 1.1
 const EXPOSURE_STORM := 0.95
 const SATURATION_CLEAR := 1.12
 const SATURATION_STORM := 0.72
+const DAY_STEP_MSEC := 1000                # sun direction and colour refresh
+const SKY_STEP_MSEC := 4000                # sky palette refresh (see the comment where it is used)
 const EASE_S := 8.0                      # seconds for a front to fade fully in or out
 const RAIN_AMOUNT := [500, 1400, 2800, 4500]
 const SNOW_AMOUNT := [350, 900, 2000, 3200]
@@ -95,6 +99,9 @@ var _flash_scale: float = 1.0
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var flash_level: float = 0.0            # 0..1, for the HUD and tests
 var gloom: float = 0.0
+var day = DayCycleScript.new()         # sun, moon and sky colours from the game clock (day_cycle.gd), refreshed twice a second
+var _day_next_msec: int = 0
+var _sky_next_msec: int = 0
 var _dark: float = 0.0                  # 0 bright .. 1 stormy: sun, ambient light, exposure and colour follow it
 var cloud_cover: float = 0.0
 var strikes_seen: int = 0
@@ -307,6 +314,35 @@ func _process_body(delta: float) -> void:
 	var environment: Environment = _client._environment
 	var sky_material: ShaderMaterial = environment.sky.sky_material as ShaderMaterial
 
+	var now_msec: int = Time.get_ticks_msec()
+
+	if LookSettings.DAY_CYCLE and now_msec >= _day_next_msec and _client.get("game_clock") != null:
+		_day_next_msec = now_msec + DAY_STEP_MSEC
+		day.update(_client.game_clock.hour(), _client.game_clock.day_of_year())
+
+		if _client._sun != null:
+			_client._sun.basis = day.light_basis
+			_client._sun.light_color = day.light_color
+
+	# The sky colours change in coarser steps than the sun: a changed sky shader parameter may make the engine redraw the
+	# sky's lighting cubemap, so it is paid once every few seconds (two game minutes), not every frame. Check the GPU table
+	# ("sky clouds at Low quality") and the frame time over a dusk if this is ever raised.
+	if LookSettings.DAY_CYCLE and now_msec >= _sky_next_msec:
+		_sky_next_msec = now_msec + SKY_STEP_MSEC
+
+		if _client.flora != null:
+			_client.flora.set_day_sky(day.sky_top, day.sky_horizon, day.cloud_shadow, day.ambient_factor)
+
+		if _client.sea != null:
+			WaterMaterial.apply_day(_client.sea.material_override as ShaderMaterial, day.sky_top, day.sky_horizon, day.cloud_shadow, day.ambient_factor)
+
+		if sky_material != null:
+			sky_material.set_shader_parameter("sky_top_color", day.sky_top)
+			sky_material.set_shader_parameter("sky_horizon_color", day.sky_horizon)
+			sky_material.set_shader_parameter("ground_horizon_color", day.ground_horizon)
+			sky_material.set_shader_parameter("cloud_shadow_color", day.cloud_shadow)
+			sky_material.set_shader_parameter("night", day.night)
+
 	if sky_material != null:
 		sky_material.set_shader_parameter("coverage", lerpf(0.62, 0.30, cloud_cover))
 		sky_material.set_shader_parameter("gloom", gloom)
@@ -316,9 +352,9 @@ func _process_body(delta: float) -> void:
 	var sun_amount: float = clampf(1.0 - cloud_cover * 1.25, 0.0, 1.0)
 
 	if _client._sun != null:
-		_client._sun.light_energy = LookSettings.SUN_ENERGY * lerpf(SUN_STORM, 1.0, sun_amount) + flash_level * 1.2
+		_client._sun.light_energy = LookSettings.SUN_ENERGY * lerpf(SUN_STORM, 1.0, sun_amount) * day.light_factor + flash_level * 1.2
 
-	environment.ambient_light_energy = lerpf(1.0, AMBIENT_STORM, _dark) + flash_level * 2.0
+	environment.ambient_light_energy = lerpf(1.0, AMBIENT_STORM, _dark * (1.0 - 0.7 * day.night)) * day.ambient_factor + flash_level * 2.0
 	# The whole picture goes dimmer and greyer with the weather.
 	environment.tonemap_exposure = lerpf(EXPOSURE_CLEAR, EXPOSURE_STORM, _dark)
 	environment.adjustment_saturation = lerpf(SATURATION_CLEAR, SATURATION_STORM, _dark)
@@ -326,7 +362,7 @@ func _process_body(delta: float) -> void:
 	if not _client.underwater:
 		var thick: float = 1.0 + 5.0 * rain + 4.0 * snow + 3.0 * storm + 12.0 * float(_s["fog"])
 		environment.fog_density = LookSettings.FOG_DENSITY * minf(thick, 20.0)
-		environment.fog_light_color = _graded(SkyClouds.HORIZON, gloom)
+		environment.fog_light_color = _graded(day.sky_horizon, gloom)
 		environment.fog_sky_affect = 0.0
 
 	canopy.update(_client.flora, Vector2(_client.camera.global_position.x, _client.camera.global_position.z))

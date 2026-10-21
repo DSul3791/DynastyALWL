@@ -336,6 +336,11 @@ func set_storm_murk(amount: float) -> void:
 		_water_material.set_shader_parameter("storm", amount)
 
 
+# The sky colours of the day cycle for the land water (weather_look.gd).
+func set_day_sky(top: Color, horizon: Color, cloud_shadow: Color, daylight: float) -> void:
+	WaterMaterial.apply_day(_water_material, top, horizon, cloud_shadow, daylight)
+
+
 func set_flow_rate(rate: float) -> void:
 	rate /= START_FLOW_RATE
 
@@ -813,6 +818,10 @@ var _ice_bears: bool = false
 
 func set_ice_cover(value: float) -> void:
 	ice_cover = value
+
+	if _water_material != null:
+		_water_material.set_shader_parameter("ice", value)
+
 	var bears: bool = IceScript.bears(value)
 
 	if bears == _ice_bears:

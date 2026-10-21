@@ -31,6 +31,7 @@ uniform float cirrus_amount = 0.3;
 uniform float sun_angle_max = 0.52;      // glow around the sun (radians)
 uniform float sun_curve = 0.15;
 uniform float gloom = 0.0;               // 0 clear, 1 storm: sky and clouds turn dark grey (weather_look.gd)
+uniform float night = 0.0;               // 0 day .. 1 night: stars (day_cycle.gd)
 uniform float flash = 0.0;               // lightning: lights the clouds from within (weather_look.gd)
 
 // No sine in the hash: stays exact for large coordinates.
@@ -146,6 +147,21 @@ vec4 clouds(vec3 dir, vec3 eye, int octaves, int light_samples, bool cirrus, flo
 	return vec4(mix(result.rgb, color, alpha), result.a + alpha * (1.0 - result.a));
 }
 
+// Stars: one jittered point per cell of a 3D grid over the sky, a few of the cells lit, some brighter.
+vec3 stars(vec3 dir) {
+	vec3 p = dir * 140.0;
+	vec3 cell = floor(p);
+	float h = hash(cell.xy + cell.z * 57.31);
+	if (h < 0.985) {
+		return vec3(0.0);
+	}
+	vec3 at = vec3(hash(cell.yz + 3.1), hash(cell.zx + 7.7), hash(cell.xy + 11.3));
+	float d = length(fract(p) - (0.2 + 0.6 * at));
+	float size = 0.1 + 0.08 * hash(cell.xz + 19.9);
+	float bright = smoothstep(size, 0.0, d) * (0.4 + 1.6 * hash(cell.xy + 29.0 + cell.z));
+	return vec3(0.85, 0.9, 1.0) * bright;
+}
+
 // Weather grading: grey and darker with gloom (weather_look.gd uses the same formula for the
 // fog), and a lightning flash that lights the clouds far more than the open sky.
 vec3 weather_grade(vec3 c, float cover) {
@@ -163,6 +179,9 @@ void sky() {
 	} else {
 		vec4 c = clouds(EYEDIR, POSITION, OCTAVES, LIGHT_SAMPLES, CIRRUS, 0.001);
 		COLOR = weather_grade(mix(base_sky(EYEDIR, true), c.rgb, c.a), c.a);
+		if (night > 0.0 && EYEDIR.y > 0.0) {
+			COLOR += stars(EYEDIR) * night * (1.0 - c.a) * (1.0 - gloom) * smoothstep(0.0, 0.12, EYEDIR.y);
+		}
 	}
 }
 """

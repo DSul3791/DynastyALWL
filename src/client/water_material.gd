@@ -30,6 +30,8 @@ uniform float cloud_scale_m = 1800.0;    // line up with the ones overhead
 uniform float coverage = 0.53;
 uniform float softness = 0.2;
 uniform vec2 wind_m_s = vec2(9.0, 4.0);
+uniform float ice = 0.0;             // 0 open water .. 1 a full sheet of ice on STILL water (src/shared/ice.gd; flora_view.gd set_ice_cover)
+uniform float daylight = 1.0;       // 1 day .. about 0.14 night: the body glow follows it (day_cycle.gd, set by weather_look.gd)
 uniform float refraction = 1.0;      // 0 (Low quality): see-through by blending; 1: the bottom bends under the ripples
 #ifdef SCENE_READS
 // Reading the depth or the screen makes Forward+ copy the whole frame, so Low quality
@@ -255,7 +257,7 @@ void fragment() {
 		seen = mix(seen, sky, fresnel * 0.8 * (1.0 - 0.7 * face));
 		// The lighting adds the sun glint on top; keep the body itself unlit-looking.
 		ALBEDO = mix(seen * 0.6, foam_tint, foam * 0.85);
-		EMISSION = seen * 0.4 * (1.0 - foam);
+		EMISSION = seen * 0.4 * (1.0 - foam) * daylight;
 		ALPHA = sheet_alpha;
 	} else
 #endif
@@ -265,6 +267,35 @@ void fragment() {
 	}
 	ROUGHNESS = 0.08 + 0.3 * foam;
 	SPECULAR = 0.6;
+
+	// Ice (still water only: running water never freezes). The sheet grows in from the shore and from the shallows,
+	// in patches, until it covers everything; a thin sheet is clear and dark (the bed shows), a thick one milky white-blue
+	// with cracks. It is flat and glossy: the ripples stop, and no foam rides it.
+	if (ice > 0.001 && steep < 0.02) {
+		float edge = 1.0 - smoothstep(0.0, 1.4, through);
+		float patch = noise(local / 7.0 + 3.7);
+		float grown = ice * 1.25 + edge * 0.5 - patch * 0.5 - 0.05;
+		float sheet = smoothstep(0.0, 0.25, grown);
+		float thick = clamp(ice * 1.4 - 0.15 + 0.3 * patch, 0.0, 1.0);
+		// Cracks: thin dark lines where noise crosses its middle, two sizes, more of them in a thin sheet.
+		float cr1 = 1.0 - smoothstep(0.0, 0.035, abs(noise(local / 2.6) - 0.5));
+		float cr2 = 1.0 - smoothstep(0.0, 0.05, abs(noise(local / 0.9 + 9.0) - 0.5));
+		float cracks = clamp(cr1 + 0.5 * cr2, 0.0, 1.0) * (1.0 - 0.5 * thick);
+		vec3 clear_ice = vec3(0.30, 0.46, 0.55);
+		vec3 milky = vec3(0.80, 0.89, 0.94);
+		vec3 ice_col = mix(clear_ice, milky, thick);
+		ice_col = mix(ice_col, vec3(0.38, 0.55, 0.68), cracks * 0.7);
+		ice_col = mix(ice_col, sky, 0.12 + 0.35 * fresnel);
+		float lit = mix(0.55, 1.0, daylight);
+		ALBEDO = mix(ALBEDO, ice_col * lit, sheet);
+		ALPHA = max(ALPHA, sheet * mix(0.55, 0.97, thick));
+#ifdef SCENE_READS
+		EMISSION = mix(EMISSION, ice_col * 0.25 * daylight, sheet);
+#endif
+		ROUGHNESS = mix(ROUGHNESS, 0.18 + 0.2 * cracks, sheet);
+		SPECULAR = mix(SPECULAR, 0.9, sheet);
+		NORMAL = normalize(mix(NORMAL, (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz, sheet * 0.95));
+	}
 }
 """
 
@@ -282,6 +313,16 @@ static func make() -> ShaderMaterial:
 	var material: ShaderMaterial = ShaderMaterial.new()
 	material.shader = _shader
 	return material
+
+
+# The sky colours and the daylight share the sky shader is using now (day_cycle.gd), so at dusk and at night the water
+# mirrors the dark sky and does not glow.
+static func apply_day(material: ShaderMaterial, top: Color, horizon: Color, cloud_shadow: Color, daylight: float) -> void:
+	if material != null:
+		material.set_shader_parameter("sky_top", top)
+		material.set_shader_parameter("sky_horizon", horizon)
+		material.set_shader_parameter("cloud_shadow", cloud_shadow)
+		material.set_shader_parameter("daylight", daylight)
 
 
 # Quality (F2): Low is the cheap variant (no depth or screen read, blended by vertex alpha);

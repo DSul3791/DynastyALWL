@@ -14,13 +14,54 @@ const SEA_MIN_M := 1.0           # the sea floor is at least this far below the 
 var seed_value: int = 0
 var ground_below: Callable       # (Vector3) -> float, NAN where no ground is loaded
 var _floes: Dictionary = {}      # Vector2i cell -> Node3D (a floe), or null (a cell that is not over the sea)
-var _material: StandardMaterial3D
+var _material: ShaderMaterial
+
+# The look of a floe (Art direction): snow-dusted white top with blue shadow patches, glassy blue-green sides with vertical
+# streaks, hairline cracks. World-space noise, so neighbouring floes differ and nothing repeats; lit by the sun and the
+# moon like any solid (no emission). One material for every floe, no textures: about 40 ALU per pixel on a few slabs.
+const ICE_SHADER := """
+shader_type spatial;
+varying vec3 wp;
+
+float hash(vec2 p) {
+	vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+	p3 += dot(p3, p3.yzx + 33.33);
+	return fract((p3.x + p3.y) * p3.z);
+}
+
+float noise(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	vec2 u = f * f * (3.0 - 2.0 * f);
+	return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+}
+
+void vertex() {
+	wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+}
+
+void fragment() {
+	vec2 q = mod(wp.xz, 2048.0);
+	vec3 n = normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz);
+	float top = smoothstep(0.55, 0.85, n.y);
+	float drift = noise(q / 5.0);
+	float cracks = (1.0 - smoothstep(0.0, 0.04, abs(noise(q / 2.3) - 0.5))) * 0.8 + (1.0 - smoothstep(0.0, 0.05, abs(noise(q / 0.8 + 5.0) - 0.5))) * 0.4;
+	vec3 snow = mix(vec3(0.93, 0.95, 0.98), vec3(0.70, 0.80, 0.90), smoothstep(0.35, 0.8, drift));
+	snow = mix(snow, vec3(0.50, 0.64, 0.76), clamp(cracks, 0.0, 1.0) * 0.55);
+	float streak = noise(vec2(q.x * 3.0 + q.y * 3.0, wp.y * 0.6));
+	vec3 side = mix(vec3(0.32, 0.55, 0.66), vec3(0.62, 0.82, 0.90), streak);
+	ALBEDO = mix(side, snow, top);
+	ROUGHNESS = mix(0.12, 0.7, top);
+	SPECULAR = mix(0.9, 0.35, top);
+}
+"""
 
 
 func _ready() -> void:
-	_material = StandardMaterial3D.new()
-	_material.albedo_color = Color(0.82, 0.9, 0.95)
-	_material.roughness = 0.35
+	var shader: Shader = Shader.new()
+	shader.code = ICE_SHADER
+	_material = ShaderMaterial.new()
+	_material.shader = shader
 
 
 # Called about once a second with the player's position and the sea's ice cover (Ice.cover).
