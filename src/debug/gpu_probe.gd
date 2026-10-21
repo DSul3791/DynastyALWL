@@ -180,6 +180,13 @@ func _show(done: bool) -> void:
 		int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)), Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME) / 1000.0,
 		int(Engine.get_frames_per_second())]
 
+	# The script time by piece, averaged per frame over the whole run (only the pieces the code times; the rest is untimed).
+	var pieces: PackedStringArray = FrameProbe.window_top(8)
+	text += "script ms by piece: %s\n" % ", ".join(pieces.slice(0, 4))
+
+	if pieces.size() > 4:
+		text += "  %s\n" % ", ".join(pieces.slice(4))
+
 	for n in range(_results.size()):
 		var gpu: float = float(_results[n][1])
 
