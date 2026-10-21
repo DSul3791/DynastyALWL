@@ -116,6 +116,7 @@ func _stress() -> void:
 	for n in 20:
 		players.append(Vector3(53301.0 + rng.randf_range(-200.0, 200.0), 10.0, 68427.0 + rng.randf_range(-200.0, 200.0)))
 
+	var mem0: int = OS.get_static_memory_usage()
 	var a = make(players)
 	var npcs = NpcsScript.new()
 	NpcsScript.test_hold_off = true
@@ -124,6 +125,7 @@ func _stress() -> void:
 	npcs.player_positions = func(): return players
 	npcs.setup("")
 	var times: Array = []
+	var bytes: int = 0
 	var dirs: Array = []
 
 	for n in 20:
@@ -139,7 +141,7 @@ func _stress() -> void:
 
 		if step % 5 == 0:   # the server sends rows about four times a second
 			for p in players:
-				a.rows_near(p)
+				bytes += var_to_bytes(a.rows_near(p)).size()
 
 		times.append(float(Time.get_ticks_usec() - t0) / 1000.0)
 
@@ -154,6 +156,7 @@ func _stress() -> void:
 	var p99: float = settled[int(settled.size() * 0.99)]
 	var worst: float = settled[settled.size() - 1]
 	print("animals stress20: %d animals, %d NPCs, tick avg %.3f ms, p99 %.3f ms, worst %.3f ms (budget 2 ms)" % [a.animals.size(), npcs.npcs.size(), avg, p99, worst])
+	print("animals stress20: %.0f bytes/s to all 20 players (%.0f per player), memory growth %d KB" % [float(bytes) / 120.0, float(bytes) / 120.0 / 20.0, (OS.get_static_memory_usage() - mem0) / 1024])
 	check(avg < 2.0, "NPC + animal AI under 2 ms a tick on average at 20 players (%.3f)" % avg)
 
 	# Worst case: the server cap of 150 animals all near players.

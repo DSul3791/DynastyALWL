@@ -2052,3 +2052,4 @@ Forest floor polish (noted 2026-10-20, owner: "good for now"): the ground textur
 
 ## Player-built buildings and blueprints (Dave 2026-10-21)
 Players will build their own buildings in the future and make blueprints of their creations (shareable). That is why buildings are not crafting stations: tier 4 is the Masonry forge, an open placeable object. Internal ids (blacksmithy_kit, blacksmithy) stay for saves.
+Tyler's research note (tyler/BEST_PRACTICES.md "Player-built buildings and blueprints"): pieces with snap sockets, server-authoritative placement, a structural integrity ramp, a blueprint as a relative piece list shareable as a code, a claim stone with piece limit and decay, per-tile delta saves, MultiMesh by piece type.
