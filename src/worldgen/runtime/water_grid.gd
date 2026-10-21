@@ -78,6 +78,8 @@ const CALM_RADIUS := 3           # cells each way: the window that tells a still
 const CALM_SLOPE := 0.003        # a surface tilting less than this over the window is standing water
 const CALM_RANGE_M := 0.6        # ...and no wave taller than this in it (a cascade lip is not calmed)
 const STILL_REACH := 3           # a rim cell this close to a calm cell of a pond is standing water too
+const STILL_BODY_M := 0.3        # a connected still body is drawn at one level (its median) when its levels lie within this
+const STILL_EASE_CELLS := 4      # the current eases in over this many cells (about 30 m) from the edge of standing water
 const STILL_LEVEL_M := 0.15      # ...if its level is within this of the pond's
 const CALM_WET_SHARE := 0.6      # a window must be this wet (shore windows are part dry)
 
@@ -199,6 +201,51 @@ static func _still_levels(count: int, spacing: float, levels: PackedFloat32Array
 
 			out[j * count + i] = best
 
+	# One level per connected body (Tyler: window means differ by a few cm between cores, faint facets on a big
+	# lake): the median of the body's levels, when they all lie within STILL_BODY_M of each other.
+	var body: PackedInt32Array = PackedInt32Array()
+	body.resize(count * count)
+	body.fill(-1)
+
+	for start in range(count * count):
+		if is_nan(out[start]) or body[start] >= 0:
+			continue
+
+		var members: PackedInt32Array = PackedInt32Array([start])
+		body[start] = start
+		var head: int = 0
+
+		while head < members.size():
+			var n: int = members[head]
+			head += 1
+
+			for dj in range(-1, 2):
+				for di in range(-1, 2):
+					var ii: int = n % count + di
+					var jj: int = n / count + dj
+
+					if ii < 0 or jj < 0 or ii >= count or jj >= count:
+						continue
+
+					var m: int = jj * count + ii
+
+					if body[m] < 0 and not is_nan(out[m]):
+						body[m] = start
+						members.append(m)
+
+		var values: PackedFloat32Array = PackedFloat32Array()
+
+		for n in members:
+			values.append(out[n])
+
+		values.sort()
+
+		if values[values.size() - 1] - values[0] <= STILL_BODY_M:
+			var median: float = values[values.size() / 2]
+
+			for n in members:
+				out[n] = median
+
 	return out
 
 
@@ -255,6 +302,18 @@ static func _velocities(generator, data, origin: Vector2, count: int, spacing: f
 			var source = data if (x < data.x0 + float(data.samples - 1) * spacing and z < data.z0 + float(data.samples - 1) * spacing) else generator.get_tile(generator.tile_of(x, z))
 			var depth: float = 0.2 if source.placeholder else maxf(level - source.heights[source.nearest(x, z)], 0.05)
 			var speed: float = minf(pow(depth, 2.0 / 3.0) * sqrt(slope) / MANNING_N, SPEED_MAX_M_S)
+			# Where a river leaves a pond its current eases in instead of jumping to river speed in one cell.
+			var near_still: int = STILL_EASE_CELLS
+
+			for dj in range(-STILL_EASE_CELLS + 1, STILL_EASE_CELLS):
+				for di in range(-STILL_EASE_CELLS + 1, STILL_EASE_CELLS):
+					var ii: int = i + di
+					var jj: int = j + dj
+
+					if ii >= 0 and jj >= 0 and ii < count and jj < count and not is_nan(still[jj * count + ii]):
+						near_still = mini(near_still, maxi(absi(di), absi(dj)))
+
+			speed *= float(near_still) / float(STILL_EASE_CELLS)
 			vel[(j * count + i) * 2] = -gx / slope * speed
 			vel[(j * count + i) * 2 + 1] = -gz / slope * speed
 
