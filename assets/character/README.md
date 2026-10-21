@@ -34,7 +34,7 @@ the stance (idle, crouch, sit, lie) and the walking speed (walk, run).
 For a swing in step with a hit, play it at the speed you need: `body.play("swing", 1.3)`.
 
 ## Where the held tool goes (Items: hotbar, equip, held tool)
-`body.hand_mount_r` (and `hand_mount_l`) is a `Marker3D` on the hand bone. Parent the tool to it:
+`body.hand_mount_r` (and `hand_mount_l`; the rig faces -Z, so the right side is +X and the right hand is the one on the viewer's right in first person) is a `Marker3D` on the hand bone. Parent the tool to it:
 
 * the mount's origin is the grip, in the palm, 7 cm below the wrist;
 * its **-Z axis points out along the fingers** (the way the tool points: a spear tip or an axe head is at -Z);

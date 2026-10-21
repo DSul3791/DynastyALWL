@@ -2731,7 +2731,7 @@ func run_eat_test(client) -> void:
 	var in_hand: int = held_slot_now.call() if held_slot_now.is_valid() else -2
 	print("Hotbar test: axe in slot %d, Use holds slot %d (matches %s), strip boxes %d" % [axe_slot, in_hand, str(in_hand == axe_slot), hotbar_strip._cells.size() if hotbar_strip != null else 0])
 	var model = client.held._model
-	print("Arms test: axe model in the right hand %s, arms shown %s" % [str(model != null and client.held._mounted and model.get_parent() == client.held._arms.hand_mount_l), str(client.held._arms.visible)])
+	print("Arms test: axe model in the right hand %s, arms shown %s" % [str(model != null and client.held._mounted and model.get_parent() == client.held._arms.hand_mount_r), str(client.held._arms.visible)])
 	eat_slot(axe_slot)
 	await get_tree().create_timer(0.5).timeout
 	print("Hotbar test: Use again, hand slot %d (-1 = empty)" % [held_slot_now.call()])

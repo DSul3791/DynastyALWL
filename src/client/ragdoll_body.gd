@@ -15,29 +15,29 @@ extends Node3D
 
 const SKIN := Color(0.78, 0.62, 0.5)
 
-# Bones: name, parent, rest offset from the parent (metres, standing, facing -Z). Left is +X.
+# Bones: name, parent, rest offset from the parent (metres, standing, facing -Z). Right is +X.
 const BONES := [
 	["hips", "", Vector3(0.0, 0.95, 0.0)],
 	["spine", "hips", Vector3(0.0, 0.12, 0.0)],
 	["chest", "spine", Vector3(0.0, 0.2, 0.0)],
 	["neck", "chest", Vector3(0.0, 0.22, 0.0)],
 	["head", "neck", Vector3(0.0, 0.07, 0.0)],
-	["arm_l", "chest", Vector3(0.21, 0.2, 0.0)],
-	["forearm_l", "arm_l", Vector3(0.0, -0.29, 0.0)],
-	["hand_l", "forearm_l", Vector3(0.0, -0.26, 0.0)],
-	["arm_r", "chest", Vector3(-0.21, 0.2, 0.0)],
+	["arm_r", "chest", Vector3(0.21, 0.2, 0.0)],
 	["forearm_r", "arm_r", Vector3(0.0, -0.29, 0.0)],
 	["hand_r", "forearm_r", Vector3(0.0, -0.26, 0.0)],
-	["thigh_l", "hips", Vector3(0.1, -0.05, 0.0)],
-	["shin_l", "thigh_l", Vector3(0.0, -0.45, 0.0)],
-	["foot_l", "shin_l", Vector3(0.0, -0.4, 0.0)],
-	["thigh_r", "hips", Vector3(-0.1, -0.05, 0.0)],
+	["arm_l", "chest", Vector3(-0.21, 0.2, 0.0)],
+	["forearm_l", "arm_l", Vector3(0.0, -0.29, 0.0)],
+	["hand_l", "forearm_l", Vector3(0.0, -0.26, 0.0)],
+	["thigh_r", "hips", Vector3(0.1, -0.05, 0.0)],
 	["shin_r", "thigh_r", Vector3(0.0, -0.45, 0.0)],
 	["foot_r", "shin_r", Vector3(0.0, -0.4, 0.0)],
+	["thigh_l", "hips", Vector3(-0.1, -0.05, 0.0)],
+	["shin_l", "thigh_l", Vector3(0.0, -0.45, 0.0)],
+	["foot_l", "shin_l", Vector3(0.0, -0.4, 0.0)],
 ]
 
 # The first-person model keeps only these (the chest is its root, at the node's origin).
-const ARM_BONES := ["chest", "arm_l", "forearm_l", "hand_l", "arm_r", "forearm_r", "hand_r"]
+const ARM_BONES := ["chest", "arm_r", "forearm_r", "hand_r", "arm_l", "forearm_l", "hand_l"]
 
 # Shapes, each on one bone, in that bone's own space: bone, shape, centre, size, in arms only (the first person model).
 # capsule size = (radius, total height); sphere size = (radius, height); box size = (x, y, z).
@@ -47,18 +47,18 @@ const PARTS := [
 	["chest", "box", Vector3(0.0, 0.1, 0.0), Vector3(0.4, 0.34, 0.22), false],
 	["neck", "capsule", Vector3(0.0, 0.03, 0.0), Vector3(0.05, 0.14, 0.0), false],
 	["head", "sphere", Vector3(0.0, 0.14, 0.0), Vector3(0.12, 0.27, 0.0), false],
-	["arm_l", "capsule", Vector3(0.0, -0.145, 0.0), Vector3(0.055, 0.34, 0.0), true],
-	["forearm_l", "capsule", Vector3(0.0, -0.13, 0.0), Vector3(0.05, 0.3, 0.0), true],
-	["hand_l", "box", Vector3(0.0, -0.05, 0.0), Vector3(0.08, 0.12, 0.045), true],
 	["arm_r", "capsule", Vector3(0.0, -0.145, 0.0), Vector3(0.055, 0.34, 0.0), true],
 	["forearm_r", "capsule", Vector3(0.0, -0.13, 0.0), Vector3(0.05, 0.3, 0.0), true],
 	["hand_r", "box", Vector3(0.0, -0.05, 0.0), Vector3(0.08, 0.12, 0.045), true],
-	["thigh_l", "capsule", Vector3(0.0, -0.22, 0.0), Vector3(0.08, 0.52, 0.0), false],
-	["shin_l", "capsule", Vector3(0.0, -0.2, 0.0), Vector3(0.065, 0.48, 0.0), false],
-	["foot_l", "box", Vector3(0.0, -0.035, -0.07), Vector3(0.1, 0.07, 0.26), false],
+	["arm_l", "capsule", Vector3(0.0, -0.145, 0.0), Vector3(0.055, 0.34, 0.0), true],
+	["forearm_l", "capsule", Vector3(0.0, -0.13, 0.0), Vector3(0.05, 0.3, 0.0), true],
+	["hand_l", "box", Vector3(0.0, -0.05, 0.0), Vector3(0.08, 0.12, 0.045), true],
 	["thigh_r", "capsule", Vector3(0.0, -0.22, 0.0), Vector3(0.08, 0.52, 0.0), false],
 	["shin_r", "capsule", Vector3(0.0, -0.2, 0.0), Vector3(0.065, 0.48, 0.0), false],
 	["foot_r", "box", Vector3(0.0, -0.035, -0.07), Vector3(0.1, 0.07, 0.26), false],
+	["thigh_l", "capsule", Vector3(0.0, -0.22, 0.0), Vector3(0.08, 0.52, 0.0), false],
+	["shin_l", "capsule", Vector3(0.0, -0.2, 0.0), Vector3(0.065, 0.48, 0.0), false],
+	["foot_l", "box", Vector3(0.0, -0.035, -0.07), Vector3(0.1, 0.07, 0.26), false],
 ]
 
 const ANIMATIONS := ["idle", "walk", "run", "crouch", "sit", "lie", "swing", "jab", "throw", "use"]
@@ -317,7 +317,7 @@ func _idle(p: float) -> Dictionary:
 	var breath: float = sin(TAU * p)
 	return {
 		"chest": Vector3(0.02 * breath, 0.0, 0.0), "head": Vector3(-0.01 * breath, 0.0, 0.0),
-		"arm_l": Vector3(0.0, 0.0, 0.07), "arm_r": Vector3(0.0, 0.0, -0.07),
+		"arm_l": Vector3(0.0, 0.0, -0.07), "arm_r": Vector3(0.0, 0.0, 0.07),
 		"forearm_l": Vector3(0.12, 0.0, 0.0), "forearm_r": Vector3(0.12, 0.0, 0.0),
 		"hips_move": Vector3(0.0, 0.004 * breath, 0.0),
 	}
@@ -327,10 +327,10 @@ func _walk(p: float) -> Dictionary:
 	var s: float = sin(TAU * p)
 	var c: float = cos(TAU * p)
 	return {
-		"thigh_l": Vector3(0.5 * s, 0.0, 0.0), "thigh_r": Vector3(-0.5 * s, 0.0, 0.0),
+		"thigh_l": Vector3(0.5 * s, 0.0, -0.0), "thigh_r": Vector3(-0.5 * s, 0.0, -0.0),
 		"shin_l": Vector3(-0.7 * maxf(c, 0.0), 0.0, 0.0), "shin_r": Vector3(-0.7 * maxf(-c, 0.0), 0.0, 0.0),
 		"foot_l": Vector3(0.15 * maxf(c, 0.0), 0.0, 0.0), "foot_r": Vector3(0.15 * maxf(-c, 0.0), 0.0, 0.0),
-		"arm_l": Vector3(-0.4 * s, 0.0, 0.05), "arm_r": Vector3(0.4 * s, 0.0, -0.05),
+		"arm_l": Vector3(-0.4 * s, 0.0, -0.05), "arm_r": Vector3(0.4 * s, 0.0, 0.05),
 		"forearm_l": Vector3(0.3, 0.0, 0.0), "forearm_r": Vector3(0.3, 0.0, 0.0),
 		"spine": Vector3(0.0, 0.07 * s, 0.0), "chest": Vector3(-0.05, -0.06 * s, 0.0),
 		"hips_move": Vector3(0.0, 0.025 * cos(2.0 * TAU * p), 0.0),
@@ -341,10 +341,10 @@ func _run(p: float) -> Dictionary:
 	var s: float = sin(TAU * p)
 	var c: float = cos(TAU * p)
 	return {
-		"thigh_l": Vector3(0.9 * s, 0.0, 0.0), "thigh_r": Vector3(-0.9 * s, 0.0, 0.0),
+		"thigh_l": Vector3(0.9 * s, 0.0, -0.0), "thigh_r": Vector3(-0.9 * s, 0.0, -0.0),
 		"shin_l": Vector3(-1.5 * maxf(c, 0.0), 0.0, 0.0), "shin_r": Vector3(-1.5 * maxf(-c, 0.0), 0.0, 0.0),
 		"foot_l": Vector3(0.3 * maxf(c, 0.0), 0.0, 0.0), "foot_r": Vector3(0.3 * maxf(-c, 0.0), 0.0, 0.0),
-		"arm_l": Vector3(-0.9 * s, 0.0, 0.1), "arm_r": Vector3(0.9 * s, 0.0, -0.1),
+		"arm_l": Vector3(-0.9 * s, 0.0, -0.1), "arm_r": Vector3(0.9 * s, 0.0, 0.1),
 		"forearm_l": Vector3(1.3, 0.0, 0.0), "forearm_r": Vector3(1.3, 0.0, 0.0),
 		"spine": Vector3(-0.15, 0.1 * s, 0.0), "chest": Vector3(-0.1, -0.12 * s, 0.0), "head": Vector3(0.12, 0.0, 0.0),
 		"hips_move": Vector3(0.0, 0.05 * cos(2.0 * TAU * p) - 0.03, 0.0),
@@ -354,11 +354,11 @@ func _run(p: float) -> Dictionary:
 func _crouch(p: float) -> Dictionary:
 	var sway: float = sin(TAU * p)
 	return {
-		"thigh_l": Vector3(1.25, 0.0, 0.0), "thigh_r": Vector3(1.25, 0.0, 0.0),
+		"thigh_l": Vector3(1.25, 0.0, -0.0), "thigh_r": Vector3(1.25, 0.0, -0.0),
 		"shin_l": Vector3(-1.6, 0.0, 0.0), "shin_r": Vector3(-1.6, 0.0, 0.0),
 		"foot_l": Vector3(0.35, 0.0, 0.0), "foot_r": Vector3(0.35, 0.0, 0.0),
 		"spine": Vector3(-0.35, 0.0, 0.0), "chest": Vector3(-0.1 + 0.01 * sway, 0.0, 0.0), "head": Vector3(0.45, 0.0, 0.0),
-		"arm_l": Vector3(0.4, 0.0, 0.08), "arm_r": Vector3(0.4, 0.0, -0.08),
+		"arm_l": Vector3(0.4, 0.0, -0.08), "arm_r": Vector3(0.4, 0.0, 0.08),
 		"forearm_l": Vector3(0.6, 0.0, 0.0), "forearm_r": Vector3(0.6, 0.0, 0.0),
 		"hips_move": Vector3(0.0, -0.36, 0.2),
 	}
@@ -367,10 +367,10 @@ func _crouch(p: float) -> Dictionary:
 func _sit(p: float) -> Dictionary:
 	var breath: float = sin(TAU * p)
 	return {
-		"thigh_l": Vector3(1.5708, 0.0, 0.05), "thigh_r": Vector3(1.5708, 0.0, -0.05),
+		"thigh_l": Vector3(1.5708, 0.0, -0.05), "thigh_r": Vector3(1.5708, 0.0, 0.05),
 		"shin_l": Vector3(-1.5708, 0.0, 0.0), "shin_r": Vector3(-1.5708, 0.0, 0.0),
 		"chest": Vector3(0.02 * breath, 0.0, 0.0),
-		"arm_l": Vector3(0.25, 0.0, 0.05), "arm_r": Vector3(0.25, 0.0, -0.05),
+		"arm_l": Vector3(0.25, 0.0, -0.05), "arm_r": Vector3(0.25, 0.0, 0.05),
 		"forearm_l": Vector3(0.9, 0.0, 0.0), "forearm_r": Vector3(0.9, 0.0, 0.0),
 		"hips_move": Vector3(0.0, -0.45, 0.0),
 	}
@@ -382,9 +382,9 @@ func _lie(p: float) -> Dictionary:
 	return {
 		"hips": Vector3(1.5708, 0.0, 0.0),
 		"chest": Vector3(0.02 * breath, 0.0, 0.0),
-		"arm_l": Vector3(0.0, 0.0, 0.12), "arm_r": Vector3(0.0, 0.0, -0.12),
+		"arm_l": Vector3(0.0, 0.0, -0.12), "arm_r": Vector3(0.0, 0.0, 0.12),
 		"forearm_l": Vector3(0.1, 0.0, 0.0), "forearm_r": Vector3(0.1, 0.0, 0.0),
-		"thigh_l": Vector3(0.0, 0.0, 0.06), "thigh_r": Vector3(0.0, 0.0, -0.06),
+		"thigh_l": Vector3(0.0, 0.0, -0.06), "thigh_r": Vector3(0.0, 0.0, 0.06),
 		"hips_move": Vector3(0.0, -0.77, 0.0),
 	}
 
@@ -395,8 +395,8 @@ func _swing(p: float) -> Dictionary:
 	var elbow: float = _keys([[0.0, 0.12], [0.35, 0.8], [0.55, 0.2], [1.0, 0.12]], p)
 	var lean: float = _keys([[0.0, 0.0], [0.35, 0.15], [0.55, -0.35], [1.0, 0.0]], p)
 	return {
-		"arm_r": Vector3(arm, 0.0, -0.07), "forearm_r": Vector3(elbow, 0.0, 0.0),
-		"arm_l": Vector3(arm * 0.75, 0.0, 0.1), "forearm_l": Vector3(elbow + 0.2, 0.0, 0.0),
+		"arm_r": Vector3(arm, 0.0, 0.07), "forearm_r": Vector3(elbow, 0.0, 0.0),
+		"arm_l": Vector3(arm * 0.75, 0.0, -0.1), "forearm_l": Vector3(elbow + 0.2, 0.0, 0.0),
 		"spine": Vector3(lean, 0.0, 0.0), "chest": Vector3(lean * 0.5, 0.0, 0.0),
 		"hips_move": Vector3(0.0, -0.05 * maxf(lean * -1.0, 0.0), 0.0),
 	}
@@ -408,8 +408,8 @@ func _jab(p: float) -> Dictionary:
 	var elbow: float = _keys([[0.0, 0.12], [0.4, 1.6], [0.55, 0.05], [1.0, 0.12]], p)
 	var twist: float = _keys([[0.0, 0.0], [0.4, 0.3], [0.55, -0.25], [1.0, 0.0]], p)
 	return {
-		"arm_r": Vector3(arm, 0.0, -0.07), "forearm_r": Vector3(elbow, 0.0, 0.0),
-		"arm_l": Vector3(0.8, 0.0, 0.2), "forearm_l": Vector3(0.9, 0.0, 0.0),
+		"arm_r": Vector3(arm, 0.0, 0.07), "forearm_r": Vector3(elbow, 0.0, 0.0),
+		"arm_l": Vector3(0.8, 0.0, -0.2), "forearm_l": Vector3(0.9, 0.0, 0.0),
 		"spine": Vector3(0.0, twist, 0.0), "chest": Vector3(-0.1 * absf(twist), twist, 0.0),
 	}
 
@@ -422,8 +422,8 @@ func _throw(p: float) -> Dictionary:
 	var lean: float = _keys([[0.0, 0.0], [0.45, 0.25], [0.6, -0.3], [1.0, 0.0]], p)
 	var other: float = _keys([[0.0, 0.2], [0.45, 1.2], [0.6, 0.5], [1.0, 0.2]], p)
 	return {
-		"arm_r": Vector3(arm, 0.0, -0.1), "forearm_r": Vector3(elbow, 0.0, 0.0),
-		"arm_l": Vector3(other, 0.0, 0.2), "forearm_l": Vector3(0.3, 0.0, 0.0),
+		"arm_r": Vector3(arm, 0.0, 0.1), "forearm_r": Vector3(elbow, 0.0, 0.0),
+		"arm_l": Vector3(other, 0.0, -0.2), "forearm_l": Vector3(0.3, 0.0, 0.0),
 		"spine": Vector3(lean, twist, 0.0), "chest": Vector3(lean * 0.5, twist * 0.6, 0.0),
 	}
 
@@ -433,7 +433,7 @@ func _use(p: float) -> Dictionary:
 	var arm: float = _keys([[0.0, 0.2], [0.3, 1.0], [0.5, 1.25], [0.7, 1.0], [1.0, 0.2]], p)
 	var elbow: float = _keys([[0.0, 0.12], [0.3, 0.7], [0.5, 0.45], [0.7, 0.7], [1.0, 0.12]], p)
 	return {
-		"arm_r": Vector3(arm, 0.0, -0.07), "forearm_r": Vector3(elbow, 0.0, 0.0),
-		"arm_l": Vector3(0.0, 0.0, 0.07), "forearm_l": Vector3(0.12, 0.0, 0.0),
+		"arm_r": Vector3(arm, 0.0, 0.07), "forearm_r": Vector3(elbow, 0.0, 0.0),
+		"arm_l": Vector3(0.0, 0.0, -0.07), "forearm_l": Vector3(0.12, 0.0, 0.0),
 		"chest": Vector3(-0.08 * sin(PI * p), 0.0, 0.0), "head": Vector3(0.1 * sin(PI * p), 0.0, 0.0),
 	}

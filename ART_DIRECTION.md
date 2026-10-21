@@ -365,3 +365,7 @@ Source: tools/export_tree_meshes.gd run on the 25 tree and 22 shrub species (ave
 ## 47. Idle grass work (build 353)
 
 Owner table (2026-10-21, tall grass at Ultra): nothing saved more than 0.9 ms and half the 3D pixels saved 0.8, so that frame was CPU bound. Standing still, grass_view.gd was rescanning the 2000 cells in reach every 0.8 s (4 rows a frame for about 14 frames) and retrying cells without ground collision every 0.5 s. Now a rescan happens only when the player changes cell, or when a waiting cell's retry falls due (the scan records the earliest retry), at most every 0.8 s and at least every 8 s, and a cell with no collision backs off 0.5, 1, 2, 4, 8 s. The GPU probe table (Ctrl+Shift+G) now has a CPU line: script ms, physics ms, draw calls, triangles, fps, to tell the two kinds of frame apart.
+
+## 48. Ragdoll sides (build 354)
+
+The rig had its sides swapped (the bone named left sat on +X, which is the right of a body facing -Z). Names now match the body: right is +X, the swing, jab and touch clips use the right arm, held tools go to hand_mount_r.

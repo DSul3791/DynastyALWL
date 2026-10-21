@@ -16,7 +16,7 @@ const REST := Vector3(0.38, -0.32, -0.55)       # model offset from the camera
 const AIMED := Vector3(0.28, -0.12, -0.35)
 # First-person arms (Art's ragdoll rig, assets/character/README.md): rooted at the chest a little below and behind the camera,
 # pitched forward so a tool in the hand points ahead instead of hanging down. The tool goes to the hand on the viewer's right
-# (the rig's hand_mount_l: its left is +X, see assets/character/README.md), grip at the mount origin, its business end tipped
+# (the rig's hand_mount_r: the rig's right is +X, see assets/character/README.md), grip at the mount origin, its business end tipped
 # up TOOL_TILT_DEG from the fingers. Rendered with software Vulkan and looked at (still frames of idle, jab, swing).
 const ARMS_POS := Vector3(0.0, -0.1, -0.15)
 const ARMS_PITCH_DEG := 50.0
@@ -461,7 +461,7 @@ func _mount_model() -> void:
 		_model.position = REST
 		return
 
-	_arms.hand_mount_l.add_child(_model)
+	_arms.hand_mount_r.add_child(_model)
 	var tilt: Basis = Basis(Vector3.RIGHT, deg_to_rad(TOOL_TILT_DEG))
 	var turn: Basis = Basis.IDENTITY
 	var grip: Vector3 = Vector3(0.0, 0.0, -SPEAR_GRIP_Z)
