@@ -60,7 +60,7 @@ const FaintEffectScript := preload("res://src/client/faint_effect.gd")
 const FallMistScript := preload("res://src/client/fall_mist.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 386
+const BUILD := 387
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
@@ -3678,6 +3678,8 @@ func _process(delta: float) -> void:
 				_flora_chunks, float(_flora_bytes) / 1048576.0, _flora_done_msec, flora.item_count(), flora.instances, flora.colliders, _flora_cuts,
 				flora.water_chunks, flora.water_cells
 			])
+			var stats: Dictionary = flora.draw_stats()
+			print("Terrain client: flora draws: %s nodes (tree, shrub, plant) for %s instances, %d nodes under 50 instances" % [str(stats["nodes"]), str(stats["instances"]), int(stats["small"])])
 			print("Terrain client: fall columns: %d meshes drawn (cap %d per chunk)" % [flora.falls_drawn, flora.fall_cap])
 			print("Terrain client: cover index %d tree crowns in %d chunks" % [flora.cover.trees, flora.cover.chunk_count()])
 			print("Terrain client: grass %d tufts in %d cells (radius %.0f m)" % [grass.tufts, grass.cells_built, grass.radius_m])

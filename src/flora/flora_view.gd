@@ -192,6 +192,7 @@ const KINDS := ["tree", "shrub", "plant"]
 const GLOW_CELL_M := 24.0   # one glow light per this square of a glowing grove
 const GLOW_LIGHTS := 24     # at most this many glow lights per chunk
 const PART_M := [256.0, 128.0, 128.0]
+const PART_M_LOW := [256.0, 256.0, 256.0]   # Low and Medium: shrubs and plants also in one part per chunk (a quarter of the draws)
 const SHAPES_PER_BODY := 64  # trunk colliders per body
 # Tree distances. The full model reaches near_m (tile rules, times the client's quality factor
 # 0.4 / 0.7 / 1.0 / 1.0: 60, 105, 150 m), the cheaper far model reaches IMPOSTOR_M, and beyond it a pair of
@@ -219,6 +220,7 @@ var view_m: PackedFloat32Array = PackedFloat32Array([900.0, 300.0, 120.0])
 var collision_m: float = 160.0
 var near_m: PackedFloat32Array = PackedFloat32Array([260.0, 110.0, 0.0])   # full-detail model out to this distance (tree, shrub)
 var canopy_version: int = 0           # counts changes to the held trees (the canopy map redraws on it)
+var part_m: Array = PART_M            # the size of the square one shrub or plant MultiMesh covers (set by set_quality)
 var impostor_m: float = 300.0          # trees beyond this are drawn as impostors (set by set_quality)
 var far_shadows: bool = false
 var shadow_m: float = 60.0
@@ -285,6 +287,7 @@ func set_quality(quality: int) -> void:
 	quality = clampi(quality, 0, IMPOSTOR_M.size() - 1)
 	impostor_m = IMPOSTOR_M[quality]
 	far_shadows = FAR_SHADOWS[quality]
+	part_m = PART_M_LOW if quality <= 1 else PART_M
 	shadow_m = SHADOW_M[quality]
 	var tile: Vector2i = IMPOSTOR_TILE_PX[quality]
 
@@ -1380,7 +1383,7 @@ func _plan(items: Dictionary, level: int) -> Dictionary:
 			continue
 
 		var p: Vector3 = items["positions"][n]
-		var part_m: float = PART_M[info["kind"]]
+		var part_size: float = float(part_m[info["kind"]])
 		var variant: int = (ids[n] * 2654435761 >> 5) % int(info["near"].size())
 
 		if info.has("young_below"):
@@ -1407,7 +1410,11 @@ func _plan(items: Dictionary, level: int) -> Dictionary:
 				else:
 					is_near = TIER_FAR
 
-		var key: Array = [species_id, int(floor(p.x / part_m)), int(floor(p.z / part_m)), variant, is_near]
+			# Far trees are small on the screen: one far model per species, so their draws merge (a third of the nodes).
+			if is_near == TIER_FAR:
+				variant = 0
+
+		var key: Array = [species_id, int(floor(p.x / part_size)), int(floor(p.z / part_size)), variant, is_near]
 
 		if not groups.has(key):
 			groups[key] = PackedInt32Array()
@@ -1556,7 +1563,7 @@ func _apply_step(job: Dictionary) -> bool:
 	multimesh.buffer = draw_plan[2]
 	var draw: MultiMeshInstance3D = MultiMeshInstance3D.new()
 	draw.multimesh = multimesh
-	draw.visibility_range_end = view_m[info["kind"]] + 0.7 * PART_M[info["kind"]]
+	draw.visibility_range_end = view_m[info["kind"]] + 0.7 * float(part_m[info["kind"]])
 	var casts: bool = info["kind"] == KIND_TREE and (key[4] == TIER_FULL or proxy_pass or (key[4] == TIER_FAR and far_shadows))
 	draw.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY if proxy_pass else (GeometryInstance3D.SHADOW_CASTING_SETTING_ON if casts else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF)
 	draw.set_meta("kind", int(info["kind"]))      # for the GPU probe (src/debug/gpu_probe.gd)
@@ -1667,6 +1674,31 @@ func _clear_node(entry: Dictionary) -> void:
 
 	node.queue_free()
 	entry["node"] = null
+
+
+# Draw statistics for the audit and the checks: MultiMesh nodes and instances held, by kind (tree, shrub, plant, in that order),
+# and how many nodes hold fewer than 50 instances (the ones a merge would fold together).
+func draw_stats() -> Dictionary:
+	var nodes: Array = [0, 0, 0]
+	var counts: Array = [0, 0, 0]
+	var small: int = 0
+
+	for chunk in _chunks:
+		var node: Node3D = _chunks[chunk].get("node")
+
+		if node == null:
+			continue
+
+		for child in node.get_children():
+			if child is MultiMeshInstance3D:
+				var kind: int = int(child.get_meta("kind", 0))
+				nodes[kind] += 1
+				counts[kind] += child.multimesh.instance_count
+
+				if child.multimesh.instance_count < 50:
+					small += 1
+
+	return {"nodes": nodes, "instances": counts, "small": small}
 
 
 static func _drawn_count(node: Node3D) -> int:
