@@ -72,8 +72,8 @@ func update(delta: float, underwater: bool) -> void:
 
 
 # The level the player is set to now, -80 while stopped (checks).
-func player_db(name: String) -> float:
-	var player: AudioStreamPlayer = _whistle if name == "wind_whistle" else _hollow
+func player_db(sound_name: String) -> float:
+	var player: AudioStreamPlayer = _whistle if sound_name == "wind_whistle" else _hollow
 	return player.volume_db if player.playing else -80.0
 
 
@@ -94,10 +94,10 @@ func _apply(player: AudioStreamPlayer, level: float, db: float, pitch: float) ->
 	player.pitch_scale = pitch
 
 
-func _loop_player(name: String) -> AudioStreamPlayer:
+func _loop_player(sound_name: String) -> AudioStreamPlayer:
 	var player: AudioStreamPlayer = AudioStreamPlayer.new()
 	player.bus = "Wind"
-	var list: Array = _variants(name)
+	var list: Array = _variants(sound_name)
 
 	if not list.is_empty():
 		player.stream = list[0]
@@ -109,16 +109,16 @@ func _loop_player(name: String) -> AudioStreamPlayer:
 	return player
 
 
-func _variants(name: String) -> Array:
-	if _streams.has(name):
-		return _streams[name]
+func _variants(sound_name: String) -> Array:
+	if _streams.has(sound_name):
+		return _streams[sound_name]
 
-	var list: Array = SoundStage._find(RECORDED_DIR, name)
+	var list: Array = SoundStage._find(RECORDED_DIR, sound_name)
 
 	if list.is_empty():
-		list = SoundStage._find(GENERATED_DIR, name)
+		list = SoundStage._find(GENERATED_DIR, sound_name)
 
-	_streams[name] = list
+	_streams[sound_name] = list
 	return list
 
 

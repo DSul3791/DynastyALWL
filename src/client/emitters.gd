@@ -293,14 +293,14 @@ func _rate_ok(entity_id: int) -> bool:
 		return false
 
 	if entity_id != 0:
-		var log: Array = _entity_log.get(entity_id, []).filter(func(t): return now - t < 1000)
+		var log_mesh: Array = _entity_log.get(entity_id, []).filter(func(t): return now - t < 1000)
 
-		if log.size() >= PER_ENTITY_PER_SEC:
-			_entity_log[entity_id] = log
+		if log_mesh.size() >= PER_ENTITY_PER_SEC:
+			_entity_log[entity_id] = log_mesh
 			return false
 
-		log.append(now)
-		_entity_log[entity_id] = log
+		log_mesh.append(now)
+		_entity_log[entity_id] = log_mesh
 
 	_client_log.append(now)
 	return true
@@ -311,16 +311,16 @@ func _listener() -> Vector3:
 	return camera.global_position if camera != null else Vector3.ZERO
 
 
-func _variants(folder: String, name: String) -> Array:
-	var id: String = folder + "/" + name
+func _variants(folder: String, sound_name: String) -> Array:
+	var id: String = folder + "/" + sound_name
 
 	if _streams.has(id):
 		return _streams[id]
 
-	var list: Array = SoundStage._find("res://assets/audio/recorded/%s/" % folder, name)
+	var list: Array = SoundStage._find("res://assets/audio/recorded/%s/" % folder, sound_name)
 
 	if list.is_empty():
-		list = SoundStage._find("res://assets/audio/%s/" % folder, name)
+		list = SoundStage._find("res://assets/audio/%s/" % folder, sound_name)
 
 	_streams[id] = list
 	return list

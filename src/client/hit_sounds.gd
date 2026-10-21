@@ -45,8 +45,8 @@ func hit(tool: String, material: String, at: Vector3, strength: float = 1.0) -> 
 	if tool not in TOOLS or material not in MATERIALS:
 		return false
 
-	var name: String = "hit_%s_%s" % [tool, material]
-	var list: Array = _variants(name)
+	var sound_name: String = "hit_%s_%s" % [tool, material]
+	var list: Array = _variants(sound_name)
 
 	if list.is_empty():
 		return false
@@ -67,7 +67,7 @@ func hit(tool: String, material: String, at: Vector3, strength: float = 1.0) -> 
 	player.finished.connect(player.queue_free)
 	player.play()
 	hits_played += 1
-	last_hit = "%s_%d (%s)" % [name, pick, SoundStage.tag(list[pick])]
+	last_hit = "%s_%d (%s)" % [sound_name, pick, SoundStage.tag(list[pick])]
 	return true
 
 
@@ -107,16 +107,16 @@ func hit_ground(tool: String, at: Vector3, strength: float = 1.0) -> bool:
 	return hit(tool, "stone" if soil >= Layout.MATERIAL_ROCK else "soil", at, strength)
 
 
-func _variants(name: String) -> Array:
-	if _streams.has(name):
-		return _streams[name]
+func _variants(sound_name: String) -> Array:
+	if _streams.has(sound_name):
+		return _streams[sound_name]
 
-	var list: Array = SoundStage._find(RECORDED_DIR, name)
+	var list: Array = SoundStage._find(RECORDED_DIR, sound_name)
 
 	if list.is_empty():
-		list = SoundStage._find(GENERATED_DIR, name)
+		list = SoundStage._find(GENERATED_DIR, sound_name)
 
-	_streams[name] = list
+	_streams[sound_name] = list
 	return list
 
 

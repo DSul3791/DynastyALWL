@@ -711,8 +711,8 @@ func budget_text() -> String:
 
 # Hook for the building system: the built floor the player stands on ("plank", "slab", "carpet", "thatch",
 # "path"), "" back on natural ground. Or set `floor_under` to a Callable(feet) -> name for a per-step query.
-func set_floor(name: String) -> void:
-	floor_surface = name if FLOOR_SURFACES.has(name) else ""
+func set_floor(sound_name: String) -> void:
+	floor_surface = sound_name if FLOOR_SURFACES.has(sound_name) else ""
 
 
 # One footfall at gait 0 walk, 1 jog, 2 run; `boost_db` makes it louder (landings).
@@ -720,12 +720,12 @@ func set_floor(name: String) -> void:
 func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: String = "left") -> void:
 	boost_db += stance.step_db()                                  # crouched steps are softer, and the gear with them
 	var feet: Vector3 = body.global_position - Vector3(0.0, FEET_M, 0.0)
-	var water: float = _flora.water_surface_at(feet.x, feet.z)
+	var water_here: float = _flora.water_surface_at(feet.x, feet.z)
 
-	if feet.y < 0.0 and (is_nan(water) or water < 0.0):
-		water = 0.0                                              # the sea
+	if feet.y < 0.0 and (is_nan(water_here) or water_here < 0.0):
+		water_here = 0.0                                              # the sea
 
-	var depth: float = water - feet.y if not is_nan(water) else -1.0
+	var depth: float = water_here - feet.y if not is_nan(water_here) else -1.0
 
 	if depth > SWIM_M:
 		return
@@ -799,16 +799,16 @@ func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: Str
 
 	surface = _stable
 	# Sets without their own sounds borrow one (generated grass for tall grass and bushes).
-	var name: String = "step_" + surface
+	var sound_name: String = "step_" + surface
 
-	if _variants(name).is_empty() and _variants(name + "_" + foot).is_empty():
-		name = "step_grass"
+	if _variants(sound_name).is_empty() and _variants(sound_name + "_" + foot).is_empty():
+		sound_name = "step_grass"
 
-	var recorded: bool = _recorded.has(name + "_" + foot) or _recorded.has(name)
+	var recorded: bool = _recorded.has(sound_name + "_" + foot) or _recorded.has(sound_name)
 	var pitch: float = float(gait_pitch[gait]) * _rng.randf_range(0.96, 1.04) * tune[1]
-	last_step = "%s (soil %d, water %.2f m, %s)" % [surface, soil, depth, name + "_" + foot if recorded else name + " generated"]
+	last_step = "%s (soil %d, water %.2f m, %s)" % [surface, soil, depth, sound_name + "_" + foot if recorded else sound_name + " generated"]
 	var step_db: float = step_level_db(surface, gait) + float(tune[0]) + boost_db + SNOW_HUSH_STEP_DB * _hush_applied + _rng.randf_range(-1.5, 1.0)
-	_play(name, step_db, pitch, foot)
+	_play(sound_name, step_db, pitch, foot)
 	steps_played[surface] = int(steps_played.get(surface, 0)) + 1
 	gear.step(gait, boost_db, surface)
 	stepfx.step(gait, step_db, surface, 0.0 if surface == "ice" else depth)
@@ -839,8 +839,8 @@ func _load_step_levels(path: String = STEP_LEVELS_PATH) -> void:
 		if data.get(key) is Dictionary:
 			var target: Dictionary = surface_db if key == "surface_db" else floor_db
 
-			for name in data[key]:
-				target[str(name)] = float(data[key][name])
+			for sound_name in data[key]:
+				target[str(sound_name)] = float(data[key][sound_name])
 
 	if data.get("gait_db") is Array and data["gait_db"].size() == 3:
 		gait_db = data["gait_db"].map(func(v): return float(v))
@@ -858,10 +858,10 @@ func _load_step_levels(path: String = STEP_LEVELS_PATH) -> void:
 
 
 # The level of one step (before boosts, tune and randomness): surface or built floor plus gait plus the table's extra.
-func step_level_db(surface: String, gait: int) -> float:
+func step_level_db(surface_kind: String, gait: int) -> float:
 	var g: int = clampi(gait, 0, 2)
-	var base: float = float(surface_db.get(surface, floor_db.get(surface, -9.0)))
-	var extra: Array = surface_gait_db.get(surface, [0.0, 0.0, 0.0])
+	var base: float = float(surface_db.get(surface_kind, floor_db.get(surface_kind, -9.0)))
+	var extra: Array = surface_gait_db.get(surface_kind, [0.0, 0.0, 0.0])
 	return base + float(gait_db[g]) + float(extra[g] if extra.size() == 3 else 0.0)
 
 
@@ -949,11 +949,11 @@ func _apply_mix(_group: String = "") -> void:
 # (wind, nature, weather) and interface, each 0 to 1, saved in the same file as the mixer steps.
 # A bus plays at its slider times its mixer step (wind, nature, steps) and Master also times the
 # old stepped volume. 0 mutes the bus.
-func set_level(name: String, value: float) -> void:
-	if not levels.has(name):
+func set_level(sound_name: String, value: float) -> void:
+	if not levels.has(sound_name):
 		return
 
-	levels[name] = clampf(value, 0.0, 1.0)
+	levels[sound_name] = clampf(value, 0.0, 1.0)
 	_apply_buses()
 	_save_settings()
 
@@ -1009,20 +1009,20 @@ func _build_warm_list() -> void:
 		for material in hits.MATERIALS:
 			_warm.append([hits, "hit_%s_%s" % [tool, material]])
 
-	for name in ["fire_small", "fire_large", "fire_rain", "fire_light", "fire_out"]:
-		_warm.append([fire, name])
+	for sound_name in ["fire_small", "fire_large", "fire_rain", "fire_light", "fire_out"]:
+		_warm.append([fire, sound_name])
 
-	for name in ["flame_torch", "flame_lantern"]:
-		_warm.append([flame, name])
+	for sound_name in ["flame_torch", "flame_lantern"]:
+		_warm.append([flame, sound_name])
 
-	for name in ["tree_creak", "tree_leaves", "tree_crash", "stump_chips"]:
-		_warm.append([trees, name])
+	for sound_name in ["tree_creak", "tree_leaves", "tree_crash", "stump_chips"]:
+		_warm.append([trees, sound_name])
 
-	for name in ["item_pickup", "item_drop", "inv_open", "inv_close", "item_swap", "craft_done"]:
-		_warm.append([itemfx, name])
+	for sound_name in ["item_pickup", "item_drop", "inv_open", "inv_close", "item_swap", "craft_done"]:
+		_warm.append([itemfx, sound_name])
 
-	for name in ["breath_in", "breath_out", "breath_gasp", "heartbeat"]:
-		_warm.append([breath, name])
+	for sound_name in ["breath_in", "breath_out", "breath_gasp", "heartbeat"]:
+		_warm.append([breath, sound_name])
 
 
 func _warm_one(delta: float) -> void:
@@ -1042,8 +1042,8 @@ func _load_settings() -> void:
 		for group in MIX_GROUPS:
 			mix_index[group] = clampi(int(file.get_value("mixer", group, 0)), 0, VOLUME_STEPS.size() - 1)
 
-		for name in levels:
-			levels[name] = clampf(float(file.get_value("levels", name, 1.0)), 0.0, 1.0)
+		for sound_name in levels:
+			levels[sound_name] = clampf(float(file.get_value("levels", sound_name, 1.0)), 0.0, 1.0)
 
 	_apply_buses()
 
@@ -1054,8 +1054,8 @@ func _save_settings() -> void:
 	for group in MIX_GROUPS:
 		file.set_value("mixer", group, int(mix_index[group]))
 
-	for name in levels:
-		file.set_value("levels", name, float(levels[name]))
+	for sound_name in levels:
+		file.set_value("levels", sound_name, float(levels[sound_name]))
 
 	file.save(SETTINGS_PATH)
 
@@ -1104,15 +1104,15 @@ func splash_ground(body: CharacterBody3D) -> String:
 	if soil < 0 or soil >= Layout.MATERIAL_ROCK:
 		return "stone"
 
-	var surface: String = str(SOIL_SURFACE.get(soil, "dirt"))
+	var surface_kind: String = str(SOIL_SURFACE.get(soil, "dirt"))
 
-	if surface == "mud" or (surface in ["dirt", "leaves"] and weather.ground_wet >= RAIN_SOAK):
+	if surface_kind == "mud" or (surface_kind in ["dirt", "leaves"] and weather.ground_wet >= RAIN_SOAK):
 		return "mud"
 
-	if surface == "dirt" and _grass != null and _grass.grass_at(feet.x, feet.z, soil).x > 0.3:
+	if surface_kind == "dirt" and _grass != null and _grass.grass_at(feet.x, feet.z, soil).x > 0.3:
 		return "grass"
 
-	return {"leaves": "litter", "stone": "stone", "sand": "sand", "gravel": "gravel"}.get(surface, "dirt")
+	return {"leaves": "litter", "stone": "stone", "sand": "sand", "gravel": "gravel"}.get(surface_kind, "dirt")
 
 
 func rain_ground(body: CharacterBody3D) -> String:
@@ -1178,9 +1178,9 @@ func water_level_at(point: Vector3) -> float:
 
 # Water depth over the ground at a point by the shared WaterVolume rules (0 under MIN_DEPTH_M: a film is wet ground).
 func water_depth_at(point: Vector3) -> float:
-	var surface: float = water_level_at(point)
+	var surface_kind: float = water_level_at(point)
 	var ground: float = ground_below.call(point) if ground_below.is_valid() else NAN
-	var depth: float = WaterVolume.depth(surface, ground)
+	var depth: float = WaterVolume.depth(surface_kind, ground)
 	return depth if depth >= WaterVolume.MIN_DEPTH_M else 0.0
 
 
@@ -1219,11 +1219,11 @@ func _in_bush(feet: Vector3) -> bool:
 
 
 # Plays a variant of `name`; with `foot`, the foot's own set (name_left_N) when there is one.
-func _play(name: String, volume_db: float, pitch: float, foot: String = "") -> void:
-	var list: Array = _variants(name + "_" + foot) if foot != "" else []
+func _play(sound_name: String, volume_db: float, pitch: float, foot: String = "") -> void:
+	var list: Array = _variants(sound_name + "_" + foot) if foot != "" else []
 
 	if list.is_empty():
-		list = _variants(name)
+		list = _variants(sound_name)
 
 	if list.is_empty():
 		return
@@ -1231,10 +1231,10 @@ func _play(name: String, volume_db: float, pitch: float, foot: String = "") -> v
 	# A different variant from last time, so steps never repeat back to back.
 	var pick: int = _rng.randi_range(0, list.size() - 1)
 
-	if list.size() > 1 and pick == int(_last_variant.get(name, -1)):
+	if list.size() > 1 and pick == int(_last_variant.get(sound_name, -1)):
 		pick = (pick + 1) % list.size()
 
-	_last_variant[name] = pick
+	_last_variant[sound_name] = pick
 	var voice: AudioStreamPlayer = _voices[_next_voice]
 	_next_voice = (_next_voice + 1) % _voices.size()
 	voice.stream = list[pick]
@@ -1243,10 +1243,10 @@ func _play(name: String, volume_db: float, pitch: float, foot: String = "") -> v
 	voice.play()
 
 
-func _player(bus: String, name: String) -> AudioStreamPlayer:
+func _player(bus: String, sound_name: String) -> AudioStreamPlayer:
 	var player: AudioStreamPlayer = AudioStreamPlayer.new()
 	player.bus = bus
-	var list: Array = _variants(name)
+	var list: Array = _variants(sound_name)
 	player.stream = list[0] if not list.is_empty() else null
 	add_child(player)
 	return player
@@ -1255,21 +1255,21 @@ func _player(bus: String, name: String) -> AudioStreamPlayer:
 # Every variant of a sound: name.ogg, or name_0.ogg, name_1.ogg ... Real
 # recordings in assets/audio/recorded/ win over the generated ones in
 # assets/audio/ (assets/audio/README.md says where to get them).
-func _variants(name: String) -> Array:
-	if _streams.has(name):
-		return _streams[name]
+func _variants(sound_name: String) -> Array:
+	if _streams.has(sound_name):
+		return _streams[sound_name]
 
-	var list: Array = _find(RECORDED_DIR, name)
+	var list: Array = _find(RECORDED_DIR, sound_name)
 
 	if list.is_empty():
-		list = _find(AUDIO_DIR, name)
+		list = _find(AUDIO_DIR, sound_name)
 
-		if list.is_empty() and name.begins_with("step_"):
-			list = _find(FLOORS_DIR, name)
+		if list.is_empty() and sound_name.begins_with("step_"):
+			list = _find(FLOORS_DIR, sound_name)
 	else:
-		_recorded[name] = true
+		_recorded[sound_name] = true
 
-	_streams[name] = list
+	_streams[sound_name] = list
 	return list
 
 
@@ -1278,8 +1278,8 @@ static func tag(stream: Resource) -> String:
 	return "recorded" if stream != null and stream.resource_path.contains("/recorded/") else "generated"
 
 
-static func _find(folder: String, name: String) -> Array:
-	var single: AudioStream = _load(folder, name)
+static func _find(folder: String, sound_name: String) -> Array:
+	var single: AudioStream = _load(folder, sound_name)
 
 	if single != null:
 		return [single]
@@ -1287,7 +1287,7 @@ static func _find(folder: String, name: String) -> Array:
 	var list: Array = []
 
 	while true:
-		var stream: AudioStream = _load(folder, "%s_%d" % [name, list.size()])
+		var stream: AudioStream = _load(folder, "%s_%d" % [sound_name, list.size()])
 
 		if stream == null:
 			break
@@ -1300,17 +1300,34 @@ static func _find(folder: String, name: String) -> Array:
 # The imported sound, or else straight from the file (headless runs have no imports).
 # Takes name.ogg, or name.wav for a recording dropped in as it came.
 # Memory audit (--load-all-sounds): loads one file the way a layer would, counting it against the cap.
-func load_for_audit(folder: String, name: String) -> AudioStream:
-	return _load(folder, name)
+func load_for_audit(folder: String, sound_name: String) -> AudioStream:
+	return _load(folder, sound_name)
 
 
 func audit_text() -> String:
 	return "%.1f MB read from disk, %d refused (cap %d MB at %s)" % [float(loaded_bytes) / 1048576.0, refused_loads, int(preset["memory_mb"]), Presets.NAMES[tier]]
 
 
-static func _load(folder: String, name: String) -> AudioStream:
+# Called with a text when a first load of a sound file took long (the crash report names it; set by the client). Dave 2026-10-21: audit of
+# anything that could block the main thread: every sound is a prepared file read from disk, nothing is synthesized while playing.
+static var slow_load: Callable = Callable()
+const SLOW_LOAD_MS := 25
+
+
+static func _load(folder: String, sound_name: String) -> AudioStream:
+	var started: int = Time.get_ticks_msec()
+	var stream: AudioStream = _load_file(folder, sound_name)
+	var took: int = Time.get_ticks_msec() - started
+
+	if took >= SLOW_LOAD_MS and slow_load.is_valid():
+		slow_load.call("SLOW AUDIO LOAD: %s%s took %d ms" % [folder, sound_name, took])
+
+	return stream
+
+
+static func _load_file(folder: String, sound_name: String) -> AudioStream:
 	for extension in ["ogg", "wav"]:
-		var path: String = folder + name + "." + extension
+		var path: String = folder + sound_name + "." + extension
 
 		if not _loaded_paths.has(path) and loaded_bytes >= memory_cap_bytes and (ResourceLoader.exists(path) or FileAccess.file_exists(path)):
 			refused_loads += 1                                       # over the tier's memory budget
@@ -1335,15 +1352,15 @@ static func _load(folder: String, name: String) -> AudioStream:
 	return null
 
 
-static func _make_bus(name: String) -> int:
-	var index: int = AudioServer.get_bus_index(name)
+static func _make_bus(sound_name: String) -> int:
+	var index: int = AudioServer.get_bus_index(sound_name)
 
 	if index >= 0:
 		return index
 
 	AudioServer.add_bus()
 	index = AudioServer.bus_count - 1
-	AudioServer.set_bus_name(index, name)
+	AudioServer.set_bus_name(index, sound_name)
 	AudioServer.set_bus_send(index, "Master")
 	return index
 
@@ -1358,8 +1375,8 @@ func _exit_tree() -> void:
 
 	AirBands.remove_all()
 
-	for name in ["Wind", "Foley", "Nature", "Weather", "World"]:
-		var index: int = AudioServer.get_bus_index(name)
+	for sound_name in ["Wind", "Foley", "Nature", "Weather", "World"]:
+		var index: int = AudioServer.get_bus_index(sound_name)
 
 		if index >= 0:
 			AudioServer.remove_bus(index)

@@ -173,7 +173,13 @@ func setup(stage, terrain: Node3D, flora, grass) -> void:
 			_beds[zone] = bed
 
 
+var enabled: bool = true               # Esc > Advanced experiment switch
+
+
 func update(delta: float, body: CharacterBody3D, flying: bool) -> void:
+	if not enabled:
+		return
+
 	_speed = Vector2(body.velocity.x, body.velocity.z).length()
 	_running_sec = _running_sec + delta if _speed > RUN_SCARE_MS and not flying else 0.0
 	_clock += delta * time_scale
@@ -209,13 +215,13 @@ func update(delta: float, body: CharacterBody3D, flying: bool) -> void:
 	_play_answers(step)
 
 	for event in EVENTS:
-		var name: String = event["name"]
-		_next[name] = float(_next[name]) - step * _rate(event)
+		var sound_name: String = event["name"]
+		_next[sound_name] = float(_next[sound_name]) - step * _rate(event)
 
-		if float(_next[name]) > 0.0:
+		if float(_next[sound_name]) > 0.0:
 			continue
 
-		_next[name] = _rng.randf_range(float(event["every"][0]), float(event["every"][1]))
+		_next[sound_name] = _rng.randf_range(float(event["every"][0]), float(event["every"][1]))
 
 		if _since_call * time_scale < MIN_GAP_SEC or _voices.size() >= max_voices or not _stage.has_room():
 			continue
@@ -475,8 +481,8 @@ func alarm(at: Vector3) -> bool:
 
 
 # Plays one of the calls in EVENTS at a place now (a hook: the creature system says a bird there called).
-func call_named(name: String, at: Vector3) -> bool:
-	var list: Array = _variants(name)
+func call_named(sound_name: String, at: Vector3) -> bool:
+	var list: Array = _variants(sound_name)
 
 	if list.is_empty():
 		return false
@@ -484,12 +490,12 @@ func call_named(name: String, at: Vector3) -> bool:
 	var db: float = -10.0
 
 	for event in EVENTS:
-		if event["name"] == name:
+		if event["name"] == sound_name:
 			db = float(event["db"])
 
-	_play(name, list, at, db)
-	last_call = name
-	calls_played[name] = int(calls_played.get(name, 0)) + 1
+	_play(sound_name, list, at, db)
+	last_call = sound_name
+	calls_played[sound_name] = int(calls_played.get(sound_name, 0)) + 1
 	return true
 
 
@@ -534,20 +540,20 @@ func flush(at: Vector3, delay: float = 0.0, size: String = "") -> bool:
 	if size == "":
 		size = _flush_size()
 
-	var name: String = "wing_" + size
-	var list: Array = _variants(name)
+	var sound_name: String = "wing_" + size
+	var list: Array = _variants(sound_name)
 
 	if list.is_empty():
 		return false
 
-	var player: AudioStreamPlayer3D = _play(name, list, at, FLUSH_DB)
+	var player: AudioStreamPlayer3D = _play(sound_name, list, at, FLUSH_DB)
 	_flush_wait = FLUSH_COOLDOWN_SEC
 	var angle: float = _rng.randf() * TAU
 	var away: Vector3 = Vector3(cos(angle), 0.0, sin(angle)) * _rng.randf_range(float(FLUSH_FLY_M[0]), float(FLUSH_FLY_M[1]))
 	var dur: float = _rng.randf_range(float(FLUSH_FLY_SEC[0]), float(FLUSH_FLY_SEC[1]))
 	_fliers.append({"player": player, "from": at, "to": at + away + Vector3(0.0, _rng.randf_range(4.0, 12.0), 0.0), "t": -delay, "dur": dur})
 	calls_played["wing_flap"] = int(calls_played.get("wing_flap", 0)) + 1
-	calls_played[name] = int(calls_played.get(name, 0)) + 1
+	calls_played[sound_name] = int(calls_played.get(sound_name, 0)) + 1
 
 	if delay > 0.0:
 		player.stream_paused = true
@@ -587,11 +593,11 @@ func _move_fliers(delta: float) -> void:
 		player.global_position = flier["from"].lerp(flier["to"], k)
 
 
-func _play(name: String, list: Array, at: Vector3, db: float) -> AudioStreamPlayer3D:
+func _play(sound_name: String, list: Array, at: Vector3, db: float) -> AudioStreamPlayer3D:
 	var player: AudioStreamPlayer3D = AudioStreamPlayer3D.new()
-	var pick: int = _pick_variant(name, list.size())
+	var pick: int = _pick_variant(sound_name, list.size())
 	player.stream = list[pick]
-	last_file = "%s_%d" % [name, pick]
+	last_file = "%s_%d" % [sound_name, pick]
 	player.bus = "Nature"
 	player.volume_db = db + _rng.randf_range(-2.0, 1.0)
 	player.pitch_scale = _rng.randf_range(0.95, 1.05)
@@ -611,8 +617,8 @@ func _play(name: String, list: Array, at: Vector3, db: float) -> AudioStreamPlay
 
 # A variant of `name` that has not played in the last REPEAT_SEC (nature seconds, so it follows the fast test clock);
 # when all have, the one heard longest ago. Never the same file twice running.
-func _pick_variant(name: String, count: int) -> int:
-	var heard: Dictionary = _heard.get(name, {})
+func _pick_variant(sound_name: String, count: int) -> int:
+	var heard: Dictionary = _heard.get(sound_name, {})
 	var fresh: Array = []
 	var oldest: int = 0
 	var oldest_at: float = INF
@@ -629,12 +635,12 @@ func _pick_variant(name: String, count: int) -> int:
 
 	var pick: int = fresh[_rng.randi_range(0, fresh.size() - 1)] if not fresh.is_empty() else oldest
 
-	if count > 1 and pick == int(_last_pick.get(name, -1)):
+	if count > 1 and pick == int(_last_pick.get(sound_name, -1)):
 		pick = (pick + 1) % count
 
-	_last_pick[name] = pick
+	_last_pick[sound_name] = pick
 	heard[pick] = _clock
-	_heard[name] = heard
+	_heard[sound_name] = heard
 	return pick
 
 
@@ -663,18 +669,18 @@ func _place(event: Dictionary, body: CharacterBody3D) -> Vector3:
 	return Vector3(x, float(hit["position"].y) + height, z)
 
 
-func _variants(name: String) -> Array:
-	if _streams.has(name):
-		return _streams[name]
+func _variants(sound_name: String) -> Array:
+	if _streams.has(sound_name):
+		return _streams[sound_name]
 
-	var list: Array = SoundStage._find(RECORDED_DIR, name)
-	_source[name] = "recorded"
+	var list: Array = SoundStage._find(RECORDED_DIR, sound_name)
+	_source[sound_name] = "recorded"
 
 	if list.is_empty():
-		list = SoundStage._find(GENERATED_DIR, name)
-		_source[name] = "generated"
+		list = SoundStage._find(GENERATED_DIR, sound_name)
+		_source[sound_name] = "generated"
 
-	_streams[name] = list
+	_streams[sound_name] = list
 	return list
 
 

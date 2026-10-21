@@ -58,9 +58,9 @@ func target(underwater: bool = false) -> float:
 	var hour: float = float(ambient.conditions["hour"])
 	var day: float = clampf((hour - (float(sun[0]) + 0.5)) / EASE_HOURS, 0.0, 1.0) * clampf((float(sun[1]) - hour) / EASE_HOURS, 0.0, 1.0)
 
-	for name in ZONE:
-		var share: float = float(ZONE[name]) * (lerpf(1.0, WATER_DAY, day) if name == "water" else 1.0)
-		zone = maxf(zone, float(ambient.weights.get(name, 0.0)) * share)
+	for sound_name in ZONE:
+		var share: float = float(ZONE[sound_name]) * (lerpf(1.0, WATER_DAY, day) if sound_name == "water" else 1.0)
+		zone = maxf(zone, float(ambient.weights.get(sound_name, 0.0)) * share)
 
 	var weather: float = clampf(1.0 - float(_stage.weather.rain) * 1.6, 0.0, 1.0)
 	var calm: float = clampf(1.0 - (float(_stage.wind_strength) - 0.6) * 1.2, 0.2, 1.0)

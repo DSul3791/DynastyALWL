@@ -69,11 +69,11 @@ func update(delta: float) -> void:
 		settles_played += 1
 
 
-func _play(name: String, volume_db: float) -> bool:
+func _play(sound_name: String, volume_db: float) -> bool:
 	if not _stage.has_room():
 		return false
 
-	var list: Array = _variants("stance_" + name)
+	var list: Array = _variants("stance_" + sound_name)
 
 	if list.is_empty():
 		return false
@@ -87,20 +87,20 @@ func _play(name: String, volume_db: float) -> bool:
 	add_child(player)
 	player.finished.connect(player.queue_free)
 	player.play()
-	last = "stance_%s_%d (%s)" % [name, pick, SoundStage.tag(list[pick])]
+	last = "stance_%s_%d (%s)" % [sound_name, pick, SoundStage.tag(list[pick])]
 	return true
 
 
-func _variants(name: String) -> Array:
-	if _streams.has(name):
-		return _streams[name]
+func _variants(sound_name: String) -> Array:
+	if _streams.has(sound_name):
+		return _streams[sound_name]
 
-	var list: Array = SoundStage._find(RECORDED_DIR, name)
+	var list: Array = SoundStage._find(RECORDED_DIR, sound_name)
 
 	if list.is_empty():
-		list = SoundStage._find(GENERATED_DIR, name)
+		list = SoundStage._find(GENERATED_DIR, sound_name)
 
-	_streams[name] = list
+	_streams[sound_name] = list
 	return list
 
 

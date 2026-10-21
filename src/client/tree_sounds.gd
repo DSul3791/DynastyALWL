@@ -100,17 +100,17 @@ func update(delta: float) -> void:
 			_queue.remove_at(n)
 
 
-func _play(name: String, at: Vector3, size: float) -> void:
-	var list: Array = _variants(name)
+func _play(sound_name: String, at: Vector3, size: float) -> void:
+	var list: Array = _variants(sound_name)
 
-	if list.is_empty() or (not _stage.has_room() and name != "tree_crash"):
+	if list.is_empty() or (not _stage.has_room() and sound_name != "tree_crash"):
 		return
 
 	var pick: int = _rng.randi_range(0, list.size() - 1)
 	var player: AudioStreamPlayer3D = AudioStreamPlayer3D.new()
 	player.stream = list[pick]
 	player.bus = "Foley"
-	player.volume_db = float(BASE_DB[name]) + linear_to_db(clampf(0.3 + 0.7 * size, 0.1, 1.5)) + _rng.randf_range(-1.0, 1.0)
+	player.volume_db = float(BASE_DB[sound_name]) + linear_to_db(clampf(0.3 + 0.7 * size, 0.1, 1.5)) + _rng.randf_range(-1.0, 1.0)
 	player.pitch_scale = _rng.randf_range(0.96, 1.04) * clampf(1.15 - 0.2 * size, 0.8, 1.15)
 	player.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
 	player.unit_size = 10.0 + 8.0 * size
@@ -120,19 +120,19 @@ func _play(name: String, at: Vector3, size: float) -> void:
 	player.global_position = at
 	player.finished.connect(player.queue_free)
 	player.play()
-	last = "%s_%d (%s)" % [name, pick, SoundStage.tag(list[pick])]
+	last = "%s_%d (%s)" % [sound_name, pick, SoundStage.tag(list[pick])]
 
 
-func _variants(name: String) -> Array:
-	if _streams.has(name):
-		return _streams[name]
+func _variants(sound_name: String) -> Array:
+	if _streams.has(sound_name):
+		return _streams[sound_name]
 
-	var list: Array = SoundStage._find(RECORDED_DIR, name)
+	var list: Array = SoundStage._find(RECORDED_DIR, sound_name)
 
 	if list.is_empty():
-		list = SoundStage._find(GENERATED_DIR, name)
+		list = SoundStage._find(GENERATED_DIR, sound_name)
 
-	_streams[name] = list
+	_streams[sound_name] = list
 	return list
 
 

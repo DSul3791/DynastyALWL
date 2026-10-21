@@ -180,9 +180,9 @@ func _step(delta: float, immersion: float, horizontal: float, vertical: float, e
 
 # An entry splash, small or big by how fast the body hit the water (m/s).
 func splash(speed: float) -> void:
-	var name: String = "swim_splash_big" if speed >= BIG_SPLASH_MPS else "swim_splash_small"
+	var sound_name: String = "swim_splash_big" if speed >= BIG_SPLASH_MPS else "swim_splash_small"
 	var power: float = clampf(speed / 8.0, 0.0, 1.0)
-	_event(name, SPLASH_DB + linear_to_db(0.45 + 0.55 * power))
+	_event(sound_name, SPLASH_DB + linear_to_db(0.45 + 0.55 * power))
 	splashes += 1
 
 
@@ -190,11 +190,11 @@ func voices_playing() -> int:
 	return 1 if _hum != null and _hum.playing else 0
 
 
-func _event(name: String, volume_db: float) -> void:
+func _event(sound_name: String, volume_db: float) -> void:
 	if not _stage.has_room():
 		return
 
-	var list: Array = _variants(name)
+	var list: Array = _variants(sound_name)
 
 	if list.is_empty():
 		return
@@ -208,17 +208,17 @@ func _event(name: String, volume_db: float) -> void:
 	add_child(player)
 	player.finished.connect(player.queue_free)
 	player.play()
-	last = "%s_%d (%s)" % [name, pick, SoundStage.tag(list[pick])]
+	last = "%s_%d (%s)" % [sound_name, pick, SoundStage.tag(list[pick])]
 
 
-func _variants(name: String) -> Array:
-	if _streams.has(name):
-		return _streams[name]
+func _variants(sound_name: String) -> Array:
+	if _streams.has(sound_name):
+		return _streams[sound_name]
 
-	var list: Array = SoundStage._find(RECORDED_DIR, name)
+	var list: Array = SoundStage._find(RECORDED_DIR, sound_name)
 
 	if list.is_empty():
-		list = SoundStage._find(GENERATED_DIR, name)
+		list = SoundStage._find(GENERATED_DIR, sound_name)
 
-	_streams[name] = list
+	_streams[sound_name] = list
 	return list

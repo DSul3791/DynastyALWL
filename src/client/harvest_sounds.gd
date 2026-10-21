@@ -49,9 +49,9 @@ static func pick_kind(row: Dictionary) -> String:
 		return "twist"
 
 	for y in yields:
-		var name: String = str(y)
+		var sound_name: String = str(y)
 
-		if name.ends_with("roots") or name.ends_with("bulbs") or name.ends_with("tubers"):
+		if sound_name.ends_with("roots") or sound_name.ends_with("bulbs") or sound_name.ends_with("tubers"):
 			return "pull"
 
 	for y in yields:
@@ -98,8 +98,8 @@ func pick(row: Dictionary, at: Vector3) -> bool:
 	return done
 
 
-func _once(name: String, at: Vector3, db: float) -> bool:
-	var list: Array = _variants(name)
+func _once(sound_name: String, at: Vector3, db: float) -> bool:
+	var list: Array = _variants(sound_name)
 
 	if list.is_empty():
 		return false
@@ -118,21 +118,21 @@ func _once(name: String, at: Vector3, db: float) -> bool:
 	player.global_position = at
 	player.finished.connect(player.queue_free)
 	player.play()
-	played[name] = int(played.get(name, 0)) + 1
-	last = "%s_%d (%s)" % [name, pick_n, SoundStage.tag(list[pick_n])]
+	played[sound_name] = int(played.get(sound_name, 0)) + 1
+	last = "%s_%d (%s)" % [sound_name, pick_n, SoundStage.tag(list[pick_n])]
 	return true
 
 
-func _variants(name: String) -> Array:
-	if _streams.has(name):
-		return _streams[name]
+func _variants(sound_name: String) -> Array:
+	if _streams.has(sound_name):
+		return _streams[sound_name]
 
-	var list: Array = SoundStage._find(RECORDED_DIR, name)
+	var list: Array = SoundStage._find(RECORDED_DIR, sound_name)
 
 	if list.is_empty():
-		list = SoundStage._find(GENERATED_DIR, name)
+		list = SoundStage._find(GENERATED_DIR, sound_name)
 
-	_streams[name] = list
+	_streams[sound_name] = list
 	return list
 
 

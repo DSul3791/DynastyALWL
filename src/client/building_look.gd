@@ -622,7 +622,7 @@ static func _stone_stack(st: SurfaceTool, base: Vector3, size: Vector3, course: 
 		for side in range(4):
 			var along_x: bool = side < 2
 			var length: float = w if along_x else d
-			var sign: float = 1.0 if side % 2 == 0 else -1.0
+			var facing: float = 1.0 if side % 2 == 0 else -1.0
 			var cursor: float = -length * 0.5 + (rng.randf_range(0.0, 0.12) if c % 2 == 0 else 0.0)
 
 			while cursor < length * 0.5 - 0.05:
@@ -630,7 +630,7 @@ static func _stone_stack(st: SurfaceTool, base: Vector3, size: Vector3, course: 
 				var mid: float = cursor + run * 0.5
 				var out: float = (d if along_x else w) * 0.5 - thick * 0.5 + rng.randf_range(-0.012, 0.02)
 				var tall: float = ch * rng.randf_range(0.9, 1.0)
-				var center: Vector3 = Vector3(base.x + (mid if along_x else out * sign), y + rng.randf_range(-0.015, 0.015), base.z + (out * sign if along_x else mid))
+				var center: Vector3 = Vector3(base.x + (mid if along_x else out * facing), y + rng.randf_range(-0.015, 0.015), base.z + (out * facing if along_x else mid))
 				var dims: Vector3 = Vector3(run * 0.97, tall, thick) if along_x else Vector3(thick, tall, run * 0.97)
 				var pick: float = rng.randf()
 				var tone: Color = _tone(STONE_PALE if pick < 0.2 else (STONE_TAN if pick < 0.35 else (STONE_DARK if pick < 0.5 else STONE_FORGE)), rng, 0.14)
@@ -753,6 +753,7 @@ static func _masonry_forge_mesh() -> ArrayMesh:
 	# Wood stacked beside the hearth: split logs in a heap, ends toward the viewer.
 	for n in range(7):
 		var col: int = n % 4
+		@warning_ignore("integer_division")
 		var row: int = n / 4
 		var logp: Vector3 = Vector3(-1.95 + 0.17 * float(col) + 0.08 * float(row), 0.22 + 0.17 * float(row), 0.35)
 		_tube(st, logp, logp + Vector3(0.02, 0.0, 0.5), 0.075, 0.07, _tone(WOOD, rng, 0.14), 6, rng)
@@ -1007,9 +1008,9 @@ static func _smoke_plume() -> GPUParticles3D:
 	return plume
 
 
-static func add_hooks(model: Node3D, fire: Variant, smoke: Variant, fx_scale: float = 1.0) -> Node3D:
-	if fire != null and model.get_node_or_null("Light") == null:
-		var spot: Vector3 = Vector3(float(fire[0]), float(fire[1]), float(fire[2])) if typeof(fire) == TYPE_ARRAY else fire
+static func add_hooks(model: Node3D, fire_node: Variant, smoke: Variant, fx_scale: float = 1.0) -> Node3D:
+	if fire_node != null and model.get_node_or_null("Light") == null:
+		var spot: Vector3 = Vector3(float(fire_node[0]), float(fire_node[1]), float(fire_node[2])) if typeof(fire_node) == TYPE_ARRAY else fire_node
 		var light: OmniLight3D = OmniLight3D.new()
 		light.name = "Light"
 		light.light_color = Color(1.0, 0.55, 0.25)
@@ -1020,7 +1021,7 @@ static func add_hooks(model: Node3D, fire: Variant, smoke: Variant, fx_scale: fl
 		light.visible = false
 		model.add_child(light)
 
-		# Dave's "Fire_Coals" is a flat untextured card; swap it for the shared coals and flame tongues at the fire marker.
+		# Dave's "Fire_Coals" is a flat untextured card; swap it for the shared coals and flame tongues at the fire_node marker.
 		var card: Node3D = model.find_child("Fire_Coals", true, false) as Node3D
 
 		if card != null:

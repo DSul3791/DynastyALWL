@@ -675,7 +675,7 @@ func _depth_at(at: Vector3) -> float:
 # The source's loudness and pitch follow the real current and depth (build 101 carries the
 # current in the water chunk): faster water is louder, brighter and a touch higher, deep
 # water is a touch lower and softer. Ponds, falls and unknown currents keep their set level.
-func _aim(slot: Dictionary, candidate: Dictionary, origin: Vector3) -> void:
+func _aim(slot: Dictionary, candidate: Dictionary, _from: Vector3) -> void:
 	slot["target"] = candidate["at"]
 	var db: float = float(KINDS[candidate["kind"]]["db"])
 	var pitch: float = 1.0
@@ -714,20 +714,20 @@ func _aim(slot: Dictionary, candidate: Dictionary, origin: Vector3) -> void:
 	slot["fade"] = db
 
 
-func _variants(name: String) -> Array:
-	if _streams.has(name):
-		return _streams[name]
+func _variants(sound_name: String) -> Array:
+	if _streams.has(sound_name):
+		return _streams[sound_name]
 
-	var list: Array = SoundStage._find(RECORDED_DIR, name)
+	var list: Array = SoundStage._find(RECORDED_DIR, sound_name)
 
 	if list.is_empty():
-		list = SoundStage._find(GENERATED_DIR, name)
+		list = SoundStage._find(GENERATED_DIR, sound_name)
 
 	for stream in list:
 		if stream is AudioStreamOggVorbis:
 			stream.loop = true
 
-	_streams[name] = list
+	_streams[sound_name] = list
 	return list
 
 

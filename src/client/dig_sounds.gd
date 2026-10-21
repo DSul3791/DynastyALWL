@@ -69,15 +69,15 @@ func dug(center: Vector3, radius: float, listener: Vector3) -> void:
 	if center.distance_to(listener) > MAX_DISTANCE_M:
 		return
 
-	var name: String = sound_for(center)
+	var sound_name: String = sound_for(center)
 	var db: float = BASE_DB + 6.0 * log(maxf(radius, 0.5) / 2.0) / log(2.0)
-	_play(name, center, db)
+	_play(sound_name, center, db)
 	var level: float = _stage.water_level_at(center)
 
 	if not is_nan(level) and level > center.y - radius:
 		_later.append([WATER_DELAY_SEC, "dig_water", center, db - 2.0])
 
-	last_dig = "%s r%.1f at %.0f m" % [name, radius, center.distance_to(listener)]
+	last_dig = "%s r%.1f at %.0f m" % [sound_name, radius, center.distance_to(listener)]
 
 
 func update(delta: float) -> void:
@@ -89,8 +89,8 @@ func update(delta: float) -> void:
 			_later.remove_at(n)
 
 
-func _play(name: String, at: Vector3, db: float) -> void:
-	var list: Array = _variants(name)
+func _play(sound_name: String, at: Vector3, db: float) -> void:
+	var list: Array = _variants(sound_name)
 
 	if list.is_empty():
 		return
@@ -108,19 +108,19 @@ func _play(name: String, at: Vector3, db: float) -> void:
 	player.global_position = at
 	player.finished.connect(player.queue_free)
 	player.play()
-	digs_played[name] = int(digs_played.get(name, 0)) + 1
+	digs_played[sound_name] = int(digs_played.get(sound_name, 0)) + 1
 
 
-func _variants(name: String) -> Array:
-	if _streams.has(name):
-		return _streams[name]
+func _variants(sound_name: String) -> Array:
+	if _streams.has(sound_name):
+		return _streams[sound_name]
 
-	var list: Array = SoundStage._find(RECORDED_DIR, name)
+	var list: Array = SoundStage._find(RECORDED_DIR, sound_name)
 
 	if list.is_empty():
-		list = SoundStage._find(GENERATED_DIR, name)
+		list = SoundStage._find(GENERATED_DIR, sound_name)
 
-	_streams[name] = list
+	_streams[sound_name] = list
 	return list
 
 

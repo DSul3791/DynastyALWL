@@ -122,8 +122,8 @@ func _scan(here: Vector3) -> void:
 		_loops[id] = {"player": player, "on": true}
 
 
-func _once(name: String, at: Vector3) -> bool:
-	var list: Array = _variants(name)
+func _once(sound_name: String, at: Vector3) -> bool:
+	var list: Array = _variants(sound_name)
 
 	if list.is_empty() or not _stage.has_room():
 		return false
@@ -132,7 +132,7 @@ func _once(name: String, at: Vector3) -> bool:
 	var player: AudioStreamPlayer3D = AudioStreamPlayer3D.new()
 	player.stream = list[pick]
 	player.bus = "Foley"
-	player.volume_db = float(CHOP_DB[name]) + _rng.randf_range(-1.5, 1.0)
+	player.volume_db = float(CHOP_DB[sound_name]) + _rng.randf_range(-1.5, 1.0)
 	player.pitch_scale = _rng.randf_range(0.95, 1.05)
 	player.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
 	player.unit_size = UNIT_SIZE
@@ -142,25 +142,25 @@ func _once(name: String, at: Vector3) -> bool:
 	player.global_position = at
 	player.finished.connect(player.queue_free)
 	player.play()
-	played[name] = int(played.get(name, 0)) + 1
-	last = "%s_%d (%s)" % [name, pick, SoundStage.tag(list[pick])]
+	played[sound_name] = int(played.get(sound_name, 0)) + 1
+	last = "%s_%d (%s)" % [sound_name, pick, SoundStage.tag(list[pick])]
 	return true
 
 
-func _variants(name: String) -> Array:
-	if _streams.has(name):
-		return _streams[name]
+func _variants(sound_name: String) -> Array:
+	if _streams.has(sound_name):
+		return _streams[sound_name]
 
-	var list: Array = SoundStage._find(RECORDED_DIR, name)
+	var list: Array = SoundStage._find(RECORDED_DIR, sound_name)
 
 	if list.is_empty():
-		list = SoundStage._find(GENERATED_DIR, name)
+		list = SoundStage._find(GENERATED_DIR, sound_name)
 
 	for stream in list:
-		if name == "saw_mill" and stream is AudioStreamOggVorbis:
+		if sound_name == "saw_mill" and stream is AudioStreamOggVorbis:
 			stream.loop = true
 
-	_streams[name] = list
+	_streams[sound_name] = list
 	return list
 
 

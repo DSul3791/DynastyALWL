@@ -63,11 +63,11 @@ func set_inside(inside: float, new_kind: String = "house") -> void:
 
 
 # A door, chest or furniture sound at `at`.
-func object(name: String, at: Vector3, strength: float = 1.0) -> bool:
-	if not OBJECTS.has(name) or not _stage.has_room():
+func object(sound_name: String, at: Vector3, strength: float = 1.0) -> bool:
+	if not OBJECTS.has(sound_name) or not _stage.has_room():
 		return false
 
-	var list: Array = _variants(name)
+	var list: Array = _variants(sound_name)
 
 	if list.is_empty():
 		return false
@@ -76,7 +76,7 @@ func object(name: String, at: Vector3, strength: float = 1.0) -> bool:
 	var player: AudioStreamPlayer3D = AudioStreamPlayer3D.new()
 	player.stream = list[pick]
 	player.bus = "Foley"
-	player.volume_db = float(OBJECTS[name]) + linear_to_db(clampf(0.3 + 0.7 * strength, 0.05, 1.0)) + _rng.randf_range(-1.0, 1.0)
+	player.volume_db = float(OBJECTS[sound_name]) + linear_to_db(clampf(0.3 + 0.7 * strength, 0.05, 1.0)) + _rng.randf_range(-1.0, 1.0)
 	player.pitch_scale = _rng.randf_range(0.95, 1.05)
 	player.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
 	player.unit_size = 6.0
@@ -87,7 +87,7 @@ func object(name: String, at: Vector3, strength: float = 1.0) -> bool:
 	player.finished.connect(player.queue_free)
 	player.play()
 	objects_played += 1
-	last = "%s_%d (%s)" % [name, pick, SoundStage.tag(list[pick])]
+	last = "%s_%d (%s)" % [sound_name, pick, SoundStage.tag(list[pick])]
 	return true
 
 
@@ -144,10 +144,10 @@ func _level(player: AudioStreamPlayer, db: float, level: float) -> void:
 	player.volume_db = db + linear_to_db(level)
 
 
-func _loop_player(name: String) -> AudioStreamPlayer:
+func _loop_player(sound_name: String) -> AudioStreamPlayer:
 	var player: AudioStreamPlayer = AudioStreamPlayer.new()
 	player.bus = "Foley"
-	var list: Array = _variants(name)
+	var list: Array = _variants(sound_name)
 
 	if not list.is_empty():
 		player.stream = list[0]
@@ -159,14 +159,14 @@ func _loop_player(name: String) -> AudioStreamPlayer:
 	return player
 
 
-func _variants(name: String) -> Array:
-	if _streams.has(name):
-		return _streams[name]
+func _variants(sound_name: String) -> Array:
+	if _streams.has(sound_name):
+		return _streams[sound_name]
 
-	var list: Array = SoundStage._find(RECORDED_DIR, name)
+	var list: Array = SoundStage._find(RECORDED_DIR, sound_name)
 
 	if list.is_empty():
-		list = SoundStage._find(GENERATED_DIR, name)
+		list = SoundStage._find(GENERATED_DIR, sound_name)
 
-	_streams[name] = list
+	_streams[sound_name] = list
 	return list

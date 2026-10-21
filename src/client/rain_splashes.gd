@@ -86,8 +86,8 @@ func drop(surface: String, at: Vector3, rain: float = 1.0) -> bool:
 	if _live.size() >= cap() or not _stage.has_room() or not GROUND_DB.has(surface):
 		return false
 
-	var name: String = "rain_splash_" + surface
-	var list: Array = _variants(name)
+	var sound_name: String = "rain_splash_" + surface
+	var list: Array = _variants(sound_name)
 
 	if list.is_empty():
 		return false
@@ -109,7 +109,7 @@ func drop(surface: String, at: Vector3, rain: float = 1.0) -> bool:
 	_live.append(player)
 	drops_played += 1
 	by_ground[surface] = int(by_ground.get(surface, 0)) + 1
-	last = "%s %s_%d (%s)" % [surface, name, pick, SoundStage.tag(player.stream)]
+	last = "%s %s_%d (%s)" % [surface, sound_name, pick, SoundStage.tag(player.stream)]
 	return true
 
 
@@ -128,16 +128,16 @@ func voices_playing() -> int:
 	return _live.size()
 
 
-func _variants(name: String) -> Array:
-	if _streams.has(name):
-		return _streams[name]
+func _variants(sound_name: String) -> Array:
+	if _streams.has(sound_name):
+		return _streams[sound_name]
 
-	var list: Array = SoundStage._find(RECORDED_DIR, name)
+	var list: Array = SoundStage._find(RECORDED_DIR, sound_name)
 
 	if list.is_empty():
-		list = SoundStage._find(GENERATED_DIR, name)
+		list = SoundStage._find(GENERATED_DIR, sound_name)
 
-	_streams[name] = list
+	_streams[sound_name] = list
 	return list
 
 

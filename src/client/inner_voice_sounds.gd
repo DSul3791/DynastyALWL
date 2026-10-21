@@ -58,8 +58,11 @@ func set_character(gender: String, traits: Dictionary, character_id: String) -> 
 	voice_set = ProfileScript.set_id(gender, traits, character_id)
 
 
+var enabled: bool = true               # Esc > Advanced experiment switch
+
+
 func speak(line_id: String, _kind: String = "") -> void:
-	if _player == null:
+	if _player == null or not enabled:
 		return
 
 	for folder in [FOLDER + voice_set + "/", FOLDER]:

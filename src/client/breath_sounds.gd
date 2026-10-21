@@ -339,8 +339,8 @@ func _level_db() -> float:
 	return db + 10.0 * _over()                # heaves reach -4 dB at the limit
 
 
-func _play(player: AudioStreamPlayer, name: String, db: float, pitch: float) -> void:
-	var list: Array = _variants(name)
+func _play(player: AudioStreamPlayer, sound_name: String, db: float, pitch: float) -> void:
+	var list: Array = _variants(sound_name)
 
 	if list.is_empty():
 		return
@@ -351,21 +351,21 @@ func _play(player: AudioStreamPlayer, name: String, db: float, pitch: float) -> 
 	player.pitch_scale = pitch * _rng.randf_range(0.97, 1.03)
 	player.play()
 
-	if name != "heartbeat":
+	if sound_name != "heartbeat":
 		breaths_played += 1
-		last = "%s_%d (%s)" % [name, pick, SoundStage.tag(list[pick])]
+		last = "%s_%d (%s)" % [sound_name, pick, SoundStage.tag(list[pick])]
 
 
-func _variants(name: String) -> Array:
-	if _streams.has(name):
-		return _streams[name]
+func _variants(sound_name: String) -> Array:
+	if _streams.has(sound_name):
+		return _streams[sound_name]
 
-	var list: Array = SoundStage._find(RECORDED_DIR, name)
+	var list: Array = SoundStage._find(RECORDED_DIR, sound_name)
 
 	if list.is_empty():
-		list = SoundStage._find(GENERATED_DIR, name)
+		list = SoundStage._find(GENERATED_DIR, sound_name)
 
-	_streams[name] = list
+	_streams[sound_name] = list
 	return list
 
 

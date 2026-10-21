@@ -96,8 +96,8 @@ func call_at(kind: String, at: Vector3, mood: String = "idle") -> bool:
 	if mood != "threat" and (_voices.size() >= int(_stage.preset["creature_voices"]) or not _stage.has_room()):
 		return false
 
-	var name: String = str(info["calls"].get(mood, info["calls"]["idle"]))
-	var list: Array = _variants(name)
+	var sound_name: String = str(info["calls"].get(mood, info["calls"]["idle"]))
+	var list: Array = _variants(sound_name)
 
 	if list.is_empty():
 		return false
@@ -123,7 +123,7 @@ func call_at(kind: String, at: Vector3, mood: String = "idle") -> bool:
 	player.play()
 	_voices.append(player)
 	calls_played[kind] = int(calls_played.get(kind, 0)) + 1
-	last = "%s %s %s_%d (%s) at %.0f m" % [kind, mood, name, pick, SoundStage.tag(list[pick]), distance]
+	last = "%s %s %s_%d (%s) at %.0f m" % [kind, mood, sound_name, pick, SoundStage.tag(list[pick]), distance]
 	return true
 
 
@@ -233,14 +233,14 @@ func _bird(at: Vector3, mood: String) -> bool:
 	return _stage.ambient.alarm(at)
 
 
-func _variants(name: String) -> Array:
-	if _streams.has(name):
-		return _streams[name]
+func _variants(sound_name: String) -> Array:
+	if _streams.has(sound_name):
+		return _streams[sound_name]
 
-	var list: Array = SoundStage._find(RECORDED_DIR, name)
+	var list: Array = SoundStage._find(RECORDED_DIR, sound_name)
 
 	if list.is_empty():
-		list = SoundStage._find(GENERATED_DIR, name)
+		list = SoundStage._find(GENERATED_DIR, sound_name)
 
-	_streams[name] = list
+	_streams[sound_name] = list
 	return list

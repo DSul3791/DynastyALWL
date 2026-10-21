@@ -81,6 +81,7 @@ func stamp(position: Vector3) -> void:
 # Clears the column and the row on the far side of the wrap whenever the player enters a new metre.
 func _move_window(tx: int, tz: int) -> void:
 	if tx != _tx:
+		@warning_ignore("integer_division")
 		var column: int = posmod(tx + SIZE / 2, SIZE)
 
 		for z in range(SIZE):
@@ -89,6 +90,7 @@ func _move_window(tx: int, tz: int) -> void:
 		_tx = tx
 
 	if tz != _tz:
+		@warning_ignore("integer_division")
 		var row: int = posmod(tz + SIZE / 2, SIZE)
 
 		for x in range(SIZE):

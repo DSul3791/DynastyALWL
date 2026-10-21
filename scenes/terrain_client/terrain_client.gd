@@ -41,6 +41,7 @@ const CompassScript := preload("res://src/client/admin_compass.gd")
 const InventoryViewScript := preload("res://src/client/inventory_view.gd")
 const NpcViewScript := preload("res://src/client/npc_view.gd")
 const NpcVoiceScript := preload("res://src/client/npc_voice.gd")
+const TestSwitchesScript := preload("res://src/client/test_switches.gd")
 const TrailCodec := preload("res://src/shared/trail_codec.gd")
 const AnimalViewScript := preload("res://src/client/animal_view.gd")
 const DialogueViewScript := preload("res://src/client/dialogue_view.gd")
@@ -66,7 +67,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 573
+const BUILD := 574
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -438,6 +439,7 @@ func _ready() -> void:
 	if DisplayServer.get_name() != "headless" or OS.has_environment("CRASH_CHECK"):
 		crash_report = CrashReportScript.new()
 		crash_report.start(BUILD, _commit)
+		SoundStageScript.slow_load = crash_report.event      # a slow first load of a sound file is named in the crash report
 
 		if crash_report.last_report != "":
 			_previous_run_note_until_msec = Time.get_ticks_msec() + 90000
@@ -1132,6 +1134,20 @@ func _on_filled(center: Vector3, radius: float, _material: int) -> void:
 		grass.ground_changed(center, radius)
 
 
+# Applies the experiment switches (Esc > Advanced); also at start.
+func _apply_switches() -> void:
+	_cleared_key = -1      # the clearing and the log strip are worked out again
+	grass.set_trails_on(_switches.on("trails"))
+	var talking: bool = _switches.on("speech")
+
+	if _npc_voice != null:
+		_npc_voice.set_enabled(talking)
+
+	if sound != null:
+		sound.inner.enabled = talking
+		sound.ambient.enabled = _switches.on("ambient")
+
+
 # Animals and NPCs leave the same trail in the grass as the player (data/look/grass_trample.json): the nearest few walkers each pass.
 var _trail_msec: int = 0
 var _animal_view_node: Node3D = null
@@ -1162,12 +1178,18 @@ func _stamp_walkers(now: int) -> void:
 const PLACED_CLEARING := "res://data/look/placed_clearing.json"
 const CLEARING_NOT := [0, 2, 3, 4, 10, 11, 12, 19]
 var _cleared_key: int = 0
+var _switches_applied: bool = false
+var _switches = TestSwitchesScript.new()      # Esc > Advanced experiment switches (default on)
 var _cleared_cfg: Dictionary = {}
 
 
 func _sync_cleared() -> void:
 	if items == null or grass == null or flora == null:
 		return
+
+	if not _switches_applied and sound != null:
+		_switches_applied = true
+		_apply_switches()
 
 	if _cleared_cfg.is_empty():
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(PLACED_CLEARING))
@@ -1180,6 +1202,9 @@ func _sync_cleared() -> void:
 	for id in items._world:
 		var row: Dictionary = items._world[id]
 
+		if int(row.get("state", 0)) == 3 and not _switches.on("log_grass"):
+			continue
+
 		if int(row.get("state", 0)) == 3:
 			# A felled trunk lies from the stump along its yaw (inventory_view._make_felled): the grass under it is pressed flat.
 			var extra: Dictionary = row.get("extra", {})
@@ -1191,7 +1216,7 @@ func _sync_cleared() -> void:
 			key = key ^ hash(Vector2(at.x, at.z)) ^ int(id) ^ int(length * 10.0)
 			continue
 
-		if int(row.get("state", 0)) in CLEARING_NOT:
+		if int(row.get("state", 0)) in CLEARING_NOT or not _switches.on("clearing"):
 			continue
 
 		var pos: Vector3 = row["pos"]
@@ -2106,6 +2131,13 @@ func _build_menu(layer: CanvasLayer) -> void:
 	_menu_button(advanced, "Measure this machine (about 1 min)", func():
 		_set_menu(false)
 		_machine_probe.toggle())
+	for entry in TestSwitchesScript.KEYS:
+		var switch_key: String = entry[0]
+		var switch_button: Button = _menu_button(advanced, _switches.label(switch_key), func(): pass)
+		switch_button.pressed.connect(func():
+			_switches.set_on(switch_key, not _switches.on(switch_key))
+			switch_button.text = _switches.label(switch_key)
+			_apply_switches())
 	_menu_button(advanced, "Back", func(): _show_menu_page("main"))
 
 	_menu_note = Label.new()

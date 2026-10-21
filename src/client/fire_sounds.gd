@@ -177,21 +177,21 @@ func update(delta: float, body: CharacterBody3D) -> void:
 		}
 		var alive: bool = false
 
-		for name in ["small", "large", "rain"]:
-			var player: AudioStreamPlayer3D = loop[name]
+		for sound_name in ["small", "large", "rain"]:
+			var player: AudioStreamPlayer3D = loop[sound_name]
 
 			if player == null:
 				continue
 
-			player.volume_db = move_toward(player.volume_db, float(targets[name]), FADE_DB_PER_SEC * delta)
+			player.volume_db = move_toward(player.volume_db, float(targets[sound_name]), FADE_DB_PER_SEC * delta)
 
-			if player.volume_db > -70.0 or float(targets[name]) > -70.0:
+			if player.volume_db > -70.0 or float(targets[sound_name]) > -70.0:
 				alive = true
 
 		if gone and not alive:
-			for name in ["small", "large", "rain"]:
-				if loop[name] != null:
-					loop[name].queue_free()
+			for sound_name in ["small", "large", "rain"]:
+				if loop[sound_name] != null:
+					loop[sound_name].queue_free()
 
 			_loops.erase(id)
 
@@ -233,9 +233,9 @@ func _scan(body: CharacterBody3D) -> void:
 		loop["rain_on"] = bool(fire.get("open", true))
 		loop["gone"] = false
 
-		for name in ["small", "large", "rain"]:
-			if loop[name] != null:
-				loop[name].global_position = fire["at"]
+		for sound_name in ["small", "large", "rain"]:
+			if loop[sound_name] != null:
+				loop[sound_name].global_position = fire["at"]
 
 	for id in _loops:
 		if not wanted.has(id):
@@ -292,8 +292,8 @@ func _merge_far(near: Array) -> Array:
 	return kept
 
 
-func _loop_player(name: String, at: Vector3) -> AudioStreamPlayer3D:
-	var list: Array = _variants(name)
+func _loop_player(sound_name: String, at: Vector3) -> AudioStreamPlayer3D:
+	var list: Array = _variants(sound_name)
 
 	if list.is_empty():
 		return null
@@ -317,8 +317,8 @@ func _loop_player(name: String, at: Vector3) -> AudioStreamPlayer3D:
 	return player
 
 
-func _one_shot(name: String, at: Vector3) -> void:
-	var list: Array = _variants(name)
+func _one_shot(sound_name: String, at: Vector3) -> void:
+	var list: Array = _variants(sound_name)
 
 	if list.is_empty() or not _stage.has_room():
 		return
@@ -337,28 +337,28 @@ func _one_shot(name: String, at: Vector3) -> void:
 	player.global_position = at
 	player.finished.connect(player.queue_free)
 	player.play()
-	last = "%s_%d (%s)" % [name, pick, SoundStage.tag(list[pick])]
+	last = "%s_%d (%s)" % [sound_name, pick, SoundStage.tag(list[pick])]
 
 
-func _variants(name: String) -> Array:
-	if _streams.has(name):
-		return _streams[name]
+func _variants(sound_name: String) -> Array:
+	if _streams.has(sound_name):
+		return _streams[sound_name]
 
-	var cooking: bool = name in ["cook_sizzle", "fire_fuel"]
-	var list: Array = SoundStage._find(COOKING_RECORDED_DIR if cooking else RECORDED_DIR, name)
+	var cooking: bool = sound_name in ["cook_sizzle", "fire_fuel"]
+	var list: Array = SoundStage._find(COOKING_RECORDED_DIR if cooking else RECORDED_DIR, sound_name)
 
 	if list.is_empty():
-		list = SoundStage._find(COOKING_DIR if cooking else GENERATED_DIR, name)
+		list = SoundStage._find(COOKING_DIR if cooking else GENERATED_DIR, sound_name)
 
-	_streams[name] = list
+	_streams[sound_name] = list
 	return list
 
 
 func _exit_tree() -> void:
 	for id in _loops:
-		for name in ["small", "large", "rain"]:
-			if _loops[id][name] != null:
-				_loops[id][name].stop()
-				_loops[id][name].stream = null
+		for sound_name in ["small", "large", "rain"]:
+			if _loops[id][sound_name] != null:
+				_loops[id][sound_name].stop()
+				_loops[id][sound_name].stream = null
 
 	_streams.clear()

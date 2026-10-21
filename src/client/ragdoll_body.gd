@@ -284,7 +284,6 @@ func _shape_arrays(kind: String, size: Vector3) -> Array:
 		var unit: SphereMesh = SphereMesh.new()
 		unit.radius = 1.0
 		unit.height = 2.0
-		var big: bool = maxf(size.x, maxf(size.y, size.z)) > 0.09
 		var round_head: bool = size.y > 0.1 and size.y < 0.13 and size.z > 0.1
 		unit.radial_segments = 14 if round_head else 10
 		unit.rings = 7 if round_head else 4
@@ -325,14 +324,14 @@ func _shape(kind: String, size: Vector3) -> Mesh:
 	return capsule
 
 
-func _mount(bone: String, mount_name: String, offset: Vector3, basis: Basis) -> Marker3D:
+func _mount(bone: String, mount_name: String, offset: Vector3, axes: Basis) -> Marker3D:
 	var attachment: BoneAttachment3D = BoneAttachment3D.new()
 	attachment.name = "Attach_" + mount_name
 	skeleton.add_child(attachment)
 	attachment.bone_name = bone
 	var marker: Marker3D = Marker3D.new()
 	marker.name = mount_name
-	marker.transform = Transform3D(basis, offset)
+	marker.transform = Transform3D(axes, offset)
 	attachment.add_child(marker)
 	return marker
 
@@ -519,7 +518,6 @@ func _swing(p: float) -> Dictionary:
 	var elbow: float = _keys([[0.0, 0.12], [0.12, 0.9], [0.35, 1.2], [0.55, 0.25], [0.72, 0.2], [1.0, 0.12]], p)
 	var twist: float = _keys([[0.0, 0.0], [0.35, -0.5], [0.55, 0.45], [0.72, 0.4], [1.0, 0.0]], p)
 	var lean: float = _keys([[0.0, 0.0], [0.35, 0.12], [0.55, -0.4], [0.72, -0.3], [1.0, 0.0]], p)
-	var steady: float = _keys([[0.0, 0.0], [0.12, 0.7], [0.35, 1.3], [0.55, 0.95], [0.72, 0.85], [1.0, 0.0]], p)
 	return {
 		"arm_r": Vector3(arm, 0.0, out), "forearm_r": Vector3(elbow, 0.0, 0.0),
 		"arm_l": LEFT_REST_ARM, "forearm_l": LEFT_REST_FOREARM,
@@ -626,7 +624,6 @@ func _throw(p: float) -> Dictionary:
 	var elbow: float = _keys([[0.0, 0.12], [0.45, 1.0], [0.6, 0.1], [1.0, 0.12]], p)
 	var twist: float = _keys([[0.0, 0.0], [0.45, -0.4], [0.6, 0.35], [1.0, 0.0]], p)
 	var lean: float = _keys([[0.0, 0.0], [0.45, 0.25], [0.6, -0.3], [1.0, 0.0]], p)
-	var other: float = _keys([[0.0, 0.2], [0.45, 1.2], [0.6, 0.5], [1.0, 0.2]], p)
 	return {
 		"arm_r": Vector3(arm, 0.0, 0.1), "forearm_r": Vector3(elbow, 0.0, 0.0),
 		"arm_l": LEFT_REST_ARM, "forearm_l": LEFT_REST_FOREARM,

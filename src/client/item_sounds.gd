@@ -353,8 +353,8 @@ func _start_work(items, number: int) -> void:
 	last = last_work
 
 
-func play(name: String, pitch: float = 1.0) -> bool:
-	if not NAMES.has(name):
+func play(sound_name: String, pitch: float = 1.0) -> bool:
+	if not NAMES.has(sound_name):
 		return false
 
 	var now: int = Time.get_ticks_msec()
@@ -362,7 +362,7 @@ func play(name: String, pitch: float = 1.0) -> bool:
 	if now - _last_msec < MIN_GAP_MSEC:
 		return false
 
-	var list: Array = _variants(name)
+	var list: Array = _variants(sound_name)
 
 	if list.is_empty():
 		return false
@@ -370,24 +370,24 @@ func play(name: String, pitch: float = 1.0) -> bool:
 	_last_msec = now
 	var pick: int = _rng.randi_range(0, list.size() - 1)
 	_player.stream = list[pick]
-	_player.volume_db = float(NAMES[name]) + _rng.randf_range(-1.0, 1.0)
+	_player.volume_db = float(NAMES[sound_name]) + _rng.randf_range(-1.0, 1.0)
 	_player.pitch_scale = pitch * _rng.randf_range(0.96, 1.04)
 	_player.play()
 	played += 1
-	last = "%s_%d (%s)" % [name, pick, SoundStage.tag(list[pick])]
+	last = "%s_%d (%s)" % [sound_name, pick, SoundStage.tag(list[pick])]
 	return true
 
 
-func _variants(name: String) -> Array:
-	if _streams.has(name):
-		return _streams[name]
+func _variants(sound_name: String) -> Array:
+	if _streams.has(sound_name):
+		return _streams[sound_name]
 
-	var crafting: bool = name.begins_with("craft_") and name != "craft_done"
-	var eating: bool = name.begins_with("eat_") or name == "drink_gulp" or name.begins_with("heal_") or name == "stomach_growl"
-	var list: Array = SoundStage._find(CRAFT_RECORDED_DIR if crafting else (COOKING_RECORDED_DIR if eating else RECORDED_DIR), name)
+	var crafting: bool = sound_name.begins_with("craft_") and sound_name != "craft_done"
+	var eating: bool = sound_name.begins_with("eat_") or sound_name == "drink_gulp" or sound_name.begins_with("heal_") or sound_name == "stomach_growl"
+	var list: Array = SoundStage._find(CRAFT_RECORDED_DIR if crafting else (COOKING_RECORDED_DIR if eating else RECORDED_DIR), sound_name)
 
 	if list.is_empty():
-		list = SoundStage._find(CRAFT_DIR if crafting else (COOKING_DIR if eating else GENERATED_DIR), name)
+		list = SoundStage._find(CRAFT_DIR if crafting else (COOKING_DIR if eating else GENERATED_DIR), sound_name)
 
-	_streams[name] = list
+	_streams[sound_name] = list
 	return list

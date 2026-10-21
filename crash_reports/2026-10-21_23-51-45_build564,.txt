@@ -1,0 +1,14 @@
+CRASH REPORT: the game ended unexpectedly.
+The run that ended: build 564, started 2026-10-21T23:34:43
+This report made by build 572 at 2026-10-21T23:51:45
+
+== Last 150 breadcrumbs (key and mouse presses, menus, errors, a state line every 5 s) ==
+
+
+== Errors and warnings of that run (last 40) ==
+
+
+== Last 300 lines of Godot's log of that run (godot2026-10-21T23.51.41.log; a native crash writes its backtrace here) ==
+Godot Engine v4.7.2.stable.custom_build.ed1daf0bf (2026-08-17 01:18:38 UTC) - https://godotengine.org
+
+

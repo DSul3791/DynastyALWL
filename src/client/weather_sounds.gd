@@ -147,8 +147,8 @@ func setup(stage, ambient) -> void:
 			ground_snow = 1.0 if kind in ["snow", "blizzard"] else 0.0
 			frogs = float(KINDS[kind]["frogs"])
 
-	for name in LOOP_DB:
-		var list: Array = _variants(name)
+	for sound_name in LOOP_DB:
+		var list: Array = _variants(sound_name)
 
 		if list.is_empty():
 			continue
@@ -162,7 +162,7 @@ func setup(stage, ambient) -> void:
 		if player.stream is AudioStreamOggVorbis:
 			player.stream.loop = true
 
-		_loops[name] = player
+		_loops[sound_name] = player
 
 
 # The one hook a weather system calls. Unknown kinds are ignored.
@@ -203,9 +203,9 @@ func apply_state(state: Dictionary) -> void:
 func active_loops() -> Array:
 	var list: Array = []
 
-	for name in _loops:
-		if _loops[name].playing and not _loops[name].stream_paused and _loops[name].volume_db > -60.0:
-			list.append([name, _loops[name].volume_db])
+	for sound_name in _loops:
+		if _loops[sound_name].playing and not _loops[sound_name].stream_paused and _loops[sound_name].volume_db > -60.0:
+			list.append([sound_name, _loops[sound_name].volume_db])
 
 	return list
 
@@ -213,8 +213,8 @@ func active_loops() -> Array:
 func voices_playing() -> int:
 	var count: int = _pending.size()
 
-	for name in _loops:
-		if _loops[name].playing and not _loops[name].stream_paused:
+	for sound_name in _loops:
+		if _loops[sound_name].playing and not _loops[sound_name].stream_paused:
 			count += 1
 
 	return count
@@ -351,11 +351,11 @@ func _drips(delta: float, body: CharacterBody3D, cover: float) -> void:
 	drips_played += 1
 
 
-func _loop(name: String, level: float) -> void:
-	if not _loops.has(name):
+func _loop(sound_name: String, level: float) -> void:
+	if not _loops.has(sound_name):
 		return
 
-	var player: AudioStreamPlayer = _loops[name]
+	var player: AudioStreamPlayer = _loops[sound_name]
 	level *= _under
 
 	if level < 0.005:
@@ -370,7 +370,7 @@ func _loop(name: String, level: float) -> void:
 	if not player.playing:
 		player.play(_rng.randf() * 10.0)
 
-	player.volume_db = float(LOOP_DB[name]) + linear_to_db(level)
+	player.volume_db = float(LOOP_DB[sound_name]) + linear_to_db(level)
 
 
 # Thunder in a storm: a roll now and then, from far to near, heard after the light.
@@ -441,22 +441,22 @@ func _thunder_bus(distance_m: float) -> String:
 	return AirBands.bus_for("thunder", AirBands.band_for("thunder", effective, 0))
 
 
-func _variants(name: String) -> Array:
-	if _streams.has(name):
-		return _streams[name]
+func _variants(sound_name: String) -> Array:
+	if _streams.has(sound_name):
+		return _streams[sound_name]
 
-	var list: Array = SoundStage._find(RECORDED_DIR, name)
+	var list: Array = SoundStage._find(RECORDED_DIR, sound_name)
 
 	if list.is_empty():
-		list = SoundStage._find(GENERATED_DIR, name)
+		list = SoundStage._find(GENERATED_DIR, sound_name)
 
-	_streams[name] = list
+	_streams[sound_name] = list
 	return list
 
 
 func _exit_tree() -> void:
-	for name in _loops:
-		_loops[name].stop()
-		_loops[name].stream = null
+	for sound_name in _loops:
+		_loops[sound_name].stop()
+		_loops[sound_name].stream = null
 
 	_streams.clear()

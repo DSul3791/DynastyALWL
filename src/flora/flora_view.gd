@@ -736,15 +736,15 @@ func species_near(point: Vector3, radius: float) -> int:
 
 
 # The chunks to have, nearest first: every chunk within tree view distance.
-func wanted_chunks(position: Vector3) -> Array:
+func wanted_chunks(from_position: Vector3) -> Array:
 	var reach: int = int(ceil(view_m[KIND_TREE] / chunk_m))
-	var center: Vector2i = Vector2i(int(floor(position.x / chunk_m)), int(floor(position.z / chunk_m)))
+	var center: Vector2i = Vector2i(int(floor(from_position.x / chunk_m)), int(floor(from_position.z / chunk_m)))
 	var list: Array = []
 
 	for dz in range(-reach, reach + 1):
 		for dx in range(-reach, reach + 1):
 			var chunk: Vector2i = center + Vector2i(dx, dz)
-			var distance: float = _distance(chunk, position)
+			var distance: float = _distance(chunk, from_position)
 
 			if distance <= view_m[KIND_TREE]:
 				list.append([distance, chunk])
@@ -969,7 +969,7 @@ func fall_list() -> Array:
 # A water grid may carry its drawing already built under "mesh" (made on a worker
 # thread by the client, see terrain_client.gd _decode_in).
 # Sets a chunk's items (as from FloraPlacer.chunk_items or decode).
-func set_chunk(chunk: Vector2i, items: Dictionary, position: Vector3, water: Dictionary = {}, full: bool = true) -> void:
+func set_chunk(chunk: Vector2i, items: Dictionary, from_position: Vector3, water: Dictionary = {}, full: bool = true) -> void:
 	drop_chunk(chunk)
 	canopy_version += 1
 	var entry: Dictionary = {"items": items, "level": -1, "node": null, "water": null, "grid": water, "full": full, "ground": _ground_here(chunk)}
@@ -992,7 +992,7 @@ func set_chunk(chunk: Vector2i, items: Dictionary, position: Vector3, water: Dic
 
 	_draw_ice(chunk, entry, water)
 	_draw_falls(chunk, entry, water)
-	_refresh(chunk, position)
+	_refresh(chunk, from_position)
 
 
 # The lake or river surface level at a point (NAN where there is none).
@@ -1122,8 +1122,8 @@ func full_m() -> float:
 	return maxf(view_m[KIND_SHRUB], view_m[KIND_PLANT]) + 0.25 * chunk_m
 
 
-func needs_full(chunk: Vector2i, position: Vector3) -> bool:
-	return _distance(chunk, position) <= full_m()
+func needs_full(chunk: Vector2i, from_position: Vector3) -> bool:
+	return _distance(chunk, from_position) <= full_m()
 
 
 func holds_full(chunk: Vector2i) -> bool:
@@ -1132,7 +1132,7 @@ func holds_full(chunk: Vector2i) -> bool:
 
 # A held chunk's items replaced (its trees-only form by the full one). The old
 # drawing stays until the new one is built, so nothing blinks.
-func replace_items(chunk: Vector2i, items: Dictionary, position: Vector3, full: bool) -> void:
+func replace_items(chunk: Vector2i, items: Dictionary, from_position: Vector3, full: bool) -> void:
 	var entry: Dictionary = _chunks.get(chunk, {})
 
 	if entry.is_empty():
@@ -1144,11 +1144,11 @@ func replace_items(chunk: Vector2i, items: Dictionary, position: Vector3, full: 
 	entry["level"] = -1
 	entry.erase("building")
 	_filter_cleared(chunk, false)
-	_refresh(chunk, position)
+	_refresh(chunk, from_position)
 
 
 # Removes one item (cut down) and redraws its chunk.
-func remove_item(chunk: Vector2i, id: int, position: Vector3) -> void:
+func remove_item(chunk: Vector2i, id: int, from_position: Vector3) -> void:
 	var entry: Dictionary = _chunks.get(chunk, {})
 
 	if entry.is_empty():
@@ -1169,7 +1169,7 @@ func remove_item(chunk: Vector2i, id: int, position: Vector3) -> void:
 
 	entry["level"] = -1
 	entry.erase("building")
-	_refresh(chunk, position)
+	_refresh(chunk, from_position)
 
 
 # The placed things of the world: no shrubs or small plants within radius of any of them (trees stay; felling is the server's).
@@ -1270,23 +1270,23 @@ func _ground_here(chunk: Vector2i) -> bool:
 
 # Redraws chunks whose level changed and drops far ones. Returns the
 # chunks dropped.
-func update(position: Vector3) -> Array:
+func update(from_position: Vector3) -> Array:
 	var dropped: Array = []
-	_last_position = position
+	_last_position = from_position
 	_check_ground()
 
 	if not _ease.is_empty():
 		_ease_water()
 
 	for chunk in _chunks.keys():
-		if _distance(chunk, position) > view_m[KIND_TREE] + 2.0 * chunk_m:
+		if _distance(chunk, from_position) > view_m[KIND_TREE] + 2.0 * chunk_m:
 			# Freeing a chunk's draws and colliders costs up to 30 ms (build 176 probe), so a few
 			# at a time; the rest go on the next update. They are out of view range meanwhile.
 			if dropped.size() < MAX_DROPS_PER_UPDATE:
 				drop_chunk(chunk)
 				dropped.append(chunk)
 		else:
-			_refresh(chunk, position)
+			_refresh(chunk, from_position)
 
 	return dropped
 
@@ -1310,8 +1310,8 @@ func item_count() -> int:
 # ---------------------------------------------------------------- drawing
 
 # Level bits: 1 trees, 2 shrubs, 4 plants, 8 colliders, 16 and 32 full models, 64 tree impostors.
-func _level(chunk: Vector2i, position: Vector3) -> int:
-	var distance: float = _distance(chunk, position)
+func _level(chunk: Vector2i, from_position: Vector3) -> int:
+	var distance: float = _distance(chunk, from_position)
 	var level: int = 0
 
 	for kind in range(3):
@@ -1331,18 +1331,18 @@ func _level(chunk: Vector2i, position: Vector3) -> int:
 	# TIER_FAR 0, TIER_FULL 1 (casts shadows), TIER_IMPOSTOR 2, TIER_MID 3.
 	if (level & 1) != 0:
 		var cells: int = int(chunk_m / CELL_M)
-		var full_m: float = maxf(shadow_m, FULL_MIN_M)
+		var full_range_m: float = maxf(shadow_m, FULL_MIN_M)
 		var x0: float = float(chunk.x) * chunk_m
 		var z0: float = float(chunk.y) * chunk_m
 
 		for cz in range(cells):
 			for cx in range(cells):
-				var dx: float = maxf(maxf(x0 + float(cx) * CELL_M - position.x, position.x - (x0 + float(cx + 1) * CELL_M)), 0.0)
-				var dz: float = maxf(maxf(z0 + float(cz) * CELL_M - position.z, position.z - (z0 + float(cz + 1) * CELL_M)), 0.0)
+				var dx: float = maxf(maxf(x0 + float(cx) * CELL_M - from_position.x, from_position.x - (x0 + float(cx + 1) * CELL_M)), 0.0)
+				var dz: float = maxf(maxf(z0 + float(cz) * CELL_M - from_position.z, from_position.z - (z0 + float(cz + 1) * CELL_M)), 0.0)
 				var d: float = sqrt(dx * dx + dz * dz)
 				var tier: int = TIER_FAR
 
-				if d <= full_m:
+				if d <= full_range_m:
 					tier = TIER_FULL
 
 					if shadow_m > CONTACT_M and d > CONTACT_M:
@@ -1361,12 +1361,12 @@ func _level(chunk: Vector2i, position: Vector3) -> int:
 # trees, set one by one) ran on the main thread, several chunks at a time. Now the layout of
 # a chunk is worked out on a worker thread (_plan) and only the finished pieces are put in
 # the scene on the main thread (apply_built, called every frame).
-func _refresh(chunk: Vector2i, position: Vector3) -> void:
+func _refresh(chunk: Vector2i, from_position: Vector3) -> void:
 	if not _setup_done:
 		return
 
 	var entry: Dictionary = _chunks[chunk]
-	var level: int = _level(chunk, position)
+	var level: int = _level(chunk, from_position)
 
 	if level == entry["level"] or level == entry.get("building", -2):
 		return
@@ -1543,8 +1543,8 @@ func _plan(items: Dictionary, level: int) -> Dictionary:
 			groups[proxy_key].append(n)
 
 		if (level & 8) != 0 and int(info["kind"]) != KIND_PLANT and float(info["trunk"]) >= 0.1:
-			var scale: float = float(items["heights"][n]) / float(info["height"])
-			shapes.append([species_id, float(info["trunk"]) * scale, p + Vector3(0.0, 1.2, 0.0)])
+			var size_scale: float = float(items["heights"][n]) / float(info["height"])
+			shapes.append([species_id, float(info["trunk"]) * size_scale, p + Vector3(0.0, 1.2, 0.0)])
 
 	# Glowing trees (everember, witness tree) light the ground around them, near the player
 	# only: one warm light per GLOW_CELL_M square, at most GLOW_LIGHTS per chunk.
@@ -1567,9 +1567,9 @@ func _plan(items: Dictionary, level: int) -> Dictionary:
 				continue
 
 			lit[cell] = true
-			var scale: float = float(items["heights"][n]) / float(info["height"])
+			var size_scale: float = float(items["heights"][n]) / float(info["height"])
 			lights.append([info["glow"], float(info["glow_energy"]),
-				maxf(8.0 + float(info["trunk"]) * scale * 4.0, float(items["heights"][n]) * 0.6),
+				maxf(8.0 + float(info["trunk"]) * size_scale * 4.0, float(items["heights"][n]) * 0.6),
 				p + Vector3(0.0, maxf(2.0, float(items["heights"][n]) * float(info["glow_height"])), 0.0)])
 
 	var draws: Array = []
@@ -1584,22 +1584,22 @@ func _plan(items: Dictionary, level: int) -> Dictionary:
 
 		for m in range(indices.size()):
 			var n: int = indices[m]
-			var scale: float = float(items["heights"][n]) / float(info["height"])
-			var basis: Basis = Basis(Vector3.UP, float(items["yaws"][n])).scaled(Vector3.ONE * scale)
+			var size_scale: float = float(items["heights"][n]) / float(info["height"])
+			var axes: Basis = Basis(Vector3.UP, float(items["yaws"][n])).scaled(Vector3.ONE * size_scale)
 			# Sunk a little so slopes do not show a gap under the trunk.
 			var origin: Vector3 = items["positions"][n] - Vector3(0.0, 0.15, 0.0)
 			var o: int = m * stride
-			buffer[o] = basis.x.x
-			buffer[o + 1] = basis.y.x
-			buffer[o + 2] = basis.z.x
+			buffer[o] = axes.x.x
+			buffer[o + 1] = axes.y.x
+			buffer[o + 2] = axes.z.x
 			buffer[o + 3] = origin.x
-			buffer[o + 4] = basis.x.y
-			buffer[o + 5] = basis.y.y
-			buffer[o + 6] = basis.z.y
+			buffer[o + 4] = axes.x.y
+			buffer[o + 5] = axes.y.y
+			buffer[o + 6] = axes.z.y
 			buffer[o + 7] = origin.y
-			buffer[o + 8] = basis.x.z
-			buffer[o + 9] = basis.y.z
-			buffer[o + 10] = basis.z.z
+			buffer[o + 8] = axes.x.z
+			buffer[o + 9] = axes.y.z
+			buffer[o + 10] = axes.z.z
 			buffer[o + 11] = origin.z
 
 			if tinted:
@@ -1825,11 +1825,11 @@ static func _drawn_count(node: Node3D) -> int:
 
 
 # Distance from the player to the nearest point of a chunk (flat).
-func _distance(chunk: Vector2i, position: Vector3) -> float:
+func _distance(chunk: Vector2i, from_position: Vector3) -> float:
 	var x0: float = float(chunk.x) * chunk_m
 	var z0: float = float(chunk.y) * chunk_m
-	var dx: float = maxf(maxf(x0 - position.x, position.x - (x0 + chunk_m)), 0.0)
-	var dz: float = maxf(maxf(z0 - position.z, position.z - (z0 + chunk_m)), 0.0)
+	var dx: float = maxf(maxf(x0 - from_position.x, from_position.x - (x0 + chunk_m)), 0.0)
+	var dz: float = maxf(maxf(z0 - from_position.z, from_position.z - (z0 + chunk_m)), 0.0)
 	return sqrt(dx * dx + dz * dz)
 
 

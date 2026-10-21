@@ -230,7 +230,6 @@ var shore_cards: int = 0                 # pebbles and reeds drawn now
 
 var _terrain: Node3D
 var _trample = null                      # GrassTrample: where the grass is trodden down
-var _trample_msec: int = 0
 const TRAIL_CELLS := 256                 # the trail map: 256 cells of 4 m, wrapping (1024 m); blocks are 64 cells (256 m)
 const TRAIL_BLOCK := 64
 const TRAIL_CONFIG := "res://data/animals/trails.json"
@@ -239,6 +238,8 @@ var _trail_image: Image = null
 var _trail_texture: ImageTexture = null
 var _trail_block: Vector2i = Vector2i(1 << 30, 0)   # the player's block when the map was last built
 var _trail_dirty: bool = false
+var _trails_on: bool = true
+var _trail_draw: float = 0.25
 var _trail_msec: int = 0
 var _trail_mult: float = 1.0
 var _flora
@@ -334,11 +335,12 @@ func setup(terrain: Node3D, flora, tables) -> void:
 
 	_trail_image = Image.create(TRAIL_CELLS, TRAIL_CELLS, false, Image.FORMAT_R8)
 	_trail_texture = ImageTexture.create_from_image(_trail_image)
-	var draw: float = 0.25
+	var draw: float = _trail_draw
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(TRAIL_CONFIG)) if FileAccess.file_exists(TRAIL_CONFIG) else null
 
 	if parsed is Dictionary:
 		draw = float(parsed.get("draw_threshold", 0.25))
+		_trail_draw = draw
 
 	for n in range(_materials.size()):
 		if not _is_solid(n):
@@ -413,6 +415,16 @@ func set_trail_multiplier(mult: float) -> void:
 			_materials[n].set_shader_parameter("recover_s", _trample.recover_s * m)
 
 
+# Experiment switch (Esc > Advanced): the trample and the game trails off, drawn and stamped.
+func set_trails_on(on: bool) -> void:
+	_trails_on = on
+
+	for n in range(_materials.size()):
+		if not _is_solid(n):
+			_materials[n].set_shader_parameter("trample_squash", _trample.squash if on else 0.0)
+			_materials[n].set_shader_parameter("trail_draw", _trail_draw if on else 9.0)
+
+
 func trail_reach_m() -> float:
 	return _trample.trail_reach_m
 
@@ -421,9 +433,9 @@ func trail_budget() -> int:
 	return _trample.trail_budget
 
 
-func stamp(position: Vector3) -> void:
+func stamp(from_position: Vector3) -> void:
 	if enabled and _trample != null:
-		_trample.stamp(position)
+		_trample.stamp(from_position)
 
 
 # The wind sways the grass with the same gusts the sound stage plays
@@ -434,8 +446,8 @@ func set_wind(strength: float) -> void:
 
 
 # The painted texture, imported by the editor or else straight from the file.
-static func _load_texture(name: String) -> Texture2D:
-	var path: String = "res://assets/grass/%s.png" % name
+static func _load_texture(sound_name: String) -> Texture2D:
+	var path: String = "res://assets/grass/%s.png" % sound_name
 
 	if ResourceLoader.exists(path):
 		var imported: Texture2D = load(path) as Texture2D
@@ -930,7 +942,7 @@ func ground_changed(center: Vector3, radius: float) -> void:
 	_edits.append([now + 2500, cells])
 
 
-func update(position: Vector3) -> void:
+func update(from_position: Vector3) -> void:
 	if not enabled or _meshes.is_empty():
 		return
 
@@ -944,13 +956,13 @@ func update(position: Vector3) -> void:
 				entry["busy"] = true
 				_pending.push_front(cell)
 
-	_center = position
+	_center = from_position
 	var now: int = Time.get_ticks_msec()
 	_trample.flush()
 
 	if _trunk_msec == 0 or (_trunk_msec > 0 and now >= _trunk_msec):
 		_trunk_msec = now + 1500
-		_push_trunks(position)
+		_push_trunks(from_position)
 
 	var clock: float = TrampleScript.now_s()
 
@@ -966,13 +978,13 @@ func update(position: Vector3) -> void:
 	# come into reach at a run; and cells whose ground collision was not loaded waited 1.5 s. Now: building
 	# goes on during a scan, the budget grows while moving, the scan is centred a little ahead of the
 	# movement, and retries are quicker.
-	var moved: Vector3 = position - _last_position
+	var moved: Vector3 = from_position - _last_position
 	var dt: float = maxf(float(now - _last_msec) / 1000.0, 0.001)
-	_last_position = position
+	_last_position = from_position
 	_last_msec = now
 	var speed: float = clampf(Vector2(moved.x, moved.z).length() / dt, 0.0, 30.0)
 	_velocity = _velocity.lerp(Vector2(moved.x, moved.z) / dt if dt < 0.5 else Vector2.ZERO, 0.2)
-	var ahead: Vector3 = position + Vector3(_velocity.x, 0.0, _velocity.y) * LOOKAHEAD_S
+	var ahead: Vector3 = from_position + Vector3(_velocity.x, 0.0, _velocity.y) * LOOKAHEAD_S
 	var here_cell: Vector2i = Vector2i(int(floor(ahead.x / CELL_M)), int(floor(ahead.z / CELL_M)))
 
 	# Standing still costs nothing: a rescan only repeats (to retry cells whose ground was not ready) while
@@ -1028,10 +1040,10 @@ func _lod_points(lod: int) -> int:
 	return [points_per_side, maxi(2, int(round(points_per_side * 0.5))), 2, 2][lod]
 
 
-func _rescan_begin(position: Vector3, now: int) -> void:
-	_scan_cx = int(floor(position.x / CELL_M))
-	_scan_cz = int(floor(position.z / CELL_M))
-	_scan_at = Vector2(position.x, position.z)
+func _rescan_begin(from_position: Vector3, now: int) -> void:
+	_scan_cx = int(floor(from_position.x / CELL_M))
+	_scan_cz = int(floor(from_position.z / CELL_M))
+	_scan_at = Vector2(from_position.x, from_position.z)
 	# The scan is centred ahead of the player; its reach grows by that offset so nothing behind is dropped early.
 	_scan_extra = _scan_at.distance_to(Vector2(_center.x, _center.z))
 	_scan_span = int(ceil((radius_m + CELL_M + _scan_extra) / CELL_M))

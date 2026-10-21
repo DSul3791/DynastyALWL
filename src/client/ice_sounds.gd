@@ -76,9 +76,9 @@ func step(feet: Vector3, gait: int, boost_db: float) -> bool:
 	return play("ice_crack", feet, CRACK_DB + _rng.randf_range(-3.0, 2.0) + boost_db, 4.0, 40.0, "Foley")
 
 
-func play(name: String, at: Vector3, db: float, unit: float, reach: float, bus: String) -> bool:
+func play(sound_name: String, at: Vector3, db: float, unit: float, reach: float, bus: String) -> bool:
 	_live = _live.filter(func(p): return is_instance_valid(p))
-	var list: Array = _variants(name)
+	var list: Array = _variants(sound_name)
 
 	if list.is_empty() or _live.size() >= 3:
 		return false
@@ -99,10 +99,10 @@ func play(name: String, at: Vector3, db: float, unit: float, reach: float, bus: 
 	player.play()
 	_live.append(player)
 
-	if name == "ice_crack":
+	if sound_name == "ice_crack":
 		cracks_played += 1
 
-	last = "%s_%d (%s)" % [name, pick, SoundStage.tag(player.stream)]
+	last = "%s_%d (%s)" % [sound_name, pick, SoundStage.tag(player.stream)]
 	return true
 
 
@@ -121,16 +121,16 @@ func voices_playing() -> int:
 	return _live.size()
 
 
-func _variants(name: String) -> Array:
-	if _streams.has(name):
-		return _streams[name]
+func _variants(sound_name: String) -> Array:
+	if _streams.has(sound_name):
+		return _streams[sound_name]
 
-	var list: Array = SoundStage._find(RECORDED_DIR, name)
+	var list: Array = SoundStage._find(RECORDED_DIR, sound_name)
 
 	if list.is_empty():
-		list = SoundStage._find(GENERATED_DIR, name)
+		list = SoundStage._find(GENERATED_DIR, sound_name)
 
-	_streams[name] = list
+	_streams[sound_name] = list
 	return list
 
 

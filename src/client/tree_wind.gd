@@ -56,17 +56,17 @@ func setup(stage) -> void:
 		if arg.begins_with("--tree-season="):
 			forced_season = arg.get_slice("=", 1)
 
-	for name in LOOPS:
+	for sound_name in LOOPS:
 		var player: AudioStreamPlayer = AudioStreamPlayer.new()
 		player.bus = "Wind"
 		player.volume_db = -80.0
-		var list: Array = _variants("treewind_" + name)
+		var list: Array = _variants("treewind_" + sound_name)
 
 		if not list.is_empty():
 			player.stream = list[0]
 
 		add_child(player)
-		_players[name] = player
+		_players[sound_name] = player
 
 
 func update(delta: float, body: CharacterBody3D) -> void:
@@ -94,36 +94,36 @@ func update(delta: float, body: CharacterBody3D) -> void:
 	var best: String = ""
 	var best_level: float = 0.0
 
-	for name in LOOPS:
-		if float(want[name]) > best_level:
-			best_level = float(want[name])
-			best = name
+	for sound_name in LOOPS:
+		if float(want[sound_name]) > best_level:
+			best_level = float(want[sound_name])
+			best = sound_name
 
 	var parts: PackedStringArray = PackedStringArray()
 	loops_playing = 0
 
-	for name in LOOPS:
-		var player: AudioStreamPlayer = _players[name]
-		var amount: float = float(want[name]) * wind
+	for sound_name in LOOPS:
+		var player: AudioStreamPlayer = _players[sound_name]
+		var amount: float = float(want[sound_name]) * wind
 		var target: float = BASE_DB + 20.0 * log(maxf(amount, 0.001)) / log(10.0) + CANOPY_DB * under if amount > 0.01 else -80.0
 
-		if int(_stage.tier) == 0 and name != best:
+		if int(_stage.tier) == 0 and sound_name != best:
 			target = -80.0                                       # Low: only the loudest
 
-		levels[name] = move_toward(float(levels[name]), target, FADE_DB_PER_SEC * delta)
-		player.volume_db = levels[name]
+		levels[sound_name] = move_toward(float(levels[sound_name]), target, FADE_DB_PER_SEC * delta)
+		player.volume_db = levels[sound_name]
 
 		if player.stream == null:
 			continue
 
-		if levels[name] > -60.0:
+		if levels[sound_name] > -60.0:
 			if not player.playing:
 				player.play()
 
 			player.stream_paused = false
 			loops_playing += 1
-			parts.append("%s %.0f dB" % [name, levels[name]])
-		elif player.playing and levels[name] <= -75.0:
+			parts.append("%s %.0f dB" % [sound_name, levels[sound_name]])
+		elif player.playing and levels[sound_name] <= -75.0:
 			player.stream_paused = true
 
 	summary = ", ".join(parts) if not parts.is_empty() else "none"
@@ -199,26 +199,26 @@ func _read_some() -> void:
 			_target[key] = clampf(float(_sum[key]) / DENSE, 0.0, 1.0)
 
 
-func _variants(name: String) -> Array:
-	if _streams.has(name):
-		return _streams[name]
+func _variants(sound_name: String) -> Array:
+	if _streams.has(sound_name):
+		return _streams[sound_name]
 
-	var list: Array = SoundStage._find(RECORDED_DIR, name)
+	var list: Array = SoundStage._find(RECORDED_DIR, sound_name)
 
 	if list.is_empty():
-		list = SoundStage._find(GENERATED_DIR, name)
+		list = SoundStage._find(GENERATED_DIR, sound_name)
 
 	for stream in list:
 		if stream is AudioStreamOggVorbis:
 			stream.loop = true
 
-	_streams[name] = list
+	_streams[sound_name] = list
 	return list
 
 
 func _exit_tree() -> void:
-	for name in _players:
-		_players[name].stop()
-		_players[name].stream = null
+	for sound_name in _players:
+		_players[sound_name].stop()
+		_players[sound_name].stream = null
 
 	_streams.clear()

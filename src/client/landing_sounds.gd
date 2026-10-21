@@ -55,8 +55,8 @@ func land(body: CharacterBody3D, drop_m: float) -> void:
 		hurt.emit(drop_m, clampf((drop_m - HURT_M) / (FULL_HURT_M - HURT_M), 0.0, 1.0))
 
 
-func _play(name: String, volume_db: float) -> bool:
-	var list: Array = _variants(name)
+func _play(sound_name: String, volume_db: float) -> bool:
+	var list: Array = _variants(sound_name)
 
 	if list.is_empty():
 		return false
@@ -70,20 +70,20 @@ func _play(name: String, volume_db: float) -> bool:
 	add_child(player)
 	player.finished.connect(player.queue_free)
 	player.play()
-	last += " %s_%d (%s)" % [name, pick, SoundStage.tag(list[pick])]
+	last += " %s_%d (%s)" % [sound_name, pick, SoundStage.tag(list[pick])]
 	return true
 
 
-func _variants(name: String) -> Array:
-	if _streams.has(name):
-		return _streams[name]
+func _variants(sound_name: String) -> Array:
+	if _streams.has(sound_name):
+		return _streams[sound_name]
 
-	var list: Array = SoundStage._find(RECORDED_DIR, name)
+	var list: Array = SoundStage._find(RECORDED_DIR, sound_name)
 
 	if list.is_empty():
-		list = SoundStage._find(GENERATED_DIR, name)
+		list = SoundStage._find(GENERATED_DIR, sound_name)
 
-	_streams[name] = list
+	_streams[sound_name] = list
 	return list
 
 

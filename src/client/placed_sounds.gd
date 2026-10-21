@@ -138,11 +138,11 @@ func watch_open(world: Dictionary, here: Vector3) -> void:
 	_open_primed = true
 
 
-func _once(name: String, at: Vector3) -> bool:
-	if not NAMES.has(name) or not _stage.has_room():
+func _once(sound_name: String, at: Vector3) -> bool:
+	if not NAMES.has(sound_name) or not _stage.has_room():
 		return false
 
-	var list: Array = _variants(name)
+	var list: Array = _variants(sound_name)
 
 	if list.is_empty():
 		return false
@@ -151,7 +151,7 @@ func _once(name: String, at: Vector3) -> bool:
 	var player: AudioStreamPlayer3D = AudioStreamPlayer3D.new()
 	player.stream = list[pick]
 	player.bus = "Foley"
-	player.volume_db = float(NAMES[name]) + _rng.randf_range(-1.0, 1.0)
+	player.volume_db = float(NAMES[sound_name]) + _rng.randf_range(-1.0, 1.0)
 	player.pitch_scale = _rng.randf_range(0.95, 1.05)
 	player.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
 	player.unit_size = 7.0
@@ -161,21 +161,21 @@ func _once(name: String, at: Vector3) -> bool:
 	player.global_position = at
 	player.finished.connect(player.queue_free)
 	player.play()
-	played[name] = int(played.get(name, 0)) + 1
-	last = "%s_%d (%s)" % [name, pick, SoundStage.tag(list[pick])]
+	played[sound_name] = int(played.get(sound_name, 0)) + 1
+	last = "%s_%d (%s)" % [sound_name, pick, SoundStage.tag(list[pick])]
 	return true
 
 
-func _variants(name: String) -> Array:
-	if _streams.has(name):
-		return _streams[name]
+func _variants(sound_name: String) -> Array:
+	if _streams.has(sound_name):
+		return _streams[sound_name]
 
-	var list: Array = SoundStage._find(RECORDED_DIR, name)
+	var list: Array = SoundStage._find(RECORDED_DIR, sound_name)
 
 	if list.is_empty():
-		list = SoundStage._find(GENERATED_DIR, name)
+		list = SoundStage._find(GENERATED_DIR, sound_name)
 
-	_streams[name] = list
+	_streams[sound_name] = list
 	return list
 
 

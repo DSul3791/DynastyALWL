@@ -202,7 +202,7 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 
 
 # A tapered tube along a gently leaning path, flared at the base.
-static func _trunk(acc: Acc, rng: RandomNumberGenerator, height: float, base_r: float, top_r: float, lean: Vector2, color: Color, sides: int, rings: int, flare: float) -> Array:
+static func _trunk(acc: Acc, _rng: RandomNumberGenerator, height: float, base_r: float, top_r: float, lean: Vector2, color: Color, sides: int, rings: int, flare: float) -> Array:
 	var first: int = acc.v.size()
 	var centers: Array = []
 
@@ -334,7 +334,7 @@ static func _broadleaf(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: fl
 static func _conifer(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, far: bool) -> void:
 	var tint: Color = BARK_TINT_SOFT
 	var lean: Vector2 = Vector2(rng.randf_range(-0.03, 0.03), rng.randf_range(-0.03, 0.03)) * h
-	var centers: Array = _trunk(bark, rng, h * 0.95, trunk, trunk * 0.12, lean, tint, 5 if far else 7, 1 if far else 3, 0.0 if far else 0.8)
+	_trunk(bark, rng, h * 0.95, trunk, trunk * 0.12, lean, tint, 5 if far else 7, 1 if far else 3, 0.0 if far else 0.8)
 	var tiers: int = 11 if far else rng.randi_range(24, 27)
 	var per: int = 7 if far else 12
 	# Each tree is its own build of the arrowhead: slim and steep like a spruce, or

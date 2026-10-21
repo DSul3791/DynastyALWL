@@ -37,43 +37,43 @@ func setup(_stage) -> void:
 	add_child(_player)
 
 
-func play(name: String) -> bool:
-	if not NAMES.has(name):
+func play(sound_name: String) -> bool:
+	if not NAMES.has(sound_name):
 		return false
 
 	var now: int = Time.get_ticks_msec()
 
-	if now - _last_msec < MIN_GAP_MSEC or (name == "ui_click" and now - _last_cue_msec < CLICK_SKIP_MSEC):
+	if now - _last_msec < MIN_GAP_MSEC or (sound_name == "ui_click" and now - _last_cue_msec < CLICK_SKIP_MSEC):
 		return false
 
-	var list: Array = _variants(name)
+	var list: Array = _variants(sound_name)
 
 	if list.is_empty():
 		return false
 
 	_last_msec = now
 
-	if name != "ui_click":
+	if sound_name != "ui_click":
 		_last_cue_msec = now
 
 	var pick: int = _rng.randi_range(0, list.size() - 1)
 	_player.stream = list[pick]
-	_player.volume_db = float(NAMES[name]) + _rng.randf_range(-1.0, 1.0)
+	_player.volume_db = float(NAMES[sound_name]) + _rng.randf_range(-1.0, 1.0)
 	_player.pitch_scale = _rng.randf_range(0.97, 1.03)
 	_player.play()
 	played += 1
-	last = "%s_%d (%s)" % [name, pick, SoundStage.tag(list[pick])]
+	last = "%s_%d (%s)" % [sound_name, pick, SoundStage.tag(list[pick])]
 	return true
 
 
-func _variants(name: String) -> Array:
-	if _streams.has(name):
-		return _streams[name]
+func _variants(sound_name: String) -> Array:
+	if _streams.has(sound_name):
+		return _streams[sound_name]
 
-	var list: Array = SoundStage._find(RECORDED_DIR, name)
+	var list: Array = SoundStage._find(RECORDED_DIR, sound_name)
 
 	if list.is_empty():
-		list = SoundStage._find(GENERATED_DIR, name)
+		list = SoundStage._find(GENERATED_DIR, sound_name)
 
-	_streams[name] = list
+	_streams[sound_name] = list
 	return list

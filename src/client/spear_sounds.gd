@@ -86,11 +86,11 @@ func update(delta: float) -> void:
 			_flights.remove_at(n)
 
 
-func _once(name: String, at: Vector3, db: float, strength: float) -> bool:
-	if not _stage.has_room() and not name.begins_with("spear_hit"):
+func _once(sound_name: String, at: Vector3, db: float, strength: float) -> bool:
+	if not _stage.has_room() and not sound_name.begins_with("spear_hit"):
 		return false
 
-	var list: Array = _variants(name)
+	var list: Array = _variants(sound_name)
 
 	if list.is_empty():
 		return false
@@ -100,8 +100,8 @@ func _once(name: String, at: Vector3, db: float, strength: float) -> bool:
 	player.global_position = at
 	player.finished.connect(player.queue_free)
 	player.play()
-	_count(name)
-	last = "%s_%d (%s)" % [name, pick, SoundStage.tag(list[pick])]
+	_count(sound_name)
+	last = "%s_%d (%s)" % [sound_name, pick, SoundStage.tag(list[pick])]
 	return true
 
 
@@ -119,18 +119,18 @@ func _make_player(stream: AudioStream, db: float, unit: float) -> AudioStreamPla
 	return player
 
 
-func _count(name: String) -> void:
-	played[name] = int(played.get(name, 0)) + 1
+func _count(sound_name: String) -> void:
+	played[sound_name] = int(played.get(sound_name, 0)) + 1
 
 
-func _variants(name: String) -> Array:
-	if _streams.has(name):
-		return _streams[name]
+func _variants(sound_name: String) -> Array:
+	if _streams.has(sound_name):
+		return _streams[sound_name]
 
-	var list: Array = SoundStage._find(RECORDED_DIR, name)
+	var list: Array = SoundStage._find(RECORDED_DIR, sound_name)
 
 	if list.is_empty():
-		list = SoundStage._find(GENERATED_DIR, name)
+		list = SoundStage._find(GENERATED_DIR, sound_name)
 
-	_streams[name] = list
+	_streams[sound_name] = list
 	return list
