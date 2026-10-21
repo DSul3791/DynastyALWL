@@ -859,8 +859,10 @@ func _sync_skills(peer: int, force: bool) -> void:
 
 			var rec: Dictionary = records.get(id, {})
 			var today: int = 1 if int(rec.get("day", -1)) == int(now_s / 86400.0) and float(rec.get("dgain", 0.0)) > 0.0 else 0
-			# [index, working level, rusty, cap, own training level, practised today, effective value]
-			rows.append([index, int(round(SkillWeb.working(_skills_cfg, str(id), records))), 1 if rec.has("p") and SkillRules.rusty(_skills_cfg, rec) else 0, SkillWeb.cap_of(_skills_cfg, str(id), records), int(rec.get("t", 0)), today, int(floor(eff))])
+			var raw: float = SkillWeb.raw_value(_skills_cfg, str(id), rec)
+			var day_left: float = 1.0 - (float(rec.get("dgain", 0.0)) / maxf(float(_skills_cfg.get("system", {}).get("day_cap_units", 300.0)), 1.0) if today == 1 else 0.0)
+			# [index, working level, rusty, cap, own training level, practised today, effective value, percent of the way to the next level, percent of today's gain left]
+			rows.append([index, int(round(SkillWeb.working(_skills_cfg, str(id), records))), 1 if rec.has("p") and SkillRules.rusty(_skills_cfg, rec) else 0, SkillWeb.cap_of(_skills_cfg, str(id), records), int(rec.get("t", 0)), today, int(floor(eff)), int((raw - floorf(raw)) * 100.0), clampi(int(round(day_left * 100.0)), 0, 100)])
 
 		index += 1
 

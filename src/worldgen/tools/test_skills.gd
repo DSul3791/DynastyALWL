@@ -174,6 +174,16 @@ func _init() -> void:
 	check(items._characters["skill-key-0001"]["skills"].has("woodwork"), "20 percent goes to the parent group")
 	check(float(items._characters["skill-key-0001"]["skills"]["woodwork"]["p"]) < gained * 0.5, "the parent gets the smaller share")
 	check(items.practice(1, "no_such_action", 1.0) == 0.0, "unknown actions do nothing")
+	items._sync_skills(1, true)
+	var last_rows: Array = sent.back()[2]
+	var wood: Array = []
+
+	for r in last_rows:
+		if int(r[0]) == cfg["skills"].keys().find("woodcutting"):
+			wood = r
+
+	check(wood.size() == 9 and int(wood[5]) == 1 and int(wood[7]) >= 0 and int(wood[7]) <= 99, "a skill row carries the percent to the next level (%s)" % str(wood))
+	check(wood.size() == 9 and int(wood[8]) < 100 and int(wood[8]) > 0, "and what is left of today's gain after practising (%s)" % str(wood))
 	check(items.train_skill(1, "woodcutting") == "not near the cap yet", "the server refuses early training")
 	items._characters["skill-key-0001"]["skills"]["woodcutting"]["p"] = Web.units_for(cfg, "woodcutting", 23.0)
 	check(items.train_skill(1, "woodcutting") == "", "and trains a skill near its cap")

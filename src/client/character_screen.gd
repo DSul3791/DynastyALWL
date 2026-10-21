@@ -20,6 +20,7 @@ var _heart: Control
 var _bpm_label: Label
 var _attributes: VBoxContainer
 var _skills_box: VBoxContainer
+var _skill_search: LineEdit
 var _remains_box: VBoxContainer
 var _skills_cfg: Dictionary = {}              # data/items/skills.json: names and order of the skills
 var _phase: float = 0.0
@@ -161,6 +162,12 @@ func _build() -> void:
 	box.add_child(_remains_box)
 	box.add_child(HSeparator.new())
 	box.add_child(_label("Skills", TITLE_PX - 6))
+	_skill_search = LineEdit.new()
+	_skill_search.placeholder_text = "Search skills"
+	_skill_search.clear_button_enabled = true
+	_skill_search.add_theme_font_size_override("font_size", _px(BODY_PX))
+	_skill_search.text_changed.connect(func(_text): refresh())
+	box.add_child(_skill_search)
 	_skills_box = VBoxContainer.new()
 	box.add_child(_skills_box)
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/skills.json"))
@@ -253,6 +260,8 @@ func refresh() -> void:
 			by_id[str(ids[index])] = row
 
 	ids = _family_order(defs)
+	ids.reverse()   # the tree grows from the bottom up: the specialties on top, the roots they grow from at the foot
+	var wanted: String = _skill_search.text.strip_edges().to_lower() if _skill_search != null else ""
 
 	# Everything practised or unlocked shows; skills still locked behind a need show greyed with what they wait for.
 	var any_row: bool = false
@@ -267,6 +276,9 @@ func refresh() -> void:
 
 		if unmet != "" and row.is_empty() and bool(def.get("placeholder", false)):
 			continue   # coming-soon skills only appear once their first need is within reach of being listed
+
+		if wanted != "" and not str(def.get("name", id)).to_lower().contains(wanted):
+			continue
 
 		any_row = true
 		var line: HBoxContainer = HBoxContainer.new()
@@ -290,6 +302,11 @@ func refresh() -> void:
 
 		line.add_child(_label("%d / %d" % [effective, cap] if unmet == "" else "locked", BODY_PX))
 
+		if unmet == "" and row.size() > 7 and effective < cap:
+			var next_level: Label = _label("%d%% to %d" % [int(row[7]), effective + 1], BODY_PX - 4)
+			next_level.modulate = Color(0.8, 0.8, 0.8)
+			line.add_child(next_level)
+
 		if unmet != "":
 			var locked: Label = _label("needs " + unmet, BODY_PX - 4)
 			locked.modulate = Color(0.75, 0.75, 0.75)
@@ -306,6 +323,7 @@ func refresh() -> void:
 
 		if row.size() > 5 and int(row[5]) == 1:
 			var today: Label = _label("practised today", BODY_PX - 4)
+			today.text = "practised today, %d%% of the day's gain left" % int(row[8]) if row.size() > 8 else "practised today"
 			today.modulate = Color(0.9, 0.9, 0.6)
 			line.add_child(today)
 

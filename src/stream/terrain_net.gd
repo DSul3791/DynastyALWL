@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 53
+const PROTOCOL_VERSION := 54
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -294,7 +294,7 @@ func died(cause: String, spawn: Vector3) -> void:
 
 
 # The character's skills (protocol 37, data/items/skills.json): attributes [strength, memory] (-10..10) and one row
-# [skill index in the file's "skills" order, working level 0..100, rusty 0/1, cap, training level, practised today 0/1, effective value] for every skill the character has practised or reads above 1 through training.
+# [skill index in the file's "skills" order, working level 0..100, rusty 0/1, cap, training level, practised today 0/1, effective value, percent of the way to the next level 0..99, percent of today's gain left 0..100] for every skill the character has practised or reads above 1 through training.
 # Sent at hello and when a level, attribute or rusty flag changes (at most every 5 s).
 @rpc("authority", "call_remote", "reliable")
 func skills(attributes: PackedInt32Array, rows: Array) -> void:
