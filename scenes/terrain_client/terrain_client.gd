@@ -65,7 +65,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 526
+const BUILD := 527
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -1728,7 +1728,9 @@ func _build_menu(layer: CanvasLayer) -> void:
 	var controls: VBoxContainer = _menu_page(column, "controls")
 	var controls_text: Label = Label.new()
 	controls_text.text = HELP_TEXT
-	controls_text.add_theme_font_size_override("font_size", 22)
+	controls_text.add_theme_font_size_override("font_size", 26)
+	controls_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	controls_text.custom_minimum_size = Vector2(1500.0, 0.0)
 	controls.add_child(controls_text)
 	_menu_button(controls, "Back", func(): _show_menu_page("main"))
 
@@ -2142,7 +2144,7 @@ func _ground_health_line() -> String:
 
 	if now - _ground_line_msec > 5000 and cache != null and stream != null:
 		_ground_line_msec = now
-		_ground_line = "ground: terrain v%s  tiles %s  starter %s  saved %.0f MB (%d hit, %d miss)  refused %d zeroed, %d bad  %d timeouts" % [str(world.get("terrain_version", "?")), str(world.get("tiles_stamp", "?")), ("seeded" if _starter_seeded > 0 else "none"), float(cache.size_bytes()) / 1048576.0, cache.hits, cache.misses, stream.zeroed_blocks, stream.bad_blocks, stream.timeouts]
+		_ground_line = "ground v%s  tiles %s  starter %s\nsaved %.0f MB  %d hit  %d miss  refused %d" % [str(world.get("terrain_version", "?")), str(world.get("tiles_stamp", "?")), ("seeded" if _starter_seeded > 0 else "none"), float(cache.size_bytes()) / 1048576.0, cache.hits, cache.misses, stream.zeroed_blocks + stream.bad_blocks + stream.timeouts]
 
 	return _ground_line
 
