@@ -17,6 +17,8 @@ static var _frames: int = 0
 static var _slow_count: int = 0
 static var _win: Dictionary = {}          # name -> us since window_reset (the GPU probe's script-cost lines)
 static var _win_frames: int = 0
+static var _win_process_ms: float = 0.0   # engine monitors summed per frame since window_reset (the GPU probe's engine rows)
+static var _win_physics_ms: float = 0.0
 
 
 static func start() -> int:
@@ -42,6 +44,8 @@ static func stop(name: String, started: int) -> void:
 static func frame(delta: float) -> void:
 	_frames += 1
 	_win_frames += 1
+	_win_process_ms += Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
+	_win_physics_ms += Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
 	var ms: float = delta * 1000.0
 
 	if ms > SLOW_MS and _frames > 30:
@@ -101,6 +105,8 @@ static func report() -> String:
 static func window_reset() -> void:
 	_win = {}
 	_win_frames = 0
+	_win_process_ms = 0.0
+	_win_physics_ms = 0.0
 
 
 # The pieces that cost most per frame since window_reset, as "name ms" strings (average over the frames in the window).
@@ -113,3 +119,14 @@ static func window_top(count: int) -> PackedStringArray:
 		out.append("%s %.1f" % [name, float(_win[name]) / 1000.0 / maxf(float(_win_frames), 1.0)])
 
 	return out
+
+
+# Per frame since window_reset: [engine idle step ms (scripts and engine nodes), physics ms, ms of the pieces the code times].
+static func window_engine() -> Array:
+	var frames: float = maxf(float(_win_frames), 1.0)
+	var named: float = 0.0
+
+	for name in _win:
+		named += float(_win[name]) / 1000.0
+
+	return [_win_process_ms / frames, _win_physics_ms / frames, named / frames]

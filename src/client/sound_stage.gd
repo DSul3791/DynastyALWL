@@ -415,6 +415,10 @@ func _sample_exposure(delta: float, body: CharacterBody3D, flying: bool) -> void
 
 
 # Each frame: wind loudness and colour, landing thumps, the underwater muffle.
+var _slow_acc: float = 0.0
+var _slow_skip: bool = false
+
+
 func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool) -> void:
 	_count_left -= delta
 
@@ -429,30 +433,63 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	if track_peaks:
 		_track_peaks()
 
-	ambient.update(delta, body, flying)
+	# TD (2026-10-21, 1050-class pass): at Low the slow-moving sound pieces (ambience, weather, timers, ramps)
+	# run every second frame with the time of both frames; the ones that answer to the player at once
+	# (steps, swimming, breath, spear, dig, fire, torch, falls) still run every frame.
+	var slow_delta: float = delta
+	var slow_now: bool = true
+
+	if tier == 0:
+		_slow_acc += delta
+		_slow_skip = not _slow_skip
+		slow_now = not _slow_skip
+		slow_delta = _slow_acc
+
+		if slow_now:
+			_slow_acc = 0.0
+
+	if slow_now:
+		ambient.update(slow_delta, body, flying)
+		insects.update(slow_delta, underwater)
+		weather.update(slow_delta, body, underwater)
+
 	water.update(delta, body, underwater)
-	insects.update(delta, underwater)
-	weather.update(delta, body, underwater)
+
 	splashes.update(delta, body, underwater)
-	ice.update(delta, body, underwater)
-	windhole.update(delta, underwater)
+
+	if slow_now:
+		ice.update(slow_delta, body, underwater)
+		windhole.update(slow_delta, underwater)
+
 	dig.update(delta)
-	cave.update(delta, body, flying)
-	town.update(delta, body)
+
+	if slow_now:
+		cave.update(slow_delta, body, flying)
+		town.update(slow_delta, body)
+
 	swim.update(delta, body, flying, underwater)
-	creatures.update(delta)
-	interior.update(delta)
+
+	if slow_now:
+		creatures.update(slow_delta)
+		interior.update(slow_delta)
+
 	spear.update(delta)
 	fire.update(delta, body)
-	treewind.update(delta, body)
-	workshop.update(delta, body)
-	trees.update(delta)
+
+	if slow_now:
+		treewind.update(slow_delta, body)
+		workshop.update(slow_delta, body)
+		trees.update(slow_delta)
+
 	breath.follow_body(delta, body, flying, swim.swimming)
 	breath.update(delta, underwater)
 	stance.update(delta)
 	stepfx.update(delta)
 	flame.update(delta, body)
-	occlusion.update(delta, body, flying)
+
+	if slow_now:
+		occlusion.update(slow_delta, body, flying)
+
 	_warm_one(delta)
 	_time += delta
 	gust = clampf(0.5 + 0.8 * _gust_noise.get_noise_1d(_time), 0.0, 1.0)

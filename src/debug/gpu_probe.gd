@@ -67,6 +67,9 @@ func toggle() -> void:
 	]
 	_results = []
 	FrameProbe.window_reset()
+	_vox_frames = 0
+	_vox_sum = {}
+	_vox_worst = {}
 	_saved = {
 		"grass": _client.grass.visible, "flora": _client.flora.visible, "terrain": _client.terrain.visible,
 		"shadow": _client._sun.shadow_enabled, "ssao": _client._environment.ssao_enabled,
@@ -153,11 +156,38 @@ func _next_step() -> void:
 	_sum = 0.0
 
 
+var _vox_frames: int = 0
+var _vox_sum: Dictionary = {}             # the voxel engine's main-thread times (microseconds) summed over the run
+var _vox_worst: Dictionary = {}
+var _vox_tasks: Dictionary = {}           # the latest task counts
+
+
+# TD (2026-10-21): the table shows 33 ms of idle step while the named script pieces add up to a few; the rest
+# is engine work, so the voxel terrain's own main-thread timings and queues are sampled every frame here.
+func _sample_voxel() -> void:
+	if _client.terrain == null:
+		return
+
+	_vox_frames += 1
+	var stats: Dictionary = _client.terrain.get_statistics()
+
+	for key in ["time_detect_required_blocks", "time_io_requests", "time_mesh_requests", "time_update_task"]:
+		var us: int = int(stats.get(key, 0))
+		_vox_sum[key] = int(_vox_sum.get(key, 0)) + us
+		_vox_worst[key] = maxi(int(_vox_worst.get(key, 0)), us)
+
+	var engine: Dictionary = VoxelEngine.get_stats()
+	_vox_tasks = engine.get("tasks", {})
+	_vox_tasks["blocks"] = int(engine.get("memory_pools", {}).get("block_count", 0))
+	_vox_tasks["blocked_lods"] = int(stats.get("blocked_lods", 0))
+
+
 func _process(_delta: float) -> void:
 	if _at < 0:
 		return
 
 	_frame += 1
+	_sample_voxel()
 
 	if _frame > WARMUP:
 		_sum += RenderingServer.viewport_get_measured_render_time_gpu(get_viewport().get_viewport_rid())
@@ -175,10 +205,24 @@ func _show(done: bool) -> void:
 
 	# CPU side, so a frame that does not move with any switch below is recognised as CPU bound (owner table,
 	# 2026-10-21: nothing saved more than 0.9 ms in tall grass): script time per frame, physics time, draw calls, triangles.
-	text += "CPU: scripts %.1f ms, physics %.1f ms; %d draw calls, %.0f k triangles, %d fps\n" % [
+	text += "CPU: idle step %.1f ms, physics %.1f ms; %d draw calls, %.0f k triangles, %d fps\n" % [
 		Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
 		int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)), Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME) / 1000.0,
 		int(Engine.get_frames_per_second())]
+
+	# Engine rows (averages per frame over the whole run): the idle step split into what the code times and the rest,
+	# then the voxel terrain's own main-thread work in microseconds (average, worst) and its queues now.
+	var engine: Array = FrameProbe.window_engine()
+	text += "engine avg: idle step %.1f ms = timed pieces %.1f + untimed %.1f; physics %.1f ms\n" % [engine[0], engine[2], maxf(engine[0] - engine[2], 0.0), engine[1]]
+	var frames: float = maxf(float(_vox_frames), 1.0)
+	text += "voxel main thread us (avg/worst): detect %d/%d, io %d/%d, mesh %d/%d, update %d/%d\n" % [
+		_vox_sum.get("time_detect_required_blocks", 0) / frames, _vox_worst.get("time_detect_required_blocks", 0),
+		_vox_sum.get("time_io_requests", 0) / frames, _vox_worst.get("time_io_requests", 0),
+		_vox_sum.get("time_mesh_requests", 0) / frames, _vox_worst.get("time_mesh_requests", 0),
+		_vox_sum.get("time_update_task", 0) / frames, _vox_worst.get("time_update_task", 0)]
+	text += "voxel queues now: streaming %d, meshing %d, main thread %d, gpu %d; %d blocks held, %d lods blocked\n" % [
+		int(_vox_tasks.get("streaming", 0)), int(_vox_tasks.get("meshing", 0)), int(_vox_tasks.get("main_thread", 0)),
+		int(_vox_tasks.get("gpu", 0)), int(_vox_tasks.get("blocks", 0)), int(_vox_tasks.get("blocked_lods", 0))]
 
 	# The script time by piece, averaged per frame over the whole run (only the pieces the code times; the rest is untimed).
 	var pieces: PackedStringArray = FrameProbe.window_top(8)
