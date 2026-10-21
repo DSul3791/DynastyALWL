@@ -156,10 +156,10 @@ static func _window(levels: PackedFloat32Array, i: int, j: int, count: int, spac
 
 # Dave (2026-10-21, build 483, river near x 52882 z 68268): the river surface sat up on its sides and showed the 8 m
 # cells as squares with sharp corners. Running water (not still) is smoothed: each wet cell takes the weighted mean
-# (3x3, centre 4, sides 2, corners 1) of the wet cells within SMOOTH_STEP_M of it, twice, so a cross-section runs flat
+# (3x3, centre 4, sides 2, corners 1) of the wet cells within SMOOTH_STEP_M of it, four times, so a cross-section runs flat
 # and the surface falls gently along the flow; a fall (a step over SMOOTH_STEP_M) is not blurred. Water is never
 # added. Two cells of padding are read from outside the chunk so neighbouring chunks agree at their shared edge.
-const SMOOTH_PASSES := 2
+const SMOOTH_PASSES := 4
 const SMOOTH_STEP_M := 1.0
 
 
