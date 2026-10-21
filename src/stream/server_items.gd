@@ -3133,12 +3133,40 @@ func _sync_sick(peer: int, force: bool) -> void:
 # --- Warmth (job 92; data/items/warmth.json) ---
 
 # The warmth the body is heading for here and now: 100 on a mild day, less as the cold stress grows.
+# The day and night swing around the weather's seasonal temperature (Tyler; server side only). The daily low comes shortly after
+# sunrise, the high mid-afternoon: a sine rise between them, an exponential fall after, centred so the day averages the seasonal
+# number. Cloud, rain or snow and wind shrink it, altitude grows it a little. The swing size is warmth.json daily_swing_c by season
+# (temperate values; the weather state carries no zone yet, so other zones borrow them).
+func daily_offset(weather: Dictionary, altitude_m: float = 0.0) -> float:
+	var swing_by: Dictionary = _warmth_cfg.get("daily_swing_c", {})
+
+	if swing_by.is_empty() or not game_seconds.is_valid():
+		return 0.0
+
+	var swing: float = float(swing_by.get(str(weather.get("season", "spring")), 9.0))
+	var precip: float = maxf(float(weather.get("rain", 0.0)), float(weather.get("snow", 0.0)))
+	swing *= (1.0 - 0.5 * float(weather.get("cloud", 0.0))) * (1.0 - 0.6 * minf(precip * 2.0, 1.0)) * (1.0 - 0.3 * float(weather.get("wind", 0.0)))
+	swing *= 1.0 + 0.05 * maxf(altitude_m, 0.0) / 300.0
+	var low_h: float = float(_warmth_cfg.get("daily_low_hour", 6.5))
+	var high_h: float = float(_warmth_cfg.get("daily_high_hour", 15.0))
+	var hour: float = fposmod(float(game_seconds.call()), 86400.0) / 3600.0
+	var shape: float
+
+	if hour >= low_h and hour <= high_h:
+		shape = 0.5 * (1.0 - cos(PI * (hour - low_h) / (high_h - low_h)))
+	else:
+		var since: float = hour - high_h if hour > high_h else hour + 24.0 - high_h
+		shape = exp(-3.0 * since / (24.0 - (high_h - low_h)))
+
+	return swing * (shape - 0.38)
+
+
 func warmth_target(peer: int) -> float:
 	var cfg: Dictionary = _warmth_cfg
 	var weather: Dictionary = weather_now.call() if weather_now.is_valid() else {}
 	var pos: Vector3 = _peer_pos.get(peer, Vector3.ZERO)
 	var covered: bool = cover_at.is_valid() and float(cover_at.call(pos)) > 0.5
-	var air: float = float(weather.get("temp_c", float(cfg.get("comfort_c", 15.0)))) - maxf(pos.y, 0.0) * float(cfg.get("lapse_c_per_m", 0.0065))
+	var air: float = float(weather.get("temp_c", float(cfg.get("comfort_c", 15.0)))) + daily_offset(weather, pos.y) - maxf(pos.y, 0.0) * float(cfg.get("lapse_c_per_m", 0.0065))
 	var wind: float = float(weather.get("wind", 0.0)) * (float(cfg.get("covered_wind_share", 0.3)) if covered else 1.0)
 	var feels: float = air - wind * float(cfg.get("wind_chill_c", 6.0))
 	var radius: float = float(cfg.get("fire_radius_m", 4.0))

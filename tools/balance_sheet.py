@@ -138,7 +138,7 @@ def hours_to_hurt(tgt):
 sets = [("naked", 0.0), ("grass set (skirt, cloak, sandals)", sum(clo[i]["warmth"] for i in ("grass_skirt", "grass_cloak", "fibre_sandals"))), ("hide set (cloak, boots, hood, mittens, leggings)", sum(clo[i]["warmth"] for i in ("hide_cloak", "hide_boots", "hide_hood", "hide_mittens", "hide_leggings")))]
 sets = [(n, min(v, wrm["max_insulation"])) for n, v in sets]
 temps = [("temperate summer 24 C", 24), ("temperate spring or autumn 10 C", 10), ("temperate winter -4 C", -4), ("arctic winter -23 C", -23)]
-L += ["## Survival day, all vitals together", "", "Warmth target in ordinary wind (0.4) on a dry day; the number in brackets is how many game hours until health starts to drain (target under %d), a dash if never. Weather has a seasonal temperature only (no day and night swing yet)." % wrm["hurt_at"], "", "| Where | " + " | ".join(n for n, _ in sets) + " |", "|---|" + "---|" * len(sets)]
+L += ["## Survival day, all vitals together", "", "Warmth target in ordinary wind (0.4) on a dry day; the number in brackets is how many game hours until health starts to drain (target under %d), a dash if never. The weather gives a seasonal temperature; warmth adds a day and night swing on top (temperate 5 to 11 C by season, low at 6:30, high at 15:00, smaller in cloud, rain and wind), so dawn in autumn is about 4 C colder than these table values and the afternoon 5 C warmer." % wrm["hurt_at"], "", "| Where | " + " | ".join(n for n, _ in sets) + " |", "|---|" + "---|" * len(sets)]
 for name, t in temps:
     cells = []
     for _, ins in sets:

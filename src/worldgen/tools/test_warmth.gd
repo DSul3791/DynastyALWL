@@ -86,6 +86,23 @@ func _init() -> void:
 	items.insulation_of = func(_p): return 0.5
 	check(items.warmth_target(1) > 50.0, "insulation lifts the target (%.0f)" % items.warmth_target(1))
 
+	# The day and night swing: low after sunrise, high mid-afternoon, smaller in cloud and rain, nothing without a clock.
+	var hour: Array = [0.0]
+	items.game_seconds = func(): return hour[0] * 3600.0
+	var calm: Dictionary = {"season": "summer", "cloud": 0.0, "rain": 0.0, "snow": 0.0, "wind": 0.0}
+	hour[0] = 6.5
+	var low: float = items.daily_offset(calm)
+	hour[0] = 15.0
+	var high: float = items.daily_offset(calm)
+	check(absf((high - low) - 11.0) < 0.3 and low < 0.0 and high > 0.0, "a clear summer day swings 11 C from dawn to afternoon (%.1f to %.1f)" % [low, high])
+	hour[0] = 3.0
+	check(items.daily_offset(calm) > low and items.daily_offset(calm) < 0.0, "the small hours are cold but not the day's low")
+	hour[0] = 15.0
+	var wet: Dictionary = {"season": "summer", "cloud": 1.0, "rain": 0.6, "snow": 0.0, "wind": 0.0}
+	check(items.daily_offset(wet) < high * 0.35, "rain and cloud shrink the swing")
+	items.game_seconds = Callable()
+	check(items.daily_offset(calm) == 0.0, "no clock, no swing")
+
 	# Swimming follows the water temperature: warm lake fine, a cold day's water is dangerous.
 	items.insulation_of = Callable()
 	items._swimming[1] = true
