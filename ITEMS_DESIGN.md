@@ -79,3 +79,7 @@ Item and recipe names are the plain item name only, with no verb: "Basic torch",
 ## Fall damage and refused actions (job 62, protocol 23)
 - The client reports a hard landing (`sound.landing.hurt`, from 6 m) with ACT_FALL; the server alone decides: nothing under `fall.safe_m` (6 m), `per_m` (8) health per metre beyond it, a faint from `faint_m` (12 m). Health stops at 1. Limited to one report per 2 s; a client that stays silent only spares itself (a server-side height tracker can replace this later).
 - `reject(reason)` goes to the player when the server refuses a pickup, mining or felling for reach (0), a missing tool (1) or a full pack (2); the client calls `sound.itemfx.reject`, which limits itself to one cue per 600 ms. The text notices stay as they were.
+
+## Persistence drills and stress (jobs 63, 64)
+- Every item save keeps `<name>.prev` (the save before it); a torn file is restored from it. Drills: src/worldgen/tools/test_persistence_drills.gd (in tools/items_check.py).
+- Stress with simulated players: src/worldgen/tools/stress_items_players.gd; numbers in /mnt/project-files/items/STRESS_20_PLAYERS.md (20 players: 0.47 ms average tick, 3.2 ms worst).
