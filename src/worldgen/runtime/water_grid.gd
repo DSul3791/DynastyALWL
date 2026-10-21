@@ -40,10 +40,19 @@ static func chunk_levels(generator, origin: Vector2, chunk_m: float) -> Dictiona
 	# Settled simulated water is already continuous: no hole closing. Running
 	# water gets a finer surface laid on the real ground (_fine_cells).
 	if not data.sim_levels.is_empty():
-		_ease_into_sea(generator, data, origin, count, spacing, levels)
+		var sea_near: PackedFloat32Array = _ease_into_sea(generator, data, origin, count, spacing, levels)
 		var still: PackedFloat32Array = _calm_still_water(count, spacing, levels)
 		var edge: PackedFloat32Array = _shore_levels(generator, data, origin, count, spacing, levels)
 		var vel: PackedFloat32Array = _velocities(generator, data, origin, count, spacing, levels, still)
+
+		# The current dies away over the same reach, so the shader sees calm water at the sea.
+		if not sea_near.is_empty():
+			for k in range(count * count):
+				if sea_near[k] < float(SEA_EASE_CELLS):
+					var calm: float = sea_near[k] / float(SEA_EASE_CELLS)
+					vel[k * 2] *= calm
+					vel[k * 2 + 1] *= calm
+
 		var fall_grid: PackedFloat32Array = _fall_grid(generator, data, origin, count, spacing, levels)
 		var fall_vel: PackedFloat32Array = vel if data.fall_levels.is_empty() else _velocities(generator, data, origin, count, spacing, fall_grid)
 		var falls: Array = FallsScript.find(generator, origin, count, spacing, fall_grid, fall_vel, func(x: float, z: float) -> float: return _fine_ground(generator, x, z), PackedFloat32Array() if data.fall_levels.is_empty() else levels, vel)
@@ -432,42 +441,80 @@ static func _level_at(generator, data, x: float, z: float, spacing: float) -> fl
 # river surface comes down to the sea in a gentle slope (at most SEA_EASE_SLOPE up from 0 m
 # per meter from the sea), never under the ground, so the river runs into the ocean as one
 # water. Drawing only: the simulation is unchanged.
-const SEA_EASE_CELLS := 6
-const SEA_EASE_SLOPE := 0.05
+# Tyler (2026-10-21, river mouth): real rivers are nearly flat near the sea (backwater), so the ramp
+# is 0.5% over 200 m (1 m) and the current is eased to still over the same reach.
+const SEA_EASE_CELLS := 25
+const SEA_EASE_SLOPE := 0.005
 const SEA_EASE_FILM_M := 0.1
 
 
-static func _ease_into_sea(generator, data, origin: Vector2, count: int, spacing: float, levels: PackedFloat32Array) -> void:
+static func _ease_into_sea(generator, data, origin: Vector2, count: int, spacing: float, levels: PackedFloat32Array) -> PackedFloat32Array:
 	var reach: int = SEA_EASE_CELLS
 	var side: int = count + 2 * reach
-	var sea: PackedByteArray = PackedByteArray()
-	sea.resize(side * side)
+	var near: PackedFloat32Array = PackedFloat32Array()
+	near.resize(side * side)
 	var any_sea: bool = false
 
 	for j in range(side):
 		for i in range(side):
 			if _is_sea(generator, data, origin.x + float(i - reach) * spacing, origin.y + float(j - reach) * spacing, spacing):
-				sea[j * side + i] = 1
+				near[j * side + i] = 0.0
 				any_sea = true
+			else:
+				near[j * side + i] = INF
 
 	if not any_sea:
-		return
+		return PackedFloat32Array()
+
+	# Distance to the nearest sea square in cells (two-pass chamfer).
+	for j in range(side):
+		for i in range(side):
+			var k: int = j * side + i
+			var best: float = near[k]
+
+			if i > 0:
+				best = minf(best, near[k - 1] + 1.0)
+
+			if j > 0:
+				best = minf(best, near[k - side] + 1.0)
+
+				if i > 0:
+					best = minf(best, near[k - side - 1] + 1.4142)
+
+				if i < side - 1:
+					best = minf(best, near[k - side + 1] + 1.4142)
+
+			near[k] = best
+
+	for j in range(side - 1, -1, -1):
+		for i in range(side - 1, -1, -1):
+			var k: int = j * side + i
+			var best: float = near[k]
+
+			if i < side - 1:
+				best = minf(best, near[k + 1] + 1.0)
+
+			if j < side - 1:
+				best = minf(best, near[k + side] + 1.0)
+
+				if i < side - 1:
+					best = minf(best, near[k + side + 1] + 1.4142)
+
+				if i > 0:
+					best = minf(best, near[k + side - 1] + 1.4142)
+
+			near[k] = best
+
+	var result: PackedFloat32Array = PackedFloat32Array()
+	result.resize(count * count)
 
 	for j in range(count):
 		for i in range(count):
+			var nearest: float = near[(j + reach) * side + i + reach]
+			result[j * count + i] = nearest if nearest <= float(reach) else INF
 			var level: float = levels[j * count + i]
 
-			if is_nan(level) or level <= SEA_EASE_FILM_M:
-				continue
-
-			var nearest: float = INF
-
-			for dj in range(-reach, reach + 1):
-				for di in range(-reach, reach + 1):
-					if sea[(j + reach + dj) * side + i + reach + di] == 1:
-						nearest = minf(nearest, sqrt(float(di * di + dj * dj)))
-
-			if nearest == INF:
+			if is_nan(level) or level <= SEA_EASE_FILM_M or nearest > float(reach):
 				continue
 
 			var x: float = origin.x + float(i) * spacing
@@ -475,6 +522,8 @@ static func _ease_into_sea(generator, data, origin: Vector2, count: int, spacing
 			var source = data if (x < data.x0 + float(data.samples - 1) * spacing and z < data.z0 + float(data.samples - 1) * spacing) else generator.get_tile(generator.tile_of(x, z))
 			var ground: float = 0.0 if source.placeholder else source.heights[source.nearest(x, z)]
 			levels[j * count + i] = minf(level, maxf(nearest * spacing * SEA_EASE_SLOPE, ground + SEA_EASE_FILM_M))
+
+	return result
 
 
 # Sea under the 8 m point (x, z): ground at or below 0 m, as the water sim counts it.
