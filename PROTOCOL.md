@@ -1,4 +1,4 @@
-# Protocol (PROTOCOL_VERSION 33, src/stream/terrain_net.gd)
+# Protocol (PROTOCOL_VERSION 43, src/stream/terrain_net.gd)
 
 Kept current by whoever changes the wire: add the row, bump PROTOCOL_VERSION to the next free number (pull first and read terrain_net.gd), and note the build.
 
@@ -72,7 +72,7 @@ Kept current by whoever changes the wire: add the row, bump PROTOCOL_VERSION to 
 
 ## World-item row states (world_items)
 
-0 item, 1 lit fire, 2 out fire (retired in 19, old saves map to 8 or 9), 3 felled trunk, 4 stump, 5 lean-to, 6 chest, 7 chopping block, 8 empty laid fire (ashes), 9 loaded unlit fire.
+0 item, 1 lit fire, 2 out fire (retired in 19, old saves map to 8 or 9), 3 felled trunk, 4 stump, 5 lean-to, 6 chest, 7 chopping block, 8 empty laid fire (ashes), 9 loaded unlit fire. 10 boulder (27), 13 camp bench (41); see the notes by version for any later state.
 
 ## Save formats
 
