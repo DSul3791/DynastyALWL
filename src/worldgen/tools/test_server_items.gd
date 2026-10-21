@@ -1052,5 +1052,26 @@ func _init() -> void:
 	bx.action(1, Net.ACT_CHEST_TAKE, box.numbers.find(box_stone), box_id, 20, Vector3.ZERO)
 	check(bx.inventory_of(1).count_of(box_stone) == before_take and box.count_of(box_stone) == 40, "a take into a pack at its weight cap moves nothing and loses nothing")
 
+	# Skill hooks (job 70): factor 1.0 changes nothing; a stub skill of 2.0 doubles yield and halves craft time.
+	DirAccess.make_dir_recursive_absolute(qd + "_skill")
+
+	for file in DirAccess.get_files_at(qd + "_skill"):
+		DirAccess.remove_absolute(qd + "_skill/" + file)
+
+	var sk = make(qd + "_skill")
+	sk.send_craft_queue = func(_p, _e, _l): pass
+	sk.send_vitals = func(_p, _h, _he, _w): pass
+	sk.peer_connected_hello(1, "skillkey0001")
+	check(sk.skill_factor(1, "craft") == 1.0 and sk.skill_factor(1, "no_such_action") == 1.0, "with no skill system every factor is 1.0")
+	sk.skill_level = func(_peer, _skill): return 2.0
+	check(sk.skill_factor(1, "craft") == 2.0 and sk.skill_factor(1, "no_such_action") == 1.0, "a skill level of 2 gives a factor of 2 for a listed action only")
+	sk.give(1, sk.table.number_of("plant_fibre"), 9)
+	sk.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 1, Vector3.ZERO)
+
+	for n in range(4 * 1 + 1):
+		sk._craft_tick(0.25)
+
+	check(sk.inventory_of(1).count_of(sk.table.number_of("cordage")) == 1, "a skill of 2 makes the 2 s cordage in 1 s")
+
 	print("server item tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

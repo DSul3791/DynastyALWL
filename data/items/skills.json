@@ -1,0 +1,11 @@
+{
+	"note": "Skill hooks (job 70). Every action that a skill will one day speed up or improve asks the server for a factor: skill_factor(peer, action) looks the action up here and asks the skill system for that skill's level. Today the skill system does not exist and every factor is 1.0, so nothing changes. 'effect' says what the factor scales: yield (how much a gather gives), speed (blows needed, cooldown or craft time shrink by the factor). Add an action here and call skill_factor from its code; do not hard-code skill names in code.",
+	"actions": {
+		"gather_plant": {"skill": "foraging", "effect": "yield"},
+		"fell_tree": {"skill": "woodcutting", "effect": "speed"},
+		"work_trunk": {"skill": "woodcutting", "effect": "speed"},
+		"split_log": {"skill": "woodcutting", "effect": "speed"},
+		"mine_rock": {"skill": "mining", "effect": "speed"},
+		"craft": {"skill": "crafting", "effect": "speed"}
+	}
+}

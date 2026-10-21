@@ -89,3 +89,6 @@ Nothing ticks per frame for either. A sapling's size is computed from `planted_a
 
 ## Container rules (job 73)
 In structures.json each container has `slots` (stacks it holds), `max_kg` (weight it takes: woven chest 40 kg, plank chest 150 kg, placeholders) and `who` (only "anyone"; "owner" and "town" come with ownership). A put past the weight puts what fits (stack by stack) and refuses the rest with the pack-full cue; a full chest or a pack at its carry cap moves nothing and loses nothing (tests in test_server_items.gd). The validator checks the three fields.
+
+## Skill hooks (job 70)
+data/items/skills.json maps each action (gather_plant, fell_tree, work_trunk, split_log, mine_rock, craft) to a skill and an effect (yield, or speed). The server asks `skill_factor(peer, action)`, which calls the `skill_level(peer, skill)` callable once the skill system provides it; until then it is 1.0 everywhere, so nothing changes. Factor is limited to 0.25 to 4. New skill-affected actions: add a row and call `skill_factor`.

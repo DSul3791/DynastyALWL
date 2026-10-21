@@ -61,6 +61,7 @@ const MINE_STONES_PER_CELL := 6          # stones a patch gives before it is spe
 const MINE_REGROW_S := 300.0             # ...and one comes back this often (real seconds)
 const PLACE_REACH_M := 6.0
 const STRUCTURES_PATH := "res://data/items/structures.json"
+const SKILLS_PATH := "res://data/items/skills.json"
 const FIRE_BURN_S := 100.0               # real seconds a fresh campfire burns (20 sticks, cooking.json start_burn_game_s)
 const FIRE_LAID_S := 1800.0             # a laid fire (empty 8, or loaded and unlit 9) waits this long for the player
 const FIRE_OUT_S := 300.0                # a burnt-out or rained-out fire stays this long
@@ -86,6 +87,8 @@ var cut_tree: Callable         # (chunk Vector2i, id) -> true when the standing 
 var rock_at: Callable          # (x, z) -> true when bare rock shows at the surface there (no soil cover); set by the server scene
 var game_seconds: Callable      # () -> game clock seconds
 var season_now: Callable        # () -> "spring" | "summer" | "autumn" | "winter"
+var skill_level: Callable         # (peer, skill id) -> level factor around 1.0; unset until the skill system exists, then every factor is 1.0
+var _skills_cfg: Dictionary = {}
 var send_reject: Callable        # (peer, reason 0 too far, 1 no tool, 2 pack full, 3 other)
 var send_craft_queue: Callable   # (peer, [[recipe, crafts left], ...], ms left on the first)
 var send_strain: Callable       # (peer, strain in thousandths, state 0 normal 1 over 2 fainted 3 waking, fade in thousandths, stance)
@@ -169,6 +172,8 @@ func setup(item_table, store_dir: String) -> void:
 		_structures = structures.get("structures", {})
 		_struct_gap_m = float(structures.get("gap_m", 2.5))
 
+	var skills_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(SKILLS_PATH))
+	_skills_cfg = skills_parsed if typeof(skills_parsed) == TYPE_DICTIONARY else {}
 	_vitals_cfg = VitalsRules.load_config()
 	_carry_cfg = CarryRules.load_config()
 	var exertion_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/exertion.json"))
@@ -513,11 +518,13 @@ func gather(peer: int, species_name: String, kind: String, flora_key: String, fl
 	if rows.is_empty() and natural == "":
 		return false
 
+	var more: float = skill_factor(peer, "gather_plant")
+
 	for row in rows:
-		give(peer, table.number_of(str(row[0])), rng.randi_range(int(row[1]), int(row[2])))
+		give(peer, table.number_of(str(row[0])), maxi(1, int(round(float(rng.randi_range(int(row[1]), int(row[2]))) * more))))
 
 	if natural != "":
-		give(peer, table.number_of(natural), rng.randi_range(1, 3))
+		give(peer, table.number_of(natural), maxi(1, int(round(float(rng.randi_range(1, 3)) * more))))
 
 	_picked[flora_key] = now_s
 	_dirty = true
@@ -526,6 +533,16 @@ func gather(peer: int, species_name: String, kind: String, flora_key: String, fl
 
 func _tool_for(item_id: String) -> String:
 	return GatherRules.tool_for(item_id, _drops)
+
+
+# What a skill does to an action (data/items/skills.json): 1.0 until the skill system exists. Never below 0.25 or above 4.
+func skill_factor(peer: int, action: String) -> float:
+	var def: Dictionary = _skills_cfg.get("actions", {}).get(action, {})
+
+	if def.is_empty() or not skill_level.is_valid():
+		return 1.0
+
+	return clampf(float(skill_level.call(peer, str(def.get("skill", "")))), 0.25, 4.0)
 
 
 func _reject(peer: int, reason: int) -> void:
@@ -627,7 +644,7 @@ func _mine(peer: int, inv, at: Vector3) -> void:
 
 	var now: int = Time.get_ticks_msec()
 
-	if not has_axe or now - int(_last_mine.get(peer, -100000)) < MINE_COOLDOWN_MS or not bool(rock_at.call(at.x, at.z)):
+	if not has_axe or float(now - int(_last_mine.get(peer, -100000))) < float(MINE_COOLDOWN_MS) / skill_factor(peer, "mine_rock") or not bool(rock_at.call(at.x, at.z)):
 		return
 
 	_last_mine[peer] = now
@@ -1114,7 +1131,7 @@ func _hit(peer: int, inv, tree_id: int, chunk: Vector2i) -> void:
 	chop["hits"] = int(chop["hits"]) + 1
 	chop["msec"] = now
 	_chops[key] = chop
-	var needed: int = clampi(int(4.0 + float(info["trunk"]) * 30.0), 4, 40)
+	var needed: int = maxi(1, int(ceil(float(clampi(int(4.0 + float(info["trunk"]) * 30.0), 4, 40)) / skill_factor(peer, "fell_tree"))))
 
 	if int(chop["hits"]) < needed:
 		return
@@ -1326,7 +1343,7 @@ func _process_trunk(peer: int, inv, id: int) -> void:
 
 	var now: int = Time.get_ticks_msec()
 
-	if now - int(_last_process.get(peer, -100000)) < PROCESS_COOLDOWN_MS:
+	if float(now - int(_last_process.get(peer, -100000))) < float(PROCESS_COOLDOWN_MS) / skill_factor(peer, "work_trunk"):
 		return
 
 	_last_process[peer] = now
@@ -1714,7 +1731,7 @@ func _use_struct(peer: int, inv, id: int) -> void:
 
 	var now: int = Time.get_ticks_msec()
 
-	if now - int(_last_use.get(peer, -100000)) < int(def.get("use_pace_ms", 600)):
+	if float(now - int(_last_use.get(peer, -100000))) < float(def.get("use_pace_ms", 600)) / skill_factor(peer, "split_log"):
 		return
 
 	var log_n: int = table.number_of("log")
@@ -2079,7 +2096,7 @@ func _craft_tick(spent: float) -> void:
 
 		queue["elapsed"] = float(queue["elapsed"]) + spent
 
-		if float(queue["elapsed"]) < float(recipe.get("craft_s", 3.0)):
+		if float(queue["elapsed"]) < float(recipe.get("craft_s", 3.0)) / skill_factor(peer, "craft"):
 			continue
 
 		queue["elapsed"] = 0.0

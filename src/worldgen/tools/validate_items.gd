@@ -203,6 +203,13 @@ func _init() -> void:
 			gatherable[id] = true
 			obtainable[id] = true
 
+	# Skill hooks: every action names a skill and an effect the code knows.
+	for action in _read("skills.json").get("actions", {}):
+		var def: Dictionary = _read("skills.json")["actions"][action]
+
+		if String(def.get("skill", "")) == "" or not String(def.get("effect", "")) in ["yield", "speed"]:
+			fail("skills.json: action '%s' needs a skill name and an effect of yield or speed" % action)
+
 	# Cooking.
 	want_item.call(String(cooking.get("gives", "")), "cooking.json gives")
 	obtainable[String(cooking.get("gives", ""))] = true
