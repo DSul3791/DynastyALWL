@@ -86,7 +86,18 @@ func state_of(items) -> Dictionary:
 		if items.inventory_of(1).numbers[i] == roast:
 			food_age = items.inventory_of(1).wear[i]
 
+	var benches: int = 0
+	var cap_owner: int = 0
+
+	for id in items._items:
+		if items._items[id].has("struct"):
+			benches += 1 if str(items._items[id]["struct"]["kind"]) in ["workbench", "tool_rack"] else 0
+
+	for id in items.remains_ids():
+		cap_owner += 1 if str(items._items[id]["struct"].get("owner", "")) == "drillkey00003" else 0
+
 	return {
+		"benches": benches, "cap_owner": cap_owner, "energy": int(items.vitals_of(1).get("energy", -1)), "worn": items.worn_of(1),
 		"remains": items.remains_ids().size(), "remains_fibre": remains_fibre, "age": food_age,
 		"warmth": int(items.vitals_of(1).get("warmth", -1)), "sick": int(items.vitals_of(1).get("sick", -1)),
 		"skill_p": snappedf(float(items._characters[KEY].get("skills", {}).get("mining", {}).get("p", -1.0)), 0.01), "strength": int(items._characters[KEY].get("strength", -1)),
@@ -129,6 +140,21 @@ func build_world(dir: String) -> Dictionary:
 	a.action(1, Net.ACT_ADMIN_GIVE, a.table.number_of("roast_forage"), 0, 4, Vector3.ZERO)
 	a.inventory_of(1).wear[a.inventory_of(1).numbers.find(a.table.number_of("roast_forage"))] = 321
 	a.vitals_of(1)["warmth"] = 63.0
+	a.vitals_of(1)["energy"] = 41.0
+	a.action(1, Net.ACT_ADMIN_GIVE, a.table.number_of("grass_cloak"), 0, 1, Vector3.ZERO)
+	a.action(1, Net.ACT_ADMIN_GIVE, a.table.number_of("workbench_kit"), 0, 1, Vector3.ZERO)
+	a.action(1, Net.ACT_ADMIN_GIVE, a.table.number_of("tool_rack_kit"), 0, 1, Vector3.ZERO)
+	a.action(1, Net.ACT_WEAR, a.inventory_of(1).numbers.find(a.table.number_of("grass_cloak")), 0, 0, Vector3.ZERO)
+	a.action(1, Net.ACT_PLACE, a.inventory_of(1).numbers.find(a.table.number_of("workbench_kit")), 0, 0, Vector3(-4.0, 10.0, 0.0))
+	a.action(1, Net.ACT_PLACE, a.inventory_of(1).numbers.find(a.table.number_of("tool_rack_kit")), 0, 0, Vector3(-4.0, 10.0, 2.5))
+	# Seven deaths of one character leave only per_owner_cap sets of remains (the oldest go first).
+	a.peer_connected_hello(3, "drillkey00003")
+	a.report_position(3, Vector3(60.0, 10.0, 60.0))
+
+	for n in 7:
+		a.report_position(3, Vector3(60.0 + 3.0 * float(n), 10.0, 60.0))
+		a.action(3, Net.ACT_ADMIN_GIVE, fibre, 0, 1, Vector3.ZERO)
+		a.kill(3, "drill")
 	a.vitals_of(1)["sick"] = 5000.0
 	a._characters[KEY]["strength"] = 3
 	a._characters[KEY]["skills"] = {"mining": {"p": 12.5, "peak": 12.5, "last": 5.0}}
@@ -150,7 +176,7 @@ func reload(dir: String):
 func _init() -> void:
 	var dir: String = "user://test_drills"
 	var want: Dictionary = build_world(dir)
-	check(int(want["remains"]) == 1 and int(want["remains_fibre"]) == 5 and int(want["age"]) == 321 and int(want["warmth"]) == 63 and int(want["sick"]) == 5000 and int(want["strength"]) == 3, "the drill world has a body, an aged stack, warmth, sickness and skills %s" % str(want))
+	check(int(want["remains"]) == 6 and int(want["remains_fibre"]) == 10 and int(want["cap_owner"]) == 5 and int(want["benches"]) == 2 and int(want["energy"]) == 41 and int(want["age"]) == 321 and int(want["warmth"]) == 63 and int(want["sick"]) == 5000 and int(want["strength"]) == 3, "the drill world has a body, an aged stack, warmth, sickness and skills %s" % str(want))
 	check(int(want["pack"]) == 20 and int(want["chest"]) == 7 and int(want["ground"]) == 3 and int(want["trees"]) == 1, "the drill world has what the drills count on %s" % str(want))
 
 	for file in FILES:
@@ -185,7 +211,7 @@ func _init() -> void:
 	var after: Dictionary = state_of(migrated)
 
 	for field in want:
-		if not ["warmth", "sick", "skill_p", "strength"].has(field):
+		if not ["warmth", "sick", "skill_p", "strength", "energy", "worn"].has(field):
 			check(after[field] == want[field], "an older save keeps %s (%s vs %s)" % [field, str(after[field]), str(want[field])])
 
 	check(int(after["warmth"]) == 100 and int(after["sick"]) == 0 and int(after["strength"]) == 0 and float(after["skill_p"]) == -1.0, "an older save reads warm, well, no skills and no attributes (%s)" % str(after))
@@ -235,8 +261,8 @@ func _init() -> void:
 		var lost: Dictionary = state_of(reload(snap))
 		var expect: Dictionary = want.duplicate()
 		var gone: Array = {
-			"inventories.json": ["pack", "water", "age"], "world_items.json": ["ground", "boulders", "remains", "remains_fibre"], "tree_states.json": ["trees"], "chests.json": ["chest", "remains_fibre"],
-			"vitals.json": ["weight", "warmth", "sick"], "craft_queues.json": ["queue"], "characters.json": ["luck", "fitness", "skill_p", "strength"],
+			"inventories.json": ["pack", "water", "age"], "world_items.json": ["ground", "boulders", "remains", "remains_fibre", "benches", "cap_owner"], "tree_states.json": ["trees"], "chests.json": ["chest", "remains_fibre", "cap_owner"],
+			"vitals.json": ["weight", "warmth", "sick", "energy"], "craft_queues.json": ["queue"], "characters.json": ["luck", "fitness", "skill_p", "strength", "worn"],
 		}[file]
 
 		for field in gone:

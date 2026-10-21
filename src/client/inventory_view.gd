@@ -2946,6 +2946,7 @@ func run_text_test(client) -> void:
 	print("Character screen: ", _character.report(), "; inventory closed ", str(not open), "; screen_open ", str(screen_open()))
 	toggle_character()
 	print("Text test: scale %.2f, %d slot buttons, all valid %s, every item shown %s, panel open %s, window sizes seen %d, contents fit %s" % [text_scale, _buttons.size(), str(valid), str(filled_ok), str(open), sizes.size(), str(fits)])
+	_finish_early(client)
 
 
 # Job 82: every control in the inventory window, read at the current text scale: the smallest font in use, the labels a
@@ -3213,6 +3214,14 @@ func run_chest_test(client) -> void:
 	quick_key(press)
 	await get_tree().create_timer(1.0).timeout
 	print("Chest test: quick key T, stones in chest %d, in pack %d" % [chest_inv.count_of(stone), inventory.count_of(stone)])
+	_finish_early(client)
+
+
+# A headless check that has printed everything ends the run on the next frame instead of waiting out --frames, which
+# takes minutes at the cloud's very low frame rate.
+func _finish_early(client) -> void:
+	if client.frames_left > 1:
+		client.frames_left = 1
 
 
 # Headless check (--chop): stand by the nearest tree with an axe and chop it down.

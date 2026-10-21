@@ -87,10 +87,10 @@ CLIENTS = [
         ("tooltips at least 24 px", r"tooltip font " + NUM + " px", 24, 200),
         ("six sort options", r"sort options " + NUM + ",", 6, 6),
         ("action buttons carry their keys", r"key buttons missing (\[\])", None, None),
-        ("five bars at the top of the inventory screen (health, exertion, energy, food, water)", r"panel bars " + NUM, 5, 5),
+        ("six bars at the top of the inventory screen (health, exertion, energy, food, water, warmth)", r"panel bars " + NUM, 6, 6),
         ("no bars on the main screen", r"main-screen bars " + NUM, 0, 0),
         ("Tab opens the character screen", r"Character screen: open (true)", None, None),
-        ("character screen: five bars", r"bars " + NUM + r", luck row", 5, 5),
+        ("character screen: six bars", r"bars " + NUM + r", luck row", 6, 6),
         ("character screen: luck and skills listed", r"luck row (true), skills section (true)", None, None),
         ("character screen fonts at least 24 px", r"Character screen: .*smallest font " + NUM + " px", 24, 200),
         ("carry bar on the inventory screen", r"carry bar (true)", None, None),
@@ -171,6 +171,9 @@ def main():
     if "--list" in args:
         print("\n".join([n for n, _ in UNITS] + [c[0] for c in CLIENTS]))
         return 0
+    # A fresh checkout has no class cache, so the client scene fails to parse and the run hangs until it times out.
+    if not os.path.exists(os.path.join(ROOT, ".godot", "global_script_class_cache.cfg")):
+        subprocess.run([godot, "--headless", "--path", ROOT, "--import"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=300)
     failed = 0
     if not only or "luck" in only:
         luck = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "check_luck.py")], capture_output=True, text=True)

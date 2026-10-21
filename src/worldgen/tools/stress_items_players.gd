@@ -30,6 +30,16 @@ func make(dir: String):
 	items.send_notice = func(_p, t): count("notice", t.length())
 	items.send_chest = func(_p, _i, b): count("chest", b.size())
 	items.send_reject = func(_p, _r): count("reject", 4)
+	items.send_energy = func(_p, _e): count("energy", 4)
+	items.send_warmth = func(_p, _w): count("warmth", 4)
+	items.send_sick = func(_p, _h): count("sick", 4)
+	items.send_skills = func(_p, _a, r): count("skills", 8 + 12 * r.size())
+	items.send_worn = func(_p, n): count("worn", 4 * n.size())
+	items.send_remains = func(_p, r): count("remains", 16 * r.size())
+	items.send_died = func(_p, _c, _s): count("died", 16)
+	items.weather_now = func(): return {"temp_c": 4.0, "wind": 0.4, "rain": 0.2, "snow": 0.0, "cloud": 0.6, "season": "autumn"}
+	items.water_near = func(p, _r): return int(p.x / 40.0) % 2 == 0
+	items.ice_cover_at = func(_p): return 0.0
 	items.ground_height = func(x, z): return 10.0 + sin(x * 0.01) * 3.0
 	items.cover_at = func(p): return 1.0 if int(p.x / 30.0) % 3 == 0 else 0.0
 	items.rock_at = func(_x, _z): return false
@@ -65,8 +75,8 @@ func run(players: int, label: String) -> void:
 		pos.append(Vector3(rng.randf() * SPREAD_M, 10.0, rng.randf() * SPREAD_M))
 		items.report_position(p, pos[p - 1])
 
-		for id in ["stick", "stone", "plant_fibre", "chest_kit", "campfire_kit", "roast_forage"]:
-			items.action(p, Net.ACT_ADMIN_GIVE, items.table.number_of(id), 0, 30 if id != "chest_kit" and id != "campfire_kit" else 2, Vector3.ZERO)
+		for id in ["stick", "stone", "plant_fibre", "chest_kit", "campfire_kit", "roast_forage", "fishing_rod", "workbench_kit", "grass_cloak", "spear", "cordage", "wooden_spade"]:
+			items.action(p, Net.ACT_ADMIN_GIVE, items.table.number_of(id), 0, 30 if not id.ends_with("_kit") and id not in ["fishing_rod", "grass_cloak", "spear", "wooden_spade"] else 2, Vector3.ZERO)
 
 	var ticks: Array = []
 	var steps: int = int(SPAN_S / TICK_S)
@@ -81,7 +91,7 @@ func run(players: int, label: String) -> void:
 
 		if step % 40 == 0:
 			for p in range(1, players + 1):
-				var kind: int = rng.randi_range(0, 4)
+				var kind: int = rng.randi_range(0, 10)
 
 				if kind == 0:
 					items._last_queue_act.clear()
@@ -92,8 +102,23 @@ func run(players: int, label: String) -> void:
 					items.action(p, Net.ACT_PLACE, items.inventory_of(p).numbers.find(items.table.number_of("chest_kit")), 0, 0, pos[p - 1] + Vector3(-2.0, 0.0, 0.0))
 				elif kind == 3:
 					items.action(p, Net.ACT_EAT, items.inventory_of(p).numbers.find(items.table.number_of("roast_forage")), 0, 0, Vector3.ZERO)
-				else:
+				elif kind == 4:
 					items.action(p, Net.ACT_DROP, 0, 0, 1, pos[p - 1])
+				elif kind == 5:
+					items.action(p, Net.ACT_WEAR, items.inventory_of(p).numbers.find(items.table.number_of("grass_cloak")), 0, 0, Vector3.ZERO)
+				elif kind == 6:
+					items._last_fish.clear()
+					items.action(p, Net.ACT_FISH, items.inventory_of(p).numbers.find(items.table.number_of("fishing_rod")), 0, 0, Vector3.ZERO)
+				elif kind == 7:
+					items.action(p, Net.ACT_FISH, items.inventory_of(p).numbers.find(items.table.number_of("spear")), 0, 0, pos[p - 1] + Vector3(2.0, 0.0, 0.0))
+				elif kind == 8:
+					items.action(p, Net.ACT_PLACE, items.inventory_of(p).numbers.find(items.table.number_of("workbench_kit")), 0, 0, pos[p - 1] + Vector3(0.0, 0.0, 2.0))
+				elif kind == 9:
+					items._last_queue_act.clear()
+					items.action(p, Net.ACT_CRAFT_QUEUE, 26, 0, 1, Vector3.ZERO)   # stone spade: needs a camp bench
+				else:
+					if rng.randf() < 0.3:
+						items.kill(p, "stress")
 
 		items.tick(TICK_S)
 
@@ -101,6 +126,22 @@ func run(players: int, label: String) -> void:
 			items._dirty = true
 
 		ticks.append(float(Time.get_ticks_usec() - t0) / 1000.0)
+
+	if label == "scaling" and players == 20:
+		for name in ["_rot", "_fires", "_vitals_tick", "_craft_tick", "_remains_tick", "_spoil_tick"]:
+			var t1: int = Time.get_ticks_usec()
+
+			for n in 20:
+				items.call(name, 0.25)
+
+			print("stress20: profile %s: %.3f ms per call" % [name, float(Time.get_ticks_usec() - t1) / 20000.0])
+
+		var t2: int = Time.get_ticks_usec()
+
+		for n in 20:
+			items._fly(0.05)
+
+		print("stress20: profile _fly: %.3f ms per call" % [float(Time.get_ticks_usec() - t2) / 20000.0])
 
 	var save0: int = Time.get_ticks_usec()
 	items._dirty = true

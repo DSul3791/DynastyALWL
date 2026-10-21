@@ -150,6 +150,18 @@ L += ["", "Swimming (cold follows the water): " + "; ".join("%d C air gives %.0f
 cx = [(ck, sp) for ck, sp in (("roast forage", spo["by_id"]["roast_forage"]), ("roast meat", spo["by_id"]["roast_meat"]), ("raw meat", spo["by_id"]["raw_meat"]))]
 L += ["Cooking: a roast keeps %.1f times what the raw item had left, up to its own shelf life; roast forage up to %.0f game days, roast meat %.0f, raw meat %.0f. A hot meal adds %d warmth points when eaten (roast forage), tea %d. Raw meat, fiddleheads and beans make you sick for 12 to 24 hours, acorns and wild mushrooms for 6." % (cook["cooked_life_mult"], spo["by_id"]["roast_forage"] * mult / 24, spo["by_id"]["roast_meat"] * mult / 24, spo["by_id"]["raw_meat"] * mult / 24, cook["warms"]["roast_forage"], cook["warms"]["herbal_tea"]), ""]
 L += ["A game day, put together: food lasts 24 game hours of walking, water 36, energy %s (see Energy); cold is the only vital that can hurt a well-fed, rested character, and only in winter or in water without clothes. Sickness (6 to 24 hours at exertion 0.5) costs food and water but never health beyond what hunger already allows." % ("3 game days awake, then sleep"), ""]
+
+# --- Fishing and stations ---
+fsh = load("fishing.json"); strc = load("structures.json")["structures"]; rcp = load("recipes.json")["recipes"]
+base = fsh["base_chance"]
+L += ["## Fishing", "", "A cast waits %.0f to %.0f s, then a bite lasts %.0f s. Chance of a bite on a cast (fresh pond, novice, no bait): %.0f%% base; dawn or dusk x1.3, midday x0.7, light rain x%.1f, storm x%.1f, cold water x%.1f, bait x%.1f, ice hole x%.1f." % (fsh["wait_s"][0], fsh["wait_s"][1], fsh["window_s"], base * 100, fsh["rain_mult"], fsh["storm_mult"], fsh["cold_mult"], fsh["bait_mult"], fsh["ice"]["ice_mult"]), ""]
+avg_wait = (fsh["wait_s"][0] + fsh["wait_s"][1]) / 2 + 3
+L += ["A cast takes about %.0f s of waiting. At %.0f%% that would be %.0f bites an hour without any limit, so the hidden stock is what really paces fishing: a cell holds only %d to %d fish and gets one back per game day (one real hour), so a spot gives about %d to %d fish at first and then roughly one an hour, however good the player is." % (avg_wait, base * 130, 3600 / avg_wait * base * 1.3, fsh["stock_base"], fsh["stock_base"] + fsh["stock_extra"], fsh["stock_base"], fsh["stock_base"] + fsh["stock_extra"]), "Spear: %.0f%% for a novice, at most %.0f%%, depth %.1f m or less, a jab every %.1f s." % (fsh["spear"]["base_chance"] * 100, fsh["spear"]["max_chance"] * 100, fsh["spear"]["max_depth_m"], fsh["spear"]["cooldown_s"]), "A trout feeds %d kcal raw, %d roasted (%.1f of a walking day's 2400 kcal)." % (load("vitals.json")["food"]["by_id"]["trout"], load("vitals.json")["food"]["by_id"]["roast_fish"], load("vitals.json")["food"]["by_id"]["roast_fish"] / 2400.0), ""]
+L += ["## Crafting stations", "", "A station recipe needs a placed station within reach (camp bench %.0f m) and its level: 1, plus one for each add-on kind (tool rack, vice) within %.0f m." % (strc["workbench"]["reach_m"], strc["workbench"]["addon_reach_m"]), "", "| Recipe | Station | Level | Needs |", "|---|---|---|---|"]
+for rid, rr in rcp.items():
+    if rr.get("station"):
+        L.append("| %s | %s | %d | %s |" % (rr["name"], rr["station"].replace("_", " "), rr.get("station_level", 1), ", ".join("%d %s" % (n[1], n[0]) for n in rr["needs"])))
+L += [""]
 L += ["", "## What looks off", ""]
 L += ["- " + f for f in flags] or ["Nothing in these tables trips the checks (a day of food, a day of water, craft times under a minute, tools of 30+ uses)."]
 open(out_path, "w").write("\n".join(L) + "\n")
