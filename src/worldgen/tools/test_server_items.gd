@@ -657,7 +657,7 @@ func _init() -> void:
 
 	var vt = make(vd)
 	var vsent: Array = []
-	vt.send_vitals = func(p, hunger, health, weight, thirst): vsent.append([hunger, health, weight, thirst])
+	vt.send_vitals = func(p, hunger, health, weight, thirst, luck): vsent.append([hunger, health, weight, thirst])
 	var vnotes: Array = []
 	vt.send_notice = func(_p, text): vnotes.append(text)
 	vt.peer_connected_hello(1, "abcdef123456")
@@ -710,7 +710,7 @@ func _init() -> void:
 	var th = make(td)
 	var tsent: Array = []
 	var thirst_rejects: Array = []
-	th.send_vitals = func(_p, hunger, health, weight, thirst): tsent.append(thirst)
+	th.send_vitals = func(_p, hunger, health, weight, thirst, luck): tsent.append(thirst)
 	th.send_reject = func(_p, reason): thirst_rejects.append(reason)
 	var nearby: Array = [false]
 	th.water_near = func(_pos, _reach): return nearby[0]
@@ -766,7 +766,7 @@ func _init() -> void:
 		DirAccess.remove_absolute(cwd + "/" + file)
 
 	var cw = make(cwd)
-	cw.send_vitals = func(_p, _h, _he, _w, _t): pass
+	cw.send_vitals = func(_p, _h, _he, _w, _t, _l): pass
 	cw.peer_connected_hello(1, "carrykey0001")
 	cw.report_position(1, Vector3(0.0, 10.0, 0.0))
 	cw.give(1, cw.table.number_of("stone"), 20)
@@ -823,7 +823,7 @@ func _init() -> void:
 
 	var sx = make(ed)
 	var strains: Array = []
-	sx.send_vitals = func(_p, _h, _he, _w, _t): pass
+	sx.send_vitals = func(_p, _h, _he, _w, _t, _l): pass
 	sx.send_strain = func(_p, s, st, fa, sn): strains.append([s, st, fa, sn])
 	sx.peer_connected_hello(1, "strainkey001")
 	sx._exertion[1] = 1.0
@@ -838,7 +838,7 @@ func _init() -> void:
 	sx._exertion[1] = 0.5
 	var st_walk: float = float(sx.strain_of(1).get("s", 0.0))
 	var sw = make(ed)
-	sw.send_vitals = func(_p, _h, _he, _w, _t): pass
+	sw.send_vitals = func(_p, _h, _he, _w, _t, _l): pass
 	sw.peer_connected_hello(1, "strainkey002")
 	sw._exertion[1] = 0.5
 
@@ -855,7 +855,7 @@ func _init() -> void:
 		DirAccess.remove_absolute(xd + "/" + file)
 
 	var sa = make(xd)
-	sa.send_vitals = func(_p, _h, _he, _w, _t): pass
+	sa.send_vitals = func(_p, _h, _he, _w, _t, _l): pass
 	sa.peer_connected_hello(1, "stancekey001")
 	sa.report_position(1, Vector3(0.0, 10.0, 0.0))
 	sa._strain[1] = {"s": 0.9, "state": 1, "t": 0.0}
@@ -914,7 +914,7 @@ func _init() -> void:
 	var cq = make(qd)
 	var queue_seen: Array = []
 	cq.send_craft_queue = func(_p, entries, left_ms): queue_seen.append([entries, left_ms])
-	cq.send_vitals = func(_p, _h, _he, _w, _t): pass
+	cq.send_vitals = func(_p, _h, _he, _w, _t, _l): pass
 	cq.peer_connected_hello(1, "queuekey0001")
 	var fibre: int = cq.table.number_of("plant_fibre")
 	var cord: int = cq.table.number_of("cordage")
@@ -938,7 +938,7 @@ func _init() -> void:
 	check(cq.inventory_of(1).count_of(cord) == 1 and cq.craft_queue_of(1) == [[1, 5]], "one cordage after its 2 s (%d)" % cq.inventory_of(1).count_of(cord))
 	cq._save_craft_queues()
 	var cq2 = make(qd)
-	cq2.send_vitals = func(_p, _h, _he, _w, _t): pass
+	cq2.send_vitals = func(_p, _h, _he, _w, _t, _l): pass
 	cq2.peer_connected_hello(1, "queuekey0001")
 	check(cq2.craft_queue_of(1) == [[1, 5]], "the queue survives a restart")
 	cq._last_queue_act.clear()
@@ -969,7 +969,7 @@ func _init() -> void:
 
 	var rq = make(qd + "_full")
 	rq.send_craft_queue = func(_p, _e, _l): pass
-	rq.send_vitals = func(_p, _h, _he, _w, _t): pass
+	rq.send_vitals = func(_p, _h, _he, _w, _t, _l): pass
 	rq.peer_connected_hello(1, "queuekey0002")
 	rq.report_position(1, Vector3(0.0, 10.0, 0.0))
 	rq.give(1, fibre, 9)
@@ -978,7 +978,7 @@ func _init() -> void:
 	rq._save_craft_queues()
 	var rq2 = make(qd + "_full")
 	rq2.send_craft_queue = func(_p, _e, _l): pass
-	rq2.send_vitals = func(_p, _h, _he, _w, _t): pass
+	rq2.send_vitals = func(_p, _h, _he, _w, _t, _l): pass
 	rq2.peer_connected_hello(1, "queuekey0002")
 	rq2.report_position(1, Vector3(0.0, 10.0, 0.0))
 	check(float(rq2._craft_queues["queuekey0002"]["elapsed"]) == 1.5, "the running craft keeps its progress over a restart")
@@ -1139,7 +1139,7 @@ func _init() -> void:
 	var fl = make(qd + "_fall")
 	var rejects: Array = []
 	fl.send_reject = func(_p, reason): rejects.append(reason)
-	fl.send_vitals = func(_p, _h, _he, _w, _t): pass
+	fl.send_vitals = func(_p, _h, _he, _w, _t, _l): pass
 	fl.peer_connected_hello(1, "fallkey00001")
 	fl.report_position(1, Vector3(0.0, 10.0, 0.0))
 	fl.action(1, Net.ACT_FALL, 500, 0, 0, Vector3.ZERO)
@@ -1167,7 +1167,7 @@ func _init() -> void:
 	var pk = make(qd + "_cap")
 	var cap_rejects: Array = []
 	pk.send_reject = func(_p, reason): cap_rejects.append(reason)
-	pk.send_vitals = func(_p, _h, _he, _w, _t): pass
+	pk.send_vitals = func(_p, _h, _he, _w, _t, _l): pass
 	pk.peer_connected_hello(1, "capkey000001")
 	pk.report_position(1, Vector3(0.0, 10.0, 0.0))
 	var rock: int = pk.table.number_of("stone")
@@ -1245,7 +1245,7 @@ func _init() -> void:
 	var box_rejects: Array = []
 	bx.send_reject = func(_p, reason): box_rejects.append(reason)
 	bx.send_chest = func(_p, _i, _b): pass
-	bx.send_vitals = func(_p, _h, _he, _w, _t): pass
+	bx.send_vitals = func(_p, _h, _he, _w, _t, _l): pass
 	bx.ground_height = func(x, z): return 10.0
 	bx.peer_connected_hello(1, "boxkey000001")
 	bx.report_position(1, Vector3(0.0, 10.0, 0.0))
@@ -1284,7 +1284,7 @@ func _init() -> void:
 
 	var sk = make(qd + "_skill")
 	sk.send_craft_queue = func(_p, _e, _l): pass
-	sk.send_vitals = func(_p, _h, _he, _w, _t): pass
+	sk.send_vitals = func(_p, _h, _he, _w, _t, _l): pass
 	sk.peer_connected_hello(1, "skillkey0001")
 	check(sk.skill_factor(1, "craft") == 1.0 and sk.skill_factor(1, "no_such_action") == 1.0, "with no skill system every factor is 1.0")
 	sk.skill_level = func(_peer, _skill): return 2.0

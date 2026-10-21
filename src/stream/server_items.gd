@@ -93,7 +93,7 @@ var _skills_cfg: Dictionary = {}
 var send_reject: Callable        # (peer, reason 0 too far, 1 no tool, 2 pack full, 3 other)
 var send_craft_queue: Callable   # (peer, [[recipe, crafts left], ...], ms left on the first)
 var send_strain: Callable       # (peer, strain in thousandths, state 0 normal 1 over 2 fainted 3 waking, fade in thousandths, stance)
-var send_vitals: Callable       # (peer, hunger percent, health, weight in tenths of a kg, thirst percent)
+var send_vitals: Callable       # (peer, hunger percent, health, weight in tenths of a kg, thirst percent, luck)
 var water_near: Callable         # (position, reach in metres) -> true when water lies within reach of the position; set by the server scene (unset: no water anywhere)
 var send_chest: Callable        # (peer, world id, bytes) a chest's contents to the player who opened it
 var roof_add: Callable          # (roof Array from Cover.box_roof) -> key; the server's cover index gets the lean-to's roof
@@ -2385,7 +2385,7 @@ func _sync_vitals(peer: int, force: bool) -> void:
 
 	if force or _vitals_sent.get(peer, []) != now_points:
 		_vitals_sent[peer] = now_points
-		send_vitals.call(peer, now_points[0], now_points[1], now_points[2], now_points[3])
+		send_vitals.call(peer, now_points[0], now_points[1], now_points[2], now_points[3], luck_of(peer))
 		_dirty = true
 
 

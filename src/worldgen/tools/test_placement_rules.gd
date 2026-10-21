@@ -46,7 +46,7 @@ func _init() -> void:
 	items.send_full = func(_p, _b): pass
 	items.send_slots = func(_p, _b): pass
 	items.send_world_items = func(_p, _a, _r): pass
-	items.send_vitals = func(_p, _h, _he, _w, _t): pass
+	items.send_vitals = func(_p, _h, _he, _w, _t, _l): pass
 	items.ground_height = func(x, z): return 10.0
 	items.setup(ItemTableScript.load_default(), dir)
 	items.peer_connected_hello(1, "placekey00001")

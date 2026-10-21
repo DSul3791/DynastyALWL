@@ -25,7 +25,7 @@ func make(dir: String):
 	items.send_slots = func(_p, b): count("slots", b.size())
 	items.send_world_items = func(_p, a, r): count("world_items", 40 * a.size() + 4 * r.size())
 	items.send_craft_queue = func(_p, _e, _l): count("craft_queue", 24)
-	items.send_vitals = func(_p, _h, _he, _w, _t): count("vitals", 8)
+	items.send_vitals = func(_p, _h, _he, _w, _t, _l): count("vitals", 8)
 	items.send_strain = func(_p, _s, _st, _f, _sn): count("strain", 8)
 	items.send_notice = func(_p, t): count("notice", t.length())
 	items.send_chest = func(_p, _i, b): count("chest", b.size())

@@ -72,7 +72,7 @@ func _init() -> void:
 	items.send_full = func(_p, _b): pass
 	items.send_slots = func(_p, _b): pass
 	items.send_world_items = func(_p, _a, _r): pass
-	items.send_vitals = func(_p, _h, _he, _w, _t): pass
+	items.send_vitals = func(_p, _h, _he, _w, _t, _l): pass
 	items.send_notice = func(_p, _t): pass
 	items.ground_height = func(_x, _z): return 10.0
 	var standing: Dictionary = {7: true}

@@ -11,6 +11,7 @@ const RecipeTableScript := preload("res://src/shared/recipe_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
 const VitalsRules := preload("res://src/shared/vitals_rules.gd")
+const CharacterScreenScript := preload("res://src/client/character_screen.gd")
 const CarryRules := preload("res://src/shared/carry_rules.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
 const KEY_FILE := "user://player_key.txt"
@@ -47,6 +48,7 @@ var _chest_buttons: Array = []
 var _pack_buttons: Array = []
 var eat_event: Callable                # (item id) when something eaten or applied takes effect (sounds)
 var hunger: int = 100                  # stomach, percent
+var luck: int = 0                     # the character's luck, -10 to 10, fixed (character screen)
 var thirst: int = 100                  # body water, percent (100 = full; 0 = parched)
 var health: int = 100
 var weight_kg: float = 75.0
@@ -68,6 +70,8 @@ var reject_event: Callable = Callable()   # ("far" | "no_tool" | "full_pack" | "
 var strain_event: Callable = Callable()   # (strain, state, fade) whenever the server sends a change
 var _strain_note: Label
 var _eat_item: String = ""
+var heart_bpm: Callable = Callable()   # () -> the heart rate now (the heartbeat sound's), set by the client
+var _character                         # CharacterScreen, built the first time Tab is pressed
 var _panel_bars: Dictionary = {}       # "Health", "Exertion", "Hunger", "Thirst" -> ProgressBar at the top of the inventory screen (the only bars in the game)
 var _vitals_back: Control
 var _vitals_warning: Label
@@ -156,6 +160,9 @@ func toggle() -> void:
 		_close_chest()
 		return
 
+	if not open and character_open():
+		_character.toggle()
+
 	open = not open
 
 	if open:
@@ -172,6 +179,42 @@ func toggle() -> void:
 func close() -> void:
 	if open:
 		toggle()
+
+	if character_open():
+		toggle_character()
+
+
+# The Tab character screen (src/client/character_screen.gd): health, exertion, heart, hunger, thirst, attributes, skills.
+func toggle_character() -> void:
+	if chest_mode:
+		return
+
+	if open:
+		toggle()
+
+	if _character == null:
+		_character = CharacterScreenScript.new()
+		_character.setup(self, _layer)
+
+	_character.toggle()
+
+
+# Called every frame by the client: the heart on the character screen beats.
+func character_update(delta: float) -> void:
+	if _character != null:
+		_character.update(delta)
+
+
+func exertion_threshold() -> float:
+	return float(_exertion_cfg.get("faint_at", 1.4))
+
+
+func carry_limit_kg() -> float:
+	return CarryRules.cap_kg(weight_kg, _carry_cfg) if not _carry_cfg.is_empty() else 0.0
+
+
+func character_open() -> bool:
+	return _character != null and _character.open
 
 
 func clear_prompt() -> void:
@@ -728,6 +771,9 @@ func _on_strain(strain_pm: int, state: int, fade_pm: int, stance: int) -> void:
 	stance_confirmed = stance
 	_update_panel_bars()
 
+	if _character != null:
+		_character.refresh()
+
 	if stance_event.is_valid():
 		stance_event.call(stance)
 
@@ -773,7 +819,7 @@ func faint_state() -> Array:
 	return ["over_exerted" if strain_state == 1 else "normal", 0.0]
 
 
-func _on_vitals(new_hunger: int, new_health: int, weight_dkg: int, new_thirst: int) -> void:
+func _on_vitals(new_hunger: int, new_health: int, weight_dkg: int, new_thirst: int, new_luck: int) -> void:
 	var ate: bool = new_hunger > hunger + 3 or new_health > health + 8
 
 	if ate and _eat_item != "" and eat_event.is_valid():
@@ -782,10 +828,14 @@ func _on_vitals(new_hunger: int, new_health: int, weight_dkg: int, new_thirst: i
 
 	hunger = new_hunger
 	thirst = new_thirst
+	luck = new_luck
 	health = new_health
 	weight_kg = float(weight_dkg) / 10.0
 	_place_vitals()
 	_update_panel_bars()
+
+	if _character != null:
+		_character.refresh()
 
 
 # Drink from the water at your feet (E at the water's edge; the server checks the water and paces the mouthfuls).
@@ -1452,6 +1502,10 @@ func set_text_scale(scale: float) -> void:
 			_refresh()
 
 
+func text_px(size: int) -> int:
+	return _px(size)
+
+
 func _px(size: int) -> int:
 	return int(round(float(size) * text_scale * maxf(_layer.get_viewport().get_visible_rect().size.y / 1080.0, 0.5)))
 
@@ -1678,7 +1732,7 @@ func _build_panel() -> void:
 
 # True while the crafting and inventory screen or a chest screen is on screen.
 func screen_open() -> bool:
-	return open or chest_mode
+	return open or chest_mode or character_open()
 
 
 # Quick keys while the screen is open: E use (eat or apply), D drop (Shift+D one), S split, R repair, T transfer
@@ -2372,6 +2426,12 @@ func run_text_test(client) -> void:
 			_arrange_slots()
 
 	_audit_text()
+	toggle_character()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_character.refresh()
+	print("Character screen: ", _character.report(), "; inventory closed ", str(not open), "; screen_open ", str(screen_open()))
+	toggle_character()
 	print("Text test: scale %.2f, %d slot buttons, all valid %s, every item shown %s, panel open %s, window sizes seen %d, contents fit %s" % [text_scale, _buttons.size(), str(valid), str(filled_ok), str(open), sizes.size(), str(fits)])
 
 

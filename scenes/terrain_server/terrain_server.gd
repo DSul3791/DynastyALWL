@@ -176,7 +176,7 @@ func _ready() -> void:
 	flora.dynamic = func(home): return items.dynamic_items(home)
 	items.cut_tree = _cut_tree
 	items.send_notice = func(peer, text): net.notice.rpc_id(peer, text)
-	items.send_vitals = func(peer, hunger, health, weight, thirst): net.vitals.rpc_id(peer, hunger, health, weight, thirst)
+	items.send_vitals = func(peer, hunger, health, weight, thirst, luck): net.vitals.rpc_id(peer, hunger, health, weight, thirst, luck)
 	items.water_near = func(pos, reach):
 		var tile_data = generator.get_tile(generator.tile_of(pos.x, pos.z))
 

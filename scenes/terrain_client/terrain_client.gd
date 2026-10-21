@@ -780,6 +780,7 @@ func _welcome_body(info: Dictionary) -> void:
 	items.eat_event = func(item_id): sound.itemfx.eat(item_id)
 	items.fuel_event = func(): sound.itemfx.fuel_pressed()
 	items.reject_event = func(reason): sound.itemfx.reject(reason)
+	items.heart_bpm = func(): return sound.breath.bpm_now
 	items.view_direction = func(): return -camera.global_transform.basis.z
 	sound.landing.hurt.connect(func(drop_m, severity):
 		if Time.get_ticks_msec() >= arrival_protect_until_msec:
@@ -1862,7 +1863,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
-		if items != null and items.open:
+		if items != null and items.screen_open():
 			items.close()
 			return
 
@@ -1874,6 +1875,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_I and items != null:
 		items.toggle()
+		return
+
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_TAB and items != null:
+		items.toggle_character()
 		return
 
 	if items != null and items.screen_open():
@@ -1961,6 +1966,10 @@ func _step_player(delta: float) -> void:
 		sound.breath.set_body(items.strain, shown[0], shown[1])
 
 	sound.update(delta, body, flying, underwater)
+
+	if items != null:
+		items.character_update(delta)
+
 	_item_sync_left -= delta
 
 	if _item_sync_left <= 0.0:

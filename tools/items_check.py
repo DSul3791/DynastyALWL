@@ -79,6 +79,11 @@ CLIENTS = [
         ("action buttons carry their keys", r"key buttons missing (\[\])", None, None),
         ("four bars at the top of the inventory screen", r"panel bars " + NUM, 4, 4),
         ("no bars on the main screen", r"main-screen bars " + NUM, 0, 0),
+        ("Tab opens the character screen", r"Character screen: open (true)", None, None),
+        ("character screen: four bars", r"bars " + NUM + r", luck row", 4, 4),
+        ("character screen: luck and skills listed", r"luck row (true), skills section (true)", None, None),
+        ("character screen fonts at least 24 px", r"Character screen: .*smallest font " + NUM + " px", 24, 200),
+        ("character screen: heart beats at a rate", r"heart label '(\d+ bpm)'", None, None),
         ("30 slot buttons", r"scale [\d.]+, " + NUM + r" slot buttons", 30, 30),
     ]),
     ("quickkeys", ["--quickkeys"], 3500, [
