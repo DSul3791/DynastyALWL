@@ -65,7 +65,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 531
+const BUILD := 532
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -83,6 +83,7 @@ const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const WaterVolume := preload("res://src/shared/water_volume.gd")
 const HotbarStripScript := preload("res://src/client/hotbar_strip.gd")
+const PickupFeedScript := preload("res://src/client/pickup_feed.gd")
 const WaterFallsScript := preload("res://src/worldgen/runtime/water_falls.gd")
 const FloraViewScript := preload("res://src/flora/flora_view.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
@@ -212,6 +213,18 @@ var _stage_done: bool = false         # the staged ground view has been started 
 var _stage_view: float = 0.0          # above 0 while only the finest ground is built after a stop high up
 var _stage_next_msec: int = 0
 var test_fly: bool = false
+var test_route: Vector2 = Vector2(1.0, 0.0)   # --route=east|south|diag: heading of the --fly test
+var test_fly_msec: int = 30000                # --flytime=seconds: how long the --fly test moves
+var hole_probe: bool = false                  # --hole-probe: count missing ground colliders around the player every second (stress test)
+var _hole_next_msec: int = 0
+var _hole_since: Dictionary = {}              # grid cell -> msec it first had no ground under it
+var _hole_worst_msec: int = 0
+var _hole_worst_cell: Vector2i = Vector2i.ZERO
+var _hole_max_count: int = 0
+var _hole_samples: int = 0
+var _hole_settled: bool = false
+var _hole_max_after: int = 0
+var _hole_missing_total: int = 0
 var test_fly_alt: float = 0.0          # --fly check: fly level at this height above sea level (0 = the spawn height)
 var _fly_ground_msec: int = 0         # --fly check: when a collider first showed under the player after stopping
 var _fly_stop_msec: int = 0           # --fly check: when the flight stopped (0 = not yet)
@@ -355,6 +368,7 @@ var fall_mist                         # FallMist: spray at the foot of the neare
 var fall_growth                       # FallGrowth: ferns around the foot of the nearest waterfall
 var items                             # InventoryView: inventory panel (I), pick-up (E)
 var harvest                           # Harvest: E prompt, tap to pick, hold to sweep
+var pickup_feed                       # PickupFeed: "+3 Firewood" notices on the left of the screen
 var hotbar_strip                      # HotbarStrip: keys 1 to 0 on screen, drag items into the first ten slots
 var held                              # HeldItem: hotbar keys 1 to 8, spear jab and throw
 var grass                             # GrassView
@@ -437,6 +451,13 @@ func _ready() -> void:
 			frames_left = int(argument.trim_prefix("--frames="))
 		elif argument.begins_with("--move="):
 			test_speed = float(argument.trim_prefix("--move="))
+		elif argument.begins_with("--route="):
+			var route: String = argument.trim_prefix("--route=")
+			test_route = Vector2(0.0, 1.0) if route == "south" else (Vector2(0.7071, 0.7071) if route == "diag" else Vector2(1.0, 0.0))
+		elif argument.begins_with("--flytime="):
+			test_fly_msec = int(float(argument.trim_prefix("--flytime=")) * 1000.0)
+		elif argument == "--hole-probe":
+			hole_probe = true
 		elif argument == "--fly":
 			test_fly = true
 		elif argument.begins_with("--flyalt="):
@@ -935,6 +956,12 @@ func _welcome_body(info: Dictionary) -> void:
 	hotbar_strip = HotbarStripScript.new()
 	hotbar_strip.setup(items, layer, held)
 	items.hotbar_strip = hotbar_strip
+	pickup_feed = PickupFeedScript.new()
+	pickup_feed.setup(items, layer)
+
+	# The server's one "received" event for every gain (pickup, quest reward, craft, harvest); Items adds the RPC.
+	if net.has_signal("item_received"):
+		net.connect("item_received", func(item_id: String, count: int, _source: String): pickup_feed.push_id(item_id, count))
 
 	if test_items:
 		items.run_test()
@@ -2071,6 +2098,57 @@ func _on_dump_received(text: String) -> void:
 
 
 # Asks the server for the ground height at one point near the player (the rings rotate, the angle is random).
+# --hole-probe: every second a 7 x 7 grid (50 m apart, 150 m each way) around the player is tested with rays straight
+# down; a cell with no ground collider is a hole. Prints the count each second and a summary line with the worst hole.
+func _hole_probe_step(now: int) -> void:
+	if not hole_probe or now < _hole_next_msec or connected_msec <= 0 or body == null:
+		return
+
+	_hole_next_msec = now + 1000
+	var centre: Vector2i = Vector2i(roundi(body.global_position.x / 50.0), roundi(body.global_position.z / 50.0))
+	var missing: int = 0
+	var seen: Dictionary = {}
+	var space: PhysicsDirectSpaceState3D = body.get_world_3d().direct_space_state
+
+	for dz in range(-3, 4):
+		for dx in range(-3, 4):
+			var cell: Vector2i = centre + Vector2i(dx, dz)
+			var top: Vector3 = Vector3(float(cell.x) * 50.0, body.global_position.y + 50.0, float(cell.y) * 50.0)
+			var q: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(top, top + Vector3(0.0, -1500.0, 0.0))
+			q.exclude = [body.get_rid()]
+			seen[cell] = true
+
+			if space.intersect_ray(q).is_empty():
+				missing += 1
+
+				if not _hole_since.has(cell):
+					_hole_since[cell] = now
+			elif _hole_since.has(cell):
+				var lasted: int = now - int(_hole_since[cell])
+
+				if lasted > _hole_worst_msec:
+					_hole_worst_msec = lasted
+					_hole_worst_cell = cell
+
+				_hole_since.erase(cell)
+
+	for cell in _hole_since.keys():
+		if not seen.has(cell):
+			_hole_since.erase(cell)
+
+	if _fly_stop_msec > 0 and not _hole_settled:
+		_hole_max_after = maxi(_hole_max_after, missing)
+
+		if missing == 0:
+			_hole_settled = true
+			print("Terrain client: hole probe: all 49 cells have ground %.1f s after the stop (worst %d missing right after it)" % [float(now - _fly_stop_msec) / 1000.0, _hole_max_after])
+
+	_hole_samples += 1
+	_hole_missing_total += missing
+	_hole_max_count = maxi(_hole_max_count, missing)
+	print("Terrain client: holes %d of 49 at %s; worst so far: %d cells missing at once, one cell missing %.1f s (cell %s); average %.1f" % [missing, str(body.global_position.round()), _hole_max_count, float(_hole_worst_msec) / 1000.0, str(_hole_worst_cell * 50), float(_hole_missing_total) / float(_hole_samples)])
+
+
 func _ground_check_step(now: int) -> void:
 	if not ground_check or now < _check_next_msec or connected_msec <= 0 or body == null:
 		return
@@ -2738,7 +2816,7 @@ func _move_player(delta: float) -> void:
 		if test_fly:
 			flying = true
 
-			if Time.get_ticks_msec() - connected_msec > 30000:
+			if Time.get_ticks_msec() - connected_msec > test_fly_msec:
 				test_speed = 0.0
 				_fly_stop_msec = Time.get_ticks_msec()
 				stream.watch_xz = Vector2(body.global_position.x, body.global_position.z)
@@ -2747,7 +2825,8 @@ func _move_player(delta: float) -> void:
 		if test_fly and test_fly_alt > 0.0:
 			body.global_position.y = test_fly_alt
 
-		body.global_position.x += test_speed * delta
+		body.global_position.x += test_speed * delta * test_route.x
+		body.global_position.z += test_speed * delta * test_route.y
 	elif test_fly and _fly_stop_msec > 0 and _fly_ground_msec == 0:
 		var below: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(body.global_position, body.global_position + Vector3(0.0, -3000.0, 0.0))
 		below.exclude = [body.get_rid()]
@@ -3000,6 +3079,9 @@ func _fire_test_step(step: int, at: Vector3) -> String:
 
 
 func _process(delta: float) -> void:
+	if pickup_feed != null:
+		pickup_feed.update(delta)
+
 	var tp: int = Probe.start()
 	_step_player(delta)
 	Probe.stop("step player", tp)
@@ -3045,6 +3127,7 @@ func _process(delta: float) -> void:
 		print("Terrain client: probe %d s after the welcome, player at %s: %s" % [(Time.get_ticks_msec() - connected_msec) / 1000, str(body.global_position.round()), ", ".join(probes)])
 
 	_ground_check_step(Time.get_ticks_msec())
+	_hole_probe_step(Time.get_ticks_msec())
 
 	if test_dump and not _test_dump_done and Time.get_ticks_msec() - connected_msec > 14000:
 		_test_dump_done = true
