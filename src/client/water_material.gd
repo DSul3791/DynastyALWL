@@ -220,9 +220,9 @@ void fragment() {
 	foam *= 1.0 / (1.0 + distance_m / 120.0);
 	// Streaks running down the face of a fall, brighter near the lip and the foot.
 	float fall_streaks = face > 0.01 ? smoothstep(0.45, 0.8, ripples(vec2((world_pos.x + world_pos.z) * 1.7, world_pos.y * 0.22 + drift * 2.5))) : 0.0;
-	foam = max(foam, face * (0.35 + 0.5 * fall_streaks));
+	foam = max(foam, face * (0.08 + 0.55 * fall_streaks));
 
-	murk = max(murk, face * 0.55);
+	murk = max(murk, face * 0.8);
 	vec3 water = mix(mix(shallow_color, deep_color, murk), mud_color * mix(1.0, 0.7, murk), mud_here);
 	water = mix(water, storm_color * mix(1.0, 0.6, murk), storm * 0.65);   // storm: dark grey-brown churned water
 	foam *= 1.0 + 0.5 * storm;
@@ -252,7 +252,7 @@ void fragment() {
 			below += vec3(1.0, 0.95, 0.8) * pow(c1 * c2, 5.0) * 0.9 * caustic_fade;
 		}
 		vec3 seen = mix(below, water, body_alpha);
-		seen = mix(seen, sky, fresnel * 0.8);
+		seen = mix(seen, sky, fresnel * 0.8 * (1.0 - 0.7 * face));
 		// The lighting adds the sun glint on top; keep the body itself unlit-looking.
 		ALBEDO = mix(seen * 0.6, foam_tint, foam * 0.85);
 		EMISSION = seen * 0.4 * (1.0 - foam);
@@ -260,7 +260,7 @@ void fragment() {
 	} else
 #endif
 	{
-		ALBEDO = mix(mix(water, sky, fresnel * 0.8), foam_tint, foam * 0.85);
+		ALBEDO = mix(mix(water, sky, fresnel * 0.8 * (1.0 - 0.7 * face)), foam_tint, foam * 0.85);
 		ALPHA = max(max(body_alpha, fresnel * 0.8), foam * 0.9) * sheet_alpha;
 	}
 	ROUGHNESS = 0.08 + 0.3 * foam;
