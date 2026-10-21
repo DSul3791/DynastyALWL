@@ -40,6 +40,7 @@ UNITS = [
     ("dialogue", "src/worldgen/tools/test_dialogue.gd"),
     ("animals", "src/worldgen/tools/test_animals.gd"),
     ("animal_senses", "src/worldgen/tools/test_animal_senses.gd"),
+    ("wolves", "src/worldgen/tools/test_wolves.gd"),
     ("forge_models", "src/worldgen/tools/test_forge_models.gd"),
     ("soak", "src/worldgen/tools/soak_server.gd"),
     ("new_player_day", "src/worldgen/tools/test_new_player_day.gd"),

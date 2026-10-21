@@ -3116,6 +3116,55 @@ func peer_stances() -> Array:
 	return out
 
 
+# What the wolf pack brain may know about each player: where, how they stand, health share, whether they carry raw meat, a
+# spear or a torch on the hotbar (the server does not know the selected slot).
+func wolf_info() -> Array:
+	var out: Array = []
+
+	for peer in _peer_pos:
+		var inv = inventory_of(peer)
+
+		if inv == null:
+			continue
+
+		var v: Dictionary = vitals_of(peer)
+		out.append({"peer": peer, "pos": _peer_pos[peer], "stance": int(_stance.get(peer, 0)),
+			"hp": float(v.get("health", 100.0)) / maxf(float(_vitals_cfg.get("health_max", 100)), 1.0),
+			"meat": count_for(peer, "raw_meat") > 0, "spear": _tool_slot(inv, "spear") >= 0, "torch": _tool_slot(inv, "torch") >= 0})
+
+	return out
+
+
+# Wolf bites (data/animals/animals.json "wolves"). Not lethal: health stops at maim_hp and the bite reports "maimed" (a crippling
+# injury; the pack then backs off). Lethal (a player already maimed): health can reach zero and the character dies.
+# Returns "hurt", "maimed" or "dead".
+func hurt_player(peer: int, amount: float, lethal: bool, cause: String, floor_hp: float = 25.0) -> String:
+	var v: Dictionary = vitals_of(peer)
+
+	if v.is_empty():
+		return "hurt"
+
+	var before: float = float(v["health"])
+	v["health"] = before - amount
+
+	if lethal and float(v["health"]) <= 0.0:
+		v["health"] = 0.0
+		_sync_vitals(peer, true)
+		return "dead" if kill(peer, cause) else "hurt"
+
+	if not lethal and float(v["health"]) <= floor_hp:
+		v["health"] = minf(before, floor_hp)
+		_say(peer, "The wolves have crippled you. Get away while you can.")
+		_sync_vitals(peer, true)
+		return "maimed"
+
+	if not _forced_sleep(peer):
+		_asleep.erase(peer)
+
+	_sync_vitals(peer, false)
+	return "hurt"
+
+
 # For the dialogue effects (authored lines only): how many of an item the pack holds, and give or take some.
 func count_for(peer: int, id: String) -> int:
 	var inv = inventory_of(peer)

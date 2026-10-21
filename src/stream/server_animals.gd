@@ -6,6 +6,7 @@ extends RefCounted
 # shared Steering module with NPCs. Ticks by distance to the nearest player (10 / 3 / 0.5 Hz), so far animals cost almost nothing.
 
 const Steering := preload("res://src/shared/steering.gd")
+const WolvesScript := preload("res://src/stream/server_wolves.gd")
 
 const GRAZE := 0
 const HOP := 1
@@ -24,6 +25,7 @@ var canopy: Callable               # (Vector3) -> bool, whether a spot is under 
 var wind: Callable                 # () -> the weather dictionary ("wind" 0..1 and "wind_dir" radians, the way it blows toward)
 var died: Callable                 # (species, position, source peer) when an animal is killed
 var ticks_run: int = 0
+var wolves = null                  # the pack brain (server_wolves.gd); wired by the server, tests may leave player_info unset
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 var blood: Array = []              # drops [position Vector3, born msec] a wounded animal left, oldest first
@@ -41,6 +43,8 @@ func setup() -> void:
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/animals/animals.json"))
 	cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
 	rng.randomize()   # luck-exempt: world wildlife placement, no player outcome
+	wolves = WolvesScript.new()
+	wolves.host = self
 
 
 func species_def(sp: String) -> Dictionary:
@@ -120,6 +124,9 @@ func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spea
 	if a["hp"] <= 0.0:
 		animals.erase(id)
 
+		if a.has("pack") and wolves != null:
+			wolves.on_death(id, a["pack"])
+
 		if died.is_valid():
 			died.call(a["sp"], a["pos"], source_peer)
 
@@ -130,6 +137,11 @@ func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spea
 	a["drops"] = 0
 	a["last_drop"] = a["pos"]
 	_drop_blood(a)
+
+	if a.has("pack"):
+		wolves.on_hit(a)   # a wolf does not bolt: its pack decides
+		return false
+
 	a["state"] = FLEE
 	a["target"] = a["pos"] + Vector3(cos(a["heading"] + PI), 0.0, sin(a["heading"] + PI)) * float(species_def(a["sp"]).get("flee_run_m", 25.0))
 	return false
@@ -224,6 +236,10 @@ func tick(delta: float) -> void:
 			a["acc"] = 0.0
 			continue   # frozen: nothing runs until a player comes within active_radius_m
 
+		if a.has("pack"):
+			a["acc"] = 0.0
+			continue   # the pack brain moves wolves (tick below)
+
 		var hz: float = float(cfg.get("hz_near", 10.0)) if near_d <= near_m else (float(cfg.get("hz_mid", 3.0)) if near_d <= mid_m else float(cfg.get("hz_far", 0.5)))
 
 		if a["acc"] < 1.0 / hz:
@@ -234,7 +250,13 @@ func tick(delta: float) -> void:
 		_step(a, dt, near_d, near_p, seen_d, seen_p)
 
 	for id in gone:
+		if animals[id].has("pack") and wolves != null and wolves.packs.has(animals[id]["pack"]):
+			wolves.packs[animals[id]["pack"]]["ids"].erase(id)
+
 		animals.erase(id)
+
+	if wolves != null and not wolves.packs.is_empty() or (wolves != null and bool(wolves.cfgw().get("natural", false))):
+		wolves.tick(delta)
 
 	_spawn_acc += delta
 
@@ -255,6 +277,9 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 
 		if a["hp"] <= 0.0:
 			animals.erase(a["id"])
+
+			if a.has("pack") and wolves != null:
+				wolves.on_death(int(a["id"]), a["pack"])
 
 			if died.is_valid():
 				died.call(a["sp"], a["pos"], a.get("hurt_by", -1))

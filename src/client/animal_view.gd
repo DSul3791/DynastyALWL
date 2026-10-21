@@ -27,10 +27,10 @@ func on_rows(rows: Array) -> void:
 			if _bodies.size() >= MAX_DRAWN:
 				continue
 
-			var node: Node3D = _make_deer() if int(row[1]) == 2 else _make_rabbit()
+			var node: Node3D = _make_wolf() if int(row[1]) == 3 else (_make_deer() if int(row[1]) == 2 else _make_rabbit())
 			node.position = row[2]
 			add_child(node)
-			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) == 2}
+			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) == 2 or int(row[1]) == 3}
 
 		_bodies[id]["target"] = row[2]
 		_bodies[id]["heading"] = float(row[3])
@@ -92,7 +92,10 @@ func _process(delta: float) -> void:
 		var rate: float = 9.0 if state == FLEE else 5.0
 		var big: bool = bool(b.get("deer", false))
 		var lift: float = ((0.06 if big else 0.22) if state == FLEE else (0.02 if big else 0.1)) * absf(sin(_t * (rate * (0.8 if big else 1.0)) + float(b["phase"]))) if state != GRAZE and state != 3 else 0.0
-		rig.position.y = lerp(rig.position.y, lift, clampf(delta * 20.0, 0.0, 1.0))
+		# Wolf idle (protocol states 8 roll in the grass, 9 play): placeholder motion until Mandy animates it.
+		var roll: float = PI * 0.5 if state == 8 else 0.0
+		rig.rotation.z = lerp_angle(rig.rotation.z, roll, clampf(delta * 6.0, 0.0, 1.0))
+		rig.position.y = lerp(rig.position.y, lift + (0.25 * absf(sin(_t * 7.0 + float(b["phase"]))) if state == 9 else 0.0), clampf(delta * 20.0, 0.0, 1.0))
 
 
 func _material(color: Color) -> StandardMaterial3D:
@@ -157,6 +160,18 @@ func _box(parent: Node3D, size: Vector3, at: Vector3, color: Color, rot: Vector3
 	inst.rotation = rot
 	inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	parent.add_child(inst)
+
+
+# A wolf for now (placeholder until Art): the deer shape in grey, a little smaller.
+func _make_wolf() -> Node3D:
+	var node: Node3D = _make_deer()
+	node.scale = Vector3(0.75, 0.75, 0.75)
+	var grey: StandardMaterial3D = _material(Color(0.36, 0.35, 0.34))
+
+	for child in node.find_children("*", "MeshInstance3D", true, false):
+		(child as MeshInstance3D).material_override = grey
+
+	return node
 
 
 # A deer for now (placeholder until Art): tan body, neck and head, four thin legs, short antlers. About 1.5 m long, 1.2 m to the back.
