@@ -2696,16 +2696,17 @@ func _step_player(delta: float) -> void:
 	# stand-in body estimate only runs without it and in the sound tests.
 	if items != null and not test_exertion and not test_faint and sound.breath._demo_t < 0.0:
 		var shown: Array = items.faint_state()
+
+		# Dave 2026-10-21: going to sleep looks and sounds exactly like passing out. The server sends the same fine 0..1 blackout
+		# for both (strain_fade: fade_in_s / fade_out_s for sleep), so sleep goes through the faint states and the one picture path.
+		if shown[0] == "sleeping":
+			shown = ["fainting", items.strain_fade] if items.strain_fade < 0.999 else ["fainted", 1.0]
+		elif shown[0] == "normal" and items.strain_fade > 0.002:
+			shown = ["waking", items.strain_fade]
+
 		faint.set_state(shown[0], items.strain, shown[1])      # every frame: the picture eases toward it, so it is smooth (Dave 2026-10-21)
-		# Asleep or just woken from sleep: the world sound follows the picture's black (sleeping, then waking as it clears).
 		var heard: String = shown[0]
 		var heard_progress: float = shown[1]
-
-		if heard == "sleeping":
-			heard_progress = faint.blackout
-		elif heard == "normal" and faint.blackout > 0.02:
-			heard = "waking"
-			heard_progress = faint.blackout
 
 		sound.breath.set_server_heart(float(items.body_bpm), items.body_phase)
 		sound.breath.set_body(items.strain, heard, heard_progress)
