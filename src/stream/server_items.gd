@@ -160,6 +160,7 @@ var send_remains: Callable          # (peer, rows [[position Vector3, seconds le
 var _remains_sent: Dictionary = {}
 var send_worn: Callable             # (peer, PackedInt32Array of item numbers, one per body slot in clothing.json order)
 var _worn_sent: Dictionary = {}
+var _wear_carry: Dictionary = {}     # peer -> fraction of a wear point not yet charged (tool_care skill)
 var _clothing: Dictionary = {}
 var send_sick: Callable             # (peer, game hours of sickness left, rounded up; 0 = well)
 var _sick_sent: Dictionary = {}
@@ -319,6 +320,7 @@ func peer_connected_hello(peer: int, key: String) -> void:
 
 
 func peer_left(peer: int) -> void:
+	_wear_carry.erase(peer)
 	_swimming.erase(peer)
 	_last_dose.erase(peer)
 	_remains_sent.erase(peer)
@@ -1845,7 +1847,12 @@ func _wear_slot(peer: int, inv, slot: int, use: String = "") -> void:
 
 	_work_until[peer] = Time.get_ticks_msec() + 5000
 	var before: Array = _snapshot(inv)
-	inv.wear[slot] += maxi(1, int(_drops.get("tool_wear", {}).get("per_use", {}).get(tool_class, {}).get(use, 1)))
+	# A skilled crafter looks after their tools: wear is spread by the tool_care factor (1.0 for everyone at first), a deterministic
+	# carry of the fraction so no dice are involved.
+	var wear_now: float = float(maxi(1, int(_drops.get("tool_wear", {}).get("per_use", {}).get(tool_class, {}).get(use, 1)))) / skill_factor(peer, "tool_care") + float(_wear_carry.get(peer, 0.0))
+	var whole: int = int(floor(wear_now))
+	_wear_carry[peer] = wear_now - float(whole)
+	inv.wear[slot] += whole
 	_dirty = true
 
 	if _is_broken(inv.numbers[slot], inv.wear[slot]):
@@ -1881,6 +1888,7 @@ func _repair(peer: int, inv, slot: int) -> void:
 		inv.remove(table.number_of(str(cost[0])), int(cost[1]))
 
 	inv.wear[slot] = maxi(0, inv.wear[slot] - int(float(entry.get("durability", 0)) * float(_drops.get("tool_wear", {}).get("repair_restores", 0.5))))
+	practice(peer, "tool_care")
 
 
 func _repair_text(costs: Array) -> String:

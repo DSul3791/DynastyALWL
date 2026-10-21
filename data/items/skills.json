@@ -30,6 +30,10 @@
 			"skill": "crafting",
 			"effect": "speed"
 		},
+		"tool_care": {
+			"skill": "crafting",
+			"effect": "toughness"
+		},
 		"dig": {
 			"skill": "digging",
 			"effect": "yield"

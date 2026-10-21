@@ -6,6 +6,7 @@ extends SceneTree
 
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
+const Net := preload("res://src/stream/terrain_net.gd")
 const Rules := preload("res://src/shared/skill_rules.gd")
 
 var failures: int = 0
@@ -74,6 +75,7 @@ func _init() -> void:
 
 	# Server: parent feed, factor hook, saving, old characters.
 	var dir: String = "user://test_skills"
+	DirAccess.make_dir_recursive_absolute(dir + "_care")
 	DirAccess.make_dir_recursive_absolute(dir)
 
 	for file in DirAccess.get_files_at(dir):
@@ -107,6 +109,22 @@ func _init() -> void:
 	var old = make(dir, clock)
 	old.peer_connected_hello(1, "skill-key-0001")
 	check(old.skill_factor(1, "fell_tree") == 1.0, "an older character record reads neutral")
+
+	# A skilled crafter wears tools slower: factor 2 charges half a point per use, carried in fractions (no dice).
+	var care = make(dir + "_care", clock)
+	care.peer_connected_hello(1, "skill-key-0002")
+	var axe_n: int = care.table.number_of("stone_axe")
+	care.action(1, Net.ACT_ADMIN_GIVE, axe_n, 0, 1, Vector3.ZERO)
+	var inv = care.inventory_of(1)
+	var slot: int = inv.numbers.find(axe_n)
+	care._wear_slot(1, inv, slot, "tree")
+	check(inv.wear[slot] == 1, "a neutral character wears a tool one point per use")
+	care.skill_level = func(_p, _s): return 2.0
+
+	for n in 4:
+		care._wear_slot(1, inv, slot, "tree")
+
+	check(inv.wear[slot] == 3, "factor 2 halves the wear (%d)" % inv.wear[slot])
 
 	print("skills tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
