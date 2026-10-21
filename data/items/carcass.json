@@ -185,6 +185,27 @@
 				]
 			],
 			"hunt_difficulty": 2.2
+		},
+		"duck": {
+			"size_kg": 1.2,
+			"parts": [
+				[
+					"raw_meat",
+					1,
+					2
+				],
+				[
+					"feather",
+					3,
+					6
+				],
+				[
+					"bone",
+					1,
+					1
+				]
+			],
+			"hunt_difficulty": 2.5
 		}
 	}
 }

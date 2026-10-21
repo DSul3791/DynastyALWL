@@ -235,6 +235,48 @@
 				"run_m": 70.0,
 				"again_s": 20.0
 			}
+		},
+		"duck": {
+			"number": 6,
+			"name": "Ducks",
+			"target_per_player": 1,
+			"spawn_share": 0.5,
+			"health": 3.0,
+			"walk_mps": 0.4,
+			"flee_mps": 14.0,
+			"spook_m": 22.0,
+			"safe_m": 60.0,
+			"graze_s": [
+				5.0,
+				15.0
+			],
+			"wander_m": 3.0,
+			"flee_run_m": 60.0,
+			"herd": [],
+			"alert_m": 45.0,
+			"alert_s": [
+				1.0,
+				2.0
+			],
+			"burst_s": 6.0,
+			"trot_share": 1.0,
+			"zig_deg": 0.0,
+			"zig_leg_m": 20.0,
+			"herd_pull_m": 0.0,
+			"eye_m": 0.3,
+			"tries": 40,
+			"flock": {
+				"birds": [
+					6,
+					14
+				],
+				"alert_m": 45.0,
+				"takeoff_m": 22.0,
+				"fly_mps": 14.0,
+				"fly_m": 160.0,
+				"climb_m": 25.0,
+				"alarm_m": 60.0
+			}
 		}
 	},
 	"senses": {

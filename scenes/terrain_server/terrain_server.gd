@@ -285,6 +285,9 @@ func _ready() -> void:
 	animals = AnimalsScript.new()
 	animals.ground_height = npcs.ground_height
 	animals.blocked = npcs.blocked
+	animals.water_level = func(x, z):
+		var water_here: Array = _water_at(Vector3(x, 0.0, z))
+		return float(water_here[0]) if not is_nan(water_here[0]) else NAN
 	animals.player_positions = npcs.player_positions
 	animals.player_stances = func(): return items.peer_stances()
 	animals.wind = func(): return weather

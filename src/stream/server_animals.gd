@@ -9,6 +9,7 @@ const Steering := preload("res://src/shared/steering.gd")
 const WolvesScript := preload("res://src/stream/server_wolves.gd")
 const BigGameScript := preload("res://src/stream/server_big_game.gd")
 const ThievesScript := preload("res://src/stream/server_thieves.gd")
+const FlocksScript := preload("res://src/stream/server_flocks.gd")
 
 const GRAZE := 0
 const HOP := 1
@@ -29,6 +30,8 @@ var canopy: Callable               # (Vector3) -> bool, whether a spot is under 
 var wind: Callable                 # () -> the weather dictionary ("wind" 0..1 and "wind_dir" radians, the way it blows toward)
 var died: Callable                 # (species, position, source peer) when an animal is killed
 var ticks_run: int = 0
+var flocks = null                  # bird flocks on water (server_flocks.gd)
+var water_level: Callable          # (x, z) -> water surface height, NAN on dry land (flocks float on it)
 var thieves = null                 # opportunists (fox; server_thieves.gd): smell loose food, creep up, take it and run
 var drop_loot: Callable            # (item number, count, position) when a thief is killed carrying food
 var big_game = null                # defending big game (moose; server_big_game.gd): warn, dodgeable charge, recover
@@ -56,6 +59,8 @@ func setup() -> void:
 	big_game.host = self
 	thieves = ThievesScript.new()
 	thieves.host = self
+	flocks = FlocksScript.new()
+	flocks.host = self
 
 
 func species_def(sp: String) -> Dictionary:
@@ -71,6 +76,9 @@ func spawn(sp: String, x: float, z: float) -> int:
 
 	var y: float = float(ground_height.call(x, z)) if ground_height.is_valid() else 0.0
 
+	if def.has("flock") and water_level.is_valid():
+		y = float(water_level.call(x, z))   # a flock sits on the surface
+
 	if is_nan(y):
 		return 0
 
@@ -79,6 +87,10 @@ func spawn(sp: String, x: float, z: float) -> int:
 	var pos: Vector3 = Vector3(x, y, z)
 	animals[id] = {"id": id, "sp": sp, "num": int(def.get("number", 0)), "pos": pos, "heading": rng.randf() * TAU, "state": GRAZE,   # luck-exempt: which way a new animal faces
 		"target": pos, "timer": _graze_time(def), "acc": 0.0, "home": pos, "hp": float(def.get("health", 5.0)), "herd": 0, "alarm": -1.0, "burst": 0.0, "alert": 0.0, "burrow": pos if float(def.get("burrow_m", 0.0)) > 0.0 else Vector3.INF, "to_burrow": false}
+
+	if def.has("flock"):
+		var span: Array = def["flock"].get("birds", [6, 14])
+		animals[id]["birds"] = rng.randi_range(int(span[0]), int(span[1]))   # luck-exempt: how many birds in a flock
 
 	if def.has("defend"):
 		animals[id]["protective"] = rng.randf() < float(def.get("protective_share", 0.3))   # luck-exempt: whether this animal defends young
@@ -135,6 +147,21 @@ func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spea
 		return false
 
 	var a: Dictionary = animals[id]
+
+	# A flock is one record: a hit that lands kills one bird (its carcass lies where it floats), the rest take off.
+	if species_def(a["sp"]).has("flock"):
+		a["birds"] = int(a.get("birds", 8)) - 1
+
+		if died.is_valid():
+			died.call(a["sp"], a["pos"], source_peer)
+
+		if int(a["birds"]) <= 0:
+			animals.erase(id)
+		elif int(a["state"]) != flocks.TAKEOFF:
+			flocks.take_off(a, a["pos"] + Vector3(1.0, 0.0, 0.0))
+
+		return int(a.get("birds", 0)) <= 0
+
 	a["hp"] -= amount
 
 	if a["hp"] <= 0.0:
@@ -302,6 +329,10 @@ func tick(delta: float) -> void:
 func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: float, seen_p: Vector3) -> void:
 	ticks_run += 1
 	var def: Dictionary = species_def(a["sp"])
+
+	if def.has("flock"):
+		flocks.step(a, dt, seen_d, seen_p)
+		return
 
 	if def.has("thief") and thieves.handles(a):
 		thieves.step(a, dt)
@@ -495,7 +526,7 @@ func _top_up(players: Array, only: int) -> void:
 			var z: float = 0.0
 			var best: float = -1.0
 
-			for attempt in int(cfg.get("habitat_tries", 6)):
+			for attempt in int(def.get("tries", cfg.get("habitat_tries", 6))):
 				var angle: float = rng.randf() * TAU   # luck-exempt: where wildlife appears
 				var dist: float = rng.randf_range(float(cfg.get("spawn_min_m", 150.0)), float(cfg.get("spawn_max_m", 250.0)))   # luck-exempt: as above
 				var cx: float = p.x + cos(angle) * dist
@@ -505,7 +536,7 @@ func _top_up(players: Array, only: int) -> void:
 				for q in players:
 					too_near = too_near or Vector2(q.x - cx, q.z - cz).length() < maxf(never, float(cfg.get("spawn_min_m", 150.0)) * 0.9)
 
-				if too_near or (blocked.is_valid() and bool(blocked.call(cx, cz))):
+				if too_near or (not def.has("flock") and blocked.is_valid() and bool(blocked.call(cx, cz))):
 					continue
 
 				var keep_out: Array = def.get("exclude", [])
@@ -549,6 +580,10 @@ func _top_up(players: Array, only: int) -> void:
 # 1 for open ground, 2 under trees for a species that likes forest ("forest": true in its habitat).
 func _habitat_score(def: Dictionary, x: float, z: float, player_y: float) -> float:
 	var hab: Dictionary = def.get("habitat", {})
+
+	if def.has("flock"):
+		var level: float = float(water_level.call(x, z)) if water_level.is_valid() else NAN
+		return 2.0 if not is_nan(level) and blocked.is_valid() and bool(blocked.call(x, z)) else -1.0   # open deep water only
 
 	if hab.is_empty() or not ground_height.is_valid():
 		return 1.0
