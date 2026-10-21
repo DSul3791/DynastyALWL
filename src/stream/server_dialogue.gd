@@ -5,6 +5,7 @@ extends RefCounted
 # health breaker between this and the providers; until an AI provider exists it only ever has the static one.
 
 const StaticProvider := preload("res://src/stream/static_provider.gd")
+const Router := preload("res://src/stream/dialogue_router.gd")
 
 const TALK_RANGE_M := 4.5
 const PACE_MSEC := 250
@@ -13,7 +14,8 @@ const MAX_GIVE := 5
 
 var items                   # ServerItems: positions, keys and the pack
 var npcs                    # ServerNpcs
-var provider                # a DialogueProvider
+var provider                # the Router (a DialogueProvider) in front of the static provider and, later, an AI provider
+var router
 var hour_now: Callable
 var send_say: Callable      # (peer, npc_id, name, text, voice_id, choices PackedStringArray, ends bool)
 
@@ -26,8 +28,11 @@ var _last_msec: Dictionary = {}
 
 func setup(store_dir: String) -> void:
 	_dir = store_dir
-	provider = StaticProvider.new()
-	provider.load_dir()
+	var static_provider = StaticProvider.new()
+	static_provider.load_dir()
+	router = Router.new()
+	router.setup(static_provider)
+	provider = router
 
 	if _dir != "" and FileAccess.file_exists(_dir + "/npc_flags.json"):
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(_dir + "/npc_flags.json"))
@@ -67,7 +72,7 @@ func talk(peer: int, npc_id: String, choice: int) -> void:
 
 	_last_msec[peer] = now
 	var ctx: Dictionary = {"flags": flags_of(key, npc_id), "hour": float(hour_now.call()) if hour_now.is_valid() else 12.0,
-		"has_item": func(id: String, n: int) -> bool: return items.count_for(peer, id) >= n, "recent": _recent.get("%s|%s" % [key, npc_id], [])}
+		"has_item": func(id: String, n: int) -> bool: return items.count_for(peer, id) >= n, "recent": _recent.get("%s|%s" % [key, npc_id], []), "rest_key": npc_id}
 	var line: Dictionary = {}
 
 	if choice < 0:

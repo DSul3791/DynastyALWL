@@ -220,5 +220,49 @@ func _init() -> void:
 
 	check(seen.size() == 4, "four greetings in a row are four different lines (%d)" % seen.size())
 
+	# The router (step C): static while no AI, unwell when the AI is down (after the anti-flap wait), complaint then rest.
+	var router = talk.router
+	var clock: Array = [1000.0]
+	router.now_s = func() -> float: return clock[0]
+	check(router.shown_mode() == "static" and not router.is_unwell(), "with no AI the router answers from data")
+	router.mode = "down"
+	check(router.shown_mode() == "static", "a fresh outage is not shown at once (anti-flap)")
+	clock[0] += 61.0
+	check(router.shown_mode() == "unwell" and router.is_unwell(), "after the wait the NPCs are unwell")
+	var sick: Dictionary = router.open("hob", {"recent": [], "hour": 10.0, "rest_key": "hob|a"})
+	var complaints: Array = router.static_provider.trees["hob"]["barks"]["complaint"]
+	var said: bool = false
+
+	for line_text in complaints:
+		said = said or str(sick["text"]).begins_with(str(line_text))
+
+	check(said and bool(sick["end"]) and sick["choices"].is_empty(), "unwell: a complaint, no choices, the talk ends")
+	var again_line: Dictionary = router.open("hob", {"recent": [], "hour": 10.01, "rest_key": "hob|a"})
+	check(router.static_provider.trees["hob"]["barks"]["cooldown"].has(again_line["text"]), "and he rests before talking again")
+	var later: Dictionary = router.open("hob", {"recent": [], "hour": 10.2, "rest_key": "hob|a"})
+	check(not router.static_provider.trees["hob"]["barks"]["cooldown"].has(later["text"]), "after a few game minutes he talks again")
+	router.mode = "auto"
+	clock[0] += 5.0
+	check(router.shown_mode() == "unwell", "recovery waits out the minimum mode time too")
+	clock[0] += 61.0
+	check(router.shown_mode() == "static", "then he is well again")
+
+	# The breaker: 3 failures in 30 s open it, a success closes it.
+	var ai_stub = load("res://src/stream/dialogue_provider.gd").new()
+	router.ai = ai_stub
+	router.report(false)
+	router.report(false)
+	check(not router.breaker_open(), "two failures do not open it")
+	router.report(false)
+	check(router.breaker_open(), "three failures in 30 s open it")
+	router.report(true)
+	check(not router.breaker_open(), "a success closes it")
+	clock[0] += 100.0
+	router.report(false)
+	clock[0] += 31.0
+	router.report(false)
+	router.report(false)
+	check(not router.breaker_open(), "failures older than 30 s do not count")
+
 	print("dialogue tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

@@ -32,6 +32,11 @@
 		"cooldown": [
 			"Please, later. My head.",
 			"Not now, I beg you."
+		],
+		"info": [
+			"The shop opens at first light.",
+			"Stone and sticks fetch fair coin.",
+			"Mind the road to the lake at night."
 		]
 	},
 	"roots": [

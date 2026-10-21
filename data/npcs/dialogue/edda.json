@@ -30,6 +30,11 @@
 		"cooldown": [
 			"Later. Please.",
 			"Leave me be a while."
+		],
+		"info": [
+			"The road north is quiet.",
+			"Keep your fire covered in rain.",
+			"I watch the gate from dusk to dawn."
 		]
 	},
 	"roots": [

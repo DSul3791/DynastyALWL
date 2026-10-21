@@ -271,6 +271,11 @@ func _ready() -> void:
 	dialogue.hour_now = func(): return game_clock.hour()
 	dialogue.send_say = func(peer, id, npc_name, text, voice, choices, ends): net.npc_say.rpc_id(peer, id, npc_name, text, voice, choices, ends)
 	dialogue.setup(store_dir)
+
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--npc-ai="):
+			dialogue.router.mode = arg.substr(9)   # auto, static, ai or down (pretend the AI is dead: NPCs are unwell)
+
 	spawn = _spawn_point(world_dir)
 	items.respawn_point = spawn
 	_world_dir = world_dir
@@ -874,6 +879,7 @@ func _process(delta: float) -> void:
 	_poll_water()
 	_update_weather()
 	items.tick(delta)
+	npcs.unwell = dialogue.router.is_unwell()
 	npcs.tick(delta)
 	_send_npcs(delta)
 
