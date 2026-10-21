@@ -83,11 +83,7 @@ SCENARIOS = [
     ("faint", ["--faint"], 6500, [
         ("world goes silent", r"faint run: world muted to " + NUM, 0.99, 1.0),
         ("heart fades away", r"heart gain down to " + NUM, 0, 0.01),
-<<<<<<< HEAD
         ("no heavy breathing (Dave 2026-10-21)", r"gain down to [\d.]+, " + NUM + r" heaves", 0, 0),
-=======
-        ("heaves played (breathing is off since 2026-10-21, so none)", r"gain down to [\d.]+, " + NUM + r" heaves", 0, 0),
->>>>>>> 9fc38ac (Landing at spawn, exertion retune, smooth blackout, bars only in the inventory, no breathing noise, 80 percent carry free)
         ("run completes", r"done (true)", 0, 1, "text"),
         ("no breathing while fainted", r"breaths while fainted " + NUM, 0, 0),
         ("world returns with the vision", r"wake mute " + NUM, 0.1, 0.9),

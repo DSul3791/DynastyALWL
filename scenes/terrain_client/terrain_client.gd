@@ -1964,7 +1964,6 @@ func _step_player(delta: float) -> void:
 		sound.itemfx.watch(items)
 		sound.itemfx.watch_vitals(items.hunger, 0.1)
 		sound.breath.set_exertion(items.strain)   # the server's real strain replaces the stand-in
-		sound.breath.set_blackout(items.blackout_level())
 
 	_fire_sync_left -= delta
 

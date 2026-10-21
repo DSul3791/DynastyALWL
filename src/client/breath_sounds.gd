@@ -44,7 +44,6 @@ const BPM_FAINT := 175.0                # right at the blackout threshold (Dave 
 const BPM_PEAK := 200.0                 # at the biggest overshoot (EXERTION_MAX)
 const BPM_EASE := 40.0                  # beats per minute the rate may change per second: never a step
 const OVER_SPAN := 0.4                  # over to fainting (data/items/exertion.json faint_at 1.4): the intensity climbs over this much
-const BREATHING := false                # Dave 2026-10-21: no heavy breathing noises on exertion; the heartbeat stays
 const HEART_GONE_SEC := 3.0             # the heartbeat after the vision is gone
 const WAKE_SEC := 4.0                   # the world sound returns this slowly after a faint
 const MUTE_RATE := 0.8                  # world_mute follows its target at this much per second (fade out about 1.3 s)
@@ -52,7 +51,6 @@ const DRAIN_PER_SEC := 0.05
 const JOG_MPS := 7.0
 const RUN_MPS := 9.8
 
-var blackout: float = 0.0               # 0 to 1, the Items blackout level (inventory_view.blackout_level): the heart climbs to 200 bpm with it
 var exertion: float = 0.0               # 0 to EXERTION_MAX (HUD); past 1 is over-exerted
 var state: String = "normal"            # normal, over, fainted, waking (HUD)
 var world_mute: float = 0.0             # 0 normal .. 1 everything but the heart is silent (sound_stage reads it)
@@ -97,10 +95,6 @@ func _ensure_bus() -> void:
 		var at: int = AudioServer.get_bus_count() - 1
 		AudioServer.set_bus_name(at, "Body")
 		AudioServer.set_bus_send(at, "Master")
-
-
-func set_blackout(level: float) -> void:
-	blackout = level
 
 
 func set_exertion(value: float) -> void:
@@ -232,7 +226,7 @@ func update(delta: float, underwater: bool) -> void:
 		_out_pending = -1.0
 		return
 
-	if not fainted and BREATHING:
+	if not fainted:
 		_breathe(delta)
 
 	if (exertion >= HEART_FROM or fainted or state == "waking") and _heart_gain > 0.01:
@@ -255,18 +249,12 @@ func _over() -> float:
 	return clampf((exertion - OVER) / OVER_SPAN, 0.0, 1.0)
 
 
-<<<<<<< HEAD
 # Beats per minute, one smooth curve of exertion (Dave 2026-10-21): 60 at HEART_FROM up to 175 right at the blackout
 # threshold (FAINT_AT), on to 200 at the biggest overshoot (EXERTION_MAX). Fainting or fainted counts as at least the
 # threshold, so passing out never starts below 175. update() eases the heart toward this, so there are no steps.
-=======
-# Beats per minute: 60 at HEART_FROM up to 170 at exertion 1, 175 right at the blackout threshold, and 200 at the peak of a
-# blackout (Dave 2026-10-21); the Items blackout level (0 to 1, set_blackout) carries it from 175 to 200 smoothly.
->>>>>>> 9fc38ac (Landing at spawn, exertion retune, smooth blackout, bars only in the inventory, no breathing noise, 80 percent carry free)
 func _bpm() -> float:
 	var e: float = exertion
 
-<<<<<<< HEAD
 	if state == "fainting" or state == "fainted":
 		e = maxf(e, FAINT_AT)
 
@@ -278,9 +266,6 @@ func _bpm() -> float:
 
 # Dave 2026-10-21: no heavy breathing on exertion (breath_in, breath_out, breath_gasp, breath_heave); the heartbeat stays.
 const BREATHING := false
-=======
-	return lerpf(170.0, 175.0, _over()) + 25.0 * clampf(blackout, 0.0, 1.0)
->>>>>>> 9fc38ac (Landing at spawn, exertion retune, smooth blackout, bars only in the inventory, no breathing noise, 80 percent carry free)
 
 
 func _breathe(delta: float) -> void:
