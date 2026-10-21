@@ -8,7 +8,7 @@ extends Node
 const SPOTS: Array = [
 	["origin", Vector2(0.0, 0.0)],
 	["20 km", Vector2(20000.0, 20000.0)],
-	["spawn", Vector2(53318.0, 68473.0)],
+	["spawn", Vector2(53301.0, 68427.0)],
 	["80 km", Vector2(80000.0, 80000.0)],
 	["100 km", Vector2(100000.0, 100000.0)],
 ]

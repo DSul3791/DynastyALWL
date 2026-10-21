@@ -338,10 +338,11 @@ func _ready() -> void:
 # head. Set to Vector2.ZERO to use the baked spot again.
 # Moved 32 m north on 2026-10-21 (was z 68448): at the x10 flow that spot is on the pond A rim in
 # 0.9 m of water; this one is on the flat 28.8 m bench, three squares from any water.
-# Dave (2026-10-21) asked for exactly x 53318, z 68473 as a temporary spawn. That is the pond A shore in about 0.9 m
+# Dave (2026-10-21 18:13) asked for exactly x 53301, z 68427, where he stood on grass by the lake (ground about 29.9 m).
+# Before that he used x 53318, z 68473 as a temporary spawn. That is the pond A shore in about 0.9 m
 # of water (you land just above it, the 6 s landing protection applies, deep or shallow water is a safe landing). The dry
 # alternative, 12 m east on the 28.8 m shore bench, is Vector2(53330.0, 68466.0).
-const SPAWN_OVERRIDE := Vector2(53318.0, 68473.0)
+const SPAWN_OVERRIDE := Vector2(53301.0, 68427.0)
 
 
 func _spawn_point(world_dir: String) -> Vector3:
