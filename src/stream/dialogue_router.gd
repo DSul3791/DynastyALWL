@@ -173,5 +173,11 @@ func _unwell_line(npc_id: String, ctx: Dictionary) -> Dictionary:
 	return _bare(text, voice)
 
 
+# What a sleeping NPC mumbles when someone talks to them: the talk does not open.
+func asleep_line(npc_id: String, ctx: Dictionary) -> Dictionary:
+	var voice: String = str(static_provider.trees.get(npc_id, {}).get("voice", npc_id))
+	return _bare(static_provider.bark(npc_id, "asleep", ctx), voice)
+
+
 func _bare(text: String, voice: String) -> Dictionary:
 	return {"text": text, "source": "static", "voice_id": voice, "choices": [], "map": [], "node": "", "end": true, "effects": []}

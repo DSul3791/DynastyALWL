@@ -7,10 +7,13 @@ extends "res://src/stream/dialogue_provider.gd"
 const VOICE_RECENT := 5
 
 var trees: Dictionary = {}    # npc id -> parsed file
+var role_pools: Dictionary = {}   # role -> bark kind -> lines
+var roles: Dictionary = {}        # npc id -> role
 
 
 func load_dir(path: String = "res://data/npcs/dialogue") -> void:
 	trees.clear()
+	load_roles()
 
 	for file in DirAccess.get_files_at(path):
 		if file.ends_with(".json"):
@@ -18,6 +21,18 @@ func load_dir(path: String = "res://data/npcs/dialogue") -> void:
 
 			if typeof(parsed) == TYPE_DICTIONARY and str(parsed.get("npc", "")) != "":
 				trees[str(parsed["npc"])] = parsed
+
+
+# Role pools (data/npcs/role_barks.json) and each NPC's role (data/npcs/npcs.json) for the barks a dialogue file does not have.
+func load_roles() -> void:
+	var pools: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/npcs/role_barks.json"))
+	role_pools = pools.get("roles", {}) if typeof(pools) == TYPE_DICTIONARY else {}
+	var npc_cfg: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/npcs/npcs.json"))
+	roles.clear()
+
+	if typeof(npc_cfg) == TYPE_DICTIONARY:
+		for npc in npc_cfg.get("npcs", []):
+			roles[str(npc.get("id", ""))] = str(npc.get("role", ""))
 
 
 func has_npc(npc_id: String) -> bool:
@@ -82,6 +97,13 @@ func _pick(options: Array, ctx: Dictionary) -> String:
 
 func bark(npc_id: String, kind: String, ctx: Dictionary) -> String:
 	var options: Array = trees.get(npc_id, {}).get("barks", {}).get(kind, [])
+
+	if options.is_empty():
+		options = role_pools.get(str(roles.get(npc_id, "")), {}).get(kind, [])
+
+	if options.is_empty():
+		options = role_pools.get("default", {}).get(kind, [])
+
 	return _pick(options, ctx) if not options.is_empty() else ""
 
 

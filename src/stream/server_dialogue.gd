@@ -76,6 +76,18 @@ func talk(peer: int, npc_id: String, choice: int) -> void:
 		"can_train": func(skill: String, max_level: int, cost_id: String, cost_n: int) -> bool: return items.npc_train(peer, skill, max_level, cost_id, cost_n, true) == ""}
 	var line: Dictionary = {}
 
+	if int(npc["state"]) == npcs.SLEEP:
+		_sessions.erase(peer)
+
+		if choice < 0:
+			var mumble: Dictionary = provider.asleep_line(npc_id, ctx)
+
+			if str(mumble.get("text", "")) != "":
+				_recent["%s|%s" % [key, npc_id]] = ctx["recent"]
+				_say(peer, npc, str(mumble["text"]), str(mumble.get("voice_id", npc_id)), [], true)
+
+		return
+
 	if choice < 0:
 		line = provider.open(npc_id, ctx)
 	else:

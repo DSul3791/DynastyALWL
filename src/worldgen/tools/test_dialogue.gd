@@ -225,6 +225,17 @@ func _init() -> void:
 	check(int(items._skill_records(1)["trades"]["t"]) == 1 and items.count_for(1, "stone") == 0, "the lesson raises the training level and takes the stones")
 	check(items.npc_train(1, "trades", 1, "stone", 3, true) != "", "training twice in a row is refused")
 
+	# A sleeping NPC mumbles from the role pool and does not open a talk; a role pool fills a kind a file lacks.
+	var fallback = StaticProvider.new()
+	fallback.load_dir()
+	check(fallback.bark("hob", "asleep", {"recent": []}) != "" and fallback.bark("edda", "asleep", {"recent": []}) != "", "the role pools give sleeping NPCs a mumble")
+	npcs.npcs["hob"]["state"] = NpcsScript.SLEEP
+	said.clear()
+	talk._last_msec.clear()
+	talk.talk(1, "hob", -1)
+	check(said.size() == 1 and bool(said[0]["ends"]) and said[0]["choices"].is_empty() and not talk._sessions.has(1), "a sleeping Hob mumbles and no talk opens")
+	npcs.npcs["hob"]["state"] = NpcsScript.STAND
+
 	# Flags survive a restart.
 	var talk2 = DialogueScript.new()
 	talk2.items = items

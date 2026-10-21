@@ -21,6 +21,7 @@ var _bpm_label: Label
 var _attributes: VBoxContainer
 var _skills_box: VBoxContainer
 var _skill_search: LineEdit
+var _teachers: Dictionary = {}               # skill id -> NPC names whose dialogue offers a lesson in it (read from data/npcs/dialogue)
 var _remains_box: VBoxContainer
 var _skills_cfg: Dictionary = {}              # data/items/skills.json: names and order of the skills
 var _phase: float = 0.0
@@ -312,7 +313,8 @@ func refresh() -> void:
 			locked.modulate = Color(0.75, 0.75, 0.75)
 			line.add_child(locked)
 		elif effective >= cap - 1 and cap < 100:
-			var wall: Label = _label("needs training to go further", BODY_PX - 4)
+			var who: Array = _teachers_of(str(id))
+			var wall: Label = _label("needs training to go further" + (" (ask " + ", ".join(who) + ")" if not who.is_empty() else ""), BODY_PX - 4)
 			wall.modulate = Color(0.6, 0.85, 1.0)
 			line.add_child(wall)
 
@@ -339,6 +341,41 @@ func refresh() -> void:
 		none.modulate = Color(1.0, 1.0, 1.0, 0.7)
 		none.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_skills_box.add_child(none)
+
+
+# The NPCs who teach a skill: any dialogue node with a can_train condition on it, found once in the shipped dialogue files.
+func _teachers_of(skill: String) -> Array:
+	if _teachers.is_empty():
+		_teachers["_"] = []
+		var names: Dictionary = {}
+		var roster: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/npcs/npcs.json"))
+
+		if typeof(roster) == TYPE_DICTIONARY:
+			for npc in roster.get("npcs", []):
+				names[str(npc.get("id", ""))] = str(npc.get("name", npc.get("id", "")))
+
+		for file in DirAccess.get_files_at("res://data/npcs/dialogue"):
+			var tree: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/npcs/dialogue/" + file)) if file.ends_with(".json") else null
+
+			if typeof(tree) != TYPE_DICTIONARY:
+				continue
+
+			for node in tree.get("nodes", {}).values():
+				for choice in node.get("choices", []):
+					var cond: Dictionary = choice.get("if", {})
+
+					if cond.has("can_train"):
+						var taught: String = str(cond["can_train"][0])
+
+						if not _teachers.has(taught):
+							_teachers[taught] = []
+
+						var who: String = str(names.get(str(tree.get("npc", "")), tree.get("npc", "")))
+
+						if not _teachers[taught].has(who):
+							_teachers[taught].append(who)
+
+	return _teachers.get(skill, [])
 
 
 # Roots first, each followed by its descendants (a family tree read top down), in file order within a level.
