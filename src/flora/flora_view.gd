@@ -264,6 +264,11 @@ var _foam_material: ShaderMaterial
 const FALL_CAP := [2, 4, 8, 12]
 const FALL_VIEW_M := 700.0   # measured from the chunk corner (the mesh origin), not the fall: 350 hid ribbons in a chunk's far half (Dave, build 483)
 var fall_cap: int = 4
+
+# Set by the client: whether any ground has arrived over a world point (network_voxel_stream.gd column_loaded). A chunk's plants and
+# fall ribbons stay hidden until the ground under its middle exists, so nothing floats over ground that is not built yet (Dave, build 483).
+var ground_ready: Callable = Callable()
+var _ground_msec: int = 0
 var falls_drawn: int = 0
 var _tree_materials: Dictionary = {}       # TreeBuilder materials (bark, broad, conifer, palm)
 var _impostors: Dictionary = {}            # species id -> {"mesh", "material"}; replaced whole when a capture finishes
@@ -928,6 +933,7 @@ func _draw_falls(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void:
 	draw.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	draw.extra_cull_margin = 30.0
 	draw.visibility_range_end = FALL_VIEW_M
+	draw.visible = bool(entry.get("ground", true))
 	draw.set_surface_override_material(0, _fall_material)
 
 	if mesh.get_surface_count() > 1:
@@ -961,7 +967,7 @@ func fall_list() -> Array:
 func set_chunk(chunk: Vector2i, items: Dictionary, position: Vector3, water: Dictionary = {}, full: bool = true) -> void:
 	drop_chunk(chunk)
 	canopy_version += 1
-	var entry: Dictionary = {"items": items, "level": -1, "node": null, "water": null, "grid": water, "full": full}
+	var entry: Dictionary = {"items": items, "level": -1, "node": null, "water": null, "grid": water, "full": full, "ground": _ground_here(chunk)}
 	_chunks[chunk] = entry
 	CoverScript.add_chunk(cover, chunk, items, _cover_info)
 
@@ -1159,10 +1165,39 @@ func remove_item(chunk: Vector2i, id: int, position: Vector3) -> void:
 	_refresh(chunk, position)
 
 
+# Once a second: chunks still waiting for ground are asked again; the moment it is there their plants and ribbons are shown (and stay).
+func _check_ground() -> void:
+	var now: int = Time.get_ticks_msec()
+
+	if now - _ground_msec < 1000:
+		return
+
+	_ground_msec = now
+
+	for chunk in _chunks:
+		var entry: Dictionary = _chunks[chunk]
+
+		if not bool(entry.get("ground", true)) and _ground_here(chunk):
+			entry["ground"] = true
+			var node: Node3D = entry.get("node")
+			var falls: Node3D = entry.get("falls")
+
+			if node != null:
+				node.visible = true
+
+			if falls != null:
+				falls.visible = true
+
+
+func _ground_here(chunk: Vector2i) -> bool:
+	return not ground_ready.is_valid() or bool(ground_ready.call((float(chunk.x) + 0.5) * chunk_m, (float(chunk.y) + 0.5) * chunk_m))
+
+
 # Redraws chunks whose level changed and drops far ones. Returns the
 # chunks dropped.
 func update(position: Vector3) -> Array:
 	var dropped: Array = []
+	_check_ground()
 
 	if not _ease.is_empty():
 		_ease_water()
@@ -1329,6 +1364,7 @@ func apply_built(budget_usec: int = 3000) -> void:
 		if _apply_step(job):
 			_clear_node(entry)
 			entry["node"] = job["node"]
+			job["node"].visible = bool(entry.get("ground", true))
 			entry["level"] = job["level"]
 			entry.erase("building")
 			entry["drawn"] = _drawn_count(job["node"])
