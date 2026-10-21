@@ -99,7 +99,15 @@ func _init() -> void:
 	bad.close()
 	var third = make(dir)
 	third.peer_connected_hello(1, "abcdef123456")
-	check(third.inventory_of(1).count_of(stone) == 0 and FileAccess.file_exists(dir + "/inventories.json.bad"), "corrupt save is set aside")
+	check(FileAccess.file_exists(dir + "/inventories.json.bad"), "corrupt save is set aside")
+	check(third.inventory_of(1).count_of(stone) == 15, "a corrupt save is replaced by the save before it (%d)" % third.inventory_of(1).count_of(stone))
+	DirAccess.remove_absolute(dir + "/inventories.json.prev")
+	var damaged: FileAccess = FileAccess.open(dir + "/inventories.json", FileAccess.WRITE)
+	damaged.store_string("{not json")
+	damaged.close()
+	var fourth = make(dir)
+	fourth.peer_connected_hello(1, "abcdef123456")
+	check(fourth.inventory_of(1).count_of(stone) == 0, "with no earlier copy a corrupt save starts clean")
 
 	# Gathering and loose items.
 	var g = make("user://test_server_items_b")
