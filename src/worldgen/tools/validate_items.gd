@@ -13,6 +13,8 @@ const DATA := "res://data/items/"
 const VERB_FIRST_WORDS := ["make", "carve", "chisel", "bind", "craft", "build", "tie", "knap", "twist", "weave", "split", "place", "roast", "cook", "dig", "cut", "sharpen", "light", "pick", "gather", "get", "use", "create", "forge", "fashion", "shape", "stack", "lay", "set", "form"]
 const CODE_SOURCES := ["stone", "stick", "log", "bark", "leaves", "seed_bundle", "firewood", "driftwood"]
 
+const MAX_INGREDIENTS := 3   # raise when recipes with four or more ingredients arrive (the craft screen must show the extra rows)
+
 var errors: int = 0
 var warnings: int = 0
 
@@ -330,10 +332,10 @@ func _init() -> void:
 		recipe_numbers[n] = rid
 		_check_name(String(r.get("name", "")), "recipes.json: recipe '%s'" % rid)
 
-		# Hand-craft rule (DESIGN_IDEAS 5.3, decided): at most two ingredients, no station. A recipe that breaks it is a warning,
-		# not an error: the design owner decides whether it moves to a bench or the rule bends.
+		# Ingredients (DESIGN_IDEAS 5.3, Dave 2026-10-21): three-ingredient hand recipes stay, and later recipes take four or more;
+		# the more ingredients, the better the item. So there is no rule below MAX_INGREDIENTS, only an info line.
 		if String(r.get("station", "")) == "" and bool(r.get("known", false)) and r.get("needs", []).size() > 2:
-			warn("recipes.json %s: a hand recipe with %d ingredients (rule: at most two)" % [rid, r["needs"].size()])
+			print("info: recipes.json %s: a hand recipe with %d ingredients" % [rid, r["needs"].size()])
 
 		for id in r.get("identify", []):
 			want_item.call(String(id), "recipe '%s' identify" % rid)
@@ -345,8 +347,8 @@ func _init() -> void:
 				if int(row[1]) < 1:
 					fail("recipe '%s' %s: amount below 1" % [rid, list])
 
-		if (r.get("needs", []) as Array).size() > 3:
-			fail("recipe '%s': hand recipes have at most three ingredient kinds" % rid)
+		if (r.get("needs", []) as Array).size() > MAX_INGREDIENTS:
+			fail("recipe '%s': recipes have at most %d ingredient kinds (raise MAX_INGREDIENTS and the craft screen's rows together)" % [rid, MAX_INGREDIENTS])
 
 		want_item.call(String(r.get("gives", [""])[0]), "recipe '%s' gives" % rid)
 
