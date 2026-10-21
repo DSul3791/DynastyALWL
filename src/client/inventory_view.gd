@@ -44,6 +44,11 @@ var chest_mode: bool = false           # the panel on screen is a chest, not the
 var chest_inv                          # contents of the open chest (Inventory), from the server
 var chest_id: int = 0
 var _chest_panel: PanelContainer
+const BOULDER_STATE := 10                 # the world-item row state of a boulder (server_items)
+var _boulders: Dictionary = {}            # boulder world id -> {node, shape, lump, pos, left, total, radius, now}
+var boulder_budget: Callable = Callable()   # () -> how many boulders may be drawn at once (by quality, the client sets it)
+var _boulder_mesh: ArrayMesh
+var _boulder_rock: StandardMaterial3D
 var _chest_buttons: Array = []
 var _pack_buttons: Array = []
 const DRINK_WINDOW_MSEC := 3000        # a rise in thirst this soon after drink() is a mouthful at the water
@@ -1098,6 +1103,10 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 		var id: int = row[0]
 		var state: int = int(row[4]) if row.size() > 4 else 0
 
+		if state == BOULDER_STATE:
+			_show_boulder(id, row)
+			continue
+
 		if _world.has(id):
 			_world[id]["count"] = row[2]
 
@@ -1161,7 +1170,74 @@ func placed_rows() -> Array:
 
 
 # Removes a world row's node and, for a lean-to, its roof in the cover index.
+# Boulders (Dave 2026-10-21): server-owned lumps of rock a pick breaks into stones. Drawn with Art's boulder mesh scaled to the
+# radius the server sends and shrinking as stones come out; solid, so the strike ray hits them. Kept apart from _world so
+# nothing that walks the world items (gathering, fires, structures) mistakes one for something else.
+func _show_boulder(id: int, row: Array) -> void:
+	var extra: Dictionary = row[5] if row.size() > 5 else {}
+	var left: int = int(row[2])
+
+	if _boulders.has(id):
+		_boulders[id]["left"] = left
+		_size_boulder(_boulders[id])
+		return
+
+	if boulder_budget.is_valid() and _boulders.size() >= int(boulder_budget.call()):
+		return   # drawn up to the quality budget; the rest wait until some are gone
+
+	if _boulder_mesh == null:
+		_boulder_mesh = load("res://src/client/grass_view.gd")._make_boulder()
+		_boulder_rock = StandardMaterial3D.new()
+		_boulder_rock.albedo_color = Color(0.46, 0.46, 0.44)
+		_boulder_rock.roughness = 1.0
+
+	var body: StaticBody3D = StaticBody3D.new()
+	var shape: CollisionShape3D = CollisionShape3D.new()
+	shape.shape = SphereShape3D.new()
+	body.add_child(shape)
+	var lump: MeshInstance3D = MeshInstance3D.new()
+	lump.mesh = _boulder_mesh
+	lump.material_override = _boulder_rock
+	body.add_child(lump)
+	body.position = row[3]
+	body.rotation.y = deg_to_rad(float(extra.get("yaw", 0.0)))
+	_root.add_child(body)
+	var entry: Dictionary = {"node": body, "shape": shape, "lump": lump, "pos": row[3], "left": left, "total": maxi(int(extra.get("total", left)), 1), "radius": float(extra.get("radius", 0.5))}
+	_boulders[id] = entry
+	_size_boulder(entry)
+
+
+# Scale to the radius still left (the cube root of the stones left), sunk a fifth into the ground like Art's scenery boulders.
+func _size_boulder(entry: Dictionary) -> void:
+	var box: AABB = _boulder_mesh.get_aabb()
+	var radius: float = float(entry["radius"]) * pow(float(entry["left"]) / float(entry["total"]), 1.0 / 3.0)
+	var unit: float = maxf(maxf(box.size.x, box.size.z) * 0.5, 0.01)
+	var scale: float = radius / unit
+	entry["now"] = radius
+	entry["lump"].scale = Vector3.ONE * scale
+	entry["lump"].position = Vector3(0.0, -(box.position.y + box.size.y * 0.2) * scale, 0.0)
+	entry["shape"].shape.radius = radius * 0.85
+	entry["shape"].position = Vector3(0.0, radius * 0.5, 0.0)
+
+
+# The boulder a strike at this point landed on (0 when none): within its radius and a little.
+func boulder_near(point: Vector3) -> int:
+	for id in _boulders:
+		var entry: Dictionary = _boulders[id]
+		var flat: float = Vector2(point.x - entry["pos"].x, point.z - entry["pos"].z).length()
+
+		if flat <= float(entry.get("now", entry["radius"])) + 0.7 and absf(point.y - entry["pos"].y) < 2.5 + float(entry["radius"]):
+			return id
+
+	return 0
+
+
 func _forget(id: int) -> void:
+	if _boulders.has(id):
+		_boulders[id]["node"].queue_free()
+		_boulders.erase(id)
+		return
+
 	if not _world.has(id):
 		return
 
@@ -2731,6 +2807,19 @@ func run_eat_test(client) -> void:
 	_queue_head_button.pressed.emit()
 	await get_tree().create_timer(1.0).timeout
 	print("Queue test: after cancel entries %d, fibre %d, queue strip hidden %s" % [craft_entries.size(), inventory.count_of(fibre), str(not _queue_box.visible)])
+
+	# Boulders: a server row draws a solid boulder that shrinks as stones come out, and a strike ray finds it.
+	var spot: Vector3 = _player_position.call() + Vector3(6.0, 0.0, 0.0)
+	_on_world_items([[987654, 0, 4000, spot, BOULDER_STATE, {"radius": 1.0, "yaw": 0.0, "total": 4000}]], PackedInt32Array())
+	await get_tree().create_timer(0.5).timeout
+	var full_radius: float = float(_boulders[987654]["now"]) if _boulders.has(987654) else -1.0
+	_on_world_items([[987654, 0, 500, spot, BOULDER_STATE, {"radius": 1.0, "yaw": 0.0, "total": 4000}]], PackedInt32Array())
+	var eighth_radius: float = float(_boulders[987654]["now"]) if _boulders.has(987654) else -1.0
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(spot + Vector3(0.0, 4.0, 0.0), spot + Vector3(0.0, -4.0, 0.0))
+	var ray: Dictionary = _root.get_world_3d().direct_space_state.intersect_ray(query)
+	print("Boulder test: radius %.2f, at an eighth of the stones %.2f, found by a strike %s, solid to a ray %s" % [full_radius, eighth_radius, str(boulder_near(spot) == 987654), str(not ray.is_empty() and ray["collider"] == _boulders[987654]["node"])])
+	_on_world_items([], PackedInt32Array([987654]))
+	print("Boulder test: gone when the server drops it %s" % str(not _boulders.has(987654)))
 
 	# Tools: Use holds a tool, again puts it away; a tool deep in the pack moves onto the hotbar first.
 	var axe: int = table.number_of("stone_axe")

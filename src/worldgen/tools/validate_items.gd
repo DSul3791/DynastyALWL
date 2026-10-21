@@ -261,6 +261,11 @@ func _init() -> void:
 	if int(recipes_file.get("next_number", 0)) <= highest_recipe:
 		fail("recipes.json: next_number is not above the highest recipe number")
 
+	# Core materials marked "future": true (iron and steel ingots until smelting exists) count as sources for the recipe check.
+	for id in items_file.get("items", {}):
+		if bool(items_file["items"][id].get("future", false)) and String(items_file["items"][id].get("kind", "")) == "material":
+			obtainable[String(id)] = true
+
 	var changed: bool = true
 
 	while changed:

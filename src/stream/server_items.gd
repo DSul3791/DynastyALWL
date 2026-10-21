@@ -134,6 +134,10 @@ var _moving: Dictionary = {}        # peer -> smoothed 0..1, 1 while walking abo
 var _characters: Dictionary = {}   # player key -> {luck: int}, rolled once at first sight and never changed (job 77)
 var _luck_cfg: Dictionary = {}
 var _fitness_cfg: Dictionary = {}
+var _boulder_cfg: Dictionary = {}    # data/items/boulders.json
+var _boulder_left: Dictionary = {}   # boulder key -> rough stones still in it (absent = untouched), saved in world_items.json
+const BOULDER_KEY := 1 << 50
+const BOULDER_STATE := 10            # world-item row state of a boulder          # boulder keys live apart from the loose stones' keys
 var _fate_rng: RandomNumberGenerator = RandomNumberGenerator.new()   # luck-exempt: the server's own fate stream, the fate() hook below
 var fate_counts: Dictionary = {}    # fate kind -> times rolled (what luck has touched)
 var _vitals: Dictionary = {}        # player key -> {hunger, health} floats
@@ -189,6 +193,8 @@ func setup(item_table, store_dir: String) -> void:
 	_vitals_cfg = VitalsRules.load_config()
 	_luck_cfg = LuckScript.load_config()
 	_fitness_cfg = _load_fitness_config()
+	var boulders_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/boulders.json"))
+	_boulder_cfg = boulders_parsed if typeof(boulders_parsed) == TYPE_DICTIONARY else {}
 	_carry_cfg = CarryRules.load_config()
 	var exertion_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/exertion.json"))
 	_exertion_cfg = exertion_parsed if typeof(exertion_parsed) == TYPE_DICTIONARY else {}
@@ -474,7 +480,7 @@ func save() -> void:
 	_save_vitals()
 	_save_characters()
 	_save_craft_queues()
-	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked})
+	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked, "boulders": _boulder_left})
 
 
 # Picking from a plant or shrub by hand. The plant stays where it is and is picked bare for
@@ -779,7 +785,7 @@ func _pickup(peer: int, inv, id: int) -> void:
 		_take_down(peer, inv, id)
 		return
 
-	if it.is_empty() or it.has("fire") or it.has("tree") or not _peer_pos.has(peer):
+	if it.is_empty() or it.has("fire") or it.has("tree") or it.has("boulder") or not _peer_pos.has(peer):
 		return
 
 	if _peer_pos[peer].distance_to(it["pos"]) > PICKUP_M + 2.0:
@@ -821,11 +827,11 @@ func _sync_world_items() -> void:
 			if it["pos"].distance_to(here) <= NEAR_M:
 				near[id] = true
 
-				var state: int = int(it["fire"]["state"]) if it.has("fire") else (int(it["tree"]["state"]) if it.has("tree") else (int(_structures.get(str(it["struct"]["kind"]), {}).get("state", 5)) if it.has("struct") else 0))
+				var state: int = int(it["fire"]["state"]) if it.has("fire") else (int(it["tree"]["state"]) if it.has("tree") else (int(_structures.get(str(it["struct"]["kind"]), {}).get("state", 5)) if it.has("struct") else (BOULDER_STATE if it.has("boulder") else 0)))
 				var signature: int = int(it["count"]) + 1000 * state
 
 				if not known.has(id) or known[id] != signature:
-					added.append([id, int(it["number"]), int(it["count"]), it["pos"], state, it["tree"] if it.has("tree") else ({"yaw": float(it["struct"]["yaw"])} if it.has("struct") else {})])
+					added.append([id, int(it["number"]), int(it["count"]), it["pos"], state, it["tree"] if it.has("tree") else ({"yaw": float(it["struct"]["yaw"])} if it.has("struct") else (it["boulder"] if it.has("boulder") else {}))])
 					known[id] = signature
 
 		for id in known.keys():
@@ -896,6 +902,9 @@ func _load_world_items() -> void:
 
 	for key in parsed.get("taken", []):
 		_taken[int(key)] = true
+
+	for key in parsed.get("boulders", {}):
+		_boulder_left[int(key)] = int(parsed["boulders"][key])
 
 	for row in parsed["items"]:
 		var entry: Dictionary = {"number": int(row[0]), "count": int(row[1]), "pos": Vector3(row[2], row[3], row[4]), "left": float(row[5])}
@@ -1068,6 +1077,135 @@ func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 		_next_id += 1
 
 	_lay_out_bank_stones(cell, cell_m, cfg, rng, kinds.size())
+	_lay_out_boulders(cell, cell_m, rng)
+
+
+# Boulders (Dave 2026-10-21), see data/items/boulders.json: server-owned lumps of rock a pick breaks into stones. Laid out per
+# cell like loose stones (same seeded rng, drawn last so the stones above do not move), only where the ground rises or at a
+# water bank; what is left of a worked boulder is kept in _boulder_left. The row carries its radius and the stones it started
+# with; the item's count is the stones left.
+func _boulder_stones(radius: float) -> int:
+	var cfg: Dictionary = _boulder_cfg
+	var volume: float = 4.0 / 3.0 * PI * radius * radius * radius * float(cfg.get("height_ratio", 0.85))
+	var stone_kg: float = maxf(CarryRules.weight_of("stone", _carry_cfg) if not _carry_cfg.is_empty() else 1.0, 0.05)
+	return maxi(int(volume * float(cfg.get("density_kg_m3", 2600)) * float(cfg.get("yield", 0.5)) / stone_kg), 1)
+
+
+func _lay_out_boulders(cell: Vector2i, cell_m: float, rng: RandomNumberGenerator) -> void:
+	var cfg: Dictionary = _boulder_cfg
+
+	if cfg.is_empty():
+		return
+
+	var laid: int = 0
+
+	for attempt in range(int(cfg.get("tries", 8))):
+		var x: float = (float(cell.x) + rng.randf()) * cell_m   # luck-exempt: seeded world layout
+		var z: float = (float(cell.y) + rng.randf()) * cell_m   # luck-exempt: seeded world layout
+		var draw: float = rng.randf()   # luck-exempt: seeded world layout
+		var size_draw: float = rng.randf()   # luck-exempt: seeded world layout
+		var yaw: float = rng.randf() * 360.0   # luck-exempt: seeded world layout
+		var y: float = float(ground_height.call(x, z))
+
+		if is_nan(y) or y < 1.0 or laid >= mini(int(cfg.get("max_per_cell", 4)), 15):
+			continue
+
+		var rise: float = (absf(float(ground_height.call(x + 3.0, z)) - y) + absf(float(ground_height.call(x, z + 3.0)) - y)) / 3.0
+		var chance: float = clampf((rise - float(cfg.get("min_slope", 0.1))) * float(cfg.get("slope_chance", 2.0)), 0.0, float(cfg.get("max_chance", 0.5)))
+		var spot: Vector3 = Vector3(x, y, z)
+
+		if water_near.is_valid() and not bool(water_near.call(spot, 0.0)) and bool(water_near.call(spot, float(cfg.get("bank_reach_m", 3.0)))):
+			chance = maxf(chance, float(cfg.get("bank_chance", 0.4)))
+
+		if draw > chance:
+			continue
+
+		var key: int = BOULDER_KEY | ((cell.x & 0xfffff) << 24) | ((cell.y & 0xfffff) << 4) | laid
+		laid += 1
+		var radius: float = lerpf(float(cfg.get("radius_min", 0.3)), float(cfg.get("radius_max", 1.2)), pow(size_draw, float(cfg.get("radius_power", 2.0))))
+		var total: int = _boulder_stones(radius)
+		var left: int = mini(int(_boulder_left.get(key, total)), total)
+
+		if left <= 0:
+			continue
+
+		_items[_next_id] = {"number": 0, "count": left, "pos": spot, "left": 1.0e9, "scatter": key, "boulder": {"radius": radius, "yaw": yaw, "total": total}}
+		_next_id += 1
+
+
+# The blows a stone takes from the best tool on the hotbar (items.json material, boulders.json tools), as [slot, blows], or [].
+func _boulder_tool(inv) -> Array:
+	var best: Array = []
+	var tools: Dictionary = _boulder_cfg.get("tools", {})
+
+	for slot in range(10):
+		if inv.numbers[slot] == 0 or _is_broken(inv.numbers[slot], inv.wear[slot]):
+			continue
+
+		var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
+		var blows: int = int(tools.get(str(entry.get("tool_class", "")), {}).get(str(entry.get("material", "")), 0))
+
+		if blows > 0 and (best.is_empty() or blows < int(best[1])):
+			best = [slot, blows]
+
+	return best
+
+
+# One blow on a boulder (ACT_HIT with the boulder marker). The best tool wears every blow; after its blows-per-stone a rough
+# stone comes out into the pack (refused when too heavy to carry), the boulder shrinks, and it is gone with its last stone.
+func _hit_boulder(peer: int, inv, id: int) -> void:
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or not it.has("boulder") or not _peer_pos.has(peer):
+		return
+
+	var now: int = Time.get_ticks_msec()
+
+	if now - int(_last_hit.get(peer, -100000)) < HIT_COOLDOWN_MS:
+		return
+
+	var tool: Array = _boulder_tool(inv)
+
+	if tool.is_empty():
+		_reject(peer, 1)
+		return
+
+	var info: Dictionary = it["boulder"]
+	var size_now: float = float(info["radius"]) * pow(float(it["count"]) / float(maxi(int(info["total"]), 1)), 1.0 / 3.0)
+	var flat: Vector2 = Vector2(_peer_pos[peer].x - it["pos"].x, _peer_pos[peer].z - it["pos"].z)
+
+	if flat.length() > HIT_REACH_M + size_now:
+		_reject(peer, 0)
+		return
+
+	_last_hit[peer] = now
+	_wear_slot(peer, inv, int(tool[0]), "boulder")
+	info["blows"] = int(info.get("blows", 0)) + 1
+
+	if int(info["blows"]) < int(tool[1]):
+		return
+
+	var stone: int = table.number_of("stone")
+
+	if _fit(peer, inv, stone, 1) == 0:
+		_say(peer, "Too heavy to carry any more")
+		_reject(peer, 2)
+		return
+
+	info["blows"] = 0
+	var out: int = 1
+
+	# Luck (TD condition): a rough stone now and then comes away as two (boulders.json luck_extra, nudged by the peer's luck).
+	if int(it["count"]) > 1 and fate(peer, "boulder_extra", float(_boulder_cfg.get("luck_extra", 0.05))):
+		out = 2
+
+	inv.add(stone, out)
+	it["count"] = int(it["count"]) - out
+	_boulder_left[it["scatter"]] = int(it["count"])
+	_dirty = true
+
+	if int(it["count"]) <= 0:
+		_items.erase(id)
 
 
 # Stones along the water's edge (Dave 2026-10-21: any rock put down is pickable, so Art's drawn pebbles and boulders became
@@ -1167,6 +1305,10 @@ func _scatter_spot(rng: RandomNumberGenerator, cell: Vector2i, cell_m: float, st
 # One axe blow on a standing tree. Enough blows fell it: the standing tree is removed, and a trunk
 # and a stump lie there (records in _items with a "tree" entry, saved in tree_states.json).
 func _hit(peer: int, inv, tree_id: int, chunk: Vector2i) -> void:
+	if chunk.x == Net.HIT_BOULDER:
+		_hit_boulder(peer, inv, tree_id)
+		return
+
 	if not _peer_pos.has(peer) or not tree_info.is_valid() or not cut_tree.is_valid():
 		return
 
@@ -1256,10 +1398,14 @@ func _is_broken(number: int, item_wear: int) -> bool:
 # One use spent on the first usable tool of this class on the hotbar; tells the player when it breaks.
 # Wear per use comes from drops.json "tool_wear" (per tool class and kind of work, default 1), so a tuning change is data.
 func _wear_tool(peer: int, inv, tool_class: String, use: String = "") -> void:
-	var slot: int = _tool_slot(inv, tool_class)
+	_wear_slot(peer, inv, _tool_slot(inv, tool_class), use)
 
+
+func _wear_slot(peer: int, inv, slot: int, use: String = "") -> void:
 	if slot < 0 or int(table.entry(table.id_of(inv.numbers[slot])).get("durability", 0)) <= 0:
 		return
+
+	var tool_class: String = str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", ""))
 
 	_work_until[peer] = Time.get_ticks_msec() + 5000
 	var before: Array = _snapshot(inv)

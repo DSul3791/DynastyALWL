@@ -1331,5 +1331,126 @@ func _init() -> void:
 
 	check(sk.inventory_of(1).count_of(sk.table.number_of("cordage")) == 1, "a skill of 2 makes the 2 s cordage in 1 s")
 
+	# Boulders (Dave 2026-10-21): a pick breaks one into stones; the count is volume x density x yield / stone mass.
+	var bld: String = "user://test_server_items_boulder"
+	DirAccess.make_dir_recursive_absolute(bld)
+
+	for file in DirAccess.get_files_at(bld):
+		DirAccess.remove_absolute(bld + "/" + file)
+
+	var bo = make(bld)
+	var bo_rejects: Array = []
+	bo.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	bo.send_reject = func(_p, reason): bo_rejects.append(reason)
+	bo.ground_height = func(x, _z): return 10.0 + x * 0.3
+	bo.peer_connected_hello(1, "boulderkey01")
+	bo.report_position(1, Vector3(5.0, 11.5, 5.0))
+	var big: int = bo._boulder_stones(1.0)
+	check(big >= 4000 and big <= 5200, "a 1 m radius boulder makes about 4600 stones at 0.85 height, 2600 kg/m3, half usable (%d)" % big)
+	check(bo._boulder_stones(0.3) >= 100 and bo._boulder_stones(0.3) <= 150 and bo._boulder_stones(1.2) > 7000, "small boulders make a hundred or so, a 1.2 m one several thousand (%d, %d)" % [bo._boulder_stones(0.3), bo._boulder_stones(1.2)])
+	bo._boulder_cfg["luck_extra"] = 0.0   # the exact-count checks below; luck's extra stone has its own check
+	var small_total: int = bo._boulder_stones(0.3)
+	bo._items[900001] = {"number": 0, "count": small_total, "pos": Vector3(5.0, 11.5, 6.0), "left": 1.0e9, "scatter": bo.BOULDER_KEY | 7, "boulder": {"radius": 0.3, "yaw": 0.0, "total": small_total}}
+	bo._last_hit.clear()
+	bo.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, 0, Vector3.ZERO)
+	check(bo_rejects == [1] and int(bo._items[900001]["count"]) == small_total, "no pick or axe on the hotbar: refused (no tool), nothing taken (%s)" % str(bo_rejects))
+	bo.give(1, bo.table.number_of("iron_pickaxe"), 1)
+	var stone_id: int = bo.table.number_of("stone")
+
+	for n in range(10):
+		bo._last_hit.clear()
+		bo.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, 0, Vector3.ZERO)
+
+	check(bo.inventory_of(1).count_of(stone_id) == 10 and int(bo._items[900001]["count"]) == small_total - 10, "an iron pick takes one stone per blow (%d stones, %d left)" % [bo.inventory_of(1).count_of(stone_id), int(bo._items[900001]["count"])])
+	var pick_slot: int = bo.inventory_of(1).numbers.find(bo.table.number_of("iron_pickaxe"))
+	check(int(bo.inventory_of(1).wear[pick_slot]) == 10, "every blow wears the pick (%d)" % int(bo.inventory_of(1).wear[pick_slot]))
+	bo.inventory_of(1).numbers[pick_slot] = 0
+	bo.inventory_of(1).counts[pick_slot] = 0
+	bo.give(1, bo.table.number_of("stone_axe"), 1)
+
+	for n in range(9):
+		bo._last_hit.clear()
+		bo.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, 0, Vector3.ZERO)
+
+	check(bo.inventory_of(1).count_of(stone_id) == 13, "a stone axe takes three blows per stone: 9 blows, 3 stones (%d)" % (bo.inventory_of(1).count_of(stone_id) - 10))
+	bo.report_position(1, Vector3(40.0, 22.0, 40.0))
+	bo._last_hit.clear()
+	bo.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, 0, Vector3.ZERO)
+	check(bo_rejects[-1] == 0, "too far away: refused")
+	bo.report_position(1, Vector3(5.0, 11.5, 5.0))
+	bo._items[900001]["count"] = 1
+	bo._items[900001]["boulder"]["blows"] = 2
+	bo._last_hit.clear()
+	bo.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, 0, Vector3.ZERO)
+	check(not bo._items.has(900001) and int(bo._boulder_left[bo.BOULDER_KEY | 7]) == 0, "the last stone takes the boulder with it")
+	bo.action(1, Net.ACT_PICKUP, 900001, 0, 0, Vector3.ZERO)
+	check(bo.inventory_of(1).count_of(0) == 0, "a boulder cannot be picked up like a stone")
+	# Luck: a lucky character gets more of the occasional double stone than an unlucky one.
+	bo._boulder_cfg["luck_extra"] = 0.2
+	var extras: Array = []
+
+	for fortune in [10, -10]:
+		bo._characters["boulderkey01"]["luck"] = fortune
+		bo.inventory_of(1).numbers[bo.inventory_of(1).numbers.find(bo.table.number_of("stone_axe"))] = 0
+		bo.give(1, bo.table.number_of("iron_pickaxe"), 1)
+		bo._items[900002] = {"number": 0, "count": 3000, "pos": Vector3(5.0, 11.5, 6.0), "left": 1.0e9, "scatter": bo.BOULDER_KEY | 9, "boulder": {"radius": 1.0, "yaw": 0.0, "total": 3000}}
+		var taken: int = 0
+
+		for n in range(400):
+			bo._last_hit.clear()
+			var before_count: int = int(bo._items[900002]["count"])
+			bo.action(1, Net.ACT_HIT, 900002, Net.HIT_BOULDER, 0, Vector3.ZERO)
+			taken += before_count - int(bo._items[900002]["count"])
+
+			# keep the pack light so the weight limit does not interfere
+			for slot in range(bo.inventory_of(1).SLOTS):
+				if bo.inventory_of(1).numbers[slot] == bo.table.number_of("stone"):
+					bo.inventory_of(1).counts[slot] = 0
+					bo.inventory_of(1).numbers[slot] = 0
+
+		extras.append(taken - 400)
+		bo._items.erase(900002)
+		bo.inventory_of(1).numbers[bo.inventory_of(1).numbers.find(bo.table.number_of("iron_pickaxe"))] = 0
+
+	check(extras[0] > extras[1] and extras[1] >= 0, "luck nudges the double stones: luck +10 got %d extra, luck -10 got %d in 400 blows" % [extras[0], extras[1]])
+	bo._boulder_cfg["luck_extra"] = 0.0
+	# Layout: on a slope the cells hold boulders, the same ones every time, none on flat ground.
+	var laid: Array = []
+
+	for cell_x in range(0, 6):
+		for cell_z in range(0, 4):
+			var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+			rng.seed = hash(Vector3i(cell_x, cell_z, 1))
+			bo._lay_out_boulders(Vector2i(cell_x, cell_z), 32.0, rng)
+
+	for bid in bo._items:
+		if bo._items[bid].has("boulder"):
+			laid.append([bid, bo._items[bid]["pos"], int(bo._items[bid]["count"])])
+
+	check(laid.size() >= 3, "a slope is dotted with boulders (%d in 24 cells)" % laid.size())
+	var replay = make(bld + "_replay")
+	replay.ground_height = bo.ground_height
+	var replay_count: int = 0
+
+	for cell_x in range(0, 6):
+		for cell_z in range(0, 4):
+			var rng2: RandomNumberGenerator = RandomNumberGenerator.new()
+			rng2.seed = hash(Vector3i(cell_x, cell_z, 1))
+			replay._lay_out_boulders(Vector2i(cell_x, cell_z), 32.0, rng2)
+
+	for aid in replay._items:
+		replay_count += 1 if replay._items[aid].has("boulder") else 0
+
+	check(replay_count == laid.size(), "the layout is deterministic (%d then %d)" % [laid.size(), replay_count])
+	var worked: int = int(laid[0][0]) if not laid.is_empty() else 0
+
+	if worked != 0:
+		bo._items[worked]["count"] = 5
+		bo._boulder_left[bo._items[worked]["scatter"]] = 5
+		bo._dirty = true
+		bo.save()
+		var reloaded = make(bld)
+		check(int(reloaded._boulder_left.get(bo._items[worked]["scatter"], -1)) == 5, "what is left of a worked boulder is saved")
+
 	print("server item tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

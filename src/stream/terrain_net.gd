@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 26
+const PROTOCOL_VERSION := 27
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -67,7 +67,8 @@ const ACT_ADMIN_GIVE := 3 # a = item number, count (admin tool; tests only)
 const ACT_CRAFT := 4      # a = recipe number (data/items/recipes.json)
 const ACT_PLACE := 6      # a = slot of a placeable item, at = where (a campfire kit becomes a fire)
 const ACT_MINE := 8       # at = the point the axe struck; on bare rock the server gives stone
-const ACT_HIT := 7        # a = tree id, b = flora chunk x, count = flora chunk z: one axe blow on a standing tree
+const ACT_HIT := 7        # a = tree id, b = flora chunk x, count = flora chunk z: one axe blow on a standing tree; with b = HIT_BOULDER, a = a boulder's world id: one pick or axe blow on a boulder
+const HIT_BOULDER := -1000000   # the b of an ACT_HIT that strikes a boulder, not a tree
 const ACT_PROCESS := 9    # a = world item id of a felled trunk: one axe blow on it gives branches, leaves, bark, logs
 const ACT_SPLIT := 10     # a = slot, count = how many go to the first empty slot
 const ACT_DRINK := 24         # no arguments: drink from the water at the player's feet (the server checks water within reach)

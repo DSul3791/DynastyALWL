@@ -1,6 +1,6 @@
 {
 	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist).",
-	"next_number": 18,
+	"next_number": 20,
 	"recipes": {
 		"cordage": {
 			"number": 1,
@@ -347,6 +347,48 @@
 			"craft_s": 10.0,
 			"known": false,
 			"station": "workbench"
+		},
+		"iron_pickaxe": {
+			"number": 18,
+			"name": "Iron pickaxe",
+			"needs": [
+				[
+					"iron_ingot",
+					3
+				],
+				[
+					"stick",
+					2
+				]
+			],
+			"gives": [
+				"iron_pickaxe",
+				1
+			],
+			"craft_s": 10.0,
+			"known": false,
+			"station": "forge"
+		},
+		"steel_pickaxe": {
+			"number": 19,
+			"name": "Steel pickaxe",
+			"needs": [
+				[
+					"steel_ingot",
+					3
+				],
+				[
+					"stick",
+					2
+				]
+			],
+			"gives": [
+				"steel_pickaxe",
+				1
+			],
+			"craft_s": 12.0,
+			"known": false,
+			"station": "forge"
 		}
 	}
 }

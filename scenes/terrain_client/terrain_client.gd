@@ -781,6 +781,7 @@ func _welcome_body(info: Dictionary) -> void:
 		_save_display()
 		items.set_text_scale(display.TEXT_SCALES[display.text_index])
 	items.eat_event = func(item_id): sound.itemfx.eat(item_id)
+	items.boulder_budget = func(): return [24, 48, 80, 120][clampi(quality, 0, 3)]
 	items.fuel_event = func(): sound.itemfx.fuel_pressed()
 	items.reject_event = func(reason): sound.itemfx.reject(reason)
 	items.heart_bpm = func(): return sound.breath.bpm_now

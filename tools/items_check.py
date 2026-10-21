@@ -104,6 +104,10 @@ CLIENTS = [
         ("Use holds a tool", r"matches (true)\), strip boxes 10", None, None),
         ("the axe is drawn in the arms' hand", r"Arms test: axe model in the right hand (true), arms shown true", None, None),
         ("every tool and weapon can be held and has a model", r"Tools test: (\d+) tools and weapons, held \1, with a model \1", None, None),
+        ("a boulder is drawn full size", r"Boulder test: radius " + NUM + ",", 0.99, 1.01),
+        ("and shrinks to the cube root of what is left (an eighth: half)", r"at an eighth of the stones " + NUM + ",", 0.49, 0.51),
+        ("a strike finds it and a ray hits it", r"found by a strike true, solid to a ray true", None, None),
+        ("and it goes when the server drops it", r"gone when the server drops it true", None, None),
         ("Use again puts it away", r"Use again, hand slot " + NUM, -1, -1),
         ("a tool deep in the pack moves to the hotbar and is held", r"Use moved it to slot \d+ and holds it \((true)\), on hotbar true", None, None),
     ]),
@@ -127,7 +131,7 @@ def run_client(index, flags, frames, checks, godot, verbose):
     server = subprocess.Popen([godot, "--headless", "--path", ROOT, "res://scenes/terrain_server/terrain_server.tscn", "--", "--port=%d" % port, "--store=" + store], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:
         time.sleep(40)
-        out = subprocess.run([godot, "--headless", "--path", ROOT, "res://scenes/terrain_client/terrain_client.tscn", "--", "--server=127.0.0.1", "--port=%d" % port, "--frames=%d" % frames] + flags, capture_output=True, text=True, timeout=400).stdout
+        out = subprocess.run([godot, "--headless", "--path", ROOT, "res://scenes/terrain_client/terrain_client.tscn", "--", "--server=127.0.0.1", "--port=%d" % port, "--frames=%d" % frames] + flags, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=400).stdout
     finally:
         server.kill()
     if verbose:
