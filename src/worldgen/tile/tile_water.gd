@@ -593,6 +593,9 @@ func _carve_guides(rivers: Array) -> void:
 				lead_areas.append_array(areas)
 				points = lead
 				areas = lead_areas
+				var straightened: Array = _straight_to_lip(points, areas, from_pond, from_pond_radius, float(joined[3]), bench_land)
+				points = straightened[0]
+				areas = straightened[1]
 
 		var count: int = points.size()
 
@@ -1621,9 +1624,85 @@ func _join_pond(head: Vector2) -> Array:
 
 			_joined_heads[Vector2i(p, h)] = true
 			var centre: Vector2 = Vector2(pond["centre"]) / spacing_m - Vector2(float(_origin_sx), float(_origin_sz))
-			return [centre, float(pond.get("radius", 35.0)), lead]
+			return [centre, float(pond.get("radius", 35.0)), lead, float(pond.get("level", 0.0))]
 
 	return []
+
+
+# Owner report (2026-10-21, Dave, build 3xx): "a lump of dirt blocking the river's path" between
+# pond B and its first fall. The pond's brook follows the fall line it was found along, which
+# hooked around a hill tip at the pond's shore, so the water had to go round the spur. The river
+# leaves the pond for its first lip (the first point where the ground falls lip_drop_m below the
+# pond's water) by the straight way, cut through whatever stands in between (the river ignores
+# the ground's hardness). Not done when the lip is further than straight_lip_max_m, or when
+# the straight line would cross ground more than straight_lip_rise_m above the pond.
+# Returns [points, areas].
+func _straight_to_lip(
+	points: PackedVector2Array, areas: PackedFloat32Array, centre: Vector2, radius_m: float, level: float, land: PackedFloat32Array
+) -> Array:
+	var drop: float = float(_rules.get("straight_lip_drop_m", 5.0))
+	var reach: float = float(_rules.get("straight_lip_max_m", 500.0))
+	var rise: float = float(_rules.get("straight_lip_rise_m", 14.0))
+	var lip_at: int = -1
+
+	# The pond's own bench height (the median ground on a ring just outside its water), not the
+	# world's nominal level, which the tile's detail can differ from by several metres.
+	var ring: Array = []
+
+	for r in range(16):
+		var on_ring: Vector2 = centre + Vector2(cos(TAU * float(r) / 16.0), sin(TAU * float(r) / 16.0)) * (radius_m + 6.0) / spacing_m
+
+		if on_ring.x >= 1.0 and on_ring.y >= 1.0 and on_ring.x <= float(samples - 2) and on_ring.y <= float(samples - 2):
+			ring.append(_bilinear(land, on_ring))
+
+	if ring.size() < 8:
+		return [points, areas]
+
+	ring.sort()
+	level = float(ring[ring.size() / 2])
+
+	for k in range(points.size()):
+		var distance: float = points[k].distance_to(centre) * spacing_m
+
+		if distance < radius_m:
+			continue
+
+		if distance > radius_m + reach:
+			break
+
+		var p: Vector2 = points[k]
+
+		if p.x < 1.0 or p.y < 1.0 or p.x > float(samples - 2) or p.y > float(samples - 2):
+			break
+
+		if _bilinear(land, p) < level - drop:
+			lip_at = k
+			break
+
+	if lip_at < 1:
+		return [points, areas]
+
+	var target: Vector2 = points[lip_at]
+	var steps: int = maxi(int(ceil(centre.distance_to(target) * 2.0)), 1)
+
+	for n in range(steps + 1):
+		var on_line: Vector2 = centre.lerp(target, float(n) / float(steps))
+
+		if on_line.distance_to(centre) * spacing_m > radius_m and _bilinear(land, on_line) > level + rise:
+			return [points, areas]
+
+	var line: PackedVector2Array = PackedVector2Array()
+	var line_areas: PackedFloat32Array = PackedFloat32Array()
+
+	for n in range(steps):
+		line.append(centre.lerp(target, float(n) / float(steps)))
+		line_areas.append(areas[0])
+
+	for k in range(lip_at, points.size()):
+		line.append(points[k])
+		line_areas.append(areas[k])
+
+	return [line, line_areas]
 
 
 # How far the middle of a channel this wide is cut below its bank toes (see _stamp_at).
