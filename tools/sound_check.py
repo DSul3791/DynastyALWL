@@ -87,6 +87,8 @@ SCENARIOS = [
         ("run completes", r"done (true)", 0, 1, "text"),
         ("no breathing while fainted", r"breaths while fainted " + NUM, 0, 0),
         ("world returns with the vision", r"wake mute " + NUM, 0.1, 0.9),
+        ("heart peaks near 175 to 200 bpm", r"bpm max " + NUM, 175, 200),
+        ("heart rate never jumps (bpm per frame)", r"bpm max \d+, step " + NUM, 0, 1.5),
     ]),
     ("merge", ["--merge-check"], 3500, [
         ("falls share a voice", r"falls 6 -> " + NUM + r" voices", 2, 2),

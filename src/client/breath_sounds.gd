@@ -22,7 +22,7 @@ extends Node
 # switches the stand-in off while it keeps being called (EXTERNAL_MSEC).
 #
 #   exertion 0 to QUIET:  nothing            QUIET to 0.5: soft breaths, slow
-#   0.5 to 0.8: clear breaths, quicker       over 0.8: gasps; heartbeat from HEART_FROM, 60 to 170 bpm
+#   heartbeat from HEART_FROM: 60 bpm rising smoothly to 175 at the blackout threshold, 200 at the biggest overshoot
 #
 # Plays on its own "Body" bus (the Effects slider; it stays when the other buses fade for a faint), 2D (it is inside the player's head), not while the
 # eyes are under water. Sounds: assets/audio/body/ (make_body.py); recordings in recorded/body/ win.
@@ -38,6 +38,11 @@ const RISE_PER_SEC := {"walk": 0.0, "jog": 0.045, "run": 0.07, "swim": 0.05}   #
 const CEILING := {"walk": 0.2, "jog": 0.62, "run": 2.0, "swim": 0.75}   # running never plateaus: it keeps climbing past 1 (over-exerted)
 const EXERTION_MAX := 2.0
 const OVER := 1.0                       # from here: racing heart, chest heaves
+const FAINT_AT := 1.4                   # the blackout threshold (data/items/exertion.json faint_at)
+const BPM_REST := 60.0                  # at HEART_FROM
+const BPM_FAINT := 175.0                # right at the blackout threshold (Dave 2026-10-21)
+const BPM_PEAK := 200.0                 # at the biggest overshoot (EXERTION_MAX)
+const BPM_EASE := 40.0                  # beats per minute the rate may change per second: never a step
 const OVER_SPAN := 0.4                  # over to fainting (data/items/exertion.json faint_at 1.4): the intensity climbs over this much
 const HEART_GONE_SEC := 3.0             # the heartbeat after the vision is gone
 const WAKE_SEC := 4.0                   # the world sound returns this slowly after a faint
@@ -52,6 +57,9 @@ var world_mute: float = 0.0             # 0 normal .. 1 everything but the heart
 var heaves_played: int = 0
 var breaths_played: int = 0
 var beats_played: int = 0
+var bpm_now: float = 0.0                # the heart rate now, eased (HUD, checks)
+var bpm_max: float = 0.0
+var bpm_step_max: float = 0.0           # the biggest change between two frames, bpm
 var last: String = ""
 
 var _stage                              # SoundStage
@@ -223,10 +231,13 @@ func update(delta: float, underwater: bool) -> void:
 
 	if (exertion >= HEART_FROM or fainted or state == "waking") and _heart_gain > 0.01:
 		_beat_left -= delta
+		var before: float = bpm_now
+		bpm_now = _bpm() if bpm_now <= 0.0 else move_toward(bpm_now, _bpm(), BPM_EASE * delta)
+		bpm_max = maxf(bpm_max, bpm_now)
+		bpm_step_max = maxf(bpm_step_max, absf(bpm_now - before) if before > 0.0 else 0.0)
 
 		if _beat_left <= 0.0:
-			var bpm: float = _bpm()
-			_beat_left = 60.0 / bpm
+			_beat_left = 60.0 / maxf(bpm_now, BPM_REST)
 			var over: float = _over()
 			var level: float = lerpf(-34.0, -20.0, clampf((exertion - HEART_FROM) / (OVER - HEART_FROM), 0.0, 1.0)) + 12.0 * over
 			_play(_heart, "heartbeat", level + linear_to_db(maxf(_heart_gain, 0.001)), 1.0 + 0.1 * clampf(exertion, 0.0, EXERTION_MAX))
@@ -238,12 +249,19 @@ func _over() -> float:
 	return clampf((exertion - OVER) / OVER_SPAN, 0.0, 1.0)
 
 
-# Beats per minute: 60 at HEART_FROM up to 170 at exertion 1, racing on to 220 at EXERTION_MAX.
+# Beats per minute, one smooth curve of exertion (Dave 2026-10-21): 60 at HEART_FROM up to 175 right at the blackout
+# threshold (FAINT_AT), on to 200 at the biggest overshoot (EXERTION_MAX). Fainting or fainted counts as at least the
+# threshold, so passing out never starts below 175. update() eases the heart toward this, so there are no steps.
 func _bpm() -> float:
-	if exertion <= OVER:
-		return lerpf(60.0, 170.0, clampf((exertion - HEART_FROM) / (OVER - HEART_FROM), 0.0, 1.0))
+	var e: float = exertion
 
-	return lerpf(170.0, 220.0, _over())
+	if state == "fainting" or state == "fainted":
+		e = maxf(e, FAINT_AT)
+
+	if e <= FAINT_AT:
+		return lerpf(BPM_REST, BPM_FAINT, clampf((e - HEART_FROM) / (FAINT_AT - HEART_FROM), 0.0, 1.0))
+
+	return lerpf(BPM_FAINT, BPM_PEAK, clampf((e - FAINT_AT) / (EXERTION_MAX - FAINT_AT), 0.0, 1.0))
 
 
 # Dave 2026-10-21: no heavy breathing on exertion (breath_in, breath_out, breath_gasp, breath_heave); the heartbeat stays.

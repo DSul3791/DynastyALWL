@@ -477,3 +477,7 @@ Dave: remove the heavy breathing on exertion. `BREATHING := false` in `breath_so
 ## Birds only near the ground (fix, 2026-10-21)
 
 Dave flew at y 420 over a forest and heard startled wings. `ambient_life.gd` now measures `agl_m` (feet above the terrain's ground height, `sound.ground_below`, 0 when not loaded). Above `BIRD_MAX_AGL_M` (40 m) `flush` and `alarm` do nothing; the bird calls (`BIRDS_LOW`) fade out between 20 and 40 m (`low_factor()`). Check: the `flush` scenario (high birds line).
+
+## Heartbeat curve (fix, 2026-10-21)
+
+Dave: the heart should speed up smoothly with how far exertion goes past the blackout threshold, about 175 bpm right at it and 200 at the peak. `breath_sounds.gd` `_bpm()`: 60 bpm at exertion 0.55 rising to 175 at `FAINT_AT` 1.4, on to 200 at `EXERTION_MAX` 2.0; fainting or fainted counts as at least 1.4. `bpm_now` eases toward it at 40 bpm per second, so there are no steps (and it eases back on waking). Check: `faint` scenario (bpm max, biggest step per frame).
