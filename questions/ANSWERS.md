@@ -8,3 +8,7 @@ Answered: 2026-10-21 23:15 UTC
 Answer: Only inside owned land
 Answered: 2026-10-21 23:15 UTC
 
+## coffer-access | Banking: who can open a family coffer?
+Answer: Only the owner
+Answered: 2026-10-21 23:16 UTC
+
