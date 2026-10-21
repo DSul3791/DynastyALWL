@@ -2361,7 +2361,8 @@ func _move_player(delta: float) -> void:
 
 		_was_waiting = waiting_for_ground
 
-		var water: Dictionary = {} if waiting_for_ground else _water_here()
+		# The --runspeed walk test measures running (strain), not swimming: it crosses the pond east of the spawn on dry-land rules.
+		var water: Dictionary = {} if waiting_for_ground or (test_walk and run_speed > 0.0) else _water_here()
 		swimming = not water.is_empty() and SwimScript.swimming(body.global_position.y, float(water["surface"]), float(water["ground"]))
 
 		if waiting_for_ground:

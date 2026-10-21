@@ -873,7 +873,7 @@ func _rescan_step() -> void:
 			buckets[n] = []
 
 		for cell in _pending:
-			var ring: int = mini(int((Vector2(cell) + Vector2(0.5, 0.5)).distance_to(near)), span + 1)
+			var ring: int = clampi(int((Vector2(cell) + Vector2(0.5, 0.5)).distance_to(near)), 0, span + 1)    # clamped: a NaN centre gave int min
 			buckets[ring].append(cell)
 
 		_pending.clear()
