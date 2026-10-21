@@ -674,6 +674,29 @@ func _carve_guides(rivers: Array) -> void:
 		var lip_drop: float = float(_rules.get("brook_lip_drop_m", 5.0))
 		var held: float = INF             # the bed at the lip of the drop the river is going over
 
+		# Owner (2026-10-20, Dave): "they should run right into the water so they look like one
+		# thing." A river that ends in the sea has an estuary: over its last estuary_m the bed
+		# sinks to estuary_depth_m under sea level and the channel widens by estuary_widen, so
+		# the sea comes up the channel and the water meets it at one level, with no step.
+		var estuary_m: float = float(_rules.get("estuary_m", 160.0))
+		var estuary_end: float = -1.0     # distance along the river where its usable stretch meets the sea
+		var cumulative: PackedFloat32Array = PackedFloat32Array()
+		cumulative.resize(count)
+
+		for k in range(1, count):
+			cumulative[k] = cumulative[k - 1] + points[k].distance_to(points[k - 1]) * spacing_m
+
+		for k in range(count - 1, -1, -1):
+			if usable[k] == 1:
+				if k + 1 < count:
+					var next: Vector2 = points[k + 1]
+					var next_at: int = clampi(int(round(next.y)), 0, samples - 1) * samples + clampi(int(round(next.x)), 0, samples - 1)
+
+					if _ocean[next_at] == 1:
+						estuary_end = cumulative[k]
+
+				break
+
 		for k in range(count):
 			if k > 0:
 				run_length += points[k].distance_to(points[k - 1]) * spacing_m
@@ -697,6 +720,13 @@ func _carve_guides(rivers: Array) -> void:
 			if last_bed < INF:
 				bed = minf(bed, last_bed - min_fall * (run_length - last_along))
 				max_bed_rise_m = maxf(max_bed_rise_m, bed - last_bed)
+
+			var to_sea: float = (estuary_end - cumulative[k]) if estuary_end >= 0.0 else INF
+			var estuary: float = clampf(1.0 - to_sea / maxf(estuary_m, 1.0), 0.0, 1.0)
+
+			if estuary > 0.0:
+				bed = minf(bed, lerpf(bed, -float(_rules.get("estuary_depth_m", 1.5)), estuary))
+				widths[k] *= lerpf(1.0, float(_rules.get("estuary_widen", 1.6)), estuary)
 
 			last_bed = bed
 			last_along = run_length
