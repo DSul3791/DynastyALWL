@@ -144,6 +144,8 @@ var _moving: Dictionary = {}        # peer -> smoothed 0..1, 1 while walking abo
 var _characters: Dictionary = {}   # player key -> {luck: int}, rolled once at first sight and never changed (job 77)
 var _luck_cfg: Dictionary = {}
 var _fitness_cfg: Dictionary = {}
+var _sleep_cfg: Dictionary = {}     # data/items/sleep.json
+var _asleep: Dictionary = {}        # peer -> true while asleep (a lying player who held Z); {rested: seconds with no strain}
 var _dig_cfg: Dictionary = {}       # data/items/digging.json
 var _boulder_cfg: Dictionary = {}    # data/items/boulders.json
 var _boulder_left: Dictionary = {}   # boulder key -> rough stones still in it (absent = untouched), saved in world_items.json
@@ -205,6 +207,8 @@ func setup(item_table, store_dir: String) -> void:
 	_vitals_cfg = VitalsRules.load_config()
 	_luck_cfg = LuckScript.load_config()
 	_fitness_cfg = _load_fitness_config()
+	var sleep_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/sleep.json"))
+	_sleep_cfg = sleep_parsed if typeof(sleep_parsed) == TYPE_DICTIONARY else {}
 	var dig_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/digging.json"))
 	_dig_cfg = dig_parsed if typeof(dig_parsed) == TYPE_DICTIONARY else {}
 	var boulders_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/boulders.json"))
@@ -282,6 +286,7 @@ func peer_left(peer: int) -> void:
 	_strain.erase(peer)
 	_strain_sent.erase(peer)
 	_stance.erase(peer)
+	_asleep.erase(peer)
 	_moving.erase(peer)
 	_last_process.erase(peer)
 
@@ -384,6 +389,8 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_fuel(peer, inv, a)
 	elif kind == Net.ACT_STANCE:
 		_set_stance(peer, a)
+	elif kind == Net.ACT_SLEEP:
+		_sleep(peer, a)
 	elif kind == Net.ACT_LIGHT:
 		_light(peer, inv, a)
 	elif kind == Net.ACT_COOK:
@@ -2302,7 +2309,61 @@ func _set_stance(peer: int, wanted: int) -> void:
 	if int(_strain.get(peer, {}).get("state", 0)) < 2:
 		_stance[peer] = wanted
 
+		if wanted != 3:
+			_asleep.erase(peer)
+
 	_strain_sent.erase(peer)
+
+
+# --- Sleep (job 86, data/items/sleep.json) ---
+func sleeping_of(peer: int) -> bool:
+	return _asleep.has(peer)
+
+
+# a = 1: fall asleep (lying, not fainted, not in rain on open ground); a = 0: wake.
+func _sleep(peer: int, want: int) -> void:
+	if not _peer_key.has(peer) or _sleep_cfg.is_empty():
+		return
+
+	if want == 0:
+		_wake(peer, "")
+		return
+
+	if _asleep.has(peer):
+		return
+
+	if int(_stance.get(peer, 0)) != 3 or int(_strain.get(peer, {}).get("state", 0)) >= 2:
+		return
+
+	if _sleep_quality(peer) < 0.0:
+		_say(peer, "Rain falls on you: find cover to sleep")
+		return
+
+	_asleep[peer] = {"rested": 0.0}
+	_strain_sent.erase(peer)
+	_say(peer, "You fall asleep")
+
+
+func _wake(peer: int, why: String) -> void:
+	if not _asleep.erase(peer):
+		return
+
+	_strain_sent.erase(peer)
+	_say(peer, why if why != "" else "You wake")
+
+
+# 1 under a roof or crown, the open-dry value in the open, -1 when rain reaches the sleeper (cannot sleep there).
+func _sleep_quality(peer: int) -> float:
+	var q: Dictionary = _sleep_cfg.get("quality", {})
+	var covered: bool = cover_at.is_valid() and _peer_pos.has(peer) and float(cover_at.call(_peer_pos[peer])) > 0.5
+
+	if covered:
+		return float(q.get("covered", 1.0))
+
+	if rain_now.is_valid() and float(rain_now.call()) >= float(_sleep_cfg.get("rain_wakes", 0.2)):
+		return -1.0
+
+	return float(q.get("open_dry", 0.6))
 
 
 func stance_of(peer: int) -> int:
@@ -2332,6 +2393,7 @@ func _note_motion(peer: int, position: Vector3) -> void:
 		# Walking off stands a sitting or lying player up.
 		if int(_stance.get(peer, 0)) >= 2 and speed > float(_exertion_cfg.get("stand_up_speed_mps", 1.5)) and int(_strain.get(peer, {}).get("state", 0)) < 2:
 			_stance[peer] = 0
+			_asleep.erase(peer)
 			_strain_sent.erase(peer)
 
 	_motion[peer] = [position, now]
@@ -2362,7 +2424,12 @@ func _vitals_tick(spent: float) -> void:
 		v["wet"] = maxf(float(v["wet"]) - dry_per_day * game_s / 86400.0, 0.0)
 
 		if float(v["fed"]) > 0.0 and float(v["wet"]) > 0.0:
-			v["health"] = clampf(float(v["health"]) + float(_vitals_cfg.get("health_regen_per_s", 0.05)) * spent, 0.0, health_max)
+			var regen: float = float(_vitals_cfg.get("health_regen_per_s", 0.05))
+
+			if _asleep.has(peer):
+				regen *= 1.0 + (float(_sleep_cfg.get("regen_mult", 2.0)) - 1.0) * maxf(_sleep_quality(peer), 0.0)
+
+			v["health"] = clampf(float(v["health"]) + regen * spent, 0.0, health_max)
 
 		_sync_vitals(peer, false)
 		_strain_tick(peer, spent)
@@ -2389,6 +2456,7 @@ func _fall(peer: int, centimetres: int) -> void:
 	_last_fall[peer] = now
 	v["health"] = maxf(float(v["health"]) - damage, 1.0)
 	_say(peer, "The fall hurt")
+	_asleep.erase(peer)
 
 	if drop >= float(cfg.get("faint_m", 12.0)) and not _exertion_cfg.is_empty():
 		_strain[peer] = {"s": float(_exertion_cfg.get("faint_at", 1.4)) + 0.05, "state": 1, "t": 0.0, "black": 1.0}
@@ -2598,6 +2666,24 @@ func _strain_tick(peer: int, spent: float) -> void:
 	var strain: float = float(st["s"])
 	st["t"] = float(st["t"]) + spent
 
+	# Sleep ends on its own: fainting, standing up, rain on an open sleeper, or rested for rested_s seconds.
+	var sleep_quality: float = 0.0
+
+	if _asleep.has(peer):
+		sleep_quality = _sleep_quality(peer)
+
+		if state >= 2 or int(_stance.get(peer, 0)) != 3:
+			_asleep.erase(peer)
+			_strain_sent.erase(peer)
+		elif sleep_quality < 0.0:
+			_wake(peer, "Rain woke you")
+		else:
+			var rest: Dictionary = _asleep[peer]
+			rest["rested"] = float(rest["rested"]) + spent if strain <= 0.0 else 0.0
+
+			if float(rest["rested"]) >= float(_sleep_cfg.get("rested_s", 10.0)):
+				_wake(peer, "You wake rested")
+
 	if state == 2:
 		if float(st["t"]) >= float(cfg.get("faint_s", 8.0)):
 			state = 3
@@ -2627,7 +2713,7 @@ func _strain_tick(peer: int, spent: float) -> void:
 		if diff < 0.0 and stance == 2:
 			rate *= float(cfg.get("sit_fall_mult", 2.0))
 		elif diff < 0.0 and stance == 3:
-			rate *= float(cfg.get("lie_fall_mult", 3.0))
+			rate *= float(cfg.get("lie_fall_mult", 3.0)) + (maxf(float(_sleep_cfg.get("strain_mult", 6.0)) - float(cfg.get("lie_fall_mult", 3.0)), 0.0) * sleep_quality if _asleep.has(peer) else 0.0)
 
 		var before: float = strain
 		strain = maxf(strain + diff * rate * spent, 0.0)
@@ -2673,7 +2759,7 @@ func _strain_tick(peer: int, spent: float) -> void:
 	elif state == 3:
 		fade = 1.0 - clampf(float(st["t"]) / float(cfg.get("wake_s", 12.0)), 0.0, 1.0)
 
-	var points: Array = [int(strain * 50.0) * 20, state, int(fade * 50.0) * 20, int(_stance.get(peer, 0))]
+	var points: Array = [int(strain * 50.0) * 20, state, int(fade * 50.0) * 20, int(_stance.get(peer, 0)) | (4 if _asleep.has(peer) else 0)]
 
 	if send_strain.is_valid() and _strain_sent.get(peer, []) != points:
 		_strain_sent[peer] = points

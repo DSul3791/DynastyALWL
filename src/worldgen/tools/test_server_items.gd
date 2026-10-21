@@ -1042,6 +1042,74 @@ func _init() -> void:
 
 	var floor_level: float = float(sa.strain_of(1)["s"])
 	check(floor_level > 0.4 and floor_level < 0.6, "standing with a pack at the limit rests only to about half (%.2f)" % floor_level)
+	# Sleep (job 86): lying plus ACT_SLEEP rests faster, by place; rain on the open wakes; stance and rest end it.
+	var sleeper: Array = [0.0, 0.0]      # cover, rain
+	var down_time = func(sl, asleep: bool) -> float:
+		sl._strain[1] = {"s": 0.9, "state": 1, "t": 0.0}
+		sl.action(1, Net.ACT_STANCE, 3, 0, 0, Vector3.ZERO)
+
+		if asleep:
+			sl.action(1, Net.ACT_SLEEP, 1, 0, 0, Vector3.ZERO)
+
+		var seconds: float = 0.0
+
+		while float(sl.strain_of(1)["s"]) > 0.05 and seconds < 400.0:
+			sl._vitals_tick(0.25)
+			seconds += 0.25
+
+		return seconds
+
+	var sl = make(xd)
+	sl.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	sl.cover_at = func(_pos): return sleeper[0]
+	sl.rain_now = func(): return sleeper[1]
+	sl.peer_connected_hello(1, "sleepkey0001")
+	sl.report_position(1, Vector3(0.0, 10.0, 0.0))
+	sl.action(1, Net.ACT_SLEEP, 1, 0, 0, Vector3.ZERO)
+	check(not sl.sleeping_of(1), "you cannot sleep standing up")
+	var lie_s: float = down_time.call(sl, false)
+	sl.action(1, Net.ACT_STANCE, 0, 0, 0, Vector3.ZERO)
+	var dry_s: float = down_time.call(sl, true)
+	check(sl.sleeping_of(1), "lying down and asking to sleep works on dry open ground")
+	sl.action(1, Net.ACT_STANCE, 0, 0, 0, Vector3.ZERO)
+	check(not sl.sleeping_of(1), "standing up wakes you")
+	sleeper[0] = 1.0
+	var roof_s: float = down_time.call(sl, true)
+	check(dry_s < lie_s * 0.85 and roof_s < dry_s, "sleep rests faster than lying, and faster under a roof (lie %.0f s, open %.0f s, roof %.0f s)" % [lie_s, dry_s, roof_s])
+	check(absf(lie_s / roof_s - 2.0) < 0.5, "under a roof it is about twice as fast as lying (strain_mult 6 against 3)")
+	sl.action(1, Net.ACT_STANCE, 0, 0, 0, Vector3.ZERO)
+	sleeper[0] = 0.0
+	sleeper[1] = 0.5
+	sl.action(1, Net.ACT_STANCE, 3, 0, 0, Vector3.ZERO)
+	sl.action(1, Net.ACT_SLEEP, 1, 0, 0, Vector3.ZERO)
+	check(not sl.sleeping_of(1), "rain on open ground will not let you sleep")
+	sleeper[1] = 0.0
+	sl.action(1, Net.ACT_SLEEP, 1, 0, 0, Vector3.ZERO)
+	check(sl.sleeping_of(1), "asleep once the rain stops")
+	sleeper[1] = 0.5
+	sl._strain_tick(1, 0.25)
+	check(not sl.sleeping_of(1), "rain that reaches an open sleeper wakes them")
+	sleeper[0] = 1.0
+	sl.action(1, Net.ACT_SLEEP, 1, 0, 0, Vector3.ZERO)
+	sl._strain_tick(1, 0.25)
+	check(sl.sleeping_of(1), "rain does not wake one under a roof")
+	sl._strain[1] = {"s": 0.0, "state": 0, "t": 0.0}
+
+	for n in range(4 * 12):
+		sl._strain_tick(1, 0.25)
+
+	check(not sl.sleeping_of(1), "fully rested for 10 s ends the sleep")
+	sl.action(1, Net.ACT_SLEEP, 1, 0, 0, Vector3.ZERO)
+	var hp: float = 50.0
+	sl.vitals_of(1)["health"] = hp
+	sl.vitals_of(1)["fed"] = 1000.0
+	sl.vitals_of(1)["wet"] = 1000.0
+	sl._vitals_tick(10.0)
+	var asleep_gain: float = float(sl.vitals_of(1)["health"]) - hp
+	sl.action(1, Net.ACT_STANCE, 3, 0, 0, Vector3.ZERO)
+	sl.vitals_of(1)["health"] = hp
+	sl._vitals_tick(10.0)
+	check(asleep_gain > (float(sl.vitals_of(1)["health"]) - hp) * 1.8, "sleep heals about twice as fast (%.2f against %.2f)" % [asleep_gain, float(sl.vitals_of(1)["health"]) - hp])
 	# Blackout is smooth and depends on the overshoot: right at the threshold it takes about slow_s, a long way over it about fast_s.
 	var seconds_to_black: Array = []
 	var smooth: bool = true

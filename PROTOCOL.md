@@ -1,4 +1,4 @@
-# Protocol (PROTOCOL_VERSION 28, src/stream/terrain_net.gd)
+# Protocol (PROTOCOL_VERSION 29, src/stream/terrain_net.gd)
 
 Kept current by whoever changes the wire: add the row, bump PROTOCOL_VERSION to the next free number (pull first and read terrain_net.gd), and note the build.
 
@@ -63,6 +63,7 @@ Kept current by whoever changes the wire: add the row, bump PROTOCOL_VERSION to 
 | 21 | ACT_CRAFT_QUEUE | a = recipe number, count = how many (1 to 20); the server takes the ingredients now and crafts in order, screen open or not; max 10 entries per player | 22 |
 | 22 | ACT_CRAFT_CANCEL | a = queue entry index as last sent; cancels it, the server hands back the ingredients of its unfinished crafts | 22 |
 | 24 | ACT_DRINK | no arguments: drink one mouthful (vitals.json thirst.drink_ml) from water within thirst.reach_m of the player's feet; refused with reject(0) when no water is near, paced by drink_pace_ms | 24 |
+| 26 | ACT_SLEEP | a = 1 fall asleep, 0 wake. Needs the player lying (stance 3), not fainted, and no rain reaching them (open ground, rain over 0.2); otherwise ignored (a notice says why). Sleep ends on any stance change, a fall hit, rain on an open sleeper, or 10 s of zero exertion. The server tells everyone with strain(): bit 4 (+4) of the stance field = asleep | 29 |
 | 25 | ACT_DIG | at = the ground point under the crosshair: one spade dig (0.9 m sphere, 0.25 m below the point); needs a whole spade (tool class spade) in the pack, point within 4.5 m of the player, one per 0.7 s; refused with reject(0 too far, 1 no spade). The server logs the hole (digs.dat) and answers everyone with dug() and tile_changed() | 28 |
 | 23 | ACT_FALL | a = drop in centimetres the client landed from (sent from 6 m up); the server turns it into health damage (vitals.json fall) and a faint from 12 m; limited to one per 2 s, drop capped at 60 m | 23 |
 
@@ -78,6 +79,7 @@ digs.dat version 2 (DIGS2: seq, kind dig/fill, material, x y z radius, 24 bytes 
 
 ## Notes by version
 
+- 29: ACT_SLEEP (26) and the sleeping flag: the `stance` field of strain() is 0..3 plus 4 when asleep (old clients read 4..7 as a wrong stance, so client and server move together). data/items/sleep.json. No new save data: sleep is not kept over a restart (everyone wakes).
 - 28: ACT_DIG (spade digging). Save file `digs.dat` (store folder): "DIGS1" then x, y, z, radius as four little-endian float32 per hole, appended in order; `load_block` cuts every logged hole out of the freshly made block, so holes survive a re-bake. Edits already in edits.sqlite are still read as the base of their block. Design: DIGGING_DESIGN.md.
 
 - 27: boulders. World-item row state 10 (boulder): count = rough stones left, extra {radius, yaw, total}; an ACT_HIT whose b is HIT_BOULDER (-1000000) strikes the boulder with world id a (one blow from the best pick or axe on the hotbar: iron or steel 1 blow per stone, stone 3). Server-owned (server_items _lay_out_boulders, data/items/boulders.json); what is left of a worked boulder is saved in world_items.json "boulders" (same file version). Old clients would draw state 10 as a chopping block, hence the bump.

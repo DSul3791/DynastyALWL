@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 28
+const PROTOCOL_VERSION := 29
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -75,6 +75,7 @@ const ACT_DRINK := 24         # no arguments: drink from the water at the player
 const ACT_FALL := 23          # a = the drop in centimetres the client landed from (only sent from the sound threshold, 6 m); the server decides the damage
 const ACT_CRAFT_CANCEL := 22 # a = queue entry index (as last sent): cancel it and get its ingredients back
 const ACT_CRAFT_QUEUE := 21  # a = recipe number, count = how many (1 to 20): queue crafts; ingredients are taken now
+const ACT_SLEEP := 26      # a = 1 fall asleep (lying, held Z for 3 s), 0 wake; the sleeping flag comes back as bit 4 of the strain() stance
 const ACT_DIG := 25        # at = the ground point under the crosshair: one spade dig (server checks spade, reach, pace; DIGGING_DESIGN.md)
 const ACT_STANCE := 20     # a = wanted stance: 0 stand, 1 crouch, 2 sit, 3 lie; the server answers in strain()
 const ACT_LIGHT := 19      # a = fire world id: light a loaded fire (uses tinder from the pack, see cooking.json)
@@ -231,7 +232,7 @@ func craft_queue(entries: Array, left_ms: int) -> void:
 # Over-exertion (data/items/exertion.json): strain in thousandths (1000 = over-exerted), state 0 normal,
 # 1 over-exerted, 2 fainted, 3 waking, fade in thousandths of the faint or wake time gone (state 2: 0 to 1000
 # as vision then heartbeat fade out; state 3: 1000 down to 0 as they return). stance is the server's answer: 0 stand,
-# 1 crouch, 2 sit, 3 lie (fainting forces 3; it also stands a sitting or lying player who walks off).
+# 1 crouch, 2 sit, 3 lie (fainting forces 3; it also stands a sitting or lying player who walks off). Bit 4 (+4) = asleep (job 86).
 @rpc("authority", "call_remote", "reliable")
 func strain(strain_pm: int, state: int, fade_pm: int, stance: int) -> void:
 	strain_received.emit(strain_pm, state, fade_pm, stance)

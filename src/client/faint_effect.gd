@@ -73,6 +73,8 @@ func set_state(state: String, exertion: float, progress: float) -> void:
 			_target = Vector3(0.6 + 0.4 * p, smoothstep(0.35, 1.0, p), 0.5 + 0.5 * p)
 		"fainted":
 			_target = Vector3(1.0, 1.0, 1.0)
+		"sleeping":
+			_target = Vector3(0.3, 0.6, 0.4)     # eyes closed: dim, 60 percent black, soft (job 86)
 		_:
 			_target = Vector3.ZERO
 

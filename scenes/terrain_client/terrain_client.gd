@@ -141,6 +141,9 @@ var sea: MeshInstance3D
 var flying: bool = false
 var underwater: bool = false
 var _ground_quality: int = -1       # quality the ground texture array was built for
+var _z_down_msec: int = -1             # when Z went down while lying (hold to sleep), -1 when not held
+var _z_slept: bool = false             # the hold already asked for sleep
+const SLEEP_HOLD_S := 3.0              # data/items/sleep.json hold_s
 var stance = StanceScript.new()       # standing, crouching (C), sitting (X), lying (Z); client.stance.stance and its `changed` signal
 var _shape: CollisionShape3D          # the player's collision capsule (resized by stance)
 var jogging: bool = false             # double-tapped W; ends when W is released
@@ -2075,7 +2078,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.keycode == KEY_X and not flying:
 			_set_stance(StanceScript.SIT, true)
 		elif event.keycode == KEY_Z and not flying:
-			_set_stance(StanceScript.LIE, true)
+			if stance.stance == StanceScript.LIE and items != null and not items.asleep:
+				_z_down_msec = Time.get_ticks_msec()   # lying: hold Z to sleep, tap to get up (decided on release, see _check_sleep_hold)
+				_z_slept = false
+			elif items != null and items.asleep:
+				items.request_sleep(0)
+			else:
+				_set_stance(StanceScript.LIE, true)
 		elif event.keycode >= KEY_1 and event.keycode <= KEY_9 and held != null:
 			held.press_slot(event.keycode - KEY_1)
 		elif event.keycode == KEY_0 and held != null:
@@ -2109,6 +2118,7 @@ func _step_player(delta: float) -> void:
 		return
 
 	delta = minf(delta, 0.1)
+	_check_sleep_hold()
 	var t: int = Probe.start()
 	_move_player(delta)
 	Probe.stop("player move", t)
@@ -2171,6 +2181,21 @@ func _set_stance(wanted: int, toggle: bool = false) -> void:
 
 
 # The server's answer (or its own change: fainting forces lying, walking off stands you up).
+# Lying and holding Z for sleep.json hold_s asks to sleep; letting go sooner gets you up like before.
+func _check_sleep_hold() -> void:
+	if _z_down_msec < 0:
+		return
+
+	if not Input.is_key_pressed(KEY_Z):
+		if not _z_slept:
+			_set_stance(StanceScript.LIE, true)
+
+		_z_down_msec = -1
+	elif not _z_slept and items != null and float(Time.get_ticks_msec() - _z_down_msec) / 1000.0 >= SLEEP_HOLD_S:
+		_z_slept = true
+		items.request_sleep(1)
+
+
 func _on_stance_from_server(confirmed: int) -> void:
 	if confirmed != stance.stance and stance.set_stance(confirmed):
 		stance.apply_shape(_shape)

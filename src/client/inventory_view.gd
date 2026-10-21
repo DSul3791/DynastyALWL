@@ -74,6 +74,7 @@ var strain_state: int = 0
 var strain_fade: float = 0.0
 var stance_confirmed: int = 0                # the server's answer: 0 stand, 1 crouch, 2 sit, 3 lie (fainting forces 3)
 var stance_event: Callable = Callable()      # (stance) when the server confirms or changes it
+var asleep: bool = false                     # the server says this character sleeps (bit 4 of the stance it sends, job 86)
 var reject_event: Callable = Callable()   # ("far" | "no_tool" | "full_pack" | "other") when the server refused an action
 var strain_event: Callable = Callable()   # (strain, state, fade) whenever the server sends a change
 var _strain_note: Label
@@ -472,7 +473,7 @@ func _process_body(_delta: float) -> void:
 	_hold_e_check()
 
 	if _strain_note != null:
-		_strain_note.text = "You are exhausted: slow down" if strain_state == 1 else ""
+		_strain_note.text = "Asleep: any key wakes you" if asleep else ("You are exhausted: slow down" if strain_state == 1 else "")
 
 	if _queue_head_button != null and now >= _queue_next_msec:
 		_queue_next_msec = now + 250
@@ -488,6 +489,9 @@ func _process_body(_delta: float) -> void:
 	if now < _notice_until_msec:
 		return
 	_prompt.text = str(current_interaction().get("prompt", ""))
+
+	if _prompt.text == "" and stance_confirmed == 3 and not asleep and strain_state < 2:
+		_prompt.text = "Hold Z to sleep"
 
 
 
@@ -799,14 +803,15 @@ func _on_strain(strain_pm: int, state: int, fade_pm: int, stance: int) -> void:
 	strain = float(strain_pm) / 1000.0
 	strain_state = state
 	strain_fade = float(fade_pm) / 1000.0
-	stance_confirmed = stance
+	stance_confirmed = stance & 3
+	asleep = (stance & 4) != 0
 	_update_panel_bars()
 
 	if _character != null:
 		_character.refresh()
 
 	if stance_event.is_valid():
-		stance_event.call(stance)
+		stance_event.call(stance & 3)
 
 	if strain_event.is_valid():
 		strain_event.call(strain, state, strain_fade)
@@ -815,6 +820,11 @@ func _on_strain(strain_pm: int, state: int, fade_pm: int, stance: int) -> void:
 # Ask the server for a stance (0 stand, 1 crouch, 2 sit, 3 lie). It answers through stance_confirmed / stance_event.
 func request_stance(wanted: int) -> void:
 	net.inventory_action.rpc_id(1, Net.ACT_STANCE, wanted, 0, 0, Vector3.ZERO)
+
+
+# Ask to fall asleep (1) or wake (0); the server answers through the stance it sends (bit 4 = asleep).
+func request_sleep(want: int) -> void:
+	net.inventory_action.rpc_id(1, Net.ACT_SLEEP, want, 0, 0, Vector3.ZERO)
 
 
 # Movement the over-exertion allows: -1 none (fainted or waking), else a speed cap in m/s (0 = no cap).
@@ -844,6 +854,9 @@ func blackout_level() -> float:
 # The picture's state name and progress for faint.set_state (Art's faint_effect.gd): vision fades over the
 # first vision_frac of a faint ("fainting", progress 0 to 1), then "fainted" holds black while only the heart is heard.
 func faint_state() -> Array:
+	if asleep and strain_state < 2:
+		return ["sleeping", 1.0]
+
 	if strain_state == 2:
 		return ["fainted", 1.0]
 

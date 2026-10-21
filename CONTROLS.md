@@ -19,7 +19,7 @@ The single complete list of every input (keyboard, mouse, held versus tap, conte
 | + / - (also numpad) | Raise or lower how much every spring pours, by about 10 % per press (tuning tool, x0.5 to x40; every pond starts at x10 = 100 m3/s; above x10 rivers and ponds turn muddy brown). Shows "Water flow rate: x10.00 = 100.0 m3/s per spring (1,585,000 gal/min)" for 3 seconds. The water then runs by real physics for two simulated hours ("running...") and redraws as it moves |
 | C | Crouch (toggle): lower eye, slower; kept while moving |
 | X | Sit (toggle): lower still, no movement; any movement key stands you up. Resting drops exertion (the server side is Items') |
-| Z | Lie down (toggle): eye almost at the ground, no movement; any movement key stands you up |
+| Z | Lie down (toggle): eye almost at the ground, no movement; any movement key stands you up. While lying, **hold Z for 3 seconds to sleep** (the screen dims to about 60% dark, "Hold Z to sleep" shows while lying): exertion falls up to twice as fast as lying and health heals up to twice as fast, best under a roof or tree crown, 60% of that on open dry ground. Rain that reaches you stops you sleeping and wakes you; a movement key, a hit or fall, or Z again wakes you; resting at zero exertion for 10 s wakes you rested. Tapping Z while lying still stands you up |
 | Ctrl+X | Admin: dig a 2 m hole where the crosshair meets the ground (up to 80 m away). Water flows into holes that open toward it (testing digging against the water) |
 | F2 | Cycle quality: Low, Medium, High, Ultra (Low is the minimum machine) |
 | F3 | Debug details on or off (the long diagnostic list; default HUD is only build, position, last sound). Also Esc > Settings. Threads add lines with `debug_hud.add_line(name, callable)`. |
