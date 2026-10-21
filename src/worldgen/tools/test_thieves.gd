@@ -28,7 +28,7 @@ func make(weather: Dictionary = {}):
 	a.wind = func(): return weather
 	a.setup()
 
-	for sp in ["rabbit", "deer", "moose", "fox"]:
+	for sp in ["rabbit", "deer", "moose", "fox", "horse"]:
 		a.cfg["species"][sp]["target_per_player"] = 0
 
 	a.cfg["senses"] = {"scent_gain": 0.5}

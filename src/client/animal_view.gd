@@ -27,7 +27,7 @@ func on_rows(rows: Array) -> void:
 			if _bodies.size() >= MAX_DRAWN:
 				continue
 
-			var node: Node3D = _make_flock(id) if int(row[1]) == 6 else _make_fox() if int(row[1]) == 5 else _make_moose() if int(row[1]) == 4 else (_make_wolf() if int(row[1]) == 3 else (_make_deer() if int(row[1]) == 2 else _make_rabbit()))
+			var node: Node3D = _make_flock(id) if int(row[1]) == 6 else _make_horse() if int(row[1]) == 7 else _make_fox() if int(row[1]) == 5 else _make_moose() if int(row[1]) == 4 else (_make_wolf() if int(row[1]) == 3 else (_make_deer() if int(row[1]) == 2 else _make_rabbit()))
 			node.position = row[2]
 			add_child(node)
 			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2}
@@ -222,6 +222,25 @@ func _make_fox() -> Node3D:
 
 	for child in node.find_children("*", "MeshInstance3D", true, false):
 		(child as MeshInstance3D).material_override = rust
+
+	return node
+
+
+# A horse for now (placeholder until Art): the deer shape without antlers, bay coat, about 1.4 times as big (2.1 m long, 1.6 m at the back).
+func _make_horse() -> Node3D:
+	var node: Node3D = _make_deer()
+	node.scale = Vector3(1.4, 1.4, 1.4)
+	var rig: Node = node.get_node("Rig")
+
+	for k in 2:
+		var last: Node = rig.get_child(rig.get_child_count() - 1)   # the two antlers are the last children
+		rig.remove_child(last)
+		last.queue_free()
+
+	var bay: StandardMaterial3D = _material(Color(0.36, 0.2, 0.11))
+
+	for child in node.find_children("*", "MeshInstance3D", true, false):
+		(child as MeshInstance3D).material_override = bay
 
 	return node
 

@@ -30,6 +30,7 @@ func make(players: Array):
 	a.cfg["species"]["moose"]["target_per_player"] = 0   # big game and the fox have their own tests
 	a.cfg["species"]["fox"]["target_per_player"] = 0
 	a.cfg["species"]["duck"]["target_per_player"] = 0
+	a.cfg["species"]["horse"]["target_per_player"] = 0
 	a.rng.seed = 7
 	return a
 

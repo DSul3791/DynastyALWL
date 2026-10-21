@@ -49,6 +49,7 @@ UNITS = [
     ("trade", "src/worldgen/tools/test_trade.gd"),
     ("flocks", "src/worldgen/tools/test_flocks.gd"),
     ("trails", "src/worldgen/tools/test_trails.gd"),
+    ("horses", "src/worldgen/tools/test_horses.gd"),
     ("ai_contract", "src/worldgen/tools/test_ai_contract.gd"),
     ("block_roundtrip", "src/worldgen/tools/test_block_roundtrip.gd"),
     ("forge_models", "src/worldgen/tools/test_forge_models.gd"),

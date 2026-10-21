@@ -93,6 +93,9 @@ func spawn(sp: String, x: float, z: float) -> int:
 		var span: Array = def["flock"].get("birds", [6, 14])
 		animals[id]["birds"] = rng.randi_range(int(span[0]), int(span[1]))   # luck-exempt: how many birds in a flock
 
+	if def.has("tame"):
+		animals[id]["tame"] = rng.randf()   # luck-exempt: how tamable this horse is born (0 flighty, 1 friendly)
+
 	if def.has("defend"):
 		animals[id]["protective"] = rng.randf() < float(def.get("protective_share", 0.3))   # luck-exempt: whether this animal defends young
 		animals[id]["cool"] = 0.0
@@ -333,6 +336,28 @@ func tick(delta: float) -> void:
 		_top_up(players, _top_idx)
 
 
+# How close a player may come before this animal runs: the species' spook_m, scaled by a horse's own tame value (a flighty one
+# runs from far off, a friendly one lets you close).
+func _spook_m(a: Dictionary, def: Dictionary) -> float:
+	var base: float = float(def.get("spook_m", 14.0))
+
+	if def.has("tame") and a.has("tame"):
+		var scale: Array = def["tame"].get("spook_scale", [1.0, 1.0])
+		var run_at: float = base * lerpf(float(scale[0]), float(scale[1]), float(a["tame"]))
+
+		if float(a["tame"]) >= float(def["tame"].get("curious_min", 0.7)):
+			run_at = minf(run_at, float(def["tame"].get("stop_m", 9.0)) * 0.6)   # a curious horse only shies when you are right on it
+
+		return run_at
+
+	return base
+
+
+# A friendly horse (tame value at curious_min or more) is not wary of a player within curious_m: it watches and ambles over.
+func _curious(a: Dictionary, def: Dictionary, seen_d: float) -> bool:
+	return def.has("tame") and float(a.get("tame", 0.0)) >= float(def["tame"].get("curious_min", 0.7)) and seen_d <= float(def["tame"].get("curious_m", 45.0))
+
+
 func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: float, seen_p: Vector3) -> void:
 	ticks_run += 1
 	var def: Dictionary = species_def(a["sp"])
@@ -371,7 +396,7 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		a["timer"] -= dt
 
 		if a["timer"] <= 0.0:
-			if seen_d > float(def.get("spook_m", 14.0)) * 1.5:
+			if seen_d > _spook_m(a, def) * 1.5:
 				a["state"] = GRAZE
 				a["timer"] = _graze_time(def)
 			else:
@@ -392,7 +417,7 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 	if stands and seen_d <= float(def["defend"].get("warn_m", 20.0)):
 		if big_game.warn(a, seen_p):
 			return
-	elif seen_d <= float(def.get("spook_m", 14.0)) and a["state"] != FLEE and not stands:
+	elif seen_d <= _spook_m(a, def) and a["state"] != FLEE and not stands:
 		_bolt(a, seen_p, def)
 
 		# The sentinel (the first to notice) alarms the herd: each mate follows after a short random moment.
@@ -408,7 +433,7 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 	if a["state"] == ALERT:
 		a["alert"] -= dt
 
-		if seen_d <= float(def.get("spook_m", 14.0)):
+		if seen_d <= _spook_m(a, def):
 			_bolt(a, seen_p, def)
 		elif a["alert"] <= 0.0 or seen_d > alert_m * 1.3:
 			a["state"] = GRAZE
@@ -416,7 +441,7 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 
 		return
 
-	if a["state"] != FLEE and alert_m > 0.0 and seen_d <= alert_m and a["alert"] <= 0.0 and seen_d > float(def.get("spook_m", 14.0)):
+	if a["state"] != FLEE and alert_m > 0.0 and seen_d <= alert_m and a["alert"] <= 0.0 and not _curious(a, def, seen_d) and seen_d > _spook_m(a, def):
 		var span2: Array = def.get("alert_s", [1.0, 2.0])
 		a["state"] = ALERT
 		a["alert"] = rng.randf_range(float(span2[0]), float(span2[1]))   # luck-exempt: how long an animal watches
@@ -442,6 +467,13 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 			var wander: float = float(def.get("wander_m", 6.0))
 			var angle: float = rng.randf() * TAU   # luck-exempt: where a grazing animal hops next
 			a["target"] = a["home"] + Vector3(cos(angle), 0.0, sin(angle)) * rng.randf_range(1.0, wander)   # luck-exempt: as above
+
+			# A friendly horse is curious: it ambles toward a player it can see until it is stop_m away.
+			if _curious(a, def, seen_d) and seen_d > float(def["tame"].get("stop_m", 9.0)):
+				var toward: Vector3 = Vector3(seen_p.x - a["pos"].x, 0.0, seen_p.z - a["pos"].z).normalized()
+				a["target"] = a["pos"] + toward * minf(wander, seen_d - float(def["tame"].get("stop_m", 9.0)))
+				a["home"] = a["target"]
+
 			a["state"] = HOP
 
 		return

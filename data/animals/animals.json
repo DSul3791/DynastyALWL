@@ -277,6 +277,64 @@
 				"climb_m": 25.0,
 				"alarm_m": 60.0
 			}
+		},
+		"horse": {
+			"number": 7,
+			"name": "Horse",
+			"target_per_player": 2,
+			"spawn_share": 0.5,
+			"health": 60.0,
+			"walk_mps": 1.6,
+			"flee_mps": 14.0,
+			"spook_m": 25.0,
+			"safe_m": 70.0,
+			"graze_s": [
+				6.0,
+				22.0
+			],
+			"wander_m": 12.0,
+			"flee_run_m": 80.0,
+			"herd": [
+				3,
+				6
+			],
+			"alarm_s": [
+				0.2,
+				0.8
+			],
+			"alert_m": 50.0,
+			"alert_s": [
+				1.5,
+				3.5
+			],
+			"burst_s": 8.0,
+			"trot_share": 0.5,
+			"zig_deg": 12.0,
+			"zig_leg_m": 20.0,
+			"herd_pull_m": 14.0,
+			"eye_m": 1.6,
+			"tame": {
+				"note": "Each horse is born with a tamable value 0..1. Its spook distance scales from spook_scale[0] (0, flighty: runs from far off) to spook_scale[1] (1, tame: lets you close); at curious_min or more it walks up to a calm player to within stop_m, watching from curious_m.",
+				"spook_scale": [
+					2.0,
+					0.3
+				],
+				"curious_min": 0.7,
+				"curious_m": 45.0,
+				"stop_m": 9.0
+			},
+			"exclude": [
+				53301.0,
+				68427.0,
+				1500.0
+			],
+			"habitat": {
+				"slope_max": 0.4,
+				"slope_run_m": 6.0,
+				"above_player_m": 250.0,
+				"water_edge_m": 3.0,
+				"forest": false
+			}
 		}
 	},
 	"senses": {
