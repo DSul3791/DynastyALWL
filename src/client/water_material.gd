@@ -23,6 +23,8 @@ uniform float edge_alpha = 0.12;     // the thinnest water
 uniform float fastest_m_s = 2.5;     // drawn speed of the steepest running water
 uniform vec3 sky_top : source_color = vec3(0.33, 0.47, 0.68);         // the sky shader's colours (sky_clouds.gd)
 uniform vec3 sky_horizon : source_color = vec3(0.63, 0.68, 0.75);
+uniform float far_fade_from_m = 3200.0;   // the sea plane is 12 km across: from here out the water takes the horizon colour
+uniform float far_fade_to_m = 5400.0;
 uniform vec3 cloud_lit : source_color = vec3(0.92, 0.92, 0.9);
 uniform vec3 cloud_shadow : source_color = vec3(0.46, 0.52, 0.62);
 uniform float cloud_height_m = 2000.0;   // the cloud layer of sky_clouds.gd, so the mirrored clouds
@@ -267,6 +269,15 @@ void fragment() {
 	}
 	ROUGHNESS = 0.08 + 0.3 * foam;
 	SPECULAR = 0.6;
+
+	// The far edge of the sea plane (Tyler, 2026-10-21, a dark tube-like strip at the horizon in every still): the sea
+	// is a 12 km plane, so its rim stood against the sky as a band. Far away the water fades to the sky's horizon
+	// colour and goes opaque, so the rim and the sky meet without an edge.
+	float far_fade = smoothstep(far_fade_from_m, far_fade_to_m, distance_m);
+	ALBEDO *= 1.0 - far_fade;
+	EMISSION = mix(EMISSION, sky_horizon, far_fade);
+	ALPHA = mix(ALPHA, 1.0, far_fade);
+	SPECULAR *= 1.0 - far_fade;
 
 	// Ice (still water only: running water never freezes). The sheet grows in from the shore and from the shallows,
 	// in patches, until it covers everything; a thin sheet is clear and dark (the bed shows), a thick one milky white-blue

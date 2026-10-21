@@ -80,7 +80,9 @@ vec3 base_sky(vec3 dir, bool with_sun) {
 		color = mix(sky_horizon_color, sky_top_color, clamp(1.0 - pow(1.0 - c, 1.0 / 0.15), 0.0, 1.0));
 	} else {
 		float c = (v_angle - PI * 0.5) / (PI * 0.5);
-		color = mix(ground_horizon_color, ground_bottom_color, clamp(1.0 - pow(1.0 - c, 1.0 / 0.02), 0.0, 1.0));
+		// Tyler (2026-10-21): the sea plane ends 6 km out, so from height a strip of this below-horizon sky shows
+		// between its rim and the horizon, and it was a dark brown band. It now stays close to the horizon colour.
+		color = mix(ground_horizon_color, mix(ground_horizon_color, ground_bottom_color, 0.25), clamp(1.0 - pow(1.0 - c, 1.0 / 0.02), 0.0, 1.0));
 	}
 	if (with_sun && LIGHT0_ENABLED) {
 		float sun_angle = acos(clamp(dot(LIGHT0_DIRECTION, dir), -1.0, 1.0));
