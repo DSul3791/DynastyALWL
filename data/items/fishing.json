@@ -1,0 +1,95 @@
+{
+	"note": "Fishing (Items refill 12, Tyler's model). No fish entities: a cast is a server roll. Click with the rod at water within reach_m; after a wait (wait_s) something may bite for window_s seconds and a second click lands it. chance = base x fishing skill x time of day x weather x bait x stock; all through fate() so luck applies. Each 'cell' (cell_m square) of water holds a hidden stock that a catch uses up and that comes back one fish per regrow_s (a game day is 3600 real seconds), so a camper cannot empty a pond. The water type of a cell (stream, pond or lake, by its position) picks the species. Raw fish is raw_sick and spoils quickly. Not built: ice holes (frozen water gives no catch yet), spear fishing, bait items beyond the list, fish drawn in the water.",
+	"reach_m": 8.0,
+	"wait_s": [
+		6.0,
+		22.0
+	],
+	"window_s": 3.0,
+	"cooldown_s": 2.0,
+	"move_cancel_m": 6.0,
+	"base_chance": 0.55,
+	"bait_mult": 1.5,
+	"bait": [
+		"berries",
+		"raw_meat",
+		"plant_fibre"
+	],
+	"hour_mult": [
+		[
+			5.0,
+			8.5,
+			1.3
+		],
+		[
+			17.0,
+			20.5,
+			1.3
+		],
+		[
+			10.0,
+			15.0,
+			0.7
+		]
+	],
+	"night_mult": 0.9,
+	"rain_mult": 1.2,
+	"storm_mult": 0.4,
+	"cloud_mult": 1.1,
+	"cold_c": 5.0,
+	"cold_mult": 0.6,
+	"cell_m": 128.0,
+	"stock_base": 4,
+	"stock_extra": 8,
+	"stock_max": 12,
+	"regrow_s": 3600.0,
+	"types": [
+		"stream",
+		"pond",
+		"lake"
+	],
+	"species": {
+		"stream": [
+			[
+				"trout",
+				0.7
+			],
+			[
+				"perch",
+				0.3
+			]
+		],
+		"pond": [
+			[
+				"carp",
+				0.6
+			],
+			[
+				"perch",
+				0.4
+			]
+		],
+		"lake": [
+			[
+				"pike",
+				0.3
+			],
+			[
+				"perch",
+				0.4
+			],
+			[
+				"carp",
+				0.3
+			]
+		]
+	},
+	"say_cast": "You cast your line.",
+	"say_bite": "Something bites! Click now.",
+	"say_nothing": "Nothing bites. Try again, or somewhere else.",
+	"say_away": "It got away.",
+	"say_no_water": "There is no water within reach.",
+	"say_wait": "Wait for a bite.",
+	"say_early": "You pull in the empty line.",
+	"say_empty": "The fish here have gone quiet for now."
+}

@@ -39,7 +39,12 @@
 			"seed_bundle": 60,
 			"raw_meat": 250,
 			"roast_meat": 700,
-			"fiddleheads": 40
+			"fiddleheads": 40,
+			"trout": 220,
+			"perch": 200,
+			"carp": 260,
+			"pike": 280,
+			"roast_fish": 650
 		},
 		"by_suffix": {
 			"berries": 90,

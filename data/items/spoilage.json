@@ -32,7 +32,12 @@
 		"willow_bark_tea": 48,
 		"raw_meat": 18,
 		"roast_meat": 48,
-		"fiddleheads": 24
+		"fiddleheads": 24,
+		"trout": 12,
+		"perch": 12,
+		"carp": 12,
+		"pike": 12,
+		"roast_fish": 36
 	},
 	"by_suffix": {
 		"berries": 36,

@@ -227,6 +227,8 @@ func mouse_button(button: int, pressed: bool) -> bool:
 
 			if str(_inv.table.entry(held_id()).get("tool_class", "")) == "spade":
 				_dig_here()
+			elif str(_inv.table.entry(held_id()).get("tool_class", "")) == "rod":
+				_net.inventory_action.rpc_id(1, Net.ACT_FISH, held_slot, 0, 0, _camera.global_position - _camera.global_transform.basis.z * 4.0)
 			else:
 				_inv._on_notice(_other_tool_hint())
 
@@ -488,6 +490,8 @@ func _fill_here() -> void:
 
 func _other_tool_hint() -> String:
 	match str(_inv.table.entry(held_id()).get("tool_class", "")):
+		"rod":
+			return "Click at the water to cast, and click again when something bites"
 		"spade":
 			return "The spade digs roots and bulbs (press E at a plant) and digs the ground (left click at it) and fills it (right click, one shovelful)"
 

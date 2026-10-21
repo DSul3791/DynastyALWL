@@ -156,7 +156,13 @@
 		"animal_fat": 0.1,
 		"feather": 0.005,
 		"workbench_kit": 12.0,
-		"workbench": 12.0
+		"workbench": 12.0,
+		"fishing_rod": 0.3,
+		"trout": 0.5,
+		"perch": 0.4,
+		"carp": 1.2,
+		"pike": 1.5,
+		"roast_fish": 0.35
 	},
 	"by_suffix": {
 		"berries": 0.05,

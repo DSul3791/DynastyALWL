@@ -252,6 +252,14 @@ func _init() -> void:
 		if station != "" and not stations.has(station):
 			fail("recipes.json %s: unknown station '%s'" % [recipe_id, station])
 
+	# Fishing: every catch and bait is an item, and the catches are obtainable (by fishing).
+	var fishing: Dictionary = _read("fishing.json")
+
+	for water in fishing.get("species", {}):
+		for row in fishing["species"][water]:
+			want_item.call(String(row[0]), "fishing.json %s" % water)
+			obtainable[String(row[0])] = true
+
 	# Cooking.
 	want_item.call(String(cooking.get("gives", "")), "cooking.json gives")
 	obtainable[String(cooking.get("gives", ""))] = true

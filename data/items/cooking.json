@@ -26,7 +26,8 @@
 		"stomach_tea": 12,
 		"chamomile_tea": 12,
 		"willow_bark_tea": 12,
-		"roast_meat": 14
+		"roast_meat": 14,
+		"roast_fish": 12
 	},
 	"fuel_note": "Burn times in GAME seconds (clock is 24:1): a stick 2 game minutes, driftwood 15, firewood 30, a log 2 game hours. A placed campfire starts lit with 20 sticks of fuel.",
 	"fuel": {
@@ -44,12 +45,20 @@
 		"log"
 	],
 	"cooks_into": {
-		"raw_meat": "roast_meat"
+		"raw_meat": "roast_meat",
+		"trout": "roast_fish",
+		"perch": "roast_fish",
+		"carp": "roast_fish",
+		"pike": "roast_fish"
 	},
 	"raw_sick": {
 		"by_id": {
 			"raw_meat": 24,
-			"fiddleheads": 12
+			"fiddleheads": 12,
+			"trout": 12,
+			"perch": 12,
+			"carp": 12,
+			"pike": 12
 		},
 		"by_suffix": {
 			"beans": 12,

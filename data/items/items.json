@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = placeholder price of one item in coins (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 75,
+	"next_number": 81,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -862,6 +862,73 @@
 			"kind": "structure",
 			"stack": 1,
 			"look_alikes": []
+		},
+		"fishing_rod": {
+			"number": 75,
+			"name": "Fishing rod",
+			"description": "A stick with a line and a hook. Hold it and click at the water, then click again when something bites.",
+			"kind": "tool",
+			"tool_class": "rod",
+			"durability": 80,
+			"repair": [
+				[
+					"cordage",
+					1
+				]
+			],
+			"stack": 1,
+			"value": 10,
+			"look_alikes": []
+		},
+		"trout": {
+			"number": 76,
+			"name": "Trout",
+			"description": "A cold-water fish from fast streams. Cook it before you eat it.",
+			"kind": "food",
+			"stack": 10,
+			"value": 8,
+			"look_alikes": [],
+			"future": true
+		},
+		"perch": {
+			"number": 77,
+			"name": "Perch",
+			"description": "A common fish of ponds and lakes. Cook it before you eat it.",
+			"kind": "food",
+			"stack": 10,
+			"value": 6,
+			"look_alikes": [],
+			"future": true
+		},
+		"carp": {
+			"number": 78,
+			"name": "Carp",
+			"description": "A heavy fish of still ponds. Cook it before you eat it.",
+			"kind": "food",
+			"stack": 10,
+			"value": 7,
+			"look_alikes": [],
+			"future": true
+		},
+		"pike": {
+			"number": 79,
+			"name": "Pike",
+			"description": "A long hunting fish of lakes. Cook it before you eat it.",
+			"kind": "food",
+			"stack": 10,
+			"value": 10,
+			"look_alikes": [],
+			"future": true
+		},
+		"roast_fish": {
+			"number": 80,
+			"name": "Roasted fish",
+			"description": "Fish cooked over a fire. Filling, and it keeps a day or two.",
+			"kind": "food",
+			"stack": 10,
+			"value": 12,
+			"look_alikes": [],
+			"future": true
 		}
 	}
 }

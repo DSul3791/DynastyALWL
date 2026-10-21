@@ -160,6 +160,10 @@ var send_remains: Callable          # (peer, rows [[position Vector3, seconds le
 var _remains_sent: Dictionary = {}
 var send_worn: Callable             # (peer, PackedInt32Array of item numbers, one per body slot in clothing.json order)
 var _worn_sent: Dictionary = {}
+var _fishing: Dictionary = {}         # peer -> {phase "wait" or "bite", at msec, spot, cell, bites}
+var _fish_stock: Dictionary = {}      # cell key -> [fish left, unix time of the last count]
+var _last_fish: Dictionary = {}
+var _fishing_cfg: Dictionary = {}
 var _station_said: Dictionary = {}
 var _wear_carry: Dictionary = {}     # peer -> fraction of a wear point not yet charged (tool_care skill)
 var _clothing: Dictionary = {}
@@ -321,6 +325,8 @@ func peer_connected_hello(peer: int, key: String) -> void:
 
 
 func peer_left(peer: int) -> void:
+	_fishing.erase(peer)
+	_last_fish.erase(peer)
 	_wear_carry.erase(peer)
 	_swimming.erase(peer)
 	_last_dose.erase(peer)
@@ -450,6 +456,8 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_eat(peer, inv, a)
 	elif kind == Net.ACT_DRINK:
 		_drink_water(peer, a, inv)
+	elif kind == Net.ACT_FISH:
+		_fish(peer, inv, a)
 	elif kind == Net.ACT_WEAR:
 		_wear(peer, inv, a)
 	elif kind == Net.ACT_UNWEAR:
@@ -517,6 +525,7 @@ func tick(delta: float) -> void:
 		_fires(spent)
 		_vitals_tick(spent)
 		_craft_tick(spent)
+		_fish_tick()
 		_remains_tick(spent)
 		_spoil_tick(spent)
 
@@ -3616,6 +3625,191 @@ func station_near(peer: int, station: String, level: int = 1) -> bool:
 			return true
 
 	return false
+
+
+# --- Fishing (data/items/fishing.json, Tyler's model: no fish entities, a roll per cast) ---
+
+func _fishing_data() -> Dictionary:
+	if _fishing_cfg.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/fishing.json"))
+		_fishing_cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {"none": true}
+
+	return _fishing_cfg
+
+
+func _fish_cell(pos: Vector3) -> Vector2i:
+	var size: float = float(_fishing_data().get("cell_m", 128.0))
+	return Vector2i(int(floor(pos.x / size)), int(floor(pos.z / size)))
+
+
+func _cell_hash(cell: Vector2i) -> int:
+	return absi((cell.x * 73856093) ^ (cell.y * 19349663))
+
+
+# Fish left in a cell of water: the hidden stock, which comes back one fish per regrow_s up to the cell's own best.
+func fish_stock(cell: Vector2i) -> int:
+	var cfg: Dictionary = _fishing_data()
+	var best: int = mini(int(cfg.get("stock_base", 4)) + _cell_hash(cell) % maxi(int(cfg.get("stock_extra", 8)), 1), int(cfg.get("stock_max", 12)))
+	var key: String = "%d,%d" % [cell.x, cell.y]
+	var row: Array = _fish_stock.get(key, [best, _unix()])
+	var back: int = int(floor((_unix() - float(row[1])) / maxf(float(cfg.get("regrow_s", 3600.0)), 1.0)))
+	var now_n: int = mini(int(row[0]) + back, best)
+	_fish_stock[key] = [now_n, _unix() if back > 0 else float(row[1])]
+	return now_n
+
+
+func _fish_chance(peer: int, cell: Vector2i, bait: bool) -> float:
+	var cfg: Dictionary = _fishing_data()
+	var chance: float = float(cfg.get("base_chance", 0.55)) * skill_factor(peer, "fish")
+	var hour: float = fposmod(float(game_seconds.call()), 86400.0) / 3600.0 if game_seconds.is_valid() else 12.0
+	var tod: float = float(cfg.get("night_mult", 0.9)) if (hour < 5.0 or hour >= 21.0) else 1.0
+
+	for band in cfg.get("hour_mult", []):
+		if hour >= float(band[0]) and hour < float(band[1]):
+			tod = float(band[2])
+
+	chance *= tod
+	var weather: Dictionary = weather_now.call() if weather_now.is_valid() else {}
+
+	if float(weather.get("storm", 0.0)) > 0.3:
+		chance *= float(cfg.get("storm_mult", 0.4))
+	elif float(weather.get("rain", 0.0)) > 0.0:
+		chance *= float(cfg.get("rain_mult", 1.2))
+
+	if float(weather.get("cloud", 0.0)) > 0.6:
+		chance *= float(cfg.get("cloud_mult", 1.1))
+
+	if float(weather.get("temp_c", 15.0)) < float(cfg.get("cold_c", 5.0)):
+		chance *= float(cfg.get("cold_mult", 0.6))
+
+	if bait:
+		chance *= float(cfg.get("bait_mult", 1.5))
+
+	return clampf(chance, 0.02, 0.95)
+
+
+func _fish_species(cell: Vector2i) -> String:
+	var cfg: Dictionary = _fishing_data()
+	var types: Array = cfg.get("types", ["pond"])
+	var water: String = str(types[(_cell_hash(cell) / 7) % types.size()])
+	var roll: float = _fate_rng.randf()
+	var table_rows: Array = cfg.get("species", {}).get(water, [])
+	var acc: float = 0.0
+
+	for row in table_rows:
+		acc += float(row[1])
+
+		if roll <= acc:
+			return str(row[0])
+
+	return str(table_rows[table_rows.size() - 1][0]) if not table_rows.is_empty() else "perch"
+
+
+func _fish(peer: int, inv, slot: int) -> void:
+	var cfg: Dictionary = _fishing_data()
+
+	if cfg.has("none") or slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or not _peer_pos.has(peer) or str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", "")) != "rod" or _is_broken(inv.numbers[slot], inv.wear[slot]):
+		return
+
+	var now: int = Time.get_ticks_msec()
+	var state: Dictionary = _fishing.get(peer, {})
+
+	if not state.is_empty():
+		if str(state["phase"]) == "bite" and now <= int(state["at"]):
+			_fish_land(peer, inv, slot, state)
+		else:
+			_fishing.erase(peer)
+			_say(peer, str(cfg.get("say_early", "")) if str(state["phase"]) == "wait" else str(cfg.get("say_away", "")))
+
+		return
+
+	if now - int(_last_fish.get(peer, -100000)) < int(float(cfg.get("cooldown_s", 2.0)) * 1000.0):
+		return
+
+	_last_fish[peer] = now
+
+	if not water_near.is_valid() or not bool(water_near.call(_peer_pos[peer], float(cfg.get("reach_m", 8.0)))):
+		_say(peer, str(cfg.get("say_no_water", "")))
+		return
+
+	var cell: Vector2i = _fish_cell(_peer_pos[peer])
+	var bait_slot: int = _fish_bait_slot(inv, cfg)
+	var chance: float = _fish_chance(peer, cell, bait_slot >= 0)
+
+	if bait_slot >= 0:
+		inv.take_from_slot(bait_slot, 1)
+
+	_wear_slot(peer, inv, slot, "fish")
+	var bites: bool = fish_stock(cell) > 0 and fate(peer, "fish", chance)
+	var wait_s: Array = cfg.get("wait_s", [6.0, 22.0])
+	var wait_ms: int = int(lerpf(float(wait_s[0]), float(wait_s[1]), _fate_rng.randf()) * 1000.0)   # luck-exempt: the length of a wait
+	_fishing[peer] = {"phase": "wait", "at": now + wait_ms, "spot": _peer_pos[peer], "cell": cell, "bites": bites}
+	_say(peer, str(cfg.get("say_cast", "")))
+
+
+func _fish_bait_slot(inv, cfg: Dictionary) -> int:
+	for slot in range(inv.SLOTS):
+		if inv.numbers[slot] == 0:
+			continue
+
+		var id: String = table.id_of(inv.numbers[slot])
+
+		for word in cfg.get("bait", []):
+			if id == str(word) or id.ends_with(str(word)):
+				return slot
+
+	return -1
+
+
+func _fish_land(peer: int, inv, slot: int, state: Dictionary) -> void:
+	_fishing.erase(peer)
+	var cell: Vector2i = state["cell"]
+	var key: String = "%d,%d" % [cell.x, cell.y]
+
+	if fish_stock(cell) <= 0:
+		_say(peer, str(_fishing_data().get("say_empty", "")))
+		return
+
+	_fish_stock[key][0] = int(_fish_stock[key][0]) - 1
+	var species: String = _fish_species(cell)
+	var left: int = inv.add(table.number_of(species), 1)
+
+	if left > 0:
+		drop_in_world(table.number_of(species), left, _peer_pos[peer])
+
+	practice(peer, "fish")
+	_say(peer, "You land a %s." % table.name_of(table.number_of(species)).to_lower())
+	_dirty = true
+
+
+func _fish_tick() -> void:
+	if _fishing.is_empty():
+		return
+
+	var now: int = Time.get_ticks_msec()
+	var cfg: Dictionary = _fishing_data()
+
+	for peer in _fishing.keys():
+		var state: Dictionary = _fishing[peer]
+
+		if not _peer_pos.has(peer) or _peer_pos[peer].distance_to(state["spot"]) > float(cfg.get("move_cancel_m", 6.0)):
+			_fishing.erase(peer)
+			continue
+
+		if now < int(state["at"]):
+			continue
+
+		if str(state["phase"]) == "wait":
+			if bool(state["bites"]):
+				state["phase"] = "bite"
+				state["at"] = now + int(float(cfg.get("window_s", 3.0)) * 1000.0)
+				_say(peer, str(cfg.get("say_bite", "")))
+			else:
+				_fishing.erase(peer)
+				_say(peer, str(cfg.get("say_nothing", "")))
+		else:
+			_fishing.erase(peer)
+			_say(peer, str(cfg.get("say_away", "")))
 
 
 func _station_name(station: String) -> String:

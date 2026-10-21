@@ -37,6 +37,10 @@
 		"dig": {
 			"skill": "digging",
 			"effect": "yield"
+		},
+		"fish": {
+			"skill": "fishing",
+			"effect": "yield"
 		}
 	},
 	"system": {
@@ -157,6 +161,16 @@
 			},
 			"k": 0.025,
 			"max_factor": 1.67
+		},
+		"fishing": {
+			"name": "Fishing",
+			"parent": "gathering",
+			"attrs": {
+				"memory": 0.5,
+				"fitness": 0.2
+			},
+			"k": 0.02,
+			"max_factor": 1.5
 		}
 	}
 }
