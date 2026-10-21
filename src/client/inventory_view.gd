@@ -1307,12 +1307,13 @@ const PICKUP_FILES := {
 const STONE_VIEW_M := 75.0
 const STICK_VIEW_M := 100.0
 # Dave 2026-10-21: big enough to stand out in the tall thick grass (about 0.9 m, nearly full cover). Stones come out about
-# 33 to 50 cm across and sticks about 0.8 to 1.5 m long; sticks rest on top of the grass (a lift), stones sit in the soil
+# 1 to 2 m across and sticks about 2.4 to 4.5 m long (three times the 2026-10-20 size, Dave 2026-10-21); sticks rest on top of the grass (a lift), stones sit in the soil
 # but proud of the blades. A little extra brightness and a faint warm glow keep them readable in shade.
-const STONE_SCALE := Vector2(2.4, 3.4)
-const STICK_SCALE := Vector2(2.0, 2.7)
-const STONE_LIFT_M := 0.05
-const STICK_LIFT_M := 0.22
+const PICKUP_SIZE_MULT := 3.0   # Dave, 2026-10-21: three times the earlier size
+const STONE_SCALE := Vector2(2.4, 3.4) * PICKUP_SIZE_MULT
+const STICK_SCALE := Vector2(2.0, 2.7) * PICKUP_SIZE_MULT
+const STONE_LIFT_M := 0.05 * PICKUP_SIZE_MULT
+const STICK_LIFT_M := 0.22 * PICKUP_SIZE_MULT
 const PICKUP_BRIGHT := 1.3
 const PICKUP_GLOW := Color(0.13, 0.11, 0.08)
 var _pickup_meshes: Dictionary = {}   # group -> Array of Mesh (empty when the files are not there)

@@ -45,8 +45,8 @@ CLIENTS = [
         ("held E gets all four stones", r"Hold test: most in one step \d+, total " + NUM, 3, 12),
         ("held E stops when nothing is in reach", r"last two steps " + NUM, 0, 0),
         ("stones use the real meshes", r"Natural look: stone uses " + NUM + " real meshes", 6, 6),
-        ("stones stand out (33 cm and up)", r"Natural size: stone lies " + NUM + " to", 0.3, 0.6),
-        ("sticks stand out (80 cm and up)", r"Natural size: stick lies " + NUM + " to", 0.8, 1.6),
+        ("stones stand out (1 m and up, three times the old size)", r"Natural size: stone lies " + NUM + " to", 0.9, 1.8),
+        ("sticks stand out (2.4 m and up, three times the old size)", r"Natural size: stick lies " + NUM + " to", 2.3, 4.8),
         ("sticks use the real meshes", r"Natural look: stick uses " + NUM + " real meshes", 3, 3),
     ]),
     ("plantpick", ["--plantpick"], 6000, [
