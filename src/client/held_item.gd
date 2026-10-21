@@ -9,10 +9,20 @@ extends Node
 
 const Net := preload("res://src/stream/terrain_net.gd")
 const PlacementRules := preload("res://src/shared/placement_rules.gd")
+const RagdollScript := preload("res://src/client/ragdoll_body.gd")
 
 const HOTBAR_FILE := "user://hotbar.txt"      # the chosen hotbar slot is remembered between sessions
 const REST := Vector3(0.38, -0.32, -0.55)       # model offset from the camera
 const AIMED := Vector3(0.28, -0.12, -0.35)
+# First-person arms (Art's ragdoll rig, assets/character/README.md): rooted at the chest a little below and behind the camera,
+# pitched forward so a tool in the hand points ahead instead of hanging down. The tool goes to the hand on the viewer's right
+# (the rig's hand_mount_l: its left is +X, see assets/character/README.md), grip at the mount origin, its business end tipped
+# up TOOL_TILT_DEG from the fingers. Rendered with software Vulkan and looked at (still frames of idle, jab, swing).
+const ARMS_POS := Vector3(0.0, -0.1, -0.15)
+const ARMS_PITCH_DEG := 50.0
+const TOOL_TILT_DEG := 20.0
+const GRIP_ALONG_Y := {"axe": 0.25, "torch": 0.25, "knife": 0.05}   # model +Y runs handle to head: the grip's distance from the model origin
+const SPEAR_GRIP_Z := 0.3
 const JAB_REACH := 0.7
 const JAB_S := 0.28
 const THROW_SPEED := 24.0
@@ -30,6 +40,8 @@ var _root: Node3D
 var _ground_below: Callable
 var held_light_budget: Callable          # () -> true when the held light may be on beside a nearby fire light (not at Low)
 var _model: Node3D
+var _arms                                 # first-person arms (Ragdoll.new(true)) on the camera; the held tool sits in its right hand
+var _mounted: bool = false                # the model is in the hand: the arm animations move it, not the offsets below
 var _label: Label
 var _jab_t: float = -1.0
 var _flights: Array = []                  # local visuals of spears this player threw: {node, vel, age}
@@ -75,6 +87,25 @@ func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hu
 	_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
 	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hud_layer.add_child(_label)
+	_arms = RagdollScript.new(true)
+	_arms.name = "Arms"
+	_arms.position = ARMS_POS
+	_arms.rotation_degrees.x = ARMS_PITCH_DEG
+	camera.add_child(_arms)
+	_arms.play("idle")
+
+
+# First person shows the arms; third person (the body is drawn instead) hides them and stops their animation.
+func set_first_person(on: bool) -> void:
+	if _arms != null and _arms.visible != on:
+		_arms.visible = on
+		_arms.animation_player.active = on
+
+
+func _arm_play(clip: String, seconds: float) -> void:
+	if _arms != null and _arms.visible:
+		var length: float = _arms.animation_player.get_animation(clip).length
+		_arms.play(clip, length / maxf(seconds, 0.05))
 
 
 # A hotbar key: hold that slot, or put it away when it is the one already held.
@@ -155,6 +186,7 @@ func mouse_button(button: int, pressed: bool) -> bool:
 		if button == MOUSE_BUTTON_LEFT and pressed and _swing_t < 0.0:
 			_swing_t = 0.0
 			_swing_hit = false
+			_arm_play("swing", SWING_S)
 
 			if _sound != null:
 				_sound.hits.swing("axe", _camera.global_position - _camera.global_transform.basis.z * 0.6)
@@ -174,6 +206,7 @@ func mouse_button(button: int, pressed: bool) -> bool:
 			_throw()
 		elif _jab_t < 0.0:
 			_jab_t = 0.0
+			_arm_play("jab", JAB_S)
 
 			if _sound != null:
 				_sound.spear.jab(_camera.global_position - _camera.global_transform.basis.z)
@@ -184,6 +217,7 @@ func mouse_button(button: int, pressed: bool) -> bool:
 
 
 func _throw() -> void:
+	_arm_play("throw", 0.8)
 	var direction: Vector3 = -_camera.global_transform.basis.z
 	_net.inventory_action.rpc_id(1, Net.ACT_THROW, held_slot, 0, 0, direction)
 	aiming = false
@@ -228,6 +262,9 @@ func _process(delta: float) -> void:
 	_show_model()
 	_label.text = _caption()
 
+	if _arms != null and _arms.visible and _arms.current() != "idle" and not _arms.is_one_shot_playing():
+		_arms.play("idle")
+
 	if _swing_t >= 0.0:
 		_swing_t += delta
 
@@ -246,7 +283,10 @@ func _process(delta: float) -> void:
 			flicker.visible = not held_light_budget.is_valid() or held_light_budget.call() or not _inv.fire_light_near(_camera.global_position, 8.0)
 			flicker.light_energy = 1.4 + 0.3 * sin(float(Time.get_ticks_msec()) * 0.017)
 
-		_model.position = _model.position.lerp(REST, clampf(delta * 14.0, 0.0, 1.0))
+		if not _mounted:
+			_model.position = _model.position.lerp(REST, clampf(delta * 14.0, 0.0, 1.0))
+	elif _model != null and _mounted:
+		pass   # in the hand: the arm animation moves it
 	elif _model != null and _is_knife():
 		_model.position = _model.position.lerp(REST, clampf(delta * 14.0, 0.0, 1.0))
 	elif _model != null and _is_axe():
@@ -407,8 +447,31 @@ func _show_model() -> void:
 
 	if number != 0:
 		_model = _make_spear_model() if _is_spear() else (_make_torch_model() if _is_torch() else (_make_knife_model() if _is_knife() else _make_axe_model()))
+		_mount_model()
+
+
+# Put the model in the hand: its business end leads along the fingers (-Z of the mount) and the grip sits in the palm.
+# Falls back to the old spot in front of the camera when there are no arms.
+func _mount_model() -> void:
+	_mounted = _arms != null
+	var kind: String = "spear" if _is_spear() else ("torch" if _is_torch() else ("knife" if _is_knife() else "axe"))
+
+	if not _mounted:
 		_camera.add_child(_model)
 		_model.position = REST
+		return
+
+	_arms.hand_mount_l.add_child(_model)
+	var tilt: Basis = Basis(Vector3.RIGHT, deg_to_rad(TOOL_TILT_DEG))
+	var turn: Basis = Basis.IDENTITY
+	var grip: Vector3 = Vector3(0.0, 0.0, -SPEAR_GRIP_Z)
+
+	if kind != "spear":
+		turn = Basis(Vector3.RIGHT, deg_to_rad(-90.0))   # +Y (handle to head) becomes -Z (along the fingers)
+		grip = Vector3(0.0, 0.0, -float(GRIP_ALONG_Y[kind]))
+
+	_model.basis = tilt * turn
+	_model.position = tilt * grip
 
 
 # A torch in hand: a stick with a glowing head and one warm light (only while it is held).

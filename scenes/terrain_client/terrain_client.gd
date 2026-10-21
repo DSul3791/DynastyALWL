@@ -1947,6 +1947,9 @@ func _update_view(delta: float) -> void:
 
 	view_cam.position = Vector3(0.0, VIEW_HEIGHT, 1.0) * _view_now
 	_avatar.visible = _view_now > 0.5
+
+	if held != null:
+		held.set_first_person(_view_now <= 0.5)
 	_avatar.animation_player.active = _avatar.visible      # no animation cost in first person
 	# Feet on the ground whatever the stance (the capsule's bottom stays put; the body origin is its standing middle).
 	_avatar.position.y = -float(StanceScript.SHAPE_HEIGHT[StanceScript.STAND]) * 0.5

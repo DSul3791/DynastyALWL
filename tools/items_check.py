@@ -102,6 +102,7 @@ CLIENTS = [
         ("cancel empties the queue and refunds", r"after cancel entries " + NUM + r", fibre", 0, 0),
         ("queue strip hides again", r"queue strip hidden (true)", None, None),
         ("Use holds a tool", r"matches (true)\), strip boxes 10", None, None),
+        ("the axe is drawn in the arms' hand", r"Arms test: axe model in the right hand (true), arms shown true", None, None),
         ("Use again puts it away", r"Use again, hand slot " + NUM, -1, -1),
         ("a tool deep in the pack moves to the hotbar and is held", r"Use moved it to slot \d+ and holds it \((true)\), on hotbar true", None, None),
     ]),
