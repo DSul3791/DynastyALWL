@@ -1,0 +1,7 @@
+{
+	"note": "Mandy (Dave 2026-10-21): grass walked through takes a full recover_s of real time to stand back up, so the trail of where anyone walked shows. squash is how far it lies down (0.75 = a quarter of its height left). Animals and NPCs leave the same trail: trail_budget walkers per pass, nearest first, within trail_reach_m.",
+	"recover_s": 300.0,
+	"squash": 0.75,
+	"trail_budget": 12,
+	"trail_reach_m": 60.0
+}

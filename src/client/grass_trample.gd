@@ -12,11 +12,16 @@ extends RefCounted
 # moves, so a wrapped texel never shows a stamp from the far side of the map (grass reaches 90 m).
 
 const SIZE := 256
-const RECOVER_S := 300.0
+const CONFIG := "res://data/look/grass_trample.json"
+const RECOVER_S := 300.0               # default; data/look/grass_trample.json recover_s decides
 const RADIUS_M := 0.8
 var upload_msec: int = 100              # 200 on Low (set_trample_rate in grass_view.gd)
 
 var texture: ImageTexture = null
+var recover_s: float = RECOVER_S
+var squash: float = 0.75
+var trail_budget: int = 12
+var trail_reach_m: float = 60.0
 
 var _image: Image = null
 var _data: PackedByteArray = PackedByteArray()
@@ -27,6 +32,14 @@ var _tz: int = 1 << 30
 
 
 func _init() -> void:
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(CONFIG)) if FileAccess.file_exists(CONFIG) else null
+
+	if parsed is Dictionary:
+		recover_s = clampf(float(parsed.get("recover_s", RECOVER_S)), 10.0, 3600.0)
+		squash = clampf(float(parsed.get("squash", 0.75)), 0.1, 0.95)
+		trail_budget = int(parsed.get("trail_budget", 12))
+		trail_reach_m = float(parsed.get("trail_reach_m", 60.0))
+
 	_data.resize(SIZE * SIZE * 3)
 	_data.fill(0)
 	_image = Image.create_from_data(SIZE, SIZE, false, Image.FORMAT_RGB8, _data)

@@ -65,7 +65,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 550
+const BUILD := 551
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -886,6 +886,7 @@ func _welcome_body(info: Dictionary) -> void:
 	var animal_view: Node3D = AnimalViewScript.new()
 	animal_view.name = "Animals"
 	add_child(animal_view)
+	_animal_view_node = animal_view
 	net.animals_received.connect(animal_view.on_rows)
 	net.blood_received.connect(animal_view.on_blood)
 	items = InventoryViewScript.new()
@@ -1059,6 +1060,30 @@ func _on_filled(center: Vector3, radius: float, _material: int) -> void:
 
 	if grass != null:
 		grass.ground_changed(center, radius)
+
+
+# Animals and NPCs leave the same trail in the grass as the player (data/look/grass_trample.json): the nearest few walkers each pass.
+var _trail_msec: int = 0
+var _animal_view_node: Node3D = null
+
+
+func _stamp_walkers(now: int) -> void:
+	if now < _trail_msec:
+		return
+
+	_trail_msec = now + 300
+	grass.set_trail_multiplier(float(items.get("trail_mult")) if items != null and items.get("trail_mult") != null else 1.0)   # Tracking skill (Radar's value, 1 until it exists)
+	var here: Vector3 = body.global_position
+	var spots: Array = []
+
+	for view in [_animal_view_node, _npc_view]:
+		if view != null:
+			spots.append_array(view.trail_points(here, grass.trail_reach_m()))
+
+	spots.sort_custom(func(a, b): return a.distance_squared_to(here) < b.distance_squared_to(here))
+
+	for n in range(mini(spots.size(), grass.trail_budget())):
+		grass.stamp(spots[n])
 
 
 # Placed things clear the ground around them (data/look/placed_clearing.json): grass and litter in grass_view, shrubs and small plants in
@@ -3276,6 +3301,8 @@ func _process(delta: float) -> void:
 
 		if body.is_on_floor() and walk.length() > 0.5:
 			grass.stamp(body.global_position - walk.normalized() * 1.3)
+
+		_stamp_walkers(now)
 		Probe.stop("grass", tg)
 
 	if _bake.running and now >= _bake_check_msec:

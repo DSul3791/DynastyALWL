@@ -137,6 +137,8 @@ uniform float wind_strength = 0.12;
 uniform float backlight = 0.0;
 uniform sampler2D trample : filter_nearest, repeat_enable, hint_default_black;   // where the grass was trodden (grass_trample.gd)
 uniform float trample_now = 0.0;
+uniform float recover_s = 300.0;        // data/look/grass_trample.json
+uniform float trample_squash = 0.75;
 varying vec3 blade_color;
 varying float tip;
 
@@ -153,9 +155,11 @@ void vertex() {
 	float flat_down = 0.0;
 	if (trod.b > 0.5) {
 		float age = mod(trample_now - (trod.r * 255.0 + trod.g * 255.0 * 256.0) + 65536.0, 65536.0);
-		flat_down = 1.0 - smoothstep(0.0, 300.0, age);
+		// Stays down most of the time (so the trail reads) and stands back up smoothly, fully only after recover_s.
+		float q = clamp(age / recover_s, 0.0, 1.0);
+		flat_down = 1.0 - q * q;
 	}
-	VERTEX.y *= 1.0 - 0.6 * flat_down;
+	VERTEX.y *= 1.0 - trample_squash * flat_down;
 	VERTEX *= fade;
 	blade_color = INSTANCE_CUSTOM.rgb * (1.0 - 0.12 * flat_down);
 }
@@ -199,6 +203,7 @@ var shore_cards: int = 0                 # pebbles and reeds drawn now
 var _terrain: Node3D
 var _trample = null                      # GrassTrample: where the grass is trodden down
 var _trample_msec: int = 0
+var _trail_mult: float = 1.0
 var _flora
 var _tables
 var _soil_color: Dictionary = {}         # soil id -> Color
@@ -287,6 +292,8 @@ func setup(terrain: Node3D, flora, tables) -> void:
 	for n in range(_materials.size()):
 		if not _is_solid(n):
 			_materials[n].set_shader_parameter("trample", _trample.texture)
+			_materials[n].set_shader_parameter("recover_s", _trample.recover_s)
+			_materials[n].set_shader_parameter("trample_squash", _trample.squash)
 
 	set_radius(radius_m)
 
@@ -304,6 +311,28 @@ func grass_at(x: float, z: float, soil: int) -> Vector2:
 
 # Grass lies down under a foot at this position (the local player each step; other players and creatures
 # the client can see call it too). It rises again over five minutes of real time (grass_trample.gd).
+# Tracking skill (Dave 2026-10-21): a good tracker sees the grass stay down longer on their own client. Base recover_s times the multiplier.
+func set_trail_multiplier(mult: float) -> void:
+	var m: float = clampf(mult, 1.0, 6.0)
+
+	if is_equal_approx(m, _trail_mult):
+		return
+
+	_trail_mult = m
+
+	for n in range(_materials.size()):
+		if not _is_solid(n):
+			_materials[n].set_shader_parameter("recover_s", _trample.recover_s * m)
+
+
+func trail_reach_m() -> float:
+	return _trample.trail_reach_m
+
+
+func trail_budget() -> int:
+	return _trample.trail_budget
+
+
 func stamp(position: Vector3) -> void:
 	if enabled and _trample != null:
 		_trample.stamp(position)

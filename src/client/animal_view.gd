@@ -75,6 +75,26 @@ func on_blood(points: PackedVector3Array) -> void:
 			spot.scale = Vector3(scale_xz, 1.0, scale_xz * 0.8)
 
 
+# Where this view's bodies walked since the last call (grass trails, Dave 2026-10-21): a point a little behind each one that moved, within
+# max_m of `from`, so no blade drops flat in front of anyone. Costs one distance test per body.
+func trail_points(from: Vector3, max_m: float) -> Array:
+	var out: Array = []
+
+	for id in _bodies:
+		var b: Dictionary = _bodies[id]
+		var at: Vector3 = b["node"].position
+		var last: Vector3 = b.get("trail_at", at)
+		var step: Vector3 = Vector3(at.x - last.x, 0.0, at.z - last.z)
+
+		if step.length() < 0.5 or from.distance_to(at) > max_m:
+			continue
+
+		b["trail_at"] = at
+		out.append(at - step.normalized() * 0.6)
+
+	return out
+
+
 func drawn_count() -> int:
 	return _bodies.size()
 
