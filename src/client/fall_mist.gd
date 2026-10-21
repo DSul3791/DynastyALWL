@@ -5,11 +5,13 @@ extends Node3D
 # rise and drift from the landing point, size and count following the flow. The wet dark rock and
 # moss around the base are in ground_material.gd (set_falls).
 #
-# Cost follows quality (F2): two falls at most, cards per fall Low 8, Medium 20, High 36, Ultra
-# 48; every card is one small alpha quad (no screen read, no extra pass).
+# Cost follows quality (F2): two falls at most; puffs per fall Low 64, Medium 96, High 128, Ultra
+# 160, all one draw per fall (one small alpha quad each, no screen read, no extra pass), plus one
+# foam ring disc per fall (one draw, a 2-triangle quad with a scrolling ring shader). The plume's
+# height and thickness follow fall height times flow, so a tall big fall throws a taller plume.
 
 const FALLS := 2
-const CARDS := [8, 20, 36, 48]
+const CARDS := [64, 96, 128, 160]   # one GPU particle draw per fall, small soft puffs
 const SHOW_M := 160.0           # beyond this distance a fall draws no mist
 
 const SHADER := """
@@ -31,6 +33,24 @@ void fragment() {
 
 var _quality: int = 1
 var _nodes: Array = []
+var _rings: Array = []
+var _ring_material: ShaderMaterial = null
+
+const RING_SHADER := """
+shader_type spatial;
+render_mode blend_mix, unshaded, cull_disabled, depth_draw_never, shadows_disabled;
+uniform float strength = 1.0;
+void fragment() {
+	vec2 p = UV * 2.0 - 1.0;
+	float d = length(p);
+	float t = TIME * 0.55;
+	float rings = 0.5 + 0.5 * sin((d * 9.0 - t * 6.28) + sin(p.x * 7.0 + t * 2.0) * 0.9);
+	float edge = 1.0 - smoothstep(0.55, 1.0, d);
+	float core = smoothstep(0.0, 0.5, d);
+	ALBEDO = vec3(0.93, 0.96, 0.98);
+	ALPHA = edge * (0.32 + 0.5 * rings * core) * strength;
+}
+"""
 var _material: ShaderMaterial = null
 
 
@@ -40,6 +60,10 @@ func setup(quality: int) -> void:
 	shader.code = SHADER
 	_material = ShaderMaterial.new()
 	_material.shader = shader
+	var ring_shader: Shader = Shader.new()
+	ring_shader.code = RING_SHADER
+	_ring_material = ShaderMaterial.new()
+	_ring_material.shader = ring_shader
 
 	for n in range(FALLS):
 		var particles: GPUParticles3D = GPUParticles3D.new()
@@ -76,6 +100,17 @@ func setup(quality: int) -> void:
 		add_child(particles)
 		_nodes.append(particles)
 
+		var ring: MeshInstance3D = MeshInstance3D.new()
+		ring.name = "Foam%d" % n
+		var plane: PlaneMesh = PlaneMesh.new()
+		plane.size = Vector2(1.0, 1.0)
+		plane.material = _ring_material
+		ring.mesh = plane
+		ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		ring.visible = false
+		add_child(ring)
+		_rings.append(ring)
+
 
 # falls: flora.fall_list() rows (base, flow, width); at: the player.
 func update(falls: Array, at: Vector3) -> void:
@@ -92,9 +127,11 @@ func update(falls: Array, at: Vector3) -> void:
 
 	for n in range(_nodes.size()):
 		var particles: GPUParticles3D = _nodes[n]
+		var foam: MeshInstance3D = _rings[n]
 
 		if n >= near.size():
 			particles.emitting = false
+			foam.visible = false
 			continue
 
 		var fall: Dictionary = near[n][1]
@@ -104,10 +141,22 @@ func update(falls: Array, at: Vector3) -> void:
 		particles.global_position = base + Vector3(0.0, 1.0, 0.0)
 		var process: ParticleProcessMaterial = particles.process_material as ParticleProcessMaterial
 		process.emission_sphere_radius = clampf(width * 0.5, 2.0, 12.0)
-		var strength: float = clampf(0.4 + flow / 15.0, 0.4, 1.0)
-		process.scale_min = 3.0 * strength
-		process.scale_max = 6.0 * strength + 1.0
+		var drop: float = 6.0
+		if fall.has("top"):
+			drop = maxf((fall["top"] as Vector3).y - base.y, 1.0)
+		# Height times flow: a tall big fall throws a tall thick plume, a small step a little haze.
+		var power: float = clampf(sqrt(drop * flow) / 14.0, 0.25, 1.0)
+		process.scale_min = 1.6 * (0.5 + power)
+		process.scale_max = 3.2 * (0.5 + power)
+		process.initial_velocity_min = 0.5 + 0.7 * power
+		process.initial_velocity_max = 1.2 + 1.6 * power
+		process.gravity = Vector3(0.0, 0.1 + 0.3 * power, 0.0)
 		particles.emitting = true
+		var foam_size: float = clampf(width * 1.3 + drop * 0.35, 4.0, 22.0)
+		foam.global_position = base + Vector3(0.0, 0.08, 0.0)
+		foam.scale = Vector3(foam_size, 1.0, foam_size)
+		_ring_material.set_shader_parameter("strength", 0.6 + 0.4 * power)
+		foam.visible = true
 
 
 func set_quality(quality: int) -> void:
