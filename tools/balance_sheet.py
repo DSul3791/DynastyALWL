@@ -109,19 +109,20 @@ cold_c = wrm["comfort_c"] - (100 - wrm["hurt_at"]) / wrm["gain"]
 L += ["## Warmth", "", "Cold starts to hurt health when the body's target warmth drops under %d, which on a still dry day is about %.0f C (comfort %.0f C, %.1f warmth points per degree). Wind chill up to %.0f C, rain or snow on you x%.1f, swimming follows the water (see Swimming); a fire within %.0f m is worth +%.0f C; cover cuts wind to %.0f%%." % (wrm["hurt_at"], cold_c, wrm["comfort_c"], wrm["gain"], wrm["wind_chill_c"], wrm["rain_mult"], wrm["fire_radius_m"], wrm["fire_c"], wrm["covered_wind_share"] * 100), "", "Warmth moves toward its target with a time constant of %.0f game hours falling and %.1f rising; health drains at most %.2f per real second, never below 1." % (wrm["tau_cool_h"], wrm["tau_warm_h"], wrm["hurt_per_s"] * 2), ""]
 L += ["## Sickness", "", "Rotten food: sick %.0f game hours (%.0f real minutes), exertion floor %.0f%%, a symptom every %.0f s, %dx faster asleep. Medicine takes off %.0f hours." % (sick["duration_h"], sick["duration_h"] / 24.0 * 60, sick["exertion_floor"] * 100, sick["symptom_every_s"], sick["sleep_mult"], vit["medicines"]["medicine"]["cure_h"]), ""]
 sys_ = skl["system"]
-L += ["## Skills", "", "Practice per verified success is about %.1f x difficulty x (1 - level/100), with a %.0f s cooldown per skill and a soft cap of %.0f points per game day." % (sys_["gain_per_success"], sys_["cooldown_s"], sys_["day_cap"]), "", "| Skill | k | Level after 50 / 150 / 500 clean successes (average attributes) | Top effect |", "|---|---|---|---|"]
+L += ["## Skills", "", "Skills run 1 to %d and are trained in steps of %d (an untrained skill stops at %d, each training level adds %d). Each success adds about %.1f practice units x difficulty, with a %.0f s cooldown per skill and a soft cap of %.0f units a game day; a skill costs %.0f units for its first point and %.1f%% more for every point after. Idle skills decay after %.0f game days, halving every %.0f days, never under %.0f%% of the best." % (sys_["max_value"], sys_["step"], sys_["step"], sys_["step"], sys_["gain_units"], sys_["cooldown_s"], sys_["day_cap_units"], sys_["base_cost"], (sys_["growth"] - 1.0) * 100.0, sys_["grace_days"], sys_["half_life_days"], sys_["floor_share"] * 100), "", "| Skill | Parents | Top effect |", "|---|---|---|"]
 for sid, sk in skl["skills"].items():
-    if "attrs" not in sk:
-        continue
-    row = []
-    for n in (50, 150, 500):
-        p = 0.0
-        for _ in range(n):
-            lvl = 10 + 90 * (1 - math.exp(-sk["k"] * p))
-            p += sys_["specific_share"] * sys_["gain_per_success"] * (1 - lvl / 100.0)
-        row.append("%d" % (10 + 90 * (1 - math.exp(-sk["k"] * p))))
-    L.append("| %s | %.3f | %s | x%.2f |" % (sk["name"], sk["k"], " / ".join(row), sk["max_factor"]))
-L += ["", "Decay: after %.0f idle game days practice halves every %.0f days, never under %.0f%% of the best." % (sys_["grace_days"], sys_["half_life_days"], sys_["floor_share"] * 100), ""]
+    L.append("| %s | %s | x%.2f |" % (sk["name"], ", ".join(sk.get("parents", {}).keys()) or "root", sk.get("max_factor", 1.0)))
+L.append("")
+
+# --- Coins and prices (Radar, build 548) ---
+coin = load("coins.json")
+tr = coin["trade"]
+L += ["## Coins and shop prices", "", "10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold. A stranger pays %.0f%% of an item's value and is paid %.0f%% for it; reputation, charisma and luck move that toward at best x%.2f and %.0f%% (never past). A trader tires of buying the same item: each unit sold lowers its price %.0f points down to %.0f%%, back %.0f points a minute." % (tr["sell_markup"] * 100, tr["buy_discount"] * 100, tr["min_sell"], tr["max_buy"] * 100, tr["demand"]["drop_per_sale"] * 100, tr["demand"]["floor"] * 100, tr["demand"]["recover_per_min"]), "", "| Item | Value (copper) | You pay | You are paid |", "|---|---|---|---|"]
+for iid, it in items.items():
+    v = it.get("value", 0)
+    if v >= 12 and it.get("kind") != "coin" and not it.get("future"):
+        L.append("| %s | %d | %d | %d |" % (it["name"], v, round(v * tr["sell_markup"]), max(int(v * tr["buy_discount"]), 1)))
+L.append("")
 
 # --- Survival day, all vitals together (Items refill 12) ---
 cook = load("cooking.json"); clo = load("items.json")["items"]
