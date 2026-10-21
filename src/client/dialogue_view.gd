@@ -21,6 +21,7 @@ var _shop_ids: PackedStringArray = PackedStringArray()
 var _shop_pay: float = 1.3                 # what you pay per unit of value
 var _shop_get: float = 0.55                # what the trader pays per unit of value
 var _shop_buys: PackedStringArray = PackedStringArray()
+var _shop_tired: Dictionary = {}           # item id -> demand multiple (the trader is tired of buying it)
 var _shop_buy_box: VBoxContainer
 var _shop_sell_box: VBoxContainer
 var _shop_purse: Label
@@ -224,13 +225,17 @@ func _build_shop(layer: CanvasLayer) -> void:
 	layer.add_child(_shop_panel)
 
 
-func _on_shop(npc_id: String, title: String, ids: PackedStringArray, pay_milli: int, get_milli: int, buys: PackedStringArray) -> void:
+func _on_shop(npc_id: String, title: String, ids: PackedStringArray, pay_milli: int, get_milli: int, buys: PackedStringArray, tired_ids: PackedStringArray, tired_milli: PackedInt32Array) -> void:
 	_shop_npc = npc_id
 	_shop_title = title
 	_shop_ids = ids
 	_shop_pay = float(pay_milli) / 1000.0
 	_shop_get = float(get_milli) / 1000.0
 	_shop_buys = buys
+	_shop_tired.clear()
+
+	for i in tired_ids.size():
+		_shop_tired[tired_ids[i]] = float(tired_milli[i]) / 1000.0
 	_panel.visible = false
 	_shop_panel.visible = true
 	_refresh_shop()
@@ -262,7 +267,8 @@ func _price_to_get(slot: int) -> int:
 	if items.table.shelf_units(number) > 0:
 		life = minf(life, items.table.freshness(number, items.inventory.wear[slot]))
 
-	return maxi(int(floor(float(value) * _shop_get * life + 0.0001)), 1) if life > 0.0 else 0
+	var tired: float = float(_shop_tired.get(items.table.id_of(number), 1.0))
+	return maxi(int(floor(float(value) * _shop_get * tired * life + 0.0001)), 1) if life > 0.0 else 0
 
 
 func _refresh_shop() -> void:

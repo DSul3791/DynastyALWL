@@ -34,6 +34,12 @@
 		"luck_share": 0.25,
 		"luck_strength": 0.04,
 		"min_sell": 1.05,
-		"max_buy": 0.9
+		"max_buy": 0.9,
+		"demand": {
+			"note": "A trader's demand for an item falls as you sell it: each unit sold lowers what they pay for that item by drop_per_sale (of the base price), never under floor, and it comes back recover_per_min sales a minute. It stops selling endless sticks for a fortune. Shared by everyone at that trader.",
+			"drop_per_sale": 0.03,
+			"floor": 0.3,
+			"recover_per_min": 4.0
+		}
 	}
 }

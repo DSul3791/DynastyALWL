@@ -315,13 +315,14 @@ func _ready() -> void:
 	trade.items = items
 	trade.npcs = npcs
 	trade.setup()
-	trade.send_shop = func(peer, npc_id, title, ids, pay, got, buys): net.shop.rpc_id(peer, npc_id, title, ids, pay, got, buys)
+	trade.send_shop = func(peer, npc_id, title, ids, pay, got, buys, tired_ids, tired): net.shop.rpc_id(peer, npc_id, title, ids, pay, got, buys, tired_ids, tired)
 	dialogue.trade = trade
 	net.trade_requested.connect(func(peer, npc_id, kind, a, count):
 		var said: String = trade.deal(peer, npc_id, kind, a, count)
 
 		if said != "":
-			items._say(peer, said))
+			items._say(peer, said)
+			trade.open(peer, npc_id))   # the window is sent again with the new demand
 	items.npc_name = func(id): return str(npcs.npcs.get(id, {}).get("name", id))
 	dialogue.hour_now = func(): return game_clock.hour()
 	dialogue.send_say = func(peer, id, npc_name, text, voice, choices, ends): net.npc_say.rpc_id(peer, id, npc_name, text, voice, choices, ends)

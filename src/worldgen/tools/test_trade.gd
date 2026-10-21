@@ -37,7 +37,9 @@ func _init() -> void:
 	trade.npcs = npcs
 	trade.setup()
 	var opened: Array = []
-	trade.send_shop = func(peer, npc, title, ids, pay, got, buys): opened.append([npc, ids, pay, got])
+	var clock: Array = [1000.0]
+	trade.now = func(): return clock[0]
+	trade.send_shop = func(_peer, npc, _title, ids, pay, got, _buys, _tired_ids, _tired): opened.append([npc, ids, pay, got])
 	check(trade.open(1, "hob") and opened.size() == 1, "Hob's shop opens beside him")
 	check(not trade.open(1, "edda"), "an NPC without a shop has no window")
 	var pay: int = int(opened[0][2])
@@ -75,6 +77,24 @@ func _init() -> void:
 	items.set_attribute(1, "charisma", -10)
 	var m_bad: Dictionary = trade.multipliers(1, "hob")
 	check(float(m_bad["pay"]) > float(m_rep["pay"]), "poor charisma costs more")
+
+	# Demand: selling the same thing over and over pays less each time and recovers with time.
+	items._characters["tradekey0001"]["luck"] = 0
+	items.set_attribute(1, "charisma", 0)
+	items.add_rep(1, "hob", -30)
+	var stone: int = items.table.number_of("stone")
+	items.give_to(1, "stone", 60)
+	var slot_s: int = items.inventory_of(1).numbers.find(stone)
+	var purse0: int = items.coins_of(1)
+	trade.deal(1, "hob", 1, slot_s, 1)
+	var first: int = items.coins_of(1) - purse0
+	var purse1: int = items.coins_of(1)
+	trade.deal(1, "hob", 1, slot_s, 40)
+	var rest: int = items.coins_of(1) - purse1
+	check(first >= 1 and rest < 40, "selling forty stones at once pays less than a copper each in the end (%d for 40)" % rest)
+	check(trade.demand("hob", "stone") <= 0.5, "and the trader is tired of stones (%.2f)" % trade.demand("hob", "stone"))
+	clock[0] += 600.0
+	check(trade.demand("hob", "stone") > 0.9, "ten minutes later the demand has come back (%.2f)" % trade.demand("hob", "stone"))
 
 	# Worthless and rotten things are not bought; damaged tools pay less.
 	check(trade.price_to_get(0, 0.55) == 0 and trade.price_to_get(20, 0.55, 0.5) == 5 and trade.price_to_get(1, 0.55) == 1, "worthless pays nothing, half-worn pays half, a copper item pays at least 1")

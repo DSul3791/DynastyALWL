@@ -9,8 +9,10 @@ const TALK_RANGE_M := 4.5
 
 var items                       # ServerItems
 var npcs                        # ServerNpcs
-var send_shop: Callable         # (peer, npc id, title, stock ids, buy_milli, sell_milli, buys kinds)
+var send_shop: Callable         # (peer, npc id, title, stock ids, buy_milli, sell_milli, buys kinds, demand ids, demand_milli)
+var now: Callable               # () -> seconds; tests set it
 var _shops: Dictionary = {}
+var _sold: Dictionary = {}      # "npc|item" -> [sales (float), time] the trader's weariness of that item
 
 
 func setup() -> void:
@@ -44,6 +46,26 @@ func multipliers(peer: int, npc_id: String) -> Dictionary:
 	return {"pay": sell, "get": buy, "shift": shift}
 
 
+func _clock() -> float:
+	return float(now.call()) if now.is_valid() else Time.get_unix_time_from_system()
+
+
+# 1.0 for an item the trader has not been selling lately, falling with each unit you sell, to the floor.
+func demand(npc_id: String, item_id: String) -> float:
+	var c: Dictionary = _cfg().get("demand", {})
+	var rec: Array = _sold.get("%s|%s" % [npc_id, item_id], [0.0, 0.0])
+	var n: float = maxf(float(rec[0]) - float(c.get("recover_per_min", 4.0)) * (_clock() - float(rec[1])) / 60.0, 0.0)
+	return clampf(1.0 - n * float(c.get("drop_per_sale", 0.03)), float(c.get("floor", 0.3)), 1.0)
+
+
+func _note_sale(npc_id: String, item_id: String, count: int) -> void:
+	var c: Dictionary = _cfg().get("demand", {})
+	var key: String = "%s|%s" % [npc_id, item_id]
+	var rec: Array = _sold.get(key, [0.0, 0.0])
+	var n: float = maxf(float(rec[0]) - float(c.get("recover_per_min", 4.0)) * (_clock() - float(rec[1])) / 60.0, 0.0)
+	_sold[key] = [n + float(count), _clock()]
+
+
 func price_to_pay(value: int, mult: float) -> int:
 	return maxi(int(ceil(float(value) * mult - 0.0001)), 1) if value > 0 else 0
 
@@ -73,7 +95,17 @@ func open(peer: int, npc_id: String) -> bool:
 	for k in shop.get("buys", []):
 		kinds.append(str(k))
 
-	send_shop.call(peer, npc_id, str(shop.get("title", "Trade")), ids, int(round(float(m["pay"]) * 1000.0)), int(round(float(m["get"]) * 1000.0)), kinds)
+	var tired_ids: PackedStringArray = PackedStringArray()
+	var tired: PackedInt32Array = PackedInt32Array()
+
+	for key in _sold:
+		var parts: PackedStringArray = str(key).split("|")
+
+		if parts[0] == npc_id and demand(npc_id, parts[1]) < 0.999:
+			tired_ids.append(parts[1])
+			tired.append(int(round(demand(npc_id, parts[1]) * 1000.0)))
+
+	send_shop.call(peer, npc_id, str(shop.get("title", "Trade")), ids, int(round(float(m["pay"]) * 1000.0)), int(round(float(m["get"]) * 1000.0)), kinds, tired_ids, tired)
 	return true
 
 
@@ -146,12 +178,30 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 	if items.table.shelf_units(number2) > 0:
 		life = minf(life, items.table.freshness(number2, inv.wear[a]))
 
-	var each2: int = price_to_get(int(entry.get("value", 0)), float(m["get"]), life)
+	count = mini(count, inv.counts[a])
+	var item_id: String = items.table.id_of(number2)
+	var value: int = int(entry.get("value", 0))
+	var total: int = 0
+	var paid_for: int = 0
+	var base_demand: float = demand(npc_id, item_id)
+	var drop: float = float(_cfg().get("demand", {}).get("drop_per_sale", 0.03))
+	var floor_d: float = float(_cfg().get("demand", {}).get("floor", 0.3))
 
-	if each2 <= 0:
+	# Each unit sold lowers the price of the next.
+	for k in count:
+		var each_k: int = price_to_get(value, float(m["get"]) * maxf(base_demand - drop * float(k), floor_d), life)
+
+		if each_k <= 0:
+			break
+
+		total += each_k
+		paid_for += 1
+
+	if paid_for <= 0:
 		return "That is worth nothing."
 
-	count = mini(count, inv.counts[a])
+	count = paid_for
+	_note_sale(npc_id, item_id, count)
 	var before: Array = items._snapshot(inv)
 	inv.counts[a] -= count
 
@@ -164,5 +214,5 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 	items._send_changes(peer, inv, before)
 	items._gain_quiet = false
 	items._dirty = true
-	items.add_coins(peer, each2 * count, "trade")
-	return "Sold %d %s for %s." % [count, items.table.name_of(number2).to_lower(), items._coin_words(each2 * count)]
+	items.add_coins(peer, total, "trade")
+	return "Sold %d %s for %s." % [count, items.table.name_of(number2).to_lower(), items._coin_words(total)]
