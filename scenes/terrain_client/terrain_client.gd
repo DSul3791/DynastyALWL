@@ -66,7 +66,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 572
+const BUILD := 573
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -85,6 +85,7 @@ const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const WaterVolume := preload("res://src/shared/water_volume.gd")
 const HotbarStripScript := preload("res://src/client/hotbar_strip.gd")
 const PickupFeedScript := preload("res://src/client/pickup_feed.gd")
+const NetSettings := preload("res://src/shared/net_settings.gd")
 const CrashReportScript := preload("res://src/client/crash_report.gd")
 const WaterFallsScript := preload("res://src/worldgen/runtime/water_falls.gd")
 const FloraViewScript := preload("res://src/flora/flora_view.gd")
@@ -648,11 +649,8 @@ func _ready() -> void:
 	# Started by the "play" launcher, whose server may still be loading.
 	if AppConfig.get_command_line_value("role", "") == "play" and _wait_until_msec == 0:
 		_wait_until_msec = Time.get_ticks_msec() + 120000
-	multiplayer.server_disconnected.connect(func():
-		print("Terrain client: server left")
-		if crash_report != null:
-			crash_report.event("server left: the game quits (the server dropped this client, or ended)")
-		_finish(1))
+	multiplayer.server_disconnected.connect(_on_server_lost)
+	multiplayer.connected_to_server.connect(func(): NetSettings.apply((multiplayer.multiplayer_peer as ENetMultiplayerPeer).get_peer(1)))
 	multiplayer.connection_failed.connect(_on_connection_failed)
 	started_msec = Time.get_ticks_msec()
 	_connect()
@@ -669,6 +667,53 @@ func _connect() -> void:
 
 	multiplayer.multiplayer_peer = peer
 	print("Terrain client: connecting to %s:%d" % [_host, _port])
+
+
+# The server dropped this client or ended. A player sees a plain message with Retry and Quit and the world stays
+# visible (the game is paused); a headless test run quits as before. The crash report is written first.
+func _on_server_lost() -> void:
+	print("Terrain client: server left")
+
+	if crash_report != null:
+		crash_report.report_now("server left: the connection to the server was lost")
+
+	if DisplayServer.get_name() == "headless" or _lost_layer != null:
+		_finish(1)
+		return
+
+	_lost_layer = CanvasLayer.new()
+	_lost_layer.layer = 100
+	_lost_layer.process_mode = Node.PROCESS_MODE_ALWAYS
+	var panel: PanelContainer = PanelContainer.new()
+	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	panel.grow_vertical = Control.GROW_DIRECTION_BOTH
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 14)
+	panel.add_child(box)
+	var label: Label = Label.new()
+	label.text = "Connection to the server was lost"
+	label.add_theme_font_size_override("font_size", 32)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(label)
+	var note: Label = Label.new()
+	note.text = "Retry joins again. If the server has stopped, quit and press Play."
+	note.add_theme_font_size_override("font_size", 22)
+	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(note)
+
+	for entry in [["Retry", func(): get_tree().paused = false; get_tree().reload_current_scene()], ["Quit", func(): _finish(1)]]:
+		var button: Button = Button.new()
+		button.text = entry[0]
+		button.custom_minimum_size = Vector2(380.0, 52.0)
+		button.add_theme_font_size_override("font_size", 26)
+		button.pressed.connect(entry[1])
+		box.add_child(button)
+
+	_lost_layer.add_child(panel)
+	add_child(_lost_layer)
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	get_tree().paused = true
 
 
 # While a --wait is running, a server not up yet is tried again.
@@ -2133,6 +2178,7 @@ func _set_menu(open: bool) -> void:
 # the dump aims where the screen centre pointed when the menu opened. The text is printed, shown and copied.
 var _dump_client: String = ""
 var _starter_seeded: int = 0
+var _lost_layer: CanvasLayer             # "Connection to the server was lost" window
 var crash_report                      # CrashReport: breadcrumbs and the report of an unclean last run
 var _previous_run_note_until_msec: int = 0
 var _ground_line: String = ""

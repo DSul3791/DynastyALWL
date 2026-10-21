@@ -19,6 +19,7 @@ extends Node
 #
 # Clients start at the starter spawn point of tile (3,4).
 
+const NetSettings := preload("res://src/shared/net_settings.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
 const SwimScript := preload("res://src/shared/swim.gd")
@@ -444,6 +445,7 @@ func _spawn_point(world_dir: String) -> Vector3:
 
 func _on_peer_connected(peer_id: int) -> void:
 	_never_joined = false
+	NetSettings.apply((multiplayer.multiplayer_peer as ENetMultiplayerPeer).get_peer(peer_id))
 	_peers[peer_id] = {"blocks": 0, "bytes": 0, "since": Time.get_ticks_msec()}
 	_queue_mutex.lock()
 	_connected_peers[peer_id] = true
@@ -1133,7 +1135,7 @@ func _process(delta: float) -> void:
 			_empty_since_msec = 0
 		elif _empty_since_msec == 0:
 			_empty_since_msec = now
-			_quit_grace_msec = 300000 if _never_joined else 10000
+			_quit_grace_msec = 300000 if _never_joined else NetSettings.value("server_empty_grace_s", 120) * 1000
 		elif now - _empty_since_msec >= _quit_grace_msec:
 			print("server: no players left")
 			_quit_at_msec = now
