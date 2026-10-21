@@ -43,6 +43,11 @@ func validate(table) -> void:
 	for npc in cfg["npcs"]:
 		var id: String = str(npc["id"])
 		check(provider.has_npc(id), "%s has a dialogue file" % id)
+		var voices: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/npcs/voices.json")).get("voices", {})
+		check(voices.has(str(npc.get("voice", id))), "%s has a text to voice entry in voices.json" % id)
+
+		if provider.has_npc(id) and provider.trees[id].has("voice"):
+			check(voices.has(str(provider.trees[id]["voice"])), "%s dialogue voice has an entry in voices.json" % id)
 
 		if not provider.has_npc(id):
 			continue
