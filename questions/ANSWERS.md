@@ -20,3 +20,7 @@ Answered: 2026-10-21 23:16 UTC
 Answer: They pass to the heir
 Answered: 2026-10-21 23:17 UTC
 
+## deal-offline | Banking: can a big deal be sealed while the payer is offline?
+Answer: Yes, the agreement waits and seals when the coin is there
+Answered: 2026-10-21 23:17 UTC
+
