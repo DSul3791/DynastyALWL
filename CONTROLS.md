@@ -32,6 +32,7 @@ The single complete list of every input (keyboard, mouse, held versus tap, conte
 | Tab | Open or close the character screen: health, exertion, beating heart, food, water, attributes (luck) and skills. Esc closes it first |
 | Left click | Use the held item (spear: jab; stone axe: swing, with the hit sound of what it strikes, and a blow on bare rock gives a stone; a held torch lights the way; on a tree trunk, repeated blows fell the tree into a trunk and a stump) |
 | Right click (hold) | Spear: aim a throw; then left click throws. Letting go returns to the normal stance |
+| Left click with a spade held | Digs the ground under the crosshair within 3 m: a 0.9 m hole each swing (every 0.7 s), the sound, grass and pebbles there vanish. The server checks the spade, wears it, keeps the hole through restarts and re-bakes |
 | Left click with a campfire kit held | Place the fire where the ring shows: yellow ring = open ground (rain puts the fire out), green = under a tree's crown (the fire survives rain) |
 | Left click with a lean-to kit held | Place the lean-to where the ghost shows; its open front faces you. E near it takes it down (kit back). Anyone under its roof counts as under cover (fires survive rain) |
 | E at a chest | Opens the chest screen: click a stack on the left to take it, a stack in your pack on the right to put it in. Hold E (0.6 s) takes an empty chest down. Esc or I closes |

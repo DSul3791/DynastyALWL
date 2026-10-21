@@ -217,12 +217,12 @@
 		}
 	},
 	"tool_wear": {
-		"note": "Tool wear tuning (job 74). Each use of a tool adds per_use[tool class][kind of work] to its wear (1 when not listed); the tool breaks at its items.json durability and a repair gives back repair_restores of that durability for the items.json repair materials. Kinds of work: gather (a plant yield that needs the tool), rock (stone from an outcrop), tree (one blow on a standing tree), trunk (one blow on a felled trunk), split (one log at the chopping block). Read the sheet: /mnt/project-files/items/TOOL_WEAR.md (tools/tool_wear_sheet.py rewrites it from this data).",
+		"note": "Tool wear tuning (job 74). Each use of a tool adds per_use[tool class][kind of work] to its wear (1 when not listed); the tool breaks at its items.json durability and a repair gives back repair_restores of that durability for the items.json repair materials. Kinds of work: gather (a plant yield that needs the tool), rock (stone from an outcrop), tree (one blow on a standing tree), trunk (one blow on a felled trunk), split (one log at the chopping block), dig (one spade dig of the ground). Read the sheet: /mnt/project-files/items/TOOL_WEAR.md (tools/tool_wear_sheet.py rewrites it from this data).",
 		"repair_restores": 0.5,
 		"per_use": {
 			"axe": {"gather": 1, "rock": 1, "tree": 1, "trunk": 1, "split": 1},
 			"knife": {"gather": 1},
-			"spade": {"gather": 1}
+			"spade": {"gather": 1, "dig": 1}
 		}
 	},
 	"tool_rules": {

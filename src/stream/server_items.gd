@@ -57,6 +57,10 @@ const GatherRules := preload("res://src/shared/gather_rules.gd")
 const GATHER_PACE_MS := 80              # at most about 12 picks a second per player (hold-E sweep)
 const MINE_REACH_M := 4.5
 const MINE_COOLDOWN_MS := 700
+const DIG_REACH_M := 4.5
+const DIG_COOLDOWN_MS := 700
+const DIG_RADIUS_M := 0.9
+const DIG_DEPTH_M := 0.25      # the hole is centred this far below the point struck
 const MINE_CELL_M := 8.0                 # one outcrop patch
 const MINE_STONES_PER_CELL := 6          # stones a patch gives before it is spent...
 const MINE_REGROW_S := 300.0             # ...and one comes back this often (real seconds)
@@ -85,6 +89,7 @@ var standing_near: Callable    # (species name, position, radius) -> [position] 
 var flora_changed: Callable    # (chunk Vector2i) -> a chunk's saplings or trees changed: refresh the server cache and the clients near it
 var tree_info: Callable        # (chunk Vector2i, id) -> {name, position, height, trunk} of a standing tree, or {}
 var cut_tree: Callable         # (chunk Vector2i, id) -> true when the standing tree was removed (and clients told)
+var dig_ground: Callable         # (centre, radius) -> void: cut a hole in the ground and tell everyone; set by the server scene
 var rock_at: Callable          # (x, z) -> true when bare rock shows at the surface there (no soil cover); set by the server scene
 var game_seconds: Callable      # () -> game clock seconds
 var season_now: Callable        # () -> "spring" | "summer" | "autumn" | "winter"
@@ -162,6 +167,7 @@ var _flora_by_name: Dictionary = {}   # flora table rows by species name (yields
 var _picked: Dictionary = {}          # "cx,cz,id" -> game seconds when last picked
 var _flights: Array = []            # thrown things in the air: {number, pos, vel, age}
 var _last_throw: Dictionary = {}    # peer -> msec
+var _last_dig: Dictionary = {}
 var _last_mine: Dictionary = {}     # peer -> msec
 var _last_hit: Dictionary = {}      # peer -> msec
 var _last_process: Dictionary = {}  # peer -> msec
@@ -253,6 +259,7 @@ func peer_left(peer: int) -> void:
 	_known.erase(peer)
 	_last_throw.erase(peer)
 	_last_mine.erase(peer)
+	_last_dig.erase(peer)
 	_last_hit.erase(peer)
 	_last_cook.erase(peer)
 	_last_gather.erase(peer)
@@ -378,6 +385,8 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_process_trunk(peer, inv, a)
 	elif kind == Net.ACT_MINE:
 		_mine(peer, inv, at)
+	elif kind == Net.ACT_DIG:
+		_dig(peer, inv, at)
 	elif kind == Net.ACT_PLACE:
 		_place(peer, inv, a, at, count)
 	elif kind == Net.ACT_THROW:
@@ -658,6 +667,30 @@ func _fly(delta: float) -> void:
 # The stone axe used as a pick (Dave: no stone pickaxe): a blow on bare rock gives a stone. The
 # server checks the axe, the reach, the pace and that rock really shows there, and each 8 m patch
 # of outcrop gives only a few stones before it needs time to recover. No ground is dug.
+# One spade dig (ACT_DIG): needs a whole spade in the pack and the point within reach; paced like mining.
+func _dig(peer: int, inv, at: Vector3) -> void:
+	if not _peer_pos.has(peer) or not dig_ground.is_valid():
+		return
+
+	if _peer_pos[peer].distance_to(at) > DIG_REACH_M:
+		_reject(peer, 0)
+		return
+
+	if not _has_tool(inv, "spade"):
+		_reject(peer, 1)
+		return
+
+	var now: int = Time.get_ticks_msec()
+
+	if now - int(_last_dig.get(peer, -100000)) < DIG_COOLDOWN_MS:
+		return
+
+	_last_dig[peer] = now
+	_wear_tool(peer, inv, "spade", "dig")
+	dig_ground.call(at - Vector3(0.0, DIG_DEPTH_M, 0.0), DIG_RADIUS_M)
+	_dirty = true
+
+
 func _mine(peer: int, inv, at: Vector3) -> void:
 	if not _peer_pos.has(peer) or not rock_at.is_valid():
 		return

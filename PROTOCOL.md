@@ -1,4 +1,4 @@
-# Protocol (PROTOCOL_VERSION 24, src/stream/terrain_net.gd)
+# Protocol (PROTOCOL_VERSION 28, src/stream/terrain_net.gd)
 
 Kept current by whoever changes the wire: add the row, bump PROTOCOL_VERSION to the next free number (pull first and read terrain_net.gd), and note the build.
 
@@ -63,6 +63,7 @@ Kept current by whoever changes the wire: add the row, bump PROTOCOL_VERSION to 
 | 21 | ACT_CRAFT_QUEUE | a = recipe number, count = how many (1 to 20); the server takes the ingredients now and crafts in order, screen open or not; max 10 entries per player | 22 |
 | 22 | ACT_CRAFT_CANCEL | a = queue entry index as last sent; cancels it, the server hands back the ingredients of its unfinished crafts | 22 |
 | 24 | ACT_DRINK | no arguments: drink one mouthful (vitals.json thirst.drink_ml) from water within thirst.reach_m of the player's feet; refused with reject(0) when no water is near, paced by drink_pace_ms | 24 |
+| 25 | ACT_DIG | at = the ground point under the crosshair: one spade dig (0.9 m sphere, 0.25 m below the point); needs a whole spade (tool class spade) in the pack, point within 4.5 m of the player, one per 0.7 s; refused with reject(0 too far, 1 no spade). The server logs the hole (digs.dat) and answers everyone with dug() and tile_changed() | 28 |
 | 23 | ACT_FALL | a = drop in centimetres the client landed from (sent from 6 m up); the server turns it into health damage (vitals.json fall) and a faint from 12 m; limited to one per 2 s, drop capped at 60 m | 23 |
 
 ## World-item row states (world_items)
@@ -73,9 +74,11 @@ Kept current by whoever changes the wire: add the row, bump PROTOCOL_VERSION to 
 
 Every server item file (inventories, world_items, tree_states, chests, vitals, craft_queues) is written atomically (.tmp then rename) and the file it replaces is first copied to `<name>.prev`. A file that does not parse is set aside as `.bad` and the `.prev` copy (one save interval old, 30 s) is restored in its place; a file from a newer version is set aside as `.bad` and not replaced by the old copy. Drilled by src/worldgen/tools/test_persistence_drills.gd.
 
-inventories.json version 2 (reads 1), world_items.json version 1, chests.json version 1, vitals.json version 1, tree_states.json. All are written atomically; an unusable file is kept as .bad.
+digs.dat version 1 (DIGS1, appended holes), inventories.json version 2 (reads 1), world_items.json version 1, chests.json version 1, vitals.json version 1, tree_states.json. All are written atomically; an unusable file is kept as .bad.
 
 ## Notes by version
+
+- 28: ACT_DIG (spade digging). Save file `digs.dat` (store folder): "DIGS1" then x, y, z, radius as four little-endian float32 per hole, appended in order; `load_block` cuts every logged hole out of the freshly made block, so holes survive a re-bake. Edits already in edits.sqlite are still read as the base of their block. Design: DIGGING_DESIGN.md.
 
 - 27: boulders. World-item row state 10 (boulder): count = rough stones left, extra {radius, yaw, total}; an ACT_HIT whose b is HIT_BOULDER (-1000000) strikes the boulder with world id a (one blow from the best pick or axe on the hotbar: iron or steel 1 blow per stone, stone 3). Server-owned (server_items _lay_out_boulders, data/items/boulders.json); what is left of a worked boulder is saved in world_items.json "boulders" (same file version). Old clients would draw state 10 as a chopping block, hence the bump.
 - 26: vitals() gains a seventh field, fitness (-10 to 10, 0 average): a character attribute stored in characters.json beside luck (older files read as 0), data/items/fitness.json. It multiplies the exertion rise rate by exp(-fitness x strength) on the server (strength 0.05: +10 is about 61 percent of the normal rise, -10 about 165 percent); recovery is untouched. server_items.set_fitness() is the hook for training, not designed yet.

@@ -56,7 +56,7 @@ const FaintEffectScript := preload("res://src/client/faint_effect.gd")
 const FallMistScript := preload("res://src/client/fall_mist.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 363
+const BUILD := 364
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
@@ -303,6 +303,7 @@ var _cache_tile: Vector2i = Vector2i.ZERO
 var _cache_removed: int = 0
 var _report_msec: int = 0
 var dig_applied: int = 0
+var test_dig_check: bool = false      # --dig-check: read the ground where --dig cut a hole in an earlier run (the hole must still be there)
 var flora                             # FloraView
 var fall_mist                         # FallMist: spray at the foot of the nearest waterfalls
 var fall_growth                       # FallGrowth: ferns around the foot of the nearest waterfall
@@ -401,6 +402,8 @@ func _ready() -> void:
 			run_speed = float(argument.trim_prefix("--runspeed="))
 		elif argument == "--water-step":
 			test_water_step = true
+		elif argument == "--dig-check":
+			test_dig_check = true
 		elif argument == "--dig":
 			test_dig = true
 		elif argument == "--cut":
@@ -3381,6 +3384,12 @@ func _process(delta: float) -> void:
 	if test_dig and now - connected_msec > 20000:
 		test_dig = false
 		net.dig.rpc_id(1, Vector3(world["spawn"]) + Vector3(0.0, -3.0, 0.0), 4.0)
+
+	if test_dig_check and now - connected_msec > 24000:
+		test_dig_check = false
+		var probe_tool: VoxelTool = terrain.get_voxel_tool()
+		var centre: Vector3 = Vector3(world["spawn"]) + Vector3(0.0, -3.0, 0.0)
+		print("Terrain client: dig check: ground value at the old hole %.2f (above 0 is open), 12 m away %.2f" % [probe_tool.get_voxel_f(Vector3i(centre.round())), probe_tool.get_voxel_f(Vector3i((centre + Vector3(12.0, 0.0, 0.0)).round()))])
 
 	if frames_left > 0 and now >= _report_msec:
 		_report_msec = now + 10000

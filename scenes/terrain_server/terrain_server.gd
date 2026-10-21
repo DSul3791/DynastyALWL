@@ -163,6 +163,7 @@ func _ready() -> void:
 	items.send_full = func(peer, bytes): net.inventory_full.rpc_id(peer, bytes)
 	items.send_slots = func(peer, bytes): net.inventory_slots.rpc_id(peer, bytes)
 	items.send_world_items = func(peer, added, removed): net.world_items.rpc_id(peer, added, removed)
+	items.dig_ground = _dig_ground
 	items.ground_height = func(x, z): return generator.surface_height(x, z)
 	items.world_seed = int(settings.master_seed)
 	items.rain_now = func(): return float(weather.get("rain", 0.0))
@@ -618,6 +619,10 @@ func _on_cut_flora_requested(peer_id: int, chunk: Vector2i, id: int) -> void:
 
 
 func _on_dig_requested(_peer_id: int, center: Vector3, radius: float) -> void:
+	_dig_ground(center, radius)
+
+
+func _dig_ground(center: Vector3, radius: float) -> void:
 	var tiles: Array = store.dig_sphere(center, radius)
 
 	for tile in tiles:

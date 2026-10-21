@@ -45,6 +45,8 @@ var _mutex: Mutex = Mutex.new()
 var _timing_on: bool = OS.has_environment("BLOCKTIME")
 var _timing: Dictionary = {}            # piece -> [calls, microseconds]; printed at exit when BLOCKTIME is set
 var _edit_mutex: Mutex = Mutex.new()
+var _digs: PackedFloat32Array = PackedFloat32Array()   # the dig log: x, y, z, radius per dig, in order (digs.dat, DIGGING_DESIGN.md)
+var _dig_index: Dictionary = {}         # block (Vector3i) -> PackedInt32Array of dig numbers that reach it
 
 
 # Returns "" or an error.
@@ -75,6 +77,7 @@ func setup(terrain_generator, store_dir: String) -> String:
 	_cache = _open_generated()
 	_edits = VoxelStreamSQLite.new()
 	_edits.database_path = ProjectSettings.globalize_path(store_dir + "/edits.sqlite")
+	_load_digs()
 	var path: String = store_dir + "/revisions.json"
 
 	if FileAccess.file_exists(path):
@@ -198,8 +201,16 @@ func revisions() -> Dictionary:
 	return copy
 
 
-# The full block (nothing hidden) into `buffer`.
+# The full block (nothing hidden) into `buffer`: the ground as generated (or kept from an older edit), with
+# every logged dig that reaches it cut again on top, so a re-bake keeps the holes.
 func load_block(buffer: VoxelBuffer, block: Vector3i, lod: int) -> void:
+	_load_base(buffer, block, lod)
+
+	if lod == 0:
+		_apply_digs(buffer, block)
+
+
+func _load_base(buffer: VoxelBuffer, block: Vector3i, lod: int) -> void:
 	if _edits.load_voxel_block(buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND:
 		_count("edit")
 		return
@@ -314,13 +325,39 @@ static func hide_buried_ore(buffer: VoxelBuffer, depth: float) -> void:
 					buffer.set_voxel(0, x, y, z, Layout.CHANNEL_RESOURCE)
 
 
-# Removes a sphere of ground (LOD 0 blocks only) and stores the changed
-# blocks as edits. Returns the tiles whose revision rose.
-func dig_sphere(center: Vector3, radius: float) -> Array:
+# The dig log (digs.dat, version 1): "DIGS1", then x, y, z, radius as four float32 per dig, appended in order.
+const DIGS_MAGIC := "DIGS1"
+
+
+func _load_digs() -> void:
+	_digs = PackedFloat32Array()
+	_dig_index = {}
+	var path: String = _store_dir + "/digs.dat"
+
+	if not FileAccess.file_exists(path):
+		return
+
+	var bytes: PackedByteArray = FileAccess.get_file_as_bytes(path)
+	var head: int = DIGS_MAGIC.length()
+
+	if bytes.size() < head or bytes.slice(0, head).get_string_from_ascii() != DIGS_MAGIC:
+		push_warning("server: digs.dat is not a version 1 dig log, ignored")
+		return
+
+	var body: PackedByteArray = bytes.slice(head, head + ((bytes.size() - head) / 16) * 16)
+	_digs = body.to_float32_array()
+
+	for n in range(_digs.size() / 4):
+		_index_dig(n)
+
+	print("server: %d dug holes loaded from digs.dat" % (_digs.size() / 4))
+
+
+# The blocks a dig reaches (a margin of 2 m for the surface band) and the tiles they lie in.
+func _dig_blocks(center: Vector3, radius: float) -> Array:
 	var low: Vector3i = Vector3i(((center - Vector3.ONE * (radius + 2.0)) / float(BLOCK_SIZE)).floor())
 	var high: Vector3i = Vector3i(((center + Vector3.ONE * (radius + 2.0)) / float(BLOCK_SIZE)).floor())
-	var changed_tiles: Dictionary = {}
-	_edit_mutex.lock()
+	var blocks: Array = []
 
 	for bz in range(low.z, high.z + 1):
 		for by in range(low.y, high.y + 1):
@@ -328,44 +365,89 @@ func dig_sphere(center: Vector3, radius: float) -> Array:
 				var block: Vector3i = Vector3i(bx, by, bz)
 				var origin: Vector3 = Vector3(block * BLOCK_SIZE)
 
-				if Vector3(clampf(center.x, origin.x, origin.x + BLOCK_SIZE), clampf(center.y, origin.y, origin.y + BLOCK_SIZE), clampf(center.z, origin.z, origin.z + BLOCK_SIZE)).distance_to(center) > radius + 2.0:
+				if Vector3(clampf(center.x, origin.x, origin.x + BLOCK_SIZE), clampf(center.y, origin.y, origin.y + BLOCK_SIZE), clampf(center.z, origin.z, origin.z + BLOCK_SIZE)).distance_to(center) <= radius + 2.0:
+					blocks.append(block)
+
+	return blocks
+
+
+func _index_dig(n: int) -> void:
+	var center: Vector3 = Vector3(_digs[n * 4], _digs[n * 4 + 1], _digs[n * 4 + 2])
+
+	for block in _dig_blocks(center, _digs[n * 4 + 3]):
+		var list: PackedInt32Array = _dig_index.get(block, PackedInt32Array())
+		list.append(n)
+		_dig_index[block] = list
+
+
+# Cuts every logged dig that reaches `block` out of the freshly made block, oldest first.
+func _apply_digs(buffer: VoxelBuffer, block: Vector3i) -> void:
+	_edit_mutex.lock()
+	var list: PackedInt32Array = _dig_index.get(block, PackedInt32Array())
+	var records: PackedFloat32Array = PackedFloat32Array()
+
+	for n in list:
+		records.append_array(_digs.slice(n * 4, n * 4 + 4))
+
+	_edit_mutex.unlock()
+	var origin: Vector3 = Vector3(block * BLOCK_SIZE)
+
+	for n in range(records.size() / 4):
+		_cut_sphere(buffer, origin, Vector3(records[n * 4], records[n * 4 + 1], records[n * 4 + 2]), records[n * 4 + 3])
+
+
+# Removes a sphere of ground from one block (origin = the block's corner in metres).
+static func _cut_sphere(buffer: VoxelBuffer, origin: Vector3, center: Vector3, radius: float) -> void:
+	for z in range(BLOCK_SIZE):
+		for y in range(BLOCK_SIZE):
+			for x in range(BLOCK_SIZE):
+				var d: float = (origin + Vector3(x, y, z)).distance_to(center) - radius
+
+				if d > 2.0:
 					continue
 
-				var buffer: VoxelBuffer = Layout.make_buffer(BLOCK_SIZE)
-				load_block(buffer, block, 0)
+				var sdf: float = buffer.get_voxel_f(x, y, z, Layout.CHANNEL_SDF)
 
-				for z in range(BLOCK_SIZE):
-					for y in range(BLOCK_SIZE):
-						for x in range(BLOCK_SIZE):
-							var d: float = (origin + Vector3(x, y, z)).distance_to(center) - radius
+				if -d > sdf:
+					buffer.set_voxel_f(-d, x, y, z, Layout.CHANNEL_SDF)
 
-							if d > 2.0:
-								continue
+				if d < 0.0:
+					buffer.set_voxel(0, x, y, z, Layout.CHANNEL_ROCK)
+					buffer.set_voxel(0, x, y, z, Layout.CHANNEL_SOIL)
+					buffer.set_voxel(0, x, y, z, Layout.CHANNEL_RESOURCE)
 
-							var sdf: float = buffer.get_voxel_f(x, y, z, Layout.CHANNEL_SDF)
 
-							if -d > sdf:
-								buffer.set_voxel_f(-d, x, y, z, Layout.CHANNEL_SDF)
+# Digs a sphere of ground (LOD 0 blocks only): the dig is appended to the dig log, and the tiles it
+# touches get a new revision. Returns those tiles.
+func dig_sphere(center: Vector3, radius: float) -> Array:
+	var changed_tiles: Dictionary = {}
+	_edit_mutex.lock()
+	var path: String = _store_dir + "/digs.dat"
+	var file: FileAccess = FileAccess.open(path, FileAccess.READ_WRITE) if FileAccess.file_exists(path) else FileAccess.open(path, FileAccess.WRITE)
 
-							if d < 0.0:
-								buffer.set_voxel(0, x, y, z, Layout.CHANNEL_ROCK)
-								buffer.set_voxel(0, x, y, z, Layout.CHANNEL_SOIL)
-								buffer.set_voxel(0, x, y, z, Layout.CHANNEL_RESOURCE)
+	if file != null:
+		if file.get_length() == 0:
+			file.store_buffer(DIGS_MAGIC.to_ascii_buffer())
 
-				_edits.save_voxel_block(buffer, block, 0)
-				changed_tiles[generator.tile_of(origin.x, origin.z)] = true
+		file.seek_end()
+		file.store_buffer(PackedFloat32Array([center.x, center.y, center.z, radius]).to_byte_array())
+		file.close()
 
-	_edits.flush()
+	_digs.append_array(PackedFloat32Array([center.x, center.y, center.z, radius]))
+	_index_dig(_digs.size() / 4 - 1)
+
+	for block in _dig_blocks(center, radius):
+		changed_tiles[generator.tile_of(float(block.x * BLOCK_SIZE), float(block.z * BLOCK_SIZE))] = true
 
 	for tile in changed_tiles:
 		var key: String = "%d,%d" % [tile.x, tile.y]
 		tile_revisions[key] = int(tile_revisions.get(key, 1)) + 1
 
-	var file: FileAccess = FileAccess.open(_store_dir + "/revisions.json", FileAccess.WRITE)
+	var revisions_file: FileAccess = FileAccess.open(_store_dir + "/revisions.json", FileAccess.WRITE)
 
-	if file != null:
-		file.store_string(JSON.stringify(tile_revisions, "\t", true))
-		file.close()
+	if revisions_file != null:
+		revisions_file.store_string(JSON.stringify(tile_revisions, "\t", true))
+		revisions_file.close()
 
 	_edit_mutex.unlock()
 	return changed_tiles.keys()

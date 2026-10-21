@@ -294,6 +294,24 @@ func _init() -> void:
 	m.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(30.0, 10.0, 0.0))
 	check(m.inventory_of(1).count_of(rock_stone) == ItemsScript.MINE_STONES_PER_CELL, "out of reach gives nothing")
 
+	# Digging the ground with a spade (ACT_DIG).
+	var digs: Array = []
+	m.dig_ground = func(centre, radius): digs.append([centre, radius])
+	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(digs.is_empty(), "no spade, no dig")
+	m.action(1, Net.ACT_ADMIN_GIVE, m.table.number_of("wooden_spade"), 0, 1, Vector3.ZERO)
+	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(30.0, 10.0, 0.0))
+	check(digs.is_empty(), "a dig out of reach does nothing")
+	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(digs.size() == 1 and absf(float(digs[0][0].y) - (10.0 - ItemsScript.DIG_DEPTH_M)) < 0.001, "a spade digs a hole a little below the point")
+	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(digs.size() == 1, "digs too close together make one hole")
+	m._last_dig.clear()
+	var spade_slot: int = m.inventory_of(1).numbers.find(m.table.number_of("wooden_spade"))
+	var spade_wear: int = m.inventory_of(1).wear[spade_slot]
+	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(digs.size() == 2 and m.inventory_of(1).wear[spade_slot] == spade_wear + 1, "each dig wears the spade by one")
+
 	# Felling.
 	var w = make("user://test_server_items_f")
 	w.ground_height = func(x, z): return 10.0
