@@ -453,3 +453,7 @@ Esc > Settings > Debug details (F3) now shows a `sound meters` block under the s
 
 New scenarios `audit_low_town`, `audit_high`, `audit_ultra` run the worst scene (night storm, cave 0.6, fires, creatures) with a busy town (`--town-sounds`: 10 fire, hammering and crowd sources and a bell every 12 s). Peaks: Low 26 of 24 (19 steady; the cap is enforced every 0.25 s, so up to 2 over for an instant), High 31 of 96, Ultra 33 of 96. The checker reads the cap from `--quality=N` (24, 48, 96, 96). Table in /mnt/project-files/sound/VOICE_AUDIT.md.
 
+## Footstep coverage audit (job 93)
+
+`python3 tools/step_coverage.py [--md]` (also `sound_check.py --only steps_coverage`, in the full run) reads the soil, rock and ore tables, `SOIL_SURFACE`, `ROCK_STEP`, `ORE_STEP`, the floor list and every surface the footstep code assigns, and checks each one has a surface, left and right step files (recorded or generated) and a row in `data/sound/step_levels.json`; the three gaits come from `gait_db` and `gait_pitch`, so a surface with files and a loudness row covers walk, jog and run. Result (build 312): 16 soils, 11 rocks, 16 surfaces, 0 gaps. Table in /mnt/project-files/sound/STEP_COVERAGE.md. Notes, not gaps: silt, clay, loam and alluvium all play the dirt files (told apart only by `SOIL_TUNE` dB and pitch); plank, slab, carpet, thatch and path are generated placeholders (no recordings yet).
+

@@ -405,6 +405,15 @@ def main():
     verbose = "--verbose" in args
     failed = 0
 
+    if not only or "steps_coverage" in only:                  # every ground, rock, ore and floor has steps and a loudness row
+        started = time.time()
+        run = subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "step_coverage.py")], capture_output=True, text=True)
+        failed += 1 if run.returncode else 0
+        print("%s  %-9s %s, %.0f s" % ("FAIL" if run.returncode else "PASS", "stepcov", run.stdout.strip().splitlines()[0] if run.stdout.strip() else run.stderr[-200:], time.time() - started))
+
+        for line in [l for l in run.stdout.splitlines() if l.startswith("GAP")]:
+            print("      - " + line)
+
     if not only or "slots" in only:                       # every sound file, offline: clipping, silence, loop seams, loudness
         started = time.time()
         run = subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "slot_audit.py")], capture_output=True, text=True)
