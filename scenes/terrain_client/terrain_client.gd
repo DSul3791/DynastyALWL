@@ -2997,6 +2997,12 @@ func _process(delta: float) -> void:
 		var crow: bool = amb.flush(body.global_position + Vector3(20.0, 2.0, 0.0), 0.0, "large")
 		var crow_file: String = amb.last_file
 		print("Terrain client: flush check: %d flushes, small %d, medium %d, large %d, files used %d, repeats %d, crow file %s, source %s" % [300, sizes["small"], sizes["medium"], sizes["large"], files.size(), repeats, crow_file, amb._source.get("wing_small", "?")])
+		# Flying high above the forest (Dave 2026-10-21): no take-off, no alarm, no bird calls.
+		var low_before: float = amb.low_factor()
+		amb.forced_agl = 120.0
+		amb.agl_m = 120.0
+		print("Terrain client: high birds: low factor %.2f then %.2f, flush %s, alarm %s" % [low_before, amb.low_factor(), str(amb.flush(body.global_position + Vector3(20.0, 2.0, 0.0), 0.0)), str(amb.alarm(body.global_position + Vector3(20.0, 2.0, 0.0)))])
+		amb.forced_agl = -1.0
 
 	if test_reject and now - connected_msec > 18000 and now >= _test_fire_at:
 		_test_fire_at = now + 10000000

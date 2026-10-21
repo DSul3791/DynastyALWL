@@ -473,3 +473,7 @@ Bird species (whistle, feebee, trill, chirp, crow, woodpecker) have `seasons` an
 ## No heavy breathing (fix, 2026-10-21)
 
 Dave: remove the heavy breathing on exertion. `BREATHING := false` in `breath_sounds.gd` skips breath_in, breath_out, breath_gasp and breath_heave (files stay); the heartbeat and the faint fade are unchanged. The `faint` check now expects 0 heaves.
+
+## Birds only near the ground (fix, 2026-10-21)
+
+Dave flew at y 420 over a forest and heard startled wings. `ambient_life.gd` now measures `agl_m` (feet above the terrain's ground height, `sound.ground_below`, 0 when not loaded). Above `BIRD_MAX_AGL_M` (40 m) `flush` and `alarm` do nothing; the bird calls (`BIRDS_LOW`) fade out between 20 and 40 m (`low_factor()`). Check: the `flush` scenario (high birds line).

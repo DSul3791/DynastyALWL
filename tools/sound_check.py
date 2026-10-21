@@ -207,6 +207,10 @@ SCENARIOS = [
         ("all 12 bursts get played", r"files used " + NUM + r",", 12, 12),
         ("never the same file twice running", r"repeats " + NUM + r",", 0, 0),
         ("a crow takes off with a large burst", r"crow file (wing_large_\d)", 0, 1, "text"),
+        ("down among the trees birds are fully on", r"low factor " + NUM + r" then", 1, 1),
+        ("high above the ground birds are off", r"then " + NUM + r", flush", 0, 0),
+        ("no take-off high up", r"flush (false), alarm", 0, 1, "text"),
+        ("no crow alarm high up", r"alarm (false)", 0, 1, "text"),
     ]),
     ("reject", ["--reject-test"], 3500, [
         ("first refusal knocks", r"reject check: first (true)", 0, 1, "text"),
