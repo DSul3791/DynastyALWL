@@ -1534,7 +1534,8 @@ func _make_big_forge(state: int) -> Node3D:
 
 
 # Dave's forge meshes (assets/stations/forge_basic, forge_medium, forge_large, forge_master .glb). They arrive Z up with the fire
-# opening toward -Y and the middle of the base off the origin, so this stands them up (Y up), turns the opening toward -Z, puts the
+# opening toward -Y and the middle of the base off the origin, so this stands them up (Y up, which leaves the opening toward +Z, the front
+# of every building here: placed with the camera yaw it faces the player who put it down), puts the
 # centre of the footprint at the pivot and the base on the ground, and takes the flame light and smoke from the Fire and Smoke empties
 # in the file. Returns null when the file is not there yet.
 func _forge_glb(file: String) -> Node3D:
@@ -1553,7 +1554,6 @@ func _forge_glb(file: String) -> Node3D:
 	upright.rotation_degrees = Vector3(-90.0, 0.0, 0.0)
 	upright.add_child(model)
 	var turned: Node3D = Node3D.new()
-	turned.rotation_degrees = Vector3(0.0, 180.0, 0.0)
 	turned.add_child(upright)
 	var root: Node3D = Node3D.new()
 	root.add_child(turned)
@@ -1563,6 +1563,14 @@ func _forge_glb(file: String) -> Node3D:
 	var smoke: Node3D = model.get_node_or_null("Smoke") as Node3D
 	var hook_fire: Variant = _local_to(fire, root) if fire != null else null
 	var hook_smoke: Variant = _local_to(smoke, root) if smoke != null else null
+	var body: StaticBody3D = StaticBody3D.new()   # solid: you walk round a forge, not through it
+	var shape: CollisionShape3D = CollisionShape3D.new()
+	var solid: BoxShape3D = BoxShape3D.new()
+	solid.size = Vector3(box.size.x, minf(box.size.y, 2.2), box.size.z)
+	shape.shape = solid
+	shape.position = Vector3(0.0, solid.size.y * 0.5, 0.0)
+	body.add_child(shape)
+	root.add_child(body)
 	return BuildingLook.add_hooks(root, hook_fire, hook_smoke)
 
 
