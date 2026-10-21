@@ -160,6 +160,40 @@ func _init() -> void:
 	var clean: Dictionary = state_of(reload(dir))
 	check(clean == want, "a clean restart brings back exactly the same state (%s vs %s)" % [str(clean), str(want)])
 
+	# Saves from before protocols 34 to 40 (no energy, warmth, sickness, skills, attributes, worn clothes): everything else loads
+	# unchanged and the missing parts read as neutral, then the next save writes the new fields.
+	wipe(dir + "_old")
+
+	for name in FILES:
+		DirAccess.copy_absolute(dir + "/" + name, dir + "_old/" + name)
+
+	var old_vitals: Variant = JSON.parse_string(FileAccess.get_file_as_string(dir + "_old/vitals.json"))
+
+	for key in old_vitals["players"]:
+		for field in ["warmth", "sick", "energy", "medicines"]:
+			old_vitals["players"][key].erase(field)
+
+	write(dir + "_old/vitals.json", JSON.stringify(old_vitals))
+	var old_chars: Variant = JSON.parse_string(FileAccess.get_file_as_string(dir + "_old/characters.json"))
+
+	for key in old_chars["players"]:
+		for field in ["strength", "memory", "skills", "worn"]:
+			old_chars["players"][key].erase(field)
+
+	write(dir + "_old/characters.json", JSON.stringify(old_chars))
+	var migrated = reload(dir + "_old")
+	var after: Dictionary = state_of(migrated)
+
+	for field in want:
+		if not ["warmth", "sick", "skill_p", "strength"].has(field):
+			check(after[field] == want[field], "an older save keeps %s (%s vs %s)" % [field, str(after[field]), str(want[field])])
+
+	check(int(after["warmth"]) == 100 and int(after["sick"]) == 0 and int(after["strength"]) == 0 and float(after["skill_p"]) == -1.0, "an older save reads warm, well, no skills and no attributes (%s)" % str(after))
+	check(migrated.worn_of(1) == [0, 0, 0, 0, 0, 0], "an older save wears nothing")
+	migrated._dirty = true
+	migrated.save()
+	check(JSON.parse_string(FileAccess.get_file_as_string(dir + "_old/vitals.json"))["players"][KEY].has("warmth"), "the next save writes the newer fields")
+
 	for file in FILES:
 		# A torn main file: restored from .prev, same state, the damaged one kept as .bad.
 		wipe(dir + "_x")

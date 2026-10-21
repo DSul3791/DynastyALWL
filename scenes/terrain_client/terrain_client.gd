@@ -60,7 +60,7 @@ const FaintEffectScript := preload("res://src/client/faint_effect.gd")
 const FallMistScript := preload("res://src/client/fall_mist.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 433
+const BUILD := 434
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
@@ -1883,6 +1883,11 @@ func _inspect_target() -> String:
 
 	if species >= 0:
 		return knowledge.reveal("f%d" % species, flora.label_of(species), flora.familiarity_of(species), "horticulture", flora.lookalikes(species))
+
+	var lying: String = items.world_item_name_near(point, 1.2)
+
+	if lying != "":
+		return lying
 
 	return _ground_name(point - hit["normal"] * 0.4)
 

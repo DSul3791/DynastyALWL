@@ -87,6 +87,7 @@ var _thought_label: Label
 var _thought_until_msec: int = 0
 var worn: PackedInt32Array = PackedInt32Array()   # item number per body slot (clothing.json order), 0 = nothing (protocol 40)
 var clothing_cfg: Dictionary = {}
+var _cooking_cfg: Dictionary = {}
 var remains_marks: Array = []                # [[position, seconds left, msec received], ...] the owner's remains with gear (protocol 39)
 var sick_hours: int = 0                      # game hours of sickness left, 0 = well (protocol 38)
 var _sick_label: Label
@@ -1735,6 +1736,40 @@ func _on_thought(line_id: String, text: String, kind: String) -> void:
 		thought_event.call(line_id, kind)
 
 
+# Hours of sickness for eating this raw (cooking.json raw_sick), 0 when it is safe.
+func _raw_sick_hours(item_id: String) -> float:
+	if _cooking_cfg.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/cooking.json"))
+		_cooking_cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {"raw_sick": {}}
+
+	var cfg: Dictionary = _cooking_cfg.get("raw_sick", {})
+
+	if cfg.get("by_id", {}).has(item_id):
+		return float(cfg["by_id"][item_id])
+
+	for suffix in cfg.get("by_suffix", {}):
+		if item_id.ends_with(str(suffix)):
+			return float(cfg["by_suffix"][suffix])
+
+	return 0.0
+
+
+# What lies on the ground within r metres of a point, named plainly (inspection mode): remains, kits, structures, loose items.
+func world_item_name_near(point: Vector3, r: float) -> String:
+	var best: float = r
+	var label: String = ""
+
+	for id in _world:
+		var d: float = point.distance_to(_world[id]["pos"])
+
+		if d < best and int(_world[id]["number"]) > 0:
+			best = d
+			var number: int = int(_world[id]["number"])
+			label = "Your remains" if int(_world[id]["state"]) >= 11 else _item_label(number)
+
+	return label
+
+
 func _on_worn(numbers: PackedInt32Array) -> void:
 	worn = numbers
 	_refresh_weight()
@@ -2207,6 +2242,18 @@ func _tooltip(number: int, count: int, fill_ml: int = 0) -> String:
 	if not _carry_cfg.is_empty():
 		var each_kg: float = CarryRules.weight_of(table.id_of(number), _carry_cfg)
 		text += "\n%s each" % (("%.0f g" % (each_kg * 1000.0)) if each_kg < 0.1 else ("%.2f kg" % each_kg))
+
+	if str(entry.get("slot", "")) != "":
+		text += "\nWorn on the %s. Use (E) puts it on." % str(entry["slot"])
+
+		if float(entry.get("warmth", 0.0)) > 0.0:
+			text += " Keeps %d%% of your body heat in." % int(round(float(entry["warmth"]) * 100.0))
+
+		if float(entry.get("carry_bonus_kg", 0.0)) > 0.0:
+			text += " Lets you carry %.0f kg more." % float(entry["carry_bonus_kg"])
+
+	if _raw_sick_hours(table.id_of(number)) > 0.0:
+		text += "\nEaten raw it makes you sick. Cook it at a fire first."
 
 	if kcal > 0:
 		text += "\n%d kcal  (right click when held, or Eat / use)" % kcal

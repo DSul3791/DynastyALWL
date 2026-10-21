@@ -1624,6 +1624,7 @@ func _hit_boulder(peer: int, inv, id: int) -> void:
 		out = 2
 
 	inv.add(stone, out)
+	practice(peer, "mine_rock")   # breaking a boulder is Mining too
 	it["count"] = int(it["count"]) - out
 	_boulder_left[it["scatter"]] = int(it["count"])
 	_dirty = true
