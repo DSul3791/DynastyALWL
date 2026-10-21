@@ -69,6 +69,16 @@
 					"goto": "sleep"
 				},
 				{
+					"text": "Teach me the sword.",
+					"goto": "teach",
+					"if": {
+						"can_train": [
+							"swordplay",
+							1
+						]
+					}
+				},
+				{
 					"text": "Goodbye.",
 					"goto": "bye"
 				}
@@ -109,6 +119,23 @@
 		"bye": {
 			"text": "$farewell",
 			"end": true
+		},
+		"teach": {
+			"text": "Hold the blade loose. Again, and again. There.",
+			"effects": [
+				{
+					"train_skill": [
+						"swordplay",
+						1
+					]
+				}
+			],
+			"choices": [
+				{
+					"text": "Thank you.",
+					"goto": "bye"
+				}
+			]
 		}
 	}
 }

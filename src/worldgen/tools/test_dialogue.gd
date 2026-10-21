@@ -8,11 +8,12 @@ const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const NpcsScript := preload("res://src/stream/server_npcs.gd")
 const DialogueScript := preload("res://src/stream/server_dialogue.gd")
+const SkillWebScript := preload("res://src/shared/skill_web.gd")
 const StaticProvider := preload("res://src/stream/static_provider.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
-const COND_KEYS := ["flag", "flag_not", "hour_between", "has_item"]
-const EFFECT_KEYS := ["set_flag", "clear_flag", "give_item", "take_item"]
+const COND_KEYS := ["flag", "flag_not", "hour_between", "has_item", "can_train"]
+const EFFECT_KEYS := ["set_flag", "clear_flag", "give_item", "take_item", "train_skill"]
 const BARKS := ["greeting", "farewell", "idle", "complaint", "cooldown"]
 
 var failures: int = 0
@@ -195,6 +196,29 @@ func _init() -> void:
 	talk._last_msec.clear()
 	talk.talk(1, "hob", -1)
 	check(not str(said.back()["choices"]).contains("help") and not str(said.back()["choices"]).contains("firewood"), "after it is done the quest does not come back")
+
+	# Trainer: Hob teaches trades once the pupil is near the cap, for three stones.
+	talk._last_msec.clear()
+	talk.talk(1, "hob", -1)
+	check(not str(said.back()["choices"]).contains("Teach me"), "a beginner is not offered the lesson")
+	var rec: Dictionary = items._skill_records(1)
+	rec["trades"] = {"p": SkillWebScript.units_for(items._skills_cfg, "trades", 22.0), "peak": 0.0, "t": 0}
+	check(items.npc_train(1, "trades", 1, "stone", 3, true) == "not enough to pay", "near the cap but no stones: cannot pay")
+	items.action(1, Net.ACT_ADMIN_GIVE, table.number_of("stone"), 0, 3, Vector3.ZERO)
+	check(items.npc_train(1, "trades", 0, "stone", 3, true) != "", "a trainer who only teaches level 0 refuses")
+	talk._last_msec.clear()
+	talk.talk(1, "hob", -1)
+	var tidx: int = -1
+
+	for i in said.back()["choices"].size():
+		if str(said.back()["choices"][i]) == "Teach me the trade.":
+			tidx = i
+
+	check(tidx >= 0, "with the stones and the skill the lesson is offered")
+	talk._last_msec.clear()
+	talk.talk(1, "hob", tidx)
+	check(int(items._skill_records(1)["trades"]["t"]) == 1 and items.count_for(1, "stone") == 0, "the lesson raises the training level and takes the stones")
+	check(items.npc_train(1, "trades", 1, "stone", 3, true) != "", "training twice in a row is refused")
 
 	# Flags survive a restart.
 	var talk2 = DialogueScript.new()

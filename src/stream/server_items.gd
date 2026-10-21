@@ -812,6 +812,29 @@ func train_skill(peer: int, skill: String, teacher_peer: int = -1) -> String:
 	return problem
 
 
+# A trainer NPC (authored dialogue only): trains `skill` one level for `cost` (an item id and count, or empty), as a teacher who
+# can teach up to level `max_level`. Returns "" on success or why not; nothing is taken when it fails.
+func npc_train(peer: int, skill: String, max_level: int, cost_id: String = "", cost_n: int = 0, dry: bool = false) -> String:
+	var records: Dictionary = _skill_records(peer)
+
+	if records.is_empty() and not _characters.has(_peer_key.get(peer, "")):
+		return "no such character"
+
+	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
+	var problem: String = SkillWeb.train_problem(_skills_cfg, skill, records, now_s, 100.0, max_level)
+
+	if problem == "" and cost_id != "" and count_for(peer, cost_id) < cost_n:
+		problem = "not enough to pay"
+
+	if problem != "" or dry:
+		return problem
+
+	if cost_id != "":
+		take_from(peer, cost_id, cost_n)
+
+	return train_skill(peer, skill, -1)
+
+
 func _sync_skills(peer: int, force: bool) -> void:
 	if not send_skills.is_valid() or not _characters.has(_peer_key.get(peer, "")):
 		return

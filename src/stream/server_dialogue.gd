@@ -72,7 +72,8 @@ func talk(peer: int, npc_id: String, choice: int) -> void:
 
 	_last_msec[peer] = now
 	var ctx: Dictionary = {"flags": flags_of(key, npc_id), "hour": float(hour_now.call()) if hour_now.is_valid() else 12.0,
-		"has_item": func(id: String, n: int) -> bool: return items.count_for(peer, id) >= n, "recent": _recent.get("%s|%s" % [key, npc_id], []), "rest_key": npc_id}
+		"has_item": func(id: String, n: int) -> bool: return items.count_for(peer, id) >= n, "recent": _recent.get("%s|%s" % [key, npc_id], []), "rest_key": npc_id,
+		"can_train": func(skill: String, max_level: int, cost_id: String, cost_n: int) -> bool: return items.npc_train(peer, skill, max_level, cost_id, cost_n, true) == ""}
 	var line: Dictionary = {}
 
 	if choice < 0:
@@ -130,6 +131,9 @@ func _apply(peer: int, key: String, npc_id: String, effects: Array) -> void:
 				_save()
 		elif e.has("give_item"):
 			items.give_to(peer, str(e["give_item"][0]), clampi(int(e["give_item"][1]), 1, MAX_GIVE))
+		elif e.has("train_skill"):
+			var t: Array = e["train_skill"]
+			items.npc_train(peer, str(t[0]), int(t[1]), str(t[2]) if t.size() > 3 else "", clampi(int(t[3]), 1, MAX_GIVE) if t.size() > 3 else 0)
 		elif e.has("take_item"):
 			items.take_from(peer, str(e["take_item"][0]), clampi(int(e["take_item"][1]), 1, MAX_GIVE))
 

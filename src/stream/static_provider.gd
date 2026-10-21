@@ -50,6 +50,11 @@ func test(cond: Dictionary, ctx: Dictionary) -> bool:
 
 			if not has.is_valid() or not bool(has.call(str(want[0]), int(want[1]))):
 				return false
+		elif key == "can_train":
+			var can: Callable = ctx.get("can_train", Callable())
+
+			if not can.is_valid() or not bool(can.call(str(want[0]), int(want[1]), str(want[2]) if want.size() > 3 else "", int(want[3]) if want.size() > 3 else 0)):
+				return false
 		else:
 			return false   # an unknown condition never holds (the validator rejects it)
 

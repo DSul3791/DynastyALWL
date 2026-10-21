@@ -1,6 +1,6 @@
 {
 	"npc": "hob",
-	"note": "Hob the shopkeeper. Trees are data: nodes {text, choices[{text, goto, if}], effects, end}. text may be a string, an array (one is picked, none repeated within the last five) or a bark token $greeting / $farewell / $idle. A choice with goto 'end' or no goto ends the talk. Conditions: flag, flag_not, hour_between [from, to], has_item [id, n]. Effects: set_flag, clear_flag, give_item [id, n], take_item [id, n]. roots: the first whose condition holds starts the talk. Lines keep to short sentences (12 words) for the voice.",
+	"note": "Hob the shopkeeper. Trees are data: nodes {text, choices[{text, goto, if}], effects, end}. text may be a string, an array (one is picked, none repeated within the last five) or a bark token $greeting / $farewell / $idle. A choice with goto 'end' or no goto ends the talk. Conditions: flag, flag_not, hour_between [from, to], has_item [id, n], can_train [skill, max_level, item, n] (item and n optional). Effects: set_flag, clear_flag, give_item [id, n], take_item [id, n], train_skill [skill, max_level, item, n]. roots: the first whose condition holds starts the talk. Lines keep to short sentences (12 words) for the voice.",
 	"barks": {
 		"greeting": [
 			"Good day to you.",
@@ -130,6 +130,18 @@
 					}
 				},
 				{
+					"text": "Teach me the trade.",
+					"goto": "teach",
+					"if": {
+						"can_train": [
+							"trades",
+							1,
+							"stone",
+							3
+						]
+					}
+				},
+				{
 					"text": "Goodbye.",
 					"goto": "bye"
 				}
@@ -226,6 +238,25 @@
 		"bye": {
 			"text": "$farewell",
 			"end": true
+		},
+		"teach": {
+			"text": "Three stones for the lesson. Now count with me.",
+			"effects": [
+				{
+					"train_skill": [
+						"trades",
+						1,
+						"stone",
+						3
+					]
+				}
+			],
+			"choices": [
+				{
+					"text": "Thank you.",
+					"goto": "bye"
+				}
+			]
 		}
 	}
 }
