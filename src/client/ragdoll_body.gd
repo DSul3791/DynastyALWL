@@ -496,15 +496,21 @@ func _lie(p: float) -> Dictionary:
 	}
 
 
-# Right arm over the head and down, both hands on the tool (an axe or a pick).
+# A chop (an axe or a pick), Dave 2026-10-21: the right arm swings the tool in a diagonal, up over the right shoulder and down across
+# the body to the left at the tree, the body twisting right then left and leaning back then into it; the left hand only steadies near
+# the handle (it follows a little, it does not swing). Arm x raises forward, z moves out (right arm) or across (negative); spine twist
+# y positive turns left, lean positive leans back.
 func _swing(p: float) -> Dictionary:
-	var arm: float = _keys([[0.0, 0.2], [0.35, 3.0], [0.55, 0.5], [1.0, 0.2]], p)
-	var elbow: float = _keys([[0.0, 0.12], [0.35, 0.8], [0.55, 0.2], [1.0, 0.12]], p)
-	var lean: float = _keys([[0.0, 0.0], [0.35, 0.15], [0.55, -0.35], [1.0, 0.0]], p)
+	var arm: float = _keys([[0.0, 0.2], [0.12, 1.2], [0.35, 2.6], [0.55, 0.9], [0.72, 0.55], [1.0, 0.2]], p)
+	var out: float = _keys([[0.0, 0.07], [0.12, 0.45], [0.35, 0.55], [0.55, -0.45], [0.72, -0.5], [1.0, 0.07]], p)
+	var elbow: float = _keys([[0.0, 0.12], [0.12, 0.9], [0.35, 1.2], [0.55, 0.25], [0.72, 0.2], [1.0, 0.12]], p)
+	var twist: float = _keys([[0.0, 0.0], [0.35, -0.5], [0.55, 0.45], [0.72, 0.4], [1.0, 0.0]], p)
+	var lean: float = _keys([[0.0, 0.0], [0.35, 0.12], [0.55, -0.4], [0.72, -0.3], [1.0, 0.0]], p)
+	var steady: float = _keys([[0.0, 0.0], [0.12, 0.7], [0.35, 1.3], [0.55, 0.95], [0.72, 0.85], [1.0, 0.0]], p)
 	return {
-		"arm_r": Vector3(arm, 0.0, 0.07), "forearm_r": Vector3(elbow, 0.0, 0.0),
-		"arm_l": Vector3(arm * 0.75, 0.0, -0.1), "forearm_l": Vector3(elbow + 0.2, 0.0, 0.0),
-		"spine": Vector3(lean, 0.0, 0.0), "chest": Vector3(lean * 0.5, 0.0, 0.0),
+		"arm_r": Vector3(arm, 0.0, out), "forearm_r": Vector3(elbow, 0.0, 0.0),
+		"arm_l": Vector3(steady, 0.0, -0.4 * minf(steady, 1.0)), "forearm_l": Vector3(0.12 + 0.8 * minf(steady, 1.0), 0.0, 0.0),
+		"spine": Vector3(lean, twist, 0.0), "chest": Vector3(lean * 0.5, twist * 0.7, 0.0),
 		"hips_move": Vector3(0.0, -0.05 * maxf(lean * -1.0, 0.0), 0.0),
 	}
 

@@ -192,6 +192,16 @@ func _is_axe() -> bool:
 	return str(_inv.table.entry(held_id()).get("tool_class", "")) in ["axe", "pick"] and not _inv.is_broken(held_slot)
 
 
+# One chop of an axe or pick. Holding the left button chains them (see _process): the next starts as the last one ends.
+func _start_swing() -> void:
+	_swing_t = 0.0
+	_swing_hit = false
+	_arm_play("swing", SWING_S)
+
+	if _sound != null:
+		_sound.hits.swing("axe", _camera.global_position - _camera.global_transform.basis.z * 0.6)
+
+
 # A mouse button while playing. Returns true when it was used here.
 func mouse_button(button: int, pressed: bool) -> bool:
 	if button == MOUSE_BUTTON_RIGHT and pressed and holding and _inv.edible_slot(held_slot):
@@ -211,12 +221,7 @@ func mouse_button(button: int, pressed: bool) -> bool:
 			return true
 
 		if button == MOUSE_BUTTON_LEFT and pressed and _swing_t < 0.0:
-			_swing_t = 0.0
-			_swing_hit = false
-			_arm_play("swing", SWING_S)
-
-			if _sound != null:
-				_sound.hits.swing("axe", _camera.global_position - _camera.global_transform.basis.z * 0.6)
+			_start_swing()
 
 		return button == MOUSE_BUTTON_LEFT
 
@@ -339,6 +344,10 @@ func _process_body(delta: float) -> void:
 
 		if _swing_t >= SWING_S:
 			_swing_t = -1.0
+
+			# Dave 2026-10-21: holding the button keeps chopping, one swing after another (no gap, no clicking).
+			if holding and _is_axe() and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+				_start_swing()
 
 	if _model != null and _is_torch():
 		var flicker: OmniLight3D = _model.get_node_or_null("Light")
