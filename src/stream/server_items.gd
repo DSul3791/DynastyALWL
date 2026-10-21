@@ -181,6 +181,8 @@ var _fishing_cfg: Dictionary = {}
 var _station_said: Dictionary = {}
 var _wear_carry: Dictionary = {}     # peer -> fraction of a wear point not yet charged (tool_care skill)
 var _clothing: Dictionary = {}
+var send_limp: Callable             # (peer, percent of normal speed, 100 = none)
+var _limp_sent: Dictionary = {}
 var send_sick: Callable             # (peer, game hours of sickness left, rounded up; 0 = well)
 var _sick_sent: Dictionary = {}
 var _last_dose: Dictionary = {}     # peer -> msec of the last medicine taken
@@ -336,6 +338,7 @@ func peer_connected_hello(peer: int, key: String) -> void:
 	_sync_warmth(peer, true)
 	_sync_remains(peer, true)
 	_sync_sick(peer, true)
+	_sync_limp(peer, true)
 	_sync_worn(peer, true)
 	_sync_skills(peer, true)
 	_sync_craft_queue(peer)
@@ -3155,6 +3158,8 @@ func hurt_player(peer: int, amount: float, lethal: bool, cause: String, floor_hp
 	if not lethal and float(v["health"]) <= floor_hp:
 		v["health"] = minf(before, floor_hp)
 		_say(peer, "The wolves have crippled you. Get away while you can.")
+		v["limp"] = float(_vitals_cfg.get("limp", {}).get("seconds", 600.0))
+		_sync_limp(peer, false)
 		_sync_vitals(peer, true)
 		return "maimed"
 
@@ -3362,6 +3367,7 @@ func _vitals_tick(spent: float) -> void:
 		if float(v["health"]) <= 0.0 and kill(peer, str(_death_cause.get(peer, "drowning"))):
 			continue
 
+		_limp_tick(peer, v, spent)
 		_sync_vitals(peer, false)
 		_strain_tick(peer, spent)
 
@@ -3384,6 +3390,45 @@ func make_sick(peer: int, hours: float = -1.0) -> void:
 	_symptom_in[peer] = float(_sick_cfg.get("symptom_every_s", 90.0)) * 0.5
 	_sync_sick(peer, true)
 	_dirty = true
+
+
+# A crippling injury (vitals.json "limp"): `limp` seconds left in the vitals, speed_share of normal speed while it lasts; it ends
+# when the time runs out or health has climbed back to heal_at of the maximum.
+func limp_share(peer: int) -> float:
+	var cfg: Dictionary = _vitals_cfg.get("limp", {})
+	return float(cfg.get("speed_share", 0.5)) if float(vitals_of(peer).get("limp", 0.0)) > 0.0 else 1.0
+
+
+func _limp_tick(peer: int, v: Dictionary, spent: float) -> void:
+	var left: float = float(v.get("limp", 0.0))
+
+	if left <= 0.0:
+		_sync_limp(peer, false)   # also clears a limp the client still holds after a death
+		return
+
+	var cfg: Dictionary = _vitals_cfg.get("limp", {})
+	left -= spent
+
+	if float(v["health"]) >= float(_vitals_cfg.get("health_max", 100)) * float(cfg.get("heal_at", 0.6)):
+		left = 0.0
+
+	v["limp"] = maxf(left, 0.0)
+
+	if left <= 0.0:
+		_say(peer, "Your leg has healed enough to walk on.")
+
+	_sync_limp(peer, false)
+
+
+func _sync_limp(peer: int, force: bool) -> void:
+	if not send_limp.is_valid():
+		return
+
+	var percent: int = int(round(limp_share(peer) * 100.0))
+
+	if force or int(_limp_sent.get(peer, -1)) != percent:
+		_limp_sent[peer] = percent
+		send_limp.call(peer, percent)
 
 
 func is_sick(peer: int) -> bool:
@@ -3915,6 +3960,7 @@ func kill(peer: int, cause: String) -> bool:
 	_energy_sent.erase(peer)
 	_warmth_sent.erase(peer)
 	_sick_sent.erase(peer)
+	_limp_sent.erase(peer)
 	_symptom_in.erase(peer)
 	_cold_level.erase(peer)
 	_fishing.erase(peer)

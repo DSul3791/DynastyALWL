@@ -183,5 +183,23 @@ func _init() -> void:
 
 	check(reborn.respawn_for(1) == reborn.respawn_point, "shelter taken down: back at the spawn")
 
+	# Wolf bites (build 513): a non-lethal bite stops at the floor and cripples; the limp slows the walker and wears off with healing; a
+	# lethal bite on a maimed player kills.
+	var wolf = make(dir + "_wolf")
+	var limps: Array = []
+	wolf.send_limp = func(p, percent): limps.append([p, percent])
+	wolf.peer_connected_hello(1, "wolf-key-00001")
+	wolf.report_position(1, Vector3(100.0, 12.0, 100.0))
+	check(wolf.limp_share(1) == 1.0, "no limp to start")
+	wolf._vitals["wolf-key-00001"]["health"] = 30.0
+	wolf._vitals["wolf-key-00001"]["health"] = 30.0
+	check(wolf.hurt_player(1, 8.0, false, "wolves", 25.0) == "maimed" and float(wolf.vitals_of(1)["health"]) == 25.0, "a bite past the floor maims and stops at 25")
+	check(wolf.limp_share(1) == 0.5 and limps.size() > 0 and limps[limps.size() - 1][1] == 50, "the limp halves the speed and is sent (50)")
+	wolf._vitals["wolf-key-00001"]["health"] = 70.0
+	wolf._limp_tick(1, wolf.vitals_of(1), 1.0)
+	check(wolf.limp_share(1) == 1.0 and limps[limps.size() - 1][1] == 100, "healing to 60 percent ends the limp")
+	wolf._vitals["wolf-key-00001"]["health"] = 5.0
+	check(wolf.hurt_player(1, 8.0, true, "wolves", 25.0) == "dead", "a lethal bite kills")
+
 	print("death tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

@@ -88,6 +88,13 @@ func _init() -> void:
 	animals.canopy = func(p): return int(p.x / 30.0) % 3 == 0
 	animals.setup()
 	animals.died = func(sp, p, _peer): items.make_carcass(sp, p)
+	animals.wolves.player_info = func(): return items.wolf_info()
+	animals.wolves.fires = func(): return items._lit_fires()
+	animals.wolves.hurt_player = func(peer, amount, lethal, cause): return items.hurt_player(peer, amount, lethal, cause)
+	animals.wolves.notice = func(peer, text): items._say(peer, text)
+	animals.cfg["wolves"]["natural"] = true
+	animals.cfg["wolves"]["exclude"] = [0.0, 0.0, 0.0]
+	animals.cfg["wolves"]["cell_m"] = 600.0   # dense: the worst case for the brain
 	var npcs = NpcsScript.new()
 	NpcsScript.test_hold_off = true
 	npcs.hour_now = func(): return 9.0

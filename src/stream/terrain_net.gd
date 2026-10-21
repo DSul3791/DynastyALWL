@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 57
+const PROTOCOL_VERSION := 58
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -57,6 +57,7 @@ signal chest_received(id: int, bytes: PackedByteArray)
 signal breath_received(deciseconds: int)
 signal energy_received(percent: int)
 signal sick_received(hours: int)
+signal limp_received(percent: int)
 signal remains_received(rows: Array)
 signal worn_received(numbers: PackedInt32Array)
 signal npc_roster_received(rows: Array)
@@ -389,6 +390,12 @@ func thought(line_id: String, text: String, kind: String) -> void:
 @rpc("authority", "call_remote", "reliable")
 func sick(hours: int) -> void:
 	sick_received.emit(hours)
+
+
+# A crippling injury (protocol 58, wolves): the share of normal speed the player may move at, 100 = no limp. At hello and on change.
+@rpc("authority", "call_remote", "reliable")
+func limp(percent: int) -> void:
+	limp_received.emit(percent)
 
 
 # Body warmth, 0 to 100 percent (protocol 36, data/items/warmth.json): at hello and whenever the whole percent changes.

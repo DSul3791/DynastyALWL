@@ -145,6 +145,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.energy_received.connect(_on_energy)
 	net.warmth_received.connect(_on_warmth)
 	net.sick_received.connect(_on_sick)
+	net.limp_received.connect(func(percent): limp_share = clampf(float(percent) / 100.0, 0.1, 1.0))
 	net.remains_received.connect(_on_remains_marks)
 	net.worn_received.connect(_on_worn)
 	net.thought_received.connect(_on_thought)
@@ -858,8 +859,11 @@ func carried_kg() -> float:
 
 
 # Walking speed multiplier for the load: 1 when comfortable, easing down past it.
+var limp_share: float = 1.0   # server: a crippling injury slows the walker (protocol 58); Mandy reads this for the limping gait
+
+
 func speed_factor() -> float:
-	return CarryRules.speed_factor(carried_kg(), carry_body_kg(), _carry_cfg) if not _carry_cfg.is_empty() else 1.0
+	return (CarryRules.speed_factor(carried_kg(), carry_body_kg(), _carry_cfg) if not _carry_cfg.is_empty() else 1.0) * limp_share
 
 
 func _refresh_weight() -> void:
