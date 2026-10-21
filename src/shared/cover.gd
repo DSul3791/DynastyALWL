@@ -19,7 +19,6 @@ const SIZE_MAX := 1.2
 # Dave 2026-10-21 (build 467, measured at a beech by the spawn: the rain edge sat 1.41 m inside the leaf edge): the sheltered
 # disc has radius crown_m (the table's spacing radius), twice the old crown_m / 2, which is about where the drawn leaves end.
 const SHELTER_RADIUS := 2.0
-const SHELTER_AREA := 4.0                 # SHELTER_RADIUS squared; crown_depth divides it out so grass and litter keep the old crown
 const RADIUS_CAP := 16.0                  # a crown must reach at most one cell beyond its own (the query looks one cell around)
 
 
@@ -291,7 +290,7 @@ class Index:
 				for n in range(0, f.size(), 4):
 					var ox: float = pos.x - f[n]
 					var oz: float = pos.z - f[n + 1]
-					var r2: float = f[n + 2] * f[n + 2] / SHELTER_AREA
+					var r2: float = f[n + 2] * f[n + 2]   # the whole crown (Dave 2026-10-21: litter and bare ground reach the canopy distance)
 
 					if ox * ox + oz * oz < r2 and pos.y <= f[n + 3]:
 						best = maxf(best, 1.0 - sqrt((ox * ox + oz * oz) / r2))

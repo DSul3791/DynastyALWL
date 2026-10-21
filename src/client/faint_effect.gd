@@ -14,7 +14,8 @@ extends Node
 # shown it is one full-screen rectangle (a screen texture read, the blur is a lower mip level, so
 # no extra passes), drawn under the HUD text and menus. `blackout` (0 to 1) is exposed for sounds.
 
-const EASE_PER_S := 1.2            # how fast the picture follows a change, per second (smooths steps)
+const EASE_K := 7.0                # how fast the picture follows a change (1 / time constant, per second): only smooths the server's steps
+const SLEEP_K := 0.9               # lying down and waking from sleep: the picture takes about four seconds either way
 
 const SHADER := """
 shader_type canvas_item;
@@ -45,6 +46,8 @@ var blur: float = 0.0
 var _rect: ColorRect
 var _material: ShaderMaterial
 var _target: Vector3 = Vector3.ZERO      # tunnel, blackout, blur
+var _k: float = EASE_K
+var _slow: bool = false
 
 
 const FrameProbe := preload("res://src/debug/frame_probe.gd")
@@ -64,19 +67,33 @@ func setup(layer: CanvasLayer) -> void:
 
 func set_state(state: String, exertion: float, progress: float) -> void:
 	var p: float = clampf(progress, 0.0, 1.0)
+	_k = EASE_K
 
+	# Dave 2026-10-21: smooth, not chunky. Only a slight vignette and soft focus, then a gradual fade to black as the character goes
+	# down; the server sends the progress in fine steps (protocol 59) and the picture follows it with exponential smoothing.
 	match state:
 		"over_exerted":
 			var over: float = clampf((exertion - 1.0) * 2.0, 0.0, 1.0)
-			_target = Vector3(0.6 * over, 0.0, 0.5 * over)
+			_target = Vector3(0.25 * over, 0.0, 0.3 * over)
 		"fainting", "waking":
-			_target = Vector3(0.6 + 0.4 * p, smoothstep(0.35, 1.0, p), 0.5 + 0.5 * p)
+			_target = Vector3(0.3 * smoothstep(0.0, 0.7, p), smoothstep(0.2, 1.0, p), 0.5 * p)
 		"fainted":
-			_target = Vector3(1.0, 1.0, 1.0)
+			_target = Vector3(0.3, 1.0, 0.5)
 		"sleeping":
-			_target = Vector3(0.3, 0.6, 0.4)     # eyes closed: dim, 60 percent black, soft (job 86)
+			_target = Vector3(0.3, 1.0, 0.5)        # lying down: the same black as a faint, a little slower in and out
+			_k = SLEEP_K
+			_slow = true
+		"sleep_wake":
+			_target = Vector3.ZERO
+			_k = SLEEP_K
 		_:
 			_target = Vector3.ZERO
+
+	if _slow and state != "sleeping" and state != "sleep_wake" and blackout > 0.01:
+		_k = SLEEP_K      # the wake from sleep keeps its slow ease until the picture is clear
+
+	if blackout <= 0.01:
+		_slow = false
 
 
 func _process(delta: float) -> void:
@@ -89,10 +106,15 @@ func _process_body(delta: float) -> void:
 	if _rect == null:
 		return
 
-	var step: float = EASE_PER_S * delta
-	tunnel = move_toward(tunnel, _target.x, step)
-	blackout = move_toward(blackout, _target.y, step)
-	blur = move_toward(blur, _target.z, step)
+	var follow: float = 1.0 - exp(-_k * delta)
+	tunnel = lerpf(tunnel, _target.x, follow)
+	blackout = lerpf(blackout, _target.y, follow)
+	blur = lerpf(blur, _target.z, follow)
+
+	if _target.y == 0.0 and blackout < 0.004:
+		tunnel = 0.0
+		blackout = 0.0
+		blur = 0.0
 	var active: bool = tunnel > 0.002 or blackout > 0.002 or blur > 0.002
 
 	if active != _rect.visible:

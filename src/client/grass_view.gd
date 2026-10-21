@@ -22,10 +22,12 @@ const MIN_SLOPE_Y := 0.58                # surface normal y; steeper is bare roc
 const COVER_FROM := 0.14                 # slope (1 - normal y) where grass starts to thin
 const COVER_TO := 0.42                   # slope where it is gone, except in patches and on ledges
 const TUFTS_PER_POINT := 3
-const CROWN_GRASS_FROM := 0.12           # depth under a crown (0 drip line, 1 trunk) where the grass starts thinning
-const CROWN_GRASS_TO := 0.5              # ... and where it is nearly gone (4 percent left)
-const CROWN_LITTER_FROM := 0.05          # litter starts getting denser here
-const CROWN_LITTER_TO := 0.4             # ... and reaches its full depth here
+# Depth under a crown is 0 at the drip line (the whole crown radius, the same disc as the rain shelter) and 1 at the trunk. Dave 2026-10-21:
+# litter and bare ground reach the canopy distance, the grass fading out over the outer fifth so there is no sharp circle.
+const CROWN_GRASS_FROM := 0.0            # grass starts thinning at the drip line
+const CROWN_GRASS_TO := 0.22             # ... and is nearly gone (4 percent left) a fifth of the way in
+const CROWN_LITTER_FROM := 0.0           # litter starts getting denser at the drip line
+const CROWN_LITTER_TO := 0.3             # ... and reaches its full depth here
 const LITTER_DEEP_LEAVES := 5.0          # leaf cards per sample at full depth, times the normal count
 const LITTER_DEEP_TWIGS := 4.0           # twigs likewise
 const SCENERY_PEBBLES := true            # owner (2026-10-21): pebbles are decoration (not pickable, not harvestable, like a voxel texture); they vanish when the ground under them is dug (ground_changed)
@@ -1231,10 +1233,11 @@ func _put_boulders(buffers: Array, counts: Array, rng: RandomNumberGenerator, po
 # One ground sample under a crown: leaf cards and, now and then, a dead branch (layers GRASS_LAYERS on).
 func _put_litter(buffers: Array, counts: Array, rng: RandomNumberGenerator, point: Vector3, spacing: float, under: float) -> void:
 	var deep: float = smoothstep(CROWN_LITTER_FROM, CROWN_LITTER_TO, under)
+	var rim: float = smoothstep(0.0, 0.12, under)   # litter thins out to nothing at the drip line, no sharp circle
 
 	for layer in range(GRASS_LAYERS, LITTER_END):
 		# Deeper under the crown the floor gets up to LITTER_DEEP_LEAVES / LITTER_DEEP_TWIGS times the litter.
-		var want: float = float(LAYERS[layer]["per_point"]) * litter_density * (1.0 + deep * ((LITTER_DEEP_TWIGS if LAYERS[layer].get("branch", false) else LITTER_DEEP_LEAVES) - 1.0))
+		var want: float = rim * float(LAYERS[layer]["per_point"]) * litter_density * (1.0 + deep * ((LITTER_DEEP_TWIGS if LAYERS[layer].get("branch", false) else LITTER_DEEP_LEAVES) - 1.0))
 		var count: int = int(want) + (1 if rng.randf() < want - floorf(want) else 0)
 		var branch: bool = LAYERS[layer].get("branch", false)
 

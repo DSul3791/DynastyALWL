@@ -65,7 +65,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 524
+const BUILD := 525
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -2526,7 +2526,19 @@ func _step_player(delta: float) -> void:
 	# stand-in body estimate only runs without it and in the sound tests.
 	if items != null and not test_exertion and not test_faint and sound.breath._demo_t < 0.0:
 		var shown: Array = items.faint_state()
-		sound.breath.set_body(items.strain, shown[0], shown[1])
+		faint.set_state(shown[0], items.strain, shown[1])      # every frame: the picture eases toward it, so it is smooth (Dave 2026-10-21)
+		# Asleep or just woken from sleep: the world sound follows the picture's black (sleeping, then waking as it clears).
+		var heard: String = shown[0]
+		var heard_progress: float = shown[1]
+
+		if heard == "sleeping":
+			heard_progress = faint.blackout
+		elif heard == "normal" and faint.blackout > 0.02:
+			heard = "waking"
+			heard_progress = faint.blackout
+
+		sound.breath.set_server_heart(float(items.body_bpm), items.body_phase)
+		sound.breath.set_body(items.strain, heard, heard_progress)
 
 	var tsd: int = Probe.start()
 	if swimming:

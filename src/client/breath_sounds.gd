@@ -58,6 +58,8 @@ var heaves_played: int = 0
 var breaths_played: int = 0
 var beats_played: int = 0
 var bpm_now: float = 0.0                # the heart rate now, eased (HUD, checks)
+var server_bpm: float = 0.0             # the server's heart rate for a faint or sleep (0: use the exertion curve)
+var server_phase: int = 0
 var bpm_max: float = 0.0
 var bpm_step_max: float = 0.0           # the biggest change between two frames, bpm
 var last: String = ""
@@ -109,11 +111,19 @@ func set_body(value: float, new_state: String, faint_progress: float = 0.0) -> v
 	exertion = clampf(value, 0.0, EXERTION_MAX)
 	_external_until = Time.get_ticks_msec() + EXTERNAL_MSEC
 	state = {"over_exerted": "over"}.get(new_state, new_state)    # Items and Art say over_exerted
-	state = state if state in ["normal", "over", "fainting", "fainted", "waking"] else "normal"
+	state = state if state in ["normal", "over", "fainting", "fainted", "waking", "sleeping"] else "normal"
 	_faint = clampf(faint_progress, 0.0, 1.0)
 
 	if state == "fainted" or state == "fainting":
 		exertion = maxf(exertion, 1.2)       # the heart is still racing in a faint, whatever strain the server holds
+
+
+# The heart the server sets in the ears (protocol 59 body(bpm, eta, phase), Dave 2026-10-21): 0 awake; in a faint a rapid beat a little
+# higher in pitch that drops to a brisk 140 as you are about to wake; asleep a slow beat that keeps slowing. phase: 0 awake, 1 falling
+# asleep, 2 out, 3 waking. While out the rest of the world is muted and the heart stays heard (it does not fade away).
+func set_server_heart(bpm: float, phase: int) -> void:
+	server_bpm = bpm
+	server_phase = phase
 
 
 func clear_exertion() -> void:
@@ -214,11 +224,12 @@ func update(delta: float, underwater: bool) -> void:
 	elif not fainted:
 		_gone_t = 0.0
 
-	var gain_target: float = clampf(1.0 - _gone_t / HEART_GONE_SEC, 0.0, 1.0) if fainted else 1.0
-	_heart_gain = move_toward(_heart_gain, gain_target, delta / (HEART_GONE_SEC if fainted else 1.5))
+	var out_phase: bool = server_phase >= 1 and server_bpm > 0.0
+	var gain_target: float = clampf(1.0 - _gone_t / HEART_GONE_SEC, 0.0, 1.0) if fainted and not out_phase else 1.0
+	_heart_gain = move_toward(_heart_gain, gain_target, delta / (HEART_GONE_SEC if fainted and not out_phase else 1.5))
 
 	# Under water the body is silent, except in a faint (the heart is inside the head).
-	var silent: bool = (underwater and not fainted) or (exertion < QUIET and state != "waking" and not fainted)
+	var silent: bool = (underwater and not fainted and not out_phase) or (exertion < QUIET and state != "waking" and not fainted and not out_phase)
 
 	if silent:
 		_breath_left = minf(_breath_left, 0.5)
@@ -229,7 +240,7 @@ func update(delta: float, underwater: bool) -> void:
 	if not fainted:
 		_breathe(delta)
 
-	if (exertion >= HEART_FROM or fainted or state == "waking") and _heart_gain > 0.01:
+	if (exertion >= HEART_FROM or fainted or state == "waking" or out_phase) and _heart_gain > 0.01:
 		_beat_left -= delta
 		var before: float = bpm_now
 		bpm_now = _bpm() if bpm_now <= 0.0 else move_toward(bpm_now, _bpm(), BPM_EASE * delta)
@@ -237,10 +248,18 @@ func update(delta: float, underwater: bool) -> void:
 		bpm_step_max = maxf(bpm_step_max, absf(bpm_now - before) if before > 0.0 else 0.0)
 
 		if _beat_left <= 0.0:
-			_beat_left = 60.0 / maxf(bpm_now, BPM_REST)
+			_beat_left = 60.0 / maxf(bpm_now, 30.0)
 			var over: float = _over()
 			var level: float = lerpf(-34.0, -20.0, clampf((exertion - HEART_FROM) / (OVER - HEART_FROM), 0.0, 1.0)) + 12.0 * over
-			_play(_heart, "heartbeat", level + linear_to_db(maxf(_heart_gain, 0.001)), 1.0 + 0.1 * clampf(exertion, 0.0, EXERTION_MAX))
+			var pitch: float = 1.0 + 0.1 * clampf(exertion, 0.0, EXERTION_MAX)
+
+			if out_phase:
+				# Faster means a little higher: 44 bpm asleep is a deep slow thud, 172 in a faint is quicker and brighter.
+				var fast: float = clampf((bpm_now - 44.0) / 128.0, 0.0, 1.0)
+				pitch = lerpf(0.92, 1.16, fast)
+				level = lerpf(-28.0, -19.0, fast)
+
+			_play(_heart, "heartbeat", level + linear_to_db(maxf(_heart_gain, 0.001)), pitch)
 			beats_played += 1
 
 
@@ -253,6 +272,9 @@ func _over() -> float:
 # threshold (FAINT_AT), on to 200 at the biggest overshoot (EXERTION_MAX). Fainting or fainted counts as at least the
 # threshold, so passing out never starts below 175. update() eases the heart toward this, so there are no steps.
 func _bpm() -> float:
+	if server_bpm > 0.0:
+		return server_bpm
+
 	var e: float = exertion
 
 	if state == "fainting" or state == "fainted":
@@ -303,7 +325,7 @@ func _breathe(delta: float) -> void:
 func _fade_world(delta: float) -> void:
 	var target: float = 0.0
 
-	if state == "fainted" or state == "fainting":
+	if state == "fainted" or state == "fainting" or state == "sleeping":
 		target = maxf(_faint, 0.0)                                          # out with the vision (client.faint.blackout)
 	elif state == "waking":
 		target = _faint                                                     # the blackness still left (Items strain_fade, Art's fade)
