@@ -18,6 +18,7 @@ const MIN_SLOPE_Y := 0.58                # surface normal y; steeper is bare roc
 const COVER_FROM := 0.14                 # slope (1 - normal y) where grass starts to thin
 const COVER_TO := 0.42                   # slope where it is gone, except in patches and on ledges
 const TUFTS_PER_POINT := 3
+const SHORT_SOIL_LIFT := 1.9    # short grass: soil thickness times at most this, capped at 1 (0.5 becomes 0.95, 0.3 becomes 0.57)
 
 # Soil ids that carry grass, with how thick (0 to 1).
 const GRASS_SOILS := {3: 0.9, 4: 0.5, 5: 1.0, 6: 0.7, 7: 1.0, 8: 0.6, 9: 0.3}
@@ -782,6 +783,7 @@ func _build(cell: Vector2i) -> int:
 			if soil < 0:
 				continue
 
+			var short_soil: float = minf(1.0 / float(GRASS_SOILS[soil]), SHORT_SOIL_LIFT)       # the short grass's soil share is lifted to near 1 (see the short layer below)
 			var thick: float = float(GRASS_SOILS[soil]) * _cover_at(x, z, hit["normal"].y)
 			# Owner (2026-10-20): in a closed forest the litter and shade under the trees stop the grass; in
 			# open fields and sparse trees it grows right up to and under them. Closure thins it gradually.
@@ -818,7 +820,9 @@ func _build(cell: Vector2i) -> int:
 					# Tall grass only in meadow patches, thinning toward their edges; by water it grows everywhere.
 					chance = lerpf(thick * clampf((meadow - 0.05) * 3.0, 0.0, 1.0) * 0.9, thick, wet)
 				elif layer == 1:
-					chance = thick * (1.0 - clampf((meadow - 0.2) * 1.5, 0.0, 0.6))
+					# Owner (2026-10-21): the short grass should cover about 98 percent of the ground. Poor soils
+					# no longer halve it (soil 4 was 0.5) and meadow patches thin it only a little.
+					chance = thick * short_soil * (1.0 - clampf((meadow - 0.2) * 1.5, 0.0, 0.25))
 
 				for k in range(count):
 					if rng.randf() > chance:
