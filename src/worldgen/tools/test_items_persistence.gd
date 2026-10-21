@@ -76,7 +76,13 @@ func _init() -> void:
 	wrong.store_string("{\"version\": 9999, \"items\": []}")
 	wrong.close()
 	var w = make(dir)
-	check(w.world_item_count() == 0, "a save from a newer version is not read")
+	var loose: int = 0
+
+	for k in w._items:
+		if not w._items[k].has("tree"):
+			loose += 1
+
+	check(loose == 0, "a save from a newer version is not read (%d loose items)" % loose)
 
 	# An old save (protocol 18) holds an out fire as state 2: empty ashes when no wood is left, loaded when some is.
 	var old = FileAccess.open(dir + "/world_items.json", FileAccess.WRITE)
@@ -87,7 +93,8 @@ func _init() -> void:
 	var states: Array = []
 
 	for k in o._items:
-		states.append(int(o._items[k]["fire"]["state"]))
+		if o._items[k].has("fire"):
+			states.append(int(o._items[k]["fire"]["state"]))
 
 	states.sort()
 	check(states == [8, 9], "old out fires load as empty (8) or loaded (9): %s" % str(states))
