@@ -40,6 +40,7 @@ const Probe := preload("res://src/debug/frame_probe.gd")
 const CompassScript := preload("res://src/client/admin_compass.gd")
 const InventoryViewScript := preload("res://src/client/inventory_view.gd")
 const NpcViewScript := preload("res://src/client/npc_view.gd")
+const NpcVoiceScript := preload("res://src/client/npc_voice.gd")
 const AnimalViewScript := preload("res://src/client/animal_view.gd")
 const DialogueViewScript := preload("res://src/client/dialogue_view.gd")
 const HeldItemScript := preload("res://src/client/held_item.gd")
@@ -66,6 +67,8 @@ const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
 const BUILD := 495
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
+var _npc_voice_button: Button = null
+var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
@@ -854,6 +857,17 @@ func _welcome_body(info: Dictionary) -> void:
 	dialogue_view.name = "Dialogue"
 	add_child(dialogue_view)
 	dialogue_view.setup(net, items, npc_view, layer, func(): return body.global_position)
+	var npc_voice: Node = NpcVoiceScript.new()
+	npc_voice.name = "NpcVoice"
+	add_child(npc_voice)
+	_npc_voice = npc_voice
+
+	if _npc_voice_button != null:
+		_npc_voice_button.text = "NPC voice: %s" % ("on" if npc_voice.enabled else "off")
+
+	dialogue_view.voice_line = func(voice_id: String, text: String):
+		var talker: Dictionary = npc_view.nearest(body.global_position, 20.0)
+		npc_voice.speak(voice_id, text, talker.get("pos", null))
 	items.knowledge = knowledge
 	items.max_lights = func(): return [1, 2, 3, 3][clampi(quality, 0, 3)]
 	items.is_inspecting = func(): return inspecting
@@ -1703,6 +1717,10 @@ func _build_menu(layer: CanvasLayer) -> void:
 			_menu_note.text = "Quality: %s (saved; the HUD shows it after the build number)" % QUALITY_NAMES[index])
 		_quality_buttons.append(tier_button)
 
+	_npc_voice_button = _menu_button(settings, "NPC voice: on", func():
+		if _npc_voice != null:
+			_npc_voice.set_enabled(not _npc_voice.enabled)
+			_npc_voice_button.text = "NPC voice: %s" % ("on" if _npc_voice.enabled else "off"))
 	_menu_button(settings, "Debug details (F3): on or off", func():
 		debug_hud.enabled = not debug_hud.enabled
 		_menu_note.text = "Debug details %s" % ("on" if debug_hud.enabled else "off"))

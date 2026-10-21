@@ -1,0 +1,358 @@
+{
+ "hob": {
+  "785ce807": {
+   "text": "A fever, perhaps. I cannot think clearly.",
+   "bytes": 20086
+  },
+  "9a9ce30c": {
+   "text": "A terrible chill has settled in my bones.",
+   "bytes": 20110
+  },
+  "ab86569c": {
+   "text": "Ah, a visitor. Welcome.",
+   "bytes": 14381
+  },
+  "3840ab81": {
+   "text": "Another quiet day.",
+   "bytes": 13097
+  },
+  "ae0b232a": {
+   "text": "Come again soon.",
+   "bytes": 11801
+  },
+  "8e4d1241": {
+   "text": "Come in, come in.",
+   "bytes": 12198
+  },
+  "5e067eb1": {
+   "text": "Do forgive my pallor, I am quite unwell.",
+   "bytes": 19066
+  },
+  "3ce22fbd": {
+   "text": "Everything smells wrong to me today.",
+   "bytes": 18107
+  },
+  "a1dcbf91": {
+   "text": "Farewell, friend.",
+   "bytes": 12785
+  },
+  "29747960": {
+   "text": "Forgive me, my head is pounding.",
+   "bytes": 16389
+  },
+  "78e9a9cd": {
+   "text": "Forgive me, the shop will have to wait a moment.",
+   "bytes": 19128
+  },
+  "9be08175": {
+   "text": "Forgive my manners, I am poorly.",
+   "bytes": 17235
+  },
+  "2a3d85f0": {
+   "text": "Good day to you.",
+   "bytes": 11609
+  },
+  "10de3f67": {
+   "text": "Hm. Business is slow.",
+   "bytes": 15723
+  },
+  "c9c8b10c": {
+   "text": "I am not myself today, I fear.",
+   "bytes": 17801
+  },
+  "b297a224": {
+   "text": "I apologize, I cannot think straight today.",
+   "bytes": 21185
+  },
+  "d537bddd": {
+   "text": "I apologize, I have had a headache all day.",
+   "bytes": 20826
+  },
+  "bf219ae1": {
+   "text": "I deal in tools, twine and trinkets. Trading opens soon.",
+   "bytes": 25735
+  },
+  "1511c55b": {
+   "text": "I feel dreadful. Do not ask me to haggle.",
+   "bytes": 18903
+  },
+  "7ee35dc6": {
+   "text": "I have been dizzy since breakfast.",
+   "bytes": 16212
+  },
+  "bf358e3c": {
+   "text": "I have felt faint since the morning bell.",
+   "bytes": 17532
+  },
+  "205ac865": {
+   "text": "I have had a dreadful ache since dawn.",
+   "bytes": 17617
+  },
+  "a5f222a0": {
+   "text": "I should lie down, truly.",
+   "bytes": 14490
+  },
+  "5ddcfdfa": {
+   "text": "Mind the dark on your way.",
+   "bytes": 14706
+  },
+  "37b2fdbd": {
+   "text": "Mind the road to the lake at night.",
+   "bytes": 16589
+  },
+  "a61b0786": {
+   "text": "My ears ring and my hands shake.",
+   "bytes": 17448
+  },
+  "b943923d": {
+   "text": "My head swims. Please be brief.",
+   "bytes": 15899
+  },
+  "98289271": {
+   "text": "My hearth is cold. Bring me three bolts of firewood.",
+   "bytes": 23064
+  },
+  "86badf98": {
+   "text": "My joints ache like a rainy week.",
+   "bytes": 18362
+  },
+  "181b29b1": {
+   "text": "My stomach turns every time I count coins.",
+   "bytes": 22247
+  },
+  "8c01322b": {
+   "text": "Not a good day for business, I am afraid.",
+   "bytes": 19582
+  },
+  "5bed16cf": {
+   "text": "Not much on the shelves yet. The carts are late.",
+   "bytes": 20151
+  },
+  "92e5139d": {
+   "text": "Not now, I beg you.",
+   "bytes": 13851
+  },
+  "e97dbcee": {
+   "text": "Pardon me, I feel quite unwell.",
+   "bytes": 16971
+  },
+  "0148c2b4": {
+   "text": "Pardon me, I have a fever coming on.",
+   "bytes": 18689
+  },
+  "730259cf": {
+   "text": "Please, later. My head.",
+   "bytes": 14645
+  },
+  "13542a53": {
+   "text": "Safe roads to you.",
+   "bytes": 12618
+  },
+  "e50f6301": {
+   "text": "Splendid! Take this for your trouble.",
+   "bytes": 16785
+  },
+  "24c24986": {
+   "text": "Stone and sticks fetch fair coin.",
+   "bytes": 17479
+  },
+  "9190d92b": {
+   "text": "The pond freezes hard in winter. Fish through the ice.",
+   "bytes": 23968
+  },
+  "02f6e266": {
+   "text": "The shop opens at first light.",
+   "bytes": 17007
+  },
+  "69594ad1": {
+   "text": "The wind smells of rain.",
+   "bytes": 15049
+  },
+  "3d4b5dfb": {
+   "text": "Three bolts of firewood, split. I am grateful.",
+   "bytes": 20869
+  },
+  "cad305af": {
+   "text": "Three stones for the lesson. Now count with me.",
+   "bytes": 21427
+  },
+  "8bf107ce": {
+   "text": "Welcome to my stall, stranger. I am Hob.",
+   "bytes": 20909
+  },
+  "a45e9ae1": {
+   "text": "Well met, traveller.",
+   "bytes": 12697
+  },
+  "8ba0f286": {
+   "text": "Wolves were heard in the hills. Keep a fire lit.",
+   "bytes": 20276
+  }
+ },
+ "edda": {
+  "63d0c483": {
+   "text": "A fever has me today, speak softly.",
+   "bytes": 17645
+  },
+  "00c3d712": {
+   "text": "A lean-to keeps the rain off. Set one by the pond.",
+   "bytes": 22099
+  },
+  "3a9583ff": {
+   "text": "A sickness has taken me since dusk.",
+   "bytes": 17919
+  },
+  "255a0a74": {
+   "text": "All quiet.",
+   "bytes": 10437
+  },
+  "8b936b84": {
+   "text": "Bad air, I think. It has taken my strength.",
+   "bytes": 19873
+  },
+  "ba7fc557": {
+   "text": "Build a lean-to near a fire. Warmth matters.",
+   "bytes": 20873
+  },
+  "0b852ae8": {
+   "text": "Cold watch tonight.",
+   "bytes": 13169
+  },
+  "9e6c762b": {
+   "text": "Even my spear feels heavy today.",
+   "bytes": 16836
+  },
+  "17cd7d19": {
+   "text": "Evening, traveller.",
+   "bytes": 11827
+  },
+  "6c752d4c": {
+   "text": "Forgive me, I have not slept well.",
+   "bytes": 16865
+  },
+  "53b34002": {
+   "text": "Forgive me, my watch has been poor today.",
+   "bytes": 19632
+  },
+  "14bdfb6d": {
+   "text": "Forgive my short answers, I feel wretched.",
+   "bytes": 19905
+  },
+  "69146aad": {
+   "text": "Halt. State your business.",
+   "bytes": 14388
+  },
+  "79147351": {
+   "text": "Hm. Nothing stirs.",
+   "bytes": 14594
+  },
+  "7977fa54": {
+   "text": "Hold the blade loose. Again, and again. There.",
+   "bytes": 19778
+  },
+  "97021d9c": {
+   "text": "I am unwell. Forgive my manner.",
+   "bytes": 16233
+  },
+  "d53733d9": {
+   "text": "I apologize, I cannot keep my eyes open.",
+   "bytes": 22015
+  },
+  "d68987fa": {
+   "text": "I apologize, my head aches terribly.",
+   "bytes": 18534
+  },
+  "8204ae95": {
+   "text": "I feel faint and hollow.",
+   "bytes": 13629
+  },
+  "f19bd6e7": {
+   "text": "I have a pounding head and a sour stomach.",
+   "bytes": 19231
+  },
+  "eb8daa3f": {
+   "text": "I have not eaten since yesterday and it shows.",
+   "bytes": 21308
+  },
+  "4d46e0f9": {
+   "text": "I need to sit before I fall.",
+   "bytes": 15001
+  },
+  "b7306f26": {
+   "text": "I watch the gate from dusk to dawn.",
+   "bytes": 17527
+  },
+  "315bfbee": {
+   "text": "Keep your fire covered in rain.",
+   "bytes": 16506
+  },
+  "5d7ba4d0": {
+   "text": "Keep your hands where I can see them.",
+   "bytes": 17025
+  },
+  "25da5aee": {
+   "text": "Later. Please.",
+   "bytes": 11631
+  },
+  "a0c68366": {
+   "text": "Leave me be a while.",
+   "bytes": 12854
+  },
+  "e622e51a": {
+   "text": "Move along.",
+   "bytes": 10038
+  },
+  "72173f30": {
+   "text": "My bones ache from the cold.",
+   "bytes": 15746
+  },
+  "55723935": {
+   "text": "My head throbs. Speak quickly.",
+   "bytes": 15741
+  },
+  "9012ae29": {
+   "text": "My legs are weak as water.",
+   "bytes": 15779
+  },
+  "1e53c454": {
+   "text": "Not my best day, I am afraid.",
+   "bytes": 15998
+  },
+  "eebb33d6": {
+   "text": "Pardon me. I can barely stand.",
+   "bytes": 15770
+  },
+  "8e651c17": {
+   "text": "Pardon my temper, I am ill.",
+   "bytes": 15756
+  },
+  "478deabe": {
+   "text": "Safe enough by day. Wolves hunt at night.",
+   "bytes": 19668
+  },
+  "080766be": {
+   "text": "Stay out of trouble.",
+   "bytes": 12679
+  },
+  "43fd5b3a": {
+   "text": "The ache behind my eyes will not leave.",
+   "bytes": 18390
+  },
+  "f6e362d9": {
+   "text": "The gate can spare me for a moment, I hope.",
+   "bytes": 18987
+  },
+  "45e60e0b": {
+   "text": "The hills are quiet. The woods are not.",
+   "bytes": 17189
+  },
+  "0f926544": {
+   "text": "The road north is quiet.",
+   "bytes": 14440
+  },
+  "1a14d7bd": {
+   "text": "Watch the road.",
+   "bytes": 10693
+  }
+ }
+}
