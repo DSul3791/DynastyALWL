@@ -15,7 +15,8 @@ const CELL_M := 6.0
 const RAYS_PER_FRAME := 40
 const BUILD_USEC := 5000                 # cells are built for at most this long a frame (at least one)
 const LOOKAHEAD_S := 1.5                 # the scan is centred this many seconds of movement ahead
-const RESCAN_MSEC := 800                 # the scan also repeats this often, to retry cells
+const RESCAN_MSEC := 800                 # the scan also repeats this often while some cell is unbuilt, to retry cells
+const IDLE_RESCAN_MSEC := 8000           # and this often when every cell in reach is built
 const RETRY_MSEC := 500
 const MIN_SLOPE_Y := 0.58                # surface normal y; steeper is bare rock
 const COVER_FROM := 0.14                 # slope (1 - normal y) where grass starts to thin
@@ -209,6 +210,8 @@ var _scan_cz: int = 0
 var _scan_span: int = 0
 var _scan_at: Vector2 = Vector2.ZERO
 var _scan_extra: float = 0.0
+var _next_rescan: int = 0                 # msec: when the next scan is due without the player changing cell (when a waiting cell's retry falls due)
+var _scan_next: int = 1 << 60
 var _scan_now: int = 0
 var _scan_keep: Dictionary = {}
 const SCAN_ROWS_PER_FRAME := 4
@@ -652,7 +655,9 @@ func update(position: Vector3) -> void:
 	var ahead: Vector3 = position + Vector3(_velocity.x, 0.0, _velocity.y) * LOOKAHEAD_S
 	var here_cell: Vector2i = Vector2i(int(floor(ahead.x / CELL_M)), int(floor(ahead.z / CELL_M)))
 
-	if not _scan_active and (here_cell != _scan_cell or now - _scan_msec > RESCAN_MSEC):
+	# Standing still costs nothing: a rescan only repeats (to retry cells whose ground was not ready) while
+	# some cell is still unbuilt, otherwise every IDLE_RESCAN_MSEC (owner table 2026-10-21: the frame was CPU bound).
+	if not _scan_active and (here_cell != _scan_cell or now >= _next_rescan):
 		_scan_msec = now
 		_scan_cell = here_cell
 		_rescan_begin(ahead, now)
@@ -737,6 +742,9 @@ func _rescan_step() -> void:
 			_scan_keep[cell] = true
 			var entry = _cells.get(cell)
 
+			if entry != null and not entry["built"] and not entry["busy"]:
+				_scan_next = mini(_scan_next, int(entry["retry"]))
+
 			if entry == null:
 				_cells[cell] = {"nodes": [], "count": 0, "retry": 0, "busy": true, "built": false}
 				_pending.append(cell)
@@ -752,6 +760,8 @@ func _rescan_step() -> void:
 		return
 
 	_scan_active = false
+	_next_rescan = _scan_now + (RESCAN_MSEC if not _pending.is_empty() else clampi(_scan_next - _scan_now, RESCAN_MSEC, IDLE_RESCAN_MSEC))
+	_scan_next = 1 << 60
 
 	if _pending.size() > 1:
 		# Nearest first, in one pass: a bucket per cell ring (sorting 2000 cells with a lambda took about 30 ms).
@@ -931,7 +941,10 @@ func _build(cell: Vector2i) -> int:
 
 	if missed * 2 > rays:
 		# The ground collision is not ready here yet; try again later.
-		entry["retry"] = Time.get_ticks_msec() + RETRY_MSEC
+		# Back off: a cell with no ground collision (beyond its range) is tried again after 0.5, 1, 2, 4, 8 s.
+		var fails: int = int(entry.get("fails", 0))
+		entry["fails"] = mini(fails + 1, 4)
+		entry["retry"] = Time.get_ticks_msec() + (RETRY_MSEC << fails)
 		return rays
 
 	entry["built"] = true
