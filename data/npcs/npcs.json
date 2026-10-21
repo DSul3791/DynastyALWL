@@ -1,5 +1,5 @@
 {
-	"note": "Classic NPC system, step A (Radar, Steve-approved 2026-10-21; design in items/NPC_DESIGN.md). packages: what an NPC does in a slot; 'marker' is the kind of world marker it goes to (bed, chair, post) and 'state' the body state there. schedule: 24 hourly slots of package names, read with the NPC's own jitter (+/- jitter_min). Beyond active_radius_m from every player an NPC is dormant: not simulated, placed at the marker its schedule says when a player comes in range. Tick rates by distance to the nearest player: near (hz_near within near_m), mid (hz_mid within mid_m), far (hz_far). Markers live in markers.json (x, z; the ground gives y) and admin additions in the store folder.",
+	"note": "Classic NPC system, step A (Radar, Steve-approved 2026-10-21; design in items/NPC_DESIGN.md). packages: what an NPC does in a slot; 'marker' is the kind of world marker it goes to (bed, chair, post) and 'state' the body state there. schedule: 24 hourly slots of package names, read with the NPC's own jitter (+/- jitter_min). Beyond active_radius_m from every player an NPC is dormant: not simulated, placed at the marker its schedule says when a player comes in range. Tick rates by distance to the nearest player: near (hz_near within near_m), mid (hz_mid within mid_m), far (hz_far). Markers live in markers.json (x, z; the ground gives y) and admin additions in the store folder. test_hold (Dave 2026-10-21, TEST): while an NPC id is listed there it does that package all day (Hob at a post, Edda in a chair, both facing the spawn x 53301 z 68427); delete test_hold to restore the day schedules.",
 	"active_radius_m": 200.0,
 	"near_m": 60.0,
 	"mid_m": 120.0,
@@ -91,5 +91,9 @@
 				"work"
 			]
 		}
-	]
+	],
+	"test_hold": {
+		"hob": "work",
+		"edda": "sit"
+	}
 }

@@ -22,6 +22,7 @@ func check(ok: bool, what: String) -> void:
 
 func make(dir: String):
 	var npcs = NpcsScript.new()
+	NpcsScript.test_hold_off = true
 	npcs.hour_now = func(): return hour
 	npcs.ground_height = func(_x, _z): return 10.0
 	npcs.blocked = func(x, z):

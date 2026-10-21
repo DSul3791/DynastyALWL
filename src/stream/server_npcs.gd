@@ -17,6 +17,7 @@ var blocked: Callable           # (x, z) -> bool: water or anything an NPC may n
 var player_positions: Callable  # () -> Array of Vector3
 
 var cfg: Dictionary = {}
+static var test_hold_off: bool = false   # unit tests read the real day schedules
 var markers: Dictionary = {}    # id -> {kind, pos Vector3, slots, yaw, users Array of npc ids}
 var npcs: Dictionary = {}       # id -> runtime record
 var _dir: String = ""
@@ -125,6 +126,10 @@ func _release_other(npc: Dictionary, keep_kind: String) -> void:
 
 func package_of(npc: Dictionary, hour: float) -> String:
 	var table: Array = npc["schedule"]
+	var hold: Dictionary = {} if test_hold_off else cfg.get("test_hold", {})
+
+	if hold.has(str(npc["id"])):
+		return str(hold[str(npc["id"])])
 
 	if table.size() != 24:
 		return ""

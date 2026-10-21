@@ -63,7 +63,8 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 463
+const BUILD := 464
+var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
@@ -834,6 +835,7 @@ func _welcome_body(info: Dictionary) -> void:
 	var npc_view: Node3D = NpcViewScript.new()
 	npc_view.name = "Npcs"
 	add_child(npc_view)
+	_npc_view = npc_view
 	net.npc_roster_received.connect(npc_view.on_roster)
 	net.npcs_received.connect(npc_view.on_rows)
 	items = InventoryViewScript.new()
@@ -1021,6 +1023,19 @@ func _arrive_on_ground() -> void:
 
 # The character died (protocol 34): the server already holds the remains and the reset vitals; put the body back at the spawn
 # high up and let it settle on the ground the way a first arrival does (no fall, a few seconds of protection).
+# Ctrl+N (admin): stand next to the nearest NPC that is drawn (they are sent within 120 m); press E there to talk.
+func _go_to_npc() -> void:
+	var near: Dictionary = _npc_view.nearest(body.global_position, 100000.0) if _npc_view != null else {}
+
+	if near.is_empty():
+		if items != null:
+			items.show_notice("No NPC within 120 m. Hob works near x 53334 z 68482.")
+
+		return
+
+	body.global_position = near["pos"] + Vector3(2.0, 1.5, 0.0)
+
+
 func _on_died(_cause: String, spawn_point: Vector3) -> void:
 	if body == null:
 		return
@@ -2242,6 +2257,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			net.step_water_rate.rpc_id(1, -1)
 		elif event.keycode == KEY_X and event.ctrl_pressed:
 			_admin_dig()
+		elif event.keycode == KEY_N and event.ctrl_pressed:
+			_go_to_npc()
 		elif event.keycode == KEY_C and not flying:
 			_set_stance(StanceScript.CROUCH, true)
 		elif event.keycode == KEY_X and not flying:

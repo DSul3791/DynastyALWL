@@ -121,6 +121,7 @@ func _init() -> void:
 	items.setup(table, dir)
 	items.peer_connected_hello(1, "talk-key-000001")
 	var npcs = NpcsScript.new()
+	NpcsScript.test_hold_off = true
 	npcs.hour_now = func(): return hour
 	npcs.ground_height = func(_x, _z): return 10.0
 	npcs.player_positions = func(): return items.peer_positions()
