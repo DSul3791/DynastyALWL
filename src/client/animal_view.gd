@@ -12,6 +12,8 @@ const FLEE := 2
 var _bodies: Dictionary = {}     # id -> {node, target Vector3, heading, state, phase}
 var _mats: Dictionary = {}
 var _t: float = 0.0
+var _blood: Array = []           # MeshInstance3D pool, one per drop shown
+var _blood_mat: StandardMaterial3D
 
 
 func on_rows(rows: Array) -> void:
@@ -38,6 +40,39 @@ func on_rows(rows: Array) -> void:
 		if not seen.has(id):
 			_bodies[id]["node"].queue_free()
 			_bodies.erase(id)
+
+
+# The blood trail (protocol 55): dark red flat spots on the ground where a wounded animal ran, a pooled MeshInstance3D each,
+# size varied by position so the trail does not look stamped.
+func on_blood(points: PackedVector3Array) -> void:
+	if _blood_mat == null:
+		_blood_mat = StandardMaterial3D.new()
+		_blood_mat.albedo_color = Color(0.32, 0.03, 0.03)
+		_blood_mat.roughness = 0.35   # wet
+		_blood_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+
+	while _blood.size() < points.size():
+		var spot: MeshInstance3D = MeshInstance3D.new()
+		var mesh: CylinderMesh = CylinderMesh.new()
+		mesh.top_radius = 0.1
+		mesh.bottom_radius = 0.1
+		mesh.height = 0.01
+		mesh.radial_segments = 8
+		mesh.rings = 1
+		mesh.material = _blood_mat
+		spot.mesh = mesh
+		spot.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(spot)
+		_blood.append(spot)
+
+	for i in _blood.size():
+		var spot: MeshInstance3D = _blood[i]
+		spot.visible = i < points.size()
+
+		if i < points.size():
+			spot.position = points[i] + Vector3(0.0, 0.03, 0.0)
+			var scale_xz: float = 0.6 + 0.8 * fposmod(points[i].x * 7.31 + points[i].z * 3.17, 1.0)
+			spot.scale = Vector3(scale_xz, 1.0, scale_xz * 0.8)
 
 
 func drawn_count() -> int:

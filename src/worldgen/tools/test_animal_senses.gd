@@ -78,5 +78,24 @@ func _init() -> void:
 
 	check(a.animals.has(id) and a.animals[id]["state"] != AnimalsScript.HIDDEN, "it comes out once the player is gone")
 
+	# Blood: a wounded deer that runs leaves a trail, a rabbit that was not hit leaves none, and it dries.
+	var far_players: Array = [Vector3(0.0, 10.0, 0.0)]
+	var z = make(far_players, [0], calm, false)
+	z.cfg["species"]["deer"]["target_per_player"] = 0
+	var deer: int = z.spawn("deer", 20.0, 0.0)
+	var bunny: int = z.spawn("rabbit", 20.0, 10.0)
+	z.damage(deer, 1.0, 1)
+	check(z.animals[deer]["state"] == AnimalsScript.FLEE and z.blood_near(far_players[0]).size() == 1, "a wounded deer bleeds where it was hit")
+
+	for n in 200:
+		z.tick(0.05)
+
+	var trail: PackedVector3Array = z.blood_near(far_players[0])
+	check(trail.size() >= 3 and trail.size() <= 24, "and leaves a trail as it runs (%d drops)" % trail.size())
+	check(z.animals[bunny]["state"] != AnimalsScript.HOP or not z.animals[bunny].get("wound", false), "an unhurt rabbit does not bleed")
+	z.cfg["blood"]["life_s"] = 0.0
+	OS.delay_msec(5)
+	check(z.blood_near(far_players[0]).is_empty(), "the blood dries")
+
 	print("animal senses: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

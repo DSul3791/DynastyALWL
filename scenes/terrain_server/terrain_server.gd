@@ -72,6 +72,7 @@ var _npc_send_t: float = 0.0
 var _water_updates: int = 0
 var weather: Dictionary = {}           # the weather at the water tile now (WeatherScript.state), refreshed every second
 var _weather_next_msec: int = 0
+var _blood_sent: Dictionary = {}       # peer -> hash of the blood trail last sent
 var _swell: float = 0.0
 var _dry: float = 0.0
 var _weather_bucket: int = -1
@@ -497,6 +498,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	_peers.erase(peer_id)
 	_npc_sent.erase(peer_id)
 	_animal_sent.erase(peer_id)
+	_blood_sent.erase(peer_id)
 	dialogue.peer_left(peer_id)
 	items.peer_left(peer_id)
 
@@ -884,6 +886,13 @@ func _send_npcs(delta: float) -> void:
 		if _animal_sent.get(peer, "") != sig:
 			_animal_sent[peer] = sig
 			net.animals.rpc_id(peer, beasts)
+
+		var trail: PackedVector3Array = animals.blood_near(at)
+		var trail_sig: int = hash(trail)
+
+		if int(_blood_sent.get(peer, 0)) != trail_sig:
+			_blood_sent[peer] = trail_sig
+			net.blood.rpc_id(peer, trail)
 
 
 # Admin placement: only player keys listed in data/admin.json. Nobody is an admin when that file is absent.

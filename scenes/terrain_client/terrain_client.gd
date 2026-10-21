@@ -64,7 +64,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 492
+const BUILD := 493
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
@@ -845,6 +845,7 @@ func _welcome_body(info: Dictionary) -> void:
 	animal_view.name = "Animals"
 	add_child(animal_view)
 	net.animals_received.connect(animal_view.on_rows)
+	net.blood_received.connect(animal_view.on_blood)
 	items = InventoryViewScript.new()
 	items.name = "Items"
 	add_child(items)

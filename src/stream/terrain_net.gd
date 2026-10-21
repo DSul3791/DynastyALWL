@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 54
+const PROTOCOL_VERSION := 55
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -60,6 +60,7 @@ signal worn_received(numbers: PackedInt32Array)
 signal npc_roster_received(rows: Array)
 signal npcs_received(rows: Array)
 signal animals_received(rows: Array)
+signal blood_received(points: PackedVector3Array)
 signal npc_talk_requested(peer_id: int, npc_id: String, choice: int)
 signal npc_say_received(npc_id: String, npc_name: String, text: String, voice_id: String, choices: PackedStringArray, ends: bool)
 signal admin_place_requested(peer_id: int, kind: String, pos: Vector3, arg: String)
@@ -325,6 +326,12 @@ func npcs(rows: Array) -> void:
 @rpc("authority", "call_remote", "unreliable")
 func animals(rows: Array) -> void:
 	animals_received.emit(rows)
+
+
+# The blood trail of wounded animals (protocol 55): positions of drops within 120 m, nearest 80, sent when the set changes.
+@rpc("authority", "call_remote", "reliable")
+func blood(points: PackedVector3Array) -> void:
+	blood_received.emit(points)
 
 
 # Talking (protocol 45): the player asks to talk to an NPC (choice -1) or picks a choice by index; the server answers with the NPC's

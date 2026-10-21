@@ -25,6 +25,7 @@ var died: Callable                 # (species, position, source peer) when an an
 var ticks_run: int = 0
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
+var blood: Array = []              # drops [position Vector3, born msec] a wounded animal left, oldest first
 var _next_id: int = 1
 var _spawn_acc: float = 0.0
 var _tick_no: int = 0
@@ -65,6 +66,48 @@ func spawn(sp: String, x: float, z: float) -> int:
 	return id
 
 
+# One drop of blood where a wounded animal is (a trail: every_m apart, at most max_drops per animal, max_total on the map,
+# gone after life_s seconds).
+func _drop_blood(a: Dictionary) -> void:
+	var sp: Dictionary = cfg.get("blood", {})
+
+	if int(a["drops"]) >= int(sp.get("max_drops", 24)):
+		return
+
+	a["drops"] = int(a["drops"]) + 1
+	a["last_drop"] = a["pos"]
+	blood.append([a["pos"], Time.get_ticks_msec()])
+
+	while blood.size() > int(sp.get("max_total", 200)):
+		blood.pop_front()
+
+
+# The blood trail within send_radius_m of a point (nearest first, at most max_sent), dropping what has dried.
+func blood_near(point: Vector3) -> PackedVector3Array:
+	var life_ms: int = int(float(cfg.get("blood", {}).get("life_s", 240.0)) * 1000.0)
+	var now: int = Time.get_ticks_msec()
+
+	while not blood.is_empty() and now - int(blood[0][1]) > life_ms:
+		blood.pop_front()
+
+	var radius: float = float(cfg.get("send_radius_m", 120.0))
+	var found: Array = []
+
+	for drop in blood:
+		var d: float = Vector2(drop[0].x - point.x, drop[0].z - point.z).length()
+
+		if d <= radius:
+			found.append([d, drop[0]])
+
+	found.sort_custom(func(l, r): return l[0] < r[0])
+	var out: PackedVector3Array = PackedVector3Array()
+
+	for f in found.slice(0, int(cfg.get("blood", {}).get("max_sent", 80))):
+		out.append(f[1])
+
+	return out
+
+
 # The one damage hook for animals (spears now, traps and others later): returns true when it killed. A hurt animal bolts.
 func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spear") -> bool:
 	if not animals.has(id) or amount <= 0.0:
@@ -81,6 +124,10 @@ func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spea
 
 		return true
 
+	a["wound"] = true
+	a["drops"] = 0
+	a["last_drop"] = a["pos"]
+	_drop_blood(a)
 	a["state"] = FLEE
 	a["target"] = a["pos"] + Vector3(cos(a["heading"] + PI), 0.0, sin(a["heading"] + PI)) * float(species_def(a["sp"]).get("flee_run_m", 25.0))
 	return false
@@ -281,6 +328,9 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 	if r["moved"]:
 		a["pos"] = r["pos"]
 		a["heading"] = r["heading"]
+
+		if a.get("wound", false) and a["pos"].distance_to(a["last_drop"]) >= float(cfg.get("blood", {}).get("every_m", 2.5)):
+			_drop_blood(a)
 
 	if a["state"] == FLEE and a["to_burrow"] and (r["arrived"] or not r["moved"]):
 		a["to_burrow"] = false
