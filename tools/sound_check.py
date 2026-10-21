@@ -249,6 +249,12 @@ SCENARIOS = [
     ]),
     ("placed", ["--placed"], 4500, [
         ("hooks played", r"placed sounds (\{[^}]*\})", 8, 20, "sum"),
+        ("door, gate, hatch and chest open and close", r"structure check: " + NUM + r" uses", 8, 8),
+        ("an unknown kind is refused", r"unknown (false)", 0, 1, "text"),
+        ("lock, unlock and knock", r"lock and knock " + NUM, 3, 3),
+        ("all of them played", r"played " + NUM + r", watched", 11, 11),
+        ("a watched row plays only its flips near the player (open, close)", r"watched flips " + NUM, 2, 2),
+        ("generated", r"last \w+_\d \((generated)\)", 0, 1, "text"),
     ]),
     ("workshop", ["--workshop"], 5500, [
         ("chop, split and plank", r"workshop sounds (\{[^}]*\})", 3, 3, "sum"),

@@ -10,7 +10,7 @@ extends Node
 # Inside: wind, weather and nature dull (the cave filters at a mild floor), a small-room reverb at Mid
 # and High, a quiet room tone, rain on the roof instead of rain on the ground, the ground counts as
 # covered (dry), and the timbers creak now and then. Objects: door_open, door_close, door_knock,
-# chest_open, chest_close, furniture_drag.
+# chest_open, chest_close, furniture_drag, gate_open, gate_close, hatch_open, hatch_close, latch_click.
 # Sounds: generated in assets/audio/interior/ (make_interior.py); recordings in
 # assets/audio/recorded/interior/ win.
 
@@ -18,7 +18,8 @@ const SoundStage := preload("res://src/client/sound_stage.gd")
 const GENERATED_DIR := "res://assets/audio/interior/"
 const RECORDED_DIR := "res://assets/audio/recorded/interior/"
 
-const OBJECTS := {"door_open": -8.0, "door_close": -7.0, "door_knock": -8.0, "chest_open": -9.0, "chest_close": -8.0, "furniture_drag": -10.0}
+const OBJECTS := {"door_open": -8.0, "door_close": -7.0, "door_knock": -8.0, "chest_open": -9.0, "chest_close": -8.0, "furniture_drag": -10.0,
+	"gate_open": -8.0, "gate_close": -7.0, "hatch_open": -9.0, "hatch_close": -8.0, "latch_click": -14.0}
 # kind: how closed in it feels (the cave enclosure floor, under the 0.45 where drips start), the
 # seconds between creaks.
 const KINDS := {
@@ -63,7 +64,7 @@ func set_inside(inside: float, new_kind: String = "house") -> void:
 
 # A door, chest or furniture sound at `at`.
 func object(name: String, at: Vector3, strength: float = 1.0) -> bool:
-	if not OBJECTS.has(name):
+	if not OBJECTS.has(name) or not _stage.has_room():
 		return false
 
 	var list: Array = _variants(name)

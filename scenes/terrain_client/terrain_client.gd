@@ -227,6 +227,7 @@ var _tree_sync_left: float = 0.0
 var _item_sync_left: float = 0.0
 var test_levels: bool = false
 var test_placed: bool = false
+var test_structures: bool = false
 var test_cooking: bool = false
 var test_workshop: bool = false
 var _test_workshop_t: float = -1.0
@@ -1902,6 +1903,7 @@ func _step_player(delta: float) -> void:
 			sound.fire.sync_world(items._world, _cover_here)
 
 		sound.placed.watch_world(items._world, body.global_position)
+		sound.placed.watch_open(items._world, body.global_position)
 
 	_tree_sync_left -= delta
 
@@ -2430,6 +2432,32 @@ func _process(delta: float) -> void:
 		sound.placed.watch_world({7: {"state": 6, "pos": here}}, here)
 		sound.placed.watch_world({}, here)
 		print("Terrain client: placed sounds %s, last %s" % [str(sound.placed.played), sound.placed.last])
+		test_structures = true
+
+	# Headless check (a few seconds after the placed hooks have finished sounding): openable structures and their world-row watcher.
+	if test_structures and now - connected_msec > 26000:
+		test_structures = false
+		var here: Vector3 = body.global_position + Vector3(2.0, 0.0, 0.0)
+		var objects_before: int = sound.interior.objects_played
+		var kinds_played: int = 0
+
+		for kind in ["door", "gate", "hatch", "chest"]:
+			kinds_played += int(sound.placed.use(kind, true, here)) + int(sound.placed.use(kind, false, here, 0.4))
+
+		var unknown_kind: bool = sound.placed.use("trapdoor", true, here)
+		var lock_knock: int = int(sound.placed.lock(true, here)) + int(sound.placed.lock(false, here)) + int(sound.placed.knock(here))
+		var direct: int = sound.interior.objects_played - objects_before
+		sound.placed.open_kinds = {90: "door"}
+		objects_before = sound.interior.objects_played
+		sound.placed.watch_open({5: {"state": 90, "pos": here, "open": 0}}, here)
+		sound.placed.watch_open({5: {"state": 90, "pos": here, "open": 0}}, here)
+		sound.placed.watch_open({5: {"state": 90, "pos": here, "open": 1}}, here)
+		sound.placed.watch_open({5: {"state": 90, "pos": here, "open": 1}}, here)
+		sound.placed.watch_open({5: {"state": 90, "pos": here, "open": 0}}, here)
+		sound.placed.watch_open({5: {"state": 90, "pos": here + Vector3(200.0, 0.0, 0.0), "open": 1}}, here)
+		sound.placed.watch_open({5: {"state": 90, "pos": here + Vector3(200.0, 0.0, 0.0), "open": 0}}, here)
+		print("Terrain client: structure check: %d uses, unknown %s, lock and knock %d, played %d, watched flips %d, last %s" % [kinds_played, str(unknown_kind), lock_knock, direct, sound.interior.objects_played - objects_before, sound.interior.last])
+		sound.placed.open_kinds = {}
 
 	# Headless check: the volume sliders change the buses and reset.
 	if test_levels and now - connected_msec > 18000:

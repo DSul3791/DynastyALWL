@@ -833,6 +833,46 @@
    "priority": 4
   },
   {
+   "name": "gate_open",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "placed_sounds.use('gate', true, at): a heavy gate swings open",
+   "to_supply": "2 or 3 gate openings: latch lift then a long creak",
+   "priority": 3
+  },
+  {
+   "name": "gate_close",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "placed_sounds.use('gate', false, at): a gate swings shut and latches",
+   "to_supply": "2 or 3 gate closings: thud then latch drop",
+   "priority": 3
+  },
+  {
+   "name": "hatch_open",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "placed_sounds.use('hatch', true, at): a floor hatch or trapdoor is lifted",
+   "to_supply": "2 or 3 trapdoor lifts: short creak then a flop",
+   "priority": 3
+  },
+  {
+   "name": "hatch_close",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "placed_sounds.use('hatch', false, at): a hatch drops shut",
+   "to_supply": "2 or 3 trapdoor drops",
+   "priority": 3
+  },
+  {
+   "name": "latch_click",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "placed_sounds.lock(locked, at): a latch or lock clicks",
+   "to_supply": "2 or 3 small latch or lock clicks",
+   "priority": 3
+  },
+  {
    "name": "chest_open",
    "state": "generated",
    "variants": 2,

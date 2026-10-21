@@ -8,6 +8,12 @@ extends Node
 #   sound.placed.pick_up(at)                a placed thing taken up again
 #   sound.placed.chest(true, at)            a chest opened (false: closed); the interior's chest sounds
 #   sound.placed.container(true, at)        something put into a container (false: taken out)
+#   sound.placed.use("door", true, at)     any openable structure opened (false: closed): "door", "gate", "hatch", "chest"
+#   sound.placed.lock(true, at)             a latch locked or unlocked (a small click)
+#   sound.placed.knock(at)                  a knock on a door
+#   sound.placed.watch_open(world, here)    about once a second: a world row of a kind in `open_kinds` whose "open" field flips
+#                                           near the player plays use() (nothing is listed yet: Items adds doors later, see
+#                                           /mnt/project-files/sound/STRUCTURE_EVENTS.md); rows first seen are silent
 #   sound.placed.tool_break(at)             a tool snaps with the last of its wear
 #   sound.placed.tool_warn(at)              a tool in the pack drops under 20 percent condition (item_sounds.watch hears it)
 #   sound.placed.tool_repair(at)            a tool mended (a 2 s work sound at the player)
@@ -27,6 +33,8 @@ const NAMES := {
 }
 # World row states of placed structures (Items thread: 5 lean-to, 6 chest, 7 chopping block) and the place sound each makes.
 const STATE_KIND := {5: "leanto", 6: "chest", 7: "thump", 1: "thump", 8: "thump", 9: "thump"}   # 1, 8, 9: a campfire set down (lit, empty or loaded)
+const OPENABLES := {"door": ["door_open", "door_close"], "gate": ["gate_open", "gate_close"], "hatch": ["hatch_open", "hatch_close"], "chest": ["chest_open", "chest_close"]}
+var open_kinds: Dictionary = {}         # world row state -> openable kind; filled when Items has doors (rows carry "open" 0 or 1)
 const NEAR_M := 40.0                    # rows closer than this are heard appearing or vanishing
 const MAX_DISTANCE_M := 120.0
 
@@ -37,6 +45,8 @@ var _stage                              # SoundStage (voice budget, interior che
 var _streams: Dictionary = {}
 var _rows: Dictionary = {}              # world row id -> place sound kind, of the rows seen last time
 var _primed: bool = false
+var _open_rows: Dictionary = {}         # world row id -> [kind, open, pos] seen last time
+var _open_primed: bool = false
 var _rng := RandomNumberGenerator.new()
 
 
@@ -55,6 +65,22 @@ func pick_up(at: Vector3) -> bool:
 
 func chest(opened: bool, at: Vector3) -> bool:
 	return _stage.interior.object("chest_open" if opened else "chest_close", at)
+
+
+# Open or close an openable structure: kind "door", "gate", "hatch" or "chest" (a lid). `strength` 0 to 1 (a gentle touch, a slam).
+func use(kind: String, opened: bool, at: Vector3, strength: float = 1.0) -> bool:
+	if not OPENABLES.has(kind):
+		return false
+
+	return _stage.interior.object(OPENABLES[kind][0 if opened else 1], at, strength)
+
+
+func lock(locked: bool, at: Vector3) -> bool:
+	return _stage.interior.object("latch_click", at, 1.0 if locked else 0.7)
+
+
+func knock(at: Vector3) -> bool:
+	return _stage.interior.object("door_knock", at)
 
 
 func container(put: bool, at: Vector3) -> bool:
@@ -93,6 +119,23 @@ func watch_world(world: Dictionary, here: Vector3) -> void:
 
 	_rows = seen
 	_primed = true
+
+
+func watch_open(world: Dictionary, here: Vector3) -> void:
+	var seen: Dictionary = {}
+
+	for id in world:
+		var row: Dictionary = world[id]
+
+		if open_kinds.has(int(row["state"])) and row.has("open"):
+			seen[id] = [str(open_kinds[int(row["state"])]), bool(row["open"]), row["pos"]]
+
+	for id in seen:
+		if _open_primed and _open_rows.has(id) and bool(_open_rows[id][1]) != bool(seen[id][1]) and here.distance_to(seen[id][2]) <= NEAR_M:
+			use(str(seen[id][0]), bool(seen[id][1]), seen[id][2])
+
+	_open_rows = seen
+	_open_primed = true
 
 
 func _once(name: String, at: Vector3) -> bool:

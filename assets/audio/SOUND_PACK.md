@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **208 slots: 18 recorded, 181 generated placeholders, 9 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **213 slots: 18 recorded, 186 generated placeholders, 9 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -113,9 +113,13 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 3 | `flame_lantern` | generated | 1 | flame_sounds.gd: a lantern in the hand (quiet loop) | a lantern flame behind glass, 10 s loop |
 | 3 | `fox_bark` | generated | 2 | creature_sounds.gd: a fox's bark (idle, alert), a night sound | 2 to 3 red fox barks, 1 to 3 per clip |
 | 3 | `fox_scream` | generated | 2 | creature_sounds.gd: a vixen's scream (threat), a night sound | 2 to 3 red fox screams, about 1 s |
+| 3 | `gate_close` | generated | 2 | placed_sounds.use('gate', false, at): a gate swings shut and latches | 2 or 3 gate closings: thud then latch drop |
+| 3 | `gate_open` | generated | 2 | placed_sounds.use('gate', true, at): a heavy gate swings open | 2 or 3 gate openings: latch lift then a long creak |
 | 3 | `gear_cloth` | generated | 3 | gear_sounds.gd: clothes rustling on a step | 3 soft cloth rustles, 0.2 s, from walking in a tunic or cloak |
 | 3 | `gear_iron` | generated | 3 | gear_sounds.gd: iron-shod boots clanging on a step | 3 iron boot clangs, 0.4 s |
 | 3 | `gear_leather` | generated | 3 | gear_sounds.gd: leather armour or straps creaking on a step | 3 leather creaks, 0.3 s |
+| 3 | `hatch_close` | generated | 2 | placed_sounds.use('hatch', false, at): a hatch drops shut | 2 or 3 trapdoor drops |
+| 3 | `hatch_open` | generated | 2 | placed_sounds.use('hatch', true, at): a floor hatch or trapdoor is lifted | 2 or 3 trapdoor lifts: short creak then a flop |
 | 3 | `hawk_screech` | generated | 3 | ambient_life.gd: highland, by day | 2 to 3 hawk screeches |
 | 3 | `heal_bandage` | generated | 2 | item_sounds.gd eat(): a bandage applied | 2 recordings of wrapping a cloth bandage, 1 s |
 | 3 | `heal_poultice` | generated | 2 | item_sounds.gd eat(): a poultice applied (Items eat_event, confirmed by the server) | 2 recordings of pressing a wet leaf pack onto skin, 0.8 s |
@@ -127,6 +131,7 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 3 | `item_reject` | generated | 3 | item_sounds.gd: an action was refused (too far, no tool, pack full), a soft double knock | a soft refusal knock, 0.2 s |
 | 3 | `land_hard` | generated | 3 | landing_sounds.gd: landing from 5 m and more, heavy impact, gear rattle and a grunt | 3 hard landings, 0.9 s |
 | 3 | `land_thud` | generated | 3 | landing_sounds.gd: landing from 2.5 to 5 m, body weight and a breath knocked out | 3 landing thuds, 0.5 s |
+| 3 | `latch_click` | generated | 2 | placed_sounds.lock(locked, at): a latch or lock clicks | 2 or 3 small latch or lock clicks |
 | 3 | `pickup_placed` | generated | 2 | placed_sounds.gd: a placed thing picked up again | 2 recordings of dragging and lifting a wooden thing |
 | 3 | `place_thump` | generated | 2 | placed_sounds.gd: any other thing set on the ground | 2 short dull thumps on soil |
 | 3 | `plank_drop` | generated | 2 | workshop_sounds.gd plank_drop(at): a sawn plank landing on its stack (hook until the saw mill exists) | 2 recordings of a plank dropped on a plank stack, 0.5 s |

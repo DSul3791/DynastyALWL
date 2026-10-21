@@ -130,8 +130,52 @@ def furniture_drag(rng):
     return finish(x, 0.6)
 
 
+def click(rng, hz=2600.0, dur=0.05, amp=1.0):
+    n = int(dur * SR)
+    x = noise(rng, n, lambda f: band(f, hz * rng.uniform(0.9, 1.1), 0.6) * highpass(f, 900)) * env(n, 0.0005, dur / 4)
+    return amp * x / (np.max(np.abs(x)) + 1e-9)
+
+
+def gate_open(rng):
+    out = np.zeros(int(1.3 * SR))
+    add(out, click(rng, 2200, 0.05, 0.6), 0.0)
+    add(out, creak_tone(rng, rng.uniform(0.8, 1.0), rng.uniform(110, 150), rng.uniform(190, 240)) * 0.55, 0.08)
+    add(out, thunk(rng, 80, 0.2, 0.6), 1.0)
+    return finish(out, 0.65)
+
+
+def gate_close(rng):
+    out = np.zeros(int(1.0 * SR))
+    add(out, creak_tone(rng, 0.5, 230, 140) * 0.35, 0.0)
+    add(out, thunk(rng, 70, 0.3, 1.0), 0.45)
+    add(out, click(rng, 2400, 0.05, 0.7), 0.52)
+    return finish(out, 0.75)
+
+
+def hatch_open(rng):
+    out = np.zeros(int(0.9 * SR))
+    add(out, creak_tone(rng, rng.uniform(0.3, 0.45), rng.uniform(200, 280), rng.uniform(330, 420)) * 0.4, 0.0)
+    add(out, thunk(rng, 130, 0.2, 0.7), 0.42)
+    return finish(out, 0.65)
+
+
+def hatch_close(rng):
+    out = np.zeros(int(0.7 * SR))
+    add(out, thunk(rng, 100, 0.25, 1.0), 0.0)
+    add(out, noise(rng, int(0.2 * SR), lambda f: band(f, 1800, 1.0) * highpass(f, 600)) * env(int(0.2 * SR), 0.01, 0.06) * 0.15, 0.04)
+    return finish(out, 0.75)
+
+
+def latch_click(rng):
+    out = np.zeros(int(0.25 * SR))
+    add(out, click(rng, 2800, 0.04, 0.8), 0.0)
+    add(out, click(rng, 2000, 0.05, 0.5), 0.09)
+    return finish(out, 0.55)
+
+
 ONE_SHOTS = {"interior_creak": creak, "door_open": door_open, "door_close": door_close, "door_knock": door_knock,
-             "chest_open": chest_open, "chest_close": chest_close, "furniture_drag": furniture_drag}
+             "chest_open": chest_open, "chest_close": chest_close, "furniture_drag": furniture_drag,
+             "gate_open": gate_open, "gate_close": gate_close, "hatch_open": hatch_open, "hatch_close": hatch_close, "latch_click": latch_click}
 
 
 def main():
