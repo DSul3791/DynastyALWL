@@ -16,8 +16,10 @@ const CELL_M := 16.0
 const KIND_TREE := 0
 const SIZE_MIN := 0.3                     # tree size scale limits, as the placer's spacing (young trees small)
 const SIZE_MAX := 1.2
-const SHELTER_AREA := 2.0                 # Dave 2026-10-21: rain came through the leaves, so the sheltered area is twice the crown disc
-const SHELTER_RADIUS := 1.41421356        # sqrt(SHELTER_AREA); crown_depth divides it out so grass and litter keep the true crown
+# Dave 2026-10-21 (build 467, measured at a beech by the spawn: the rain edge sat 1.41 m inside the leaf edge): the sheltered
+# disc has radius crown_m (the table's spacing radius), twice the old crown_m / 2, which is about where the drawn leaves end.
+const SHELTER_RADIUS := 2.0
+const SHELTER_AREA := 4.0                 # SHELTER_RADIUS squared; crown_depth divides it out so grass and litter keep the old crown
 const RADIUS_CAP := 16.0                  # a crown must reach at most one cell beyond its own (the query looks one cell around)
 
 
