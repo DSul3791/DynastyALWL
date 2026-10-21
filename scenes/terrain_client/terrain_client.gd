@@ -56,9 +56,10 @@ const FaintEffectScript := preload("res://src/client/faint_effect.gd")
 const FallMistScript := preload("res://src/client/fall_mist.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 346
+const BUILD := 349
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
+const RagdollScript := preload("res://src/client/ragdoll_body.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
 const KnowledgeScript := preload("res://src/client/inspection_knowledge.gd")
@@ -1878,7 +1879,7 @@ var view_cam: Camera3D
 var third_person: bool = false
 var _view_m: float = 3.0
 var _view_now: float = 0.0             # the distance drawn now (eases out and in, and shortens when blocked)
-var _avatar: MeshInstance3D
+var _avatar                                               # the ragdoll body (src/client/ragdoll_body.gd), feet on the ground under the capsule
 
 
 func _load_view() -> void:
@@ -1910,7 +1911,7 @@ func _scroll_view(out: bool) -> void:
 	_save_view()
 
 
-# Each drawn frame: place the drawn camera, keep it out of walls and trunks, and show the placeholder body.
+# Each drawn frame: place the drawn camera, keep it out of walls and trunks, and show the ragdoll body.
 func _update_view(delta: float) -> void:
 	if view_cam == null or body == null:
 		return
@@ -1939,31 +1940,28 @@ func _update_view(delta: float) -> void:
 
 	view_cam.position = Vector3(0.0, VIEW_HEIGHT, 1.0) * _view_now
 	_avatar.visible = _view_now > 0.5
-	var height: float = float(StanceScript.SHAPE_HEIGHT[stance.stance])
-	(_avatar.mesh as CapsuleMesh).height = height
-	_avatar.position.y = -(float(StanceScript.SHAPE_HEIGHT[StanceScript.STAND]) - height) * 0.5
+	_avatar.animation_player.active = _avatar.visible      # no animation cost in first person
+	# Feet on the ground whatever the stance (the capsule's bottom stays put; the body origin is its standing middle).
+	_avatar.position.y = -float(StanceScript.SHAPE_HEIGHT[StanceScript.STAND]) * 0.5
+
+	if _avatar.visible:
+		var pace: float = Vector2(body.velocity.x, body.velocity.z).length()
+		var clip: String = ["idle", "crouch", "sit", "lie"][stance.stance]
+
+		if stance.stance == StanceScript.STAND and pace > 0.6:
+			clip = "run" if pace > 7.0 else "walk"
+
+		if _avatar.current() != clip and not _avatar.is_one_shot_playing():
+			_avatar.play(clip)
+
+		# Feet keep up with the ground: about 1.6 m a walk cycle, 2.8 m a run cycle (0.6 s long).
+		_avatar.animation_player.speed_scale = clampf(pace / 1.6, 0.4, 5.0) if clip == "walk" else (clampf(pace * 0.6 / 2.8, 0.5, 3.0) if clip == "run" else 1.0)
 
 
-# A plain stand-in body until there is a real character: a capsule the size of the collision shape and a
-# nose block so you can see which way it faces.
-func _make_avatar() -> MeshInstance3D:
-	var mesh: CapsuleMesh = CapsuleMesh.new()
-	mesh.radius = 0.35
-	mesh.height = 1.8
-	var material: StandardMaterial3D = StandardMaterial3D.new()
-	material.albedo_color = Color(0.55, 0.45, 0.35)
-	material.roughness = 1.0
-	mesh.material = material
-	var avatar: MeshInstance3D = MeshInstance3D.new()
-	avatar.mesh = mesh
+# The plain ragdoll character (owner, 2026-10-21): body, head, arms, legs and hands, no features.
+func _make_avatar() -> Node3D:
+	var avatar: Node3D = RagdollScript.new()
 	avatar.visible = false
-	var nose: MeshInstance3D = MeshInstance3D.new()
-	var block: BoxMesh = BoxMesh.new()
-	block.size = Vector3(0.14, 0.14, 0.2)
-	block.material = material
-	nose.mesh = block
-	nose.position = Vector3(0.0, 0.62, -0.38)
-	avatar.add_child(nose)
 	return avatar
 
 
