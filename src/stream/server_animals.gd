@@ -126,6 +126,7 @@ func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spea
 		return true
 
 	a["wound"] = true
+	a["hurt_by"] = source_peer
 	a["drops"] = 0
 	a["last_drop"] = a["pos"]
 	_drop_blood(a)
@@ -247,6 +248,18 @@ func tick(delta: float) -> void:
 func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: float, seen_p: Vector3) -> void:
 	ticks_run += 1
 	var def: Dictionary = species_def(a["sp"])
+
+	# A wounded animal bleeds: it runs, rests and finally dies where it stands, at the end of its trail.
+	if a.get("wound", false):
+		a["hp"] -= float(cfg.get("blood", {}).get("bleed_hp_per_s", 0.0)) * dt
+
+		if a["hp"] <= 0.0:
+			animals.erase(a["id"])
+
+			if died.is_valid():
+				died.call(a["sp"], a["pos"], a.get("hurt_by", -1))
+
+			return
 
 	if a["state"] == HIDDEN:
 		a["timer"] -= dt

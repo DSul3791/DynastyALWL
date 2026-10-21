@@ -326,6 +326,26 @@ func _hunting() -> void:
 
 	check(not items._items.has(carcass), "four blows finish the carcass")
 	check(items.count_for(1, "raw_meat") >= meat0 + 1 and items.count_for(1, "hide") == held_before + 1 and items.count_for(1, "bone") >= 1, "it gave meat, a hide and bones (carcass.json)")
+	# Bleed-out: a wounded deer that is never finished dies by itself, leaving a carcass where it fell.
+	var bled_id: int = zoo.spawn("deer", 40.0, 40.0)
+	zoo.animals[bled_id]["hp"] = 1.0
+	zoo.animals[bled_id]["wound"] = true
+	var bled_pos: Vector3 = zoo.animals[bled_id]["pos"]
+	var carcasses_before: int = 0
+
+	for id in items._items:
+		carcasses_before += 1 if items._items[id].has("struct") and str(items._items[id]["struct"]["kind"]) == "carcass" else 0
+
+	for n in 600:
+		if zoo.animals.has(bled_id):
+			zoo._step(zoo.animals[bled_id], 0.5, 999.0, Vector3.ZERO, 999.0, Vector3.ZERO)
+
+	var carcasses_after: int = 0
+
+	for id in items._items:
+		carcasses_after += 1 if items._items[id].has("struct") and str(items._items[id]["struct"]["kind"]) == "carcass" else 0
+
+	check(not zoo.animals.has(bled_id) and carcasses_after == carcasses_before + 1, "a wounded animal bleeds out and leaves a carcass")
 	var test_one: int = items.make_carcass("rabbit", Vector3(3.0, 10.0, 0.0))
 	check(test_one != 0 and items.make_carcass("dragon", Vector3.ZERO) == 0, "the admin test carcass works for a known species only")
 	items.save()

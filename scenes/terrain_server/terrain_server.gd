@@ -281,7 +281,7 @@ func _ready() -> void:
 	animals.wind = func(): return weather
 	animals.canopy = func(point): return flora.covered(point)
 	animals.setup()
-	animals.died = func(sp, pos, _peer): items.make_carcass(sp, pos)
+	animals.died = func(sp, pos, peer): items.make_carcass(sp, pos, peer)
 	items.hit_animal = func(peer, origin, dir, reach, amount) -> bool:
 		var target: int = animals.target_along(origin, dir, reach)
 		return target != 0 and (animals.damage(target, amount, peer, "spear") or true)

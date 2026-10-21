@@ -79,6 +79,14 @@
 		"fish": {
 			"skill": "fishing",
 			"effect": "yield"
+		},
+		"hunt": {
+			"skill": "hunting",
+			"effect": "yield"
+		},
+		"dress_carcass": {
+			"skill": "hunting",
+			"effect": "yield"
 		}
 	},
 	"skills": {
@@ -430,6 +438,19 @@
 				}
 			],
 			"placeholder": true
+		},
+		"hunting": {
+			"name": "Hunting",
+			"parents": {
+				"gathering": 1.0
+			},
+			"traits": {
+				"perception": 0.5,
+				"dexterity": 0.3,
+				"fitness": 0.2
+			},
+			"max_factor": 1.5,
+			"order": 13
 		}
 	},
 	"migration": {

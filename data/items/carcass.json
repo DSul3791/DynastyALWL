@@ -1,5 +1,5 @@
 {
-	"note": "Carcass loot (Items refill 11, hunting prerequisites). When an animal dies it leaves a carcass; working it with a knife (class knife) gives one blow's worth at a time, like a trunk. Each species lists parts [item, min, max] rolled through roll_amount, so luck and the Foraging-style skill apply; size_kg is the body weight (a carcass is never picked up whole). Read by server_items (make_carcass, _process_carcass); the carcass is a struct (state 19), not saved, rots in 2 game days; admin_place kind carcass with a species makes a test one.",
+	"note": "Carcass loot (Items refill 11, hunting prerequisites). When an animal dies it leaves a carcass; working it with a knife (class knife) gives one blow's worth at a time, like a trunk. Each species lists parts [item, min, max] rolled through roll_amount, so luck and the Foraging-style skill apply; size_kg is the body weight (a carcass is never picked up whole). Read by server_items (make_carcass, _process_carcass); the carcass is a struct (state 19), not saved, rots in 2 game days; admin_place kind carcass with a species makes a test one. Build 508 (hunting step B): the first knife blow rolls each part and then scales it by the Hunting skill (action dress_carcass, factor 0.25 to 4, so a novice gets the rolled amount and a master up to 1.5 times it, at least 1); a kill practises Hunting (action hunt, difficulty hunt_difficulty of the species).",
 	"tool_class": "knife",
 	"blows": 4,
 	"species": {
@@ -21,7 +21,8 @@
 					1,
 					2
 				]
-			]
+			],
+			"hunt_difficulty": 1.0
 		},
 		"grouse": {
 			"size_kg": 1.0,
@@ -126,7 +127,8 @@
 					1,
 					3
 				]
-			]
+			],
+			"hunt_difficulty": 1.6
 		},
 		"wolf": {
 			"size_kg": 35.0,

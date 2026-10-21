@@ -951,9 +951,12 @@ func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
 
 
 # A carcass where an animal died (and for the admin test carcass): a struct the player works with a knife. Not saved, rots in 2 game days.
-func make_carcass(species: String, pos: Vector3) -> int:
+func make_carcass(species: String, pos: Vector3, hunter: int = -1) -> int:
 	if not _carcass_cfg.get("species", {}).has(species) or not _structures.has("carcass"):
 		return 0
+
+	if hunter >= 0:
+		practice(hunter, "hunt", float(_carcass_cfg["species"][species].get("hunt_difficulty", 1.0)))
 
 	var ground: float = float(ground_height.call(pos.x, pos.z)) if ground_height.is_valid() else pos.y
 	var spot: Vector3 = Vector3(pos.x, ground if not is_nan(ground) else pos.y, pos.z)
@@ -989,7 +992,8 @@ func _process_carcass(peer: int, inv, id: int) -> void:
 		st["parts"] = []
 
 		for row in _carcass_cfg.get("species", {}).get(str(st["species"]), {}).get("parts", []):
-			st["parts"].append([str(row[0]), roll_amount(peer, rng, int(row[1]), int(row[2]))])
+			var rolled: int = roll_amount(peer, rng, int(row[1]), int(row[2]))
+			st["parts"].append([str(row[0]), maxi(int(round(float(rolled) * skill_factor(peer, "dress_carcass"))), 1) if rolled > 0 else 0])
 
 	var left_blows: int = maxi(blows_total - int(st["blows"]), 1)
 
@@ -1004,6 +1008,7 @@ func _process_carcass(peer: int, inv, id: int) -> void:
 
 	if int(st["blows"]) >= blows_total:
 		_items.erase(id)
+		practice(peer, "dress_carcass")
 
 	_dirty = true
 
