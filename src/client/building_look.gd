@@ -910,3 +910,82 @@ static func stone_forge() -> Node3D:
 	root.add_child(_instance(_stone_forge_mesh()))
 	root.add_child(_instance(_stone_forge_coals()))
 	return root
+
+
+# --------------------------------------------------------------- hooks for Dave's own station meshes
+
+# data/items/station_models.json holds per-model hook points in the model's own space (metres, pivot at the footprint centre on
+# the ground, as the forge .glb spec says), keyed by the file name without extension:
+#   {"forge_large": {"fire": [x, y, z], "smoke": [x, y, z]}}
+# `fire` adds the flickering "Light" child that inventory_view.gd switches on near the player; `smoke` adds a thin smoke plume.
+# No entry: the model is returned as it is.
+static var _hooks: Dictionary = {}
+static var _hooks_loaded: bool = false
+static var _smoke: ParticleProcessMaterial
+static var _smoke_mesh: QuadMesh
+
+
+static func _hook_config() -> Dictionary:
+	if not _hooks_loaded:
+		_hooks_loaded = true
+		var text: String = FileAccess.get_file_as_string("res://data/items/station_models.json")
+		var parsed: Variant = JSON.parse_string(text) if text != "" else null
+		_hooks = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+
+	return _hooks
+
+
+static func _smoke_plume() -> GPUParticles3D:
+	if _smoke == null:
+		_smoke = ParticleProcessMaterial.new()
+		_smoke.direction = Vector3(0.0, 1.0, 0.0)
+		_smoke.spread = 8.0
+		_smoke.initial_velocity_min = 0.5
+		_smoke.initial_velocity_max = 0.9
+		_smoke.gravity = Vector3(0.25, 0.1, 0.0)
+		_smoke.scale_min = 0.5
+		_smoke.scale_max = 1.0
+		_smoke_mesh = QuadMesh.new()
+		_smoke_mesh.size = Vector2(0.5, 0.5)
+		var material: StandardMaterial3D = StandardMaterial3D.new()
+		material.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		material.albedo_color = Color(0.55, 0.55, 0.57, 0.3)
+		_smoke_mesh.material = material
+
+	var plume: GPUParticles3D = GPUParticles3D.new()
+	plume.amount = 10
+	plume.lifetime = 4.0
+	plume.process_material = _smoke
+	plume.draw_pass_1 = _smoke_mesh
+	plume.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	plume.visibility_aabb = AABB(Vector3(-2.0, 0.0, -2.0), Vector3(4.0, 6.0, 4.0))
+	return plume
+
+
+static func dress(key: String, model: Node3D) -> Node3D:
+	var entry: Variant = _hook_config().get(key, null)
+
+	if model == null or typeof(entry) != TYPE_DICTIONARY:
+		return model
+
+	if entry.has("fire") and model.get_node_or_null("Light") == null:
+		var spot: Array = entry["fire"]
+		var light: OmniLight3D = OmniLight3D.new()
+		light.name = "Light"
+		light.light_color = Color(1.0, 0.55, 0.25)
+		light.omni_range = 9.0
+		light.light_energy = 1.4
+		light.shadow_enabled = false
+		light.position = Vector3(float(spot[0]), float(spot[1]), float(spot[2]))
+		light.visible = false
+		model.add_child(light)
+
+	if entry.has("smoke"):
+		var at: Array = entry["smoke"]
+		var plume: GPUParticles3D = _smoke_plume()
+		plume.position = Vector3(float(at[0]), float(at[1]), float(at[2]))
+		model.add_child(plume)
+
+	return model

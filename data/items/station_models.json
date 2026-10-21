@@ -1,0 +1,4 @@
+{
+	"_note": "Hook points for Dave's forge models, in the model's own space (metres, pivot at the footprint centre on the ground), keyed by file name in assets/stations without .glb. fire adds the flickering light, smoke adds a thin plume. Remove a key to go without.",
+	"_example_forge_large": {"fire": [0.0, 0.6, 0.2], "smoke": [0.0, 2.8, -0.3]}
+}

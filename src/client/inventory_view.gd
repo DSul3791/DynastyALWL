@@ -1542,7 +1542,7 @@ func _forge_glb(file: String) -> Node3D:
 		return null
 
 	var scene: Variant = load(path)
-	return (scene as PackedScene).instantiate() as Node3D if scene is PackedScene else null
+	return BuildingLook.dress(file, (scene as PackedScene).instantiate() as Node3D) if scene is PackedScene else null
 
 
 # Is a placed station of this kind within its reach? Display only (the server decides): greys recipes that need one.
