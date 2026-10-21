@@ -3,25 +3,27 @@
 render_line(kokoro, spec, voice_id, text) -> (float32 mono samples, rate). All randomness is seeded from the voice id and the text, so the
 same line always comes out the same (the cache key stays honest). What it does to a line:
   * splits it into sentences, and each sentence into phrases at commas, dashes and semicolons; each phrase is rendered on its own
-  * puts measured silence between them: about 200 ms at a comma, 250 ms at a dash, 500-650 ms at a sentence end, 600-900 ms at an
-    ellipsis, each randomised by 15 percent
+  * puts measured silence between them (numbers in data/npcs/voices.json "timing": about 130 ms at a comma, 160 at a dash, 330-430 at a
+    sentence end, 420-600 at an ellipsis), each randomised by 15 percent
   * varies speed and pitch per phrase by 4-6 percent, slows the last phrase of a sentence, and gives the whole line a mood of up to two
     semitones (calmer or brighter)
   * blends two voices when the spec has "blend": [[voice, weight], [voice, weight]]
   * now and then a quiet breath before a sentence
 Reverb and EQ are NOT baked in: they sit on the NPC voice bus in the game (npc_voice.gd).
 """
-import hashlib, random, re
+import hashlib, json, os, random, re
 
 import numpy as np
 
-COMMA_MS = 200.0
-DASH_MS = 250.0
-SENTENCE_MS = (500.0, 650.0)
-ELLIPSIS_MS = (600.0, 900.0)
-JITTER = 0.15
-PHRASE_VARIATION = 0.05
-LAST_PHRASE_SLOWER = 0.93
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_timing = json.load(open(os.path.join(ROOT, "data/npcs/voices.json"))).get("timing", {})   # pause and variation numbers live in the data
+COMMA_MS = float(_timing.get("comma_ms", 130.0))
+DASH_MS = float(_timing.get("dash_ms", 160.0))
+SENTENCE_MS = tuple(_timing.get("sentence_ms", [330.0, 430.0]))
+ELLIPSIS_MS = tuple(_timing.get("ellipsis_ms", [420.0, 600.0]))
+JITTER = float(_timing.get("jitter", 0.15))
+PHRASE_VARIATION = float(_timing.get("phrase_variation", 0.05))
+LAST_PHRASE_SLOWER = float(_timing.get("last_phrase_speed", 0.97))
 MOOD_SEMITONES = (-0.6, 1.2)
 BREATH_CHANCE = 0.2
 BREATH_DB = -34.0

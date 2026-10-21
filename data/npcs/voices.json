@@ -1,10 +1,10 @@
 {
-	"note": "Text to voice for the NPCs (Dave: all voice is Kokoro, Apache 2.0). Keys are the voice ids the dialogue sends (npcs.json 'voice', or a dialogue file's 'voice'); every NPC voice must be listed here (test_dialogue checks). Same fields as data/items/inner_voice_sets.json: Kokoro voice id, lang, speed below 1 is slower. Mandy hooks the player through DialogueView.voice_line(voice_id, text). Mandy (2026-10-21): rendered by tools/gen_npc_voice.py into assets/audio/npc_voice/<voice_id>/<hash8>.ogg; optional pitch (playback, default 1.0); the file name is the first 8 hex of md5('k1|voice_id|speed|pitch|text'); distinct from the player's inner voices (george, michael, lewis, liam, emma, heart, isabella, sarah). Build 518: model k2 = phrase-timed render (tools/npc_voice_render.py); optional blend [[kokoro voice, weight], ...] mixes two voices.",
+	"note": "Text to voice for the NPCs (Dave: all voice is Kokoro, Apache 2.0). Keys are the voice ids the dialogue sends (npcs.json 'voice', or a dialogue file's 'voice'); every NPC voice must be listed here (test_dialogue checks). Same fields as data/items/inner_voice_sets.json: Kokoro voice id, lang, speed below 1 is slower. Mandy hooks the player through DialogueView.voice_line(voice_id, text). Mandy (2026-10-21): rendered by tools/gen_npc_voice.py into assets/audio/npc_voice/<voice_id>/<hash8>.ogg; optional pitch (playback, default 1.0); the file name is the first 8 hex of md5('k1|voice_id|speed|pitch|text'); distinct from the player's inner voices (george, michael, lewis, liam, emma, heart, isabella, sarah). Build 518: model k2 = phrase-timed render (tools/npc_voice_render.py); optional blend [[kokoro voice, weight], ...] mixes two voices. Build 526: Dave found 518 too slow: speeds raised about 14 percent (hob 1.08, edda 1.13) and the pauses shortened; the pause and variation numbers are in 'timing' and are read by tools/npc_voice_render.py (live lines use the same).",
 	"voices": {
 		"hob": {
 			"voice": "bm_daniel",
 			"lang": "en-gb",
-			"speed": 0.95,
+			"speed": 1.08,
 			"pitch": 1.0,
 			"blend": [
 				[
@@ -20,7 +20,7 @@
 		"edda": {
 			"voice": "bf_alice",
 			"lang": "en-gb",
-			"speed": 1.0,
+			"speed": 1.13,
 			"pitch": 1.0,
 			"blend": [
 				[
@@ -34,5 +34,20 @@
 			]
 		}
 	},
-	"model": "k2"
+	"model": "k2",
+	"timing": {
+		"comma_ms": 130,
+		"dash_ms": 160,
+		"sentence_ms": [
+			330,
+			430
+		],
+		"ellipsis_ms": [
+			420,
+			600
+		],
+		"jitter": 0.15,
+		"phrase_variation": 0.05,
+		"last_phrase_speed": 0.97
+	}
 }
