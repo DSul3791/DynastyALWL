@@ -61,7 +61,20 @@ func state_of(items) -> Dictionary:
 		if int(items._items[id]["number"]) == stone and not items._items[id].has("scatter"):
 			ground_stones += int(items._items[id]["count"])
 
+	var water: int = 0
+	var bucket: int = items.table.number_of("bucket")
+
+	for i in items.inventory_of(1).SLOTS:
+		if items.inventory_of(1).numbers[i] == bucket:
+			water += items.inventory_of(1).wear[i]
+
+	var boulders: int = 0
+
+	for key in items._boulder_left:
+		boulders += int(items._boulder_left[key])
+
 	return {
+		"water": water, "boulders": boulders,
 		"pack": items.inventory_of(1).count_of(stone), "chest": chest_stones, "ground": ground_stones,
 		"trees": items.tree_row_count(), "queue": items.craft_queue_of(1), "weight": snappedf(float(items.vitals_of(1)["weight"]), 0.01), "luck": items.luck_of(1), "fitness": items.fitness_of(1),
 	}
@@ -86,6 +99,9 @@ func build_world(dir: String) -> Dictionary:
 	a._items[a._next_id] = {"number": 0, "count": 1, "pos": Vector3(5.0, 10.0, 5.0), "left": 1.0e9, "tree": {"state": 4, "chunk": [0, 0], "species": "oak", "yaw": 0.0, "length": 5.0, "radius": 0.2, "felled_at": 0.0}}
 	a._next_id += 1
 	a.vitals_of(1)["weight"] = 71.0
+	a.action(1, Net.ACT_ADMIN_GIVE, a.table.number_of("bucket"), 0, 1, Vector3.ZERO)
+	a.inventory_of(1).wear[a.inventory_of(1).numbers.find(a.table.number_of("bucket"))] = 3500   # water in a container (millilitres in the wear field)
+	a._boulder_left[(1 << 50) | 9] = 77                                                       # a worked boulder with 77 rough stones left
 	a._characters[KEY]["luck"] = 7
 	a._characters[KEY]["fitness"] = 4
 	a.action(1, Net.ACT_ADMIN_GIVE, fibre, 0, 9, Vector3.ZERO)
@@ -157,7 +173,7 @@ func _init() -> void:
 		var lost: Dictionary = state_of(reload(snap))
 		var expect: Dictionary = want.duplicate()
 		var gone: Array = {
-			"inventories.json": ["pack"], "world_items.json": ["ground"], "tree_states.json": ["trees"], "chests.json": ["chest"],
+			"inventories.json": ["pack", "water"], "world_items.json": ["ground", "boulders"], "tree_states.json": ["trees"], "chests.json": ["chest"],
 			"vitals.json": ["weight"], "craft_queues.json": ["queue"], "characters.json": ["luck", "fitness"],
 		}[file]
 
@@ -178,6 +194,46 @@ func _init() -> void:
 	write(dir + "_x/world_items.json", "{\"version\": 9999, \"items\": []}")
 	var newer = reload(dir + "_x")
 	check(int(state_of(newer)["ground"]) == 0 and FileAccess.file_exists(dir + "_x/world_items.json.bad"), "a file from a newer version is set aside, not replaced by an old copy")
+
+	# digs.dat (the ground edit log, Ground's): a torn last record is cut off and appending goes on; a header torn while the
+	# file was first written starts a fresh log; a file that is not a log is refused and left alone.
+	var GroundOps = load("res://src/stream/ground_ops.gd")
+	var logdir: String = ProjectSettings.globalize_path("user://test_drills_digs")
+	wipe(logdir)
+	var path: String = logdir + "/digs.dat"
+	var log = GroundOps.new()
+	check(log.open(path) == "", "a new digs.dat opens")
+
+	for k in 3:
+		log.add(GroundOps.KIND_DIG, 0, Vector3(10.0 * k, 5.0, 3.0), 1.0)
+
+	check(log.count == 3, "three holes are logged")
+	log = null
+	var good: PackedByteArray = FileAccess.get_file_as_bytes(path)
+	var again = GroundOps.new()
+	check(again.open(path) == "" and again.count == 3, "a clean restart brings back all three holes")
+	again = null
+
+	var torn: FileAccess = FileAccess.open(path, FileAccess.WRITE)
+	torn.store_buffer(good.slice(0, good.size() - 5))
+	torn.close()
+	var after_kill = GroundOps.new()
+	check(after_kill.open(path) == "" and after_kill.count == 2, "killed mid-record: the two whole holes come back")
+	check(not after_kill.add(GroundOps.KIND_DIG, 0, Vector3(90.0, 5.0, 3.0), 1.0).is_empty() and after_kill.count == 3, "and a new hole appends after them")
+	after_kill = null
+	var healed = GroundOps.new()
+	check(healed.open(path) == "" and healed.count == 3, "the healed log reads back whole")
+	healed = null
+
+	var head: FileAccess = FileAccess.open(path, FileAccess.WRITE)
+	head.store_buffer(good.slice(0, 3))
+	head.close()
+	var fresh = GroundOps.new()
+	check(fresh.open(path) == "" and fresh.count == 0, "killed while the header was first written: a fresh empty log, no error")
+	fresh = null
+	write(path, "this is not a log")
+	var foreign = GroundOps.new()
+	check(foreign.open(path) != "" and FileAccess.get_file_as_string(path) == "this is not a log", "a file that is not a log is refused and left untouched")
 
 	print("persistence drills: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

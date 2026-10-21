@@ -74,6 +74,8 @@ func open(path: String) -> String:
 
 			_file.seek(head + count * RECORD_BYTES)
 			return ""
+		elif bytes.size() > 0 and bytes.size() < head and MAGIC.to_ascii_buffer().slice(0, bytes.size()) == bytes:
+			pass   # killed while the header of a brand-new log was being written: nothing in it, start the log afresh
 		elif bytes.size() > 0:
 			return "%s is not a ground operations log (DIGS1 or DIGS2)" % path
 
