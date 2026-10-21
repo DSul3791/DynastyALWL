@@ -70,6 +70,8 @@ Kept current by whoever changes the wire: add the row, bump PROTOCOL_VERSION to 
 
 ## Save formats
 
+Every server item file (inventories, world_items, tree_states, chests, vitals, craft_queues) is written atomically (.tmp then rename) and the file it replaces is first copied to `<name>.prev`. A file that does not parse is set aside as `.bad` and the `.prev` copy (one save interval old, 30 s) is restored in its place; a file from a newer version is set aside as `.bad` and not replaced by the old copy. Drilled by src/worldgen/tools/test_persistence_drills.gd.
+
 inventories.json version 2 (reads 1), world_items.json version 1, chests.json version 1, vitals.json version 1, tree_states.json. All are written atomically; an unusable file is kept as .bad.
 
 ## Notes by version

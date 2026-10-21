@@ -28,6 +28,7 @@ UNITS = [
     ("inventory", "src/worldgen/tools/test_inventory.gd"),
     ("server_items", "src/worldgen/tools/test_server_items.gd"),
     ("persistence", "src/worldgen/tools/test_items_persistence.gd"),
+    ("drills", "src/worldgen/tools/test_persistence_drills.gd"),
 ]
 
 # name, client flags, frames, checks

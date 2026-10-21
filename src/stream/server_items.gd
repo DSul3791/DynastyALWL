@@ -536,6 +536,17 @@ func _say(peer: int, text: String) -> void:
 		send_notice.call(peer, text)
 
 
+# How many felled trunks and stumps are on record (the persistence drills count them).
+func tree_row_count() -> int:
+	var n: int = 0
+
+	for id in _items:
+		if _items[id].has("tree"):
+			n += 1
+
+	return n
+
+
 func world_item_count() -> int:
 	return _items.size()
 
@@ -881,6 +892,9 @@ func _read_json(name: String) -> Variant:
 	return _read_json_version(name, VERSION)
 
 
+# Reads a save file. A file that does not parse (a torn write, a damaged disk) is set aside as .bad and the copy kept
+# from the save before it (.prev, at most one save interval old) is used instead, so a corrupt file costs seconds,
+# not the world. A file from another version is set aside as .bad and NOT replaced by the older copy.
 func _read_json_version(name: String, version: int, oldest: int = -1) -> Variant:
 	var path: String = _dir + "/" + name
 
@@ -889,14 +903,28 @@ func _read_json_version(name: String, version: int, oldest: int = -1) -> Variant
 
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
 
-	if typeof(parsed) != TYPE_DICTIONARY or int(parsed.get("version", 0)) > version or int(parsed.get("version", 0)) < (version if oldest < 0 else oldest):
-		push_error("server items: %s is not usable; kept as %s.bad" % [path, path])
-		DirAccess.rename_absolute(path, path + ".bad")
+	if typeof(parsed) == TYPE_DICTIONARY and int(parsed.get("version", 0)) <= version and int(parsed.get("version", 0)) >= (version if oldest < 0 else oldest):
+		return parsed
+
+	push_error("server items: %s is not usable; kept as %s.bad" % [path, path])
+	DirAccess.rename_absolute(path, path + ".bad")
+
+	if typeof(parsed) == TYPE_DICTIONARY:
 		return null
 
-	return parsed
+	if FileAccess.file_exists(path + ".prev"):
+		var previous: Variant = JSON.parse_string(FileAccess.get_file_as_string(path + ".prev"))
+
+		if typeof(previous) == TYPE_DICTIONARY and int(previous.get("version", 0)) <= version and int(previous.get("version", 0)) >= (version if oldest < 0 else oldest):
+			push_error("server items: %s restored from the save before it" % path)
+			DirAccess.copy_absolute(path + ".prev", path)
+			return previous
+
+	return null
 
 
+# Writes a save file without ever leaving a half-written one: the new text goes to .tmp and is renamed over the old file,
+# and the file it replaces is first copied to .prev (the fallback when a file later turns out torn or damaged).
 func _write_atomic(name: String, data: Dictionary) -> void:
 	var path: String = _dir + "/" + name
 	var file: FileAccess = FileAccess.open(path + ".tmp", FileAccess.WRITE)
@@ -907,6 +935,10 @@ func _write_atomic(name: String, data: Dictionary) -> void:
 
 	file.store_string(JSON.stringify(data))
 	file.close()
+
+	if FileAccess.file_exists(path):
+		DirAccess.copy_absolute(path, path + ".prev")
+
 	DirAccess.rename_absolute(path + ".tmp", path)
 
 
