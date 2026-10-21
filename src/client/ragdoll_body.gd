@@ -143,7 +143,68 @@ func _global_rest(bone: String) -> Transform3D:
 	return skeleton.get_bone_global_rest(index)
 
 
+# Clothes: every vertex carries its region in the red channel (0 skin, 0.34 coat, 0.67 trousers, 1 shoes) so `dress` can colour
+# one shared mesh per character with a tiny shader. The plain material ignores it (the player stays one skin colour).
+static func _region(bone: String) -> float:
+	if bone.begins_with("foot"):
+		return 1.0
+
+	if bone.begins_with("thigh") or bone.begins_with("shin") or bone == "hips":
+		return 0.67
+
+	if bone.begins_with("arm") or bone.begins_with("forearm") or bone == "spine" or bone == "chest":
+		return 0.34
+
+	return 0.0
+
+
+static var _full_mesh: ArrayMesh
+static var _full_skin: Skin
+static var _dress_shader: Shader
+
+const DRESS_SHADER := """
+shader_type spatial;
+uniform vec3 skin_color : source_color = vec3(0.78, 0.62, 0.5);
+uniform vec3 coat_color : source_color = vec3(0.4, 0.34, 0.28);
+uniform vec3 trouser_color : source_color = vec3(0.25, 0.22, 0.2);
+uniform vec3 shoe_color : source_color = vec3(0.14, 0.11, 0.09);
+void fragment() {
+	float r = COLOR.r;
+	vec3 c = mix(skin_color, coat_color, step(0.17, r));
+	c = mix(c, trouser_color, step(0.5, r));
+	c = mix(c, shoe_color, step(0.83, r));
+	ALBEDO = c;
+	ROUGHNESS = 0.9;
+}
+"""
+
+
+# Paint this character: skin, coat (torso and arms), trousers (hips and legs) and shoes, one cheap shader material each.
+func dress(skin_color: Color, coat: Color, trousers: Color, shoes: Color = Color(0.14, 0.11, 0.09)) -> void:
+	if _dress_shader == null:
+		_dress_shader = Shader.new()
+		_dress_shader.code = DRESS_SHADER
+
+	var material: ShaderMaterial = ShaderMaterial.new()
+	material.shader = _dress_shader
+	material.set_shader_parameter("skin_color", skin_color)
+	material.set_shader_parameter("coat_color", coat)
+	material.set_shader_parameter("trouser_color", trousers)
+	material.set_shader_parameter("shoe_color", shoes)
+	body_mesh.material_override = material
+
+
 func _build_mesh() -> void:
+	if not arms_only and _full_mesh != null:
+		body_mesh = MeshInstance3D.new()
+		body_mesh.name = "Body"
+		body_mesh.mesh = _full_mesh
+		body_mesh.skin = _full_skin
+		body_mesh.skeleton = NodePath("..")
+		skeleton.add_child(body_mesh)
+		return
+
+	var colors: PackedColorArray = PackedColorArray()
 	var vertices: PackedVector3Array = PackedVector3Array()
 	var normals: PackedVector3Array = PackedVector3Array()
 	var uvs: PackedVector2Array = PackedVector2Array()
@@ -169,6 +230,7 @@ func _build_mesh() -> void:
 
 		for v in range(source_vertices.size()):
 			vertices.append(model * source_vertices[v])
+			colors.append(Color(_region(part[0]), 0.0, 0.0, 1.0))
 			normals.append(model.basis * source_normals[v])
 			uvs.append(source_uvs[v])
 			bone_ids.append_array(PackedInt32Array([_bones[part[0]], 0, 0, 0]))
@@ -181,6 +243,7 @@ func _build_mesh() -> void:
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX] = vertices
 	arrays[Mesh.ARRAY_NORMAL] = normals
+	arrays[Mesh.ARRAY_COLOR] = colors
 	arrays[Mesh.ARRAY_TEX_UV] = uvs
 	arrays[Mesh.ARRAY_INDEX] = indices
 	arrays[Mesh.ARRAY_BONES] = bone_ids
@@ -199,6 +262,10 @@ func _build_mesh() -> void:
 	body_mesh.skin = skin
 	body_mesh.skeleton = NodePath("..")
 	skeleton.add_child(body_mesh)
+
+	if not arms_only:
+		_full_mesh = mesh
+		_full_skin = skin
 
 
 func _shape_arrays(kind: String, size: Vector3) -> Array:

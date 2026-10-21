@@ -1,19 +1,23 @@
 extends Node3D
 
-# Classic NPCs on the client (protocol 45). Placeholder body until Art dresses the player ragdoll with their outfit: a capsule
-# body and a round head with a name above. The server sends rows about four times a second; the view glides to each and lies the
-# body down for sleep and lowers it for sitting. At most MAX_DRAWN are drawn (the nearest), nothing is built for the rest.
+# Classic NPCs on the client (protocol 45). Each is the player's rounded ragdoll (ragdoll_body.gd), dressed in a coat, trousers
+# and shoes by outfit with a small colour variation per NPC, a name above, and the clips idle / walk / jog / run / sit / lie chosen
+# from the server state and the measured speed. The server sends rows about four times a second; the view glides to each.
+# Animation by distance from the camera (Tyler Report 17, Dave: full within 15 m, reduced beyond, frozen past 70 m): every frame
+# to 15 m, every 2nd frame to 40 m, every 4th to 70 m, a held pose beyond. At most MAX_DRAWN are drawn (the nearest).
 
 const MAX_DRAWN := 20
 const STAND := 0
 const WALK := 1
 const SIT := 2
 const SLEEP := 3
+const RagdollScript := preload("res://src/client/ragdoll_body.gd")
+const FULL_M := 15.0
+const HALF_M := 40.0
+const QUARTER_M := 70.0
 
 var roster: Dictionary = {}      # id -> {name, role, outfit}
 var _bodies: Dictionary = {}     # id -> {node, target Vector3, heading, state}
-var _skin: StandardMaterial3D = null
-var _cloth: Dictionary = {}
 
 
 func on_roster(rows: Array) -> void:
@@ -69,55 +73,58 @@ func drawn_count() -> int:
 
 
 func _process(delta: float) -> void:
+	var camera: Camera3D = get_viewport().get_camera_3d()
+	var eye: Vector3 = camera.global_position if camera != null else Vector3.ZERO
+	var frame: int = Engine.get_process_frames()
+
 	for id in _bodies:
 		var body: Dictionary = _bodies[id]
 		var node: Node3D = body["node"]
 		var state: int = body["state"]
+		var before: Vector3 = node.position
 		node.position = node.position.lerp(body["target"], clampf(delta * 6.0, 0.0, 1.0))
 		node.rotation.y = lerp_angle(node.rotation.y, -float(body["heading"]) - PI * 0.5, clampf(delta * 8.0, 0.0, 1.0))
-		var rig: Node3D = node.get_node("Rig")
-		rig.rotation.x = lerp_angle(rig.rotation.x, -PI * 0.5 if state == SLEEP else 0.0, clampf(delta * 4.0, 0.0, 1.0))
-		rig.position.y = lerp(rig.position.y, 0.25 if state == SLEEP else (-0.35 if state == SIT else 0.0), clampf(delta * 4.0, 0.0, 1.0))
+		var ragdoll: Node3D = node.get_node("Rig")
+		var pace: float = lerpf(float(body.get("pace", 0.0)), Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001), clampf(delta * 5.0, 0.0, 1.0))
+		body["pace"] = pace
+		var clip: String = "lie" if state == SLEEP else ("sit" if state == SIT else "idle")
 
+		if state == WALK or (state == STAND and pace > 0.5):
+			clip = "run" if pace > 5.0 else ("jog" if pace > 2.2 else ("walk" if pace > 0.4 else "idle"))
 
-func _material(color: Color) -> StandardMaterial3D:
-	var key: String = color.to_html()
+		if ragdoll.current() != clip and not ragdoll.is_one_shot_playing():
+			ragdoll.play(clip, 1.0, 0.25)
 
-	if not _cloth.has(key):
-		var m: StandardMaterial3D = StandardMaterial3D.new()
-		m.albedo_color = color
-		m.roughness = 1.0
-		m.emission_enabled = true               # a little self-light so they can be seen on a dark night (until the real characters arrive)
-		m.emission = color
-		m.emission_energy_multiplier = 0.25
-		_cloth[key] = m
+		ragdoll.position.y = lerpf(ragdoll.position.y, 0.25 if state == SLEEP else 0.0, clampf(delta * 4.0, 0.0, 1.0))   # lying on the bed, not the floor
+		var player: AnimationPlayer = ragdoll.animation_player
+		player.speed_scale = clampf(pace / 1.4, 0.5, 1.7) if clip == "walk" else (clampf(pace / 3.2, 0.8, 1.6) if clip == "jog" else (clampf(pace / 6.0, 0.8, 2.0) if clip == "run" else 1.0))
+		var distance: float = eye.distance_to(node.global_position)
+		var every: int = 1 if distance <= FULL_M else (2 if distance <= HALF_M else (4 if distance <= QUARTER_M else 0))
+		body["owed"] = float(body.get("owed", 0.0)) + delta
 
-	return _cloth[key]
+		if every > 0 and (frame + int(id.hash() & 3)) % every == 0:
+			player.advance(float(body["owed"]))
+			body["owed"] = 0.0
+		elif every == 0:
+			body["owed"] = 0.0
 
 
 func _make_body(id: String) -> Node3D:
 	var info: Dictionary = roster.get(id, {})
 	var root: Node3D = Node3D.new()
-	var rig: Node3D = Node3D.new()
-	rig.name = "Rig"
-	root.add_child(rig)
-	var coat: Color = Color(0.36, 0.3, 0.22) if str(info.get("outfit", "")) == "merchant" else (Color(0.3, 0.32, 0.38) if str(info.get("outfit", "")) == "guard" else Color(0.4, 0.34, 0.28))
-	var body: MeshInstance3D = MeshInstance3D.new()
-	var capsule: CapsuleMesh = CapsuleMesh.new()
-	capsule.radius = 0.24
-	capsule.height = 1.25
-	capsule.material = _material(coat)
-	body.mesh = capsule
-	body.position = Vector3(0.0, 0.85, 0.0)
-	rig.add_child(body)
-	var head: MeshInstance3D = MeshInstance3D.new()
-	var ball: SphereMesh = SphereMesh.new()
-	ball.radius = 0.15
-	ball.height = 0.3
-	ball.material = _material(Color(0.78, 0.6, 0.48))
-	head.mesh = ball
-	head.position = Vector3(0.0, 1.62, 0.0)
-	rig.add_child(head)
+	var ragdoll: Node3D = RagdollScript.new()
+	ragdoll.name = "Rig"
+	ragdoll.rotation.y = 0.0
+	root.add_child(ragdoll)
+	var outfit: String = str(info.get("outfit", ""))
+	var coat: Color = Color(0.36, 0.3, 0.22) if outfit == "merchant" else (Color(0.3, 0.32, 0.38) if outfit == "guard" else Color(0.4, 0.34, 0.28))
+	var trousers: Color = Color(0.22, 0.2, 0.19) if outfit == "guard" else Color(0.27, 0.22, 0.17)
+	var h: int = id.hash()
+	var shade: float = 1.0 + (float(h & 255) / 255.0 - 0.5) * 0.35
+	var skin: Color = Color(0.78, 0.62, 0.5).lerp(Color(0.5, 0.36, 0.28), float((h >> 8) & 255) / 255.0 * 0.6)
+	ragdoll.dress(skin, Color(coat.r * shade, coat.g * shade, coat.b * shade), Color(trousers.r * shade, trousers.g * shade, trousers.b * shade))
+	ragdoll.animation_player.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
+	ragdoll.play("idle")
 	var label: Label3D = Label3D.new()
 	label.text = str(info.get("name", id))
 	label.font_size = 48
