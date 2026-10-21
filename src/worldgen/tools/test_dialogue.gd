@@ -13,7 +13,7 @@ const StaticProvider := preload("res://src/stream/static_provider.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
 const COND_KEYS := ["flag", "flag_not", "hour_between", "has_item", "can_train", "min_rep", "rank"]
-const EFFECT_KEYS := ["set_flag", "clear_flag", "give_item", "take_item", "train_skill", "add_rep"]
+const EFFECT_KEYS := ["set_flag", "clear_flag", "give_item", "take_item", "train_skill", "add_rep", "open_shop"]
 const BARKS := ["greeting", "farewell", "idle", "complaint", "cooldown"]
 
 var failures: int = 0

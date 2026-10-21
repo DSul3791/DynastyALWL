@@ -16,6 +16,7 @@ var items                   # ServerItems: positions, keys and the pack
 var npcs                    # ServerNpcs
 var provider                # the Router (a DialogueProvider) in front of the static provider and, later, an AI provider
 var router
+var trade                    # ServerTrade: {"open_shop": true} opens the NPC's shop
 var hour_now: Callable
 var send_say: Callable      # (peer, npc_id, name, text, voice_id, choices PackedStringArray, ends bool)
 
@@ -142,6 +143,9 @@ func _apply(peer: int, key: String, npc_id: String, effects: Array) -> void:
 		elif e.has("clear_flag"):
 			if _flags.get(key, {}).get(npc_id, {}).erase(str(e["clear_flag"])):
 				_save()
+		elif e.has("open_shop"):
+			if trade != null:
+				trade.open(peer, npc_id)
 		elif e.has("add_rep"):
 			items.add_rep(peer, npc_id, clampi(int(e["add_rep"]), -5, 5))
 		elif e.has("give_item"):

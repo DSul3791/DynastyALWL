@@ -648,7 +648,7 @@ func save() -> void:
 			continue
 
 		if it.has("struct"):
-			items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int(_structures.get(str(it["struct"]["kind"]), {}).get("state", 5)), float(it["struct"]["yaw"]), 0, str(it["struct"]["kind"]), int(it["struct"].get("uid", 0)), str(it["struct"].get("owner", "")), float(it["struct"].get("born", 0.0)), bool(it["struct"].get("cave", false))])
+			items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int(_structures.get(str(it["struct"]["kind"]), {}).get("state", 5)), float(it["struct"]["yaw"]), 0, str(it["struct"]["kind"]), int(it["struct"].get("uid", 0)), str(it["struct"].get("owner", "")), float(it["struct"].get("born", 0.0)), bool(it["struct"].get("cave", false)), int(it["struct"].get("coins", 0))])
 			continue
 
 		items.append([int(it["number"]), int(it["count"]), it["pos"].x, it["pos"].y, it["pos"].z, it["left"], int(it["fire"]["state"]) if it.has("fire") else 0, float(it["fire"]["burn_left"]) if it.has("fire") else 0.0, int(it.get("wear", 0))])
@@ -1608,6 +1608,7 @@ func _load_world_items() -> void:
 				entry["struct"]["owner"] = str(row[11])
 				entry["struct"]["born"] = float(row[12])
 				entry["struct"]["cave"] = row.size() > 13 and bool(row[13])
+				entry["struct"]["coins"] = maxi(int(row[14]), 0) if row.size() > 14 else 0
 
 			_items[_next_id] = entry
 			_next_id += 1
@@ -2829,6 +2830,14 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int) -> vo
 	if chest == null:
 		return
 
+	# Remains hold the dead character's purse: whoever may open them takes it with the first opening.
+	var rec_struct: Dictionary = _items.get(id, {}).get("struct", {})
+
+	if kind != Net.ACT_CHEST_PUT and str(rec_struct.get("kind", "")) == "remains" and int(rec_struct.get("coins", 0)) > 0:
+		add_coins(peer, int(rec_struct["coins"]), "pickup")
+		rec_struct["coins"] = 0
+		_dirty = true
+
 	if kind == Net.ACT_CHEST_PUT and bool(_structures.get(str(_items.get(id, {}).get("struct", {}).get("kind", "")), {}).get("take_only", false)):
 		_reject(peer, 3)
 	elif kind == Net.ACT_CHEST_PUT and a >= 0 and a < inv.SLOTS and inv.numbers[a] != 0 and count > 0:
@@ -3417,6 +3426,24 @@ func take_coins(peer: int, copper: int) -> bool:
 	_dirty = true
 	sync_purse(peer)
 	return true
+
+
+# The copper amount in words, richest coin first: "2 silver, 3 bronze".
+func _coin_words(copper: int) -> String:
+	var parts: PackedStringArray = PackedStringArray()
+
+	for row in purse_breakdown(copper):
+		parts.append("%d %s" % [int(row[1]), str(_coin_name(str(row[0])))])
+
+	return ", ".join(parts) if not parts.is_empty() else "nothing"
+
+
+func _coin_name(id: String) -> String:
+	for row in _coins_cfg.get("ladder", []):
+		if str(row["id"]) == id:
+			return str(row["name"])
+
+	return id
 
 
 func sync_purse(peer: int) -> void:
@@ -4246,10 +4273,16 @@ func kill(peer: int, cause: String) -> bool:
 	var chest = InventoryScript.new(table)
 	chest.from_json_array(inv.to_json_array())
 	_chests[uid] = chest
-	_items[_next_id] = {"number": table.number_of("remains"), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": "remains", "yaw": float(randi() % 360), "uid": uid, "owner": key, "born": _unix(), "cave": cave}}   # luck-exempt: a body's facing
+	_items[_next_id] = {"number": table.number_of("remains"), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": "remains", "yaw": float(randi() % 360), "uid": uid, "owner": key, "born": _unix(), "cave": cave, "coins": coins_of(peer)}}   # luck-exempt: a body's facing
 	_next_id += 1
 	inv.from_json_array(InventoryScript.new(table).to_json_array())
 	send_full.call(peer, inv.to_bytes())
+
+	# Dave 2026-10-21: the purse stays on the body, so the whole purse lies with the remains and is found like the other things.
+	if _characters.has(key):
+		_characters[key]["coins"] = 0
+		sync_purse(peer)
+
 	_sync_remains(peer, true)
 
 	# Start over: vitals, strain, sleep, breath. Luck, fitness and skills live in characters.json and stay.

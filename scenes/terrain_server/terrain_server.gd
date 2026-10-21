@@ -27,6 +27,7 @@ const AnimalsScript := preload("res://src/stream/server_animals.gd")
 const IdentityScript := preload("res://src/stream/identity_provider.gd")
 const AdminScript := preload("res://src/stream/server_admin.gd")
 const DialogueScript := preload("res://src/stream/server_dialogue.gd")
+const TradeScript := preload("res://src/stream/server_trade.gd")
 const StoreScript := preload("res://src/stream/server_block_store.gd")
 const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings.gd")
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
@@ -67,6 +68,7 @@ var items                              # ServerItems: inventories and world item
 var npcs                               # ServerNpcs: classic NPCs (protocol 45)
 var admin                              # ServerAdmin: who may place markers and NPCs
 var dialogue                           # ServerDialogue: talking to NPCs
+var trade                              # ServerTrade: shops (coins)
 var _npc_sent_ms: Dictionary = {}
 var _animal_sent_ms: Dictionary = {}
 var _npc_sent: Dictionary = {}         # peer -> signature of the NPC rows last sent
@@ -306,6 +308,17 @@ func _ready() -> void:
 	dialogue = DialogueScript.new()
 	dialogue.items = items
 	dialogue.npcs = npcs
+	trade = TradeScript.new()
+	trade.items = items
+	trade.npcs = npcs
+	trade.setup()
+	trade.send_shop = func(peer, npc_id, title, ids, pay, got, buys): net.shop.rpc_id(peer, npc_id, title, ids, pay, got, buys)
+	dialogue.trade = trade
+	net.trade_requested.connect(func(peer, npc_id, kind, a, count):
+		var said: String = trade.deal(peer, npc_id, kind, a, count)
+
+		if said != "":
+			items._say(peer, said))
 	items.npc_name = func(id): return str(npcs.npcs.get(id, {}).get("name", id))
 	dialogue.hour_now = func(): return game_clock.hour()
 	dialogue.send_say = func(peer, id, npc_name, text, voice, choices, ends): net.npc_say.rpc_id(peer, id, npc_name, text, voice, choices, ends)

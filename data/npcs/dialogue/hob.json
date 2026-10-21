@@ -1,6 +1,6 @@
 {
 	"npc": "hob",
-	"note": "Hob the shopkeeper. Trees are data: nodes {text, choices[{text, goto, if}], effects, end}. text may be a string, an array (one is picked, none repeated within the last five) or a bark token $greeting / $farewell / $idle. A choice with goto 'end' or no goto ends the talk. Conditions: min_rep [points], rank [Stranger, Known, Friend, Trusted: this rank or better] (data/npcs/reputation.json), flag, flag_not, hour_between [from, to], has_item [id, n], can_train [skill, max_level, item, n] (item and n optional). Effects: add_rep [points], set_flag, clear_flag, give_item [id, n], take_item [id, n], train_skill [skill, max_level, item, n]. roots: the first whose condition holds starts the talk. Lines keep to short sentences (12 words) for the voice.",
+	"note": "Hob the shopkeeper. Trees are data: nodes {text, choices[{text, goto, if}], effects, end}. text may be a string, an array (one is picked, none repeated within the last five) or a bark token $greeting / $farewell / $idle. A choice with goto 'end' or no goto ends the talk. Conditions: min_rep [points], rank [Stranger, Known, Friend, Trusted: this rank or better] (data/npcs/reputation.json), flag, flag_not, hour_between [from, to], has_item [id, n], can_train [skill, max_level, item, n] (item and n optional). Effects: open_shop (opens the NPC's shop from data/npcs/shops.json), add_rep [points], set_flag, clear_flag, give_item [id, n], take_item [id, n], train_skill [skill, max_level, item, n]. roots: the first whose condition holds starts the talk. Lines keep to short sentences (12 words) for the voice.",
 	"barks": {
 		"greeting": [
 			"Good day to you.",
@@ -196,8 +196,8 @@
 		},
 		"wares": {
 			"text": [
-				"I deal in tools, twine and trinkets. Trading opens soon.",
-				"Not much on the shelves yet. The carts are late."
+				"Have a look. I buy and sell.",
+				"Take your time. Prices are fair."
 			],
 			"choices": [
 				{
@@ -207,6 +207,11 @@
 				{
 					"text": "Goodbye.",
 					"goto": "bye"
+				}
+			],
+			"effects": [
+				{
+					"open_shop": true
 				}
 			]
 		},

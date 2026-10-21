@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 61
+const PROTOCOL_VERSION := 62
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -52,6 +52,8 @@ signal surface_received(x: float, z: float, y: float)
 signal dump_requested(peer_id: int, x: float, y: float, z: float)
 signal dump_received(text: String)
 signal water_received(chunk: Vector2i, water: PackedByteArray)
+signal shop_received(npc_id: String, title: String, ids: PackedStringArray, pay_milli: int, get_milli: int, buys: PackedStringArray)
+signal trade_requested(peer_id: int, npc_id: String, kind: int, a: int, count: int)
 signal purse_received(copper: int)
 signal reputation_received(ids: PackedStringArray, names: PackedStringArray, points: PackedInt32Array)
 signal item_received(item_id: String, count: int, source: String)
@@ -438,6 +440,20 @@ func chest_contents(id: int, bytes: PackedByteArray) -> void:
 @rpc("authority", "call_remote", "reliable")
 func item_gain(item_id: String, count: int, source: String) -> void:
 	item_received.emit(item_id, count, source)
+
+
+# A trader's window (protocol 62): what they sell (item ids), the multiples of an item's value you pay and they pay (thousandths),
+# and the kinds of item they buy.
+@rpc("authority", "call_remote", "reliable")
+func shop(npc_id: String, title: String, ids: PackedStringArray, pay_milli: int, get_milli: int, buys: PackedStringArray) -> void:
+	shop_received.emit(npc_id, title, ids, pay_milli, get_milli, buys)
+
+
+# Buy (kind 0, a = index in the shop's list) or sell (kind 1, a = pack slot). The server prices and checks everything.
+@rpc("any_peer", "call_remote", "reliable")
+func trade(npc_id: String, kind: int, a: int, count: int) -> void:
+	if multiplayer.is_server():
+		trade_requested.emit(multiplayer.get_remote_sender_id(), npc_id, kind, a, count)
 
 
 # The purse as a number of copper (protocol 61); the client shows it as copper, bronze, silver and gold.

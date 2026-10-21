@@ -1,0 +1,32 @@
+{
+	"note": "Shops (Dave 2026-10-21). An NPC with an entry here can trade: a dialogue effect {\"open_shop\": true} opens the trade window. stock: items the trader sells (unlimited for now); buys: item kinds the trader will buy from the player, or \"all\"; title: the window title. Prices come from items.json value (copper) and data/items/coins.json trade.",
+	"hob": {
+		"title": "Hob's stall",
+		"stock": [
+			"stone_axe",
+			"stone_knife",
+			"wooden_spade",
+			"torch",
+			"cordage",
+			"rope",
+			"plant_fibre",
+			"bandage",
+			"waterskin",
+			"wooden_bowl",
+			"backpack",
+			"roast_forage",
+			"firewood",
+			"stone",
+			"stick"
+		],
+		"buys": [
+			"material",
+			"food",
+			"tool",
+			"container",
+			"medicine",
+			"clothing",
+			"placeable"
+		]
+	}
+}

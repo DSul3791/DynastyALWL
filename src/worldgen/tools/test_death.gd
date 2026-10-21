@@ -57,8 +57,10 @@ func _init() -> void:
 	items._vitals["owner-key-0001"]["fed"] = 5.0
 	items._characters["owner-key-0001"]["luck"] = 4
 	items._characters["owner-key-0001"]["fitness"] = 3
+	items.add_coins(1, 250)
 
 	check(items.kill(1, "drowning"), "kill works on a connected player")
+	check(items.coins_of(1) == 0, "the purse leaves the body at death")
 	check(not items.kill(99, "x"), "kill refuses a stranger")
 	check(died.size() == 1 and str(died[0][1]) == "drowning" and died[0][2] == Vector3(5.0, 20.0, 5.0), "client told the cause and the spawn")
 	check(items.inventory_of(1).count_of(stone) == 0, "the pack is empty after death")
@@ -68,6 +70,7 @@ func _init() -> void:
 	check(ids.size() == 1, "one remains record")
 	var id: int = int(ids[0]) if ids.size() == 1 else 0
 	check(id != 0 and absf(items._items[id]["pos"].y - ground) < 0.01, "remains sit on the surface, not in the air where the player fell")
+	check(int(items._items[id]["struct"].get("coins", 0)) == 250, "the whole purse lies with the remains")
 
 	# The owner is told where the remains lie and how long they have left; emptying them removes the marker.
 	check(not marks.is_empty() and marks.back()[0] == 1 and marks.back()[1].size() == 1 and int(marks.back()[1][0][1]) > 604000, "the owner gets a death marker with the time left")
@@ -81,6 +84,7 @@ func _init() -> void:
 	items.report_position(1, items._items[id]["pos"] + Vector3(1.0, 0.0, 0.0))
 	items.action(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)
 	check(chest_sent.size() == 1, "the owner can open them")
+	check(items.coins_of(1) == 250 and int(items._items[id]["struct"].get("coins", 0)) == 0, "opening the remains returns the whole purse, once")
 	items.action(1, Net.ACT_ADMIN_GIVE, stone, 0, 1, Vector3.ZERO)
 	items.action(1, Net.ACT_CHEST_PUT, 0, id, 1, Vector3.ZERO)
 	check(items.inventory_of(1).count_of(stone) == 1, "nothing can be put on remains")
