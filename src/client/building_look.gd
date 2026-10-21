@@ -737,3 +737,142 @@ static func masonry_forge() -> Node3D:
 	root.add_child(_instance(_masonry_forge_mesh()))
 	root.add_child(_instance(_forge_coals()))
 	return root
+
+
+# --------------------------------------------------------------- the smaller stations (camp bench, log workbench, stone forge)
+
+# Camp bench, 1.5 x 1.0 m: three rough planks pinned on two cross-bars over four splayed pole legs, a mallet and a knife on top.
+static func _camp_bench_mesh() -> ArrayMesh:
+	if _cache.has("camp_bench"):
+		return _cache["camp_bench"]
+
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 13
+	var st: SurfaceTool = SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+
+	for n in range(3):
+		_box(st, Vector3(0.0, 0.84 + rng.randf_range(-0.006, 0.008), -0.28 + 0.28 * float(n)), Vector3(1.5 + rng.randf_range(-0.04, 0.02), 0.06, 0.26), _tone(WOOD, rng, 0.1), rng.randf_range(-0.015, 0.015))
+
+	for x in [-0.55, 0.55]:
+		_box(st, Vector3(x, 0.79, 0.0), Vector3(0.1, 0.05, 0.9), WOOD_DARK)
+
+		for z in [-0.32, 0.32]:
+			_tube(st, Vector3(x + signf(x) * 0.08, 0.0, z + signf(z) * 0.08), Vector3(x, 0.8, z), 0.055, 0.045, _tone(WOOD_DARK, rng, 0.1), 5, rng)
+
+		_tube(st, Vector3(x, 0.3, -0.36), Vector3(x, 0.3, 0.36), 0.025, 0.025, WOOD, 4, rng)
+
+	_tube(st, Vector3(-0.3, 0.9, 0.1), Vector3(0.0, 0.9, 0.2), 0.022, 0.022, WOOD_PALE, 5, rng)
+	_box(st, Vector3(0.05, 0.93, 0.21), Vector3(0.14, 0.09, 0.09), WOOD_DARK, 0.3)
+	_box(st, Vector3(0.45, 0.875, -0.1), Vector3(0.2, 0.012, 0.03), IRON, 0.5)
+	_blob(st, Vector3(-0.45, 0.89, -0.3), Vector3(0.1, 0.04, 0.08), WICKER, rng, 6, 2, 0.12)
+	return _finish_cached("camp_bench", st, _solid_material())
+
+
+static func camp_bench() -> Node3D:
+	var root: Node3D = Node3D.new()
+	root.add_child(_instance(_camp_bench_mesh()))
+	return root
+
+
+# Log workbench, 2.0 x 1.0 m: a hewn slab top on two log trestles, a peg rail with tools at the back, a wooden screw vice at one end.
+static func _log_bench_mesh() -> ArrayMesh:
+	if _cache.has("log_bench"):
+		return _cache["log_bench"]
+
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 16
+	var st: SurfaceTool = SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	_box(st, Vector3(0.0, 0.9, 0.0), Vector3(2.0, 0.14, 0.86), _tone(WOOD_PALE, rng, 0.05))
+	_box(st, Vector3(0.0, 0.97, -0.2), Vector3(1.98, 0.01, 0.02), WOOD_DARK)
+
+	for x in [-0.8, 0.8]:
+		_tube(st, Vector3(x, 0.0, -0.3), Vector3(x + 0.04, 0.84, -0.12), 0.085, 0.075, _tone(WOOD_DARK, rng, 0.1), 7, rng)
+		_tube(st, Vector3(x, 0.0, 0.3), Vector3(x + 0.04, 0.84, 0.12), 0.085, 0.075, _tone(WOOD_DARK, rng, 0.1), 7, rng)
+		_tube(st, Vector3(x - 0.04, 0.26, -0.33), Vector3(x - 0.04, 0.26, 0.33), 0.05, 0.05, WOOD, 6, rng)
+
+	# Back rail on two posts, with pegs and tools hung from it.
+	for x in [-0.9, 0.9]:
+		_tube(st, Vector3(x, 0.95, -0.4), Vector3(x, 1.62, -0.4), 0.04, 0.035, WOOD_DARK, 5, rng)
+
+	_tube(st, Vector3(-0.92, 1.5, -0.4), Vector3(0.92, 1.5, -0.4), 0.03, 0.03, WOOD, 5, rng)
+
+	for k in range(6):
+		var x2: float = -0.7 + 0.28 * float(k)
+		_tube(st, Vector3(x2, 1.5, -0.37), Vector3(x2, 1.5, -0.27), 0.012, 0.012, WOOD_PALE, 4, rng)
+
+		if k % 2 == 0:
+			_tube(st, Vector3(x2, 1.5, -0.3), Vector3(x2, 1.12, -0.3), 0.012, 0.012, WOOD_PALE, 4, rng)
+			_box(st, Vector3(x2, 1.1, -0.3), Vector3(0.09, 0.08, 0.025), IRON)
+
+	# The vice: a thick wooden jaw on the front edge at the right end, a wooden screw through it with a cross handle.
+	_box(st, Vector3(0.82, 0.99, 0.43), Vector3(0.3, 0.2, 0.08), WOOD_DARK)
+	_box(st, Vector3(0.82, 0.99, 0.35), Vector3(0.3, 0.2, 0.06), WOOD)
+	_tube(st, Vector3(0.82, 0.96, 0.47), Vector3(0.82, 0.96, 0.75), 0.03, 0.03, WOOD_PALE, 6, rng)
+	_tube(st, Vector3(0.7, 0.96, 0.74), Vector3(0.94, 0.96, 0.74), 0.014, 0.014, WOOD_DARK, 4, rng)
+	_box(st, Vector3(-0.3, 0.985, 0.1), Vector3(0.5, 0.025, 0.1), WOOD_DARK, 0.15)
+	_box(st, Vector3(0.2, 0.995, 0.0), Vector3(0.05, 0.04, 0.3), IRON, 0.8)
+	return _finish_cached("log_bench", st, _solid_material())
+
+
+static func log_bench() -> Node3D:
+	var root: Node3D = Node3D.new()
+	root.add_child(_instance(_log_bench_mesh()))
+	return root
+
+
+# Stone forge, 3.2 x 2.0 m: a laid-stone hearth and a hooded chimney, a bellows at one side, an anvil on a log stump, a bench plank.
+static func _stone_forge_mesh() -> ArrayMesh:
+	if _cache.has("stone_forge"):
+		return _cache["stone_forge"]
+
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 17
+	var st: SurfaceTool = SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	_stone_stack(st, Vector3(-0.8, 0.0, 0.0), Vector3(1.4, 0.8, 1.2), 0.2, rng)
+	_box(st, Vector3(-0.8, 0.8, 0.0), Vector3(1.0, 0.04, 0.8), SOOT)
+	_stone_stack(st, Vector3(-0.8, 0.8, -0.38), Vector3(1.1, 0.4, 0.44), 0.2, rng)
+
+	for step in range(3):
+		var inset: float = 0.08 * float(step)
+		_box(st, Vector3(-0.8, 1.22 + 0.2 * float(step), -0.34 + inset * 0.6), Vector3(1.2 - inset * 2.0, 0.2, 0.55 - inset), _tone(STONE_FORGE, rng, 0.1))
+
+	_stone_stack(st, Vector3(-0.8, 1.68, -0.36), Vector3(0.8, 1.6, 0.45), 0.2, rng, 0.06)
+	_box(st, Vector3(-0.8, 3.3, -0.36), Vector3(0.5, 0.08, 0.34), STONE_DARK)
+	var stump: Vector3 = Vector3(0.55, 0.0, 0.25)
+	_tube(st, stump + Vector3(0.0, 0.0, 0.0), stump + Vector3(0.0, 0.5, 0.0), 0.26, 0.23, _tone(WOOD_DARK, rng, 0.08), 8, rng)
+	_tube(st, stump + Vector3(0.0, 0.42, 0.0), stump + Vector3(0.0, 0.46, 0.0), 0.235, 0.235, IRON, 8)
+	_anvil(st, stump + Vector3(0.0, 0.5, 0.0), rng)
+	_box(st, Vector3(-0.8, 0.5, 0.72), Vector3(0.5, 0.4, 0.26), _tone(LEATHER, rng, 0.1))
+	_tube(st, Vector3(-0.55, 0.55, 0.72), Vector3(-0.8, 0.82, 0.3), 0.025, 0.017, IRON, 5, rng)
+	_box(st, Vector3(1.2, 0.84, -0.4), Vector3(1.0, 0.07, 0.5), _tone(WOOD, rng, 0.06))
+
+	for x in [0.75, 1.65]:
+		for z in [-0.6, -0.2]:
+			_tube(st, Vector3(x, 0.0, z), Vector3(x, 0.8, z), 0.045, 0.04, WOOD_DARK, 5, rng)
+
+	return _finish_cached("stone_forge", st, _solid_material())
+
+
+static func _stone_forge_coals() -> ArrayMesh:
+	if _cache.has("stone_forge_coals"):
+		return _cache["stone_forge_coals"]
+
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 20
+	var st: SurfaceTool = SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+
+	for n in range(9):
+		_blob(st, Vector3(-0.8 + rng.randf_range(-0.35, 0.35), 0.84, 0.0 + rng.randf_range(-0.22, 0.22)), Vector3(0.065, 0.035, 0.055), Color.WHITE, rng, 6, 2, 0.15)
+
+	return _finish_cached("stone_forge_coals", st, _coal_material())
+
+
+static func stone_forge() -> Node3D:
+	var root: Node3D = Node3D.new()
+	root.add_child(_instance(_stone_forge_mesh()))
+	root.add_child(_instance(_stone_forge_coals()))
+	return root

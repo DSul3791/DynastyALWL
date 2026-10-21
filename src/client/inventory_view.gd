@@ -1457,28 +1457,7 @@ func _structure_kinds() -> Array:
 
 
 func _make_bench() -> Node3D:
-	var root: Node3D = Node3D.new()
-	var wood: StandardMaterial3D = StandardMaterial3D.new()
-	wood.albedo_color = Color(0.45, 0.33, 0.2)
-	wood.roughness = 1.0
-	var top: MeshInstance3D = MeshInstance3D.new()
-	var slab: BoxMesh = BoxMesh.new()
-	slab.size = Vector3(1.5, 0.08, 0.8)
-	top.mesh = slab
-	top.material_override = wood
-	top.position = Vector3(0.0, 0.86, 0.0)
-	root.add_child(top)
-
-	for corner in [Vector2(-0.65, -0.32), Vector2(0.65, -0.32), Vector2(-0.65, 0.32), Vector2(0.65, 0.32)]:
-		var leg: MeshInstance3D = MeshInstance3D.new()
-		var post: BoxMesh = BoxMesh.new()
-		post.size = Vector3(0.09, 0.82, 0.09)
-		leg.mesh = post
-		leg.material_override = wood
-		leg.position = Vector3(corner.x, 0.41, corner.y)
-		root.add_child(leg)
-
-	return root
+	return BuildingLook.camp_bench()
 
 
 # The bigger stations (placeholder looks until Art draws them; medieval log and timber, stone and iron, nothing modern).
@@ -1504,37 +1483,12 @@ const IRON_COLOR := Color(0.16, 0.16, 0.18)
 
 # Medium: a thick hewn top on two log trestles, a rack of pegs at the back and a wooden vice at one end, about 2 by 1 m.
 func _make_log_bench() -> Node3D:
-	var root: Node3D = Node3D.new()
-	_part(root, Vector3(2.0, 0.14, 0.9), Vector3(0.0, 0.9, 0.0), PLANK_COLOR)
-
-	for x in [-0.8, 0.8]:
-		_part(root, Vector3(0.14, 0.85, 0.14), Vector3(x, 0.42, -0.3), LOG_COLOR)
-		_part(root, Vector3(0.14, 0.85, 0.14), Vector3(x, 0.42, 0.3), LOG_COLOR)
-		_part(root, Vector3(0.1, 0.1, 0.7), Vector3(x, 0.25, 0.0), LOG_COLOR)
-
-	_part(root, Vector3(1.8, 0.08, 0.06), Vector3(0.0, 1.5, -0.46), LOG_COLOR)
-	_part(root, Vector3(0.08, 0.7, 0.08), Vector3(-0.85, 1.15, -0.46), LOG_COLOR)
-	_part(root, Vector3(0.08, 0.7, 0.08), Vector3(0.85, 1.15, -0.46), LOG_COLOR)
-	_part(root, Vector3(0.3, 0.2, 0.2), Vector3(0.75, 1.07, 0.2), PLANK_COLOR)
-	return root
+	return BuildingLook.log_bench()
 
 
 # Large: a stone hearth with a hooded chimney, an anvil on a stump, a bellows of leather and wood, and a plank bench alongside.
 func _make_forge() -> Node3D:
-	var root: Node3D = Node3D.new()
-	_part(root, Vector3(1.4, 0.8, 1.2), Vector3(-0.8, 0.4, 0.0), STONE_COLOR)
-	_part(root, Vector3(1.0, 0.1, 0.8), Vector3(-0.8, 0.85, 0.0), Color(0.08, 0.06, 0.05))
-	_part(root, Vector3(0.9, 1.3, 0.5), Vector3(-0.8, 1.45, -0.35), STONE_COLOR)
-	_part(root, Vector3(0.4, 1.2, 0.4), Vector3(-0.8, 2.6, -0.35), STONE_COLOR)
-	_part(root, Vector3(0.5, 0.45, 0.3), Vector3(-0.8, 0.55, 0.78), Color(0.3, 0.2, 0.13))
-	_part(root, Vector3(0.45, 0.5, 0.45), Vector3(0.45, 0.25, 0.3), LOG_COLOR)
-	_part(root, Vector3(0.5, 0.14, 0.2), Vector3(0.45, 0.58, 0.3), IRON_COLOR)
-	_part(root, Vector3(1.0, 0.08, 0.6), Vector3(1.2, 0.86, -0.4), PLANK_COLOR)
-	_part(root, Vector3(0.09, 0.82, 0.09), Vector3(0.75, 0.41, -0.65), PLANK_COLOR)
-	_part(root, Vector3(0.09, 0.82, 0.09), Vector3(1.65, 0.41, -0.65), PLANK_COLOR)
-	_part(root, Vector3(0.09, 0.82, 0.09), Vector3(0.75, 0.41, -0.15), PLANK_COLOR)
-	_part(root, Vector3(0.09, 0.82, 0.09), Vector3(1.65, 0.41, -0.15), PLANK_COLOR)
-	return root
+	return BuildingLook.stone_forge()
 
 
 # Epic: the masonry forge (4.2 x 3 m, no roof), drawn in building_look.gd.
