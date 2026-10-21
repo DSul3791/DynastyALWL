@@ -1394,6 +1394,7 @@ func _apply_quality() -> void:
 		weather_look.set_quality(quality)
 	grass.points_per_side = QUALITY_GRASS_POINTS[quality]
 	grass.density = QUALITY_GRASS_DENSITY[quality]
+	grass.set_merge(4 if quality == 0 else 2)    # cells per MultiMesh side: fewer draw calls at Low (TD audit 2026-10-21)
 	grass.set_radius(QUALITY_GRASS_M[quality])
 	if terrain != null:
 		GroundMaterialScript.set_grass_far(terrain.material as ShaderMaterial, QUALITY_GRASS_M[quality])
@@ -3682,7 +3683,7 @@ func _process(delta: float) -> void:
 			print("Terrain client: flora draws: %s nodes (tree, shrub, plant) for %s instances, %d nodes under 50 instances" % [str(stats["nodes"]), str(stats["instances"]), int(stats["small"])])
 			print("Terrain client: fall columns: %d meshes drawn (cap %d per chunk)" % [flora.falls_drawn, flora.fall_cap])
 			print("Terrain client: cover index %d tree crowns in %d chunks" % [flora.cover.trees, flora.cover.chunk_count()])
-			print("Terrain client: grass %d tufts in %d cells (radius %.0f m)" % [grass.tufts, grass.cells_built, grass.radius_m])
+			print("Terrain client: grass %d tufts in %d cells (radius %.0f m), %d MultiMesh draws" % [grass.tufts, grass.cells_built, grass.radius_m, grass.draw_nodes])
 			print("Terrain client: water sounds: %s (%d falls known)" % [sound.water.summary, flora.fall_list().size()])
 			print("Terrain client: nature calls %s, zones %s" % [str(sound.ambient.calls_played), str(sound.ambient.weights)])
 			print("Terrain client: tree sounds: %d falls, %d stump sprays, last %s" % [sound.trees.falls_played, sound.trees.chips_played, sound.trees.last])

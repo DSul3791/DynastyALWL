@@ -199,7 +199,11 @@ var _materials: Array = []               # one material per layer
 var _patch := FastNoiseLite.new()        # where tall grass grows
 var _tint := FastNoiseLite.new()         # greener and yellower patches
 var _cover := FastNoiseLite.new()        # breaks the grass up into patches on slopes
-var _cells: Dictionary = {}              # Vector2i -> {"nodes", "retry", "busy", "built", "count"}
+var _cells: Dictionary = {}              # Vector2i -> {"cell", "bufs" (layer -> card buffer), "retry", "busy", "built", "count"}
+var merge_cells: int = 2                 # cells per side drawn by one MultiMesh per layer (set_merge): fewer draw calls (TD audit 2026-10-21)
+var draw_nodes: int = 0                  # MultiMesh nodes drawn now
+var _groups: Dictionary = {}             # Vector2i group -> {layer: MultiMeshInstance3D}
+var _dirty: Dictionary = {}              # groups whose cards changed this frame (rebuilt once at the end of update)
 var _pending: Array = []                 # cells waiting for rays, nearest first
 var _scan_cell: Vector2i = Vector2i(1 << 30, 1 << 30)
 var _scan_msec: int = 0
@@ -570,22 +574,116 @@ static func _make_branch() -> ArrayMesh:
 
 
 func _free_cell_nodes(entry: Dictionary) -> void:
-	for node in entry.get("nodes", []):
-		node.queue_free()
+	if not entry.get("bufs", {}).is_empty():
+		_dirty[_group_of(entry["cell"])] = true
 
 	tufts -= int(entry.get("count", 0))
 	litter_cards -= int(entry.get("litter", 0))
 	shore_cards -= int(entry.get("shore", 0))
-	entry["nodes"] = []
+	entry["bufs"] = {}
 	entry["count"] = 0
 	entry["litter"] = 0
 	entry["shore"] = 0
+
+
+func _group_of(cell: Vector2i) -> Vector2i:
+	return Vector2i(int(floor(float(cell.x) / float(merge_cells))), int(floor(float(cell.y) / float(merge_cells))))
+
+
+# Cells per MultiMesh side (2 normally, 4 at Low): one draw call per layer and group instead of per cell. A change redraws all.
+func set_merge(cells: int) -> void:
+	cells = clampi(cells, 1, 8)
+
+	if cells != merge_cells:
+		merge_cells = cells
+		_clear_all()
+
+
+# Rebuilds the MultiMesh of every group whose cells changed: the layer's card buffers of its cells, end to end.
+# Called at the end of update(), so a rebuilt cell still swaps its cards within the frame.
+func _flush_groups() -> void:
+	if _dirty.is_empty():
+		return
+
+	var span: float = float(merge_cells) * CELL_M
+
+	for g in _dirty.keys():
+		var group: Dictionary = _groups.get(g, {})
+
+		for layer in range(LAYERS.size()):
+			var merged: PackedFloat32Array = PackedFloat32Array()
+
+			for dz in range(merge_cells):
+				for dx in range(merge_cells):
+					var entry = _cells.get(Vector2i(g.x * merge_cells + dx, g.y * merge_cells + dz))
+
+					if entry != null and entry["bufs"].has(layer):
+						merged.append_array(entry["bufs"][layer])
+
+			var count: int = merged.size() / 16
+			var node = group.get(layer)
+
+			if count == 0:
+				if node != null:
+					node.queue_free()
+					group.erase(layer)
+					draw_nodes -= 1
+
+				continue
+
+			if node == null:
+				node = _make_group_node(layer, span)
+				group[layer] = node
+				draw_nodes += 1
+
+			node.custom_aabb = AABB(Vector3(float(g.x) * span - 1.0, _center.y - 150.0, float(g.y) * span), Vector3(span, 300.0, span))
+			var multi: MultiMesh = node.multimesh
+
+			if multi.instance_count != count:
+				multi.instance_count = count
+
+			multi.buffer = merged
+
+		if group.is_empty():
+			_groups.erase(g)
+		else:
+			_groups[g] = group
+
+	_dirty.clear()
+
+
+func _make_group_node(layer: int, span: float) -> MultiMeshInstance3D:
+	var multi: MultiMesh = MultiMesh.new()
+	multi.transform_format = MultiMesh.TRANSFORM_3D
+	multi.use_custom_data = true
+	multi.mesh = _meshes[layer]
+	var node: MultiMeshInstance3D = MultiMeshInstance3D.new()
+	node.multimesh = multi
+	node.material_override = _materials[layer]
+	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+	if layer >= GRASS_LAYERS:
+		# Measured from the group's middle: the cards fade out in their shader at the litter or shore range, this only culls.
+		node.visibility_range_end = (litter_m if layer < LITTER_END else shore_m) + span
+		node.visibility_range_end_margin = 2.0
+
+	add_child(node)
+	return node
 
 
 func _clear_all() -> void:
 	for key in _cells:
 		_free_cell_nodes(_cells[key])
 
+	_flush_groups()
+
+	for g in _groups.keys():
+		for node in _groups[g].values():
+			node.queue_free()
+
+	_groups.clear()
+	draw_nodes = 0
+	_dirty.clear()
 	_cells.clear()
 	_pending.clear()
 	_scan_active = false
@@ -680,6 +778,8 @@ func update(position: Vector3) -> void:
 		if Time.get_ticks_usec() - started > BUILD_USEC:
 			break
 
+	_flush_groups()
+
 
 # The band of a cell by its distance: 0 near (full samples), 1 middle, 2 far, 3 very far (reach beyond 50 m).
 # Limits come from set_radius. A cell keeps its band until it is LOD_HYSTERESIS_M past the boundary (builds
@@ -746,7 +846,7 @@ func _rescan_step() -> void:
 				_scan_next = mini(_scan_next, int(entry["retry"]))
 
 			if entry == null:
-				_cells[cell] = {"nodes": [], "count": 0, "retry": 0, "busy": true, "built": false}
+				_cells[cell] = {"cell": cell, "bufs": {}, "count": 0, "retry": 0, "busy": true, "built": false}
 				_pending.append(cell)
 			elif not entry["built"] and not entry["busy"] and _scan_now >= int(entry["retry"]):
 				entry["busy"] = true
@@ -958,26 +1058,10 @@ func _build(cell: Vector2i) -> int:
 		if count == 0:
 			continue
 
-		var multi: MultiMesh = MultiMesh.new()
-		multi.transform_format = MultiMesh.TRANSFORM_3D
-		multi.use_custom_data = true
-		multi.mesh = _meshes[layer]
-		multi.instance_count = count
 		var buffer: PackedFloat32Array = buffers[layer]
 		buffer.resize(count * 16)
-		multi.buffer = buffer
-
-		var node: MultiMeshInstance3D = MultiMeshInstance3D.new()
-		node.multimesh = multi
-		node.material_override = _materials[layer]
-		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		if layer >= GRASS_LAYERS:
-			node.visibility_range_end = (litter_m if layer < LITTER_END else shore_m) + CELL_M
-			node.visibility_range_end_margin = 2.0
-
-		node.custom_aabb = AABB(Vector3(float(cell.x) * CELL_M - 1.0, _center.y - 150.0, float(cell.y) * CELL_M), Vector3(CELL_M, 300.0, CELL_M))
-		add_child(node)
-		entry["nodes"].append(node)
+		entry["bufs"][layer] = buffer
+		_dirty[_group_of(cell)] = true
 
 		if layer >= LITTER_END:
 			entry["shore"] = int(entry.get("shore", 0)) + count
