@@ -171,6 +171,13 @@ func _show(done: bool) -> void:
 	var text: String = "GPU probe (Ctrl+Shift+G)%s\n" % ("" if done else ", keep still: step %d of %d" % [_results.size() + 1, _steps.size()])
 	text += "%s, %s, window %dx%d, 3D scale %.2f, quality %s\n" % [RenderingServer.get_video_adapter_name(), RenderingServer.get_current_rendering_driver_name(), win.x, win.y, _client._render_scale, _client.QUALITY_NAMES[_client.quality]]
 
+	# CPU side, so a frame that does not move with any switch below is recognised as CPU bound (owner table,
+	# 2026-10-21: nothing saved more than 0.9 ms in tall grass): script time per frame, physics time, draw calls, triangles.
+	text += "CPU: scripts %.1f ms, physics %.1f ms; %d draw calls, %.0f k triangles, %d fps\n" % [
+		Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
+		int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)), Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME) / 1000.0,
+		int(Engine.get_frames_per_second())]
+
 	for n in range(_results.size()):
 		var gpu: float = float(_results[n][1])
 
