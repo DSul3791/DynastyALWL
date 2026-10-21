@@ -1,9 +1,3 @@
-
-## coffer-raid | Banking: if raiders break a family coffer, how much coin do they get?
-- None, a coffer cannot be raided
-- A share (about a quarter)
-- All of it
-
 ## coffer-place | Banking: where can a family coffer be placed?
 - Anywhere (a wilderness coffer is easy to raid)
 - Only inside owned land
