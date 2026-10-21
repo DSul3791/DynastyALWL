@@ -18,6 +18,12 @@ const MIN_SLOPE_Y := 0.58                # surface normal y; steeper is bare roc
 const COVER_FROM := 0.14                 # slope (1 - normal y) where grass starts to thin
 const COVER_TO := 0.42                   # slope where it is gone, except in patches and on ledges
 const TUFTS_PER_POINT := 3
+const CROWN_GRASS_FROM := 0.12           # depth under a crown (0 drip line, 1 trunk) where the grass starts thinning
+const CROWN_GRASS_TO := 0.5              # ... and where it is nearly gone (4 percent left)
+const CROWN_LITTER_FROM := 0.05          # litter starts getting denser here
+const CROWN_LITTER_TO := 0.4             # ... and reaches its full depth here
+const LITTER_DEEP_LEAVES := 5.0          # leaf cards per sample at full depth, times the normal count
+const LITTER_DEEP_TWIGS := 4.0           # twigs likewise
 const SHORT_SOIL_LIFT := 1.9    # short grass: soil thickness times at most this, capped at 1 (0.5 becomes 0.95, 0.3 becomes 0.57)
 
 # Soil ids that carry grass, with how thick (0 to 1).
@@ -741,7 +747,8 @@ func _build(cell: Vector2i) -> int:
 		var cap: PackedFloat32Array = PackedFloat32Array()
 		var share: float = density if layer < GRASS_LAYERS else (litter_density if layer < LITTER_END else shore_density)
 		# Tall grass is drawn thicker near water (up to twice the cards), so its buffer holds twice.
-		cap.resize(pps * pps * (int(ceil(float(LAYERS[layer]["per_point"]) * share * (2.0 if layer == 2 else 1.0))) + 1) * 16)
+		var room: float = 2.0 if layer == 2 else (1.0 if layer < GRASS_LAYERS or layer >= LITTER_END else (LITTER_DEEP_TWIGS if LAYERS[layer].get("branch", false) else LITTER_DEEP_LEAVES))
+		cap.resize(pps * pps * (int(ceil(float(LAYERS[layer]["per_point"]) * share * room)) + 1) * 16)
 		buffers.append(cap)
 		counts.append(0)
 
@@ -775,8 +782,12 @@ func _build(cell: Vector2i) -> int:
 			if not is_nan(water) and point.y < water + 0.3:
 				continue
 
-			if litter_here and _flora.cover.covers(Vector3(x, point.y + 1.0, z)):
-				_put_litter(buffers, counts, rng, point, spacing)
+			# Owner (2026-10-21): under a big crown almost no grass except at the edge of its canopy footprint,
+			# and a floor so covered in leaves and twigs that no ground shows. `under` is 0 at the drip line, 1 at the trunk.
+			var under: float = _flora.cover.crown_depth(Vector3(x, point.y + 1.0, z))
+
+			if litter_here and under > 0.0:
+				_put_litter(buffers, counts, rng, point, spacing, under)
 
 			var soil: int = _grass_soil(tool, point - hit["normal"] * 0.4)
 
@@ -788,6 +799,7 @@ func _build(cell: Vector2i) -> int:
 			# Owner (2026-10-20): in a closed forest the litter and shade under the trees stop the grass; in
 			# open fields and sparse trees it grows right up to and under them. Closure thins it gradually.
 			thick *= 1.0 - 0.95 * smoothstep(0.4, 0.9, _closure(x, point.y, z))
+			thick *= 1.0 - 0.96 * smoothstep(CROWN_GRASS_FROM, CROWN_GRASS_TO, under)
 
 			if thick < 0.04:
 				continue
@@ -1063,9 +1075,12 @@ func _put_boulders(buffers: Array, counts: Array, rng: RandomNumberGenerator, po
 
 
 # One ground sample under a crown: leaf cards and, now and then, a dead branch (layers GRASS_LAYERS on).
-func _put_litter(buffers: Array, counts: Array, rng: RandomNumberGenerator, point: Vector3, spacing: float) -> void:
+func _put_litter(buffers: Array, counts: Array, rng: RandomNumberGenerator, point: Vector3, spacing: float, under: float) -> void:
+	var deep: float = smoothstep(CROWN_LITTER_FROM, CROWN_LITTER_TO, under)
+
 	for layer in range(GRASS_LAYERS, LITTER_END):
-		var want: float = float(LAYERS[layer]["per_point"]) * litter_density
+		# Deeper under the crown the floor gets up to LITTER_DEEP_LEAVES / LITTER_DEEP_TWIGS times the litter.
+		var want: float = float(LAYERS[layer]["per_point"]) * litter_density * (1.0 + deep * ((LITTER_DEEP_TWIGS if LAYERS[layer].get("branch", false) else LITTER_DEEP_LEAVES) - 1.0))
 		var count: int = int(want) + (1 if rng.randf() < want - floorf(want) else 0)
 		var branch: bool = LAYERS[layer].get("branch", false)
 

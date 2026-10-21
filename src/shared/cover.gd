@@ -267,6 +267,33 @@ class Index:
 		return _chunk_cells.size()
 
 
+	# How far under a tree crown a spot is: 0 at or outside the drip line (or higher than the treetop),
+	# 1 at the trunk. The deepest of the crowns over the spot. Trees only (roofs have no depth).
+	func crown_depth(pos: Vector3) -> float:
+		var cx: int = int(floor(pos.x / CELL_M))
+		var cz: int = int(floor(pos.z / CELL_M))
+		var best: float = 0.0
+
+		for dz in range(-1, 2):
+			for dx in range(-1, 2):
+				var entry: Dictionary = _cells.get(Vector2i(cx + dx, cz + dz), {})
+
+				if entry.is_empty():
+					continue
+
+				var f: PackedFloat32Array = entry["f"]
+
+				for n in range(0, f.size(), 4):
+					var ox: float = pos.x - f[n]
+					var oz: float = pos.z - f[n + 1]
+					var r2: float = f[n + 2] * f[n + 2]
+
+					if ox * ox + oz * oz < r2 and pos.y <= f[n + 3]:
+						best = maxf(best, 1.0 - sqrt((ox * ox + oz * oz) / r2))
+
+		return best
+
+
 	func covers(pos: Vector3) -> bool:
 		var cx: int = int(floor(pos.x / CELL_M))
 		var cz: int = int(floor(pos.z / CELL_M))
