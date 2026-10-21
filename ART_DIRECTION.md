@@ -318,3 +318,7 @@ Crash (owner, 2026-10-21): "Out of bounds get index '3424' (on base: 'PackedInt3
 ## 42. No decorative rocks (build 320)
 
 Owner rule (2026-10-21): any rock mesh placed in the world must be pickable. grass_view.gd no longer draws boulders or shore pebbles (SCENERY_ROCKS false; the code stays for a later pickable version). Real stones come from the Items scatter. What they replaced: shore pebbles 14 to 44 cm, about 10 per m2 on gravel banks within the shore reach (an Ultra figure; many tiny ones), and mossy boulders 0.6 to 2.4 m wide, 0.1 per sample in clusters near water and on slopes over about 0.1. Litter twigs and leaf cards stay as non-carryable floor litter under crowns.
+
+## 43. Boulders stay, pebbles go (build 336)
+
+Owner (2026-10-21): boulders are not rocks; they are boulders, harvestable by the right tool. So SCENERY_BOULDERS is true again in grass_view.gd (the mossy granite lumps near water and on slopes, section 32) and only the decorative pebbles stay off (SCENERY_PEBBLES false; loose rocks must be pickable, Items scatters them). Placement is client side and deterministic per 6 m cell (rng seed hash(cell)), from a ground ray, the patch noise and the water test, so the server cannot reproduce it. For harvesting Items would need the boulders as server entities; GrassView._make_boulder() (static, ArrayMesh, radius 1 unit, scaled 0.3 to 1.2 m, 0.65 to 1.1 tall, sunk 20 percent) is the mesh to reuse.
