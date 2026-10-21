@@ -106,6 +106,10 @@ var send_craft_queue: Callable   # (peer, [[recipe, crafts left], ...], ms left 
 var send_strain: Callable       # (peer, strain in thousandths, state 0 normal 1 over 2 fainted 3 waking, fade in thousandths, stance)
 var send_breath: Callable       # (peer, seconds of air left in tenths, or -1 when the head is above water)
 var send_vitals: Callable       # (peer, hunger percent, health, weight in tenths of a kg, thirst percent, luck, fitness)
+var water_depth_at: Callable       # (position) -> metres of water there (optional; unset: depth is not checked)
+var ice_cover_at: Callable       # (position) -> 0..1 ice cover on still water there (ice.gd); unset: no ice
+var _holes: Array = []            # ice fishing holes: {pos, owner key, until game seconds}
+var _hole_blows: Dictionary = {}  # peer -> [blows, msec of the last]
 var water_near: Callable         # (position, reach in metres) -> true when water lies within reach of the position; set by the server scene (unset: no water anywhere)
 var send_chest: Callable        # (peer, world id, bytes) a chest's contents to the player who opened it
 var roof_add: Callable          # (roof Array from Cover.box_roof) -> key; the server's cover index gets the lean-to's roof
@@ -325,6 +329,7 @@ func peer_connected_hello(peer: int, key: String) -> void:
 
 
 func peer_left(peer: int) -> void:
+	_hole_blows.erase(peer)
 	_fishing.erase(peer)
 	_last_fish.erase(peer)
 	_wear_carry.erase(peer)
@@ -456,8 +461,10 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_eat(peer, inv, a)
 	elif kind == Net.ACT_DRINK:
 		_drink_water(peer, a, inv)
+	elif kind == Net.ACT_ICEHOLE:
+		_cut_hole(peer, inv, a)
 	elif kind == Net.ACT_FISH:
-		_fish(peer, inv, a)
+		_fish(peer, inv, a, at)
 	elif kind == Net.ACT_WEAR:
 		_wear(peer, inv, a)
 	elif kind == Net.ACT_UNWEAR:
@@ -3618,13 +3625,32 @@ func station_near(peer: int, station: String, level: int = 1) -> bool:
 
 		var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
 
-		if str(def.get("station", "")) != station or int(def.get("station_level", 1)) < level:
+		if str(def.get("station", "")) != station or _peer_pos[peer].distance_to(it["pos"]) > float(def.get("reach_m", 3.0)) + 1.0:
 			continue
 
-		if _peer_pos[peer].distance_to(it["pos"]) <= float(def.get("reach_m", 3.0)) + 1.0:
+		if int(def.get("station_level", 1)) + _addon_kinds(it, def, station) >= level:
 			return true
 
 	return false
+
+
+# How many different add-on kinds (structures.json addon_of) stand within addon_reach_m of a station: each raises its level by one.
+func _addon_kinds(station_row: Dictionary, def: Dictionary, station: String) -> int:
+	var kinds: Dictionary = {}
+	var reach: float = float(def.get("addon_reach_m", 5.0))
+
+	for id in _items:
+		var other: Dictionary = _items[id]
+
+		if not other.has("struct"):
+			continue
+
+		var kind: String = str(other["struct"]["kind"])
+
+		if str(_structures.get(kind, {}).get("addon_of", "")) == station and station_row["pos"].distance_to(other["pos"]) <= reach:
+			kinds[kind] = true
+
+	return kinds.size()
 
 
 # --- Fishing (data/items/fishing.json, Tyler's model: no fish entities, a roll per cast) ---
@@ -3705,10 +3731,19 @@ func _fish_species(cell: Vector2i) -> String:
 	return str(table_rows[table_rows.size() - 1][0]) if not table_rows.is_empty() else "perch"
 
 
-func _fish(peer: int, inv, slot: int) -> void:
+func _fish(peer: int, inv, slot: int, at: Vector3 = Vector3.ZERO) -> void:
 	var cfg: Dictionary = _fishing_data()
 
-	if cfg.has("none") or slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or not _peer_pos.has(peer) or str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", "")) != "rod" or _is_broken(inv.numbers[slot], inv.wear[slot]):
+	if cfg.has("none") or slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or not _peer_pos.has(peer) or _is_broken(inv.numbers[slot], inv.wear[slot]):
+		return
+
+	var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
+
+	if str(entry.get("weapon_class", "")) == "spear":
+		_spear_fish(peer, inv, slot, at, cfg)
+		return
+
+	if str(entry.get("tool_class", "")) != "rod":
 		return
 
 	var now: int = Time.get_ticks_msec()
@@ -3732,9 +3767,15 @@ func _fish(peer: int, inv, slot: int) -> void:
 		_say(peer, str(cfg.get("say_no_water", "")))
 		return
 
+	var icy: bool = _on_ice(_peer_pos[peer])
+
+	if icy and not _hole_near(_peer_pos[peer]):
+		_say(peer, str(cfg.get("ice", {}).get("say_need_hole", "")))
+		return
+
 	var cell: Vector2i = _fish_cell(_peer_pos[peer])
 	var bait_slot: int = _fish_bait_slot(inv, cfg)
-	var chance: float = _fish_chance(peer, cell, bait_slot >= 0)
+	var chance: float = _fish_chance(peer, cell, bait_slot >= 0) * (float(cfg.get("ice", {}).get("ice_mult", 0.8)) if icy else 1.0)
 
 	if bait_slot >= 0:
 		inv.take_from_slot(bait_slot, 1)
@@ -3745,6 +3786,123 @@ func _fish(peer: int, inv, slot: int) -> void:
 	var wait_ms: int = int(lerpf(float(wait_s[0]), float(wait_s[1]), _fate_rng.randf()) * 1000.0)   # luck-exempt: the length of a wait
 	_fishing[peer] = {"phase": "wait", "at": now + wait_ms, "spot": _peer_pos[peer], "cell": cell, "bites": bites}
 	_say(peer, str(cfg.get("say_cast", "")))
+
+
+# A spear jab at water (the client sends ACT_FISH with the spear in hand and the point it stabs at): see fishing.json "spear".
+func _spear_fish(peer: int, inv, slot: int, at: Vector3, fishing: Dictionary) -> void:
+	var cfg: Dictionary = fishing.get("spear", {})
+	var pos: Vector3 = _peer_pos[peer]
+
+	if cfg.is_empty() or not water_near.is_valid() or Vector2(at.x - pos.x, at.z - pos.z).length() > float(cfg.get("reach_m", 3.0)) or not bool(water_near.call(at, 0.0)) or bool(_swimming.get(peer, false)):
+		return
+
+	var now: int = Time.get_ticks_msec()
+
+	if now - int(_last_fish.get(peer, -100000)) < int(float(cfg.get("cooldown_s", 1.2)) * 1000.0):
+		return
+
+	_last_fish[peer] = now
+
+	if _on_ice(at):
+		_say(peer, str(cfg.get("say_ice", "")))
+		return
+
+	if water_depth_at.is_valid() and float(water_depth_at.call(at)) > float(cfg.get("max_depth_m", 1.5)):
+		return
+
+	if float(_moving.get(peer, 0.0)) > float(cfg.get("still_below", 0.25)):
+		_say(peer, str(cfg.get("say_move", "")))
+		return
+
+	_wear_slot(peer, inv, slot, "fish")
+	var cell: Vector2i = _fish_cell(pos)
+	var chance: float = float(cfg.get("base_chance", 0.2)) * skill_factor(peer, "fish")
+	var weather: Dictionary = weather_now.call() if weather_now.is_valid() else {}
+
+	if float(weather.get("storm", 0.0)) > 0.3 or float(weather.get("rain", 0.0)) > float(cfg.get("rain_over", 0.4)):
+		chance *= float(cfg.get("murky_mult", 0.5))
+
+	var hour: float = fposmod(_now_game_s(), 86400.0) / 3600.0
+	var glare: Array = cfg.get("glare_hours", [11.0, 14.0])
+
+	if hour >= float(glare[0]) and hour < float(glare[1]):
+		chance *= float(cfg.get("glare_mult", 0.85))
+
+	chance = clampf(chance, 0.02, float(cfg.get("max_chance", 0.6)))
+
+	if fish_stock(cell) > 0 and fate(peer, "fish", chance):
+		var key: String = "%d,%d" % [cell.x, cell.y]
+		_fish_stock[key][0] = int(_fish_stock[key][0]) - 1
+		var species: String = _fish_species(cell)
+		var left: int = inv.add(table.number_of(species), 1)
+
+		if left > 0:
+			drop_in_world(table.number_of(species), left, pos)
+
+		practice(peer, "fish")
+		_say(peer, str(cfg.get("say_hit", "")) % table.name_of(table.number_of(species)).to_lower())
+		_dirty = true
+	else:
+		_say(peer, str(cfg.get("say_miss", "")))
+
+
+func _on_ice(pos: Vector3) -> bool:
+	return ice_cover_at.is_valid() and float(ice_cover_at.call(pos)) >= 0.5 and water_near.is_valid() and bool(water_near.call(pos, 0.0))
+
+
+func _now_game_s() -> float:
+	return float(game_seconds.call()) if game_seconds.is_valid() else 0.0
+
+
+func _hole_near(pos: Vector3) -> bool:
+	_holes = _holes.filter(func(h): return float(h["until"]) > _now_game_s())
+
+	for hole in _holes:
+		if pos.distance_to(hole["pos"]) <= float(_fishing_data().get("ice", {}).get("hole_reach_m", 2.0)):
+			return true
+
+	return false
+
+
+# Right click with an axe or pick on a bearing sheet: blows_needed blows (blow_gap_s apart) open a hole that stays open hole_game_h
+# game hours. The oldest of a player's holes closes when they cut a new one over their limit.
+func _cut_hole(peer: int, inv, slot: int) -> void:
+	var cfg: Dictionary = _fishing_data().get("ice", {})
+
+	if cfg.is_empty() or slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or not _peer_pos.has(peer) or not _peer_key.has(peer):
+		return
+
+	if not str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", "")) in ["axe", "pick"] or _is_broken(inv.numbers[slot], inv.wear[slot]):
+		_reject(peer, 1)
+		return
+
+	if not _on_ice(_peer_pos[peer]):
+		_say(peer, str(cfg.get("say_no_ice", "")))
+		return
+
+	var now: int = Time.get_ticks_msec()
+	var row: Array = _hole_blows.get(peer, [0, -100000])
+
+	if now - int(row[1]) < int(float(cfg.get("blow_gap_s", 0.8)) * 1000.0):
+		return
+
+	_wear_slot(peer, inv, slot, "ice")
+	var blows: int = int(row[0]) + 1
+
+	if blows < int(cfg.get("blows_needed", 6)):
+		_hole_blows[peer] = [blows, now]
+		return
+
+	_hole_blows.erase(peer)
+	var key: String = str(_peer_key[peer])
+	var mine: Array = _holes.filter(func(h): return str(h["owner"]) == key)
+
+	while mine.size() >= int(cfg.get("holes_per_player", 2)):
+		_holes.erase(mine[0])
+		mine.remove_at(0)
+
+	_holes.append({"pos": _peer_pos[peer], "owner": key, "until": _now_game_s() + float(cfg.get("hole_game_h", 12.0)) * 3600.0})
+	_say(peer, str(cfg.get("say_hole", "")))
 
 
 func _fish_bait_slot(inv, cfg: Dictionary) -> int:

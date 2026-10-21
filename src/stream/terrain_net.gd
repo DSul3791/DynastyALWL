@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 42
+const PROTOCOL_VERSION := 43
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -95,6 +95,7 @@ const ACT_USE_STRUCT := 17  # a = structure world id: use it (a chopping block s
 const ACT_CHEST_OPEN := 14 # a = chest world id: the server answers with chest_contents
 const ACT_CHEST_PUT := 15  # a = pack slot, b = chest world id, count = how many to put in
 const ACT_CHEST_TAKE := 16 # a = chest slot, b = chest world id, count = how many to take out
+const ACT_ICEHOLE := 31   # a = slot of an axe or pick: one blow at the ice under you; the sixth opens a fishing hole
 const ACT_FISH := 30      # a = slot of a fishing rod, at = where the cast lands (water): cast the line, and click again when it bites
 const ACT_WEAR := 28      # a = pack slot: put on the clothing or gear in it (the piece it replaces goes to the pack)
 const ACT_UNWEAR := 29    # a = body slot index (data/items/clothing.json slots): take that piece off into the pack

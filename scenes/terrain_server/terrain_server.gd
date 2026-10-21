@@ -41,6 +41,7 @@ const ItemsScript := preload("res://src/stream/server_items.gd")
 const MAX_BATCH_BYTES := 192 * 1024
 const MAX_QUEUE_PER_PEER := 20000
 const WeatherScript := preload("res://src/shared/weather.gd")
+const IceScript := preload("res://src/shared/ice.gd")
 const WEATHER_SWELL := 1.0              # a big storm makes every spring run this much stronger (x2 in all: the x10 start flow becomes x20; Dave 2026-10-20)
 const WEATHER_LAG_S := 600.0            # real seconds the rivers take to follow the weather (about ten minutes to swell, as long to recede)
 const WATER_BASE_RATE := 10.0           # m3 per second at each spring (about 158,000 US gallons a minute); the + and - keys scale it
@@ -185,6 +186,7 @@ func _ready() -> void:
 	items.send_energy = func(peer, percent): net.energy.rpc_id(peer, percent)
 	items.send_warmth = func(peer, percent): net.warmth.rpc_id(peer, percent)
 	items.send_sick = func(peer, hours): net.sick.rpc_id(peer, hours)
+	items.ice_cover_at = func(pos): return IceScript.cover(game_clock.seconds, settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), maxf(pos.y, 0.0), 3.0)
 	items.send_worn = func(peer, numbers): net.worn.rpc_id(peer, numbers)
 	items.send_remains = func(peer, rows): net.remains_marks.rpc_id(peer, rows)
 	items.send_thought = func(peer, line_id, text, kind): net.thought.rpc_id(peer, line_id, text, kind)

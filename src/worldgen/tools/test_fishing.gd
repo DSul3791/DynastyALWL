@@ -90,6 +90,64 @@ func _init() -> void:
 	clock[0] += 2.0 * float(items._fishing_data()["regrow_s"]) + 5.0
 	check(items.fish_stock(cell) == 2, "two regrow periods bring two fish back (%d)" % items.fish_stock(cell))
 
+	# Ice: a cast on a bearing sheet needs a hole, six blows with an axe cut one, a hole closes after its game hours.
+	var ice: Array = [0.8]
+	var game: Array = [0.0]
+	items.ice_cover_at = func(_p): return ice[0]
+	items.game_seconds = func(): return game[0]
+	items._last_fish.clear()
+	items.action(1, Net.ACT_FISH, slot, 0, 0, Vector3.ZERO)
+	check(not items._fishing.has(1) and said.has(items._fishing_data()["ice"]["say_need_hole"]), "on ice a cast needs a hole")
+	var axe: int = items.table.number_of("stone_axe")
+	items.action(1, Net.ACT_ADMIN_GIVE, axe, 0, 1, Vector3.ZERO)
+	var axe_slot: int = items.inventory_of(1).numbers.find(axe)
+
+	for n in 6:
+		items._hole_blows[1] = [int(items._hole_blows.get(1, [0, 0])[0]), -100000]
+		items.action(1, Net.ACT_ICEHOLE, axe_slot, 0, 0, Vector3.ZERO)
+
+	check(items._holes.size() == 1 and items._hole_near(Vector3(5.0, 10.0, 5.0)), "six blows cut a hole")
+	items._last_fish.clear()
+	items.action(1, Net.ACT_FISH, slot, 0, 0, Vector3.ZERO)
+	check(items._fishing.has(1), "with a hole the cast goes out")
+	items._fishing.erase(1)
+	game[0] = 19.0 * 3600.0
+	check(not items._hole_near(Vector3(5.0, 10.0, 5.0)), "the hole freezes over after its game hours")
+	ice[0] = 0.0
+	items.action(1, Net.ACT_ICEHOLE, axe_slot, 0, 0, Vector3.ZERO)
+	check(items._holes.is_empty(), "no ice, no hole")
+
+	# Spear: a jab at water while standing still.
+	items.game_seconds = Callable()
+	var spear: int = items.table.number_of("spear")
+	items.action(1, Net.ACT_ADMIN_GIVE, spear, 0, 1, Vector3.ZERO)
+	var spear_slot: int = items.inventory_of(1).numbers.find(spear)
+	items._moving[1] = 1.0
+	items._last_fish.clear()
+	var before_wear: int = items.inventory_of(1).wear[spear_slot]
+	items.action(1, Net.ACT_FISH, spear_slot, 0, 0, Vector3(6.0, 10.0, 5.0))
+	check(items.inventory_of(1).wear[spear_slot] == before_wear, "moving scares the fish: no strike")
+	items._moving[1] = 0.0
+	var tries: int = 0
+	var fish_before: int = 0
+
+	for fish in ["trout", "perch", "carp", "pike"]:
+		fish_before += items.inventory_of(1).count_of(items.table.number_of(fish))
+
+	items._fish_stock["%d,%d" % [cell.x, cell.y]] = [12, clock[0]]
+
+	for n in 40:
+		items._last_fish.clear()
+		items.action(1, Net.ACT_FISH, spear_slot, 0, 0, Vector3(6.0, 10.0, 5.0))
+
+	var fish_after: int = 0
+
+	for fish in ["trout", "perch", "carp", "pike"]:
+		fish_after += items.inventory_of(1).count_of(items.table.number_of(fish))
+
+	check(fish_after > fish_before and fish_after - fish_before < 40, "40 spear strikes land some fish but not all (%d)" % (fish_after - fish_before))
+	check(items.inventory_of(1).wear[spear_slot] > before_wear, "a strike wears the spear")
+
 	# Raw fish makes you sick; cooked fish is a different item.
 	check(items._cooking["raw_sick"]["by_id"].has("trout") and str(items._cooking["cooks_into"]["trout"]) == "roast_fish", "raw fish is raw_sick and cooks into roast fish")
 	print("fishing tests: %d failures" % failures)

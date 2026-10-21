@@ -1233,7 +1233,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 		if state >= 5:
 			var yaw: float = deg_to_rad(float(row[5].get("yaw", 0.0))) if row.size() > 5 else 0.0
-			node = _make_leanto() if state == 5 else (_make_chest() if state == 6 else (_make_remains(float(row[5].get("age", 0.0)) if row.size() > 5 else 0.0) if (state == 11 or state == 12) else (_make_bench() if state == 13 else _make_block())))
+			node = _make_leanto() if state == 5 else (_make_chest() if state == 6 else (_make_remains(float(row[5].get("age", 0.0)) if row.size() > 5 else 0.0) if (state == 11 or state == 12) else (_make_bench() if state == 13 else (_make_rack() if state == 14 else (_make_vice() if state == 15 else _make_block())))))
 			node.position = row[3] - Vector3(0.0, SINK_M * float(row[5].get("age", 0.0)), 0.0) if (state == 11 or state == 12) and row.size() > 5 else row[3]
 			node.rotation.y = yaw
 			_root.add_child(node)
@@ -1276,7 +1276,7 @@ func placed_rows() -> Array:
 	for id in _world:
 		var state: int = int(_world[id]["state"])
 
-		if state == 1 or state == 5 or state == 6 or state == 7 or state == 8 or state == 9 or state == 13:
+		if state == 1 or state == 5 or state == 6 or state == 7 or state == 8 or state == 9 or state == 13 or state == 14 or state == 15:
 			rows.append({"pos": _world[id]["pos"], "state": state})
 
 	return rows
@@ -1373,6 +1373,55 @@ func _make_block() -> Node3D:
 
 
 # A camp bench (placeholder look until Art draws it): a flat top on four legs, waist high, about 1.5 by 1 m.
+# Add-ons (placeholder looks): a tool rack is two posts and a crossbar with pegs; a vice is a block with two jaws.
+func _make_rack() -> Node3D:
+	var root: Node3D = Node3D.new()
+	var wood: StandardMaterial3D = StandardMaterial3D.new()
+	wood.albedo_color = Color(0.4, 0.29, 0.18)
+
+	for x in [-0.45, 0.45]:
+		var post: MeshInstance3D = MeshInstance3D.new()
+		var bar: BoxMesh = BoxMesh.new()
+		bar.size = Vector3(0.08, 1.5, 0.08)
+		post.mesh = bar
+		post.material_override = wood
+		post.position = Vector3(x, 0.75, 0.0)
+		root.add_child(post)
+
+	var cross: MeshInstance3D = MeshInstance3D.new()
+	var beam: BoxMesh = BoxMesh.new()
+	beam.size = Vector3(1.0, 0.08, 0.08)
+	cross.mesh = beam
+	cross.material_override = wood
+	cross.position = Vector3(0.0, 1.35, 0.0)
+	root.add_child(cross)
+	return root
+
+
+func _make_vice() -> Node3D:
+	var root: Node3D = Node3D.new()
+	var wood: StandardMaterial3D = StandardMaterial3D.new()
+	wood.albedo_color = Color(0.36, 0.26, 0.16)
+	var block: MeshInstance3D = MeshInstance3D.new()
+	var base: BoxMesh = BoxMesh.new()
+	base.size = Vector3(0.45, 0.8, 0.4)
+	block.mesh = base
+	block.material_override = wood
+	block.position = Vector3(0.0, 0.4, 0.0)
+	root.add_child(block)
+
+	for x in [-0.12, 0.12]:
+		var jaw: MeshInstance3D = MeshInstance3D.new()
+		var plate: BoxMesh = BoxMesh.new()
+		plate.size = Vector3(0.06, 0.25, 0.3)
+		jaw.mesh = plate
+		jaw.material_override = wood
+		jaw.position = Vector3(x, 0.92, 0.0)
+		root.add_child(jaw)
+
+	return root
+
+
 func _station_ok(r: Dictionary) -> bool:
 	return str(r.get("station", "")) == "" or station_near(str(r["station"]), int(r.get("station_level", 1)))
 
@@ -1422,10 +1471,22 @@ func station_near(station: String, level: int = 1) -> bool:
 	for id in _world:
 		var def: Dictionary = _structure_by_state(int(_world[id]["state"]))
 
-		if not def.is_empty() and str(def.get("station", "")) == station and int(def.get("station_level", 1)) >= level and here.distance_to(_world[id]["pos"]) <= float(def.get("reach_m", 3.0)):
+		if not def.is_empty() and str(def.get("station", "")) == station and here.distance_to(_world[id]["pos"]) <= float(def.get("reach_m", 3.0)) and int(def.get("station_level", 1)) + _addons_near(id, station, float(def.get("addon_reach_m", 5.0))) >= level:
 			return true
 
 	return false
+
+
+func _addons_near(bench_id: int, station: String, reach: float) -> int:
+	var kinds: Dictionary = {}
+
+	for id in _world:
+		var def: Dictionary = _structure_by_state(int(_world[id]["state"]))
+
+		if not def.is_empty() and str(def.get("addon_of", "")) == station and _world[bench_id]["pos"].distance_to(_world[id]["pos"]) <= reach:
+			kinds[int(_world[id]["state"])] = true
+
+	return kinds.size()
 
 
 func _structure_by_state(state: int) -> Dictionary:

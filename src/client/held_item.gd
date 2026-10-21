@@ -205,6 +205,11 @@ func mouse_button(button: int, pressed: bool) -> bool:
 		return button == MOUSE_BUTTON_LEFT
 
 	if _is_axe():
+		if button == MOUSE_BUTTON_RIGHT and pressed:
+			_net.inventory_action.rpc_id(1, Net.ACT_ICEHOLE, held_slot, 0, 0, Vector3.ZERO)
+			_arm_play("use", 0.6)
+			return true
+
 		if button == MOUSE_BUTTON_LEFT and pressed and _swing_t < 0.0:
 			_swing_t = 0.0
 			_swing_hit = false
@@ -248,6 +253,7 @@ func mouse_button(button: int, pressed: bool) -> bool:
 		elif _jab_t < 0.0:
 			_jab_t = 0.0
 			_arm_play("jab", JAB_S)
+			_net.inventory_action.rpc_id(1, Net.ACT_FISH, held_slot, 0, 0, _camera.global_position - _camera.global_transform.basis.z * 2.5 - Vector3(0.0, 1.2, 0.0))
 
 			if _sound != null:
 				_sound.spear.jab(_camera.global_position - _camera.global_transform.basis.z)
@@ -580,6 +586,15 @@ func _make_kit_model() -> Node3D:
 		shape.material = _kit_material(Color(0.55, 0.45, 0.28) if id == "chest_kit" else Color(0.5, 0.36, 0.22))
 		box.mesh = shape
 		node.add_child(box)
+		return node
+
+	if id == "tool_rack_kit" or id == "vice_kit":
+		var piece: MeshInstance3D = MeshInstance3D.new()
+		var chunk: BoxMesh = BoxMesh.new()
+		chunk.size = Vector3(0.3, 0.1, 0.1) if id == "tool_rack_kit" else Vector3(0.14, 0.14, 0.12)
+		chunk.material = _kit_material(Color(0.4, 0.29, 0.18))
+		piece.mesh = chunk
+		node.add_child(piece)
 		return node
 
 	if id == "workbench_kit":

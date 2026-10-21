@@ -162,7 +162,11 @@
 		"perch": 0.4,
 		"carp": 1.2,
 		"pike": 1.5,
-		"roast_fish": 0.35
+		"roast_fish": 0.35,
+		"tool_rack_kit": 6.0,
+		"tool_rack": 6.0,
+		"vice_kit": 9.0,
+		"vice": 9.0
 	},
 	"by_suffix": {
 		"berries": 0.05,

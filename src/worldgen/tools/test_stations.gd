@@ -82,5 +82,16 @@ func _init() -> void:
 	items._craft_tick(60.0)
 	check(items.inventory_of(1).count_of(items.table.number_of("stone_spade")) == 1, "back at the bench it finishes")
 
+	# Add-ons raise the bench's level: a tool rack and a vice beside it.
+	check(not items.station_near(1, "workbench", 2), "a bare bench is level 1")
+	var rack: int = items.table.number_of("tool_rack_kit")
+	items.action(1, Net.ACT_ADMIN_GIVE, rack, 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(rack), 0, 0, Vector3(2.0, 10.0, 3.5))
+	check(items.station_near(1, "workbench", 2) and not items.station_near(1, "workbench", 3), "a tool rack makes it level 2")
+	var vice: int = items.table.number_of("vice_kit")
+	items.action(1, Net.ACT_ADMIN_GIVE, vice, 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(vice), 0, 0, Vector3(2.0, 10.0, -2.5))
+	check(items.station_near(1, "workbench", 3), "a vice as well makes it level 3")
+
 	print("station tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
