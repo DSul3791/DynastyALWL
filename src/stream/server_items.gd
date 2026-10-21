@@ -89,6 +89,7 @@ var recipes
 var send_full: Callable        # (peer, bytes)
 var send_slots: Callable       # (peer, bytes)
 var send_purse: Callable       # (peer, copper total): the purse (protocol 61)
+var send_carry: Callable       # (peer, item id or ""): the large log on the shoulder (protocol 64)
 var send_reputation: Callable  # (peer, ids PackedStringArray, names PackedStringArray, points PackedInt32Array)
 var _coins_cfg: Dictionary = {}
 var _rep_cfg: Dictionary = {}
@@ -363,6 +364,7 @@ func peer_connected_hello(peer: int, key: String) -> void:
 	_sync_skills(peer, true)
 	sync_purse(peer)
 	sync_reputation(peer)
+	sync_shoulder(peer)
 	_sync_craft_queue(peer)
 
 
@@ -428,6 +430,9 @@ func give(peer: int, number: int, count: int) -> int:
 	if inv == null or number <= 0 or count <= 0 or table.id_of(number) == "":
 		return 0
 
+	if is_shoulder_item(number):
+		return _give_shoulder(peer, number, count)
+
 	var before: Array = _snapshot(inv)
 	var fits: int = _fit(peer, inv, number, count)
 	var left: int = inv.add(number, fits) + (count - fits)
@@ -441,6 +446,70 @@ func give(peer: int, number: int, count: int) -> int:
 		drop_in_world(number, left, _peer_pos.get(peer, Vector3.ZERO))
 
 	return count - left
+
+
+# --- The large log on the shoulder (Dave 2026-10-21): one at a time, not a bag item, its weight counts in the load ---
+
+func is_shoulder_item(number: int) -> bool:
+	return number > 0 and str(table.entry(table.id_of(number)).get("carry", "")) == "shoulder"
+
+
+# The item id of the log on this player's shoulder, "" when there is none (saved in the character row).
+func shoulder_of(peer: int) -> String:
+	return str(_characters.get(_peer_key.get(peer, ""), {}).get("shoulder", ""))
+
+
+func _shoulder_kg(peer: int) -> float:
+	var id: String = shoulder_of(peer)
+	return CarryRules.weight_of(id, _carry_cfg) if id != "" and not _carry_cfg.is_empty() else 0.0
+
+
+func sync_shoulder(peer: int) -> void:
+	if send_carry.is_valid() and _characters.has(_peer_key.get(peer, "")):
+		send_carry.call(peer, shoulder_of(peer))
+
+
+# Puts one large log on the shoulder; with a log already there the new one lies at the player's feet. Returns how many were taken.
+func _give_shoulder(peer: int, number: int, count: int) -> int:
+	var key: String = str(_peer_key.get(peer, ""))
+
+	if not _characters.has(key):
+		return 0
+
+	var here: Vector3 = _peer_pos.get(peer, Vector3.ZERO)
+
+	if shoulder_of(peer) != "":
+		_say(peer, "You can only carry one large log on your shoulder.")
+		drop_in_world(number, count, here)
+		return 0
+
+	_characters[key]["shoulder"] = table.id_of(number)
+	sync_shoulder(peer)
+	_dirty = true
+
+	if count > 1:
+		drop_in_world(number, count - 1, here)
+
+	return 1
+
+
+# D or the lay-down key with a log on the shoulder: it lies on the ground in front of the player.
+func lay_down_shoulder(peer: int, at: Vector3 = Vector3.ZERO) -> bool:
+	var id: String = shoulder_of(peer)
+
+	if id == "" or not _peer_pos.has(peer):
+		return false
+
+	var here: Vector3 = _peer_pos[peer]
+	var spot: Vector3 = at if at != Vector3.ZERO and at.distance_to(here) <= DROP_REACH_M else here
+
+	if not drop_in_world(table.number_of(id), 1, spot):
+		return false
+
+	_characters[str(_peer_key[peer])]["shoulder"] = ""
+	sync_shoulder(peer)
+	_dirty = true
+	return true
 
 
 # Takes items out of a player's inventory (crafting). False and no change if they lack them.
@@ -492,7 +561,10 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 	if kind == Net.ACT_MOVE:
 		inv.move(a, b)                 # move() ignores bad slots
 	elif kind == Net.ACT_DROP:
-		_drop(peer, inv, a, count, at)
+		if a == -1:
+			lay_down_shoulder(peer, at)
+		else:
+			_drop(peer, inv, a, count, at)
 	elif kind == Net.ACT_PICKUP:
 		_pickup(peer, inv, a)
 	elif kind == Net.ACT_HIT:
@@ -1440,6 +1512,25 @@ func _pickup(peer: int, inv, id: int) -> void:
 		_reject(peer, 0)
 		return
 
+	if is_shoulder_item(int(it["number"])):
+		if shoulder_of(peer) != "":
+			_say(peer, "You can only carry one large log on your shoulder.")
+			return
+
+		if _fit(peer, inv, int(it["number"]), 1) == 0:
+			_say(peer, "Too heavy to carry any more")
+			return
+
+		var took: int = _give_shoulder(peer, int(it["number"]), 1)
+
+		if took > 0:
+			if int(it["count"]) > 1:
+				it["count"] = int(it["count"]) - 1
+			else:
+				_items.erase(id)
+
+		return
+
 	var fits: int = _fit(peer, inv, int(it["number"]), int(it["count"]))
 
 	if fits == 0:
@@ -2361,7 +2452,8 @@ func _process_trunk(peer: int, inv, id: int) -> void:
 			give(peer, table.number_of(str(row[0])), roll_amount(peer, rng, int(row[1]), int(row[2])))
 	else:
 		if (blows - int(cfg.get("branch_blows", 3))) % int(cfg.get("blows_per_log", 3)) == 2:
-			give(peer, table.number_of("log"), 1)
+			var log_n: int = table.number_of("log_" + str(tree.get("species", "")))
+			give(peer, log_n if log_n > 0 else table.number_of("log"), 1)   # "Oak log" for an oak; an unknown species gives the plain log
 			tree["logs_left"] = int(tree["logs_left"]) - 1
 
 		if roll_chance(peer, rng, float(cfg.get("bark_chance", 0.3))):
@@ -2769,19 +2861,27 @@ func _use_struct(peer: int, inv, id: int) -> void:
 		return
 
 	var log_n: int = table.number_of("log")
+	var big: bool = shoulder_of(peer) != ""
 
 	if not _has_tool(inv, "axe"):
 		_say(peer, "You need an axe to split wood.")
 		return
 
-	if not inv.has(log_n, 1):
+	if not big and not inv.has(log_n, 1):
 		_say(peer, "You need a log to split.")
 		return
 
 	_last_use[peer] = now
-	inv.remove(log_n, 1)
+
+	# A large log from the shoulder gives several bolts' worth (it is about a dozen times a short log); plain firewood, no species.
+	if big:
+		_characters[str(_peer_key[peer])]["shoulder"] = ""
+		sync_shoulder(peer)
+	else:
+		inv.remove(log_n, 1)
+
 	var wood: int = table.number_of("firewood")
-	var left: int = inv.add(wood, int(def.get("logs_to_firewood", 4)))
+	var left: int = inv.add(wood, int(def.get("shoulder_log_to_firewood", 12)) if big else int(def.get("logs_to_firewood", 4)))
 
 	if left > 0:
 		drop_in_world(wood, left, _peer_pos[peer])
@@ -2915,12 +3015,12 @@ func _fit(peer: int, inv, number: int, count: int) -> int:
 		return count
 
 	var body: float = _carry_body(peer)
-	return CarryRules.fit_count(table.id_of(number), count, CarryRules.carried_kg(inv, table, _carry_cfg), body, _carry_cfg)
+	return CarryRules.fit_count(table.id_of(number), count, CarryRules.carried_kg(inv, table, _carry_cfg) + _shoulder_kg(peer), body, _carry_cfg)
 
 
 func carried_kg_of(peer: int) -> float:
 	var inv = inventory_of(peer)
-	return CarryRules.carried_kg(inv, table, _carry_cfg) if inv != null and not _carry_cfg.is_empty() else 0.0
+	return (CarryRules.carried_kg(inv, table, _carry_cfg) + _shoulder_kg(peer)) if inv != null and not _carry_cfg.is_empty() else 0.0
 
 
 func vitals_of(peer: int) -> Dictionary:
@@ -4283,6 +4383,11 @@ func kill(peer: int, cause: String) -> bool:
 	_next_id += 1
 	inv.from_json_array(InventoryScript.new(table).to_json_array())
 	send_full.call(peer, inv.to_bytes())
+
+	if shoulder_of(peer) != "" and _characters.has(key):   # the log on the shoulder falls where they fell
+		drop_in_world(table.number_of(shoulder_of(peer)), 1, spot)
+		_characters[key]["shoulder"] = ""
+		sync_shoulder(peer)
 
 	# Dave 2026-10-21: the purse stays on the body, so the whole purse lies with the remains and is found like the other things.
 	if _characters.has(key):

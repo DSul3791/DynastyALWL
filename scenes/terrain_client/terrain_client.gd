@@ -2696,6 +2696,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			_go_to_npc()
 		elif event.keycode == KEY_R and event.ctrl_pressed:
 			_admin_rabbit()
+		elif event.keycode == KEY_Q and not flying and items != null and not items.open:
+			items.lay_down_shoulder()
 		elif event.keycode == KEY_C and not flying:
 			_set_stance(StanceScript.CROUCH, true)
 		elif event.keycode == KEY_X and not flying:

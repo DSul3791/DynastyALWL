@@ -614,7 +614,7 @@ func _init() -> void:
 		w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3.ZERO)
 		guard += 1
 
-	check(not w._items.has(trunk_id) and w.inventory_of(1).count_of(logs) >= 1, "the trunk is worked into logs and used up")
+	check(not w._items.has(trunk_id) and w.shoulder_of(1) == "log_oak", "the trunk is worked into oak logs (one on the shoulder, the rest on the ground) and used up")
 	check(w.inventory_of(1).count_of(w.table.number_of("tree_roots")) >= 1, "the root ball comes up with the last log")
 	var stump_left: bool = false
 
@@ -908,6 +908,36 @@ func _init() -> void:
 	cb._last_use.clear()
 	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, 0, Vector3.ZERO)
 	check(cb.inventory_of(1).count_of(firewood_n) == 8, "the second log splits too")
+
+	# The large log on the shoulder (Dave 2026-10-21): one at a time, named for its tree, heavy, split at the block, falls with the body.
+	var oak_log: int = cb.table.number_of("log_oak")
+	var shoulder_sent: Array = []
+	cb.send_carry = func(_p, id): shoulder_sent.append(id)
+	check(oak_log > 0 and cb.is_shoulder_item(oak_log) and not cb.is_shoulder_item(cb.table.number_of("log")), "an oak log is a shoulder item, the short log is not")
+	var kg_before: float = cb.carried_kg_of(1)
+	cb.give(1, oak_log, 1)
+	check(cb.shoulder_of(1) == "log_oak" and shoulder_sent.back() == "log_oak" and cb.inventory_of(1).count_of(oak_log) == 0, "an oak log goes on the shoulder, not into the bag")
+	check(cb.carried_kg_of(1) - kg_before > 40.0, "and its weight counts in the load (%.1f kg more)" % (cb.carried_kg_of(1) - kg_before))
+	cb.give(1, cb.table.number_of("log_beech"), 1)
+	check(cb.shoulder_of(1) == "log_oak" and cb.world_item_count() >= 2, "a second large log lies on the ground: only one on the shoulder")
+	var beech_id: int = 0
+
+	for k in cb._items:
+		if int(cb._items[k]["number"]) == cb.table.number_of("log_beech"):
+			beech_id = k
+
+	cb.action(1, Net.ACT_PICKUP, beech_id, 0, 0, Vector3.ZERO)
+	check(cb.shoulder_of(1) == "log_oak" and cb._items.has(beech_id), "it cannot be picked up while carrying one")
+	cb._last_use.clear()
+	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, 0, Vector3.ZERO)
+	check(cb.shoulder_of(1) == "" and cb.inventory_of(1).count_of(firewood_n) == 8 + 12, "the block splits the shoulder log into plain firewood (%d)" % cb.inventory_of(1).count_of(firewood_n))
+	cb.take(1, firewood_n, cb.inventory_of(1).count_of(firewood_n))   # the 20 firewood would be too heavy with a log on top
+	cb.action(1, Net.ACT_PICKUP, beech_id, 0, 0, Vector3.ZERO)
+	check(cb.shoulder_of(1) == "log_beech" and not cb._items.has(beech_id), "with the shoulder free the beech log is picked up")
+	check(cb.lay_down_shoulder(1) and cb.shoulder_of(1) == "" and shoulder_sent.back() == "", "laying it down puts it on the ground")
+	cb.give(1, oak_log, 1)
+	cb.kill(1, "test")
+	check(cb.shoulder_of(1) == "", "dying drops the shoulder log")
 
 	# Hunger, health and weight.
 	var vd: String = "user://test_server_items_vitals"

@@ -1,6 +1,6 @@
 {
 	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist). station: the recipe is made only near that placed station (structures.json station, reach_m with 1 m grace on the server); station_level (default 1) is the lowest level of the station it needs.",
-	"next_number": 52,
+	"next_number": 102,
 	"recipes": {
 		"cordage": {
 			"number": 1,
@@ -1053,6 +1053,856 @@
 			"known": true,
 			"station": "workbench",
 			"station_level": 3
+		},
+		"lumber_oak": {
+			"number": 52,
+			"name": "Oak lumber",
+			"needs": [
+				[
+					"log_oak",
+					1
+				]
+			],
+			"gives": [
+				"lumber_oak",
+				6
+			],
+			"craft_s": 6.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"beams_oak": {
+			"number": 53,
+			"name": "Oak beams",
+			"needs": [
+				[
+					"log_oak",
+					1
+				]
+			],
+			"gives": [
+				"beam_oak",
+				2
+			],
+			"craft_s": 8.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"lumber_beech": {
+			"number": 54,
+			"name": "Beech lumber",
+			"needs": [
+				[
+					"log_beech",
+					1
+				]
+			],
+			"gives": [
+				"lumber_beech",
+				6
+			],
+			"craft_s": 6.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"beams_beech": {
+			"number": 55,
+			"name": "Beech beams",
+			"needs": [
+				[
+					"log_beech",
+					1
+				]
+			],
+			"gives": [
+				"beam_beech",
+				2
+			],
+			"craft_s": 8.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"lumber_birch": {
+			"number": 56,
+			"name": "Birch lumber",
+			"needs": [
+				[
+					"log_birch",
+					1
+				]
+			],
+			"gives": [
+				"lumber_birch",
+				6
+			],
+			"craft_s": 6.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"beams_birch": {
+			"number": 57,
+			"name": "Birch beams",
+			"needs": [
+				[
+					"log_birch",
+					1
+				]
+			],
+			"gives": [
+				"beam_birch",
+				2
+			],
+			"craft_s": 8.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"lumber_scots_pine": {
+			"number": 58,
+			"name": "Scots pine lumber",
+			"needs": [
+				[
+					"log_scots_pine",
+					1
+				]
+			],
+			"gives": [
+				"lumber_scots_pine",
+				6
+			],
+			"craft_s": 6.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"beams_scots_pine": {
+			"number": 59,
+			"name": "Scots pine beams",
+			"needs": [
+				[
+					"log_scots_pine",
+					1
+				]
+			],
+			"gives": [
+				"beam_scots_pine",
+				2
+			],
+			"craft_s": 8.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"lumber_spruce": {
+			"number": 60,
+			"name": "Spruce lumber",
+			"needs": [
+				[
+					"log_spruce",
+					1
+				]
+			],
+			"gives": [
+				"lumber_spruce",
+				6
+			],
+			"craft_s": 6.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"beams_spruce": {
+			"number": 61,
+			"name": "Spruce beams",
+			"needs": [
+				[
+					"log_spruce",
+					1
+				]
+			],
+			"gives": [
+				"beam_spruce",
+				2
+			],
+			"craft_s": 8.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"lumber_alder": {
+			"number": 62,
+			"name": "Alder lumber",
+			"needs": [
+				[
+					"log_alder",
+					1
+				]
+			],
+			"gives": [
+				"lumber_alder",
+				6
+			],
+			"craft_s": 6.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"beams_alder": {
+			"number": 63,
+			"name": "Alder beams",
+			"needs": [
+				[
+					"log_alder",
+					1
+				]
+			],
+			"gives": [
+				"beam_alder",
+				2
+			],
+			"craft_s": 8.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"lumber_willow": {
+			"number": 64,
+			"name": "Willow lumber",
+			"needs": [
+				[
+					"log_willow",
+					1
+				]
+			],
+			"gives": [
+				"lumber_willow",
+				6
+			],
+			"craft_s": 6.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"beams_willow": {
+			"number": 65,
+			"name": "Willow beams",
+			"needs": [
+				[
+					"log_willow",
+					1
+				]
+			],
+			"gives": [
+				"beam_willow",
+				2
+			],
+			"craft_s": 8.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"lumber_coconut_palm": {
+			"number": 66,
+			"name": "Coconut palm lumber",
+			"needs": [
+				[
+					"log_coconut_palm",
+					1
+				]
+			],
+			"gives": [
+				"lumber_coconut_palm",
+				6
+			],
+			"craft_s": 6.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"beams_coconut_palm": {
+			"number": 67,
+			"name": "Coconut palm beams",
+			"needs": [
+				[
+					"log_coconut_palm",
+					1
+				]
+			],
+			"gives": [
+				"beam_coconut_palm",
+				2
+			],
+			"craft_s": 8.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"lumber_tropical_hardwood": {
+			"number": 68,
+			"name": "Tropical hardwood lumber",
+			"needs": [
+				[
+					"log_tropical_hardwood",
+					1
+				]
+			],
+			"gives": [
+				"lumber_tropical_hardwood",
+				6
+			],
+			"craft_s": 6.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"beams_tropical_hardwood": {
+			"number": 69,
+			"name": "Tropical hardwood beams",
+			"needs": [
+				[
+					"log_tropical_hardwood",
+					1
+				]
+			],
+			"gives": [
+				"beam_tropical_hardwood",
+				2
+			],
+			"craft_s": 8.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"lumber_acacia": {
+			"number": 70,
+			"name": "Acacia lumber",
+			"needs": [
+				[
+					"log_acacia",
+					1
+				]
+			],
+			"gives": [
+				"lumber_acacia",
+				6
+			],
+			"craft_s": 6.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"beams_acacia": {
+			"number": 71,
+			"name": "Acacia beams",
+			"needs": [
+				[
+					"log_acacia",
+					1
+				]
+			],
+			"gives": [
+				"beam_acacia",
+				2
+			],
+			"craft_s": 8.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"lumber_mangrove": {
+			"number": 72,
+			"name": "Mangrove lumber",
+			"needs": [
+				[
+					"log_mangrove",
+					1
+				]
+			],
+			"gives": [
+				"lumber_mangrove",
+				6
+			],
+			"craft_s": 6.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"beams_mangrove": {
+			"number": 73,
+			"name": "Mangrove beams",
+			"needs": [
+				[
+					"log_mangrove",
+					1
+				]
+			],
+			"gives": [
+				"beam_mangrove",
+				2
+			],
+			"craft_s": 8.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"lumber_rowan": {
+			"number": 74,
+			"name": "Rowan lumber",
+			"needs": [
+				[
+					"log_rowan",
+					1
+				]
+			],
+			"gives": [
+				"lumber_rowan",
+				6
+			],
+			"craft_s": 6.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"beams_rowan": {
+			"number": 75,
+			"name": "Rowan beams",
+			"needs": [
+				[
+					"log_rowan",
+					1
+				]
+			],
+			"gives": [
+				"beam_rowan",
+				2
+			],
+			"craft_s": 8.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"lumber_wild_apple": {
+			"number": 76,
+			"name": "Crab apple lumber",
+			"needs": [
+				[
+					"log_wild_apple",
+					1
+				]
+			],
+			"gives": [
+				"lumber_wild_apple",
+				6
+			],
+			"craft_s": 6.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"beams_wild_apple": {
+			"number": 77,
+			"name": "Crab apple beams",
+			"needs": [
+				[
+					"log_wild_apple",
+					1
+				]
+			],
+			"gives": [
+				"beam_wild_apple",
+				2
+			],
+			"craft_s": 8.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"lumber_wild_pear": {
+			"number": 78,
+			"name": "Wild pear lumber",
+			"needs": [
+				[
+					"log_wild_pear",
+					1
+				]
+			],
+			"gives": [
+				"lumber_wild_pear",
+				6
+			],
+			"craft_s": 6.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"beams_wild_pear": {
+			"number": 79,
+			"name": "Wild pear beams",
+			"needs": [
+				[
+					"log_wild_pear",
+					1
+				]
+			],
+			"gives": [
+				"beam_wild_pear",
+				2
+			],
+			"craft_s": 8.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"lumber_wild_cherry": {
+			"number": 80,
+			"name": "Wild cherry lumber",
+			"needs": [
+				[
+					"log_wild_cherry",
+					1
+				]
+			],
+			"gives": [
+				"lumber_wild_cherry",
+				6
+			],
+			"craft_s": 6.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"beams_wild_cherry": {
+			"number": 81,
+			"name": "Wild cherry beams",
+			"needs": [
+				[
+					"log_wild_cherry",
+					1
+				]
+			],
+			"gives": [
+				"beam_wild_cherry",
+				2
+			],
+			"craft_s": 8.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"lumber_sweet_chestnut": {
+			"number": 82,
+			"name": "Sweet chestnut lumber",
+			"needs": [
+				[
+					"log_sweet_chestnut",
+					1
+				]
+			],
+			"gives": [
+				"lumber_sweet_chestnut",
+				6
+			],
+			"craft_s": 6.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"beams_sweet_chestnut": {
+			"number": 83,
+			"name": "Sweet chestnut beams",
+			"needs": [
+				[
+					"log_sweet_chestnut",
+					1
+				]
+			],
+			"gives": [
+				"beam_sweet_chestnut",
+				2
+			],
+			"craft_s": 8.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"lumber_walnut": {
+			"number": 84,
+			"name": "Walnut lumber",
+			"needs": [
+				[
+					"log_walnut",
+					1
+				]
+			],
+			"gives": [
+				"lumber_walnut",
+				6
+			],
+			"craft_s": 6.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"beams_walnut": {
+			"number": 85,
+			"name": "Walnut beams",
+			"needs": [
+				[
+					"log_walnut",
+					1
+				]
+			],
+			"gives": [
+				"beam_walnut",
+				2
+			],
+			"craft_s": 8.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"lumber_date_palm": {
+			"number": 86,
+			"name": "Date palm lumber",
+			"needs": [
+				[
+					"log_date_palm",
+					1
+				]
+			],
+			"gives": [
+				"lumber_date_palm",
+				6
+			],
+			"craft_s": 6.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"beams_date_palm": {
+			"number": 87,
+			"name": "Date palm beams",
+			"needs": [
+				[
+					"log_date_palm",
+					1
+				]
+			],
+			"gives": [
+				"beam_date_palm",
+				2
+			],
+			"craft_s": 8.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"lumber_mirrorbark": {
+			"number": 88,
+			"name": "Mirrorbark lumber",
+			"needs": [
+				[
+					"log_mirrorbark",
+					1
+				]
+			],
+			"gives": [
+				"lumber_mirrorbark",
+				6
+			],
+			"craft_s": 6.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"beams_mirrorbark": {
+			"number": 89,
+			"name": "Mirrorbark beams",
+			"needs": [
+				[
+					"log_mirrorbark",
+					1
+				]
+			],
+			"gives": [
+				"beam_mirrorbark",
+				2
+			],
+			"craft_s": 8.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"lumber_wardpine": {
+			"number": 90,
+			"name": "Wardpine lumber",
+			"needs": [
+				[
+					"log_wardpine",
+					1
+				]
+			],
+			"gives": [
+				"lumber_wardpine",
+				6
+			],
+			"craft_s": 6.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"beams_wardpine": {
+			"number": 91,
+			"name": "Wardpine beams",
+			"needs": [
+				[
+					"log_wardpine",
+					1
+				]
+			],
+			"gives": [
+				"beam_wardpine",
+				2
+			],
+			"craft_s": 8.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"lumber_hearthwood": {
+			"number": 92,
+			"name": "Hearthwood lumber",
+			"needs": [
+				[
+					"log_hearthwood",
+					1
+				]
+			],
+			"gives": [
+				"lumber_hearthwood",
+				6
+			],
+			"craft_s": 6.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"beams_hearthwood": {
+			"number": 93,
+			"name": "Hearthwood beams",
+			"needs": [
+				[
+					"log_hearthwood",
+					1
+				]
+			],
+			"gives": [
+				"beam_hearthwood",
+				2
+			],
+			"craft_s": 8.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"lumber_everember": {
+			"number": 94,
+			"name": "Everember lumber",
+			"needs": [
+				[
+					"log_everember",
+					1
+				]
+			],
+			"gives": [
+				"lumber_everember",
+				6
+			],
+			"craft_s": 6.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"beams_everember": {
+			"number": 95,
+			"name": "Everember beams",
+			"needs": [
+				[
+					"log_everember",
+					1
+				]
+			],
+			"gives": [
+				"beam_everember",
+				2
+			],
+			"craft_s": 8.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"lumber_witness_tree": {
+			"number": 96,
+			"name": "Witness tree lumber",
+			"needs": [
+				[
+					"log_witness_tree",
+					1
+				]
+			],
+			"gives": [
+				"lumber_witness_tree",
+				6
+			],
+			"craft_s": 6.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"beams_witness_tree": {
+			"number": 97,
+			"name": "Witness tree beams",
+			"needs": [
+				[
+					"log_witness_tree",
+					1
+				]
+			],
+			"gives": [
+				"beam_witness_tree",
+				2
+			],
+			"craft_s": 8.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"lumber_balsam_fir": {
+			"number": 98,
+			"name": "Balsam fir lumber",
+			"needs": [
+				[
+					"log_balsam_fir",
+					1
+				]
+			],
+			"gives": [
+				"lumber_balsam_fir",
+				6
+			],
+			"craft_s": 6.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"beams_balsam_fir": {
+			"number": 99,
+			"name": "Balsam fir beams",
+			"needs": [
+				[
+					"log_balsam_fir",
+					1
+				]
+			],
+			"gives": [
+				"beam_balsam_fir",
+				2
+			],
+			"craft_s": 8.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"lumber_maple": {
+			"number": 100,
+			"name": "Sugar maple lumber",
+			"needs": [
+				[
+					"log_maple",
+					1
+				]
+			],
+			"gives": [
+				"lumber_maple",
+				6
+			],
+			"craft_s": 6.0,
+			"known": false,
+			"station": "saw_mill"
+		},
+		"beams_maple": {
+			"number": 101,
+			"name": "Sugar maple beams",
+			"needs": [
+				[
+					"log_maple",
+					1
+				]
+			],
+			"gives": [
+				"beam_maple",
+				2
+			],
+			"craft_s": 8.0,
+			"known": false,
+			"station": "saw_mill"
 		}
 	}
 }

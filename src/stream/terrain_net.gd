@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 63
+const PROTOCOL_VERSION := 64
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -55,6 +55,7 @@ signal water_received(chunk: Vector2i, water: PackedByteArray)
 signal shop_received(npc_id: String, title: String, ids: PackedStringArray, pay_milli: int, get_milli: int, buys: PackedStringArray, tired_ids: PackedStringArray, tired_milli: PackedInt32Array)
 signal trade_requested(peer_id: int, npc_id: String, kind: int, a: int, count: int)
 signal purse_received(copper: int)
+signal carry_received(item_id: String)
 signal reputation_received(ids: PackedStringArray, names: PackedStringArray, points: PackedInt32Array)
 signal item_received(item_id: String, count: int, source: String)
 signal notice_received(text: String)
@@ -454,6 +455,13 @@ func shop(npc_id: String, title: String, ids: PackedStringArray, pay_milli: int,
 func trade(npc_id: String, kind: int, a: int, count: int) -> void:
 	if multiplayer.is_server():
 		trade_requested.emit(multiplayer.get_remote_sender_id(), npc_id, kind, a, count)
+
+
+# The large log on the shoulder (protocol 64): its item id, "" when nothing is carried. The client counts its weight in the load
+# and Mandy's character reads InventoryView.shoulder_id to show the carry pose.
+@rpc("authority", "call_remote", "reliable")
+func carry(item_id: String) -> void:
+	carry_received.emit(item_id)
 
 
 # The purse as a number of copper (protocol 61); the client shows it as copper, bronze, silver and gold.

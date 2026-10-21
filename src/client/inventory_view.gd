@@ -114,6 +114,7 @@ var _vitals_back: Control
 var _vitals_warning: Label
 var _weight_label: Label
 var _purse_label: Label
+var shoulder_id: String = ""                  # the large log on the shoulder (protocol 64), "" when none: Mandy shows the carry pose from this
 var purse_copper: int = 0                      # the purse, in copper (protocol 61)
 var rep_names: PackedStringArray = PackedStringArray()   # NPCs this player has a reputation with, and the points
 var rep_points: PackedInt32Array = PackedInt32Array()
@@ -161,6 +162,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.thought_received.connect(_on_thought)
 	net.skills_received.connect(_on_skills)
 	net.purse_received.connect(func(copper): purse_copper = copper; _refresh_purse())
+	net.carry_received.connect(func(item_id): shoulder_id = item_id; _refresh_weight() if _weight_label != null else null)
 	net.reputation_received.connect(func(_ids, names, points): rep_names = names; rep_points = points)
 	var coins_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/coins.json"))
 	_coins_cfg = coins_parsed if typeof(coins_parsed) == TYPE_DICTIONARY else {}
@@ -873,7 +875,20 @@ func _place_vitals() -> void:
 
 # Kilograms in the pack (the server counts the same way).
 func carried_kg() -> float:
-	return CarryRules.carried_kg(inventory, table, _carry_cfg) if not _carry_cfg.is_empty() else 0.0
+	if _carry_cfg.is_empty():
+		return 0.0
+
+	return CarryRules.carried_kg(inventory, table, _carry_cfg) + (CarryRules.weight_of(shoulder_id, _carry_cfg) if shoulder_id != "" else 0.0)
+
+
+# Q or D with nothing selected: lay the log on your shoulder down in front of you.
+func lay_down_shoulder() -> void:
+	if shoulder_id == "":
+		_on_notice("You are not carrying a log.")
+		return
+
+	var here: Vector3 = _player_position.call()
+	net.inventory_action.rpc_id(1, Net.ACT_DROP, -1, 0, 1, here)
 
 
 # Walking speed multiplier for the load: 1 when comfortable, easing down past it.
@@ -931,7 +946,7 @@ func _load_text() -> String:
 	var free: float = CarryRules.comfort_kg(carry_body_kg(), _carry_cfg)
 	var limit: float = CarryRules.cap_kg(carry_body_kg(), _carry_cfg)
 	var state: String = "" if load_kg <= free else ("   (heavy: you move slower)" if load_kg < limit else "   (at the limit)")
-	return "Carrying %.1f kg of %.0f kg you can carry%s" % [load_kg, limit, state]
+	return "Carrying %.1f kg of %.0f kg you can carry%s" % [load_kg, limit, state] + ("\nOn your shoulder: %s (Q lays it down)" % table.name_of(table.number_of(shoulder_id)) if shoulder_id != "" else "")
 
 
 func _on_strain(strain_pm: int, state: int, fade_pm: int, stance: int) -> void:
@@ -2466,6 +2481,10 @@ func quick_key(event: InputEventKey) -> bool:
 
 			return true
 		KEY_D:
+			if slot < 0 and shoulder_id != "" and not chest_mode:
+				lay_down_shoulder()
+				return true
+
 			if slot >= 0 and not chest_mode:
 				_selected = slot
 				_drop_selected(not event.shift_pressed)
