@@ -314,3 +314,7 @@ Owner rule: rivers run into the sea so they look like one body (brown is only a 
 ## 41. Flora worker crash (build 317)
 
 Crash (owner, 2026-10-21): "Out of bounds get index '3424' (on base: 'PackedInt32Array')" in FloraView._plan on a worker thread. The worker was handed a shallow copy of a chunk's item arrays; `remove_item` (a tree felled) changes those arrays on the main thread while the worker reads them. Now `_refresh` gives the worker real copies of the packed arrays, and `_plan` never reads past the shortest of ids, positions, heights and yaws.
+
+## 42. No decorative rocks (build 320)
+
+Owner rule (2026-10-21): any rock mesh placed in the world must be pickable. grass_view.gd no longer draws boulders or shore pebbles (SCENERY_ROCKS false; the code stays for a later pickable version). Real stones come from the Items scatter. What they replaced: shore pebbles 14 to 44 cm, about 10 per m2 on gravel banks within the shore reach (an Ultra figure; many tiny ones), and mossy boulders 0.6 to 2.4 m wide, 0.1 per sample in clusters near water and on slopes over about 0.1. Litter twigs and leaf cards stay as non-carryable floor litter under crowns.

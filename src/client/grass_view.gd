@@ -27,6 +27,7 @@ const CROWN_LITTER_FROM := 0.05          # litter starts getting denser here
 const CROWN_LITTER_TO := 0.4             # ... and reaches its full depth here
 const LITTER_DEEP_LEAVES := 5.0          # leaf cards per sample at full depth, times the normal count
 const LITTER_DEEP_TWIGS := 4.0           # twigs likewise
+const SCENERY_ROCKS := false             # owner (2026-10-21): any rock we put down must be pickable, so no boulder or pebble decoration; Items scatters real stones instead
 const SHORT_SOIL_LIFT := 1.9    # short grass: soil thickness times at most this, capped at 1 (0.5 becomes 0.95, 0.3 becomes 0.57)
 
 # Soil ids that carry grass, with how thick (0 to 1).
@@ -803,7 +804,8 @@ func _build(cell: Vector2i) -> int:
 
 			if shore_here:
 				_put_shore(buffers, counts, rng, point, spacing, water)
-				_put_boulders(buffers, counts, rng, point, spacing, hit["normal"].y, water)
+				if SCENERY_ROCKS:
+					_put_boulders(buffers, counts, rng, point, spacing, hit["normal"].y, water)
 
 			if not is_nan(water) and point.y < water + 0.3:
 				continue
@@ -989,7 +991,7 @@ func _put_shore(buffers: Array, counts: Array, rng: RandomNumberGenerator, point
 		return
 
 	for layer in range(LITTER_END, LAYERS.size()):
-		if LAYERS[layer].get("boulder", false):
+		if LAYERS[layer].get("boulder", false) or (LAYERS[layer].get("pebble", false) and not SCENERY_ROCKS):
 			continue
 
 		var reed: bool = LAYERS[layer].get("reed", false)
