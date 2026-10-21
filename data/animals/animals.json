@@ -189,6 +189,52 @@
 				"provoked_m": 10.0,
 				"provoked_warn_s": 0.8
 			}
+		},
+		"fox": {
+			"number": 5,
+			"name": "Fox",
+			"target_per_player": 1,
+			"spawn_share": 0.5,
+			"health": 12.0,
+			"walk_mps": 1.4,
+			"flee_mps": 11.0,
+			"spook_m": 22.0,
+			"safe_m": 50.0,
+			"graze_s": [
+				4.0,
+				14.0
+			],
+			"wander_m": 12.0,
+			"flee_run_m": 50.0,
+			"herd": [],
+			"alert_m": 40.0,
+			"alert_s": [
+				1.0,
+				2.5
+			],
+			"burst_s": 6.0,
+			"trot_share": 0.55,
+			"zig_deg": 20.0,
+			"zig_leg_m": 12.0,
+			"herd_pull_m": 0.0,
+			"eye_m": 0.5,
+			"habitat": {
+				"slope_max": 0.6,
+				"slope_run_m": 6.0,
+				"above_player_m": 250.0,
+				"water_edge_m": 3.0,
+				"forest": true
+			},
+			"thief": {
+				"smell_m": 30.0,
+				"look_s": 2.0,
+				"scare_m": 18.0,
+				"fire_m": 10.0,
+				"sneak_mps": 2.5,
+				"run_mps": 9.0,
+				"run_m": 70.0,
+				"again_s": 20.0
+			}
 		}
 	},
 	"senses": {

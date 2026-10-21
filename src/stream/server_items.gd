@@ -3228,6 +3228,38 @@ func wolf_info() -> Array:
 	return out
 
 
+# Loose food lying on the ground within r of a point, for a fox to smell: [[world id, position], ...]. Chests, remains, fires and
+# placed things are not loose; whatever is in a chest or a pack is safe.
+func loose_food_near(centre: Vector3, r: float) -> Array:
+	var out: Array = []
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if it.has("struct") or it.has("fire") or it.has("tree") or it.has("boulder") or it.has("scatter"):
+			continue
+
+		if str(table.entry(table.id_of(int(it["number"]))).get("kind", "")) != "food":
+			continue
+
+		if Vector2(it["pos"].x - centre.x, it["pos"].z - centre.z).length() <= r:
+			out.append([id, it["pos"]])
+
+	return out
+
+
+# A thief takes a loose item whole: [item number, count], or [] when it is no longer there.
+func take_loose(id: int) -> Array:
+	if not _items.has(id):
+		return []
+
+	var it: Dictionary = _items[id]
+	var out: Array = [int(it["number"]), int(it["count"])]
+	_items.erase(id)
+	_dirty = true
+	return out
+
+
 # Wolves steal: every raw and roast meat leaves the pack. Returns how many pieces went.
 func take_all_meat(peer: int) -> int:
 	var total: int = 0

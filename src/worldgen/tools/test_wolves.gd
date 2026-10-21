@@ -29,6 +29,7 @@ func make():
 	a.rng.seed = 3
 	a.cfg["species"]["rabbit"]["target_per_player"] = 0
 	a.cfg["species"]["moose"]["target_per_player"] = 0
+	a.cfg["species"]["fox"]["target_per_player"] = 0
 	a.cfg["species"]["deer"]["target_per_player"] = 0
 	a.cfg["senses"] = {}
 	var w = a.wolves

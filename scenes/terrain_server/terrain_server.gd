@@ -294,6 +294,10 @@ func _ready() -> void:
 	animals.wolves.notice = func(peer, text): items._say(peer, text)
 	animals.wolves.take_meat = func(peer): return items.take_all_meat(peer)
 	animals.big_game.player_info = func(): return items.wolf_info()
+	animals.thieves.loose_food = func(centre, r): return items.loose_food_near(centre, r)
+	animals.thieves.take_food = func(id): return items.take_loose(id)
+	animals.thieves.fires = func(): return animals.wolves.fires.call() if animals.wolves.fires.is_valid() else []
+	animals.drop_loot = func(number, count, pos): items.drop_in_world(number, count, pos)
 	animals.big_game.hurt_player = func(peer, amount, lethal, cause): return items.hurt_player(peer, amount, lethal, cause, 10.0)
 	animals.died = func(sp, pos, peer): items.make_carcass(sp, pos, peer)
 	items.hit_animal = func(peer, origin, dir, reach, amount) -> bool:

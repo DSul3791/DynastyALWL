@@ -45,6 +45,7 @@ UNITS = [
     ("animal_senses", "src/worldgen/tools/test_animal_senses.gd"),
     ("wolves", "src/worldgen/tools/test_wolves.gd"),
     ("big_game", "src/worldgen/tools/test_big_game.gd"),
+    ("thieves", "src/worldgen/tools/test_thieves.gd"),
     ("ai_contract", "src/worldgen/tools/test_ai_contract.gd"),
     ("block_roundtrip", "src/worldgen/tools/test_block_roundtrip.gd"),
     ("forge_models", "src/worldgen/tools/test_forge_models.gd"),

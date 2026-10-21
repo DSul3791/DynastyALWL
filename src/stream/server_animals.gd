@@ -8,12 +8,14 @@ extends RefCounted
 const Steering := preload("res://src/shared/steering.gd")
 const WolvesScript := preload("res://src/stream/server_wolves.gd")
 const BigGameScript := preload("res://src/stream/server_big_game.gd")
+const ThievesScript := preload("res://src/stream/server_thieves.gd")
 
 const GRAZE := 0
 const HOP := 1
 const FLEE := 2
 const ALERT := 3
 const WARN := 10                # big game standing its ground (head down), then 11 charge, 12 recover (server_big_game.gd)
+const SNEAK := 13               # a thief creeping up on food, 14 running off with it (server_thieves.gd)
 const HIDDEN := 5               # in its burrow: never sent, never hunted
 const STAGGER := 4              # a quarter of the animals are looked at each tick
 
@@ -27,6 +29,8 @@ var canopy: Callable               # (Vector3) -> bool, whether a spot is under 
 var wind: Callable                 # () -> the weather dictionary ("wind" 0..1 and "wind_dir" radians, the way it blows toward)
 var died: Callable                 # (species, position, source peer) when an animal is killed
 var ticks_run: int = 0
+var thieves = null                 # opportunists (fox; server_thieves.gd): smell loose food, creep up, take it and run
+var drop_loot: Callable            # (item number, count, position) when a thief is killed carrying food
 var big_game = null                # defending big game (moose; server_big_game.gd): warn, dodgeable charge, recover
 var wolves = null                  # the pack brain (server_wolves.gd); wired by the server, tests may leave player_info unset
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -50,6 +54,8 @@ func setup() -> void:
 	wolves.host = self
 	big_game = BigGameScript.new()
 	big_game.host = self
+	thieves = ThievesScript.new()
+	thieves.host = self
 
 
 func species_def(sp: String) -> Dictionary:
@@ -134,6 +140,9 @@ func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spea
 	if a["hp"] <= 0.0:
 		animals.erase(id)
 
+		if a.has("loot") and drop_loot.is_valid():
+			drop_loot.call(int(a["loot"][0]), int(a["loot"][1]), a["pos"])
+
 		if a.has("pack") and wolves != null:
 			wolves.on_death(id, a["pack"])
 
@@ -141,6 +150,10 @@ func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spea
 			died.call(a["sp"], a["pos"], source_peer)
 
 		return true
+
+	if a.has("loot") and drop_loot.is_valid():
+		drop_loot.call(int(a["loot"][0]), int(a["loot"][1]), a["pos"])   # a hurt thief drops what it stole and runs
+		a.erase("loot")
 
 	a["wound"] = true
 	a["hurt_by"] = source_peer
@@ -290,6 +303,10 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 	ticks_run += 1
 	var def: Dictionary = species_def(a["sp"])
 
+	if def.has("thief") and thieves.handles(a):
+		thieves.step(a, dt)
+		return
+
 	if def.has("defend"):
 		big_game.cool_down(a, dt)
 
@@ -372,6 +389,9 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		a["alert"] = 0.0   # it forgets once the player is well away
 
 	if a["state"] == GRAZE:
+		if def.has("thief") and thieves.try_sneak(a, dt):
+			return
+
 		a["timer"] -= dt
 
 		if a["herd"] != 0 and float(def.get("herd_pull_m", 0.0)) > 0.0:
@@ -464,10 +484,10 @@ func _top_up(players: Array, only: int) -> void:
 					all_near += 1
 					have += 1 if animals[id]["sp"] == sp else 0
 
-			if def.has("spawn_share") and rng.randf() > float(def["spawn_share"]):   # luck-exempt: rare species turn up on some top-ups only
+			if have >= int(def.get("target_per_player", 6)) or all_near >= per_player or animals.size() >= int(cfg.get("server_cap", 150)):
 				continue
 
-			if have >= int(def.get("target_per_player", 6)) or all_near >= per_player or animals.size() >= int(cfg.get("server_cap", 150)):
+			if def.has("spawn_share") and rng.randf() > float(def["spawn_share"]):   # luck-exempt: rare species turn up on some top-ups only
 				continue
 
 			# A few candidate spots; the first the species can live on wins, a forest animal takes a spot under trees if one turns up.

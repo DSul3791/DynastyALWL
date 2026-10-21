@@ -27,7 +27,7 @@ func on_rows(rows: Array) -> void:
 			if _bodies.size() >= MAX_DRAWN:
 				continue
 
-			var node: Node3D = _make_moose() if int(row[1]) == 4 else (_make_wolf() if int(row[1]) == 3 else (_make_deer() if int(row[1]) == 2 else _make_rabbit()))
+			var node: Node3D = _make_fox() if int(row[1]) == 5 else _make_moose() if int(row[1]) == 4 else (_make_wolf() if int(row[1]) == 3 else (_make_deer() if int(row[1]) == 2 else _make_rabbit()))
 			node.position = row[2]
 			add_child(node)
 			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2}
@@ -86,7 +86,7 @@ func _process(delta: float) -> void:
 		var b: Dictionary = _bodies[id]
 		var node: Node3D = b["node"]
 		var state: int = b["state"]
-		node.position = node.position.lerp(b["target"], clampf(delta * (10.0 if state == FLEE or state == 11 else 5.0), 0.0, 1.0))
+		node.position = node.position.lerp(b["target"], clampf(delta * (10.0 if state == FLEE or state == 11 or state == 14 else 5.0), 0.0, 1.0))
 		node.rotation.y = lerp_angle(node.rotation.y, -float(b["heading"]) - PI * 0.5, clampf(delta * 10.0, 0.0, 1.0))
 		var rig: Node3D = node.get_node("Rig")
 		var rate: float = 9.0 if state == FLEE else 5.0
@@ -95,7 +95,7 @@ func _process(delta: float) -> void:
 		# Wolf idle (protocol states 8 roll in the grass, 9 play): placeholder motion until Mandy animates it.
 		var roll: float = PI * 0.5 if state == 8 else 0.0
 		# Big game (protocol states 10 warn: head down and stamping, 11 charge: gallop, 12 recover): placeholder motion until Mandy animates it.
-		rig.rotation.x = lerp_angle(rig.rotation.x, 0.28 if state == 10 else (0.12 if state == 11 else 0.0), clampf(delta * 8.0, 0.0, 1.0))
+		rig.rotation.x = lerp_angle(rig.rotation.x, 0.28 if state == 10 or state == 13 else (0.12 if state == 11 else 0.0), clampf(delta * 8.0, 0.0, 1.0))
 		rig.rotation.z = lerp_angle(rig.rotation.z, roll, clampf(delta * 6.0, 0.0, 1.0))
 		rig.position.y = lerp(rig.position.y, lift + (0.25 * absf(sin(_t * 7.0 + float(b["phase"]))) if state == 9 else 0.0), clampf(delta * 20.0, 0.0, 1.0))
 
@@ -172,6 +172,18 @@ func _make_wolf() -> Node3D:
 
 	for child in node.find_children("*", "MeshInstance3D", true, false):
 		(child as MeshInstance3D).material_override = grey
+
+	return node
+
+
+# A fox for now (placeholder until Art): the deer shape small and rusty red; state 13 creeps low, 14 runs with food.
+func _make_fox() -> Node3D:
+	var node: Node3D = _make_deer()
+	node.scale = Vector3(0.5, 0.5, 0.5)
+	var rust: StandardMaterial3D = _material(Color(0.72, 0.34, 0.12))
+
+	for child in node.find_children("*", "MeshInstance3D", true, false):
+		(child as MeshInstance3D).material_override = rust
 
 	return node
 
