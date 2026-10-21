@@ -40,8 +40,8 @@ static func chunk_levels(generator, origin: Vector2, chunk_m: float) -> Dictiona
 	# Settled simulated water is already continuous: no hole closing. Running
 	# water gets a finer surface laid on the real ground (_fine_cells).
 	if not data.sim_levels.is_empty():
-		var sea_near: PackedFloat32Array = _ease_into_sea(generator, data, origin, count, spacing, levels)
 		var still: PackedFloat32Array = _calm_still_water(count, spacing, levels)
+		var sea_near: PackedFloat32Array = _ease_into_sea(generator, data, origin, count, spacing, levels, still)
 		var edge: PackedFloat32Array = _shore_levels(generator, data, origin, count, spacing, levels)
 		var vel: PackedFloat32Array = _velocities(generator, data, origin, count, spacing, levels, still)
 
@@ -372,6 +372,62 @@ static func blend(old: Dictionary, new: Dictionary, t: float) -> Dictionary:
 	return result
 
 
+# Dave (2026-10-21): at middling spring rates the shore twitched and flickered. The sim's draw line (0.12 m of
+# water) is crossed back and forth by cells that slosh a little, so a cell now needs HOLD_ON updates in a row
+# of water to appear and HOLD_OFF updates in a row of none to vanish. `new` is changed in place (levels, wet, a
+# "hold" array of per-cell streaks kept from update to update) and its prebuilt "mesh" is dropped when a cell was
+# held, so the drawing is made from the steadied levels. Returns true when any cell was held or delayed.
+const HOLD_ON := 2
+const HOLD_OFF := 4
+
+
+static func steady_edges(old: Dictionary, new: Dictionary) -> bool:
+	if int(old.get("count", -1)) != int(new.get("count", -2)) or int(old.get("wet", 0)) == 0 or int(new.get("wet", 0)) == 0:
+		return false
+
+	var old_levels: PackedFloat32Array = old["levels"]
+	var levels: PackedFloat32Array = new["levels"]
+	var old_hold: PackedByteArray = old.get("hold", PackedByteArray())
+	var hold: PackedByteArray = PackedByteArray()
+	hold.resize(levels.size())
+	var changed: bool = false
+	var wet: int = int(new["wet"])
+
+	for n in range(levels.size()):
+		var was: bool = not is_nan(old_levels[n])
+		var is_now: bool = not is_nan(levels[n])
+		var streak: int = old_hold[n] if old_hold.size() == levels.size() else 0
+
+		if was == is_now:
+			continue
+
+		# streak counts the updates in a row that disagree with what is drawn
+		streak += 1
+		var need: int = HOLD_ON if is_now else HOLD_OFF
+
+		if streak >= need:
+			continue
+
+		hold[n] = streak
+		changed = true
+
+		if is_now:
+			levels[n] = NAN
+			wet -= 1
+		else:
+			levels[n] = old_levels[n]
+			wet += 1
+
+	new["hold"] = hold
+
+	if changed:
+		new["levels"] = levels
+		new["wet"] = wet
+		new.erase("mesh")
+
+	return changed
+
+
 # Whether two grids' levels differ anywhere by more than `limit` metres (so easing is worth it).
 static func moved(old: Dictionary, new: Dictionary, limit: float) -> bool:
 	if int(old.get("count", -1)) != int(new.get("count", -2)) or int(old.get("wet", 0)) == 0 or int(new.get("wet", 0)) == 0:
@@ -448,7 +504,7 @@ const SEA_EASE_SLOPE := 0.005
 const SEA_EASE_FILM_M := 0.1
 
 
-static func _ease_into_sea(generator, data, origin: Vector2, count: int, spacing: float, levels: PackedFloat32Array) -> PackedFloat32Array:
+static func _ease_into_sea(generator, data, origin: Vector2, count: int, spacing: float, levels: PackedFloat32Array, still: PackedFloat32Array) -> PackedFloat32Array:
 	var reach: int = SEA_EASE_CELLS
 	var side: int = count + 2 * reach
 	var near: PackedFloat32Array = PackedFloat32Array()
@@ -514,7 +570,8 @@ static func _ease_into_sea(generator, data, origin: Vector2, count: int, spacing
 			result[j * count + i] = nearest if nearest <= float(reach) else INF
 			var level: float = levels[j * count + i]
 
-			if is_nan(level) or level <= SEA_EASE_FILM_M or nearest > float(reach):
+			# Still water (a pond or lake near the sea) keeps its own flat level; only running water is eased.
+			if is_nan(level) or level <= SEA_EASE_FILM_M or nearest > float(reach) or not is_nan(still[j * count + i]):
 				continue
 
 			var x: float = origin.x + float(i) * spacing

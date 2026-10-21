@@ -776,6 +776,7 @@ func set_water(chunk: Vector2i, water: Dictionary) -> void:
 
 	_ease.erase(chunk)
 	var old: Dictionary = entry.get("grid", {})
+	WaterGridScript.steady_edges(old, water)
 
 	if water_ease and WaterGridScript.moved(old, water, EASE_MIN_M):
 		_ease[chunk] = {"old": old, "new": water, "step": 1, "next_msec": Time.get_ticks_msec() + EASE_STEP_MSEC}
