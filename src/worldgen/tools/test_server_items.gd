@@ -1308,6 +1308,72 @@ func _init() -> void:
 		sl._strain_tick(1, 0.25)
 
 	check(not sl.sleeping_of(1), "fully rested for 10 s ends the sleep")
+	# Dave 2026-10-21: fade_smooth fade, slowing heart, wake timer, wake by itself only with full energy and no exertion, early wake keeps energy.
+	var body_log: Array = []
+	var strain_log: Array = []
+	sl.send_body = func(_p, bpm, eta, phase): body_log.append([bpm, eta, phase])
+	sl.send_strain = func(_p, _s, _st, fade, _stance): strain_log.append(fade)
+	sl._body_sent.clear()
+	sl._strain_sent.clear()
+	sl.action(1, Net.ACT_STANCE, 0, 0, 0, Vector3.ZERO)
+	sl.action(1, Net.ACT_STANCE, 3, 0, 0, Vector3.ZERO)
+	sl.vitals_of(1)["energy"] = 40.0
+	sl._strain[1] = {"s": 0.6, "state": 0, "t": 0.0}
+	sleeper[0] = 1.0
+	sl.action(1, Net.ACT_SLEEP, 1, 0, 0, Vector3.ZERO)
+	check(sl.sleeping_of(1), "asleep again for the wake rules")
+	var eta0: float = sl.sleep_eta(1)
+	check(eta0 > 100.0 and eta0 < 1000.0, "the expected wake time follows the energy to refill (%.0f s for 60 energy)" % eta0)
+	strain_log.clear()
+
+	for n in 24:
+		sl._strain_tick(1, 0.25)
+
+	var fade_smooth: bool = strain_log.size() > 8
+
+	for k in range(1, strain_log.size()):
+		fade_smooth = fade_smooth and strain_log[k] >= strain_log[k - 1] and strain_log[k] - strain_log[k - 1] <= 80
+
+	check(fade_smooth and strain_log[strain_log.size() - 1] >= 990, "going to sleep fades to black fade_smoothly over fade_in_s (last %d)" % strain_log[strain_log.size() - 1])
+	check(body_log.size() > 0 and body_log[0][2] == 1 and body_log[body_log.size() - 1][2] == 2, "the body message goes falling asleep then asleep")
+	var bpm_first: int = body_log[0][0]
+
+	for n in 400:
+		sl._strain_tick(1, 0.25)
+
+	check(body_log[body_log.size() - 1][0] < bpm_first - 8, "the heart slows while asleep (%d to %d)" % [bpm_first, body_log[body_log.size() - 1][0]])
+	sl.vitals_of(1)["energy"] = 80.0
+	sl._strain[1] = {"s": 0.0, "state": 0, "t": 0.0}
+
+	for n in 60:
+		sl._strain_tick(1, 0.25)
+
+	check(sl.sleeping_of(1), "not full of energy: you keep sleeping")
+	sl.vitals_of(1)["energy"] = 100.0
+	sl._strain[1] = {"s": 0.5, "state": 0, "t": 0.0}
+
+	for n in 8:
+		sl._strain_tick(1, 0.25)
+
+	check(sl.sleeping_of(1) or float(sl._strain[1]["s"]) <= 0.0, "full energy but still exerted: you keep sleeping until it is gone")
+	sl._strain[1] = {"s": 0.0, "state": 0, "t": 0.0}
+
+	for n in 20:
+		sl._strain_tick(1, 0.25)
+
+	check(not sl.sleeping_of(1), "full energy and no exertion: you wake by yourself")
+	var wake_phase: int = body_log[body_log.size() - 1][2]
+	check(wake_phase == 3 or wake_phase == 0, "and the wake fades back (phase %d)" % wake_phase)
+	strain_log.clear()
+
+	for n in 24:
+		sl._strain_tick(1, 0.25)
+
+	check(strain_log.is_empty() or strain_log[strain_log.size() - 1] == 0, "the fade is gone after the wake fade")
+	sl.vitals_of(1)["energy"] = 30.0
+	sl.action(1, Net.ACT_SLEEP, 1, 0, 0, Vector3.ZERO)
+	sl.action(1, Net.ACT_SLEEP, 0, 0, 0, Vector3.ZERO)
+	check(not sl.sleeping_of(1) and float(sl.vitals_of(1)["energy"]) == 30.0, "holding Space (asleep 0) wakes you early with the energy where it was")
 	sl.action(1, Net.ACT_SLEEP, 1, 0, 0, Vector3.ZERO)
 	var hp: float = 50.0
 	sl.vitals_of(1)["health"] = hp
@@ -1315,6 +1381,7 @@ func _init() -> void:
 	sl.vitals_of(1)["wet"] = 1000.0
 	sl._vitals_tick(10.0)
 	var asleep_gain: float = float(sl.vitals_of(1)["health"]) - hp
+	sl.action(1, Net.ACT_SLEEP, 0, 0, 0, Vector3.ZERO)
 	sl.action(1, Net.ACT_STANCE, 3, 0, 0, Vector3.ZERO)
 	sl.vitals_of(1)["health"] = hp
 	sl._vitals_tick(10.0)

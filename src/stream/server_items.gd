@@ -151,6 +151,9 @@ var _carry_cfg: Dictionary = {}
 var _exertion_cfg: Dictionary = {}
 var _strain: Dictionary = {}        # peer -> {s: strain, state: 0..3, t: seconds in the state}
 var _strain_sent: Dictionary = {}
+var send_body: Callable             # (peer, bpm, seconds until awake, phase 0 awake 1 falling asleep 2 asleep or fainted 3 waking), protocol 59
+var _body_sent: Dictionary = {}
+var _waking: Dictionary = {}        # peer -> {t seconds into the wake fade}, after any sleep ended
 var _last_fall: Dictionary = {}       # peer -> msec of its last accepted fall report
 var _craft_queues: Dictionary = {}    # player key -> {entries: [[recipe, crafts left], ...], elapsed: seconds on the first}
 const QUEUE_ACT_GAP_MS := 100          # queue and cancel requests closer together than this from one player are ignored
@@ -382,6 +385,8 @@ func peer_left(peer: int) -> void:
 	_stance.erase(peer)
 	_energy_sent.erase(peer)
 	_asleep.erase(peer)
+	_waking.erase(peer)
+	_body_sent.erase(peer)
 	_moving.erase(peer)
 	_last_process.erase(peer)
 
@@ -2922,7 +2927,7 @@ func _set_stance(peer: int, wanted: int) -> void:
 		_stance[peer] = wanted
 
 		if wanted != 3:
-			_asleep.erase(peer)
+			_end_sleep(peer)
 
 	_strain_sent.erase(peer)
 
@@ -2967,12 +2972,12 @@ func _energy_tick(peer: int, v: Dictionary, spent: float, game_s: float) -> void
 
 	if e <= 0.0 and not _forced_sleep(peer) and int(_strain.get(peer, {}).get("state", 0)) < 2:
 		_stance[peer] = 3
-		_asleep[peer] = {"rested": 0.0, "forced": true}
+		_asleep[peer] = {"rested": 0.0, "forced": true, "t": 0.0}
 		_note_shelter(peer)
 		_strain_sent.erase(peer)
 		_say(peer, "You collapse with exhaustion")
-	elif _forced_sleep(peer) and e >= float(_energy_cfg.get("forced", {}).get("wake_at", 100.0)):
-		_asleep.erase(peer)
+	elif _forced_sleep(peer) and e >= float(_energy_cfg.get("forced", {}).get("wake_at", 100.0)) and float(_strain.get(peer, {}).get("s", 0.0)) <= 0.02:
+		_end_sleep(peer)
 		_strain_sent.erase(peer)
 		_say(peer, "You wake rested")
 
@@ -3011,7 +3016,7 @@ func _sleep(peer: int, want: int) -> void:
 
 	if want == 0:
 		if not _forced_sleep(peer):
-			_wake(peer, "")
+			_wake(peer, "You wake, not fully rested" if energy_of(peer) < 99.0 else "")
 
 		return
 
@@ -3025,7 +3030,8 @@ func _sleep(peer: int, want: int) -> void:
 		_say(peer, "Rain falls on you: find cover to sleep")
 		return
 
-	_asleep[peer] = {"rested": 0.0}
+	_asleep[peer] = {"rested": 0.0, "t": 0.0}
+	_waking.erase(peer)
 	_strain_sent.erase(peer)
 	_note_shelter(peer)
 	_say(peer, "You fall asleep")
@@ -3092,11 +3098,35 @@ func respawn_for(peer: int) -> Vector3:
 
 
 func _wake(peer: int, why: String) -> void:
-	if not _asleep.erase(peer):
+	if not _end_sleep(peer):
 		return
 
 	_strain_sent.erase(peer)
 	_say(peer, why if why != "" else "You wake")
+
+
+# Sleep ends (any reason): the wake fade starts. True when the player was asleep.
+func _end_sleep(peer: int) -> bool:
+	if not _asleep.erase(peer):
+		return false
+
+	_waking[peer] = {"t": 0.0}
+	return true
+
+
+# Real seconds until a sleeper wakes by themselves: the longer of the energy still to fill (at the rate sleeping here refills
+# it, game hours at 24:1) and the exertion still to rest off (strain falls at the lying rate times the sleep multiplier).
+func sleep_eta(peer: int) -> float:
+	if not _asleep.has(peer):
+		return 0.0
+
+	var rec: Dictionary = _energy_cfg.get("recover_per_game_hour", {})
+	var rate: float = float(rec.get("sleep", 12.5)) if _forced_sleep(peer) else lerpf(float(rec.get("lie", 8.3)), float(rec.get("sleep", 12.5)), clampf(_sleep_quality(peer), 0.0, 1.0))
+	var energy_s: float = maxf(100.0 - energy_of(peer), 0.0) / maxf(rate, 0.1) * 3600.0 / GAME_RATE
+	var cfg: Dictionary = _exertion_cfg
+	var strain: float = float(_strain.get(peer, {}).get("s", 0.0))
+	var fall: float = float(cfg.get("fall_per_s", 0.05)) * (float(_sleep_cfg.get("strain_mult", 6.0)) if not _forced_sleep(peer) else float(cfg.get("lie_fall_mult", 3.0))) * maxf(float(cfg.get("rest_effort", 0.52)), 0.1)
+	return maxf(energy_s, strain / maxf(fall, 0.001)) + float(_sleep_cfg.get("rested_s", 1.5))
 
 
 # 1 under a roof or crown, the open-dry value in the open, -1 when rain reaches the sleeper (cannot sleep there).
@@ -3173,7 +3203,7 @@ func hurt_player(peer: int, amount: float, lethal: bool, cause: String, floor_hp
 		return "maimed"
 
 	if not _forced_sleep(peer):
-		_asleep.erase(peer)
+		_end_sleep(peer)
 
 	_sync_vitals(peer, false)
 	return "hurt"
@@ -3960,6 +3990,8 @@ func kill(peer: int, cause: String) -> bool:
 	_strain.erase(peer)
 	_strain_sent.erase(peer)
 	_asleep.erase(peer)
+	_waking.erase(peer)
+	_body_sent.erase(peer)
 	_breath.erase(peer)
 	_head_under.erase(peer)
 	_exertion[peer] = 0.0
@@ -4732,11 +4764,12 @@ func _strain_tick(peer: int, spent: float) -> void:
 
 	if _asleep.has(peer):
 		sleep_quality = _sleep_quality(peer)
+		_asleep[peer]["t"] = float(_asleep[peer].get("t", 0.0)) + spent
 
 		if _forced_sleep(peer):
 			sleep_quality = clampf(sleep_quality, 0.0, 1.0)
 		elif state >= 2 or int(_stance.get(peer, 0)) != 3:
-			_asleep.erase(peer)
+			_end_sleep(peer)
 			_strain_sent.erase(peer)
 		elif sleep_quality < 0.0:
 			_wake(peer, "Rain woke you")
@@ -4744,7 +4777,7 @@ func _strain_tick(peer: int, spent: float) -> void:
 			var rest: Dictionary = _asleep[peer]
 			rest["rested"] = float(rest["rested"]) + spent if strain <= 0.0 else 0.0
 
-			if float(rest["rested"]) >= float(_sleep_cfg.get("rested_s", 10.0)) and energy_of(peer) >= 99.0:
+			if float(rest["rested"]) >= float(_sleep_cfg.get("rested_s", 1.5)) and energy_of(peer) >= 99.9:
 				_wake(peer, "You wake rested")
 
 	if state == 2:
@@ -4823,11 +4856,60 @@ func _strain_tick(peer: int, spent: float) -> void:
 	elif state == 3:
 		fade = 1.0 - clampf(float(st["t"]) / float(cfg.get("wake_s", 12.0)), 0.0, 1.0)
 
-	var points: Array = [int(strain * 50.0) * 20, state, int(fade * 50.0) * 20, int(_stance.get(peer, 0)) | (4 if _asleep.has(peer) else 0) | (8 if _forced_sleep(peer) else 0)]
+	# Sleep: the blackout comes on smoothly (fade_in_s) and goes off smoothly (fade_out_s) after waking.
+	if _asleep.has(peer):
+		fade = maxf(fade, clampf(float(_asleep[peer].get("t", 0.0)) / maxf(float(_sleep_cfg.get("fade_in_s", 4.0)), 0.1), 0.0, 1.0))
+	elif _waking.has(peer):
+		_waking[peer]["t"] = float(_waking[peer]["t"]) + spent
+		fade = maxf(fade, 1.0 - clampf(float(_waking[peer]["t"]) / maxf(float(_sleep_cfg.get("fade_out_s", 4.0)), 0.1), 0.0, 1.0))
+
+		if float(_waking[peer]["t"]) >= float(_sleep_cfg.get("fade_out_s", 4.0)):
+			_waking.erase(peer)
+
+	_sync_body(peer, state, st)
+	var points: Array = [int(strain * 50.0) * 20, state, int(fade * 200.0) * 5, int(_stance.get(peer, 0)) | (4 if _asleep.has(peer) else 0) | (8 if _forced_sleep(peer) else 0)]
 
 	if send_strain.is_valid() and _strain_sent.get(peer, []) != points:
 		_strain_sent[peer] = points
 		send_strain.call(peer, points[0], points[1], points[2], points[3])
+
+
+# The heart in the ears, the expected wake time and the phase (protocol 59): 0 awake, 1 falling asleep, 2 out (asleep or fainted),
+# 3 waking. Fainted: a fast, high heart (exertion.json faint_bpm.out), dropping to a brisk 140 for the waking stage. Asleep: slows
+# from bpm.start to bpm.end over bpm.slow_s. Sent on change, whole bpm, ETA in steps of 5 s.
+func _sync_body(peer: int, state: int, st: Dictionary) -> void:
+	if not send_body.is_valid():
+		return
+
+	var fb: Dictionary = _exertion_cfg.get("faint_bpm", {"out": 172, "wake": 140})
+	var bpm: float = 0.0
+	var eta: float = 0.0
+	var phase: int = 0
+
+	if state == 2:
+		phase = 2
+		bpm = float(fb.get("out", 172))
+		eta = maxf(float(_exertion_cfg.get("faint_s", 8.0)) - float(st["t"]), 0.0) + float(_exertion_cfg.get("wake_s", 12.0))
+	elif state == 3:
+		phase = 3
+		bpm = float(fb.get("wake", 140))
+		eta = maxf(float(_exertion_cfg.get("wake_s", 12.0)) - float(st["t"]), 0.0)
+	elif _asleep.has(peer):
+		var cfg: Dictionary = _sleep_cfg.get("bpm", {})
+		var t: float = float(_asleep[peer].get("t", 0.0))
+		phase = 1 if t < float(_sleep_cfg.get("fade_in_s", 4.0)) else 2
+		bpm = lerpf(float(cfg.get("start", 66.0)), float(cfg.get("end", 44.0)), clampf(t / maxf(float(cfg.get("slow_s", 45.0)), 1.0), 0.0, 1.0))
+		eta = sleep_eta(peer)
+	elif _waking.has(peer):
+		phase = 3
+		bpm = float(_sleep_cfg.get("bpm", {}).get("wake", 72.0))
+		eta = maxf(float(_sleep_cfg.get("fade_out_s", 4.0)) - float(_waking[peer]["t"]), 0.0)
+
+	var row: Array = [int(round(bpm)), int(ceil(eta / 5.0)) * 5, phase]
+
+	if _body_sent.get(peer, [0, 0, 0]) != row:
+		_body_sent[peer] = row
+		send_body.call(peer, row[0], row[1], row[2])
 
 
 # How fast the blackout builds, per second, for an overshoot of the faint threshold (0 = right at it, as a fraction of it):

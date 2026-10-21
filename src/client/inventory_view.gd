@@ -145,6 +145,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.energy_received.connect(_on_energy)
 	net.warmth_received.connect(_on_warmth)
 	net.sick_received.connect(_on_sick)
+	net.body_received.connect(func(bpm, eta, phase): body_bpm = bpm; sleep_eta_s = eta; body_phase = phase)
 	net.limp_received.connect(func(percent): limp_share = clampf(float(percent) / 100.0, 0.1, 1.0))
 	net.remains_received.connect(_on_remains_marks)
 	net.worn_received.connect(_on_worn)
@@ -859,6 +860,9 @@ func carried_kg() -> float:
 
 
 # Walking speed multiplier for the load: 1 when comfortable, easing down past it.
+var body_bpm: int = 0          # protocol 59: the heart in the ears, 0 awake
+var sleep_eta_s: int = 0       # real seconds until awake (asleep or fainted)
+var body_phase: int = 0        # 0 awake, 1 falling asleep, 2 out, 3 waking
 var limp_share: float = 1.0   # server: a crippling injury slows the walker (protocol 58); Mandy reads this for the limping gait
 
 

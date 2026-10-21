@@ -65,7 +65,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 521
+const BUILD := 522
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -124,6 +124,7 @@ const STAGE_STEP_MIN_MSEC := 600
 const STILL_MSEC := 3000              # flying: ground loads again after staying still this long
 # Natural speeds (Dave 2026-10-21, Tyler Report 13): walk, jog and run in m/s. The ONE place to tune them; the server
 # reads effort from data/items/exertion.json effort_by_speed, so change those anchors to the same numbers.
+const SPACE_WAKE_S := 1.0               # hold Space this long to wake from sleep early
 const WALK_SPEED := 1.4
 const FAST := 3.0                     # flying: Shift multiplier
 const JOG_SPEED := 3.2
@@ -221,6 +222,7 @@ var _still_since_msec: int = 0
 var _building_paused: bool = false    # flying and moving: no ground is asked for
 var run_speed: float = 0.0            # with --walk: ground speed in m/s instead of the walking pace
 var _wait_frames: int = 0             # walk test: frames spent waiting for ground
+var _space_wake_s: float = 0.0
 var _slowest_frame: float = 0.0       # walk test: longest frame (s)
 var rescued: int = 0                   # times the player was lifted back above the ground
 var _floor_msec: int = 0               # last time the player stood on something
@@ -2631,7 +2633,19 @@ func _move_player(delta: float) -> void:
 	var direction: Vector3 = body.global_transform.basis * input
 
 	# Any movement key stands the player up from sitting or lying; those stances do not move.
-	if input != Vector3.ZERO or Input.is_key_pressed(KEY_SPACE):
+	var sleeping_now: bool = items != null and items.asleep
+
+	if sleeping_now and Input.is_key_pressed(KEY_SPACE) and input == Vector3.ZERO:
+		# Dave 2026-10-21: holding Space wakes a sleeper early (not fully rested: the energy stays where it was).
+		_space_wake_s += delta
+
+		if _space_wake_s >= SPACE_WAKE_S:
+			_space_wake_s = 0.0
+			items.request_sleep(0)
+	else:
+		_space_wake_s = 0.0
+
+	if input != Vector3.ZERO or (Input.is_key_pressed(KEY_SPACE) and not sleeping_now):
 		if stance.stance >= StanceScript.SIT:
 			_set_stance(StanceScript.STAND)
 

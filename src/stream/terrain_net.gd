@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 58
+const PROTOCOL_VERSION := 59
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -58,6 +58,7 @@ signal breath_received(deciseconds: int)
 signal energy_received(percent: int)
 signal sick_received(hours: int)
 signal limp_received(percent: int)
+signal body_received(bpm: int, eta_s: int, phase: int)
 signal remains_received(rows: Array)
 signal worn_received(numbers: PackedInt32Array)
 signal npc_roster_received(rows: Array)
@@ -396,6 +397,14 @@ func sick(hours: int) -> void:
 @rpc("authority", "call_remote", "reliable")
 func limp(percent: int) -> void:
 	limp_received.emit(percent)
+
+
+# The heart in the ears and the wake timer (protocol 59, sleep.json and exertion.json): beats per minute (0 when awake), real
+# seconds until the sleeper or fainted player is awake again (steps of 5), and the phase: 0 awake, 1 falling asleep, 2 out
+# (asleep or fainted), 3 waking. Sent whenever one of them changes.
+@rpc("authority", "call_remote", "reliable")
+func body(bpm: int, eta_s: int, phase: int) -> void:
+	body_received.emit(bpm, eta_s, phase)
 
 
 # Body warmth, 0 to 100 percent (protocol 36, data/items/warmth.json): at hello and whenever the whole percent changes.
