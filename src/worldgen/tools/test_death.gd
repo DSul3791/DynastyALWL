@@ -11,6 +11,7 @@ const Net := preload("res://src/stream/terrain_net.gd")
 var failures: int = 0
 var clock: float = 1.0e9
 var died: Array = []
+var marks: Array = []
 var chest_sent: Array = []
 var world_sent: Array = []
 var ground: float = 10.0
@@ -28,6 +29,7 @@ func make(dir: String):
 	items.send_slots = func(_p, _b): pass
 	items.send_world_items = func(p, a, r): world_sent.append([p, a, r])
 	items.send_chest = func(p, id, bytes): chest_sent.append([p, id, bytes])
+	items.send_remains = func(p, rows): marks.append([p, rows])
 	items.send_died = func(p, cause, point): died.append([p, cause, point])
 	items.unix_now = func(): return clock
 	items.ground_height = func(_x, _z): return ground
@@ -66,6 +68,10 @@ func _init() -> void:
 	var id: int = int(ids[0]) if ids.size() == 1 else 0
 	check(id != 0 and absf(items._items[id]["pos"].y - ground) < 0.01, "remains sit on the surface, not in the air where the player fell")
 
+	# The owner is told where the remains lie and how long they have left; emptying them removes the marker.
+	check(not marks.is_empty() and marks.back()[0] == 1 and marks.back()[1].size() == 1 and int(marks.back()[1][0][1]) > 604000, "the owner gets a death marker with the time left")
+	check(marks.back()[1].size() == 1 and marks.back()[1][0][0].distance_to(items._items[id]["pos"]) < 0.01, "at the remains")
+
 	# Day 1: only the owner opens them; nobody may put things in.
 	chest_sent.clear()
 	items.report_position(2, items._items[id]["pos"] + Vector3(1.0, 0.0, 0.0))
@@ -79,6 +85,7 @@ func _init() -> void:
 	check(items.inventory_of(1).count_of(stone) == 1, "nothing can be put on remains")
 	items.action(1, Net.ACT_CHEST_TAKE, 0, id, 15, Vector3.ZERO)
 	check(items.inventory_of(1).count_of(stone) == 16, "the owner takes the pack back")
+	check(marks.back()[1].is_empty(), "taking everything clears the marker")
 	items.action(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 	check(items.remains_ids().size() == 1, "remains cannot be picked up like a kit")
 

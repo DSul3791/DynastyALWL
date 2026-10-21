@@ -63,6 +63,14 @@ func add(number: int, count: int, item_wear: int = 0) -> int:
 	return left
 
 
+func is_empty() -> bool:
+	for i in SLOTS:
+		if numbers[i] != 0:
+			return false
+
+	return true
+
+
 func count_of(number: int) -> int:
 	var total: int = 0
 

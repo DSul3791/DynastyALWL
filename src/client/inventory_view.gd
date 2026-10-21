@@ -85,6 +85,7 @@ var skill_rows: Array = []                  # [[skill index, working level, rust
 var thought_event: Callable = Callable()     # (line id, kind) when the inner voice speaks: Sounds plays inner_voice/<line id>.ogg if it exists
 var _thought_label: Label
 var _thought_until_msec: int = 0
+var remains_marks: Array = []                # [[position, seconds left, msec received], ...] the owner's remains with gear (protocol 39)
 var sick_hours: int = 0                      # game hours of sickness left, 0 = well (protocol 38)
 var _sick_label: Label
 var warmth: int = 100                       # body warmth, percent (protocol 36)
@@ -139,6 +140,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.energy_received.connect(_on_energy)
 	net.warmth_received.connect(_on_warmth)
 	net.sick_received.connect(_on_sick)
+	net.remains_received.connect(_on_remains_marks)
 	net.thought_received.connect(_on_thought)
 	net.skills_received.connect(_on_skills)
 	net.died_received.connect(_on_died)
@@ -1723,6 +1725,17 @@ func _on_thought(line_id: String, text: String, kind: String) -> void:
 
 	if thought_event.is_valid():
 		thought_event.call(line_id, kind)
+
+
+func _on_remains_marks(rows: Array) -> void:
+	remains_marks = []
+	var now: int = Time.get_ticks_msec()
+
+	for row in rows:
+		remains_marks.append([row[0], int(row[1]), now])
+
+	if _character != null:
+		_character.refresh()
 
 
 func _on_sick(hours: int) -> void:

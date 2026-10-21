@@ -156,6 +156,8 @@ var _energy_cfg: Dictionary = {}    # data/items/energy.json
 var _death_cfg: Dictionary = {}     # data/items/death.json
 var _sick_cfg: Dictionary = {}      # data/items/sickness.json
 var send_thought: Callable          # (peer, line id, text, kind): the inner voice
+var send_remains: Callable          # (peer, rows [[position Vector3, seconds left], ...]): the owner's remains that still hold gear
+var _remains_sent: Dictionary = {}
 var send_sick: Callable             # (peer, game hours of sickness left, rounded up; 0 = well)
 var _sick_sent: Dictionary = {}
 var _last_dose: Dictionary = {}     # peer -> msec of the last medicine taken
@@ -306,6 +308,7 @@ func peer_connected_hello(peer: int, key: String) -> void:
 	_sync_vitals(peer, true)
 	_sync_energy(peer, true)
 	_sync_warmth(peer, true)
+	_sync_remains(peer, true)
 	_sync_sick(peer, true)
 	_sync_skills(peer, true)
 	_sync_craft_queue(peer)
@@ -314,6 +317,7 @@ func peer_connected_hello(peer: int, key: String) -> void:
 func peer_left(peer: int) -> void:
 	_swimming.erase(peer)
 	_last_dose.erase(peer)
+	_remains_sent.erase(peer)
 	_skills_sent.erase(peer)
 	_skills_send_in.erase(peer)
 	_last_practice.erase(peer)
@@ -2479,6 +2483,9 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int) -> vo
 	if send_chest.is_valid():
 		send_chest.call(peer, id, chest.to_bytes())
 
+	if kind == Net.ACT_CHEST_TAKE and str(_items.get(id, {}).get("struct", {}).get("kind", "")) == "remains":
+		_sync_remains(peer, false)
+
 
 func _save_chests() -> void:
 	var rows: Dictionary = {}
@@ -3205,6 +3212,7 @@ func kill(peer: int, cause: String) -> bool:
 	_next_id += 1
 	inv.from_json_array(InventoryScript.new(table).to_json_array())
 	send_full.call(peer, inv.to_bytes())
+	_sync_remains(peer, true)
 
 	# Start over: vitals, strain, sleep, breath. Luck, fitness and skills live in characters.json and stay.
 	_vitals[key] = _new_vitals()
@@ -3234,6 +3242,44 @@ func kill(peer: int, cause: String) -> bool:
 	return true
 
 
+# The owner's death markers (protocol 39): every set of their remains that still holds something, with the seconds until it is cleaned up.
+func _remains_rows(key: String) -> Array:
+	var rows: Array = []
+	var gone_s: float = float(_death_cfg.get("gone_s", 604800))
+
+	for id in remains_ids():
+		var it: Dictionary = _items[id]
+
+		if str(it["struct"].get("owner", "")) != key:
+			continue
+
+		var chest = _chests.get(int(it["struct"].get("uid", 0)))
+
+		if chest == null or chest.is_empty():
+			continue
+
+		rows.append([it["pos"], maxi(int(gone_s - (_unix() - float(it["struct"].get("born", 0.0)))), 0)])
+
+	return rows
+
+
+func _sync_remains(peer: int, force: bool) -> void:
+	if not send_remains.is_valid() or not _peer_key.has(peer):
+		return
+
+	var rows: Array = _remains_rows(str(_peer_key[peer]))
+	var shape: Array = []
+
+	for row in rows:
+		shape.append(row[0])
+
+	if not force and _remains_sent.get(peer, []) == shape:
+		return
+
+	_remains_sent[peer] = shape
+	send_remains.call(peer, rows)
+
+
 # Once in a while: clean up remains that have run their seven days and put the others back on the surface when the ground
 # under them has changed (digging, a fill). The record never moves anywhere else; the sinking is only a drawing offset.
 func _remains_tick(spent: float) -> void:
@@ -3244,6 +3290,9 @@ func _remains_tick(spent: float) -> void:
 
 	_remains_check_in = float(_death_cfg.get("recheck_s", 30))
 	var gone_s: float = float(_death_cfg.get("gone_s", 604800))
+
+	for peer in _peer_key:
+		_sync_remains(peer, false)
 
 	for id in remains_ids():
 		var it: Dictionary = _items[id]

@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 38
+const PROTOCOL_VERSION := 39
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -53,6 +53,7 @@ signal chest_received(id: int, bytes: PackedByteArray)
 signal breath_received(deciseconds: int)
 signal energy_received(percent: int)
 signal sick_received(hours: int)
+signal remains_received(rows: Array)
 signal thought_received(line_id: String, text: String, kind: String)
 signal skills_received(attributes: PackedInt32Array, rows: Array)
 signal warmth_received(percent: int)
@@ -271,6 +272,13 @@ func died(cause: String, spawn: Vector3) -> void:
 @rpc("authority", "call_remote", "reliable")
 func skills(attributes: PackedInt32Array, rows: Array) -> void:
 	skills_received.emit(attributes, rows)
+
+
+# The owner's death markers (protocol 39): [[position Vector3, seconds until the remains are cleaned up], ...] for their remains
+# that still hold gear. Sent at hello, when one appears and when one is emptied or cleaned up; the client counts the time down.
+@rpc("authority", "call_remote", "reliable")
+func remains_marks(rows: Array) -> void:
+	remains_received.emit(rows)
 
 
 # The inner voice (protocol 38, data/items/inner_voice.json): one remark of the character's own thoughts. `line_id` is stable

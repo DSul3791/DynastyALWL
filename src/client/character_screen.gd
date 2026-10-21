@@ -19,6 +19,7 @@ var _heart: Control
 var _bpm_label: Label
 var _attributes: VBoxContainer
 var _skills_box: VBoxContainer
+var _remains_box: VBoxContainer
 var _skills_cfg: Dictionary = {}              # data/items/skills.json: names and order of the skills
 var _phase: float = 0.0
 var _text_scale_built: float = -1.0
@@ -155,6 +156,8 @@ func _build() -> void:
 	box.add_child(_label("Attributes", TITLE_PX - 6))
 	_attributes = VBoxContainer.new()
 	box.add_child(_attributes)
+	_remains_box = VBoxContainer.new()
+	box.add_child(_remains_box)
 	box.add_child(HSeparator.new())
 	box.add_child(_label("Skills", TITLE_PX - 6))
 	_skills_box = VBoxContainer.new()
@@ -229,6 +232,11 @@ func refresh() -> void:
 	more.modulate = Color(1.0, 1.0, 1.0, 0.55)
 	_attributes.add_child(more)
 
+	for child in _remains_box.get_children():
+		child.queue_free()
+
+	_add_remains_lines()
+
 	for child in _skills_box.get_children():
 		child.queue_free()
 
@@ -267,6 +275,26 @@ func refresh() -> void:
 			line.add_child(rusty)
 
 		_skills_box.add_child(line)
+
+
+# The death markers (DESIGN_IDEAS 6.1): each of your remains that still holds gear, with the way and distance to it and the
+# time left before it is cleaned up. There is no map yet; the map marker uses the same rows.
+func _add_remains_lines() -> void:
+	if _items.remains_marks.is_empty():
+		return
+
+	var here: Vector3 = _items._player_position.call()
+	_remains_box.add_child(HSeparator.new())
+	_remains_box.add_child(_label("Your remains", TITLE_PX - 6))
+
+	for mark in _items.remains_marks:
+		var left: int = maxi(int(mark[1]) - int((Time.get_ticks_msec() - int(mark[2])) / 1000), 0)
+		var to: Vector3 = mark[0] - here
+		var dir: String = ["east", "south-east", "south", "south-west", "west", "north-west", "north", "north-east"][posmod(int(round(atan2(to.z, to.x) / (PI / 4.0))), 8)]
+		var days: int = left / 86400
+		var hours: int = (left % 86400) / 3600
+		var line: Label = _label("%d m %s, gone in %d d %d h" % [int(Vector2(to.x, to.z).length()), dir, days, hours], BODY_PX)
+		_remains_box.add_child(line)
 
 
 # Every frame while open: the heart beats at the heart rate the sound uses (60 at rest).
