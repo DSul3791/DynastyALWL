@@ -329,6 +329,7 @@ func peer_connected_hello(peer: int, key: String) -> void:
 
 
 func peer_left(peer: int) -> void:
+	_station_said.erase(peer)
 	_hole_blows.erase(peer)
 	_fishing.erase(peer)
 	_last_fish.erase(peer)
@@ -3445,6 +3446,8 @@ func kill(peer: int, cause: String) -> bool:
 	_sick_sent.erase(peer)
 	_symptom_in.erase(peer)
 	_cold_level.erase(peer)
+	_fishing.erase(peer)
+	_hole_blows.erase(peer)
 	_peer_pos[peer] = respawn_point
 	_motion.erase(peer)
 	_sync_breath(peer, -1)
