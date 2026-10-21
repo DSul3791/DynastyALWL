@@ -41,6 +41,7 @@ static func chunk_levels(generator, origin: Vector2, chunk_m: float) -> Dictiona
 	# water gets a finer surface laid on the real ground (_fine_cells).
 	if not data.sim_levels.is_empty():
 		_ease_into_sea(generator, data, origin, count, spacing, levels)
+		_calm_still_water(count, spacing, levels)
 		var edge: PackedFloat32Array = _shore_levels(generator, data, origin, count, spacing, levels)
 		var vel: PackedFloat32Array = _velocities(generator, data, origin, count, spacing, levels)
 		var fall_grid: PackedFloat32Array = _fall_grid(generator, data, origin, count, spacing, levels)
@@ -73,6 +74,88 @@ const FLOW_FASTEST_M_S := 2.5   # the water shader's fastest drawn speed (fastes
 # The current at each wet point, m/s as x, z pairs (0 on dry points): the speed the water
 # sim's own friction law gives for the depth and the surface slope there (steady flow,
 # Manning), pointing downhill. Owner (2026-10-20): ripples and foam follow the true current.
+const CALM_RADIUS := 3           # cells each way: the window that tells a still pond from a river (24 m)
+const CALM_SLOPE := 0.003        # a surface tilting less than this over the window is standing water
+const CALM_RANGE_M := 0.6        # ...and no wave taller than this in it (a cascade lip is not calmed)
+const CALM_WET_SHARE := 0.6      # a window must be this wet (shore windows are part dry)
+
+
+# Mean tilt (x, z) and wet-cell mean of the surface over the window around (i, j), plus the
+# window's range: [gx, gz, mean, range, wet share]. The sim's pond surface ripples by a
+# decimetre cell to cell; over a whole window that averages out, so this tells standing
+# water from a current where the one-cell slope cannot.
+static func _window(levels: PackedFloat32Array, i: int, j: int, count: int, spacing: float) -> Array:
+	var sum: float = 0.0
+	var n: int = 0
+	var lo: float = INF
+	var hi: float = -INF
+	var west: float = 0.0
+	var east: float = 0.0
+	var north: float = 0.0
+	var south: float = 0.0
+	var nw: int = 0
+	var ne: int = 0
+	var nn: int = 0
+	var ns: int = 0
+
+	for dj in range(-CALM_RADIUS, CALM_RADIUS + 1):
+		for di in range(-CALM_RADIUS, CALM_RADIUS + 1):
+			var ii: int = i + di
+			var jj: int = j + dj
+
+			if ii < 0 or jj < 0 or ii >= count or jj >= count:
+				continue
+
+			var level: float = levels[jj * count + ii]
+
+			if is_nan(level):
+				continue
+
+			sum += level
+			n += 1
+			lo = minf(lo, level)
+			hi = maxf(hi, level)
+
+			if di < 0:
+				west += level
+				nw += 1
+			elif di > 0:
+				east += level
+				ne += 1
+
+			if dj < 0:
+				north += level
+				nn += 1
+			elif dj > 0:
+				south += level
+				ns += 1
+
+	var span: float = float(CALM_RADIUS + 1) * spacing
+	var gx: float = (east / float(ne) - west / float(nw)) / span if ne > 0 and nw > 0 else 0.0
+	var gz: float = (south / float(ns) - north / float(nn)) / span if ns > 0 and nn > 0 else 0.0
+	var cells: float = float((2 * CALM_RADIUS + 1) * (2 * CALM_RADIUS + 1))
+	return [gx, gz, sum / float(maxi(n, 1)), hi - lo, float(n) / cells]
+
+
+# Standing water draws flat (owner 2026-10-21: "the water is all rough in the pond"): where
+# the surface barely tilts across a whole window, every level in it becomes the window mean.
+static func _calm_still_water(count: int, spacing: float, levels: PackedFloat32Array) -> void:
+	var calmed: PackedFloat32Array = levels.duplicate()
+
+	for j in range(count):
+		for i in range(count):
+			if is_nan(levels[j * count + i]):
+				continue
+
+			var w: Array = _window(levels, i, j, count, spacing)
+
+			if w[4] >= CALM_WET_SHARE and w[3] < CALM_RANGE_M and sqrt(w[0] * w[0] + w[1] * w[1]) < CALM_SLOPE:
+				calmed[j * count + i] = w[2]
+
+	for n in range(levels.size()):
+		levels[n] = calmed[n]
+
+
 static func _velocities(generator, data, origin: Vector2, count: int, spacing: float, levels: PackedFloat32Array) -> PackedFloat32Array:
 	var vel: PackedFloat32Array = PackedFloat32Array()
 	vel.resize(count * count * 2)
@@ -108,6 +191,13 @@ static func _velocities(generator, data, origin: Vector2, count: int, spacing: f
 			var slope: float = sqrt(gx * gx + gz * gz)
 
 			if slope < 0.00001:
+				continue
+
+			# A pond's level ripples a decimetre cell to cell and Manning turns that into a
+			# 12 m/s "current" in deep water: standing water has no current.
+			var w: Array = _window(levels, i, j, count, spacing)
+
+			if w[4] >= CALM_WET_SHARE and sqrt(w[0] * w[0] + w[1] * w[1]) < CALM_SLOPE:
 				continue
 
 			var x: float = origin.x + float(i) * spacing
