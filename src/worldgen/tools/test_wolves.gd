@@ -213,6 +213,34 @@ func _init() -> void:
 	run(a, 20.0)
 	check(count1 == a.wolves.wolf_count(), "a natural cell holds one pack (%d)" % count1)
 
+	# 9b. A server restart: animals are not saved, they come back around the players; a natural pack comes back at the same home.
+	var homes: Array = []
+
+	for round in 2:
+		a = make()
+		a.cfg["wolves"]["natural"] = true
+		a.cfg["wolves"]["cell_m"] = 300.0
+		a.cfg["wolves"]["cell_share"] = 1.0
+		var hh: int = hash("3,3" + str(a.cfg["wolves"].get("seed", 7)))
+		var cell_home := Vector2((3.0 + float(absi(hh) % 1000) / 1000.0) * 300.0, (3.0 + float(absi(hh / 1000) % 1000) / 1000.0) * 300.0)
+		players = [player(1, cell_home.x + 170.0, cell_home.y)]
+		a.cfg["wolves"]["exclude"] = [0.0, 0.0, 0.0]
+		a.cfg["species"]["deer"]["target_per_player"] = 5
+		a.cfg["species"]["deer"]["herd"] = [3, 3]
+		run(a, 20.0)
+		var deer_n: int = 0
+
+		for id in a.animals:
+			deer_n += 1 if a.animals[id]["sp"] == "deer" else 0
+
+		check(deer_n >= 3, "after a restart the deer herd forms again around the player (%d)" % deer_n)
+
+		for pid2 in a.wolves.packs:
+			homes.append(a.wolves.packs[pid2]["den"])
+
+	homes.sort_custom(func(l, r): return l.x < r.x)
+	check(homes.size() >= 2 and homes.size() % 2 == 0 and homes[0].distance_to(homes[1]) < 0.1, "a natural pack's den is the same after a restart (%s)" % str(homes))
+
 	# 10. Killing wolves: spear jabs reach a wolf; the last one ends the pack.
 	a = make()
 	players = [player(1, 0.0, 0.0)]

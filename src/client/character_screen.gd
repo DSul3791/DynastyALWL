@@ -21,6 +21,7 @@ var _bpm_label: Label
 var _attributes: VBoxContainer
 var _skills_box: VBoxContainer
 var _skill_search: LineEdit
+var _lessons: Dictionary = {}                # skill id -> lesson lines "Hob: up to level 40, 3 stone"
 var _teachers: Dictionary = {}               # skill id -> NPC names whose dialogue offers a lesson in it (read from data/npcs/dialogue)
 var _remains_box: VBoxContainer
 var _skills_cfg: Dictionary = {}              # data/items/skills.json: names and order of the skills
@@ -318,6 +319,13 @@ func refresh() -> void:
 			wall.modulate = Color(0.6, 0.85, 1.0)
 			line.add_child(wall)
 
+		var lessons: Array = _lessons_of(str(id))
+
+		if not lessons.is_empty():
+			var teach: Label = _label("Lessons: " + "; ".join(lessons), BODY_PX - 4)
+			teach.modulate = Color(0.6, 0.85, 1.0)
+			line.add_child(teach)
+
 		if row.size() > 4 and int(row[4]) > 0:
 			var trained: Label = _label("trained %d" % int(row[4]), BODY_PX - 4)
 			trained.modulate = Color(0.6, 0.9, 0.6)
@@ -375,7 +383,23 @@ func _teachers_of(skill: String) -> Array:
 						if not _teachers[taught].has(who):
 							_teachers[taught].append(who)
 
+						var can: Array = cond["can_train"]
+						var price: String = "%d %s" % [int(can[3]), str(can[2]).replace("_", " ")] if can.size() > 3 and int(can[3]) > 0 else "free"
+						var lesson: String = "%s: up to level %d, %s" % [who, int(can[1]), price]
+
+						if not _lessons.has(taught):
+							_lessons[taught] = []
+
+						if not _lessons[taught].has(lesson):
+							_lessons[taught].append(lesson)
+
 	return _teachers.get(skill, [])
+
+
+# Lesson lines for a skill ("Hob: up to level 40, 3 stone"); empty when nobody teaches it.
+func _lessons_of(skill: String) -> Array:
+	_teachers_of(skill)
+	return _lessons.get(skill, [])
 
 
 # Roots first, each followed by its descendants (a family tree read top down), in file order within a level.

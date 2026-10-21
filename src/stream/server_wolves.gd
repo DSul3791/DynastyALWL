@@ -601,7 +601,7 @@ func _natural(infos: Array) -> void:
 				if Vector2(home.x - float(ex[0]), home.y - float(ex[1])).length() < float(ex[2]):
 					continue
 
-				var d: float = Vector2(home.x - p.x, home.y - p.y).length()
+				var d: float = Vector2(home.x - p.x, home.y - p.z).length()
 
 				if d > active or d < float(host.cfg.get("spawn_min_m", 150.0)) * 0.9:
 					continue

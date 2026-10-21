@@ -435,10 +435,10 @@ func _probe_structure() -> Dictionary:
 		return {"prompt": "Press E to search the remains", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)}
 
 	if state == 6:
-		return {"prompt": "Press E to open the chest    (hold E: take it down, empty only)", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO), "hold": take_down}
+		return {"prompt": "Press E to open", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO), "hold": take_down}
 
 	if state == 7:
-		return {"prompt": "Press E to split a log into firewood    (hold E to keep going, needs an axe; Shift+E: take it down)", "tap": pick_up_nearest}
+		return {"prompt": "Press E to split firewood", "tap": pick_up_nearest}
 
 	return {"prompt": "Hold E to take down the %s" % table.name_of(_world[id]["number"]).to_lower(), "tap": func(): show_notice("Hold E to take it down"), "hold": take_down}
 
@@ -485,9 +485,9 @@ func _fire_prompt(state: int) -> String:
 		return "Press E to add firewood"
 
 	if state == 9:
-		return "Press E to light    (needs plant fibre; hold E: add more wood)"
+		return "Press E to light"
 
-	return "Press E to add wood    (hold E: roast food)"
+	return "Press E to add wood"
 
 
 # True when something lay within reach and the server was asked for it.

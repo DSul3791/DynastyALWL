@@ -143,5 +143,21 @@ func _init() -> void:
 
 	check(all_wooded, "a deer settles where the trees are when it can")
 
+	# Trees dim sight (forest_block): a player seen across wooded ground is noticed later than across open ground.
+	var seen_at = func(player_x: float, wooded: bool) -> bool:
+		var zoo2 = make([Vector3(player_x, 10.0, 0.0)], [0], calm, false)
+		zoo2.canopy = func(_p): return wooded
+		var zid2: int = zoo2.spawn("rabbit", 0.0, 0.0)
+		zoo2.animals[zid2]["timer"] = 100.0
+
+		for n in 60:
+			zoo2.tick(0.05)
+
+		return zoo2.animals[zid2]["state"] == AnimalsScript.ALERT
+
+	check(seen_at.call(20.0, false), "open ground: a standing player at 20 m is noticed")
+	check(not seen_at.call(20.0, true), "through trees the same player at 20 m is not noticed")
+	check(seen_at.call(13.0, true), "through trees a player at 13 m is noticed (later than in the open)")
+
 	print("animal senses: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
