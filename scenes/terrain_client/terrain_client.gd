@@ -65,7 +65,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 560
+const BUILD := 561
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -116,6 +116,7 @@ const FLY_SPEED := 30.0
 const INCOMING_USEC := 3000           # most time a frame puts arrived chunks in the scene (one at least)
 const WATER_HOLD_MSEC := 2000        # water refreshes wait this long while ground loads
 const SURFACE_WAIT_MSEC := 1500       # stopped in the air: wait this long for the server to say where the ground is
+const LOAD_THREADS_MIN := 6                 # ground loading workers at least (see _ready)
 const LOD_COUNT := 7
 const STAGE_VIEW_M := 128            # the ground view distance in that time
 const STAGE_VERTICAL := 0.25         # and this share of it up and down
@@ -421,6 +422,15 @@ var _wait_until_msec: int = 0
 
 
 func _ready() -> void:
+	# Ground loading threads (Dave 2026-10-21, settling after a fast fly-over took 61 s): each ground block a worker asks for
+	# waits for the server's answer, so with the engine's default pool (half the cores: 2 on a 4 core machine) only two
+	# blocks were in flight. 6 or more workers settle the same stop in about 15 s (hole_stress east, 4 cores, 4 to 8 threads);
+	# a machine whose default is already higher keeps it. VOXEL_THREADS=n overrides (tests).
+	if OS.has_environment("VOXEL_THREADS"):
+		VoxelEngine.set_thread_count(int(OS.get_environment("VOXEL_THREADS")))
+	else:
+		VoxelEngine.set_thread_count(maxi(VoxelEngine.get_thread_count(), LOAD_THREADS_MIN))
+
 	net = $TerrainNet
 	display.load_saved()
 

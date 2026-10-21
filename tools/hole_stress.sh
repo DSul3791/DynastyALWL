@@ -2,7 +2,8 @@
 # Flying-over-new-ground stress test (headless): flies a route at a fixed height and counts missing ground colliders.
 # usage: tools/hole_stress.sh route(east|south|diag) height speed seconds quality
 # Reads the last "holes" line: cells missing at once, longest a cell stayed missing. Compare builds with the same arguments.
-ROUTE=${1:-east}; ALT=${2:-300}; SPEED=${3:-60}; SECS=${4:-40}; Q=${5:-ultra}
+ROUTE=${1:-east}; ALT=${2:-300}; SPEED=${3:-60}; SECS=${4:-40}; Q=${5:-3}
+case $Q in low) Q=0;; medium) Q=1;; high) Q=2;; ultra) Q=3;; esac   # --quality takes the number 0 (Low) to 3 (Ultra)
 PORT=$((7400 + RANDOM % 400)); D=$(mktemp -d /tmp/hole_XXXX); mkdir -p $D/cache
 # HOLE_STORE=dir keeps the server store between runs (a warm server: ground already generated and saved)
 STORE=${HOLE_STORE:-$D/store}; mkdir -p $STORE
