@@ -68,9 +68,7 @@ var reject_event: Callable = Callable()   # ("far" | "no_tool" | "full_pack" | "
 var strain_event: Callable = Callable()   # (strain, state, fade) whenever the server sends a change
 var _strain_note: Label
 var _eat_item: String = ""
-var _hunger_bar: ColorRect
-var _thirst_bar: ColorRect
-var _health_bar: ColorRect
+var _panel_bars: Dictionary = {}       # "Health", "Exertion", "Hunger", "Thirst" -> ProgressBar at the top of the inventory screen (the only bars in the game)
 var _vitals_back: Control
 var _vitals_warning: Label
 var _weight_label: Label
@@ -672,9 +670,6 @@ func _build_vitals_hud() -> void:
 	_vitals_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_vitals_back.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	_layer.add_child(_vitals_back)
-	_hunger_bar = _make_bar(Color(0.9, 0.65, 0.2))
-	_health_bar = _make_bar(Color(0.85, 0.2, 0.2))
-	_thirst_bar = _make_bar(Color(0.3, 0.6, 0.95))
 	_vitals_warning = Label.new()
 	_vitals_warning.add_theme_font_size_override("font_size", 28)
 	_vitals_warning.add_theme_constant_override("outline_size", 5)
@@ -684,34 +679,10 @@ func _build_vitals_hud() -> void:
 	_place_vitals()
 
 
-func _make_bar(color: Color) -> ColorRect:
-	var back: ColorRect = ColorRect.new()
-	back.color = Color(0.0, 0.0, 0.0, 0.5)
-	back.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_vitals_back.add_child(back)
-	var fill: ColorRect = ColorRect.new()
-	fill.color = color
-	fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	back.add_child(fill)
-	return fill
-
-
 func _place_vitals() -> void:
 	var scale: float = maxf(_layer.get_viewport().get_visible_rect().size.y / 1080.0, 0.5)
-	var width: float = 240.0 * scale
-	var height: float = 14.0 * scale
-	var origin: Vector2 = Vector2(24.0 * scale, -(170.0 * scale))
-	_vitals_back.position = origin
-
-	for pair in [[_hunger_bar, hunger, 0.0], [_health_bar, health, 1.0], [_thirst_bar, thirst, 2.0]]:
-		var fill: ColorRect = pair[0]
-		var back: Control = fill.get_parent()
-		back.position = Vector2(0.0, float(pair[2]) * (height + 6.0 * scale))
-		back.size = Vector2(width, height)
-		fill.position = Vector2(1.0, 1.0)
-		fill.size = Vector2(maxf((width - 2.0) * float(pair[1]) / 100.0, 0.0), height - 2.0)
-
-	_vitals_warning.position = Vector2(0.0, 3.0 * (height + 6.0 * scale))
+	_vitals_back.position = Vector2(24.0 * scale, -(170.0 * scale))
+	_vitals_warning.position = Vector2.ZERO
 	var warn: int = int(_vitals_cfg.get("warn_hunger", 15))
 	var warn_thirst: int = int(_vitals_cfg.get("warn_thirst", 15))
 	var lines: Array = []
@@ -744,9 +715,10 @@ func speed_factor() -> float:
 
 func _load_text() -> String:
 	var load_kg: float = carried_kg()
-	var comfort: float = CarryRules.comfort_kg(weight_kg, _carry_cfg)
-	var state: String = "" if load_kg <= comfort else ("   (heavy: you move slower)" if load_kg < CarryRules.cap_kg(weight_kg, _carry_cfg) else "   (at the limit)")
-	return "Carrying %.1f kg of %.0f kg comfortable%s" % [load_kg, comfort, state]
+	var free: float = CarryRules.comfort_kg(weight_kg, _carry_cfg)
+	var limit: float = CarryRules.cap_kg(weight_kg, _carry_cfg)
+	var state: String = "" if load_kg <= free else ("   (heavy: you move slower)" if load_kg < limit else "   (at the limit)")
+	return "Carrying %.1f kg of %.0f kg you can carry%s" % [load_kg, limit, state]
 
 
 func _on_strain(strain_pm: int, state: int, fade_pm: int, stance: int) -> void:
@@ -754,6 +726,7 @@ func _on_strain(strain_pm: int, state: int, fade_pm: int, stance: int) -> void:
 	strain_state = state
 	strain_fade = float(fade_pm) / 1000.0
 	stance_confirmed = stance
+	_update_panel_bars()
 
 	if stance_event.is_valid():
 		stance_event.call(stance)
@@ -772,15 +745,27 @@ func move_cap() -> float:
 	if strain_state >= 2:
 		return -1.0
 
-	return float(_exertion_cfg.get("over_speed_mps", 3.0)) if strain_state == 1 else 0.0
+	# Over-exerted: capped, and the blackout coming on slows the staggering further (smoothly, no steps).
+	return lerpf(float(_exertion_cfg.get("over_speed_mps", 3.0)), 0.8, clampf(strain_fade, 0.0, 1.0)) if strain_state == 1 else 0.0
+
+
+# The blackout level, 0 to 1: rising while strain is over the faint threshold (slowly at the threshold, faster the further
+# over it), 1 while fainted, falling as the character wakes. Sounds scale the heartbeat with it.
+func blackout_level() -> float:
+	if strain_state == 2:
+		return 1.0
+
+	return clampf(strain_fade, 0.0, 1.0) if strain_state == 1 or strain_state == 3 else 0.0
 
 
 # The picture's state name and progress for faint.set_state (Art's faint_effect.gd): vision fades over the
 # first vision_frac of a faint ("fainting", progress 0 to 1), then "fainted" holds black while only the heart is heard.
 func faint_state() -> Array:
 	if strain_state == 2:
-		var vision: float = clampf(strain_fade / float(_exertion_cfg.get("vision_frac", 0.625)), 0.0, 1.0)
-		return ["fainting" if vision < 1.0 else "fainted", vision]
+		return ["fainted", 1.0]
+
+	if strain_state == 1 and strain_fade > 0.001:
+		return ["fainting", strain_fade]   # the blackout coming on, smoothly from 0 (Dave 2026-10-21)
 
 	if strain_state == 3:
 		return ["waking", strain_fade]
@@ -800,6 +785,7 @@ func _on_vitals(new_hunger: int, new_health: int, weight_dkg: int, new_thirst: i
 	health = new_health
 	weight_kg = float(weight_dkg) / 10.0
 	_place_vitals()
+	_update_panel_bars()
 
 
 # Drink from the water at your feet (E at the water's edge; the server checks the water and paces the mouthfuls).
@@ -1477,6 +1463,53 @@ func _tooltip_theme() -> Theme:
 	return themed
 
 
+# Health, exertion, hunger and thirst, side by side at the top of the inventory screen: the only bars in the game (Dave
+# 2026-10-21: no bars on the main screen). Exertion is the strain as a share of the blackout threshold.
+func _build_bars_row() -> HBoxContainer:
+	var row: HBoxContainer = HBoxContainer.new()
+	row.add_theme_constant_override("separation", _px(28))
+	_panel_bars.clear()
+
+	for spec in [["Health", Color(0.85, 0.2, 0.2)], ["Exertion", Color(0.95, 0.8, 0.25)], ["Hunger", Color(0.9, 0.55, 0.2)], ["Thirst", Color(0.3, 0.6, 0.95)]]:
+		var cell: HBoxContainer = HBoxContainer.new()
+		cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		cell.add_theme_constant_override("separation", _px(10))
+		var label: Label = Label.new()
+		label.text = spec[0]
+		_style(label, BODY_PX - 6)
+		cell.add_child(label)
+		var bar: ProgressBar = ProgressBar.new()
+		bar.show_percentage = false
+		bar.min_value = 0.0
+		bar.max_value = 100.0
+		bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		bar.custom_minimum_size = Vector2(_px(60), _px(22))
+		var fill: StyleBoxFlat = StyleBoxFlat.new()
+		fill.bg_color = spec[1]
+		bar.add_theme_stylebox_override("fill", fill)
+		var empty: StyleBoxFlat = StyleBoxFlat.new()
+		empty.bg_color = Color(0.0, 0.0, 0.0, 0.5)
+		bar.add_theme_stylebox_override("background", empty)
+		cell.add_child(bar)
+		row.add_child(cell)
+		_panel_bars[spec[0]] = bar
+
+	_update_panel_bars()
+	return row
+
+
+func _update_panel_bars() -> void:
+	if _panel_bars.is_empty() or not is_instance_valid(_panel_bars["Health"]):
+		return
+
+	var threshold: float = maxf(float(_exertion_cfg.get("faint_at", 1.4)), 0.1)
+	_panel_bars["Health"].value = float(health)
+	_panel_bars["Exertion"].value = clampf(strain / threshold, 0.0, 1.0) * 100.0
+	_panel_bars["Hunger"].value = float(hunger)
+	_panel_bars["Thirst"].value = float(thirst)
+
+
 func _style(control: Control, size: int) -> void:
 	control.add_theme_font_size_override("font_size", _px(size))
 
@@ -1529,6 +1562,7 @@ func _build_panel() -> void:
 	_style(_search, BODY_PX)
 	_search.text_changed.connect(func(_text): _refresh())
 	top.add_child(_search)
+	box.add_child(_build_bars_row())
 	var columns: HBoxContainer = HBoxContainer.new()
 	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	columns.add_theme_constant_override("separation", _px(24))
@@ -2094,6 +2128,36 @@ func run_test() -> void:
 
 
 # Headless check (--gather): stand next to the nearest shrub or plant that drops something and gather it.
+# Headless check (--arrival): the ground appears under the gliding body, it is set down just above the surface, and
+# nothing hurts: health stays 100 and the character is not fainted.
+func run_arrival_test(client) -> void:
+	var waited: float = 0.0
+
+	while client.arrival_protect_until_msec == 0 and waited < 90.0:
+		await get_tree().create_timer(0.5).timeout
+		waited += 0.5
+
+	var ground: float = client._ground_below(client.body.global_position)
+	var above: float = client.body.global_position.y - ground if not is_nan(ground) else -1.0
+	await get_tree().create_timer(10.0).timeout
+	print("Arrival test: ground found %s, set down %.1f m above it, health %d, strain state %s" % [str(client.arrival_protect_until_msec > 0), above, health, str(strain_state)])
+
+
+# Headless check (--strainrun with --walk --runspeed=11): the body runs and the strain the server sends must climb.
+func run_strain_test(client) -> void:
+	var waited: float = 0.0
+
+	while client.arrival_protect_until_msec == 0 and waited < 90.0:
+		await get_tree().create_timer(0.5).timeout
+		waited += 0.5
+
+	var start_strain: float = strain
+	var start_pos: Vector3 = client.body.global_position
+	await get_tree().create_timer(25.0).timeout
+	var covered: float = Vector2(client.body.global_position.x - start_pos.x, client.body.global_position.z - start_pos.z).length()
+	print("Strain test: ran %.0f m in 25 s, strain %.2f -> %.2f, state %d" % [covered, start_strain, strain, strain_state])
+
+
 func run_gather_test(client) -> void:
 	await get_tree().create_timer(6.0).timeout
 	var real_view: Callable = view_direction
@@ -2354,7 +2418,7 @@ func _audit_text() -> void:
 		if not labels.has(key_label):
 			missing.append(key_label)
 
-	print("Audit: smallest font %d px (%s), tooltip font %d px, sort options %d, button labels %s, key buttons missing %s" % [smallest, smallest_name, tooltip_px, _sort_menu.item_count, str(labels), str(missing)])
+	print("Audit: smallest font %d px (%s), tooltip font %d px, sort options %d, button labels %s, key buttons missing %s, panel bars %d, main-screen bars %d" % [smallest, smallest_name, tooltip_px, _sort_menu.item_count, str(labels), str(missing), _panel_bars.size(), (1 if _vitals_back.find_children("*", "ColorRect", true, false).size() > 0 else 0)])
 
 
 # Headless check (--plantpick): pick several plants (kind 2, flowers and herbs) and see whether each one is gone

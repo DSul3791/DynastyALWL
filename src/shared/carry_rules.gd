@@ -34,15 +34,28 @@ static func carried_kg(inventory, table, cfg: Dictionary) -> float:
 	return total
 
 
-static func comfort_kg(body_kg: float, cfg: Dictionary) -> float:
-	return body_kg * float(cfg.get("comfort_kg_per_body_kg", 0.35))
-
-
+# The most a body carries (the server refuses to pick up more).
 static func cap_kg(body_kg: float, cfg: Dictionary) -> float:
-	return comfort_kg(body_kg, cfg) * float(cfg.get("hard_cap_ratio", 2.0))
+	return body_kg * float(cfg.get("carry_kg_per_body_kg", 0.7))
 
 
-# Walking speed multiplier: 1 up to the comfortable load, easing down to min_speed at the hard cap.
+# Up to this much (free_ratio of the limit, 80 percent) nothing hinders: full speed, no extra effort (Dave 2026-10-21).
+static func comfort_kg(body_kg: float, cfg: Dictionary) -> float:
+	return cap_kg(body_kg, cfg) * float(cfg.get("free_ratio", 0.8))
+
+
+# 0 up to the free load, rising smoothly (in a straight line) to 1 at the limit: how much of the hindering band is used.
+static func load_fraction(carried: float, body_kg: float, cfg: Dictionary) -> float:
+	var free: float = comfort_kg(body_kg, cfg)
+	var cap: float = cap_kg(body_kg, cfg)
+
+	if carried <= free or cap <= free:
+		return 0.0
+
+	return clampf((carried - free) / (cap - free), 0.0, 1.0)
+
+
+# Walking speed multiplier: 1 up to the free load (80 percent of the limit), easing down to min_speed at the limit.
 static func speed_factor(carried: float, body_kg: float, cfg: Dictionary) -> float:
 	var comfort: float = comfort_kg(body_kg, cfg)
 	var cap: float = cap_kg(body_kg, cfg)

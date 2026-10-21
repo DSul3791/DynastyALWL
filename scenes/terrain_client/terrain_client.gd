@@ -143,6 +143,10 @@ var _last_w_msec: int = -1000
 var _bob_phase: float = 0.0           # walking head bob
 var _bob_amount: float = 0.0
 var waiting_for_ground: bool = false
+var _was_waiting: bool = false
+var arrival_protect_until_msec: int = 0   # no fall damage report until then (Dave 2026-10-21: arriving must not hurt)
+const ARRIVAL_HEIGHT_M := 0.5             # the body is set this far above the ground when the ground first appears
+const ARRIVAL_PROTECT_MS := 6000
 var _tint: ColorRect
 var _aim_msec: int = 0
 var _aim_pos: Vector3 = Vector3.ZERO
@@ -266,6 +270,8 @@ var _sound_interior_at: int = -1
 var _sound_gear_at: int = -1
 var test_items: bool = false
 var test_gather: bool = false
+var test_strain_run: bool = false       # --strainrun: with --walk --runspeed=11, the server strain must climb while running
+var test_arrival: bool = false         # --arrival: after the ground appears, health must still be 100 (arriving is not a fall)
 var test_leanto: bool = false
 var test_chest: bool = false
 var test_eat: bool = false
@@ -500,6 +506,10 @@ func _ready() -> void:
 			test_leanto = true
 		elif argument == "--gather":
 			test_gather = true
+		elif argument == "--strainrun":
+			test_strain_run = true
+		elif argument == "--arrival":
+			test_arrival = true
 		elif argument == "--spear":
 			test_spear = true
 		elif argument == "--chop":
@@ -771,7 +781,9 @@ func _welcome_body(info: Dictionary) -> void:
 	items.fuel_event = func(): sound.itemfx.fuel_pressed()
 	items.reject_event = func(reason): sound.itemfx.reject(reason)
 	items.view_direction = func(): return -camera.global_transform.basis.z
-	sound.landing.hurt.connect(items.report_fall)
+	sound.landing.hurt.connect(func(drop_m, severity):
+		if Time.get_ticks_msec() >= arrival_protect_until_msec:
+			items.report_fall(drop_m, severity))
 	items.strain_event = func(strain, _state, _fade):
 		var shown: Array = items.faint_state()
 		faint.set_state(shown[0], strain, shown[1])
@@ -791,6 +803,12 @@ func _welcome_body(info: Dictionary) -> void:
 
 	if test_items:
 		items.run_test()
+
+	if test_strain_run:
+		items.run_strain_test(self)
+
+	if test_arrival:
+		items.run_arrival_test(self)
 
 	if test_gather:
 		items.run_gather_test(self)
@@ -874,6 +892,19 @@ func _water_ahead() -> bool:
 			return true
 
 	return false
+
+
+# The body glides high above the spawn until the ground under it has collision. When it does, set it down just above the
+# surface and protect it for a few seconds, so arriving is not a fall (Dave 2026-10-21: damage and a faint every landing).
+func _arrive_on_ground() -> void:
+	var ground: float = _ground_below(body.global_position)
+
+	if not is_nan(ground) and body.global_position.y - ground > ARRIVAL_HEIGHT_M + 0.2:
+		body.global_position.y = ground + ARRIVAL_HEIGHT_M
+		body.velocity = Vector3.ZERO
+
+	arrival_protect_until_msec = Time.get_ticks_msec() + ARRIVAL_PROTECT_MS
+	sound.forget_fall(body)
 
 
 func _on_flora(chunk: Vector2i, bytes: PackedByteArray, water: PackedByteArray, full: bool) -> void:
@@ -1933,6 +1964,7 @@ func _step_player(delta: float) -> void:
 		sound.itemfx.watch(items)
 		sound.itemfx.watch_vitals(items.hunger, 0.1)
 		sound.breath.set_exertion(items.strain)   # the server's real strain replaces the stand-in
+		sound.breath.set_blackout(items.blackout_level())
 
 	_fire_sync_left -= delta
 
@@ -2074,6 +2106,11 @@ func _move_player(delta: float) -> void:
 
 			if waiting_for_ground:
 				_wait_frames += 1
+
+		if _was_waiting and not waiting_for_ground:
+			_arrive_on_ground()
+
+		_was_waiting = waiting_for_ground
 
 		if waiting_for_ground:
 			velocity.y = 0.0

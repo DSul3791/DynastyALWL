@@ -1963,20 +1963,20 @@ func effort_of(peer: int) -> float:
 	if Time.get_ticks_msec() < int(_work_until.get(peer, 0)):
 		level = maxf(level, 0.6)
 
-	# A heavy pack is work for anyone on the move, even at a crawl: load_effort x ratio^power added.
+	# A pack past 80 percent of the limit is work for anyone on the move, even at a crawl: load_effort x fraction^power added.
 	if not _carry_cfg.is_empty():
 		level += float(_moving.get(peer, 0.0)) * float(_carry_cfg.get("load_effort", 0.45)) * pow(_load_ratio(peer), float(_carry_cfg.get("load_effort_power", 1.5)))
 
 	return level
 
 
-# Carried weight over the comfortable load, 0 to 2 and a bit.
+# How far into the hindering band the load is: 0 up to 80 percent of the limit, 1 at the limit.
 func _load_ratio(peer: int) -> float:
 	if _carry_cfg.is_empty():
 		return 0.0
 
 	var body: float = float(vitals_of(peer).get("weight", 75.0))
-	return minf(carried_kg_of(peer) / maxf(CarryRules.comfort_kg(body, _carry_cfg), 1.0), 2.5)
+	return CarryRules.load_fraction(carried_kg_of(peer), body, _carry_cfg)
 
 
 # Stance changes (0 stand, 1 crouch, 2 sit, 3 lie). Fainted or waking players cannot choose; the answer
@@ -2068,7 +2068,7 @@ func _fall(peer: int, centimetres: int) -> void:
 	_say(peer, "The fall hurt")
 
 	if drop >= float(cfg.get("faint_m", 12.0)) and not _exertion_cfg.is_empty():
-		_strain[peer] = {"s": float(_exertion_cfg.get("faint_at", 1.4)) + 0.05, "state": 1, "t": 0.0}
+		_strain[peer] = {"s": float(_exertion_cfg.get("faint_at", 1.4)) + 0.05, "state": 1, "t": 0.0, "black": 1.0}
 
 	_sync_vitals(peer, true)
 
@@ -2280,6 +2280,7 @@ func _strain_tick(peer: int, spent: float) -> void:
 			state = 3
 			st["t"] = 0.0
 			st["after_faint"] = true
+			st["black"] = 0.0
 			strain = float(cfg.get("wake_strain", 1.1))
 	elif state == 3:
 		strain = maxf(strain - float(cfg.get("rest_effort", 0.52)) * float(cfg.get("fall_per_s", 0.05)) * float(cfg.get("wake_fall_mult", 0.4)) * spent, 0.0)
@@ -2318,7 +2319,21 @@ func _strain_tick(peer: int, spent: float) -> void:
 			state = 0
 			st["after_faint"] = false
 
-		if state == 1 and strain >= float(cfg.get("faint_at", 1.4)) * scale:
+		# Blacking out is a smooth build-up, not a step (Dave 2026-10-21): past the faint threshold "black" climbs, slowly right
+		# at the threshold and faster the further strain overshoots it (a straight line in the overshoot, no steps); under the
+		# threshold it drains away. When it reaches 1 the character lies down unconscious.
+		var threshold: float = float(cfg.get("faint_at", 1.4)) * scale
+		var black: float = float(st.get("black", 0.0))
+		var blackout: Dictionary = cfg.get("blackout", {})
+
+		if strain >= threshold and state <= 1:
+			black = minf(black + _blackout_rate(strain / threshold - 1.0, blackout) * spent, 1.0)
+		else:
+			black = maxf(black - spent / maxf(float(blackout.get("recover_s", 6.0)), 0.1), 0.0)
+
+		st["black"] = black
+
+		if black >= 1.0 and state <= 1:
 			state = 2
 			st["t"] = 0.0
 			_stance[peer] = 3
@@ -2327,16 +2342,27 @@ func _strain_tick(peer: int, spent: float) -> void:
 	st["state"] = state
 	var fade: float = 0.0
 
-	if state == 2:
-		fade = clampf(float(st["t"]) / float(cfg.get("faint_s", 8.0)), 0.0, 1.0)
+	if state <= 1:
+		fade = float(st.get("black", 0.0))                      # the blackout coming on, 0 to 1
+	elif state == 2:
+		var vision: float = float(cfg.get("vision_frac", 0.625))
+		fade = vision + (1.0 - vision) * clampf(float(st["t"]) / float(cfg.get("faint_s", 8.0)), 0.0, 1.0)
 	elif state == 3:
 		fade = 1.0 - clampf(float(st["t"]) / float(cfg.get("wake_s", 12.0)), 0.0, 1.0)
 
-	var points: Array = [int(strain * 50.0) * 20, state, int(fade * 20.0) * 50, int(_stance.get(peer, 0))]
+	var points: Array = [int(strain * 50.0) * 20, state, int(fade * 50.0) * 20, int(_stance.get(peer, 0))]
 
 	if send_strain.is_valid() and _strain_sent.get(peer, []) != points:
 		_strain_sent[peer] = points
 		send_strain.call(peer, points[0], points[1], points[2], points[3])
+
+
+# How fast the blackout builds, per second, for an overshoot of the faint threshold (0 = right at it, as a fraction of it):
+# 1 / slow_s at the threshold, rising in a straight line to 1 / fast_s at `margin` over it and beyond.
+func _blackout_rate(overshoot: float, blackout: Dictionary) -> float:
+	var slow: float = 1.0 / maxf(float(blackout.get("slow_s", 14.0)), 0.1)
+	var fast: float = 1.0 / maxf(float(blackout.get("fast_s", 1.5)), 0.1)
+	return lerpf(slow, fast, clampf(overshoot / maxf(float(blackout.get("margin", 0.25)), 0.001), 0.0, 1.0))
 
 
 func strain_of(peer: int) -> Dictionary:

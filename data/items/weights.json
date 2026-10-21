@@ -1,10 +1,10 @@
 {
-	"note": "Carrying (Dave 2026-10-20): weight in kg per single item. by_id wins over by_suffix (an item id that ends with the word); anything else is default_kg. The comfortable load is comfort_kg_per_body_kg x body weight (placeholder for strength). Past it you slow smoothly down to min_speed at hard_cap_ratio x the comfortable load; the server refuses to pick up more than that. load_effort x ratio^load_effort_power (ratio = carried / comfortable) is added to the effort of a moving player, so a pack at the limit tires you quickly even at a crawl.",
+	"note": "Carrying (Dave 2026-10-20, changed 2026-10-21): weight in kg per single item. by_id wins over by_suffix (an item id that ends with the word); anything else is default_kg. The most a body carries is carry_kg_per_body_kg x body weight (placeholder for strength; the server refuses to pick up more). Up to free_ratio (80 percent) of that limit nothing hinders at all: full speed, no extra effort. Above it you slow smoothly down to min_speed at the limit, and load_effort x fraction^load_effort_power (fraction 0 at 80 percent of the limit to 1 at the limit) is added to the effort of a moving player.",
 	"default_kg": 0.1,
-	"comfort_kg_per_body_kg": 0.35,
-	"hard_cap_ratio": 2.0,
+	"carry_kg_per_body_kg": 0.7,
+	"free_ratio": 0.8,
 	"min_speed": 0.25,
-	"load_effort": 0.45,
+	"load_effort": 0.6,
 	"load_effort_power": 1.5,
 	"by_id": {
 		"stone": 1.0,

@@ -77,6 +77,7 @@ inventories.json version 2 (reads 1), world_items.json version 1, chests.json ve
 
 ## Notes by version
 
+- 24 (strain fade): the fade field of strain() is now the blackout level: 0 to 1 climbing while the player is over-exerted past the faint threshold (state 1), 1.0 from the faint start (state 2 sends 0.625 to 1 over the faint time), then falling 1 to 0 while waking (state 3); sent in steps of 0.02. strain_state, speeds and thresholds are unchanged. Client name: inventory_view.blackout_level(), which Sounds read for the heartbeat.
 - 24: vitals() gains a fourth field, thirst (percent of a full body, 100 = full); ACT_DRINK. Thirst is server-owned (data/items/vitals.json "thirst": cap_ml 2400, rest_ml_day 1000, work_ml_day 1200 x exertion, so a full body lasts a whole game day even at full exertion); empty thirst stops health recovering. Saved as "wet" (ml) in vitals.json; older saves start full.
 - 23: reject() (refused action: too far, no tool, pack full) for the client's refusal cue; ACT_FALL and server-side fall damage (data/items/vitals.json "fall": safe_m 6, per_m 8, faint_m 12; health never below 1).
 - (no version) characters.json, version 1: {players: {key: {luck: -10..10}}}, rolled once at first hello and never changed; server side only. Every server roll goes through server_items roll_chance / roll_amount / fate (src/shared/luck.gd, data/items/luck.json); tools/check_luck.py fails on a raw random call that skips it.

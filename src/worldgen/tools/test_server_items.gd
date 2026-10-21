@@ -758,7 +758,7 @@ func _init() -> void:
 	th2.peer_connected_hello(1, "thirstkey0001")
 	check(float(th2.vitals_of(1)["wet"]) == float(th.vitals_of(1)["wet"]), "thirst survives a restart")
 
-	# Carrying weight: stones weigh 1 kg; a 75 kg player carries 26 kg comfortably and 52 kg at most.
+	# Carrying weight: stones weigh 1 kg; a 75 kg player carries 52.5 kg at most and up to 80 percent of that (42 kg) with no hindrance.
 	var cwd: String = "user://test_server_items_carry"
 	DirAccess.make_dir_recursive_absolute(cwd)
 
@@ -776,8 +776,43 @@ func _init() -> void:
 	var CarryScript = load("res://src/shared/carry_rules.gd")
 	var ccfg: Dictionary = CarryScript.load_config()
 	check(CarryScript.speed_factor(20.0, 75.0, ccfg) == 1.0 and absf(CarryScript.speed_factor(52.5, 75.0, ccfg) - 0.25) < 0.001, "no slowdown when comfortable, 25 percent speed at the cap")
-	var mid: float = CarryScript.speed_factor(39.0, 75.0, ccfg)
+	var mid: float = CarryScript.speed_factor(47.0, 75.0, ccfg)
 	check(mid > 0.25 and mid < 1.0, "slowdown is smooth in between (%.2f)" % mid)
+
+	# The loads Dave asked about: 0, 2 kg, 79 percent, 81 percent and 100 percent of the limit (75 kg body, limit 52.5 kg).
+	var cap_kg: float = CarryScript.cap_kg(75.0, ccfg)
+	var reports: Array = []
+	var no_hindrance: bool = true
+	var grows: bool = true
+	var last_effort: float = -1.0
+
+	for load in [0.0, 2.0, 0.79 * cap_kg, 0.80 * cap_kg, 0.81 * cap_kg, 0.9 * cap_kg, cap_kg]:
+		var inv_c = cw.inventory_of(1)
+
+		for slot in range(inv_c.SLOTS):
+			inv_c.numbers[slot] = 0
+			inv_c.counts[slot] = 0
+
+		var whole: int = int(floor(load))
+		inv_c.add(cw.table.number_of("stone"), whole)
+		inv_c.add(cw.table.number_of("stick"), int(round((load - float(whole)) / 0.15)))
+		cw._moving[1] = 1.0
+		cw._exertion[1] = 0.0
+		var speed: float = CarryScript.speed_factor(cw.carried_kg_of(1), 75.0, ccfg)
+		var effort: float = cw.effort_of(1)
+		reports.append("%.1f kg: speed %.2f, extra effort %.3f" % [cw.carried_kg_of(1), speed, effort])
+
+		if load <= 0.8 * cap_kg + 0.001:
+			no_hindrance = no_hindrance and speed == 1.0 and effort == 0.0
+		else:
+			grows = grows and speed < 1.0 and effort > last_effort
+
+		last_effort = effort
+
+	print("carry loads: ", "; ".join(reports))
+	check(no_hindrance, "up to 80 percent of the limit (0, 2 kg, 79%, 80%) there is no slowdown and no extra effort")
+	check(grows, "past 80 percent (81%, 90%, 100%) speed drops and effort rises smoothly")
+	cw._moving[1] = 0.0
 
 	# Over-exertion: running climbs strain past 1 (over-exerted), on to a faint, then a slow wake.
 	var ed: String = "user://test_server_items_strain"
@@ -811,7 +846,7 @@ func _init() -> void:
 		sw._vitals_tick(0.25)
 
 	check(float(sw.strain_of(1).get("s", 0.0)) < 0.2 and int(sw.strain_of(1).get("state", 0)) == 0, "walking is sustainable (%.2f)" % float(sw.strain_of(1).get("s", 0.0)))
-	check(strains.size() > 0 and strains.size() < 500, "strain updates are not flooded (%d sent)" % strains.size())
+	check(strains.size() > 0 and strains.size() < 1300, "strain updates are at most one per 4 Hz tick (never more than 4 a second while it changes) (%d sent)" % strains.size())
 	# Stance: sitting drops strain to 0; standing under a heavy pack only to about half; walking off stands you up.
 	var xd: String = "user://test_server_items_stance"
 	DirAccess.make_dir_recursive_absolute(xd)
@@ -831,7 +866,7 @@ func _init() -> void:
 		sa._vitals_tick(0.25)
 
 	check(float(sa.strain_of(1)["s"]) < 0.01, "sitting rests strain to 0 (%.2f)" % float(sa.strain_of(1)["s"]))
-	sa.give(1, sa.table.number_of("stone"), 26)
+	sa.give(1, sa.table.number_of("stone"), 52)
 	sa._strain[1] = {"s": 0.9, "state": 1, "t": 0.0}
 	sa.action(1, Net.ACT_STANCE, 0, 0, 0, Vector3.ZERO)
 
@@ -839,9 +874,32 @@ func _init() -> void:
 		sa._vitals_tick(0.25)
 
 	var floor_level: float = float(sa.strain_of(1)["s"])
-	check(floor_level > 0.4 and floor_level < 0.6, "standing with a full pack rests only to about half (%.2f)" % floor_level)
-	sa._strain[1] = {"s": 1.45, "state": 1, "t": 0.0}
-	sa._vitals_tick(0.25)
+	check(floor_level > 0.4 and floor_level < 0.6, "standing with a pack at the limit rests only to about half (%.2f)" % floor_level)
+	# Blackout is smooth and depends on the overshoot: right at the threshold it takes about slow_s, a long way over it about fast_s.
+	var seconds_to_black: Array = []
+	var smooth: bool = true
+
+	for over_by in [0.0, 0.05, 0.125, 0.3]:
+		sa._strain[1] = {"s": 1.4 * (1.0 + over_by), "state": 1, "t": 0.0}
+		sa._stance[1] = 0
+		sa._exertion[1] = 1.0
+		var waited: float = 0.0
+		var last_black: float = 0.0
+
+		while int(sa.strain_of(1)["state"]) < 2 and waited < 60.0:
+			sa._strain[1]["s"] = 1.4 * (1.0 + over_by)
+			sa._strain_tick(1, 0.25)
+			waited += 0.25
+			var now_black: float = float(sa.strain_of(1).get("black", 0.0))
+			smooth = smooth and now_black >= last_black and now_black - last_black < 0.2
+			last_black = now_black
+
+		seconds_to_black.append(waited)
+
+	check(seconds_to_black[0] > 11.0 and seconds_to_black[0] < 17.0, "right at the threshold the blackout takes about 14 s (%.1f)" % seconds_to_black[0])
+	check(seconds_to_black[0] > seconds_to_black[1] and seconds_to_black[1] > seconds_to_black[2] and seconds_to_black[2] > seconds_to_black[3], "the further over the threshold the faster it comes on (%s s)" % str(seconds_to_black))
+	check(seconds_to_black[3] < 2.5, "a long way over it blacks out in about 1.5 s (%.2f)" % seconds_to_black[3])
+	check(smooth, "the blackout level only climbs and never jumps")
 	check(int(sa.strain_of(1)["state"]) == 2 and sa.stance_of(1) == 3, "fainting forces lying")
 	sa.action(1, Net.ACT_STANCE, 0, 0, 0, Vector3.ZERO)
 	check(sa.stance_of(1) == 3, "a fainted player cannot choose a stance")

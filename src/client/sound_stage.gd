@@ -505,6 +505,12 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 		_air_time = 0.0
 
 
+# Forget the height the body fell from (arrival at a new place): the next landing is measured from here.
+func forget_fall(body: CharacterBody3D) -> void:
+	_air_top = body.global_position.y
+	_air_time = 0.0
+
+
 # Sets the audio budget for a quality tier (0 Low, 1 Mid, 2 High).
 func set_quality(quality: int) -> void:
 	tier = clampi(quality, 0, Presets.ROWS.size() - 1)

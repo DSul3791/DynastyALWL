@@ -51,6 +51,16 @@ CLIENTS = [
         ("sticks use the real meshes", r"Natural look: stick uses " + NUM + " real meshes", 3, 3),
         ("driftwood uses the real meshes", r"Natural look: driftwood uses " + NUM + " real meshes", 3, 3),
     ]),
+    ("arrival", ["--arrival"], 2600, [
+        ("ground appears and the body is set down", r"Arrival test: ground found (true)", None, None),
+        ("set down within a metre of the ground", r"set down " + NUM + " m above it", 0.0, 1.5),
+        ("arriving does not hurt", r"health " + NUM + r", strain state", 100, 100),
+        ("and does not faint", r"strain state " + NUM, 0, 0),
+    ]),
+    ("strainrun", ["--walk", "--runspeed=24", "--strainrun"], 6000, [
+        ("the body really ran", r"Strain test: ran " + NUM + " m", 150, 400),
+        ("running raises the strain the server sends", r"strain [\d.]+ -> " + NUM, 0.08, 3.0),
+    ]),
     ("plantpick", ["--plantpick"], 6000, [
         ("plants were picked", r"tried (\d+), gone", 3, 20),
         ("none left standing", r"still standing (\d+)", 0, 0),
@@ -67,6 +77,8 @@ CLIENTS = [
         ("tooltips at least 24 px", r"tooltip font " + NUM + " px", 24, 200),
         ("six sort options", r"sort options " + NUM + ",", 6, 6),
         ("action buttons carry their keys", r"key buttons missing (\[\])", None, None),
+        ("four bars at the top of the inventory screen", r"panel bars " + NUM, 4, 4),
+        ("no bars on the main screen", r"main-screen bars " + NUM, 0, 0),
         ("30 slot buttons", r"scale [\d.]+, " + NUM + r" slot buttons", 30, 30),
     ]),
     ("quickkeys", ["--quickkeys"], 3500, [
