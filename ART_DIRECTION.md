@@ -330,3 +330,34 @@ Owner (2026-10-21): pebbles are decoration, not pickable or harvestable, like a 
 ## 45. Ragdoll character (build 349)
 
 Owner (2026-10-21): a simple ragdoll-type character, no features. src/client/ragdoll_body.gd builds it in code (17-bone Skeleton3D, one skinned mesh of capsules and boxes in a neutral skin colour, about 1.86 m tall, 1.5k triangles, one draw call, AnimationPlayer with idle walk run crouch sit lie swing jab throw use, a Marker3D mount on each hand for held tools); `Ragdoll.new(true)` is the first-person arms model. Docs: assets/character/README.md; check: tools/check_ragdoll.gd. Cost: no physics bodies and no joints (it is animated, not simulated); only the local player's body exists and only draws and animates in third person (the animation is switched off in first person); the skinned mesh and 18 tracks are well under 0.5 ms a frame on a GTX 1050-class PC by estimate, not measured live. Other players would cost one draw call and one animation player each, about 20 players at a few hundred microseconds each when visible.
+
+
+## 46. Asset budget table (job 9; numbers computed from the builders, not measured on a GPU)
+
+Source: tools/export_tree_meshes.gd run on the 25 tree and 22 shrub species (average over the four variants), FloraView constants, tools/check_grass_density.py. Draw time and overdraw per frame need Dave's GPU tables (still owed).
+
+**Triangles per model** (full = near band, mid = decimated to about a third by `generate_lods` for models over 500 triangles, far = the cheaper far model, impostor = 4 triangles, a crossed pair of cards):
+* trees: near 174 to 4170 (average 1781), far 34 to 326 (average 150); shrubs: near 48 to 2179 (average 176), far 16 to 200 (average 37).
+* heaviest trees:
+
+| species | height m | near tris | mid tris (a third) | far tris | surfaces |
+|---|---|---|---|---|---|
+| oak | 20 | 4170 | 1390 | 207 | 2 |
+| everember | 90 | 3446 | 1148 | 238 | 2 |
+| wild_cherry | 11 | 3347 | 1115 | 166 | 3 |
+| rowan | 10 | 3011 | 1003 | 182 | 2 |
+| sweet_chestnut | 14 | 2893 | 964 | 187 | 2 |
+| wild_pear | 10 | 2395 | 798 | 172 | 3 |
+| walnut | 14 | 2331 | 777 | 176 | 2 |
+| wild_apple | 7 | 2329 | 776 | 163 | 3 |
+| spruce | 38 | 2255 | 751 | 326 | 2 |
+| wardpine | 27 | 2251 | 750 | 162 | 2 |
+| (lightest) coconut_palm | 16 | 174 | 174 | 34 | 2 |
+
+**Where each is used** (FloraView, per quality Low, Medium, High, Ultra): full models inside the tier's shadow range or 30 m (shadow 0, 45, 60, 90 m; sun shadow from the far model past 30 m since build 301), mid models out to `near_m`, far models out to the impostor switch (100, 150, 180, 210 m), impostors beyond. Draw calls: one MultiMesh per species, variant, 64 m cell tier and surface (bark and leaf cards are two surfaces; a few species have a third); the shadow proxy adds one shadows-only draw per full cell group.
+
+**Textures** (all 8-bit RGBA PNG, GPU compressed on import): bark 128 x 256 (29 to 37 KB each, three), leaf cards 256 x 256 (58 to 107 KB, eight; conifer and palm 256 x 128, about 31 KB), twig 256 x 256 (44 KB); grass_short, grass_tall, fern, litter, ground_cover in assets/grass. Alpha: leaf cards are alpha-scissor (no blending, but overdraw where crowns stack: the pixel cost the Ultra table shows under trees).
+
+**Cards per tier** (grass, density guard worst case, every sample at full chance): Low 25k, Medium 93k, High 205k, Ultra 381k (caps 25k, 130k, 250k, 400k). Litter hard cap: 3k, 20k, 40k, 60k. Shore and reeds follow QUALITY_SHORE_M (8, 20, 30, 40 m) at 0.3, 1.0, 1.5, 2.0 of their per-sample counts; boulders are 0.1 per sample on banks and slopes, pebbles 4 per sample on banks. Ragdoll: 1.5k triangles, one draw call, third person only.
+
+**Still to measure for the table** (owed, needs Dave's PC): trees per band at the spawn view (counts from the chunk plans, not tables), ms per band, draw calls, overdraw. Ask for the Ultra and High tables on the forest view and the meadow view.
