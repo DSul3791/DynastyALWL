@@ -28,8 +28,9 @@ func _init() -> void:
 		var meshes: Node3D = m.get_child(0)
 		var b: AABB = view._bounds_in(meshes, m)
 		var def: Dictionary = structures[tiers[tier]]
+		var k: float = view._forge_scale("forge_" + tier)
 		check(absf(b.size.x - float(def["footprint_x"])) <= 0.35 and absf(b.size.z - float(def["footprint_z"])) <= 0.35, "%s footprint %.2f x %.2f matches the mesh %.2f x %.2f" % [tier, def["footprint_x"], def["footprint_z"], b.size.x, b.size.z])
-		check(absf(b.position.y) < 0.02 and b.size.y > 2.0 and b.size.y > b.size.x * 0.6, "%s stands upright with its base on the ground (height %.2f)" % [tier, b.size.y])
+		check(absf(b.position.y) < 0.02 and b.size.y > 2.0 * k and b.size.y > b.size.x * 0.6, "%s stands upright with its base on the ground (height %.2f)" % [tier, b.size.y])
 		check(absf(b.position.x + b.size.x * 0.5) < 0.02 and absf(b.position.z + b.size.z * 0.5) < 0.02, "%s footprint is centred on the pivot" % tier)
 		var light: Node3D = m.get_node_or_null("Light")
 		var plume: Node3D = null
@@ -42,7 +43,7 @@ func _init() -> void:
 
 		if light != null and plume != null:
 			check(light.position.z > plume.position.z, "%s: the fire is in front of the chimney, opening toward +Z (fire z %.2f, smoke z %.2f)" % [tier, light.position.z, plume.position.z])
-			check(light.position.y < 1.2 and plume.position.y > 2.0, "%s: fire low, smoke at the top" % tier)
+			check(light.position.y < plume.position.y * 0.6 and plume.position.y > b.size.y * 0.8, "%s: fire low, smoke at the top (fire y %.2f smoke y %.2f scale %.2f)" % [tier, light.position.y, plume.position.y, k])
 
 		var solid: CollisionShape3D = null
 
@@ -50,7 +51,7 @@ func _init() -> void:
 			if c is StaticBody3D:
 				solid = c.get_child(0)
 
-		check(solid != null and (solid.shape as BoxShape3D).size.x > 2.0, "%s is solid" % tier)
+		check(solid != null and (solid.shape as BoxShape3D).size.x > 2.0 * k, "%s is solid" % tier)
 
 	print("forge models: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
