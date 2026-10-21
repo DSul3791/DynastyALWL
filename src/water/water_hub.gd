@@ -25,7 +25,7 @@ extends RefCounted
 const WaterLive := preload("res://src/water/water_live.gd")
 const WaterSim := preload("res://src/water/water_sim.gd")
 
-const MAX_ACTIVE := 3
+const MAX_ACTIVE := 4                    # live tiles at most (Technical direction: 4)
 const MEMORY_LIMIT_BYTES := 1288490188   # 1.2 GB of water memory in all (Technical direction)
 const PAD := 3                           # cells either side of a wet crossing that are coupled too
 const WET_CLASSES := [2, 3]              # lake, river
@@ -81,26 +81,53 @@ func stop() -> void:
 # Moves the centre (where the players are): the wanted tiles are the new centre and the neighbours a
 # wet crossing leads into. Called on the main thread; the water thread loads and unloads to match.
 func set_centre(tile: Vector2i) -> void:
-	var wanted: Array = [tile]
-	var links: Array = []
-	var found: Dictionary = {tile: _tile_data(tile)}
+	set_live([tile])
 
-	if found[tile] == null:
+
+# The live set (tech/WATER_NINE_TILES_PLAN.md): the tiles players stand in come first (the first is the
+# centre), then, up to MAX_ACTIVE in all, the neighbours that share the most wet border with a live
+# tile. Tiles outside it are saved and unloaded by the water thread, so a sleeping tile holds no per-cell
+# arrays. Calling it again with the same tiles changes nothing.
+func set_live(tiles: Array) -> void:
+	var wanted: Array = []
+	var found: Dictionary = {}
+
+	for tile in tiles:
+		if wanted.size() >= MAX_ACTIVE:
+			break
+
+		if tile in wanted:
+			continue
+
+		var tile_data = _tile_data(tile)
+
+		if tile_data == null:
+			continue
+
+		wanted.append(tile)
+		found[tile] = tile_data
+
+	if wanted.is_empty():
 		return
 
 	var candidates: Array = []
 
-	for step in [Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(0, -1)]:
-		var other: Vector2i = tile + step
-		var other_data = _tile_data(other)
+	for tile in wanted.duplicate():
+		for step in [Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(0, -1)]:
+			var other: Vector2i = tile + step
 
-		if other_data == null:
-			continue
+			if other in wanted:
+				continue
 
-		var pairs: Array = border_pairs(found[tile], other_data, step)
+			var other_data = _tile_data(other)
 
-		if not pairs[0].is_empty():
-			candidates.append({"tile": other, "data": other_data, "pairs": pairs})
+			if other_data == null:
+				continue
+
+			var pairs: Array = border_pairs(found[tile], other_data, step)
+
+			if not pairs[0].is_empty():
+				candidates.append({"tile": other, "data": other_data, "pairs": pairs})
 
 	candidates.sort_custom(func(x, y): return x["pairs"][0].size() > y["pairs"][0].size())
 
@@ -108,19 +135,36 @@ func set_centre(tile: Vector2i) -> void:
 		if wanted.size() >= MAX_ACTIVE:
 			break
 
+		if candidate["tile"] in wanted:
+			continue
+
 		wanted.append(candidate["tile"])
 		found[candidate["tile"]] = candidate["data"]
-		links.append({"a": tile, "b": candidate["tile"], "ka": candidate["pairs"][0], "kb": candidate["pairs"][1]})
+
+	# Every pair of live tiles that touch is coupled.
+	var links: Array = []
+
+	for a in range(wanted.size()):
+		for b in range(a + 1, wanted.size()):
+			var step: Vector2i = wanted[b] - wanted[a]
+
+			if absi(step.x) + absi(step.y) != 1:
+				continue
+
+			var pairs: Array = border_pairs(found[wanted[a]], found[wanted[b]], step)
+
+			if not pairs[0].is_empty():
+				links.append({"a": wanted[a], "b": wanted[b], "ka": pairs[0], "kb": pairs[1]})
 
 	_mutex.lock()
-	centre = tile
+	centre = wanted[0]
 	_wanted = wanted
 	_links = links
 
 	for t in wanted:
 		_data[t] = found[t]
 
-	data = _data.get(tile)
+	data = _data.get(centre)
 	_mutex.unlock()
 
 
