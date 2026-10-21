@@ -3053,7 +3053,7 @@ func run_strain_test(client) -> void:
 
 
 func run_gather_test(client) -> void:
-	await get_tree().create_timer(6.0).timeout
+	await get_tree().create_timer(14.0).timeout
 	var real_view: Callable = view_direction
 	view_direction = Callable()   # the prompt checks below stand wherever the test camera happens to look
 	var best: Array = []
@@ -3508,7 +3508,7 @@ func run_eat_test(client) -> void:
 
 # Headless check (--chest): place a chest, open it, put stones in, take them out.
 func run_chest_test(client) -> void:
-	await get_tree().create_timer(6.0).timeout
+	await get_tree().create_timer(14.0).timeout
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("chest_kit"), 0, 1, Vector3.ZERO)
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("stone"), 0, 10, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout

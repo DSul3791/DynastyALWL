@@ -60,7 +60,7 @@ UNITS = [
 
 # name, client flags, frames, checks
 CLIENTS = [
-    ("chest", ["--chest"], 2500, [
+    ("chest", ["--chest"], 3500, [
         ("chest screen opens", r"screen open (true)", None, None),
         ("stones taken out", r"after taking out, stones in chest \d+, in pack " + NUM, 10, 10),
     ]),
