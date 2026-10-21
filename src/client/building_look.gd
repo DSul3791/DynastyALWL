@@ -970,8 +970,15 @@ static func dress(key: String, model: Node3D) -> Node3D:
 	if model == null or typeof(entry) != TYPE_DICTIONARY:
 		return model
 
-	if entry.has("fire") and model.get_node_or_null("Light") == null:
-		var spot: Array = entry["fire"]
+	return add_hooks(model, entry.get("fire", null), entry.get("smoke", null))
+
+
+# The flame light (a hidden "Light" child that inventory_view.gd switches on near the player) and a thin smoke plume at points in the
+# model's own space; either may be null to go without. Used by dress (station_models.json) and by the forge loader, which takes
+# the points from the Fire and Smoke empties in Dave's files.
+static func add_hooks(model: Node3D, fire: Variant, smoke: Variant) -> Node3D:
+	if fire != null and model.get_node_or_null("Light") == null:
+		var spot: Array = fire if typeof(fire) == TYPE_ARRAY else [fire.x, fire.y, fire.z]
 		var light: OmniLight3D = OmniLight3D.new()
 		light.name = "Light"
 		light.light_color = Color(1.0, 0.55, 0.25)
@@ -982,8 +989,8 @@ static func dress(key: String, model: Node3D) -> Node3D:
 		light.visible = false
 		model.add_child(light)
 
-	if entry.has("smoke"):
-		var at: Array = entry["smoke"]
+	if smoke != null:
+		var at: Array = smoke if typeof(smoke) == TYPE_ARRAY else [smoke.x, smoke.y, smoke.z]
 		var plume: GPUParticles3D = _smoke_plume()
 		plume.position = Vector3(float(at[0]), float(at[1]), float(at[2]))
 		model.add_child(plume)

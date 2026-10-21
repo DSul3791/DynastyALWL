@@ -1533,8 +1533,10 @@ func _make_big_forge(state: int) -> Node3D:
 	return stand_in
 
 
-# Dave's forge meshes (.glb, metres, pivot at the footprint centre on the ground, front toward -Z; spec in STATION_TIERS_DESIGN.md).
-# Returns null when the file is not there yet. Found by the exact name forge_basic, forge_medium, forge_large or forge_master.
+# Dave's forge meshes (assets/stations/forge_basic, forge_medium, forge_large, forge_master .glb). They arrive Z up with the fire
+# opening toward -Y and the middle of the base off the origin, so this stands them up (Y up), turns the opening toward -Z, puts the
+# centre of the footprint at the pivot and the base on the ground, and takes the flame light and smoke from the Fire and Smoke empties
+# in the file. Returns null when the file is not there yet.
 func _forge_glb(file: String) -> Node3D:
 	var path: String = "res://assets/stations/%s.glb" % file
 
@@ -1542,7 +1544,58 @@ func _forge_glb(file: String) -> Node3D:
 		return null
 
 	var scene: Variant = load(path)
-	return BuildingLook.dress(file, (scene as PackedScene).instantiate() as Node3D) if scene is PackedScene else null
+
+	if not (scene is PackedScene):
+		return null
+
+	var model: Node3D = (scene as PackedScene).instantiate() as Node3D
+	var upright: Node3D = Node3D.new()
+	upright.rotation_degrees = Vector3(-90.0, 0.0, 0.0)
+	upright.add_child(model)
+	var turned: Node3D = Node3D.new()
+	turned.rotation_degrees = Vector3(0.0, 180.0, 0.0)
+	turned.add_child(upright)
+	var root: Node3D = Node3D.new()
+	root.add_child(turned)
+	var box: AABB = _bounds_in(model, root)
+	turned.position = Vector3(-(box.position.x + box.size.x * 0.5), -box.position.y, -(box.position.z + box.size.z * 0.5))
+	var fire: Node3D = model.get_node_or_null("Fire") as Node3D
+	var smoke: Node3D = model.get_node_or_null("Smoke") as Node3D
+	var hook_fire: Variant = _local_to(fire, root) if fire != null else null
+	var hook_smoke: Variant = _local_to(smoke, root) if smoke != null else null
+	return BuildingLook.add_hooks(root, hook_fire, hook_smoke)
+
+
+# The box of every mesh under `node`, in the space of `space` (a Node3D above it), without needing the tree.
+func _bounds_in(node: Node3D, space: Node3D) -> AABB:
+	var found: Array = [null]
+	_grow_bounds(node, space, found)
+	return found[0] if found[0] != null else AABB()
+
+
+func _grow_bounds(node: Node, space: Node3D, found: Array) -> void:
+	if node is MeshInstance3D:
+		var box: AABB = _chain_to(node as Node3D, space) * (node as MeshInstance3D).get_aabb()
+		found[0] = box if found[0] == null else (found[0] as AABB).merge(box)
+
+	for child in node.get_children():
+		_grow_bounds(child, space, found)
+
+
+func _chain_to(node: Node3D, space: Node3D) -> Transform3D:
+	var t: Transform3D = Transform3D.IDENTITY
+	var cur: Node = node
+
+	while cur != null and cur != space and cur is Node3D:
+		t = (cur as Node3D).transform * t
+		cur = cur.get_parent()
+
+	return t
+
+
+# Where a node sits in the space of an ancestor, without needing the tree.
+func _local_to(node: Node3D, ancestor: Node3D) -> Vector3:
+	return _chain_to(node, ancestor).origin
 
 
 # Is a placed station of this kind within its reach? Display only (the server decides): greys recipes that need one.
