@@ -87,7 +87,43 @@ func _load_voxel_block(out_buffer: VoxelBuffer, block: Vector3i, lod: int) -> in
 	return result
 
 
+# Ground that has arrived at some level of detail, by column (lod, block x, block z). column_loaded() asks it for a world point.
+var _columns: Dictionary = {}
+const COLUMN_LODS := 8
+
+
+func _note_column(block: Vector3i, lod: int) -> void:
+	_mutex.lock()
+	_columns[Vector3i(lod, block.x, block.z)] = true
+	_mutex.unlock()
+
+
+# True once any block of the ground column over world point (x, z) has arrived, even a coarse one (flora and fall ribbons
+# are drawn only where this is true, so they do not hang over ground that has not loaded yet).
+func column_loaded(x: float, z: float) -> bool:
+	_mutex.lock()
+
+	for lod in range(COLUMN_LODS):
+		var size: float = float(16 << lod)
+
+		if _columns.has(Vector3i(lod, int(floor(x / size)), int(floor(z / size)))):
+			_mutex.unlock()
+			return true
+
+	_mutex.unlock()
+	return false
+
+
 func _load(out_buffer: VoxelBuffer, block: Vector3i, lod: int) -> int:
+	var found: int = _load_inner(out_buffer, block, lod)
+
+	if found == RESULT_BLOCK_FOUND:
+		_note_column(block, lod)
+
+	return found
+
+
+func _load_inner(out_buffer: VoxelBuffer, block: Vector3i, lod: int) -> int:
 	var key: Vector4i = Vector4i(block.x, block.y, block.z, lod)
 	_mutex.lock()
 	loads += 1

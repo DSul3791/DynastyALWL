@@ -65,7 +65,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 514
+const BUILD := 515
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -186,6 +186,8 @@ var _inspect_label: Label            # what the player is looking at (inspection
 var inspecting: bool = false
 var test_clear: bool = false          # --test-clear: press Clear saved ground 12 s after the welcome
 var _test_clear_done: bool = false
+var test_start: Vector3 = Vector3.INF   # --start=x,y,z: put the player there (tests)
+var _test_probe_msec: int = 0
 var test_dump: bool = false           # --dump-test: 14 s after the welcome dump the ground under the feet (prints the dump)
 var _test_dump_done: bool = false
 var menu_open: bool = false          # the Esc options menu
@@ -445,6 +447,11 @@ func _ready() -> void:
 			quality = clampi(int(argument.trim_prefix("--quality=")), 0, QUALITY_NAMES.size() - 1)
 		elif argument == "--test-clear":
 			test_clear = true
+		elif argument.begins_with("--start="):
+			var xyz: PackedStringArray = argument.trim_prefix("--start=").split(",")
+			test_start = Vector3(float(xyz[0]), float(xyz[1]), float(xyz[2]))
+		elif argument == "--no-ground-check":
+			ground_check = false
 		elif argument == "--dump-test":
 			test_dump = true
 		elif argument == "--inspect":
@@ -698,7 +705,7 @@ func _welcome_body(info: Dictionary) -> void:
 	Probe.stop("welcome: ground material", t2)
 	_ground_quality = quality
 	root.add_child(terrain)
-	_make_player(root, info["spawn"] + Vector3(0.0, 28.0, 0.0))
+	_make_player(root, test_start if test_start.is_finite() else info["spawn"] + Vector3(0.0, 28.0, 0.0))
 	flora = FloraViewScript.new()
 	flora.name = "Flora"
 	var t3: int = Probe.start()
@@ -753,6 +760,7 @@ func _welcome_body(info: Dictionary) -> void:
 	if test_gear:
 		sound.gear.set_worn(["plate", "cloth", "iron"])
 	var t5: int = Probe.start()
+	debug_hud.add_line("ground check", func() -> String: return "%d samples, %d mismatches, last %s" % [check_samples, check_mismatches, check_last])
 	debug_hud.add_line("video memory", func() -> String:
 		return "video memory %.0f MB (textures %.0f, buffers %.0f), objects %d, nodes %d (orphans %d), script memory %.0f MB, primitives %d" % [
 			Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0, Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED) / 1048576.0,
@@ -1411,6 +1419,11 @@ func _collider_below(p: Vector3) -> bool:
 
 
 func _on_surface_received(x: float, z: float, y: float) -> void:
+	if is_finite(_check_pending.x) and absf(_check_pending.x - x) < 0.01 and absf(_check_pending.y - z) < 0.01:
+		_check_pending = Vector2(NAN, NAN)
+		_ground_check_compare(x, z, y)
+		return
+
 	_ground_below_xz = Vector2(x, z)
 	_ground_below_y = y
 	_surface_answered_msec = Time.get_ticks_msec()
@@ -1968,6 +1981,22 @@ func _set_menu(open: bool) -> void:
 # and the server's stores hold for the ground voxel the crosshair points at (Esc, Advanced, Dump ground; look at it first):
 # the dump aims where the screen centre pointed when the menu opened. The text is printed, shown and copied.
 var _dump_client: String = ""
+# Ground self-check (Dave's floating block and tan slab in the lake, 2026-10-21): every few seconds one point near
+# the player is asked of the server (surface height from the generator) and the client's own ground there is found by
+# a ray from above; ground more than GROUND_CHECK_TOLERANCE_M above the server's is logged with the coordinates
+# (user://ground_mismatch.log), and the server's dump of that cell is logged next to it. --no-ground-check turns it off.
+const GROUND_CHECK_EVERY_MSEC := 4000
+const GROUND_CHECK_TOLERANCE_M := 3.0
+const GROUND_CHECK_RINGS := [6.0, 15.0, 30.0, 50.0, 80.0]
+var ground_check: bool = true
+var _check_next_msec: int = 0
+var _check_ring: int = 0
+var _check_pending: Vector2 = Vector2(NAN, NAN)
+var _check_dump_msec: int = 0
+var check_samples: int = 0
+var check_mismatches: int = 0
+var check_last: String = "none yet"
+var _check_dump_at: Vector3 = Vector3.INF
 
 
 func _dump_ground_here(at: Vector3 = Vector3.INF) -> void:
@@ -2010,10 +2039,75 @@ func _dump_ground_here(at: Vector3 = Vector3.INF) -> void:
 func _on_dump_received(text: String) -> void:
 	var all: String = _dump_client + "\n" + text
 	print("Terrain client: ground dump\n" + all)
+
+	if _check_dump_at.is_finite():
+		_ground_check_log(all)
+		_check_dump_at = Vector3.INF
 	DisplayServer.clipboard_set(all)
 
 	if _menu_note != null:
 		_menu_note.text = all + "\n(copied to the clipboard)"
+
+
+# Asks the server for the ground height at one point near the player (the rings rotate, the angle is random).
+func _ground_check_step(now: int) -> void:
+	if not ground_check or now < _check_next_msec or connected_msec <= 0 or body == null:
+		return
+
+	_check_next_msec = now + GROUND_CHECK_EVERY_MSEC
+
+	if _building_paused or flying or is_finite(_check_pending.x):
+		_check_pending = Vector2(NAN, NAN)
+		return
+
+	var ring: float = GROUND_CHECK_RINGS[_check_ring % GROUND_CHECK_RINGS.size()]
+	_check_ring += 1
+	var angle: float = randf() * TAU
+	var x: float = snappedf(body.global_position.x + cos(angle) * ring, 0.5)
+	var z: float = snappedf(body.global_position.z + sin(angle) * ring, 0.5)
+	_check_pending = Vector2(x, z)
+	net.request_surface.rpc_id(1, x, z)
+
+
+func _ground_check_compare(x: float, z: float, server_y: float) -> void:
+	var top: Vector3 = Vector3(x, server_y + 120.0, z)
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(top, top + Vector3(0.0, -400.0, 0.0))
+	query.exclude = [body.get_rid()]
+	var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(query)
+
+	if hit.is_empty():
+		check_last = "no collider yet at %.0f, %.0f" % [x, z]
+		return
+
+	check_samples += 1
+	var client_y: float = hit["position"].y
+	check_last = "%.0f, %.0f: client %.1f, server %.1f" % [x, z, client_y, server_y]
+
+	if OS.has_environment("GROUND_CHECK_VERBOSE"):
+		print("Terrain client: ground check " + check_last + ", column loaded " + str(stream.column_loaded(x, z)))
+
+	if client_y - server_y <= GROUND_CHECK_TOLERANCE_M:
+		return
+
+	check_mismatches += 1
+	var inside: Vector3 = hit["position"] - hit["normal"] * 0.5
+	var line: String = "%s build %d GROUND MISMATCH at x %.1f z %.1f: client ground %.1f m, server %.1f m (%.1f m too high); player %s; voxel %s; lod_count %d, view %d; digs near: see the server dump" % [Time.get_datetime_string_from_system(true), BUILD, x, z, client_y, server_y, client_y - server_y, str(body.global_position.round()), str(Vector3i(floori(inside.x), floori(inside.y), floori(inside.z))), terrain.lod_count, terrain.view_distance]
+	print("Terrain client: " + line)
+	_ground_check_log(line)
+
+	if Time.get_ticks_msec() - _check_dump_msec > 20000:
+		_check_dump_msec = Time.get_ticks_msec()
+		_check_dump_at = inside
+		_dump_ground_here(inside)
+
+
+func _ground_check_log(text: String) -> void:
+	var file: FileAccess = FileAccess.open("user://ground_mismatch.log", FileAccess.READ_WRITE if FileAccess.file_exists("user://ground_mismatch.log") else FileAccess.WRITE)
+
+	if file != null:
+		file.seek_end()
+		file.store_line(text)
+		file.close()
 
 
 func _ask_clear_cache() -> void:
@@ -2870,6 +2964,20 @@ func _process(delta: float) -> void:
 
 	if stream == null:
 		return
+
+	if test_start.is_finite() and Time.get_ticks_msec() - _test_probe_msec > 10000 and connected_msec > 0:
+		_test_probe_msec = Time.get_ticks_msec()
+		var probes: PackedStringArray = PackedStringArray()
+
+		for east in [60.0, 110.0, 220.0, 600.0]:
+			var top: Vector3 = Vector3(test_start.x + east, 900.0, test_start.z)
+			var q: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(top, top + Vector3(0.0, -1300.0, 0.0))
+			var h: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(q)
+			probes.append("+%dm east: %s" % [int(east), ("ground at %.0f" % h["position"].y) if not h.is_empty() else "NO GROUND"])
+
+		print("Terrain client: probe %d s after the welcome, player at %s: %s" % [(Time.get_ticks_msec() - connected_msec) / 1000, str(body.global_position.round()), ", ".join(probes)])
+
+	_ground_check_step(Time.get_ticks_msec())
 
 	if test_dump and not _test_dump_done and Time.get_ticks_msec() - connected_msec > 14000:
 		_test_dump_done = true
