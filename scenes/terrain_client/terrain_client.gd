@@ -65,7 +65,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 529
+const BUILD := 530
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -1400,9 +1400,13 @@ func _update_anchor(now: int, delta: float) -> void:
 		if flying and not is_nan(_ground_below_y) and _ground_below_y < here.y - STAGE_MIN_HEIGHT_M:
 			_viewer_ground_y = _ground_below_y + 2.0
 
+			# Only when the ground below has no collider yet: staging drops every coarse level, so over ground that is
+			# already loaded it only made patches of it disappear and come back (Dave, 2026-10-21, hovering at 460 m).
 			if _stage_view == 0.0 and not _stage_done:
 				_stage_done = true
-				_set_stage_view(1.0)
+
+				if not _collider_below(here):
+					_set_stage_view(1.0)
 		elif _stage_view > 0.0:
 			_set_stage_view(0.0)
 

@@ -47,6 +47,7 @@ var _answers: Dictionary = {}         # Vector4i -> PackedByteArray
 var _waiting: Dictionary = {}         # Vector4i -> true
 var _closing: bool = false
 var zeroed_blocks: int = 0
+var _refused_key: Vector4i = Vector4i(0, 0, 0, -1)   # the last block refused (damaged, zeroed, not ready): _load asks again
 var paused: bool = false              # main thread: requests are held (flying), so waits do not time out
 var only_urgent: bool = false         # main thread: a bake runs, no prefetch is asked for
 var link = null                       # BlockLink: when ready, misses are asked for straight from the loader thread
@@ -117,6 +118,24 @@ func column_loaded(x: float, z: float) -> bool:
 
 func _load(out_buffer: VoxelBuffer, block: Vector3i, lod: int) -> int:
 	var found: int = _load_inner(out_buffer, block, lod)
+
+	# A block that arrived damaged, zeroed or "not ready" is asked for again right here (up to 3 tries in all), so the
+	# engine is not left with a hole where it would have to ask on its own.
+	for attempt in range(2):
+		if found != RESULT_ERROR:
+			break
+
+		_mutex.lock()
+		var refused: bool = _refused_key == Vector4i(block.x, block.y, block.z, lod)
+		_refused_key = Vector4i(0, 0, 0, -1)
+		var closing: bool = _closing
+		_mutex.unlock()
+
+		if not refused or closing:
+			break
+
+		OS.delay_msec(300)
+		found = _load_inner(out_buffer, block, lod)
 
 	if found == RESULT_BLOCK_FOUND:
 		_note_column(block, lod)
@@ -275,6 +294,7 @@ func _looks_zeroed(buffer: VoxelBuffer) -> bool:
 func _note_zeroed(block: Vector3i, lod: int, where: String, bytes: PackedByteArray) -> void:
 	_mutex.lock()
 	zeroed_blocks += 1
+	_refused_key = Vector4i(block.x, block.y, block.z, lod)
 	_asked.erase(Vector4i(block.x, block.y, block.z, lod))
 	var n: int = zeroed_blocks
 	_mutex.unlock()
@@ -301,6 +321,7 @@ func _note_zeroed(block: Vector3i, lod: int, where: String, bytes: PackedByteArr
 func _note_bad(block: Vector3i, lod: int, why: String) -> void:
 	_mutex.lock()
 	bad_blocks += 1
+	_refused_key = Vector4i(block.x, block.y, block.z, lod)
 	_asked.erase(Vector4i(block.x, block.y, block.z, lod))
 	_mutex.unlock()
 	push_error("client: bad block %s at LOD %d (%s); not cached" % [str(block), lod, why])
