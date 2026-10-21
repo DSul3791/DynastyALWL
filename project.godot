@@ -37,3 +37,8 @@ window/stretch/mode="viewport"
 [rendering]
 
 rendering_device/driver.windows="d3d12"
+
+[debug]
+
+file_logging/enable_file_logging=true
+file_logging/max_log_files=10

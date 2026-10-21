@@ -66,7 +66,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 565
+const BUILD := 567
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -85,7 +85,7 @@ const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const WaterVolume := preload("res://src/shared/water_volume.gd")
 const HotbarStripScript := preload("res://src/client/hotbar_strip.gd")
 const PickupFeedScript := preload("res://src/client/pickup_feed.gd")
-const CrashBreadcrumb := preload("res://src/client/crash_breadcrumb.gd")
+const CrashReportScript := preload("res://src/client/crash_report.gd")
 const WaterFallsScript := preload("res://src/worldgen/runtime/water_falls.gd")
 const FloraViewScript := preload("res://src/flora/flora_view.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
@@ -433,16 +433,13 @@ func _ready() -> void:
 	else:
 		VoxelEngine.set_thread_count(maxi(VoxelEngine.get_thread_count(), LOAD_THREADS_MIN))
 
-	# A run that ended without a clean exit leaves its flag: show and keep the last log lines (and copy them).
+	# Crash reporting (crash_report.gd): breadcrumbs, a flag, and a report file in crash_reports/ after an unclean end.
 	if DisplayServer.get_name() != "headless" or OS.has_environment("CRASH_CHECK"):
-		_previous_run_note = CrashBreadcrumb.check_previous()
+		crash_report = CrashReportScript.new()
+		crash_report.start(BUILD, _commit)
 
-		if _previous_run_note != "":
-			print("Terrain client: " + _previous_run_note)
-			DisplayServer.clipboard_set(_previous_run_note)
-			_previous_run_note_until_msec = Time.get_ticks_msec() + 60000
-
-		CrashBreadcrumb.mark_running(BUILD)
+		if crash_report.last_report != "":
+			_previous_run_note_until_msec = Time.get_ticks_msec() + 90000
 
 	net = $TerrainNet
 	display.load_saved()
@@ -2132,7 +2129,7 @@ func _set_menu(open: bool) -> void:
 # the dump aims where the screen centre pointed when the menu opened. The text is printed, shown and copied.
 var _dump_client: String = ""
 var _starter_seeded: int = 0
-var _previous_run_note: String = ""
+var crash_report                      # CrashReport: breadcrumbs and the report of an unclean last run
 var _previous_run_note_until_msec: int = 0
 var _ground_line: String = ""
 var _ground_line_msec: int = 0
@@ -2353,6 +2350,11 @@ Esc: this menu"""
 
 
 # One line for screenshots: terrain version, tile stamp, starter ground, saved ground (size, hits, misses) and the guards' counts.
+func _crash_state() -> String:
+	var at: Vector3 = body.global_position if body != null else Vector3.ZERO
+	return "pos %d,%d,%d quality %d fps %d ram %d MB video %d MB menu %s screen %s" % [at.x, at.y, at.z, quality, Engine.get_frames_per_second(), int(OS.get_static_memory_usage() / 1048576), int(RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_VIDEO_MEM_USED) / 1048576), menu_open, items != null and items.screen_open()]
+
+
 func _ground_health_line() -> String:
 	var now: int = Time.get_ticks_msec()
 
@@ -2668,6 +2670,17 @@ func _make_avatar() -> Node3D:
 	var avatar: Node3D = RagdollScript.new()
 	avatar.visible = false
 	return avatar
+
+
+# Breadcrumbs for crash reports: every key and mouse button press, before any menu or window can swallow it.
+func _input(event: InputEvent) -> void:
+	if crash_report == null:
+		return
+
+	if event is InputEventKey and event.pressed and not event.echo:
+		crash_report.event("key %s" % OS.get_keycode_string(event.keycode))
+	elif event is InputEventMouseButton and event.pressed:
+		crash_report.event("mouse button %d at %d,%d" % [event.button_index, int(event.position.x), int(event.position.y)])
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -3232,6 +3245,9 @@ func _fire_test_step(step: int, at: Vector3) -> String:
 
 
 func _process(delta: float) -> void:
+	if crash_report != null:
+		crash_report.tick(_crash_state)
+
 	if pickup_feed != null:
 		pickup_feed.update(delta)
 
@@ -4345,8 +4361,8 @@ func _process(delta: float) -> void:
 	hud.text = "build %d (%s)  %d fps  %s (F2)\nx %.0f  y %.1f  z %.0f\nlast sound: %s" % [BUILD, _commit, Engine.get_frames_per_second(), QUALITY_NAMES[quality], body.global_position.x, body.global_position.y, body.global_position.z, _last_sound]
 	hud.text += "\n" + _ground_health_line()
 
-	if _previous_run_note != "" and Time.get_ticks_msec() < _previous_run_note_until_msec:
-		hud.text += "\nThe previous run ended unexpectedly: its last log lines are copied (also user://previous_run_log.txt)"
+	if crash_report != null and crash_report.last_report != "" and Time.get_ticks_msec() < _previous_run_note_until_msec:
+		hud.text += "\nThe game closed unexpectedly last time. Report saved: %s. Please commit and push it (GitHub Desktop)." % crash_report.last_report
 
 	if debug_hud.enabled:
 		hud.text += "\n" + _debug_text(avg_ms, worst_ms)
@@ -4728,7 +4744,9 @@ func _finish_cache_task() -> void:
 
 
 func _exit_tree() -> void:
-	CrashBreadcrumb.mark_clean()
+	if crash_report != null:
+		crash_report.mark_clean()
+
 	_finish_cache_task()
 	_drain_incoming()
 	if stream != null:
