@@ -7,6 +7,8 @@ extends SceneTree
 
 const DATA := "res://data/items/"
 # Items the code itself hands out (felling a trunk, the admin give, placing a fire) and so need no drop entry.
+# Names of items and recipes are plain nouns (Dave 2026-10-20): "Basic torch", "Stone axe", never "Carve a ..." or "Make a ...".
+const VERB_FIRST_WORDS := ["make", "carve", "chisel", "bind", "craft", "build", "tie", "knap", "twist", "weave", "split", "place", "roast", "cook", "dig", "cut", "sharpen", "light", "pick", "gather", "get", "use", "create", "forge", "fashion", "shape", "stack", "lay", "set", "form"]
 const CODE_SOURCES := ["stone", "stick", "log", "bark", "leaves", "seed_bundle", "firewood"]
 
 var errors: int = 0
@@ -50,6 +52,25 @@ func _walk(id: String, path: Array, edges: Dictionary, state: Dictionary) -> voi
 	state[id] = 2
 
 
+# Every name in the data must be a plain noun phrase: no leading verb, no article, at most four words, capital first letter.
+func _check_name(name: String, where: String) -> void:
+	var words: PackedStringArray = name.strip_edges().split(" ", false)
+
+	if words.is_empty():
+		return
+
+	var first: String = words[0].to_lower()
+
+	if first in VERB_FIRST_WORDS or first in ["a", "an", "the"]:
+		fail("%s: name '%s' starts with a verb or an article (names are plain nouns)" % [where, name])
+
+	if words.size() > 4:
+		fail("%s: name '%s' is longer than four words" % [where, name])
+
+	if words[0].substr(0, 1) != words[0].substr(0, 1).to_upper():
+		fail("%s: name '%s' does not start with a capital letter" % [where, name])
+
+
 func _init() -> void:
 	var items_file: Dictionary = _read("items.json")
 	var gathered_file: Dictionary = _read("gathered.json")
@@ -84,6 +105,7 @@ func _init() -> void:
 
 			if String(entry.get("name", "")) == "":
 				fail("%s: '%s' has no name" % [pair[1], id])
+			_check_name(String(entry.get("name", "")), "%s: item '%s'" % [pair[1], id])
 
 			all[id] = entry
 			numbers[number] = id
@@ -193,6 +215,7 @@ func _init() -> void:
 			fail("recipes.json: number %d used by '%s' and '%s'" % [n, recipe_numbers[n], rid])
 
 		recipe_numbers[n] = rid
+		_check_name(String(r.get("name", "")), "recipes.json: recipe '%s'" % rid)
 
 		for id in r.get("identify", []):
 			want_item.call(String(id), "recipe '%s' identify" % rid)

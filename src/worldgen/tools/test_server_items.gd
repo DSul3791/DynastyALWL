@@ -278,6 +278,15 @@ func _init() -> void:
 		m.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
 
 	check(m.inventory_of(1).count_of(rock_stone) == ItemsScript.MINE_STONES_PER_CELL, "a patch gives only a few stones")
+	# Wear per use is data (drops.json tool_wear): three points a blow when the table says so.
+	var axe_slot: int = m.inventory_of(1).numbers.find(m.table.number_of("stone_axe"))
+	var wear_was: int = m.inventory_of(1).wear[axe_slot]
+	m._drops["tool_wear"]["per_use"]["axe"]["rock"] = 3
+	m._last_mine.clear()
+	m.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(m.inventory_of(1).wear[axe_slot] == wear_was + 3, "a blow on rock wears the axe by the table's number (%d to %d)" % [wear_was, m.inventory_of(1).wear[axe_slot]])
+	m._drops["tool_wear"]["per_use"]["axe"]["rock"] = 1
+
 	m.report_position(1, Vector3(-5.0, 10.0, 0.0))
 	m.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(-6.0, 10.0, 0.0))
 	check(m.inventory_of(1).count_of(rock_stone) == ItemsScript.MINE_STONES_PER_CELL, "soil gives no stone")

@@ -505,7 +505,7 @@ func gather(peer: int, species_name: String, kind: String, flora_key: String, fl
 				var used_class: String = _tool_for(natural)
 
 				if used_class != "":
-					_wear_tool(peer, inv, used_class)
+					_wear_tool(peer, inv, used_class, "gather")
 			elif rows.is_empty() and missing != "":
 				_say(peer, "You need a %s for that." % str(_drops.get("tool_rules", {}).get("tool_names", {}).get(missing, missing)))
 				_reject(peer, 1)
@@ -631,7 +631,7 @@ func _mine(peer: int, inv, at: Vector3) -> void:
 		return
 
 	_last_mine[peer] = now
-	_wear_tool(peer, inv, "axe")
+	_wear_tool(peer, inv, "axe", "rock")
 	var patch: Vector2i = Vector2i(int(floor(at.x / MINE_CELL_M)), int(floor(at.z / MINE_CELL_M)))
 	var state: Dictionary = _mined.get(patch, {"taken": 0, "since": now})
 	var regrown: int = int((now - int(state["since"])) / (MINE_REGROW_S * 1000.0))
@@ -1104,7 +1104,7 @@ func _hit(peer: int, inv, tree_id: int, chunk: Vector2i) -> void:
 		return
 
 	_last_hit[peer] = now
-	_wear_tool(peer, inv, "axe")
+	_wear_tool(peer, inv, "axe", "tree")
 	var key: String = "%d,%d,%d" % [chunk.x, chunk.y, tree_id]
 	var chop: Dictionary = _chops.get(key, {"hits": 0, "msec": now})
 
@@ -1166,7 +1166,8 @@ func _is_broken(number: int, item_wear: int) -> bool:
 
 
 # One use spent on the first usable tool of this class on the hotbar; tells the player when it breaks.
-func _wear_tool(peer: int, inv, tool_class: String) -> void:
+# Wear per use comes from drops.json "tool_wear" (per tool class and kind of work, default 1), so a tuning change is data.
+func _wear_tool(peer: int, inv, tool_class: String, use: String = "") -> void:
 	var slot: int = _tool_slot(inv, tool_class)
 
 	if slot < 0 or int(table.entry(table.id_of(inv.numbers[slot])).get("durability", 0)) <= 0:
@@ -1174,7 +1175,7 @@ func _wear_tool(peer: int, inv, tool_class: String) -> void:
 
 	_work_until[peer] = Time.get_ticks_msec() + 5000
 	var before: Array = _snapshot(inv)
-	inv.wear[slot] += 1
+	inv.wear[slot] += maxi(1, int(_drops.get("tool_wear", {}).get("per_use", {}).get(tool_class, {}).get(use, 1)))
 	_dirty = true
 
 	if _is_broken(inv.numbers[slot], inv.wear[slot]):
@@ -1209,7 +1210,7 @@ func _repair(peer: int, inv, slot: int) -> void:
 	for cost in costs:
 		inv.remove(table.number_of(str(cost[0])), int(cost[1]))
 
-	inv.wear[slot] = maxi(0, inv.wear[slot] - int(entry.get("durability", 0)) / 2)
+	inv.wear[slot] = maxi(0, inv.wear[slot] - int(float(entry.get("durability", 0)) * float(_drops.get("tool_wear", {}).get("repair_restores", 0.5))))
 
 
 func _repair_text(costs: Array) -> String:
@@ -1329,7 +1330,7 @@ func _process_trunk(peer: int, inv, id: int) -> void:
 		return
 
 	_last_process[peer] = now
-	_wear_tool(peer, inv, "axe")
+	_wear_tool(peer, inv, "axe", "trunk")
 
 	if not tree.has("logs_left"):
 		tree["logs_left"] = clampi(int(float(tree["length"]) / float(cfg.get("log_length_m", 2.5)) * clampf(float(tree["radius"]) * 2.5, 0.5, 2.0)), 1, int(cfg.get("max_logs", 12)))
@@ -1734,7 +1735,7 @@ func _use_struct(peer: int, inv, id: int) -> void:
 	if left > 0:
 		drop_in_world(wood, left, _peer_pos[peer])
 
-	_wear_tool(peer, inv, "axe")
+	_wear_tool(peer, inv, "axe", "split")
 	_dirty = true
 
 
