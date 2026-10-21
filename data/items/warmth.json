@@ -1,12 +1,11 @@
 {
-	"note": "Warmth (Dave 2026-10-21: cold costs health, slowly down to 1, like hunger). A vital 0 to 100 shown as the Warmth bar at the top of the inventory and Tab screens only. Each slow tick the server works out the warmth the body is heading for: 100 minus the cold stress. Stress is the degrees below comfort_c (air temperature from the weather and altitude, less wind chill when exposed, plus fire_c near a lit fire), times rain_mult in rain or snow on you, times water_mult when swimming, times gain, cut by the clothing insulation (0 to 0.85; no clothes exist yet, insulation_of is the hook). Warmth moves toward that target with a time constant in game hours (tau_cool falling, tau_warm rising: a fire warms you quicker than the cold chills you). Below cold_at you shiver (exertion rises faster, health stops regenerating); below hurt_at cold costs health hurt_per_s, more the colder, never below 1. Messages use two levels so they do not flicker.",
+	"note": "Warmth (Dave 2026-10-21: cold costs health, slowly down to 1, like hunger). A vital 0 to 100 shown as the Warmth bar at the top of the inventory and Tab screens only. Each slow tick the server works out the warmth the body is heading for: 100 minus the cold stress. Stress is the degrees below comfort_c (air temperature from the weather and altitude, less wind chill when exposed, plus fire_c near a lit fire), times rain_mult in rain or snow on you, times water_mult when swimming, times gain, cut by the clothing insulation (0 to 0.85; no clothes exist yet, insulation_of is the hook). Warmth moves toward that target with a time constant in game hours (tau_cool falling, tau_warm rising: a fire warms you quicker than the cold chills you). Below cold_at you shiver (exertion rises faster, health stops regenerating); below hurt_at cold costs health hurt_per_s, more the colder, never below 1. Messages use two levels so they do not flicker. Swimming (Tyler): the stress comes from the WATER temperature instead of the air: water_c = water_base_c + water_follow x (air at sea level - water_base_c), never under 1 C; stress = water_comfort_c - water_c, times water_gain (so 10 C water cuts the target to about 20 and 25 C water barely matters); the body cools with tau_water_h instead of tau_cool_h.",
 	"comfort_c": 15.0,
 	"lapse_c_per_m": 0.0065,
 	"wind_chill_c": 6.0,
 	"covered_wind_share": 0.3,
 	"covered_rain_share": 0.0,
 	"rain_mult": 1.5,
-	"water_mult": 2.5,
 	"gain": 3.0,
 	"fire_c": 20.0,
 	"fire_radius_m": 4.0,
@@ -21,5 +20,10 @@
 	"shiver_effort": 0.15,
 	"say_cold": "You are getting cold",
 	"say_freezing": "You are freezing",
-	"say_warm": "You feel warm again"
+	"say_warm": "You feel warm again",
+	"water_base_c": 12.0,
+	"water_follow": 0.7,
+	"water_comfort_c": 26.0,
+	"water_gain": 5.0,
+	"tau_water_h": 0.7
 }

@@ -247,8 +247,8 @@ func _init() -> void:
 		want_item.call(String(raw_id), "cooking.json cooks_into")
 		want_item.call(String(cooking["cooks_into"][raw_id]), "cooking.json cooks_into")
 
-	for raw_id in cooking.get("raw_unsafe", []):
-		want_item.call(String(raw_id), "cooking.json raw_unsafe")
+	for raw_id in cooking.get("raw_sick", {}).get("by_id", {}):
+		want_item.call(String(raw_id), "cooking.json raw_sick")
 
 	var carcass: Dictionary = _read("carcass.json")
 

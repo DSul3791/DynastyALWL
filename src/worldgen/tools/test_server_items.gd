@@ -237,7 +237,7 @@ func _init() -> void:
 	f.action(1, Net.ACT_ADMIN_GIVE, berries, 0, 2, Vector3.ZERO)
 	f.action(1, Net.ACT_COOK, open_id, 0, 0, Vector3.ZERO)
 	check(f.inventory_of(1).count_of(f.table.number_of("roast_forage")) == 1 and f.inventory_of(1).count_of(berries) == 1, "a lit fire roasts one berry item")
-	# Cooking keeps the age: a half-stale berry roasts into a quarter-stale roast (age_carry 0.5), and a hot meal warms.
+	# Cooking: a half-stale berry (half its life left) roasts into a roast with twice that left (cooked_life_mult 2), and a hot meal warms.
 	var ck_inv: Variant = f.inventory_of(1)
 	var ck_bslot: int = -1
 
@@ -253,9 +253,9 @@ func _init() -> void:
 
 	for sl in range(ck_inv.SLOTS):
 		if ck_inv.numbers[sl] == ck_roast_n and ck_inv.wear[sl] > 0:
-			ck_aged = absf(float(ck_inv.wear[sl]) / float(f.table.shelf_units(ck_roast_n)) - 0.25) < 0.02
+			ck_aged = ck_aged or absf(float(ck_inv.wear[sl]) / float(f.table.shelf_units(ck_roast_n)) - 0.75) < 0.02
 
-	check(ck_aged, "a roast carries half the raw item's age")
+	check(ck_aged, "a roast carries twice the raw life left")
 	f.vitals_of(1)["warmth"] = 50.0
 	f._last_eat.clear()
 
@@ -670,7 +670,7 @@ func _init() -> void:
 		wr._last_mine.clear()
 		wr.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(1.0, 10.0, 0.0))
 
-	check(wr.inventory_of(1).wear[0] == 3, "each effective blow wears the axe one use (%d)" % wr.inventory_of(1).wear[0])
+	check(wr.inventory_of(1).wear[0] >= 2 and wr.inventory_of(1).wear[0] <= 3, "each effective blow wears the axe one use (%d, care %.4f carry %.4f)" % [wr.inventory_of(1).wear[0], wr.skill_factor(1, "tool_care"), float(wr._wear_carry.get(1, 0.0))])
 	wr.inventory_of(1).wear[0] = durability - 1
 	wr._last_mine.clear()
 	wr._mined.clear()

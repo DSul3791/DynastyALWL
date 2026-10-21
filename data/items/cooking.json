@@ -1,5 +1,5 @@
 {
-	"note": "Cooked food (Items refill 11): a roast keeps the raw item's age as a share of its own shelf life times age_carry (the fire kills half the wear) and lasts longer than most raw foraged food (spoilage.json). A hot meal or drink adds the warms points to body warmth when eaten. Cooking placeholder (until the cook and food systems exist): at a lit fire, one raw forage item becomes Roasted forage. A gathered item cooks when its id ends with one of these words.",
+	"note": "Cooked food (Items refill 11): a roast keeps for cooked_life_mult times what the raw item had left (Tyler: 1.5 to 2.5 times, 3 at most), never more than the roast's own shelf life (spoilage.json), and a hot meal or drink adds the warms points to body warmth when eaten. raw_sick: eating these uncooked still feeds you but makes you sick for that many game hours (by item id or id suffix; raw meat 24, fiddleheads and beans 12, acorns and wild mushrooms a mild 6). Cooking placeholder (until the cook and food systems exist): at a lit fire, one raw forage item becomes Roasted forage (cooks_into maps others). A gathered item cooks when its id ends with one of the cookable words.",
 	"cookable_suffixes": [
 		"berries",
 		"nuts",
@@ -13,12 +13,13 @@
 		"pears",
 		"bananas",
 		"hazelnuts",
-		"acorns"
+		"acorns",
+		"fiddleheads"
 	],
 	"gives": "roast_forage",
 	"tinder": "plant_fibre",
 	"pace_ms": 1200,
-	"age_carry": 0.5,
+	"cooked_life_mult": 2.0,
 	"warms": {
 		"roast_forage": 10,
 		"herbal_tea": 12,
@@ -45,7 +46,18 @@
 	"cooks_into": {
 		"raw_meat": "roast_meat"
 	},
-	"raw_unsafe": [
-		"raw_meat"
-	]
+	"raw_sick": {
+		"by_id": {
+			"raw_meat": 24,
+			"fiddleheads": 12
+		},
+		"by_suffix": {
+			"beans": 12,
+			"acorns": 6,
+			"caps": 6,
+			"morels": 6,
+			"porcini": 6,
+			"chanterelles": 6
+		}
+	}
 }

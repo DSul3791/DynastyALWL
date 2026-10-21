@@ -1850,7 +1850,7 @@ func _wear_slot(peer: int, inv, slot: int, use: String = "") -> void:
 	# A skilled crafter looks after their tools: wear is spread by the tool_care factor (1.0 for everyone at first), a deterministic
 	# carry of the fraction so no dice are involved.
 	var wear_now: float = float(maxi(1, int(_drops.get("tool_wear", {}).get("per_use", {}).get(tool_class, {}).get(use, 1)))) / skill_factor(peer, "tool_care") + float(_wear_carry.get(peer, 0.0))
-	var whole: int = int(floor(wear_now))
+	var whole: int = int(floor(wear_now + 0.001))
 	_wear_carry[peer] = wear_now - float(whole)
 	inv.wear[slot] += whole
 	_dirty = true
@@ -2263,15 +2263,33 @@ func _cook(peer: int, inv, id: int) -> void:
 			_last_cook[peer] = now
 			var raw: Dictionary = inv.take_from_slot(slot, 1)
 			var cooked: int = table.number_of(str(_cooking.get("cooks_into", {}).get(table.id_of(int(raw["number"])), _cooking.get("gives", "roast_forage"))))
-			# Cooking keeps the age: the roast starts as stale as the raw item was, as a share of its own shelf life, less what the fire killed.
-			var share: float = 1.0 - table.freshness(int(raw["number"]), int(raw.get("wear", 0)))
-			var age: int = int(round(share * float(table.shelf_units(cooked)) * float(_cooking.get("age_carry", 0.5))))
+			# Cooking: the roast keeps for cooked_life_mult times what the raw item had left (Tyler: 1.5 to 2.5 times, about 3 at most), never more than the roast's own shelf life.
+			var left_units: float = float(table.shelf_units(int(raw["number"])) - int(raw.get("wear", 0))) if table.shelf_units(int(raw["number"])) > 0 else 1.0e9
+			var life: int = table.shelf_units(cooked)
+			var age: int = maxi(life - int(minf(left_units * float(_cooking.get("cooked_life_mult", 2.0)), float(life))), 0)
 			var left: int = inv.add(cooked, 1, age)
 
 			if left > 0:
 				drop_in_world(cooked, left, _peer_pos[peer])
 
 			return
+
+
+# Food that should have been cooked (cooking.json raw_sick, hours of sickness by item id or id suffix; Tyler: raw meat 24 h,
+# fiddleheads and beans 12, acorns and wild mushrooms mild at 6). It still feeds you; the stomach pays afterwards.
+func _raw_sickness(peer: int, item_id: String) -> void:
+	var cfg: Dictionary = _cooking.get("raw_sick", {})
+	var hours: float = float(cfg.get("by_id", {}).get(item_id, 0.0))
+
+	if hours <= 0.0:
+		for suffix in cfg.get("by_suffix", {}):
+			if item_id.ends_with(str(suffix)):
+				hours = float(cfg["by_suffix"][suffix])
+				break
+
+	if hours > 0.0:
+		_say(peer, "That should have been cooked. Your stomach turns.")
+		make_sick(peer, hours)
 
 
 # A hot meal or a hot drink lifts body warmth a little (cooking.json "warms", warmth points); the warmth tick then pulls it back.
@@ -2888,7 +2906,7 @@ func _vitals_tick(spent: float) -> void:
 # --- Sickness (Dave 2026-10-21; data/items/sickness.json) ---
 # `sick` in the vitals is the game seconds of sickness left (0 = well).
 
-func make_sick(peer: int) -> void:
+func make_sick(peer: int, hours: float = -1.0) -> void:
 	var v: Dictionary = vitals_of(peer)
 
 	if v.is_empty() or _sick_cfg.is_empty():
@@ -2897,7 +2915,7 @@ func make_sick(peer: int) -> void:
 	if float(v.get("sick", 0.0)) <= 0.0:
 		_say(peer, str(_sick_cfg.get("say_start", "You feel sick.")))
 
-	v["sick"] = float(_sick_cfg.get("duration_h", 24.0)) * 3600.0
+	v["sick"] = maxf(float(v.get("sick", 0.0)), (hours if hours > 0.0 else float(_sick_cfg.get("duration_h", 24.0))) * 3600.0)
 	_symptom_in[peer] = float(_sick_cfg.get("symptom_every_s", 90.0)) * 0.5
 	_sync_sick(peer, true)
 	_dirty = true
@@ -3136,10 +3154,14 @@ func warmth_target(peer: int) -> float:
 	if precip > 0.05 and not covered:
 		stress *= 1.0 + (float(cfg.get("rain_mult", 1.5)) - 1.0) * minf(precip * 2.0, 1.0)
 
-	if bool(_swimming.get(peer, false)):
-		stress *= float(cfg.get("water_mult", 2.5))
-
 	var insulation: float = clampf(float(insulation_of.call(peer)) if insulation_of.is_valid() else insulation_worn(peer), 0.0, float(cfg.get("max_insulation", 0.85)))
+
+	if bool(_swimming.get(peer, false)):
+		# In the water the cold follows the WATER's temperature, not the air's (Tyler): a lagged, damped copy of the air at sea level.
+		var sea_air: float = float(weather.get("temp_c", float(cfg.get("comfort_c", 15.0))))
+		var water_c: float = maxf(float(cfg.get("water_base_c", 6.0)) + float(cfg.get("water_follow", 0.5)) * (sea_air - float(cfg.get("water_base_c", 6.0))), 1.0)
+		stress = maxf(float(cfg.get("water_comfort_c", 26.0)) - water_c, 0.0) * float(cfg.get("water_gain", 5.0)) / maxf(float(cfg.get("gain", 3.0)), 0.01)
+
 	return clampf(100.0 - stress * float(cfg.get("gain", 3.0)) * (1.0 - insulation), 0.0, 100.0)
 
 
@@ -3150,7 +3172,7 @@ func _warmth_tick(peer: int, v: Dictionary, spent: float, game_s: float) -> void
 	var cfg: Dictionary = _warmth_cfg
 	var w: float = float(v.get("warmth", 100.0))
 	var target: float = warmth_target(peer)
-	var tau_h: float = float(cfg.get("tau_warm_h", 0.5)) if target > w else float(cfg.get("tau_cool_h", 3.0))
+	var tau_h: float = float(cfg.get("tau_warm_h", 0.5)) if target > w else (float(cfg.get("tau_water_h", 0.7)) if bool(_swimming.get(peer, false)) else float(cfg.get("tau_cool_h", 3.0)))
 	w += (target - w) * (1.0 - exp(-(game_s / 3600.0) / maxf(tau_h, 0.01)))
 	w = clampf(w, 0.0, 100.0)
 	v["warmth"] = w
@@ -3349,7 +3371,7 @@ func kill(peer: int, cause: String) -> bool:
 	var ground: float = float(ground_height.call(pos.x, pos.z)) if ground_height.is_valid() else NAN
 	var cave: bool = not is_nan(ground) and pos.y < ground - 1.5   # underground: keep the spot, the surface above is not theirs
 	var spot: Vector3 = pos if (is_nan(ground) or cave) else Vector3(pos.x, ground, pos.z)
-	_trim_owner_remains(key)
+	_trim_owner_remains(key, peer)
 	var uid: int = _next_uid
 	_next_uid += 1
 	var chest = InventoryScript.new(table)
@@ -3390,7 +3412,7 @@ func kill(peer: int, cause: String) -> bool:
 
 
 # One character cannot litter the world: with per_owner_cap sets already out, the emptiest-then-oldest goes first to make room for the new one.
-func _trim_owner_remains(key: String) -> void:
+func _trim_owner_remains(key: String, peer: int = -1) -> void:
 	var cap: int = int(_death_cfg.get("per_owner_cap", 5))
 	var mine: Array = []
 
@@ -3409,6 +3431,11 @@ func _trim_owner_remains(key: String) -> void:
 
 			if drop < 0 or (empty and not drop_empty) or (empty == drop_empty and older):
 				drop = id
+
+		var lost_chest = _chests.get(int(_items[drop]["struct"].get("uid", 0)))
+
+		if peer >= 0 and lost_chest != null and not lost_chest.is_empty():
+			_say(peer, "Your oldest remains crumble to make room. What was on them is lost.")
 
 		_chests.erase(int(_items[drop]["struct"].get("uid", 0)))
 		_items.erase(drop)
@@ -3921,14 +3948,6 @@ func _eat(peer: int, inv, slot: int) -> void:
 		_sync_vitals(peer, true)
 		return
 
-	if _cooking.get("raw_unsafe", []).has(item_id):
-		_last_eat[peer] = now
-		inv.take_from_slot(slot, 1)
-		_say(peer, "That should have been cooked. Your stomach turns.")
-		make_sick(peer)
-		_sync_vitals(peer, true)
-		return
-
 	if _unfit.has(item_id):
 		_last_eat[peer] = now
 		_say(peer, "It tastes bitter and wrong. You spit it out.")
@@ -4003,6 +4022,7 @@ func _eat(peer: int, inv, slot: int) -> void:
 		total = cap
 
 	v["fed"] = total
+	_raw_sickness(peer, item_id)
 	v["wet"] = minf(float(v["wet"]) + float(ml), wet_cap)
 	v["health"] = clampf(float(v["health"]) + float(heal), 0.0, float(_vitals_cfg.get("health_max", 100)))
 	_sync_vitals(peer, true)

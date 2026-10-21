@@ -86,6 +86,16 @@ func _init() -> void:
 	items.insulation_of = func(_p): return 0.5
 	check(items.warmth_target(1) > 50.0, "insulation lifts the target (%.0f)" % items.warmth_target(1))
 
+	# Swimming follows the water temperature: warm lake fine, a cold day's water is dangerous.
+	items.insulation_of = Callable()
+	items._swimming[1] = true
+	weather = {"temp_c": 26.0, "wind": 0.0, "rain": 0.0, "snow": 0.0}
+	var warm_swim: float = items.warmth_target(1)
+	weather = {"temp_c": 10.0, "wind": 0.0, "rain": 0.0, "snow": 0.0}
+	var cold_swim: float = items.warmth_target(1)
+	items._swimming.erase(1)
+	check(warm_swim > 65.0 and cold_swim < 40.0, "swimming cold follows water temperature (%.0f warm, %.0f cold)" % [warm_swim, cold_swim])
+
 	# Worn clothes through the real actions: a cloak keeps heat, swapping returns the old piece, a pack lifts the carry limit.
 	items.insulation_of = Callable()
 	var bare: float = items.warmth_target(1)

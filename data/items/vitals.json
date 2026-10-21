@@ -38,7 +38,8 @@
 			"roast_forage": 400,
 			"seed_bundle": 60,
 			"raw_meat": 250,
-			"roast_meat": 700
+			"roast_meat": 700,
+			"fiddleheads": 40
 		},
 		"by_suffix": {
 			"berries": 90,
