@@ -1,0 +1,8 @@
+{
+	"note": "Energy (Dave 2026-10-21, job 95): the master pool, 0 to 100, shown as the Energy bar at the top of the inventory and Tab screens (no bar on the main screen). It drains by game time: drain_per_game_day.rest while still, plus .work x exertion (0 to 1), so ordinary heroic play (exertion about 0.5) lasts 3 game days (3 real hours) from full. It refills by resting: sitting rises slowly to sit_cap (75 percent); lying (awake) and sleeping refill it all the way, sleep faster (and better under a roof, scaled like the sleep.json quality); from empty, 8 game hours of sleep fill it. At 0 the character collapses asleep and cannot wake until energy reaches forced.wake_at (8 game hours, 20 real minutes). Supplements (vitals.json energy_aids: Energy bar, Herbal tea, and later Magic tonic) add energy at once and cost fitness (each use takes fitness training away, down to max_loss points under the creation value; training comes back slowly). Rates are per game hour, a game hour is 150 real seconds.",
+	"drain_per_game_day": {"rest": 12.0, "work": 42.0},
+	"recover_per_game_hour": {"sit": 9.4, "lie": 8.3, "sleep": 12.5},
+	"sit_cap": 75.0,
+	"forced": {"wake_at": 100.0},
+	"fitness_max_loss": 3.0
+}

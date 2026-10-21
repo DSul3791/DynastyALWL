@@ -76,6 +76,8 @@ var strain_state: int = 0
 var strain_fade: float = 0.0
 var stance_confirmed: int = 0                # the server's answer: 0 stand, 1 crouch, 2 sit, 3 lie (fainting forces 3)
 var stance_event: Callable = Callable()      # (stance) when the server confirms or changes it
+var energy: int = 100                       # the Energy pool, percent (job 95)
+var forced_sleep: bool = false               # collapsed from exhaustion: asleep and cannot wake until rested (bit 8 of the stance)
 var asleep: bool = false                     # the server says this character sleeps (bit 4 of the stance it sends, job 86)
 var reject_event: Callable = Callable()   # ("far" | "no_tool" | "full_pack" | "other") when the server refused an action
 var strain_event: Callable = Callable()   # (strain, state, fade) whenever the server sends a change
@@ -122,6 +124,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.notice_received.connect(_on_notice)
 	net.chest_received.connect(_on_chest)
 	net.vitals_received.connect(_on_vitals)
+	net.energy_received.connect(_on_energy)
 	net.breath_received.connect(func(deciseconds: int) -> void: breath_ds = deciseconds)
 	net.strain_received.connect(_on_strain)
 	net.craft_queue_received.connect(_on_craft_queue)
@@ -476,7 +479,7 @@ func _process_body(_delta: float) -> void:
 	_hold_e_check()
 
 	if _strain_note != null:
-		_strain_note.text = "Asleep: any key wakes you" if asleep else ("You are exhausted: slow down" if strain_state == 1 else "")
+		_strain_note.text = "Exhausted: you sleep until you are rested" if forced_sleep else "Asleep: any key wakes you" if asleep else ("You are exhausted: slow down" if strain_state == 1 else "")
 
 	if _queue_head_button != null and now >= _queue_next_msec:
 		_queue_next_msec = now + 250
@@ -808,6 +811,7 @@ func _on_strain(strain_pm: int, state: int, fade_pm: int, stance: int) -> void:
 	strain_fade = float(fade_pm) / 1000.0
 	stance_confirmed = stance & 3
 	asleep = (stance & 4) != 0
+	forced_sleep = (stance & 8) != 0
 	_update_panel_bars()
 
 	if _character != null:
@@ -832,7 +836,7 @@ func request_sleep(want: int) -> void:
 
 # Movement the over-exertion allows: -1 none (fainted or waking), else a speed cap in m/s (0 = no cap).
 func move_cap() -> float:
-	if strain_state >= 2:
+	if strain_state >= 2 or forced_sleep:
 		return -1.0
 
 	# Over-exerted is only a slow-down (over_speed_factor, see over_pace_factor); running on is allowed until the blackout.
@@ -1593,7 +1597,7 @@ func _build_bars_row() -> HBoxContainer:
 	row.add_theme_constant_override("separation", _px(28))
 	_panel_bars.clear()
 
-	for spec in [["Health", Color(0.85, 0.2, 0.2)], ["Exertion", Color(0.95, 0.8, 0.25)], ["Food", Color(0.9, 0.55, 0.2)], ["Water", Color(0.3, 0.6, 0.95)]]:
+	for spec in [["Health", Color(0.85, 0.2, 0.2)], ["Exertion", Color(0.95, 0.8, 0.25)], ["Energy", Color(0.6, 0.45, 0.9)], ["Food", Color(0.9, 0.55, 0.2)], ["Water", Color(0.3, 0.6, 0.95)]]:
 		var cell: HBoxContainer = HBoxContainer.new()
 		cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		cell.add_theme_constant_override("separation", _px(10))
@@ -1622,6 +1626,14 @@ func _build_bars_row() -> HBoxContainer:
 	return row
 
 
+func _on_energy(percent: int) -> void:
+	energy = percent
+	_update_panel_bars()
+
+	if _character != null:
+		_character.refresh()
+
+
 func _update_panel_bars() -> void:
 	if _panel_bars.is_empty() or not is_instance_valid(_panel_bars["Health"]):
 		return
@@ -1629,6 +1641,7 @@ func _update_panel_bars() -> void:
 	var threshold: float = maxf(float(_exertion_cfg.get("faint_at", 1.4)), 0.1)
 	_panel_bars["Health"].value = float(health)
 	_panel_bars["Exertion"].value = clampf(strain / threshold, 0.0, 1.0) * 100.0
+	_panel_bars["Energy"].value = float(energy)
 	_panel_bars["Food"].value = float(hunger)
 	_panel_bars["Water"].value = float(thirst)
 

@@ -150,6 +150,9 @@ var _moving: Dictionary = {}        # peer -> smoothed 0..1, 1 while walking abo
 var _characters: Dictionary = {}   # player key -> {luck: int}, rolled once at first sight and never changed (job 77)
 var _luck_cfg: Dictionary = {}
 var _fitness_cfg: Dictionary = {}
+var send_energy: Callable       # (peer, energy percent 0..100)
+var _energy_cfg: Dictionary = {}    # data/items/energy.json
+var _energy_sent: Dictionary = {}
 var _sleep_cfg: Dictionary = {}     # data/items/sleep.json
 var _asleep: Dictionary = {}        # peer -> true while asleep (a lying player who held Z); {rested: seconds with no strain}
 var _dig_cfg: Dictionary = {}       # data/items/digging.json
@@ -213,6 +216,8 @@ func setup(item_table, store_dir: String) -> void:
 	_vitals_cfg = VitalsRules.load_config()
 	_luck_cfg = LuckScript.load_config()
 	_fitness_cfg = _load_fitness_config()
+	var energy_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/energy.json"))
+	_energy_cfg = energy_parsed if typeof(energy_parsed) == TYPE_DICTIONARY else {}
 	var sleep_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/sleep.json"))
 	_sleep_cfg = sleep_parsed if typeof(sleep_parsed) == TYPE_DICTIONARY else {}
 	var dig_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/digging.json"))
@@ -268,6 +273,7 @@ func peer_connected_hello(peer: int, key: String) -> void:
 
 	_vitals_sent.erase(peer)
 	_sync_vitals(peer, true)
+	_sync_energy(peer, true)
 	_sync_craft_queue(peer)
 
 
@@ -296,6 +302,7 @@ func peer_left(peer: int) -> void:
 	_strain.erase(peer)
 	_strain_sent.erase(peer)
 	_stance.erase(peer)
+	_energy_sent.erase(peer)
 	_asleep.erase(peer)
 	_moving.erase(peer)
 	_last_process.erase(peer)
@@ -2350,7 +2357,7 @@ func vitals_of(peer: int) -> Dictionary:
 
 
 func _new_vitals() -> Dictionary:
-	return {"fed": float(_vitals_cfg.get("stomach_cap_kcal", 2400)), "weight": float(_vitals_cfg.get("start_weight_kg", 75)), "health": float(_vitals_cfg.get("health_max", 100)), "wet": float(_vitals_cfg.get("thirst", {}).get("cap_ml", 2400))}
+	return {"fed": float(_vitals_cfg.get("stomach_cap_kcal", 2400)), "weight": float(_vitals_cfg.get("start_weight_kg", 75)), "health": float(_vitals_cfg.get("health_max", 100)), "wet": float(_vitals_cfg.get("thirst", {}).get("cap_ml", 2400)), "energy": 100.0}
 
 
 # How hard the player is working, 0 to 1: movement speed from position reports, lifted by recent tool work.
@@ -2387,7 +2394,7 @@ func _load_ratio(peer: int) -> float:
 # Stance changes (0 stand, 1 crouch, 2 sit, 3 lie). Fainted or waking players cannot choose; the answer
 # (the confirmed stance) goes back in the next strain message.
 func _set_stance(peer: int, wanted: int) -> void:
-	if wanted < 0 or wanted > 3 or not _peer_key.has(peer):
+	if wanted < 0 or wanted > 3 or not _peer_key.has(peer) or _forced_sleep(peer):
 		return
 
 	if int(_strain.get(peer, {}).get("state", 0)) < 2:
@@ -2404,13 +2411,86 @@ func sleeping_of(peer: int) -> bool:
 	return _asleep.has(peer)
 
 
+# --- Energy (job 95, data/items/energy.json) ---
+func energy_of(peer: int) -> float:
+	return float(vitals_of(peer).get("energy", 100.0))
+
+
+func _forced_sleep(peer: int) -> bool:
+	return _asleep.has(peer) and bool(_asleep[peer].get("forced", false))
+
+
+# Drains with game time by exertion, refills by resting; at 0 the character collapses asleep until the pool is full again.
+func _energy_tick(peer: int, v: Dictionary, spent: float, game_s: float) -> void:
+	if _energy_cfg.is_empty():
+		return
+
+	var e: float = float(v.get("energy", 100.0))
+	var hours: float = game_s / 3600.0
+	var drain: Dictionary = _energy_cfg.get("drain_per_game_day", {})
+	var rec: Dictionary = _energy_cfg.get("recover_per_game_hour", {})
+	e -= (float(drain.get("rest", 12.0)) + float(drain.get("work", 42.0)) * exertion_of(peer)) * game_s / 86400.0
+	var stance: int = int(_stance.get(peer, 0))
+
+	if _forced_sleep(peer):
+		e += float(rec.get("sleep", 12.5)) * hours
+	elif _asleep.has(peer):
+		e += lerpf(float(rec.get("lie", 8.3)), float(rec.get("sleep", 12.5)), clampf(_sleep_quality(peer), 0.0, 1.0)) * hours
+	elif stance == 3:
+		e += float(rec.get("lie", 8.3)) * hours
+	elif stance == 2 and e < float(_energy_cfg.get("sit_cap", 75.0)):
+		e = minf(e + float(rec.get("sit", 9.4)) * hours, float(_energy_cfg.get("sit_cap", 75.0)))
+
+	e = clampf(e, 0.0, 100.0)
+	v["energy"] = e
+
+	if e <= 0.0 and not _forced_sleep(peer) and int(_strain.get(peer, {}).get("state", 0)) < 2:
+		_stance[peer] = 3
+		_asleep[peer] = {"rested": 0.0, "forced": true}
+		_strain_sent.erase(peer)
+		_say(peer, "You collapse with exhaustion")
+	elif _forced_sleep(peer) and e >= float(_energy_cfg.get("forced", {}).get("wake_at", 100.0)):
+		_asleep.erase(peer)
+		_strain_sent.erase(peer)
+		_say(peer, "You wake rested")
+
+	_sync_energy(peer, false)
+
+
+func _sync_energy(peer: int, force: bool) -> void:
+	if not send_energy.is_valid():
+		return
+
+	var pct: int = int(ceil(clampf(energy_of(peer), 0.0, 100.0)))
+
+	if force or int(_energy_sent.get(peer, -1)) != pct:
+		_energy_sent[peer] = pct
+		send_energy.call(peer, pct)
+
+
+# An energy supplement (vitals.json energy_aids): energy at once, a cost to fitness training.
+func _use_energy_aid(peer: int, inv, slot: int, v: Dictionary, aid: Dictionary) -> void:
+	if float(v.get("energy", 100.0)) >= 99.0:
+		_say(peer, "You are not tired")
+		return
+
+	_last_eat[peer] = Time.get_ticks_msec()
+	inv.take_from_slot(slot, 1)
+	v["energy"] = minf(float(v.get("energy", 100.0)) + float(aid.get("energy", 0)), 100.0)
+	_fitness_cost(peer, float(aid.get("fitness", 0.0)))
+	_sync_energy(peer, true)
+	_dirty = true
+
+
 # a = 1: fall asleep (lying, not fainted, not in rain on open ground); a = 0: wake.
 func _sleep(peer: int, want: int) -> void:
 	if not _peer_key.has(peer) or _sleep_cfg.is_empty():
 		return
 
 	if want == 0:
-		_wake(peer, "")
+		if not _forced_sleep(peer):
+			_wake(peer, "")
+
 		return
 
 	if _asleep.has(peer):
@@ -2534,7 +2614,7 @@ func _note_motion(peer: int, position: Vector3) -> void:
 		_moving[peer] = lerpf(float(_moving.get(peer, 0.0)), 1.0 if speed > 0.4 else 0.0, clampf(dt * 1.0, 0.0, 1.0))
 
 		# Walking off stands a sitting or lying player up.
-		if int(_stance.get(peer, 0)) >= 2 and speed > float(_exertion_cfg.get("stand_up_speed_mps", 1.5)) and int(_strain.get(peer, {}).get("state", 0)) < 2:
+		if int(_stance.get(peer, 0)) >= 2 and speed > float(_exertion_cfg.get("stand_up_speed_mps", 1.5)) and int(_strain.get(peer, {}).get("state", 0)) < 2 and not _forced_sleep(peer):
 			_stance[peer] = 0
 			_asleep.erase(peer)
 			_strain_sent.erase(peer)
@@ -2574,6 +2654,7 @@ func _vitals_tick(spent: float) -> void:
 
 			v["health"] = clampf(float(v["health"]) + regen * spent, 0.0, health_max)
 
+		_energy_tick(peer, v, spent, game_s)
 		_breath_tick(peer, v, spent)
 		_sync_vitals(peer, false)
 		_strain_tick(peer, spent)
@@ -2604,7 +2685,9 @@ func _fall(peer: int, centimetres: int) -> void:
 	_last_fall[peer] = now
 	v["health"] = maxf(float(v["health"]) - damage, 1.0)
 	_say(peer, "The fall hurt")
-	_asleep.erase(peer)
+
+	if not _forced_sleep(peer):
+		_asleep.erase(peer)
 
 	if drop >= float(cfg.get("faint_m", 12.0)) * jump and not _exertion_cfg.is_empty():
 		_strain[peer] = {"s": float(_exertion_cfg.get("faint_at", 1.4)) + 0.05, "state": 1, "t": 0.0, "black": 1.0}
@@ -2820,7 +2903,9 @@ func _strain_tick(peer: int, spent: float) -> void:
 	if _asleep.has(peer):
 		sleep_quality = _sleep_quality(peer)
 
-		if state >= 2 or int(_stance.get(peer, 0)) != 3:
+		if _forced_sleep(peer):
+			sleep_quality = clampf(sleep_quality, 0.0, 1.0)
+		elif state >= 2 or int(_stance.get(peer, 0)) != 3:
 			_asleep.erase(peer)
 			_strain_sent.erase(peer)
 		elif sleep_quality < 0.0:
@@ -2829,7 +2914,7 @@ func _strain_tick(peer: int, spent: float) -> void:
 			var rest: Dictionary = _asleep[peer]
 			rest["rested"] = float(rest["rested"]) + spent if strain <= 0.0 else 0.0
 
-			if float(rest["rested"]) >= float(_sleep_cfg.get("rested_s", 10.0)):
+			if float(rest["rested"]) >= float(_sleep_cfg.get("rested_s", 10.0)) and energy_of(peer) >= 99.0:
 				_wake(peer, "You wake rested")
 
 	if state == 2:
@@ -2908,7 +2993,7 @@ func _strain_tick(peer: int, spent: float) -> void:
 	elif state == 3:
 		fade = 1.0 - clampf(float(st["t"]) / float(cfg.get("wake_s", 12.0)), 0.0, 1.0)
 
-	var points: Array = [int(strain * 50.0) * 20, state, int(fade * 50.0) * 20, int(_stance.get(peer, 0)) | (4 if _asleep.has(peer) else 0)]
+	var points: Array = [int(strain * 50.0) * 20, state, int(fade * 50.0) * 20, int(_stance.get(peer, 0)) | (4 if _asleep.has(peer) else 0) | (8 if _forced_sleep(peer) else 0)]
 
 	if send_strain.is_valid() and _strain_sent.get(peer, []) != points:
 		_strain_sent[peer] = points
@@ -2999,6 +3084,12 @@ func _eat(peer: int, inv, slot: int) -> void:
 	if _unfit.has(item_id):
 		_last_eat[peer] = now
 		_say(peer, "It tastes bitter and wrong. You spit it out.")
+		return
+
+	var aid: Dictionary = VitalsRules.energy_aid(item_id, _vitals_cfg)
+
+	if not aid.is_empty():
+		_use_energy_aid(peer, inv, slot, v, aid)
 		return
 
 	var kcal: int = VitalsRules.food_value(item_id, _vitals_cfg)
@@ -3106,7 +3197,7 @@ func _fitness_default() -> int:
 
 func fitness_of(peer: int) -> int:
 	var row: Dictionary = _characters.get(_peer_key.get(peer, ""), {})
-	return clampi(int(row.get("fitness", _fitness_default())) + int(floor(float(row.get("train", 0.0)))), _fitness_min(), _fitness_max())
+	return clampi(int(row.get("fitness", _fitness_default())) + int(float(row.get("train", 0.0))), _fitness_min(), _fitness_max())
 
 
 # Fitness trains slowly (Dave 2026-10-21, fitness.json "train"): time spent over-exerted adds to the character's training, a point
@@ -3125,7 +3216,8 @@ func _train_fitness(peer: int, winded: bool, spent: float) -> void:
 	if winded:
 		train = minf(train + spent / maxf(float(cfg.get("winded_s_per_point", 1800.0)), 1.0), float(cfg.get("max_gain", 5)))
 	else:
-		train = maxf(train - spent / maxf(float(cfg.get("decay_s_per_point", 14400.0)), 1.0), 0.0)
+		var step: float = spent / maxf(float(cfg.get("decay_s_per_point", 14400.0)), 1.0)
+		train = maxf(train - step, 0.0) if train > 0.0 else minf(train + step, 0.0)   # back toward the creation value from either side
 
 	row["train"] = train
 	_dirty = true
@@ -3154,6 +3246,22 @@ func set_fitness(peer: int, value: int) -> void:
 	_sync_vitals(peer, true)
 
 
+# Energy supplements wear the body down (Dave 2026-10-21): training points lost, down to energy.json fitness_max_loss under the base.
+func _fitness_cost(peer: int, points: float) -> void:
+	var row: Dictionary = _characters.get(_peer_key.get(peer, ""), {})
+
+	if row.is_empty() or points <= 0.0:
+		return
+
+	var before: int = fitness_of(peer)
+	row["train"] = maxf(float(row.get("train", 0.0)) - points, -float(_energy_cfg.get("fitness_max_loss", 3.0)))
+	_dirty = true
+
+	if fitness_of(peer) != before:
+		_vitals_sent.erase(peer)
+		_sync_vitals(peer, true)
+
+
 func _load_characters() -> void:
 	var parsed: Variant = _read_json_version("characters.json", 1)
 
@@ -3164,7 +3272,7 @@ func _load_characters() -> void:
 		_characters[str(key)] = {
 			"luck": clampi(int(parsed["players"][key].get("luck", 0)), -LuckScript.MAX, LuckScript.MAX),
 			"fitness": clampi(int(parsed["players"][key].get("fitness", _fitness_default())), _fitness_min(), _fitness_max()),
-			"train": maxf(float(parsed["players"][key].get("train", 0.0)), 0.0),
+			"train": clampf(float(parsed["players"][key].get("train", 0.0)), -10.0, 10.0),
 		}
 
 
@@ -3221,4 +3329,4 @@ func _load_vitals() -> void:
 	for key in parsed.get("players", {}):
 		var row: Dictionary = parsed["players"][key]
 		var fresh: Dictionary = _new_vitals()
-		_vitals[str(key)] = {"fed": float(row.get("fed", fresh["fed"])), "weight": float(row.get("weight", fresh["weight"])), "health": float(row.get("health", fresh["health"])), "wet": float(row.get("wet", fresh["wet"]))}
+		_vitals[str(key)] = {"fed": float(row.get("fed", fresh["fed"])), "weight": float(row.get("weight", fresh["weight"])), "health": float(row.get("health", fresh["health"])), "wet": float(row.get("wet", fresh["wet"])), "energy": clampf(float(row.get("energy", 100.0)), 0.0, 100.0)}

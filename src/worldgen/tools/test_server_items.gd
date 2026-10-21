@@ -1139,6 +1139,72 @@ func _init() -> void:
 	tr._train_fitness(1, false, 1.0e7)
 	check(tr.fitness_of(1) == 2, "and never below the creation value")
 
+	# Energy (job 95, energy.json): 3 game days of ordinary play empty it, rest refills it, supplements cost fitness, 0 forces sleep.
+	var en = make(xd)
+	en.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	var energy_sent: Array = []
+	en.send_energy = func(_p, pct): energy_sent.append(pct)
+	en.peer_connected_hello(1, "energykey001")
+	check(en.energy_of(1) == 100.0 and energy_sent[0] == 100, "a new character has full energy and is told so")
+	en._exertion[1] = 0.5
+	var steps: int = 0
+
+	while not en._forced_sleep(1) and steps < 100000:
+		en._energy_tick(1, en.vitals_of(1), 1.0, 24.0)   # one real second is 24 game seconds
+		en._exertion[1] = 0.5
+		steps += 1
+
+	var hours: float = float(steps) * 24.0 / 3600.0
+	check(hours > 66.0 and hours < 78.0, "ordinary play (exertion 0.5) drains energy in about 3 game days (%.1f game hours)" % hours)
+	check(en.sleeping_of(1) and en._forced_sleep(1) and en.stance_of(1) == 3, "at 0 the character collapses asleep")
+	en.action(1, Net.ACT_STANCE, 0, 0, 0, Vector3.ZERO)
+	en.action(1, Net.ACT_SLEEP, 0, 0, 0, Vector3.ZERO)
+	check(en._forced_sleep(1) and en.stance_of(1) == 3, "a collapsed character cannot get up or wake themselves")
+	en._exertion[1] = 0.0
+	var rested: int = 0
+
+	while en._forced_sleep(1) and rested < 100000:
+		en._energy_tick(1, en.vitals_of(1), 1.0, 24.0)
+		rested += 1
+
+	var sleep_hours: float = float(rested) * 24.0 / 3600.0
+	check(sleep_hours > 7.0 and sleep_hours < 9.5 and en.energy_of(1) >= 99.0, "8 game hours of sleep fill it again (%.1f)" % sleep_hours)
+	check(not en.sleeping_of(1), "and the character wakes when it is full")
+	en.vitals_of(1)["energy"] = 20.0
+	en.action(1, Net.ACT_STANCE, 2, 0, 0, Vector3.ZERO)
+
+	for n in 3000:
+		en._energy_tick(1, en.vitals_of(1), 1.0, 24.0)
+
+	check(absf(en.energy_of(1) - 75.0) < 1.5, "sitting refills only up to 75 percent (%.1f)" % en.energy_of(1))
+	en.action(1, Net.ACT_STANCE, 3, 0, 0, Vector3.ZERO)
+
+	for n in 3000:
+		en._energy_tick(1, en.vitals_of(1), 1.0, 24.0)
+
+	check(en.energy_of(1) > 99.0, "lying down refills it completely")
+	en.vitals_of(1)["energy"] = 30.0
+	var bar: int = en.table.number_of("energy_bar")
+	en.action(1, Net.ACT_ADMIN_GIVE, bar, 0, 3, Vector3.ZERO)
+	var fit_before: int = en.fitness_of(1)
+	var slot_bar: int = en.inventory_of(1).numbers.find(bar)
+	en._last_eat.clear()
+	en.action(1, Net.ACT_EAT, slot_bar, 0, 0, Vector3.ZERO)
+	check(en.energy_of(1) == 55.0 and en.inventory_of(1).count_of(bar) == 2, "an energy bar gives 25 energy at once")
+	check(float(en._characters["energykey001"]["train"]) < 0.0, "and costs fitness training")
+	en.vitals_of(1)["energy"] = 100.0
+	en._last_eat.clear()
+	en.action(1, Net.ACT_EAT, slot_bar, 0, 0, Vector3.ZERO)
+	check(en.inventory_of(1).count_of(bar) == 2, "not tired: the bar is kept")
+
+	for k in 40:
+		en.vitals_of(1)["energy"] = 10.0
+		en._last_eat.clear()
+		en.action(1, Net.ACT_ADMIN_GIVE, bar, 0, 1, Vector3.ZERO)
+		en.action(1, Net.ACT_EAT, en.inventory_of(1).numbers.find(bar), 0, 0, Vector3.ZERO)
+
+	check(en.fitness_of(1) == fit_before - 2 or en.fitness_of(1) == fit_before - 3, "supplements can wear fitness down by at most 3 points (%d to %d)" % [fit_before, en.fitness_of(1)])
+
 	# Sleep (job 86): lying plus ACT_SLEEP rests faster, by place; rain on the open wakes; stance and rest end it.
 	var sleeper: Array = [0.0, 0.0]      # cover, rain
 	var down_time = func(sl, asleep: bool) -> float:

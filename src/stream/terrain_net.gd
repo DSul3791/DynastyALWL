@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 32
+const PROTOCOL_VERSION := 33
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -51,6 +51,7 @@ signal water_received(chunk: Vector2i, water: PackedByteArray)
 signal notice_received(text: String)
 signal chest_received(id: int, bytes: PackedByteArray)
 signal breath_received(deciseconds: int)
+signal energy_received(percent: int)
 signal vitals_received(hunger: int, health: int, weight_dkg: int, thirst: int, luck: int, fitness: int)
 signal reject_received(reason: int)
 signal craft_queue_received(entries: Array, left_ms: int)
@@ -250,6 +251,12 @@ func strain(strain_pm: int, state: int, fade_pm: int, stance: int) -> void:
 @rpc("authority", "call_remote", "reliable")
 func vitals(hunger: int, health: int, weight_dkg: int, thirst: int, luck: int, fitness: int) -> void:
 	vitals_received.emit(hunger, health, weight_dkg, thirst, luck, fitness)
+
+
+# The energy pool, 0 to 100 percent (job 95): at hello and whenever the whole percent changes.
+@rpc("authority", "call_remote", "reliable")
+func energy(percent: int) -> void:
+	energy_received.emit(percent)
 
 
 # Air left under water in tenths of a second, or -1 when the head is above the surface (the oxygen symbol hides).

@@ -44,5 +44,10 @@ static func drink_value(item_id: String, cfg: Dictionary) -> int:
 	return 0
 
 
+# What an energy supplement gives: {energy, fitness} (fitness = training points it costs), or {} when it is not one.
+static func energy_aid(item_id: String, cfg: Dictionary) -> Dictionary:
+	return cfg.get("energy_aids", {}).get(item_id, {})
+
+
 static func edible(item_id: String, cfg: Dictionary) -> bool:
-	return food_value(item_id, cfg) > 0 or heal_value(item_id, cfg) > 0 or drink_value(item_id, cfg) > 0
+	return food_value(item_id, cfg) > 0 or heal_value(item_id, cfg) > 0 or drink_value(item_id, cfg) > 0 or not energy_aid(item_id, cfg).is_empty()

@@ -1,4 +1,4 @@
-# Protocol (PROTOCOL_VERSION 32, src/stream/terrain_net.gd)
+# Protocol (PROTOCOL_VERSION 33, src/stream/terrain_net.gd)
 
 Kept current by whoever changes the wire: add the row, bump PROTOCOL_VERSION to the next free number (pull first and read terrain_net.gd), and note the build.
 
@@ -100,6 +100,7 @@ digs.dat version 2 (DIGS2: seq, kind dig/fill, material, x y z radius, 24 bytes 
 - 16: storage chest (ACT_CHEST_*, chest_contents, state 6).
 - 15: lean-to (state 5, ACT_PLACE carries yaw in count).
 - 14: tool wear (9-byte slot updates, ACT_REPAIR).
+- 33: Energy (job 95, data/items/energy.json). New server-to-client energy(percent 0..100) at hello and whenever the whole percent changes (a separate RPC; vitals() is unchanged). Bits of the `stance` field of strain(): +4 asleep (protocol 29), +8 collapsed from exhaustion (cannot wake until rested; the client locks movement). The energy value is saved as "energy" in vitals.json (older saves start full); fitness training is saved as "train" in characters.json (older files read 0). Energy supplements (vitals.json energy_aids) are used with ACT_EAT.
 - 32: breath(deciseconds): the oxygen symbol (data/items/vitals.json "breath"). The server reads the head under water from the position report (swim.gd head_under), runs the air down (60 s at swimming pace, x0.5 resting, x1.6 swimming hard), resets it at the surface, and drains health once it is out. Not saved.
 - 31: water containers. ACT_DRINK takes a = the held container's pack slot or -1. A container (items.json `capacity_ml`, kind container) keeps its water in the slot's existing `wear` field in millilitres, so slot rows and inventories.json are unchanged (an old save reads 0 = empty). Use (ACT_EAT) on a container drinks a mouthful from it. Carried weight counts 1 kg per litre inside. data/items/vitals.json thirst.fill_ml.
 - 30: ACT_FILL (27) and filled(): spade fills saved as DIGS2 fill records. Digs and fills also remove shrubs and plants standing in the sphere (flora_cut).

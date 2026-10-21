@@ -41,6 +41,11 @@
 			"sap": 50
 		}
 	},
+	"energy_aids": {
+		"energy_bar": {"energy": 25, "fitness": 0.25},
+		"herbal_tea": {"energy": 12, "fitness": 0.1},
+		"magic_tonic": {"energy": 50, "fitness": 0.5}
+	},
 	"heal": {
 		"poultice": 30,
 		"bandage": 15

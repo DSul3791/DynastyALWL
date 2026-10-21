@@ -182,6 +182,7 @@ func _ready() -> void:
 	items.cut_tree = _cut_tree
 	items.send_notice = func(peer, text): net.notice.rpc_id(peer, text)
 	items.send_breath = func(peer, tenths): net.breath.rpc_id(peer, tenths)
+	items.send_energy = func(peer, percent): net.energy.rpc_id(peer, percent)
 	items.send_vitals = func(peer, hunger, health, weight, thirst, luck, fitness): net.vitals.rpc_id(peer, hunger, health, weight, thirst, luck, fitness)
 	items.water_near = func(pos, reach):
 		var tile_data = generator.get_tile(generator.tile_of(pos.x, pos.z))
