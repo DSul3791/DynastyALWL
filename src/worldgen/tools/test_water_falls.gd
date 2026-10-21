@@ -95,7 +95,24 @@ func _init() -> void:
 # Owner report (2026-10-20, build 200): no water went over pond B's cliff. A spring's flow down
 # a cliff is a film about 10 cm thick, hidden by the steep draw rule, so the drawn levels have
 # no fall. The fall finder's levels (WaterLive._fall_levels) count that film.
+func _test_river_width() -> void:
+	# A river three cells across feeding a lip: the fall is as wide as the river (2.5 cells = 20 m), not the flow formula.
+	var count: int = 12
+	var levels: PackedFloat32Array = PackedFloat32Array()
+	levels.resize(count * count)
+	levels.fill(NAN)
+
+	for j in range(4, 7):
+		for i in range(0, 5):
+			levels[j * count + i] = 50.0
+
+	var chain: PackedInt32Array = PackedInt32Array([5 * count + 4, 5 * count + 5, 5 * count + 6])
+	_check(absf(FallsScript._river_width(chain, count, 8.0, levels) - 20.0) < 0.01, "the fall width is the river's: three wet cells across make 20 m (%.1f)" % FallsScript._river_width(chain, count, 8.0, levels))
+	_check(FallsScript._river_width(PackedInt32Array([0]), count, 8.0, levels) == 0.0, "a lone point cannot be measured")
+
+
 func _test_thin_fall() -> void:
+	_test_river_width()
 	var count: int = 12
 	var ground: PackedFloat32Array = PackedFloat32Array()
 	ground.resize(count * count)

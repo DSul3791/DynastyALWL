@@ -215,6 +215,57 @@ static func _chain_flow(chain: PackedInt32Array, origin: Vector2, count: int, sp
 	return clampf(float(flows[flows.size() / 2]), 0.0, FLOW_MAX_M3S) if not flows.is_empty() else 0.0
 
 
+# The width of the water across the flow just upstream of the lip (chain[0]): the wet cells in a row
+# across the flow, a cell wide each, taken at the lip and two cells back up the river, the middle value.
+# 0 when it cannot be measured (a lip at the chunk edge, nothing wet upstream).
+static func _river_width(chain: PackedInt32Array, count: int, spacing: float, levels: PackedFloat32Array) -> float:
+	if chain.size() < 2:
+		return 0.0
+
+	var p: int = chain[0]
+	var q: int = chain[1]
+	var along: Vector2 = Vector2(float(q % count - p % count), float(q / count - p / count)).normalized()
+	var across: Vector2 = Vector2(-along.y, along.x)
+	var widths: Array = []
+
+	for back in range(0, 3):
+		var centre: Vector2 = Vector2(float(p % count), float(p / count)) - along * float(back)
+		var first: int = _wet_at(centre, count, levels)
+
+		if first < 0:
+			continue
+
+		var cells: int = 1
+
+		for sign in [-1.0, 1.0]:
+			var step: int = 1
+
+			while step < 12:
+				if _wet_at(centre + across * sign * float(step), count, levels) < 0:
+					break
+
+				cells += 1
+				step += 1
+
+		widths.append((float(cells) - 0.5) * spacing)
+
+	if widths.is_empty():
+		return 0.0
+
+	widths.sort()
+	return float(widths[widths.size() / 2])
+
+
+static func _wet_at(at: Vector2, count: int, levels: PackedFloat32Array) -> int:
+	var i: int = int(round(at.x))
+	var j: int = int(round(at.y))
+
+	if i < 0 or j < 0 or i >= count or j >= count or is_nan(levels[j * count + i]):
+		return -1
+
+	return j * count + i
+
+
 static func _fall(chain: PackedInt32Array, flow: float, origin: Vector2, count: int, spacing: float, levels: PackedFloat32Array, ground: Callable) -> Dictionary:
 	flow = clampf(flow, 0.0, FLOW_MAX_M3S)
 	var points: PackedVector3Array = PackedVector3Array()
@@ -247,6 +298,13 @@ static func _fall(chain: PackedInt32Array, flow: float, origin: Vector2, count: 
 	# Owner report (2026-10-20, build 257): a normal-flow fall was a 2 m stripe under a 20 m
 	# river. Water going over a lip spreads into a curtain: about CURTAIN_M2S per metre of width.
 	var width: float = clampf(maxf(WIDTH_PER_ROOT_M3S * sqrt(flow), flow / CURTAIN_M2S), WIDTH_MIN_M, WIDTH_MAX_M)
+	# Owner (2026-10-21, build 528): the fall must be as wide as the river that feeds it. The wet cells
+	# across the flow just upstream of the lip are measured and win over the flow formula.
+	var river: float = _river_width(chain, count, spacing, levels)
+
+	if river > 0.0:
+		width = clampf(river, WIDTH_MIN_M, WIDTH_MAX_M)
+
 	return {"width": width, "flow": flow, "points": points, "drop": drop, "pool": levels[chain[chain.size() - 1]]}
 
 
