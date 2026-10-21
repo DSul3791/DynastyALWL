@@ -426,7 +426,7 @@ func _update_particles(rain: float, snow: float, wind: float) -> void:
 	var tilt: float = wind * 0.4
 	_rain.global_position = eye + Vector3(0.0, 12.0, 0.0)
 	_snow.global_position = eye + Vector3(0.0, 10.0, 0.0)
-	wind_cue.update(get_process_delta_time(), eye, _client.weather, rain, snow, under)
+	wind_cue.update(get_process_delta_time(), eye, _client.weather, rain, snow, under, 1.0 - day.night)
 	_rain.emitting = rain > 0.04 and not under
 	_snow.emitting = snow > 0.04 and not under
 	_rain.amount_ratio = clampf(rain, 0.05, 1.0)
