@@ -63,6 +63,10 @@ CLIENTS = [
         ("every item still shown", r"every item shown (true)", None, None),
         ("window size never changes", r"window sizes seen " + NUM, 1, 1),
         ("contents fit the window", r"contents fit (true)", None, None),
+        ("fonts at least 24 px at 1080", r"Audit: smallest font " + NUM + " px", 24, 200),
+        ("tooltips at least 24 px", r"tooltip font " + NUM + " px", 24, 200),
+        ("six sort options", r"sort options " + NUM + ",", 6, 6),
+        ("action buttons carry their keys", r"key buttons missing (\[\])", None, None),
         ("30 slot buttons", r"scale [\d.]+, " + NUM + r" slot buttons", 30, 30),
     ]),
     ("quickkeys", ["--quickkeys"], 3500, [

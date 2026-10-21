@@ -116,3 +116,7 @@ Water's bank query turned out not to be needed: the server's `water_near` (live 
 ## First-hour script (job 78)
 
 `test_first_hour.gd` (in items_check as first_hour) plays a new character's first real hour on the server: gather by hand, hand-craft a stone axe, fell a tree and work the trunk, craft and place a campfire, get thirsty and drink at the water, twist twine, build a lean-to and a woven chest. Each step is asserted and the vitals curve is printed as "first hour:" lines (hunger and thirst percent, weight). At the data's numbers a full stomach is about 37 percent after 36 minutes of mixed work, and thirst falls about as fast as hunger.
+
+## Inventory screen audit (job 82)
+
+`_audit_text` (run by the texttest scenario) reads every visible control in the inventory window at the current text scale. Findings and fixes: tooltips used the engine's 16 px font, so the window's theme now sets TooltipLabel to the body size minus 6 (24 px at 1080); the vitals warning line was 22 px and is now 28 px. The check asserts the smallest font in the window is at least 24 px, tooltips at least 24 px, six sort options, and that the Split (S), Drop (D), Use (E) and Repair (R) buttons exist; CONTROLS.md lists them with Transfer (T), the Text -/+ buttons and the sort drop-down.

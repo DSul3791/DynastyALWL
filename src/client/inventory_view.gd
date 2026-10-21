@@ -676,7 +676,7 @@ func _build_vitals_hud() -> void:
 	_health_bar = _make_bar(Color(0.85, 0.2, 0.2))
 	_thirst_bar = _make_bar(Color(0.3, 0.6, 0.95))
 	_vitals_warning = Label.new()
-	_vitals_warning.add_theme_font_size_override("font_size", 22)
+	_vitals_warning.add_theme_font_size_override("font_size", 28)
 	_vitals_warning.add_theme_constant_override("outline_size", 5)
 	_vitals_warning.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
 	_vitals_warning.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -872,6 +872,7 @@ func _build_chest_panel() -> void:
 		return
 
 	_chest_panel = PanelContainer.new()
+	_chest_panel.theme = _tooltip_theme()
 	_chest_panel.anchor_left = 0.125
 	_chest_panel.anchor_right = 0.875
 	_chest_panel.anchor_top = 0.1
@@ -1469,6 +1470,13 @@ func _px(size: int) -> int:
 	return int(round(float(size) * text_scale * maxf(_layer.get_viewport().get_visible_rect().size.y / 1080.0, 0.5)))
 
 
+# Tooltips pop up in the engine's small default font; the window's theme makes them as large as the body text (audit, job 82).
+func _tooltip_theme() -> Theme:
+	var themed: Theme = Theme.new()
+	themed.set_font_size("font_size", "TooltipLabel", _px(BODY_PX - 6))
+	return themed
+
+
 func _style(control: Control, size: int) -> void:
 	control.add_theme_font_size_override("font_size", _px(size))
 
@@ -1480,6 +1488,7 @@ func _build_panel() -> void:
 	_buttons.clear()   # a rebuilt panel starts with a fresh list; never keep freed buttons
 
 	_panel = PanelContainer.new()
+	_panel.theme = _tooltip_theme()
 	_panel.anchor_left = 0.05
 	_panel.anchor_right = 0.95
 	_panel.anchor_top = 0.05
@@ -2298,7 +2307,54 @@ func run_text_test(client) -> void:
 			sort_index = mode
 			_arrange_slots()
 
+	_audit_text()
 	print("Text test: scale %.2f, %d slot buttons, all valid %s, every item shown %s, panel open %s, window sizes seen %d, contents fit %s" % [text_scale, _buttons.size(), str(valid), str(filled_ok), str(open), sizes.size(), str(fits)])
+
+
+# Job 82: every control in the inventory window, read at the current text scale: the smallest font in use, the labels a
+# player sees (buttons, sort options, hints) and the key letters on the action buttons. Printed as "Audit:" lines.
+const MIN_FONT_PX := 24
+const ACTION_BUTTON_LABELS := ["Split (S)", "Drop (D)", "Use (E)", "Repair (R)"]
+
+
+func _audit_text() -> void:
+	var smallest: int = 999
+	var smallest_name: String = ""
+	var labels: Array = []
+	var stack: Array = [_panel]
+
+	while not stack.is_empty():
+		var node: Node = stack.pop_back()
+		stack.append_array(node.get_children())
+
+		if not (node is Label or node is Button or node is LineEdit or node is SpinBox):
+			continue
+
+		var control: Control = node as Control
+
+		if node is SpinBox:
+			control = (node as SpinBox).get_line_edit()
+
+		if not control.is_visible_in_tree():
+			continue
+
+		var size: int = control.get_theme_font_size("font_size")
+
+		if size < smallest and (str(control.get("text")) != "" or node is OptionButton):
+			smallest = size
+			smallest_name = "%s %s" % [node.get_class(), str(control.get("text")).left(24)]
+
+		if node is Button and str(control.get("text")) != "" and not _buttons.has(node):
+			labels.append(str(control.get("text")))
+
+	var tooltip_px: int = _panel.theme.get_font_size("font_size", "TooltipLabel") if _panel.theme != null else 16
+	var missing: Array = []
+
+	for key_label in ACTION_BUTTON_LABELS:
+		if not labels.has(key_label):
+			missing.append(key_label)
+
+	print("Audit: smallest font %d px (%s), tooltip font %d px, sort options %d, button labels %s, key buttons missing %s" % [smallest, smallest_name, tooltip_px, _sort_menu.item_count, str(labels), str(missing)])
 
 
 # Headless check (--plantpick): pick several plants (kind 2, flowers and herbs) and see whether each one is gone
