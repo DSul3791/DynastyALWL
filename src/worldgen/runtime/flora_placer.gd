@@ -590,6 +590,19 @@ func _ground_ok(item: Dictionary, data, k: int, x: float, z: float) -> float:
 	if y < item["altitude_min"] or y > item["altitude_max"]:
 		return NAN
 
+	# Nothing grows under water: ground within WET_FOOT_M of the sea or a lake or river level stays bare, except reeds.
+	if item["shape"] != "reed":
+		var level: float = SEA_LEVEL_M
+
+		if not is_nan(data.water_surface[k]):
+			level = maxf(level, data.water_surface[k])
+
+		if not data.sim_levels.is_empty() and not is_nan(data.sim_levels[k]):
+			level = maxf(level, data.sim_levels[k])
+
+		if y < level + WET_FOOT_M:
+			return NAN
+
 	return y
 
 
@@ -681,6 +694,8 @@ func _in_grove(groves: Array, x: float, z: float) -> bool:
 
 # The patch field, about -1 to 1, the same across the wrap seam.
 const WATER_MARGIN_M := 4.0
+const SEA_LEVEL_M := 0.0
+const WET_FOOT_M := 0.3
 
 
 func _near_water(data, x: float, z: float) -> bool:

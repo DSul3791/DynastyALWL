@@ -20,27 +20,48 @@ static var _cache: Dictionary = {}              # name -> ArrayMesh
 static var _solid: StandardMaterial3D           # vertex colours, one side
 static var _cards: StandardMaterial3D           # vertex colours, both sides (leaves)
 static var _flame: ShaderMaterial
-static var _coal: StandardMaterial3D
+static var _coal: ShaderMaterial
 
 const FLAME_SHADER := """
 shader_type spatial;
 render_mode unshaded, cull_disabled, blend_add, depth_draw_never, shadows_disabled;
 uniform float height = 0.7;
 varying float up;
+varying float flick;
 
+// Flicker 8 to 12 Hz: two beating sines per tongue plus slow tilt, so no two tongues pulse together.
 void vertex() {
 	up = clamp(VERTEX.y / height, 0.0, 1.0);
-	float sway = sin(TIME * 6.0 + VERTEX.y * 7.0 + float(INSTANCE_ID)) * 0.05 + sin(TIME * 11.0 + VERTEX.y * 3.0) * 0.025;
+	float ph = float(INSTANCE_ID) * 1.7 + VERTEX.x * 3.0;
+	flick = 0.5 + 0.5 * sin(TIME * 9.0 + ph) * sin(TIME * 11.3 + ph * 0.6 + 1.0);
+	float sway = sin(TIME * 6.0 + VERTEX.y * 7.0 + ph) * 0.05 + sin(TIME * 11.0 + VERTEX.y * 3.0) * 0.025;
 	VERTEX.x += sway * up;
-	VERTEX.z += cos(TIME * 5.0 + VERTEX.y * 6.0) * 0.04 * up;
+	VERTEX.z += cos(TIME * 5.0 + VERTEX.y * 6.0 + ph) * 0.04 * up;
+	VERTEX.y *= 0.85 + 0.3 * flick;
 }
 
 void fragment() {
-	float rim = pow(clamp(dot(normalize(NORMAL), normalize(VIEW)), 0.0, 1.0), 0.8);
-	vec3 low = vec3(1.0, 0.32, 0.05);
-	vec3 high = vec3(1.0, 0.85, 0.35);
-	ALBEDO = mix(low, high, 1.0 - up) * (0.7 + 0.3 * sin(TIME * 17.0));
-	ALPHA = rim * (1.0 - up * up) * 0.85;
+	float facing = clamp(dot(normalize(NORMAL), normalize(VIEW)), 0.0, 1.0);
+	float soft = smoothstep(0.0, 0.85, facing);
+	vec3 low = vec3(1.0, 0.3, 0.04);
+	vec3 high = vec3(1.0, 0.8, 0.3);
+	ALBEDO = mix(low, high, 1.0 - up) * (0.75 + 0.35 * flick);
+	ALPHA = soft * (1.0 - up * up) * (0.6 + 0.25 * flick);
+}
+"""
+
+# Coals glow brighter than the flame body and breathe slowly; vertex colours are not used.
+const COAL_SHADER := """
+shader_type spatial;
+render_mode unshaded, shadows_disabled;
+
+void fragment() {
+	float t = TIME * 3.0 + NODE_POSITION_WORLD.x * 5.0;
+	float pulse = 0.5 + 0.5 * sin(t) * sin(t * 0.7 + 1.3);
+	float spot = 0.5 + 0.5 * sin(UV.x * 40.0 + t * 1.3) * sin(UV.y * 40.0 - t);
+	vec3 deep = vec3(0.75, 0.16, 0.03);
+	vec3 hot = vec3(1.0, 0.62, 0.2);
+	ALBEDO = mix(deep, hot, 0.35 + 0.5 * pulse * spot) * (1.5 + 0.7 * pulse);
 }
 """
 
@@ -73,14 +94,12 @@ static func _flame_material() -> ShaderMaterial:
 	return _flame
 
 
-static func _coal_material() -> StandardMaterial3D:
+static func _coal_material() -> ShaderMaterial:
 	if _coal == null:
-		_coal = StandardMaterial3D.new()
-		_coal.albedo_color = Color(0.9, 0.3, 0.05)
-		_coal.emission_enabled = true
-		_coal.emission = Color(1.0, 0.35, 0.06)
-		_coal.emission_energy_multiplier = 1.6
-		_coal.roughness = 1.0
+		var shader: Shader = Shader.new()
+		shader.code = COAL_SHADER
+		_coal = ShaderMaterial.new()
+		_coal.shader = shader
 	return _coal
 
 
@@ -919,32 +938,72 @@ static var _smoke: ParticleProcessMaterial
 static var _smoke_mesh: QuadMesh
 
 
+# Soft round puffs: a radial falloff on a camera-facing quad, growing and fading over the particle's life (colour ramp), no hard edge.
+const SMOKE_SHADER := """
+shader_type spatial;
+render_mode unshaded, blend_mix, depth_draw_never, shadows_disabled, cull_disabled;
+
+void vertex() {
+	MODELVIEW_MATRIX = VIEW_MATRIX * mat4(INV_VIEW_MATRIX[0], INV_VIEW_MATRIX[1], INV_VIEW_MATRIX[2], MODEL_MATRIX[3]);
+	MODELVIEW_MATRIX = MODELVIEW_MATRIX * mat4(vec4(length(MODEL_MATRIX[0].xyz), 0.0, 0.0, 0.0), vec4(0.0, length(MODEL_MATRIX[1].xyz), 0.0, 0.0), vec4(0.0, 0.0, length(MODEL_MATRIX[2].xyz), 0.0), vec4(0.0, 0.0, 0.0, 1.0));
+}
+
+void fragment() {
+	float d = length(UV - vec2(0.5)) * 2.0;
+	float puff = smoothstep(1.0, 0.15, d);
+	float lump = 0.85 + 0.15 * sin(UV.x * 9.0 + COLOR.r * 20.0) * sin(UV.y * 9.0 + COLOR.g * 20.0);
+	ALBEDO = vec3(0.42, 0.40, 0.38);
+	ALPHA = puff * puff * lump * COLOR.a * 0.55;
+}
+"""
+
+
 static func _smoke_plume() -> GPUParticles3D:
 	if _smoke == null:
 		_smoke = ParticleProcessMaterial.new()
 		_smoke.direction = Vector3(0.0, 1.0, 0.0)
-		_smoke.spread = 8.0
+		_smoke.spread = 10.0
 		_smoke.initial_velocity_min = 0.5
 		_smoke.initial_velocity_max = 0.9
 		_smoke.gravity = Vector3(0.25, 0.1, 0.0)
+		_smoke.damping_min = 0.1
+		_smoke.damping_max = 0.2
+		_smoke.turbulence_enabled = true
+		_smoke.turbulence_noise_strength = 0.5
+		_smoke.turbulence_noise_scale = 1.5
 		_smoke.scale_min = 0.5
-		_smoke.scale_max = 1.0
+		_smoke.scale_max = 0.9
+		var grow: Curve = Curve.new()
+		grow.add_point(Vector2(0.0, 0.4))
+		grow.add_point(Vector2(1.0, 2.6))
+		var grow_tex: CurveTexture = CurveTexture.new()
+		grow_tex.curve = grow
+		_smoke.scale_curve = grow_tex
+		var fade: Gradient = Gradient.new()
+		fade.set_color(0, Color(1.0, 1.0, 1.0, 0.0))
+		fade.add_point(0.15, Color(1.0, 1.0, 1.0, 0.9))
+		fade.set_color(2, Color(1.0, 1.0, 1.0, 0.0))
+		var fade_tex: GradientTexture1D = GradientTexture1D.new()
+		fade_tex.gradient = fade
+		_smoke.color_ramp = fade_tex
+		_smoke.color_initial_ramp = null
+		_smoke.angle_min = -180.0
+		_smoke.angle_max = 180.0
 		_smoke_mesh = QuadMesh.new()
-		_smoke_mesh.size = Vector2(0.5, 0.5)
-		var material: StandardMaterial3D = StandardMaterial3D.new()
-		material.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		material.albedo_color = Color(0.55, 0.55, 0.57, 0.3)
+		_smoke_mesh.size = Vector2(0.6, 0.6)
+		var shader: Shader = Shader.new()
+		shader.code = SMOKE_SHADER
+		var material: ShaderMaterial = ShaderMaterial.new()
+		material.shader = shader
 		_smoke_mesh.material = material
 
 	var plume: GPUParticles3D = GPUParticles3D.new()
-	plume.amount = 10
-	plume.lifetime = 4.0
+	plume.amount = 14
+	plume.lifetime = 5.0
 	plume.process_material = _smoke
 	plume.draw_pass_1 = _smoke_mesh
 	plume.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	plume.visibility_aabb = AABB(Vector3(-2.0, 0.0, -2.0), Vector3(4.0, 6.0, 4.0))
+	plume.visibility_aabb = AABB(Vector3(-3.0, 0.0, -3.0), Vector3(6.0, 8.0, 6.0))
 	return plume
 
 
