@@ -95,6 +95,8 @@ var _collide: Array = []              # [node, StaticBody3D] trunks whose collid
 var _meshes: Dictionary = {}       # item number -> Mesh
 
 
+const FrameProbe := preload("res://src/debug/frame_probe.gd")
+
 func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_position: Callable, ground_below: Callable) -> void:
 	net = terrain_net
 	_layer = hud_layer
@@ -453,6 +455,12 @@ func admin_give_test_set() -> void:
 
 
 func _process(_delta: float) -> void:
+	var t: int = FrameProbe.start()
+	_process_body(_delta)
+	FrameProbe.stop("inventory view", t)
+
+
+func _process_body(_delta: float) -> void:
 	var now: int = Time.get_ticks_msec()
 	_hold_e_check()
 

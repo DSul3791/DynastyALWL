@@ -56,7 +56,7 @@ const FaintEffectScript := preload("res://src/client/faint_effect.gd")
 const FallMistScript := preload("res://src/client/fall_mist.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 354
+const BUILD := 355
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
@@ -2086,7 +2086,9 @@ func _step_player(delta: float) -> void:
 		var shown: Array = items.faint_state()
 		sound.breath.set_body(items.strain, shown[0], shown[1])
 
+	var tsd: int = Probe.start()
 	sound.update(delta, body, flying, underwater)
+	Probe.stop("sound", tsd)
 
 	if items != null:
 		items.character_update(delta)
@@ -2342,13 +2344,19 @@ func _fire_test_step(step: int, at: Vector3) -> String:
 
 
 func _process(delta: float) -> void:
+	var tp: int = Probe.start()
 	_step_player(delta)
+	Probe.stop("step player", tp)
+	tp = Probe.start()
 	_update_view(delta)
+	Probe.stop("update view", tp)
+	tp = Probe.start()
 
 	if harvest != null:
 		harvest.update(delta, Input.is_key_pressed(KEY_E) and not items.open)
 	game_clock.tick()
 	_update_weather()
+	Probe.stop("harvest, clock, weather", tp)
 
 	if _sound_test_at < 0 and sound != null and sound.ambient != null:
 		sound.ambient.set_conditions(game_clock.hour(), game_clock.season())
@@ -2372,7 +2380,9 @@ func _process(delta: float) -> void:
 		_test_clear_done = true
 		_ask_clear_cache()
 
+	var ta0: int = Probe.start()
 	_update_anchor(Time.get_ticks_msec(), delta)
+	Probe.stop("anchor", ta0)
 	# Owner (2026-10-19): while a bake runs, ask only for the ground the game is waiting on
 	# right now, not the extra ground around it (it is all thrown away when the bake ends).
 	stream.only_urgent = _bake.running
@@ -2416,8 +2426,10 @@ func _process(delta: float) -> void:
 
 	settled_msec = stream.last_load_msec - connected_msec
 
+	var ti: int = Probe.start()
 	_send_water_request(now)
 	_apply_incoming()
+	Probe.stop("incoming", ti)
 
 	if now >= _flora_check_msec:
 		_flora_check_msec = now + 500

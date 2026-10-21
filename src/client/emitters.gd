@@ -55,6 +55,8 @@ var _client_log: Array = []
 var _loop_players: Dictionary = {}      # key -> {player, loop, gone}
 
 
+const FrameProbe := preload("res://src/debug/frame_probe.gd")
+
 func setup(stage) -> void:
 	_stage = stage
 	_rng.randomize()
@@ -246,6 +248,12 @@ func _loop(entry: Dictionary) -> void:
 
 
 func _process(delta: float) -> void:
+	var t: int = FrameProbe.start()
+	_process_body(delta)
+	FrameProbe.stop("emitters", t)
+
+
+func _process_body(delta: float) -> void:
 	for key in _loop_players:
 		var state: Dictionary = _loop_players[key]
 		var player: AudioStreamPlayer3D = state["player"]

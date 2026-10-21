@@ -63,6 +63,8 @@ const SWING_S := 0.55
 const REACH_M := 3.0
 
 
+const FrameProbe := preload("res://src/debug/frame_probe.gd")
+
 func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hud_layer: CanvasLayer, ground_below: Callable, sound_stage = null, tree_near: Callable = Callable(), cover_at: Callable = Callable()) -> void:
 	_cover_at = cover_at
 	_sound = sound_stage
@@ -252,6 +254,12 @@ func _predict_landing(from: Vector3, velocity: Vector3) -> Vector3:
 
 
 func _process(delta: float) -> void:
+	var t: int = FrameProbe.start()
+	_process_body(delta)
+	FrameProbe.stop("held item", t)
+
+
+func _process_body(delta: float) -> void:
 	_update_blueprint()
 
 	if _sound != null:

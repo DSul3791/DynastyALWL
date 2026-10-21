@@ -16,6 +16,8 @@ var heading: float = 0.0:
 		queue_redraw()
 
 
+const FrameProbe := preload("res://src/debug/frame_probe.gd")
+
 func _ready() -> void:
 	custom_minimum_size = Vector2(WIDTH, HEIGHT)
 	size = custom_minimum_size
@@ -24,6 +26,12 @@ func _ready() -> void:
 
 # Kept centered at the top of the window every frame, whatever the window size.
 func _process(_delta: float) -> void:
+	var t: int = FrameProbe.start()
+	_process_body(_delta)
+	FrameProbe.stop("admin compass", t)
+
+
+func _process_body(_delta: float) -> void:
 	position = Vector2((get_viewport_rect().size.x - WIDTH) * 0.5, 6.0)
 
 

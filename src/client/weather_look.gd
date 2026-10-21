@@ -100,6 +100,8 @@ var cloud_cover: float = 0.0
 var strikes_seen: int = 0
 
 
+const FrameProbe := preload("res://src/debug/frame_probe.gd")
+
 func setup(client) -> void:
 	_client = client
 	_rng.seed = 5150
@@ -263,6 +265,12 @@ func _update_water_murk(delta: float, storm: float, rain: float) -> void:
 
 
 func _process(delta: float) -> void:
+	var t: int = FrameProbe.start()
+	_process_body(delta)
+	FrameProbe.stop("weather look", t)
+
+
+func _process_body(delta: float) -> void:
 	if _client == null or _client._environment == null or _client.camera == null or _client.terrain == null:
 		return
 

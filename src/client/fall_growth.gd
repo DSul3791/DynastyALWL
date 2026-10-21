@@ -34,6 +34,8 @@ var _node: MultiMeshInstance3D = null
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 
+const FrameProbe := preload("res://src/debug/frame_probe.gd")
+
 func setup(terrain: Node3D, flora, quality: int) -> void:
 	_terrain = terrain
 	_flora = flora
@@ -119,6 +121,12 @@ func _restart() -> void:
 
 
 func _process(_delta: float) -> void:
+	var t: int = FrameProbe.start()
+	_process_body(_delta)
+	FrameProbe.stop("fall growth", t)
+
+
+func _process_body(_delta: float) -> void:
 	if _tries.is_empty() or _terrain == null:
 		return
 

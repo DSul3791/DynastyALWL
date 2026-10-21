@@ -6,6 +6,7 @@ extends Node
 # user://gpu_probe.txt. The saving next to each line is what that piece costs in this spot.
 # Nothing runs until it is started.
 
+const FrameProbe := preload("res://src/debug/frame_probe.gd")
 const WARMUP := 20
 const MEASURE := 40
 
@@ -65,6 +66,7 @@ func toggle() -> void:
 		["sky clouds at Low quality", func(on): _sky(on)],
 	]
 	_results = []
+	FrameProbe.window_reset()
 	_saved = {
 		"grass": _client.grass.visible, "flora": _client.flora.visible, "terrain": _client.terrain.visible,
 		"shadow": _client._sun.shadow_enabled, "ssao": _client._environment.ssao_enabled,

@@ -15,6 +15,8 @@ static var _this_frame: Dictionary = {}   # name -> us spent this frame
 static var _slow: Array = []              # [frame_ms, {name: ms}]
 static var _frames: int = 0
 static var _slow_count: int = 0
+static var _win: Dictionary = {}          # name -> us since window_reset (the GPU probe's script-cost lines)
+static var _win_frames: int = 0
 
 
 static func start() -> int:
@@ -33,11 +35,13 @@ static func stop(name: String, started: int) -> void:
 	entry[2] = maxi(entry[2], used)
 	_totals[name] = entry
 	_this_frame[name] = int(_this_frame.get(name, 0)) + used
+	_win[name] = int(_win.get(name, 0)) + used
 
 
 # Call at the start of each frame with the previous frame's length (seconds).
 static func frame(delta: float) -> void:
 	_frames += 1
+	_win_frames += 1
 	var ms: float = delta * 1000.0
 
 	if ms > SLOW_MS and _frames > 30:
@@ -92,3 +96,20 @@ static func report() -> String:
 		lines.append("  slow frame %.0f ms: %s" % [slow[0], ", ".join(text) if not text.is_empty() else "(nothing measured: engine work)"])
 
 	return "\n".join(lines)
+
+
+static func window_reset() -> void:
+	_win = {}
+	_win_frames = 0
+
+
+# The pieces that cost most per frame since window_reset, as "name ms" strings (average over the frames in the window).
+static func window_top(count: int) -> PackedStringArray:
+	var out: PackedStringArray = PackedStringArray()
+	var names: Array = _win.keys()
+	names.sort_custom(func(a, b): return _win[a] > _win[b])
+
+	for name in names.slice(0, count):
+		out.append("%s %.1f" % [name, float(_win[name]) / 1000.0 / maxf(float(_win_frames), 1.0)])
+
+	return out

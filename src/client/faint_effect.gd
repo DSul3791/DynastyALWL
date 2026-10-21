@@ -47,6 +47,8 @@ var _material: ShaderMaterial
 var _target: Vector3 = Vector3.ZERO      # tunnel, blackout, blur
 
 
+const FrameProbe := preload("res://src/debug/frame_probe.gd")
+
 func setup(layer: CanvasLayer) -> void:
 	var shader: Shader = Shader.new()
 	shader.code = SHADER
@@ -76,6 +78,12 @@ func set_state(state: String, exertion: float, progress: float) -> void:
 
 
 func _process(delta: float) -> void:
+	var t: int = FrameProbe.start()
+	_process_body(delta)
+	FrameProbe.stop("faint effect", t)
+
+
+func _process_body(delta: float) -> void:
 	if _rect == null:
 		return
 
