@@ -1443,7 +1443,10 @@ func _terrace(
 		# The lowest bed of each step: the river's own bed where the step ends.
 		var tread: PackedFloat32Array = PackedFloat32Array()
 
-		var half_run: float = clampf(round(widths[used[from_a]] / spacing_m) * spacing_m, width_min, width_max) * 0.5
+		# Dave (2026-10-21): the fall is as wide as the river that feeds it. One width for the whole chute, the river's own
+		# width at its lip rounded to whole cells (no longer cut down to 24 m, which pinched a 40 m river into a 24 m chute).
+		var chute_width: float = clampf(round(widths[used[from_a]] / spacing_m) * spacing_m, width_min, width_max)
+		var half_run: float = chute_width * 0.5
 
 		var foot_set: bool = false
 		var ramp: bool = single and top_bed - beds[used[last]] > float(_rules.get("chute_face_max_m", 90.0))
@@ -1461,7 +1464,7 @@ func _terrace(
 
 		for q in range(from_a, last + 1):
 			var k: int = used[q]
-			var width: float = clampf(round(widths[k] / spacing_m) * spacing_m, width_min, width_max)
+			var width: float = chute_width
 			widths[k] = width
 			var half: float = width * 0.5
 			var rel: float = along[k] - s0
