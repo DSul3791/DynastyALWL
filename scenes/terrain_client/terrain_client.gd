@@ -41,6 +41,7 @@ const CompassScript := preload("res://src/client/admin_compass.gd")
 const InventoryViewScript := preload("res://src/client/inventory_view.gd")
 const NpcViewScript := preload("res://src/client/npc_view.gd")
 const NpcVoiceScript := preload("res://src/client/npc_voice.gd")
+const TrailCodec := preload("res://src/shared/trail_codec.gd")
 const AnimalViewScript := preload("res://src/client/animal_view.gd")
 const DialogueViewScript := preload("res://src/client/dialogue_view.gd")
 const HeldItemScript := preload("res://src/client/held_item.gd")
@@ -898,6 +899,7 @@ func _welcome_body(info: Dictionary) -> void:
 	add_child(animal_view)
 	_animal_view_node = animal_view
 	net.animals_received.connect(animal_view.on_rows)
+	net.trails_received.connect(func(bx, bz, bytes): grass.set_trail_block(bx, bz, TrailCodec.decode(bytes)))
 	net.blood_received.connect(animal_view.on_blood)
 	items = InventoryViewScript.new()
 	items.name = "Items"

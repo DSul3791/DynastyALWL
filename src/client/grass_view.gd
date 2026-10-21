@@ -137,6 +137,8 @@ uniform float wind_strength = 0.12;
 uniform float backlight = 0.0;
 uniform sampler2D trample : filter_nearest, repeat_enable, hint_default_black;   // where the grass was trodden (grass_trample.gd)
 uniform float trample_now = 0.0;
+uniform sampler2D trail_map : filter_linear, repeat_enable, hint_default_black;   // worn game trails, R = strength, 4 m texels over 1024 m (set_trail_block)
+uniform float trail_draw = 0.25;
 uniform float recover_s = 300.0;        // data/look/grass_trample.json
 uniform float trample_squash = 0.75;
 uniform float trunk_squash = 0.2;       // the share of its height grass keeps under a trunk
@@ -163,6 +165,9 @@ void vertex() {
 		flat_down = 1.0 - q * q;
 	}
 	VERTEX.y *= 1.0 - trample_squash * flat_down;
+	// Game trails (Dave 2026-10-21): where animals pass again and again the grass grows low and thin and a little paler.
+	float worn = smoothstep(trail_draw, trail_draw + 0.35, textureLod(trail_map, MODEL_MATRIX[3].xz / 1024.0, 0.0).r);
+	VERTEX.y *= 1.0 - 0.6 * worn;
 	// A felled trunk presses the grass flat under it and along both sides, soft at the edge (Dave 2026-10-21).
 	vec2 root_xz = MODEL_MATRIX[3].xz;
 	float pressed = 0.0;
@@ -182,7 +187,7 @@ void vertex() {
 	VERTEX.y *= mix(1.0, trunk_squash, pressed);
 	VERTEX *= 1.0 - inside;
 	VERTEX *= fade;
-	blade_color = INSTANCE_CUSTOM.rgb * (1.0 - 0.12 * flat_down);
+	blade_color = mix(INSTANCE_CUSTOM.rgb, INSTANCE_CUSTOM.rgb * 0.85 + vec3(0.1, 0.085, 0.04), 0.7 * worn) * (1.0 - 0.12 * flat_down);
 }
 
 void fragment() {
@@ -226,6 +231,15 @@ var shore_cards: int = 0                 # pebbles and reeds drawn now
 var _terrain: Node3D
 var _trample = null                      # GrassTrample: where the grass is trodden down
 var _trample_msec: int = 0
+const TRAIL_CELLS := 256                 # the trail map: 256 cells of 4 m, wrapping (1024 m); blocks are 64 cells (256 m)
+const TRAIL_BLOCK := 64
+const TRAIL_CONFIG := "res://data/animals/trails.json"
+var _trail_blocks: Dictionary = {}       # Vector2i block -> {cell index: strength 0..1}, as the server sent them
+var _trail_image: Image = null
+var _trail_texture: ImageTexture = null
+var _trail_block: Vector2i = Vector2i(1 << 30, 0)   # the player's block when the map was last built
+var _trail_dirty: bool = false
+var _trail_msec: int = 0
 var _trail_mult: float = 1.0
 var _flora
 var _tables
@@ -318,7 +332,58 @@ func setup(terrain: Node3D, flora, tables) -> void:
 			_materials[n].set_shader_parameter("recover_s", _trample.recover_s)
 			_materials[n].set_shader_parameter("trample_squash", _trample.squash)
 
+	_trail_image = Image.create(TRAIL_CELLS, TRAIL_CELLS, false, Image.FORMAT_R8)
+	_trail_texture = ImageTexture.create_from_image(_trail_image)
+	var draw: float = 0.25
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(TRAIL_CONFIG)) if FileAccess.file_exists(TRAIL_CONFIG) else null
+
+	if parsed is Dictionary:
+		draw = float(parsed.get("draw_threshold", 0.25))
+
+	for n in range(_materials.size()):
+		if not _is_solid(n):
+			_materials[n].set_shader_parameter("trail_map", _trail_texture)
+			_materials[n].set_shader_parameter("trail_draw", draw)
+
 	set_radius(radius_m)
+
+
+# One 256 m block of worn game trails from the server (protocol 65, net.trails_received): cells {index: strength 0..1}, index = x + z * 64
+# from the block's south-west corner. Kept; the map is rebuilt from the blocks around the player (so a block far away never shows up
+# again when the wrapped map comes round to it).
+func set_trail_block(block_x: int, block_z: int, cells: Dictionary) -> void:
+	_trail_blocks[Vector2i(block_x, block_z)] = cells
+	_trail_dirty = true
+
+
+func _rebuild_trails(player: Vector3) -> void:
+	var here: Vector2i = Vector2i(int(floor(player.x / 256.0)), int(floor(player.z / 256.0)))
+
+	if here != _trail_block:
+		_trail_block = here
+		_trail_dirty = true
+
+	if not _trail_dirty or Time.get_ticks_msec() < _trail_msec:
+		return
+
+	_trail_msec = Time.get_ticks_msec() + 500
+	_trail_dirty = false
+	_trail_image.fill(Color(0, 0, 0, 1))
+
+	for key in _trail_blocks.keys():
+		if absi(key.x - here.x) > 2 or absi(key.y - here.y) > 2:
+			_trail_blocks.erase(key)
+			continue
+
+		var cells: Dictionary = _trail_blocks[key]
+
+		for idx in cells:
+			var cx: int = posmod(key.x * TRAIL_BLOCK + int(idx) % TRAIL_BLOCK, TRAIL_CELLS)
+			var cz: int = posmod(key.y * TRAIL_BLOCK + int(idx) / TRAIL_BLOCK, TRAIL_CELLS)
+			var v: float = float(cells[idx])
+			_trail_image.set_pixel(cx, cz, Color(v, v, v, 1.0))
+
+	_trail_texture.update(_trail_image)
 
 
 # How much grass grows at a spot on soil `soil`, by the same rules the tufts
