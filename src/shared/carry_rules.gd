@@ -40,6 +40,19 @@ static func cap_kg(body_kg: float, cfg: Dictionary) -> float:
 
 
 # Up to this much (free_ratio of the limit, 80 percent) nothing hinders: full speed, no extra effort (Dave 2026-10-21).
+# The carry-weight bar (Dave 2026-10-21): fills toward the gross weight you can carry, green, yellow from 70 percent of it,
+# red from 80 percent (where being slowed begins).
+static func bar_fraction(carried: float, body_kg: float, cfg: Dictionary) -> float:
+	return clampf(carried / maxf(cap_kg(body_kg, cfg), 0.001), 0.0, 1.0)
+
+
+static func bar_color(fraction: float) -> Color:
+	if fraction >= 0.8:
+		return Color(0.85, 0.2, 0.2)
+
+	return Color(0.95, 0.8, 0.25) if fraction >= 0.7 else Color(0.35, 0.75, 0.3)
+
+
 static func comfort_kg(body_kg: float, cfg: Dictionary) -> float:
 	return cap_kg(body_kg, cfg) * float(cfg.get("free_ratio", 0.8))
 

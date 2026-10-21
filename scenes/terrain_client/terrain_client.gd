@@ -56,9 +56,10 @@ const FaintEffectScript := preload("res://src/client/faint_effect.gd")
 const FallMistScript := preload("res://src/client/fall_mist.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 342
+const BUILD := 354
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
+const RagdollScript := preload("res://src/client/ragdoll_body.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
 const KnowledgeScript := preload("res://src/client/inspection_knowledge.gd")
@@ -69,6 +70,7 @@ const NetScript := preload("res://src/stream/terrain_net.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const WaterVolume := preload("res://src/shared/water_volume.gd")
+const HotbarStripScript := preload("res://src/client/hotbar_strip.gd")
 const WaterFallsScript := preload("res://src/worldgen/runtime/water_falls.gd")
 const FloraViewScript := preload("res://src/flora/flora_view.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
@@ -306,6 +308,7 @@ var fall_mist                         # FallMist: spray at the foot of the neare
 var fall_growth                       # FallGrowth: ferns around the foot of the nearest waterfall
 var items                             # InventoryView: inventory panel (I), pick-up (E)
 var harvest                           # Harvest: E prompt, tap to pick, hold to sweep
+var hotbar_strip                      # HotbarStrip: keys 1 to 0 on screen, drag items into the first ten slots
 var held                              # HeldItem: hotbar keys 1 to 8, spear jab and throw
 var grass                             # GrassView
 var faint                             # FaintEffect: tunnel vision, blur and black-out (set_state)
@@ -801,6 +804,11 @@ func _welcome_body(info: Dictionary) -> void:
 	add_child(held)
 	held.setup(items, net, camera, root, layer, _ground_below, sound, _tree_trunk_near, _cover_here)
 	held.held_light_budget = func(): return quality >= 1
+	items.equip_requested = func(slot): held.equip_toggle(slot)
+	items.held_slot_now = func(): return held.held_slot if held.holding else -1
+	hotbar_strip = HotbarStripScript.new()
+	hotbar_strip.setup(items, layer, held)
+	items.hotbar_strip = hotbar_strip
 
 	if test_items:
 		items.run_test()
@@ -1255,9 +1263,15 @@ func _make_player(root: Node3D, start: Vector3) -> void:
 	body.global_position = start
 	camera = Camera3D.new()
 	camera.position = Vector3(0.0, 0.7, 0.0)
-	camera.far = 6000.0
-	camera.current = true
 	body.add_child(camera)
+	# The eye node (`camera`) stays where the eyes are: aim, interaction rays, the held item and the sounds
+	# all read it. What is drawn comes from a child camera that sits on the eye in first person and swings
+	# up and back in third person (_update_view).
+	view_cam = Camera3D.new()
+	view_cam.far = 6000.0
+	camera.add_child(view_cam)
+	view_cam.current = true
+	_load_view()
 	var viewer: VoxelViewer = VoxelViewer.new()
 	viewer.view_distance = VIEW_DISTANCE
 	viewer.requires_collisions = true
@@ -1858,6 +1872,109 @@ func _make_environment(root: Node3D) -> void:
 
 
 
+# Third-person view (Dave, 2026-10-21): scroll out from first person to look at yourself from up and back
+# of the shoulders; scrolling out more pulls the camera further away, scrolling in comes back and, past
+# the nearest distance, returns to first person. The distance is remembered between sessions.
+const VIEW_FILE := "user://view.txt"
+const VIEW_MIN_M := 1.6
+const VIEW_MAX_M := 7.0
+const VIEW_STEP_M := 0.4
+const VIEW_HEIGHT := 0.12              # camera rise per metre of distance
+const VIEW_CLEAR_M := 0.25             # how far short of a wall or trunk the camera stops
+
+var view_cam: Camera3D
+var third_person: bool = false
+var _view_m: float = 3.0
+var _view_now: float = 0.0             # the distance drawn now (eases out and in, and shortens when blocked)
+var _avatar                                               # the ragdoll body (src/client/ragdoll_body.gd), feet on the ground under the capsule
+
+
+func _load_view() -> void:
+	if FileAccess.file_exists(VIEW_FILE):
+		_view_m = clampf(float(FileAccess.get_file_as_string(VIEW_FILE)), VIEW_MIN_M, VIEW_MAX_M)
+
+
+func _save_view() -> void:
+	var file: FileAccess = FileAccess.open(VIEW_FILE, FileAccess.WRITE)
+
+	if file != null:
+		file.store_string("%.2f" % _view_m)
+
+
+# Wheel steps: out (down) enters third person at the saved distance and then pulls further; in (up) comes
+# closer and, at the nearest distance, goes back to first person.
+func _scroll_view(out: bool) -> void:
+	if out:
+		if not third_person:
+			third_person = true
+		else:
+			_view_m = minf(_view_m + VIEW_STEP_M, VIEW_MAX_M)
+	elif third_person:
+		if _view_m - VIEW_STEP_M < VIEW_MIN_M - 0.001:
+			third_person = false
+		else:
+			_view_m -= VIEW_STEP_M
+
+	_save_view()
+
+
+# Each drawn frame: place the drawn camera, keep it out of walls and trunks, and show the ragdoll body.
+func _update_view(delta: float) -> void:
+	if view_cam == null or body == null:
+		return
+
+	if _avatar == null:
+		_avatar = _make_avatar()
+		body.add_child(_avatar)
+
+	var want: float = _view_m if third_person else 0.0
+	var eye: Vector3 = camera.global_position
+	var aim: Vector3 = camera.global_transform.basis * Vector3(0.0, VIEW_HEIGHT, 1.0)
+
+	if third_person and want > 0.0:
+		var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(eye, eye + aim * want)
+		query.exclude = [body.get_rid()]
+		var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(query)
+
+		if not hit.is_empty():
+			want = maxf(eye.distance_to(hit["position"]) - VIEW_CLEAR_M, 0.0)
+
+	# Pull in at once when blocked, ease out otherwise.
+	_view_now = want if want < _view_now else lerpf(_view_now, want, clampf(delta * 10.0, 0.0, 1.0))
+
+	if absf(_view_now - want) < 0.01:
+		_view_now = want
+
+	view_cam.position = Vector3(0.0, VIEW_HEIGHT, 1.0) * _view_now
+	_avatar.visible = _view_now > 0.5
+
+	if held != null:
+		held.set_first_person(_view_now <= 0.5)
+	_avatar.animation_player.active = _avatar.visible      # no animation cost in first person
+	# Feet on the ground whatever the stance (the capsule's bottom stays put; the body origin is its standing middle).
+	_avatar.position.y = -float(StanceScript.SHAPE_HEIGHT[StanceScript.STAND]) * 0.5
+
+	if _avatar.visible:
+		var pace: float = Vector2(body.velocity.x, body.velocity.z).length()
+		var clip: String = ["idle", "crouch", "sit", "lie"][stance.stance]
+
+		if stance.stance == StanceScript.STAND and pace > 0.6:
+			clip = "run" if pace > 7.0 else "walk"
+
+		if _avatar.current() != clip and not _avatar.is_one_shot_playing():
+			_avatar.play(clip)
+
+		# Feet keep up with the ground: about 1.6 m a walk cycle, 2.8 m a run cycle (0.6 s long).
+		_avatar.animation_player.speed_scale = clampf(pace / 1.6, 0.4, 5.0) if clip == "walk" else (clampf(pace * 0.6 / 2.8, 0.5, 3.0) if clip == "run" else 1.0)
+
+
+# The plain ragdoll character (owner, 2026-10-21): body, head, arms, legs and hands, no features.
+func _make_avatar() -> Node3D:
+	var avatar: Node3D = RagdollScript.new()
+	avatar.visible = false
+	return avatar
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if body == null:
 		return
@@ -1891,6 +2008,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		body.rotate_y(-event.relative.x * MOUSE_SENSITIVITY)
 		pitch = clampf(pitch - event.relative.y * MOUSE_SENSITIVITY, -1.5, 1.5)
 		camera.rotation.x = pitch
+	elif event is InputEventMouseButton and event.pressed and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and (event.button_index == MOUSE_BUTTON_WHEEL_UP or event.button_index == MOUSE_BUTTON_WHEEL_DOWN):
+		_scroll_view(event.button_index == MOUSE_BUTTON_WHEEL_DOWN)
 	elif event is InputEventMouseButton and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and held != null and held.mouse_button(event.button_index, event.pressed):
 		pass
 	elif event is InputEventMouseButton and event.pressed:
@@ -1924,8 +2043,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			_set_stance(StanceScript.SIT, true)
 		elif event.keycode == KEY_Z and not flying:
 			_set_stance(StanceScript.LIE, true)
-		elif event.keycode >= KEY_1 and event.keycode <= KEY_8 and held != null:
-			held.select(event.keycode - KEY_1)
+		elif event.keycode >= KEY_1 and event.keycode <= KEY_9 and held != null:
+			held.press_slot(event.keycode - KEY_1)
+		elif event.keycode == KEY_0 and held != null:
+			held.press_slot(9)
 		elif event.keycode == KEY_E and items != null:
 			items.press_e()
 		elif event.keycode == KEY_BRACKETRIGHT and items != null:
@@ -2080,7 +2201,7 @@ func _move_player(delta: float) -> void:
 		pace = WALK_SPEED * float(StanceScript.SPEED[stance.stance])
 
 	if items != null and not flying:
-		pace *= items.speed_factor()
+		pace *= items.speed_factor() * items.over_pace_factor()
 
 		if strain_cap > 0.0:
 			pace = minf(pace, strain_cap)
@@ -2222,6 +2343,7 @@ func _fire_test_step(step: int, at: Vector3) -> String:
 
 func _process(delta: float) -> void:
 	_step_player(delta)
+	_update_view(delta)
 
 	if harvest != null:
 		harvest.update(delta, Input.is_key_pressed(KEY_E) and not items.open)

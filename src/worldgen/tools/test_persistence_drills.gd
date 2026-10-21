@@ -28,7 +28,7 @@ func make(dir: String):
 	items.send_slots = func(_p, _b): pass
 	items.send_world_items = func(_p, _a, _r): pass
 	items.send_craft_queue = func(_p, _e, _l): pass
-	items.send_vitals = func(_p, _h, _he, _w, _t, _l): pass
+	items.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
 	items.ground_height = func(x, z): return 10.0
 	items.setup(ItemTableScript.load_default(), dir)
 	return items
@@ -63,7 +63,7 @@ func state_of(items) -> Dictionary:
 
 	return {
 		"pack": items.inventory_of(1).count_of(stone), "chest": chest_stones, "ground": ground_stones,
-		"trees": items.tree_row_count(), "queue": items.craft_queue_of(1), "weight": snappedf(float(items.vitals_of(1)["weight"]), 0.01), "luck": items.luck_of(1),
+		"trees": items.tree_row_count(), "queue": items.craft_queue_of(1), "weight": snappedf(float(items.vitals_of(1)["weight"]), 0.01), "luck": items.luck_of(1), "fitness": items.fitness_of(1),
 	}
 
 
@@ -87,6 +87,7 @@ func build_world(dir: String) -> Dictionary:
 	a._next_id += 1
 	a.vitals_of(1)["weight"] = 71.0
 	a._characters[KEY]["luck"] = 7
+	a._characters[KEY]["fitness"] = 4
 	a.action(1, Net.ACT_ADMIN_GIVE, fibre, 0, 9, Vector3.ZERO)
 	a._last_queue_act.clear()
 	a.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 3, Vector3.ZERO)
@@ -157,7 +158,7 @@ func _init() -> void:
 		var expect: Dictionary = want.duplicate()
 		var gone: Array = {
 			"inventories.json": ["pack"], "world_items.json": ["ground"], "tree_states.json": ["trees"], "chests.json": ["chest"],
-			"vitals.json": ["weight"], "craft_queues.json": ["queue"], "characters.json": ["luck"],
+			"vitals.json": ["weight"], "craft_queues.json": ["queue"], "characters.json": ["luck", "fitness"],
 		}[file]
 
 		for field in gone:

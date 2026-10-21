@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 25
+const PROTOCOL_VERSION := 26
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -49,7 +49,7 @@ signal water_requested(peer_id: int, chunks: PackedInt32Array)
 signal water_received(chunk: Vector2i, water: PackedByteArray)
 signal notice_received(text: String)
 signal chest_received(id: int, bytes: PackedByteArray)
-signal vitals_received(hunger: int, health: int, weight_dkg: int, thirst: int, luck: int)
+signal vitals_received(hunger: int, health: int, weight_dkg: int, thirst: int, luck: int, fitness: int)
 signal reject_received(reason: int)
 signal craft_queue_received(entries: Array, left_ms: int)
 signal strain_received(strain_pm: int, state: int, fade_pm: int, stance: int)
@@ -237,8 +237,8 @@ func strain(strain_pm: int, state: int, fade_pm: int, stance: int) -> void:
 
 # The player's hunger (stomach percent), thirst (percent of a full body), luck (-10 to 10, fixed), health (points 0 to 100) and body weight (tenths of a kg) (at hello, after eating, and when a point changes).
 @rpc("authority", "call_remote", "reliable")
-func vitals(hunger: int, health: int, weight_dkg: int, thirst: int, luck: int) -> void:
-	vitals_received.emit(hunger, health, weight_dkg, thirst, luck)
+func vitals(hunger: int, health: int, weight_dkg: int, thirst: int, luck: int, fitness: int) -> void:
+	vitals_received.emit(hunger, health, weight_dkg, thirst, luck, fitness)
 
 
 # The contents of a chest the player opened (30 slots in the inventory byte format).

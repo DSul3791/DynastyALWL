@@ -6,7 +6,7 @@ import re, sys, pathlib
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 LABELS = {  # Godot key constant -> word that must appear in a CONTROLS.md control cell
     "KEY_SPACE": "Space", "KEY_CTRL": "Ctrl", "KEY_SHIFT": "Shift", "KEY_ESCAPE": "Esc",
-    "KEY_SLASH": "/", "KEY_PLUS": "+", "KEY_EQUAL": "+", "KEY_MINUS": "-", "KEY_KP_ADD": "numpad",
+    "KEY_SLASH": "/", "KEY_TAB": "Tab", "KEY_PLUS": "+", "KEY_EQUAL": "+", "KEY_MINUS": "-", "KEY_KP_ADD": "numpad",
     "KEY_KP_SUBTRACT": "numpad", "KEY_BRACKETRIGHT": "]", "KEY_BRACKETLEFT": "[",
     "MOUSE_BUTTON_LEFT": "Left click", "MOUSE_BUTTON_RIGHT": "Right click",
     "MOUSE_BUTTON_MIDDLE": "Middle click", "MOUSE_BUTTON_WHEEL_UP": "Wheel", "MOUSE_BUTTON_WHEEL_DOWN": "Wheel",

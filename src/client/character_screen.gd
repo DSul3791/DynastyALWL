@@ -7,6 +7,7 @@ extends RefCounted
 const HEART_REST_BPM := 60.0
 const BODY_PX := 30
 const TITLE_PX := 40
+const CarryRules := preload("res://src/shared/carry_rules.gd")
 
 var open: bool = false
 
@@ -179,8 +180,9 @@ func refresh() -> void:
 
 	var rows: Array = [
 		["Luck", "%+d" % int(_items.luck) if int(_items.luck) != 0 else "0", "Fixed when the character was made; nudges every roll of chance."],
+		["Fitness", "%+d" % int(_items.fitness) if int(_items.fitness) != 0 else "0", "How slowly exertion builds when you run, climb or haul. Training it is not designed yet."],
 		["Body weight", "%.1f kg" % float(_items.weight_kg), ""],
-		["Can carry", "%.0f kg" % float(_items.carry_limit_kg()), "Nothing slows you up to 80 percent of this."],
+		["Can carry", "%.0f kg" % float(_items.carry_limit_kg()), ""],
 	]
 
 	for row in rows:
@@ -192,6 +194,24 @@ func refresh() -> void:
 		var value_label: Label = _label(row[1], BODY_PX)
 		value_label.custom_minimum_size = Vector2(_px(130), 0.0)
 		line.add_child(value_label)
+
+		if row[0] == "Can carry":
+			var carried: float = _items.carried_kg()
+			var fraction: float = clampf(carried / maxf(float(_items.carry_limit_kg()), 0.001), 0.0, 1.0)
+			var carry_bar: ProgressBar = ProgressBar.new()
+			carry_bar.show_percentage = false
+			carry_bar.max_value = 100.0
+			carry_bar.value = fraction * 100.0
+			carry_bar.custom_minimum_size = Vector2(_px(260), _px(26))
+			carry_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			var carry_fill: StyleBoxFlat = StyleBoxFlat.new()
+			carry_fill.bg_color = CarryRules.bar_color(fraction)
+			carry_bar.add_theme_stylebox_override("fill", carry_fill)
+			var carry_empty: StyleBoxFlat = StyleBoxFlat.new()
+			carry_empty.bg_color = Color(0.0, 0.0, 0.0, 0.5)
+			carry_bar.add_theme_stylebox_override("background", carry_empty)
+			line.add_child(carry_bar)
+			line.add_child(_label("%.1f kg carried" % carried, BODY_PX - 4))
 
 		if row[2] != "":
 			var note: Label = _label(row[2], BODY_PX - 6)
