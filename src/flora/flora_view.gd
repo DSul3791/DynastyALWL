@@ -262,7 +262,7 @@ var _splash_material: ShaderMaterial
 var _foam_material: ShaderMaterial
 # Falls drawn per water chunk, by quality (Low, Medium, High, Ultra); farther than FALL_VIEW_M none.
 const FALL_CAP := [2, 4, 8, 12]
-const FALL_VIEW_M := 350.0
+const FALL_VIEW_M := 700.0   # measured from the chunk corner (the mesh origin), not the fall: 350 hid ribbons in a chunk's far half (Dave, build 483)
 var fall_cap: int = 4
 var falls_drawn: int = 0
 var _tree_materials: Dictionary = {}       # TreeBuilder materials (bark, broad, conifer, palm)
