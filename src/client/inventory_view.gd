@@ -1891,9 +1891,10 @@ const STICK_VIEW_M := 100.0
 # but proud of the blades. A little extra brightness and a faint warm glow keep them readable in shade.
 const PICKUP_SIZE_MULT := 3.0   # Dave, 2026-10-21: three times the earlier size
 const STONE_SCALE := Vector2(2.4, 3.4) * PICKUP_SIZE_MULT
-const STICK_SCALE := Vector2(2.0, 2.7) * PICKUP_SIZE_MULT
+const STICK_SIZE_SHARE := 0.75   # Dave 2026-10-21: sticks about 75 percent of that, lying on the ground
+const STICK_SCALE := Vector2(2.0, 2.7) * PICKUP_SIZE_MULT * STICK_SIZE_SHARE
+const STICK_TINT := Color(0.42, 0.29, 0.17)   # bark brown, multiplied into the mesh colours
 const STONE_LIFT_M := 0.05 * PICKUP_SIZE_MULT
-const STICK_LIFT_M := 0.22 * PICKUP_SIZE_MULT
 const PICKUP_BRIGHT := 1.3
 const PICKUP_GLOW := Color(0.13, 0.11, 0.08)
 var _pickup_meshes: Dictionary = {}   # group -> Array of Mesh (empty when the files are not there)
@@ -1918,7 +1919,7 @@ func _pickup_group(group: String) -> Array:
 
 						if base is StandardMaterial3D:
 							var lit: StandardMaterial3D = base.duplicate()
-							lit.albedo_color = Color(PICKUP_BRIGHT, PICKUP_BRIGHT, PICKUP_BRIGHT)
+							lit.albedo_color = STICK_TINT if group == "stick" else Color(PICKUP_BRIGHT, PICKUP_BRIGHT, PICKUP_BRIGHT)
 							lit.emission_enabled = true
 							lit.emission = PICKUP_GLOW
 							mesh.surface_set_material(surface, lit)
@@ -1967,8 +1968,8 @@ func _dress_natural(node: MeshInstance3D, id: String, rng: RandomNumberGenerator
 	else:
 		var size: float = rng.randf_range(STICK_SCALE.x, STICK_SCALE.y)
 		node.scale = Vector3(size, size, size)
-		node.rotation = Vector3(rng.randf_range(-0.1, 0.1), rng.randf_range(0.0, TAU), rng.randf_range(-0.08, 0.08))
-		node.position.y += STICK_LIFT_M - rng.randf_range(0.0, 0.03)
+		node.rotation = Vector3(rng.randf_range(-0.04, 0.04), rng.randf_range(0.0, TAU), rng.randf_range(-0.04, 0.04))
+		node.position.y -= height * node.scale.y * rng.randf_range(0.1, 0.35)   # seated in the ground like the stones
 		node.visibility_range_end = STICK_VIEW_M
 		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 

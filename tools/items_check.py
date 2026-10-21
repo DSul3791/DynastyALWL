@@ -69,7 +69,7 @@ CLIENTS = [
         ("held E stops when nothing is in reach", r"last two steps " + NUM, 0, 0),
         ("stones use the real meshes", r"Natural look: stone uses " + NUM + " real meshes", 6, 6),
         ("stones stand out (1 m and up, three times the old size)", r"Natural size: stone lies " + NUM + " to", 0.9, 1.8),
-        ("sticks stand out (2.4 m and up, three times the old size)", r"Natural size: stick lies " + NUM + " to", 2.3, 4.8),
+        ("sticks stand out (1.8 m and up, 75 percent of the old size, Dave 2026-10-21)", r"Natural size: stick lies " + NUM + " to", 1.6, 3.8),
         ("sticks use the real meshes", r"Natural look: stick uses " + NUM + " real meshes", 3, 3),
         ("driftwood uses the real meshes", r"Natural look: driftwood uses " + NUM + " real meshes", 3, 3),
     ]),
