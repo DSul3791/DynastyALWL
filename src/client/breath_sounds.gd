@@ -246,7 +246,14 @@ func _bpm() -> float:
 	return lerpf(170.0, 220.0, _over())
 
 
+# Dave 2026-10-21: no heavy breathing on exertion (breath_in, breath_out, breath_gasp, breath_heave); the heartbeat stays.
+const BREATHING := false
+
+
 func _breathe(delta: float) -> void:
+	if not BREATHING:
+		return
+
 	_breath_left -= delta
 
 	if _out_pending >= 0.0:

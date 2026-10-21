@@ -469,3 +469,7 @@ Bird species (whistle, feebee, trill, chirp, crow, woodpecker) have `seasons` an
 ## Wind in structures (job 89)
 
 `wind_structures.gd` (`sound.windhole`), two flat loops on the Wind bus (`windhole/wind_whistle`, `wind_hollow`, `make_windhole.py`). Gate: silent under a breeze (wind_strength below 0.35), full at 0.95. Moan = gate x sin(pi x enclosure) (peaks at a cave mouth, gone in open air and in a sealed tunnel); whistle = gate x (0.8 x roofed x (1 - enclosure) + 0.5 x mouth shape). Pitch rises a little with the wind. Eases 1 s; the player stops under 1 % level, under water, or when the world is muted. Cost: at most two loop players, none in calm or open air. Check: `python3 tools/sound_check.py --only windhole` (run `godot --headless --path . --import` first after new files).
+
+## No heavy breathing (fix, 2026-10-21)
+
+Dave: remove the heavy breathing on exertion. `BREATHING := false` in `breath_sounds.gd` skips breath_in, breath_out, breath_gasp and breath_heave (files stay); the heartbeat and the faint fade are unchanged. The `faint` check now expects 0 heaves.
