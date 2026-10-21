@@ -2796,12 +2796,24 @@ func effort_of(peer: int) -> float:
 
 
 # How far into the hindering band the load is: 0 up to 80 percent of the limit, 1 at the limit.
+var _load_cache: Dictionary = {}     # peer -> load ratio, valid only during one _vitals_tick (it asks four times per player)
+var _in_vitals: bool = false
+
+
 func _load_ratio(peer: int) -> float:
 	if _carry_cfg.is_empty():
 		return 0.0
 
+	if _in_vitals and _load_cache.has(peer):
+		return float(_load_cache[peer])
+
 	var body: float = _carry_body(peer)
-	return CarryRules.load_fraction(carried_kg_of(peer), body, _carry_cfg)
+	var ratio: float = CarryRules.load_fraction(carried_kg_of(peer), body, _carry_cfg)
+
+	if _in_vitals:
+		_load_cache[peer] = ratio
+
+	return ratio
 
 
 # Stance changes (0 stand, 1 crouch, 2 sit, 3 lie). Fainted or waking players cannot choose; the answer
@@ -3177,6 +3189,9 @@ func _vitals_tick(spent: float) -> void:
 	var cap: float = float(_vitals_cfg.get("stomach_cap_kcal", 2400))
 	var health_max: float = float(_vitals_cfg.get("health_max", 100))
 	var game_s: float = spent * GAME_RATE
+	_load_cache.clear()
+	_lit_valid = false
+	_in_vitals = true
 
 	for peer in _peer_key:
 		var v: Dictionary = _vitals.get(_peer_key[peer], {})
@@ -3216,6 +3231,8 @@ func _vitals_tick(spent: float) -> void:
 
 		_sync_vitals(peer, false)
 		_strain_tick(peer, spent)
+
+	_in_vitals = false
 
 
 # --- Sickness (Dave 2026-10-21; data/items/sickness.json) ---
@@ -3474,6 +3491,33 @@ func daily_offset(weather: Dictionary, altitude_m: float = 0.0) -> float:
 	return swing * (shape - 0.38)
 
 
+# The positions of the burning fires. Inside one _vitals_tick they are listed once for all players (the soak test found warmth
+# scanning every world record per player); anywhere else the scan is live.
+var _lit_cache: Array = []
+
+
+func _lit_fires() -> Array:
+	if _in_vitals and _lit_valid:
+		return _lit_cache
+
+	var found: Array = []
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if it.has("fire") and int(it["fire"]["state"]) == 1:
+			found.append(it["pos"])
+
+	if _in_vitals:
+		_lit_cache = found
+		_lit_valid = true
+
+	return found
+
+
+var _lit_valid: bool = false
+
+
 func warmth_target(peer: int) -> float:
 	var cfg: Dictionary = _warmth_cfg
 	var weather: Dictionary = weather_now.call() if weather_now.is_valid() else {}
@@ -3484,10 +3528,8 @@ func warmth_target(peer: int) -> float:
 	var feels: float = air - wind * float(cfg.get("wind_chill_c", 6.0))
 	var radius: float = float(cfg.get("fire_radius_m", 4.0))
 
-	for id in _items:
-		var it: Dictionary = _items[id]
-
-		if it.has("fire") and int(it["fire"]["state"]) == 1 and it["pos"].distance_to(pos) <= radius:
+	for fire_pos in _lit_fires():
+		if fire_pos.distance_to(pos) <= radius:
 			feels += float(cfg.get("fire_c", 20.0))
 			break
 

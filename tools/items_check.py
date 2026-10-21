@@ -41,6 +41,8 @@ UNITS = [
     ("animals", "src/worldgen/tools/test_animals.gd"),
     ("animal_senses", "src/worldgen/tools/test_animal_senses.gd"),
     ("forge_models", "src/worldgen/tools/test_forge_models.gd"),
+    ("soak", "src/worldgen/tools/soak_server.gd"),
+    ("save_compat", "src/worldgen/tools/test_save_compat.gd"),
     ("first_hour", "src/worldgen/tools/test_first_hour.gd"),
 ]
 
