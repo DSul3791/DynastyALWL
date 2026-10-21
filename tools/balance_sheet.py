@@ -162,6 +162,20 @@ for rid, rr in rcp.items():
     if rr.get("station"):
         L.append("| %s | %s | %d | %s |" % (rr["name"], rr["station"].replace("_", " "), rr.get("station_level", 1), ", ".join("%d %s" % (n[1], n[0]) for n in rr["needs"])))
 L += [""]
+L += ["Station tiers (Dave 2026-10-21, all placeable): " + "; ".join("%s %s (workbench %d%s)" % (v.get("tier", ""), k.replace("_", " "), v["station_level"], ", forge %d" % v["also"]["forge"] if v.get("also") else "") for k, v in strc.items() if v.get("tier")) + ".", ""]
+
+# --- Skill web hours (tools/skills_sim.py, Tyler's curve; the web is not built yet) ---
+import importlib.util
+spec = importlib.util.spec_from_file_location("skills_sim", os.path.join(os.path.dirname(os.path.abspath(__file__)), "skills_sim.py"))
+sim = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(sim)
+class SimArgs:
+    day_cap = 300.0; base = 40.0; growth = 1.045; gen = 1.5; cap_step = 25; train_speed = 1.2
+tabs = [sim.simulate(d, SimArgs) for d in (0, 1, 2)]
+L += ["## Skills web: hours of play to reach each value (design, not built)", "", "From tools/skills_sim.py: practice cost of the next point = 40 x 1.045^(n-1) x 1.5 per generation, 300 practice units a game day (a real hour) at most, untrained cap 25, +25 per training level (a teacher is assumed found at each cap; training gains x1.2). Real hours of play for one skill. Depth 0 is a foundation like Athleticism, depth 1 a skill under it, depth 2 a subskill.", "", "| Value | Depth 0 | Depth 1 | Depth 2 |", "|---|---|---|---|"]
+for v in (15, 25, 40, 50, 65, 75, 90, 100):
+    L.append("| %d | %.0f h | %.0f h | %.0f h |" % (v, tabs[0][v][0], tabs[1][v][0], tabs[2][v][0]))
+L += [""]
 L += ["", "## What looks off", ""]
 L += ["- " + f for f in flags] or ["Nothing in these tables trips the checks (a day of food, a day of water, craft times under a minute, tools of 30+ uses)."]
 open(out_path, "w").write("\n".join(L) + "\n")
