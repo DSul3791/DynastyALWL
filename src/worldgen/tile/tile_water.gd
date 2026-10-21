@@ -643,6 +643,9 @@ func _carve_guides(rivers: Array) -> void:
 				width *= grow
 				depth *= grow
 
+			# Dave (2026-10-21, build 483): at the x10 spring flow a channel one or two cells wide piled the water up
+			# 2 m above its own banks. A river is never narrower than river_min_width_m (3 cells).
+			width = maxf(width, float(_rules.get("river_min_width_m", 0.0)))
 			widths[k] = width
 			depths[k] = depth
 

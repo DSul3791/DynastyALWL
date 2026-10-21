@@ -5,7 +5,7 @@ extends SceneTree
 # each river head (moved to flat high ground close by), runs the simulation, writes
 # worlds/base_world/water/tile_X_Z.water and a flood picture.
 #
-#   godot --headless --path . --script res://src/worldgen/tools/settle_water.gd -- --tile=3,4 [--ticks=600] [--rate=10] (m3/s per spring) [--multiplier=10] (the server's start flow rate, WaterLive.DEFAULT_RATE) [--picture=PATH]
+#   godot --headless --path . --script res://src/worldgen/tools/settle_water.gd -- --tile=3,4 [--ticks=600] [--rate=10] (m3/s per spring) [--world=DIR] (a scratch copy of the world folder, default res://worlds/base_world) [--multiplier=10] (the server's start flow rate, WaterLive.DEFAULT_RATE) [--picture=PATH]
 
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
 const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings.gd")
@@ -14,7 +14,9 @@ const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const WaterSettler := preload("res://src/water/water_settler.gd")
 const WaterStore := preload("res://src/water/water_store.gd")
 
-const WORLD_DIR := "res://worlds/base_world"
+const DEFAULT_WORLD_DIR := "res://worlds/base_world"
+
+var WORLD_DIR: String = DEFAULT_WORLD_DIR
 
 
 func _init() -> void:
@@ -34,6 +36,8 @@ func _init() -> void:
 			rate = float(argument.trim_prefix("--rate="))
 		elif argument.begins_with("--multiplier="):
 			multiplier = float(argument.trim_prefix("--multiplier="))
+		elif argument.begins_with("--world="):
+			WORLD_DIR = argument.trim_prefix("--world=")
 		elif argument.begins_with("--picture="):
 			picture = argument.trim_prefix("--picture=")
 

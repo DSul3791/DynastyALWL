@@ -204,6 +204,7 @@
 			{"wavelength_m": 260, "amplitude_m": 12}
 		],
 		"river_width_base_m": 18,
+		"river_min_width_m": 24,
 		"river_width_per_sqrt_km2": 0.3,
 		"river_depth_base_m": 3.75,
 		"river_depth_per_width": 0.0375,
