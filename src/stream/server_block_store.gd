@@ -371,7 +371,15 @@ func _cell_text(buffer: VoxelBuffer, local: Vector3i) -> String:
 # The block as it is sent to clients: buried ore hidden, compressed.
 func block_bytes(block: Vector3i, lod: int) -> PackedByteArray:
 	var buffer: VoxelBuffer = Layout.make_buffer(BLOCK_SIZE)
+	var failed_before: int = generator.failed_tiles
 	load_block(buffer, block, lod)
+
+	# Built from a stand-in tile (its file would not load just now, for instance during a bake): not ready. An empty
+	# answer makes the client drop the block, not cache it, and ask again.
+	if generator.failed_tiles != failed_before:
+		_count("not_ready")
+		return PackedByteArray()
+
 	if looks_zeroed(buffer):
 		print("server: ZEROED BLOCK %s LOD %d after generating; serving it anyway (failed tile loads %d)" % [str(block), lod, generator.failed_tiles])
 
