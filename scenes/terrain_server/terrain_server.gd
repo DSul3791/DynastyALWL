@@ -339,6 +339,13 @@ func _start_water() -> void:
 	water_live = WaterLiveScript.new()
 	water_live.setup(water_data, "%s/water/tile_%d_%d.water" % [_world_dir, water_tile.x, water_tile.y], WATER_BASE_RATE, generator, dry_start)
 
+	# Saved digs and fills shape the water's ground again after every restart and re-bake.
+	for edit in store.ops.edits():
+		if int(edit[0]) == store.ops.KIND_FILL:
+			water_live.fill(edit[1], float(edit[2]))
+		else:
+			water_live.dig(edit[1], float(edit[2]))
+
 
 # Which starter ground (shipped client cache) fits the tiles: terrain version and the spawn tile file.
 func _starter_stamp() -> String:

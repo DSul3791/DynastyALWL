@@ -91,8 +91,17 @@ func step_rate(direction: int) -> float:
 
 # A player dug a hole: the water thread lowers its ground there and runs again.
 func dig(center: Vector3, radius: float) -> void:
+	_edit(center, radius, false)
+
+
+# A player filled ground in (a dam): the water thread raises its ground there and runs again.
+func fill(center: Vector3, radius: float) -> void:
+	_edit(center, radius, true)
+
+
+func _edit(center: Vector3, radius: float, filled: bool) -> void:
 	_mutex.lock()
-	_digs.append([center, radius])
+	_digs.append([center, radius, filled])
 	_budget = maxf(_budget, RUN_SECONDS)
 	_mutex.unlock()
 
@@ -162,8 +171,10 @@ func _run() -> void:
 		var tick_start: int = Time.get_ticks_usec()
 
 		for hole in digs:
-			var cells: int = sim.dig(hole[0], hole[1], Vector2(data.x0, data.z0))
-			print("water: a dig at %s lowered %d water squares" % [str(hole[0]), cells])
+			if hole[2]:
+				print("water: a fill at %s raised %d water squares" % [str(hole[0]), sim.fill(hole[0], hole[1], Vector2(data.x0, data.z0))])
+			else:
+				print("water: a dig at %s lowered %d water squares" % [str(hole[0]), sim.dig(hole[0], hole[1], Vector2(data.x0, data.z0))])
 
 		# The rate scales the springs only; the water itself moves by gravity and
 		# friction, so a low rate drains the rivers to a trickle (owner, 2026-10-19).

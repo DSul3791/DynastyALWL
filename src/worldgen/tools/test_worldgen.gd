@@ -1941,12 +1941,18 @@ func _test_streaming(generator, data) -> void:
 	var dug_block: Vector3i = Vector3i((center / 16.0).floor())
 	store.load_block(dug, dug_block, 0)
 	var inside: Vector3i = Vector3i(center.floor()) - dug_block * 16
-	_check(store.edit_hits == 1 and dug.get_voxel_f(inside.x, inside.y, inside.z, TerrainLayout.CHANNEL_SDF) > 0.0,
-		"the dug block comes from the edits store and is open at the dig")
+	_check(dug.get_voxel_f(inside.x, inside.y, inside.z, TerrainLayout.CHANNEL_SDF) > 0.0,
+		"the dug block is open at the dig")
 	store.flush()
 	var reopened = ServerStoreScript.new()
 	reopened.setup(generator, root + "/server")
 	_check(reopened.revision_of(tile) == 2, "tile revisions survive a server restart")
+	# A re-bake throws the generated ground away; the saved dig replays over the new ground.
+	reopened.clear_generated()
+	var replayed: VoxelBuffer = TerrainLayout.make_buffer(16)
+	reopened.load_block(replayed, dug_block, 0)
+	_check(reopened.ops.count == 1 and replayed.get_voxel_f(inside.x, inside.y, inside.z, TerrainLayout.CHANNEL_SDF) > 0.0,
+		"a saved dig survives a restart and a re-bake")
 
 	# The client cache: hits, stale revisions and the size limit.
 	var world: Dictionary = {"tile_size_m": generator.tile_size_m, "min_tile": generator.min_tile, "tiles_per_side": int(round(generator.period_m / generator.tile_size_m))}

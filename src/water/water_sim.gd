@@ -238,6 +238,42 @@ func dig(center: Vector3, radius: float, origin: Vector2) -> int:
 	return changed
 
 
+# A fill (a dam, a filled ditch): each 8 m water square whose ground the sphere touches is raised to
+# the top of the fill there. The water already standing on it stays, so its level rises (the fill
+# displaces it). Returns how many squares rose.
+func fill(center: Vector3, radius: float, origin: Vector2) -> int:
+	var half: float = spacing_m * 0.5
+	var low_i: int = maxi(int(floor((center.x - radius - origin.x) / spacing_m)), 0)
+	var high_i: int = mini(int(ceil((center.x + radius - origin.x) / spacing_m)), side - 1)
+	var low_j: int = maxi(int(floor((center.z - radius - origin.y) / spacing_m)), 0)
+	var high_j: int = mini(int(ceil((center.z + radius - origin.y) / spacing_m)), side - 1)
+	var changed: int = 0
+
+	for j in range(low_j, high_j + 1):
+		for i in range(low_i, high_i + 1):
+			var cx: float = origin.x + float(i) * spacing_m
+			var cz: float = origin.y + float(j) * spacing_m
+			var near: Vector2 = Vector2(clampf(center.x, cx - half, cx + half), clampf(center.z, cz - half, cz + half))
+			var reach2: float = radius * radius - near.distance_squared_to(Vector2(center.x, center.z))
+
+			if reach2 <= 0.0:
+				continue
+
+			var reach: float = sqrt(reach2)
+			var k: int = j * side + i
+
+			if ground[k] <= 0.0 or center.y - reach > ground[k]:
+				continue
+
+			var top: float = center.y + reach
+
+			if top > ground[k]:
+				set_ground(i, j, top)
+				changed += 1
+
+	return changed
+
+
 func total_volume() -> float:
 	if _core != null:
 		return _core.total_volume()
