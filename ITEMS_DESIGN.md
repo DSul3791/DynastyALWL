@@ -112,3 +112,7 @@ Luck applies to ALL rolls: chance, loot, fate. Design note: /mnt/project-files/i
 ## Driftwood (job 71, 2026-10-21)
 
 Water's bank query turned out not to be needed: the server's `water_near` (live water sim, else baked water) is the bank test. A new item, Driftwood (number 30, stack 20, 2 kg, plain material), lies along the banks: 12 percent of the bank spots in drops.json ground_scatter "bank" hold driftwood instead of a stone, using Dave's three driftwood meshes at stick size. It is dry fuel: 15 game minutes in a fire, after firewood and before sticks in the fuel order. Nothing else uses it yet.
+
+## First-hour script (job 78)
+
+`test_first_hour.gd` (in items_check as first_hour) plays a new character's first real hour on the server: gather by hand, hand-craft a stone axe, fell a tree and work the trunk, craft and place a campfire, get thirsty and drink at the water, twist twine, build a lean-to and a woven chest. Each step is asserted and the vitals curve is printed as "first hour:" lines (hunger and thirst percent, weight). At the data's numbers a full stomach is about 37 percent after 36 minutes of mixed work, and thirst falls about as fast as hunger.

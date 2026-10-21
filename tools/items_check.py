@@ -29,6 +29,7 @@ UNITS = [
     ("server_items", "src/worldgen/tools/test_server_items.gd"),
     ("persistence", "src/worldgen/tools/test_items_persistence.gd"),
     ("drills", "src/worldgen/tools/test_persistence_drills.gd"),
+    ("first_hour", "src/worldgen/tools/test_first_hour.gd"),
 ]
 
 # name, client flags, frames, checks
