@@ -65,7 +65,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 556
+const BUILD := 557
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -1136,6 +1136,7 @@ func _sync_cleared() -> void:
 	grass.set_cleared(spots, radius, float(_cleared_cfg.get("edge_m", 1.5)))
 	grass.set_trunks(lying, float(_cleared_cfg.get("trunk_margin_m", 0.3)), float(_cleared_cfg.get("trunk_squash", 0.15)))
 	flora.set_cleared(spots, radius)
+	flora.set_trunks(lying, float(_cleared_cfg.get("trunk_margin_m", 0.3)))
 
 
 # Water within a stride of the feet or a step or two ahead (where you look, flat): what the E-to-drink prompt needs.

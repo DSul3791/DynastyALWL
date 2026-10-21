@@ -176,7 +176,7 @@ void vertex() {
 			float reach = mix(trunk_b[i].x, trunk_b[i].y, along) + trunk_b[i].z;
 			pressed = max(pressed, 1.0 - smoothstep(reach, reach + trunk_b[i].w, d));
 			float body = mix(trunk_b[i].x, trunk_b[i].y, along);
-			inside = max(inside, 1.0 - smoothstep(body * 0.8, body * 1.15, d));   // no blade grows out of the log itself
+			inside = max(inside, 1.0 - smoothstep(body * 0.8, body * 1.15 + 0.15, d));   // no blade grows out of the log itself
 		}
 	}
 	VERTEX.y *= mix(1.0, trunk_squash, pressed);

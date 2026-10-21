@@ -270,6 +270,8 @@ var fall_cap: int = 4
 var ground_ready: Callable = Callable()
 var cleared: Array = []               # Vector3 spots of placed items: shrubs and small plants within clear_m are not drawn (set_cleared)
 var clear_m: float = 5.0
+var trunks: Array = []               # felled trunks: [ax, az, bx, bz, radius a, radius b]; no small plants under or beside them (set_trunks)
+var trunk_margin_m: float = 0.3
 var _last_position: Vector3 = Vector3.ZERO
 var _ground_msec: int = 0
 var falls_drawn: int = 0
@@ -1180,10 +1182,31 @@ func set_cleared(spots: Array, radius: float) -> void:
 		_filter_cleared(chunk, true)
 
 
+# Felled trunks (Dave 2026-10-21): small plants growing out of a lying log are not drawn (the grass is pressed flat in grass_view).
+func set_trunks(list: Array, margin: float) -> void:
+	trunks = list
+	trunk_margin_m = margin
+
+	for chunk in _chunks.keys():
+		_filter_cleared(chunk, true)
+
+
+func _under_trunk(p: Vector3) -> bool:
+	for t in trunks:
+		var a: Vector2 = Vector2(t[0], t[1])
+		var ab: Vector2 = Vector2(t[2], t[3]) - a
+		var along: float = clampf((Vector2(p.x, p.z) - a).dot(ab) / maxf(ab.length_squared(), 0.0001), 0.0, 1.0)
+
+		if (Vector2(p.x, p.z) - (a + ab * along)).length() < lerpf(t[4], t[5], along) + trunk_margin_m + 0.2:
+			return true
+
+	return false
+
+
 func _filter_cleared(chunk: Vector2i, redraw: bool) -> void:
 	var entry: Dictionary = _chunks.get(chunk, {})
 
-	if entry.is_empty() or cleared.is_empty():
+	if entry.is_empty() or (cleared.is_empty() and trunks.is_empty()):
 		return
 
 	var items: Dictionary = entry["items"]
@@ -1195,7 +1218,12 @@ func _filter_cleared(chunk: Vector2i, redraw: bool) -> void:
 	while n >= 0:
 		var species: Dictionary = _species.get(int(ids[n]) >> 16, {})
 
-		if not species.is_empty() and int(species["kind"]) != KIND_TREE:
+		if not species.is_empty() and int(species["kind"]) != KIND_TREE and not trunks.is_empty() and _under_trunk(positions[n]):
+			for key in ["ids", "positions", "heights", "yaws"]:
+				items[key].remove_at(n)
+
+			removed = true
+		elif not species.is_empty() and int(species["kind"]) != KIND_TREE:
 			for spot in cleared:
 				if Vector2(positions[n].x - spot.x, positions[n].z - spot.z).length() < clear_m:
 					for key in ["ids", "positions", "heights", "yaws"]:
