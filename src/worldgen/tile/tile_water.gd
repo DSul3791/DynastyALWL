@@ -51,6 +51,7 @@ var _settings
 var _rules: Dictionary = {}
 var _legacy_rivers: bool = true
 var _ocean: PackedByteArray = PackedByteArray()
+var _chute_feet: Array = []   # per river: where each clean chute lands ({point, bed, width}), for its plunge pool
 var _origin_sx: int = 0       # world sample index of sample 0 (set by build)
 var _origin_sz: int = 0
 
@@ -775,6 +776,7 @@ func _carve_guides(rivers: Array) -> void:
 		# and straight down until they hit the ground, and if there are cascading waterfalls it
 		# will require more than one." Steep stretches of bed become a staircase of flat treads
 		# and one-sample vertical faces (the water is drawn from the sim, no ribbon meshes).
+		_chute_feet = []
 		var terraced: PackedByteArray = _terrace(points, usable, cumulative, beds, widths, banks)
 
 
@@ -891,8 +893,14 @@ func _carve_guides(rivers: Array) -> void:
 						if centre.distance_to(head_point) * spacing_m > radius_here:
 							_cut_brook(carved, centre, radius_here, rim_low, head_point, beds[0], widths[0], depths[0], min_fall, slope, areas[0] / cell_km2, best_flow)
 
-		# A plunge pool at the foot of every steep drop (waterfall or cascade):
-		# the water scours a basin where it lands.
+		# A plunge pool at the foot of every clean chute: the water scours a basin where it lands.
+		for foot in _chute_feet:
+			# Tyler: pool depth 0.3 to 0.5 of the drop (capped at 4 m), about as wide as the drop is high.
+			var chute_pool: float = clampf(float(foot["height"]), float(foot["width"]) * 1.8 + 6.0, 40.0)
+			var chute_depth: float = clampf(float(foot["height"]) * 0.4, pool_depth, 4.0)
+			_stamp_at(carved, foot["point"], chute_pool, chute_depth, float(foot["bed"]) - chute_depth * 0.9, float(_rules.get("terrace_bank", 2.0)), areas[0] / cell_km2, best_flow)
+			_wash_foot(carved, foot["point"], chute_pool * 0.5 + float(_rules.get("fall_wash_m", 24.0)))
+
 		var run_start: int = -1
 
 		for k in range(count - 2):
@@ -914,7 +922,7 @@ func _carve_guides(rivers: Array) -> void:
 				for near in range(maxi(run_start - 2, 0), mini(k + 4, count)):
 					staircase = staircase or terraced[near] == 1
 
-				if drop >= fall_min_drop and not staircase:
+				if drop >= fall_min_drop and not staircase and not bool(_rules.get("terrace_single_chute", false)):
 					var pool_width: float = clampf(widths[k] * 1.8 + 6.0, 10.0, 26.0)
 					_stamp_at(carved, points[k], pool_width, pool_depth, beds[k] - pool_depth * 0.9, slope, areas[k] / cell_km2, best_flow)
 					_wash_foot(carved, points[k], pool_width * 0.5 + float(_rules.get("fall_wash_m", 24.0)))
@@ -1344,6 +1352,7 @@ func _terrace(
 	var slope_min: float = float(_rules.get("terrace_slope", 0.30))
 	var window_m: float = float(_rules.get("terrace_window_m", 32.0))
 	var drop_target: float = float(_rules.get("terrace_drop_m", 20.0))
+	var single: bool = bool(_rules.get("terrace_single_chute", false))
 	var step_min: float = float(_rules.get("terrace_step_min_m", 24.0))
 	var run_min: float = float(_rules.get("terrace_run_min_m", 40.0))
 	var drop_min: float = float(_rules.get("terrace_drop_min_m", 8.0))
@@ -1407,6 +1416,12 @@ func _terrace(
 		while steps > 1 and length / float(steps) < step_min:
 			steps -= 1
 
+		# Owner (2026-10-21, Dave): never steps. One clean chute per steep run; where the land
+		# levels out onto a plateau the run ends, the plunge pool and a river follow, and the next
+		# drop is its own chute.
+		if single:
+			steps = 1
+
 		var period: float = length / float(steps)
 		var s0: float = along[used[from_a]]
 		var top_bed: float = beds[used[from_a]]
@@ -1414,6 +1429,8 @@ func _terrace(
 		var tread: PackedFloat32Array = PackedFloat32Array()
 
 		var half_run: float = clampf(round(widths[used[from_a]] / spacing_m) * spacing_m, width_min, width_max) * 0.5
+
+		var foot_set: bool = false
 
 		for j in range(steps):
 			var end_s: float = s0 + float(j + 1) * period + half_run
@@ -1433,6 +1450,11 @@ func _terrace(
 			var half: float = width * 0.5
 			var rel: float = along[k] - s0
 			flags[k] = 1
+
+			# The plunge pool sits at the foot of the face, one pool radius downstream of it.
+			if single and not foot_set and rel >= half + width * 0.6 and _bilinear(heights, points[k]) - tread[0] < float(_rules.get("chute_foot_land_m", 10.0)):
+				foot_set = true
+				_chute_feet.append({"point": points[k], "bed": tread[0], "width": width, "height": top_bed - tread[0]})
 			banks[k] = maxf(banks[k], wall_slope)
 
 			if rel < half:

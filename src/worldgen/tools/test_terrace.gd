@@ -20,14 +20,25 @@ func _check(ok: bool, what: String) -> void:
 		failures += 1
 
 
-func _carve(rules: Dictionary, fall_per_m: float) -> PackedFloat32Array:
-	# Flat 60 m plateau for 20 samples, then a slope of `fall_per_m` down to column 120, flat below.
+func _carve(rules: Dictionary, fall_per_m: float, profile: Array = []) -> PackedFloat32Array:
+	# Default: flat 60 m plateau for 20 samples, then a slope of `fall_per_m` down to column 120, flat below.
+	# With a profile ([[column, height], ...] joined by straight lines): that land instead.
 	var heights: PackedFloat32Array = PackedFloat32Array()
 	heights.resize(SIDE * SIDE)
 
 	for j in range(SIDE):
 		for i in range(SIDE):
-			heights[j * SIDE + i] = maxf(60.0 - maxf(float(i) - 30.0, 0.0) * SPACING * fall_per_m, 60.0 - 70.0 * SPACING * fall_per_m)
+			if profile.is_empty():
+				heights[j * SIDE + i] = maxf(60.0 - maxf(float(i) - 30.0, 0.0) * SPACING * fall_per_m, 60.0 - 70.0 * SPACING * fall_per_m)
+			else:
+				var h: float = float(profile[profile.size() - 1][1])
+
+				for n in range(profile.size() - 1):
+					if float(i) <= float(profile[n + 1][0]):
+						h = lerpf(float(profile[n][1]), float(profile[n + 1][1]), clampf((float(i) - float(profile[n][0])) / (float(profile[n + 1][0]) - float(profile[n][0])), 0.0, 1.0))
+						break
+
+				heights[j * SIDE + i] = h
 
 	var water = TileWaterScript.new()
 	water._rules = rules["water"]
@@ -66,6 +77,19 @@ func _faces(heights: PackedFloat32Array, min_drop: float) -> Array:
 	return faces
 
 
+# A face is one or two neighbouring drops (the cut edge is never exactly on a sample).
+func _merge_faces(faces: Array) -> Array:
+	var merged: Array = []
+
+	for face in faces:
+		if not merged.is_empty() and int(face[0]) - int(merged[merged.size() - 1][0]) <= 2:
+			merged[merged.size() - 1][1] = float(merged[merged.size() - 1][1]) + float(face[1])
+		else:
+			merged.append([face[0], face[1]])
+
+	return merged
+
+
 func _init() -> void:
 	var errors: Array = []
 	var rules: Dictionary = TileHeightScript.load_rules("res://worlds/base_world/plan/tile_rules.json", errors)
@@ -75,29 +99,37 @@ func _init() -> void:
 		quit(1)
 		return
 
-	var steep: PackedFloat32Array = _carve(rules, 1.2)
+	# Dave 2026-10-21: never steps. A 60 m cliff onto a plateau, a river across it, then a 30 m cliff:
+	# two clean chutes, one face each, a plunge pool at each foot, no benches on the way down.
+	var land: Array = [[0, 200.0], [30, 200.0], [34, 140.0], [70, 140.0], [73, 110.0], [120, 110.0]]
+	var chutes: PackedFloat32Array = _carve(rules, 0.0, land)
 
 	if OS.get_cmdline_user_args().has("--profile"):
-		for i in range(20, 110):
-			print("col %d  %.1f  (%.1f)" % [i, steep[80 * SIDE + i], steep[75 * SIDE + i]])
+		for i in range(20, 125):
+			print("col %d  %.1f  (%.1f)" % [i, chutes[80 * SIDE + i], chutes[75 * SIDE + i]])
 
-	var faces: Array = _faces(steep, 8.0)
-	_check(faces.size() >= 3, "a steep slope becomes a cascade of several vertical faces (%d faces: %s)" % [faces.size(), str(faces)])
+	var faces: Array = _merge_faces(_faces(chutes, 8.0))
+	_check(faces.size() == 2, "two cliffs make exactly two chutes (%d faces: %s)" % [faces.size(), str(faces)])
 
-	# Treads between the faces are flat for at least two samples.
-	var flat_runs: int = 0
-	var run: int = 0
+	# No bench inside a drop: after the first face the bed only goes down to the pool floor, never steps again before the plateau.
+	var first_face: int = int(faces[0][0]) if faces.size() > 0 else 0
+	var second_face: int = int(faces[1][0]) if faces.size() > 1 else SIDE
+	var stray: int = 0
 
-	for i in range(20, 110):
-		if absf(steep[80 * SIDE + i] - steep[80 * SIDE + i + 1]) < 1.0:
-			run += 1
-		else:
-			if run >= 2:
-				flat_runs += 1
+	for i in range(first_face + 16, second_face - 8):
+		if absf(chutes[80 * SIDE + i] - chutes[80 * SIDE + i + 1]) >= 3.0:
+			stray += 1
 
-			run = 0
+	_check(stray == 0, "river reach between the chutes has no steps (%d)" % stray)
 
-	_check(flat_runs >= 2, "flat treads of 16 m or more between the faces (%d)" % flat_runs)
+	# A plunge pool: the bed a few samples below each face lies deeper than the bed that carries on after the pool.
+	var pool_a: float = INF
+
+	for i in range(first_face + 2, first_face + 14):
+		pool_a = minf(pool_a, chutes[80 * SIDE + i])
+
+	var reach_a: float = chutes[80 * SIDE + first_face + 24]
+	_check(pool_a < reach_a - 1.5, "plunge pool below the first chute (%.1f in the pool, %.1f on the reach)" % [pool_a, reach_a])
 
 	# A gentle slope is left alone.
 	var gentle: PackedFloat32Array = _carve(rules, 0.1)
