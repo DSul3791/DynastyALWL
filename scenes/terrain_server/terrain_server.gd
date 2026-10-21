@@ -23,6 +23,7 @@ const GameClockScript := preload("res://src/shared/game_clock.gd")
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
 const SwimScript := preload("res://src/shared/swim.gd")
 const NpcsScript := preload("res://src/stream/server_npcs.gd")
+const IdentityScript := preload("res://src/stream/identity_provider.gd")
 const AdminScript := preload("res://src/stream/server_admin.gd")
 const DialogueScript := preload("res://src/stream/server_dialogue.gd")
 const StoreScript := preload("res://src/stream/server_block_store.gd")
@@ -55,6 +56,7 @@ const IDLE_MAX_DONE := 400000          # remembered built blocks (skips re-check
 var generator
 var store
 var flora
+var identity = IdentityScript.new()      # who a peer is (src/stream/identity_provider.gd): the swap point for real logins
 var items                              # ServerItems: inventories and world items
 var npcs                               # ServerNpcs: classic NPCs (protocol 45)
 var admin                              # ServerAdmin: who may place markers and NPCs
@@ -308,7 +310,12 @@ func _ready() -> void:
 	net.water_rate_requested.connect(_on_water_rate_requested)
 	net.water_requested.connect(_on_water_requested)
 	net.hello_requested.connect(func(peer, key):
-		items.peer_connected_hello(peer, key)
+		var account: String = identity.authenticate(peer, key)
+
+		if account == "":
+			return
+
+		items.peer_connected_hello(peer, identity.store_key(account))
 		net.npc_roster.rpc_id(peer, npcs.roster()))
 	net.admin_place_requested.connect(_on_admin_place)
 	net.npc_talk_requested.connect(func(peer, npc_id, choice): dialogue.talk(peer, npc_id, choice))

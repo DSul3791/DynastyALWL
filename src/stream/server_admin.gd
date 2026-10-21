@@ -29,7 +29,9 @@ func load_keys(paths: Array = ["res://data/admin.json"]) -> void:
 				_keys[str(key)] = true
 
 
+# `key` is the store key or an account id ("local:<key>"); admin.json lists raw keys and is never logged.
 func is_admin(key: String) -> bool:
+	key = key.trim_prefix("local:")
 	return open_to_all or not enforce or (key != "" and _keys.has(key))
 
 

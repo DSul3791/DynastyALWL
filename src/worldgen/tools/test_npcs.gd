@@ -143,12 +143,15 @@ func _init() -> void:
 	admin.enforce = true
 	admin.load_keys(["user://nope/admin.json"])
 	check(AdminScript.new().is_admin("anything") or AdminScript.check_enabled(), "with the check off everybody is an admin")
+	var ident = load("res://src/stream/identity_provider.gd").new()
+	var acct: String = ident.authenticate(1, "key-one")
+	check(acct == "local:key-one" and ident.store_key(acct) == "key-one" and ident.store_key("google:abc") == "" and ident.authenticate(1, "") == "", "the local identity maps a key to local:<key> and back")
 	check(not admin.is_admin("anything") and not admin.is_admin("") and admin.count() == 0, "no admin file means no admins")
 	var f: FileAccess = FileAccess.open(dir + "/admin.json", FileAccess.WRITE)
 	f.store_string("{\"keys\": [\"key-one\"]}")
 	f.close()
 	admin.load_keys([dir + "/admin.json"])
-	check(admin.is_admin("key-one") and not admin.is_admin("key-two"), "only listed keys are admins")
+	check(admin.is_admin("key-one") and admin.is_admin("local:key-one") and not admin.is_admin("key-two"), "only listed keys are admins, as raw keys or account ids")
 	check(not FileAccess.get_file_as_string("res://data/admin.example.json").contains("\"keys\": []") , "the example file shows the shape")
 
 	# Admin additions survive a restart; two NPCs still never share.
