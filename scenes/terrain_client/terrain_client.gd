@@ -58,9 +58,10 @@ const GpuProbeScript := preload("res://src/debug/gpu_probe.gd")
 const WeatherLookScript := preload("res://src/client/weather_look.gd")
 const FaintEffectScript := preload("res://src/client/faint_effect.gd")
 const FallMistScript := preload("res://src/client/fall_mist.gd")
+const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 441
+const BUILD := 442
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
@@ -380,6 +381,14 @@ func _ready() -> void:
 		quality = clampi(display.quality, 0, QUALITY_NAMES.size() - 1)
 
 	display.apply(get_window())
+
+	for shot_argument in OS.get_cmdline_user_args():
+		if shot_argument.begins_with("--shots="):
+			var shot_runner = ShotRunnerScript.new()
+			shot_runner.name = "ShotRunner"
+			add_child(shot_runner)
+			shot_runner.setup(self, OS.get_cmdline_user_args())
+			break
 	var host: String = "127.0.0.1"
 	var port: int = 24600
 

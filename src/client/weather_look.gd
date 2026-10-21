@@ -35,6 +35,8 @@ signal flash_started(at_world: Vector3, distance_m: float)
 # Rain and storm darkening, the numbers to tweak (owner, 2026-10-20): how dark a full storm gets.
 const RAIN_OVERCAST := 0.6               # cloud cover as soon as it rains (light rain), rising to 1 in heavy rain
 const SUN_STORM := 0.05                  # share of the sun left under full cover
+const AMBIENT_STORM_FLOOR := 1.1         # the same floor in a full storm: no moon shows through the cloud, the fill has to carry the night
+const AMBIENT_NIGHT_COLOR := Color(0.24, 0.3, 0.44)   # the cold fill used on dark nights and storms
 const AMBIENT_FLOOR := 0.32             # ambient light never drops below this, so a storm night is not pure black
 const AMBIENT_STORM := 0.4               # ambient light left in a full storm (1 clear)
 const EXPOSURE_CLEAR := 1.1
@@ -363,7 +365,12 @@ func _process_body(delta: float) -> void:
 	if _client._sun != null:
 		_client._sun.light_energy = LookSettings.SUN_ENERGY * lerpf(SUN_STORM, 1.0, sun_amount) * day.light_factor + flash_level * 1.2
 
-	environment.ambient_light_energy = maxf(lerpf(1.0, AMBIENT_STORM, _dark * (1.0 - 0.7 * day.night)) * day.ambient_factor, AMBIENT_FLOOR) + flash_level * 2.0
+	environment.ambient_light_energy = maxf(lerpf(1.0, AMBIENT_STORM, _dark * (1.0 - 0.7 * day.night)) * day.ambient_factor, lerpf(AMBIENT_FLOOR, AMBIENT_STORM_FLOOR, _dark)) + flash_level * 2.0
+	# The sky's own light is near black on a dark night or a storm night, so a cold moonlit blue is mixed in
+	# (ambient colour counts where the sky contribution is below 1): trees and ground stay readable, never pure black.
+	var dim: float = clampf(maxf(day.night, _dark * 0.6), 0.0, 1.0)
+	environment.ambient_light_sky_contribution = 1.0 - 0.7 * dim
+	environment.ambient_light_color = AMBIENT_NIGHT_COLOR
 	# The whole picture goes dimmer and greyer with the weather.
 	environment.tonemap_exposure = lerpf(EXPOSURE_CLEAR, EXPOSURE_STORM, _dark)
 	environment.adjustment_saturation = lerpf(SATURATION_CLEAR, SATURATION_STORM, _dark)
