@@ -76,7 +76,19 @@
 		"rock_note": "Owner (2026-10-20): erosion knows the rock. Each point wears at the plain rate times soft_rate for the softest rock down to hard_rate for the hardest (geometric between, by rock.hardness), worked out from the rock at its current height every rock_refresh_iterations steps. River carving (water) ignores the rock.",
 		"soft_rate": 2.0,
 		"hard_rate": 0.1,
-		"rock_refresh_iterations": 5
+		"rock_refresh_iterations": 5,
+		"mountain_note": "Tyler (2026-10-21, M1): a second, stronger run (stream_k, iterations) blended in on high ground (from_m to full_m) and not near keep_clear spots (world x, z, radius_m, then fade_m): carves ridges and gullies in the mountains without moving lowlands, rivers, ponds or the spawn.",
+		"mountain": {
+			"stream_k": 0.02,
+			"iterations": 60,
+			"talus_deg": 33,
+			"cliff_deg": 50,
+			"thermal_iterations": 30,
+			"max_change_m": 25,
+			"from_m": 90,
+			"full_m": 200,
+			"keep_clear": [{"x": 53233, "z": 68416, "radius_m": 600, "fade_m": 600}]
+		}
 	},
 	"ore_cap": {
 		"note": "Owner (2026-10-20): ore under soil stays hidden. Where loose cover lies over rock, ore stops at least min_m (and the whole cover) below the surface; bare rock keeps its ore showing. In node_share of node_cell_m squares the ore is left exposed as a node (its top voxels turn to the host rock). terrain_generator.gd _fill_ore_column.",

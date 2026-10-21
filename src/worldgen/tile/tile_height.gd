@@ -19,6 +19,7 @@ var valley_guides: Array = []        # world rivers near the frame (RiverNetwork
 var rock = null                      # optional TileGeology prepared for this frame (prepare_frame): ledges follow its rock layers
 var defer_strata: bool = false       # build_frame leaves the rock beds for add_strata (the baker runs it after erosion)
 var _detail_scale: PackedFloat32Array = PackedFloat32Array()
+var _edge_cache: Dictionary = {}
 
 var _settings
 var _elevation
@@ -529,10 +530,18 @@ func _add_rock_beds(detail_scale: PackedFloat32Array) -> void:
 			continue
 
 		var beds_in_layer: int = maxi(int(round(thickness / bed)), 1)
-		var sub: float = thickness / float(beds_in_layer)
-		var position: float = (h - layer.y) / sub
-		var bed_index: int = clampi(int(floor(position)), 0, beds_in_layer - 1)
-		var t: float = clampf(position - float(bed_index), 0.0, 1.0)
+		# Tyler (2026-10-21): real beds differ in thickness (log-normal around bed_m, 0.4x to 2.5x) and
+		# dip a few degrees, so benches are neither evenly spaced nor dead level.
+		var edges: PackedFloat32Array = _bed_edges(int(layer.w), beds_in_layer, thickness, seed_value, rules)
+		var fraction: float = clampf((h - layer.y) / thickness, 0.0, 0.99999)
+		fraction = clampf(fraction - _dip_shift(int(layer.w), index, seed_value, rules, thickness) * 4.0 * fraction * (1.0 - fraction) / thickness, 0.0, 0.99999)
+		var bed_index: int = 0
+
+		while bed_index < beds_in_layer - 1 and fraction >= edges[bed_index + 1]:
+			bed_index += 1
+
+		var sub: float = (edges[bed_index + 1] - edges[bed_index]) * thickness
+		var t: float = clampf((fraction - edges[bed_index]) / (edges[bed_index + 1] - edges[bed_index]), 0.0, 1.0)
 		# Each bed its own strength: some low ledges, some tall cliffs.
 		strength *= ledge * (0.4 + 0.6 * _bed_hash(int(layer.w) * 31 + bed_index, seed_value))
 		var rise: float
@@ -594,6 +603,62 @@ func _add_rock_beds(detail_scale: PackedFloat32Array) -> void:
 	for index in range(total):
 		if delta[index] != 0.0:
 			heights[index] += delta[index]
+
+
+# Cumulative bed edges (0 to 1) of a rock layer split into `count` beds of uneven thickness; the same for every
+# sample of the layer, drawn from the layer and the strata seed.
+func _bed_edges(layer_number: int, count: int, thickness: float, seed_value: int, rules: Dictionary) -> PackedFloat32Array:
+	var key: int = layer_number * 100003 + int(round(thickness * 10.0)) * 31 + count
+	var cache: Dictionary = _edge_cache
+
+	if cache.has(key):
+		return cache[key]
+
+	var edges: PackedFloat32Array = PackedFloat32Array()
+	edges.append(0.0)
+	var weights: PackedFloat32Array = PackedFloat32Array()
+	var total_w: float = 0.0
+	var spread: float = float(rules.get("bed_sigma", 0.4))
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = hash(key) ^ seed_value
+
+	for n in range(count):
+		var w: float = 1.0 if spread <= 0.0 else clampf(exp(rng.randfn(0.0, spread)), 0.4, 2.5)
+		weights.append(w)
+		total_w += w
+
+	var run: float = 0.0
+
+	for n in range(count):
+		run += weights[n] / total_w
+		edges.append(run)
+
+	edges[count] = 1.0
+	cache[key] = edges
+	return edges
+
+
+# How far a bed plane is lifted at a sample by its dip: a slow wave across the country (world position along a
+# direction per layer) whose steepest slope is the layer's dip of 1 to 5 degrees and whose height is a third of the
+# layer, so neighbouring tiles agree and the layer's own top and bottom stay where they are (the caller fades it to
+# zero there).
+func _dip_shift(layer_number: int, index: int, seed_value: int, rules: Dictionary, thickness: float) -> float:
+	var max_deg: float = float(rules.get("bed_dip_max_deg", 5.0))
+
+	if max_deg <= 0.0:
+		return 0.0
+
+	var roll_a: float = _bed_hash(layer_number * 17 + 3, seed_value)
+	var roll_b: float = _bed_hash(layer_number * 17 + 5, seed_value)
+	var slope: float = tan(deg_to_rad(lerpf(float(rules.get("bed_dip_min_deg", 1.0)), max_deg, roll_a)))
+	var angle: float = roll_b * TAU
+	var amplitude: float = minf(thickness * 0.3, 12.0)
+	var wavelength: float = TAU * amplitude / slope
+	var i: int = index % samples
+	var j: int = index / samples
+	var wx: float = float(origin_sx + i) * spacing_m
+	var wz: float = float(origin_sz + j) * spacing_m
+	return amplitude * sin(TAU * (wx * cos(angle) + wz * sin(angle)) / wavelength)
 
 
 # A box blur of `field` (samples x samples) over (2 radius + 1) squared, two passes.

@@ -26,6 +26,7 @@ var highest_fill_m: float = 0.0
 
 var _settings
 var _rules: Dictionary = {}
+var _k_value: float = 0.0
 var _hardness: Dictionary = {}       # rock name -> 0 (soft) .. 1 (hard), tile_rules rock.hardness
 
 
@@ -44,6 +45,8 @@ func build(height_map, rock = null, margin: int = 0, frame_samples: int = 0) -> 
 	var step: int = maxi(int(round(float(_rules["cell_m"]) / spacing)), 1)
 	var coarse: int = (samples - 1) / step + 1
 	var dx: float = float(step) * spacing
+	var origin_sx: int = height_map.origin_sx
+	var origin_sz: int = height_map.origin_sz
 
 	# Coarse copy: each point is the average of the fine samples around it.
 	var start: PackedFloat32Array = PackedFloat32Array()
@@ -86,15 +89,46 @@ func build(height_map, rock = null, margin: int = 0, frame_samples: int = 0) -> 
 			var name: String = rock.rock_name(id)
 			by_id[id] = soft * pow(hard / soft, float(_hardness.get(name, 0.5)))
 
+	_k_value = float(_rules["stream_k"])
+
 	for iteration in range(int(_rules["iterations"])):
 		if not by_id.is_empty() and iteration % refresh == 0:
-			for row in range(coarse):
-				for column in range(coarse):
-					var index: int = row * coarse + column
-					var frame_index: int = (mini(row * step, samples - 1) + margin) * frame_samples + mini(column * step, samples - 1) + margin
-					erodibility[index] = by_id[int(rock.layer_at(frame_index, current[index]).x)]
+			_refresh_erodibility(erodibility, by_id, current, rock, coarse, step, margin, frame_samples)
 
 		_erode_once(current, sea, coarse, dx, erodibility)
+
+	# Tyler (2026-10-21, M1): the far mountains were smooth mounds without drainage. A second, stronger
+	# run (more stream power, more steps) is blended in only on high ground (mountain.from_m to full_m) and
+	# not at all near the places that must not move (mountain.keep_clear: x, z, radius_m, fade_m), so the
+	# lowlands, rivers, ponds and the spawn keep their shape; the tile-edge fade below still applies.
+	var mountain: Dictionary = _rules.get("mountain", {})
+
+	if not mountain.is_empty():
+		var strong: PackedFloat32Array = start.duplicate()
+		_k_value = float(mountain["stream_k"])
+
+		for iteration in range(int(mountain["iterations"])):
+			if not by_id.is_empty() and iteration % refresh == 0:
+				_refresh_erodibility(erodibility, by_id, strong, rock, coarse, step, margin, frame_samples)
+
+			_erode_once(strong, sea, coarse, dx, erodibility)
+
+		# Thermal pass (Tyler: talus 33 degrees, half of the excess moves, slopes steeper than cliff_deg are
+		# cliffs and stay): loose slopes settle and leave scree below.
+		_thermal(strong, sea, coarse, dx, float(mountain.get("talus_deg", 33.0)), float(mountain.get("cliff_deg", 50.0)), int(mountain.get("thermal_iterations", 30)))
+
+		for row in range(coarse):
+			for column in range(coarse):
+				var index: int = row * coarse + column
+				var mask: float = smoothstep(float(mountain["from_m"]), float(mountain["full_m"]), start[index])
+				var wx: float = float(origin_sx + column * step) * spacing
+				var wz: float = float(origin_sz + row * step) * spacing
+
+				for clear in mountain.get("keep_clear", []):
+					var away: float = Vector2(wx - float(clear["x"]), wz - float(clear["z"])).length()
+					mask *= smoothstep(float(clear["radius_m"]), float(clear["radius_m"]) + float(clear["fade_m"]), away)
+
+				current[index] = lerpf(current[index], strong[index], mask)
 
 	# Change per coarse point, faded toward the tile edges.
 	var fade_cells: float = float(_rules["edge_fade_m"]) / dx
@@ -127,6 +161,7 @@ func build(height_map, rock = null, margin: int = 0, frame_samples: int = 0) -> 
 	# Add the change back onto the fine map (bilinear between coarse points).
 	heights = fine.duplicate()
 	var min_land: float = float(_rules["min_land_m"])
+	var max_change: float = float(_rules.get("mountain", {}).get("max_change_m", 1.0e9))
 	deepest_cut_m = 0.0
 	highest_fill_m = 0.0
 
@@ -148,10 +183,56 @@ func build(height_map, rock = null, margin: int = 0, frame_samples: int = 0) -> 
 			var top: float = lerpf(delta[r0 * coarse + c0], delta[r0 * coarse + c0 + 1], tu)
 			var bottom: float = lerpf(delta[(r0 + 1) * coarse + c0], delta[(r0 + 1) * coarse + c0 + 1], tu)
 			var change: float = lerpf(top, bottom, tv)
+			change = clampf(change, -max_change, max_change)
 			var value: float = maxf(original + change, minf(original, min_land))
 			heights[index] = value
 			deepest_cut_m = maxf(deepest_cut_m, original - value)
 			highest_fill_m = maxf(highest_fill_m, value - original)
+
+
+# Thermal erosion on the coarse grid: where a point stands higher above a neighbour than the talus slope allows (and
+# the slope is not a cliff), half of the excess moves down to that neighbour. Sea points never change.
+func _thermal(h: PackedFloat32Array, sea: PackedByteArray, size: int, dx: float, talus_deg: float, cliff_deg: float, iterations: int) -> void:
+	var talus: float = tan(deg_to_rad(talus_deg))
+	var cliff: float = tan(deg_to_rad(cliff_deg))
+	var offsets: Array = [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
+
+	for iteration in range(iterations):
+		var change: PackedFloat32Array = PackedFloat32Array()
+		change.resize(size * size)
+
+		for row in range(1, size - 1):
+			for column in range(1, size - 1):
+				var index: int = row * size + column
+
+				if sea[index] == 1:
+					continue
+
+				for offset in offsets:
+					var other: int = (row + offset.y) * size + column + offset.x
+
+					if sea[other] == 1:
+						continue
+
+					var drop: float = h[index] - h[other]
+					var slope: float = drop / dx
+
+					if slope > talus and slope < cliff:
+						var move: float = 0.5 * (drop - talus * dx) * 0.25
+						change[index] -= move
+						change[other] += move
+
+		for index in range(size * size):
+			h[index] += change[index]
+
+
+# The erodibility of every coarse point from the rock at its current height.
+func _refresh_erodibility(erodibility: PackedFloat32Array, by_id: PackedFloat32Array, current: PackedFloat32Array, rock, coarse: int, step: int, margin: int, frame_samples: int) -> void:
+	for row in range(coarse):
+		for column in range(coarse):
+			var index: int = row * coarse + column
+			var frame_index: int = (mini(row * step, samples - 1) + margin) * frame_samples + mini(column * step, samples - 1) + margin
+			erodibility[index] = by_id[int(rock.layer_at(frame_index, current[index]).x)]
 
 
 # One erosion step on the coarse grid.
@@ -176,7 +257,7 @@ func _erode_once(h: PackedFloat32Array, sea: PackedByteArray, size: int, dx: flo
 			area[down] += area[index]
 
 	# Stream power, downstream cells first so each receiver is already final.
-	var k_value: float = float(_rules["stream_k"])
+	var k_value: float = _k_value
 	var exponent: float = float(_rules["area_exponent"])
 
 	for index in order:

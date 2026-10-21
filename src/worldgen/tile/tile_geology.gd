@@ -1016,12 +1016,22 @@ func _compute_cover(heights: PackedFloat32Array, water_class: PackedByteArray, s
 			var kind: int = water_class[index]
 			var depth: float = 0.0
 			var here: float = heights[index]
-			var cliff: bool = (
-				(i > 0 and absf(heights[index - 1] - here) >= cliff_m)
-				or (i < samples - 1 and absf(heights[index + 1] - here) >= cliff_m)
-				or (j > 0 and absf(heights[index - samples] - here) >= cliff_m)
-				or (j < samples - 1 and absf(heights[index + samples] - here) >= cliff_m)
-			)
+			var cliff: bool
+			# On a tile's edge the neighbours across it come from the ghost frame, so both tiles that share the
+			# edge judge the same four neighbours (a chute drop beside the edge made the covers differ).
+			if has_ghost:
+				var gat: int = (j + margin) * ghost_n + i + margin
+				cliff = (
+					absf(ghost_heights[gat - 1] - here) >= cliff_m or absf(ghost_heights[gat + 1] - here) >= cliff_m
+					or absf(ghost_heights[gat - ghost_n] - here) >= cliff_m or absf(ghost_heights[gat + ghost_n] - here) >= cliff_m
+				)
+			else:
+				cliff = (
+					(i > 0 and absf(heights[index - 1] - here) >= cliff_m)
+					or (i < samples - 1 and absf(heights[index + 1] - here) >= cliff_m)
+					or (j > 0 and absf(heights[index - samples] - here) >= cliff_m)
+					or (j < samples - 1 and absf(heights[index + samples] - here) >= cliff_m)
+				)
 
 			if cliff and kind != OCEAN:
 				depth = 0.0

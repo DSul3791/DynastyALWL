@@ -165,6 +165,8 @@ func bake(tile: Vector2i) -> Dictionary:
 	var core_height = TileHeightScript.new()
 	core_height.samples = core
 	core_height.spacing_m = frame_height.spacing_m
+	core_height.origin_sx = origin_sx + margin
+	core_height.origin_sz = origin_sz + margin
 	core_height.heights = raw_heights
 	var erosion = TileErosionScript.new()
 	erosion.setup(settings, tile_rules)
