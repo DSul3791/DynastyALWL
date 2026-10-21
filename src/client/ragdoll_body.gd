@@ -362,7 +362,7 @@ func _idle(p: float) -> Dictionary:
 # 45 degrees at foot plant, elbow 25 / 70 / 90 degrees, forward lean 2 / 6 / 10 degrees with the head level, shoulders turning
 # against the hips, the body rising twice a stride. Natural speeds (m/s) where the stride matches the ground: walk 1.4, jog 3.2,
 # run 6.0; terrain_client.gd scales the playback inside a limited range around them.
-func _gait(p: float, thigh: float, knee_swing: float, knee_plant: float, arm: float, elbow: float, lean: float, twist: float, bob: float, sink: float) -> Dictionary:
+func _gait(p: float, thigh: float, knee_swing: float, knee_plant: float, arm: float, elbow: float, lean: float, twist: float, bob: float, sink: float, hop: float = 0.0) -> Dictionary:
 	var s: float = sin(TAU * p)
 	var c: float = cos(TAU * p)
 	var swing_l: float = maxf(c, 0.0)
@@ -375,20 +375,20 @@ func _gait(p: float, thigh: float, knee_swing: float, knee_plant: float, arm: fl
 		"forearm_l": Vector3(elbow + 0.25 * elbow * maxf(-s, 0.0), 0.0, 0.0), "forearm_r": Vector3(elbow + 0.25 * elbow * maxf(s, 0.0), 0.0, 0.0),
 		"hips": Vector3(0.0, -0.4 * twist * s, 0.0),
 		"spine": Vector3(-lean * 0.6, twist * s, 0.0), "chest": Vector3(-lean * 0.4, -0.3 * twist * s, 0.0), "head": Vector3(lean * 0.9, 0.0, 0.0),
-		"hips_move": Vector3(0.0, bob * cos(2.0 * TAU * p) - sink, 0.0),
+		"hips_move": Vector3(0.0, bob * cos(2.0 * TAU * p) - sink + hop * maxf(cos(2.0 * TAU * p) - 0.3, 0.0) / 0.7, 0.0),
 	}
 
 
 func _walk(p: float) -> Dictionary:
-	return _gait(p, 0.45, 1.05, 0.3, 0.5, 0.4, 0.035, 0.08, 0.02, 0.01)
+	return _gait(p, 0.45, 1.05, 0.3, 0.3, 0.4, 0.035, 0.08, 0.02, 0.01)
 
 
 func _jog(p: float) -> Dictionary:
-	return _gait(p, 0.75, 1.65, 0.65, 0.8, 1.2, 0.1, 0.12, 0.03, 0.04)
+	return _gait(p, 0.6, 1.65, 0.65, 0.5, 1.2, 0.1, 0.12, 0.03, 0.04)
 
 
 func _run(p: float) -> Dictionary:
-	return _gait(p, 1.0, 1.9, 0.75, 1.0, 1.5, 0.18, 0.16, 0.045, 0.07)
+	return _gait(p, 0.75, 1.9, 0.75, 0.8, 1.5, 0.18, 0.16, 0.045, 0.07, 0.03)
 
 
 func _crouch(p: float) -> Dictionary:

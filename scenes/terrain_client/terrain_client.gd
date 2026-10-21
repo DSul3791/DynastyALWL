@@ -2192,6 +2192,16 @@ func _update_view(delta: float) -> void:
 
 		_avatar.animation_player.speed_scale = clampf(pace / 1.4, 0.5, 1.7) if clip == "walk" else (clampf(pace / 3.2, 0.8, 1.6) if clip == "jog" else (clampf(pace / 6.0, 0.8, 2.0) if clip == "run" else 1.0))
 
+		# Lean into a slope: uphill by the slope angle (up to 25 degrees), downhill a little back (Tyler's table).
+		var tilt: float = 0.0
+
+		if body.is_on_floor() and pace > 0.6 and clip != "idle":
+			var n: Vector3 = body.global_transform.basis.inverse() * body.get_floor_normal()
+			var angle: float = atan2(n.z, maxf(n.y, 0.1))
+			tilt = clampf(angle, -0.1, 0.44) if angle > 0.0 else clampf(angle * 0.4, -0.1, 0.0)
+
+		_avatar.rotation.x = lerpf(_avatar.rotation.x, -tilt, minf(1.0, 6.0 * get_process_delta_time()))
+
 
 # The plain ragdoll character (owner, 2026-10-21): body, head, arms, legs and hands, no features.
 func _make_avatar() -> Node3D:
