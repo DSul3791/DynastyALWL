@@ -689,6 +689,8 @@ func _carve_guides(rivers: Array) -> void:
 		var estuary_end: float = -1.0     # distance along the river where its usable stretch meets the sea
 		var cumulative: PackedFloat32Array = PackedFloat32Array()
 		cumulative.resize(count)
+		var estuary_here: PackedFloat32Array = PackedFloat32Array()
+		estuary_here.resize(count)
 
 		for k in range(1, count):
 			cumulative[k] = cumulative[k - 1] + points[k].distance_to(points[k - 1]) * spacing_m
@@ -732,8 +734,16 @@ func _carve_guides(rivers: Array) -> void:
 			var estuary: float = clampf(1.0 - to_sea / maxf(estuary_m, 1.0), 0.0, 1.0)
 
 			if estuary > 0.0:
-				bed = minf(bed, lerpf(bed, -float(_rules.get("estuary_depth_m", 1.5)), estuary))
+				var sunk: float = -float(_rules.get("estuary_depth_m", 1.5))
+				var bar: float = maxf(1.0 - absf(to_sea - float(_rules.get("estuary_bar_at_m", 60.0))) / maxf(float(_rules.get("estuary_bar_half_m", 30.0)), 1.0), 0.0)
+				# Tyler (2026-10-21): a submerged bar a little inside the mouth, the channel deeper beyond it.
+				sunk = lerpf(sunk, float(_rules.get("estuary_bar_bed_m", -0.6)), bar)
+				# Only where the river already runs near sea level: a river that meets the sea over a
+				# cliff or a hill is not drowned (it would cut a deep slot through the headland).
+				estuary *= clampf(1.0 - (bed - float(_rules.get("estuary_max_bed_m", 4.0))) / 6.0, 0.0, 1.0)
+				bed = minf(bed, lerpf(bed, sunk, estuary))
 				widths[k] *= lerpf(1.0, float(_rules.get("estuary_widen", 1.6)), estuary)
+				estuary_here[k] = estuary
 
 			last_bed = bed
 			last_along = run_length
@@ -770,6 +780,8 @@ func _carve_guides(rivers: Array) -> void:
 
 				bank_here = maxf(slope, face * 1.25)
 
+			# Gentle banks (estuary_bank, 1 in 8) where the river widens into the sea.
+			bank_here = lerpf(bank_here, minf(bank_here, float(_rules.get("estuary_bank", 0.125))), estuary_here[k])
 			banks[k] = bank_here
 
 		# Owner (2026-10-21, Dave): "we will have to fix the generator to make waterfalls flat
