@@ -3874,7 +3874,7 @@ func _fish_species(cell: Vector2i) -> String:
 	var cfg: Dictionary = _fishing_data()
 	var types: Array = cfg.get("types", ["pond"])
 	var water: String = str(types[(_cell_hash(cell) / 7) % types.size()])
-	var roll: float = _fate_rng.randf()
+	var roll: float = _fate_rng.randf()   # luck-exempt: the fate stream picks the fish species (luck applies to the catch roll)
 	var table_rows: Array = cfg.get("species", {}).get(water, [])
 	var acc: float = 0.0
 

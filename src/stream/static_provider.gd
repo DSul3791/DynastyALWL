@@ -65,7 +65,7 @@ func _pick(options: Array, ctx: Dictionary) -> String:
 			fresh.append(str(o))
 
 	var pool: Array = fresh if not fresh.is_empty() else options
-	var text: String = str(pool[randi() % pool.size()])
+	var text: String = str(pool[randi() % pool.size()])   # luck-exempt: which wording of a line, no outcome
 	recent.append(hash(text))
 
 	while recent.size() > VOICE_RECENT:

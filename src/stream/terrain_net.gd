@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 47
+const PROTOCOL_VERSION := 48
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -59,6 +59,7 @@ signal remains_received(rows: Array)
 signal worn_received(numbers: PackedInt32Array)
 signal npc_roster_received(rows: Array)
 signal npcs_received(rows: Array)
+signal animals_received(rows: Array)
 signal npc_talk_requested(peer_id: int, npc_id: String, choice: int)
 signal npc_say_received(npc_id: String, npc_name: String, text: String, voice_id: String, choices: PackedStringArray, ends: bool)
 signal admin_place_requested(peer_id: int, kind: String, pos: Vector3, arg: String)
@@ -316,6 +317,13 @@ func npc_roster(rows: Array) -> void:
 @rpc("authority", "call_remote", "unreliable")
 func npcs(rows: Array) -> void:
 	npcs_received.emit(rows)
+
+
+# Animals (protocol 48, data/animals/animals.json): the animals within 120 m as [[id, species number, position, heading radians,
+# state 0 graze / 1 hop / 2 flee], ...], nearest 30, about four times a second when something near changed.
+@rpc("authority", "call_remote", "unreliable")
+func animals(rows: Array) -> void:
+	animals_received.emit(rows)
 
 
 # Talking (protocol 45): the player asks to talk to an NPC (choice -1) or picks a choice by index; the server answers with the NPC's

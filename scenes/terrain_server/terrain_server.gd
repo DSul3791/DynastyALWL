@@ -23,6 +23,7 @@ const GameClockScript := preload("res://src/shared/game_clock.gd")
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
 const SwimScript := preload("res://src/shared/swim.gd")
 const NpcsScript := preload("res://src/stream/server_npcs.gd")
+const AnimalsScript := preload("res://src/stream/server_animals.gd")
 const IdentityScript := preload("res://src/stream/identity_provider.gd")
 const AdminScript := preload("res://src/stream/server_admin.gd")
 const DialogueScript := preload("res://src/stream/server_dialogue.gd")
@@ -56,6 +57,8 @@ const IDLE_MAX_DONE := 400000          # remembered built blocks (skips re-check
 var generator
 var store
 var flora
+var animals                            # ServerAnimals: wildlife around the players (rabbits)
+var _animal_sent: Dictionary = {}
 var identity = IdentityScript.new()      # who a peer is (src/stream/identity_provider.gd): the swap point for real logins
 var items                              # ServerItems: inventories and world items
 var npcs                               # ServerNpcs: classic NPCs (protocol 45)
@@ -265,6 +268,11 @@ func _ready() -> void:
 		return not is_nan(water[0]) and float(water[0]) - float(water[1]) > 0.7
 	npcs.player_positions = func(): return items.peer_positions()
 	npcs.setup(store_dir)
+	animals = AnimalsScript.new()
+	animals.ground_height = npcs.ground_height
+	animals.blocked = npcs.blocked
+	animals.player_positions = npcs.player_positions
+	animals.setup()
 	dialogue = DialogueScript.new()
 	dialogue.items = items
 	dialogue.npcs = npcs
@@ -478,6 +486,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	])
 	_peers.erase(peer_id)
 	_npc_sent.erase(peer_id)
+	_animal_sent.erase(peer_id)
 	dialogue.peer_left(peer_id)
 	items.peer_left(peer_id)
 
@@ -854,6 +863,13 @@ func _send_npcs(delta: float) -> void:
 			_npc_sent[peer] = signature
 			net.npcs.rpc_id(peer, rows)
 
+		var beasts: Array = animals.rows_near(at)
+		var sig: String = str(beasts)
+
+		if _animal_sent.get(peer, "") != sig:
+			_animal_sent[peer] = sig
+			net.animals.rpc_id(peer, beasts)
+
 
 # Admin placement: only player keys listed in data/admin.json. Nobody is an admin when that file is absent.
 func _on_admin_place(peer: int, kind: String, pos: Vector3, arg: String) -> void:
@@ -865,6 +881,8 @@ func _on_admin_place(peer: int, kind: String, pos: Vector3, arg: String) -> void
 		print("Admin %d placed marker %s" % [peer, npcs.add_marker(arg, pos.x, pos.z)])
 	elif kind == "npc":
 		npcs.place_npc(arg, pos.x, pos.z)
+	elif kind == "animal":
+		animals.spawn(arg, pos.x, pos.z)
 
 
 func _process(delta: float) -> void:
@@ -881,6 +899,7 @@ func _process(delta: float) -> void:
 	items.tick(delta)
 	npcs.unwell = dialogue.router.is_unwell()
 	npcs.tick(delta)
+	animals.tick(delta)
 	_send_npcs(delta)
 
 	# Send what the workers made, batched per peer.

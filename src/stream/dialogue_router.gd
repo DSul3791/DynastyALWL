@@ -163,13 +163,13 @@ func _unwell_line(npc_id: String, ctx: Dictionary) -> Dictionary:
 	if info != "":
 		text += " " + info
 
-	if randf() < 0.4:
+	if randf() < 0.4:   # luck-exempt: how many small facts an unwell NPC says, no outcome
 		var more: String = static_provider.bark(npc_id, "info", ctx)
 
 		if more != "" and more != info:
 			text += " " + more
 
-	_rest_until[rest_key] = hour + randf_range(REST_MIN, REST_MAX) / 60.0
+	_rest_until[rest_key] = hour + randf_range(REST_MIN, REST_MAX) / 60.0   # luck-exempt: how long an unwell NPC rests, no outcome
 	return _bare(text, voice)
 
 

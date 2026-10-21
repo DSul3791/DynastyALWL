@@ -40,6 +40,7 @@ const Probe := preload("res://src/debug/frame_probe.gd")
 const CompassScript := preload("res://src/client/admin_compass.gd")
 const InventoryViewScript := preload("res://src/client/inventory_view.gd")
 const NpcViewScript := preload("res://src/client/npc_view.gd")
+const AnimalViewScript := preload("res://src/client/animal_view.gd")
 const DialogueViewScript := preload("res://src/client/dialogue_view.gd")
 const HeldItemScript := preload("res://src/client/held_item.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
@@ -838,6 +839,10 @@ func _welcome_body(info: Dictionary) -> void:
 	_npc_view = npc_view
 	net.npc_roster_received.connect(npc_view.on_roster)
 	net.npcs_received.connect(npc_view.on_rows)
+	var animal_view: Node3D = AnimalViewScript.new()
+	animal_view.name = "Animals"
+	add_child(animal_view)
+	net.animals_received.connect(animal_view.on_rows)
 	items = InventoryViewScript.new()
 	items.name = "Items"
 	add_child(items)
@@ -1208,6 +1213,17 @@ func _admin_dig() -> void:
 
 	if not hit.is_empty():
 		net.dig.rpc_id(1, hit["position"], 2.0)
+
+
+# Ctrl+R (admin): a rabbit on the ground where the crosshair points, up to 40 m away (testing animals).
+func _admin_rabbit() -> void:
+	var origin: Vector3 = camera.global_position
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(origin, origin - camera.global_transform.basis.z * 40.0)
+	query.exclude = [body.get_rid()]
+	var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(query)
+
+	if not hit.is_empty():
+		net.admin_place.rpc_id(1, "animal", hit["position"], "rabbit")
 
 
 func _thousands(value: int) -> String:
@@ -2274,6 +2290,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			_admin_dig()
 		elif event.keycode == KEY_N and event.ctrl_pressed:
 			_go_to_npc()
+		elif event.keycode == KEY_R and event.ctrl_pressed:
+			_admin_rabbit()
 		elif event.keycode == KEY_C and not flying:
 			_set_stance(StanceScript.CROUCH, true)
 		elif event.keycode == KEY_X and not flying:

@@ -38,6 +38,7 @@ UNITS = [
     ("drills", "src/worldgen/tools/test_persistence_drills.gd"),
     ("npcs", "src/worldgen/tools/test_npcs.gd"),
     ("dialogue", "src/worldgen/tools/test_dialogue.gd"),
+    ("animals", "src/worldgen/tools/test_animals.gd"),
     ("first_hour", "src/worldgen/tools/test_first_hour.gd"),
 ]
 
