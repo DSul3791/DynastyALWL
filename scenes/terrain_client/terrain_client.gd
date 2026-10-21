@@ -66,7 +66,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 562
+const BUILD := 563
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -85,6 +85,7 @@ const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const WaterVolume := preload("res://src/shared/water_volume.gd")
 const HotbarStripScript := preload("res://src/client/hotbar_strip.gd")
 const PickupFeedScript := preload("res://src/client/pickup_feed.gd")
+const CrashBreadcrumb := preload("res://src/client/crash_breadcrumb.gd")
 const WaterFallsScript := preload("res://src/worldgen/runtime/water_falls.gd")
 const FloraViewScript := preload("res://src/flora/flora_view.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
@@ -431,6 +432,17 @@ func _ready() -> void:
 		VoxelEngine.set_thread_count(int(OS.get_environment("VOXEL_THREADS")))
 	else:
 		VoxelEngine.set_thread_count(maxi(VoxelEngine.get_thread_count(), LOAD_THREADS_MIN))
+
+	# A run that ended without a clean exit leaves its flag: show and keep the last log lines (and copy them).
+	if DisplayServer.get_name() != "headless" or OS.has_environment("CRASH_CHECK"):
+		_previous_run_note = CrashBreadcrumb.check_previous()
+
+		if _previous_run_note != "":
+			print("Terrain client: " + _previous_run_note)
+			DisplayServer.clipboard_set(_previous_run_note)
+			_previous_run_note_until_msec = Time.get_ticks_msec() + 60000
+
+		CrashBreadcrumb.mark_running(BUILD)
 
 	net = $TerrainNet
 	display.load_saved()
@@ -2120,6 +2132,8 @@ func _set_menu(open: bool) -> void:
 # the dump aims where the screen centre pointed when the menu opened. The text is printed, shown and copied.
 var _dump_client: String = ""
 var _starter_seeded: int = 0
+var _previous_run_note: String = ""
+var _previous_run_note_until_msec: int = 0
 var _ground_line: String = ""
 var _ground_line_msec: int = 0
 # Ground self-check (Dave's floating block and tan slab in the lake, 2026-10-21): every few seconds one point near
@@ -4331,6 +4345,9 @@ func _process(delta: float) -> void:
 	hud.text = "build %d (%s)  %d fps  %s (F2)\nx %.0f  y %.1f  z %.0f\nlast sound: %s" % [BUILD, _commit, Engine.get_frames_per_second(), QUALITY_NAMES[quality], body.global_position.x, body.global_position.y, body.global_position.z, _last_sound]
 	hud.text += "\n" + _ground_health_line()
 
+	if _previous_run_note != "" and Time.get_ticks_msec() < _previous_run_note_until_msec:
+		hud.text += "\nThe previous run ended unexpectedly: its last log lines are copied (also user://previous_run_log.txt)"
+
 	if debug_hud.enabled:
 		hud.text += "\n" + _debug_text(avg_ms, worst_ms)
 
@@ -4711,6 +4728,7 @@ func _finish_cache_task() -> void:
 
 
 func _exit_tree() -> void:
+	CrashBreadcrumb.mark_clean()
 	_finish_cache_task()
 	_drain_incoming()
 	if stream != null:
