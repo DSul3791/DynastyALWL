@@ -39,6 +39,7 @@ var layer_offset: PackedInt32Array = PackedInt32Array()  # raw x 0.1 m
 var soil: PackedByteArray = PackedByteArray()
 var water_class: PackedByteArray = PackedByteArray()
 var _near_water: PackedByteArray = PackedByteArray()
+var _near_mutex: Mutex = Mutex.new()
 var water_surface: PackedFloat32Array = PackedFloat32Array()   # NAN = no water above sea level
 var biome: PackedByteArray = PackedByteArray()
 var moisture: PackedByteArray = PackedByteArray()
@@ -297,11 +298,16 @@ func height_at(x: float, z: float) -> float:
 # Index of the nearest map sample.
 # 1 where the sample or any of its eight neighbours is lake, pond or river water (built once).
 func near_water() -> PackedByteArray:
-	if _near_water.size() == samples * samples:
-		return _near_water
+	# Built once, under a lock: several server worker threads ask at the same time.
+	_near_mutex.lock()
 
-	_near_water = PackedByteArray()
-	_near_water.resize(samples * samples)
+	if _near_water.size() == samples * samples:
+		var ready: PackedByteArray = _near_water
+		_near_mutex.unlock()
+		return ready
+
+	var built: PackedByteArray = PackedByteArray()
+	built.resize(samples * samples)
 
 	for j in samples:
 		for i in samples:
@@ -314,9 +320,11 @@ func near_water() -> PackedByteArray:
 					if kind == 2 or kind == 3:
 						hit = 1
 
-			_near_water[j * samples + i] = hit
+			built[j * samples + i] = hit
 
-	return _near_water
+	_near_water = built
+	_near_mutex.unlock()
+	return built
 
 
 func nearest(x: float, z: float) -> int:
