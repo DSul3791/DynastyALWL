@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = placeholder price of one item in coins (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 57,
+	"next_number": 60,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -673,6 +673,33 @@
 			"stack": 10,
 			"value": 12,
 			"future": true,
+			"look_alikes": []
+		},
+		"stomach_tea": {
+			"number": 57,
+			"name": "Stomach tea",
+			"description": "A folk remedy: mint and chamomile steeped for a sick stomach. Settles vomiting and the runs.",
+			"kind": "food",
+			"stack": 10,
+			"value": 8,
+			"look_alikes": []
+		},
+		"chamomile_tea": {
+			"number": 58,
+			"name": "Chamomile tea",
+			"description": "A folk remedy: chamomile flowers steeped in water. Calms the stomach and helps you sleep.",
+			"kind": "food",
+			"stack": 10,
+			"value": 6,
+			"look_alikes": []
+		},
+		"willow_bark_tea": {
+			"number": 59,
+			"name": "Willow bark tea",
+			"description": "A folk remedy: bitter willow bark steeped for pain and fever. It also eases a sick stomach a little.",
+			"kind": "food",
+			"stack": 10,
+			"value": 6,
 			"look_alikes": []
 		}
 	}

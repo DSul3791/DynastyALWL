@@ -158,6 +158,7 @@ var _sick_cfg: Dictionary = {}      # data/items/sickness.json
 var send_thought: Callable          # (peer, line id, text, kind): the inner voice
 var send_sick: Callable             # (peer, game hours of sickness left, rounded up; 0 = well)
 var _sick_sent: Dictionary = {}
+var _last_dose: Dictionary = {}     # peer -> msec of the last medicine taken
 var _symptom_in: Dictionary = {}    # peer -> real seconds to the next symptom
 var send_skills: Callable           # (peer, attributes PackedInt32Array [strength, memory], rows Array [[skill index, working level 0..100, rusty 0/1], ...])
 var _skills_sent: Dictionary = {}   # peer -> the rows last sent
@@ -312,6 +313,7 @@ func peer_connected_hello(peer: int, key: String) -> void:
 
 func peer_left(peer: int) -> void:
 	_swimming.erase(peer)
+	_last_dose.erase(peer)
 	_skills_sent.erase(peer)
 	_skills_send_in.erase(peer)
 	_last_practice.erase(peer)
@@ -3709,8 +3711,18 @@ func _eat(peer: int, inv, slot: int) -> void:
 			return
 
 		_last_eat[peer] = now
+		# Fresh herbs are stronger (spoilage), and a second dose soon after the first works only redose_share as well:
+		# re-dosing shortens the effect instead of stacking it.
+		var strength: float = 0.5 + 0.5 * table.freshness(inv.numbers[slot], inv.wear[slot])
+		var recent: bool = float(now - int(_last_dose.get(peer, -10000000))) < float(_sick_cfg.get("dose_cooldown_s", 180.0)) * 1000.0
+
+		if recent:
+			strength *= float(_sick_cfg.get("redose_share", 0.25))
+			_say(peer, str(_sick_cfg.get("say_too_soon", "")))
+
+		_last_dose[peer] = now
 		inv.take_from_slot(slot, 1)
-		v["sick"] = maxf(float(v["sick"]) - float(cure.get("cure_h", 12.0)) * 3600.0, 0.0)
+		v["sick"] = maxf(float(v["sick"]) - float(cure.get("cure_h", 12.0)) * 3600.0 * strength, 0.0)
 		_say(peer, str(_sick_cfg.get("say_medicine", "")))
 		_sync_sick(peer, true)
 		_dirty = true

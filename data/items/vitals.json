@@ -42,7 +42,10 @@
 		}
 	},
 	"medicines": {
-		"medicine": {"cure_h": 18}
+		"medicine": {"cure_h": 18},
+		"stomach_tea": {"cure_h": 10},
+		"chamomile_tea": {"cure_h": 6},
+		"willow_bark_tea": {"cure_h": 5}
 	},
 	"energy_aids": {
 		"energy_bar": {"energy": 25, "fitness": 0.25},

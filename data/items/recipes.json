@@ -1,6 +1,6 @@
 {
 	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist).",
-	"next_number": 33,
+	"next_number": 36,
 	"recipes": {
 		"cordage": {
 			"number": 1,
@@ -633,6 +633,9 @@
 			],
 			"craft_s": 4.0,
 			"known": true
-		}
+		},
+		"stomach_tea": {"number": 33, "name": "Stomach tea", "needs": [["mint", 2], ["chamomile_flowers", 2]], "keeps": [["wooden_bowl", 1]], "gives": ["stomach_tea", 1], "craft_s": 5.0, "known": true, "identify": ["mint", "chamomile_flowers"]},
+		"chamomile_tea": {"number": 34, "name": "Chamomile tea", "needs": [["chamomile_flowers", 3]], "keeps": [["wooden_bowl", 1]], "gives": ["chamomile_tea", 1], "craft_s": 5.0, "known": true, "identify": ["chamomile_flowers"]},
+		"willow_bark_tea": {"number": 35, "name": "Willow bark tea", "needs": [["willow_bark", 2]], "keeps": [["wooden_bowl", 1]], "gives": ["willow_bark_tea", 1], "craft_s": 5.0, "known": true, "identify": ["willow_bark"]}
 	}
 }

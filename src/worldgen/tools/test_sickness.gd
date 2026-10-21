@@ -102,6 +102,27 @@ func _init() -> void:
 	items.action(1, Net.ACT_EAT, items.inventory_of(1).numbers.find(medicine), 0, 0, Vector3.ZERO)
 	check(items.inventory_of(1).count_of(medicine) == 1 and said.has("You are not sick"), "medicine is not wasted when well")
 
+	# Folk remedies: a tea cures hours; a second dose right after works only a quarter as well; stale herbs are weaker.
+	var tea: int = items.table.number_of("stomach_tea")
+	items._vitals["sick-key-00001"]["sick"] = 20.0 * 3600.0
+	items._last_dose.clear()
+	items.action(1, Net.ACT_ADMIN_GIVE, tea, 0, 3, Vector3.ZERO)
+	items._last_eat.clear()
+	items.action(1, Net.ACT_EAT, items.inventory_of(1).numbers.find(tea), 0, 0, Vector3.ZERO)
+	var after_first: float = float(items.vitals_of(1)["sick"])
+	check(absf((20.0 * 3600.0 - after_first) - 10.0 * 3600.0) < 60.0, "stomach tea takes about 10 hours off")
+	items._last_eat.clear()
+	items.action(1, Net.ACT_EAT, items.inventory_of(1).numbers.find(tea), 0, 0, Vector3.ZERO)
+	var second: float = after_first - float(items.vitals_of(1)["sick"])
+	check(second < 0.3 * 10.0 * 3600.0 and second > 0.0, "a second dose at once works a quarter as well (%.0f s)" % second)
+	items._last_dose.clear()
+	items._vitals["sick-key-00001"]["sick"] = 20.0 * 3600.0
+	var stale_slot: int = items.inventory_of(1).numbers.find(tea)
+	items.inventory_of(1).wear[stale_slot] = items.table.shelf_units(tea)
+	items._last_eat.clear()
+	items.action(1, Net.ACT_EAT, stale_slot, 0, 0, Vector3.ZERO)
+	check(absf((20.0 * 3600.0 - float(items.vitals_of(1)["sick"])) - 5.0 * 3600.0) < 60.0, "a nearly rotten tea works half as well")
+
 	# Gone by itself after the day; death resets it; older saves are well.
 	items.action(1, Net.ACT_EAT, items.inventory_of(1).numbers.find(rotten), 0, 0, Vector3.ZERO)
 	check(items.is_sick(1), "sick again")

@@ -10,5 +10,8 @@
 	],
 	"say_start": "It was rotten. You feel sick.",
 	"say_well": "You feel well again",
+	"dose_cooldown_s": 180.0,
+	"redose_share": 0.25,
+	"say_too_soon": "Your stomach is not ready for more yet.",
 	"say_medicine": "The medicine settles your stomach"
 }
