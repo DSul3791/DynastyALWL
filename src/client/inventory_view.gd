@@ -2096,7 +2096,7 @@ func _update_panel_bars() -> void:
 	_panel_bars["Warmth"].value = float(warmth)
 
 	if _sick_label != null and is_instance_valid(_sick_label):
-		_sick_label.text = ("Sick, about %d h left" % sick_hours) if sick_hours > 0 else ""
+		_sick_label.text = ("Health: ill, about %d h left" % sick_hours) if sick_hours > 0 else ""
 	_panel_bars["Food"].value = float(hunger)
 	_panel_bars["Water"].value = float(thirst)
 
@@ -2515,7 +2515,7 @@ func _tooltip(number: int, count: int, fill_ml: int = 0) -> String:
 			text += " Lets you carry %.0f kg more." % float(entry["carry_bonus_kg"])
 
 	if _raw_sick_hours(table.id_of(number)) > 0.0:
-		text += "\nEaten raw it makes you sick. Cook it at a fire first."
+		text += "\nEaten raw it ruins your health for a day. Cook it at a fire first."
 
 	if kcal > 0:
 		text += "\n%d kcal  (right click when held, or Eat / use)" % kcal
@@ -2526,7 +2526,7 @@ func _tooltip(number: int, count: int, fill_ml: int = 0) -> String:
 	var cure: Dictionary = VitalsRules.medicine(table.id_of(number), _vitals_cfg)
 
 	if not cure.is_empty():
-		text += "\nTakes away %d hours of sickness  (right click when held, or Eat / use)" % int(cure.get("cure_h", 0))
+		text += "\nTakes away %d hours of ill health  (right click when held, or Eat / use)" % int(cure.get("cure_h", 0))
 
 	if table.shelf_units(number) > 0:
 		var f: float = table.freshness(number, fill_ml)

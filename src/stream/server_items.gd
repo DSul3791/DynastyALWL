@@ -4545,7 +4545,7 @@ func _eat(peer: int, inv, slot: int) -> void:
 
 	if not cure.is_empty():
 		if float(v.get("sick", 0.0)) <= 0.0:
-			_say(peer, "You are not sick")
+			_say(peer, "Your health is fine")
 			return
 
 		_last_eat[peer] = now

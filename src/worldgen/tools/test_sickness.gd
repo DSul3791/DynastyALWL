@@ -100,7 +100,7 @@ func _init() -> void:
 	items._vitals["sick-key-00001"]["sick"] = 0.0
 	items._last_eat.clear()
 	items.action(1, Net.ACT_EAT, items.inventory_of(1).numbers.find(medicine), 0, 0, Vector3.ZERO)
-	check(items.inventory_of(1).count_of(medicine) == 1 and said.has("You are not sick"), "medicine is not wasted when well")
+	check(items.inventory_of(1).count_of(medicine) == 1 and said.has("Your health is fine"), "medicine is not wasted when well")
 
 	# Folk remedies: a tea cures hours; a second dose right after works only a quarter as well; stale herbs are weaker.
 	var tea: int = items.table.number_of("stomach_tea")
