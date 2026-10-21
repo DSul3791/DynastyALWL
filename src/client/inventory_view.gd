@@ -1778,6 +1778,7 @@ func _tooltip(number: int, count: int) -> String:
 	var name: String = _item_label(number)
 
 	var text: String = "%s x%d\n%s, stacks to %d" % [name, count, str(entry.get("kind", "item")), table.stack_of(number)]
+	text += "\n%s" % str(entry.get("description", "A plant material you gathered."))
 
 	var kcal: int = VitalsRules.food_value(table.id_of(number), _vitals_cfg)
 	var heal: int = VitalsRules.heal_value(table.id_of(number), _vitals_cfg)

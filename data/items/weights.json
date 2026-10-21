@@ -23,7 +23,11 @@
 		"chopping_block_kit": 8.0,
 		"torch": 0.5,
 		"lumber": 3.0,
-		"plank_chest_kit": 14.0
+		"plank_chest_kit": 14.0,
+		"cordage": 0.05,
+		"spear": 1.4,
+		"wooden_spear": 0.8,
+		"bark": 0.3
 	},
 	"by_suffix": {
 		"berries": 0.05,

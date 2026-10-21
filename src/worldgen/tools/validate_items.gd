@@ -128,8 +128,27 @@ func _init() -> void:
 		if not all.has(id):
 			fail("%s: unknown item '%s'" % [where, id])
 
+	var weights: Dictionary = _read("weights.json")
+
 	for id in items_file.get("items", {}):
 		var item: Dictionary = items_file["items"][id]
+		var description: String = String(item.get("description", ""))
+
+		# Every core item has a one-line description, a value and (unless it is a placed structure) its own weight.
+		if description == "" or description.length() > 110 or not description.ends_with("."):
+			fail("items.json: '%s' needs a one-line description of up to 110 characters ending in a full stop" % id)
+
+		if String(item.get("kind", "")) != "structure":
+			if not item.has("value"):
+				fail("items.json: '%s' has no value" % id)
+
+			var weighed: bool = weights.get("by_id", {}).has(id)
+
+			for suffix in weights.get("by_suffix", {}):
+				weighed = weighed or String(id).ends_with(String(suffix))
+
+			if not weighed:
+				fail("weights.json: '%s' has no weight (by_id or by_suffix); the default is not a real weight" % id)
 
 		if item.has("durability") and (int(item["durability"]) < 1 or item.get("repair", []).is_empty()):
 			fail("items.json: '%s' has durability but no repair materials" % id)
