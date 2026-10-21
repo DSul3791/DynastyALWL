@@ -65,7 +65,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 538
+const BUILD := 539
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -904,8 +904,10 @@ func _welcome_body(info: Dictionary) -> void:
 		_npc_voice_button.text = "NPC voice: %s" % ("on" if npc_voice.enabled else "off")
 
 	dialogue_view.voice_line = func(voice_id: String, text: String):
-		var talker: Dictionary = npc_view.nearest(body.global_position, 20.0)
-		npc_voice.speak(voice_id, text, talker.get("pos", null))
+		var talker: Dictionary = npc_view.nearest(body.global_position, npc_voice.hear_m)
+
+		if not talker.is_empty():       # nobody in earshot is talking: no voice (the text still shows)
+			npc_voice.speak(voice_id, text, talker["pos"])
 	items.knowledge = knowledge
 	items.max_lights = func(): return [1, 2, 3, 3][clampi(quality, 0, 3)]
 	items.is_inspecting = func(): return inspecting
@@ -4374,7 +4376,7 @@ func _note_last_sound() -> void:
 	var sources: Array = [
 		["step", sound.last_step], ["breath", sound.breath.last], ["fire", sound.fire.last], ["tree", sound.trees.last], ["item", sound.itemfx.last], ["spear", sound.spear.last], ["placed", sound.placed.last],
 		["interior", sound.interior.last], ["gear", sound.gear.last], ["creature", sound.creatures.last], ["swim", sound.swim.last],
-		["dig", sound.dig.last_dig], ["nature", sound.ambient.last_call],
+		["dig", sound.dig.last_dig], ["nature", sound.ambient.last_call], ["npc voice", _npc_voice.last if _npc_voice != null else ""], ["inner voice", sound.inner.last],
 	]
 
 	for n in range(sources.size()):

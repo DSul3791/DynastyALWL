@@ -21,6 +21,8 @@ const BUS := "NpcVoice"
 var enabled: bool = true
 var live_maker: Callable = Callable()
 var played: int = 0
+var last: String = ""                   # the HUD's "last sound": who spoke, what, and how far away
+var hear_m: float = 15.0                # an NPC voice carries this far (data/npcs/voices.json hear_m), then nothing
 var last_hash: String = ""
 
 var _spec: Dictionary = {}
@@ -36,6 +38,7 @@ func _ready() -> void:
 	_make_bus()
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(VOICES_PATH))
 	_spec = parsed.get("voices", {}) if typeof(parsed) == TYPE_DICTIONARY else {}
+	hear_m = float(parsed.get("hear_m", hear_m)) if typeof(parsed) == TYPE_DICTIONARY else hear_m
 
 
 func set_enabled(on: bool) -> void:
@@ -60,6 +63,17 @@ func speak(voice_id: String, text: String, at: Variant = null) -> bool:
 	if not enabled or text.strip_edges() == "":
 		return false
 
+	# Speech is always somebody talking to somebody: it needs the NPC's position and plays only if the listener is in earshot.
+	# (Dave 2026-10-21: NPCs were heard talking from nowhere.) No position, no sound; the chat box still shows the text.
+	if not (at is Vector3):
+		return false
+
+	var camera: Camera3D = get_viewport().get_camera_3d()
+	var distance: float = ((at as Vector3) - camera.global_position).length() if camera != null else 0.0
+
+	if distance > hear_m:
+		return false
+
 	var hash8: String = line_hash(voice_id, text)
 	var stream: AudioStream = _find(voice_id, hash8)
 
@@ -78,7 +92,7 @@ func speak(voice_id: String, text: String, at: Variant = null) -> bool:
 		player = AudioStreamPlayer3D.new()
 		player.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
 		player.unit_size = 3.0
-		player.max_distance = 18.0
+		player.max_distance = hear_m
 		player.attenuation_filter_cutoff_hz = 6000.0
 		player.volume_db = 3.0
 		player.bus = BUS
@@ -94,6 +108,7 @@ func speak(voice_id: String, text: String, at: Variant = null) -> bool:
 	player.play()
 	played += 1
 	last_hash = hash8
+	last = "%s: %s (%.0f m)" % [voice_id, text.left(28), distance]
 	return true
 
 
