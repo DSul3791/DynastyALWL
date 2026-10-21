@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = placeholder price of one item in coins (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 56,
+	"next_number": 57,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -663,6 +663,16 @@
 			"kind": "material",
 			"stack": 200,
 			"value": 0,
+			"look_alikes": []
+		},
+		"medicine": {
+			"number": 56,
+			"name": "Medicine",
+			"description": "A bitter remedy that settles a sick stomach. Placeholder until healers and herb cures exist.",
+			"kind": "food",
+			"stack": 10,
+			"value": 12,
+			"future": true,
 			"look_alikes": []
 		}
 	}

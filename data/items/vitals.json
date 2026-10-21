@@ -41,6 +41,9 @@
 			"sap": 50
 		}
 	},
+	"medicines": {
+		"medicine": {"cure_h": 18}
+	},
 	"energy_aids": {
 		"energy_bar": {"energy": 25, "fitness": 0.25},
 		"herbal_tea": {"energy": 12, "fitness": 0.1},

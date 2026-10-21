@@ -154,6 +154,11 @@ var _fitness_cfg: Dictionary = {}
 var send_energy: Callable       # (peer, energy percent 0..100)
 var _energy_cfg: Dictionary = {}    # data/items/energy.json
 var _death_cfg: Dictionary = {}     # data/items/death.json
+var _sick_cfg: Dictionary = {}      # data/items/sickness.json
+var send_thought: Callable          # (peer, line id, text, kind): the inner voice
+var send_sick: Callable             # (peer, game hours of sickness left, rounded up; 0 = well)
+var _sick_sent: Dictionary = {}
+var _symptom_in: Dictionary = {}    # peer -> real seconds to the next symptom
 var send_skills: Callable           # (peer, attributes PackedInt32Array [strength, memory], rows Array [[skill index, working level 0..100, rusty 0/1], ...])
 var _skills_sent: Dictionary = {}   # peer -> the rows last sent
 var _skills_send_in: Dictionary = {}   # peer -> msec before which no skills message goes out
@@ -239,6 +244,8 @@ func setup(item_table, store_dir: String) -> void:
 	_energy_cfg = energy_parsed if typeof(energy_parsed) == TYPE_DICTIONARY else {}
 	var warmth_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/warmth.json"))
 	_warmth_cfg = warmth_parsed if typeof(warmth_parsed) == TYPE_DICTIONARY else {}
+	var sick_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/sickness.json"))
+	_sick_cfg = sick_parsed if typeof(sick_parsed) == TYPE_DICTIONARY else {}
 	var death_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/death.json"))
 	_death_cfg = death_parsed if typeof(death_parsed) == TYPE_DICTIONARY else {}
 	var sleep_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/sleep.json"))
@@ -298,6 +305,7 @@ func peer_connected_hello(peer: int, key: String) -> void:
 	_sync_vitals(peer, true)
 	_sync_energy(peer, true)
 	_sync_warmth(peer, true)
+	_sync_sick(peer, true)
 	_sync_skills(peer, true)
 	_sync_craft_queue(peer)
 
@@ -2517,7 +2525,7 @@ func vitals_of(peer: int) -> Dictionary:
 
 
 func _new_vitals() -> Dictionary:
-	return {"fed": float(_vitals_cfg.get("stomach_cap_kcal", 2400)), "weight": float(_vitals_cfg.get("start_weight_kg", 75)), "health": float(_vitals_cfg.get("health_max", 100)), "wet": float(_vitals_cfg.get("thirst", {}).get("cap_ml", 2400)), "energy": 100.0, "warmth": 100.0}
+	return {"fed": float(_vitals_cfg.get("stomach_cap_kcal", 2400)), "weight": float(_vitals_cfg.get("start_weight_kg", 75)), "health": float(_vitals_cfg.get("health_max", 100)), "wet": float(_vitals_cfg.get("thirst", {}).get("cap_ml", 2400)), "energy": 100.0, "warmth": 100.0, "sick": 0.0}
 
 
 # How hard the player is working, 0 to 1: movement speed from position reports, lifted by recent tool work.
@@ -2534,6 +2542,10 @@ func effort_of(peer: int) -> float:
 
 	if Time.get_ticks_msec() < int(_work_until.get(peer, 0)):
 		level = maxf(level, 0.6)
+
+	# Vomiting and diarrhoea keep the body working at least exertion_floor (data/items/sickness.json) until the sickness fades.
+	if float(vitals_of(peer).get("sick", 0.0)) > 0.0:
+		level = maxf(level, float(_sick_cfg.get("exertion_floor", 0.5)))
 
 	# Shivering is work (data/items/warmth.json shiver_effort), more the colder.
 	if not _warmth_cfg.is_empty():
@@ -2812,6 +2824,7 @@ func _vitals_tick(spent: float) -> void:
 		v["wet"] = maxf(float(v["wet"]) - dry_per_day * game_s / 86400.0, 0.0)
 
 		_warmth_tick(peer, v, spent, game_s)
+		_sick_tick(peer, v, spent, game_s)
 
 		if float(v["fed"]) > 0.0 and float(v["wet"]) > 0.0 and float(v.get("warmth", 100.0)) >= float(_warmth_cfg.get("cold_at", 40.0)):
 			var regen: float = float(_vitals_cfg.get("health_regen_per_s", 0.05))
@@ -2829,6 +2842,117 @@ func _vitals_tick(spent: float) -> void:
 
 		_sync_vitals(peer, false)
 		_strain_tick(peer, spent)
+
+
+# --- Sickness (Dave 2026-10-21; data/items/sickness.json) ---
+# `sick` in the vitals is the game seconds of sickness left (0 = well).
+
+func make_sick(peer: int) -> void:
+	var v: Dictionary = vitals_of(peer)
+
+	if v.is_empty() or _sick_cfg.is_empty():
+		return
+
+	if float(v.get("sick", 0.0)) <= 0.0:
+		_say(peer, str(_sick_cfg.get("say_start", "You feel sick.")))
+
+	v["sick"] = float(_sick_cfg.get("duration_h", 24.0)) * 3600.0
+	_symptom_in[peer] = float(_sick_cfg.get("symptom_every_s", 90.0)) * 0.5
+	_sync_sick(peer, true)
+	_dirty = true
+
+
+func is_sick(peer: int) -> bool:
+	return float(vitals_of(peer).get("sick", 0.0)) > 0.0
+
+
+func _sick_tick(peer: int, v: Dictionary, spent: float, game_s: float) -> void:
+	var left: float = float(v.get("sick", 0.0))
+
+	if left <= 0.0 or _sick_cfg.is_empty():
+		return
+
+	left -= game_s * (float(_sick_cfg.get("sleep_mult", 4.0)) if _asleep.has(peer) else 1.0)
+	_symptom_in[peer] = float(_symptom_in.get(peer, float(_sick_cfg.get("symptom_every_s", 90.0)))) - spent
+
+	if left <= 0.0:
+		v["sick"] = 0.0
+		_symptom_in.erase(peer)
+		_say(peer, str(_sick_cfg.get("say_well", "You feel well again")))
+	else:
+		v["sick"] = left
+
+		if float(_symptom_in[peer]) <= 0.0:
+			_symptom_in[peer] = float(_sick_cfg.get("symptom_every_s", 90.0))
+			var symptoms: Array = _sick_cfg.get("symptoms", [])
+
+			if not symptoms.is_empty():
+				var symptom: Dictionary = symptoms[int(_symptom_count(peer)) % symptoms.size()]
+				v["fed"] = maxf(float(v["fed"]) - float(symptom.get("fed_kcal", 0)), 0.0)
+				v["wet"] = maxf(float(v["wet"]) - float(symptom.get("wet_ml", 0)), 0.0)
+				_say(peer, str(symptom.get("say", "")))
+				think(peer, str(symptom.get("kind", "")))
+
+	_sync_sick(peer, false)
+
+
+var _symptoms_seen: Dictionary = {}
+var _voice_cfg: Dictionary = {}
+var _voice_last: Dictionary = {}    # peer -> the last inner-voice line, so it does not repeat
+
+
+# The inner voice speaks: a line of `kind` goes to the player as audio id plus subtitle (design: DESIGN_IDEAS 6.14, sparing and
+# never twice in a row). Returns the text.
+func think(peer: int, kind: String) -> String:
+	var text: String = inner_voice(peer, kind)
+
+	if text != "" and send_thought.is_valid():
+		send_thought.call(peer, voice_line_id(text), text, kind)
+
+	return text
+
+
+# A stable id for a line, so adding or reordering lines in inner_voice.json never moves a recording to the wrong text.
+func voice_line_id(text: String) -> String:
+	return text.md5_text().substr(0, 8)
+
+
+# One inner-voice joke for a symptom kind (data/items/inner_voice.json), never the one just shown.
+func inner_voice(peer: int, kind: String) -> String:
+	if _voice_cfg.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/inner_voice.json"))
+		_voice_cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {"none": true}
+
+	var lines: Array = _voice_cfg.get(kind, [])
+
+	if lines.is_empty():
+		return ""
+
+	var pick: String = str(lines[_fate_rng.randi() % lines.size()])   # luck-exempt: flavour text
+	var guard: int = 0
+
+	while pick == str(_voice_last.get(peer, "")) and lines.size() > 1 and guard < 20:
+		pick = str(lines[_fate_rng.randi() % lines.size()])   # luck-exempt: flavour text
+		guard += 1
+
+	_voice_last[peer] = pick
+	return pick
+
+
+func _symptom_count(peer: int) -> int:
+	_symptoms_seen[peer] = int(_symptoms_seen.get(peer, -1)) + 1
+	return int(_symptoms_seen[peer])
+
+
+func _sync_sick(peer: int, force: bool) -> void:
+	if not send_sick.is_valid():
+		return
+
+	var hours: int = int(ceil(float(vitals_of(peer).get("sick", 0.0)) / 3600.0))
+
+	if force or int(_sick_sent.get(peer, -1)) != hours:
+		_sick_sent[peer] = hours
+		send_sick.call(peer, hours)
 
 
 # --- Warmth (job 92; data/items/warmth.json) ---
@@ -3093,6 +3217,8 @@ func kill(peer: int, cause: String) -> bool:
 	_death_cause.erase(peer)
 	_energy_sent.erase(peer)
 	_warmth_sent.erase(peer)
+	_sick_sent.erase(peer)
+	_symptom_in.erase(peer)
 	_cold_level.erase(peer)
 	_peer_pos[peer] = respawn_point
 	_motion.erase(peer)
@@ -3564,15 +3690,30 @@ func _eat(peer: int, inv, slot: int) -> void:
 		_last_eat[peer] = now
 		inv.take_from_slot(slot, 1)
 		var sick: Dictionary = spoil.get("sick", {})
-		v["health"] = maxf(float(v["health"]) - float(sick.get("health", 10)), 1.0)
-		v["wet"] = maxf(float(v["wet"]) - float(sick.get("wet_ml", 300)), 0.0)
-		_say(peer, str(sick.get("say", "It was rotten.")))
+		v["health"] = maxf(float(v["health"]) - float(sick.get("health", 0)), 1.0)
+		v["wet"] = maxf(float(v["wet"]) - float(sick.get("wet_ml", 0)), 0.0)
+		make_sick(peer)
 		_sync_vitals(peer, true)
 		return
 
 	if _unfit.has(item_id):
 		_last_eat[peer] = now
 		_say(peer, "It tastes bitter and wrong. You spit it out.")
+		return
+
+	var cure: Dictionary = VitalsRules.medicine(item_id, _vitals_cfg)
+
+	if not cure.is_empty():
+		if float(v.get("sick", 0.0)) <= 0.0:
+			_say(peer, "You are not sick")
+			return
+
+		_last_eat[peer] = now
+		inv.take_from_slot(slot, 1)
+		v["sick"] = maxf(float(v["sick"]) - float(cure.get("cure_h", 12.0)) * 3600.0, 0.0)
+		_say(peer, str(_sick_cfg.get("say_medicine", "")))
+		_sync_sick(peer, true)
+		_dirty = true
 		return
 
 	var aid: Dictionary = VitalsRules.energy_aid(item_id, _vitals_cfg)
@@ -3822,4 +3963,4 @@ func _load_vitals() -> void:
 	for key in parsed.get("players", {}):
 		var row: Dictionary = parsed["players"][key]
 		var fresh: Dictionary = _new_vitals()
-		_vitals[str(key)] = {"fed": float(row.get("fed", fresh["fed"])), "weight": float(row.get("weight", fresh["weight"])), "health": float(row.get("health", fresh["health"])), "wet": float(row.get("wet", fresh["wet"])), "energy": clampf(float(row.get("energy", 100.0)), 0.0, 100.0), "warmth": clampf(float(row.get("warmth", 100.0)), 0.0, 100.0)}
+		_vitals[str(key)] = {"fed": float(row.get("fed", fresh["fed"])), "weight": float(row.get("weight", fresh["weight"])), "health": float(row.get("health", fresh["health"])), "wet": float(row.get("wet", fresh["wet"])), "energy": clampf(float(row.get("energy", 100.0)), 0.0, 100.0), "warmth": clampf(float(row.get("warmth", 100.0)), 0.0, 100.0), "sick": maxf(float(row.get("sick", 0.0)), 0.0)}

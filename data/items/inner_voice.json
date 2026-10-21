@@ -1,0 +1,35 @@
+{
+	"note": "The inner voice (Dave 2026-10-21): while you are sick from rotten food, every vomit or bout of diarrhoea your inner voice makes a bad dad joke, shown with the symptom message. Add lines freely: one string per line, under 'vomit' or 'diarrhea'. Keep them rude but silly, no slurs. The same line never comes twice in a row. Lines can use plain quotes; keep them short enough for one line of the notice.",
+	"vomit": [
+		"Oh, that's going to itch when it dries.",
+		"Well, that's one way to lose a few kilos. Ask me how I know.",
+		"I'd call that a stomach-ache with an exit strategy.",
+		"Note to self: the berries were not 'extra ripe'.",
+		"And the carrots were just along for the ride.",
+		"That was not on the menu. Well, it was, but only once.",
+		"I've seen that meal before, it looked better the first time.",
+		"At least it's an easy recipe: eat, regret, repeat.",
+		"My stomach just filed a formal complaint.",
+		"If that was lunch, it was a short one.",
+		"That's what I get for trusting 'it'll be fine'.",
+		"My breakfast has left the building. And the garden.",
+		"I'm not saying I'm sick, but my shoes are not going to be the same.",
+		"That's a lot of food for a very small ceremony."
+	],
+	"diarrhea": [
+		"I think that fart was towing a turd.",
+		"Never trust a fart after a bad lunch.",
+		"Well, that's a bottom-line decision.",
+		"My backside just applied for independence.",
+		"That wasn't a warning shot, that was the whole army.",
+		"I'm not running late, I'm running everywhere.",
+		"That's one way to clear a path.",
+		"The bushes and I are now very close friends.",
+		"Look at me, giving back to the soil.",
+		"At least the trip is short, it's the return I dread.",
+		"I'd like a word with whoever packed this lunch.",
+		"That sound was either a fart or a distant thunderstorm.",
+		"My guts are holding a very noisy meeting.",
+		"This is the kind of trouble that sits you down and doesn't let you up."
+	]
+}

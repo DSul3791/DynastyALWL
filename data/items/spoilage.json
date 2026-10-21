@@ -5,7 +5,7 @@
 	"tick_s": 15,
 	"merge_gap": 0.1,
 	"rotten_item": "rotten_food",
-	"sick": {"health": 10, "wet_ml": 300, "say": "It was rotten. Your stomach turns."},
+	"sick": {"health": 0, "wet_ml": 0},
 	"place_mult": {"pack": 1.0, "chest": 0.8, "plank_chest": 0.6, "remains": 1.0, "ground": 1.5},
 	"season_mult": {"spring": 1.0, "summer": 1.5, "autumn": 1.0, "winter": 0.5},
 	"by_id": {"roast_forage": 72, "seed_bundle": 720, "energy_bar": 720, "herbal_tea": 48},

@@ -49,5 +49,10 @@ static func energy_aid(item_id: String, cfg: Dictionary) -> Dictionary:
 	return cfg.get("energy_aids", {}).get(item_id, {})
 
 
+# What a medicine does: {cure_h} (game hours of sickness it takes away), or {} when it is not one.
+static func medicine(item_id: String, cfg: Dictionary) -> Dictionary:
+	return cfg.get("medicines", {}).get(item_id, {})
+
+
 static func edible(item_id: String, cfg: Dictionary) -> bool:
-	return food_value(item_id, cfg) > 0 or heal_value(item_id, cfg) > 0 or drink_value(item_id, cfg) > 0 or not energy_aid(item_id, cfg).is_empty()
+	return not medicine(item_id, cfg).is_empty() or food_value(item_id, cfg) > 0 or heal_value(item_id, cfg) > 0 or drink_value(item_id, cfg) > 0 or not energy_aid(item_id, cfg).is_empty()

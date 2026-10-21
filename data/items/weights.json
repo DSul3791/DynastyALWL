@@ -95,6 +95,7 @@
 		"stone": 1.0,
 		"energy_bar": 0.1,
 		"herbal_tea": 0.05,
+		"medicine": 0.05,
 		"magic_tonic": 0.2,
 		"rope": 0.4,
 		"stone_spade": 1.3,

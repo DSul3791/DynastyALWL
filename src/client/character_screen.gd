@@ -185,6 +185,7 @@ func refresh() -> void:
 		["Fitness", "%+d" % int(_items.fitness) if int(_items.fitness) != 0 else "0", "How slowly exertion builds when you run, climb or haul. Training it is not designed yet."],
 		["Strength", "%+d" % int(_items.strength) if int(_items.strength) != 0 else "0", "Helps woodcutting, mining, digging and jumping."],
 		["Memory", "%+d" % int(_items.memory) if int(_items.memory) != 0 else "0", "Helps foraging and crafting, and recognising things you inspect."],
+		["Sickness", "well" if int(_items.sick_hours) <= 0 else "sick, %d h" % int(_items.sick_hours), "Rotten food makes you sick for about a day: vomiting and diarrhoea keep you working hard. Sleep or medicine shortens it."],
 		["Body weight", "%.1f kg" % float(_items.weight_kg), ""],
 		["Can carry", "%.0f kg" % float(_items.carry_limit_kg()), ""],
 	]

@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 37
+const PROTOCOL_VERSION := 38
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -52,6 +52,8 @@ signal notice_received(text: String)
 signal chest_received(id: int, bytes: PackedByteArray)
 signal breath_received(deciseconds: int)
 signal energy_received(percent: int)
+signal sick_received(hours: int)
+signal thought_received(line_id: String, text: String, kind: String)
 signal skills_received(attributes: PackedInt32Array, rows: Array)
 signal warmth_received(percent: int)
 signal died_received(cause: String, spawn: Vector3)
@@ -269,6 +271,20 @@ func died(cause: String, spawn: Vector3) -> void:
 @rpc("authority", "call_remote", "reliable")
 func skills(attributes: PackedInt32Array, rows: Array) -> void:
 	skills_received.emit(attributes, rows)
+
+
+# The inner voice (protocol 38, data/items/inner_voice.json): one remark of the character's own thoughts. `line_id` is stable
+# for the line's text (the audio file inner_voice/<line_id>.ogg Sounds records for it), `kind` the group (vomit, diarrhea, ...).
+# The client plays the audio if it exists and always shows the text as a subtitle.
+@rpc("authority", "call_remote", "reliable")
+func thought(line_id: String, text: String, kind: String) -> void:
+	thought_received.emit(line_id, text, kind)
+
+
+# Sickness from rotten food (protocol 38, data/items/sickness.json): game hours left, rounded up; 0 = well. At hello and on change.
+@rpc("authority", "call_remote", "reliable")
+func sick(hours: int) -> void:
+	sick_received.emit(hours)
 
 
 # Body warmth, 0 to 100 percent (protocol 36, data/items/warmth.json): at hello and whenever the whole percent changes.

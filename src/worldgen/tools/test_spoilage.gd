@@ -98,10 +98,9 @@ func _init() -> void:
 
 	var rotten: int = items.table.number_of("rotten_food")
 	check(pack.numbers[slot] == rotten and pack.wear[slot] == 0, "a stack at its shelf life becomes rotten food")
-	var health: float = float(items.vitals_of(1)["health"])
 	items._last_eat.clear()
 	items.action(1, Net.ACT_EAT, slot, 0, 0, Vector3.ZERO)
-	check(float(items.vitals_of(1)["health"]) < health and pack.count_of(rotten) == 2, "eating rotten food costs health and one item")
+	check(items.is_sick(1) and pack.count_of(rotten) == 2, "eating rotten food makes you sick and costs one item")
 
 	# A save keeps the age; an old save (no wear column) reads fresh.
 	items.inventory_of(1).add(roast, 1, 777)

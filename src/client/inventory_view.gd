@@ -82,6 +82,11 @@ var _death_msec: int = 0                    # when the last death arrived, 0 whe
 var strength: int = 0                       # attributes the server sends with the skills (protocol 37)
 var memory: int = 0
 var skill_rows: Array = []                  # [[skill index, working level, rusty], ...] in skills.json order
+var thought_event: Callable = Callable()     # (line id, kind) when the inner voice speaks: Sounds plays inner_voice/<line id>.ogg if it exists
+var _thought_label: Label
+var _thought_until_msec: int = 0
+var sick_hours: int = 0                      # game hours of sickness left, 0 = well (protocol 38)
+var _sick_label: Label
 var warmth: int = 100                       # body warmth, percent (protocol 36)
 var energy: int = 100                       # the Energy pool, percent (job 95)
 var forced_sleep: bool = false               # collapsed from exhaustion: asleep and cannot wake until rested (bit 8 of the stance)
@@ -133,6 +138,8 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.vitals_received.connect(_on_vitals)
 	net.energy_received.connect(_on_energy)
 	net.warmth_received.connect(_on_warmth)
+	net.sick_received.connect(_on_sick)
+	net.thought_received.connect(_on_thought)
 	net.skills_received.connect(_on_skills)
 	net.died_received.connect(_on_died)
 	net.breath_received.connect(func(deciseconds: int) -> void: breath_ds = deciseconds)
@@ -166,6 +173,19 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	_strain_note.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
 	_strain_note.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_layer.add_child(_strain_note)
+	_thought_label = Label.new()
+	_thought_label.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_thought_label.offset_top = -190.0
+	_thought_label.offset_left = -520.0
+	_thought_label.offset_right = 520.0
+	_thought_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_thought_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_thought_label.add_theme_font_size_override("font_size", 28)
+	_thought_label.add_theme_constant_override("outline_size", 6)
+	_thought_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.85))
+	_thought_label.add_theme_color_override("font_color", Color(0.78, 0.86, 1.0))
+	_thought_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_layer.add_child(_thought_label)
 	net.hello.rpc_id(1, _player_key())
 
 
@@ -490,6 +510,9 @@ func _process(_delta: float) -> void:
 func _process_body(_delta: float) -> void:
 	var now: int = Time.get_ticks_msec()
 	_hold_e_check()
+
+	if _thought_label != null and _thought_label.text != "" and now >= _thought_until_msec:
+		_thought_label.text = ""
 
 	if _strain_note != null:
 		_strain_note.text = "Exhausted: you sleep until you are rested" if forced_sleep else "Asleep: any key wakes you" if asleep else ("You are exhausted: slow down" if strain_state == 1 else "")
@@ -1670,6 +1693,10 @@ func _build_bars_row() -> HBoxContainer:
 		row.add_child(cell)
 		_panel_bars[spec[0]] = bar
 
+	_sick_label = Label.new()
+	_sick_label.add_theme_font_size_override("font_size", _px(BODY_PX - 6))
+	_sick_label.add_theme_color_override("font_color", Color(0.6, 0.85, 0.3))
+	row.add_child(_sick_label)
 	_update_panel_bars()
 	return row
 
@@ -1684,6 +1711,23 @@ func _on_skills(attributes: PackedInt32Array, rows: Array) -> void:
 	strength = attributes[0] if attributes.size() > 0 else 0
 	memory = attributes[1] if attributes.size() > 1 else 0
 	skill_rows = rows
+
+	if _character != null:
+		_character.refresh()
+
+
+# The inner voice (protocol 38): the text as a subtitle for a few seconds; Sounds plays the line's recording when there is one.
+func _on_thought(line_id: String, text: String, kind: String) -> void:
+	_thought_label.text = "(%s)" % text
+	_thought_until_msec = Time.get_ticks_msec() + 5500
+
+	if thought_event.is_valid():
+		thought_event.call(line_id, kind)
+
+
+func _on_sick(hours: int) -> void:
+	sick_hours = hours
+	_update_panel_bars()
 
 	if _character != null:
 		_character.refresh()
@@ -1714,6 +1758,9 @@ func _update_panel_bars() -> void:
 	_panel_bars["Exertion"].value = clampf(strain / threshold, 0.0, 1.0) * 100.0
 	_panel_bars["Energy"].value = float(energy)
 	_panel_bars["Warmth"].value = float(warmth)
+
+	if _sick_label != null and is_instance_valid(_sick_label):
+		_sick_label.text = ("Sick, about %d h left" % sick_hours) if sick_hours > 0 else ""
 	_panel_bars["Food"].value = float(hunger)
 	_panel_bars["Water"].value = float(thirst)
 
@@ -2118,6 +2165,11 @@ func _tooltip(number: int, count: int, fill_ml: int = 0) -> String:
 
 	if heal > 0:
 		text += "\nrestores %d health  (right click when held, or Eat / use)" % heal
+
+	var cure: Dictionary = VitalsRules.medicine(table.id_of(number), _vitals_cfg)
+
+	if not cure.is_empty():
+		text += "\nTakes away %d hours of sickness  (right click when held, or Eat / use)" % int(cure.get("cure_h", 0))
 
 	if table.shelf_units(number) > 0:
 		var f: float = table.freshness(number, fill_ml)
