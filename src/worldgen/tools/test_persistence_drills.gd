@@ -73,7 +73,23 @@ func state_of(items) -> Dictionary:
 	for key in items._boulder_left:
 		boulders += int(items._boulder_left[key])
 
+	var remains_fibre: int = 0
+	var fibre_n: int = items.table.number_of("plant_fibre")
+
+	for id in items.remains_ids():
+		remains_fibre += items._chests[int(items._items[id]["struct"]["uid"])].count_of(fibre_n)
+
+	var roast: int = items.table.number_of("roast_forage")
+	var food_age: int = -1
+
+	for i in items.inventory_of(1).SLOTS:
+		if items.inventory_of(1).numbers[i] == roast:
+			food_age = items.inventory_of(1).wear[i]
+
 	return {
+		"remains": items.remains_ids().size(), "remains_fibre": remains_fibre, "age": food_age,
+		"warmth": int(items.vitals_of(1).get("warmth", -1)), "sick": int(items.vitals_of(1).get("sick", -1)),
+		"skill_p": snappedf(float(items._characters[KEY].get("skills", {}).get("mining", {}).get("p", -1.0)), 0.01), "strength": int(items._characters[KEY].get("strength", -1)),
 		"water": water, "boulders": boulders,
 		"pack": items.inventory_of(1).count_of(stone), "chest": chest_stones, "ground": ground_stones,
 		"trees": items.tree_row_count(), "queue": items.craft_queue_of(1), "weight": snappedf(float(items.vitals_of(1)["weight"]), 0.01), "luck": items.luck_of(1), "fitness": items.fitness_of(1),
@@ -105,6 +121,17 @@ func build_world(dir: String) -> Dictionary:
 	a._characters[KEY]["luck"] = 7
 	a._characters[KEY]["fitness"] = 4
 	a.action(1, Net.ACT_ADMIN_GIVE, fibre, 0, 9, Vector3.ZERO)
+	# Death, spoilage, warmth, sickness and skills (Items jobs 81, 91, 92, 87): a body with a pack, an aged stack of food, the vitals and skills.
+	a.peer_connected_hello(2, "drillkey00002")
+	a.report_position(2, Vector3(30.0, 10.0, 30.0))
+	a.action(2, Net.ACT_ADMIN_GIVE, fibre, 0, 5, Vector3.ZERO)
+	a.kill(2, "drill")
+	a.action(1, Net.ACT_ADMIN_GIVE, a.table.number_of("roast_forage"), 0, 4, Vector3.ZERO)
+	a.inventory_of(1).wear[a.inventory_of(1).numbers.find(a.table.number_of("roast_forage"))] = 321
+	a.vitals_of(1)["warmth"] = 63.0
+	a.vitals_of(1)["sick"] = 5000.0
+	a._characters[KEY]["strength"] = 3
+	a._characters[KEY]["skills"] = {"mining": {"p": 12.5, "peak": 12.5, "last": 5.0}}
 	a._last_queue_act.clear()
 	a.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 3, Vector3.ZERO)
 	a._dirty = true
@@ -123,6 +150,7 @@ func reload(dir: String):
 func _init() -> void:
 	var dir: String = "user://test_drills"
 	var want: Dictionary = build_world(dir)
+	check(int(want["remains"]) == 1 and int(want["remains_fibre"]) == 5 and int(want["age"]) == 321 and int(want["warmth"]) == 63 and int(want["sick"]) == 5000 and int(want["strength"]) == 3, "the drill world has a body, an aged stack, warmth, sickness and skills %s" % str(want))
 	check(int(want["pack"]) == 20 and int(want["chest"]) == 7 and int(want["ground"]) == 3 and int(want["trees"]) == 1, "the drill world has what the drills count on %s" % str(want))
 
 	for file in FILES:
@@ -173,8 +201,8 @@ func _init() -> void:
 		var lost: Dictionary = state_of(reload(snap))
 		var expect: Dictionary = want.duplicate()
 		var gone: Array = {
-			"inventories.json": ["pack", "water"], "world_items.json": ["ground", "boulders"], "tree_states.json": ["trees"], "chests.json": ["chest"],
-			"vitals.json": ["weight"], "craft_queues.json": ["queue"], "characters.json": ["luck", "fitness"],
+			"inventories.json": ["pack", "water", "age"], "world_items.json": ["ground", "boulders", "remains", "remains_fibre"], "tree_states.json": ["trees"], "chests.json": ["chest", "remains_fibre"],
+			"vitals.json": ["weight", "warmth", "sick"], "craft_queues.json": ["queue"], "characters.json": ["luck", "fitness", "skill_p", "strength"],
 		}[file]
 
 		for field in gone:

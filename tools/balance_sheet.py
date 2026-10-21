@@ -95,6 +95,33 @@ for item_id, entry in items.items():
     L.append("| %s | %d | %s |" % (entry["name"], entry["durability"], ", ".join("%s %d" % (k, entry["durability"] // max(1, c)) for k, c in per_use.items())))
     if entry["durability"] < 30:
         flags.append("%s breaks after %d wear points. Looks harsh." % (entry["name"], entry["durability"]))
+
+spo, wrm, sick, ene, skl = [load(n) for n in ("spoilage.json", "warmth.json", "sickness.json", "energy.json", "skills.json")]
+mult = spo["gentle_mult"]
+L += ["", "## Food spoilage (gentle, x%d the strict table)" % mult, "", "A game day is 24 game hours (one real hour). Open air in spring or autumn, in a pack. A woven chest keeps food %.0f%% as fast, a plank chest %.0f%%, the ground %.0f%%; winter x%.1f, summer x%.1f." % (spo["place_mult"]["chest"] * 100, spo["place_mult"]["plank_chest"] * 100, spo["place_mult"]["ground"] * 100, spo["season_mult"]["winter"], spo["season_mult"]["summer"]), "", "| Food | Fresh for (game days) | Real time |", "|---|---|---|"]
+seen = {}
+for key, hours in list(spo["by_id"].items()) + list(spo["by_suffix"].items()):
+    seen[key] = hours * mult / 24.0
+for key, days in sorted(seen.items(), key=lambda kv: kv[1]):
+    L.append("| %s | %.1f | %.0f min |" % (key.replace("_", " "), days, days * 60))
+L += ["", "Stale food feeds less: half fresh gives 75%% of its kcal. Eaten rotten: sick for %.0f game hours (see Sickness)." % sick["duration_h"], ""]
+cold_c = wrm["comfort_c"] - (100 - wrm["hurt_at"]) / wrm["gain"]
+L += ["## Warmth", "", "Cold starts to hurt health when the body's target warmth drops under %d, which on a still dry day is about %.0f C (comfort %.0f C, %.1f warmth points per degree). Wind chill up to %.0f C, rain or snow on you x%.1f, swimming x%.1f; a fire within %.0f m is worth +%.0f C; cover cuts wind to %.0f%%." % (wrm["hurt_at"], cold_c, wrm["comfort_c"], wrm["gain"], wrm["wind_chill_c"], wrm["rain_mult"], wrm["water_mult"], wrm["fire_radius_m"], wrm["fire_c"], wrm["covered_wind_share"] * 100), "", "Warmth moves toward its target with a time constant of %.0f game hours falling and %.1f rising; health drains at most %.2f per real second, never below 1." % (wrm["tau_cool_h"], wrm["tau_warm_h"], wrm["hurt_per_s"] * 2), ""]
+L += ["## Sickness", "", "Rotten food: sick %.0f game hours (%.0f real minutes), exertion floor %.0f%%, a symptom every %.0f s, %dx faster asleep. Medicine takes off %.0f hours." % (sick["duration_h"], sick["duration_h"] / 24.0 * 60, sick["exertion_floor"] * 100, sick["symptom_every_s"], sick["sleep_mult"], vit["medicines"]["medicine"]["cure_h"]), ""]
+sys_ = skl["system"]
+L += ["## Skills", "", "Practice per verified success is about %.1f x difficulty x (1 - level/100), with a %.0f s cooldown per skill and a soft cap of %.0f points per game day." % (sys_["gain_per_success"], sys_["cooldown_s"], sys_["day_cap"]), "", "| Skill | k | Level after 50 / 150 / 500 clean successes (average attributes) | Top effect |", "|---|---|---|---|"]
+for sid, sk in skl["skills"].items():
+    if "attrs" not in sk:
+        continue
+    row = []
+    for n in (50, 150, 500):
+        p = 0.0
+        for _ in range(n):
+            lvl = 10 + 90 * (1 - math.exp(-sk["k"] * p))
+            p += sys_["specific_share"] * sys_["gain_per_success"] * (1 - lvl / 100.0)
+        row.append("%d" % (10 + 90 * (1 - math.exp(-sk["k"] * p))))
+    L.append("| %s | %.3f | %s | x%.2f |" % (sk["name"], sk["k"], " / ".join(row), sk["max_factor"]))
+L += ["", "Decay: after %.0f idle game days practice halves every %.0f days, never under %.0f%% of the best." % (sys_["grace_days"], sys_["half_life_days"], sys_["floor_share"] * 100), ""]
 L += ["", "## What looks off", ""]
 L += ["- " + f for f in flags] or ["Nothing in these tables trips the checks (a day of food, a day of water, craft times under a minute, tools of 30+ uses)."]
 open(out_path, "w").write("\n".join(L) + "\n")
