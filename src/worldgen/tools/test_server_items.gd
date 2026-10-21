@@ -265,6 +265,22 @@ func _init() -> void:
 			break
 
 	check(float(f.vitals_of(1)["warmth"]) >= 59.0, "a hot meal lifts warmth")
+
+	# Meat: raw meat cooks into roast meat and eating it raw makes you sick (Tyler: cook me).
+	var meat_n: int = f.table.number_of("raw_meat")
+	f.action(1, Net.ACT_ADMIN_GIVE, meat_n, 0, 2, Vector3.ZERO)
+	f._last_cook.clear()
+	f.action(1, Net.ACT_COOK, open_id, 0, 0, Vector3.ZERO)
+	var made: int = f.inventory_of(1).count_of(f.table.number_of("roast_meat"))
+	check(made == 1 or f.inventory_of(1).count_of(meat_n) == 1, "a lit fire roasts one raw meat (%d roast)" % made)
+	f._last_eat.clear()
+
+	for sl in range(ck_inv.SLOTS):
+		if ck_inv.numbers[sl] == meat_n:
+			f.action(1, Net.ACT_EAT, sl, 0, 0, Vector3.ZERO)
+			break
+
+	check(float(f.vitals_of(1).get("sick", 0.0)) > 0.0, "raw meat makes you sick")
 	f.report_position(1, Vector3(40.0, 10.0, 0.0))
 	f._last_cook.clear()
 	f.action(1, Net.ACT_COOK, open_id, 0, 0, Vector3.ZERO)

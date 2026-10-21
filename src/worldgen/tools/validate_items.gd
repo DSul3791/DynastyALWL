@@ -243,6 +243,22 @@ func _init() -> void:
 	want_item.call(String(cooking.get("gives", "")), "cooking.json gives")
 	obtainable[String(cooking.get("gives", ""))] = true
 
+	for raw_id in cooking.get("cooks_into", {}):
+		want_item.call(String(raw_id), "cooking.json cooks_into")
+		want_item.call(String(cooking["cooks_into"][raw_id]), "cooking.json cooks_into")
+
+	for raw_id in cooking.get("raw_unsafe", []):
+		want_item.call(String(raw_id), "cooking.json raw_unsafe")
+
+	var carcass: Dictionary = _read("carcass.json")
+
+	for animal in carcass.get("species", {}):
+		for part in carcass["species"][animal].get("parts", []):
+			want_item.call(String(part[0]), "carcass.json %s" % animal)
+
+			if int(part[1]) < 0 or int(part[2]) < int(part[1]):
+				fail("carcass.json %s: %s has a bad range" % [animal, part[0]])
+
 	# Skills: every action names a skill, every skill's parent and attributes exist.
 	var skills_cfg: Dictionary = _read("skills.json")
 	var skill_defs: Dictionary = skills_cfg.get("skills", {})

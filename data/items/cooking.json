@@ -19,7 +19,14 @@
 	"tinder": "plant_fibre",
 	"pace_ms": 1200,
 	"age_carry": 0.5,
-	"warms": {"roast_forage": 10, "herbal_tea": 12, "stomach_tea": 12, "chamomile_tea": 12, "willow_bark_tea": 12},
+	"warms": {
+		"roast_forage": 10,
+		"herbal_tea": 12,
+		"stomach_tea": 12,
+		"chamomile_tea": 12,
+		"willow_bark_tea": 12,
+		"roast_meat": 14
+	},
 	"fuel_note": "Burn times in GAME seconds (clock is 24:1): a stick 2 game minutes, driftwood 15, firewood 30, a log 2 game hours. A placed campfire starts lit with 20 sticks of fuel.",
 	"fuel": {
 		"stick": 120.0,
@@ -34,5 +41,11 @@
 		"driftwood",
 		"stick",
 		"log"
+	],
+	"cooks_into": {
+		"raw_meat": "roast_meat"
+	},
+	"raw_unsafe": [
+		"raw_meat"
 	]
 }

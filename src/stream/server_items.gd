@@ -2254,7 +2254,7 @@ func _cook(peer: int, inv, id: int) -> void:
 		if inv.numbers[slot] != 0 and _cookable(table.id_of(inv.numbers[slot])):
 			_last_cook[peer] = now
 			var raw: Dictionary = inv.take_from_slot(slot, 1)
-			var cooked: int = table.number_of(str(_cooking.get("gives", "roast_forage")))
+			var cooked: int = table.number_of(str(_cooking.get("cooks_into", {}).get(table.id_of(int(raw["number"])), _cooking.get("gives", "roast_forage"))))
 			# Cooking keeps the age: the roast starts as stale as the raw item was, as a share of its own shelf life, less what the fire killed.
 			var share: float = 1.0 - table.freshness(int(raw["number"]), int(raw.get("wear", 0)))
 			var age: int = int(round(share * float(table.shelf_units(cooked)) * float(_cooking.get("age_carry", 0.5))))
@@ -2275,6 +2275,9 @@ func _warm_bite(v: Dictionary, item_id: String) -> void:
 
 
 func _cookable(item_id: String) -> bool:
+	if _cooking.get("cooks_into", {}).has(item_id):
+		return true
+
 	if item_id == "" or item_id == str(_cooking.get("gives", "")):
 		return false
 
@@ -3906,6 +3909,14 @@ func _eat(peer: int, inv, slot: int) -> void:
 		var sick: Dictionary = spoil.get("sick", {})
 		v["health"] = maxf(float(v["health"]) - float(sick.get("health", 0)), 1.0)
 		v["wet"] = maxf(float(v["wet"]) - float(sick.get("wet_ml", 0)), 0.0)
+		make_sick(peer)
+		_sync_vitals(peer, true)
+		return
+
+	if _cooking.get("raw_unsafe", []).has(item_id):
+		_last_eat[peer] = now
+		inv.take_from_slot(slot, 1)
+		_say(peer, "That should have been cooked. Your stomach turns.")
 		make_sick(peer)
 		_sync_vitals(peer, true)
 		return

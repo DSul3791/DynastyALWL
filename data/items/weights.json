@@ -149,7 +149,12 @@
 		"hide_boots": 0.9,
 		"hide_hood": 0.3,
 		"hide_mittens": 0.2,
-		"hide_leggings": 1.0
+		"hide_leggings": 1.0,
+		"raw_meat": 0.5,
+		"roast_meat": 0.4,
+		"sinew": 0.02,
+		"animal_fat": 0.1,
+		"feather": 0.005
 	},
 	"by_suffix": {
 		"berries": 0.05,

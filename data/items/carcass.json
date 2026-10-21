@@ -1,0 +1,157 @@
+{
+	"note": "Carcass loot (Items refill 11, hunting prerequisites). When an animal dies it leaves a carcass; working it with a knife (class knife) gives one blow's worth at a time, like a trunk. Each species lists parts [item, min, max] rolled through roll_amount, so luck and the Foraging-style skill apply; size_kg is the body weight (a carcass is never picked up whole). Nothing reads this yet: the damage hook, the carcass entity and a test carcass command are the next build.",
+	"tool_class": "knife",
+	"blows": 4,
+	"species": {
+		"rabbit": {
+			"size_kg": 2.0,
+			"parts": [
+				[
+					"raw_meat",
+					1,
+					2
+				],
+				[
+					"hide",
+					1,
+					1
+				],
+				[
+					"bone",
+					1,
+					2
+				]
+			]
+		},
+		"grouse": {
+			"size_kg": 1.0,
+			"parts": [
+				[
+					"raw_meat",
+					1,
+					1
+				],
+				[
+					"feather",
+					4,
+					8
+				],
+				[
+					"bone",
+					1,
+					1
+				]
+			]
+		},
+		"fox": {
+			"size_kg": 7.0,
+			"parts": [
+				[
+					"raw_meat",
+					2,
+					3
+				],
+				[
+					"hide",
+					1,
+					1
+				],
+				[
+					"bone",
+					2,
+					3
+				],
+				[
+					"sinew",
+					1,
+					2
+				]
+			]
+		},
+		"boar": {
+			"size_kg": 90.0,
+			"parts": [
+				[
+					"raw_meat",
+					8,
+					14
+				],
+				[
+					"hide",
+					1,
+					2
+				],
+				[
+					"bone",
+					4,
+					7
+				],
+				[
+					"sinew",
+					2,
+					4
+				],
+				[
+					"animal_fat",
+					2,
+					4
+				]
+			]
+		},
+		"deer": {
+			"size_kg": 80.0,
+			"parts": [
+				[
+					"raw_meat",
+					8,
+					12
+				],
+				[
+					"hide",
+					1,
+					2
+				],
+				[
+					"bone",
+					4,
+					7
+				],
+				[
+					"sinew",
+					3,
+					5
+				],
+				[
+					"animal_fat",
+					1,
+					3
+				]
+			]
+		},
+		"wolf": {
+			"size_kg": 35.0,
+			"parts": [
+				[
+					"raw_meat",
+					3,
+					5
+				],
+				[
+					"hide",
+					1,
+					2
+				],
+				[
+					"bone",
+					3,
+					5
+				],
+				[
+					"sinew",
+					2,
+					3
+				]
+			]
+		}
+	}
+}
