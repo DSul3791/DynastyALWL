@@ -66,7 +66,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 571
+const BUILD := 572
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -4719,6 +4719,9 @@ func _walk_report() -> void:
 
 
 func _finish(code: int) -> void:
+	if code != 0 and crash_report != null:
+		crash_report.report_now("the game quits with code %d" % code)
+
 	_drain_incoming()
 
 	if link != null:

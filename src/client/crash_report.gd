@@ -14,6 +14,7 @@ extends RefCounted
 # The log of a hard native crash (a backtrace) is in Godot's own log file, which is why the end of that log is included.
 
 const FLAG := "user://running.flag"
+const NOTICE := "user://report_notice.txt"   # name of a report made by a run that quit by itself, shown at the next start
 const BREAD := "user://breadcrumbs.log"
 const REPORT_DIR := "res://crash_reports"
 const KEEP_EVENTS := 150          # breadcrumb lines in a report
@@ -29,6 +30,7 @@ var _logger: Logger
 var _next_state_msec: int = 0
 var _build: int = 0
 var _last_tick_msec: int = 0
+var reported_now: bool = false
 
 
 class BreadLogger extends Logger:
@@ -44,6 +46,12 @@ class BreadLogger extends Logger:
 func start(build: int, commit: String) -> void:
 	_build = build
 	last_report = _report_of_previous_run()
+
+	if last_report == "" and FileAccess.file_exists(NOTICE):
+		last_report = FileAccess.get_file_as_string(NOTICE).strip_edges()
+
+	if FileAccess.file_exists(NOTICE):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(NOTICE))
 	var file: FileAccess = FileAccess.open(FLAG, FileAccess.WRITE)
 
 	if file != null:
@@ -132,7 +140,6 @@ func _report_of_previous_run() -> String:
 	if not FileAccess.file_exists(FLAG):
 		return ""
 
-	var flag: String = FileAccess.get_file_as_string(FLAG).strip_edges()
 	var log_name: String = ""
 	var log_time: int = 0
 
@@ -144,7 +151,26 @@ func _report_of_previous_run() -> String:
 				log_time = modified
 				log_name = file
 
-	var text: String = "CRASH REPORT: the game ended unexpectedly.\nThe run that ended: %s\nThis report made by build %d at %s\n\n" % [flag, _build, Time.get_datetime_string_from_system(true)]
+	return _write_report("The run that ended: " + FileAccess.get_file_as_string(FLAG).strip_edges(), FileAccess.get_file_as_string(FLAG).strip_edges(), log_name)
+
+
+# The game is about to quit for a bad reason (server left, cannot connect): writes the report now, from this run's own log.
+func report_now(reason: String) -> void:
+	if reported_now:
+		return
+
+	reported_now = true
+	event("QUIT: " + reason)
+	last_report = _write_report("This run is quitting by itself: " + reason, "build %d" % _build, "godot.log")
+	var note: FileAccess = FileAccess.open(NOTICE, FileAccess.WRITE)
+
+	if note != null:
+		note.store_string(last_report)
+		note.close()
+
+
+func _write_report(headline: String, flag: String, log_name: String) -> String:
+	var text: String = "CRASH REPORT: the game ended unexpectedly.\n%s\nThis report made by build %d at %s\n\n" % [headline, _build, Time.get_datetime_string_from_system(true)]
 	var bread: PackedStringArray = FileAccess.get_file_as_string(BREAD).split("\n") if FileAccess.file_exists(BREAD) else PackedStringArray()
 	var errors: PackedStringArray = PackedStringArray()
 
@@ -155,6 +181,9 @@ func _report_of_previous_run() -> String:
 	text += "== Last %d breadcrumbs (key and mouse presses, menus, errors, a state line every 5 s) ==\n%s\n\n" % [KEEP_EVENTS, "\n".join(bread.slice(maxi(bread.size() - KEEP_EVENTS, 0)))]
 	text += "== Errors and warnings of that run (last 40) ==\n%s\n\n" % "\n".join(errors.slice(maxi(errors.size() - 40, 0)))
 	var log_lines: PackedStringArray = PackedStringArray()
+
+	if _file != null:
+		_file.flush()
 
 	if log_name != "":
 		var all_lines: PackedStringArray = FileAccess.get_file_as_string("user://logs/" + log_name).split("\n")
@@ -183,6 +212,8 @@ func _report_of_previous_run() -> String:
 
 	print("Crash report written: %s/%s" % [dir, name])
 	return "%s/%s" % [dir.trim_prefix("res://"), name]
+
+
 
 
 static func _flag_build(flag: String) -> String:
