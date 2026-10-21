@@ -228,6 +228,7 @@ var _vitals: Dictionary = {}        # player key -> {hunger, health} floats
 var _vitals_sent: Dictionary = {}   # peer -> [hunger, health] last whole points sent
 var _exertion: Dictionary = {}      # peer -> smoothed 0..1 from movement
 var _motion: Dictionary = {}        # peer -> [last position, msec]
+var _work_level: Dictionary = {}    # peer -> effort of the last tool work (data/items/exertion.json tool_effort)
 var _work_until: Dictionary = {}    # peer -> msec until which tool work counts as effort
 var _last_eat: Dictionary = {}      # peer -> msec
 var _last_drink: Dictionary = {}    # peer -> msec of the last mouthful at the water
@@ -2157,7 +2158,9 @@ func _wear_slot(peer: int, inv, slot: int, use: String = "") -> void:
 
 	var tool_class: String = str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", ""))
 
-	_work_until[peer] = Time.get_ticks_msec() + 5000
+	var work_cfg: Dictionary = _exertion_cfg.get("tool_effort", {})
+	_work_until[peer] = Time.get_ticks_msec() + int(float(_exertion_cfg.get("work_s", 2.5)) * 1000.0)
+	_work_level[peer] = float(work_cfg.get(tool_class, work_cfg.get("default", 0.6)))
 	var before: Array = _snapshot(inv)
 	# A skilled crafter looks after their tools: wear is spread by the tool_care factor (1.0 for everyone at first), a deterministic
 	# carry of the fraction so no dice are involved.
@@ -2916,7 +2919,7 @@ func effort_of(peer: int) -> float:
 	var level: float = float(_exertion.get(peer, 0.0))
 
 	if Time.get_ticks_msec() < int(_work_until.get(peer, 0)):
-		level = maxf(level, 0.6)
+		level = maxf(level, float(_work_level.get(peer, 0.6)))
 
 	# Vomiting and diarrhoea keep the body working at least exertion_floor (data/items/sickness.json) until the sickness fades.
 	if float(vitals_of(peer).get("sick", 0.0)) > 0.0:
