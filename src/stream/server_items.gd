@@ -3213,9 +3213,22 @@ func wolf_info() -> Array:
 		var v: Dictionary = vitals_of(peer)
 		out.append({"peer": peer, "pos": _peer_pos[peer], "stance": int(_stance.get(peer, 0)),
 			"hp": float(v.get("health", 100.0)) / maxf(float(_vitals_cfg.get("health_max", 100)), 1.0),
-			"meat": count_for(peer, "raw_meat") > 0, "spear": _tool_slot(inv, "spear") >= 0, "torch": _tool_slot(inv, "torch") >= 0})
+			"meat": count_for(peer, "raw_meat") > 0, "meat_cooked": count_for(peer, "roast_meat") > 0, "spear": _tool_slot(inv, "spear") >= 0, "torch": _tool_slot(inv, "torch") >= 0})
 
 	return out
+
+
+# Wolves steal: every raw and roast meat leaves the pack. Returns how many pieces went.
+func take_all_meat(peer: int) -> int:
+	var total: int = 0
+
+	for id in ["raw_meat", "roast_meat"]:
+		var n: int = count_for(peer, id)
+
+		if n > 0 and take_from(peer, id, n):
+			total += n
+
+	return total
 
 
 # Wolf bites (data/animals/animals.json "wolves"). Not lethal: health stops at maim_hp and the bite reports "maimed" (a crippling

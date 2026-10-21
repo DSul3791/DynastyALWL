@@ -290,6 +290,7 @@ func _ready() -> void:
 	animals.wolves.fires = func(): return items._lit_fires()
 	animals.wolves.hurt_player = func(peer, amount, lethal, cause): return items.hurt_player(peer, amount, lethal, cause, float(animals.cfg.get("wolves", {}).get("maim_hp", 25.0)))
 	animals.wolves.notice = func(peer, text): items._say(peer, text)
+	animals.wolves.take_meat = func(peer): return items.take_all_meat(peer)
 	animals.died = func(sp, pos, peer): items.make_carcass(sp, pos, peer)
 	items.hit_animal = func(peer, origin, dir, reach, amount) -> bool:
 		var target: int = animals.target_along(origin, dir, reach)

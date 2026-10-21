@@ -196,6 +196,13 @@
 		"distract_m": 80.0,
 		"feed_s": 60.0,
 		"play_chance": 0.3,
+		"hunger_start": 0.4,
+		"hunger_full_s": 3600.0,
+		"hungry_at": 0.6,
+		"starving_at": 0.9,
+		"steal_bites": 3,
+		"stolen_ignore_s": 900.0,
+		"say_stolen": "The wolves tear your meat away and run off with it.",
 		"say_watched": "Something is watching you from the trees.",
 		"say_rush": "The wolves are coming for you!",
 		"say_return": "The wolves are back."

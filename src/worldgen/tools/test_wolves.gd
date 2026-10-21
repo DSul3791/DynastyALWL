@@ -252,5 +252,65 @@ func _init() -> void:
 
 	check(not a.wolves.packs.has(pid) and a.wolves.wolf_count() == 0, "killing every wolf ends the pack")
 
+	# 11. Meat (Dave 2026-10-21): a pack tears meat out of the pack and runs; hungry packs want cooked meat too; light always wins.
+	var stolen: Array = [0]
+	var meat_on: Array = [true]
+	var meat_pack = func(hunger: float, cooked: bool, lit_by_fire: bool):
+		var b = make()
+		health = {1: 100.0}
+		log_bites = 0
+		fires_at = [Vector3(0.0, 10.0, 0.0)] if lit_by_fire else []
+		var who: Dictionary = player(1, 0.0, 0.0, 1.0, false)
+		who["meat"] = not cooked
+		who["meat_cooked"] = cooked
+		players = [who]
+		b.wolves.take_meat = func(_peer):
+			stolen[0] += 1
+			who["meat"] = false
+			who["meat_cooked"] = false
+			return 2
+		var q: int = b.wolves.spawn_pack(30.0, 0.0)
+		b.wolves.packs[q]["den"] = Vector3(9000.0, 0.0, 0.0)
+		b.wolves.packs[q]["hunger"] = hunger
+		return [b, q]
+
+	var run_pack = func(pair: Array, seconds: float) -> void:
+		for n in int(seconds / 0.1):
+			pair[0].tick(0.1)
+
+	var pr: Array = meat_pack.call(0.5, false, false)
+	run_pack.call(pr, 80.0)
+	check(stolen[0] == 1 and health[1] > 25.0, "raw meat is torn away after a few bites and the player is not crippled (%d, %.0f)" % [stolen[0], health[1]])
+	check(pr[0].wolves.packs[pr[1]]["ignore"].has(1) and phase_of(pr[0], pr[1]) != "rush", "the pack runs off and forgets the player")
+	check(pr[0].wolves.packs[pr[1]]["hunger"] < 0.1, "a pack that fed on stolen meat is not hungry")
+
+	stolen[0] = 0
+	pr = meat_pack.call(0.1, true, false)
+	run_pack.call(pr, 60.0)
+	check(log_bites == 0 and stolen[0] == 0, "a fed pack ignores cooked meat")
+	pr = meat_pack.call(0.8, true, false)
+	run_pack.call(pr, 80.0)
+	check(stolen[0] == 1, "a hungry pack takes cooked meat too (%d)" % stolen[0])
+
+	stolen[0] = 0
+	pr = meat_pack.call(0.8, false, false)
+
+	for n in 1200:
+		pr[0].tick(0.1)
+
+		if phase_of(pr[0], pr[1]) == "rush":
+			players[0]["meat"] = false   # the player drops the meat
+			break
+
+	var bites_then: int = log_bites
+	run_pack.call(pr, 20.0)
+	check(phase_of(pr[0], pr[1]) != "rush" and log_bites - bites_then <= 3 and health[1] > 25.0, "dropping the meat ends the attack (%s)" % phase_of(pr[0], pr[1]))
+
+	stolen[0] = 0
+	pr = meat_pack.call(1.0, false, true)
+	run_pack.call(pr, 90.0)
+	check(stolen[0] == 0 and log_bites == 0, "a starving pack with meat never enters a fire's light (%d bites)" % log_bites)
+	fires_at = []
+
 	print("wolves: %d failures" % failures)
 	quit(failures)

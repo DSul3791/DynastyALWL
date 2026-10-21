@@ -18,6 +18,7 @@ const ROLL := 8       # idle: rolling in the grass
 const PLAY := 9       # idle: playing like dogs
 
 var host                          # the animals module (animals, cfg, rng, ground_height, blocked, species_def, spawn, damage)
+var take_meat: Callable           # (peer) -> int: takes every piece of meat out of the pack, returns how many
 var player_info: Callable         # () -> Array of {peer, pos, stance, hp 0..1, meat bool, spear bool, torch bool}
 var fires: Callable               # () -> Array of Vector3, burning fires
 var hurt_player: Callable         # (peer, damage, lethal, cause) -> "hurt" | "maimed" | "dead"
@@ -53,7 +54,7 @@ func spawn_pack(x: float, z: float) -> int:
 	var count: int = host.rng.randi_range(int(size[0]), int(size[1]))   # luck-exempt: how many wolves in a pack
 	var pid: int = _next_pack
 	_next_pack += 1
-	var pack: Dictionary = {"id": pid, "ids": [], "phase": "prowl", "timer": 0.0, "target": -1, "home": Vector3(x, 0.0, z), "maimed": {}, "hurt": false, "prey": 0, "den": Vector3(x, 0.0, z), "joined": false, "point": Vector3.INF, "bite": {}, "ignore": {}, "angle": 0.0, "sprint": 0.0, "stalk_s": 0.0}
+	var pack: Dictionary = {"id": pid, "ids": [], "phase": "prowl", "timer": 0.0, "target": -1, "home": Vector3(x, 0.0, z), "maimed": {}, "hurt": false, "prey": 0, "den": Vector3(x, 0.0, z), "joined": false, "point": Vector3.INF, "bite": {}, "ignore": {}, "angle": 0.0, "sprint": 0.0, "stalk_s": 0.0, "hunger": float(cfgw().get("hunger_start", 0.4)), "for_meat": false, "meat_hits": 0}
 
 	for k in count:
 		var angle: float = TAU * float(k) / float(count)
@@ -216,6 +217,14 @@ func _info_of(infos: Array, peer: int) -> Dictionary:
 	return {}
 
 
+# Does this pack want what the player carries? Raw meat always; cooked meat only when the pack is hungry (Dave 2026-10-21).
+func wants_meat(pack: Dictionary, info: Dictionary) -> bool:
+	if bool(info.get("meat", false)):
+		return true
+
+	return bool(info.get("meat_cooked", false)) and float(pack["hunger"]) >= float(cfgw().get("hungry_at", 0.6))
+
+
 func _say_to(peer: int, text: String) -> void:
 	if notice.is_valid() and peer >= 0:
 		notice.call(peer, text)
@@ -240,6 +249,7 @@ func _think(pack: Dictionary, dt: float, infos: Array) -> void:
 
 	var w: Dictionary = cfgw()
 	pack["timer"] -= dt
+	pack["hunger"] = minf(float(pack["hunger"]) + dt / maxf(float(w.get("hunger_full_s", 3600.0)), 1.0), 1.0)
 
 	# Prey draws a pack that is stalking or waiting (never one in the middle of a rush).
 	if pack["phase"] in ["stalk", "wait", "prowl_target"] and pack["phase"] != "feed":
@@ -426,7 +436,10 @@ func _stalk(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Arra
 
 	var maimed: bool = pack["maimed"].has(target)
 	var bold: float = boldness(pack, p)
-	var weak: bool = float(info.get("hp", 1.0)) < float(w.get("weak_hp", 0.6)) + bold * float(w.get("den_weak_gain", 0.5)) or bool(info.get("meat", false)) or maimed
+	var meaty: bool = wants_meat(pack, info)
+	var starving: bool = float(pack["hunger"]) >= float(w.get("starving_at", 0.9))
+	var hurt_weak: bool = float(info.get("hp", 1.0)) < float(w.get("weak_hp", 0.6)) + bold * float(w.get("den_weak_gain", 0.5)) or maimed
+	var weak: bool = hurt_weak or meaty or starving
 	var armed: bool = bool(info.get("spear", false)) and float(info.get("hp", 1.0)) >= float(w.get("spear_ignore_hp", 0.3)) and not maimed and bold < float(w.get("den_spear_bold", 0.7))
 	var torch: bool = bool(info.get("torch", false)) and not maimed
 
@@ -440,6 +453,8 @@ func _stalk(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Arra
 	pack["phase"] = "rush"
 	pack["sprint"] = 0.0
 	pack["bite"] = {}
+	pack["meat_hits"] = 0
+	pack["for_meat"] = meaty and not hurt_weak and not starving   # only after the meat: dropping it ends the attack
 	_say_to(target, str(w.get("say_rush", "The wolves are coming for you!")))
 	_event("growl", c)
 
@@ -471,6 +486,12 @@ func _rush(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Array
 		_retreat(pack, members, c, p, float(w.get("hurt_retreat_s", 45.0)), false)
 		return
 
+	# The player dropped the meat (or lost it): a pack that only came for the meat lets go.
+	if bool(pack["for_meat"]) and not wants_meat(pack, info) and not pack["maimed"].has(target):
+		pack["ignore"][target] = _clock + float(w.get("ignore_s", 180.0))
+		_retreat(pack, members, c, p, float(w.get("hurt_retreat_s", 45.0)), false)
+		return
+
 	pack["sprint"] += dt
 	var speed: float = float(def.get("sprint_mps", 10.5)) if pack["sprint"] <= float(def.get("sprint_s", 5.0)) else float(def.get("chase_mps", 7.0))
 
@@ -482,6 +503,17 @@ func _rush(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Array
 		if Vector2(m["pos"].x - p.x, m["pos"].z - p.z).length() <= float(w.get("reach_m", 3.0)) and absf(m["pos"].y - p.y) < 3.0 and float(pack["bite"][id]) <= 0.0 and hurt_player.is_valid():
 			pack["bite"][id] = float(w.get("bite_every_s", 1.0))
 			var result: String = str(hurt_player.call(target, float(w.get("bite", 8.0)), pack["maimed"].has(target), "wolves"))
+
+			# Meat is the prize: a few bites in, the pack tears it out of the pack and runs (never in a fire's or torch's light).
+			if result == "hurt" and bool(pack["for_meat"]) and not lit_target and take_meat.is_valid():
+				pack["meat_hits"] = int(pack["meat_hits"]) + 1
+
+				if int(pack["meat_hits"]) >= int(w.get("steal_bites", 3)) and int(take_meat.call(target)) > 0:
+					pack["hunger"] = 0.0
+					pack["ignore"][target] = _clock + float(w.get("stolen_ignore_s", 900.0))
+					_say_to(target, str(w.get("say_stolen", "The wolves tear your meat away and run off with it.")))
+					_retreat(pack, members, c, p, float(w.get("hurt_retreat_s", 45.0)), false)
+					return
 
 			if result == "maimed":
 				pack["maimed"][target] = true
@@ -553,6 +585,7 @@ func _feed(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Array
 
 		if Vector2(members[0]["pos"].x - prey["pos"].x, members[0]["pos"].z - prey["pos"].z).length() <= float(cfgw().get("reach_m", 3.0)):
 			host.animals.erase(prey_id)   # a wolf kill leaves nothing to dress
+			pack["hunger"] = 0.0
 			pack["prey"] = 0
 		return
 
