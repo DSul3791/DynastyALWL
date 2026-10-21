@@ -109,6 +109,13 @@ const QUALITY_CACHE_MB := [1024, 4096, 10240, 10240]    # ground cache limit on 
 const FLY_SPEED := 30.0
 const INCOMING_USEC := 3000           # most time a frame puts arrived chunks in the scene (one at least)
 const WATER_HOLD_MSEC := 2000        # water refreshes wait this long while ground loads
+const SURFACE_WAIT_MSEC := 1500       # stopped in the air: wait this long for the server to say where the ground is
+const LOD_COUNT := 7
+const STAGE_VIEW_M := 128            # the ground view distance in that time
+const STAGE_VERTICAL := 0.25         # and this share of it up and down
+const STAGE_LODS := 1                # after a stop high up only this many detail levels are built until the ground under the player has a collider
+const STAGE_MIN_HEIGHT_M := 40.0      # staged only when the player is this far above the ground
+const STAGE_STEP_MIN_MSEC := 600
 const STILL_MSEC := 3000              # flying: ground loads again after staying still this long
 const WALK_SPEED := 6.0
 const FAST := 3.0                     # flying: Shift multiplier
@@ -184,7 +191,17 @@ var _environment: Environment
 var pitch: float = 0.0
 var frames_left: int = -1
 var test_speed: float = 0.0
+var _surface_asked_msec: int = 0      # stopped in the air: when the ground height was asked for (0 = not asked)
+var _surface_answered_msec: int = 0
+var _ground_below_y: float = NAN      # the answer: the ground height under _ground_below_xz
+var _ground_below_xz: Vector2 = Vector2.ZERO
+var _viewer_ground_y: float = NAN     # the streaming viewer's height while it stands on the ground below a high player (NAN = at the player)
+var _stage_done: bool = false         # the staged ground view has been started for this stop
+var _stage_view: float = 0.0          # above 0 while only the finest ground is built after a stop high up
+var _stage_next_msec: int = 0
 var test_fly: bool = false
+var test_fly_alt: float = 0.0          # --fly check: fly level at this height above sea level (0 = the spawn height)
+var _fly_ground_msec: int = 0         # --fly check: when a collider first showed under the player after stopping
 var _fly_stop_msec: int = 0           # --fly check: when the flight stopped (0 = not yet)
 var _anchor: Vector3 = Vector3.ZERO    # where the ground and plants are loaded around (the viewer)
 var _anchor_set: bool = false
@@ -409,6 +426,8 @@ func _ready() -> void:
 			test_speed = float(argument.trim_prefix("--move="))
 		elif argument == "--fly":
 			test_fly = true
+		elif argument.begins_with("--flyalt="):
+			test_fly_alt = float(argument.trim_prefix("--flyalt="))
 		elif argument.begins_with("--wait="):
 			_wait_until_msec = Time.get_ticks_msec() + int(float(argument.trim_prefix("--wait=")) * 1000.0)
 		elif argument == "--clear-cache":
@@ -559,6 +578,7 @@ func _ready() -> void:
 	net.ground_reset_received.connect(_on_ground_reset)
 	net.died_received.connect(_on_died)
 	net.water_received.connect(_on_water_received)
+	net.surface_received.connect(_on_surface_received)
 	_host = host
 	_port = port
 
@@ -653,7 +673,7 @@ func _welcome_body(info: Dictionary) -> void:
 	var mesher: VoxelMesherTransvoxel = VoxelMesherTransvoxel.new()
 	mesher.texturing_mode = VoxelMesherTransvoxel.TEXTURES_SINGLE_S4
 	terrain.mesher = mesher
-	terrain.lod_count = 7
+	terrain.lod_count = LOD_COUNT
 	terrain.view_distance = VIEW_DISTANCE
 	terrain.mesh_block_size = 32
 	terrain.generate_collisions = true
@@ -1274,8 +1294,25 @@ func _update_anchor(now: int, delta: float) -> void:
 
 	if speed > 0.5:
 		_still_since_msec = now
+		_surface_asked_msec = 0
+		_stage_done = false
 
 	var follow: bool = not flying or not _anchor_set or now - _still_since_msec >= STILL_MSEC
+
+	# Stopped in the air (Dave, 2026-10-21): the ground straight below is built first. The server says where the
+	# ground is under the player (protocol 45), the streaming viewer goes down to it and only the finest level is built
+	# to a short distance until the ground under the player has a collider; then the rest follows.
+	if follow and flying and _anchor_set and not is_nan(_ground_below_y) and absf(_ground_below_xz.x - here.x) < 2.0 and absf(_ground_below_xz.y - here.z) < 2.0:
+		pass
+	elif follow and flying and _anchor_set:
+		if _surface_asked_msec == 0:
+			_surface_asked_msec = now
+			_ground_below_y = NAN
+			net.request_surface.rpc_id(1, here.x, here.z)
+
+		# Held until the answer (a round trip), or 1.5 s.
+		follow = not is_nan(_ground_below_y) or now - _surface_asked_msec >= SURFACE_WAIT_MSEC
+
 	var was_paused: bool = _building_paused
 	_building_paused = not follow
 	stream.paused = _building_paused
@@ -1290,8 +1327,54 @@ func _update_anchor(now: int, delta: float) -> void:
 		_anchor = here
 		_anchor_set = true
 
+		_viewer_ground_y = NAN
+
+		if flying and not is_nan(_ground_below_y) and _ground_below_y < here.y - STAGE_MIN_HEIGHT_M:
+			_viewer_ground_y = _ground_below_y + 2.0
+
+			if _stage_view == 0.0 and not _stage_done:
+				_stage_done = true
+				_set_stage_view(1.0)
+		elif _stage_view > 0.0:
+			_set_stage_view(0.0)
+
+	# The coarse levels follow once the ground under the player can be stood on.
+	if _stage_view > 0.0 and not _building_paused and now >= _stage_next_msec and _collider_below(here):
+		_set_stage_view(0.0)
+
 	if _viewer != null:
-		_viewer.global_position = _anchor
+		# The viewer stands on the ground under a player who stopped high up; everything else keeps the player's own anchor.
+		_viewer.global_position = _anchor if is_nan(_viewer_ground_y) else Vector3(_anchor.x, _viewer_ground_y, _anchor.z)
+
+
+# A collider under the player within 3000 m (the ground there has loaded).
+func _collider_below(p: Vector3) -> bool:
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(p, p + Vector3(0.0, -3000.0, 0.0))
+	query.exclude = [body.get_rid()]
+	return not body.get_world_3d().direct_space_state.intersect_ray(query).is_empty()
+
+
+func _on_surface_received(x: float, z: float, y: float) -> void:
+	_ground_below_xz = Vector2(x, z)
+	_ground_below_y = y
+	_surface_answered_msec = Time.get_ticks_msec()
+	print("Terrain client: ground under (%.0f, %.0f) is at %.1f m" % [x, z, y])
+
+
+# After a stop high up only the finest STAGE_LODS levels are built (the engine builds the coarsest first, so
+# with all of them the ground under the player came last); 0 = all levels again.
+func _set_stage_view(value: float) -> void:
+	_stage_view = value
+	terrain.lod_count = STAGE_LODS if value > 0.0 else LOD_COUNT
+	var view: int = STAGE_VIEW_M if value > 0.0 else QUALITY_VIEW[quality]
+	terrain.view_distance = view
+
+	if _viewer != null:
+		_viewer.view_distance = view
+		_viewer.view_distance_vertical_ratio = STAGE_VERTICAL if value > 0.0 else 1.0
+
+	_stage_next_msec = Time.get_ticks_msec() + STAGE_STEP_MIN_MSEC
+	print("Terrain client: ground detail levels %d" % terrain.lod_count)
 
 
 # Cover.at at a point, for the campfire blueprint colour.
@@ -1411,6 +1494,8 @@ func _apply_quality() -> void:
 		sound.set_quality(quality)
 
 	var view: int = QUALITY_VIEW[quality]
+	_stage_view = 0.0
+	terrain.lod_count = LOD_COUNT
 	terrain.view_distance = view
 
 	if cache != null and cache_mb_from_quality:
@@ -2365,7 +2450,16 @@ func _move_player(delta: float) -> void:
 				stream.watch_xz = Vector2(body.global_position.x, body.global_position.z)
 				stream.watch_on = true
 
+		if test_fly and test_fly_alt > 0.0:
+			body.global_position.y = test_fly_alt
+
 		body.global_position.x += test_speed * delta
+	elif test_fly and _fly_stop_msec > 0 and _fly_ground_msec == 0:
+		var below: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(body.global_position, body.global_position + Vector3(0.0, -3000.0, 0.0))
+		below.exclude = [body.get_rid()]
+
+		if not body.get_world_3d().direct_space_state.intersect_ray(below).is_empty():
+			_fly_ground_msec = Time.get_ticks_msec()
 	elif flying:
 		direction.y += float(Input.is_key_pressed(KEY_SPACE)) - float(Input.is_key_pressed(KEY_CTRL))
 		body.global_position += direction * FLY_SPEED * fast * delta
@@ -3711,6 +3805,8 @@ func _process(delta: float) -> void:
 
 		if frames_left == 0:
 			if test_fly and _fly_stop_msec > 0:
+				print("Terrain client: ground collider under the player %s ms after stopping (altitude %.0f)" % [str(_fly_ground_msec - _fly_stop_msec) if _fly_ground_msec > 0 else "never", body.global_position.y])
+
 				for lod in range(6):
 					print("Terrain client: under the stop point, LOD %d first asked %s, loaded %s (ms after stopping)" % [
 						lod,

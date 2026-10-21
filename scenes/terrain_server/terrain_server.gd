@@ -312,6 +312,7 @@ func _ready() -> void:
 		net.npc_roster.rpc_id(peer, npcs.roster()))
 	net.admin_place_requested.connect(_on_admin_place)
 	net.npc_talk_requested.connect(func(peer, npc_id, choice): dialogue.talk(peer, npc_id, choice))
+	net.surface_requested.connect(_on_surface_requested)
 	net.inventory_action_requested.connect(func(peer, kind, a, b, count, at): items.action(peer, kind, a, b, count, at))
 	_report_at_msec = Time.get_ticks_msec() + 10000
 
@@ -539,6 +540,11 @@ func _on_water_rate_requested(_peer_id: int, direction: int) -> void:
 	var rate: float = water_live.step_rate(direction)
 	print("server: water flow rate now x%.2f" % rate)
 	net.water_rate.rpc(rate, true, rate * WATER_BASE_RATE)
+
+
+# Protocol 45: the ground height under a point (a client that stopped high up streams the ground below first).
+func _on_surface_requested(peer_id: int, x: float, z: float) -> void:
+	net.surface.rpc_id(peer_id, x, z, float(generator.surface_height(x, z)))
 
 
 func _on_water_requested(peer_id: int, chunks: PackedInt32Array) -> void:

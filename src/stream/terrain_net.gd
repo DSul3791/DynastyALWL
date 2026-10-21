@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 46
+const PROTOCOL_VERSION := 47
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -47,6 +47,8 @@ signal water_rate_received(rate: float, busy: bool, spring_m3_s: float)
 signal water_changed_received()
 signal ground_reset_received(tiles_stamp: String, starter_stamp: String)
 signal water_requested(peer_id: int, chunks: PackedInt32Array)
+signal surface_requested(peer_id: int, x: float, z: float)
+signal surface_received(x: float, z: float, y: float)
 signal water_received(chunk: Vector2i, water: PackedByteArray)
 signal notice_received(text: String)
 signal chest_received(id: int, bytes: PackedByteArray)
@@ -204,6 +206,19 @@ func ground_reset(tiles_stamp: String, starter_stamp: String) -> void:
 func request_water(chunks: PackedInt32Array) -> void:
 	if multiplayer.is_server() and chunks.size() % 2 == 0 and chunks.size() <= 4000:
 		water_requested.emit(multiplayer.get_remote_sender_id(), chunks)
+
+
+# Protocol 45: where the ground is under a point, so a player who stopped high in the air has the ground
+# column below them loaded first (the client puts its streaming viewer there).
+@rpc("any_peer", "call_remote", "reliable")
+func request_surface(x: float, z: float) -> void:
+	if multiplayer.is_server() and is_finite(x) and is_finite(z):
+		surface_requested.emit(multiplayer.get_remote_sender_id(), x, z)
+
+
+@rpc("authority", "call_remote", "reliable")
+func surface(x: float, z: float, y: float) -> void:
+	surface_received.emit(x, z, y)
 
 
 @rpc("authority", "call_remote", "reliable")
