@@ -43,6 +43,7 @@ const HeldItemScript := preload("res://src/client/held_item.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
 const WeatherScript := preload("res://src/shared/weather.gd")
 const IceScript := preload("res://src/shared/ice.gd")
+const OceanIceScript := preload("res://src/client/ocean_ice.gd")
 const ICE_POND_DEPTH_M := 3.0           # a typical pond's depth for its freezing speed
 const CoverScript := preload("res://src/shared/cover.gd")
 const StanceScript := preload("res://src/client/stance.gd")
@@ -58,7 +59,7 @@ const FaintEffectScript := preload("res://src/client/faint_effect.gd")
 const FallMistScript := preload("res://src/client/fall_mist.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 375
+const BUILD := 376
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
@@ -307,6 +308,7 @@ var _report_msec: int = 0
 var dig_applied: int = 0
 var test_dig_check: bool = false      # --dig-check: read the ground where --dig cut a hole in an earlier run (the hole must still be there)
 var flora                             # FloraView
+var ocean_ice                         # OceanIce (floes over a frozen sea)
 var fall_mist                         # FallMist: spray at the foot of the nearest waterfalls
 var fall_growth                       # FallGrowth: ferns around the foot of the nearest waterfall
 var items                             # InventoryView: inventory panel (I), pick-up (E)
@@ -649,6 +651,11 @@ func _welcome_body(info: Dictionary) -> void:
 	flora.setup(_tables, TileHeightScript.load_rules("res://worlds/base_world/plan/tile_rules.json", []))
 	Probe.stop("welcome: flora setup", t3)
 	root.add_child(flora)
+	ocean_ice = OceanIceScript.new()
+	ocean_ice.name = "OceanIce"
+	ocean_ice.seed_value = int(info.get("master_seed", 0))
+	ocean_ice.ground_below = _ground_below
+	root.add_child(ocean_ice)
 	fall_mist = FallMistScript.new()
 	fall_mist.name = "FallMist"
 	fall_mist.setup(quality)
@@ -1053,6 +1060,10 @@ func _update_weather() -> void:
 
 	if flora != null:
 		flora.set_ice_cover(ice_now)
+
+	if ocean_ice != null:
+		# Salt water freezes harder to start: the sea only shows floes once the ice is well on.
+		ocean_ice.update(_anchor, maxf(IceScript.cover(game_clock.seconds, group, 0.0, 12.0) * 1.0 - 0.05, 0.0))
 
 	if sound != null and sound.weather != null:
 		sound.weather.ice_cover = ice_now
