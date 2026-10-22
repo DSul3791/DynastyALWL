@@ -1,10 +1,3 @@
-## cc-first-job | When the team restarts, what should they do first? (Triple-check item; every thread agreed the process is ready.)
-My plan: crashes, saves and the server/client version check first, then the pond and water fixes, then items and building, then art and sound polish.
-- Crashes, saves and version check first, then water, then items, then art (recommended)
-- Water and the pond first (what you see in the game)
-- Items and building first
-- Decide later
-
 ## cc-radar-name | One thread is called Radar in the docs and Sal_Crafts in one review. Which name do we use?
 - Radar (recommended: all docs and handoffs use it)
 - Sal_Crafts
