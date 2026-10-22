@@ -4,6 +4,7 @@ Threads never ask Dave for tests in chat or posts. Add ONE line here instead; St
 Line format: `- build N | thread | what to look at (x y z if any) | what to check`
 
 ## Queue
+- 658 | Kathleen (shots by MikeW) | creatures at 20 m, picture /mnt/project-files/animals_20m_sheet.png (the game's AnimalView, side-on, 70 degree view, standing still, not a live game): moose grazing, warning and charging, horse, fox, ducks | each reads as the right animal from 20 m? Then in game walk up to a moose and watch warn and charge
 - 657 | Kathleen (shots by MikeW) | batch 2 item looks, picture /mnt/project-files/looks_batch2.png (BasicLook rendered on a plane, not an in-game drop): stone axe, knife, wooden spade, iron pickaxe, torch, three kits, clay pot, bucket, backpack, bone (now dimmer), bowl, waterskin, iron ingot, oak lumber | does each read as what it is; any wrong size or colour?
 - 656 | Kathleen (shots by MikeW) | stage-one item looks, picture /mnt/project-files/looks_batch1.png (rendered with the game's BasicLook on a ground plane, not an in-game drop): spear, bark, leaves, bandage, firewood, cordage, seed bundle, roots, poultice, plant fibre, roast forage, bone | does each read as what it is; any wrong size or colour? Then in game drop a few and compare
 
