@@ -41,10 +41,6 @@
 - Yes (recommended)
 - No (tell me in chat)
 
-## chk-masonry-tv6 | Check the masonry items (labelled picture): stone block, brick, mortar. Do they look like the real things?
-Image: questions/img/looks_masonry_tv6.png
-[check]
-
 ## spade-load | You said "one shovelful at a time" for raising ground. How should the spade work?
 Note: Today (build 676) a spade is loaded by dragging soil onto it: small, medium and large spades hold 8, 12 and 16 shovelfuls, move 1, 4 and 8 pieces of ground per stroke, and each raise click uses one shovelful.
 - Keep loading: spades hold 8, 12 and 16 and each raise click uses one (recommended: it matches your bow-style idea)
