@@ -1408,7 +1408,8 @@ func _stamp_walkers(now: int) -> void:
 # flora_view. The spots are read from the world items the inventory view already holds (a fire, shelter, chest, bench, forge...; loose
 # sticks, felled trunks, boulders, remains and carcasses do not count). Updated when the set changes.
 const PLACED_CLEARING := "res://data/look/placed_clearing.json"
-const CLEARING_NOT := [0, 2, 3, 4, 10, 11, 12, 19, 22, 24, 26, 27]   # walls and roofs stand on a foundation or floor that clears; the foundation (25) clears 2 m past its edge inside the 5 m circle
+const CLEARING_NOT := [0, 2, 3, 4, 10]   # loose items, felled trunks and stumps; every other state asks structures.json "clears_grass" (StructureLook)
+const StructureLook := preload("res://src/shared/structure_look.gd")
 var _cleared_key: int = 0
 var _switches_applied: bool = false
 var _switches = TestSwitchesScript.new()      # Esc > Advanced experiment switches (default on)
@@ -1448,7 +1449,7 @@ func _sync_cleared() -> void:
 			key = key ^ hash(Vector2(at.x, at.z)) ^ int(id) ^ int(length * 10.0)
 			continue
 
-		if int(row.get("state", 0)) in CLEARING_NOT or not _switches.on("clearing"):
+		if int(row.get("state", 0)) in CLEARING_NOT or not StructureLook.clears_grass(int(row.get("state", 0))) or not _switches.on("clearing"):
 			continue
 
 		var pos: Vector3 = row["pos"]
