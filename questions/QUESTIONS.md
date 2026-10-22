@@ -1,8 +1,3 @@
-## cast-roles | Starter town people: who lives here besides Hob (shopkeeper) and Edda (guard)?
-- Five more: smith, healer, farmer, elder, child (seven in all) [recommended]
-- Only smith and healer first (four in all)
-- Keep just Hob and Edda for now
-
 ## cast-names | Starter town people: what are the new people called?
 - Brann the smith, Mira the healer, Tolly the farmer, old Wenna the elder, Pip the child [recommended]
 - I will name them myself later
