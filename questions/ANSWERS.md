@@ -400,3 +400,7 @@ Answered: 2026-10-22 22:53 UTC
 Answer: No: Very close almost perfect everyone was perfect except for the log wall because you’re notched ends need to be opposite on each side so they can fit into each other so rework the log wall and send it back for approval
 Answered: 2026-10-22 22:55 UTC
 
+## chk-plank-v2 | Check the redrawn plank wall (picture): smooth rounded planks outside, the small inset shows the flat rough face inside. Does the plank wall look right now?
+Answer: No: Very close almost perfect everyone was perfect except for the log wall because you’re notched ends need to be opposite on each side so they can fit into each other so rework the log wall and send it back for approval
+Answered: 2026-10-22 22:55 UTC
+
