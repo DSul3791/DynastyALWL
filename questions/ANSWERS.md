@@ -480,3 +480,7 @@ Answered: 2026-10-22 23:27 UTC
 Answer: No: It’s the opposite direction it’s a shorter peak. Also, please pass along that I want the cave in duration for now to be a number we can set and adjust in settings and it’s lowest setting should be two minutes and it’s highest setting should be 20 minutes
 Answered: 2026-10-22 23:28 UTC
 
+## roofs-65-tall | Is it OK that a 65 degree roof is very tall (4.3 m rise per 2 m of run)?
+Answer: No: It’s the opposite direction it’s a shorter peak. Also, please pass along that I want the cave in duration for now to be a number we can set and adjust in settings and it’s lowest setting should be two minutes and it’s highest setting should be 20 minutes
+Answered: 2026-10-22 23:28 UTC
+
