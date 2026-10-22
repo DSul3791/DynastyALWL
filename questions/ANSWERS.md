@@ -48,3 +48,7 @@ Answered: 2026-10-22 00:07 UTC
 Answer: Yes: Pip chats, plays, and runs small errands, never trades or fights [recommended]
 Answered: 2026-10-22 00:07 UTC
 
+## fall-channel | The 300 m waterfall near x 53640 z 69150 is thin water running down bare mountain slope, not a carved river. Do you want a carved river channel (about 10 to 14 m wide, one clean chute, bed continuing from the pond) down it in the next bake?
+Answer: Yes, carve the river channel down the fall in the next bake
+Answered: 2026-10-22 01:04 UTC
+
