@@ -67,7 +67,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 639
+const BUILD := 641
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -1407,7 +1407,7 @@ func _stamp_walkers(now: int) -> void:
 # flora_view. The spots are read from the world items the inventory view already holds (a fire, shelter, chest, bench, forge...; loose
 # sticks, felled trunks, boulders, remains and carcasses do not count). Updated when the set changes.
 const PLACED_CLEARING := "res://data/look/placed_clearing.json"
-const CLEARING_NOT := [0, 2, 3, 4, 10, 11, 12, 19, 22, 24]   # walls and roofs stand on a foundation or floor that clears; the foundation (25) clears 2 m past its edge inside the 5 m circle
+const CLEARING_NOT := [0, 2, 3, 4, 10, 11, 12, 19, 22, 24, 26, 27]   # walls and roofs stand on a foundation or floor that clears; the foundation (25) clears 2 m past its edge inside the 5 m circle
 var _cleared_key: int = 0
 var _switches_applied: bool = false
 var _switches = TestSwitchesScript.new()      # Esc > Advanced experiment switches (default on)

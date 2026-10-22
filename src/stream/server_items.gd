@@ -2904,6 +2904,23 @@ func register_roofs() -> void:
 			_add_roof(_items[id])
 
 
+# True when another placed piece stands on this foundation (on its top, inside its footprint).
+func _stands_on(base: Dictionary, def: Dictionary) -> bool:
+	var half_x: float = float(def.get("footprint_x", 4.0)) * 0.5 + 0.1
+	var half_z: float = float(def.get("footprint_z", 4.0)) * 0.5 + 0.1
+
+	for other in _items.values():
+		if other == base or not other.has("struct") or not bool(_structures.get(str(other["struct"]["kind"]), {}).get("piece", false)):
+			continue
+
+		var d: Vector3 = other["pos"] - base["pos"]
+
+		if d.y > 0.1 and absf(d.x) <= half_x and absf(d.z) <= half_z:
+			return true
+
+	return false
+
+
 # Taking a structure down (E near it) gives its kit back. A chest with things in it cannot be taken down.
 func _take_down(peer: int, inv, id: int) -> void:
 	var it: Dictionary = _items.get(id, {})
@@ -2918,6 +2935,10 @@ func _take_down(peer: int, inv, id: int) -> void:
 
 	if not _struct_empty(id):
 		_say(peer, "Empty it first.")
+		return
+
+	if bool(def.get("foundation", false)) and _stands_on(it, def):
+		_say(peer, "Take down what stands on it first.")
 		return
 
 	var kit: int = table.number_of(str(def["kit"]))

@@ -180,3 +180,40 @@ static func foundation() -> Node3D:
 	_box(root, Vector3(3.6, 0.02, 3.6), Vector3(0.0, 0.305, 0.0), _earth)      # the packed earth top inside the stone rim
 	_solid(root, Vector3(4.0, 0.3, 4.0), Vector3(0.0, 0.15, 0.0))
 	return root
+
+
+# A wall with an opening: `jamb` is the width of wall left on each side of the gap, the gap runs from `low` to `high` metres up (a doorway from 0, a window from 0.9).
+static func _wall_with_gap(low: float, high: float, jamb: float) -> Node3D:
+	_materials()
+	var root: Node3D = Node3D.new()
+	var half: float = 1.0
+	var side_x: float = half - jamb * 0.5
+
+	for x in [-side_x, side_x]:
+		_box(root, Vector3(jamb, 2.4, 0.14), Vector3(x, 1.2, 0.0), _planks)
+		_solid(root, Vector3(jamb, 2.4, 0.2), Vector3(x, 1.2, 0.0))
+
+	var gap_w: float = 2.0 * (half - jamb)
+	_box(root, Vector3(gap_w, 2.4 - high, 0.14), Vector3(0.0, (high + 2.4) * 0.5, 0.0), _planks)
+	_solid(root, Vector3(gap_w, 2.4 - high, 0.2), Vector3(0.0, (high + 2.4) * 0.5, 0.0))
+
+	if low > 0.0:
+		_box(root, Vector3(gap_w, low, 0.14), Vector3(0.0, low * 0.5, 0.0), _planks)
+		_solid(root, Vector3(gap_w, low, 0.2), Vector3(0.0, low * 0.5, 0.0))
+		_box(root, Vector3(gap_w + 0.1, 0.06, 0.24), Vector3(0.0, low + 0.03, 0.0), _frame)   # the sill
+
+	for x in [-0.95, 0.95]:
+		_box(root, Vector3(0.1, 2.4, 0.2), Vector3(x, 1.2, 0.0), _frame)
+
+	_box(root, Vector3(2.0, 0.1, 0.2), Vector3(0.0, 2.35, 0.0), _frame)
+	return root
+
+
+# A doorway: a gap one metre wide and two high, walkable.
+static func doorway() -> Node3D:
+	return _wall_with_gap(0.0, 2.0, 0.5)
+
+
+# A window wall: an opening one metre wide from 0.9 to 1.7 m up.
+static func window_wall() -> Node3D:
+	return _wall_with_gap(0.9, 1.7, 0.5)

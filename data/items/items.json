@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 200,
+	"next_number": 204,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -2179,6 +2179,44 @@
 			"look_alikes": [],
 			"material": "stone",
 			"note": "Building piece: row state 25."
+		},
+		"doorway_section_kit": {
+			"number": 200,
+			"name": "Doorway",
+			"description": "A plank wall with a gap you can walk through, one metre wide and two high.",
+			"kind": "placeable",
+			"stack": 1,
+			"look_alikes": [],
+			"value": 30
+		},
+		"doorway_section": {
+			"number": 201,
+			"name": "Doorway",
+			"description": "A plank wall with a gap you can walk through, one metre wide and two high.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": [],
+			"material": "planks",
+			"note": "Building piece: row state 26; sits on a 1 m grid, turns in quarter circles."
+		},
+		"window_section_kit": {
+			"number": 202,
+			"name": "Window wall",
+			"description": "A plank wall with an opening at chest height to see through.",
+			"kind": "placeable",
+			"stack": 1,
+			"look_alikes": [],
+			"value": 30
+		},
+		"window_section": {
+			"number": 203,
+			"name": "Window wall",
+			"description": "A plank wall with an opening at chest height to see through.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": [],
+			"material": "planks",
+			"note": "Building piece: row state 27; sits on a 1 m grid, turns in quarter circles."
 		}
 	}
 }

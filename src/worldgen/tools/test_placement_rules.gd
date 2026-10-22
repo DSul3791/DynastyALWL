@@ -151,6 +151,17 @@ func _init() -> void:
 			wall_y = maxf(wall_y, items._items[id]["pos"].y)
 
 	check(items.world_item_count() == base_before + 2 and is_equal_approx(wall_y, 10.3), "a wall beside it stands on the foundation top (y %.2f)" % wall_y)
+	# A doorway and a window wall snap onto the foundation like a wall; the foundation stays while they stand on it.
+	check(bool(Rules.snap(cfg, "doorway_section_kit", Vector3(48.9, 10.0, 47.6), 0, base_rows)[2]) and bool(Rules.snap(cfg, "window_section_kit", Vector3(48.9, 10.0, 47.6), 0, base_rows)[2]), "doorway and window walls snap to the foundation anchors")
+	var base_id: int = 0
+
+	for id in items._items:
+		if items._items[id].has("struct") and items._items[id]["struct"]["kind"] == "foundation_section":
+			base_id = id
+
+	var found_before: int = items.world_item_count()
+	items.action(2, Net.ACT_PICKUP, base_id, 0, 0, Vector3.ZERO)
+	check(items.world_item_count() == found_before, "a foundation with a wall on it cannot be taken down")
 	# A dead branch on the forest floor gives one stick, only within reach.
 	var sticks_had: int = items.inventory_of(2).count_of(items.table.number_of("stick"))
 	items.action(2, Net.ACT_LITTER, 0, 0, 0, Vector3(401.0, 10.0, 400.0))

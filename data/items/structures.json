@@ -312,6 +312,28 @@
 				]
 			},
 			"note": "Foundation (Dave 2026-10-22): a 4 m square slab 0.3 m high that clears the grass under and around it (placed_clearing.json) and that walls, floors and roofs snap to at the listed anchors (x, z, yaw from its middle)."
+		},
+		"doorway_section": {
+			"kit": "doorway_section_kit",
+			"item": "doorway_section",
+			"state": 26,
+			"piece": true,
+			"footprint_x": 2.0,
+			"footprint_z": 0.25,
+			"cap_per_chunk": 200,
+			"max_rise_m": 0.6,
+			"piece_kind": "wall"
+		},
+		"window_section": {
+			"kit": "window_section_kit",
+			"item": "window_section",
+			"state": 27,
+			"piece": true,
+			"footprint_x": 2.0,
+			"footprint_z": 0.25,
+			"cap_per_chunk": 200,
+			"max_rise_m": 0.6,
+			"piece_kind": "wall"
 		}
 	},
 	"campfire": {
