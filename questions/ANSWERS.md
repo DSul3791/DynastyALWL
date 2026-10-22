@@ -28,3 +28,7 @@ Answered: 2026-10-21 23:17 UTC
 Answer: Cap the bonus so dawn is a bit under sure (about 0.93 a cast)
 Answered: 2026-10-22 00:06 UTC
 
+## fishing-hint | Fishing: show a hint when a spot is nearly fished out?
+Answer: Yes, "the water is still" when under 3 fish are left
+Answered: 2026-10-22 00:06 UTC
+
