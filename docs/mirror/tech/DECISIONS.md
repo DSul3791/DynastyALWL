@@ -358,3 +358,6 @@ tech/BACKUP_PLAN.md and RESTORE_PROCEDURE.md approved as written (nightly real r
 
 ## 2026-10-22 15:50 Backup code review (tools/nightly_backup.py e1d4506) (Tyler_Guru_SenDev)
 Verdict: sound structure, tests pass on fake trees, NOT yet cleared for a real run. Required fixes before the first real run: (1) cull cap must drain, not block: move 3, alert, continue; block only above 7 candidates; (2) rmtree of the restore scratch must clear read-only files and fail clearly; (3) write failures to backup_log.txt and LAST_BACKUP_FAILED.txt, write LAST_BACKUP_OK.txt only after the restore test; (4) refusal message "close Godot completely". Decisions made: weekly survivor is the LAST backup of each ISO week (matches code; plan text corrected, tell Dave); saves folder is server_store; .godot stays excluded, restore test keeps --import.
+
+## 2026-10-22 15:50 Backup fixes (04e057f) re-reviewed: CLEARED for the first supervised run (Tyler_Guru_SenDev)
+All 4 required fixes verified in the diff; tests 0 failures (cloud/Linux only). Not yet exercised on Windows: tasklist check, E: paths, git fsck on E:, Godot --import time, real server_store path. First run = supervised by Dave, cull stays DRY-RUN for 14 nights. Open Dave answers: bk-weekly (code keeps last-of-week; oldest would need a small change), bk-trigger.
