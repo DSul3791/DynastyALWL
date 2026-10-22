@@ -103,6 +103,15 @@ func _init() -> void:
 	# Building pieces: they click to a 1 m grid and quarter turns and sit edge to edge, though other structures keep their gap.
 	var on_grid: Array = Rules.snap(cfg, "wall_section_kit", Vector3(10.4, 10.0, 7.6), 133)
 	check(on_grid[0] == Vector3(10.0, 10.0, 8.0) and int(on_grid[1]) == 90, "a wall snaps to the 1 m grid and a quarter turn (%s)" % str(on_grid))
+	# A foundation: walls and floors near it click to its anchors and stand on its top; far from it they use the grid.
+	var base_rows: Array = [{"pos": Vector3(50.0, 10.0, 50.0), "state": 25}]
+	var on_base: Array = Rules.snap(cfg, "wall_section_kit", Vector3(48.9, 10.0, 47.6), 0, base_rows)
+	check(bool(on_base[2]) and is_equal_approx(on_base[0].y, 10.3) and on_base[0].x == 49.0 and on_base[0].z == 48.0, "a wall near the foundation edge snaps to its anchor, on top (%s)" % str(on_base))
+	var on_side: Array = Rules.snap(cfg, "wall_section_kit", Vector3(47.9, 10.0, 49.4), 0, base_rows)
+	check(bool(on_side[2]) and int(on_side[1]) == 90, "a wall at the side anchor turns to run along that side (%s)" % str(on_side))
+	check(bool(Rules.snap(cfg, "floor_section_kit", Vector3(50.9, 10.0, 49.2), 0, base_rows)[2]), "a floor snaps onto the foundation")
+	check(not bool(Rules.snap(cfg, "wall_section_kit", Vector3(60.0, 10.0, 60.0), 0, base_rows)[2]), "far from the foundation a wall uses the plain grid")
+	check(not bool(Rules.snap(cfg, "foundation_section_kit", Vector3(50.0, 10.0, 50.0), 0, base_rows)[2]), "a foundation does not snap onto a foundation")
 	check(Rules.snap(cfg, "chest_kit", Vector3(10.4, 10.0, 7.6), 133)[0] == Vector3(10.4, 10.0, 7.6), "a chest keeps its own spot")
 	items.report_position(1, Vector3(200.0, 10.0, 200.0))
 	var walls_before: int = items.world_item_count()
@@ -125,5 +134,22 @@ func _init() -> void:
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("floor_section_kit"), 0, 1, Vector3.ZERO)
 	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("floor_section_kit")), 0, 0, Vector3(302.0, 10.0, 202.0))
 	check(items.world_item_count() == wet_before, "the server refuses a floor section over water")
+	# Server: a foundation stands, then a wall near its edge sits on top of it at the anchor.
+	items.peer_connected_hello(2, "foundkey0002")
+	items.water_depth_at = func(_pos: Vector3) -> float: return 0.0
+	items.report_position(2, Vector3(400.0, 10.0, 400.0))
+	var base_before: int = items.world_item_count()
+	items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of("foundation_section_kit"), 0, 1, Vector3.ZERO)
+	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of("foundation_section_kit")), 0, 0, Vector3(400.0, 10.0, 402.0))
+	check(items.world_item_count() == base_before + 1, "a foundation is placed")
+	items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of("wall_section_kit"), 0, 1, Vector3.ZERO)
+	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of("wall_section_kit")), 0, 0, Vector3(399.2, 10.0, 399.7))
+	var wall_y: float = -1.0
+
+	for id in items._items:
+		if items._items[id].has("struct") and items._items[id]["struct"]["kind"] == "wall_section":
+			wall_y = maxf(wall_y, items._items[id]["pos"].y)
+
+	check(items.world_item_count() == base_before + 2 and is_equal_approx(wall_y, 10.3), "a wall beside it stands on the foundation top (y %.2f)" % wall_y)
 	print("placement rules: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

@@ -6,6 +6,7 @@ extends SceneTree
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const TradeScript := preload("res://src/stream/server_trade.gd")
+const Net := preload("res://src/stream/terrain_net.gd")
 
 var failures: int = 0
 
@@ -41,7 +42,7 @@ func _init() -> void:
 	trade.now = func(): return clock[0]
 	var gclock: Array = [0.0]
 	trade.game_seconds = func(): return gclock[0]
-	trade.send_shop = func(_peer, npc, _title, ids, pay, got, _buys, _tired_ids, _tired, stock, supply, till): opened.append([npc, ids, pay, got, stock, supply, till])
+	trade.send_shop = func(_peer, npc, _title, ids, pay_milli, got_milli, _buys, _tired_ids, _tired, stock, supply, till): opened.append([npc, ids, pay_milli, got_milli, stock, supply, till])
 	check(trade.open(1, "hob") and opened.size() == 1, "Hob's shop opens beside him")
 	check(not trade.open(1, "edda"), "an NPC without a shop has no window")
 	var pay: int = int(opened[0][2])
@@ -64,6 +65,19 @@ func _init() -> void:
 	trade.deal(1, "hob", 1, slot, 1)
 	check(items.coins_of(1) == before_coins + 11 and items.inventory_of(1).count_of(axe) >= 0, "selling an axe back pays 11 copper (55 percent of 20) (%d to %d)" % [before_coins, items.coins_of(1)])
 	check(trade.deal(1, "hob", 1, 29, 1) == "", "an empty slot sells nothing")
+
+	# "Would you like to buy my extra stuff?" (kind 3): materials sold, tools, coins and valuables kept.
+	items.add_coins(1, 5)
+	var kept_axe: int = items.table.number_of("stone_axe")
+	items.action(1, Net.ACT_ADMIN_GIVE, kept_axe, 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stick"), 0, 5, Vector3.ZERO)
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("steel_ingot"), 0, 1, Vector3.ZERO)
+	var sticks_before: int = items.inventory_of(1).count_of(items.table.number_of("stick"))
+	var coins_before: int = items.coins_of(1)
+	var extras_said: String = trade.deal(1, "hob", 3, 0, 1)
+	check(items.inventory_of(1).count_of(items.table.number_of("stick")) == 0 and sticks_before > 0, "the extras sale sells the sticks (%s)" % extras_said)
+	check(items.inventory_of(1).count_of(kept_axe) >= 1 and items.inventory_of(1).count_of(items.table.number_of("steel_ingot")) == 1, "it keeps the axe and the valuable steel ingot")
+	check(items.coins_of(1) >= coins_before, "the sale pays coin (%d to %d)" % [coins_before, items.coins_of(1)])
 
 	# Reputation, charisma and luck move the prices both ways, never past the floors.
 	var m_rep0: Dictionary = trade.multipliers(1, "hob")

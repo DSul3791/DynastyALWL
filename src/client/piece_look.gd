@@ -11,6 +11,7 @@ const TEX := 128                 # texture side in pixels: small and cheap at ev
 static var _planks: StandardMaterial3D
 static var _frame: StandardMaterial3D
 static var _roof: StandardMaterial3D
+static var _slab: StandardMaterial3D
 
 
 # Boards from a little noise, drawn once: `boards` boards across, dark seams between them, long grain along y, a per-board tint, a few knots.
@@ -68,6 +69,7 @@ static func _materials() -> void:
 	_planks = _textured(WOOD, 8, 11, true)       # 25 cm boards
 	_frame = _textured(WOOD_DARK, 2, 23, false)  # squared timbers: wide, long grain
 	_roof = _textured(Color(0.36, 0.25, 0.15), 10, 37, false)   # split boards laid close
+	_slab = _textured(Color(0.5, 0.49, 0.46), 4, 51, false)     # stone and clay slabs, wide joints
 
 
 static func _box(parent: Node3D, size: Vector3, at: Vector3, material: StandardMaterial3D) -> void:
@@ -134,4 +136,20 @@ static func roof() -> Node3D:
 			_box(root, Vector3(0.12, 2.5, 0.12), Vector3(x, 1.25, z), _frame)
 
 	_solid(root, Vector3(2.4, 0.12, 2.4), Vector3(0.0, 2.5, 0.0))
+	return root
+
+
+# A 4 by 4 m slab 0.3 m high, a stone and clay base the other pieces click onto (placement_rules.gd anchors); a darker rim marks its edge.
+static func foundation() -> Node3D:
+	_materials()
+	var root: Node3D = Node3D.new()
+	_box(root, Vector3(4.0, 0.3, 4.0), Vector3(0.0, 0.15, 0.0), _slab)
+
+	for z in [-1.97, 1.97]:
+		_box(root, Vector3(4.0, 0.32, 0.06), Vector3(0.0, 0.15, z), _frame)
+
+	for x in [-1.97, 1.97]:
+		_box(root, Vector3(0.06, 0.32, 4.0), Vector3(x, 0.15, 0.0), _frame)
+
+	_solid(root, Vector3(4.0, 0.3, 4.0), Vector3(0.0, 0.15, 0.0))
 	return root

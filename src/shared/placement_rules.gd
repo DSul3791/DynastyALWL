@@ -29,17 +29,60 @@ static func structure_of_kit(cfg: Dictionary, kit_id: String) -> Dictionary:
 	return {}
 
 
-# Building pieces (walls, floors, roofs: structures.json "piece": true) click to a grid: x and z to piece_snap_m metres, the turn to
-# a quarter circle, so neighbours meet edge to edge. Anything else keeps its spot and turn. Returns [spot, yaw in degrees].
-static func snap(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int) -> Array:
+# Building pieces (structures.json "piece": true) click to a grid: x and z to the piece's snap_m (else piece_snap_m) metres, the turn to
+# a quarter circle, so neighbours meet edge to edge. A wall, floor or roof near a foundation (rows: {"pos", "state"}) snaps to the
+# nearest of the foundation's anchors instead and stands on its top. Anything else keeps its spot and turn.
+# Returns [spot, yaw in degrees, on_foundation].
+static func snap(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int, rows: Array = []) -> Array:
 	var def: Dictionary = structure_of_kit(cfg, kit_id)
 
 	if def.is_empty() or not bool(def.get("piece", false)):
-		return [spot, yaw_deg]
+		return [spot, yaw_deg, false]
 
-	var grid: float = maxf(float(cfg.get("piece_snap_m", 1.0)), 0.1)
 	var turned: int = posmod(int(round(float(yaw_deg) / 90.0)) * 90, 360)
-	return [Vector3(round(spot.x / grid) * grid, spot.y, round(spot.z / grid) * grid), turned]
+	var piece_kind: String = str(def.get("piece_kind", ""))
+
+	if piece_kind != "":
+		for row in rows:
+			var base: Dictionary = structure_of_state(cfg, int(row["state"]))
+
+			if base.is_empty() or not bool(base.get("foundation", false)):
+				continue
+
+			var local: Vector2 = Vector2(spot.x - row["pos"].x, spot.z - row["pos"].z)
+
+			if absf(local.x) > float(base.get("footprint_x", 4.0)) * 0.5 + 1.0 or absf(local.y) > float(base.get("footprint_z", 4.0)) * 0.5 + 1.0:
+				continue
+
+			var best: Array = []
+			var best_d: float = 1.4
+
+			for anchor in base.get("anchors", {}).get(piece_kind, []):
+				var d: float = local.distance_to(Vector2(float(anchor[0]), float(anchor[1])))
+
+				if d < best_d:
+					best_d = d
+					best = anchor
+
+			if not best.is_empty():
+				var yaw_at: int = int(best[2]) if best.size() > 2 else turned
+				return [Vector3(row["pos"].x + float(best[0]), row["pos"].y + float(base.get("top_m", 0.3)), row["pos"].z + float(best[1])), yaw_at, true]
+
+	var grid: float = maxf(float(def.get("snap_m", cfg.get("piece_snap_m", 1.0))), 0.1)
+	return [Vector3(round(spot.x / grid) * grid, spot.y, round(spot.z / grid) * grid), turned, false]
+
+
+# The structure definition drawn as world-item state `state` (its row with "kind" added), {} when none.
+static func structure_of_state(cfg: Dictionary, state: int) -> Dictionary:
+	for kind in cfg.get("structures", {}):
+		var def: Dictionary = cfg["structures"][kind]
+
+		if int(def.get("state", -1)) == state:
+			var out: Dictionary = def.duplicate()
+			out["kind"] = kind
+			return out
+
+	return {}
 
 
 # The ghost's footprint in metres: zero for a campfire (drawn as a ring).

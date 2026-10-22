@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 198,
+	"next_number": 200,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -2160,6 +2160,25 @@
 			"look_alikes": [],
 			"material": "planks",
 			"note": "Building piece: row state 24; sits on a 1 m grid, turns in quarter circles."
+		},
+		"foundation_section_kit": {
+			"number": 198,
+			"name": "Foundation",
+			"description": "A stone and clay slab, four metres square. Walls and floors snap onto it.",
+			"kind": "placeable",
+			"stack": 1,
+			"look_alikes": [],
+			"value": 40
+		},
+		"foundation_section": {
+			"number": 199,
+			"name": "Foundation",
+			"description": "A stone and clay slab, four metres square. Walls and floors snap onto it.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": [],
+			"material": "stone",
+			"note": "Building piece: row state 25."
 		}
 	}
 }

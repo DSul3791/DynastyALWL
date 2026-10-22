@@ -186,7 +186,8 @@
 			"footprint_x": 2.0,
 			"footprint_z": 0.25,
 			"cap_per_chunk": 200,
-			"max_rise_m": 0.6
+			"max_rise_m": 0.6,
+			"piece_kind": "wall"
 		},
 		"floor_section": {
 			"kit": "floor_section_kit",
@@ -196,7 +197,8 @@
 			"footprint_x": 2.0,
 			"footprint_z": 2.0,
 			"cap_per_chunk": 200,
-			"max_rise_m": 0.6
+			"max_rise_m": 0.6,
+			"piece_kind": "floor"
 		},
 		"roof_section": {
 			"kit": "roof_section_kit",
@@ -210,7 +212,106 @@
 			"half_x": 1.2,
 			"half_z": 1.2,
 			"height": 2.6,
-			"max_rise_m": 0.6
+			"max_rise_m": 0.6,
+			"piece_kind": "roof"
+		},
+		"foundation_section": {
+			"kit": "foundation_section_kit",
+			"item": "foundation_section",
+			"state": 25,
+			"piece": true,
+			"foundation": true,
+			"footprint_x": 4.0,
+			"footprint_z": 4.0,
+			"cap_per_chunk": 60,
+			"max_rise_m": 0.6,
+			"snap_m": 2.0,
+			"top_m": 0.3,
+			"anchors": {
+				"wall": [
+					[
+						-1,
+						-2,
+						0
+					],
+					[
+						1,
+						-2,
+						0
+					],
+					[
+						-1,
+						2,
+						0
+					],
+					[
+						1,
+						2,
+						0
+					],
+					[
+						-2,
+						-1,
+						90
+					],
+					[
+						-2,
+						1,
+						90
+					],
+					[
+						2,
+						-1,
+						90
+					],
+					[
+						2,
+						1,
+						90
+					]
+				],
+				"floor": [
+					[
+						-1,
+						-1
+					],
+					[
+						1,
+						-1
+					],
+					[
+						-1,
+						1
+					],
+					[
+						1,
+						1
+					]
+				],
+				"roof": [
+					[
+						0,
+						0
+					],
+					[
+						-1,
+						-1
+					],
+					[
+						1,
+						-1
+					],
+					[
+						-1,
+						1
+					],
+					[
+						1,
+						1
+					]
+				]
+			},
+			"note": "Foundation (Dave 2026-10-22): a 4 m square slab 0.3 m high that clears the grass under and around it (placed_clearing.json) and that walls, floors and roofs snap to at the listed anchors (x, z, yaw from its middle)."
 		}
 	},
 	"campfire": {

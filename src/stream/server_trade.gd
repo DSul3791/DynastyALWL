@@ -222,6 +222,9 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 	var m: Dictionary = multipliers(peer, npc_id)
 	var shop: Dictionary = _shops[npc_id]
 
+	if kind == 3:
+		return _sell_extras(peer, npc_id, inv)
+
 	if kind == 0:
 		var ids: Array = []
 
@@ -327,6 +330,41 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 	items._dirty = true
 	items.add_coins(peer, total, "trade")
 	return "Sold %d %s for %s." % [count, items.table.name_of(number2).to_lower(), items._coin_words(total)]
+
+
+# kind 3, "Would you like to buy my extra stuff?" (Dave 2026-10-22): one click sells every pack stack of the kinds coins.json
+# trade.sell_extras lists that the trader buys and that is worth less than valuable_from copper each. Tools, weapons, coins, gear,
+# clothing, kits and anything worth more are never swept. Each stack is an ordinary sale (same prices, demand and purse limits).
+func _sell_extras(peer: int, npc_id: String, inv) -> String:
+	var rule: Dictionary = _cfg().get("sell_extras", {})
+	var kinds: Array = rule.get("kinds", ["material", "food", "medicine"])
+	var below: int = int(rule.get("valuable_from", 50))
+	var buys: Array = _shops[npc_id].get("buys", [])
+	var before_coins: int = items.coins_of(peer)
+	var sold: int = 0
+
+	for slot in range(inv.SLOTS):
+		if inv.numbers[slot] == 0:
+			continue
+
+		var entry: Dictionary = items.table.entry(items.table.id_of(inv.numbers[slot]))
+		var item_kind: String = str(entry.get("kind", ""))
+
+		if not kinds.has(item_kind) or str(entry.get("tool_class", "")) != "" or int(entry.get("value", 0)) >= below:
+			continue
+
+		if not buys.has("all") and not buys.has(item_kind):
+			continue
+
+		var number_before: int = inv.counts[slot]
+
+		if deal(peer, npc_id, 1, slot, 999) != "" and (inv.numbers[slot] == 0 or inv.counts[slot] < number_before):
+			sold += 1
+
+	if sold == 0:
+		return "You have no extra stuff he will buy."
+
+	return "Sold %d kinds of extra stuff for %s." % [sold, items._coin_words(items.coins_of(peer) - before_coins)]
 
 
 # What a smith asks to mend the tool in a pack slot (0 = nothing to mend).

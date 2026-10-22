@@ -31,6 +31,8 @@ var _shop_till: int = -1                   # the coin in the trader's purse, -1 
 var _shop_tired: Dictionary = {}           # item id -> demand multiple (the trader is tired of buying it)
 var _shop_buy_box: VBoxContainer
 var _shop_sell_box: VBoxContainer
+var _trader_ids: Array = []                 # npc ids in data/npcs/shops.json (they get the extras button)
+var _extras_button: Button                   # the same one-click sale on the dialogue screen itself (trade kind 3)
 var _shop_sell_all: Button                  # "Sell all but tools": the first press shows the total, the second sells
 var _sell_all_result: Array = []             # "Sold ..." segments (text and coin amounts) shown beside the purse after the button
 var _shop_sell_all_price: RichTextLabel
@@ -94,6 +96,20 @@ func _build(layer: CanvasLayer) -> void:
 	box.add_child(_text)
 	_choices = VBoxContainer.new()
 	box.add_child(_choices)
+	var shops: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/npcs/shops.json"))
+
+	if typeof(shops) == TYPE_DICTIONARY:
+		for key in shops:
+			if typeof(shops[key]) == TYPE_DICTIONARY and shops[key].has("buys"):
+				_trader_ids.append(str(key))
+
+	_extras_button = Button.new()
+	_extras_button.text = "Would you like to buy my extra stuff?"
+	_extras_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_extras_button.add_theme_font_size_override("font_size", FONT_PX)
+	_extras_button.visible = false
+	_extras_button.pressed.connect(func(): net.trade.rpc_id(1, _npc_id, 3, 0, 1))
+	box.add_child(_extras_button)
 	layer.add_child(_panel)
 	_build_shop(layer)
 
@@ -127,6 +143,9 @@ func _on_say(npc_id: String, npc_name: String, text: String, voice_id: String, c
 		done.add_theme_font_size_override("font_size", FONT_PX)
 		done.pressed.connect(close)
 		_choices.add_child(done)
+
+	if _extras_button != null:
+		_extras_button.visible = _trader_ids.has(npc_id)
 
 	_panel.visible = true
 

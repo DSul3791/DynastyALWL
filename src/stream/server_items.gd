@@ -1433,6 +1433,19 @@ func _mine(peer: int, inv, at: Vector3) -> void:
 	_dirty = true
 
 
+# Placed foundations as {"pos", "state"} rows, for pieces to snap to.
+func _foundation_rows() -> Array:
+	var rows: Array = []
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if it.has("struct") and bool(_structures.get(str(it["struct"]["kind"]), {}).get("foundation", false)):
+			rows.append({"pos": it["pos"], "state": int(_structures[str(it["struct"]["kind"])]["state"])})
+
+	return rows
+
+
 # A placeable item (the campfire kit) becomes a fire on the ground in front of the player.
 func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0) -> void:
 	if slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or not _peer_pos.has(peer):
@@ -1445,21 +1458,22 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0) -> void:
 	if _peer_pos[peer].distance_to(at) > PLACE_REACH_M or (kit_id != "campfire_kit" and _structure_of_kit(kit_id).is_empty()):
 		return
 
-	var on_grid: Array = PlacementRules.snap(_structures_cfg, kit_id, at, yaw_deg)
+	var on_grid: Array = PlacementRules.snap(_structures_cfg, kit_id, at, yaw_deg, _foundation_rows())
 	at = on_grid[0]
 	yaw_deg = int(on_grid[1])
+	var on_base: bool = bool(on_grid[2])
 	var ground: float = float(ground_height.call(at.x, at.z)) if ground_height.is_valid() else at.y
 
-	if is_nan(ground) or absf(ground - at.y) > 1.0 or ground < 1.0:
+	if is_nan(ground) or absf(ground - at.y) > (1.0 if not on_base else 1.5) or ground < 1.0:
 		return
 
-	var spot: Vector3 = Vector3(at.x, ground, at.z)
+	var spot: Vector3 = Vector3(at.x, at.y if on_base else ground, at.z)
 
-	if water_depth_at.is_valid() and PlacementRules.over_water(_structures_cfg, kit_id, spot, deg_to_rad(float(yaw_deg)), func(x, z): return float(water_depth_at.call(Vector3(x, spot.y, z)))):
+	if not on_base and water_depth_at.is_valid() and PlacementRules.over_water(_structures_cfg, kit_id, spot, deg_to_rad(float(yaw_deg)), func(x, z): return float(water_depth_at.call(Vector3(x, spot.y, z)))):
 		_say(peer, "You cannot build in water.")
 		return
 
-	if ground_height.is_valid() and PlacementRules.steep(_structures_cfg, kit_id, spot, deg_to_rad(float(yaw_deg)), func(x, z): return float(ground_height.call(x, z))) == "steep":
+	if not on_base and ground_height.is_valid() and PlacementRules.steep(_structures_cfg, kit_id, spot, deg_to_rad(float(yaw_deg)), func(x, z): return float(ground_height.call(x, z))) == "steep":
 		_say(peer, "The ground is too steep there.")
 		return
 

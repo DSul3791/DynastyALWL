@@ -535,14 +535,15 @@ func _update_blueprint() -> void:
 	if hit.is_empty():
 		return
 
-	var on_grid: Array = PlacementRules.snap(_placement, held_id(), hit["position"], posmod(int(round(rad_to_deg(_camera.global_rotation.y))), 360))
+	var on_grid: Array = PlacementRules.snap(_placement, held_id(), hit["position"], posmod(int(round(rad_to_deg(_camera.global_rotation.y))), 360), _inv.foundation_rows())
 	_blueprint_at = on_grid[0]
 	_blueprint_yaw = int(on_grid[1])
 	_blueprint.global_position = _blueprint_at + Vector3(0.0, 0.04, 0.0)
 	_blueprint.rotation.y = deg_to_rad(float(_blueprint_yaw)) if PlacementRules.structure_of_kit(_placement, held_id()).get("piece", false) else _camera.global_rotation.y
+	var on_base: bool = bool(on_grid[2])
 	blueprint_state = PlacementRules.blocked(_placement, held_id(), _blueprint_at, _inv.placed_rows())
 
-	if blueprint_state == "":
+	if blueprint_state == "" and not on_base:
 		var ground_at: Vector3 = _blueprint_at
 		var probe: Callable = func(x: float, z: float) -> float:
 			var ray: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(Vector3(x, ground_at.y + 3.0, z), Vector3(x, ground_at.y - 3.0, z))
@@ -550,7 +551,7 @@ func _update_blueprint() -> void:
 			return float(found["position"].y) if not found.is_empty() else NAN
 		blueprint_state = PlacementRules.steep(_placement, held_id(), _blueprint_at, _camera.global_rotation.y, probe)
 
-	if blueprint_state == "" and water_depth_at.is_valid() and PlacementRules.over_water(_placement, held_id(), _blueprint_at, deg_to_rad(float(_blueprint_yaw)), water_depth_at):
+	if blueprint_state == "" and not on_base and water_depth_at.is_valid() and PlacementRules.over_water(_placement, held_id(), _blueprint_at, deg_to_rad(float(_blueprint_yaw)), water_depth_at):
 		blueprint_state = "water"
 
 	if blueprint_state == "":
