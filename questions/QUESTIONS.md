@@ -1,8 +1,3 @@
-## rv-bp-digest | Everyone reads the 80-entry best practices every day (costly; research says long instruction files get ignored). Replace with a 15-line digest per role plus the changelog lines? BP-T25.
-- Yes, role digests (recommended)
-- Keep reading the whole document
-- Decide later
-
 ## rv-shared-files | Threads need one-line changes in other threads' files (piece looks, sounds, client wiring). Allow one-line data hooks in another thread's file if announced in BUILD_LOG? BP-C10, BP-T22.
 - Yes (recommended)
 - No, always ask the owner first
