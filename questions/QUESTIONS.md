@@ -1,43 +1,45 @@
-## check-623-backpond | Have you answered this yet? Back pond (build 623): after Pull and a full restart, does the east bowl fill with water within minutes? (note your HUD build)
-- Yes
-- No
+## rv-build-numbers | Build numbers keep colliding (5 re-pushes in one evening). Fix it? Research: short-lived branches merged fast by one owner work best. Best practices BP-C101, BP-C107.
+The fix: the Technical Director assigns the number when merging, plus a tiny script that prints the next free number, plus the BUILD constant in its own file so it cannot conflict.
+- Yes, all three (recommended)
+- Only the script
+- Keep as is
+- Decide later
 
-## check-625-rock | Have you answered this yet? Rock rescue (build 625): break a rock beside you. Do you stay on top of the ground?
-- Yes
-- No
+## rv-big-files | Three code files are huge (server_items 5,000 lines, inventory_view 3,800, terrain_client 5,200), so every edit costs a lot of reading. Split them? Research: the context window is the scarce resource. BP-C03.
+Done one file at a time as a Systems job, with the existing tests as the safety net. This is a big fix.
+- Yes, one at a time, after restart (recommended)
+- Only add the rule "new logic goes in new files"
+- Keep as is
+- Decide later
 
-## check-627-beach | Have you answered this yet? Beach (build 627): is it still too loud, the footsteps or the waves?
-- Yes
-- No
+## rv-local-first | Run every build, test and warning check on your PC by default through one command (tools/local_check.sh), cloud threads only edit and review? Research: a check the agent can run is the best quality lever. BP-C83, BP-C80.
+- Yes (recommended)
+- Only warnings and long tests
+- Keep as is (cloud for small runs)
+- Decide later
 
-## check-628-squares | Have you answered this yet? Brown squares at the spawn lake (build 628): press Ctrl+Shift+W. Do the squares stay with the water hidden (ground) or vanish (water)?
-- Yes
-- No
+## rv-warning-baseline | Commit the current warning list (233) as a baseline file so reports show only NEW warnings? BP-C01.
+- Yes (recommended)
+- Keep as is
+- Decide later
 
-## check-629-building | Have you answered this yet? Building (builds 629, 630, 641): does the foundation clear grass 2 m around, do wall, doorway and window snap to it, is the stone look right, and is there a thud sound?
-- Yes
-- No
+## rv-bp-digest | Everyone reads the 80-entry best practices every day (costly; research says long instruction files get ignored). Replace with a 15-line digest per role plus the changelog lines? BP-T25.
+- Yes, role digests (recommended)
+- Keep reading the whole document
+- Decide later
 
-## check-632-sleep | Have you answered this yet? Sleep (build 632): does holding Space wake you once energy is over 30 percent?
-- Yes
-- No
+## rv-shared-files | Threads need one-line changes in other threads' files (piece looks, sounds, client wiring). Allow one-line data hooks in another thread's file if announced in BUILD_LOG? BP-C10, BP-T22.
+- Yes (recommended)
+- No, always ask the owner first
+- Decide later
 
-## check-636-sticks | Have you answered this yet? Sticks (build 636): does E on a dead branch within 2 m give a stick?
-- Yes
-- No
+## rv-waiting-line | Your rule: every post ends "Still waiting on:". Threads often have nothing to wait for. Keep it always (writing "nothing") or only when something is pending? BP-T10.
+- Only when something is pending (recommended)
+- Always, even "nothing"
+- Decide later
 
-## check-638-torch | Have you answered this yet? Torch in third person (build 638): is it held by the handle?
-- Yes
-- No
-
-## check-639-fire | Have you answered this yet? Fire sound (build 639): is the jet-engine hum gone?
-- Yes
-- No
-
-## check-642-pitwalls | Have you answered this yet? Pit walls (build 642): do you see dark panels on the pit walls, and do they vanish with F2 Low?
-- Yes
-- No
-
-## check-645-campfire | Have you answered this yet? Campfire (build 645): F opens it, T moves wood and food, and an empty fire shows no flames or sound. Does all that work?
-- Yes
-- No
+## rv-lfs | Git LFS for the tile files: GitHub's free plan gives 10 GiB storage and 10 GiB bandwidth a month, and LFS stops working for the month if exceeded. Tiles are about 81 MB, so storage is fine, but repeated cloud pulls could use the bandwidth. How do we go ahead? BP-C108.
+- Go ahead, forward-only, cloud threads skip downloading tiles (recommended)
+- Skip LFS, keep tiles out of git with a download step
+- Keep tiles in git as now
+- Decide later
