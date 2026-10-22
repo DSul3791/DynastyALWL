@@ -249,3 +249,17 @@ static func timber_set() -> Node3D:
 
 	_box(root, Vector3(2.1, 0.2, 0.22), Vector3(0.0, 2.3, 0.0), _planks)
 	return root
+
+
+# A ladder: two rails and rungs every 30 cm, 2.4 m tall, leaning-free (set flat against a wall). Walkable collision is Steve's climb job.
+static func ladder() -> Node3D:
+	_materials()
+	var root: Node3D = Node3D.new()
+
+	for x in [-0.25, 0.25]:
+		_box(root, Vector3(0.07, 2.4, 0.07), Vector3(x, 1.2, 0.0), _frame)
+
+	for i in 8:
+		_box(root, Vector3(0.5, 0.05, 0.05), Vector3(0.0, 0.2 + 0.3 * float(i), 0.0), _planks)
+
+	return root

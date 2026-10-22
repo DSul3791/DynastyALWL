@@ -225,6 +225,7 @@
 			"item": "wall_section",
 			"state": 22,
 			"piece": true,
+			"material": "wood",
 			"footprint_x": 2.0,
 			"footprint_z": 0.25,
 			"cap_per_chunk": 200,
@@ -239,6 +240,7 @@
 			"item": "floor_section",
 			"state": 23,
 			"piece": true,
+			"material": "wood",
 			"footprint_x": 2.0,
 			"footprint_z": 2.0,
 			"cap_per_chunk": 200,
@@ -253,6 +255,7 @@
 			"item": "roof_section",
 			"state": 24,
 			"piece": true,
+			"material": "wood",
 			"shelter": true,
 			"footprint_x": 2.4,
 			"footprint_z": 2.4,
@@ -271,6 +274,7 @@
 			"item": "foundation_section",
 			"state": 25,
 			"piece": true,
+			"material": "wood",
 			"foundation": true,
 			"footprint_x": 4.0,
 			"footprint_z": 4.0,
@@ -372,6 +376,7 @@
 			"item": "doorway_section",
 			"state": 26,
 			"piece": true,
+			"material": "wood",
 			"footprint_x": 2.0,
 			"footprint_z": 0.25,
 			"cap_per_chunk": 200,
@@ -390,6 +395,7 @@
 			"item": "window_section",
 			"state": 27,
 			"piece": true,
+			"material": "wood",
 			"footprint_x": 2.0,
 			"footprint_z": 0.25,
 			"cap_per_chunk": 200,
@@ -404,6 +410,7 @@
 			"item": "doorway_section",
 			"state": 28,
 			"piece": true,
+			"material": "wood",
 			"footprint_x": 2.0,
 			"footprint_z": 0.25,
 			"cap_per_chunk": 200,
@@ -450,6 +457,17 @@
 				"wear_game_days": 120,
 				"floor": 0.25
 			}
+		},
+		"ladder": {
+			"kit": "ladder_kit",
+			"item": "ladder",
+			"state": 31,
+			"footprint_x": 0.6,
+			"footprint_z": 0.15,
+			"cap_per_chunk": 60,
+			"look": "ladder",
+			"sound": "timber",
+			"clears_grass": false
 		}
 	},
 	"campfire": {
