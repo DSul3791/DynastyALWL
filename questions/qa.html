@@ -21,9 +21,9 @@ button{font-size:22px;padding:12px 24px;margin-top:10px;border:0;border-radius:8
 <div id="cmd" hidden><dl><dt>status</dt><dd>One-screen report: who is working, parked or blocked, open questions, last backup.</dd><dt>audit</dt><dd>Checks that every decision, answer and idea has an owner and a task, and fixes the gaps.</dd><dt>goodnight</dt><dd>Runs the backup, parks every thread with a handoff, lists tomorrow's first jobs.</dd><dt>idea</dt><dd>Adds what you just said to the ideas ledger; the owner decides now or later.</dd></dl></div>
 <div id="tok" hidden><p>Paste your GitHub token (once):</p><input id="t" type="password"><br><button onclick="saveTok()">Remember</button></div>
 <div id="list">Loading...</div>
-<div id="pokebox"><button onclick="poke()">Tell Claude I answered</button><div class=msg id="pokemsg"></div><p class=ver>Page version: poke v2 (1950 UTC). If you do not see this line, you have an old copy: reload.</p></div>
+<div id="pokebox"><button onclick="poke()">Tell Claude I answered</button><div class=msg id="pokemsg"></div><p class=ver>Page version: poke v3 (1955 UTC). If you do not see this line, you have an old copy: reload.</p></div>
 <script>
-const POKE_PR=3;
+const POKE_TARGETS=[["DSul3791/DynastyALWL-QA",1],["DSul3791/DynastyALWL",3]];
 const REPO="DSul3791/DynastyALWL",BR="claude/generator-v2",QF="questions/QUESTIONS.md",AF="questions/ANSWERS.md";
 const api=p=>`https://api.github.com/repos/${REPO}/contents/${p}`;
 const tok=()=>{try{return localStorage.getItem("ghtok")||""}catch(e){return ""}};
@@ -92,12 +92,14 @@ async function poke(){
   try{ids=JSON.parse(localStorage.getItem('answered')||'[]')}catch(e){}
   if(!tok()){m.innerHTML='<span class=err>No token saved in this browser. Paste it in the box at the top.</span>';return}
   const body={body:"poke "+new Date().toISOString().slice(0,16).replace("T"," ")+" UTC"+(ids.length?" answered: "+ids.join(", "):" (nothing new answered)")};
-  try{const r=await fetch(`https://api.github.com/repos/${REPO}/issues/${POKE_PR}/comments`,{method:"POST",headers:hdr(),body:JSON.stringify(body)});
-    if(r.ok){try{localStorage.removeItem('answered')}catch(e){}m.textContent="Poke sent at "+new Date().toLocaleTimeString()+".";return}
-    let why="";try{why=(await r.json()).message||""}catch(e){}
-    const help=r.status==403||r.status==404?" Token needs Issues: Read and write, and Repository access must include DynastyALWL (GitHub > Settings > Developer settings > Fine-grained tokens > your token > Edit).":(r.status==401?" The token is wrong or expired: press Forget token and paste it again.":"");
-    m.innerHTML=`<span class=err>Poke failed: HTTP ${r.status} ${esc(why)}.${help}</span>`}
-  catch(e){m.innerHTML=`<span class=err>Poke failed: ${esc(e.message)}</span>`}}
+  const errs=[];
+  for(const [repo,pr] of POKE_TARGETS){
+    try{const r=await fetch(`https://api.github.com/repos/${repo}/issues/${pr}/comments`,{method:"POST",headers:hdr(),body:JSON.stringify(body)});
+      if(r.ok){try{localStorage.removeItem('answered')}catch(e){}m.textContent="Poke sent at "+new Date().toLocaleTimeString()+" (via "+repo+").";return}
+      let why="";try{why=(await r.json()).message||""}catch(e){}
+      errs.push(`${repo}: HTTP ${r.status} ${why}`)}
+    catch(e){errs.push(`${repo}: ${e.message}`)}}
+  m.innerHTML=`<span class=err>Poke failed. ${errs.map(esc).join(" | ")}. Fix: GitHub > Settings > Developer settings > Fine-grained tokens > your token > Edit: Repository access must include DynastyALWL-QA (or DynastyALWL) and Issues + Pull requests = Read and write. A new token means Forget token, then paste it.</span>`}
 async function q_get(id){const f=await get(QF);return{text:f.text,sha:f.sha,q:parse(f.text).find(x=>x.id==id)}}
 load();
 </script></body></html>
