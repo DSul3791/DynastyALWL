@@ -1,0 +1,4 @@
+{
+	"_note": "step_up_m: the highest thing a walking, jogging or running player hops onto without jumping (logs, stones, stumps). Anything higher is slid along.",
+	"step_up_m": 0.5
+}

@@ -67,7 +67,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 586
+const BUILD := 587
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -87,6 +87,7 @@ const WaterVolume := preload("res://src/shared/water_volume.gd")
 const HotbarStripScript := preload("res://src/client/hotbar_strip.gd")
 const PickupFeedScript := preload("res://src/client/pickup_feed.gd")
 const NetSettings := preload("res://src/shared/net_settings.gd")
+const StepUpScript := preload("res://src/client/step_up.gd")
 const CrashReportScript := preload("res://src/client/crash_report.gd")
 const WaterFallsScript := preload("res://src/worldgen/runtime/water_falls.gd")
 const FloraViewScript := preload("res://src/flora/flora_view.gd")
@@ -1730,6 +1731,8 @@ func _cut_nearest_tree() -> void:
 func _make_player(root: Node3D, start: Vector3) -> void:
 	body = CharacterBody3D.new()
 	body.collision_mask = 3                # the ground (1) and ice sheets and floes (2)
+	body.wall_min_slide_angle = 0.0        # always slide along a wall, never stop dead against it
+	_movement = JSON.parse_string(FileAccess.get_file_as_string("res://data/movement.json")) if FileAccess.file_exists("res://data/movement.json") else {}
 	var shape: CollisionShape3D = CollisionShape3D.new()
 	var capsule: CapsuleShape3D = CapsuleShape3D.new()
 	capsule.radius = 0.35
@@ -2220,6 +2223,8 @@ func _set_menu(open: bool) -> void:
 # the dump aims where the screen centre pointed when the menu opened. The text is printed, shown and copied.
 var _dump_client: String = ""
 var _starter_seeded: int = 0
+var _step_lift: float = 0.0               # metres the eye still has to rise after a step-up (eased out)
+var _movement: Dictionary = {}        # data/movement.json
 var _lost_layer: CanvasLayer             # "Connection to the server was lost" window
 var crash_report                      # CrashReport: breadcrumbs and the report of an unclean last run
 var _previous_run_note_until_msec: int = 0
@@ -3157,6 +3162,10 @@ func _move_player(delta: float) -> void:
 			sound.footstep(body, 1, -3.0, "right")        # the push off the ground (job 61: a jump had no sound, only the landing)
 
 		body.velocity = velocity
+
+		if not swimming and not waiting_for_ground and body.is_on_floor():
+			_step_up(Vector3(velocity.x, 0.0, velocity.z) * delta)
+
 		var tm: int = Probe.start()
 		body.move_and_slide()
 		Probe.stop("p slide", tm)
@@ -3168,6 +3177,7 @@ func _move_player(delta: float) -> void:
 
 		var tb: int = Probe.start()
 		_update_bob(delta)
+		_ease_step_lift(delta)
 		Probe.stop("p bob", tb)
 
 	if flying:
@@ -3180,6 +3190,18 @@ func _move_player(delta: float) -> void:
 
 	sea.global_position = Vector3(body.global_position.x, 0.0, body.global_position.z)
 	_update_underwater()
+
+
+# Walking, jogging or running into something you can step over (a log, a stone, a low stump): you hop onto it and keep going.
+# The step height is data/movement.json step_up_m. Anything higher is a wall and move_and_slide slides along it.
+func _step_up(motion: Vector3) -> void:
+	_step_lift += StepUpScript.try(body, motion, float(_movement.get("step_up_m", 0.5)))
+
+
+# The window stays put while the body hops: the eye eases up the step (the lift fades) instead of jumping.
+func _ease_step_lift(delta: float) -> void:
+	_step_lift = move_toward(_step_lift, 0.0, maxf(delta * 3.0, _step_lift * (1.0 - exp(-14.0 * delta))))
+	camera.position.y -= _step_lift
 
 
 # The water at the player: {"surface", "ground"} when they are in or over water deeper than a film
