@@ -313,6 +313,11 @@ static func _fall(chain: PackedInt32Array, flow: float, origin: Vector2, count: 
 	# across the flow just upstream of the lip are measured and win over the flow formula.
 	var river: float = _river_width(chain, count, spacing, drawn)
 
+	if river <= 0.0:
+		# Nothing drawn upstream of the lip (a film too thin to draw, or the river has not arrived): the thin water of
+		# the fall levels shows how wide the water there is.
+		river = _river_width(chain, count, spacing, levels)
+
 	if river > 0.0:
 		width = clampf(river, WIDTH_MIN_M, WIDTH_MAX_M)
 
