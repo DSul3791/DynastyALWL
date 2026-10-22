@@ -165,10 +165,69 @@ def bear_roar(rng):
     return finish(np.tanh(x * 2.0 / (np.max(np.abs(x)) + 1e-9)), 0.9, 0.15)
 
 
+def moose_grunt(rng):
+    # A low, short cow-like grunt, one or two.
+    out = np.zeros(int(1.0 * SR))
+
+    for k in range(rng.integers(1, 3)):
+        d = rng.uniform(0.3, 0.5)
+        g = voiced(rng, d, rng.uniform(70, 90), rng.uniform(55, 70), [(250, 1.0), (700, 0.7)], rough=0.35, breath=0.15)
+        g *= np.sin(np.pi * np.arange(len(g)) / len(g)) ** 0.5
+        add(out, g / (np.max(np.abs(g)) + 1e-9), 0.03 + 0.45 * k)
+
+    return finish(out[:int(0.9 * SR)], 0.8)
+
+
+def moose_snort(rng):
+    n = int(0.6 * SR)
+    x = noise(rng, n, lambda f: band(f, rng.uniform(700, 1100), 1.4) * highpass(f, 250)) * env(n, 0.02, 0.15)
+    x += 0.5 * noise(rng, n, lambda f: lowpass(f, 300, 2)) * env(n, 0.02, 0.2)
+    return finish(x, 0.75)
+
+
+def moose_bellow(rng):
+    # The warning: a long loud rough bellow that rises then falls, unmistakable.
+    d = rng.uniform(1.6, 2.0)
+    x = voiced(rng, d, rng.uniform(95, 115), rng.uniform(70, 85), [(300, 1.0), (800, 1.0), (1800, 0.5)], rough=0.5, breath=0.2, bend=0.85)
+    t = np.arange(len(x)) / SR
+    x *= np.minimum(t / 0.12, 1.0) * np.minimum((d - t) / 0.3, 1.0)
+    return finish(np.tanh(x * 2.0 / (np.max(np.abs(x)) + 1e-9)), 0.9, 0.12)
+
+
+def horse_snort(rng):
+    n = int(0.7 * SR)
+    x = noise(rng, n, lambda f: band(f, rng.uniform(900, 1400), 1.2) * highpass(f, 300)) * env(n, 0.02, 0.12)
+    x += 0.4 * noise(rng, n, lambda f: lowpass(f, 500, 2)) * env(n, 0.03, 0.2)
+    return finish(x, 0.7)
+
+
+def horse_whinny(rng):
+    # A rising squeal then a falling whicker.
+    d = rng.uniform(1.2, 1.6)
+    x = voiced(rng, d, rng.uniform(380, 460), rng.uniform(260, 320), [(600, 1.0), (1600, 0.8), (3200, 0.4)], rough=0.2, breath=0.15, vib_hz=7.0, vib_depth=0.03, bend=0.7)
+    t = np.arange(len(x)) / SR
+    x *= np.minimum(t / 0.08, 1.0) * np.minimum((d - t) / 0.3, 1.0)
+    return finish(x, 0.8, 0.1)
+
+
+def duck_quack(rng):
+    out = np.zeros(int(0.9 * SR))
+
+    for k in range(rng.integers(2, 4)):
+        d = rng.uniform(0.12, 0.18)
+        q = voiced(rng, d, rng.uniform(480, 560), rng.uniform(380, 440), [(900, 1.0), (2200, 0.7)], rough=0.4, breath=0.1)
+        q *= np.sin(np.pi * np.arange(len(q)) / len(q)) ** 0.4
+        add(out, q / (np.max(np.abs(q)) + 1e-9), 0.02 + 0.2 * k)
+
+    return finish(out[:int(0.7 * SR)], 0.7)
+
+
 SOUNDS = {
     "deer_grunt": deer_grunt, "deer_snort": deer_snort, "rabbit_thump": rabbit_thump, "rabbit_squeak": rabbit_squeak,
     "fox_bark": fox_bark, "fox_scream": fox_scream, "wolf_howl": wolf_howl, "wolf_growl": wolf_growl,
     "bear_growl": bear_growl, "bear_roar": bear_roar,
+    "moose_grunt": moose_grunt, "moose_snort": moose_snort, "moose_bellow": moose_bellow, "horse_snort": horse_snort,
+    "horse_whinny": horse_whinny, "duck_quack": duck_quack,
 }
 
 

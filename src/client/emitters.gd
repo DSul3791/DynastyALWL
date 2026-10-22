@@ -20,7 +20,7 @@ extends Node
 
 const SoundStage := preload("res://src/client/sound_stage.gd")
 
-const CREATURE_KINDS := ["deer", "rabbit", "fox", "wolf", "bear", "bird"]
+const CREATURE_KINDS := ["deer", "rabbit", "fox", "wolf", "bear", "bird", "moose", "horse", "duck"]
 const CREATURE_MOODS := {"call_idle": "idle", "call_alert": "alert", "call_threat": "threat"}
 const PER_ENTITY_PER_SEC := 4
 const PER_CLIENT_PER_SEC := 60
