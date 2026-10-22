@@ -42,6 +42,7 @@ const InventoryViewScript := preload("res://src/client/inventory_view.gd")
 const NpcViewScript := preload("res://src/client/npc_view.gd")
 const GroundDebugScript := preload("res://src/client/ground_debug.gd")
 const SoundTestMenuScript := preload("res://src/client/sound_test_menu.gd")
+const QuakeViewScript := preload("res://src/client/quake_view.gd")
 const LadderClimbScript := preload("res://src/client/ladder_climb.gd")
 const NpcVoiceScript := preload("res://src/client/npc_voice.gd")
 const TestSwitchesScript := preload("res://src/client/test_switches.gd")
@@ -210,6 +211,7 @@ var test_start: Vector3 = Vector3.INF   # --start=x,y,z: put the player there (t
 var _test_probe_msec: int = 0
 var test_dump: bool = false           # --dump-test: 14 s after the welcome dump the ground under the feet (prints the dump)
 var _test_dump_done: bool = false
+var quake_view = QuakeViewScript.new()        # shake, dust and notices while a tunnel is failing (quake_view.gd)
 var ladder = LadderClimbScript.new()          # holding on to a placed ladder (ladder_climb.gd)
 var ground_debug = GroundDebugScript.new()    # ground dump, ground self-check, hole probe (ground_debug.gd)
 var sound_tests = SoundTestMenuScript.new()   # Esc > Settings sound test buttons and their state (sound_test_menu.gd)
@@ -662,6 +664,8 @@ func _ready() -> void:
 	net.water_rate_received.connect(_on_water_rate)
 	net.water_changed_received.connect(_on_water_changed)
 	net.quake_received.connect(func(stage: int, strength: float, point: Vector3) -> void:
+		quake_view.on_quake(stage, strength)
+
 		if sound != null and sound.placed != null:
 			sound.placed.quake(stage, strength, point))
 	net.pulse_received.connect(func() -> void:
@@ -1972,6 +1976,7 @@ func _make_player(root: Node3D, start: Vector3) -> void:
 	view_cam = Camera3D.new()
 	view_cam.far = 6000.0
 	camera.add_child(view_cam)
+	quake_view.setup(self, camera)
 	view_cam.current = true
 	_load_view()
 	var viewer: VoxelViewer = VoxelViewer.new()
@@ -3348,6 +3353,9 @@ func _update_bob(delta: float) -> void:
 	camera.position.y = stance.eye_y - float(BOB_M[gait]) * dip * _bob_amount
 	camera.position.x = -float(SWAY_M[gait]) * side * _bob_amount
 	camera.rotation.z = deg_to_rad(float(SWAY_DEG[gait])) * side * _bob_amount
+	var shake: Dictionary = quake_view.step(delta)
+	camera.position += shake["offset"]
+	camera.rotation.z += deg_to_rad(float(shake["roll"]))
 
 
 func _process(delta: float) -> void:
