@@ -137,19 +137,46 @@ func watch_world(world: Dictionary, here: Vector3) -> void:
 		var kind: String = StructureLook.sound_of(int(row["state"]))
 
 		if kind != "":
-			seen[id] = [kind, row["pos"]]
+			seen[id] = [kind, row["pos"], int(row["state"])]
 
 	if _primed:
+		var swung: Dictionary = {}      # row ids already heard as a door opening or closing (not as a thing placed or taken up)
+
 		for id in seen:
-			if not _rows.has(id) and here.distance_to(seen[id][1]) <= NEAR_M:
+			if _rows.has(id) and _rows[id][2] != seen[id][2] and _is_door(seen[id][2]) and _is_door(_rows[id][2]):
+				swung[id] = true         # the same row flipped between the shut and open door
+				_swing(seen[id], here)
+
+		for id in seen:
+			if not _rows.has(id) and _is_door(seen[id][2]):
+				for old_id in _rows:
+					if not seen.has(old_id) and not swung.has(old_id) and _is_door(_rows[old_id][2]) and _rows[old_id][2] != seen[id][2] and Vector3(_rows[old_id][1]).distance_to(seen[id][1]) < 0.6:
+						swung[id] = true          # the open door is a new row where the shut one vanished (or the other way round)
+						swung[old_id] = true
+						_swing(seen[id], here)
+						break
+
+		for id in seen:
+			if not _rows.has(id) and not swung.has(id) and here.distance_to(seen[id][1]) <= NEAR_M:
 				place(str(seen[id][0]), seen[id][1])
 
 		for id in _rows:
-			if not seen.has(id) and here.distance_to(_rows[id][1]) <= NEAR_M:
+			if not seen.has(id) and not swung.has(id) and here.distance_to(_rows[id][1]) <= NEAR_M:
 				pick_up(_rows[id][1])
 
 	_rows = seen
 	_primed = true
+
+
+# A door piece (structures.json look door_shut or door_open).
+func _is_door(state: int) -> bool:
+	return StructureLook.look_of(state) in ["door_shut", "door_open"]
+
+
+# A door swung: heard as the door opening (state look door_open) or shutting.
+func _swing(row: Array, here: Vector3) -> void:
+	if here.distance_to(row[1]) <= NEAR_M:
+		use("door", StructureLook.look_of(int(row[2])) == "door_open", row[1])
 
 
 func watch_open(world: Dictionary, here: Vector3) -> void:
