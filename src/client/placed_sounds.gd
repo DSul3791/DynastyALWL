@@ -29,7 +29,7 @@ const RECORDED_DIR := "res://assets/audio/recorded/placed/"
 
 const NAMES := {
 	"place_leanto": -7.0, "place_chest": -6.0, "place_thump": -10.0, "pickup_placed": -10.0,
-	"place_timber": -7.0, "place_foundation": -5.0, "container_put": -11.0, "container_take": -12.0, "tool_break": -4.0, "tool_repair": -12.0, "tool_warn": -10.0,
+	"place_timber": -7.0, "place_foundation": -5.0, "bracing_creak": -24.0, "bracing_rumble": -22.0, "dust_patter": -26.0, "bracing_crack": -9.0, "quake_tick": -10.0, "container_put": -11.0, "container_take": -12.0, "tool_break": -4.0, "tool_repair": -12.0, "tool_warn": -10.0,
 }
 # World row states of placed structures (Items thread: 5 lean-to, 6 chest, 7 chopping block) and the place sound each makes.
 const STATE_KIND := {5: "leanto", 6: "chest", 7: "thump", 1: "thump", 8: "thump", 9: "thump", 22: "timber", 23: "timber", 24: "timber", 25: "foundation"}   # 1, 8, 9: a campfire set down (lit, empty or loaded)
@@ -48,6 +48,7 @@ var _primed: bool = false
 var _open_rows: Dictionary = {}         # world row id -> [kind, open, pos] seen last time
 var _open_primed: bool = false
 var _rng := RandomNumberGenerator.new()
+var _quake_next: Dictionary = {}        # sound -> time (seconds) it may play again
 
 
 func setup(stage) -> void:
@@ -61,6 +62,34 @@ func place(kind: String, at: Vector3) -> bool:
 
 func pick_up(at: Vector3) -> bool:
 	return _once("pickup_placed", at)
+
+
+# Unbraced tunnel warning (design: tech/EXCAVATION_BRACING_GROUND_DESIGN.md; plan: sound/TUNNEL_WARNING_SOUND_PLAN.md). Call about twice a
+# second with the stage (2 creak, 3 shake, 4 throes), strength 0 to 1 and the place of the working; it paces itself. The server message
+# is not built yet, so nothing calls this.
+func quake(stage: int, strength: float, at: Vector3) -> void:
+	var now: float = Time.get_ticks_msec() * 0.001
+	strength = clampf(strength, 0.0, 1.0)
+
+	if stage == 2 and now >= _quake_next.get("creak", 0.0):
+		_once("bracing_creak", at)
+		_quake_next["creak"] = now + _rng.randf_range(4.0, 9.0)
+
+	if stage >= 3 and now >= _quake_next.get("rumble", 0.0):
+		_once("bracing_rumble", at, lerpf(0.0, 14.0, strength))
+		_quake_next["rumble"] = now + 2.3
+
+	if stage >= 3 and now >= _quake_next.get("dust", 0.0):
+		_once("dust_patter", at)
+		_quake_next["dust"] = now + _rng.randf_range(1.0, 2.0)
+
+	if stage >= 3 and now >= _quake_next.get("crack", 0.0):
+		_once("bracing_crack", at)
+		_quake_next["crack"] = now + (_rng.randf_range(2.0, 4.0) if stage == 3 else _rng.randf_range(1.0, 2.0))
+
+	if stage >= 4 and now >= _quake_next.get("tick", 0.0) and strength >= 0.9:
+		_once("quake_tick", at)
+		_quake_next["tick"] = now + 1.0
 
 
 func chest(opened: bool, at: Vector3) -> bool:
@@ -138,7 +167,7 @@ func watch_open(world: Dictionary, here: Vector3) -> void:
 	_open_primed = true
 
 
-func _once(sound_name: String, at: Vector3) -> bool:
+func _once(sound_name: String, at: Vector3, db_add: float = 0.0) -> bool:
 	if not NAMES.has(sound_name) or not _stage.has_room():
 		return false
 
@@ -151,7 +180,7 @@ func _once(sound_name: String, at: Vector3) -> bool:
 	var player: AudioStreamPlayer3D = AudioStreamPlayer3D.new()
 	player.stream = list[pick]
 	player.bus = "Foley"
-	player.volume_db = float(NAMES[sound_name]) + _rng.randf_range(-1.0, 1.0)
+	player.volume_db = float(NAMES[sound_name]) + db_add + _rng.randf_range(-1.0, 1.0)
 	player.pitch_scale = _rng.randf_range(0.95, 1.05)
 	player.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
 	player.unit_size = 7.0

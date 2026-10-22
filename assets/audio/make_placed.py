@@ -167,8 +167,52 @@ def place_foundation(rng):
     return finish(out)
 
 
+def bracing_creak(rng):
+    # An unbraced roof taking weight: a dry earth tick and a short low wooden groan, no timber in a tunnel but the sound reads as strain.
+    out = np.zeros(int(0.9 * SR))
+    add(out, knock(rng, rng.uniform(110, 150), 0.03, 1800, 0.7), 0.0)
+    groan = rustle(rng, int(0.6 * SR), rng.uniform(240, 340), 0.6) * env(int(0.6 * SR), 0.3, 0.3)
+    add(out, groan * 0.5, 0.1)
+    return finish(out, 0.7)
+
+
+def bracing_rumble(rng):
+    # Sub-bass rumble with grit, 2.5 s, played end to end while the ground shakes.
+    n = int(2.5 * SR)
+    low = noise(rng, n, lambda f: lowpass(f, 180, 3))
+    grit = noise(rng, n, lambda f: band(f, 700, 1.0)) * 0.12
+    x = (low / (np.max(np.abs(low)) + 1e-9) + grit) * env(n, 0.5, 0.8)
+    return finish(x, 0.8)
+
+
+def dust_patter(rng):
+    # Fine grains and small pebbles dropping onto the floor.
+    out = np.zeros(int(1.0 * SR))
+
+    for at in np.sort(rng.uniform(0.0, 0.8, 14)):
+        add(out, burst(rng, 0.02, rng.uniform(2500, 5500), 1.0) * rng.uniform(0.1, 0.4), at)
+
+    return finish(out, 0.5)
+
+
+def bracing_crack(rng):
+    # A sharp crack in rock and a falling stone: loud, the last warning.
+    out = np.zeros(int(1.0 * SR))
+    add(out, knock(rng, rng.uniform(180, 240), 0.012, 3200, 1.3), 0.0)
+    add(out, knock(rng, rng.uniform(60, 80), 0.08, 800, 0.9), 0.05)
+    add(out, rustle(rng, int(0.5 * SR), 1500, 1.5) * env(int(0.5 * SR), 0.02, 0.3) * 0.4, 0.1)
+    return finish(out, 0.9)
+
+
+def quake_tick(rng):
+    # The last five seconds: one low wooden thud a second.
+    out = np.zeros(int(0.4 * SR))
+    add(out, knock(rng, rng.uniform(70, 85), 0.05, 600, 1.2), 0.0)
+    return finish(out, 0.85)
+
+
 ONE_SHOTS = {"place_leanto": place_leanto, "place_chest": place_chest, "place_thump": place_thump, "pickup_placed": pickup_placed,
-             "container_put": container_put, "container_take": container_take, "tool_break": tool_break, "tool_repair": tool_repair, "tool_warn": tool_warn, "place_timber": place_timber, "place_foundation": place_foundation}
+             "container_put": container_put, "container_take": container_take, "tool_break": tool_break, "tool_repair": tool_repair, "tool_warn": tool_warn, "place_timber": place_timber, "place_foundation": place_foundation, "bracing_creak": bracing_creak, "bracing_rumble": bracing_rumble, "dust_patter": dust_patter, "bracing_crack": bracing_crack, "quake_tick": quake_tick}
 
 
 def main():
