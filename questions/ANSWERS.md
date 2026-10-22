@@ -128,3 +128,7 @@ Answered: 2026-10-22 03:59 UTC
 ## collapse-offline | A tunnel's collapse time runs out while the player is logged out inside it. What happens to them?
 Answer (Dave, in chat): the game must tell a deliberate logout from a disconnect. A disconnect: the player respawns at the nearest place they rested or built a shelter. A deliberate logout inside a tunnel that then collapses: they die.
 Answered: 2026-10-22 05:38 UTC
+## rv-build-numbers | Build numbers keep colliding (5 re-pushes in one evening). Fix it? Research: short-lived branches merged fast by one owner work best. Best practices BP-C101, BP-C107.
+Answer: Yes, all three (recommended)
+Answered: 2026-10-22 15:01 UTC
+
