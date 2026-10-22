@@ -1,6 +1,3 @@
-## collapse-plan-1 | A dug space wider than the ground can hold starts a timer. The grace window is 225 s to 60 min, depending on width and depth. Digging more does not reset it. Is this right?
-[check]
-
 ## collapse-plan-2 | Supports (props, timber sets) in reach pause the timer. A new support restarts the full window. A removed or worn-out support starts a fresh half window. Is this right?
 [check]
 
