@@ -264,3 +264,7 @@ Answered: 2026-10-22 19:40 UTC
 Answer: Stay natural (recommended)
 Answered: 2026-10-22 19:41 UTC
 
+## chk-foods-v4 | Check the redrawn foods (labelled picture): do the stews and soups look like food in a wooden bowl, does the roast look like a roast on the bone, and does the energy bar look like a trail-mix bar?
+Answer: Yes
+Answered: 2026-10-22 19:55 UTC
+
