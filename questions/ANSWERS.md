@@ -136,3 +136,7 @@ Answered: 2026-10-22 15:01 UTC
 Answer: Yes, one at a time, after restart (recommended)
 Answered: 2026-10-22 15:02 UTC
 
+## rv-local-first | Run every build, test and warning check on your PC by default through one command (tools/local_check.sh), cloud threads only edit and review? Research: a check the agent can run is the best quality lever. BP-C83, BP-C80.
+Answer: Yes (recommended)
+Answered: 2026-10-22 15:02 UTC
+
