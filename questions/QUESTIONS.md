@@ -1,7 +1,3 @@
-## found-start | Does every building start on a foundation, with foundations joined side by side to make the floor shape, and you build up from them?
-Image: questions/img/tiers_roof_pieces.png
-[check]
-
 ## blueprint-1 | A builder's mallet tool replaces building kits?
 [check]
 
