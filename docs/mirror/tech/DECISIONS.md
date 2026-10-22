@@ -376,3 +376,5 @@ bk-weekly: keep the LAST backup of each ISO week (normally Sunday night); matche
 - 2026-10-22 17:04 Guru: MikeW concerns folded into BP-T31 (second clone for 1-tile bakes, game and Godot closed, PC awake, snapshot outside repo).
 
 - 2026-10-22 17:06 Guru: Steve_ProblemSolver concerns folded into BP-T31: server-read data (network.json, limits.json, items) is RESTART not BAKE; src/shared is RESTART; BAKE list is generator, tiles, TERRAIN_VERSION, baked world data only.
+
+- 2026-10-22 17:08 Guru: Sonny and Kathleen concerns folded into BP-T31 (after-bake water step, edge-match only on full bake, hashes on 3 tiles, screenshots for look check). All five thread replies received.
