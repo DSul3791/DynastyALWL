@@ -370,3 +370,5 @@ Each active thread holds its current number plus ONE spare, handed out in advanc
 - 00:15 Guru: MERGED 673 (Sal_Crafts: wall corner and end-to-end snaps, walls stand on floor edges, floors and roofs meet edge to edge; RESTART; 4 new tests, local_check PASS per Sal; not tested in game; close the game fully after Pull).
 - steve-welcome-split (provisional): sound test menu buttons + fire step moved to src/client/sound_test_menu.gd; terrain_client.gd -160 lines. RUNTIME.
 - 00:25 Guru: MERGED 674 (Steve_ProblemSolver: sound-test menu split out of terrain_client.gd into its own file, no behaviour change; RUNTIME; 0 new warnings per Steve; not tested in game).
+- steve-ladder (provisional): ladder climbing client-only (ladder_climb.gd, inventory_view.ladders, _climb_ladder in terrain_client); test_ladder_climb. RUNTIME, no restart.
+- 00:35 Guru: MERGED 675 (Steve_ProblemSolver: ladder climbing, client only; test_ladder_climb 13/13, 0 new warnings, CONTROLS.md updated, TEST_QUEUE line; RUNTIME; not tested in game).
