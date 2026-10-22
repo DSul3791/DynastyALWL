@@ -164,3 +164,7 @@ Answered: 2026-10-22 15:09 UTC
 Answer: Crashes, saves and version check first, then water, then items, then art (recommended)
 Answered: 2026-10-22 15:14 UTC
 
+## cc-radar-name | One thread is called Radar in the docs and Sal_Crafts in one review. Which name do we use?
+Answer: Sal_Crafts
+Answered: 2026-10-22 15:15 UTC
+
