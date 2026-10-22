@@ -486,6 +486,11 @@ func _probe_structure() -> Dictionary:
 	if state == 26 or state == 28:
 		return {"prompt": "Press E to open the door" if state == 26 else "Press E to close the door", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
 
+	var station_def: Dictionary = _structure_by_state(state)
+
+	if str(station_def.get("station", "")) != "":
+		return {"prompt": "Press F to use the %s" % table.name_of(_world[id]["number"]).to_lower(), "tap": _open_station, "hold": take_down}
+
 	return {"prompt": "Hold E to take down the %s" % table.name_of(_world[id]["number"]).to_lower(), "tap": func(): show_notice("Hold E to take it down"), "hold": take_down}
 
 
@@ -537,7 +542,7 @@ func _fire_prompt(state: int) -> String:
 
 
 # F (Dave 2026-10-22): opens the container you stand beside, your pack on the left and its contents on the right (T moves the selected stack across).
-# True when a chest, remains or campfire lay within reach and the server was asked to open it.
+# True when a chest, remains, campfire or crafting station lay within reach and it was opened (a station opens the crafting screen).
 func open_container() -> bool:
 	var here: Vector3 = _player_position.call()
 	var best: int = 0
@@ -545,16 +550,27 @@ func open_container() -> bool:
 
 	for id in _world:
 		var state: int = int(_world[id]["state"])
+		var is_station: bool = str(_structure_by_state(state).get("station", "")) != ""
 
-		if (state == 6 or state == 11 or state == 12 or state == 1 or state == 8 or state == 9) and here.distance_to(_world[id]["pos"]) <= best_d:
+		if (is_station or state == 6 or state == 11 or state == 12 or state == 1 or state == 8 or state == 9) and here.distance_to(_world[id]["pos"]) <= best_d:
 			best_d = here.distance_to(_world[id]["pos"])
 			best = id
 
 	if best == 0:
 		return false
 
+	if str(_structure_by_state(int(_world[best]["state"])).get("station", "")) != "":
+		_open_station()
+		return true
+
 	_ask_open(best)
 	return true
+
+
+# A workbench or forge has no slots of its own: using it opens the crafting screen, which greys what the station cannot make.
+func _open_station() -> void:
+	if not open:
+		toggle()
 
 
 # True when something lay within reach and the server was asked for it.
