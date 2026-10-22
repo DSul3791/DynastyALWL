@@ -276,3 +276,7 @@ Answered: 2026-10-22 19:56 UTC
 Answer: Rename them to match (Roast Beast style, e.g. Roast Fish, Roast Roots as proper names)
 Answered: 2026-10-22 19:56 UTC
 
+## building-plan | Kathleen's building plan (art/BUILDING_PLAN.md): approve all five points?
+Answer: Approve all five (recommended)
+Answered: 2026-10-22 19:57 UTC
+
