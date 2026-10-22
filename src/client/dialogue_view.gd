@@ -29,6 +29,10 @@ var _shop_till: int = -1                   # the coin in the trader's purse, -1 
 var _shop_tired: Dictionary = {}           # item id -> demand multiple (the trader is tired of buying it)
 var _shop_buy_box: VBoxContainer
 var _shop_sell_box: VBoxContainer
+var _shop_sell_all: Button                  # "Sell all but tools": the first press shows the total, the second sells
+var _sell_all_armed: bool = false
+var _sell_all_slots: Array = []             # pack slots the button would sell
+var _sell_all_total: int = 0
 var _shop_purse: Label
 var _shop_title_label: Label
 var _name: Label = null
@@ -215,6 +219,14 @@ func _build_shop(layer: CanvasLayer) -> void:
 		title.text = "Buy" if side == 0 else "Sell"
 		title.add_theme_font_size_override("font_size", SHOP_PX + 4)
 		column.add_child(title)
+
+		if side == 1:
+			_shop_sell_all = Button.new()
+			_shop_sell_all.add_theme_font_size_override("font_size", SHOP_PX)
+			_shop_sell_all.alignment = HORIZONTAL_ALIGNMENT_LEFT
+			_shop_sell_all.pressed.connect(_on_sell_all_pressed)
+			column.add_child(_shop_sell_all)
+
 		var scroll: ScrollContainer = ScrollContainer.new()
 		scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		column.add_child(scroll)
@@ -326,6 +338,9 @@ func _refresh_shop() -> void:
 		_shop_row(_shop_buy_box, "%s  x%d  -  %s" % [items.table.name_of(number), left, items.coin_text(price)] if left > 0 else "%s  -  sold out" % items.table.name_of(number), items._tooltip(number, 1) + "\nYou pay %s each." % items.coin_text(price), i, 0, left > 0 and items.purse_copper >= price)
 
 	var any: bool = false
+	_sell_all_slots.clear()
+	_sell_all_total = 0
+	_sell_all_armed = false
 
 	for slot in items.inventory.numbers.size():
 		if items.inventory.numbers[slot] == 0:
@@ -337,6 +352,12 @@ func _refresh_shop() -> void:
 			continue
 
 		any = true
+		var entry2: Dictionary = items.table.entry(items.table.id_of(items.inventory.numbers[slot]))
+
+		if str(entry2.get("tool_class", "")) == "" and not str(entry2.get("kind", "")) in ["tool", "weapon"]:
+			_sell_all_slots.append(slot)
+			_sell_all_total += each * items.inventory.counts[slot]
+
 		var number2: int = items.inventory.numbers[slot]
 		_shop_row(_shop_sell_box, "%s x%d  -  %s each" % [items.table.name_of(number2), items.inventory.counts[slot], items.coin_text(each)], items._tooltip(number2, items.inventory.counts[slot], items.inventory.wear[slot]) + "\nThe trader pays %s each." % items.coin_text(each), slot, 1, true)
 
@@ -348,11 +369,42 @@ func _refresh_shop() -> void:
 				var number3: int = items.inventory.numbers[slot]
 				_shop_row(_shop_sell_box, "Mend %s  -  %s" % [items.table.name_of(number3), items.coin_text(cost)], items._tooltip(number3, 1, items.inventory.wear[slot]) + "\nThe smith mends it as new for %s." % items.coin_text(cost), slot, 2, items.purse_copper >= cost)
 
+	_update_sell_all()
+
 	if not any:
 		var none: Label = Label.new()
 		none.text = "Nothing in your pack that this trader will buy."
 		none.add_theme_font_size_override("font_size", SHOP_PX - 4)
 		_shop_sell_box.add_child(none)
+
+
+func _update_sell_all() -> void:
+	if _shop_sell_all == null:
+		return
+
+	_shop_sell_all.disabled = _sell_all_slots.is_empty()
+
+	if _sell_all_slots.is_empty():
+		_shop_sell_all.text = "Sell all but tools  -  nothing to sell"
+	elif _sell_all_armed:
+		_shop_sell_all.text = "Sell %d kinds of item for about %s?  Press again to sell" % [_sell_all_slots.size(), items.coin_text(_sell_all_total)]
+	else:
+		_shop_sell_all.text = "Sell all but tools  (about %s)" % items.coin_text(_sell_all_total)
+
+
+func _on_sell_all_pressed() -> void:
+	if _sell_all_slots.is_empty():
+		return
+
+	if not _sell_all_armed:
+		_sell_all_armed = true
+		_update_sell_all()
+		return
+
+	_sell_all_armed = false
+
+	for slot in _sell_all_slots.duplicate():
+		net.trade.rpc_id(1, _shop_npc, 1, slot, 999)
 
 
 func _shop_row(parent: VBoxContainer, text: String, tip: String, index: int, kind: int, enabled: bool) -> void:
