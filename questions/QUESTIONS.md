@@ -51,3 +51,20 @@ Note: 5. Snapping is one table of data, so most pieces snap to most other pieces
 Note: 6. Roofs come at 45 and 65 degrees, each with straight and corner pieces.
 Note: 7. Kathleen is drawing the roofs and the pillar for you to check.
 [check]
+
+## roofs-short | ROOF SLOPES AND PILLARS IN SHORT (Kathleen's designs from your 23:08 rule). Have you read this?
+Image: questions/img/tiers_roof_pieces.png
+Note: 1. Two roof angles: 45 and 65 degrees. A slope piece covers 2 m of run (45 degrees rises 2.0 m; 65 degrees rises 4.3 m, tall and steep).
+Note: 2. Each angle has a straight slope piece, an outside (hip) corner and an inside (valley) corner: 6 roof pieces per tier look.
+Note: 3. Pillars: round log post, squared timber, stone pillar, mason column. They snap to the centre or any of the 4 corners of a foundation or a ceiling.
+Note: 4. Every building starts on a foundation; foundations join side by side to make the floor; you build up from them.
+[check]
+
+## chk-roof-pieces | Do the 45 and 65 degree roof pieces and their hip and valley corners look right (see the picture on the card above)?
+[check]
+
+## roof-65-tall | Is it OK that a 65 degree roof is very tall (4.3 m of rise for every 2 m of run)?
+[check]
+
+## chk-pillars | Do the four pillar looks and the 5 snap points (centre and 4 corners) look right (picture above)?
+[check]
