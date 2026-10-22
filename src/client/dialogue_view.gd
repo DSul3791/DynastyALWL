@@ -21,6 +21,9 @@ var _shop_ids: PackedStringArray = PackedStringArray()
 var _shop_pay: float = 1.3                 # what you pay per unit of value
 var _shop_get: float = 0.55                # what the trader pays per unit of value
 var _shop_buys: PackedStringArray = PackedStringArray()
+var _shop_stock: Dictionary = {}           # item id -> how many he has on the shelf
+var _shop_supply: Dictionary = {}          # item id -> supply price multiple (a full shelf is cheaper)
+var _shop_till: int = -1                   # the coin in the trader's purse, -1 = unlimited
 var _shop_tired: Dictionary = {}           # item id -> demand multiple (the trader is tired of buying it)
 var _shop_buy_box: VBoxContainer
 var _shop_sell_box: VBoxContainer
@@ -225,7 +228,7 @@ func _build_shop(layer: CanvasLayer) -> void:
 	layer.add_child(_shop_panel)
 
 
-func _on_shop(npc_id: String, title: String, ids: PackedStringArray, pay_milli: int, get_milli: int, buys: PackedStringArray, tired_ids: PackedStringArray, tired_milli: PackedInt32Array) -> void:
+func _on_shop(npc_id: String, title: String, ids: PackedStringArray, pay_milli: int, get_milli: int, buys: PackedStringArray, tired_ids: PackedStringArray, tired_milli: PackedInt32Array, stock: PackedInt32Array, supply_milli: PackedInt32Array, trader_purse: int) -> void:
 	_shop_npc = npc_id
 	_shop_title = title
 	_shop_ids = ids
@@ -233,6 +236,13 @@ func _on_shop(npc_id: String, title: String, ids: PackedStringArray, pay_milli: 
 	_shop_get = float(get_milli) / 1000.0
 	_shop_buys = buys
 	_shop_tired.clear()
+	_shop_stock.clear()
+	_shop_supply.clear()
+	_shop_till = trader_purse
+
+	for i in ids.size():
+		_shop_stock[ids[i]] = stock[i]
+		_shop_supply[ids[i]] = float(supply_milli[i]) / 1000.0
 
 	for i in tired_ids.size():
 		_shop_tired[tired_ids[i]] = float(tired_milli[i]) / 1000.0
@@ -276,7 +286,7 @@ func _refresh_shop() -> void:
 		return
 
 	_shop_title_label.text = _shop_title
-	_shop_purse.text = "Purse: %s    " % items.coin_text(items.purse_copper)
+	_shop_purse.text = "Purse: %s    " % items.coin_text(items.purse_copper) + ("His purse: %s    " % items.coin_text(_shop_till) if _shop_till >= 0 else "")
 
 	for child in _shop_buy_box.get_children():
 		child.queue_free()
@@ -287,8 +297,9 @@ func _refresh_shop() -> void:
 	for i in _shop_ids.size():
 		var id: String = _shop_ids[i]
 		var number: int = items.table.number_of(id)
-		var price: int = _price_to_pay(int(items.table.entry(id).get("value", 0)))
-		_shop_row(_shop_buy_box, "%s  -  %s" % [items.table.name_of(number), items.coin_text(price)], items._tooltip(number, 1) + "\nYou pay %s each." % items.coin_text(price), i, 0, items.purse_copper >= price)
+		var price: int = maxi(int(ceil(float(items.table.entry(id).get("value", 0)) * _shop_pay * float(_shop_supply.get(id, 1.0)) - 0.0001)), 1) if int(items.table.entry(id).get("value", 0)) > 0 else 0
+		var left: int = int(_shop_stock.get(id, 0))
+		_shop_row(_shop_buy_box, "%s  x%d  -  %s" % [items.table.name_of(number), left, items.coin_text(price)] if left > 0 else "%s  -  sold out" % items.table.name_of(number), items._tooltip(number, 1) + "\nYou pay %s each." % items.coin_text(price), i, 0, left > 0 and items.purse_copper >= price)
 
 	var any: bool = false
 

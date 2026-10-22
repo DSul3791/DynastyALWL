@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 65
+const PROTOCOL_VERSION := 66
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -52,7 +52,7 @@ signal surface_received(x: float, z: float, y: float)
 signal dump_requested(peer_id: int, x: float, y: float, z: float)
 signal dump_received(text: String)
 signal water_received(chunk: Vector2i, water: PackedByteArray)
-signal shop_received(npc_id: String, title: String, ids: PackedStringArray, pay_milli: int, get_milli: int, buys: PackedStringArray, tired_ids: PackedStringArray, tired_milli: PackedInt32Array)
+signal shop_received(npc_id: String, title: String, ids: PackedStringArray, pay_milli: int, get_milli: int, buys: PackedStringArray, tired_ids: PackedStringArray, tired_milli: PackedInt32Array, stock: PackedInt32Array, supply_milli: PackedInt32Array, trader_purse: int)
 signal trade_requested(peer_id: int, npc_id: String, kind: int, a: int, count: int)
 signal purse_received(copper: int)
 signal carry_received(item_id: String)
@@ -447,8 +447,8 @@ func item_gain(item_id: String, count: int, source: String) -> void:
 # A trader's window (protocol 62): what they sell (item ids), the multiples of an item's value you pay and they pay (thousandths),
 # and the kinds of item they buy.
 @rpc("authority", "call_remote", "reliable")
-func shop(npc_id: String, title: String, ids: PackedStringArray, pay_milli: int, get_milli: int, buys: PackedStringArray, tired_ids: PackedStringArray, tired_milli: PackedInt32Array) -> void:
-	shop_received.emit(npc_id, title, ids, pay_milli, get_milli, buys, tired_ids, tired_milli)
+func shop(npc_id: String, title: String, ids: PackedStringArray, pay_milli: int, get_milli: int, buys: PackedStringArray, tired_ids: PackedStringArray, tired_milli: PackedInt32Array, stock: PackedInt32Array, supply_milli: PackedInt32Array, trader_purse: int) -> void:
+	shop_received.emit(npc_id, title, ids, pay_milli, get_milli, buys, tired_ids, tired_milli, stock, supply_milli, trader_purse)
 
 
 # Buy (kind 0, a = index in the shop's list) or sell (kind 1, a = pack slot). The server prices and checks everything.

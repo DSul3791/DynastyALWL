@@ -40,6 +40,16 @@
 			"drop_per_sale": 0.03,
 			"floor": 0.3,
 			"recover_per_min": 4.0
+		},
+		"stock": {
+			"note": "Trader stock (build 576): each stocked item has a maximum and a restock rate per game day (a game day is one real hour); shops.json stock_rules [max, per_day] overrides default_max and default_per_day. Supply moves the price you pay: a full shelf is cheaper by strength x 0.5, an empty one dearer by strength x 0.5, kept between min and max. Items you sell that the trader stocks go back on the shelf. A trader can only pay out its purse: purse_cap_default and purse_regen_default per game day, shops.json purse_cap and purse_regen_per_day override.",
+			"default_max": 8,
+			"default_per_day": 3,
+			"supply_strength": 0.3,
+			"supply_min": 0.85,
+			"supply_max": 1.2,
+			"purse_cap_default": 300,
+			"purse_regen_default": 100
 		}
 	}
 }

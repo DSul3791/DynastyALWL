@@ -9,15 +9,97 @@ const TALK_RANGE_M := 4.5
 
 var items                       # ServerItems
 var npcs                        # ServerNpcs
-var send_shop: Callable         # (peer, npc id, title, stock ids, buy_milli, sell_milli, buys kinds, demand ids, demand_milli)
+var send_shop: Callable         # (peer, npc id, title, stock ids, buy_milli, sell_milli, buys kinds, demand ids, demand_milli, stock counts, supply_milli, trader purse)
+var game_seconds: Callable      # () -> game clock seconds (restocking runs on game days); unset: the real clock x 24
 var now: Callable               # () -> seconds; tests set it
 var _shops: Dictionary = {}
 var _sold: Dictionary = {}      # "npc|item" -> [sales (float), time] the trader's weariness of that item
+var _state: Dictionary = {}     # npc id -> {"stock": {item id: float on the shelf}, "purse": float copper, "t": game seconds of the last refresh}
+var _path: String = ""
 
 
-func setup() -> void:
+func setup(store_dir: String = "") -> void:
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/npcs/shops.json"))
 	_shops = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+	_path = store_dir.path_join("trade_state.json") if store_dir != "" else ""
+
+	if _path != "" and FileAccess.file_exists(_path):
+		var saved: Variant = JSON.parse_string(FileAccess.get_file_as_string(_path))
+		_state = saved.get("traders", {}) if typeof(saved) == TYPE_DICTIONARY else {}
+
+
+# Shelves and purses are saved after every deal (a few hundred bytes).
+func save() -> void:
+	if _path == "":
+		return
+
+	var file: FileAccess = FileAccess.open(_path, FileAccess.WRITE)
+
+	if file != null:
+		file.store_string(JSON.stringify({"version": 1, "traders": _state}))
+		file.close()
+
+
+func _game_s() -> float:
+	return float(game_seconds.call()) if game_seconds.is_valid() else Time.get_unix_time_from_system() * 24.0
+
+
+func _stock_cfg() -> Dictionary:
+	return _cfg().get("stock", {})
+
+
+# [most on the shelf, restock per game day] for one stocked item.
+func _rule(npc_id: String, item_id: String) -> Array:
+	var rules: Dictionary = _shops.get(npc_id, {}).get("stock_rules", {})
+	var rule: Array = rules.get(item_id, [])
+	var c: Dictionary = _stock_cfg()
+	return [float(rule[0]), float(rule[1])] if rule.size() == 2 else [float(c.get("default_max", 8)), float(c.get("default_per_day", 3))]
+
+
+func _purse_cap(npc_id: String) -> float:
+	return float(_shops.get(npc_id, {}).get("purse_cap", _stock_cfg().get("purse_cap_default", 300)))
+
+
+# Brings a trader's shelf and purse up to date: a full shelf and purse at first sight, then restocking by game days.
+func _refresh(npc_id: String) -> Dictionary:
+	var now_s: float = _game_s()
+
+	if not _state.has(npc_id):
+		var stock: Dictionary = {}
+
+		for id in _shops[npc_id].get("stock", []):
+			stock[str(id)] = _rule(npc_id, str(id))[0]
+
+		_state[npc_id] = {"stock": stock, "purse": _purse_cap(npc_id), "t": now_s}
+
+	var st: Dictionary = _state[npc_id]
+	var days: float = maxf((now_s - float(st["t"])) / 86400.0, 0.0)
+
+	if days > 0.0:
+		for id in st["stock"]:
+			var rule: Array = _rule(npc_id, str(id))
+			st["stock"][id] = minf(float(st["stock"][id]) + rule[1] * days, rule[0])
+
+		st["purse"] = minf(float(st["purse"]) + float(_shops[npc_id].get("purse_regen_per_day", _stock_cfg().get("purse_regen_default", 100))) * days, _purse_cap(npc_id))
+		st["t"] = now_s
+
+	return st
+
+
+func stock_of(npc_id: String, item_id: String) -> int:
+	return int(floor(float(_refresh(npc_id)["stock"].get(item_id, 0.0)) + 0.0001))
+
+
+func purse_of(npc_id: String) -> int:
+	return int(floor(float(_refresh(npc_id)["purse"])))
+
+
+# What the player pays moves with supply: a full shelf is cheaper, an empty one dearer.
+func supply(npc_id: String, item_id: String) -> float:
+	var c: Dictionary = _stock_cfg()
+	var rule: Array = _rule(npc_id, item_id)
+	var fill: float = float(_refresh(npc_id)["stock"].get(item_id, 0.0)) / maxf(rule[0], 1.0)
+	return clampf(1.0 + (0.5 - fill) * float(c.get("supply_strength", 0.3)), float(c.get("supply_min", 0.85)), float(c.get("supply_max", 1.2)))
 
 
 func has_shop(npc_id: String) -> bool:
@@ -105,7 +187,14 @@ func open(peer: int, npc_id: String) -> bool:
 			tired_ids.append(parts[1])
 			tired.append(int(round(demand(npc_id, parts[1]) * 1000.0)))
 
-	send_shop.call(peer, npc_id, str(shop.get("title", "Trade")), ids, int(round(float(m["pay"]) * 1000.0)), int(round(float(m["get"]) * 1000.0)), kinds, tired_ids, tired)
+	var counts: PackedInt32Array = PackedInt32Array()
+	var supply_milli: PackedInt32Array = PackedInt32Array()
+
+	for id in ids:
+		counts.append(stock_of(npc_id, id))
+		supply_milli.append(int(round(supply(npc_id, id) * 1000.0)))
+
+	send_shop.call(peer, npc_id, str(shop.get("title", "Trade")), ids, int(round(float(m["pay"]) * 1000.0)), int(round(float(m["get"]) * 1000.0)), kinds, tired_ids, tired, counts, supply_milli, purse_of(npc_id))
 	return true
 
 
@@ -144,7 +233,13 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 			return ""
 
 		var number: int = items.table.number_of(str(ids[a]))
-		var each: int = price_to_pay(int(items.table.entry(str(ids[a])).get("value", 0)), float(m["pay"]))
+		var each: int = price_to_pay(int(items.table.entry(str(ids[a])).get("value", 0)), float(m["pay"]) * supply(npc_id, str(ids[a])))
+		var shelf: int = stock_of(npc_id, str(ids[a]))
+
+		if shelf <= 0:
+			return "He has none left."
+
+		count = mini(count, shelf)
 		count = mini(count, items._fit(peer, inv, number, count))
 
 		if count <= 0:
@@ -154,6 +249,10 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 			return "You cannot afford that."
 
 		items.take_coins(peer, each * count)
+		var st: Dictionary = _refresh(npc_id)
+		st["stock"][str(ids[a])] = float(st["stock"][str(ids[a])]) - float(count)
+		st["purse"] = minf(float(st["purse"]) + float(each * count), _purse_cap(npc_id))   # the coin goes into his till
+		save()
 		items._gain_source = "trade"
 		items.give(peer, number, count)
 		items._gain_source = items.SRC_PICKUP
@@ -187,20 +286,29 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 	var drop: float = float(_cfg().get("demand", {}).get("drop_per_sale", 0.03))
 	var floor_d: float = float(_cfg().get("demand", {}).get("floor", 0.3))
 
-	# Each unit sold lowers the price of the next.
+	var st2: Dictionary = _refresh(npc_id)
+	var till: int = int(floor(float(st2["purse"])))
+
+	# Each unit sold lowers the price of the next; the trader can only pay what is in his purse.
 	for k in count:
 		var each_k: int = price_to_get(value, float(m["get"]) * maxf(base_demand - drop * float(k), floor_d), life)
 
-		if each_k <= 0:
+		if each_k <= 0 or total + each_k > till:
 			break
 
 		total += each_k
 		paid_for += 1
 
 	if paid_for <= 0:
-		return "That is worth nothing."
+		return "He cannot pay for that just now." if till < price_to_get(value, float(m["get"]), life) else "That is worth nothing."
 
 	count = paid_for
+	st2["purse"] = float(st2["purse"]) - float(total)
+
+	if st2["stock"].has(item_id):   # what he stocks goes back on the shelf
+		st2["stock"][item_id] = minf(float(st2["stock"][item_id]) + float(count), _rule(npc_id, item_id)[0])
+
+	save()
 	_note_sale(npc_id, item_id, count)
 	var before: Array = items._snapshot(inv)
 	inv.counts[a] -= count

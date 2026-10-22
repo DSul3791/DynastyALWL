@@ -326,8 +326,9 @@ func _ready() -> void:
 	trade = TradeScript.new()
 	trade.items = items
 	trade.npcs = npcs
-	trade.setup()
-	trade.send_shop = func(peer, npc_id, title, ids, pay, got, buys, tired_ids, tired): net.shop.rpc_id(peer, npc_id, title, ids, pay, got, buys, tired_ids, tired)
+	trade.game_seconds = func(): return game_clock.seconds
+	trade.setup(store_dir)
+	trade.send_shop = func(peer, npc_id, title, ids, pay, got, buys, tired_ids, tired, stock, supply_milli, purse): net.shop.rpc_id(peer, npc_id, title, ids, pay, got, buys, tired_ids, tired, stock, supply_milli, purse)
 	dialogue.trade = trade
 	net.trade_requested.connect(func(peer, npc_id, kind, a, count):
 		var said: String = trade.deal(peer, npc_id, kind, a, count)
