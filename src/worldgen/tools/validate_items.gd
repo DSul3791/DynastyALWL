@@ -405,7 +405,8 @@ func _init() -> void:
 		var def: Dictionary = structures[kind]
 
 		if not bool(def.get("take_only", false)):   # remains have no kit: nobody takes them down
-			want_item.call(String(def.get("kit", "")), "structures.json %s kit" % kind)
+			if String(def.get("kit", "")) != "" or not bool(def.get("walkover", false)):
+				want_item.call(String(def.get("kit", "")), "structures.json %s kit" % kind)
 
 
 		want_item.call(String(def.get("item", "")), "structures.json %s item" % kind)

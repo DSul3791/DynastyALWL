@@ -263,3 +263,11 @@ static func ladder() -> Node3D:
 		_box(root, Vector3(0.5, 0.05, 0.05), Vector3(0.0, 0.2 + 0.3 * float(i), 0.0), _planks)
 
 	return root
+
+
+# A metre of hoe path: a flat tan patch laid on the ground (real packed-earth ground material comes later); no collision.
+static func path() -> Node3D:
+	_materials()
+	var root: Node3D = Node3D.new()
+	_box(root, Vector3(1.0, 0.03, 1.0), Vector3(0.0, 0.0, 0.0), _earth)
+	return root

@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 221,
+	"next_number": 226,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -2491,6 +2491,106 @@
 			"look_alikes": [],
 			"repair_station": "forge",
 			"spade_size": "large"
+		},
+		"wooden_hoe": {
+			"number": 221,
+			"name": "Wooden hoe",
+			"description": "A flat blade lashed to a long handle. Paths the ground and smooths it.",
+			"kind": "tool",
+			"tool_class": "hoe",
+			"stack": 1,
+			"durability": 2025,
+			"repair": [
+				[
+					"stick",
+					1
+				]
+			],
+			"value": 15,
+			"look_alikes": []
+		},
+		"stone_hoe": {
+			"number": 222,
+			"name": "Stone hoe",
+			"description": "A hoe with a flat stone blade. Lasts longer than bare wood.",
+			"kind": "tool",
+			"tool_class": "hoe",
+			"material": "stone",
+			"tier": 2,
+			"stack": 1,
+			"durability": 4050,
+			"repair": [
+				[
+					"stone",
+					1
+				],
+				[
+					"cordage",
+					1
+				]
+			],
+			"value": 30,
+			"look_alikes": []
+		},
+		"iron_hoe": {
+			"number": 223,
+			"name": "Iron hoe",
+			"description": "A hoe with an iron blade.",
+			"kind": "tool",
+			"tool_class": "hoe",
+			"material": "iron",
+			"tier": 3,
+			"stack": 1,
+			"durability": 20250,
+			"repair": [
+				[
+					"iron_ingot",
+					1
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"value": 90,
+			"look_alikes": [],
+			"future": true,
+			"repair_station": "forge"
+		},
+		"steel_hoe": {
+			"number": 224,
+			"name": "Steel hoe",
+			"description": "A hoe with a steel blade.",
+			"kind": "tool",
+			"tool_class": "hoe",
+			"material": "steel",
+			"tier": 4,
+			"stack": 1,
+			"durability": 40500,
+			"repair": [
+				[
+					"steel_ingot",
+					1
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"value": 140,
+			"look_alikes": [],
+			"future": true,
+			"repair_station": "forge"
+		},
+		"path_patch": {
+			"number": 225,
+			"name": "Path",
+			"description": "Trodden ground, a metre of path.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": [],
+			"material": "earth",
+			"note": "Hoe path: row state 32; no kit, cannot be picked up."
 		}
 	}
 }

@@ -468,6 +468,18 @@
 			"look": "ladder",
 			"sound": "timber",
 			"clears_grass": false
+		},
+		"path_patch": {
+			"kit": "",
+			"item": "path_patch",
+			"state": 32,
+			"footprint_x": 1.0,
+			"footprint_z": 1.0,
+			"cap_per_chunk": 400,
+			"look": "path",
+			"sound": "",
+			"clears_grass": true,
+			"walkover": true
 		}
 	},
 	"campfire": {

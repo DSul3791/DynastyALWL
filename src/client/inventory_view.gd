@@ -667,7 +667,7 @@ func _nearest_struct() -> int:
 	var best_d: float = 3.0
 
 	for id in _world:
-		if _world[id]["state"] >= 5 and here.distance_to(_world[id]["pos"]) <= best_d:
+		if _world[id]["state"] >= 5 and _world[id]["state"] != 32 and here.distance_to(_world[id]["pos"]) <= best_d:
 			best_d = here.distance_to(_world[id]["pos"])
 			best = id
 
@@ -2047,6 +2047,8 @@ func _model_for_state(state: int, extra: Dictionary = {}) -> Node3D:
 			return PieceLook.timber_set()
 		"ladder":
 			return PieceLook.ladder()
+		"path":
+			return PieceLook.path()
 		"door_shut":
 			return PieceLook.doorway(false)
 		"door_open":

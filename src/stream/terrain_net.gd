@@ -127,6 +127,8 @@ const ACT_UNWEAR := 29    # a = body slot index (data/items/clothing.json slots)
 const ACT_REPAIR := 13    # a = slot of a worn or broken tool: spend its repair materials, win back half its durability
 const ACT_FUEL := 11      # a = fire world id: burn one stick (or a log) in the fire
 const ACT_COOK := 12      # a = fire world id: roast one raw forage item at the fire
+const ACT_HOE_PATH := 36     # at = the ground point under the crosshair: one hoe stroke treads a metre of path (clears grass, no height change)
+const ACT_HOE_SMOOTH := 37   # at = the ground point under the crosshair: one hoe stroke moves ground from the high spots to the low spots within 1.5 m
 const ACT_UNLOAD := 35       # tip the shovel's load back into the pack (Shift and right click with a spade); loading is a drag of fill material onto the spade (ACT_MOVE)
 const ACT_CHEST_CLOSE := 34  # the player closed the container window: the server stops pushing its contents
 const ACT_LITTER := 33     # at = a dead branch lying on the forest floor within reach: one stick into the pack (the client hides that branch)

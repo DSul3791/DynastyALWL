@@ -522,6 +522,38 @@ func _init() -> void:
 	check(m.inventory_of(1).count_of(soil_n) == soil_before, "a dig that changes nothing brings up nothing")
 	refuse[0] = false
 
+	# The garden hoe: path patches and smoothing (no items, only wear).
+	var hoe_n: int = m.table.number_of("wooden_hoe")
+	m.action(1, Net.ACT_ADMIN_GIVE, hoe_n, 0, 1, Vector3.ZERO)
+	m.ground_height = func(x, _z): return 10.0 + (0.2 if x > 6.5 else 0.0)
+	var patches_of = func() -> int:
+		var count: int = 0
+
+		for it in m._items.values():
+			if it.has("struct") and str(it["struct"]["kind"]) == "path_patch":
+				count += 1
+
+		return count
+	m._last_dig.clear()
+	m.action(1, Net.ACT_HOE_PATH, 0, 0, 0, Vector3(6.3, 10.0, 0.4))
+	check(patches_of.call() == 1, "a hoe stroke treads a path patch")
+	m._last_dig.clear()
+	m.action(1, Net.ACT_HOE_PATH, 0, 0, 0, Vector3(6.6, 10.0, 0.6))
+	check(patches_of.call() == 1, "the same metre is not trodden twice")
+	m._last_dig.clear()
+	m.action(1, Net.ACT_HOE_PATH, 0, 0, 0, Vector3(30.0, 10.0, 0.0))
+	check(patches_of.call() == 1, "a path out of reach does nothing")
+	var hoe_slot: int = m.inventory_of(1).numbers.find(hoe_n)
+	var hoe_wear: int = m.inventory_of(1).wear[hoe_slot]
+	digs.clear()
+	fills.clear()
+	accept[0] = true
+	m._last_dig.clear()
+	m.action(1, Net.ACT_HOE_SMOOTH, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(digs.size() == 1 and fills.size() >= 1 and m.inventory_of(1).wear[hoe_slot] == hoe_wear + 1, "smoothing cuts the high spot and fills the low ones (%d cuts, %d fills)" % [digs.size(), fills.size()])
+	check(patches_of.call() == 0, "smoothed ground loses its path patch")
+	m.ground_height = Callable()
+
 	# Dig under trees (job 85): the tree falls when what holds it up is thin enough, by species class.
 	var species: Array = ["beech", 0.4]
 	var share: Array = [0.5]

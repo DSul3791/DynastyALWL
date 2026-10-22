@@ -689,6 +689,10 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_dig(peer, inv, at)
 	elif kind == Net.ACT_FILL:
 		_fill(peer, inv, at)
+	elif kind == Net.ACT_HOE_PATH:
+		_hoe_path(peer, inv, at)
+	elif kind == Net.ACT_HOE_SMOOTH:
+		_hoe_smooth(peer, inv, at)
 	elif kind == Net.ACT_PLACE:
 		_place(peer, inv, a, at, count)
 	elif kind == Net.ACT_THROW:
@@ -1337,6 +1341,155 @@ func _fill(peer: int, inv, at: Vector3) -> void:
 	_dirty = true
 
 
+# --- The garden hoe (Dave 2026-10-22, items/HOE_AND_SHOVEL_DESIGN.md) ---
+# Path: one stroke treads the metre of ground under the crosshair: a path patch (state 32) clears the grass and draws flat tan; the height does
+# not change. Smooth: ground is MOVED within SMOOTH_REACH_M of the point, cut from the spots above the average height and put on the spots
+# below it (volume balanced), at most SMOOTH_MAX_M a stroke. No items go in or out; the only cost is the hoe's own wear.
+const HOE_COOLDOWN_MS := 500
+const SMOOTH_REACH_M := 1.5
+const SMOOTH_MAX_M := 0.25
+const SMOOTH_MIN_M := 0.04
+const SMOOTH_SPHERE_M := 0.9
+
+
+func _hoe_ready(peer: int, inv, at: Vector3) -> bool:
+	if not _peer_pos.has(peer):
+		return false
+
+	if _peer_pos[peer].distance_to(at) > DIG_REACH_M:
+		_reject(peer, 0)
+		return false
+
+	if not _has_tool(inv, "hoe"):
+		_say_tool_missing(peer, inv, "hoe")
+		_reject(peer, 1)
+		return false
+
+	var now: int = Time.get_ticks_msec()
+
+	if now - int(_last_dig.get(peer, -100000)) < HOE_COOLDOWN_MS:
+		return false
+
+	_last_dig[peer] = now
+	return true
+
+
+func _hoe_path(peer: int, inv, at: Vector3) -> void:
+	if not ground_height.is_valid() or not _structures.has("path_patch") or not _hoe_ready(peer, inv, at):
+		return
+
+	var cell: Vector3 = Vector3(floor(at.x) + 0.5, 0.0, floor(at.z) + 0.5)
+	var ground: float = float(ground_height.call(cell.x, cell.z))
+
+	if is_nan(ground):
+		return
+
+	cell.y = ground + 0.02
+
+	if water_depth_at.is_valid() and float(water_depth_at.call(Vector3(cell.x, ground, cell.z))) > 0.05:
+		_say(peer, "You cannot tread a path in water.")
+		return
+
+	var here_chunk: Vector2i = _chunk_of(cell)
+	var of_kind: int = 0
+
+	for id in _items:
+		var other: Dictionary = _items[id]
+
+		if not other.has("struct"):
+			continue
+
+		if str(other["struct"]["kind"]) == "path_patch":
+			if absf(other["pos"].x - cell.x) < 0.25 and absf(other["pos"].z - cell.z) < 0.25:
+				return   # already trodden
+
+			if _chunk_of(other["pos"]) == here_chunk:
+				of_kind += 1
+		elif other["pos"].distance_to(cell) < 1.0 and not bool(_structures.get(str(other["struct"]["kind"]), {}).get("walkover", false)):
+			_say(peer, "Something stands there.")
+			return
+
+	if of_kind >= int(_structures["path_patch"]["cap_per_chunk"]):
+		_say(peer, "This ground is paths enough.")
+		return
+
+	_wear_tool(peer, inv, "hoe", "dig")
+	_items[_next_id] = {"number": table.number_of("path_patch"), "count": 1, "pos": cell, "left": 1.0e9, "struct": {"kind": "path_patch", "yaw": 0.0}}
+	_next_id += 1
+	_dirty = true
+
+
+func _hoe_smooth(peer: int, inv, at: Vector3) -> void:
+	if not ground_height.is_valid() or not dig_ground.is_valid() or not fill_ground.is_valid() or not _hoe_ready(peer, inv, at):
+		return
+
+	var spots: Array = [Vector2.ZERO, Vector2(1.0, 0.0), Vector2(-1.0, 0.0), Vector2(0.0, 1.0), Vector2(0.0, -1.0)]
+	var heights: Array = []
+	var total: float = 0.0
+
+	for offset in spots:
+		var h: float = float(ground_height.call(at.x + offset.x, at.z + offset.y))
+
+		if is_nan(h):
+			return
+
+		heights.append(h)
+		total += h
+
+	var mean: float = total / float(spots.size())
+	var cut_sum: float = 0.0
+	var fill_sum: float = 0.0
+	var moves: Array = []   # [offset, depth, +1 cut / -1 fill]
+
+	for n in spots.size():
+		var d: float = float(heights[n]) - mean
+
+		if absf(d) < SMOOTH_MIN_M:
+			continue
+
+		var depth: float = minf(absf(d), SMOOTH_MAX_M)
+		moves.append([spots[n], depth, 1 if d > 0.0 else -1])
+
+		if d > 0.0:
+			cut_sum += depth
+		else:
+			fill_sum += depth
+
+	if moves.is_empty():
+		_say(peer, "The ground here is already smooth.")
+		return
+
+	# Ground only moves: whichever side is short sets how much moves on the other.
+	var moved: float = minf(cut_sum, fill_sum)
+
+	if moved <= 0.0:
+		return
+
+	_wear_tool(peer, inv, "hoe", "dig")
+
+	for move in moves:
+		var offset: Vector2 = move[0]
+		var spot: Vector3 = Vector3(at.x + offset.x, float(heights[spots.find(offset)]), at.z + offset.y)
+		var depth: float = float(move[1]) * moved / (cut_sum if int(move[2]) > 0 else fill_sum)
+
+		if int(move[2]) > 0:
+			dig_ground.call(Vector3(spot.x, spot.y - depth + SMOOTH_SPHERE_M, spot.z), SMOOTH_SPHERE_M)
+		else:
+			fill_ground.call(Vector3(spot.x, spot.y + depth - SMOOTH_SPHERE_M, spot.z), SMOOTH_SPHERE_M, int(FILL_SOIL["soil"]))
+
+	_remove_paths_near(at, SMOOTH_REACH_M + 1.0)
+	_dirty = true
+
+
+# Ground that was moved takes the path on it with it: patches near a smoothed spot are removed (the hoe treads them again).
+func _remove_paths_near(at: Vector3, radius: float) -> void:
+	for id in _items.keys():
+		var it: Dictionary = _items[id]
+
+		if it.has("struct") and str(it["struct"]["kind"]) == "path_patch" and it["pos"].distance_to(at) <= radius:
+			_items.erase(id)
+
+
 # --- The loaded shovel (Raise mode) ---
 const SPADE_LOAD_MAX := 8        # shovelfuls the shovel holds
 var send_spade_load: Callable    # (peer, item number, count): tells the client what the shovel holds (protocol 70)
@@ -1727,7 +1880,7 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0) -> void:
 
 			if _chunk_of(_items[id]["pos"]) == _chunk_of(spot):
 				chunk_fires += 1
-		elif _items[id].has("struct") and _items[id]["pos"].distance_to(spot) < _struct_gap_m:
+		elif _items[id].has("struct") and _items[id]["pos"].distance_to(spot) < _struct_gap_m and not bool(_structures.get(str(_items[id]["struct"]["kind"]), {}).get("walkover", false)):
 			return
 
 	if chunk_fires >= _fires_per_chunk:
@@ -3088,7 +3241,9 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 
 		var both_pieces: bool = bool(def.get("piece", false)) and other.has("struct") and bool(_structures.get(str(other["struct"]["kind"]), {}).get("piece", false))
 
-		if other["pos"].distance_to(spot) < _struct_gap_m and (other.has("struct") or other.has("fire")) and not both_pieces:
+		var walkover: bool = other.has("struct") and bool(_structures.get(str(other["struct"]["kind"]), {}).get("walkover", false))
+
+		if other["pos"].distance_to(spot) < _struct_gap_m and (other.has("struct") or other.has("fire")) and not both_pieces and not walkover:
 			return
 
 		if other.has("struct") and str(other["struct"]["kind"]) == str(def["kind"]) and _chunk_of(other["pos"]) == here_chunk:

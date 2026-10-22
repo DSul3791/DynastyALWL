@@ -267,6 +267,12 @@ func mouse_button(button: int, pressed: bool) -> bool:
 
 			return true
 
+		# The garden hoe: left click treads a path, right click smooths the ground (it moves dirt from the high spots to the low ones; no items).
+		if pressed and (button == MOUSE_BUTTON_LEFT or button == MOUSE_BUTTON_RIGHT) and str(_inv.table.entry(held_id()).get("tool_class", "")) == "hoe":
+			_arm_play("use", 0.6)
+			_hoe_here(Net.ACT_HOE_PATH if button == MOUSE_BUTTON_LEFT else Net.ACT_HOE_SMOOTH)
+			return true
+
 		if button == MOUSE_BUTTON_LEFT and pressed:
 			_arm_play("use", 0.6)
 
@@ -627,6 +633,19 @@ func _dig_here() -> void:
 	_net.inventory_action.rpc_id(1, Net.ACT_DIG, held_slot, 0, 0, hit["position"])
 
 
+# A hoe stroke (path or smooth) at the ground under the crosshair; the server checks the hoe, the reach and the pace.
+func _hoe_here(action: int) -> void:
+	var from: Vector3 = _camera.global_position
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - _camera.global_transform.basis.z * REACH_M)
+	var hit: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(query)
+
+	if hit.is_empty() or hit["collider"].has_meta("species_ids"):
+		_inv._on_notice("Nothing to work there: aim the hoe at the ground within reach")
+		return
+
+	_net.inventory_action.rpc_id(1, action, held_slot, 0, 0, hit["position"])
+
+
 # A spade fill at the ground under the crosshair (right click): the server spends a shovelful and puts the ground back.
 func _fill_here() -> void:
 	var from: Vector3 = _camera.global_position
@@ -660,6 +679,8 @@ func _other_tool_hint() -> String:
 	match str(_inv.table.entry(held_id()).get("tool_class", "")):
 		"rod":
 			return "Click at the water to cast, and click again when something bites"
+		"hoe":
+			return "The hoe treads a path (left click) and smooths the ground by moving dirt from high spots to low ones (right click). It uses no items, only its own wear"
 		"spade":
 			return "The spade digs roots and bulbs (press E at a plant), digs the ground (left click) or raises it in Raise mode (right click switches; drag soil or stone onto the shovel to load it)"
 

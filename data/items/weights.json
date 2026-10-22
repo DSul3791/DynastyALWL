@@ -292,7 +292,11 @@
 		"iron_spade_medium": 3.2,
 		"iron_spade_large": 5.6,
 		"steel_spade_medium": 3.2,
-		"steel_spade_large": 5.6
+		"steel_spade_large": 5.6,
+		"wooden_hoe": 0.8,
+		"stone_hoe": 1.2,
+		"iron_hoe": 1.8,
+		"steel_hoe": 1.8
 	},
 	"by_suffix": {
 		"berries": 0.05,
