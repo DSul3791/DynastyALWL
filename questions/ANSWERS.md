@@ -108,3 +108,7 @@ Answered: 2026-10-22 03:20 UTC
 ## host-max-players | Friend-hosted game player cap
 Answer: Already decided in DECISIONS.md 2026-10-22 01:40 (condition 2): baseline a friend session of 10 to 20 on an 8 GB machine; max_clients becomes a config value. Technical, not Dave's call. (Withdrawn by Steve_002)
 Answered: 2026-10-22 03:20 UTC
+## bracing-grace | How long is the grace window after digging a soil tunnel before the earth starts to shake? (my pick: 30 real minutes, shorter for wider spans)
+Answer: About 30 real minutes (shorter for wider spans, longer for rock)
+Answered: 2026-10-22 03:56 UTC
+
