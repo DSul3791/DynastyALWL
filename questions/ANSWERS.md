@@ -140,3 +140,7 @@ Answered: 2026-10-22 15:02 UTC
 Answer: Yes (recommended)
 Answered: 2026-10-22 15:02 UTC
 
+## rv-warning-baseline | Commit the current warning list (233) as a baseline file so reports show only NEW warnings? BP-C01.
+Answer: Yes (recommended)
+Answered: 2026-10-22 15:03 UTC
+
