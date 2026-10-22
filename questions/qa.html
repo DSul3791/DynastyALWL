@@ -13,8 +13,10 @@ input[type=radio]{transform:scale(1.6);margin-right:14px}
 textarea,input[type=password]{width:100%;font-size:22px;box-sizing:border-box;padding:8px}
 button{font-size:22px;padding:12px 24px;margin-top:10px;border:0;border-radius:8px;background:var(--acc);color:#fff}
 .err{color:var(--err)}.msg{margin-top:8px}
+#cmd{background:var(--card);border-radius:12px;padding:12px 16px;margin:12px 0}#cmd dt{font-weight:bold;margin-top:8px}#cmd dd{margin:0 0 0 12px}
 </style></head><body>
-<h1 style="display:inline-block;margin-right:12px">Questions &amp; Tasks for Dave</h1><button onclick="forget()">Forget token</button>
+<h1 style="display:inline-block;margin-right:12px">Questions &amp; Tasks for Dave</h1><button onclick="forget()">Forget token</button> <button onclick="var c=document.getElementById('cmd');c.hidden=!c.hidden">Dave's commands</button>
+<div id="cmd" hidden><dl><dt>status</dt><dd>One-screen report: who is working, parked or blocked, open questions, last backup.</dd><dt>audit</dt><dd>Checks that every decision, answer and idea has an owner and a task, and fixes the gaps.</dd><dt>goodnight</dt><dd>Runs the backup, parks every thread with a handoff, lists tomorrow's first jobs.</dd><dt>idea</dt><dd>Adds what you just said to the ideas ledger; the owner decides now or later.</dd></dl></div>
 <div id="tok" hidden><p>Paste your GitHub token (once):</p><input id="t" type="password"><br><button onclick="saveTok()">Remember</button></div>
 <div id="list">Loading...</div>
 <script>

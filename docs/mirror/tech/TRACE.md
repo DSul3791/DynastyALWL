@@ -24,3 +24,6 @@
 | 10-22 | Collapse gate (second approval, test card, 90 s + visual warning, logout flag, rest lookup) | Sonny, Steve_PS, Sal, Kathleen | Phase 2 item 6, Phase 5 item 3 | OPEN |
 | 10-22 | Next bake bundle + Dave bake steps | Sonny, Guru, Dave | Phase 3 item 4 (cl-bake) | OPEN |
 | 10-22 | 11 parked checks (LATER.md) | Guru | Phase 6 (cl-tests) | OPEN |
+
+## Forget-check log (BP-T29): coordinator asks Guru every 2 h while dev runs; Guru asks coordinator at daily check and phase end. Format: time | who asks | gaps found (0 to 5) | action.
+2026-10-22 16:00 | schedule set (Dave 15:58) | - | first coordinator question due at the first 2-hour mark after "go"
