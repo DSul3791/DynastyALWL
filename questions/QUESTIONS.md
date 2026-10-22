@@ -1,4 +1,3 @@
-
 ## dig-depth | How deep may players dig below the surface? (my pick: about 30 m, then bedrock)
 - About 30 m, then unbreakable bedrock
 - About 100 m
@@ -13,12 +12,6 @@
 - No, a hole stays until someone fills it
 - Yes, soil holes in open ground slowly fill over many game days; tunnels stay
 - Yes, all holes slowly fill unless something keeps them open (timber, stone)
-
-
-## drop-cap-full | When the ground around you already holds 64 dropped items (a 256 m square), what should happen when you drop one more?
-- The longest-lying dropped item vanishes to make room, so a drop always works [recommended]
-- Refuse the drop and say why (current behaviour)
-- Raise the limit to 128 items per square and still refuse beyond it
 
 ## armour-ladder | What material ladder should armour follow for boar and bear defence?
 - Leather, then padded cloth, then iron mail, then steel plate [recommended]
