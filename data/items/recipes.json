@@ -1948,7 +1948,7 @@
 		},
 		"cook_roast_roots": {
 			"number": 104,
-			"name": "Embered roots",
+			"name": "Roast Roots",
 			"needs": [
 				[
 					"burdock_roots",

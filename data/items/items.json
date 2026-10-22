@@ -812,7 +812,7 @@
 		},
 		"roast_meat": {
 			"number": 69,
-			"name": "Roasted meat",
+			"name": "Roast Meat",
 			"description": "Meat cooked over a fire. Filling, and it keeps a couple of days.",
 			"kind": "food",
 			"stack": 10,
@@ -926,7 +926,7 @@
 		},
 		"roast_fish": {
 			"number": 80,
-			"name": "Roasted fish",
+			"name": "Roast Fish",
 			"description": "Fish cooked over a fire. Filling, and it keeps a day or two.",
 			"kind": "food",
 			"stack": 10,
@@ -1971,7 +1971,7 @@
 		},
 		"roast_roots": {
 			"number": 177,
-			"name": "Embered roots",
+			"name": "Roast Roots",
 			"description": "Roots baked in the embers. Plain and filling.",
 			"kind": "food",
 			"stack": 10,
