@@ -380,3 +380,7 @@ Answered: 2026-10-22 22:26 UTC
 Answer: Yes
 Answered: 2026-10-22 22:27 UTC
 
+## spade-load | You said "one shovelful at a time" for raising ground. How should the spade work?
+Answer: No load: each raise click takes one shovelful straight from the pack, nothing is loaded onto the spade
+Answered: 2026-10-22 22:27 UTC
+
