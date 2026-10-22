@@ -6,10 +6,6 @@
 - 8 shovelfuls, dragged from a stack onto the hotbar shovel (recommended)
 - One shovelful at a time
 
-## hoe-grade | Hoe grading for roads: must cut and fill balance?
-- Yes: cut ground comes into the pack as soil, raised ground uses soil or stone from the pack (recommended)
-- Free grading for admin only at first
-
 ## hoe-order | In what order should Sal build the shovel and hoe work?
 - Shovel Raise mode and new model first, then hoe path and smooth, then grade line (recommended)
 - Hoe first
