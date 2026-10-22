@@ -1,10 +1,3 @@
-## rv-build-numbers | Build numbers keep colliding (5 re-pushes in one evening). Fix it? Research: short-lived branches merged fast by one owner work best. Best practices BP-C101, BP-C107.
-The fix: the Technical Director assigns the number when merging, plus a tiny script that prints the next free number, plus the BUILD constant in its own file so it cannot conflict.
-- Yes, all three (recommended)
-- Only the script
-- Keep as is
-- Decide later
-
 ## rv-big-files | Three code files are huge (server_items 5,000 lines, inventory_view 3,800, terrain_client 5,200), so every edit costs a lot of reading. Split them? Research: the context window is the scarce resource. BP-C03.
 Done one file at a time as a Systems job, with the existing tests as the safety net. This is a big fix.
 - Yes, one at a time, after restart (recommended)
