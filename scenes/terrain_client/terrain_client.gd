@@ -67,7 +67,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 600
+const BUILD := 601
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -82,6 +82,7 @@ const BlockLinkScript := preload("res://src/stream/block_link.gd")
 const CacheScript := preload("res://src/stream/client_block_cache.gd")
 const NetScript := preload("res://src/stream/terrain_net.gd")
 const LinkBarsScript := preload("res://src/client/link_bars.gd")
+const ConnectWindowScript := preload("res://src/client/connect_window.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const WaterVolume := preload("res://src/shared/water_volume.gd")
@@ -670,10 +671,57 @@ func _ready() -> void:
 	if AppConfig.get_command_line_value("role", "") == "play" and _wait_until_msec == 0:
 		_wait_until_msec = Time.get_ticks_msec() + 120000
 	multiplayer.server_disconnected.connect(_on_server_lost)
-	multiplayer.connected_to_server.connect(func(): NetSettings.apply((multiplayer.multiplayer_peer as ENetMultiplayerPeer).get_peer(1)))
+	multiplayer.connected_to_server.connect(func():
+		_link_up_msec = Time.get_ticks_msec()
+		NetSettings.apply((multiplayer.multiplayer_peer as ENetMultiplayerPeer).get_peer(1)))
 	multiplayer.connection_failed.connect(_on_connection_failed)
 	started_msec = Time.get_ticks_msec()
+
+	if DisplayServer.get_name() != "headless":
+		_connect_window = ConnectWindowScript.new()
+		_connect_window.setup(self)
+
 	_connect()
+
+
+# What the connection window says: the step the game is on, how long it has been there, and (when it is stuck) the likely reason.
+func _update_connect_window() -> void:
+	var now: int = Time.get_ticks_msec()
+	var waited: int = int(float(now - started_msec) * 0.001)
+	var where: String = "%s:%d" % [_host, _port]
+
+	if connected_msec > 0:
+		var since: int = int(float(now - connected_msec) * 0.001)
+
+		if (not waiting_for_ground and since >= 3) or since > 120:
+			_telemetry.event("connect window closed after %d s in the world" % since)
+			_connect_window.close()
+			_connect_window = null
+			return
+
+		_connect_window.update("1. Server found at %s: done\n2. Welcome received, server protocol %s, this game %d: matches\n3. Loading the ground under you: %d blocks still arriving, %d s so far\n\nThe game opens as soon as there is ground to stand on." % [where, str(world.get("protocol", "?")), NetScript.PROTOCOL_VERSION, stream.pending() if stream != null else 0, since])
+		return
+
+	var peer: MultiplayerPeer = multiplayer.multiplayer_peer
+	var status: int = peer.get_connection_status() if peer != null else MultiplayerPeer.CONNECTION_DISCONNECTED
+
+	if _link_up_msec > 0:
+		var quiet: int = int(float(now - _link_up_msec) * 0.001)
+		var text: String = "1. Opening the connection to %s: done\n2. Waiting for the server's welcome: %d s" % [where, quiet]
+
+		if quiet >= 8:
+			text += "\n\nThe server accepted the connection but has not welcomed this game. Most likely an OLD server from an earlier run is still running on port %d. Close the game, end every \"Godot\" process except the editor in Task Manager, then press Play again." % _port
+			_connect_window.fail("The server is not answering this game", text, func(): _finish(1))
+
+		_connect_window.update(text)
+		return
+
+	var trying: String = "1. Opening the connection to %s: %s, %d s\n2. Waiting for the server's welcome\n3. Loading the ground under you" % [where, "trying" if status == MultiplayerPeer.CONNECTION_CONNECTING else "not connected", waited]
+
+	if waited >= 20:
+		trying += "\n\nNo server has answered yet. The server may still be starting (the game keeps trying for up to 2 minutes), or it did not start: if port %d is held by another program the new server cannot use it." % _port
+
+	_connect_window.update(trying)
 
 
 func _connect() -> void:
@@ -788,6 +836,11 @@ func _on_welcome(info: Dictionary) -> void:
 func _welcome_body(info: Dictionary) -> void:
 	if int(info.get("protocol", 0)) != NetScript.PROTOCOL_VERSION:
 		push_error("Terrain client: server speaks protocol %s, this client %d" % [str(info.get("protocol")), NetScript.PROTOCOL_VERSION])
+
+		if _connect_window != null:
+			_connect_window.fail("The server is out of date", "The server on port %d speaks protocol %s, this game speaks %d.\nAn old server from an earlier run is still running. Close the game, end every \"Godot\" process except the editor in Task Manager, then press Play again." % [_port, str(info.get("protocol")), NetScript.PROTOCOL_VERSION], func(): _finish(1))
+			return
+
 		_finish(1)
 		return
 
@@ -2291,6 +2344,8 @@ var _dig_spam_next_msec: int = 0
 var _step_lift: float = 0.0               # metres the eye still has to rise after a step-up (eased out)
 var _movement: Dictionary = {}        # data/movement.json
 var _telemetry = EventLogScript.new()       # crash_reports/telemetry_client.log: traffic, backlog and frame gaps once a second
+var _connect_window = null                # shown until the ground under the player is ready (connect_window.gd)
+var _link_up_msec: int = 0                # when ENet reported the connection up (welcome still to come)
 var _lose_after_s: float = 0.0
 var _link_print_msec: int = 0
 var link_bars = null                      # server connection indicator (link_bars.gd)
@@ -3478,6 +3533,9 @@ func _process(delta: float) -> void:
 
 	if link_bars != null:
 		link_bars.client_stalled(delta)
+
+	if _connect_window != null:
+		_update_connect_window()
 
 	if _lose_after_s > 0.0 and connected_msec > 0 and Time.get_ticks_msec() - connected_msec > int(_lose_after_s * 1000.0):
 		_lose_after_s = 0.0
