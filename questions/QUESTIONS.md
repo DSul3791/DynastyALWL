@@ -1,6 +1,3 @@
-## collapse-plan-5 | When it falls, rubble fills about 70% of the space and the top stays open, so you can dig it out. The land above does not sink (at most 1 m under a thin roof). Anyone inside dies and leaves remains and a purse. Floor items are buried; braces and chests inside are destroyed. Is this right?
-[check]
-
 ## collapse-plan-8 | Should the collapse stay OFF until your second approval and a test card? (The warning shaking and messages are built but never fire while it is off.)
 [check]
 
