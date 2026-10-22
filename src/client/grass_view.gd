@@ -30,6 +30,7 @@ const CROWN_LITTER_FROM := 0.0           # litter starts getting denser at the d
 const CROWN_LITTER_TO := 0.3             # ... and reaches its full depth here
 const LITTER_DEEP_LEAVES := 5.0          # leaf cards per sample at full depth, times the normal count
 const LITTER_DEEP_TWIGS := 4.0           # twigs likewise
+const RIM_CLEAR_M := 0.9                 # no blades this close to the edge of a dug hole (they lean over it)
 const SCENERY_PEBBLES := true            # owner (2026-10-21): pebbles are decoration (not pickable, not harvestable, like a voxel texture); they vanish when the ground under them is dug (ground_changed)
 const SCENERY_BOULDERS := false          # server-owned boulders (Items, build 361) are drawn by inventory_view with GrassView._make_boulder(); the client scenery boulders would double up
 const SHORT_SOIL_LIFT := 1.9    # short grass: soil thickness times at most this, capped at 1 (0.5 becomes 0.95, 0.3 becomes 0.57)
@@ -959,12 +960,14 @@ func _note_dug(center: Vector3, radius: float, reach: float, filled: bool) -> vo
 			_dug[key] = list
 
 
-# True when a ray hit lies in a dug hollow (its floor) or just inside its mouth.
+# True when a ray hit lies in a dug hollow (its floor), at its mouth or on its rim. Blades are about 0.9 m tall and lean, so
+# blades rooted on the rim hang over the hole (Dave, build 612, a dug pit at the surface): none are grown within 0.9 m of the
+# hole's edge, measured sideways, at any height up to the rim.
 static func _in_dug(list: Array, p: Vector3) -> bool:
 	for d in list:
 		var c: Vector3 = d[0]
 
-		if p.y <= c.y + 0.2 and p.distance_to(c) <= float(d[1]) + 0.6:
+		if p.y <= c.y + float(d[1]) * 0.7 and Vector2(p.x - c.x, p.z - c.z).length() <= float(d[1]) + RIM_CLEAR_M:
 			return true
 
 	return false
