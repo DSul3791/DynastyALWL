@@ -14,8 +14,7 @@ textarea,input[type=password]{width:100%;font-size:22px;box-sizing:border-box;pa
 button{font-size:22px;padding:12px 24px;margin-top:10px;border:0;border-radius:8px;background:var(--acc);color:#fff}
 .err{color:var(--err)}.msg{margin-top:8px}
 </style></head><body>
-<h1>Questions &amp; Tasks for Dave</h1>
-<p><button onclick="forget()">Forget token</button></p>
+<h1 style="display:inline-block;margin-right:12px">Questions &amp; Tasks for Dave</h1><button onclick="forget()">Forget token</button>
 <div id="tok" hidden><p>Paste your GitHub token (once):</p><input id="t" type="password"><br><button onclick="saveTok()">Remember</button></div>
 <div id="list">Loading...</div>
 <script>
