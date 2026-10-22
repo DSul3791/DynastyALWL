@@ -464,3 +464,7 @@ Answered: 2026-10-22 23:25 UTC
 Answer: No: Anyone trapped inside dies and leaves everything they have on them according to our death rules already established.
 Answered: 2026-10-22 23:26 UTC
 
+## roofs-angles | Should there be two roof angles, 45 and 65 degrees?
+Answer: Yes
+Answered: 2026-10-22 23:26 UTC
+
