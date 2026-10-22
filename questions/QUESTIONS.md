@@ -1,6 +1,3 @@
-## tier-nails | Nails: 1 iron ingot makes 20 nails at a forge?
-[check]
-
 ## tier-mason-heavy | Mason walls are so heavy (about 200 kg) that you build them where you stand?
 [check]
 
