@@ -292,3 +292,7 @@ Answered: 2026-10-22 20:14 UTC
 Answer: No: Let’s figure out the tears for building materials because I think we need to have the basic tier which is where people use Thatch and twine and wooden sticks so you could have a basic wall which would be made from Thatch twine and wooden sticks in woven to create a wall and you could have a plank wall where you use rough wooden planks like the kind that are smooth on one side, but they’re rounded and have bark on the other and then you could have fine wooden walls and they would be made from quality lumber and nails and then you could have log walls and they’re made from large round logs to look like a log cabin and they would be thicker and they should be placed on large foundations and then we could have cobblestone walls which are made with cobblestones and mortar and they would be thick also so they would have to be on a large foundation and then we could have mason walls which are very large carved bricks that require proper mason foundations. They would look like the bricks in a castle. Do have some designs and let me see.
 Answered: 2026-10-22 20:14 UTC
 
+## chk-materials-floors | Check the floors and roofs (labelled picture): floors, wood roofs and thatch roofs. Does each look like the real material?
+Answer: No: I just submitted the walls and we had an entire discussion and now you need to rework all of these to match the walls
+Answered: 2026-10-22 20:15 UTC
+
