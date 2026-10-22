@@ -1532,7 +1532,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			elif state == 24 and cover_index != null:
 				roof_key = cover_index.add_roof(CoverScript.box_roof(Vector2(row[3].x, row[3].z), 1.2, 1.2, yaw, row[3].y - 0.5, row[3].y + 2.6))
 
-			_world[id] = {"node": node, "number": row[1], "count": 1, "pos": row[3], "state": state, "light": null, "roof": roof_key}
+			_world[id] = {"node": node, "number": row[1], "count": 1, "pos": row[3], "state": state, "light": null, "roof": roof_key, "yaw": rad_to_deg(yaw)}
 			continue
 
 		if state >= 3:
@@ -1567,8 +1567,10 @@ func foundation_rows() -> Array:
 	var rows: Array = []
 
 	for id in _world:
-		if int(_world[id]["state"]) == 25:
-			rows.append({"pos": _world[id]["pos"], "state": 25})
+		var state: int = int(_world[id]["state"])
+
+		if state >= 22 and state <= 28 and _world[id].has("yaw"):
+			rows.append({"pos": _world[id]["pos"], "state": state, "yaw": _world[id]["yaw"]})
 
 	return rows
 

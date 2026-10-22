@@ -1645,14 +1645,15 @@ func support_strength_at(at: Vector3, now_game_s: float = -1.0) -> float:
 
 
 # Placed foundations as {"pos", "state"} rows, for pieces to snap to.
+# Foundations and building pieces, for PlacementRules.snap (anchors and joins).
 func _foundation_rows() -> Array:
 	var rows: Array = []
 
 	for id in _items:
 		var it: Dictionary = _items[id]
 
-		if it.has("struct") and bool(_structures.get(str(it["struct"]["kind"]), {}).get("foundation", false)):
-			rows.append({"pos": it["pos"], "state": int(_structures[str(it["struct"]["kind"])]["state"])})
+		if it.has("struct") and (bool(_structures.get(str(it["struct"]["kind"]), {}).get("foundation", false)) or bool(_structures.get(str(it["struct"]["kind"]), {}).get("piece", false))):
+			rows.append({"pos": it["pos"], "state": int(_structures[str(it["struct"]["kind"])]["state"]), "yaw": float(it["struct"]["yaw"])})
 
 	return rows
 
