@@ -87,6 +87,7 @@ var _weather_bucket: int = -1
 var _water_seen: Dictionary = {}        # tile -> msec a player was last in it (the live water set keeps a tile WATER_KEEP_MS after)
 var _water_live_next: int = 0
 var _water_live_last: Array = []
+var _centre_levels: PackedFloat32Array = PackedFloat32Array()   # the centre tile's last drawn levels (only read for the log line)
 var _wet_centre: int = 0               # wet squares on the starter tile at the last update (the log line)
 var water_live                         # the starter tile's running water, tuned with + and - on the client
 var _world_dir: String = ""
@@ -785,6 +786,20 @@ func _update_water_live() -> void:
 		water_live.set_live(tiles)
 
 
+# Wet squares of a tile's levels, counted on every 4th row and column (times 16): the log line only. Counting all of them
+# in GDScript took about 250 ms of a server frame on every water update.
+func _wet_squares(levels: PackedFloat32Array) -> int:
+	var side: int = int(round(sqrt(float(levels.size()))))
+	var count: int = 0
+
+	for j in range(0, side, 4):
+		for i in range(0, side, 4):
+			if not is_nan(levels[j * side + i]):
+				count += 1
+
+	return count * 16
+
+
 # New levels from the water thread: swap them into the tile and tell clients.
 func _poll_water() -> void:
 	if water_live == null:
@@ -805,15 +820,12 @@ func _poll_water() -> void:
 			tile_data.fall_levels = update[2]
 
 			if update[0] == water_live.centre:
-				_wet_centre = 0
-
-				for level in update[1]:
-					if not is_nan(level):
-						_wet_centre += 1
+				_centre_levels = update[1]
 
 		_water_updates += 1
 
 		if _water_updates == 1 or _water_updates % 10 == 0:
+			_wet_centre = _wet_squares(_centre_levels)
 			print("server: water update %d (%d tiles), %d wet squares on the starter tile" % [_water_updates, updates.size(), _wet_centre])
 
 		flora.clear_water()
