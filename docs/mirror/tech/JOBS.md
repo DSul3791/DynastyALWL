@@ -415,3 +415,5 @@ Needs for both: TERRAIN_VERSION 26 held branch, 882-test suite, edge-match numbe
 ## TEAM CHANGE (Dave 2026-10-22 14:18, Guru/Technical Director): Steve and Willy are RETIRED. Technical Director (Tyler_Guru_SenDev) = everything Steve did. Steve_ProblemSolver = Systems, the renamed Tyler_002 (Dave 14:32). MikeW_LocalAgent = the renamed MichealW_Local_agent (Dave 14:33). Kathleen_ArtisticDirector = the renamed Mandy (Dave 14:33; older lines saying Mandy mean her). Sonny = World (Willy's ground, tunnels, bracing, quake RPC, worldgen tests PLUS water). Workers run on demand from queues; moderator check every 30 minutes. Where FILE OWNERSHIP above says Steve read Technical Director, Willy read Sonny. Ownership table: PROCESS.md "Who owns what".
 
 NAME (Dave 2026-10-22 15:15): Radar is now Sal_Crafts; older lines saying Radar mean Sal_Crafts.
+
+## MikeW: nightly backup (Dave idea 2026-10-22, P2). Spec: BEST_PRACTICES BP-C110. First: feasibility check (size of folder + server_data, E: drive present, zip tool, time), then one manual run, then "goodnight" trigger.

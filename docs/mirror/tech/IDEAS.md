@@ -8,3 +8,4 @@ Status values: NEW (logged, owner not answered), NOW, LATER, DONE, REJECTED.
 
 | # | Date | Idea (Dave's words) | Owner thread | Status | Verdict / reason | Job / P-level |
 |---|---|---|---|---|---|---|
+| 1 | 2026-10-22 | "eventually I want to be able to zip our entire project nightly after I say goodnight each night and to save it as DynastyALWL_ProjectBackup_TheDateTime.zip in my large drive at E:\Software\godotDev\DynastyALWL_ProjectBackups" | MikeW_LocalAgent (his PC), Guru reviews | NOW (P2, small job; closes the backup gap C93) | Plan in BEST_PRACTICES BP-C110. Needs MikeW feasibility check (size, E: drive, game-closed check). | job in JOBS.md "MikeW: nightly backup" |
