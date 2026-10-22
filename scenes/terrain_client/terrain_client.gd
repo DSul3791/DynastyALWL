@@ -67,7 +67,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 604
+const BUILD := 605
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -502,6 +502,8 @@ func _ready() -> void:
 			_dig_guard = false                    # test: switch the dig guard of the surface rescue off (shows the old behaviour)
 		elif argument.begins_with("--lose-after="):
 			_lose_after_s = float(argument.trim_prefix("--lose-after="))   # test: act as if the server dropped us this many seconds after the welcome
+		elif argument.begins_with("--tunnel-spam="):
+			_tunnel_per_s = float(argument.trim_prefix("--tunnel-spam="))   # test: dig a shaft down then a tunnel along, a new 0.9 m spot this many times a second
 		elif argument.begins_with("--dig-spam="):
 			_dig_spam_per_s = float(argument.trim_prefix("--dig-spam="))   # test: dig the same 0.9 m spot this many times a second (a held click)
 		elif argument == "--fly":
@@ -2400,6 +2402,8 @@ var _dump_client: String = ""
 var _starter_seeded: int = 0
 var _water_spam_per_s: float = 0.0
 var _dig_spam_per_s: float = 0.0
+var _tunnel_per_s: float = 0.0
+var _tunnel_spam_count: int = 0
 var _dig_spam_next_msec: int = 0
 var _step_lift: float = 0.0               # metres the eye still has to rise after a step-up (eased out)
 var _movement: Dictionary = {}        # data/movement.json
@@ -3594,6 +3598,23 @@ func _process(delta: float) -> void:
 	if _dig_spam_per_s > 0.0 and world.has("spawn") and Time.get_ticks_msec() >= _dig_spam_next_msec and Time.get_ticks_msec() - connected_msec > 8000:
 		_dig_spam_next_msec = Time.get_ticks_msec() + int(1000.0 / _dig_spam_per_s)
 		net.dig.rpc_id(1, Vector3(world["spawn"]) + Vector3(0.0, -3.0, 0.0), 0.9)
+
+	if _tunnel_per_s > 0.0 and world.has("spawn") and Time.get_ticks_msec() >= _dig_spam_next_msec and Time.get_ticks_msec() - connected_msec > 8000:
+		_dig_spam_next_msec = Time.get_ticks_msec() + int(1000.0 / _tunnel_per_s)
+		var shaft: int = 8
+		var spot: Vector3 = Vector3(world["spawn"]) + Vector3(0.0, -2.0, 0.0)
+
+		# Down a shaft (0.7 m steps), then a tunnel along x, bending south every 20 steps, like a player digging in.
+		if _tunnel_spam_count < shaft:
+			spot.y -= 0.7 * float(_tunnel_spam_count)
+		else:
+			var run: int = _tunnel_spam_count - shaft
+			spot.y -= 0.7 * float(shaft)
+			spot.x += 0.7 * float(run % 20) + 14.0 * floorf(float(run) / 40.0)
+			spot.z += 0.7 * float(int(floorf(float(run) / 20.0)) % 2) * 20.0
+
+		_tunnel_spam_count += 1
+		net.dig.rpc_id(1, spot, 0.9)
 
 	if link_bars != null:
 		link_bars.client_stalled(delta)

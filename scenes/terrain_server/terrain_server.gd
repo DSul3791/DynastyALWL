@@ -127,6 +127,14 @@ var _quit_grace_msec: int = 10000
 var _never_joined: bool = true
 var _water_answered_msec: Dictionary = {}   # peer -> last time its water request was answered
 var _gather_msec: Dictionary = {}           # peer -> last gather request handled
+const BURY_QUEUE_MAX := 4000        # digs waiting for the plant check; beyond it a dig skips the check
+const BURY_CHUNKS_MAX := 48         # flora chunks kept by the plant check (worker thread only)
+var _bury_mutex: Mutex = Mutex.new()
+var _bury_queue: Array = []         # [center, radius] of digs and fills not yet checked for plants
+var _bury_out: Array = []           # [chunk, id] of plants removed, waiting to be announced
+var _bury_running: bool = false
+var _bury_task: int = -1
+var _bury_chunks: Dictionary = {}   # chunk -> chunk_items, used by the worker only
 var _fill_last: Array = []                  # [centre, radius, material] of the last fill that changed something; a repeat is dropped
 var _tiles_changed: Dictionary = {}     # tiles edited since the clients were told (tile_changed goes out at most every 0.5 s)
 var _tiles_told_msec: int = 0
@@ -1066,7 +1074,9 @@ func _tell_tile_changed(tile: Vector2i) -> void:
 
 
 func _dig_ground(center: Vector3, radius: float) -> bool:
+	var t0: int = Time.get_ticks_usec()
 	var tiles: Array = store.dig_sphere(center, radius)
+	var t1: int = Time.get_ticks_usec()
 
 	# Nothing changed (the ground there is already dug out, or the block's log is full): no message to the clients, no
 	# water wake, no log line. A held click on one spot used to do all of it every time and the server fell behind.
@@ -1079,28 +1089,81 @@ func _dig_ground(center: Vector3, radius: float) -> bool:
 		_tell_tile_changed(tile)
 
 	net.dug.rpc(center, radius)
+	var t2: int = Time.get_ticks_usec()
 
 	if water_live != null:
 		water_live.dig(center, radius)
 
-	if not tiles.is_empty():
-		_bury_plants(center, radius)
-
+	var t3: int = Time.get_ticks_usec()
+	_bury_plants(center, radius)
+	var t4: int = Time.get_ticks_usec()
 	print("Dug a %.1f m sphere at %s; tiles %s" % [radius, str(center), str(tiles)])
-	return not tiles.is_empty()
+
+	# A dig over 20 ms names where the time went (edit log, announcement, water, plants), so a slow tunnel shows in the telemetry.
+	if t4 - t0 > 20000:
+		_events.event("slow dig %.0f ms: edit %.0f, tell %.0f, water %.0f, plants %.0f" % [float(t4 - t0) / 1000.0, float(t1 - t0) / 1000.0, float(t2 - t1) / 1000.0, float(t3 - t2) / 1000.0, float(t4 - t3) / 1000.0])
+
+	return true
 
 
 # Shrubs and plants (not trees: they fall, see server_items _fell_undermined) standing in a dug or filled
 # sphere are removed from the world, so nothing floats over a hole or stands buried in a fill (saved edits
 # step 2, flora cleanup). They stay gone like any picked plant.
 func _bury_plants(center: Vector3, radius: float) -> void:
+	_bury_mutex.lock()
+
+	if _bury_queue.size() < BURY_QUEUE_MAX:
+		_bury_queue.append([center, radius])
+
+	if not _bury_running:
+		_bury_running = true
+
+		if _bury_task >= 0:
+			WorkerThreadPool.wait_for_task_completion(_bury_task)
+
+		_bury_task = WorkerThreadPool.add_task(_bury_drain)
+
+	_bury_mutex.unlock()
+
+
+# Worker thread: one dig after another. Placing a chunk's flora takes seconds the first time (it used to run here on the main
+# thread, nine chunks per dig: one tunnel dig cost 6 s and a minute of digging stalled the server for minutes). The cuts it finds
+# wait in _bury_out and are announced from the main thread.
+func _bury_drain() -> void:
+	while true:
+		_bury_mutex.lock()
+
+		if _bury_queue.is_empty():
+			_bury_running = false
+			_bury_mutex.unlock()
+			return
+
+		var job: Array = _bury_queue.pop_front()
+		_bury_mutex.unlock()
+		var found: Array = _bury_find(job[0], job[1])
+
+		if not found.is_empty():
+			_bury_mutex.lock()
+			_bury_out.append_array(found)
+			_bury_mutex.unlock()
+
+
+func _bury_find(center: Vector3, radius: float) -> Array:
+	var found: Array = []
 	var chunk_m: float = flora.placer.chunk_m
 	var home: Vector2i = Vector2i(int(floor(center.x / chunk_m)), int(floor(center.z / chunk_m)))
 
 	for dz in range(-1, 2):
 		for dx in range(-1, 2):
 			var chunk: Vector2i = flora.placer.normalize(home + Vector2i(dx, dz))
-			var all: Dictionary = flora.placer.chunk_items(chunk)
+
+			if not _bury_chunks.has(chunk):
+				if _bury_chunks.size() >= BURY_CHUNKS_MAX:
+					_bury_chunks.erase(_bury_chunks.keys()[0])
+
+				_bury_chunks[chunk] = flora.placer.chunk_items(chunk)
+
+			var all: Dictionary = _bury_chunks[chunk]
 
 			for n in range(all["ids"].size()):
 				var id: int = all["ids"][n]
@@ -1112,7 +1175,20 @@ func _bury_plants(center: Vector3, radius: float) -> void:
 				var at: Vector3 = all["positions"][n]
 
 				if Vector2(at.x - center.x, at.z - center.z).length() <= radius and at.y >= center.y - radius and at.y <= center.y + radius + 0.5 and flora.cut(chunk, id):
-					net.flora_cut.rpc(chunk, id)
+					found.append([chunk, id])
+
+	return found
+
+
+# Main thread, each frame: announce the plants the worker removed.
+func _send_buried() -> void:
+	_bury_mutex.lock()
+	var out: Array = _bury_out.slice(0, 200)
+	_bury_out = _bury_out.slice(out.size())
+	_bury_mutex.unlock()
+
+	for cut in out:
+		net.flora_cut.rpc(cut[0], cut[1])
 
 
 # A spade fill: the sphere of ground is saved in the edit log (store.fill_sphere), the water thread raises its ground
@@ -1236,6 +1312,7 @@ func _process(delta: float) -> void:
 	_update_weather()
 	_events.mark("items")
 	items.tick(delta)
+	_send_buried()
 	_events.mark("npcs")
 	npcs.unwell = dialogue.router.is_unwell()
 	npcs.tick(delta)
@@ -1631,6 +1708,14 @@ func _exit_tree() -> void:
 
 	if items != null:
 		items.save()
+
+	_bury_mutex.lock()
+	_bury_queue.clear()
+	_bury_mutex.unlock()
+
+	if _bury_task >= 0:
+		WorkerThreadPool.wait_for_task_completion(_bury_task)
+		_bury_task = -1
 
 	if flora != null:
 		flora.save_removed(true)
