@@ -1,7 +1,3 @@
-## chk-tools-v4 | Check the redrawn backpack, bucket, clay pot, wooden bowl and stone axe (labelled picture): does each look like the real thing, and does the axe look like an axe and not a hammer?
-Image: questions/img/looks_v5_tools.png
-[check]
-
 ## roast-names | The other roasts are still called roast meat, roast fish and roast roots. Rename any of them like Roast Beast?
 - Keep them as they are (recommended)
 - Rename them to match (Roast Beast style, e.g. Roast Fish, Roast Roots as proper names)
