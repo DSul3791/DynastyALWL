@@ -3,31 +3,69 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Questions &amp; Tasks for Dave</title>
 <style>
-:root{--bg:#fff;--fg:#111;--card:#f1f1f1;--acc:#1a5fb4;--err:#b00020}
-@media(prefers-color-scheme:dark){:root{--bg:#161616;--fg:#eee;--card:#262626;--acc:#6aa9ff;--err:#ff6b7a}}
-body{background:var(--bg);color:var(--fg);font:22px/1.4 system-ui,sans-serif;margin:0;padding:16px;max-width:760px;margin:auto}
-.q{background:var(--card);border-radius:12px;padding:16px;margin:16px 0}
-.q h2{font-size:24px;margin:0 0 12px}
-label{display:block;padding:10px 4px}
-input[type=radio]{transform:scale(1.6);margin-right:14px}
-textarea,input[type=password]{width:100%;font-size:22px;box-sizing:border-box;padding:8px}
-button{font-size:22px;padding:12px 24px;margin-top:10px;border:0;border-radius:8px;background:var(--acc);color:#fff}
-.err{color:var(--err)}.msg{margin-top:8px}
-.hd{display:flex;align-items:center;justify-content:space-between;gap:6px}.hd h1{font-size:clamp(15px,4.5vw,28px);margin:0;flex:1;text-align:center}.hd button{margin-top:0;padding:8px 10px;font-size:clamp(13px,3.6vw,18px)}
-.ver{font-size:14px;opacity:.7}
-#cmd{background:var(--card);border-radius:12px;padding:12px 16px;margin:12px 0}#cmd dt{font-weight:bold;margin-top:8px}#cmd dd{margin:0 0 0 12px}
+:root{--bg:#f4f1ea;--fg:#1d1d1f;--mut:#5b5b60;--card:#fffdf8;--line:#ddd6c8;--acc:#7a1f1f;--accfg:#fff;--err:#b00020;--ok:#1f6f3f;--sel:#f3e6e0}
+@media(prefers-color-scheme:dark){:root{--bg:#141416;--fg:#ecebe8;--mut:#a3a2a0;--card:#1f1f22;--line:#34343a;--acc:#d98a7a;--accfg:#1a1010;--err:#ff7b8a;--ok:#6fd49a;--sel:#2c2422}}
+*{box-sizing:border-box}
+html{font-size:clamp(17px,1.1vw + 13px,26px)}
+body{background:var(--bg);color:var(--fg);font:1rem/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;margin:0;padding:0 0 6.5rem}
+.bar{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:.5rem;padding:.5rem .75rem}
+.bar h1{font:600 1.15rem/1.2 Georgia,"Times New Roman",serif;margin:0;flex:1;text-align:center;letter-spacing:.02em}
+.ib{min-width:48px;min-height:48px;border:1px solid var(--line);border-radius:12px;background:transparent;color:var(--fg);font-size:1.5rem;line-height:1;padding:0;margin:0}
+main{max-width:46rem;margin:0 auto;padding:.75rem}
+h2.sec{font:600 .85rem/1 system-ui,sans-serif;text-transform:uppercase;letter-spacing:.12em;color:var(--mut);margin:1.4rem .25rem .5rem}
+.q{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:1rem;margin:.75rem 0}
+.q h2{font:600 1.15rem/1.35 system-ui,sans-serif;margin:0 0 .6rem}
+.q p{margin:.35rem 0;color:var(--mut);font-size:.92rem}
+label{display:flex;align-items:flex-start;gap:.75rem;min-height:48px;padding:.65rem .75rem;margin:.4rem 0;border:1px solid var(--line);border-radius:12px;cursor:pointer}
+label:has(input:checked){border-color:var(--acc);background:var(--sel)}
+input[type=radio]{width:1.3rem;height:1.3rem;margin:.1rem 0 0;accent-color:var(--acc);flex:none}
+textarea,input[type=password]{width:100%;font:inherit;padding:.65rem;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--fg)}
+button{font:600 1rem system-ui,sans-serif;min-height:48px;padding:.6rem 1.2rem;margin-top:.6rem;border:0;border-radius:12px;background:var(--acc);color:var(--accfg)}
+button.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)}
+.err{color:var(--err)}.msg{margin-top:.5rem;font-size:.95rem}.ok{color:var(--ok)}
+.ver{font-size:.75rem;color:var(--mut);text-align:center;margin:1.5rem 0 0}
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--card);border-top:1px solid var(--line);padding:.6rem .75rem calc(.6rem + env(safe-area-inset-bottom))}
+.dock .in{max-width:46rem;margin:0 auto}.dock button{width:100%;margin:0}.dock .msg{margin:.3rem 0 0;text-align:center}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9;display:none}
+.scrim.on{display:block}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:10;background:var(--card);border-radius:20px 20px 0 0;padding:1rem .75rem calc(1rem + env(safe-area-inset-bottom));max-height:85vh;overflow:auto;transform:translateY(105%);transition:transform .18s}
+.sheet.on{transform:none}
+.sheet .in{max-width:46rem;margin:0 auto}
+.sheet h3{margin:.2rem .25rem .6rem;font:600 1.05rem Georgia,serif}
+.item{display:flex;align-items:center;width:100%;margin:.35rem 0;text-align:left;background:transparent;color:var(--fg);border:1px solid var(--line)}
+.item.danger{color:var(--err)}
+#cmd dt{font-weight:700;margin-top:.7rem}#cmd dd{margin:.1rem 0 0 .5rem;color:var(--mut)}
+.dlg{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:11;background:var(--card);border-radius:16px;padding:1.2rem;width:min(92vw,26rem);display:none;box-shadow:0 8px 30px rgba(0,0,0,.35)}
+.dlg.on{display:block}.dlg .row{display:flex;gap:.6rem}.dlg .row button{flex:1;margin-top:.8rem}
 </style></head><body>
-<div class="hd"><button onclick="forget()">Forget token</button><h1>Questions &amp; Tasks for Dave</h1><button onclick="var c=document.getElementById('cmd');c.hidden=!c.hidden">Dave's commands</button></div>
-<div id="cmd" hidden><dl><dt>status</dt><dd>One-screen report: who is working, parked or blocked, open questions, last backup.</dd><dt>audit</dt><dd>Checks that every decision, answer and idea has an owner and a task, and fixes the gaps.</dd><dt>goodnight</dt><dd>Runs the backup, parks every thread with a handoff, lists tomorrow's first jobs.</dd><dt>idea</dt><dd>Adds what you just said to the ideas ledger; the owner decides now or later.</dd></dl></div>
-<div id="tok" hidden><p>Paste your GitHub token (once):</p><input id="t" type="password"><br><button onclick="saveTok()">Remember</button></div>
+<div class="bar"><button class="ib" aria-label="Menu" onclick="sheet('menu')">&#9776;</button><h1>Questions &amp; Tasks for Dave</h1><button class="ib" aria-label="Reload" onclick="load()">&#8635;</button></div>
+<main>
+<div id="tok" hidden class="q"><h2>Paste your GitHub token (once)</h2><input id="t" type="password" autocomplete="off"><button onclick="saveTok()">Remember</button></div>
 <div id="list">Loading...</div>
-<div id="pokebox"><button onclick="poke()">Tell Claude I answered</button><div class=msg id="pokemsg"></div><p class=ver>Page version: poke v3 (1955 UTC). If you do not see this line, you have an old copy: reload.</p></div>
+<p class=ver>Page version: poke v4 (menu, 2005 UTC). If you do not see this line, you have an old copy: reload.</p>
+</main>
+<div class="dock"><div class="in"><button onclick="poke()">Tell Claude I answered</button><div class=msg id="pokemsg"></div></div></div>
+<div class="scrim" id="scrim" onclick="closeAll()"></div>
+<div class="sheet" id="menu"><div class="in"><h3>Menu</h3>
+<button class="item" onclick="goSec('sec-check')">Things to check</button>
+<button class="item" onclick="goSec('sec-q')">Questions</button>
+<button class="item" onclick="sheet('cmds')">Dave's commands</button>
+<button class="item" onclick="closeAll();load()">Reload questions</button>
+<button class="item danger" onclick="askForget()">Forget token</button>
+<button class="item ghost" onclick="closeAll()">Close</button></div></div>
+<div class="sheet" id="cmds"><div class="in"><h3>Dave's commands</h3><div id="cmd"><dl><dt>status</dt><dd>One-screen report: who is working, parked or blocked, open questions, last backup.</dd><dt>audit</dt><dd>Checks that every decision, answer and idea has an owner and a task, and fixes the gaps.</dd><dt>goodnight</dt><dd>Runs the backup, parks every thread with a handoff, lists tomorrow's first jobs.</dd><dt>idea</dt><dd>Adds what you just said to the ideas ledger; the owner decides now or later.</dd></dl></div><button class="item ghost" onclick="closeAll()">Close</button></div></div>
+<div class="dlg" id="sure" role="alertdialog" aria-labelledby="sureh"><h3 id="sureh" style="margin:0 0 .4rem;font:600 1.15rem Georgia,serif">Are you sure?</h3><p style="margin:0">Forgetting the token removes it from this browser. You will have to paste it again.</p><div class="row"><button class="ghost" onclick="closeAll()">Cancel</button><button onclick="doForget()">Yes, forget it</button></div></div>
 <script>
 const POKE_TARGETS=[["DSul3791/DynastyALWL-QA",1],["DSul3791/DynastyALWL",3]];
 const REPO="DSul3791/DynastyALWL",BR="claude/generator-v2",QF="questions/QUESTIONS.md",AF="questions/ANSWERS.md";
 const api=p=>`https://api.github.com/repos/${REPO}/contents/${p}`;
 const tok=()=>{try{return localStorage.getItem("ghtok")||""}catch(e){return ""}};
 function saveTok(){try{localStorage.setItem("ghtok",document.getElementById("t").value.trim())}catch(e){}load()}
+function closeAll(){for(const i of ['menu','cmds','sure'])document.getElementById(i).classList.remove('on');document.getElementById('scrim').classList.remove('on')}
+function sheet(id){closeAll();document.getElementById(id).classList.add('on');document.getElementById('scrim').classList.add('on')}
+function askForget(){closeAll();document.getElementById('sure').classList.add('on');document.getElementById('scrim').classList.add('on')}
+function doForget(){closeAll();forget()}
+function goSec(id){closeAll();const e=document.getElementById(id);if(e)e.scrollIntoView({behavior:'smooth',block:'start'})}
 function forget(){try{localStorage.removeItem("ghtok")}catch(e){}load()}
 const hdr=()=>({Authorization:"Bearer "+tok(),Accept:"application/vnd.github+json"});
 const b64d=s=>new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\n/g,"")),c=>c.charCodeAt(0)));
@@ -49,7 +87,7 @@ async function load(){
   const L=document.getElementById("list");document.getElementById("tok").hidden=!!tok();
   if(!tok()){L.textContent="";return}
   try{const {text}=await get(QF);const qs=parse(text);
-    if(!qs.length){L.textContent="No questions right now.";return}
+    if(!qs.length){L.innerHTML="<div class=q><h2>All clear</h2><p>No questions right now.</p></div>";return}
     let k=0;
     const card=(q,n)=>{
       let body,num="";
@@ -59,7 +97,7 @@ async function load(){
       else return `<div class=q><h2>${esc(q.text||q.id)}</h2><p class=err>Error: question "${esc(q.id)}" has no choices and is not marked [text] or [check]. Ask the thread that wrote it to fix it.</p></div>`;
       return `<div class=q id=box${n}><h2>${num}${esc(q.text||q.id)}</h2>${q.notes.map(x=>`<p>${esc(x)}</p>`).join("")}${body}<button onclick="save(${n},'${q.id.replace(/'/g,"")}')">Save</button><div class=msg id=m${n}></div></div>`};
     const checks=qs.map((q,n)=>q.isCheck?card(q,n):"").join(""),rest=qs.map((q,n)=>q.isCheck?"":card(q,n)).join("");
-    L.innerHTML=(checks?"<h2>Things to check</h2>"+checks:"")+(rest?(checks?"<h2>Questions</h2>":"")+rest:"");
+    L.innerHTML=(checks?"<h2 class=sec id=sec-check>Things to check</h2>"+checks:"")+(rest?"<h2 class=sec id=sec-q>Questions</h2>"+rest:"");
   }catch(e){L.innerHTML=`<p class=err>${esc(e.message)}. Check the token.</p>`}}
 async function save(n,id){
   const m=document.getElementById("m"+n);let ans;
@@ -95,7 +133,7 @@ async function poke(){
   const errs=[];
   for(const [repo,pr] of POKE_TARGETS){
     try{const r=await fetch(`https://api.github.com/repos/${repo}/issues/${pr}/comments`,{method:"POST",headers:hdr(),body:JSON.stringify(body)});
-      if(r.ok){try{localStorage.removeItem('answered')}catch(e){}m.textContent="Poke sent at "+new Date().toLocaleTimeString()+" (via "+repo+").";return}
+      if(r.ok){try{localStorage.removeItem('answered')}catch(e){}m.innerHTML='<span class=ok>Poke sent at '+new Date().toLocaleTimeString()+" (via "+esc(repo)+").</span>";return}
       let why="";try{why=(await r.json()).message||""}catch(e){}
       errs.push(`${repo}: HTTP ${r.status} ${why}`)}
     catch(e){errs.push(`${repo}: ${e.message}`)}}
