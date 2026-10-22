@@ -404,3 +404,7 @@ Answered: 2026-10-22 22:55 UTC
 Answer: No: Very close almost perfect everyone was perfect except for the log wall because you’re notched ends need to be opposite on each side so they can fit into each other so rework the log wall and send it back for approval
 Answered: 2026-10-22 22:55 UTC
 
+## chk-doors | Check the door and window designs (picture): five door tiers (twine and thatch hurdle, planks, reinforced with iron bands, wrought iron, steel and iron), a double door, a window and a double window. Do these look right?
+Answer: No: A wall with a window hole in it is just a hole for a window. And we should have a square window around window and eventually in the future we’re going to make double walls so we can make tall windows and eventually stained glass windows, but when it comes to making walls, they just have holes in them for windows, and eventually we will make shutters that you can put on them, so you’ll just have a wooden type shutter that you can open her clothes to cover the window with hinges, so it would take wood and hinges to make and nails
+Answered: 2026-10-22 23:01 UTC
+
