@@ -80,3 +80,7 @@ Answered: 2026-10-22 03:06 UTC
 Answer: Spade digs soil, gravel and sand only; rock needs a pick and is slower
 Answered: 2026-10-22 03:07 UTC
 
+## hole-refill | Do small surface holes and pits (spade digs in open ground, not mines) fill back in by themselves? (the docs only say mines revert through erosion and water; my pick: yes, slowly)
+Answer: No, a hole stays until someone fills it
+Answered: 2026-10-22 03:08 UTC
+
