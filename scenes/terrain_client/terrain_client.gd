@@ -67,7 +67,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 643
+const BUILD := 644
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -258,6 +258,7 @@ const DIG_RESCUE_SKIP_M := 14.0        # no "stand the player on the surface" re
 const DIG_RESCUE_SKIP_MSEC := 1800000  # ... for half an hour
 var _embed_check_msec: int = 0
 var embed_rescues: int = 0
+var _void_rescue_msec: int = -10000
 var rescued: int = 0                   # times the player was lifted back above the ground
 var _floor_msec: int = 0               # last time the player stood on something
 var test_walk: bool = false
@@ -5178,8 +5179,15 @@ func _free_if_in_void(now: int) -> void:
 	if body.is_on_floor() or now - _floor_msec < 1500 or swimming:
 		return
 
+	# A block still loading reads as empty: only act when the whole column below is loaded, and never twice within 6 s.
+	if now - _void_rescue_msec < 6000:
+		return
+
 	var tool: VoxelTool = terrain.get_voxel_tool()
 	var here: Vector3 = body.global_position
+
+	if not tool.is_area_editable(AABB(here + Vector3(-1.0, -42.0, -1.0), Vector3(2.0, 43.0, 2.0))):
+		return
 
 	for depth in range(0, 41, 2):
 		if _solid_at(tool, here + Vector3(0.0, -float(depth), 0.0)):
@@ -5195,6 +5203,7 @@ func _free_if_in_void(now: int) -> void:
 	body.global_position = Vector3(here.x, float(hit["position"].y) + 1.2, here.z)
 	body.velocity = Vector3.ZERO
 	_floor_msec = now
+	_void_rescue_msec = now
 	rescued += 1
 	embed_rescues += 1
 	_telemetry.event("RESCUE: player was in empty space under the world at %s, stood on the surface at y %.1f" % [str(here), float(hit["position"].y)])
