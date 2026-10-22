@@ -144,3 +144,7 @@ Answered: 2026-10-22 15:02 UTC
 Answer: Yes (recommended)
 Answered: 2026-10-22 15:03 UTC
 
+## rv-bp-digest | Everyone reads the 80-entry best practices every day (costly; research says long instruction files get ignored). Replace with a 15-line digest per role plus the changelog lines? BP-T25.
+Answer: Yes, role digests (recommended)
+Answered: 2026-10-22 15:03 UTC
+
