@@ -132,3 +132,7 @@ Answered: 2026-10-22 05:38 UTC
 Answer: Yes, all three (recommended)
 Answered: 2026-10-22 15:01 UTC
 
+## rv-big-files | Three code files are huge (server_items 5,000 lines, inventory_view 3,800, terrain_client 5,200), so every edit costs a lot of reading. Split them? Research: the context window is the scarce resource. BP-C03.
+Answer: Yes, one at a time, after restart (recommended)
+Answered: 2026-10-22 15:02 UTC
+
