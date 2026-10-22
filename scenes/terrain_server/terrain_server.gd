@@ -42,6 +42,7 @@ const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 const NetScript := preload("res://src/stream/terrain_net.gd")
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
+const ActionLimitsScript := preload("res://src/shared/action_limits.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const FloraStoreScript := preload("res://src/stream/server_flora.gd")
 const WaterHubScript := preload("res://src/water/water_hub.gd")
@@ -135,6 +136,7 @@ var _bury_out: Array = []           # [chunk, id] of plants removed, waiting to 
 var _bury_running: bool = false
 var _bury_task: int = -1
 var _bury_chunks: Dictionary = {}   # chunk -> chunk_items, used by the worker only
+var limits = ActionLimitsScript.new()      # per-peer token buckets (data/limits.json); drops show in the telemetry line
 var _fill_last: Array = []                  # [centre, radius, material] of the last fill that changed something; a repeat is dropped
 var _tiles_changed: Dictionary = {}     # tiles edited since the clients were told (tile_changed goes out at most every 0.5 s)
 var _tiles_told_msec: int = 0
@@ -531,6 +533,8 @@ func _event_state() -> String:
 	_queue_mutex.lock()
 	var queued: String = "queued urgent %d prefetch %d, in work %d" % [_queue.size(), _prefetch.size(), _queued.size()]
 	_queue_mutex.unlock()
+	var dropped: String = limits.summary()
+	queued += ", limiter drops: " + dropped if dropped != "" else ""
 	return "peers %d fps %d ram %d MB, %s, %s | %s" % [_peers.size(), Engine.get_frames_per_second(), int(OS.get_static_memory_usage() / 1048576.0), queued, EventLogScript.host_stats(multiplayer.multiplayer_peer), " | ".join(parts)]
 
 
@@ -640,6 +644,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	])
 	_events.event("peer %d left after %d blocks (last stats: %s)" % [peer_id, int(info.get("blocks", 0)), str(info.get("last_stats", "none"))])
 	_peers.erase(peer_id)
+	limits.forget(peer_id)
 	_water_answered_msec.erase(peer_id)
 	_gather_msec.erase(peer_id)
 	_npc_sent.erase(peer_id)
@@ -1056,6 +1061,9 @@ func _on_cut_flora_requested(peer_id: int, chunk: Vector2i, id: int) -> void:
 func _on_dig_requested(peer_id: int, center: Vector3, radius: float) -> void:
 	if not admin.is_admin(items.key_of(peer_id)):
 		print("Admin dig refused for peer %d" % peer_id)
+		return
+
+	if not limits.allow(peer_id, "dig"):
 		return
 
 	_dig_ground(center, radius)

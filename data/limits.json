@@ -1,0 +1,4 @@
+{
+	"_note": "Per-peer action limits (src/shared/action_limits.gd): a token bucket per peer and action. rate = tokens refilled per second, burst = most tokens saved up. Generous on purpose: an honest player and a fast clicker never feel them; a script or a held-down loop is cut. Drops are counted in the server telemetry line. A server restart is needed for a change.",
+	"dig": { "rate": 4.0, "burst": 8.0 }
+}
