@@ -2,7 +2,7 @@ extends RefCounted
 
 # Stage-one models (Kathleen, art/MODEL_PLAN.md): any loose item drawn from a small shape and a colour, so every item has a look before
 # any item gets a good one. `data/items/looks.json` maps an item id to {shape, color, size}; `mesh()` returns one vertex-coloured ArrayMesh
-# (under 150 triangles, one shared material) centred on its middle with the underside near y = -0.06 * size. Upgrading an item later means
+# (a few hundred triangles, 1200 at most for a bowl of stew, one shared material) centred on its middle with the underside near y = -0.06 * size. Upgrading an item later means
 # deleting its looks.json entry or giving it a real model; nothing here changes.
 
 const LOOKS_PATH := "res://data/items/looks.json"
@@ -37,10 +37,10 @@ static func mesh_for(item_id: String) -> Mesh:
 	if def.is_empty():
 		return null
 
-	return mesh(str(def.get("shape", "chunk")), Color.html(str(def.get("color", "#8a8a8a"))), float(def.get("size", 1.0)))
+	return mesh(str(def.get("shape", "chunk")), Color.html(str(def.get("color", "#8a8a8a"))), float(def.get("size", 1.0)), def.get("bits", []))
 
 
-static func mesh(shape: String, color: Color, size: float = 1.0) -> ArrayMesh:
+static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = []) -> ArrayMesh:
 	var parts: Array = []
 
 	if shape not in ["bone", "coil", "coin", "ingot"]:
@@ -52,6 +52,37 @@ static func mesh(shape: String, color: Color, size: float = 1.0) -> ArrayMesh:
 		"sack":
 			_sph(parts, 0.1, Vector3(1.0, 1.1, 1.0), Vector3(0.0, 0.0, 0.0), color)
 			_cyl(parts, 0.04, 0.05, Vector3(0.0, 0.11, 0.0), Vector3.ZERO, dark)
+		"backpack":
+			# A hide rucksack: tall rounded body, a flap over the top with a buckle, two side pockets, two shoulder straps, a bedroll on top.
+			_sph(parts, 0.12, Vector3(1.0, 1.25, 0.7), Vector3(0.0, 0.0, 0.0), color)
+			_sph(parts, 0.12, Vector3(1.05, 0.5, 0.78), Vector3(0.0, 0.1, 0.0), dark)
+			_box(parts, Vector3(0.03, 0.04, 0.012), Vector3(0.0, 0.03, -0.1), Color(0.85, 0.75, 0.3))
+			_sph(parts, 0.05, Vector3(0.8, 1.0, 0.8), Vector3(0.12, -0.05, 0.0), dark)
+			_sph(parts, 0.05, Vector3(0.8, 1.0, 0.8), Vector3(-0.12, -0.05, 0.0), dark)
+			_cyl(parts, 0.04, 0.26, Vector3(0.0, 0.22, 0.0), Vector3(0.0, 0.0, PI * 0.5), light)
+			_box(parts, Vector3(0.03, 0.22, 0.01), Vector3(0.05, 0.0, 0.085), dark)
+			_box(parts, Vector3(0.03, 0.22, 0.01), Vector3(-0.05, 0.0, 0.085), dark)
+		"fibre":
+			# A hank of plant fibre: a fan of long fine strands, frayed at both ends, tied in the middle with a twist of cord.
+			for k in 14:
+				var spread: float = (float(k) - 6.5) * 0.007
+				var bend: float = (float(k % 3) - 1.0) * 0.05
+				_box_rot(parts, Vector3(0.34 + 0.02 * float(k % 4), 0.004, 0.006), Vector3(0.0, 0.004 * float(k % 5), spread), Vector3(0.0, bend, 0.0), color.lightened(0.07 * float(k % 3)) if k % 2 == 0 else color.darkened(0.08))
+			_cyl(parts, 0.04, 0.02, Vector3.ZERO, Vector3(0.0, 0.0, PI * 0.5), Color(0.45, 0.36, 0.2))
+		"bar":
+			# A trail-mix bar: a bar of oats and syrup with nuts, raisins, seeds and dried fruit pressed into it.
+			_box(parts, Vector3(0.2, 0.035, 0.07), Vector3(0.0, -0.04, 0.0), color)
+			for k in bits.size() * 3:
+				var at: Vector3 = Vector3(-0.08 + 0.027 * float(k % 7), -0.018, -0.025 + 0.025 * float(k % 3))
+				_sph(parts, 0.016, Vector3(1.0, 0.8, 1.0), at, Color.html(str(bits[k % bits.size()])))
+		"joint":
+			# A roast joint on the bone: a browned, glazed lump of meat with the bone showing at each end.
+			_sph(parts, 0.1, Vector3(1.3, 0.8, 0.9), Vector3(0.0, -0.02, 0.0), color)
+			_sph(parts, 0.06, Vector3(1.2, 0.5, 0.8), Vector3(0.0, 0.03, 0.0), color.lightened(0.15))
+			_cyl(parts, 0.014, 0.12, Vector3(-0.17, -0.02, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.9, 0.87, 0.78))
+			_sph(parts, 0.025, Vector3.ONE, Vector3(-0.23, -0.02, 0.015), Color(0.9, 0.87, 0.78))
+			_sph(parts, 0.025, Vector3.ONE, Vector3(-0.23, -0.02, -0.015), Color(0.9, 0.87, 0.78))
+			_cyl(parts, 0.014, 0.1, Vector3(0.16, -0.02, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.9, 0.87, 0.78))
 		"ingot":
 			_box(parts, Vector3(0.24, 0.05, 0.1), Vector3(0.0, -0.035, 0.0), color)
 			_box(parts, Vector3(0.2, 0.03, 0.07), Vector3(0.0, 0.0, 0.0), light)
@@ -106,8 +137,13 @@ static func mesh(shape: String, color: Color, size: float = 1.0) -> ArrayMesh:
 			_sph(parts, 0.07, Vector3(1.0, 0.9, 1.0), Vector3(0.0, -0.01, 0.0), color)
 			_cyl(parts, 0.006, 0.04, Vector3(0.0, 0.055, 0.0), Vector3.ZERO, Color(0.3, 0.22, 0.12))
 		"bowl":
-			_cyl(parts, 0.1, 0.05, Vector3(0.0, -0.04, 0.0), Vector3.ZERO, dark)
-			_cyl(parts, 0.085, 0.012, Vector3(0.0, -0.012, 0.0), Vector3.ZERO, color)
+			_bowl(parts, color)
+		"stew":
+			_bowl(parts, Color(0.5, 0.34, 0.19))      # one shared wooden bowl under every soup and stew (Dave 2026-10-22)
+			_fill(parts, color, bits, false)
+		"mound":
+			_bowl(parts, Color(0.5, 0.34, 0.19))
+			_fill(parts, color, bits, true)
 		"fish":
 			_sph(parts, 0.09, Vector3(1.9, 0.6, 0.55), Vector3(0.0, -0.03, 0.0), color)
 			_box(parts, Vector3(0.07, 0.012, 0.09), Vector3(0.2, -0.03, 0.0), dark)
@@ -134,8 +170,12 @@ static func mesh(shape: String, color: Color, size: float = 1.0) -> ArrayMesh:
 			_cone(parts, 0.045, 0.28, Vector3(0.58, 0.0, 0.0), color)
 			_cyl(parts, 0.024, 0.04, Vector3(0.43, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.8, 0.7, 0.4))   # the binding below the head
 		"axe":
+			# A stone axe: handle, a lashed eye block, and a broad rounded blade fanning out from it with a sharpened curved edge.
 			_handle(parts, 0.5)
-			_box(parts, Vector3(0.1, 0.12, 0.04), Vector3(0.22, 0.0, 0.0), color)
+			_box(parts, Vector3(0.06, 0.05, 0.06), Vector3(0.22, 0.0, 0.0), dark)
+			_sph(parts, 0.08, Vector3(0.95, 0.16, 1.0), Vector3(0.22, 0.0, 0.07), color)
+			_sph(parts, 0.05, Vector3(0.9, 0.1, 0.75), Vector3(0.22, 0.0, 0.135), light)       # the thinned, sharpened edge
+			_cyl(parts, 0.032, 0.035, Vector3(0.22, 0.0, 0.0), Vector3(PI * 0.5, 0.0, 0.0), Color(0.8, 0.7, 0.4))   # lashing
 		"pick":
 			_handle(parts, 0.6)
 			_box(parts, Vector3(0.04, 0.04, 0.3), Vector3(0.27, 0.0, 0.0), color)
@@ -154,12 +194,20 @@ static func mesh(shape: String, color: Color, size: float = 1.0) -> ArrayMesh:
 			_handle(parts, 0.5)
 			_sph(parts, 0.04, Vector3(1.0, 1.4, 1.0), Vector3(0.27, 0.0, 0.0), color)
 		"pot":
-			_sph(parts, 0.1, Vector3(1.0, 0.9, 1.0), Vector3(0.0, -0.01, 0.0), color)
-			_cyl(parts, 0.06, 0.03, Vector3(0.0, 0.085, 0.0), Vector3.ZERO, dark)
+			# A clay cooking pot: round belly, narrow neck, flared rim and two small lug handles.
+			_sph(parts, 0.11, Vector3(1.0, 0.85, 1.0), Vector3(0.0, -0.025, 0.0), color)
+			_cyl(parts, 0.06, 0.04, Vector3(0.0, 0.06, 0.0), Vector3.ZERO, color.darkened(0.1))
+			_torus(parts, 0.065, 0.014, Vector3(0.0, 0.082, 0.0), dark)
+			_box(parts, Vector3(0.05, 0.025, 0.02), Vector3(0.115, 0.0, 0.0), dark)
+			_box(parts, Vector3(0.05, 0.025, 0.02), Vector3(-0.115, 0.0, 0.0), dark)
+			_cyl(parts, 0.05, 0.012, Vector3(0.0, 0.075, 0.0), Vector3.ZERO, Color(0.12, 0.08, 0.06))   # dark mouth
 		"bucket":
-			_cyl(parts, 0.1, 0.18, Vector3.ZERO, Vector3.ZERO, color)
-			_cyl(parts, 0.103, 0.015, Vector3(0.0, 0.04, 0.0), Vector3.ZERO, dark)
-			_cyl(parts, 0.103, 0.015, Vector3(0.0, -0.04, 0.0), Vector3.ZERO, dark)
+			# A stave bucket: tapering sides, two dark iron hoops, a rope bail across the top.
+			_frustum(parts, 0.085, 0.11, 0.2, Vector3.ZERO, color)
+			_torus(parts, 0.1, 0.007, Vector3(0.0, -0.05, 0.0), Color(0.18, 0.18, 0.2))
+			_torus(parts, 0.108, 0.007, Vector3(0.0, 0.06, 0.0), Color(0.18, 0.18, 0.2))
+			_cyl(parts, 0.1, 0.01, Vector3(0.0, 0.085, 0.0), Vector3.ZERO, Color(0.07, 0.05, 0.04))     # dark inside
+			_torus_v(parts, 0.1, 0.007, Vector3(0.0, 0.1, 0.0), Color(0.75, 0.62, 0.38))                  # the bail
 		"skin":
 			_sph(parts, 0.09, Vector3(1.0, 1.3, 0.7), Vector3.ZERO, color)
 			_cyl(parts, 0.02, 0.06, Vector3(0.0, 0.12, 0.0), Vector3.ZERO, dark)
@@ -203,6 +251,62 @@ static func _cone(parts: Array, radius: float, length: float, at: Vector3, color
 	cone.radial_segments = 6
 	cone.rings = 1
 	parts.append([cone, Transform3D(Basis.from_euler(Vector3(0.0, 0.0, -PI * 0.5)), at), color])
+
+
+# A box turned by `tilt` (Euler) in place.
+static func _box_rot(parts: Array, dims: Vector3, at: Vector3, tilt: Vector3, color: Color) -> void:
+	var box: BoxMesh = BoxMesh.new()
+	box.size = dims
+	parts.append([box, Transform3D(Basis.from_euler(tilt), at), color])
+
+
+# A frustum (wider at the top): a bucket or a bowl.
+static func _frustum(parts: Array, bottom: float, top: float, height: float, at: Vector3, color: Color) -> void:
+	var cyl: CylinderMesh = CylinderMesh.new()
+	cyl.top_radius = top
+	cyl.bottom_radius = bottom
+	cyl.height = height
+	cyl.radial_segments = 10
+	cyl.rings = 1
+	parts.append([cyl, Transform3D(Basis.IDENTITY, at), color])
+
+
+# A ring standing on its edge (a bucket bail).
+static func _torus_v(parts: Array, ring: float, tube: float, at: Vector3, color: Color) -> void:
+	var torus: TorusMesh = TorusMesh.new()
+	torus.inner_radius = ring - tube
+	torus.outer_radius = ring + tube
+	torus.rings = 10
+	torus.ring_segments = 4
+	parts.append([torus, Transform3D(Basis.from_euler(Vector3(PI * 0.5, 0.0, 0.0)), at), color])
+
+
+# The shared wooden bowl: a shallow flared bowl with a rim and a dark hollow.
+static func _bowl(parts: Array, wood: Color) -> void:
+	_frustum(parts, 0.055, 0.115, 0.07, Vector3(0.0, -0.035, 0.0), wood)
+	_torus(parts, 0.115, 0.011, Vector3(0.0, 0.0, 0.0), wood.lightened(0.12))
+	_cyl(parts, 0.105, 0.006, Vector3(0.0, -0.003, 0.0), Vector3.ZERO, wood.darkened(0.45))
+
+
+# What is in a bowl: a surface of `broth` and chunky bits (small cubes and balls of the given colours) scattered over it, or a heaped mound.
+static func _fill(parts: Array, broth: Color, bits: Array, mound: bool) -> void:
+	if mound:
+		_sph(parts, 0.1, Vector3(1.0, 0.55, 1.0), Vector3(0.0, 0.0, 0.0), broth)
+	else:
+		_cyl(parts, 0.103, 0.012, Vector3(0.0, -0.004, 0.0), Vector3.ZERO, broth)
+
+	var count: int = 10 if bits.size() > 0 else 0
+
+	for k in count:
+		var angle: float = float(k) * 2.39996
+		var radius: float = 0.085 * sqrt((float(k) + 0.5) / float(count))
+		var at: Vector3 = Vector3(cos(angle) * radius, (0.045 if mound else 0.012) * (1.0 - radius / 0.12) + 0.008, sin(angle) * radius)
+		var tint: Color = Color.html(str(bits[k % bits.size()]))
+
+		if k % 2 == 0:
+			_box_rot(parts, Vector3(0.03, 0.026, 0.03), at, Vector3(0.3 * float(k), 0.5 * float(k), 0.0), tint)
+		else:
+			_sph(parts, 0.017, Vector3.ONE, at, tint)
 
 
 static func _sph(parts: Array, radius: float, scale_v: Vector3, at: Vector3, color: Color) -> void:

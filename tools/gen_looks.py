@@ -58,6 +58,26 @@ TOOLS = {
     "window_section_kit": ("kit", "#8a6a3a", 1.2),
 }
 SPECIAL.update(TOOLS)
+# Dave 2026-10-22: look at what the real things look like. Soups and stews sit in the one shared wooden bowl with their food visible in it.
+CARROT, GREEN, POTATO, MUSHROOM, MEAT = "#f07f13", "#4f9a2c", "#f2e3b5", "#a98467", "#8c4a2f"
+SPECIAL.update({
+    "plant_fibre": ("fibre", "#c9bb7a", 1.0),
+    "roast_forage": ("stew", "#b5793a", 1.0, [CARROT, GREEN, POTATO, MUSHROOM, "#d8352a"]),
+    "hunters_stew": ("stew", "#6b3a1e", 1.0, [MEAT, MEAT, CARROT, POTATO]),
+    "forager_stew": ("stew", "#7a9a3a", 1.0, ["#2f7a2a", "#e8dcb0", MUSHROOM, "#2f7a2a"]),
+    "fish_stew": ("stew", "#e8c870", 1.0, ["#f4b5a0", "#f4b5a0", "#3f9a3a", POTATO]),
+    "hearty_pottage": ("stew", "#d9a640", 1.0, ["#7a5a2a", "#f0e0a0", "#7a5a2a"]),
+    "berry_compote": ("stew", "#9a1f3f", 1.0, ["#4a1030", "#c0204a", "#4a1030"]),
+    "acorn_mash": ("mound", "#8a6a3a", 1.0, ["#6a4a22", "#a98a55"]),
+    "nut_paste": ("mound", "#b08a55", 1.0, ["#6a4a22", "#d8b27a"]),
+    "poultice": ("mound", "#4f7a3a", 1.0, ["#2f6a2a", "#7a9a3a"]),
+    "energy_bar": ("bar", "#c9a15b", 1.0, ["#6b4423", "#4a1f4a", "#e9e2c8", "#c0392b", "#f4d03f"]),
+    "roast_meat": ("joint", "#8a4a22", 0.9),
+    "garlic_meat": ("joint", "#7a4a2a", 0.9),
+    "feast_roast": ("joint", "#7a3a1e", 1.5),
+    "backpack": ("backpack", "#8a6a4a", 1.4),
+    "wooden_bowl": ("bowl", "#2ecc40", 1.0),
+})
 SKIP = {"stone", "stick", "driftwood", "log"}
 
 out = {}
@@ -65,8 +85,10 @@ for item_id, entry in items.items():
     kind = entry.get("kind", "")
     if item_id in SKIP or item_id.startswith("log_") or kind == "structure":
         continue
+    bits = None
     if item_id in SPECIAL:
-        shape, color, size = SPECIAL[item_id]
+        shape, color, size, *rest = SPECIAL[item_id]
+        bits = rest[0] if rest else None
     elif item_id.startswith("lumber_") or item_id.startswith("beam_"):
         species = item_id.split("_", 1)[1]
         shape, color, size = ("planks" if item_id.startswith("lumber_") else "beams"), WOOD.get(species, "#a07a4a"), 1.0
@@ -76,6 +98,8 @@ for item_id, entry in items.items():
     else:
         continue
     out[item_id] = {"shape": shape, "color": color, "size": size}
+    if bits:
+        out[item_id]["bits"] = bits
 
 doc = {"_about": "Stage-one basic looks, written by tools/gen_looks.py (src/client/basic_look.gd draws them). Client only: editing needs no server restart. Remove an entry when an item gets a real model.", "items": out}
 with open(os.path.join(ROOT, "data/items/looks.json"), "w") as f:

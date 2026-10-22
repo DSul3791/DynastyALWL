@@ -2,9 +2,9 @@
  "_about": "Stage-one basic looks, written by tools/gen_looks.py (src/client/basic_look.gd draws them). Client only: editing needs no server restart. Remove an entry when an item gets a real model.",
  "items": {
   "plant_fibre": {
-   "shape": "bundle",
-   "color": "#b7ac6a",
-   "size": 0.8
+   "shape": "fibre",
+   "color": "#c9bb7a",
+   "size": 1.0
   },
   "cordage": {
    "shape": "coil",
@@ -52,9 +52,16 @@
    "size": 1.0
   },
   "roast_forage": {
-   "shape": "bowl",
-   "color": "#a4de02",
-   "size": 0.9
+   "shape": "stew",
+   "color": "#b5793a",
+   "size": 1.0,
+   "bits": [
+    "#f07f13",
+    "#4f9a2c",
+    "#f2e3b5",
+    "#a98467",
+    "#d8352a"
+   ]
   },
   "seed_bundle": {
    "shape": "sack",
@@ -62,9 +69,13 @@
    "size": 0.6
   },
   "poultice": {
-   "shape": "bowl",
-   "color": "#0e9488",
-   "size": 0.7
+   "shape": "mound",
+   "color": "#4f7a3a",
+   "size": 1.0,
+   "bits": [
+    "#2f6a2a",
+    "#7a9a3a"
+   ]
   },
   "bandage": {
    "shape": "coil",
@@ -207,14 +218,21 @@
    "size": 1.2
   },
   "backpack": {
-   "shape": "sack",
-   "color": "#7a5a3a",
-   "size": 1.5
+   "shape": "backpack",
+   "color": "#8a6a4a",
+   "size": 1.4
   },
   "energy_bar": {
-   "shape": "loaf",
-   "color": "#3d5afe",
-   "size": 0.6
+   "shape": "bar",
+   "color": "#c9a15b",
+   "size": 1.0,
+   "bits": [
+    "#6b4423",
+    "#4a1f4a",
+    "#e9e2c8",
+    "#c0392b",
+    "#f4d03f"
+   ]
   },
   "herbal_tea": {
    "shape": "bottle",
@@ -297,9 +315,9 @@
    "size": 1.0
   },
   "roast_meat": {
-   "shape": "meat",
-   "color": "#6a3c24",
-   "size": 1.0
+   "shape": "joint",
+   "color": "#8a4a22",
+   "size": 0.9
   },
   "sinew": {
    "shape": "bundle",
@@ -652,14 +670,23 @@
    "size": 1.0
   },
   "berry_compote": {
-   "shape": "bowl",
-   "color": "#e84393",
-   "size": 0.9
+   "shape": "stew",
+   "color": "#9a1f3f",
+   "size": 1.0,
+   "bits": [
+    "#4a1030",
+    "#c0204a",
+    "#4a1030"
+   ]
   },
   "nut_paste": {
-   "shape": "bowl",
-   "color": "#e67e22",
-   "size": 0.9
+   "shape": "mound",
+   "color": "#b08a55",
+   "size": 1.0,
+   "bits": [
+    "#6a4a22",
+    "#d8b27a"
+   ]
   },
   "roast_roots": {
    "shape": "bundle",
@@ -667,9 +694,13 @@
    "size": 0.7
   },
   "acorn_mash": {
-   "shape": "bowl",
-   "color": "#8e44ad",
-   "size": 0.9
+   "shape": "mound",
+   "color": "#8a6a3a",
+   "size": 1.0,
+   "bits": [
+    "#6a4a22",
+    "#a98a55"
+   ]
   },
   "baked_apples": {
    "shape": "fruit",
@@ -687,9 +718,9 @@
    "size": 1.0
   },
   "garlic_meat": {
-   "shape": "meat",
+   "shape": "joint",
    "color": "#7a4a2a",
-   "size": 1.0
+   "size": 0.9
   },
   "chestnut_cakes": {
    "shape": "loaf",
@@ -707,19 +738,37 @@
    "size": 1.0
   },
   "hunters_stew": {
-   "shape": "bowl",
-   "color": "#d62828",
-   "size": 1.0
+   "shape": "stew",
+   "color": "#6b3a1e",
+   "size": 1.0,
+   "bits": [
+    "#8c4a2f",
+    "#8c4a2f",
+    "#f07f13",
+    "#f2e3b5"
+   ]
   },
   "forager_stew": {
-   "shape": "bowl",
-   "color": "#2ecc71",
-   "size": 1.0
+   "shape": "stew",
+   "color": "#7a9a3a",
+   "size": 1.0,
+   "bits": [
+    "#2f7a2a",
+    "#e8dcb0",
+    "#a98467",
+    "#2f7a2a"
+   ]
   },
   "fish_stew": {
-   "shape": "bowl",
-   "color": "#2e86de",
-   "size": 1.0
+   "shape": "stew",
+   "color": "#e8c870",
+   "size": 1.0,
+   "bits": [
+    "#f4b5a0",
+    "#f4b5a0",
+    "#3f9a3a",
+    "#f2e3b5"
+   ]
   },
   "trail_bread": {
    "shape": "loaf",
@@ -727,13 +776,18 @@
    "size": 1.0
   },
   "hearty_pottage": {
-   "shape": "bowl",
-   "color": "#f4d03f",
-   "size": 1.0
+   "shape": "stew",
+   "color": "#d9a640",
+   "size": 1.0,
+   "bits": [
+    "#7a5a2a",
+    "#f0e0a0",
+    "#7a5a2a"
+   ]
   },
   "feast_roast": {
-   "shape": "meat",
-   "color": "#ff2e63",
+   "shape": "joint",
+   "color": "#7a3a1e",
    "size": 1.5
   },
   "wall_section_kit": {
