@@ -396,3 +396,7 @@ Answered: 2026-10-22 22:53 UTC
 Answer: No: Remember that we have some walls that are thin walls and some walls that are thick walls and the thick walls all go on large foundations and the thin walls go on small foundations so we should have a 1x1 small and a 2 x 2 small, and a one by one large and a 2 x 2 large. The other thing is foundations are collectible. You can stack them on top of each other so you can level out a floor or you can connect them side-by-side into different configurations for your building. You can use your scroll wheel to move them up and down on the ground when you place the first one, but you can only do that while it’s on the ground and they will have a very wide snapping range so they will connect together very well. One of the biggest problems I see in most games is that snapping pieces together can be difficult and it’s hard to find the snap point so we need to be aware of that and plan for it.
 Answered: 2026-10-22 22:53 UTC
 
+## chk-plank-v2 | Check the redrawn plank wall (picture): smooth rounded planks outside, the small inset shows the flat rough face inside. Does the plank wall look right now?
+Answer: No: Very close almost perfect everyone was perfect except for the log wall because you’re notched ends need to be opposite on each side so they can fit into each other so rework the log wall and send it back for approval
+Answered: 2026-10-22 22:55 UTC
+
