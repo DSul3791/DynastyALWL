@@ -36,3 +36,7 @@ Answered: 2026-10-22 00:06 UTC
 Answer: Keep just Hob and Edda for now
 Answered: 2026-10-22 00:06 UTC
 
+## cast-names | Starter town people: what are the new people called?
+Answer: I will name them myself later
+Answered: 2026-10-22 00:07 UTC
+
