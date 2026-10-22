@@ -296,3 +296,7 @@ Answered: 2026-10-22 20:14 UTC
 Answer: No: I just submitted the walls and we had an entire discussion and now you need to rework all of these to match the walls
 Answered: 2026-10-22 20:15 UTC
 
+## chk-materials-floors | Check the floors and roofs (labelled picture): floors, wood roofs and thatch roofs. Does each look like the real material?
+Answer: No: I just submitted the walls and we had an entire discussion and now you need to rework all of these to match the walls
+Answered: 2026-10-22 20:15 UTC
+
