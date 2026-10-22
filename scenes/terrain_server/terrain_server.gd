@@ -52,6 +52,8 @@ const ItemsScript := preload("res://src/stream/server_items.gd")
 
 const MAX_BATCH_BYTES := 192 * 1024
 const MAX_QUEUE_PER_PEER := 20000
+const KEY_BURST := 8000                # block keys one peer may ask for at once; it refills KEY_REFILL_PER_S a second (one peer flooding must not fill the queue)
+const KEY_REFILL_PER_S := 4000.0
 const WeatherScript := preload("res://src/shared/weather.gd")
 const IceScript := preload("res://src/shared/ice.gd")
 const WEATHER_SWELL := 1.0              # a big storm makes every spring run this much stronger (x2 in all: the x10 start flow becomes x20; Dave 2026-10-20)
@@ -102,6 +104,7 @@ var _queue: Array = []                 # urgent [peer, key Vector4i], oldest fir
 var _prefetch: Array = []              # prefetch [peer, key], oldest first
 var _queued: Dictionary = {}           # [peer, key] -> "u" urgent, "p" prefetch, "r" running
 var _flora_queue: Array = []           # [peer, chunk Vector2i, full (false: trees only)], oldest first
+var _key_budget: Dictionary = {}       # peer -> [keys left, msec of the last refill] (queue mutex)
 var _water_queue: Array = []           # [peer, chunk Vector2i] water to pack on a worker thread (never on the main thread), oldest first
 var _water_done: Array = []            # [peer, chunk, bytes] packed, waiting to be sent by the main thread
 var _flora_queued: Dictionary = {}     # [peer, chunk, full] -> true
@@ -647,6 +650,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	_prefetch = _prefetch.filter(func(item): return item[0] != peer_id)
 	_flora_queue = _flora_queue.filter(func(item): return item[0] != peer_id)
 	_water_queue = _water_queue.filter(func(item): return item[0] != peer_id)
+	_key_budget.erase(peer_id)
 	_queue_mutex.unlock()
 
 
@@ -654,10 +658,17 @@ func _on_peer_disconnected(peer_id: int) -> void:
 # as urgent moves up.
 func _on_blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int) -> void:
 	var added: int = 0
+	var now: int = Time.get_ticks_msec()
 	_queue_mutex.lock()
-
+	var budget: Array = _key_budget.get(peer_id, [float(KEY_BURST), now])
+	budget[0] = minf(float(KEY_BURST), float(budget[0]) + float(now - int(budget[1])) * 0.001 * KEY_REFILL_PER_S)
+	budget[1] = now
 	@warning_ignore("integer_division")
-	for n in range(keys.size() / 4):
+	var wanted: int = mini(keys.size() / 4, int(budget[0]))
+	budget[0] = float(budget[0]) - float(wanted)
+	_key_budget[peer_id] = budget
+
+	for n in range(wanted):
 		if _queue.size() + _prefetch.size() >= MAX_QUEUE_PER_PEER:
 			break
 
