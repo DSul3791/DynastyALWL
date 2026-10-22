@@ -47,7 +47,7 @@ TOOLS = {
     "wooden_spade": ("spade", "#8a6a3a", 1.0), "stone_spade": ("spade", "#7d7a74", 1.0), "iron_spade": ("spade", "#6c6f75", 1.0),
     "steel_spade": ("spade", "#9aa3ad", 1.0), "iron_pickaxe": ("pick", "#6c6f75", 1.0), "steel_pickaxe": ("pick", "#9aa3ad", 1.0),
     "sewing_needle": ("needle", "#c8c8cc", 1.2), "fishing_rod": ("rod", "#9a9a9e", 1.0),
-    "wooden_bowl": ("bowl", "#9a6b38", 1.3), "clay_pot": ("pot", "#ff7f11", 1.0), "bucket": ("bucket", "#1f78ff", 1.0),
+    "wooden_bowl": ("bowl", "#9a6b38", 1.3), "clay_pot": ("pot", "#ff7f11", 1.0), "bucket": ("bucket", "#b88a50", 1.0),
     "waterskin": ("skin", "#ff4fa3", 1.0),
     "campfire_kit": ("kit", "#6a4a2a", 1.0), "lean_to_kit": ("kit", "#6a8a3a", 1.0), "chest_kit": ("kit", "#9a7a45", 1.0),
     "chopping_block_kit": ("kit", "#7a5a35", 1.0), "plank_chest_kit": ("kit", "#a07a45", 1.0), "workbench_kit": ("kit", "#8a6a3a", 1.0),
