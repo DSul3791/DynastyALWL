@@ -1,1 +1,1 @@
-READ-ONLY MIRROR of /mnt/project-files/tech/*.md (project files are the master). Overwritten daily by the Technical Director. Do not edit here; send changes to the Technical Director. Copied 2026-10-22.
+READ-ONLY MIRROR of text files from /mnt/project-files (project files are the master): tech/*.md, items/*.md, handoff/*, tyler/*.md and patches. No art, engine, tiles or logs. Overwritten daily by the Technical Director. Do not edit here. Last copy 2026-10-22.
