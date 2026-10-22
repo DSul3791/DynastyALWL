@@ -48,6 +48,7 @@ var _mutex: Mutex = Mutex.new()
 var _timing_on: bool = OS.has_environment("BLOCKTIME")
 var _timing: Dictionary = {}            # piece -> [calls, microseconds]; printed at exit when BLOCKTIME is set
 var _edit_mutex: Mutex = Mutex.new()
+var settle_enabled: bool = true         # data/network.json "settled_ground": 0 turns settled copies off (every load replays the whole log)
 var settle = GroundSettle.new()        # settled copies of busy blocks (ground_settle.gd); the edit log stays the truth
 var ops = GroundOps.new()               # the ground edit log (digs.dat, DIGS2): digs and fills replayed over every block
 
@@ -255,7 +256,7 @@ func load_block(buffer: VoxelBuffer, block: Vector3i, lod: int) -> void:
 	if lod == 0:
 		# A busy block has a settled copy with its first `upto` edits in it: replay only the rest (the same ground as replaying
 		# them all, ground_settle.gd).
-		var upto: int = settle.try_load(buffer, block)
+		var upto: int = settle.try_load(buffer, block) if settle_enabled else -1
 
 		if upto >= 0:
 			ops.apply_range(buffer, block, upto, 1 << 30)
@@ -480,7 +481,8 @@ func edit_sphere(kind: int, material: int, center: Vector3, radius: float) -> Ar
 
 	for block in ops.add(kind, material, center, radius):
 		changed_tiles[generator.tile_of(float(block.x * BLOCK_SIZE), float(block.z * BLOCK_SIZE))] = true
-		settle.consider(block)
+		if settle_enabled:
+			settle.consider(block)
 
 	for tile in changed_tiles:
 		var key: String = "%d,%d" % [tile.x, tile.y]

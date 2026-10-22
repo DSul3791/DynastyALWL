@@ -201,6 +201,7 @@ func _ready() -> void:
 	generator = GeneratorScript.new()
 	generator.setup(settings, rules, tables, world_dir + "/tiles")
 	store = StoreScript.new()
+	store.settle_enabled = int(NetSettings.value("settled_ground", 1)) != 0
 
 	if store_dir == "":
 		store_dir = "user://server_store/%s" % settings.world_name.validate_filename()
