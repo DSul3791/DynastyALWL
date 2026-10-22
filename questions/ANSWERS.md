@@ -112,3 +112,7 @@ Answered: 2026-10-22 03:20 UTC
 Answer: About 30 real minutes (shorter for wider spans, longer for rock)
 Answered: 2026-10-22 03:56 UTC
 
+## collapse-lethal | Can a collapse kill a player who ignores the warnings? (my pick: heavy damage, buried, can be dug out)
+Answer: Always lethal inside the collapse
+Answered: 2026-10-22 03:57 UTC
+
