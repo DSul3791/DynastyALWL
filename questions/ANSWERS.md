@@ -220,3 +220,7 @@ Answered: 2026-10-22 17:21 UTC
 Answer: B: Find rivers and lakes from the terrain itself. Meets all requirements, including natural channel shape. 1 to 2 weeks. Threaded bake about 8 to 10 minutes for 9 tiles. Makes the held spill-chute patch unnecessary (recommended)
 Answered: 2026-10-22 17:22 UTC
 
+## model-plan | Approve Kathleen's two-stage plan? Stage one: a simple first model AND a placeholder sound for every item, creature and plant. Stage two: upgrades. (art/MODEL_PLAN.md)
+Answer: Approve, two stages: basic models and placeholder sounds first, upgrades later (recommended)
+Answered: 2026-10-22 18:32 UTC
+
