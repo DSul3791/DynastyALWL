@@ -256,3 +256,7 @@ Answered: 2026-10-22 19:36 UTC
 Answer: No: Anything that’s a soup or a stew should be in a bowl. So make a basic wooden bowl and then use that as the foundation and then put whatever the food is inside of it the thing it looks like a roast we should call roast beast . An energy bar should look like a trail mix bar. You have to put an effort into seeing what the real things look like first and then trying to make something that resembles them slightly. Try again.
 Answered: 2026-10-22 19:38 UTC
 
+## chk-looks2v2 | Check the revised tools, containers and potions (labelled picture): does each have its own colour you can learn?
+Answer: No: The backpack, the bucket, the clay pot and the bowl don’t look anything like what they really look like. And the ax looks like it could be a hammer or a shovel. The Action should have a rounded edge and be sharpened.
+Answered: 2026-10-22 19:40 UTC
+
