@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 70
+const PROTOCOL_VERSION := 71
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -63,7 +63,6 @@ signal reputation_received(ids: PackedStringArray, names: PackedStringArray, poi
 signal item_received(item_id: String, count: int, source: String)
 signal notice_received(text: String)
 signal chest_received(id: int, bytes: PackedByteArray)
-signal spade_load_received(number: int, count: int)
 signal breath_received(deciseconds: int)
 signal energy_received(percent: int)
 signal sick_received(hours: int)
@@ -129,7 +128,6 @@ const ACT_FUEL := 11      # a = fire world id: burn one stick (or a log) in the 
 const ACT_COOK := 12      # a = fire world id: roast one raw forage item at the fire
 const ACT_HOE_PATH := 36     # at = the ground point under the crosshair: one hoe stroke treads a metre of path (clears grass, no height change)
 const ACT_HOE_SMOOTH := 37   # at = the ground point under the crosshair: one hoe stroke moves ground from the high spots to the low spots within 1.5 m
-const ACT_UNLOAD := 35       # tip the shovel's load back into the pack (Shift and right click with a spade); loading is a drag of fill material onto the spade (ACT_MOVE)
 const ACT_CHEST_CLOSE := 34  # the player closed the container window: the server stops pushing its contents
 const ACT_LITTER := 33     # at = a dead branch lying on the forest floor within reach: one stick into the pack (the client hides that branch)
 const ACT_STRIKE := 32     # a = slot of a weapon, at = aim direction: one jab at an animal in front (the server checks reach, pace and the weapon)
@@ -469,12 +467,6 @@ func energy(percent: int) -> void:
 @rpc("authority", "call_remote", "reliable")
 func breath(deciseconds: int) -> void:
 	breath_received.emit(deciseconds)
-
-
-# What the shovel is loaded with (protocol 70): item number and shovelfuls, 0 and 0 when empty. Sent after every change and at hello.
-@rpc("authority", "call_remote", "reliable")
-func spade_load(number: int, count: int) -> void:
-	spade_load_received.emit(number, count)
 
 
 # The contents of a chest the player opened (30 slots in the inventory byte format).
