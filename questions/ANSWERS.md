@@ -336,3 +336,7 @@ Answered: 2026-10-22 20:57 UTC
 Answer: Yes
 Answered: 2026-10-22 20:57 UTC
 
+## chk-masonry-tv6 | Check the masonry items (labelled picture): stone block, brick, mortar. Do they look like the real things?
+Answer: Yes
+Answered: 2026-10-22 20:58 UTC
+
