@@ -395,3 +395,5 @@ bk-weekly: keep the LAST backup of each ISO week (normally Sunday night); matche
 - 2026-10-22 18:05 Guru: Dave 17:10: no pull/run until a thread needs him to look; then a numbered 'Things to check' list on his page (Yes/No, Why not? box). Built into qa.html ([check] blocks, tested on a phone-width page). Exception to multiple-choice-only approved by Dave. TEST_QUEUE batching rule added.
 
 - 2026-10-22 18:10 Guru: Dave 17:14 question flow approved: thread asks Guru, Guru answers or posts to Dave's page with a recommendation, Guru reviews answers periodically and replies to the thread. Added to HOW_WE_WORK.md, BP-T33, all digests. Threads no longer write to QUESTIONS.md.
+
+- 2026-10-22 18:20 Guru: Dave 17:15: wrote tech/QA_SYSTEM.md (files, hosting stub, token, flows, gotchas, reuse). Linked from HOW_WE_WORK.md and PROJECT_DEBRIEF_KIT.md.

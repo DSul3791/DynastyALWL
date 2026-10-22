@@ -6,7 +6,7 @@
 | Best practices (rules, why, owner, Dave vs team) | tech/BEST_PRACTICES.md | starter rulebook; strip [LOCAL] game entries |
 | Process (rules 1 to 4, build numbers, pre-push checks) | tech/PROCESS.md | template |
 | Team structure, roles, ownership, priority, cross-talk, ideas flow | tech/HOW_WE_WORK.md, TEAM_PROPOSAL.md | team template |
-| Question page + answers loop | questions/ (README, qa.html) | reusable owner-question tool |
+| Question page + answers loop | questions/ (README, qa.html), tech/QA_SYSTEM.md, tools/watch_answers.sh, stub repo DynastyALWL-QA | reusable owner-question tool; QA_SYSTEM.md is the guide |
 | Check tools | tools/check_controls.py, items_check.py, check_warnings.sh, conflict-marker grep, bots.sh | adapt per engine |
 | Handoff / archive pattern | HANDOFF.md short + docs/archive | template |
 | Design doc discipline | DESIGN_IDEAS.md tags, DESIGN_REJECTED.md, DESIGN_PRINCIPLES.md, BIG_PICTURE.md, role map, changelog | template |

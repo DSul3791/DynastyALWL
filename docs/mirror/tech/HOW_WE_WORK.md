@@ -31,6 +31,8 @@ Workers run ON DEMAND from the queue (BP-T20). Ownership table: PROCESS.md "Who 
 5. Dave answers when he can. Tyler reviews ANSWERS.md at each 30-minute check and tells the asking thread the answer, always checking it against best practices, and records any new rule.
 6. Tyler lists which threads are waiting on which question in tech/QUESTION_OWED.md.
 
+How the QA page and its files work (reusable): tech/QA_SYSTEM.md.
+
 ## Approved infrastructure changes (Dave, "approve all"; plan in IMPLEMENTATION_PLAN.md)
 Daily docs mirror (T18); per-thread branches merged by the Technical Director (C107); CI on push (C85, gated); dated save backups (C93); Git LFS for tiles (C108, gated, forward-only). Gated = Dave's go plus a MikeW run first.
 
