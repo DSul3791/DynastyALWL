@@ -159,6 +159,7 @@ var _struct_gap_m: float = 2.5
 var _structures_cfg: Dictionary = {}   # the whole structures.json, for the shared placement rules
 var _fire_gap_m: float = FIRE_MIN_GAP_M
 var _fires_per_chunk: int = FIRES_PER_CHUNK
+var _chest_viewer: Dictionary = {}   # peer -> world id of the container they last opened (fresh contents are pushed while it changes)
 var _chests: Dictionary = {}        # structure uid -> Inventory (server-owned contents, chests.json)
 var _next_uid: int = 1
 var _vitals_cfg: Dictionary = {}
@@ -421,6 +422,7 @@ func start_position_for(peer: int) -> Array:
 func peer_left(peer: int) -> void:
 	_note_spot(peer, "deliberate" if _logout_peers.has(peer) else "disconnect")
 	_logout_peers.erase(peer)
+	_chest_viewer.erase(peer)
 	_spot_saved_msec.erase(peer)
 	_station_said.erase(peer)
 	_hole_blows.erase(peer)
@@ -1599,7 +1601,7 @@ func _fires(delta: float) -> void:
 		var fire: Dictionary = it["fire"]
 
 		if fire.has("uid"):
-			_tend_fire(it, fire, delta)
+			_tend_fire(id, it, fire, delta)
 
 		if int(fire["state"]) != 1:
 			continue
@@ -3113,7 +3115,7 @@ func _fire_takes(item_id: String) -> bool:
 
 
 # Once every couple of seconds: wood in the store feeds a fire that is nearly out (or loads a cold one), and raw food on a lit fire cooks, one item per box_cook_s.
-func _tend_fire(it: Dictionary, fire: Dictionary, delta: float) -> void:
+func _tend_fire(id: int, it: Dictionary, fire: Dictionary, delta: float) -> void:
 	if not fire.has("uid") or not _chests.has(int(fire["uid"])):
 		return
 
@@ -3140,6 +3142,7 @@ func _tend_fire(it: Dictionary, fire: Dictionary, delta: float) -> void:
 					it["left"] = FIRE_LAID_S
 
 				_dirty = true
+				_push_box(id, box)
 				break
 
 	if int(fire["state"]) != 1:
@@ -3160,7 +3163,18 @@ func _tend_fire(it: Dictionary, fire: Dictionary, delta: float) -> void:
 				box.add(int(raw["number"]), 1, int(raw.get("wear", 0)))
 
 			_dirty = true
+			_push_box(id, box)
 			return
+
+
+# Sends fresh contents to whoever has this container open and still stands beside it.
+func _push_box(id: int, box) -> void:
+	if not send_chest.is_valid():
+		return
+
+	for peer in _chest_viewer:
+		if int(_chest_viewer[peer]) == id and _peer_pos.has(peer) and _peer_pos[peer].distance_to(_items[id]["pos"]) <= CHEST_REACH_M:
+			send_chest.call(peer, id, box.to_bytes())
 
 
 func _chest_of(peer: int, id: int):
@@ -3198,6 +3212,9 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int) -> vo
 
 	if chest == null:
 		return
+
+	if kind == Net.ACT_CHEST_OPEN:
+		_chest_viewer[peer] = id
 
 	# Remains hold the dead character's purse: whoever may open them takes it with the first opening.
 	var rec_struct: Dictionary = _items.get(id, {}).get("struct", {})

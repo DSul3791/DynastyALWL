@@ -183,7 +183,13 @@ func _init() -> void:
 	items._items[fire_id]["fire"]["burn_left"] = 5.0
 	items._items[fire_id]["fire"]["tend"] = 0.0
 	items._fires(0.1)
-	check(float(items._items[fire_id]["fire"]["burn_left"]) > 5.0 and box.count_of(items.table.number_of("stick")) == 2, "wood in the store feeds a nearly-out fire")
+	var pushed: Array = []
+	items.send_chest = func(peer: int, id: int, _bytes: PackedByteArray) -> void: pushed.append([peer, id])
+	items._items[fire_id]["fire"]["burn_left"] = 5.0
+	items._items[fire_id]["fire"]["tend"] = 0.0
+	items._fires(0.1)
+	check(float(items._items[fire_id]["fire"]["burn_left"]) > 5.0 and box.count_of(items.table.number_of("stick")) == 1, "wood in the store feeds a nearly-out fire")
+	check(pushed.size() == 1 and pushed[0][0] == 2 and pushed[0][1] == fire_id, "the player with the store open is sent the new contents")
 	# A dead branch on the forest floor gives one stick, only within reach.
 	var sticks_had: int = items.inventory_of(2).count_of(items.table.number_of("stick"))
 	items.action(2, Net.ACT_LITTER, 0, 0, 0, Vector3(451.0, 10.0, 450.0))
