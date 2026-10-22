@@ -340,3 +340,7 @@ Answered: 2026-10-22 20:57 UTC
 Answer: Yes
 Answered: 2026-10-22 20:58 UTC
 
+## tier-fine | Existing lumber pieces become the FINE WOOD tier (nails added to their recipe)?
+Answer: No: You can turn logs into lumber at the sawmill and then at the firsttier woodworking table you can turn lumber into fine boards
+Answered: 2026-10-22 22:13 UTC
+
