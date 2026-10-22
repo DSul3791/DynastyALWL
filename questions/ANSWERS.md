@@ -192,3 +192,7 @@ Answered: 2026-10-22 15:44 UTC
 Answer: When you say "goodnight", and MikeW checks that Godot is closed first (recommended: it only runs when you are done)
 Answered: 2026-10-22 15:44 UTC
 
+## bake-plan | Approve the bake plan (BP-T31)? Every change is labelled RUNTIME (just play), RESTART (close game fully) or BAKE (waits for a bake window). Bakes are batched, at most once a week, 1-tile test first, then one full 9-tile bake.
+Answer: Approve as written (recommended)
+Answered: 2026-10-22 16:52 UTC
+
