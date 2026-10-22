@@ -17,8 +17,3 @@
 - Leather, then padded cloth, then iron mail, then steel plate [recommended]
 - Only leather and iron, kept simple
 - Add hide and bone armour for early hunters before leather
-
-## build-first-set | Which player-built structures should come first after the campfire kit, lean-to and chest?
-- Chopping block, drying rack, workbench and a small log hut [recommended]
-- Only a small log hut and a bed
-- A full wall, floor and roof kit so players design their own houses
