@@ -76,6 +76,7 @@ var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
+const BasicLookScript := preload("res://src/client/basic_look.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
 const KnowledgeScript := preload("res://src/client/inspection_knowledge.gd")
@@ -2965,6 +2966,8 @@ func _update_view(delta: float) -> void:
 	if _avatar == null:
 		_avatar = _make_avatar()
 		body.add_child(_avatar)
+		net.worn_received.connect(func(_numbers: PackedInt32Array) -> void: _dress_avatar())
+		_dress_avatar()
 
 	var want: float = _view_m if third_person else 0.0
 	var eye: Vector3 = camera.global_position
@@ -3032,6 +3035,39 @@ func _update_view(delta: float) -> void:
 
 
 # The plain ragdoll character (owner, 2026-10-21): body, head, arms, legs and hands, no features.
+# Stage-one clothing on the body (art/MODEL_PLAN.md): the worn body, legs and feet items colour the coat, trousers and shoes of the ragdoll
+# with their basic-look colour (data/items/looks.json); head, hands and back items have no look on the body yet.
+func _dress_avatar() -> void:
+	if _avatar == null or items == null:
+		return
+
+	var coat: Color = Color(0.4, 0.34, 0.28)
+	var trousers: Color = Color(0.25, 0.22, 0.2)
+	var shoes: Color = Color(0.14, 0.11, 0.09)
+
+	for number in items.worn:
+		if int(number) == 0:
+			continue
+
+		var id: String = items.table.id_of(int(number))
+		var slot: String = str(items.table.entry(id).get("slot", ""))
+		var def: Dictionary = BasicLookScript.entry(id)
+
+		if def.is_empty():
+			continue
+
+		var tint: Color = Color.html(str(def.get("color", "#808080")))
+
+		if slot == "body":
+			coat = tint
+		elif slot == "legs":
+			trousers = tint
+		elif slot == "feet":
+			shoes = tint
+
+	_avatar.dress(Color(0.78, 0.62, 0.5), coat, trousers, shoes)
+
+
 func _make_avatar() -> Node3D:
 	var avatar: Node3D = RagdollScript.new()
 	avatar.visible = false
