@@ -1,6 +1,3 @@
-## collapse-on | May we turn the tunnel collapse ON in your test world so you can test it? (This is the second approval; you will get a test card after.)
-[check]
-
 ## collapse-plan-1 | A dug space wider than the ground can hold starts a timer. The grace window is 225 s to 60 min, depending on width and depth. Digging more does not reset it. Is this right?
 [check]
 
