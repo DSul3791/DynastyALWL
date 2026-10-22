@@ -1,9 +1,3 @@
-## river-flood | Should heavy rain make rivers swell and flood low ground?
-- No, rivers stay steady (recommended: safe for builders; water stays predictable)
-- Yes, rivers rise a little in rain but never leave their banks
-- Yes, real floods in storms and spring melt (can wash out low buildings and crops)
-- Later, decide when towns are being built
-
 ## dig-rock | Can a spade dig through solid rock? (my pick: soil only, rock needs a pick)
 - Spade digs soil, gravel and sand only; rock needs a pick and is slower
 - Spade digs everything the same, no hard rock
