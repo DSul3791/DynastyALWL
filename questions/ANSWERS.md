@@ -228,3 +228,7 @@ Answered: 2026-10-22 18:32 UTC
 Answer: Yes, fine for now (recommended)
 Answered: 2026-10-22 18:32 UTC
 
+## model-creatures | Do animals count as "basic done" when they read as the right animal from 20 m (shape and colour)?
+Answer: Yes (recommended)
+Answered: 2026-10-22 18:33 UTC
+
