@@ -50,3 +50,6 @@ Place and door sounds per tier: thatch (basic), board (plank, fine), log (new: d
 - Each angle has a straight slope piece, a HIP corner piece (outside corner) and a VALLEY corner piece (inside corner of an L-shaped house): 6 roof pieces per tier look.
 - Pillars: round log post, squared timber, stone pillar, mason column (base and capital). A pillar snaps to the centre or any of the 4 corners of a foundation (4 x 4 m) or a floor/ceiling cell (2 x 2 m): 5 snap points.
 - Foundation sentence for the page: every building starts on a foundation. A foundation goes on the ground anywhere level enough to hide the whole bottom; on a slope it must be levelled first. Foundations join side by side to make the floor and the shape of the house, then you build up from them. Most pieces snap to most other pieces in a sensible way. (Sal/Steve own the rule.)
+
+## Door and window changes (Dave 23:01)
+Windows are just holes in the wall (no frame piece, no glass); shutters come later as separate hinged wood pieces. A double door sits in a full 2 x 2.4 m wall slot with 10 cm clear all round (leaves 1.8 m wide, 2.2 m high), like Ark. Picture tiers_doors.png redrawn.

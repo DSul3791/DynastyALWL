@@ -652,43 +652,61 @@ def door_steel(rng):
 
 
 def door_double(rng):
-    w, h = DOOR
-    img = canvas((w * 2, h), (30, 22, 14))
-    left = door_reinforced(rng)
-    right = door_reinforced(rng)
-    img.paste(left, (0, 0))
-    img.paste(right, (w, 0))
+    """A double door in a full 2 m x 2.4 m wall slot: each edge 10 cm short of the slot all round (a visible gap), so the leaves are 1.8 m wide and 2.2 m high."""
+    sw, sh = 2 * PPM, int(2.4 * PPM)
+    img = canvas((sw, sh), (96, 70, 44))                        # the wall around it
+    g = int(0.1 * PPM)
+    leaf_w, leaf_h = (sw - 2 * g) // 2, sh - 2 * g
     d = ImageDraw.Draw(img)
-    d.line([(w, 0), (w, h)], fill=(10, 8, 6), width=3)
-    d.rectangle([w - 12, h // 2 - 12, w - 6, h // 2 + 12], fill=(60, 60, 66))
-    d.rectangle([w + 6, h // 2 - 12, w + 12, h // 2 + 12], fill=(60, 60, 66))
+    d.rectangle([g - 3, g - 3, sw - g + 3, sh - g + 3], fill=(12, 10, 8))                # the 10 cm gap: dark around the leaves
+
+    for k in range(2):
+        leaf = Image.new("RGB", (leaf_w, leaf_h), (30, 22, 14))
+        dl = ImageDraw.Draw(leaf)
+        door_planks(dl, leaf_w, leaf_h, rng, (170, 128, 80), battens=False)
+
+        for y in (28, leaf_h - 46):
+            dl.rectangle([0, y, leaf_w, y + 14], fill=(62, 62, 66))
+
+            for x in range(8, leaf_w, 20):
+                dl.ellipse([x - 2, y + 5, x + 2, y + 9], fill=(130, 130, 136))
+
+        img.paste(leaf, (g + k * leaf_w, g))
+
+    d = ImageDraw.Draw(img)
+    d.line([(sw // 2, g), (sw // 2, sh - g)], fill=(10, 8, 6), width=3)                 # the 3 mm seam between the leaves is drawn heavier so it shows
+    d.ellipse([sw // 2 - 22, sh // 2 - 6, sw // 2 - 10, sh // 2 + 6], fill=(50, 50, 54), outline=(120, 120, 126))
+    d.ellipse([sw // 2 + 10, sh // 2 - 6, sw // 2 + 22, sh // 2 + 6], fill=(50, 50, 54), outline=(120, 120, 126))
     return img
 
 
 def window_single(rng):
+    """A window is just a hole in the wall (Dave): the wall around it, sky and a tree beyond. No frame. Shutters come later as separate hinged pieces."""
     w, h = DOOR
-    img = canvas((w, h), (110, 80, 50))
+    img = canvas((w, h), (96, 70, 44))
     d = ImageDraw.Draw(img)
-    d.rectangle([14, 50, w - 14, 50 + 110], fill=(34, 44, 56))
-    d.rectangle([14, 50, w - 14, 50 + 110], outline=(150, 112, 70), width=8)
-    d.line([(w // 2, 56), (w // 2, 152)], fill=(150, 112, 70), width=4)
-    d.line([(20, 105), (w - 20, 105)], fill=(150, 112, 70), width=4)
-    d.rectangle([0, 160, w, 168], fill=(150, 112, 70))
+
+    for x in range(0, w, 22):
+        d.line([(x, 0), (x, h)], fill=(70, 50, 30), width=1)
+
+    d.rectangle([20, 60, w - 20, 160], fill=(150, 190, 220))
+    d.ellipse([40, 100, 100, 160], fill=(70, 120, 60))
+    d.rectangle([20, 60, w - 20, 160], outline=(20, 14, 8), width=3)
     return img
 
 
 def window_double(rng):
+    """A wide window: a bigger hole, 1.6 m (still just a hole)."""
     w, h = DOOR
-    img = canvas((w * 2, h), (110, 80, 50))
+    img = canvas((w * 2, h), (96, 70, 44))
     d = ImageDraw.Draw(img)
 
-    for k in range(2):
-        x0 = k * w + 10
-        d.rectangle([x0, 50, x0 + w - 20, 160], fill=(34, 44, 56), outline=(150, 112, 70), width=8)
-        d.line([(x0 + (w - 20) // 2, 56), (x0 + (w - 20) // 2, 152)], fill=(150, 112, 70), width=4)
-        d.line([(x0 + 6, 105), (x0 + w - 26, 105)], fill=(150, 112, 70), width=4)
+    for x in range(0, w * 2, 22):
+        d.line([(x, 0), (x, h)], fill=(70, 50, 30), width=1)
 
-    d.rectangle([0, 160, w * 2, 168], fill=(150, 112, 70))
+    d.rectangle([30, 60, w * 2 - 30, 160], fill=(150, 190, 220))
+    d.ellipse([80, 100, 160, 160], fill=(70, 120, 60))
+    d.rectangle([30, 60, w * 2 - 30, 160], outline=(20, 14, 8), width=3)
     return img
 
 
@@ -696,20 +714,20 @@ def doors_sheet(out):
     gap = 24
     items = [("1 Basic door", door_basic, "hurdle, thatch, twine"), ("2 Plank door", door_plank, "planks, battens"), ("3 Reinforced", door_reinforced, "iron bands, rivets"),
              ("4 Wrought iron", door_wrought, "iron frame, bars"), ("5 Steel and iron", door_steel, "steel panels, brass"),
-             ("Double door", door_double, "two leaves, 2 m wide"), ("Window", window_single, "single, with sill"), ("Double window", window_double, "two lights, 2 m")]
-    sizes = [DOOR, DOOR, DOOR, DOOR, DOOR, (2 * DOOR[0], DOOR[1]), DOOR, (2 * DOOR[0], DOOR[1])]
+             ("Double door", door_double, "slot 2 x 2.4 m, 10 cm gap all round"), ("Window", window_single, "just a hole, no frame"), ("Wide window", window_double, "a wider hole, 2 m slot")]
+    sizes = [DOOR, DOOR, DOOR, DOOR, DOOR, (2 * DOOR[0], int(2.4 * PPM)), DOOR, (2 * DOOR[0], DOOR[1])]
     w = sum(s[0] for s in sizes) + gap * (len(items) + 1)
-    h = 72 + DOOR[1] + 40 + gap
+    h = 72 + int(2.4 * PPM) + 40 + gap
     img = canvas((w, h), (34, 34, 38))
     d = ImageDraw.Draw(img)
-    d.text((gap, 10), "DOORS AND WINDOWS: 1 m wide and 2 m high; double ones 2 m wide (all fit a 2 m wall slot)", fill=(240, 240, 240), font=font(22))
+    d.text((gap, 10), "DOORS AND WINDOWS: door 1 m x 2 m; double door fills a 2 x 2.4 m slot less a 10 cm gap all round; windows are holes", fill=(240, 240, 240), font=font(22))
     x = gap
 
     for (name, make, note), size in zip(items, sizes):
         img.paste(make(rng_for(len(name))), (x, 72))
         d.rectangle([x - 1, 71, x + size[0], 72 + size[1]], outline=(15, 15, 15))
         d.text((x, 48), name, fill=(250, 220, 140), font=font(15))
-        d.text((x, 72 + DOOR[1] + 6), note, fill=(200, 200, 200), font=font(12))
+        d.text((x, 72 + size[1] + 6), note, fill=(200, 200, 200), font=font(12))
         x += size[0] + gap
 
     img.save(out)
