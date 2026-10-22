@@ -356,3 +356,7 @@ Answered: 2026-10-22 22:14 UTC
 Answer: No: One iron and it weighs 1 kg and makes 100 nails
 Answered: 2026-10-22 22:16 UTC
 
+## tier-mason-heavy | Mason walls are so heavy (about 200 kg) that you build them where you stand?
+Answer: No: We want a design system where you can put down blueprints for the items you want and you can keep placing the blueprint so you could build the whole building out of blueprints and then you can come along and put the items into those blueprints however, if the item they are connected to and depend on like the foundation is not complete completed, you can’t put the last item into whatever it is your building so you have to finish the foundations first, and then the walls, and then the ceilings
+Answered: 2026-10-22 22:17 UTC
+
