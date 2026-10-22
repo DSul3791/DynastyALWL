@@ -715,6 +715,87 @@ def doors_sheet(out):
     img.save(out)
 
 
+def roof_pieces(out):
+    """Roof slope pieces at 45 and 65 degrees with their hip and valley corner pieces, and pillars with their snap points. 60 px per metre."""
+    k = 60
+    img = canvas((1500, 1230), (34, 34, 38))
+    d = ImageDraw.Draw(img)
+    d.text((24, 10), "ROOF PIECES AND PILLARS (60 px = 1 m)", fill=(240, 240, 240), font=font(22))
+    shingle = (190, 150, 100)
+
+    for n, (deg, rise) in enumerate(((45, 2.0), (65, 4.29))):          # side view: a 4 m wide house, 2.4 m walls, a gable roof
+        ox, oy = 40 + n * 330, 60
+        top = oy + 430
+        wall_top = top - int(2.4 * k)
+        d.rectangle([ox, wall_top, ox + 4 * k, top], fill=(120, 112, 100), outline=(220, 220, 220))
+        apex = (ox + 2 * k, wall_top - int(rise * k))
+        d.polygon([(ox - 10, wall_top), apex, (ox + 4 * k + 10, wall_top)], fill=shingle, outline=(240, 240, 240))
+
+        for yy in range(wall_top - 8, apex[1], -14):                   # shingle courses
+            f = (wall_top - yy) / max(wall_top - apex[1], 1)
+            d.line([(ox - 10 + f * (2 * k + 10), yy), (ox + 4 * k + 10 - f * (2 * k + 10), yy)], fill=(130, 100, 64), width=1)
+
+        run = 2.0
+        d.text((ox, top + 6), "%d degrees: 2 m run, rise %.1f m, slope %.2f m" % (deg, rise, (run * run + rise * rise) ** 0.5), fill=(250, 220, 140), font=font(12))
+        d.text((ox + 4, top + 24), "walls 2.4 m, house 4 m wide", fill=(170, 170, 170), font=font(11))
+
+    # plan views of the pieces (seen from above); arrow = downhill, dashed = ridge or hip line
+    y0 = 600
+    labels = [("slope piece (45 and 65)", "straight"), ("hip corner (outside)", "hip"), ("valley corner (inside)", "valley")]
+
+    for n, (label, kind) in enumerate(labels):
+        ox = 40 + n * 250
+        d.rectangle([ox, y0, ox + 2 * k, y0 + 2 * k], outline=(120, 120, 126))
+
+        if kind == "straight":
+            d.rectangle([ox, y0, ox + 2 * k, y0 + 2 * k], fill=shingle, outline=(240, 240, 240))
+            d.line([(ox + k, y0 + 12), (ox + k, y0 + 2 * k - 12)], fill=(60, 40, 20), width=3)
+            d.polygon([(ox + k, y0 + 2 * k - 6), (ox + k - 8, y0 + 2 * k - 22), (ox + k + 8, y0 + 2 * k - 22)], fill=(60, 40, 20))
+        elif kind == "hip":
+            d.polygon([(ox, y0 + 2 * k), (ox + 2 * k, y0 + 2 * k), (ox + 2 * k, y0)], fill=shingle, outline=(240, 240, 240))
+            d.line([(ox, y0 + 2 * k), (ox + 2 * k, y0)], fill=(60, 40, 20), width=3)
+        else:
+            d.polygon([(ox, y0), (ox, y0 + 2 * k), (ox + 2 * k, y0 + 2 * k)], fill=shingle, outline=(240, 240, 240))
+            d.line([(ox, y0), (ox + 2 * k, y0 + 2 * k)], fill=(60, 40, 20), width=3)
+
+        d.text((ox, y0 + 2 * k + 8), label, fill=(250, 220, 140), font=font(12))
+
+    d.text((40, y0 - 22), "Roof pieces seen from above (each 2 m x 2 m of footprint; one set per angle; tier look on the surface)", fill=(240, 240, 240), font=font(14))
+    d.text((40, y0 + 2 * k + 30), "Same three pieces at 45 and at 65 degrees. A hip corner turns an outside corner of the house; a valley corner fills an inside corner (an L-shaped house).", fill=(200, 200, 200), font=font(12))
+
+    # pillars
+    y1 = 930
+    d.text((40, y1 - 28), "Pillars: snap to the centre or any of the 4 corners of a foundation or a ceiling", fill=(240, 240, 240), font=font(14))
+    styles = [("round log post", (130, 94, 56), 0.3, "round"), ("squared timber", (190, 150, 100), 0.3, "box"), ("stone pillar", (130, 126, 118), 0.45, "box"), ("mason column", (184, 178, 164), 0.5, "col")]
+
+    for n, (label, col, wd, kind) in enumerate(styles):
+        ox = 40 + n * 130
+        bw = int(wd * k * 1.4)
+        d.rectangle([ox + 20 - bw // 2, y1, ox + 20 + bw // 2, y1 + int(2.4 * k)], fill=col, outline=(20, 20, 20))
+
+        if kind == "col":
+            d.rectangle([ox + 20 - bw // 2 - 6, y1 + int(2.4 * k) - 10, ox + 20 + bw // 2 + 6, y1 + int(2.4 * k)], fill=tint(col, 0.9))
+            d.rectangle([ox + 20 - bw // 2 - 6, y1, ox + 20 + bw // 2 + 6, y1 + 10], fill=tint(col, 1.05))
+
+        d.text((ox - 10, y1 + int(2.4 * k) + 8), label, fill=(250, 220, 140), font=font(11))
+
+    fx, fy = 560, y1 - 10
+    d.rectangle([fx, fy, fx + 4 * 40, fy + 4 * 40], fill=(120, 116, 108), outline=(230, 230, 230))
+
+    for gx, gy in ((0, 0), (4, 0), (0, 4), (4, 4), (2, 2)):
+        d.ellipse([fx + gx * 40 - 6, fy + gy * 40 - 6, fx + gx * 40 + 6, fy + gy * 40 + 6], fill=(250, 200, 60), outline=(20, 20, 20))
+
+    d.text((fx, fy + 170), "foundation 4 x 4 m: 5 pillar snaps", fill=(250, 220, 140), font=font(12))
+    cx = 800
+    d.rectangle([cx, fy, cx + 2 * 40, fy + 2 * 40], fill=(150, 120, 80), outline=(230, 230, 230))
+
+    for gx, gy in ((0, 0), (2, 0), (0, 2), (2, 2), (1, 1)):
+        d.ellipse([cx + gx * 40 - 6, fy + gy * 40 - 6, cx + gx * 40 + 6, fy + gy * 40 + 6], fill=(250, 200, 60), outline=(20, 20, 20))
+
+    d.text((cx, fy + 100), "ceiling or floor cell 2 x 2 m: 5 snaps", fill=(250, 220, 140), font=font(12))
+    img.save(out)
+
+
 # ---------------------------------------------------------------- sheets
 def font(size):
     for path in ("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf"):
@@ -787,6 +868,7 @@ def main():
     plan(os.path.join(out, "tiers_plan.png"))
     doors_sheet(os.path.join(out, "tiers_doors.png"))
     log_corner(os.path.join(out, "tiers_log_corner.png"))
+    roof_pieces(os.path.join(out, "tiers_roof_pieces.png"))
     parts = [Image.open(os.path.join(out, n)) for n in ("tiers_walls.png", "tiers_floors.png", "tiers_roofs.png")]
     allimg = canvas((max(p.width for p in parts), sum(p.height for p in parts)), (34, 34, 38))
     y = 0

@@ -44,3 +44,9 @@ Place and door sounds per tier: thatch (basic), board (plank, fine), log (new: d
 
 ## Doors and windows (Dave 22:20; picture art/tiers/tiers_doors.png)
 1 Basic: woven hurdle with thatch and twine ties. 2 Plank: planks with two battens, wooden latch. 3 Reinforced: planks with iron bands and rivets. 4 Wrought iron: iron frame with crossed bars over dark planks. 5 Steel and iron: steel panels in an iron frame, brass handle. Double door: two leaves, 2 m wide, fills the slot. Window and double window (two lights, 2 m). All fit a door or window frame in the 2 m wall slot; mouse wheel scrolls wall / window / door frame / double door frame / double window frame while placing (Steve and Sal).
+
+## Roof slopes, corners and pillars (Dave 23:08; picture art/tiers/tiers_roof_pieces.png)
+- Two roof angles, 45 and 65 degrees. A slope piece covers 2 m of run: at 45 degrees rise 2.0 m, slope length 2.83 m; at 65 degrees rise 4.29 m, slope length 4.73 m (a steep, tall roof).
+- Each angle has a straight slope piece, a HIP corner piece (outside corner) and a VALLEY corner piece (inside corner of an L-shaped house): 6 roof pieces per tier look.
+- Pillars: round log post, squared timber, stone pillar, mason column (base and capital). A pillar snaps to the centre or any of the 4 corners of a foundation (4 x 4 m) or a floor/ceiling cell (2 x 2 m): 5 snap points.
+- Foundation sentence for the page: every building starts on a foundation. A foundation goes on the ground anywhere level enough to hide the whole bottom; on a slope it must be levelled first. Foundations join side by side to make the floor and the shape of the house, then you build up from them. Most pieces snap to most other pieces in a sensible way. (Sal/Steve own the rule.)
