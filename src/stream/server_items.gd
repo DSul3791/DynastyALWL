@@ -1455,6 +1455,10 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0) -> void:
 
 	var spot: Vector3 = Vector3(at.x, ground, at.z)
 
+	if water_depth_at.is_valid() and PlacementRules.over_water(_structures_cfg, kit_id, spot, deg_to_rad(float(yaw_deg)), func(x, z): return float(water_depth_at.call(Vector3(x, spot.y, z)))):
+		_say(peer, "You cannot build in water.")
+		return
+
 	if ground_height.is_valid() and PlacementRules.steep(_structures_cfg, kit_id, spot, deg_to_rad(float(yaw_deg)), func(x, z): return float(ground_height.call(x, z))) == "steep":
 		_say(peer, "The ground is too steep there.")
 		return

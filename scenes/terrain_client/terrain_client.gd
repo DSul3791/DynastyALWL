@@ -1165,6 +1165,9 @@ func _welcome_body(info: Dictionary) -> void:
 	held.name = "Held"
 	add_child(held)
 	held.setup(items, net, camera, root, layer, _ground_below, sound, _tree_trunk_near, _cover_here)
+	held.water_depth_at = func(x: float, z: float) -> float:
+		var surface: float = flora.water_surface_at(x, z)
+		return 0.0 if is_nan(surface) else WaterVolume.depth(surface, _ground_below(Vector3(x, body.global_position.y, z)))
 	held.held_light_budget = func(): return quality >= 1
 	items.equip_requested = func(slot): held.equip_toggle(slot)
 	items.held_slot_now = func(): return held.held_slot if held.holding else -1

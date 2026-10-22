@@ -8,6 +8,7 @@ const PATH := "res://data/items/structures.json"
 const CHUNK_M := 256.0
 const FIRE_STATES := [1, 8, 9]
 const STRUCTURE_STATES := [5, 6, 7]
+const WATER_BLOCK_M := 0.15          # water at least this deep under a kit blocks it
 
 
 static func load_config() -> Dictionary:
@@ -89,6 +90,31 @@ static func blocked(cfg: Dictionary, kit_id: String, spot: Vector3, rows: Array)
 	return "crowded" if same >= cap else ""
 
 
+# True when the kit's spot is over standing water: `depth` is Callable(x, z) -> water depth in metres (0 or NAN where dry). The middle
+# and the corners of the footprint (turned by `yaw` in radians; a ring of 0.8 m for a campfire) are checked. Nothing is built in water.
+static func over_water(cfg: Dictionary, kit_id: String, spot: Vector3, yaw: float, depth: Callable) -> bool:
+	var def: Dictionary = structure_of_kit(cfg, kit_id)
+	var offsets: Array = [Vector2.ZERO]
+
+	if def.is_empty():
+		for corner in [Vector2(0.8, 0.0), Vector2(-0.8, 0.0), Vector2(0.0, 0.8), Vector2(0.0, -0.8)]:
+			offsets.append(corner)
+	else:
+		var hx: float = float(def.get("footprint_x", 1.0)) * 0.5
+		var hz: float = float(def.get("footprint_z", 1.0)) * 0.5
+
+		for corner in [Vector2(hx, hz), Vector2(-hx, hz), Vector2(hx, -hz), Vector2(-hx, -hz)]:
+			offsets.append(Vector2(corner.x * cos(yaw) + corner.y * sin(yaw), -corner.x * sin(yaw) + corner.y * cos(yaw)))
+
+	for offset in offsets:
+		var wet: float = float(depth.call(spot.x + offset.x, spot.z + offset.y))
+
+		if not is_nan(wet) and wet >= WATER_BLOCK_M:
+			return true
+
+	return false
+
+
 # Why a spot is red in words (the ghost's caption; the server says it too when it refuses).
 static func reason_text(state: String) -> String:
 	match state:
@@ -98,6 +124,8 @@ static func reason_text(state: String) -> String:
 			return "too many of these here already"
 		"steep":
 			return "the ground is too steep here"
+		"water":
+			return "you cannot build in water"
 
 	return ""
 

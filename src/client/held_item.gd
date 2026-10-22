@@ -52,6 +52,7 @@ var _arms                                 # first-person arms (Ragdoll.new(true)
 var _stop_t: float = 0.0                  # hit stop left, seconds
 var _shoulder_log: MeshInstance3D          # the log across the shoulder (set_shoulder)
 var _arm_up: float = 0.0                  # 0 arms hang at the body's side, 1 raised to the camera pose (swing, jab, use, aim)
+var water_depth_at: Callable = Callable()   # (x, z) -> metres of standing water there; set by the client scene, unset in tests
 var _blueprint_yaw: int = 0               # the turn (degrees) the ghost will be placed at
 var _first_person: bool = true
 var _avatar_rig                          # the full body (ragdoll_body.gd) drawn in third person, or null
@@ -549,11 +550,14 @@ func _update_blueprint() -> void:
 			return float(found["position"].y) if not found.is_empty() else NAN
 		blueprint_state = PlacementRules.steep(_placement, held_id(), _blueprint_at, _camera.global_rotation.y, probe)
 
+	if blueprint_state == "" and water_depth_at.is_valid() and PlacementRules.over_water(_placement, held_id(), _blueprint_at, deg_to_rad(float(_blueprint_yaw)), water_depth_at):
+		blueprint_state = "water"
+
 	if blueprint_state == "":
 		var covered: bool = footprint != Vector2.ZERO or (_cover_at.is_valid() and _cover_at.call(_blueprint_at))
 		blueprint_state = "covered" if covered else "open"
 
-	var blocked: bool = blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep"
+	var blocked: bool = blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep" or blueprint_state == "water"
 	_blueprint_ok = _blueprint_ok and not blocked
 	(_blueprint.mesh.material as StandardMaterial3D).albedo_color = Color(0.9, 0.2, 0.2, 0.55) if blocked else (Color(0.3, 0.9, 0.3, 0.55) if blueprint_state == "covered" else Color(0.95, 0.85, 0.2, 0.55))
 
