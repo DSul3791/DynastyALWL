@@ -4,7 +4,7 @@ Threads never ask Dave for tests in chat or posts. Add ONE line here instead; St
 Line format: `- build N | thread | what to look at (x y z if any) | what to check`
 
 ## Queue
-(empty)
+- 656 | Kathleen (shots by MikeW) | stage-one item looks, picture /mnt/project-files/looks_batch1.png (rendered with the game's BasicLook on a ground plane, not an in-game drop): spear, bark, leaves, bandage, firewood, cordage, seed bundle, roots, poultice, plant fibre, roast forage, bone | does each read as what it is; any wrong size or colour? Then in game drop a few and compare
 
 ## Sent to Dave (card id in questions/QUESTIONS.md)
 Card test-626 (2026-10-22 05:05), build 626:
