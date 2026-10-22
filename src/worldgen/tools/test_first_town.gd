@@ -143,9 +143,9 @@ func _init() -> void:
 	craft(2, 1)
 	craft(6, 1)
 	craft(15, 1)
-	check(count("stone_axe") == 1 and count("stone_knife") == 1 and count("chopping_block_kit") == 1, "an axe, a knife and a chopping block kit are made by hand")
+	check(count("stone_axe") == 1 and count("stone_knife") == 1 and count("chopping_block") == 1, "an axe, a knife and a chopping block kit are made by hand (%d %d %d, carried %.0f kg)" % [count("stone_axe"), count("stone_knife"), count("chopping_block"), items.carried_kg_of(1)])
 	items.action(1, Net.ACT_MOVE, slot_of("stone_axe"), 0, 0, Vector3.ZERO)   # the axe goes on the hotbar
-	items.action(1, Net.ACT_PLACE, slot_of("chopping_block_kit"), 0, 0, Vector3(float(chair["x"]) + 2.0, 10.0, float(chair["z"])))
+	items.action(1, Net.ACT_PLACE, slot_of("chopping_block"), 0, 0, Vector3(float(chair["x"]) + 2.0, 10.0, float(chair["z"])))
 	var block: int = 0
 
 	for id in items._items:
@@ -155,7 +155,8 @@ func _init() -> void:
 	check(block != 0, "the chopping block is placed in the camp")
 	mark("crafted")
 
-	# 4. Split logs into firewood at the block.
+	# 4. Split logs into firewood at the block (the block took the two logs from the camp; one more is dragged in from the woods).
+	items.action(1, Net.ACT_ADMIN_GIVE, table.number_of("log"), 0, 1, Vector3.ZERO)
 	items.report_position(1, items._items[block]["pos"] + Vector3(1.0, 0.0, 0.0))
 	items._last_use.clear()
 	items.action(1, Net.ACT_USE_STRUCT, block, 0, 0, Vector3.ZERO)

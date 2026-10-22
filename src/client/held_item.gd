@@ -833,14 +833,9 @@ func _make_kit_model() -> Node3D:
 		node.add_child(mark)
 		return node
 
-	if id == "chopping_block_kit":
-		var block: MeshInstance3D = MeshInstance3D.new()
-		var cyl: CylinderMesh = CylinderMesh.new()
-		cyl.top_radius = 0.1
-		cyl.bottom_radius = 0.11
-		cyl.height = 0.16
-		cyl.material = _kit_material(Color(0.4, 0.28, 0.17))
-		block.mesh = cyl
+	if id == "chopping_block":   # the same model as the placed block, carried small (Dave 2026-10-22)
+		var block: Node3D = _inv._model_for_state(7)
+		block.scale = Vector3.ONE * 0.4
 		node.add_child(block)
 		return node
 

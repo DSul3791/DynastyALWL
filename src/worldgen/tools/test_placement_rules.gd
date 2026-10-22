@@ -63,7 +63,7 @@ func _init() -> void:
 	items.setup(ItemTableScript.load_default(), dir)
 	items.peer_connected_hello(1, "placekey00001")
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
-	var kits: Array = ["campfire_kit", "chest_kit", "lean_to_kit", "chopping_block_kit"]
+	var kits: Array = ["campfire_kit", "chest_kit", "lean_to_kit", "chopping_block"]
 	var agree: int = 0
 	var total: int = 0
 	var spots: Array = []

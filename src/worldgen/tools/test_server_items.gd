@@ -954,8 +954,8 @@ func _init() -> void:
 	cb.send_notice = func(_p, text): notes.append(text)
 	cb.peer_connected_hello(1, "abcdef123456")
 	cb.report_position(1, Vector3(0.0, 10.0, 0.0))
-	cb.action(1, Net.ACT_ADMIN_GIVE, cb.table.number_of("chopping_block_kit"), 0, 1, Vector3.ZERO)
-	cb.action(1, Net.ACT_PLACE, cb.inventory_of(1).numbers.find(cb.table.number_of("chopping_block_kit")), 0, 0, Vector3(2.0, 10.0, 0.0))
+	cb.action(1, Net.ACT_ADMIN_GIVE, cb.table.number_of("chopping_block"), 0, 1, Vector3.ZERO)
+	cb.action(1, Net.ACT_PLACE, cb.inventory_of(1).numbers.find(cb.table.number_of("chopping_block")), 0, 0, Vector3(2.0, 10.0, 0.0))
 	var block_id: int = 0
 
 	for k in cb._items:
