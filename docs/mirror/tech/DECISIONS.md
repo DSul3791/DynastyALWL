@@ -380,3 +380,5 @@ bk-weekly: keep the LAST backup of each ISO week (normally Sunday night); matche
 - 2026-10-22 17:08 Guru: Sonny and Kathleen concerns folded into BP-T31 (after-bake water step, edge-match only on full bake, hashes on 3 tiles, screenshots for look check). All five thread replies received.
 
 - 2026-10-22 17:15 Guru: Dave 16:51 started a terrain rethink (natural catch basins, runoffs, brooks, rivers from the terrain, then waterfalls; climate by coordinates). Added BP-T32 (design review rules); BP-T31 now has a 30-minute cap for a 9-tile bake and the first bake waits for the review. Sonny owns the review; Guru turns options into a question.
+
+- 2026-10-22 17:25 Guru: BP-T32 check of TERRAIN_REVIEW.md passed (docs first, 3 options with 3+ sources, tests listed, small prototype, freeze kept; some sources only title-read, flagged by Sonny). Question terrain-opt added; recommend B. First bake waits.

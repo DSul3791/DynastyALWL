@@ -24,3 +24,10 @@ Climate by coordinates (desert, jungle, tundra, volcano) is part of the review. 
 - Approve as written (recommended)
 - Approve, but I want to see the review before any prototype
 - Change it, I will tell you how
+
+## terrain-opt | How should we fix the ground so rivers and lakes come from the land? (Sonny's review, tech/TERRAIN_REVIEW.md)
+Today only 32% of river cells sit where the ground really drains, a 2 m rise floods 6 times the wet area, and 1,912 natural basins are ignored because lakes are premade. A 9-tile bake is about 21 minutes in the cloud, not yet timed on your PC. The first bake waits for this choice. Nothing is built until you pick.
+- B: Rivers and lakes found from the terrain; every lake gets a natural outlet; rain depends on climate (desert, jungle, volcano). 1 to 2 weeks, bake about the same length, makes the held spill-chute patch unnecessary (recommended)
+- A: Quick fix. Snap the drawn rivers onto the land's own channels and deepen them. About 3 days. Lakes stay premade and climate stays cosmetic
+- C: Rebuild the whole foundation with uplift and erosion. 4+ weeks, everything redone, best long term
+- Not yet, I want to talk it through first
