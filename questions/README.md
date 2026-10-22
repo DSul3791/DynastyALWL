@@ -28,3 +28,6 @@ Answers appear in `ANSWERS.md` as `## id | question`, then `Answer: ...` and `An
 1. Make a token: GitHub > Settings > Developer settings > Fine-grained tokens > Generate. Repository: only DynastyALWL. Permission: Contents = Read and write. Copy it.
 2. Save `qa.html` to your computer (open it on GitHub, Raw, Save as) and double-click it.
 3. Paste the token in the box and press Remember. It stays in that browser only.
+
+## Notes under a question (added by Steve_002)
+Lines under the header that are not `- ` choices and not `[text]` are shown as short paragraphs under the question (used by the grouped test card: one line per thing to look at). The page is titled "Questions & Tasks for Dave"; there is no Refresh button (press F5).
