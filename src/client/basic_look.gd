@@ -128,10 +128,49 @@ static func mesh(shape: String, color: Color, size: float = 1.0) -> ArrayMesh:
 		"shaft":
 			_cyl(parts, 0.015, 0.9, Vector3.ZERO, Vector3(0.0, 0.0, PI * 0.5), Color(0.42, 0.3, 0.17))
 			_cyl(parts, 0.03, 0.12, Vector3(0.48, 0.0, 0.0), Vector3(0.0, 0.0, -PI * 0.5), color)
+		"axe":
+			_handle(parts, 0.5)
+			_box(parts, Vector3(0.1, 0.12, 0.04), Vector3(0.22, 0.0, 0.0), color)
+		"pick":
+			_handle(parts, 0.6)
+			_box(parts, Vector3(0.04, 0.04, 0.3), Vector3(0.27, 0.0, 0.0), color)
+		"spade":
+			_handle(parts, 0.7)
+			_box(parts, Vector3(0.12, 0.03, 0.16), Vector3(0.38, 0.0, 0.0), color)
+		"knife":
+			_handle(parts, 0.14)
+			_box(parts, Vector3(0.13, 0.015, 0.035), Vector3(0.12, 0.0, 0.0), color)
+		"needle":
+			_cyl(parts, 0.004, 0.12, Vector3.ZERO, Vector3(0.0, 0.0, PI * 0.5), color)
+		"rod":
+			_cyl(parts, 0.008, 0.9, Vector3.ZERO, Vector3(0.0, 0.0, PI * 0.5), Color(0.4, 0.3, 0.18))
+			_cyl(parts, 0.025, 0.04, Vector3(-0.3, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), color)
+		"torch":
+			_handle(parts, 0.5)
+			_sph(parts, 0.04, Vector3(1.0, 1.4, 1.0), Vector3(0.27, 0.0, 0.0), color)
+		"pot":
+			_sph(parts, 0.1, Vector3(1.0, 0.9, 1.0), Vector3(0.0, -0.01, 0.0), color)
+			_cyl(parts, 0.06, 0.03, Vector3(0.0, 0.085, 0.0), Vector3.ZERO, dark)
+		"bucket":
+			_cyl(parts, 0.1, 0.18, Vector3.ZERO, Vector3.ZERO, color)
+			_cyl(parts, 0.103, 0.015, Vector3(0.0, 0.04, 0.0), Vector3.ZERO, dark)
+			_cyl(parts, 0.103, 0.015, Vector3(0.0, -0.04, 0.0), Vector3.ZERO, dark)
+		"skin":
+			_sph(parts, 0.09, Vector3(1.0, 1.3, 0.7), Vector3.ZERO, color)
+			_cyl(parts, 0.02, 0.06, Vector3(0.0, 0.12, 0.0), Vector3.ZERO, dark)
+		"kit":
+			_box(parts, Vector3(0.3, 0.12, 0.2), Vector3(0.0, -0.01, 0.0), color)
+			_box(parts, Vector3(0.31, 0.02, 0.21), Vector3(0.0, 0.0, 0.0), dark)
+			_box(parts, Vector3(0.02, 0.13, 0.21), Vector3(0.0, 0.0, 0.0), light)
 		_:
 			_sph(parts, 0.08, Vector3.ONE, Vector3.ZERO, color)
 
 	return _combine(parts, size)
+
+
+# A wooden handle lying along x, centred on the middle of a tool of this length (the head is added at its +x end).
+static func _handle(parts: Array, length: float) -> void:
+	_cyl(parts, 0.016, length, Vector3(-length * 0.05, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.42, 0.3, 0.17))
 
 
 static func _box(parts: Array, dims: Vector3, at: Vector3, color: Color) -> void:

@@ -1,7 +1,7 @@
 """Writes data/items/looks.json (stage-one basic looks, src/client/basic_look.gd) from rules on item ids and kinds.
 
-Run: python3 tools/gen_looks.py. Items with their own model are left out on purpose (stick, stone, driftwood, log, species logs, tools,
-placeables, structures). Edit the rules or add a SPECIAL entry; do not hand-edit looks.json.
+Run: python3 tools/gen_looks.py. Items with their own model are left out on purpose (stick, stone, driftwood, log, species logs, structures).
+Tools, kits and containers get a loose-on-the-ground look here (their in-hand models are separate). Edit the rules or add a SPECIAL entry; do not hand-edit looks.json.
 """
 import json
 import os
@@ -42,20 +42,34 @@ SPECIAL = {
     "coin_copper": ("coin", "#b0653a", 1.0), "coin_bronze": ("coin", "#9c7a3a", 1.0), "coin_silver": ("coin", "#c4c8cc", 1.0), "coin_gold": ("coin", "#e0b83a", 1.0),
     "spear": ("shaft", "#8d8d90", 1.0), "wooden_spear": ("shaft", "#6a4a2a", 1.0),
 }
+TOOLS = {
+    "stone_axe": ("axe", "#7d7a74", 1.0), "stone_knife": ("knife", "#8a8680", 1.0), "torch": ("torch", "#e08a2a", 1.0),
+    "wooden_spade": ("spade", "#8a6a3a", 1.0), "stone_spade": ("spade", "#7d7a74", 1.0), "iron_spade": ("spade", "#6c6f75", 1.0),
+    "steel_spade": ("spade", "#9aa3ad", 1.0), "iron_pickaxe": ("pick", "#6c6f75", 1.0), "steel_pickaxe": ("pick", "#9aa3ad", 1.0),
+    "sewing_needle": ("needle", "#c8c8cc", 1.2), "fishing_rod": ("rod", "#9a9a9e", 1.0),
+    "wooden_bowl": ("bowl", "#a07a45", 1.0), "clay_pot": ("pot", "#a0603c", 1.0), "bucket": ("bucket", "#8a6a3a", 1.0),
+    "waterskin": ("skin", "#8a6a4a", 1.0),
+    "campfire_kit": ("kit", "#6a4a2a", 1.0), "lean_to_kit": ("kit", "#6a8a3a", 1.0), "chest_kit": ("kit", "#9a7a45", 1.0),
+    "chopping_block_kit": ("kit", "#7a5a35", 1.0), "plank_chest_kit": ("kit", "#a07a45", 1.0), "workbench_kit": ("kit", "#8a6a3a", 1.0),
+    "tool_rack_kit": ("kit", "#7a5a35", 1.0), "vice_kit": ("kit", "#7a5a35", 1.0), "log_workbench_kit": ("kit", "#6a4a2a", 1.0),
+    "stone_forge_kit": ("kit", "#7d7a74", 1.0), "blacksmithy_kit": ("kit", "#6c6f75", 1.0), "large_forge_kit": ("kit", "#5c5f65", 1.0),
+    "master_forge_kit": ("kit", "#44474d", 1.0), "wall_section_kit": ("kit", "#9a7a45", 1.2), "floor_section_kit": ("kit", "#a98350", 1.2),
+    "roof_section_kit": ("kit", "#6a4a2a", 1.2), "foundation_section_kit": ("kit", "#7d7a74", 1.2), "doorway_section_kit": ("kit", "#8a6a3a", 1.2),
+    "window_section_kit": ("kit", "#8a6a3a", 1.2),
+}
+SPECIAL.update(TOOLS)
 SKIP = {"stone", "stick", "driftwood", "log"}
 
 out = {}
 for item_id, entry in items.items():
     kind = entry.get("kind", "")
-    if item_id in SKIP or item_id.startswith("log_") or kind in ("structure", "placeable", "container"):
+    if item_id in SKIP or item_id.startswith("log_") or kind == "structure":
         continue
     if item_id in SPECIAL:
         shape, color, size = SPECIAL[item_id]
     elif item_id.startswith("lumber_") or item_id.startswith("beam_"):
         species = item_id.split("_", 1)[1]
         shape, color, size = ("planks" if item_id.startswith("lumber_") else "beams"), WOOD.get(species, "#a07a4a"), 1.0
-    elif kind == "tool":
-        continue
     elif kind in ("material", "food", "medicine", "clothing", "gear", "coin", "weapon"):
         shape, color, size = "chunk", "#8a8a8a", 1.0
         print("no rule for", item_id, kind)
