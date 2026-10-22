@@ -21,6 +21,7 @@ extends Node
 
 const EventLogScript := preload("res://src/shared/event_log.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
+const BuildInfo := preload("res://src/shared/build.gd")
 const RUN_NOTE := "user://server_run.json"      # which server holds the port (read by the launcher)
 const WATER_CHUNKS_MAX := 64              # flora chunks answered per water request
 const GATHER_MIN_MSEC := 100              # a peer's gather requests are handled at most this often
@@ -561,6 +562,8 @@ func _on_peer_connected(peer_id: int) -> void:
 	_events.event("peer %d connected" % peer_id)
 	net.welcome.rpc_id(peer_id, {
 		"protocol": NetScript.PROTOCOL_VERSION,
+		"server_build": BuildInfo.NUMBER,       # the build id: a client on another commit says so plainly (empty commit = unknown = match)
+		"server_commit": GitStamp.short_commit(),
 		"world_name": settings.world_name,
 		"master_seed": settings.master_seed,
 		"tile_size_m": settings.tile_size_m,

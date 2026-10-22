@@ -880,6 +880,15 @@ func _welcome_body(info: Dictionary) -> void:
 		_finish(1)
 		return
 
+	var server_commit: String = str(info.get("server_commit", ""))
+
+	if server_commit != "" and _commit != "" and server_commit != _commit and _connect_window != null:
+		# Dave (build 621): an old server answered and sent no ground. A different checkout is named at once. A joined server
+		# cannot be restarted from here, so the player closes the game and presses Play again.
+		_telemetry.event("JOIN: server is build %s commit %s, this game is build %d commit %s" % [str(info.get("server_build", "?")), server_commit, BUILD, _commit])
+		_connect_window.fail("The server is out of date", "The server on port %d runs build %s (commit %s); this game is build %d (commit %s).\nClose the game and press Play again so a new server starts. If you joined a friend's server, ask them to restart it." % [_port, str(info.get("server_build", "?")), server_commit, BUILD, _commit], func(): _finish(1))
+		return
+
 	world = info
 	game_clock.sync(float(info.get("game_seconds", game_clock.seconds)))
 	connected_msec = Time.get_ticks_msec()
@@ -996,6 +1005,7 @@ func _welcome_body(info: Dictionary) -> void:
 	if test_gear:
 		sound.gear.set_worn(["plate", "cloth", "iron"])
 	var t5: int = Probe.start()
+	debug_hud.add_line("server build", func() -> String: return "build %s, commit %s (this game: build %d, commit %s)" % [str(world.get("server_build", "?")), str(world.get("server_commit", "?")), BUILD, _commit])
 	debug_hud.add_line("ground check", func() -> String: return "%d samples, %d mismatches, %d zeroed blocks refused, last %s" % [check_samples, check_mismatches, stream.zeroed_blocks, check_last])
 	debug_hud.add_line("video memory", func() -> String:
 		return "video memory %.0f MB (textures %.0f, buffers %.0f), objects %d, nodes %d (orphans %d), script memory %.0f MB, primitives %d" % [
