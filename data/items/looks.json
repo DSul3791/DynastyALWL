@@ -18,7 +18,7 @@
   },
   "spear": {
    "shape": "shaft",
-   "color": "#8d8d90",
+   "color": "#b8bcc4",
    "size": 1.0
   },
   "campfire_kit": {
@@ -28,7 +28,7 @@
   },
   "wooden_spear": {
    "shape": "shaft",
-   "color": "#6a4a2a",
+   "color": "#d8b070",
    "size": 1.0
   },
   "stone_knife": {
@@ -63,12 +63,12 @@
   },
   "poultice": {
    "shape": "bowl",
-   "color": "#5f7a3a",
+   "color": "#0e9488",
    "size": 0.7
   },
   "bandage": {
    "shape": "coil",
-   "color": "#d8ccaa",
+   "color": "#f4f4f4",
    "size": 0.8
   },
   "tree_roots": {
@@ -153,22 +153,22 @@
   },
   "wooden_bowl": {
    "shape": "bowl",
-   "color": "#a07a45",
+   "color": "#2ecc40",
    "size": 1.0
   },
   "clay_pot": {
    "shape": "pot",
-   "color": "#a0603c",
+   "color": "#ff7f11",
    "size": 1.0
   },
   "bucket": {
    "shape": "bucket",
-   "color": "#8a6a3a",
+   "color": "#1f78ff",
    "size": 1.0
   },
   "waterskin": {
    "shape": "skin",
-   "color": "#8a6a4a",
+   "color": "#ff4fa3",
    "size": 1.0
   },
   "hide": {
@@ -218,12 +218,12 @@
   },
   "herbal_tea": {
    "shape": "bottle",
-   "color": "#6a8a3a",
+   "color": "#b6e61a",
    "size": 0.8
   },
   "magic_tonic": {
    "shape": "bottle",
-   "color": "#8a5ad0",
+   "color": "#9b30ff",
    "size": 0.8
   },
   "rotten_food": {
@@ -233,22 +233,22 @@
   },
   "medicine": {
    "shape": "bottle",
-   "color": "#7a4b2a",
+   "color": "#e01e1e",
    "size": 0.8
   },
   "stomach_tea": {
    "shape": "bottle",
-   "color": "#9aa05a",
+   "color": "#18d0d0",
    "size": 0.8
   },
   "chamomile_tea": {
    "shape": "bottle",
-   "color": "#d8c860",
+   "color": "#ffd800",
    "size": 0.8
   },
   "willow_bark_tea": {
    "shape": "bottle",
-   "color": "#a07a4a",
+   "color": "#8a4b1e",
    "size": 0.8
   },
   "grass_skirt": {
