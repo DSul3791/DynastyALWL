@@ -51,7 +51,12 @@ static func build(data, rate: float, generator, seed_painted: bool = true):
 
 	var placed: Array = []
 
-	for head in _find_heads(data, side):
+	# Highest head first: a big head pond has several heads and keeps the spring of the first one that
+	# reaches it, so the highest pond (not a lower basin beside it that the outlet carve made) gets it.
+	var heads: Array = _find_heads(data, side)
+	heads.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return data.heights[a.y * side + a.x] > data.heights[b.y * side + b.x])
+
+	for head in heads:
 		# Dry start (owner, 2026-10-18): water comes only from head ponds. A head with no
 		# pond (a river entering from the next tile, a short brook) got a spring on bare
 		# hillside that flooded the flatland.
@@ -194,6 +199,8 @@ static func _plateau_near(sim, head: Vector2i, side: int, data = null) -> Vector
 # poured into the channel below the pond and the pond never filled. The spring belongs in the
 # middle of the pond: from `spot`, the water cell furthest from dry ground (the shortest of
 # eight rays out to dry ground, the longest of these within POND_MIDDLE_SEARCH cells).
+# Bowls whose water levels differ by less than this count as one pond for the pick below.
+const POND_LEVEL_TIE_M := 2.0
 const POND_MIDDLE_SEARCH := 26
 const POND_MIDDLE_RAY_MAX := 30
 
@@ -201,6 +208,7 @@ const POND_MIDDLE_RAY_MAX := 30
 static func _pond_middle(data, spot: Vector2i, side: int) -> Vector2i:
 	var best: Vector2i = spot
 	var best_reach: int = _dry_reach(data, spot, side)
+	var pond_level: float = data.water_surface[spot.y * side + spot.x]
 
 	for dj in range(-POND_MIDDLE_SEARCH, POND_MIDDLE_SEARCH + 1):
 		for di in range(-POND_MIDDLE_SEARCH, POND_MIDDLE_SEARCH + 1):
@@ -208,6 +216,12 @@ static func _pond_middle(data, spot: Vector2i, side: int) -> Vector2i:
 			var j: int = spot.y + dj
 
 			if i < 12 or j < 12 or i >= side - 12 or j >= side - 12 or data.water_class[j * side + i] == 0:
+				continue
+
+			# Only this pond's own water: a wider, lower basin joined to it by the outlet carve is not its middle.
+			var level: float = data.water_surface[j * side + i]
+
+			if not is_nan(pond_level) and not is_nan(level) and absf(level - pond_level) > POND_LEVEL_TIE_M:
 				continue
 
 			var reach: int = _dry_reach(data, Vector2i(i, j), side, best_reach)
@@ -252,6 +266,7 @@ static func _dry_reach(data, at: Vector2i, side: int, to_beat: int = -1) -> int:
 static func _pond_near(data, head: Vector2i, side: int) -> Vector2i:
 	var best: Vector2i = Vector2i(-1, -1)
 	var best_dist: float = INF
+	var best_level: float = -INF
 
 	for dj in range(-PLATEAU_SEARCH, PLATEAU_SEARCH + 1):
 		for di in range(-PLATEAU_SEARCH, PLATEAU_SEARCH + 1):
@@ -290,8 +305,16 @@ static func _pond_near(data, head: Vector2i, side: int) -> Vector2i:
 					break
 
 			var dist: float = sqrt(float(di * di + dj * dj))
+			var surface: float = data.water_surface[j * side + i]
+			var level: float = surface if not is_nan(surface) else floor_here
 
-			if inside and dist < best_dist:
+			# The head pond is the highest bowl near the head: v25's wide outlet carve left a lower basin
+			# beside it that a nearest-first pick chose (the real pond stayed dry, the basin filled and spilled).
+			if not inside:
+				continue
+
+			if level > best_level + POND_LEVEL_TIE_M or (level > best_level - POND_LEVEL_TIE_M and dist < best_dist):
+				best_level = maxf(best_level, level)
 				best_dist = dist
 				best = Vector2i(i, j)
 
