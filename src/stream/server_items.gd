@@ -1465,18 +1465,23 @@ func _hoe_smooth(peer: int, inv, at: Vector3) -> void:
 	if moved <= 0.0:
 		return
 
-	_wear_tool(peer, inv, "hoe", "dig")
+	var worked: int = 0
 
 	for move in moves:
 		var offset: Vector2 = move[0]
 		var spot: Vector3 = Vector3(at.x + offset.x, float(heights[spots.find(offset)]), at.z + offset.y)
 		var depth: float = float(move[1]) * moved / (cut_sum if int(move[2]) > 0 else fill_sum)
 
-		if int(move[2]) > 0:
-			dig_ground.call(Vector3(spot.x, spot.y - depth + SMOOTH_SPHERE_M, spot.z), SMOOTH_SPHERE_M)
-		else:
-			fill_ground.call(Vector3(spot.x, spot.y + depth - SMOOTH_SPHERE_M, spot.z), SMOOTH_SPHERE_M, int(FILL_SOIL["soil"]))
+		var done: Variant = dig_ground.call(Vector3(spot.x, spot.y - depth + SMOOTH_SPHERE_M, spot.z), SMOOTH_SPHERE_M) if int(move[2]) > 0 else fill_ground.call(Vector3(spot.x, spot.y + depth - SMOOTH_SPHERE_M, spot.z), SMOOTH_SPHERE_M, int(FILL_SOIL["soil"]))
 
+		if typeof(done) != TYPE_BOOL or bool(done):
+			worked += 1
+
+	if worked == 0:
+		_say(peer, "This ground is worked enough.")   # every block refused the edit (full): nothing moved, the hoe does not wear
+		return
+
+	_wear_tool(peer, inv, "hoe", "dig")
 	_remove_paths_near(at, SMOOTH_REACH_M + 1.0)
 	_dirty = true
 
