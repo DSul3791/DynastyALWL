@@ -6,6 +6,7 @@ extends SceneTree
 
 const GroundOps := preload("res://src/stream/ground_ops.gd")
 const Watch := preload("res://src/stream/tunnel_watch.gd")
+const ItemsScript := preload("res://src/stream/server_items.gd")
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 
 var failures: int = 0
@@ -74,6 +75,26 @@ func _init() -> void:
 	braced.process_dirty(0)
 	var late: Dictionary = braced.tick(grace * 3, peers)
 	_check(late["collapse"].is_empty() and late["quake"].is_empty(), "covered by supports: no shaking and no collapse")
+
+	# Wired as terrain_server.gd does it: the items' support list holds the tunnel up, and a changed support restarts the windows.
+	var items = ItemsScript.new()
+	var wired: Watch = _watch()
+	wired.support_strength = items.support_strength_at
+	items.support_changed = func(at: Vector3) -> void: wired.support_changed(at, 0)
+	wired.mark_dirty([Vector3i.ZERO])
+	wired.process_dirty(0)
+	_check(items.support_strength_at(Vector3(8.0, 8.0, 8.0)) == 0.0, "no supports: strength 0")
+	items._supports = [[Vector3(8.0, 8.0, 8.0), 200.0, 1.0, 86400.0, 0.25, 0.0], [Vector3(4.0, 8.0, 8.0), 200.0, 1.0, 86400.0, 0.25, 0.0]]
+	_check(items.support_strength_at(Vector3(8.0, 8.0, 8.0)) == 1.0, "a new support at the spot gives full strength")
+	_check(wired.tick(grace * 3, peers)["collapse"].is_empty(), "wired items: supported tunnel does not fall")
+	var again: Watch = _watch()
+	var again_items = ItemsScript.new()
+	again.support_strength = again_items.support_strength_at
+	again_items.support_changed = func(at: Vector3) -> void: again.support_changed(at, grace)
+	again.mark_dirty([Vector3i.ZERO])
+	again.process_dirty(0)
+	again_items.support_changed.call(Vector3(8.0, 8.0, 8.0))      # no supports yet, so every cell is still short
+	_check(int(again._cells.values()[0]["opened"]) == grace, "a changed support still too weak restarts the window through the items hook")
 
 	_radius = 0.9
 	var narrow: Watch = _watch()

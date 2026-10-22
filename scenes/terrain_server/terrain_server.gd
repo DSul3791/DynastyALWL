@@ -243,6 +243,8 @@ func _ready() -> void:
 	@warning_ignore("confusable_local_declaration")
 	items.send_world_items = func(peer, added, removed): net.world_items.rpc_id(peer, added, removed)
 	items.dig_ground = _dig_ground
+	tunnels.support_strength = items.support_strength_at      # bracing holds a tunnel up (called from the watch's own thread; the support list is mutex-guarded)
+	items.support_changed = func(at: Vector3) -> void: tunnels.support_changed(at, Time.get_ticks_msec())
 	items.dig_refusal = _dig_refusal
 	items.fill_ground = _fill_ground
 	items.ground_height = func(x, z): return generator.surface_height(x, z)
