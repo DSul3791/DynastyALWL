@@ -468,3 +468,7 @@ Answered: 2026-10-22 23:26 UTC
 Answer: Yes
 Answered: 2026-10-22 23:26 UTC
 
+## collapse-plan-8 | Should the collapse stay OFF until your second approval and a test card? (The warning shaking and messages are built but never fire while it is off.)
+Answer: No: Since we’re enabling it, we might as well use it and test it
+Answered: 2026-10-22 23:27 UTC
+
