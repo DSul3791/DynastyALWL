@@ -9,9 +9,3 @@ Containers, potions and foods now have bright distinct colours. Raw materials ar
 - Stay natural (recommended)
 - Distinct bright colours for all raw materials
 - Distinct colours only for ores
-
-## chk-foods | Check the 16 prepared foods (labelled picture): can you tell them apart by colour?
-[check]
-Image: questions/img/foods_b662.png
-Build: 662 (test-scene picture at true size; no need to pull anything yet)
-Look: tell me which foods are still too alike.
