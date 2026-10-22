@@ -70,8 +70,15 @@ def test_plan_cap_and_alerts():
     today = datetime.date(2026, 10, 22)
     old = [today - datetime.timedelta(days=60 + i) for i in range(10)]
     keep = [today - datetime.timedelta(days=i) for i in range(31)]
-    actions, alerts, _ = nb.plan_cull(entries_for(old + keep), today, (), max_moves=3)
-    check(actions == [] and any("cap 3" in a for a in alerts), "more than 3 would-be moves: nothing moved and an alert")
+    actions, alerts, _ = nb.plan_cull(entries_for(old[:9] + keep), today, (), max_moves=3)
+    check(actions == [] and any("block above 7" in a for a in alerts), "9 candidates: nothing moved and an alert")
+    actions, alerts, _ = nb.plan_cull(entries_for(old[:8] + keep), today, (), max_moves=3)
+    check(actions == [] and any("block above 7" in a for a in alerts), "8 candidates: still blocked")
+    actions, alerts, _ = nb.plan_cull(entries_for(old[:7] + keep), today, (), max_moves=3)
+    check(len(actions) == 3 and any("the rest tomorrow" in a for a in alerts), "7 candidates: the 3 oldest move, alert about the rest")
+    check([a[0] for a in actions] == [nm(d) for d in sorted(old[:7])[:3]], "the 3 OLDEST are the ones moved")
+    actions, alerts, _ = nb.plan_cull(entries_for(old[:9] + keep), today, (), max_moves=9)
+    check(len(actions) == 9, "--max-moves 9 override allows 9")
     actions, alerts, _ = nb.plan_cull(entries_for(old[:2] + keep), today, (), max_moves=3)
     check(len(actions) == 2 and not alerts, "2 moves are allowed")
     # mtime mismatch: 3 days apart is skipped with an alert and counts as kept
@@ -273,6 +280,71 @@ def test_preflight_failures(tmp):
     check(res.startswith("Preflight OK") and not [x for x in os.listdir(cfg3.dest) if x.endswith(".zip")], "--preflight writes nothing")
 
 
+def test_drain_after_missed_nights(tmp):
+    """5 missed nights then a good night: 5 candidates drain over 2 nights (3 then 2), no block."""
+    dest = os.path.join(tmp, "drain")
+    os.makedirs(dest)
+    today = datetime.date(2026, 10, 22)
+    for i in list(range(0, 31)) + [31, 32, 33, 34, 35]:
+        d = today - datetime.timedelta(days=i)
+        p = os.path.join(dest, nm(d))
+        open(p, "w").write("x")
+        ts = datetime.datetime(d.year, d.month, d.day, 12).timestamp()
+        os.utime(p, (ts, ts))
+    n1, a1 = nb.do_cull(dest, today, True, 3, quiet)
+    check(n1 == 3 and any("tomorrow" in a for a in a1), "night 1 moves 3 and alerts")
+    n2, a2 = nb.do_cull(dest, today + datetime.timedelta(days=1), True, 3, quiet)
+    check(n2 >= 2, "night 2 moves the remaining ones (%d)" % n2)
+    left_old = [x for x in os.listdir(dest) if nb.parse_name(x) and (today - nb.parse_name(x)[0]).days > 31]
+    check(left_old == [] or len(left_old) <= 1, "old zips drained: %s" % left_old)
+
+
+def test_force_rmtree(tmp):
+    d = os.path.join(tmp, "ro")
+    os.makedirs(os.path.join(d, ".git", "objects"))
+    f = os.path.join(d, ".git", "objects", "pack.idx")
+    open(f, "w").write("x")
+    os.chmod(f, 0o444)
+    nb.force_rmtree(d)
+    check(not os.path.exists(d), "read-only files removed by force_rmtree")
+    os.makedirs(d)
+    real = nb.shutil.rmtree
+    nb.shutil.rmtree = lambda *a, **k: None
+    try:
+        nb.force_rmtree(d)
+        check(False, "should fail when the folder stays")
+    except nb.BackupError as e:
+        check("could not remove" in e.reason, "stuck scratch folder fails with a clear message")
+    finally:
+        nb.shutil.rmtree = real
+        real(d, ignore_errors=True)
+
+
+def test_failure_files(tmp):
+    cfg = make_cfg(tmp, "fail")
+    cfg.no_restore_test = False
+    now = datetime.datetime(2026, 10, 22, 23, 30)
+    real = nb.restore_test
+    nb.restore_test = lambda c, z, log: (_ for _ in ()).throw(nb.BackupError("restore test", "boom"))
+    try:
+        nb.run(cfg, now=now, game_running_fn=lambda: False, free_fn=lambda p: 10 ** 12)
+        check(False, "restore failure should raise")
+    except nb.BackupError as e:
+        check(e.step == "restore test", "restore failure surfaces")
+    finally:
+        nb.restore_test = real
+    check(os.path.isfile(os.path.join(cfg.dest, "LAST_BACKUP_FAILED.txt")), "LAST_BACKUP_FAILED.txt written")
+    check("Backup FAILED: restore test, boom" in open(os.path.join(cfg.dest, "backup_log.txt")).read(), "FAILED line in backup_log.txt")
+    check(not os.path.exists(os.path.join(cfg.dest, "LAST_BACKUP_OK.txt")) and not os.path.exists(os.path.join(cfg.dest, "backup_status.json")),
+          "no OK files when the restore test fails")
+    cfg.no_restore_test = True
+    nb.run(cfg, now=now + datetime.timedelta(days=1), game_running_fn=lambda: False, free_fn=lambda p: 10 ** 12)
+    check(os.path.isfile(os.path.join(cfg.dest, "LAST_BACKUP_OK.txt")) and not os.path.exists(os.path.join(cfg.dest, "LAST_BACKUP_FAILED.txt")),
+          "a good run writes OK files and clears the FAILED file")
+    cfg2 = make_cfg(tmp, "fail2")
+    expect_fail(cfg2, now, "close Godot completely (editor and game)", game_running_fn=lambda: True, free_fn=lambda p: 10 ** 12)
+
+
 def main():
     tmp = tempfile.mkdtemp(prefix="nbtest_")
     assert not tmp.upper().startswith("E:"), "tests must never run on E:"
@@ -286,8 +358,11 @@ def main():
         test_year_simulation(tmp)
         test_dry_run_moves_nothing(tmp)
         test_trash_purge(tmp)
+        test_drain_after_missed_nights(tmp)
+        test_force_rmtree(tmp)
         test_end_to_end(tmp)
         test_preflight_failures(tmp)
+        test_failure_files(tmp)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     print("nightly backup: %d failures" % len(fails))

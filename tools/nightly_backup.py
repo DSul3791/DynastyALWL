@@ -10,7 +10,7 @@
 Prints one last line: "Backup done: ..." or "Backup FAILED: <step>, <reason>" (exit code 0 / 1).
 The zip holds the project folder (incl .git) under DynastyALWL/ and the save folder under server_store/.
 """
-import argparse, ctypes, datetime, fnmatch, hashlib, json, os, re, shutil, subprocess, sys, time, zipfile
+import argparse, ctypes, datetime, fnmatch, hashlib, json, os, re, shutil, stat, subprocess, sys, time, zipfile
 
 VERSION = "1"
 NAME_RE = re.compile(r"^DynastyALWL_ProjectBackup_(\d{4})-(\d{2})-(\d{2})_(\d{4})\.zip$")
@@ -24,7 +24,8 @@ EXCLUDE_DIRS = {".godot", "crash_reports", "__pycache__"}
 EXCLUDE_FILES = ("~libwatercore*", "*.tmp")
 REQUIRED = ("DynastyALWL/project.godot", "DynastyALWL/.git/HEAD", "DynastyALWL/worlds/base_world/tiles/tile_3_4.tile", "server_store/")
 KEEP_DAYS = 30          # every nightly of the last 30 days is kept, and never fewer than 30 zips
-MAX_MOVES = 3           # at most this many zips moved per run, more = stop and alert
+MAX_MOVES = 3           # at most this many zips moved per run; the rest wait for the next night
+BLOCK_ABOVE = 7         # more than this many candidates at once = move nothing and alert (a logic bug or a wrong clock)
 TRASH_DAYS = 7
 MTIME_SLACK_DAYS = 2
 FREE_MARGIN = 5 * 1024 ** 3
@@ -107,9 +108,12 @@ def plan_cull(entries, today, weekly_names=(), max_moves=MAX_MOVES):
         removed.add(z[2])
         remaining -= 1
         actions.append((z[2], kind, "%d-W%02d" % week))
-    if len(actions) > max_moves:
-        alerts.append("cull would move %d zips (cap %d): nothing moved, check the dates and clock" % (len(actions), max_moves))
+    if len(actions) > max(BLOCK_ABOVE, max_moves):
+        alerts.append("cull has %d candidates (block above %d): nothing moved, check the dates and clock" % (len(actions), max(BLOCK_ABOVE, max_moves)))
         actions = []
+    elif len(actions) > max_moves:
+        alerts.append("cull has %d candidates: moving the %d oldest now, the rest tomorrow" % (len(actions), max_moves))
+        actions = actions[:max_moves]
     return actions, alerts, ignored
 
 
@@ -193,7 +197,7 @@ def preflight(cfg, log, now, game_running_fn, free_fn):
         raise BackupError("preflight", "drive %s is not there (no fallback to another drive)" % drive)
     os.makedirs(cfg.dest, exist_ok=True)
     if game_running_fn():
-        raise BackupError("preflight", "the game or Godot is running, close it first")
+        raise BackupError("preflight", "the game or Godot is running: close Godot completely (editor and game) and run again")
     if os.path.exists(os.path.join(cfg.src, ".git", "index.lock")):
         raise BackupError("preflight", ".git/index.lock exists (git is busy)")
     last = newest_zip(cfg.dest)
@@ -298,10 +302,24 @@ def verify(partial, manifest, last):
     return None
 
 
+def force_rmtree(path):
+    """rmtree that also removes read-only files (git packs on Windows); fails loudly if the folder is still there."""
+    def fix(func, p, *_):
+        os.chmod(p, stat.S_IWRITE)
+        func(p)
+    if os.path.exists(path):
+        try:
+            shutil.rmtree(path, onexc=fix)
+        except TypeError:
+            shutil.rmtree(path, onerror=fix)
+    if os.path.exists(path):
+        raise BackupError("restore test", "could not remove the scratch folder %s (a file is locked?), remove it by hand" % path)
+
+
 def restore_test(cfg, zippath, log):
     scratch = os.path.join(cfg.dest, "_restore_test")
-    if os.path.exists(scratch):
-        shutil.rmtree(scratch)
+    force_rmtree(scratch)
+    err = None
     try:
         os.makedirs(scratch)
         with zipfile.ZipFile(zippath) as z:
@@ -318,8 +336,15 @@ def restore_test(cfg, zippath, log):
         r = subprocess.run([cfg.godot, "--headless", "--path", proj, "--script", "res://_addon_check.gd"], capture_output=True, text=True, timeout=600)
         if "ADDON_OK" not in r.stdout:
             raise BackupError("restore test", "voxel/water_core addons did not load in the restored copy")
-    finally:
-        shutil.rmtree(scratch, ignore_errors=True)
+    except BaseException as e:
+        err = e
+    try:
+        force_rmtree(scratch)
+    except BackupError as e:
+        log("FAILED cleanup: " + e.reason)
+        err = err or e
+    if err:
+        raise err
     log("restore test OK (git fsck, git status, addons load)")
 
 
@@ -356,10 +381,6 @@ def run(cfg, now=None, game_running_fn=game_running, free_fn=lambda p: shutil.di
         os.replace(partial, final)
         partial = None
         size = os.path.getsize(final)
-        with open(os.path.join(cfg.dest, "LAST_BACKUP_OK.txt"), "w") as f:
-            f.write("%s\n" % name)
-        with open(os.path.join(cfg.dest, "backup_status.json"), "w") as f:
-            json.dump({"name": name, "bytes": size, "time": now.isoformat(timespec="seconds"), "files": len(files)}, f)
         log("zip written and verified: %s, %d MB" % (name, size // 2 ** 20))
         if cfg.no_restore_test:
             restore = "restore test SKIPPED"
@@ -367,12 +388,28 @@ def run(cfg, now=None, game_running_fn=game_running, free_fn=lambda p: shutil.di
         else:
             restore_test(cfg, final, log)
             restore = "restore test OK"
+        with open(os.path.join(cfg.dest, "LAST_BACKUP_OK.txt"), "w") as f:      # only after every check passed
+            f.write(name + "\n")
+        with open(os.path.join(cfg.dest, "backup_status.json"), "w") as f:
+            json.dump({"name": name, "bytes": size, "time": now.isoformat(timespec="seconds"), "files": len(files), "restore": restore}, f)
+        failed_file = os.path.join(cfg.dest, "LAST_BACKUP_FAILED.txt")
+        if os.path.exists(failed_file):
+            os.remove(failed_file)
         n, alerts = do_cull(cfg.dest, now.date(), cfg.cull_live, cfg.max_moves, log)
         return "Backup done: %s, %d MB, %s, culled %d%s%s" % (name, size // 2 ** 20, restore, n, "" if cfg.cull_live else " (dry-run)",
                                                           ", %d cull alerts" % len(alerts) if alerts else "")
-    except BaseException:
+    except BaseException as e:
         if partial and os.path.exists(partial):
             os.remove(partial)      # a failed run never leaves a half zip; older zips are untouched
+        if isinstance(e, Exception) and not (cfg.preflight_only or cfg.cull_only):
+            be = e if isinstance(e, BackupError) else BackupError("unexpected", repr(e))
+            log("Backup FAILED: %s, %s" % (be.step, be.reason))
+            try:
+                with open(os.path.join(cfg.dest, "LAST_BACKUP_FAILED.txt"), "w") as f:
+                    f.write("%s\nBackup FAILED: %s, %s\n" % (now.isoformat(timespec="seconds"), be.step, be.reason))
+            except OSError:
+                pass
+            raise be
         raise
     finally:
         keep_awake(False)
