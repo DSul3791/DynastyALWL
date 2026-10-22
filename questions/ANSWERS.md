@@ -440,3 +440,7 @@ Answered: 2026-10-22 23:14 UTC
 Answer: Yes
 Answered: 2026-10-22 23:14 UTC
 
+## collapse-on | May we turn the tunnel collapse ON in your test world so you can test it? (This is the second approval; you will get a test card after.)
+Answer: Yes
+Answered: 2026-10-22 23:15 UTC
+
