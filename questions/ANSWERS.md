@@ -536,3 +536,7 @@ Answered: 2026-10-22 23:48 UTC
 Answer: No: There should be what we call a ceiling which is just a wooden style floor turned 90° so you can place it up on top of a wall or attach it to anything that has an attachment point but there should also be a flat roof piece that is specifically only made of wood and tar which comes from Bitumen. Which is one of the things in our world and once you combine these things, you make a Flat tarred roof and it can protect everything below it from the elements just like every other roof piece. You can make a roof piece out of Thatch and that has a natural look. You can make a roof piece out of boards and nails, and that would look like a lap board roof and you can make it out of stone shingles. And that would be it for roof roofing.
 Answered: 2026-10-22 23:53 UTC
 
+## blueprint-10 | Foundation needs ground level enough to hide the whole bottom (about 0.3 m), otherwise you level it first?
+Answer: No: I want to clarify what I mean by hide the whole bottom if it is a slope and you can only set a foundation down until it starts to go underground has to stop there if the bottom does not have ground underneath all of it and it cannot be placed so if the slope is shallow, then you should have no problem, but if it’s too steep, this will stop you. And a foundation should have a height, maximum height, the same as its width and length so it’s a cube and you can raise it until there’s about point one of a metre underground or you can lower it until there’s point one of a metre above ground
+Answered: 2026-10-22 23:55 UTC
+
