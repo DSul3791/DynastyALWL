@@ -67,7 +67,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 589
+const BUILD := 590
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -652,6 +652,8 @@ func _ready() -> void:
 
 	if crash_report != null:
 		crash_report.server_port = port
+		_telemetry.start("telemetry_client.log")
+		_telemetry.event("client start build %d, port %d" % [BUILD, port])
 
 	# Started by the "play" launcher, whose server may still be loading.
 	if AppConfig.get_command_line_value("role", "") == "play" and _wait_until_msec == 0:
@@ -680,6 +682,7 @@ func _connect() -> void:
 # visible (the game is paused); a headless test run quits as before. The crash report is written first.
 func _on_server_lost() -> void:
 	print("Terrain client: server left")
+	_telemetry.event("EXIT: server_disconnected (the server dropped this client or ended); last link: %s" % (EventLogScript.peer_stats((multiplayer.multiplayer_peer as ENetMultiplayerPeer).get_peer(1)) if multiplayer.multiplayer_peer is ENetMultiplayerPeer else "gone"))
 
 	if crash_report != null:
 		crash_report.report_now("server left: the connection to the server was lost")
@@ -2229,6 +2232,7 @@ var _dump_client: String = ""
 var _starter_seeded: int = 0
 var _step_lift: float = 0.0               # metres the eye still has to rise after a step-up (eased out)
 var _movement: Dictionary = {}        # data/movement.json
+var _telemetry = EventLogScript.new()       # crash_reports/telemetry_client.log: traffic, backlog and frame gaps once a second
 var _lost_layer: CanvasLayer             # "Connection to the server was lost" window
 var crash_report                      # CrashReport: breadcrumbs and the report of an unclean last run
 var _previous_run_note_until_msec: int = 0
@@ -2451,6 +2455,18 @@ Esc: this menu"""
 
 
 # One line for screenshots: terrain version, tile stamp, starter ground, saved ground (size, hits, misses) and the guards' counts.
+# One telemetry line (once a second): what is moving over the link and what is waiting, so a backlog or an overload shows before a drop.
+func _telemetry_state() -> String:
+	var voxel: Dictionary = VoxelEngine.get_stats()
+	var enet: ENetMultiplayerPeer = multiplayer.multiplayer_peer as ENetMultiplayerPeer
+	@warning_ignore("integer_division")
+	return "fps %d ram %d MB video %d MB, block requests waiting %d, chunks unpacking %d, voxel %s | %s | link %s" % [
+		Engine.get_frames_per_second(), int(OS.get_static_memory_usage() / 1048576), int(RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_VIDEO_MEM_USED) / 1048576),
+		stream.pending() if stream != null else -1, _in_queue.size(), str(voxel.get("tasks", voxel)),
+		EventLogScript.host_stats(multiplayer.multiplayer_peer), EventLogScript.peer_stats(enet.get_peer(1)) if enet != null else "no link"
+	]
+
+
 func _crash_state() -> String:
 	var at: Vector3 = body.global_position if body != null else Vector3.ZERO
 	var enet: ENetMultiplayerPeer = multiplayer.multiplayer_peer as ENetMultiplayerPeer
@@ -2779,6 +2795,9 @@ func _make_avatar() -> Node3D:
 
 # Crash report breadcrumbs: the window losing or getting back focus, and the game being hidden (a throttled window can stop answering the server).
 func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		_telemetry.event("EXIT: the window was asked to close (X button, Alt+F4 or the editor's Stop)")
+
 	if crash_report == null:
 		return
 
@@ -3385,6 +3404,7 @@ func _fire_test_step(step: int, at: Vector3) -> String:
 func _process(delta: float) -> void:
 	if crash_report != null:
 		crash_report.tick(_crash_state)
+		_telemetry.tick(_telemetry_state, 1000, 500)
 
 	if pickup_feed != null:
 		pickup_feed.update(delta)
@@ -4869,6 +4889,8 @@ func _walk_report() -> void:
 
 
 func _finish(code: int) -> void:
+	_telemetry.event("EXIT: quitting with code %d" % code)
+
 	if code != 0 and crash_report != null:
 		crash_report.report_now("the game quits with code %d" % code)
 
@@ -4901,6 +4923,8 @@ func _finish_cache_task() -> void:
 
 
 func _exit_tree() -> void:
+	_telemetry.event("EXIT: game closed (exit_tree)")
+
 	if crash_report != null:
 		crash_report.mark_clean()
 

@@ -391,13 +391,13 @@ func _ready() -> void:
 
 	if error != OK:
 		push_error("Terrain server: cannot listen on port %d (%s)" % [port, error_string(error)])
-		_events.start("server_events_failed.log")
+		_events.start("telemetry_server_failed.log")
 		_events.event("cannot listen on port %d (%s): another server may still be running on it" % [port, error_string(error)])
 		get_tree().quit(1)
 		return
 
 	multiplayer.multiplayer_peer = peer
-	_events.start("server_events_%d.log" % port)
+	_events.start("telemetry_server_%d.log" % port)
 	_events.event("server listening on port %d, %s, ram %d MB" % [port, OS.get_name(), int(OS.get_static_memory_usage() / 1048576.0)])
 	# Build the flora of the spawn's chunk once here, before any other thread exists. Start-up
 	# crash (owner thread bug, build 204): about 1 start in 10 to 20 a worker thread died in the
@@ -498,7 +498,10 @@ func _event_state() -> String:
 		_peers[peer_id]["last_stats"] = stats
 		parts.append("peer %d %s" % [peer_id, stats])
 
-	return "state peers %d fps %d ram %d MB | %s" % [_peers.size(), Engine.get_frames_per_second(), int(OS.get_static_memory_usage() / 1048576.0), " | ".join(parts)]
+	_queue_mutex.lock()
+	var queued: String = "queued urgent %d prefetch %d, in work %d" % [_queue.size(), _prefetch.size(), _queued.size()]
+	_queue_mutex.unlock()
+	return "peers %d fps %d ram %d MB, %s, %s | %s" % [_peers.size(), Engine.get_frames_per_second(), int(OS.get_static_memory_usage() / 1048576.0), queued, EventLogScript.host_stats(multiplayer.multiplayer_peer), " | ".join(parts)]
 
 
 func _on_peer_connected(peer_id: int) -> void:
@@ -1092,7 +1095,7 @@ func _process(delta: float) -> void:
 		return
 
 	game_clock.advance(delta)
-	_events.tick(_event_state, 5000, 700)
+	_events.tick(_event_state, 1000, 500)
 
 	if Time.get_ticks_msec() - _clock_saved_msec > 30000:
 		_save_game_clock()
@@ -1448,6 +1451,7 @@ func _save_game_clock() -> void:
 
 
 func _exit_tree() -> void:
+	_events.event("EXIT: server closed (exit_tree)")
 	_save_game_clock()
 
 	if trails != null:

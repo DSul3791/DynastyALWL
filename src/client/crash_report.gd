@@ -184,9 +184,9 @@ func _write_report(headline: String, flag: String, log_name: String) -> String:
 	text += "== Errors and warnings of that run (last 40) ==\n%s\n\n" % "\n".join(errors.slice(maxi(errors.size() - 40, 0)))
 	var server_lines: PackedStringArray = PackedStringArray()
 
-	for name in ["server_events_%d.log" % server_port, "server_events_failed.log"]:
-		if FileAccess.file_exists("user://" + name):
-			var all: PackedStringArray = FileAccess.get_file_as_string("user://" + name).split("\n")
+	for name in ["telemetry_server_%d.log" % server_port, "telemetry_server_failed.log"]:
+		if FileAccess.file_exists("res://crash_reports/" + name):
+			var all: PackedStringArray = FileAccess.get_file_as_string("res://crash_reports/" + name).split("\n")
 			server_lines.append("-- " + name)
 			server_lines.append_array(all.slice(maxi(all.size() - 60, 0)))
 
