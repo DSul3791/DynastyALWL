@@ -32,7 +32,7 @@ Written 2026-10-22 by the Guru. Goal: one phone-friendly page where the owner an
 - Style: numbered steps whenever Dave must act; succinct; "Question added: <title>".
 
 ## 5b. Poke button (Dave 17:34): wake Claude without a timer
-- The page has a button "Tell Claude I answered". It posts one comment ("poke <UTC time> answered: <ids>") on a standing DRAFT pull request, DSul3791/DynastyALWL PR #3 "QA poke" (branch qa-poke, base claude/generator-v2). NEVER merge or close it; never delete the branch.
+- The page has a button "Tell Claude I answered". It posts one comment ("poke <UTC time> answered: <ids>") on a standing DRAFT pull request, DSul3791/DynastyALWL PR #1 in DSul3791/DynastyALWL-QA (branch qa-poke, base main) or, if the token only covers the main repo, PR #3 in DSul3791/DynastyALWL (branch qa-poke, base claude/generator-v2); the page tries QA first. NEVER merge or close it; never delete the branch.
 - The coordinator session subscribes to PR #3 (subscribe_pr_activity); a comment wakes it, so idle cost is zero. On a poke: run `tools/watch_answers.sh once`, process only new answers (BP-T33), reply to the asking threads.
 - Needs the token permission Issues: Read and write on DynastyALWL (the token that already has Contents). Dave adds it once: GitHub > Settings > Developer settings > Fine-grained tokens > the token > Edit > Repository permissions > Issues: Read and write > Update. No new token to paste.
 - Answered ids are remembered in the browser (localStorage "answered") and sent with the next poke.
