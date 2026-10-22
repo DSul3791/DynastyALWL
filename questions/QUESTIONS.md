@@ -1,8 +1,3 @@
-## chk-doors | Check the door and window designs (picture): five door tiers (twine and thatch hurdle, planks, reinforced with iron bands, wrought iron, steel and iron), a double door, a window and a double window. Do these look right?
-Note: Built from your 22:21 answer about doors; this is the first time you see the pictures.
-Image: questions/img/tiers_doors.png
-[check]
-
 ## doors-width | Is it OK that a double door fills the whole 2 m wall slot and a double window is 2 m wide?
 Note: You already asked for double doors and double windows (22:21). This only confirms the width.
 [check]
