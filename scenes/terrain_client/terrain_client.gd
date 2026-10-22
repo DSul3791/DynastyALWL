@@ -1116,6 +1116,8 @@ func _welcome_body(info: Dictionary) -> void:
 	add_child(animal_view)
 	_animal_view_node = animal_view
 	net.animals_received.connect(animal_view.on_rows)
+	animal_view.state_changed.connect(func(kind: String, state: int, at: Vector3) -> void:
+		sound.creatures.call_at(kind, at, "alert" if state == 3 or state == 2 else "threat"))      # an animal noticing, bolting, warning or charging calls (rate limited by the voice budget)
 	net.trails_received.connect(func(bx, bz, bytes): grass.set_trail_block(bx, bz, TrailCodec.decode(bytes)))
 	net.blood_received.connect(animal_view.on_blood)
 	items = InventoryViewScript.new()
