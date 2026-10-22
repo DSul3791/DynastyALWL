@@ -184,3 +184,7 @@ Answered: 2026-10-22 15:16 UTC
 Answer: Approve as written (recommended)
 Answered: 2026-10-22 15:35 UTC
 
+## bk-weekly | Backups older than 30 days are thinned to one per week. Which one do we keep forever from each week?
+Answer: The LAST backup of the week, normally Sunday night: it holds the whole week's work (recommended)
+Answered: 2026-10-22 15:44 UTC
+
