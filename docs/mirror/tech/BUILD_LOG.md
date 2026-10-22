@@ -372,3 +372,4 @@ Each active thread holds its current number plus ONE spare, handed out in advanc
 - 00:25 Guru: MERGED 674 (Steve_ProblemSolver: sound-test menu split out of terrain_client.gd into its own file, no behaviour change; RUNTIME; 0 new warnings per Steve; not tested in game).
 - steve-ladder (provisional): ladder climbing client-only (ladder_climb.gd, inventory_view.ladders, _climb_ladder in terrain_client); test_ladder_climb. RUNTIME, no restart.
 - 00:35 Guru: MERGED 675 (Steve_ProblemSolver: ladder climbing, client only; test_ladder_climb 13/13, 0 new warnings, CONTROLS.md updated, TEST_QUEUE line; RUNTIME; not tested in game).
+- 00:45 Guru: MERGED 676 (Sal_Crafts: small/medium/large spades move 1/4/8 pieces per stroke, shovel load cap 8/12/16, tuning in data/items/digging.json spade_sizes; RESTART; no save or protocol change; local_check PASS per Sal; numbers are Dave's to veto, card spade-sizes posted).
