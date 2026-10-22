@@ -1,7 +1,3 @@
-## chk-block-hand | Check the chopping block in your hand (picture, bottom right of the screen): is it a good size now, and does it look like the placed chopping block? It is made from 2 logs and weighs 30 kg.
-Image: questions/img/chopping_block_in_hand.png
-[check]
-
 ## chk-log-wall | Check the reworked log wall (two pictures: the 4th wall on the first, the corner on the second). Round logs with saddle-notched corners that interlock; the log running through the corner alternates each course; the two ends of a wall are opposite (left end runs through on even courses, right end on odd). Does it look right now?
 Image: questions/img/tiers_walls_v3.png
 Image: questions/img/tiers_log_corner.png
