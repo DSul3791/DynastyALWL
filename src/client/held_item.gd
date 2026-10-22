@@ -66,7 +66,9 @@ var _tree_near: Callable                  # (point) -> [chunk, id] of the tree t
 var _swing_t: float = -1.0
 var _swing_hit: bool = false
 var _cover_at: Callable                   # (point) -> true when under a tree's crown
-var _blueprint: MeshInstance3D
+var _blueprint: Node3D
+var _blueprint_kit: String = ""
+var _ghost_material: StandardMaterial3D
 var _blueprint_at: Vector3 = Vector3.ZERO
 var _blueprint_ok: bool = false
 var _placement: Dictionary = {}              # structures.json: footprints, gaps, caps (shared with the server's rules)
@@ -483,6 +485,21 @@ func _place_arms(delta: float) -> void:
 	_arms.transform = Transform3D(Basis(side.basis.get_rotation_quaternion().slerp(up_basis.get_rotation_quaternion(), _arm_up)), side.origin.lerp(up_pos, _arm_up))
 
 
+# Makes a world model a ghost: solid bodies, lights, particles and sounds go, every mesh takes the one see-through material.
+func _ghost_clean(node: Node) -> void:
+	for child in node.get_children():
+		if child is StaticBody3D or child is Light3D or child is GPUParticles3D or child is AudioStreamPlayer3D or child is CPUParticles3D:
+			node.remove_child(child)
+			child.queue_free()
+			continue
+
+		if child is MeshInstance3D:
+			child.material_override = _ghost_material
+			child.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+		_ghost_clean(child)
+
+
 # The placement ghost for a held campfire: a ring on the ground where it would go, yellow in the open
 # and green under a tree's crown (Dave, 2026-10-20: fires under cover survive rain, open ones go out).
 func _update_blueprint() -> void:
@@ -500,31 +517,28 @@ func _update_blueprint() -> void:
 
 	_blueprint_next_msec = now + 100
 
-	# The ghost's shape follows the held kit: a ring for a fire, a footprint box for a structure.
+	# The ghost is the placeable's own model, see-through and tinted: green where it can go, red where it cannot (Dave 2026-10-22).
 	var footprint: Vector2 = PlacementRules.footprint(_placement, held_id())
 
-	if _blueprint == null or _blueprint_shape != footprint:
+	if _blueprint == null or _blueprint_kit != held_id():
 		if _blueprint == null:
-			_blueprint = MeshInstance3D.new()
+			_blueprint = Node3D.new()
 			_root.add_child(_blueprint)
+			_ghost_material = StandardMaterial3D.new()
+			_ghost_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			_ghost_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			_ghost_material.cull_mode = BaseMaterial3D.CULL_DISABLED
 
+		_blueprint_kit = held_id()
+
+		for child in _blueprint.get_children():
+			child.queue_free()
+
+		var def: Dictionary = PlacementRules.structure_of_kit(_placement, held_id())
+		var model: Node3D = _inv.ghost_model(int(def.get("state", 1)))
+		_ghost_clean(model)
+		_blueprint.add_child(model)
 		_blueprint_shape = footprint
-		var material: StandardMaterial3D = StandardMaterial3D.new()
-		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-
-		if footprint == Vector2.ZERO:
-			var ring: CylinderMesh = CylinderMesh.new()
-			ring.top_radius = 0.6
-			ring.bottom_radius = 0.6
-			ring.height = 0.06
-			ring.material = material
-			_blueprint.mesh = ring
-		else:
-			var slab: BoxMesh = BoxMesh.new()
-			slab.size = Vector3(footprint.x, 0.06, footprint.y)
-			slab.material = material
-			_blueprint.mesh = slab
 
 	var from: Vector3 = _camera.global_position
 	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - _camera.global_transform.basis.z * 5.0)
@@ -538,7 +552,7 @@ func _update_blueprint() -> void:
 	var on_grid: Array = PlacementRules.snap(_placement, held_id(), hit["position"], posmod(int(round(rad_to_deg(_camera.global_rotation.y))), 360), _inv.foundation_rows())
 	_blueprint_at = on_grid[0]
 	_blueprint_yaw = int(on_grid[1])
-	_blueprint.global_position = _blueprint_at + Vector3(0.0, 0.04, 0.0)
+	_blueprint.global_position = _blueprint_at
 	_blueprint.rotation.y = deg_to_rad(float(_blueprint_yaw)) if PlacementRules.structure_of_kit(_placement, held_id()).get("piece", false) else _camera.global_rotation.y
 	var on_base: bool = bool(on_grid[2])
 	blueprint_state = PlacementRules.blocked(_placement, held_id(), _blueprint_at, _inv.placed_rows())
@@ -560,7 +574,7 @@ func _update_blueprint() -> void:
 
 	var blocked: bool = blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep" or blueprint_state == "water"
 	_blueprint_ok = _blueprint_ok and not blocked
-	(_blueprint.mesh.material as StandardMaterial3D).albedo_color = Color(0.9, 0.2, 0.2, 0.55) if blocked else (Color(0.3, 0.9, 0.3, 0.55) if blueprint_state == "covered" else Color(0.95, 0.85, 0.2, 0.55))
+	_ghost_material.albedo_color = Color(0.9, 0.2, 0.2, 0.5) if blocked else Color(0.3, 0.9, 0.3, 0.5)
 
 
 # The blow lands: what is in reach decides the sound. (Chopping trees and digging stone come with
@@ -639,7 +653,7 @@ func _caption() -> String:
 	if _is_placeable() and PlacementRules.reason_text(blueprint_state) != "":
 		text += "   (red: %s)" % PlacementRules.reason_text(blueprint_state)
 	elif _is_placeable():
-		text += "   (left click: place; green = under cover, yellow = open)" if _blueprint_shape == Vector2.ZERO else "   (left click: place, it faces you)"
+		text += "   (left click: place; under a tree it keeps dry, in the open rain puts it out)" if _blueprint_shape == Vector2.ZERO else "   (left click: place, it faces you)"
 	elif _is_torch():
 		text += "   (lights the way while held)"
 	elif _is_axe():

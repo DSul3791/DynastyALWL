@@ -1941,6 +1941,42 @@ func _make_remains(age: float) -> Node3D:
 
 
 # Only the nearest MAX_FIRE_LIGHTS lit fires keep their light on (cost cap at every quality).
+# The model of a placeable as it stands in the world, for the placement ghost (held_item.gd): the same builders the world draws with.
+func ghost_model(state: int) -> Node3D:
+	if state == 1:
+		return _make_fire(false)
+
+	match state:
+		5:
+			return _make_leanto()
+		6:
+			return _make_chest()
+		13:
+			return _make_bench()
+		14:
+			return _make_rack()
+		15:
+			return _make_vice()
+		16:
+			return _make_log_bench()
+		17:
+			return _make_forge()
+		18:
+			return _make_smithy()
+		20, 21:
+			return _make_big_forge(state)
+		22:
+			return PieceLook.wall()
+		23:
+			return PieceLook.floor_piece()
+		24:
+			return PieceLook.roof()
+		25:
+			return PieceLook.foundation()
+
+	return _make_block()
+
+
 func _make_fire(lit: bool, loaded: bool = false) -> Node3D:
 	return BuildingLook.fire(lit, loaded)
 
