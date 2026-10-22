@@ -30,3 +30,24 @@ Note: They live in data/items/digging.json (spade_sizes) and are easy to change 
 ## tier-mason-heavy | Mason walls are so heavy (about 200 kg) that you build them where you stand?
 - Yes (recommended)
 - No (tell me in chat)
+
+## chk-tiers | Check the building tier designs (drawn, not engine renders): walls, floors and roofs for the six tiers. Does each tier look like what you described, and is it clearly different from the next?
+Image: questions/img/tiers_all.png
+Note: Details in art/BUILDING_TIERS_LOOKS.md.
+[check]
+
+## tl-roof | Roofs: cobblestone tier = rough slate-like slabs on beams, mason tier = tidy dressed slabs?
+- Yes (recommended)
+- No (tell me in chat)
+
+## tl-logs | Log walls are real round logs with notched corners (not a picture)?
+- Yes (recommended)
+- No (tell me in chat)
+
+## tl-plank | Plank wall is two layers: bark outside, smooth inside?
+- Yes (recommended)
+- No (tell me in chat)
+
+## tl-doors | Doors and windows follow each tier's look?
+- Yes (recommended)
+- No (tell me in chat)
