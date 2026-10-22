@@ -397,3 +397,4 @@ bk-weekly: keep the LAST backup of each ISO week (normally Sunday night); matche
 - 2026-10-22 18:10 Guru: Dave 17:14 question flow approved: thread asks Guru, Guru answers or posts to Dave's page with a recommendation, Guru reviews answers periodically and replies to the thread. Added to HOW_WE_WORK.md, BP-T33, all digests. Threads no longer write to QUESTIONS.md.
 
 - 2026-10-22 18:20 Guru: Dave 17:15: wrote tech/QA_SYSTEM.md (files, hosting stub, token, flows, gotchas, reuse). Linked from HOW_WE_WORK.md and PROJECT_DEBRIEF_KIT.md.
+- 2026-10-22 18:25 Guru: idea #4 logged in IDEAS.md: team page for Dave's co-designers (LATER, P3); open points: who may answer, whose answer wins, how answers reach the Guru, public-repo risk.
