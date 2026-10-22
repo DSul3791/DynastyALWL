@@ -11,7 +11,8 @@ const TEX := 128                 # texture side in pixels: small and cheap at ev
 static var _planks: StandardMaterial3D
 static var _frame: StandardMaterial3D
 static var _roof: StandardMaterial3D
-static var _slab: StandardMaterial3D
+static var _earth: StandardMaterial3D
+static var _stone: StandardMaterial3D
 
 
 # Boards from a little noise, drawn once: `boards` boards across, dark seams between them, long grain along y, a per-board tint, a few knots.
@@ -53,6 +54,37 @@ static func _board_texture(base: Color, boards: int, seed_value: int, knots: boo
 	return ImageTexture.create_from_image(image)
 
 
+# Mottled stone or earth: `blocks` rows of blocks with dark joints (1 = none), noise colour variation of `mottle`.
+static func _blocks_material(base: Color, blocks: int, seed_value: int, mottle: float) -> StandardMaterial3D:
+	var noise: FastNoiseLite = FastNoiseLite.new()
+	noise.seed = seed_value
+	noise.frequency = 0.08
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = seed_value
+	var image: Image = Image.create(TEX, TEX, true, Image.FORMAT_RGB8)
+	var row_h: int = floori(float(TEX) / float(blocks))
+
+	for y in TEX:
+		var row: int = floori(float(y) / float(row_h))
+		var offset: int = (row % 2) * 16
+
+		for x in TEX:
+			var shade: float = 1.0 - mottle * 0.5 + mottle * (noise.get_noise_2d(float(x), float(y)) * 0.5 + 0.5) * 1.4 + rng.randf_range(-0.04, 0.04)
+
+			if blocks > 1 and ((y % row_h) <= 1 or ((x + offset) % 32) <= 1):
+				shade *= 0.45          # the joint between two stones
+
+			image.set_pixel(x, y, Color(base.r * shade, base.g * shade, base.b * shade))
+
+	image.generate_mipmaps()
+	var m: StandardMaterial3D = StandardMaterial3D.new()
+	m.albedo_texture = ImageTexture.create_from_image(image)
+	m.roughness = 1.0
+	m.uv1_triplanar = true
+	m.uv1_scale = Vector3(0.5, 0.5, 0.5)
+	return m
+
+
 static func _textured(base: Color, boards: int, seed_value: int, knots: bool) -> StandardMaterial3D:
 	var m: StandardMaterial3D = StandardMaterial3D.new()
 	m.albedo_texture = _board_texture(base, boards, seed_value, knots)
@@ -69,7 +101,8 @@ static func _materials() -> void:
 	_planks = _textured(WOOD, 8, 11, true)       # 25 cm boards
 	_frame = _textured(WOOD_DARK, 2, 23, false)  # squared timbers: wide, long grain
 	_roof = _textured(Color(0.36, 0.25, 0.15), 10, 37, false)   # split boards laid close
-	_slab = _textured(Color(0.5, 0.49, 0.46), 4, 51, false)     # stone and clay slabs, wide joints
+	_earth = _blocks_material(Color(0.33, 0.25, 0.17), 1, 41, 0.35)      # packed earth: mottled, no seams
+	_stone = _blocks_material(Color(0.5, 0.49, 0.46), 4, 53, 0.22)       # fitted stone: courses of blocks with dark joints
 
 
 static func _box(parent: Node3D, size: Vector3, at: Vector3, material: StandardMaterial3D) -> void:
@@ -139,17 +172,11 @@ static func roof() -> Node3D:
 	return root
 
 
-# A 4 by 4 m slab 0.3 m high, a stone and clay base the other pieces click onto (placement_rules.gd anchors); a darker rim marks its edge.
+# A foundation (Radar: 4 by 4 m, 0.3 m high, solid; the other pieces click onto it): a fitted-stone course round a packed-earth top.
 static func foundation() -> Node3D:
 	_materials()
 	var root: Node3D = Node3D.new()
-	_box(root, Vector3(4.0, 0.3, 4.0), Vector3(0.0, 0.15, 0.0), _slab)
-
-	for z in [-1.97, 1.97]:
-		_box(root, Vector3(4.0, 0.32, 0.06), Vector3(0.0, 0.15, z), _frame)
-
-	for x in [-1.97, 1.97]:
-		_box(root, Vector3(0.06, 0.32, 4.0), Vector3(x, 0.15, 0.0), _frame)
-
+	_box(root, Vector3(4.0, 0.3, 4.0), Vector3(0.0, 0.15, 0.0), _stone)
+	_box(root, Vector3(3.6, 0.02, 3.6), Vector3(0.0, 0.305, 0.0), _earth)      # the packed earth top inside the stone rim
 	_solid(root, Vector3(4.0, 0.3, 4.0), Vector3(0.0, 0.15, 0.0))
 	return root

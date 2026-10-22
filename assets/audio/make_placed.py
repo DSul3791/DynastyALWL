@@ -155,8 +155,20 @@ def place_timber(rng):
     return finish(out)
 
 
+def place_foundation(rng):
+    # A stone and earth slab laid down: a deep thud, a grinding scrape of stone on stone, gravel settling.
+    out = np.zeros(int(1.2 * SR))
+    add(out, knock(rng, rng.uniform(45, 60), 0.07, 700, 1.3), 0.0)
+    add(out, knock(rng, rng.uniform(90, 120), 0.04, 1200, 0.6), 0.09)
+    scrape = rustle(rng, int(0.5 * SR), 900, 1.0) * env(int(0.5 * SR), 0.15, 0.4)
+    add(out, scrape * 0.4, 0.15)
+    gravel = rustle(rng, int(0.4 * SR), 2600, 1.5) * env(int(0.4 * SR), 0.05, 0.6)
+    add(out, gravel * 0.25, 0.5)
+    return finish(out)
+
+
 ONE_SHOTS = {"place_leanto": place_leanto, "place_chest": place_chest, "place_thump": place_thump, "pickup_placed": pickup_placed,
-             "container_put": container_put, "container_take": container_take, "tool_break": tool_break, "tool_repair": tool_repair, "tool_warn": tool_warn, "place_timber": place_timber}
+             "container_put": container_put, "container_take": container_take, "tool_break": tool_break, "tool_repair": tool_repair, "tool_warn": tool_warn, "place_timber": place_timber, "place_foundation": place_foundation}
 
 
 def main():
