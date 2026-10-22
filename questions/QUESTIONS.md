@@ -1,6 +1,6 @@
 
 ## bake-plan | Approve the bake plan (BP-T31)? Every change is labelled RUNTIME (just play), RESTART (close game fully) or BAKE (waits for a bake window). Bakes are batched, at most once a week, 1-tile test first, then one full 9-tile bake.
-A bake window opens when the held list is complete, or a bake change blocks play, or 2 weeks pass. Gates: frozen generator, hash tests, edge-match on all borders, game closed, backup within 24 hours. Only your PC bakes. This also answers when the next bake happens.
+A bake window opens when the held list is complete, or a bake change blocks play, or 2 weeks pass. Gates: frozen generator, hash tests, edge-match on all borders, game closed, backup within 24 hours. Only your PC bakes. 1-tile test bakes need no approval from you (MikeW runs them, at least 2 hours apart, and everyone waits while a 9-tile bake runs). This also answers when the next bake happens.
 - Approve as written (recommended)
 - Approve, but open a window only when I say so
 - Change it, I will tell you how
