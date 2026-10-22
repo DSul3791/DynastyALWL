@@ -328,3 +328,7 @@ Answered: 2026-10-22 20:19 UTC
 Answer: Yes
 Answered: 2026-10-22 20:56 UTC
 
+## chk-tools-tv6 | Check the reworked tools and containers (labelled picture): backpack, wooden bucket, clay pot, bowl, wedge axe, chopping block kit, pickaxe, stone block. Does each look like the real thing now, and does the axe look like a wedge with a sharp edge?
+Answer: No: I don’t think there should be a chopping block kit. It should just be a chopping block and it’s heavy and it looks exactly like the model for the actual chopping block.
+Answered: 2026-10-22 20:57 UTC
+
