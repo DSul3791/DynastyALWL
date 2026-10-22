@@ -7,6 +7,7 @@ const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.g
 const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings.gd")
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
+const DrainageFlowScript := preload("res://src/worldgen/tile/drainage_flow.gd")
 const DrainageFillScript := preload("res://src/worldgen/tile/drainage_fill.gd")
 
 var failures: int = 0
@@ -97,14 +98,6 @@ func _tile(tile: Vector2i) -> void:
 		if int(lake["outlet"]) < 0:
 			no_outlet += 1
 			print("  no outlet: level %.1f depth %.1f cells %d" % [lake["level"], lake["depth"], lake["cells"]])
-			var seed: int = -1
-
-			for index in range(side * side):
-				if fill.lake_id[index] == fill.lakes.find(lake) + 1:
-					seed = index
-					break
-
-			print("   at row %d col %d of %d" % [seed / side, seed % side, side])
 
 	print("tile %s at %d m: %d lakes deeper than 2 m, deepest %.1f m, %.1f s" % [tile, int(data.spacing_m) * step, fill.lakes.size(), worst, took])
 	_check(no_outlet == 0, "every lake has an outlet")

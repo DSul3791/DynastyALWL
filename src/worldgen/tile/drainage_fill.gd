@@ -18,6 +18,8 @@ var filled: PackedFloat32Array = PackedFloat32Array()
 var lake_id: PackedInt32Array = PackedInt32Array()
 var lakes: Array = []
 var _parent: PackedInt32Array = PackedInt32Array()   # cell the flood came from, -1 at seeds
+var receiver: PackedInt32Array = PackedInt32Array()  # where water on this cell goes next (-1 at the sea or tile edge)
+var order: PackedInt32Array = PackedInt32Array()     # cells in flood order: receivers come before the cells that drain into them
 
 
 func build(h: PackedFloat32Array, sea: PackedByteArray, grid: int, min_depth_m: float) -> void:
@@ -28,8 +30,10 @@ func build(h: PackedFloat32Array, sea: PackedByteArray, grid: int, min_depth_m: 
 	lake_id.fill(0)
 	_parent.resize(total)
 	_parent.fill(-1)
+	order.clear()
 	lakes.clear()
 	_flood(h, sea)
+	receiver = _parent
 	_label(h, sea, min_depth_m)
 
 
@@ -50,6 +54,7 @@ func _flood(h: PackedFloat32Array, sea: PackedByteArray) -> void:
 	seen.resize(total)
 
 	for index in range(total):
+		@warning_ignore("integer_division")
 		var row: int = index / size
 		var column: int = index % size
 		var edge: bool = row == 0 or column == 0 or row == size - 1 or column == size - 1
@@ -71,6 +76,8 @@ func _flood(h: PackedFloat32Array, sea: PackedByteArray) -> void:
 		while head[slot] != -1:
 			var index: int = head[slot]
 			head[slot] = next[index]
+			order.append(index)
+			@warning_ignore("integer_division")
 			var row: int = index / size
 			var column: int = index % size
 
@@ -123,6 +130,7 @@ func _label(h: PackedFloat32Array, sea: PackedByteArray, min_depth_m: float) -> 
 			stack.resize(stack.size() - 1)
 			members.append(index)
 			deepest = maxf(deepest, filled[index] - h[index])
+			@warning_ignore("integer_division")
 			var row: int = index / size
 			var column: int = index % size
 
@@ -174,12 +182,14 @@ func _find_outlet(members: PackedInt32Array, deepest_cell: int, level: float, h:
 	var best_height: float = INF
 	var best_distance: float = INF
 	var head: int = 0
+	@warning_ignore("integer_division")
 	var anchor_row: int = deepest_cell / size
 	var anchor_column: int = deepest_cell % size
 
 	while head < queue.size() and queue.size() < LEVEL_SET_MAX_CELLS:
 		var index: int = queue[head]
 		head += 1
+		@warning_ignore("integer_division")
 		var row: int = index / size
 		var column: int = index % size
 		var lower_side: bool = false
