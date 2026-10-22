@@ -3,11 +3,6 @@
 - Approve, but fewer phrases (tell me which in chat)
 - Not yet
 
-## nf-ok | Approve the "never forget" rules for every thread (BP-T30)? Each thread keeps one open-items list, writes down promises at once, checks a six-box "definition of done" before saying done, lists unfinished things in its handoff, and may drop an item only with a one-line reason.
-- Approve as proposed (recommended)
-- Approve, but a lighter checklist (tell me in chat)
-- Not yet
-
 ## repo-vis | Important: the main DynastyALWL repo is PUBLIC on GitHub today. Anyone with the address can read the code, design docs, questions and answers. Do you want that?
 Making it private does not stop the team or your PC. The cloud threads and GitHub Desktop keep working. GitHub Pages for the repo itself would need a paid plan, which is why the tiny separate page repo is the plan.
 - Make it private (recommended: it is an unreleased game)
