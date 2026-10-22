@@ -1,7 +1,3 @@
-## found-metres | Foundation sizes in metres. Small foundation (for thin walls): 2 x 2 m, or 4 x 4 m as a double. Large foundation (for thick walls: log, cobblestone, mason): 3 x 3 m, or 6 x 6 m as a double. Pieces snap from about 6 m away. Are these sizes right?
-Note: Foundations stack, join side by side, and the mouse wheel raises the first one while it is on the ground. A foundation can only go where the ground is level enough to hide its whole bottom; slopes are levelled first.
-[check]
-
 ## collapse-on | May we turn the tunnel collapse ON in your test world so you can test it? (This is the second approval; you will get a test card after.)
 [check]
 
