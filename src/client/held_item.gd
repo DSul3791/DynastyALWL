@@ -835,7 +835,9 @@ func _make_kit_model() -> Node3D:
 		return node
 
 	if id == "chopping_block":
-		node.add_child(BuildingLook.block())       # the same model as the placed block
+		var model: Node3D = BuildingLook.block()       # the same model as the placed block, carried at 30 percent so it fits the hand
+		model.scale = Vector3.ONE * 0.3
+		node.add_child(model)
 		return node
 
 	# Lean-to and campfire: a bundle of sticks across the hand; the lean-to is tied and leafy, the fire has stones at one end.
