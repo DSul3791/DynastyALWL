@@ -34,7 +34,7 @@ const BasicLook := preload("res://src/client/basic_look.gd")
 const SHAPE_CLASS := {
 	"planks": "wood", "beams": "wood", "bark": "wood", "shaft": "wood", "axe": "wood", "pick": "wood", "spade": "wood", "knife": "wood",
 	"torch": "wood", "rod": "wood", "kit": "wood", "bucket": "wood", "bundle": "cloth", "sack": "cloth", "hide": "cloth", "coil": "cloth",
-	"skin": "cloth", "feather": "cloth", "cloth": "cloth", "chunk": "stone", "ingot": "metal", "coin": "metal", "needle": "metal",
+	"skin": "cloth", "feather": "cloth", "cloth": "cloth", "chunk": "stone", "block": "stone", "brick": "stone", "ingot": "metal", "coin": "metal", "needle": "metal",
 	"pile": "soft", "leaves": "soft", "fish": "food", "meat": "food", "loaf": "food", "fruit": "food", "bowl": "food", "skewer": "food",
 	"bottle": "glass", "pot": "glass", "bone": "bone",
 }

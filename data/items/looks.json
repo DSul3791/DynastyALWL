@@ -819,6 +819,21 @@
    "shape": "kit",
    "color": "#8a6a3a",
    "size": 1.2
+  },
+  "cut_stone_block": {
+   "shape": "block",
+   "color": "#8a8780",
+   "size": 1.5
+  },
+  "brick": {
+   "shape": "brick",
+   "color": "#a8452e",
+   "size": 1.4
+  },
+  "mortar": {
+   "shape": "pile",
+   "color": "#a89c85",
+   "size": 1.0
   }
  }
 }

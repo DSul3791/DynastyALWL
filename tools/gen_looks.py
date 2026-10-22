@@ -83,6 +83,11 @@ SPECIAL.update({
     "backpack": ("backpack", "#8a6a4a", 1.4),
     "wooden_bowl": ("bowl", "#9a6b38", 1.3),
 })
+SPECIAL.update({
+    "cut_stone_block": ("block", "#8a8780", 1.5),
+    "brick": ("brick", "#a8452e", 1.4),
+    "mortar": ("pile", "#a89c85", 1.0),
+})
 SKIP = {"stone", "stick", "driftwood", "log"}
 
 out = {}
