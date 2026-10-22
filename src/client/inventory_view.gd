@@ -979,7 +979,7 @@ func make_coin_label(px: int) -> RichTextLabel:
 	label.fit_content = true
 	label.scroll_active = false
 	label.autowrap_mode = TextServer.AUTOWRAP_OFF
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.mouse_filter = Control.MOUSE_FILTER_PASS   # so a coin's hint (its name) shows on mouse-over
 	label.custom_minimum_size = Vector2(0.0, float(px) * 1.4)
 	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	label.add_theme_font_size_override("normal_font_size", px)
@@ -1020,8 +1020,10 @@ func fill_coin_line(label: RichTextLabel, segments: Array) -> void:
 					label.add_text("  ")
 
 				any = true
+				label.push_hint("%s coin" % str(pair[0]["name"]).capitalize())
 				label.add_text("%d " % int(pair[1]))
 				label.add_image(coin_icon(str(pair[0]["id"])), int(px * 0.8), int(px * 0.8))
+				label.pop()
 
 		if not any:
 			label.add_text("nothing")
