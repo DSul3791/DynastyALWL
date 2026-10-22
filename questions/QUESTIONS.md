@@ -1,6 +1,3 @@
-## blueprint-1 | A builder's mallet tool replaces building kits?
-[check]
-
 ## blueprint-2 | Does the mouse wheel cycle piece type, then tier, with the cost shown on the ghost?
 [check]
 
