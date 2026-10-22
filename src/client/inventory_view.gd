@@ -2017,6 +2017,10 @@ func _model_for_state(state: int, extra: Dictionary = {}) -> Node3D:
 			return PieceLook.roof()
 		"foundation":
 			return PieceLook.foundation()
+		"prop":
+			return PieceLook.prop()
+		"set":
+			return PieceLook.timber_set()
 		"door_shut":
 			return PieceLook.doorway(false)
 		"door_open":

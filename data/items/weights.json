@@ -278,7 +278,9 @@
 		"roof_section_kit": 15.0,
 		"foundation_section_kit": 40.0,
 		"doorway_section_kit": 10.0,
-		"window_section_kit": 10.0
+		"window_section_kit": 10.0,
+		"timber_prop_kit": 18.0,
+		"timber_set_kit": 22.0
 	},
 	"by_suffix": {
 		"berries": 0.05,

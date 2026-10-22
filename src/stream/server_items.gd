@@ -159,6 +159,9 @@ var _struct_gap_m: float = 2.5
 var _structures_cfg: Dictionary = {}   # the whole structures.json, for the shared placement rules
 var _fire_gap_m: float = FIRE_MIN_GAP_M
 var _fires_per_chunk: int = FIRES_PER_CHUNK
+var support_changed: Callable            # (Vector3) -> void: a bracing support was placed, taken down or loaded; the tunnel watch restarts its grace windows near it
+var _supports: Array = []                # bracing supports [pos, reach_m, strength, wear_s, floor, born_s], rebuilt on the main thread, read by the tunnel watch's worker under the mutex
+var _supports_mutex: Mutex = Mutex.new()
 var _chest_viewer: Dictionary = {}   # peer -> world id of the container they last opened (fresh contents are pushed while it changes)
 var _chests: Dictionary = {}        # structure uid -> Inventory (server-owned contents, chests.json)
 var _next_uid: int = 1
@@ -318,6 +321,7 @@ func setup(item_table, store_dir: String) -> void:
 	_load_inventories()
 	_load_chests()
 	_load_world_items()
+	_rebuild_supports()
 	_load_trees()
 	var cooking: Variant = JSON.parse_string(FileAccess.get_file_as_string(COOKING_PATH))
 	_cooking = cooking if typeof(cooking) == TYPE_DICTIONARY else {}
@@ -1521,6 +1525,50 @@ func _mine(peer: int, inv, at: Vector3) -> void:
 	_dirty = true
 
 
+# Bracing supports (Dave 2026-10-22, BRACING_ITEMS.md): the strength they give the ground at a point, for the tunnel watch.
+func _rebuild_supports() -> void:
+	var list: Array = []
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if not it.has("struct"):
+			continue
+
+		var support: Dictionary = _structures.get(str(it["struct"]["kind"]), {}).get("support", {})
+
+		if support.is_empty():
+			continue
+
+		list.append([it["pos"], float(support["reach_m"]), float(support["strength"]), float(support["wear_game_days"]) * 86400.0, float(support.get("floor", 0.25)), float(it["struct"].get("born", 0.0))])
+
+	_supports_mutex.lock()
+	_supports = list
+	_supports_mutex.unlock()
+
+
+# Support strength x condition at `at`, 0 to 1: each support gives its strength at its own spot, falling to 0 at its reach, times its condition
+# (1 when new, down to its floor over its wear time); overlapping supports add up to 1. Safe to call from the tunnel watch's worker thread.
+func support_strength_at(at: Vector3, now_game_s: float = -1.0) -> float:
+	var now_s: float = _now_game_s() if now_game_s < 0.0 else now_game_s
+	var total: float = 0.0
+	_supports_mutex.lock()
+	var list: Array = _supports
+	_supports_mutex.unlock()
+
+	for entry in list:
+		var d: float = (entry[0] as Vector3).distance_to(at)
+
+		if d >= float(entry[1]):
+			continue
+
+		var worn: float = clampf((now_s - float(entry[5])) / maxf(float(entry[3]), 1.0), 0.0, 1.0)
+		var condition: float = lerpf(1.0, float(entry[4]), worn)
+		total += float(entry[2]) * (1.0 - d / float(entry[1])) * condition
+
+	return minf(total, 1.0)
+
+
 # Placed foundations as {"pos", "state"} rows, for pieces to snap to.
 func _foundation_rows() -> Array:
 	var rows: Array = []
@@ -1827,6 +1875,9 @@ func _load_world_items() -> void:
 
 				if not _chests.has(int(row[10])):
 					_chests[int(row[10])] = InventoryScript.new(table)
+
+			if row.size() > 12 and _structures.get(str(row[9]), {}).has("support"):
+				entry["struct"]["born"] = float(row[12])
 
 			if row.size() > 12 and str(row[9]) == "remains":
 				entry["struct"]["owner"] = str(row[11])
@@ -2958,6 +3009,13 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 	_next_id += 1
 	_add_roof(entry)
 
+	if def.has("support"):
+		entry["struct"]["born"] = _now_game_s()
+		_rebuild_supports()
+
+		if support_changed.is_valid():
+			support_changed.call(spot)
+
 	if bool(def.get("shelter", false)):
 		_record_rest(str(_peer_key.get(peer, "")), spot, "shelter")   # a lean-to you built is a place to come back to
 
@@ -3030,6 +3088,12 @@ func _take_down(peer: int, inv, id: int) -> void:
 	_chests.erase(int(it["struct"].get("uid", 0)))
 	_items.erase(id)
 	_dirty = true
+
+	if def.has("support"):
+		_rebuild_supports()
+
+		if support_changed.is_valid():
+			support_changed.call(it["pos"])
 
 
 # E at a chopping block: one log becomes firewood; the axe wears one use. The server checks the reach,

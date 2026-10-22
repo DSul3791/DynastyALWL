@@ -416,6 +416,40 @@
 			"toggle": "doorway_section",
 			"use_pace_ms": 400,
 			"use_reach_m": 3.0
+		},
+		"timber_prop": {
+			"kit": "timber_prop_kit",
+			"item": "timber_prop",
+			"state": 29,
+			"footprint_x": 0.4,
+			"footprint_z": 0.4,
+			"cap_per_chunk": 60,
+			"look": "prop",
+			"sound": "thump",
+			"clears_grass": false,
+			"support": {
+				"reach_m": 3.0,
+				"strength": 0.5,
+				"wear_game_days": 60,
+				"floor": 0.25
+			}
+		},
+		"timber_set": {
+			"kit": "timber_set_kit",
+			"item": "timber_set",
+			"state": 30,
+			"footprint_x": 2.0,
+			"footprint_z": 0.4,
+			"cap_per_chunk": 60,
+			"look": "set",
+			"sound": "thump",
+			"clears_grass": false,
+			"support": {
+				"reach_m": 6.0,
+				"strength": 0.7,
+				"wear_game_days": 120,
+				"floor": 0.25
+			}
 		}
 	},
 	"campfire": {
@@ -425,5 +459,6 @@
 	},
 	"max_rise_m": 1.0,
 	"piece_snap_m": 1.0,
-	"note_look": "look (model builder name in inventory_view._model_for_look), sound (placed_sounds kind) and clears_grass (the 5 m circle of cleared grass) per structure, read by src/shared/structure_look.gd. Never renumber a state; new states only append (BP-T28)."
+	"note_look": "look (model builder name in inventory_view._model_for_look), sound (placed_sounds kind) and clears_grass (the 5 m circle of cleared grass) per structure, read by src/shared/structure_look.gd. Never renumber a state; new states only append (BP-T28).",
+	"note_support": "support: a prop or set holds the ground around it (BRACING_ITEMS.md): strength at the support, fading to 0 at reach_m, times its condition (1 down to floor over wear_game_days). server_items.support_strength_at sums them, capped at 1."
 }

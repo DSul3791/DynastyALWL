@@ -226,3 +226,26 @@ static func doorway(open: bool = false) -> Node3D:
 # A window wall: an opening one metre wide from 0.9 to 1.7 m up.
 static func window_wall() -> Node3D:
 	return _wall_with_gap(0.9, 1.7, 0.5)
+
+
+# A timber prop: a squared log on end, 2.4 m, with a flat cap plate; solid.
+static func prop() -> Node3D:
+	_materials()
+	var root: Node3D = Node3D.new()
+	_box(root, Vector3(0.18, 2.4, 0.18), Vector3(0.0, 1.2, 0.0), _frame)
+	_box(root, Vector3(0.4, 0.06, 0.4), Vector3(0.0, 2.43, 0.0), _planks)
+	_solid(root, Vector3(0.18, 2.4, 0.18), Vector3(0.0, 1.2, 0.0))
+	return root
+
+
+# A timber set: two posts and a cap beam across, 2 m wide and 2.4 m high; the posts are solid, the opening between them is walkable.
+static func timber_set() -> Node3D:
+	_materials()
+	var root: Node3D = Node3D.new()
+
+	for x in [-0.9, 0.9]:
+		_box(root, Vector3(0.18, 2.4, 0.18), Vector3(x, 1.2, 0.0), _frame)
+		_solid(root, Vector3(0.18, 2.4, 0.18), Vector3(x, 1.2, 0.0))
+
+	_box(root, Vector3(2.1, 0.2, 0.22), Vector3(0.0, 2.3, 0.0), _planks)
+	return root
