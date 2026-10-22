@@ -1,6 +1,22 @@
 # Terrain review and proposal (Sonny, World), 2026-10-22. DOCS ONLY: no generator, tile or rule change. Freeze stays.
 Dave's ask: (1) 9-tile bake max 30 min, (2) rivers and lakes from the natural lay of the land (catch basins, runoffs, brooks, streams, rivers; waterfalls only after), (3) climate by coordinates changes how water and ground behave. Order: terrain height, then water from terrain, then climate, then waterfalls.
 
+## 0. Requirements (Dave, 2026-10-22 16:56: the water cycle) and which option covers them
+Y = covered, P = partly, N = not.
+| # | Requirement | A snap+deepen | B drainage from terrain | C rebuild |
+|---|---|---|---|---|
+| R1 | Rain and snowmelt on hillsides feed streams (melt by season and altitude) | N | Y (runoff map: rain + melt, zone coefficient) | Y |
+| R2 | Streams gather water down hillsides into lakes and ponds | P | Y (flow accumulation on fine grid) | Y |
+| R3 | Natural catch basins become deeper lakes (depression filling, depth from fill volume) | N | Y | Y |
+| R4 | Plunge pools where steep channels land (rule from knickpoints, depth by drop) | P (today's pools) | Y | Y |
+| R5 | Every lake has an outlet at its lowest rim, rivers leave lakes | N | Y | Y |
+| R6 | Rivers carry water on to farmland (soak in) and to the ocean (runoff) | P | Y (infiltration by soil, rest to sea) | Y |
+| R7 | Fertile flood plains: flat low land beside rivers, floods in big storms | N | Y (valley floor width from accumulation, soil alluvium, flood depth test) | Y |
+| R8 | Streams, brooks and rivers good for waterwheels (steady flow, usable fall) and fishing (deep pools, slow reaches) | N | Y (per-reach flow, fall and depth tags written to the tile) | Y |
+| R9 | Climate by coordinates (desert wadis, jungle dense, volcano springs) | N | Y | Y |
+All four requirements marked N in A mean A alone is not enough. B covers all nine. C covers all nine at much higher cost.
+Extra data B must write per tile for R6 to R8: reach tags (flow m3/s class, drop m per 100 m, pool depth) and a flood-plain mask, stored beside water_class (tile file section, WORLD_FORMAT_SPEC update needed).
+
 ## 1. How we make ground today (files)
 Pipeline per tile (tile_baker.gd): height -> erosion -> ledges -> scree -> water -> climate -> geology -> sites.
 - World level (once): world_elevation.gd builds a 160 m elevation map from the sketch; river_network.gd runs priority flood + drainage area on that 160 m map and makes river chains (threshold river_start_km2 = 0.5 km2, "rain falls evenly").
@@ -41,6 +57,11 @@ Prototype plan (no tile commits): one tile (3,4) in MikeW's second clone, flag-g
 4. Drainage agreement: at least 90% of river cells within 64 m of a fine-terrain accumulation channel (today 54%).
 5. Climate: desert tile shows fewer, ephemeral channels; jungle denser; same terrain, different runoff coefficient (unit test on one synthetic tile).
 6. Bake: 9 tiles at or under 30 min on Dave's PC (MikeW timing), edge match on all 8 borders, tile hashes stable run to run.
+8. Water cycle (R1, R2): a rain-and-melt run on one tile delivers more water to each lake than its direct springs; catchment area of every lake is above 0 and lakes high in snow zones fill in spring.
+9. Catch basins and pools (R3, R4): every natural depression deeper than 2 m becomes a lake, deepest point at least 60% of fill depth; every chute lands in a pool at least 2 m deep and 0.4 x drop (cap 4 m), as today.
+10. Soak and runoff (R6): water mass balance on a 6 h dry sim: spring + rain = evaporation + soaked + ocean outflow within 5%; farmland cells within 200 m of a river show a soaked-water value above the rest.
+11. Flood plains (R7): a 3x storm flow floods a flat strip beside rivers (soil alluvium, fertility high) and stays at least 100 m away from the spawn hill and village; flood depth below 2 m outside the plain.
+12. Waterwheel and fishing reaches (R8): at least one reach per river with flow class and fall tagged; at least one pool of 3 m depth with slow flow per major river.
 7. Settled water: 6 h dry sim has no flooding of the starter plains beyond rivers and lakes (soak test).
 
 ## 6. Needs from others (via the coordinator)
