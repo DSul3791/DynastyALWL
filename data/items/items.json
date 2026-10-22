@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 208,
+	"next_number": 213,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -2255,6 +2255,52 @@
 			"look_alikes": [],
 			"material": "wood",
 			"note": "Bracing support."
+		},
+		"cut_stone_block": {
+			"number": 208,
+			"name": "Stone block",
+			"description": "A squared block of stone, 40 by 20 by 20 cm. Heavy, and laid in courses with mortar.",
+			"kind": "material",
+			"stack": 4,
+			"look_alikes": [],
+			"value": 25
+		},
+		"brick": {
+			"number": 209,
+			"name": "Brick",
+			"description": "A fired clay brick, 22 by 10 by 7 cm. Laid in courses with mortar.",
+			"kind": "material",
+			"stack": 40,
+			"look_alikes": [],
+			"value": 4
+		},
+		"mortar": {
+			"number": 210,
+			"name": "Mortar",
+			"description": "A bucketful of sand and clay paste that binds stone blocks and bricks.",
+			"kind": "material",
+			"stack": 10,
+			"look_alikes": [],
+			"value": 6
+		},
+		"ladder_kit": {
+			"number": 211,
+			"name": "Ladder",
+			"description": "A wooden ladder, 2.4 m tall. Set it against a wall or an edge and climb.",
+			"kind": "placeable",
+			"stack": 1,
+			"look_alikes": [],
+			"value": 35
+		},
+		"ladder": {
+			"number": 212,
+			"name": "Ladder",
+			"description": "A wooden ladder, 2.4 m tall. Set it against a wall or an edge and climb.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": [],
+			"material": "wood",
+			"note": "Building piece: row state 31."
 		}
 	}
 }

@@ -280,7 +280,11 @@
 		"doorway_section_kit": 10.0,
 		"window_section_kit": 10.0,
 		"timber_prop_kit": 18.0,
-		"timber_set_kit": 22.0
+		"timber_set_kit": 22.0,
+		"cut_stone_block": 25.0,
+		"brick": 2.7,
+		"mortar": 3.5,
+		"ladder_kit": 12.0
 	},
 	"by_suffix": {
 		"berries": 0.05,

@@ -2021,6 +2021,8 @@ func _model_for_state(state: int, extra: Dictionary = {}) -> Node3D:
 			return PieceLook.prop()
 		"set":
 			return PieceLook.timber_set()
+		"ladder":
+			return PieceLook.ladder()
 		"door_shut":
 			return PieceLook.doorway(false)
 		"door_open":
@@ -3163,7 +3165,7 @@ func _add_admin_builds() -> void:
 	head.modulate = Color(1.0, 0.8, 0.4)
 	_recipe_list.add_child(head)
 
-	for id in ["foundation_section_kit", "wall_section_kit", "doorway_section_kit", "window_section_kit", "floor_section_kit", "roof_section_kit", "campfire_kit", "lean_to_kit", "chest_kit", "workbench_kit"]:
+	for id in ["foundation_section_kit", "wall_section_kit", "doorway_section_kit", "window_section_kit", "floor_section_kit", "roof_section_kit", "ladder_kit", "campfire_kit", "lean_to_kit", "chest_kit", "workbench_kit"]:
 		var number: int = table.number_of(id)
 
 		if number == 0:
