@@ -1,7 +1,3 @@
-## roofs-pieces | Should each angle have a straight slope piece, an outside (hip) corner piece and an inside (valley) corner piece, 6 roof pieces per tier look?
-Image: questions/img/tiers_roof_pieces.png
-[check]
-
 ## roofs-65-tall | Is it OK that a 65 degree roof is very tall (4.3 m rise per 2 m of run)?
 Image: questions/img/tiers_roof_pieces.png
 [check]
