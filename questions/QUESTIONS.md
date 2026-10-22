@@ -1,9 +1,4 @@
 
-## spade-sizes | Spade sizes: small, medium and large spades move 1, 4 and 8 pieces of ground per stroke, and carry 8, 12 and 16 shovelfuls when loaded. Keep these numbers?
-Note: They live in data/items/digging.json (spade_sizes) and are easy to change later.
-- Keep these numbers (recommended)
-- Change them (tell me in chat)
-
 ## tier-plan | Building tiers: please read art/BUILDING_TIERS_PLAN.md (six wall tiers, five slots, recipes). Questions 1 to 6 follow as cards. Pictures of the designs come from Kathleen next; nothing is built until you approve.
 - Plan read, go through the questions
 
@@ -63,3 +58,9 @@ Image: questions/img/looks_spades_tv6.png
 ## chk-masonry-tv6 | Check the masonry items (labelled picture): stone block, brick, mortar. Do they look like the real things?
 Image: questions/img/looks_masonry_tv6.png
 [check]
+
+## spade-load | You said "one shovelful at a time" for raising ground. How should the spade work?
+Note: Today (build 676) a spade is loaded by dragging soil onto it: small, medium and large spades hold 8, 12 and 16 shovelfuls, move 1, 4 and 8 pieces of ground per stroke, and each raise click uses one shovelful.
+- Keep loading: spades hold 8, 12 and 16 and each raise click uses one (recommended: it matches your bow-style idea)
+- No load: each raise click takes one shovelful straight from the pack, nothing is loaded onto the spade
+- Always load exactly one: the spade holds one shovelful at a time
