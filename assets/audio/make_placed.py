@@ -141,8 +141,22 @@ def tool_warn(rng):
     return finish(out, 0.6)
 
 
+def place_timber(rng):
+    # A wall, floor or roof piece set in place: a stand-down thud, two or three hammer blows on a peg, a short wood creak as it settles.
+    out = np.zeros(int(1.0 * SR))
+    add(out, knock(rng, rng.uniform(75, 100), 0.04, 900, 1.0), 0.0)
+
+    for at in (0.22, 0.4, 0.55)[:rng.integers(2, 4)]:
+        add(out, knock(rng, rng.uniform(150, 210), 0.02, 2600, 0.8), at)
+        add(out, ping(rng.uniform(1500, 2100), 0.04, 0.2) * 0.25, at)
+
+    creak = rustle(rng, int(0.35 * SR), 700, 0.7) * env(int(0.35 * SR), 0.2, 0.3)
+    add(out, creak * 0.3, 0.62)
+    return finish(out)
+
+
 ONE_SHOTS = {"place_leanto": place_leanto, "place_chest": place_chest, "place_thump": place_thump, "pickup_placed": pickup_placed,
-             "container_put": container_put, "container_take": container_take, "tool_break": tool_break, "tool_repair": tool_repair, "tool_warn": tool_warn}
+             "container_put": container_put, "container_take": container_take, "tool_break": tool_break, "tool_repair": tool_repair, "tool_warn": tool_warn, "place_timber": place_timber}
 
 
 def main():

@@ -4,7 +4,7 @@ extends Node
 # how the Items thread builds them; the hooks below are called with a place, and `watch_world` hears
 # the world rows by itself.
 #
-#   sound.placed.place("leanto", at)        "leanto", "chest" or "thump" (any other thing set down)
+#   sound.placed.place("leanto", at)        "leanto", "chest", "timber" (wall, floor, roof piece) or "thump" (any other thing set down)
 #   sound.placed.pick_up(at)                a placed thing taken up again
 #   sound.placed.chest(true, at)            a chest opened (false: closed); the interior's chest sounds
 #   sound.placed.container(true, at)        something put into a container (false: taken out)
@@ -29,10 +29,10 @@ const RECORDED_DIR := "res://assets/audio/recorded/placed/"
 
 const NAMES := {
 	"place_leanto": -7.0, "place_chest": -6.0, "place_thump": -10.0, "pickup_placed": -10.0,
-	"container_put": -11.0, "container_take": -12.0, "tool_break": -4.0, "tool_repair": -12.0, "tool_warn": -10.0,
+	"place_timber": -7.0, "container_put": -11.0, "container_take": -12.0, "tool_break": -4.0, "tool_repair": -12.0, "tool_warn": -10.0,
 }
 # World row states of placed structures (Items thread: 5 lean-to, 6 chest, 7 chopping block) and the place sound each makes.
-const STATE_KIND := {5: "leanto", 6: "chest", 7: "thump", 1: "thump", 8: "thump", 9: "thump"}   # 1, 8, 9: a campfire set down (lit, empty or loaded)
+const STATE_KIND := {5: "leanto", 6: "chest", 7: "thump", 1: "thump", 8: "thump", 9: "thump", 22: "timber", 23: "timber", 24: "timber"}   # 1, 8, 9: a campfire set down (lit, empty or loaded)
 const OPENABLES := {"door": ["door_open", "door_close"], "gate": ["gate_open", "gate_close"], "hatch": ["hatch_open", "hatch_close"], "chest": ["chest_open", "chest_close"]}
 var open_kinds: Dictionary = {}         # world row state -> openable kind; filled when Items has doors (rows carry "open" 0 or 1)
 const NEAR_M := 40.0                    # rows closer than this are heard appearing or vanishing
@@ -56,7 +56,7 @@ func setup(stage) -> void:
 
 
 func place(kind: String, at: Vector3) -> bool:
-	return _once("place_" + (kind if kind in ["leanto", "chest"] else "thump"), at)
+	return _once("place_" + (kind if kind in ["leanto", "chest", "timber"] else "thump"), at)
 
 
 func pick_up(at: Vector3) -> bool:
