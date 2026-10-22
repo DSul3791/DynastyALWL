@@ -1,6 +1,3 @@
-## blueprint-2 | Does the mouse wheel cycle piece type, then tier, with the cost shown on the ghost?
-[check]
-
 ## blueprint-3 | Place a see-through blueprint first, then fill it with items (E or drag a stack, any order, partial is fine)?
 [check]
 
