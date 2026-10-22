@@ -115,7 +115,7 @@ var _panel_bars: Dictionary = {}       # "Health", "Exertion", "Food", "Water" -
 var _vitals_back: Control
 var _vitals_warning: Label
 var _weight_label: Label
-var _purse_label: Label
+var _purse_label: RichTextLabel
 var shoulder_id: String = ""                  # the large log on the shoulder (protocol 64), "" when none: Mandy shows the carry pose from this
 var purse_copper: int = 0                      # the purse, in copper (protocol 61)
 var rep_names: PackedStringArray = PackedStringArray()   # NPCs this player has a reputation with, and the points
@@ -926,20 +926,105 @@ func speed_factor() -> float:
 	return (CarryRules.speed_factor(carried_kg(), carry_body_kg(), _carry_cfg) if not _carry_cfg.is_empty() else 1.0) * limp_share
 
 
-# The purse as words, richest coin first: "2 silver, 3 bronze, 4 copper" (copper = items.json value unit).
+# The purse as words, cheapest coin first: "4 copper, 3 bronze, 2 silver" (copper = items.json value unit). Used where only text fits
+# (tooltips, notices); windows draw coin icons instead (fill_coin_line).
 func coin_text(copper: int) -> String:
 	var parts: PackedStringArray = PackedStringArray()
 	var left: int = copper
+	var rows: Array = _coins_cfg.get("ladder", []).duplicate()
 
-	for row in _coins_cfg.get("ladder", []):
+	rows.sort_custom(func(x, y): return int(x["copper"]) > int(y["copper"]))
+
+	for row in rows:
 		var each: int = maxi(int(row["copper"]), 1)
 
 		if left >= each:
 			@warning_ignore("integer_division")
-			parts.append("%d %s" % [left / each, str(row["name"])])
+			parts.insert(0, "%d %s" % [left / each, str(row["name"])])
 			left = left % each
 
 	return ", ".join(parts) if not parts.is_empty() else "nothing"
+
+
+# Coin icons (Dave 2026-10-22): a small filled circle in the coin's colour, shown instead of the words copper, bronze, silver, gold.
+const COIN_COLOURS := {"coin_copper": Color(0.78, 0.42, 0.22), "coin_bronze": Color(0.55, 0.40, 0.16), "coin_silver": Color(0.78, 0.80, 0.84), "coin_gold": Color(0.96, 0.76, 0.18)}
+static var _coin_icons: Dictionary = {}
+
+
+static func coin_icon(coin_id: String) -> Texture2D:
+	if _coin_icons.has(coin_id):
+		return _coin_icons[coin_id]
+
+	var size: int = 32
+	var image: Image = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	var fill: Color = COIN_COLOURS.get(coin_id, Color.WHITE)
+	var rim: Color = fill.darkened(0.45)
+	var centre: float = float(size) * 0.5 - 0.5
+
+	for y in size:
+		for x in size:
+			var d: float = Vector2(float(x) - centre, float(y) - centre).length()
+
+			if d <= 15.0:
+				image.set_pixel(x, y, rim if d > 12.0 else fill.lightened(0.18) if d < 6.0 and float(x) < centre and float(y) < centre else fill)
+
+	var texture: ImageTexture = ImageTexture.create_from_image(image)
+	_coin_icons[coin_id] = texture
+	return texture
+
+
+# A label that can hold coin icons beside numbers and words.
+func make_coin_label(px: int) -> RichTextLabel:
+	var label: RichTextLabel = RichTextLabel.new()
+	label.fit_content = true
+	label.scroll_active = false
+	label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.custom_minimum_size = Vector2(0.0, float(px) * 1.4)
+	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	label.add_theme_font_size_override("normal_font_size", px)
+	label.set_meta("px", px)
+	return label
+
+
+# Fills the label with segments: a String is text, an int is a coin amount in copper drawn as "4 (copper icon) 3 (bronze icon) ...",
+# cheapest coin first (copper, bronze, silver, gold, left to right). A zero amount reads "nothing".
+func fill_coin_line(label: RichTextLabel, segments: Array) -> void:
+	label.clear()
+	var px: int = int(label.get_meta("px", 24))
+	var rows: Array = _coins_cfg.get("ladder", []).duplicate()
+	rows.sort_custom(func(x, y): return int(x["copper"]) < int(y["copper"]))
+
+	for segment in segments:
+		if typeof(segment) == TYPE_STRING:
+			label.add_text(segment)
+			continue
+
+		var left: int = int(segment)
+		var amounts: Array = []
+
+		for row in rows.duplicate():
+			amounts.append([row, 0])
+
+		for n in range(amounts.size() - 1, -1, -1):
+			var each: int = maxi(int(amounts[n][0]["copper"]), 1)
+			@warning_ignore("integer_division")
+			amounts[n][1] = left / each
+			left = left % each
+
+		var any: bool = false
+
+		for pair in amounts:
+			if int(pair[1]) > 0:
+				if any:
+					label.add_text("  ")
+
+				any = true
+				label.add_text("%d " % int(pair[1]))
+				label.add_image(coin_icon(str(pair[0]["id"])), int(px * 0.8), int(px * 0.8))
+
+		if not any:
+			label.add_text("nothing")
 
 
 func rank_word(points: int) -> String:
@@ -954,7 +1039,7 @@ func rank_word(points: int) -> String:
 
 func _refresh_purse() -> void:
 	if _purse_label != null:
-		_purse_label.text = "Purse: %s" % coin_text(purse_copper)
+		fill_coin_line(_purse_label, ["Purse: ", purse_copper])
 
 
 func _refresh_weight() -> void:
@@ -2417,8 +2502,7 @@ func _build_panel() -> void:
 	_weight_label.text = "Body weight %.1f kg" % weight_kg
 	_weight_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	right.add_child(_weight_label)
-	_purse_label = Label.new()
-	_style(_purse_label, BODY_PX - 6)
+	_purse_label = make_coin_label(_px(BODY_PX - 6))
 	right.add_child(_purse_label)
 	_refresh_purse()
 	_carry_bar = ProgressBar.new()
