@@ -436,3 +436,7 @@ Answered: 2026-10-22 23:14 UTC
 Answer: No: That is close, but you have the notches wrong. Look up any log cabin picture and you will see what I mean.
 Answered: 2026-10-22 23:14 UTC
 
+## found-metres | Foundation sizes in metres. Small foundation (for thin walls): 2 x 2 m, or 4 x 4 m as a double. Large foundation (for thick walls: log, cobblestone, mason): 3 x 3 m, or 6 x 6 m as a double. Pieces snap from about 6 m away. Are these sizes right?
+Answer: Yes
+Answered: 2026-10-22 23:14 UTC
+
