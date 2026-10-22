@@ -1,6 +1,3 @@
-## blueprint-4 | A piece cannot finish before what it rests on is finished (wall waits for foundation, roof for walls)?
-[check]
-
 ## blueprint-5 | Taking down an unfinished blueprint returns every item put in?
 [check]
 
