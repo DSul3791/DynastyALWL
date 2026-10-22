@@ -160,3 +160,7 @@ Answered: 2026-10-22 15:04 UTC
 Answer: Keep tiles in git as backup, cloud threads simply never use them (recommended)
 Answered: 2026-10-22 15:09 UTC
 
+## cc-first-job | When the team restarts, what should they do first? (Triple-check item; every thread agreed the process is ready.)
+Answer: Crashes, saves and version check first, then water, then items, then art (recommended)
+Answered: 2026-10-22 15:14 UTC
+
