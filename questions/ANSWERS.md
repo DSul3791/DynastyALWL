@@ -320,3 +320,7 @@ Answered: 2026-10-22 20:17 UTC
 Answer: One shovelful at a time
 Answered: 2026-10-22 20:18 UTC
 
+## hoe-order | In what order should Sal build the shovel and hoe work?
+Answer: Shovel Raise mode and new model first, then hoe path and smooth, then grade line (recommended)
+Answered: 2026-10-22 20:19 UTC
+
