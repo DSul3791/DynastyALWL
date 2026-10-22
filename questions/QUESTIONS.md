@@ -1,6 +1,3 @@
-## collapse-plan-2 | Supports (props, timber sets) in reach pause the timer. A new support restarts the full window. A removed or worn-out support starts a fresh half window. Is this right?
-[check]
-
 ## collapse-plan-3 | Warnings: quiet until 60% of the window. Then creaks, then shaking with dust and "The earth groans.", then strong shaking with a warning line every 5 seconds. Then it falls. Is this right?
 [check]
 
