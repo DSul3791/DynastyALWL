@@ -500,3 +500,7 @@ Answered: 2026-10-22 23:36 UTC
 Answer: Yes
 Answered: 2026-10-22 23:36 UTC
 
+## blueprint-6 | Foundation snap range about 6 m (very wide)?
+Answer: Yes
+Answered: 2026-10-22 23:42 UTC
+
