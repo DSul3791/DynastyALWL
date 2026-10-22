@@ -1,7 +1,3 @@
-## fishing-hint | Fishing: show a hint when a spot is nearly fished out?
-- Yes, "the water is still" when under 3 fish are left
-- No, players find out by trying
-
 ## cast-roles | Starter town people: who lives here besides Hob (shopkeeper) and Edda (guard)?
 - Five more: smith, healer, farmer, elder, child (seven in all) [recommended]
 - Only smith and healer first (four in all)
