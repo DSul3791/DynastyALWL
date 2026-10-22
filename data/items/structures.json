@@ -12,7 +12,10 @@
 			"cap_per_chunk": 6,
 			"half_x": 1.1,
 			"half_z": 0.95,
-			"height": 2.1
+			"height": 2.1,
+			"look": "lean_to",
+			"sound": "leanto",
+			"clears_grass": true
 		},
 		"chest": {
 			"kit": "chest_kit",
@@ -23,7 +26,10 @@
 			"cap_per_chunk": 8,
 			"slots": 12,
 			"max_kg": 40,
-			"who": "anyone"
+			"who": "anyone",
+			"look": "chest",
+			"sound": "chest",
+			"clears_grass": true
 		},
 		"chopping_block": {
 			"kit": "chopping_block_kit",
@@ -36,7 +42,10 @@
 			"logs_to_firewood": 4,
 			"shoulder_log_to_firewood": 12,
 			"use_pace_ms": 600,
-			"use_reach_m": 3.0
+			"use_reach_m": 3.0,
+			"look": "chopping_block",
+			"sound": "thump",
+			"clears_grass": true
 		},
 		"plank_chest": {
 			"kit": "plank_chest_kit",
@@ -47,7 +56,10 @@
 			"cap_per_chunk": 8,
 			"slots": 20,
 			"max_kg": 150,
-			"who": "anyone"
+			"who": "anyone",
+			"look": "chest",
+			"sound": "chest",
+			"clears_grass": true
 		},
 		"remains": {
 			"kit": "",
@@ -58,7 +70,10 @@
 			"cap_per_chunk": 50,
 			"slots": 30,
 			"who": "owner",
-			"take_only": true
+			"take_only": true,
+			"look": "remains",
+			"sound": "",
+			"clears_grass": false
 		},
 		"workbench": {
 			"kit": "workbench_kit",
@@ -71,7 +86,10 @@
 			"station_level": 1,
 			"reach_m": 4.0,
 			"addon_reach_m": 5.0,
-			"tier": "small"
+			"tier": "small",
+			"look": "workbench",
+			"sound": "",
+			"clears_grass": true
 		},
 		"tool_rack": {
 			"kit": "tool_rack_kit",
@@ -80,7 +98,10 @@
 			"footprint_x": 1.0,
 			"footprint_z": 0.4,
 			"cap_per_chunk": 6,
-			"addon_of": "workbench"
+			"addon_of": "workbench",
+			"look": "tool_rack",
+			"sound": "",
+			"clears_grass": true
 		},
 		"vice": {
 			"kit": "vice_kit",
@@ -89,7 +110,10 @@
 			"footprint_x": 0.5,
 			"footprint_z": 0.5,
 			"cap_per_chunk": 6,
-			"addon_of": "workbench"
+			"addon_of": "workbench",
+			"look": "vice",
+			"sound": "",
+			"clears_grass": true
 		},
 		"log_workbench": {
 			"kit": "log_workbench_kit",
@@ -102,7 +126,10 @@
 			"station_level": 2,
 			"tier": "medium",
 			"reach_m": 4.5,
-			"addon_reach_m": 5.0
+			"addon_reach_m": 5.0,
+			"look": "log_workbench",
+			"sound": "",
+			"clears_grass": true
 		},
 		"stone_forge": {
 			"kit": "stone_forge_kit",
@@ -118,7 +145,10 @@
 			},
 			"tier": "large",
 			"reach_m": 5.0,
-			"addon_reach_m": 5.0
+			"addon_reach_m": 5.0,
+			"look": "stone_forge",
+			"sound": "",
+			"clears_grass": true
 		},
 		"blacksmithy": {
 			"kit": "blacksmithy_kit",
@@ -134,7 +164,10 @@
 			},
 			"tier": "epic",
 			"reach_m": 5.0,
-			"addon_reach_m": 5.0
+			"addon_reach_m": 5.0,
+			"look": "blacksmithy",
+			"sound": "",
+			"clears_grass": true
 		},
 		"carcass": {
 			"kit": "",
@@ -144,7 +177,10 @@
 			"footprint_z": 0.6,
 			"cap_per_chunk": 50,
 			"take_only": true,
-			"reach_m": 3.0
+			"reach_m": 3.0,
+			"look": "carcass",
+			"sound": "",
+			"clears_grass": false
 		},
 		"large_forge": {
 			"kit": "large_forge_kit",
@@ -160,7 +196,10 @@
 			},
 			"tier": "epic",
 			"reach_m": 6.0,
-			"addon_reach_m": 5.0
+			"addon_reach_m": 5.0,
+			"look": "big_forge",
+			"sound": "",
+			"clears_grass": true
 		},
 		"master_forge": {
 			"kit": "master_forge_kit",
@@ -176,7 +215,10 @@
 			},
 			"tier": "epic",
 			"reach_m": 6.0,
-			"addon_reach_m": 5.0
+			"addon_reach_m": 5.0,
+			"look": "big_forge",
+			"sound": "",
+			"clears_grass": true
 		},
 		"wall_section": {
 			"kit": "wall_section_kit",
@@ -187,7 +229,10 @@
 			"footprint_z": 0.25,
 			"cap_per_chunk": 200,
 			"max_rise_m": 0.6,
-			"piece_kind": "wall"
+			"piece_kind": "wall",
+			"look": "wall",
+			"sound": "timber",
+			"clears_grass": false
 		},
 		"floor_section": {
 			"kit": "floor_section_kit",
@@ -198,7 +243,10 @@
 			"footprint_z": 2.0,
 			"cap_per_chunk": 200,
 			"max_rise_m": 0.6,
-			"piece_kind": "floor"
+			"piece_kind": "floor",
+			"look": "floor",
+			"sound": "timber",
+			"clears_grass": true
 		},
 		"roof_section": {
 			"kit": "roof_section_kit",
@@ -213,7 +261,10 @@
 			"half_z": 1.2,
 			"height": 2.6,
 			"max_rise_m": 0.6,
-			"piece_kind": "roof"
+			"piece_kind": "roof",
+			"look": "roof",
+			"sound": "timber",
+			"clears_grass": false
 		},
 		"foundation_section": {
 			"kit": "foundation_section_kit",
@@ -311,7 +362,10 @@
 					]
 				]
 			},
-			"note": "Foundation (Dave 2026-10-22): a 4 m square slab 0.3 m high that clears the grass under and around it (placed_clearing.json) and that walls, floors and roofs snap to at the listed anchors (x, z, yaw from its middle)."
+			"note": "Foundation (Dave 2026-10-22): a 4 m square slab 0.3 m high that clears the grass under and around it (placed_clearing.json) and that walls, floors and roofs snap to at the listed anchors (x, z, yaw from its middle).",
+			"look": "foundation",
+			"sound": "foundation",
+			"clears_grass": true
 		},
 		"doorway_section": {
 			"kit": "doorway_section_kit",
@@ -322,7 +376,10 @@
 			"footprint_z": 0.25,
 			"cap_per_chunk": 200,
 			"max_rise_m": 0.6,
-			"piece_kind": "wall"
+			"piece_kind": "wall",
+			"look": "doorway",
+			"sound": "timber",
+			"clears_grass": false
 		},
 		"window_section": {
 			"kit": "window_section_kit",
@@ -333,7 +390,10 @@
 			"footprint_z": 0.25,
 			"cap_per_chunk": 200,
 			"max_rise_m": 0.6,
-			"piece_kind": "wall"
+			"piece_kind": "wall",
+			"look": "window_wall",
+			"sound": "timber",
+			"clears_grass": false
 		}
 	},
 	"campfire": {
@@ -342,5 +402,6 @@
 		"max_rise_m": 0.6
 	},
 	"max_rise_m": 1.0,
-	"piece_snap_m": 1.0
+	"piece_snap_m": 1.0,
+	"note_look": "look (model builder name in inventory_view._model_for_look), sound (placed_sounds kind) and clears_grass (the 5 m circle of cleared grass) per structure, read by src/shared/structure_look.gd. Never renumber a state; new states only append (BP-T28)."
 }

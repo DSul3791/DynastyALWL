@@ -12,6 +12,7 @@ const ItemTableScript := preload("res://src/shared/item_table.gd")
 const InventoryScript := preload("res://src/shared/inventory.gd")
 const RecipeTableScript := preload("res://src/shared/recipe_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const StructureLook := preload("res://src/shared/structure_look.gd")
 const AdminScript := preload("res://src/stream/server_admin.gd")
 
 const VitalsRules := preload("res://src/shared/vitals_rules.gd")
@@ -1484,7 +1485,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 		if state >= 5 and state != 8 and state != 9:   # 8 is a burnt-out fire, 9 a loaded one: the campfire model without flames, light or sound
 			var yaw: float = deg_to_rad(float(row[5].get("yaw", 0.0))) if row.size() > 5 else 0.0
-			node = _make_leanto() if state == 5 else (_make_chest() if state == 6 else (_make_remains(float(row[5].get("age", 0.0)) if row.size() > 5 else 0.0) if (state == 11 or state == 12) else (_make_bench() if state == 13 else (_make_rack() if state == 14 else (_make_vice() if state == 15 else (_make_log_bench() if state == 16 else (_make_forge() if state == 17 else (_make_smithy() if state == 18 else (_make_big_forge(state) if (state == 20 or state == 21) else (PieceLook.wall() if state == 22 else (PieceLook.floor_piece() if state == 23 else (PieceLook.roof() if state == 24 else (PieceLook.foundation() if state == 25 else (PieceLook.doorway() if state == 26 else (PieceLook.window_wall() if state == 27 else (_make_carcass(str(row[5].get("sp", "")) if row.size() > 5 else "") if state == 19 else _make_block()))))))))))))))))
+			node = _model_for_state(state, row[5] if row.size() > 5 else {})
 			node.position = row[3] - Vector3(0.0, SINK_M * float(row[5].get("age", 0.0)), 0.0) if (state == 11 or state == 12) and row.size() > 5 else row[3]
 			node.rotation.y = yaw
 			_root.add_child(node)
@@ -1962,44 +1963,53 @@ func _make_remains(age: float) -> Node3D:
 
 
 # Only the nearest MAX_FIRE_LIGHTS lit fires keep their light on (cost cap at every quality).
-# The model of a placeable as it stands in the world, for the placement ghost (held_item.gd): the same builders the world draws with.
-func ghost_model(state: int) -> Node3D:
-	if state == 1:
-		return _make_fire(false)
-
-	match state:
-		5:
+# The model of a world state (structures.json "look", read through StructureLook): the same builders draw a placed thing and the placement ghost.
+# `extra` is the row's extras (remains age, carcass species).
+func _model_for_state(state: int, extra: Dictionary = {}) -> Node3D:
+	match StructureLook.look_of(state):
+		"campfire":
+			return _make_fire(false, state == 9)
+		"lean_to":
 			return _make_leanto()
-		6:
+		"chest":
 			return _make_chest()
-		13:
+		"remains":
+			return _make_remains(float(extra.get("age", 0.0)))
+		"workbench":
 			return _make_bench()
-		14:
+		"tool_rack":
 			return _make_rack()
-		15:
+		"vice":
 			return _make_vice()
-		16:
+		"log_workbench":
 			return _make_log_bench()
-		17:
+		"stone_forge":
 			return _make_forge()
-		18:
+		"blacksmithy":
 			return _make_smithy()
-		20, 21:
+		"big_forge":
 			return _make_big_forge(state)
-		22:
+		"wall":
 			return PieceLook.wall()
-		23:
+		"floor":
 			return PieceLook.floor_piece()
-		24:
+		"roof":
 			return PieceLook.roof()
-		25:
+		"foundation":
 			return PieceLook.foundation()
-		26:
+		"doorway":
 			return PieceLook.doorway()
-		27:
+		"window_wall":
 			return PieceLook.window_wall()
+		"carcass":
+			return _make_carcass(str(extra.get("sp", "")))
 
 	return _make_block()
+
+
+# The ghost's model: a lit campfire is shown cold.
+func ghost_model(state: int) -> Node3D:
+	return _model_for_state(state)
 
 
 func _make_fire(lit: bool, loaded: bool = false) -> Node3D:

@@ -32,7 +32,7 @@ const NAMES := {
 	"place_timber": -7.0, "place_foundation": -5.0, "bracing_creak": -24.0, "bracing_rumble": -22.0, "dust_patter": -26.0, "bracing_crack": -9.0, "quake_tick": -10.0, "container_put": -11.0, "container_take": -12.0, "tool_break": -4.0, "tool_repair": -12.0, "tool_warn": -10.0,
 }
 # World row states of placed structures (Items thread: 5 lean-to, 6 chest, 7 chopping block) and the place sound each makes.
-const STATE_KIND := {5: "leanto", 6: "chest", 7: "thump", 1: "thump", 8: "thump", 9: "thump", 22: "timber", 23: "timber", 24: "timber", 25: "foundation"}   # 1, 8, 9: a campfire set down (lit, empty or loaded)
+const StructureLook := preload("res://src/shared/structure_look.gd")   # which states make a placed sound, and which kind, is data (structures.json "sound")
 const OPENABLES := {"door": ["door_open", "door_close"], "gate": ["gate_open", "gate_close"], "hatch": ["hatch_open", "hatch_close"], "chest": ["chest_open", "chest_close"]}
 var open_kinds: Dictionary = {}         # world row state -> openable kind; filled when Items has doors (rows carry "open" 0 or 1)
 const NEAR_M := 40.0                    # rows closer than this are heard appearing or vanishing
@@ -134,8 +134,10 @@ func watch_world(world: Dictionary, here: Vector3) -> void:
 	for id in world:
 		var row: Dictionary = world[id]
 
-		if STATE_KIND.has(int(row["state"])):
-			seen[id] = [STATE_KIND[int(row["state"])], row["pos"]]
+		var kind: String = StructureLook.sound_of(int(row["state"]))
+
+		if kind != "":
+			seen[id] = [kind, row["pos"]]
 
 	if _primed:
 		for id in seen:
