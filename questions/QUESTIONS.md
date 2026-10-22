@@ -1,6 +1,3 @@
-## tier-foundations | Foundation sizes: 4 x 4 standard, 6 x 6 large, 8 x 8 mason?
-[check]
-
 ## tier-basic-ground | May tier-1 basic buildings (woven thatch hut) sit on bare ground with no foundation?
 [check]
 
