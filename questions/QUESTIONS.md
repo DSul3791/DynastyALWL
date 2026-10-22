@@ -1,7 +1,3 @@
-## blueprint-refund | When you take down a FINISHED piece, how much of its items come back? Sal recommends half (50%).
-[check]
-Note: Answer Yes for 50%. Answer No and write the share you want in the box (for example 25% or all of it).
-
 ## chk-block-hand | Check the chopping block in your hand (picture, bottom right of the screen): is it a good size now, and does it look like the placed chopping block? It is made from 2 logs and weighs 30 kg.
 Image: questions/img/chopping_block_in_hand.png
 [check]
