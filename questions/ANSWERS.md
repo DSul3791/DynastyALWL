@@ -216,3 +216,7 @@ Answered: 2026-10-22 17:20 UTC
 Answer: Approve as written (recommended)
 Answered: 2026-10-22 17:21 UTC
 
+## terrain-opt | How should we fix the ground so water works like real nature? (Sonny's review, tech/TERRAIN_REVIEW.md)
+Answer: B: Find rivers and lakes from the terrain itself. Meets all requirements, including natural channel shape. 1 to 2 weeks. Threaded bake about 8 to 10 minutes for 9 tiles. Makes the held spill-chute patch unnecessary (recommended)
+Answered: 2026-10-22 17:22 UTC
+
