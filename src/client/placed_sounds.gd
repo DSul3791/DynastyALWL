@@ -120,6 +120,11 @@ func tool_break(at: Vector3) -> bool:
 	return _once("tool_break", at)
 
 
+# Loading the shovel for raise mode: soil or stone dragged onto it.
+func shovel_load(stone: bool, at: Vector3) -> bool:
+	return _once("stone_load" if stone else "soil_load", at)
+
+
 func tool_warn(at: Vector3) -> bool:
 	return _once("tool_warn", at)
 
