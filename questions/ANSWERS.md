@@ -196,3 +196,7 @@ Answered: 2026-10-22 15:44 UTC
 Answer: Approve as written (recommended)
 Answered: 2026-10-22 16:52 UTC
 
+## cl-tests | The 11 old "have you answered this" checks (builds 623 to 645) are parked. Many builds have changed since. What now?
+Answer: Regroup them into one test card after the restart work, dropping any that no longer apply (recommended)
+Answered: 2026-10-22 17:17 UTC
+
