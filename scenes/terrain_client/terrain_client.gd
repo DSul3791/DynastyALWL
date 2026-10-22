@@ -67,7 +67,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 641
+const BUILD := 642
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -2469,6 +2469,8 @@ var _movement: Dictionary = {}        # data/movement.json
 var _telemetry = EventLogScript.new()       # crash_reports/telemetry_client.log: traffic, backlog and frame gaps once a second
 var _connect_window = null                # shown until the ground under the player is ready (connect_window.gd)
 var _link_up_msec: int = 0                # when ENet reported the connection up (welcome still to come)
+var _pit_shadow_msec: int = 0
+var _in_pit: bool = false
 var _lose_after_s: float = 0.0
 var _link_print_msec: int = 0
 var _horizon = null                   # artificial horizon (horizon_indicator.gd), shown underground or in water
@@ -3699,6 +3701,8 @@ func _process(delta: float) -> void:
 
 	if _tunnel_test > 0:
 		_tunnel_step()
+
+	_update_pit_shadow()
 
 	if _connect_window != null:
 		_update_connect_window()
@@ -5266,6 +5270,38 @@ func _update_underwater() -> void:
 
 
 # Ground height under a point, from the terrain colliders (NAN if none).
+# In a pit or under a roof the sun's shadow biases (set for open ground, where large ones stop acne stripes) are too coarse for walls
+# a few metres away: they show as hard-edged panels of different brightness (Dave's pit, x 53320 y 10.5 z 68418). While the player is
+# in a pit or tunnel the biases are small; open ground keeps the old values. Checked twice a second.
+func _update_pit_shadow() -> void:
+	var now: int = Time.get_ticks_msec()
+
+	if now < _pit_shadow_msec or _sun == null or body == null:
+		return
+
+	_pit_shadow_msec = now + 500
+	var here: Vector3 = body.global_position + Vector3(0.0, 1.6, 0.0)
+	var up: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(here, here + Vector3(0.0, 40.0, 0.0))
+	up.exclude = [body.get_rid()]
+	var enclosed: bool = not body.get_world_3d().direct_space_state.intersect_ray(up).is_empty()
+
+	if not enclosed:
+		var higher: int = 0
+
+		for offset in [Vector3(6.0, 0.0, 0.0), Vector3(-6.0, 0.0, 0.0), Vector3(0.0, 0.0, 6.0), Vector3(0.0, 0.0, -6.0)]:
+			var ground: float = _ground_below(here + offset + Vector3(0.0, 30.0, 0.0))
+
+			if not is_nan(ground) and ground > here.y + 3.0:
+				higher += 1
+
+		enclosed = higher >= 3
+
+	if enclosed != _in_pit:
+		_in_pit = enclosed
+		_sun.shadow_bias = 0.1 if enclosed else 0.3
+		_sun.shadow_normal_bias = 0.8 if enclosed else 3.0
+
+
 func _ground_below(p: Vector3) -> float:
 	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(p + Vector3(0.0, 2.0, 0.0), p + Vector3(0.0, -200.0, 0.0))
 	query.exclude = [body.get_rid()]
