@@ -528,3 +528,7 @@ Answered: 2026-10-22 23:47 UTC
 Answer: Yes
 Answered: 2026-10-22 23:47 UTC
 
+## blueprint-5 | Taking down an unfinished blueprint returns every item put in?
+Answer: Yes
+Answered: 2026-10-22 23:48 UTC
+
