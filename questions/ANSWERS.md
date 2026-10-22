@@ -384,3 +384,7 @@ Answered: 2026-10-22 22:27 UTC
 Answer: No load: each raise click takes one shovelful straight from the pack, nothing is loaded onto the spade
 Answered: 2026-10-22 22:27 UTC
 
+## build-recap | WHAT I TOOK FROM YOUR 22:13-22:26 ANSWERS (nothing you already answered is asked again). Is this right?
+Answer: No: You are very, very close most of that is correct. However, basic doors would have to use twine Thatch and sticks. And correct we are not gonna run around with 200 kg of stuff in our inventory, but we might use a wheelbarrow or a donkey or a waggon and you might have to bring in a waggon load of lumber from the sawmill and then carry five boards at a time or three boards or two boards at a time and put them into your wall. We have to find a balance because it can’t be so tedious that it’s no fun to do but also it should take a little bit of time because the goal is to use NPC’s to do most of the work people might build their first house, but they’ll probably just put down the blueprints and let the builders do the work the second time.
+Answered: 2026-10-22 22:51 UTC
+
