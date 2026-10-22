@@ -19,3 +19,15 @@ Before it: the gate tests pass on your PC and Kathleen reviews the look. Bakes a
 - Approve as proposed (recommended)
 - Approve, but a lighter checklist (tell me in chat)
 - Not yet
+
+## pub-page | Put only the page file (qa.html) on a public web address? Here is exactly what becomes public.
+Public: one small file, qa.html (page layout, the "Dave's commands" box, the repo name and file paths). NOT public: your token (it stays in your own browser), the questions, your answers, the design, the code, the saves. Without your token the page shows an empty box. It would live in a new, separate public repo called DynastyALWL-QA, at https://dsul3791.github.io/DynastyALWL-QA/qa.html
+- Yes, publish only qa.html in a new public repo (recommended)
+- No, keep using the local file after Pull
+- Decide later
+
+## repo-vis | Important: the main DynastyALWL repo is PUBLIC on GitHub today. Anyone with the address can read the code, design docs, questions and answers. Do you want that?
+Making it private does not stop the team or your PC. The cloud threads and GitHub Desktop keep working. GitHub Pages for the repo itself would need a paid plan, which is why the tiny separate page repo is the plan.
+- Make it private (recommended: it is an unreleased game)
+- Keep it public
+- Decide later
