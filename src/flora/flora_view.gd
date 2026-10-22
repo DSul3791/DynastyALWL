@@ -898,6 +898,7 @@ func _draw_water(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void:
 			add_child(draw)
 			entry["water"] = draw
 			water_chunks += 1
+			@warning_ignore("integer_division")
 			water_cells += mesh.surface_get_array_index_len(0) / 6
 
 	_draw_ice(chunk, entry, water)
@@ -988,6 +989,7 @@ func set_chunk(chunk: Vector2i, items: Dictionary, from_position: Vector3, water
 			add_child(draw)
 			entry["water"] = draw
 			water_chunks += 1
+			@warning_ignore("integer_division")
 			water_cells += mesh.surface_get_array_index_len(0) / 6
 
 	_draw_ice(chunk, entry, water)
@@ -1501,6 +1503,7 @@ func _plan(items: Dictionary, level: int) -> Dictionary:
 
 		if info.has("young_below"):
 			# First half of the variants mature, second half young (beech).
+			@warning_ignore("integer_division")
 			var half: int = int(info["near"].size()) / 2
 			variant = variant % half + (half if float(items["heights"][n]) < float(info["young_below"]) else 0)
 		var proxy: bool = false
@@ -1710,6 +1713,7 @@ func _decimate_task(wanted: Array) -> void:
 
 		for surface in range(mesh.get_surface_count()):
 			var arrays: Array = mesh.surface_get_arrays(surface)
+			@warning_ignore("integer_division")
 			triangles += (arrays[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3
 			arrays_list.append(arrays)
 			materials.append(mesh.surface_get_material(surface))
@@ -1740,11 +1744,11 @@ func _decimate_task(wanted: Array) -> void:
 
 func _apply_mid(limit: int) -> void:
 	_built_mutex.lock()
-	var ready: Array = _mid_ready.slice(0, limit)
+	var due: Array = _mid_ready.slice(0, limit)
 	_mid_ready = _mid_ready.slice(limit)
 	_built_mutex.unlock()
 
-	for item in ready:
+	for item in due:
 		var info: Dictionary = _species.get(item[0], {})
 
 		if info.is_empty():

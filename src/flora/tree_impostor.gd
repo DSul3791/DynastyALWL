@@ -202,6 +202,7 @@ func _render(model: ArrayMesh, box: AABB, frame: float, centre: Vector3, view: i
 	var seen: bool = false
 
 	for step in range(0, image.get_width() * image.get_height(), 7):
+		@warning_ignore("integer_division")
 		if image.get_pixel(step % image.get_width(), step / image.get_width()).a > 0.5:
 			seen = true
 			break

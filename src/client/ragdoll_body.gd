@@ -110,7 +110,7 @@ func play(animation: String, speed: float = 1.0, blend: float = 0.15) -> void:
 
 
 func current() -> String:
-	return animation_player.current_animation if animation_player != null else ""
+	return String(animation_player.current_animation) if animation_player != null else ""
 
 
 func is_one_shot_playing() -> bool:
@@ -230,13 +230,13 @@ func _build_mesh() -> void:
 		if not _bones.has(part[0]) or (arms_only and not part[4]):
 			continue
 
-		var arrays: Array = _shape_arrays(part[1], part[3])
+		var source_arrays: Array = _shape_arrays(part[1], part[3])
 		var model: Transform3D = _global_rest(part[0]) * Transform3D(Basis.IDENTITY, part[2])
 		var first: int = vertices.size()
-		var source_vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
-		var source_normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
-		var source_uvs: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV]
-		var source_indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+		var source_vertices: PackedVector3Array = source_arrays[Mesh.ARRAY_VERTEX]
+		var source_normals: PackedVector3Array = source_arrays[Mesh.ARRAY_NORMAL]
+		var source_uvs: PackedVector2Array = source_arrays[Mesh.ARRAY_TEX_UV]
+		var source_indices: PackedInt32Array = source_arrays[Mesh.ARRAY_INDEX]
 
 		for v in range(source_vertices.size()):
 			vertices.append(model * source_vertices[v])

@@ -1347,7 +1347,9 @@ static func _load_file(folder: String, sound_name: String) -> AudioStream:
 				return imported
 
 		if FileAccess.file_exists(path):
-			return AudioStreamOggVorbis.load_from_file(path) if extension == "ogg" else AudioStreamWAV.load_from_file(path)
+			if extension == "ogg":
+				return AudioStreamOggVorbis.load_from_file(path)
+			return AudioStreamWAV.load_from_file(path)
 
 	return null
 

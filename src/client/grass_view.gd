@@ -381,7 +381,7 @@ func _rebuild_trails(player: Vector3) -> void:
 
 		for idx in cells:
 			var cx: int = posmod(key.x * TRAIL_BLOCK + int(idx) % TRAIL_BLOCK, TRAIL_CELLS)
-			var cz: int = posmod(key.y * TRAIL_BLOCK + int(idx) / TRAIL_BLOCK, TRAIL_CELLS)
+			var cz: int = posmod(key.y * TRAIL_BLOCK + floori(float(idx) / TRAIL_BLOCK), TRAIL_CELLS)
 			var v: float = float(cells[idx])
 			_trail_image.set_pixel(cx, cz, Color(v, v, v, 1.0))
 
@@ -757,7 +757,7 @@ func _flush_groups() -> void:
 					if entry != null and entry["bufs"].has(layer):
 						merged.append_array(entry["bufs"][layer])
 
-			var count: int = merged.size() / 16
+			var count: int = merged.size() >> 4
 			var node = group.get(layer)
 
 			if count == 0:

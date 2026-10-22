@@ -512,8 +512,8 @@ static func _balsam_fir(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: f
 			var a: float = rng.randf() * TAU
 			var base: Vector3 = Vector3(cos(a), 0.0, sin(a)) * reach * rng.randf_range(0.3, 0.75) + Vector3(lean.x, y + 0.03, lean.y)
 			# A little larger than life (real cones 4 to 8 cm) so they read in the storybook look.
-			var len: float = rng.randf_range(0.12, 0.16)
-			_branch(bark, base, base + Vector3(0.0, len, 0.0), 0.04, 0.028, CONE_TINT_FIR, 5)
+			var tip_len: float = rng.randf_range(0.12, 0.16)
+			_branch(bark, base, base + Vector3(0.0, tip_len, 0.0), 0.04, 0.028, CONE_TINT_FIR, 5)
 
 
 # Birch (Betula papyrifera / pendula). From the owner's photos (2026-10-18,
@@ -544,6 +544,7 @@ static func _birch(white: Acc, bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNu
 		# The foot of an old birch goes black and rough in ragged tongues: the
 		# lowest ring is mostly black, the next one only flecked.
 		for k in range(first, white.v.size()):
+			@warning_ignore("integer_division")
 			var ring: int = (k - first) / (sides + 1)
 			var dark: float = 0.0
 			if ring == 0:
@@ -655,8 +656,8 @@ static func _birch(white: Acc, bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNu
 # narrower crown), 2 and 3 young (young_below_m picks them).
 static func _maple(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, variant: int, far: bool, bare: bool) -> void:
 	if variant >= 2:
-		var lean: Vector3 = Vector3(rng.randf_range(-0.02, 0.02), 0.0, rng.randf_range(-0.02, 0.02)) * h
-		_pole(bark, leaves, twigs, rng, Vector3.ZERO, Vector3(0.0, h * 0.95, 0.0) + lean, maxf(trunk * 0.5, h * 0.014), maxf(crown * 0.7, h * 0.26), h * rng.randf_range(0.25, 0.32), 8 if far else rng.randi_range(13, 16), 0.8, BARK_TINT_MAPLE.lerp(Color(0.6, 0.57, 0.52), 0.6), far, bare, 0.3)
+		var drift: Vector3 = Vector3(rng.randf_range(-0.02, 0.02), 0.0, rng.randf_range(-0.02, 0.02)) * h
+		_pole(bark, leaves, twigs, rng, Vector3.ZERO, Vector3(0.0, h * 0.95, 0.0) + drift, maxf(trunk * 0.5, h * 0.014), maxf(crown * 0.7, h * 0.26), h * rng.randf_range(0.25, 0.32), 8 if far else rng.randi_range(13, 16), 0.8, BARK_TINT_MAPLE.lerp(Color(0.6, 0.57, 0.52), 0.6), far, bare, 0.3)
 		return
 
 	var stand_grown: bool = variant % 2 == 1
@@ -1079,8 +1080,8 @@ static func _chestnut(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGener
 	var half_h: float
 
 	if young:
-		var lean: Vector3 = Vector3(rng.randf_range(-0.02, 0.02), 0.0, rng.randf_range(-0.02, 0.02)) * h
-		_pole(bark, leaves, twigs, rng, Vector3.ZERO, Vector3(0.0, h * 0.95, 0.0) + lean, maxf(trunk * 0.5, h * 0.016), crown_w, h * rng.randf_range(0.3, 0.36), 8 if far else rng.randi_range(12, 15), 0.8, tint.lerp(Color(0.62, 0.6, 0.56), 0.5), far, bare, 0.3)
+		var drift: Vector3 = Vector3(rng.randf_range(-0.02, 0.02), 0.0, rng.randf_range(-0.02, 0.02)) * h
+		_pole(bark, leaves, twigs, rng, Vector3.ZERO, Vector3(0.0, h * 0.95, 0.0) + drift, maxf(trunk * 0.5, h * 0.016), crown_w, h * rng.randf_range(0.3, 0.36), 8 if far else rng.randi_range(12, 15), 0.8, tint.lerp(Color(0.62, 0.6, 0.56), 0.5), far, bare, 0.3)
 		center = Vector3(0.0, h * 0.64, 0.0)
 		half_h = h * 0.3
 	else:
@@ -1281,8 +1282,8 @@ static func _witness(smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGene
 	var half_h: float
 
 	if young:
-		var lean: Vector3 = Vector3(rng.randf_range(-0.02, 0.02), 0.0, rng.randf_range(-0.02, 0.02)) * h
-		_pole(smooth, leaves, twigs, rng, Vector3.ZERO, Vector3(0.0, h * 0.95, 0.0) + lean, h * 0.0065, crown_w, h * rng.randf_range(0.3, 0.36), 7 if far else rng.randi_range(12, 15), 0.8, BARK_TINT_WITNESS, far, bare, 0.3)
+		var drift: Vector3 = Vector3(rng.randf_range(-0.02, 0.02), 0.0, rng.randf_range(-0.02, 0.02)) * h
+		_pole(smooth, leaves, twigs, rng, Vector3.ZERO, Vector3(0.0, h * 0.95, 0.0) + drift, h * 0.0065, crown_w, h * rng.randf_range(0.3, 0.36), 7 if far else rng.randi_range(12, 15), 0.8, BARK_TINT_WITNESS, far, bare, 0.3)
 		center = Vector3(0.0, h * 0.64, 0.0)
 		half_h = h * 0.3
 	else:
@@ -1657,9 +1658,9 @@ static func _beech(smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenera
 
 static func _beech_young(smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, far: bool, bare: bool) -> void:
 	var trunk_r: float = maxf(trunk * 0.6, h * 0.014)
-	var lean: Vector3 = Vector3(rng.randf_range(-0.02, 0.02), 0.0, rng.randf_range(-0.02, 0.02)) * h
+	var drift: Vector3 = Vector3(rng.randf_range(-0.02, 0.02), 0.0, rng.randf_range(-0.02, 0.02)) * h
 	var crown_w: float = maxf(crown * 0.8, h * 0.28) * rng.randf_range(0.9, 1.1)
-	_pole(smooth, leaves, twigs, rng, Vector3.ZERO, Vector3(0.0, h * 0.95, 0.0) + lean, trunk_r, crown_w, h * rng.randf_range(0.24, 0.3), 8 if far else rng.randi_range(16, 20), 1.0, BARK_TINT_BEECH, far, bare, 0.4)
+	_pole(smooth, leaves, twigs, rng, Vector3.ZERO, Vector3(0.0, h * 0.95, 0.0) + drift, trunk_r, crown_w, h * rng.randf_range(0.24, 0.3), 8 if far else rng.randi_range(16, 20), 1.0, BARK_TINT_BEECH, far, bare, 0.4)
 
 
 # A slim, straight stem from `base` to `top` with short limbs climbing along it
@@ -1868,8 +1869,8 @@ static func _rowan(smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenera
 	var half_h: float
 
 	if young:
-		var lean: Vector3 = Vector3(rng.randf_range(-0.02, 0.02), 0.0, rng.randf_range(-0.02, 0.02)) * h
-		_pole(smooth, leaves, twigs, rng, Vector3.ZERO, Vector3(0.0, h * 0.95, 0.0) + lean, maxf(trunk * 0.7, h * 0.014), crown_w, h * rng.randf_range(0.25, 0.32), 7 if far else rng.randi_range(12, 15), 0.9, BARK_TINT_ROWAN.lerp(Color(0.6, 0.56, 0.5), 0.5), far, bare, 0.3)
+		var drift: Vector3 = Vector3(rng.randf_range(-0.02, 0.02), 0.0, rng.randf_range(-0.02, 0.02)) * h
+		_pole(smooth, leaves, twigs, rng, Vector3.ZERO, Vector3(0.0, h * 0.95, 0.0) + drift, maxf(trunk * 0.7, h * 0.014), crown_w, h * rng.randf_range(0.25, 0.32), 7 if far else rng.randi_range(12, 15), 0.9, BARK_TINT_ROWAN.lerp(Color(0.6, 0.56, 0.5), 0.5), far, bare, 0.3)
 		center = Vector3(0.0, h * 0.62, 0.0)
 		half_h = h * 0.32
 	else:

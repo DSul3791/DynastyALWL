@@ -76,7 +76,7 @@ static func parent_of(bus_name: String) -> String:
 		return bus_name
 
 	var index: int = AudioServer.get_bus_index(bus_name)
-	return AudioServer.get_bus_send(index) if index >= 0 else bus_name
+	return String(AudioServer.get_bus_send(index)) if index >= 0 else bus_name
 
 
 static func remove_all() -> void:
