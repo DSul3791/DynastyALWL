@@ -473,10 +473,10 @@ func _probe_structure() -> Dictionary:
 		net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 
 	if state == 11 or state == 12:
-		return {"prompt": "Press E to search the remains", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)}
+		return {"prompt": "Press E to search the remains", "tap": func(): _ask_open(id)}
 
 	if state == 6:
-		return {"prompt": "Press F to open", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO), "hold": take_down}
+		return {"prompt": "Press F to open", "tap": func(): _ask_open(id), "hold": take_down}
 
 	if state == 7:
 		return {"prompt": "Press E to split firewood", "tap": pick_up_nearest}
@@ -548,7 +548,7 @@ func open_container() -> bool:
 	if best == 0:
 		return false
 
-	net.inventory_action.rpc_id(1, Net.ACT_CHEST_OPEN, best, 0, 0, Vector3.ZERO)
+	_ask_open(best)
 	return true
 
 
@@ -563,7 +563,7 @@ func pick_up_nearest() -> bool:
 		return false
 
 	if _world[id]["state"] == 6 and not Input.is_key_pressed(KEY_SHIFT):
-		net.inventory_action.rpc_id(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)
+		_ask_open(id)
 		return true
 
 	if _world[id]["state"] == 7 and not Input.is_key_pressed(KEY_SHIFT):
@@ -1327,7 +1327,20 @@ func eat_slot(slot: int) -> void:
 	net.inventory_action.rpc_id(1, Net.ACT_EAT, slot, 0, 0, Vector3.ZERO)
 
 
+# Asks the server to open a container. The server also pushes fresh contents while it is open (a fire eating wood); a push that arrives when
+# no window is open and none was asked for in the last 2 s is ignored, so closing the window is not undone.
+var _open_asked_msec: int = -100000
+
+
+func _ask_open(id: int) -> void:
+	_open_asked_msec = Time.get_ticks_msec()
+	net.inventory_action.rpc_id(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)
+
+
 func _on_chest(id: int, bytes: PackedByteArray) -> void:
+	if not chest_mode and Time.get_ticks_msec() - _open_asked_msec > 2000:
+		return
+
 	if chest_inv == null:
 		chest_inv = InventoryScript.new(table)
 
@@ -3767,7 +3780,7 @@ func run_chest_test(client) -> void:
 		if _world[k]["state"] == 6:
 			id = k
 
-	net.inventory_action.rpc_id(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)
+	_ask_open(id)
 
 	for wait in 60:   # the cloud is slow: give the chest up to 6 s to open
 		if chest_inv != null:
