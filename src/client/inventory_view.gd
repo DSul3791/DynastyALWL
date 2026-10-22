@@ -1366,6 +1366,8 @@ func _on_chest(id: int, bytes: PackedByteArray) -> void:
 
 
 func _close_chest() -> void:
+	net.inventory_action.rpc_id(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
+
 	if chest_event.is_valid() and _world.has(chest_id):
 		chest_event.call("close", _world[chest_id]["pos"])
 
