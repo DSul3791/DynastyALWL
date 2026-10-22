@@ -1,9 +1,3 @@
-## rv-local-first | Run every build, test and warning check on your PC by default through one command (tools/local_check.sh), cloud threads only edit and review? Research: a check the agent can run is the best quality lever. BP-C83, BP-C80.
-- Yes (recommended)
-- Only warnings and long tests
-- Keep as is (cloud for small runs)
-- Decide later
-
 ## rv-warning-baseline | Commit the current warning list (233) as a baseline file so reports show only NEW warnings? BP-C01.
 - Yes (recommended)
 - Keep as is
