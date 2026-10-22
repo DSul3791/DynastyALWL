@@ -3,7 +3,7 @@ STATUS: awaiting Dave's approval (question bk-plan). MikeW writes NOTHING until 
 
 ## What it is
 One Python script `tools/nightly_backup.py` (+ tests `tools/test_nightly_backup.py`) run by MikeW on Dave's PC when Dave says "goodnight". Python, not PowerShell Compress-Archive (that tool has file-size limits and locks files); `zipfile` with ZIP64 and a CRC test. Output: `E:\Software\godotDev\DynastyALWL_ProjectBackups\DynastyALWL_ProjectBackup_YYYY-MM-DD_HHMM.zip`.
-Inside the zip: the whole `C:\GodotProjects\DynastyALWL` incl. `.git`; the `server_data` save folder (source path recorded in `BACKUP_MANIFEST.json`); the manifest itself (file count, total bytes, SHA-256 of project.godot and .git\HEAD, script version, date). Excluded (listed in the log every night): crash_reports, editor logs, `.godot` cache, `~libwatercore*` temp dll, `*.tmp`, `__pycache__`.
+Inside the zip: the whole `C:\GodotProjects\DynastyALWL` incl. `.git` (folder `DynastyALWL/`); the `server_store` save folder (top-level folder `server_store/`) (source path recorded in `BACKUP_MANIFEST.json`); the manifest itself (file count, total bytes, SHA-256 of project.godot and .git\HEAD, script version, date). Excluded (listed in the log every night): crash_reports, editor logs, `.godot` cache, `~libwatercore*` temp dll, `*.tmp`, `__pycache__`.
 
 ## Order of a run (any failed step = stop, report FAILED, never half-continue)
 1. Preflight: E: exists (never fall back to C:), free space >= 1.3 x last zip + 5 GB, game process NOT running (C109), no `.git\index.lock`, clock sanity (new timestamp later than the newest zip's), target name does not exist. Keep the PC awake for the whole run (SetThreadExecutionState).
@@ -20,7 +20,7 @@ Keep every nightly 30 days. Older: oldest-first; if its ISO week (Mon to Sun, by
 Cull safety:
 - Acts only on files in the backup folder root whose names match `^DynastyALWL_ProjectBackup_\d{4}-\d{2}-\d{2}_\d{4}\.zip$` exactly. Any other file is ignored and listed.
 - Cross-checks the date in the name against the file's modified time; more than 2 days apart = skip and alert.
-- At most 3 zips moved to `_trash\` per run; more would-be removals = stop and alert (catches logic bugs and clock errors).
+- At most 3 zips moved per run. With 4 to 7 candidates (e.g. after a few missed nights) it moves 3, alerts, and continues next night until the backlog is gone. With MORE than 7 candidates (a week-plus outage or a clock error) nothing moves and it alerts; Dave present can override with `--max-moves`.
 - Never touches the newest 30 days, never the newest zip, never leaves fewer than 30 zips if they exist.
 - Every move is written to `backup_log.txt` (name, reason, week, time). DRY-RUN: first 14 real nights the cull only logs what it WOULD do.
 
@@ -44,3 +44,8 @@ Cull safety:
 ## Rollout (nothing runs unattended until step 6)
 1. Dave approves. 2. MikeW writes script + tests; Guru reads code. 3. MikeW unit-tests the cull on fake data (cloud-style scratch folder). 4. First manual run with Dave present: backup + restore test + a manual full restore using RESTORE_PROCEDURE.md. 5. "Goodnight" runs for 14 nights with cull in DRY-RUN; Guru reviews the log. 6. Cull goes live; weekly check of `backup_log.txt` by MikeW report; monthly manual restore drill by Dave (5 minutes).
 Estimated size: about 1.5 GB per zip (MikeW measures first); 30 nightlies about 45 GB; plus about 1.5 GB per kept week, about 80 GB a year. Run time estimate: 3 to 8 minutes (MikeW times it).
+
+## Code review additions (Guru, 2026-10-22 15:50, tools/nightly_backup.py e1d4506)
+- Restore test needs `godot --import` because `.godot` is excluded. Decision: keep `.godot` OUT (derived cache, can be stale) and keep the import in the restore test (it proves the project really opens). MikeW times it on the first run; if it takes over 10 minutes, the import test runs weekly and the nightly test is git fsck + addon load only.
+- Failure must leave a trace: write FAILED lines to `backup_log.txt` and a `LAST_BACKUP_FAILED.txt`; write `LAST_BACKUP_OK.txt` only after the restore test passes.
+- If Godot (editor or game) is open the run refuses; the message must say "close Godot completely" (Dave says goodnight, closes Godot, then the run starts).

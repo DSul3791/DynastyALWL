@@ -355,3 +355,6 @@ See CONCERNS_RESOLUTIONS.md "Round 2". No Dave decisions needed. MikeW told: cc-
 
 ## 2026-10-22 15:40 Dave approved bk-plan "as written": nightly backup (Tyler_Guru_SenDev)
 tech/BACKUP_PLAN.md and RESTORE_PROCEDURE.md approved as written (nightly real restore test, trash instead of delete, 3 per run cull cap, 14 nights dry-run, retention 30 days then oldest-per-ISO-week kept forever). P0. MikeW may now write tools/nightly_backup.py and tools/test_nightly_backup.py; Guru reviews code read-only before the first real run.
+
+## 2026-10-22 15:50 Backup code review (tools/nightly_backup.py e1d4506) (Tyler_Guru_SenDev)
+Verdict: sound structure, tests pass on fake trees, NOT yet cleared for a real run. Required fixes before the first real run: (1) cull cap must drain, not block: move 3, alert, continue; block only above 7 candidates; (2) rmtree of the restore scratch must clear read-only files and fail clearly; (3) write failures to backup_log.txt and LAST_BACKUP_FAILED.txt, write LAST_BACKUP_OK.txt only after the restore test; (4) refusal message "close Godot completely". Decisions made: weekly survivor is the LAST backup of each ISO week (matches code; plan text corrected, tell Dave); saves folder is server_store; .godot stays excluded, restore test keeps --import.

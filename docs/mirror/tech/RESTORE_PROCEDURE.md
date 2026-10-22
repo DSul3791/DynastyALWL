@@ -2,6 +2,7 @@
 Backups are in `E:\Software\godotDev\DynastyALWL_ProjectBackups\` (newest nightlies there, old weeks in `weekly\`, recently culled in `_trash\` for 7 days).
 
 ## Restore the whole project (code, tiles, docs)
+Inside every zip: the folder `DynastyALWL` (the project, with .git) and the folder `server_store` (your world saves). Godot's `.godot` cache is not included; Godot rebuilds it when you open the project (a minute or two).
 1. Close the game, Godot and GitHub Desktop.
 2. Right-click the zip you want (usually the newest, check the date in the name) > Extract All > a NEW folder such as `C:\GodotProjects\DynastyALWL_restored`. Never extract over your working folder.
 3. Open the new folder in GitHub Desktop (File > Add local repository). Check the current branch is claude/generator-v2 and the latest commit looks right. Open it in Godot (Import > project.godot) and press F6 to be sure it runs.
@@ -9,8 +10,8 @@ Backups are in `E:\Software\godotDev\DynastyALWL_ProjectBackups\` (newest nightl
 
 ## Restore only the world saves
 1. Close the game completely.
-2. In the zip, the saves are in the folder named `server_data` (the manifest file `BACKUP_MANIFEST.json` says its original path, normally `%APPDATA%\Godot\app_userdata\Dynasty a life well lived\server_data`).
-3. Rename the current `server_data` to `server_data_before_restore`, then extract the zip's `server_data` to that place.
+2. In the zip, the saves are in the folder named `server_store` at the top of the zip, next to the folder `DynastyALWL` (the manifest file `BACKUP_MANIFEST.json` says the original path, normally `%APPDATA%\Godot\app_userdata\Dynasty a life well lived\server_store`).
+3. Rename the current `server_store` to `server_store_before_restore`, then extract the zip's `server_store` folder to that place.
 4. Start the game. If something is wrong, put the renamed folder back.
 
 ## Restore one file
