@@ -368,3 +368,7 @@ Answered: 2026-10-22 22:18 UTC
 Answer: Yes
 Answered: 2026-10-22 22:18 UTC
 
+## tl-doors | Should doors and windows follow the wall tier's look (nailed boards with iron straps and shutters from tier 3 up)?
+Answer: No: Actually, yes, however for stick tier, they will be sticking twine and Thatch doors for the next year they will be made out of planks for the next year. They will be made out of wood, but they can also be made out of wood with iron banding, and that would be called a reinforced door, and there will also be probably two more tears of nicer doors so iron doors with and forced wrought iron and then we could have fancier doors that might use steel and iron combined, but they will all fit into a door frame and we will have to have a double French door style also and we will have to be able to place walls and use the mouse wheel to scroll through the different type of walls so like a wall and then a wall with a window and a wall with the door frame or a wall with a double door frame or a wall with a double window frame
+Answered: 2026-10-22 22:21 UTC
+
