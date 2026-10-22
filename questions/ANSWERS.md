@@ -32,3 +32,7 @@ Answered: 2026-10-22 00:06 UTC
 Answer: Yes, "the water is still" when under 3 fish are left
 Answered: 2026-10-22 00:06 UTC
 
+## cast-roles | Starter town people: who lives here besides Hob (shopkeeper) and Edda (guard)?
+Answer: Keep just Hob and Edda for now
+Answered: 2026-10-22 00:06 UTC
+
