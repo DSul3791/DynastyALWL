@@ -168,3 +168,7 @@ Answered: 2026-10-22 15:14 UTC
 Answer: Sal_Crafts
 Answered: 2026-10-22 15:15 UTC
 
+## cc-long-runs | Long test runs and bakes on your PC use the same computer and graphics card as your game. When may MikeW run them?
+Answer: Any time except while the game is running; MikeW checks first (recommended)
+Answered: 2026-10-22 15:15 UTC
+
