@@ -1,6 +1,6 @@
-## rv-lfs | Tile files in git (BP-C108): the whole repo is only 142 MB and tiles were committed once, so is Git LFS worth the bother now? Tiles are made on your PC; the cloud gets them from git only when it needs a server run or test.
-Git LFS is a "locker" for big files; GitHub's free locker has 10 GiB of space and 10 GiB of downloads a month, and stops working for the month if exceeded.
-- Keep tiles in git as now, look again after 3 more bakes or at 500 MB (recommended)
-- Use LFS now, forward-only, cloud skips downloading tiles
-- Take tiles out of git and copy them by hand
+## rv-lfs | Tile files in git (BP-C108): all server runs, flight checks and edge-matching run on your PC (your rule), so cloud threads never need tiles. Tiles stay in git as backup and history. Is any extra step needed?
+The repo is only 142 MB with tiles committed once. Git LFS (a "locker" with a free 10 GiB cap) is not needed.
+- Keep tiles in git as backup, cloud threads simply never use them (recommended)
+- Use LFS anyway
+- Take tiles out of git and keep them only on your PC
 - Decide later
