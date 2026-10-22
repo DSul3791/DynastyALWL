@@ -67,6 +67,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
+const RescueScript := preload("res://src/client/rescue.gd")
 const BuildInfo := preload("res://src/shared/build.gd")
 const BUILD: int = BuildInfo.NUMBER
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
@@ -253,15 +254,7 @@ var _slowest_frame: float = 0.0       # walk test: longest frame (s)
 var _tunnel_test: int = 0
 var _tunnel_msec: int = 0
 var _tunnel_at: Vector3 = Vector3.ZERO
-var _dig_guard: bool = true
-var _dug_points: Array = []            # [centre, msec] of digs this session (_near_dig)
-const DIG_RESCUE_SKIP_M := 14.0        # no "stand the player on the surface" rescue this close to a dig ...
-const DIG_RESCUE_SKIP_MSEC := 1800000  # ... for half an hour
-var _embed_check_msec: int = 0
-var embed_rescues: int = 0
-var _void_rescue_msec: int = -10000
-var rescued: int = 0                   # times the player was lifted back above the ground
-var _floor_msec: int = 0               # last time the player stood on something
+var rescue = RescueScript.new()        # every way the player is stood back on the surface (src/client/rescue.gd)
 var test_walk: bool = false
 var _walk_phase: int = 0               # 0 wait, 1 falling, 2 walking, 3 into a tree, 4 done
 var _walk_msec: int = 0
@@ -506,7 +499,7 @@ func _ready() -> void:
 		elif argument == "--tunnel-test":
 			_tunnel_test = 1                      # test: dig a shaft and a side tunnel, stand in it, report whether the player was moved
 		elif argument == "--no-dig-guard":
-			_dig_guard = false                    # test: switch the dig guard of the surface rescue off (shows the old behaviour)
+			rescue.dig_guard = false                    # test: switch the dig guard of the surface rescue off (shows the old behaviour)
 		elif argument.begins_with("--lose-after="):
 			_lose_after_s = float(argument.trim_prefix("--lose-after="))   # test: act as if the server dropped us this many seconds after the welcome
 		elif argument == "--act-test":
@@ -1273,10 +1266,7 @@ func _on_tile_changed(tile: Vector2i, revision: int) -> void:
 # Digs made or seen this session (spot, time). A player inside a dug tunnel or pit is not "under the ground": the rescue that
 # stands a player on the surface must not fire there (Dave 2026-10-22: tunnelled underground and popped back up to the top).
 func _note_dig(center: Vector3) -> void:
-	_dug_points.append([center, Time.get_ticks_msec()])
-
-	if _dug_points.size() > 1500:
-		_dug_points = _dug_points.slice(500)
+	rescue.note_dig(center)
 
 
 # --tunnel-test: stand on the ground at the spawn, dig a 6 m shaft and a 6 m side tunnel, stand in the tunnel for 10 s, say where the player is.
@@ -1301,7 +1291,7 @@ func _tunnel_step() -> void:
 		_tunnel_msec = now
 	elif _tunnel_test == 3 and now - _tunnel_msec > 12000:
 		var moved: float = body.global_position.distance_to(_tunnel_at + Vector3(0.0, -6.0, 0.0))
-		print("Terrain client: tunnel test: player ended %.1f m from where it was put in the tunnel (y %.1f, surface y %.1f), rescues %d, %s" % [moved, body.global_position.y, _tunnel_at.y, rescued, "STAYED" if body.global_position.y < _tunnel_at.y - 3.0 else "POPPED UP"])
+		print("Terrain client: tunnel test: player ended %.1f m from where it was put in the tunnel (y %.1f, surface y %.1f), rescues %d, %s" % [moved, body.global_position.y, _tunnel_at.y, rescue.rescued, "STAYED" if body.global_position.y < _tunnel_at.y - 3.0 else "POPPED UP"])
 		_tunnel_test = 4
 		_tunnel_msec = now
 		body.global_position = _tunnel_at + Vector3(7.0, -12.0, 0.0)      # inside solid rock beside the dug tunnel: the rescue must lift the player
@@ -1309,36 +1299,6 @@ func _tunnel_step() -> void:
 	elif _tunnel_test == 4 and now - _tunnel_msec > 8000:
 		print("Terrain client: tunnel test: put inside rock beside the tunnel, ended at y %.1f (rock was y %.1f, surface y %.1f): %s" % [body.global_position.y, _tunnel_at.y - 12.0, _tunnel_at.y, "LIFTED" if body.global_position.y > _tunnel_at.y - 6.0 else "STUCK"])
 		_tunnel_test = 0
-
-
-# True when the player's body (feet, middle or head) is inside solid ground by the loaded voxels: nobody stands inside rock, so
-# the surface rescue always applies then, dug tunnels nearby or not (Dave 2026-10-22: pushed under the world next to his pit and the
-# dig guard held the rescue back). Unloaded voxels read as not solid.
-func _inside_solid(here: Vector3) -> bool:
-	if terrain == null:
-		return false
-
-	var tool: VoxelTool = terrain.get_voxel_tool()
-	tool.channel = VoxelBuffer.CHANNEL_SDF
-
-	for lift in [0.2, 0.9, 1.6]:
-		if tool.get_voxel_f(Vector3i((here + Vector3(0.0, lift, 0.0)).floor())) > -0.3:
-			return false
-
-	return true
-
-
-func _near_dig(here: Vector3) -> bool:
-	if not _dig_guard:
-		return false
-
-	var now: int = Time.get_ticks_msec()
-
-	for entry in _dug_points:
-		if now - int(entry[1]) < DIG_RESCUE_SKIP_MSEC and here.distance_to(entry[0]) < DIG_RESCUE_SKIP_M:
-			return true
-
-	return false
 
 
 func _on_dug(center: Vector3, radius: float) -> void:
@@ -1986,6 +1946,7 @@ func _make_player(root: Node3D, start: Vector3) -> void:
 	_shape = shape
 	body.add_child(shape)
 	root.add_child(body)
+	rescue.setup(self)
 	body.global_position = start
 	camera = Camera3D.new()
 	camera.position = Vector3(0.0, 0.7, 0.0)
@@ -3462,12 +3423,7 @@ func _move_player(delta: float) -> void:
 		body.move_and_slide()
 		Probe.stop("p slide", tm)
 
-		if body.is_on_floor():
-			_floor_msec = Time.get_ticks_msec()
-		elif Time.get_ticks_msec() - _floor_msec > 1200 and _under_the_ground():
-			rescued += 1
-
-		_free_if_embedded()
+		rescue.step()
 
 		var tb: int = Probe.start()
 		_update_bob(delta)
@@ -5109,13 +5065,7 @@ func _ground_ready() -> bool:
 	up.exclude = [body.get_rid()]
 	var hit: Dictionary = space.intersect_ray(up)
 
-	if not hit.is_empty() and (not _near_dig(here) or _inside_solid(here)):
-		body.global_position = Vector3(here.x, float(hit["position"].y) + 1.2, here.z)
-		rescued += 1
-
-		if crash_report != null:
-			crash_report.event("RESCUE (no ground below) from %s up to y %.1f, near a dig %s, inside rock %s" % [str(here.round()), float(hit["position"].y), _near_dig(here), _inside_solid(here)])
-
+	rescue.lift_when_no_ground_below(here, hit)
 	return false
 
 
@@ -5144,119 +5094,29 @@ func _run_dig_next_test() -> void:
 			off_floor_max = maxi(off_floor_max, off_floor)
 
 	await get_tree().create_timer(4.0).timeout
-	print("Dig-next test: %d digs around the player; start y %.1f, lowest y %.1f, now y %.1f, longest time off the floor %d frames, rescues %d, %s" % [spots.size(), start.y, lowest, body.global_position.y, off_floor_max, rescued, "NEVER BELOW THE WORLD" if lowest > start.y - 6.0 else "FELL THROUGH"])
+	print("Dig-next test: %d digs around the player; start y %.1f, lowest y %.1f, now y %.1f, longest time off the floor %d frames, rescues %d, %s" % [spots.size(), start.y, lowest, body.global_position.y, off_floor_max, rescue.rescued, "NEVER BELOW THE WORLD" if lowest > start.y - 6.0 else "FELL THROUGH"])
 
 
 # Headless check (--embed-test): put the body 4 m inside the ground; it must be out within 3 s.
 func _run_embed_test() -> void:
 	await get_tree().create_timer(25.0).timeout
 	var start: Vector3 = body.global_position
-	print("Embed test: embed rescues while standing %d" % embed_rescues)
+	print("Embed test: embed rescues while standing %d" % rescue.embed_rescues)
 	var column: Array = []
 
 	for k in range(-8, 6):
 		column.append("%d:%.1f" % [k, terrain.get_voxel_tool().get_voxel_f(Vector3i((start + Vector3(0.0, float(k), 0.0)).round()))])
 
 	print("Embed test: sdf column (m from feet): ", " ".join(column))
-	_dug_points.append([start, Time.get_ticks_msec()])      # as after a dig here: the surface rescue is off, only the embedded check can free the player
+	rescue.note_dig(start)      # as after a dig here: the surface rescue is off, only the embedded check can free the player
 	body.global_position = start + Vector3(0.0, -4.0, 0.0)
 	body.velocity = Vector3.ZERO
 	await get_tree().create_timer(3.0).timeout
-	print("Embed test: put at y %.1f (4 m under y %.1f), after 3 s y %.1f, embed rescues %d, %s" % [start.y - 4.0, start.y, body.global_position.y, embed_rescues, "FREED" if body.global_position.y > start.y - 1.0 else "STILL INSIDE"])
+	print("Embed test: put at y %.1f (4 m under y %.1f), after 3 s y %.1f, embed rescues %d, %s" % [start.y - 4.0, start.y, body.global_position.y, rescue.embed_rescues, "FREED" if body.global_position.y > start.y - 1.0 else "STILL INSIDE"])
 	body.global_position = start + Vector3(0.0, -150.0, 0.0)
 	body.velocity = Vector3.ZERO
 	await get_tree().create_timer(5.0).timeout
 	print("Embed test: put in the void 150 m under, after 5 s y %.1f, %s" % [body.global_position.y, "BACK ON THE SURFACE" if body.global_position.y > start.y - 1.0 else "STILL UNDER THE WORLD"])
-
-
-# Dave (build 621): off the floor in empty space under the world is rescued even near a dig (Willy's 625 covers the player inside rock).
-func _free_if_embedded() -> void:
-	if terrain == null or flying:
-		return
-
-	var now: int = Time.get_ticks_msec()
-
-	if now < _embed_check_msec:
-		return
-
-	_embed_check_msec = now + 100
-	_free_if_in_void(now)
-
-
-# Dave (build 621, "under the world looking up at it"): off the floor for 1.5 s with no solid ground within 40 m below (the
-# ground's distance field) and ground overhead: the player left the world (collision vanished under them). The dig guard of the
-# older rescue is not used: a tunnel has floor under it, a void does not. Stands the player on the surface above.
-func _free_if_in_void(now: int) -> void:
-	if body.is_on_floor() or now - _floor_msec < 1500 or swimming:
-		return
-
-	# A block still loading reads as empty: only act when the whole column below is loaded, and never twice within 6 s.
-	if now - _void_rescue_msec < 6000:
-		return
-
-	var tool: VoxelTool = terrain.get_voxel_tool()
-	var here: Vector3 = body.global_position
-
-	if not tool.is_area_editable(AABB(here + Vector3(-1.0, -42.0, -1.0), Vector3(2.0, 43.0, 2.0))):
-		return
-
-	for depth in range(0, 41, 2):
-		if _solid_at(tool, here + Vector3(0.0, -float(depth), 0.0)):
-			return
-
-	var up: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(here + Vector3(0.0, 800.0, 0.0), here + Vector3(0.0, -1.0, 0.0))
-	up.exclude = [body.get_rid()]
-	var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(up)
-
-	if hit.is_empty() or float(hit["position"].y) < here.y + 2.0:
-		return
-
-	body.global_position = Vector3(here.x, float(hit["position"].y) + 1.2, here.z)
-	body.velocity = Vector3.ZERO
-	_floor_msec = now
-	_void_rescue_msec = now
-	rescued += 1
-	embed_rescues += 1
-	_telemetry.event("RESCUE: player was in empty space under the world at %s, stood on the surface at y %.1f" % [str(here), float(hit["position"].y)])
-	print("Terrain client: void rescue from %s to y %.1f" % [str(here), float(hit["position"].y)])
-
-
-func _solid_at(tool: VoxelTool, point: Vector3) -> bool:
-	return tool.get_voxel_f(Vector3i(point.round())) < -0.3
-
-
-# Off the floor for a while and below the highest collider overhead: the
-# player slipped through the ground (a gap, or collision that was not ready).
-# Stands the player on top of the surface and returns true.
-func _under_the_ground() -> bool:
-	var here: Vector3 = body.global_position
-	var up: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(here + Vector3(0.0, 800.0, 0.0), here + Vector3(0.0, -1.0, 0.0))
-	up.exclude = [body.get_rid()]
-	var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(up)
-
-	if hit.is_empty() or float(hit["position"].y) < here.y + 2.0:
-		return false
-
-	var inside: bool = _inside_solid(here)
-
-	if _near_dig(here) and not inside:
-		return false
-
-	# Ground below within reach: this is a fall inside a cave or pit, not a slip through the world.
-	var down: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(here, here + Vector3(0.0, -120.0, 0.0))
-	down.exclude = [body.get_rid()]
-
-	if not inside and not body.get_world_3d().direct_space_state.intersect_ray(down).is_empty():
-		return false
-
-	body.global_position = Vector3(here.x, float(hit["position"].y) + 1.2, here.z)
-	body.velocity = Vector3.ZERO
-	_floor_msec = Time.get_ticks_msec()
-
-	if crash_report != null:
-		crash_report.event("RESCUE (off the floor, under the ground) from %s up to y %.1f, inside rock %s" % [str(here.round()), float(hit["position"].y), inside])
-
-	return true
 
 
 # Blue tint and thick blue fog while the camera is below the sea or a lake.
@@ -5368,7 +5228,7 @@ func _walk_report() -> void:
 	print("Terrain client: walk: landed %.1f s after dropping %.0f m; walked %.0f m east in 30 s, on the ground %d%% of frames, %d frames below the ground (lowest gap %.2f m); tree trunk at x %.1f, furthest reached %.1f; put 60 m under the ground, then %.1f m above it (%d rescues); waited for ground %d of %d frames, slowest frame %.0f ms" % [
 		float(s.get("landed_s", -1.0)), float(s.get("drop_m", 0.0)), float(s.get("walked_m", 0.0)),
 		100 * int(s.get("floor_frames", 0)) / maxi(int(s.get("frames", 0)), 1), int(s.get("fell_through", 0)), float(s.get("lowest_gap", 0.0)),
-		float(s.get("tree_x", NAN)), float(s.get("tree_max_x", NAN)), float(s.get("rescued_gap", NAN)), rescued,
+		float(s.get("tree_x", NAN)), float(s.get("tree_max_x", NAN)), float(s.get("rescued_gap", NAN)), rescue.rescued,
 		_wait_frames, int(s.get("frames", 0)), _slowest_frame * 1000.0
 	])
 
