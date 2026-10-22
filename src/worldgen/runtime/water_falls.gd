@@ -150,7 +150,7 @@ static func find(generator, origin: Vector2, count: int, spacing: float, levels:
 		kept.append(fall)
 
 	for entry in kept:
-		falls.append(_fall(entry["chain"], float(entry["flow"]), origin, count, spacing, levels, ground))
+		falls.append(_fall(entry["chain"], float(entry["flow"]), origin, count, spacing, levels, ground, drawn if drawn.size() == levels.size() else levels))
 
 	falls.sort_custom(func(a, b): return float(a["drop"]) > float(b["drop"]))
 	return falls
@@ -216,8 +216,9 @@ static func _chain_flow(chain: PackedInt32Array, origin: Vector2, count: int, sp
 	return clampf(float(flows[flows.size() / 2]), 0.0, FLOW_MAX_M3S) if not flows.is_empty() else 0.0
 
 
-# The width of the water across the flow just upstream of the lip (chain[0]): the wet cells in a row
-# across the flow, a cell wide each, taken at the lip and two cells back up the river, the middle value.
+# The width of the DRAWN water across the flow just upstream of the lip (chain[0]): the wet cells in a row
+# across the flow, a cell wide each, taken at the lip and up to five cells back up the river, the middle
+# value. (The levels with thin films, which include the whole baked channel, are not the river drawn.)
 # 0 when it cannot be measured (a lip at the chunk edge, nothing wet upstream).
 static func _river_width(chain: PackedInt32Array, count: int, spacing: float, levels: PackedFloat32Array) -> float:
 	if chain.size() < 2:
@@ -229,7 +230,7 @@ static func _river_width(chain: PackedInt32Array, count: int, spacing: float, le
 	var across: Vector2 = Vector2(-along.y, along.x)
 	var widths: Array = []
 
-	for back in range(0, 3):
+	for back in range(0, 6):
 		var centre: Vector2 = Vector2(float(p % count), float(p / count)) - along * float(back)
 		var first: int = _wet_at(centre, count, levels)
 
@@ -267,7 +268,7 @@ static func _wet_at(at: Vector2, count: int, levels: PackedFloat32Array) -> int:
 	return j * count + i
 
 
-static func _fall(chain: PackedInt32Array, flow: float, origin: Vector2, count: int, spacing: float, levels: PackedFloat32Array, ground: Callable) -> Dictionary:
+static func _fall(chain: PackedInt32Array, flow: float, origin: Vector2, count: int, spacing: float, levels: PackedFloat32Array, ground: Callable, drawn: PackedFloat32Array) -> Dictionary:
 	flow = clampf(flow, 0.0, FLOW_MAX_M3S)
 	var points: PackedVector3Array = PackedVector3Array()
 	var last_y: float = INF
@@ -301,7 +302,7 @@ static func _fall(chain: PackedInt32Array, flow: float, origin: Vector2, count: 
 	var width: float = clampf(maxf(WIDTH_PER_ROOT_M3S * sqrt(flow), flow / CURTAIN_M2S), WIDTH_MIN_M, WIDTH_MAX_M)
 	# Owner (2026-10-21, build 528): the fall must be as wide as the river that feeds it. The wet cells
 	# across the flow just upstream of the lip are measured and win over the flow formula.
-	var river: float = _river_width(chain, count, spacing, levels)
+	var river: float = _river_width(chain, count, spacing, drawn)
 
 	if river > 0.0:
 		width = clampf(river, WIDTH_MIN_M, WIDTH_MAX_M)
