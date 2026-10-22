@@ -30,7 +30,7 @@ def from_fish(src, dst):
     filt = ("asetrate=%d,aresample=%d,lowpass=f=2400,volume=0.55,afade=t=in:d=0.05,"
             "atrim=0:%.2f,afade=t=out:st=%.2f:d=%.2f") % (int(44100 * SPEED), 44100, LENGTH, LENGTH - 0.9, 0.9)
     subprocess.run(["ffmpeg", "-nostdin", "-y", "-loglevel", "error", "-i", src, "-ac", "1", "-af", filt,
-                    "-c:a", "libvorbis", "-q:a", "4", dst], check=True)
+                    "-fflags", "+bitexact", "-flags:a", "+bitexact", "-c:a", "libvorbis", "-q:a", "4", dst], check=True)
 
 
 def synthetic(rng, dst):
@@ -55,7 +55,7 @@ def synthetic(rng, dst):
             w.setsampwidth(2)
             w.setframerate(SR)
             w.writeframes(data.tobytes())
-        subprocess.run(["ffmpeg", "-nostdin", "-y", "-loglevel", "error", "-i", wav, "-c:a", "libvorbis", "-q:a", "4", dst], check=True)
+        subprocess.run(["ffmpeg", "-nostdin", "-y", "-loglevel", "error", "-i", wav, "-fflags", "+bitexact", "-flags:a", "+bitexact", "-c:a", "libvorbis", "-q:a", "4", dst], check=True)
 
 
 def main():
