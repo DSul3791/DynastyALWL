@@ -52,6 +52,7 @@ const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const BlockLinkScript := preload("res://src/stream/block_link_server.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
+const TunnelWatchScript := preload("res://src/stream/tunnel_watch.gd")
 
 const MAX_BATCH_BYTES := 192 * 1024
 const MAX_QUEUE_PER_PEER := 20000
@@ -98,6 +99,7 @@ var _water_live_next: int = 0
 var _water_live_last: Array = []
 var _centre_levels: PackedFloat32Array = PackedFloat32Array()   # the centre tile's last drawn levels (only read for the log line)
 var _wet_centre: int = 0               # wet squares on the starter tile at the last update (the log line)
+var tunnels = TunnelWatchScript.new()     # tunnel grace timers, shaking and collapse (data/tunnels.json, off until the bracing items exist)
 var water_live                         # the starter tile's running water, tuned with + and - on the client
 var _world_dir: String = ""
 var _bake_running: bool = false        # a tile bake is writing the tile files (store.baking)
@@ -219,6 +221,7 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 
+	_start_tunnels()
 	var placer = PlacerScript.new()
 	placer.setup(generator, tables, rules)
 	flora = FloraStoreScript.new()
@@ -1093,6 +1096,47 @@ func _dig_refusal() -> String:
 	return "The ground there is already open."
 
 
+# Tunnel watch (tunnel_watch.gd, tech/EXCAVATION_BRACING_GROUND_DESIGN.md): measures dug blocks on its own thread; the main
+# thread only sends the shaking messages and applies a collapse (rubble fills, victims). Does nothing while data/tunnels.json says off.
+func _start_tunnels() -> void:
+	var path: String = "res://data/tunnels.json"
+	var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(path)) if FileAccess.file_exists(path) else {}
+	tunnels.configure(data if typeof(data) == TYPE_DICTIONARY else {})
+	tunnels.load_block = func(block: Vector3i) -> VoxelBuffer:
+		var buffer: VoxelBuffer = Layout.make_buffer(16)
+		store.load_block(buffer, block, 0)
+		return buffer
+	tunnels.surface_h = func(x: float, z: float) -> float: return generator.surface_height(x, z)
+	tunnels.start()
+
+
+func _tunnel_tick() -> void:
+	if not tunnels.enabled:
+		return
+
+	var peers: Dictionary = {}
+
+	for peer in items.peer_ids():
+		var at: Variant = items.position_of(int(peer))
+
+		if at != null:
+			peers[int(peer)] = at
+
+	var result: Dictionary = tunnels.tick(Time.get_ticks_msec(), peers)
+
+	for quake in result["quake"]:
+		net.quake.rpc_id(quake[0], quake[1], quake[2], quake[3])
+
+	for collapse in result["collapse"]:
+		_events.event("tunnel collapse: %d cells, %d fills, victims %s" % [int(collapse["cells"]), (collapse["fills"] as Array).size(), str(collapse["victims"])])
+
+		for victim in collapse["victims"]:
+			items.kill(int(victim), "cave-in")
+
+		for fill in collapse["fills"]:
+			_fill_ground(fill[0], fill[1], tunnels.rubble_material)
+
+
 func _dig_ground(center: Vector3, radius: float) -> bool:
 	var t0: int = Time.get_ticks_usec()
 	var tiles: Array = store.dig_sphere(center, radius)
@@ -1109,6 +1153,7 @@ func _dig_ground(center: Vector3, radius: float) -> bool:
 		_tell_tile_changed(tile)
 
 	net.dug.rpc(center, radius)
+	tunnels.mark_edit(center, radius)
 	var t2: int = Time.get_ticks_usec()
 
 	if water_live != null:
@@ -1256,6 +1301,7 @@ func _fill_ground(center: Vector3, radius: float, material: int) -> bool:
 
 	if not tiles.is_empty():
 		net.filled.rpc(center, radius, material)
+		tunnels.mark_edit(center, radius)
 		_bury_plants(center, radius)
 
 		if water_live != null:
@@ -1359,6 +1405,7 @@ func _process(delta: float) -> void:
 	_update_weather()
 	_events.mark("items")
 	items.tick(delta)
+	_tunnel_tick()
 	_send_buried()
 	_events.mark("npcs")
 	npcs.unwell = dialogue.router.is_unwell()
@@ -1764,6 +1811,8 @@ func _exit_tree() -> void:
 	_events.event("EXIT: server closed (exit_tree)")
 	_events.stop_watchdog()
 	_save_game_clock()
+
+	tunnels.stop()
 
 	if trails != null:
 		trails.save()
