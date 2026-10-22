@@ -84,3 +84,7 @@ Answered: 2026-10-22 03:07 UTC
 Answer: No, a hole stays until someone fills it
 Answered: 2026-10-22 03:08 UTC
 
+## drop-cap-full | When the ground around you already holds 64 dropped items (a 256 m square), what should happen when you drop one more?
+Answer: Refuse the drop and say why (current behaviour)
+Answered: 2026-10-22 03:12 UTC
+
