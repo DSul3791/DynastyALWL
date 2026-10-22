@@ -208,3 +208,7 @@ Answered: 2026-10-22 17:18 UTC
 Answer: Approve as proposed (recommended)
 Answered: 2026-10-22 17:19 UTC
 
+## repo-vis | Important: the main DynastyALWL repo is PUBLIC on GitHub today. Anyone with the address can read the code, design docs, questions and answers. Do you want that?
+Answer: Make it private (recommended: it is an unreleased game)
+Answered: 2026-10-22 17:20 UTC
+
