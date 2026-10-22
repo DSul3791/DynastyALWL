@@ -26,3 +26,9 @@ Making it private does not stop the team or your PC. The cloud threads and GitHu
 - Make it private (recommended: it is an unreleased game)
 - Keep it public
 - Decide later
+
+## review-rules | Approve the rules for the terrain review (BP-T32)? Sonny writes a docs-only review first: what is wrong today, 2 or 3 options with sources, tests a bake must pass (rivers flow downhill, lakes have outlets, 2 m of water does not flood everything, 9-tile bake 30 minutes or less). Nothing is built or baked until you pick an option.
+Climate by coordinates (desert, jungle, tundra, volcano) is part of the review. The first bake waits for it.
+- Approve as written (recommended)
+- Approve, but I want to see the review before any prototype
+- Change it, I will tell you how
