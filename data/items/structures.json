@@ -377,9 +377,13 @@
 			"cap_per_chunk": 200,
 			"max_rise_m": 0.6,
 			"piece_kind": "wall",
-			"look": "doorway",
+			"look": "door_shut",
 			"sound": "timber",
-			"clears_grass": false
+			"clears_grass": false,
+			"use": "door",
+			"toggle": "door_open",
+			"use_pace_ms": 400,
+			"use_reach_m": 3.0
 		},
 		"window_section": {
 			"kit": "window_section_kit",
@@ -394,6 +398,24 @@
 			"look": "window_wall",
 			"sound": "timber",
 			"clears_grass": false
+		},
+		"door_open": {
+			"kit": "doorway_section_kit",
+			"item": "doorway_section",
+			"state": 28,
+			"piece": true,
+			"footprint_x": 2.0,
+			"footprint_z": 0.25,
+			"cap_per_chunk": 200,
+			"max_rise_m": 0.6,
+			"piece_kind": "wall",
+			"look": "door_open",
+			"sound": "timber",
+			"clears_grass": false,
+			"use": "door",
+			"toggle": "doorway_section",
+			"use_pace_ms": 400,
+			"use_reach_m": 3.0
 		}
 	},
 	"campfire": {

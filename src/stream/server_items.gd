@@ -3038,7 +3038,21 @@ func _use_struct(peer: int, inv, id: int) -> void:
 
 	var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
 
-	if str(def.get("use", "")) != "split_log" or _peer_pos[peer].distance_to(it["pos"]) > float(def.get("use_reach_m", 3.0)):
+	if _peer_pos[peer].distance_to(it["pos"]) > float(def.get("use_reach_m", 3.0)):
+		return
+
+	if str(def.get("use", "")) == "door":
+		# A door opens and shuts: the structure turns into its other kind (structures.json "toggle"), the row's state follows.
+		var now_ms: int = Time.get_ticks_msec()
+
+		if now_ms - int(_last_use.get(peer, -100000)) >= int(def.get("use_pace_ms", 400)) and _structures.has(str(def.get("toggle", ""))):
+			_last_use[peer] = now_ms
+			it["struct"]["kind"] = str(def["toggle"])
+			_dirty = true
+
+		return
+
+	if str(def.get("use", "")) != "split_log":
 		return
 
 	var now: int = Time.get_ticks_msec()
