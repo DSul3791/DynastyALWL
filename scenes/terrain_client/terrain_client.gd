@@ -41,6 +41,7 @@ const CompassScript := preload("res://src/client/admin_compass.gd")
 const InventoryViewScript := preload("res://src/client/inventory_view.gd")
 const NpcViewScript := preload("res://src/client/npc_view.gd")
 const SoundTestMenuScript := preload("res://src/client/sound_test_menu.gd")
+const LadderClimbScript := preload("res://src/client/ladder_climb.gd")
 const NpcVoiceScript := preload("res://src/client/npc_voice.gd")
 const TestSwitchesScript := preload("res://src/client/test_switches.gd")
 const TrailCodec := preload("res://src/shared/trail_codec.gd")
@@ -208,6 +209,7 @@ var test_start: Vector3 = Vector3.INF   # --start=x,y,z: put the player there (t
 var _test_probe_msec: int = 0
 var test_dump: bool = false           # --dump-test: 14 s after the welcome dump the ground under the feet (prints the dump)
 var _test_dump_done: bool = false
+var ladder = LadderClimbScript.new()          # holding on to a placed ladder (ladder_climb.gd)
 var sound_tests = SoundTestMenuScript.new()   # Esc > Settings sound test buttons and their state (sound_test_menu.gd)
 var menu_open: bool = false          # the Esc options menu
 var _menu: Control
@@ -3322,6 +3324,8 @@ func _move_player(delta: float) -> void:
 	elif flying:
 		direction.y += float(Input.is_key_pressed(KEY_SPACE)) - float(Input.is_key_pressed(KEY_CTRL))
 		body.global_position += direction * FLY_SPEED * fast * delta
+	elif _climb_ladder(delta, strain_cap):
+		pass
 	else:
 		var velocity: Vector3 = direction.normalized() * (run_speed if run_speed > 0.0 and test_walk else pace)
 
@@ -3392,6 +3396,29 @@ func _move_player(delta: float) -> void:
 
 	sea.global_position = Vector3(body.global_position.x, 0.0, body.global_position.z)
 	_update_underwater()
+
+
+# On a placed ladder (ladder_climb.gd): W climbs, S descends, Space lets go. True while holding on (that frame does no walking).
+func _climb_ladder(delta: float, strain_cap: float) -> bool:
+	if items == null or strain_cap < 0.0 or (items.ladders.is_empty() and not ladder.climbing()):
+		ladder.let_go()
+		return false
+
+	var look: Vector3 = -body.global_transform.basis.z
+	var result: Dictionary = ladder.step(items.ladders.values(), body.global_position - Vector3(0.0, 0.9, 0.0), look, Input.is_key_pressed(KEY_W), Input.is_key_pressed(KEY_S), Input.is_key_pressed(KEY_SPACE), delta)
+	var at: Vector3 = result["position"]
+
+	if at != Vector3.INF:
+		body.global_position = at + Vector3(0.0, 0.9, 0.0)
+
+	body.velocity = result["velocity"]
+
+	if not bool(result["active"]):
+		return false
+
+	sea.global_position = Vector3(body.global_position.x, 0.0, body.global_position.z)
+	_update_underwater()
+	return true
 
 
 # Walking, jogging or running into something you can step over (a log, a stone, a low stump): you hop onto it and keep going.

@@ -12,7 +12,8 @@ The single complete list of every input (keyboard, mouse, held versus tap, conte
 | Double-tap W (within 0.30 s) | Jog (3.2 m/s) |
 | Shift + W | Run (6 m/s) |
 | (automatic) | Very slight camera bob and sway when moving on the ground, in step with the feet: down and leaning to the stepping side at each footfall, back up in between. Strides are longer when jogging (4.2 m) and running (6 m) than walking (3 m) |
-| Space | Jump (walking) or go up (flying) |
+| Space | Jump (walking) or go up (flying); on a ladder, let go and drop back |
+| Ladder (W / S) | Walk up to a placed ladder facing it and hold W to grab on and climb (1.1 m/s); S climbs down and steps off at the bottom; at the top W steps you onto the edge |
 | Ctrl | Go down (flying) |
 | G | Switch between walking and flying |
 | F | Open the chest or remains beside you (your pack left, its contents right; T moves the selected stack across) |
