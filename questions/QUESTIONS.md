@@ -1,8 +1,3 @@
-## chk-log-wall | Check the reworked log wall (two pictures: the 4th wall on the first, the corner on the second). Round logs with saddle-notched corners that interlock; the log running through the corner alternates each course; the two ends of a wall are opposite (left end runs through on even courses, right end on odd). Does it look right now?
-Image: questions/img/tiers_walls_v3.png
-Image: questions/img/tiers_log_corner.png
-[check]
-
 ## found-metres | Foundation sizes in metres. Small foundation (for thin walls): 2 x 2 m, or 4 x 4 m as a double. Large foundation (for thick walls: log, cobblestone, mason): 3 x 3 m, or 6 x 6 m as a double. Pieces snap from about 6 m away. Are these sizes right?
 Note: Foundations stack, join side by side, and the mouse wheel raises the first one while it is on the ground. A foundation can only go where the ground is level enough to hide its whole bottom; slopes are levelled first.
 [check]
