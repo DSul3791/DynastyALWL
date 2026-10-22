@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 175,
+	"next_number": 192,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -1950,6 +1950,159 @@
 			"look_alikes": [],
 			"value": 36,
 			"future": true
+		},
+		"berry_compote": {
+			"number": 175,
+			"name": "Berry compote",
+			"description": "Sweet stewed berries. Light, quick energy.",
+			"kind": "food",
+			"stack": 10,
+			"value": 8,
+			"look_alikes": []
+		},
+		"nut_paste": {
+			"number": 176,
+			"name": "Nut paste",
+			"description": "Ground hazelnuts and honey. Keeps well.",
+			"kind": "food",
+			"stack": 10,
+			"value": 11,
+			"look_alikes": []
+		},
+		"roast_roots": {
+			"number": 177,
+			"name": "Embered roots",
+			"description": "Roots baked in the embers. Plain and filling.",
+			"kind": "food",
+			"stack": 10,
+			"value": 10,
+			"look_alikes": []
+		},
+		"acorn_mash": {
+			"number": 178,
+			"name": "Acorn mash",
+			"description": "Leached acorns boiled to a mash. Famine food.",
+			"kind": "food",
+			"stack": 10,
+			"value": 9,
+			"look_alikes": []
+		},
+		"baked_apples": {
+			"number": 179,
+			"name": "Baked apples",
+			"description": "Crab apples baked sweet in the ashes.",
+			"kind": "food",
+			"stack": 10,
+			"value": 10,
+			"look_alikes": []
+		},
+		"mushroom_skewer": {
+			"number": 180,
+			"name": "Mushroom skewer",
+			"description": "Mushrooms and wild garlic grilled on a stick.",
+			"kind": "food",
+			"stack": 10,
+			"value": 21,
+			"look_alikes": []
+		},
+		"herb_fish": {
+			"number": 181,
+			"name": "Herb fish",
+			"description": "Trout roasted with thyme and sea greens.",
+			"kind": "food",
+			"stack": 10,
+			"value": 25,
+			"look_alikes": []
+		},
+		"garlic_meat": {
+			"number": 182,
+			"name": "Garlic meat",
+			"description": "Meat roasted with wild garlic and rosemary.",
+			"kind": "food",
+			"stack": 10,
+			"value": 28,
+			"look_alikes": []
+		},
+		"chestnut_cakes": {
+			"number": 183,
+			"name": "Chestnut cakes",
+			"description": "Flat cakes of chestnut, honey and linseed. Good travelling food.",
+			"kind": "food",
+			"stack": 10,
+			"value": 22,
+			"look_alikes": []
+		},
+		"fruit_leather": {
+			"number": 184,
+			"name": "Fruit leather",
+			"description": "Dried fruit pressed flat. Keeps for a long journey.",
+			"kind": "food",
+			"stack": 10,
+			"value": 19,
+			"look_alikes": []
+		},
+		"smoked_fish": {
+			"number": 185,
+			"name": "Smoked fish",
+			"description": "Pike smoked over juniper. Lasts for weeks.",
+			"kind": "food",
+			"stack": 10,
+			"value": 25,
+			"look_alikes": []
+		},
+		"hunters_stew": {
+			"number": 186,
+			"name": "Hunter's stew",
+			"description": "A thick meat and root stew. Warms you through.",
+			"kind": "food",
+			"stack": 10,
+			"value": 44,
+			"look_alikes": []
+		},
+		"forager_stew": {
+			"number": 187,
+			"name": "Forager's stew",
+			"description": "Greens, roots and mushrooms in one pot.",
+			"kind": "food",
+			"stack": 10,
+			"value": 42,
+			"look_alikes": []
+		},
+		"fish_stew": {
+			"number": 188,
+			"name": "Fish stew",
+			"description": "Perch, cress and root in a sage broth.",
+			"kind": "food",
+			"stack": 10,
+			"value": 44,
+			"look_alikes": []
+		},
+		"trail_bread": {
+			"number": 189,
+			"name": "Trail bread",
+			"description": "Dense seed and nut loaves. Barely spoils.",
+			"kind": "food",
+			"stack": 10,
+			"value": 46,
+			"look_alikes": []
+		},
+		"hearty_pottage": {
+			"number": 190,
+			"name": "Hearty pottage",
+			"description": "A rich pot of seeds, roots, herbs and fat. Fills and warms.",
+			"kind": "food",
+			"stack": 10,
+			"value": 65,
+			"look_alikes": []
+		},
+		"feast_roast": {
+			"number": 191,
+			"name": "Feast roast",
+			"description": "Spiced, fat-basted roast. The best meal a campfire makes.",
+			"kind": "food",
+			"stack": 10,
+			"value": 75,
+			"look_alikes": []
 		}
 	}
 }

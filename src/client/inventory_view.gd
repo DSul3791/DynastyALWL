@@ -1714,6 +1714,13 @@ func _local_to(node: Node3D, ancestor: Node3D) -> Vector3:
 func station_near(station: String, level: int = 1) -> bool:
 	var here: Vector3 = _player_position.call() if _player_position.is_valid() else Vector3.ZERO
 
+	if station == "campfire":   # a lit campfire (state 1) within reach
+		for fire_id in _world:
+			if int(_world[fire_id]["state"]) == 1 and here.distance_to(_world[fire_id]["pos"]) <= 4.5:
+				return true
+
+		return false
+
 	for id in _world:
 		var def: Dictionary = _structure_by_state(int(_world[id]["state"]))
 
@@ -3416,7 +3423,7 @@ func run_eat_test(client) -> void:
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("roast_forage"), 0, 2, Vector3.ZERO)
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("poultice"), 0, 1, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout
-	print("Eat test: start hunger %d health %d weight %.1f; edible slot 0 %s" % [hunger, health, weight_kg, str(edible_slot(0))])
+	print("Eat test: start hunger %d health %d weight %.1f; edible slot 0 %s" % [hunger, health, weight_kg, str(edible_slot(inventory.numbers.find(table.number_of("roast_forage"))))])
 	eat_slot(inventory.numbers.find(table.number_of("roast_forage")))
 	await get_tree().create_timer(1.0).timeout
 	print("Eat test: after a roast, hunger %d, roasts left %d" % [hunger, inventory.count_of(table.number_of("roast_forage"))])

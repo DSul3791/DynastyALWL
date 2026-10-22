@@ -4599,6 +4599,15 @@ func station_near(peer: int, station: String, level: int = 1) -> bool:
 	if not _peer_pos.has(peer):
 		return false
 
+	if station == "campfire":   # dishes are cooked at a lit campfire (data/items/dishes.json), not at a placed structure
+		for id in _items:
+			var fire_item: Dictionary = _items[id]
+
+			if fire_item.has("fire") and int(fire_item["fire"]["state"]) == 1 and _peer_pos[peer].distance_to(fire_item["pos"]) <= FIRE_USE_M + 1.0:
+				return true
+
+		return false
+
 	for id in _items:
 		var it: Dictionary = _items[id]
 

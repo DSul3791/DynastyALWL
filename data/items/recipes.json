@@ -1,6 +1,6 @@
 {
 	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist). station: the recipe is made only near that placed station (structures.json station, reach_m with 1 m grace on the server); station_level (default 1) is the lowest level of the station it needs.",
-	"next_number": 102,
+	"next_number": 119,
 	"recipes": {
 		"cordage": {
 			"number": 1,
@@ -1903,6 +1903,443 @@
 			"craft_s": 8.0,
 			"known": false,
 			"station": "saw_mill"
+		},
+		"cook_berry_compote": {
+			"number": 102,
+			"name": "Berry compote",
+			"needs": [
+				[
+					"blueberries",
+					2
+				],
+				[
+					"honeyspindle_nectar",
+					1
+				]
+			],
+			"gives": [
+				"berry_compote",
+				2
+			],
+			"craft_s": 6.0,
+			"station": "campfire",
+			"known": true
+		},
+		"cook_nut_paste": {
+			"number": 103,
+			"name": "Nut paste",
+			"needs": [
+				[
+					"hazelnuts",
+					3
+				],
+				[
+					"honeyspindle_nectar",
+					1
+				]
+			],
+			"gives": [
+				"nut_paste",
+				2
+			],
+			"craft_s": 6.0,
+			"station": "campfire",
+			"known": true
+		},
+		"cook_roast_roots": {
+			"number": 104,
+			"name": "Embered roots",
+			"needs": [
+				[
+					"burdock_roots",
+					2
+				],
+				[
+					"wild_carrot_roots",
+					2
+				]
+			],
+			"gives": [
+				"roast_roots",
+				2
+			],
+			"craft_s": 8.0,
+			"station": "campfire",
+			"known": true
+		},
+		"cook_acorn_mash": {
+			"number": 105,
+			"name": "Acorn mash",
+			"needs": [
+				[
+					"acorns",
+					3
+				],
+				[
+					"water",
+					1
+				]
+			],
+			"gives": [
+				"acorn_mash",
+				2
+			],
+			"craft_s": 8.0,
+			"station": "campfire",
+			"known": true
+		},
+		"cook_baked_apples": {
+			"number": 106,
+			"name": "Baked apples",
+			"needs": [
+				[
+					"crab_apples",
+					3
+				],
+				[
+					"honeyspindle_nectar",
+					1
+				]
+			],
+			"gives": [
+				"baked_apples",
+				2
+			],
+			"craft_s": 8.0,
+			"station": "campfire",
+			"known": true
+		},
+		"cook_mushroom_skewer": {
+			"number": 107,
+			"name": "Mushroom skewer",
+			"needs": [
+				[
+					"porcini",
+					2
+				],
+				[
+					"chanterelles",
+					1
+				],
+				[
+					"wild_garlic_leaves",
+					1
+				]
+			],
+			"gives": [
+				"mushroom_skewer",
+				2
+			],
+			"craft_s": 8.0,
+			"station": "campfire",
+			"known": true
+		},
+		"cook_herb_fish": {
+			"number": 108,
+			"name": "Herb fish",
+			"needs": [
+				[
+					"trout",
+					1
+				],
+				[
+					"thyme",
+					1
+				],
+				[
+					"samphire",
+					1
+				]
+			],
+			"gives": [
+				"herb_fish",
+				1
+			],
+			"craft_s": 8.0,
+			"station": "campfire",
+			"known": true
+		},
+		"cook_garlic_meat": {
+			"number": 109,
+			"name": "Garlic meat",
+			"needs": [
+				[
+					"raw_meat",
+					1
+				],
+				[
+					"wild_garlic_bulbs",
+					1
+				],
+				[
+					"rosemary",
+					1
+				]
+			],
+			"gives": [
+				"garlic_meat",
+				1
+			],
+			"craft_s": 8.0,
+			"station": "campfire",
+			"known": true
+		},
+		"cook_chestnut_cakes": {
+			"number": 110,
+			"name": "Chestnut cakes",
+			"needs": [
+				[
+					"chestnuts",
+					3
+				],
+				[
+					"honeyspindle_nectar",
+					1
+				],
+				[
+					"linseed",
+					1
+				]
+			],
+			"gives": [
+				"chestnut_cakes",
+				3
+			],
+			"craft_s": 10.0,
+			"station": "campfire",
+			"known": true
+		},
+		"cook_fruit_leather": {
+			"number": 111,
+			"name": "Fruit leather",
+			"needs": [
+				[
+					"crab_apples",
+					2
+				],
+				[
+					"cranberries",
+					1
+				],
+				[
+					"honeyspindle_nectar",
+					1
+				]
+			],
+			"gives": [
+				"fruit_leather",
+				3
+			],
+			"craft_s": 10.0,
+			"station": "campfire",
+			"known": true
+		},
+		"cook_smoked_fish": {
+			"number": 112,
+			"name": "Smoked fish",
+			"needs": [
+				[
+					"pike",
+					1
+				],
+				[
+					"samphire",
+					1
+				],
+				[
+					"juniper_berries",
+					1
+				]
+			],
+			"gives": [
+				"smoked_fish",
+				1
+			],
+			"craft_s": 10.0,
+			"station": "campfire",
+			"known": true
+		},
+		"cook_hunters_stew": {
+			"number": 113,
+			"name": "Hunter's stew",
+			"needs": [
+				[
+					"raw_meat",
+					1
+				],
+				[
+					"wild_carrot_roots",
+					1
+				],
+				[
+					"wild_garlic_bulbs",
+					1
+				],
+				[
+					"porcini",
+					1
+				]
+			],
+			"gives": [
+				"hunters_stew",
+				2
+			],
+			"craft_s": 12.0,
+			"station": "campfire",
+			"known": true
+		},
+		"cook_forager_stew": {
+			"number": 114,
+			"name": "Forager's stew",
+			"needs": [
+				[
+					"greens",
+					2
+				],
+				[
+					"burdock_roots",
+					1
+				],
+				[
+					"chanterelles",
+					1
+				],
+				[
+					"sorrel_leaves",
+					1
+				]
+			],
+			"gives": [
+				"forager_stew",
+				2
+			],
+			"craft_s": 12.0,
+			"station": "campfire",
+			"known": true
+		},
+		"cook_fish_stew": {
+			"number": 115,
+			"name": "Fish stew",
+			"needs": [
+				[
+					"perch",
+					1
+				],
+				[
+					"watercress",
+					1
+				],
+				[
+					"wild_carrot_roots",
+					1
+				],
+				[
+					"sage",
+					1
+				]
+			],
+			"gives": [
+				"fish_stew",
+				2
+			],
+			"craft_s": 12.0,
+			"station": "campfire",
+			"known": true
+		},
+		"cook_trail_bread": {
+			"number": 116,
+			"name": "Trail bread",
+			"needs": [
+				[
+					"linseed",
+					2
+				],
+				[
+					"hazelnuts",
+					2
+				],
+				[
+					"dates",
+					1
+				],
+				[
+					"animal_fat",
+					1
+				]
+			],
+			"gives": [
+				"trail_bread",
+				3
+			],
+			"craft_s": 12.0,
+			"station": "campfire",
+			"known": true
+		},
+		"cook_hearty_pottage": {
+			"number": 117,
+			"name": "Hearty pottage",
+			"needs": [
+				[
+					"seeds",
+					2
+				],
+				[
+					"wild_carrot_roots",
+					1
+				],
+				[
+					"dandelion_leaves",
+					1
+				],
+				[
+					"marjoram",
+					1
+				],
+				[
+					"animal_fat",
+					1
+				]
+			],
+			"gives": [
+				"hearty_pottage",
+				3
+			],
+			"craft_s": 14.0,
+			"station": "campfire",
+			"known": true
+		},
+		"cook_feast_roast": {
+			"number": 118,
+			"name": "Feast roast",
+			"needs": [
+				[
+					"raw_meat",
+					2
+				],
+				[
+					"wild_garlic_bulbs",
+					1
+				],
+				[
+					"thyme",
+					1
+				],
+				[
+					"rosemary",
+					1
+				],
+				[
+					"animal_fat",
+					1
+				]
+			],
+			"gives": [
+				"feast_roast",
+				2
+			],
+			"craft_s": 14.0,
+			"station": "campfire",
+			"known": true
 		}
 	}
 }

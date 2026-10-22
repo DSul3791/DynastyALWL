@@ -244,7 +244,7 @@ func _init() -> void:
 			fail("skills.json: action '%s' needs a skill name and an effect of yield, speed or toughness" % action)
 
 	# Stations: a recipe's station is a placed structure with that station, or one of the stations still to be built.
-	var stations: Dictionary = {"saw_mill": true, "forge": true}
+	var stations: Dictionary = {"saw_mill": true, "forge": true, "campfire": true}   # a lit campfire is a station for dishes
 
 	for kind in _read("structures.json").get("structures", {}):
 		if String(_read("structures.json")["structures"][kind].get("station", "")) != "":
@@ -262,6 +262,12 @@ func _init() -> void:
 	for water in fishing.get("species", {}):
 		for row in fishing["species"][water]:
 			want_item.call(String(row[0]), "fishing.json %s" % water)
+			obtainable[String(row[0])] = true
+
+	# Hunting: every part a carcass can give is obtainable (by hunting and working the carcass).
+	for species_id in _read("carcass.json").get("species", {}):
+		for row in _read("carcass.json")["species"][species_id].get("parts", []):
+			want_item.call(String(row[0]), "carcass.json %s" % species_id)
 			obtainable[String(row[0])] = true
 
 	# Cooking.
