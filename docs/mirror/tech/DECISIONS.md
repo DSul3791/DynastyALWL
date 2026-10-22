@@ -352,3 +352,6 @@ cc-first-job: crashes, saves and version check first, then water, then items, th
 
 ## 2026-10-22 15:55 Round 2 concerns resolved (Tyler_Guru_SenDev)
 See CONCERNS_RESOLUTIONS.md "Round 2". No Dave decisions needed. MikeW told: cc-long-runs and cc-keep-awake are answered.
+
+## 2026-10-22 15:40 Dave approved bk-plan "as written": nightly backup (Tyler_Guru_SenDev)
+tech/BACKUP_PLAN.md and RESTORE_PROCEDURE.md approved as written (nightly real restore test, trash instead of delete, 3 per run cull cap, 14 nights dry-run, retention 30 days then oldest-per-ISO-week kept forever). P0. MikeW may now write tools/nightly_backup.py and tools/test_nightly_backup.py; Guru reviews code read-only before the first real run.

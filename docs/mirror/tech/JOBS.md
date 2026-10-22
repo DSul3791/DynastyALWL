@@ -416,4 +416,4 @@ Needs for both: TERRAIN_VERSION 26 held branch, 882-test suite, edge-match numbe
 
 NAME (Dave 2026-10-22 15:15): Radar is now Sal_Crafts; older lines saying Radar mean Sal_Crafts.
 
-## MikeW: nightly backup (Dave idea 2026-10-22, now P0 per Dave 15:33; BLOCKED until Dave approves tech/BACKUP_PLAN.md, question bk-plan). Spec: BEST_PRACTICES BP-C110. First: feasibility check (size of folder + server_data, E: drive present, zip tool, time), then one manual run, then "goodnight" trigger.
+## MikeW: nightly backup (Dave idea 2026-10-22, now P0 per Dave 15:33; APPROVED by Dave 15:35 as written; MikeW starts: step 2 of the rollout in tech/BACKUP_PLAN.md). Spec: BEST_PRACTICES BP-C110. First: feasibility check (size of folder + server_data, E: drive present, zip tool, time), then one manual run, then "goodnight" trigger.
