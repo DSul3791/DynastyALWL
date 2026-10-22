@@ -43,7 +43,7 @@ button.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)
 <main>
 <div id="tok" hidden class="q"><h2>Paste your GitHub token (once)</h2><input id="t" type="password" autocomplete="off"><button onclick="saveTok()">Remember</button></div>
 <div id="list">Loading...</div>
-<p class=ver>Page version: poke v5 (pictures, 2120 UTC). If you do not see this line, you have an old copy: reload.</p>
+<p class=ver>Page version: poke v6 (loader fix, 2135 UTC). If you do not see this line, you have an old copy: reload.</p>
 </main>
 <div class="dock"><div class="in"><button onclick="poke()">Tell Claude I answered</button><div class=msg id="pokemsg"></div></div></div>
 <div class="scrim" id="scrim" onclick="closeAll()"></div>
@@ -142,4 +142,5 @@ async function poke(){
   m.innerHTML=`<span class=err>Poke failed. ${errs.map(esc).join(" | ")}. Fix: GitHub > Settings > Developer settings > Fine-grained tokens > your token > Edit: Repository access must include DynastyALWL-QA (or DynastyALWL) and Issues + Pull requests = Read and write. A new token means Forget token, then paste it.</span>`}
 async function q_get(id){const f=await get(QF);return{text:f.text,sha:f.sha,q:parse(f.text).find(x=>x.id==id)}}
 load();
+setTimeout(function(){var l=document.getElementById('list');if(l&&l.textContent.trim()=='Loading...')l.innerHTML='<p class=err>The page started but could not load the questions in 8 seconds. Check your phone signal, then tap Reload. If it still fails: menu, Forget token, paste the token again.</p>'},8000);
 </script></body></html>
