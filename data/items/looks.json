@@ -174,7 +174,7 @@
   },
   "bucket": {
    "shape": "bucket",
-   "color": "#1f78ff",
+   "color": "#b88a50",
    "size": 1.0
   },
   "waterskin": {
@@ -819,6 +819,21 @@
    "shape": "kit",
    "color": "#8a6a3a",
    "size": 1.2
+  },
+  "cut_stone_block": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "brick": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "mortar": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
   }
  }
 }

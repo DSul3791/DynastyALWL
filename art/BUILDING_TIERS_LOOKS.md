@@ -1,0 +1,43 @@
+# Building tiers: the looks (designs)
+Kathleen_ArtisticDirector, 2026-10-22. Pictures: art/tiers/tiers_walls.png, tiers_floors.png, tiers_roofs.png, tiers_plan.png (all to scale). Costs, foundations and ids are Sal's (art/BUILDING_TIERS_PLAN.md). Revises BUILDING_PLAN.md point 1: tiers replace material skins. These are design pictures, not engine renders. Rebuild with `python3 tools/design_tiers.py <dir>`.
+
+## Real examples I based them on
+- Basic: wattle and daub / woven hazel hurdles (Iron Age roundhouse walls), stakes with rods woven over and under, straw packed in, thatch eaves.
+- Plank: slab or waney-edge siding: boards split from a round log, bark left on the outer face, flat face inside.
+- Fine wood: lapped clapboard (weatherboard) with nails and corner trim.
+- Log: Scandinavian/Appalachian log cabin, round logs, notched corners with ends sticking out, chinking (moss and clay) between logs.
+- Cobblestone: fieldstone/cobble walls, rounded stones in thick lime or clay mortar.
+- Mason: castle ashlar, big dressed blocks in staggered courses, chisel-draft margins, plinth course at the foot.
+
+## Walls (2 m wide, 2.4 m high)
+| Tier | Look | Real geometry |
+|---|---|---|
+| 1 Basic | vertical stakes every 15 cm, light rods woven over and under, twine lashing, straw along the top | flat panel 0.1 m |
+| 2 Plank | uneven vertical planks 18 to 28 cm, rough bark face out, dark gaps, smooth pale face inside | two layers: bark outside, smooth inside, 0.1 m |
+| 3 Fine wood | lapped boards 12 cm, nail heads, corner trim, top plate | panel 0.15 m with trim posts |
+| 4 Log | 8 round logs 30 cm, bark on, notched ends stick out 12 cm alternately, chinking | real cylinders (8 per wall), 0.4 m |
+| 5 Cobblestone | rounded stones 20 to 40 cm, thick pale mortar, mixed grey, brown, blue-grey | panel 0.5 m, rounded mortar relief by texture |
+| 6 Mason | blocks 80 x 40 cm staggered, dressed centre and chisel margin, small stains, projecting plinth | panel 0.6 m with plinth and top course |
+
+## Floors (2 m square)
+1 beaten earth, straw and a woven mat. 2 rough planks, gaps, pegs. 3 planed boards, nail pairs. 4 split logs flat side up, bark edges. 5 flagstone, narrow joints. 6 cut stone blocks 50 cm, tight joints.
+
+## Roofs (2.4 m square, eave at the bottom)
+1 thatch, bound courses, thick eave edge. 2 riven plank shingles, ragged. 3 sawn shingles, nailed. 4 bark sheets over log rafters with a ridge log. 5 stone slabs on visible beam ends. 6 dressed slabs, carved ridge cap.
+
+## Doors and windows (same slots, per tier)
+Doors take the tier's look but stay wood: basic = woven hurdle, plank = bark door, fine = nailed boards with iron straps, log = thick planks, cobble and mason = heavy planks with iron bands. Windows: shutters from tier 3 up, plain opening below.
+
+## Sounds
+Place and door sounds per tier: thatch (basic), board (plank, fine), log (new: deep thud, creak), stone (cobble), heavy stone (mason, new). Floor footsteps already exist: dirt/thatch, plank, slab.
+
+## Other fixes from Dave's answers
+- Bucket: now wood (light ash staves with visible joints, dark wooden hoops, rope bail).
+- Axe: a wedge head, thick at the stick and thinning to a sharp edge, sticking out sideways so from the side it reads like a hoe.
+- Spade sizes: small 1.0, medium 1.25, large 1.5 of the same spade.
+
+## Questions (recommendation first)
+1. Roof of tier 5: stone slabs on beams as Sal wrote; tier 6: dressed slabs. Recommend yes (cobble = rough slate-like slabs, mason = tidy dressed slabs).
+2. Log walls are real cylinders and not a texture so the notched corners show. Recommend yes (8 small meshes per wall).
+3. Tier 2 plank wall is two layers (bark outside, smooth inside). Recommend yes.
+4. Do doors/windows follow the tier look? Recommend yes (table above).
