@@ -424,3 +424,7 @@ Answered: 2026-10-22 23:12 UTC
 Answer: No: It should weigh about 18 kg
 Answered: 2026-10-22 23:13 UTC
 
+## chk-block-hand | Check the chopping block in your hand (picture, bottom right of the screen): is it a good size now, and does it look like the placed chopping block? It is made from 2 logs and weighs 30 kg.
+Answer: No: It should weigh about 18 kg
+Answered: 2026-10-22 23:13 UTC
+
