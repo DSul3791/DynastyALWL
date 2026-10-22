@@ -2075,6 +2075,11 @@ func _make_fire(lit: bool, loaded: bool = false) -> Node3D:
 func _mesh_for(number: int) -> Mesh:
 	if not _meshes.has(number):
 		var id: String = table.id_of(number)
+
+		if id == "chopping_block" or id == "chopping_block_kit":
+			_meshes[number] = BuildingLook.block_mesh()      # the heavy block you carry is the placed model, nothing else
+			return _meshes[number]
+
 		var basic: Mesh = BasicLook.mesh_for(id)      # stage-one look from data/items/looks.json (src/client/basic_look.gd)
 
 		if basic != null:

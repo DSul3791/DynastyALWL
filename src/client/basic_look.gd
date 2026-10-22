@@ -86,6 +86,14 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 		"ingot":
 			_box(parts, Vector3(0.24, 0.05, 0.1), Vector3(0.0, -0.035, 0.0), color)
 			_box(parts, Vector3(0.2, 0.03, 0.07), Vector3(0.0, 0.0, 0.0), light)
+		"block":
+			# A cut stone block, 2:1:1, with a chiselled lighter top.
+			_box(parts, Vector3(0.2, 0.1, 0.1), Vector3(0.0, -0.02, 0.0), color)
+			_box(parts, Vector3(0.18, 0.012, 0.08), Vector3(0.0, 0.034, 0.0), light)
+		"brick":
+			# A fired brick, about 3:1.4:1, with a paler top face.
+			_box(parts, Vector3(0.15, 0.05, 0.07), Vector3(0.0, -0.02, 0.0), color)
+			_box(parts, Vector3(0.13, 0.008, 0.055), Vector3(0.0, 0.009, 0.0), light)
 		"pile":
 			_sph(parts, 0.15, Vector3(1.0, 0.45, 1.0), Vector3(0.0, -0.03, 0.0), color)
 			_sph(parts, 0.06, Vector3(1.0, 0.7, 1.0), Vector3(0.07, 0.03, 0.03), light)
@@ -170,18 +178,34 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_cone(parts, 0.045, 0.28, Vector3(0.58, 0.0, 0.0), color)
 			_cyl(parts, 0.024, 0.04, Vector3(0.43, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.8, 0.7, 0.4))   # the binding below the head
 		"axe":
-			# A stone axe: handle, a lashed eye block, and a broad rounded blade fanning out from it with a sharpened curved edge.
+			# A stone axe: a stick with a wedge-headed blade lashed to the end. The wedge is thick at the stick and thins to a sharp edge, sticking out
+			# sideways, so from the side the whole thing reads like a hoe.
 			_handle(parts, 0.5)
-			_box(parts, Vector3(0.06, 0.05, 0.06), Vector3(0.22, 0.0, 0.0), dark)
-			_sph(parts, 0.1, Vector3(0.95, 0.16, 1.0), Vector3(0.22, 0.0, 0.08), color)
-			_sph(parts, 0.06, Vector3(0.9, 0.1, 0.75), Vector3(0.22, 0.0, 0.16), light)       # the thinned, sharpened edge
-			_cyl(parts, 0.032, 0.035, Vector3(0.22, 0.0, 0.0), Vector3(PI * 0.5, 0.0, 0.0), Color(0.8, 0.7, 0.4))   # lashing
+			_box(parts, Vector3(0.1, 0.06, 0.06), Vector3(0.22, 0.0, 0.0), dark)                                   # the poll block the wedge sits on
+			_wedge(parts, 0.06, 0.15, 0.12, Vector3(0.22, 0.0, 0.05), color)                                        # the wedge: base 6 cm, 15 cm out, 12 cm of edge
+			_wedge(parts, 0.024, 0.05, 0.125, Vector3(0.22, 0.0, 0.1), light)                                       # the ground, sharpened edge
+			_cyl(parts, 0.034, 0.03, Vector3(0.19, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.8, 0.7, 0.4))   # lashing
+			_cyl(parts, 0.034, 0.03, Vector3(0.25, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.8, 0.7, 0.4))
 		"pick":
 			_handle(parts, 0.6)
 			_box(parts, Vector3(0.04, 0.04, 0.3), Vector3(0.27, 0.0, 0.0), color)
 		"spade":
-			_handle(parts, 0.7)
-			_box(parts, Vector3(0.12, 0.03, 0.16), Vector3(0.38, 0.0, 0.0), color)
+			# A real garden spade: long shaft, D-shaped grip, a socket, and a flat blade that narrows to a point.
+			_handle(parts, 0.75)
+			_box(parts, Vector3(0.03, 0.03, 0.15), Vector3(-0.4, 0.0, 0.0), Color(0.42, 0.3, 0.17))                    # grip bar
+			_box(parts, Vector3(0.06, 0.03, 0.03), Vector3(-0.37, 0.0, 0.06), Color(0.42, 0.3, 0.17))                  # grip sides
+			_box(parts, Vector3(0.06, 0.03, 0.03), Vector3(-0.37, 0.0, -0.06), Color(0.42, 0.3, 0.17))
+			_cyl(parts, 0.024, 0.11, Vector3(0.3, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), dark)                        # socket
+			_box(parts, Vector3(0.14, 0.012, 0.19), Vector3(0.4, 0.0, 0.0), color)                                     # blade, square part
+			_box_rot(parts, Vector3(0.13, 0.012, 0.13), Vector3(0.47, 0.0, 0.0), Vector3(0.0, PI * 0.25, 0.0), color)  # blade, pointed tip
+			_box(parts, Vector3(0.1, 0.016, 0.02), Vector3(0.36, 0.0, 0.0), light)                                     # centre rib
+		"hoe":
+			# A garden hoe: long handle, a socket, a neck that bends out sideways, and a flat wide blade angled back toward the handle's end.
+			_handle(parts, 0.85)
+			_cyl(parts, 0.022, 0.08, Vector3(0.38, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), dark)                           # socket
+			_box_rot(parts, Vector3(0.03, 0.025, 0.12), Vector3(0.44, 0.0, 0.045), Vector3(0.0, 0.35, 0.0), dark)         # the neck bends out
+			_box_rot(parts, Vector3(0.012, 0.17, 0.1), Vector3(0.5, 0.0, 0.1), Vector3(0.0, -0.25, 0.0), color)           # the flat blade, wide across
+			_box_rot(parts, Vector3(0.012, 0.17, 0.015), Vector3(0.5, 0.0, 0.147), Vector3(0.0, -0.25, 0.0), light)       # the sharpened lower edge
 		"knife":
 			_handle(parts, 0.14)
 			_box(parts, Vector3(0.13, 0.015, 0.035), Vector3(0.12, 0.0, 0.0), color)
@@ -202,12 +226,18 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_box(parts, Vector3(0.05, 0.025, 0.02), Vector3(-0.115, 0.0, 0.0), dark)
 			_cyl(parts, 0.05, 0.012, Vector3(0.0, 0.075, 0.0), Vector3.ZERO, Color(0.12, 0.08, 0.06))   # dark mouth
 		"bucket":
-			# A stave bucket: tapering sides, two dark iron hoops, a rope bail across the top.
+			# A wooden stave bucket: tapering sides with the stave joints showing, two dark wooden hoops, a rope bail across the top.
 			_frustum(parts, 0.085, 0.11, 0.2, Vector3.ZERO, color)
-			_torus(parts, 0.1, 0.007, Vector3(0.0, -0.05, 0.0), Color(0.18, 0.18, 0.2))
-			_torus(parts, 0.108, 0.007, Vector3(0.0, 0.06, 0.0), Color(0.18, 0.18, 0.2))
+			var stave: Color = color.darkened(0.4)
+
+			for n in 8:
+				var turn: float = float(n) * TAU / 8.0
+				_box_rot(parts, Vector3(0.006, 0.2, 0.006), Vector3(sin(turn) * 0.0985, 0.0, cos(turn) * 0.0985), Vector3(0.0, turn, 0.0), stave)
+
+			_torus(parts, 0.1, 0.008, Vector3(0.0, -0.05, 0.0), Color(0.3, 0.2, 0.11))
+			_torus(parts, 0.108, 0.008, Vector3(0.0, 0.06, 0.0), Color(0.3, 0.2, 0.11))
 			_cyl(parts, 0.1, 0.01, Vector3(0.0, 0.085, 0.0), Vector3.ZERO, Color(0.07, 0.05, 0.04))     # dark inside
-			_torus_v(parts, 0.1, 0.007, Vector3(0.0, 0.1, 0.0), Color(0.75, 0.62, 0.38))                  # the bail
+			_torus_v(parts, 0.1, 0.007, Vector3(0.0, 0.1, 0.0), Color(0.75, 0.62, 0.38))                  # the rope bail
 		"skin":
 			_sph(parts, 0.09, Vector3(1.0, 1.3, 0.7), Vector3.ZERO, color)
 			_cyl(parts, 0.02, 0.06, Vector3(0.0, 0.12, 0.0), Vector3.ZERO, dark)
@@ -251,6 +281,14 @@ static func _cone(parts: Array, radius: float, length: float, at: Vector3, color
 	cone.radial_segments = 6
 	cone.rings = 1
 	parts.append([cone, Transform3D(Basis.from_euler(Vector3(0.0, 0.0, -PI * 0.5)), at), color])
+
+
+# A wedge for an axe head: `base` wide (y), `out` long (z) from its base to the edge, `along` long (x, the length of the edge). Thick at z - out/2, edge at +z.
+static func _wedge(parts: Array, base: float, out: float, along: float, at: Vector3, color: Color) -> void:
+	var prism: PrismMesh = PrismMesh.new()
+	prism.size = Vector3(base, out, along)
+	prism.left_to_right = 0.5
+	parts.append([prism, Transform3D(Basis(Vector3(0.0, 1.0, 0.0), Vector3(0.0, 0.0, 1.0), Vector3(1.0, 0.0, 0.0)), at), color])
 
 
 # A box turned by `tilt` (Euler) in place.

@@ -46,11 +46,17 @@ TOOLS = {
     "stone_axe": ("axe", "#7d7a74", 1.6), "stone_knife": ("knife", "#8a8680", 1.0), "torch": ("torch", "#e08a2a", 1.0),
     "wooden_spade": ("spade", "#8a6a3a", 1.0), "stone_spade": ("spade", "#7d7a74", 1.0), "iron_spade": ("spade", "#6c6f75", 1.0),
     "steel_spade": ("spade", "#9aa3ad", 1.0), "iron_pickaxe": ("pick", "#6c6f75", 1.0), "steel_pickaxe": ("pick", "#9aa3ad", 1.0),
+    # Medium and large spades: the same shape, a longer shaft and a wider blade (size 1.25 and 1.5 of the small one).
+    "wooden_spade_medium": ("spade", "#8a6a3a", 1.25), "wooden_spade_large": ("spade", "#8a6a3a", 1.5),
+    "stone_spade_medium": ("spade", "#7d7a74", 1.25), "stone_spade_large": ("spade", "#7d7a74", 1.5),
+    "iron_spade_medium": ("spade", "#6c6f75", 1.25), "iron_spade_large": ("spade", "#6c6f75", 1.5),
+    "steel_spade_medium": ("spade", "#9aa3ad", 1.25), "steel_spade_large": ("spade", "#9aa3ad", 1.5),
+    "wooden_hoe": ("hoe", "#8a6a3a", 1.2), "stone_hoe": ("hoe", "#7d7a74", 1.2), "iron_hoe": ("hoe", "#6c6f75", 1.2), "steel_hoe": ("hoe", "#9aa3ad", 1.2),
     "sewing_needle": ("needle", "#c8c8cc", 1.2), "fishing_rod": ("rod", "#9a9a9e", 1.0),
-    "wooden_bowl": ("bowl", "#9a6b38", 1.3), "clay_pot": ("pot", "#ff7f11", 1.0), "bucket": ("bucket", "#1f78ff", 1.0),
+    "wooden_bowl": ("bowl", "#9a6b38", 1.3), "clay_pot": ("pot", "#ff7f11", 1.0), "bucket": ("bucket", "#b88a50", 1.0),
     "waterskin": ("skin", "#ff4fa3", 1.0),
     "campfire_kit": ("kit", "#6a4a2a", 1.0), "lean_to_kit": ("kit", "#6a8a3a", 1.0), "chest_kit": ("kit", "#9a7a45", 1.0),
-    "chopping_block_kit": ("kit", "#7a5a35", 1.0), "plank_chest_kit": ("kit", "#a07a45", 1.0), "workbench_kit": ("kit", "#8a6a3a", 1.0),
+    "plank_chest_kit": ("kit", "#a07a45", 1.0), "workbench_kit": ("kit", "#8a6a3a", 1.0),
     "tool_rack_kit": ("kit", "#7a5a35", 1.0), "vice_kit": ("kit", "#7a5a35", 1.0), "log_workbench_kit": ("kit", "#6a4a2a", 1.0),
     "stone_forge_kit": ("kit", "#7d7a74", 1.0), "blacksmithy_kit": ("kit", "#6c6f75", 1.0), "large_forge_kit": ("kit", "#5c5f65", 1.0),
     "master_forge_kit": ("kit", "#44474d", 1.0), "wall_section_kit": ("kit", "#9a7a45", 1.2), "floor_section_kit": ("kit", "#a98350", 1.2),
@@ -77,6 +83,11 @@ SPECIAL.update({
     "feast_roast": ("joint", "#62301a", 1.5),
     "backpack": ("backpack", "#8a6a4a", 1.4),
     "wooden_bowl": ("bowl", "#9a6b38", 1.3),
+})
+SPECIAL.update({
+    "cut_stone_block": ("block", "#8a8780", 1.5),
+    "brick": ("brick", "#a8452e", 1.4),
+    "mortar": ("pile", "#a89c85", 1.0),
 })
 SKIP = {"stone", "stick", "driftwood", "log"}
 
