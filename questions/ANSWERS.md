@@ -532,3 +532,7 @@ Answered: 2026-10-22 23:47 UTC
 Answer: Yes
 Answered: 2026-10-22 23:48 UTC
 
+## blueprint-8 | Keep the old flat roof as the fine-wood flat roof next to the six new slope pieces?
+Answer: No: There should be what we call a ceiling which is just a wooden style floor turned 90° so you can place it up on top of a wall or attach it to anything that has an attachment point but there should also be a flat roof piece that is specifically only made of wood and tar which comes from Bitumen. Which is one of the things in our world and once you combine these things, you make a Flat tarred roof and it can protect everything below it from the elements just like every other roof piece. You can make a roof piece out of Thatch and that has a natural look. You can make a roof piece out of boards and nails, and that would look like a lap board roof and you can make it out of stone shingles. And that would be it for roof roofing.
+Answered: 2026-10-22 23:53 UTC
+
