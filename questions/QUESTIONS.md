@@ -1,7 +1,3 @@
-## found-sizes | Foundation sizes: 1 x 1, 2 x 2 (small), 4 x 4, 6 x 6, 8 x 8 (large), measured in metres. Right?
-Note: Partly answered before: at 22:13 you said small versions 1 x 1 and 2 x 2 must exist. This only confirms the exact list and the metre unit.
-[check]
-
 ## chk-plank-v2 | Check the redrawn plank wall (picture): smooth rounded planks outside, the small inset shows the flat rough face inside. Does the plank wall look right now?
 Image: questions/img/tiers_walls_v2.png
 [check]
