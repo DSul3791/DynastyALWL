@@ -1,8 +1,3 @@
-## dig-rock | Can a spade dig through solid rock? (my pick: soil only, rock needs a pick)
-- Spade digs soil, gravel and sand only; rock needs a pick and is slower
-- Spade digs everything the same, no hard rock
-- Rock cannot be dug at all (only soil layers)
-
 ## dig-depth | How deep may players dig below the surface? (my pick: about 30 m, then bedrock)
 - About 30 m, then unbreakable bedrock
 - About 100 m
