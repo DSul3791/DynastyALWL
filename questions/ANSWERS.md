@@ -308,3 +308,7 @@ Answered: 2026-10-22 20:15 UTC
 Answer: Free grading for admin only at first
 Answered: 2026-10-22 20:16 UTC
 
+
+## hoe-grade | Hoe grading for roads: must cut and fill balance?
+Answer: No: the hoe moves dirt from space to space on the ground; it needs no soil items and no materials and only wears down its own durability (Dave's words, chat 20:17, resolved by Guru)
+Answered: 2026-10-22 20:17 UTC
