@@ -1,8 +1,3 @@
-## roast-names | The other roasts are still called roast meat, roast fish and roast roots. Rename any of them like Roast Beast?
-- Keep them as they are (recommended)
-- Rename them to match (Roast Beast style, e.g. Roast Fish, Roast Roots as proper names)
-- I will give names myself
-
 ## building-plan | Kathleen's building plan (art/BUILDING_PLAN.md): approve all five points?
 Note: 1. One piece per slot (wall, floor, roof...) plus a material skin: thatch, wood, stone, brick.
 Note: 2. 2 m grid, walls 2.4 m high.
