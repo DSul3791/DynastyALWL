@@ -1,4 +1,3 @@
-
 ## tier-plan | Building tiers: please read art/BUILDING_TIERS_PLAN.md (six wall tiers, five slots, recipes). Questions 1 to 6 follow as cards. Pictures of the designs come from Kathleen next; nothing is built until you approve.
 - Plan read, go through the questions
 
@@ -25,11 +24,6 @@
 ## tier-mason-heavy | Mason walls are so heavy (about 200 kg) that you build them where you stand?
 - Yes (recommended)
 - No (tell me in chat)
-
-## chk-tiers | Check the building tier designs (drawn, not engine renders): walls, floors and roofs for the six tiers. Does each tier look like what you described, and is it clearly different from the next?
-Image: questions/img/tiers_all.png
-Note: Details in art/BUILDING_TIERS_LOOKS.md.
-[check]
 
 ## tl-roof | Roofs: cobblestone tier = rough slate-like slabs on beams, mason tier = tidy dressed slabs?
 - Yes (recommended)
