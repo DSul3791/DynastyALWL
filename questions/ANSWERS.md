@@ -240,3 +240,7 @@ Answered: 2026-10-22 19:12 UTC
 Answer: No: Anything that’s in a container or that is a container like a potion or a bottle or something with its own name needs to have its own colour so we learned to recognize the colours and use very separate colours nice bowl, green, blue, red, yellow, pink purple, etc.
 Answered: 2026-10-22 19:13 UTC
 
+## chk-animals | Check the animals from 20 m: moose (grazing, warning, charging), horse, fox, ducks. Does each read as the right animal?
+Answer: Yes
+Answered: 2026-10-22 19:13 UTC
+
