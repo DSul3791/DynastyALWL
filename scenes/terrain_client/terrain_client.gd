@@ -1005,11 +1005,6 @@ func _welcome_body(info: Dictionary) -> void:
 	layer.add_child(link_bars)
 	_horizon = HorizonScript.new()
 	_horizon.setup(camera, func() -> bool: return swimming or (items != null and items.breath_ds >= 0))
-	_horizon.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	_horizon.offset_left = -_horizon.size.x - 14.0
-	_horizon.offset_right = -14.0
-	_horizon.offset_top = 16.0
-	_horizon.offset_bottom = 16.0 + _horizon.size.y
 	layer.add_child(_horizon)
 	debug_hud.add_line("server link", func() -> String: return link_bars.text())
 	_tint = ColorRect.new()

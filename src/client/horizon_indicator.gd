@@ -1,17 +1,18 @@
 extends Control
 
-# A small artificial horizon like an airplane's (Dave 2026-10-22): shown only underground or in water, where there is no sky to
-# tell whether you are looking level, up or down. The ball is sky-coloured above the horizon line and earth-coloured below; looking
-# up moves the line down, as in a cockpit. A fixed aircraft mark sits in the middle, rungs every 10 degrees. An exception to
-# "no bars on the main screen", like the server link bars.
+# A look-angle ruler at the crosshair (Dave 2026-10-22): shown only underground or in water, where there is no sky to tell whether
+# you are looking level, up or down. A vertical line beside the centre of the screen with a tick every 5 degrees from -45 to +45
+# (up is the top), a longer tick and a number every 15, and a marker that rides the line at the angle you are looking. An exception
+# to "no bars on the main screen", like the server link bars.
 
-const RADIUS := 64.0
-const DEGREES_SHOWN := 45.0               # pitch at which the horizon line reaches the edge of the ball
+const DEGREES := 45                       # the ruler runs from -DEGREES to +DEGREES
+const TICKS := 9                          # ticks each side of zero (every 5 degrees)
+const PX_PER_DEGREE := 4.0
+const SIDE := 40.0                        # the ruler stands this far right of the aim point
 const CHECK_SEC := 0.25
 const ROOF_M := 1.2                       # ground this far above the head counts as underground
-const SKY := Color(0.36, 0.55, 0.78, 0.85)
-const EARTH := Color(0.42, 0.29, 0.18, 0.85)
-const LINE := Color(1.0, 1.0, 1.0, 0.9)
+const LINE := Color(1.0, 1.0, 1.0, 0.8)
+const MARK := Color(1.0, 0.85, 0.2, 0.95)
 
 var pitch_rad: float = 0.0                # set every frame by the game: the camera's up/down angle
 var _camera: Camera3D
@@ -24,8 +25,12 @@ func setup(camera: Camera3D, in_water: Callable) -> void:
 	_camera = camera
 	_in_water = in_water
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	custom_minimum_size = Vector2(RADIUS * 2.0 + 8.0, RADIUS * 2.0 + 8.0)
-	size = custom_minimum_size
+	size = Vector2(160.0, float(DEGREES) * 2.0 * PX_PER_DEGREE + 40.0)
+	set_anchors_preset(Control.PRESET_CENTER)
+	offset_left = -size.x * 0.5 + SIDE + 40.0
+	offset_right = offset_left + size.x
+	offset_top = -size.y * 0.5
+	offset_bottom = offset_top + size.y
 	visible = false
 
 
@@ -72,35 +77,20 @@ func _underground() -> bool:
 
 
 func _draw() -> void:
-	var centre: Vector2 = Vector2(size.x * 0.5, size.y * 0.5)
-	var pitch_deg: float = rad_to_deg(pitch_rad)
-	var offset: float = clampf(pitch_deg / DEGREES_SHOWN, -1.0, 1.0) * RADIUS   # looking up lowers the horizon line
-	draw_circle(centre, RADIUS, SKY)
-	var ratio: float = clampf(offset / RADIUS, -1.0, 1.0)
-	var low: float = asin(ratio)
-	var ground: PackedVector2Array = PackedVector2Array()
-	var steps: int = 40
+	var middle: Vector2 = Vector2(SIDE, size.y * 0.5)
+	var font: Font = ThemeDB.fallback_font
+	draw_line(middle + Vector2(0.0, -float(DEGREES) * PX_PER_DEGREE), middle + Vector2(0.0, float(DEGREES) * PX_PER_DEGREE), LINE, 2.0)
 
-	for n in range(steps + 1):
-		var angle: float = low + (PI - 2.0 * low) * float(n) / float(steps)
-		ground.append(centre + Vector2(cos(angle), sin(angle)) * RADIUS)
+	for step in range(-TICKS, TICKS + 1):
+		var degrees: int = step * 5
+		var y: float = middle.y - float(degrees) * PX_PER_DEGREE
+		var long: bool = degrees % 15 == 0
+		draw_line(Vector2(middle.x, y), Vector2(middle.x + (18.0 if long else 9.0), y), LINE, 3.0 if degrees == 0 else 2.0)
 
-	if ground.size() >= 3:
-		draw_colored_polygon(ground, EARTH)
+		if long:
+			draw_string(font, Vector2(middle.x + 24.0, y + 7.0), ("%+d" % degrees) if degrees != 0 else "0", HORIZONTAL_ALIGNMENT_LEFT, -1, 20, LINE)
 
-	# The horizon line and a rung every 10 degrees, clipped to the ball.
-	for rung in range(-3, 4):
-		var y: float = offset + float(rung) * 10.0 / DEGREES_SHOWN * RADIUS * -1.0
-		var half: float = sqrt(maxf(RADIUS * RADIUS - y * y, 0.0))
-
-		if absf(y) >= RADIUS - 2.0:
-			continue
-
-		var width: float = half if rung == 0 else minf(half, 16.0)
-		draw_line(centre + Vector2(-width, y), centre + Vector2(width, y), LINE, 3.0 if rung == 0 else 2.0)
-
-	draw_arc(centre, RADIUS, 0.0, TAU, 64, LINE, 3.0, true)
-	# The aircraft mark, fixed: where you are looking.
-	draw_line(centre + Vector2(-26.0, 0.0), centre + Vector2(-8.0, 0.0), Color(1.0, 0.85, 0.2), 4.0)
-	draw_line(centre + Vector2(8.0, 0.0), centre + Vector2(26.0, 0.0), Color(1.0, 0.85, 0.2), 4.0)
-	draw_circle(centre, 4.0, Color(1.0, 0.85, 0.2))
+	# The marker: a triangle pointing at the ruler at the angle the camera looks.
+	var at: float = clampf(rad_to_deg(pitch_rad), -float(DEGREES), float(DEGREES))
+	var y_mark: float = middle.y - at * PX_PER_DEGREE
+	draw_colored_polygon(PackedVector2Array([Vector2(middle.x - 4.0, y_mark), Vector2(middle.x - 22.0, y_mark - 9.0), Vector2(middle.x - 22.0, y_mark + 9.0)]), MARK)
