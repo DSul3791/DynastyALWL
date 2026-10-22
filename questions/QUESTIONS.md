@@ -1,6 +1,3 @@
-## tier-basic-ground | May tier-1 basic buildings (woven thatch hut) sit on bare ground with no foundation?
-[check]
-
 ## tier-nails | Nails: 1 iron ingot makes 20 nails at a forge?
 [check]
 
