@@ -227,6 +227,20 @@ func _init() -> void:
 	items.action(2, Net.ACT_USE_STRUCT, door_id, 0, 0, Vector3.ZERO)
 	check(items._items[door_id]["struct"]["kind"] == "doorway_section", "the door will not flap faster than its pace")
 	items.report_position(2, Vector3(450.0, 10.0, 450.0))
+	# Bracing supports: strength fades from the support to its reach, adds up to 1, wears to a floor, and the tunnel watch is told.
+	items.report_position(2, Vector3(700.0, 10.0, 700.0))
+	var told: Array = []
+	items.support_changed = func(at: Vector3) -> void: told.append(at)
+	items.game_seconds = func() -> float: return 1000.0
+	items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of("timber_prop_kit"), 0, 2, Vector3.ZERO)
+	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of("timber_prop_kit")), 0, 0, Vector3(700.0, 10.0, 702.0))
+	check(told.size() == 1 and absf(items.support_strength_at(Vector3(700.0, 10.0, 702.0)) - 0.5) < 0.001, "a new prop gives 0.5 at its own spot and tells the tunnel watch (%.3f)" % items.support_strength_at(Vector3(700.0, 10.0, 702.0)))
+	check(absf(items.support_strength_at(Vector3(701.5, 10.0, 702.0)) - 0.25) < 0.001 and items.support_strength_at(Vector3(703.1, 10.0, 702.0)) == 0.0, "it fades to nothing at its 3 m reach")
+	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of("timber_prop_kit")), 0, 0, Vector3(700.0, 10.0, 703.0))
+	check(items.support_strength_at(Vector3(700.0, 10.0, 702.5)) > items.support_strength_at(Vector3(701.5, 10.0, 702.0)), "two props beside each other hold more than one")
+	var worn_s: float = items.support_strength_at(Vector3(700.0, 10.0, 702.0), 1000.0 + 61.0 * 86400.0)
+	check(worn_s < 0.4 and worn_s > 0.1, "after 60 game days a prop has worn down to its floor (%.3f)" % worn_s)
+	items.report_position(2, Vector3(450.0, 10.0, 450.0))
 	# A dead branch on the forest floor gives one stick, only within reach.
 	var sticks_had: int = items.inventory_of(2).count_of(items.table.number_of("stick"))
 	items.action(2, Net.ACT_LITTER, 0, 0, 0, Vector3(451.0, 10.0, 450.0))
