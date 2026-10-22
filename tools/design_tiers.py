@@ -151,35 +151,74 @@ def wall_fine(rng):
     return img
 
 
+def log_row(d, rng, x0, x1, y, dia, bark):
+    d.rectangle([x0, y + 2, x1, y + dia - 2], fill=bark)
+
+    for k in range(1, 6):                    # cylinder shading
+        f = 0.55 + 0.5 * np.sin(np.pi * k / 6.0)
+        yy = y + 2 + k * (dia - 4) // 6
+        d.line([(x0, yy), (x1, yy)], fill=tint(bark, f), width=(dia - 4) // 6 + 1)
+
+    for _ in range(12):                      # bark ridges
+        rx = int(rng.integers(x0, max(x0 + 1, x1 - 40)))
+        ry = y + int(rng.integers(6, dia - 6))
+        d.line([(rx, ry), (rx + int(rng.integers(20, 70)), ry)], fill=tint(bark, 0.55), width=1)
+
+
 def wall_log(rng):
+    """Saddle-notched corners. Rows alternate: where this wall's log runs through (sticking out, with a saddle notch cut underneath) the other wall's
+    log end shows as a circle on the opposite course. The two ends of the wall are opposite: left runs through on even rows, right on odd rows."""
     w, h = WALL
     img = canvas((w, h), (34, 26, 16))
     d = ImageDraw.Draw(img)
     dia = 45
-    n = h // dia
+    end = (212, 180, 126)
 
-    for i in range(n + 1):
+    for i in range(h // dia + 1):
         y = i * dia
-        x0 = 4 if i % 2 == 0 else 20            # notched corners: every other log sticks out further
-        x1 = w - x0
         bark = tint((132, 96, 58), rng.uniform(0.85, 1.1))
-        d.rectangle([x0, y + 2, x1, y + dia - 2], fill=bark)
+        left_through = i % 2 == 0
+        right_through = not left_through
+        x0 = 2 if left_through else 46
+        x1 = w - 2 if right_through else w - 46
+        log_row(d, rng, x0, x1, y, dia, bark)
+        d.line([(x0, y + 1), (x1, y + 1)], fill=(184, 176, 128), width=2)       # chinking between the logs
 
-        for k in range(1, 6):                # cylinder shading
-            f = 0.55 + 0.5 * np.sin(np.pi * k / 6.0)
-            yy = y + 2 + k * (dia - 4) // 6
-            d.line([(x0, yy), (x1, yy)], fill=tint(bark, f), width=(dia - 4) // 6 + 1)
+        for side, through in ((0, left_through), (1, right_through)):
+            cx = 24 if side == 0 else w - 24
+            ex = 2 if side == 0 else w - 2
 
-        for _ in range(12):                  # bark ridges
-            rx = int(rng.integers(x0, x1 - 40))
-            ry = y + int(rng.integers(6, dia - 6))
-            d.line([(rx, ry), (rx + int(rng.integers(20, 70)), ry)], fill=tint(bark, 0.55), width=1)
-
-        d.line([(x0, y + 1), (x1, y + 1)], fill=(184, 176, 128), width=2)               # chinking: moss and clay between the logs
-        d.ellipse([x0 - 6, y + 5, x0 + 8, y + dia - 5], fill=(212, 180, 126), outline=(120, 84, 48))   # cut ends at the corners
-        d.ellipse([x1 - 8, y + 5, x1 + 6, y + dia - 5], fill=(212, 180, 126), outline=(120, 84, 48))
+            if through:
+                d.ellipse([ex - 10 if side == 0 else ex - 4, y + 5, ex + 4 if side == 0 else ex + 10, y + dia - 5], fill=end, outline=(120, 84, 48))
+                d.pieslice([cx - 16, y + dia - 22, cx + 16, y + dia + 10], 180, 360, fill=(34, 26, 16))      # the saddle notch cut underneath
+            else:
+                d.ellipse([cx - 20, y + 3, cx + 20, y + dia - 3], fill=end, outline=(120, 84, 48))        # the other wall's log end, seen end-on
+                d.ellipse([cx - 9, y + 14, cx + 9, y + dia - 14], outline=(170, 130, 80))                 # growth rings
 
     return img
+
+
+def log_corner(out):
+    """Plan of a log corner, four courses side by side: walls A (horizontal) and B (vertical); the log that runs through the corner alternates."""
+    scale = 90
+    img = canvas((4 * (scale * 2 + 40) + 80, 2 * scale + 140), (34, 34, 38))
+    d = ImageDraw.Draw(img)
+    d.text((24, 10), "LOG CORNER, top view: the log that runs through alternates each course, so ends interlock", fill=(240, 240, 240), font=font(18))
+    t = 30                                   # log diameter in the picture
+
+    for c in range(4):
+        ox = 40 + c * (scale * 2 + 40)
+        oy = 70
+        a_through = c % 2 == 0
+        d.text((ox, oy + scale + t + 40), "course %d: %s runs through" % (c + 1, "A" if a_through else "B"), fill=(250, 220, 140), font=font(13))
+        ax0 = ox - 14 if a_through else ox + t
+        d.rectangle([ax0, oy + scale, ox + scale * 2, oy + scale + t], fill=(132, 96, 58), outline=(60, 40, 22))        # wall A
+        by0 = oy - 14 if not a_through else oy + 0
+        by1 = oy + scale + t if not a_through else oy + scale
+        d.rectangle([ox, by0, ox + t, by1 + (14 if not a_through else 0)], fill=(150, 108, 66), outline=(60, 40, 22))    # wall B
+        d.ellipse([ox - 14, oy + scale + 4, ox - 2, oy + scale + t - 4], fill=(212, 180, 126)) if a_through else d.ellipse([ox + 4, oy - 14, ox + t - 4, oy - 2], fill=(212, 180, 126))
+
+    img.save(out)
 
 
 def voronoi(rng, w, h, cells):
@@ -740,13 +779,14 @@ def main():
     out = sys.argv[1] if len(sys.argv) > 1 else "."
     os.makedirs(out, exist_ok=True)
     sheet("WALLS: 2 m wide, 2.4 m high (seen from outside)", [wall_basic, wall_plank, wall_fine, wall_log, wall_cobble, wall_mason], WALL, os.path.join(out, "tiers_walls.png"),
-          ["woven rods, stakes, straw on top", "smooth rounded out, rough flat in", "lapped boards, nails, trim", "stacked logs, notched ends", "round stones, thick mortar", "large carved blocks, plinth"])
+          ["woven rods, stakes, straw on top", "smooth rounded out, rough flat in", "lapped boards, nails, trim", "corners interlock, notches opposite", "round stones, thick mortar", "large carved blocks, plinth"])
     sheet("FLOORS: 2 m square (seen from above)", [floor_basic, floor_plank, floor_fine, floor_log, floor_flag, floor_block], FLOOR, os.path.join(out, "tiers_floors.png"),
           ["beaten earth, straw, woven mat", "rough planks, gaps, pegs", "planed boards, nail pairs", "split logs, flat side up", "flagstone, narrow joints", "cut stone blocks, tight joints"])
     sheet("ROOFS: 2.4 m square (seen from above, eave at the bottom)", [roof_thatch, roof_plank, roof_fine, roof_log, roof_slab, roof_stone], ROOF, os.path.join(out, "tiers_roofs.png"),
           ["thatch, bound courses, thick eave", "riven plank shingles, ragged", "sawn shingles, nailed", "bark sheets over log rafters", "stone slabs on beams", "dressed slabs, carved ridge"])
     plan(os.path.join(out, "tiers_plan.png"))
     doors_sheet(os.path.join(out, "tiers_doors.png"))
+    log_corner(os.path.join(out, "tiers_log_corner.png"))
     parts = [Image.open(os.path.join(out, n)) for n in ("tiers_walls.png", "tiers_floors.png", "tiers_roofs.png")]
     allimg = canvas((max(p.width for p in parts), sum(p.height for p in parts)), (34, 34, 38))
     y = 0

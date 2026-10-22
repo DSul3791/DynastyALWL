@@ -15,7 +15,7 @@ Kathleen_ArtisticDirector, 2026-10-22. Pictures: art/tiers/tiers_walls.png, tier
 | 1 Basic | vertical stakes every 15 cm, light rods woven over and under, twine lashing, straw along the top | flat panel 0.1 m |
 | 2 Plank | half-round planks, smooth and rounded on the OUTSIDE (Dave 22:20), flat rough face INSIDE, dark gaps | two layers: rounded smooth outside, flat rough inside, 0.1 m |
 | 3 Fine wood | lapped boards 12 cm, nail heads, corner trim, top plate | panel 0.15 m with trim posts |
-| 4 Log | 8 round logs 30 cm, bark on, notched ends stick out 12 cm alternately, chinking | real cylinders (8 per wall), 0.4 m |
+| 4 Log | 8 round logs 30 cm, bark on, saddle-notched corners that interlock (the log that runs through the corner alternates each course, opposite on the two ends of a wall; picture tiers_log_corner.png), chinking | real cylinders (8 per wall), 0.4 m |
 | 5 Cobblestone | rounded stones 20 to 40 cm, thick pale mortar, mixed grey, brown, blue-grey | panel 0.5 m, rounded mortar relief by texture |
 | 6 Mason | blocks 80 x 40 cm staggered, dressed centre and chisel margin, small stains, projecting plinth | panel 0.6 m with plinth and top course |
 
