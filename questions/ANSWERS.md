@@ -152,3 +152,7 @@ Answered: 2026-10-22 15:03 UTC
 Answer: Yes (recommended)
 Answered: 2026-10-22 15:04 UTC
 
+## rv-waiting-line | Your rule: every post ends "Still waiting on:". Threads often have nothing to wait for. Keep it always (writing "nothing") or only when something is pending? BP-T10.
+Answer: Only when something is pending (recommended)
+Answered: 2026-10-22 15:04 UTC
+
