@@ -41,3 +41,13 @@ Note: 8. The collapse is still OFF. The warning shaking and messages are built b
 
 ## collapse-on | May we turn the tunnel collapse ON in your test world so you can test it? (This is the second approval; you will get a test card after.)
 [check]
+
+## foundation-rules | FOUNDATIONS, PILLARS AND ROOFS IN SHORT (Sal's update from your 23:08 rule). Have you read this?
+Note: 1. Every building starts with a foundation. It goes where the ground is level enough to hide its whole bottom (checked about 0.3 m at the corners).
+Note: 2. On a slope the blueprint ghost is red and says "level the ground first". You level it with the hoe or shovel, then place it.
+Note: 3. Foundations join side by side and stack. The cells together are the floor.
+Note: 4. New PILLAR piece: snaps to the centre or the 4 corners of a foundation cell or a ceiling.
+Note: 5. Snapping is one table of data, so most pieces snap to most other pieces in a sensible way, with a wide snap range.
+Note: 6. Roofs come at 45 and 65 degrees, each with straight and corner pieces.
+Note: 7. Kathleen is drawing the roofs and the pillar for you to check.
+[check]
