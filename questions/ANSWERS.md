@@ -120,3 +120,7 @@ Answered: 2026-10-22 03:57 UTC
 Answer: No, only server overload makes actions harder (a player on bad wifi is not punished)
 Answered: 2026-10-22 03:58 UTC
 
+## warning-cleanup-frozen | May Willy add warning-silencing annotations to the frozen terrain-generator files (no change to the baked result, checked by identical test-bake hashes)? (my pick: yes, gated)
+Answer: No, leave the frozen files alone until the next real bake
+Answered: 2026-10-22 03:59 UTC
+
