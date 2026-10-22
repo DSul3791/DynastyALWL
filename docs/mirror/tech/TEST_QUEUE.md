@@ -42,3 +42,7 @@ Added to card test-626 at build 639 (05:35): 633 coin names, 636 sticks, 637 pla
 
 ## Parked 2026-10-22 (Dave: "we will address the old questions later")
 The 11 "Have you answered this yet?" checks (builds 623 to 645) were moved from the question page to `questions/LATER.md` and can be restored at any time. They will be regrouped into one test card when development restarts.
+PROVISIONAL | Sal | branch claude/sal-piecelook | RESTART | Same look as before: place a wall, doorway, campfire, chest; grass clears under the foundation, floor and campfire but not under walls or roofs; placed sounds unchanged
+
+## Batching rule (Dave 17:10)
+Dave does NOT pull or run builds until a thread needs him to look. A thread adds a line here: build number, one-line what to look at, owner. The Guru batches ready lines into check cards ("[check]" blocks, see questions/README.md) so Dave tests several things in one pull. Dave answers Yes, or No plus a reason; the coordinator relays No reasons to the owner. The 11 old checks in questions/LATER.md become cards only when their owner says they are ready.

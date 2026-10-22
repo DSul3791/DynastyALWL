@@ -1,5 +1,5 @@
 # RULE 1 (Dave 2026-10-22, permanent): QUESTIONS FOR DAVE
-Every question with pickable answers (or a short typed answer) for Dave goes ONLY in `questions/QUESTIONS.md` on branch claude/generator-v2 (format in `questions/README.md`), then the thread reports "Question added: <title>" to the coordinator. Never ask Dave in chat or any other file or card. Answers come back in `questions/ANSWERS.md`. No look-at or test tasks in that file; those stay in chat.
+(Dave 17:14, BP-T33: threads ask the Guru, who posts to the page; threads do NOT write to QUESTIONS.md themselves.) Every question with pickable answers (or a short typed answer) for Dave goes ONLY in `questions/QUESTIONS.md` on branch claude/generator-v2 (format in `questions/README.md`), then the thread reports "Question added: <title>" to the coordinator. Never ask Dave in chat or any other file or card. Answers come back in `questions/ANSWERS.md`. No look-at or test tasks in that file; those stay in chat.
 
 # How threads work with Technical direction
 

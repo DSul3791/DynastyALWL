@@ -392,3 +392,6 @@ bk-weekly: keep the LAST backup of each ISO week (normally Sunday night); matche
 - 2026-10-22 18:00 Guru: Dave asked for a stateful answers check. Added tools/watch_answers.sh (ETag + last-seen commit SHA per file; prints only on change; run under Monitor so the session wakes only on output).
 
 - 2026-10-22 17:55 Guru: Dave's rule (17:07): anything Dave must do is written as numbered point form. Added to BP-T10, all digests (All threads line) and the question page notes.
+- 2026-10-22 18:05 Guru: Dave 17:10: no pull/run until a thread needs him to look; then a numbered 'Things to check' list on his page (Yes/No, Why not? box). Built into qa.html ([check] blocks, tested on a phone-width page). Exception to multiple-choice-only approved by Dave. TEST_QUEUE batching rule added.
+
+- 2026-10-22 18:10 Guru: Dave 17:14 question flow approved: thread asks Guru, Guru answers or posts to Dave's page with a recommendation, Guru reviews answers periodically and replies to the thread. Added to HOW_WE_WORK.md, BP-T33, all digests. Threads no longer write to QUESTIONS.md.

@@ -18,10 +18,18 @@ Workers run ON DEMAND from the queue (BP-T20). Ownership table: PROCESS.md "Who 
 - Priority (BP-T23, Dave): P0 Dave/data loss/crash/broken branch (now); P1 blocks a running job (about 30 min); P2 reviews, test card (same day); P3 daily check, docs. Request type decides, not thread; aging after 24 h; same scheme for every thread, queue per thread.
 - Ideas (BP-T24, Dave): Dave blurts, coordinator logs in tech/IDEAS.md (verdict ledger), owner says NOW (job with P-level) or LATER (reason) within one cycle, design ideas then go into DESIGN_IDEAS.md (the one permanent file). DESIGN_IDEAS_BY_CHATGPT.md stays the temporary ChatGPT inbox.
 - Design reading (BP-T25, Dave): BIG_PICTURE.md (all, repo root) + tech/DESIGN_ROLE_MAP.md (your sections) + tech/DESIGN_CHANGELOG.md (lines since your last read).
-- Questions for Dave: pickable answers only, questions/QUESTIONS.md (RULE 1). Test asks: tech/TEST_QUEUE.md, grouped test card (RULE 2). Builds/tests that fit run on Dave's PC via MikeW (RULE 3). Never wait for Dave: park and take the next job.
+- Questions for Dave: threads ask Tyler, Tyler posts them (pickable answers, questions/QUESTIONS.md; section 'How threads ask questions'). Test asks: tech/TEST_QUEUE.md, grouped test card (RULE 2). Builds/tests that fit run on Dave's PC via MikeW (RULE 3). Never wait for Dave: park and take the next job.
 - Reports to Dave: SUCCINCT; "Test done: X pass, Y fail" with one line per failure; "Finished:" for big jobs; end with "Still waiting on:".
 
 - Lessons and debrief (BP-T26, Dave approved): running `tech/LESSONS.md`; at the end the debrief checklist and starter kit in `tech/PROJECT_DEBRIEF_KIT.md`.
+
+## How threads ask questions (Dave 17:14; BP-T33)
+1. A thread asks Tyler_Guru (through the coordinator), one question per message, with its own recommended answer and what it will do meanwhile.
+2. Tyler decides: can it be answered from best practices, DECISIONS.md, ANSWERS.md or the design docs? Then Tyler answers the thread himself and records it in DECISIONS.md.
+3. If it truly needs Dave, Tyler posts it on Dave's page (questions/QUESTIONS.md) as multiple choice with Tyler's recommendation marked, then reports "Question added: <title>". A test ask becomes a "Things to check" card the same way.
+4. Threads do NOT write to QUESTIONS.md themselves. They keep working on the recommended option, or park the job and move on (the "stuck thread moves on" rule stays).
+5. Dave answers when he can. Tyler reviews ANSWERS.md at each 30-minute check and tells the asking thread the answer, always checking it against best practices, and records any new rule.
+6. Tyler lists which threads are waiting on which question in tech/QUESTION_OWED.md.
 
 ## Approved infrastructure changes (Dave, "approve all"; plan in IMPLEMENTATION_PLAN.md)
 Daily docs mirror (T18); per-thread branches merged by the Technical Director (C107); CI on push (C85, gated); dated save backups (C93); Git LFS for tiles (C108, gated, forward-only). Gated = Dave's go plus a MikeW run first.
