@@ -1,6 +1,6 @@
 extends Control
 
-# Server connection indicator: five bars at the top of the screen like a phone's signal. The bars drop when the round trip is long,
+# Server connection indicator: five bars at the top left of the screen like a phone's signal (soft white until the first server pulse, then green when good, amber, red). The bars drop when the round trip is long,
 # packets are lost, or the server has been silent (it sends a small pulse four times a second, so a stalled server loses bars within
 # a second). No bars and a cross when the connection is gone. The numbers are in the debug details and in the telemetry file.
 
@@ -14,6 +14,7 @@ var rtt_ms: float = 0.0
 var loss_percent: float = 0.0
 var silence_msec: int = 0
 var lost: bool = false
+var heard: bool = false                                  # a server pulse has arrived (before that the bars stay soft white)
 var on_drop: Callable                                    # (text) when the bars fall by two or more, or to 0
 
 var _last_pulse_msec: int = 0
@@ -30,6 +31,10 @@ func setup(peer_of: Callable) -> void:
 
 
 func pulse() -> void:
+	if not heard:
+		heard = true
+		queue_redraw()
+
 	_last_pulse_msec = Time.get_ticks_msec()
 
 
@@ -90,12 +95,14 @@ func _process(_delta: float) -> void:
 
 func _draw() -> void:
 	var unit: float = maxf(4.0, size.y / 12.0)
-	var colour: Color = Color(1.0, 1.0, 1.0, 0.9)
+	var colour: Color = Color(1.0, 1.0, 1.0, 0.75)
 
 	if bars <= 1:
 		colour = Color(1.0, 0.25, 0.2, 0.95)
 	elif bars <= 3:
 		colour = Color(1.0, 0.8, 0.2, 0.95)
+	elif heard:
+		colour = Color(0.35, 0.85, 0.4, 0.95)
 
 	for n in range(BARS):
 		var height: float = unit * (1.0 + 1.6 * float(n))

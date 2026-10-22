@@ -67,7 +67,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 602
+const BUILD := 603
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -984,9 +984,8 @@ func _welcome_body(info: Dictionary) -> void:
 	link_bars = LinkBarsScript.new()
 	link_bars.setup(func() -> ENetPacketPeer: return (multiplayer.multiplayer_peer as ENetMultiplayerPeer).get_peer(1) if multiplayer.multiplayer_peer is ENetMultiplayerPeer else null)
 	link_bars.on_drop = func(text: String) -> void: _telemetry.event(text)
-	link_bars.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	link_bars.position = Vector2(-18.0, 8.0)
-	link_bars.size = Vector2(80.0, 36.0)
+	link_bars.position = Vector2(16.0, 10.0)
+	link_bars.size = Vector2(120.0, 54.0)
 	layer.add_child(link_bars)
 	debug_hud.add_line("server link", func() -> String: return link_bars.text())
 	_tint = ColorRect.new()
@@ -1049,7 +1048,8 @@ func _welcome_body(info: Dictionary) -> void:
 	status_icons.add_icon("cover", StatusIconsScript.house_texture(), func() -> bool: return under_cover > 0.0)
 	_build_menu(layer)
 	hud = Label.new()
-	hud.position = Vector2(12.0, 12.0)
+	hud.position = Vector2(12.0, 72.0)   # below the link bars (top left)
+	hud.visible = display.hud_text
 	hud.add_theme_font_size_override("font_size", 52)
 	hud.add_theme_constant_override("outline_size", 8)
 	hud.add_theme_constant_override("shadow_offset_x", 3)
@@ -2565,7 +2565,7 @@ Crouch C   Sit X   Lie down Z (hold Z 3 s to sleep)   Mouse wheel: third-person 
 E: gather, drink, fill, talk, open (hold E for the long action)   Left click: use held item   Right click: aim or eat
 I: crafting and inventory   Tab: character screen   1 to 9, 0: hotbar   Split S, Drop D, Use E, Repair R, Transfer T (inventory)
 /: inspection mode   + and -: spring flow (tuning)
-F2: quality   F3: debug details   Ctrl+Shift+G: GPU probe table (press again to close)   J: jitter test
+F2: quality   F3: debug details   F4: all screen text on or off   Ctrl+Shift+G: GPU probe table (press again to close)   J: jitter test
 Admin: Ctrl+N nearest NPC   Ctrl+R rabbit   Ctrl+X dig hole   ]: starter items   Esc > Advanced > Dump ground: crosshair ground report
 Esc: this menu"""
 
@@ -3033,6 +3033,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			_gpu_probe.toggle()
 		elif event.keycode == KEY_F3:
 			debug_hud.enabled = not debug_hud.enabled
+		elif event.keycode == KEY_F4:
+			hud.visible = not hud.visible
+			display.hud_text = hud.visible
+			display.save()
 		elif event.keycode == KEY_F2:
 			quality = (quality + 1) % QUALITY_NAMES.size()
 			_apply_quality()

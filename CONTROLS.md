@@ -29,6 +29,7 @@ The single complete list of every input (keyboard, mouse, held versus tap, conte
 | 1 to 5 (in a talk panel) | Pick the numbered answer |
 | Ctrl+X | Admin: dig a 2 m hole where the crosshair meets the ground (up to 80 m away). Water flows into holes that open toward it (testing digging against the water) |
 | F2 | Cycle quality: Low, Medium, High, Ultra (Low is the minimum machine) |
+| F4 | All the overlay text on the screen (build, fps, position, last sound, debug lines) on or off; remembered between runs (default on). The server link bars at the top left stay. |
 | F3 | Debug details on or off (the long diagnostic list; default HUD is only build, position, last sound). Also Esc > Settings. Threads add lines with `debug_hud.add_line(name, callable)`. |
 | Esc > Advanced > Measure this machine | About 1 minute: stands still and slowly turns at Low, Medium and High and shows fps, 1% low, worst frame, CPU and GPU ms, draw calls and video memory per tier; saved to machine_run.txt in the game data folder. Press it again to stop or to close the table |
 | Ctrl+Shift+G | GPU probe: stand still, press once; after about 20 s it lists what each piece (grass, trees, ground, sea, shadows, SSAO, glow, fog, anti-aliasing) costs in GPU ms; also saved to gpu_probe.txt in the game data folder |
