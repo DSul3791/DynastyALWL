@@ -1031,6 +1031,7 @@ func _drop(peer: int, inv, slot: int, count: int, at: Vector3) -> void:
 	var amount: int = mini(count, inv.counts[slot])
 
 	if not drop_in_world(number, amount, spot, inv.wear[slot]):
+		_say(peer, "Too many things already lie here. Pick some up or move a little way off.")
 		return
 
 	inv.take_from_slot(slot, amount)
