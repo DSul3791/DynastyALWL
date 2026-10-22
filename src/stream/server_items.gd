@@ -1178,6 +1178,7 @@ func _dig(peer: int, inv, at: Vector3) -> void:
 		return
 
 	if not _has_tool(inv, "spade"):
+		_say_tool_missing(peer, inv, "spade")
 		_reject(peer, 1)
 		return
 
@@ -2256,6 +2257,25 @@ func _tool_slot(inv, tool_class: String) -> int:
 			return slot
 
 	return -1
+
+
+# Why a tool-class action did nothing: no tool, the tool is worn out, or it lies in the bag instead of on the hotbar.
+func _say_tool_missing(peer: int, inv, tool_class: String) -> void:
+	var found: int = -1
+
+	for slot in range(inv.SLOTS):
+		if inv.numbers[slot] != 0 and str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", "")) == tool_class:
+			found = slot
+
+			if not _is_broken(inv.numbers[slot], inv.wear[slot]):
+				break
+
+	if found < 0:
+		_say(peer, "You need a %s for that." % tool_class)
+	elif _is_broken(inv.numbers[found], inv.wear[found]):
+		_say(peer, "Your %s is worn out. Repair it (R in the inventory) with %s." % [table.name_of(inv.numbers[found]).to_lower(), _repair_text(table.entry(table.id_of(inv.numbers[found])).get("repair", []))])
+	else:
+		_say(peer, "Put your %s on the hotbar: select it in the inventory and press E." % table.name_of(inv.numbers[found]).to_lower())
 
 
 # Worn out: durability is the number of uses a tool lasts (items.json); items without it never wear.

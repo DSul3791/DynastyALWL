@@ -235,7 +235,7 @@
 			"tool_class": "spade",
 			"stack": 1,
 			"look_alikes": [],
-			"durability": 675,
+			"durability": 2025,
 			"repair": [
 				[
 					"stick",
@@ -521,7 +521,7 @@
 			"material": "stone",
 			"tier": 2,
 			"stack": 1,
-			"durability": 1350,
+			"durability": 4050,
 			"repair": [
 				[
 					"stone",
@@ -544,7 +544,7 @@
 			"material": "iron",
 			"tier": 3,
 			"stack": 1,
-			"durability": 6750,
+			"durability": 20250,
 			"repair": [
 				[
 					"iron_ingot",
@@ -569,7 +569,7 @@
 			"material": "steel",
 			"tier": 4,
 			"stack": 1,
-			"durability": 13500,
+			"durability": 40500,
 			"repair": [
 				[
 					"steel_ingot",
