@@ -13,3 +13,8 @@ Format: date | area | what happened | worked / failed | lesson | source. One lin
 2026-10-22 | cost | Builds that fit on Dave's PC were run in the cloud, burning tokens. | failed | Run GPU, editor and long runs locally via the local agent. [KEEP] | PROCESS.md RULE 3
 2026-10-22 | docs | Design file reached 376 KB; nobody could read it all. | failed | Big-picture page + role map + changelog (BP-T25). [KEEP] | BEST_PRACTICES.md
 2026-10-22 | communication | Dave uses voice and finds long reports hard. | failed | Succinct reports, results first, "Still waiting on:" line. [KEEP] | BP-T10
+
+- 2026-10-22 Kathleen: generated-asset scripts (make_*.py) re-encode every ogg differently each run; after running one, git checkout unchanged oggs and add only new ones.
+- Sonny: ground/water changes are verified by hand (4 h dry sim, tile maps). Lesson: write the probe as a repo test the first time (head pond fill test) so the next owner and MikeW can rerun it. A cloud bake never matches Dave's tile hash, so compare cloud before/after only.
+- Tyler 2026-10-22: three build-number collisions in one day came from every thread editing the one BUILD const in terrain_client.gd; a per-push next-number script or a separate build file removes them.
+- Tyler 2026-10-22: a join hang that "a restart fixed" was joining a stale or closing old server; a version handshake beats a launcher workaround.

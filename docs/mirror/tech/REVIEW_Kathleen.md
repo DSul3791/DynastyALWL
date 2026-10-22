@@ -1,22 +1,35 @@
-# Process review: Kathleen_ArtisticDirector (art and sound), 2026-10-22
+# Review: Kathleen_ArtisticDirector (art and sound), 2026-10-22
+Read: HOW_WE_WORK, BIG_PICTURE (art/sound parts), BEST_PRACTICES (C60-C74, POLICY, B), REVIEW_BRIEF. Not read in full: PROCESS, TEAM_PROPOSAL.
 
-## What works
-- Build log + one build number claim per push: no clashes once I recomputed from origin and BUILD_LOG.
-- TEST_QUEUE lines instead of asking Dave: I queued 3 looks/sounds with no waiting.
-- Dave's sound notes become a running approved list in LISTEN_CHECKLIST.md, so nothing gets re-asked.
-- "Data in JSON" (step_levels.json) made the sand fix a one-line change.
+## 1 Keep
+- TEST_QUEUE lines (RULE 2): I queued 3 builds with zero waiting on Dave.
+- Build number = max(origin, BUILD_LOG)+1 (C101): no clashes once followed.
+- Data in JSON (C04): sand step fix was one line in step_levels.json.
+- LISTEN_CHECKLIST approved list (C61): nothing re-asked.
+- Park and move on (T07): keeps me from idling on Dave.
 
-## What hurts my area
-1. **I cannot see or hear.** Cloud engine is headless: no screenshots, no audio. Every look/sound change ships unseen; Dave is the only eye and ear. This is the biggest quality risk and token waste (fix, ship, wait, fix again).
-2. **Generated assets are not reproducible.** Every `make_*.py` run re-encodes all oggs differently; I must `git checkout` the unchanged ones by hand or the diff is noise (about 20 files).
-3. **Shared files cause merge pain.** `piece_look.gd` and `placed_sounds.gd` were edited by Radar and me within minutes (one rebase conflict). Building look and building data share a file.
-4. **Ambiguous feedback.** "Beach a little loud" could be sand steps or waves; I guessed. No standard way to name the sound (F3 sounds-heard list exists but is not required in reports).
-5. **Idle gaps.** I waited with nothing queued several times because art jobs need a visual check I cannot do.
+## 2 Change
+1. Asset scripts re-encode every ogg on each run (non-deterministic). Fix: only write files whose waveform changed, or fixed seeds/encoder. Saves ~20 noise files per sound build; guess 3-5k tokens each time.
+2. I cannot see or hear in the cloud. Fix: MikeW returns 1 screenshot per new piece + F3 sounds-heard line after each look/sound build, in the test card. Saves a fix-ship-wait loop; guess 10-20k tokens per look job.
+3. piece_look.gd / placed_sounds.gd edited by me and Radar in minutes (rebase conflict). Fix: Radar owns state ids and data; I own materials/meshes/sounds; each adds in separate functions/blocks. Guess 2k tokens.
+4. Sound feedback ambiguous ("beach loud"). Fix: test card sound items name the file from the F3 list and say steps/waves/wind. Saves a wrong guess.
+5. Moderator pings "idle" while I wait on eyes. Fix: let idle be fine when TEST_QUEUE holds my items.
 
-## Changes
-- **Screenshot + audio check on Dave's PC by MikeW** after each look/sound build, batched in the test card: MikeW sends me one screenshot per new piece and the F3 sounds-heard line. Cuts rework loops. Cloud only for code.
-- **Make asset scripts deterministic** (fixed encoder settings, or write only files whose waveform changed). Small Systems job, saves tokens on every sound build.
-- **Split piece look from piece data**: `piece_look.gd` (mine) vs placement/state (Radar); Radar only adds state numbers, I only change materials.
-- **Test-card sound items must name the file** (F3 list) so one reply fixes the right sound.
-- **Park art that needs eyes** (animals) until MikeW screenshots exist; do sound/data-driven work meanwhile.
-- **Token saving for me**: read only BP entries for my section (C60-C74) plus my handoff; skip BIG_PICTURE parts outside art, sound, buildings.
+## 3 Missing
+- Entry for visual checks without a renderer (screenshots by MikeW) and for generated textures/sounds (cost at Low, texture size 128 px).
+- Entry for asset licences/credits when Dave records real sounds (assets/audio/CREDITS.md exists, no rule).
+
+## 4 Conflicts
+- C60 (sounds on HOLD) vs coordinator jobs to build tunnel/building sounds: I followed the coordinator; make the hold rule say "present-day systems (dig, tunnel, building, fire) allowed".
+- C61 says ffmpeg missing on Dave's PC; asset scripts need ffmpeg, so only cloud can regenerate. Fine, but say so.
+
+## 5 My area
+- Look/sound is tuned blind. Recommendation: a small `tools/look_sheet` scene MikeW runs headed that renders all pieces/creatures/lighting to PNGs (one command). Dave's decisions untouched.
+
+## 6 Token moves
+- Read only my BP sections + handoff; skip BIG_PICTURE outside art/sound/buildings.
+- Handoff under 40 lines; patches as files, not prose.
+- Reports to Dave 3 lines; details in checklist files.
+
+## 7 Verdict
+Process good for now; needs changes 1-2 above.

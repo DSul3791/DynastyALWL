@@ -39,3 +39,6 @@ Added to card test-626 at build 639 (05:35): 633 coin names, 636 sticks, 637 pla
 641 | Radar | Craft a Doorway and a Window wall (workbench, 3 lumber 1 cordage), place them on or beside a foundation: you walk through the door gap, the window opening is at chest height; a foundation with a wall on it says 'Take down what stands on it first'
 643 | Radar | Let a campfire burn out: it stays a campfire with no flames. Stand beside a chest and press F: your pack left, chest right, T moves the selected stack. G still flies
 645 | Radar | Stand at a campfire, press F: pack left, fire right. T a few sticks and some berries into it: the sticks feed the fire when it burns low and the berries roast. Crafting list > Admin: ten placeables, free
+
+## Parked 2026-10-22 (Dave: "we will address the old questions later")
+The 11 "Have you answered this yet?" checks (builds 623 to 645) were moved from the question page to `questions/LATER.md` and can be restored at any time. They will be regrouped into one test card when development restarts.

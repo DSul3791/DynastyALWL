@@ -336,3 +336,6 @@ Full text in BEST_PRACTICES.md.
 
 ## 2026-10-22 14:55 Dave "ok on BP-T26": lessons log and post-project debrief APPROVED (Tyler_Guru_SenDev)
 Running tech/LESSONS.md (any thread adds a line; Technical Director tags KEEP/LOCAL), tech/PROJECT_DEBRIEF_KIT.md (reusable assets, 8-step debrief checklist, starter-kit outline). Dave decides when the debrief starts. Text: BEST_PRACTICES.md BP-T26.
+
+## 2026-10-22 15:10 Technical Director approvals from the process review (Tyler_Guru_SenDev)
+Approved without Dave (small, technical): server welcome carries a build id and a mismatch shows a plain "server is out of date" message (protocol bump, job for Steve_ProblemSolver after restart); one-line fixes to BP wording (C60, C80, T08); BP-T27 token habits; BP-T28 gap entries. Eight items need Dave and are on the question page (rv-*). Details: tech/REVIEW_VERDICT.md.
