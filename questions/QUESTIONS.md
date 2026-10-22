@@ -1,6 +1,3 @@
-## blueprint-5 | Taking down an unfinished blueprint returns every item put in?
-[check]
-
 ## blueprint-8 | Keep the old flat roof as the fine-wood flat roof next to the six new slope pieces?
 [check]
 
