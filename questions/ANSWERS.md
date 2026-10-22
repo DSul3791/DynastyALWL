@@ -56,3 +56,7 @@ Answered: 2026-10-22 01:04 UTC
 Answer: 1000 spread across the whole world (normal MMO target)
 Answered: 2026-10-22 01:24 UTC
 
+## sound-music | Should the game have background music?
+Answer: No music, only world sounds (recommended: keeps the world feeling real)
+Answered: 2026-10-22 03:05 UTC
+
