@@ -488,3 +488,7 @@ Answered: 2026-10-22 23:28 UTC
 Answer: Yes
 Answered: 2026-10-22 23:29 UTC
 
+## pillars-looks | Should pillars come as round log post, squared timber, stone pillar and mason column?
+Answer: Yes
+Answered: 2026-10-22 23:29 UTC
+
