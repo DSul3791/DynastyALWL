@@ -44,3 +44,7 @@ Answered: 2026-10-22 00:07 UTC
 Answer: Only Hob trades; the others only talk and give quests
 Answered: 2026-10-22 00:07 UTC
 
+## cast-child | Starter town people: should there be a child?
+Answer: Yes: Pip chats, plays, and runs small errands, never trades or fights [recommended]
+Answered: 2026-10-22 00:07 UTC
+
