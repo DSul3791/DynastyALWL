@@ -507,6 +507,26 @@ func _init() -> void:
 
 	print("graph: %d core items: %d gatherable plain materials feed %d craftable items; %d marked future (%s); %d gathered materials have no use yet" % [items_file.get("items", {}).size(), gatherable.size(), craftable.size(), future.size(), ", ".join(future), gathered_unused])
 
+	# data/items/looks.json (client-only, Kathleen's data-driven item models): every key is a real item and every look has shape, colour and size.
+	if FileAccess.file_exists("res://data/items/looks.json"):
+		var looks: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/looks.json"))
+
+		if typeof(looks) != TYPE_DICTIONARY:
+			fail("looks.json is not a JSON object")
+		else:
+			for id in looks:
+				if String(id).begins_with("_") or String(id) == "note":
+					continue
+
+				if not items_file.get("items", {}).has(id) and not gathered_file.get("items", {}).has(id):
+					fail("looks.json: '%s' is not an item in items.json or gathered.json" % id)
+					continue
+
+				var look: Variant = looks[id]
+
+				if typeof(look) != TYPE_DICTIONARY or typeof(look.get("shape", null)) != TYPE_STRING or not look.has("color") or float(look.get("size", 0.0)) <= 0.0:
+					fail("looks.json: '%s' needs shape (text), color and size (a number above 0)" % id)
+
 	print("items: %d core, %d gathered, %d recipes" % [items_file.get("items", {}).size(), gathered_file.get("items", {}).size(), recipes.size()])
 	print("item validator: %d errors, %d warnings" % [errors, warnings])
 	quit(1 if errors > 0 else 0)
