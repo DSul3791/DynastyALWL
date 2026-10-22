@@ -1,8 +1,3 @@
-## chk-foods-v4 | Check the redrawn foods (labelled picture): do the stews and soups look like food in a wooden bowl, does the roast look like a roast on the bone, and does the energy bar look like a trail-mix bar?
-Image: questions/img/looks_v5_foods.png
-Note: Campfire Stew and Roast Beast are the new names you picked.
-[check]
-
 ## chk-tools-v4 | Check the redrawn backpack, bucket, clay pot, wooden bowl and stone axe (labelled picture): does each look like the real thing, and does the axe look like an axe and not a hammer?
 Image: questions/img/looks_v5_tools.png
 [check]
