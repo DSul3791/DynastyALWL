@@ -1,8 +1,9 @@
 
 ## build-recap | WHAT I TOOK FROM YOUR 22:13-22:26 ANSWERS (nothing you already answered is asked again). Is this right?
 Note: 1. Every building piece, even Basic, sits on its own matching foundation. No bare-ground huts.
-Note: 2. Logs become lumber at a sawmill. Lumber becomes fine boards at a first-tier woodworking table. Fine wood = those boards plus nails.
+Note: 2. Sawmill: 1 log becomes 4 lumber. Woodworking table: 1 lumber becomes 1 fine board (no nails). Wooden builds (walls, doors, windows, shutters, roofs, tables, workbenches) may need nails. First-tier workbenches are made from lumber and nails.
 Note: 3. One iron ingot weighs 1 kg and makes 100 nails.
+Note: 3b. A first-tier sawmill needs lumber, nails and iron for the saw blades, a tall foundation, and a water wheel. It must be placed with the wheel in running water.
 Note: 4. Foundations come in small sizes too (1 x 1 and 2 x 2) as well as the big ones.
 Note: 5. You build by putting down BLUEPRINTS. Blueprints join (foundation, then walls, then ceilings). You or NPC builders then put the items into them. A part cannot be finished until what it depends on is finished: foundation first, then walls, then roof. Looking at a blueprint tells you its type, what it needs and what it costs.
 Note: 6. Nothing is carried far: you build where you stand, from blueprints (no 200 kg carrying).
