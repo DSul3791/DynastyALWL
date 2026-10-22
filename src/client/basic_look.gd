@@ -59,7 +59,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_box(parts, Vector3(0.03, 0.04, 0.012), Vector3(0.0, 0.03, -0.1), Color(0.85, 0.75, 0.3))
 			_sph(parts, 0.05, Vector3(0.8, 1.0, 0.8), Vector3(0.12, -0.05, 0.0), dark)
 			_sph(parts, 0.05, Vector3(0.8, 1.0, 0.8), Vector3(-0.12, -0.05, 0.0), dark)
-			_cyl(parts, 0.04, 0.26, Vector3(0.0, 0.22, 0.0), Vector3(0.0, 0.0, PI * 0.5), light)
+			_cyl(parts, 0.032, 0.22, Vector3(0.0, 0.2, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.35, 0.3, 0.22))   # bedroll
 			_box(parts, Vector3(0.03, 0.22, 0.01), Vector3(0.05, 0.0, 0.085), dark)
 			_box(parts, Vector3(0.03, 0.22, 0.01), Vector3(-0.05, 0.0, 0.085), dark)
 		"fibre":
@@ -173,8 +173,8 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			# A stone axe: handle, a lashed eye block, and a broad rounded blade fanning out from it with a sharpened curved edge.
 			_handle(parts, 0.5)
 			_box(parts, Vector3(0.06, 0.05, 0.06), Vector3(0.22, 0.0, 0.0), dark)
-			_sph(parts, 0.08, Vector3(0.95, 0.16, 1.0), Vector3(0.22, 0.0, 0.07), color)
-			_sph(parts, 0.05, Vector3(0.9, 0.1, 0.75), Vector3(0.22, 0.0, 0.135), light)       # the thinned, sharpened edge
+			_sph(parts, 0.1, Vector3(0.95, 0.16, 1.0), Vector3(0.22, 0.0, 0.08), color)
+			_sph(parts, 0.06, Vector3(0.9, 0.1, 0.75), Vector3(0.22, 0.0, 0.16), light)       # the thinned, sharpened edge
 			_cyl(parts, 0.032, 0.035, Vector3(0.22, 0.0, 0.0), Vector3(PI * 0.5, 0.0, 0.0), Color(0.8, 0.7, 0.4))   # lashing
 		"pick":
 			_handle(parts, 0.6)
