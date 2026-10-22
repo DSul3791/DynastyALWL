@@ -67,7 +67,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 634
+const BUILD := 635
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -675,6 +675,9 @@ func _ready() -> void:
 	net.flora_cut_received.connect(_on_flora_cut)
 	net.water_rate_received.connect(_on_water_rate)
 	net.water_changed_received.connect(_on_water_changed)
+	net.quake_received.connect(func(stage: int, strength: float, point: Vector3) -> void:
+		if sound != null and sound.placed != null:
+			sound.placed.quake(stage, strength, point))
 	net.pulse_received.connect(func() -> void:
 		if link_bars != null:
 			link_bars.pulse())

@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 67
+const PROTOCOL_VERSION := 68
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -46,6 +46,7 @@ signal water_rate_requested(peer_id: int, direction: int)
 signal water_rate_received(rate: float, busy: bool, spring_m3_s: float)
 signal water_changed_received()
 signal pulse_received()
+signal quake_received(stage: int, strength: float, point: Vector3)
 signal ground_reset_received(tiles_stamp: String, starter_stamp: String)
 signal water_requested(peer_id: int, chunks: PackedInt32Array)
 signal surface_requested(peer_id: int, x: float, z: float)
@@ -209,6 +210,14 @@ func water_rate(rate: float, busy: bool, spring_m3_s: float) -> void:
 @rpc("authority", "call_remote", "unreliable")
 func pulse() -> void:
 	pulse_received.emit()
+
+
+# Earth shaking in an excavation that needs bracing (tech/EXCAVATION_BRACING_GROUND_DESIGN.md section 3): stage 2 creak, 3 shake,
+# 4 throes (the collapse follows), strength 0..1000 per mille, point = the working cluster. The server sends it twice a second to
+# players within 40 m of a cluster in stage 2 or later; nothing sends it yet (the tunnel timers are switched off until the bracing items exist).
+@rpc("authority", "call_remote", "unreliable")
+func quake(stage: int, strength_pm: int, point: Vector3) -> void:
+	quake_received.emit(stage, float(strength_pm) * 0.001, point)
 
 
 # The server's water has new levels: clients ask again for the chunks they hold.
