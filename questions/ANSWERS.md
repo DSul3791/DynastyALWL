@@ -520,3 +520,7 @@ Answered: 2026-10-22 23:46 UTC
 Answer: No: It only rotates the type of piece so if it’s a wall, then it can also be placed as a wall with a door, a wall with a window, etc. when you pull the piece from your inventory and place it in your hot bar, the piece that you put in your hot bar, determines the tier of the wall so you would put a basic wall in your hot bar or a plank wall or a fine wooden wall, etc., but when you place a foundation, it only has one piece it can’t be variations of a foundation so when you turn the mouse wheel, it will allow you to raise the foundation up or down.
 Answered: 2026-10-22 23:46 UTC
 
+## blueprint-3 | Place a see-through blueprint first, then fill it with items (E or drag a stack, any order, partial is fine)?
+Answer: No: Yes is the correct answer here except you will only be able to press E on it if you have the items in your inventory.
+Answered: 2026-10-22 23:47 UTC
+
