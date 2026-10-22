@@ -23,3 +23,11 @@ Note: Real packed-earth ground needs a new shader material from Sonny and Kathle
 ## hoe-order | In what order should Sal build the shovel and hoe work?
 - Shovel Raise mode and new model first, then hoe path and smooth, then grade line (recommended)
 - Hoe first
+
+## chk-materials-walls | Check the wall materials (labelled picture): wood, log, daub, stone, brick. Can you tell them apart, and does each look like the real material?
+Image: questions/img/materials_walls.png
+[check]
+
+## chk-materials-floors | Check the floors and roofs (labelled picture): floors, wood roofs and thatch roofs. Does each look like the real material?
+Image: questions/img/materials_floors_roofs.png
+[check]
