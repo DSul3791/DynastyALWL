@@ -312,3 +312,7 @@ Answered: 2026-10-22 20:16 UTC
 ## hoe-grade | Hoe grading for roads: must cut and fill balance?
 Answer: No: the hoe moves dirt from space to space on the ground; it needs no soil items and no materials and only wears down its own durability (Dave's words, chat 20:17, resolved by Guru)
 Answered: 2026-10-22 20:17 UTC
+## hoe-mode | Shovel: should right click switch between Dig and Raise? (Design: items/HOE_AND_SHOVEL_DESIGN.md)
+Answer: Right click toggles Dig/Raise (recommended)
+Answered: 2026-10-22 20:17 UTC
+
