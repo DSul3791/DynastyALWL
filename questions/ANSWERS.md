@@ -92,3 +92,7 @@ Answered: 2026-10-22 03:12 UTC
 Answer: A full wall, floor and roof kit so players design their own houses
 Answered: 2026-10-22 03:13 UTC
 
+## hole-refill | Do dug holes slowly fill back in by themselves? (my pick: no, they stay until filled)
+Answer: No, a hole stays until someone fills it
+Answered: 2026-10-22 03:16 UTC
+
