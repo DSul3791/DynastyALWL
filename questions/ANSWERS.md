@@ -552,3 +552,7 @@ Answered: 2026-10-22 23:58 UTC
 Answer: Yes
 Answered: 2026-10-22 23:58 UTC
 
+## doors-double | Does the double door look right: it fills the 2 x 2.4 m wall slot with a 10 cm gap all round (leaves 1.8 m wide, 2.2 m high)?
+Answer: No: Yes, it does but there shouldn’t be an edge across the bottom. It should look like a realistic door.
+Answered: 2026-10-22 23:59 UTC
+
