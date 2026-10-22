@@ -172,3 +172,7 @@ Answered: 2026-10-22 15:15 UTC
 Answer: Any time except while the game is running; MikeW checks first (recommended)
 Answered: 2026-10-22 15:15 UTC
 
+## cc-keep-awake | Local-first only works if your PC is awake with Claude Desktop open while the team works. Can we ask Windows to stay awake then?
+Answer: Yes, keep awake while the team is working (recommended)
+Answered: 2026-10-22 15:15 UTC
+
