@@ -1,0 +1,469 @@
+CRASH REPORT: the game ended unexpectedly.
+This run is quitting by itself: server left: the connection to the server was lost
+This report made by build 590 at 2026-10-22T00:55:06
+
+== Last 150 breadcrumbs (key and mouse presses, menus, errors, a state line every 5 s) ==
+[21:52:21.691] mouse button 1 at 1439,809
+[21:52:21.994] mouse button 1 at 1442,809
+[21:52:22.330] mouse button 1 at 1439,809
+[21:52:22.456] key W
+[21:52:22.708] mouse button 1 at 1439,809
+[21:52:23.138] mouse button 1 at 1439,809
+[21:52:23.148] key W
+[21:52:23.505] mouse button 1 at 1439,809
+[21:52:23.862] mouse button 1 at 1439,800
+[21:52:24.144] state link rtt 2397 ms (last 596), loss 7322, state 5, loss variance 4421 pos 53309,24,68421 quality 3 fps 96 ram 507 MB video 1058 MB menu false screen false
+[21:52:24.281] mouse button 1 at 1439,806
+[21:52:24.647] mouse button 1 at 1439,806
+[21:52:24.944] mouse button 1 at 1439,809
+[21:52:25.209] mouse button 1 at 1439,807
+[21:52:25.630] mouse button 1 at 1439,809
+[21:52:25.888] mouse button 1 at 1439,809
+[21:52:26.147] mouse button 1 at 1439,809
+[21:52:26.431] mouse button 1 at 1439,809
+[21:52:26.702] mouse button 1 at 1439,809
+[21:52:26.973] mouse button 1 at 1439,809
+[21:52:27.233] mouse button 1 at 1439,809
+[21:52:27.661] mouse button 1 at 1441,828
+[21:52:27.901] key W
+[21:52:28.059] mouse button 1 at 1441,813
+[21:52:28.426] mouse button 1 at 1439,813
+[21:52:28.836] mouse button 1 at 1439,809
+[21:52:29.151] state link rtt 2397 ms (last 596), loss 7322, state 5, loss variance 4421 pos 53309,24,68421 quality 3 fps 95 ram 507 MB video 1058 MB menu false screen false
+[21:52:29.183] mouse button 1 at 1439,809
+[21:52:29.541] mouse button 1 at 1439,809
+[21:52:29.866] mouse button 1 at 1439,809
+[21:52:30.234] mouse button 1 at 1439,809
+[21:52:31.117] key W
+[21:52:31.234] mouse button 1 at 1439,809
+[21:52:31.624] mouse button 1 at 1439,809
+[21:52:31.970] mouse button 1 at 1439,809
+[21:52:32.685] key Alt
+[21:52:32.800] window focus lost
+[21:52:32.810] game window focus lost
+[21:52:34.153] state link rtt 2397 ms (last 596), loss 7527, state 5, loss variance 3727 pos 53309,24,68421 quality 3 fps 91 ram 507 MB video 1058 MB menu false screen false
+[21:52:39.166] state link rtt 2397 ms (last 596), loss 7527, state 5, loss variance 3727 pos 53309,24,68421 quality 3 fps 92 ram 507 MB video 1058 MB menu false screen false
+[21:52:44.167] state link rtt 2397 ms (last 596), loss 6586, state 5, loss variance 4677 pos 53309,24,68421 quality 3 fps 90 ram 507 MB video 1058 MB menu false screen false
+[21:52:49.167] state link rtt 2397 ms (last 596), loss 6586, state 5, loss variance 4677 pos 53309,24,68421 quality 3 fps 84 ram 507 MB video 1058 MB menu false screen false
+[21:52:53.576] window focus back
+[21:52:53.579] game window focus back
+[21:52:54.171] state link rtt 2397 ms (last 596), loss 10074, state 5, loss variance 10484 pos 53309,24,68421 quality 3 fps 81 ram 507 MB video 1058 MB menu false screen false
+[21:52:56.255] key W
+[21:52:58.988] key W
+[21:52:59.109] key Shift
+[21:52:59.174] state link rtt 2397 ms (last 596), loss 10074, state 5, loss variance 10484 pos 53306,24,68421 quality 3 fps 88 ram 508 MB video 1066 MB menu false screen false
+[21:52:59.449] key Space
+[21:52:59.803] key Space
+[21:53:02.102] key G
+[21:53:02.436] key Space
+[21:53:02.883] key W
+[21:53:04.190] state link rtt 2397 ms (last 596), loss 9399, state 5, loss variance 9211 pos 53296,58,68420 quality 3 fps 80 ram 508 MB video 1063 MB menu false screen false
+[21:53:04.614] key Space
+[21:53:04.676] key W
+[21:53:04.753] key Shift
+[21:53:05.319] key A
+[21:53:09.190] state link rtt 2397 ms (last 596), loss 9399, state 5, loss variance 9211 pos 53295,158,68527 quality 3 fps 74 ram 508 MB video 1063 MB menu false screen false
+[21:53:14.201] state link rtt 2397 ms (last 596), loss 8224, state 5, loss variance 9258 pos 53295,158,68527 quality 3 fps 95 ram 508 MB video 1065 MB menu false screen false
+[21:53:14.234] key W
+[21:53:14.279] key Shift
+[21:53:19.203] state link rtt 2397 ms (last 596), loss 8224, state 5, loss variance 9258 pos 53349,158,68967 quality 3 fps 101 ram 508 MB video 1065 MB menu false screen false
+[21:53:20.915] key Space
+[21:53:24.212] state link rtt 2397 ms (last 596), loss 7196, state 5, loss variance 8999 pos 53532,454,69317 quality 3 fps 111 ram 508 MB video 1065 MB menu false screen false
+[21:53:29.213] state link rtt 2397 ms (last 596), loss 7196, state 5, loss variance 8999 pos 53551,470,69325 quality 3 fps 110 ram 498 MB video 1046 MB menu false screen false
+[21:53:34.221] state link rtt 2397 ms (last 596), loss 10507, state 5, loss variance 13371 pos 53551,470,69325 quality 3 fps 94 ram 493 MB video 1022 MB menu false screen false
+[21:53:36.791] key D
+[21:53:37.200] key S
+[21:53:38.844] key W
+[21:53:39.227] state link rtt 2397 ms (last 596), loss 10507, state 5, loss variance 13371 pos 53593,470,69385 quality 3 fps 76 ram 496 MB video 1029 MB menu false screen false
+[21:53:39.583] key Shift
+[21:53:40.176] key D
+[21:53:41.833] key W
+[21:53:42.737] key S
+[21:53:44.237] state link rtt 2397 ms (last 596), loss 11300, state 5, loss variance 11614 pos 53746,470,69396 quality 3 fps 83 ram 496 MB video 1029 MB menu false screen false
+[21:53:48.382] key G
+[21:53:49.243] state link rtt 2397 ms (last 596), loss 11300, state 5, loss variance 11614 pos 53746,462,69396 quality 3 fps 61 ram 429 MB video 921 MB menu false screen false
+[21:53:51.760] key W
+[21:53:52.065] key Shift
+[21:53:54.244] state link rtt 2397 ms (last 596), loss 10334, state 5, loss variance 10642 pos 53740,428,69384 quality 3 fps 58 ram 505 MB video 998 MB menu false screen false
+[21:53:58.347] key W
+[21:53:58.396] key Shift
+[21:53:59.245] state link rtt 2397 ms (last 596), loss 10334, state 5, loss variance 10642 pos 53732,428,69371 quality 3 fps 78 ram 522 MB video 1016 MB menu false screen false
+[21:54:01.185] key W
+[21:54:01.304] key Shift
+[21:54:02.839] key Shift
+[21:54:04.248] state link rtt 2397 ms (last 596), loss 9042, state 5, loss variance 10565 pos 53722,426,69375 quality 3 fps 65 ram 519 MB video 1010 MB menu false screen false
+[21:54:04.718] key G
+[21:54:05.219] key Space
+[21:54:06.364] key W
+[21:54:06.669] key Shift
+[21:54:09.257] state link rtt 2397 ms (last 596), loss 9042, state 5, loss variance 10565 pos 53527,527,69322 quality 3 fps 83 ram 519 MB video 1010 MB menu false screen false
+[21:54:09.718] key A
+[21:54:13.089] key Ctrl
+[21:54:13.776] key A
+[21:54:14.260] state link rtt 2397 ms (last 596), loss 7911, state 5, loss variance 10184 pos 53452,491,69352 quality 3 fps 74 ram 519 MB video 1010 MB menu false screen false
+[21:54:14.465] key S
+[21:54:16.612] key W
+[21:54:19.268] state link rtt 2397 ms (last 596), loss 7911, state 5, loss variance 10184 pos 53467,351,69340 quality 3 fps 96 ram 519 MB video 1010 MB menu false screen false
+[21:54:19.587] key 6
+[21:54:20.370] key W
+[21:54:21.730] key A
+[21:54:22.537] key Space
+[21:54:22.720] key W
+[21:54:24.276] state link rtt 2397 ms (last 596), loss 6922, state 5, loss variance 9615 pos 53535,403,69335 quality 3 fps 90 ram 519 MB video 1009 MB menu false screen false
+[21:54:25.730] key W
+[21:54:28.071] key S
+[21:54:28.153] key D
+[21:54:28.597] key W
+[21:54:28.759] key Shift
+[21:54:29.286] state link rtt 2397 ms (last 596), loss 6922, state 5, loss variance 9615 pos 53590,474,69392 quality 3 fps 74 ram 519 MB video 1009 MB menu false screen false
+[21:54:30.922] key Escape
+[21:54:34.289] state link rtt 2397 ms (last 596), loss 6056, state 5, loss variance 8941 pos 53590,474,69393 quality 3 fps 74 ram 518 MB video 1008 MB menu true screen false
+[21:54:34.538] mouse button 1 at 1476,878
+[21:54:36.561] mouse button 1 at 1476,448
+[21:54:39.292] state link rtt 2397 ms (last 596), loss 6056, state 5, loss variance 8941 pos 53590,474,69393 quality 3 fps 87 ram 489 MB video 935 MB menu true screen false
+[21:54:39.421] key Escape
+[21:54:44.299] state link rtt 2397 ms (last 596), loss 5299, state 5, loss variance 8219 pos 53590,474,69393 quality 3 fps 77 ram 509 MB video 986 MB menu false screen false
+[21:54:47.775] key W
+[21:54:47.943] key A
+[21:54:49.306] state link rtt 2397 ms (last 596), loss 5299, state 5, loss variance 8219 pos 53587,474,69387 quality 3 fps 72 ram 509 MB video 986 MB menu false screen false
+[21:54:49.570] key W
+[21:54:49.598] key Shift
+[21:54:52.295] key S
+[21:54:52.525] key A
+[21:54:53.851] key A
+[21:54:54.274] key W
+[21:54:54.315] state link rtt 2397 ms (last 596), loss 4636, state 5, loss variance 7489 pos 53745,474,69394 quality 3 fps 67 ram 509 MB video 986 MB menu false screen false
+[21:54:54.437] key Shift
+[21:54:56.830] key G
+[21:54:59.317] state link rtt 2397 ms (last 596), loss 4636, state 5, loss variance 7489 pos 53652,430,69540 quality 3 fps 65 ram 500 MB video 967 MB menu false screen false
+[21:55:00.742] key 3
+[21:55:01.382] mouse button 1 at 1439,809
+[21:55:01.934] mouse button 1 at 1439,809
+[21:55:03.119] mouse button 1 at 1439,809
+[21:55:03.477] mouse button 1 at 1439,809
+[21:55:03.836] mouse button 1 at 1439,809
+[21:55:04.158] mouse button 1 at 1439,809
+[21:55:04.320] state link rtt 2397 ms (last 596), loss 4056, state 5, loss variance 6775 pos 53652,430,69540 quality 3 fps 81 ram 535 MB video 1013 MB menu false screen false
+[21:55:04.506] mouse button 1 at 1439,809
+[21:55:04.803] mouse button 1 at 1439,809
+[21:55:05.087] mouse button 1 at 1439,809
+[21:55:05.384] mouse button 1 at 1439,809
+[21:55:05.654] mouse button 1 at 1439,809
+[21:55:06.052] mouse button 1 at 1439,809
+[21:55:06.288] ERROR enet_multiplayer_peer.cpp:460 Condition "!_is_active()" is true. Returning: nullptr  (in ENetMultiplayerPeer::get_peer)
+[21:55:06.288] QUIT: server left: the connection to the server was lost
+
+
+== Errors and warnings of that run (last 40) ==
+[21:55:06.288] ERROR enet_multiplayer_peer.cpp:460 Condition "!_is_active()" is true. Returning: nullptr  (in ENetMultiplayerPeer::get_peer)
+
+== The server's own events (last 60 lines: peers, stalls, why a client was dropped) ==
+-- telemetry_server_24600.log
+[21:51:07.916] STALL: the main thread did not run for 1038 ms
+[21:51:07.916] max gap 1038 ms | peers 1 fps 1 ram 621 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 155 pkts 194 KB, received 21 pkts 2 KB | peer 2045142329 rtt 21 ms (last 13), loss 16705, state 5, loss variance 13989
+[21:51:09.334] STALL: the main thread did not run for 1045 ms
+[21:51:09.334] max gap 1045 ms | peers 1 fps 7 ram 635 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 102 pkts 130 KB, received 19 pkts 1 KB | peer 2045142329 rtt 21 ms (last 13), loss 16705, state 5, loss variance 13989
+[21:51:10.769] STALL: the main thread did not run for 1051 ms
+[21:51:10.769] max gap 1051 ms | peers 1 fps 4 ram 649 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 159 pkts 196 KB, received 19 pkts 1 KB | peer 2045142329 rtt 14 ms (last 13), loss 18273, state 5, loss variance 13628
+[21:51:11.802] STALL: the main thread did not run for 1033 ms
+[21:51:11.803] max gap 1033 ms | peers 1 fps 4 ram 649 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 101 pkts 130 KB, received 13 pkts 0 KB | peer 2045142329 rtt 730 ms (last 13), loss 18273, state 5, loss variance 13628
+[21:51:13.294] STALL: the main thread did not run for 1073 ms
+[21:51:13.294] max gap 1073 ms | peers 1 fps 1 ram 649 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 154 pkts 195 KB, received 21 pkts 1 KB | peer 2045142329 rtt 21 ms (last 14), loss 18273, state 5, loss variance 13628
+[21:51:14.729] STALL: the main thread did not run for 1063 ms
+[21:51:14.729] max gap 1063 ms | peers 1 fps 12 ram 649 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 104 pkts 130 KB, received 20 pkts 1 KB | peer 2045142329 rtt 27 ms (last 14), loss 18273, state 5, loss variance 13628
+[21:51:15.184] STALL: the main thread did not run for 1068 ms
+[21:51:15.184] max gap 1068 ms | peers 1 fps 5 ram 621 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 154 pkts 194 KB, received 17 pkts 1 KB | peer 2045142329 rtt 21 ms (last 14), loss 18273, state 5, loss variance 13628
+[21:51:17.587] STALL: the main thread did not run for 1403 ms
+[21:51:17.587] max gap 1403 ms | peers 1 fps 5 ram 663 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 102 pkts 130 KB, received 13 pkts 0 KB | peer 2045142329 rtt 1131 ms (last 14), loss 18273, state 5, loss variance 13628
+[21:51:18.590] max gap 352 ms | peers 1 fps 27 ram 607 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 143 pkts 177 KB, received 30 pkts 2 KB | peer 2045142329 rtt 21 ms (last 21), loss 18273, state 5, loss variance 13628
+[21:51:19.756] max gap 352 ms | peers 1 fps 130 ram 607 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 1 pkts 0 KB, received 5 pkts 0 KB | peer 2045142329 rtt 21 ms (last 21), loss 19161, state 5, loss variance 11997
+[21:51:20.756] max gap 8 ms | peers 1 fps 96 ram 607 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 4 pkts 0 KB, received 8 pkts 0 KB | peer 2045142329 rtt 19 ms (last 21), loss 19161, state 5, loss variance 11997
+[21:51:22.506] STALL: the main thread did not run for 1048 ms
+[21:51:22.506] max gap 1048 ms | peers 1 fps 145 ram 635 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 62 pkts 65 KB, received 11 pkts 1 KB | peer 2045142329 rtt 15 ms (last 21), loss 19161, state 5, loss variance 11997
+[21:51:24.278] STALL: the main thread did not run for 1044 ms
+[21:51:24.279] max gap 1044 ms | peers 1 fps 37 ram 663 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 163 pkts 192 KB, received 32 pkts 1 KB | peer 2045142329 rtt 14 ms (last 15), loss 19161, state 5, loss variance 11997
+[21:51:25.116] STALL: the main thread did not run for 1070 ms
+[21:51:25.116] max gap 1070 ms | peers 1 fps 57 ram 635 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 162 pkts 193 KB, received 30 pkts 1 KB | peer 2045142329 rtt 21 ms (last 15), loss 19161, state 5, loss variance 11997
+[21:51:27.921] STALL: the main thread did not run for 1052 ms
+[21:51:27.921] max gap 1052 ms | peers 1 fps 8 ram 635 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 167 pkts 200 KB, received 32 pkts 1 KB | peer 2045142329 rtt 26 ms (last 15), loss 19161, state 5, loss variance 11997
+[21:51:29.318] STALL: the main thread did not run for 1029 ms
+[21:51:29.318] max gap 1029 ms | peers 1 fps 63 ram 635 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 134 pkts 163 KB, received 23 pkts 1 KB | peer 2045142329 rtt 13 ms (last 14), loss 19161, state 5, loss variance 11997
+[21:51:30.132] STALL: the main thread did not run for 1065 ms
+[21:51:30.132] max gap 1065 ms | peers 1 fps 51 ram 663 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 157 pkts 192 KB, received 26 pkts 1 KB | peer 2045142329 rtt 21 ms (last 14), loss 20488, state 5, loss variance 11652
+[21:51:32.963] STALL: the main thread did not run for 1074 ms
+[21:51:32.964] max gap 1074 ms | peers 1 fps 11 ram 635 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 164 pkts 196 KB, received 29 pkts 1 KB | peer 2045142329 rtt 25 ms (last 14), loss 20488, state 5, loss variance 11652
+[21:51:34.788] STALL: the main thread did not run for 1065 ms
+[21:51:34.788] max gap 1065 ms | peers 1 fps 6 ram 663 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 165 pkts 199 KB, received 29 pkts 1 KB | peer 2045142329 rtt 21 ms (last 9), loss 20488, state 5, loss variance 11652
+[21:51:36.681] STALL: the main thread did not run for 1104 ms
+[21:51:36.681] max gap 1104 ms | peers 1 fps 5 ram 663 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 166 pkts 196 KB, received 29 pkts 1 KB | peer 2045142329 rtt 14 ms (last 9), loss 20488, state 5, loss variance 11652
+[21:51:37.684] max gap 362 ms | peers 1 fps 63 ram 607 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 83 pkts 101 KB, received 24 pkts 1 KB | peer 2045142329 rtt 9 ms (last 9), loss 20488, state 5, loss variance 11652
+[21:51:38.155] STALL: the main thread did not run for 1058 ms
+[21:51:38.155] max gap 1058 ms | peers 1 fps 140 ram 663 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 84 pkts 101 KB, received 6 pkts 0 KB | peer 2045142329 rtt 9 ms (last 9), loss 20488, state 5, loss variance 11652
+[21:51:40.371] max gap 362 ms | peers 1 fps 72 ram 607 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 85 pkts 99 KB, received 26 pkts 1 KB | peer 2045142329 rtt 14 ms (last 9), loss 21915, state 5, loss variance 11594
+[21:51:41.702] STALL: the main thread did not run for 1055 ms
+[21:51:41.702] max gap 1055 ms | peers 1 fps 72 ram 663 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 86 pkts 100 KB, received 8 pkts 0 KB | peer 2045142329 rtt 15 ms (last 9), loss 21915, state 5, loss variance 11594
+[21:51:43.503] STALL: the main thread did not run for 1049 ms
+[21:51:43.503] max gap 1049 ms | peers 1 fps 4 ram 663 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 166 pkts 197 KB, received 29 pkts 1 KB | peer 2045142329 rtt 16 ms (last 9), loss 21915, state 5, loss variance 11594
+[21:51:44.505] max gap 368 ms | peers 1 fps 20 ram 607 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 85 pkts 99 KB, received 25 pkts 1 KB | peer 2045142329 rtt 25 ms (last 9), loss 21915, state 5, loss variance 11594
+[21:51:45.027] STALL: the main thread did not run for 1074 ms
+[21:51:45.027] max gap 1074 ms | peers 1 fps 20 ram 663 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 84 pkts 98 KB, received 6 pkts 0 KB | peer 2045142329 rtt 20 ms (last 14), loss 21915, state 5, loss variance 11594
+[21:51:47.303] max gap 359 ms | peers 1 fps 140 ram 607 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 83 pkts 99 KB, received 26 pkts 1 KB | peer 2045142329 rtt 42 ms (last 14), loss 21915, state 5, loss variance 11594
+[21:51:48.504] STALL: the main thread did not run for 1077 ms
+[21:51:48.504] max gap 1077 ms | peers 1 fps 84 ram 635 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 83 pkts 100 KB, received 5 pkts 0 KB | peer 2045142329 rtt 35 ms (last 14), loss 21915, state 5, loss variance 11594
+[21:51:50.303] STALL: the main thread did not run for 1055 ms
+[21:51:50.304] max gap 1055 ms | peers 1 fps 32 ram 663 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 166 pkts 199 KB, received 30 pkts 1 KB | peer 2045142329 rtt 14 ms (last 14), loss 21915, state 5, loss variance 11594
+[21:51:55.598] STALL: the main thread did not run for 5146 ms
+[21:51:55.598] max gap 5146 ms | peers 1 fps 29 ram 691 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 86 pkts 98 KB, received 22 pkts 1 KB | peer 2045142329 rtt 20 ms (last 14), loss 23211, state 5, loss variance 11288
+[21:52:06.224] STALL: the main thread did not run for 10626 ms
+[21:52:06.224] max gap 10626 ms | peers 1 fps 29 ram 691 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 45 pkts 35 KB, received 36 pkts 1 KB | peer 2045142329 rtt 1282 ms (last 20), loss 26092, state 5, loss variance 14228
+[21:52:49.240] STALL: the main thread did not run for 43016 ms
+[21:52:49.240] max gap 43016 ms | peers 1 fps 24 ram 691 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 85 pkts 97 KB, received 78 pkts 3 KB | peer 2045142329 rtt 3952 ms (last 705), loss 26092, state 5, loss variance 14228
+
+
+== Last 300 lines of Godot's log of that run (godot.log; a native crash writes its backtrace here) ==
+Godot Engine v4.7.2.stable.custom_build.ed1daf0bf (2026-08-17 01:18:38 UTC) - https://godotengine.org
+
+server: terrain or tile files changed, old generated ground thrown away
+server: 76 ground edits loaded from digs.dat
+Terrain server listening on port 24600 with 11 worker threads; store user://server_store/Modular Island World; spawn (533Terrain client: first run, copied the starter ground for the spawn (1 tile)
+Terrain client: welcome after 7553 ms; world Modular Island World; spaserver: 0 urgent and 0 prefetch queued; generated 2180, cache hits 19, edit hits 0; flora chunks 30 made, 1762 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+server: 2199 bloTerrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: ground under (53274, 68458) is at 19.8 m
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: ground under (53215, 68476) is at 24.6 m
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: ground under (53312, 68422) is at 28.4 m
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: ground under (53249, 68446) is at 24.8 m
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: ground under (53303, 68426) is at 28.8 m
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: ground under (53269, 68426) is at 28.6 m
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: ground under (53277, 68489) is at 14.5 m
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: ground under (53218, 68425) is at 29.0 m
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: ground under (53284, 68466) is at 18.9 m
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: ground under (53338, 68460) is at 28.7 m
+Terrain client: ground under (53283, 68436) is at 27.9 m
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: ground under (53294, 68433) is at 29.1 m
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: ground under (53282, 68405) is at 28.8 m
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: ground under (53300, 68504) is at 19.3 m
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: ground under (53254, 68364) is at 27.5 m
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: ground under (53302, 68435) is at 28.9 m
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: ground under (53313, 68433) is at 28.9 m
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: ground under (53270, 68470) is at 16.4 m
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: ground under (53250, 68468) is at 17.8 m
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: ground under (53304, 68433) is at 28.9 m
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: ground under (53290, 68455) is at 22.9 m
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: ground under (53312, 68462) is at 26.7 m
+Terrain client: ground under (53219, 68436) is at 28.1 m
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: ground under (53308, 68458) is at 26.5 m
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: ground under (53222, 68404) is at 28.9 m
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: ground under (53262, 68452) is at 21.7 m
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: ground under (53333, 68379) is at 30.5 m
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: ground under (53314, 68426) is at 28.4 m
+Terrain client: tile (3, 4) is now revision 78
+Terrain client: applied a 0.9 m dig at (53309.44, 24.9189, 68421.74); ground value there now 0.38 (above 0 is open)
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: tile (3, 4) is now revision 79
+Terrain client: applied a 0.9 m dig at (53309.49, 24.82784, 68421.7); ground value there now 0.38 (above 0 is open)
+Terrain client: tile (3, 4) is now revision 80
+Terrain client: applied a 0.9 m dig at (53309.49, 24.82136, 68421.7); ground value there now 0.38 (above 0 is open)
+Terrain client: ground under (53270, 68446) is at 24.0 m
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: stopped flying at (53295.0, 158.0, 68527.0), loading the ground here
+Terrain client: stopped flying at (53552.0, 470.0, 69325.0), loading the ground here
+Terrain client: stopped flying at (53747.0, 470.0, 69396.0), loading the ground here
+Terrain client: stopped flying at (53591.0, 475.0, 69393.0), loading the ground here
+Terrain client: cleared the saved ground and reloaded the terrain
+Terrain client: server left
+ERROR: Condition "!_is_active()" is true. Returning: nullptr
+   at: ENetMultiplayerPeer::get_peer (modules\enet\enet_multiplayer_peer.cpp:460)
+   GDScript backtrace (most recent call first):
+       [0] _on_server_lost (res://scenes/terrain_client/terrain_client.gd:685)
+t and 0 prefetch queued; generated 19690, cache hits 744, edit hits 0; flora chunks 30 made, 3265 from memory; idle-built 1166 columns; bad blocks 0, failed tile loads 0
+server: 17057 blocks sent on the block line (8.4 MB)
+server: water update 90 (2 tiles), 35489 wet squares on the starter tile
+server: 0 urgent and 0 prefetch queued; generated 19690, cache hits 744, edit hits 0; flora chunks 30 made, 3427 from memory; idle-built 1166 columns; bad blocks 0, failed tile loads 0
+server: 17057 blocks sent on the block line (8.4 MB)
+server: water update 100 (1 tiles), 36032 wet squares on the starter tile
+server: 0 urgent and 0 prefetch queued; generated 19690, cache hits 744, edit hits 0; flora chunks 30 made, 3562 from memory; idle-built 1166 columns; bad blocks 0, failed tile loads 0
+server: 17057 blocks sent on the block line (8.4 MB)
+server: water update 110 (1 tiles), 36353 wet squares on the starter tile
+server: 0 urgent and 0 prefetch queued; generated 19690, cache hits 744, edit hits 0; flora chunks 30 made, 3634 from memory; idle-built 1166 columns; bad blocks 0, failed tile loads 0
+server: 17057 blocks sent on the block line (8.4 MB)
+server: water update 120 (2 tiles), 36769 wet squares on the starter tile
+server: 0 urgent and 0 prefetch queued; generated 19690, cache hits 744, edit hits 0; flora chunks 30 made, 3715 from memory; idle-built 1166 columns; bad blocks 0, failed tile loads 0
+server: 17057 blocks sent on the block line (8.4 MB)
+server: water update 130 (1 tiles), 37164 wet squares on the starter tile
+server: water update 140 (1 tiles), 37368 wet squares on the starter tile
+server: 0 urgent and 0 prefetch queued; generated 19690, cache hits 744, edit hits 0; flora chunks 30 made, 3850 from memory; idle-built 1166 columns; bad blocks 0, failed tile loads 0
+server: 17057 blocks sent on the block line (8.4 MB)
+server: water update 150 (1 tiles), 37720 wet squares on the starter tile
+server: 0 urgent and 0 prefetch queued; generated 19690, cache hits 744, edit hits 0; flora chunks 30 made, 3976 from memory; idle-built 1166 columns; bad blocks 0, failed tile loads 0
+server: 17057 blocks sent on the block line (8.4 MB)
+server: water update 160 (2 tiles), 37887 wet squares on the starter tile
+server: 0 urgent and 0 prefetch queued; generated 19690, cache hits 744, edit hits 0; flora chunks 30 made, 4129 from memory; idle-built 1166 columns; bad blocks 0, failed tile loads 0
+server: 17057 blocks sent on the block line (8.4 MB)
+water (3, 4): a dig at (53309.44, 24.9189, 68421.74) lowered 0 water squares
+Dug a 0.9 m sphere at (53309.44, 24.9189, 68421.74); tiles [(3, 4)]
+water (3, 4): a dig at (53309.49, 24.82784, 68421.7) lowered 0 water squares
+Dug a 0.9 m sphere at (53309.49, 24.82784, 68421.7); tiles [(3, 4)]
+water (3, 4): a dig at (53309.49, 24.82136, 68421.7) lowered 0 water squares
+Dug a 0.9 m sphere at (53309.49, 24.82136, 68421.7); tiles [(3, 4)]
+server: 0 urgent and 0 prefetch queued; generated 19690, cache hits 744, edit hits 0; flora chunks 30 made, 4147 from memory; idle-built 1166 columns; bad blocks 0, failed tile loads 0
+server: 17057 blocks sent on the block line (8.4 MB)
+water (3, 4): a dig at (53309.86, 24.17278, 68421.58) lowered 0 water squares
+Dug a 0.9 m sphere at (53309.86, 24.17278, 68421.58); tiles [(3, 4)]
+water (3, 4): a dig at (53309.86, 24.1762, 68421.57) lowered 0 water squares
+Dug a 0.9 m sphere at (53309.86, 24.1762, 68421.57); tiles [(3, 4)]
+water (3, 4): a dig at (53309.86, 24.17849, 68421.55) lowered 0 water squares
+Dug a 0.9 m sphere at (53309.86, 24.17849, 68421.55); tiles [(3, 4)]
+water (3, 4): a dig at (53309.86, 24.17849, 68421.55) lowered 0 water squares
+Dug a 0.9 m sphere at (53309.86, 24.17849, 68421.55); tiles [(3, 4)]
+water (3, 4): a dig at (53309.86, 24.17849, 68421.55) lowered 0 water squares
+Dug a 0.9 m sphere at (53309.86, 24.17849, 68421.55); tiles [(3, 4)]
+water (3, 4): a dig at (53309.86, 24.17849, 68421.55) lowered 0 water squares
+Dug a 0.9 m sphere at (53309.86, 24.17849, 68421.55); tiles [(3, 4)]
+water (3, 4): a dig at (53309.86, 24.17849, 68421.55) lowered 0 water squares
+Dug a 0.9 m sphere at (53309.86, 24.17849, 68421.55); tiles [(3, 4)]
+water (3, 4): a dig at (53309.86, 24.17849, 68421.55) lowered 0 water squares
+Dug a 0.9 m sphere at (53309.86, 24.17849, 68421.55); tiles [(3, 4)]
+server: water update 170 (3 tiles), 38056 wet squares on the starter tile
+server: 0 urgent and 0 prefetch queued; generated 19690, cache hits 744, edit hits 0; flora chunks 30 made, 4147 from memory; idle-built 1166 columns; bad blocks 0, failed tile loads 0
+server: 17057 blocks sent on the block line (8.4 MB)
+water (3, 4): a dig at (53309.86, 24.17849, 68421.55) lowered 0 water squares
+Dug a 0.9 m sphere at (53309.86, 24.17849, 68421.55); tiles [(3, 4)]
+water (3, 4): a dig at (53309.86, 24.17849, 68421.55) lowered 0 water squares
+Dug a 0.9 m sphere at (53309.86, 24.17849, 68421.55); tiles [(3, 4)]
+water (3, 4): a dig at (53309.86, 24.17849, 68421.55) lowered 0 water squares
+Dug a 0.9 m sphere at (53309.86, 24.17849, 68421.55); tiles [(3, 4)]
+water (3, 4): a dig at (53309.86, 24.17849, 68421.55) lowered 0 water squares
+Dug a 0.9 m sphere at (53309.86, 24.17849, 68421.55); tiles [(3, 4)]
+water (3, 4): a dig at (53309.86, 24.17849, 68421.55) lowered 0 water squares
+Dug a 0.9 m sphere at (53309.86, 24.17849, 68421.55); tiles [(3, 4)]
+water (3, 4): a dig at (53309.86, 24.17827, 68421.55) lowered 0 water squares
+Dug a 0.9 m sphere at (53309.86, 24.17827, 68421.55); tiles [(3, 4)]
+water (3, 4): a dig at (53309.84, 24.16681, 68421.53) lowered 0 water squares
+Dug a 0.9 m sphere at (53309.84, 24.16681, 68421.53); tiles [(3, 4)]
+water (3, 4): a dig at (53309.86, 24.20652, 68421.52) lowered 0 water squares
+Dug a 0.9 m sphere at (53309.86, 24.20652, 68421.52); tiles [(3, 4)]
+water (3, 4): a dig at (53309.87, 24.21341, 68421.53) lowered 0 water squares
+Dug a 0.9 m sphere at (53309.87, 24.21341, 68421.53); tiles [(3, 4)]
+water (3, 4): a dig at (53309.94, 24.29371, 68421.51) lowered 0 water squares
+Dug a 0.9 m sphere at (53309.94, 24.29371, 68421.51); tiles [(3, 4)]
+water (3, 4): a dig at (53309.94, 24.29435, 68421.51) lowered 0 water squares
+Dug a 0.9 m sphere at (53309.94, 24.29435, 68421.51); tiles [(3, 4)]
+water (3, 4): a dig at (53309.94, 24.29418, 68421.51) lowered 0 water squares
+Dug a 0.9 m sphere at (53309.94, 24.29418, 68421.51); tiles [(3, 4)]
+water (3, 4): a dig at (53309.94, 24.29241, 68421.51) lowered 0 water squares
+Dug a 0.9 m sphere at (53309.94, 24.29241, 68421.51); tiles [(3, 4)]
+water (3, 4): a dig at (53309.95, 24.29908, 68421.51) lowered 0 water squares
+Dug a 0.9 m sphere at (53309.95, 24.29908, 68421.51); tiles [(3, 4)]
+water (3, 4): a dig at (53309.94, 24.29295, 68421.51) lowered 0 water squares
+Dug a 0.9 m sphere at (53309.94, 24.29295, 68421.51); tiles [(3, 4)]
+water (3, 4): a dig at (53309.94, 24.2914, 68421.51) lowered 0 water squares
+Dug a 0.9 m sphere at (53309.94, 24.2914, 68421.51); tiles [(3, 4)]
+water (3, 4): a dig at (53309.94, 24.29198, 68421.51) lowered 0 water squares
+Dug a 0.9 m sphere at (53309.94, 24.29198, 68421.51); tiles [(3, 4)]
+water (3, 4): a dig at (53310.2, 24.74515, 68421.64) lowered 0 water squares
+Dug a 0.9 m sphere at (53310.2, 24.74515, 68421.64); tiles [(3, 4)]
+water (3, 4): a dig at (53310.04, 24.41353, 68421.55) lowered 0 water squares
+Dug a 0.9 m sphere at (53310.04, 24.41353, 68421.55); tiles [(3, 4)]
+water (3, 4): a dig at (53310.0, 24.31568, 68421.57) lowered 0 water squares
+Dug a 0.9 m sphere at (53310.0, 24.31568, 68421.57); tiles [(3, 4)]
+water (3, 4): a dig at (53310.0, 24.32824, 68421.56) lowered 0 water squares
+Dug a 0.9 m sphere at (53310.0, 24.32824, 68421.56); tiles [(3, 4)]
+water (3, 4): a dig at (53309.9, 24.20635, 68421.58) lowered 0 water squares
+Dug a 0.9 m sphere at (53309.9, 24.20635, 68421.58); tiles [(3, 4)]
+water (3, 4): a dig at (53309.86, 24.22383, 68421.47) lowered 0 water squares
+Dug a 0.9 m sphere at (53309.86, 24.22383, 68421.47); tiles [(3, 4)]
+water (3, 4): a dig at (53309.89, 24.25689, 68421.5) lowered 0 water squares
+
