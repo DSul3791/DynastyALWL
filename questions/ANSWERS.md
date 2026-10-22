@@ -88,3 +88,7 @@ Answered: 2026-10-22 03:08 UTC
 Answer: Refuse the drop and say why (current behaviour)
 Answered: 2026-10-22 03:12 UTC
 
+## build-first-set | Which player-built structures should come first after the campfire kit, lean-to and chest?
+Answer: A full wall, floor and roof kit so players design their own houses
+Answered: 2026-10-22 03:13 UTC
+
