@@ -1,16 +1,3 @@
-## blueprint-plan | THE BLUEPRINT BUILD SYSTEM IN SHORT (Sal's design). Have you read this?
-Note: 1. A builder's mallet replaces the kits. The mouse wheel cycles piece type, then tier. A click places a see-through blueprint that shows its cost.
-Note: 2. Every building starts with a foundation. You place a foundation anywhere level enough to hide its whole bottom; on a slope you level the ground first. Foundations join side by side to make the building shape and the floor. You build up from them. Pillars snap to the centre or the 4 corners of a foundation or ceiling. Most pieces snap to most other pieces in a sensible way. Roof pieces come in 45 and 65 degree slopes, each with corner pieces.
-Note: 3. A blueprint tracks what it needs and what it has so far.
-Note: 4. Press E, or drag a stack onto it, to add items in any order. NPC builders will use the same action later.
-Note: 5. Nothing finishes before the pieces it depends on (foundation, then walls, then roof).
-Note: 6. A completed blueprint turns into the real piece.
-Note: 7. Taking down an unfinished blueprint returns all items. A finished piece returns a share of its items.
-Note: 8. Server side: one new action (ACT_BUILD_ADD), one protocol bump, an additive save field (old saves still load).
-Note: 9. Doors: twine and thatch, planks, reinforced, wrought iron, steel and iron; doubles, windows and shutters.
-Note: 10. Cordage is shown as TWINE (the id stays the same). Nothing is built until you fix the cost table.
-[check]
-
 ## blueprint-refund | When you take down a FINISHED piece, how much of its items come back? Sal recommends half (50%).
 [check]
 Note: Answer Yes for 50%. Answer No and write the share you want in the box (for example 25% or all of it).
@@ -28,43 +15,74 @@ Image: questions/img/tiers_log_corner.png
 Note: Foundations stack, join side by side, and the mouse wheel raises the first one while it is on the ground. A foundation can only go where the ground is level enough to hide its whole bottom; slopes are levelled first.
 [check]
 
-## collapse-plan | THE TUNNEL COLLAPSE IN SHORT (Steve's design, built from your earlier answers). Have you read this?
-Note: 1. A dug space wider than the ground can hold starts a timer. The grace window is 225 s to 60 min, depending on width and depth. Digging more does not reset it.
-Note: 2. Supports (props, timber sets) in reach pause the timer. A new support restarts the full window. A removed or worn-out support starts a fresh half window.
-Note: 3. Warnings: quiet until 60% of the window. Then creaks, then shaking with dust and "The earth groans.", then strong shaking with a warning line every 5 seconds. Then it falls.
-Note: 4. The shaking part always lasts at least 90 real seconds. Nobody dies without that warning.
-Note: 5. When it falls, rubble fills about 70% of the space and the top stays open, so you can dig it out. The land above does not sink (at most 1 m under a thin roof). Anyone inside dies and leaves remains and a purse. Floor items are buried; braces and chests inside are destroyed.
-Note: 6. If you disconnect, reconnecting within 2 minutes resumes you. After that you respawn at the nearest bed, lean-to, campfire or shelter (or world spawn) and are safe meanwhile.
-Note: 7. Logging out on purpose inside a collapsing tunnel counts as death, and your remains stay in the rubble.
-Note: 8. The collapse is still OFF. The warning shaking and messages are built but never fire while it is off.
-[check]
-
 ## collapse-on | May we turn the tunnel collapse ON in your test world so you can test it? (This is the second approval; you will get a test card after.)
 [check]
 
-## foundation-rules | FOUNDATIONS, PILLARS AND ROOFS IN SHORT (Sal's update from your 23:08 rule). Have you read this?
-Note: 1. Every building starts with a foundation. It goes where the ground is level enough to hide its whole bottom (checked about 0.3 m at the corners).
-Note: 2. On a slope the blueprint ghost is red and says "level the ground first". You level it with the hoe or shovel, then place it.
-Note: 3. Foundations join side by side and stack. The cells together are the floor.
-Note: 4. New PILLAR piece: snaps to the centre or the 4 corners of a foundation cell or a ceiling.
-Note: 5. Snapping is one table of data, so most pieces snap to most other pieces in a sensible way, with a wide snap range.
-Note: 6. Roofs come at 45 and 65 degrees, each with straight and corner pieces.
-Note: 7. Kathleen is drawing the roofs and the pillar for you to check.
+## collapse-plan-1 | A dug space wider than the ground can hold starts a timer. The grace window is 225 s to 60 min, depending on width and depth. Digging more does not reset it. Is this right?
 [check]
 
-## roofs-short | ROOF SLOPES AND PILLARS IN SHORT (Kathleen's designs from your 23:08 rule). Have you read this?
+## collapse-plan-2 | Supports (props, timber sets) in reach pause the timer. A new support restarts the full window. A removed or worn-out support starts a fresh half window. Is this right?
+[check]
+
+## collapse-plan-3 | Warnings: quiet until 60% of the window. Then creaks, then shaking with dust and "The earth groans.", then strong shaking with a warning line every 5 seconds. Then it falls. Is this right?
+[check]
+
+## collapse-plan-5 | When it falls, rubble fills about 70% of the space and the top stays open, so you can dig it out. The land above does not sink (at most 1 m under a thin roof). Anyone inside dies and leaves remains and a purse. Floor items are buried; braces and chests inside are destroyed. Is this right?
+[check]
+
+## collapse-plan-8 | Should the collapse stay OFF until your second approval and a test card? (The warning shaking and messages are built but never fire while it is off.)
+[check]
+
+## roofs-angles | Should there be two roof angles, 45 and 65 degrees?
 Image: questions/img/tiers_roof_pieces.png
-Note: 1. Two roof angles: 45 and 65 degrees. A slope piece covers 2 m of run (45 degrees rises 2.0 m; 65 degrees rises 4.3 m, tall and steep).
-Note: 2. Each angle has a straight slope piece, an outside (hip) corner and an inside (valley) corner: 6 roof pieces per tier look.
-Note: 3. Pillars: round log post, squared timber, stone pillar, mason column. They snap to the centre or any of the 4 corners of a foundation or a ceiling.
-Note: 4. Every building starts on a foundation; foundations join side by side to make the floor; you build up from them.
 [check]
 
-## chk-roof-pieces | Do the 45 and 65 degree roof pieces and their hip and valley corners look right (see the picture on the card above)?
+## roofs-pieces | Should each angle have a straight slope piece, an outside (hip) corner piece and an inside (valley) corner piece, 6 roof pieces per tier look?
+Image: questions/img/tiers_roof_pieces.png
 [check]
 
-## roof-65-tall | Is it OK that a 65 degree roof is very tall (4.3 m of rise for every 2 m of run)?
+## roofs-65-tall | Is it OK that a 65 degree roof is very tall (4.3 m rise per 2 m of run)?
+Image: questions/img/tiers_roof_pieces.png
 [check]
 
-## chk-pillars | Do the four pillar looks and the 5 snap points (centre and 4 corners) look right (picture above)?
+## pillars-looks | Should pillars come as round log post, squared timber, stone pillar and mason column?
+Image: questions/img/tiers_roof_pieces.png
+[check]
+
+## pillars-snap | Should a pillar snap to the centre or any of the 4 corners of a foundation or a ceiling (5 snap points)?
+Image: questions/img/tiers_roof_pieces.png
+[check]
+
+## found-start | Does every building start on a foundation, with foundations joined side by side to make the floor shape, and you build up from them?
+Image: questions/img/tiers_roof_pieces.png
+[check]
+
+## blueprint-1 | A builder's mallet tool replaces building kits?
+[check]
+
+## blueprint-2 | Does the mouse wheel cycle piece type, then tier, with the cost shown on the ghost?
+[check]
+
+## blueprint-3 | Place a see-through blueprint first, then fill it with items (E or drag a stack, any order, partial is fine)?
+[check]
+
+## blueprint-4 | A piece cannot finish before what it rests on is finished (wall waits for foundation, roof for walls)?
+[check]
+
+## blueprint-5 | Taking down an unfinished blueprint returns every item put in?
+[check]
+
+## blueprint-6 | Foundation snap range about 6 m (very wide)?
+[check]
+
+## blueprint-7 | Rename cordage to Twine in names only, id unchanged so saves keep working?
+[check]
+
+## blueprint-8 | Keep the old flat roof as the fine-wood flat roof next to the six new slope pieces?
+[check]
+
+## blueprint-9 | Pillars on every tier, 5 anchors per cell, solid but not carrying load yet?
+[check]
+
+## blueprint-10 | Foundation needs ground level enough to hide the whole bottom (about 0.3 m), otherwise you level it first?
 [check]
