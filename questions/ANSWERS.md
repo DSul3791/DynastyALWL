@@ -524,3 +524,7 @@ Answered: 2026-10-22 23:46 UTC
 Answer: No: Yes is the correct answer here except you will only be able to press E on it if you have the items in your inventory.
 Answered: 2026-10-22 23:47 UTC
 
+## blueprint-4 | A piece cannot finish before what it rests on is finished (wall waits for foundation, roof for walls)?
+Answer: Yes
+Answered: 2026-10-22 23:47 UTC
+
