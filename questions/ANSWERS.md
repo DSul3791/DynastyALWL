@@ -376,3 +376,7 @@ Answered: 2026-10-22 22:21 UTC
 Answer: No: You’re very close, but your numbers are off so I’ve already previously answered about one iron ingot makes 100 nails every wall and every building has to have a foundation and lumber can get made into fine boards at a woodworking table. Everything gets built where you stand because you put blueprints down to represent the items and you can join blueprints together like you can put down a blueprint of a foundation and you can put a blueprint of a wall on it and you can attach blueprints of all the walls and blueprints of the ceilings and then this will allow you or NPC builders to come along and put items into those walls to complete them so when you look at the wall, it will tell you what type of wall it is and what it needs to finish. Also, what it takes to make. The wall has to make sense like the build a Thatch or basic tier wall you would have to use Thatch and sticks and cordage or twine. From now on, let’s call it twin so it’s gonna take 20 twine, 50 Thatch and 15 sticks
 Answered: 2026-10-22 22:26 UTC
 
+## chk-looks-short | THE BUILDING LOOKS IN SHORT (six tiers, same 2 m grid, 2.4 m walls). Have you read this?
+Answer: Yes
+Answered: 2026-10-22 22:27 UTC
+
