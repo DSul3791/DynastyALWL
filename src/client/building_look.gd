@@ -416,6 +416,11 @@ static func _block_mesh() -> ArrayMesh:
 	return _finish_cached("block", st, _solid_material())
 
 
+# The block's mesh for the carried and dropped item (Dave 2026-10-22: the chopping block item looks exactly like the placed one).
+static func block_mesh() -> ArrayMesh:
+	return _block_mesh()
+
+
 static func block() -> Node3D:
 	var root: Node3D = Node3D.new()
 	root.add_child(_instance(_block_mesh()))

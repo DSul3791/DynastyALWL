@@ -8,6 +8,7 @@ extends Node
 # the normal stance. The weapon is drawn as a simple first-person model until real art exists.
 
 const Net := preload("res://src/stream/terrain_net.gd")
+const BuildingLook := preload("res://src/client/building_look.gd")
 const PlacementRules := preload("res://src/shared/placement_rules.gd")
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
 
@@ -812,15 +813,8 @@ func _make_kit_model() -> Node3D:
 		node.add_child(mark)
 		return node
 
-	if id == "chopping_block_kit":
-		var block: MeshInstance3D = MeshInstance3D.new()
-		var cyl: CylinderMesh = CylinderMesh.new()
-		cyl.top_radius = 0.1
-		cyl.bottom_radius = 0.11
-		cyl.height = 0.16
-		cyl.material = _kit_material(Color(0.4, 0.28, 0.17))
-		block.mesh = cyl
-		node.add_child(block)
+	if id == "chopping_block_kit" or id == "chopping_block":
+		node.add_child(BuildingLook.block())       # the same model as the placed block
 		return node
 
 	# Lean-to and campfire: a bundle of sticks across the hand; the lean-to is tied and leafy, the fire has stones at one end.
