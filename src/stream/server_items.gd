@@ -1265,13 +1265,17 @@ func _dig(peer: int, inv, at: Vector3) -> void:
 		return
 
 	var now: int = Time.get_ticks_msec()
+	var reach: float = _spade_reach(inv)
 
-	if now - int(_last_dig.get(peer, -100000)) < DIG_COOLDOWN_MS:
+	if float(now - int(_last_dig.get(peer, -100000))) < float(DIG_COOLDOWN_MS) * reach:
 		return
 
 	_last_dig[peer] = now
-	_wear_tool(peer, inv, "spade", "dig")
-	var dug: Variant = dig_ground.call(at - Vector3(0.0, DIG_DEPTH_M, 0.0), DIG_RADIUS_M)
+
+	for n in maxi(1, int(round(reach))):
+		_wear_tool(peer, inv, "spade", "dig")
+
+	var dug: Variant = dig_ground.call(at - Vector3(0.0, DIG_DEPTH_M, 0.0), DIG_RADIUS_M * reach)
 
 	# The ground answers false when the dig changed nothing (a block is full, or the hole was already there): no yield, no fall.
 	if typeof(dug) == TYPE_BOOL and not bool(dug):
@@ -1280,7 +1284,7 @@ func _dig(peer: int, inv, at: Vector3) -> void:
 
 		return
 
-	_give_dig_yield(peer, at, _spade_tier(inv))
+	_give_dig_yield(peer, at, _spade_tier(inv), _spade_pieces(inv))
 	_fell_undermined(peer, at)
 	_dirty = true
 
@@ -1307,7 +1311,7 @@ func _fill(peer: int, inv, at: Vector3) -> void:
 
 	var now: int = Time.get_ticks_msec()
 
-	if now - int(_last_dig.get(peer, -100000)) < DIG_COOLDOWN_MS:
+	if float(now - int(_last_dig.get(peer, -100000))) < float(DIG_COOLDOWN_MS) * _spade_reach(inv):
 		return
 
 	# Raise mode (Dave 2026-10-22): the ground that goes up comes from the shovel's load, filled by dragging soil or stone onto it.
@@ -1318,13 +1322,17 @@ func _fill(peer: int, inv, at: Vector3) -> void:
 		return
 
 	var material_item: String = table.id_of(int(loaded[0]))
+	var pieces: int = mini(_spade_pieces(inv), int(loaded[1]))   # a medium or large spade moves up to 4 or 8 pieces in a stroke
 	_last_dig[peer] = now
-	_set_spade_load(peer, int(loaded[0]), int(loaded[1]) - 1)
-	_wear_tool(peer, inv, "spade", "dig")
-	var done: Variant = fill_ground.call(at + Vector3(0.0, FILL_UP_M, 0.0), FILL_RADIUS_M, int(FILL_SOIL.get(material_item, 5)))
+	_set_spade_load(peer, int(loaded[0]), int(loaded[1]) - pieces)
+
+	for n in maxi(1, int(round(pow(float(pieces), 1.0 / 3.0)))):
+		_wear_tool(peer, inv, "spade", "dig")
+
+	var done: Variant = fill_ground.call(at + Vector3(0.0, FILL_UP_M, 0.0), FILL_RADIUS_M * pow(float(pieces), 1.0 / 3.0), int(FILL_SOIL.get(material_item, 5)))
 
 	if typeof(done) == TYPE_BOOL and not bool(done):
-		_set_spade_load(peer, int(loaded[0]), int(loaded[1]))   # the ground refused it: the shovelful stays loaded
+		_set_spade_load(peer, int(loaded[0]), int(loaded[1]))   # the ground refused it: the shovelfuls stay loaded
 
 	_dirty = true
 
@@ -1378,7 +1386,8 @@ func _try_load_spade(peer: int, inv, from_slot: int, to_slot: int) -> bool:
 		_say(peer, "The shovel holds %s: unload it first (Shift and right click)" % table.name_of(int(loaded[0])).to_lower())
 		return true
 
-	var room: int = SPADE_LOAD_MAX - int(loaded[1])
+	var cap: int = int(_dig_cfg.get("spade_sizes", {}).get(str(table.entry(table.id_of(inv.numbers[to_slot])).get("spade_size", "small")), {}).get("load_cap", SPADE_LOAD_MAX))
+	var room: int = cap - int(loaded[1])
 
 	if room <= 0:
 		_say(peer, "The shovel is full")
@@ -1463,12 +1472,28 @@ func _fell_undermined(peer: int, at: Vector3) -> void:
 
 
 # What a dig brings up (data/items/digging.json): shovelfuls by the surface material at the hole, through luck, counted by weight.
+# Spade sizes (Dave 2026-10-22, digging.json "spade_sizes"): a small shovel moves 1 piece (shovelful) per stroke, a medium 4, a large 8.
+# The sphere it digs or raises grows with the cube root of the pieces (so its volume goes with them), and so do its pace and its wear.
+func _spade_size(inv) -> Dictionary:
+	var slot: int = _tool_slot(inv, "spade")
+	var name: String = str(table.entry(table.id_of(inv.numbers[slot])).get("spade_size", "small")) if slot >= 0 else "small"
+	return _dig_cfg.get("spade_sizes", {}).get(name, {"pieces": 1, "load_cap": SPADE_LOAD_MAX})
+
+
+func _spade_pieces(inv) -> int:
+	return maxi(1, int(_spade_size(inv).get("pieces", 1)))
+
+
+func _spade_reach(inv) -> float:
+	return pow(float(_spade_pieces(inv)), 1.0 / 3.0)
+
+
 func _spade_tier(inv) -> int:
 	var slot: int = _tool_slot(inv, "spade")
 	return int(table.entry(table.id_of(inv.numbers[slot])).get("tier", 1)) if slot >= 0 else 1
 
 
-func _give_dig_yield(peer: int, at: Vector3, tier: int = 1) -> void:
+func _give_dig_yield(peer: int, at: Vector3, tier: int = 1, pieces: int = 1) -> void:
 	if not ground_material.is_valid() or _dig_cfg.is_empty():
 		return
 
@@ -1481,7 +1506,7 @@ func _give_dig_yield(peer: int, at: Vector3, tier: int = 1) -> void:
 		var amount: int = roll_amount(peer, _fate_rng, int(row[1]), int(row[2]) + extra)
 
 		if number > 0 and amount > 0:
-			give(peer, number, maxi(1, int(round(float(amount) * skill_factor(peer, "dig")))))
+			give(peer, number, maxi(1, int(round(float(amount) * skill_factor(peer, "dig")))) * pieces)
 
 	practice(peer, "dig")
 	var under: Array = _dig_cfg.get("under", {}).get(material, [])
