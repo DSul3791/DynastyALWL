@@ -1153,7 +1153,7 @@ func _welcome_body(info: Dictionary) -> void:
 	items.register_interactable("drink_held", 36, func():
 		return {"prompt": "Press E to drink", "tap": func(): items.eat_slot(items.held_container_slot())} if items.thirst < 100 and items.held_container_has_water() else {})
 	items.register_interactable("plant", 40, func():
-		return {} if items.plant_hint == "" else {"prompt": items.plant_hint, "tap": harvest.tap})
+		return {} if items.plant_hint == "" else {"prompt": items.plant_hint, "quiet": not items.plant_aimed, "tap": harvest.tap})
 	held = HeldItemScript.new()
 	held.name = "Held"
 	add_child(held)

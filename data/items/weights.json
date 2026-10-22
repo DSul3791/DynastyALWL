@@ -272,7 +272,10 @@
 		"fish_stew": 0.3,
 		"trail_bread": 0.3,
 		"hearty_pottage": 0.3,
-		"feast_roast": 0.3
+		"feast_roast": 0.3,
+		"wall_section_kit": 12.0,
+		"floor_section_kit": 12.0,
+		"roof_section_kit": 15.0
 	},
 	"by_suffix": {
 		"berries": 0.05,

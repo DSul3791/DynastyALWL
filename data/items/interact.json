@@ -1,0 +1,6 @@
+{
+	"note": "Pick and gather (Dave 2026-10-22). prompt_reach_m: the 'Press E to gather' text only shows for something this close that you are aiming at; aim_cos: how straight you must look at it (cosine of the angle, 0.9 is about 25 degrees). reach_m: how far E reaches to pick up or gather on the client; the server allows 1 m more for lag. Read by src/shared/interact_rules.gd on both sides.",
+	"prompt_reach_m": 2.0,
+	"aim_cos": 0.9,
+	"reach_m": 2.5
+}

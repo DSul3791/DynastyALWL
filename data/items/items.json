@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 192,
+	"next_number": 198,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -2103,6 +2103,63 @@
 			"stack": 10,
 			"value": 75,
 			"look_alikes": []
+		},
+		"wall_section_kit": {
+			"number": 192,
+			"name": "Wall section",
+			"description": "A plank wall, two metres wide. Set pieces edge to edge to build a house.",
+			"kind": "placeable",
+			"stack": 1,
+			"look_alikes": [],
+			"value": 30
+		},
+		"wall_section": {
+			"number": 193,
+			"name": "Wall section",
+			"description": "A plank wall, two metres wide. Set pieces edge to edge to build a house.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": [],
+			"material": "planks",
+			"note": "Building piece: row state 22; sits on a 1 m grid, turns in quarter circles."
+		},
+		"floor_section_kit": {
+			"number": 194,
+			"name": "Floor section",
+			"description": "A plank floor, two metres square. Set pieces edge to edge to build a house.",
+			"kind": "placeable",
+			"stack": 1,
+			"look_alikes": [],
+			"value": 30
+		},
+		"floor_section": {
+			"number": 195,
+			"name": "Floor section",
+			"description": "A plank floor, two metres square. Set pieces edge to edge to build a house.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": [],
+			"material": "planks",
+			"note": "Building piece: row state 23; sits on a 1 m grid, turns in quarter circles."
+		},
+		"roof_section_kit": {
+			"number": 196,
+			"name": "Roof section",
+			"description": "A plank roof on four posts, to set over walls and floors.",
+			"kind": "placeable",
+			"stack": 1,
+			"look_alikes": [],
+			"value": 40
+		},
+		"roof_section": {
+			"number": 197,
+			"name": "Roof section",
+			"description": "A plank roof on four posts, to set over walls and floors.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": [],
+			"material": "planks",
+			"note": "Building piece: row state 24; sits on a 1 m grid, turns in quarter circles."
 		}
 	}
 }

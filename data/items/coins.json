@@ -55,6 +55,15 @@
 			"rate": 0.4,
 			"say_done": "Mended.",
 			"note": "A smith with 'repairs': true in shops.json mends a worn or broken tool for value x rate x the share of durability used x the stranger/reputation pay multiple; the tool comes back as new."
+		},
+		"sell_extras": {
+			"kinds": [
+				"material",
+				"food",
+				"medicine"
+			],
+			"valuable_from": 50,
+			"note": "The one-click 'Would you like to buy my extra stuff?' sale (Dave 2026-10-22): sells every stack of these kinds worth less than valuable_from copper each. Tools, weapons, coins, gear, clothing, kits and anything worth more are never swept; sell those one by one."
 		}
 	}
 }

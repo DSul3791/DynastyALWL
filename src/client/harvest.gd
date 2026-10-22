@@ -8,7 +8,7 @@ extends RefCounted
 
 const GatherRules := preload("res://src/shared/gather_rules.gd")
 
-const TAP_REACH_M := 2.5
+const Interact := preload("res://src/shared/interact_rules.gd")
 const SWEEP_RADIUS_M := 2.0
 const SWEEP_AFTER_S := 0.35         # E held this long starts the sweep
 const SWEEP_EVERY_S := 0.2          # then one pick per step (5 a second)
@@ -90,7 +90,7 @@ func update(delta: float, e_down: bool) -> void:
 
 # E tapped with nothing on the ground in reach: pick the nearest pickable plant, or say why not.
 func tap() -> void:
-	var found: Array = _candidates(TAP_REACH_M, true)
+	var found: Array = _candidates(Interact.reach_m(), true)
 
 	for c in found:
 		if c["ok"]:
@@ -118,14 +118,16 @@ func _is_nothing(c: Dictionary) -> bool:
 
 
 func _hint() -> String:
-	var found: Array = _candidates(TAP_REACH_M, true)
+	var found: Array = _candidates(Interact.reach_m(), true)
 
 	if found.is_empty():
 		return ""
 
 	# Dave 2026-10-21: only "Press E to gather", no name and no "hold E". A missing tool is told after the press (message and cue).
+	# Dave 2026-10-22: the text shows only while looking straight at it within the prompt reach (plant_aimed); E still works without it.
 	for c in found:
 		if c["ok"] or not _is_nothing(c):
+			_items.plant_aimed = _items.aimed_at(c["pos"] + Vector3(0.0, 0.6, 0.0))
 			return "Press E to gather"
 
 	return ""

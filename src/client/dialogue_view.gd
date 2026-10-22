@@ -24,13 +24,15 @@ var _shop_buys: PackedStringArray = PackedStringArray()
 var _shop_stock: Dictionary = {}           # item id -> how many he has on the shelf
 var _shop_supply: Dictionary = {}          # item id -> supply price multiple (a full shelf is cheaper)
 var _shop_repairs: bool = false            # this trader mends tools (data/npcs/shops.json "repairs")
+var _extras_kinds: Array = ["material", "food", "medicine"]   # coins.json trade.sell_extras: what the one-click sale may sell
+var _extras_below: int = 50                 # and only stacks worth less than this many copper each
 var _repair_rate: float = 0.4              # data/items/coins.json trade.repair.rate
 var _shop_till: int = -1                   # the coin in the trader's purse, -1 = unlimited
 var _shop_tired: Dictionary = {}           # item id -> demand multiple (the trader is tired of buying it)
 var _shop_buy_box: VBoxContainer
 var _shop_sell_box: VBoxContainer
 var _shop_sell_all: Button                  # "Sell all but tools": the first press shows the total, the second sells
-var _sell_all_armed: bool = false
+var _sell_all_result: String = ""            # "Sold ..." line shown beside the purse after the button
 var _sell_all_slots: Array = []             # pack slots the button would sell
 var _sell_all_total: int = 0
 var _shop_purse: Label
@@ -165,6 +167,7 @@ func close() -> void:
 		_shop_panel.visible = false
 
 	_shop_npc = ""
+	_sell_all_result = ""
 
 	if items != null and items.dialogue_open:
 		items.dialogue_open = false
@@ -258,6 +261,11 @@ func _on_shop(npc_id: String, title: String, ids: PackedStringArray, pay_milli: 
 	_shop_repairs = typeof(shops) == TYPE_DICTIONARY and bool(shops.get(npc_id, {}).get("repairs", false))
 	_repair_rate = float(coins.get("trade", {}).get("repair", {}).get("rate", 0.4)) if typeof(coins) == TYPE_DICTIONARY else 0.4
 
+	if typeof(coins) == TYPE_DICTIONARY:
+		var extras: Dictionary = coins.get("trade", {}).get("sell_extras", {})
+		_extras_kinds = extras.get("kinds", _extras_kinds)
+		_extras_below = int(extras.get("valuable_from", _extras_below))
+
 	for i in ids.size():
 		_shop_stock[ids[i]] = stock[i]
 		_shop_supply[ids[i]] = float(supply_milli[i]) / 1000.0
@@ -322,7 +330,7 @@ func _refresh_shop() -> void:
 		return
 
 	_shop_title_label.text = _shop_title
-	_shop_purse.text = "Purse: %s    " % items.coin_text(items.purse_copper) + ("His purse: %s    " % items.coin_text(_shop_till) if _shop_till >= 0 else "")
+	_shop_purse.text = "Purse: %s    " % items.coin_text(items.purse_copper) + ("His purse: %s    " % items.coin_text(_shop_till) if _shop_till >= 0 else "") + _sell_all_result
 
 	for child in _shop_buy_box.get_children():
 		child.queue_free()
@@ -340,7 +348,6 @@ func _refresh_shop() -> void:
 	var any: bool = false
 	_sell_all_slots.clear()
 	_sell_all_total = 0
-	_sell_all_armed = false
 
 	for slot in items.inventory.numbers.size():
 		if items.inventory.numbers[slot] == 0:
@@ -354,7 +361,7 @@ func _refresh_shop() -> void:
 		any = true
 		var entry2: Dictionary = items.table.entry(items.table.id_of(items.inventory.numbers[slot]))
 
-		if str(entry2.get("tool_class", "")) == "" and not str(entry2.get("kind", "")) in ["tool", "weapon"]:
+		if _extras_kinds.has(str(entry2.get("kind", ""))) and str(entry2.get("tool_class", "")) == "" and int(entry2.get("value", 0)) < _extras_below:
 			_sell_all_slots.append(slot)
 			_sell_all_total += each * items.inventory.counts[slot]
 
@@ -383,28 +390,24 @@ func _update_sell_all() -> void:
 		return
 
 	_shop_sell_all.disabled = _sell_all_slots.is_empty()
+	_shop_sell_all.tooltip_text = "Sells everything except tools, weapons, coins and valuables (worth %s or more each). Sell those one at a time below." % items.coin_text(_extras_below)
 
 	if _sell_all_slots.is_empty():
-		_shop_sell_all.text = "Sell all but tools  -  nothing to sell"
-	elif _sell_all_armed:
-		_shop_sell_all.text = "Sell %d kinds of item for about %s?  Press again to sell" % [_sell_all_slots.size(), items.coin_text(_sell_all_total)]
+		_shop_sell_all.text = "Would you like to buy my extra stuff?  (nothing to spare)"
 	else:
-		_shop_sell_all.text = "Sell all but tools  (about %s)" % items.coin_text(_sell_all_total)
+		_shop_sell_all.text = "Would you like to buy my extra stuff?  (about %s)" % items.coin_text(_sell_all_total)
 
 
 func _on_sell_all_pressed() -> void:
 	if _sell_all_slots.is_empty():
 		return
 
-	if not _sell_all_armed:
-		_sell_all_armed = true
-		_update_sell_all()
-		return
-
-	_sell_all_armed = false
+	_sell_all_result = "Sold %d kinds of extra stuff for about %s." % [_sell_all_slots.size(), items.coin_text(_sell_all_total)]
 
 	for slot in _sell_all_slots.duplicate():
 		net.trade.rpc_id(1, _shop_npc, 1, slot, 999)
+
+	_refresh_shop()
 
 
 func _shop_row(parent: VBoxContainer, text: String, tip: String, index: int, kind: int, enabled: bool) -> void:

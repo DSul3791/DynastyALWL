@@ -30,7 +30,7 @@ func _init() -> void:
 	# Slope (design 10.1): the ghost is red until the ground is a reasonable shape.
 	var flat: Callable = func(_x, _z): return 10.0
 	var ramp: Callable = func(x, _z): return 10.0 + 0.5 * x   # rises 0.5 m per metre along x
-	var hole: Callable = func(x, _z): return NAN
+	var hole: Callable = func(_x, _z): return NAN
 	check(Rules.steep(cfg, "lean_to_kit", Vector3(0, 10, 0), 0.0, flat) == "", "flat ground takes a lean-to")
 	check(Rules.steep(cfg, "lean_to_kit", Vector3(0, 10, 0), 0.0, ramp) == "steep", "a lean-to on a 50 percent slope is red (rise 1.2 m over 2.4 m)")
 	check(Rules.steep(cfg, "campfire_kit", Vector3(0, 10, 0), 0.0, ramp) == "steep", "a campfire on the same slope is red (rise 0.8 m over 1.6 m, limit 0.6)")
@@ -59,7 +59,7 @@ func _init() -> void:
 	items.send_slots = func(_p, _b): pass
 	items.send_world_items = func(_p, _a, _r): pass
 	items.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
-	items.ground_height = func(x, z): return 10.0
+	items.ground_height = func(_x, _z): return 10.0
 	items.setup(ItemTableScript.load_default(), dir)
 	items.peer_connected_hello(1, "placekey00001")
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
@@ -69,6 +69,7 @@ func _init() -> void:
 	var spots: Array = []
 
 	for n in range(60):
+		@warning_ignore("integer_division")
 		spots.append(Vector3(float(n % 6) * 1.7 - 4.0, 10.0, float(n / 6) * 1.7 - 5.0))
 
 	for n in range(spots.size()):
@@ -99,5 +100,20 @@ func _init() -> void:
 			print("DISAGREE ", kit, " at ", spots[n], " ghost says '", says, "' server placed ", placed)
 
 	check(agree == total, "the ghost agrees with the server on %d of %d placements" % [agree, total])
+	# Building pieces: they click to a 1 m grid and quarter turns and sit edge to edge, though other structures keep their gap.
+	var on_grid: Array = Rules.snap(cfg, "wall_section_kit", Vector3(10.4, 10.0, 7.6), 133)
+	check(on_grid[0] == Vector3(10.0, 10.0, 8.0) and int(on_grid[1]) == 90, "a wall snaps to the 1 m grid and a quarter turn (%s)" % str(on_grid))
+	check(Rules.snap(cfg, "chest_kit", Vector3(10.4, 10.0, 7.6), 133)[0] == Vector3(10.4, 10.0, 7.6), "a chest keeps its own spot")
+	items.report_position(1, Vector3(200.0, 10.0, 200.0))
+	var walls_before: int = items.world_item_count()
+
+	for spot in [Vector3(198.0, 10.0, 202.0), Vector3(200.0, 10.0, 202.0), Vector3(202.0, 10.0, 202.0), Vector3(200.0, 10.0, 203.0)]:
+		items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("wall_section_kit"), 0, 1, Vector3.ZERO)
+		items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("wall_section_kit")), 0, 0, spot)
+
+	check(items.world_item_count() == walls_before + 4, "four wall sections stand edge to edge, 2 m and 1 m apart (%d placed)" % (items.world_item_count() - walls_before))
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("chest_kit"), 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("chest_kit")), 0, 0, Vector3(200.0, 10.0, 202.5))
+	check(items.world_item_count() == walls_before + 4, "a chest is still kept 2.5 m from a wall")
 	print("placement rules: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

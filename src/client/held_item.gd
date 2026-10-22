@@ -52,6 +52,7 @@ var _arms                                 # first-person arms (Ragdoll.new(true)
 var _stop_t: float = 0.0                  # hit stop left, seconds
 var _shoulder_log: MeshInstance3D          # the log across the shoulder (set_shoulder)
 var _arm_up: float = 0.0                  # 0 arms hang at the body's side, 1 raised to the camera pose (swing, jab, use, aim)
+var _blueprint_yaw: int = 0               # the turn (degrees) the ghost will be placed at
 var _first_person: bool = true
 var _avatar_rig                          # the full body (ragdoll_body.gd) drawn in third person, or null
 var _mounted: bool = false                # the model is in the hand: the arm animations move it, not the offsets below
@@ -236,7 +237,7 @@ func mouse_button(button: int, pressed: bool) -> bool:
 
 	if _is_placeable():
 		if button == MOUSE_BUTTON_LEFT and pressed and _blueprint_ok:
-			_net.inventory_action.rpc_id(1, Net.ACT_PLACE, held_slot, 0, posmod(int(round(rad_to_deg(_camera.global_rotation.y))), 360), _blueprint_at)
+			_net.inventory_action.rpc_id(1, Net.ACT_PLACE, held_slot, 0, _blueprint_yaw, _blueprint_at)
 
 		return button == MOUSE_BUTTON_LEFT
 
@@ -533,9 +534,11 @@ func _update_blueprint() -> void:
 	if hit.is_empty():
 		return
 
-	_blueprint_at = hit["position"]
+	var on_grid: Array = PlacementRules.snap(_placement, held_id(), hit["position"], posmod(int(round(rad_to_deg(_camera.global_rotation.y))), 360))
+	_blueprint_at = on_grid[0]
+	_blueprint_yaw = int(on_grid[1])
 	_blueprint.global_position = _blueprint_at + Vector3(0.0, 0.04, 0.0)
-	_blueprint.rotation.y = _camera.global_rotation.y
+	_blueprint.rotation.y = deg_to_rad(float(_blueprint_yaw)) if PlacementRules.structure_of_kit(_placement, held_id()).get("piece", false) else _camera.global_rotation.y
 	blueprint_state = PlacementRules.blocked(_placement, held_id(), _blueprint_at, _inv.placed_rows())
 
 	if blueprint_state == "":

@@ -177,6 +177,40 @@
 			"tier": "epic",
 			"reach_m": 6.0,
 			"addon_reach_m": 5.0
+		},
+		"wall_section": {
+			"kit": "wall_section_kit",
+			"item": "wall_section",
+			"state": 22,
+			"piece": true,
+			"footprint_x": 2.0,
+			"footprint_z": 0.25,
+			"cap_per_chunk": 200,
+			"max_rise_m": 0.6
+		},
+		"floor_section": {
+			"kit": "floor_section_kit",
+			"item": "floor_section",
+			"state": 23,
+			"piece": true,
+			"footprint_x": 2.0,
+			"footprint_z": 2.0,
+			"cap_per_chunk": 200,
+			"max_rise_m": 0.6
+		},
+		"roof_section": {
+			"kit": "roof_section_kit",
+			"item": "roof_section",
+			"state": 24,
+			"piece": true,
+			"shelter": true,
+			"footprint_x": 2.4,
+			"footprint_z": 2.4,
+			"cap_per_chunk": 100,
+			"half_x": 1.2,
+			"half_z": 1.2,
+			"height": 2.6,
+			"max_rise_m": 0.6
 		}
 	},
 	"campfire": {
@@ -184,5 +218,6 @@
 		"cap_per_chunk": 8,
 		"max_rise_m": 0.6
 	},
-	"max_rise_m": 1.0
+	"max_rise_m": 1.0,
+	"piece_snap_m": 1.0
 }

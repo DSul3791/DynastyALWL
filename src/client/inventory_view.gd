@@ -1,4 +1,6 @@
 extends Node
+const Interact := preload("res://src/shared/interact_rules.gd")
+const PieceLook := preload("res://src/client/piece_look.gd")
 const BuildingLook := preload("res://src/client/building_look.gd")
 
 # The client side of items: the inventory panel (I), things lying on the ground (E picks up
@@ -121,6 +123,7 @@ var rep_points: PackedInt32Array = PackedInt32Array()
 var _coins_cfg: Dictionary = {}
 var _rep_cfg: Dictionary = {}
 var _carry_bar: ProgressBar              # carried weight against what you can carry: green, yellow from 70 percent, red from 80
+var plant_aimed: bool = true             # the plant to gather is straight ahead, within the prompt reach (harvest.gd)
 var plant_hint: String = ""            # set by the harvest prompt (harvest.gd)
 var _crafting: int = 0                # recipe at the head of the server's queue (0 none); the work sounds follow it
 var craft_entries: Array = []          # the server's crafting queue: [[recipe, crafts left], ...], head first
@@ -374,9 +377,25 @@ func _probe_pickup() -> Dictionary:
 		return {}
 
 	var id: int = near[0]
-	return {"prompt": "Press E to gather", "tap": func():
+	return {"prompt": "Press E to gather", "quiet": not aimed_at(_world[id]["pos"]), "tap": func():
 		clear_prompt()
 		net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)}
+
+
+# Dave 2026-10-22: the pick text shows only for something you are looking straight at, within interact.json prompt_reach_m. E still
+# picks up what is merely near (reach_m), without the text. Unset view direction (tests) counts as aimed.
+func aimed_at(point: Vector3) -> bool:
+	if not view_direction.is_valid():
+		return true
+
+	var eye: Vector3 = _player_position.call() + Vector3(0.0, 1.6, 0.0)
+	var to: Vector3 = point - eye
+
+	if Vector2(to.x, to.z).length() > Interact.prompt_reach_m():
+		return false
+
+	var forward: Vector3 = view_direction.call()
+	return forward.length() < 0.01 or to.normalized().dot(forward.normalized()) >= Interact.aim_cos()
 
 
 # Held E (harvest.gd steps this): the nearest loose item within 2 m, wherever you look, one at a time. 0 when none, when
@@ -573,7 +592,8 @@ func _process_body(_delta: float) -> void:
 
 	if now < _notice_until_msec:
 		return
-	_prompt.text = str(current_interaction().get("prompt", ""))
+	var interaction: Dictionary = current_interaction()
+	_prompt.text = "" if bool(interaction.get("quiet", false)) else str(interaction.get("prompt", ""))
 
 	if _prompt.text == "" and stance_confirmed == 3 and not asleep and strain_state < 2:
 		_prompt.text = "Hold Z to sleep"
@@ -642,7 +662,7 @@ func fuel_nearest() -> void:
 func _nearest(view_only: bool = false) -> Array:
 	var here: Vector3 = _player_position.call()
 	var best: Array = [0, 0, 0]
-	var best_d: float = PICKUP_M
+	var best_d: float = Interact.reach_m()
 
 	for id in _world:
 		if _world[id]["state"] != 0 or (view_only and not in_view(_world[id]["pos"])):
@@ -1356,7 +1376,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 		if state >= 5:
 			var yaw: float = deg_to_rad(float(row[5].get("yaw", 0.0))) if row.size() > 5 else 0.0
-			node = _make_leanto() if state == 5 else (_make_chest() if state == 6 else (_make_remains(float(row[5].get("age", 0.0)) if row.size() > 5 else 0.0) if (state == 11 or state == 12) else (_make_bench() if state == 13 else (_make_rack() if state == 14 else (_make_vice() if state == 15 else (_make_log_bench() if state == 16 else (_make_forge() if state == 17 else (_make_smithy() if state == 18 else (_make_big_forge(state) if (state == 20 or state == 21) else (_make_carcass(str(row[5].get("sp", "")) if row.size() > 5 else "") if state == 19 else _make_block()))))))))))
+			node = _make_leanto() if state == 5 else (_make_chest() if state == 6 else (_make_remains(float(row[5].get("age", 0.0)) if row.size() > 5 else 0.0) if (state == 11 or state == 12) else (_make_bench() if state == 13 else (_make_rack() if state == 14 else (_make_vice() if state == 15 else (_make_log_bench() if state == 16 else (_make_forge() if state == 17 else (_make_smithy() if state == 18 else (_make_big_forge(state) if (state == 20 or state == 21) else (PieceLook.wall() if state == 22 else (PieceLook.floor_piece() if state == 23 else (PieceLook.roof() if state == 24 else (_make_carcass(str(row[5].get("sp", "")) if row.size() > 5 else "") if state == 19 else _make_block())))))))))))))
 			node.position = row[3] - Vector3(0.0, SINK_M * float(row[5].get("age", 0.0)), 0.0) if (state == 11 or state == 12) and row.size() > 5 else row[3]
 			node.rotation.y = yaw
 			_root.add_child(node)
@@ -1364,6 +1384,8 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 			if state == 5 and cover_index != null:
 				roof_key = cover_index.add_roof(CoverScript.box_roof(Vector2(row[3].x, row[3].z), 1.1, 0.95, yaw, row[3].y - 0.5, row[3].y + 2.1))
+			elif state == 24 and cover_index != null:
+				roof_key = cover_index.add_roof(CoverScript.box_roof(Vector2(row[3].x, row[3].z), 1.2, 1.2, yaw, row[3].y - 0.5, row[3].y + 2.6))
 
 			_world[id] = {"node": node, "number": row[1], "count": 1, "pos": row[3], "state": state, "light": null, "roof": roof_key}
 			continue

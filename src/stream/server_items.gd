@@ -63,6 +63,7 @@ const GatherRules := preload("res://src/shared/gather_rules.gd")
 const SkillRules := preload("res://src/shared/skill_rules.gd")
 const SkillWeb := preload("res://src/shared/skill_web.gd")
 const PlacementRules := preload("res://src/shared/placement_rules.gd")
+const Interact := preload("res://src/shared/interact_rules.gd")
 const GATHER_PACE_MS := 80              # at most about 12 picks a second per player (hold-E sweep)
 const MINE_REACH_M := 4.5
 const MINE_COOLDOWN_MS := 700
@@ -757,7 +758,7 @@ func was_picked(flora_key: String) -> bool:
 
 
 func gather(peer: int, species_name: String, kind: String, flora_key: String, flora_id: int, plant_position: Vector3) -> bool:
-	if not _peer_pos.has(peer) or _peer_pos[peer].distance_to(plant_position) > GATHER_M:
+	if not _peer_pos.has(peer) or _peer_pos[peer].distance_to(plant_position) > Interact.server_reach_m():
 		return false
 
 	var now_ms: int = Time.get_ticks_msec()
@@ -1444,6 +1445,9 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0) -> void:
 	if _peer_pos[peer].distance_to(at) > PLACE_REACH_M or (kit_id != "campfire_kit" and _structure_of_kit(kit_id).is_empty()):
 		return
 
+	var on_grid: Array = PlacementRules.snap(_structures_cfg, kit_id, at, yaw_deg)
+	at = on_grid[0]
+	yaw_deg = int(on_grid[1])
 	var ground: float = float(ground_height.call(at.x, at.z)) if ground_height.is_valid() else at.y
 
 	if is_nan(ground) or absf(ground - at.y) > 1.0 or ground < 1.0:
@@ -1522,7 +1526,7 @@ func _pickup(peer: int, inv, id: int) -> void:
 	if it.is_empty() or it.has("fire") or it.has("tree") or it.has("boulder") or not _peer_pos.has(peer):
 		return
 
-	if _peer_pos[peer].distance_to(it["pos"]) > PICKUP_M + 2.0:
+	if _peer_pos[peer].distance_to(it["pos"]) > Interact.server_reach_m():
 		_reject(peer, 0)
 		return
 
@@ -2814,7 +2818,9 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 	for id in _items:
 		var other: Dictionary = _items[id]
 
-		if other["pos"].distance_to(spot) < _struct_gap_m and (other.has("struct") or other.has("fire")):
+		var both_pieces: bool = bool(def.get("piece", false)) and other.has("struct") and bool(_structures.get(str(other["struct"]["kind"]), {}).get("piece", false))
+
+		if other["pos"].distance_to(spot) < _struct_gap_m and (other.has("struct") or other.has("fire")) and not both_pieces:
 			return
 
 		if other.has("struct") and str(other["struct"]["kind"]) == str(def["kind"]) and _chunk_of(other["pos"]) == here_chunk:
@@ -2860,7 +2866,7 @@ func register_roofs() -> void:
 func _take_down(peer: int, inv, id: int) -> void:
 	var it: Dictionary = _items.get(id, {})
 
-	if it.is_empty() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(it["pos"]) > PICKUP_M + 2.0:
+	if it.is_empty() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(it["pos"]) > Interact.server_reach_m():
 		return
 
 	var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})

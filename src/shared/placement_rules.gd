@@ -28,6 +28,19 @@ static func structure_of_kit(cfg: Dictionary, kit_id: String) -> Dictionary:
 	return {}
 
 
+# Building pieces (walls, floors, roofs: structures.json "piece": true) click to a grid: x and z to piece_snap_m metres, the turn to
+# a quarter circle, so neighbours meet edge to edge. Anything else keeps its spot and turn. Returns [spot, yaw in degrees].
+static func snap(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int) -> Array:
+	var def: Dictionary = structure_of_kit(cfg, kit_id)
+
+	if def.is_empty() or not bool(def.get("piece", false)):
+		return [spot, yaw_deg]
+
+	var grid: float = maxf(float(cfg.get("piece_snap_m", 1.0)), 0.1)
+	var turned: int = posmod(int(round(float(yaw_deg) / 90.0)) * 90, 360)
+	return [Vector3(round(spot.x / grid) * grid, spot.y, round(spot.z / grid) * grid), turned]
+
+
 # The ghost's footprint in metres: zero for a campfire (drawn as a ring).
 static func footprint(cfg: Dictionary, kit_id: String) -> Vector2:
 	var def: Dictionary = structure_of_kit(cfg, kit_id)
