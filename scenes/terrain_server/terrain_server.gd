@@ -115,6 +115,8 @@ var _quit_when_empty: bool = false
 var _empty_since_msec: int = 0
 var _quit_grace_msec: int = 10000
 var _never_joined: bool = true
+var _tiles_changed: Dictionary = {}     # tiles edited since the clients were told (tile_changed goes out at most every 0.5 s)
+var _tiles_told_msec: int = 0
 var _events = EventLogScript.new()      # user://server_events.log: peers, stalls, quit reason (why a client was dropped)
 var _report_at_msec: int = 0
 var _idle_threads: int = 2             # idle builder threads (--idle-threads=N, 0 turns it off)
@@ -960,11 +962,28 @@ func _on_dig_requested(peer_id: int, center: Vector3, radius: float) -> void:
 	_dig_ground(center, radius)
 
 
+# The first edit after a quiet half second is announced at once; edits that follow within it are announced together when it ends
+# (_process), each announcement making every client forget what it fetched ahead and ask again.
+func _tell_tile_changed(tile: Vector2i) -> void:
+	var now: int = Time.get_ticks_msec()
+
+	if now - _tiles_told_msec >= 500 and _tiles_changed.is_empty():
+		_tiles_told_msec = now
+		net.tile_changed.rpc(tile, store.revision_of(tile))
+	else:
+		_tiles_changed[tile] = true
+
+
 func _dig_ground(center: Vector3, radius: float) -> bool:
 	var tiles: Array = store.dig_sphere(center, radius)
 
+	# Nothing changed (the ground there is already dug out, or the block's log is full): no message to the clients, no
+	# water wake, no log line. A held click on one spot used to do all of it every time and the server fell behind.
+	if tiles.is_empty():
+		return false
+
 	for tile in tiles:
-		net.tile_changed.rpc(tile, store.revision_of(tile))
+		_tell_tile_changed(tile)
 
 	net.dug.rpc(center, radius)
 
@@ -1009,7 +1028,7 @@ func _fill_ground(center: Vector3, radius: float, material: int) -> bool:
 	var tiles: Array = store.fill_sphere(center, radius, material)
 
 	for tile in tiles:
-		net.tile_changed.rpc(tile, store.revision_of(tile))
+		_tell_tile_changed(tile)
 
 	if not tiles.is_empty():
 		net.filled.rpc(center, radius, material)
@@ -1164,6 +1183,17 @@ func _process(delta: float) -> void:
 
 	_events.mark("checks")
 	var now: int = Time.get_ticks_msec()
+
+	# One tile_changed per tile per half second however many edits there were (each makes every client forget what it
+	# fetched ahead and ask again), and the revision file once a second.
+	if now - _tiles_told_msec >= 500:
+		_tiles_told_msec = now
+
+		for tile in _tiles_changed:
+			net.tile_changed.rpc(tile, store.revision_of(tile))
+
+		_tiles_changed.clear()
+		store.save_revisions()
 
 	var flag_path: String = _store_path + "/clear_generated.now"
 

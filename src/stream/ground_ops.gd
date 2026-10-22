@@ -284,7 +284,7 @@ func _covered(blocks: Array, centre: Vector3, radius: float) -> bool:
 		if _kinds[n] == KIND_FILL:
 			if gap < radius + _radii[n]:
 				return false
-		elif gap + radius <= _radii[n]:
+		elif gap + radius <= _radii[n] + 0.001:   # radii are stored as 32-bit floats: 0.9 came back as 0.89999998 and a repeated dig was never "covered"
 			return true
 
 	return false

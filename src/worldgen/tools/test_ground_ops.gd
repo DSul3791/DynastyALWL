@@ -50,6 +50,10 @@ func _init() -> void:
 	_check(buffer.get_voxel_f(8, 7, 8, Layout.CHANNEL_SDF) > 0.0 and buffer.get_voxel_f(0, 0, 0, Layout.CHANNEL_SDF) < 0.0, "the dig opens the ground and leaves the rest")
 
 	_check(ops.add(GroundOps.KIND_DIG, 0, centre + Vector3(0.3, 0, 0), 1.0).is_empty() and ops.coalesced == 1, "a dig inside an earlier dig is dropped")
+
+	var first_small: Array = ops.add(GroundOps.KIND_DIG, 0, centre + Vector3(0.0, 0.0, 6.0), 0.9)
+	var n_before: int = ops.count
+	_check(not first_small.is_empty() and ops.add(GroundOps.KIND_DIG, 0, centre + Vector3(0.0, 0.0, 6.0), 0.9).is_empty() and ops.count == n_before, "the same 0.9 m dig twice is saved once (32-bit radius rounding)")
 	ops.add(GroundOps.KIND_FILL, 5, centre, 1.0)
 	buffer = _ground_block()
 	ops.apply(buffer, block)
@@ -92,6 +96,7 @@ func _init() -> void:
 	var accepted: int = 0
 
 	for n in range(300):
+		@warning_ignore("integer_division")
 		var spot: Vector3 = Vector3(2.0 + float(n % 12), 4.0 + float(n / 12 % 4) * 0.01, 2.0 + float(n / 12) * 0.1)
 		accepted += 0 if busy.add(GroundOps.KIND_FILL if n % 2 == 0 else GroundOps.KIND_DIG, 1, spot, 0.6).is_empty() else 1
 
@@ -103,9 +108,11 @@ func _init() -> void:
 		DirAccess.remove_absolute(dir + "/timing.bin")
 		timing.open(dir + "/timing.bin")
 		var made: int = 0
+		@warning_ignore("confusable_local_declaration")
 		var n: int = 0
 
 		while made < want and n < 5000:
+			@warning_ignore("integer_division")
 			var spot: Vector3 = Vector3(1.5 + float(n % 13), 6.0 + float(n / 13 % 4), 1.5 + float(n / 52 % 13))
 			n += 1
 

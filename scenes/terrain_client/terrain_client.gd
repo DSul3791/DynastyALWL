@@ -67,7 +67,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 591
+const BUILD := 592
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -120,6 +120,7 @@ const QUALITY_SHADOW_M := [0.0, 45.0, 60.0, 90.0]    # 0 = no shadows
 const QUALITY_CACHE_MB := [1024, 4096, 10240, 10240]    # ground cache limit on disk
 const FLY_SPEED := 30.0
 const INCOMING_USEC := 3000           # most time a frame puts arrived chunks in the scene (one at least)
+const WATER_MIN_MSEC := 3000          # and never more often than this, ground loading or not
 const WATER_HOLD_MSEC := 2000        # water refreshes wait this long while ground loads
 const SURFACE_WAIT_MSEC := 1500       # stopped in the air: wait this long for the server to say where the ground is
 const LOAD_THREADS_MIN := 6                 # ground loading workers at least (see _ready)
@@ -484,6 +485,8 @@ func _ready() -> void:
 			test_fly_msec = int(float(argument.trim_prefix("--flytime=")) * 1000.0)
 		elif argument == "--hole-probe":
 			hole_probe = true
+		elif argument.begins_with("--dig-spam="):
+			_dig_spam_per_s = float(argument.trim_prefix("--dig-spam="))   # test: dig the same 0.9 m spot this many times a second (a held click)
 		elif argument == "--fly":
 			test_fly = true
 		elif argument.begins_with("--flyalt="):
@@ -1502,6 +1505,11 @@ func _send_water_request(now: int) -> void:
 	if stream.pending() > 0 and now - _water_asked_msec < WATER_HOLD_MSEC:
 		return
 
+	# At most one re-ask every WATER_MIN_MSEC: the server says the water moved about twice a second and answers every flora chunk
+	# held each time, which in Dave's crash logs kept its main thread about 65 percent busy.
+	if now - _water_asked_msec < WATER_MIN_MSEC:
+		return
+
 	_water_dirty = false
 	_water_asked_msec = now
 	var chunks: PackedInt32Array = PackedInt32Array()
@@ -2230,6 +2238,8 @@ func _set_menu(open: bool) -> void:
 # the dump aims where the screen centre pointed when the menu opened. The text is printed, shown and copied.
 var _dump_client: String = ""
 var _starter_seeded: int = 0
+var _dig_spam_per_s: float = 0.0
+var _dig_spam_next_msec: int = 0
 var _step_lift: float = 0.0               # metres the eye still has to rise after a step-up (eased out)
 var _movement: Dictionary = {}        # data/movement.json
 var _telemetry = EventLogScript.new()       # crash_reports/telemetry_client.log: traffic, backlog and frame gaps once a second
@@ -3402,6 +3412,10 @@ func _fire_test_step(step: int, at: Vector3) -> String:
 
 
 func _process(delta: float) -> void:
+	if _dig_spam_per_s > 0.0 and world.has("spawn") and Time.get_ticks_msec() >= _dig_spam_next_msec and Time.get_ticks_msec() - connected_msec > 8000:
+		_dig_spam_next_msec = Time.get_ticks_msec() + int(1000.0 / _dig_spam_per_s)
+		net.dig.rpc_id(1, Vector3(world["spawn"]) + Vector3(0.0, -3.0, 0.0), 0.9)
+
 	if crash_report != null:
 		crash_report.tick(_crash_state)
 		_telemetry.tick(_telemetry_state, 1000, 500)

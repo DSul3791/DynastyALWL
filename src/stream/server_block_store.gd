@@ -29,6 +29,7 @@ const BLOCK_SIZE := 16
 
 var generator
 var hide_ore_depth_m: float = 2.0
+var _revisions_dirty: bool = false
 var tile_revisions: Dictionary = {}     # "x,z" -> revision (missing = 1)
 var tiles_stamp: String = ""            # fingerprint of the tile files the ground is made from
 var _tile_dates: String = ""            # tile file names, sizes and dates last seen
@@ -434,6 +435,19 @@ func edit_sphere(kind: int, material: int, center: Vector3, radius: float) -> Ar
 		tile_revisions[key] = int(tile_revisions.get(key, 1)) + 1
 
 	if not changed_tiles.is_empty():
+		_revisions_dirty = true
+
+	_edit_mutex.unlock()
+	return changed_tiles.keys()
+
+
+# The revision file is written at most once a second (the server calls this from its frame) and at flush: a held click used to
+# rewrite it on every dig.
+func save_revisions() -> void:
+	_edit_mutex.lock()
+
+	if _revisions_dirty:
+		_revisions_dirty = false
 		var revisions_file: FileAccess = FileAccess.open(_store_dir + "/revisions.json", FileAccess.WRITE)
 
 		if revisions_file != null:
@@ -441,10 +455,10 @@ func edit_sphere(kind: int, material: int, center: Vector3, radius: float) -> Ar
 			revisions_file.close()
 
 	_edit_mutex.unlock()
-	return changed_tiles.keys()
 
 
 func flush() -> void:
+	save_revisions()
 	_cache.flush()
 	_edits.flush()
 
