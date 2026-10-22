@@ -30,6 +30,7 @@ const CROWN_LITTER_FROM := 0.0           # litter starts getting denser at the d
 const CROWN_LITTER_TO := 0.3             # ... and reaches its full depth here
 const LITTER_DEEP_LEAVES := 5.0          # leaf cards per sample at full depth, times the normal count
 const LITTER_DEEP_TWIGS := 4.0           # twigs likewise
+const RIM_DROP_M := 0.8                  # ground this much lower beside a blade means a hole edge (see _drop_beside)
 const RIM_CLEAR_M := 0.9                 # no blades this close to the edge of a dug hole (they lean over it)
 const SCENERY_PEBBLES := true            # owner (2026-10-21): pebbles are decoration (not pickable, not harvestable, like a voxel texture); they vanish when the ground under them is dug (ground_changed)
 const SCENERY_BOULDERS := false          # server-owned boulders (Items, build 361) are drawn by inventory_view with GrassView._make_boulder(); the client scenery boulders would double up
@@ -1154,6 +1155,27 @@ func _rescan_step() -> void:
 	_scan_keep = {}
 
 
+# True when ground within RIM_CLEAR_M of grid point (i, j) lies more than RIM_DROP_M lower: the edge of a hole or pit.
+# Holes dug in earlier sessions are not in `_dug`, so this reads the rays themselves.
+static func _drop_beside(heights: PackedFloat32Array, pps: int, i: int, j: int, reach: int) -> bool:
+	var here: float = heights[j * pps + i]
+
+	for dj in range(-reach, reach + 1):
+		for di in range(-reach, reach + 1):
+			var ni: int = i + di
+			var nj: int = j + dj
+
+			if ni < 0 or nj < 0 or ni >= pps or nj >= pps:
+				continue
+
+			var other: float = heights[nj * pps + ni]
+
+			if not is_nan(other) and other < here - RIM_DROP_M:
+				return true
+
+	return false
+
+
 # Rays for one cell; returns how many were cast.
 func _build(cell: Vector2i) -> int:
 	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
@@ -1190,16 +1212,36 @@ func _build(cell: Vector2i) -> int:
 	var missed: int = 0
 	var dug_here: Array = _dug.get(cell, [])
 
+	# All rays first, so a blade can be refused when ground drops away beside it (the rim of a hole, old or new).
+	var hits: Array = []
+	var heights: PackedFloat32Array = PackedFloat32Array()
+	heights.resize(pps * pps)
+
 	for j in range(pps):
 		for i in range(pps):
 			var x: float = float(cell.x) * CELL_M + (float(i) + rng.randf()) * spacing
 			var z: float = float(cell.y) * CELL_M + (float(j) + rng.randf()) * spacing
 			var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(Vector3(x, _center.y + 80.0, z), Vector3(x, _center.y - 120.0, z))
-			var hit: Dictionary = space.intersect_ray(query)
+			var found: Dictionary = space.intersect_ray(query)
 			rays += 1
+			hits.append([x, z, found])
+			heights[j * pps + i] = NAN if found.is_empty() else float((found["position"] as Vector3).y)
+
+			if found.is_empty():
+				missed += 1
+
+	var edge_cells: int = int(ceil(RIM_CLEAR_M / spacing))
+
+	for j in range(pps):
+		for i in range(pps):
+			var x: float = hits[j * pps + i][0]
+			var z: float = hits[j * pps + i][1]
+			var hit: Dictionary = hits[j * pps + i][2]
 
 			if hit.is_empty():
-				missed += 1
+				continue
+
+			if _drop_beside(heights, pps, i, j, edge_cells):
 				continue
 
 			var collider = hit["collider"]

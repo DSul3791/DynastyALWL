@@ -162,7 +162,7 @@ func _make_body(id: String) -> Node3D:
 	label.text = str(info.get("name", id))
 	label.font_size = 48
 	label.pixel_size = 0.008
-	label.no_depth_test = true
+	label.no_depth_test = false           # Dave, build 612: names showed through the walls of a hole
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	label.position = Vector3(0.0, 2.05, 0.0)
 	label.modulate = Color(1.0, 0.95, 0.8)

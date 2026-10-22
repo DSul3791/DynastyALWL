@@ -3218,13 +3218,20 @@ func run_gather_test(client) -> void:
 
 # Headless check (--quickkeys): D drops, S splits and E eats the stack under the mouse.
 func run_quickkey_test(_client) -> void:
-	await get_tree().create_timer(6.0).timeout
-	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("stone"), 0, 6, Vector3.ZERO)
-	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("roast_forage"), 0, 2, Vector3.ZERO)
-	await get_tree().create_timer(1.0).timeout
-	toggle()
 	var stone: int = table.number_of("stone")
 	var roast: int = table.number_of("roast_forage")
+	await get_tree().create_timer(6.0).timeout
+
+	# A slow join (cold server) drops a give sent too early: ask again every 3 s until the stones arrive.
+	for attempt in range(30):
+		net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, stone, 0, 6, Vector3.ZERO)
+		net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, roast, 0, 2, Vector3.ZERO)
+		await get_tree().create_timer(3.0).timeout
+
+		if inventory.count_of(stone) > 0 and inventory.count_of(roast) > 0:
+			break
+
+	toggle()
 	var slot: int = inventory.numbers.find(stone)
 	var before: int = inventory.count_of(stone)
 	_hover = slot
