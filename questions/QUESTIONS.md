@@ -1,7 +1,3 @@
-## chk-plank-v2 | Check the redrawn plank wall (picture): smooth rounded planks outside, the small inset shows the flat rough face inside. Does the plank wall look right now?
-Image: questions/img/tiers_walls_v2.png
-[check]
-
 ## chk-doors | Check the door and window designs (picture): five door tiers (twine and thatch hurdle, planks, reinforced with iron bands, wrought iron, steel and iron), a double door, a window and a double window. Do these look right?
 Note: Built from your 22:21 answer about doors; this is the first time you see the pictures.
 Image: questions/img/tiers_doors.png
