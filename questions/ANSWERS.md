@@ -412,3 +412,7 @@ Answered: 2026-10-22 23:01 UTC
 Answer: No: A wall with a window hole in it is just a hole for a window. And we should have a square window around window and eventually in the future we’re going to make double walls so we can make tall windows and eventually stained glass windows, but when it comes to making walls, they just have holes in them for windows, and eventually we will make shutters that you can put on them, so you’ll just have a wooden type shutter that you can open her clothes to cover the window with hinges, so it would take wood and hinges to make and nails
 Answered: 2026-10-22 23:01 UTC
 
+## doors-width | Is it OK that a double door fills the whole 2 m wall slot and a double window is 2 m wide?
+Answer: No: A double door should just be slightly smaller than the wall so it leaves roughly 10 cm all the way around the wall around the outside of the door. If you can look up the doors from Ark survival
+Answered: 2026-10-22 23:02 UTC
+
