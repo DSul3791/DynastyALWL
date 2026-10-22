@@ -40,3 +40,7 @@ Answered: 2026-10-22 00:06 UTC
 Answer: I will name them myself later
 Answered: 2026-10-22 00:07 UTC
 
+## cast-trade | Starter town people: what do they trade?
+Answer: Only Hob trades; the others only talk and give quests
+Answered: 2026-10-22 00:07 UTC
+
