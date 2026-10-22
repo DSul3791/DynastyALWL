@@ -484,3 +484,7 @@ Answered: 2026-10-22 23:28 UTC
 Answer: No: It’s the opposite direction it’s a shorter peak. Also, please pass along that I want the cave in duration for now to be a number we can set and adjust in settings and it’s lowest setting should be two minutes and it’s highest setting should be 20 minutes
 Answered: 2026-10-22 23:28 UTC
 
+## pillars-snap | Should a pillar snap to the centre or any of the 4 corners of a foundation or a ceiling (5 snap points)?
+Answer: Yes
+Answered: 2026-10-22 23:29 UTC
+
