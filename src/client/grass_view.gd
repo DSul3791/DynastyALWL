@@ -271,6 +271,7 @@ var _scan_now: int = 0
 var _scan_keep: Dictionary = {}
 const SCAN_ROWS_PER_FRAME := 4
 var _center: Vector3 = Vector3.ZERO
+var _dug: Dictionary = {}                # cell -> [[centre Vector3, radius]] of digs touching it: no blade where a hit lies in a dug hollow or its mouth
 var _edits: Array = []                   # [when msec, cells] ground changes waiting for their collision before cells are redrawn
 var _last_position: Vector3 = Vector3.ZERO
 var _last_msec: int = 0
@@ -925,8 +926,9 @@ func _flat_at(x: float, z: float) -> bool:
 	return false
 
 
-func ground_changed(center: Vector3, radius: float) -> void:
+func ground_changed(center: Vector3, radius: float, filled: bool = false) -> void:
 	var reach: float = radius + 1.0
+	_note_dug(center, radius, reach, filled)
 	var x0: int = int(floor((center.x - reach) / CELL_M))
 	var x1: int = int(floor((center.x + reach) / CELL_M))
 	var z0: int = int(floor((center.z - reach) / CELL_M))
@@ -940,6 +942,32 @@ func ground_changed(center: Vector3, radius: float) -> void:
 	var now: int = Time.get_ticks_msec()
 	_edits.append([now + 600, cells])
 	_edits.append([now + 2500, cells])
+
+
+func _note_dug(center: Vector3, radius: float, reach: float, filled: bool) -> void:
+	for cz in range(int(floor((center.z - reach) / CELL_M)), int(floor((center.z + reach) / CELL_M)) + 1):
+		for cx in range(int(floor((center.x - reach) / CELL_M)), int(floor((center.x + reach) / CELL_M)) + 1):
+			var key: Vector2i = Vector2i(cx, cz)
+			var list: Array = _dug.get(key, [])
+
+			if filled:
+				# A fill puts back the ground inside its sphere, so the digs it covers are forgotten.
+				list = list.filter(func(d: Array) -> bool: return (d[0] as Vector3).distance_to(center) + float(d[1]) > radius + 0.05)
+			else:
+				list.append([center, radius])
+
+			_dug[key] = list
+
+
+# True when a ray hit lies in a dug hollow (its floor) or just inside its mouth.
+static func _in_dug(list: Array, p: Vector3) -> bool:
+	for d in list:
+		var c: Vector3 = d[0]
+
+		if p.y <= c.y + 0.2 and p.distance_to(c) <= float(d[1]) + 0.6:
+			return true
+
+	return false
 
 
 func update(from_position: Vector3) -> void:
@@ -1157,6 +1185,7 @@ func _build(cell: Vector2i) -> int:
 
 	var rays: int = 0
 	var missed: int = 0
+	var dug_here: Array = _dug.get(cell, [])
 
 	for j in range(pps):
 		for i in range(pps):
@@ -1176,6 +1205,10 @@ func _build(cell: Vector2i) -> int:
 				continue
 
 			var point: Vector3 = hit["position"]
+
+			if not dug_here.is_empty() and _in_dug(dug_here, point):
+				continue
+
 			var water: float = _flora.water_level_at(x, z)
 
 			if shore_here:

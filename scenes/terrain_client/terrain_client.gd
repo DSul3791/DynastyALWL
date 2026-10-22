@@ -67,7 +67,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 606
+const BUILD := 607
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -1306,7 +1306,7 @@ func _on_filled(center: Vector3, radius: float, _material: int) -> void:
 	tool.do_sphere(center, radius)
 
 	if grass != null:
-		grass.ground_changed(center, radius)
+		grass.ground_changed(center, radius, true)
 
 
 # Applies the experiment switches (Esc > Advanced); also at start.
