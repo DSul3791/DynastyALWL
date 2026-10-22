@@ -96,7 +96,6 @@ func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hu
 	_tree_near = tree_near
 	_inv = inventory_view
 	_net = terrain_net
-	_net.spade_load_received.connect(_on_spade_load)
 	_camera = camera
 	_root = world_root
 	_ground_below = ground_below
@@ -258,14 +257,10 @@ func mouse_button(button: int, pressed: bool) -> bool:
 		return button == MOUSE_BUTTON_LEFT
 
 	if _is_other_tool():
-		# Right click with the spade switches between Dig and Raise mode; Shift and right click tips the load back into the pack (Dave 2026-10-22).
+		# Right click with the spade switches between Dig and Raise mode (Dave 2026-10-22).
 		if button == MOUSE_BUTTON_RIGHT and pressed and str(_inv.table.entry(held_id()).get("tool_class", "")) == "spade":
-			if Input.is_key_pressed(KEY_SHIFT):
-				_net.inventory_action.rpc_id(1, Net.ACT_UNLOAD, 0, 0, 0, Vector3.ZERO)
-			else:
-				raise_mode = not raise_mode
-				_inv._on_notice("Raise mode: left click adds ground from the load" if raise_mode else "Dig mode: left click digs")
-
+			raise_mode = not raise_mode
+			_inv._on_notice("Raise mode: left click adds ground, using soil or stone from your pack" if raise_mode else "Dig mode: left click digs")
 			return true
 
 		# The garden hoe: left click treads a path, right click smooths the ground (it moves dirt from the high spots to the low ones; no items).
@@ -660,20 +655,7 @@ func _fill_here() -> void:
 	_net.inventory_action.rpc_id(1, Net.ACT_FILL, held_slot, 0, 0, hit["position"])
 
 
-# The shovel's load (protocol 70): what and how many, shown beside its name; a rise in the load is the sound of soil or stone dropped on the blade.
 var raise_mode: bool = false              # the spade raises ground (Dave 2026-10-22); false digs
-var spade_load_number: int = 0
-var spade_load_count: int = 0
-
-
-func _on_spade_load(number: int, count: int) -> void:
-	var grew: bool = count > spade_load_count
-
-	spade_load_number = number
-	spade_load_count = count
-
-	if grew and _sound != null and _sound.placed != null and _sound.placed.has_method("shovel_load"):
-		_sound.placed.shovel_load(_inv.table.id_of(number) == "stone", _camera.global_position)
 
 
 func _other_tool_hint() -> String:
@@ -683,7 +665,7 @@ func _other_tool_hint() -> String:
 		"hoe":
 			return "The hoe treads a path (left click) and smooths the ground by moving dirt from high spots to low ones (right click). It uses no items, only its own wear"
 		"spade":
-			return "The spade digs roots and bulbs (press E at a plant), digs the ground (left click) or raises it in Raise mode (right click switches; drag soil or stone onto the shovel to load it)"
+			return "The spade digs roots and bulbs (press E at a plant), digs the ground (left click) or raises it in Raise mode (right click switches; each raise uses soil, sand, gravel, clay or stone from your pack)"
 
 	return "%s: nothing to use it on yet" % _inv.table.name_of(held_number())
 
@@ -707,8 +689,7 @@ func _caption() -> String:
 	elif _is_spear():
 		text += "   (left click: jab; hold right click to aim, then left click to throw)"
 	elif _is_other_tool() and str(_inv.table.entry(held_id()).get("tool_class", "")) == "spade":
-		var load_text: String = "empty" if spade_load_count < 1 else "%d %s" % [spade_load_count, _inv.table.name_of(spade_load_number).to_lower()]
-		text += "   (%s, loaded: %s; right click switches)" % ["Raise" if raise_mode else "Dig", load_text]
+		text += "   (%s; right click switches)" % ("Raise" if raise_mode else "Dig")
 	elif _is_other_tool():
 		text += "   (in hand)"
 

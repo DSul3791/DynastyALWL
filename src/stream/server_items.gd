@@ -374,7 +374,6 @@ func peer_connected_hello(peer: int, key: String) -> void:
 	sync_reputation(peer)
 	sync_shoulder(peer)
 	_sync_craft_queue(peer)
-	_send_spade_load(peer)
 
 
 # --- Where a character resumes (protocol 69, DECISIONS collapse-offline) ---
@@ -630,10 +629,7 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 	var before: Array = _snapshot(inv)
 
 	if kind == Net.ACT_MOVE:
-		if not _try_load_spade(peer, inv, a, b):
-			inv.move(a, b)             # move() ignores bad slots
-	elif kind == Net.ACT_UNLOAD:
-		_unload_spade(peer, inv)
+		inv.move(a, b)             # move() ignores bad slots
 	elif kind == Net.ACT_DROP:
 		if a == -1:
 			lay_down_shoulder(peer, at)
@@ -1318,17 +1314,32 @@ func _fill(peer: int, inv, at: Vector3) -> void:
 	if float(now - int(_last_dig.get(peer, -100000))) < float(DIG_COOLDOWN_MS) * _spade_reach(inv):
 		return
 
-	# Raise mode (Dave 2026-10-22): the ground that goes up comes from the shovel's load, filled by dragging soil or stone onto it.
-	var loaded: Array = _spade_load_of(peer)
+	# Raise mode (Dave 2026-10-22): no load, every raise takes shovelfuls from the pack (one for a small spade, 4 medium, 8 large),
+	# soil first, then sand, gravel, clay, stone (digging.json "fill"). A short pack raises a smaller heap.
+	var material_item: String = ""
 
-	if int(loaded[1]) < 1:
-		_say(peer, "Load the shovel: drag soil or stone onto it on the hotbar")
+	for name in _dig_cfg.get("fill", []):
+		var number: int = table.number_of(str(name))
+
+		if number > 0 and inv.count_of(number) > 0:
+			material_item = str(name)
+			break
+
+	if material_item == "":
+		_say(peer, "Nothing to fill with: dig some soil, sand or gravel first")
 		return
 
-	var material_item: String = table.id_of(int(loaded[0]))
-	var pieces: int = mini(_spade_pieces(inv), int(loaded[1]))   # a medium or large spade moves up to 4 or 8 pieces in a stroke
 	_last_dig[peer] = now
-	_set_spade_load(peer, int(loaded[0]), int(loaded[1]) - pieces)
+	var pieces: int = 0
+
+	for n in _spade_pieces(inv):
+		if take_fill_item(peer, material_item) < 1:
+			break
+
+		pieces += 1
+
+	if pieces < 1:
+		return
 
 	for n in maxi(1, int(round(pow(float(pieces), 1.0 / 3.0)))):
 		_wear_tool(peer, inv, "spade", "dig")
@@ -1336,7 +1347,7 @@ func _fill(peer: int, inv, at: Vector3) -> void:
 	var done: Variant = fill_ground.call(at + Vector3(0.0, FILL_UP_M, 0.0), FILL_RADIUS_M * pow(float(pieces), 1.0 / 3.0), int(FILL_SOIL.get(material_item, 5)))
 
 	if typeof(done) == TYPE_BOOL and not bool(done):
-		_set_spade_load(peer, int(loaded[0]), int(loaded[1]))   # the ground refused it: the shovelfuls stay loaded
+		give(peer, table.number_of(material_item), pieces)   # the ground refused it: the shovelfuls come back
 
 	_dirty = true
 
@@ -1495,86 +1506,6 @@ func _remove_paths_near(at: Vector3, radius: float) -> void:
 			_items.erase(id)
 
 
-# --- The loaded shovel (Raise mode) ---
-const SPADE_LOAD_MAX := 8        # shovelfuls the shovel holds
-var send_spade_load: Callable    # (peer, item number, count): tells the client what the shovel holds (protocol 70)
-
-
-func _spade_load_of(peer: int) -> Array:
-	var saved: Array = _characters.get(_peer_key.get(peer, ""), {}).get("spade_load", [])
-	return [int(saved[0]), int(saved[1])] if saved.size() == 2 else [0, 0]
-
-
-func _set_spade_load(peer: int, number: int, count: int) -> void:
-	var key: String = str(_peer_key.get(peer, ""))
-
-	if not _characters.has(key):
-		return
-
-	_characters[key]["spade_load"] = [number if count > 0 else 0, maxi(count, 0)]
-	_dirty = true
-	_send_spade_load(peer)
-
-
-func _send_spade_load(peer: int) -> void:
-	if send_spade_load.is_valid():
-		var loaded: Array = _spade_load_of(peer)
-		send_spade_load.call(peer, int(loaded[0]), int(loaded[1]))
-
-
-# Dragging a stack of fill material (digging.json "fill": soil, sand, gravel, clay, stone) onto the spade in the hotbar loads it, up to SPADE_LOAD_MAX
-# shovelfuls of one kind. True when the drag was a loading (nothing else moves).
-func _try_load_spade(peer: int, inv, from_slot: int, to_slot: int) -> bool:
-	if from_slot < 0 or from_slot >= inv.SLOTS or to_slot < 0 or to_slot >= inv.SLOTS or from_slot == to_slot:
-		return false
-
-	if inv.numbers[from_slot] == 0 or inv.numbers[to_slot] == 0:
-		return false
-
-	if str(table.entry(table.id_of(inv.numbers[to_slot])).get("tool_class", "")) != "spade":
-		return false
-
-	if not _dig_cfg.get("fill", []).has(table.id_of(inv.numbers[from_slot])):
-		return false
-
-	var number: int = inv.numbers[from_slot]
-	var loaded: Array = _spade_load_of(peer)
-
-	if int(loaded[1]) > 0 and int(loaded[0]) != number:
-		_say(peer, "The shovel holds %s: unload it first (Shift and right click)" % table.name_of(int(loaded[0])).to_lower())
-		return true
-
-	var cap: int = int(_dig_cfg.get("spade_sizes", {}).get(str(table.entry(table.id_of(inv.numbers[to_slot])).get("spade_size", "small")), {}).get("load_cap", SPADE_LOAD_MAX))
-	var room: int = cap - int(loaded[1])
-
-	if room <= 0:
-		_say(peer, "The shovel is full")
-		return true
-
-	var amount: int = mini(room, inv.counts[from_slot])
-	var before: Array = _snapshot(inv)
-	inv.take_from_slot(from_slot, amount)
-	_send_changes(peer, inv, before)
-	_set_spade_load(peer, number, int(loaded[1]) + amount)
-	return true
-
-
-func _unload_spade(peer: int, inv) -> void:
-	var loaded: Array = _spade_load_of(peer)
-
-	if int(loaded[1]) < 1:
-		return
-
-	var before: Array = _snapshot(inv)
-	var left: int = inv.add(int(loaded[0]), int(loaded[1]))
-
-	if left > 0:
-		drop_in_world(int(loaded[0]), left, _peer_pos.get(peer, Vector3.ZERO))
-
-	_send_changes(peer, inv, before)
-	_set_spade_load(peer, 0, 0)
-
-
 # Takes one shovelful of the named fill item; returns 1 or 0.
 func take_fill_item(peer: int, name: String) -> int:
 	var inv = inventory_of(peer)
@@ -1635,7 +1566,7 @@ func _fell_undermined(peer: int, at: Vector3) -> void:
 func _spade_size(inv) -> Dictionary:
 	var slot: int = _tool_slot(inv, "spade")
 	var name: String = str(table.entry(table.id_of(inv.numbers[slot])).get("spade_size", "small")) if slot >= 0 else "small"
-	return _dig_cfg.get("spade_sizes", {}).get(name, {"pieces": 1, "load_cap": SPADE_LOAD_MAX})
+	return _dig_cfg.get("spade_sizes", {}).get(name, {"pieces": 1})
 
 
 func _spade_pieces(inv) -> int:
