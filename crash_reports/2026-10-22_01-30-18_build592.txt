@@ -1,0 +1,27 @@
+CRASH REPORT: the game ended unexpectedly.
+This run is quitting by itself: server left: the connection to the server was lost
+This report made by build 592 at 2026-10-22T01:30:18
+
+== Last 150 breadcrumbs (key and mouse presses, menus, errors, a state line every 5 s) ==
+[01:30:15.528] start build 592 (), Linux, , , 4 cores, ram 74 MB, video memory 0 MB; run from the editor: true, editor debugger attached: false
+[01:30:15.529] state link rtt 500 ms (last 500), loss 0, state 1, loss variance 0 pos 0,0,0 quality 2 fps 1 ram 74 MB video 0 MB menu false screen false
+
+
+== Errors and warnings of that run (last 40) ==
+
+
+== The server's own events (last 60 lines: peers, stalls, why a client was dropped) ==
+
+
+== Last 300 lines of Godot's log of that run (godot.log; a native crash writes its backtrace here) ==
+Godot Engine v4.7.2.stable.custom_build.ed1daf0bf (2026-08-17 01:18:38 UTC) - https://godotengine.org
+
+Crash report written: res://crash_reports/2026-10-22_01-30-15_build592.txt
+Terrain client: connecting to 127.0.0.1:24820
+Terrain client: first run, copied the starter ground for the spawn (1 tile)
+Terrain client: welcome after 101 ms; world Modular Island World; spawn (53301.0, 30.98295, 68427.0); cache /tmp/dig_wafter/cache (10240 MB)
+Terrain client: block line open
+client: 0 s, 0 blocks loaded, 0 from the server (0.0 MB), 0 waiting, 1 fps, at (53301.0, 59.0, 68427.0)
+ter (4, 4): running on the C++ core, 5 springs
+water: loaded tile (4, 4) (2 active, 357 MB of water memory)
+

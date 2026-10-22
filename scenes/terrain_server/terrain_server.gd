@@ -20,6 +20,9 @@ extends Node
 # Clients start at the starter spawn point of tile (3,4).
 
 const EventLogScript := preload("res://src/shared/event_log.gd")
+const WATER_CHUNKS_MAX := 64              # flora chunks answered per water request
+const GATHER_MIN_MSEC := 100              # a peer's gather requests are handled at most this often
+const GATHER_REACH_M := 12.0              # a gather request for a chunk further than this from the player is ignored
 const NetSettings := preload("res://src/shared/net_settings.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
@@ -116,6 +119,9 @@ var _quit_when_empty: bool = false
 var _empty_since_msec: int = 0
 var _quit_grace_msec: int = 10000
 var _never_joined: bool = true
+var _water_answered_msec: Dictionary = {}   # peer -> last time its water request was answered
+var _gather_msec: Dictionary = {}           # peer -> last gather request handled
+var _fill_last: Array = []                  # [centre, radius, material] of the last fill that changed something; a repeat is dropped
 var _tiles_changed: Dictionary = {}     # tiles edited since the clients were told (tile_changed goes out at most every 0.5 s)
 var _tiles_told_msec: int = 0
 var _events = EventLogScript.new()      # user://server_events.log: peers, stalls, quit reason (why a client was dropped)
@@ -619,6 +625,8 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	])
 	_events.event("peer %d left after %d blocks (last stats: %s)" % [peer_id, int(info.get("blocks", 0)), str(info.get("last_stats", "none"))])
 	_peers.erase(peer_id)
+	_water_answered_msec.erase(peer_id)
+	_gather_msec.erase(peer_id)
 	_npc_sent.erase(peer_id)
 	_animal_sent.erase(peer_id)
 	trails.forget_peer(peer_id)
@@ -722,8 +730,16 @@ func _on_surface_requested(peer_id: int, x: float, z: float) -> void:
 
 
 func _on_water_requested(peer_id: int, chunks: PackedInt32Array) -> void:
+	# One answer per peer per second and at most WATER_CHUNKS_MAX chunks in it: every answer costs main-thread time, and a client
+	# (or a bug) asking over and over must not be able to keep the server busy.
+	var now: int = Time.get_ticks_msec()
+
+	if now - int(_water_answered_msec.get(peer_id, -100000)) < 1000:
+		return
+
+	_water_answered_msec[peer_id] = now
 	@warning_ignore("integer_division")
-	for n in range(chunks.size() / 2):
+	for n in range(mini(chunks.size() / 2, WATER_CHUNKS_MAX)):
 		var chunk: Vector2i = Vector2i(chunks[2 * n], chunks[2 * n + 1])
 		net.deliver_water.rpc_id(peer_id, chunk, flora.water_bytes(chunk))
 
@@ -953,6 +969,25 @@ func _flora_changed(chunk: Vector2i) -> void:
 func _on_cut_flora_requested(peer_id: int, chunk: Vector2i, id: int) -> void:
 	# Gathering (E): a plant or shrub is picked: it gives what drops.json and its season allow and then rests.
 	# Trees are felled, not gathered (tree-fall comes later).
+	var tick: int = Time.get_ticks_msec()
+
+	if tick - int(_gather_msec.get(peer_id, -100000)) < GATHER_MIN_MSEC:
+		return
+
+	_gather_msec[peer_id] = tick
+	var player_at: Variant = items.position_of(peer_id)
+	var chunk_m: float = flora.placer.chunk_m
+
+	if player_at == null:
+		return
+
+	# Nearest point of the chunk's square to the player: nothing is gathered, or generated, far away.
+	var near_x: float = clampf((player_at as Vector3).x, float(chunk.x) * chunk_m, float(chunk.x + 1) * chunk_m)
+	var near_z: float = clampf((player_at as Vector3).z, float(chunk.y) * chunk_m, float(chunk.y + 1) * chunk_m)
+
+	if Vector2((player_at as Vector3).x - near_x, (player_at as Vector3).z - near_z).length() > GATHER_REACH_M:
+		return
+
 	var home: Vector2i = flora.placer.normalize(chunk)
 	var all: Dictionary = flora.placer.chunk_items(home)
 	var at: int = all["ids"].find(id)
@@ -1000,6 +1035,8 @@ func _dig_ground(center: Vector3, radius: float) -> bool:
 	if tiles.is_empty():
 		return false
 
+	_fill_last = []
+
 	for tile in tiles:
 		_tell_tile_changed(tile)
 
@@ -1043,7 +1080,15 @@ func _bury_plants(center: Vector3, radius: float) -> void:
 # A spade fill: the sphere of ground is saved in the edit log (store.fill_sphere), the water thread raises its ground
 # there, and everyone is told. Returns false when nothing changed (the block holds its edit limit).
 func _fill_ground(center: Vector3, radius: float, material: int) -> bool:
+	# The same fill again with no dig in between changes nothing (a held click): dropped before it costs a log entry, a tile
+	# revision, two messages and a water wake.
+	if _fill_last == [center, radius, material]:
+		return false
+
 	var tiles: Array = store.fill_sphere(center, radius, material)
+
+	if not tiles.is_empty():
+		_fill_last = [center, radius, material]
 
 	for tile in tiles:
 		_tell_tile_changed(tile)

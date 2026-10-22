@@ -485,6 +485,8 @@ func _ready() -> void:
 			test_fly_msec = int(float(argument.trim_prefix("--flytime=")) * 1000.0)
 		elif argument == "--hole-probe":
 			hole_probe = true
+		elif argument.begins_with("--water-spam="):
+			_water_spam_per_s = float(argument.trim_prefix("--water-spam="))   # test: ask for the water of every held chunk this many times a second
 		elif argument.begins_with("--dig-spam="):
 			_dig_spam_per_s = float(argument.trim_prefix("--dig-spam="))   # test: dig the same 0.9 m spot this many times a second (a held click)
 		elif argument == "--fly":
@@ -2238,6 +2240,7 @@ func _set_menu(open: bool) -> void:
 # the dump aims where the screen centre pointed when the menu opened. The text is printed, shown and copied.
 var _dump_client: String = ""
 var _starter_seeded: int = 0
+var _water_spam_per_s: float = 0.0
 var _dig_spam_per_s: float = 0.0
 var _dig_spam_next_msec: int = 0
 var _step_lift: float = 0.0               # metres the eye still has to rise after a step-up (eased out)
@@ -3412,6 +3415,15 @@ func _fire_test_step(step: int, at: Vector3) -> String:
 
 
 func _process(delta: float) -> void:
+	if _water_spam_per_s > 0.0 and flora != null and Time.get_ticks_msec() >= _dig_spam_next_msec and Time.get_ticks_msec() - connected_msec > 8000:
+		_dig_spam_next_msec = Time.get_ticks_msec() + int(1000.0 / _water_spam_per_s)
+		var spam_chunks: PackedInt32Array = PackedInt32Array()
+
+		for chunk in flora.held_chunks():
+			spam_chunks.append_array(PackedInt32Array([chunk.x, chunk.y]))
+
+		net.request_water.rpc_id(1, spam_chunks)
+
 	if _dig_spam_per_s > 0.0 and world.has("spawn") and Time.get_ticks_msec() >= _dig_spam_next_msec and Time.get_ticks_msec() - connected_msec > 8000:
 		_dig_spam_next_msec = Time.get_ticks_msec() + int(1000.0 / _dig_spam_per_s)
 		net.dig.rpc_id(1, Vector3(world["spawn"]) + Vector3(0.0, -3.0, 0.0), 0.9)

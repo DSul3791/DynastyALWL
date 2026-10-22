@@ -1,0 +1,337 @@
+CRASH REPORT: the game ended unexpectedly.
+This run is quitting by itself: server left: the connection to the server was lost
+This report made by build 592 at 2026-10-22T01:31:41
+
+== Last 150 breadcrumbs (key and mouse presses, menus, errors, a state line every 5 s) ==
+[01:30:15.528] start build 592 (), Linux, , , 4 cores, ram 74 MB, video memory 0 MB; run from the editor: true, editor debugger attached: false
+[01:30:15.529] state link rtt 500 ms (last 500), loss 0, state 1, loss variance 0 pos 0,0,0 quality 2 fps 1 ram 74 MB video 0 MB menu false screen false
+[01:30:20.547] state link rtt 551 ms (last 34), loss 0, state 5, loss variance 0 pos 53301,58,68427 quality 2 fps 30 ram 151 MB video 0 MB menu false screen false
+[01:30:25.547] state link rtt 187 ms (last 34), loss 0, state 5, loss variance 0 pos 53301,29,68427 quality 2 fps 30 ram 286 MB video 0 MB menu false screen false
+[01:30:30.547] state link rtt 151 ms (last 172), loss 303, state 5, loss variance 606 pos 53301,29,68427 quality 2 fps 30 ram 310 MB video 0 MB menu false screen false
+[01:30:35.547] state link rtt 147 ms (last 128), loss 303, state 5, loss variance 606 pos 53301,29,68427 quality 2 fps 30 ram 323 MB video 0 MB menu false screen false
+[01:30:40.584] state link rtt 289 ms (last 140), loss 265, state 5, loss variance 530 pos 53301,29,68427 quality 2 fps 30 ram 340 MB video 0 MB menu false screen false
+[01:30:45.614] state link rtt 251 ms (last 148), loss 265, state 5, loss variance 530 pos 53301,29,68427 quality 2 fps 30 ram 342 MB video 0 MB menu false screen false
+[01:30:50.614] state link rtt 144 ms (last 185), loss 344, state 5, loss variance 555 pos 53301,29,68427 quality 2 fps 30 ram 343 MB video 0 MB menu false screen false
+[01:30:55.624] state link rtt 214 ms (last 120), loss 344, state 5, loss variance 555 pos 53301,29,68427 quality 2 fps 30 ram 344 MB video 0 MB menu false screen false
+[01:31:00.640] state link rtt 204 ms (last 161), loss 574, state 5, loss variance 876 pos 53301,29,68427 quality 2 fps 30 ram 344 MB video 0 MB menu false screen false
+[01:31:05.673] state link rtt 151 ms (last 180), loss 610, state 5, loss variance 729 pos 53301,29,68427 quality 2 fps 30 ram 344 MB video 0 MB menu false screen false
+[01:31:10.674] state link rtt 176 ms (last 141), loss 610, state 5, loss variance 729 pos 53301,29,68427 quality 2 fps 30 ram 344 MB video 0 MB menu false screen false
+[01:31:15.674] state link rtt 176 ms (last 128), loss 610, state 5, loss variance 729 pos 53301,29,68427 quality 2 fps 30 ram 344 MB video 0 MB menu false screen false
+[01:31:20.684] state link rtt 198 ms (last 145), loss 988, state 5, loss variance 1304 pos 53301,29,68427 quality 2 fps 30 ram 344 MB video 0 MB menu false screen false
+[01:31:25.699] state link rtt 280 ms (last 186), loss 988, state 5, loss variance 1304 pos 53301,29,68427 quality 2 fps 30 ram 344 MB video 0 MB menu false screen false
+[01:31:30.717] state link rtt 232 ms (last 151), loss 864, state 5, loss variance 1225 pos 53301,29,68427 quality 2 fps 30 ram 344 MB video 0 MB menu false screen false
+[01:31:35.734] state link rtt 234 ms (last 171), loss 864, state 5, loss variance 1225 pos 53301,29,68427 quality 2 fps 30 ram 344 MB video 0 MB menu false screen false
+[01:31:40.743] state link rtt 173 ms (last 167), loss 864, state 5, loss variance 919 pos 53301,29,68427 quality 2 fps 30 ram 344 MB video 0 MB menu false screen false
+[01:31:41.210] ERROR enet_multiplayer_peer.cpp:460 Condition "!_is_active()" is true. Returning: nullptr  (in get_peer)
+[01:31:41.210] QUIT: server left: the connection to the server was lost
+st
+[01:30:18.495] clean exit
+
+
+== Errors and warnings of that run (last 40) ==
+[01:31:41.210] ERROR enet_multiplayer_peer.cpp:460 Condition "!_is_active()" is true. Returning: nullptr  (in get_peer)
+
+== The server's own events (last 60 lines: peers, stalls, why a client was dropped) ==
+
+
+== Last 300 lines of Godot's log of that run (godot.log; a native crash writes its backtrace here) ==
+   GDScript backtrace (most recent call first):
+       [0] _initialize (res://tools/check_warnings.gd:24)
+WARNING: The local variable "beach_near_sea" is declared but never used in the block. If this is intended, prefix it with an underscore: "_beach_near_sea".
+   at: GDScript::reload (res://src/worldgen/tools/test_worldgen.gd:1230)
+   GDScript backtrace (most recent call first):
+       [0] _initialize (res://tools/check_warnings.gd:24)
+WARNING: The local variable "wet_west" is declared but never used in the block. If this is intended, prefix it with an underscore: "_wet_west".
+   at: GDScript::reload (res://src/worldgen/tools/test_worldgen.gd:1231)
+   GDScript backtrace (most recent call first):
+       [0] _initialize (res://tools/check_warnings.gd:24)
+WARNING: The local variable "dry_east" is declared but never used in the block. If this is intended, prefix it with an underscore: "_dry_east".
+   at: GDScript::reload (res://src/worldgen/tools/test_worldgen.gd:1232)
+   GDScript backtrace (most recent call first):
+       [0] _initialize (res://tools/check_warnings.gd:24)
+WARNING: The local variable "west_cells" is declared but never used in the block. If this is intended, prefix it with an underscore: "_west_cells".
+   at: GDScript::reload (res://src/worldgen/tools/test_worldgen.gd:1233)
+   GDScript backtrace (most recent call first):
+       [0] _initialize (res://tools/check_warnings.gd:24)
+WARNING: The local variable "east_cells" is declared but never used in the block. If this is intended, prefix it with an underscore: "_east_cells".
+   at: GDScript::reload (res://src/worldgen/tools/test_worldgen.gd:1234)
+   GDScript backtrace (most recent call first):
+       [0] _initialize (res://tools/check_warnings.gd:24)
+WARNING: The local variable "root" is shadowing an already-declared property in the base class "SceneTree".
+   at: GDScript::reload (res://src/worldgen/tools/test_worldgen.gd:1893)
+   GDScript backtrace (most recent call first):
+       [0] _initialize (res://tools/check_warnings.gd:24)
+WARNING: The local variable "root" is shadowing an already-declared property in the base class "SceneTree".
+   at: GDScript::reload (res://src/worldgen/tools/test_worldgen.gd:2132)
+   GDScript backtrace (most recent call first):
+       [0] _initialize (res://tools/check_warnings.gd:24)
+WARNING: Integer division. Decimal part will be discarded.
+   at: GDScript::reload (res://src/worldgen/tools/test_worldgen.gd:2275)
+   GDScript backtrace (most recent call first):
+       [0] _initialize (res://tools/check_warnings.gd:24)
+WARNING: Integer division. Decimal part will be discarded.
+   at: GDScript::reload (res://src/worldgen/tools/test_worldgen.gd:2277)
+   GDScript backtrace (most recent call first):
+       [0] _initialize (res://tools/check_warnings.gd:24)
+WARNING: Integer division. Decimal part will be discarded.
+   at: GDScript::reload (res://src/worldgen/tools/tree_mesh_dump.gd:56)
+   GDScript backtrace (most recent call first):
+       [0] _initialize (res://tools/check_warnings.gd:24)
+WARN src/admin/tile_bake_launcher.gd:67: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/builder/geology/tectonic_deformation.gd:1430: UNUSED_PARAMETER The parameter "x" is never used in the function "_get_secondary_relief()". If this is intended, prefix it with an underscore: "_x".
+WARN src/builder/geology/tectonic_deformation.gd:1431: UNUSED_PARAMETER The parameter "z" is never used in the function "_get_secondary_relief()". If this is intended, prefix it with an underscore: "_z".
+WARN src/builder/world_preview.gd:169: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/builder/world_preview.gd:174: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/client/character_screen.gd:514: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/client/character_screen.gd:517: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/client/character_screen.gd:518: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/client/inventory_view.gd:1657: INCOMPATIBLE_TERNARY Values of the ternary operator are not mutually compatible.
+WARN src/client/inventory_view.gd:1658: INCOMPATIBLE_TERNARY Values of the ternary operator are not mutually compatible.
+WARN src/client/inventory_view.gd:165: STANDALONE_TERNARY Standalone ternary operator (the return value is being discarded).
+WARN src/client/inventory_view.gd:1996: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/client/inventory_view.gd:2320: STANDALONE_TERNARY Standalone ternary operator (the return value is being discarded).
+WARN src/client/inventory_view.gd:2663: SHADOWED_VARIABLE_BASE_CLASS The local variable "name" is shadowing an already-declared property in the base class "Node".
+WARN src/client/inventory_view.gd:2681: SHADOWED_VARIABLE_BASE_CLASS The local variable "name" is shadowing an already-declared property in the base class "Node".
+WARN src/client/inventory_view.gd:2849: SHADOWED_VARIABLE The local variable "worn" is shadowing an already-declared variable at line 89 in the current class.
+WARN src/client/inventory_view.gd:3205: UNUSED_PARAMETER The parameter "client" is never used in the function "run_quickkey_test()". If this is intended, prefix it with an underscore: "_client".
+WARN src/client/inventory_view.gd:3219: INT_AS_ENUM_WITHOUT_CAST Integer used when an enum value is expected. If this is intended, cast the integer to the enum type using the "as" keyword.
+WARN src/client/inventory_view.gd:3400: UNUSED_PARAMETER The parameter "client" is never used in the function "run_leanto_test()". If this is intended, prefix it with an underscore: "_client".
+WARN src/client/inventory_view.gd:914: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/debug/machine_probe.gd:64: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/debug/shot_runner.gd:157: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/debug/shot_runner.gd:160: UNUSED_PARAMETER The parameter "now" is never used in the function "_cost_then_next()". If this is intended, prefix it with an underscore: "_now".
+WARN src/debug/shot_runner.gd:206: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/debug/shot_runner.gd:218: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/debug/shot_runner.gd:221: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/shared/game_clock.gd:53: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/shared/inner_voice_profile.gd:57: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/shared/item_table.gd:30: SHADOWED_VARIABLE The local variable "entry" is shadowing an already-declared function at line 44 in the current class.
+WARN src/stream/block_link_server.gd:194: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/stream/server_items.gd:1349: SHADOWED_VARIABLE The local variable "take" is shadowing an already-declared function at line 516 in the current class.
+WARN src/stream/server_items.gd:3122: UNUSED_PARAMETER The parameter "spent" is never used in the function "_energy_tick()". If this is intended, prefix it with an underscore: "_spent".
+WARN src/stream/server_items.gd:3505: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/stream/server_items.gd:3772: UNUSED_VARIABLE The local variable "cap" is declared but never used in the block. If this is intended, prefix it with an underscore: "_cap".
+WARN src/stream/server_items.gd:4687: UNUSED_PARAMETER The parameter "cell" is never used in the function "_fish_chance()". If this is intended, prefix it with an underscore: "_cell".
+WARN src/stream/server_items.gd:4720: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/stream/server_items.gd:4925: UNUSED_PARAMETER The parameter "slot" is never used in the function "_fish_land()". If this is intended, prefix it with an underscore: "_slot".
+WARN src/stream/server_items.gd:754: SHADOWED_VARIABLE The local variable "tick" is shadowing an already-declared function at line 651 in the current class.
+WARN src/stream/server_items.gd:823: SHADOWED_VARIABLE The local function parameter "action" is shadowing an already-declared function at line 553 in the current class.
+WARN src/stream/server_items.gd:877: SHADOWED_VARIABLE The local function parameter "action" is shadowing an already-declared function at line 553 in the current class.
+WARN src/stream/server_wolves.gd:320: UNUSED_VARIABLE The local variable "lead" is declared but never used in the block. If this is intended, prefix it with an underscore: "_lead".
+WARN src/stream/server_wolves.gd:530: UNUSED_PARAMETER The parameter "members" is never used in the function "_retreat()". If this is intended, prefix it with an underscore: "_members".
+WARN src/stream/server_wolves.gd:629: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/stream/server_wolves.gd:631: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/stream/stub_ai_provider.gd:28: UNUSED_PARAMETER The parameter "map" is never used in the function "choose()". If this is intended, prefix it with an underscore: "_map".
+WARN src/stream/terrain_net.gd:137: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/matrix/matrix_preview.gd:277: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/plan/tile_plan.gd:121: UNUSED_VARIABLE The local variable "cell_km2" is declared but never used in the block. If this is intended, prefix it with an underscore: "_cell_km2".
+WARN src/worldgen/plan/tile_plan.gd:127: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/plan/tile_plan.gd:128: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/runtime/flora_placer.gd:651: SHADOWED_GLOBAL_IDENTIFIER The function parameter "seed" has the same name as a built-in function.
+WARN src/worldgen/runtime/flora_placer.gd:651: UNUSED_PARAMETER The parameter "item" is never used in the function "_groves_near()". If this is intended, prefix it with an underscore: "_item".
+WARN src/worldgen/runtime/terrain_generator.gd:1032: UNUSED_PARAMETER The parameter "lod" is never used in the function "_cave_shapes()". If this is intended, prefix it with an underscore: "_lod".
+WARN src/worldgen/runtime/terrain_generator.gd:906: CONFUSABLE_LOCAL_DECLARATION The variable "top" is declared below in the parent block.
+WARN src/worldgen/sketch/island_census.gd:46: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/sketch/river_network.gd:135: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/sketch/river_network.gd:170: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/sketch/river_network.gd:812: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/sketch/river_network.gd:97: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/sketch/world_elevation.gd:130: INT_AS_ENUM_WITHOUT_CAST Integer used when an enum value is expected. If this is intended, cast the integer to the enum type using the "as" keyword.
+WARN src/worldgen/sketch/world_elevation.gd:132: INT_AS_ENUM_WITHOUT_CAST Integer used when an enum value is expected. If this is intended, cast the integer to the enum type using the "as" keyword.
+WARN src/worldgen/sketch/world_elevation.gd:269: UNUSED_PARAMETER The parameter "owner_index" is never used in the function "_raise_ridge()". If this is intended, prefix it with an underscore: "_owner_index".
+WARN src/worldgen/sketch/world_elevation.gd:735: CONFUSABLE_LOCAL_DECLARATION The variable "point" is declared below in the parent block.
+WARN src/worldgen/sketch/world_elevation.gd:833: UNUSED_PARAMETER The parameter "owner_index" is never used in the function "_flatten_ruin()". If this is intended, prefix it with an underscore: "_owner_index".
+WARN src/worldgen/sketch/world_sketch.gd:560: UNUSED_VARIABLE The local variable "volcano_rules" is declared but never used in the block. If this is intended, prefix it with an underscore: "_volcano_rules".
+WARN src/worldgen/tile/tile_climate.gd:102: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tile/tile_climate.gd:276: UNUSED_PARAMETER The parameter "fresh_distance" is never used in the function "_pick_biome()". If this is intended, prefix it with an underscore: "_fresh_distance".
+WARN src/worldgen/tile/tile_climate.gd:340: UNUSED_PARAMETER The parameter "ocean_distance" is never used in the function "_pick_soil()". If this is intended, prefix it with an underscore: "_ocean_distance".
+WARN src/worldgen/tile/tile_climate.gd:341: UNUSED_PARAMETER The parameter "beach_distance" is never used in the function "_pick_soil()". If this is intended, prefix it with an underscore: "_beach_distance".
+WARN src/worldgen/tile/tile_climate.gd:68: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tile/tile_climate.gd:69: UNUSED_VARIABLE The local variable "tile_m" is declared but never used in the block. If this is intended, prefix it with an underscore: "_tile_m".
+WARN src/worldgen/tile/tile_climate.gd:94: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tile/tile_erosion.gd:325: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tile/tile_erosion.gd:346: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tile/tile_erosion.gd:380: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tile/tile_erosion.gd:46: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tile/tile_erosion.gd:48: UNUSED_VARIABLE The local variable "origin_sx" is declared but never used in the block. If this is intended, prefix it with an underscore: "_origin_sx".
+WARN src/worldgen/tile/tile_erosion.gd:49: UNUSED_VARIABLE The local variable "origin_sz" is declared but never used in the block. If this is intended, prefix it with an underscore: "_origin_sz".
+WARN src/worldgen/tile/tile_erosion.gd:54: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tile/tile_file.gd:102: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tile/tile_file.gd:127: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tile/tile_file.gd:167: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tile/tile_file.gd:179: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tile/tile_file.gd:248: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tile/tile_file.gd:73: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tile/tile_geology.gd:1203: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tile/tile_geology.gd:167: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tile/tile_geology.gd:244: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tile/tile_geology.gd:253: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tile/tile_geology.gd:256: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tile/tile_geology.gd:867: UNUSED_PARAMETER The parameter "tile" is never used in the function "_collect_lists()". If this is intended, prefix it with an underscore: "_tile".
+WARN src/worldgen/tile/tile_height.gd:658: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tile/tile_preview.gd:15: UNUSED_PARAMETER The parameter "settings" is never used in the function "render()". If this is intended, prefix it with an underscore: "_settings".
+WARN src/worldgen/tile/tile_preview.gd:15: UNUSED_PARAMETER The parameter "tile" is never used in the function "render()". If this is intended, prefix it with an underscore: "_tile".
+WARN src/worldgen/tile/tile_preview.gd:216: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tile/tile_preview.gd:217: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tile/tile_sites.gd:262: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tile/tile_sites.gd:357: UNUSED_PARAMETER The parameter "province" is never used in the function "_steer_to_ore()". If this is intended, prefix it with an underscore: "_province".
+WARN src/worldgen/tile/tile_sites.gd:865: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tile/tile_sites.gd:880: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tools/prebuild_blocks.gd:100: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tools/prebuild_blocks.gd:30: UNUSED_PRIVATE_CLASS_VARIABLE The class variable "_done" is declared but never used in the class.
+WARN src/worldgen/tools/soak_server.gd:230: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tools/soak_server.gd:45: UNUSED_PARAMETER The parameter "z" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_z".
+WARN src/worldgen/tools/stress_items_players.gd:43: UNUSED_PARAMETER The parameter "z" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_z".
+WARN src/worldgen/tools/terrain_bench.gd:122: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tools/terrain_bench.gd:134: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tools/terrain_bench.gd:165: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tools/terrain_bench.gd:286: UNUSED_PARAMETER The parameter "data" is never used in the function "_sections()". If this is intended, prefix it with an underscore: "_data".
+WARN src/worldgen/tools/terrain_bench.gd:30: UNUSED_PRIVATE_CLASS_VARIABLE The class variable "_thread_ms" is declared but never used in the class.
+WARN src/worldgen/tools/terrain_bench.gd:313: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tools/terrain_bench.gd:314: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tools/terrain_bench.gd:325: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tools/terrain_bench.gd:326: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tools/terrain_bench.gd:327: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tools/terrain_bench.gd:328: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tools/terrain_bench.gd:348: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tools/terrain_bench.gd:66: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tools/test_animal_senses.gd:117: CONFUSABLE_LOCAL_DECLARATION The variable "z" is declared below in the parent block.
+WARN src/worldgen/tools/test_animal_senses.gd:117: UNUSED_PARAMETER The parameter "z" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_z".
+WARN src/worldgen/tools/test_animal_senses.gd:20: UNUSED_PARAMETER The parameter "z" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_z".
+WARN src/worldgen/tools/test_animals.gd:204: UNUSED_PARAMETER The parameter "x" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_x".
+WARN src/worldgen/tools/test_animals.gd:204: UNUSED_PARAMETER The parameter "z" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_z".
+WARN src/worldgen/tools/test_animals.gd:227: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tools/test_animals.gd:238: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tools/test_animals.gd:25: UNUSED_PARAMETER The parameter "z" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_z".
+WARN src/worldgen/tools/test_animals.gd:26: UNUSED_PARAMETER The parameter "z" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_z".
+WARN src/worldgen/tools/test_animals.gd:337: UNUSED_VARIABLE The local variable "bled_pos" is declared but never used in the block. If this is intended, prefix it with an underscore: "_bled_pos".
+WARN src/worldgen/tools/test_cover.gd:76: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tools/test_cover.gd:82: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tools/test_cover.gd:84: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tools/test_dialogue.gd:139: CONFUSABLE_LOCAL_USAGE The identifier "said" will be shadowed below in the block.
+WARN src/worldgen/tools/test_dialogue.gd:146: CONFUSABLE_LOCAL_USAGE The identifier "said" will be shadowed below in the block.
+WARN src/worldgen/tools/test_dialogue.gd:152: CONFUSABLE_LOCAL_USAGE The identifier "said" will be shadowed below in the block.
+WARN src/worldgen/tools/test_dialogue.gd:154: CONFUSABLE_LOCAL_USAGE The identifier "said" will be shadowed below in the block.
+WARN src/worldgen/tools/test_dialogue.gd:157: CONFUSABLE_LOCAL_USAGE The identifier "said" will be shadowed below in the block.
+WARN src/worldgen/tools/test_dialogue.gd:160: CONFUSABLE_LOCAL_USAGE The identifier "said" will be shadowed below in the block.
+WARN src/worldgen/tools/test_dialogue.gd:165: CONFUSABLE_LOCAL_USAGE The identifier "said" will be shadowed below in the block.
+WARN src/worldgen/tools/test_dialogue.gd:176: CONFUSABLE_LOCAL_USAGE The identifier "said" will be shadowed below in the block.
+WARN src/worldgen/tools/test_dialogue.gd:188: CONFUSABLE_LOCAL_USAGE The identifier "said" will be shadowed below in the block.
+WARN src/worldgen/tools/test_dialogue.gd:205: CONFUSABLE_LOCAL_USAGE The identifier "said" will be shadowed below in the block.
+WARN src/worldgen/tools/test_dialogue.gd:210: CONFUSABLE_LOCAL_USAGE The identifier "said" will be shadowed below in the block.
+WARN src/worldgen/tools/test_dialogue.gd:220: CONFUSABLE_LOCAL_USAGE The identifier "said" will be shadowed below in the block.
+WARN src/worldgen/tools/test_dialogue.gd:221: CONFUSABLE_LOCAL_USAGE The identifier "said" will be shadowed below in the block.
+WARN src/worldgen/tools/test_dialogue.gd:235: CONFUSABLE_LOCAL_USAGE The identifier "said" will be shadowed below in the block.
+WARN src/worldgen/tools/test_dialogue.gd:238: CONFUSABLE_LOCAL_USAGE The identifier "said" will be shadowed below in the block.
+WARN src/worldgen/tools/test_dialogue.gd:250: CONFUSABLE_LOCAL_USAGE The identifier "said" will be shadowed below in the block.
+WARN src/worldgen/tools/test_dialogue.gd:253: CONFUSABLE_LOCAL_USAGE The identifier "said" will be shadowed below in the block.
+WARN src/worldgen/tools/test_dialogue.gd:276: SHADOWED_VARIABLE The local variable "said" is shadowing an already-declared variable at line 20 in the current class.
+WARN src/worldgen/tools/test_dialogue.gd:67: SHADOWED_VARIABLE_BASE_CLASS The local "for" iterator variable "root" is shadowing an already-declared property in the base class "SceneTree".
+WARN src/worldgen/tools/test_dishes.gd:88: UNUSED_PARAMETER The parameter "dish_id" is never used in the function "_stock()". If this is intended, prefix it with an underscore: "_dish_id".
+WARN src/worldgen/tools/test_fishing.gd:131: UNUSED_VARIABLE The local variable "tries" is declared but never used in the block. If this is intended, prefix it with an underscore: "_tries".
+WARN src/worldgen/tools/test_horses.gd:34: UNUSED_VARIABLE The local variable "def" is declared but never used in the block. If this is intended, prefix it with an underscore: "_def".
+WARN src/worldgen/tools/test_items_persistence.gd:106: UNUSED_PARAMETER The parameter "x" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_x".
+WARN src/worldgen/tools/test_items_persistence.gd:106: UNUSED_PARAMETER The parameter "z" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_z".
+WARN src/worldgen/tools/test_items_persistence.gd:111: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tools/test_items_persistence.gd:137: UNUSED_PARAMETER The parameter "radius" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_radius".
+WARN src/worldgen/tools/test_items_persistence.gd:48: UNUSED_PARAMETER The parameter "x" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_x".
+WARN src/worldgen/tools/test_items_persistence.gd:48: UNUSED_PARAMETER The parameter "z" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_z".
+WARN src/worldgen/tools/test_npcs.gd:167: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tools/test_persistence_drills.gd:293: SHADOWED_GLOBAL_IDENTIFIER The variable "log" has the same name as a built-in function.
+WARN src/worldgen/tools/test_persistence_drills.gd:32: UNUSED_PARAMETER The parameter "x" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_x".
+WARN src/worldgen/tools/test_persistence_drills.gd:32: UNUSED_PARAMETER The parameter "z" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_z".
+WARN src/worldgen/tools/test_placement_rules.gd:33: UNUSED_PARAMETER The parameter "x" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_x".
+WARN src/worldgen/tools/test_placement_rules.gd:62: UNUSED_PARAMETER The parameter "x" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_x".
+WARN src/worldgen/tools/test_placement_rules.gd:62: UNUSED_PARAMETER The parameter "z" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_z".
+WARN src/worldgen/tools/test_placement_rules.gd:72: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tools/test_server_items.gd:1052: UNUSED_PARAMETER The parameter "fitness" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_fitness".
+WARN src/worldgen/tools/test_server_items.gd:1052: UNUSED_PARAMETER The parameter "health" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_health".
+WARN src/worldgen/tools/test_server_items.gd:1052: UNUSED_PARAMETER The parameter "hunger" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_hunger".
+WARN src/worldgen/tools/test_server_items.gd:1052: UNUSED_PARAMETER The parameter "luck" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_luck".
+WARN src/worldgen/tools/test_server_items.gd:1052: UNUSED_PARAMETER The parameter "weight" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_weight".
+WARN src/worldgen/tools/test_server_items.gd:1128: SHADOWED_GLOBAL_IDENTIFIER The "for" iterator variable "load" has the same name as a built-in function.
+WARN src/worldgen/tools/test_server_items.gd:1129: CONFUSABLE_LOCAL_DECLARATION The variable "inv_c" is declared below in the parent block.
+WARN src/worldgen/tools/test_server_items.gd:1178: UNUSED_VARIABLE The local variable "st_walk" is declared but never used in the block. If this is intended, prefix it with an underscore: "_st_walk".
+WARN src/worldgen/tools/test_server_items.gd:1252: SHADOWED_VARIABLE_BASE_CLASS The local variable "tr" is shadowing an already-declared method in the base class "Object".
+WARN src/worldgen/tools/test_server_items.gd:1336: CONFUSABLE_LOCAL_DECLARATION The variable "sl" is declared below in the parent block.
+WARN src/worldgen/tools/test_server_items.gd:164: UNUSED_PARAMETER The parameter "z" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_z".
+WARN src/worldgen/tools/test_server_items.gd:1660: UNUSED_PARAMETER The parameter "z" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_z".
+WARN src/worldgen/tools/test_server_items.gd:1662: UNUSED_PARAMETER The parameter "x" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_x".
+WARN src/worldgen/tools/test_server_items.gd:1662: UNUSED_PARAMETER The parameter "z" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_z".
+WARN src/worldgen/tools/test_server_items.gd:1737: UNUSED_PARAMETER The parameter "x" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_x".
+WARN src/worldgen/tools/test_server_items.gd:1737: UNUSED_PARAMETER The parameter "z" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_z".
+WARN src/worldgen/tools/test_server_items.gd:1738: UNUSED_PARAMETER The parameter "p" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_p".
+WARN src/worldgen/tools/test_server_items.gd:1821: UNUSED_PARAMETER The parameter "x" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_x".
+WARN src/worldgen/tools/test_server_items.gd:1821: UNUSED_PARAMETER The parameter "z" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_z".
+WARN src/worldgen/tools/test_server_items.gd:1855: UNUSED_PARAMETER The parameter "x" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_x".
+WARN src/worldgen/tools/test_server_items.gd:1855: UNUSED_PARAMETER The parameter "z" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_z".
+WARN src/worldgen/tools/test_server_items.gd:1908: UNUSED_PARAMETER The parameter "x" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_x".
+WARN src/worldgen/tools/test_server_items.gd:1908: UNUSED_PARAMETER The parameter "z" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_z".
+WARN src/worldgen/tools/test_server_items.gd:215: UNUSED_PARAMETER The parameter "x" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_x".
+WARN src/worldgen/tools/test_server_items.gd:215: UNUSED_PARAMETER The parameter "z" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_z".
+WARN src/worldgen/tools/test_server_items.gd:239: UNUSED_PARAMETER The parameter "x" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_x".
+WARN src/worldgen/tools/test_server_items.gd:239: UNUSED_PARAMETER The parameter "z" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_z".
+WARN src/worldgen/tools/test_server_items.gd:357: UNUSED_PARAMETER The parameter "x" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_x".
+WARN src/worldgen/tools/test_server_items.gd:357: UNUSED_PARAMETER The parameter "z" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_z".
+WARN src/worldgen/tools/test_server_items.gd:358: UNUSED_PARAMETER The parameter "z" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_z".
+WARN src/worldgen/tools/test_server_items.gd:545: SHADOWED_VARIABLE_BASE_CLASS The local variable "root" is shadowing an already-declared property in the base class "SceneTree".
+WARN src/worldgen/tools/test_server_items.gd:560: UNUSED_PARAMETER The parameter "x" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_x".
+WARN src/worldgen/tools/test_server_items.gd:560: UNUSED_PARAMETER The parameter "z" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_z".
+WARN src/worldgen/tools/test_server_items.gd:566: CONFUSABLE_LOCAL_DECLARATION The variable "id" is declared below in the parent block.
+WARN src/worldgen/tools/test_server_items.gd:566: UNUSED_PARAMETER The parameter "chunk" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_chunk".
+WARN src/worldgen/tools/test_server_items.gd:567: CONFUSABLE_LOCAL_DECLARATION The variable "id" is declared below in the parent block.
+WARN src/worldgen/tools/test_server_items.gd:567: UNUSED_PARAMETER The parameter "chunk" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_chunk".
+WARN src/worldgen/tools/test_server_items.gd:568: UNUSED_PARAMETER The parameter "peer" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_peer".
+WARN src/worldgen/tools/test_server_items.gd:605: UNUSED_VARIABLE The local variable "logs" is declared but never used in the block. If this is intended, prefix it with an underscore: "_logs".
+WARN src/worldgen/tools/test_server_items.gd:653: UNUSED_PARAMETER The parameter "x" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_x".
+WARN src/worldgen/tools/test_server_items.gd:653: UNUSED_PARAMETER The parameter "z" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_z".
+WARN src/worldgen/tools/test_server_items.gd:659: UNUSED_PARAMETER The parameter "radius" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_radius".
+WARN src/worldgen/tools/test_server_items.gd:69: CONFUSABLE_LOCAL_DECLARATION The variable "id" is declared below in the parent block.
+WARN src/worldgen/tools/test_server_items.gd:710: UNUSED_PARAMETER The parameter "x" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_x".
+WARN src/worldgen/tools/test_server_items.gd:710: UNUSED_PARAMETER The parameter "z" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_z".
+WARN src/worldgen/tools/test_server_items.gd:716: UNUSED_PARAMETER The parameter "x" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_x".
+WARN src/worldgen/tools/test_server_items.gd:716: UNUSED_PARAMETER The parameter "z" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_z".
+WARN src/worldgen/tools/test_server_items.gd:737: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tools/test_server_items.gd:745: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tools/test_server_items.gd:747: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tools/test_server_items.gd:751: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tools/test_server_items.gd:764: UNUSED_PARAMETER The parameter "x" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_x".
+WARN src/worldgen/tools/test_server_items.gd:764: UNUSED_PARAMETER The parameter "z" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_z".
+WARN src/worldgen/tools/test_server_items.gd:767: CONFUSABLE_LOCAL_DECLARATION The variable "roof" is declared below in the parent block.
+WARN src/worldgen/tools/test_server_items.gd:802: UNUSED_PARAMETER The parameter "key" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_key".
+WARN src/worldgen/tools/test_server_items.gd:814: UNUSED_PARAMETER The parameter "x" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_x".
+WARN src/worldgen/tools/test_server_items.gd:814: UNUSED_PARAMETER The parameter "z" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_z".
+WARN src/worldgen/tools/test_server_items.gd:816: CONFUSABLE_LOCAL_DECLARATION The variable "id" is declared below in the parent block.
+WARN src/worldgen/tools/test_server_items.gd:882: UNUSED_PARAMETER The parameter "x" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_x".
+WARN src/worldgen/tools/test_server_items.gd:882: UNUSED_PARAMETER The parameter "z" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_z".
+WARN src/worldgen/tools/test_server_items.gd:915: CONFUSABLE_LOCAL_DECLARATION The variable "id" is declared below in the parent block.
+WARN src/worldgen/tools/test_server_items.gd:951: UNUSED_PARAMETER The parameter "fitness" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_fitness".
+WARN src/worldgen/tools/test_server_items.gd:951: UNUSED_PARAMETER The parameter "luck" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_luck".
+WARN src/worldgen/tools/test_server_items.gd:951: UNUSED_PARAMETER The parameter "p" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_p".
+WARN src/worldgen/tools/test_spoilage.gd:28: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tools/test_spoilage.gd:88: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tools/test_step_up.gd:43: STANDALONE_TERNARY Standalone ternary operator (the return value is being discarded).
+WARN src/worldgen/tools/test_step_up.gd:56: STANDALONE_TERNARY Standalone ternary operator (the return value is being discarded).
+WARN src/worldgen/tools/test_trade.gd:44: CONFUSABLE_LOCAL_DECLARATION The variable "got" is declared below in the parent block.
+WARN src/worldgen/tools/test_trade.gd:44: CONFUSABLE_LOCAL_DECLARATION The variable "pay" is declared below in the parent block.
+WARN src/worldgen/tools/test_trails.gd:113: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tools/test_wolves.gd:223: SHADOWED_GLOBAL_IDENTIFIER The "for" iterator variable "round" has the same name as a built-in function.
+WARN src/worldgen/tools/test_wolves.gd:229: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tools/test_wolves.gd:24: UNUSED_PARAMETER The parameter "x" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_x".
+WARN src/worldgen/tools/test_wolves.gd:24: UNUSED_PARAMETER The parameter "z" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_z".
+WARN src/worldgen/tools/test_wolves.gd:25: UNUSED_PARAMETER The parameter "x" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_x".
+WARN src/worldgen/tools/test_wolves.gd:25: UNUSED_PARAMETER The parameter "z" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_z".
+WARN src/worldgen/tools/test_wolves.gd:261: UNUSED_VARIABLE The local variable "meat_on" is declared but never used in the block. If this is intended, prefix it with an underscore: "_meat_on".
+WARN src/worldgen/tools/test_wolves.gd:27: UNUSED_PARAMETER The parameter "p" is never used in the function "<anonymous lambda>()". If this is intended, prefix it with an underscore: "_p".
+WARN src/worldgen/tools/test_worldgen.gd:1230: UNUSED_VARIABLE The local variable "beach_near_sea" is declared but never used in the block. If this is intended, prefix it with an underscore: "_beach_near_sea".
+WARN src/worldgen/tools/test_worldgen.gd:1231: UNUSED_VARIABLE The local variable "wet_west" is declared but never used in the block. If this is intended, prefix it with an underscore: "_wet_west".
+WARN src/worldgen/tools/test_worldgen.gd:1232: UNUSED_VARIABLE The local variable "dry_east" is declared but never used in the block. If this is intended, prefix it with an underscore: "_dry_east".
+WARN src/worldgen/tools/test_worldgen.gd:1233: UNUSED_VARIABLE The local variable "west_cells" is declared but never used in the block. If this is intended, prefix it with an underscore: "_west_cells".
+WARN src/worldgen/tools/test_worldgen.gd:1234: UNUSED_VARIABLE The local variable "east_cells" is declared but never used in the block. If this is intended, prefix it with an underscore: "_east_cells".
+WARN src/worldgen/tools/test_worldgen.gd:1893: SHADOWED_VARIABLE_BASE_CLASS The local variable "root" is shadowing an already-declared property in the base class "SceneTree".
+WARN src/worldgen/tools/test_worldgen.gd:2132: SHADOWED_VARIABLE_BASE_CLASS The local variable "root" is shadowing an already-declared property in the base class "SceneTree".
+WARN src/worldgen/tools/test_worldgen.gd:2275: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tools/test_worldgen.gd:2277: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+WARN src/worldgen/tools/tree_mesh_dump.gd:56: INTEGER_DIVISION Integer division. Decimal part will be discarded.
+scripts checked: 306, warnings: 256
+
