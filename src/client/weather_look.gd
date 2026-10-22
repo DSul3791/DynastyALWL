@@ -243,7 +243,7 @@ func _make_snow() -> GPUParticles3D:
 func _target() -> Dictionary:
 	var out: Dictionary = {"cloud": 0.0, "rain": 0.0, "snow": 0.0, "storm": 0.0, "wind": 0.1, "fog": 0.0}
 
-	if int(_client._sound_weather_at) >= 0 and _client.sound != null and _client.sound.weather != null:
+	if int(_client.sound_tests.weather_at) >= 0 and _client.sound != null and _client.sound.weather != null:
 		return TEST.get(_client.sound.weather.kind, out)
 
 	var world: Dictionary = _client.weather

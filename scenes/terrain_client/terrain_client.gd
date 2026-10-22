@@ -40,6 +40,7 @@ const Probe := preload("res://src/debug/frame_probe.gd")
 const CompassScript := preload("res://src/client/admin_compass.gd")
 const InventoryViewScript := preload("res://src/client/inventory_view.gd")
 const NpcViewScript := preload("res://src/client/npc_view.gd")
+const SoundTestMenuScript := preload("res://src/client/sound_test_menu.gd")
 const NpcVoiceScript := preload("res://src/client/npc_voice.gd")
 const TestSwitchesScript := preload("res://src/client/test_switches.gd")
 const TrailCodec := preload("res://src/shared/trail_codec.gd")
@@ -207,6 +208,7 @@ var test_start: Vector3 = Vector3.INF   # --start=x,y,z: put the player there (t
 var _test_probe_msec: int = 0
 var test_dump: bool = false           # --dump-test: 14 s after the welcome dump the ground under the feet (prints the dump)
 var _test_dump_done: bool = false
+var sound_tests = SoundTestMenuScript.new()   # Esc > Settings sound test buttons and their state (sound_test_menu.gd)
 var menu_open: bool = false          # the Esc options menu
 var _menu: Control
 var _menu_pages: Dictionary = {}     # page name -> VBoxContainer
@@ -329,18 +331,13 @@ var test_flame: bool = false
 var _test_flame_t: float = -1.0
 var test_exertion: bool = false
 var _test_exertion_t: float = -1.0
-var _sound_exertion_at: int = -1
 var _test_fire_at: int = 0
 var _test_fire_step: int = 0
-var _sound_fire_at: int = -1
 var _test_spear_step: int = 0
 var _test_spear_at: int = 0
-var _sound_spear_at: int = -1
 var test_interior: bool = false
 var _test_interior_step: int = 0
 var _test_interior_at: int = 0
-var _sound_interior_at: int = -1
-var _sound_gear_at: int = -1
 var test_items: bool = false
 var test_gather: bool = false
 var test_strain_run: bool = false       # --strainrun: with --walk --runspeed=11, the server strain must climb while running
@@ -359,7 +356,6 @@ var test_chop: bool = false
 var test_creatures: bool = false
 var _test_creature_at: int = 0
 var _test_creature_step: int = 0
-var _sound_creature_at: int = -1
 var _quality_cued: int = -1
 var _test_ui_next: int = 0
 var _test_ui_step: int = 0
@@ -424,10 +420,6 @@ var under_cover: float = 0.0          # 1 under a tree's canopy, else 0 (Cover.a
 var weather: Dictionary = {}          # the weather here and now (WeatherScript.state): the same on every client, no network traffic; rendering and sounds read it
 var _weather_next_msec: int = 0
 var game_clock = GameClockScript.new()   # copy of the server's game clock, set at the welcome
-var _sound_test_at: int = -1          # Esc > Settings "Sound test time"; -1 follows the game clock
-var _sound_town_on: bool = false
-var _sound_hit_at: int = -1
-var _sound_weather_at: int = -1         # Esc > Settings "Sound test weather"; -1 follows the weather state
 var _water_dirty: bool = false        # the server said the water moved; not asked for yet
 var _water_asked_msec: int = 0
 var _flora_chunks: int = 0
@@ -1093,6 +1085,7 @@ func _welcome_body(info: Dictionary) -> void:
 	status_icons.add_icon("thirst", StatusIconsScript.drop_texture(), func() -> bool: return items.thirst <= 15, 0.85)
 	status_icons.add_icon("oxygen", StatusIconsScript.bubble_texture(), func() -> bool: return items.breath_ds >= 0, 0.9)
 	status_icons.add_icon("cover", StatusIconsScript.house_texture(), func() -> bool: return under_cover > 0.0)
+	sound_tests.setup(self)
 	_build_menu(layer)
 	hud = Label.new()
 	hud.position = Vector2(12.0, 72.0)   # below the link bars (top left)
@@ -1660,7 +1653,7 @@ func _update_weather() -> void:
 	if sound != null and sound.weather != null:
 		sound.weather.ice_cover = ice_now
 
-	if _sound_weather_at < 0 and sound != null and sound.weather != null:
+	if sound_tests.weather_at < 0 and sound != null and sound.weather != null:
 		sound.weather.apply_state(weather)
 
 
@@ -2247,114 +2240,7 @@ func _build_menu(layer: CanvasLayer) -> void:
 		_menu_button(settings, "%s volume: change" % group.capitalize(), func():
 			var share: float = sound.mix_step(group)
 			_menu_note.text = "%s sounds are off" % group.capitalize() if share <= 0.0 else "%s volume %d %%" % [group.capitalize(), roundi(share * 100.0)])
-	_menu_button(settings, "Sound test time: change", func():
-		var order: Array = [["day", 14.0, "autumn"], ["dawn", 6.0, "autumn"], ["dusk", 18.4, "autumn"], ["night", 23.0, "autumn"], ["winter day", 12.0, "winter"], ["summer dawn", 5.0, "summer"], ["spring night", 22.0, "spring"], ["clock runs", -1.0, "autumn"], ["world clock", -2.0, ""]]
-		_sound_test_at = (_sound_test_at + 1) % order.size()
-		var pick: Array = order[_sound_test_at]
-		if float(pick[1]) == -2.0:
-			_sound_test_at = -1
-			_menu_note.text = "Nature sounds follow the world clock again."
-			return
-
-		sound.ambient.conditions["season"] = pick[2]
-		sound.ambient.clock_runs = float(pick[1]) == -1.0
-
-		if float(pick[1]) >= 0.0:
-			sound.ambient.conditions["hour"] = pick[1]
-
-		_menu_note.text = "Nature sounds now play as: %s (a test setting; the sky does not follow)" % pick[0])
-	_menu_button(settings, "Sound test: town sounds", func():
-		_sound_town_on = not _sound_town_on
-		var here: Vector3 = body.global_position
-		sound.town.set_sources([
-			{"id": 1, "kind": "fire", "at": here + Vector3(6, 0, 0), "strength": 1.0},
-			{"id": 2, "kind": "hammering", "at": here + Vector3(0, 0, 25), "strength": 1.0},
-			{"id": 3, "kind": "crowd", "at": here + Vector3(-20, 0, 0), "strength": 1.0},
-			{"id": 4, "kind": "bell", "at": here + Vector3(0, 20, -60), "strength": 1.0},
-		] if _sound_town_on else [])
-
-		if _sound_town_on:
-			sound.town.ring_bell(here + Vector3(0, 20, -60), 3)
-
-		_menu_note.text = "Town sounds %s (a test: a fire, a smith, a crowd and a bell placed around you)" % ("on" if _sound_town_on else "off"))
-	_menu_button(settings, "Sound test: creature calls", func():
-		var kinds: Array = sound.creatures.KINDS.keys()
-		var moods: Array = ["idle", "alert", "threat"]
-		_sound_creature_at = (_sound_creature_at + 1) % (kinds.size() * moods.size())
-		@warning_ignore("integer_division")
-		var kind: String = kinds[_sound_creature_at / moods.size()]
-		var mood: String = moods[_sound_creature_at % moods.size()]
-		var distance: float = (float(sound.creatures.KINDS[kind]["dist"][0]) + float(sound.creatures.KINDS[kind]["dist"][1])) * 0.5
-		var played: bool = sound.creatures.call_nearby(kind, mood, distance)
-		_menu_note.text = "Creature call: %s, %s, about %.0f m away%s (press again for the next)" % [kind, mood, distance, "" if played else " (did not play)"])
-	_menu_button(settings, "Sound test: spear", func():
-		_sound_spear_at = (_sound_spear_at + 1) % 6
-		var eye: Vector3 = camera.global_position
-		var ahead: Vector3 = -camera.global_transform.basis.z
-
-		if _sound_spear_at == 0:
-			sound.spear.jab(eye + ahead * 1.0)
-			_menu_note.text = "Spear jab (press again: throws into wood, stone, soil, flesh, then hits right here)"
-		elif _sound_spear_at <= 4:
-			var material: String = sound.spear.MATERIALS[_sound_spear_at - 1]
-			sound.spear.throw(eye + ahead, eye + ahead * 30.0, 28.0, material)
-			_menu_note.text = "Spear thrown 30 m ahead into %s" % material
-		else:
-			sound.spear.hit("wood", eye + ahead * 2.0, 1.0)
-			_menu_note.text = "Spear hits wood two metres ahead")
-	_menu_button(settings, "Sound test: fire", func():
-		_sound_fire_at = (_sound_fire_at + 1) % 7
-		_menu_note.text = _fire_test_step(_sound_fire_at, body.global_position + -camera.global_transform.basis.z * 3.0) + " (press again for the next)")
-	_menu_button(settings, "Sound test: exertion", func():
-		_sound_exertion_at = (_sound_exertion_at + 1) % 7
-		var levels: Array = [0.0, 0.35, 0.6, 0.9, 1.0, 1.6]
-		var notes: Array = ["Rested: silent", "Light exertion: soft slow breaths", "Hard exertion: clear quick breaths, heartbeat starts", "Severe exertion: gasps and a strong heartbeat", "Exhausted: fastest gasps (then it follows your running again)", "Over-exerted: racing heart, great chest heaves", "Faint demo, 27 s: over-exertion, forced slow-down, faint (world fades, only the heart, gone in 3 s), waking with the heart racing"]
-
-		if _sound_exertion_at == 6:
-			sound.breath.demo()
-		else:
-			sound.breath.set_exertion(levels[_sound_exertion_at])
-		_menu_note.text = "%s (press again for the next)" % notes[_sound_exertion_at])
-	_menu_button(settings, "Sound test: interior", func():
-		_sound_interior_at = (_sound_interior_at + 1) % 5
-		var here: Vector3 = body.global_position + -camera.global_transform.basis.z * 2.0
-		var step: int = _sound_interior_at
-		var notes: Array = ["Inside a house (press again: door open, door close, chest, then back outside)", "Door opens", "Door closes", "Chest opens", "Back outside"]
-		var objects: Array = ["", "door_open", "door_close", "chest_open", ""]
-
-		if step == 0:
-			sound.interior.set_inside(1.0, "house")
-		elif step == 4:
-			sound.interior.set_inside(0.0)
-		else:
-			sound.interior.object(objects[step], here)
-
-		_menu_note.text = notes[step])
-	_menu_button(settings, "Sound test: gear", func():
-		var sets: Array = [[], ["cloth"], ["leather", "hobnail"], ["chain", "iron"], ["plate", "iron"]]
-		_sound_gear_at = (_sound_gear_at + 1) % sets.size()
-		sound.gear.set_worn(sets[_sound_gear_at])
-		_menu_note.text = "Gear worn: %s (walk to hear it on every step)" % (", ".join(sets[_sound_gear_at]) if not sets[_sound_gear_at].is_empty() else "none"))
-	_menu_button(settings, "Sound test: swimming", func():
-		sound.swim.demo()
-		_menu_note.text = "A scripted swim: a splash, strokes, going under, surfacing (10 s; a test of the sounds)")
-	_menu_button(settings, "Sound test: tool hit", func():
-		_sound_hit_at = (_sound_hit_at + 1) % (sound.hits.TOOLS.size() * sound.hits.MATERIALS.size())
-		var tool: String = sound.hits.TOOLS[_sound_hit_at / sound.hits.MATERIALS.size()]
-		var material: String = sound.hits.MATERIALS[_sound_hit_at % sound.hits.MATERIALS.size()]
-		sound.hits.hit(tool, material, body.global_position + -camera.global_transform.basis.z * 2.0, 1.0)
-		_menu_note.text = "Tool hit: %s on %s (press again for the next; a test of the sounds, no tools exist yet)" % [tool, material])
-	_menu_button(settings, "Sound test weather: change", func():
-		var kinds: Array = sound.weather.KINDS.keys()
-		_sound_weather_at += 1
-
-		if _sound_weather_at >= kinds.size():
-			_sound_weather_at = -1
-			_menu_note.text = "Weather sounds follow the game's weather"
-			return
-
-		sound.weather.set_weather(kinds[_sound_weather_at], 1.0)
-		_menu_note.text = "Weather sounds now play: %s (a test setting; the sky, ground, rain and snow follow it too). Press again until it follows the game's weather." % kinds[_sound_weather_at])
+	sound_tests.add_buttons(settings)
 	_menu_button(settings, "Back", func(): _show_menu_page("main"))
 
 	var advanced: VBoxContainer = _menu_page(column, "advanced")
@@ -3654,44 +3540,6 @@ func _update_bob(delta: float) -> void:
 	camera.rotation.z = deg_to_rad(float(SWAY_DEG[gait])) * side * _bob_amount
 
 
-# One step of the fire sound test (button and --fire): returns what it did.
-func _fire_test_step(step: int, at: Vector3) -> String:
-	sound.fire.hold_manual(12.0)
-	var fire := {"id": 1, "at": at, "size": 0.3, "lit": true, "open": true}
-	var note: String = ""
-
-	if step == 0:
-		fire["lit"] = false
-		sound.weather.set_weather("clear", 1.0)
-		sound.fire.set_fires([fire])
-		note = "Unlit fire placed three metres ahead (silent)"
-	elif step == 1:
-		sound.fire.set_fires([fire])
-		note = "Fire lit: small embers"
-	elif step == 2:
-		fire["size"] = 1.0
-		sound.fire.set_fires([fire])
-		note = "Fire grows to a bonfire"
-	elif step == 3:
-		fire["size"] = 1.0
-		sound.weather.set_weather("rain", 1.0)
-		sound.fire.set_fires([fire])
-		note = "Rain starts on the open fire (sizzle)"
-	elif step == 4:
-		fire["lit"] = false
-		sound.fire.set_fires([fire])
-		note = "Fire put out (hiss)"
-	elif step == 5:
-		sound.weather.set_weather("clear", 1.0)
-		sound.fire.set_fires([fire])
-		note = "Fire lit again, rain gone"
-	else:
-		sound.fire.set_fires([])
-		note = "Fire removed (fades)"
-
-	return note
-
-
 func _process(delta: float) -> void:
 	if _water_spam_per_s > 0.0 and flora != null and Time.get_ticks_msec() >= _dig_spam_next_msec and Time.get_ticks_msec() - connected_msec > 8000:
 		_dig_spam_next_msec = Time.get_ticks_msec() + int(1000.0 / _water_spam_per_s)
@@ -3773,7 +3621,7 @@ func _process(delta: float) -> void:
 	_update_weather()
 	Probe.stop("harvest, clock, weather", tp)
 
-	if _sound_test_at < 0 and sound != null and sound.ambient != null:
+	if sound_tests.time_at < 0 and sound != null and sound.ambient != null:
 		sound.ambient.set_conditions(game_clock.hour(), game_clock.season())
 
 	if _water_label != null and _water_label.text != "" and Time.get_ticks_msec() > _water_label_until_msec:
@@ -4151,7 +3999,7 @@ func _process(delta: float) -> void:
 	# Headless check: place, light, grow, rain on, put out, light, remove.
 	if test_fire and now - connected_msec > 18000 and now >= _test_fire_at:
 		_test_fire_at = now + 1200
-		print("Terrain client: fire step %d: %s" % [_test_fire_step, _fire_test_step(_test_fire_step, body.global_position + Vector3(3.0, 0.0, 0.0))])
+		print("Terrain client: fire step %d: %s" % [_test_fire_step, sound_tests.fire_step(_test_fire_step, body.global_position + Vector3(3.0, 0.0, 0.0))])
 		_test_fire_step += 1
 
 		if _test_fire_step >= 7:
@@ -5007,7 +4855,7 @@ func _debug_text(avg_ms: float, worst_ms: float) -> String:
 	text += "\nmuffled sounds: %d filtered, %d behind hills" % [sound.occlusion.filtered, sound.occlusion.occluded]
 	text += "\ncave: enclosure %.2f, drips %d" % [sound.cave.enclosure, sound.cave.drips_played]
 	text += "\nlast dig sound: %s" % sound.dig.last_dig
-	text += "\nweather sounds follow: %s" % ("the TEST button (press it until it says follow the world)" if _sound_weather_at >= 0 else "the world weather above")
+	text += "\nweather sounds follow: %s" % ("the TEST button (press it until it says follow the world)" if sound_tests.weather_at >= 0 else "the world weather above")
 	text += "\nweather sounds: %s (rain %.1f, wind %.1f, thunder %d), ground wet %.2f snow %.2f, %s, drips %d" % [sound.weather.kind, sound.weather.rain, sound.weather.wind, sound.weather.thunders_played, sound.weather.ground_wet, sound.weather.ground_snow, "under canopy" if sound.weather.covered > 0.5 else "in the open", sound.weather.drips_played]
 	text += "\nnature (%02d:%02d %s): forest %.1f meadow %.1f water %.1f high %.1f, last %s" % [int(sound.ambient.conditions["hour"]), int(fposmod(float(sound.ambient.conditions["hour"]), 1.0) * 60.0), sound.ambient.conditions["season"], sound.ambient.weights["forest"], sound.ambient.weights["meadow"], sound.ambient.weights["water"], sound.ambient.weights["highland"], sound.ambient.last_call]
 	text += "\nwater sounds: " + sound.water.summary
