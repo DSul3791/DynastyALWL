@@ -300,3 +300,7 @@ Answered: 2026-10-22 20:15 UTC
 Answer: No: I just submitted the walls and we had an entire discussion and now you need to rework all of these to match the walls
 Answered: 2026-10-22 20:15 UTC
 
+## hoe-path | Garden hoe path look: how should the trodden path look at first?
+Answer: Clear the grass and paint a flat tan blend now, real material later (recommended)
+Answered: 2026-10-22 20:15 UTC
+
