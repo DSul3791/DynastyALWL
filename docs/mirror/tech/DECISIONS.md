@@ -401,3 +401,5 @@ bk-weekly: keep the LAST backup of each ISO week (normally Sunday night); matche
 - 2026-10-22 18:30 Guru: Dave 17:18: cmd-ok approved in chat (commands already done); BP-T29 approved; question removed, recorded in ANSWERS.md.
 
 - 2026-10-22 18:35 Guru: Dave answered bake-plan: approve as written, so BP-T31 is approved. cl-tests: regroup the 11 old checks into one test card after the restart work, dropping any that no longer apply (job: Guru, with owners' ready-statements, as Things-to-check cards). cmd-ok: BP-T29 approved.
+
+- 2026-10-22 18:40 Guru: Dave answered nf-ok (17:19): BP-T30 never-forget rules approved for every thread.
