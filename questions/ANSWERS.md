@@ -116,3 +116,7 @@ Answered: 2026-10-22 03:56 UTC
 Answer: Always lethal inside the collapse
 Answered: 2026-10-22 03:57 UTC
 
+## load-exertion-own-link | When the server is overloaded players tire faster. Should a player whose OWN connection is weak (but the server is fine) also tire faster? (my pick: no, only server load counts)
+Answer: No, only server overload makes actions harder (a player on bad wifi is not punished)
+Answered: 2026-10-22 03:58 UTC
+
