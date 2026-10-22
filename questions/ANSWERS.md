@@ -272,3 +272,7 @@ Answered: 2026-10-22 19:55 UTC
 Answer: Yes
 Answered: 2026-10-22 19:56 UTC
 
+## roast-names | The other roasts are still called roast meat, roast fish and roast roots. Rename any of them like Roast Beast?
+Answer: Rename them to match (Roast Beast style, e.g. Roast Fish, Roast Roots as proper names)
+Answered: 2026-10-22 19:56 UTC
+
