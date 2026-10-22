@@ -213,6 +213,12 @@ func _ready() -> void:
 	items.dig_ground = _dig_ground
 	items.fill_ground = _fill_ground
 	items.ground_height = func(x, z): return generator.surface_height(x, z)
+	items.ground_ready = func(x, z) -> bool:
+		if generator.tile_cached(x, z):
+			return true
+
+		generator.prefetch_tile(x, z)
+		return false
 	items.world_seed = int(settings.master_seed)
 	items.rain_now = func(): return float(weather.get("rain", 0.0))
 	items.cover_at = _cover_at

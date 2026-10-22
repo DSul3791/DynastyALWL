@@ -62,6 +62,7 @@ var _resource_ids: Dictionary = {}
 var _tiles: Dictionary = {}           # Vector2i -> tile data
 var failed_tiles: int = 0              # times a tile file existed but failed to load (a stand-in was used)
 var _mutex: Mutex = Mutex.new()
+var _prefetching: Dictionary = {}       # Vector2i -> true while a worker thread reads that tile
 var _detail: Array = []               # [FastNoiseLite, amplitude_m, wavelength_m]
 var _band: float = 3.0
 var _detail_max: float = 0.0          # largest possible detail offset (m)
@@ -211,6 +212,36 @@ func get_tile(coord: Vector2i):
 
 	_mutex.unlock()
 	return data
+
+
+# Is the tile under a world position already in memory? A first look at a tile reads its file (over a second on the main thread).
+func tile_cached(x: float, z: float) -> bool:
+	var coord: Vector2i = Vector2i(int(floor(wrap_x(x) / tile_size_m)), int(floor(wrap_x(z) / tile_size_m)))
+	_mutex.lock()
+	var cached: bool = _tiles.has(coord)
+	_mutex.unlock()
+	return cached
+
+
+# Reads the tile under a world position on a worker thread so a later surface_height call on the main thread finds it cached.
+func prefetch_tile(x: float, z: float) -> void:
+	var coord: Vector2i = Vector2i(int(floor(wrap_x(x) / tile_size_m)), int(floor(wrap_x(z) / tile_size_m)))
+	_mutex.lock()
+	var busy: bool = _tiles.has(coord) or _prefetching.has(coord)
+
+	if not busy:
+		_prefetching[coord] = true
+
+	_mutex.unlock()
+
+	if busy:
+		return
+
+	WorkerThreadPool.add_task(func():
+		get_tile(coord)
+		_mutex.lock()
+		_prefetching.erase(coord)
+		_mutex.unlock())
 
 
 # Drops every loaded tile so the next use reads the files again (a bake replaced them).

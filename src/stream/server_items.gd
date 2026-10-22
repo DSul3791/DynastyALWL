@@ -645,6 +645,7 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 	_dirty = true
 
 
+var ground_ready: Callable              # (x, z) -> bool: the ground there is in memory; when not, it is being read in the background (unset in tests = always ready)
 var admin_ok: Callable                  # set by the server: true when the peer may use admin gives
 
 
@@ -1849,6 +1850,10 @@ func _scatter_around_players() -> void:
 				var cell: Vector2i = home + Vector2i(dx, dz)
 
 				if budget > 0 and not _cells_done.has(cell) and Vector2(dx, dz).length() * cell_m <= SCATTER_RADIUS_M:
+					# A tile that is not in memory yet takes over a second to read: ask for it on a worker thread and lay this cell out next time.
+					if ground_ready.is_valid() and not bool(ground_ready.call((float(cell.x) + 0.5) * cell_m, (float(cell.y) + 0.5) * cell_m)):
+						continue
+
 					_cells_done[cell] = true
 					_lay_out_cell(cell, cell_m, cfg)
 					budget -= 1
