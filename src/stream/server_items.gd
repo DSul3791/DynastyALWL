@@ -398,7 +398,7 @@ func _note_spot(peer: int, how: String) -> void:
 
 # [x, y, z] where this peer starts, or [] to stay at the world spawn. Deliberate quit: the saved spot. Disconnect (or a spot last
 # written while online, which a crash leaves): the saved spot when they come back within RESUME_GRACE_S, else where they last
-# rested or sheltered (respawn_for), else the world spawn.
+# rested or sheltered (rest_point_for: the nearest of their rest points), else the world spawn.
 func start_position_for(peer: int) -> Array:
 	var row: Dictionary = _characters.get(_peer_key.get(peer, ""), {})
 	var last: Dictionary = row.get("last", {})
@@ -413,7 +413,7 @@ func start_position_for(peer: int) -> Array:
 		return []
 
 	if str(last.get("left", "")) != "deliberate" and int(Time.get_unix_time_from_system()) - int(last.get("t", 0)) > RESUME_GRACE_S:
-		spot = respawn_for(peer)
+		spot = rest_point_for(peer, spot)   # the nearest rest or shelter point to where they dropped
 
 	return [spot.x, spot.y, spot.z]
 
@@ -2953,6 +2953,10 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 	_items[_next_id] = entry
 	_next_id += 1
 	_add_roof(entry)
+
+	if bool(def.get("shelter", false)):
+		_record_rest(str(_peer_key.get(peer, "")), spot, "shelter")   # a lean-to you built is a place to come back to
+
 	_dirty = true
 
 
@@ -3520,6 +3524,60 @@ func _shelter_near(pos: Vector3) -> int:
 	return best
 
 
+# The places a character rested or built a shelter (characters.json "rests", newest last, at most REST_POINTS_MAX): [x, y, z, "shelter" or "fire"].
+# DECISIONS.md 2026-10-22 collapse-offline: after a dropped connection the player comes back at the nearest of these (rest_point_for).
+const REST_POINTS_MAX := 12
+
+
+func _record_rest(key: String, pos: Vector3, kind: String) -> void:
+	if not _characters.has(key):
+		return
+
+	var rests: Array = _characters[key].get("rests", [])
+
+	for r in rests:
+		if Vector3(float(r[0]), float(r[1]), float(r[2])).distance_to(pos) < 1.0:
+			return
+
+	rests.append([pos.x, pos.y, pos.z, kind])
+
+	while rests.size() > REST_POINTS_MAX:
+		rests.remove_at(0)
+
+	_characters[key]["rests"] = rests
+	_dirty = true
+
+
+# Where a character who dropped off comes back: the nearest of their rest and shelter points (by distance from `from`) that still stands,
+# in front of it; with none, their last shelter or the world spawn. Computed when they rejoin, never stored.
+func rest_point_for(peer: int, from: Vector3) -> Vector3:
+	var best: Vector3 = Vector3.ZERO
+	var best_d: float = INF
+
+	for r in _characters.get(_peer_key.get(peer, ""), {}).get("rests", []):
+		var spot: Vector3 = Vector3(float(r[0]), float(r[1]), float(r[2]))
+		var landing: Vector3 = Vector3.INF
+
+		if str(r[3]) == "shelter":
+			var id: int = _shelter_near(spot)
+
+			if id >= 0 and _items[id]["pos"].distance_to(spot) <= 0.5:
+				var def: Dictionary = _structures.get(str(_items[id]["struct"]["kind"]), {})
+				var yaw: float = deg_to_rad(float(_items[id]["struct"]["yaw"]))
+				landing = spot + Vector3(cos(yaw), 0.0, sin(yaw)) * (maxf(float(def.get("half_x", 1.0)), float(def.get("half_z", 1.0))) + 1.5)
+		else:
+			for id in _items:
+				if _items[id].has("fire") and _items[id]["pos"].distance_to(spot) <= 0.5:
+					landing = spot + Vector3(1.5, 0.0, 0.0)
+					break
+
+		if landing != Vector3.INF and landing.distance_to(from) < best_d:
+			best_d = landing.distance_to(from)
+			best = landing
+
+	return best if best_d < INF else respawn_for(peer)
+
+
 func _note_shelter(peer: int) -> void:
 	if not _peer_pos.has(peer) or not _characters.has(_peer_key.get(peer, "")):
 		return
@@ -3527,7 +3585,14 @@ func _note_shelter(peer: int) -> void:
 	var id: int = _shelter_near(_peer_pos[peer])
 
 	if id < 0:
+		for fire_id in _items:
+			if _items[fire_id].has("fire") and _items[fire_id]["pos"].distance_to(_peer_pos[peer]) <= SHELTER_NOTE_M:
+				_record_rest(str(_peer_key[peer]), _items[fire_id]["pos"], "fire")
+				break
+
 		return
+
+	_record_rest(str(_peer_key[peer]), _items[id]["pos"], "shelter")
 
 	var p: Vector3 = _items[id]["pos"]
 	var row: Dictionary = _characters[_peer_key[peer]]

@@ -184,6 +184,18 @@ func _init() -> void:
 	items._items[fire_id]["fire"]["tend"] = 0.0
 	items._fires(0.1)
 	check(float(items._items[fire_id]["fire"]["burn_left"]) > 5.0 and box.count_of(items.table.number_of("stick")) == 2, "wood in the store feeds a nearly-out fire")
+	# Rest points: a lean-to you built and a fire you slept by are places to come back to, the nearest one wins; none left means the old rule.
+	items.report_position(2, Vector3(500.0, 10.0, 500.0))
+	items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of("lean_to_kit"), 0, 1, Vector3.ZERO)
+	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of("lean_to_kit")), 0, 0, Vector3(500.0, 10.0, 503.0))
+	var rest_key: String = str(items._peer_key[2])
+	check(items._characters[rest_key].get("rests", []).size() == 1, "building a lean-to records a rest point")
+	var near_lean: Vector3 = items.rest_point_for(2, Vector3(500.0, 10.0, 520.0))
+	check(near_lean.distance_to(Vector3(500.0, 10.0, 503.0)) < 5.0, "a dropped player comes back beside the lean-to (%s)" % str(near_lean))
+	items._record_rest(rest_key, items._items[fire_id]["pos"], "fire")
+	var fire_back: Vector3 = items.rest_point_for(2, Vector3(450.0, 10.0, 470.0))
+	check(fire_back.distance_to(items._items[fire_id]["pos"]) < 3.0, "from beside the campfire the campfire is the nearest rest point (%s)" % str(fire_back))
+	items.report_position(2, Vector3(450.0, 10.0, 450.0))
 	# A dead branch on the forest floor gives one stick, only within reach.
 	var sticks_had: int = items.inventory_of(2).count_of(items.table.number_of("stick"))
 	items.action(2, Net.ACT_LITTER, 0, 0, 0, Vector3(451.0, 10.0, 450.0))
