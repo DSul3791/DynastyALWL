@@ -64,3 +64,7 @@ Answered: 2026-10-22 03:05 UTC
 Answer: Only at night, far away, more in winter (recommended)
 Answered: 2026-10-22 03:05 UTC
 
+## sound-footstep-others | How far away should you hear other players' footsteps?
+Answer: 15 m, same as NPC voices (recommended)
+Answered: 2026-10-22 03:06 UTC
+
