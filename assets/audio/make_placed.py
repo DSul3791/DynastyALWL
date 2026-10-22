@@ -230,8 +230,42 @@ def stone_load(rng):
     return finish(out, 0.7)
 
 
+def place_stone(rng):
+    # A cut block or stone piece lowered into mortar: a heavy grind-down, a dull clack, a trowel tap.
+    out = np.zeros(int(1.0 * SR))
+    add(out, rustle(rng, int(0.25 * SR), 1800, 1.3) * env(int(0.25 * SR), 0.1, 0.2) * 0.35, 0.0)
+    add(out, knock(rng, rng.uniform(95, 130), 0.07, 1600, 1.1), 0.22)
+    add(out, knock(rng, rng.uniform(380, 520), 0.02, 3200, 0.8), 0.24)
+
+    for at in (0.5, 0.64)[:rng.integers(1, 3)]:
+        add(out, knock(rng, rng.uniform(600, 800), 0.012, 4000, 0.6), at)
+
+    return finish(out)
+
+
+def place_brick(rng):
+    # Bricks set in mortar: a few light ceramic taps and a wet press.
+    out = np.zeros(int(0.9 * SR))
+    add(out, rustle(rng, int(0.15 * SR), 900, 0.8) * env(int(0.15 * SR), 0.2, 0.3) * 0.25, 0.0)
+
+    for at in np.sort(rng.uniform(0.1, 0.65, 3)):
+        add(out, knock(rng, rng.uniform(420, 620), 0.018, 3600, 0.9), at)
+        add(out, ping(rng.uniform(2400, 3200), 0.03, 0.2) * 0.2, at)
+
+    return finish(out)
+
+
+def place_thatch(rng):
+    # Straw bundles laid and tied: dry rustle, a pat, a cord tug.
+    out = np.zeros(int(1.0 * SR))
+    add(out, rustle(rng, int(0.5 * SR), 3500, 1.5) * env(int(0.5 * SR), 0.05, 0.4) * 0.5, 0.0)
+    add(out, knock(rng, rng.uniform(70, 90), 0.06, 500, 0.6), 0.3)
+    add(out, rustle(rng, int(0.25 * SR), 2500, 1.0) * env(int(0.25 * SR), 0.3, 0.3) * 0.3, 0.55)
+    return finish(out, 0.7)
+
+
 ONE_SHOTS = {"place_leanto": place_leanto, "place_chest": place_chest, "place_thump": place_thump, "pickup_placed": pickup_placed,
-             "container_put": container_put, "container_take": container_take, "tool_break": tool_break, "tool_repair": tool_repair, "tool_warn": tool_warn, "place_timber": place_timber, "place_foundation": place_foundation, "bracing_creak": bracing_creak, "bracing_rumble": bracing_rumble, "dust_patter": dust_patter, "bracing_crack": bracing_crack, "quake_tick": quake_tick, "soil_load": soil_load, "stone_load": stone_load}
+             "container_put": container_put, "container_take": container_take, "tool_break": tool_break, "tool_repair": tool_repair, "tool_warn": tool_warn, "place_timber": place_timber, "place_foundation": place_foundation, "bracing_creak": bracing_creak, "bracing_rumble": bracing_rumble, "dust_patter": dust_patter, "bracing_crack": bracing_crack, "quake_tick": quake_tick, "soil_load": soil_load, "stone_load": stone_load, "place_stone": place_stone, "place_brick": place_brick, "place_thatch": place_thatch}
 
 
 def main():
