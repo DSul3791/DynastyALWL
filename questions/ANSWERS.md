@@ -68,3 +68,7 @@ Answered: 2026-10-22 03:05 UTC
 Answer: 15 m, same as NPC voices (recommended)
 Answered: 2026-10-22 03:06 UTC
 
+## sound-npc-voice-ambient | Should NPCs mutter or hum when you are nearby and they are idle?
+Answer: Yes, rarely, short lines (recommended)
+Answered: 2026-10-22 03:06 UTC
+
