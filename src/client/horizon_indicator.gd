@@ -6,7 +6,6 @@ extends Control
 # to "no bars on the main screen", like the server link bars.
 
 const DEGREES := 45                       # the ruler runs from -DEGREES to +DEGREES
-const TICKS := 9                          # ticks each side of zero (every 5 degrees)
 const PX_PER_DEGREE := 4.0
 const SIDE := 40.0                        # the ruler stands this far right of the aim point
 const CHECK_SEC := 0.25
@@ -94,13 +93,11 @@ func _underground() -> bool:
 func _draw() -> void:
 	var middle: Vector2 = Vector2(SIDE, size.y * 0.5)
 	var font: Font = ThemeDB.fallback_font
-	draw_line(middle + Vector2(0.0, -float(DEGREES) * PX_PER_DEGREE), middle + Vector2(0.0, float(DEGREES) * PX_PER_DEGREE), LINE, 2.0)
-
-	for step in range(-TICKS, TICKS + 1):
-		var degrees: int = step * 5
+	# Dave (build 619): a mark every 10 degrees and one more at the 45 end; no line down the middle.
+	for degrees in [-45, -40, -30, -20, -10, 0, 10, 20, 30, 40, 45]:
 		var y: float = middle.y - float(degrees) * PX_PER_DEGREE
-		var long: bool = degrees % 15 == 0
-		draw_line(Vector2(middle.x, y), Vector2(middle.x + (18.0 if long else 9.0), y), LINE, 3.0 if degrees == 0 else 2.0)
+		var long: bool = degrees % 20 == 0
+		draw_line(Vector2(middle.x, y), Vector2(middle.x + (18.0 if long else 10.0), y), LINE, 3.0 if degrees == 0 else 2.0)
 
 		if long:
 			draw_string(font, Vector2(middle.x + 24.0, y + 7.0), ("%+d" % degrees) if degrees != 0 else "0", HORIZONTAL_ALIGNMENT_LEFT, -1, 20, LINE)

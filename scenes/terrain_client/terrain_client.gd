@@ -67,7 +67,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 620
+const BUILD := 621
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -714,6 +714,13 @@ func _update_connect_window() -> void:
 			_connect_window.close()
 			_connect_window = null
 			return
+
+		var silent_server: bool = waiting_for_ground and stream != null and stream.blocks_received == 0 and stream.pending() == 0
+
+		if silent_server and since >= 20:
+			_telemetry.event("JOIN: %d s in the world with no ground, 0 blocks received, 0 asked for; link: %s" % [since, link_bars.text() if link_bars != null else "?"])
+			var advice: String = "The server welcomed this game but no ground has arrived for %d s and none is being asked for. Most likely the server is an old one from an earlier run that is closing or out of date. Quit, wait a few seconds, and press Play again (a new game replaces an out-of-date server)." % since
+			_connect_window.fail("The server is not sending ground", "1. Server found at %s: done\n2. Welcome received\n3. Loading the ground under you: nothing arriving\n\n%s" % [where, advice], func(): _finish(1))
 
 		_connect_window.update("1. Server found at %s: done\n2. Welcome received, server protocol %s, this game %d: matches\n3. Loading the ground under you: %d blocks still arriving, %d s so far\n\nThe game opens as soon as there is ground to stand on." % [where, str(world.get("protocol", "?")), NetScript.PROTOCOL_VERSION, stream.pending() if stream != null else 0, since])
 		return

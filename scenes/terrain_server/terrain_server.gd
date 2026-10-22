@@ -20,6 +20,8 @@ extends Node
 # Clients start at the starter spawn point of tile (3,4).
 
 const EventLogScript := preload("res://src/shared/event_log.gd")
+const GitStamp := preload("res://src/debug/git_stamp.gd")
+const RUN_NOTE := "user://server_run.json"      # which server holds the port (read by the launcher)
 const WATER_CHUNKS_MAX := 64              # flora chunks answered per water request
 const GATHER_MIN_MSEC := 100              # a peer's gather requests are handled at most this often
 const GATHER_REACH_M := 12.0              # a gather request for a chunk further than this from the player is ignored
@@ -433,7 +435,8 @@ func _ready() -> void:
 	multiplayer.multiplayer_peer = peer
 	_events.start("telemetry_server_%d.log" % port)
 	_events.start_watchdog()
-	_events.event("server listening on port %d, %s, ram %d MB" % [port, OS.get_name(), int(OS.get_static_memory_usage() / 1048576.0)])
+	_events.event("server listening on port %d after %d ms of start-up, %s, ram %d MB, commit %s" % [port, Time.get_ticks_msec(), OS.get_name(), int(OS.get_static_memory_usage() / 1048576.0), GitStamp.short_commit()])
+	_run_note("running", port)
 	# Build the flora of the spawn's chunk once here, before any other thread exists. Start-up
 	# crash (owner thread bug, build 204): about 1 start in 10 to 20 a worker thread died in the
 	# flora placer (flora_placer.gd patch_at, signal 11) right after the first client connected,
@@ -1485,14 +1488,29 @@ func _process(delta: float) -> void:
 			print("server: no players left")
 			_events.event("QUIT: no players left for %d s" % int(_quit_grace_msec / 1000.0))
 			_quit_at_msec = now
+			_run_note("closing", _link_port - 1)
 
 	if _quit_at_msec > 0 and now >= _quit_at_msec:
 		_quit_at_msec = -1
+		var flush_from: int = Time.get_ticks_msec()
 		store.flush()
+		_events.event("shutdown: ground flushed in %d ms" % (Time.get_ticks_msec() - flush_from))
+		DirAccess.remove_absolute(RUN_NOTE)
 		print("server: done; generated %d, cache hits %d, edit hits %d" % [store.blocks_generated, store.cache_hits, store.edit_hits])
 		get_tree().quit(0)
 
 	_events.mark("between frames (rpc handlers, engine)")
+
+
+# Tells the launcher (another process, same user folder) which server is on the port: its process, commit and whether it is closing.
+# A game started while the old server is closing, or from a newer checkout, replaces it instead of joining a server that
+# will stop answering (Dave, build 619: stuck on "0 blocks arriving").
+func _run_note(state: String, listen_port: int) -> void:
+	var file: FileAccess = FileAccess.open(RUN_NOTE, FileAccess.WRITE)
+
+	if file != null:
+		file.store_string(JSON.stringify({"pid": OS.get_process_id(), "port": listen_port, "commit": GitStamp.short_commit(), "state": state}))
+		file.close()
 
 
 func _send(peer_id: int, batch: Array) -> void:

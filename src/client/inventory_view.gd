@@ -3431,9 +3431,17 @@ func run_plant_test(client) -> void:
 
 		client.harvest._pick(client.harvest._candidates(2.5).filter(func(c): return int(c["id"]) == int(spot[2]))[0])
 		tried += 1
-		await get_tree().create_timer(1.0).timeout
-		var held_now: Dictionary = client.flora._chunks.get(spot[3], {}).get("items", {})
-		var still: bool = held_now.has("ids") and held_now["ids"].find(spot[2]) >= 0
+		var still: bool = true
+
+		# A cold server answers late (its item step can stall for seconds): wait up to 8 s for the plant to leave the flora.
+		for wait in range(16):
+			await get_tree().create_timer(0.5).timeout
+			var held_now: Dictionary = client.flora._chunks.get(spot[3], {}).get("items", {})
+			still = held_now.has("ids") and held_now["ids"].find(spot[2]) >= 0
+
+			if not still:
+				break
+
 		print("Plant test: %s %s" % [client.harvest._flora_by_id.get(int(spot[2]) >> 16, {}).get("name", "?"), "STILL THERE" if still else "gone"])
 		gone += 0 if still else 1
 
