@@ -27,3 +27,7 @@ Image: questions/img/chopping_block_in_hand.png
 Image: questions/img/tiers_walls_v3.png
 Image: questions/img/tiers_log_corner.png
 [check]
+
+## found-metres | Foundation sizes in metres: small cell 2 m (1x1 foundation = 2x2 m, 2x2 foundation = 4x4 m), large cell 3 m (1x1 = 3x3 m, 2x2 = 6x6 m). Pieces snap from about 6 m away. Right?
+Note: Large foundations are for the thick walls (log, cobblestone, mason); small ones are for thin walls. Foundations stack, join side by side, and the wheel raises the first one on the ground.
+[check]
