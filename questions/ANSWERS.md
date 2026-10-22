@@ -232,3 +232,7 @@ Answered: 2026-10-22 18:32 UTC
 Answer: Yes (recommended)
 Answered: 2026-10-22 18:33 UTC
 
+## chk-looks1 | Check the first 12 basic item looks: does each one read as the right thing? (spear, bark, leaves, bandage, firewood, cordage, seed bundle, roots, poultice, plant fibre, roast forage, bone)
+Answer: No: The spear is not pointy. It should be, and I can’t tell what all the other things are. I think I recognized the cordage. and the bone looks fine.
+Answered: 2026-10-22 19:12 UTC
+
