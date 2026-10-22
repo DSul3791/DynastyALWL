@@ -151,5 +151,12 @@ func _init() -> void:
 			wall_y = maxf(wall_y, items._items[id]["pos"].y)
 
 	check(items.world_item_count() == base_before + 2 and is_equal_approx(wall_y, 10.3), "a wall beside it stands on the foundation top (y %.2f)" % wall_y)
+	# A dead branch on the forest floor gives one stick, only within reach.
+	var sticks_had: int = items.inventory_of(2).count_of(items.table.number_of("stick"))
+	items.action(2, Net.ACT_LITTER, 0, 0, 0, Vector3(401.0, 10.0, 400.0))
+	check(items.inventory_of(2).count_of(items.table.number_of("stick")) == sticks_had + 1, "picking a branch from the forest floor gives a stick")
+	OS.delay_msec(100)
+	items.action(2, Net.ACT_LITTER, 0, 0, 0, Vector3(440.0, 10.0, 400.0))
+	check(items.inventory_of(2).count_of(items.table.number_of("stick")) == sticks_had + 1, "a branch far away gives nothing")
 	print("placement rules: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

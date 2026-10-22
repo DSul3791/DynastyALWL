@@ -616,6 +616,8 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_process_trunk(peer, inv, a)
 	elif kind == Net.ACT_MINE:
 		_mine(peer, inv, at)
+	elif kind == Net.ACT_LITTER:
+		_pick_litter(peer, inv, at)
 	elif kind == Net.ACT_DIG:
 		_dig(peer, inv, at)
 	elif kind == Net.ACT_FILL:
@@ -1386,6 +1388,28 @@ func fill_units_of(peer: int) -> int:
 			total += inv.count_of(number) if number > 0 else 0
 
 	return total
+
+
+# A dead branch on the forest floor (Dave 2026-10-22: loose sticks you can see should be pickable): one stick. The branches are drawn
+# by the client, so the server only checks reach and pace (the same pace as a plant pick).
+func _pick_litter(peer: int, inv, at: Vector3) -> void:
+	if not _peer_pos.has(peer) or _peer_pos[peer].distance_to(at) > Interact.server_reach_m():
+		return
+
+	var now_ms: int = Time.get_ticks_msec()
+
+	if now_ms - int(_last_gather.get(peer, -100000)) < gather_pace_ms:
+		return
+
+	_last_gather[peer] = now_ms
+	var before: Array = _snapshot(inv)
+	var left: int = inv.add(table.number_of("stick"), 1)
+
+	if left > 0:
+		drop_in_world(table.number_of("stick"), left, _peer_pos[peer])
+
+	_send_changes(peer, inv, before)
+	_dirty = true
 
 
 func _mine(peer: int, inv, at: Vector3) -> void:

@@ -726,6 +726,68 @@ func _free_cell_nodes(entry: Dictionary) -> void:
 	entry["shore"] = 0
 
 
+# The nearest dead branch lying within `radius` (flat distance) of `here`, or {} : {"pos", "d", "cell", "at"}. Branches are the litter layer
+# after the leaves; a picked one is hidden by hide_branch.
+func branch_near(here: Vector3, radius: float) -> Dictionary:
+	var layer: int = GRASS_LAYERS + 1
+	var best: Dictionary = {}
+	var span: float = CELL_M
+
+	for key in _cells:
+		var entry: Dictionary = _cells[key]
+		var bufs: Dictionary = entry.get("bufs", {})
+
+		if not bufs.has(layer):
+			continue
+
+		var centre: Vector2 = Vector2((float(key.x) + 0.5) * span, (float(key.y) + 0.5) * span)
+
+		if centre.distance_to(Vector2(here.x, here.z)) > radius + span:
+			continue
+
+		var buffer: PackedFloat32Array = bufs[layer]
+
+		@warning_ignore("integer_division")
+		var count: int = buffer.size() / 16
+
+		for n in range(count):
+			var o: int = n * 16
+			var length: float = Vector2(buffer[o], buffer[o + 2]).length()
+
+			if length < 0.01:
+				continue
+
+			# The branch lies along +x from its origin for `length`: its middle is half way along its own x axis.
+			var mid: Vector3 = Vector3(buffer[o + 3] + buffer[o] * 0.5, buffer[o + 7], buffer[o + 11] + buffer[o + 2] * 0.5)
+			var d: float = Vector2(mid.x - here.x, mid.z - here.z).length()
+
+			if d <= radius and (best.is_empty() or d < float(best["d"])):
+				best = {"pos": mid, "d": d, "cell": key, "at": n}
+
+	return best
+
+
+# Hides one dead branch (a stick was picked up): its record is scaled to nothing and the group redrawn.
+func hide_branch(cell: Vector2i, at: int) -> void:
+	var entry: Dictionary = _cells.get(cell, {})
+	var layer: int = GRASS_LAYERS + 1
+
+	if entry.is_empty() or not entry.get("bufs", {}).has(layer):
+		return
+
+	var buffer: PackedFloat32Array = entry["bufs"][layer]
+	var o: int = at * 16
+
+	if o + 16 > buffer.size():
+		return
+
+	for k in [0, 1, 2, 4, 5, 6, 8, 9, 10]:
+		buffer[o + k] = 0.0
+
+	entry["bufs"][layer] = buffer
+	_dirty[_group_of(cell)] = true
+
+
 func _group_of(cell: Vector2i) -> Vector2i:
 	return Vector2i(int(floor(float(cell.x) / float(merge_cells))), int(floor(float(cell.y) / float(merge_cells))))
 

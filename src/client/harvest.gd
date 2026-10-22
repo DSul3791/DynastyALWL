@@ -8,6 +8,7 @@ extends RefCounted
 
 const GatherRules := preload("res://src/shared/gather_rules.gd")
 
+const Net := preload("res://src/stream/terrain_net.gd")
 const Interact := preload("res://src/shared/interact_rules.gd")
 const SWEEP_RADIUS_M := 2.0
 const SWEEP_AFTER_S := 0.35         # E held this long starts the sweep
@@ -86,6 +87,31 @@ func update(delta: float, e_down: bool) -> void:
 			_items.sweep_pick(int(loose[0]))
 		elif not plant.is_empty():
 			_pick(plant)
+		elif int(loose[0]) == 0:
+			var branch: Dictionary = _branch(SWEEP_RADIUS_M, false)
+
+			if not branch.is_empty():
+				_pick_branch(branch)
+
+
+# The nearest dead branch lying on the forest floor in reach (Dave 2026-10-22: loose sticks you can see are pickable); `view_only` keeps to those in view.
+func _branch(radius: float, view_only: bool) -> Dictionary:
+	if _client.grass == null:
+		return {}
+
+	var branch: Dictionary = _client.grass.branch_near(_client.body.global_position, radius)
+
+	if branch.is_empty() or (view_only and not _items.in_view(branch["pos"])):
+		return {}
+
+	return branch
+
+
+func _pick_branch(branch: Dictionary) -> void:
+	_net.inventory_action.rpc_id(1, Net.ACT_LITTER, 0, 0, 0, branch["pos"])
+	_client.grass.hide_branch(branch["cell"], int(branch["at"]))
+	_items.clear_prompt()
+	_hint_left = 0.0
 
 
 # E tapped with nothing on the ground in reach: pick the nearest pickable plant, or say why not.
@@ -96,6 +122,12 @@ func tap() -> void:
 		if c["ok"]:
 			_pick(c)
 			return
+
+	var branch: Dictionary = _branch(Interact.reach_m(), true)
+
+	if found.is_empty() and not branch.is_empty():
+		_pick_branch(branch)
+		return
 
 	for c in found:
 		if not _is_nothing(c):
@@ -121,7 +153,13 @@ func _hint() -> String:
 	var found: Array = _candidates(Interact.reach_m(), true)
 
 	if found.is_empty():
-		return ""
+		var branch: Dictionary = _branch(Interact.reach_m(), true)
+
+		if branch.is_empty():
+			return ""
+
+		_items.plant_aimed = _items.aimed_at(branch["pos"] + Vector3(0.0, 0.2, 0.0))
+		return "Press E to gather"
 
 	# Dave 2026-10-21: only "Press E to gather", no name and no "hold E". A missing tool is told after the press (message and cue).
 	# Dave 2026-10-22: the text shows only while looking straight at it within the prompt reach (plant_aimed); E still works without it.
