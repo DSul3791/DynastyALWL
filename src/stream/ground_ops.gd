@@ -24,7 +24,7 @@ const BLOCK_SIZE := 16
 const KIND_DIG := 0
 const KIND_FILL := 1
 const SHAPE_SPHERE := 0
-const MAX_PER_BLOCK := 200       # Technical direction: replay cap per block; a block this busy takes no more
+const MAX_PER_BLOCK := 600       # Technical direction: replay cap per block; a block this busy takes no more (200 until build 610: a minute of fast digging in one spot filled it and the spade then did nothing, silently)
 const MAX_RADIUS_M := 3.0        # Technical direction: widest hole one operation makes
 
 var count: int = 0

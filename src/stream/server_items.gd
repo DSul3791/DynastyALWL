@@ -110,6 +110,7 @@ var flora_changed: Callable    # (chunk Vector2i) -> a chunk's saplings or trees
 var tree_info: Callable        # (chunk Vector2i, id) -> {name, position, height, trunk} of a standing tree, or {}
 var cut_tree: Callable         # (chunk Vector2i, id) -> true when the standing tree was removed (and clients told)
 var fill_ground: Callable        # (centre, radius, material) -> bool: add ground (a fill) and tell everyone; false when it changed nothing
+var dig_refusal: Callable        # () -> String: why the last dig changed nothing, shown to the player; set by the server scene
 var dig_ground: Callable         # (centre, radius) -> void: cut a hole in the ground and tell everyone; set by the server scene
 var trees_near: Callable        # (point, radius) -> Array of [chunk Vector2i, id int]: standing placer trees whose root is that close; set by the server scene
 var dig_support: Callable       # (base, radius, depth) -> share 0..1 of the ground under a tree not dug away; set by the server scene
@@ -1191,6 +1192,9 @@ func _dig(peer: int, inv, at: Vector3) -> void:
 
 	# The ground answers false when the dig changed nothing (a block is full, or the hole was already there): no yield, no fall.
 	if typeof(dug) == TYPE_BOOL and not bool(dug):
+		if dig_refusal.is_valid():
+			_say(peer, str(dig_refusal.call()))
+
 		return
 
 	_give_dig_yield(peer, at, _spade_tier(inv))

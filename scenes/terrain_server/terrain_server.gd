@@ -129,13 +129,15 @@ var _never_joined: bool = true
 var _water_answered_msec: Dictionary = {}   # peer -> last time its water request was answered
 var _gather_msec: Dictionary = {}           # peer -> last gather request handled
 const BURY_QUEUE_MAX := 4000        # digs waiting for the plant check; beyond it a dig skips the check
-const BURY_CHUNKS_MAX := 48         # flora chunks kept by the plant check (worker thread only)
 var _bury_mutex: Mutex = Mutex.new()
 var _bury_queue: Array = []         # [center, radius] of digs and fills not yet checked for plants
 var _bury_out: Array = []           # [chunk, id] of plants removed, waiting to be announced
-var _bury_running: bool = false
-var _bury_task: int = -1
-var _bury_chunks: Dictionary = {}   # chunk -> chunk_items, used by the worker only
+var _bury_thread: Thread = null     # the flora thread (started at the first job)
+var _bury_sem: Semaphore = Semaphore.new()
+var _bury_stop: bool = false
+var _bury_dropped: int = 0
+var _warm_home: Dictionary = {}     # peer -> the flora chunk last warmed around it
+var _refused_seen: int = 0              # ops.rejected when a refusal was last told to a player
 var limits = ActionLimitsScript.new()      # per-peer token buckets (data/limits.json); drops show in the telemetry line
 var _fill_last: Array = []                  # [centre, radius, material] of the last fill that changed something; a repeat is dropped
 var _tiles_changed: Dictionary = {}     # tiles edited since the clients were told (tile_changed goes out at most every 0.5 s)
@@ -234,6 +236,7 @@ func _ready() -> void:
 	@warning_ignore("confusable_local_declaration")
 	items.send_world_items = func(peer, added, removed): net.world_items.rpc_id(peer, added, removed)
 	items.dig_ground = _dig_ground
+	items.dig_refusal = _dig_refusal
 	items.fill_ground = _fill_ground
 	items.ground_height = func(x, z): return generator.surface_height(x, z)
 	items.ground_ready = func(x, z) -> bool:
@@ -535,6 +538,7 @@ func _event_state() -> String:
 	_queue_mutex.unlock()
 	var dropped: String = limits.summary()
 	queued += ", limiter drops: " + dropped if dropped != "" else ""
+	queued += ", digs refused (block full): %d" % store.ops.rejected if store.ops.rejected > 0 else ""
 	return "peers %d fps %d ram %d MB, %s, %s | %s" % [_peers.size(), Engine.get_frames_per_second(), int(OS.get_static_memory_usage() / 1048576.0), queued, EventLogScript.host_stats(multiplayer.multiplayer_peer), " | ".join(parts)]
 
 
@@ -621,6 +625,7 @@ func _on_position_reported(peer_id: int, position: Vector3, velocity: Vector3) -
 	items.set_head_under(peer_id, SwimScript.head_under(position.y, water[0], water[1]))
 	items.report_position(peer_id, position)
 	generator.prefetch_around(position.x, position.z)
+	_warm_flora(peer_id, position)
 	var height: float = maxf(position.y - generator.surface_height(position.x, position.z), 0.0) if generator.tile_cached(position.x, position.z) else 0.0
 	var descent: float = maxf(-velocity.y, 10.0)
 	var seconds: float = minf(height / descent, 8.0)
@@ -645,6 +650,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	_events.event("peer %d left after %d blocks (last stats: %s)" % [peer_id, int(info.get("blocks", 0)), str(info.get("last_stats", "none"))])
 	_peers.erase(peer_id)
 	limits.forget(peer_id)
+	_warm_home.erase(peer_id)
 	_water_answered_msec.erase(peer_id)
 	_gather_msec.erase(peer_id)
 	_npc_sent.erase(peer_id)
@@ -913,18 +919,10 @@ func _cover_at(point: Vector3) -> float:
 
 # A standing tree for the axe: {name, position, height, trunk}, or {} when there is none (cut already,
 # not a tree, no such id). The last few chunks' items are kept so a run of blows works them out once.
-var _tree_cache: Dictionary = {}
-
 func _tree_info(chunk: Vector2i, id: int) -> Dictionary:
 	var home: Vector2i = flora.placer.normalize(chunk)
 
-	if not _tree_cache.has(home):
-		if _tree_cache.size() > 6:
-			_tree_cache.erase(_tree_cache.keys()[0])
-
-		_tree_cache[home] = flora.placer.chunk_items(home)
-
-	var all: Dictionary = _tree_cache[home]
+	var all: Dictionary = flora.items_of(home)
 	var at: int = all["ids"].find(id)
 	var species: Dictionary = flora.placer._by_id.get(id >> 16, {})
 
@@ -960,7 +958,7 @@ func _trees_near(point: Vector3, radius: float) -> Array:
 	for dz in [-1, 0, 1]:
 		for dx in [-1, 0, 1]:
 			var chunk: Vector2i = flora.placer.normalize(home + Vector2i(dx, dz))
-			var trees: Dictionary = flora.placer.chunk_items(chunk, true)
+			var trees: Dictionary = flora.items_of(chunk, true)
 			var gone: Array = flora.removed_in(chunk)
 
 			for n in range(trees["ids"].size()):
@@ -984,7 +982,7 @@ func _standing_near(species_name: String, point: Vector3, radius: float) -> Arra
 	for dz in [-1, 0, 1]:
 		for dx in [-1, 0, 1]:
 			var chunk: Vector2i = flora.placer.normalize(home + Vector2i(dx, dz))
-			var trees: Dictionary = flora.placer.chunk_items(chunk, true)
+			var trees: Dictionary = flora.items_of(chunk, true)
 			var gone: Array = flora.removed_in(chunk)
 
 			for n in range(trees["ids"].size()):
@@ -1040,7 +1038,7 @@ func _on_cut_flora_requested(peer_id: int, chunk: Vector2i, id: int) -> void:
 		return
 
 	var home: Vector2i = flora.placer.normalize(chunk)
-	var all: Dictionary = flora.placer.chunk_items(home)
+	var all: Dictionary = flora.items_of(home)
 	var at: int = all["ids"].find(id)
 	var species: Dictionary = flora.placer._by_id.get(id >> 16, {})
 
@@ -1081,6 +1079,15 @@ func _tell_tile_changed(tile: Vector2i) -> void:
 		_tiles_changed[tile] = true
 
 
+# Why the dig that just changed nothing did so: the spot's blocks hold the most edits they replay, or the hole is already there.
+func _dig_refusal() -> String:
+	if store.ops.rejected != _refused_seen:
+		_refused_seen = store.ops.rejected
+		return "This ground is dug over too much to dig any further here."
+
+	return "The ground there is already open."
+
+
 func _dig_ground(center: Vector3, radius: float) -> bool:
 	var t0: int = Time.get_ticks_usec()
 	var tiles: Array = store.dig_sphere(center, radius)
@@ -1118,42 +1125,75 @@ func _dig_ground(center: Vector3, radius: float) -> bool:
 # sphere are removed from the world, so nothing floats over a hole or stands buried in a fill (saved edits
 # step 2, flora cleanup). They stay gone like any picked plant.
 func _bury_plants(center: Vector3, radius: float) -> void:
+	_flora_job(["bury", center, radius])
+
+
+# One persistent thread does the slow flora work so the main thread never waits for it: the plant check of every dig and fill, and
+# placing the chunks around a player before their first dig or chop. Placing a chunk takes seconds the first time (it used to run
+# on the main thread, nine chunks per dig: 6 s per tunnel dig, and a minute of fast digging backed the server up for minutes).
+# The cuts it finds wait in _bury_out and are announced from the main thread.
+func _flora_job(job: Array) -> void:
 	_bury_mutex.lock()
 
-	if _bury_queue.size() < BURY_QUEUE_MAX:
-		_bury_queue.append([center, radius])
+	if _bury_queue.size() >= BURY_QUEUE_MAX:
+		_bury_dropped += 1
 
-	if not _bury_running:
-		_bury_running = true
-
-		if _bury_task >= 0:
-			WorkerThreadPool.wait_for_task_completion(_bury_task)
-
-		_bury_task = WorkerThreadPool.add_task(_bury_drain)
+		if _bury_dropped == 1 or _bury_dropped % 100 == 0:
+			_events.event("flora worker queue full (%d jobs), %d dropped" % [_bury_queue.size(), _bury_dropped])
+	else:
+		_bury_queue.append(job)
 
 	_bury_mutex.unlock()
 
+	if _bury_thread == null:
+		_bury_thread = Thread.new()
+		_bury_thread.start(_bury_drain)
 
-# Worker thread: one dig after another. Placing a chunk's flora takes seconds the first time (it used to run here on the main
-# thread, nine chunks per dig: one tunnel dig cost 6 s and a minute of digging stalled the server for minutes). The cuts it finds
-# wait in _bury_out and are announced from the main thread.
+	_bury_sem.post()
+
+
 func _bury_drain() -> void:
 	while true:
+		_bury_sem.wait()
 		_bury_mutex.lock()
+		var job: Array = [] if _bury_queue.is_empty() else _bury_queue.pop_front()
+		var stop: bool = _bury_stop
+		_bury_mutex.unlock()
 
-		if _bury_queue.is_empty():
-			_bury_running = false
-			_bury_mutex.unlock()
+		if stop:
 			return
 
-		var job: Array = _bury_queue.pop_front()
-		_bury_mutex.unlock()
-		var found: Array = _bury_find(job[0], job[1])
+		if job.is_empty():
+			continue
+
+		if job[0] == "warm":
+			flora.items_of(job[1])
+			continue
+
+		var found: Array = _bury_find(job[1], job[2])
 
 		if not found.is_empty():
 			_bury_mutex.lock()
 			_bury_out.append_array(found)
 			_bury_mutex.unlock()
+
+
+# Places the nine chunks around a player on the flora thread when they step into a new chunk, so a dig or chop there finds them ready.
+func _warm_flora(peer_id: int, position: Vector3) -> void:
+	var size: float = flora.placer.chunk_m
+	var home: Vector2i = Vector2i(int(floor(position.x / size)), int(floor(position.z / size)))
+
+	if _warm_home.get(peer_id, Vector2i(1 << 30, 0)) == home:
+		return
+
+	_warm_home[peer_id] = home
+
+	for dz in range(-1, 2):
+		for dx in range(-1, 2):
+			var chunk: Vector2i = flora.placer.normalize(home + Vector2i(dx, dz))
+
+			if not flora.has_items(chunk):
+				_flora_job(["warm", chunk])
 
 
 func _bury_find(center: Vector3, radius: float) -> Array:
@@ -1165,13 +1205,7 @@ func _bury_find(center: Vector3, radius: float) -> Array:
 		for dx in range(-1, 2):
 			var chunk: Vector2i = flora.placer.normalize(home + Vector2i(dx, dz))
 
-			if not _bury_chunks.has(chunk):
-				if _bury_chunks.size() >= BURY_CHUNKS_MAX:
-					_bury_chunks.erase(_bury_chunks.keys()[0])
-
-				_bury_chunks[chunk] = flora.placer.chunk_items(chunk)
-
-			var all: Dictionary = _bury_chunks[chunk]
+			var all: Dictionary = flora.items_of(chunk)
 
 			for n in range(all["ids"].size()):
 				var id: int = all["ids"][n]
@@ -1719,11 +1753,13 @@ func _exit_tree() -> void:
 
 	_bury_mutex.lock()
 	_bury_queue.clear()
+	_bury_stop = true
 	_bury_mutex.unlock()
 
-	if _bury_task >= 0:
-		WorkerThreadPool.wait_for_task_completion(_bury_task)
-		_bury_task = -1
+	if _bury_thread != null:
+		_bury_sem.post()
+		_bury_thread.wait_to_finish()
+		_bury_thread = null
 
 	if flora != null:
 		flora.save_removed(true)

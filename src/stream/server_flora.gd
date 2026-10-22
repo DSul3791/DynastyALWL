@@ -17,6 +17,7 @@ const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
 const MEMORY_CHUNKS := 2048
+const ITEMS_CHUNKS := 160             # chunks of placed items kept by items_of
 const COVER_CHUNKS := 1500            # chunks kept in the cover index (oldest dropped first)
 
 var placer
@@ -29,10 +30,49 @@ var _removed: Dictionary = {}          # Vector2i chunk -> {item id: true}
 var _memory: Dictionary = {}           # Vector3i (chunk x, z, 1 full / 0 trees only) -> PackedByteArray
 var _water: Dictionary = {}            # Vector2i chunk -> PackedByteArray (cleared when the water moves)
 var _mutex: Mutex = Mutex.new()
+var _items: Dictionary = {}            # Vector3i (chunk x, z, 1 full / 0 trees only) -> chunk_items result, shared read-only
+var _items_mutex: Mutex = Mutex.new()
 var _removed_dirty: bool = false       # removals not yet written to flora_removed.json
 var _removed_saved_msec: int = 0
 var cover = CoverScript.Index.new()    # tree crowns of the chunks made so far (Cover.at; read it under cover_lock)
 var _cover_order: Array = []           # chunks in the index, oldest first
+
+
+# The chunk's placed items (FloraPlacer.chunk_items), kept for a while: placing a chunk takes seconds the first time and the
+# server asks about the same nine chunks at every dig, chop and gather. Callers only read the result. Safe from any thread (the
+# placer only reads); two threads missing at once both place it and the last result is kept.
+func items_of(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
+	var home: Vector2i = placer.normalize(chunk)
+	var full_key: Vector3i = Vector3i(home.x, home.y, 1)
+	var key: Vector3i = Vector3i(home.x, home.y, 0 if trees_only else 1)
+	_items_mutex.lock()
+	var kept: Dictionary = _items.get(full_key, {}) if trees_only else {}
+
+	if kept.is_empty():
+		kept = _items.get(key, {})
+
+	_items_mutex.unlock()
+
+	if not kept.is_empty():
+		return kept
+
+	var made: Dictionary = placer.chunk_items(home, trees_only)
+	_items_mutex.lock()
+
+	while _items.size() >= ITEMS_CHUNKS:
+		_items.erase(_items.keys()[0])
+
+	_items[key] = made
+	_items_mutex.unlock()
+	return made
+
+
+func has_items(chunk: Vector2i) -> bool:
+	var home: Vector2i = placer.normalize(chunk)
+	_items_mutex.lock()
+	var has: bool = _items.has(Vector3i(home.x, home.y, 1))
+	_items_mutex.unlock()
+	return has
 
 
 func setup(flora_placer, store_dir: String) -> void:
@@ -220,7 +260,7 @@ func cut(chunk: Vector2i, id: int) -> bool:
 	var already: bool = _removed.get(home, {}).has(id)
 	_mutex.unlock()
 
-	if already or placer.chunk_items(home)["ids"].find(id) < 0:
+	if already or items_of(home)["ids"].find(id) < 0:
 		return false
 
 	_mutex.lock()

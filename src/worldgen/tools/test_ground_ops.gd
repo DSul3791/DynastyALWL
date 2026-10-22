@@ -89,13 +89,13 @@ func _init() -> void:
 	var reread = GroundOps.new()
 	_check(reread.open(old_path) == "" and reread.count == 2 and FileAccess.get_file_as_bytes(old_path).slice(0, 5).get_string_from_ascii() == "DIGS2", "...and rewritten as DIGS2")
 
-	# The cap: a block with 200 operations takes no more.
+	# The cap: a block with 600 operations takes no more.
 	var busy = GroundOps.new()
 	DirAccess.remove_absolute(dir + "/busy.bin")
 	busy.open(dir + "/busy.bin")
 	var accepted: int = 0
 
-	for n in range(300):
+	for n in range(700):
 		@warning_ignore("integer_division")
 		var spot: Vector3 = Vector3(2.0 + float(n % 12), 4.0 + float(n / 12 % 4) * 0.01, 2.0 + float(n / 12) * 0.1)
 		accepted += 0 if busy.add(GroundOps.KIND_FILL if n % 2 == 0 else GroundOps.KIND_DIG, 1, spot, 0.6).is_empty() else 1
