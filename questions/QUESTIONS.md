@@ -1,7 +1,3 @@
-## doors-width | Is it OK that a double door fills the whole 2 m wall slot and a double window is 2 m wide?
-Note: You already asked for double doors and double windows (22:21). This only confirms the width.
-[check]
-
 ## blueprint-plan | THE BLUEPRINT BUILD SYSTEM IN SHORT (Sal's design). Have you read this?
 Note: 1. A builder's mallet replaces the kits. The mouse wheel cycles piece type, then tier. A click places a see-through blueprint that shows its cost.
 Note: 2. Every piece needs a matching foundation (small foundations too).
