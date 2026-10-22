@@ -148,3 +148,7 @@ Answered: 2026-10-22 15:03 UTC
 Answer: Yes, role digests (recommended)
 Answered: 2026-10-22 15:03 UTC
 
+## rv-shared-files | Threads need one-line changes in other threads' files (piece looks, sounds, client wiring). Allow one-line data hooks in another thread's file if announced in BUILD_LOG? BP-C10, BP-T22.
+Answer: Yes (recommended)
+Answered: 2026-10-22 15:04 UTC
+
