@@ -349,3 +349,6 @@ All 6 CONCERNS files reviewed; resolutions in tech/CONCERNS_RESOLUTIONS.md (buil
 
 ## 2026-10-22 15:40 Dave answered cc-* (all recommended except the name) (Tyler_Guru_SenDev)
 cc-first-job: crashes, saves and version check first, then water, then items, then art. cc-radar-name: SAL_CRAFTS (Radar retired as a name; older lines mean Sal_Crafts). cc-long-runs: MikeW runs long tests/bakes any time except while the game is running, checking first (BP-C109). cc-keep-awake: yes, Windows stays awake while the team works. cc-branches: per-thread branches start from the first job after restart (coordinator assigns branches). Dave also ordered repeated re-check rounds until every thread reports no concerns.
+
+## 2026-10-22 15:55 Round 2 concerns resolved (Tyler_Guru_SenDev)
+See CONCERNS_RESOLUTIONS.md "Round 2". No Dave decisions needed. MikeW told: cc-long-runs and cc-keep-awake are answered.

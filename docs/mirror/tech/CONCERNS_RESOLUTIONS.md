@@ -28,3 +28,11 @@
 
 ## Sent to Dave (question page)
 cc-first-job (restart order), cc-radar-name, cc-long-runs (when MikeW may run long gates), cc-keep-awake (PC stays awake), cc-branches (when per-thread branches start).
+
+## Round 2 (15:55)
+- Held rule: any branch whose name contains `held` (Sonny). Pushed copy `claude/sonny-held-spill-chute`; the patch in handoff/ stays the real backup.
+- Handshake (Tyler): drop the pid-kill entirely once the handshake exists; message for a joined server "the server is out of date; close the game and press Play again"; the launcher restarts only a server it started itself.
+- Merge lines in BUILD_LOG name both numbers ("640, was 627") (Tyler).
+- Branch names `claude/<sal|sonny|steve|kathleen|mike>-<topic>` (Sal); the coordinator creates/assigns them at the first job after restart (Dave: cc-branches).
+- PieceLook table and structures.json fields: Sal_Crafts writes first, Kathleen swaps look functions (Sal).
+- MikeW tests in a second clone `C:\GodotProjects\DynastyALWL_test` (MikeW); Dave answered cc-long-runs (any time except while the game runs) and cc-keep-awake (yes): MikeW may run long gates now.
