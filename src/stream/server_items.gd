@@ -673,6 +673,8 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_process_trunk(peer, inv, a)
 	elif kind == Net.ACT_MINE:
 		_mine(peer, inv, at)
+	elif kind == Net.ACT_CHEST_CLOSE:
+		_chest_viewer.erase(peer)
 	elif kind == Net.ACT_LITTER:
 		_pick_litter(peer, inv, at)
 	elif kind == Net.ACT_DIG:
