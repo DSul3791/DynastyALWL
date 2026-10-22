@@ -3250,6 +3250,11 @@ func _sleep(peer: int, want: int) -> void:
 	if want == 0:
 		if not _forced_sleep(peer):
 			_wake(peer, "You wake, not fully rested" if energy_of(peer) < 99.0 else "")
+		elif energy_of(peer) >= float(_energy_cfg.get("forced", {}).get("manual_wake_at", 30.0)) and float(_strain.get(peer, {}).get("s", 0.0)) <= 0.3:
+			# Dave 2026-10-22: after an exhaustion collapse the sleeper may wake early once the energy is back to manual_wake_at.
+			_end_sleep(peer)
+			_strain_sent.erase(peer)
+			_say(peer, "You wake, not fully rested")
 
 		return
 

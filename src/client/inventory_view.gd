@@ -577,7 +577,7 @@ func _process_body(_delta: float) -> void:
 		_thought_label.text = ""
 
 	if _strain_note != null:
-		_strain_note.text = "Exhausted: you sleep until you are rested" if forced_sleep else "Asleep: any key wakes you" if asleep else ("You are exhausted: slow down" if strain_state == 1 else "")
+		_strain_note.text = ("Exhausted: you sleep until you are rested, about %d min left%s" % [maxi(int(ceil(float(sleep_eta_s) / 60.0)), 1), "; hold Space to wake early" if energy >= 30 else " (hold Space to wake early once energy is 30 percent)"]) if forced_sleep else "Asleep: any key wakes you" if asleep else ("You are exhausted: slow down" if strain_state == 1 else "")
 
 	if _queue_head_button != null and now >= _queue_next_msec:
 		_queue_next_msec = now + 250
