@@ -29,7 +29,8 @@ RESTART_RE='^(src/(server|shared|stream|water|admin)/|scenes/(server|terrain_ser
 git fetch -q origin claude/generator-v2 2>/dev/null
 CHANGED=$( (git diff --name-only origin/claude/generator-v2...HEAD; git diff --name-only HEAD) 2>/dev/null | sort -u)
 BAKE_FILES=$(echo "$CHANGED" | grep -E "$BAKE_RE")
-RESTART_FILES=$(echo "$CHANGED" | grep -E "$RESTART_RE")
+LOOK_RE='^data/(items/looks\.json|look/)'      # only the client reads these, the server never loads them: RUNTIME
+RESTART_FILES=$(echo "$CHANGED" | grep -E "$RESTART_RE" | grep -vE "$LOOK_RE")
 if [ -n "$BAKE_FILES" ]; then CLASS=BAKE; elif [ -n "$RESTART_FILES" ]; then CLASS=RESTART; else CLASS=RUNTIME; fi
 rank() { case "$1" in BAKE) echo 3;; RESTART) echo 2;; *) echo 1;; esac; }
 if [ -n "$CHANGE_LABEL" ] && [ "$(rank "$CLASS")" -gt "$(rank "$CHANGE_LABEL")" ]; then
