@@ -760,12 +760,12 @@ func gather(peer: int, species_name: String, kind: String, flora_key: String, fl
 	if not _peer_pos.has(peer) or _peer_pos[peer].distance_to(plant_position) > GATHER_M:
 		return false
 
-	var tick: int = Time.get_ticks_msec()
+	var now_ms: int = Time.get_ticks_msec()
 
-	if tick - int(_last_gather.get(peer, -100000)) < gather_pace_ms:
+	if now_ms - int(_last_gather.get(peer, -100000)) < gather_pace_ms:
 		return false
 
-	_last_gather[peer] = tick
+	_last_gather[peer] = now_ms
 	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
 
 	if now_s - float(_picked.get(flora_key, -1.0e12)) < REGROW_GAME_S:
@@ -829,8 +829,8 @@ func _tool_for(item_id: String) -> String:
 
 
 # What a skill does to an action (data/items/skills.json): 1.0 until the skill system exists. Never below 0.25 or above 4.
-func skill_factor(peer: int, action: String) -> float:
-	var def: Dictionary = _skills_cfg.get("actions", {}).get(action, {})
+func skill_factor(peer: int, action_name: String) -> float:
+	var def: Dictionary = _skills_cfg.get("actions", {}).get(action_name, {})
 
 	if def.is_empty():
 		return 1.0
@@ -883,8 +883,8 @@ func working_level(peer: int, skill: String) -> float:
 
 # One verified success at `action` (a skills.json action): practice for its skill (80 percent) and the parent group (20 percent).
 # Nothing for trivial work, a cooldown per skill, a soft cap per game day; returns the points the skill gained.
-func practice(peer: int, action: String, difficulty: float = 1.0) -> float:
-	var def: Dictionary = _skills_cfg.get("actions", {}).get(action, {})
+func practice(peer: int, action_name: String, difficulty: float = 1.0) -> float:
+	var def: Dictionary = _skills_cfg.get("actions", {}).get(action_name, {})
 	var records: Dictionary = _skill_records(peer)
 
 	if def.is_empty() or not _characters.has(_peer_key.get(peer, "")):
@@ -1360,10 +1360,10 @@ func take_fill(peer: int, units: int) -> int:
 
 	for name in _dig_cfg.get("fill", []):
 		var number: int = table.number_of(str(name))
-		var take: int = mini(units - got, inv.count_of(number)) if number > 0 else 0
+		var took: int = mini(units - got, inv.count_of(number)) if number > 0 else 0
 
-		if take > 0 and inv.remove(number, take):
-			got += take
+		if took > 0 and inv.remove(number, took):
+			got += took
 
 		if got >= units:
 			break
@@ -3156,7 +3156,7 @@ func _forced_sleep(peer: int) -> bool:
 
 
 # Drains with game time by exertion, refills by resting; at 0 the character collapses asleep until the pool is full again.
-func _energy_tick(peer: int, v: Dictionary, spent: float, game_s: float) -> void:
+func _energy_tick(peer: int, v: Dictionary, _spent: float, game_s: float) -> void:
 	if _energy_cfg.is_empty():
 		return
 
@@ -3539,6 +3539,7 @@ func purse_breakdown(copper: int) -> Array:
 		var each: int = maxi(int(row["copper"]), 1)
 
 		if left >= each:
+			@warning_ignore("integer_division")
 			out.append([str(row["id"]), left / each])
 			left = left % each
 
@@ -3806,7 +3807,6 @@ func _note_motion(peer: int, position: Vector3) -> void:
 
 
 func _vitals_tick(spent: float) -> void:
-	var cap: float = float(_vitals_cfg.get("stomach_cap_kcal", 2400))
 	var health_max: float = float(_vitals_cfg.get("health_max", 100))
 	var game_s: float = spent * GAME_RATE
 	_load_cache.clear()
@@ -4721,7 +4721,7 @@ func fish_stock(cell: Vector2i) -> int:
 	return now_n
 
 
-func _fish_chance(peer: int, cell: Vector2i, bait: bool) -> float:
+func _fish_chance(peer: int, _cell: Vector2i, bait: bool) -> float:
 	var cfg: Dictionary = _fishing_data()
 	var chance: float = float(cfg.get("base_chance", 0.55)) * skill_factor(peer, "fish")
 	var hour: float = fposmod(float(game_seconds.call()), 86400.0) / 3600.0 if game_seconds.is_valid() else 12.0
@@ -4754,6 +4754,7 @@ func _fish_chance(peer: int, cell: Vector2i, bait: bool) -> float:
 func _fish_species(cell: Vector2i) -> String:
 	var cfg: Dictionary = _fishing_data()
 	var types: Array = cfg.get("types", ["pond"])
+	@warning_ignore("integer_division")
 	var water: String = str(types[(_cell_hash(cell) / 7) % types.size()])
 	var roll: float = _fate_rng.randf()   # luck-exempt: the fate stream picks the fish species (luck applies to the catch roll)
 	var table_rows: Array = cfg.get("species", {}).get(water, [])
@@ -4959,7 +4960,7 @@ func _fish_bait_slot(inv, cfg: Dictionary) -> int:
 	return -1
 
 
-func _fish_land(peer: int, inv, slot: int, state: Dictionary) -> void:
+func _fish_land(peer: int, inv, _slot: int, state: Dictionary) -> void:
 	_fishing.erase(peer)
 	var cell: Vector2i = state["cell"]
 	var key: String = "%d,%d" % [cell.x, cell.y]

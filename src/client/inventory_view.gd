@@ -162,7 +162,11 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.thought_received.connect(_on_thought)
 	net.skills_received.connect(_on_skills)
 	net.purse_received.connect(func(copper): purse_copper = copper; _refresh_purse())
-	net.carry_received.connect(func(item_id): shoulder_id = item_id; _refresh_weight() if _weight_label != null else null)
+	net.carry_received.connect(func(item_id):
+		shoulder_id = item_id
+
+		if _weight_label != null:
+			_refresh_weight())
 	net.reputation_received.connect(func(_ids, names, points): rep_names = names; rep_points = points)
 	var coins_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/coins.json"))
 	_coins_cfg = coins_parsed if typeof(coins_parsed) == TYPE_DICTIONARY else {}
@@ -911,6 +915,7 @@ func coin_text(copper: int) -> String:
 		var each: int = maxi(int(row["copper"]), 1)
 
 		if left >= each:
+			@warning_ignore("integer_division")
 			parts.append("%d %s" % [left / each, str(row["name"])])
 			left = left % each
 
@@ -1654,8 +1659,15 @@ func _forge_glb(file: String) -> Node3D:
 	box = AABB(box.position * fit, box.size * fit)
 	var fire: Node3D = model.get_node_or_null("Fire") as Node3D
 	var smoke: Node3D = model.get_node_or_null("Smoke") as Node3D
-	var hook_fire: Variant = _local_to(fire, root) if fire != null else null
-	var hook_smoke: Variant = _local_to(smoke, root) if smoke != null else null
+	var hook_fire: Variant = null
+	var hook_smoke: Variant = null
+
+	if fire != null:
+		hook_fire = _local_to(fire, root)
+
+	if smoke != null:
+		hook_smoke = _local_to(smoke, root)
+
 	var body: StaticBody3D = StaticBody3D.new()   # solid: you walk round a forge, not through it
 	var shape: CollisionShape3D = CollisionShape3D.new()
 	var solid: BoxShape3D = BoxShape3D.new()
@@ -1993,6 +2005,7 @@ func _natural_mesh(number: int, world_id: int) -> Mesh:
 		return null
 
 	var meshes: Array = _pickup_group(group)
+	@warning_ignore("integer_division")
 	return null if meshes.is_empty() else meshes[(pick / 100) % 3]
 
 
@@ -2317,7 +2330,9 @@ func _build_panel() -> void:
 		var size_button: Button = Button.new()
 		size_button.text = step[1]
 		_style(size_button, BODY_PX - 6)
-		size_button.pressed.connect(func(): text_step.call(step[0]) if text_step.is_valid() else null)
+		size_button.pressed.connect(func():
+			if text_step.is_valid():
+				text_step.call(step[0]))
 		top.add_child(size_button)
 
 	_search = LineEdit.new()
@@ -2660,13 +2675,13 @@ func _split_selected() -> void:
 # The item's name as this character sees it: plain, or in inspection mode the truth, "Unknown" or a
 # sticky wrong guess drawn from the look-alike list. Items with no look-alikes are always known.
 func _item_label(number: int) -> String:
-	var name: String = table.name_of(number)
+	var item_name: String = table.name_of(number)
 	var entry: Dictionary = table.entry(table.id_of(number))
 
 	if knowledge != null and is_inspecting.is_valid() and bool(is_inspecting.call()) and not entry.get("look_alikes", []).is_empty():
-		return knowledge.reveal("i%d" % number, name, int(entry.get("familiarity", 100)), "horticulture", entry.get("look_alikes", []))
+		return knowledge.reveal("i%d" % number, item_name, int(entry.get("familiarity", 100)), "horticulture", entry.get("look_alikes", []))
 
-	return name
+	return item_name
 
 
 func _freshness_word(f: float) -> String:
@@ -2678,9 +2693,9 @@ func _tooltip(number: int, count: int, fill_ml: int = 0) -> String:
 		return ""
 
 	var entry: Dictionary = table.entry(table.id_of(number))
-	var name: String = _item_label(number)
+	var item_name: String = _item_label(number)
 
-	var text: String = "%s x%d\n%s, stacks to %d" % [name, count, str(entry.get("kind", "item")), table.stack_of(number)]
+	var text: String = "%s x%d\n%s, stacks to %d" % [item_name, count, str(entry.get("kind", "item")), table.stack_of(number)]
 	text += "\n%s" % str(entry.get("description", "A plant material you gathered."))
 
 	if int(entry.get("capacity_ml", 0)) > 0:
@@ -2846,9 +2861,9 @@ func _refresh() -> void:
 		var number: int = inventory.numbers[i]
 		button.text = "" if number == 0 else "%s\nx%d" % [_item_label(number), inventory.counts[i]]
 		var bar: ColorRect = button.get_node("Condition")
-		var worn: bool = number != 0 and int(table.entry(table.id_of(number)).get("durability", 0)) > 0 and inventory.wear[i] > 0
+		var is_worn: bool = number != 0 and int(table.entry(table.id_of(number)).get("durability", 0)) > 0 and inventory.wear[i] > 0
 		var perishable: bool = number != 0 and table.shelf_units(number) > 0
-		bar.visible = worn or perishable
+		bar.visible = is_worn or perishable
 
 		if perishable:
 			var f: float = table.freshness(number, inventory.wear[i])
@@ -2857,7 +2872,7 @@ func _refresh() -> void:
 			bar.anchor_left = 0.0
 			bar.offset_right = -_px(4)
 			button.text += "   %s" % _freshness_word(f)
-		elif worn:
+		elif is_worn:
 			var c: float = condition(i)
 			bar.anchor_right = maxf(c, 0.04)
 			bar.color = Color(0.85, 0.2, 0.15) if c <= 0.0 else Color(1.0 - c, 0.2 + 0.7 * c, 0.15)
@@ -3202,7 +3217,7 @@ func run_gather_test(client) -> void:
 
 
 # Headless check (--quickkeys): D drops, S splits and E eats the stack under the mouse.
-func run_quickkey_test(client) -> void:
+func run_quickkey_test(_client) -> void:
 	await get_tree().create_timer(6.0).timeout
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("stone"), 0, 6, Vector3.ZERO)
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("roast_forage"), 0, 2, Vector3.ZERO)
@@ -3216,7 +3231,7 @@ func run_quickkey_test(client) -> void:
 
 	var press: Callable = func(code: int, shift: bool = false) -> bool:
 		var event: InputEventKey = InputEventKey.new()
-		event.keycode = code
+		event.keycode = code as Key
 		event.shift_pressed = shift
 		event.pressed = true
 		return quick_key(event)
@@ -3397,7 +3412,7 @@ func run_plant_test(client) -> void:
 
 
 # Headless check (--leanto): place a lean-to ahead of the player and look for its row and its roof.
-func run_leanto_test(client) -> void:
+func run_leanto_test(_client) -> void:
 	await get_tree().create_timer(6.0).timeout
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("lean_to_kit"), 0, 1, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout
