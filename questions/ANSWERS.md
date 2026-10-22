@@ -204,3 +204,7 @@ Answered: 2026-10-22 17:17 UTC
 Answer: Approved (Dave in chat: the commands are already done)
 Answered: 2026-10-22 17:18 UTC
 
+## nf-ok | Approve the "never forget" rules for every thread (BP-T30)? Each thread keeps one open-items list, writes down promises at once, checks a six-box "definition of done" before saying done, lists unfinished things in its handoff, and may drop an item only with a one-line reason.
+Answer: Approve as proposed (recommended)
+Answered: 2026-10-22 17:19 UTC
+
