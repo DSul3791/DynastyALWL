@@ -180,3 +180,7 @@ Answered: 2026-10-22 15:15 UTC
 Answer: From the first job after restart (recommended)
 Answered: 2026-10-22 15:16 UTC
 
+## bk-plan | Nightly backup plan (your top priority). Approve it so MikeW can write the script? Plan and every failure case it handles: tech/BACKUP_PLAN.md (copy in docs/mirror/tech/). Restore steps: tech/RESTORE_PROCEDURE.md.
+Answer: Approve as written (recommended)
+Answered: 2026-10-22 15:35 UTC
+
