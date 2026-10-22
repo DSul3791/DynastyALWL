@@ -72,3 +72,7 @@ Answered: 2026-10-22 03:06 UTC
 Answer: Yes, rarely, short lines (recommended)
 Answered: 2026-10-22 03:06 UTC
 
+## river-flood | Should heavy rain make rivers swell and flood low ground?
+Answer: Yes, real floods in storms and spring melt (can wash out low buildings and crops)
+Answered: 2026-10-22 03:06 UTC
+
