@@ -50,3 +50,6 @@ Written 2026-10-22 by the Guru. Goal: one phone-friendly page where the owner an
 ## 7. Reuse and improvement ideas
 - Reuse: copy questions/, the stub repo and watch_answers.sh; change REPO and BRANCH constants at the top of qa.html and the watcher.
 - Later: friends hub (polls, suggestions, news posts; see IDEAS.md rows 2 and 2a), per-friend tokens in a separate data repo, a notification when a question is added.
+
+## 8. Look and feel (v4, Dave 17:48)
+Calm cream/dark theme, serif title (Daily Planet masthead idea saved for the friends page), sticky top bar with a menu button (sheet: Things to check, Questions, Dave's commands, Reload, Forget token), big 48 px tap targets, scalable font (clamp, readable on a 55-inch TV), always-visible bottom bar "Tell Claude I answered". Forget token asks "Are you sure?" (Cancel / Yes, forget it) before removing anything. Test at 390 px width with a mocked API (Playwright) after every change.
