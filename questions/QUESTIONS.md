@@ -1,6 +1,3 @@
-## tl-logs | Should log walls be real round logs with notched corner ends sticking out (8 small meshes per wall), not just a picture?
-[check]
-
 ## tl-doors | Should doors and windows follow the wall tier's look (nailed boards with iron straps and shutters from tier 3 up)?
 [check]
 
