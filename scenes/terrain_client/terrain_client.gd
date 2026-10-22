@@ -67,7 +67,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 588
+const BUILD := 589
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -88,6 +88,7 @@ const HotbarStripScript := preload("res://src/client/hotbar_strip.gd")
 const PickupFeedScript := preload("res://src/client/pickup_feed.gd")
 const NetSettings := preload("res://src/shared/net_settings.gd")
 const StepUpScript := preload("res://src/client/step_up.gd")
+const EventLogScript := preload("res://src/shared/event_log.gd")
 const CrashReportScript := preload("res://src/client/crash_report.gd")
 const WaterFallsScript := preload("res://src/worldgen/runtime/water_falls.gd")
 const FloraViewScript := preload("res://src/flora/flora_view.gd")
@@ -648,6 +649,9 @@ func _ready() -> void:
 	net.dump_received.connect(_on_dump_received)
 	_host = host
 	_port = port
+
+	if crash_report != null:
+		crash_report.server_port = port
 
 	# Started by the "play" launcher, whose server may still be loading.
 	if AppConfig.get_command_line_value("role", "") == "play" and _wait_until_msec == 0:
@@ -2449,8 +2453,10 @@ Esc: this menu"""
 # One line for screenshots: terrain version, tile stamp, starter ground, saved ground (size, hits, misses) and the guards' counts.
 func _crash_state() -> String:
 	var at: Vector3 = body.global_position if body != null else Vector3.ZERO
+	var enet: ENetMultiplayerPeer = multiplayer.multiplayer_peer as ENetMultiplayerPeer
+	var link_stats: String = EventLogScript.peer_stats(enet.get_peer(1)) if enet != null else "no link"
 	@warning_ignore("integer_division")
-	return "pos %d,%d,%d quality %d fps %d ram %d MB video %d MB menu %s screen %s" % [at.x, at.y, at.z, quality, Engine.get_frames_per_second(), int(OS.get_static_memory_usage() / 1048576), int(RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_VIDEO_MEM_USED) / 1048576), menu_open, items != null and items.screen_open()]
+	return "link " + link_stats + " pos %d,%d,%d quality %d fps %d ram %d MB video %d MB menu %s screen %s" % [at.x, at.y, at.z, quality, Engine.get_frames_per_second(), int(OS.get_static_memory_usage() / 1048576), int(RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_VIDEO_MEM_USED) / 1048576), menu_open, items != null and items.screen_open()]
 
 
 func _ground_health_line() -> String:

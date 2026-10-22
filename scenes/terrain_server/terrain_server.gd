@@ -19,6 +19,7 @@ extends Node
 #
 # Clients start at the starter spawn point of tile (3,4).
 
+const EventLogScript := preload("res://src/shared/event_log.gd")
 const NetSettings := preload("res://src/shared/net_settings.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
@@ -114,6 +115,7 @@ var _quit_when_empty: bool = false
 var _empty_since_msec: int = 0
 var _quit_grace_msec: int = 10000
 var _never_joined: bool = true
+var _events = EventLogScript.new()      # user://server_events.log: peers, stalls, quit reason (why a client was dropped)
 var _report_at_msec: int = 0
 var _idle_threads: int = 2             # idle builder threads (--idle-threads=N, 0 turns it off)
 var _idle_workers: Array = []
@@ -389,10 +391,14 @@ func _ready() -> void:
 
 	if error != OK:
 		push_error("Terrain server: cannot listen on port %d (%s)" % [port, error_string(error)])
+		_events.start("server_events_failed.log")
+		_events.event("cannot listen on port %d (%s): another server may still be running on it" % [port, error_string(error)])
 		get_tree().quit(1)
 		return
 
 	multiplayer.multiplayer_peer = peer
+	_events.start("server_events_%d.log" % port)
+	_events.event("server listening on port %d, %s, ram %d MB" % [port, OS.get_name(), int(OS.get_static_memory_usage() / 1048576.0)])
 	# Build the flora of the spawn's chunk once here, before any other thread exists. Start-up
 	# crash (owner thread bug, build 204): about 1 start in 10 to 20 a worker thread died in the
 	# flora placer (flora_placer.gd patch_at, signal 11) right after the first client connected,
@@ -482,6 +488,19 @@ func _spawn_point(world_dir: String) -> Vector3:
 	return point
 
 
+# The server's state line for user://server_events.log; keeps each peer's last statistics for the "left" line.
+func _event_state() -> String:
+	var enet: ENetMultiplayerPeer = multiplayer.multiplayer_peer as ENetMultiplayerPeer
+	var parts: PackedStringArray = PackedStringArray()
+
+	for peer_id in _peers:
+		var stats: String = EventLogScript.peer_stats(enet.get_peer(peer_id)) if enet != null else "no enet"
+		_peers[peer_id]["last_stats"] = stats
+		parts.append("peer %d %s" % [peer_id, stats])
+
+	return "state peers %d fps %d ram %d MB | %s" % [_peers.size(), Engine.get_frames_per_second(), int(OS.get_static_memory_usage() / 1048576.0), " | ".join(parts)]
+
+
 func _on_peer_connected(peer_id: int) -> void:
 	_never_joined = false
 	NetSettings.apply((multiplayer.multiplayer_peer as ENetMultiplayerPeer).get_peer(peer_id))
@@ -490,6 +509,7 @@ func _on_peer_connected(peer_id: int) -> void:
 	_connected_peers[peer_id] = true
 	_queue_mutex.unlock()
 	print("Client %d connected" % peer_id)
+	_events.event("peer %d connected" % peer_id)
 	net.welcome.rpc_id(peer_id, {
 		"protocol": NetScript.PROTOCOL_VERSION,
 		"world_name": settings.world_name,
@@ -584,6 +604,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	print("Client %d left after %d blocks, %.1f MB; flora %.1f MB" % [
 		peer_id, int(info.get("blocks", 0)), float(info.get("bytes", 0)) / 1048576.0, float(info.get("flora_bytes", 0)) / 1048576.0
 	])
+	_events.event("peer %d left after %d blocks (last stats: %s)" % [peer_id, int(info.get("blocks", 0)), str(info.get("last_stats", "none"))])
 	_peers.erase(peer_id)
 	_npc_sent.erase(peer_id)
 	_animal_sent.erase(peer_id)
@@ -1071,6 +1092,7 @@ func _process(delta: float) -> void:
 		return
 
 	game_clock.advance(delta)
+	_events.tick(_event_state, 5000, 700)
 
 	if Time.get_ticks_msec() - _clock_saved_msec > 30000:
 		_save_game_clock()
@@ -1180,6 +1202,7 @@ func _process(delta: float) -> void:
 			_quit_grace_msec = 300000 if _never_joined else NetSettings.value("server_empty_grace_s", 120) * 1000
 		elif now - _empty_since_msec >= _quit_grace_msec:
 			print("server: no players left")
+			_events.event("QUIT: no players left for %d s" % int(_quit_grace_msec / 1000.0))
 			_quit_at_msec = now
 
 	if _quit_at_msec > 0 and now >= _quit_at_msec:

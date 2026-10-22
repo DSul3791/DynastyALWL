@@ -31,6 +31,7 @@ var _next_state_msec: int = 0
 var _build: int = 0
 var _last_tick_msec: int = 0
 var reported_now: bool = false
+var server_port: int = 0            # the server's port: its own events file is added to a report
 
 
 class BreadLogger extends Logger:
@@ -63,7 +64,7 @@ func start(build: int, commit: String) -> void:
 	_logger = BreadLogger.new()
 	_logger.owner_report = self
 	OS.add_logger(_logger)
-	event("start build %d (%s), %s, %s" % [build, commit, OS.get_name(), _machine()])
+	event("start build %d (%s), %s, %s; run from the editor: %s, editor debugger attached: %s" % [build, commit, OS.get_name(), _machine(), OS.has_feature("editor"), EngineDebugger.is_active()])
 
 
 func mark_clean() -> void:
@@ -181,6 +182,15 @@ func _write_report(headline: String, flag: String, log_name: String) -> String:
 
 	text += "== Last %d breadcrumbs (key and mouse presses, menus, errors, a state line every 5 s) ==\n%s\n\n" % [KEEP_EVENTS, "\n".join(bread.slice(maxi(bread.size() - KEEP_EVENTS, 0)))]
 	text += "== Errors and warnings of that run (last 40) ==\n%s\n\n" % "\n".join(errors.slice(maxi(errors.size() - 40, 0)))
+	var server_lines: PackedStringArray = PackedStringArray()
+
+	for name in ["server_events_%d.log" % server_port, "server_events_failed.log"]:
+		if FileAccess.file_exists("user://" + name):
+			var all: PackedStringArray = FileAccess.get_file_as_string("user://" + name).split("\n")
+			server_lines.append("-- " + name)
+			server_lines.append_array(all.slice(maxi(all.size() - 60, 0)))
+
+	text += "== The server's own events (last 60 lines: peers, stalls, why a client was dropped) ==\n%s\n\n" % "\n".join(server_lines)
 	var log_lines: PackedStringArray = PackedStringArray()
 
 	if _file != null:
