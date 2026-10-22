@@ -1,0 +1,1 @@
+READ-ONLY MIRROR of /mnt/project-files/tech/*.md (project files are the master). Overwritten daily by the Technical Director. Do not edit here; send changes to the Technical Director. Copied 2026-10-22.

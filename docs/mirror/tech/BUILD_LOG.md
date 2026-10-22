@@ -1,0 +1,341 @@
+# Build number log (owned by Technical direction)
+
+Source of truth for `BUILD` in `scenes/terrain_client/terrain_client.gd`. Last build seen on `claude/generator-v2`: **67** (2026-10-20).
+
+## Scheme (in force since 2026-10-20, replaces the blocks of 5; Dave's rule)
+Technical direction hands out build numbers one at a time, when a job starts, strictly in order, so each update is the next number. A thread asks Technical direction (cross-session message, session id cse_0111SmjyMaTAj3PtyQqHboYJ) when it starts a job and gets the next number back; it sets `BUILD` in `scenes/terrain_client/terrain_client.gd` to that number for its push. Old blocks are void. A number that a job never uses stays unused. If a job needs more than one push, it asks again.
+
+**Next number: 552.** (90 Art direction flora placement; 91 Water and terrain ore dirt and mud cap; 92 Basic world sounds wind floor; 93 Basic world sounds nature ambience; 94 Water and terrain brook depth rule; 95 Water and terrain pond-size spring flow; 96 Basic world sounds positional water; 97 Art direction dense grass; 98 Ground loading perf routine and spikes; 99 Water and terrain river fall floor (cancelled, unused); 100 Art direction tree crowns; 101 Water and terrain flow speed and smoothing (approved with changes); 102 Art direction clear water shader; 103 Basic world sounds day night season ambience; 104 Basic world sounds weather sounds hooks; 105 Technical direction game clock; 106 Water and terrain weather state (approved, no new message); 107 Technical direction client clock follows ticks; 108 Basic world sounds audio budget by tier; 109 Basic world sounds footsteps and mixer; 110 Basic world sounds dig sounds; 111 Art direction clear water shader (102 was used for denser grass); 112 Technical direction render audit; 113 Basic world sounds cave reverb and dripping; 114 Ground loading pause fixes (pushed); 114 also used by Basic world sounds thunder (clash, tell apart by commit id); 115 Ground loading resolution and display settings (pushed as 115, used instead of 116); 116 unused; 117 Basic world sounds muffling; 118 Ground loading display settings second push; 119 Basic world sounds water loops by flow; 120 Water and terrain brook deep to the ledge; 121 Basic world sounds valley and ridge wind; 122 Basic world sounds pack manifest; 123 Basic world sounds tool hit sounds; 124 Basic world sounds town placeholders; 125 Art direction far-tree impostors and LOD (approved with changes); 126 Ground loading embedded-window settings fix; 127 Basic world sounds swimming and diving; 128 Water and terrain weather tuning (drier default); 129 Basic world sounds wet and snowy ground; 130 Basic world sounds interface sounds; 131 Art direction weather look (clouds, rain, lightning; pushed); 132 Basic world sounds creature call hooks; 133 Water and terrain cover query; 134 Items and crafting item and inventory system (protocol 10, approved with conditions); 135 Basic world sounds mixer preset per tier; 136 Ground loading fixed 16:9 picture size, letterboxed; 137 Items and crafting harvest and drop; 138 Basic world sounds armour and clothing footstep hooks; 139 Items and crafting hand-craft recipes; 140 Items and crafting spears (throw, hotbar, held model); 141 Basic world sounds interior ambience and furniture slots; 142 Items and crafting stone axe as tool and hit sounds (pushed); 143 Water and terrain cover query (pushed as 143, was leased 133) and thin channel water; 146 Items and crafting campfire (reissued, 143 was taken); 144 Basic world sounds spear sounds; 145 Basic world sounds river and brook loop rework (pushed); 147 Basic world sounds Cover.at swap (reserved); 148 Basic world sounds item sounds (pushed); 149 Basic world sounds fire sound hooks; 150 Art direction fir to hardwood gradient; 151 Basic world sounds audio volume sliders; 152 Water and terrain water draw fix (channel film, underwater test); 153 Basic world sounds loudness pass and probe table; 154 Water and terrain fall columns (pushed, protocol 13); 155 Art direction slope gravel and boulder aprons; 156 Items and crafting chop and fall (pushed, protocol 12); 157 Items and crafting stone knife and torch (job 14); 158 Items and crafting hand gathering (job 13); 159 Basic world sounds sound pack validator; 160 Art direction flora cost step 2 (impostor switch closer); 161 Ground loading GPU table layout fix (pushed); 162 Ground loading probe split rows; 163 Ground loading HUD cut-down and debug details toggle; 164 Art direction flora cost step 3 (shadow range per tier); 165 Basic world sounds wire fire, spear, item and hit sounds to real calls; 166 Art direction flora cost step 4 (mid LOD, pushed a2fd928); 167 Items and crafting process a trunk (job 10, pushed); 168 Basic world sounds waterfall roar and WaterVolume swap (job 36, reserved); 169 Items and crafting Ark-style crafting and inventory screen; 170 Basic world sounds water sound rework (steady flow, no bubbles; pushed); 171 Basic world sounds tree felling sounds (job 31, pushed); 172 Items and crafting saplings and regrowth (job 11); 173 Basic world sounds exertion breathing and heartbeat (job 32, pushed); 174 Basic world sounds torch and lantern flame loops (job 33, pushed); 175 Items and crafting inventory polish (job 15); 176 Ground loading spike hunt (job 2); 177 Basic world sounds sound.update tuning (pushed); 178 Items and crafting item data validator (job 17, pushed); 179 Items and crafting persistence tests and caps (job 18, pushed); 180 Items and crafting poultice and bandage (job 19); 181 Basic world sounds crafting sounds (job 34); 182 Water and terrain outlet fix (commit a06cce1, generator change, re-bake needed; pushed without asking) and also used as the label for Items held light (3920189), so Items job 20 label stays 182 in git and 189 is unused; 183 Items and crafting tool-gated gathering (job 21b); 184 Basic world sounds built-floor footstep surfaces (job 35); 185 Items and crafting tool wear and repair; 186 Items and crafting lean-to shelter; 187 Items and crafting storage chest; 188 spare; 189 Items and crafting held light cost (job 20); 190 Water and terrain cover roof API (pushed); 191 Art direction double grass; 192 Basic world sounds distant-sound pass (job 37, pushed); 193 Items and crafting harvest prompt (press E, hold to sweep); 194 Basic world sounds lean-to, chest, tool break and repair sounds (job 38, pushed); 195 Items and crafting tool wear and repair (pushed, protocol 14; 185 unused); 196 Basic world sounds cooking and eating check (job 39, pushed); 197 Basic world sounds wind in trees (job 40, pushed); 198 Ground loading cold-ground generation speed (job 3); 199 Basic world sounds credits and licence table (job 41, pushed); 200 Basic world sounds headless sound regression scenarios (job 42); 201 Items and crafting woven chest (pushed, took the next free number without asking); 202 Items and crafting chopping block; 203 Basic world sounds placeholder swap kit (job 43, pushed); 204 Ground loading server start-up thread error (propagate_notification); 205 Basic world sounds plant harvest and pick sounds (job 44, pushed); 206 Items and crafting hunger, health and body weight (pushed without asking, protocol 18; label also used in git by nobody else); 207 Basic world sounds chopping block and saw mill hooks (job 45, pushed, reissued from 206); 208 Items and crafting carrying weight and safe jobs; 209 Basic world sounds eating, healing and stomach growl (pushed); 210 Basic world sounds rain on different ground (job 46); 211 Ground loading F2 quality tier fix; 212 Art direction rain fades under canopy; 213 Ground loading HUD status-effect icon row; 214 Art direction canopy map stamps roofs; 215 Basic world sounds recording-wanted list (job 47, docs only, no build); 216 Items and crafting E-key interaction prompts and fire lighting (pushed with HUD label 218, protocol 19); 217 Basic world sounds what-is-that-sound list (job 49); 218 unused label (taken by Items HUD); 220 Basic world sounds fire lighting and loading wiring (job 48, pushed); 221 Sounds memory audit at Low (job 52, pushed); 223 Sounds job 53 (after 54); 231 Ground job 5 HUD VRAM/draw calls plus Measure this machine (pushed, includes C/X/Z stance wiring); 232 Opus River start (pushed, head abf71be, fixes 7476b49, dc84088, b0d317d (pond B ribbon, server only, no bake); next River push uses 244; the one re-bake: Dave bakes from abf71be) at the pond (brook bed notch, outlet not 40 m flat, fall-finding level map; re-bake needed, no protocol change); 229 Ground client stances (C crouch, X sit, Z lie; admin dig moves to Ctrl+X); 222 Ground client cache on worker thread (pushed, stall 407 ms to 0); 235 unused (Art water shader already shipped as 111); 234 Art flora chunk-in time budget (pushed, touches cover.gd, behaviour identical); 233 Art flora setup spread (pushed); 228 Art grass doubled again (pushed dc86e88) (Medium+, CPU test; was 226, but Items carrying weight pushed with HUD label 226); 227 Items exertion and fainting (pushed with HUD label 230, protocol 21 incl. ACT_STANCE); 225 Art faint effect (pushed before number; faint_effect.gd, hidden when normal); 224 Sounds job 54 heartbeat and breath exertion stages (from Dave, pushed); 222 Ground client cache on slow disks (job 4); 204 Ground startup crash mitigation (flora chunks pre-built on main thread, pushed); 219 Basic world sounds snowfall hush (job 51).) Numbers up to 89 were used or leased; 69-88 had been leased in blocks and are not reissued.
+
+## Pushes
+| Build | Thread | What | Date |
+|---|---|---|---|
+| 65 | Water and terrain | After merging the pond outlet change | 2026-10-20 |
+| 66 | Art direction | Warm sun, sky light, tone mapping (seen in code) | 2026-10-20 |
+| 67 | Technical direction | Float jitter test (F9) | 2026-10-20 |
+| 68 | Technical direction | Jitter test moved to J, readout bottom left | 2026-10-20 |
+| 89 | Technical direction | HUD shows short commit id next to build | 2026-10-20 |
+
+## One number ahead (Dave 2026-10-20 23:42: threads must not wait on a number)
+Each active thread holds its current number plus ONE spare, handed out in advance, one at a time, never reused by others: Sounds 291 (pushed d18542d), 295 job 83 rain splash (pushed bad29bd), 300 job 84 (pushed af07b4d), spare 310; Art 288 (pushed d3a12bf), 296 Ultra shadow range 90 m and impostor 210 m (pushed c3ca880), 301 tree shadow proxy (pushed 56f27e6), 302 tree mesh export and glb override loader (pushed 9b57d92), 303 Art short grass coverage (pushed, same label as Items 303), 304 held by Art, 307 forest floor under crowns (pushed; cover.gd crown_depth added), spare 309; Items 265 and 271, 297 job 62 (pushed as label 303, fd505eb, protocol 23), 305 job 63 persistence drills (pushed 31aae51), 308 job 64 stress test, next spare after: ask; River start 292 and 293 + spare 298; Ground spare 299. A thread that uses its spare asks for its next spare in the same message. Next free: 311.
+- 310 Sounds job 86 F3 sound meters (done; spare used). Sounds now holds 311.
+- 304 unused (Art pushed grass-while-moving 9289c58 with HUD label 311 since upstream was 310; clash with Sounds spare 311, so Sounds spare moved to 312). Art keeps 304 and 309 spare. Litter caps Low 3k/Med 20k/High 40k/Ultra 60k in. Open: Dave's forest-floor table at Ultra and High; cloud straight-edge question.
+- 292 River generator FINAL baec958; 293 River runtime ad44fad approved with conditions (see DECISIONS 2026-10-21).
+- 312 Sounds job 87 voice audit (done; Low peak 26 of cap 24 for an instant, steady 19; High 31/96; Ultra 33/96). Sounds holds 313.
+- 308 Items job 64 pickups plus stress test (issued 00:23). Items spare 314.
+- Art river-mouth shader (water_material.gd) pushed with HUD label 313 (upstream 312); Art 304/309 unused. Sounds spare 313 clashed, moved to 315.
+- 316 Items job 66 (issued 00:32), Items spare 317.
+- Branch check 00:47 (head 586d597): 314 Items pickups + stress (a5849fa, de6d8c0, HUD 314); 316 Items job 66 lazy catch-up (16704b6, HUD 316); 317 Art flora worker crash fix (586d597, HUD 317; Art keeps 317); 313 Art river mouth (f2dbadd); 312 Sounds job 87 (fd263d4); 293 River storm 20x and thread cap (18600f5). Items 308/317 spare gone: Items spare is now 318. Sounds spare 322. Next 319.
+- 315 Sounds job 92 bird and insect variety (9136d7c, HUD stays 318). Sounds spare 322. Low voice cap stays 24 (no +2; instant of 26 accepted).
+- 318 Items jobs 70,72-76 (f7d1fd9); 319 Items pickable stones/sticks (8dac85c, took Sounds' spare 319 because upstream was 318). Sounds spare moved to 320, Items spare 321. Thirst (job 67): Dave said yes (bar, drink at water edge, at least one drink per game day). Next 322.
+- 320 Art no decorative boulders/pebbles (took Sounds' spare 320; Art keeps it). Sounds spare 322, Items 321, Art spare 323. Next 324.
+- Sounds job 88 frozen ponds/ice sounds pushed on label 319 (clash with Items 319 8dac85c, tell apart by commit id; HUD stays 320). Sounds spare 322.
+- Sounds ON HOLD (Dave 01:24) after job 89; no more numbers (spare 322 covers job 89 only).
+- 322 Sounds job 89 wind in structures (pushed, HUD 322). Sounds idle on hold, no spare.
+  (job 89 commits: 0907b47, BUILD fa551fa)
+- 321 Items thirst (5e7b59a, protocol 24: vitals thirst, ACT_DRINK; HUD stays 322). Items spare 324.
+- 325 Waterfall research: sim-driven water sheet in water_live.gd (approved, runtime only, no re-bake). Spare 326. Must coordinate with River start in water_live.gd (smooth-lake fix): separate functions, merge before push, commit ids to me.
+- 325 Waterfall sim-driven sheet PUSHED (e0f9918, feature 987caf3; water_grid.gd _stand_off + water_material.gd fall face; zero extra verts/draws at Low). Runtime only. Waterfall thread spare 326. Not yet seen on Dave's cliff.
+- 324 Items bank stones (03c99b6). 327 Items luck trait (c06e0cd, approved, no protocol change). Items spare 328. Next 329.
+- 328 Items driftwood (c560f8d). Items spares 329 and 330. Next 331.
+- 331 Sounds bug fix: remove heavy exertion breathing (breath_out/breath_in) per Dave (issued 02:24). Sounds otherwise on hold. Next 332.
+- 331 Sounds breathing off (BREATHING := false in breath_sounds.gd; heartbeat stays), pushed.
+- 332 Sounds bug fix: no bird take-offs/flaps when player is high above ground (Dave, y~420). Next 333.
+- 332 Sounds bird height gate pushed (take-off/alarm off above 40 m, calls fade 20-40 m). 333 Sounds heartbeat speed-up 175-200 bpm with blackout overshoot (Dave, issued 02:33). Next 334.
+- 333 Sounds heartbeat curve pushed (60 bpm at exertion 0.55, 175 at 1.4, 200 at 2.0, eased 40 bpm/s).
+- 334 Waterfall look fix (no horizontal standoff at 8 m seams, fall-face shader tuned; runtime only). Waterfall spare 335 (326 stale). Waterfall thread session_01LfSUeb5nufvBEw694MPZEv. Next 336.
+- 334 Waterfall look fix pushed (3ab6b28). Waterfall holds 335 (spare) and 340. Items numbers for the carry-weight/landing/exertion/no-bars/smooth blackout/Tab screen jobs: 329,330 (earlier) + 336,337,338,339. Next 341.
+- 335 Waterfall compile fix (60a18f1; 334 had deleted FINE_WALL_M in water_grid.gd, restored). Waterfall spare 340. Process: every push touching client or shared .gd files runs a headless load first. Next 342.
+- 336 Art boulders restored as scenery, pebbles off (took Items' 336). Art spares 341 and 342 (old 304/309/323 void). Items loses 336, gets 343 and 344 instead (holds 329,330,337,338,339,343,344). Next 345.
+- 341 Art pebbles back (decoration, not pickable) + GrassView.ground_changed on _on_dug (redraws 6 m cells at 0.6 s and 2.5 s). Art holds 342 and 345. Rule: any ground edit (build, fill) must call GrassView.ground_changed. Next 346.
+- 346 Ground third-person camera (scroll wheel, placeholder body, zoom saved; controls checked). Ground spare 347 (old 299 void). Next 348.
+- 346 Ground third-person camera pushed (bed68da): one ray per frame, small body draw. Ground holds 347 and 348. check_controls fails on Tab (Items b0c856a): Items to fix. Next 349.
+- 349 Art ragdoll character (ragdoll_body.gd, check_ragdoll.gd; replaces Ground's third-person placeholder body). Art spare 350. Next 351.
+- 349 Art character body pushed (790ce06): animated skeleton (not ragdoll physics), 17 bones, 1.5k tris, 1 draw, <0.5 ms for the local player; 20 players est. 2-6 ms CPU. CONDITION for other players' bodies: distance cull plus animation LOD, budget 1 ms at Low for 20 players, re-measure first.
+- Items b0c856a Tab screen pushed with protocol 25 (luck sent to client) without prior OK; accepted retroactively. 343 Items weights audit + Fitness + carry bar + hotbar + over-exerted slowdown (protocol 26 approved with conditions). Items extra spares 351, 352 (holds 329,330,337,338,339,343,344,351,352). Next 353.
+- 350 Art probe table CPU script/physics/draw calls/triangles. Art spares 353, 354. Next 355.
+- 353 Art idle grass work removed while standing (no 2000-cell rescan every 0.8 s; retry backoff 0.5-8 s). Art holds 354, 355. Next 356.
+- 343 Items pushed (c7d4621, rebased on 353): hotbar+strip, Use equips, over-exerted 10 percent slower, carry bar, Fitness (protocol 26, note in tech/FITNESS_NOTE.md), weights audit. Items still holds 344, 329, 330, 337, 338, 339, 351, 352.
+- 344 Items first-person arms hold the tool (Art's Ragdoll.new(true) on hand_mount_l); HUD stays at upstream 353. Items holds 329, 330, 337, 338, 339, 351, 352.
+- 354 Art ragdoll sides fixed (right is +X, hand_mount_r; held_item.gd and inventory_view.gd changed in same commit). Art holds 355.
+- 355 Art probe table lists script ms by piece. Art holds 356, 357. Dave's 354 table (Ultra meadow+trees): CPU scripts 33.0 ms, physics 0.3, GPU 20.6, 30 fps; script bound, NOT grass. Next 358.
+- 358 Sounds bug fix: drink sound (gulp) on ACT_DRINK (Dave). Next 359.
+- 358 Sounds drink gulp pushed (hook in inventory_view._on_vitals; Items file touched, one small block).
+- Art probe-table fix (script ms per piece, commit after 8afdab5, no BUILD change). Dave's 358 table (under-tree 53179/68694, Ultra): scripts 33.1 ms, GPU 18.8, script bound. Art spares replaced: 359, 360 (356/357 void, below upstream 358). Next 361.
+- 361 Items boulders (protocol 27 approved), spare 362. Next 363.
+361 Items boulders (ae476a0, HUD set in next commit)
+- Numbers 363,364 Ground (spades/perf) in addition to 347,348; 365,366 River start. Next 367.
+- 361 Items server boulders pushed (protocol 27). Art spares now 367, 368 (359/360 void, below upstream). Art switches scenery boulders off (SCENERY_BOULDERS false) so server boulders are the one drawing path. Next 369.
+- 363 Art scenery boulders off (took Ground's 363; commit id distinguishes). Art keeps 367, 368. Ground numbers: 347, 348, 364, 369, 370. Next 371.
+  (363 commit 4d33371)
+- 364 Ground spade digging (45ee3af, protocol 28 ACT_DIG=25, digs.dat log 'DIGS1' replayed over fresh blocks). Overlaps River start's saved-edits step 1: digs.dat IS the op log, River extends it (DIGS2: kind, material, seq, water replay, flora cleanup, fill). Ground holds 347,348,369,370. Next 371.
+- Items numbers 371,372,373,374 (refill 7); Items also holds leftovers 329,330,337-339,343,344,351,352 if unused, 361/362 used or spare. Next 375.
+- 375 River start ice (Ice.cover step 1), spare 376. River holds 365, 366, 375, 376. Next 377.
+371 Items dig yields and fill source (2dc87bd)
+372 Items dig under trees (1dfd688)
+372 Items dig under trees = commit 5dc97f1 (HUD stays 375, the higher one)
+- 376 River ocean ice floes (d556072). River now holds 377, 378, 379, 380. Next 381.
+373 Items sleep, protocol 29 (671a8b6; HUD stays at the higher number)
+- Items refill 8: numbers 381-384 plus spare 374 if unused. Next 385.
+- 379 Ground engine rows in probe table + sound.update every second frame at Low for non-critical updaters (deeb36f); took River's 379, River gets 385 instead (holds 377, 378, 380, 385). sound_check scenario 'floor' fails even without the change (pre-existing, Sounds on hold: log as bug). Ground holds 347,348,369,370. Next 386.
+- NIGHT PAUSE 05:28 (Dave): threads finish the current job, then stop; no refills until morning. Queued: Ground grass merge (a), Art flora merge (b), River refill 6-8, Items refill 8, Sounds hold.
+- 386 Art day cycle (sun, moon, sky, stars follow the game clock; kill switch LookSettings.DAY_CYCLE) + ice look + floe shader (b0e9a74). Sky palette updates every 4 s: Dave to watch for a dusk hitch. Art 367/368 void; Art holds none, next free 387. Night pause.
+- Art spares 387, 388. Next 389.
+381 Items water containers + jumping fall hook, protocol 31 (81b1ac3; HUD stays at the higher number)
+- OVERNIGHT LOG (head 1be1f5f, HUD 386 then 380/381 labels; log by commit): 372 Items dig under trees (5dc97f1); 373 Items sleep (671a8b6, protocol 29); 375 River pond/lake ice (e0fa79e, Ice.cover); 376 River ocean floes (d556072); 377 River swimming (92af51a); 378 Items spade fill ACT_FILL (a2f6b32, protocol 30); 379 Ground engine rows (deeb36f); 380 Waterfall bare rock at lips and faces (1be1f5f, NEEDS RE-BAKE); 381 Items water containers (81b1ac3, protocol 31); 386 Art day cycle (b0e9a74). Protocol now 31.
+- MORNING NUMBERS (2026-10-21 12:40): Ground 347, 348, 369, 370, 389, 390; Art 387, 388; Items 374, 382, 383, 384, 391, 392; River start 385, 393, 394; Waterfall 340, 395. Sounds on hold. Next 396.
+- BAKE POINT: Dave bakes from head 1be1f5f (contains River generator set baec958 and Waterfall bare rock 380). No queued job changes tiles. Anything that does must be announced to me first and Dave re-told.
+382 Items next-tier recipes (ba2fa88, data only; HUD unchanged)
+383 Items persistence drills + digs.dat torn-header fix (8e58d94)
+- 387 Art flora draw merge (1438998): Low flora MultiMesh nodes 543 to 197, Medium 281, High/Ultra shrubs/plants unchanged, Ultra trees 452; not checked on a GPU. Art holds 388, 396. Next 397.
+- 347 Ground grass merge (c6ab4d6): Low grass MultiMesh nodes 388 to 68, groups 4x4 cells at Low, 2x2 Medium+; guards pass; BUILD constant left at head value. Dave to watch for grass popping at group edges. Ground holds 348, 369, 370, 389, 390.
+- 388 Art buildings look (34c8a7d, building_look.gd). Art holds 396, 397, 398. Next 399.
+384 Items fitness training (b56367d); strainrun client check fails on origin head too (ran 23 m), not from this change
+- 396 Art wind cue (67f5e30): weather.gd 'wind_dir' (deterministic, no protocol/save change), wind_cue.gd one GPUParticles3D, off at Low, 160/260/400 specks at Medium/High/Ultra. Art holds 397, 398.
+- 13:15 catch-up (head 67f5e30, HUD 396, protocol 32): 382 Items next-tier recipes (ba2fa88); 383 Items persistence drills (8e58d94); 384 Items Fitness training (b56367d); 385 River oxygen bubble, protocol 32 (de7013e); 393 River border water stage A (3fe2674, one water thread, at most 3 tiles); 394 River cold generation 1.5x faster, byte identical (5c88c81); 396 Art wind cue. Next 399.
+- 13:25 RESTART NUMBERS (new Technical direction thread, head 67f5e30, HUD 396): Items 399, 400; River start 401, 402; Art 403, 404 (+397, 398 if unused); Ground 405, 406 (+348, 369, 370, 389, 390 if unused). Waterfall 340, 395 on hold (thread done). Sounds none. Strainrun regression (items_check) assigned to Ground. Next 407.
+399  Energy (protocol 33)  d077109+
+- 13:21 Thread ids changed after restart; numbers resent to Willy (405,406), Radar (399,400), Sonny (401,402), Mandy (403,404). Sounds fall under Mandy (Dave 13:19), still on hold. Tyler = Problem Solver (research). Next 407.
+- 403 Mandy distance haze + night ambient floor (20cf6e4, client look only, no tiles; HUD 407 because upstream was 405). Mandy keeps 404. Next 408. NOTE: Steve hit the 20 msgs/hour send quota at ~13:35; Mandy has not yet been told Tyler report 2 routing (S2 cloud fade, M3 rock, leaf cards later, mountain still); it is in JOBS.md.
+- 400 Items death and remains pushed (01dc61e), protocol 34; HUD stays at upstream 408. Items spare: none (ask Steve).
+- 13:50 branch check (head b9cbb1c, HUD 408, protocol 34): 399 Radar Energy d077109 (protocol 33); 400 Radar death/remains 01dc61e (protocol 34, approved); 401 Sonny brook bank bands 9a027b8 (terrain version 20, no re-bake); 403 Mandy haze 20cf6e4 (HUD 407); 404 Mandy fall foam/mist plume 318b9fd (HUD 408); 405 Willy memory leak d7aefa9 and runspeed/grass guard b9cbb1c. Radar now holds 409, 410. Next 411.
+- 410 (Items, taken by Radar as upstream+1; Steve to confirm) food spoilage fc5826a, protocol 35.
+- 14:00 410 Radar spoilage fc5826a (protocol 35, approved). Radar holds 411 for warmth. Next 412.
+- 411 Items warmth cadb4ca, protocol 36.
+- 14:05 411 Radar warmth cadb4ca (protocol 36, approved; vitals.json warmth, neutral default). Radar holds 412, 413 (job 94 audit, job 87 skills). Next 414.
+- 14:10 Radar: 412 skills system, 413, 414, 415 spares (audit 2cd284d needed none). Next 416.
+- 413 Items skills system 421cb87, protocol 37.
+- 414 Items sickness and inner voice d56ac9d, protocol 38.
+- 14:15 Radar skills 421cb87 (413, protocol 37) and sickness + inner voice d56ac9d (414, protocol 38; sickness was Dave's design message): both approved retroactively, conditions met. Radar holds 415, 416 (412 unused). Next 417.
+- 14:20 Radar refill 10 numbers: 415, 416, 417, 418 (all four held, 413/414 used). Next 420 (419 spare for Steve).
+- 416 Items folk remedies 8465e81 (data/server, no protocol change).
+- 14:15 Mandy (Art): used 407 (20cf6e4 haze + ambient floor), 408 (318b9fd fall foam and mist), 409 (1431ec2 Ultra tree shadow 70 m), 412 (a94664b cliff strata fade), 415 (3b10a7c inner voice audio), 417 (eeb398f GPU probe shows build). Next Art numbers: 421 and up, claimed here before each push.
+- 14:16 Mandy: 421 (revert Ultra tree shadow to 90 m, saved only 0.2 ms)
+- 14:22 Mandy: 422 (Ultra full-detail tree reach 90 to 50 m test)
+- 418 Items death markers 2d7dc30, protocol 39; HUD 423 (upstream was 422).
+- 419 Items held kit models 0aba225; HUD 424.
+- 14:40 Sonny (Water Works): 425 (335c358 pond rims still), 426 (6eeb393 still mask once), 427 (one level per lake body, current eases in at pond outlets; runtime only).
+- 420 Items remains cap per owner 26f8c62; server only; HUD 428.
+- 429 Items cooking (age carry, 144 h roast, warm meals) e19895b; server only; HUD 429.
+- 430 Items clothing and equipment, protocol 40, 1128b59; HUD 430.
+- 431 Items hunting prerequisites data d848245; server/data only; HUD 431.
+- 432 Items tool care (wear spread by crafting skill) dd17781; server only; HUD 432.
+- 433 Items Tyler review fixes (cooked life, raw sick, swim water temp) c2d4b6f; server/data only; HUD 433.
+- 434 Items migration drill, boulder mining practice, inspection of ground items, tooltips e7a53f6; client text only; HUD 434.
+- 435 Items crafting stations / camp bench, protocol 41, bf2abe2; HUD 435.
+- 436 Items day/night temperature swing in warmth 75c79c6; server only; HUD 436.
+- 437 Items fishing, protocol 42, 53c2e7e; HUD 437.
+- 438 Items ice holes, spear fishing, bench add-ons, protocol 43, 6c9fe11; HUD 438.
+- 439 Items quality pass (state cleanup) eccb60e; server only; HUD 439.
+- 440 Sonny water_depth_at hook set on the server (spear fishing depth check), server only; HUD 440.
+- 441 Items spear depth window, worn-screen null guard 68a742f; HUD 441.
+- 15:20 Steve branch check (head 59ff93b, HUD 441, protocol 43): numbers 399-441 used or logged by commit; label clashes (405, 410-412, 425) are cosmetic. Radar's 415-418 used. Next 442. Mandy claims her own 421+ here; Sonny 425-427, 440; Willy 405, 406 (+ own). Everyone: claim by appending a line here BEFORE pushing, take the next number above the highest line.
+- 15:30 Mandy: 442 (storm/dark night ambient fill, shot runner debug tool)
+- 15:45 Radar: 443 (cloud client checks end early and import first, persistence drills, balance sheet, stress script)
+- 16:05 BAKE COMMIT 4e6d7ee (Willy+Sonny merged generator, TERRAIN_VERSION 21, no BUILD change; HUD stays 443). Next 444.
+- 16:10 Sonny: 444 (horizon dark band fix: sky below-horizon colour + sea far fade; client only).
+- 16:15 Sonny: 445 (fix: near_water built under a lock; server worker race out-of-bounds in terrain generation).
+- 16:25 Radar: 446 (protocol 44: four station tiers, respawn at last shelter, comfort 20 C; HELD LOCAL until the bake freeze lifts)
+- 16:45 Bake confirmed: Dave pushed tiles 873544e (version 21). Mandy 444 horizon (0645549), 445 near_water race fix (2670506). Next 446. Freeze lifted.
+- 16:39 Mandy: 447 (rounded character, rock colour + cloud shadows on ground; client only), 448 (wind cue rewrite: drift upwind to downwind), 449 (tree cost cut)
+- 16:40 Willy: 450 (spawn moved to x 53330 z 68466, dry shore bench 12 m east of Dave's 53318 68473 which is lake bed; server constant only, no bake)
+- 16:41 Sonny: 451 (tile_3_4.water regenerated on the 4e6d7ee bake with settle_water.gd, 12000 ticks x10; settle_water --multiplier option; no tile change)
+- 16:50 Steve branch check (head f1cf675): 447 Mandy 5fecfd2; 450 Willy spawn f1cf675; 451 Sonny settled water 77ad220/9815ec8; 446 Radar protocol 44 held local (to push). Next 452.
+- 16:47 Mandy: 452 (wind cue rewrite: specks drift upwind to downwind, count follows wind; 448-449 above not used)
+- 16:55 Radar: 453 (replaces my 446 claim: stations tiers, shelter respawn, comfort 20 C; protocol 44)
+- 17:11 Mandy: 454 (Ultra GPU cut: far trees cast no sun shadow, two sun cascades at Ultra; shot runner --shot-cost)
+- 17:12 Sonny: 452 (TERRAIN_VERSION 22: spawn keep_clear mask removed from mountain erosion, rules only; HELD LOCAL until Steve verifies and Dave bakes)
+- 17:35 Radar: 455 (protocol 45: classic NPCs step A: admin key check, markers, schedule runner, shared steering, two test NPCs)
+- 17:55 Radar: 456 (protocol 46: NPC talk, static dialogue provider, Hob quest, admin dig RPC behind the admin check)
+- 18:05 Radar: 457 (Esc > Advanced: Show my player key, copies it; client only)
+- 18:15 Radar: 458 (] test set adds clay and hides for the big stations; player keys may hold an apostrophe)
+- 18:30 Radar: 459 (skills web v2 data and rules, admin check off by default via data/items/admin_setting.json, Admin build list with the four station kits)
+- 17:50 Sonny: 460 (river mouth part A: sea ease slope 0.5% over 200 m, current eased to still, water_grid.gd client/draw only; the mask-removal generator commit stays HELD, will take a new number)
+- 18:45 Radar: 460 (player-facing sickness renamed Health: Tab row Health status, panel label, item text; internal ids unchanged)
+- 19:00 Radar: 461 (tree shelter area doubled: cover radius x1.414, cap 16 m; grass/litter crown depth unchanged)
+- 19:20 Radar: 462 (tier 4 is the Masonry forge: open placeable, 4.2 x 3.0 m, no roof; ids unchanged)
+- 18:17 Willy: 463 (ground under a player who stops high up builds first, protocol 47; spawn moved to x 53301 z 68427)
+- 18:30 Radar: 464 (Hob and Edda stand by the new spawn x 53301 z 68427 facing it, all day (test_hold); Ctrl+N goes to nearest NPC; CONTROLS.md keys)
+- 18:23 Mandy: 465 (wind debris floating and smaller and fainter, rain streaks by strength, walk/jog/run clips, fall ribbons ON with straighter edges, inner voice sets, Ultra shot tools)
+- 18:45 Radar: 465 (identity provider swap point: IdentityProvider.authenticate -> local:<key>, store files unchanged)
+- 19:10 Radar: 466 (NPC step C: dialogue router, circuit breaker, unwell fallback, --npc-ai switch)
+- 18:31 Mandy: 467 (masonry forge model: laid stone hearth, chimney, anvil on stump, bellows, quench trough, bench)
+- 18:32 Mandy: 469 (gait amplitudes per Tyler, run hop, slope lean)
+- 18:50 Radar: 470 (protocol 48: animals step B, the rabbit: server spawn/graze/flee, client view, Ctrl+R admin spawn, stress test)
+- 18:36 Sonny: 470 (water draw: shore hysteresis so cells do not flicker (appear after 2 updates, vanish after 4), sea ease skips still lakes; client/draw only)
+- 19:15 Steve: 470 clashed (Radar animals B, Sonny water draw), log by commit id. Next 471. Bundle status: claude/sonny-held (c26c782 mask removal v22, fe1d8de river mouth estuary; generator code and data only, 4 files, no .tile). Willy's mountain extras and Sonny's river-diminish fix not yet seen on any branch.
+- 18:40 Mandy: 471 (station looks: camp bench, log workbench, stone forge)
+- 18:41 Sonny: 472 (hot spell: dry heat shrinks the springs up to 70% (floor 20%), smooth with the weather lag; server and shared weather only, no bake)
+- 19:30 Sonny: 472 hot-spell trickle (generator-v2 60f987c) took 472, so Radar's damage hook + carcass gets 473. Next 474. Bundle: claude/sonny-held tip cf19447 (e018bbd mask removal v22 + cf19447 river mouth rules; rebased on 60f987c; 4 files, no .tile; suite 882/0; edge match 14 edges 0 hard failures with (3,4)+(4,4) rebuilt; (3,4) 255 s, 9.44 MB, ~39.5k samples ~1% change). Waiting on Willy's part; Willy branches from cf19447.
+- 18:41 Mandy: 474 (masonry forge pass per Tyler report 14: shorter straight chimney, mixed stone, black iron, coal bin, rack, forge glow)
+- 18:45 Sonny: 475 (lakes drawn flat: every connected body of wet baked-lake cells at its median level, whatever the sim says; kills jagged shards over filling/fed lakes; draw only)
+- 19:50 Radar: 476 (protocol 49: hunting step A, damage hook, spear jab, carcass and knife; animals staggered ticks; NPC diagnostics and night glow)
+- 19:55 Radar: 477 (forge line: Basic/Medium/Large/Master Forge, Large and Master admin-only, glb hook in assets/stations)
+- 20:10 Radar: 478 (protocol 51: deer, species 2: herds of 3 to 6 with a sentinel, 20 health; top-up one player per pass)
+- 20:30 Radar: 479 (protocol 52: skills step B, Tab skills list as a family tree with caps, locks, needs training, practised today)
+- 20:50 Radar: 481 (protocol 53: animals alert state, zigzag, burst then trot, herd centre pull; 14 more complaint lines per NPC; locked skills show no bar)
+- 19:02 Mandy: 482 (station model hooks: fire light and smoke for Dave's forge glbs)
+- 19:06 Sonny: 483 (water draw: steps over 4 m between cell corners never drawn as water; line cut short by Willy's slip, see Sonny's commit)
+- 19:15 Willy: 486 (natural speeds walk 1.4, jog 3.2, run 6.0 m/s; effort anchors in exertion.json; stride lengths)
+- 19:19 Radar: 485 (Dave's forge meshes wired upright and centred, footprints to real sizes)
+- 19:22 Mandy: 487 (forge fire: flat Fire_Coals card swapped for coals and flame tongues at the Fire marker; light and smoke from markers)
+- 19:25 Sonny: 488 (river surface smoothing: running water levels and current tint smoothed 3x3 twice, padded across chunk edges so no seams, falls not blurred; neighbour step 0.76 -> 0.44 m on Dave's reach; draw only)
+- 19:28 Radar: 489 (trainer action: NPC dialogue train_skill effect and can_train condition; Hob teaches trades, Edda swordplay)
+- 19:31 Radar: 490 (skills screen: bottom-up tree, search, percent to next level, daily gain left; protocol 54)
+- 19:33 Mandy: 491 (NPC bodies are the rounded ragdoll with clothes colours, idle/walk/jog/run/sit/lie, animation by distance)
+- 19:34 Radar: 492 (animal senses: wind scent, stance, terrain line of sight; rabbit burrows)
+- 19:36 Radar: 493 (blood trail from wounded animals; protocol 55)
+- 19:38 Radar: 494 (forge meshes: opening toward +Z (faces the player who places it), solid collision, forge model test)
+- 19:40 Radar: 495 (animals: habitat-only spawn (slope, summit, water edge, deer prefer woods); tree crowns dim line of sight)
+- 19:42 Radar: 497 (NPC role bark pools, sleeping NPCs mumble, skills screen names who teaches)
+- 19:44 Mandy: 498 (chair and bed meshes under sitting and sleeping NPCs, log and timber look)
+- 19:49 Mandy: 499 (forge flame flicker, glowing coals, soft round smoke; warm tree trunk colour; no plants under water except reeds)
+- 19:53 Radar: 500 (server soak test; warmth and load ratio cached per vitals tick (13.7 to 2.4 ms); save compat test)
+- 19:55 Sonny: 501 (generator only: river minimum width 24 m, TERRAIN_VERSION 24; no tiles)
+- 21:00 FINAL BAKE COMMIT 87be29e (build 501, TERRAIN_VERSION 24). Next 502.
+- 19:56 Radar: 502 (autosave written off the tick thread, world-item sync by grid, shelf life cached: soak worst tick 16-25 ms to 8 ms)
+- 20:02 Sonny: 503 (swimming: sink to head-out depth walking in, neutral buoyancy so no drifting up after stopping)
+- 19:58 Radar: 504 (new-player-day playthrough test; autosave thread joined cleanly)
+- 20:08 Sonny: 505 (lake bodies fill one- and two-cell holes: dirt/water flicker on the lake)
+- 20:01 Mandy: 506 (fall ribbons stay drawn: view range 700 m from chunk corner)
+- 20:03 Radar: 507 (placement ghost red on steep ground with the reason in the caption, server refuses; hand-craft rule warnings in the validator)
+- 20:06 Radar: 508 (hunting step B: wounded animals bleed out and leave a carcass at the end of the trail; Hunting skill scales carcass yields)
+- 20:10 Willy: 509 (protocol 56: Esc > Advanced > Dump ground at the crosshair compares client and server stores; server drops saved blocks that fail the sanity check; closed streams never write the cache)
+- 20:15 Radar: 510 (wolves: pack brain, protocol 57 states 6-9; natural packs off, admin spawn wolf)
+- 20:15 Mandy: 511 (forges scaled to data/stations/forge_sizes.json: 1.3/1.8/2.6/3.2 m wide; client only)
+- 20:17 Radar: 512 (not pushed; superseded by Mandy 511)
+- 20:19 Radar: 513 (limp for a maimed player: protocol 58 limp(percent), speed halves 10 min or until health 60%; wolves in the soak)
+- 20:20 Radar: 514 (server resends unchanged NPC and animal rows every 2 s: a lost first unreliable packet left NPCs undrawn)
+- 20:22 Willy: 515 (client ground self-check: samples server surface near the player every 4 s, logs and dumps mismatches to user://ground_mismatch.log; --start probe test)
+- 20:30 Radar: 516 (spawn_boost: extra loose sticks and stones within 300 m of the respawn point; server layout, no bake)
+- 20:31 Mandy: 517 (plants and fall ribbons hidden until ground over the chunk has arrived; NPC view test)
+- 20:37 Mandy: 518 (NPC voices re-rendered with phrase pauses, per-phrase variation, blended voices, voice bus reverb; model k2)
+- 20:41 Willy: 519 (client refuses and re-asks ground blocks whose distances are all exactly zero, logs them with the bytes to user://ground_mismatch.log and user://zeroed_blocks)
+- 20:44 Willy: 520 (server side of the zeroed block guard: server refuses to save or reuse blocks with all-zero distances and logs them; protocol unchanged)
+- 20:48 Willy: 521 (server answers 'not ready' for a block built from a stand-in tile; client drops and asks again)
+- 20:52 Radar: 522 (sleep and faint rules: smooth fade, slowing heart, wake timer, wake by itself when energy full and exertion gone, Space hold wakes early; protocol 59 body(bpm, eta, phase))
+- 21:10 Sonny: 523 (swimming: idle diver drifts up in the last 10 s of air)
+- 21:20 Sonny: 524 (water hub live set from player tiles, max 4 tiles; not wired to the server yet)
+- 21:01 Mandy: 525 (smooth faint and sleep picture, heart in the ears follows server bpm with pitch and muted world; litter and bare ground to the full crown)
+- 21:06 Willy: 526 (HUD ground health line for screenshots: terrain version, tile stamp, starter, saved size/hits, refused blocks; Esc > Controls hotkey screen; CONTROLS.md speeds corrected)
+- 21:08 Willy: 527 (ground health HUD lines shortened to fit; Controls screen text 26 px wrapped)
+- 21:12 Radar: 528 (skills screen shows trainer lessons with price; short E prompts for chest, chopping block, fire; natural wolf pack distance bug fixed (used height not z); limp saved across restart; restart and forest-sight tests)
+- 21:15 Radar: 529 (fishing data only: a cell regrows one fish per 15 real minutes, bait x1.3; server restart picks it up)
+- 21:16 Willy: 530 (no staging over ground that already has a collider: stops patches of ground vanishing while hovering; refused blocks asked again at once, 3 tries)
+- 21:18 Mandy: 531 (NPC speech about 14 percent faster, shorter pauses; timing numbers in voices.json)
+- 21:26 Willy: 532 (pickup feed on the left of the screen, waits for Radar's item_received event; tools/hole_stress.sh flying hole counter, --hole-probe/--route/--flytime test flags)
+- 21:36 Radar: 533 (protocol 60: server tells the client every item gained, with source, for Willy's pickup feed; quest reward goes through it)
+- 21:32 Mandy: 534 (axe and pick chop: one-arm diagonal swing with body twist, off hand steadies; holding left button keeps chopping)
+- 21:42 Radar: 535 (tool work is hard: axe and pick swing holds effort at 1.05 (running is 1.0), spade 0.9, knife 0.55, 2.5 s per swing; server only, data/items/exertion.json tool_effort)
+- 21:55 Radar: 536 (wolves: hunger, steal meat (raw always, roast when hungry) and run; dropping meat ends the attack; light always wins; server restart)
+- 21:41 Mandy: 537 (placed items clear grass, litter and small plants in a 5 m circle; data/look/placed_clearing.json; client only)
+- 22:05 Radar: 538 (protocol 61: purse of coins (copper/bronze/silver/gold, 10x ladder), NPC reputation (Stranger/Known/Friend/Trusted) with Hob quests, hover text shows coin value and key hints; items/COINS.md; server restart needed)
+- 21:50 Mandy: 539 (NPC voice only when an NPC in earshot (hear_m 15) talks; HUD last sound shows npc voice and inner voice)
+- 21:51 Willy: 540 (ground self-check also while flying; on a mismatch it saves a screenshot user://ground_mismatch_N.png next to the log and dump)
+- 22:20 Radar: 541 (sticks on the ground: 75 percent size, seated in the soil like stones, bark brown; runtime only, client)
+- 22:00 Sonny: 542 (waterfall width = measured river width upstream of the lip; server restart, no bake)
+- 22:30 Radar: 543 (moose: avoids players; protective moose warns 2.2 s then a dodgeable charge; wolves hunt it; carcass; placeholder drawn; G landing from flying: 60 s without fall damage (client); server restart for the moose)
+- 22:45 Mandy: 544 (going to sleep and waking look and sound exactly like a faint: sleep goes through the faint states; runtime only, client)
+- 22:45 Radar: 544 (fox: smells loose food (wind counts), creeps up, takes it and runs off; people near, fire or a chest keep food safe; placeholder drawn; server restart)
+- 22:55 Radar: 545 (sleep rule: Z hold; full energy and exertion 75 percent or less = 'You are well rested, you really can't sleep right now'; over 75 percent = a 10 s nap that drops exertion to 25 percent; data/items/sleep.json nap; server)
+- 23:20 Radar: 546 (protocol 62: shop trading with coins at Hob (buy markup, sell discount from rep, charisma, luck), trade window, purse goes to the remains at death; banking ideas in DESIGN_IDEAS; server restart)
+- 23:45 Radar: 547 (bird flocks on lakes and ponds: float, heads up at 45 m, whole flock takes off at 22 m and alarms nearby wildlife; hits kill one bird; placeholder drawn; server restart)
+- 22:11 Radar: 548 (protocol 63: traders tire of buying the same item: price drops 3 percent per unit sold, floor 30 percent, recovers 4 points a minute; shop window shows it; server restart)
+- 22:15 Willy: 549 (BAKE: TERRAIN_VERSION 25, waterfall chute as wide as the river feeding it: tile_water.gd _terrace uses the river width at the lip, terrace_width_max_m 64; scratch bake of tile 3,4 shows the lip 41 m river now a 40 m chute, was pinched to 24 m)
+- 22:50 Mandy: 550 (felled trunks press the grass flat under them and 0.3 m out each side, along the trunk line, while they lie; runtime only, client)
+- 22:55 Mandy: 551 (grass trails: 5 min recover from data/look/grass_trample.json, stays down then rises smoothly, animals and NPCs leave trails (12 nearest per pass), trail lifetime x Tracking multiplier; runtime only, client)
+- 22:40 BAKE of record: 40ea647 (build 549, TERRAIN_VERSION 25), Dave baking now; push hold until he commits tiles.
+- 22:38 Radar: 555 (felled logs lifted onto the ground by one radius and tapered to lie flat; inventory: window moved up so the hotbar shows; new items go to the bag not the hotbar; Use on a tool/blueprint puts it in the first free hotbar slot, says so when full; E over a hotbar item moves it to the inventory; Tracking skill under Hunting + trail_mult 1-6x on the client inventory view; client + server restart; pushed after the bake hold)
+- 22:54 Willy: 553 (ground self-check every 1.5 s and half over water, dump lists logged dig/fill ops near the voxel, hole_stress prints engine task counts)
+- 22:55 BAKE COMMITTED: tiles b1fb0c9 (from build 549, TERRAIN_VERSION 25). Head 33d3e1c = build 551. Next 552.
+- 23:05 Mandy: 554 (felled log grass: pressing drawn in the grass shader, soft edge, no blades grow out of the log body, rises back over 0.45 m; runtime only, client)
+- 23:25 Mandy: 556 (first person: arms hang at the body's side below the screen with the tool in hand, new swing_fp chop clip per Tyler Report 26 with wrist, hit stop 45 ms, thump at 0.35 s impact, no swing whoosh, empty left hand stays at rest; runtime only, client)
+- 23:23 Radar: 558 (protocol 64: species logs 'Oak log' etc, one large log on the shoulder (Q lays down, slows by weight), chopping block splits it into 12 firewood, lumber and beams per species ready for a saw mill, horses/logging notes; client + server restart)
+- 23:55 Mandy: 559 (shoulder log carry: carry_idle and carry_walk clips (right arm over the log, empty left hand at rest, forward lean, slow roll), log on the shoulder in third person and at the edge of the view in first person; runtime only, client)
+- 23:27 Radar: 560 (protocol 65: game trail grid on the server, 4 m cells, 256 m blocks sent compressed, decays by game days, saved in the store as trails.json; data/animals/trails.json; server restart)
+- 23:28 Willy: 561 (ground loading workers at least 6: settle after a 300 m fast fly-over stop 61 s to 15 s on 4 cores; starter cache rebuilt for TERRAIN_VERSION 25, stamp 25_436799f935; hole_stress takes quality names, use height 800 over mountains)
+- 00:05 Mandy: 561 (game trails drawn: grass low, thin and paler where the server's trail strength is at or above 0.25; blocks from net.trails_received into a 1024 m wrapping map; runtime only, client)
+- 23:29 Radar: 562 (wild horses: species 7, herds of 3-6, each born with a tame value 0-1: flighty ones run from 50 m, friendly ones let you close and walk up to you; placeholder drawn; no wire change; server restart)
+- 23:30 Willy: 563 (crash breadcrumb: next start after an unexpected end prints, copies and keeps the last 20 log lines of the run that ended: user://previous_run_log.txt)
+- 23:40 Sonny: 564 (water sim follows players: live tile set max 4; soak and river tests; server restart)
+- 23:33 Radar: 565 (species logs lying on the ground are drawn as full-size 2.5 m logs instead of a small lump; client only)
+- 23:41 Willy: 567 (crash reports: breadcrumbs of keys/clicks/menus/errors + state every 5 s, flag file; after an unexpected end the next start writes crash_reports/<date>_build<N>.txt into the project folder with those and the end of Godot's log; file logging on)
+- 23:48 Willy: 568 (crash report also logs main-thread stalls over 1 s and the 'server left' quit)
+- 00:05 Sonny: 569 (water files warning cleanup, no behaviour change)
+- 23:58 Willy: 572 (crash report is written at the moment the game quits by itself, e.g. server left, not only at next start; notice shown next start)
+- 00:20 Sonny: 571 (drawn river surface smoothing 4 passes; server restart)
+- 00:30 Willy: 573 (connection timeouts 60-120 s from data/network.json, server restart needed; server empty grace 120 s; 'Connection to the server was lost' window with Retry/Quit instead of quitting)
+- 00:45 Mandy: 574 (GDScript warnings cleaned in my own files (no behaviour change), five experiment switches in Esc > Advanced (log grass strip, trample and trails, clearing circles, speech, ambient sounds; default on, remembered), slow audio load marker in the crash report; runtime only, client)
+- 23:56 Radar: 575 (NPC routines: eat, wander and shelter packages, NPCs seek shelter in rain, 4 new markers, Hob and Edda day schedules fuller; server restart)
+- 00:55 Radar: 576 (trader stock: Hob's shelf is finite, restocks by game days, supply moves the price, trader purse caps what he pays, saved in trade_state.json; protocol 66; server restart needed)
+- 00:40 Sonny: 577 (waterfall width measured on the drawn river; server restart)
+- 01:10 Radar: 578 (fishing: bait dawn chance capped at 0.93, 'The water is still.' when under 3 fish left (Dave's answers); first-town test fixed for protocol 66; server restart needed)
+- 01:20 Mandy: 579 (wolf model and animation: deep chest, snout, ears, tail, four legs that walk, trot and gallop by ground speed, head low when stalking or sniffing, crouch, roll kick, play wag; runtime only, client)
+- 01:25 Willy: 580 (GDScript warnings cleaned in my files: client, server, crash report, stream; tools/check_warnings.sh counts warnings per file; no behaviour change)
+- 01:35 Willy: 581 (crash report breadcrumbs: window focus lost/back)
+- 01:50 Radar: 582 (tool repair: iron/steel tools need a forge nearby, smith mends worn tools for coin (shops.json repairs, coins.json trade.repair), TOOL_WEAR.md has minutes of work and smith price; server restart needed, no protocol change)
+- 00:55 Sonny: 583 (water files: all GDScript warnings cleared)
+- 00:40 Steve: warning cleanup (shared/weather.gd, two tools) pushed, no build bump (no game change).
+- 01:10 Sonny: 584 (waterfall width fallback measures thin fall water; server restart)
+- 02:10 Radar: 585 (tool durability raised per coordinator: stone axe ~30 min, wooden spear ~10 min of steady work, others in proportion; first_hour test updated for hotbar and species logs; server restart needed)
+- 02:20 Mandy: 586 (GDScript warnings cleaned in my files, annotation and rename only, no behaviour change)
+- 02:30 Willy: 587 (step over: walking, jogging or running onto a low log, stone or stump up to 0.5 m (data/movement.json step_up_m) hops onto it with the eye eased; higher things are slid along, never stopped dead; client only, no server restart)
+- 02:40 Radar: 588 (17 campfire dishes cooked at a lit campfire, data/items/dishes.json + tools/gen_dishes.py, more ingredient kinds = better dish; recipe station 'campfire'; validator knows carcass parts; server restart needed, no protocol change; items/DISHES.md)
+- 02:50 Willy: 589 (crash tools: server writes user://server_events_<port>.log with peer stats, stalls and quit reason; crash report adds the server's events, link stats (rtt, loss) and whether run from the editor with debugger; server restart needed)
+- 03:00 Willy: 590 (telemetry: crash_reports/telemetry_client.log and telemetry_server_<port>.log, a line a second with traffic, backlog, frame gaps, memory, link stats; final EXIT line with the reason; server restart needed)
+- 03:20 Willy: 591 (crash tools: server telemetry names the slow step of each frame (water poll, items, ...) and a watchdog thread says which step a frozen main thread is stuck in; client watchdog writes a HUNG report after 15 s silent; server restart needed)
+- 03:40 Willy: 592 (dig crash fix: a repeated dig of the same spot is dropped (32-bit radius bug), nothing changed = no message/water wake, tile_changed at most every 0.5 s, revisions file once a second, client re-asks water at most every 3 s; headless repro 3 digs/s: worst server gap 64 s before, none after startup; server restart needed)
+- 04:00 Radar: 593 (join stall: the first item scatter after a player joins read the player's ground tile on the main thread, 1.0-1.5 s in items.tick; now the tile is read on a worker thread (generator.tile_cached / prefetch_tile) and the scatter waits for it; no behaviour change; server restart needed; tools: src/worldgen/tools/profile_join.gd)
+- 01:35 Sonny: 595 (server water poll 250 ms stall removed)
+- 04:30 Willy: 596 (server guards: a repeated fill is dropped, water requests capped at 64 chunks and one answer a second per peer, gather rate (100 ms) and reach (12 m) check; water-spam test: server fps 1 to 40; server restart needed)
+- 01:45 Willy: 597 (server stalls: water for clients is packed on worker threads, not ~33 ms per chunk on the main thread; flora_removed.json written at most once a second and at exit, not per cut; server restart needed, no protocol change)
+- 01:55 Willy: 598 (server: each peer may ask for at most 8000 block keys at once, refilling 4000 a second, so one client flooding the block line cannot fill the queue; ground load unchanged on the east fly test (all 49 cells at 58.6 s cold); server restart needed, no protocol change)
+- 01:55 Radar: 599 (server stalls on a cold tile: the player's tile and any neighbour tile within 2 km are read on worker threads when a position is reported (generator.prefetch_around); the main thread no longer reads a tile file for the player's height; profile_join.gd checks it; server restart needed)
+- 02:10 Willy: 600 (server link indicator: 5 bars at the top of the screen from round trip, packet loss and silence (the server sends a pulse 4 times a second; protocol 67); numbers in the debug details; lost-connection notice now never quits by itself: shows time and reason, world frozen, sound muted, Retry or Quit; also after a failed link; server restart needed)
+- 02:25 Willy: 601 (connection window from the first frame: step by step what the game is doing to join (opening connection, waiting for the welcome, ground loading), a named failure when the server accepts but never welcomes (old server still on the port) or speaks another protocol, Quit button; closes when ground is ready; client only. Found: an OLD server (protocol 66) still on the port makes the new client hang silently after 'connecting')
+- 02:40 Tyler: 602 (launcher: Play checks whether UDP port 24600 is already held before starting a server; if so it logs a warning and joins the server already there instead of starting one that would die at once; connect window (601) names an out-of-date one; Windows bind behaviour untested; no server restart, no protocol change)
+- 02:55 Tyler: 603 (HUD: server link bars moved to the top left and 50% bigger, soft white until the first server pulse, then green when good, amber 2-3 bars, red at 1 or lost; F4 turns all the overlay text on or off, remembered in display_settings.cfg, default on; CONTROLS.md and Esc > Controls updated; client only, no server restart, no protocol change)
+- 03:10 Willy: 604 (ground: digging a tunnel no longer pops the player back to the surface: the stand-on-the-surface rescues skip spots within 14 m of a dig seen this session, and a fall inside a cave with ground below is not a slip through the world; tests --tunnel-test (shaft + side tunnel: old code POPPED UP, new STAYED) and --no-dig-guard; client only, no server restart)
+- 03:25 Tyler: 605 (server stall fix: every dig and fill checked 9 flora chunks for buried plants ON THE MAIN THREAD, 6 s per dig in a tunnel (a minute of fast digging backed the server up for minutes); the check now runs on a worker thread with a chunk cache and the plant cuts are announced from the main thread; 'slow dig' line in the server telemetry names the slow stage; client test flag --tunnel-spam=N; headless tunnel 3 digs/s for 60 s: 275 digs done vs 31 before, no gap over 1.4 s after the join; server restart needed, no protocol change)
+- 03:45 Tyler: 606 (scale step 1 start: src/shared/action_limits.gd, a per-peer token bucket read from data/limits.json (dig 4 per second, burst 8); applied to the admin dig RPC; drops counted in the server telemetry line ('limiter drops: dig N'); spade digs and fills already had the 700 ms cooldown; test: tunnel-spam at 20 per second dropped 678 of 935 and the server stayed responsive; server restart needed, no protocol change)
+- 04:00 Mandy: 607 (grass: no blades in dug tunnels or over a dug opening; every dig sphere is remembered per grass cell, hits inside a dug hollow or 0.6 m inside its mouth get no grass, fills forget the digs they cover; client only)
+- 04:10 Sonny: 609 (renumbered by Steve from a duplicate 608; commit 51c4b9d) (water_grid.gd thread safety: the worker's chunk_levels read data.fall_levels and sim_levels twice (size check, then index) while the main thread swaps them in _poll_water, so a swap to an empty array between the two gave out-of-bounds errors in _fall_grid; each is now read once into a local; server restart needed, no protocol change)
+- 04:10 Radar: 608 (a drop refused because the 256 m chunk already holds 64 items now says so ('Too many things already lie here...'); before it did nothing silently; server restart needed)
+- 04:30 Tyler: 610 (shovel does nothing: each 16 m ground block replays at most N saved edits and every dig past it was refused SILENTLY; the cap was 200 (a pit of about 200 holes fills it, and the edits are saved so a restart does not clear it), now 600, and the player is told 'This ground is dug over too much to dig any further here.'; telemetry shows 'digs refused (block full): N'. Also: flora items cached and thread safe (server_flora.items_of), ONE persistent flora thread for the plant check and for placing chunks around players before they dig or chop (no main-thread wait), tree checks of a dig no longer place 9 chunks on the main thread; test flag --tunnel-spam=N now sends spade digs and drops; server restart needed, no protocol change)
+- 04:45 Radar: 611 (a dig that does nothing now says why: no spade, spade worn out (with repair materials), or spade in the bag not on the hotbar; spade durability x3 (wooden 2025, stone 4050, iron 20250, steel 40500); questions drop-cap-full, armour-ladder, build-first-set added; server restart needed)
+- 05:00 Radar: 612 (torch and other held items now show in the body's right hand in third person (light and model no longer vanish); a drop is refused only when 64 loose dropped items lie within 12 m (trunks, stumps, fires, structures no longer count); server restart needed)
+- 05:15 Radar: 613 (trade window: 'Sell all but tools' button sells every sellable stack that is not a tool or weapon; first press shows the total, second sells; client only, no restart needed beyond the game)
+- 05:10 Tyler: 614 (ground compaction (renumbered from 613, Radar took it): a busy 16 m block now gets a settled copy made by one low-priority worker (settled_g<N>.sqlite + .idx, checksum on every read, begin/block/done order) so a load replays only the newest edits; digs.dat stays the only truth and is never changed; the dig cap counts only unsettled edits (600) with a 20,000 lifetime backstop; tests: src/worldgen/tools/test_ground_settle.gd (settled+tail equals full replay, torn/cut-off/corrupt/zeroed copies, re-bake, edits during a settle; 1,189 edits: full replay 73 ms, settled load 0.1 ms); server run: 913 digs in one block, 3 settles, no refusals; client file: --tunnel-spam test flag only; server restart needed, no protocol change)
+- 05:25 Tyler: 615 (grass: no blades within 0.9 m of the edge of a dug hole, so grass rooted on the lip no longer hangs over the pit (Dave's build 612 screenshot); client only, no server restart, no protocol change)
+- 05:30 Tyler: 616 (look-angle ruler: underground or in water a vertical line beside the crosshair with a tick every 5 degrees from -45 to +45, a number every 15 and a yellow marker at the angle you look (Dave's request); src/client/horizon_indicator.gd; client only; look not seen on screen yet)
+- 05:40 Radar: 617 (warning cleanup: server_items.gd and inventory_view.gd now 0 warnings, no behaviour change; server restart needed)
+- 05:55 Tyler: 618 (grass is no longer grown within 0.9 m of any ground edge that drops 0.8 m or more, read from the cell's own rays, so holes dug in earlier sessions and pits seen from below are clear too; NPC name labels no longer show through terrain; quick-key test retries its give on a slow join; client only, no restart; not yet seen by Dave)
+- 06:10 Tyler: 619 (ruler also shows in an open pit or shaft: ground 1.5 m above your eyes on most sides; hotbar: the held-item caption sits above the hotbar at any text size; crash note on screen now says plainly how the last run ended (crash backtrace, freeze, quit by itself, or closed with nothing wrong in the log, e.g. editor Stop button); client only, no restart)
+- 06:20 Radar: 620 (building pieces: wall, floor and roof sections, 1 m grid and quarter turns, solid, roof gives cover (workbench recipes, 4-5 lumber + cordage); trade window button is now one click 'Would you like to buy my extra stuff?' selling materials, food and medicine under 50 copper each, never tools, weapons, coins or valuables (coins.json trade.sell_extras), result line; 'Press E to gather' only when aimed within 2 m, E reach 2.5 m, server 3.5 m (data/items/interact.json); server restart needed)
+- 06:40 Tyler: 621 (ruler: marks every 10 degrees plus one at 45, no line down the middle (Dave); launcher replaces an old server from another checkout or waits for one that is closing instead of joining it; join screen says when the server welcomed the game but sends no ground for 20 s; server note user://server_run.json and shutdown/start-up lines in telemetry; plant-pick test waits for a cold server; client and launcher, server restart needed for the note)
+- 06:50 Radar: 622 (coin icons: the purse and the trade window show a coloured circle per coin, cheapest first copper, bronze, silver, gold, instead of the words; tooltips and notices keep words, also cheapest first; client only; test coin icons)
+- 07:00 Sonny: 623 (head pond spring: the spring was placed in a lower basin that the v25 outlet carve left beside the east head pond, so the real pond (x 53800 z 69340, 427 m) stayed dry and the basin filled and spilled onto the plains; water_settler now gives the spring to the highest head and keeps the pond middle to cells within 2 m of the pond's own level; dry sim 4 h on tile 3,4: east pond holds at 425.6 m, basin 4 m, south valley a 2 cm film; server restart needed, no protocol change, no bake)
+- 07:10 Radar: 624 (nothing is built in water: the placement ghost turns red ('you cannot build in water') and the server refuses a kit, fire or building piece with standing water 0.15 m deep at its middle or corners; server restart needed)
+- 07:20 Willy: 625 (ground: a player inside solid rock is always lifted to open air even next to a dug tunnel (the 604 dig guard held the rescue back and could leave a player under the world); rescues are logged to the crash report with position, near a dig, inside rock; tests --tunnel-test: stays in the tunnel, is lifted from inside rock; client only, no server restart)
+- 05:20 Mandy: 626 (building pieces: wall, floor, roof get generated board textures (no files) and edge timbers; hammer-and-creak place sound place_timber for states 22-24; client only)
+- 05:30 Mandy: 627 (sound: sand footsteps 3 dB quieter, -8 to -11, data/sound/step_levels.json and sound_stage.gd; client only)
+- 05:35 Sonny: 628 (debug key Ctrl+Shift+W hides or shows every river and lake drawing, to tell water patches from ground patches (brown squares on the spawn lake); client only, no server restart, no protocol change)
+- 05:50 Radar: 629 (foundation piece: 4 m slab, walls/floors/roofs snap to its anchors and stand on it, clears grass 2 m past its edge, kit in structures.json state 25; Hob's 'buy my extra stuff' button on the NPC dialogue screen (trade kind 3, sells materials/food/medicine, never tools/valuables/coins); SERVER RESTART needed)
+- 05:45 Mandy: 630 (foundation look: 4 x 4 x 0.3 m fitted stone course with packed-earth top; place_foundation stone-thud-and-scrape sound for state 25; client only)
+- 07:45 Tyler: 631 (renumbered from 627; under-the-world: off the floor in empty space with no ground within 40 m below is stood on the surface even next to a dig (void rescue; Willy's 625 handles the player inside rock); data/network.json settled_ground 0 turns settled ground copies off for a test; new headless tests --embed-test and --dig-next-test; server restart needed for settled_ground; client otherwise)
+- 08:05 Tyler: 632 (exhaustion sleep: the black screen now says about how many minutes are left, and from 30 percent energy you can hold Space to wake early (data/items/energy.json forced.manual_wake_at); full wake at 100 percent is unchanged; server restart needed)
+- 08:30 Tyler: tool (no build bump): protocol-only bots, tools/bots.sh and scenes/bot, numbers in tech/BOTS.md (15 bots: server worst frame gap 60 ms)
+- 08:40 Radar: 633 (coin icons show the coin name on mouse-over: Copper coin, Bronze coin...; client only, no server restart)
+- 06:00 Mandy: 634 (sound: tunnel warning sounds ready, sound.placed.quake(stage, strength, at): creak, rumble, dust, crack, 5 s tick; generated; nothing calls it until the server warning message exists; client only)
+- 06:10 Willy: 635 (protocol 68: new server-to-client message quake(stage, strength_pm, point) for the tunnel warning; client forwards it to Mandy's sound.placed.quake; nothing sends it yet; server restart needed)
+- 06:20 Radar: 636 (dead branches lying on the forest floor can be gathered: E within 2 m gives one stick and that branch disappears; ACT_LITTER 33, no protocol bump; SERVER RESTART needed)
+- 06:35 Radar: 637 (placement ghost is now the item's own model, see-through, green where it can go and red where it cannot; one shared path for campfire, benches, forges, chest, lean-to, wall/floor/roof/foundation; client only)
+- 06:45 Radar: 638 (third person: torch, axe and knife are held by the handle end, not the head; the grip offset had the wrong sign; client only)
+- 06:15 Mandy: 639 (sound: campfire jet-engine removed: the low roar bed (96 percent of the fire loops' energy) is dropped from fire_small and fire_large; the crackle is the same samples at the same level; client only)
+- 07:00 Tyler: 644 (renumbered from 640; void rescue only when the whole 42 m column below is loaded and at most once per 6 s, so a still-loading block cannot cause a rescue loop (Steve); client only)
+- 07:10 Radar: 641 (doorway and window wall pieces (states 26, 27, craft at a workbench), foundation cannot be taken down while pieces stand on it; SERVER RESTART needed)
+- 07:20 Willy: 642 (pit wall panels: while the player is in a pit or under a roof the sun shadow biases are small (0.1 / 0.8, open ground keeps 0.3 / 3.0), checked twice a second; client only; test line 625 pit wall panels, F2 Low check)
+- 07:30 Radar: 643 (a burnt-out or loaded campfire is the campfire model again, no flames, light or sound, not a chopping block; F opens the chest or remains beside you, fly is G only; client only)
+- 07:10 Tyler: note on 614 for the record: test_ground_settle 0 failures; 1,189 edits: full replay 74 ms, settled load 0.1 ms; 913 digs in one block took 3 settles of about 62 ms with no refusals; settled_ground in data/network.json is the kill switch (approved by Steve)
+- 07:50 Radar: 645 (campfire store: F beside a fire opens a 4-slot store, your pack left and the fire right, T moves stacks; wood in it feeds the fire and raw food cooks; chest prompt reads Press F to open, E opens it too; the Admin crafting list is now foundation, wall, doorway, window wall, floor, roof, campfire, lean-to, chest, workbench; SERVER RESTART needed)
+- 08:05 Willy: 646 (tunnel watch, OFF by default: data/tunnels.json enabled false, collapse false; measures dug blocks on its own thread, grace timers, quake messages; collapse code exists but is off until Steve's second approval and a Dave test card; tests test_tunnel_stability and test_tunnel_watch; server restart needed, no protocol change)

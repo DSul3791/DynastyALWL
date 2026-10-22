@@ -1,0 +1,150 @@
+# BEST PRACTICES (office Guru: Tyler_Guru_SenDev). Created 2026-10-22.
+
+This is THE guideline document. One entry per thing we do. Topic research from earlier (waterfalls, erosion, animals, skills, TTS, walking numbers, buildings) stays in `/mnt/project-files/tyler/BEST_PRACTICES.md` and `FINDINGS.md`; those are the detail appendix. If an entry here and the appendix disagree, this file wins.
+
+Key for each entry: **Source** D = Dave's decision (do not change without him), T = our own choice (Guru may change after telling Dave). **Owner** = thread that keeps it true. **FLAG** = Guru thinks it is not best practice; recommendation given, nothing changed.
+
+---
+## POLICY (Dave, 2026-10-22 14:08, permanent) 
+
+1. The Guru (Tyler_Guru_SenDev) checks this document at least once every day: is it current, are we doing things the right way. Each check is logged in "Daily check log" at the bottom.
+2. Every other thread reads this document once a day, AFTER the Guru's latest check (look at the log date), and confirms to the coordinator or in its handoff: "BP read <date>".
+3. Before starting anything NEW (a new kind of job, system, tool or file type), even if the thread thinks it knows how, the thread finds the entry here and follows it.
+4. No entry for it? The thread asks the Guru (through the coordinator) for one, and does NOT start that job until the Guru posts an entry here. Reconciled with "never wait for Dave": the thread parks the job in JOBS.md ("Waiting on Guru"), takes the next independent job, and the Guru answers in the same moderator cycle (about 10 minutes) with a short entry, so nobody idles. An entry may be short (rule, why, owner); it can be deepened later.
+5. Copied into PROCESS.md as RULE 4.
+
+---
+## A. GAME CODING
+
+### A1. GDScript
+- **BP-C01 Zero new warnings.** New and edited code adds zero GDScript warnings; typed code (`var x: Type`, return types); no accidental integer division; no shadowing members; unused locals/params underscored or deleted; `@warning_ignore` only with a one-line reason. Why: logs must hold only real problems (233-warning baseline). Source D 2026-10-21. Owner: every thread; check tool: Local build and test runs `tools/check_warnings.sh`. 
+- **BP-C02 Warning cleanup is its own build.** Each thread cleans its own files in one build, no behaviour change, commit says "warning cleanup only". Frozen worldgen files wait for the next bake. Source D. Owner: each thread.
+- **BP-C03 Match the surrounding code.** Comment density, naming, idiom as in the neighbouring file; no new framework for one use. Source T. Owner: all.
+- **BP-C04 Data in JSON, not constants in code.** Tunables, item tables, switches live in `data/*.json` (items, network, tunnels). New feature switches default OFF until Technical Director and Dave test (example: tunnel watch, collapse). Source T. Owner: Radar (items), Steve_ProblemSolver (network/settings), Sonny (tunnels).
+- **BP-C05 Static scan before push.** Run headless load of touched files and the warning count must not rise; conflict-marker grep prints nothing. Source D/T (PROCESS "Before every push"). Owner: pusher.
+
+### A2. Architecture, networking, server authority
+- **BP-C10 Three separable programs.** Server, client, admin tool. They talk only via messages in `src/stream/terrain_net.gd`; client never reads server files or edits server data; shared code in `src/shared`; server-only and client-only code stay in their own folders. Source D 2026-10-17. Owner: Technical Director (approves splits).
+- **BP-C11 Server is authoritative.** The client sends intent (dig here, craft this, move); the server checks range, tools, wear, inventory and applies it; the client never decides outcomes. Why: any MMO is cheatable otherwise. Source T. Owner: Steve_ProblemSolver. *Audit item:* confirm every item/dig/trade message is validated server-side (to verify in code, not yet done).
+- **BP-C12 Protocol changes need a number and a note.** Any message change bumps `PROTOCOL_VERSION` (now 68) and is logged in BUILD_LOG.md; old clients are refused rather than half-working. Needs Technical Director approval (big change). Source D 2026-10-20. Owner: Technical Director.
+- **BP-C13 Never block the server main thread.** Heavy work (generation, settling, water, tunnel measuring) goes on worker threads or is time-sliced; spam from dig/chop must not stall ticks. Why: root cause of the crash hunt (builds 592-609). Source T, learned. Owner: Steve_ProblemSolver.
+- **BP-C14 Fixes need evidence.** "No chasing ghosts": change code only with a log, reproduction or screenshot. Crash reports and editor logs are never committed. Source D. Owner: Steve_ProblemSolver.
+- **BP-C15 Single precision, no VoxelInstancer.** Godot float32 world coords, voxel 1 m, block 16x16x16. Source D/Technical Director 2026-10-20. Owner: Technical Director. *Watch:* float32 jitter grows far from origin (spawn is ~53 km out; ok today, revisit before the world grows).
+- **BP-C16 Scale: design for one friend session now, 1000 later.** Scale work (QoS, bots, banking) is parked; do not extend bots (`tech/BOTS.md`). Source D 2026-10-22 03:53, SCALE_PLAN.md is direction only. Owner: Steve_ProblemSolver.
+
+### A3. Ground and voxel edits
+- **BP-C20 Ground owned by Sonny (World).** Generation, loading, tunnel stability, compaction. Others ask before touching it. Source D 2026-10-22. Owner: Sonny.
+- **BP-C21 Ground edits tell the grass; edits are logged in one place (digs.dat)** so they replay after restart/re-bake. Source Technical Director 2026-10-21. Owner: Sonny.
+- **BP-C22 Frozen until the next bake:** generator, tiles, TERRAIN_VERSION, world data. Runtime-only changes need no re-bake. Source D. Owner: Technical Director.
+- **BP-C23 Dave bakes; we never bake or commit .tile files.** Cloud rebuilds are scratch checks. Before a push touching `src/worldgen`, `git show --stat` shows no .tile. Source D 2026-10-21 18:25. Owner: Technical Director.
+- **BP-C24 Collapse is gated.** No collapse until the Technical Director's second approval and a Dave test card; never death without 90 s warning; logout vs disconnect rule in DECISIONS.md. Source D. Owner: Sonny.
+
+### A4. Water
+- **BP-C30 Water is simulated; owned by Sonny** (sim, generation, ice, swim). Springs per head pond; rivers min 24 m guide width. Source D. Owner: Sonny.
+- **BP-C31 Waterfalls are never steps.** One clean chute, plunge pool, river, next chute. Source D 2026-10-21. Owner: Sonny.
+- **BP-C32 One water-volume query** (`src/shared/water_volume.gd`) for swim, sound, tint; do not write a second one. Source T. Owner: Sonny.
+- **BP-C33 Water cost is reported.** Memory and tick cost stated with each water change (WATER_COST_REPORT.md). Source Technical Director. Owner: Sonny.
+
+### A5. Items, crafting, NPCs
+- **BP-C40 Items live in data; validate before push.** Run `validate_items.gd` (0 errors), plus `test_inventory.gd`, `test_server_items.gd`, `tools/items_check.py`. Source T. Owner: Radar.
+- **BP-C41 Crafting = three ingredients, more ingredients = better item; skills 1-100, untrained cap 25.** Source D. Owner: Radar.
+- **BP-C42 Do it yourself or hire it out.** No job only by hand and none only by NPC. Source D (DESIGN_PRINCIPLES 2). Owner: Radar.
+- **BP-C43 Hob and Edda are test dummies only.** Source D. Owner: Radar.
+- **BP-C44 NPC voice behind a swappable interface** (classic now, AI later, graceful fallback; Kokoro; never espeak-ng). Source D 2026-10-21. Owner: Radar/Kathleen_ArtisticDirector.
+
+### A6. UI and controls
+- **BP-C50 Every input is in CONTROLS.md, same push;** run `python3 tools/check_controls.py` before pushing. Source D 2026-10-20. Owner: pusher; Items and Ground own most keys.
+- **BP-C51 UI rules:** readable on 55" 4K at 1080p; E = Use, F = Open; prompts like "Press E to gather"; labels carry keys; plain item names; no bars on main screen (exceptions listed in memory); hotbar 1-9,0. Source D. Owner: Steve_ProblemSolver (HUD plumbing).
+- **BP-C52 Never name a key you did not check in CONTROLS.md** (example: probe table is Ctrl+Shift+G, not F8). Source D. Owner: all.
+
+### A7. Audio
+- **BP-C60 Sounds ahead of development are on HOLD;** only fix sounds Dave hears wrong. When built: layered stage, own performance budget (ARCHITECTURE_BUDGET s9). No music. Source D. Owner: Kathleen_ArtisticDirector.
+- **BP-C61 Sound approvals via sound/LISTEN_CHECKLIST.md.** Source T. Owner: Kathleen_ArtisticDirector. (ffmpeg only on a machine that has it; missing on Dave's PC.)
+
+### A8. Art and performance
+- **BP-C70 Near-photoreal, Dave's brook photo wins;** look rules in ART_DIRECTION.md. Source D. Owner: Kathleen_ArtisticDirector.
+- **BP-C71 Minimum machine: 1050-class, 8 GB, SATA at 30 fps.** Every change states its cost at Low; anything per-frame sits behind the quality setting. Source D 2026-10-17. Owner: Technical Director approves; each thread states cost.
+- **BP-C72 Performance routine after client/server/streaming/flora/water changes** (flight check with frame probe, HANDOFF.md). Dave tests Ultra on RTX 2060 SUPER; no 1050-class testing by him. Source D. Owner: each thread.
+- **BP-C73 No per-tree nodes;** MultiMesh per species plus impostors. Source T (tyler appendix). Owner: Kathleen_ArtisticDirector/Sonny.
+- **BP-C74 Do not set visuals by feel when a metric exists;** use probe tables (Ctrl+Shift+G). Source T. Owner: Steve_ProblemSolver.
+
+### A9. Testing
+- **BP-C80 Layers:** (1) headless script tests (`src/worldgen/tools/test_*.gd`, about 6 min for worldgen), (2) static checks (warnings, controls, items), (3) flight check, (4) Dave's play test. Source T. Owner: Steve_ProblemSolver.
+- **BP-C81 Test requests go in `tech/TEST_QUEUE.md`,** Technical Director groups them into ONE question. No individual test asks to Dave. Source D RULE 2. Owner: Technical Director.
+- **BP-C82 Test report format:** "Test done: X pass, Y fail", one short line per failure; simple fix = steps; big fix = say "big fix". Source D 2026-10-22 14:01. Owner: all.
+- **BP-C83 Runs that fit Dave's PC run on Dave's PC** (RULE 3): GPU, editor, full game, long runs. Ask "Local build and test" via the coordinator with exact commands. Cloud for small loads and doc work. Source D 13:23. Owner: coordinator.
+- **BP-C84 Cloud-engine caveat:** headless load prints no warnings; use the local tool. Source Technical Director. Owner: Local thread.
+- **BP-C85 CI on push. APPROVED (Dave 2026-10-22 14:27, "approve all").** GitHub Actions runs `check_controls.py`, `items_check.py`, a conflict-marker grep and a docs-only/no-.tile guard on every push; Godot checks stay local (MikeW). Workflow file waits for Dave's go and a MikeW run. Plan: IMPLEMENTATION_PLAN.md step 3. Source D. Owner: Technical Director.
+
+### A10. Saving and persistence
+- **BP-C90 Saved data is versioned;** TERRAIN_VERSION and file format version change only with approval and a migration or deliberate wipe. Source D/Technical Director. Owner: Technical Director.
+- **BP-C91 Player and ground state survive a server restart;** edits via digs.dat, settled water after Dave's bake. Players currently always spawn at world spawn (saved positions pending; Steve_ProblemSolver). Source T. Owner: Steve_ProblemSolver/Willy.
+- **BP-C92 Time is real saved wall-clock** where rules say minutes (bracing grace about 30 real minutes). Source D. Owner: Sonny.
+- **BP-C93 Dated save backups. APPROVED (Dave 2026-10-22 14:27).** Before any protocol, TERRAIN_VERSION or save-format bump, copy the server store folder to a dated name (`store_YYYYMMDD_HHMM`) and note it in BUILD_LOG.md; keep the last 3. Plan step 4. Source D. Owner: Steve_ProblemSolver (saves), Technical Director checks.
+
+### A11. Builds, protocol, git
+- **BP-C100 Branch only `claude/generator-v2`;** main is protected, Dave merges via PR. Source D. Owner: all.
+- **BP-C101 Build number = max(origin BUILD, last BUILD_LOG line) + 1,** BUILD_LOG line and `const BUILD` in the same commit, push at once; on rejection fetch, rebase, recompute. Source Technical Director 2026-10-22. Owner: Technical Director.
+- **BP-C102 Before every push:** `git pull --rebase`, conflict-marker grep empty, headless parse of touched files, controls check, warning count not rising. Source PROCESS 2026-10-20. Owner: pusher.
+- **BP-C103 Push messages name build number and thread.** HUD shows `build N (commit)`; check Dave's HUD build first. Source T. Owner: all.
+- **BP-C104 After a server-side build Dave must close the game fully** so the server restarts; say so. Source D. Owner: reporter.
+- **BP-C105 Never commit** crash reports, editor logs, temp water DLLs, .tile files. Source D. Owner: all.
+- **BP-C106 A thread denied push waits** for Dave to type the push permission in THAT thread. Source Dave. Owner: coordinator.
+- **BP-C107 Per-thread short branches merged by the Technical Director. APPROVED (Dave 2026-10-22 14:27).** Each thread pushes to `claude/<thread>-<topic>` (short-lived, one job); the Technical Director merges to `claude/generator-v2` in build order, owns build numbers at merge, and deletes merged branches. `main` stays Dave's. Replaces the single-branch rule once the coordinator has set thread branch permissions. Plan step 2. Source D. Owner: Technical Director.
+- **BP-C108 Git LFS for .tile files. APPROVED (Dave 2026-10-22 14:27).** Forward-only first (`.gitattributes` tracks `*.tile`, no history rewrite). Any history migration (force-push) needs a separate explicit go from Dave and a MikeW run on his PC. Plan step 5. Source D. Owner: Technical Director with MikeW.
+
+---
+## B. TEAM STRUCTURE
+
+- **BP-T01 Thread roles and ownership** (PROCESS.md "Who owns what", approved by Dave 2026-10-22 14:18): Technical Director + Guru (Tyler_Guru_SenDev; docs, approvals, build numbers, question page, test card, BEST_PRACTICES); Sonny (World: ground, tunnels, bracing, water, ice, swim); Radar (items, crafting, NPCs, animals, buildings, trade); Steve_ProblemSolver (Systems, was Tyler_002: everything unassigned, server, network, HUD, movement, performance, saves); Kathleen_ArtisticDirector (art, animation, sound); MikeW_LocalAgent (Dave's PC, on demand); Coordinator. Steve and Willy are retired. Never touch another thread's code. Source D. Owner: Technical Director.
+- **BP-T02 Anything unassigned goes to Steve_ProblemSolver.** Source D. Owner: Steve_ProblemSolver.
+- **BP-T03 Approvals: big changes only** (split of server/client, protocol, save formats, shared files, new dependencies, per-frame cost). Bug fixes and tuning in your own area need none. Standing approval for routine builds/protocol bumps. Source D 2026-10-20. Owner: Technical Director.
+- **BP-T04 Handoffs:** on stop or context end a thread writes `handoff/<Name>_<NNN>_HANDOFF.md` (what is done, held patches, next job); the next iteration reads it first. HANDOFF.md in repo is the master summary. Source T. Owner: each thread.
+- **BP-T05 HANDOFF.md stays short.** Done 2026-10-22: trimmed from 112 KB to about 10 KB, old text kept in `docs/archive/HANDOFF_FULL_2026-10-22.md`. Rule: keep the top file under 12 KB; move dated history to docs/archive when it grows. Source D approved 2026-10-22. Owner: Technical Director.
+- **BP-T06 Moderator = coordinator;** checks every 30 minutes (Dave 2026-10-22, was 10), only threads changed since the last check; stuck threads post a question and move on. Paused while dev is stopped. Source D. Owner: coordinator.
+- **BP-T07 Never wait for Dave.** Park the job in JOBS.md with the exact question, take the next independent job. Source D 2026-10-21. Owner: all.
+- **BP-T08 Question page:** only pickable-answer questions in `questions/QUESTIONS.md`, answers in ANSWERS.md, report "Question added: <title>". Check DECISIONS.md, ANSWERS.md and design docs BEFORE asking. Source D RULE 1. Owner: Technical Director.
+- **BP-T09 Confidence rule:** technical details decide yourself; thinly discussed design = one short question with a recommended answer, keep working meanwhile. Source D 2026-10-16. Owner: all.
+- **BP-T10 Reporting to Dave: SUCCINCT** (voice user). Test reports as in BP-C82; no walkthrough prose; every post ends "Still waiting on:" (short). Source D 2026-10-22. Owner: all.
+- **BP-T11 Alerts:** "Finished:" for big jobs; phone alert "!!! All threads are done - ready for a rebuild!" when everything is done; notify only for finishes or needs from Dave. Source D. Owner: coordinator.
+- **BP-T12 Decisions are written down** in tech/DECISIONS.md with date and who; Dave's answers recorded from ANSWERS.md. A replaced session must find them. Source Technical Director. Owner: Technical Director.
+- **BP-T13 Memory:** lasting facts (Dave's rules, IDs, states) go to project memory the turn they are learned; one file per subject. Source T (system). Owner: all.
+- **BP-T14 Design docs:** ideas tagged [Decided]/[Proposed]/[Idea]/[Open] in DESIGN_IDEAS.md; rejected ideas logged in DESIGN_REJECTED.md without being asked; principles in DESIGN_PRINCIPLES.md (safe, kind, generous; do it yourself or hire it out; nobody forced to build a town). If Dave contradicts a file, trust Dave and update it; if it conflicts with [Decided], say so in one line. Source D. Owner: all.
+- **BP-T15 Focus rule:** present, not distant future: movement, physics, water, tunnels, getting ready to play. Parked list in memory/DECISIONS. Source D 2026-10-22 03:53. Owner: Technical Director.
+- **BP-T16 Dev stop/go:** a stop is written at the top of JOBS.md and PROCESS.md; on "go" the coordinator re-arms the moderator and nudges threads to resume from handoff. Source D. Owner: coordinator.
+- **BP-T17 Best-practice check (this document):** see POLICY above. Replaces the older "ask Tyler" line. Source D 2026-10-22. Owner: Guru.
+- **BP-T18 Daily read-only docs mirror. APPROVED (Dave 2026-10-22 14:27).** Once a day the Technical Director copies `tech/`, `handoff/`, `items/` (md only) into `docs/mirror/` in the repo and pushes; the project-files copy stays the master. Plan step 1. Source D. Owner: Technical Director.
+- **BP-T19 Single points of failure.** The coordinator relays everything and the Technical Director is approver, scribe and build numbers (Steve's and Guru's jobs now one thread). Mitigation: BUILD_LOG, DECISIONS and JOBS stay complete enough for a replacement. Source T. Owner: Technical Director.
+- **BP-T20 Workers run on demand.** A thread starts when a job is queued and parks with a handoff when its queue is empty; no idle always-on threads. MikeW_LocalAgent likewise, batching runs from TEST_QUEUE. Source D approved 2026-10-22. Owner: coordinator.
+- **BP-T21 Technical Director duties** (inherited from Steve): JOBS.md/DECISIONS.md/PROCESS.md/BUILD_LOG.md/TEST_QUEUE.md, approvals (big changes only), build-number repair, question page and grouped test card, review of risky pushes, HANDOFF.md, daily doc check and BP log, daily mirror of tech docs (if Dave approves T18). Source D. Owner: Technical Director.
+
+---- **BP-T22 Cross-talk between threads. APPROVED (Dave 2026-10-22 14:40, "ok").** Cross-talk is valuable, so allow it, but cheap and on purpose:
+  1. Allowed only when a thread's work depends on another's files or decisions, a design needs a second owner's input, or a risky change needs review. Not for status, chat or "FYI".
+  2. Route: through the coordinator, or directly where a direct channel exists, always one message, one question, with the answer format asked for ("yes/no + one line"). Attach the exact file/lines, not a recap.
+  3. Receiver answers in the same cycle (about 30 minutes) in 1 to 3 lines, or says "queued, answer by <time>"; the asker takes another job meanwhile (never idle).
+  4. Limits: at most 2 open requests per thread; at most 3 messages per topic, then the Technical Director decides; no ping-pong chains (A to B to C): go through the Technical Director.
+  5. Never touch another thread's code through a message. Ownership rules (PROCESS.md) win; cross-talk asks the owner to do it.
+  6. Decisions reached are written down (DECISIONS.md or the handoff) so nobody asks twice. Repeats of a settled question are answered with the link.
+  7. The Technical Director reviews cross-talk volume in the daily check and tightens or loosens these limits.
+  Source D (approved Guru proposal). Owner: Technical Director.
+- **BP-T23 Priority (QoS) for requests, ONE shared scheme for EVERY thread. APPROVED (Dave 2026-10-22 14:49, "I approve").** Priority is by request type, not by who asks, so no thread outranks another permanently:
+  P0: Dave's direct word, data loss, crash, a push that breaks the branch. Do now; it may pause anything.
+  P1: a request that blocks another thread's running job (approval, build number, missing BP entry). Same cycle (about 30 min).
+  P2: reviews of risky pushes, test card, DECISIONS entries. Within the day.
+  P3: daily BP check, mirror, doc tidy. Best effort, but never skipped two days running.
+  Rules: (1) the asker names the level and a one-line reason; the Technical Director may lower it. (2) A higher level pauses a lower one only at a job boundary, except P0. A paused request gets "queued, answer by <time>". (3) Aging: a P2 or P3 older than 24 hours moves up one level so nothing starves. (4) Queue lives in JOBS.md under "Guru queue" with level, asker, time. (5) Dave can change any level by saying so.
+  Applies to all threads, not just the Technical Director: each thread keeps its own short queue (top of its handoff or its JOBS.md section) with level, asker, time, uses the same P0 to P3 meaning, and answers Dave first (P0), then requests that block a running job (P1). Per-thread differences are only the examples of what counts as P1 for its area, listed in its JOBS.md section; no thread invents its own levels. A thread that is paused for a higher level posts "queued, answer by <time>" to the asker. The Technical Director audits the queues in the daily check.
+  Source: Guru proposal. Owner: Technical Director.
+- **BP-T24 Ideas: one permanent home, a small inbox, and the ChatGPT inbox. APPROVED (Dave 2026-10-22 14:49; corrected 14:47 after Dave's "didn't we already have a design ideas").** (1) `DESIGN_IDEAS.md` stays THE one permanent ideas file (statuses [Decided]/[Proposed]/[Idea]/[Open]); rejected ideas go to `DESIGN_REJECTED.md`; principles to `DESIGN_PRINCIPLES.md`. (2) `DESIGN_IDEAS_BY_CHATGPT.md` (repo root) remains the temporary inbox Dave fills from ChatGPT: folded into DESIGN_IDEAS.md tagged "(brainstorm)" only when Dave asks, conflicts flagged against DESIGN_PRINCIPLES and DESIGN_REJECTED, then the inbox file is deleted (Dave 2026-10-16, unchanged). (3) For Dave's spoken blurts, `tech/IDEAS.md` is only a verdict ledger, not a second idea store: the coordinator logs the blurt in Dave's words with date and owner thread (unclear = Technical Director); the owner answers NOW or LATER within one cycle (about 30 minutes) with a one-line reason; NOW = JOBS.md job with a P-level (BP-T23), LATER says what would make it NOW; then the owner folds a design idea into DESIGN_IDEAS.md (confidence rule: thinly covered = one question to Dave on the question page) and the ledger row becomes a pointer. (4) No idea is dropped silently; Dave can reverse any verdict. (5) The Technical Director reviews the ledger daily (no NEW older than 24 hours, LATER re-read weekly). Source: Guru proposal from Dave's process. Owner: coordinator (logging), Technical Director (review).
+- **BP-T25 Reading the design without reading all of it. APPROVED (Dave 2026-10-22 14:49). Files drafted 2026-10-22: BIG_PICTURE.md (repo root), tech/DESIGN_ROLE_MAP.md, tech/DESIGN_CHANGELOG.md.** DESIGN_IDEAS.md is about 376 KB (roughly 90k tokens): nobody should read it whole, and nobody does today. Three layers instead: (1) BIG PICTURE: one page `BIG_PICTURE.md` (about 2 KB: vision, the principles in one line each, current scope and focus rule, what is built, the team) that EVERY thread reads at start, kept current by the Technical Director; (2) ROLE MAP: `tech/DESIGN_ROLE_MAP.md`, a reading list per thread naming the DESIGN_IDEAS.md sections (and docs in items/, tech/) that thread needs, as pointers, not copies, so nothing drifts; threads read only their sections, plus the section of any system their job touches; (3) DESIGN CHANGELOG: `tech/DESIGN_CHANGELOG.md`, one line per change (date, section, what, [Decided]/[Proposed]), written when DESIGN_IDEAS.md or DESIGN_PRINCIPLES.md changes; each thread reads the lines since its last "BP read <date>" so direction stays shared without rereading. Also: when a job needs a section outside the map, the thread reads it and tells the Technical Director to add it to the map. Why not extracts per role: copies go stale. Source: Guru proposal. Owner: Technical Director. 
+- **BP-T26 Lessons and the post-project debrief. APPROVED (Dave 2026-10-22 14:55, "ok on BP-T26").** Dave wants a debrief when the game is "finished" and everything learned and built reused to jumpstart future projects. (1) `tech/LESSONS.md` is a running log: any thread adds one line when a bug, rework, collision or good surprise teaches something (date, area, what, worked/failed, lesson); the Technical Director tags entries [KEEP] or [LOCAL] in the daily check. (2) `tech/PROJECT_DEBRIEF_KIT.md` holds the reusable-assets list (kept current), the debrief checklist (freeze and archive, one-page retro per thread, tag every BEST_PRACTICES entry KEEP/CHANGE/LOCAL/DROP, measure, asset audit, Dave's three questions) and the starter-kit outline for a new project. (3) Every BEST_PRACTICES entry carries a general-vs-this-game judgement at its yearly/milestone review. (4) Dave decides when the debrief starts (milestone or "finished"). Source: Guru proposal from Dave's request. Owner: Technical Director.
+
+## Entry count and Dave decisions needed
+Entries: 81 (55 code, 26 team; BP-T26 approved; BP-T22 to BP-T25 all approved by Dave), plus the POLICY. All 5 flagged decisions (C85, C93, C107, C108, T18) APPROVED by Dave 2026-10-22 14:27; implementation plan in tech/IMPLEMENTATION_PLAN.md. Everything else stands as is.
+
+Audit scope note (2026-10-22): this first pass is a document-level audit of PROCESS, DECISIONS, JOBS, HANDOFF, DESIGN_PRINCIPLES and the Tyler appendix. A code-level audit (server authority C11, validation paths, save versioning) is queued as the next daily check; findings get added here.
+
+## Daily check log
+- 2026-10-22 14:30 Guru: document created, policy added, no thread has read it yet.
+- 2026-10-22 14:50 Guru: team changes applied (Steve/Willy retired, Sonny=World, on-demand workers, moderator 30 min, HANDOFF.md trimmed). Next check due 2026-10-23.
+- 2026-10-22 15:00 Guru: Dave approved C85, C93, C107, C108, T18; entries updated, plan written.

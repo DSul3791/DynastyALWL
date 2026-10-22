@@ -1,0 +1,7 @@
+# Design changelog (BP-T25). One line per change to DESIGN_IDEAS.md, DESIGN_PRINCIPLES.md, DESIGN_REJECTED.md or a Dave design answer. Newest at the bottom. Format: date | section or file | change | tag | owner who needs to know.
+# Writers: whoever changes the design file adds the line in the same job; the Technical Director checks the log daily and backfills misses. Readers: every thread reads the lines since its last "BP read <date>".
+
+2026-10-22 | start of log | Earlier history is in DESIGN_IDEAS.md and tech/DECISIONS.md; this log starts today. | - | all
+2026-10-22 | DESIGN_IDEAS.md / answers | Dave's answers 2026-10-22: no music; wolves howl only at night, far; footsteps heard 15 m; NPCs mutter rarely; river flood YES; fall channel YES; scale target 1000 players; bracing grace about 30 real minutes; collapse always lethal inside the falling part; load exertion only on server overload; shovel digs everything in one smash for admin, later iron then steel pickaxe. | [Decided] | Sonny, Radar, Steve_ProblemSolver, Kathleen_ArtisticDirector
+2026-10-22 | tech/DECISIONS.md | Collapse/logout rule: disconnect = reconnect within 2 min or respawn at nearest bed/lean-to/campfire/shelter; deliberate logout in a collapsing tunnel = death with remains. | [Decided] | Sonny, Steve_ProblemSolver, Radar
+2026-10-22 | tech/BEST_PRACTICES.md | Team and process decisions BP-T20 to BP-T25 (on-demand workers, cross-talk, priority, ideas, design reading) approved. | [Decided] | all
