@@ -67,7 +67,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 599
+const BUILD := 600
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -81,6 +81,7 @@ const StreamScript := preload("res://src/stream/network_voxel_stream.gd")
 const BlockLinkScript := preload("res://src/stream/block_link.gd")
 const CacheScript := preload("res://src/stream/client_block_cache.gd")
 const NetScript := preload("res://src/stream/terrain_net.gd")
+const LinkBarsScript := preload("res://src/client/link_bars.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const WaterVolume := preload("res://src/shared/water_volume.gd")
@@ -487,6 +488,8 @@ func _ready() -> void:
 			hole_probe = true
 		elif argument.begins_with("--water-spam="):
 			_water_spam_per_s = float(argument.trim_prefix("--water-spam="))   # test: ask for the water of every held chunk this many times a second
+		elif argument.begins_with("--lose-after="):
+			_lose_after_s = float(argument.trim_prefix("--lose-after="))   # test: act as if the server dropped us this many seconds after the welcome
 		elif argument.begins_with("--dig-spam="):
 			_dig_spam_per_s = float(argument.trim_prefix("--dig-spam="))   # test: dig the same 0.9 m spot this many times a second (a held click)
 		elif argument == "--fly":
@@ -647,6 +650,9 @@ func _ready() -> void:
 	net.flora_cut_received.connect(_on_flora_cut)
 	net.water_rate_received.connect(_on_water_rate)
 	net.water_changed_received.connect(_on_water_changed)
+	net.pulse_received.connect(func() -> void:
+		if link_bars != null:
+			link_bars.pulse())
 	net.ground_reset_received.connect(_on_ground_reset)
 	net.died_received.connect(_on_died)
 	net.water_received.connect(_on_water_received)
@@ -692,10 +698,29 @@ func _on_server_lost() -> void:
 	if crash_report != null:
 		crash_report.report_now("server left: the connection to the server was lost")
 
-	if DisplayServer.get_name() == "headless" or _lost_layer != null:
+	if _lost_layer != null:
+		return
+
+	if DisplayServer.get_name() == "headless" and not OS.get_cmdline_user_args().has("--lost-notice"):
 		_finish(1)
 		return
 
+	_show_lost_notice("the server stopped answering or closed the connection")
+
+
+# The notice stays up until the player picks Retry or Quit: no timer, no automatic quit. The world is frozen (tree paused,
+# so input and movement stop), sound is muted, and the window stays open even if the server process is gone.
+func _show_lost_notice(reason: String) -> void:
+	if _lost_layer != null:
+		return
+
+	if link_bars != null:
+		link_bars.set_lost()
+		reason += " (" + link_bars.text() + ")"
+
+	_telemetry.event("NOTICE: connection lost, window stays open: " + reason)
+	print("Terrain client: connection lost notice shown: ", reason)
+	AudioServer.set_bus_mute(0, true)
 	_lost_layer = CanvasLayer.new()
 	_lost_layer.layer = 100
 	_lost_layer.process_mode = Node.PROCESS_MODE_ALWAYS
@@ -708,16 +733,19 @@ func _on_server_lost() -> void:
 	panel.add_child(box)
 	var label: Label = Label.new()
 	label.text = "Connection to the server was lost"
-	label.add_theme_font_size_override("font_size", 32)
+	label.add_theme_font_size_override("font_size", 40)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(label)
 	var note: Label = Label.new()
-	note.text = "Retry joins again. If the server has stopped, quit and press Play."
-	note.add_theme_font_size_override("font_size", 22)
+	@warning_ignore("integer_division")
+	note.text = "At %s, after %d min in this session.\nReason: %s.\nRetry joins again. If the server has stopped, Quit and press Play." % [Time.get_time_string_from_system(), (Time.get_ticks_msec() - connected_msec) / 60000, reason]
+	note.add_theme_font_size_override("font_size", 24)
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	note.custom_minimum_size = Vector2(900.0, 0.0)
 	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(note)
 
-	for entry in [["Retry", func(): get_tree().paused = false; get_tree().reload_current_scene()], ["Quit", func(): _finish(1)]]:
+	for entry in [["Retry", func(): AudioServer.set_bus_mute(0, false); get_tree().paused = false; get_tree().reload_current_scene()], ["Quit", func(): _finish(1)]]:
 		var button: Button = Button.new()
 		button.text = entry[0]
 		button.custom_minimum_size = Vector2(380.0, 52.0)
@@ -725,6 +753,10 @@ func _on_server_lost() -> void:
 		button.pressed.connect(entry[1])
 		box.add_child(button)
 
+	var backdrop: ColorRect = ColorRect.new()
+	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	backdrop.color = Color(0.0, 0.0, 0.0, 0.6)
+	_lost_layer.add_child(backdrop)
 	_lost_layer.add_child(panel)
 	add_child(_lost_layer)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -739,6 +771,11 @@ func _on_connection_failed() -> void:
 		return
 
 	print("Terrain client: connection failed")
+
+	if DisplayServer.get_name() != "headless" and connected_msec > 0:
+		_show_lost_notice("the connection failed after joining")
+		return
+
 	_finish(1)
 
 
@@ -891,6 +928,14 @@ func _welcome_body(info: Dictionary) -> void:
 	RenderingServer.viewport_set_measure_render_time(get_viewport().get_viewport_rid(), true)
 	var layer: CanvasLayer = CanvasLayer.new()
 	add_child(layer)
+	link_bars = LinkBarsScript.new()
+	link_bars.setup(func() -> ENetPacketPeer: return (multiplayer.multiplayer_peer as ENetMultiplayerPeer).get_peer(1) if multiplayer.multiplayer_peer is ENetMultiplayerPeer else null)
+	link_bars.on_drop = func(text: String) -> void: _telemetry.event(text)
+	link_bars.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	link_bars.position = Vector2(-18.0, 8.0)
+	link_bars.size = Vector2(80.0, 36.0)
+	layer.add_child(link_bars)
+	debug_hud.add_line("server link", func() -> String: return link_bars.text())
 	_tint = ColorRect.new()
 	_tint.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_tint.color = Color(0.05, 0.25, 0.4, 0.55)
@@ -2246,6 +2291,9 @@ var _dig_spam_next_msec: int = 0
 var _step_lift: float = 0.0               # metres the eye still has to rise after a step-up (eased out)
 var _movement: Dictionary = {}        # data/movement.json
 var _telemetry = EventLogScript.new()       # crash_reports/telemetry_client.log: traffic, backlog and frame gaps once a second
+var _lose_after_s: float = 0.0
+var _link_print_msec: int = 0
+var link_bars = null                      # server connection indicator (link_bars.gd)
 var _lost_layer: CanvasLayer             # "Connection to the server was lost" window
 var crash_report                      # CrashReport: breadcrumbs and the report of an unclean last run
 var _previous_run_note_until_msec: int = 0
@@ -3427,6 +3475,17 @@ func _process(delta: float) -> void:
 	if _dig_spam_per_s > 0.0 and world.has("spawn") and Time.get_ticks_msec() >= _dig_spam_next_msec and Time.get_ticks_msec() - connected_msec > 8000:
 		_dig_spam_next_msec = Time.get_ticks_msec() + int(1000.0 / _dig_spam_per_s)
 		net.dig.rpc_id(1, Vector3(world["spawn"]) + Vector3(0.0, -3.0, 0.0), 0.9)
+
+	if link_bars != null:
+		link_bars.client_stalled(delta)
+
+	if _lose_after_s > 0.0 and connected_msec > 0 and Time.get_ticks_msec() - connected_msec > int(_lose_after_s * 1000.0):
+		_lose_after_s = 0.0
+		_on_server_lost()
+
+	if OS.get_cmdline_user_args().has("--lost-notice") and link_bars != null and Time.get_ticks_msec() - _link_print_msec > 2000:
+		_link_print_msec = Time.get_ticks_msec()
+		print("Terrain client: ", link_bars.text())
 
 	if crash_report != null:
 		crash_report.tick(_crash_state)

@@ -82,6 +82,7 @@ var _npc_sent_ms: Dictionary = {}
 var _animal_sent_ms: Dictionary = {}
 var _npc_sent: Dictionary = {}         # peer -> signature of the NPC rows last sent
 var _npc_send_t: float = 0.0
+var _pulse_t: float = 0.0
 var _water_updates: int = 0
 var weather: Dictionary = {}           # the weather at the water tile now (WeatherScript.state), refreshed every second
 var _weather_next_msec: int = 0
@@ -1143,6 +1144,14 @@ func _fill_ground(center: Vector3, radius: float, material: int) -> bool:
 
 # NPC rows to each player, about four times a second and only when something near them changed.
 func _send_npcs(delta: float) -> void:
+	_pulse_t += delta
+
+	if _pulse_t >= 0.25:
+		_pulse_t = 0.0
+
+		for peer_id in _peers:
+			net.pulse.rpc_id(peer_id)
+
 	_npc_send_t += delta
 
 	if _npc_send_t < 0.05:

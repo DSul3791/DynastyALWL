@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 66
+const PROTOCOL_VERSION := 67
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -45,6 +45,7 @@ signal flora_cut_received(chunk: Vector2i, id: int)
 signal water_rate_requested(peer_id: int, direction: int)
 signal water_rate_received(rate: float, busy: bool, spring_m3_s: float)
 signal water_changed_received()
+signal pulse_received()
 signal ground_reset_received(tiles_stamp: String, starter_stamp: String)
 signal water_requested(peer_id: int, chunks: PackedInt32Array)
 signal surface_requested(peer_id: int, x: float, z: float)
@@ -134,6 +135,7 @@ func welcome(info: Dictionary) -> void:
 @rpc("any_peer", "call_remote", "reliable")
 func request_blocks(keys: PackedInt32Array, urgent: int) -> void:
 	if multiplayer.is_server() and keys.size() % 4 == 0:
+		@warning_ignore("integer_division")
 		blocks_requested.emit(multiplayer.get_remote_sender_id(), keys, clampi(urgent, 0, keys.size() / 4))
 
 
@@ -201,6 +203,12 @@ func step_water_rate(direction: int) -> void:
 @rpc("authority", "call_remote", "reliable")
 func water_rate(rate: float, busy: bool, spring_m3_s: float) -> void:
 	water_rate_received.emit(rate, busy, spring_m3_s)
+
+
+# The server's heartbeat, four times a second (the client's connection indicator counts the silence between them).
+@rpc("authority", "call_remote", "unreliable")
+func pulse() -> void:
+	pulse_received.emit()
 
 
 # The server's water has new levels: clients ask again for the chunks they hold.
