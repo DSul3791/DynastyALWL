@@ -1,6 +1,3 @@
-## blueprint-9 | Pillars on every tier, 5 anchors per cell, solid but not carrying load yet?
-[check]
-
 ## doors-window-hole | Is a window just a plain hole in the wall, with no frame or glass piece for now (shutters come later as separate hinged wood pieces)?
 Image: questions/img/tiers_doors_v2.png
 [check]
