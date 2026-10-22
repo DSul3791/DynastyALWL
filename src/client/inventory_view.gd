@@ -2,6 +2,7 @@ extends Node
 const Interact := preload("res://src/shared/interact_rules.gd")
 const PieceLook := preload("res://src/client/piece_look.gd")
 const BuildingLook := preload("res://src/client/building_look.gd")
+const BasicLook := preload("res://src/client/basic_look.gd")
 
 # The client side of items: the inventory panel (I), things lying on the ground (E picks up
 # the nearest within reach) and the player key. The server owns all of it; this only shows
@@ -21,6 +22,7 @@ const CarryRules := preload("res://src/shared/carry_rules.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
 const KEY_FILE := "user://player_key.txt"
 const PICKUP_M := 3.0
+const BASIC_DROP_SCALE := 1.8           # loose items with a stage-one look (basic_look.gd) are drawn this much bigger so they show in the grass
 const COLUMNS := 6
 const MAX_FIRE_LIGHTS := 3              # at High and Ultra; fewer below (max_lights)
 
@@ -2041,6 +2043,12 @@ func _make_fire(lit: bool, loaded: bool = false) -> Node3D:
 func _mesh_for(number: int) -> Mesh:
 	if not _meshes.has(number):
 		var id: String = table.id_of(number)
+		var basic: Mesh = BasicLook.mesh_for(id)      # stage-one look from data/items/looks.json (src/client/basic_look.gd)
+
+		if basic != null:
+			_meshes[number] = basic
+			return basic
+
 		var material: StandardMaterial3D = StandardMaterial3D.new()
 		material.roughness = 1.0
 		var mesh: Mesh
@@ -2130,6 +2138,11 @@ func _dress_item(node: Node3D, number: int, world_id: int, natural: bool = false
 		return
 
 	node.rotation = Vector3(0.0, rng.randf_range(0.0, TAU), 0.0)
+
+	if BasicLook.has_look(id):
+		node.scale = Vector3.ONE * BASIC_DROP_SCALE      # big enough to find in the tall grass (the natural stones and sticks are 3 times)
+		node.position.y += 0.04
+		return
 
 	if id == "stick" or id == "plant_fibre" or id == "firewood" or id == "log" or id == "driftwood":
 		node.scale = Vector3(rng.randf_range(0.7, 1.3), 1.0, 1.0)
