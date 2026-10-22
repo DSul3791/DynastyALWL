@@ -81,6 +81,12 @@ func _init() -> void:
 
 	print("after the tile arrived: worst tick %.1f ms, %d loose stones and sticks laid out" % [after[-1], loose])
 
+	generator.prefetch_around(60940.0, 68427.0)   # 500 m west of a tile edge: the east tile must be read ahead
+	OS.delay_msec(6000)
+	var t3: int = Time.get_ticks_usec()
+	generator.surface_height(61500.0, 68427.0)
+	print("east tile after prefetch_around: %.1f ms" % [float(Time.get_ticks_usec() - t3) / 1000.0])
+
 	for step in [Vector2(0.0, 0.0), Vector2(1.0, 0.0), Vector2(1.0, 1.0), Vector2(-1.0, 0.0)]:
 		var t1: int = Time.get_ticks_usec()
 		generator.surface_height(53301.0 + step.x * float(settings.tile_size_m), 68427.0 + step.y * float(settings.tile_size_m))

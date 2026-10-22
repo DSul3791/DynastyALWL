@@ -244,6 +244,20 @@ func prefetch_tile(x: float, z: float) -> void:
 		_mutex.unlock())
 
 
+# Prefetches the tile under a position and any neighbour tile within `margin` metres, so main-thread height lookups near a tile edge never read a file.
+func prefetch_around(x: float, z: float, margin: float = 2000.0) -> void:
+	prefetch_tile(x, z)
+
+	for dx in [-1.0, 0.0, 1.0]:
+		for dz in [-1.0, 0.0, 1.0]:
+			if dx == 0.0 and dz == 0.0:
+				continue
+
+			var nx: float = x + dx * margin
+			var nz: float = z + dz * margin
+			prefetch_tile(nx, nz)
+
+
 # Drops every loaded tile so the next use reads the files again (a bake replaced them).
 func forget_tiles() -> void:
 	_mutex.lock()

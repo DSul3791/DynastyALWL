@@ -607,7 +607,8 @@ func _on_position_reported(peer_id: int, position: Vector3, velocity: Vector3) -
 	items.set_swimming(peer_id, SwimScript.swimming(position.y, water[0], water[1]))
 	items.set_head_under(peer_id, SwimScript.head_under(position.y, water[0], water[1]))
 	items.report_position(peer_id, position)
-	var height: float = maxf(position.y - generator.surface_height(position.x, position.z), 0.0)
+	generator.prefetch_around(position.x, position.z)
+	var height: float = maxf(position.y - generator.surface_height(position.x, position.z), 0.0) if generator.tile_cached(position.x, position.z) else 0.0
 	var descent: float = maxf(-velocity.y, 10.0)
 	var seconds: float = minf(height / descent, 8.0)
 	var point: Vector2 = Vector2(position.x + velocity.x * seconds, position.z + velocity.z * seconds)
