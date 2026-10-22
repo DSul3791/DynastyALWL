@@ -43,11 +43,11 @@ SPECIAL = {
     "spear": ("shaft", "#b8bcc4", 1.0), "wooden_spear": ("shaft", "#d8b070", 1.0),
 }
 TOOLS = {
-    "stone_axe": ("axe", "#7d7a74", 1.0), "stone_knife": ("knife", "#8a8680", 1.0), "torch": ("torch", "#e08a2a", 1.0),
+    "stone_axe": ("axe", "#7d7a74", 1.6), "stone_knife": ("knife", "#8a8680", 1.0), "torch": ("torch", "#e08a2a", 1.0),
     "wooden_spade": ("spade", "#8a6a3a", 1.0), "stone_spade": ("spade", "#7d7a74", 1.0), "iron_spade": ("spade", "#6c6f75", 1.0),
     "steel_spade": ("spade", "#9aa3ad", 1.0), "iron_pickaxe": ("pick", "#6c6f75", 1.0), "steel_pickaxe": ("pick", "#9aa3ad", 1.0),
     "sewing_needle": ("needle", "#c8c8cc", 1.2), "fishing_rod": ("rod", "#9a9a9e", 1.0),
-    "wooden_bowl": ("bowl", "#2ecc40", 1.0), "clay_pot": ("pot", "#ff7f11", 1.0), "bucket": ("bucket", "#1f78ff", 1.0),
+    "wooden_bowl": ("bowl", "#9a6b38", 1.3), "clay_pot": ("pot", "#ff7f11", 1.0), "bucket": ("bucket", "#1f78ff", 1.0),
     "waterskin": ("skin", "#ff4fa3", 1.0),
     "campfire_kit": ("kit", "#6a4a2a", 1.0), "lean_to_kit": ("kit", "#6a8a3a", 1.0), "chest_kit": ("kit", "#9a7a45", 1.0),
     "chopping_block_kit": ("kit", "#7a5a35", 1.0), "plank_chest_kit": ("kit", "#a07a45", 1.0), "workbench_kit": ("kit", "#8a6a3a", 1.0),
@@ -62,21 +62,21 @@ SPECIAL.update(TOOLS)
 CARROT, GREEN, POTATO, MUSHROOM, MEAT = "#f07f13", "#4f9a2c", "#f2e3b5", "#a98467", "#8c4a2f"
 SPECIAL.update({
     "plant_fibre": ("fibre", "#c9bb7a", 1.0),
-    "roast_forage": ("stew", "#b5793a", 1.0, [CARROT, GREEN, POTATO, MUSHROOM, "#d8352a"]),
-    "hunters_stew": ("stew", "#6b3a1e", 1.0, [MEAT, MEAT, CARROT, POTATO]),
-    "forager_stew": ("stew", "#7a9a3a", 1.0, ["#2f7a2a", "#e8dcb0", MUSHROOM, "#2f7a2a"]),
-    "fish_stew": ("stew", "#e8c870", 1.0, ["#f4b5a0", "#f4b5a0", "#3f9a3a", POTATO]),
-    "hearty_pottage": ("stew", "#d9a640", 1.0, ["#7a5a2a", "#f0e0a0", "#7a5a2a"]),
-    "berry_compote": ("stew", "#9a1f3f", 1.0, ["#4a1030", "#c0204a", "#4a1030"]),
-    "acorn_mash": ("mound", "#8a6a3a", 1.0, ["#6a4a22", "#a98a55"]),
-    "nut_paste": ("mound", "#b08a55", 1.0, ["#6a4a22", "#d8b27a"]),
-    "poultice": ("mound", "#4f7a3a", 1.0, ["#2f6a2a", "#7a9a3a"]),
+    "roast_forage": ("stew", "#b5793a", 1.4, [CARROT, GREEN, POTATO, MUSHROOM, "#d8352a"]),
+    "hunters_stew": ("stew", "#6b3a1e", 1.4, [MEAT, MEAT, CARROT, POTATO]),
+    "forager_stew": ("stew", "#7a9a3a", 1.4, ["#2f7a2a", "#e8dcb0", MUSHROOM, "#2f7a2a"]),
+    "fish_stew": ("stew", "#e8c870", 1.4, ["#f4b5a0", "#f4b5a0", "#3f9a3a", POTATO]),
+    "hearty_pottage": ("stew", "#d9a640", 1.4, ["#7a5a2a", "#f0e0a0", "#7a5a2a"]),
+    "berry_compote": ("stew", "#9a1f3f", 1.4, ["#4a1030", "#c0204a", "#4a1030"]),
+    "acorn_mash": ("mound", "#8a6a3a", 1.4, ["#6a4a22", "#a98a55"]),
+    "nut_paste": ("mound", "#b08a55", 1.4, ["#6a4a22", "#d8b27a"]),
+    "poultice": ("mound", "#4f7a3a", 1.4, ["#2f6a2a", "#7a9a3a"]),
     "energy_bar": ("bar", "#c9a15b", 1.0, ["#6b4423", "#4a1f4a", "#e9e2c8", "#c0392b", "#f4d03f"]),
-    "roast_meat": ("joint", "#8a4a22", 0.9),
-    "garlic_meat": ("joint", "#7a4a2a", 0.9),
-    "feast_roast": ("joint", "#7a3a1e", 1.5),
+    "roast_meat": ("joint", "#6e3a1c", 0.9),
+    "garlic_meat": ("joint", "#6a3c20", 0.9),
+    "feast_roast": ("joint", "#62301a", 1.5),
     "backpack": ("backpack", "#8a6a4a", 1.4),
-    "wooden_bowl": ("bowl", "#2ecc40", 1.0),
+    "wooden_bowl": ("bowl", "#9a6b38", 1.3),
 })
 SKIP = {"stone", "stick", "driftwood", "log"}
 

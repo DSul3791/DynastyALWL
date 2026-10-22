@@ -14,7 +14,7 @@
   "stone_axe": {
    "shape": "axe",
    "color": "#7d7a74",
-   "size": 1.0
+   "size": 1.6
   },
   "spear": {
    "shape": "shaft",
@@ -54,7 +54,7 @@
   "roast_forage": {
    "shape": "stew",
    "color": "#b5793a",
-   "size": 1.0,
+   "size": 1.4,
    "bits": [
     "#f07f13",
     "#4f9a2c",
@@ -71,7 +71,7 @@
   "poultice": {
    "shape": "mound",
    "color": "#4f7a3a",
-   "size": 1.0,
+   "size": 1.4,
    "bits": [
     "#2f6a2a",
     "#7a9a3a"
@@ -164,8 +164,8 @@
   },
   "wooden_bowl": {
    "shape": "bowl",
-   "color": "#2ecc40",
-   "size": 1.0
+   "color": "#9a6b38",
+   "size": 1.3
   },
   "clay_pot": {
    "shape": "pot",
@@ -316,7 +316,7 @@
   },
   "roast_meat": {
    "shape": "joint",
-   "color": "#8a4a22",
+   "color": "#6e3a1c",
    "size": 0.9
   },
   "sinew": {
@@ -672,7 +672,7 @@
   "berry_compote": {
    "shape": "stew",
    "color": "#9a1f3f",
-   "size": 1.0,
+   "size": 1.4,
    "bits": [
     "#4a1030",
     "#c0204a",
@@ -682,7 +682,7 @@
   "nut_paste": {
    "shape": "mound",
    "color": "#b08a55",
-   "size": 1.0,
+   "size": 1.4,
    "bits": [
     "#6a4a22",
     "#d8b27a"
@@ -696,7 +696,7 @@
   "acorn_mash": {
    "shape": "mound",
    "color": "#8a6a3a",
-   "size": 1.0,
+   "size": 1.4,
    "bits": [
     "#6a4a22",
     "#a98a55"
@@ -719,7 +719,7 @@
   },
   "garlic_meat": {
    "shape": "joint",
-   "color": "#7a4a2a",
+   "color": "#6a3c20",
    "size": 0.9
   },
   "chestnut_cakes": {
@@ -740,7 +740,7 @@
   "hunters_stew": {
    "shape": "stew",
    "color": "#6b3a1e",
-   "size": 1.0,
+   "size": 1.4,
    "bits": [
     "#8c4a2f",
     "#8c4a2f",
@@ -751,7 +751,7 @@
   "forager_stew": {
    "shape": "stew",
    "color": "#7a9a3a",
-   "size": 1.0,
+   "size": 1.4,
    "bits": [
     "#2f7a2a",
     "#e8dcb0",
@@ -762,7 +762,7 @@
   "fish_stew": {
    "shape": "stew",
    "color": "#e8c870",
-   "size": 1.0,
+   "size": 1.4,
    "bits": [
     "#f4b5a0",
     "#f4b5a0",
@@ -778,7 +778,7 @@
   "hearty_pottage": {
    "shape": "stew",
    "color": "#d9a640",
-   "size": 1.0,
+   "size": 1.4,
    "bits": [
     "#7a5a2a",
     "#f0e0a0",
@@ -787,7 +787,7 @@
   },
   "feast_roast": {
    "shape": "joint",
-   "color": "#7a3a1e",
+   "color": "#62301a",
    "size": 1.5
   },
   "wall_section_kit": {
