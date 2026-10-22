@@ -57,8 +57,8 @@ static func zone_group(zones: Array, equator_row: int, tile_row: int) -> String:
 const RIVER_RAIN_SHARE := 0.6
 
 
-static func river_push(state: Dictionary) -> float:
-	return clampf(maxf(float(state.get("rain", 0.0)) * RIVER_RAIN_SHARE, float(state.get("storm", 0.0))), 0.0, 1.0)
+static func river_push(weather_state: Dictionary) -> float:
+	return clampf(maxf(float(weather_state.get("rain", 0.0)) * RIVER_RAIN_SHARE, float(weather_state.get("storm", 0.0))), 0.0, 1.0)
 
 
 # Dry heat shrinks the rivers (Dave 2026-10-21: a hot spell dries them to a small smooth trickle, never off):
@@ -67,25 +67,25 @@ const DRY_FROM_C := 22.0
 const DRY_FULL_C := 32.0
 
 
-static func river_dry(state: Dictionary) -> float:
-	var heat: float = clampf((float(state.get("temp_c", 15.0)) - DRY_FROM_C) / (DRY_FULL_C - DRY_FROM_C), 0.0, 1.0)
-	return heat * (1.0 - clampf(maxf(float(state.get("rain", 0.0)) * 2.0, float(state.get("storm", 0.0))), 0.0, 1.0))
+static func river_dry(weather_state: Dictionary) -> float:
+	var heat: float = clampf((float(weather_state.get("temp_c", 15.0)) - DRY_FROM_C) / (DRY_FULL_C - DRY_FROM_C), 0.0, 1.0)
+	return heat * (1.0 - clampf(maxf(float(weather_state.get("rain", 0.0)) * 2.0, float(weather_state.get("storm", 0.0))), 0.0, 1.0))
 
 
 # Air temperature (C) from the season (no day/night swing, no weather): zone mean and seasonal swing,
 # cooler with altitude. The same number Weather.state reports as temp_c.
-static func temp_at(game_s: float, zone_group: String, altitude_m: float = 0.0) -> float:
-	var zone: Dictionary = ZONES.get(zone_group, ZONES["temperate"])
+static func temp_at(game_s: float, group: String, altitude_m: float = 0.0) -> float:
+	var zone: Dictionary = ZONES.get(group, ZONES["temperate"])
 	return float(zone["temp"]) + float(zone["swing"]) * cos(TAU * (year_phase(game_s) - 0.375)) - maxf(altitude_m, 0.0) * 0.0065
 
 
 # {"rain", "snow", "storm", "cloud", "sun", "wind" (all 0..1), "wind_dir" (radians), "temp_c", "season"}.
 # wind_dir is the way the wind blows TOWARD, as an angle in the ground plane: direction = (cos, sin) on (x, z). It turns slowly
 # (a new heading about every 20 game hours) and swings further in a storm; same on server and client, nothing saved.
-static func state(seed_value: int, game_s: float, zone_group: String, altitude_m: float = 0.0, spirit: float = 0.0) -> Dictionary:
-	var zone: Dictionary = ZONES.get(zone_group, ZONES["temperate"])
+static func state(seed_value: int, game_s: float, group: String, altitude_m: float = 0.0, spirit: float = 0.0) -> Dictionary:
+	var zone: Dictionary = ZONES.get(group, ZONES["temperate"])
 	var phase: float = year_phase(game_s)
-	var temp: float = temp_at(game_s, zone_group, altitude_m)
+	var temp: float = temp_at(game_s, group, altitude_m)
 	# Wetter in autumn and winter, a little drier in high summer.
 	var wet: float = float(zone["wet"]) * (1.0 + 0.2 * cos(TAU * (phase - 0.75)))
 	var front: float = _noise(seed_value, 1, game_s / (FRONT_HOURS * 3600.0))
@@ -99,13 +99,13 @@ static func state(seed_value: int, game_s: float, zone_group: String, altitude_m
 		# High spirit: showers shrink to light rain, and the crops get a gentle rain most nights.
 		precip *= 1.0 - 0.75 * spirit
 
-		if night and zone_group != "desert" and temp > 1.0:
+		if night and group != "desert" and temp > 1.0:
 			var gentle: float = smoothstep(0.55, 0.8, _noise(seed_value, 2, game_s / (FRONT_HOURS * 3600.0)))
 			precip = maxf(precip, 0.22 * spirit * gentle)
 	elif spirit < 0.0:
 		# Low spirit: fronts last longer and hit harder, wherever rain can fall.
 		var longer: float = smoothstep(need - 0.2 * -spirit, need + 0.2, front)
-		precip = clampf(maxf(precip, longer) * (1.0 + 0.9 * -spirit), 0.0, 1.0) if zone_group != "desert" else precip
+		precip = clampf(maxf(precip, longer) * (1.0 + 0.9 * -spirit), 0.0, 1.0) if group != "desert" else precip
 
 	var storm: float = clampf((precip - 0.7) / 0.3, 0.0, 1.0) * (0.5 + 0.5 * -minf(spirit, 0.0)) if precip > 0.7 else 0.0
 	var snowing: bool = temp < 0.5

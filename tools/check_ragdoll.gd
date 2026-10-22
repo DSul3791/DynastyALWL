@@ -26,6 +26,7 @@ func _initialize() -> void:
 		high = maxf(high, v.y)
 		wide = maxf(wide, absf(v.x))
 
+	@warning_ignore("integer_division")   # whole triangles: the index count is a multiple of 3
 	var triangles: int = (mesh.surface_get_arrays(0)[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3
 	print("full body: height %.2f m (%.2f to %.2f), half width %.2f m, %d triangles, %d bones" % [high - low, low, high, wide, triangles, body.skeleton.get_bone_count()])
 

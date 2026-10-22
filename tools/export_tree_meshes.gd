@@ -77,19 +77,19 @@ func _initialize() -> void:
 	quit()
 
 
-func _add(root: Node3D, mesh: ArrayMesh, node_name: String, v: int, spread: float) -> void:
+func _add(scene_root: Node3D, mesh: ArrayMesh, node_name: String, v: int, spread: float) -> void:
 	var instance: MeshInstance3D = MeshInstance3D.new()
 	instance.name = node_name
 	instance.mesh = mesh
 	instance.position = Vector3(float(v) * spread, 0.0, 0.0)
-	root.add_child(instance)
-	instance.owner = root
+	scene_root.add_child(instance)
+	instance.owner = scene_root
 
 
-func _write(root: Node3D, path: String) -> void:
+func _write(scene_root: Node3D, path: String) -> void:
 	var document: GLTFDocument = GLTFDocument.new()
 	var state: GLTFState = GLTFState.new()
-	var error: int = document.append_from_scene(root, state)
+	var error: int = document.append_from_scene(scene_root, state)
 
 	if error == OK:
 		error = document.write_to_filesystem(state, path)
@@ -102,6 +102,7 @@ func _triangles(mesh: ArrayMesh) -> int:
 	var total: int = 0
 
 	for s in range(mesh.get_surface_count()):
+		@warning_ignore("integer_division")   # whole triangles: the index count is a multiple of 3
 		total += (mesh.surface_get_arrays(s)[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3
 
 	return total
