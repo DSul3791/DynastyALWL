@@ -27,3 +27,17 @@ Image: questions/img/tiers_log_corner.png
 ## found-metres | Foundation sizes in metres: small cell 2 m (1x1 foundation = 2x2 m, 2x2 foundation = 4x4 m), large cell 3 m (1x1 = 3x3 m, 2x2 = 6x6 m). Pieces snap from about 6 m away. Right?
 Note: Large foundations are for the thick walls (log, cobblestone, mason); small ones are for thin walls. Foundations stack, join side by side, and the wheel raises the first one on the ground.
 [check]
+
+## collapse-plan | THE TUNNEL COLLAPSE IN SHORT (Steve's design, built from your earlier answers). Have you read this?
+Note: 1. A dug space wider than the ground can hold starts a timer. The grace window is 225 s to 60 min, depending on width and depth. Digging more does not reset it.
+Note: 2. Supports (props, timber sets) in reach pause the timer. A new support restarts the full window. A removed or worn-out support starts a fresh half window.
+Note: 3. Warnings: quiet until 60% of the window. Then creaks, then shaking with dust and "The earth groans.", then strong shaking with a warning line every 5 seconds. Then it falls.
+Note: 4. The shaking part always lasts at least 90 real seconds. Nobody dies without that warning.
+Note: 5. When it falls, rubble fills about 70% of the space and the top stays open, so you can dig it out. The land above does not sink (at most 1 m under a thin roof). Anyone inside dies and leaves remains and a purse. Floor items are buried; braces and chests inside are destroyed.
+Note: 6. If you disconnect, reconnecting within 2 minutes resumes you. After that you respawn at the nearest bed, lean-to, campfire or shelter (or world spawn) and are safe meanwhile.
+Note: 7. Logging out on purpose inside a collapsing tunnel counts as death, and your remains stay in the rubble.
+Note: 8. The collapse is still OFF. The warning shaking and messages are built but never fire while it is off.
+[check]
+
+## collapse-on | May we turn the tunnel collapse ON in your test world so you can test it? (This is the second approval; you will get a test card after.)
+[check]
