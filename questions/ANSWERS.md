@@ -76,3 +76,7 @@ Answered: 2026-10-22 03:06 UTC
 Answer: Yes, real floods in storms and spring melt (can wash out low buildings and crops)
 Answered: 2026-10-22 03:06 UTC
 
+## dig-rock | Can a spade dig through solid rock? (my pick: soil only, rock needs a pick)
+Answer: Spade digs soil, gravel and sand only; rock needs a pick and is slower
+Answered: 2026-10-22 03:07 UTC
+
