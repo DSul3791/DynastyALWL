@@ -34,3 +34,15 @@ Lines under the header that are not `- ` choices and not `[text]` are shown as s
 
 ## Style (Dave 17:07)
 Whenever Dave must do something, write it as numbered point form (1. 2. 3.), one action per line, with exact button or file names.
+
+## Things to check (Dave 17:10)
+Dave does not pull or run builds until a thread needs him to look. Then a check card goes in QUESTIONS.md (the Guru batches requests from TEST_QUEUE.md so he tests several things in one pull). Format:
+
+```
+## chk-trees | Check trees: do they look good?
+[check]
+Build: 648 (Pull, close the game fully, press Play)
+Look: walk to the spawn lake and look at the pines on the east bank
+```
+
+The page shows a numbered "Things to check" list with Yes / No and a "Why not?" box that appears on No. The answer lands in ANSWERS.md as `Yes` or `No: reason`.
