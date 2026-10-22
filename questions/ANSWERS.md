@@ -52,3 +52,7 @@ Answered: 2026-10-22 00:07 UTC
 Answer: Yes, carve the river channel down the fall in the next bake
 Answered: 2026-10-22 01:04 UTC
 
+## scale-target | What does "1000 players online" mean for the server plan?
+Answer: 1000 spread across the whole world (normal MMO target)
+Answered: 2026-10-22 01:24 UTC
+
