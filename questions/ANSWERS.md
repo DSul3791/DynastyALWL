@@ -364,3 +364,7 @@ Answered: 2026-10-22 22:17 UTC
 Answer: No: No, they would have a flat rough side on the inside and a rounded smooth side on the outside
 Answered: 2026-10-22 22:18 UTC
 
+## tl-logs | Should log walls be real round logs with notched corner ends sticking out (8 small meshes per wall), not just a picture?
+Answer: Yes
+Answered: 2026-10-22 22:18 UTC
+
