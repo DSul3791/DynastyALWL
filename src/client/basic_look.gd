@@ -180,8 +180,15 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_handle(parts, 0.6)
 			_box(parts, Vector3(0.04, 0.04, 0.3), Vector3(0.27, 0.0, 0.0), color)
 		"spade":
-			_handle(parts, 0.7)
-			_box(parts, Vector3(0.12, 0.03, 0.16), Vector3(0.38, 0.0, 0.0), color)
+			# A real garden spade: long shaft, D-shaped grip, a socket, and a flat blade that narrows to a point.
+			_handle(parts, 0.75)
+			_box(parts, Vector3(0.03, 0.03, 0.15), Vector3(-0.4, 0.0, 0.0), Color(0.42, 0.3, 0.17))                    # grip bar
+			_box(parts, Vector3(0.06, 0.03, 0.03), Vector3(-0.37, 0.0, 0.06), Color(0.42, 0.3, 0.17))                  # grip sides
+			_box(parts, Vector3(0.06, 0.03, 0.03), Vector3(-0.37, 0.0, -0.06), Color(0.42, 0.3, 0.17))
+			_cyl(parts, 0.024, 0.11, Vector3(0.3, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), dark)                        # socket
+			_box(parts, Vector3(0.14, 0.012, 0.19), Vector3(0.4, 0.0, 0.0), color)                                     # blade, square part
+			_box_rot(parts, Vector3(0.13, 0.012, 0.13), Vector3(0.47, 0.0, 0.0), Vector3(0.0, PI * 0.25, 0.0), color)  # blade, pointed tip
+			_box(parts, Vector3(0.1, 0.016, 0.02), Vector3(0.36, 0.0, 0.0), light)                                     # centre rib
 		"knife":
 			_handle(parts, 0.14)
 			_box(parts, Vector3(0.13, 0.015, 0.035), Vector3(0.12, 0.0, 0.0), color)
