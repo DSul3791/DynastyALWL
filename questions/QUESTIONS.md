@@ -1,9 +1,3 @@
-## review-rules | Approve the rules for the terrain review (BP-T32)? Sonny writes a docs-only review first: what is wrong today, 2 or 3 options with sources, tests a bake must pass (rivers flow downhill, lakes have outlets, 2 m of water does not flood everything, 9-tile bake 30 minutes or less). Nothing is built or baked until you pick an option.
-Climate by coordinates (desert, jungle, tundra, volcano) is part of the review. The first bake waits for it.
-- Approve as written (recommended)
-- Approve, but I want to see the review before any prototype
-- Change it, I will tell you how
-
 ## terrain-opt | How should we fix the ground so water works like real nature? (Sonny's review, tech/TERRAIN_REVIEW.md)
 Your requirements: deep lakes in natural basins, streams that gather rain and snowmelt, rivers that carry water away to farmland and sea, flood-prone fertile land, streams good for waterwheels and fishing, and natural channel shape (deeper on outer bends, shallow inside, pools and riffles, never a uniform ditch). Today only 32% of river cells sit where the ground really drains, and a 2 m rise floods 6 times the wet area. The first bake waits for this choice. Nothing is built until you pick.
 - B: Find rivers and lakes from the terrain itself. Meets all requirements, including natural channel shape. 1 to 2 weeks. Threaded bake about 8 to 10 minutes for 9 tiles. Makes the held spill-chute patch unnecessary (recommended)
