@@ -1,8 +1,3 @@
-## sound-footstep-others | How far away should you hear other players' footsteps?
-- 15 m, same as NPC voices (recommended)
-- 30 m
-- 8 m, only close
-
 ## sound-npc-voice-ambient | Should NPCs mutter or hum when you are nearby and they are idle?
 - Yes, rarely, short lines (recommended)
 - No, only when spoken to
