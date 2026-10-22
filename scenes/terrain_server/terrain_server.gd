@@ -474,7 +474,12 @@ func _ready() -> void:
 			return
 
 		items.peer_connected_hello(peer, identity.store_key(account))
-		net.npc_roster.rpc_id(peer, npcs.roster()))
+		net.npc_roster.rpc_id(peer, npcs.roster())
+		var resume: Array = items.start_position_for(peer)
+
+		if resume.size() == 3:
+			net.start_at.rpc_id(peer, Vector3(float(resume[0]), float(resume[1]), float(resume[2]))))
+	net.logout_requested.connect(func(leaving): items.note_logout(leaving))
 	net.admin_place_requested.connect(_on_admin_place)
 	@warning_ignore("confusable_local_declaration")
 	net.npc_talk_requested.connect(func(peer, npc_id, choice): dialogue.talk(peer, npc_id, choice))
