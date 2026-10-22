@@ -1,7 +1,3 @@
-## roofs-65-tall | Is it OK that a 65 degree roof is very tall (4.3 m rise per 2 m of run)?
-Image: questions/img/tiers_roof_pieces.png
-[check]
-
 ## pillars-looks | Should pillars come as round log post, squared timber, stone pillar and mason column?
 Image: questions/img/tiers_roof_pieces.png
 [check]
