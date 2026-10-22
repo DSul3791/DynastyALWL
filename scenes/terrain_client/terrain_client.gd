@@ -81,6 +81,7 @@ const StreamScript := preload("res://src/stream/network_voxel_stream.gd")
 const BlockLinkScript := preload("res://src/stream/block_link.gd")
 const CacheScript := preload("res://src/stream/client_block_cache.gd")
 const NetScript := preload("res://src/stream/terrain_net.gd")
+const HorizonScript := preload("res://src/client/horizon_indicator.gd")
 const LinkBarsScript := preload("res://src/client/link_bars.gd")
 const ConnectWindowScript := preload("res://src/client/connect_window.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
@@ -1002,6 +1003,14 @@ func _welcome_body(info: Dictionary) -> void:
 	link_bars.position = Vector2(16.0, 10.0)
 	link_bars.size = Vector2(120.0, 54.0)
 	layer.add_child(link_bars)
+	_horizon = HorizonScript.new()
+	_horizon.setup(camera, func() -> bool: return swimming or (items != null and items.breath_ds >= 0))
+	_horizon.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_horizon.offset_left = -_horizon.size.x - 14.0
+	_horizon.offset_right = -14.0
+	_horizon.offset_top = 16.0
+	_horizon.offset_bottom = 16.0 + _horizon.size.y
+	layer.add_child(_horizon)
 	debug_hud.add_line("server link", func() -> String: return link_bars.text())
 	_tint = ColorRect.new()
 	_tint.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -2417,6 +2426,7 @@ var _connect_window = null                # shown until the ground under the pla
 var _link_up_msec: int = 0                # when ENet reported the connection up (welcome still to come)
 var _lose_after_s: float = 0.0
 var _link_print_msec: int = 0
+var _horizon = null                   # artificial horizon (horizon_indicator.gd), shown underground or in water
 var link_bars = null                      # server connection indicator (link_bars.gd)
 var _lost_layer: CanvasLayer             # "Connection to the server was lost" window
 var crash_report                      # CrashReport: breadcrumbs and the report of an unclean last run
@@ -3042,6 +3052,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		body.rotate_y(-event.relative.x * MOUSE_SENSITIVITY)
 		pitch = clampf(pitch - event.relative.y * MOUSE_SENSITIVITY, -1.5, 1.5)
 		camera.rotation.x = pitch
+
+		if _horizon != null:
+			_horizon.pitch_rad = pitch
 	elif event is InputEventMouseButton and event.pressed and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and (event.button_index == MOUSE_BUTTON_WHEEL_UP or event.button_index == MOUSE_BUTTON_WHEEL_DOWN):
 		_scroll_view(event.button_index == MOUSE_BUTTON_WHEEL_DOWN)
 	elif event is InputEventMouseButton and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and held != null and held.mouse_button(event.button_index, event.pressed):
