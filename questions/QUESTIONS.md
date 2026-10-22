@@ -1,8 +1,3 @@
-## cmd-ok | Approve the five completeness phrases (status, audit, what did we forget, goodnight, log it), the decision trace and the moderator's 30-minute checklist? (BP-T29)
-- Approve as proposed (recommended)
-- Approve, but fewer phrases (tell me which in chat)
-- Not yet
-
 ## repo-vis | Important: the main DynastyALWL repo is PUBLIC on GitHub today. Anyone with the address can read the code, design docs, questions and answers. Do you want that?
 Making it private does not stop the team or your PC. The cloud threads and GitHub Desktop keep working. GitHub Pages for the repo itself would need a paid plan, which is why the tiny separate page repo is the plan.
 - Make it private (recommended: it is an unreleased game)

@@ -398,3 +398,6 @@ bk-weekly: keep the LAST backup of each ISO week (normally Sunday night); matche
 
 - 2026-10-22 18:20 Guru: Dave 17:15: wrote tech/QA_SYSTEM.md (files, hosting stub, token, flows, gotchas, reuse). Linked from HOW_WE_WORK.md and PROJECT_DEBRIEF_KIT.md.
 - 2026-10-22 18:25 Guru: idea #4 logged in IDEAS.md: team page for Dave's co-designers (LATER, P3); open points: who may answer, whose answer wins, how answers reach the Guru, public-repo risk.
+- 2026-10-22 18:30 Guru: Dave 17:18: cmd-ok approved in chat (commands already done); BP-T29 approved; question removed, recorded in ANSWERS.md.
+
+- 2026-10-22 18:35 Guru: Dave answered bake-plan: approve as written, so BP-T31 is approved. cl-tests: regroup the 11 old checks into one test card after the restart work, dropping any that no longer apply (job: Guru, with owners' ready-statements, as Things-to-check cards). cmd-ok: BP-T29 approved.

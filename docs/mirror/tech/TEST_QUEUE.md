@@ -46,3 +46,7 @@ PROVISIONAL | Sal | branch claude/sal-piecelook | RESTART | Same look as before:
 
 ## Batching rule (Dave 17:10)
 Dave does NOT pull or run builds until a thread needs him to look. A thread adds a line here: build number, one-line what to look at, owner. The Guru batches ready lines into check cards ("[check]" blocks, see questions/README.md) so Dave tests several things in one pull. Dave answers Yes, or No plus a reason; the coordinator relays No reasons to the owner. The 11 old checks in questions/LATER.md become cards only when their owner says they are ready.
+
+- 649 (Steve_ProblemSolver): rock rescue and void rescue still work after the rescue.gd split. Look: get stuck in a rock / fall through a void and see you are rescued. Status: waiting to batch.
+
+- cl-tests (Dave 17:17): the 11 old checks in questions/LATER.md are regrouped into check cards after the restart work; owner of each says whether it still applies. Guru builds the cards.
