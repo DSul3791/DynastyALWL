@@ -1,10 +1,3 @@
-## rv-big-files | Three code files are huge (server_items 5,000 lines, inventory_view 3,800, terrain_client 5,200), so every edit costs a lot of reading. Split them? Research: the context window is the scarce resource. BP-C03.
-Done one file at a time as a Systems job, with the existing tests as the safety net. This is a big fix.
-- Yes, one at a time, after restart (recommended)
-- Only add the rule "new logic goes in new files"
-- Keep as is
-- Decide later
-
 ## rv-local-first | Run every build, test and warning check on your PC by default through one command (tools/local_check.sh), cloud threads only edit and review? Research: a check the agent can run is the best quality lever. BP-C83, BP-C80.
 - Yes (recommended)
 - Only warnings and long tests
