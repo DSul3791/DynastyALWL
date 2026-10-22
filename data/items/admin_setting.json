@@ -1,0 +1,4 @@
+{
+	"note": "Single switch for the admin check. false = everyone counts as admin (local game, Dave alone): X digging, NPC markers and the Admin build list just work with no admin.json or player key. MUST be true before any public server; then only keys listed in data/admin.json are admins.",
+	"check_admin": false
+}

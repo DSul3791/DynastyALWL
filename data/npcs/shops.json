@@ -1,0 +1,97 @@
+{
+	"note": "Shops (Dave 2026-10-21). An NPC with an entry here can trade: a dialogue effect {\"open_shop\": true} opens the trade window. stock: items the trader sells (unlimited for now); buys: item kinds the trader will buy from the player, or \"all\"; title: the window title. Prices come from items.json value (copper) and data/items/coins.json trade. stock_rules: item id -> [most on the shelf, restock per game day]; purse_cap and purse_regen_per_day: the coin the trader can pay out (copper) and how fast it refills (data/items/coins.json trade.stock has the defaults).",
+	"hob": {
+		"title": "Hob's stall",
+		"stock": [
+			"stone_axe",
+			"stone_knife",
+			"wooden_spade",
+			"torch",
+			"cordage",
+			"rope",
+			"plant_fibre",
+			"bandage",
+			"waterskin",
+			"wooden_bowl",
+			"backpack",
+			"roast_forage",
+			"firewood",
+			"stone",
+			"stick"
+		],
+		"buys": [
+			"material",
+			"food",
+			"tool",
+			"container",
+			"medicine",
+			"clothing",
+			"placeable"
+		],
+		"stock_rules": {
+			"stone": [
+				40,
+				20
+			],
+			"stick": [
+				40,
+				20
+			],
+			"plant_fibre": [
+				30,
+				15
+			],
+			"firewood": [
+				20,
+				10
+			],
+			"stone_axe": [
+				3,
+				1
+			],
+			"stone_knife": [
+				3,
+				1
+			],
+			"wooden_spade": [
+				2,
+				1
+			],
+			"torch": [
+				6,
+				3
+			],
+			"cordage": [
+				10,
+				5
+			],
+			"rope": [
+				6,
+				3
+			],
+			"bandage": [
+				6,
+				3
+			],
+			"waterskin": [
+				4,
+				2
+			],
+			"wooden_bowl": [
+				4,
+				2
+			],
+			"backpack": [
+				1,
+				1
+			],
+			"roast_forage": [
+				10,
+				5
+			]
+		},
+		"purse_cap": 300,
+		"purse_regen_per_day": 100,
+		"repairs": true
+	}
+}

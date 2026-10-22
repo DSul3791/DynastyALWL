@@ -1,0 +1,92 @@
+{
+	"note": "Cooked food (Items refill 11): a roast keeps for cooked_life_mult times what the raw item had left (Tyler: 1.5 to 2.5 times, 3 at most), never more than the roast's own shelf life (spoilage.json), and a hot meal or drink adds the warms points to body warmth when eaten. raw_sick: eating these uncooked still feeds you but makes you sick for that many game hours (by item id or id suffix; raw meat 24, fiddleheads and beans 12, acorns and wild mushrooms a mild 6). Cooking placeholder (until the cook and food systems exist): at a lit fire, one raw forage item becomes Roasted forage (cooks_into maps others). A gathered item cooks when its id ends with one of the cookable words. Fire store (Dave 2026-10-22, F beside a fire): fire_slots slots for wood and food; wood in it feeds the fire when burn_left falls under feed_below_s seconds (or loads a cold fire), and one raw item cooks every box_cook_s seconds while it burns.",
+	"cookable_suffixes": [
+		"berries",
+		"nuts",
+		"roots",
+		"caps",
+		"morels",
+		"porcini",
+		"chanterelles",
+		"bulbs",
+		"pods",
+		"pears",
+		"bananas",
+		"hazelnuts",
+		"acorns",
+		"fiddleheads"
+	],
+	"gives": "roast_forage",
+	"tinder": "plant_fibre",
+	"pace_ms": 1200,
+	"cooked_life_mult": 2.0,
+	"warms": {
+		"roast_forage": 10,
+		"herbal_tea": 12,
+		"stomach_tea": 12,
+		"chamomile_tea": 12,
+		"willow_bark_tea": 12,
+		"roast_meat": 14,
+		"roast_fish": 12,
+		"berry_compote": 4,
+		"nut_paste": 0,
+		"roast_roots": 8,
+		"acorn_mash": 6,
+		"baked_apples": 8,
+		"mushroom_skewer": 10,
+		"herb_fish": 12,
+		"garlic_meat": 14,
+		"chestnut_cakes": 6,
+		"fruit_leather": 0,
+		"smoked_fish": 4,
+		"hunters_stew": 24,
+		"forager_stew": 22,
+		"fish_stew": 22,
+		"trail_bread": 0,
+		"hearty_pottage": 30,
+		"feast_roast": 30
+	},
+	"fuel_note": "Burn times in GAME seconds (clock is 24:1): a stick 2 game minutes, driftwood 15, firewood 30, a log 2 game hours. A placed campfire starts lit with 20 sticks of fuel.",
+	"fuel": {
+		"stick": 120.0,
+		"log": 7200.0,
+		"firewood": 1800.0,
+		"driftwood": 900.0
+	},
+	"start_burn_game_s": 2400.0,
+	"max_burn_game_s": 43200.0,
+	"fuel_order": [
+		"firewood",
+		"driftwood",
+		"stick",
+		"log"
+	],
+	"cooks_into": {
+		"raw_meat": "roast_meat",
+		"trout": "roast_fish",
+		"perch": "roast_fish",
+		"carp": "roast_fish",
+		"pike": "roast_fish"
+	},
+	"raw_sick": {
+		"by_id": {
+			"raw_meat": 24,
+			"fiddleheads": 12,
+			"trout": 12,
+			"perch": 12,
+			"carp": 12,
+			"pike": 12
+		},
+		"by_suffix": {
+			"beans": 12,
+			"acorns": 6,
+			"caps": 6,
+			"morels": 6,
+			"porcini": 6,
+			"chanterelles": 6
+		}
+	},
+	"fire_slots": 4,
+	"feed_below_s": 20.0,
+	"box_cook_s": 8.0
+}

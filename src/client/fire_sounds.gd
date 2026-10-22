@@ -1,0 +1,364 @@
+extends Node
+
+# Fire sounds (client only): hooks for the campfire and any later fire. Nothing here knows how a
+# fire is built; a caller says where fires are, how big, whether lit and whether open to the sky.
+#
+#   sound.fire.set_fires([{"id": 3, "at": Vector3(...), "size": 0.4, "lit": true, "open": true}, ...])
+#       the fires near the player, called whenever the list changes (once a second is plenty).
+#       size 0 (embers) to 1 (bonfire) crossfades a small and a large crackle loop. A fire whose
+#       "lit" turns on while it stays in the list plays the lighting sound; turning off plays the
+#       put-out hiss. A fire that leaves the list just fades (it went out of range, not out).
+#       "open" true plays a sizzle loop on top while it rains (weather.rain), louder with more rain.
+#   sound.fire.light(at)        the lighting sound once, at a position
+#   sound.fire.put_out(at)      the put-out hiss once (rain or water on a fire)
+#   sound.fire.cook(at)         food laid on the embers sizzles (item_sounds hears a roast appear in the bag)
+#   sound.fire.fuel(at)         a stick or log laid on the fire (item_sounds hears V use up wood)
+#
+# Only the nearest preset["town_loops"] fires play (Low 3, Mid 5, High 8), none beyond REACH_M.
+# Sounds: generated in assets/audio/fire/ (make_fire.py); recordings in assets/audio/recorded/fire/ win.
+
+const SoundStage := preload("res://src/client/sound_stage.gd")
+const GENERATED_DIR := "res://assets/audio/fire/"
+const RECORDED_DIR := "res://assets/audio/recorded/fire/"
+const COOKING_DIR := "res://assets/audio/cooking/"            # cook_sizzle, fire_fuel (make_cooking.py)
+const COOKING_RECORDED_DIR := "res://assets/audio/recorded/cooking/"
+
+const REACH_M := 35.0
+const UNIT_SIZE := 4.0
+const SMALL_DB := -13.0
+const LARGE_DB := -10.0
+const RAIN_DB := -16.0
+const ONE_SHOT_DB := -8.0
+const SCAN_SEC := 0.5
+const NEW_FIRE_SETTLE_MSEC := 6000      # fires seen in the first seconds were loaded with the world, not just lit
+const NEW_FIRE_NEAR_M := 6.0
+const FIRE_SIZE := 0.5                  # size of a world campfire until fires have a burn time
+const FADE_DB_PER_SEC := 30.0
+const MERGE_M := 18.0                   # fires farther than this and near each other share one loop
+const CLUSTER_M := 15.0
+
+var loops_playing: int = 0              # HUD
+var lit_played: int = 0
+var out_played: int = 0
+var cook_played: int = 0
+var fuel_played: int = 0
+var last: String = ""
+var merged_fires: int = 0              # fires folded into a neighbour's loop at the last scan (HUD, check)
+
+var _stage                              # SoundStage (weather.rain)
+var _fires: Array = []
+var _loops: Dictionary = {}             # id -> {"small", "large", "rain": players, "lit": bool, "size", "rain_on", "gone"}
+var _was_lit: Dictionary = {}           # id -> lit last time
+var _scan_left: float = 0.0
+var _manual_until_msec: int = 0
+var _first_set_msec: int = -1
+var _here: Vector3 = Vector3.ZERO       # the player, from the last update
+var _streams: Dictionary = {}
+var _rng := RandomNumberGenerator.new()
+
+
+func setup(stage) -> void:
+	_stage = stage
+	_rng.randomize()
+
+
+# The sound test places its own fire: the world sync keeps off for a while.
+func hold_manual(seconds: float) -> void:
+	_manual_until_msec = Time.get_ticks_msec() + int(seconds * 1000.0)
+
+
+func manual_active() -> bool:
+	return Time.get_ticks_msec() < _manual_until_msec
+
+
+func set_fires(fires: Array) -> void:
+	var first_list: bool = _first_set_msec < 0
+
+	if first_list:
+		_first_set_msec = Time.get_ticks_msec()
+
+	var settled: bool = Time.get_ticks_msec() - _first_set_msec > NEW_FIRE_SETTLE_MSEC
+
+	for fire in fires:
+		var id = fire["id"]
+		var lit: bool = bool(fire.get("lit", true))
+
+		# A lit fire first seen right beside the player, once the world has settled, was just made: it catches.
+		if settled and not _was_lit.has(id) and lit and fire["at"].distance_to(_here) <= NEW_FIRE_NEAR_M:
+			light(fire["at"])
+
+		if _was_lit.has(id) and _was_lit[id] != lit:
+			if lit:
+				light(fire["at"])
+			else:
+				put_out(fire["at"])
+
+		_was_lit[id] = lit
+
+	_fires = fires
+
+
+# The campfires the Items thread keeps (inventory_view `_world`: rows with state 0 item, 1 lit fire,
+# 2 burnt-out fire): call about once a second. Size is a fixed middle value until fires have a burn
+# time; a fire is "open" when the cover query says the sky reaches it.
+# Item world row states that are fires: 1 lit, 2 burnt out (old saves), 8 empty (ashes), 9 loaded but unlit.
+const FIRE_STATES := [1, 2, 8, 9]
+const FUEL_HEARD_M := 25.0
+const FUEL_DEDUP_MSEC := 1500
+var _world_states: Dictionary = {}      # fire id -> last seen row state
+var _last_fuel_msec: int = -100000
+
+
+func sync_world(world: Dictionary, cover_at: Callable = Callable()) -> void:
+	var fires: Array = []
+	var states: Dictionary = {}
+
+	for id in world:
+		var row: Dictionary = world[id]
+
+		if not int(row["state"]) in FIRE_STATES:
+			continue
+
+		var at: Vector3 = row["pos"]
+		states[id] = int(row["state"])
+
+		# Wood laid on an empty fire (8 to 9) by someone else, or seen from the bag path too late: the bag path
+		# plays its own cue within FUEL_DEDUP_MSEC, so only a laying nobody here pressed is voiced.
+		if int(_world_states.get(id, 9)) == 8 and int(row["state"]) == 9 and _here.distance_to(at) < FUEL_HEARD_M \
+				and Time.get_ticks_msec() - _last_fuel_msec > FUEL_DEDUP_MSEC:
+			fuel(at)
+		fires.append({"id": id, "at": at, "size": FIRE_SIZE, "lit": int(row["state"]) == 1,
+			"open": not (cover_at.is_valid() and bool(cover_at.call(at)))})
+
+	_world_states = states
+	set_fires(fires)
+
+
+func light(at: Vector3) -> void:
+	_one_shot("fire_light", at)
+	lit_played += 1
+
+
+func put_out(at: Vector3) -> void:
+	_one_shot("fire_out", at)
+	out_played += 1
+
+
+func cook(at: Vector3) -> void:
+	_one_shot("cook_sizzle", at)
+	cook_played += 1
+
+
+func fuel(at: Vector3) -> void:
+	_last_fuel_msec = Time.get_ticks_msec()
+	_one_shot("fire_fuel", at)
+	fuel_played += 1
+
+
+func update(delta: float, body: CharacterBody3D) -> void:
+	_here = body.global_position
+	_scan_left -= delta
+
+	if _scan_left <= 0.0:
+		_scan_left = SCAN_SEC
+		_scan(body)
+
+	var rain: float = float(_stage.weather.rain)
+
+	for id in _loops.keys():
+		var loop: Dictionary = _loops[id]
+		var gone: bool = bool(loop["gone"])
+		var size: float = float(loop["size"])
+		var lit: bool = bool(loop["lit"]) and not gone
+		var targets: Dictionary = {
+			"small": SMALL_DB + 20.0 * log(maxf(1.0 - size, 0.02)) / log(10.0) if lit else -80.0,
+			"large": LARGE_DB + 20.0 * log(maxf(size, 0.02)) / log(10.0) if lit else -80.0,
+			"rain": RAIN_DB + 20.0 * log(maxf(rain, 0.02)) / log(10.0) + 6.0 * size if lit and bool(loop["rain_on"]) and rain > 0.05 else -80.0,
+		}
+		var alive: bool = false
+
+		for sound_name in ["small", "large", "rain"]:
+			var player: AudioStreamPlayer3D = loop[sound_name]
+
+			if player == null:
+				continue
+
+			player.volume_db = move_toward(player.volume_db, float(targets[sound_name]), FADE_DB_PER_SEC * delta)
+
+			if player.volume_db > -70.0 or float(targets[sound_name]) > -70.0:
+				alive = true
+
+		if gone and not alive:
+			for sound_name in ["small", "large", "rain"]:
+				if loop[sound_name] != null:
+					loop[sound_name].queue_free()
+
+			_loops.erase(id)
+
+	loops_playing = _loops.size()
+
+
+func _scan(body: CharacterBody3D) -> void:
+	var here: Vector3 = body.global_position
+	var near: Array = []
+
+	for fire in _fires:
+		var distance: float = fire["at"].distance_to(here)
+
+		if distance <= REACH_M:
+			near.append({"fire": fire, "distance": distance})
+
+	near.sort_custom(func(a, b): return a["distance"] < b["distance"])
+	near = _merge_far(near)
+	var wanted: Dictionary = {}
+
+	for entry in near.slice(0, int(_stage.preset["town_loops"])):
+		wanted[entry["fire"]["id"]] = entry["fire"]
+
+	for id in wanted:
+		var fire: Dictionary = wanted[id]
+
+		if not _loops.has(id):
+			var made: Dictionary = {"small": _loop_player("fire_small", fire["at"]), "large": _loop_player("fire_large", fire["at"]),
+				"rain": _loop_player("fire_rain", fire["at"]), "lit": true, "size": 0.5, "rain_on": false, "gone": false}
+
+			if made["small"] == null and made["large"] == null:
+				continue
+
+			_loops[id] = made
+
+		var loop: Dictionary = _loops[id]
+		loop["lit"] = bool(fire.get("lit", true))
+		loop["size"] = clampf(float(fire.get("size", 0.5)), 0.0, 1.0)
+		loop["rain_on"] = bool(fire.get("open", true))
+		loop["gone"] = false
+
+		for sound_name in ["small", "large", "rain"]:
+			if loop[sound_name] != null:
+				loop[sound_name].global_position = fire["at"]
+
+	for id in _loops:
+		if not wanted.has(id):
+			_loops[id]["gone"] = true
+
+
+# Fires beyond MERGE_M that stand within CLUSTER_M of each other are one crackle (job 53): one loop at their centre,
+# bigger the more fires there are (a town's far hearths hum together instead of taking all the loops). Lit if any is.
+func _merge_far(near: Array) -> Array:
+	merged_fires = 0
+	var kept: Array = []
+	var clusters: Array = []
+
+	for entry in near:
+		if float(entry["distance"]) <= MERGE_M:
+			kept.append(entry)
+			continue
+
+		var joined: bool = false
+
+		for cluster in clusters:
+			if cluster["seed"].distance_to(entry["fire"]["at"]) <= CLUSTER_M:
+				cluster["members"].append(entry)
+				joined = true
+				break
+
+		if not joined:
+			clusters.append({"seed": entry["fire"]["at"], "members": [entry]})
+
+	for cluster in clusters:
+		var members: Array = cluster["members"]
+
+		if members.size() == 1:
+			kept.append(members[0])
+			continue
+
+		var centre: Vector3 = Vector3.ZERO
+		var lit: bool = false
+		var open: bool = false
+		var nearest: float = INF
+
+		for entry in members:
+			centre += entry["fire"]["at"]
+			lit = lit or bool(entry["fire"].get("lit", true))
+			open = open or bool(entry["fire"].get("open", true))
+			nearest = minf(nearest, float(entry["distance"]))
+
+		centre /= float(members.size())
+		var id: String = "far_%d_%d" % [roundi(cluster["seed"].x / CLUSTER_M), roundi(cluster["seed"].z / CLUSTER_M)]
+		kept.append({"fire": {"id": id, "at": centre, "size": minf(0.5 + 0.12 * float(members.size() - 1), 1.0), "lit": lit, "open": open}, "distance": nearest})
+		merged_fires += members.size() - 1
+
+	kept.sort_custom(func(a, b): return a["distance"] < b["distance"])
+	return kept
+
+
+func _loop_player(sound_name: String, at: Vector3) -> AudioStreamPlayer3D:
+	var list: Array = _variants(sound_name)
+
+	if list.is_empty():
+		return null
+
+	var player: AudioStreamPlayer3D = AudioStreamPlayer3D.new()
+	player.stream = list[_rng.randi_range(0, list.size() - 1)]
+
+	if player.stream is AudioStreamOggVorbis:
+		player.stream.loop = true
+
+	player.bus = "Foley"
+	player.set_meta("air_kind", "fire")              # far fires go dull by band bus (air_bands.gd)
+	player.volume_db = -80.0
+	player.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
+	player.unit_size = UNIT_SIZE
+	player.max_distance = REACH_M * 1.5
+	add_child(player)
+	player.add_to_group("world_sounds")
+	player.global_position = at
+	player.play(_rng.randf() * 4.0)
+	return player
+
+
+func _one_shot(sound_name: String, at: Vector3) -> void:
+	var list: Array = _variants(sound_name)
+
+	if list.is_empty() or not _stage.has_room():
+		return
+
+	var pick: int = _rng.randi_range(0, list.size() - 1)
+	var player: AudioStreamPlayer3D = AudioStreamPlayer3D.new()
+	player.stream = list[pick]
+	player.bus = "Foley"
+	player.volume_db = ONE_SHOT_DB + _rng.randf_range(-1.0, 1.0)
+	player.pitch_scale = _rng.randf_range(0.97, 1.03)
+	player.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
+	player.unit_size = UNIT_SIZE
+	player.max_distance = REACH_M * 2.0
+	add_child(player)
+	player.add_to_group("world_sounds")
+	player.global_position = at
+	player.finished.connect(player.queue_free)
+	player.play()
+	last = "%s_%d (%s)" % [sound_name, pick, SoundStage.tag(list[pick])]
+
+
+func _variants(sound_name: String) -> Array:
+	if _streams.has(sound_name):
+		return _streams[sound_name]
+
+	var cooking: bool = sound_name in ["cook_sizzle", "fire_fuel"]
+	var list: Array = SoundStage._find(COOKING_RECORDED_DIR if cooking else RECORDED_DIR, sound_name)
+
+	if list.is_empty():
+		list = SoundStage._find(COOKING_DIR if cooking else GENERATED_DIR, sound_name)
+
+	_streams[sound_name] = list
+	return list
+
+
+func _exit_tree() -> void:
+	for id in _loops:
+		for sound_name in ["small", "large", "rain"]:
+			if _loops[id][sound_name] != null:
+				_loops[id][sound_name].stop()
+				_loops[id][sound_name].stream = null
+
+	_streams.clear()

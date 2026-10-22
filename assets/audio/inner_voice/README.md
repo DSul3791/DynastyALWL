@@ -1,0 +1,1 @@
+Inner voice recordings. One file per line, named <line_id>.ogg (ids in /mnt/project-files/sound/INNER_VOICE_LINES.md and data/items/inner_voice.json). No file: the subtitle only. Voice: dry, tired, close and quiet, no room reverb.

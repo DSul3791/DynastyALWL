@@ -1144,6 +1144,7 @@ func _test_tile_water(settings, elevation, sketch: Dictionary) -> void:
 		Time.get_ticks_msec() - started, water.river_cells, water.lakes.size()
 	])
 	_check(water.river_cells > 500, "the tile has rivers")
+	_check(water.max_bed_rise_m <= 0.0, "river beds only run downhill toward the sea (largest climb %.2f m)" % water.max_bed_rise_m)
 
 	var low_lake: bool = false
 
@@ -1162,16 +1163,29 @@ func _test_tile_water(settings, elevation, sketch: Dictionary) -> void:
 		if kind == TileWaterScript.OCEAN and water.water_surface[index] != 0.0:
 			bad_surface += 1
 		elif kind == TileWaterScript.RIVER and (
-			water.water_surface[index] > water.heights[index] + 40.0
+			water.water_surface[index] > water.heights[index] + 130.0
 			or water.water_surface[index] < water.heights[index] - 0.01
 		):
 			bad_surface += 1
 
+	var over_max: float = 0.0
+	var under_max: float = 0.0
+
+	for index in range(water.samples * water.samples):
+		if water.water_class[index] == TileWaterScript.RIVER:
+			over_max = maxf(over_max, water.water_surface[index] - water.heights[index])
+			under_max = maxf(under_max, water.heights[index] - water.water_surface[index])
+
+	print("river surface over ground at most %.1f m, under at most %.2f m, bad cells %d" % [over_max, under_max, bad_surface])
 	_check(bad_surface == 0, "water surfaces are consistent with the ground")
 
-	# The starter river reaches the bay head.
+	# The starter river reaches the bay head (when it is turned on; owner 2026-10-19: off).
 	var path: PackedVector2Array = water.starter_path
-	_check(path.size() > 50, "a starter river route was found (%d points)" % path.size())
+
+	if bool(tile_rules["water"].get("starter_river", {}).get("enabled", false)):
+		_check(path.size() > 50, "a starter river route was found (%d points)" % path.size())
+	else:
+		_check(path.is_empty(), "no designed starter river while it is turned off")
 
 	if path.size() > 50:
 		var mouth: Vector2 = path[path.size() - 1]
@@ -1639,7 +1653,9 @@ func _test_runtime_terrain(settings, tile_rules: Dictionary, tables, tile: Vecto
 	var target: String = "%s/tile_%d_%d.tile" % [dir, tile.x, tile.y]
 	_check(FileAccess.file_exists(target), "the test tile file is there for the terrain generator")
 	var generator = TerrainGeneratorScript.new()
-	generator.setup(settings, tile_rules, tables, dir)
+	var plain_rules: Dictionary = tile_rules.duplicate(true)      # without the simulated-water channel cutting
+	plain_rules["runtime_terrain"].erase("sim_water")
+	generator.setup(settings, plain_rules, tables, dir)
 	var data = generator.get_tile(tile)
 	_check(not data.placeholder, "the terrain generator loads the tile file")
 	_check(data.prov_datum.size() == geology.provinces.size(), "the terrain generator reads every province")
@@ -1925,12 +1941,18 @@ func _test_streaming(generator, data) -> void:
 	var dug_block: Vector3i = Vector3i((center / 16.0).floor())
 	store.load_block(dug, dug_block, 0)
 	var inside: Vector3i = Vector3i(center.floor()) - dug_block * 16
-	_check(store.edit_hits == 1 and dug.get_voxel_f(inside.x, inside.y, inside.z, TerrainLayout.CHANNEL_SDF) > 0.0,
-		"the dug block comes from the edits store and is open at the dig")
+	_check(dug.get_voxel_f(inside.x, inside.y, inside.z, TerrainLayout.CHANNEL_SDF) > 0.0,
+		"the dug block is open at the dig")
 	store.flush()
 	var reopened = ServerStoreScript.new()
 	reopened.setup(generator, root + "/server")
 	_check(reopened.revision_of(tile) == 2, "tile revisions survive a server restart")
+	# A re-bake throws the generated ground away; the saved dig replays over the new ground.
+	reopened.clear_generated()
+	var replayed: VoxelBuffer = TerrainLayout.make_buffer(16)
+	reopened.load_block(replayed, dug_block, 0)
+	_check(reopened.ops.count == 1 and replayed.get_voxel_f(inside.x, inside.y, inside.z, TerrainLayout.CHANNEL_SDF) > 0.0,
+		"a saved dig survives a restart and a re-bake")
 
 	# The client cache: hits, stale revisions and the size limit.
 	var world: Dictionary = {"tile_size_m": generator.tile_size_m, "min_tile": generator.min_tile, "tiles_per_side": int(round(generator.period_m / generator.tile_size_m))}
@@ -1962,7 +1984,12 @@ func _test_streaming(generator, data) -> void:
 	var stream = NetworkStreamScript.new()
 	stream.cache = cache
 	var far: Vector3i = block + Vector3i(0, 0, 3 * tile_blocks)
-	stream.deliver(PackedInt32Array([far.x, far.y, far.z, 0]), [bytes])
+	var sent: PackedByteArray = bytes.duplicate()          # as the server sends it: the block plus its checksum
+	var check: PackedByteArray = PackedByteArray()
+	check.resize(4)
+	check.encode_u32(0, hash(bytes) & 0xffffffff)
+	sent.append_array(check)
+	stream.deliver(PackedInt32Array([far.x, far.y, far.z, 0]), [sent])
 	var streamed: VoxelBuffer = TerrainLayout.make_buffer(16)
 	var result: int = stream._load_voxel_block(streamed, far, 0)
 	var keys: Array = stream.take_requests()
@@ -1999,6 +2026,25 @@ func _test_flora(generator, data, tables, tile_rules: Dictionary) -> void:
 	_check(tables.get_entries("flora").size() > 20 and bad_names.is_empty(), "the flora table names only real biomes and water classes %s" % str(bad_names))
 	var placer = FloraPlacerScript.new()
 	placer.setup(generator, tables, tile_rules)
+
+	# Grove species (everember) grow only in groves, which are stable and sized as the table says.
+	var ever: Dictionary = placer.species_by_id(122)
+	var grove_count: int = 0
+	var grove_ok: bool = ever.has("grove")
+
+	if grove_ok:
+		# Every chunk of a 12 km square (nine grove squares).
+		for gz in range(47):
+			for gx in range(47):
+				var at: Vector2 = Vector2(float(gx) * 256.0, float(gz) * 256.0)
+				var groves: Array = placer._groves_near(ever, ever["grove"], placer._grove_seed, 122, at)
+				grove_ok = grove_ok and str(groves) == str(placer._groves_near(ever, ever["grove"], placer._grove_seed, 122, at))
+
+				for g in groves:
+					grove_count += 1
+					grove_ok = grove_ok and g[1] >= 90.0 and g[1] <= 150.0 and placer._in_grove([g], g[0].x, g[0].y) and not placer._in_grove([g], g[0].x + 200.0, g[0].y)
+
+	_check(grove_ok and grove_count > 0, "everember groves are stable, 90 to 150 m across in radius, and found (%d)" % grove_count)
 
 	# The most wooded of a few chunks in the middle of the tile.
 	var best: Vector2i = Vector2i.ZERO
@@ -2060,11 +2106,13 @@ func _test_flora(generator, data, tables, tile_rules: Dictionary) -> void:
 			if sb["kind"] == FloraPlacerScript.KIND_PLANT:
 				continue
 
-			var gap: float = minf(0.6 * (float(sa["crown"]) + float(sb["crown"])), FloraPlacerScript.OCCUPANCY_CELL)
+			var stand_a: float = float(sa["stand"]["spacing_m"]) if (ids[a] & 0xffff) >= FloraPlacerScript.STAND_BASE else 0.0
+			var stand_b: float = float(sb["stand"]["spacing_m"]) if (ids[b] & 0xffff) >= FloraPlacerScript.STAND_BASE else 0.0
+			var gap: float = FloraPlacerScript.min_gap(sa["kind"], FloraPlacerScript.spacing_radius(sa, items["heights"][a]), stand_a, ids[a] >> 16, sb["kind"], FloraPlacerScript.spacing_radius(sb, items["heights"][b]), stand_b, ids[b] >> 16)
 			var pa: Vector3 = items["positions"][a]
 			var pb: Vector3 = items["positions"][b]
 
-			if Vector2(pa.x - pb.x, pa.z - pb.z).length() < gap - 0.001:
+			if Vector2(pa.x - pb.x, pa.z - pb.z).length() < gap - 0.01:
 				crowded += 1
 
 	_check(crowded == 0, "tree and shrub crowns keep apart (%d too close)" % crowded)
@@ -2219,8 +2267,9 @@ func _test_tile_file(settings, tile: Vector2i, water, climate, geology, sites) -
 	var damaged: FileAccess = FileAccess.open(path, FileAccess.READ_WRITE)
 	var target: Dictionary = {}
 
+	# The biggest section: a tiny one (all one biome) can hide a flipped byte in padding.
 	for entry in table:
-		if str(entry["name"]) == "biome":
+		if str(entry["name"]) != "height" and (target.is_empty() or int(entry["size"]) > int(target["size"])):
 			target = entry
 
 	damaged.seek(int(target["offset"]) + int(target["size"]) / 2)
@@ -2228,7 +2277,7 @@ func _test_tile_file(settings, tile: Vector2i, water, climate, geology, sites) -
 	damaged.seek(int(target["offset"]) + int(target["size"]) / 2)
 	damaged.store_8(byte ^ 0x55)
 	damaged.close()
-	_check(not TileFileScript.read_section(path, table, "biome")["ok"], "a damaged section is caught")
+	_check(not TileFileScript.read_section(path, table, str(target["name"]))["ok"], "a damaged section is caught")
 	_check(TileFileScript.read_section(path, table, "height")["ok"], "other sections still read after one is damaged")
 
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))

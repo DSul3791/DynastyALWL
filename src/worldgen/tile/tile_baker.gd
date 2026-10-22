@@ -15,6 +15,7 @@ const SketchScript := preload("res://src/worldgen/sketch/world_sketch.gd")
 const ElevationScript := preload("res://src/worldgen/sketch/world_elevation.gd")
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 const TileErosionScript := preload("res://src/worldgen/tile/tile_erosion.gd")
+const TileScreeScript := preload("res://src/worldgen/tile/tile_scree.gd")
 const TileWaterScript := preload("res://src/worldgen/tile/tile_water.gd")
 const TileClimateScript := preload("res://src/worldgen/tile/tile_climate.gd")
 const TileGeologyScript := preload("res://src/worldgen/tile/tile_geology.gd")
@@ -60,6 +61,7 @@ func setup(world_directory: String, elevation_cell_m: float = 0.0) -> String:
 	river_network = RiverNetworkScript.new()
 	river_network.build(elevation, float(tile_rules["water"]["river_start_km2"]))
 	river_network.set_meander(tile_rules["water"].get("network_meander", []), SeedUtil.rng_for(settings.master_seed, "river_meander"))
+	river_network.place_ponds(tile_rules["water"], tile_rules.get("valleys", {}))
 	tables = TableSetScript.new()
 	var table_problems: Array = tables.load_directory()
 
@@ -140,6 +142,21 @@ func bake(tile: Vector2i) -> Dictionary:
 	var clock: int = Time.get_ticks_msec()
 	var frame_height = TileHeightScript.new()
 	frame_height.setup(settings, elevation, tile_rules)
+	var frame_rect: Rect2 = Rect2(
+		Vector2(float(origin_sx), float(origin_sz)) * float(settings.map_spacing_m),
+		Vector2(float(n - 1), float(n - 1)) * float(settings.map_spacing_m)
+	)
+
+	# Valleys reach this far from a river, so rivers just outside the frame shape it too.
+	if tile_rules.has("valleys"):
+		frame_height.valley_guides = river_network.guides_in(frame_rect.grow(float(tile_rules["valleys"]["half_width_max_m"])), 4.0)
+
+	# The rock under the frame (positions only), so erosion and ledges follow the real layers.
+	var frame_rock = TileGeologyScript.new()
+	frame_rock.setup(settings, tile_rules, tables, elevation, sketch)
+	frame_rock.prepare_frame(float(origin_sx) * float(settings.map_spacing_m), float(origin_sz) * float(settings.map_spacing_m), n)
+	frame_height.rock = frame_rock
+	frame_height.defer_strata = true
 	frame_height.build_frame(origin_sx, origin_sz, n)
 	timings["height"] = Time.get_ticks_msec() - clock
 	var raw_heights: PackedFloat32Array = crop(frame_height.heights, n, core)
@@ -149,22 +166,31 @@ func bake(tile: Vector2i) -> Dictionary:
 	var core_height = TileHeightScript.new()
 	core_height.samples = core
 	core_height.spacing_m = frame_height.spacing_m
+	core_height.origin_sx = origin_sx + margin
+	core_height.origin_sz = origin_sz + margin
 	core_height.heights = raw_heights
 	var erosion = TileErosionScript.new()
 	erosion.setup(settings, tile_rules)
-	erosion.build(core_height)
+	erosion.build(core_height, frame_rock, margin, n)
 	frame_height.heights = paste(frame_height.heights, n, erosion.heights, core)
 	timings["erosion"] = Time.get_ticks_msec() - clock
+	clock = Time.get_ticks_msec()
+	frame_height.add_strata()
+	timings["ledges"] = Time.get_ticks_msec() - clock
+
+	# Scree aprons at the foot of steep faces (Tyler 9 B), on the whole frame so tiles agree along their edge.
+	clock = Time.get_ticks_msec()
+	var scree = TileScreeScript.new()
+	scree.setup(tile_rules.get("scree", {}))
+	frame_height.heights = scree.apply(frame_height.heights, n, frame_height.spacing_m, origin_sx, origin_sz)
+	erosion.heights = crop(frame_height.heights, n, core)
+	timings["scree"] = Time.get_ticks_msec() - clock
 
 	clock = Time.get_ticks_msec()
 	var starter: Dictionary = starter_info(tile)
 	var water = TileWaterScript.new()
 	water.setup(settings, tile_rules)
-	var frame_rect: Rect2 = Rect2(
-		Vector2(float(origin_sx), float(origin_sz)) * float(settings.map_spacing_m),
-		Vector2(float(n - 1), float(n - 1)) * float(settings.map_spacing_m)
-	)
-	water.build(frame_height, starter, river_network.guides_in(frame_rect, 4.0))
+	water.build(frame_height, starter, river_network.guides_in(frame_rect, 4.0), river_network.ponds_in(frame_rect, float(tile_rules["water"].get("head_pond_search_m", 2000.0)) + 700.0))
 	timings["water"] = Time.get_ticks_msec() - clock
 
 	clock = Time.get_ticks_msec()

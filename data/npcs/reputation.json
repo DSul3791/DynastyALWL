@@ -1,0 +1,11 @@
+{
+	"note": "Reputation (Dave 2026-10-21). Each NPC keeps a score for each player. A dialogue effect {\"add_rep\": n} adds points for THAT NPC (capped at max_points). Ranks come from the score: the highest rank whose `at` is not above it. Dialogue conditions: {\"min_rep\": points} or {\"rank\": \"Friend\"} (this rank or better) unlock choices and quests; a bark kind with the rank in lower case (greeting_friend) is preferred over the plain one; price_mult scales what an NPC charges (trainer lessons) by rank. Shown on the Tab character screen.",
+	"max_points": 30,
+	"ranks": [
+		{"name": "Stranger", "at": 0},
+		{"name": "Known", "at": 2},
+		{"name": "Friend", "at": 5},
+		{"name": "Trusted", "at": 10}
+	],
+	"price_mult": {"Stranger": 1.0, "Known": 1.0, "Friend": 0.9, "Trusted": 0.8}
+}

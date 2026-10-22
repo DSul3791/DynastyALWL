@@ -1,0 +1,36 @@
+{
+ "_about": "Footstep loudness (dB) by surface and gait, read by src/client/sound_stage.gd at start. Edit and restart. Final step level = surface_db + gait_db + surface_gait_db[surface][gait]. Quiet is more negative. A missing or broken file falls back to the built-in numbers. Table: sound/STEP_LEVELS.md (python3 tools/step_levels.py).",
+ "gait_db": [
+  -25.0,
+  -19.0,
+  -13.0
+ ],
+ "gait_pitch": [
+  1.0,
+  1.03,
+  1.06
+ ],
+ "surface_db": {
+  "grass": -15.0,
+  "dirt": -10.0,
+  "sand": -11.0,
+  "gravel": -9.0,
+  "stone": -8.0,
+  "leaves": -6.0,
+  "mud": -10.0,
+  "snow": -11.0,
+  "ice": -9.0,
+  "water": -10.0,
+  "grass_tall": -14.0,
+  "bushes": -13.0
+ },
+ "floor_db": {
+  "plank": -9.0,
+  "slab": -8.0,
+  "carpet": -13.0,
+  "thatch": -11.0,
+  "path": -9.0
+ },
+ "surface_gait_db": {},
+ "puddle_db": -13.0
+}

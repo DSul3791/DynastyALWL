@@ -1,0 +1,8 @@
+{
+	"_note": "Connection timeouts in milliseconds, read by the server and the client at start (a server restart is needed for a change). A game that freezes for a while (loading, a slow machine) is not dropped until max passes with no answer.",
+	"peer_timeout_limit_ms": 64,
+	"peer_timeout_min_ms": 60000,
+	"peer_timeout_max_ms": 120000,
+	"server_empty_grace_s": 120,
+	"settled_ground": 1
+}

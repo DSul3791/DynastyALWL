@@ -33,6 +33,10 @@ const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const DataScript := preload("res://src/worldgen/runtime/tile_terrain_data.gd")
 const SeedUtil := preload("res://src/worldgen/settings/worldgen_seed.gd")
 
+const TOPSOIL_M := 0.4                 # topsoil layer over a clay subsoil
+const CLAY_UNDER_MOISTURE := 165       # wet air (0 to 255) from which loam and humus lie on clay
+const MUD_DEPTH_M := 3.0               # lake and river beds this far below the water line are mud
+const BANK_SOIL_M := 1.0               # banks within this of the water line (or above it) are soil, between is clay
 const ORE_LENS := 0
 const ORE_HALO := 1
 const ORE_PIPE := 2
@@ -56,7 +60,9 @@ var _terrain: Dictionary = {}         # tile rules "runtime_terrain"
 var _rock_ids: Dictionary = {}
 var _resource_ids: Dictionary = {}
 var _tiles: Dictionary = {}           # Vector2i -> tile data
+var failed_tiles: int = 0              # times a tile file existed but failed to load (a stand-in was used)
 var _mutex: Mutex = Mutex.new()
+var _prefetching: Dictionary = {}       # Vector2i -> true while a worker thread reads that tile
 var _detail: Array = []               # [FastNoiseLite, amplitude_m, wavelength_m]
 var _band: float = 3.0
 var _detail_max: float = 0.0          # largest possible detail offset (m)
@@ -64,6 +70,12 @@ var _placeholder_depth: float = -200.0
 var _cave_max_lod: int = 2
 var _ore_max_lod: int = 0
 var _limestone: int = 3
+var _clay: int = -1
+var _loam: int = -1
+var _humus: int = -1
+var _silt: int = -1
+var _alluvium: int = -1
+var _mud: int = -1
 var _marble: int = 9
 var _granite: int = 5
 var _basalt: int = 7
@@ -87,6 +99,15 @@ func setup(settings, tile_rules: Dictionary, tables, tiles_directory: String) ->
 
 	for entry in tables.get_entries("rocks"):
 		_rock_ids[str(entry["name"])] = int(entry["id"])
+
+	for entry in tables.get_entries("soils"):
+		match str(entry["name"]):
+			"clay": _clay = int(entry["id"])
+			"loam": _loam = int(entry["id"])
+			"forest_humus": _humus = int(entry["id"])
+			"silt": _silt = int(entry["id"])
+			"alluvium": _alluvium = int(entry["id"])
+			"mud": _mud = int(entry["id"])
 
 	for entry in tables.get_entries("resources"):
 		_resource_ids[str(entry["name"])] = int(entry["id"])
@@ -151,12 +172,33 @@ func get_tile(coord: Vector2i):
 	var path: String = "%s/tile_%d_%d.tile" % [tiles_dir, coord.x, coord.y]
 
 	if FileAccess.file_exists(path):
-		var error: String = data.load_file(path, coord, tile_size_m, _rules, _rock_ids, _resource_ids)
+		# The tile file is read in several passes; a bake that replaces it in between would
+		# mix two versions. Reload until the file is the same before and after the read.
+		var error: String = ""
+
+		for attempt in range(4):
+			var stamp: int = FileAccess.get_modified_time(path)
+			var length: int = _file_length(path)
+			data = DataScript.new()
+			error = data.load_file(path, coord, tile_size_m, _rules, _rock_ids, _resource_ids)
+
+			if FileAccess.get_modified_time(path) == stamp and _file_length(path) == length:
+				break
+
+			error = "%s changed while it was being read" % path
+			OS.delay_msec(500)
 
 		if error != "":
-			push_error("terrain: %s" % error)
+			# A tile file that exists but would not load (for example while a bake is
+			# rewriting it) gets a stand-in for this call only, so it is read again next
+			# time; blocks built from a stand-in are not saved (see failed_tiles).
+			push_error("terrain: %s (using a stand-in tile for now; blocks built from it are not saved)" % error)
 			data = DataScript.new()
 			data.make_placeholder(coord, tile_size_m, _placeholder_depth)
+			_mutex.lock()
+			failed_tiles += 1
+			_mutex.unlock()
+			return data
 	else:
 		data.make_placeholder(coord, tile_size_m, _placeholder_depth)
 
@@ -170,6 +212,68 @@ func get_tile(coord: Vector2i):
 
 	_mutex.unlock()
 	return data
+
+
+# Is the tile under a world position already in memory? A first look at a tile reads its file (over a second on the main thread).
+func tile_cached(x: float, z: float) -> bool:
+	var coord: Vector2i = Vector2i(int(floor(wrap_x(x) / tile_size_m)), int(floor(wrap_x(z) / tile_size_m)))
+	_mutex.lock()
+	var cached: bool = _tiles.has(coord)
+	_mutex.unlock()
+	return cached
+
+
+# Reads the tile under a world position on a worker thread so a later surface_height call on the main thread finds it cached.
+func prefetch_tile(x: float, z: float) -> void:
+	var coord: Vector2i = Vector2i(int(floor(wrap_x(x) / tile_size_m)), int(floor(wrap_x(z) / tile_size_m)))
+	_mutex.lock()
+	var busy: bool = _tiles.has(coord) or _prefetching.has(coord)
+
+	if not busy:
+		_prefetching[coord] = true
+
+	_mutex.unlock()
+
+	if busy:
+		return
+
+	WorkerThreadPool.add_task(func():
+		get_tile(coord)
+		_mutex.lock()
+		_prefetching.erase(coord)
+		_mutex.unlock())
+
+
+# Prefetches the tile under a position and any neighbour tile within `margin` metres, so main-thread height lookups near a tile edge never read a file.
+func prefetch_around(x: float, z: float, margin: float = 2000.0) -> void:
+	prefetch_tile(x, z)
+
+	for dx in [-1.0, 0.0, 1.0]:
+		for dz in [-1.0, 0.0, 1.0]:
+			if dx == 0.0 and dz == 0.0:
+				continue
+
+			var nx: float = x + dx * margin
+			var nz: float = z + dz * margin
+			prefetch_tile(nx, nz)
+
+
+# Drops every loaded tile so the next use reads the files again (a bake replaced them).
+func forget_tiles() -> void:
+	_mutex.lock()
+	_tiles.clear()
+	_mutex.unlock()
+
+
+func _file_length(path: String) -> int:
+	var file: FileAccess = FileAccess.open(path, FileAccess.READ)
+
+	if file == null:
+		return -1
+
+	var length: int = file.get_length()
+	file.close()
+	return length
 
 
 # ---------------------------------------------------------------- surface
@@ -393,19 +497,107 @@ func generate(buffer: VoxelBuffer, origin: Vector3i, lod: int) -> void:
 
 			# The ground material of the column's top; the rock fill below
 			# replaces it under the cover.
-			buffer.fill_area(_surface_material(data, wx[i + 1], wz[k + 1], h), Vector3i(i, 0, k), Vector3i(i + 1, ny, k + 1), Layout.CHANNEL_MATERIAL)
+			var sample: int = -1
+			var soil_id: int = -1
+			var cover_m: float = NAN
+			var offset_m: float = NAN
+
+			if lookups_shared and not data.placeholder:
+				sample = data.nearest(wx[i + 1], wz[k + 1])
+				soil_id = _ground_soil(data, sample, h, wx[i + 1], wz[k + 1])
+
+				if soil_id <= 0 or h >= oy:
+					cover_m = data.cover_at(wx[i + 1], wz[k + 1])
+					offset_m = data.offset_at(wx[i + 1], wz[k + 1])
+
+				buffer.fill_area(_surface_material_known(data, sample, soil_id, cover_m, offset_m, h), Vector3i(i, 0, k), Vector3i(i + 1, ny, k + 1), Layout.CHANNEL_MATERIAL)
+			else:
+				buffer.fill_area(_surface_material(data, wx[i + 1], wz[k + 1], h), Vector3i(i, 0, k), Vector3i(i + 1, ny, k + 1), Layout.CHANNEL_MATERIAL)
 
 			# Nothing solid in this column of the block.
 			if h < oy:
 				continue
 
-			_fill_rock_column(buffer, data, block_bodies.get(data.tile, []), i, k, wx[i + 1], wz[k + 1], h, oy, sf, ny)
+			_fill_rock_column(buffer, data, block_bodies.get(data.tile, []), i, k, wx[i + 1], wz[k + 1], h, oy, sf, ny, sample, soil_id, cover_m, offset_m)
 
 			if has_ore:
-				_fill_ore_column(buffer, data, ore_set, i, k, wx[i + 1], wz[k + 1], h, oy, sf, ny, origin)
+				_fill_ore_column(buffer, data, ore_set, i, k, wx[i + 1], wz[k + 1], h, oy, sf, ny, origin, sample, cover_m, offset_m)
 
 	if not shapes.is_empty():
 		_carve_caves(buffer, shapes, origin, sf, size)
+
+
+# True where the soil at the surface sits on a clay subsoil.
+func _clay_under(soil: int, moisture: int) -> bool:
+	return _clay >= 0 and moisture >= CLAY_UNDER_MOISTURE and (soil == _loam or soil == _humus or soil == _silt or soil == _alluvium)
+
+
+# The soil of a lake, pond or river cell, chosen by how far the ground lies
+# below the water line (owner, 2026-10-19: the baked gravel and silt drew the
+# beds and banks grey): mud on the bed, wet clay on the lower bank, alluvium
+# near and above the water line. Other cells keep their baked soil.
+func _ground_soil(data, sample: int, h: float, x: float, z: float) -> int:
+	var soil: int = data.soil[sample]
+
+	if _mud < 0 or data.placeholder:
+		return soil
+
+	# Owner (2026-10-21, Tyler's finding): the bank bands followed the 8 m cells (square patches of
+	# baked bank soil, stepped mud/clay lines). The water line and the nearness of water are read
+	# bilinearly from the four samples around the column and the depth is jittered a little, so the
+	# bands run as soft, wandering curves.
+	var side: int = data.samples
+	var fx: float = clampf((x - data.x0) / data.spacing_m, 0.0, float(side - 1) - 0.001)
+	var fz: float = clampf((z - data.z0) / data.spacing_m, 0.0, float(side - 1) - 0.001)
+	var i0: int = int(fx)
+	var j0: int = int(fz)
+	var tx: float = fx - float(i0)
+	var tz: float = fz - float(j0)
+	var near: PackedByteArray = data.near_water()
+	var water_w: float = 0.0
+	var level_sum: float = 0.0
+	var near_w: float = 0.0
+
+	for c in 4:
+		var wgt: float = (tx if (c & 1) == 1 else 1.0 - tx) * (tz if (c & 2) == 2 else 1.0 - tz)
+		var k: int = (j0 + (c >> 1)) * side + i0 + (c & 1)
+		near_w += wgt * float(near[k])
+		var kind: int = data.water_class[k]
+
+		if (kind == 2 or kind == 3) and not is_nan(data.water_surface[k]):
+			water_w += wgt
+			level_sum += wgt * data.water_surface[k]
+
+	if near_w <= 0.0:
+		return soil
+
+	var jitter: float = _value_noise(x / 2.5, z / 2.5)
+
+	if water_w <= 0.02:
+		# Dry bank beside the water: grassy, broken up along its edge.
+		return _alluvium if near_w > 0.9 * jitter else soil
+
+	var depth: float = level_sum / water_w - h + (jitter - 0.5) * 0.8
+
+	if depth > MUD_DEPTH_M:
+		return _mud
+
+	return _clay if depth > BANK_SOIL_M else _alluvium
+
+
+# Smooth value noise in 0..1 on a unit grid (deterministic, no seed needed for looks).
+static func _value_noise(x: float, z: float) -> float:
+	var xi: float = floorf(x)
+	var zi: float = floorf(z)
+	var u: float = x - xi
+	var v: float = z - zi
+	u = u * u * (3.0 - 2.0 * u)
+	v = v * v * (3.0 - 2.0 * v)
+	var a: float = _hash01(int(xi), 0, int(zi), 7)
+	var b: float = _hash01(int(xi) + 1, 0, int(zi), 7)
+	var c: float = _hash01(int(xi), 0, int(zi) + 1, 7)
+	var d: float = _hash01(int(xi) + 1, 0, int(zi) + 1, 7)
+	return lerpf(lerpf(a, b, u), lerpf(c, d, u), v)
 
 
 # What the top of a column looks like: its soil, else the rock at the
@@ -415,7 +607,7 @@ func _surface_material(data, x: float, z: float, h: float) -> int:
 		return Layout.MATERIAL_ROCK + Layout.ROCK_SEDIMENT
 
 	var sample: int = data.nearest(x, z)
-	var soil: int = data.soil[sample]
+	var soil: int = _ground_soil(data, sample, h, x, z)
 
 	if soil > 0:
 		return soil
@@ -425,9 +617,20 @@ func _surface_material(data, x: float, z: float, h: float) -> int:
 	return Layout.MATERIAL_ROCK + data.layered_rock(p, maxf(depth, 0.0), _limestone, _marble)
 
 
+# _surface_material from lookups already made for the column (not a placeholder tile): the nearest sample,
+# its ground soil, and (needed when there is no soil) the cover and layer offset at the column.
+func _surface_material_known(data, sample: int, soil: int, cover_m: float, offset_m: float, h: float) -> int:
+	if soil > 0:
+		return soil
+
+	var p: int = data.province[sample]
+	var depth: float = data.prov_datum[p] + offset_m - (h - cover_m)
+	return Layout.MATERIAL_ROCK + data.layered_rock(p, maxf(depth, 0.0), _limestone, _marble)
+
+
 # Rock and soil of one column: cover on top, layered bedrock below, then
 # the bodies that cut through the layers.
-func _fill_rock_column(buffer: VoxelBuffer, data, bodies: Array, i: int, k: int, x: float, z: float, h: float, oy: float, sf: float, ny: int) -> void:
+func _fill_rock_column(buffer: VoxelBuffer, data, bodies: Array, i: int, k: int, x: float, z: float, h: float, oy: float, sf: float, ny: int, known_sample: int = -1, known_soil: int = -1, known_cover: float = NAN, known_offset: float = NAN) -> void:
 	var j_surface: int = mini(int(floor((h - oy) / sf)), ny - 1)
 
 	if data.placeholder:
@@ -437,21 +640,31 @@ func _fill_rock_column(buffer: VoxelBuffer, data, bodies: Array, i: int, k: int,
 	# Ground material below the cover is the rock itself, so cave walls and
 	# dug holes show their stone (the cover band keeps the surface material).
 
-	var cover_m: float = data.cover_at(x, z)
+	var cover_m: float = known_cover if not is_nan(known_cover) else data.cover_at(x, z)
 	var yb: float = h - cover_m
 	var j_bed: int = mini(int(floor((yb - oy) / sf)), ny - 1)
-	var sample: int = data.nearest(x, z)
+	var sample: int = known_sample if known_sample >= 0 else data.nearest(x, z)
 
 	if j_surface > j_bed:
 		var lo: int = maxi(j_bed + 1, 0)
+		var soil: int = known_soil if known_soil >= 0 else _ground_soil(data, sample, h, x, z)
 		buffer.fill_area(Layout.ROCK_SEDIMENT, Vector3i(i, lo, k), Vector3i(i + 1, j_surface + 1, k + 1), Layout.CHANNEL_ROCK)
-		buffer.fill_area(data.soil[sample], Vector3i(i, lo, k), Vector3i(i + 1, j_surface + 1, k + 1), Layout.CHANNEL_SOIL)
+		buffer.fill_area(soil, Vector3i(i, lo, k), Vector3i(i + 1, j_surface + 1, k + 1), Layout.CHANNEL_SOIL)
+
+		# Wet lowland loam, humus, silt and alluvium lies on clay: a topsoil
+		# layer on the surface and clay below it (owner, 2026-10-17).
+		if _clay_under(soil, data.moisture[sample]):
+			var j_clay: int = mini(int(floor((h - TOPSOIL_M - oy) / sf)), j_surface)
+
+			if j_clay >= lo:
+				buffer.fill_area(_clay, Vector3i(i, lo, k), Vector3i(i + 1, j_clay + 1, k + 1), Layout.CHANNEL_SOIL)
+				buffer.fill_area(_clay, Vector3i(i, lo, k), Vector3i(i + 1, j_clay + 1, k + 1), Layout.CHANNEL_MATERIAL)
 
 	if j_bed < 0:
 		return
 
 	var p: int = data.province[sample]
-	var top: float = data.prov_datum[p] + data.offset_at(x, z)
+	var top: float = data.prov_datum[p] + (known_offset if not is_nan(known_offset) else data.offset_at(x, z))
 	var j: int = j_bed
 
 	while j >= 0:
@@ -465,6 +678,10 @@ func _fill_rock_column(buffer: VoxelBuffer, data, bodies: Array, i: int, k: int,
 		j -= count
 
 	var point: Vector2 = Vector2(x, z)
+
+	if bodies_prepared:
+		_fill_bodies(buffer, bodies, point, yb, i, k, oy, sf, ny)
+		return
 
 	for body in bodies:
 		if not body["rect"].has_point(point):
@@ -501,6 +718,87 @@ func _fill_rock_column(buffer: VoxelBuffer, data, bodies: Array, i: int, k: int,
 				buffer.set_voxel(Layout.MATERIAL_ROCK + _marble, i, jj, k, Layout.CHANNEL_MATERIAL)
 
 
+# The intrusions, vents and pipes over one column, from _prepared_body arrays: the same voxels as the
+# dictionary loop it replaced, with the keys read once per block and each run's range worked out once
+# for both channels.
+func _fill_bodies(buffer: VoxelBuffer, bodies: Array, point: Vector2, yb: float, i: int, k: int, oy: float, sf: float, ny: int) -> void:
+	for body in bodies:
+		if not body[B_RECT].has_point(point):
+			continue
+
+		if body[B_KIND] == 1:
+			if point.distance_squared_to(body[B_CENTER]) <= body[B_RADIUS] * body[B_RADIUS]:
+				_fill_rock_run(buffer, _basalt, body[B_BOTTOM], minf(body[B_TOP], yb), i, k, oy, sf, ny)
+
+			continue
+
+		var local: Vector2 = (point - body[B_CENTER]).rotated(body[B_NEG_ANGLE])
+		var q: float = pow(local.x / body[B_RA], 2.0) + pow(local.y / body[B_RB], 2.0)
+
+		if q <= 1.0:
+			_fill_rock_run(buffer, _granite, body[B_BOTTOM], minf(body[B_TOP] - body[B_ROOF_DROP] * q, yb), i, k, oy, sf, ny)
+			continue
+
+		if pow(local.x / body[B_OUTER_A], 2.0) + pow(local.y / body[B_OUTER_B], 2.0) > 1.0:
+			continue
+
+		# Contact aureole: limestone turns to marble.
+		var lo: int = maxi(int(ceil((body[B_BOTTOM] - oy) / sf)), 0)
+		var hi: int = mini(int(floor((minf(body[B_AUREOLE_TOP], yb) - oy) / sf)), ny - 1)
+
+		for jj in range(lo, hi + 1):
+			if buffer.get_voxel(i, jj, k, Layout.CHANNEL_ROCK) == _limestone:
+				buffer.set_voxel(_marble, i, jj, k, Layout.CHANNEL_ROCK)
+				buffer.set_voxel(Layout.MATERIAL_ROCK + _marble, i, jj, k, Layout.CHANNEL_MATERIAL)
+
+
+# A rock between two heights in one column: the rock id and its material, the range worked out once.
+func _fill_rock_run(buffer: VoxelBuffer, rock: int, y_lo: float, y_hi: float, i: int, k: int, oy: float, sf: float, ny: int) -> void:
+	var lo: int = maxi(int(ceil((y_lo - oy) / sf)), 0)
+	var hi: int = mini(int(floor((y_hi - oy) / sf)), ny - 1)
+
+	if hi >= lo:
+		buffer.fill_area(rock, Vector3i(i, lo, k), Vector3i(i + 1, hi + 1, k + 1), Layout.CHANNEL_ROCK)
+		buffer.fill_area(Layout.MATERIAL_ROCK + rock, Vector3i(i, lo, k), Vector3i(i + 1, hi + 1, k + 1), Layout.CHANNEL_MATERIAL)
+
+
+
+# Cold generation speed (owner queue, 2026-10-21): off, bodies buried under a block are tested anyway
+# (the reference run of test_generation_speed.gd, which checks the output is byte identical).
+var buried_bodies_skipped: bool = true
+var ore_columns_skipped: bool = true
+var bodies_prepared: bool = true
+var lookups_shared: bool = true       # a column's cover, layer offset, nearest sample and ground soil are read once, not once per fill step
+
+# A body's numbers read once for the block as an array (indices B_*): the per-column loop in
+# _fill_rock_column was reading a dozen dictionary keys per column and body.
+const B_RECT := 0
+const B_KIND := 1
+const B_CENTER := 2
+const B_NEG_ANGLE := 3
+const B_RA := 4
+const B_RB := 5
+const B_BOTTOM := 6
+const B_TOP := 7
+const B_ROOF_DROP := 8
+const B_AUREOLE_TOP := 9
+const B_OUTER_A := 10
+const B_OUTER_B := 11
+const B_RADIUS := 12
+
+
+static func _prepared_body(body: Dictionary) -> Array:
+	if int(body["kind"]) == 1:
+		return [body["rect"], 1, body["center"], 0.0, 0.0, 0.0, float(body["bottom"]), float(body["top"]), 0.0, 0.0, 0.0, 0.0, float(body["radius"])]
+
+	return [
+		body["rect"], 0, body["center"], -float(body["angle"]), float(body["ra"]), float(body["rb"]), float(body["bottom"]),
+		float(body["top"]), float(body["roof_drop"]), float(body["aureole_top"]), float(body["ra"]) + float(body["aureole"]),
+		float(body["rb"]) + float(body["aureole"]), 0.0,
+	]
+
+
+
 # Intrusions, vents and pipes whose bounds touch the block, per tile.
 func _bodies_touching(column_tile: Array, box: AABB) -> Dictionary:
 	var out: Dictionary = {}
@@ -516,7 +814,12 @@ func _bodies_touching(column_tile: Array, box: AABB) -> Dictionary:
 
 		for body in data.bodies:
 			if body["rect"].intersects(local_rect, true) and float(body["bottom"]) <= box.end.y:
-				list.append(body)
+				# A body whose top (its aureole's top for an intrusion) is under the block's bottom
+				# changes no voxel in it: left out, the columns of a surface block do not test it.
+				if buried_bodies_skipped and maxf(float(body["top"]), float(body.get("aureole_top", -INF))) < box.position.y:
+					continue
+
+				list.append(_prepared_body(body) if bodies_prepared else body)
 
 		out[data.tile] = list
 
@@ -582,8 +885,39 @@ func _ores_touching(column_tile: Array, box: AABB) -> Dictionary:
 
 
 # Ore runs of one column. Ore only replaces solid voxels.
-func _fill_ore_column(buffer: VoxelBuffer, data, ore_set: Dictionary, i: int, k: int, x: float, z: float, h: float, oy: float, sf: float, ny: int, origin: Vector3i) -> void:
+func _fill_ore_column(buffer: VoxelBuffer, data, ore_set: Dictionary, i: int, k: int, x: float, z: float, h_ground: float, oy: float, sf: float, ny: int, origin: Vector3i, known_sample: int = -1, known_cover: float = NAN, known_offset: float = NAN) -> void:
 	var point: Vector2 = Vector2(x, z)
+
+	# Cold generation speed (owner queue, 2026-10-21): most columns of an ore block have no ore of any
+	# kind in them (no shape's outline over the column, no layer ore in its province), and then
+	# nothing below writes a voxel, so the cover and node work is skipped.
+	if ore_columns_skipped:
+		var touched: bool = false
+
+		for pair in ore_set["shapes"]:
+			if pair[0] == data and pair[1]["rect"].has_point(point):
+				touched = true
+				break
+
+		if not touched:
+			var layers_here: Dictionary = ore_set["layers"].get(data.tile, {})
+
+			if layers_here.is_empty() or not layers_here.has(data.province[known_sample if known_sample >= 0 else data.nearest(x, z)]):
+				return
+
+	# Owner (2026-10-20): ore under soil stays hidden. Where loose cover (dirt, mud, humus) lies
+	# over the rock, ore stops a cap below the surface (at least ore_cap.min_m, and the full
+	# cover); bare rock keeps its ore showing, and in a small hashed share of small cells
+	# (ore_cap.node_share) the ore is left exposed as a node, its top voxels turned to rock so
+	# what is seen matches the label.
+	var cap_rules: Dictionary = _rules.get("ore_cap", {})
+	var cover: float = known_cover if not is_nan(known_cover) else data.cover_at(x, z)
+	var node_cell: float = maxf(float(cap_rules.get("node_cell_m", 24.0)), 1.0)
+	var exposed: bool = cover <= 0.0 or _hash01(int(floor(x / node_cell)), 0, int(floor(z / node_cell)), 7121) < float(cap_rules.get("node_share", 0.04))
+	var h: float = h_ground
+
+	if not exposed:
+		h = h_ground - maxf(maxf(cover, float(cap_rules.get("min_m", 1.5))), sf)
 
 	for pair in ore_set["shapes"]:
 		if pair[0] != data:
@@ -629,21 +963,31 @@ func _fill_ore_column(buffer: VoxelBuffer, data, ore_set: Dictionary, i: int, k:
 
 			for n in range(polyline.size() - 1):
 				if Geometry2D.get_closest_point_to_segment(point, polyline[n], polyline[n + 1]).distance_to(point) <= 0.5 * width:
-					_fill_run(buffer, id, h - float(ore.get("thickness_m", 1.0)), h, i, k, oy, sf, ny, Layout.CHANNEL_RESOURCE)
+					_fill_run(buffer, id, h_ground - float(ore.get("thickness_m", 1.0)), h_ground, i, k, oy, sf, ny, Layout.CHANNEL_RESOURCE)
 					break
+
+	# An exposed node on covered ground: the ore's top voxels turn to rock (the host rock
+	# below the cover), so the ground shows an outcrop instead of grass over ore.
+	if exposed and cover > 0.0:
+		var j_top: int = mini(int(floor((h_ground - oy) / sf)), ny - 1)
+
+		if j_top >= 0 and buffer.get_voxel(i, j_top, k, Layout.CHANNEL_RESOURCE) > 0:
+			var j_bed: int = clampi(int(floor((h_ground - cover - oy) / sf)), 0, ny - 1)
+			var host_rock: int = buffer.get_voxel(i, j_bed, k, Layout.CHANNEL_ROCK)
+			buffer.fill_area(Layout.MATERIAL_ROCK + host_rock, Vector3i(i, maxi(j_bed, 0), k), Vector3i(i + 1, j_top + 1, k + 1), Layout.CHANNEL_MATERIAL)
 
 	var by_province: Dictionary = ore_set["layers"].get(data.tile, {})
 
 	if by_province.is_empty():
 		return
 
-	var p: int = data.province[data.nearest(x, z)]
+	var p: int = data.province[known_sample if known_sample >= 0 else data.nearest(x, z)]
 
 	if not by_province.has(p):
 		return
 
-	var top: float = data.prov_datum[p] + data.offset_at(x, z)
-	var yb: float = h - data.cover_at(x, z)
+	var top: float = data.prov_datum[p] + (known_offset if not is_nan(known_offset) else data.offset_at(x, z))
+	var yb: float = h_ground - cover
 
 	for ore in by_province[p]:
 		_layer_column(buffer, ore, top, yb, i, k, oy, sf, ny, origin)

@@ -1,0 +1,5 @@
+{
+	"note": "Luck (Dave 2026-10-21): applies to ALL rolls (chance, loot, fate). A whole number -10 to +10 fixed at character creation, 0 neutral. strength is the pull per point on a roll drawn between 0 and 1 (u raised to exp(luck x strength)): at 0.04, +10 luck takes a 50 percent chance to about 63 percent and the average of a 1 to 3 yield from 2.0 to about 2.2. Set strength to 0 to switch luck off.",
+	"strength": 0.04,
+	"creation": {"dice": 2, "faces": 5}
+}

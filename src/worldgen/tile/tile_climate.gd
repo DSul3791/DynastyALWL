@@ -370,7 +370,7 @@ func _pick_soil(
 	if slope > stony_tan:
 		return soil_ids["stony_soil"]
 
-	if wet >= float(rules["clay_moisture"]) and slope < flood_tan:
+	if wet >= float(rules["clay_moisture"]) and slope < flood_tan and fresh_distance < float(rules.get("clay_edge_m", 160.0)):
 		return soil_ids["clay"]
 
 	if chosen == ids["temperate_forest"] or chosen == ids["mixed_forest"] or chosen == ids["boreal_forest"] \

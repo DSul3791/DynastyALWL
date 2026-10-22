@@ -1,0 +1,139 @@
+{
+	"note": "Thirst (Dave 2026-10-21): hydration holds up to thirst.cap_ml; it falls rest_ml_day plus work_ml_day x exertion a game day, so a full body lasts at least one game day even at full exertion and needs one drink a day. A mouthful at the water edge gives drink_ml (the server checks water within reach_m of the feet); drink items give ml from the drink table. Empty thirst stops health recovering; nothing else yet. Hunger, health and body weight as an energy balance (Dave 2026-10-20). A stomach holds up to stomach_cap_kcal; the body burns rest_kcal_per_kg_day x weight a day plus work_kcal_day x exertion (0 to 1, from how fast the player moves and tool work). A full stomach lasts at least one game day (24 game hours = 1 real hour at the 24:1 clock) at ordinary activity. When the stomach is empty the shortfall is burnt from the body: weight falls kcal/kcal_per_kg. Eating beyond a full stomach (up to overeat_allowance) turns the surplus into weight at gain_efficiency. Health recovers slowly while the stomach is not empty. Nothing here can kill. food = kcal per item: by_id wins over by_suffix (an item id that ends with the word). Plants whose flora uses include poison give nothing. Limp (build 513, protocol 58): a crippling injury (wolves) slows the player to speed_share of normal for `seconds` real seconds, or until health is back to heal_at of the maximum.",
+	"health_max": 100,
+	"health_regen_per_s": 0.05,
+	"fall": {
+		"safe_m": 6.0,
+		"per_m": 8.0,
+		"faint_m": 12.0
+	},
+	"breath": {
+		"note": "Dave 2026-10-21: an oxygen symbol with a countdown (seconds) shows only with the head under water; the air lasts seconds at ordinary swimming pace, runs down rest_mult as fast resting or floating still (up to rest_speed m/s), hard_mult as fast swimming hard (from hard_speed m/s), and is full again the instant the head is above the surface. At zero the player loses drown_per_s health a second. can_die true (protocol 34): at zero health the character dies (death.json).",
+		"seconds": 60,
+		"rest_mult": 0.5,
+		"rest_speed": 0.5,
+		"hard_mult": 1.6,
+		"hard_speed": 2.6,
+		"drown_per_s": 6.0,
+		"can_die": true
+	},
+	"warn_hunger": 15,
+	"warn_thirst": 15,
+	"thirst": {
+		"cap_ml": 2400,
+		"rest_ml_day": 1000,
+		"work_ml_day": 1200,
+		"drink_ml": 300,
+		"fill_ml": 500,
+		"drink_pace_ms": 900,
+		"reach_m": 3.0
+	},
+	"drink": {
+		"by_id": {},
+		"by_suffix": {}
+	},
+	"eat_pace_ms": 800,
+	"food": {
+		"by_id": {
+			"roast_forage": 400,
+			"seed_bundle": 60,
+			"raw_meat": 250,
+			"roast_meat": 700,
+			"fiddleheads": 40,
+			"trout": 220,
+			"perch": 200,
+			"carp": 260,
+			"pike": 280,
+			"roast_fish": 650,
+			"berry_compote": 350,
+			"nut_paste": 450,
+			"roast_roots": 400,
+			"acorn_mash": 380,
+			"baked_apples": 420,
+			"mushroom_skewer": 560,
+			"herb_fish": 680,
+			"garlic_meat": 760,
+			"chestnut_cakes": 600,
+			"fruit_leather": 520,
+			"smoked_fish": 700,
+			"hunters_stew": 900,
+			"forager_stew": 850,
+			"fish_stew": 880,
+			"trail_bread": 950,
+			"hearty_pottage": 1050,
+			"feast_roast": 1200
+		},
+		"by_suffix": {
+			"berries": 90,
+			"nuts": 180,
+			"roots": 150,
+			"caps": 50,
+			"morels": 60,
+			"porcini": 80,
+			"chanterelles": 80,
+			"bulbs": 110,
+			"greens": 45,
+			"pears": 120,
+			"apples": 120,
+			"cherries": 90,
+			"dates": 200,
+			"coconuts": 250,
+			"haws": 70,
+			"hips": 60,
+			"acorns": 150,
+			"chestnuts": 200,
+			"walnuts": 220,
+			"beechnuts": 150,
+			"hazelnuts": 200,
+			"pods": 80,
+			"wheat": 120,
+			"sap": 50
+		}
+	},
+	"medicines": {
+		"medicine": {
+			"cure_h": 18
+		},
+		"stomach_tea": {
+			"cure_h": 10
+		},
+		"chamomile_tea": {
+			"cure_h": 6
+		},
+		"willow_bark_tea": {
+			"cure_h": 5
+		}
+	},
+	"energy_aids": {
+		"energy_bar": {
+			"energy": 25,
+			"fitness": 0.25
+		},
+		"herbal_tea": {
+			"energy": 12,
+			"fitness": 0.1
+		},
+		"magic_tonic": {
+			"energy": 50,
+			"fitness": 0.5
+		}
+	},
+	"heal": {
+		"poultice": 30,
+		"bandage": 15
+	},
+	"stomach_cap_kcal": 2400,
+	"overeat_allowance": 0.25,
+	"kcal_per_kg": 7700,
+	"gain_efficiency": 0.8,
+	"rest_kcal_per_kg_day": 22,
+	"work_kcal_day": 1500,
+	"start_weight_kg": 75,
+	"min_weight_kg": 40,
+	"max_weight_kg": 150,
+	"limp": {
+		"seconds": 600.0,
+		"speed_share": 0.5,
+		"heal_at": 0.6
+	}
+}

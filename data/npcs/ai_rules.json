@@ -1,0 +1,17 @@
+{
+	"note": "Limits the server applies to every line an AI provider returns (src/stream/ai_guard.gd, contract in /mnt/project-files/tech/AI_PROVIDER_CONTRACT.md). A line that breaks a hard limit is dropped (counts as a failed call); soft limits are clamped. Authored (static) lines are never touched.",
+	"max_chars": 320,
+	"max_words": 60,
+	"max_choices": 4,
+	"max_choice_chars": 60,
+	"max_effects": 2,
+	"banned": ["http", "www.", ".com", "discord", "as an ai", "language model", "chatgpt", "openai", "anthropic", "claude"],
+	"speed": [0.85, 1.15],
+	"pitch": [0.92, 1.08],
+	"moods": ["neutral", "warm", "cheerful", "gruff", "worried", "angry", "sad", "amused"],
+	"timeout_s": 6.0,
+	"max_context_facts": 8,
+	"max_memory_lines": 6,
+	"cost_note": "A line is about 450 prompt tokens (persona 150, memory 150, context 100, player 50) and 60 reply tokens; at Haiku 5.5 class prices that is a small fraction of a cent. Budget per player per game day below."
+	,"lines_per_player_per_day": 120
+}

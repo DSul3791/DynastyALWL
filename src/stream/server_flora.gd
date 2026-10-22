@@ -8,23 +8,71 @@ extends RefCounted
 # Regrowth comes later.
 #
 # Packed chunks are kept in memory (up to MEMORY_CHUNKS, oldest dropped
-# first) so a chunk asked for by several players is worked out once.
+# first) so a chunk asked for by several players is worked out once. A chunk
+# comes in two forms: full, or trees only for chunks seen from afar.
 #
 # Thread safe: chunk_bytes may run on many worker threads at once.
 
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
+const CoverScript := preload("res://src/shared/cover.gd")
 const MEMORY_CHUNKS := 2048
+const ITEMS_CHUNKS := 160             # chunks of placed items kept by items_of
+const COVER_CHUNKS := 1500            # chunks kept in the cover index (oldest dropped first)
 
 var placer
+var dynamic: Callable                       # (home chunk) -> flora-style items of saplings and grown trees, {} when none (server_items.gd)
 var chunks_made: int = 0
 var memory_hits: int = 0
 
 var _path: String = ""
 var _removed: Dictionary = {}          # Vector2i chunk -> {item id: true}
-var _memory: Dictionary = {}           # Vector2i chunk -> PackedByteArray
-var _water: Dictionary = {}            # Vector2i chunk -> PackedByteArray (water never changes)
+var _memory: Dictionary = {}           # Vector3i (chunk x, z, 1 full / 0 trees only) -> PackedByteArray
+var _water: Dictionary = {}            # Vector2i chunk -> PackedByteArray (cleared when the water moves)
 var _mutex: Mutex = Mutex.new()
+var _items: Dictionary = {}            # Vector3i (chunk x, z, 1 full / 0 trees only) -> chunk_items result, shared read-only
+var _items_mutex: Mutex = Mutex.new()
+var _removed_dirty: bool = false       # removals not yet written to flora_removed.json
+var _removed_saved_msec: int = 0
+var cover = CoverScript.Index.new()    # tree crowns of the chunks made so far (Cover.at; read it under cover_lock)
+var _cover_order: Array = []           # chunks in the index, oldest first
+
+
+# The chunk's placed items (FloraPlacer.chunk_items), kept for a while: placing a chunk takes seconds the first time and the
+# server asks about the same nine chunks at every dig, chop and gather. Callers only read the result. Safe from any thread (the
+# placer only reads); two threads missing at once both place it and the last result is kept.
+func items_of(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
+	var home: Vector2i = placer.normalize(chunk)
+	var full_key: Vector3i = Vector3i(home.x, home.y, 1)
+	var key: Vector3i = Vector3i(home.x, home.y, 0 if trees_only else 1)
+	_items_mutex.lock()
+	var kept: Dictionary = _items.get(full_key, {}) if trees_only else {}
+
+	if kept.is_empty():
+		kept = _items.get(key, {})
+
+	_items_mutex.unlock()
+
+	if not kept.is_empty():
+		return kept
+
+	var made: Dictionary = placer.chunk_items(home, trees_only)
+	_items_mutex.lock()
+
+	while _items.size() >= ITEMS_CHUNKS:
+		_items.erase(_items.keys()[0])
+
+	_items[key] = made
+	_items_mutex.unlock()
+	return made
+
+
+func has_items(chunk: Vector2i) -> bool:
+	var home: Vector2i = placer.normalize(chunk)
+	_items_mutex.lock()
+	var has: bool = _items.has(Vector3i(home.x, home.y, 1))
+	_items_mutex.unlock()
+	return has
 
 
 func setup(flora_placer, store_dir: String) -> void:
@@ -52,11 +100,12 @@ func setup(flora_placer, store_dir: String) -> void:
 
 # A chunk's flora for clients, with removals applied, packed relative to
 # the chunk as asked for (so a client across the wrap seam gets positions
-# in its own coordinates).
-func chunk_bytes(chunk: Vector2i) -> PackedByteArray:
+# in its own coordinates). `full` false: trees only.
+func chunk_bytes(chunk: Vector2i, full: bool = true) -> PackedByteArray:
 	var home: Vector2i = placer.normalize(chunk)
+	var key: Vector3i = Vector3i(home.x, home.y, 1 if full else 0)
 	_mutex.lock()
-	var bytes: PackedByteArray = _memory.get(home, PackedByteArray())
+	var bytes: PackedByteArray = _memory.get(key, PackedByteArray())
 
 	if not bytes.is_empty():
 		memory_hits += 1
@@ -67,17 +116,119 @@ func chunk_bytes(chunk: Vector2i) -> PackedByteArray:
 	if not bytes.is_empty():
 		return bytes
 
-	var items: Dictionary = PlacerScript.without(placer.chunk_items(home), removed)
+	var items: Dictionary = PlacerScript.without(placer.chunk_items(home, not full), removed)
+
+	if dynamic.is_valid():
+		var extra: Dictionary = dynamic.call(home)
+
+		if not extra.is_empty():
+			items = items.duplicate()
+
+			for field in items:
+				items[field] = items[field].duplicate()
+				items[field].append_array(extra[field])
 	bytes = PlacerScript.encode(items, placer.chunk_origin(home))
 	_mutex.lock()
+	_fill_cover(home, items)
 	chunks_made += 1
-	_memory[home] = bytes
+	_memory[key] = bytes
 
 	while _memory.size() > MEMORY_CHUNKS:
 		_memory.erase(_memory.keys()[0])
 
 	_mutex.unlock()
 	return bytes
+
+
+# Puts a chunk's tree crowns in the cover index (called with the mutex held).
+func _fill_cover(home: Vector2i, items: Dictionary) -> void:
+	CoverScript.add_chunk(cover, home, items, func(species_id: int) -> Array:
+		var item: Dictionary = placer.species_by_id(species_id)
+		return [] if item.is_empty() else [int(item["kind"]), float(item["crown"]), float(item["height_ref"])])
+	_cover_order.erase(home)
+	_cover_order.append(home)
+
+	while _cover_order.size() > COVER_CHUNKS:
+		cover.remove_chunk(_cover_order.pop_front())
+
+
+# Whether a spot is under a tree's canopy (Cover.at on the server's index).
+func covered(pos: Vector3) -> bool:
+	_mutex.lock()
+	var yes: bool = CoverScript.at(pos, cover) > 0.0
+	_mutex.unlock()
+	return yes
+
+
+# Roofs (lean-tos) live in the same cover index as the tree crowns.
+func add_roof(roof: Array) -> int:
+	_mutex.lock()
+	var key: int = cover.add_roof(roof)
+	_mutex.unlock()
+	return key
+
+
+func remove_roof(key: int) -> void:
+	_mutex.lock()
+	cover.remove_roof(key)
+	_mutex.unlock()
+
+
+# Forgets one chunk's packed flora (its saplings or trees changed); it is made again when asked for.
+func invalidate(chunk: Vector2i) -> void:
+	var home: Vector2i = placer.normalize(chunk)
+	_mutex.lock()
+	_memory.erase(Vector3i(home.x, home.y, 1))
+	_memory.erase(Vector3i(home.x, home.y, 0))
+	_mutex.unlock()
+
+
+# Forgets every made chunk (the tile files changed).
+func clear_memory() -> void:
+	_mutex.lock()
+	_memory.clear()
+	_water.clear()
+	_mutex.unlock()
+
+
+# Forgets the packed water (the simulated water changed).
+func clear_water() -> void:
+	_mutex.lock()
+	_water.clear()
+	_mutex.unlock()
+
+
+# Writes the removals when some are new, at most once a second (rewriting the whole file per cut stalled the server); `force` at exit.
+func save_removed(force: bool = false) -> void:
+	var now: int = Time.get_ticks_msec()
+	_mutex.lock()
+
+	if not _removed_dirty or (not force and now - _removed_saved_msec < 1000):
+		_mutex.unlock()
+		return
+
+	_removed_dirty = false
+	_removed_saved_msec = now
+	var copy: Dictionary = {}
+
+	for key in _removed:
+		copy["%d,%d" % [key.x, key.y]] = _removed[key].keys()
+
+	_mutex.unlock()
+	var file: FileAccess = FileAccess.open(_path, FileAccess.WRITE)
+
+	if file != null:
+		file.store_string(JSON.stringify(copy, "\t", true))
+		file.close()
+
+
+# True when the chunk's packed water is ready (water_bytes then costs nothing).
+func water_ready(chunk: Vector2i) -> bool:
+	var home: Vector2i = placer.normalize(chunk)
+	_mutex.lock()
+	var known: bool = _water.has(home)
+	_mutex.unlock()
+	return known
 
 
 # A chunk's rivers and lakes for clients (empty when it has none).
@@ -109,7 +260,7 @@ func cut(chunk: Vector2i, id: int) -> bool:
 	var already: bool = _removed.get(home, {}).has(id)
 	_mutex.unlock()
 
-	if already or placer.chunk_items(home)["ids"].find(id) < 0:
+	if already or items_of(home)["ids"].find(id) < 0:
 		return false
 
 	_mutex.lock()
@@ -118,19 +269,11 @@ func cut(chunk: Vector2i, id: int) -> bool:
 		_removed[home] = {}
 
 	_removed[home][id] = true
-	_memory.erase(home)
-	var copy: Dictionary = {}
-
-	for key in _removed:
-		copy["%d,%d" % [key.x, key.y]] = _removed[key].keys()
-
+	cover.remove_item(home, id)
+	_memory.erase(Vector3i(home.x, home.y, 1))
+	_memory.erase(Vector3i(home.x, home.y, 0))
+	_removed_dirty = true
 	_mutex.unlock()
-	var file: FileAccess = FileAccess.open(_path, FileAccess.WRITE)
-
-	if file != null:
-		file.store_string(JSON.stringify(copy, "\t", true))
-		file.close()
-
 	return true
 
 

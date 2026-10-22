@@ -1,0 +1,75 @@
+{
+	"note": "Bark pools by NPC role (npcs.json 'role'). A bark kind an NPC's own dialogue file lacks is taken from its role pool, then from 'default'. 'asleep' is what a sleeping NPC mumbles when someone talks to them (the talk does not open). Lines keep to short sentences for the voice.",
+	"roles": {
+		"default": {
+			"greeting": [
+				"Hello there.",
+				"Good day.",
+				"Well met."
+			],
+			"farewell": [
+				"Take care.",
+				"Fare well.",
+				"Until next time."
+			],
+			"idle": [
+				"Hm.",
+				"Quiet today.",
+				"Mind the weather."
+			],
+			"info": [
+				"Keep to the road after dark.",
+				"The town grows by the day."
+			],
+			"cooldown": [
+				"One moment, please.",
+				"Not so fast."
+			],
+			"asleep": [
+				"Mmh... later... let me sleep.",
+				"Zzz... what... not now.",
+				"Come back in the morning."
+			]
+		},
+		"shopkeeper": {
+			"greeting": [
+				"Welcome, welcome.",
+				"Looking to trade?",
+				"Come in, friend."
+			],
+			"idle": [
+				"Counting stock again.",
+				"Business is slow.",
+				"Good wares, fair prices."
+			],
+			"info": [
+				"Stone and sticks fetch fair coin.",
+				"Ask me about tools."
+			],
+			"asleep": [
+				"The shop is shut... come back at dawn.",
+				"Mm... closed... tomorrow."
+			]
+		},
+		"guard": {
+			"greeting": [
+				"Halt. Oh, a friend. Pass.",
+				"All quiet, traveller.",
+				"State your business."
+			],
+			"idle": [
+				"Keeping watch.",
+				"Eyes on the road.",
+				"Nothing to report."
+			],
+			"info": [
+				"Stay near the lights at night.",
+				"Wolves are said to roam the far hills."
+			],
+			"asleep": [
+				"Hm? Not on watch... yawn... later.",
+				"Off duty... let me rest."
+			]
+		}
+	}
+}

@@ -1,0 +1,2173 @@
+extends RefCounted
+
+# Procedural tree and shrub models (plan step 15 art pass, owner 2026-10-17).
+#
+# Each model is two surfaces: bark (tapered, flared trunk and branches) and
+# foliage (crossed leaf cards painted with see-through gaps, grouped into
+# clumps). Several variants per species differ in lean, branching and clump
+# placement, and every model has a near version and a cheaper far version.
+# Foliage normals point away from the crown's center, so a crown shades like a
+# soft ball and light bleeds through the gaps. Bark takes its color from the
+# vertex color; foliage takes a per-tree tint from the instance custom data.
+
+const VARIANTS := 4
+const BARK_TINT_HARD := Color(0.45, 0.42, 0.35)       # hardwood: gray (owner, 2026-10-17)
+const BARK_TINT_SOFT := Color(0.50, 0.34, 0.22)       # softwood and evergreens: brown
+const BARK_TINT_PALM := Color(0.60, 0.50, 0.36)
+const BARK_TINT_FIR := Color(0.59, 0.53, 0.45)        # balsam fir: smooth ash gray, browner with age
+const CONE_TINT_FIR := Color(0.40, 0.30, 0.34)        # balsam fir cones: purple-brown, upright
+const BARK_TINT_BIRCH := Color(0.56, 0.56, 0.55)      # birch: white bark texture at full brightness
+const TWIG_TINT_BIRCH := Color(0.30, 0.24, 0.22)      # birch twigs: dark gray-brown
+const BARK_TINT_MAPLE := Color(0.49, 0.43, 0.34)      # maple: furrowed gray-brown
+const BARK_TINT_BEECH := Color(0.60, 0.55, 0.47)      # beech: smooth bark texture at full brightness
+const BARK_TINT_ALDER := Color(0.49, 0.45, 0.38)      # alder: darker gray, paler patches
+const BARK_TINT_WILLOW := Color(0.40, 0.35, 0.30)     # willow: dark, deeply furrowed gray-brown
+const BARK_TINT_ROWAN := Color(0.54, 0.47, 0.38)      # rowan: smooth gray-brown, rougher at the foot
+const BERRY_TINT_ROWAN := Color(0.78, 0.08, 0.04)     # rowan berries: scarlet (times the bark shader's light texture)
+const FLOWER_TINT_ROWAN := Color(0.72, 0.70, 0.62)    # rowan flower heads: creamy white
+const BARK_TINT_APPLE := Color(0.46, 0.40, 0.34)      # wild apple: scaly gray-brown
+const APPLE_TINT := Color(0.74, 0.12, 0.06)           # wild apples: small and red
+const BLOSSOM_TINT := Color(0.74, 0.62, 0.62)         # apple blossom: white flushed pink
+const BARK_TINT_PEAR := Color(0.40, 0.36, 0.32)       # wild pear: dark, blocky
+const PEAR_TINT := Color(0.56, 0.52, 0.16)            # wild pears: green-gold
+const BLOSSOM_TINT_PEAR := Color(0.76, 0.75, 0.70)    # pear blossom: pure white
+const BARK_TINT_CHERRY := Color(0.54, 0.47, 0.40)     # wild cherry: smooth gray with darker bands
+const CHERRY_TINT := Color(0.62, 0.04, 0.05)          # wild cherries: deep red
+const CHERRY_BLOSSOM_TINT := Color(0.74, 0.62, 0.80)  # wild cherry blossom: light purple (owner, 2026-10-18)
+const BARK_TINT_CHESTNUT := Color(0.46, 0.42, 0.38)   # sweet chestnut: gray-brown, deep spiral furrows
+const CATKIN_TINT := Color(0.78, 0.74, 0.52)          # chestnut catkins: long and creamy
+const BURR_TINT := Color(0.50, 0.52, 0.16)            # chestnut burrs: spiny green-gold
+const NUT_TINT := Color(0.36, 0.16, 0.06)             # chestnuts: glossy brown
+const CHROME_TINT := Color(0.56, 0.56, 0.57)          # mirrorbark: polished chrome (the chrome material does the shine)
+const BARK_TINT_EVEREMBER := Color(0.30, 0.21, 0.18)   # everember: charcoal to dark red-brown (the ember material adds the glowing veins)
+const BARK_TINT_WITNESS := Color(0.62, 0.60, 0.66)    # witness tree: silvery gray with a violet undertone
+const FLOWER_TINT_WITNESS := Color(0.70, 0.56, 0.80)  # witness tree flowers: pale purple
+const BARK_TINT_HEARTHWOOD := Color(0.56, 0.36, 0.26)  # hearthwood: reddish brown, fine vertical ridges
+const BARK_TINT_WALNUT := Color(0.56, 0.50, 0.42)     # walnut: pale gray, straight deep furrows
+const WALNUT_CATKIN_TINT := Color(0.56, 0.62, 0.18)   # walnut catkins: long, yellow-green
+const WALNUT_HUSK_TINT := Color(0.38, 0.52, 0.16)     # walnuts in their green husks
+const BARK_TINT_HAZEL := Color(0.54, 0.47, 0.40)     # hazel: smooth gray-brown stems, silvery when old
+const HAZEL_CATKIN_TINT := Color(0.86, 0.80, 0.28)    # hazel catkins in spring: pale lemon yellow
+const HAZEL_CATKIN_WINTER := Color(0.42, 0.20, 0.12)  # next spring's catkins over winter: tight, red-brown
+const HAZEL_HUSK_TINT := Color(0.52, 0.56, 0.22)      # the frilly leafy husk round the nuts
+const HAZELNUT_TINT := Color(0.50, 0.30, 0.12)        # hazelnuts: warm brown
+const BARK_TINT_OAK := Color(0.44, 0.40, 0.36)        # oak: rugged, deeply furrowed gray-brown
+const BARK_TINT_WARDPINE := Color(0.54, 0.46, 0.38)   # wardpine: weathered silver-brown
+const BARK_TINT_PINE_LOW := Color(0.54, 0.46, 0.40)   # Scots pine: thick gray-brown plates low down
+const BARK_TINT_PINE_HIGH := Color(0.86, 0.48, 0.24)  # Scots pine: thin orange-red bark higher up
+
+
+class Acc:
+	var v: PackedVector3Array = PackedVector3Array()
+	var n: PackedVector3Array = PackedVector3Array()
+	var uv: PackedVector2Array = PackedVector2Array()
+	var c: PackedColorArray = PackedColorArray()
+	var i: PackedInt32Array = PackedInt32Array()
+
+	func vert(p: Vector3, normal: Vector3, coord: Vector2, color: Color) -> int:
+		v.append(p)
+		n.append(normal)
+		uv.append(coord)
+		c.append(color)
+		return v.size() - 1
+
+	func tri(a: int, b: int, d: int) -> void:
+		i.append_array([a, b, d])
+
+	# A card centered at `at`, spanned by unit axes `right` and `up`.
+	func card(at: Vector3, right: Vector3, up: Vector3, half_w: float, half_h: float, normal: Vector3, color: Color) -> void:
+		var a: int = vert(at - right * half_w - up * half_h, normal, Vector2(0, 1), color)
+		var b: int = vert(at + right * half_w - up * half_h, normal, Vector2(1, 1), color)
+		var d: int = vert(at + right * half_w + up * half_h, normal, Vector2(1, 0), color)
+		var e: int = vert(at - right * half_w + up * half_h, normal, Vector2(0, 0), color)
+		tri(a, b, d)
+		tri(a, d, e)
+
+	func commit(mesh: ArrayMesh, material: Material) -> void:
+		if v.is_empty():
+			return
+
+		var arrays: Array = []
+		arrays.resize(Mesh.ARRAY_MAX)
+		arrays[Mesh.ARRAY_VERTEX] = v
+		arrays[Mesh.ARRAY_NORMAL] = n
+		arrays[Mesh.ARRAY_TEX_UV] = uv
+		arrays[Mesh.ARRAY_COLOR] = c
+		arrays[Mesh.ARRAY_INDEX] = i
+		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+		mesh.surface_set_material(mesh.get_surface_count() - 1, material)
+
+
+# `materials`: {"bark": Material, "broad": Material, "conifer": Material, "palm": Material,
+# "birch_bark": Material, "twig": Material, "oak": Material, "smooth_bark": Material}. `season`: "winter" gives species that
+# have a bare model (birch) no leaves; anything else gives the leafy model (the
+# leaf color is the per-tree tint, so summer and autumn share one model).
+static func build(entry: Dictionary, h: float, variant: int, far: bool, materials: Dictionary, season: String = "") -> ArrayMesh:
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = hash([str(entry["name"]), variant])
+	var bark: Acc = Acc.new()
+	var leaves: Acc = Acc.new()
+	var white: Acc = Acc.new()   # birch bark
+	var twigs: Acc = Acc.new()   # bare winter twig curtains
+	var smooth: Acc = Acc.new()  # smooth gray bark (beech)
+	var chrome: Acc = Acc.new()  # mirror-polished bark (mirrorbark)
+	var ember: Acc = Acc.new()   # bark with glowing veins (everember); vertex alpha = glow
+	var crown: float = float(entry["crown_m"])
+	var trunk: float = maxf(float(entry["trunk_m"]), 0.03)
+
+	# A species can ask for its own model; it still draws with its shape's leaves.
+	match str(entry.get("model", entry["shape"])):
+		"balsam_fir":
+			_balsam_fir(bark, leaves, rng, h, crown, trunk, variant, far)
+		"birch":
+			_birch(white, bark, leaves, twigs, rng, h, crown, trunk, variant, far, season == "winter")
+		"spruce":
+			_spruce(bark, leaves, rng, h, crown, trunk, variant, far)
+		"scots_pine":
+			_scots_pine(bark, leaves, rng, h, crown, trunk, variant, far)
+		"wardpine":
+			_wardpine(bark, leaves, rng, h, crown, trunk, variant, far)
+		"wild_apple":
+			_wild_apple(bark, smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season)
+		"wild_pear":
+			_wild_apple(bark, smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season, true)
+		"wild_cherry":
+			_wild_apple(bark, smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season, false, true)
+		"rowan":
+			_rowan(smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season)
+		"willow":
+			_willow(bark, leaves, twigs, rng, h, crown, trunk, variant, far, season == "winter")
+		"alder":
+			_alder(smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season == "winter")
+		"beech":
+			_beech(smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season == "winter")
+		"witness_tree":
+			_witness(smooth, leaves, twigs, rng, h, variant, far, season)
+		"everember":
+			_everember(ember, leaves, rng, h, variant, far)
+		"hearthwood":
+			_hearthwood(bark, leaves, twigs, rng, h, variant, far, season == "winter")
+		"mirrorbark":
+			_mirrorbark(chrome, leaves, twigs, rng, h, crown, trunk, variant, far, season == "winter")
+		"walnut":
+			_chestnut(bark, leaves, twigs, rng, h, crown, trunk, variant, far, season, true)
+		"sweet_chestnut":
+			_chestnut(bark, leaves, twigs, rng, h, crown, trunk, variant, far, season)
+		"hazel":
+			_hazel(smooth, leaves, twigs, rng, h, variant, far, season)
+		"oak":
+			_oak(bark, leaves, twigs, rng, h, crown, trunk, variant, far, season == "winter")
+		"maple":
+			_maple(bark, leaves, twigs, rng, h, crown, trunk, variant, far, season == "winter")
+		"broadleaf":
+			_broadleaf(bark, leaves, rng, h, crown, trunk, far)
+		"conifer":
+			_conifer(bark, leaves, rng, h, crown, trunk, far)
+		"palm":
+			_palm(bark, leaves, rng, h, crown, trunk, far)
+		"shrub":
+			_shrub(bark, leaves, rng, h, crown, far)
+		"cactus":
+			_column(bark, rng, h, trunk, Color(0.7, 0.9, 0.6), 6 if far else 8, 3)
+		"grass", "reed":
+			_grass(leaves, rng, h, crown, 2 if far else 3)
+		"fern":
+			_fern(leaves, rng, h, crown, far)
+		"flower":
+			_flower(bark, leaves, rng, h, crown, far)
+		_:
+			_shrub(bark, leaves, rng, h, crown, far)
+
+	var mesh: ArrayMesh = ArrayMesh.new()
+	bark.commit(mesh, materials["bark"])
+	white.commit(mesh, materials.get("birch_bark", materials["bark"]))
+	smooth.commit(mesh, materials.get("smooth_bark", materials["bark"]))
+	chrome.commit(mesh, materials.get("chrome", materials["bark"]))
+	ember.commit(mesh, materials.get("ember", materials["bark"]))
+	twigs.commit(mesh, materials.get("twig", materials["broad"]))
+	var shape: String = str(entry["shape"])
+	var leaf_kind: String = "broad"
+
+	if shape == "conifer":
+		leaf_kind = "conifer"
+	elif shape == "palm" or shape == "fern":
+		leaf_kind = "palm"
+	elif shape == "grass" or shape == "reed":
+		leaf_kind = "grass"
+
+	# A species can name its own leaf texture (oak: lobed leaves).
+	leaf_kind = str(entry.get("leaf", leaf_kind))
+	leaves.commit(mesh, materials.get(leaf_kind, materials["broad"]))
+	return mesh
+
+
+# A tapered tube along a gently leaning path, flared at the base.
+static func _trunk(acc: Acc, _rng: RandomNumberGenerator, height: float, base_r: float, top_r: float, lean: Vector2, color: Color, sides: int, rings: int, flare: float) -> Array:
+	var first: int = acc.v.size()
+	var centers: Array = []
+
+	for r in range(rings + 1):
+		var t: float = float(r) / float(rings)
+		var center: Vector3 = Vector3(lean.x * t * t, t * height, lean.y * t * t)
+		centers.append(center)
+		var radius: float = lerpf(base_r, top_r, t) * (1.0 + flare * pow(1.0 - t, 6.0))
+
+		for s in range(sides + 1):
+			var a: float = TAU * float(s) / float(sides)
+			var dir: Vector3 = Vector3(cos(a), 0.0, sin(a))
+			acc.vert(center + dir * radius, dir, Vector2(float(s) / float(sides) * 2.0, t * height * 0.5), color)
+
+	for r in range(rings):
+		for s in range(sides):
+			var a: int = first + r * (sides + 1) + s
+			var b: int = a + 1
+			var d: int = a + sides + 1
+			var e: int = d + 1
+			# Clockwise seen from outside: Godot draws these as front faces, so the trunk is
+			# solid from outside (it was wound the other way, so only its inside showed and
+			# the base looked hollow; owner, 2026-10-20).
+			acc.tri(a, b, d)
+			acc.tri(b, e, d)
+
+	return centers
+
+
+# A thin tube from `from` toward `to`.
+static func _branch(acc: Acc, from: Vector3, to: Vector3, r0: float, r1: float, color: Color, sides: int) -> void:
+	var axis: Vector3 = (to - from)
+	var length: float = axis.length()
+
+	if length < 0.01:
+		return
+
+	axis /= length
+	var ref: Vector3 = Vector3.UP if absf(axis.y) < 0.9 else Vector3.RIGHT
+	var side: Vector3 = axis.cross(ref).normalized()
+	var other: Vector3 = axis.cross(side).normalized()
+	var first: int = acc.v.size()
+
+	for end in range(2):
+		var center: Vector3 = from if end == 0 else to
+		var radius: float = r0 if end == 0 else r1
+
+		for s in range(sides + 1):
+			var a: float = TAU * float(s) / float(sides)
+			var dir: Vector3 = side * cos(a) + other * sin(a)
+			acc.vert(center + dir * radius, dir, Vector2(float(s) / float(sides), float(end) * length * 0.5), color)
+
+	for s in range(sides):
+		var a: int = first + s
+		acc.tri(a, a + 1, a + sides + 1)
+		acc.tri(a + 1, a + sides + 2, a + sides + 1)
+
+
+# A clump of leaves: crossed cards at `at`; normals point away from `crown_center`.
+static func _clump(acc: Acc, rng: RandomNumberGenerator, at: Vector3, crown_center: Vector3, size: float, shade: float, cards: int) -> void:
+	var out: Vector3 = (at - crown_center)
+	out = out.normalized() if out.length() > 0.01 else Vector3.UP
+	var color: Color = Color(shade, shade, shade, rng.randf_range(0.5, 1.0))
+	var yaw: float = rng.randf() * PI
+
+	for k in range(cards):
+		var turn: float = yaw + PI * float(k) / float(cards)
+		var right: Vector3 = Vector3(cos(turn), 0.0, sin(turn))
+		var up: Vector3 = Vector3.UP
+		var tilt: float = rng.randf_range(-0.5, 0.5)
+
+		if k == cards - 1 and cards > 2:
+			# One card more flat than upright, so a clump has body from above.
+			up = Vector3(-right.z, 0.0, right.x)
+			right = Vector3(cos(turn), 0.0, sin(turn))
+			up = (up + Vector3.UP * 1.1).normalized()
+
+		acc.card(at, right, (up + right * tilt * 0.25).normalized(), size * 0.5, size * 0.5, (out * 0.8 + Vector3.UP * 0.2).normalized(), color)
+
+
+static func _broadleaf(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown_m: float, trunk_m: float, far: bool) -> void:
+	# Small trees keep a visible trunk: the crown is sized to the height and the
+	# trunk never gets thinner than a few percent of it.
+	var crown: float = minf(crown_m, h * 0.3)
+	var trunk: float = maxf(trunk_m, h * 0.035)
+	var tint: Color = BARK_TINT_HARD
+	var trunk_h: float = h * rng.randf_range(0.55, 0.65)
+	var lean: Vector2 = Vector2(rng.randf_range(-0.07, 0.07), rng.randf_range(-0.07, 0.07)) * h
+	var sides: int = 5 if far else 8
+	var rings: int = 1 if far else 4
+	var centers: Array = _trunk(bark, rng, trunk_h, trunk * 1.0, trunk * 0.55, lean, tint, sides, rings, 0.0 if far else 0.9)
+	var top: Vector3 = centers[centers.size() - 1]
+	# Short clear trunk, then one dense, full, egg-shaped crown from about a quarter of
+	# the height to the top, like a street maple; a few limbs show through.
+	var base_y: float = h * 0.25
+	var limbs: int = 5 if far else rng.randi_range(9, 11)
+	var size_base: float = crown * (0.95 if far else 0.6)
+
+	# Limbs sweep up and out from the trunk at an angle, like a young maple, and carry
+	# the leaves along their length so the crown is built from them.
+	for k in range(limbs):
+		var f: float = (float(k) + rng.randf()) / float(limbs)
+		var y0: float = lerpf(base_y, h * 0.62, f)
+		var az: float = rng.randf() * TAU
+		var rise: float = deg_to_rad(rng.randf_range(38.0, 62.0))
+		var reach: float = (h - y0) * rng.randf_range(0.85, 1.0) / sin(rise) * 0.55
+		reach = minf(reach, crown * 1.9)
+		var start: Vector3 = Vector3(lean.x * (y0 / h), y0, lean.y * (y0 / h))
+		var dirv: Vector3 = Vector3(cos(az) * cos(rise), sin(rise), sin(az) * cos(rise))
+		var tip: Vector3 = start + dirv * reach
+		tip.y = minf(tip.y, h * 0.97)
+		if not far:
+			_branch(bark, start, tip, trunk * lerpf(0.34, 0.14, f), trunk * 0.07, tint, 5)
+		var along: int = 3 if far else 5
+		for m in range(along):
+			var t: float = lerpf(0.3, 1.0, float(m) / float(along - 1))
+			var p: Vector3 = start.lerp(tip, t)
+			p += Vector3(rng.randfn(), rng.randfn() * 0.5, rng.randfn()) * crown * 0.12
+			p.y = maxf(p.y, base_y + crown * 0.5)
+			var vf: float = clampf((p.y - base_y) / (h - base_y), 0.0, 1.0)
+			var shade: float = lerpf(0.55, 1.0, vf) * rng.randf_range(0.9, 1.08)
+			_clump(leaves, rng, p, Vector3(start.x, p.y - crown * 0.3, start.z), size_base * rng.randf_range(0.9, 1.3), shade, 2 if far else 3)
+
+	# Leader: the crown tops out on the trunk's own tip.
+	var cap: Vector3 = Vector3(top.x, h - crown * 0.3, top.z)
+	_clump(leaves, rng, cap, cap - Vector3(0.0, 1.0, 0.0), size_base * 1.2, 1.0, 2 if far else 3)
+
+
+static func _conifer(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, far: bool) -> void:
+	var tint: Color = BARK_TINT_SOFT
+	var lean: Vector2 = Vector2(rng.randf_range(-0.03, 0.03), rng.randf_range(-0.03, 0.03)) * h
+	_trunk(bark, rng, h * 0.95, trunk, trunk * 0.12, lean, tint, 5 if far else 7, 1 if far else 3, 0.0 if far else 0.8)
+	var tiers: int = 11 if far else rng.randi_range(24, 27)
+	var per: int = 7 if far else 12
+	# Each tree is its own build of the arrowhead: slim and steep like a spruce, or
+	# fuller and flatter like a fir, so a stand never looks cloned.
+	var slim: float = rng.randf_range(0.72, 1.12)
+	var sag: float = rng.randf_range(0.45, 0.8)
+
+	# The bottom 4 feet stay bare: the lowest bough tip hangs 1.3 m above the ground.
+	var widest: float = maxf(crown * 1.2, h * 0.17) * slim + crown * 0.06
+	var y_low: float = 1.3 + widest * sag
+
+	for t in range(tiers):
+		var f: float = float(t) / float(tiers - 1)
+		# Spacing shrinks with the tiers, matching their width, so the tip stays solid.
+		var y: float = lerpf(y_low, h * 0.97, 1.0 - pow(1.0 - f, 1.9))
+		# Boughs grow with the tree's height (big old firs get massive), not a fixed size.
+		var reach: float = maxf(crown * 1.2, h * 0.17) * slim * pow(1.0 - f, 0.95) + crown * 0.06
+		var center: Vector3 = Vector3(lean.x * pow(y / h, 2.0), y, lean.y * pow(y / h, 2.0))
+		var phase: float = rng.randf() * TAU
+		var shade: float = lerpf(0.62, 1.0, f) * rng.randf_range(0.9, 1.06)
+		var color: Color = Color(shade, shade, shade, 0.6)
+
+		for k in range(per):
+			var a: float = phase + TAU * float(k) / float(per)
+			var out: Vector3 = Vector3(cos(a), 0.0, sin(a))
+			var droop: float = reach * sag
+			# A bough: a card running outward from the trunk, drooping at the tip.
+			var mid: Vector3 = center + out * reach * 0.5 - Vector3(0.0, droop * 0.5, 0.0)
+			var axis: Vector3 = (out * reach - Vector3(0.0, droop, 0.0))
+			var length: float = axis.length()
+			var right: Vector3 = axis / length
+			var up: Vector3 = out.cross(Vector3.UP).normalized()
+			var normal: Vector3 = (out * 0.95 + Vector3.UP * 0.5).normalized()
+			# Two cards per bough (flat and tilted) so it has body from any angle.
+			acc_bough(leaves, mid, right, up, length * 0.5, reach * 0.95, normal, color)
+			acc_bough(leaves, mid, right, (up + Vector3.UP * 0.9).normalized(), length * 0.5, reach * 0.55, normal, color)
+
+
+# Balsam fir (Abies balsamea), the New Brunswick provincial tree. From field
+# guides (Maine Forest Service, USDA FEIS, Wikipedia): a dense, narrow cone that
+# ends in a slender spire; branches leave the trunk at right angles in even
+# whorls, lower ones spreading and drooping, upper ones angled up; foliage lies
+# in flat sprays, so the crown looks layered; shiny dark green; smooth gray bark
+# that browns with age; dark purple cones stand upright on the top branches.
+# Trees in a stand keep a few dead, bare twigs below the live crown.
+# Owner's photos (2026-10-18): not as even as a pine; boughs differ in length
+# and some are missing, and low down the tree is often bare on one side and
+# thin on the other (dead twigs show through). Young trees are bright green and
+# darken with age (the tint is chosen per tree by height in flora_view.gd).
+# Variants: 0 the full open-grown "perfect" fir; 2 open grown but bare low on one
+# side; both open grown (live crown low, cone year), 1 and 3 stand grown
+# (higher, sparser live crown over a bare trunk). The open-grown shape follows
+# the owner's photo of a "perfect middle-aged" fir: a broad full skirt low down,
+# widest near the bottom, and a narrower, airy top whose boughs sweep upward
+# with sky showing between them.
+static func _balsam_fir(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, variant: int, far: bool) -> void:
+	var stand_grown: bool = variant % 2 == 1
+	var coning: bool = variant % 2 == 0 and not far
+	var age: float = rng.randf()
+	var tint: Color = BARK_TINT_FIR.lerp(BARK_TINT_SOFT, age * 0.2)
+	# Firs grow very straight; only a hint of lean.
+	var lean: Vector2 = Vector2(rng.randf_range(-0.012, 0.012), rng.randf_range(-0.012, 0.012)) * h
+	var trunk_r: float = maxf(trunk, h * 0.009)
+	_trunk(bark, rng, h * 0.985, trunk_r, trunk_r * 0.08, lean, tint, 5 if far else 7, 1 if far else 4, 0.0 if far else 0.5)
+	# Narrow crown: widest spread about a quarter to a third of the height.
+	var full_skirt: bool = variant == 0
+	var widest: float = maxf(crown, h * (0.15 if stand_grown else (0.22 if full_skirt else 0.19))) * rng.randf_range(0.9, 1.1)
+	var crown_base: float = h * (rng.randf_range(0.28, 0.4) if stand_grown else 0.0)
+	# Lowest live bough tips stay above 4 feet (1.3 m).
+	var y_low: float = maxf(crown_base, 1.3 + widest * 0.32)
+	var tiers: int = 11 if far else rng.randi_range(27, 30)
+	var per: int = 5 if far else 6
+	var phase: float = rng.randf() * TAU
+	var shade_top: float = rng.randf_range(0.95, 1.05)
+	# The lower crown is bare toward one side (shaded by neighbors or browsed) and
+	# thin on the other.
+	var bare_dir: float = rng.randf() * TAU
+	var low_zone: float = rng.randf_range(0.25, 0.4)
+	var gaps: float = 0.22 if stand_grown else (0.05 if full_skirt else 0.1)
+	var dead_tint: Color = Color(0.5, 0.48, 0.46)
+
+	for t in range(tiers):
+		var f: float = float(t) / float(tiers - 1)
+		# Whorls get closer toward the top, as yearly growth does on a crowded leader.
+		var y: float = lerpf(y_low, h * 0.93, 1.0 - pow(1.0 - f, 1.45))
+		var g: float = clampf((y - y_low) / (h - y_low), 0.0, 1.0)
+		# Straight-sided cone, a touch fuller in the middle, sharp spire on top.
+		var profile: float = pow(1.0 - g, 0.92) * (1.0 + 0.12 * sin(g * PI)) if stand_grown else pow(1.0 - g, 0.8)
+		var reach: float = (widest * profile + 0.12) * rng.randf_range(0.85, 1.12)
+		var low: float = clampf(1.0 - g / low_zone, 0.0, 1.0)   # 1 at the lowest whorl, 0 above the low zone
+		# Low boughs droop at the tip; high ones angle up toward the light.
+		var droop: float = lerpf(0.32, -0.25 if stand_grown else -0.55, g)
+		var center: Vector3 = Vector3(lean.x * pow(y / h, 2.0), y, lean.y * pow(y / h, 2.0))
+		phase += 2.4   # golden-angle turn per whorl, so boughs never line up in columns
+		var shade: float = lerpf(0.58, 1.0, g) * shade_top
+		var count: int = per if g < (0.8 if stand_grown else 0.5) else maxi(per - 2, 3)
+		var gap: float = (h * 0.93 - y_low) / float(tiers) * (2.0 - 1.45 * g)
+
+		if not far and (low < 0.3 or full_skirt) and (stand_grown or g < 0.55):
+			# Dark inner foliage around the trunk, so the crown reads as dense as a real
+			# fir's and the trunk only shows low down.
+			for k in range(3):
+				var turn: float = phase + PI * float(k) / 3.0
+				var right: Vector3 = Vector3(cos(turn), 0.0, sin(turn))
+				var inner: Color = Color(shade * 0.7, shade * 0.7, shade * 0.7, 0.3)
+				leaves.card(center, right, Vector3.UP, reach * 0.5, minf(gap * 0.75, maxf(y - 1.3, 0.1)), right.cross(Vector3.UP), inner)
+
+		for k in range(count):
+			var a: float = phase + TAU * (float(k) + rng.randf_range(-0.2, 0.2)) / float(count)
+			var out: Vector3 = Vector3(cos(a), 0.0, sin(a))
+			var r: float = reach * rng.randf_range(0.65, 1.12)
+			var facing: float = cos(a - bare_dir)
+			# Bare side: most low boughs gone; thin side: some gone, the rest shorter.
+			var lose: float = gaps + (0.0 if full_skirt else low * (0.85 if facing > 0.25 else 0.35))
+
+			if rng.randf() < lose:
+				if not far and rng.randf() < 0.6:
+					var stub: Vector3 = center + Vector3(0.0, -0.05, 0.0)
+					_branch(bark, stub, stub + (out + Vector3(0.0, -0.15, 0.0)) * r * rng.randf_range(0.3, 0.7), trunk_r * 0.07, 0.01, dead_tint, 3)
+				continue
+
+			r *= 1.0 - low * 0.3 * maxf(-facing, 0.0)
+			var side: Vector3 = out.cross(Vector3.UP).normalized()
+			var c: Color = Color(shade * rng.randf_range(0.93, 1.05), shade, shade, 0.6)
+			# Two segments: a level inner run, then the outer run that droops or lifts.
+			var knee: Vector3 = center + out * r * 0.55 + Vector3(0.0, -r * droop * 0.15, 0.0)
+			var tip: Vector3 = center + out * r + Vector3(0.0, -r * droop, 0.0)
+			# The lowest boughs flatten out rather than hang into the bare bottom 4 feet.
+			tip.y = maxf(tip.y, 1.45)
+
+			if not far and g < 0.7:
+				_branch(bark, center, knee, trunk_r * lerpf(0.22, 0.08, g), trunk_r * 0.04, tint, 4)
+
+			for seg in range(2):
+				var p0: Vector3 = center if seg == 0 else knee
+				var p1: Vector3 = knee if seg == 0 else tip
+				var axis: Vector3 = p1 - p0
+				var length: float = axis.length()
+				var along: Vector3 = axis / length
+				var width: float = r * (0.5 if seg == 0 else 0.42) * (1.0 if stand_grown else lerpf(1.0, 0.7, g))
+				var normal: Vector3 = (out * 0.6 + Vector3.UP * 0.8).normalized()
+				# A flat spray, the fir's layered look, plus a steeper card for body seen side-on.
+				leaves.card((p0 + p1) * 0.5, along, side, length * 0.55, width, normal, c)
+				if seg == 1 or far:
+					var steep: Vector3 = (side + Vector3.UP * 1.2).normalized()
+					var mid: Vector3 = (p0 + p1) * 0.5
+					# Keep the hanging card's lower edge above 4 feet as well.
+					var half: float = minf(maxf(width * 0.6, gap * 0.8), maxf(mid.y - absf(along.y) * length * 0.55 - 1.3, 0.1) / steep.y)
+					leaves.card(mid, along, steep, length * 0.55, half, normal, c)
+
+	# The spire: a slim leader standing clear of the last whorl.
+	var top: Vector3 = Vector3(lean.x, h, lean.y)
+	var spire: Color = Color(shade_top, shade_top, shade_top, 0.6)
+	for k in range(2):
+		var turn: float = phase + PI * 0.5 * float(k)
+		leaves.card(top - Vector3(0.0, h * 0.04, 0.0), Vector3(cos(turn), 0.0, sin(turn)), Vector3.UP, widest * 0.035 + 0.05, h * 0.045, Vector3.UP, spire)
+
+	if not far and stand_grown:
+		# Dead lower branches: short gray spikes under the live crown.
+		var dy: float = 1.6
+		while dy < crown_base - 0.4:
+			for k in range(rng.randi_range(2, 4)):
+				var a: float = rng.randf() * TAU
+				var out: Vector3 = Vector3(cos(a), rng.randf_range(-0.25, 0.05), sin(a)).normalized()
+				var from: Vector3 = Vector3(lean.x * pow(dy / h, 2.0), dy, lean.y * pow(dy / h, 2.0))
+				_branch(bark, from, from + out * rng.randf_range(0.4, 1.2) * (1.0 - dy / h), trunk_r * 0.08, 0.01, dead_tint, 3)
+			dy += rng.randf_range(0.5, 0.9)
+
+	if coning:
+		# Upright cones in rows along the tops of the highest boughs.
+		for n in range(rng.randi_range(26, 40)):
+			var g: float = rng.randf_range(0.7, 0.94)
+			var y: float = lerpf(y_low, h * 0.93, g)
+			var reach: float = widest * pow(1.0 - (y - y_low) / (h - y_low), 0.92) + 0.12
+			var a: float = rng.randf() * TAU
+			var base: Vector3 = Vector3(cos(a), 0.0, sin(a)) * reach * rng.randf_range(0.3, 0.75) + Vector3(lean.x, y + 0.03, lean.y)
+			# A little larger than life (real cones 4 to 8 cm) so they read in the storybook look.
+			var tip_len: float = rng.randf_range(0.12, 0.16)
+			_branch(bark, base, base + Vector3(0.0, tip_len, 0.0), 0.04, 0.028, CONE_TINT_FIR, 5)
+
+
+# Birch (Betula papyrifera / pendula). From the owner's photos (2026-10-18,
+# summer, autumn and winter beside a lake) and field guides: one slim, slightly
+# leaning chalk-white trunk with dark lenticel dashes and black patches, turning
+# black and rough at the foot of old trees; the trunk carries on as a leader
+# into the top. Limbs leave at a steep angle, arch outward and droop at the
+# tips, and fine dark red-brown twigs hang from them in curtains, so the crown
+# is an airy, open oval with sky showing through. Small leaves, light green in
+# summer, golden yellow in autumn (the tint, flora_view.gd); bare in winter,
+# when the hanging twigs show as a fine dark haze.
+# Variants: 0 open grown (crown low and broad, like the photos), 1 stand grown
+# (crown high and narrow over a long clear trunk), 2 open grown and leaning
+# (the summer photo), 3 stand grown and leaning.
+static func _birch(white: Acc, bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, variant: int, far: bool, bare: bool) -> void:
+	var stand_grown: bool = variant % 2 == 1
+	var leaning: bool = variant >= 2
+	var lean_m: float = h * (rng.randf_range(0.1, 0.14) if leaning else rng.randf_range(0.01, 0.035))
+	var lean_az: float = rng.randf() * TAU
+	var lean: Vector2 = Vector2(cos(lean_az), sin(lean_az)) * lean_m
+	var trunk_r: float = maxf(trunk, h * 0.015)
+	var first: int = white.v.size()
+	var sides: int = 5 if far else 8
+	var rings: int = 1 if far else 12
+	_trunk(white, rng, h * 0.9, trunk_r, trunk_r * 0.14, lean, BARK_TINT_BIRCH, sides, rings, 0.0 if far else 0.7)
+
+	if not far:
+		# The foot of an old birch goes black and rough in ragged tongues: the
+		# lowest ring is mostly black, the next one only flecked.
+		for k in range(first, white.v.size()):
+			@warning_ignore("integer_division")
+			var ring: int = (k - first) / (sides + 1)
+			var dark: float = 0.0
+			if ring == 0:
+				dark = rng.randf_range(0.55, 0.95)
+			elif ring == 1:
+				dark = rng.randf_range(0.0, 0.4)
+			white.c[k] = BARK_TINT_BIRCH.lerp(Color(0.16, 0.15, 0.14), dark)
+
+	var crown_base: float = h * (rng.randf_range(0.3, 0.36) if stand_grown else rng.randf_range(0.2, 0.26))
+	var crown_w: float = maxf(crown * (1.0 if stand_grown else 1.35), h * (0.17 if stand_grown else 0.3)) * rng.randf_range(0.9, 1.1)
+	var limbs: int = 7 if far else rng.randi_range(13, 17)
+	var phase: float = rng.randf() * TAU
+	var axis_at := func(y: float) -> Vector3:
+		var t: float = y / (h * 0.9)
+		return Vector3(lean.x * t * t, y, lean.y * t * t)
+
+	for k in range(limbs):
+		var g: float = (float(k) + rng.randf_range(0.0, 0.8)) / float(limbs)
+		var y0: float = lerpf(crown_base, h * 0.86, g)
+		phase += 2.4   # golden-angle turn, so limbs never line up in columns
+		var out: Vector3 = Vector3(cos(phase), 0.0, sin(phase))
+		# Oval crown: limbs longest a third of the way up, short at the top.
+		var prof: float = pow(sin(PI * clampf(0.12 + 0.88 * g, 0.0, 1.0) * 0.92 + 0.08), 0.8)
+		var length: float = crown_w * maxf(prof, 0.25) * rng.randf_range(0.8, 1.15)
+		# Leaning trees reach farther on their lean side.
+		length *= 1.0 + 0.25 * out.dot(Vector3(lean.x, 0.0, lean.y).normalized()) * (1.0 if leaning else 0.0)
+		var rise0: float = deg_to_rad(lerpf(52.0, 68.0, g) + rng.randf_range(-6.0, 6.0))
+		var rise1: float = deg_to_rad(lerpf(14.0, 40.0, g) + rng.randf_range(-6.0, 6.0))
+		var droop: float = lerpf(0.45, 0.1, g) * rng.randf_range(0.8, 1.2)
+		var p0: Vector3 = axis_at.call(y0)
+		var p1: Vector3 = p0 + (out * cos(rise0) + Vector3.UP * sin(rise0)) * length * 0.42
+		var p2: Vector3 = p1 + (out * cos(rise1) + Vector3.UP * sin(rise1)) * length * 0.4
+		var p3: Vector3 = p2 + out * length * 0.28 - Vector3.UP * length * droop * 0.5
+		p1.y = minf(p1.y, h * 0.97)
+		p2.y = minf(p2.y, h * 0.98)
+		p3.y = minf(p3.y, h * 0.96)
+
+		if not far:
+			var r0: float = trunk_r * lerpf(0.42, 0.22, g)
+			_branch(white, p0, p1, r0, r0 * 0.6, BARK_TINT_BIRCH, 6)
+			_branch(white, p1, p2, r0 * 0.6, r0 * 0.3, BARK_TINT_BIRCH, 5)
+			_branch(bark, p2, p3, r0 * 0.3, 0.01, TWIG_TINT_BIRCH, 4)
+
+		var shade: float = lerpf(0.72, 1.0, clampf((p2.y - crown_base) / (h - crown_base), 0.0, 1.0)) * rng.randf_range(0.92, 1.06)
+		var curtains: int = 3 if far else 9
+
+		# Hanging curtains of twigs and leaves along the outer part of the limb.
+		for m in range(curtains):
+			var t: float = lerpf(0.25, 1.0, float(m) / float(curtains - 1))
+			var top: Vector3 = p1.lerp(p2, t * 2.0) if t < 0.5 else p2.lerp(p3, (t - 0.5) * 2.0)
+			top += Vector3(rng.randfn(), rng.randfn() * 0.3, rng.randfn()) * length * 0.1
+			var hang: float = minf(length * rng.randf_range(0.3, 0.5) * lerpf(1.0, 0.6, g) + 0.4, top.y - 1.8)
+
+			if hang < 0.3:
+				continue
+
+			var away: Vector3 = Vector3(top.x - p0.x, 0.0, top.z - p0.z).normalized()
+			var normal: Vector3 = (away * 0.8 + Vector3.UP * 0.3).normalized()
+			var yaw: float = phase + rng.randf_range(-0.6, 0.6)
+
+			for c in range(1 if far else 2):
+				var turn: float = yaw + PI * 0.5 * float(c)
+				var right: Vector3 = Vector3(cos(turn), 0.0, sin(turn))
+				var down: Vector3 = (Vector3.UP + right * rng.randf_range(-0.1, 0.1)).normalized()
+				var center: Vector3 = top - down * hang * 0.5 + away * hang * 0.08
+				var half_w: float = hang * rng.randf_range(0.22, 0.32) * (1.6 if far else 1.0)
+
+				if bare:
+					var tw: float = rng.randf_range(0.85, 1.1)
+					twigs.card(center, right, down, half_w, hang * 0.5, normal, Color(tw, tw, tw, 0.3))
+				else:
+					var leaf_c: Color = Color(shade, shade, shade, rng.randf_range(0.75, 1.0))
+					leaves.card(center, right, down, half_w, hang * 0.5, normal, leaf_c)
+
+		if not bare:
+			# Leafy body along the limb, so the crown has some fullness from afar.
+			for m in range(1 if far else 2):
+				var at: Vector3 = p1.lerp(p3, rng.randf_range(0.5, 1.0)) + Vector3(0.0, length * 0.05, 0.0)
+				_clump(leaves, rng, at, axis_at.call(at.y - crown_w * 0.3), length * rng.randf_range(0.22, 0.32) * (1.8 if far else 1.0), shade, 2 if far else 3)
+		elif not far:
+			# Bare upright twig sprays at the limb's end.
+			var tip_up: Vector3 = p3 + Vector3(0.0, length * 0.12, 0.0)
+			for c in range(2):
+				var turn: float = phase + PI * 0.5 * float(c)
+				twigs.card(tip_up, Vector3(cos(turn), 0.0, sin(turn)), Vector3.DOWN, length * 0.2, length * 0.18, Vector3.UP, Color(1.0, 1.0, 1.0, 0.3))
+
+	# The leader's top: a narrow spray, leafy or bare.
+	var crest: Vector3 = axis_at.call(h * 0.9) + Vector3(0.0, h * 0.05, 0.0)
+	for c in range(2):
+		var turn: float = phase + PI * 0.5 * float(c)
+		var right: Vector3 = Vector3(cos(turn), 0.0, sin(turn))
+		if bare:
+			twigs.card(crest, right, Vector3.DOWN, h * 0.035, h * 0.07, Vector3.UP, Color(1.0, 1.0, 1.0, 0.3))
+		else:
+			leaves.card(crest, right, Vector3.UP, crown_w * 0.12, h * 0.06, Vector3.UP, Color(1.0, 1.0, 1.0, 0.9))
+
+
+# Maple (sugar maple, Acer saccharum). From the owner's photos (2026-10-18,
+# summer, autumn and winter beside a lake) and field guides: a stout, straight
+# gray-brown trunk with furrowed bark that forks about a third of the way up
+# into a few big limbs climbing steeply in a vase, which split again and again
+# into a dense, broad, rounded crown reaching low on open-grown trees. Leaves
+# fresh green in summer, fiery red, orange and yellow in autumn (the tint,
+# flora_view.gd); in winter the bare crown is a fine upright web of twigs.
+# Owner's sugar maple photos (2026-10-18, young and mature in four seasons):
+# five-lobed leaves (leaf_maple.png); a young maple is a slim, pale stem with
+# an airy upright crown of climbing limbs.
+# Variants: 0 open grown (broad, low crown), 1 stand grown (taller clear trunk,
+# narrower crown), 2 and 3 young (young_below_m picks them).
+static func _maple(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, variant: int, far: bool, bare: bool) -> void:
+	if variant >= 2:
+		var drift: Vector3 = Vector3(rng.randf_range(-0.02, 0.02), 0.0, rng.randf_range(-0.02, 0.02)) * h
+		_pole(bark, leaves, twigs, rng, Vector3.ZERO, Vector3(0.0, h * 0.95, 0.0) + drift, maxf(trunk * 0.5, h * 0.014), maxf(crown * 0.7, h * 0.26), h * rng.randf_range(0.25, 0.32), 8 if far else rng.randi_range(13, 16), 0.8, BARK_TINT_MAPLE.lerp(Color(0.6, 0.57, 0.52), 0.6), far, bare, 0.3)
+		return
+
+	var stand_grown: bool = variant % 2 == 1
+	var trunk_r: float = maxf(trunk, h * 0.022)
+	var fork_y: float = h * (rng.randf_range(0.36, 0.44) if stand_grown else rng.randf_range(0.26, 0.34))
+	var lean: Vector2 = Vector2(rng.randf_range(-0.03, 0.03), rng.randf_range(-0.03, 0.03)) * h
+	var sides: int = 5 if far else 9
+	_trunk(bark, rng, fork_y + h * 0.04, trunk_r, trunk_r * 0.72, lean, BARK_TINT_MAPLE, sides, 1 if far else 4, 0.0 if far else 1.1)
+	var fork: Vector3 = Vector3(lean.x, fork_y, lean.y)
+	var crown_w: float = maxf(crown, h * (0.24 if stand_grown else 0.36)) * rng.randf_range(0.92, 1.08)
+	# The crown is an egg standing on the fork: wide low down, round on top.
+	var center: Vector3 = Vector3(lean.x, lerpf(fork_y, h, 0.45), lean.y)
+	var limbs: int = rng.randi_range(4, 6)
+	var phase: float = rng.randf() * TAU
+
+	for k in range(limbs):
+		phase += TAU / float(limbs) + rng.randf_range(-0.4, 0.4)
+		var out: Vector3 = Vector3(cos(phase), 0.0, sin(phase))
+		# The middle limb carries on as the leader; the rest lean out in a vase.
+		var rise: float = deg_to_rad(82.0 if k == 0 else rng.randf_range(45.0, 60.0))
+		var from: Vector3 = fork + Vector3(0.0, rng.randf_range(-0.05, 0.03) * h, 0.0)
+		var dir: Vector3 = (out * cos(rise) + Vector3.UP * sin(rise)).normalized()
+		var length: float = (h - fork_y) * (0.24 if k == 0 else rng.randf_range(0.17, 0.22))
+		_maple_limb(bark, leaves, twigs, rng, from, dir, length, trunk_r * (0.62 if k == 0 else 0.5), 0, 2 if far else 3, center, crown_w, h, far, bare)
+
+	# Low skirt limbs (owner, 2026-10-18: hardwood crowns cover the top three
+	# quarters of the tree): they leave the trunk near level and droop at the ends.
+	_skirt_limbs(rng, fork_y, lean, trunk_r, crown_w, far, func(from: Vector3, dir: Vector3, length: float, r: float) -> void:
+		_maple_limb(bark, leaves, twigs, rng, from, dir, length, r, 0, 1 if far else 2, center, crown_w, h, far, bare, -0.3))
+
+
+# One limb of a maple: a tube, then two or three smaller limbs from its end that
+# spread and turn up toward the light, until the last twigs carry the leaves.
+static func _maple_limb(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, from: Vector3, dir: Vector3, length: float, r: float, depth: int, last: int, center: Vector3, crown_w: float, h: float, far: bool, bare: bool, climb: float = 0.2, tint: Color = BARK_TINT_MAPLE) -> void:
+	var to: Vector3 = from + dir * length
+	# Keep the crown inside its egg: pull tips that wander out back toward it.
+	var rel: Vector3 = to - center
+	var half_h: float = (h - center.y) * 1.02
+	var low_h: float = maxf(center.y - h * 0.25, 1.0)
+	var e: float = pow(Vector2(rel.x, rel.z).length() / crown_w, 2.0) + pow(rel.y / (half_h if rel.y > 0.0 else low_h), 2.0)
+	if e > 1.0:
+		to = center + rel / sqrt(e)
+	to.y = minf(to.y, h)
+
+	if not far:
+		_branch(bark, from, to, r, r * 0.62, tint, 6 if depth == 0 else (5 if depth == 1 else 4))
+
+	var shade: float = lerpf(0.66, 1.0, clampf((to.y - (center.y - half_h)) / (2.0 * half_h), 0.0, 1.0)) * rng.randf_range(0.92, 1.06)
+
+	if not bare and depth < last:
+		# Leaves all along the inner limbs too, so the crown is full down to the fork.
+		_clump(leaves, rng, to + (to - center).normalized() * crown_w * 0.08, center, crown_w * (0.5 if far else 0.3), shade * 0.88, 2 if far else 3)
+
+	if depth >= last:
+
+		if bare:
+			if not far:
+				# A fine web of twigs standing up from the tip.
+				var yaw: float = rng.randf() * PI
+				for c in range(2):
+					var turn: float = yaw + PI * 0.5 * float(c)
+					twigs.card(to + Vector3(0.0, length * 0.45, 0.0), Vector3(cos(turn), 0.0, sin(turn)), Vector3.DOWN, length * 0.6, length * 0.55, (to - center).normalized(), Color(1.0, 1.0, 1.0, 0.3))
+		else:
+			var size: float = crown_w * (0.5 if far else 0.3) * rng.randf_range(0.85, 1.15)
+			_clump(leaves, rng, to, center, size, shade, 2 if far else 3)
+			if not far:
+				_clump(leaves, rng, from.lerp(to, 0.5) + (to - center).normalized() * size * 0.2, center, size * 0.8, shade * 0.85, 2)
+		return
+
+	var kids: int = 3 if depth == 0 else (rng.randi_range(2, 3) if depth == 1 else 2)
+	var az: float = rng.randf() * TAU
+
+	for k in range(kids):
+		az += TAU / float(kids) + rng.randf_range(-0.5, 0.5)
+		var side: Vector3 = Vector3(cos(az), 0.0, sin(az))
+		# Children spread from the parent, outward from the crown's middle, and up.
+		var away: Vector3 = Vector3(to.x - center.x, 0.0, to.z - center.z)
+		away = away.normalized() if away.length() > 0.01 else side
+		var d: Vector3 = (dir * 0.9 + side * 0.7 + away * 0.6 + Vector3.UP * climb).normalized()
+		_maple_limb(bark, leaves, twigs, rng, to, d, length * rng.randf_range(0.85, 1.0), r * 0.62, depth + 1, last, center, crown_w, h, far, bare, climb + 0.15, tint)
+
+
+# Wardpine (fantasy, owner's picture 2026-10-18: summer, autumn, winter). An
+# ancient, massive pine: a short, thick, twisting trunk with deep ropey ridges
+# and great roots gripping the ground, heavy crooked limbs leaving it from low
+# down, and a broad, rounded cone of crown built from layered pads of tufted
+# needles that turn up at the ends. Unlike any real pine its needles turn fiery
+# orange, red and gold in autumn (autumn_colors in flora.json, picked like a
+# hardwood's), and it keeps them through winter.
+# Variants: 0 and 2 full and broad, 1 and 3 taller and narrower; 2 and 3 lean.
+static func _wardpine(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, variant: int, far: bool) -> void:
+	var narrow: bool = variant % 2 == 1
+	var trunk_r: float = maxf(trunk, h * 0.03)
+	var lean: Vector2 = Vector2(rng.randf_range(-1.0, 1.0), rng.randf_range(-1.0, 1.0)).normalized() * h * (rng.randf_range(0.03, 0.05) if variant >= 2 else 0.01)
+	var first: int = bark.v.size()
+	var sides: int = 6 if far else 12
+	var rings: int = 1 if far else 10
+	_trunk(bark, rng, h * 0.88, trunk_r, trunk_r * 0.2, lean, BARK_TINT_WARDPINE, sides, rings, 0.0 if far else 0.9)
+
+	if not far:
+		# Twisting ropey ridges: push the trunk's surface in and out in a slow spiral.
+		var twist: float = rng.randf_range(0.25, 0.45) * (1.0 if rng.randf() < 0.5 else -1.0)
+		for k in range(first, bark.v.size()):
+			var n: Vector3 = bark.n[k]
+			var y: float = bark.v[k].y
+			var a: float = atan2(n.z, n.x)
+			var ridge: float = sin(a * 6.0 + y * twist) * 0.6 + sin(a * 11.0 - y * twist * 1.7) * 0.4
+			bark.v[k] += n * ridge * trunk_r * 0.09 * (1.0 - clampf(y / h, 0.0, 0.8))
+			var shade: float = 1.0 + ridge * 0.12
+			bark.c[k] = Color(BARK_TINT_WARDPINE.r * shade, BARK_TINT_WARDPINE.g * shade, BARK_TINT_WARDPINE.b * shade)
+
+		# Great roots spreading over the ground.
+		var root_az: float = rng.randf() * TAU
+		for k in range(rng.randi_range(5, 7)):
+			root_az += TAU / 6.0 + rng.randf_range(-0.3, 0.3)
+			var out: Vector3 = Vector3(cos(root_az), 0.0, sin(root_az))
+			var reach: float = trunk_r * rng.randf_range(2.2, 3.4)
+			var knee: Vector3 = out * trunk_r * 1.4 + Vector3(0.0, trunk_r * 0.5, 0.0)
+			_branch(bark, out * trunk_r * 0.5 + Vector3(0.0, trunk_r * 1.4, 0.0), knee, trunk_r * 0.45, trunk_r * 0.3, BARK_TINT_WARDPINE, 6)
+			_branch(bark, knee, out * reach + Vector3(0.0, -0.15, 0.0), trunk_r * 0.3, 0.04, BARK_TINT_WARDPINE, 5)
+
+	var crown_base: float = h * (rng.randf_range(0.22, 0.3) if narrow else rng.randf_range(0.16, 0.24))
+	var crown_w: float = maxf(crown * 2.0, h * (0.24 if narrow else 0.32)) * rng.randf_range(0.92, 1.08)
+	var limbs: int = 12 if far else rng.randi_range(22, 26)
+	var phase: float = rng.randf() * TAU
+
+	for k in range(limbs):
+		var g: float = (float(k) + rng.randf_range(0.0, 0.7)) / float(limbs)
+		var y0: float = lerpf(crown_base, h * 0.86, g)
+		phase += 2.4   # golden-angle turn
+		var out: Vector3 = Vector3(cos(phase), 0.0, sin(phase))
+		# A rounded cone: widest a third of the way up the crown, narrowing to the top.
+		var prof: float = pow(1.0 - g, 0.7) * (0.8 + 0.35 * sin(PI * minf(g * 1.6, 1.0)))
+		var length: float = crown_w * maxf(prof, 0.18) * rng.randf_range(0.85, 1.12)
+		var t: float = y0 / (h * 0.88)
+		var p0: Vector3 = Vector3(lean.x * t * t, y0, lean.y * t * t)
+		# Crooked: the limb leaves level or a little up, kinks, then turns up at the end.
+		var bend: Vector3 = Vector3(-out.z, 0.0, out.x) * rng.randf_range(-0.3, 0.3)
+		var p1: Vector3 = p0 + (out + bend + Vector3.UP * rng.randf_range(0.1, 0.35)).normalized() * length * 0.5
+		var p2: Vector3 = p1 + (out - bend * 0.5 + Vector3.UP * rng.randf_range(-0.05, 0.25)).normalized() * length * 0.35
+		var p3: Vector3 = p2 + (out * 0.6 + Vector3.UP * 0.8).normalized() * length * 0.18
+
+		if not far:
+			var r0: float = trunk_r * lerpf(0.36, 0.14, g)
+			_branch(bark, p0, p1, r0, r0 * 0.7, BARK_TINT_WARDPINE, 6)
+			_branch(bark, p1, p2, r0 * 0.7, r0 * 0.4, BARK_TINT_WARDPINE, 5)
+			_branch(bark, p2, p3, r0 * 0.4, r0 * 0.15, BARK_TINT_WARDPINE, 4)
+
+		var shade_k: float = lerpf(0.66, 1.0, g) * rng.randf_range(0.92, 1.06)
+
+		if not far:
+			# Dark inner needles on the limb's first half, so the crown reads as dense.
+			var inner: Vector3 = p0.lerp(p1, 0.6) + Vector3(0.0, length * 0.05, 0.0)
+			var right_i: Vector3 = (out + Vector3.UP * 0.15).normalized()
+			leaves.card(inner, right_i, Vector3(-out.z, 0.0, out.x), length * 0.3, length * 0.25, Vector3.UP, Color(shade_k * 0.75, shade_k * 0.75, shade_k * 0.75, 0.3))
+			leaves.card(inner, right_i, (Vector3(-out.z, 0.0, out.x) + Vector3.UP).normalized(), length * 0.3, length * 0.22, (out + Vector3.UP).normalized(), Color(shade_k * 0.75, shade_k * 0.75, shade_k * 0.75, 0.3))
+
+		var pads: int = 3 if far else 7
+
+		# Pads of tufted needles along the outer limb and on short side shoots.
+		for m in range(pads):
+			var f: float = lerpf(0.3, 1.0, float(m) / float(pads - 1))
+			var at: Vector3 = p1.lerp(p2, f * 2.0 - 0.6) if f < 0.8 else p2.lerp(p3, (f - 0.8) * 5.0)
+			var side: Vector3 = Vector3(-out.z, 0.0, out.x) * rng.randf_range(-0.7, 0.7) * length * 0.25
+			at += side + Vector3(0.0, length * 0.04, 0.0)
+			var size: float = length * rng.randf_range(0.45, 0.6) * (1.4 if far else 1.0) + 0.6
+			var c: Color = Color(shade_k, shade_k, shade_k, 0.4)
+			var yaw: float = phase + rng.randf_range(-0.8, 0.8)
+
+			for q in range(2 if far else 3):
+				var turn: float = yaw + PI * float(q) / 3.0
+				var right: Vector3 = Vector3(cos(turn), 0.0, sin(turn))
+				# A flat pad, then tilted ones that give it body side-on, tips turned up.
+				var up: Vector3 = Vector3(-right.z, 0.0, right.x)
+				if q > 0:
+					up = (up + Vector3.UP * (0.9 if q == 1 else -0.9)).normalized()
+				leaves.card(at, (right + Vector3.UP * 0.25).normalized(), up, size * 0.5, size * 0.4, (out * 0.6 + Vector3.UP * 0.8).normalized(), c)
+
+	# The crown's top: a few upturned tufts on the leader.
+	var top: Vector3 = Vector3(lean.x, h * 0.9, lean.y)
+	for q in range(3):
+		var turn: float = phase + PI * float(q) / 3.0
+		leaves.card(top, Vector3(cos(turn), 0.0, sin(turn)), Vector3.UP, crown_w * 0.18 + 0.3, h * 0.07, Vector3.UP, Color(1.0, 1.0, 1.0, 0.4))
+
+
+# Scots pine (Pinus sylvestris). From the owner's photos (2026-10-18, summer,
+# autumn and winter beside a lake; evergreen, so the same in every season) and
+# field guides: a tall, straight trunk, bare for half its height, with thick
+# gray-brown plated bark low down turning to thin, glowing orange-red bark
+# higher up and on the limbs; long limbs leave the trunk nearly level, curve up
+# at their ends and carry blue-green needles in tufts at the tips, so the crown
+# is an open, irregular, round-topped dome with sky between the tufts. A few
+# dead stubs stay on the bare trunk.
+# Variants: 0 open grown (wide crown from about a third of the way up), 1 stand
+# grown (small crown high on a long bare trunk), 2 and 3 the same leaning.
+static func _scots_pine(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, variant: int, far: bool) -> void:
+	var stand_grown: bool = variant % 2 == 1
+	var lean_m: float = h * (rng.randf_range(0.04, 0.06) if variant >= 2 else rng.randf_range(0.005, 0.02))
+	var lean_az: float = rng.randf() * TAU
+	var lean: Vector2 = Vector2(cos(lean_az), sin(lean_az)) * lean_m
+	var trunk_r: float = maxf(trunk, h * 0.018)
+	var trunk_h: float = h * 0.93
+	var first: int = bark.v.size()
+	_trunk(bark, rng, trunk_h, trunk_r, trunk_r * 0.15, lean, BARK_TINT_PINE_LOW, 5 if far else 8, 2 if far else 10, 0.0 if far else 0.5)
+	# Gray-brown plates low down give way to orange-red bark above.
+	var change: float = h * rng.randf_range(0.32, 0.42)
+
+	for k in range(first, bark.v.size()):
+		var t: float = smoothstep(change - h * 0.08, change + h * 0.08, bark.v[k].y)
+		bark.c[k] = BARK_TINT_PINE_LOW.lerp(BARK_TINT_PINE_HIGH, t)
+
+	var axis_at := func(y: float) -> Vector3:
+		var t: float = y / trunk_h
+		return Vector3(lean.x * t * t, y, lean.y * t * t)
+	var crown_base: float = h * (rng.randf_range(0.55, 0.65) if stand_grown else rng.randf_range(0.32, 0.42))
+	var crown_w: float = maxf(crown * (0.9 if stand_grown else 1.3), h * (0.16 if stand_grown else 0.31)) * rng.randf_range(0.9, 1.1)
+	var limbs: int = 9 if far else rng.randi_range(14, 18)
+	var phase: float = rng.randf() * TAU
+
+	for k in range(limbs):
+		var g: float = (float(k) + rng.randf_range(0.0, 0.8)) / float(limbs)
+		var y0: float = lerpf(crown_base, h * 0.88, g)
+		phase += 2.4   # golden-angle turn
+		var out: Vector3 = Vector3(cos(phase), 0.0, sin(phase))
+		# Round-topped dome: limbs longest a little below the middle of the crown.
+		var prof: float = sin(PI * clampf(0.2 + 0.8 * g, 0.0, 1.0))
+		var length: float = crown_w * maxf(prof, 0.22) * rng.randf_range(0.75, 1.2)
+		var p0: Vector3 = axis_at.call(y0)
+		# Nearly level, the low limbs dipping a little, then curving up at the end.
+		var p1: Vector3 = p0 + (out + Vector3.UP * lerpf(-0.1, 0.45, g) + Vector3(rng.randfn(), 0.0, rng.randfn()) * 0.1).normalized() * length * 0.6
+		var p2: Vector3 = p1 + (out + Vector3.UP * lerpf(0.35, 0.9, g)).normalized() * length * 0.45
+		p2.y = minf(p2.y, h * 0.98)
+		var tint: Color = BARK_TINT_PINE_LOW.lerp(BARK_TINT_PINE_HIGH, smoothstep(change - h * 0.08, change + h * 0.08, y0))
+
+		if not far:
+			var r0: float = trunk_r * lerpf(0.3, 0.15, g)
+			_branch(bark, p0, p1, r0, r0 * 0.6, tint, 5)
+			_branch(bark, p1, p2, r0 * 0.6, r0 * 0.25, tint, 4)
+
+		var shade: float = lerpf(0.72, 1.0, g) * rng.randf_range(0.92, 1.06)
+		var tufts: int = 3 if far else rng.randi_range(5, 7)
+
+		# Tufts of needles at the ends of short side shoots on the outer limb.
+		for m in range(tufts):
+			var f: float = lerpf(0.35, 1.0, float(m) / float(tufts - 1))
+			var on: Vector3 = p0.lerp(p1, f * 1.7) if f < 0.6 else p1.lerp(p2, (f - 0.6) / 0.4)
+			var side: Vector3 = (Vector3(-out.z, 0.0, out.x) * rng.randf_range(-1.0, 1.0) + out * 0.4).normalized()
+			var at: Vector3 = on + side * length * rng.randf_range(0.08, 0.2) + Vector3(0.0, length * 0.05, 0.0)
+
+			if not far and m % 2 == 0:
+				_branch(bark, on, at, 0.03, 0.015, tint, 3)
+
+			var size: float = (length * rng.randf_range(0.28, 0.38) + 0.5) * (1.5 if far else 1.0)
+			var c: Color = Color(shade, shade, shade, 0.45)
+			var yaw: float = rng.randf() * PI
+
+			for q in range(2 if far else 3):
+				var turn: float = yaw + PI * float(q) / 3.0
+				var right: Vector3 = Vector3(cos(turn), 0.0, sin(turn))
+				# A tuft: a flat pad and two steep cards with their tips turned up.
+				var up: Vector3 = Vector3(-right.z, 0.0, right.x) if q == 0 else (Vector3(-right.z, 0.0, right.x) * 0.4 + Vector3.UP).normalized()
+				leaves.card(at, right, up, size * 0.5, size * (0.42 if q == 0 else 0.3), (side * 0.5 + Vector3.UP).normalized(), c)
+
+	# The top: a tuft on the leader.
+	var top: Vector3 = axis_at.call(trunk_h)
+	for q in range(3):
+		var turn: float = phase + PI * float(q) / 3.0
+		leaves.card(top, Vector3(cos(turn), 0.0, sin(turn)), Vector3.UP, crown_w * 0.15 + 0.3, h * 0.04, Vector3.UP, Color(1.0, 1.0, 1.0, 0.45))
+
+	if not far:
+		# Dead stubs on the bare trunk below the crown.
+		var dy: float = 2.0
+		while dy < crown_base - 0.5:
+			var a: float = rng.randf() * TAU
+			var from: Vector3 = axis_at.call(dy)
+			_branch(bark, from, from + Vector3(cos(a), rng.randf_range(-0.2, 0.1), sin(a)).normalized() * rng.randf_range(0.2, 0.6), trunk_r * 0.12, 0.01, BARK_TINT_PINE_LOW, 3)
+			dy += rng.randf_range(1.0, 2.2)
+
+
+# Spruce (Norway spruce, Picea abies). From the owner's photos (2026-10-18,
+# summer, autumn and winter beside a lake; evergreen) and field guides: a
+# straight brown trunk under a narrow, dense, dark green cone ending in a sharp
+# spire. Boughs leave the trunk sloping down, then turn up at their ends (the
+# owner's point); fine branchlets hang below them in curtains, so each bough
+# reads as a drooping skirt with an upturned lip. Full almost to the ground on
+# open-grown trees (the bottom 4 feet stay bare, as for every conifer).
+# Variants: 0 and 2 open grown (full to the ground), 1 and 3 stand grown (live
+# crown higher up); 2 and 3 a little slimmer.
+static func _spruce(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, variant: int, far: bool) -> void:
+	var stand_grown: bool = variant % 2 == 1
+	var lean: Vector2 = Vector2(rng.randf_range(-0.012, 0.012), rng.randf_range(-0.012, 0.012)) * h
+	var trunk_r: float = maxf(trunk, h * 0.012)
+	_trunk(bark, rng, h * 0.97, trunk_r, trunk_r * 0.08, lean, BARK_TINT_SOFT, 5 if far else 7, 1 if far else 4, 0.0 if far else 0.6)
+	var widest: float = maxf(crown, h * (0.13 if variant >= 2 else 0.16)) * rng.randf_range(0.92, 1.08)
+	var crown_base: float = h * (rng.randf_range(0.3, 0.42) if stand_grown else 0.0)
+	var y_low: float = maxf(crown_base, 1.3 + widest * 0.25)
+	var tiers: int = 12 if far else rng.randi_range(26, 30)
+	var per: int = 5 if far else 7
+	var phase: float = rng.randf() * TAU
+	var shade_top: float = rng.randf_range(0.95, 1.05)
+
+	for t in range(tiers):
+		var f: float = float(t) / float(tiers - 1)
+		var y: float = lerpf(y_low, h * 0.92, 1.0 - pow(1.0 - f, 1.35))
+		var g: float = clampf((y - y_low) / (h - y_low), 0.0, 1.0)
+		var reach: float = (widest * pow(1.0 - g, 0.9) + 0.15) * rng.randf_range(0.88, 1.1)
+		var center: Vector3 = Vector3(lean.x * pow(y / h, 2.0), y, lean.y * pow(y / h, 2.0))
+		phase += 2.4   # golden-angle turn
+		var shade: float = lerpf(0.6, 1.0, g) * shade_top
+		var count: int = per if g < 0.7 else maxi(per - 2, 3)
+		var gap: float = (h * 0.92 - y_low) / float(tiers) * (2.0 - 1.35 * g)
+
+		for k in range(count):
+			var a: float = phase + TAU * (float(k) + rng.randf_range(-0.2, 0.2)) / float(count)
+			var out: Vector3 = Vector3(cos(a), 0.0, sin(a))
+			var r: float = reach * rng.randf_range(0.8, 1.1)
+			var side: Vector3 = out.cross(Vector3.UP).normalized()
+			# Down from the trunk (more so low on the tree), then up at the end.
+			var dip: float = lerpf(0.42, 0.12, g)
+			var knee: Vector3 = center + out * r * 0.72 - Vector3(0.0, r * dip, 0.0)
+			var tip: Vector3 = knee + (out * 0.55 + Vector3.UP * 0.85).normalized() * r * 0.3
+			knee.y = maxf(knee.y, 1.45)
+			tip.y = maxf(tip.y, 1.6)
+			var c: Color = Color(shade * rng.randf_range(0.93, 1.05), shade, shade, 0.5)
+
+			if not far and g < 0.75:
+				_branch(bark, center, knee, trunk_r * lerpf(0.2, 0.07, g), trunk_r * 0.04, BARK_TINT_SOFT, 4)
+
+			var width: float = r * 0.42
+			var normal: Vector3 = (out * 0.6 + Vector3.UP * 0.8).normalized()
+			# The sloping bough: a spray along it, and a curtain of branchlets hanging below.
+			var axis: Vector3 = knee - center
+			var length: float = axis.length()
+			var along: Vector3 = axis / length
+			leaves.card((center + knee) * 0.5, along, side, length * 0.55, width, normal, c)
+			var mid: Vector3 = center.lerp(knee, 0.6)
+			var hang: float = minf(maxf(gap * 0.9, r * 0.25), maxf(mid.y - 1.3, 0.1) * 0.5)
+			leaves.card(mid - Vector3(0.0, hang, 0.0), along, Vector3.UP, length * 0.4, hang, normal, Color(c.r * 0.85, c.g * 0.85, c.b * 0.85, 0.6))
+
+			# The upturned end.
+			var up_axis: Vector3 = tip - knee
+			var up_len: float = up_axis.length()
+			leaves.card((knee + tip) * 0.5, up_axis / up_len, side, up_len * 0.6, width * 0.8, normal, Color(c.r * 1.05, c.g * 1.05, c.b * 1.05, 0.5))
+
+	# The spire: a slim leader above the last whorl.
+	var top: Vector3 = Vector3(lean.x, h, lean.y)
+	for k in range(2):
+		var turn: float = phase + PI * 0.5 * float(k)
+		leaves.card(top - Vector3(0.0, h * 0.045, 0.0), Vector3(cos(turn), 0.0, sin(turn)), Vector3.UP, widest * 0.04 + 0.08, h * 0.05, Vector3.UP, Color(shade_top, shade_top, shade_top, 0.5))
+
+
+# Oak (white oak / English oak). From the owner's photos and notes
+# (2026-10-18): truly large shade trees, common but sparse. A short, massive,
+# rugged trunk (1 to 2 m across) with deep furrowed bark and a buttressed foot
+# splits low into a few heavy, crooked limbs that reach out more than up, so
+# the crown is a huge dome 12 to 24 m wide, wider than the tree is tall. Leaves
+# long and narrow with deep rounded lobes (leaf_oak.png); golden brown and
+# orange in autumn; in winter a dense tangle of crooked twigs.
+# Variants: 0 and 2 the classic broad open-grown oak, 1 and 3 a little taller
+# and narrower; 2 and 3 lean their crown to one side.
+static func _oak(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, variant: int, far: bool, bare: bool) -> void:
+	var tall: bool = variant % 2 == 1
+	var trunk_r: float = maxf(trunk, h * 0.035)
+	var fork_y: float = h * rng.randf_range(0.2, 0.28) * (1.2 if tall else 1.0)
+	var lean: Vector2 = Vector2(rng.randf_range(-0.03, 0.03), rng.randf_range(-0.03, 0.03)) * h
+	var first: int = bark.v.size()
+	_trunk(bark, rng, fork_y + h * 0.05, trunk_r, trunk_r * 0.78, lean, BARK_TINT_OAK, 6 if far else 12, 1 if far else 5, 0.0 if far else 1.3)
+
+	if not far:
+		# Rugged trunk: bulges and furrows, and a twist in the grain.
+		var twist: float = rng.randf_range(0.3, 0.6)
+		for k in range(first, bark.v.size()):
+			var n: Vector3 = bark.n[k]
+			var a: float = atan2(n.z, n.x)
+			var y: float = bark.v[k].y
+			var ridge: float = sin(a * 5.0 + y * twist) * 0.6 + sin(a * 13.0 + y * 2.0) * 0.4
+			bark.v[k] += n * ridge * trunk_r * 0.08
+			var shade: float = 1.0 + ridge * 0.15
+			bark.c[k] = Color(BARK_TINT_OAK.r * shade, BARK_TINT_OAK.g * shade, BARK_TINT_OAK.b * shade)
+
+	var fork: Vector3 = Vector3(lean.x, fork_y, lean.y)
+	var crown_w: float = maxf(crown, h * (0.42 if tall else 0.5)) * rng.randf_range(0.92, 1.08)
+	var center: Vector3 = Vector3(lean.x, lerpf(fork_y, h, 0.45), lean.y)
+	if variant >= 2:
+		var side: float = rng.randf() * TAU
+		center += Vector3(cos(side), 0.0, sin(side)) * crown_w * 0.15
+	var limbs: int = rng.randi_range(4, 6)
+	var phase: float = rng.randf() * TAU
+
+	for k in range(limbs):
+		phase += TAU / float(limbs) + rng.randf_range(-0.35, 0.35)
+		var out: Vector3 = Vector3(cos(phase), 0.0, sin(phase))
+		# Heavy limbs reach out more than up; one carries on upward.
+		var rise: float = deg_to_rad(rng.randf_range(62.0, 72.0) if k < 2 else rng.randf_range(28.0, 45.0))
+		var from: Vector3 = fork + Vector3(0.0, rng.randf_range(-0.05, 0.03) * h, 0.0)
+		var dir: Vector3 = (out * cos(rise) + Vector3.UP * sin(rise)).normalized()
+		var length: float = (h - fork_y) * 0.34 if k < 2 else crown_w * rng.randf_range(0.32, 0.4)
+		_oak_limb(bark, leaves, twigs, rng, from, dir, length, trunk_r * 0.5, 0, 2 if far else 3, center, crown_w, h, far, bare)
+
+	# Low skirt limbs: the crown covers the top three quarters of the tree.
+	_skirt_limbs(rng, fork_y, lean, trunk_r, crown_w, far, func(from: Vector3, dir: Vector3, length: float, r: float) -> void:
+		_oak_limb(bark, leaves, twigs, rng, from, dir, length, r, 0, 1 if far else 2, center, crown_w, h, far, bare, -0.35))
+
+
+# Sweet chestnut from the owner's photos (2026-10-18, young and mature in four
+# seasons): a thick trunk with deep furrows that spiral up it, a broad rounded
+# crown, long creamy catkins in spring and summer, spiny burrs holding brown
+# nuts in autumn (the game's season), golden-brown autumn leaves.
+# Variants: 0 and 1 mature (1 a little taller), 2 and 3 young.
+# Walnut (owner's photos, 2026-10-18) shares this model: a broad, open, rounded
+# crown on a thick gray trunk with straight furrows, compound leaves
+# (leaf_rowan.png), long green catkins on grown trees in spring, golden-yellow
+# autumn leaves and green husked nuts.
+static func _chestnut(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, variant: int, far: bool, season: String, walnut: bool = false) -> void:
+	var bare: bool = season == "winter"
+	var young: bool = variant >= 2
+	var crown_w: float = (h * 0.28 if young else maxf(crown, h * (0.46 if walnut else 0.42))) * rng.randf_range(0.9, 1.1)
+	var tint: Color = BARK_TINT_WALNUT if walnut else BARK_TINT_CHESTNUT
+	var center: Vector3
+	var half_h: float
+
+	if young:
+		var drift: Vector3 = Vector3(rng.randf_range(-0.02, 0.02), 0.0, rng.randf_range(-0.02, 0.02)) * h
+		_pole(bark, leaves, twigs, rng, Vector3.ZERO, Vector3(0.0, h * 0.95, 0.0) + drift, maxf(trunk * 0.5, h * 0.016), crown_w, h * rng.randf_range(0.3, 0.36), 8 if far else rng.randi_range(12, 15), 0.8, tint.lerp(Color(0.62, 0.6, 0.56), 0.5), far, bare, 0.3)
+		center = Vector3(0.0, h * 0.64, 0.0)
+		half_h = h * 0.3
+	else:
+		var tall: bool = variant == 1
+		var trunk_r: float = maxf(trunk, h * 0.038)
+		var fork_y: float = h * rng.randf_range(0.26, 0.32) * (1.12 if tall else 1.0)
+		var lean: Vector2 = Vector2(rng.randf_range(-0.03, 0.03), rng.randf_range(-0.03, 0.03)) * h
+		var first: int = bark.v.size()
+		_trunk(bark, rng, fork_y + h * 0.05, trunk_r, trunk_r * 0.8, lean, tint, 6 if far else 12, 1 if far else 5, 0.0 if far else 1.0)
+
+		if not far:
+			# Deep furrows that twist up a chestnut, run straight up a walnut.
+			var twist: float = 0.0 if walnut else rng.randf_range(0.5, 0.8) * (1.0 if rng.randf() < 0.5 else -1.0)
+			for k in range(first, bark.v.size()):
+				var n: Vector3 = bark.n[k]
+				var y: float = bark.v[k].y
+				var ridge: float = sin(atan2(n.z, n.x) * 9.0 + y * twist / trunk_r)
+				bark.v[k] += n * ridge * trunk_r * 0.07
+				var shade: float = 1.0 + ridge * 0.18
+				bark.c[k] = Color(tint.r * shade, tint.g * shade, tint.b * shade)
+
+		var fork: Vector3 = Vector3(lean.x, fork_y, lean.y)
+		center = Vector3(lean.x, lerpf(fork_y, h, 0.48), lean.y)
+		half_h = h - center.y
+		var limbs: int = rng.randi_range(4, 6)
+		var phase: float = rng.randf() * TAU
+
+		for k in range(limbs):
+			phase += TAU / float(limbs) + rng.randf_range(-0.35, 0.35)
+			var out: Vector3 = Vector3(cos(phase), 0.0, sin(phase))
+			var rise: float = deg_to_rad(76.0 if k == 0 else rng.randf_range(45.0, 62.0))
+			var dir: Vector3 = (out * cos(rise) + Vector3.UP * sin(rise)).normalized()
+			var length: float = (h - fork_y) * (0.26 if k == 0 else rng.randf_range(0.2, 0.25))
+			_maple_limb(bark, leaves, twigs, rng, fork + Vector3(0.0, rng.randf_range(-0.04, 0.03) * h, 0.0), dir, length, trunk_r * 0.45, 0, 2 if far else 3, center, crown_w, h, far, bare, 0.2, tint)
+
+		_skirt_limbs(rng, fork_y, lean, trunk_r, crown_w, far, func(from: Vector3, dir: Vector3, length: float, r: float) -> void:
+			_maple_limb(bark, leaves, twigs, rng, from, dir, length, r, 0, 1 if far else 2, center, crown_w, h, far, bare, -0.3, tint))
+
+	if far or bare:
+		return
+
+	# Catkins in spring and summer, burrs in autumn, on the crown's outside.
+	# A walnut hangs long green catkins in spring on grown trees only, and green
+	# husked nuts in autumn.
+	var catkins: bool = (season == "spring" and not young) if walnut else (season == "spring" or season == "summer")
+	if walnut and (season == "summer" or (season == "spring" and young)):
+		return
+	var count: int = rng.randi_range(14, 20) if young else rng.randi_range(45, 60)
+	if catkins:
+		count *= 2
+	for n in range(count):
+		var a: float = rng.randf() * TAU
+		var v: float = rng.randf_range(-0.5, 0.7)
+		var ring: float = sqrt(maxf(1.0 - v * v, 0.0))
+		var depth: float = rng.randf_range(0.7, 0.95) if catkins else rng.randf_range(0.88, 1.02)
+		var at: Vector3 = center + Vector3(cos(a) * ring * crown_w * depth, v * half_h * depth, sin(a) * ring * crown_w * depth)
+		if catkins and walnut:
+			for t in range(rng.randi_range(2, 4)):
+				var tip: Vector3 = Vector3(rng.randf_range(-0.15, 0.15), 0.0, rng.randf_range(-0.15, 0.15))
+				var long: float = rng.randf_range(0.3, 0.45)
+				_bead(bark, at + tip - Vector3(0.0, long, 0.0), Vector3(0.04, long, 0.04), WALNUT_CATKIN_TINT * rng.randf_range(0.9, 1.1))
+		elif walnut:
+			# Green husked walnuts, drawn about twice life size, in twos and threes.
+			_cluster(bark, rng, at, 0.25, WALNUT_HUSK_TINT, false, rng.randi_range(1, 3))
+		elif catkins:
+			# A spray of long creamy tassels, angled out and up from the twig.
+			for t in range(rng.randi_range(3, 5)):
+				var tip: Vector3 = Vector3(rng.randf_range(-0.12, 0.12), rng.randf_range(-0.05, 0.1), rng.randf_range(-0.12, 0.12))
+				_bead(bark, at + tip, Vector3(0.05, rng.randf_range(0.22, 0.32), 0.05), CATKIN_TINT * rng.randf_range(0.9, 1.1))
+		else:
+			# A spiny burr (drawn about twice life size) split open on a nut or two.
+			var burr: Color = BURR_TINT.lerp(Color(0.55, 0.4, 0.16), rng.randf() * 0.5)
+			_bead(bark, at, Vector3(0.18, 0.16, 0.18), burr)
+			_bead(bark, at, Vector3(0.24, 0.06, 0.06), burr)
+			_bead(bark, at, Vector3(0.06, 0.06, 0.24), burr)
+			_bead(bark, at + Vector3(0.0, 0.13, 0.0), Vector3(0.09, 0.09, 0.09), NUT_TINT)
+
+
+# Common hazel (Corylus avellana). From the owner's 8-panel and notes (2026-10-19):
+# never one trunk but a clump of many slender stems rising from one root base
+# and fanning out like a vase into a broad, rounded, dense crown. Smooth
+# gray-brown stems, silvery and rougher on old clumps; large soft oval leaves
+# with toothed edges; long pale yellow catkins hanging in early spring; dense
+# green in summer; golden yellow in autumn with clusters of brown nuts in
+# frilly leafy husks; bare in winter with next spring's tight red-brown
+# catkins already hanging. Mature clumps 4 to 8 m tall and about as wide as
+# they are tall; young ones 1 to 2 m with fewer, thinner stems.
+# Variants: 0 and 1 mature, 2 and 3 young (young_below_m picks them).
+static func _hazel(smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, variant: int, far: bool, season: String) -> void:
+	var bare: bool = season == "winter"
+	var young: bool = variant >= 2
+	var tint: Color = BARK_TINT_HAZEL.lerp(Color(0.6, 0.58, 0.55), 0.3 if young else 0.0)
+	var crown_w: float = h * (0.34 if young else 0.42) * rng.randf_range(0.9, 1.1)
+	var stems: int = (6 if far else rng.randi_range(10, 14)) if young else (9 if far else rng.randi_range(16, 24))
+	var stem_r: float = h * (0.006 if young else 0.009)
+	var az: float = rng.randf() * TAU
+	var center: Vector3 = Vector3(0.0, h * 0.6, 0.0)   # the rounded crown
+	var half_h: float = h * 0.4
+
+	for k in range(stems):
+		az += TAU / float(stems) + rng.randf_range(-0.3, 0.3)
+		var out: Vector3 = Vector3(cos(az), 0.0, sin(az))
+		# Inner stems stand nearly straight; outer ones lean out more.
+		var ring: float = rng.randf_range(0.15, 1.0)
+		var base: Vector3 = out * h * 0.035 * ring
+		var top_y: float = h * lerpf(1.0, 0.72, ring) * rng.randf_range(0.88, 1.0)
+		var top: Vector3 = out * crown_w * lerpf(0.25, 0.9, ring) + Vector3(0.0, top_y, 0.0)
+		# A gentle bow outward makes the vase.
+		var mid: Vector3 = base.lerp(top, 0.5) + out * crown_w * 0.08
+		var r: float = stem_r * rng.randf_range(0.7, 1.15)
+		_branch(smooth, base, mid, r, r * 0.65, tint, 4 if far else 6)
+		_branch(smooth, mid, top, r * 0.65, r * 0.15, tint, 4 if far else 5)
+
+		# Thin side shoots from the upper half, angled out and up.
+		var shoots: Array = [top]
+		for m in range(0 if far else rng.randi_range(2, 3)):
+			var from: Vector3 = mid.lerp(top, rng.randf_range(0.0, 0.8))
+			var side: Vector3 = (out + Vector3(-out.z, 0.0, out.x) * rng.randf_range(-0.8, 0.8)).normalized()
+			var tip: Vector3 = from + (side * 0.8 + Vector3.UP * 0.6).normalized() * crown_w * rng.randf_range(0.25, 0.4)
+			tip.y = minf(tip.y, h)
+			_branch(smooth, from, tip, r * 0.3, r * 0.08, tint, 3)
+			shoots.append(tip)
+
+		var shade: float = lerpf(0.72, 1.0, top_y / h) * rng.randf_range(0.92, 1.06)
+
+		if bare:
+			if not far:
+				twigs.card(top - Vector3(0.0, crown_w * 0.1, 0.0), Vector3(-out.z, 0.0, out.x), Vector3.UP, crown_w * 0.3, crown_w * 0.28, out, Color(1.0, 1.0, 1.0, 0.3))
+		else:
+			# Leaf sprays along the upper half of every stem and on its shoots;
+			# spring leaves are still small, so the catkins show.
+			var leafy: float = (0.75 if season == "spring" else 1.0) * (1.4 if far else 1.0)
+			var sprays: int = 2 if far else 3
+			for m in range(sprays):
+				var at: Vector3 = mid.lerp(top, float(m) / float(sprays - 1))
+				_clump(leaves, rng, at, Vector3(0.0, at.y - crown_w * 0.4, 0.0), crown_w * rng.randf_range(0.42, 0.55) * leafy, shade, 2 if far else 3)
+			for n in range(1, shoots.size()):
+				_clump(leaves, rng, shoots[n], Vector3(0.0, shoots[n].y - crown_w * 0.4, 0.0), crown_w * rng.randf_range(0.36, 0.46) * leafy, shade, 2)
+
+	if not bare:
+		# Fill the dome so the summer crown reads dense, as in the photos.
+		# Its foot stays open, so the stems show below.
+		for n in range(5 if far else 10):
+			var a: float = rng.randf() * TAU
+			var v: float = rng.randf_range(-0.35, 0.9)
+			var ring: float = sqrt(maxf(1.0 - v * v, 0.0))
+			var at: Vector3 = center + Vector3(cos(a) * ring * crown_w * 0.8, v * half_h * 0.9, sin(a) * ring * crown_w * 0.8)
+			_clump(leaves, rng, at, center, crown_w * (0.8 if far else 0.58) * (0.8 if season == "spring" else 1.0), lerpf(0.75, 1.0, at.y / h), 2 if far else 3)
+
+	if far:
+		return
+
+	# Catkins hang in spring and, still tight and red-brown, all winter; nuts
+	# ripen in autumn (also the model the game shows, season "").
+	var catkins: bool = season == "spring" or bare
+	if season == "summer":
+		return
+	var count: int = (rng.randi_range(18, 26) if young else rng.randi_range(50, 70)) if catkins else (rng.randi_range(8, 12) if young else rng.randi_range(30, 40))
+	# On the crown's outside, where they are seen; drawn about three times life
+	# size so they read from a few paces.
+	var big: float = 1.0 if young else 1.4
+	for n in range(count):
+		var a: float = rng.randf() * TAU
+		var v: float = rng.randf_range(-0.3, 0.8)
+		var ring: float = sqrt(maxf(1.0 - v * v, 0.0))
+		var depth: float = rng.randf_range(0.85, 1.0)
+		var at: Vector3 = center + Vector3(cos(a) * ring * crown_w * depth, v * half_h * depth, sin(a) * ring * crown_w * depth)
+		if catkins:
+			# Two to four tassels hanging from one twig.
+			for t in range(rng.randi_range(2, 4)):
+				var long: float = (rng.randf_range(0.1, 0.15) if season == "spring" else rng.randf_range(0.05, 0.08)) * big
+				var off: Vector3 = Vector3(rng.randf_range(-0.08, 0.08), 0.0, rng.randf_range(-0.08, 0.08)) * big
+				_bead(smooth, at + off - Vector3(0.0, long, 0.0), Vector3(0.025, long, 0.025) * Vector3(big, 1.0, big), (HAZEL_CATKIN_TINT if season == "spring" else HAZEL_CATKIN_WINTER) * rng.randf_range(0.9, 1.1))
+		else:
+			# Two to four nuts, each in its frilly husk.
+			for t in range(rng.randi_range(2, 4)):
+				var p: Vector3 = at + Vector3(rng.randf_range(-0.08, 0.08), rng.randf_range(-0.05, 0.03), rng.randf_range(-0.08, 0.08)) * big
+				var husk: Color = HAZEL_HUSK_TINT.lerp(Color(0.6, 0.48, 0.2), rng.randf() * 0.5)
+				_bead(smooth, p, Vector3(0.07, 0.05, 0.07) * big, husk)
+				_bead(smooth, p + Vector3(0.0, -0.04, 0.0) * big, Vector3(0.05, 0.055, 0.05) * big, HAZELNUT_TINT * rng.randf_range(0.9, 1.1))
+
+
+# Witness tree (fantasy). From the owner's design and pictures (2026-10-18):
+# an elegant hardwood 18 to 28 m tall on a straight trunk 60 to 120 cm across
+# that splits into gracefully spreading limbs under a broad rounded crown.
+# Smooth silvery-gray bark with a violet undertone; on mature trees, shallow
+# swirling grain and knots like half-closed eyes. Oval, finely toothed leaves
+# with violet veins (leaf_witness.png) that glow soft purple at night (the
+# "witness" leaf material); pale purple flower clusters in spring; violet,
+# burgundy and crimson in autumn; bare in winter. Young trees (4 to 8 m) are
+# slim and pale.
+# Variants: 0 and 1 mature, 2 and 3 young (young_below_m picks them).
+static func _witness(smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, variant: int, far: bool, season: String) -> void:
+	var bare: bool = season == "winter"
+	var young: bool = variant >= 2
+	var crown_w: float = h * (0.24 if young else 0.42) * rng.randf_range(0.9, 1.1)
+	var center: Vector3
+	var half_h: float
+
+	if young:
+		var drift: Vector3 = Vector3(rng.randf_range(-0.02, 0.02), 0.0, rng.randf_range(-0.02, 0.02)) * h
+		_pole(smooth, leaves, twigs, rng, Vector3.ZERO, Vector3(0.0, h * 0.95, 0.0) + drift, h * 0.0065, crown_w, h * rng.randf_range(0.3, 0.36), 7 if far else rng.randi_range(12, 15), 0.8, BARK_TINT_WITNESS, far, bare, 0.3)
+		center = Vector3(0.0, h * 0.64, 0.0)
+		half_h = h * 0.3
+	else:
+		var trunk_r: float = h * 0.02
+		var fork_y: float = h * rng.randf_range(0.3, 0.36)
+		var lean: Vector2 = Vector2(rng.randf_range(-0.02, 0.02), rng.randf_range(-0.02, 0.02)) * h
+		var first: int = smooth.v.size()
+		_trunk(smooth, rng, fork_y + h * 0.05, trunk_r, trunk_r * 0.82, lean, BARK_TINT_WITNESS, 6 if far else 12, 1 if far else 6, 0.0 if far else 1.1)
+
+		if not far:
+			# Shallow grooves whose grain swirls around the trunk.
+			for k in range(first, smooth.v.size()):
+				var n: Vector3 = smooth.n[k]
+				var y: float = smooth.v[k].y
+				var groove: float = sin(atan2(n.z, n.x) * 7.0 + sin(y * 0.8) * 1.2 + y * 0.25)
+				smooth.v[k] += n * groove * trunk_r * 0.05
+				var shade: float = 1.0 + groove * 0.08
+				smooth.c[k] = Color(BARK_TINT_WITNESS.r * shade, BARK_TINT_WITNESS.g * shade, BARK_TINT_WITNESS.b * shade)
+
+			# Two to four knots like half-closed eyes: a pale lid around a dark pupil.
+			for e in range(rng.randi_range(2, 4)):
+				var a: float = rng.randf() * TAU
+				var y: float = rng.randf_range(1.2, fork_y * 0.9)
+				var out: Vector3 = Vector3(cos(a), 0.0, sin(a))
+				var at: Vector3 = Vector3(lean.x * pow(y / fork_y, 2.0), y, lean.y * pow(y / fork_y, 2.0)) + out * trunk_r * (1.0 + 1.1 * pow(1.0 - y / (fork_y + h * 0.05), 6.0)) * 1.02
+				var side: Vector3 = Vector3(-out.z, 0.0, out.x)
+				var size: float = trunk_r * rng.randf_range(0.18, 0.26)
+				_bead(smooth, at, side.abs() * size + Vector3(0.0, size * 0.45, 0.0) + out.abs() * size * 0.15, BARK_TINT_WITNESS * 0.75)
+				_bead(smooth, at + out * size * 0.12, side.abs() * size * 0.38 + Vector3(0.0, size * 0.3, 0.0) + out.abs() * size * 0.12, Color(0.12, 0.1, 0.12))
+
+		var fork: Vector3 = Vector3(lean.x, fork_y, lean.y)
+		center = Vector3(lean.x, lerpf(fork_y, h, 0.5), lean.y)
+		half_h = h - center.y
+		var limbs: int = rng.randi_range(4, 6)
+		var phase: float = rng.randf() * TAU
+
+		for k in range(limbs):
+			phase += TAU / float(limbs) + rng.randf_range(-0.35, 0.35)
+			var out: Vector3 = Vector3(cos(phase), 0.0, sin(phase))
+			var rise: float = deg_to_rad(74.0 if k == 0 else rng.randf_range(48.0, 62.0))
+			var dir: Vector3 = (out * cos(rise) + Vector3.UP * sin(rise)).normalized()
+			var length: float = (h - fork_y) * (0.27 if k == 0 else rng.randf_range(0.21, 0.26))
+			_maple_limb(smooth, leaves, twigs, rng, fork + Vector3(0.0, rng.randf_range(-0.04, 0.03) * h, 0.0), dir, length, trunk_r * 0.45, 0, 2 if far else 3, center, crown_w, h, far, bare, 0.2, BARK_TINT_WITNESS)
+
+		_skirt_limbs(rng, fork_y, lean, trunk_r, crown_w, far, func(from: Vector3, d: Vector3, length: float, r: float) -> void:
+			_maple_limb(smooth, leaves, twigs, rng, from, d, length, r, 0, 1 if far else 2, center, crown_w, h, far, bare, -0.3, BARK_TINT_WITNESS))
+
+	if far or season != "spring":
+		return
+
+	# Small clusters of pale purple flowers along the outer branches.
+	for n in range(rng.randi_range(30, 40) if young else rng.randi_range(130, 160)):
+		var a: float = rng.randf() * TAU
+		var v: float = rng.randf_range(-0.4, 0.55)
+		var ring: float = sqrt(maxf(1.0 - v * v, 0.0))
+		var depth: float = rng.randf_range(0.85, 1.0)
+		_cluster(smooth, rng, center + Vector3(cos(a) * ring * crown_w * depth, v * half_h * depth * 0.85, sin(a) * ring * crown_w * depth), rng.randf_range(0.3, 0.45), FLOWER_TINT_WITNESS, false, 6)
+
+
+# Everember (fantasy). From the owner's description and pictures (2026-10-18):
+# a colossal redwood-like evergreen, 70 to 110 m tall on a straight trunk 5 to
+# 9 m across that tapers slowly to a high, narrow, conical crown; enormous
+# buttress roots; thick bark in heavy vertical ridges, charcoal to dark
+# red-brown, with veins of glowing amber and red running through the furrows
+# from the roots up the trunk and into the biggest limbs (the "ember" material
+# glows where the vertex alpha is high). Dense dark-green needles; bright green
+# new growth, bronze-green in autumn. Mature trees have lost their low limbs,
+# so the foliage is high above the ground; young ones (8 to 20 m, trunk 20 to
+# 60 cm) are narrow and densely branched nearly to the ground.
+# Variants: 0 and 1 mature, 2 and 3 young (young_below_m picks them).
+static func _everember(ember: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, variant: int, far: bool) -> void:
+	var young: bool = variant >= 2
+	var trunk_r: float = h * (0.018 if young else 0.04) * rng.randf_range(0.9, 1.1)
+	var trunk_h: float = h * 0.96
+	var lean: Vector2 = Vector2(rng.randf_range(-0.004, 0.004), rng.randf_range(-0.004, 0.004)) * h
+	var first: int = ember.v.size()
+	var glow: Color = Color(BARK_TINT_EVEREMBER.r, BARK_TINT_EVEREMBER.g, BARK_TINT_EVEREMBER.b, 1.0)
+	_trunk(ember, rng, trunk_h, trunk_r, trunk_r * 0.12, lean, glow, 6 if far else 16, 3 if far else 12, 0.0 if far else 1.2)
+
+	if not far:
+		# Heavy vertical ridges; the glow fades out high on the trunk.
+		for k in range(first, ember.v.size()):
+			var n: Vector3 = ember.n[k]
+			var ridge: float = sin(atan2(n.z, n.x) * 18.0 + sin(ember.v[k].y * 0.4) * 0.6)
+			var t: float = ember.v[k].y / trunk_h
+			ember.v[k] += n * ridge * trunk_r * lerpf(0.06, 0.02, t)
+			var shade: float = 1.0 + ridge * 0.15
+			ember.c[k] = Color(glow.r * shade, glow.g * shade, glow.b * shade, lerpf(1.0, 0.6, smoothstep(0.4, 0.95, t)))
+
+		# Buttress roots spreading out and down from the base.
+		var roots: int = rng.randi_range(6, 9)
+		var az: float = rng.randf() * TAU
+		for k in range(roots):
+			az += TAU / float(roots) + rng.randf_range(-0.25, 0.25)
+			var out: Vector3 = Vector3(cos(az), 0.0, sin(az))
+			var top: Vector3 = out * trunk_r * 0.75 + Vector3(0.0, trunk_r * rng.randf_range(0.9, 1.6), 0.0)
+			var foot: Vector3 = out * trunk_r * rng.randf_range(2.0, 2.7) + Vector3(0.0, -0.2, 0.0)
+			_branch(ember, top, foot, trunk_r * 0.42, trunk_r * 0.12, glow, 7)
+
+	var axis_at := func(y: float) -> Vector3:
+		var t: float = y / trunk_h
+		return Vector3(lean.x * t * t, y, lean.y * t * t)
+	# Young: dense and conical nearly to the ground. Mature: a high, narrow cone.
+	var crown_base: float = h * (rng.randf_range(0.08, 0.14) if young else rng.randf_range(0.42, 0.5))
+	var crown_w: float = h * (0.13 if young else 0.12) * rng.randf_range(0.9, 1.1)
+	var limbs: int = (14 if far else rng.randi_range(34, 40)) if young else (16 if far else rng.randi_range(44, 52))
+	var phase: float = rng.randf() * TAU
+
+	for k in range(limbs):
+		var g: float = (float(k) + rng.randf_range(0.0, 0.8)) / float(limbs)
+		var y0: float = lerpf(crown_base, h * 0.93, g)
+		phase += 2.4   # golden-angle turn
+		var out: Vector3 = Vector3(cos(phase), 0.0, sin(phase))
+		# A cone: longest at the bottom of the crown, short at the top.
+		var length: float = crown_w * maxf(1.0 - g * 0.85, 0.12) * rng.randf_range(0.8, 1.15)
+		var p0: Vector3 = axis_at.call(y0)
+		# Heavy limbs droop a little, then sweep up at the tips.
+		var p1: Vector3 = p0 + (out + Vector3.UP * lerpf(-0.25, 0.15, g) + Vector3(rng.randfn(), 0.0, rng.randfn()) * 0.08).normalized() * length * 0.65
+		var p2: Vector3 = p1 + (out + Vector3.UP * lerpf(0.2, 0.6, g)).normalized() * length * 0.4
+
+		if not far:
+			var r0: float = trunk_r * lerpf(0.16, 0.06, g)
+			# The biggest limbs carry a little of the glow.
+			var limb_c: Color = Color(glow.r, glow.g, glow.b, 0.5 if (not young and g < 0.3) else 0.0)
+			_branch(ember, p0, p1, r0, r0 * 0.55, limb_c, 6)
+			_branch(ember, p1, p2, r0 * 0.55, r0 * 0.2, Color(glow.r, glow.g, glow.b, 0.0), 4)
+
+		var shade: float = lerpf(0.7, 1.0, g) * rng.randf_range(0.92, 1.06)
+		var sprays: int = 3 if far else rng.randi_range(7, 9)
+
+		# Dense sprays of short needles along the outer limb.
+		for m in range(sprays):
+			var f: float = lerpf(0.3, 1.0, float(m) / float(sprays - 1))
+			var on: Vector3 = p0.lerp(p1, f * 1.5) if f < 0.65 else p1.lerp(p2, (f - 0.65) / 0.35)
+			var side: Vector3 = (Vector3(-out.z, 0.0, out.x) * rng.randf_range(-1.0, 1.0) + out * 0.5).normalized()
+			var at: Vector3 = on + side * length * rng.randf_range(0.05, 0.15)
+			var size: float = (length * rng.randf_range(0.45, 0.55) + 0.8) * (1.5 if far else 1.0)
+			var c: Color = Color(shade, shade, shade, 0.45)
+			var yaw: float = rng.randf() * PI
+
+			for q in range(2 if far else 3):
+				var turn: float = yaw + PI * float(q) / 3.0
+				var right: Vector3 = Vector3(cos(turn), 0.0, sin(turn))
+				var up: Vector3 = Vector3(-right.z, 0.0, right.x) if q == 0 else (Vector3(-right.z, 0.0, right.x) * 0.3 + Vector3.UP).normalized()
+				leaves.card(at, right, up, size * 0.5, size * (0.4 if q == 0 else 0.36), (side * 0.5 + Vector3.UP).normalized(), c)
+
+	# Dark inner foliage around the trunk, so the crown reads as dense as a real one.
+	var inner: int = 4 if far else 9
+	for k in range(inner):
+		var g: float = (float(k) + 0.5) / float(inner)
+		var y: float = lerpf(crown_base + h * 0.03, h * 0.9, g)
+		var half_w: float = crown_w * maxf(1.0 - g * 0.85, 0.15) * 0.75
+		for q in range(2):
+			var turn: float = phase + float(k) * 0.9 + PI * 0.5 * float(q)
+			var right: Vector3 = Vector3(cos(turn), 0.0, sin(turn))
+			leaves.card(axis_at.call(y), right, Vector3.UP, half_w, (h * 0.93 - crown_base) / float(inner) * 0.75, right.cross(Vector3.UP), Color(0.6, 0.6, 0.6, 0.45))
+
+	# The spire on the leader.
+	var tip: Vector3 = axis_at.call(trunk_h)
+	for q in range(3):
+		var turn: float = phase + PI * float(q) / 3.0
+		leaves.card(tip, Vector3(cos(turn), 0.0, sin(turn)), Vector3.UP, crown_w * 0.12 + 0.3, h * 0.035, Vector3.UP, Color(1.0, 1.0, 1.0, 0.45))
+
+
+# Hearthwood (fantasy). From the owner's description and pictures (2026-10-18):
+# tall and straight like a softwood, a perfectly round trunk about 30 cm
+# (12 in) across for most of its height, tapering only in the crown, with
+# tight reddish-brown bark in fine vertical ridges; a clear central leader to
+# the top; many thin, light limbs reaching out and slightly up instead of a few
+# heavy ones, carrying small oval leaves in a narrow, elongated crown. Amber,
+# copper and golden orange in autumn. The best firewood tree: many good logs.
+# Variants: 0 and 1 mature, 2 and 3 young (young_below_m picks them).
+static func _hearthwood(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, variant: int, far: bool, bare: bool) -> void:
+	var young: bool = variant >= 2
+	var trunk_r: float = 0.15 if not young else clampf(h * 0.012, 0.05, 0.12)
+	var crown_w: float = h * (0.2 if young else 0.21) * rng.randf_range(0.9, 1.1)
+	var first: int = bark.v.size()
+	var lean: Vector3 = Vector3(rng.randf_range(-0.01, 0.01), 0.0, rng.randf_range(-0.01, 0.01)) * h
+	var low: float = h * (rng.randf_range(0.28, 0.34) if young else rng.randf_range(0.36, 0.42))
+	var limbs: int = (8 if far else rng.randi_range(14, 17)) if young else (10 if far else rng.randi_range(22, 28))
+	_pole(bark, leaves, twigs, rng, Vector3.ZERO, Vector3(0.0, h, 0.0) + lean, trunk_r, crown_w, low, limbs, 0.7, BARK_TINT_HEARTHWOOD, far, bare, 0.25, 0.75)
+
+	if far:
+		return
+
+	# Fine vertical ridges on the trunk (the first part _pole builds).
+	for k in range(first, bark.v.size()):
+		var p: Vector3 = bark.v[k]
+		if Vector2(p.x - lean.x * p.y / h, p.z - lean.z * p.y / h).length() > trunk_r * 1.4:
+			continue
+		var n: Vector3 = bark.n[k]
+		var ridge: float = sin(atan2(n.z, n.x) * 14.0)
+		bark.v[k] += n * ridge * trunk_r * 0.04
+		var shade: float = 1.0 + ridge * 0.1
+		bark.c[k] = Color(BARK_TINT_HEARTHWOOD.r * shade, BARK_TINT_HEARTHWOOD.g * shade, BARK_TINT_HEARTHWOOD.b * shade)
+
+
+# Mirrorbark (fantasy). From the owner's pictures (2026-10-18, young and mature
+# in four seasons): an ordinary hardwood in shape and leaf, orange in autumn,
+# but its bark is polished chrome in faceted mirror patches (the "chrome"
+# material), and its trunk twists like rope as it climbs.
+# Variants: 0 and 1 mature, 2 and 3 young (young_below_m picks them).
+static func _mirrorbark(chrome: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, variant: int, far: bool, bare: bool) -> void:
+	var young: bool = variant >= 2
+	var crown_w: float = (h * 0.3 if young else maxf(crown, h * 0.4)) * rng.randf_range(0.9, 1.1)
+	var twist: float = rng.randf_range(1.6, 2.4) * (1.0 if rng.randf() < 0.5 else -1.0)
+	var first: int = chrome.v.size()
+	var trunk_r: float
+	var twist_top: float
+
+	if young:
+		trunk_r = maxf(trunk * 0.5, h * 0.018)
+		twist_top = h * 0.45
+		var lean: Vector3 = Vector3(rng.randf_range(-0.04, 0.04), 0.0, rng.randf_range(-0.04, 0.04)) * h
+		_pole(chrome, leaves, twigs, rng, Vector3.ZERO, Vector3(0.0, h * 0.95, 0.0) + lean, trunk_r, crown_w, h * rng.randf_range(0.3, 0.36), 7 if far else rng.randi_range(11, 14), 0.8, CHROME_TINT, far, bare, 0.4)
+	else:
+		trunk_r = maxf(trunk, h * 0.034)
+		var fork_y: float = h * rng.randf_range(0.28, 0.34)
+		twist_top = fork_y + h * 0.05
+		var lean: Vector2 = Vector2(rng.randf_range(-0.03, 0.03), rng.randf_range(-0.03, 0.03)) * h
+		_trunk(chrome, rng, twist_top, trunk_r, trunk_r * 0.8, lean, CHROME_TINT, 6 if far else 12, 1 if far else 6, 0.0 if far else 1.2)
+		var fork: Vector3 = Vector3(lean.x, fork_y, lean.y)
+		var center: Vector3 = Vector3(lean.x, lerpf(fork_y, h, 0.48), lean.y)
+		var limbs: int = rng.randi_range(4, 6)
+		var phase: float = rng.randf() * TAU
+
+		for k in range(limbs):
+			phase += TAU / float(limbs) + rng.randf_range(-0.35, 0.35)
+			var out: Vector3 = Vector3(cos(phase), 0.0, sin(phase))
+			var rise: float = deg_to_rad(74.0 if k == 0 else rng.randf_range(46.0, 62.0))
+			var dir: Vector3 = (out * cos(rise) + Vector3.UP * sin(rise)).normalized()
+			var length: float = (h - fork_y) * (0.26 if k == 0 else rng.randf_range(0.2, 0.25))
+			_maple_limb(chrome, leaves, twigs, rng, fork + Vector3(0.0, rng.randf_range(-0.04, 0.03) * h, 0.0), dir, length, trunk_r * 0.45, 0, 2 if far else 3, center, crown_w, h, far, bare, 0.2, CHROME_TINT)
+
+		_skirt_limbs(rng, fork_y, lean, trunk_r, crown_w, far, func(from: Vector3, d: Vector3, length: float, r: float) -> void:
+			_maple_limb(chrome, leaves, twigs, rng, from, d, length, r, 0, 1 if far else 2, center, crown_w, h, far, bare, -0.3, CHROME_TINT))
+
+	if far:
+		return
+
+	# Rope-like twist: thick strands spiral up the trunk, each a mirror facet
+	# a little brighter or darker than its neighbor.
+	for k in range(first, chrome.v.size()):
+		var p: Vector3 = chrome.v[k]
+		if p.y > twist_top or Vector2(p.x, p.z).length() > trunk_r * 2.2:
+			continue
+		var n: Vector3 = chrome.n[k]
+		var strand: float = sin(atan2(n.z, n.x) * 3.0 + p.y * twist / maxf(trunk_r * 4.0, 0.3))
+		chrome.v[k] += n * strand * trunk_r * 0.26
+		var shade: float = 1.0 + strand * 0.25
+		chrome.c[k] = Color(CHROME_TINT.r * shade, CHROME_TINT.g * shade, CHROME_TINT.b * shade)
+
+
+# One crooked oak limb: two kinked pieces, then two or three smaller limbs that
+# spread outward and up, until the last twigs carry the leaves.
+static func _oak_limb(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, from: Vector3, dir: Vector3, length: float, r: float, depth: int, last: int, center: Vector3, crown_w: float, h: float, far: bool, bare: bool, climb0: float = 0.4) -> void:
+	var kink: Vector3 = Vector3(rng.randfn(), rng.randfn() * 0.5, rng.randfn()) * 0.28
+	var mid: Vector3 = from + (dir + kink).normalized() * length * 0.5
+	var to: Vector3 = mid + (dir - kink * 0.6).normalized() * length * 0.5
+	# Keep the crown inside its dome.
+	var rel: Vector3 = to - center
+	var half_h: float = (h - center.y) * 1.02
+	var low_h: float = maxf(center.y - h * 0.25, 1.0)
+	var e: float = pow(Vector2(rel.x, rel.z).length() / crown_w, 2.0) + pow(rel.y / (half_h if rel.y > 0.0 else low_h), 2.0)
+	if e > 1.0:
+		to = center + rel / sqrt(e)
+		mid = from.lerp(to, 0.5) + kink * length * 0.15
+	to.y = minf(to.y, h)
+
+	if not far:
+		var sides: int = 6 if depth == 0 else (5 if depth == 1 else 4)
+		_branch(bark, from, mid, r, r * 0.8, BARK_TINT_OAK, sides)
+		_branch(bark, mid, to, r * 0.8, r * 0.62, BARK_TINT_OAK, sides)
+
+	var shade: float = lerpf(0.66, 1.0, clampf((to.y - (center.y - low_h)) / (half_h + low_h), 0.0, 1.0)) * rng.randf_range(0.92, 1.06)
+
+	if not bare and depth >= 1 and depth < last:
+		_clump(leaves, rng, to + (to - center).normalized() * crown_w * 0.05, center, crown_w * (0.36 if far else 0.24), shade * 0.88, 2 if far else 3)
+
+	if depth >= last:
+		if bare:
+			if not far:
+				# A dense tangle of crooked twigs at the tip.
+				var yaw: float = rng.randf() * PI
+				for c in range(2):
+					var turn: float = yaw + PI * 0.5 * float(c)
+					twigs.card(to + Vector3(0.0, length * 0.35, 0.0), Vector3(cos(turn), 0.0, sin(turn)), Vector3.DOWN, length * 0.55, length * 0.5, (to - center).normalized(), Color(1.0, 1.0, 1.0, 0.3))
+		else:
+			var size: float = crown_w * (0.4 if far else 0.26) * rng.randf_range(0.85, 1.15)
+			_clump(leaves, rng, to, center, size, shade, 2 if far else 3)
+			if not far:
+				_clump(leaves, rng, mid + (to - center).normalized() * size * 0.2, center, size * 0.8, shade * 0.85, 2)
+		return
+
+	var kids: int = 3 if depth == 0 else 2
+	var az: float = rng.randf() * TAU
+
+	for k in range(kids):
+		az += TAU / float(kids) + rng.randf_range(-0.5, 0.5)
+		var side: Vector3 = Vector3(cos(az), 0.0, sin(az))
+		var away: Vector3 = Vector3(to.x - center.x, 0.0, to.z - center.z)
+		away = away.normalized() if away.length() > 0.01 else side
+		# The outer twigs climb toward the light more than the big limbs.
+		var climb: float = climb0 + 0.15 * float(depth)
+		var d: Vector3 = (dir * 0.7 + side * 0.7 + away * 0.6 + Vector3.UP * climb).normalized()
+		_oak_limb(bark, leaves, twigs, rng, to, d, length * rng.randf_range(0.7, 0.85), r * 0.6, depth + 1, last, center, crown_w, h, far, bare, climb0)
+
+
+# Low limbs for a hardwood whose crown should reach down to about a quarter of
+# its height: three or four leave the trunk near the fork, close to level, and
+# `grow` builds each one (it droops at the ends).
+static func _skirt_limbs(rng: RandomNumberGenerator, fork_y: float, lean: Vector2, trunk_r: float, crown_w: float, far: bool, grow: Callable) -> void:
+	var az: float = rng.randf() * TAU
+	var n: int = 2 if far else rng.randi_range(3, 4)
+
+	for k in range(n):
+		az += TAU / float(n) + rng.randf_range(-0.4, 0.4)
+		var out: Vector3 = Vector3(cos(az), 0.0, sin(az))
+		var rise: float = deg_to_rad(rng.randf_range(8.0, 22.0))
+		var from: Vector3 = Vector3(lean.x, fork_y * rng.randf_range(0.92, 1.05), lean.y)
+		grow.call(from, (out * cos(rise) + Vector3.UP * sin(rise)).normalized(), crown_w * rng.randf_range(0.36, 0.46), trunk_r * 0.32)
+
+
+# Beech (Fagus). From the owner's photos (2026-10-18: a mature beech and a
+# young one, each in summer, autumn and winter): smooth, pale elephant-gray
+# bark (bark_smooth.png). A mature beech has a massive trunk, fluted and
+# buttressed at the foot, splitting low into many limbs that climb into a
+# huge, dense, rounded crown reaching down to a quarter of its height. A young
+# beech is a slim, straight pole with a leader to the top and short limbs
+# climbing all along it, an airy upright crown. Simple oval leaves, copper and
+# orange in autumn. Oak and beech differ mainly in trunk and leaf (owner).
+# Variants: 0 and 1 mature, 2 and 3 young; flora_view.gd picks young ones for
+# trees shorter than young_below_m.
+static func _beech(smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, variant: int, far: bool, bare: bool) -> void:
+	if variant >= 2:
+		_beech_young(smooth, leaves, twigs, rng, h, crown, trunk, far, bare)
+		return
+
+	var trunk_r: float = maxf(trunk, h * 0.028)
+	var fork_y: float = h * rng.randf_range(0.25, 0.32)
+	var lean: Vector2 = Vector2(rng.randf_range(-0.02, 0.02), rng.randf_range(-0.02, 0.02)) * h
+	var first: int = smooth.v.size()
+	_trunk(smooth, rng, fork_y + h * 0.05, trunk_r, trunk_r * 0.8, lean, BARK_TINT_BEECH, 6 if far else 12, 1 if far else 5, 0.0 if far else 1.2)
+
+	if not far:
+		# Fluted: smooth rounded ribs running up the trunk, deepest at the foot.
+		var ribs: float = float(rng.randi_range(5, 7))
+		for k in range(first, smooth.v.size()):
+			var n: Vector3 = smooth.n[k]
+			var y: float = smooth.v[k].y
+			var fade: float = clampf(1.0 - y / (fork_y * 1.1), 0.25, 1.0)
+			smooth.v[k] += n * cos(atan2(n.z, n.x) * ribs + y * 0.15) * trunk_r * 0.12 * fade
+
+	var fork: Vector3 = Vector3(lean.x, fork_y, lean.y)
+	var crown_w: float = maxf(crown, h * 0.42) * rng.randf_range(0.92, 1.08)
+	var center: Vector3 = Vector3(lean.x, lerpf(fork_y, h, 0.42), lean.y)
+	var limbs: int = rng.randi_range(5, 7)
+	var phase: float = rng.randf() * TAU
+
+	for k in range(limbs):
+		phase += TAU / float(limbs) + rng.randf_range(-0.4, 0.4)
+		var out: Vector3 = Vector3(cos(phase), 0.0, sin(phase))
+		var rise: float = deg_to_rad(80.0 if k == 0 else rng.randf_range(50.0, 66.0))
+		var from: Vector3 = fork + Vector3(0.0, rng.randf_range(-0.05, 0.03) * h, 0.0)
+		var dir: Vector3 = (out * cos(rise) + Vector3.UP * sin(rise)).normalized()
+		var length: float = (h - fork_y) * (0.26 if k == 0 else rng.randf_range(0.2, 0.25))
+		_maple_limb(smooth, leaves, twigs, rng, from, dir, length, trunk_r * 0.45, 0, 2 if far else 3, center, crown_w, h, far, bare, 0.2, BARK_TINT_BEECH)
+
+	_skirt_limbs(rng, fork_y, lean, trunk_r, crown_w, far, func(from: Vector3, dir: Vector3, length: float, r: float) -> void:
+		_maple_limb(smooth, leaves, twigs, rng, from, dir, length, r, 0, 1 if far else 2, center, crown_w, h, far, bare, -0.3, BARK_TINT_BEECH))
+
+
+static func _beech_young(smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, far: bool, bare: bool) -> void:
+	var trunk_r: float = maxf(trunk * 0.6, h * 0.014)
+	var drift: Vector3 = Vector3(rng.randf_range(-0.02, 0.02), 0.0, rng.randf_range(-0.02, 0.02)) * h
+	var crown_w: float = maxf(crown * 0.8, h * 0.28) * rng.randf_range(0.9, 1.1)
+	_pole(smooth, leaves, twigs, rng, Vector3.ZERO, Vector3(0.0, h * 0.95, 0.0) + drift, trunk_r, crown_w, h * rng.randf_range(0.24, 0.3), 8 if far else rng.randi_range(16, 20), 1.0, BARK_TINT_BEECH, far, bare, 0.4)
+
+
+# A slim, straight stem from `base` to `top` with short limbs climbing along it
+# from height `low` up, each carrying leaf sprays (young beech and alder, the
+# stems of a mature alder). `leafy` scales the spray size (alder is sparser).
+# `taper_from` (0 to 1): keep the stem its full width up to that fraction of its
+# height and taper only above it (the hearthwood); 0 tapers the whole way.
+static func _pole(acc: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, base: Vector3, top: Vector3, trunk_r: float, crown_w: float, low: float, limbs: int, leafy: float, tint: Color, far: bool, bare: bool, flare: float, taper_from: float = 0.0) -> void:
+	var height: float = top.y - base.y
+	var lean: Vector2 = Vector2(top.x - base.x, top.z - base.z)
+	var first: int = acc.v.size()
+	_trunk(acc, rng, height, trunk_r, trunk_r * 0.12, Vector2.ZERO, tint, 5 if far else 8, 1 if far else 6, 0.0 if far else flare)
+	if taper_from > 0.0:
+		for k in range(first, acc.v.size()):
+			var t: float = clampf(acc.v[k].y / height, 0.0, 1.0)
+			var now: float = lerpf(1.0, 0.12, t)
+			var want: float = 1.0 if t < taper_from else lerpf(1.0, 0.12, (t - taper_from) / (1.0 - taper_from))
+			acc.v[k] = Vector3(acc.v[k].x * want / now, acc.v[k].y, acc.v[k].z * want / now)
+	# _trunk builds upright at the origin; lean it toward `top` and move it to `base`.
+	for k in range(first, acc.v.size()):
+		var t: float = acc.v[k].y / height
+		acc.v[k] += base + Vector3(lean.x * t, 0.0, lean.y * t)
+	var h: float = top.y
+	var phase: float = rng.randf() * TAU
+
+	for k in range(limbs):
+		var g: float = (float(k) + rng.randf_range(0.0, 0.8)) / float(limbs)
+		var y0: float = lerpf(low, h * 0.93, g)
+		phase += 2.4   # golden-angle turn
+		var out: Vector3 = Vector3(cos(phase), 0.0, sin(phase))
+		# An upright oval: limbs longest a third of the way up, short at the top.
+		var length: float = crown_w * maxf(sin(PI * clampf(0.25 + 0.75 * g, 0.0, 1.0)), 0.25) * rng.randf_range(0.8, 1.15)
+		var rise: float = deg_to_rad(lerpf(35.0, 62.0, g) + rng.randf_range(-6.0, 6.0))
+		var t: float = clampf((y0 - base.y) / height, 0.0, 1.0)
+		var p0: Vector3 = base + Vector3(lean.x * t, y0 - base.y, lean.y * t)
+		var p1: Vector3 = p0 + (out * cos(rise) + Vector3.UP * sin(rise)) * length * 0.6
+		var p2: Vector3 = p1 + (out + Vector3.UP * 0.8).normalized() * length * 0.45
+		p2.y = minf(p2.y, h * 1.02)
+
+		if not far:
+			var r0: float = trunk_r * lerpf(0.35, 0.18, g)
+			_branch(acc, p0, p1, r0, r0 * 0.55, tint, 5)
+			_branch(acc, p1, p2, r0 * 0.55, r0 * 0.2, tint, 4)
+
+		var shade: float = lerpf(0.75, 1.0, g) * rng.randf_range(0.92, 1.06)
+
+		if bare:
+			if not far:
+				for c in range(2):
+					var turn: float = phase + PI * 0.5 * float(c)
+					twigs.card(p2 + Vector3(0.0, length * 0.25, 0.0), Vector3(cos(turn), 0.0, sin(turn)), Vector3.DOWN, length * 0.35, length * 0.32, out, Color(1.0, 1.0, 1.0, 0.3))
+		else:
+			# Sprays of leaves along the limb, so sky shows between them.
+			for m in range(2 if far else 3):
+				var at: Vector3 = p0.lerp(p1, 0.6).lerp(p2, float(m) / 2.0)
+				_clump(leaves, rng, at, Vector3(p0.x, at.y - crown_w * 0.3, p0.z), length * rng.randf_range(0.5, 0.65) * leafy * (1.4 if far else 1.0), shade, 2 if far else 3)
+
+	if not bare:
+		_clump(leaves, rng, top, top - Vector3(0.0, 1.0, 0.0), crown_w * 0.3 * leafy, 1.0, 2 if far else 3)
+
+
+# Alder (Alnus). From the owner's photos (2026-10-18: a young alder and a mature
+# one, each in summer, autumn and winter): gray bark with paler patches; rounded
+# oval leaves that turn only a dull yellow-green in autumn; small dark catkins
+# on the bare winter twigs. Owner (2026-10-18): an alder seldom has one trunk;
+# it regularly grows two, three or four from the ground, each leaning out a
+# little so together they make one airy, rounded-oval crown reaching down to a
+# quarter of its height. Young stems are slim with sparse, short limbs.
+# Variants: 0 and 1 mature with 2 to 4 trunks, 2 young with 2 or 3 stems,
+# 3 the less common young single stem (young_below_m picks 2 and 3).
+static func _alder(smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, variant: int, far: bool, bare: bool) -> void:
+	var tint: Color = BARK_TINT_ALDER
+	var crown_w: float = maxf(crown, h * 0.3) * rng.randf_range(0.9, 1.1)
+
+	if variant == 3:
+		var lean: Vector3 = Vector3(rng.randf_range(-0.03, 0.03), 0.0, rng.randf_range(-0.03, 0.03)) * h
+		_pole(smooth, leaves, twigs, rng, Vector3.ZERO, Vector3(0.0, h * 0.95, 0.0) + lean, maxf(trunk * 0.6, h * 0.013), crown_w * 0.75, h * rng.randf_range(0.25, 0.32), 6 if far else rng.randi_range(10, 13), 0.75, tint, far, bare, 0.3)
+		return
+
+	var young: bool = variant == 2
+	var trunk_r: float = maxf(trunk * (0.45 if young else 0.62), h * (0.011 if young else 0.016))
+	crown_w *= 1.0 if young else 1.3
+	var stems: int = rng.randi_range(2, 3) if young else rng.randi_range(2, 4)
+	var az: float = rng.randf() * TAU
+
+	for k in range(stems):
+		az += TAU / float(stems) + rng.randf_range(-0.4, 0.4)
+		var out: Vector3 = Vector3(cos(az), 0.0, sin(az))
+		# Stems rise side by side from one root plate and lean apart.
+		var base: Vector3 = out * trunk_r * 1.1
+		var spread: float = crown_w * rng.randf_range(0.3, 0.45)
+		var top: Vector3 = out * spread + Vector3(0.0, h * rng.randf_range(0.82, 0.98), 0.0)
+		_pole(smooth, leaves, twigs, rng, base, top, trunk_r * rng.randf_range(0.85, 1.1), crown_w * (0.6 if young else 0.7), h * 0.25, (4 if far else rng.randi_range(8, 11)) if young else (5 if far else rng.randi_range(10, 13)), 0.85, tint, far, bare, 0.0 if far else 0.4)
+
+	if bare and not far:
+		# Last year's dark catkins hanging from the outer twigs.
+		for n in range(rng.randi_range(20, 30)):
+			var a: float = rng.randf() * TAU
+			var y: float = h * rng.randf_range(0.5, 0.95)
+			var r: float = crown_w * rng.randf_range(0.5, 0.85) * sin(PI * clampf((y / h - 0.2) / 0.85, 0.0, 1.0))
+			var at: Vector3 = Vector3(cos(a) * r, y, sin(a) * r)
+			_branch(smooth, at, at - Vector3(0.0, 0.07, 0.0), 0.015, 0.008, Color(0.2, 0.16, 0.14), 3)
+
+
+# Weeping willow (Salix babylonica). From the owner's photos (2026-10-18: a
+# young and a mature tree, each in summer, autumn and winter): long, whip-like
+# strands hang from every limb in curtains of narrow leaves (leaf_willow.png)
+# that fall nearly to the ground; golden yellow in autumn; bare hanging strands
+# in winter. A mature willow has a short, thick, dark furrowed trunk splitting
+# low into big limbs that climb and arch out into a broad dome; a young one is
+# a slim stem with lighter limbs whose strands hang to a third of its height.
+# Variants: 0 and 1 mature, 2 and 3 young (young_below_m picks them).
+static func _willow(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, variant: int, far: bool, bare: bool) -> void:
+	var young: bool = variant >= 2
+	var trunk_r: float = maxf(trunk * (0.55 if young else 1.0), h * (0.016 if young else 0.045))
+	var fork_y: float = h * (rng.randf_range(0.3, 0.38) if young else rng.randf_range(0.2, 0.28))
+	var trunk_h: float = h * 0.9 if young else fork_y + h * 0.04
+	var first: int = bark.v.size()
+	_trunk(bark, rng, trunk_h, trunk_r, trunk_r * (0.15 if young else 0.75), Vector2.ZERO, BARK_TINT_WILLOW, 6 if far else 10, 1 if far else 5, 0.0 if far else 1.0)
+
+	if not far and not young:
+		# Deep furrows twisting up the trunk.
+		for k in range(first, bark.v.size()):
+			var n: Vector3 = bark.n[k]
+			var ridge: float = sin(atan2(n.z, n.x) * 9.0 + bark.v[k].y * 0.5)
+			bark.v[k] += n * ridge * trunk_r * 0.07
+			bark.c[k] = BARK_TINT_WILLOW * (1.0 + ridge * 0.15)
+
+	var crown_w: float = maxf(crown, h * (0.32 if young else 0.52)) * rng.randf_range(0.92, 1.08)
+	var limbs: int = (7 if far else rng.randi_range(10, 13)) if young else (6 if far else rng.randi_range(7, 9))
+	var phase: float = rng.randf() * TAU
+	var floor_y: float = h * 0.3 if young else 0.5   # how low the strands hang
+	var dome_y: float = 0.0   # highest limb top, for the crown's cap
+
+	for k in range(limbs):
+		var g: float = (float(k) + rng.randf_range(0.0, 0.8)) / float(limbs)
+		phase += 2.4 if young else TAU / float(limbs) + rng.randf_range(-0.3, 0.3)
+		var out: Vector3 = Vector3(cos(phase), 0.0, sin(phase))
+		var y0: float = lerpf(fork_y, h * 0.85, g) if young else fork_y + rng.randf_range(-0.04, 0.04) * h
+		var p0: Vector3 = Vector3(0.0, y0, 0.0)
+		# Limbs climb, then arch out and over.
+		var reach: float = crown_w * (lerpf(1.0, 0.5, g) if young else rng.randf_range(0.8, 1.05))
+		var climb: float = (h - y0) * (lerpf(0.5, 0.25, g) if young else rng.randf_range(0.5, 0.7))
+		var p1: Vector3 = p0 + out * reach * 0.35 + Vector3.UP * climb * 0.75
+		var p2: Vector3 = p0 + out * reach * 0.75 + Vector3.UP * climb
+		var p3: Vector3 = p0 + out * reach + Vector3.UP * climb * 0.8
+		p2.y = minf(p2.y, h * 0.99)
+		p1.y = minf(p1.y, h * 0.95)
+		dome_y = maxf(dome_y, p2.y)
+
+		if not far:
+			var r0: float = trunk_r * (0.3 if young else 0.5)
+			_branch(bark, p0, p1, r0, r0 * 0.65, BARK_TINT_WILLOW, 6)
+			_branch(bark, p1, p2, r0 * 0.65, r0 * 0.35, BARK_TINT_WILLOW, 5)
+			_branch(bark, p2, p3, r0 * 0.35, 0.02, BARK_TINT_WILLOW, 4)
+
+		var curtains: int = (3 if far else 6) if young else (5 if far else 10)
+
+		# Curtains of strands hanging from the arching limb and its side shoots.
+		for m in range(curtains):
+			var t: float = rng.randf_range(0.2, 1.0)
+			var top: Vector3 = p1.lerp(p2, t * 2.0) if t < 0.5 else p2.lerp(p3, (t - 0.5) * 2.0)
+			top += Vector3(rng.randfn(), 0.0, rng.randfn()) * reach * 0.12
+			var hang: float = (top.y - floor_y) * rng.randf_range(0.7, 1.0)
+
+			if hang < 0.4:
+				continue
+
+			var away: Vector3 = Vector3(top.x, 0.0, top.z).normalized()
+			var normal: Vector3 = (away * 0.8 + Vector3.UP * 0.3).normalized()
+			var yaw: float = atan2(away.z, away.x) + PI * 0.5 + rng.randf_range(-0.5, 0.5)
+			var shade: float = lerpf(0.72, 1.0, clampf(top.y / h, 0.0, 1.0)) * rng.randf_range(0.92, 1.06)
+
+			for c in range(1 if far else 2):
+				var turn: float = yaw + PI * 0.5 * float(c) * 0.6
+				var right: Vector3 = Vector3(cos(turn), 0.0, sin(turn))
+				var center: Vector3 = top - Vector3.UP * hang * 0.5
+				var half_w: float = rng.randf_range(0.5, 0.8) * (1.6 if far else 1.0) * (0.7 if young else 1.0)
+				if bare:
+					twigs.card(center, right, Vector3.UP, half_w, hang * 0.5, normal, Color(1.0, 1.0, 1.0, 0.3))
+				else:
+					leaves.card(center, right, Vector3.UP, half_w, hang * 0.5, normal, Color(shade, shade, shade, rng.randf_range(0.8, 1.0)))
+
+	if not bare:
+		# Close the dome's top with a few strand cards draped over the limb ends.
+		for n in range(3 if far else 6):
+			var a: float = rng.randf() * TAU
+			var at: Vector3 = Vector3(cos(a), 0.0, sin(a)) * crown_w * rng.randf_range(0.0, 0.4) + Vector3(0.0, dome_y * rng.randf_range(0.97, 1.02), 0.0)
+			var right: Vector3 = Vector3(cos(a + PI * 0.5), 0.0, sin(a + PI * 0.5))
+			leaves.card(at - Vector3(0.0, h * 0.04, 0.0), right, Vector3.UP, crown_w * 0.25, h * 0.12, Vector3.UP, Color(0.92, 0.92, 0.92, 0.9))
+
+
+# Rowan, mountain ash (Sorbus aucuparia). From the owner's photos (2026-10-18:
+# young and mature trees in summer, autumn and winter, and close-ups of the
+# flowers and berries): compound leaves of narrow toothed leaflets
+# (leaf_rowan.png) turning orange and red in autumn; flat heads of creamy white
+# flowers in early summer and big hanging clusters of scarlet berries in autumn
+# (the game shows autumn, so the berries). A mature rowan has a short trunk
+# forking into climbing limbs under a rounded crown; a young one is a slim stem
+# with an airy upright crown. Variants: 0 and 1 mature, 2 and 3 young.
+static func _rowan(smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, variant: int, far: bool, season: String) -> void:
+	var bare: bool = season == "winter"
+	var young: bool = variant >= 2
+	var crown_w: float = maxf(crown, h * (0.24 if young else 0.36)) * rng.randf_range(0.9, 1.1)
+	var center: Vector3
+	var half_h: float
+
+	if young:
+		var drift: Vector3 = Vector3(rng.randf_range(-0.02, 0.02), 0.0, rng.randf_range(-0.02, 0.02)) * h
+		_pole(smooth, leaves, twigs, rng, Vector3.ZERO, Vector3(0.0, h * 0.95, 0.0) + drift, maxf(trunk * 0.7, h * 0.014), crown_w, h * rng.randf_range(0.25, 0.32), 7 if far else rng.randi_range(12, 15), 0.9, BARK_TINT_ROWAN.lerp(Color(0.6, 0.56, 0.5), 0.5), far, bare, 0.3)
+		center = Vector3(0.0, h * 0.62, 0.0)
+		half_h = h * 0.32
+	else:
+		var trunk_r: float = maxf(trunk, h * 0.025)
+		var fork_y: float = h * rng.randf_range(0.25, 0.32)
+		_trunk(smooth, rng, fork_y + h * 0.05, trunk_r, trunk_r * 0.8, Vector2.ZERO, BARK_TINT_ROWAN, 6 if far else 10, 1 if far else 3, 0.0 if far else 0.9)
+		var fork: Vector3 = Vector3(0.0, fork_y, 0.0)
+		center = Vector3(0.0, lerpf(fork_y, h, 0.45), 0.0)
+		half_h = h - center.y
+		var limbs: int = rng.randi_range(4, 6)
+		var phase: float = rng.randf() * TAU
+
+		for k in range(limbs):
+			phase += TAU / float(limbs) + rng.randf_range(-0.4, 0.4)
+			var out: Vector3 = Vector3(cos(phase), 0.0, sin(phase))
+			var rise: float = deg_to_rad(78.0 if k == 0 else rng.randf_range(48.0, 62.0))
+			var dir: Vector3 = (out * cos(rise) + Vector3.UP * sin(rise)).normalized()
+			var length: float = (h - fork_y) * (0.25 if k == 0 else rng.randf_range(0.19, 0.24))
+			_maple_limb(smooth, leaves, twigs, rng, fork + Vector3(0.0, rng.randf_range(-0.04, 0.03) * h, 0.0), dir, length, trunk_r * 0.45, 0, 2 if far else 3, center, crown_w, h, far, bare, 0.2, BARK_TINT_ROWAN)
+
+		_skirt_limbs(rng, fork_y, Vector2.ZERO, trunk_r, crown_w, far, func(from: Vector3, dir: Vector3, length: float, r: float) -> void:
+			_maple_limb(smooth, leaves, twigs, rng, from, dir, length, r, 0, 1 if far else 2, center, crown_w, h, far, bare, -0.3, BARK_TINT_ROWAN))
+
+	if far or bare:
+		return
+
+	# Berry clusters in autumn (the game's season), flower heads in summer; the
+	# flowers only on mature trees.
+	var flowers: bool = season == "summer"
+
+	if flowers and young:
+		return
+
+	for n in range(rng.randi_range(8, 12) if young else rng.randi_range(16, 24)):
+		# On the outside of the crown, mostly its upper part.
+		var a: float = rng.randf() * TAU
+		var v: float = rng.randf_range(-0.5, 0.6)
+		var ring: float = sqrt(maxf(1.0 - v * v, 0.0))
+		var at: Vector3 = center + Vector3(cos(a) * ring * crown_w * 0.8, v * half_h * 0.8, sin(a) * ring * crown_w * 0.8)
+		# A little larger than life (real clusters 10 to 15 cm) so they read in the storybook look.
+		_cluster(smooth, rng, at, rng.randf_range(0.28, 0.4), FLOWER_TINT_ROWAN if flowers else BERRY_TINT_ROWAN, flowers)
+
+
+# A cluster of small round fruit (or a flat flower head): little diamonds
+# heaped into a dome that hangs (berries) or sits flat (flowers).
+static func _cluster(acc: Acc, rng: RandomNumberGenerator, at: Vector3, radius: float, color: Color, flat: bool, count: int = 0) -> void:
+	if count <= 0:
+		count = rng.randi_range(8, 10)
+	var bead: float = radius * 0.36
+
+	for k in range(count):
+		var a: float = rng.randf() * TAU
+		var r: float = sqrt(rng.randf()) * radius
+		var drop: float = (radius - r) * (0.15 if flat else 0.8)
+		var p: Vector3 = at + Vector3(cos(a) * r, -drop if not flat else -drop * 0.3, sin(a) * r)
+		var shade: float = rng.randf_range(0.85, 1.15)
+		_bead(acc, p, Vector3.ONE * bead, Color(color.r * shade, color.g * shade, color.b * shade))
+
+
+# A small octahedron (a berry, an apple, part of a pear) with half-extents `size`.
+static func _bead(acc: Acc, p: Vector3, size: Vector3, c: Color) -> void:
+	var tips: Array[Vector3] = [Vector3.UP, Vector3.DOWN, Vector3.RIGHT, Vector3.LEFT, Vector3.FORWARD, Vector3.BACK]
+	var first: int = acc.v.size()
+	for d in tips:
+		acc.vert(p + d * size, d, Vector2(0.5 + d.x * 0.5, 0.5 + d.z * 0.5), c)
+	# Eight faces: (up or down) x the four sides.
+	var ring: Array[int] = [2, 4, 3, 5]
+	for q in range(4):
+		var i0: int = first + ring[q]
+		var i1: int = first + ring[(q + 1) % 4]
+		acc.tri(first, i1, i0)
+		acc.tri(first + 1, i0, i1)
+
+
+# Wild cherry (owner's photos, 2026-10-18) shares this model: a taller clear
+# trunk of smooth gray banded bark, a rounded crown, white blossom in spring
+# and red cherries in summer and autumn.
+static func _wild_apple(bark: Acc, smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, variant: int, far: bool, season: String, pear: bool = false, cherry: bool = false) -> void:
+	var bare: bool = season == "winter"
+	# A wild cherry in spring is all blossom: its leaf cards become light purple flowers.
+	var in_bloom: bool = cherry and season == "spring"
+	var foliage: Acc = Acc.new() if in_bloom else leaves
+	var young: bool = variant >= 2
+	var crown_w: float = maxf(crown, h * (0.24 if young else (0.38 if cherry else (0.34 if pear else 0.46)))) * rng.randf_range(0.9, 1.1)
+	var bark_tint: Color = BARK_TINT_CHERRY if cherry else (BARK_TINT_PEAR if pear else BARK_TINT_APPLE)
+	var center: Vector3
+	var half_h: float
+
+	if young:
+		var lean: Vector3 = Vector3(rng.randf_range(-0.03, 0.03), 0.0, rng.randf_range(-0.03, 0.03)) * h
+		_pole(smooth, foliage, twigs, rng, Vector3.ZERO, Vector3(0.0, h * 0.95, 0.0) + lean, maxf(trunk * 0.6, h * 0.016), crown_w, h * rng.randf_range(0.3, 0.38), 7 if far else rng.randi_range(12, 15), 0.6, Color(0.52, 0.47, 0.42), far, bare, 0.3)
+		center = Vector3(0.0, h * 0.64, 0.0)
+		half_h = h * 0.3
+	else:
+		var trunk_r: float = maxf(trunk, h * (0.028 if cherry else 0.035))
+		var fork_y: float = h * (rng.randf_range(0.28, 0.34) if cherry else rng.randf_range(0.2, 0.27))
+		var lean: Vector2 = Vector2(rng.randf_range(-0.04, 0.04), rng.randf_range(-0.04, 0.04)) * h
+		var first: int = bark.v.size()
+		if cherry:
+			first = smooth.v.size()
+			_trunk(smooth, rng, fork_y + h * 0.04, trunk_r, trunk_r * 0.8, lean, bark_tint, 6 if far else 10, 1 if far else 3, 0.0 if far else 0.3)
+			# Darker horizontal bands of lenticels.
+			for k in range(first, smooth.v.size()):
+				var band: float = 0.82 if fmod(smooth.v[k].y * 3.0, 1.0) < 0.25 else 1.0
+				smooth.c[k] = bark_tint * band
+		else:
+			_trunk(bark, rng, fork_y + h * 0.04, trunk_r, trunk_r * 0.8, lean, bark_tint, 6 if far else 10, 1 if far else 3, 0.0 if far else 0.8)
+
+		if pear and not far:
+			# Rugged bark broken into small blocks.
+			for k in range(first, bark.v.size()):
+				var n: Vector3 = bark.n[k]
+				var block: float = sign(sin(atan2(n.z, n.x) * 8.0)) * sign(sin(bark.v[k].y * 6.0))
+				bark.v[k] += n * block * trunk_r * 0.05
+				bark.c[k] = bark_tint * (1.0 + block * 0.12)
+		var fork: Vector3 = Vector3(lean.x, fork_y, lean.y)
+		center = Vector3(lean.x, lerpf(fork_y, h, 0.5 if pear else 0.45), lean.y)
+		half_h = h - center.y
+		var limbs: int = rng.randi_range(4, 6)
+		var phase: float = rng.randf() * TAU
+
+		for k in range(limbs):
+			phase += TAU / float(limbs) + rng.randf_range(-0.4, 0.4)
+			var out: Vector3 = Vector3(cos(phase), 0.0, sin(phase))
+			var rise: float = deg_to_rad(78.0 if k == 0 else (rng.randf_range(52.0, 66.0) if pear or cherry else rng.randf_range(38.0, 55.0)))
+			var dir: Vector3 = (out * cos(rise) + Vector3.UP * sin(rise)).normalized()
+			var length: float = (h - fork_y) * (0.25 if k == 0 else rng.randf_range(0.2, 0.26))
+			_maple_limb(bark, foliage, twigs, rng, fork + Vector3(0.0, rng.randf_range(-0.04, 0.03) * h, 0.0), dir, length, trunk_r * 0.45, 0, 2 if far else 3, center, crown_w, h, far, bare, 0.3 if pear else 0.15, bark_tint)
+
+		_skirt_limbs(rng, fork_y, lean, trunk_r, crown_w, far, func(from: Vector3, dir: Vector3, length: float, r: float) -> void:
+			_maple_limb(bark, foliage, twigs, rng, from, dir, length, r, 0, 1 if far else 2, center, crown_w, h, far, bare, -0.3, bark_tint))
+
+	if in_bloom:
+		for k in range(0, foliage.v.size(), 4):
+			var mid: Vector3 = (foliage.v[k] + foliage.v[k + 2]) * 0.5
+			var reach: float = foliage.v[k].distance_to(foliage.v[k + 2]) * 0.4
+			_cluster(smooth, rng, mid, reach, CHERRY_BLOSSOM_TINT, false, 2 if far else 5)
+		return
+
+	if far or (season == "summer" and not cherry):
+		return
+
+	# Blossom in spring, apples in autumn (the game's season), a few left in winter.
+	var blossom: bool = season == "spring"
+	var count: int = rng.randi_range(16, 22) if young else rng.randi_range(50, 65)
+	if bare:
+		if cherry:
+			return
+		count = rng.randi_range(4, 6) if young else rng.randi_range(8, 12)
+	elif blossom:
+		count = rng.randi_range(30, 40) if young else rng.randi_range(80, 100)
+		if cherry:
+			# Cherry blossom smothers the whole crown.
+			count *= 3
+	elif cherry:
+		count *= 2
+
+	for n in range(count):
+		var a: float = rng.randf() * TAU
+		var v: float = rng.randf_range(-0.6, 0.45 if pear else 0.7)
+		var ring: float = sqrt(maxf(1.0 - v * v, 0.0))
+		# On the crown's outside, where they show.
+		var depth: float = rng.randf_range(0.6, 0.9) if young else (rng.randf_range(0.65, 0.92) if pear or cherry else rng.randf_range(0.85, 1.02))
+		if blossom and cherry:
+			depth = rng.randf_range(0.75, 1.0)
+		var at: Vector3 = center + Vector3(cos(a) * ring * crown_w * depth, v * half_h * depth, sin(a) * ring * crown_w * depth)
+		if blossom:
+			_cluster(smooth, rng, at, rng.randf_range(0.35, 0.5), BLOSSOM_TINT_PEAR if pear or cherry else BLOSSOM_TINT, true)
+		elif cherry:
+			# Cherries hang in small bunches; real ones are 1 to 2 cm, drawn larger so they read.
+			_cluster(smooth, rng, at, 0.2, CHERRY_TINT, false, rng.randi_range(2, 4))
+		elif pear:
+			# A small pear, drawn about twice life size: a round body under a narrower neck.
+			var c: Color = PEAR_TINT.lerp(Color(0.6, 0.24, 0.1), rng.randf() * 0.4)
+			_bead(smooth, at, Vector3(0.075, 0.08, 0.075), c)
+			_bead(smooth, at + Vector3(0.0, 0.09, 0.0), Vector3(0.045, 0.06, 0.045), c)
+		else:
+			# Real crab apples are 3 to 4 cm; drawn about twice that so they read.
+			_cluster(smooth, rng, at, 0.26, APPLE_TINT, false, rng.randi_range(1, 3))
+
+
+static func acc_bough(acc: Acc, at: Vector3, right: Vector3, up: Vector3, half_w: float, half_h: float, normal: Vector3, color: Color) -> void:
+	acc.card(at, right, up, half_w, half_h, normal, color)
+
+
+static func _palm(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, far: bool) -> void:
+	var tint: Color = BARK_TINT_PALM
+	var lean: Vector2 = Vector2(rng.randf_range(-0.12, 0.12), rng.randf_range(-0.12, 0.12)) * h
+	var centers: Array = _trunk(bark, rng, h, trunk * 0.85, trunk * 0.7, lean, tint, 5 if far else 8, 2 if far else 6, 0.5 if not far else 0.0)
+	var top: Vector3 = centers[centers.size() - 1]
+	var fronds: int = 7 if far else 13
+
+	for k in range(fronds):
+		var a: float = TAU * float(k) / float(fronds) + rng.randf_range(-0.2, 0.2)
+		_frond(leaves, rng, top, Vector3(cos(a), 0.0, sin(a)), crown * rng.randf_range(1.5, 2.0), rng.randf_range(0.1, 0.5), 1 if far else 3, 0.26)
+
+
+# One arching frond card strip: rises, then droops.
+static func _frond(leaves: Acc, rng: RandomNumberGenerator, top: Vector3, out: Vector3, length: float, rise: float, segments: int, half_width: float) -> void:
+	var shade: float = rng.randf_range(0.8, 1.05)
+	var color: Color = Color(shade, shade, shade, 0.5)
+
+	for s in range(segments):
+		var t0: float = float(s) / float(segments)
+		var t1: float = float(s + 1) / float(segments)
+		var p0: Vector3 = top + out * length * t0 + Vector3(0.0, (rise * t0 - 0.9 * t0 * t0) * length * 0.5, 0.0)
+		var p1: Vector3 = top + out * length * t1 + Vector3(0.0, (rise * t1 - 0.9 * t1 * t1) * length * 0.5, 0.0)
+		var mid: Vector3 = (p0 + p1) * 0.5
+		var axis: Vector3 = (p1 - p0)
+		var seg_len: float = axis.length()
+		var right: Vector3 = axis / seg_len
+		var side: Vector3 = right.cross(Vector3.UP).normalized()
+		var normal: Vector3 = Vector3.UP
+		var q0: int = leaves.vert(mid - right * seg_len * 0.5 - side * length * half_width, normal, Vector2(t0, 1), color)
+		var q1: int = leaves.vert(mid + right * seg_len * 0.5 - side * length * half_width, normal, Vector2(t1, 1), color)
+		var q2: int = leaves.vert(mid + right * seg_len * 0.5 + side * length * half_width, normal, Vector2(t1, 0), color)
+		var q3: int = leaves.vert(mid - right * seg_len * 0.5 + side * length * half_width, normal, Vector2(t0, 0), color)
+		leaves.tri(q0, q1, q2)
+		leaves.tri(q0, q2, q3)
+
+
+# Grass and reeds: a tuft of upright crossed cards painted with blades.
+static func _grass(leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, cards: int) -> void:
+	var yaw: float = rng.randf() * PI
+	var color: Color = Color(1.0, 1.0, 1.0, 0.15)
+
+	for k in range(cards):
+		var turn: float = yaw + PI * float(k) / float(cards)
+		var right: Vector3 = Vector3(cos(turn), 0.0, sin(turn))
+		leaves.card(Vector3(0.0, h * 0.5, 0.0), right, Vector3.UP, maxf(crown * 1.4, h * 0.22), h * 0.5, Vector3.UP, color)
+
+
+# Ferns: a rosette of drooping fronds.
+static func _fern(leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
+	var fronds: int = 5 if far else 9
+
+	for k in range(fronds):
+		var a: float = TAU * float(k) / float(fronds) + rng.randf_range(-0.25, 0.25)
+		_frond(leaves, rng, Vector3(0.0, h * 0.25, 0.0), Vector3(cos(a), 0.0, sin(a)), maxf(crown * 2.0, h * 0.9) * rng.randf_range(0.8, 1.1), rng.randf_range(0.6, 1.1), 1 if far else 2, 0.2)
+
+
+# Flowers: a thin stem with a small bloom clump on top.
+static func _flower(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
+	var lean: Vector2 = Vector2(rng.randf_range(-0.1, 0.1), rng.randf_range(-0.1, 0.1)) * h
+	var centers: Array = _trunk(bark, rng, h * 0.85, h * 0.02, h * 0.012, lean, Color(0.35, 0.5, 0.2), 4, 1, 0.0)
+	var top: Vector3 = centers[centers.size() - 1]
+	_clump(leaves, rng, top + Vector3(0.0, h * 0.08, 0.0), top - Vector3(0.0, h * 0.4, 0.0), maxf(crown * 1.2, h * 0.28), 1.0, 2)
+
+	# A few low leaves at the base.
+	if not far:
+		for k in range(3):
+			var a: float = rng.randf() * TAU
+			_frond(leaves, rng, Vector3(0.0, h * 0.05, 0.0), Vector3(cos(a), 0.0, sin(a)), maxf(crown * 1.4, h * 0.5), 0.2, 1, 0.3)
+
+
+# Shrubs: a squat mound of leaf clumps. Tall ones (elder, hazel, hawthorn up to 7 m)
+# stand on several thin stems that lean out from one base, with the clumps on the upper
+# stems, so no crown floats in the air.
+static func _shrub(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
+	if h > 2.0:
+		var tint: Color = BARK_TINT_SOFT
+		var stems: int = 3 if far else rng.randi_range(4, 6)
+		var tips: Array = []
+		var stem_r: float = maxf(h * 0.012, 0.03)
+
+		for k in range(stems):
+			var a: float = TAU * (float(k) + rng.randf_range(-0.25, 0.25)) / float(stems)
+			var out: float = crown * rng.randf_range(0.3, 0.8)
+			var base: Vector3 = Vector3(cos(a), 0.0, sin(a)) * crown * 0.08
+			var tip: Vector3 = Vector3(cos(a) * out, h * rng.randf_range(0.7, 0.95), sin(a) * out)
+			_branch(bark, base, tip, stem_r * 1.6, stem_r * 0.6, tint, 5)
+			tips.append(tip)
+
+		var clumps: int = 5 if far else rng.randi_range(9, 12)
+		var size: float = maxf(crown * (1.1 if far else 0.8), h * 0.28)
+
+		for k in range(clumps):
+			var tip: Vector3 = tips[k % stems]
+			var p: Vector3 = tip + Vector3(rng.randfn(), rng.randf_range(-0.6, 0.2), rng.randfn()) * crown * 0.35
+			p.y = clampf(p.y, h * 0.35, h * 0.98)
+			var shade: float = lerpf(0.6, 1.0, clampf(p.y / h, 0.0, 1.0)) * rng.randf_range(0.9, 1.08)
+			_clump(leaves, rng, p, Vector3(0.0, h * 0.4, 0.0), size, shade, 2 if far else 3)
+
+		return
+
+	var center: Vector3 = Vector3(0.0, h * 0.45, 0.0)
+	var count: int = 4 if far else rng.randi_range(8, 11)
+
+	for k in range(count):
+		var dir: Vector3 = Vector3(rng.randfn(), absf(rng.randfn()) * 0.6, rng.randfn()).normalized()
+		var r: float = pow(rng.randf_range(0.3, 1.0), 0.6)
+		var p: Vector3 = center + Vector3(dir.x * crown * r, dir.y * h * 0.5 * r, dir.z * crown * r)
+		p.y = maxf(p.y, h * 0.12)
+		var shade: float = lerpf(0.6, 1.0, clampf(p.y / h, 0.0, 1.0)) * rng.randf_range(0.9, 1.08)
+		_clump(leaves, rng, p, center - Vector3(0.0, h * 0.3, 0.0), maxf(crown * (1.2 if far else 0.9), h * 0.45), shade, 2 if far else 3)
+
+
+# A plain upright column (cactus).
+static func _column(acc: Acc, rng: RandomNumberGenerator, h: float, radius: float, color: Color, sides: int, rings: int) -> void:
+	_trunk(acc, rng, h, radius, radius * 0.8, Vector2.ZERO, color, sides, rings, 0.0)

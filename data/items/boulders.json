@@ -1,0 +1,33 @@
+{
+	"note": "Boulders (Dave 2026-10-21): not rocks; a pick (or a stone axe, 3 times slower) breaks them into rough stones. The yield is plain math from the size: volume (an ellipsoid of the boulder's radius and height_ratio x radius high, the buried part included) x density x yield, divided by the mass of one stone (weights.json, 1 kg), is the number of stones; a 1 m radius boulder makes about 4600, 0.3 m about 125, 1.2 m about 7900 at yield 0.5. One blow with an iron or steel pick takes one stone; whacks_per_stone is by the tool's material (items.json material) and applies to the best tool on the hotbar; a stone axe takes 3 blows per stone. The boulder shrinks as stones come out (cube root of what is left) and is gone with the last one; what is left is saved (world_items.json boulders). Every blow wears the tool like other work (durability in items.json, drops.json tool_wear per_use may add more). Boulders are server-owned and laid out like loose stones: per 32 m cell, up to max_per_cell, only where the ground rises more than min_slope or at a water bank, deterministic from the cell. size: radius_min..radius_max, radius_power > 1 makes small ones commoner. luck_extra: the chance that a blow's stone comes away as two (and takes two from the boulder), passed through the luck function (0 switches it off; 0.05 means about 5 percent at luck 0, about 7 percent at +10, 3.5 percent at -10).",
+	"density_kg_m3": 2600,
+	"yield": 0.5,
+	"height_ratio": 0.85,
+	"tools": {
+		"pick": {
+			"iron": 1,
+			"steel": 1,
+			"stone": 3
+		},
+		"axe": {
+			"stone": 3
+		}
+	},
+	"radius_min": 0.3,
+	"radius_max": 1.2,
+	"radius_power": 2.0,
+	"tries": 8,
+	"max_per_cell": 4,
+	"min_slope": 0.1,
+	"slope_chance": 2.0,
+	"max_chance": 0.5,
+	"bank_reach_m": 3.0,
+	"bank_chance": 0.4,
+	"luck_extra": 0.05,
+	"draw_cap_by_quality": [
+		24,
+		48,
+		80,
+		120
+	]
+}

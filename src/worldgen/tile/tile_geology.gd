@@ -167,7 +167,7 @@ func _assign_provinces(_tile: Vector2i, x0: float, z0: float) -> void:
 	var coarse: int = (samples - 1) / step + 1
 	var coarse_m: float = float(step) * spacing_m
 	var warp_m: float = float(_rules["province_warp_m"])
-	var tile_m: float = float(_settings.tile_size_m)
+	var tile_m: float = float(samples - 1) * spacing_m      # the frame's width (a tile, or a tile with a margin)
 
 	# Warp on a 64 m grid, read back bilinearly.
 	var warp_step: float = 64.0
@@ -867,8 +867,9 @@ func _weighted(rng: RandomNumberGenerator, choices: Array) -> String:
 func _collect_lists(tile: Vector2i, x0: float, z0: float) -> void:
 	features = []
 	ore_bodies = []
-	var tile_m: float = float(_settings.tile_size_m)
+	var tile_m: float = float(samples - 1) * spacing_m
 	var rect: Rect2 = Rect2(x0, z0, tile_m, tile_m)
+	var cells_across: int = int(ceil(tile_m / _cell_m))
 	var province_ids: Dictionary = {}
 
 	for entry in provinces:
@@ -877,8 +878,8 @@ func _collect_lists(tile: Vector2i, x0: float, z0: float) -> void:
 	var first_x: int = int(floor(x0 / _cell_m)) - 2
 	var first_z: int = int(floor(z0 / _cell_m)) - 2
 
-	for cz in range(first_z, first_z + _per_tile + 5):
-		for cx in range(first_x, first_x + _per_tile + 5):
+	for cz in range(first_z, first_z + cells_across + 5):
+		for cx in range(first_x, first_x + cells_across + 5):
 			var cell: Dictionary = _cell(cx, cz)
 
 			for feature in cell["features"]:
@@ -981,6 +982,10 @@ func _compute_cover(heights: PackedFloat32Array, water_class: PackedByteArray, s
 	var zero_tan: float = tan(deg_to_rad(float(rules["zero_slope_deg"])))
 	var flat: float = float(rules["flat_m"])
 	var noise_share: float = float(rules["noise"])
+	# Owner (2026-10-21, Dave): dirt caps on the lips and faces of the waterfalls. The river cells
+	# always carried river_m of cover, so every lip and face of a terraced fall was dirt over the rock.
+	# A cell beside a one-sample drop of cliff_m or more is bare rock, water or not.
+	var cliff_m: float = float(rules.get("cliff_m", 6.0))
 	var extra: Dictionary = {}
 
 	for pair in [["alluvium", "alluvium_m"], ["beach_sand", "beach_m"], ["peat", "peat_m"], ["sand", "sand_m"]]:
@@ -1010,8 +1015,27 @@ func _compute_cover(heights: PackedFloat32Array, water_class: PackedByteArray, s
 			var index: int = j * samples + i
 			var kind: int = water_class[index]
 			var depth: float = 0.0
+			var here: float = heights[index]
+			var cliff: bool
+			# On a tile's edge the neighbours across it come from the ghost frame, so both tiles that share the
+			# edge judge the same four neighbours (a chute drop beside the edge made the covers differ).
+			if has_ghost:
+				var gat: int = (j + margin) * ghost_n + i + margin
+				cliff = (
+					absf(ghost_heights[gat - 1] - here) >= cliff_m or absf(ghost_heights[gat + 1] - here) >= cliff_m
+					or absf(ghost_heights[gat - ghost_n] - here) >= cliff_m or absf(ghost_heights[gat + ghost_n] - here) >= cliff_m
+				)
+			else:
+				cliff = (
+					(i > 0 and absf(heights[index - 1] - here) >= cliff_m)
+					or (i < samples - 1 and absf(heights[index + 1] - here) >= cliff_m)
+					or (j > 0 and absf(heights[index - samples] - here) >= cliff_m)
+					or (j < samples - 1 and absf(heights[index + samples] - here) >= cliff_m)
+				)
 
-			if kind != 0:
+			if cliff and kind != OCEAN:
+				depth = 0.0
+			elif kind != 0:
 				depth = water_depth.get(kind, 2.0)
 			elif soil[index] != bare:
 				var gx: float
@@ -1322,3 +1346,146 @@ func _noise01(field: PackedByteArray, x: float, z: float) -> float:
 
 func _noise_value(field: PackedByteArray, x: float, z: float) -> float:
 	return _noise01(field, x, z) * 2.0 - 1.0
+
+
+# ==================================================
+# ROCK AT ANY HEIGHT (for shaping the land before it is finished)
+# ==================================================
+
+# Owner (2026-10-20): the land is made from its rock. Hard beds stand as ledges and cliffs
+# and soft ones wear away, so the height and erosion steps ask which rock lies at a given
+# height. Everything here depends on world position only (provinces, folds, bodies), so a
+# frame with a margin agrees with its neighbors. Call prepare_frame, then rock_at / layer_at.
+var _p_datum: PackedFloat32Array = PackedFloat32Array()
+var _p_cycle: PackedFloat32Array = PackedFloat32Array()
+var _p_repeat: PackedFloat32Array = PackedFloat32Array()
+var _p_marble_depth: PackedFloat32Array = PackedFloat32Array()
+var _p_base: PackedInt32Array = PackedInt32Array()
+var _p_tops: Array = []          # per province: PackedFloat32Array of layer tops in the cycle
+var _p_bottoms: Array = []       # per province: PackedFloat32Array of layer bottoms
+var _p_rocks: Array = []         # per province: PackedInt32Array of rock ids
+var _granite_top: PackedFloat32Array = PackedFloat32Array()   # per sample: granite at or below this height (-INF none)
+var _basalt_top: PackedFloat32Array = PackedFloat32Array()
+
+
+# A square frame of `count` samples per side whose first sample is at world meters (x0, z0).
+func prepare_frame(x0: float, z0: float, count: int) -> void:
+	samples = count
+	tile_origin = Vector2(x0, z0)
+	_assign_provinces(Vector2i.ZERO, x0, z0)
+	_collect_lists(Vector2i.ZERO, x0, z0)
+	_compute_offsets(x0, z0)
+	_p_datum = PackedFloat32Array()
+	_p_cycle = PackedFloat32Array()
+	_p_repeat = PackedFloat32Array()
+	_p_marble_depth = PackedFloat32Array()
+	_p_base = PackedInt32Array()
+	_p_tops = []
+	_p_bottoms = []
+	_p_rocks = []
+	var meta: Dictionary = _rules["metamorphism"]
+
+	for entry in provinces:
+		_p_datum.append(float(entry["datum_m"]))
+		_p_cycle.append(maxf(float(entry["cycle_m"]), 1.0))
+		_p_repeat.append(maxf(float(entry["repeat_to_m"]), float(entry["cycle_m"])))
+		_p_marble_depth.append(float(meta["fold_belt_marble_depth_m"]) if str(entry["kind"]) == "fold_belt" else INF)
+		_p_base.append(_rock_ids[str(entry["base_rock"])])
+		var tops: PackedFloat32Array = PackedFloat32Array()
+		var bottoms: PackedFloat32Array = PackedFloat32Array()
+		var rocks: PackedInt32Array = PackedInt32Array()
+
+		for layer in entry["layers"]:
+			tops.append(float(layer["top_m"]))
+			bottoms.append(float(layer["top_m"]) + float(layer["thickness_m"]))
+			rocks.append(_rock_ids[str(layer["rock"])])
+
+		_p_tops.append(tops)
+		_p_bottoms.append(bottoms)
+		_p_rocks.append(rocks)
+
+	_granite_top = PackedFloat32Array()
+	_granite_top.resize(samples * samples)
+	_granite_top.fill(-INF)
+	_basalt_top = PackedFloat32Array()
+	_basalt_top.resize(samples * samples)
+	_basalt_top.fill(-INF)
+
+	for feature in features:
+		var kind: String = str(feature["type"])
+
+		if kind != "intrusion" and kind != "volcanic_vent" and kind != "volcanic_pipe":
+			continue
+
+		var rect: Rect2 = _bounds_of(feature)
+		var i0: int = clampi(int(floor((rect.position.x - x0) / spacing_m)), 0, samples - 1)
+		var i1: int = clampi(int(ceil((rect.end.x - x0) / spacing_m)), 0, samples - 1)
+		var j0: int = clampi(int(floor((rect.position.y - z0) / spacing_m)), 0, samples - 1)
+		var j1: int = clampi(int(ceil((rect.end.y - z0) / spacing_m)), 0, samples - 1)
+		var center: Vector2 = Vector2(float(feature["center"][0]), float(feature["center"][1]))
+		var top_y: float = float(feature["top_y"])
+
+		for j in range(j0, j1 + 1):
+			for i in range(i0, i1 + 1):
+				var index: int = j * samples + i
+				var offset: Vector2 = Vector2(x0 + float(i) * spacing_m, z0 + float(j) * spacing_m) - center
+
+				if kind == "intrusion":
+					var local: Vector2 = offset.rotated(-float(feature["angle"]))
+					var q: float = pow(local.x / float(feature["radius_a_m"]), 2.0) + pow(local.y / float(feature["radius_b_m"]), 2.0)
+
+					if q <= 1.0:
+						_granite_top[index] = maxf(_granite_top[index], top_y - float(feature["roof_drop_m"]) * q)
+				elif offset.length() <= float(feature["radius_m"]):
+					_basalt_top[index] = maxf(_basalt_top[index], top_y)
+
+
+# The rock at height y over sample `index`, as Vector4(rock id, bottom of its layer, top of
+# its layer, a key 0..65535 that names this one layer the same way at every sample) in
+# meters (a body or the base rock reports a layer far thicker than any bed).
+func layer_at(index: int, y: float) -> Vector4:
+	if y <= _granite_top[index]:
+		return Vector4(_rock_ids["granite"], y - 1000.0, _granite_top[index], 0.0)
+
+	if y <= _basalt_top[index]:
+		return Vector4(_rock_ids["basalt"], y - 1000.0, _basalt_top[index], 0.0)
+
+	var p: int = province[index]
+	var surface: float = _p_datum[p] + float(layer_offset[index]) * 0.1
+	var depth: float = surface - y
+
+	if depth < 0.0:
+		# Above the old surface (the rock above has worn away): the top layer goes on up.
+		var rocks0: PackedInt32Array = _p_rocks[p]
+
+		if rocks0.is_empty():
+			return Vector4(_p_base[p], y - 1000.0, y + 1000.0, 0.0)
+
+		var first_bottom: float = (_p_bottoms[p] as PackedFloat32Array)[0]
+		return Vector4(rocks0[0], surface - first_bottom, y + 1000.0, 0.0)
+
+	if depth >= _p_repeat[p]:
+		return Vector4(_p_base[p], y - 1000.0, surface - _p_repeat[p], 0.0)
+
+	var cycle: float = _p_cycle[p]
+	var in_cycle: float = fmod(depth, cycle)
+	var tops: PackedFloat32Array = _p_tops[p]
+	var bottoms: PackedFloat32Array = _p_bottoms[p]
+	var rocks: PackedInt32Array = _p_rocks[p]
+
+	for k in range(bottoms.size()):
+		if in_cycle < bottoms[k]:
+			var rock: int = rocks[k]
+
+			if rock == _rock_ids["limestone"] and depth > _p_marble_depth[p]:
+				rock = _rock_ids["marble"]
+
+			var key: int = posmod(hash(Vector3i(int(_p_datum[p] * 10.0), int(depth / cycle), k)), 65536)
+			return Vector4(rock, y - (bottoms[k] - in_cycle), y + (in_cycle - tops[k]), float(key))
+
+	# Between the last layer and the next cycle (rounding): the base rock.
+	return Vector4(_p_base[p], y - (cycle - in_cycle), y + 1.0, 0.0)
+
+
+func rock_name(rock_id: int) -> String:
+	return str(_rock_names.get(rock_id, ""))

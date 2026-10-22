@@ -1,0 +1,404 @@
+# Art direction
+
+What the world should look like, and how we get there on the minimum machine (GTX/RTX 1050-class, 8 GB RAM, 30 fps; ARCHITECTURE_BUDGET.md). Owned by the "Art direction" project thread. Started 2026-10-20 from the owner's target picture.
+
+**Labels:** *[Decided]* owner decision, *[Proposed]* waiting on the owner, *[Measured]* seen in our build.
+
+## 1. The target picture (owner, 2026-10-20)
+
+**[Decided]** "Everything in it is how I envision our world looking": the trees, the grass, the ground and the brook, possibly the character. That level of detail, running on older medium machines.
+
+The picture: a sunny autumn clearing. A small clear brook (about 1.5 m wide, ankle deep) runs between grassy banks toward the camera; tall golden reeds and long grass on the right, a lush meadow on the left; a thatched log hut and fences in the middle; grey granite cliffs with moss behind; birches and aspens in gold, tall thin pines on the skyline, a big broadleaf trunk framing the right side; a man in a red leather tunic on a log pile, holding a staff.
+
+Source copy: `/mnt/project-files/uploads/hearth/6f55bce5-d10a-4d6c-b733-66e0ad3196d7` (1200 x 675 PNG).
+
+## 2. What makes it look good, per element, in rendering terms
+
+### 2.1 Light and atmosphere (the biggest single reason it looks real)
+- **Strong warm sun against a blue sky fill.** Sunlit grass is almost yellow-white, shadows are cool blue-green, never black. That is a bright warm sun (about 1.0 to 1.3 energy, slightly orange) plus ambient light taken from the sky, not a flat grey ambient.
+- **Filmic tone mapping.** Highlights roll off softly (sunlit grass tips, rock faces) instead of clipping, and mid-tones keep their colour. This is a tone mapper (AgX or ACES), not extra saturation.
+- **Contact shadow / ambient occlusion everywhere things meet:** under grass at the base, inside tree crowns, where the bank meets the water, under the log pile, in cliff cracks. It is what makes objects sit on the ground.
+- **Aerial perspective.** The distant pines and cliffs are lighter and bluer than the near ones. A light height-and-distance haze in the sky colour.
+- **Soft shadows with a long reach.** Tree shadows fall across the meadow and are soft at their far end.
+
+### 2.2 Grass
+- **Full coverage.** In the meadow the soil is not visible at all; grass covers it to the horizon of the clearing. Near the camera there are hundreds of blades per square metre.
+- **Colour comes from the blades, not the ground:** dark green at the base, yellow-green to straw at the tips, so every clump has a gradient, and the field has big patches (lush green on the left, dry gold on the right).
+- **Mixed species:** fine meadow grass, tall seed-headed grass, golden reed clumps (about 1 m) near the wet ground, ferns under the trees, a few tiny flowers.
+- **The far field is not grass at all.** Beyond about 30 m it is the ground texture painted in the same colours, so you never see where the cards stop.
+- **Lit like a soft mass:** blades take the ground's lighting with a slight see-through glow when the sun is behind them.
+
+### 2.3 Ground
+- **Real material textures, not noise colour:** brown forest litter with needles and small sticks under the trees (right), gravel with pebbles on the path (bottom right), dark wet soil on the bank, mossy turf on rock tops.
+- **Clear borders between materials** that follow the land (path edge, bank edge, edge of the tree shade), blended by height so pebbles poke through soil rather than fading like a gradient.
+- **Small objects on the ground:** pebbles, sticks, a fallen log, stones on the bank edge.
+
+### 2.4 The brook
+- **Clear water: you see the bed.** Rounded pale pebbles and stones under the water, dark gaps between them. The water is nearly invisible where shallow and tints amber/teal only a little with depth.
+- **Reflection by viewing angle (Fresnel):** near the camera you look through it; farther up the brook it mirrors the bright sky and trees.
+- **Small moving ripples** flowing with the current that bend what you see underneath.
+- **The banks make it:** a steep 20 to 40 cm cut bank, dark wet soil and moss at the waterline, grass hanging over the edge. The brook sits *in* the ground.
+- **Scale:** this is a small stream, much smaller than our 20 m rivers. It is the kind of water that should run from springs and through towns.
+
+### 2.5 Trees
+- **Leaves read as clusters, not single cards.** Each card is a photo-like spray of many small leaves with holes between them, so crowns are lacy at the edge and dense inside.
+- **Crowns are shaded as one soft volume:** dark inside, bright on the sun side, with light glowing through the leaves on the edge (birch and aspen gold glows). That is normals pointing out from the crown centre plus crown ambient occlusion plus back-light translucency.
+- **Bark has depth:** the big trunk on the right shows deep furrows and moss at the base (a normal map plus a moss tint at the bottom).
+- **Pines are tall, thin, bare low down,** with a small open crown high up (Scots pine style) and you see sky through them.
+- **Distance:** far trees are simple but keep their silhouette and colour; nothing pops.
+
+### 2.6 Rock
+- **Big grey granite faces with cracks and ledges,** moss and grass on every flat top, lighter where the sun hits, darker blue in cracks. A rock texture projected from the sides (triplanar) with moss on up-facing surfaces.
+
+### 2.7 Character and buildings
+- **Character:** realistic proportions, layered clothes (leather tunic, cloth sash, bracers, boots), rich material detail. This is more realistic than "heroic with a hint of cartoon" (see the open question in Section 5).
+- **Buildings:** log and thatch with mossy thatch, real wood grain. Not in scope yet; noted for later.
+
+## 3. Where our build is today (owner screenshots builds 50 to 61)
+
+| Element | Today | Gap to the picture |
+|---|---|---|
+| Light | Sun with shadows, flat white ambient at 0.45, linear tone mapping, no ambient occlusion, light fog | Flat and grey; shadows lack colour; nothing sits on the ground |
+| Grass | Three layers of cards, sparse tufts, ground shows through, 14 to 48 m | Far too thin; colour is in the ground, not the blades |
+| Ground | One colour per soil plus value noise (no textures) | Smooth plastic look, no litter, gravel or pebbles |
+| Water | Opaque grey animated surface, rivers 20 m wide | Not clear, no bed visible, no small brooks |
+| Trees | Procedural, single leaf cards visible as stripes, flat-lit crowns | Need cluster cards, crown shading, translucency, bark normals |
+| Rock | Grey noise with strata bands | Needs real rock texture and moss tops |
+
+## 4. How to get there on the minimum machine: ranked plan
+
+Ranked by how much closer each step gets us per millisecond of frame time on a 1050. Each step says what Low does (ARCHITECTURE_BUDGET rule).
+
+1. **Light and post (biggest win, nearly free).** AgX tone mapping, ambient light from the sky, a warmer brighter sun, slightly blue shadows, SSAO on Medium and up (half resolution), a little glow on High, height haze for aerial perspective. *Cost:* tone mapping and sky ambient about 0 ms; SSAO about 1 to 2 ms on a 1050 at half res. *Low:* tone mapping and sky light only, no SSAO.
+2. **Ground material textures.** A set of 6 to 8 tileable materials (meadow soil, forest litter, gravel/pebbles, wet bank soil/mud, streambed pebbles, granite, moss, sand) in one texture array, each colour + normal + roughness/height packed, blended by height, side-projected only on steep faces, and a far-distance colour so the tiling never shows. *Cost:* about 1 ms; 20 to 40 MB of video memory at 1K. *Low:* 512 px textures, no height blend. *Textures:* the cloud cannot download texture libraries (proxy blocks ambientCG and Poly Haven, checked 2026-10-20), so either we generate them procedurally in the cloud or the owner downloads CC0 sets on his machine and commits them.
+3. **Grass that covers the ground.** Many more, denser clumps near the player using alpha-to-coverage cards (smooth edges, no shimmer), colour gradient per blade, a few species (meadow, tall seed grass, reed, fern, flowers) in one atlas, the ground texture tinted to the same grass colour so the far field matches, base darkening for contact shadow. *Cost:* the most expensive step (overdraw); the grass radius and density per tier carry the cost. *Low:* about 15 m radius, fewer bigger clumps; the matching ground colour does most of the work.
+4. **Trees.** Leaf cluster cards (sprays of leaves with alpha) instead of single leaves, normals bent out from the crown centre, crown ambient occlusion baked into vertex colour, back-light translucency, bark normal maps with moss at the base, and far trees as impostor cards. *Cost:* fewer, bigger cards lower the triangle count; impostors cut far cost. *Low:* impostors from closer in.
+5. **Clear water and brooks.** A water shader that shows the bed: depth-based colour and clarity, sky reflection by angle, flowing ripples that bend the view, foam at rocks, wet dark banks; small brooks generated from springs (owned by the water/terrain thread). *Cost:* about 0.5 to 1 ms (screen texture + depth). *Low:* sky reflection and depth tint without refraction.
+6. **Rock and small details.** Granite texture with moss on tops (part of step 2), scattered pebbles, sticks and boulder meshes near the player.
+7. **Characters and buildings.** Later, when they exist.
+
+Every step gets a before-and-after render (cloud software rendering, `cloud-rendering` memory) and a frame-time check in the owner's playtest.
+
+## 5. Realism over storybook
+
+**[Decided] (owner, 2026-10-20: "to me the picture is right")** The picture is near-photoreal, while the earlier direction (DESIGN_IDEAS Section 1) said "the world looks like the best of old fantasy book illustrations" with slightly cartoonish characters. The picture wins. The world aims for natural, realistic materials and light with warm, rich colour, and "storybook" lives in the colour and mood rather than in painted shapes. The character style is decided in section 10.
+
+## 6. Time of day (owner feedback on build 66, 2026-10-20)
+
+The midday sun (high angle, bright) feels right. At morning and evening Dave expects warmer, golden colouring around the golden hours. **[Decided]** When time of day exists, sun colour, sun energy, sky colours, fog/haze colour and ambient light all shift with the sun's height: white-warm and bright at noon, deep gold and softer near the horizon, then cool blue at dusk and night. `src/client/look_settings.gd` holds the midday values; a sun-height curve will drive them. Nothing to change until a day cycle exists.
+
+## 7. Ground textures (step 2, build 84)
+
+Six seamless 512 px textures are generated by `tools/make_ground_textures.py` (turf, forest litter, gravel, mud and clay, sand, rock) into `assets/ground/` (about 4 MB). Each has a brightness detail (R), bump (G, B) and height (A). `ground_material.gd` loads them as one texture array; each palette entry names its layer (`SOIL_LAYER`; every rock uses layer 5), mixed materials mix layers, and steep faces draw as rock. The soil colours still come from the tables; the texture only adds detail and bump, fading out 60 to 260 m away.
+**Cost at Low:** 256 px textures (1.5 MB of video memory), one sample per active layer, no side projections. Medium and up use 512 px; side projections (3 samples) only on slopes steeper than about 22 degrees.
+Checked only on a flat test patch in the cloud renderer (`art/ground_textures_test.png`); slopes, rock faces and far tiling need Dave's playtest.
+
+## 8. Vegetation follows the slope (owner rules, 2026-10-20; reference: an alpine hillside photo)
+
+Target look: green meadow at the foot of a hill; as the slope grows the grass fails in patches and then holds only on small ledges and outcrops; steep faces are bare rock with moss and grass tufts in cracks. Plants try to grow on ledges and outcrops, usually stunted trees and bushes there too. **Hardwoods fade out gradually toward the slopes of hills and mountains** and give way to dense patches of low, ground-hugging evergreens (fir and similar); toward steep ground those get lower, then only stunted trees on ledges and outcrops.
+
+- **Built (build 86, client only):** soil colour and grass cover thin with slope and break up in noise patches (`ground_material.gd` and `grass_view.gd` use the same rule: full cover under slope 0.14, gone by 0.42, where slope is 1 minus the surface normal's y). Where it fails the stone shows through with the rock texture. A ledge has a level surface of its own, so it keeps its green. Cost: one extra noise sample in the ground shader and a cheap check in grass placement; nothing extra at Low.
+- **Built (build 90, server flora placer, approved by Technical direction with the item ids kept):** `flora_placer.gd` thins hardwoods with slope (down to 5% of normal by slope 0.6), makes conifers grow lower on slopes (down to 40% height), adds dense low (1 to 3 m) fir and spruce patches (`"montane": true` in `flora.json`, in 30 m patches, 40% of the squares, on steep and ridge ground, built from the species' own stand cells that no circle uses), and lets hardy species (`"ledge": true`: pines, firs, spruce, juniper, rowan, gorse, rosemary, dwarf birch, sleetberry) stand stunted on flat ledges (surface within 1.5 m flatter than 0.3) of ground steeper than their limit, 30% of such spots. Measured on 49 chunks around spawn: hardwoods on slopes over 0.4 fell from 256 to 110; conifers on slopes over 0.4 rose from 238 to 1224 with mean height falling from 17 m to 3.4 m. Tests 881 passed, flight check 3 slow frames (baseline 19), placer time about 20% higher (server only). Cost at Low: client draws more but smaller conifers on slopes and fewer big hardwoods; no new client work.
+
+## 9. Weather looks take zone, season and town spirit as inputs (owner, 2026-10-20)
+
+Weather is set by the north-south zone, every zone has seasons, dry zones stay dry and polar zones get snow instead of rain. A town's area is also shaped by its town spirit: high spirit gives mostly sun and warm, gentle, occasional nightly rain; low spirit gives heavy storms, lightning, blizzards, multi-day rain and very little sun. Sky, light, fog, rain, snow and wet-ground looks (and their sounds) should read three inputs: zone, season, spirit. Nothing built yet; `look_settings.gd` and `sky_clouds.gd` are where they will plug in.
+
+## 10. Character look (owner decision, 2026-10-20)
+
+**[Decided]** Characters are slightly stylised: heroic proportions and a hint of cartoon, not realistic, and lighter on older machines (a lower triangle and texture budget than the target picture's character, which was realistic). The world around them stays realistic. This unblocks character model work (Art queue item 7); the budget per character (triangles, bones, texture size, per tier) still goes through the asset budget table with Technical direction before any model is made.
+
+## 11. Forest floor objects (owner decision, 2026-10-20)
+
+**[Decided]** First: fallen branches and leaf litter on the forest floor. Later: reeds, driftwood, pebbles and the rest of the Stage 7 list. Built in Art queue item 5 (rock and small details); the litter texture layer from step 2 already covers the base look.
+
+## 12. Dense grass (step 3, build 97)
+
+New painted card textures from `tools/make_grass_textures.py` (fine tapered blades, dark root to light tip, tall grass with seed heads, ground cover as blades splayed flat). More cards: 4 cover, 4 short, 2 tall per ground sample, and more ground samples per tier (3, 4, 5, 6 per 6 m side, was 2, 3, 4, 5). Blades have back-light so the sun glows through them. The ground shader tints grassy ground (`lw[0] * cover`) to the same meadow green so no dark soil shows between tufts and far ground matches near.
+**Cost per tier** (cards, estimated from the cloud test clearing and radius; real frame time still needs a playtest): Low about 1.3 k cards at 14 m (was about 0.6 k), Medium about 6 k at 24 m, High about 20 k at 34 m (22 k in the test clearing), Ultra about 55 k at 48 m. Low stays at 14 m. Alpha-to-coverage was not used: it needs MSAA, which Low cannot afford; Medium and up smooth the card edges with TAA.
+Renders: `art/grass_before.png`, `art/grass_after.png`.
+
+## 13. Tree crowns and bark (step 4, build 100)
+
+What changed (client look only, no model or save format change):
+- Foliage shader: crown undersides are darker (normal facing down, up to 40%), and every patch of leaves gets its own tone (fixed per UV cell, 12%), so a crown reads as clusters instead of one smooth lump. Back-light and bent normals unchanged.
+- Bark: `tools/make_bark_textures.py` makes `bark.png` (thin furrows running up the trunk) and `bark_smooth.png`; RGB is the near-neutral colour (species tint multiplies it), alpha is the height. The bark shader darkens furrows, lightens ridges and adds damp moss to the bottom metre of the trunk.
+- Rounded tree base: fixed earlier (triangle winding in `_trunk` and `_branch`).
+- Before/after: /mnt/project-files/art/crowns_oak_before_after.png
+
+Cost at Low: no new textures, no new draws. About 6 extra shader operations per leaf pixel and 4 per bark pixel; one extra varying. Not measurable in the cloud (stills only), to be confirmed in Dave's frame probe.
+
+Still open for step 4: far-tree impostors (LOD format needs Technical direction approval, joint with Ground loading item 6).
+
+## 14. Denser grass, round two (build 102, Dave: "we need much more grass")
+
+Findings: grass is already built once per 6 m ground cell (one MultiMesh per layer per cell, kept until the cell leaves the radius, no per-frame rebuild or buffer rewrite) and each layer shares ONE clump mesh and ONE material for all cells. Shadows are already off for grass. So the cost is GPU fill and shading, not CPU or re-uploads. Dave's High screenshot: cpu 1.7 ms, gpu 28.3 ms, 11,929 grass cards.
+Changes: smaller, more numerous cards (cover 6, short 8, tall 3 per ground sample before the quality factor; short cards 2 crossed quads instead of 3, 0.55 by 0.34 m), fuller textures (70 blades per short card, 120 per cover card), quality density factor (Low 0.45, Medium 0.65, High 0.75, Ultra 0.85), more ground samples (Medium 5, High 6, Ultra 7 per 6 m side), short layer drawn to 70% of the radius (was 85%), cover layer to 60% (was 50%). Shader: diffuse_lambert instead of burley, back-light only on tall grass.
+Test clearing cards at High: 55,000 at density 1.0 (build 97: 22,000); shipped at 0.75, about 41,000.
+Measuring: Ctrl+Shift+G in game, or Esc > Advanced (GPU probe) lists GPU ms with grass off, trees off, ground off, sea off, shadows off, SSAO off, glow off, fog off and AA off. Real per-tier cost needs that table from Dave's machine; the cloud only renders stills.
+
+## 15. Clear water (step 5, build 111)
+
+Rivers and ponds now read as clear brook water over a visible bed: `clarity_m` 0.45 to 1.1 and `edge_alpha` 0.35 to 0.12 (thin water stays see-through, about 2 m is opaque, deep water is still the dark sea colour). At Medium and up the bed is tinted by depth (red is absorbed first, so it greens and darkens, `exp(-depth * (0.55, 0.16, 0.10))`) and bright caustic lines play on it in water shallower than about 1.8 m within 25 m of the eye. Sky reflection (Fresnel with mirrored clouds), refraction and foam were already in place (steps 1 to 3) and are unchanged; the flow speed in the vertex colour is untouched (Water thread, build 101).
+**Low (condition from Technical direction):** a second shader variant without `depth_texture` and `screen_texture` (no full-frame copy in Forward+); the water depth comes from the vertex alpha, the colour is sky reflection plus depth tint blended over the ground. `WaterMaterial.apply_quality` switches the shader. Renders: `art/water_before_after.png` (Medium, before on top), `art/water_low.png`.
+**GPU breakdown cost:** not measurable in the cloud. Expected: Medium and up, caustics add 2 noise samples only on shallow near water (a few percent of the water pass), the absorption is 3 multiplies; Low saves the two full-frame copies the old shader forced at every tier. Dave's GPU table (Ctrl+Shift+G or Esc > Advanced) "sea off" line before and after is the real number.
+
+## 16. Far-tree impostors (step 4, build 125, approved by Technical direction with conditions)
+
+Trees now have three tiers, chosen per 256 m chunk by chunk distance (table `FloraView.IMPOSTOR_M`, `IMPOSTOR_TILE_PX`, `FAR_SHADOWS`; full-model and view distances come from the tile rules times the client's QUALITY_FLORA):
+| Quality | Full model | Far model (150 to 300 tris) | Impostor | Image per species |
+|---|---|---|---|---|
+| Low | 0 to 60 m | 60 to 120 m | 120 to 180 m | 64x128 x 2 views, about 87 KB |
+| Medium | 0 to 105 m | 105 to 210 m | 210 to 315 m | 128x256 x 2 views, about 350 KB |
+| High | 0 to 150 m | 150 to 300 m | 300 to 450 m | same |
+| Ultra | 0 to 150 m | 150 to 300 m (casts shadows) | 300 to 450 m | same |
+How: `src/flora/tree_impostor.gd` renders each tree species' far model once at startup into a SubViewport (orthographic, front and side, flat white ambient and no sun so no light direction is baked in), packs the two views into one mipmapped atlas and builds 2 crossed vertical quads (4 triangles). The shader tints the crown above the lowest leaf with the tree's own autumn or conifer colour (INSTANCE_CUSTOM), leaves the trunk untinted, lights the quad like the ground (normal up) and darkens the lower crown a little. Everything is client only: no server, protocol, save or item id change, the MultiMesh per species and part and its buffer are as before (only the mesh differs). Skipped (far model stays): glowing species (everember, witness tree), headless runs (no rendering device), and any species whose capture fails; the capture runs one view per frame at startup (about 24 species) and again only if the image size changes with quality. Shadows: impostors cast none; far-model trees cast shadows only at Ultra (the part's bounds overlap the cascades, so every instance of a part would otherwise go through the shadow pass).
+Known limits: one variant per species (the far model's variant 0) stands for all variants; a season change needs a new capture (hook: `set_quality`/`_capture_impostors`); no fade between tiers (the switch is per chunk, 256 m wide, beyond 120 to 300 m).
+Checks: cloud render, far model above and impostors below at 190 m, same trees: `art/tree_impostor_far_vs_impostor.png` (size and tint match; impostor crowns are a little flatter). Headless client check: 1507 frames, 2 slower than 50 ms, no script errors.
+Cost at Low: 4 triangles and 2 alpha-tested quads per tree beyond 120 m instead of 150 to 300 triangles; 87 KB per species once. GPU breakdown "trees off" before and after still to be measured on Dave's machine.
+
+## 17. Weather look (job 6b, build 131)
+
+Client only; no server, protocol or save change. `src/client/weather_look.gd` reads the same weather state the sounds use (`terrain_client.weather`, refreshed once a second; the F-menu sound test kinds also drive it) and eases the picture toward it over about 8 s.
+Rules (Dave, 2026-10-20): rain and snow only fall from clouds (cloud cover = max of cloud, rain, snow, storm, so a clear sky never rains). Bigger storms get darker, greyer clouds and sky (`gloom` uniform in `sky_clouds.gd`; coverage rises toward overcast; sun energy and sky light dim; fog thickens and takes the same grey). The biggest storms add lightning: a sky flash (lights the clouds from within, jumps sun and ambient) and, from Medium, a jagged camera-facing bolt with two forks. Rain soaks the ground everywhere (darker, glossier) and stays dry under trees; snow settles on flat ground and not under trees, buries the grass above 0.5 lying.
+Dry under trees: `canopy_map.gd` keeps a 128 m x 128 m map (one texel per metre, R8, 16 KB) centred on the player; every tree crown within it is stamped as a disc of its crown diameter (any tree, any season; `FloraView.canopy_discs`, `canopy_version`). The ground shader reads it (no wetness or snow under a disc) and the rain streak shader scales a streak to zero over a disc, so no rain falls through a canopy near the player. `weather_look.cover_at(Vector3)` is the shared query. The map redraws when the player moved 12 m or the trees changed (at most every 400 ms).
+Lightning event for Sounds and gameplay: `sound.weather.lightning(at, distance_m)` (client side, from the weather state, no network); the look listens to it and also emits `flash_started(at_world, distance_m)`. Real strikes that burn, injure or kill need a server position: a gameplay matter, not built here.
+Cost per tier (rain streaks, snow flakes, bolt): Low 500 / 350, no bolt geometry, sky flash only, no snow turbulence; Medium 1400 / 900 plus bolt and turbulence; High 2800 / 2000; Ultra 4500 / 3200. Per frame at every tier: a handful of sky, light, fog and ground uniforms; the 16 KB canopy texture upload only when it changes. The sky grading is 6 extra multiplies per sky pixel. No new full-frame passes, no volumetrics. GPU table numbers (Ctrl+Shift+G, not F8) are for Dave's machine; the cloud renderer (software) cannot time the GPU.
+
+## 18. Fir to hardwood gradient (build 150, Dave 2026-10-20)
+
+Below a mountain about 80 to 90% of the trees are firs; moving away toward the fertile lowlands it reverses to about 85% hardwoods. `flora_placer.gd`: `_mountain_near` (how far the highest ground on rings 200 and 450 m around a spot stands above it, smoothstep 25 to 120 m) combined with the old ridge factor gives a 0..1 "mountain" value; evergreens get a chance multiplier from `MIX_MINOR` 0.12 (lowland) to 1.0 (mountain), hardwoods from 1.0 to `MIX_HARD_AT_MOUNTAIN` 0.05, so the change is smooth. Slope thinning of hardwoods is unchanged. Server placement only: no re-bake, no format change, trees are placed live.
+Counts (starter area, 11 x 11 chunks, trees only), by mountain value: below a mountain (over 0.8) firs 15,798 vs hardwoods 3,761 (81% firs; before 11,477 vs 12,927, 47%); lowland (under 0.2) firs 1,327 vs hardwoods 8,278 (86% hardwoods; before 1,499 vs 8,352, 85%); middle bands 22% and 62% firs. Cost: 16 extra height lookups per tree candidate on the server only; nothing on the client.
+
+## 19. Flora cost plan, step 2: impostor switch closer (build 160)
+
+Dave's GPU table (build 157, High): trees, shrubs and plants 11.3 ms of 20, sun shadows 6.2 ms. Step 2 of tech/RENDER_AUDIT.md "Flora cost plan": `FloraView.IMPOSTOR_M` from [120, 210, 300, 300] to [100, 150, 180, 250] (Low, Medium, High, Ultra), so trees turn into 4-triangle impostors sooner. Full-model range (60 / 105 / 150 / 150 m) and view range are unchanged. Cost: fewer far-model trees (150 to 300 triangles each) drawn between the old and new switch distance; Low saves them beyond 100 m instead of 120 m. Measure: Dave's GPU table (Ctrl+Shift+G or Esc > Advanced) table "trees, shrubs, plants off" and the total at High and Low before and after; keep only if it saves 1 ms or more with no visible pop.
+
+## 20. Flora cost plan, step 3: tree shadows only near (build 164)
+
+Sun shadow range per tier (terrain_client QUALITY_SHADOW_M, Technical direction): Low off, Medium 45 m, High 60 m, Ultra 120 m. Full-detail trees also cast shadows only inside the same range, chosen per 64 m cell (`FloraView.SHADOW_M`, `CELL_M`): a cell of a chunk beyond it draws its full models in a separate group with shadows off, so a 256 m chunk no longer casts everything because one corner is near. Far-model trees cast shadows only at Ultra (unchanged), impostors none, shrubs and plants none. Client only. Cost: up to 16 cell checks per chunk when its level is worked out; one extra draw group per species and part for the cells beyond the range. Measure: GPU table "sun shadows off" and total at High.
+
+## 21. Double the grass (build 191, Dave 2026-10-20: "double the amount or more")
+
+`QUALITY_GRASS_DENSITY` (cards per ground sample, times each layer's own count) from [0.45, 0.65, 0.75, 0.85] to [0.68, 1.3, 1.5, 1.7]: 2.0 times the grass at Medium, High and Ultra, and 1.5 times at Low (Technical direction: the Low minimum machine is a 1050-class card). Draw radius (14 / 24 / 34 / 48 m), ground samples per cell (so ground raycasts), draws per cell (3 layers) and every thinning rule (slope, water, canopy, soil) are unchanged: the extra cards fall only where grass already grew, and each cell is still built once.
+Instances in the headless walk: Low about 1,400 (about 930 before), High about 57,000 (about 28,000 before). Draw calls: unchanged (up to 3 per cell, 420 cells at High in the walk). Memory: 64 bytes per card in the GPU buffer, so about 3.6 MB at High (was 1.8 MB), about 0.1 MB at Low.
+Also: the cell's cards now go to the GPU as one MultiMesh buffer instead of two calls per card. Grass build on the main thread at High (900-frame walk): 4.16 ms average and 170 ms worst per frame with double density and the old per-card calls; 1.26 ms average and 14.5 ms worst with the buffer (that run at density 1.65).
+GPU: grass is alpha-scissor cards and "grass off" saved about 0 ms in Dave's table (build 157). The Low and High "grass off" rows on Dave's next table are the real numbers (cloud has no graphics).
+
+## 22. Low priority: drifting air debris (idea from Dave, 2026-10-20, not to build now)
+
+Pollen, seeds and dust drifting through the air, for realism and to show the wind direction for hunting on land. None at sea unless close to an island. Plan: a small GPUParticles3D around the camera like the rain and snow in `weather_look.gd`, fed by the same world wind vector the sound and the grass sway use, so all three agree; density by season (pollen in spring and summer, seeds in autumn), nearby flora and time of day; off or very sparse at Low; faded by distance from the shore (needs a shore distance from the ground or sea, no new network data). Cost to state when built: particle count per tier and the GPU table line.
+
+
+Grass doubled again (build 228): Medium/High/Ultra density 2.6/3.0/3.4 cards per sample, Low unchanged at 0.68. Cards are packed straight into the MultiMesh buffer (no per-card Transform3D/Color objects): microbench 120k cards 191 ms old way vs 111 ms new. Memory 64 B per card.
+
+Flora setup spread (build 233): `FloraView.setup` now only reads the rules and makes materials, then queues the species; `apply_built` builds them within a 4 ms budget per frame (`_setup_step`), and chunk planning waits until all are built (`_setup_done`, then crowns of chunks that arrived early are added to the cover index). Tools without a frame loop call `finish_setup()`. Cloud flight check: welcome stall for flora setup 63 ms.
+
+Chunk-in and setup hitches (build 234): species models are now built on a worker thread (`_models_task`), the main thread only fills tables; chunk planning copies items shallowly (packed arrays are copy-on-write); `Cover.add_chunk` asks the species table once per species and writes cards without temporary arrays. Cloud flight check at High: flora apply worst 54.9 to 10.7 ms, chunk in worst 28.7 to 9.1 ms, welcome flora setup 63 to 28 ms; at Low apply worst 8.1 ms, chunk in 9.9 ms.
+
+Slope gravel (build 155): where slopes lose their grass the ground now turns to gravel first, or sand and gravel where broad noise (and soft rock) picks it, and only the steepest faces (slope above about 0.46 to 0.7) show bare cracked rock. `ground_material.gd` fragment: `scree` weight into gravel (layer 2) and sand (layer 4), tinted. Gravel texture regenerated by `tools/make_ground_textures.py`. Cost: about 6 ALU operations and one existing vnoise sample on the ground pass, same at every tier (no extra texture reads). Boulder aprons at slope bases are still to do. Check in game: slope below the mountain; GPU table "ground off" before and after.
+
+GPU table, Dave's RTX 2060 SUPER, window 3816x1869, build after 234 (2026-10-20). Correction from Dave: the Medium table was taken looking at the trees; only the Low table was taken looking at the sky, and he will redo Low.
+- Medium (3D scale 0.67), real: everything on 11.4 ms; trees, grass and shrubs about 0.1 ms each, ground 0.9, sun shadows 0.3, SSAO 0.2; 3D at full window size is 17.7 ms. This machine is resolution bound, not flora bound.
+- Low (3D scale 0.44), sky view, ignore for flora budget: everything on 9.1 ms; ground 1.9, sea 1.5, sun shadows 1.6, SSAO 1.6, fog 1.2, AA 1.1.
+No flora cuts are chosen from these; wait for the redone Low table (looking along the ground at the spawn).
+Redone Low table (looking at trees and ground, same machine and window, 3D scale 0.44): everything on 7.8 ms. Savings: grass 0.0, trees 0.3, shrubs 0.2, trees beyond 100 m -0.2, beyond 200 m 0.1, tree shadows 0.1, sun shadows 0.1, SSAO 0.5, AA 0.1, sky clouds 1.1. Switching ground (-2.2), fog (-2.6), sea (-0.8), glow (-0.7) and plants (-0.6) off made the frame slower (the engine does other work when they are off), so those rows are not savings. 3D at full window size 13.1 ms. On this machine at Low the flora is nearly free; the frame is limited by resolution, sky clouds, ground and fog. A GTX 1050-class card has about a third of this card's shader and fill rate and a quarter of its memory bandwidth, so every per-pixel row (clouds, ground, fog, SSAO) is expected to cost about three times as much there, while flora (vertex and draw-call bound) scales less; no flora cut is justified until the Measure this machine run on that PC shows trees or shrubs over 1 ms.
+
+## 23. Waterfall base look (build 236)
+
+Owner (2026-10-20): the foot of the falls did not look like the reference photo (spray, wet dark rock, moss and growth on the walls from the extra moisture). Two look-only parts, no protocol change, fed from `flora.fall_list()`:
+- `ground_material.gd` fragment: the three nearest falls (`GroundMaterial.set_falls`, refreshed with the flora update, twice a second) make a damp zone around the landing point, radius 14 to 40 m by flow, from 4 m below the base to 5 m above the top of the fall: ground and rock darken up to 38 percent, moss (two noise octaves, more on steep rock) takes up to 80 percent, glossier. Same at every tier: three loop steps, about 25 ALU and 3 vnoise samples only where a fall is near (the branch is skipped otherwise). No new passes.
+- `src/client/fall_mist.gd`: soft white spray cards rising from the nearest two falls (8 / 20 / 36 / 48 cards per fall at Low / Medium / High / Ultra, unshaded alpha quads, no screen read, no shadow), nothing beyond 160 m.
+Not done: ferns and small growth models on the walls (needs a flora table entry from the Items or flora data side), wet-rock normal sheen beyond the roughness change. Cloud check: shader compiles in the software renderer; a still of the effect needs a real fall (the scratch harness places it off the mound), so please look at a fall base in game.
+Cost: Low about 0.1 ms ground plus 16 small cards; GPU table "ground off" and total near a fall are the real numbers.
+
+## 24. Forest litter: leaves and dead branches (build 251)
+
+Look only, under tree crowns (owner and Technical direction, step 6 first part). Built inside `grass_view.gd` with the grass: the same ground samples and the rays already cast, so no extra rays. Where a sample lies under a crown (`flora.cover.covers`) it gets 2 leaf cards (flat 0.9 m cards with the new `assets/grass/litter.png`, made by `tools/make_litter_texture.py`, laid a hair apart in height) and a 0.35 chance of a dead branch (12 triangles, one MultiMesh per cell, dark weathered grey-brown, thin, so it is not mistaken for the pale loose sticks of world items, which are server objects; litter has no collider, no id and no prompt). Cards are written straight into MultiMesh buffers per cell; leaf and branch layers are two more nodes per cell that have litter, culled by `visibility_range_end`.
+Per quality (`QUALITY_LITTER_M` / `QUALITY_LITTER_AMOUNT`): Low 10 m, 0.3 of the cards (about 0.6 leaf cards per sample, a branch on about 1 sample in 10); Medium 18 m, 1.0; High 26 m, 1.5; Ultra 34 m, 2.0. Cost: main thread about 7 microseconds per covered sample (microbench, 243 us for a full 36-sample cell at High), inside the existing 40 rays per frame budget, so about 0.3 ms per frame while cells are being built and nothing in between; memory 64 bytes per card (a full forest cell at High: 108 leaf cards + 19 branches, about 8 KB). GPU: alpha-scissored quads and 12-triangle sticks, no shadows, no screen read; expect well under 0.3 ms at High in forest. Cells are built once as they come into grass range, so a cell built before its flora chunk arrived has no litter until it is rebuilt (a known gap shared with the grass).
+Not checked in the cloud: the look in a real forest (the software renderer takes about 15 minutes per still); please look at a forest floor in game.
+
+## 25. Ferns at the foot of waterfalls (build 268)
+
+Look only, client only (`src/client/fall_growth.gd`, texture `assets/grass/fern.png` from `tools/make_fern_texture.py`). Fed by `flora.fall_list()` with the nearest fall within 110 m: fern cards (three crossed quads, alpha-scissored, the grass shader and wind) are scattered inside the spray zone of that fall (same radius rule as the damp ground and the mist), at 2.5 m out to about three quarters of the zone, placed with up to 6 downward rays per frame against the terrain collision (ferns skip water, very steep ground and trees' colliders), leaning half way toward the surface normal so they sprout from walls and banks, with more of them on the steeper ground. Rebuilt when the nearest fall changes or the quality changes.
+Per quality: Low 6 cards, Medium 40, High 80, Ultra 120, one draw call, culled beyond 70 m. Cost: main thread 6 rays per frame only while a group is placed (about 30 frames), then nothing; GPU a few thousand triangles. Worst frame in the cloud flight check: unchanged (no fall in the test world's view range, so the group is not built there); the fern builder was exercised in a unit test only. Not checked in a render: please look at a fall base in game.
+Not done: ferns do not grow on the fall's own face (a vertical sheet of water), only around it.
+
+## 26. Shore pebbles and reeds (job 270, rock and small details part 2, first slice)
+
+Look only, in `grass_view.gd` like the litter. At every ground sample near water (`flora.water_level_at`, four neighbours at 2.5 m for the dry bank) it adds stones and reeds. Pebbles: a 20-triangle rounded lump (twelve-point solid, jittered and flattened) in pale grey, warm grey and brown, darker where wet, 7 to 22 cm, on the dry bank within 1 m above the water and on the shallow bed under clear water (depth under 0.9 m, thinning with depth), so the bed reads as pebbles through the clear water (reference photo). Reeds: the tall-grass card, 1.5 m, olive and straw, only along still water (water speed under 0.35 m/s: ponds and lake edges, not the current), in water under 0.4 m deep or on the bank within 0.6 m of it.
+Per quality (`QUALITY_SHORE_M` / `QUALITY_SHORE_AMOUNT`): Low 8 m at 0.3 (a few pebbles near the player, reeds only where the share rounds up, about one in three samples), Medium 20 m at 1.0, High 30 m at 1.5, Ultra 40 m at 2.0; culled by `visibility_range_end`. Cost: only cells near water have shore cards; main thread about 5 microseconds per shore sample inside the 40-ray budget; 64 bytes per card. Not done: boulders, moss on rocks and trunks, driftwood (next slices). Cloud check: unit test of the placement with a fake shoreline (297 pebbles and 83 reeds for 72 samples); not yet seen in a render.
+
+## 27. Meadow grass, step 1 (job 272): reach, distance bands, canopy closure
+
+Owner (2026-10-20): grass about 3 ft tall, so abundant the ground only shows where it does not grow, visible tens of metres out at every tier, no popping; grass thins in a closed forest and grows right under trees in open fields. Before: Low radius 14 m (short grass stopped near 10 m), density 0.68, tall cards 0.7 m. Now:
+- Radius per tier 40 / 55 / 70 / 90 m (`QUALITY_GRASS_M`), samples per 6 m cell side 5 / 5 / 6 / 7, density 1.2 / 2.6 / 3.0 / 3.4. Tall cards 0.7 m wide and 0.95 m high before the 0.75 to 1.15 size scatter (about 0.9 m average); layer reach cover 0.4, short 0.85, tall 1.0 of the radius; the cards shrink to nothing over the last 12 m (`fade_start = reach - 12`).
+- Three distance bands per 6 m cell (`LOD_SCALE`, `_lod_of`): near (to about 0.35 of the radius, 14 to 26 m) full samples; middle half the samples per side with cards 1.5 times as wide; far (beyond 65 percent of the radius) two samples per side with cards 2.1 times as wide, no ground-cover cards beyond the near band. A cell is rebuilt, its new cards swapped for the old in the same frame, when the player moves it into another band (3 m hysteresis), so there is no pop.
+- Canopy closure (`_closure`): seven points within 4 m tested against the shared cover index; thickness x (1 - 0.95 x smoothstep(0.4, 0.9, closure)). Scattered trees give about 0.15 to 0.3 (full grass under them), a closed forest 1 (no grass; the litter of section 24 takes over).
+Cost (estimates, headless has no ground for grass): cards Low about 25k, Medium about 60k, High about 145k, Ultra about 260k; 64 bytes per card; initial fill about 3.3k rays at High at 40 per frame (about 1.5 s); each band change costs 4 to 36 rays for that cell. GPU: alpha-scissored cards, no blending; overdraw is the risk on a 1050-class card; the Measure this machine run after this push is the check. Software still (Low, brook meadow): grass now reaches the far bank and the tree line; the harness does not apply the bands.
+
+## 28. Meadow far field (job 273) and trampling (job 275)
+
+Owner (2026-10-20): the grass reaches the horizon, and walked grass is stomped flat and stands up again in about 5 real minutes.
+- Far field (`ground_material.gd`, uniform `grass_far`, set per tier by `set_grass_far`): from 0.6 to 1.0 of the blade radius the ground fades toward a meadow colour with vertical blade streaks and clumps (value noise), out to 5 to 9 times the radius, only where the ground is grass and not under canopy. About 40 ALU per pixel, no geometry. If the ground still shows as a flat green carpet far out, raise the streak contrast here, not the blade radius.
+- Trampling (`grass_trample.gd`, read in the grass vertex shader): a 256 x 256 toroidal RGB8 map, 1.1 m radius stamps at the player's feet while walking on the floor, the time of the stamp in two 8 bit channels. The shader shrinks each blade card's height by how recently it was stamped and recovers over 300 s (`RECOVER_S`), so no CPU work per frame. Cost: one vertex texture fetch per card, about 5 us per stamp, an upload of 192 KB at most 10 times a second only when a stamp landed.
+- Only the local player stamps for now. Other players and creatures are not on the client yet; `grass.stamp(position)` is the hook for them.
+- If the 1050 run shows trampling over about 0.1 ms CPU or visible cost, turn it off at Low.
+
+## 29. Waterfall curtain (job 280)
+
+Owner (2026-10-20): "that doesn't look like water going over the falls". Look only, in `water_falls.gd` (`FALL_SHADER`, `build_mesh`) and `flora_view.gd` (`set_water_quality` sets `detail`); no wire format or fall finding change.
+- The ribbon mesh now carries vertex COLOR: r how far down the fall (0 lip, 1 foot), g width / 25 m, b a seed per fall, a fall length / 100 m. The shader works in metres from these: three scrolling noise strands (fast, long vertical streaks), thin spots that let the rock show, sides that fray, white foam at the lip and at the foot, whiter the further it has fallen, teal like the river above.
+- Geometry: from the lip the curtain arcs out from the face by 0.55 x sqrt(drop) up to 1.8 m and comes back to the foot (a free fall). Diffuse-lit (`diffuse_lambert_wrap`, no specular) so it darkens at night; the old shader was unshaded and glowed.
+- Cost: 5 value noises per pixel (3 on Low, `detail` 0), no screen or depth read, one shared material, no per-frame CPU. Check the GPU table at a fall at Low and High.
+- Not changed yet: the splash sprite and the plunge pool foam shader (rings toned down to 0.22) and the mist cards at the foot.
+
+## 30. Rain and storm darkening, storm water (jobs 283 and the rain fix)
+
+Owner (2026-10-20): "the weather still doesn't get darker when it rains"; ocean and land water darker and dirtier in a big storm.
+- What was wrong (`weather_look.gd`): light rain barely raised the cloud cover (`cloud_cover` only followed the weather's own cloud value), the sun dipped to about 40 percent and the ambient light only to 0.87. The ambient light comes from the sky's lighting cubemap, which is drawn once and not redrawn as the weather changes, so it stayed a bright clear sky. Nothing touched exposure or colour.
+- Numbers to tweak: the constants block at the top of weather_look.gd (RAIN_OVERCAST, SUN_STORM, AMBIENT_STORM, EXPOSURE_*, SATURATION_*).
+- Now: any rain or snow forces heavy overcast (cover 0.6 rising to 1 with the rain, `wet_sky`); sun energy goes to about 5 percent at full cover (`SUN_ENERGY * lerp(0.05, 1, 1 - 1.25 * cover)`); ambient energy 1.0 to 0.4 by `_dark`; exposure 1.1 to 0.95 and saturation 1.12 to 0.72 by `_dark`; `gloom` stronger (clouds and fog colour). `_dark` = 0.5 cover + 0.35 rain + 0.15 snow + 0.35 storm. All eased by the existing 8 s front ease. Only lightning (`flash_level`) lights a big storm up. Cost: a few environment values per frame.
+- Storm water (`water_material.gd`, uniform `storm`, `weather_look._update_water_murk`): darker grey-brown, clarity down by 65 percent, a little more foam, from the weather's storm plus a quarter of the rain, lagged separately: land water rises over 6 min and clears over 15 min, the sea 2 and 6 min. About 6 ALU per water pixel.
+
+## 31. Grass density per tier and the guard
+
+Owner (2026-10-20): the sparse grass he saw was the Low quality setting (cards per sample 1.2 over 40 m since build 272, 0.68 over 14 m before), not a regression at his usual tier.
+- Cards per ground sample per tier (Low, Medium, High, Ultra): 1.2 / 2.6 / 3.0 / 3.4 (build 228 had 0.68 / 2.6 / 3.0 / 3.4); reach 40 / 55 / 70 / 90 m; height 0.95 m. Near band (to 0.35 of the radius, 14 to 26 m) cards per m2 of short plus tall grass: Low 9.2, Medium 19.9, High 33, Ultra 50.9. The middle and far bands are thinner on purpose (half the samples with wider cards) to pay for the reach.
+- Guard: `python3 tools/check_grass_density.py` fails if the near-field coverage (cards per m2 times the band's card width) of any tier is below build 228's, or a tier's reach is shorter than 228's. Run it before pushing any change to grass_view.gd or the QUALITY_GRASS tables.
+
+## 32. Boulders and moss (job 286, rock and small details part 2, second slice)
+
+Look only. `grass_view.gd` layer `boulders` (shore group, so the shore range and amount apply: Low 8 m at 0.3, Medium 20 m at 1.0, High 30 m at 1.5, Ultra 40 m at 2.0): flat shaded 80 face granite lumps, 0.3 to 1.2 m, half buried, placed by `_put_boulders` on slopes (normal y 0.58 to 0.9, more as the slope steepens) and along banks, in clusters where the patch noise is high (aprons at slope bases). Each carries a stone colour and a moss amount; `BOULDER_SHADER` lays moss on the tops and the north side (north is -z) in soft patches, nothing else, no texture reads. Pebble and boulder faces now wind clockwise (Godot's front), so they are solid; before they showed their inside faces. Moss on trunks: `BARK_SHADER` in `flora_view.gd` adds north-side moss low on the trunk (about 8 ALU, no new texture). Cost: 80 triangles per boulder, about 0.1 boulders per ground sample times the cluster share (a few dozen near the player on a rocky slope); the same 40-ray budget, no extra rays. Not done: driftwood. Cloud check: software render of the boulder shader and mesh (grey stone, moss on tops); placement not seen on real terrain (headless has no ground).
+
+## 33. Grass reach per tier, doubled amounts, taller short grass, tall by water (build 288)
+
+Owner (2026-10-20): the grass edge was visible on Ultra at 90 m; the two screenshots were taken 159 m apart (x 53318 z 68473, and x 53191 z 68569), so Ultra reaches 160 m, High 75 percent (120 m), Medium 50 percent (80 m), Low 25 percent (40 m, as before). Also: the tall grass "looks great and needs to be thicker around water", the short grass "at least twice as tall and much more abundant", double the amount of both.
+- Cards per ground sample doubled for both types: short 8 to 16 and 0.34 to 0.7 m tall (card 0.8 m wide), tall 3 to 6 (same look, 0.95 m). Tier densities 1.0 / 2.6 / 3.0 / 3.4 (Low 1.2 to 1.0 so Low stays near 25k cards; its per-sample count is still 1.67 times the old, not 2).
+- Tall by water (`_wetness`): water within 3.5 m and no more than 2 m below the point makes the tall grass up to twice as many cards and drops the meadow-patch gate (it grows everywhere on the bank). Four water lookups per ground sample (about 5 microseconds).
+- Four bands by distance (`set_radius` sets the limits, `_lod_of`): near to 0.3 of the reach (14 to 20 m) full samples; middle to 0.5 of the reach (0.65 at Low); far to 0.8; very far to the reach. Samples per cell side beyond Low: near 5 to 7, then 3, 2, 1; cards 2, 3, 4 times wider; `BAND_SHARE` 0.4 / 0.35 / 0.35 of the cards beyond the near band. In the far bands only the tall grass is drawn (one draw a cell instead of three). Low keeps its old three bands (half the samples, then 2) and card widths.
+- The far-field ground tint (section 28) now starts at 0.6 of each tier's reach and carries the meadow on past the blades (to 5 to 9 times the reach), so no edge shows; it multiplies the ground colour that the blades are tinted from, so the season, the rain and storm darkening and the night apply to both together.
+- Cost estimate, cards on open meadow (`tools/check_grass_density.py` prints it): Low 25k, Medium 93k, High 205k, Ultra 381k (caps 25k, 130k, 250k, 400k). Rays to fill the reach: Ultra about 2200 cells, 40 rays a frame.
+- Scan: the cell scan of the reach now runs 4 rows a frame (one pass at 160 m took about 30 ms) and the queue is ordered by rings, not a lambda sort; worst grass frame in the flight check at Ultra 8.9 ms (was 27 to 31), High 8.5 ms, Low 8.4 ms (first-frame setup). Cells are built only between scans, nearest first.
+- Guards: `tools/check_grass_density.py` (reach, near-field per m2 and the card caps per tier), `tools/check_grass_bands.py` (no band flip-flop). Not seen live: the hand-off between the last blades and the tint (a ring would show as a band of different green at 0.6 to 1.0 of the reach); Dave to check on Ultra at the lake shore (x 53318, z 68473), plus Measure this machine at High and Ultra. If grass beyond about 90 m does not appear at all, the cause is not the blades: check whether ground collision and the voxel data reach that far (rays miss them), and the tint is then all there is.
+
+## 34. Flora cost at Ultra (build 296)
+
+Dave's Ultra table (RTX 2060 SUPER, forest view, 25.6 ms all on): trees 7.6 ms, trees beyond 100 m 3.8, tree shadows 5.5, sun shadows 6.5, grass 0.1. Ultra shadow range 120 to 90 m (`QUALITY_SHADOW_M` and `FloraView.SHADOW_M`, kept equal) and the full-model to impostor switch 250 to 210 m (`IMPOSTOR_M`); High, Medium and Low unchanged. Expectation (unmeasured): the shadow area falls by 44 percent and the impostor ring by about a quarter, so about 2 to 3 ms of the 12 ms of tree and shadow cost; the near 90 m keeps four cascades. Dave to compare the same Ultra table and a before/after screenshot of far tree shadows; if the shadow edge at 90 m shows on the ground, go back to 105.
+
+## 35. Tree shadow proxy (build 301)
+
+Sun shadows of full-detail trees cost more than the trees themselves (Ultra table: trees 7.6 ms, tree shadows 5.5, sun shadows 6.5). Full models (about 1300 triangles) now cast the sun shadow only in 64 m cells whose nearest edge is within 30 m of the player (CONTACT_M). Full trees in cells farther out (up to the tier's shadow range: Medium 45, High 60, Ultra 90 m) are still drawn full, but cast no shadow; their shadow comes from a second shadows-only draw of their far model (about 120 triangles). Same species, variant, position and wind-free shape, so the shadow outline is close; the leaf cards are coarser. Low is unchanged (no shadows). Cell granularity means the full-shadow area is the 64 m cell the player stands in plus neighbours within 30 m, not a perfect 30 m circle; the switch happens when a chunk redraws, like the other tiers. Expected saving: roughly 1 to 3 ms at Ultra, less at High and Medium. NOT measured: Dave's Ultra table before and after is the test.
+
+## 36. Tree meshes out and back in (build 302)
+
+`tools/export_tree_meshes.gd` writes every tree and shrub species to glb (near file with four variants, far file, winter file) plus triangles.csv; the zip Dave works from is /mnt/project-files/trees/dynasty_tree_meshes.zip. Run: `godot --headless --path . --script res://tools/export_tree_meshes.gd -- --out=DIR`.
+Coming back: FloraView `_override_models` looks for `<species>.glb` and `<species>_far.glb` in user://tree_meshes/ then res://assets/tree_meshes/ and uses the objects named `<species>_v0..3` / `<species>_v0..3_far` instead of the built ones. Missing, unreadable or misnamed files keep the procedural model. Materials are matched by name (bark, birch_bark, smooth_bark, chrome, ember, twig, leaves ...) and replaced by the game's shaders. The middle level is still cut from the near model by the game; the flat picture still comes from the far model. Winter files are not read yet (the winter model is still procedural). Saves and protocol are untouched.
+
+## 37. Short grass coverage (build 303)
+
+Owner (2026-10-21, build 290 Ultra screenshot at x 53190, z 68681): the small green grass should be so thick the ground texture is barely seen; target 98 percent cover. Measured on the screenshot (blade pixels vs ground pixels, shadowed grass counted as grass): about 13 to 29 percent bare (13 % in the mid field, 29 % in the near field, bare patches and the brown bank included); read as roughly 80 to 85 percent cover. Build 290 already had the doubled counts of 288. Cause found in the placement, not the card count: the short grass was placed with the soil's thickness (soil 4, the soil in the screenshot, is 0.5, so half the cards were dropped) and meadow patches thinned it to 40 percent, so the short grass was about 20 to 50 percent of its nominal density exactly where the bare patches show. Build 303: the soil share of the short grass is lifted (times 1.9, capped at 1: soil 4 becomes 0.95) and meadow patches thin it by at most 25 percent. Cards per square metre in a soil 4 meadow go up about 2 to 4.5 times; with random placement cover = 1 - exp(-n), so 85 percent needs n about 1.9 and 98 percent needs n about 3.9, a factor 2.05; the change gives more than that. Card caps in tools/check_grass_density.py already assumed every sample at full chance (Low 25k, Medium 93k, High 205k, Ultra 381k), so the worst case is unchanged; the real card count on open meadow rises toward that worst case. Cost per tier not measured live: needs Dave's Ultra and High GPU tables over open meadow.
+
+## 38. Under the crown (build 307)
+
+Owner (2026-10-21, build 290 Ultra screenshot at x 53180, z 68690): under a big tree there should be almost no grass except at the edge of the canopy footprint, and the ground should be so covered in leaves and twigs that none shows. Rule, per tree (its own crown radius, from the species crown_m grown with the tree's size): `Cover.Index.crown_depth` gives 0 at the drip line to 1 at the trunk. Grass: full to 0.12 depth (the edge band, about 0.7 m of a 6 m crown), then thinned to 4 percent by 0.5 depth (CROWN_GRASS_FROM/TO), on top of the existing forest closure thinning and independent of the short-grass lift of section 37 (edge band keeps the 98 percent short grass). Litter: leaf cards and twigs rise from the normal count at the drip line to 5 times (leaves) and 4 times (twigs) by 0.4 depth (CROWN_LITTER_*, LITTER_DEEP_*). The forest floor look already approved (leaf litter, gravel slope) is unchanged at the drip line. Cost, not measured live: Ultra full-depth floor is about 27 leaf cards per m2 (litter_m 34 m), so a lone crown of 6 m radius adds about 2 thousand cards and a closed forest within 34 m up to about 80 thousand flat litter cards, offset by the grass that is no longer drawn there (a closed forest draws about 5 percent of the meadow grass). Low (10 m reach, 0.3 amount) adds a few hundred.
+
+## 39. Grass while moving, one reach, litter cap (build 311)
+
+Owner (2026-10-21): "the grass stops rendering while I am moving ... pops into view as I step on it", and all grass should have the same draw distance. Causes found in grass_view.gd: cells were built only between scans and a run starts a new scan every cell crossing, so building was starved; the ray budget (40 a frame) could not keep up with the cells that change band or reach at a run; cells whose ground collision was not ready waited 1.5 s. Fix: building goes on during a scan; the budget doubles while moving fast with a backlog and is capped at 5 ms a frame (BUILD_USEC); the scan is centred LOOKAHEAD_S (1.5 s) of movement ahead and widened by that offset, with cells still queued nearest the player first; retry 0.5 s; rescan every 0.8 s. The short grass now has reach 1.0 like the tall grass and is drawn in the far bands too (the density guard already counted it there). Litter now has a hard cap per tier (Technical direction): Low 3k, Medium 20k, High 40k, Ultra 60k cards drawn at once, nearest cells served first. Not run with a moving player (owner: he is the test); cost while moving at Low is bounded by the 5 ms cap and is not measured.
+
+## 40. River mouth (build 313)
+
+Owner rule: rivers run into the sea so they look like one body (brown is only a test colour). water_material.gd now fades the flood brown (`mud`) out of any water whose surface is within MOUTH_FROM_M (0.4 m) to MOUTH_TO_M (4.5 m) above sea level (0 m), so a river's colour is the sea's by the time it reaches it, with no edge or step; the sea itself is at 0 m and is unchanged. Where fresh meets salt (the middle of that height range) moving water gets a soft band of foam (`meet`, at most 45 percent). Storm colour and murk are shared by rivers and sea (same uniforms from weather_look.gd), so the storm look matches on both. Shader only; no tile data, no re-bake. Not checked on the real river mouth (needs Dave's build): look at where a river meets the ocean in calm and in a storm.
+
+## 41. Flora worker crash (build 317)
+
+Crash (owner, 2026-10-21): "Out of bounds get index '3424' (on base: 'PackedInt32Array')" in FloraView._plan on a worker thread. The worker was handed a shallow copy of a chunk's item arrays; `remove_item` (a tree felled) changes those arrays on the main thread while the worker reads them. Now `_refresh` gives the worker real copies of the packed arrays, and `_plan` never reads past the shortest of ids, positions, heights and yaws.
+
+## 42. No decorative rocks (build 320)
+
+Owner rule (2026-10-21): any rock mesh placed in the world must be pickable. grass_view.gd no longer draws boulders or shore pebbles (SCENERY_ROCKS false; the code stays for a later pickable version). Real stones come from the Items scatter. What they replaced: shore pebbles 14 to 44 cm, about 10 per m2 on gravel banks within the shore reach (an Ultra figure; many tiny ones), and mossy boulders 0.6 to 2.4 m wide, 0.1 per sample in clusters near water and on slopes over about 0.1. Litter twigs and leaf cards stay as non-carryable floor litter under crowns.
+
+## 43. Boulders stay, pebbles go (build 336)
+
+Owner (2026-10-21): boulders are not rocks; they are boulders, harvestable by the right tool. So SCENERY_BOULDERS is true again in grass_view.gd (the mossy granite lumps near water and on slopes, section 32) and only the decorative pebbles stay off (SCENERY_PEBBLES false; loose rocks must be pickable, Items scatters them). Placement is client side and deterministic per 6 m cell (rng seed hash(cell)), from a ground ray, the patch noise and the water test, so the server cannot reproduce it. For harvesting Items would need the boulders as server entities; GrassView._make_boulder() (static, ArrayMesh, radius 1 unit, scaled 0.3 to 1.2 m, 0.65 to 1.1 tall, sunk 20 percent) is the mesh to reuse.
+
+## 44. Pebbles back, redrawn after digs (build 341)
+
+Owner (2026-10-21): pebbles are decoration, not pickable or harvestable, like a voxel texture; they should vanish if anyone digs the voxel under them. SCENERY_PEBBLES is true again. New `GrassView.ground_changed(center, radius)`, called from terrain_client `_on_dug`: the 6 m cells around a dig are redrawn 0.6 s and again 2.5 s later (once the ground collision has caught up), so grass, litter, pebbles and boulders over a dug hole are gone (before this nothing redrew a cell after an edit until it left reach or changed band). Boulders stay scenery (section 43). Only digs the client applies are covered; if building or other edits change the ground they need the same call.
+
+## 45. Ragdoll character (build 349)
+
+Owner (2026-10-21): a simple ragdoll-type character, no features. src/client/ragdoll_body.gd builds it in code (17-bone Skeleton3D, one skinned mesh of capsules and boxes in a neutral skin colour, about 1.86 m tall, 1.5k triangles, one draw call, AnimationPlayer with idle walk run crouch sit lie swing jab throw use, a Marker3D mount on each hand for held tools); `Ragdoll.new(true)` is the first-person arms model. Docs: assets/character/README.md; check: tools/check_ragdoll.gd. Cost: no physics bodies and no joints (it is animated, not simulated); only the local player's body exists and only draws and animates in third person (the animation is switched off in first person); the skinned mesh and 18 tracks are well under 0.5 ms a frame on a GTX 1050-class PC by estimate, not measured live. Other players would cost one draw call and one animation player each, about 20 players at a few hundred microseconds each when visible.
+
+
+## 46. Asset budget table (job 9; numbers computed from the builders, not measured on a GPU)
+
+Source: tools/export_tree_meshes.gd run on the 25 tree and 22 shrub species (average over the four variants), FloraView constants, tools/check_grass_density.py. Draw time and overdraw per frame need Dave's GPU tables (still owed).
+
+**Triangles per model** (full = near band, mid = decimated to about a third by `generate_lods` for models over 500 triangles, far = the cheaper far model, impostor = 4 triangles, a crossed pair of cards):
+* trees: near 174 to 4170 (average 1781), far 34 to 326 (average 150); shrubs: near 48 to 2179 (average 176), far 16 to 200 (average 37).
+* heaviest trees:
+
+| species | height m | near tris | mid tris (a third) | far tris | surfaces |
+|---|---|---|---|---|---|
+| oak | 20 | 4170 | 1390 | 207 | 2 |
+| everember | 90 | 3446 | 1148 | 238 | 2 |
+| wild_cherry | 11 | 3347 | 1115 | 166 | 3 |
+| rowan | 10 | 3011 | 1003 | 182 | 2 |
+| sweet_chestnut | 14 | 2893 | 964 | 187 | 2 |
+| wild_pear | 10 | 2395 | 798 | 172 | 3 |
+| walnut | 14 | 2331 | 777 | 176 | 2 |
+| wild_apple | 7 | 2329 | 776 | 163 | 3 |
+| spruce | 38 | 2255 | 751 | 326 | 2 |
+| wardpine | 27 | 2251 | 750 | 162 | 2 |
+| (lightest) coconut_palm | 16 | 174 | 174 | 34 | 2 |
+
+**Where each is used** (FloraView, per quality Low, Medium, High, Ultra): full models inside the tier's shadow range or 30 m (shadow 0, 45, 60, 90 m; sun shadow from the far model past 30 m since build 301), mid models out to `near_m`, far models out to the impostor switch (100, 150, 180, 210 m), impostors beyond. Draw calls: one MultiMesh per species, variant, 64 m cell tier and surface (bark and leaf cards are two surfaces; a few species have a third); the shadow proxy adds one shadows-only draw per full cell group.
+
+**Textures** (all 8-bit RGBA PNG, GPU compressed on import): bark 128 x 256 (29 to 37 KB each, three), leaf cards 256 x 256 (58 to 107 KB, eight; conifer and palm 256 x 128, about 31 KB), twig 256 x 256 (44 KB); grass_short, grass_tall, fern, litter, ground_cover in assets/grass. Alpha: leaf cards are alpha-scissor (no blending, but overdraw where crowns stack: the pixel cost the Ultra table shows under trees).
+
+**Cards per tier** (grass, density guard worst case, every sample at full chance): Low 25k, Medium 93k, High 205k, Ultra 381k (caps 25k, 130k, 250k, 400k). Litter hard cap: 3k, 20k, 40k, 60k. Shore and reeds follow QUALITY_SHORE_M (8, 20, 30, 40 m) at 0.3, 1.0, 1.5, 2.0 of their per-sample counts; boulders are 0.1 per sample on banks and slopes, pebbles 4 per sample on banks. Ragdoll: 1.5k triangles, one draw call, third person only.
+
+**Still to measure for the table** (owed, needs Dave's PC): trees per band at the spawn view (counts from the chunk plans, not tables), ms per band, draw calls, overdraw. Ask for the Ultra and High tables on the forest view and the meadow view.
+
+## 47. Idle grass work (build 353)
+
+Owner table (2026-10-21, tall grass at Ultra): nothing saved more than 0.9 ms and half the 3D pixels saved 0.8, so that frame was CPU bound. Standing still, grass_view.gd was rescanning the 2000 cells in reach every 0.8 s (4 rows a frame for about 14 frames) and retrying cells without ground collision every 0.5 s. Now a rescan happens only when the player changes cell, or when a waiting cell's retry falls due (the scan records the earliest retry), at most every 0.8 s and at least every 8 s, and a cell with no collision backs off 0.5, 1, 2, 4, 8 s. The GPU probe table (Ctrl+Shift+G) now has a CPU line: script ms, physics ms, draw calls, triangles, fps, to tell the two kinds of frame apart.
+
+## 48. Ragdoll sides (build 354)
+
+The rig had its sides swapped (the bone named left sat on +X, which is the right of a body facing -Z). Names now match the body: right is +X, the swing, jab and touch clips use the right arm, held tools go to hand_mount_r.
+
+## 49. Scenery boulders off (build 363)
+
+Items made boulders server-owned objects (build 361, drawn in inventory_view with GrassView._make_boulder, solid, shrinking as stones come out). SCENERY_BOULDERS in grass_view.gd is now false so there is one drawing path and no double boulders. Pebbles stay as decoration. Cost: the boulder layer no longer runs, a little less grass-cell work near water and slopes.
+
+## 50. Sun, moon and sky follow the game clock; ice look (build 386)
+
+**Day cycle** (`src/client/day_cycle.gd`, applied by `weather_look.gd`, kill switch `LookSettings.DAY_CYCLE`). The sun path is the real one for latitude 52 degrees: rises in the east, south at noon (north is -Z), sets in the west; the noon sun is high in summer and low in winter, so days are long in summer and short in winter. One game day is one real hour, so the sun moves 15 degrees per 2.5 real minutes. The one directional light is the sun by day (white, golden when low, red on the horizon, faded to nothing as it sets) and a cold blue full moon, opposite the sun, at night (0.22 of the daytime energy); there is still one light and one shadow map. Sky palettes (day, dusk, night) blend by sun height and drive the sky shader colours, the fog colour, the water's mirrored sky, and the water's body glow (`daylight`). Stars at night (one hash per pixel, hidden by cloud and storm). Ambient light falls to 0.24 of the day value at night, never pitch black. The weather multiplies on top: a storm still darkens the sun and ambient light, a little less at night so a storm night is not black. Cost: a few trig calls once a second, a handful of uniforms; the sky palette uniforms change only every 4 s (SKY_STEP_MSEC) because a changed sky parameter may make the engine redraw the sky's lighting cubemap: if the frame time shows a hitch every 4 s at dusk, raise it. The sky's ambient cubemap itself is drawn rarely (`PROCESS_MODE_QUALITY`), so the ambient colour is the day sky's scaled down at night, not a dark-sky colour. Not checked on a real GPU. Stills (lavapipe): `/mnt/project-files/art/day_cycle_sheet.png` (06:30, noon, sunset 18:12, dusk 19:12, night 23:00 and 03:00, storm at noon and at 23:00).
+
+**Ice look.** Still water only (`steep < 0.02`): `ice` uniform 0..1 on the water shader (set by `flora_view.set_ice_cover`, which River start calls once a game minute from `Ice.cover`). From 0, a frost rim grows in from the shore and shallows, then patches, then a full sheet by about 0.6: thin ice is clear and dark (the bed and black ice show), thick ice milky white-blue with two sizes of hairline cracks, flat and glossy, no ripples, no foam. Ocean floes (`ocean_ice.gd`) have their own shader: snow-dusted top with blue patches, glassy blue-green sides with streaks, cracks, world-space noise, lit like any solid. Cost: the ice branch only runs where `ice > 0` on still water; floes are a few slabs. Stills: `/mnt/project-files/art/ice_pond_sheet.png` (cover 0, 0.15, 0.35, 0.6, 1.0, the first run before the ramp was slowed from 1.7 to 1.25). Not checked on a real GPU.
+
+## 51. Flora draw merge (build 387, Technical direction render audit)
+
+Ground's Low audit found about 1000 draw calls before terrain, most from splitting flora per chunk, part, species, variant and tier (15 to 50 instances a draw). Two changes in `flora_view.gd`, same instances drawn, same shadow rules:
+- Shrubs and plants at Low and Medium: one MultiMesh part per 256 m chunk instead of per 128 m quarter (`PART_M_LOW`, set by `set_quality`; High and Ultra keep 128 m). The distance cut of those draws is `view + 0.7 * part`, so a shrub or plant in a held chunk can show up to about 90 m farther out than before (the chunk is held by its nearest edge anyway, so no new instances are made, only the edge of the draw moves). Cost: slightly coarser frustum culling of those nodes.
+- Far trees (tier FAR) use one far model per species (variant 0): at that distance the variants are not told apart, and their draws merge.
+Measured, headless at spawn 53233,68416 with the new `flora.draw_stats()` line in the client's end-of-run log ("flora draws"): Low 543 flora MultiMesh nodes for 8214 instances (trees 185, shrubs 145, plants 213) became 197 (87, 43, 67), same instances, nodes under 50 instances 518 to 156. Medium now 281 nodes (trees 231); Ultra unchanged for shrubs and plants (213 plants, 145 shrubs) and trees 452. Full and mid tree tiers still keep their variants (a tree seen within about 200 m shows its own model). Not checked on a real GPU; if far trees look too alike or shrubs pop at the edge, say so and the variants or `PART_M_LOW` can be set back. Next step if wanted: merge neighbouring chunks' draws (2x2 chunks per MultiMesh), needs a group node rebuilt when a member chunk changes.
+
+## 52. Look of what the player builds (build 388, job 10)
+- New `src/client/building_look.gd`: lean-to (forked poles, ridge pole, rafters, overlapping leaf cards, stacked-branch back wall, leaf bed), chopping block (wobbly bark, ring top, axe cut, root flares, chips), woven chest (wicker bands, corner stakes, domed lid, straps), campfire (irregular stones, ash, charred logs; loaded: leaned kindling; lit: three shader flames, glowing coals, same OmniLight3D "Light").
+- inventory_view.gd `_make_*` only delegate; footprints and the "Light" child are unchanged. Meshes are built once and shared, vertex colours, one material each, no per-frame work (flame sway is on the GPU).
+- Triangles roughly: lean-to 1500 (cards), chest 400, block 300, fire 500. Cloud cannot judge on a GPU; stills in /mnt/project-files/art/buildings_look.png and buildings_look_night.png.
+
+## 53. Wind direction cue (build 396, job 11)
+- `src/shared/weather.gd` gains `wind_dir` (radians, the way the wind blows toward, direction = (cos, sin) on (x, z)): slow noise of seed and game time, a new heading about every 20 game hours, swings more in a storm. Same on server and client, nothing sent or saved; existing keys untouched; test_weather.gd checks it is deterministic-finite, slow and changing.
+- `src/client/wind_cue.gd` (rewritten in build 448 after Dave saw specks hover like fireflies): ONE GPUParticles3D, billboard quads. Specks are born on a thin slab 14 m UPWIND of the camera, move downwind at 1.5 + 7 x wind m/s (x0.6..1.2 each), life = 44 m / speed, and fade by distance from the camera (18 to 30 m) and with age, so they cross the view and leave. Count: none under wind 0.05, 12% of the full count in the faintest breeze, full at wind 0.6. Heading = wind_dir plus a slow shared gust wobble (about +-10 deg), per-speck spread 20 deg. NO turbulence: Godot's GPU turbulence field overrides the velocity and was what made the first version hover. Leaves/petals are elongated and tumble, sink fraction per season, colour x daylight (nothing glows at night). Pollen (summer), petals (spring), leaves (autumn), dust (winter) by colour and size.
+- Off at Low. Particles: Medium 160, High 260, Ultra 400; turbulence from High. Fades out with rain or snow, underwater, and near sea level (zero below 2.5 m eye height, full at 6 m, so none out at sea). No per-particle scripts. Cost (cloud estimate, one particle system, no shadows, alpha quads): Medium well under 0.1 ms GPU; not measured on a GPU.
+- Dave to check: can he tell which way the wind blows from the specks, and are they too faint or too many.
+
+## Station meshes from Dave (2026-10-21)
+
+Dave is modelling the forges himself (his concept picture: Basic, Medium, Large, Master Forge; `/root/.claude/uploads/.../dave_forge_ideas.png`, copy it to `art/` when it is shared). Import path: Dave's `.glb` files go in `assets/stations/` by the names forge_basic, forge_medium, forge_large, forge_master (spec in STATION_TIERS_DESIGN.md: metres, pivot at the footprint centre on the ground, front toward -Z); `inventory_view.gd` loads them. Hooks (build 475): the "Fire" and "Smoke" Node3D markers inside each model give the points; `BuildingLook.add_hooks` adds the flickering light, swaps the flat "Fire_Coals" card for the shared coals and flame tongues, and adds a smoke plume. Keep one material per surface kind, emissive only on coals and gems.
+Look cues from his picture for the later look pass: Basic = clay-daubed rubble hearth with a plank-and-log lean-to roof; Medium = squared stone, arched firebox, stepped stone hood with one riveted iron band; Large = same with heavy riveted iron straps at the corners, an iron-banded hood and a diamond plate over the arch; Master = black iron and gold filigree, red gem inlays, glowing hood, side towers. All: arched firebox with glowing coals and sparks, stepped hood into a flue, riveted iron straps, warm orange glow on the surrounding stone.

@@ -1,0 +1,18 @@
+{
+	"note": "Voice sets for the inner voice (Dave 2026-10-21): the voice is compiled from the character's gender and traits, with no pick screen. src/shared/inner_voice_profile.gd chooses the set id <family>_<temperament>_<n>; tools/gen_inner_voice.py renders every line in data/items/inner_voice.json once per set with the text to voice engine Kokoro (Apache 2.0) into assets/audio/inner_voice/<set id>/<line id>.ogg. Voices are Kokoro voice ids; speed below 1 is slower.",
+	"families": {
+		"masculine": {
+			"steady": [{"voice": "bm_george", "lang": "en-gb", "speed": 0.92}, {"voice": "am_michael", "lang": "en-us", "speed": 0.92}],
+			"nervous": [{"voice": "bm_lewis", "lang": "en-gb", "speed": 1.0}, {"voice": "am_liam", "lang": "en-us", "speed": 1.0}]
+		},
+		"feminine": {
+			"steady": [{"voice": "bf_emma", "lang": "en-gb", "speed": 0.92}, {"voice": "af_heart", "lang": "en-us", "speed": 0.92}],
+			"nervous": [{"voice": "bf_isabella", "lang": "en-gb", "speed": 1.0}, {"voice": "af_sarah", "lang": "en-us", "speed": 1.0}]
+		}
+	},
+	"temperament": {
+		"traits": ["boldness", "wisdom"],
+		"steady_at": 0.5
+	},
+	"gender_families": {"man": "masculine", "male": "masculine", "woman": "feminine", "female": "feminine"}
+}

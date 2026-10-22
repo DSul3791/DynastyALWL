@@ -1,0 +1,4 @@
+{
+	"note": "Copy to data/admin.json (gitignored) and list the player keys that may place NPC markers and NPCs. With no data/admin.json there are no admins.",
+	"keys": ["replace-with-a-real-player-key"]
+}

@@ -1,0 +1,21 @@
+{
+	"note": "Sleep (Dave 2026-10-21, job 86, items/SLEEP_DESIGN.md). Lie down (Z) and hold Z for hold_s seconds to sleep. While asleep exertion falls strain_mult times faster than standing (lying alone is 3 times) and health regenerates regen_mult times faster; the part above lying is scaled by the quality of the place: under a roof or tree crown 'covered', open dry ground 'open_dry'. Open ground in rain (rain at or over rain_wakes) will not let you sleep and wakes you at once. You wake on any movement or stance key, a hit or a fall, a rain that reaches you, or after rested_s seconds with exertion at zero (so you do not sleep your life away). Waking from a faint is unchanged. No tiredness bar yet: sleep only rests exertion and health. Hunger and thirst run at the resting rate while lying. Build 522 (Dave 2026-10-21): going to sleep (Z) blacks out smoothly over fade_in_s like a faint, the heart in the ears slows from bpm.start to bpm.end over bpm.slow_s, you wake by yourself once energy is full AND exertion is gone for rested_s, and the wake fades back over fade_out_s with the heart at bpm.wake. Holding Space (the client sends ACT_SLEEP 0) wakes you early with energy where it was. The expected time to wake (real seconds) is sent with the heart rate in body(bpm, eta_s, phase), protocol 59.",
+	"hold_s": 3.0,
+	"nap": {"energy_full": 99.0, "exertion_min": 0.75, "exertion_end": 0.25, "target_s": 10.0, "say_rested": "You are well rested, you really can't sleep right now"},
+	"strain_mult": 6.0,
+	"regen_mult": 2.0,
+	"quality": {
+		"covered": 1.0,
+		"open_dry": 0.6
+	},
+	"rain_wakes": 0.2,
+	"rested_s": 1.5,
+	"fade_in_s": 4.0,
+	"fade_out_s": 4.0,
+	"bpm": {
+		"start": 66.0,
+		"end": 44.0,
+		"slow_s": 45.0,
+		"wake": 72.0
+	}
+}

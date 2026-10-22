@@ -1,5 +1,8 @@
 extends Node
 
+const GitStamp := preload("res://src/debug/git_stamp.gd")
+const RUN_NOTE := "user://server_run.json"
+
 
 func _ready() -> void:
 	var role := AppConfig.get_command_line_value("role", "play")
@@ -51,6 +54,18 @@ func _launch_role(role: String) -> void:
 # "play": starts a terrain server for this world in the background (no
 # window; it stops when this game closes) and joins it.
 func _host_and_play() -> void:
+	var port: int = int(AppConfig.get_command_line_value("port", "24600"))
+
+	if _port_is_taken(port):
+		await _clear_old_server(port)
+
+	if _port_is_taken(port):
+		# A second server on the same UDP port would die at once and leave the player talking to the old one (maybe an older build).
+		push_warning("Play: UDP port %d is already in use, probably a server from an earlier run; not starting another" % port)
+		print("Play: port %d is busy, joining the server already there (the connect window names it if it is out of date)" % port)
+		get_tree().change_scene_to_file("res://scenes/terrain_client/terrain_client.tscn")
+		return
+
 	var arguments: PackedStringArray = PackedStringArray([
 		"--headless",
 		"--path", ProjectSettings.globalize_path("res://"),
@@ -67,3 +82,48 @@ func _host_and_play() -> void:
 
 	print("Play: started the terrain server (process %d), joining it" % pid)
 	get_tree().change_scene_to_file("res://scenes/terrain_client/terrain_client.tscn")
+
+
+# The port is held. Read the note the old server left (server_run.json): one from another checkout is stopped; one that is closing is
+# waited for (it stops answering blocks while it saves). A healthy server of this same checkout is kept and joined.
+func _clear_old_server(port: int) -> void:
+	var note: Dictionary = {}
+
+	if FileAccess.file_exists(RUN_NOTE):
+		var parsed = JSON.parse_string(FileAccess.get_file_as_string(RUN_NOTE))
+
+		if parsed is Dictionary:
+			note = parsed
+
+	if note.is_empty() or int(note.get("port", 0)) != port:
+		return
+
+	var mine: String = GitStamp.short_commit()
+	var old_commit: String = str(note.get("commit", ""))
+	var stale: bool = old_commit != "" and mine != "" and old_commit != mine
+	var closing: bool = str(note.get("state", "")) == "closing"
+
+	if stale and int(note.get("pid", 0)) > 0:
+		print("Play: the server on port %d is from commit %s, this game is %s: stopping it" % [port, old_commit, mine])
+		OS.kill(int(note["pid"]))
+	elif not closing:
+		return
+
+	var waited: int = 0
+
+	while _port_is_taken(port) and waited < 30000:
+		await get_tree().create_timer(0.5).timeout
+		waited += 500
+
+	print("Play: old server on port %d %s after %d ms" % [port, "gone" if not _port_is_taken(port) else "still there", waited])
+
+
+# True when something already holds this UDP port (the server's ENet host binds it).
+func _port_is_taken(port: int) -> bool:
+	var probe: PacketPeerUDP = PacketPeerUDP.new()
+	var error: int = probe.bind(port, "*")
+
+	if error == OK:
+		probe.close()
+
+	return error != OK

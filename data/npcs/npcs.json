@@ -1,0 +1,116 @@
+{
+	"note": "Classic NPC system, step A (Radar, Steve-approved 2026-10-21; design in items/NPC_DESIGN.md). packages: what an NPC does in a slot; 'marker' is the kind of world marker it goes to (bed, chair, post) and 'state' the body state there. schedule: 24 hourly slots of package names, read with the NPC's own jitter (+/- jitter_min). Beyond active_radius_m from every player an NPC is dormant: not simulated, placed at the marker its schedule says when a player comes in range. Tick rates by distance to the nearest player: near (hz_near within near_m), mid (hz_mid within mid_m), far (hz_far). Markers live in markers.json (x, z; the ground gives y) and admin additions in the store folder. test_hold (Dave 2026-10-21, TEST): while an NPC id is listed there it does that package all day (Hob at a post, Edda in a chair, both facing the spawn x 53301 z 68427); delete test_hold to restore the day schedules. Routines (build 566): packages eat (table), wander (square, a short walk about the town) and shelter (a roofed marker). In rain at or above shelter_rain an NPC doing a package listed in shelter_from goes to the nearest free shelter marker instead and returns when it stops. Every schedule is 24 slots naming a package; tests/test_npc_routines.gd checks sleep hours, marker kinds and slot counts.",
+	"active_radius_m": 200.0,
+	"near_m": 60.0,
+	"mid_m": 120.0,
+	"hz_near": 10.0,
+	"hz_mid": 3.0,
+	"hz_far": 0.5,
+	"walk_mps": 1.4,
+	"arrive_m": 0.4,
+	"jitter_min": 10,
+	"send_radius_m": 120.0,
+	"packages": {
+		"sleep": {
+			"marker": "bed",
+			"state": "sleep"
+		},
+		"sit": {
+			"marker": "chair",
+			"state": "sit"
+		},
+		"work": {
+			"marker": "post",
+			"state": "stand"
+		},
+		"eat": {
+			"marker": "table",
+			"state": "sit"
+		},
+		"wander": {
+			"marker": "square",
+			"state": "stand"
+		},
+		"shelter": {
+			"marker": "shelter",
+			"state": "stand"
+		}
+	},
+	"npcs": [
+		{
+			"id": "hob",
+			"name": "Hob",
+			"role": "shopkeeper",
+			"voice": "hob",
+			"outfit": "merchant",
+			"schedule": [
+				"sleep",
+				"sleep",
+				"sleep",
+				"sleep",
+				"sleep",
+				"sleep",
+				"sit",
+				"work",
+				"work",
+				"work",
+				"work",
+				"work",
+				"eat",
+				"work",
+				"work",
+				"work",
+				"work",
+				"work",
+				"eat",
+				"sit",
+				"sit",
+				"sleep",
+				"sleep",
+				"sleep"
+			]
+		},
+		{
+			"id": "edda",
+			"name": "Edda",
+			"role": "guard",
+			"voice": "edda",
+			"outfit": "guard",
+			"schedule": [
+				"work",
+				"work",
+				"work",
+				"work",
+				"work",
+				"work",
+				"sleep",
+				"sleep",
+				"wander",
+				"sleep",
+				"sleep",
+				"sleep",
+				"sleep",
+				"sleep",
+				"eat",
+				"sit",
+				"wander",
+				"work",
+				"work",
+				"work",
+				"work",
+				"work",
+				"work",
+				"work"
+			]
+		}
+	],
+	"test_hold": {
+		"hob": "work",
+		"edda": "sit"
+	},
+	"shelter_rain": 0.35,
+	"shelter_from": [
+		"work",
+		"wander"
+	]
+}

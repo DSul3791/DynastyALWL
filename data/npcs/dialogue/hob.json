@@ -1,0 +1,402 @@
+{
+	"npc": "hob",
+	"note": "Hob the shopkeeper. Trees are data: nodes {text, choices[{text, goto, if}], effects, end}. text may be a string, an array (one is picked, none repeated within the last five) or a bark token $greeting / $farewell / $idle. A choice with goto 'end' or no goto ends the talk. Conditions: min_rep [points], rank [Stranger, Known, Friend, Trusted: this rank or better] (data/npcs/reputation.json), flag, flag_not, hour_between [from, to], has_item [id, n], can_train [skill, max_level, item, n] (item and n optional). Effects: open_shop (opens the NPC's shop from data/npcs/shops.json), add_rep [points], set_flag, clear_flag, give_item [id, n], take_item [id, n], train_skill [skill, max_level, item, n]. roots: the first whose condition holds starts the talk. Lines keep to short sentences (12 words) for the voice.",
+	"barks": {
+		"greeting": [
+			"Good day to you.",
+			"Well met, traveller.",
+			"Ah, a visitor. Welcome.",
+			"Come in, come in."
+		],
+		"farewell": [
+			"Safe roads to you.",
+			"Come again soon.",
+			"Mind the dark on your way.",
+			"Farewell, friend."
+		],
+		"idle": [
+			"Hm. Business is slow.",
+			"Another quiet day.",
+			"The wind smells of rain."
+		],
+		"complaint": [
+			"I apologize, I have had a headache all day.",
+			"Forgive me, my head is pounding.",
+			"I am not myself today, I fear.",
+			"Pardon me, I feel quite unwell.",
+			"My head swims. Please be brief.",
+			"I have had a dreadful ache since dawn.",
+			"Forgive my manners, I am poorly.",
+			"A fever, perhaps. I cannot think clearly.",
+			"I apologize, I cannot think straight today.",
+			"Forgive me, the shop will have to wait a moment.",
+			"My stomach turns every time I count coins.",
+			"I feel dreadful. Do not ask me to haggle.",
+			"I have been dizzy since breakfast.",
+			"Pardon me, I have a fever coming on.",
+			"My joints ache like a rainy week.",
+			"Not a good day for business, I am afraid.",
+			"I should lie down, truly.",
+			"My ears ring and my hands shake.",
+			"Everything smells wrong to me today.",
+			"I have felt faint since the morning bell.",
+			"A terrible chill has settled in my bones.",
+			"Do forgive my pallor, I am quite unwell."
+		],
+		"cooldown": [
+			"Please, later. My head.",
+			"Not now, I beg you."
+		],
+		"info": [
+			"The shop opens at first light.",
+			"Stone and sticks fetch fair coin.",
+			"Mind the road to the lake at night."
+		],
+		"greeting_friend": [
+			"Ah, my friend! Come in.",
+			"Good to see you again, friend.",
+			"Welcome, welcome. The kettle is on."
+		],
+		"greeting_trusted": [
+			"There you are! My most trusted friend.",
+			"Come, sit. You are always welcome here."
+		]
+	},
+	"roots": [
+		{
+			"if": {
+				"flag": "met"
+			},
+			"node": "again"
+		},
+		{
+			"node": "first"
+		}
+	],
+	"nodes": {
+		"first": {
+			"text": [
+				"Welcome to my stall, stranger. I am Hob."
+			],
+			"effects": [
+				{
+					"set_flag": "met"
+				}
+			],
+			"choices": [
+				{
+					"text": "What do you sell?",
+					"goto": "wares"
+				},
+				{
+					"text": "Any news?",
+					"goto": "news"
+				},
+				{
+					"text": "Goodbye.",
+					"goto": "bye"
+				}
+			]
+		},
+		"again": {
+			"text": "$greeting",
+			"choices": [
+				{
+					"text": "What do you sell?",
+					"goto": "wares"
+				},
+				{
+					"text": "Any news?",
+					"goto": "news"
+				},
+				{
+					"text": "Can I help with anything?",
+					"goto": "quest_offer",
+					"if": {
+						"flag_not": [
+							"quest_firewood",
+							"quest_firewood_done"
+						]
+					}
+				},
+				{
+					"text": "I have your firewood.",
+					"goto": "quest_done",
+					"if": {
+						"flag": "quest_firewood",
+						"has_item": [
+							"firewood",
+							3
+						]
+					}
+				},
+				{
+					"text": "About the firewood...",
+					"goto": "quest_reminder",
+					"if": {
+						"flag": "quest_firewood",
+						"flag_not": "quest_firewood_done"
+					}
+				},
+				{
+					"text": "Teach me the trade.",
+					"goto": "teach",
+					"if": {
+						"can_train": [
+							"trades",
+							1,
+							"stone",
+							3
+						]
+					}
+				},
+				{
+					"text": "Any more work?",
+					"goto": "quest2_offer",
+					"if": {
+						"min_rep": 1,
+						"flag_not": [
+							"quest_logs",
+							"quest_logs_done"
+						]
+					}
+				},
+				{
+					"text": "I have your logs.",
+					"goto": "quest2_done",
+					"if": {
+						"flag": "quest_logs",
+						"has_item": [
+							"log",
+							4
+						]
+					}
+				},
+				{
+					"text": "About the logs...",
+					"goto": "quest2_reminder",
+					"if": {
+						"flag": "quest_logs",
+						"flag_not": "quest_logs_done"
+					}
+				},
+				{
+					"text": "How are things between us?",
+					"goto": "friend_gift",
+					"if": {
+						"rank": "Friend",
+						"flag_not": "gift_friend"
+					}
+				},
+				{
+					"text": "Goodbye.",
+					"goto": "bye"
+				}
+			]
+		},
+		"wares": {
+			"text": [
+				"Have a look. I buy and sell.",
+				"Take your time. Prices are fair."
+			],
+			"choices": [
+				{
+					"text": "Anything else?",
+					"goto": "again"
+				},
+				{
+					"text": "Goodbye.",
+					"goto": "bye"
+				}
+			],
+			"effects": [
+				{
+					"open_shop": true
+				}
+			]
+		},
+		"news": {
+			"text": [
+				"Wolves were heard in the hills. Keep a fire lit.",
+				"The pond freezes hard in winter. Fish through the ice."
+			],
+			"choices": [
+				{
+					"text": "Anything else?",
+					"goto": "again"
+				},
+				{
+					"text": "Goodbye.",
+					"goto": "bye"
+				}
+			]
+		},
+		"quest_offer": {
+			"text": "My hearth is cold. Bring me three bolts of firewood.",
+			"effects": [
+				{
+					"set_flag": "quest_firewood"
+				}
+			],
+			"choices": [
+				{
+					"text": "I will.",
+					"goto": "bye"
+				},
+				{
+					"text": "Not now.",
+					"goto": "bye"
+				}
+			]
+		},
+		"quest_reminder": {
+			"text": "Three bolts of firewood, split. I am grateful.",
+			"choices": [
+				{
+					"text": "On my way.",
+					"goto": "bye"
+				}
+			]
+		},
+		"quest_done": {
+			"text": "Splendid! Take this for your trouble: two roast meals and five copper.",
+			"effects": [
+				{
+					"take_item": [
+						"firewood",
+						3
+					]
+				},
+				{
+					"give_item": [
+						"roast_forage",
+						2
+					]
+				},
+				{
+					"set_flag": "quest_firewood_done"
+				},
+				{
+					"clear_flag": "quest_firewood"
+				},
+				{
+					"give_item": [
+						"coin_copper",
+						5
+					]
+				},
+				{
+					"add_rep": 1
+				},
+				{
+					"set_flag": "quest_firewood_paid"
+				}
+			],
+			"choices": [
+				{
+					"text": "Thank you.",
+					"goto": "bye"
+				}
+			]
+		},
+		"bye": {
+			"text": "$farewell",
+			"end": true
+		},
+		"teach": {
+			"text": "Three stones for the lesson. Now count with me.",
+			"effects": [
+				{
+					"train_skill": [
+						"trades",
+						1,
+						"stone",
+						3
+					]
+				}
+			],
+			"choices": [
+				{
+					"text": "Thank you.",
+					"goto": "bye"
+				}
+			]
+		},
+		"quest2_offer": {
+			"text": "Since you ask: bring me four logs. I will pay three bronze.",
+			"effects": [
+				{
+					"set_flag": "quest_logs"
+				}
+			],
+			"choices": [
+				{
+					"text": "I will.",
+					"goto": "bye"
+				},
+				{
+					"text": "Not now.",
+					"goto": "bye"
+				}
+			]
+		},
+		"quest2_done": {
+			"text": "Fine logs. Three bronze, as I said. You are a help.",
+			"effects": [
+				{
+					"take_item": [
+						"log",
+						4
+					]
+				},
+				{
+					"give_item": [
+						"coin_bronze",
+						3
+					]
+				},
+				{
+					"add_rep": 1
+				},
+				{
+					"set_flag": "quest_logs_done"
+				}
+			],
+			"choices": [
+				{
+					"text": "Glad to help.",
+					"goto": "bye"
+				}
+			]
+		},
+		"quest2_reminder": {
+			"text": "Four logs, and the pay is three bronze.",
+			"choices": [
+				{
+					"text": "On my way.",
+					"goto": "bye"
+				}
+			]
+		},
+		"friend_gift": {
+			"text": "You have been good to me. Take this knife, it was my father's.",
+			"effects": [
+				{
+					"give_item": [
+						"stone_knife",
+						1
+					]
+				},
+				{
+					"set_flag": "gift_friend"
+				}
+			],
+			"choices": [
+				{
+					"text": "Thank you, Hob.",
+					"goto": "bye"
+				}
+			]
+		}
+	}
+}

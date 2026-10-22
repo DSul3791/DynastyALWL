@@ -14,6 +14,9 @@ extends SceneTree
 const TileBakerScript := preload("res://src/worldgen/tile/tile_baker.gd")
 
 
+const LOCK_NAME := "baking.lock"   # in the tiles folder while a bake runs (read by server_block_store.gd)
+
+
 func _init() -> void:
 	var tiles: Array = [Vector2i(3, 4)]
 	var world_dir: String = "res://worlds/base_world"
@@ -31,10 +34,24 @@ func _init() -> void:
 		elif argument.begins_with("--out="):
 			out_dir = argument.trim_prefix("--out=")
 
-	quit(_run(world_dir, out_dir, tiles))
+	# Owner (2026-10-19): a running game leaves the tiles alone until the whole bake is done
+	# (the server waits while this lock is there, then reloads the ground once).
+	var lock_path: String = (out_dir if out_dir != "" else world_dir + "/tiles") + "/" + LOCK_NAME
+	_touch(lock_path)
+	var code: int = _run(world_dir, out_dir, tiles, lock_path)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(lock_path))
+	quit(code)
 
 
-func _run(world_dir: String, out_dir: String, tiles: Array) -> int:
+func _touch(path: String) -> void:
+	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
+
+	if file != null:
+		file.store_string("baking since %s\n" % Time.get_datetime_string_from_system())
+		file.close()
+
+
+func _run(world_dir: String, out_dir: String, tiles: Array, lock_path: String) -> int:
 	var baker = TileBakerScript.new()
 	var started: int = Time.get_ticks_msec()
 	var problem: String = baker.setup(world_dir)
@@ -48,6 +65,7 @@ func _run(world_dir: String, out_dir: String, tiles: Array) -> int:
 	])
 
 	for tile in tiles:
+		_touch(lock_path)
 		started = Time.get_ticks_msec()
 		var result: Dictionary = baker.bake_to_file(tile, out_dir)
 

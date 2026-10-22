@@ -1,0 +1,346 @@
+{
+	"note": "Placed structures (Dave 2026-10-20: lean-to and storage chest are the first buildables). Placed like the campfire kit with ACT_PLACE (count = yaw in degrees). state is the world-item row state clients draw it by (5 lean-to, 6 chest). cap_per_chunk counts one 256 m chunk. A lean-to is a roof for the Cover index: a box of half_x by half_z around its spot, from 0.5 m below the ground to height above it. A structure with slots is a container: its contents are server-owned (chests.json) and sent only to the player who opens it. Container rules (data): slots is how many stacks it holds, max_kg the most weight it takes (weights.json kilograms; a put that would pass it puts what fits and the rest stays in the pack), who is who may open it (only \"anyone\" for now; \"owner\" and \"town\" come with ownership). The take side is limited by the player's own carry cap. footprint_x and footprint_z are the ghost's size in metres (the client draws it as the player holds the kit; red when blocked, from src/shared/placement_rules.gd). campfire is the fire kit's own gap between fires and cap per chunk (a fire is not a structure row). Station add-ons (Tyler, Valheim style): a structure with addon_of names the station it improves. A station's level is 1 plus the number of different add-on kinds within its addon_reach_m; recipes with station_level above that need more add-ons. Placement slope (build 505, design 10.1): max_rise_m is how much higher the highest of five ground samples across the footprint (middle and corners, turned by the placing yaw; a ring of 0.8 m for the campfire) may be than the lowest; a kit over the limit shows a red ghost with the reason and the server refuses it. A structure may set its own max_rise_m.",
+	"gap_m": 2.5,
+	"structures": {
+		"lean_to": {
+			"shelter": true,
+			"kit": "lean_to_kit",
+			"item": "lean_to",
+			"state": 5,
+			"footprint_x": 2.4,
+			"footprint_z": 2.1,
+			"cap_per_chunk": 6,
+			"half_x": 1.1,
+			"half_z": 0.95,
+			"height": 2.1
+		},
+		"chest": {
+			"kit": "chest_kit",
+			"item": "chest",
+			"state": 6,
+			"footprint_x": 0.8,
+			"footprint_z": 0.6,
+			"cap_per_chunk": 8,
+			"slots": 12,
+			"max_kg": 40,
+			"who": "anyone"
+		},
+		"chopping_block": {
+			"kit": "chopping_block_kit",
+			"item": "chopping_block",
+			"state": 7,
+			"footprint_x": 0.7,
+			"footprint_z": 0.7,
+			"cap_per_chunk": 4,
+			"use": "split_log",
+			"logs_to_firewood": 4,
+			"shoulder_log_to_firewood": 12,
+			"use_pace_ms": 600,
+			"use_reach_m": 3.0
+		},
+		"plank_chest": {
+			"kit": "plank_chest_kit",
+			"item": "plank_chest",
+			"state": 6,
+			"footprint_x": 0.9,
+			"footprint_z": 0.6,
+			"cap_per_chunk": 8,
+			"slots": 20,
+			"max_kg": 150,
+			"who": "anyone"
+		},
+		"remains": {
+			"kit": "",
+			"item": "remains",
+			"state": 11,
+			"footprint_x": 1.8,
+			"footprint_z": 0.7,
+			"cap_per_chunk": 50,
+			"slots": 30,
+			"who": "owner",
+			"take_only": true
+		},
+		"workbench": {
+			"kit": "workbench_kit",
+			"item": "workbench",
+			"state": 13,
+			"footprint_x": 1.5,
+			"footprint_z": 1.0,
+			"cap_per_chunk": 4,
+			"station": "workbench",
+			"station_level": 1,
+			"reach_m": 4.0,
+			"addon_reach_m": 5.0,
+			"tier": "small"
+		},
+		"tool_rack": {
+			"kit": "tool_rack_kit",
+			"item": "tool_rack",
+			"state": 14,
+			"footprint_x": 1.0,
+			"footprint_z": 0.4,
+			"cap_per_chunk": 6,
+			"addon_of": "workbench"
+		},
+		"vice": {
+			"kit": "vice_kit",
+			"item": "vice",
+			"state": 15,
+			"footprint_x": 0.5,
+			"footprint_z": 0.5,
+			"cap_per_chunk": 6,
+			"addon_of": "workbench"
+		},
+		"log_workbench": {
+			"kit": "log_workbench_kit",
+			"item": "log_workbench",
+			"state": 16,
+			"footprint_x": 2.0,
+			"footprint_z": 1.0,
+			"cap_per_chunk": 3,
+			"station": "workbench",
+			"station_level": 2,
+			"tier": "medium",
+			"reach_m": 4.5,
+			"addon_reach_m": 5.0
+		},
+		"stone_forge": {
+			"kit": "stone_forge_kit",
+			"item": "stone_forge",
+			"state": 17,
+			"footprint_x": 0.9,
+			"footprint_z": 0.72,
+			"cap_per_chunk": 2,
+			"station": "workbench",
+			"station_level": 3,
+			"also": {
+				"forge": 1
+			},
+			"tier": "large",
+			"reach_m": 5.0,
+			"addon_reach_m": 5.0
+		},
+		"blacksmithy": {
+			"kit": "blacksmithy_kit",
+			"item": "blacksmithy",
+			"state": 18,
+			"footprint_x": 1.5,
+			"footprint_z": 1.17,
+			"cap_per_chunk": 1,
+			"station": "workbench",
+			"station_level": 4,
+			"also": {
+				"forge": 2
+			},
+			"tier": "epic",
+			"reach_m": 5.0,
+			"addon_reach_m": 5.0
+		},
+		"carcass": {
+			"kit": "",
+			"item": "carcass",
+			"state": 19,
+			"footprint_x": 1.0,
+			"footprint_z": 0.6,
+			"cap_per_chunk": 50,
+			"take_only": true,
+			"reach_m": 3.0
+		},
+		"large_forge": {
+			"kit": "large_forge_kit",
+			"item": "large_forge",
+			"state": 20,
+			"footprint_x": 2.8,
+			"footprint_z": 2.0,
+			"cap_per_chunk": 1,
+			"station": "workbench",
+			"station_level": 4,
+			"also": {
+				"forge": 3
+			},
+			"tier": "epic",
+			"reach_m": 6.0,
+			"addon_reach_m": 5.0
+		},
+		"master_forge": {
+			"kit": "master_forge_kit",
+			"item": "master_forge",
+			"state": 21,
+			"footprint_x": 3.9,
+			"footprint_z": 2.6,
+			"cap_per_chunk": 1,
+			"station": "workbench",
+			"station_level": 4,
+			"also": {
+				"forge": 4
+			},
+			"tier": "epic",
+			"reach_m": 6.0,
+			"addon_reach_m": 5.0
+		},
+		"wall_section": {
+			"kit": "wall_section_kit",
+			"item": "wall_section",
+			"state": 22,
+			"piece": true,
+			"footprint_x": 2.0,
+			"footprint_z": 0.25,
+			"cap_per_chunk": 200,
+			"max_rise_m": 0.6,
+			"piece_kind": "wall"
+		},
+		"floor_section": {
+			"kit": "floor_section_kit",
+			"item": "floor_section",
+			"state": 23,
+			"piece": true,
+			"footprint_x": 2.0,
+			"footprint_z": 2.0,
+			"cap_per_chunk": 200,
+			"max_rise_m": 0.6,
+			"piece_kind": "floor"
+		},
+		"roof_section": {
+			"kit": "roof_section_kit",
+			"item": "roof_section",
+			"state": 24,
+			"piece": true,
+			"shelter": true,
+			"footprint_x": 2.4,
+			"footprint_z": 2.4,
+			"cap_per_chunk": 100,
+			"half_x": 1.2,
+			"half_z": 1.2,
+			"height": 2.6,
+			"max_rise_m": 0.6,
+			"piece_kind": "roof"
+		},
+		"foundation_section": {
+			"kit": "foundation_section_kit",
+			"item": "foundation_section",
+			"state": 25,
+			"piece": true,
+			"foundation": true,
+			"footprint_x": 4.0,
+			"footprint_z": 4.0,
+			"cap_per_chunk": 60,
+			"max_rise_m": 0.6,
+			"snap_m": 2.0,
+			"top_m": 0.3,
+			"anchors": {
+				"wall": [
+					[
+						-1,
+						-2,
+						0
+					],
+					[
+						1,
+						-2,
+						0
+					],
+					[
+						-1,
+						2,
+						0
+					],
+					[
+						1,
+						2,
+						0
+					],
+					[
+						-2,
+						-1,
+						90
+					],
+					[
+						-2,
+						1,
+						90
+					],
+					[
+						2,
+						-1,
+						90
+					],
+					[
+						2,
+						1,
+						90
+					]
+				],
+				"floor": [
+					[
+						-1,
+						-1
+					],
+					[
+						1,
+						-1
+					],
+					[
+						-1,
+						1
+					],
+					[
+						1,
+						1
+					]
+				],
+				"roof": [
+					[
+						0,
+						0
+					],
+					[
+						-1,
+						-1
+					],
+					[
+						1,
+						-1
+					],
+					[
+						-1,
+						1
+					],
+					[
+						1,
+						1
+					]
+				]
+			},
+			"note": "Foundation (Dave 2026-10-22): a 4 m square slab 0.3 m high that clears the grass under and around it (placed_clearing.json) and that walls, floors and roofs snap to at the listed anchors (x, z, yaw from its middle)."
+		},
+		"doorway_section": {
+			"kit": "doorway_section_kit",
+			"item": "doorway_section",
+			"state": 26,
+			"piece": true,
+			"footprint_x": 2.0,
+			"footprint_z": 0.25,
+			"cap_per_chunk": 200,
+			"max_rise_m": 0.6,
+			"piece_kind": "wall"
+		},
+		"window_section": {
+			"kit": "window_section_kit",
+			"item": "window_section",
+			"state": 27,
+			"piece": true,
+			"footprint_x": 2.0,
+			"footprint_z": 0.25,
+			"cap_per_chunk": 200,
+			"max_rise_m": 0.6,
+			"piece_kind": "wall"
+		}
+	},
+	"campfire": {
+		"gap_m": 2.0,
+		"cap_per_chunk": 8,
+		"max_rise_m": 0.6
+	},
+	"max_rise_m": 1.0,
+	"piece_snap_m": 1.0
+}

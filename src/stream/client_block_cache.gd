@@ -20,6 +20,8 @@ var hits: int = 0
 var misses: int = 0
 
 var _dir: String = ""
+var _base_dir: String = ""
+var _generation: int = 0              # bumped by clear_all(): a fresh folder, the old one is purged at the next start
 var _tile_size_m: float = 15360.0
 var _world_min_m: float = -153600.0
 var _period_m: float = 322560.0
@@ -32,8 +34,11 @@ var _mutex: Mutex = Mutex.new()
 # `world` holds tile_size_m, min_tile and tiles_per_side (from the server's
 # welcome); `revisions` maps "x,z" to the tile's revision.
 func setup(cache_dir: String, world: Dictionary, revisions: Dictionary, budget_mb: int) -> void:
-	_dir = ProjectSettings.globalize_path(cache_dir)
+	_base_dir = ProjectSettings.globalize_path(cache_dir)
+	_generation = _read_generation()
+	_dir = _generation_dir(_generation)
 	DirAccess.make_dir_recursive_absolute(_dir)
+	_purge_other_generations()
 	_tile_size_m = float(world["tile_size_m"])
 	_tiles_per_side = int(world["tiles_per_side"])
 	_world_min_m = float(world["min_tile"]) * _tile_size_m
@@ -50,6 +55,92 @@ func tile_of_block(block: Vector3i, lod: int) -> Vector2i:
 
 
 # Applies the server's revisions: files of older revisions are deleted.
+func _generation_dir(generation: int) -> String:
+	return _base_dir if generation == 0 else "%s_g%d" % [_base_dir, generation]
+
+
+func _generation_file() -> String:
+	return _base_dir + "_generation.txt"
+
+
+func _read_generation() -> int:
+	var path: String = _generation_file()
+	return int(FileAccess.get_file_as_string(path).strip_edges()) if FileAccess.file_exists(path) else 0
+
+
+# Removes the folders of earlier generations (best effort; they may still be
+# in use right after a clear, so this runs at the next start).
+func _purge_other_generations() -> void:
+	var parent: String = _base_dir.get_base_dir()
+	var name: String = _base_dir.get_file()
+
+	for folder in DirAccess.get_directories_at(parent):
+		var is_mine: bool = folder == name or folder.begins_with(name + "_g")
+
+		if is_mine and parent + "/" + folder != _dir:
+			var path: String = parent + "/" + folder
+
+			for file in DirAccess.get_files_at(path):
+				DirAccess.remove_absolute(path + "/" + file)
+
+			DirAccess.remove_absolute(path)
+
+
+# Throws the saved ground away at once: a new empty folder is used from now on.
+func clear_all() -> void:
+	_mutex.lock()
+	_generation += 1
+	var file: FileAccess = FileAccess.open(_generation_file(), FileAccess.WRITE)
+
+	if file != null:
+		file.store_string(str(_generation))
+		file.close()
+
+	_streams.clear()
+	_dir = _generation_dir(_generation)
+	DirAccess.make_dir_recursive_absolute(_dir)
+	_mutex.unlock()
+
+
+# First run: copies the shipped starter ground (gzipped tile files in `res_dir`,
+# built by running a client at the spawn) into an empty cache, so the ground
+# under the spawn is there at once. Returns the number of files seeded. Call
+# set_revisions afterward so stale starter files are dropped.
+func seed_starter(res_dir: String, starter_stamp: String = "") -> int:
+	var seeded: int = 0
+
+	if not DirAccess.get_files_at(_dir).is_empty():
+		return 0
+
+	# The starter ground is only good for the tile file it was built from
+	# (tiles_stamp.txt: terrain version _ Layout.tile_stamp of tile 3,4); after a re-bake it waits
+	# for a rebuild and the ground comes from the server meanwhile.
+	var stamp_path: String = res_dir + "/tiles_stamp.txt"
+	var built_for: String = FileAccess.get_file_as_string(stamp_path).strip_edges() if FileAccess.file_exists(stamp_path) else ""
+
+	if starter_stamp != "" and built_for != starter_stamp:
+		return 0
+
+	for file in DirAccess.get_files_at(res_dir):
+		if not file.ends_with(".sqlite.gz"):
+			continue
+
+		var packed: PackedByteArray = FileAccess.get_file_as_bytes(res_dir + "/" + file)
+		var bytes: PackedByteArray = packed.decompress_dynamic(-1, FileAccess.COMPRESSION_GZIP)
+
+		if bytes.is_empty():
+			continue
+
+		var out: FileAccess = FileAccess.open(_dir + "/" + file.trim_suffix(".gz"), FileAccess.WRITE)
+
+		if out != null:
+			out.store_buffer(bytes)
+			out.close()
+			seeded += 1
+
+	return seeded
+
+
 func set_revisions(revisions: Dictionary) -> void:
 	_mutex.lock()
 
@@ -93,8 +184,12 @@ func save_block(buffer: VoxelBuffer, block: Vector3i, lod: int) -> void:
 	_stream_for(tile_of_block(block, lod)).save_voxel_block(buffer, block, lod)
 
 
-# Writes pending blocks to disk.
+# Writes pending blocks to disk. CACHE_SLOW_MS (a test setting) adds that many ms to each flush, to
+# try a slow disk.
 func flush() -> void:
+	if OS.has_environment("CACHE_SLOW_MS"):
+		OS.delay_msec(int(OS.get_environment("CACHE_SLOW_MS")))
+
 	_mutex.lock()
 	var streams: Array = _streams.values()
 	_mutex.unlock()

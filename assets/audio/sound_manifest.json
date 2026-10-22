@@ -1,0 +1,1717 @@
+{
+ "slots": [
+  {
+   "name": "wind_low",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "sound_stage.gd: the steady wind bed, louder with height and open ground, softer in trees",
+   "to_supply": "A calm open-field wind loop, 20 s or more, seamless, no gusts (low rumble layer)",
+   "priority": 1
+  },
+  {
+   "name": "wind_gust",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "sound_stage.gd: the swelling gust layer on top of the bed",
+   "to_supply": "A leaf-and-grass rustling wind loop with soft swells, seamless",
+   "priority": 1
+  },
+  {
+   "name": "wind_storm",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "weather_sounds.gd: gale howl in storms and blizzards",
+   "to_supply": "A howling gale loop, seamless",
+   "priority": 2
+  },
+  {
+   "name": "rain_light",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "weather_sounds.gd: drizzle and light rain loop",
+   "to_supply": "A light rain on open ground loop, seamless",
+   "priority": 1
+  },
+  {
+   "name": "rain_heavy",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "weather_sounds.gd: heavy rain and storm loop",
+   "to_supply": "A heavy downpour loop, seamless",
+   "priority": 1
+  },
+  {
+   "name": "rain_roof",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "weather_sounds.gd: rain pattering on a roof overhead (a lean-to), boards or thatch",
+   "to_supply": "Rain on a wooden roof from underneath, loop, seamless",
+   "priority": 2
+  },
+  {
+   "name": "rain_leaves",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "weather_sounds.gd: rain pattering on leaves under trees",
+   "to_supply": "Rain on forest canopy loop, seamless",
+   "priority": 2
+  },
+  {
+   "name": "rain_water",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "weather_sounds.gd: rain falling on ponds and rivers near the player",
+   "to_supply": "Rain on a lake surface loop, seamless",
+   "priority": 3
+  },
+  {
+   "name": "rain_stone",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "weather_sounds.gd: rain on stone, rock, slab, plank or path ground under the player (open sky)",
+   "to_supply": "Rain on bare rock or flagstones loop, seamless",
+   "priority": 3
+  },
+  {
+   "name": "rain_mud",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "weather_sounds.gd: rain on mud and soaked soil",
+   "to_supply": "Rain on mud loop, seamless",
+   "priority": 3
+  },
+  {
+   "name": "rain_litter",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "weather_sounds.gd: rain on forest leaf litter in the open",
+   "to_supply": "Rain on dry leaf litter loop, seamless",
+   "priority": 3
+  },
+  {
+   "name": "rain_snow",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "weather_sounds.gd: rain falling on lying snow (very quiet)",
+   "to_supply": "Rain on snow loop, soft, seamless",
+   "priority": 3
+  },
+  {
+   "name": "thunder",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "weather_sounds.gd: a mid-distance thunder roll",
+   "to_supply": "2 to 3 rolling thunder claps, 5 to 9 s",
+   "priority": 1
+  },
+  {
+   "name": "thunder_near",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "weather_sounds.gd: a close strike (under 500 m): sharp crack and thud",
+   "to_supply": "2 to 3 close, sharp thunder cracks, 2 to 4 s",
+   "priority": 2
+  },
+  {
+   "name": "thunder_far",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "weather_sounds.gd: a far strike (over 1800 m): a low grumble",
+   "to_supply": "2 to 3 distant low rumbles, 8 to 12 s",
+   "priority": 2
+  },
+  {
+   "name": "rain_drip",
+   "state": "generated",
+   "variants": 4,
+   "used_in": "weather_sounds.gd: a drop falling from a leaf near you, under trees in rain",
+   "to_supply": "3 to 4 single drops falling from leaves onto leaves or ground, 0.3 s",
+   "priority": 3
+  },
+  {
+   "name": "water_brook",
+   "state": "recorded",
+   "variants": 1,
+   "used_in": "water_sounds.gd: a fast shallow stream, positional loop",
+   "to_supply": "A babbling brook loop, seamless",
+   "priority": 1
+  },
+  {
+   "name": "water_river",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "water_sounds.gd: a wide slow river, positional loop",
+   "to_supply": "A broad river flow loop, seamless",
+   "priority": 1
+  },
+  {
+   "name": "water_pond",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "water_sounds.gd: gentle lapping at a pond shore",
+   "to_supply": "A calm lake shore lapping loop, seamless",
+   "priority": 2
+  },
+  {
+   "name": "lake_lap",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "water_sounds.gd: a soft lap on a still lake or pond shore (random one-shots, no loop)",
+   "to_supply": "3 soft water laps like a slowed, softened fish splash, 2 to 3 s; or a real recording of a lake lapping",
+   "priority": 1
+  },
+  {
+   "name": "water_fall_base",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "water_sounds.gd: the close spray and churn where a fall lands (within 60 m)",
+   "to_supply": "A close waterfall base loop: hiss and splash, steady, seamless, no bubbles",
+   "priority": 2
+  },
+  {
+   "name": "water_fall",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "water_sounds.gd: a waterfall roar",
+   "to_supply": "A waterfall loop, seamless",
+   "priority": 2
+  },
+  {
+   "name": "bird_whistle",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "ambient_life.gd: forest bird, by day",
+   "to_supply": "2 to 4 clear songbird whistles, 1 to 2 s",
+   "priority": 2
+  },
+  {
+   "name": "bird_feebee",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "ambient_life.gd: forest bird, by day",
+   "to_supply": "2 chickadee-style two-note calls",
+   "priority": 3
+  },
+  {
+   "name": "bird_trill",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "ambient_life.gd: meadow bird, by day",
+   "to_supply": "2 to 3 trilling songs, about 1 s",
+   "priority": 2
+  },
+  {
+   "name": "bird_chirp",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "ambient_life.gd: meadow, water-edge and forest, the most frequent call",
+   "to_supply": "3 to 5 short sparrow-like chirps, 0.5 s",
+   "priority": 1
+  },
+  {
+   "name": "crow_caw",
+   "state": "recorded",
+   "variants": 7,
+   "used_in": "ambient_life.gd: forest and highland, by day",
+   "to_supply": "have: Dave's crow calls",
+   "priority": 5
+  },
+  {
+   "name": "crow_alarm",
+   "state": "recorded",
+   "variants": 3,
+   "used_in": "ambient_life.gd: alarm(at): a crow scolds when the player runs through crow country, and the danger warning hook",
+   "to_supply": "have: Dave's angry crow",
+   "priority": 5
+  },
+  {
+   "name": "wind_whistle",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "wind_structures.gd: wind whistling through a gap (under a lean-to roof, a door ajar), level by wind and enclosure",
+   "to_supply": "Wind whistling through a gap or a window crack, thin wandering tone, seamless loop, 20 s",
+   "priority": 2
+  },
+  {
+   "name": "wind_hollow",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "wind_structures.gd: a low moan of wind across a cave mouth or big opening, half-enclosed only",
+   "to_supply": "Wind moaning across a cave mouth, low, seamless loop, 20 s",
+   "priority": 2
+  },
+  {
+   "name": "ice_crack",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "ice_sounds.gd: a sharp crack under a step on a frozen pond (more often running or landing)",
+   "to_supply": "3 short ice cracks under a boot, with a glassy ring, 0.5 s",
+   "priority": 2
+  },
+  {
+   "name": "ice_groan",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "ice_sounds.gd: the frozen pond groans and pings from the shore, every 25 to 70 s",
+   "to_supply": "3 recordings of pond ice settling in the cold (long low sweeps with pings), 2 to 4 s",
+   "priority": 2
+  },
+  {
+   "name": "rain_splash_stone",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "rain_splashes.gd: a single rain drop landing on stone near the player (open sky only)",
+   "to_supply": "A single raindrop landing on stone, close, 3 or 4 different drops",
+   "priority": 3
+  },
+  {
+   "name": "rain_splash_gravel",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "rain_splashes.gd: a single rain drop landing on gravel near the player (open sky only)",
+   "to_supply": "A single raindrop landing on gravel, close, 3 or 4 different drops",
+   "priority": 3
+  },
+  {
+   "name": "rain_splash_grass",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "rain_splashes.gd: a single rain drop landing on grass near the player (open sky only)",
+   "to_supply": "A single raindrop landing on grass, close, 3 or 4 different drops",
+   "priority": 3
+  },
+  {
+   "name": "rain_splash_dirt",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "rain_splashes.gd: a single rain drop landing on bare soil near the player (open sky only)",
+   "to_supply": "A single raindrop landing on bare soil, close, 3 or 4 different drops",
+   "priority": 3
+  },
+  {
+   "name": "rain_splash_sand",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "rain_splashes.gd: a single rain drop landing on sand near the player (open sky only)",
+   "to_supply": "A single raindrop landing on sand, close, 3 or 4 different drops",
+   "priority": 3
+  },
+  {
+   "name": "rain_splash_mud",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "rain_splashes.gd: a single rain drop landing on mud near the player (open sky only)",
+   "to_supply": "A single raindrop landing on mud, close, 3 or 4 different drops",
+   "priority": 3
+  },
+  {
+   "name": "rain_splash_litter",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "rain_splashes.gd: a single rain drop landing on fallen leaves near the player (open sky only)",
+   "to_supply": "A single raindrop landing on fallen leaves, close, 3 or 4 different drops",
+   "priority": 3
+  },
+  {
+   "name": "rain_splash_water",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "rain_splashes.gd: a single rain drop landing on water near the player (open sky only)",
+   "to_supply": "A single raindrop landing on water, close, 3 or 4 different drops",
+   "priority": 3
+  },
+  {
+   "name": "wing_grain",
+   "state": "recorded",
+   "variants": 3,
+   "used_in": "make_wings.py: single flaps cut from Dave's recording; the take-offs are built from them (not played directly)",
+   "to_supply": "have: Dave's recording",
+   "priority": 3
+  },
+  {
+   "name": "wing_small",
+   "state": "generated",
+   "variants": 4,
+   "used_in": "ambient_life.gd: flush(at, delay, 'small'): a finch bursts out of cover, 9 to 12 quick flaps",
+   "to_supply": "made from Dave's wing flap recording (make_wings.py); a real finch or sparrow take-off wins",
+   "priority": 4
+  },
+  {
+   "name": "wing_medium",
+   "state": "generated",
+   "variants": 4,
+   "used_in": "ambient_life.gd: flush(at, delay, 'medium'): a pigeon or thrush bursts out, 5 to 7 flaps a second",
+   "to_supply": "made from Dave's wing flap recording (make_wings.py); a real pigeon take-off wins",
+   "priority": 4
+  },
+  {
+   "name": "wing_large",
+   "state": "generated",
+   "variants": 4,
+   "used_in": "ambient_life.gd: flush(at, delay, 'large'): a crow or hawk takes off, 3 to 4 heavy flaps a second",
+   "to_supply": "made from Dave's wing flap recording (make_wings.py)",
+   "priority": 4
+  },
+  {
+   "name": "woodpecker",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "ambient_life.gd: forest, by day",
+   "to_supply": "2 to 3 woodpecker drumming runs, about 1 s",
+   "priority": 3
+  },
+  {
+   "name": "owl_hoot",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "ambient_life.gd: forest at night",
+   "to_supply": "2 to 3 owl hoots (tawny or barred), 2 to 3 s",
+   "priority": 2
+  },
+  {
+   "name": "hawk_screech",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "ambient_life.gd: highland, by day",
+   "to_supply": "2 to 3 hawk screeches",
+   "priority": 3
+  },
+  {
+   "name": "cricket_chirp",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "ambient_life.gd: meadow and water edge at dusk and night, summer and autumn",
+   "to_supply": "2 to 3 cricket chirps runs, 2 s (one species)",
+   "priority": 1
+  },
+  {
+   "name": "frog_croak",
+   "state": "recorded",
+   "variants": 6,
+   "used_in": "ambient_life.gd: ponds and rivers, spring to autumn, more at night and in rain",
+   "to_supply": "have: Dave's frogs (mostly small trillers); a deep bullfrog croak is still missing",
+   "priority": 4
+  },
+  {
+   "name": "tree_frog_peep",
+   "state": "recorded",
+   "variants": 6,
+   "used_in": "ambient_life.gd: water edge and forest, spring to autumn",
+   "to_supply": "have: Dave's frogs (short peeps)",
+   "priority": 5
+  },
+  {
+   "name": "fish_splash",
+   "state": "recorded",
+   "variants": 3,
+   "used_in": "ambient_life.gd: a fish jumps at the water edge, rare",
+   "to_supply": "have: Dave's fish jumping clip, played whole",
+   "priority": 5
+  },
+  {
+   "name": "bed_forest",
+   "state": "empty",
+   "variants": 0,
+   "used_in": "ambient_life.gd (optional bed): a quiet forest background that fades in with forest cover",
+   "to_supply": "A quiet forest background loop, 30 s or more, no clear single calls",
+   "priority": 3
+  },
+  {
+   "name": "bed_meadow",
+   "state": "empty",
+   "variants": 0,
+   "used_in": "ambient_life.gd (optional bed): a meadow background",
+   "to_supply": "A meadow background loop (insects, distant birds), seamless",
+   "priority": 3
+  },
+  {
+   "name": "bed_water",
+   "state": "empty",
+   "variants": 0,
+   "used_in": "ambient_life.gd (optional bed): a water-edge background",
+   "to_supply": "A quiet marsh or lake edge background loop",
+   "priority": 3
+  },
+  {
+   "name": "bed_highland",
+   "state": "empty",
+   "variants": 0,
+   "used_in": "ambient_life.gd (optional bed): highland wind and space",
+   "to_supply": "A thin high-altitude background loop",
+   "priority": 3
+  },
+  {
+   "name": "cave_drip",
+   "state": "generated",
+   "variants": 5,
+   "used_in": "cave_sounds.gd: water drops in caves and tunnels",
+   "to_supply": "3 to 6 single water drips in a stone room, 1 to 2 s each",
+   "priority": 2
+  },
+  {
+   "name": "dig_soil",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "dig_sounds.gd: digging dirt and humus",
+   "to_supply": "3 spade or shovel scoops into earth",
+   "priority": 2
+  },
+  {
+   "name": "dig_clay",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "dig_sounds.gd: digging clay, mud and peat",
+   "to_supply": "3 wet sticky digs",
+   "priority": 3
+  },
+  {
+   "name": "dig_sand",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "dig_sounds.gd: digging sand and snow",
+   "to_supply": "3 sand shovelling sounds",
+   "priority": 3
+  },
+  {
+   "name": "dig_gravel",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "dig_sounds.gd: digging gravel",
+   "to_supply": "3 gravel shovelling sounds",
+   "priority": 3
+  },
+  {
+   "name": "dig_rock",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "dig_sounds.gd: breaking rock",
+   "to_supply": "3 pickaxe on rock or rock breaking sounds",
+   "priority": 2
+  },
+  {
+   "name": "dig_ore",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "dig_sounds.gd: digging out ore (metal clink on rock)",
+   "to_supply": "3 pick on ore sounds",
+   "priority": 3
+  },
+  {
+   "name": "hit_axe_wood",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: an axe blow on wood (felling, chopping)",
+   "to_supply": "3 axe chops into a log or tree",
+   "priority": 2
+  },
+  {
+   "name": "hit_axe_stone",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: an axe blow on stone",
+   "to_supply": "3 axe strikes on rock",
+   "priority": 4
+  },
+  {
+   "name": "hit_axe_soil",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: an axe blow on soil",
+   "to_supply": "3 axe thuds into earth",
+   "priority": 4
+  },
+  {
+   "name": "hit_pick_wood",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: a pickaxe blow on wood",
+   "to_supply": "3 pick strikes into wood",
+   "priority": 4
+  },
+  {
+   "name": "hit_pick_stone",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: a pickaxe blow on rock (mining)",
+   "to_supply": "3 pickaxe strikes on rock",
+   "priority": 2
+  },
+  {
+   "name": "hit_pick_soil",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: a pickaxe blow on soil",
+   "to_supply": "3 pick strikes into hard earth",
+   "priority": 3
+  },
+  {
+   "name": "hit_hammer_wood",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: a hammer blow on wood (building)",
+   "to_supply": "3 hammer knocks on timber, or nails driven",
+   "priority": 2
+  },
+  {
+   "name": "hit_hammer_stone",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: a hammer blow on stone (chiselling, smithing)",
+   "to_supply": "3 hammer clanks on stone",
+   "priority": 3
+  },
+  {
+   "name": "hit_hammer_soil",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: a hammer blow on soil (driving stakes)",
+   "to_supply": "3 mallet thumps into earth",
+   "priority": 4
+  },
+  {
+   "name": "hit_spade_wood",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: a spade strike on wood",
+   "to_supply": "3 spade knocks and scrapes on wood",
+   "priority": 4
+  },
+  {
+   "name": "hit_spade_stone",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: a spade scraping on stone",
+   "to_supply": "3 spade scrapes on stone",
+   "priority": 4
+  },
+  {
+   "name": "hit_spade_soil",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: a spade strike into soil",
+   "to_supply": "3 spade thuds into earth",
+   "priority": 3
+  },
+  {
+   "name": "deer_grunt",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "creature_sounds.gd: a deer's low grunt (idle)",
+   "to_supply": "2 to 3 low deer grunts or contact calls, 0.3 to 0.8 s",
+   "priority": 3
+  },
+  {
+   "name": "deer_snort",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "creature_sounds.gd: a deer's alarm snort (alert, threat)",
+   "to_supply": "2 to 3 deer alarm snorts, 0.3 s",
+   "priority": 3
+  },
+  {
+   "name": "rabbit_thump",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "creature_sounds.gd: a rabbit's warning foot thump (idle, alert)",
+   "to_supply": "2 to 3 rabbit hind-foot thumps, a double knock",
+   "priority": 4
+  },
+  {
+   "name": "rabbit_squeak",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "creature_sounds.gd: a rabbit's distress squeal (threat)",
+   "to_supply": "2 to 3 short rabbit squeals",
+   "priority": 4
+  },
+  {
+   "name": "fox_bark",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "creature_sounds.gd: a fox's bark (idle, alert), a night sound",
+   "to_supply": "2 to 3 red fox barks, 1 to 3 per clip",
+   "priority": 3
+  },
+  {
+   "name": "fox_scream",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "creature_sounds.gd: a vixen's scream (threat), a night sound",
+   "to_supply": "2 to 3 red fox screams, about 1 s",
+   "priority": 3
+  },
+  {
+   "name": "wolf_howl",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "creature_sounds.gd: a wolf's howl (idle), far away at night",
+   "to_supply": "2 to 3 long wolf howls, 3 to 6 s, single wolf and a pack",
+   "priority": 2
+  },
+  {
+   "name": "wolf_growl",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "creature_sounds.gd: a wolf's growl (alert, threat)",
+   "to_supply": "2 to 3 wolf growls and snarls, 1 to 2 s",
+   "priority": 3
+  },
+  {
+   "name": "bear_growl",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "creature_sounds.gd: a bear's growl (idle, alert)",
+   "to_supply": "2 to 3 low bear growls, 1 to 2 s",
+   "priority": 3
+  },
+  {
+   "name": "bear_roar",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "creature_sounds.gd: a bear's roar (threat), the danger cue",
+   "to_supply": "2 to 3 bear roars, 1 to 2 s",
+   "priority": 2
+  },
+  {
+   "name": "item_reject",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "item_sounds.gd: an action was refused (too far, no tool, pack full), a soft double knock",
+   "to_supply": "a soft refusal knock, 0.2 s",
+   "priority": 3
+  },
+  {
+   "name": "insect_bed",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "insect_bed.gd: quiet summer insect chirring over meadows and water on warm days (loop)",
+   "to_supply": "a 15 to 30 s seamless loop of many small insects, nothing rhythmic",
+   "priority": 2
+  },
+  {
+   "name": "hit_swing",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "hit_sounds.gd: a tool swung through the air, hit or miss",
+   "to_supply": "3 tool whooshes, 0.5 s",
+   "priority": 3
+  },
+  {
+   "name": "wet_squelch",
+   "state": "generated",
+   "variants": 4,
+   "used_in": "step_fx.gd: wet shoes squelch under steps for 20 s after wading",
+   "to_supply": "4 short wet squelches, 0.22 s",
+   "priority": 4
+  },
+  {
+   "name": "cloth_walk",
+   "state": "generated",
+   "variants": 4,
+   "used_in": "step_fx.gd: soft clothes rustle under every step",
+   "to_supply": "4 soft cloth swishes, 0.25 s",
+   "priority": 4
+  },
+  {
+   "name": "land_thud",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "landing_sounds.gd: landing from 2.5 to 5 m, body weight and a breath knocked out",
+   "to_supply": "3 landing thuds, 0.5 s",
+   "priority": 3
+  },
+  {
+   "name": "land_hard",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "landing_sounds.gd: landing from 5 m and more, heavy impact, gear rattle and a grunt",
+   "to_supply": "3 hard landings, 0.9 s",
+   "priority": 3
+  },
+  {
+   "name": "stance_crouch",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "stance_sounds.gd: cloth rustle crouching down",
+   "to_supply": "3 soft cloth rustles of crouching down, 0.45 s",
+   "priority": 3
+  },
+  {
+   "name": "stance_sit",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "stance_sounds.gd: sitting down, rustle and a soft weight",
+   "to_supply": "3 sitting-down rustles with a soft thud, 0.7 s",
+   "priority": 3
+  },
+  {
+   "name": "stance_lie",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "stance_sounds.gd: lying down on the ground",
+   "to_supply": "3 lying-down slides and thuds, 1 s",
+   "priority": 3
+  },
+  {
+   "name": "stance_rise",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "stance_sounds.gd: getting up",
+   "to_supply": "3 getting-up rustles, 0.7 s",
+   "priority": 3
+  },
+  {
+   "name": "stance_settle",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "stance_sounds.gd: a tiny shift while sitting or lying",
+   "to_supply": "3 tiny cloth shifts, 0.3 s",
+   "priority": 4
+  },
+  {
+   "name": "gear_cloth",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "gear_sounds.gd: clothes rustling on a step",
+   "to_supply": "3 soft cloth rustles, 0.2 s, from walking in a tunic or cloak",
+   "priority": 3
+  },
+  {
+   "name": "gear_leather",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "gear_sounds.gd: leather armour or straps creaking on a step",
+   "to_supply": "3 leather creaks, 0.3 s",
+   "priority": 3
+  },
+  {
+   "name": "gear_chain",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "gear_sounds.gd: mail jingling on a step",
+   "to_supply": "3 chainmail jingles, 0.4 s",
+   "priority": 2
+  },
+  {
+   "name": "gear_plate",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "gear_sounds.gd: plate armour clanking on a step",
+   "to_supply": "3 plate armour clanks, 0.4 s",
+   "priority": 2
+  },
+  {
+   "name": "gear_hobnail",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "gear_sounds.gd: hobnailed boots clicking on a step (loud on stone, dull on soft ground)",
+   "to_supply": "3 hobnail boot clicks, 0.1 s",
+   "priority": 4
+  },
+  {
+   "name": "gear_iron",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "gear_sounds.gd: iron-shod boots clanging on a step",
+   "to_supply": "3 iron boot clangs, 0.4 s",
+   "priority": 3
+  },
+  {
+   "name": "interior_room",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "interior_sounds.gd: the room tone while inside a building (loop)",
+   "to_supply": "A quiet indoor room tone loop, seamless",
+   "priority": 4
+  },
+  {
+   "name": "interior_rain_roof",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "interior_sounds.gd: rain on a roof heard from inside (loop)",
+   "to_supply": "Rain on a wooden or thatched roof from inside, seamless",
+   "priority": 2
+  },
+  {
+   "name": "interior_creak",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "interior_sounds.gd: timbers creaking now and then inside",
+   "to_supply": "2 to 3 wood creaks, 0.5 to 1 s",
+   "priority": 4
+  },
+  {
+   "name": "door_open",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "interior_sounds.gd: a door opens (object)",
+   "to_supply": "2 to 3 wooden door opens with latch and hinge creak",
+   "priority": 3
+  },
+  {
+   "name": "door_close",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "interior_sounds.gd: a door closes (object)",
+   "to_supply": "2 to 3 wooden door closes with a thud and latch",
+   "priority": 3
+  },
+  {
+   "name": "door_knock",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "interior_sounds.gd: knocking on a door (object)",
+   "to_supply": "2 to 3 triple knocks on wood",
+   "priority": 4
+  },
+  {
+   "name": "gate_open",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "placed_sounds.use('gate', true, at): a heavy gate swings open",
+   "to_supply": "2 or 3 gate openings: latch lift then a long creak",
+   "priority": 3
+  },
+  {
+   "name": "gate_close",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "placed_sounds.use('gate', false, at): a gate swings shut and latches",
+   "to_supply": "2 or 3 gate closings: thud then latch drop",
+   "priority": 3
+  },
+  {
+   "name": "hatch_open",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "placed_sounds.use('hatch', true, at): a floor hatch or trapdoor is lifted",
+   "to_supply": "2 or 3 trapdoor lifts: short creak then a flop",
+   "priority": 3
+  },
+  {
+   "name": "hatch_close",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "placed_sounds.use('hatch', false, at): a hatch drops shut",
+   "to_supply": "2 or 3 trapdoor drops",
+   "priority": 3
+  },
+  {
+   "name": "latch_click",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "placed_sounds.lock(locked, at): a latch or lock clicks",
+   "to_supply": "2 or 3 small latch or lock clicks",
+   "priority": 3
+  },
+  {
+   "name": "chest_open",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "interior_sounds.gd: a chest opens (object)",
+   "to_supply": "2 to 3 wooden chest lid opens with a creak",
+   "priority": 3
+  },
+  {
+   "name": "chest_close",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "interior_sounds.gd: a chest closes (object)",
+   "to_supply": "2 to 3 chest lid thuds",
+   "priority": 3
+  },
+  {
+   "name": "furniture_drag",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "interior_sounds.gd: furniture dragged on a floor (object)",
+   "to_supply": "2 to 3 wooden furniture scrapes, 1 s",
+   "priority": 4
+  },
+  {
+   "name": "fire_small",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "fire_sounds.gd: a small fire or embers (loop; crossfades with fire_large by size)",
+   "to_supply": "a quiet campfire loop, soft crackle, 10 to 15 s",
+   "priority": 2
+  },
+  {
+   "name": "fire_large",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "fire_sounds.gd: a big fire (loop)",
+   "to_supply": "a bonfire loop with roar, crackle and pops, 10 to 15 s",
+   "priority": 2
+  },
+  {
+   "name": "fire_rain",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "fire_sounds.gd: rain falling on an open fire (loop, only when raining)",
+   "to_supply": "rain sizzling on a campfire, 10 s loop",
+   "priority": 2
+  },
+  {
+   "name": "flame_torch",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "flame_sounds.gd: the torch in the hand (loop, louder when running and in wind)",
+   "to_supply": "a held torch burning, close to the ear, 10 s loop",
+   "priority": 2
+  },
+  {
+   "name": "flame_lantern",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "flame_sounds.gd: a lantern in the hand (quiet loop)",
+   "to_supply": "a lantern flame behind glass, 10 s loop",
+   "priority": 3
+  },
+  {
+   "name": "fire_light",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "fire_sounds.gd: a fire catches (one-shot)",
+   "to_supply": "3 fire-lighting sounds: strike and soft whoomph, 1 to 2 s",
+   "priority": 2
+  },
+  {
+   "name": "fire_out",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "fire_sounds.gd: a fire put out (one-shot)",
+   "to_supply": "3 water or rain extinguishing a fire, hiss and steam, 2 to 3 s",
+   "priority": 2
+  },
+  {
+   "name": "breath_in",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "breath_sounds.gd: breathing in, from moderate exertion",
+   "to_supply": "3 soft breaths in through the mouth, 0.8 s",
+   "priority": 2
+  },
+  {
+   "name": "breath_out",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "breath_sounds.gd: breathing out",
+   "to_supply": "3 soft breaths out, 0.9 s",
+   "priority": 2
+  },
+  {
+   "name": "breath_gasp",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "breath_sounds.gd: ragged hard breathing at severe exertion",
+   "to_supply": "3 hard gasping breaths of an exhausted runner, 0.7 s",
+   "priority": 2
+  },
+  {
+   "name": "breath_heave",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "breath_sounds.gd: the great chest heave when over-exerted (exertion over 1)",
+   "to_supply": "3 huge, loud chest-heaving breaths of someone at their limit, 1.3 s",
+   "priority": 2
+  },
+  {
+   "name": "heartbeat",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "breath_sounds.gd: the player's own heartbeat when exerted (lub-dub)",
+   "to_supply": "3 heartbeat lub-dubs, 0.4 s, no room tone",
+   "priority": 3
+  },
+  {
+   "name": "tree_creak",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "tree_sounds.gd: a felled tree groans as it starts to go (when its trunk appears)",
+   "to_supply": "3 tree trunk creaks and groans before falling, 1 to 2 s",
+   "priority": 2
+  },
+  {
+   "name": "tree_leaves",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "tree_sounds.gd: the crown rushing down through the air",
+   "to_supply": "3 branches and leaves rushing as a tree falls, about 1 s",
+   "priority": 3
+  },
+  {
+   "name": "tree_crash",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "tree_sounds.gd: the tree hits the ground (1.5 s after it starts to fall)",
+   "to_supply": "3 big tree crashes: snapping branches and a deep thud, 2 to 3 s",
+   "priority": 1
+  },
+  {
+   "name": "stump_chips",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "tree_sounds.gd: wood chips and a last crack as the stump is left",
+   "to_supply": "3 wood chip sprays and cracks, 0.5 s",
+   "priority": 3
+  },
+  {
+   "name": "craft_twine",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "item_sounds.gd: crafting work sound (twisting fibre into cord), plays for the length of the craft",
+   "to_supply": "2 to 3 recordings of twisting plant fibre or rope, 4 s",
+   "priority": 3
+  },
+  {
+   "name": "craft_knap",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "item_sounds.gd: crafting work sound (chipping stone: stone axe, knife), plays for the length of the craft",
+   "to_supply": "2 to 3 recordings of knapping flint, stone on stone, 4 s",
+   "priority": 3
+  },
+  {
+   "name": "craft_bind",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "item_sounds.gd: crafting work sound (binding with cord: spear, torch), plays for the length of the craft",
+   "to_supply": "2 to 3 recordings of tying cord around a pole, 4 s",
+   "priority": 3
+  },
+  {
+   "name": "craft_carve",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "item_sounds.gd: crafting work sound (scraping a point on wood: wooden spear), plays for the length of the craft",
+   "to_supply": "2 to 3 recordings of scraping wood with a stone, 4 s",
+   "priority": 3
+  },
+  {
+   "name": "craft_stack",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "item_sounds.gd: crafting work sound (laying sticks and stones: campfire), plays for the length of the craft",
+   "to_supply": "2 to 3 recordings of stacking sticks and stones, 4 s",
+   "priority": 3
+  },
+  {
+   "name": "craft_pound",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "item_sounds.gd: crafting work sound (pounding leaves: poultices), plays for the length of the craft",
+   "to_supply": "2 to 3 recordings of pounding leaves with a stone, 4 s",
+   "priority": 3
+  },
+  {
+   "name": "craft_wrap",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "item_sounds.gd: crafting work sound (wrapping a bandage), plays for the length of the craft",
+   "to_supply": "2 to 3 recordings of wrapping a cloth or leaf bandage, 4 s",
+   "priority": 3
+  },
+  {
+   "name": "item_pickup",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "item_sounds.gd: stacks in the inventory grew (picked up, harvested)",
+   "to_supply": "3 soft scoop and rustle cues of picking something up",
+   "priority": 2
+  },
+  {
+   "name": "item_drop",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "item_sounds.gd: stacks in the inventory shrank (dropped)",
+   "to_supply": "3 dull thuds of setting an item down",
+   "priority": 2
+  },
+  {
+   "name": "inv_open",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "item_sounds.gd: the inventory opened (I)",
+   "to_supply": "3 leather pouch or satchel flaps opening",
+   "priority": 2
+  },
+  {
+   "name": "inv_close",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "item_sounds.gd: the inventory closed",
+   "to_supply": "3 leather pouch flaps closing",
+   "priority": 2
+  },
+  {
+   "name": "hotbar_tick",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "item_sounds.gd: a hotbar slot chosen (number keys)",
+   "to_supply": "3 short quiet dry wooden ticks, 0.07 s",
+   "priority": 4
+  },
+  {
+   "name": "craft_start",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "item_sounds.gd: a craft begins",
+   "to_supply": "3 soft two-part clicks of setting materials down, 0.15 s",
+   "priority": 4
+  },
+  {
+   "name": "item_swap",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "item_sounds.gd: items moved between slots",
+   "to_supply": "3 short slide and tap cues",
+   "priority": 1
+  },
+  {
+   "name": "craft_done",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "item_sounds.gd: a craft finished",
+   "to_supply": "3 wooden knock and small chime cues",
+   "priority": 2
+  },
+  {
+   "name": "spear_jab",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "spear_sounds.gd: a spear thrust through the air",
+   "to_supply": "3 spear thrust whooshes, 0.3 s",
+   "priority": 3
+  },
+  {
+   "name": "spear_throw",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "spear_sounds.gd: the heave and release of a thrown spear",
+   "to_supply": "3 spear throw whooshes with effort, 0.7 s",
+   "priority": 3
+  },
+  {
+   "name": "spear_flight",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "spear_sounds.gd: a thrown spear whistling through the air (moves along the path)",
+   "to_supply": "3 thin air whistles of a spear in flight, 1 to 2 s",
+   "priority": 3
+  },
+  {
+   "name": "spear_hit_wood",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "spear_sounds.gd: a spear sticking into wood (the shaft quivers)",
+   "to_supply": "3 spear thunks into a tree or board with shaft vibration",
+   "priority": 2
+  },
+  {
+   "name": "spear_hit_stone",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "spear_sounds.gd: a spear striking stone",
+   "to_supply": "3 spear tips hitting rock, clack and scrape",
+   "priority": 3
+  },
+  {
+   "name": "spear_hit_soil",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "spear_sounds.gd: a spear sticking into earth",
+   "to_supply": "3 spear thuds into dirt",
+   "priority": 3
+  },
+  {
+   "name": "spear_hit_flesh",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "spear_sounds.gd: a spear hitting flesh",
+   "to_supply": "3 wet heavy thumps of a spear hitting an animal or body",
+   "priority": 2
+  },
+  {
+   "name": "ui_click",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "ui_sounds.gd: every menu button pressed",
+   "to_supply": "2 to 3 very soft, short interface ticks",
+   "priority": 4
+  },
+  {
+   "name": "ui_on",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "ui_sounds.gd: a toggle switched on (inspection mode)",
+   "to_supply": "2 short rising two-note cues, quiet",
+   "priority": 4
+  },
+  {
+   "name": "ui_off",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "ui_sounds.gd: a toggle switched off",
+   "to_supply": "2 short falling two-note cues, quiet",
+   "priority": 4
+  },
+  {
+   "name": "ui_quality",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "ui_sounds.gd: the quality tier changed (F2 or the menu)",
+   "to_supply": "2 soft settled chimes, 0.5 s",
+   "priority": 4
+  },
+  {
+   "name": "swim_splash_small",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "swim_sounds.gd: the body enters water slowly (under 4 m/s)",
+   "to_supply": "3 small body-into-water splashes, 0.5 to 1 s",
+   "priority": 2
+  },
+  {
+   "name": "swim_splash_big",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "swim_sounds.gd: a jump or fall into water (4 m/s and up)",
+   "to_supply": "3 big splashes of a person falling in, 1 to 2 s",
+   "priority": 2
+  },
+  {
+   "name": "swim_stroke",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "swim_sounds.gd: an arm stroke while swimming, one every 0.6 to 1.4 s",
+   "to_supply": "3 breaststroke or crawl arm pulls through water, 0.5 s",
+   "priority": 3
+  },
+  {
+   "name": "swim_dive",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "swim_sounds.gd: the head goes under",
+   "to_supply": "3 bubbling gulps of going under, 1 s",
+   "priority": 3
+  },
+  {
+   "name": "swim_surface",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "swim_sounds.gd: the head comes out of the water",
+   "to_supply": "3 breaths and running water on surfacing, 1 s",
+   "priority": 3
+  },
+  {
+   "name": "swim_under",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "swim_sounds.gd: the hum of being underwater (loop while the eyes are under)",
+   "to_supply": "A muffled underwater ambience loop, seamless",
+   "priority": 3
+  },
+  {
+   "name": "town_bell",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "town_sounds.gd: a tower bell tolling the hour or on call (ring_bell)",
+   "to_supply": "2 to 3 bell strikes with a long ring, 4 to 6 s each",
+   "priority": 3
+  },
+  {
+   "name": "town_hammering",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "town_sounds.gd: a smith or builder working nearby (loop)",
+   "to_supply": "A seamless loop of hammer on anvil, 8 to 15 s",
+   "priority": 2
+  },
+  {
+   "name": "town_fire",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "town_sounds.gd: a hearth or forge fire (loop)",
+   "to_supply": "A seamless crackling fire loop",
+   "priority": 2
+  },
+  {
+   "name": "town_crowd",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "town_sounds.gd: a busy square murmur (loop)",
+   "to_supply": "A seamless crowd murmur loop, no clear words",
+   "priority": 3
+  },
+  {
+   "name": "dig_water",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "dig_sounds.gd: water pouring into a new hole",
+   "to_supply": "3 water splashing into a pit",
+   "priority": 3
+  },
+  {
+   "name": "heal_poultice",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "item_sounds.gd eat(): a poultice applied (Items eat_event, confirmed by the server)",
+   "to_supply": "2 recordings of pressing a wet leaf pack onto skin, 0.8 s",
+   "priority": 3
+  },
+  {
+   "name": "heal_bandage",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "item_sounds.gd eat(): a bandage applied",
+   "to_supply": "2 recordings of wrapping a cloth bandage, 1 s",
+   "priority": 3
+  },
+  {
+   "name": "stomach_growl",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "item_sounds.gd watch_vitals(): a hungry stomach, every 50 to 110 s at 15 percent hunger or less (twice as often when starving)",
+   "to_supply": "2 recordings of a stomach growling, 1.5 s",
+   "priority": 3
+  },
+  {
+   "name": "chop_split",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "workshop_sounds.gd: a log split into firewood at the chopping block (heard when a log is traded for firewood beside a block)",
+   "to_supply": "3 recordings of an axe splitting a log on a block, 0.8 s",
+   "priority": 2
+  },
+  {
+   "name": "chop_thock",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "workshop_sounds.gd chop(at, false): an axe stroke on the block that does not split",
+   "to_supply": "3 recordings of an axe biting wood, 0.3 s",
+   "priority": 3
+  },
+  {
+   "name": "plank_drop",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "workshop_sounds.gd plank_drop(at): a sawn plank landing on its stack (hook until the saw mill exists)",
+   "to_supply": "2 recordings of a plank dropped on a plank stack, 0.5 s",
+   "priority": 3
+  },
+  {
+   "name": "saw_mill",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "workshop_sounds.gd set_saws: a running saw mill (hook until it exists, loop)",
+   "to_supply": "A seamless loop of a saw mill running, blade rasp and frame, 10 s or more",
+   "priority": 3
+  },
+  {
+   "name": "pick_pluck",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "harvest_sounds.gd: a berry, fruit or nut picked",
+   "to_supply": "3 recordings of plucking a berry or nut from its stalk, 0.3 s",
+   "priority": 2
+  },
+  {
+   "name": "pick_snip",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "harvest_sounds.gd: a herb, leaf or flower nipped off",
+   "to_supply": "3 recordings of snipping a leaf or herb stem, 0.3 s",
+   "priority": 2
+  },
+  {
+   "name": "pick_pull",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "harvest_sounds.gd: a root or bulb pulled from the soil",
+   "to_supply": "3 recordings of pulling a root or carrot out of soil, 0.6 s",
+   "priority": 2
+  },
+  {
+   "name": "pick_twist",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "harvest_sounds.gd: a mushroom twisted off",
+   "to_supply": "3 recordings of twisting a mushroom off its base, 0.4 s",
+   "priority": 2
+  },
+  {
+   "name": "pick_snap",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "harvest_sounds.gd: a stalk, reed, fibre plant or twig snapped",
+   "to_supply": "3 recordings of snapping a green stalk or reed, 0.3 s",
+   "priority": 2
+  },
+  {
+   "name": "plant_rustle_leaves",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "harvest_sounds.gd: leaves and shrub shaking when picked",
+   "to_supply": "2 recordings of shaking a leafy plant, 1 s",
+   "priority": 3
+  },
+  {
+   "name": "plant_rustle_reeds",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "harvest_sounds.gd: reeds and grass swishing when picked",
+   "to_supply": "2 recordings of shaking reeds or tall grass, 1 s",
+   "priority": 3
+  },
+  {
+   "name": "treewind_pine",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "tree_wind.gd: wind through conifers, a soft needle hiss (loop, level follows wind and conifer count)",
+   "to_supply": "A seamless loop of wind in pines, 20 s or more, steady, no gusts",
+   "priority": 2
+  },
+  {
+   "name": "treewind_leaves",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "tree_wind.gd: wind in summer and spring leaves (loop)",
+   "to_supply": "A seamless loop of wind in green broadleaf trees, 20 s or more",
+   "priority": 2
+  },
+  {
+   "name": "treewind_dry",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "tree_wind.gd: wind in dry autumn leaves (loop)",
+   "to_supply": "A seamless loop of wind in dry crackling leaves",
+   "priority": 2
+  },
+  {
+   "name": "treewind_bare",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "tree_wind.gd: wind in bare winter branches, creaks (loop)",
+   "to_supply": "A seamless loop of wind in bare branches with soft creaks",
+   "priority": 2
+  },
+  {
+   "name": "cook_sizzle",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "fire_sounds.gd cook(): food laid on the embers (heard when a roast appears in the bag at a fire)",
+   "to_supply": "2 to 3 recordings of meat or food sizzling on embers, 3 s",
+   "priority": 2
+  },
+  {
+   "name": "fire_fuel",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "fire_sounds.gd fuel(): a stick or log laid on a fire (V key)",
+   "to_supply": "2 recordings of wood put on a fire with a flare of crackles, 1 s",
+   "priority": 2
+  },
+  {
+   "name": "eat_crunch",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "item_sounds.gd eat(): a crisp bite and chews (roast, nuts, roots)",
+   "to_supply": "2 to 3 recordings of biting and chewing something crisp, 1 s",
+   "priority": 3
+  },
+  {
+   "name": "eat_soft",
+   "state": "generated",
+   "variants": 3,
+   "used_in": "item_sounds.gd eat(): soft chewing (berries, greens)",
+   "to_supply": "2 to 3 recordings of chewing something soft, 1 s",
+   "priority": 3
+  },
+  {
+   "name": "drink_gulp",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "item_sounds.gd eat(\"drink\"): two swallows",
+   "to_supply": "2 recordings of drinking and swallowing, 1 s",
+   "priority": 3
+  },
+  {
+   "name": "place_leanto",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "placed_sounds.gd: a lean-to set up (hook place(\"leanto\"); also heard from a world row of item id lean_to)",
+   "to_supply": "2 to 3 recordings of planting poles and laying brush, 1 s",
+   "priority": 2
+  },
+  {
+   "name": "place_chest",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "placed_sounds.gd: a chest set down",
+   "to_supply": "2 to 3 recordings of a heavy wooden box put on the ground",
+   "priority": 2
+  },
+  {
+   "name": "place_thump",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "placed_sounds.gd: any other thing set on the ground",
+   "to_supply": "2 short dull thumps on soil",
+   "priority": 3
+  },
+  {
+   "name": "pickup_placed",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "placed_sounds.gd: a placed thing picked up again",
+   "to_supply": "2 recordings of dragging and lifting a wooden thing",
+   "priority": 3
+  },
+  {
+   "name": "container_put",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "placed_sounds.gd: something put into a chest",
+   "to_supply": "2 short wood clacks with a little rustle",
+   "priority": 2
+  },
+  {
+   "name": "container_take",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "placed_sounds.gd: something taken out of a chest",
+   "to_supply": "2 short rustles and a wood clack",
+   "priority": 2
+  },
+  {
+   "name": "tool_break",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "placed_sounds.gd: a tool breaks with the last of its wear",
+   "to_supply": "2 to 3 sharp wood or stone cracks with splinters",
+   "priority": 2
+  },
+  {
+   "name": "tool_warn",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "placed_sounds.gd: a worn tool complaining before it breaks (under 20 percent condition)",
+   "to_supply": "3 small dry cracks and creaks of a tool at its limit, 0.4 s",
+   "priority": 3
+  },
+  {
+   "name": "tool_repair",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "placed_sounds.gd: a tool mended (about 2 s)",
+   "to_supply": "2 recordings of scraping, tapping and binding a tool, 2 s",
+   "priority": 3
+  }
+ ],
+ "steps": [
+  {
+   "name": "step_grass",
+   "state": "recorded",
+   "variants": 6,
+   "used_in": "short grass ground"
+  },
+  {
+   "name": "step_grass_tall",
+   "state": "recorded",
+   "variants": 6,
+   "used_in": "tall grass"
+  },
+  {
+   "name": "step_bushes",
+   "state": "recorded",
+   "variants": 6,
+   "used_in": "walking through shrubs"
+  },
+  {
+   "name": "step_dirt",
+   "state": "recorded",
+   "variants": 6,
+   "used_in": "soil, forest soil, clay, stony ground"
+  },
+  {
+   "name": "step_leaves",
+   "state": "recorded",
+   "variants": 6,
+   "used_in": "leaf litter on forest humus"
+  },
+  {
+   "name": "step_mud",
+   "state": "recorded",
+   "variants": 6,
+   "used_in": "mud, peat, wet ground, soaked ground in rain"
+  },
+  {
+   "name": "step_sand",
+   "state": "recorded",
+   "variants": 6,
+   "used_in": "sand, beach, salt flat, ash"
+  },
+  {
+   "name": "step_snow",
+   "state": "recorded",
+   "variants": 6,
+   "used_in": "snow"
+  },
+  {
+   "name": "step_stone",
+   "state": "recorded",
+   "variants": 6,
+   "used_in": "rock, outcrops, ore"
+  },
+  {
+   "name": "step_ice",
+   "state": "empty",
+   "variants": 0,
+   "used_in": "a frozen pond (generated placeholder in floors/)"
+  },
+  {
+   "name": "step_gravel",
+   "state": "recorded",
+   "variants": 6,
+   "used_in": "gravel, soft rock"
+  },
+  {
+   "name": "step_water",
+   "state": "recorded",
+   "variants": 6,
+   "used_in": "wading in water"
+  },
+  {
+   "name": "step_plank",
+   "state": "empty",
+   "variants": 0,
+   "used_in": "built wooden floor (sound.set_floor, generated placeholder in floors/)"
+  },
+  {
+   "name": "step_slab",
+   "state": "empty",
+   "variants": 0,
+   "used_in": "built stone slab floor"
+  },
+  {
+   "name": "step_carpet",
+   "state": "empty",
+   "variants": 0,
+   "used_in": "built carpeted floor"
+  },
+  {
+   "name": "step_thatch",
+   "state": "empty",
+   "variants": 0,
+   "used_in": "built thatch floor"
+  },
+  {
+   "name": "step_path",
+   "state": "empty",
+   "variants": 0,
+   "used_in": "gravel path laid by builders"
+  }
+ ],
+ "planned": []
+}

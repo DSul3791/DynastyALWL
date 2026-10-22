@@ -1,0 +1,148 @@
+extends Node
+
+# NPC speech (Dave 2026-10-21: "text is always the trigger, then we hand it the prebaked text or the AI text"). ONE entry point:
+#   speak(voice_id, text, at)   a line of text, who says it, and where (the NPC's position in the world)
+# The text is turned into a cache key from the voice details (data/npcs/voices.json: voice, speed, pitch) and the text itself,
+# the first 8 hex of md5("k2|voice_id|speed|pitch|text") with the text trimmed and whitespace collapsed (tools/gen_npc_voice.py
+# makes the same names). A premade line is only text whose file is already in the pack, assets/audio/npc_voice/<voice_id>/<hash>.ogg;
+# a line made live lands in user://npc_voice/<voice_id>/<hash>.ogg and is found the same way next time. A line with no file
+# stays text: the chat box always shows it (dialogue_view.gd), speech is extra. `live_maker` is the hook for live synthesis
+# (Callable(voice_id, text, hash, spec) -> bool, a client helper process later); unset, only cached and premade lines speak.
+# Playback is 3D from the NPC, inverse distance from 3 m, silent past 18 m, a gentle low-pass with range; the same NPC talking
+# again cuts off its last line. Switch: `enabled` (Settings > NPC voice), kept in user://npc_voice.cfg.
+
+const PACK := "res://assets/audio/npc_voice/"
+const CACHE := "user://npc_voice/"
+const VOICES_PATH := "res://data/npcs/voices.json"
+const MODEL := "k2"
+const CONFIG := "user://npc_voice.cfg"
+const BUS := "NpcVoice"
+
+var enabled: bool = true
+var live_maker: Callable = Callable()
+var played: int = 0
+var last: String = ""                   # the HUD's "last sound": who spoke, what, and how far away
+var hear_m: float = 15.0                # an NPC voice carries this far (data/npcs/voices.json hear_m), then nothing
+var last_hash: String = ""
+
+var _spec: Dictionary = {}
+var _players: Dictionary = {}   # voice_id -> AudioStreamPlayer3D
+
+
+func _ready() -> void:
+	var config: ConfigFile = ConfigFile.new()
+
+	if config.load(CONFIG) == OK:
+		enabled = bool(config.get_value("voice", "enabled", true))
+
+	_make_bus()
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(VOICES_PATH))
+	_spec = parsed.get("voices", {}) if typeof(parsed) == TYPE_DICTIONARY else {}
+	hear_m = float(parsed.get("hear_m", hear_m)) if typeof(parsed) == TYPE_DICTIONARY else hear_m
+
+
+func set_enabled(on: bool) -> void:
+	enabled = on
+	var config: ConfigFile = ConfigFile.new()
+	config.set_value("voice", "enabled", on)
+	config.save(CONFIG)
+
+	if not on:
+		for id in _players:
+			(_players[id] as AudioStreamPlayer3D).stop()
+
+
+# The cache key of a line (exposed for the generator test and for live synthesis).
+func line_hash(voice_id: String, text: String) -> String:
+	var spec: Dictionary = _spec.get(voice_id, {})
+	var clean: String = " ".join(text.strip_edges().split(" ", false)).replace("\n", " ")
+	return ("%s|%s|%.2f|%.2f|%s" % [MODEL, voice_id, float(spec.get("speed", 0.95)), float(spec.get("pitch", 1.0)), clean]).md5_text().substr(0, 8)
+
+
+func speak(voice_id: String, text: String, at: Variant = null) -> bool:
+	if not enabled or text.strip_edges() == "":
+		return false
+
+	# Speech is always somebody talking to somebody: it needs the NPC's position and plays only if the listener is in earshot.
+	# (Dave 2026-10-21: NPCs were heard talking from nowhere.) No position, no sound; the chat box still shows the text.
+	if not (at is Vector3):
+		return false
+
+	var camera: Camera3D = get_viewport().get_camera_3d()
+	var distance: float = ((at as Vector3) - camera.global_position).length() if camera != null else 0.0
+
+	if distance > hear_m:
+		return false
+
+	var hash8: String = line_hash(voice_id, text)
+	var stream: AudioStream = _find(voice_id, hash8)
+
+	if stream == null and live_maker.is_valid():
+		var spec: Dictionary = _spec.get(voice_id, {})
+
+		if bool(live_maker.call(voice_id, text, hash8, spec)):
+			stream = _find(voice_id, hash8)
+
+	if stream == null:
+		return false
+
+	var player: AudioStreamPlayer3D = _players.get(voice_id)
+
+	if player == null:
+		player = AudioStreamPlayer3D.new()
+		player.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
+		player.unit_size = 3.0
+		player.max_distance = hear_m
+		player.attenuation_filter_cutoff_hz = 6000.0
+		player.volume_db = 3.0
+		player.bus = BUS
+		add_child(player)
+		_players[voice_id] = player
+
+	player.stream = stream
+	player.pitch_scale = float(_spec.get(voice_id, {}).get("pitch", 1.0))
+
+	if at is Vector3:
+		player.global_position = (at as Vector3) + Vector3(0.0, 1.6, 0.0)
+
+	player.play()
+	played += 1
+	last_hash = hash8
+	last = "%s: %s (%.0f m)" % [voice_id, text.left(28), distance]
+	return true
+
+
+func _find(voice_id: String, hash8: String) -> AudioStream:
+	var premade: String = "%s%s/%s.ogg" % [PACK, voice_id, hash8]
+
+	if ResourceLoader.exists(premade):
+		return load(premade) as AudioStream
+
+	var cached: String = "%s%s/%s.ogg" % [CACHE, voice_id, hash8]
+
+	if FileAccess.file_exists(cached):
+		return AudioStreamOggVorbis.load_from_file(cached)
+
+	return null
+
+
+# The voice bus: a little room (light reverb) and a rumble cut, so the voices sit in the world instead of sounding dry and close
+# (Tyler Report 24). Not baked into the recordings, so it can be tuned here.
+func _make_bus() -> void:
+	if AudioServer.get_bus_index(BUS) != -1:
+		return
+
+	AudioServer.add_bus()
+	var index: int = AudioServer.bus_count - 1
+	AudioServer.set_bus_name(index, BUS)
+	AudioServer.set_bus_send(index, "Master")
+	var cut: AudioEffectHighPassFilter = AudioEffectHighPassFilter.new()
+	cut.cutoff_hz = 110.0
+	AudioServer.add_bus_effect(index, cut)
+	var room: AudioEffectReverb = AudioEffectReverb.new()
+	room.room_size = 0.22
+	room.damping = 0.65
+	room.wet = 0.07
+	room.dry = 0.95
+	room.spread = 0.6
+	AudioServer.add_bus_effect(index, room)

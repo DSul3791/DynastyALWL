@@ -96,11 +96,11 @@ What this means for the low tier (8 GB RAM, SATA drive) *[Practice]*:
 - **Done (build 15):** ground detail comes from a cheap noise shader (no textures to load); fine detail fades out with distance. Colors were converted to true display values and muted. Not seen on screen yet.
 - **Not started:** real-machine measurement (needs a playtest), tree levels of detail and variants, an in-game clear-cache button.
 
-## 9. Audio budget (direction only, nothing built)
+## 9. Audio budget (first sounds built 2026-10-19: wind, footsteps, grass; under 1 MB of Ogg, at most 8 playing)
 
 Audio needs its own budget, especially on the low tier *[Practice]*:
 - **CPU:** mixing many sounds at once (wind, water, birds, footsteps, animals) costs processor time. Cap the number of sounds playing together (for example about 24 on Low, 48 on Mid, 96 on High) and drop the quietest or farthest first.
 - **Memory:** short sounds stay in RAM; long ambient beds are streamed from disk, never fully loaded. Keep total loaded sound under a set size per tier (suggested 150 MB on Low).
 - **Disk:** compressed formats (Ogg), streamed in the background, so a slow SATA drive never stalls the game. Sound adds to the install size, so it is part of the light-download goal.
+- **Built (build 108):** the voice caps (24, 48, 96) and memory caps (150, 300, 600 MB) are enforced in `src/client/sound_stage.gd`; the HUD shows sounds playing and megabytes loaded. Measured at Low in a storm walk: peak 14 sounds, 2.6 MB of Ogg loaded.
 - **Placement:** sounds are placed in space (direction and distance), which is what makes a sound stage believable; keep the position math cheap and only for nearby sources.
-

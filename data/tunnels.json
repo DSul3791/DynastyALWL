@@ -1,0 +1,8 @@
+{
+	"enabled": false,
+	"collapse": false,
+	"base_grace_s": 1800,
+	"min_grace_s": 225,
+	"max_grace_s": 3600,
+	"rubble_material": 1
+}

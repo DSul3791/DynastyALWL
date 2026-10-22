@@ -1,0 +1,141 @@
+{
+	"npc": "edda",
+	"note": "Edda the guard. See hob.json for the format.",
+	"barks": {
+		"greeting": [
+			"Halt. State your business.",
+			"Keep your hands where I can see them.",
+			"Evening, traveller."
+		],
+		"farewell": [
+			"Move along.",
+			"Stay out of trouble.",
+			"Watch the road."
+		],
+		"idle": [
+			"All quiet.",
+			"Hm. Nothing stirs.",
+			"Cold watch tonight."
+		],
+		"complaint": [
+			"I apologize, my head aches terribly.",
+			"Forgive me, I have not slept well.",
+			"My head throbs. Speak quickly.",
+			"I am unwell. Forgive my manner.",
+			"A sickness has taken me since dusk.",
+			"Not my best day, I am afraid.",
+			"The ache behind my eyes will not leave.",
+			"Pardon me. I can barely stand.",
+			"I apologize, I cannot keep my eyes open.",
+			"Forgive me, my watch has been poor today.",
+			"My bones ache from the cold.",
+			"A fever has me today, speak softly.",
+			"I have a pounding head and a sour stomach.",
+			"The gate can spare me for a moment, I hope.",
+			"I feel faint and hollow.",
+			"Pardon my temper, I am ill.",
+			"I have not eaten since yesterday and it shows.",
+			"My legs are weak as water.",
+			"I need to sit before I fall.",
+			"Bad air, I think. It has taken my strength.",
+			"Forgive my short answers, I feel wretched.",
+			"Even my spear feels heavy today."
+		],
+		"cooldown": [
+			"Later. Please.",
+			"Leave me be a while."
+		],
+		"info": [
+			"The road north is quiet.",
+			"Keep your fire covered in rain.",
+			"I watch the gate from dusk to dawn."
+		]
+	},
+	"roots": [
+		{
+			"node": "post"
+		}
+	],
+	"nodes": {
+		"post": {
+			"text": "$greeting",
+			"choices": [
+				{
+					"text": "Is it safe here?",
+					"goto": "safe"
+				},
+				{
+					"text": "Where can I sleep?",
+					"goto": "sleep"
+				},
+				{
+					"text": "Teach me the sword.",
+					"goto": "teach",
+					"if": {
+						"can_train": [
+							"swordplay",
+							1
+						]
+					}
+				},
+				{
+					"text": "Goodbye.",
+					"goto": "bye"
+				}
+			]
+		},
+		"safe": {
+			"text": [
+				"Safe enough by day. Wolves hunt at night.",
+				"The hills are quiet. The woods are not."
+			],
+			"choices": [
+				{
+					"text": "Anything else?",
+					"goto": "post"
+				},
+				{
+					"text": "Goodbye.",
+					"goto": "bye"
+				}
+			]
+		},
+		"sleep": {
+			"text": [
+				"Build a lean-to near a fire. Warmth matters.",
+				"A lean-to keeps the rain off. Set one by the pond."
+			],
+			"choices": [
+				{
+					"text": "Anything else?",
+					"goto": "post"
+				},
+				{
+					"text": "Goodbye.",
+					"goto": "bye"
+				}
+			]
+		},
+		"bye": {
+			"text": "$farewell",
+			"end": true
+		},
+		"teach": {
+			"text": "Hold the blade loose. Again, and again. There.",
+			"effects": [
+				{
+					"train_skill": [
+						"swordplay",
+						1
+					]
+				}
+			],
+			"choices": [
+				{
+					"text": "Thank you.",
+					"goto": "bye"
+				}
+			]
+		}
+	}
+}
