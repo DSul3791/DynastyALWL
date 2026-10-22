@@ -1,8 +1,3 @@
-## sound-wolf-howl | When should wolves howl?
-- Only at night, far away, more in winter (recommended)
-- Night and dusk, and when a pack spots a player
-- Any time of day, rarely
-
 ## sound-footstep-others | How far away should you hear other players' footsteps?
 - 15 m, same as NPC voices (recommended)
 - 30 m
