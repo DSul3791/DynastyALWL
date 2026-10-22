@@ -60,3 +60,7 @@ Answered: 2026-10-22 01:24 UTC
 Answer: No music, only world sounds (recommended: keeps the world feeling real)
 Answered: 2026-10-22 03:05 UTC
 
+## sound-wolf-howl | When should wolves howl?
+Answer: Only at night, far away, more in winter (recommended)
+Answered: 2026-10-22 03:05 UTC
+
