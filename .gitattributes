@@ -2,3 +2,4 @@
 * text=auto
 *.bat text eol=crlf
 *.sh text eol=lf
+tools/godot text eol=lf

@@ -1,0 +1,3 @@
+#!/bin/sh
+# Shim so the .sh tools find `godot` on Dave's PC (Git bash). Override the program with GODOT_EXE.
+exec "${GODOT_EXE:-C:/GodotInstaller/godot.windows.editor.x86_64.exe}" "$@"
