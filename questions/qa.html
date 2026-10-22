@@ -56,7 +56,7 @@ async function save(n,id){
   const ta=document.getElementById("ta"+n);
   if(ta)ans=ta.value.trim();else{const r=document.querySelector(`input[name=q${n}]:checked`);ans=r&&r.value}
   if(!ans){m.textContent="Pick or type an answer first.";return}
-  m.textContent="Saving...";
+  m.textContent="";
   try{
     let q;
     for(let k=0;k<5;k++){ // append answer
@@ -73,7 +73,7 @@ async function save(n,id){
       const nt=(pre?pre+"\n":"")+rest.map(x=>x.raw.join("\n").replace(/\n+$/,"")).join("\n\n")+(rest.length?"\n":"");
       if(await put(QF,nt,f.sha,"Answered, removed: "+id))break;
       if(k==4)throw new Error("conflict removing, try again")}
-    document.getElementById("box"+n).innerHTML="<h2>Saved. Thank you.</h2>";
+    load();
   }catch(e){m.innerHTML=`<span class=err>${esc(e.message)}</span>`}}
 async function q_get(id){const f=await get(QF);return{text:f.text,sha:f.sha,q:parse(f.text).find(x=>x.id==id)}}
 load();
