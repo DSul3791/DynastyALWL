@@ -1,8 +1,3 @@
-## cc-radar-name | One thread is called Radar in the docs and Sal_Crafts in one review. Which name do we use?
-- Radar (recommended: all docs and handoffs use it)
-- Sal_Crafts
-- Decide later
-
 ## cc-long-runs | Long test runs and bakes on your PC use the same computer and graphics card as your game. When may MikeW run them?
 - Any time except while the game is running; MikeW checks first (recommended)
 - Only when you say "PC is free"
