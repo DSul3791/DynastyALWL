@@ -13,7 +13,7 @@ Kathleen_ArtisticDirector, 2026-10-22. Pictures: art/tiers/tiers_walls.png, tier
 | Tier | Look | Real geometry |
 |---|---|---|
 | 1 Basic | vertical stakes every 15 cm, light rods woven over and under, twine lashing, straw along the top | flat panel 0.1 m |
-| 2 Plank | uneven vertical planks 18 to 28 cm, rough bark face out, dark gaps, smooth pale face inside | two layers: bark outside, smooth inside, 0.1 m |
+| 2 Plank | half-round planks, smooth and rounded on the OUTSIDE (Dave 22:20), flat rough face INSIDE, dark gaps | two layers: rounded smooth outside, flat rough inside, 0.1 m |
 | 3 Fine wood | lapped boards 12 cm, nail heads, corner trim, top plate | panel 0.15 m with trim posts |
 | 4 Log | 8 round logs 30 cm, bark on, notched ends stick out 12 cm alternately, chinking | real cylinders (8 per wall), 0.4 m |
 | 5 Cobblestone | rounded stones 20 to 40 cm, thick pale mortar, mixed grey, brown, blue-grey | panel 0.5 m, rounded mortar relief by texture |
@@ -39,5 +39,8 @@ Place and door sounds per tier: thatch (basic), board (plank, fine), log (new: d
 ## Questions (recommendation first)
 1. Roof of tier 5: stone slabs on beams as Sal wrote; tier 6: dressed slabs. Recommend yes (cobble = rough slate-like slabs, mason = tidy dressed slabs).
 2. Log walls are real cylinders and not a texture so the notched corners show. Recommend yes (8 small meshes per wall).
-3. Tier 2 plank wall is two layers (bark outside, smooth inside). Recommend yes.
+3. (answered: smooth rounded outside, rough flat inside). Recommend yes.
 4. Do doors/windows follow the tier look? Recommend yes (table above).
+
+## Doors and windows (Dave 22:20; picture art/tiers/tiers_doors.png)
+1 Basic: woven hurdle with thatch and twine ties. 2 Plank: planks with two battens, wooden latch. 3 Reinforced: planks with iron bands and rivets. 4 Wrought iron: iron frame with crossed bars over dark planks. 5 Steel and iron: steel panels in an iron frame, brass handle. Double door: two leaves, 2 m wide, fills the slot. Window and double window (two lights, 2 m). All fit a door or window frame in the 2 m wall slot; mouse wheel scrolls wall / window / door frame / double door frame / double window frame while placing (Steve and Sal).

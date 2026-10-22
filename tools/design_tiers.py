@@ -85,38 +85,41 @@ def wall_basic(rng):
 
 
 def wall_plank(rng):
+    """Outside: the rounded, smooth face of half-round planks. Inset: the flat, rough face inside."""
     w, h = WALL
-    img = canvas((w, h), (24, 18, 12))
+    img = canvas((w, h), (30, 22, 14))
     d = ImageDraw.Draw(img)
     x = 0
 
     while x < w:
-        pw = int(rng.integers(26, 42))
-        gap = int(rng.integers(1, 4))
-        top = int(rng.integers(0, 8))
-        bark = tint((104, 82, 62), rng.uniform(0.8, 1.1))
-        left = [(x + int(rng.integers(-2, 3)), yy) for yy in range(top, h, 24)]
-        right = [(x + pw - gap + int(rng.integers(-2, 3)), yy) for yy in range(h, top - 1, -24)]
-        d.polygon([(x, top)] + left + [(x, h)] + right, fill=bark)
+        pw = int(rng.integers(30, 44))
+        gap = int(rng.integers(2, 4))
+        base = tint((184, 142, 92), rng.uniform(0.88, 1.08))
+        top = int(rng.integers(0, 6))
 
-        for _ in range(7):                   # bark fissures
-            fx = x + int(rng.integers(3, max(4, pw - 3)))
-            fy = int(rng.integers(top, h - 60))
-            d.line([(fx, fy), (fx + int(rng.integers(-2, 3)), fy + int(rng.integers(30, 90)))], fill=tint(bark, 0.5), width=1)
+        for k in range(pw - gap):            # a rounded plank: light in the middle, darker toward both edges
+            f = 0.62 + 0.45 * np.sin(np.pi * (k + 0.5) / float(pw - gap))
+            d.line([(x + k, top), (x + k, h)], fill=tint(base, f))
 
-        d.line([(x + 1, top), (x + 1, h)], fill=tint(bark, 1.18), width=2)
+        for _ in range(5):                   # smooth grain
+            gx = x + int(rng.integers(4, max(5, pw - 5)))
+            gy = int(rng.integers(top, h - 100))
+            d.line([(gx, gy), (gx, gy + int(rng.integers(40, 120)))], fill=tint(base, 0.82), width=1)
+
         x += pw
 
-    img = img.filter(ImageFilter.GaussianBlur(0.5))
-    d = ImageDraw.Draw(img)
-    d.rectangle([w - 70, h - 90, w - 6, h - 6], fill=(230, 214, 168), outline=(30, 20, 12), width=2)   # inset: the smooth face inside
-    inset = Image.new("RGB", (60, 80), (222, 196, 140))
+    d.rectangle([w - 72, h - 92, w - 6, h - 6], fill=(20, 14, 8), outline=(240, 240, 240), width=2)
+    inset = Image.new("RGB", (64, 84), (96, 70, 44))
     di = ImageDraw.Draw(inset)
 
-    for ix in range(0, 60, 14):
-        di.line([(ix, 0), (ix, 80)], fill=(150, 120, 80), width=1)
+    for ix in range(0, 64, 16):
+        di.rectangle([ix, 0, ix + 14, 84], fill=tint((110, 80, 50), rng.uniform(0.85, 1.1)))
 
-    img.paste(inset, (w - 67, h - 87))
+    for _ in range(50):                      # the rough, split, flat face
+        sx, sy = int(rng.integers(0, 60)), int(rng.integers(0, 80))
+        di.line([(sx, sy), (sx + int(rng.integers(-4, 5)), sy + int(rng.integers(4, 14)))], fill=(66, 46, 28), width=1)
+
+    img.paste(inset, (w - 71, h - 91))
     return img
 
 
@@ -498,6 +501,181 @@ def roof_stone(rng):
     return img
 
 
+# ---------------------------------------------------------------- doors and windows (1 m wide, 2 m high; double = 2 m wide)
+DOOR = (PPM, 2 * PPM)
+
+
+def door_planks(d, w, h, rng, col, battens=True):
+    pw = w // 5
+
+    for i in range(5):
+        c = tint(col, rng.uniform(0.9, 1.08))
+        d.rectangle([i * pw, 0, (i + 1) * pw - 2, h], fill=c)
+        d.line([((i + 1) * pw - 1, 0), ((i + 1) * pw - 1, h)], fill=tint(c, 0.5), width=2)
+
+    if battens:
+        for y in (28, h - 48):
+            d.rectangle([0, y, w, y + 16], fill=tint(col, 0.7))
+
+
+def door_basic(rng):
+    w, h = DOOR
+    img = canvas((w, h), (70, 52, 30))
+    d = ImageDraw.Draw(img)
+
+    for y in range(6, h, 10):                # a woven hurdle of sticks
+        for x in range(4, w - 8, 12):
+            over = ((x // 12) + (y // 10)) % 2 == 0
+            d.line([(x, y + (2 if over else -2)), (x + 12, y + (-2 if over else 2))], fill=tint((170, 128, 76), rng.uniform(0.85, 1.1)), width=6)
+
+    for _ in range(700):                     # thatch tied on
+        x = int(rng.integers(0, w))
+        y = int(rng.integers(0, h - 20))
+        d.line([(x, y), (x + int(rng.integers(-2, 3)), y + int(rng.integers(8, 24)))], fill=tint((208, 180, 104), rng.uniform(0.7, 1.1)), width=1)
+
+    d.line([(0, 40), (w, 52)], fill=(216, 198, 150), width=3)             # twine ties
+    d.line([(0, h - 60), (w, h - 50)], fill=(216, 198, 150), width=3)
+    d.ellipse([w - 28, h // 2, w - 16, h // 2 + 12], fill=(216, 198, 150), outline=(130, 110, 70))   # a twine loop for a handle
+    d.rectangle([0, 0, 5, h], fill=(90, 62, 36))
+    d.rectangle([w - 5, 0, w, h], fill=(90, 62, 36))
+    return img
+
+
+def door_plank(rng):
+    w, h = DOOR
+    img = canvas((w, h), (30, 22, 14))
+    d = ImageDraw.Draw(img)
+    door_planks(d, w, h, rng, (160, 120, 74))
+    d.rectangle([w - 30, h // 2 - 4, w - 14, h // 2 + 4], fill=(70, 50, 30))    # a wooden latch bar
+    return img
+
+
+def door_reinforced(rng):
+    w, h = DOOR
+    img = canvas((w, h), (30, 22, 14))
+    d = ImageDraw.Draw(img)
+    door_planks(d, w, h, rng, (170, 128, 80), battens=False)
+
+    for y in (30, h - 50):                   # iron bands with strap hinges and rivets
+        d.rectangle([0, y, w, y + 14], fill=(62, 62, 66))
+        d.line([(0, y), (w, y)], fill=(110, 110, 116), width=1)
+
+        for x in range(10, w, 22):
+            d.ellipse([x - 2, y + 5, x + 2, y + 9], fill=(130, 130, 136))
+
+    d.ellipse([w - 30, h // 2 - 6, w - 18, h // 2 + 6], fill=(50, 50, 54), outline=(120, 120, 126))   # ring handle
+    return img
+
+
+def door_wrought(rng):
+    w, h = DOOR
+    img = canvas((w, h), (24, 20, 18))
+    d = ImageDraw.Draw(img)
+    d.rectangle([0, 0, w, h], fill=(56, 56, 60))
+    d.rectangle([5, 5, w - 5, h - 5], outline=(100, 100, 108), width=3)
+
+    for k in range(3):                       # a wrought lattice of crossed bars over dark planks
+        top = 14 + k * 90
+        d.rectangle([14, top, w - 14, top + 76], fill=(86, 66, 44))
+
+        for x in range(14, w - 14, 18):
+            d.line([(x, top), (x + 18, top + 76)], fill=(40, 40, 44), width=4)
+            d.line([(x + 18, top), (x, top + 76)], fill=(40, 40, 44), width=4)
+
+        for x in (14, w - 20):
+            for y in (top, top + 70):
+                d.ellipse([x, y, x + 6, y + 6], fill=(150, 150, 156))
+
+    d.ellipse([w - 34, h // 2 - 8, w - 16, h // 2 + 8], fill=(36, 36, 40), outline=(150, 150, 156), width=2)
+    return img
+
+
+def door_steel(rng):
+    w, h = DOOR
+    img = canvas((w, h), (24, 24, 28))
+    d = ImageDraw.Draw(img)
+    d.rectangle([0, 0, w, h], fill=(120, 126, 136))
+    d.rectangle([6, 6, w - 6, h - 6], outline=(200, 206, 216), width=2)
+
+    for k in range(2):                       # two big steel panels with iron frames and studs
+        top = 14 + k * 140
+        d.rectangle([16, top, w - 16, top + 120], fill=(150, 156, 168), outline=(60, 60, 66), width=4)
+        d.line([(20, top + 4), (w - 20, top + 4)], fill=(220, 226, 236), width=2)
+        d.rectangle([w // 2 - 3, top + 14, w // 2 + 3, top + 106], fill=(70, 70, 76))
+
+        for x in (26, w - 32):
+            for y in (top + 10, top + 108):
+                d.ellipse([x, y, x + 8, y + 8], fill=(220, 226, 236), outline=(60, 60, 66))
+
+    d.rectangle([0, h // 2 - 8, w, h // 2 + 8], fill=(58, 58, 64))      # iron crossband
+    d.ellipse([w - 36, h // 2 - 10, w - 14, h // 2 + 10], fill=(200, 160, 60), outline=(60, 60, 66), width=2)   # a brass handle
+    return img
+
+
+def door_double(rng):
+    w, h = DOOR
+    img = canvas((w * 2, h), (30, 22, 14))
+    left = door_reinforced(rng)
+    right = door_reinforced(rng)
+    img.paste(left, (0, 0))
+    img.paste(right, (w, 0))
+    d = ImageDraw.Draw(img)
+    d.line([(w, 0), (w, h)], fill=(10, 8, 6), width=3)
+    d.rectangle([w - 12, h // 2 - 12, w - 6, h // 2 + 12], fill=(60, 60, 66))
+    d.rectangle([w + 6, h // 2 - 12, w + 12, h // 2 + 12], fill=(60, 60, 66))
+    return img
+
+
+def window_single(rng):
+    w, h = DOOR
+    img = canvas((w, h), (110, 80, 50))
+    d = ImageDraw.Draw(img)
+    d.rectangle([14, 50, w - 14, 50 + 110], fill=(34, 44, 56))
+    d.rectangle([14, 50, w - 14, 50 + 110], outline=(150, 112, 70), width=8)
+    d.line([(w // 2, 56), (w // 2, 152)], fill=(150, 112, 70), width=4)
+    d.line([(20, 105), (w - 20, 105)], fill=(150, 112, 70), width=4)
+    d.rectangle([0, 160, w, 168], fill=(150, 112, 70))
+    return img
+
+
+def window_double(rng):
+    w, h = DOOR
+    img = canvas((w * 2, h), (110, 80, 50))
+    d = ImageDraw.Draw(img)
+
+    for k in range(2):
+        x0 = k * w + 10
+        d.rectangle([x0, 50, x0 + w - 20, 160], fill=(34, 44, 56), outline=(150, 112, 70), width=8)
+        d.line([(x0 + (w - 20) // 2, 56), (x0 + (w - 20) // 2, 152)], fill=(150, 112, 70), width=4)
+        d.line([(x0 + 6, 105), (x0 + w - 26, 105)], fill=(150, 112, 70), width=4)
+
+    d.rectangle([0, 160, w * 2, 168], fill=(150, 112, 70))
+    return img
+
+
+def doors_sheet(out):
+    gap = 24
+    items = [("1 Basic door", door_basic, "hurdle, thatch, twine"), ("2 Plank door", door_plank, "planks, battens"), ("3 Reinforced", door_reinforced, "iron bands, rivets"),
+             ("4 Wrought iron", door_wrought, "iron frame, bars"), ("5 Steel and iron", door_steel, "steel panels, brass"),
+             ("Double door", door_double, "two leaves, 2 m wide"), ("Window", window_single, "single, with sill"), ("Double window", window_double, "two lights, 2 m")]
+    sizes = [DOOR, DOOR, DOOR, DOOR, DOOR, (2 * DOOR[0], DOOR[1]), DOOR, (2 * DOOR[0], DOOR[1])]
+    w = sum(s[0] for s in sizes) + gap * (len(items) + 1)
+    h = 72 + DOOR[1] + 40 + gap
+    img = canvas((w, h), (34, 34, 38))
+    d = ImageDraw.Draw(img)
+    d.text((gap, 10), "DOORS AND WINDOWS: 1 m wide and 2 m high; double ones 2 m wide (all fit a 2 m wall slot)", fill=(240, 240, 240), font=font(22))
+    x = gap
+
+    for (name, make, note), size in zip(items, sizes):
+        img.paste(make(rng_for(len(name))), (x, 72))
+        d.rectangle([x - 1, 71, x + size[0], 72 + size[1]], outline=(15, 15, 15))
+        d.text((x, 48), name, fill=(250, 220, 140), font=font(15))
+        d.text((x, 72 + DOOR[1] + 6), note, fill=(200, 200, 200), font=font(12))
+        x += size[0] + gap
+
+    img.save(out)
+
+
 # ---------------------------------------------------------------- sheets
 def font(size):
     for path in ("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf"):
@@ -562,12 +740,13 @@ def main():
     out = sys.argv[1] if len(sys.argv) > 1 else "."
     os.makedirs(out, exist_ok=True)
     sheet("WALLS: 2 m wide, 2.4 m high (seen from outside)", [wall_basic, wall_plank, wall_fine, wall_log, wall_cobble, wall_mason], WALL, os.path.join(out, "tiers_walls.png"),
-          ["woven rods, stakes, straw on top", "bark face out (inset: smooth face in)", "lapped boards, nails, trim", "stacked logs, notched ends", "round stones, thick mortar", "large carved blocks, plinth"])
+          ["woven rods, stakes, straw on top", "smooth rounded out, rough flat in", "lapped boards, nails, trim", "stacked logs, notched ends", "round stones, thick mortar", "large carved blocks, plinth"])
     sheet("FLOORS: 2 m square (seen from above)", [floor_basic, floor_plank, floor_fine, floor_log, floor_flag, floor_block], FLOOR, os.path.join(out, "tiers_floors.png"),
           ["beaten earth, straw, woven mat", "rough planks, gaps, pegs", "planed boards, nail pairs", "split logs, flat side up", "flagstone, narrow joints", "cut stone blocks, tight joints"])
     sheet("ROOFS: 2.4 m square (seen from above, eave at the bottom)", [roof_thatch, roof_plank, roof_fine, roof_log, roof_slab, roof_stone], ROOF, os.path.join(out, "tiers_roofs.png"),
           ["thatch, bound courses, thick eave", "riven plank shingles, ragged", "sawn shingles, nailed", "bark sheets over log rafters", "stone slabs on beams", "dressed slabs, carved ridge"])
     plan(os.path.join(out, "tiers_plan.png"))
+    doors_sheet(os.path.join(out, "tiers_doors.png"))
     parts = [Image.open(os.path.join(out, n)) for n in ("tiers_walls.png", "tiers_floors.png", "tiers_roofs.png")]
     allimg = canvas((max(p.width for p in parts), sum(p.height for p in parts)), (34, 34, 38))
     y = 0
