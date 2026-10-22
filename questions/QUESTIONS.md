@@ -1,10 +1,3 @@
-
-## sound-music | Should the game have background music?
-- No music, only world sounds (recommended: keeps the world feeling real)
-- Quiet music only in towns and inside buildings
-- Music at login screen only
-- Music everywhere, with a volume slider
-
 ## sound-wolf-howl | When should wolves howl?
 - Only at night, far away, more in winter (recommended)
 - Night and dusk, and when a pack spots a player
@@ -18,6 +11,7 @@
 ## sound-npc-voice-ambient | Should NPCs mutter or hum when you are nearby and they are idle?
 - Yes, rarely, short lines (recommended)
 - No, only when spoken to
+
 ## river-flood | Should heavy rain make rivers swell and flood low ground?
 - No, rivers stay steady (recommended: safe for builders; water stays predictable)
 - Yes, rivers rise a little in rain but never leave their banks
