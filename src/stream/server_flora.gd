@@ -29,6 +29,8 @@ var _removed: Dictionary = {}          # Vector2i chunk -> {item id: true}
 var _memory: Dictionary = {}           # Vector3i (chunk x, z, 1 full / 0 trees only) -> PackedByteArray
 var _water: Dictionary = {}            # Vector2i chunk -> PackedByteArray (cleared when the water moves)
 var _mutex: Mutex = Mutex.new()
+var _removed_dirty: bool = false       # removals not yet written to flora_removed.json
+var _removed_saved_msec: int = 0
 var cover = CoverScript.Index.new()    # tree crowns of the chunks made so far (Cover.at; read it under cover_lock)
 var _cover_order: Array = []           # chunks in the index, oldest first
 
@@ -156,6 +158,39 @@ func clear_water() -> void:
 	_mutex.unlock()
 
 
+# Writes the removals when some are new, at most once a second (rewriting the whole file per cut stalled the server); `force` at exit.
+func save_removed(force: bool = false) -> void:
+	var now: int = Time.get_ticks_msec()
+	_mutex.lock()
+
+	if not _removed_dirty or (not force and now - _removed_saved_msec < 1000):
+		_mutex.unlock()
+		return
+
+	_removed_dirty = false
+	_removed_saved_msec = now
+	var copy: Dictionary = {}
+
+	for key in _removed:
+		copy["%d,%d" % [key.x, key.y]] = _removed[key].keys()
+
+	_mutex.unlock()
+	var file: FileAccess = FileAccess.open(_path, FileAccess.WRITE)
+
+	if file != null:
+		file.store_string(JSON.stringify(copy, "\t", true))
+		file.close()
+
+
+# True when the chunk's packed water is ready (water_bytes then costs nothing).
+func water_ready(chunk: Vector2i) -> bool:
+	var home: Vector2i = placer.normalize(chunk)
+	_mutex.lock()
+	var known: bool = _water.has(home)
+	_mutex.unlock()
+	return known
+
+
 # A chunk's rivers and lakes for clients (empty when it has none).
 func water_bytes(chunk: Vector2i) -> PackedByteArray:
 	var home: Vector2i = placer.normalize(chunk)
@@ -197,18 +232,8 @@ func cut(chunk: Vector2i, id: int) -> bool:
 	cover.remove_item(home, id)
 	_memory.erase(Vector3i(home.x, home.y, 1))
 	_memory.erase(Vector3i(home.x, home.y, 0))
-	var copy: Dictionary = {}
-
-	for key in _removed:
-		copy["%d,%d" % [key.x, key.y]] = _removed[key].keys()
-
+	_removed_dirty = true
 	_mutex.unlock()
-	var file: FileAccess = FileAccess.open(_path, FileAccess.WRITE)
-
-	if file != null:
-		file.store_string(JSON.stringify(copy, "\t", true))
-		file.close()
-
 	return true
 
 

@@ -102,6 +102,8 @@ var _queue: Array = []                 # urgent [peer, key Vector4i], oldest fir
 var _prefetch: Array = []              # prefetch [peer, key], oldest first
 var _queued: Dictionary = {}           # [peer, key] -> "u" urgent, "p" prefetch, "r" running
 var _flora_queue: Array = []           # [peer, chunk Vector2i, full (false: trees only)], oldest first
+var _water_queue: Array = []           # [peer, chunk Vector2i] water to pack on a worker thread (never on the main thread), oldest first
+var _water_done: Array = []            # [peer, chunk, bytes] packed, waiting to be sent by the main thread
 var _flora_queued: Dictionary = {}     # [peer, chunk, full] -> true
 var _queue_mutex: Mutex = Mutex.new()  # guards the five above
 var _work: Semaphore = Semaphore.new() # one post per queued item
@@ -644,6 +646,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	_queue = _queue.filter(func(item): return item[0] != peer_id)
 	_prefetch = _prefetch.filter(func(item): return item[0] != peer_id)
 	_flora_queue = _flora_queue.filter(func(item): return item[0] != peer_id)
+	_water_queue = _water_queue.filter(func(item): return item[0] != peer_id)
 	_queue_mutex.unlock()
 
 
@@ -740,8 +743,26 @@ func _on_water_requested(peer_id: int, chunks: PackedInt32Array) -> void:
 	_water_answered_msec[peer_id] = now
 	@warning_ignore("integer_division")
 	for n in range(mini(chunks.size() / 2, WATER_CHUNKS_MAX)):
-		var chunk: Vector2i = Vector2i(chunks[2 * n], chunks[2 * n + 1])
+		_queue_water(peer_id, Vector2i(chunks[2 * n], chunks[2 * n + 1]))
+
+
+# Packing a chunk's water takes about 30 ms: ready ones go out at once, the rest are packed by a worker thread and sent
+# from _process when done.
+func _queue_water(peer_id: int, chunk: Vector2i) -> void:
+	if flora.water_ready(chunk):
 		net.deliver_water.rpc_id(peer_id, chunk, flora.water_bytes(chunk))
+		return
+
+	_queue_mutex.lock()
+	var added: bool = _water_queue.size() < MAX_QUEUE_PER_PEER * maxi(1, _connected_peers.size())
+
+	if added:
+		_water_queue.append([peer_id, chunk])
+
+	_queue_mutex.unlock()
+
+	if added:
+		_work.post()
 
 
 # The weather over the starter tile (zone from its row, season and time from the game clock,
@@ -963,7 +984,11 @@ func _flora_changed(chunk: Vector2i) -> void:
 	var centre: Vector3 = Vector3(origin.x + flora.placer.chunk_m * 0.5, 0.0, origin.y + flora.placer.chunk_m * 0.5)
 
 	for peer in items.peers_near(centre, 600.0):
-		net.deliver_flora.rpc_id(peer, chunk, flora.chunk_bytes(chunk, true), flora.water_bytes(chunk), true)
+		var water_cached: bool = flora.water_ready(chunk)
+		net.deliver_flora.rpc_id(peer, chunk, flora.chunk_bytes(chunk, true), flora.water_bytes(chunk) if water_cached else PackedByteArray(), true)
+
+		if not water_cached:
+			_queue_water(peer, chunk)
 
 
 func _on_cut_flora_requested(peer_id: int, chunk: Vector2i, id: int) -> void:
@@ -1205,7 +1230,14 @@ func _process(delta: float) -> void:
 	_done_mutex.lock()
 	var done: Array = _done
 	_done = []
+	var water_done: Array = _water_done
+	_water_done = []
 	_done_mutex.unlock()
+
+	for entry in water_done:
+		if _peers.has(entry[0]):
+			net.deliver_water.rpc_id(entry[0], entry[1], entry[2])
+
 	var batches: Dictionary = {}
 	_queue_mutex.lock()
 
@@ -1257,6 +1289,7 @@ func _process(delta: float) -> void:
 
 		_tiles_changed.clear()
 		store.save_revisions()
+		flora.save_removed()
 
 	var flag_path: String = _store_path + "/clear_generated.now"
 
@@ -1336,10 +1369,14 @@ func _worker_loop() -> void:
 		var flora_item: Array = []
 
 		# Order: urgent blocks, flora chunks, prefetch blocks.
+		var water_item: Array = []
+
 		if _queue.is_empty() and not _flora_queue.is_empty():
 			flora_item = _flora_queue.pop_front()
+		elif _queue.is_empty() and not _water_queue.is_empty():
+			water_item = _water_queue.pop_front()
 
-		while flora_item.is_empty() and item.is_empty() and not (_queue.is_empty() and _prefetch.is_empty()):
+		while flora_item.is_empty() and water_item.is_empty() and item.is_empty() and not (_queue.is_empty() and _prefetch.is_empty()):
 			var urgent: bool = not _queue.is_empty()
 			var next: Array = _pop_nearest_urgent() if urgent else _prefetch.pop_front()
 
@@ -1353,6 +1390,13 @@ func _worker_loop() -> void:
 
 		if stopping:
 			return
+
+		if not water_item.is_empty():
+			var packed: PackedByteArray = flora.water_bytes(water_item[1])
+			_done_mutex.lock()
+			_water_done.append([water_item[0], water_item[1], packed])
+			_done_mutex.unlock()
+			continue
 
 		if not flora_item.is_empty():
 			var chunk_bytes: PackedByteArray = flora.chunk_bytes(flora_item[1], flora_item[2])
@@ -1438,7 +1482,7 @@ func _idle_loop() -> void:
 	while true:
 		_queue_mutex.lock()
 		var stopping: bool = _stopping
-		var busy: bool = not (_queue.is_empty() and _prefetch.is_empty() and _flora_queue.is_empty())
+		var busy: bool = not (_queue.is_empty() and _prefetch.is_empty() and _flora_queue.is_empty() and _water_queue.is_empty())
 		var anchors: Dictionary = _idle_anchor.duplicate()
 
 		for peer in anchors:
@@ -1566,6 +1610,9 @@ func _exit_tree() -> void:
 
 	if items != null:
 		items.save()
+
+	if flora != null:
+		flora.save_removed(true)
 
 	_queue_mutex.lock()
 	_stopping = true
