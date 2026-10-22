@@ -1,6 +1,3 @@
-## collapse-plan-3 | Warnings: quiet until 60% of the window. Then creaks, then shaking with dust and "The earth groans.", then strong shaking with a warning line every 5 seconds. Then it falls. Is this right?
-[check]
-
 ## collapse-plan-5 | When it falls, rubble fills about 70% of the space and the top stays open, so you can dig it out. The land above does not sink (at most 1 m under a thin roof). Anyone inside dies and leaves remains and a purse. Floor items are buried; braces and chests inside are destroyed. Is this right?
 [check]
 
