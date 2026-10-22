@@ -420,3 +420,7 @@ Answered: 2026-10-22 23:02 UTC
 Answer: No: There is a write up in the design document talking about if a piece is in good repair because everything will gradually degrade so everything should have a durability and that affects how much you get back from it. Check in the design document.
 Answered: 2026-10-22 23:12 UTC
 
+## chk-block-hand | Check the chopping block in your hand (picture, bottom right of the screen): is it a good size now, and does it look like the placed chopping block? It is made from 2 logs and weighs 30 kg.
+Answer: No: It should weigh about 18 kg
+Answered: 2026-10-22 23:13 UTC
+
