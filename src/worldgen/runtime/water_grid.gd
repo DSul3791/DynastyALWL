@@ -58,8 +58,9 @@ static func chunk_levels(generator, origin: Vector2, chunk_m: float) -> Dictiona
 					vel[k * 2 + 1] *= calm
 
 		var fall_grid: PackedFloat32Array = _fall_grid(generator, data, origin, count, spacing, levels)
-		var fall_vel: PackedFloat32Array = vel if data.fall_levels.is_empty() else _velocities(generator, data, origin, count, spacing, fall_grid)
-		var falls: Array = FallsScript.find(generator, origin, count, spacing, fall_grid, fall_vel, func(x: float, z: float) -> float: return _fine_ground(generator, x, z), PackedFloat32Array() if data.fall_levels.is_empty() else levels, vel)
+		var has_falls: bool = fall_grid.size() == levels.size() and not data.fall_levels.is_empty()
+		var fall_vel: PackedFloat32Array = _velocities(generator, data, origin, count, spacing, fall_grid) if has_falls else vel
+		var falls: Array = FallsScript.find(generator, origin, count, spacing, fall_grid, fall_vel, func(x: float, z: float) -> float: return _fine_ground(generator, x, z), levels if has_falls else PackedFloat32Array(), vel)
 		return {"count": count, "spacing": spacing, "levels": levels, "wet": wet, "edge": edge, "fine": _fine_cells(generator, origin, count, spacing, levels, edge), "vel": vel, "falls": falls}
 
 	var closed: PackedFloat32Array = levels.duplicate()
@@ -760,7 +761,10 @@ static func moved(old: Dictionary, new: Dictionary, limit: float) -> bool:
 # The levels the fall finder works on: the drawn levels plus thin running water on the
 # baked channels (TileTerrainData.fall_levels), so a film down a cliff still makes a fall.
 static func _fall_grid(_generator, data, origin: Vector2, count: int, spacing: float, levels: PackedFloat32Array) -> PackedFloat32Array:
-	if data.fall_levels.size() != data.samples * data.samples:
+	# The main thread swaps data.fall_levels while this runs on a worker: read it once.
+	var fall_source: PackedFloat32Array = data.fall_levels
+
+	if fall_source.size() != data.samples * data.samples:
 		return levels
 
 	var grid: PackedFloat32Array = levels.duplicate()
@@ -781,7 +785,7 @@ static func _fall_grid(_generator, data, origin: Vector2, count: int, spacing: f
 			var k: int = data.nearest(x, z)
 
 			if data.heights[k] > 0.0:
-				grid[p] = data.fall_levels[k]
+				grid[p] = fall_source[k]
 
 	return grid
 
@@ -798,8 +802,10 @@ static func _level_at(generator, data, x: float, z: float, spacing: float) -> fl
 
 	# A tile with settled simulated water draws that; the painted classes only
 	# stand in for tiles that have not been settled yet.
-	if not source.sim_levels.is_empty():
-		return source.sim_levels[k] if source.heights[k] > 0.0 else NAN
+	var sim_source: PackedFloat32Array = source.sim_levels
+
+	if not sim_source.is_empty():
+		return sim_source[k] if source.heights[k] > 0.0 else NAN
 
 	var level: float = source.water_surface[k]
 	return level if source.water_class[k] > 1 and not is_nan(level) else NAN
