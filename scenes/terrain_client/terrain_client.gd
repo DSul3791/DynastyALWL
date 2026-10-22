@@ -67,7 +67,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 624
+const BUILD := 625
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -1266,14 +1266,37 @@ func _tunnel_step() -> void:
 		_tunnel_test = 2
 		_tunnel_msec = now
 	elif _tunnel_test == 2 and now - _tunnel_msec > 4000:
-		body.global_position = _tunnel_at + Vector3(4.0, -6.0, 0.0)
+		body.global_position = _tunnel_at + Vector3(0.0, -6.0, 0.0)
 		body.velocity = Vector3.ZERO
 		_tunnel_test = 3
 		_tunnel_msec = now
 	elif _tunnel_test == 3 and now - _tunnel_msec > 12000:
-		var moved: float = body.global_position.distance_to(_tunnel_at + Vector3(4.0, -6.0, 0.0))
+		var moved: float = body.global_position.distance_to(_tunnel_at + Vector3(0.0, -6.0, 0.0))
 		print("Terrain client: tunnel test: player ended %.1f m from where it was put in the tunnel (y %.1f, surface y %.1f), rescues %d, %s" % [moved, body.global_position.y, _tunnel_at.y, rescued, "STAYED" if body.global_position.y < _tunnel_at.y - 3.0 else "POPPED UP"])
+		_tunnel_test = 4
+		_tunnel_msec = now
+		body.global_position = _tunnel_at + Vector3(7.0, -12.0, 0.0)      # inside solid rock beside the dug tunnel: the rescue must lift the player
+		body.velocity = Vector3.ZERO
+	elif _tunnel_test == 4 and now - _tunnel_msec > 8000:
+		print("Terrain client: tunnel test: put inside rock beside the tunnel, ended at y %.1f (rock was y %.1f, surface y %.1f): %s" % [body.global_position.y, _tunnel_at.y - 12.0, _tunnel_at.y, "LIFTED" if body.global_position.y > _tunnel_at.y - 6.0 else "STUCK"])
 		_tunnel_test = 0
+
+
+# True when the player's body (feet, middle or head) is inside solid ground by the loaded voxels: nobody stands inside rock, so
+# the surface rescue always applies then, dug tunnels nearby or not (Dave 2026-10-22: pushed under the world next to his pit and the
+# dig guard held the rescue back). Unloaded voxels read as not solid.
+func _inside_solid(here: Vector3) -> bool:
+	if terrain == null:
+		return false
+
+	var tool: VoxelTool = terrain.get_voxel_tool()
+	tool.channel = VoxelBuffer.CHANNEL_SDF
+
+	for lift in [0.2, 0.9, 1.6]:
+		if tool.get_voxel_f(Vector3i((here + Vector3(0.0, lift, 0.0)).floor())) > -0.3:
+			return false
+
+	return true
 
 
 func _near_dig(here: Vector3) -> bool:
@@ -5046,9 +5069,12 @@ func _ground_ready() -> bool:
 	up.exclude = [body.get_rid()]
 	var hit: Dictionary = space.intersect_ray(up)
 
-	if not hit.is_empty() and not _near_dig(here):
+	if not hit.is_empty() and (not _near_dig(here) or _inside_solid(here)):
 		body.global_position = Vector3(here.x, float(hit["position"].y) + 1.2, here.z)
 		rescued += 1
+
+		if crash_report != null:
+			crash_report.event("RESCUE (no ground below) from %s up to y %.1f, near a dig %s, inside rock %s" % [str(here.round()), float(hit["position"].y), _near_dig(here), _inside_solid(here)])
 
 	return false
 
@@ -5062,19 +5088,28 @@ func _under_the_ground() -> bool:
 	up.exclude = [body.get_rid()]
 	var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(up)
 
-	if hit.is_empty() or float(hit["position"].y) < here.y + 2.0 or _near_dig(here):
+	if hit.is_empty() or float(hit["position"].y) < here.y + 2.0:
+		return false
+
+	var inside: bool = _inside_solid(here)
+
+	if _near_dig(here) and not inside:
 		return false
 
 	# Ground below within reach: this is a fall inside a cave or pit, not a slip through the world.
 	var down: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(here, here + Vector3(0.0, -120.0, 0.0))
 	down.exclude = [body.get_rid()]
 
-	if not body.get_world_3d().direct_space_state.intersect_ray(down).is_empty():
+	if not inside and not body.get_world_3d().direct_space_state.intersect_ray(down).is_empty():
 		return false
 
 	body.global_position = Vector3(here.x, float(hit["position"].y) + 1.2, here.z)
 	body.velocity = Vector3.ZERO
 	_floor_msec = Time.get_ticks_msec()
+
+	if crash_report != null:
+		crash_report.event("RESCUE (off the floor, under the ground) from %s up to y %.1f, inside rock %s" % [str(here.round()), float(hit["position"].y), inside])
+
 	return true
 
 
