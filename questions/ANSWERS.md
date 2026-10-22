@@ -260,3 +260,7 @@ Answered: 2026-10-22 19:38 UTC
 Answer: No: The backpack, the bucket, the clay pot and the bowl don’t look anything like what they really look like. And the ax looks like it could be a hammer or a shovel. The Action should have a rounded edge and be sharpened.
 Answered: 2026-10-22 19:40 UTC
 
+## looks-raw | Should raw materials (logs, lumber, ores, stones) also get strongly distinct colours, or stay natural?
+Answer: Stay natural (recommended)
+Answered: 2026-10-22 19:41 UTC
+
