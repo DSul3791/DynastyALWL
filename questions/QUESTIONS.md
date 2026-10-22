@@ -20,3 +20,8 @@ Campfire sound (639): the loud jet-engine roar under the campfire should be gone
 - B. We already answered this
 - C. Tested, all fine
 - D. Found a problem (I will describe it)
+
+## collapse-offline | A tunnel's collapse time runs out while the player is logged out inside it. What happens to them? (my pick: they are safe: the collapse waits, and on login they are moved to the nearest open air)
+- Safe: collapse waits until they leave, they log in at the nearest open air (recommended)
+- Safe: they log in outside, but the tunnel has collapsed behind them
+- Lethal: they are killed while offline, remains in the rubble
