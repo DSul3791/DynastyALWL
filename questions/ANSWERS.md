@@ -156,3 +156,7 @@ Answered: 2026-10-22 15:04 UTC
 Answer: Only when something is pending (recommended)
 Answered: 2026-10-22 15:04 UTC
 
+## rv-lfs | Tile files in git (BP-C108): all server runs, flight checks and edge-matching run on your PC (your rule), so cloud threads never need tiles. Tiles stay in git as backup and history. Is any extra step needed?
+Answer: Keep tiles in git as backup, cloud threads simply never use them (recommended)
+Answered: 2026-10-22 15:09 UTC
+
