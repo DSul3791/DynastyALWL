@@ -352,3 +352,7 @@ Answered: 2026-10-22 22:13 UTC
 Answer: No: They have to have the same related foundation
 Answered: 2026-10-22 22:14 UTC
 
+## tier-nails | Nails: 1 iron ingot makes 20 nails at a forge?
+Answer: No: One iron and it weighs 1 kg and makes 100 nails
+Answered: 2026-10-22 22:16 UTC
+
