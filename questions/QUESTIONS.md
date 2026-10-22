@@ -1,6 +1,3 @@
-## tl-doors | Should doors and windows follow the wall tier's look (nailed boards with iron straps and shutters from tier 3 up)?
-[check]
-
 ## spade-load | You said "one shovelful at a time" for raising ground. How should the spade work?
 Note: Today (build 676) a spade is loaded by dragging soil onto it: small, medium and large spades hold 8, 12 and 16 shovelfuls, move 1, 4 and 8 pieces of ground per stroke, and each raise click uses one shovelful.
 - Keep loading: spades hold 8, 12 and 16 and each raise click uses one (recommended: it matches your bow-style idea)
