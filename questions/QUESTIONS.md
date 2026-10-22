@@ -41,10 +41,6 @@
 - Yes (recommended)
 - No (tell me in chat)
 
-## chk-spades-tv6 | Check the spades (labelled picture): small, medium and large in wood, stone, iron and steel. Can you tell the sizes and materials apart? (The sheet is crowded because the handles are long.)
-Image: questions/img/looks_spades_tv6.png
-[check]
-
 ## chk-masonry-tv6 | Check the masonry items (labelled picture): stone block, brick, mortar. Do they look like the real things?
 Image: questions/img/looks_masonry_tv6.png
 [check]
