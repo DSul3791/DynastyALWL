@@ -8,7 +8,7 @@ A multiplayer medieval survival and town-building game ("Dynasty, a life well li
 ## Current state (2026-10-22)
 - Development is PAUSED by Dave until the new team set-up is approved. Docs only for now.
 - Scope: starter town tile (3,4) plus its 8 neighbours; a friend-session-sized game. Scale work is parked.
-- Latest build about 646, protocol 68, TERRAIN_VERSION 25 baked. FREEZE on generator, tiles, TERRAIN_VERSION and world data until the next bake. Dave bakes on his PC and commits .tile files; we never bake or commit tiles.
+- Latest build 654+ (see BUILD_LOG), protocol 69, TERRAIN_VERSION 25 baked. FREEZE LIFTED 2026-10-22 for Sonny's option B terrain rework (prototype branch, one tile, MikeW's second clone, never committed tiles); still no baking or tile commits in the cloud, the first real bake needs Dave's go (BP-T31). Dave bakes on his PC and commits .tile files; we never bake or commit tiles.
 - Runtime-only changes need no re-bake; server-side builds need the game closed fully so the server restarts.
 - Pending from Dave: the 11-question test checklist on the question page, sound approvals (`sound/LISTEN_CHECKLIST.md`), and the team decisions in BEST_PRACTICES.md.
 - Tunnel watch (build 646) is OFF; collapse is a second switch, also OFF, and needs Technical Director approval plus a Dave test card.

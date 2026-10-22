@@ -38,6 +38,12 @@ Written 2026-10-22 by the Guru. Goal: one phone-friendly page where the owner an
 - Answered ids are remembered in the browser (localStorage "answered") and sent with the next poke.
 - Fallback if the permission is not given: tell the coordinator in chat; the 5-minute watcher (tools/watch_answers.sh) still works.
 
+## 5c. Watcher failure found 2026-10-22 and fixed
+Answers sat unrelayed for 70 minutes. Causes: (1) a first run on an empty or new state file baselined silently, and a stale copy of the script kept doing so; (2) any HTTP error, rate limit or network failure was swallowed as "unchanged". Fixes: errors now print `ERROR ... HTTP <code>` and exit 10; the first run prints BASELINE; the state file defaults to /mnt/project-files/tech/.answers_seen (shared, permanent); `tools/answers_since.sh "YYYY-MM-DD HH:MM"` lists every answer newer than a time with no state at all. Rule: silence is never proof of "no change": a poke or a check without a clean exit 0 plus a successful read means UNKNOWN. A private repo needs GH_TOKEN for both scripts.
+
+## 5d. Stub v2 (works with a private main repo)
+The hosted page in DynastyALWL-QA asks for the token once (same localStorage key ghtok on github.io), then loads questions/qa.html from the main repo through the GitHub API with `Accept: application/vnd.github.raw`. No secret is in the stub. Poke comments go to DynastyALWL-QA PR #1 (public repo, no secrets in the comment).
+
 ## 6. Lessons and gotchas
 - A locally saved copy of qa.html goes stale: Dave did not see a new button. Open the repo copy after Pull, or use the hosted page.
 - GitHub "Raw" shows source in the browser, not the page; that is why a Pages address is needed.
