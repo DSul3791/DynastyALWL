@@ -188,3 +188,7 @@ Answered: 2026-10-22 15:35 UTC
 Answer: The LAST backup of the week, normally Sunday night: it holds the whole week's work (recommended)
 Answered: 2026-10-22 15:44 UTC
 
+## bk-trigger | How should the nightly backup start?
+Answer: When you say "goodnight", and MikeW checks that Godot is closed first (recommended: it only runs when you are done)
+Answered: 2026-10-22 15:44 UTC
+
