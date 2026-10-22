@@ -1,8 +1,3 @@
-## cl-tests | The 11 old "have you answered this" checks (builds 623 to 645) are parked. Many builds have changed since. What now?
-- Regroup them into one test card after the restart work, dropping any that no longer apply (recommended)
-- Drop them all, test fresh builds instead
-- Keep them parked for now
-
 ## cmd-ok | Approve the five completeness phrases (status, audit, what did we forget, goodnight, log it), the decision trace and the moderator's 30-minute checklist? (BP-T29)
 - Approve as proposed (recommended)
 - Approve, but fewer phrases (tell me which in chat)
