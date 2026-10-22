@@ -67,7 +67,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 580
+const BUILD := 581
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -2764,6 +2764,22 @@ func _make_avatar() -> Node3D:
 	var avatar: Node3D = RagdollScript.new()
 	avatar.visible = false
 	return avatar
+
+
+# Crash report breadcrumbs: the window losing or getting back focus, and the game being hidden (a throttled window can stop answering the server).
+func _notification(what: int) -> void:
+	if crash_report == null:
+		return
+
+	match what:
+		NOTIFICATION_APPLICATION_FOCUS_OUT:
+			crash_report.event("window focus lost")
+		NOTIFICATION_APPLICATION_FOCUS_IN:
+			crash_report.event("window focus back")
+		NOTIFICATION_WM_WINDOW_FOCUS_OUT:
+			crash_report.event("game window focus lost")
+		NOTIFICATION_WM_WINDOW_FOCUS_IN:
+			crash_report.event("game window focus back")
 
 
 # Breadcrumbs for crash reports: every key and mouse button press, before any menu or window can swallow it.
