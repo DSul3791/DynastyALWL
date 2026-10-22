@@ -138,7 +138,7 @@ def write_ogg(name, x, quality=4):
             w.setsampwidth(2)
             w.setframerate(SR)
             w.writeframes(data.tobytes())
-        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", wav, "-c:a", "libvorbis",
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", wav, "-fflags", "+bitexact", "-flags:a", "+bitexact", "-c:a", "libvorbis",
                         "-q:a", str(quality), os.path.join(HERE, name + ".ogg")], check=True)
 
 
