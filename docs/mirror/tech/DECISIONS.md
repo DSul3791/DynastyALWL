@@ -339,3 +339,7 @@ Running tech/LESSONS.md (any thread adds a line; Technical Director tags KEEP/LO
 
 ## 2026-10-22 15:10 Technical Director approvals from the process review (Tyler_Guru_SenDev)
 Approved without Dave (small, technical): server welcome carries a build id and a mismatch shows a plain "server is out of date" message (protocol bump, job for Steve_ProblemSolver after restart); one-line fixes to BP wording (C60, C80, T08); BP-T27 token habits; BP-T28 gap entries. Eight items need Dave and are on the question page (rv-*). Details: tech/REVIEW_VERDICT.md.
+
+## 2026-10-22 15:25 Dave answered all 8 review questions (page rv-*; every pick was the recommended one) (Tyler_Guru_SenDev)
+1. Build numbers: assigned at merge by the Technical Director + tools/next_build.sh + BUILD const in its own file (src/shared/build.gd). 2. Split server_items.gd, inventory_view.gd, terrain_client.gd one at a time after restart (Systems job, tests as net). 3. Local-first: every build, test and warning check on Dave's PC through tools/local_check.sh; cloud edits and reviews. 4. Commit the warning baseline (233) so only NEW warnings report. 5. Daily BP reading = role digest (about 15 lines) plus changelog lines. 6. One-line data hooks in another thread's file are allowed, announced in BUILD_LOG. 7. "Still waiting on:" only when something is pending. 8. Tiles stay in git as backup; cloud threads never use them; no LFS (supersedes C108).
+Old 11 test-checklist questions remain parked in questions/LATER.md.

@@ -91,7 +91,7 @@ Key for each entry: **Source** D = Dave's decision (do not change without him), 
 - **BP-C105 Never commit** crash reports, editor logs, temp water DLLs, .tile files. Source D. Owner: all.
 - **BP-C106 A thread denied push waits** for Dave to type the push permission in THAT thread. Source Dave. Owner: coordinator.
 - **BP-C107 Per-thread short branches merged by the Technical Director. APPROVED (Dave 2026-10-22 14:27).** Each thread pushes to `claude/<thread>-<topic>` (short-lived, one job); the Technical Director merges to `claude/generator-v2` in build order, owns build numbers at merge, and deletes merged branches. `main` stays Dave's. Replaces the single-branch rule once the coordinator has set thread branch permissions. Plan step 2. Source D. Owner: Technical Director.
-- **BP-C108 Git LFS for .tile files. APPROVED (Dave 2026-10-22 14:27).** Forward-only first (`.gitattributes` tracks `*.tile`, no history rewrite). Any history migration (force-push) needs a separate explicit go from Dave and a MikeW run on his PC. Plan step 5. Source D. Owner: Technical Director with MikeW.
+- **BP-C108 Git LFS for .tile files. APPROVED 14:27, now SUPERSEDED (Guru 15:20, Dave 15:08): server runs, flight checks and edge-match run only on Dave's PC (RULE 3), so cloud threads never use tiles; tiles stay in git as backup, no LFS (question rv-lfs, awaiting Dave).** Forward-only first (`.gitattributes` tracks `*.tile`, no history rewrite). Any history migration (force-push) needs a separate explicit go from Dave and a MikeW run on his PC. Plan step 5. Source D. Owner: Technical Director with MikeW.
 
 ---
 ## B. TEAM STRUCTURE
@@ -105,7 +105,7 @@ Key for each entry: **Source** D = Dave's decision (do not change without him), 
 - **BP-T07 Never wait for Dave.** Park the job in JOBS.md with the exact question, take the next independent job. Source D 2026-10-21. Owner: all.
 - **BP-T08 Question page:** only pickable-answer questions (a `[text]` box only where a typed answer is truly needed, as README.md allows) in `questions/QUESTIONS.md`, answers in ANSWERS.md, report "Question added: <title>". Check DECISIONS.md, ANSWERS.md and design docs BEFORE asking. Source D RULE 1. Owner: Technical Director.
 - **BP-T09 Confidence rule:** technical details decide yourself; thinly discussed design = one short question with a recommended answer, keep working meanwhile. Source D 2026-10-16. Owner: all.
-- **BP-T10 Reporting to Dave: SUCCINCT** (voice user). Test reports as in BP-C82; no walkthrough prose; every post ends "Still waiting on:" (short). Source D 2026-10-22. Owner: all.
+- **BP-T10 Reporting to Dave: SUCCINCT** (voice user). "Still waiting on:" only when something is pending (Dave 2026-10-22 15:04). Test reports as in BP-C82; no walkthrough prose; every post ends "Still waiting on:" (short). Source D 2026-10-22. Owner: all.
 - **BP-T11 Alerts:** "Finished:" for big jobs; phone alert "!!! All threads are done - ready for a rebuild!" when everything is done; notify only for finishes or needs from Dave. Source D. Owner: coordinator.
 - **BP-T12 Decisions are written down** in tech/DECISIONS.md with date and who; Dave's answers recorded from ANSWERS.md. A replaced session must find them. Source Technical Director. Owner: Technical Director.
 - **BP-T13 Memory:** lasting facts (Dave's rules, IDs, states) go to project memory the turn they are learned; one file per subject. Source T (system). Owner: all.
@@ -151,3 +151,4 @@ Audit scope note (2026-10-22): this first pass is a document-level audit of PROC
 - 2026-10-22 14:50 Guru: team changes applied (Steve/Willy retired, Sonny=World, on-demand workers, moderator 30 min, HANDOFF.md trimmed). Next check due 2026-10-23.
 - 2026-10-22 15:00 Guru: Dave approved C85, C93, C107, C108, T18; entries updated, plan written.
 - 2026-10-22 15:10 Guru: first full team review merged (REVIEW_VERDICT.md); BP-T27, BP-T28 added; C60, C80, T08 wording fixed; 8 decisions put on the question page.
+- 2026-10-22 15:25 Guru: Dave answered all 8 review questions (all my recommended picks); recorded in DECISIONS.md; restart jobs queued per REVIEW_VERDICT.md. Pending to apply on restart: BP-C101 numbers at merge + next_build.sh + build.gd, local_check.sh, warning baseline file, role digests, one-line hooks rule.

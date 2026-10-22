@@ -9,7 +9,7 @@ KEEP the structure. All five threads say "good for now". CHANGE eight things (on
 - Claude Code best practices: the context window is the most important resource; give the agent a check it can run; keep instruction files short and prune them (long files get ignored); use subagents/fresh context for investigation and review; /clear between tasks. https://code.claude.com/docs/en/best-practices
   AGREES with: local_check script (BP-C83, C80), CI (C85), short HANDOFF (T05). DISAGREES with our practice: BEST_PRACTICES.md (83 entries) read whole daily is itself the "over-specified instruction file" (fix: role digests, question rv-bp-digest).
 - GitHub Git LFS: free plan 10 GiB storage and 10 GiB bandwidth; over the cap with no payment method LFS is disabled until next month or pushes are blocked. https://docs.github.com/en/billing/concepts/product-billing/git-lfs
-  PARTLY DISAGREES with BP-C108: storage is fine (about 81 MB of tiles) but repeated cloud pulls could burn bandwidth; fix: cloud skips LFS downloads (question rv-lfs).
+  WAS: partly disagrees with BP-C108 (LFS caps). CORRECTED 15:20 after Dave: cloud never uses tiles (RULE 3) and the repo is 142 MB, so LFS is unnecessary; keep tiles in git as backup (question rv-lfs).
 - Trunk-based development: short-lived branches merged quickly are linked with high delivery performance; slow or inconsistent review undermines velocity (secondary source, DORA only mentioned, not verified). https://www.minware.com/guide/best-practices/trunk-based-development
   AGREES with BP-C107 but warns the Technical Director merge must happen every cycle (fast path in IMPLEMENTATION_PLAN step 2).
 
