@@ -548,3 +548,7 @@ Answered: 2026-10-22 23:55 UTC
 Answer: No: Pillars on every tier yes they can anchor to the centre or each corner of a foundation or ceiling or the ground. They can act like foundations. They are stackable and they support just like a foundation and foundations and pillars. Can both allow you to connect items up to three spaces away from the pillar or foundation in all directions so when you go to place the blueprint, it will have to check to make sure there’s enough foundation connecting to it also structures can have a load limit like in Valheim. So when you place a foundation, it can carry three walls worth of weight and then out from those walls you can go three spaces out in any direction off the square edges. I’m sure you can see what I’m trying to do here it’s the same as Ark and Atlas. Look those up if you need a reference.
 Answered: 2026-10-22 23:58 UTC
 
+## doors-window-hole | Is a window just a plain hole in the wall, with no frame or glass piece for now (shutters come later as separate hinged wood pieces)?
+Answer: Yes
+Answered: 2026-10-22 23:58 UTC
+
