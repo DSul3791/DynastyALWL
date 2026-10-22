@@ -244,3 +244,7 @@ Answered: 2026-10-22 19:13 UTC
 Answer: Yes
 Answered: 2026-10-22 19:13 UTC
 
+## chk-looks1v2 | Check the revised first 12 item looks (labelled picture): is the spear pointed now, and can you tell the items apart?
+Answer: No: Fibre bundle should look like fibers, and the roast forage is a terrible name. We should rename it. I would call it campfire Stew. And it should look like a bowl of chunky vegetable soup.
+Answered: 2026-10-22 19:36 UTC
+
