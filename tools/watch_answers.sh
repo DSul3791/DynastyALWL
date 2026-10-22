@@ -2,6 +2,7 @@
 # Prints one line ONLY when questions/ANSWERS.md or QUESTIONS.md changed on the branch. No AI model runs while nothing changes.
 # Use: tools/watch_answers.sh          (loops every 300 s; run it under Monitor so the session wakes only on output)
 #      tools/watch_answers.sh once     (one check, exit code 0 = unchanged, 10 = changed)
+# First run on an empty state prints BASELINE (and exits 10) so a lost or new state file is never silent.
 # State: last seen commit SHA per file in $STATE (default ~/.cache/dynasty_answers_seen). An ETag makes an unchanged poll a free 304.
 REPO=${REPO:-DSul3791/DynastyALWL}
 BRANCH=${BRANCH:-claude/generator-v2}
@@ -20,7 +21,8 @@ check() {
     old=$(grep "^sha:$f " "$STATE" | cut -d' ' -f2)
     etag=$(echo "$hdr" | grep -i '^etag:' | tr -d '\r' | cut -d' ' -f2-)
     grep -v "^\(sha\|etag\):$f " "$STATE" > "$STATE.new"; printf 'sha:%s %s\netag:%s %s\n' "$f" "$sha" "$f" "$etag" >> "$STATE.new"; mv "$STATE.new" "$STATE"
-    [ "$sha" != "$old" ] && [ -n "$old" ] && { echo "CHANGED $f now ${sha:0:7} (was ${old:0:7})"; changed=1; }
+    if [ -z "$old" ]; then echo "BASELINE $f ${sha:0:7} (first run: nothing compared; treat everything newer than your last known state as changed)"; changed=1
+    elif [ "$sha" != "$old" ]; then echo "CHANGED $f now ${sha:0:7} (was ${old:0:7})"; changed=1; fi
   done
   rm -f /tmp/wa_body.$$
   return $changed
