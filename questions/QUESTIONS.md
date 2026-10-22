@@ -7,8 +7,3 @@
 - No, tunnels stay open as dug
 - Only wide or very high roofs collapse (needs timber supports, later)
 - Everything unsupported collapses over time
-
-## hole-refill | Do dug holes slowly fill back in by themselves? (my pick: no, they stay until filled)
-- No, a hole stays until someone fills it
-- Yes, soil holes in open ground slowly fill over many game days; tunnels stay
-- Yes, all holes slowly fill unless something keeps them open (timber, stone)
