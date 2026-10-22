@@ -51,19 +51,28 @@ def snaps(rng, n, rate, lo, hi, decay, gain):
     return out
 
 
+def _crackle_only(bed, crackle, target):
+    """Dave (2026-10-22): the low roar bed sounded like a jet engine on the campfire and is gone; the crackle is kept exactly as it was
+    (same random draws, same level as when the bed was mixed in), so only the bed is dropped."""
+    full = bed + crackle
+    return crackle * (np.std(normalize(full, target)) / (np.std(full) + 1e-12))
+
+
 def small(rng, n):
     roar = shaped_noise(rng, n, lambda f: band(f, 180, 1.0) * lowpass(f, 600, 2))
     roar /= np.std(roar)
-    x = roar * 0.12 * slow_swell(rng, n, 0.3, (3, 5, 9)) + snaps(rng, n, 6, 1500, 4200, 0.004, 0.6)
-    return normalize(x, 0.1) * 1.2
+    bed = roar * 0.12 * slow_swell(rng, n, 0.3, (3, 5, 9))
+    crackle = snaps(rng, n, 6, 1500, 4200, 0.004, 0.6)
+    return _crackle_only(bed, crackle, 0.1) * 1.2
 
 
 def large(rng, n):
     roar = shaped_noise(rng, n, lambda f: band(f, 160, 1.1) * lowpass(f, 800, 2))
     roar /= np.std(roar)
-    x = roar * 0.45 * slow_swell(rng, n, 0.25, (2, 4, 7)) + snaps(rng, n, 26, 1200, 4500, 0.006, 0.5)
-    x += snaps(rng, n, 1.2, 700, 1100, 0.015, 1.1)
-    return normalize(x, 0.13) * 1.3
+    bed = roar * 0.45 * slow_swell(rng, n, 0.25, (2, 4, 7))
+    crackle = snaps(rng, n, 26, 1200, 4500, 0.006, 0.5)
+    crackle += snaps(rng, n, 1.2, 700, 1100, 0.015, 1.1)
+    return _crackle_only(bed, crackle, 0.13) * 1.3
 
 
 def rain_on_fire(rng, n):
