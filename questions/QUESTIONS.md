@@ -19,16 +19,13 @@
 ## tier-mason-heavy | Mason walls are so heavy (about 200 kg) that you build them where you stand?
 [check]
 
-## tl-roof | Roofs: cobblestone tier = rough slate-like slabs on beams, mason tier = tidy dressed slabs?
+## tl-logs | Should log walls be real round logs with notched corner ends sticking out (8 small meshes per wall), not just a picture?
 [check]
 
-## tl-logs | Log walls are real round logs with notched corners (not a picture)?
+## tl-plank | Should the plank wall have a rough bark side outside and a smooth side inside?
 [check]
 
-## tl-plank | Plank wall is two layers: bark outside, smooth inside?
-[check]
-
-## tl-doors | Doors and windows follow each tier's look?
+## tl-doors | Should doors and windows follow the wall tier's look (nailed boards with iron straps and shutters from tier 3 up)?
 [check]
 
 ## spade-load | You said "one shovelful at a time" for raising ground. How should the spade work?
