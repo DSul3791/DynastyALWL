@@ -199,6 +199,13 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_box(parts, Vector3(0.14, 0.012, 0.19), Vector3(0.4, 0.0, 0.0), color)                                     # blade, square part
 			_box_rot(parts, Vector3(0.13, 0.012, 0.13), Vector3(0.47, 0.0, 0.0), Vector3(0.0, PI * 0.25, 0.0), color)  # blade, pointed tip
 			_box(parts, Vector3(0.1, 0.016, 0.02), Vector3(0.36, 0.0, 0.0), light)                                     # centre rib
+		"hoe":
+			# A garden hoe: long handle, a socket, a neck that bends out sideways, and a flat wide blade angled back toward the handle's end.
+			_handle(parts, 0.85)
+			_cyl(parts, 0.022, 0.08, Vector3(0.38, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), dark)                           # socket
+			_box_rot(parts, Vector3(0.03, 0.025, 0.12), Vector3(0.44, 0.0, 0.045), Vector3(0.0, 0.35, 0.0), dark)         # the neck bends out
+			_box_rot(parts, Vector3(0.012, 0.17, 0.1), Vector3(0.5, 0.0, 0.1), Vector3(0.0, -0.25, 0.0), color)           # the flat blade, wide across
+			_box_rot(parts, Vector3(0.012, 0.17, 0.015), Vector3(0.5, 0.0, 0.147), Vector3(0.0, -0.25, 0.0), light)       # the sharpened lower edge
 		"knife":
 			_handle(parts, 0.14)
 			_box(parts, Vector3(0.13, 0.015, 0.035), Vector3(0.12, 0.0, 0.0), color)
