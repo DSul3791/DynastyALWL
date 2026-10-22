@@ -67,7 +67,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 642
+const BUILD := 643
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -3173,7 +3173,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			quality = (quality + 1) % QUALITY_NAMES.size()
 			_apply_quality()
 			_save_display()
-		elif event.keycode == KEY_G or event.keycode == KEY_F:
+		elif event.keycode == KEY_F:
+			if items != null and not flying:
+				items.open_container()   # Dave 2026-10-22: F opens the chest beside you (fly is G)
+		elif event.keycode == KEY_G:
 			flying = not flying
 			body.velocity = Vector3.ZERO
 

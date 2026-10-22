@@ -530,6 +530,27 @@ func _fire_prompt(state: int) -> String:
 	return "Press E to add wood"
 
 
+# F (Dave 2026-10-22): opens the container you stand beside, your pack on the left and its contents on the right (T moves the selected stack across).
+# True when a chest or remains lay within reach and the server was asked to open it.
+func open_container() -> bool:
+	var here: Vector3 = _player_position.call()
+	var best: int = 0
+	var best_d: float = 3.0
+
+	for id in _world:
+		var state: int = int(_world[id]["state"])
+
+		if (state == 6 or state == 11 or state == 12) and here.distance_to(_world[id]["pos"]) <= best_d:
+			best_d = here.distance_to(_world[id]["pos"])
+			best = id
+
+	if best == 0:
+		return false
+
+	net.inventory_action.rpc_id(1, Net.ACT_CHEST_OPEN, best, 0, 0, Vector3.ZERO)
+	return true
+
+
 # True when something lay within reach and the server was asked for it.
 func pick_up_nearest() -> bool:
 	var id: int = _nearest()[0]
@@ -1461,7 +1482,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 		var node: Node3D
 		var light: OmniLight3D = null
 
-		if state >= 5:
+		if state >= 5 and state != 8 and state != 9:   # 8 is a burnt-out fire, 9 a loaded one: the campfire model without flames, light or sound
 			var yaw: float = deg_to_rad(float(row[5].get("yaw", 0.0))) if row.size() > 5 else 0.0
 			node = _make_leanto() if state == 5 else (_make_chest() if state == 6 else (_make_remains(float(row[5].get("age", 0.0)) if row.size() > 5 else 0.0) if (state == 11 or state == 12) else (_make_bench() if state == 13 else (_make_rack() if state == 14 else (_make_vice() if state == 15 else (_make_log_bench() if state == 16 else (_make_forge() if state == 17 else (_make_smithy() if state == 18 else (_make_big_forge(state) if (state == 20 or state == 21) else (PieceLook.wall() if state == 22 else (PieceLook.floor_piece() if state == 23 else (PieceLook.roof() if state == 24 else (PieceLook.foundation() if state == 25 else (PieceLook.doorway() if state == 26 else (PieceLook.window_wall() if state == 27 else (_make_carcass(str(row[5].get("sp", "")) if row.size() > 5 else "") if state == 19 else _make_block()))))))))))))))))
 			node.position = row[3] - Vector3(0.0, SINK_M * float(row[5].get("age", 0.0)), 0.0) if (state == 11 or state == 12) and row.size() > 5 else row[3]
