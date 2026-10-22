@@ -96,3 +96,15 @@ Answered: 2026-10-22 03:13 UTC
 Answer: No, a hole stays until someone fills it
 Answered: 2026-10-22 03:16 UTC
 
+
+## dig-depth | How deep may players dig below the surface?
+Answer: Already decided in DESIGN_IDEAS.md (Sections 4.5, 11): depth is measured from sea level; deep mines are limited by heat (lethal about -3,000 m), the world bottom is -4,000 m; deep mines need ventilation. No separate dig limit. (Removed from the page by Steve_002, answered in the docs)
+Answered: 2026-10-22 03:20 UTC
+
+## tunnel-collapse | Do unsupported tunnels and caves ever collapse?
+Answer: Already decided in DESIGN_IDEAS.md (mines section): mines and caves can become unstable; bigger man-made openings need timber supports (reach about 10 m); unmaintained supports fail and the mine can cave in. (Removed from the page by Steve_002, answered in the docs)
+Answered: 2026-10-22 03:20 UTC
+
+## host-max-players | Friend-hosted game player cap
+Answer: Already decided in DECISIONS.md 2026-10-22 01:40 (condition 2): baseline a friend session of 10 to 20 on an 8 GB machine; max_clients becomes a config value. Technical, not Dave's call. (Withdrawn by Steve_002)
+Answered: 2026-10-22 03:20 UTC
