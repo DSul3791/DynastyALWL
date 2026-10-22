@@ -13,7 +13,7 @@
  "surface_db": {
   "grass": -15.0,
   "dirt": -10.0,
-  "sand": -8.0,
+  "sand": -11.0,
   "gravel": -9.0,
   "stone": -8.0,
   "leaves": -6.0,

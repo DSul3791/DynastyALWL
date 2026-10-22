@@ -69,7 +69,7 @@ const SOIL_SURFACE := {
 	16: "mud",
 }
 const SURFACE_DB := {
-	"grass": -15.0, "dirt": -10.0, "sand": -8.0, "gravel": -9.0, "stone": -8.0,
+	"grass": -15.0, "dirt": -10.0, "sand": -11.0, "gravel": -9.0, "stone": -8.0,
 	"leaves": -6.0, "mud": -10.0, "snow": -11.0, "ice": -9.0, "water": -10.0,
 	"grass_tall": -14.0, "bushes": -13.0,
 }
