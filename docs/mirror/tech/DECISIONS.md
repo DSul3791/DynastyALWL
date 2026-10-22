@@ -364,3 +364,15 @@ All 4 required fixes verified in the diff; tests 0 failures (cloud/Linux only). 
 
 ## 2026-10-22 15:50 Dave answered bk-weekly and bk-trigger (Tyler_Guru_SenDev)
 bk-weekly: keep the LAST backup of each ISO week (normally Sunday night); matches the code, no code change. bk-trigger: when Dave says "goodnight"; MikeW checks Godot is closed first; no fixed-time job. Supervised first run may start when Dave closes Godot and says "run backup". Plan/BP text already updated.
+
+- 2026-10-22 16:50 Guru: Dave asked for a plan for 1-tile vs 9-tile bakes. Proposed BP-T31 (RUNTIME/RESTART/BAKE labels, weekly bake window, 1-tile test then full bake). Question bake-plan added; it replaces cl-bake.
+
+- 2026-10-22 16:55 Guru: Dave refined BP-T31: 1-tile test bakes need no approval from him; run via MikeW, never back to back (min 2 h gap), wait for any running 9-tile bake, one shared BAKE queue. Full 9-tile bake still follows window rules.
+
+- 2026-10-22 17:00 Guru: Dave asked for a critical review of BP-T31. Added secret-bake guard, safe rollback (pre-bake tile copy), no-deadlock rules. Thread views requested via coordinator.
+
+- 2026-10-22 17:02 Guru: Sal_Crafts concern folded into BP-T31: data/items and data/*.json read by the server are RESTART, not RUNTIME.
+
+- 2026-10-22 17:04 Guru: MikeW concerns folded into BP-T31 (second clone for 1-tile bakes, game and Godot closed, PC awake, snapshot outside repo).
+
+- 2026-10-22 17:06 Guru: Steve_ProblemSolver concerns folded into BP-T31: server-read data (network.json, limits.json, items) is RESTART not BAKE; src/shared is RESTART; BAKE list is generator, tiles, TERRAIN_VERSION, baked world data only.
