@@ -42,6 +42,9 @@ static func mesh_for(item_id: String) -> Mesh:
 
 static func mesh(shape: String, color: Color, size: float = 1.0) -> ArrayMesh:
 	var parts: Array = []
+
+	if shape not in ["bone", "coil", "coin", "ingot"]:
+		color = Color.from_hsv(color.h, minf(color.s * 1.35, 1.0), minf(color.v * 1.08, 1.0))      # bolder colours so loose items tell apart on the grass (Dave 2026-10-22)
 	var dark: Color = color.darkened(0.35)
 	var light: Color = color.lightened(0.25)
 
@@ -103,7 +106,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0) -> ArrayMesh:
 			_sph(parts, 0.07, Vector3(1.0, 0.9, 1.0), Vector3(0.0, -0.01, 0.0), color)
 			_cyl(parts, 0.006, 0.04, Vector3(0.0, 0.055, 0.0), Vector3.ZERO, Color(0.3, 0.22, 0.12))
 		"bowl":
-			_cyl(parts, 0.1, 0.05, Vector3(0.0, -0.04, 0.0), Vector3.ZERO, Color(0.4, 0.28, 0.17))
+			_cyl(parts, 0.1, 0.05, Vector3(0.0, -0.04, 0.0), Vector3.ZERO, dark)
 			_cyl(parts, 0.085, 0.012, Vector3(0.0, -0.012, 0.0), Vector3.ZERO, color)
 		"fish":
 			_sph(parts, 0.09, Vector3(1.9, 0.6, 0.55), Vector3(0.0, -0.03, 0.0), color)
@@ -126,8 +129,10 @@ static func mesh(shape: String, color: Color, size: float = 1.0) -> ArrayMesh:
 			_box(parts, Vector3(0.22, 0.03, 0.16), Vector3(0.01, -0.005, 0.0), light)
 			_box(parts, Vector3(0.18, 0.025, 0.12), Vector3(0.0, 0.02, 0.0), color)
 		"shaft":
-			_cyl(parts, 0.015, 0.9, Vector3.ZERO, Vector3(0.0, 0.0, PI * 0.5), Color(0.42, 0.3, 0.17))
-			_cyl(parts, 0.03, 0.12, Vector3(0.48, 0.0, 0.0), Vector3(0.0, 0.0, -PI * 0.5), color)
+			# A spear: a long shaft and a long, plainly pointed cone head at the +x end (Dave: it must be pointy).
+			_cyl(parts, 0.016, 0.9, Vector3.ZERO, Vector3(0.0, 0.0, PI * 0.5), Color(0.42, 0.3, 0.17))
+			_cone(parts, 0.045, 0.28, Vector3(0.58, 0.0, 0.0), color)
+			_cyl(parts, 0.024, 0.04, Vector3(0.43, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.8, 0.7, 0.4))   # the binding below the head
 		"axe":
 			_handle(parts, 0.5)
 			_box(parts, Vector3(0.1, 0.12, 0.04), Vector3(0.22, 0.0, 0.0), color)
@@ -187,6 +192,17 @@ static func _cyl(parts: Array, radius: float, height: float, at: Vector3, tilt: 
 	cyl.radial_segments = 8
 	cyl.rings = 1
 	parts.append([cyl, Transform3D(Basis.from_euler(tilt), at), color])
+
+
+# A cone along x with its point at +x.
+static func _cone(parts: Array, radius: float, length: float, at: Vector3, color: Color) -> void:
+	var cone: CylinderMesh = CylinderMesh.new()
+	cone.top_radius = 0.0
+	cone.bottom_radius = radius
+	cone.height = length
+	cone.radial_segments = 6
+	cone.rings = 1
+	parts.append([cone, Transform3D(Basis.from_euler(Vector3(0.0, 0.0, -PI * 0.5)), at), color])
 
 
 static func _sph(parts: Array, radius: float, scale_v: Vector3, at: Vector3, color: Color) -> void:
