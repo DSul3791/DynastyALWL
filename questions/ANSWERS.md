@@ -324,3 +324,7 @@ Answered: 2026-10-22 20:18 UTC
 Answer: Shovel Raise mode and new model first, then hoe path and smooth, then grade line (recommended)
 Answered: 2026-10-22 20:19 UTC
 
+## chk-tiers | Check the building tier designs (drawn, not engine renders): walls, floors and roofs for the six tiers. Does each tier look like what you described, and is it clearly different from the next?
+Answer: Yes
+Answered: 2026-10-22 20:56 UTC
+
