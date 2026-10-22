@@ -1,5 +1,5 @@
 {
-	"note": "Cooked food (Items refill 11): a roast keeps for cooked_life_mult times what the raw item had left (Tyler: 1.5 to 2.5 times, 3 at most), never more than the roast's own shelf life (spoilage.json), and a hot meal or drink adds the warms points to body warmth when eaten. raw_sick: eating these uncooked still feeds you but makes you sick for that many game hours (by item id or id suffix; raw meat 24, fiddleheads and beans 12, acorns and wild mushrooms a mild 6). Cooking placeholder (until the cook and food systems exist): at a lit fire, one raw forage item becomes Roasted forage (cooks_into maps others). A gathered item cooks when its id ends with one of the cookable words.",
+	"note": "Cooked food (Items refill 11): a roast keeps for cooked_life_mult times what the raw item had left (Tyler: 1.5 to 2.5 times, 3 at most), never more than the roast's own shelf life (spoilage.json), and a hot meal or drink adds the warms points to body warmth when eaten. raw_sick: eating these uncooked still feeds you but makes you sick for that many game hours (by item id or id suffix; raw meat 24, fiddleheads and beans 12, acorns and wild mushrooms a mild 6). Cooking placeholder (until the cook and food systems exist): at a lit fire, one raw forage item becomes Roasted forage (cooks_into maps others). A gathered item cooks when its id ends with one of the cookable words. Fire store (Dave 2026-10-22, F beside a fire): fire_slots slots for wood and food; wood in it feeds the fire when burn_left falls under feed_below_s seconds (or loads a cold fire), and one raw item cooks every box_cook_s seconds while it burns.",
 	"cookable_suffixes": [
 		"berries",
 		"nuts",
@@ -85,5 +85,8 @@
 			"porcini": 6,
 			"chanterelles": 6
 		}
-	}
+	},
+	"fire_slots": 4,
+	"feed_below_s": 20.0,
+	"box_cook_s": 8.0
 }

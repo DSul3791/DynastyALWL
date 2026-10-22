@@ -475,7 +475,7 @@ func _probe_structure() -> Dictionary:
 		return {"prompt": "Press E to search the remains", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)}
 
 	if state == 6:
-		return {"prompt": "Press E to open", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO), "hold": take_down}
+		return {"prompt": "Press F to open", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO), "hold": take_down}
 
 	if state == 7:
 		return {"prompt": "Press E to split firewood", "tap": pick_up_nearest}
@@ -531,7 +531,7 @@ func _fire_prompt(state: int) -> String:
 
 
 # F (Dave 2026-10-22): opens the container you stand beside, your pack on the left and its contents on the right (T moves the selected stack across).
-# True when a chest or remains lay within reach and the server was asked to open it.
+# True when a chest, remains or campfire lay within reach and the server was asked to open it.
 func open_container() -> bool:
 	var here: Vector3 = _player_position.call()
 	var best: int = 0
@@ -540,7 +540,7 @@ func open_container() -> bool:
 	for id in _world:
 		var state: int = int(_world[id]["state"])
 
-		if (state == 6 or state == 11 or state == 12) and here.distance_to(_world[id]["pos"]) <= best_d:
+		if (state == 6 or state == 11 or state == 12 or state == 1 or state == 8 or state == 9) and here.distance_to(_world[id]["pos"]) <= best_d:
 			best_d = here.distance_to(_world[id]["pos"])
 			best = id
 
@@ -3104,7 +3104,7 @@ func _refresh() -> void:
 	_refresh_detail()
 
 
-# The Admin heading at the bottom of the list: the four station kits, free and unlocked. Click one to get it; put it in a quick key
+# The Admin heading at the bottom of the list (Dave 2026-10-22): the building pieces to test plus the other placeables, free and unlocked. Click one to get it; put it in a quick key
 # and it is the usual placement blueprint (left click places one). Shown while the admin check is off (local play) .
 func _add_admin_builds() -> void:
 	if AdminScript.check_enabled():
@@ -3116,7 +3116,7 @@ func _add_admin_builds() -> void:
 	head.modulate = Color(1.0, 0.8, 0.4)
 	_recipe_list.add_child(head)
 
-	for id in ["workbench_kit", "log_workbench_kit", "stone_forge_kit", "blacksmithy_kit", "large_forge_kit", "master_forge_kit"]:
+	for id in ["foundation_section_kit", "wall_section_kit", "doorway_section_kit", "window_section_kit", "floor_section_kit", "roof_section_kit", "campfire_kit", "lean_to_kit", "chest_kit", "workbench_kit"]:
 		var number: int = table.number_of(id)
 
 		if number == 0:

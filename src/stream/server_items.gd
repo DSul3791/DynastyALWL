@@ -739,7 +739,12 @@ func save() -> void:
 			items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int(_structures.get(str(it["struct"]["kind"]), {}).get("state", 5)), float(it["struct"]["yaw"]), 0, str(it["struct"]["kind"]), int(it["struct"].get("uid", 0)), str(it["struct"].get("owner", "")), float(it["struct"].get("born", 0.0)), bool(it["struct"].get("cave", false)), int(it["struct"].get("coins", 0))])
 			continue
 
-		items.append([int(it["number"]), int(it["count"]), it["pos"].x, it["pos"].y, it["pos"].z, it["left"], int(it["fire"]["state"]) if it.has("fire") else 0, float(it["fire"]["burn_left"]) if it.has("fire") else 0.0, int(it.get("wear", 0))])
+		var row: Array = [int(it["number"]), int(it["count"]), it["pos"].x, it["pos"].y, it["pos"].z, it["left"], int(it["fire"]["state"]) if it.has("fire") else 0, float(it["fire"]["burn_left"]) if it.has("fire") else 0.0, int(it.get("wear", 0))]
+
+		if it.has("fire") and int(it["fire"].get("uid", 0)) > 0:
+			row.append(int(it["fire"]["uid"]))   # a campfire's store (a number here; a structure's kind is a string)
+
+		items.append(row)
 
 	_save_trees()
 	_save_chests()
@@ -1538,6 +1543,9 @@ func _fires(delta: float) -> void:
 
 		var fire: Dictionary = it["fire"]
 
+		if fire.has("uid"):
+			_tend_fire(it, fire, delta)
+
 		if int(fire["state"]) != 1:
 			continue
 
@@ -1751,7 +1759,7 @@ func _load_world_items() -> void:
 	for row in parsed["items"]:
 		var entry: Dictionary = {"number": int(row[0]), "count": int(row[1]), "pos": Vector3(row[2], row[3], row[4]), "left": float(row[5])}
 
-		if row.size() > 9 and int(row[6]) >= 5:
+		if row.size() > 9 and int(row[6]) >= 5 and typeof(row[9]) == TYPE_STRING:
 			entry["struct"] = {"kind": str(row[9]), "yaw": float(row[7])}
 
 			if row.size() > 10 and int(row[10]) > 0:
@@ -1781,6 +1789,13 @@ func _load_world_items() -> void:
 				saved_state = 9 if float(row[7]) > 0.0 else 8
 
 			entry["fire"] = {"state": saved_state, "burn_left": float(row[7]), "covered": false, "recheck": 0.0}
+
+			if row.size() > 9 and int(row[9]) > 0:
+				entry["fire"]["uid"] = int(row[9])
+				_next_uid = maxi(_next_uid, int(row[9]) + 1)
+
+				if not _chests.has(int(row[9])):
+					_chests[int(row[9])] = InventoryScript.new(table)
 
 		_items[_next_id] = entry
 		_next_id += 1
@@ -3018,10 +3033,91 @@ func _struct_empty(id: int) -> bool:
 
 # --- Chest contents: server-owned; the actor gets the full 30 slots after every open, put and take ---
 
+# A campfire's own little store (Dave 2026-10-22, F beside a fire): a few slots for wood that feeds it and food that cooks on it.
+# Made the first time anyone opens it. _tend_fire does the feeding and cooking.
+func _fire_box(peer: int, it: Dictionary):
+	if _peer_pos[peer].distance_to(it["pos"]) > CHEST_REACH_M:
+		return null
+
+	var fire: Dictionary = it["fire"]
+
+	if not _chests.has(int(fire.get("uid", 0))):
+		fire["uid"] = _next_uid
+		_next_uid += 1
+		_chests[int(fire["uid"])] = InventoryScript.new(table)
+		_dirty = true
+
+	var box = _chests[int(fire["uid"])]
+	box.usable = clampi(int(_cooking.get("fire_slots", 4)), 1, box.SLOTS)
+	return box
+
+
+# Wood or food a fire's store accepts.
+func _fire_takes(item_id: String) -> bool:
+	return _cooking.get("fuel", {}).has(item_id) or _cookable(item_id)
+
+
+# Once every couple of seconds: wood in the store feeds a fire that is nearly out (or loads a cold one), and raw food on a lit fire cooks, one item per box_cook_s.
+func _tend_fire(it: Dictionary, fire: Dictionary, delta: float) -> void:
+	if not fire.has("uid") or not _chests.has(int(fire["uid"])):
+		return
+
+	fire["tend"] = float(fire.get("tend", 0.0)) - delta
+
+	if float(fire["tend"]) > 0.0:
+		return
+
+	fire["tend"] = 2.0
+	var box = _chests[int(fire["uid"])]
+	var state: int = int(fire["state"])
+	var fuel: Dictionary = _cooking.get("fuel", {})
+
+	if (state == 1 and float(fire["burn_left"]) < float(_cooking.get("feed_below_s", 20.0))) or state == 8:
+		for wood in _cooking.get("fuel_order", ["stick", "log"]):
+			var number: int = table.number_of(wood)
+
+			if box.has(number, 1):
+				box.remove(number, 1)
+				fire["burn_left"] = minf(float(fire["burn_left"]) + float(fuel.get(wood, 120.0)) / GAME_RATE, float(_cooking.get("max_burn_game_s", 43200.0)) / GAME_RATE)
+
+				if state == 8:
+					fire["state"] = 9
+					it["left"] = FIRE_LAID_S
+
+				_dirty = true
+				break
+
+	if int(fire["state"]) != 1:
+		return
+
+	fire["cook_t"] = float(fire.get("cook_t", 0.0)) + 2.0
+
+	if float(fire["cook_t"]) < float(_cooking.get("box_cook_s", 8.0)):
+		return
+
+	for slot in range(box.usable):
+		if box.numbers[slot] != 0 and _cookable(table.id_of(box.numbers[slot])):
+			fire["cook_t"] = 0.0
+			var raw: Dictionary = box.take_from_slot(slot, 1)
+			var cooked: int = table.number_of(str(_cooking.get("cooks_into", {}).get(table.id_of(int(raw["number"])), _cooking.get("gives", "roast_forage"))))
+
+			if box.add(cooked, 1) > 0:
+				box.add(int(raw["number"]), 1, int(raw.get("wear", 0)))
+
+			_dirty = true
+			return
+
+
 func _chest_of(peer: int, id: int):
 	var it: Dictionary = _items.get(id, {})
 
-	if it.is_empty() or not it.has("struct") or not it["struct"].has("uid") or not _peer_pos.has(peer):
+	if it.is_empty() or not _peer_pos.has(peer):
+		return null
+
+	if it.has("fire"):
+		return _fire_box(peer, it)
+
+	if not it.has("struct") or not it["struct"].has("uid"):
 		return null
 
 	if _peer_pos[peer].distance_to(it["pos"]) > CHEST_REACH_M:
@@ -3056,7 +3152,12 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int) -> vo
 		rec_struct["coins"] = 0
 		_dirty = true
 
-	if kind == Net.ACT_CHEST_PUT and bool(_structures.get(str(_items.get(id, {}).get("struct", {}).get("kind", "")), {}).get("take_only", false)):
+	var fire_refuses: bool = kind == Net.ACT_CHEST_PUT and _items.get(id, {}).has("fire") and a >= 0 and a < inv.SLOTS and inv.numbers[a] != 0 and not _fire_takes(table.id_of(inv.numbers[a]))
+
+	if fire_refuses:
+		_say(peer, "A fire takes wood and food.")
+		_reject(peer, 3)
+	elif kind == Net.ACT_CHEST_PUT and bool(_structures.get(str(_items.get(id, {}).get("struct", {}).get("kind", "")), {}).get("take_only", false)):
 		_reject(peer, 3)
 	elif kind == Net.ACT_CHEST_PUT and a >= 0 and a < inv.SLOTS and inv.numbers[a] != 0 and count > 0:
 		var number: int = inv.numbers[a]

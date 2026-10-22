@@ -162,12 +162,34 @@ func _init() -> void:
 	var found_before: int = items.world_item_count()
 	items.action(2, Net.ACT_PICKUP, base_id, 0, 0, Vector3.ZERO)
 	check(items.world_item_count() == found_before, "a foundation with a wall on it cannot be taken down")
+	# A campfire's store: wood goes in and feeds the fire, an axe is refused.
+	items.report_position(2, Vector3(450.0, 10.0, 450.0))
+	items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of("campfire_kit"), 0, 1, Vector3.ZERO)
+	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of("campfire_kit")), 0, 0, Vector3(450.0, 10.0, 452.0))
+	var fire_id: int = 0
+
+	for id in items._items:
+		if items._items[id].has("fire") and items._items[id]["pos"].distance_to(Vector3(450.0, 10.0, 452.0)) < 1.0:
+			fire_id = id
+
+	check(fire_id != 0, "a campfire is placed for the store test")
+	items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of("stick"), 0, 3, Vector3.ZERO)
+	items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
+	items.action(2, Net.ACT_CHEST_OPEN, fire_id, 0, 0, Vector3.ZERO)
+	items.action(2, Net.ACT_CHEST_PUT, items.inventory_of(2).numbers.find(items.table.number_of("stone_axe")), fire_id, 1, Vector3.ZERO)
+	items.action(2, Net.ACT_CHEST_PUT, items.inventory_of(2).numbers.find(items.table.number_of("stick")), fire_id, 3, Vector3.ZERO)
+	var box = items._chests.get(int(items._items[fire_id]["fire"].get("uid", 0)))
+	check(box != null and box.count_of(items.table.number_of("stick")) == 3 and box.count_of(items.table.number_of("stone_axe")) == 0, "a fire's store takes wood and refuses an axe")
+	items._items[fire_id]["fire"]["burn_left"] = 5.0
+	items._items[fire_id]["fire"]["tend"] = 0.0
+	items._fires(0.1)
+	check(float(items._items[fire_id]["fire"]["burn_left"]) > 5.0 and box.count_of(items.table.number_of("stick")) == 2, "wood in the store feeds a nearly-out fire")
 	# A dead branch on the forest floor gives one stick, only within reach.
 	var sticks_had: int = items.inventory_of(2).count_of(items.table.number_of("stick"))
-	items.action(2, Net.ACT_LITTER, 0, 0, 0, Vector3(401.0, 10.0, 400.0))
+	items.action(2, Net.ACT_LITTER, 0, 0, 0, Vector3(451.0, 10.0, 450.0))
 	check(items.inventory_of(2).count_of(items.table.number_of("stick")) == sticks_had + 1, "picking a branch from the forest floor gives a stick")
 	OS.delay_msec(100)
-	items.action(2, Net.ACT_LITTER, 0, 0, 0, Vector3(440.0, 10.0, 400.0))
+	items.action(2, Net.ACT_LITTER, 0, 0, 0, Vector3(490.0, 10.0, 450.0))
 	check(items.inventory_of(2).count_of(items.table.number_of("stick")) == sticks_had + 1, "a branch far away gives nothing")
 	print("placement rules: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
