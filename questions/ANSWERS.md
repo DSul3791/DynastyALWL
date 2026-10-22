@@ -268,3 +268,7 @@ Answered: 2026-10-22 19:41 UTC
 Answer: Yes
 Answered: 2026-10-22 19:55 UTC
 
+## chk-tools-v4 | Check the redrawn backpack, bucket, clay pot, wooden bowl and stone axe (labelled picture): does each look like the real thing, and does the axe look like an axe and not a hammer?
+Answer: Yes
+Answered: 2026-10-22 19:56 UTC
+
