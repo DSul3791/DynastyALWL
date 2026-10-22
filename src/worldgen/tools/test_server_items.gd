@@ -473,6 +473,27 @@ func _init() -> void:
 	m.action(1, Net.ACT_UNLOAD, 0, 0, 0, Vector3.ZERO)
 	check(m.carried_kg_of(1) < 60.0, "digging cannot overfill the pack")
 
+	# Spade sizes (Dave 2026-10-22): a large spade moves 8 pieces, a medium 4, a small 1.
+	m.inventory_of(1).remove(m.table.number_of("wooden_spade"), 1)
+	m.action(1, Net.ACT_ADMIN_GIVE, m.table.number_of("wooden_spade_large"), 0, 1, Vector3.ZERO)
+	check(m._spade_pieces(m.inventory_of(1)) == 8, "a large spade moves 8 pieces (%d)" % m._spade_pieces(m.inventory_of(1)))
+	digs.clear()
+	m._last_dig.clear()
+	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(digs.size() == 1 and is_equal_approx(float(digs[0][1]), 1.8), "a large spade digs a sphere twice as wide (%s)" % str(digs))
+	m.action(1, Net.ACT_ADMIN_GIVE, soil_n, 0, 12, Vector3.ZERO)
+	var big_slot: int = m.inventory_of(1).numbers.find(m.table.number_of("wooden_spade_large"))
+	m.action(1, Net.ACT_MOVE, m.inventory_of(1).numbers.find(soil_n), big_slot, 0, Vector3.ZERO)
+	check(m._spade_load_of(1)[1] == 14, "a large spade takes a bigger load than 8 (%s)" % str(m._spade_load_of(1)))
+	fills.clear()
+	accept[0] = true
+	m._last_dig.clear()
+	m.action(1, Net.ACT_FILL, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(fills.size() == 1 and is_equal_approx(float(fills[0][1]), 1.8) and m._spade_load_of(1)[1] == 6, "a large raise spends 8 pieces from the load")
+	m.action(1, Net.ACT_UNLOAD, 0, 0, 0, Vector3.ZERO)
+	m.inventory_of(1).remove(m.table.number_of("wooden_spade_large"), 1)
+	m.action(1, Net.ACT_ADMIN_GIVE, m.table.number_of("wooden_spade"), 0, 1, Vector3.ZERO)
+
 	# The spade tier adds to the top of the dig roll (digging.json tier_extra).
 	m.action(1, Net.ACT_ADMIN_GIVE, m.table.number_of("stone_spade"), 0, 1, Vector3.ZERO)
 	check(m._spade_tier(m.inventory_of(1)) >= 1, "the spade tier is read from the tool in the pack")

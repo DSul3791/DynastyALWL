@@ -1,5 +1,5 @@
 {
-	"note": "Digging yields (Dave 2026-10-21, job 84). A spade dig gives what the ground at the hole is made of, as shovelfuls: [item, min, max], the number rolled through luck (more when lucky) and counted into the pack by weight like any pick (what does not fit lands on the ground). yield is by the surface material name from data/tables/soils.json; 'rock' is bare rock showing (a stone or two). under: a chance of a second kind from the layer below the topsoil (wet lowland soils lie on clay). fill is what filling a hole uses up, tried in this order; the fill operation (River start, Ground) calls ServerItems.take_fill(peer, units). A better spade lifts more: tier_extra adds that many shovelfuls to the top of the roll by the spade's tier in items.json (wooden 1, stone 2, iron 3, steel 4). A shovelful weighs 4 to 5 kg (weights.json), so a body carries about nine before it slows.",
+	"note": "Digging yields (Dave 2026-10-21, job 84). A spade dig gives what the ground at the hole is made of, as shovelfuls: [item, min, max], the number rolled through luck (more when lucky) and counted into the pack by weight like any pick (what does not fit lands on the ground). yield is by the surface material name from data/tables/soils.json; 'rock' is bare rock showing (a stone or two). under: a chance of a second kind from the layer below the topsoil (wet lowland soils lie on clay). fill is what filling a hole uses up, tried in this order; the fill operation (River start, Ground) calls ServerItems.take_fill(peer, units). A better spade lifts more: tier_extra adds that many shovelfuls to the top of the roll by the spade's tier in items.json (wooden 1, stone 2, iron 3, steel 4). A shovelful weighs 4 to 5 kg (weights.json), so a body carries about nine before it slows. Spade sizes (Dave 2026-10-22): spade_sizes by an item's spade_size (default small): pieces = shovelfuls moved per stroke (1, 4, 8; a dig yields that many times the roll, a Raise stroke spends that many from the load), load_cap = most the shovel's load holds. The sphere radius grows with the cube root of the pieces, and pace and wear with it.",
 	"yield": {
 		"loam": [
 			[
@@ -114,7 +114,11 @@
 			]
 		]
 	},
-	"tier_extra": {"2": 1, "3": 2, "4": 3},
+	"tier_extra": {
+		"2": 1,
+		"3": 2,
+		"4": 3
+	},
 	"default": [
 		[
 			"soil",
@@ -146,5 +150,19 @@
 		"gravel",
 		"clay",
 		"stone"
-	]
+	],
+	"spade_sizes": {
+		"small": {
+			"pieces": 1,
+			"load_cap": 8
+		},
+		"medium": {
+			"pieces": 4,
+			"load_cap": 12
+		},
+		"large": {
+			"pieces": 8,
+			"load_cap": 16
+		}
+	}
 }

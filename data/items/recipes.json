@@ -1,6 +1,6 @@
 {
 	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist). station: the recipe is made only near that placed station (structures.json station, reach_m with 1 m grace on the server); station_level (default 1) is the lowest level of the station it needs.",
-	"next_number": 131,
+	"next_number": 139,
 	"recipes": {
 		"cordage": {
 			"number": 1,
@@ -2599,6 +2599,185 @@
 			"known": false,
 			"station": "workbench",
 			"station_level": 1
+		},
+		"wooden_spade_medium": {
+			"number": 131,
+			"name": "Medium wooden spade",
+			"needs": [
+				[
+					"stick",
+					5
+				]
+			],
+			"keeps": [
+				[
+					"stone",
+					1
+				]
+			],
+			"gives": [
+				"wooden_spade_medium",
+				1
+			],
+			"craft_s": 6.0,
+			"known": true
+		},
+		"wooden_spade_large": {
+			"number": 132,
+			"name": "Large wooden spade",
+			"needs": [
+				[
+					"stick",
+					8
+				],
+				[
+					"cordage",
+					2
+				]
+			],
+			"keeps": [
+				[
+					"stone",
+					1
+				]
+			],
+			"gives": [
+				"wooden_spade_large",
+				1
+			],
+			"craft_s": 9.0,
+			"known": true,
+			"station": "workbench"
+		},
+		"stone_spade_medium": {
+			"number": 133,
+			"name": "Medium stone spade",
+			"needs": [
+				[
+					"wooden_spade_medium",
+					1
+				],
+				[
+					"stone",
+					4
+				],
+				[
+					"cordage",
+					2
+				]
+			],
+			"gives": [
+				"stone_spade_medium",
+				1
+			],
+			"craft_s": 10.0,
+			"known": true,
+			"station": "workbench"
+		},
+		"stone_spade_large": {
+			"number": 134,
+			"name": "Large stone spade",
+			"needs": [
+				[
+					"wooden_spade_large",
+					1
+				],
+				[
+					"stone",
+					8
+				],
+				[
+					"cordage",
+					3
+				]
+			],
+			"gives": [
+				"stone_spade_large",
+				1
+			],
+			"craft_s": 14.0,
+			"known": true,
+			"station": "workbench"
+		},
+		"iron_spade_medium": {
+			"number": 135,
+			"name": "Medium iron spade",
+			"needs": [
+				[
+					"iron_ingot",
+					4
+				],
+				[
+					"stick",
+					3
+				]
+			],
+			"gives": [
+				"iron_spade_medium",
+				1
+			],
+			"craft_s": 14.0,
+			"known": false
+		},
+		"iron_spade_large": {
+			"number": 136,
+			"name": "Large iron spade",
+			"needs": [
+				[
+					"iron_ingot",
+					8
+				],
+				[
+					"stick",
+					4
+				]
+			],
+			"gives": [
+				"iron_spade_large",
+				1
+			],
+			"craft_s": 20.0,
+			"known": false
+		},
+		"steel_spade_medium": {
+			"number": 137,
+			"name": "Medium steel spade",
+			"needs": [
+				[
+					"steel_ingot",
+					4
+				],
+				[
+					"stick",
+					3
+				]
+			],
+			"gives": [
+				"steel_spade_medium",
+				1
+			],
+			"craft_s": 16.0,
+			"known": false
+		},
+		"steel_spade_large": {
+			"number": 138,
+			"name": "Large steel spade",
+			"needs": [
+				[
+					"steel_ingot",
+					8
+				],
+				[
+					"stick",
+					4
+				]
+			],
+			"gives": [
+				"steel_spade_large",
+				1
+			],
+			"craft_s": 24.0,
+			"known": false
 		}
 	}
 }
