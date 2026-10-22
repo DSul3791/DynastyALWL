@@ -332,3 +332,7 @@ Answered: 2026-10-22 20:56 UTC
 Answer: No: I don’t think there should be a chopping block kit. It should just be a chopping block and it’s heavy and it looks exactly like the model for the actual chopping block.
 Answered: 2026-10-22 20:57 UTC
 
+## chk-spades-tv6 | Check the spades (labelled picture): small, medium and large in wood, stone, iron and steel. Can you tell the sizes and materials apart? (The sheet is crowded because the handles are long.)
+Answer: Yes
+Answered: 2026-10-22 20:57 UTC
+
