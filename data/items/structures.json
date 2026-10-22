@@ -32,7 +32,7 @@
 			"clears_grass": true
 		},
 		"chopping_block": {
-			"kit": "chopping_block_kit",
+			"kit": "chopping_block",
 			"item": "chopping_block",
 			"state": 7,
 			"footprint_x": 0.7,

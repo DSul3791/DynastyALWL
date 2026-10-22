@@ -284,19 +284,21 @@
 		"chopping_block_kit": {
 			"number": 24,
 			"name": "Chopping block",
-			"description": "A log set on end to split wood on, ready to set down.",
+			"description": "Retired: the chopping block itself is now the carried item (Dave 2026-10-22).",
 			"kind": "placeable",
 			"stack": 1,
 			"look_alikes": [],
-			"value": 20
+			"value": 20,
+			"retired": true
 		},
 		"chopping_block": {
 			"number": 25,
 			"name": "Chopping block",
-			"description": "A chopping block. Split logs into firewood here.",
-			"kind": "structure",
+			"description": "A heavy log set on end. Set it down and split logs into firewood on it.",
+			"kind": "placeable",
 			"stack": 1,
-			"look_alikes": []
+			"look_alikes": [],
+			"value": 20
 		},
 		"driftwood": {
 			"number": 30,
