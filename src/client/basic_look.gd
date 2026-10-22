@@ -86,6 +86,14 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 		"ingot":
 			_box(parts, Vector3(0.24, 0.05, 0.1), Vector3(0.0, -0.035, 0.0), color)
 			_box(parts, Vector3(0.2, 0.03, 0.07), Vector3(0.0, 0.0, 0.0), light)
+		"block":
+			# A cut stone block, 2:1:1, with a chiselled lighter top.
+			_box(parts, Vector3(0.2, 0.1, 0.1), Vector3(0.0, -0.02, 0.0), color)
+			_box(parts, Vector3(0.18, 0.012, 0.08), Vector3(0.0, 0.034, 0.0), light)
+		"brick":
+			# A fired brick, about 3:1.4:1, with a paler top face.
+			_box(parts, Vector3(0.15, 0.05, 0.07), Vector3(0.0, -0.02, 0.0), color)
+			_box(parts, Vector3(0.13, 0.008, 0.055), Vector3(0.0, 0.009, 0.0), light)
 		"pile":
 			_sph(parts, 0.15, Vector3(1.0, 0.45, 1.0), Vector3(0.0, -0.03, 0.0), color)
 			_sph(parts, 0.06, Vector3(1.0, 0.7, 1.0), Vector3(0.07, 0.03, 0.03), light)

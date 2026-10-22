@@ -821,19 +821,59 @@
    "size": 1.2
   },
   "cut_stone_block": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
+   "shape": "block",
+   "color": "#8a8780",
+   "size": 1.5
   },
   "brick": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
+   "shape": "brick",
+   "color": "#a8452e",
+   "size": 1.4
   },
   "mortar": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
+   "shape": "pile",
+   "color": "#a89c85",
    "size": 1.0
+  },
+  "wooden_spade_medium": {
+   "shape": "spade",
+   "color": "#8a6a3a",
+   "size": 1.25
+  },
+  "wooden_spade_large": {
+   "shape": "spade",
+   "color": "#8a6a3a",
+   "size": 1.5
+  },
+  "stone_spade_medium": {
+   "shape": "spade",
+   "color": "#7d7a74",
+   "size": 1.25
+  },
+  "stone_spade_large": {
+   "shape": "spade",
+   "color": "#7d7a74",
+   "size": 1.5
+  },
+  "iron_spade_medium": {
+   "shape": "spade",
+   "color": "#6c6f75",
+   "size": 1.25
+  },
+  "iron_spade_large": {
+   "shape": "spade",
+   "color": "#6c6f75",
+   "size": 1.5
+  },
+  "steel_spade_medium": {
+   "shape": "spade",
+   "color": "#9aa3ad",
+   "size": 1.25
+  },
+  "steel_spade_large": {
+   "shape": "spade",
+   "color": "#9aa3ad",
+   "size": 1.5
   }
  }
 }
