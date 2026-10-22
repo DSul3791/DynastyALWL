@@ -416,3 +416,7 @@ Answered: 2026-10-22 23:01 UTC
 Answer: No: A double door should just be slightly smaller than the wall so it leaves roughly 10 cm all the way around the wall around the outside of the door. If you can look up the doors from Ark survival
 Answered: 2026-10-22 23:02 UTC
 
+## blueprint-refund | When you take down a FINISHED piece, how much of its items come back? Sal recommends half (50%).
+Answer: No: There is a write up in the design document talking about if a piece is in good repair because everything will gradually degrade so everything should have a durability and that affects how much you get back from it. Check in the design document.
+Answered: 2026-10-22 23:12 UTC
+
