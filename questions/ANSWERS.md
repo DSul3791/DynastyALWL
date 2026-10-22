@@ -212,3 +212,7 @@ Answered: 2026-10-22 17:19 UTC
 Answer: Make it private (recommended: it is an unreleased game)
 Answered: 2026-10-22 17:20 UTC
 
+## review-rules | Approve the rules for the terrain review (BP-T32)? Sonny writes a docs-only review first: what is wrong today, 2 or 3 options with sources, tests a bake must pass (rivers flow downhill, lakes have outlets, 2 m of water does not flood everything, 9-tile bake 30 minutes or less). Nothing is built or baked until you pick an option.
+Answer: Approve as written (recommended)
+Answered: 2026-10-22 17:21 UTC
+
