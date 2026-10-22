@@ -26,7 +26,18 @@ const GENERATED_DIR := "res://assets/audio/items/"
 const RECORDED_DIR := "res://assets/audio/recorded/items/"
 const CRAFT_DIR := "res://assets/audio/crafting/"
 const CRAFT_RECORDED_DIR := "res://assets/audio/recorded/crafting/"
-const NAMES := {"item_pickup": -17.0, "item_drop": -17.0, "inv_open": -20.0, "inv_close": -21.0, "item_swap": -20.0, "craft_done": -16.0, "hotbar_tick": -26.0, "craft_start": -22.0, "item_reject": -24.0}
+const NAMES := {"item_pickup_wood": -17.0, "item_pickup_stone": -17.0, "item_pickup_metal": -19.0, "item_pickup_cloth": -17.0, "item_pickup_soft": -17.0, "item_pickup_food": -17.0, "item_pickup_glass": -19.0, "item_pickup_bone": -17.0,
+	"item_drop_wood": -17.0, "item_drop_stone": -17.0, "item_drop_metal": -19.0, "item_drop_cloth": -17.0, "item_drop_soft": -17.0, "item_drop_food": -17.0, "item_drop_glass": -19.0, "item_drop_bone": -17.0,
+	"item_pickup": -17.0, "item_drop": -17.0, "inv_open": -20.0, "inv_close": -21.0, "item_swap": -20.0, "craft_done": -16.0, "hotbar_tick": -26.0, "craft_start": -22.0, "item_reject": -24.0}
+const BasicLook := preload("res://src/client/basic_look.gd")
+# Stage-one pick-up and put-down sounds by what the item is made of (make_items.py class_sound): the shape in data/items/looks.json says which.
+const SHAPE_CLASS := {
+	"planks": "wood", "beams": "wood", "bark": "wood", "shaft": "wood", "axe": "wood", "pick": "wood", "spade": "wood", "knife": "wood",
+	"torch": "wood", "rod": "wood", "kit": "wood", "bucket": "wood", "bundle": "cloth", "sack": "cloth", "hide": "cloth", "coil": "cloth",
+	"skin": "cloth", "feather": "cloth", "cloth": "cloth", "chunk": "stone", "ingot": "metal", "coin": "metal", "needle": "metal",
+	"pile": "soft", "leaves": "soft", "fish": "food", "meat": "food", "loaf": "food", "fruit": "food", "bowl": "food", "skewer": "food",
+	"bottle": "glass", "pot": "glass", "bone": "bone",
+}
 const MIN_GAP_MSEC := 60
 const WORK_DB := -18.0
 const WORK_TYPES := {"cordage": "twine", "stone_axe": "knap", "stone_knife": "knap", "wooden_spear": "carve", "spear": "bind", "torch": "bind", "campfire": "stack"}
@@ -113,6 +124,30 @@ func hotbar(slot: int) -> void:
 	play("hotbar_tick", 0.94 + 0.02 * float(clampi(slot, 0, 7)))
 
 
+# "item_pickup" or "item_drop" with the material class of the item that changed (its own sound when it has one, else the plain cue).
+func _class_sound(base: String, inv, items, gained: bool) -> String:
+	var counts: Dictionary = {}
+
+	for i in inv.numbers.size():
+		if inv.numbers[i] != 0:
+			counts[inv.numbers[i]] = int(counts.get(inv.numbers[i], 0)) + int(inv.counts[i])
+
+	for number in (counts if gained else _counts_by_number):
+		var before: int = int(_counts_by_number.get(number, 0))
+		var after: int = int(counts.get(number, 0))
+
+		if (after > before) if gained else (after < before):
+			var shape: String = str(BasicLook.entry(str(items.table.id_of(int(number)))).get("shape", ""))
+			var named: String = "%s_%s" % [base, SHAPE_CLASS.get(shape, "")]
+
+			if SHAPE_CLASS.has(shape) and NAMES.has(named):
+				return named
+
+			break
+
+	return base
+
+
 func watch(items) -> void:
 	if items == null or items.inventory == null:
 		return
@@ -125,9 +160,9 @@ func watch(items) -> void:
 
 	if _total >= 0:
 		if total > _total:
-			play("item_pickup")
+			play(_class_sound("item_pickup", inv, items, true))
 		elif total < _total:
-			play("item_drop")
+			play(_class_sound("item_drop", inv, items, false))
 		elif inv.numbers != _numbers:
 			play("item_swap")
 

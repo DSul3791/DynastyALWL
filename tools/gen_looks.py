@@ -23,7 +23,7 @@ SPECIAL = {
     "tree_roots": ("bundle", "#6a4a2e", 1.0), "firewood": ("bundle", "#8a5e36", 1.0), "lumber": ("planks", "#b98d57", 1.0),
     "iron_ingot": ("ingot", "#6c6f75", 1.0), "steel_ingot": ("ingot", "#9aa3ad", 1.0),
     "soil": ("pile", "#4a3322", 1.0), "clay": ("pile", "#a0603c", 1.0), "sand": ("pile", "#d6c18b", 1.0), "gravel": ("pile", "#8d8a84", 1.0),
-    "hide": ("hide", "#8a6a4a", 1.0), "bone": ("bone", "#e6e0cf", 1.0), "sinew": ("bundle", "#d0b898", 0.6), "animal_fat": ("chunk", "#f1ead2", 0.8),
+    "hide": ("hide", "#8a6a4a", 1.0), "bone": ("bone", "#b3a98f", 1.0), "sinew": ("bundle", "#d0b898", 0.6), "animal_fat": ("chunk", "#f1ead2", 0.8),
     "feather": ("feather", "#b9b4a8", 1.0), "rotten_food": ("pile", "#4f5a2c", 0.8), "backpack": ("sack", "#7a5a3a", 1.5),
     "poultice": ("bowl", "#5f7a3a", 0.7), "bandage": ("coil", "#d8ccaa", 0.8), "medicine": ("bottle", "#7a4b2a", 0.8),
     "energy_bar": ("loaf", "#8a6a3a", 0.6), "herbal_tea": ("bottle", "#6a8a3a", 0.8), "magic_tonic": ("bottle", "#8a5ad0", 0.8),
