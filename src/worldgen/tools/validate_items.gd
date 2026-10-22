@@ -514,7 +514,9 @@ func _init() -> void:
 		if typeof(looks) != TYPE_DICTIONARY:
 			fail("looks.json is not a JSON object")
 		else:
-			for id in looks:
+			var entries: Dictionary = looks.get("items", looks) if looks.get("items") is Dictionary else looks
+
+			for id in entries:
 				if String(id).begins_with("_") or String(id) == "note":
 					continue
 
@@ -522,7 +524,7 @@ func _init() -> void:
 					fail("looks.json: '%s' is not an item in items.json or gathered.json" % id)
 					continue
 
-				var look: Variant = looks[id]
+				var look: Variant = entries[id]
 
 				if typeof(look) != TYPE_DICTIONARY or typeof(look.get("shape", null)) != TYPE_STRING or not look.has("color") or float(look.get("size", 0.0)) <= 0.0:
 					fail("looks.json: '%s' needs shape (text), color and size (a number above 0)" % id)
