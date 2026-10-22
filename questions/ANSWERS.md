@@ -24,3 +24,7 @@ Answered: 2026-10-21 23:17 UTC
 Answer: Yes, the agreement waits and seals when the coin is there
 Answered: 2026-10-21 23:17 UTC
 
+## fishing-bait | Fishing: should bait still make dawn fishing a sure bite (a fish every 19 s)?
+Answer: Cap the bonus so dawn is a bit under sure (about 0.93 a cast)
+Answered: 2026-10-22 00:06 UTC
+
