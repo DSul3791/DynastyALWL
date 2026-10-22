@@ -52,6 +52,8 @@ var _arms                                 # first-person arms (Ragdoll.new(true)
 var _stop_t: float = 0.0                  # hit stop left, seconds
 var _shoulder_log: MeshInstance3D          # the log across the shoulder (set_shoulder)
 var _arm_up: float = 0.0                  # 0 arms hang at the body's side, 1 raised to the camera pose (swing, jab, use, aim)
+var _first_person: bool = true
+var _avatar_rig                          # the full body (ragdoll_body.gd) drawn in third person, or null
 var _mounted: bool = false                # the model is in the hand: the arm animations move it, not the offsets below
 var _label: Label
 var _jab_t: float = -1.0
@@ -115,6 +117,19 @@ func set_first_person(on: bool) -> void:
 	if _arms != null and _arms.visible != on:
 		_arms.visible = on
 		_arms.animation_player.active = on
+
+	if _first_person != on:
+		_first_person = on
+
+		# The held model moves between the first-person hand and the body's own hand (Dave 2026-10-22: the torch vanished in third person).
+		if _model != null and _model.get_parent() != null:
+			_model.get_parent().remove_child(_model)
+			_mount_model()
+
+
+# The player's full body (third person), whose right hand carries the held model when the camera is out.
+func set_avatar(avatar) -> void:
+	_avatar_rig = avatar
 
 
 func _arm_play(clip: String, seconds: float) -> void:
@@ -658,6 +673,10 @@ func _mount_model() -> void:
 		_model.position = REST
 		return
 
+	if not _first_person and _avatar_rig != null and _avatar_rig.hand_mount_r != null:
+		_mount_model_third(kind)
+		return
+
 	_arms.hand_mount_r.add_child(_model)
 	var tilt: Basis = Basis(Vector3.RIGHT, deg_to_rad(TOOL_TILT_DEG))
 	var turn: Basis = Basis.IDENTITY
@@ -671,6 +690,23 @@ func _mount_model() -> void:
 
 	_model.basis = tilt * turn
 	_model.position = tilt * grip
+
+
+# Third person: the hand hangs at the side (mount -Z down the fingers, +Y forward, +Z up), so a tool is turned to stand up and a little forward.
+func _mount_model_third(kind: String) -> void:
+	_avatar_rig.hand_mount_r.add_child(_model)
+	var turn: Basis = Basis(Vector3.RIGHT, deg_to_rad(60.0))
+	var grip: Vector3 = Vector3(0.0, -float(GRIP_ALONG_Y.get(kind, 0.0)), 0.0)
+
+	if kind == "spear":
+		turn = Basis(Vector3.RIGHT, deg_to_rad(150.0))
+		grip = Vector3(0.0, 0.0, -SPEAR_GRIP_Z)
+	elif kind == "kit":
+		turn = Basis.IDENTITY
+		grip = Vector3(0.0, -0.03, -0.14)
+
+	_model.basis = turn
+	_model.position = turn * grip
 
 
 # A placeable kit in the hand (Items job 3 of refill 10): a small bundle the size of what it makes, shared meshes and materials,

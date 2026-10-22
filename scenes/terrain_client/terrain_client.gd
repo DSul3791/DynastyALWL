@@ -2929,6 +2929,7 @@ func _update_view(delta: float) -> void:
 	_avatar.visible = _view_now > 0.5
 
 	if held != null:
+		held.set_avatar(_avatar)
 		held.set_first_person(_view_now <= 0.5)
 		held.set_shoulder(items != null and items.shoulder_id != "" and _view_now <= 0.5, CARRY_LOG_LENGTH_M, CARRY_LOG_RADIUS_M)
 	_avatar.animation_player.active = _avatar.visible      # no animation cost in first person
