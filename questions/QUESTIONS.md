@@ -1,14 +1,5 @@
-## dig-depth | How deep may players dig below the surface? (my pick: about 30 m, then bedrock)
-- About 30 m, then unbreakable bedrock
-- About 100 m
-- No limit
+## hole-refill | Do small surface holes and pits (spade digs in open ground, not mines) fill back in by themselves? (the docs only say mines revert through erosion and water; my pick: yes, slowly)
+- Yes, slowly over many game days (rain and erosion), faster in wet ground
+- No, a surface hole stays until someone fills it
+- Only holes that fill with water fill in; dry holes stay
 
-## tunnel-collapse | Do unsupported tunnels and caves ever collapse? (my pick: no, for now)
-- No, tunnels stay open as dug
-- Only wide or very high roofs collapse (needs timber supports, later)
-- Everything unsupported collapses over time
-
-## hole-refill | Do dug holes slowly fill back in by themselves? (my pick: no, they stay until filled)
-- No, a hole stays until someone fills it
-- Yes, soil holes in open ground slowly fill over many game days; tunnels stay
-- Yes, all holes slowly fill unless something keeps them open (timber, stone)
