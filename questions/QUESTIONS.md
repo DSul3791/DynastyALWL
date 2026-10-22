@@ -1,6 +1,3 @@
-## blueprint-3 | Place a see-through blueprint first, then fill it with items (E or drag a stack, any order, partial is fine)?
-[check]
-
 ## blueprint-4 | A piece cannot finish before what it rests on is finished (wall waits for foundation, roof for walls)?
 [check]
 
