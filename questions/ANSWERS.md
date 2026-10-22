@@ -348,3 +348,7 @@ Answered: 2026-10-22 22:13 UTC
 Answer: No: They’re also has to be a one by one and a 2 x 2 in the smaller versions
 Answered: 2026-10-22 22:13 UTC
 
+## tier-basic-ground | May tier-1 basic buildings (woven thatch hut) sit on bare ground with no foundation?
+Answer: No: They have to have the same related foundation
+Answered: 2026-10-22 22:14 UTC
+
