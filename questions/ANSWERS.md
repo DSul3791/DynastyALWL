@@ -176,3 +176,7 @@ Answered: 2026-10-22 15:15 UTC
 Answer: Yes, keep awake while the team is working (recommended)
 Answered: 2026-10-22 15:15 UTC
 
+## cc-branches | Per-thread branches (you approved): when do they start?
+Answer: From the first job after restart (recommended)
+Answered: 2026-10-22 15:16 UTC
+
