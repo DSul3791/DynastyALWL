@@ -50,6 +50,11 @@
 			"supply_max": 1.2,
 			"purse_cap_default": 300,
 			"purse_regen_default": 100
+		},
+		"repair": {
+			"rate": 0.4,
+			"say_done": "Mended.",
+			"note": "A smith with 'repairs': true in shops.json mends a worn or broken tool for value x rate x the share of durability used x the stranger/reputation pay multiple; the tool comes back as new."
 		}
 	}
 }

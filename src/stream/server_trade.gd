@@ -261,6 +261,9 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 	if a < 0 or a >= inv.SLOTS or inv.numbers[a] == 0:
 		return ""
 
+	if kind == 2:
+		return _repair_deal(peer, npc_id, inv, a, float(m["pay"]))
+
 	var number2: int = inv.numbers[a]
 	var entry: Dictionary = items.table.entry(items.table.id_of(number2))
 	var kinds: Array = shop.get("buys", [])
@@ -324,3 +327,40 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 	items._dirty = true
 	items.add_coins(peer, total, "trade")
 	return "Sold %d %s for %s." % [count, items.table.name_of(number2).to_lower(), items._coin_words(total)]
+
+
+# What a smith asks to mend the tool in a pack slot (0 = nothing to mend).
+func repair_cost(number: int, item_wear: int, pay_mult: float) -> int:
+	var entry: Dictionary = items.table.entry(items.table.id_of(number))
+	var durability: int = int(entry.get("durability", 0))
+	var value: int = int(entry.get("value", 0))
+
+	if durability <= 0 or item_wear <= 0 or value <= 0:
+		return 0
+
+	var used: float = clampf(float(item_wear) / float(durability), 0.0, 1.0)
+	return maxi(int(ceil(float(value) * float(_cfg().get("repair", {}).get("rate", 0.4)) * used * pay_mult - 0.0001)), 1)
+
+
+func _repair_deal(peer: int, npc_id: String, inv, slot: int, pay_mult: float) -> String:
+	if not bool(_shops[npc_id].get("repairs", false)):
+		return "He does not mend tools."
+
+	var cost: int = repair_cost(inv.numbers[slot], inv.wear[slot], pay_mult)
+
+	if cost <= 0:
+		return "That needs no mending."
+
+	if items.coins_of(peer) < cost:
+		return "You cannot afford that."
+
+	var name_of: String = items.table.name_of(inv.numbers[slot]).to_lower()
+	items.take_coins(peer, cost)
+	var before: Array = items._snapshot(inv)
+	inv.wear[slot] = 0
+	items._send_changes(peer, inv, before)
+	items._dirty = true
+	var st: Dictionary = _refresh(npc_id)
+	st["purse"] = minf(float(st["purse"]) + float(cost), _purse_cap(npc_id))
+	save()
+	return "%s Your %s is as good as new for %s." % [str(_cfg().get("repair", {}).get("say_done", "Mended.")), name_of, items._coin_words(cost)]

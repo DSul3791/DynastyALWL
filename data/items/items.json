@@ -388,7 +388,8 @@
 				]
 			],
 			"value": 120,
-			"future": true
+			"future": true,
+			"repair_station": "forge"
 		},
 		"steel_pickaxe": {
 			"number": 34,
@@ -412,7 +413,8 @@
 				]
 			],
 			"value": 300,
-			"future": true
+			"future": true,
+			"repair_station": "forge"
 		},
 		"soil": {
 			"number": 35,
@@ -555,7 +557,8 @@
 			],
 			"value": 90,
 			"future": true,
-			"look_alikes": []
+			"look_alikes": [],
+			"repair_station": "forge"
 		},
 		"steel_spade": {
 			"number": 47,
@@ -579,7 +582,8 @@
 			],
 			"value": 140,
 			"future": true,
-			"look_alikes": []
+			"look_alikes": [],
+			"repair_station": "forge"
 		},
 		"bone": {
 			"number": 48,

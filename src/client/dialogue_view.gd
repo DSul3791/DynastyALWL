@@ -23,6 +23,8 @@ var _shop_get: float = 0.55                # what the trader pays per unit of va
 var _shop_buys: PackedStringArray = PackedStringArray()
 var _shop_stock: Dictionary = {}           # item id -> how many he has on the shelf
 var _shop_supply: Dictionary = {}          # item id -> supply price multiple (a full shelf is cheaper)
+var _shop_repairs: bool = false            # this trader mends tools (data/npcs/shops.json "repairs")
+var _repair_rate: float = 0.4              # data/items/coins.json trade.repair.rate
 var _shop_till: int = -1                   # the coin in the trader's purse, -1 = unlimited
 var _shop_tired: Dictionary = {}           # item id -> demand multiple (the trader is tired of buying it)
 var _shop_buy_box: VBoxContainer
@@ -239,6 +241,10 @@ func _on_shop(npc_id: String, title: String, ids: PackedStringArray, pay_milli: 
 	_shop_stock.clear()
 	_shop_supply.clear()
 	_shop_till = trader_purse
+	var shops: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/npcs/shops.json"))
+	var coins: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/coins.json"))
+	_shop_repairs = typeof(shops) == TYPE_DICTIONARY and bool(shops.get(npc_id, {}).get("repairs", false))
+	_repair_rate = float(coins.get("trade", {}).get("repair", {}).get("rate", 0.4)) if typeof(coins) == TYPE_DICTIONARY else 0.4
 
 	for i in ids.size():
 		_shop_stock[ids[i]] = stock[i]
@@ -281,6 +287,24 @@ func _price_to_get(slot: int) -> int:
 	return maxi(int(floor(float(value) * _shop_get * tired * life + 0.0001)), 1) if life > 0.0 else 0
 
 
+# The smith's price for the pack slot, the same rule as the server's repair_cost.
+func _repair_cost(slot: int) -> int:
+	var number: int = items.inventory.numbers[slot]
+
+	if number == 0:
+		return 0
+
+	var entry: Dictionary = items.table.entry(items.table.id_of(number))
+	var durability: int = int(entry.get("durability", 0))
+	var value: int = int(entry.get("value", 0))
+	var worn: int = items.inventory.wear[slot]
+
+	if durability <= 0 or worn <= 0 or value <= 0:
+		return 0
+
+	return maxi(int(ceil(float(value) * _repair_rate * clampf(float(worn) / float(durability), 0.0, 1.0) * _shop_pay - 0.0001)), 1)
+
+
 func _refresh_shop() -> void:
 	if _shop_panel == null or not _shop_panel.visible or _shop_npc == "":
 		return
@@ -316,6 +340,14 @@ func _refresh_shop() -> void:
 		var number2: int = items.inventory.numbers[slot]
 		_shop_row(_shop_sell_box, "%s x%d  -  %s each" % [items.table.name_of(number2), items.inventory.counts[slot], items.coin_text(each)], items._tooltip(number2, items.inventory.counts[slot], items.inventory.wear[slot]) + "\nThe trader pays %s each." % items.coin_text(each), slot, 1, true)
 
+	if bool(_shop_repairs):
+		for slot in items.inventory.numbers.size():
+			var cost: int = _repair_cost(slot)
+
+			if cost > 0:
+				var number3: int = items.inventory.numbers[slot]
+				_shop_row(_shop_sell_box, "Mend %s  -  %s" % [items.table.name_of(number3), items.coin_text(cost)], items._tooltip(number3, 1, items.inventory.wear[slot]) + "\nThe smith mends it as new for %s." % items.coin_text(cost), slot, 2, items.purse_copper >= cost)
+
 	if not any:
 		var none: Label = Label.new()
 		none.text = "Nothing in your pack that this trader will buy."
@@ -336,6 +368,7 @@ func _shop_row(parent: VBoxContainer, text: String, tip: String, index: int, kin
 	button.pressed.connect(func(): net.trade.rpc_id(1, _shop_npc, kind, index, 1))
 	row.add_child(button)
 	var more: Button = Button.new()
+	more.visible = kind != 2
 	more.text = "x10" if kind == 0 else "All"
 	more.add_theme_font_size_override("font_size", SHOP_PX - 4)
 	more.disabled = not enabled

@@ -91,6 +91,7 @@
 			]
 		},
 		"purse_cap": 300,
-		"purse_regen_per_day": 100
+		"purse_regen_per_day": 100,
+		"repairs": true
 	}
 }

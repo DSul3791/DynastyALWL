@@ -2296,6 +2296,12 @@ func _repair(peer: int, inv, slot: int) -> void:
 	if costs.is_empty():
 		return
 
+	var bench: String = str(entry.get("repair_station", ""))
+
+	if bench != "" and not station_near(peer, bench):
+		_say(peer, "Repairing this needs a %s nearby." % _station_name(bench).to_lower())
+		return
+
 	# The tool's own slot must not be spent as material.
 	var held_number: int = inv.numbers[slot]
 
