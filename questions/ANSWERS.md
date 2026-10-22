@@ -124,3 +124,7 @@ Answered: 2026-10-22 03:58 UTC
 Answer: No, leave the frozen files alone until the next real bake
 Answered: 2026-10-22 03:59 UTC
 
+
+## collapse-offline | A tunnel's collapse time runs out while the player is logged out inside it. What happens to them?
+Answer (Dave, in chat): the game must tell a deliberate logout from a disconnect. A disconnect: the player respawns at the nearest place they rested or built a shelter. A deliberate logout inside a tunnel that then collapses: they die.
+Answered: 2026-10-22 05:38 UTC
