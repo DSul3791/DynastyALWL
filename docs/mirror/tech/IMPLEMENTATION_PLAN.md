@@ -35,4 +35,4 @@ Risk: Technical Director becomes a merge bottleneck. Mitigation: merge on each m
 2. Coordinator: re-arm moderator at 30 minutes; assign thread branches (step 2); wake only threads with queued jobs.
 3. MikeW: run warning baseline, the three CI scripts, git-lfs check, store backup (steps 3 to 5 prerequisites). Report "Test done: X pass, Y fail".
 4. Technical Director: after MikeW passes, add CI workflow and `.gitattributes` (GATED, one PR-sized commit), update PROCESS.md.
-5. Restart order for workers: Steve_ProblemSolver (crash/persistence), Sonny, Radar, Kathleen_ArtisticDirector. Each reads BEST_PRACTICES entries changed since 2026-10-22.
+5. Restart order for workers: Steve_ProblemSolver (crash/persistence), Sonny, Sal_Crafts, Kathleen_ArtisticDirector. Each reads BEST_PRACTICES entries changed since 2026-10-22.

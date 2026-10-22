@@ -51,7 +51,7 @@ Logs must hold only real problems. Rules for ALL threads: (1) new and edited cod
 |---|---|
 | Technical Director + Guru (Tyler_Guru_SenDev; took over Steve's duties) | tech/ docs (JOBS, DECISIONS, PROCESS, BUILD_LOG, TEST_QUEUE, BEST_PRACTICES), architecture approvals, build numbers, question page and grouped test card, daily doc check, HANDOFF.md |
 | Sonny (World; took over Willy) | ground and how it is shaped (loading, generation, worldgen tests, tunnels, bracing, collapse) AND water sim/generation, ice, swim |
-| Radar | items, crafting, NPC/animal design, trade, buildings, server items |
+| Sal_Crafts (was Radar) | items, crafting, NPC/animal design, trade, buildings, server items |
 | Steve_ProblemSolver (Systems; was Tyler_002) | everything not assigned: server stalls, networking, crash hunt/telemetry, HUD/UI plumbing, settings, performance, movement, threading, saves, scale plan |
 | Kathleen_ArtisticDirector | art, animation, sounds/voice, client look files |
 | MikeW_LocalAgent | on demand, on Dave's PC: warning count, headless tests, GPU/editor/visual checks, long runs |

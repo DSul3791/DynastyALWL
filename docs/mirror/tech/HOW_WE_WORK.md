@@ -6,7 +6,7 @@
 | Coordinator | project chat | routing, moderator every 30 min, Dave's reports, logs Dave's ideas, memory |
 | Technical Director + Guru | Tyler_Guru_SenDev | tech/ docs, approvals, build numbers, question page, test card, BEST_PRACTICES daily check, HANDOFF.md, review of risky pushes. Docs only |
 | World | Sonny | ground, loading, tunnels, bracing, collapse, water, ice, swim |
-| Items and World objects | Radar | items, crafting, NPCs, animals, buildings, trade |
+| Items and World objects | Sal_Crafts (was Radar) | items, crafting, NPCs, animals, buildings, trade |
 | Systems | Steve_ProblemSolver (was Tyler_002) | server, network, HUD, movement, performance, saves, crash hunt, anything unassigned |
 | Art and Sound | Kathleen_ArtisticDirector (was Mandy) | look, animation, audio |
 | Local runner | MikeW_LocalAgent (was MichealW_Local_agent) | on Dave's PC: warnings, headless tests, GPU/editor checks, long runs |
@@ -27,7 +27,7 @@ Workers run ON DEMAND from the queue (BP-T20). Ownership table: PROCESS.md "Who 
 Daily docs mirror (T18); per-thread branches merged by the Technical Director (C107); CI on push (C85, gated); dated save backups (C93); Git LFS for tiles (C108, gated, forward-only). Gated = Dave's go plus a MikeW run first.
 
 ## Restart plan ("go" from Dave; dev is paused now)
-1. Guru mirrors docs and posts "BP ready". 2. Coordinator re-arms the 30 minute moderator, assigns thread branches, wakes only threads with queued jobs. 3. MikeW runs the warning baseline and CI-script/LFS/backup prerequisites. 4. Technical Director adds CI and .gitattributes after MikeW passes. 5. Workers resume in order: Steve_ProblemSolver, Sonny, Radar, Kathleen_ArtisticDirector, each reading BP entries and design changelog lines since 2026-10-22.
+1. Guru mirrors docs and posts "BP ready". 2. Coordinator re-arms the 30 minute moderator, assigns thread branches, wakes only threads with queued jobs. 3. MikeW runs the warning baseline and CI-script/LFS/backup prerequisites. 4. Technical Director adds CI and .gitattributes after MikeW passes. 5. Workers resume in Dave's order (cc-first-job): Steve_ProblemSolver (crashes, saves, version check, build const), then Sonny (water/ground), Sal_Crafts (items, building), Kathleen_ArtisticDirector (art, sound), each reading BP entries and design changelog lines since 2026-10-22.
 
 ## Where each piece lives
 BEST_PRACTICES.md, PROCESS.md, DECISIONS.md, JOBS.md, BUILD_LOG.md, TEST_QUEUE.md, IDEAS.md, TEAM_PROPOSAL.md (team + efficiency review), IMPLEMENTATION_PLAN.md, DESIGN_ROLE_MAP.md, DESIGN_CHANGELOG.md, LESSONS.md, PROJECT_DEBRIEF_KIT.md (all in `/mnt/project-files/tech/`); HANDOFF.md, BIG_PICTURE.md, DESIGN_IDEAS.md, questions/ (repo, branch claude/generator-v2).

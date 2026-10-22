@@ -6,7 +6,7 @@
 | Coordinator | project chat | routing, moderator check every 30 min, Dave's reports, memory |
 | Technical Director + Guru | Tyler_Guru_SenDev | tech/ docs, approvals, build numbers, question page and test card, BEST_PRACTICES daily check, HANDOFF.md. Docs only, no game code |
 | World | Sonny | ground, loading, tunnels, bracing, collapse, worldgen tests, water sim, ice, swim |
-| Items and World objects | Radar | items, crafting, NPCs, animals, buildings, trade |
+| Items and World objects | Sal_Crafts | items, crafting, NPCs, animals, buildings, trade |
 | Systems | Steve_ProblemSolver (was Tyler_002; on demand) | server, network, HUD, movement, performance, saves, crash hunt |
 | Art and Sound | Kathleen_ArtisticDirector | look, animation, audio |
 | Local runner | MikeW_LocalAgent (Dave's PC) | warning count, headless tests, GPU/editor checks, long runs |
@@ -30,7 +30,7 @@ Short, voice friendly: "Finished: <job>", "Test done: X pass, Y fail" with one l
 - Rendering/GPU audit (Willy's RENDER_AUDIT.md, Ultra idle GPU-bound): assigned to Steve_ProblemSolver (performance) with Kathleen_ArtisticDirector for shaders.
 - Warning-count tool (`tools/check_warnings.sh`, Willy's): maintained by MikeW, run on demand.
 - Reviews of pushes (Steve's): Technical Director.
-- Logout flag for collapse (Steve_ProblemSolver), nearest-rest lookup (Radar), flag read in collapse (Sonny): unchanged, Sonny now owns the collapse side.
+- Logout flag for collapse (Steve_ProblemSolver), nearest-rest lookup (Sal_Crafts), flag read in collapse (Sonny): unchanged, Sonny now owns the collapse side.
 - Bake bundle steps for Dave (Steve's): Technical Director writes them, Sonny supplies the water/ground part.
 
 ## Efficiency review (kept from the earlier version)

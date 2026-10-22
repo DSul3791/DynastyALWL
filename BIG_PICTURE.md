@@ -8,6 +8,6 @@
 
 **What is built (see HANDOFF.md).** Generated terrain and water simulation, flora, walking/swimming/sleeping, items and crafting, campfire, foundations and walls, test NPCs (Hob, Edda), tunnel watch (off).
 
-**Who does what.** Coordinator (routes, reports to Dave); Technical Director + Guru (docs, approvals, best practices); Sonny (ground and water); Radar (items, crafting, NPCs, buildings); Steve_ProblemSolver (server, network, UI, performance, saves); Kathleen_ArtisticDirector (art and sound); MikeW_LocalAgent (runs on Dave's PC).
+**Who does what.** Coordinator (routes, reports to Dave); Technical Director + Guru (docs, approvals, best practices); Sonny (ground and water); Sal_Crafts (was Radar: items, crafting, NPCs, buildings); Steve_ProblemSolver (server, network, UI, performance, saves); Kathleen_ArtisticDirector (art and sound); MikeW_LocalAgent (runs on Dave's PC).
 
 **How we work.** One-page summary: tech/HOW_WE_WORK.md. Read tech/BEST_PRACTICES.md daily and before anything new. Dave wants SHORT reports. Questions for Dave go on the question page; blurts go to tech/IDEAS.md; priorities are P0 to P3. Details: HANDOFF.md, tech/PROCESS.md.
