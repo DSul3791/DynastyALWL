@@ -1,8 +1,3 @@
-## rv-warning-baseline | Commit the current warning list (233) as a baseline file so reports show only NEW warnings? BP-C01.
-- Yes (recommended)
-- Keep as is
-- Decide later
-
 ## rv-bp-digest | Everyone reads the 80-entry best practices every day (costly; research says long instruction files get ignored). Replace with a 15-line digest per role plus the changelog lines? BP-T25.
 - Yes, role digests (recommended)
 - Keep reading the whole document
