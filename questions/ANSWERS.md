@@ -236,3 +236,7 @@ Answered: 2026-10-22 18:33 UTC
 Answer: No: The spear is not pointy. It should be, and I can’t tell what all the other things are. I think I recognized the cordage. and the bone looks fine.
 Answered: 2026-10-22 19:12 UTC
 
+## chk-looks2 | Check batch 2 of basic item looks: tools, kits and containers. Do they read as the right things? (the bone is now dimmer)
+Answer: No: Anything that’s in a container or that is a container like a potion or a bottle or something with its own name needs to have its own colour so we learned to recognize the colours and use very separate colours nice bowl, green, blue, red, yellow, pink purple, etc.
+Answered: 2026-10-22 19:13 UTC
+
