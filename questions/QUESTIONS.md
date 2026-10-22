@@ -1,6 +1,3 @@
-## collapse-plan-8 | Should the collapse stay OFF until your second approval and a test card? (The warning shaking and messages are built but never fire while it is off.)
-[check]
-
 ## roofs-pieces | Should each angle have a straight slope piece, an outside (hip) corner piece and an inside (valley) corner piece, 6 roof pieces per tier look?
 Image: questions/img/tiers_roof_pieces.png
 [check]
