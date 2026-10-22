@@ -280,3 +280,7 @@ Answered: 2026-10-22 19:56 UTC
 Answer: Approve all five (recommended)
 Answered: 2026-10-22 19:57 UTC
 
+## chk-spades | Check the four spades from above (labelled picture): wooden, stone, iron, steel. Do they look like real spades (D-grip, long handle, pointed blade), and can you tell the four apart?
+Answer: No: Bucket should be made out of wood and look like a wooden bucket. The ax looks like it’s round. It should be a wedge with a sharp edge on the end of a stick, and if you turn it sideways, it would look like a gardening hoe
+Answered: 2026-10-22 20:10 UTC
+
