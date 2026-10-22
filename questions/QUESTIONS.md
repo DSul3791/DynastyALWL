@@ -13,9 +13,6 @@
 ## blueprint-5 | Taking down an unfinished blueprint returns every item put in?
 [check]
 
-## blueprint-6 | Foundation snap range about 6 m (very wide)?
-[check]
-
 ## blueprint-7 | Rename cordage to Twine in names only, id unchanged so saves keep working?
 [check]
 
