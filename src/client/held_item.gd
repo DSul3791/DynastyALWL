@@ -720,7 +720,7 @@ func _mount_model() -> void:
 func _mount_model_third(kind: String) -> void:
 	_avatar_rig.hand_mount_r.add_child(_model)
 	var turn: Basis = Basis(Vector3.RIGHT, deg_to_rad(60.0))
-	var grip: Vector3 = Vector3(0.0, -float(GRIP_ALONG_Y.get(kind, 0.0)), 0.0)
+	var grip: Vector3 = Vector3(0.0, float(GRIP_ALONG_Y.get(kind, 0.0)), 0.0)   # the hand sits grip below the model middle, on the handle end (Dave 2026-10-22: it was held by the head)
 
 	if kind == "spear":
 		turn = Basis(Vector3.RIGHT, deg_to_rad(150.0))
