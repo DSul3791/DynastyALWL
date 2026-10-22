@@ -20,7 +20,9 @@ button{font-size:22px;padding:12px 24px;margin-top:10px;border:0;border-radius:8
 <div id="cmd" hidden><dl><dt>status</dt><dd>One-screen report: who is working, parked or blocked, open questions, last backup.</dd><dt>audit</dt><dd>Checks that every decision, answer and idea has an owner and a task, and fixes the gaps.</dd><dt>goodnight</dt><dd>Runs the backup, parks every thread with a handoff, lists tomorrow's first jobs.</dd><dt>idea</dt><dd>Adds what you just said to the ideas ledger; the owner decides now or later.</dd></dl></div>
 <div id="tok" hidden><p>Paste your GitHub token (once):</p><input id="t" type="password"><br><button onclick="saveTok()">Remember</button></div>
 <div id="list">Loading...</div>
+<div id="pokebox"><button onclick="poke()">Tell Claude I answered</button><div class=msg id="pokemsg"></div></div>
 <script>
+const POKE_PR=3;
 const REPO="DSul3791/DynastyALWL",BR="claude/generator-v2",QF="questions/QUESTIONS.md",AF="questions/ANSWERS.md";
 const api=p=>`https://api.github.com/repos/${REPO}/contents/${p}`;
 const tok=()=>{try{return localStorage.getItem("ghtok")||""}catch(e){return ""}};
@@ -80,8 +82,17 @@ async function save(n,id){
       const nt=(pre?pre+"\n":"")+rest.map(x=>x.raw.join("\n").replace(/\n+$/,"")).join("\n\n")+(rest.length?"\n":"");
       if(await put(QF,nt,f.sha,"Answered, removed: "+id))break;
       if(k==4)throw new Error("conflict removing, try again")}
+    try{const a=JSON.parse(localStorage.getItem('answered')||'[]');a.push(id);localStorage.setItem('answered',JSON.stringify(a))}catch(e){}
     load();
   }catch(e){m.innerHTML=`<span class=err>${esc(e.message)}</span>`}}
+async function poke(){
+  const m=document.getElementById('pokemsg');let ids=[];
+  try{ids=JSON.parse(localStorage.getItem('answered')||'[]')}catch(e){}
+  const body={body:"poke "+new Date().toISOString().slice(0,16).replace("T"," ")+" UTC"+(ids.length?" answered: "+ids.join(", "):" (nothing new answered)")};
+  try{const r=await fetch(`https://api.github.com/repos/${REPO}/issues/${POKE_PR}/comments`,{method:"POST",headers:hdr(),body:JSON.stringify(body)});
+    if(r.ok){try{localStorage.removeItem('answered')}catch(e){}m.textContent="Claude has been poked.";return}
+    m.innerHTML=`<span class=err>Poke failed (${r.status}). Your token needs the permission Issues: Read and write on DynastyALWL (GitHub > Settings > Developer settings > Fine-grained tokens > your token > Edit).</span>`}
+  catch(e){m.innerHTML=`<span class=err>${esc(e.message)}</span>`}}
 async function q_get(id){const f=await get(QF);return{text:f.text,sha:f.sha,q:parse(f.text).find(x=>x.id==id)}}
 load();
 </script></body></html>

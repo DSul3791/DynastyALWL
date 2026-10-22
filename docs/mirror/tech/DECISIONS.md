@@ -403,3 +403,9 @@ bk-weekly: keep the LAST backup of each ISO week (normally Sunday night); matche
 - 2026-10-22 18:35 Guru: Dave answered bake-plan: approve as written, so BP-T31 is approved. cl-tests: regroup the 11 old checks into one test card after the restart work, dropping any that no longer apply (job: Guru, with owners' ready-statements, as Things-to-check cards). cmd-ok: BP-T29 approved.
 
 - 2026-10-22 18:40 Guru: Dave answered nf-ok (17:19): BP-T30 never-forget rules approved for every thread.
+- 2026-10-22 18:45 Guru: merged claude/mike-local-check (tools/local_check.sh, godot shim, warning baseline 233; tools only, no build number). Baseline updates are Technical Director only.
+- 2026-10-22 18:50 Guru: reviewed build 650 (saved positions, protocol 69): approved with notes; DESIGN_CHANGELOG line added; merge after MikeW's headless resume test passes.
+- 2026-10-22 18:55 Guru: merged mike-bake-guard (BP-T31 guard in local_check.sh; use CHANGE_LABEL=RUNTIME|RESTART|BAKE).
+- 2026-10-22 19:05 Guru: merged sal-rest-point (651) and sal-piecelook (652); MikeW headless run requested.
+
+- 2026-10-22 19:40 Guru: Poke button built (Dave 17:34). Standing draft PR #3 'QA poke' (branch qa-poke, never merge). The page comments on it with Dave's token (needs Issues: Read and write). Coordinator subscribes to PR #3. Documented in QA_SYSTEM.md.

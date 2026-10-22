@@ -31,6 +31,13 @@ Written 2026-10-22 by the Guru. Goal: one phone-friendly page where the owner an
 - Watching: `tools/watch_answers.sh` remembers the last commit SHA of ANSWERS.md and QUESTIONS.md and uses an ETag, so an unchanged poll is a free HTTP 304 and prints nothing. Run it under a Monitor so the AI wakes only on a printed line. Never generate questions because time passed.
 - Style: numbered steps whenever Dave must act; succinct; "Question added: <title>".
 
+## 5b. Poke button (Dave 17:34): wake Claude without a timer
+- The page has a button "Tell Claude I answered". It posts one comment ("poke <UTC time> answered: <ids>") on a standing DRAFT pull request, DSul3791/DynastyALWL PR #3 "QA poke" (branch qa-poke, base claude/generator-v2). NEVER merge or close it; never delete the branch.
+- The coordinator session subscribes to PR #3 (subscribe_pr_activity); a comment wakes it, so idle cost is zero. On a poke: run `tools/watch_answers.sh once`, process only new answers (BP-T33), reply to the asking threads.
+- Needs the token permission Issues: Read and write on DynastyALWL (the token that already has Contents). Dave adds it once: GitHub > Settings > Developer settings > Fine-grained tokens > the token > Edit > Repository permissions > Issues: Read and write > Update. No new token to paste.
+- Answered ids are remembered in the browser (localStorage "answered") and sent with the next poke.
+- Fallback if the permission is not given: tell the coordinator in chat; the 5-minute watcher (tools/watch_answers.sh) still works.
+
 ## 6. Lessons and gotchas
 - A locally saved copy of qa.html goes stale: Dave did not see a new button. Open the repo copy after Pull, or use the hosted page.
 - GitHub "Raw" shows source in the browser, not the page; that is why a Pages address is needed.
