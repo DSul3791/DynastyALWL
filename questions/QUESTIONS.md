@@ -1,6 +1,6 @@
 ## blueprint-plan | THE BLUEPRINT BUILD SYSTEM IN SHORT (Sal's design). Have you read this?
 Note: 1. A builder's mallet replaces the kits. The mouse wheel cycles piece type, then tier. A click places a see-through blueprint that shows its cost.
-Note: 2. Every piece needs a matching foundation (small foundations too).
+Note: 2. Every building starts with a foundation. You place a foundation anywhere level enough to hide its whole bottom; on a slope you level the ground first. Foundations join side by side to make the building shape and the floor. You build up from them. Pillars snap to the centre or the 4 corners of a foundation or ceiling. Most pieces snap to most other pieces in a sensible way. Roof pieces come in 45 and 65 degree slopes, each with corner pieces.
 Note: 3. A blueprint tracks what it needs and what it has so far.
 Note: 4. Press E, or drag a stack onto it, to add items in any order. NPC builders will use the same action later.
 Note: 5. Nothing finishes before the pieces it depends on (foundation, then walls, then roof).
@@ -24,8 +24,8 @@ Image: questions/img/tiers_walls_v3.png
 Image: questions/img/tiers_log_corner.png
 [check]
 
-## found-metres | Foundation sizes in metres: small cell 2 m (1x1 foundation = 2x2 m, 2x2 foundation = 4x4 m), large cell 3 m (1x1 = 3x3 m, 2x2 = 6x6 m). Pieces snap from about 6 m away. Right?
-Note: Large foundations are for the thick walls (log, cobblestone, mason); small ones are for thin walls. Foundations stack, join side by side, and the wheel raises the first one on the ground.
+## found-metres | Foundation sizes in metres. Small foundation (for thin walls): 2 x 2 m, or 4 x 4 m as a double. Large foundation (for thick walls: log, cobblestone, mason): 3 x 3 m, or 6 x 6 m as a double. Pieces snap from about 6 m away. Are these sizes right?
+Note: Foundations stack, join side by side, and the mouse wheel raises the first one while it is on the ground. A foundation can only go where the ground is level enough to hide its whole bottom; slopes are levelled first.
 [check]
 
 ## collapse-plan | THE TUNNEL COLLAPSE IN SHORT (Steve's design, built from your earlier answers). Have you read this?
