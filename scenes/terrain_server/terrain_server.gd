@@ -359,6 +359,7 @@ func _ready() -> void:
 	trade.npcs = npcs
 	trade.game_seconds = func(): return game_clock.seconds
 	trade.setup(store_dir)
+	@warning_ignore("confusable_local_declaration")
 	trade.send_shop = func(peer, npc_id, title, ids, pay, got, buys, tired_ids, tired, stock, supply_milli, purse): net.shop.rpc_id(peer, npc_id, title, ids, pay, got, buys, tired_ids, tired, stock, supply_milli, purse)
 	dialogue.trade = trade
 	@warning_ignore("confusable_local_declaration")

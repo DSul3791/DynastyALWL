@@ -111,12 +111,14 @@ func _init() -> void:
 	cache.setup(dir, {"tile_size_m": 15360.0, "min_tile": -10, "tiles_per_side": 21}, {}, 64)
 	var stream = StreamScript.new()
 	stream.cache = cache
+	@warning_ignore("integer_division")
 	var area := Vector3i(53850 / 16, 430 / 16, 69340 / 16)   # the block under Dave's dumps
 	var kinds: Array = ["uniform air 3.57", "uniform air 1.91", "uniform solid -3.57", "uniform near zero", "mixed surface", "mixed large positive 1.91 / 2.06", "mixed all large positive", "steep", "ore and material"]
 	var n: int = 0
 
 	for kind in kinds:
 		var original: VoxelBuffer = fill(kind, size)
+		@warning_ignore("integer_division")
 		var block: Vector3i = area + Vector3i(n % 3, n / 3 % 2, n / 6)
 		n += 1
 
@@ -211,6 +213,7 @@ func _init() -> void:
 	for t in 4:
 		jobs.append(WorkerThreadPool.add_task(func():
 			for k in 60:
+				@warning_ignore("integer_division")
 				var blk: Vector3i = area + Vector3i(100 + t * 10 + k % 10, k / 10, 300)
 				var kind2: String = kinds[(t * 7 + k) % kinds.size()]
 				var buf: VoxelBuffer = fill(kind2, size)
