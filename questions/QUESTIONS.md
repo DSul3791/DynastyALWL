@@ -14,3 +14,8 @@ Before it: the gate tests pass on your PC and Kathleen reviews the look. Bakes a
 - Approve as proposed (recommended)
 - Approve, but fewer phrases (tell me which in chat)
 - Not yet
+
+## nf-ok | Approve the "never forget" rules for every thread (BP-T30)? Each thread keeps one open-items list, writes down promises at once, checks a six-box "definition of done" before saying done, lists unfinished things in its handoff, and may drop an item only with a one-line reason.
+- Approve as proposed (recommended)
+- Approve, but a lighter checklist (tell me in chat)
+- Not yet
