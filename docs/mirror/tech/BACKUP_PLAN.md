@@ -16,7 +16,7 @@ Inside the zip: the whole `C:\GodotProjects\DynastyALWL` incl. `.git` (folder `D
 8. Report one line to the coordinator: "Backup done: <name>, <size>, restore test OK, culled N" or "Backup FAILED: <step>, <reason>".
 
 ## Retention and cull rules (Dave 2026-10-22 15:32)
-Keep every nightly 30 days. Older: oldest-first; if its ISO week (Mon to Sun, by the date in the NAME) has no survivor, it moves to `weekly\` (rename, same drive) and is kept forever; otherwise it goes to `_trash\`, not deleted. `_trash\` is emptied after 7 days. Nothing in `weekly\` is ever touched by the cull.
+Keep every nightly 30 days. Older: oldest-first; the LAST backup of each ISO week (Mon to Sun, by the date in the NAME; normally Sunday night) moves to `weekly\` (rename, same drive) and is kept forever, the other days of that week go to `_trash\` (Guru changed this from 'oldest' after code review, 2026-10-22 15:50: the code keeps the last of the week, which holds the whole week's work), not deleted. `_trash\` is emptied after 7 days. Nothing in `weekly\` is ever touched by the cull.
 Cull safety:
 - Acts only on files in the backup folder root whose names match `^DynastyALWL_ProjectBackup_\d{4}-\d{2}-\d{2}_\d{4}\.zip$` exactly. Any other file is ignored and listed.
 - Cross-checks the date in the name against the file's modified time; more than 2 days apart = skip and alert.
