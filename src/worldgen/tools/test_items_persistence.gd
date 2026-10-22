@@ -109,12 +109,12 @@ func _init() -> void:
 	for n in range(1000):
 		var cx: int = n % 2
 		var cz: int = (n / 2) % 2
-		var pos: Vector3 = Vector3(float(cx) * 256.0 + 5.0 + float(n % 200), 10.0, float(cz) * 256.0 + 5.0 + float((n * 7) % 200))
+		var pos: Vector3 = Vector3(float(cx) * 256.0 + 5.0 + float(n % 4), 10.0, float(cz) * 256.0 + 5.0 + float((n * 7) % 4))
 
 		if s.drop_in_world(stone, 1, pos):
 			accepted += 1
 
-	check(accepted == 4 * ItemsScript.MAX_WORLD_ITEMS_PER_CHUNK and s.world_item_count() == accepted, "world items stop at the chunk cap (%d accepted of 1000)" % accepted)
+	check(accepted == 4 * ItemsScript.MAX_DROPPED_NEAR and s.world_item_count() == accepted, "world items stop at the near-spot cap (%d accepted of 1000)" % accepted)
 
 	# Fires: 40 kits in one chunk give 8 fires.
 	s.peer_connected_hello(1, "abcdef123456")
@@ -130,7 +130,7 @@ func _init() -> void:
 
 		s.action(1, Net.ACT_PLACE, slot, 0, 0, Vector3(1030.0 + float(n) * 4.0 + 1.0, 10.0, 1000.0))
 
-	check(s.world_item_count() - before_fires == ItemsScript.FIRES_PER_CHUNK, "fires stop at the chunk cap (%d)" % (s.world_item_count() - before_fires))
+	check(s.world_item_count() - before_fires == ItemsScript.FIRES_PER_CHUNK, "fires stop at the near-spot cap (%d)" % (s.world_item_count() - before_fires))
 
 	# Saplings: 400 stumps in one chunk, about half take, capped at 64.
 	s.world_seed = 3
@@ -144,7 +144,7 @@ func _init() -> void:
 	for sapling in s._saplings:
 		in_chunk += 1
 
-	check(in_chunk > 0 and in_chunk <= ItemsScript.SAPLINGS_PER_CHUNK, "saplings stop at the chunk cap (%d)" % in_chunk)
+	check(in_chunk > 0 and in_chunk <= ItemsScript.SAPLINGS_PER_CHUNK, "saplings stop at the near-spot cap (%d)" % in_chunk)
 
 	# 1000 trunk and stump records across 40 chunks: save and reload time and size.
 	for n in range(1000):

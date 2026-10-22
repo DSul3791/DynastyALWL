@@ -18,7 +18,8 @@ const Net := preload("res://src/stream/terrain_net.gd")
 
 const VERSION := 1
 const INVENTORY_VERSION := 2            # 2 added wear per slot; version 1 files load with zero wear
-const MAX_WORLD_ITEMS_PER_CHUNK := 64    # chunks are 256 m
+const MAX_DROPPED_NEAR := 64             # loose dropped items allowed within DROP_CROWD_M of a new drop
+const DROP_CROWD_M := 12.0
 const WORLD_ITEM_LIFETIME_S := 1200.0    # real seconds until a dropped item despawns
 const CHUNK_M := 256.0
 const NEAR_M := 100.0                    # items this close are sent to a player
@@ -535,14 +536,20 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 	if count <= 0 or number <= 0:
 		return false
 
-	var chunk: Vector2i = _chunk_of(position)
+	# Only loose dropped things near the spot count: felled trunks, stumps, fires, structures, carcasses and natural scatter are not
+	# "dropped" and last far longer (Dave 2026-10-22: a drop was refused with nothing in sight, the chunk was full of stumps and trunks).
 	var here: int = 0
 
 	for id in _items:
-		if not _items[id].has("scatter") and _chunk_of(_items[id]["pos"]) == chunk:
+		var other: Dictionary = _items[id]
+
+		if other.has("scatter") or other.has("struct") or other.has("fire") or other.has("tree"):
+			continue
+
+		if Vector2(other["pos"].x - position.x, other["pos"].z - position.z).length() <= DROP_CROWD_M:
 			here += 1
 
-	if here >= MAX_WORLD_ITEMS_PER_CHUNK:
+	if here >= MAX_DROPPED_NEAR:
 		return false
 
 	_items[_next_id] = {"number": number, "count": count, "pos": position, "left": WORLD_ITEM_LIFETIME_S, "wear": item_wear}
@@ -1032,7 +1039,7 @@ func _drop(peer: int, inv, slot: int, count: int, at: Vector3) -> void:
 	var amount: int = mini(count, inv.counts[slot])
 
 	if not drop_in_world(number, amount, spot, inv.wear[slot]):
-		_say(peer, "Too many things already lie here. Pick some up or move a little way off.")
+		_say(peer, "Too many dropped things already lie within a few steps. Pick some up or move a little way off.")
 		return
 
 	inv.take_from_slot(slot, amount)

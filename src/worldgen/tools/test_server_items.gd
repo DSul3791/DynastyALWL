@@ -128,7 +128,7 @@ func _init() -> void:
 
 	for n in range(100):
 		items.drop_in_world(stone, 1, Vector3(10.0, 0.0, 10.0))
-	check(items.world_item_count() == ItemsScript.MAX_WORLD_ITEMS_PER_CHUNK + 1, "chunk cap holds")
+	check(items.world_item_count() == ItemsScript.MAX_DROPPED_NEAR + 1, "dropped cap near a spot holds")
 
 	items.tick(ItemsScript.WORLD_ITEM_LIFETIME_S + 1.0)
 	check(items.world_item_count() == 0, "items despawn")
