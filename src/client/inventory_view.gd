@@ -135,6 +135,7 @@ var _queue_box: VBoxContainer
 var _queue_head_button: Button
 var _queue_next_msec: int = 0
 var _world: Dictionary = {}        # id -> {node, number, count, pos}
+var ladders: Dictionary = {}       # id -> {pos, yaw} of every placed ladder (state 31), for ladder_climb.gd
 var _prompt_next_msec: int = 0
 var _notice_until_msec: int = 0
 var _collide: Array = []              # [node, StaticBody3D] trunks whose collider is on only near the player
@@ -1533,6 +1534,10 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 				roof_key = cover_index.add_roof(CoverScript.box_roof(Vector2(row[3].x, row[3].z), 1.2, 1.2, yaw, row[3].y - 0.5, row[3].y + 2.6))
 
 			_world[id] = {"node": node, "number": row[1], "count": 1, "pos": row[3], "state": state, "light": null, "roof": roof_key, "yaw": rad_to_deg(yaw)}
+
+			if StructureLook.look_of(state) == "ladder":
+				ladders[id] = {"pos": row[3], "yaw": rad_to_deg(yaw)}
+
 			continue
 
 		if state >= 3:
@@ -1666,6 +1671,7 @@ func _forget(id: int) -> void:
 
 	entry["node"].queue_free()
 	_world.erase(id)
+	ladders.erase(id)
 
 
 # The look of what is built lives in building_look.gd (Art direction); these keep the call sites and the "Light" child.
