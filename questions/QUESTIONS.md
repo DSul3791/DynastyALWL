@@ -1,7 +1,3 @@
-## pillars-looks | Should pillars come as round log post, squared timber, stone pillar and mason column?
-Image: questions/img/tiers_roof_pieces.png
-[check]
-
 ## found-start | Does every building start on a foundation, with foundations joined side by side to make the floor shape, and you build up from them?
 Image: questions/img/tiers_roof_pieces.png
 [check]
