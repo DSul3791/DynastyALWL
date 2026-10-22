@@ -15,6 +15,8 @@ const CODE_SOURCES := ["stone", "stick", "log", "bark", "leaves", "seed_bundle",
 
 const MAX_INGREDIENTS := 6   # the craft screen lists every ingredient in a scrolling detail area and the server crafts any count (test_server_items); raise further here only
 
+const DAVE_NAMES := ["Roast Beast"]   # names Dave chose himself (2026-10-22): they read like a verb and are the real name
+
 var errors: int = 0
 var warnings: int = 0
 
@@ -64,6 +66,9 @@ func _check_name(name: String, where: String) -> void:
 		return
 
 	var first: String = words[0].to_lower()
+
+	if name in DAVE_NAMES:
+		return
 
 	if first in VERB_FIRST_WORDS or first in ["a", "an", "the"]:
 		fail("%s: name '%s' starts with a verb or an article (names are plain nouns)" % [where, name])

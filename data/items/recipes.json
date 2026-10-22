@@ -2310,7 +2310,7 @@
 		},
 		"cook_feast_roast": {
 			"number": 118,
-			"name": "Feast roast",
+			"name": "Roast Beast",
 			"needs": [
 				[
 					"raw_meat",

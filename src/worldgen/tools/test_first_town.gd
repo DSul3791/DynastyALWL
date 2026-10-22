@@ -174,7 +174,7 @@ func _init() -> void:
 	var give: int = choice_index("I have your firewood.")
 	check(give >= 0, "with the firewood in the pack the hand-over choice appears")
 	say(give)
-	check(count("firewood") == 1 and count("roast_forage") == 2 and items.coins_of(1) == 5 and items.rep_points(1, "hob") == 1, "the reward is two roast forage, five copper and a reputation point")
+	check(count("firewood") == 1 and count("roast_forage") == 2 and items.coins_of(1) == 5 and items.rep_points(1, "hob") == 1, "the reward is two Campfire Stew, five copper and a reputation point")
 	mark("quest done")
 
 	# 6. Trade: sell some stones and the spare log, then buy a bandage.

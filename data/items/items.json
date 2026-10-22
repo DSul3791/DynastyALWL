@@ -182,8 +182,8 @@
 		},
 		"roast_forage": {
 			"number": 15,
-			"name": "Roasted forage",
-			"description": "Foraged food cooked over a fire.",
+			"name": "Campfire Stew",
+			"description": "A bowl of chunky vegetable soup, simmered over a fire.",
 			"kind": "food",
 			"stack": 20,
 			"look_alikes": [],
@@ -2097,7 +2097,7 @@
 		},
 		"feast_roast": {
 			"number": 191,
-			"name": "Feast roast",
+			"name": "Roast Beast",
 			"description": "Spiced, fat-basted roast. The best meal a campfire makes.",
 			"kind": "food",
 			"stack": 10,
