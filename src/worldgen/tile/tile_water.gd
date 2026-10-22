@@ -2005,12 +2005,14 @@ func _cut_starter_river(source: int, starter: Dictionary, river_rules: Dictionar
 	var walker: int = goal_node
 
 	while walker != -1:
+		@warning_ignore("integer_division")
 		coarse_path.append(Vector2(float((walker % coarse) * step), float((walker / coarse) * step)))
 		walker = came[walker]
 
 	coarse_path.reverse()
 	var path: PackedVector2Array = _smooth_path(coarse_path, river_rules)
 	# Start exactly at the lake's edge cell so the lake has to spill into the channel.
+	@warning_ignore("integer_division")
 	path.insert(0, Vector2(float(source % samples), float(source / samples)))
 	starter_path = path
 

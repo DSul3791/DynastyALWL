@@ -64,6 +64,7 @@ func _init() -> void:
 	calm.resize(count * count * 2)
 	var pond_sheet: PackedVector3Array = WaterGrid.ice_triangles({"count": count, "spacing": 8.0, "levels": pond, "wet": 256, "vel": calm})
 	var river_sheet: PackedVector3Array = WaterGrid.ice_triangles({"count": count, "spacing": 8.0, "levels": river, "wet": 72, "vel": calm})
+	@warning_ignore("integer_division")
 	_check(pond_sheet.size() >= 6 * 15 * 15 and absf(pond_sheet[0].y - 100.0) < 0.001, "a pond gets an ice sheet over its whole surface (%d triangles)" % (pond_sheet.size() / 3))
 	_check(river_sheet.is_empty(), "a river never gets ice")
 	var running: PackedFloat32Array = calm.duplicate()

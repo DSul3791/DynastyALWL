@@ -88,11 +88,13 @@ func _init() -> void:
 
 	print("river cross-section triples %d, flat within %.0f cm: %d (%.1f percent), worst spread %.2f m; shore pairs %d, water more than 4 m above its bank: %d" % [triples, FLAT_M * 100.0, flat, 100.0 * float(flat) / maxf(float(triples), 1.0), worst, checked_pairs, uphill])
 	spreads.sort()
+	@warning_ignore("integer_division")
 	print("spread percentiles (m): 50 %.3f, 75 %.3f, 90 %.3f, 99 %.3f" % [spreads[spreads.size() / 2], spreads[spreads.size() * 3 / 4], spreads[spreads.size() * 9 / 10], spreads[spreads.size() * 99 / 100]])
 	print("water far above bank at: ", hung.slice(0, 12))
 	_check(triples > 100, "enough river to check (%d triples)" % triples)
 	# The 3 cm goal (Report 17 C) is for the drawn surface (water_grid smoothing); the simulation's own levels on the 8 m grid are
 	# only guarded against getting worse: median spread across a river and its 90th percentile (measured 2026-10-21: 0.19 and 0.73 m).
+	@warning_ignore("integer_division")
 	_check(spreads[spreads.size() / 2] <= 0.25 and spreads[spreads.size() * 9 / 10] <= 0.9, "the simulation's cross-sections stay no worse than the baseline (median %.2f m, 90th %.2f m)" % [spreads[spreads.size() / 2], spreads[spreads.size() * 9 / 10]])
 	_check(uphill <= 60, "few river cells stand more than 4 m above the bank beside them (%d, baseline 46: falls and dams)" % uphill)
 	print("river surface: %d failures" % failures)

@@ -82,6 +82,7 @@ func _init() -> void:
 	var kb: PackedInt32Array = east[1]
 
 	for k in ka:
+		@warning_ignore("integer_division")
 		sa.add_water(k % n, k / n, 1.0)
 
 	var before: float = sa.total_volume() + sb.total_volume()

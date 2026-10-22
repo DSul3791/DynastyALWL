@@ -759,7 +759,7 @@ static func moved(old: Dictionary, new: Dictionary, limit: float) -> bool:
 
 # The levels the fall finder works on: the drawn levels plus thin running water on the
 # baked channels (TileTerrainData.fall_levels), so a film down a cliff still makes a fall.
-static func _fall_grid(generator, data, origin: Vector2, count: int, spacing: float, levels: PackedFloat32Array) -> PackedFloat32Array:
+static func _fall_grid(_generator, data, origin: Vector2, count: int, spacing: float, levels: PackedFloat32Array) -> PackedFloat32Array:
 	if data.fall_levels.size() != data.samples * data.samples:
 		return levels
 

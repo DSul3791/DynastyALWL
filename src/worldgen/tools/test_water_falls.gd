@@ -31,7 +31,7 @@ func _init() -> void:
 		levels[5 * count + i] = level
 		vel[(5 * count + i) * 2] = 6.0
 
-	var bed: Callable = func(x: float, z: float) -> float: return levels[5 * 12 + clampi(int(round(x / 8.0)), 0, 11)] - 0.5
+	var bed: Callable = func(x: float, _z: float) -> float: return levels[5 * 12 + clampi(int(round(x / 8.0)), 0, 11)] - 0.5
 	var falls: Array = FallsScript.find(null, Vector2.ZERO, count, 8.0, levels, vel, bed)
 	_check(falls.size() == 1, "one fall found (%d)" % falls.size())
 
@@ -65,8 +65,8 @@ func _init() -> void:
 	for n in range(wide_vel.size()):
 		wide_vel[n] *= 1.0
 
-	var strong: Array = FallsScript.find(null, Vector2.ZERO, count, 8.0, levels, vel, func(x: float, z: float) -> float: return levels[5 * 12 + clampi(int(round(x / 8.0)), 0, 11)] - 1.5)
-	var weak: Array = FallsScript.find(null, Vector2.ZERO, count, 8.0, levels, vel, func(x: float, z: float) -> float: return levels[5 * 12 + clampi(int(round(x / 8.0)), 0, 11)] - 0.1)
+	var strong: Array = FallsScript.find(null, Vector2.ZERO, count, 8.0, levels, vel, func(x: float, _z: float) -> float: return levels[5 * 12 + clampi(int(round(x / 8.0)), 0, 11)] - 1.5)
+	var weak: Array = FallsScript.find(null, Vector2.ZERO, count, 8.0, levels, vel, func(x: float, _z: float) -> float: return levels[5 * 12 + clampi(int(round(x / 8.0)), 0, 11)] - 0.1)
 	_check(strong.size() == 1 and weak.size() == 1 and float(strong[0]["flow"]) > float(weak[0]["flow"]), "deeper water carries more flow")
 
 	# A chunk grid with falls survives encode and decode with its levels.

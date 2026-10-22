@@ -52,7 +52,6 @@ var _links: Array = []                     # {a, b, ka, kb}: shared border cell 
 var _edits: Array = []                     # [center, radius, filled] of every dig and fill, replayed into tiles as they load
 var _used: Dictionary = {}                 # tile -> msec of its last tick (least recently used goes first)
 var _saved: Dictionary = {}                # tile -> true when depths were saved by an unload this session
-var _published: Dictionary = {}            # tile -> {levels, falls} waiting for the main thread
 var _baseline: int = 0                    # process memory before any water sim (the limit counts what the water adds)
 var _stats: Dictionary = {"moved_m3": 0.0, "memory": 0, "loaded": 0}
 

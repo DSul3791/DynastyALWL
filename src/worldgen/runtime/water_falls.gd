@@ -36,7 +36,7 @@ const START_SPEED_M_S := 0.3      # with thin water in the levels, a fall starts
 # also holds thin water that is not drawn (water_live._fall_levels). A fall must then start
 # in drawn, running water: owner report (2026-10-20, build 232): thin films left on a pond's
 # bank (rain, sloshing) made rows of fall ribbons down the bank into the pond.
-static func find(generator, origin: Vector2, count: int, spacing: float, levels: PackedFloat32Array, vel: PackedFloat32Array, ground: Callable, drawn: PackedFloat32Array = PackedFloat32Array(), drawn_vel: PackedFloat32Array = PackedFloat32Array()) -> Array:
+static func find(_generator, origin: Vector2, count: int, spacing: float, levels: PackedFloat32Array, vel: PackedFloat32Array, ground: Callable, drawn: PackedFloat32Array = PackedFloat32Array(), drawn_vel: PackedFloat32Array = PackedFloat32Array()) -> Array:
 	var link: PackedInt32Array = PackedInt32Array()
 	link.resize(count * count)
 	link.fill(-1)
@@ -103,9 +103,11 @@ static func find(generator, origin: Vector2, count: int, spacing: float, levels:
 		# Standing water is not a fall (a spring's mound, the pond beside a lip): a fall starts
 		# in shallow water and the ground itself drops along it.
 		var top_x: float = origin.x + float(p % count) * spacing
+		@warning_ignore("integer_division")
 		var top_z: float = origin.y + float(p / count) * spacing
 		var end: int = chain[chain.size() - 1]
 		var bottom_x: float = origin.x + float(end % count) * spacing
+		@warning_ignore("integer_division")
 		var bottom_z: float = origin.y + float(end / count) * spacing
 
 		if levels[p] - float(ground.call(top_x, top_z)) > START_DEPTH_MAX_M:
@@ -205,6 +207,7 @@ static func _chain_flow(chain: PackedInt32Array, origin: Vector2, count: int, sp
 
 	for p in chain:
 		var x: float = origin.x + float(p % count) * spacing
+		@warning_ignore("integer_division")
 		var z: float = origin.y + float(p / count) * spacing
 		var depth: float = maxf(levels[p] - float(ground.call(x, z)), 0.0)
 		var speed: float = Vector2(vel[p * 2], vel[p * 2 + 1]).length() if vel.size() == levels.size() * 2 else 0.0
@@ -213,6 +216,7 @@ static func _chain_flow(chain: PackedInt32Array, origin: Vector2, count: int, sp
 			flows.append(depth * speed * spacing)
 
 	flows.sort()
+	@warning_ignore("integer_division")
 	return clampf(float(flows[flows.size() / 2]), 0.0, FLOW_MAX_M3S) if not flows.is_empty() else 0.0
 
 
@@ -226,11 +230,13 @@ static func _river_width(chain: PackedInt32Array, count: int, spacing: float, le
 
 	var p: int = chain[0]
 	var q: int = chain[1]
+	@warning_ignore("integer_division")
 	var along: Vector2 = Vector2(float(q % count - p % count), float(q / count - p / count)).normalized()
 	var across: Vector2 = Vector2(-along.y, along.x)
 	var widths: Array = []
 
 	for back in range(0, 6):
+		@warning_ignore("integer_division")
 		var centre: Vector2 = Vector2(float(p % count), float(p / count)) - along * float(back)
 		var first: int = _wet_at(centre, count, levels)
 
@@ -239,11 +245,11 @@ static func _river_width(chain: PackedInt32Array, count: int, spacing: float, le
 
 		var cells: int = 1
 
-		for sign in [-1.0, 1.0]:
+		for direction in [-1.0, 1.0]:
 			var step: int = 1
 
 			while step < 12:
-				if _wet_at(centre + across * sign * float(step), count, levels) < 0:
+				if _wet_at(centre + across * direction * float(step), count, levels) < 0:
 					break
 
 				cells += 1
@@ -255,6 +261,7 @@ static func _river_width(chain: PackedInt32Array, count: int, spacing: float, le
 		return 0.0
 
 	widths.sort()
+	@warning_ignore("integer_division")
 	return float(widths[widths.size() / 2])
 
 
@@ -276,6 +283,7 @@ static func _fall(chain: PackedInt32Array, flow: float, origin: Vector2, count: 
 	for n in range(chain.size()):
 		var a: int = chain[n]
 		var ax: float = float(a % count) * spacing
+		@warning_ignore("integer_division")
 		var az: float = float(a / count) * spacing
 
 		if n == chain.size() - 1:
@@ -285,6 +293,7 @@ static func _fall(chain: PackedInt32Array, flow: float, origin: Vector2, count: 
 
 		var b: int = chain[n + 1]
 		var bx: float = float(b % count) * spacing
+		@warning_ignore("integer_division")
 		var bz: float = float(b / count) * spacing
 		var steps: int = maxi(int(ceil(Vector2(bx - ax, bz - az).length() / STEP_M)), 1)
 

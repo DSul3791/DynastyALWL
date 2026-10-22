@@ -203,17 +203,17 @@ func tick(multiplier: float) -> float:
 # between water and bank. A channel cell drawn last publish stays drawn, at its true level,
 # until its water is thinner than HOLD_M, so a shallow reach sloshing around the 12 cm draw
 # depth is a steady ribbon. `held` is 1 on the channel cells drawn last time (updated here).
-static func _hold_channel(sim, levels: PackedFloat32Array, channel: PackedInt32Array, held: PackedByteArray) -> void:
-	if levels.size() != sim.ground.size():
+static func _hold_channel(water, levels: PackedFloat32Array, channel: PackedInt32Array, held: PackedByteArray) -> void:
+	if levels.size() != water.ground.size():
 		return
 
-	var depth: PackedFloat32Array = sim.get_depth()
+	var depth: PackedFloat32Array = water.get_depth()
 
 	for n in range(channel.size()):
 		var k: int = channel[n]
 
-		if is_nan(levels[k]) and held[n] == 1 and depth[k] >= HOLD_M and sim.ground[k] > 0.0 and not (depth[k] < sim.STEEP_WET_M and sim._is_steep(k)):
-			levels[k] = sim.ground[k] + depth[k]
+		if is_nan(levels[k]) and held[n] == 1 and depth[k] >= HOLD_M and water.ground[k] > 0.0 and not (depth[k] < water.STEEP_WET_M and water._is_steep(k)):
+			levels[k] = water.ground[k] + depth[k]
 
 		held[n] = 0 if is_nan(levels[k]) else 1
 
@@ -223,11 +223,11 @@ static func _hold_channel(sim, levels: PackedFloat32Array, channel: PackedInt32A
 # (sloshing a few cm) drawn above the pond climbed its bank like a wall, so a film is skipped
 # where its bed is within CHANNEL_BANK_M of the drawn water beside it; a cell further above
 # (the fall face, or the ramp below a lip) is drawn.
-static func _show_channel(sim, levels: PackedFloat32Array, channel: PackedInt32Array) -> PackedFloat32Array:
-	if levels.size() != sim.ground.size():
+static func _show_channel(water, levels: PackedFloat32Array, channel: PackedInt32Array) -> PackedFloat32Array:
+	if levels.size() != water.ground.size():
 		return levels
 
-	var depth: PackedFloat32Array = sim.get_depth()
+	var depth: PackedFloat32Array = water.get_depth()
 	var side: int = int(sqrt(float(levels.size())))
 	var drawn: PackedFloat32Array = levels.duplicate()
 
@@ -235,7 +235,7 @@ static func _show_channel(sim, levels: PackedFloat32Array, channel: PackedInt32A
 		if not is_nan(levels[k]) or depth[k] < CHANNEL_WET_M:
 			continue
 
-		var level: float = sim.ground[k] + depth[k]
+		var level: float = water.ground[k] + depth[k]
 		var climbs: bool = false
 		var column: int = k % side
 
@@ -243,7 +243,7 @@ static func _show_channel(sim, levels: PackedFloat32Array, channel: PackedInt32A
 			if n < 0 or n >= levels.size() or absi(n % side - column) > 1:
 				continue
 
-			if not is_nan(drawn[n]) and depth[n] >= CHANNEL_POOL_M and sim.ground[k] <= drawn[n] + CHANNEL_BANK_M:
+			if not is_nan(drawn[n]) and depth[n] >= CHANNEL_POOL_M and water.ground[k] <= drawn[n] + CHANNEL_BANK_M:
 				climbs = true
 				break
 
@@ -259,15 +259,15 @@ static func _show_channel(sim, levels: PackedFloat32Array, channel: PackedInt32A
 # on the face and made no fall. For the fall finder only, the drawn levels plus the thin
 # water on the baked channels: the falls are drawn as ribbons, so this never puts a film on
 # a bank.
-static func _fall_levels(sim, levels: PackedFloat32Array, channel: PackedInt32Array) -> PackedFloat32Array:
-	if levels.size() != sim.ground.size():
+static func _fall_levels(water, levels: PackedFloat32Array, channel: PackedInt32Array) -> PackedFloat32Array:
+	if levels.size() != water.ground.size():
 		return levels
 
-	var depth: PackedFloat32Array = sim.get_depth()
+	var depth: PackedFloat32Array = water.get_depth()
 	var out: PackedFloat32Array = levels.duplicate()
 
 	for k in channel:
 		if is_nan(out[k]) and depth[k] >= FALL_FILM_M:
-			out[k] = sim.ground[k] + depth[k]
+			out[k] = water.ground[k] + depth[k]
 
 	return out
