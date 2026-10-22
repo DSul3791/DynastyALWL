@@ -10,6 +10,8 @@ const TICKS := 9                          # ticks each side of zero (every 5 deg
 const PX_PER_DEGREE := 4.0
 const SIDE := 40.0                        # the ruler stands this far right of the aim point
 const CHECK_SEC := 0.25
+const PIT_M := 1.5                      # ground this much above the eyes all around: in a pit
+const PIT_RING_M := 3.0
 const ROOF_M := 1.2                       # ground this far above the head counts as underground
 const LINE := Color(1.0, 1.0, 1.0, 0.8)
 const MARK := Color(1.0, 0.85, 0.2, 0.95)
@@ -46,13 +48,26 @@ func _process(delta: float) -> void:
 		queue_redraw()
 
 
-# True when solid ground (not a tree or plant) lies over the head.
+# True when solid ground (not a tree or plant) lies over the head, or the player is down in a pit or shaft that is open to the sky:
+# most of the ground 3 m around is at least PIT_M higher than the eyes.
 func _underground() -> bool:
 	if _camera == null or not _camera.is_inside_tree():
 		return false
 
 	var from: Vector3 = _camera.global_position
 	var space: PhysicsDirectSpaceState3D = _camera.get_world_3d().direct_space_state
+	var higher: int = 0
+
+	for k in range(8):
+		var around: Vector3 = from + Vector3(cos(TAU * k / 8.0), 0.0, sin(TAU * k / 8.0)) * PIT_RING_M
+		var down: Dictionary = space.intersect_ray(PhysicsRayQueryParameters3D.create(around + Vector3.UP * 60.0, around + Vector3.DOWN * 4.0))
+
+		if not down.is_empty() and not (down["collider"] as Object).has_meta("species_ids") and (down["position"] as Vector3).y >= from.y + PIT_M:
+			higher += 1
+
+	if higher >= 5:
+		return true
+
 	var skip: Array[RID] = []
 
 	for attempt in range(3):

@@ -22,6 +22,7 @@ const KEEP_LOG_LINES := 300       # Godot log lines in a report
 const MAX_BYTES := 190000
 const FILE_LINES_MAX := 4000      # the breadcrumb file is cut back to its last 400 lines when it grows past this
 
+var last_plain: String = ""       # one plain sentence on what happened to the last run (shown on screen)
 var last_report: String = ""      # file name of the report made at this start ("" when the last run ended cleanly)
 var _file: FileAccess
 var _mutex: Mutex = Mutex.new()
@@ -186,7 +187,43 @@ func _report_of_previous_run() -> String:
 				log_time = modified
 				log_name = file
 
-	return _write_report("The run that ended: " + FileAccess.get_file_as_string(FLAG).strip_edges(), FileAccess.get_file_as_string(FLAG).strip_edges(), log_name)
+	var flag_text: String = FileAccess.get_file_as_string(FLAG).strip_edges()
+	last_plain = _explain(flag_text, log_name)
+	return _write_report("What happened: " + last_plain + "\nThe run that ended: " + flag_text, flag_text, log_name)
+
+
+# One plain sentence on how the last run ended, from its breadcrumbs and Godot's log. A run that never said "clean exit" looks the
+# same whether it crashed, froze, was stopped with the editor's Stop button or killed from Task Manager, so say which signs were found.
+func _explain(flag_text: String, log_name: String) -> String:
+	var bread: PackedStringArray = FileAccess.get_file_as_string(BREAD).split("\n") if FileAccess.file_exists(BREAD) else PackedStringArray()
+	var tail: PackedStringArray = bread.slice(maxi(bread.size() - 40, 0))
+	var log_text: String = ""
+
+	if log_name != "":
+		var all_lines: PackedStringArray = FileAccess.get_file_as_string("user://logs/" + log_name).split("\n")
+		log_text = "\n".join(all_lines.slice(maxi(all_lines.size() - KEEP_LOG_LINES, 0)))
+
+	var joined: String = "\n".join(tail)
+	var last_state: String = ""
+
+	for i in range(tail.size() - 1, -1, -1):
+		if " state " in tail[i]:
+			last_state = tail[i].substr(0, 140)
+			break
+
+	var how: String
+	if "Program crashed" in log_text or "handle_crash" in log_text:
+		how = "The game itself crashed (the engine wrote a crash backtrace)."
+	elif "HUNG" in joined or "WATCHDOG" in joined:
+		how = "The game froze (it stopped responding) and was then closed."
+	elif "QUIT:" in joined:
+		how = "The game quit by itself: " + joined.substr(joined.rfind("QUIT:"), 120).split("\n")[0]
+	elif " ERROR " in joined:
+		how = "The game stopped without a clean exit; script errors were logged just before it."
+	else:
+		how = "The game was closed without a clean exit and nothing went wrong in its log: the editor's Stop button, Task Manager, a power cut or a plain kill look exactly like this."
+
+	return "%s (%s). Last thing it showed: %s" % [how, flag_text, last_state if last_state != "" else "no state line"]
 
 
 # The game is about to quit for a bad reason (server left, cannot connect): writes the report now, from this run's own log.

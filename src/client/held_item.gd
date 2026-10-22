@@ -357,6 +357,8 @@ func _process_body(delta: float) -> void:
 
 	_show_model()
 	_label.text = _caption()
+	if _inv != null:
+		_label.offset_bottom = -float(_inv.text_px(78 + 14 + 8))    # above the hotbar at any text size (Dave, build 617: they overlapped)
 	_place_arms(delta)
 
 	if _arms != null and _arms.visible and _arms.current() != "idle" and not _arms.is_one_shot_playing():

@@ -67,7 +67,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 618
+const BUILD := 619
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -4788,7 +4788,7 @@ func _process(delta: float) -> void:
 	hud.text += "\n" + _ground_health_line()
 
 	if crash_report != null and crash_report.last_report != "" and Time.get_ticks_msec() < _previous_run_note_until_msec:
-		hud.text += "\nThe game closed unexpectedly last time. Report saved: %s. Please commit and push it (GitHub Desktop)." % crash_report.last_report
+		hud.text += "\nLast run did not close cleanly. %s\nReport: %s" % [crash_report.last_plain if crash_report.last_plain != "" else "The game quit for a bad reason.", crash_report.last_report]
 
 	if debug_hud.enabled:
 		hud.text += "\n" + _debug_text(avg_ms, worst_ms)
