@@ -460,3 +460,7 @@ Answered: 2026-10-22 23:24 UTC
 Answer: Yes
 Answered: 2026-10-22 23:25 UTC
 
+## collapse-plan-5 | When it falls, rubble fills about 70% of the space and the top stays open, so you can dig it out. The land above does not sink (at most 1 m under a thin roof). Anyone inside dies and leaves remains and a purse. Floor items are buried; braces and chests inside are destroyed. Is this right?
+Answer: No: Anyone trapped inside dies and leaves everything they have on them according to our death rules already established.
+Answered: 2026-10-22 23:26 UTC
+
