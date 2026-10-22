@@ -224,3 +224,7 @@ Answered: 2026-10-22 17:22 UTC
 Answer: Approve, two stages: basic models and placeholder sounds first, upgrades later (recommended)
 Answered: 2026-10-22 18:32 UTC
 
+## model-look | Basic models and placeholder sounds may differ in colour, size and sound from the final art (stage one). Is that fine for now?
+Answer: Yes, fine for now (recommended)
+Answered: 2026-10-22 18:32 UTC
+
