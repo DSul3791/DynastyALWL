@@ -30,7 +30,7 @@ func on_rows(rows: Array) -> void:
 			var node: Node3D = _make_flock(id) if int(row[1]) == 6 else _make_horse() if int(row[1]) == 7 else _make_fox() if int(row[1]) == 5 else _make_moose() if int(row[1]) == 4 else (_make_wolf() if int(row[1]) == 3 else (_make_deer() if int(row[1]) == 2 else _make_rabbit()))
 			node.position = row[2]
 			add_child(node)
-			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2}
+			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2, "wolf": int(row[1]) == 3}
 
 		_bodies[id]["target"] = row[2]
 		_bodies[id]["heading"] = float(row[3])
@@ -106,6 +106,7 @@ func _process(delta: float) -> void:
 		var b: Dictionary = _bodies[id]
 		var node: Node3D = b["node"]
 		var state: int = b["state"]
+		var before: Vector3 = node.position
 		node.position = node.position.lerp(b["target"], clampf(delta * (10.0 if state == FLEE or state == 11 or state == 14 or state == 15 else 5.0), 0.0, 1.0))
 		node.rotation.y = lerp_angle(node.rotation.y, -float(b["heading"]) - PI * 0.5, clampf(delta * 10.0, 0.0, 1.0))
 		var rig: Node3D = node.get_node("Rig")
@@ -117,7 +118,10 @@ func _process(delta: float) -> void:
 		# Big game (protocol states 10 warn: head down and stamping, 11 charge: gallop, 12 recover): placeholder motion until Mandy animates it.
 		rig.rotation.x = lerp_angle(rig.rotation.x, 0.28 if state == 10 or state == 13 else (0.12 if state == 11 or state == 15 else 0.0), clampf(delta * 8.0, 0.0, 1.0))
 		rig.rotation.z = lerp_angle(rig.rotation.z, roll, clampf(delta * 6.0, 0.0, 1.0))
-		rig.position.y = lerp(rig.position.y, lift + (0.25 * absf(sin(_t * 7.0 + float(b["phase"]))) if state == 9 else 0.0), clampf(delta * 20.0, 0.0, 1.0))
+		if bool(b.get("wolf", false)):
+			_animate_wolf(node, b, state, Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001), delta)
+		else:
+			rig.position.y = lerp(rig.position.y, lift + (0.25 * absf(sin(_t * 7.0 + float(b["phase"]))) if state == 9 else 0.0), clampf(delta * 20.0, 0.0, 1.0))
 
 
 func _material(color: Color) -> StandardMaterial3D:
@@ -132,7 +136,7 @@ func _material(color: Color) -> StandardMaterial3D:
 	return _mats[key]
 
 
-func _ball(parent: Node3D, radius: float, scale_v: Vector3, at: Vector3, color: Color) -> void:
+func _ball(parent: Node3D, radius: float, scale_v: Vector3, at: Vector3, color: Color, rot: Vector3 = Vector3.ZERO) -> void:
 	var mesh: SphereMesh = SphereMesh.new()
 	mesh.radius = radius
 	mesh.height = radius * 2.0
@@ -143,6 +147,7 @@ func _ball(parent: Node3D, radius: float, scale_v: Vector3, at: Vector3, color: 
 	inst.mesh = mesh
 	inst.scale = scale_v
 	inst.position = at
+	inst.rotation = rot
 	inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	parent.add_child(inst)
 
@@ -184,16 +189,104 @@ func _box(parent: Node3D, size: Vector3, at: Vector3, color: Color, rot: Vector3
 	parent.add_child(inst)
 
 
-# A wolf for now (placeholder until Art): the deer shape in grey, a little smaller.
+# The wolf (Dave 2026-10-21): about 1.3 m of body and 0.8 m at the shoulder, grey with a pale belly and muzzle, a deep chest, a thick neck, a
+# long snout, upright ears, a bushy tail and four legs on pivots so they can walk, trot, run and kick. Facing -Z. The pieces are named for
+# `_animate_wolf`: Rig (everything that rolls and crouches), Head, Tail, Leg_FL, Leg_FR, Leg_HL, Leg_HR.
 func _make_wolf() -> Node3D:
-	var node: Node3D = _make_deer()
-	node.scale = Vector3(0.75, 0.75, 0.75)
-	var grey: StandardMaterial3D = _material(Color(0.36, 0.35, 0.34))
+	var root: Node3D = Node3D.new()
+	var rig: Node3D = Node3D.new()
+	rig.name = "Rig"
+	root.add_child(rig)
+	var coat: Color = Color(0.36, 0.35, 0.33)
+	var dark: Color = Color(0.24, 0.23, 0.22)
+	var pale: Color = Color(0.72, 0.69, 0.63)
+	_ball(rig, 0.2, Vector3(0.95, 1.05, 1.5), Vector3(0.0, 0.62, -0.18), coat)      # chest and shoulders, deep
+	_ball(rig, 0.17, Vector3(0.9, 0.95, 1.5), Vector3(0.0, 0.6, 0.28), coat)        # hips
+	_ball(rig, 0.15, Vector3(0.85, 0.7, 1.7), Vector3(0.0, 0.5, 0.05), pale)        # belly
+	_ball(rig, 0.17, Vector3(0.9, 0.8, 1.0), Vector3(0.0, 0.74, -0.36), dark)       # mane over the shoulders
+	var neck: Node3D = Node3D.new()
+	neck.name = "Head"
+	neck.position = Vector3(0.0, 0.66, -0.42)
+	rig.add_child(neck)
+	_ball(neck, 0.12, Vector3(0.85, 0.85, 1.5), Vector3(0.0, 0.04, -0.12), coat)     # neck
+	_ball(neck, 0.11, Vector3(0.9, 0.85, 1.0), Vector3(0.0, 0.06, -0.3), coat)       # head
+	_box(neck, Vector3(0.09, 0.075, 0.2), Vector3(0.0, 0.03, -0.43), pale)          # snout
+	_box(neck, Vector3(0.05, 0.03, 0.05), Vector3(0.0, 0.07, -0.54), Color(0.08, 0.07, 0.07))   # nose
 
-	for child in node.find_children("*", "MeshInstance3D", true, false):
-		(child as MeshInstance3D).material_override = grey
+	for side in [-1.0, 1.0]:
+		_box(neck, Vector3(0.05, 0.1, 0.035), Vector3(side * 0.06, 0.2, -0.28), dark, Vector3(-0.15, 0.0, side * 0.15))   # ears
+		_ball(neck, 0.018, Vector3.ONE, Vector3(side * 0.055, 0.09, -0.4), Color(0.9, 0.7, 0.2))                        # eyes
 
-	return node
+	var tail: Node3D = Node3D.new()
+	tail.name = "Tail"
+	tail.position = Vector3(0.0, 0.66, 0.42)
+	rig.add_child(tail)
+	_ball(tail, 0.08, Vector3(0.8, 0.8, 2.6), Vector3(0.0, -0.08, 0.2), coat, Vector3(0.7, 0.0, 0.0))
+	_ball(tail, 0.05, Vector3(0.8, 0.8, 1.6), Vector3(0.0, -0.2, 0.36), dark, Vector3(0.7, 0.0, 0.0))
+
+	for leg in [["Leg_FL", -1.0, -0.26], ["Leg_FR", 1.0, -0.26], ["Leg_HL", -1.0, 0.3], ["Leg_HR", 1.0, 0.3]]:
+		var pivot: Node3D = Node3D.new()
+		pivot.name = leg[0]
+		pivot.position = Vector3(float(leg[1]) * 0.1, 0.5, float(leg[2]))
+		rig.add_child(pivot)
+		_box(pivot, Vector3(0.09, 0.28, 0.1), Vector3(0.0, -0.13, 0.0), coat)       # upper leg
+		_box(pivot, Vector3(0.06, 0.26, 0.07), Vector3(0.0, -0.36, 0.0), dark)      # lower leg
+		_box(pivot, Vector3(0.075, 0.04, 0.12), Vector3(0.0, -0.49, -0.02), dark)   # paw
+
+	return root
+
+
+# The wolf's legs, head and tail follow what it does: legs swing with the real ground speed (walk, trot, gallop), the head sinks to sniff or
+# stalk, the tail wags at play and hangs low when stalking, a roll kicks the legs up. `speed` is metres a second.
+func _animate_wolf(node: Node3D, b: Dictionary, state: int, speed: float, delta: float) -> void:
+	var rig: Node3D = node.get_node("Rig")
+	var head: Node3D = rig.get_node("Head")
+	var tail: Node3D = rig.get_node("Tail")
+	var gallop: float = clampf((speed - 2.5) / 3.5, 0.0, 1.0)
+	b["gait"] = float(b.get("gait", 0.0)) + speed * delta * lerpf(2.6, 1.8, gallop)
+	var amp: float = clampf(speed / 1.8, 0.0, 1.0) * lerpf(0.5, 0.95, gallop)
+	var swing: float = sin(float(b["gait"]) * TAU * 0.5)
+	var rolling: bool = state == 8
+	var kick: float = sin(_t * 9.0) * 0.6 if rolling else 0.0
+	var legs: Dictionary = {"Leg_FL": swing, "Leg_HR": swing, "Leg_FR": -swing, "Leg_HL": -swing}
+
+	if gallop > 0.5:
+		legs = {"Leg_FL": swing, "Leg_FR": swing * 0.9, "Leg_HL": -swing, "Leg_HR": -swing * 0.9}      # bounding: the pairs move together
+
+	for leg in legs:
+		var pivot: Node3D = rig.get_node(leg)
+		var target: float = float(legs[leg]) * amp + (kick * (1.0 if leg.ends_with("L") else -1.0) + 1.2 if rolling else 0.0)
+		pivot.rotation.x = lerpf(pivot.rotation.x, target, clampf(delta * 18.0, 0.0, 1.0))
+
+	var head_down: float = 0.0
+
+	if state == 6:
+		head_down = 0.55          # stalking: head low, eyes on the prey
+	elif state == 0 and speed < 0.3:
+		head_down = 0.35 + 0.15 * sin(_t * 1.3 + float(b["phase"]))      # grazing wolf: nose to the ground, sniffing
+	elif state == 3:
+		head_down = -0.25         # alert: head high
+	elif state == 7 or gallop > 0.5:
+		head_down = 0.1
+
+	head.rotation.x = lerpf(head.rotation.x, -(head_down + 0.04 * swing * amp), clampf(delta * 8.0, 0.0, 1.0))
+	var tail_target: float = 0.2
+	var tail_wag: float = 0.0
+
+	if state == 6:
+		tail_target = -0.2        # low and straight
+	elif state == 9:
+		tail_target = 0.5
+		tail_wag = sin(_t * 12.0) * 0.5
+	elif gallop > 0.5:
+		tail_target = -0.35       # streaming behind
+
+	tail.rotation.x = lerpf(tail.rotation.x, tail_target, clampf(delta * 6.0, 0.0, 1.0))
+	tail.rotation.y = lerpf(tail.rotation.y, tail_wag, clampf(delta * 10.0, 0.0, 1.0))
+	# Crouch low when stalking, bob with the stride, play bow (front down, hips up) when playing.
+	var crouch: float = -0.12 if state == 6 else 0.0
+	var bob: float = absf(sin(float(b["gait"]) * TAU * 0.5)) * 0.04 * amp
+	rig.position.y = lerpf(rig.position.y, crouch + bob + (0.06 if state == 9 else 0.0), clampf(delta * 10.0, 0.0, 1.0))
 
 
 # A flock of ducks for now (placeholder until Art): 6 to 13 small birds spread over a few metres (one wire record per flock).
