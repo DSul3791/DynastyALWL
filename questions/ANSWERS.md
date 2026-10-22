@@ -496,3 +496,7 @@ Answered: 2026-10-22 23:29 UTC
 Answer: Yes
 Answered: 2026-10-22 23:36 UTC
 
+## found-start | Does every building start on a foundation, with foundations joined side by side to make the floor shape, and you build up from them?
+Answer: Yes
+Answered: 2026-10-22 23:36 UTC
+
