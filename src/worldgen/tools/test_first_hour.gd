@@ -104,6 +104,7 @@ func _init() -> void:
 	queue(2, 1)
 	pass_time(10.0, 0.2)
 	check(count("stone_axe") == 1, "the stone axe is made by hand")
+	items.action(1, Net.ACT_MOVE, items.inventory_of(1).numbers.find(items.table.number_of("stone_axe")), 0, 0, Vector3.ZERO)   # the player puts the axe on the hotbar
 	note("crafting the axe")
 
 	# 3. Fell a tree and work the trunk.
@@ -130,7 +131,9 @@ func _init() -> void:
 		guard += 1
 
 	pass_time(120.0, 0.8)
-	check(count("log") >= 1 and count("leaves") >= 1, "the trunk gives logs and leaves (%d logs, %d leaves)" % [count("log"), count("leaves")])
+	var logs: int = count("log") + (1 if items.shoulder_of(1) != "" else 0)
+	check(logs >= 1 and count("leaves") >= 1, "the trunk gives logs and leaves (%d logs, %d leaves)" % [logs, count("leaves")])
+	items.lay_down_shoulder(1)   # the big log is put down before the next job
 	note("felling and working the tree")
 
 	# 4. A campfire: craft the kit, place it, it starts lit.
