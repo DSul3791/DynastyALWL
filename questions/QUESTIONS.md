@@ -15,3 +15,14 @@ Note: 11. Sal will write the blueprint design and new costs as a short list for 
 
 ## found-sizes | Foundation sizes: 1 x 1, 2 x 2 (small), 4 x 4, 6 x 6, 8 x 8 (large), measured in metres. Right?
 [check]
+
+## chk-plank-v2 | Check the redrawn plank wall (picture): smooth rounded planks outside, the small inset shows the flat rough face inside. Does the plank wall look right now?
+Image: questions/img/tiers_walls_v2.png
+[check]
+
+## chk-doors | Check the door and window designs (picture): five door tiers (twine and thatch hurdle, planks, reinforced with iron bands, wrought iron, steel and iron), a double door, a window and a double window. Do these look right?
+Image: questions/img/tiers_doors.png
+[check]
+
+## doors-width | Is it OK that a double door fills the whole 2 m wall slot and a double window is 2 m wide?
+[check]
