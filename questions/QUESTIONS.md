@@ -12,8 +12,3 @@
 - No, a hole stays until someone fills it
 - Yes, soil holes in open ground slowly fill over many game days; tunnels stay
 - Yes, all holes slowly fill unless something keeps them open (timber, stone)
-
-## armour-ladder | What material ladder should armour follow for boar and bear defence?
-- Leather, then padded cloth, then iron mail, then steel plate [recommended]
-- Only leather and iron, kept simple
-- Add hide and bone armour for early hunters before leather
