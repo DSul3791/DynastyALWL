@@ -18,3 +18,8 @@
 ## sound-npc-voice-ambient | Should NPCs mutter or hum when you are nearby and they are idle?
 - Yes, rarely, short lines (recommended)
 - No, only when spoken to
+## river-flood | Should heavy rain make rivers swell and flood low ground?
+- No, rivers stay steady (recommended: safe for builders; water stays predictable)
+- Yes, rivers rise a little in rain but never leave their banks
+- Yes, real floods in storms and spring melt (can wash out low buildings and crops)
+- Later, decide when towns are being built
