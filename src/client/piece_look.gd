@@ -209,9 +209,18 @@ static func _wall_with_gap(low: float, high: float, jamb: float) -> Node3D:
 	return root
 
 
-# A doorway: a gap one metre wide and two high, walkable.
-static func doorway() -> Node3D:
-	return _wall_with_gap(0.0, 2.0, 0.5)
+# A doorway: a gap one metre wide and two high, with a plank door in it. Shut it fills the gap (solid); open it stands swung back against the jamb.
+static func doorway(open: bool = false) -> Node3D:
+	var root: Node3D = _wall_with_gap(0.0, 2.0, 0.5)
+
+	if open:
+		_box(root, Vector3(0.06, 2.0, 0.9), Vector3(0.47, 1.0, 0.47), _frame)
+		_solid(root, Vector3(0.06, 2.0, 0.9), Vector3(0.47, 1.0, 0.47))
+	else:
+		_box(root, Vector3(1.0, 2.0, 0.08), Vector3(0.0, 1.0, 0.0), _frame)
+		_solid(root, Vector3(1.0, 2.0, 0.1), Vector3(0.0, 1.0, 0.0))
+
+	return root
 
 
 # A window wall: an opening one metre wide from 0.9 to 1.7 m up.
