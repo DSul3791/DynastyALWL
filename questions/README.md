@@ -31,3 +31,6 @@ Answers appear in `ANSWERS.md` as `## id | question`, then `Answer: ...` and `An
 
 ## Notes under a question (added by Steve_002)
 Lines under the header that are not `- ` choices and not `[text]` are shown as short paragraphs under the question (used by the grouped test card: one line per thing to look at). The page is titled "Questions & Tasks for Dave"; there is no Refresh button (press F5).
+
+## Style (Dave 17:07)
+Whenever Dave must do something, write it as numbered point form (1. 2. 3.), one action per line, with exact button or file names.

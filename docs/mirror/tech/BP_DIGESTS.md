@@ -2,7 +2,7 @@
 
 ## All threads (every digest includes these)
 - Policy: BP read daily after the Guru's check; before anything NEW find the entry, none = ask the Technical Director and take another job (RULE 4). Priorities P0-P3 (T23). Cross-talk limits (T22). Ideas via ledger (T24). Token habits (T27).
-- Zero new warnings (C01). No other thread's code without a one-line announced hook (rv-shared-files). Reports succinct; "Still waiting on:" only if pending (T10). Never commit crash reports, logs, .tile (C105). Never wait for Dave (T07).
+- Zero new warnings (C01). No other thread's code without a one-line announced hook (rv-shared-files). Reports succinct; "Still waiting on:" only if pending (T10). Anything Dave must do = numbered point form, one action per line (T10, Dave 17:07). Never commit crash reports, logs, .tile (C105). Never wait for Dave (T07).
 - Push: own branch `claude/<sal|sonny|steve|kathleen|mike>-<topic>` (any branch containing `held` is never merged); merge line names both numbers ("640, was 627"), pre-push checks (C102), numbers provisional until the Technical Director merges (C101/C107). Server-side build = say "SERVER RESTART".
 
 ## Technical Director + Guru (Tyler_Guru_SenDev)

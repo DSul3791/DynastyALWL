@@ -384,3 +384,11 @@ bk-weekly: keep the LAST backup of each ISO week (normally Sunday night); matche
 - 2026-10-22 17:25 Guru: BP-T32 check of TERRAIN_REVIEW.md passed (docs first, 3 options with 3+ sources, tests listed, small prototype, freeze kept; some sources only title-read, flagged by Sonny). Question terrain-opt added; recommend B. First bake waits.
 
 - 2026-10-22 17:30 Guru: Dave's water-cycle intent (16:56), recorded as a requirement for the terrain choice: (1) deeper lake-like structures at natural catch basins and plunge pools; (2) streams gather rain and snowmelt from hillsides and channel it to lakes and ponds; (3) rivers, streams and brooks carry water out of lakes to farmland (soaks in) and to the ocean; (4) result: fertile lands that can flood in big storms, rich streams for waterwheels and fishing. Sonny folds this into TERRAIN_REVIEW.md and checks options A/B/C; terrain-opt question gets updated when he reports. Design-ideas owner: Sonny to fold into DESIGN_IDEAS.md after Dave picks.
+
+- 2026-10-22 17:35 Guru: Dave said GO (16:58). Dev resumes; ground generation rework (Sonny) is first priority; generator freeze stays until terrain-opt is answered. Guru keeps the hosted page and questions page current, mirrors docs daily, runs forget-checks. Restart order per RESTART_CHECKLIST.md.
+- 2026-10-22 17:40 Guru: Dave asked that each 30-min check confirm every thread has put its open questions on his page. Tracking list: tech/QUESTION_OWED.md.
+- 2026-10-22 17:45 Guru: merged claude/kathleen-asset-determinism into claude/generator-v2 (26 audio scripts, one identical flag change each, tools only, no assets regenerated, no build number).
+- 2026-10-22 17:50 Guru: merged builds 647 and 648 (Steve_ProblemSolver) into claude/generator-v2; MikeW verification requested.
+- 2026-10-22 18:00 Guru: Dave asked for a stateful answers check. Added tools/watch_answers.sh (ETag + last-seen commit SHA per file; prints only on change; run under Monitor so the session wakes only on output).
+
+- 2026-10-22 17:55 Guru: Dave's rule (17:07): anything Dave must do is written as numbered point form. Added to BP-T10, all digests (All threads line) and the question page notes.
