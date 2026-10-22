@@ -361,3 +361,6 @@ Verdict: sound structure, tests pass on fake trees, NOT yet cleared for a real r
 
 ## 2026-10-22 15:50 Backup fixes (04e057f) re-reviewed: CLEARED for the first supervised run (Tyler_Guru_SenDev)
 All 4 required fixes verified in the diff; tests 0 failures (cloud/Linux only). Not yet exercised on Windows: tasklist check, E: paths, git fsck on E:, Godot --import time, real server_store path. First run = supervised by Dave, cull stays DRY-RUN for 14 nights. Open Dave answers: bk-weekly (code keeps last-of-week; oldest would need a small change), bk-trigger.
+
+## 2026-10-22 15:50 Dave answered bk-weekly and bk-trigger (Tyler_Guru_SenDev)
+bk-weekly: keep the LAST backup of each ISO week (normally Sunday night); matches the code, no code change. bk-trigger: when Dave says "goodnight"; MikeW checks Godot is closed first; no fixed-time job. Supervised first run may start when Dave closes Godot and says "run backup". Plan/BP text already updated.
