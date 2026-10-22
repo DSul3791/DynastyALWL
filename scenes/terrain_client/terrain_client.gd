@@ -67,7 +67,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 603
+const BUILD := 604
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -248,6 +248,13 @@ var run_speed: float = 0.0            # with --walk: ground speed in m/s instead
 var _wait_frames: int = 0             # walk test: frames spent waiting for ground
 var _space_wake_s: float = 0.0
 var _slowest_frame: float = 0.0       # walk test: longest frame (s)
+var _tunnel_test: int = 0
+var _tunnel_msec: int = 0
+var _tunnel_at: Vector3 = Vector3.ZERO
+var _dig_guard: bool = true
+var _dug_points: Array = []            # [centre, msec] of digs this session (_near_dig)
+const DIG_RESCUE_SKIP_M := 14.0        # no "stand the player on the surface" rescue this close to a dig ...
+const DIG_RESCUE_SKIP_MSEC := 1800000  # ... for half an hour
 var rescued: int = 0                   # times the player was lifted back above the ground
 var _floor_msec: int = 0               # last time the player stood on something
 var test_walk: bool = false
@@ -489,6 +496,10 @@ func _ready() -> void:
 			hole_probe = true
 		elif argument.begins_with("--water-spam="):
 			_water_spam_per_s = float(argument.trim_prefix("--water-spam="))   # test: ask for the water of every held chunk this many times a second
+		elif argument == "--tunnel-test":
+			_tunnel_test = 1                      # test: dig a shaft and a side tunnel, stand in it, report whether the player was moved
+		elif argument == "--no-dig-guard":
+			_dig_guard = false                    # test: switch the dig guard of the surface rescue off (shows the old behaviour)
 		elif argument.begins_with("--lose-after="):
 			_lose_after_s = float(argument.trim_prefix("--lose-after="))   # test: act as if the server dropped us this many seconds after the welcome
 		elif argument.begins_with("--dig-spam="):
@@ -1212,6 +1223,54 @@ func _on_tile_changed(tile: Vector2i, revision: int) -> void:
 
 # Applies an edit to the terrain already loaded; blocks loaded later come
 # from the server with the edit in them.
+# Digs made or seen this session (spot, time). A player inside a dug tunnel or pit is not "under the ground": the rescue that
+# stands a player on the surface must not fire there (Dave 2026-10-22: tunnelled underground and popped back up to the top).
+func _note_dig(center: Vector3) -> void:
+	_dug_points.append([center, Time.get_ticks_msec()])
+
+	if _dug_points.size() > 1500:
+		_dug_points = _dug_points.slice(500)
+
+
+# --tunnel-test: stand on the ground at the spawn, dig a 6 m shaft and a 6 m side tunnel, stand in the tunnel for 10 s, say where the player is.
+func _tunnel_step() -> void:
+	var now: int = Time.get_ticks_msec()
+
+	if _tunnel_test == 1 and connected_msec > 0 and now - connected_msec > 20000 and not waiting_for_ground:
+		var top: Vector3 = body.global_position
+		_tunnel_at = top
+		for n in range(7):
+			net.dig.rpc_id(1, top + Vector3(0.0, -1.0 - float(n), 0.0), 1.6)
+
+		for n in range(1, 7):
+			net.dig.rpc_id(1, top + Vector3(float(n), -6.5, 0.0), 1.6)
+
+		_tunnel_test = 2
+		_tunnel_msec = now
+	elif _tunnel_test == 2 and now - _tunnel_msec > 4000:
+		body.global_position = _tunnel_at + Vector3(4.0, -6.0, 0.0)
+		body.velocity = Vector3.ZERO
+		_tunnel_test = 3
+		_tunnel_msec = now
+	elif _tunnel_test == 3 and now - _tunnel_msec > 12000:
+		var moved: float = body.global_position.distance_to(_tunnel_at + Vector3(4.0, -6.0, 0.0))
+		print("Terrain client: tunnel test: player ended %.1f m from where it was put in the tunnel (y %.1f, surface y %.1f), rescues %d, %s" % [moved, body.global_position.y, _tunnel_at.y, rescued, "STAYED" if body.global_position.y < _tunnel_at.y - 3.0 else "POPPED UP"])
+		_tunnel_test = 0
+
+
+func _near_dig(here: Vector3) -> bool:
+	if not _dig_guard:
+		return false
+
+	var now: int = Time.get_ticks_msec()
+
+	for entry in _dug_points:
+		if now - int(entry[1]) < DIG_RESCUE_SKIP_MSEC and here.distance_to(entry[0]) < DIG_RESCUE_SKIP_M:
+			return true
+
+	return false
+
+
 func _on_dug(center: Vector3, radius: float) -> void:
 	if terrain == null:
 		return
@@ -1224,6 +1283,7 @@ func _on_dug(center: Vector3, radius: float) -> void:
 	tool.mode = VoxelTool.MODE_REMOVE
 	tool.do_sphere(center, radius)
 	dig_applied += 1
+	_note_dig(center)
 
 	if grass != null:
 		grass.ground_changed(center, radius)
@@ -3538,6 +3598,9 @@ func _process(delta: float) -> void:
 	if link_bars != null:
 		link_bars.client_stalled(delta)
 
+	if _tunnel_test > 0:
+		_tunnel_step()
+
 	if _connect_window != null:
 		_update_connect_window()
 
@@ -4928,7 +4991,7 @@ func _ground_ready() -> bool:
 	up.exclude = [body.get_rid()]
 	var hit: Dictionary = space.intersect_ray(up)
 
-	if not hit.is_empty():
+	if not hit.is_empty() and not _near_dig(here):
 		body.global_position = Vector3(here.x, float(hit["position"].y) + 1.2, here.z)
 		rescued += 1
 
@@ -4944,7 +5007,14 @@ func _under_the_ground() -> bool:
 	up.exclude = [body.get_rid()]
 	var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(up)
 
-	if hit.is_empty() or float(hit["position"].y) < here.y + 2.0:
+	if hit.is_empty() or float(hit["position"].y) < here.y + 2.0 or _near_dig(here):
+		return false
+
+	# Ground below within reach: this is a fall inside a cave or pit, not a slip through the world.
+	var down: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(here, here + Vector3(0.0, -120.0, 0.0))
+	down.exclude = [body.get_rid()]
+
+	if not body.get_world_3d().direct_space_state.intersect_ray(down).is_empty():
 		return false
 
 	body.global_position = Vector3(here.x, float(hit["position"].y) + 1.2, here.z)
