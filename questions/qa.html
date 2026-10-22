@@ -23,6 +23,7 @@ textarea,input[type=password]{width:100%;font:inherit;padding:.65rem;border:1px 
 button{font:600 1rem system-ui,sans-serif;min-height:48px;padding:.6rem 1.2rem;margin-top:.6rem;border:0;border-radius:12px;background:var(--acc);color:var(--accfg)}
 button.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)}
 .err{color:var(--err)}.msg{margin-top:.5rem;font-size:.95rem}.ok{color:var(--ok)}
+.pic{width:100%;height:auto;border-radius:12px;border:1px solid var(--line);margin:.4rem 0;background:var(--bg)}
 .ver{font-size:.75rem;color:var(--mut);text-align:center;margin:1.5rem 0 0}
 .dock{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--card);border-top:1px solid var(--line);padding:.6rem .75rem calc(.6rem + env(safe-area-inset-bottom))}
 .dock .in{max-width:46rem;margin:0 auto}.dock button{width:100%;margin:0}.dock .msg{margin:.3rem 0 0;text-align:center}
@@ -42,7 +43,7 @@ button.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)
 <main>
 <div id="tok" hidden class="q"><h2>Paste your GitHub token (once)</h2><input id="t" type="password" autocomplete="off"><button onclick="saveTok()">Remember</button></div>
 <div id="list">Loading...</div>
-<p class=ver>Page version: poke v4 (menu, 2005 UTC). If you do not see this line, you have an old copy: reload.</p>
+<p class=ver>Page version: poke v5 (pictures, 2120 UTC). If you do not see this line, you have an old copy: reload.</p>
 </main>
 <div class="dock"><div class="in"><button onclick="poke()">Tell Claude I answered</button><div class=msg id="pokemsg"></div></div></div>
 <div class="scrim" id="scrim" onclick="closeAll()"></div>
@@ -95,9 +96,10 @@ async function load(){
       else if(q.choices.length)body=q.choices.map(c=>`<label><input type=radio name=q${n} value="${esc(c).replace(/"/g,"&quot;")}">${esc(c)}</label>`).join("");
       else if(q.isText)body=`<textarea id=ta${n} rows=3></textarea>`;
       else return `<div class=q><h2>${esc(q.text||q.id)}</h2><p class=err>Error: question "${esc(q.id)}" has no choices and is not marked [text] or [check]. Ask the thread that wrote it to fix it.</p></div>`;
-      return `<div class=q id=box${n}><h2>${num}${esc(q.text||q.id)}</h2>${q.notes.map(x=>`<p>${esc(x)}</p>`).join("")}${body}<button onclick="save(${n},'${q.id.replace(/'/g,"")}')">Save</button><div class=msg id=m${n}></div></div>`};
+      return `<div class=q id=box${n}><h2>${num}${esc(q.text||q.id)}</h2>${q.notes.map(x=>x.startsWith("Image: ")?`<img class=pic data-p="${esc(x.slice(7).trim())}" alt="">`:`<p>${esc(x)}</p>`).join("")}${body}<button onclick="save(${n},'${q.id.replace(/'/g,"")}')">Save</button><div class=msg id=m${n}></div></div>`};
     const checks=qs.map((q,n)=>q.isCheck?card(q,n):"").join(""),rest=qs.map((q,n)=>q.isCheck?"":card(q,n)).join("");
     L.innerHTML=(checks?"<h2 class=sec id=sec-check>Things to check</h2>"+checks:"")+(rest?"<h2 class=sec id=sec-q>Questions</h2>"+rest:"");
+    document.querySelectorAll("img.pic[data-p]").forEach(async im=>{try{const r=await fetch(api(im.dataset.p)+"?ref="+BR,{headers:{Authorization:"Bearer "+tok(),Accept:"application/vnd.github.raw"}});if(!r.ok)throw new Error(r.status);im.src=URL.createObjectURL(await r.blob())}catch(e){im.alt="Picture could not load ("+e.message+")"}});
   }catch(e){L.innerHTML=`<p class=err>${esc(e.message)}. Check the token.</p>`}}
 async function save(n,id){
   const m=document.getElementById("m"+n);let ans;
