@@ -316,3 +316,7 @@ Answered: 2026-10-22 20:17 UTC
 Answer: Right click toggles Dig/Raise (recommended)
 Answered: 2026-10-22 20:17 UTC
 
+## hoe-load | How much can a shovel carry for Raise mode?
+Answer: One shovelful at a time
+Answered: 2026-10-22 20:18 UTC
+
