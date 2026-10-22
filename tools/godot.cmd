@@ -1,0 +1,3 @@
+@echo off
+rem Same shim for cmd/PowerShell: tools\godot.cmd --headless --path . --script ...
+"C:\GodotInstaller\godot.windows.editor.x86_64.exe" %*
