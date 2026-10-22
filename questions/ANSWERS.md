@@ -360,3 +360,7 @@ Answered: 2026-10-22 22:16 UTC
 Answer: No: We want a design system where you can put down blueprints for the items you want and you can keep placing the blueprint so you could build the whole building out of blueprints and then you can come along and put the items into those blueprints however, if the item they are connected to and depend on like the foundation is not complete completed, you can’t put the last item into whatever it is your building so you have to finish the foundations first, and then the walls, and then the ceilings
 Answered: 2026-10-22 22:17 UTC
 
+## tl-plank | Should the plank wall have a rough bark side outside and a smooth side inside?
+Answer: No: No, they would have a flat rough side on the inside and a rounded smooth side on the outside
+Answered: 2026-10-22 22:18 UTC
+
