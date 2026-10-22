@@ -10,6 +10,9 @@
 	"move_cancel_m": 6.0,
 	"base_chance": 0.55,
 	"bait_mult": 1.3,
+	"max_chance": 0.93,
+	"hint_below": 3,
+	"say_still": "The water is still.",
 	"bait": [
 		"berries",
 		"raw_meat",

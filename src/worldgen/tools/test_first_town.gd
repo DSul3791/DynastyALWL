@@ -106,7 +106,7 @@ func _init() -> void:
 	trade.npcs = npcs
 	trade.setup()
 	var window: Array = []
-	trade.send_shop = func(_p, _npc, _title, ids, pay, got, _buys, _ti, _tm):
+	trade.send_shop = func(_p, _npc, _title, ids, pay, got, _buys, _ti, _tm, _st, _su, _tp):
 		window.clear()
 		window.append_array([ids, pay, got])
 	var chair: Dictionary = npcs.markers["chair_1"]

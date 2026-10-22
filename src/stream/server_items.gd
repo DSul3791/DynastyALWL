@@ -4696,7 +4696,7 @@ func _fish_chance(peer: int, cell: Vector2i, bait: bool) -> float:
 	if bait:
 		chance *= float(cfg.get("bait_mult", 1.5))
 
-	return clampf(chance, 0.02, 0.95)
+	return clampf(chance, 0.02, float(cfg.get("max_chance", 0.93)))
 
 
 func _fish_species(cell: Vector2i) -> String:
@@ -4924,7 +4924,12 @@ func _fish_land(peer: int, inv, slot: int, state: Dictionary) -> void:
 		drop_in_world(table.number_of(species), left, _peer_pos[peer])
 
 	practice(peer, "fish")
-	_say(peer, "You land a %s." % table.name_of(table.number_of(species)).to_lower())
+	var landed: String = "You land a %s." % table.name_of(table.number_of(species)).to_lower()
+
+	if int(_fish_stock[key][0]) < int(_fishing_data().get("hint_below", 3)):
+		landed += " " + str(_fishing_data().get("say_still", "The water is still."))
+
+	_say(peer, landed)
 	_dirty = true
 
 
