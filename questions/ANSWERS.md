@@ -472,3 +472,7 @@ Answered: 2026-10-22 23:26 UTC
 Answer: No: Since we’re enabling it, we might as well use it and test it
 Answered: 2026-10-22 23:27 UTC
 
+## roofs-pieces | Should each angle have a straight slope piece, an outside (hip) corner piece and an inside (valley) corner piece, 6 roof pieces per tier look?
+Answer: Yes
+Answered: 2026-10-22 23:27 UTC
+
