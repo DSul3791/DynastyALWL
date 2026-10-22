@@ -41,10 +41,6 @@
 - Yes (recommended)
 - No (tell me in chat)
 
-## chk-tools-tv6 | Check the reworked tools and containers (labelled picture): backpack, wooden bucket, clay pot, bowl, wedge axe, chopping block kit, pickaxe, stone block. Does each look like the real thing now, and does the axe look like a wedge with a sharp edge?
-Image: questions/img/looks_tools_tv6.png
-[check]
-
 ## chk-spades-tv6 | Check the spades (labelled picture): small, medium and large in wood, stone, iron and steel. Can you tell the sizes and materials apart? (The sheet is crowded because the handles are long.)
 Image: questions/img/looks_spades_tv6.png
 [check]
