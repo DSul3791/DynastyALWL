@@ -320,6 +320,7 @@ func _ready() -> void:
 	items.send_strain = func(peer, strain_pm, state, fade_pm, stance): net.strain.rpc_id(peer, strain_pm, state, fade_pm, stance)
 	@warning_ignore("confusable_local_declaration")
 	items.send_chest = func(peer, id, bytes): net.chest_contents.rpc_id(peer, id, bytes)
+	items.send_spade_load = func(who, number, count): net.spade_load.rpc_id(who, number, count)
 	items.game_seconds = func(): return game_clock.seconds
 	items.season_now = func(): return game_clock.season()
 	items.rock_at = func(x, z):
