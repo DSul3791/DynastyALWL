@@ -17,6 +17,6 @@
 		"fish_stew": {"name": "Fish stew", "needs": [["perch", 1], ["watercress", 1], ["wild_carrot_roots", 1], ["sage", 1]], "gives": 2, "kcal": 880, "shelf_h": 60, "warms": 22, "craft_s": 12, "description": "Perch, cress and root in a sage broth."},
 		"trail_bread": {"name": "Trail bread", "needs": [["linseed", 2], ["hazelnuts", 2], ["dates", 1], ["animal_fat", 1]], "gives": 3, "kcal": 950, "shelf_h": 480, "warms": 0, "craft_s": 12, "description": "Dense seed and nut loaves. Barely spoils."},
 		"hearty_pottage": {"name": "Hearty pottage", "needs": [["seeds", 2], ["wild_carrot_roots", 1], ["dandelion_leaves", 1], ["marjoram", 1], ["animal_fat", 1]], "gives": 3, "kcal": 1050, "shelf_h": 96, "warms": 30, "craft_s": 14, "description": "A rich pot of seeds, roots, herbs and fat. Fills and warms."},
-		"feast_roast": {"name": "Feast roast", "needs": [["raw_meat", 2], ["wild_garlic_bulbs", 1], ["thyme", 1], ["rosemary", 1], ["animal_fat", 1]], "gives": 2, "kcal": 1200, "shelf_h": 96, "warms": 30, "craft_s": 14, "description": "Spiced, fat-basted roast. The best meal a campfire makes."}
+		"feast_roast": {"name": "Roast Beast", "needs": [["raw_meat", 2], ["wild_garlic_bulbs", 1], ["thyme", 1], ["rosemary", 1], ["animal_fat", 1]], "gives": 2, "kcal": 1200, "shelf_h": 96, "warms": 30, "craft_s": 14, "description": "Spiced, fat-basted roast. The best meal a campfire makes."}
 	}
 }

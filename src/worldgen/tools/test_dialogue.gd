@@ -194,7 +194,7 @@ func _init() -> void:
 	check(idx >= 0, "with three firewood the handing-over choice appears")
 	talk._last_msec.clear()
 	talk.talk(1, "hob", idx)
-	check(items.count_for(1, "firewood") == 0 and items.count_for(1, "roast_forage") == 2, "he takes three firewood and gives two roasted forage")
+	check(items.count_for(1, "firewood") == 0 and items.count_for(1, "roast_forage") == 2, "he takes three firewood and gives two Campfire Stew")
 	check(talk.flags_of("talk-key-000001", "hob").has("quest_firewood_done"), "the quest is marked done")
 	check(items.coins_of(1) == 5 and items.rep_points(1, "hob") == 1, "the reward also pays five copper and earns one reputation point")
 	check(items.price_for(1, "hob", 3) == 3, "a stranger or acquaintance pays the full price")

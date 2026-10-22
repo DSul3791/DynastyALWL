@@ -2837,7 +2837,7 @@ func _light(peer: int, inv, id: int) -> void:
 	_dirty = true
 
 
-# Roasting at a lit fire: one raw forage item (cookable_suffixes in cooking.json) becomes Roasted forage.
+# Roasting at a lit fire: one raw forage item (cookable_suffixes in cooking.json) becomes Campfire Stew.
 func _cook(peer: int, inv, id: int) -> void:
 	var fire: Dictionary = _fire_in_reach(peer, id)
 
