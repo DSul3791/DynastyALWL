@@ -113,6 +113,18 @@ func _init() -> void:
 	check(not bool(Rules.snap(cfg, "wall_section_kit", Vector3(60.0, 10.0, 60.0), 0, base_rows)[2]), "far from the foundation a wall uses the plain grid")
 	check(not bool(Rules.snap(cfg, "foundation_section_kit", Vector3(50.0, 10.0, 50.0), 0, base_rows)[2]), "a foundation does not snap onto a foundation")
 	check(Rules.snap(cfg, "chest_kit", Vector3(10.4, 10.0, 7.6), 133)[0] == Vector3(10.4, 10.0, 7.6), "a chest keeps its own spot")
+
+	# Joins: a wall continues a wall, turns the corner at its end, stands on a floor edge; floors and roofs meet edge to edge.
+	var wall_rows: Array = [{"pos": Vector3(20.0, 10.0, 20.0), "state": 22, "yaw": 0.0}]
+	var straight: Array = Rules.snap(cfg, "wall_section_kit", Vector3(22.3, 10.0, 20.2), 0, wall_rows)
+	check(is_equal_approx(straight[0].x, 22.0) and is_equal_approx(straight[0].z, 20.0) and int(straight[1]) == 0, "a wall continues a wall end to end (%s)" % str(straight))
+	var corner: Array = Rules.snap(cfg, "wall_section_kit", Vector3(21.2, 10.0, 21.6), 0, wall_rows)
+	check(is_equal_approx(corner[0].x, 21.0) and is_equal_approx(corner[0].z, 21.0) and int(corner[1]) == 90, "a wall turns the corner at the end of a wall (%s)" % str(corner))
+	var floor_rows: Array = [{"pos": Vector3(30.0, 10.0, 30.0), "state": 23, "yaw": 0.0}]
+	var beside: Array = Rules.snap(cfg, "floor_section_kit", Vector3(32.4, 10.0, 30.3), 90, floor_rows)
+	check(is_equal_approx(beside[0].x, 32.0) and is_equal_approx(beside[0].z, 30.0) and int(beside[1]) == 0, "a floor meets a floor edge to edge (%s)" % str(beside))
+	var on_edge: Array = Rules.snap(cfg, "wall_section_kit", Vector3(31.2, 10.0, 30.1), 0, floor_rows)
+	check(is_equal_approx(on_edge[0].x, 31.0) and int(on_edge[1]) == 90, "a wall stands on a floor edge (%s)" % str(on_edge))
 	items.report_position(1, Vector3(200.0, 10.0, 200.0))
 	var walls_before: int = items.world_item_count()
 
