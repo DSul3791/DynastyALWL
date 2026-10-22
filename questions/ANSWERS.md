@@ -252,3 +252,7 @@ Answered: 2026-10-22 19:36 UTC
 Answer: No: Fibre bundle should look like fibers, and the roast forage is a terrible name. We should rename it. I would call it campfire Stew. And it should look like a bowl of chunky vegetable soup.
 Answered: 2026-10-22 19:36 UTC
 
+## chk-foods | Check the 16 prepared foods (labelled picture): can you tell them apart by colour?
+Answer: No: Anything that’s a soup or a stew should be in a bowl. So make a basic wooden bowl and then use that as the foundation and then put whatever the food is inside of it the thing it looks like a roast we should call roast beast . An energy bar should look like a trail mix bar. You have to put an effort into seeing what the real things look like first and then trying to make something that resembles them slightly. Try again.
+Answered: 2026-10-22 19:38 UTC
+
