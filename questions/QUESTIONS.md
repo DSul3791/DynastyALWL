@@ -1,7 +1,7 @@
 
-## model-plan | Approve Kathleen's model plan: a simple first model for every item, creature and plant before any upgrades? (art/MODEL_PLAN.md)
-Today 151 of 203 items have no model. One shape builder (about 20 shapes) reads a small "look" entry per item, so the same shape shows on the ground, in the hand and in the inventory. Upgrades wait until every row has a basic model, unless you name something to fix. Models are made in batches of about 25 items, each with a screenshot check. Nothing is generated until you approve.
-- Approve, basic first and upgrades wait (recommended)
+## model-plan | Approve Kathleen's two-stage plan? Stage one: a simple first model AND a placeholder sound for every item, creature and plant. Stage two: upgrades. (art/MODEL_PLAN.md)
+Today 151 of 203 items have no model. One shape builder (about 20 shapes) reads a small "look" entry per item from a client-only file (data/items/looks.json), so the same shape shows on the ground, in the hand and in the inventory, and editing looks needs no restart. Sounds get the same treatment: a sound inventory and a placeholder for every row. Upgrades wait until every row is basic, unless you name something to fix. Batches of about 25 items, each with a screenshot check. Nothing is generated until you approve.
+- Approve, two stages: basic models and placeholder sounds first, upgrades later (recommended)
 - Approve, but I want to see the first batch before the rest
 - Not yet, I want to talk it through
 
