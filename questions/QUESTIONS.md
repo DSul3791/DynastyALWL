@@ -1,9 +1,9 @@
 
-## cl-bake | The next bake (spill chute fix, pond outlet fix, new terrain version) needs your PC. When should it happen?
-Before it: the gate tests pass on your PC and Kathleen reviews the look. Bakes are done by you only.
-- After the restart work is done and the gate tests pass; I give you short steps (recommended)
-- As soon as the gate tests pass, even if other work is still going
-- Not yet, decide later
+## bake-plan | Approve the bake plan (BP-T31)? Every change is labelled RUNTIME (just play), RESTART (close game fully) or BAKE (waits for a bake window). Bakes are batched, at most once a week, 1-tile test first, then one full 9-tile bake.
+A bake window opens when the held list is complete, or a bake change blocks play, or 2 weeks pass. Gates: frozen generator, hash tests, edge-match on all borders, game closed, backup within 24 hours. Only your PC bakes. This also answers when the next bake happens.
+- Approve as written (recommended)
+- Approve, but open a window only when I say so
+- Change it, I will tell you how
 
 ## cl-tests | The 11 old "have you answered this" checks (builds 623 to 645) are parked. Many builds have changed since. What now?
 - Regroup them into one test card after the restart work, dropping any that no longer apply (recommended)
