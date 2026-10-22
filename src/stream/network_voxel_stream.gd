@@ -283,6 +283,7 @@ func _looks_zeroed(buffer: VoxelBuffer) -> bool:
 	for k in range(3):
 		for j in range(3):
 			for i in range(3):
+				@warning_ignore("integer_division")
 				var v: float = buffer.get_voxel_f(1 + i * (size.x - 3) / 2, 1 + j * (size.y - 3) / 2, 1 + k * (size.z - 3) / 2, Layout.CHANNEL_SDF)
 
 				if absf(v) < 0.0005:
@@ -344,6 +345,7 @@ func take_requests() -> Array:
 # prefetch keys are dropped and may be asked for again later.
 func _take_locked() -> Array:
 	var keys: PackedInt32Array = _outbox
+	@warning_ignore("integer_division")
 	var urgent: int = _outbox.size() / 4
 
 	if only_urgent:

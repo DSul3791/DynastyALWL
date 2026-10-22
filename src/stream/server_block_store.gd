@@ -223,6 +223,7 @@ static func looks_zeroed(buffer: VoxelBuffer) -> bool:
 	for k in range(3):
 		for j in range(3):
 			for i in range(3):
+				@warning_ignore("integer_division")
 				if absf(buffer.get_voxel_f(1 + i * (size.x - 3) / 2, 1 + j * (size.y - 3) / 2, 1 + k * (size.z - 3) / 2, Layout.CHANNEL_SDF)) < 0.0005:
 					zero += 1
 
@@ -310,10 +311,13 @@ func _is_sane(buffer: VoxelBuffer, block: Vector3i, lod: int) -> bool:
 	var s: float = float(1 << lod)
 	var origin: Vector3 = Vector3(block * (BLOCK_SIZE << lod))
 
+	@warning_ignore("integer_division")
 	for layer in [BLOCK_SIZE - 1, BLOCK_SIZE / 2]:
 		var y: float = origin.y + float(layer) * s
 
+		@warning_ignore("integer_division")
 		for cz in [0, BLOCK_SIZE / 2, BLOCK_SIZE - 1]:
+			@warning_ignore("integer_division")
 			for cx in [0, BLOCK_SIZE / 2, BLOCK_SIZE - 1]:
 				var h: float = generator.surface_height(origin.x + float(cx) * s, origin.z + float(cz) * s, lod)
 

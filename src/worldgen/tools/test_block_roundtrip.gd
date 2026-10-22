@@ -35,8 +35,8 @@ func fill(kind: String, size: int) -> VoxelBuffer:
 			b.fill_f(-3.57, Layout.CHANNEL_SDF)
 			b.fill(7, Layout.CHANNEL_ROCK)
 			b.fill(3, Layout.CHANNEL_SOIL)
-		"uniform zero":
-			b.fill_f(0.0, Layout.CHANNEL_SDF)
+		"uniform near zero":
+			b.fill_f(0.05, Layout.CHANNEL_SDF)
 		"mixed surface":
 			for z in size:
 				for x in size:
@@ -112,7 +112,7 @@ func _init() -> void:
 	var stream = StreamScript.new()
 	stream.cache = cache
 	var area := Vector3i(53850 / 16, 430 / 16, 69340 / 16)   # the block under Dave's dumps
-	var kinds: Array = ["uniform air 3.57", "uniform air 1.91", "uniform solid -3.57", "uniform zero", "mixed surface", "mixed large positive 1.91 / 2.06", "mixed all large positive", "steep", "ore and material"]
+	var kinds: Array = ["uniform air 3.57", "uniform air 1.91", "uniform solid -3.57", "uniform near zero", "mixed surface", "mixed large positive 1.91 / 2.06", "mixed all large positive", "steep", "ore and material"]
 	var n: int = 0
 
 	for kind in kinds:

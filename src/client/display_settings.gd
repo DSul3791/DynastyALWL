@@ -117,4 +117,5 @@ func apply(window: Window) -> void:
 	window.size = size()
 	# Keep the window on the screen after it grew.
 	var screen: Rect2i = DisplayServer.screen_get_usable_rect(window.current_screen)
+	@warning_ignore("integer_division")
 	window.position = Vector2i(maxi(screen.position.x, screen.position.x + (screen.size.x - window.size.x) / 2), maxi(screen.position.y, screen.position.y + (screen.size.y - window.size.y) / 2))

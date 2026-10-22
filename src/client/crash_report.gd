@@ -133,6 +133,7 @@ func _trim() -> void:
 
 
 static func _machine() -> String:
+	@warning_ignore("integer_division")
 	return "%s, %s, %d cores, ram %d MB, video memory %d MB" % [RenderingServer.get_video_adapter_name(), RenderingServer.get_video_adapter_api_version(), OS.get_processor_count(), int(OS.get_static_memory_usage() / 1048576), int(RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_VIDEO_MEM_USED) / 1048576)]
 
 
@@ -193,6 +194,7 @@ func _write_report(headline: String, flag: String, log_name: String) -> String:
 	text = _clean(text)
 
 	if text.length() > MAX_BYTES:
+		@warning_ignore("integer_division")
 		text = text.substr(0, MAX_BYTES / 4) + "\n[... cut ...]\n" + text.substr(text.length() - MAX_BYTES * 3 / 4)
 
 	var stamp: String = Time.get_datetime_string_from_system(false).replace(":", "-").replace("T", "_")

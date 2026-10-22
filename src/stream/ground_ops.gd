@@ -52,6 +52,7 @@ func open(path: String) -> String:
 		var bytes: PackedByteArray = FileAccess.get_file_as_bytes(path)
 
 		if bytes.size() >= head and bytes.slice(0, head).get_string_from_ascii() == MAGIC_V1:
+			@warning_ignore("integer_division")
 			for n in range((bytes.size() - head) / 16):
 				var at: int = head + n * 16
 				_append(KIND_DIG, 0, Vector3(bytes.decode_float(at), bytes.decode_float(at + 4), bytes.decode_float(at + 8)), bytes.decode_float(at + 12))
@@ -62,6 +63,7 @@ func open(path: String) -> String:
 			if error != "":
 				return error
 		elif bytes.size() >= head and bytes.slice(0, head).get_string_from_ascii() == MAGIC:
+			@warning_ignore("integer_division")
 			for n in range((bytes.size() - head) / RECORD_BYTES):
 				var at: int = head + n * RECORD_BYTES
 				_append(bytes.decode_u8(at + 4), bytes.decode_u16(at + 6), Vector3(bytes.decode_float(at + 8), bytes.decode_float(at + 12), bytes.decode_float(at + 16)), bytes.decode_float(at + 20))
@@ -266,6 +268,7 @@ func _append(kind: int, material: int, centre: Vector3, radius: float) -> void:
 
 
 # True when an earlier dig holds this one entirely and no fill has touched the place since.
+@warning_ignore("unused_parameter")
 func _covered(blocks: Array, centre: Vector3, radius: float) -> bool:
 	var block: Vector3i = Vector3i((centre / float(BLOCK_SIZE)).floor())
 

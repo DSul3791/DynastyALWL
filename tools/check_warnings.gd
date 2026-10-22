@@ -21,10 +21,7 @@ func _initialize() -> void:
 		_collect(root, files)
 
 	for file in files:
-		var script: Script = load(file)
-
-		if script is GDScript:
-			(script as GDScript).reload(true)
+		var script = ResourceLoader.load(file, "", ResourceLoader.CACHE_MODE_IGNORE)
 
 	OS.remove_logger(catcher)
 	var lines: PackedStringArray = PackedStringArray()
@@ -33,6 +30,13 @@ func _initialize() -> void:
 		lines.append("%s:%d: %s %s" % [str(item[0]).replace("res://", ""), item[1], item[2], item[3]])
 
 	lines.sort()
+	var unique: PackedStringArray = PackedStringArray()
+
+	for line in lines:
+		if unique.is_empty() or unique[unique.size() - 1] != line:
+			unique.append(line)
+
+	lines = unique
 
 	for line in lines:
 		print("WARN ", line)
@@ -43,7 +47,7 @@ func _initialize() -> void:
 
 func _collect(dir: String, files: PackedStringArray) -> void:
 	for file in DirAccess.get_files_at(dir):
-		if file.ends_with(".gd"):
+		if file.ends_with(".gd") and not file.ends_with("check_warnings.gd"):
 			files.append(dir + "/" + file)
 
 	for sub in DirAccess.get_directories_at(dir):

@@ -192,12 +192,19 @@ func _ready() -> void:
 	flora = FloraStoreScript.new()
 	flora.setup(placer, store_dir)
 	items = ItemsScript.new()
+	@warning_ignore("confusable_local_declaration")
 	items.send_full = func(peer, bytes): net.inventory_full.rpc_id(peer, bytes)
+	@warning_ignore("confusable_local_declaration")
 	items.send_slots = func(peer, bytes): net.inventory_slots.rpc_id(peer, bytes)
+	@warning_ignore("confusable_local_declaration")
 	items.send_purse = func(peer, copper): net.purse.rpc_id(peer, copper)
+	@warning_ignore("confusable_local_declaration")
 	items.send_carry = func(peer, item_id): net.carry.rpc_id(peer, item_id)
+	@warning_ignore("confusable_local_declaration")
 	items.send_reputation = func(peer, ids, names, points): net.reputation.rpc_id(peer, ids, names, points)
+	@warning_ignore("confusable_local_declaration")
 	items.send_received = func(peer, item_id, count, source): net.item_gain.rpc_id(peer, item_id, count, source)
+	@warning_ignore("confusable_local_declaration")
 	items.send_world_items = func(peer, added, removed): net.world_items.rpc_id(peer, added, removed)
 	items.dig_ground = _dig_ground
 	items.fill_ground = _fill_ground
@@ -213,20 +220,33 @@ func _ready() -> void:
 	items.flora_changed = _flora_changed
 	flora.dynamic = func(home): return items.dynamic_items(home)
 	items.cut_tree = _cut_tree
+	@warning_ignore("confusable_local_declaration")
 	items.send_notice = func(peer, text): net.notice.rpc_id(peer, text)
+	@warning_ignore("confusable_local_declaration")
 	items.send_breath = func(peer, tenths): net.breath.rpc_id(peer, tenths)
+	@warning_ignore("confusable_local_declaration")
 	items.send_energy = func(peer, percent): net.energy.rpc_id(peer, percent)
+	@warning_ignore("confusable_local_declaration")
 	items.send_warmth = func(peer, percent): net.warmth.rpc_id(peer, percent)
+	@warning_ignore("confusable_local_declaration")
 	items.send_sick = func(peer, hours): net.sick.rpc_id(peer, hours)
+	@warning_ignore("confusable_local_declaration")
 	items.send_body = func(peer, bpm, eta, phase): net.body.rpc_id(peer, bpm, eta, phase)
+	@warning_ignore("confusable_local_declaration")
 	items.send_limp = func(peer, percent): net.limp.rpc_id(peer, percent)
 	items.ice_cover_at = func(pos): return IceScript.cover(game_clock.seconds, settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), maxf(pos.y, 0.0), 3.0)
+	@warning_ignore("confusable_local_declaration")
 	items.send_worn = func(peer, numbers): net.worn.rpc_id(peer, numbers)
+	@warning_ignore("confusable_local_declaration")
 	items.send_remains = func(peer, rows): net.remains_marks.rpc_id(peer, rows)
+	@warning_ignore("confusable_local_declaration")
 	items.send_thought = func(peer, line_id, text, kind): net.thought.rpc_id(peer, line_id, text, kind)
+	@warning_ignore("confusable_local_declaration")
 	items.send_skills = func(peer, attributes, rows): net.skills.rpc_id(peer, attributes, rows)
 	items.weather_now = func(): return weather
+	@warning_ignore("confusable_local_declaration")
 	items.send_died = func(peer, cause, point): net.died.rpc_id(peer, cause, point)
+	@warning_ignore("confusable_local_declaration")
 	items.send_vitals = func(peer, hunger, health, weight, thirst, luck, fitness): net.vitals.rpc_id(peer, hunger, health, weight, thirst, luck, fitness)
 	items.water_near = func(pos, reach):
 		var tile_data = generator.get_tile(generator.tile_of(pos.x, pos.z))
@@ -247,9 +267,13 @@ func _ready() -> void:
 	items.water_depth_at = func(pos: Vector3) -> float:
 		var water: Array = _water_at(pos)
 		return 0.0 if is_nan(water[0]) else maxf(float(water[0]) - float(water[1]), 0.0)
+	@warning_ignore("confusable_local_declaration")
 	items.send_reject = func(peer, reason): net.reject.rpc_id(peer, reason)
+	@warning_ignore("confusable_local_declaration")
 	items.send_craft_queue = func(peer, entries, left_ms): net.craft_queue.rpc_id(peer, entries, left_ms)
+	@warning_ignore("confusable_local_declaration")
 	items.send_strain = func(peer, strain_pm, state, fade_pm, stance): net.strain.rpc_id(peer, strain_pm, state, fade_pm, stance)
+	@warning_ignore("confusable_local_declaration")
 	items.send_chest = func(peer, id, bytes): net.chest_contents.rpc_id(peer, id, bytes)
 	items.game_seconds = func(): return game_clock.seconds
 	items.season_now = func(): return game_clock.season()
@@ -279,6 +303,7 @@ func _ready() -> void:
 	items.setup(ItemTableScript.load_default(), store_dir)
 	admin = AdminScript.new()
 	admin.load_keys(["res://data/admin.json", store_dir + "/admin.json"])
+	@warning_ignore("confusable_local_declaration")
 	items.admin_ok = func(peer: int) -> bool: return admin.is_admin(items.key_of(peer))
 	admin.open_to_all = OS.get_cmdline_user_args().has("--open-admin")
 	npcs = NpcsScript.new()
@@ -307,16 +332,22 @@ func _ready() -> void:
 	animals.trails = trails
 	animals.wolves.player_info = func(): return items.wolf_info()
 	animals.wolves.fires = func(): return items._lit_fires()
+	@warning_ignore("confusable_local_declaration")
 	animals.wolves.hurt_player = func(peer, amount, lethal, cause): return items.hurt_player(peer, amount, lethal, cause, float(animals.cfg.get("wolves", {}).get("maim_hp", 25.0)))
+	@warning_ignore("confusable_local_declaration")
 	animals.wolves.notice = func(peer, text): items._say(peer, text)
+	@warning_ignore("confusable_local_declaration")
 	animals.wolves.take_meat = func(peer): return items.take_all_meat(peer)
 	animals.big_game.player_info = func(): return items.wolf_info()
 	animals.thieves.loose_food = func(centre, r): return items.loose_food_near(centre, r)
 	animals.thieves.take_food = func(id): return items.take_loose(id)
 	animals.thieves.fires = func(): return animals.wolves.fires.call() if animals.wolves.fires.is_valid() else []
 	animals.drop_loot = func(number, count, pos): items.drop_in_world(number, count, pos)
+	@warning_ignore("confusable_local_declaration")
 	animals.big_game.hurt_player = func(peer, amount, lethal, cause): return items.hurt_player(peer, amount, lethal, cause, 10.0)
+	@warning_ignore("confusable_local_declaration")
 	animals.died = func(sp, pos, peer): items.make_carcass(sp, pos, peer)
+	@warning_ignore("confusable_local_declaration")
 	items.hit_animal = func(peer, origin, dir, reach, amount) -> bool:
 		var target: int = animals.target_along(origin, dir, reach)
 		return target != 0 and (animals.damage(target, amount, peer, "spear") or true)
@@ -330,6 +361,7 @@ func _ready() -> void:
 	trade.setup(store_dir)
 	trade.send_shop = func(peer, npc_id, title, ids, pay, got, buys, tired_ids, tired, stock, supply_milli, purse): net.shop.rpc_id(peer, npc_id, title, ids, pay, got, buys, tired_ids, tired, stock, supply_milli, purse)
 	dialogue.trade = trade
+	@warning_ignore("confusable_local_declaration")
 	net.trade_requested.connect(func(peer, npc_id, kind, a, count):
 		var said: String = trade.deal(peer, npc_id, kind, a, count)
 
@@ -338,6 +370,7 @@ func _ready() -> void:
 			trade.open(peer, npc_id))   # the window is sent again with the new demand
 	items.npc_name = func(id): return str(npcs.npcs.get(id, {}).get("name", id))
 	dialogue.hour_now = func(): return game_clock.hour()
+	@warning_ignore("confusable_local_declaration")
 	dialogue.send_say = func(peer, id, npc_name, text, voice, choices, ends): net.npc_say.rpc_id(peer, id, npc_name, text, voice, choices, ends)
 	dialogue.setup(store_dir)
 
@@ -383,6 +416,7 @@ func _ready() -> void:
 	net.position_reported.connect(_on_position_reported)
 	net.water_rate_requested.connect(_on_water_rate_requested)
 	net.water_requested.connect(_on_water_requested)
+	@warning_ignore("confusable_local_declaration")
 	net.hello_requested.connect(func(peer, key):
 		var account: String = identity.authenticate(peer, key)
 
@@ -392,9 +426,11 @@ func _ready() -> void:
 		items.peer_connected_hello(peer, identity.store_key(account))
 		net.npc_roster.rpc_id(peer, npcs.roster()))
 	net.admin_place_requested.connect(_on_admin_place)
+	@warning_ignore("confusable_local_declaration")
 	net.npc_talk_requested.connect(func(peer, npc_id, choice): dialogue.talk(peer, npc_id, choice))
 	net.surface_requested.connect(_on_surface_requested)
 	net.dump_requested.connect(_on_dump_requested)
+	@warning_ignore("confusable_local_declaration")
 	net.inventory_action_requested.connect(func(peer, kind, a, b, count, at): items.action(peer, kind, a, b, count, at))
 	_report_at_msec = Time.get_ticks_msec() + 10000
 
@@ -574,6 +610,7 @@ func _on_blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int) -> 
 	var added: int = 0
 	_queue_mutex.lock()
 
+	@warning_ignore("integer_division")
 	for n in range(keys.size() / 4):
 		if _queue.size() + _prefetch.size() >= MAX_QUEUE_PER_PEER:
 			break
@@ -606,6 +643,7 @@ func _on_flora_requested(peer_id: int, chunks: PackedInt32Array) -> void:
 	var added: int = 0
 	_queue_mutex.lock()
 
+	@warning_ignore("integer_division")
 	for n in range(chunks.size() / 3):
 		var id: Array = [peer_id, Vector2i(chunks[3 * n], chunks[3 * n + 1]), chunks[3 * n + 2] != 0]
 
@@ -649,6 +687,7 @@ func _on_surface_requested(peer_id: int, x: float, z: float) -> void:
 
 
 func _on_water_requested(peer_id: int, chunks: PackedInt32Array) -> void:
+	@warning_ignore("integer_division")
 	for n in range(chunks.size() / 2):
 		var chunk: Vector2i = Vector2i(chunks[2 * n], chunks[2 * n + 1])
 		net.deliver_water.rpc_id(peer_id, chunk, flora.water_bytes(chunk))
@@ -1338,6 +1377,7 @@ func _idle_prebuild_column(anchor: Vector3i, offset: Array) -> bool:
 
 	for k in range(5):
 		var sx: float = (float(bx) + (0.5 if k == 4 else float(k % 2) * 0.99)) * block_m
+		@warning_ignore("integer_division")
 		var sz: float = (float(bz) + (0.5 if k == 4 else float(k / 2 % 2) * 0.99)) * block_m
 		var h: float = generator.surface_height(sx, sz)
 		low = minf(low, h)

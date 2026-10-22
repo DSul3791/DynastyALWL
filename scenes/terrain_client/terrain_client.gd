@@ -67,7 +67,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 579
+const BUILD := 580
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -1009,7 +1009,9 @@ func _welcome_body(info: Dictionary) -> void:
 	items.strain_event = func(strain, _state, _fade):
 		var shown: Array = items.faint_state()
 		faint.set_state(shown[0], strain, shown[1])
+	@warning_ignore("standalone_ternary")
 	items.chest_event = func(what, at): sound.placed.chest(what == "open", at) if what in ["open", "close"] else sound.placed.container(what == "put", at)
+	@warning_ignore("standalone_ternary")
 	items.tool_event = func(what): sound.placed.tool_break(body.global_position) if what == "broke" else sound.placed.tool_repair(body.global_position)
 	harvest = HarvestScript.new()
 	harvest.setup(self, items, net)
@@ -1499,6 +1501,7 @@ func _send_water_request(now: int) -> void:
 	for chunk in flora.held_chunks():
 		chunks.append_array(PackedInt32Array([chunk.x, chunk.y]))
 
+	@warning_ignore("integer_division")
 	print("Terrain client: the water moved, asking again for %d chunks" % (chunks.size() / 2))
 
 	if not chunks.is_empty():
@@ -1518,6 +1521,7 @@ func _on_flora_cut(chunk: Vector2i, id: int) -> void:
 	# of it this client holds is the same chunk.
 	var period: int = int(round(float(world["tiles_per_side"]) * float(world["tile_size_m"]) / flora.chunk_m))
 
+	@warning_ignore("shadowed_variable")
 	for held in _flora_asked:
 		if posmod(held.x - chunk.x, period) == 0 and posmod(held.y - chunk.y, period) == 0:
 			flora.remove_item(held, id, _anchor)
@@ -1681,6 +1685,7 @@ func _gather_nearest() -> void:
 	var best: Array = []
 
 	for chunk in flora._chunks:
+		@warning_ignore("shadowed_variable")
 		var held: Dictionary = flora._chunks[chunk]["items"]
 
 		for n in range(held["ids"].size()):
@@ -1702,6 +1707,7 @@ func _cut_nearest_tree() -> void:
 	var best: Array = []
 
 	for chunk in flora._chunks:
+		@warning_ignore("shadowed_variable")
 		var items: Dictionary = flora._chunks[chunk]["items"]
 
 		for n in range(items["ids"].size()):
@@ -1846,6 +1852,7 @@ func _report_display(prefix: String = "") -> void:
 	var render: Vector2i = Vector2i(Vector2(display.BASE) * _render_scale)
 	var text: String = "%s3D picture %dx%d" % [prefix, render.x, render.y]
 
+	@warning_ignore("static_called_on_instance")
 	if display.embedded():
 		text += " (window %dx%d). The game runs inside the editor, which owns the window: it cannot be resized or made fullscreen from here, only the 3D size changes. To change the real window size, resize the Game tab or turn embedding off (Project > Run without embedding)." % [win.x, win.y]
 	elif display.fullscreen:
@@ -2035,6 +2042,7 @@ func _build_menu(layer: CanvasLayer) -> void:
 		var kinds: Array = sound.creatures.KINDS.keys()
 		var moods: Array = ["idle", "alert", "threat"]
 		_sound_creature_at = (_sound_creature_at + 1) % (kinds.size() * moods.size())
+		@warning_ignore("integer_division")
 		var kind: String = kinds[_sound_creature_at / moods.size()]
 		var mood: String = moods[_sound_creature_at % moods.size()]
 		var distance: float = (float(sound.creatures.KINDS[kind]["dist"][0]) + float(sound.creatures.KINDS[kind]["dist"][1])) * 0.5
@@ -2179,12 +2187,14 @@ func _menu_button(parent: VBoxContainer, text: String, action: Callable) -> Butt
 	button.custom_minimum_size = Vector2(380.0, 52.0)
 	button.add_theme_font_size_override("font_size", 26)
 	button.pressed.connect(action)
+	@warning_ignore("standalone_ternary")
 	button.pressed.connect(func(): sound.ui.play("ui_click") if sound != null else null)   # after the action: a cue it plays itself wins
 	parent.add_child(button)
 	return button
 
 
 func _show_menu_page(page_name: String) -> void:
+	@warning_ignore("shadowed_variable_base_class")
 	for name in _menu_pages:
 		_menu_pages[name].visible = name == page_name
 
@@ -2434,6 +2444,7 @@ Esc: this menu"""
 # One line for screenshots: terrain version, tile stamp, starter ground, saved ground (size, hits, misses) and the guards' counts.
 func _crash_state() -> String:
 	var at: Vector3 = body.global_position if body != null else Vector3.ZERO
+	@warning_ignore("integer_division")
 	return "pos %d,%d,%d quality %d fps %d ram %d MB video %d MB menu %s screen %s" % [at.x, at.y, at.z, quality, Engine.get_frames_per_second(), int(OS.get_static_memory_usage() / 1048576), int(RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_VIDEO_MEM_USED) / 1048576), menu_open, items != null and items.screen_open()]
 
 
@@ -2576,6 +2587,7 @@ func _known_from_table(table: String, prefix: String, id: int) -> String:
 	var others: Array = []
 
 	for entry in _tables.get_entries(table):
+		@warning_ignore("shadowed_variable_base_class")
 		var name: String = str(entry.get("display", entry["name"]))
 
 		if int(entry["id"]) == id:
@@ -3375,6 +3387,7 @@ func _process(delta: float) -> void:
 			var h: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(q)
 			probes.append("+%dm east: %s" % [int(east), ("ground at %.0f" % h["position"].y) if not h.is_empty() else "NO GROUND"])
 
+		@warning_ignore("integer_division")
 		print("Terrain client: probe %d s after the welcome, player at %s: %s" % [(Time.get_ticks_msec() - connected_msec) / 1000, str(body.global_position.round()), ", ".join(probes)])
 
 	_ground_check_step(Time.get_ticks_msec())
@@ -3498,6 +3511,7 @@ func _process(delta: float) -> void:
 		_test_creature_step += 1
 
 		if step < kinds.size() * moods.size():
+			@warning_ignore("integer_division")
 			var kind: String = kinds[step / moods.size()]
 			var at: Vector3 = body.global_position + Vector3(30.0, 2.0, 0.0)
 			print("Terrain client: creature test %s %s -> %s" % [kind, moods[step % moods.size()], sound.creatures.call_at(kind, at, moods[step % moods.size()])])
@@ -3714,6 +3728,7 @@ func _process(delta: float) -> void:
 
 		print("Terrain client: levels set:%s" % report)
 
+		@warning_ignore("shadowed_variable_base_class")
 		for name in sound.levels:
 			sound.set_level(name, 1.0)
 
@@ -3809,6 +3824,7 @@ func _process(delta: float) -> void:
 	if test_windhole and now - connected_msec > 18000:
 		var hole = sound.windhole
 		var phases: Array = [Vector3(1.0, 0.0, 0.0), Vector3(1.0, 1.0, 0.0), Vector3(1.0, 0.0, 0.5), Vector3(1.0, 1.0, 1.0), Vector3(0.2, 1.0, 0.0)]
+		@warning_ignore("integer_division")
 		var step: int = int((now - connected_msec - 18000) / 3000)
 
 		if step < phases.size():
@@ -3841,12 +3857,14 @@ func _process(delta: float) -> void:
 					total += int(sound.ambient.calls_played[kind])
 
 				_sweep_max = maxi(_sweep_max, _sweep_peak)
+				@warning_ignore("integer_division")
 				print("Terrain client: sweep cell %s %02d:00 calls %d voices %d  %s" % [seasons[done / 8], (done % 8) * 3, total, _sweep_peak, str(sound.ambient.calls_played)])
 
 		if _sweep_step < cells:
 			_sweep_step += 1
 
 			if _sweep_step < cells:
+				@warning_ignore("integer_division")
 				sound.ambient.set_conditions(float((_sweep_step % 8) * 3), seasons[_sweep_step / 8], "clear")
 				sound.ambient.calls_played = {}
 				_sweep_peak = 0
@@ -4052,6 +4070,7 @@ func _process(delta: float) -> void:
 		var live_now: int = sp.voices_playing()
 		var cap_now: int = sp.cap()
 		sp.test_release()
+		@warning_ignore("shadowed_variable")
 		var weather = sound.weather
 		weather.rain = 1.0
 		weather.covered = 0.0
@@ -4099,6 +4118,7 @@ func _process(delta: float) -> void:
 
 	if test_reverb and now - connected_msec > 18000 and now >= _test_fire_at:
 		_test_fire_at = now + 10000000
+		@warning_ignore("shadowed_variable")
 		var world: int = AudioServer.get_bus_index("World")
 		var rows: Array = []
 
@@ -4195,6 +4215,7 @@ func _process(delta: float) -> void:
 			amb._voices.erase(flier["player"])
 			flier["player"].queue_free()
 
+		@warning_ignore("unused_variable")
 		var crow: bool = amb.flush(body.global_position + Vector3(20.0, 2.0, 0.0), 0.0, "large")
 		var crow_file: String = amb.last_file
 		print("Terrain client: flush check: %d flushes, small %d, medium %d, large %d, files used %d, repeats %d, crow file %s, source %s" % [300, sizes["small"], sizes["medium"], sizes["large"], files.size(), repeats, crow_file, amb._source.get("wing_small", "?")])
@@ -4271,6 +4292,7 @@ func _process(delta: float) -> void:
 			var list: Array = [{"id": 1, "at": base + Vector3(5.0, 0.0, 0.0), "size": 0.5, "lit": true, "open": true}]
 
 			for n in range(6):
+				@warning_ignore("integer_division")
 				list.append({"id": 10 + n, "at": base + Vector3(27.0 + float(n % 3) * 3.0, 0.0, float(n / 3) * 3.0), "size": 0.5, "lit": true, "open": true})
 
 			sound.fire.set_fires(list)
@@ -4312,6 +4334,7 @@ func _process(delta: float) -> void:
 
 			for file in DirAccess.get_files_at(dir):
 				if file.ends_with(".ogg") or file.ends_with(".wav"):
+					@warning_ignore("shadowed_variable")
 					var stream: AudioStream = sound.load_for_audit(dir, file.get_basename())
 					count += 1 if stream != null else 0
 
@@ -4365,6 +4388,7 @@ func _process(delta: float) -> void:
 		test_flood = false
 
 		for n in range(80):
+			@warning_ignore("integer_division")
 			sound.hits.hit("axe", "wood", body.global_position + Vector3(float(n % 20) * 5.0 + 3.0, 0.0, float(n / 20) * 10.0), 1.0)
 
 		var before: int = sound.voices_playing()
@@ -4399,6 +4423,7 @@ func _process(delta: float) -> void:
 
 	if frames_left > 0 and now >= _report_msec:
 		_report_msec = now + 10000
+		@warning_ignore("integer_division")
 		print("client: %d s, %d blocks loaded, %d from the server (%.1f MB), %d waiting, %d fps, at %s" % [
 			(now - connected_msec) / 1000, stream.loads, stream.blocks_received,
 			float(stream.bytes_received) / 1048576.0, stream.pending(), Engine.get_frames_per_second(), str(body.global_position.round())
@@ -4547,6 +4572,7 @@ func _debug_text(avg_ms: float, worst_ms: float) -> String:
 		text += "\nweather: rain %.2f snow %.2f storm %.2f sun %.2f wind %.2f, %.0f C, %s" % [weather["rain"], weather["snow"], weather["storm"], weather["sun"], weather["wind"], weather["temp_c"], "under cover" if under_cover > 0.0 else "open"]
 
 	var win: Vector2i = get_window().size
+	@warning_ignore("static_called_on_instance")
 	text += "\n3D %dx%d 16:9 in window %dx%d (scale %.2f)%s, %s, %s" % [int(display.BASE.x * _render_scale), int(display.BASE.y * _render_scale), win.x, win.y, _render_scale, " (embedded: editor owns the window)" if display.embedded() else "", RenderingServer.get_video_adapter_name(), RenderingServer.get_current_rendering_driver_name()]
 	text += "\nGPU breakdown: Ctrl+Shift+G or Esc > Advanced; table shows top left, press again to close; also in the log and user://gpu_probe.txt"
 	text += "\nlast step: " + sound.last_step
@@ -4763,6 +4789,7 @@ func _place_by_tree() -> bool:
 	var best: Array = []
 
 	for chunk in flora._chunks:
+		@warning_ignore("shadowed_variable")
 		var items: Dictionary = flora._chunks[chunk]["items"]
 
 		for n in range(items["ids"].size()):
@@ -4788,6 +4815,7 @@ func _place_by_tree() -> bool:
 
 func _walk_report() -> void:
 	var s: Dictionary = _walk_stats
+	@warning_ignore("integer_division")
 	print("Terrain client: walk: landed %.1f s after dropping %.0f m; walked %.0f m east in 30 s, on the ground %d%% of frames, %d frames below the ground (lowest gap %.2f m); tree trunk at x %.1f, furthest reached %.1f; put 60 m under the ground, then %.1f m above it (%d rescues); waited for ground %d of %d frames, slowest frame %.0f ms" % [
 		float(s.get("landed_s", -1.0)), float(s.get("drop_m", 0.0)), float(s.get("walked_m", 0.0)),
 		100 * int(s.get("floor_frames", 0)) / maxi(int(s.get("frames", 0)), 1), int(s.get("fell_through", 0)), float(s.get("lowest_gap", 0.0)),
