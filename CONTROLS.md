@@ -34,6 +34,7 @@ The single complete list of every input (keyboard, mouse, held versus tap, conte
 | F3 | Debug details on or off (the long diagnostic list; default HUD is only build, position, last sound). Also Esc > Settings. Threads add lines with `debug_hud.add_line(name, callable)`. |
 | Esc > Advanced > Measure this machine | About 1 minute: stands still and slowly turns at Low, Medium and High and shows fps, 1% low, worst frame, CPU and GPU ms, draw calls and video memory per tier; saved to machine_run.txt in the game data folder. Press it again to stop or to close the table |
 | Ctrl+Shift+G | GPU probe: stand still, press once; after about 20 s it lists what each piece (grass, trees, ground, sea, shadows, SSAO, glow, fog, anti-aliasing) costs in GPU ms; also saved to gpu_probe.txt in the game data folder |
+| Ctrl+Shift+W | Hide or show every river and lake drawing (debug: if an odd patch stays with the water hidden, it is ground, not water) |
 | J | Float jitter test: fly to the next far-from-origin spot (admin test, build 68) |
 | Esc > Controls | One screen listing every hotkey (Dave 2026-10-21); keep its text (HELP_TEXT in terrain_client.gd) in step with this file |
 | Esc | Options menu: Resume, Controls (every hotkey), Settings (quality, Resolution 1280x720 to 1920x1080, Window: windowed or fullscreen windowed, VSync, sound volume 100/75/50/25 % or off), Advanced (Clear saved ground, which takes effect at once), Quit game. Esc again resumes |

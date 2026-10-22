@@ -67,7 +67,7 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 627
+const BUILD := 992
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -3142,6 +3142,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			_jitter_test.next_spot()
 		elif event.keycode == KEY_G and event.ctrl_pressed and event.shift_pressed:
 			_gpu_probe.toggle()
+		elif event.keycode == KEY_W and event.ctrl_pressed and event.shift_pressed:
+			flora.toggle_water_visible()
 		elif event.keycode == KEY_F3:
 			debug_hud.enabled = not debug_hud.enabled
 		elif event.keycode == KEY_F4:

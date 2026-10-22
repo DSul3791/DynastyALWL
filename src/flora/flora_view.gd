@@ -287,6 +287,15 @@ var _impostor_node: Node
 const START_FLOW_RATE := 10.0      # water_live.gd DEFAULT_RATE (the server's start rate)
 
 
+# Ctrl+Shift+W hides every river and lake drawing (debug: does an odd patch on the water stay, then it is ground).
+var water_hidden: bool = false
+
+
+func toggle_water_visible() -> void:
+	water_hidden = not water_hidden
+	get_tree().call_group("water_draw", "set_visible", not water_hidden)
+
+
 func water_material() -> Material:
 	return _water_material
 
@@ -895,6 +904,8 @@ func _draw_water(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void:
 			draw.mesh = mesh
 			draw.position = Vector3(float(chunk.x) * chunk_m, 0.0, float(chunk.y) * chunk_m)
 			draw.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			draw.visible = not water_hidden
+			draw.add_to_group("water_draw")
 			add_child(draw)
 			entry["water"] = draw
 			water_chunks += 1
@@ -986,6 +997,8 @@ func set_chunk(chunk: Vector2i, items: Dictionary, from_position: Vector3, water
 			draw.mesh = mesh
 			draw.position = Vector3(float(chunk.x) * chunk_m, 0.0, float(chunk.y) * chunk_m)
 			draw.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			draw.visible = not water_hidden
+			draw.add_to_group("water_draw")
 			add_child(draw)
 			entry["water"] = draw
 			water_chunks += 1
