@@ -1,6 +1,3 @@
-## tier-fine | Existing lumber pieces become the FINE WOOD tier (nails added to their recipe)?
-[check]
-
 ## tier-foundations | Foundation sizes: 4 x 4 standard, 6 x 6 large, 8 x 8 mason?
 [check]
 
