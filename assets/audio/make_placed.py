@@ -211,8 +211,27 @@ def quake_tick(rng):
     return finish(out, 0.85)
 
 
+def soil_load(rng):
+    # Soil sliding onto the shovel blade: a soft hiss and a few crumbs.
+    out = np.zeros(int(0.7 * SR))
+    add(out, rustle(rng, int(0.45 * SR), 1400, 1.2) * env(int(0.45 * SR), 0.05, 0.25) * 0.6, 0.0)
+
+    for at in np.sort(rng.uniform(0.05, 0.5, 6)):
+        add(out, burst(rng, 0.02, rng.uniform(900, 2500), 1.0) * rng.uniform(0.1, 0.3), at)
+
+    return finish(out, 0.6)
+
+
+def stone_load(rng):
+    # A stone set on the blade: a dull clack and a short scrape.
+    out = np.zeros(int(0.5 * SR))
+    add(out, knock(rng, rng.uniform(300, 420), 0.015, 2400, 1.2), 0.0)
+    add(out, rustle(rng, int(0.2 * SR), 2200, 1.4) * env(int(0.2 * SR), 0.02, 0.1) * 0.3, 0.03)
+    return finish(out, 0.7)
+
+
 ONE_SHOTS = {"place_leanto": place_leanto, "place_chest": place_chest, "place_thump": place_thump, "pickup_placed": pickup_placed,
-             "container_put": container_put, "container_take": container_take, "tool_break": tool_break, "tool_repair": tool_repair, "tool_warn": tool_warn, "place_timber": place_timber, "place_foundation": place_foundation, "bracing_creak": bracing_creak, "bracing_rumble": bracing_rumble, "dust_patter": dust_patter, "bracing_crack": bracing_crack, "quake_tick": quake_tick}
+             "container_put": container_put, "container_take": container_take, "tool_break": tool_break, "tool_repair": tool_repair, "tool_warn": tool_warn, "place_timber": place_timber, "place_foundation": place_foundation, "bracing_creak": bracing_creak, "bracing_rumble": bracing_rumble, "dust_patter": dust_patter, "bracing_crack": bracing_crack, "quake_tick": quake_tick, "soil_load": soil_load, "stone_load": stone_load}
 
 
 def main():
