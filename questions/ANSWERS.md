@@ -504,3 +504,7 @@ Answered: 2026-10-22 23:36 UTC
 Answer: Yes
 Answered: 2026-10-22 23:42 UTC
 
+## blueprint-7 | Rename cordage to Twine in names only, id unchanged so saves keep working?
+Answer: No: It’s early on in the development go ahead and change them all to twine. I assume you mean the save files for the game so that we keep materials laying around on the ground and if this is the case just to delete all the files and we will make more.
+Answered: 2026-10-22 23:43 UTC
+
