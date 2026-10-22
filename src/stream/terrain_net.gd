@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 68
+const PROTOCOL_VERSION := 69
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -86,6 +86,8 @@ signal reject_received(reason: int)
 signal craft_queue_received(entries: Array, left_ms: int)
 signal strain_received(strain_pm: int, state: int, fade_pm: int, stance: int)
 signal hello_requested(peer_id: int, player_key: String)
+signal logout_requested(peer_id: int)
+signal start_at_received(position: Vector3)
 signal inventory_action_requested(peer_id: int, kind: int, a: int, b: int, count: int, at: Vector3)
 signal inventory_full_received(bytes: PackedByteArray)
 signal inventory_slots_received(bytes: PackedByteArray)
@@ -269,6 +271,20 @@ func surface(x: float, z: float, y: float) -> void:
 func deliver_water(chunk: Vector2i, water: PackedByteArray) -> void:
 	water_received.emit(chunk, water)
 
+
+
+# A deliberate quit (Quit game, window close): sent before the connection ends. No such message = a disconnect (protocol 69).
+@rpc("any_peer", "call_remote", "reliable")
+func logout() -> void:
+	if multiplayer.is_server():
+		logout_requested.emit(multiplayer.get_remote_sender_id())
+
+
+# Where this character resumes (protocol 69): sent after hello when the player has a saved place (their last spot, or the nearest
+# rest or shelter after a long disconnect). Without it the player stays at the world spawn.
+@rpc("authority", "call_remote", "reliable")
+func start_at(position: Vector3) -> void:
+	start_at_received.emit(position)
 
 
 @rpc("any_peer", "call_remote", "reliable")

@@ -371,7 +371,57 @@ func peer_connected_hello(peer: int, key: String) -> void:
 	_sync_craft_queue(peer)
 
 
+# --- Where a character resumes (protocol 69, DECISIONS collapse-offline) ---
+const RESUME_GRACE_S := 120          # a reconnect within this long of a dropped connection resumes in place
+const SAVE_SPOT_EVERY_MSEC := 30000  # the last known spot is written to the character at most this often while playing
+var _logout_peers: Dictionary = {}   # peer -> true once the client said it is quitting on purpose
+var _spot_saved_msec: Dictionary = {}
+
+
+func note_logout(peer: int) -> void:
+	if _peer_key.has(peer):
+		_logout_peers[peer] = true
+
+
+# Writes where the peer is and how they last left into the character row: "online" while playing, then "deliberate" (the client
+# sent logout first) or "disconnect" (anything else: a dropped line, a crash, a kick, a server stop).
+func _note_spot(peer: int, how: String) -> void:
+	var key: String = str(_peer_key.get(peer, ""))
+
+	if key == "" or not _characters.has(key) or not _peer_pos.has(peer):
+		return
+
+	var at: Vector3 = _peer_pos[peer]
+	_characters[key]["last"] = {"pos": [at.x, at.y, at.z], "t": int(Time.get_unix_time_from_system()), "left": how}
+	_dirty = true
+
+
+# [x, y, z] where this peer starts, or [] to stay at the world spawn. Deliberate quit: the saved spot. Disconnect (or a spot last
+# written while online, which a crash leaves): the saved spot when they come back within RESUME_GRACE_S, else where they last
+# rested or sheltered (respawn_for), else the world spawn.
+func start_position_for(peer: int) -> Array:
+	var row: Dictionary = _characters.get(_peer_key.get(peer, ""), {})
+	var last: Dictionary = row.get("last", {})
+	var pos: Array = last.get("pos", [])
+
+	if pos.size() != 3:
+		return []
+
+	var spot := Vector3(float(pos[0]), float(pos[1]), float(pos[2]))
+
+	if not (is_finite(spot.x) and is_finite(spot.y) and is_finite(spot.z)):
+		return []
+
+	if str(last.get("left", "")) != "deliberate" and int(Time.get_unix_time_from_system()) - int(last.get("t", 0)) > RESUME_GRACE_S:
+		spot = respawn_for(peer)
+
+	return [spot.x, spot.y, spot.z]
+
+
 func peer_left(peer: int) -> void:
+	_note_spot(peer, "deliberate" if _logout_peers.has(peer) else "disconnect")
+	_logout_peers.erase(peer)
+	_spot_saved_msec.erase(peer)
 	_station_said.erase(peer)
 	_hole_blows.erase(peer)
 	_fishing.erase(peer)
@@ -419,6 +469,11 @@ func report_position(peer: int, position: Vector3) -> void:
 	if _peer_key.has(peer):
 		_peer_pos[peer] = position
 		_note_motion(peer, position)
+		var now: int = Time.get_ticks_msec()
+
+		if now - int(_spot_saved_msec.get(peer, 0)) >= SAVE_SPOT_EVERY_MSEC:
+			_spot_saved_msec[peer] = now
+			_note_spot(peer, "online")
 
 
 func inventory_of(peer: int):

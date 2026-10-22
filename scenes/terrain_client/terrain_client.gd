@@ -351,6 +351,7 @@ var test_quickkeys: bool = false
 var test_texttest: bool = false
 var test_plantpick: bool = false
 var test_embed: bool = false
+var test_resume: String = ""          # --resume-test=logout|drop (leave 60 m from the spawn) or =check (say where the game starts)
 var test_dig_next: bool = false
 var test_spear: bool = false
 var test_chop: bool = false
@@ -636,6 +637,8 @@ func _ready() -> void:
 			test_plantpick = true
 		elif argument == "--embed-test":
 			test_embed = true
+		elif argument.begins_with("--resume-test="):
+			test_resume = argument.trim_prefix("--resume-test=")
 		elif argument == "--dig-next-test":
 			test_dig_next = true
 		elif argument == "--texttest":
@@ -678,6 +681,7 @@ func _ready() -> void:
 			link_bars.pulse())
 	net.ground_reset_received.connect(_on_ground_reset)
 	net.died_received.connect(_on_died)
+	net.start_at_received.connect(_on_start_at)
 	net.water_received.connect(_on_water_received)
 	net.surface_received.connect(_on_surface_received)
 	net.dump_received.connect(_on_dump_received)
@@ -1224,6 +1228,9 @@ func _welcome_body(info: Dictionary) -> void:
 	if test_embed:
 		_run_embed_test()
 
+	if test_resume != "":
+		_run_resume_test()
+
 	if test_dig_next:
 		_run_dig_next_test()
 
@@ -1482,6 +1489,23 @@ func _go_to_npc() -> void:
 		items.show_notice("Next to %s (roster %d, drawn %d)" % [str(near["name"]), _npc_view.roster.size(), _npc_view.drawn_count()])
 
 	body.global_position = near["pos"] + Vector3(2.0, 1.5, 0.0)
+
+
+# The server's answer to hello with where this character resumes (protocol 69): their last spot, or the nearest rest or shelter.
+func _on_start_at(spot: Vector3) -> void:
+	if body == null or body.global_position.distance_to(spot) < 8.0:
+		return
+
+	_telemetry.event("JOIN: resuming at %s (from %s)" % [str(spot.round()), str(body.global_position.round())])
+	body.global_position = spot + Vector3(0.0, 1.0, 0.0)
+	body.velocity = Vector3.ZERO
+
+
+# Tells the server this quit is on purpose, then lets the packet go out before the game closes.
+func _say_logout() -> void:
+	if multiplayer.multiplayer_peer != null and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED and net != null:
+		net.logout.rpc_id(1)
+		multiplayer.poll()
 
 
 func _on_died(_cause: String, spawn_point: Vector3) -> void:
@@ -2146,7 +2170,9 @@ func _build_menu(layer: CanvasLayer) -> void:
 	_menu_button(main, "Settings", func(): _show_menu_page("settings"))
 	_menu_button(main, "Controls (every hotkey)", func(): _show_menu_page("controls"))
 	_menu_button(main, "Advanced", func(): _show_menu_page("advanced"))
-	_menu_button(main, "Quit game", func(): get_tree().quit())
+	_menu_button(main, "Quit game", func():
+		_say_logout()
+		get_tree().quit())
 
 	var controls: VBoxContainer = _menu_page(column, "controls")
 	var controls_text: Label = Label.new()
@@ -3013,6 +3039,7 @@ func _make_avatar() -> Node3D:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
 		_telemetry.event("EXIT: the window was asked to close (X button, Alt+F4 or the editor's Stop)")
+		_say_logout()
 
 	if crash_report == null:
 		return
@@ -5095,6 +5122,29 @@ func _run_dig_next_test() -> void:
 
 	await get_tree().create_timer(4.0).timeout
 	print("Dig-next test: %d digs around the player; start y %.1f, lowest y %.1f, now y %.1f, longest time off the floor %d frames, rescues %d, %s" % [spots.size(), start.y, lowest, body.global_position.y, off_floor_max, rescue.rescued, "NEVER BELOW THE WORLD" if lowest > start.y - 6.0 else "FELL THROUGH"])
+
+
+# Headless check (--resume-test=logout|drop|check): two runs against one server. "logout"/"drop" walk 60 m from the spawn and leave
+# with or without telling the server; "check" prints how far from the spawn the game starts (a resume puts it back at the spot).
+func _run_resume_test() -> void:
+	await get_tree().create_timer(25.0).timeout
+	var spawn: Vector3 = world["spawn"]
+
+	if test_resume == "check":
+		print("Resume test: started %.0f m from the spawn, at %s" % [Vector2(body.global_position.x - spawn.x, body.global_position.z - spawn.z).length(), str(body.global_position.round())])
+		_finish(0)
+		return
+
+	body.global_position = spawn + Vector3(60.0, 4.0, 0.0)
+	body.velocity = Vector3.ZERO
+	await get_tree().create_timer(6.0).timeout
+	print("Resume test: leaving (%s) at %s" % [test_resume, str(body.global_position.round())])
+
+	if test_resume == "logout":
+		_say_logout()
+		await get_tree().create_timer(0.5).timeout
+
+	_finish(0)
 
 
 # Headless check (--embed-test): put the body 4 m inside the ground; it must be out within 3 s.
