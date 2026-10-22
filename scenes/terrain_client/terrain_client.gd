@@ -3629,8 +3629,8 @@ func _process(delta: float) -> void:
 			net.inventory_action.rpc_id(1, NetScript.ACT_DROP, 1, 0, 1, Vector3(world["spawn"]))
 		else:
 			var cell: int = i % 81
-			var layer: int = int(floorf(float(i) / 81.0)) % 4
-			net.inventory_action.rpc_id(1, NetScript.ACT_DIG, 0, 0, 0, Vector3(world["spawn"]) + Vector3(float(cell % 9 - 4) * 0.5, -2.0 - 0.4 * float(layer), float(int(floorf(float(cell) / 9.0)) - 4) * 0.5))
+			var layer: int = int(floorf(float(i) / 81.0)) % 12
+			net.dig.rpc_id(1, Vector3(world["spawn"]) + Vector3(float(cell % 9 - 4) * 0.5, -2.0 - 0.4 * float(layer), float(int(floorf(float(cell) / 9.0)) - 4) * 0.5), 0.9)
 
 	if link_bars != null:
 		link_bars.client_stalled(delta)

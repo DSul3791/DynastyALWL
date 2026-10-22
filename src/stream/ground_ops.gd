@@ -25,6 +25,7 @@ const KIND_DIG := 0
 const KIND_FILL := 1
 const SHAPE_SPHERE := 0
 const MAX_PER_BLOCK := 600       # Technical direction: replay cap per block; a block this busy takes no more (200 until build 610: a minute of fast digging in one spot filled it and the spade then did nothing, silently)
+const MAX_TOTAL_PER_BLOCK := 20000   # lifetime edits one block may hold (memory and the water replay); the settled cache lifts the replay cost, not this
 const MAX_RADIUS_M := 3.0        # Technical direction: widest hole one operation makes
 
 var count: int = 0
@@ -35,6 +36,7 @@ var _kinds: PackedByteArray = PackedByteArray()
 var _materials: PackedInt32Array = PackedInt32Array()
 var _centres: PackedVector3Array = PackedVector3Array()
 var _radii: PackedFloat32Array = PackedFloat32Array()
+var settled_upto: Callable           # (block) -> int: edits with a number below it are already in the block's settled copy (0 when none)
 var _by_block: Dictionary = {}   # Vector3i -> PackedInt32Array of operation numbers, oldest first
 var _path: String = ""
 var _file: FileAccess
@@ -138,7 +140,7 @@ func add(kind: int, material: int, centre: Vector3, radius: float) -> Array:
 	_mutex.lock()
 
 	for block in blocks:
-		if _by_block.has(block) and (_by_block[block] as PackedInt32Array).size() >= MAX_PER_BLOCK:
+		if _by_block.has(block) and _full(block):
 			rejected += 1
 			_mutex.unlock()
 			return []
@@ -200,6 +202,12 @@ func edits_near(point: Vector3, radius: float) -> Array:
 
 # Applies the block's operations, oldest first, to `buffer` (the generated block).
 func apply(buffer: VoxelBuffer, block: Vector3i) -> void:
+	apply_range(buffer, block, 0, 1 << 30)
+
+
+# The block's operations numbered from `from_seq` up to but not including `to_seq`, oldest first: the settled copy of a block
+# holds those below its `upto`, the rest are replayed on top (ground_settle.gd).
+func apply_range(buffer: VoxelBuffer, block: Vector3i, from_seq: int, to_seq: int) -> void:
 	_mutex.lock()
 
 	if not _by_block.has(block):
@@ -215,7 +223,69 @@ func apply(buffer: VoxelBuffer, block: Vector3i) -> void:
 	var origin: Vector3 = Vector3(block * BLOCK_SIZE)
 
 	for n in list:
-		apply_op(buffer, origin, int(kinds[n]), int(materials[n]), centres[n], radii[n])
+		if n >= from_seq and n < to_seq:
+			apply_op(buffer, origin, int(kinds[n]), int(materials[n]), centres[n], radii[n])
+
+
+# One more than the number of the block's newest operation (0 when it has none): a settled copy made now covers every
+# operation below this.
+func seq_end(block: Vector3i) -> int:
+	_mutex.lock()
+	var end: int = 0
+
+	if _by_block.has(block):
+		var list: PackedInt32Array = _by_block[block]
+		end = int(list[list.size() - 1]) + 1
+
+	_mutex.unlock()
+	return end
+
+
+# The block's operations numbered `upto` or higher (not yet in its settled copy).
+func unsettled_in(block: Vector3i, upto: int) -> int:
+	_mutex.lock()
+	var n: int = _unsettled(block, upto)
+	_mutex.unlock()
+	return n
+
+
+# The most operations any block holds, for the telemetry.
+func busiest_block() -> int:
+	_mutex.lock()
+	var most: int = 0
+
+	for block in _by_block:
+		most = maxi(most, (_by_block[block] as PackedInt32Array).size())
+
+	_mutex.unlock()
+	return most
+
+
+# Caller holds _mutex.
+func _unsettled(block: Vector3i, upto: int) -> int:
+	if not _by_block.has(block):
+		return 0
+
+	var list: PackedInt32Array = _by_block[block]
+	var n: int = 0
+
+	for at in range(list.size() - 1, -1, -1):
+		if list[at] < upto:
+			break
+
+		n += 1
+
+	return n
+
+
+# Caller holds _mutex. A block is full when it holds MAX_TOTAL_PER_BLOCK operations in all, or MAX_PER_BLOCK that the
+# settled cache has not taken over yet (the worker has fallen far behind).
+func _full(block: Vector3i) -> bool:
+	if (_by_block[block] as PackedInt32Array).size() >= MAX_TOTAL_PER_BLOCK:
+		return true
+
+	var upto: int = int(settled_upto.call(block)) if settled_upto.is_valid() else 0
+	return _unsettled(block, upto) >= MAX_PER_BLOCK
 
 
 # One sphere into a block whose corner is `origin`. A dig empties the sphere (ground distance

@@ -24,6 +24,7 @@ extends RefCounted
 
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const GroundOps := preload("res://src/stream/ground_ops.gd")
+const GroundSettle := preload("res://src/stream/ground_settle.gd")
 
 const BLOCK_SIZE := 16
 
@@ -47,6 +48,7 @@ var _mutex: Mutex = Mutex.new()
 var _timing_on: bool = OS.has_environment("BLOCKTIME")
 var _timing: Dictionary = {}            # piece -> [calls, microseconds]; printed at exit when BLOCKTIME is set
 var _edit_mutex: Mutex = Mutex.new()
+var settle = GroundSettle.new()        # settled copies of busy blocks (ground_settle.gd); the edit log stays the truth
 var ops = GroundOps.new()               # the ground edit log (digs.dat, DIGS2): digs and fills replayed over every block
 
 
@@ -84,6 +86,12 @@ func setup(terrain_generator, store_dir: String) -> String:
 		return ops_error
 
 	print("server: %d ground edits loaded from digs.dat" % ops.count)
+	_purge_old_settled()
+	var settle_error: String = _open_settle()
+
+	if settle_error != "":
+		return settle_error
+
 	var path: String = store_dir + "/revisions.json"
 
 	if FileAccess.file_exists(path):
@@ -161,6 +169,35 @@ func _write(path: String, text: String) -> void:
 		file.close()
 
 
+func _settled_stem() -> String:
+	return ProjectSettings.globalize_path(_store_dir) + "/settled_g%d" % _generation
+
+
+# The settled copies of earlier generations (a bake, a cleared cache) are deleted: they were made from other ground.
+func _purge_old_settled() -> void:
+	var folder: String = ProjectSettings.globalize_path(_store_dir)
+
+	for file in DirAccess.get_files_at(folder):
+		if file.begins_with("settled_g") and not file.begins_with("settled_g%d." % _generation):
+			DirAccess.remove_absolute(folder + "/" + file)
+
+
+func _open_settle() -> String:
+	settle.ops = ops
+	settle.base_loader = _load_base_lod0
+	settle.guard = _settled_ok
+	ops.settled_upto = settle.upto_of
+	return settle.open(_settled_stem())
+
+
+func _load_base_lod0(buffer: VoxelBuffer, block: Vector3i) -> void:
+	_load_base(buffer, block, 0)
+
+
+func _settled_ok(buffer: VoxelBuffer, block: Vector3i) -> bool:
+	return not looks_zeroed(buffer) and _is_sane(buffer, block, 0)
+
+
 func _generated_name() -> String:
 	return "generated.sqlite" if _generation == 0 else "generated_g%d.sqlite" % _generation
 
@@ -191,6 +228,11 @@ func clear_generated() -> void:
 		file.close()
 
 	_cache = _open_generated()
+	# The settled copies were made over the ground just thrown away: new files for the new generation, the old ones deleted.
+	settle.close()
+	settle = GroundSettle.new()
+	_purge_old_settled()
+	_open_settle()
 
 
 func revision_of(tile: Vector2i) -> int:
@@ -210,6 +252,15 @@ func revisions() -> Dictionary:
 # The full block (nothing hidden) into `buffer`: the ground as generated (or kept from an older edit), with
 # every logged dig that reaches it cut again on top, so a re-bake keeps the holes.
 func load_block(buffer: VoxelBuffer, block: Vector3i, lod: int) -> void:
+	if lod == 0:
+		# A busy block has a settled copy with its first `upto` edits in it: replay only the rest (the same ground as replaying
+		# them all, ground_settle.gd).
+		var upto: int = settle.try_load(buffer, block)
+
+		if upto >= 0:
+			ops.apply_range(buffer, block, upto, 1 << 30)
+			return
+
 	_load_base(buffer, block, lod)
 
 	if lod == 0:
@@ -429,6 +480,7 @@ func edit_sphere(kind: int, material: int, center: Vector3, radius: float) -> Ar
 
 	for block in ops.add(kind, material, center, radius):
 		changed_tiles[generator.tile_of(float(block.x * BLOCK_SIZE), float(block.z * BLOCK_SIZE))] = true
+		settle.consider(block)
 
 	for tile in changed_tiles:
 		var key: String = "%d,%d" % [tile.x, tile.y]
@@ -458,6 +510,7 @@ func save_revisions() -> void:
 
 
 func flush() -> void:
+	settle.close()
 	save_revisions()
 	_cache.flush()
 	_edits.flush()
