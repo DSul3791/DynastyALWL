@@ -1,6 +1,3 @@
-## blueprint-8 | Keep the old flat roof as the fine-wood flat roof next to the six new slope pieces?
-[check]
-
 ## blueprint-9 | Pillars on every tier, 5 anchors per cell, solid but not carrying load yet?
 [check]
 
