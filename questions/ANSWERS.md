@@ -540,3 +540,7 @@ Answered: 2026-10-22 23:53 UTC
 Answer: No: I want to clarify what I mean by hide the whole bottom if it is a slope and you can only set a foundation down until it starts to go underground has to stop there if the bottom does not have ground underneath all of it and it cannot be placed so if the slope is shallow, then you should have no problem, but if it’s too steep, this will stop you. And a foundation should have a height, maximum height, the same as its width and length so it’s a cube and you can raise it until there’s about point one of a metre underground or you can lower it until there’s point one of a metre above ground
 Answered: 2026-10-22 23:55 UTC
 
+## blueprint-10 | Foundation needs ground level enough to hide the whole bottom (about 0.3 m), otherwise you level it first?
+Answer: No: I want to clarify what I mean by hide the whole bottom if it is a slope and you can only set a foundation down until it starts to go underground has to stop there if the bottom does not have ground underneath all of it and it cannot be placed so if the slope is shallow, then you should have no problem, but if it’s too steep, this will stop you. And a foundation should have a height, maximum height, the same as its width and length so it’s a cube and you can raise it until there’s about point one of a metre underground or you can lower it until there’s point one of a metre above ground
+Answered: 2026-10-22 23:55 UTC
+
