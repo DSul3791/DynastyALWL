@@ -344,3 +344,7 @@ Answered: 2026-10-22 20:58 UTC
 Answer: No: You can turn logs into lumber at the sawmill and then at the firsttier woodworking table you can turn lumber into fine boards
 Answered: 2026-10-22 22:13 UTC
 
+## tier-foundations | Foundation sizes: 4 x 4 standard, 6 x 6 large, 8 x 8 mason?
+Answer: No: They’re also has to be a one by one and a 2 x 2 in the smaller versions
+Answered: 2026-10-22 22:13 UTC
+
