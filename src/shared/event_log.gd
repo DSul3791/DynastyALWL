@@ -9,6 +9,12 @@ var _lines: int = 0
 var _last_tick_msec: int = 0
 var _next_state_msec: int = 0
 var _max_gap_msec: int = 0
+var _mutex: Mutex = Mutex.new()
+var _phase: String = ""                 # what the main thread is in (mark()), read by the watchdog thread
+var _phase_since_msec: int = 0
+var _phase_max: Dictionary = {}         # phase -> longest ms this second
+var _watchdog: Thread
+var _stop: bool = false
 
 
 # The file goes into the project's crash_reports folder (the one the game is played from, so it shows up in GitHub Desktop);
@@ -24,6 +30,12 @@ func start(name: String) -> void:
 
 
 func event(text: String) -> void:
+	_mutex.lock()
+	_write(text)
+	_mutex.unlock()
+
+
+func _write(text: String) -> void:
 	if _file == null:
 		return
 
@@ -50,8 +62,54 @@ func tick(state: Callable, every_msec: int, stall_msec: int) -> void:
 
 	if now >= _next_state_msec:
 		_next_state_msec = now + every_msec
-		event("max gap %d ms | %s" % [_max_gap_msec, String(state.call())])
+		event("max gap %d ms%s | %s" % [_max_gap_msec, _slowest_phases(), String(state.call())])
 		_max_gap_msec = 0
+		_phase_max.clear()
+
+
+# The main thread says where it is (one call between the steps of a frame). The time since the last mark goes to the step
+# that just ended; the slowest steps of the second are printed in the state line, and the watchdog names the step a frozen
+# main thread is stuck in.
+func mark(phase: String) -> void:
+	var now: int = Time.get_ticks_msec()
+
+	if _phase != "":
+		_phase_max[_phase] = maxi(int(_phase_max.get(_phase, 0)), now - _phase_since_msec)
+
+	_phase = phase
+	_phase_since_msec = now
+
+
+func _slowest_phases() -> String:
+	var parts: PackedStringArray = PackedStringArray()
+
+	for phase in _phase_max:
+		if int(_phase_max[phase]) >= 50:
+			parts.append("%s %d" % [phase, int(_phase_max[phase])])
+
+	return " (slow steps ms: %s)" % ", ".join(parts) if not parts.is_empty() else ""
+
+
+# A thread that writes a line each second while the main thread has not run for 3 s, naming the step it is stuck in.
+func start_watchdog() -> void:
+	_watchdog = Thread.new()
+	_watchdog.start(_watch)
+
+
+func stop_watchdog() -> void:
+	_stop = true
+
+	if _watchdog != null and _watchdog.is_started():
+		_watchdog.wait_to_finish()
+
+
+func _watch() -> void:
+	while not _stop:
+		OS.delay_msec(1000)
+		var silent: int = Time.get_ticks_msec() - _last_tick_msec
+
+		if _last_tick_msec > 0 and silent > 3000:
+			event("WATCHDOG: the main thread has been silent for %d s, in step '%s' for %d s" % [int(silent / 1000.0), _phase, int((Time.get_ticks_msec() - _phase_since_msec) / 1000.0)])
 
 
 func _cut() -> void:

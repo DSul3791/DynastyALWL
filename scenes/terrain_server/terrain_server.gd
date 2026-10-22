@@ -398,6 +398,7 @@ func _ready() -> void:
 
 	multiplayer.multiplayer_peer = peer
 	_events.start("telemetry_server_%d.log" % port)
+	_events.start_watchdog()
 	_events.event("server listening on port %d, %s, ram %d MB" % [port, OS.get_name(), int(OS.get_static_memory_usage() / 1048576.0)])
 	# Build the flora of the spawn's chunk once here, before any other thread exists. Start-up
 	# crash (owner thread bug, build 204): about 1 start in 10 to 20 a worker thread died in the
@@ -1096,18 +1097,27 @@ func _process(delta: float) -> void:
 
 	game_clock.advance(delta)
 	_events.tick(_event_state, 1000, 500)
+	_events.mark("clock")
 
 	if Time.get_ticks_msec() - _clock_saved_msec > 30000:
 		_save_game_clock()
 
+	_events.mark("water poll")
 	_poll_water()
+	_events.mark("weather")
 	_update_weather()
+	_events.mark("items")
 	items.tick(delta)
+	_events.mark("npcs")
 	npcs.unwell = dialogue.router.is_unwell()
 	npcs.tick(delta)
+	_events.mark("animals")
 	animals.tick(delta)
+	_events.mark("trails")
 	trails.tick(delta)
+	_events.mark("send npcs")
 	_send_npcs(delta)
+	_events.mark("deliver blocks")
 
 	# Send what the workers made, batched per peer.
 	_done_mutex.lock()
@@ -1152,6 +1162,7 @@ func _process(delta: float) -> void:
 		if not batches[peer_id][1].is_empty():
 			_send(peer_id, batches[peer_id])
 
+	_events.mark("checks")
 	var now: int = Time.get_ticks_msec()
 
 	var flag_path: String = _store_path + "/clear_generated.now"
@@ -1213,6 +1224,8 @@ func _process(delta: float) -> void:
 		store.flush()
 		print("server: done; generated %d, cache hits %d, edit hits %d" % [store.blocks_generated, store.cache_hits, store.edit_hits])
 		get_tree().quit(0)
+
+	_events.mark("between frames (rpc handlers, engine)")
 
 
 func _send(peer_id: int, batch: Array) -> void:
@@ -1452,6 +1465,7 @@ func _save_game_clock() -> void:
 
 func _exit_tree() -> void:
 	_events.event("EXIT: server closed (exit_tree)")
+	_events.stop_watchdog()
 	_save_game_clock()
 
 	if trails != null:

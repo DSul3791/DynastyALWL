@@ -31,6 +31,9 @@ var _next_state_msec: int = 0
 var _build: int = 0
 var _last_tick_msec: int = 0
 var reported_now: bool = false
+var _watchdog: Thread
+var _watchdog_stop: bool = false
+var _hang_reported: bool = false
 var server_port: int = 0            # the server's port: its own events file is added to a report
 
 
@@ -64,11 +67,17 @@ func start(build: int, commit: String) -> void:
 	_logger = BreadLogger.new()
 	_logger.owner_report = self
 	OS.add_logger(_logger)
+	_watchdog = Thread.new()
+	_watchdog.start(_watch)
 	event("start build %d (%s), %s, %s; run from the editor: %s, editor debugger attached: %s" % [build, commit, OS.get_name(), _machine(), OS.has_feature("editor"), EngineDebugger.is_active()])
 
 
 func mark_clean() -> void:
 	event("clean exit")
+	_watchdog_stop = true
+
+	if _watchdog != null and _watchdog.is_started():
+		_watchdog.wait_to_finish()
 
 	if _logger != null:
 		OS.remove_logger(_logger)
@@ -116,6 +125,30 @@ func tick(state: Callable) -> void:
 
 	if _lines_written > FILE_LINES_MAX:
 		_trim()
+
+
+# A thread that watches the main thread: when no frame has run for 3 s it says so once a second with what the engine is doing,
+# and after 15 s it writes a full report (the game may be killed soon after, a minute later in Dave's case).
+func _watch() -> void:
+
+	while not _watchdog_stop:
+		OS.delay_msec(1000)
+		var last: int = _last_tick_msec
+
+		if last == 0:
+			continue
+
+		var silent: int = Time.get_ticks_msec() - last
+
+		if silent < 3000:
+			_hang_reported = false
+			continue
+
+		event("WATCHDOG: the main thread has been silent for %d s; voxel engine %s" % [int(silent / 1000.0), str(VoxelEngine.get_stats().get("tasks", {}))])
+
+		if silent >= 15000 and not _hang_reported:
+			_hang_reported = true
+			last_report = _write_report("The game is HUNG: the main thread was silent for %d s (a freeze, not a clean quit). The run: %s" % [int(silent / 1000.0), "build %d" % _build], "build %d" % _build, "godot.log")
 
 
 func _trim() -> void:
