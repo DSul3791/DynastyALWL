@@ -1,6 +1,3 @@
-## tier-mason-heavy | Mason walls are so heavy (about 200 kg) that you build them where you stand?
-[check]
-
 ## tl-logs | Should log walls be real round logs with notched corner ends sticking out (8 small meshes per wall), not just a picture?
 [check]
 
