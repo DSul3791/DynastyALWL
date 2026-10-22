@@ -200,3 +200,7 @@ Answered: 2026-10-22 16:52 UTC
 Answer: Regroup them into one test card after the restart work, dropping any that no longer apply (recommended)
 Answered: 2026-10-22 17:17 UTC
 
+## cmd-ok | Approve the completeness phrases (status, audit, goodnight, idea), the decision trace and the moderator's 30-minute checklist? (BP-T29)
+Answer: Approved (Dave in chat: the commands are already done)
+Answered: 2026-10-22 17:18 UTC
+
