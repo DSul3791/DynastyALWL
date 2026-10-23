@@ -1038,3 +1038,7 @@ Answered: 2026-10-23 04:11 UTC
 Answer: Yes
 Answered: 2026-10-23 04:11 UTC
 
+## rockpile-block | Should a pile of 6 or more block movement like a boulder (you walk around it, you cannot climb it)?
+Answer: Yes
+Answered: 2026-10-23 04:11 UTC
+
