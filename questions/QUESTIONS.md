@@ -1,7 +1,3 @@
-## cost-16 | Roof, Flat: 6 lumber, 20 nails and 4 tar (from bitumen)?
-Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
-[check]
-
 ## cost-17 | Small foundation 1x1: 10 stone and 3 clay?
 Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
 [check]
