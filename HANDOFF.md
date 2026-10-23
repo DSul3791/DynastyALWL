@@ -92,3 +92,4 @@ Baked tiles for the inner starters and their neighbors (36 files) are in `/mnt/p
 - Merge Sal hoe-hold test line already posted tonight (hoe-hold card).
 - Merge claude/kathleen-wet (RUNTIME, wet-tunnel sounds, nothing calls them yet) with the other held branches; not in head 695.
 - Merge claude/steve-esc-test (headless Esc test only, no game code).
+- Merge claude/steve-drip (undersea drip detection, RESTART, protocol 73: Guru protocol-bump check first); not in head 695. Ask Steve for its next-night test line.
