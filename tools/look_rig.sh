@@ -5,6 +5,7 @@
 #   --item   the item in slot 0 of the test character, held in the hand (omit for an empty hand)
 #   --cam    first = the player's own view; left = the character seen from 2.8 m to its left (third person)
 #   --at     world x,z (default the spawn 53301,68427); --agl metres above the ground; --yaw 0 faces north (-Z), 90 west, -90 east
+#   --cam right = the character seen from its right (the right hand shows); --nograss hides the grass; --keep keeps the temp folder
 #   --admin  also show the F3 admin/debug lines
 # Runs a throwaway server (own store, --open-admin) and a windowed client with its own APPDATA, so Dave's saves, hotbar and
 # display settings are never read or written. PNGs go to --out (default E:/Software/godotDev/DynastyALWL_Evidence/shots).
@@ -16,7 +17,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --item) ITEM="$2"; shift 2;; --count) COUNT="$2"; shift 2;; --cam) CAM="$2"; shift 2;; --at) AT="$2"; shift 2;;
     --agl) AGL="$2"; shift 2;; --yaw) YAW="$2"; shift 2;; --pitch) PITCH="$2"; shift 2;; --hour) HOUR="$2"; shift 2;;
-    --weather) WEATHER="$2"; shift 2;; --admin) ADMIN="--shot-admin"; shift;; --keep) KEEP=1; shift;; --name) NAME="$2"; shift 2;; --out) OUT="$2"; shift 2;;
+    --weather) WEATHER="$2"; shift 2;; --admin) ADMIN="$ADMIN --shot-admin"; shift;; --nograss) ADMIN="$ADMIN --shot-nograss"; shift;; --keep) KEEP=1; shift;; --keep) KEEP=1; shift;; --name) NAME="$2"; shift 2;; --out) OUT="$2"; shift 2;;
     --wait) WAIT="$2"; shift 2;; --settle) SETTLE="$2"; shift 2;; *) echo "unknown argument $1"; exit 2;;
   esac
 done
@@ -52,7 +53,7 @@ PORT=$((7800 + RANDOM % 150))
 SP=$!
 trap 'kill $SP 2>/dev/null; sleep 1; [ -z "$KEEP" ] && rm -rf "$RIG"; [ -n "$KEEP" ] && echo "rig kept: $RIG"' EXIT
 sleep 30
-WALK=-1; [ "$CAM" = "left" ] && WALK=0
+WALK=-1; [ "$CAM" = "left" ] && WALK=0; [ "$CAM" = "right" ] && { WALK=0; ADMIN="$ADMIN --shot-right"; }
 SHOT="$NAME:$X,$AGL,$Z,$YAW,$PITCH,$HOUR,$WEATHER,$WALK"
 APPDATA="$(cygpath -w "$RIG/appdata")" "$GODOT" --path . --resolution 1280x720 res://scenes/terrain_client/terrain_client.tscn -- --server=127.0.0.1 --port=$PORT --shots="$SHOT" --shot-dir="$OUT" --shot-wait=$WAIT --shot-settle=$SETTLE $ADMIN > "$RIG/client.log" 2>&1
 grep -E "shot runner: saved|ERROR|SCRIPT" "$RIG/client.log" | head -5 | cut -c1-200

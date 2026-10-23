@@ -13,6 +13,7 @@ extends Node
 #   --shot-settle=S     seconds per shot for streaming after the move (default 25)
 #   --shot-cost         also print primitives, draw calls and objects with the sun shadows off and the flora hidden
 #   --shot-admin        show the F3 debug lines in the pictures
+#   --shot-nograss      hide the grass; --shot-right puts the third-person camera on the body's right (look rig)
 #
 # yaw 0 faces -Z (north), 90 faces -X, -90 faces +X (Godot rotation about Y). Quits after the last shot.
 
@@ -31,6 +32,8 @@ var _weather: String = ""
 var _busy: bool = false
 var costs: bool = false
 var admin_text: bool = false
+var no_grass: bool = false
+var side_sign: float = 1.0      # 1 = camera on the body's left side, -1 = right side (--shot-right)
 
 const STORM := {"rain": 1.0, "snow": 0.0, "storm": 1.0, "cloud": 1.0, "sun": 0.0, "wind": 0.9, "wind_dir": 1.0, "temp_c": 8.0}
 const RAIN := {"rain": 0.65, "snow": 0.0, "storm": 0.0, "cloud": 0.8, "sun": 0.0, "wind": 0.3, "wind_dir": 1.0, "temp_c": 9.0}
@@ -53,6 +56,10 @@ func setup(owner_client, args: Array) -> void:
 			dir = argument.trim_prefix("--shot-dir=")
 		elif argument == "--shot-cost":
 			costs = true
+		elif argument == "--shot-right":
+			side_sign = -1.0
+		elif argument == "--shot-nograss":
+			no_grass = true      # hide the grass so a hand-held item or the body is not hidden by blades
 		elif argument == "--shot-admin":
 			admin_text = true      # keep the HUD and show the F3 debug lines in the pictures (look rig, tools/look_rig.sh)
 			client.debug_hud.enabled = true
@@ -81,6 +88,9 @@ func _process(_delta: float) -> void:
 			"clear": client.weather = CLEAR.duplicate()
 
 		client.body.velocity = Vector3.ZERO
+
+		if no_grass and client.grass != null:
+			client.grass.visible = false
 
 		if client.held != null:
 			client.held.set_first_person(false)
@@ -146,7 +156,7 @@ func _side_view(walk: float) -> void:
 	client.third_person = true
 	var origin: Vector3 = client._avatar.global_position + Vector3(0.0, 0.95, 0.0)
 	var left: Vector3 = client.body.global_transform.basis * Vector3(-1.0, 0.0, 0.0)
-	client.view_cam.global_position = origin + left * 2.8 + Vector3(0.0, 0.15, 0.0)
+	client.view_cam.global_position = origin + left * 2.8 * side_sign + Vector3(0.0, 0.15, 0.0)
 	client.view_cam.look_at(origin, Vector3.UP)
 
 
