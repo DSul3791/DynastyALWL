@@ -2137,8 +2137,8 @@
 			"shape": "shrub",
 			"model": "blackthorn",
 			"height_m": [
-				2.5,
-				5
+				2,
+				3.6
 			],
 			"crown_m": 2.4,
 			"trunk_m": 0.08,
