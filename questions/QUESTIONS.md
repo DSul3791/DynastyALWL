@@ -7,9 +7,6 @@ Note: 5. Check a natural cave does NOT collapse. Check the warning gives you at 
 Note: 6. Answer Yes if all of that worked. Answer No and tell me which step broke.
 [check]
 
-## esc-menu-2 | Esc menu: should Settings open a page with Display (quality, VSync, resolution, window mode, text size, reset), Sound (volumes) and Gameplay (NPC voice; tunnel collapse and cave-in time for admins)?
-[check]
-
 ## esc-menu-3 | Esc menu: should Controls show the hotkey list?
 [check]
 
