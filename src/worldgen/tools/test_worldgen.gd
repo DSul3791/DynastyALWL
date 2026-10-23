@@ -31,6 +31,7 @@ const ClientCacheScript := preload("res://src/stream/client_block_cache.gd")
 const NetworkStreamScript := preload("res://src/stream/network_voxel_stream.gd")
 const FloraPlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const ServerFloraScript := preload("res://src/stream/server_flora.gd")
+const FloraLayoutScript := preload("res://src/worldgen/runtime/flora_layout.gd")
 
 const WORLD_PATH := "res://worlds/base_world/world.json"
 const RULES_PATH := "res://worlds/base_world/plan/matrix_rules.json"
@@ -2146,7 +2147,21 @@ func _test_flora(generator, data, tables, tile_rules: Dictionary) -> void:
 	server.save_removed(true)       # since build 597 the server writes removals on its tick (at most once a second) and at exit, not per cut
 	var restarted = ServerFloraScript.new()
 	restarted.setup(placer, root)
-	_check(restarted.removed_in(best) == [ids[0]], "flora removals survive a server restart")
+	_check(restarted.removed_in(best) == [ids[0]] and not restarted.layout_cleared, "flora removals survive a server restart")
+	# A save made under another flora layout is dropped (patches move plants); a save without a stamp counts as the first layout.
+	var stale: Dictionary = {"layout": FloraLayoutScript.VERSION + 1, "%d,%d" % [best.x, best.y]: [ids[0]]}
+	var stale_file: FileAccess = FileAccess.open(root + "/flora_removed.json", FileAccess.WRITE)
+	stale_file.store_string(JSON.stringify(stale))
+	stale_file.close()
+	var moved = ServerFloraScript.new()
+	moved.setup(placer, root)
+	_check(moved.layout_cleared and moved.removed_in(best).is_empty(), "removals made under another flora layout are cleared")
+	var bare_file: FileAccess = FileAccess.open(root + "/flora_removed.json", FileAccess.WRITE)
+	bare_file.store_string(JSON.stringify({"%d,%d" % [best.x, best.y]: [ids[0]]}))
+	bare_file.close()
+	var unstamped = ServerFloraScript.new()
+	unstamped.setup(placer, root)
+	_check(FloraLayoutScript.VERSION != 1 or (not unstamped.layout_cleared and unstamped.removed_in(best) == [ids[0]]), "an unstamped save counts as layout 1")
 	_remove_tree(root)
 
 
