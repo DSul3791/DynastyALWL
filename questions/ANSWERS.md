@@ -1254,3 +1254,7 @@ Answered: 2026-10-23 19:08 UTC
 Answer: No: You didn’t provide a picture
 Answered: 2026-10-23 19:08 UTC
 
+## kath-raspberry-rig-2 | Does this look like a real raspberry bush? (picture attached)
+Answer: No: There is no picture here. Please tell somebody to review this and figure out why ask Tyler
+Answered: 2026-10-23 19:25 UTC
+
