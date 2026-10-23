@@ -20,6 +20,11 @@ const VERSION := 1
 const INVENTORY_VERSION := 2            # 2 added wear per slot; version 1 files load with zero wear
 const MAX_DROPPED_NEAR := 64             # loose dropped items allowed within DROP_CROWD_M of a new drop
 const DROP_CROWD_M := 12.0
+const MERGE_M := 1.0                     # a stackable drop landing this close to the same kind on the ground joins it (Dave 2026-10-23, rock piles)
+const PILE_MIN := 6                      # a ground item holding this many is a pile (the client draws it from the count)
+const PILE_HANDFUL := 5                  # one E on a pile takes this many
+const PILE_CAP := 100000                 # most one ground item holds; more starts a second pile beside it
+const PILE_LIFETIME_S := 7200.0          # a pile lives this long after the last add or take (loose items keep WORLD_ITEM_LIFETIME_S)
 const WORLD_ITEM_LIFETIME_S := 1200.0    # real seconds until a dropped item despawns
 const CHUNK_M := 256.0
 const NEAR_M := 100.0                    # items this close are sent to a player
@@ -602,6 +607,31 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 
 	# Only loose dropped things near the spot count: felled trunks, stumps, fires, structures, carcasses and natural scatter are not
 	# "dropped" and last far longer (Dave 2026-10-22: a drop was refused with nothing in sight, the chunk was full of stumps and trunks).
+	# Same kind within MERGE_M joins the item already lying there (stackables without wear only), so a heap grows as one ground item
+	# and never meets the crowd limit. The merge runs before the limit check.
+	if item_wear == 0 and table.stack_of(number) > 1:
+		for id in _items:
+			var near: Dictionary = _items[id]
+
+			if near.has("scatter") or near.has("struct") or near.has("fire") or near.has("tree") or near.has("boulder"):
+				continue
+
+			if int(near["number"]) != number or int(near.get("wear", 0)) != 0 or int(near["count"]) >= PILE_CAP:
+				continue
+
+			if Vector2(near["pos"].x - position.x, near["pos"].z - position.z).length() <= MERGE_M and absf(near["pos"].y - position.y) <= 2.0:
+				var room: int = PILE_CAP - int(near["count"])
+				var added: int = mini(count, room)
+				near["count"] = int(near["count"]) + added
+				near["left"] = PILE_LIFETIME_S if int(near["count"]) >= PILE_MIN else WORLD_ITEM_LIFETIME_S
+				_dirty = true
+				count -= added
+
+				if count <= 0:
+					return true
+
+				break   # the rest (over the cap) falls through and starts a second pile
+
 	var here: int = 0
 
 	for id in _items:
@@ -616,9 +646,14 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 	if here >= MAX_DROPPED_NEAR:
 		return false
 
-	_items[_next_id] = {"number": number, "count": count, "pos": position, "left": WORLD_ITEM_LIFETIME_S, "wear": item_wear}
+	var first: int = mini(count, PILE_CAP)
+	_items[_next_id] = {"number": number, "count": first, "pos": position, "left": PILE_LIFETIME_S if first >= PILE_MIN else WORLD_ITEM_LIFETIME_S, "wear": item_wear}
 	_next_id += 1
 	_dirty = true
+
+	if count > first:
+		return drop_in_world(number, count - first, position, item_wear)   # over the cap: the rest starts a second pile beside it
+
 	return true
 
 
@@ -638,7 +673,7 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		else:
 			_drop(peer, inv, a, count, at)
 	elif kind == Net.ACT_PICKUP:
-		_pickup(peer, inv, a)
+		_pickup(peer, inv, a, count)
 	elif kind == Net.ACT_HIT:
 		_hit(peer, inv, a, Vector2i(b, count))
 	elif kind == Net.ACT_CHEST_OPEN or kind == Net.ACT_CHEST_PUT or kind == Net.ACT_CHEST_TAKE:
@@ -1907,7 +1942,7 @@ func _fires(delta: float) -> void:
 			_dirty = true
 
 
-func _pickup(peer: int, inv, id: int) -> void:
+func _pickup(peer: int, inv, id: int, wanted: int = 0) -> void:
 	var it: Dictionary = _items.get(id, {})
 
 	if it.has("struct"):
@@ -1940,14 +1975,20 @@ func _pickup(peer: int, inv, id: int) -> void:
 
 		return
 
-	var fits: int = _fit(peer, inv, int(it["number"]), int(it["count"]))
+	# A pile gives a handful (or the count the client asks for), anything smaller is taken whole.
+	var want: int = int(it["count"])
+
+	if want >= PILE_MIN:
+		want = mini(want, wanted if wanted > 0 else PILE_HANDFUL)
+
+	var fits: int = _fit(peer, inv, int(it["number"]), want)
 
 	if fits == 0:
 		_say(peer, "Too heavy to carry any more")
 		_reject(peer, 2)
 		return
 
-	var left: int = inv.add(int(it["number"]), fits, int(it.get("wear", 0))) + (int(it["count"]) - fits)
+	var left: int = int(it["count"]) - want + inv.add(int(it["number"]), fits, int(it.get("wear", 0))) + (want - fits)
 
 	if left == 0:
 		if it.has("scatter"):
@@ -1956,6 +1997,9 @@ func _pickup(peer: int, inv, id: int) -> void:
 		_items.erase(id)
 	else:
 		it["count"] = left
+
+		if left >= PILE_MIN:
+			it["left"] = PILE_LIFETIME_S
 
 
 func _sync_world_items() -> void:

@@ -92,12 +92,14 @@ func _init() -> void:
 
 	# 1. Gather by hand: stones, sticks and fibre lie around (what the ground scatter and the plants give).
 	for n in range(6):
-		items.drop_in_world(items.table.number_of("stone"), 4, Vector3(float(n) * 0.3, 10.0, 1.0))
-		items.drop_in_world(items.table.number_of("stick"), 6, Vector3(float(n) * 0.3, 10.0, -1.0))
-		items.drop_in_world(items.table.number_of("plant_fibre"), 3, Vector3(float(n) * 0.3, 10.0, 1.5))
+		var around: Vector3 = Vector3(cos(float(n) * TAU / 6.0), 0.0, sin(float(n) * TAU / 6.0))   # lying more than a metre apart, or they would merge into one heap
+		items.drop_in_world(items.table.number_of("stone"), 4, Vector3(0.0, 10.0, 0.0) + around * 1.5)
+		items.drop_in_world(items.table.number_of("stick"), 5, Vector3(0.0, 10.0, 0.0) + around * 2.2)
+		items.drop_in_world(items.table.number_of("plant_fibre"), 3, Vector3(0.0, 10.0, 0.0) + around * 2.9)
+		items.drop_in_world(items.table.number_of("stick"), 1, Vector3(0.0, 10.0, 0.0) + around.rotated(Vector3.UP, 0.5) * 2.6)
 
 	pass_time(120.0, 0.3)
-	check(pick_up_everything_near() == 18 and count("stone") == 24 and count("stick") == 36 and count("plant_fibre") == 18, "gathering by hand fills the pack (%d stones, %d sticks, %d fibre)" % [count("stone"), count("stick"), count("plant_fibre")])
+	check(pick_up_everything_near() == 24 and count("stone") == 24 and count("stick") == 36 and count("plant_fibre") == 18, "gathering by hand fills the pack (%d stones, %d sticks, %d fibre)" % [count("stone"), count("stick"), count("plant_fibre")])
 	note("gathering")
 
 	# 2. Hand-craft a stone axe (two stones and a stick, 4 s).
