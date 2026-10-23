@@ -44,12 +44,6 @@ Note: 2. Hold W to climb, then S to come down, Space to let go backwards.
 Note: 3. Climb to the top and hold W: you step onto the edge.
 [test]
 
-## offhand-items | Off-hand items: pick a torch, shield or similar from the hotbar and it goes in your left hand; pick it again and it is put away; hold B to block with it?
-Note: This works for a torch, a shield and any other item that can be held in the left hand.
-Note: Tyler checked: nothing in the game uses the B key today, so there is no clash.
-Note: Tyler recommends Yes because it matches what you described and B is free. Steve builds the input and left-hand slot, Sal marks which items can go in the left hand, Kathleen does the hand pose. It is tomorrow's work, not tonight's.
-[check]
-
 ## lake-hide-water | Please test: hide the water and see what stays. Look for: do the grey shapes and dark squares STAY when the water is hidden?
 Note: 1. Go to x 52392, z 69477 (or x 53786, z 69256) where the water surface flickers.
 Note: 2. Press Ctrl+Shift+W (hides every river and lake drawing).
