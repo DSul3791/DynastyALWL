@@ -660,3 +660,7 @@ Answered: 2026-10-23 00:44 UTC
 Answer: Yes
 Answered: 2026-10-23 00:44 UTC
 
+## cost-7 | Floor or ceiling (2 m x 2 m), Basic: 12 twine, 30 thatch, 8 sticks?
+Answer: Yes
+Answered: 2026-10-23 00:44 UTC
+
