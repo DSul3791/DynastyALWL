@@ -121,6 +121,7 @@ var _vitals_back: Control
 var _vitals_warning: Label
 var _weight_label: Label
 var _purse_label: RichTextLabel
+var _shoulder_put: Button                     # chest window: puts the shoulder log in (ACT_CHEST_PUT slot -1)
 var shoulder_id: String = ""                  # the large log on the shoulder (protocol 64), "" when none: Mandy shows the carry pose from this
 var purse_copper: int = 0                      # the purse, in copper (protocol 61)
 var rep_names: PackedStringArray = PackedStringArray()   # NPCs this player has a reputation with, and the points
@@ -173,6 +174,9 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.purse_received.connect(func(copper): purse_copper = copper; _refresh_purse())
 	net.carry_received.connect(func(item_id):
 		shoulder_id = item_id
+
+		if chest_mode:
+			_refresh_chest()
 
 		if _weight_label != null:
 			_refresh_weight())
@@ -630,6 +634,7 @@ func _process(_delta: float) -> void:
 func _process_body(_delta: float) -> void:
 	var now: int = Time.get_ticks_msec()
 	_roll_tick(_delta, now)
+	_snap_tick(now)
 	_hold_e_check()
 
 	if _thought_label != null and _thought_label.text != "" and now >= _thought_until_msec:
@@ -1494,6 +1499,13 @@ func _build_chest_panel() -> void:
 			_on_chest_slot(bool(_chest_last[0]), int(_chest_last[1])))
 	transfer.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	chest_outer.add_child(transfer)
+	_shoulder_put = Button.new()
+	_shoulder_put.text = "Put the log from your shoulder in"
+	_shoulder_put.tooltip_text = "The large log on your shoulder goes into the container (take it out again the same way, one log at a time)"
+	_style(_shoulder_put, BODY_PX)
+	_shoulder_put.pressed.connect(func(): net.inventory_action.rpc_id(1, Net.ACT_CHEST_PUT, -1, chest_id, 1, Vector3.ZERO))
+	_shoulder_put.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	chest_outer.add_child(_shoulder_put)
 	_layer.add_child(_chest_panel)
 
 
@@ -1514,6 +1526,9 @@ func _on_chest_slot(chest_side: bool, slot: int) -> void:
 func _refresh_chest() -> void:
 	if not chest_mode or _chest_panel == null:
 		return
+
+	if _shoulder_put != null:
+		_shoulder_put.visible = shoulder_id != ""
 
 	var capacity: int = int(table.entry(table.id_of(int(_world.get(chest_id, {}).get("number", 0)))).get("slots", inventory.SLOTS))
 
@@ -1543,6 +1558,11 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 		if _world.has(id):
 			_world[id]["count"] = row[2]
 			_refresh_pile(id)
+
+			if int(_world[id]["state"]) == 0 and state == 0 and (row[3] as Vector3).distance_to(_world[id]["pos"]) > 0.05:
+				_world[id]["pos"] = row[3]      # the server let it down onto the ground (after a dig): draw it there
+				(_world[id]["node"] as Node3D).position = row[3] + Vector3(0.0, 0.12, 0.0)
+				_snap_loose(id)
 
 			if _world[id]["state"] == state:
 				continue
@@ -1598,6 +1618,51 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 		_root.add_child(node)
 		_world[id] = {"node": node, "number": row[1], "count": row[2], "pos": row[3], "state": state, "light": light}
 		_refresh_pile(id)
+		_snap_loose(id)
+
+
+# The server places a loose item by the generated height field; the drawn ground is the voxel surface, up to about half a metre off, so a
+# lump could hang in the air (Dave 2026-10-23, rig: 0.40 m). A loose item within 1 m of the drawn ground rests on it; one whose chunk is not
+# drawn yet is tried again each second.
+const SNAP_UP_M := 0.6               # the drawn ground may be this far above the server's height (a lump rests on a rim)
+const SNAP_DOWN_M := 8.0             # and an item that hangs this far above the ground comes down to it (a deep shaft: the rig saw 1.6 and 4.3 m)
+const SNAP_TRIES := 10               # looked at again each second this many times: the collision ground under a fresh dig or fill is rebuilt a moment later
+var _snap_next_msec: int = 0
+var _unsnapped: Dictionary = {}      # world item id -> tries left
+
+
+func _snap_loose(id: int, tries: int = SNAP_TRIES) -> void:
+	var entry: Dictionary = _world.get(id, {})
+
+	if entry.is_empty() or int(entry.get("state", 0)) != 0 or not _ground_below.is_valid() or _rolling.has(id):
+		_unsnapped.erase(id)
+		return
+
+	var at: Vector3 = entry["pos"]
+	var ground: float = float(_ground_below.call(at - Vector3(0.0, 1.5, 0.0)))      # the probe starts 2 m above its point: 0.5 m above the item, so a tunnel roof is not hit
+
+	if is_nan(ground) or ground > at.y + SNAP_UP_M or ground < at.y - SNAP_DOWN_M:
+		_unsnapped[id] = tries - 1 if tries > 1 else 0
+		return
+
+	_unsnapped[id] = tries - 1
+	var node: Node3D = entry["node"]
+	node.position = Vector3(at.x, ground + 0.12, at.z)
+
+
+func _snap_tick(now: int) -> void:
+	if _unsnapped.is_empty() or now < _snap_next_msec:
+		return
+
+	_snap_next_msec = now + 1000
+
+	for id in _unsnapped.keys():
+		var left: int = int(_unsnapped[id])
+
+		if not _world.has(id) or left <= 0:
+			_unsnapped.erase(id)
+		else:
+			_snap_loose(id, left)
 
 
 # A heap of six or more stones (or soil, clay, sand, gravel) is drawn as one pile built from its count (PileLook); fewer are single items.
@@ -1788,6 +1853,7 @@ func _roll_tick(delta: float, now: int) -> void:
 
 func _forget(id: int) -> void:
 	_rolling.erase(id)
+	_unsnapped.erase(id)
 
 	if _boulders.has(id):
 		_boulders[id]["node"].queue_free()

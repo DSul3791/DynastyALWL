@@ -1206,11 +1206,31 @@ Answered: 2026-10-23 13:18 UTC
 Answer: No: To make the rig dig can’t you put a shovel in your hand look down at a 15° angle and push the mouse button and then walk forward a step and do it again and then look around
 Answered: 2026-10-23 14:27 UTC
 
-## test-floating-soil | Mined soil lies in the hole
-Answer: No: To make the rig dig can’t you put a shovel in your hand look down at a 15° angle and push the mouse button and then walk forward a step and do it again and then look around
-Answered: 2026-10-23 14:27 UTC
-
 
 ## test-lake-flicker | Lake no longer flashes grey
 Answer: Yes: told in chat, "I can clearly see the flickering on the lake water is gone" (build 727)
 Answered: 2026-10-23 14:55 UTC
+
+## playtester-plan | Build a play-tester that plays the game and reports problems?
+Answer: No: told in chat, no player bot; instead improve how testing works (drop dirt, look down, step back a very short distance) 15:58 UTC
+Answered: 2026-10-23 15:58 UTC
+## kath-moose-standin | Use an elk bugle as the moose call for now?
+Answer: No: This is not what the move sounds like a moose. Sounds like somebody having a grunt when they poop so see if you can look up that sound.
+Answered: 2026-10-23 16:00 UTC
+
+## kath-wolf-real-clips | Do the real wolf howl recordings (clip A and clip B) sound like a wolf?
+Answer: Yes
+Answered: 2026-10-23 16:30 UTC
+
+## kath-fox-real-clips | Do the real fox clips (a bark and a scream) sound like a fox?
+Answer: Yes
+Answered: 2026-10-23 16:37 UTC
+
+## kath-deer-horse-real-clips | Do the real deer grunt and the two horse neighs sound right?
+Answer: Yes
+Answered: 2026-10-23 16:37 UTC
+
+## kath-bear-real-clips | Do the real bear growls (clip A and clip B) sound like a bear?
+Answer: Yes
+Answered: 2026-10-23 16:37 UTC
+

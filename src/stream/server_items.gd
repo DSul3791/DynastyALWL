@@ -2064,7 +2064,7 @@ func _sync_world_items() -> void:
 				near[id] = true
 
 				var state: int = int(it["fire"]["state"]) if it.has("fire") else (int(it["tree"]["state"]) if it.has("tree") else (_struct_state(it) if it.has("struct") else (BOULDER_STATE if it.has("boulder") else 0)))
-				var signature: int = int(it["count"]) + 1000 * state + 100000 * int(it["number"])
+				var signature: int = int(it["count"]) + 1000 * state + 100000 * int(it["number"]) + 1000000000 * int(round(it["pos"].y * 10.0))   # the height too: an item that comes down onto the ground after a dig is sent again
 
 				if not known.has(id) or known[id] != signature:
 					added.append([id, int(it["number"]), int(it["count"]), it["pos"], state, it["tree"] if it.has("tree") else ({"yaw": float(it["struct"]["yaw"]), "age": _remains_age(it), "sp": str(it["struct"].get("species", ""))} if it.has("struct") else (it["boulder"] if it.has("boulder") else {}))])
@@ -3678,6 +3678,20 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int) -> vo
 		_reject(peer, 3)
 	elif kind == Net.ACT_CHEST_PUT and bool(_structures.get(str(_items.get(id, {}).get("struct", {}).get("kind", "")), {}).get("take_only", false)):
 		_reject(peer, 3)
+	elif kind == Net.ACT_CHEST_PUT and a == -1 and shoulder_of(peer) != "":   # slot -1 is the log on the shoulder (as in ACT_DROP)
+		var log_number: int = table.number_of(shoulder_of(peer))
+		var log_max_kg: float = float(_structures.get(str(_items.get(id, {}).get("struct", {}).get("kind", "")), {}).get("max_kg", 0.0))
+
+		if log_max_kg > 0.0 and not _carry_cfg.is_empty() and CarryRules.carried_kg(chest, table, _carry_cfg) + CarryRules.weight_of(shoulder_of(peer), _carry_cfg) > log_max_kg:
+			_say(peer, "It is too heavy for the chest")
+			_reject(peer, 2)
+		elif chest.add(log_number, 1, 0) == 0:
+			_characters[str(_peer_key[peer])]["shoulder"] = ""
+			sync_shoulder(peer)
+			_dirty = true
+		else:
+			_say(peer, "The chest is full.")
+			_reject(peer, 2)
 	elif kind == Net.ACT_CHEST_PUT and a >= 0 and a < inv.SLOTS and inv.numbers[a] != 0 and count > 0:
 		var number: int = inv.numbers[a]
 		var held_wear: int = inv.wear[a]
@@ -3701,10 +3715,18 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int) -> vo
 		var number: int = chest.numbers[a]
 		var held_wear: int = chest.wear[a]
 		var amount: int = mini(count, chest.counts[a])
-		amount = _fit(peer, inv, number, amount)
-		var left: int = inv.add(number, amount, held_wear)
-		chest.take_from_slot(a, amount - left)
-		_dirty = true
+
+		if is_shoulder_item(number):   # a large log goes on the shoulder, never into the pack
+			if shoulder_of(peer) != "":
+				_say(peer, "You can only carry one large log on your shoulder.")
+			elif _give_shoulder(peer, number, 1) == 1:
+				chest.take_from_slot(a, 1)
+				_dirty = true
+		else:
+			amount = _fit(peer, inv, number, amount)
+			var left: int = inv.add(number, amount, held_wear)
+			chest.take_from_slot(a, amount - left)
+			_dirty = true
 
 	if send_chest.is_valid():
 		send_chest.call(peer, id, chest.to_bytes())

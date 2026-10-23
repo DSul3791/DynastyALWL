@@ -1091,7 +1091,8 @@
 			"name": "heather",
 			"display": "Heather",
 			"kind": "plant",
-			"shape": "flower",
+			"shape": "shrub",
+			"model": "wildflower",
 			"height_m": [
 				0.2,
 				0.6
@@ -1099,9 +1100,9 @@
 			"crown_m": 0.4,
 			"trunk_m": 0.0,
 			"color": [
-				0.5,
 				0.3,
-				0.45
+				0.45,
+				0.2
 			],
 			"per_hectare": {
 				"heath": 500,
@@ -1208,7 +1209,8 @@
 			"name": "flax",
 			"display": "Wild flax",
 			"kind": "plant",
-			"shape": "flower",
+			"shape": "shrub",
+			"model": "wildflower",
 			"height_m": [
 				0.4,
 				0.9
@@ -1216,9 +1218,9 @@
 			"crown_m": 0.3,
 			"trunk_m": 0.0,
 			"color": [
-				0.4,
-				0.5,
-				0.7
+				0.3,
+				0.45,
+				0.2
 			],
 			"per_hectare": {
 				"temperate_grassland": 40,
@@ -2628,7 +2630,8 @@
 			"name": "wild_garlic",
 			"display": "Wild garlic",
 			"kind": "plant",
-			"shape": "flower",
+			"shape": "shrub",
+			"model": "wildflower",
 			"height_m": [
 				0.2,
 				0.45
@@ -2637,8 +2640,8 @@
 			"trunk_m": 0.0,
 			"color": [
 				0.3,
-				0.55,
-				0.25
+				0.45,
+				0.2
 			],
 			"per_hectare": {
 				"temperate_forest": 60,
@@ -2745,7 +2748,8 @@
 			"name": "wild_mint",
 			"display": "Water mint",
 			"kind": "plant",
-			"shape": "flower",
+			"shape": "shrub",
+			"model": "wildflower",
 			"height_m": [
 				0.2,
 				0.6
@@ -2753,9 +2757,9 @@
 			"crown_m": 0.3,
 			"trunk_m": 0.0,
 			"color": [
-				0.35,
-				0.55,
-				0.35
+				0.3,
+				0.45,
+				0.2
 			],
 			"per_hectare": {
 				"marsh": 40,
@@ -2862,7 +2866,8 @@
 			"name": "dandelion",
 			"display": "Dandelion",
 			"kind": "plant",
-			"shape": "flower",
+			"shape": "shrub",
+			"model": "wildflower",
 			"height_m": [
 				0.1,
 				0.3
@@ -2870,9 +2875,9 @@
 			"crown_m": 0.25,
 			"trunk_m": 0.0,
 			"color": [
-				0.85,
-				0.75,
-				0.15
+				0.3,
+				0.45,
+				0.2
 			],
 			"per_hectare": {
 				"temperate_grassland": 80,
@@ -2922,7 +2927,8 @@
 			"name": "wild_carrot",
 			"display": "Wild carrot",
 			"kind": "plant",
-			"shape": "flower",
+			"shape": "shrub",
+			"model": "wildflower",
 			"height_m": [
 				0.4,
 				1.0
@@ -2930,9 +2936,9 @@
 			"crown_m": 0.3,
 			"trunk_m": 0.0,
 			"color": [
-				0.88,
-				0.88,
-				0.82
+				0.3,
+				0.45,
+				0.2
 			],
 			"per_hectare": {
 				"temperate_grassland": 15,
@@ -3090,7 +3096,8 @@
 			"name": "wild_marjoram",
 			"display": "Wild marjoram",
 			"kind": "plant",
-			"shape": "flower",
+			"shape": "shrub",
+			"model": "wildflower",
 			"height_m": [
 				0.3,
 				0.6
@@ -3098,9 +3105,9 @@
 			"crown_m": 0.3,
 			"trunk_m": 0.0,
 			"color": [
-				0.65,
+				0.3,
 				0.45,
-				0.6
+				0.2
 			],
 			"per_hectare": {
 				"temperate_grassland": 10,
@@ -3259,7 +3266,8 @@
 			"name": "lavender",
 			"display": "Lavender",
 			"kind": "plant",
-			"shape": "flower",
+			"shape": "shrub",
+			"model": "wildflower",
 			"height_m": [
 				0.3,
 				0.7
@@ -3267,9 +3275,9 @@
 			"crown_m": 0.4,
 			"trunk_m": 0.0,
 			"color": [
-				0.55,
+				0.3,
 				0.45,
-				0.75
+				0.2
 			],
 			"per_hectare": {
 				"dry_scrub": 20,
@@ -3318,7 +3326,8 @@
 			"name": "yarrow",
 			"display": "Yarrow",
 			"kind": "plant",
-			"shape": "flower",
+			"shape": "shrub",
+			"model": "wildflower",
 			"height_m": [
 				0.3,
 				0.7
@@ -3326,9 +3335,9 @@
 			"crown_m": 0.3,
 			"trunk_m": 0.0,
 			"color": [
-				0.9,
-				0.88,
-				0.8
+				0.3,
+				0.45,
+				0.2
 			],
 			"per_hectare": {
 				"temperate_grassland": 30,
@@ -3434,7 +3443,8 @@
 			"name": "chamomile",
 			"display": "Chamomile",
 			"kind": "plant",
-			"shape": "flower",
+			"shape": "shrub",
+			"model": "wildflower",
 			"height_m": [
 				0.2,
 				0.5
@@ -3442,9 +3452,9 @@
 			"crown_m": 0.3,
 			"trunk_m": 0.0,
 			"color": [
-				0.95,
-				0.95,
-				0.85
+				0.3,
+				0.45,
+				0.2
 			],
 			"per_hectare": {
 				"temperate_grassland": 20,
@@ -3552,7 +3562,8 @@
 			"name": "st_johns_wort",
 			"display": "St John's wort",
 			"kind": "plant",
-			"shape": "flower",
+			"shape": "shrub",
+			"model": "wildflower",
 			"height_m": [
 				0.3,
 				0.8
@@ -3560,8 +3571,8 @@
 			"crown_m": 0.3,
 			"trunk_m": 0.0,
 			"color": [
-				0.9,
-				0.8,
+				0.3,
+				0.45,
 				0.2
 			],
 			"per_hectare": {
@@ -3608,7 +3619,8 @@
 			"name": "valerian",
 			"display": "Valerian",
 			"kind": "plant",
-			"shape": "flower",
+			"shape": "shrub",
+			"model": "wildflower",
 			"height_m": [
 				0.6,
 				1.5
@@ -3616,9 +3628,9 @@
 			"crown_m": 0.4,
 			"trunk_m": 0.0,
 			"color": [
-				0.92,
-				0.82,
-				0.85
+				0.3,
+				0.45,
+				0.2
 			],
 			"per_hectare": {
 				"marsh": 10,
@@ -3665,7 +3677,8 @@
 			"name": "meadowsweet",
 			"display": "Meadowsweet",
 			"kind": "plant",
-			"shape": "flower",
+			"shape": "shrub",
+			"model": "wildflower",
 			"height_m": [
 				0.6,
 				1.2
@@ -3673,9 +3686,9 @@
 			"crown_m": 0.4,
 			"trunk_m": 0.0,
 			"color": [
-				0.93,
-				0.92,
-				0.8
+				0.3,
+				0.45,
+				0.2
 			],
 			"per_hectare": {
 				"marsh": 30,
@@ -3724,7 +3737,8 @@
 			"name": "feverfew",
 			"display": "Feverfew",
 			"kind": "plant",
-			"shape": "flower",
+			"shape": "shrub",
+			"model": "wildflower",
 			"height_m": [
 				0.3,
 				0.6
@@ -3732,9 +3746,9 @@
 			"crown_m": 0.3,
 			"trunk_m": 0.0,
 			"color": [
-				0.92,
-				0.92,
-				0.7
+				0.3,
+				0.45,
+				0.2
 			],
 			"per_hectare": {
 				"temperate_grassland": 6,
@@ -3890,7 +3904,8 @@
 			"name": "arnica",
 			"display": "Arnica",
 			"kind": "plant",
-			"shape": "flower",
+			"shape": "shrub",
+			"model": "wildflower",
 			"height_m": [
 				0.2,
 				0.5
@@ -3898,9 +3913,9 @@
 			"crown_m": 0.3,
 			"trunk_m": 0.0,
 			"color": [
-				0.95,
-				0.7,
-				0.15
+				0.3,
+				0.45,
+				0.2
 			],
 			"per_hectare": {
 				"alpine_meadow": 25,
@@ -3943,7 +3958,8 @@
 			"name": "angelica",
 			"display": "Angelica",
 			"kind": "plant",
-			"shape": "flower",
+			"shape": "shrub",
+			"model": "wildflower",
 			"height_m": [
 				1,
 				2
@@ -3951,9 +3967,9 @@
 			"crown_m": 0.5,
 			"trunk_m": 0.0,
 			"color": [
-				0.75,
-				0.85,
-				0.6
+				0.3,
+				0.45,
+				0.2
 			],
 			"per_hectare": {
 				"marsh": 6,
@@ -4059,7 +4075,8 @@
 			"name": "foxglove",
 			"display": "Foxglove",
 			"kind": "plant",
-			"shape": "flower",
+			"shape": "shrub",
+			"model": "wildflower",
 			"height_m": [
 				0.6,
 				1.5
@@ -4067,9 +4084,9 @@
 			"crown_m": 0.3,
 			"trunk_m": 0.0,
 			"color": [
-				0.72,
-				0.35,
-				0.62
+				0.3,
+				0.45,
+				0.2
 			],
 			"per_hectare": {
 				"temperate_forest": 6,
@@ -4173,7 +4190,8 @@
 			"name": "wolfsbane",
 			"display": "Wolfsbane",
 			"kind": "plant",
-			"shape": "flower",
+			"shape": "shrub",
+			"model": "wildflower",
 			"height_m": [
 				0.5,
 				1.2
@@ -4181,9 +4199,9 @@
 			"crown_m": 0.3,
 			"trunk_m": 0.0,
 			"color": [
-				0.35,
 				0.3,
-				0.7
+				0.45,
+				0.2
 			],
 			"per_hectare": {
 				"alpine_meadow": 6,

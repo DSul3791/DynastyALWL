@@ -33,7 +33,7 @@ static func apply(water, rules: Dictionary) -> Dictionary:
 	var flow = FlowScript.new()
 	flow.build(fill, runoff)
 	var channels = ChannelsScript.new()
-	channels.build(land, fill, flow, samples, cell_m, float(rules.get("river_start_km2", 0.5)), rules, int(rules.get("seed", 17)))
+	channels.build(land, fill, flow, samples, cell_m, float(rules.get("river_start_km2", 0.5)), rules, int(rules.get("seed", 17)), Vector2i(water._origin_sx, water._origin_sz))
 	water.heights = channels.bed
 	water.flow = flow.discharge
 	water.river_cells = 0
