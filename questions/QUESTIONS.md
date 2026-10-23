@@ -118,3 +118,26 @@ Note: Tyler recommends Yes because piles take work to make, and losing them in 2
 Note: A mound keeps the game fast. Past 100,000 a second pile starts beside the first.
 Note: Tyler recommends Yes because drawing thousands of rocks would slow the game, and nobody can tell the difference at that size.
 [check]
+
+## cavein-death-slow | Should a cave-in that kills you be slow and dramatic: the roof falls in 3 to 5 waves over about 6 seconds, with dust and rumble, instead of all at once?
+Note: Damage comes in chunks, one per wave, and you stagger and then lie down on the last one. You still get the full warning first.
+Note: Tyler recommends Yes because it matches what you asked for and keeps the 90 second warning rule.
+[check]
+
+## cavein-death-fade | Then: the picture fades to black over about 4 seconds while the rumble keeps going for about 3 more seconds, then the sound fades out too?
+Note: Tyler recommends Yes because it is the order you described and is easy to tune.
+[check]
+
+## cavein-death-skull | Then: a grey, translucent skull and crossbones fills about 75% of the screen over the black?
+Note: Kathleen draws it (grim cartoon, not gory).
+Note: Tyler recommends Yes because it is cheap to build (one picture with transparency) and easy to swap later.
+[check]
+
+## cavein-death-voice | Until the real voice exists, show the three lines as big text under the skull with a small horn sting and a comic sting, and swap the voice in later?
+Note: Line 1 (sad): "I tried to warn you, but would you listen? Oh no..." Pause. Line 2 (jokey): "Oh well, now you're dead." Pause. Line 3: "Better luck next time, eh?"
+Note: Tyler recommends Yes because the voice (Kokoro) is not built yet, and swapping sound files later needs no code change.
+[check]
+
+## cavein-death-next | Then everything fades out slowly and you fade in on the inheritance or character creation screen, and this long sequence is only for cave-ins (other deaths keep the simple screen)?
+Note: Tyler recommends Yes because it gives cave-ins their own moment without slowing down every death, and we can add the sequence to other deaths later if you like it.
+[check]
