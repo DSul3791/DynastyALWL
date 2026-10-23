@@ -932,3 +932,7 @@ Answered: 2026-10-23 01:34 UTC
 Answer: Yes
 Answered: 2026-10-23 01:35 UTC
 
+## pier-bed | May a pier cell (pillar or foundation) sit on the sea bed under up to 0.5 m of water?
+Answer: Yes
+Answered: 2026-10-23 01:35 UTC
+
