@@ -187,6 +187,11 @@ func _init() -> void:
 		for row in item.get("repair", []):
 			want_item.call(String(row[0]), "items.json %s repair" % id)
 
+	var yield_scale: Dictionary = drops.get("yield_scale", {})
+
+	if not yield_scale.is_empty() and (float(yield_scale.get("min", 1.0)) < 0.1 or float(yield_scale.get("max", 1.0)) < float(yield_scale.get("min", 1.0)) or float(yield_scale.get("max", 1.0)) > 5.0):
+		fail("drops.json yield_scale: min 0.1 or more, max at least min and at most 5")
+
 	# Berries per plant (drops.json berry_yield): a flora species, one of its yields, a count of at least 1 and a berry stack of 100.
 	for key in drops.get("berry_yield", {}):
 		var berry: Dictionary = drops["berry_yield"][key]

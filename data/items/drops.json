@@ -57,6 +57,7 @@
 		"mournbloom": {"item": "mournbloom_petals", "count": 4},
 		"nightcrown": {"item": "nightcrown_blooms", "count": 3}
 	},
+	"yield_scale": {"min": 1.0, "max": 3.0, "note": "A plant's berry and harvest count is the table number times its size (patch scale 1 to 3, Dave 2026-10-23), never above max times the table. Uproot always gives a normal 1x plant item."},
 	"berry_yield": {
 		"raspberry": {"item": "raspberries", "count": 150},
 		"bramble": {"item": "blackberries", "count": 250},
