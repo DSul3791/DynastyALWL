@@ -2181,10 +2181,10 @@ const RASPBERRY_BERRY := Color(1.0, 0.16, 0.22)
 const RASPBERRY_UNRIPE := Color(0.95, 0.85, 0.35)
 const SHRUB_LOOKS := {
 	"raspberry": {"canes": [6, 9], "arch": 0.8, "reach": 1.0, "cane": RASPBERRY_CANE, "leaf": 1.0, "fruit": RASPBERRY_BERRY, "unripe": RASPBERRY_UNRIPE, "flower": null, "thorns": false},
-	"bramble": {"canes": [5, 8], "arch": 1.0, "reach": 1.8, "cane": Color(0.50, 0.30, 0.30), "leaf": 1.2, "fruit": Color(0.35, 0.10, 0.55), "unripe": Color(1.0, 0.25, 0.25), "flower": Color(1.0, 0.9, 0.9), "thorns": true},
+	"bramble": {"canes": [6, 9], "arch": 0.9, "reach": 1.0, "cane": Color(0.50, 0.30, 0.30), "leaf": 1.2, "fruit": Color(0.35, 0.10, 0.55), "unripe": Color(1.0, 0.25, 0.25), "flower": Color(1.0, 0.9, 0.9), "thorns": true},
 	"wild_rose": {"canes": [5, 7], "arch": 0.7, "reach": 1.1, "cane": Color(0.45, 0.30, 0.22), "leaf": 0.8, "fruit": Color(1.0, 0.18, 0.1), "unripe": Color(1.0, 0.55, 0.3), "flower": Color(1.0, 0.6, 0.75), "thorns": true},
-	"blackthorn": {"canes": [7, 10], "arch": 0.35, "reach": 0.9, "cane": Color(0.20, 0.17, 0.15), "leaf": 0.5, "fruit": Color(0.4, 0.45, 0.9), "unripe": Color(0.5, 0.6, 0.5), "flower": Color(1.0, 1.0, 1.0), "thorns": true},
-	"blueberry": {"canes": [8, 12], "arch": 0.15, "reach": 0.8, "cane": Color(0.50, 0.38, 0.28), "leaf": 0.5, "fruit": Color(0.35, 0.45, 1.0), "unripe": Color(0.7, 0.9, 0.6), "flower": null, "thorns": false},
+	"blackthorn": {"canes": [14, 18], "arch": 0.55, "reach": 1.4, "rate": 0.12, "cane": Color(0.20, 0.17, 0.15), "leaf": 0.32, "fruit": Color(0.4, 0.45, 0.9), "unripe": Color(0.5, 0.6, 0.5), "flower": null, "thorns": true},
+	"blueberry": {"canes": [8, 12], "arch": 0.15, "reach": 0.8, "rate": 0.2, "cane": Color(0.50, 0.38, 0.28), "leaf": 0.5, "fruit": Color(0.35, 0.45, 1.0), "unripe": Color(0.7, 0.9, 0.6), "flower": null, "thorns": false},
 }
 
 
@@ -2205,7 +2205,7 @@ static func _cane_shrub(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 		var p0: Vector3 = out * crown * 0.06
 		var p1: Vector3 = out * reach * (0.1 + 0.1 * arch) + Vector3(0.0, top_y * 0.7, 0.0)
 		var p2: Vector3 = out * reach * (0.25 + 0.35 * arch) + Vector3(0.0, top_y, 0.0)
-		var p3: Vector3 = out * reach * (0.3 + 0.7 * arch) + Vector3(0.0, top_y * (1.0 - 0.38 * arch), 0.0)
+		var p3: Vector3 = out * reach * (0.3 + 0.7 * arch) + Vector3(0.0, top_y * (1.0 - 0.28 * arch), 0.0)
 		var pts: Array = [p0, p1, p2, p3]
 
 		for m in range(3):
@@ -2229,7 +2229,7 @@ static func _cane_shrub(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 			var at: Vector3 = (pts[seg] as Vector3).lerp(pts[seg + 1], t * 3.0 - float(seg))
 			_clump(leaves, rng, at, Vector3(0.0, at.y - crown * 0.5, 0.0), leaf_size * rng.randf_range(0.85, 1.2), rng.randf_range(0.85, 1.05), 2 if far else 3)
 
-			if far or rng.randf() > 0.45:
+			if far or rng.randf() > float(look.get("rate", 0.45)):
 				continue
 
 			var low: Vector3 = at + Vector3(0.0, -leaf_size * 0.95, 0.0) + out * leaf_size * 0.3
@@ -2248,11 +2248,11 @@ static func _raspberry(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: fl
 # A stinging nettle and other upright herbs: a few straight square stems, pairs of toothed leaves along them, small flower strings in the leaf
 # axils near the top.
 static func _herb(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool, flower: Color) -> void:
-	var stems: int = 3 if far else rng.randi_range(5, 8)
+	var stems: int = 4 if far else rng.randi_range(9, 13)
 
 	for k in range(stems):
 		var a: float = TAU * float(k) / float(stems) + rng.randf_range(-0.3, 0.3)
-		var base: Vector3 = Vector3(cos(a), 0.0, sin(a)) * crown * rng.randf_range(0.05, 0.4)
+		var base: Vector3 = Vector3(cos(a), 0.0, sin(a)) * crown * rng.randf_range(0.05, 0.5)
 		var top: Vector3 = base + Vector3(cos(a), 0.0, sin(a)) * crown * 0.05 + Vector3(0.0, h * rng.randf_range(0.85, 1.1), 0.0)
 		_branch(bark, base, top, h * 0.008 + 0.004, h * 0.004 + 0.002, Color(0.45, 0.55, 0.3), 4)
 		var pairs: int = 3 if far else 7
@@ -2260,7 +2260,7 @@ static func _herb(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, 
 		for m in range(pairs):
 			var t: float = 0.25 + 0.75 * float(m) / float(pairs - 1)
 			var at: Vector3 = base.lerp(top, t)
-			var size: float = crown * lerpf(0.34, 0.18, t) * rng.randf_range(0.85, 1.1)
+			var size: float = crown * lerpf(0.55, 0.3, t) * rng.randf_range(0.85, 1.1)
 			_clump(leaves, rng, at, Vector3(base.x, at.y - crown * 0.3, base.z), size, rng.randf_range(0.85, 1.05), 2)
 
 		if not far:
