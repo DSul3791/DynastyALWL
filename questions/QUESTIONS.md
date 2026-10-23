@@ -8,9 +8,6 @@ Note: 6. Optional: place a timber prop near the roof before the time runs out. T
 Note: 7. Take a picture of the shaking and dust. Write in Notes what happened, yes or no.
 [test]
 
-## floor-brace-2 | Floor brace: one log makes the four edge sills of one floor cell, and the wooden floor sits on the sills; every Plank, Fine and Log floor costs +1 log?
-[check]
-
 ## floor-brace-3 | Floor brace: neighbouring floor cells share the sill where they touch, so a big floor needs fewer logs than cells?
 [check]
 
