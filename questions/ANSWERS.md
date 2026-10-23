@@ -980,3 +980,7 @@ Answered: 2026-10-23 01:40 UTC
 Answer: No: This seems confusing. I don’t want to be able to push tab while I’m in the setting screen and have it open my character screen if that’s what you’re asking me. But if you’re asking me if the escape key should open the menu for settings, then the answer is yes the escape key should open the settings menu. I hope that answers this.
 Answered: 2026-10-23 01:57 UTC
 
+## item-recipes-2 | Are these recipes OK: rough plank = 1 log gives 4; fine board = 1 lumber; nails = 1 iron ingot gives 100; cobblestone = 3 stone; stone shingle = 2 stone; tar = 5 pine tar; hinges = 1 ingot gives 4; wooden pin = 1 lumber gives 4?
+Answer: No: Tar, you get from bitumen . Hinges you get 20 from one iron ingot. Wooden pins you probably get 20 from one lumber. But other than that, everything else is correct.
+Answered: 2026-10-23 02:06 UTC
+
