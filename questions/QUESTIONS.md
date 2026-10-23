@@ -8,10 +8,6 @@ Note: 6. Optional: place a timber prop near the roof before the time runs out. T
 Note: 7. Take a picture of the shaking and dust. Write in Notes what happened, yes or no.
 [test]
 
-## roof-65-low | Kathleen read '65 degrees' as measured from the vertical, so a LOW roof: 45 degrees rises 2.0 m per 2 m of run, 65 rises only 0.93 m. Is that the shorter peak you meant?
-Image: questions/img/tiers_roof_pieces_r4.png
-[check]
-
 ## braces-r4 | Do the braces look right: round logs joined with wooden pins, each of the three sizes in a plain and a tar-soaked version?
 Image: questions/img/tiers_braces_r4.png
 [check]
