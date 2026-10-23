@@ -1,7 +1,3 @@
-## cost-19 | Large foundation 1x1: 30 stone, 10 clay and 4 mortar?
-Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
-[check]
-
 ## cost-20 | Large foundation 2x2: 120 stone, 40 clay and 16 mortar?
 Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
 [check]
