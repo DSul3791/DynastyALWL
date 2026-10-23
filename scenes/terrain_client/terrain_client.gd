@@ -3212,7 +3212,7 @@ func _show_tunnel_buttons() -> void:
 
 	_tunnel_button.text = "Tunnel collapse: %s (admin)" % ("On" if tunnel_on else "Off")
 	_tunnel_button.add_theme_color_override("font_color", Color(0.45, 0.9, 0.45) if tunnel_on else Color(0.95, 0.4, 0.4))
-	_cave_in_button.text = "Cave-in time: %d min (change)" % (tunnel_cave_in_s / 60)
+	_cave_in_button.text = "Cave-in time: %d min (change)" % roundi(float(tunnel_cave_in_s) / 60.0)
 
 
 # The VSync button shows its state, kept between sessions (display_settings.gd): On in green, Adaptive in amber, Off in red.
