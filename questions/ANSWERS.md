@@ -1162,3 +1162,7 @@ Answered: 2026-10-23 10:25 UTC
 Answer: Yes
 Answered: 2026-10-23 10:26 UTC
 
+## fix-id-claims | Should item numbers and action ids be claimed in one short file (or given fixed ranges per thread), so two threads can never pick the same number?
+Answer: Yes
+Answered: 2026-10-23 10:26 UTC
+
