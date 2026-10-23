@@ -96,6 +96,25 @@ func _init() -> void:
 	again_items.support_changed.call(Vector3(8.0, 8.0, 8.0))      # no supports yet, so every cell is still short
 	_check(int(again._cells.values()[0]["opened"]) == grace, "a changed support still too weak restarts the window through the items hook")
 
+	# Fixed window (Dave 2026-10-22): 600 s quiet, then the cave-in duration of rumbling (clamped to 120..1200 s).
+	var fixed: Watch = Watch.new()
+	fixed.configure({"enabled": true, "collapse": true, "quiet_s": 600, "cave_in_s": 60})
+	_check(fixed.cave_in_s == 120.0, "cave-in duration is clamped to at least 2 minutes")
+	fixed.configure({"enabled": true, "collapse": true, "quiet_s": 600, "cave_in_s": 9999})
+	_check(fixed.cave_in_s == 1200.0, "and to at most 20 minutes")
+	fixed.configure({"enabled": true, "collapse": true, "quiet_s": 600, "cave_in_s": 1200})
+	fixed.load_block = _tunnel
+	fixed.surface_h = func(_x: float, _z: float) -> float: return 40.0
+	fixed.mark_dirty([Vector3i.ZERO])
+	fixed.process_dirty(0)
+	_check(int(fixed._cells.values()[0]["grace_ms"]) == 1800000, "the window is 10 + 20 minutes whatever the width")
+	_check(fixed.tick(590000, peers)["quake"].is_empty(), "quiet for the first 10 minutes")
+	var rumble: Dictionary = fixed.tick(700000, peers)
+	_check(rumble["quake"].size() == 1 and int(rumble["quake"][0][1]) == 2, "rumbling (creak) starts after the quiet part")
+	var shake: Dictionary = fixed.tick(1500000, peers)
+	_check(shake["quake"].size() == 1 and int(shake["quake"][0][1]) == 3, "then shaking")
+	_check(fixed.tick(1800000, peers)["collapse"].size() >= 1, "and it falls at 30 minutes")
+
 	_radius = 0.9
 	var narrow: Watch = _watch()
 	narrow.load_block = func(_b: Vector3i) -> VoxelBuffer: return _tunnel(Vector3i.ZERO)

@@ -27,6 +27,13 @@ var base_grace_s: float = 1800.0
 var min_grace_s: float = 225.0
 var max_grace_s: float = 3600.0
 var rubble_material: int = 1
+# Dave 2026-10-22 (collapse-plan-1): a dug space wider than about 2 m starts a timer; about 10 minutes of quiet, then rumbling for the
+# cave-in duration (a setting, 2 to 20 minutes, 20 by default) to dig out and brace. With quiet_s set the window is that fixed total
+# (no width scaling) and the stages are measured from the end of the quiet part; unset (0) keeps the older width-scaled window.
+var quiet_s: float = 0.0
+var cave_in_s: float = 1200.0
+const CAVE_IN_MIN_S := 120.0
+const CAVE_IN_MAX_S := 1200.0
 var load_block: Callable                     # (Vector3i block) -> VoxelBuffer of the block with every edit applied, or null
 var surface_h: Callable                      # (x, z) -> ground surface height
 var support_strength: Callable               # (Vector3) -> support strength x condition 0..1 at a point (items; none until they exist)
@@ -51,6 +58,8 @@ func configure(data: Dictionary) -> void:
 	min_grace_s = float(data.get("min_grace_s", min_grace_s))
 	max_grace_s = float(data.get("max_grace_s", max_grace_s))
 	rubble_material = int(data.get("rubble_material", rubble_material))
+	quiet_s = maxf(float(data.get("quiet_s", quiet_s)), 0.0)
+	cave_in_s = clampf(float(data.get("cave_in_s", cave_in_s)), CAVE_IN_MIN_S, CAVE_IN_MAX_S)
 
 
 func start() -> void:
@@ -149,7 +158,7 @@ func process_dirty(now_msec: int) -> void:
 
 		for cell in found:
 			var key: Vector3i = Vector3i(((cell["pos"] as Vector3) / CELL_M).floor())
-			var grace_s: float = clampf(base_grace_s * pow(float(cell["free"]) / maxf(float(cell["span"]), 0.1), 2.0), min_grace_s, max_grace_s)
+			var grace_s: float = quiet_s + cave_in_s if quiet_s > 0.0 else clampf(base_grace_s * pow(float(cell["free"]) / maxf(float(cell["span"]), 0.1), 2.0), min_grace_s, max_grace_s)
 			var was: Dictionary = _cells.get(key, {})
 			_cells[key] = {"pos": cell["pos"], "need": cell["need"], "span": cell["span"], "opened": int(was.get("opened", now_msec)), "grace_ms": int(grace_s * 1000.0), "last": now_msec}
 			keys.append(key)
@@ -157,6 +166,18 @@ func process_dirty(now_msec: int) -> void:
 		_block_cells[block] = keys
 		cells_measured += found.size()
 		_mutex.unlock()
+
+
+# The window share f mapped so the quiet part (share q of the window; 0 keeps the old fixed layout) ends at 0.6: stage_of and
+# strength_of then work unchanged on it.
+static func _stage_share(f: float, q: float) -> float:
+	if q <= 0.0:
+		return f
+
+	if f < q:
+		return f / q * 0.6
+
+	return 0.6 + (f - q) / maxf(1.0 - q, 0.001) * 0.4
 
 
 static func stage_of(f: float) -> int:
@@ -206,7 +227,7 @@ func tick(now_msec: int, peers: Dictionary) -> Dictionary:
 			continue
 
 		cell["last"] = now_msec
-		var f: float = float(now_msec - int(cell["opened"])) / float(cell["grace_ms"])
+		var f: float = _stage_share(float(now_msec - int(cell["opened"])) / float(cell["grace_ms"]), quiet_s / maxf(quiet_s + cave_in_s, 1.0) if quiet_s > 0.0 else 0.0)
 		var stage: int = stage_of(f)
 
 		if stage == 5 and collapse_enabled:
