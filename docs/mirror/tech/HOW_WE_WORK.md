@@ -55,3 +55,4 @@ The game is a safe place and never says anything that might divide people. No "W
 
 ## Nobody is ever stuck (BP-T44, Dave 2026-10-23)
 If you are blocked or would wait too long, start the next thing on your list at once (a super productive day). If you truly need Dave (a permission or a decision), ask the Guru through the coordinator to post a card on the QA page with the exact thing needed and what you do meanwhile. A permission prompt in your window is not enough: Dave cannot see it.
+- Dave: "qa is my todo list and thats what i check regularly": anything that needs Dave must be a card on the QA page with the exact action in numbered point form.

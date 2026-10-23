@@ -1,4 +1,4 @@
-# BP-T44 (Dave 04:37): NOBODY IS EVER STUCK. Blocked or long wait = start the next item on your list now. If you truly need Dave, ask the Guru (via the coordinator) to post a QA card with the exact need and your meanwhile plan; permission prompts in your window are not enough. A super productive day.
+# BP-T44 (Dave 04:37): NOBODY IS EVER STUCK. Blocked or long wait = start the next item on your list now. If you truly need Dave, ask the Guru (via the coordinator) to post a QA card with the exact need and your meanwhile plan; permission prompts in your window are not enough. A super productive day. Dave: "qa is my todo list and thats what i check regularly": anything he must do or decide is a QA card with exact numbered steps.
 
 # TOMORROW (written by the Guru 04:35 UTC 23 Oct; head = build 700, MikeW full check + backup pending)
 FIRST 3 JOBS (final, Dave done 04:34; head = 701 after MikeW recheck):
