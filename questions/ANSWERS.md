@@ -1326,3 +1326,7 @@ Answered: 2026-10-23 21:51 UTC
 Answer: No: No, it’s not
 Answered: 2026-10-23 21:51 UTC
 
+## shrub-wildrose-4 | Wild rose: is it a full bush with flowers from the top to the ground?
+Answer: Yes: It is not full. It needs to be thicker in the middle with the roses all over the top and down both sides and the leaves have to go all over the top around to fill the middle and go down the side right to the ground.
+Answered: 2026-10-23 21:52 UTC
+
