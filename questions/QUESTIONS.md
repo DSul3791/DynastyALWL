@@ -1,7 +1,3 @@
-## cost-28 | Stone pillar: 20 stone blocks and 4 mortar?
-Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
-[check]
-
 ## cost-29 | Brace 1.5 m: 1 log and 1 twine?
 Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
 [check]
