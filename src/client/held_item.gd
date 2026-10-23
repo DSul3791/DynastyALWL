@@ -231,6 +231,7 @@ func _is_look_item() -> bool:
 func _make_look_model() -> Node3D:
 	var node: MeshInstance3D = MeshInstance3D.new()
 	node.mesh = BasicLook.mesh_for(held_id())
+	node.scale = Vector3.ONE * 1.8   # same enlargement as on the ground, so a berry is seen in the palm
 	return node
 
 
