@@ -836,3 +836,7 @@ Answered: 2026-10-23 01:20 UTC
 Answer: No: I need you to clarify what this means. Do you mean putting a dam in a river causes it to back up like a real damn Would then yes. However, I would expect if I built a dam at the bottom of a river between the river and the ocean, I would expect the river to back up until it went over my damn or around my damn unless I built a damn around the entire island tall enough to stop it
 Answered: 2026-10-23 01:22 UTC
 
+## island-fill | Can players fill shallow sea with the spade (Raise mode) to build their own islands, up to about 6 m deep? (Sonny says 6 m, Sal says 1.5 m, Guru says about 4 m: answer No and write your number if you prefer another.)
+Answer: No: I think players can put sand, soil or stone anywhere they want to all the way to the sky until they run out of oxygen. If this becomes a problem in the future, we will handle it then, but I can also see how if placing sand on an unstable foundation could cause it to spread out or slide down. Obviously you couldn’t put something like sand or dirt on a steep slope but if you keep throwing sand in a hole, it will fill it up eventually while spreading out into the whole kind of like water the way sand does. I’m not sure how we want to handle that dirt might just be handle like a normal voxel we should have Tyler review that and come up with the best practice
+Answered: 2026-10-23 01:26 UTC
+
