@@ -8,9 +8,6 @@ Note: 6. Optional: place a timber prop near the roof before the time runs out. T
 Note: 7. Take a picture of the shaking and dust. Write in Notes what happened, yes or no.
 [test]
 
-## wet-looks | Should the wet ceiling and walls look darker with a sheen and a few streaks, and each drop be a small falling sprite with a tiny ring splash on the floor?
-[check]
-
 ## wet-floor | Should the wet floor look dark and glossy under and between the drips, with no puddles and no standing water?
 [check]
 
