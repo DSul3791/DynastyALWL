@@ -203,15 +203,18 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 		# for the whole patch (Dave, 23 Oct). Only in patches: such a species skips the main grid.
 		if entry.has("patch"):
 			var patch: Dictionary = entry["patch"]
+			var counts: Vector2 = _range_of(patch.get("count", [10, 20]))
+			var radii: Vector2 = _range_of(patch.get("radius_m", [2.0, 3.5]))
+			var scales: Vector2 = _range_of(patch.get("scale", [1.0, 3.0]))
 			item["patch"] = {
 				"every_m": float(patch.get("every_m", 40.0)),
 				"chance": float(patch.get("chance", 0.5)),
-				"count_min": clampi(int(patch.get("count", [10, 20])[0]), 1, PATCH_MAX_PLANTS),
-				"count_max": clampi(int(patch.get("count", [10, 20])[1]), 1, PATCH_MAX_PLANTS),
-				"radius_min": float(patch.get("radius_m", [2.0, 3.5])[0]),
-				"radius_max": float(patch.get("radius_m", [2.0, 3.5])[1]),
-				"scale_min": float(patch.get("scale", [1.0, 3.0])[0]),
-				"scale_max": float(patch.get("scale", [1.0, 3.0])[1]),
+				"count_min": clampi(int(counts.x), 1, PATCH_MAX_PLANTS),
+				"count_max": clampi(int(counts.y), 1, PATCH_MAX_PLANTS),
+				"radius_min": radii.x,
+				"radius_max": radii.y,
+				"scale_min": scales.x,
+				"scale_max": scales.y,
 				"spacing_m": maxf(float(patch.get("spacing_m", 0.8)), PLANT_MIN_GAP),
 				"fill": float(patch.get("fill", 1.0)),
 			}
@@ -712,7 +715,8 @@ func _groves_near(item: Dictionary, grove: Dictionary, seed: int, species_id: in
 func _place_patches(item: Dictionary, data, chunk: Vector2i, origin: Vector2, species_id: int, found: Array) -> void:
 	var patch: Dictionary = item["patch"]
 	var every: float = patch["every_m"]
-	var reach: float = patch["radius_max"]
+	# radius_m and spacing_m are given for scale 1 and grow with the patch scale (a 3x bush would overlap its neighbours).
+	var reach: float = float(patch["radius_max"]) * float(patch["scale_max"])
 	var per_biome: PackedFloat32Array = item["per_biome"]
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	var gi0: int = int(floor((origin.x - reach) / every))
@@ -738,7 +742,9 @@ func _place_patches(item: Dictionary, data, chunk: Vector2i, origin: Vector2, sp
 			var fr: float = float((h >> 34) % 1000) / 1000.0
 			var fn: float = float((h >> 44) % 1000) / 1000.0
 			var fs: float = float((h >> 54) % 1000) / 1000.0
-			var radius: float = lerpf(patch["radius_min"], patch["radius_max"], fr)
+			# One scale for the whole patch, from the patch cell.
+			var scale: float = lerpf(patch["scale_min"], patch["scale_max"], fs)
+			var radius: float = lerpf(patch["radius_min"], patch["radius_max"], fr) * scale
 			var margin: float = minf(radius / every, 0.45)
 			var center: Vector2 = Vector2((float(gi) + lerpf(margin, 1.0 - margin, fx)) * every, (float(gj) + lerpf(margin, 1.0 - margin, fz)) * every)
 
@@ -746,8 +752,6 @@ func _place_patches(item: Dictionary, data, chunk: Vector2i, origin: Vector2, sp
 				continue
 
 			var plants: int = int(round(lerpf(float(patch["count_min"]), float(patch["count_max"]), fn)))
-			# One scale for the whole patch, from the patch cell.
-			var scale: float = lerpf(patch["scale_min"], patch["scale_max"], fs)
 
 			for n in range(plants):
 				rng.seed = _mix(_patch_seed, gi * 31 + n, gj, species_id + 977)
@@ -776,7 +780,15 @@ func _place_patches(item: Dictionary, data, chunk: Vector2i, origin: Vector2, sp
 					continue
 
 				var height: float = lerpf(item["height_min"], item["height_max"], size) * scale
-				found.append([_tier(item, height), species_id, STAND_BASE + slot * PATCH_MAX_PLANTS + n, x, y, z, height, yaw, float(patch["spacing_m"])])
+				found.append([_tier(item, height), species_id, STAND_BASE + slot * PATCH_MAX_PLANTS + n, x, y, z, height, yaw, float(patch["spacing_m"]) * scale])
+
+
+# A table value that is either a number or a [low, high] pair, as (low, high).
+static func _range_of(value: Variant) -> Vector2:
+	if value is Array:
+		return Vector2(float(value[0]), float(value[1]))
+
+	return Vector2(float(value), float(value))
 
 
 func _in_grove(groves: Array, x: float, z: float) -> bool:
