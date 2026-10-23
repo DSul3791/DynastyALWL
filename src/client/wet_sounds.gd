@@ -81,6 +81,7 @@ func _set_trickle(on: bool, here: Vector3) -> void:
 		_loop.max_distance = MAX_DISTANCE_M
 		add_child(_loop)
 		_loop.play()
+		played["drip_trickle"] = int(played.get("drip_trickle", 0)) + 1      # counted when the loop starts (it is not a one-shot)
 
 	if _loop != null:
 		if on:
