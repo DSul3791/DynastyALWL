@@ -27,3 +27,9 @@ Note: 1. Look at the picture (top-down view, one plant, 4 m away).
 Image: questions/img/shrub_bramble_9698b9f.png
 Note: Recommendation: No, not yet, because it still looks like separate clumps with gaps between them; Kathleen is joining them into one thick bush.
 [picture]
+
+## shrub-wildrose-4 | Wild rose: is it a full bush with flowers from the top to the ground?
+Note: 1. Look at the picture (top-down view, one plant, 4 m away).
+Image: questions/img/shrub_wild_rose_9698b9f.png
+Note: Recommendation: No, not yet, because it forms a ring with an empty middle; the flowers and leaf colour look right, the middle needs filling.
+[picture]
