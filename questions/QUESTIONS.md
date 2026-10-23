@@ -38,12 +38,6 @@ Note: 2. Place a timber prop 3 m from the roof.
 Note: 3. Shaking should stop near it (7.5 m for a timber set).
 [test]
 
-## vsync | Please test VSync. Look for: On green, Adaptive amber, Off red, and the same after restart.
-Note: 1. Esc > Settings > VSync: press it through all three.
-Note: 2. Look for "(vsync X)" next to the fps in the top text.
-Note: 3. Restart the game; the setting should be kept.
-[test]
-
 ## ladder | Please test a ladder. Look for: it climbs, comes down, lets go backwards and steps you onto the top edge.
 Note: 1. Place a ladder against a wall and face it.
 Note: 2. Hold W to climb, then S to come down, Space to let go backwards.
