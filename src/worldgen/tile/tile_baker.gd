@@ -225,13 +225,20 @@ func bake(tile: Vector2i) -> Dictionary:
 	var starter: Dictionary = starter_info(tile)
 	var water = TileWaterScript.new()
 	water.setup(settings, tile_rules)
-	water.build(frame_height, starter, river_network.guides_in(frame_rect, 4.0), river_network.ponds_in(frame_rect, float(tile_rules["water"].get("head_pond_search_m", 2000.0)) + 700.0))
+	var river_guides: Array = river_network.guides_in(frame_rect, 4.0)
+	water.build(frame_height, starter, river_guides, river_network.ponds_in(frame_rect, float(tile_rules["water"].get("head_pond_search_m", 2000.0)) + 700.0))
 	timings["water"] = Time.get_ticks_msec() - clock
 
 	clock = Time.get_ticks_msec()
 	var climate = TileClimateScript.new()
 	climate.setup(settings, tile_rules, tables)
 	climate.use_world_air(world_air)
+	var fresh_points: PackedVector2Array = PackedVector2Array()
+
+	for guide in river_guides:
+		fresh_points.append_array(guide["points"])
+
+	climate.use_world_fresh_water(fresh_points)
 	climate.build(water.heights, water.water_class, origin_sx, origin_sz)
 	timings["climate"] = Time.get_ticks_msec() - clock
 

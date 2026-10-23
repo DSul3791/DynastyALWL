@@ -37,6 +37,8 @@ var _settings
 var _rules: Dictionary = {}
 var _tables
 var _air_field: Dictionary = {}     # world wet-air field (see build_world_air), empty = sweep per tile
+var _fresh_points: PackedVector2Array = PackedVector2Array()
+var _use_fresh_points: bool = false
 var _origin_sx: int = 0             # world sample index of sample 0 / row 0
 var _origin_sz: int = 0
 
@@ -53,6 +55,15 @@ func setup(settings, rules: Dictionary, tables) -> void:
 # wind across itself starting from a fixed value.
 func use_world_air(field: Dictionary) -> void:
 	_air_field = field
+
+
+# The fresh water that wets the land (river bonus, clay banks) comes from the world's own river lines, not from the water
+# this frame happened to build: the drainage in a frame depends on how much upstream it can see, so two tiles that share an
+# edge disagreed about which streams exist near it (23 Oct bake: soil/moisture/cover differed up to 240 m from the edge).
+# `points` are river line points in world meters (RiverNetwork.guides_in), the same for every frame that contains them.
+func use_world_fresh_water(points: PackedVector2Array) -> void:
+	_fresh_points = points
+	_use_fresh_points = true
 
 
 # Builds a frame of the world grid: `heights` and `water_class` hold
@@ -103,8 +114,15 @@ func build(heights: PackedFloat32Array, water_class: PackedByteArray, origin_sx:
 
 			if kind == OCEAN:
 				ocean_mask[cell] = 1
-			else:
+			elif not _use_fresh_points:
 				fresh_mask[cell] = 1
+
+	for point in _fresh_points:
+		var column: int = roundi((point.x / spacing_m - float(origin_sx)) / float(step))
+		var row: int = roundi((point.y / spacing_m - float(origin_sz)) / float(step))
+
+		if column >= 0 and column < coarse and row >= 0 and row < coarse:
+			fresh_mask[row * coarse + column] = 1
 
 	var cell_m: float = float(step) * spacing_m
 	var ocean_distance: PackedFloat32Array = _chamfer(ocean_mask, coarse, cell_m)
