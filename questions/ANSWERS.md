@@ -820,3 +820,7 @@ Answered: 2026-10-23 01:18 UTC
 Answer: No: No tides
 Answered: 2026-10-23 01:18 UTC
 
+## sea-source | Is the sea an endless source at sea level, so a pit dug below sea level and connected to the sea fills to sea level (trenches flood, harbours and canals possible)?
+Answer: Yes
+Answered: 2026-10-23 01:19 UTC
+
