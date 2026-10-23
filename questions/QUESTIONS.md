@@ -8,11 +8,6 @@ Note: 6. Optional: place a timber prop near the roof before the time runs out. T
 Note: 7. Take a picture of the shaking and dust. Write in Notes what happened, yes or no.
 [test]
 
-## log-wall-r4 | Does the log wall look right now: only this wall's logs, ends offset left and right, open spaces where a joining wall's logs pass through, no curved notch?
-Image: questions/img/tiers_walls_r4.png
-Image: questions/img/tiers_log_corner_r4.png
-[check]
-
 ## ceilings-r4 | Do the six ceilings look right now: log = wide boards on top with rounded undersides, fine boards full length with no strips, cobblestone looks like cobblestone, mason unchanged?
 Image: questions/img/tiers_ceilings_r4.png
 [check]
