@@ -418,3 +418,4 @@ Each active thread holds its current number plus ONE spare, handed out in advanc
 - 11:50 UTC 23 Oct Guru: MERGED 705: sal-firewood-two (1 wooden block at the chopping block gives 2 firewood; structures.json + 2 tests). DATA/RUNTIME. Sal ran local_check pass. Head = 705.
 - 12:00 UTC 23 Oct Guru: MERGED 706: mike-pile-uid (pile_look.gd.uid). 705 check: headless PASS, local_check +2 warnings in test_showroom.gd 14-15 (Steve fixing on a branch). Head = 706.
 - 12:10 UTC 23 Oct Guru: MERGED 707: steve-showroom-warn (test_showroom.gd warning fix, back to 233 per Steve) + sal-wood-species (data/items/wood_species.json, data only). mike-pile-uid already in 706. NOT RUN in Godot here: MikeW local_check (expect 233) + headless. Head = 707.
+- 12:20 UTC 23 Oct Guru: MERGED 708: mike-look-rig update (look rig flags --flora, --ground ID:N, --give, --nograss). kathleen-shrubs HELD until nettle model shows and blackthorn size is fixed. Head = 708.
