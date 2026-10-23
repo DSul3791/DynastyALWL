@@ -634,6 +634,7 @@ func _process(_delta: float) -> void:
 func _process_body(_delta: float) -> void:
 	var now: int = Time.get_ticks_msec()
 	_roll_tick(_delta, now)
+	_snap_tick(now)
 	_hold_e_check()
 
 	if _thought_label != null and _thought_label.text != "" and now >= _thought_until_msec:
@@ -1558,6 +1559,11 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			_world[id]["count"] = row[2]
 			_refresh_pile(id)
 
+			if int(_world[id]["state"]) == 0 and state == 0 and (row[3] as Vector3).distance_to(_world[id]["pos"]) > 0.05:
+				_world[id]["pos"] = row[3]      # the server let it down onto the ground (after a dig): draw it there
+				(_world[id]["node"] as Node3D).position = row[3] + Vector3(0.0, 0.12, 0.0)
+				_snap_loose(id)
+
 			if _world[id]["state"] == state:
 				continue
 
@@ -1612,6 +1618,47 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 		_root.add_child(node)
 		_world[id] = {"node": node, "number": row[1], "count": row[2], "pos": row[3], "state": state, "light": light}
 		_refresh_pile(id)
+		_snap_loose(id)
+
+
+# The server places a loose item by the generated height field; the drawn ground is the voxel surface, up to about half a metre off, so a
+# lump could hang in the air (Dave 2026-10-23, rig: 0.40 m). A loose item within 1 m of the drawn ground rests on it; one whose chunk is not
+# drawn yet is tried again each second.
+const SNAP_MAX_M := 1.0
+var _snap_next_msec: int = 0
+var _unsnapped: Dictionary = {}      # world item id -> true
+
+
+func _snap_loose(id: int) -> void:
+	var entry: Dictionary = _world.get(id, {})
+
+	if entry.is_empty() or int(entry.get("state", 0)) != 0 or not _ground_below.is_valid() or _rolling.has(id):
+		_unsnapped.erase(id)
+		return
+
+	var at: Vector3 = entry["pos"]
+	var ground: float = float(_ground_below.call(at))
+
+	if is_nan(ground) or absf(ground - at.y) > SNAP_MAX_M:
+		_unsnapped[id] = true
+		return
+
+	_unsnapped.erase(id)
+	var node: Node3D = entry["node"]
+	node.position = Vector3(at.x, ground + 0.12, at.z)
+
+
+func _snap_tick(now: int) -> void:
+	if _unsnapped.is_empty() or now < _snap_next_msec:
+		return
+
+	_snap_next_msec = now + 1000
+
+	for id in _unsnapped.keys():
+		if not _world.has(id):
+			_unsnapped.erase(id)
+		else:
+			_snap_loose(id)
 
 
 # A heap of six or more stones (or soil, clay, sand, gravel) is drawn as one pile built from its count (PileLook); fewer are single items.
@@ -1802,6 +1849,7 @@ func _roll_tick(delta: float, now: int) -> void:
 
 func _forget(id: int) -> void:
 	_rolling.erase(id)
+	_unsnapped.erase(id)
 
 	if _boulders.has(id):
 		_boulders[id]["node"].queue_free()
