@@ -1058,3 +1058,7 @@ Answered: 2026-10-23 04:12 UTC
 Answer: Yes
 Answered: 2026-10-23 04:12 UTC
 
+## cavein-death-fade | Then: the picture fades to black over about 4 seconds while the rumble keeps going for about 3 more seconds, then the sound fades out too?
+Answer: Yes
+Answered: 2026-10-23 04:13 UTC
+
