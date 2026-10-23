@@ -8,9 +8,6 @@ Note: 6. Optional: place a timber prop near the roof before the time runs out. T
 Note: 7. Take a picture of the shaking and dust. Write in Notes what happened, yes or no.
 [test]
 
-## cost-braces | Braces are logs plus wooden pins (no twine): 1.5 m = 3 logs + 4 pins; 3 m = 4 logs + 6 pins; 5 m = 6 logs + 8 pins?
-[check]
-
 ## cost-braces-tar | Tar-soaked braces: same shape, add 1 tar per log, and the wear decay is almost zero?
 [check]
 
