@@ -624,3 +624,7 @@ Answered: 2026-10-23 00:33 UTC
 Answer: Yes
 Answered: 2026-10-23 00:34 UTC
 
+## esc-menu-8 | Esc menu: should Debug details (F3) move from Settings into Admin?
+Answer: Yes
+Answered: 2026-10-23 00:34 UTC
+
