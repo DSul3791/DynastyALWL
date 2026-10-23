@@ -52,3 +52,6 @@ BEST_PRACTICES.md, PROCESS.md, DECISIONS.md, JOBS.md, BUILD_LOG.md, TEST_QUEUE.m
 
 ## Safe place wording (BP-T42, Dave 2026-10-23)
 The game is a safe place and never says anything that might divide people. No "Womens Health", "Mens Health" or similar labels on plants, tools, items, tooltips, sounds or lines. Describe the use, never who it is for. Every new piece of player-visible text is checked against this.
+
+## Nobody is ever stuck (BP-T44, Dave 2026-10-23)
+If you are blocked or would wait too long, start the next thing on your list at once (a super productive day). If you truly need Dave (a permission or a decision), ask the Guru through the coordinator to post a card on the QA page with the exact thing needed and what you do meanwhile. A permission prompt in your window is not enough: Dave cannot see it.
