@@ -30,3 +30,8 @@ Note: Recommendation: Yes: the dump gives the exact water cells and levels under
 Note: 1. Fill your pack with soil or stone until it is full. 2. Dig down under your own feet. 3. Look at the dug soil: does it lie in the hole (not float in the air)? Build 711 or newer.
 Note: Tyler recommends: Yes if it lies on the ground, because Steve's fix and unit tests pass but the rig cannot dig, so only you can check it in game.
 [test]
+
+## keep-item-roll | Items roll a little when walked over
+Note: Not built yet. Loose items would nudge and roll a short way when you walk over them. Build it?
+Note: Tyler recommends No for now because it is cosmetic and the focus is movement, water and tunnels.
+[check]
