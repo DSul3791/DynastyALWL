@@ -588,3 +588,7 @@ Answered: 2026-10-23 00:11 UTC
 Answer: Yes
 Answered: 2026-10-23 00:11 UTC
 
+## door-double-r3 | Is the double door right: 10 cm gap at the top and sides only, leaves reaching the floor?
+Answer: Yes
+Answered: 2026-10-23 00:12 UTC
+
