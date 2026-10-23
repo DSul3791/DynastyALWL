@@ -153,7 +153,9 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 			_chestnut(bark, leaves, twigs, rng, h, crown, trunk, variant, far, season, true)
 		"sweet_chestnut":
 			_chestnut(bark, leaves, twigs, rng, h, crown, trunk, variant, far, season)
-		"raspberry", "bramble", "wild_rose", "blackthorn", "blueberry":
+		"blackthorn":
+			_blackthorn(bark, leaves, rng, h, crown, far, season)
+		"raspberry", "bramble", "wild_rose", "blueberry":
 			_cane_shrub(SHRUB_LOOKS[str(entry["name"])], bark, leaves, rng, h, crown, far)
 		"herb_nettle":
 			_herb(bark, leaves, rng, h, crown, far, Color(0.7, 0.95, 0.5))
@@ -2257,6 +2259,65 @@ static func _blossom(acc: Acc, rng: RandomNumberGenerator, at: Vector3, size: fl
 	for k in range(4):
 		var a: float = turn + TAU * float(k) / 4.0
 		_bead(acc, at + Vector3(cos(a), 0.0, sin(a)) * size * 0.22 + Vector3(0.0, size * 0.18, 0.0), Vector3(size * 0.06, size * 0.06, size * 0.06), Color(1.0, 0.6, 0.15))
+
+
+# Blackthorn (Dave's photos 2026-10-23): a dense twisting dome of dark thorny wood with a bare base, side shoots ending in long sharp spines,
+# small oval leaves, round blue-black sloes in tight clusters; in "spring" it is bare and covered in snow-white five-petal blossom (flowers before leaves).
+const BLACKTHORN_WOOD := Color(0.20, 0.15, 0.13)
+const SLOE_COLOR := Color(0.36, 0.40, 0.62)
+const BLOSSOM_WHITE := Color(1.0, 1.0, 0.98)
+
+
+static func _blackthorn(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool, season: String) -> void:
+	var bloom: bool = season == "spring"
+	var stems: int = 10 if far else rng.randi_range(22, 28)
+	var az: float = rng.randf() * TAU
+	var r0: float = maxf(h * 0.006, 0.012)
+
+	for k in range(stems):
+		az += TAU / float(stems) + rng.randf_range(-0.3, 0.3)
+		var out: Vector3 = Vector3(cos(az), 0.0, sin(az))
+		var top_y: float = h * rng.randf_range(0.55, 0.95)
+		var reach: float = crown * rng.randf_range(0.35, 0.9)
+		var base: Vector3 = out * crown * 0.12
+		var mid: Vector3 = base + out * reach * 0.3 + Vector3(0.0, top_y * 0.5, 0.0) + Vector3(rng.randfn(), 0.0, rng.randfn()) * 0.05 * crown
+		var top: Vector3 = base + out * reach + Vector3(0.0, top_y, 0.0)
+		_branch(bark, base, mid, r0 * 1.5, r0, BLACKTHORN_WOOD, 5)
+		_branch(bark, mid, top, r0, r0 * 0.4, BLACKTHORN_WOOD, 4)
+		var nodes: Array = []
+
+		# Side shoots from the upper two thirds, angled out; each ends in a long spine and has a few short ones.
+		for m in range(4 if far else rng.randi_range(6, 8)):
+			var from: Vector3 = mid.lerp(top, rng.randf_range(0.05, 1.0))
+			var side: Vector3 = (out * 0.6 + Vector3(rng.randfn(), rng.randf_range(0.0, 0.8), rng.randfn()) * 0.6).normalized()
+			var length: float = crown * rng.randf_range(0.18, 0.4)
+			var tip: Vector3 = from + side * length
+			_branch(bark, from, tip, r0 * 0.5, r0 * 0.15, BLACKTHORN_WOOD, 3)
+			nodes.append(tip)
+
+			if not far:
+				_branch(bark, tip, tip + side * crown * 0.1, r0 * 0.25, 0.0015, BLACKTHORN_WOOD, 3)
+
+				for sp in range(2):
+					var on: Vector3 = from.lerp(tip, rng.randf_range(0.3, 0.9))
+					var spine: Vector3 = (side + Vector3(rng.randfn(), rng.randfn() * 0.5, rng.randfn()) * 0.8).normalized()
+					_branch(bark, on, on + spine * crown * rng.randf_range(0.05, 0.09), r0 * 0.3, 0.0015, BLACKTHORN_WOOD, 3)
+
+		nodes.append(top)
+
+		for node in nodes:
+			var n: Vector3 = node
+			var shade: float = rng.randf_range(0.85, 1.05)
+
+			if bloom:
+				if not far:
+					_blossom(bark, rng, n, crown * 0.035, BLOSSOM_WHITE)
+					_blossom(bark, rng, n + Vector3(rng.randfn(), rng.randfn(), rng.randfn()) * crown * 0.04, crown * 0.03, BLOSSOM_WHITE)
+			else:
+				_clump(leaves, rng, n, Vector3(0.0, n.y - crown * 0.4, 0.0), crown * 0.09, shade, 2 if far else 3)
+
+				if not far and rng.randf() < 0.5:
+					_cluster(bark, rng, n + Vector3(0.0, -crown * 0.05, 0.0), crown * 0.03, SLOE_COLOR, false, rng.randi_range(3, 6))
 
 
 static func _raspberry(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:

@@ -950,6 +950,11 @@
    "color": "#8e0f1c",
    "size": 1.0
   },
+  "sloes": {
+   "shape": "round_berries",
+   "color": "#2a2c46",
+   "size": 1.0
+  },
   "strawberries": {
    "shape": "berries",
    "color": "#c8202a",
