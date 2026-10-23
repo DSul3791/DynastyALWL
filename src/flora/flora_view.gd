@@ -825,6 +825,8 @@ func set_water(chunk: Vector2i, water: Dictionary) -> void:
 		return
 
 	_ease.erase(chunk)
+	entry["water_in"] = int(entry.get("water_in", 0)) + 1      # for water_debug: how many water patches this chunk has had, and when the last came
+	entry["water_in_msec"] = Time.get_ticks_msec()
 	var old: Dictionary = entry.get("grid", {})
 	WaterGridScript.steady_edges(old, water)
 
@@ -1114,6 +1116,37 @@ func water_surface_at(x: float, z: float) -> float:
 
 	# One wet corner up to 8 m away is not water under the feet: need more than half the square wet.
 	return total / weight if weight > 0.5 else NAN
+
+
+# For Esc > Admin > Dump water here: what this client holds for the water at a point (the patch's grid values round it, how many patches
+# the chunk has had and how long ago the last one came), to set beside the server's dump of the same spot (dry river, 2026-10-23).
+func water_debug(x: float, z: float) -> String:
+	var chunk: Vector2i = Vector2i(int(floor(x / chunk_m)), int(floor(z / chunk_m)))
+	var entry: Dictionary = _chunks.get(chunk, {})
+
+	if entry.is_empty():
+		return "client water at x %.0f z %.0f: chunk %s is not held" % [x, z, str(chunk)]
+
+	var grid: Dictionary = entry.get("grid", {})
+	var lines: PackedStringArray = PackedStringArray()
+	lines.append("client water at x %.1f z %.1f: chunk %s, patches received %d, last %.1f s ago, wet cells %d, surface_at %.2f, level_at %.2f" % [x, z, str(chunk), int(entry.get("water_in", 0)), float(Time.get_ticks_msec() - int(entry.get("water_in_msec", 0))) / 1000.0, int(grid.get("wet", 0)), water_surface_at(x, z), water_level_at(x, z)])
+
+	if int(grid.get("wet", 0)) > 0:
+		var spacing: float = float(grid["spacing"])
+		var count: int = int(grid["count"])
+		var ci: int = clampi(int(floor((x - float(chunk.x) * chunk_m) / spacing)), 0, count - 1)
+		var cj: int = clampi(int(floor((z - float(chunk.y) * chunk_m) / spacing)), 0, count - 1)
+		lines.append("grid spacing %.1f m, count %d, point square %d,%d; levels (rows z, columns x, nan = dry):" % [spacing, count, ci, cj])
+
+		for j in range(maxi(cj - 3, 0), mini(cj + 5, count)):
+			var row: PackedStringArray = PackedStringArray()
+
+			for i in range(maxi(ci - 3, 0), mini(ci + 5, count)):
+				row.append("%.2f" % float(grid["levels"][j * count + i]))
+
+			lines.append("z %.0f: %s" % [float(chunk.y) * chunk_m + float(j) * spacing, " ".join(row)])
+
+	return "\n".join(lines)
 
 
 # The speed of the water current (m/s) at the nearest wet grid point, -1 where there is no water

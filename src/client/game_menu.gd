@@ -259,7 +259,16 @@ func _build_admin() -> void:
 	_button(admin, "Reset all terrain edits", func(): show_page("reset_edits"))
 	_button(admin, "Dump water here (to a file on the server)", func():
 		var here: Vector3 = _c.body.global_position
-		_c.net.inventory_action.rpc_id(1, Net.ACT_DUMP_WATER, 0, 0, 0, here))
+		_c.net.inventory_action.rpc_id(1, Net.ACT_DUMP_WATER, 0, 0, 0, here)
+		var report: String = _c.flora.water_debug(here.x, here.z)
+		var file: FileAccess = FileAccess.open("user://water_client_%d_%d.txt" % [int(here.x), int(here.z)], FileAccess.WRITE)
+
+		if file != null:
+			file.store_string(report + "\n")
+			file.close()
+
+		print(report)
+		note.text = "The server writes water_dump_X_Z.txt in its store; this client's view is in the game log and in user://water_client_X_Z.txt (Project > Open User Data Folder).")
 	_button(admin, "Clear blocks (reload from the server)", func(): _c._ask_clear_cache())
 	_button(admin, "Show my player key (and copy it)", func():
 		var key: String = _c.items.player_key() if _c.items != null else ""
