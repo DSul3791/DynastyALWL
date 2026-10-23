@@ -33,3 +33,9 @@ Note: 1. Look at the picture (top-down view, one plant, 4 m away).
 Image: questions/img/shrub_wild_rose_9698b9f.png
 Note: Recommendation: No, not yet, because it forms a ring with an empty middle; the flowers and leaf colour look right, the middle needs filling.
 [picture]
+
+## shrub-blackthorn-4 | Blackthorn: does it look like a real blackthorn (dark thorny twigs, small leaves, blue-black berries)?
+Note: 1. Look at the picture (top-down view, one plant, 4 m away).
+Image: questions/img/shrub_blackthorn_9698b9f.png
+Note: Recommendation: No, not yet, because the thorns are far too long and thick; see the next card about real sizes.
+[picture]
