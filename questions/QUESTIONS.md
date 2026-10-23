@@ -1,7 +1,3 @@
-## cost-2 | Wall, Plank: 12 rough planks and 30 nails?
-Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
-[check]
-
 ## cost-3 | Wall, Fine wood: 8 fine boards and 40 nails?
 Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
 [check]
