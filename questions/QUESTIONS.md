@@ -82,11 +82,6 @@ Note: A dam across the mouth raises the water behind it. If the dam does not rea
 Note: Tyler recommends Yes because it is what the water simulation does by itself, so players can learn to read the land.
 [check]
 
-## loose-fill-slope | Should sand and loose soil refuse to be placed on ground steeper than they would slide on ("too steep, it would slide")?
-Note: Sand about 34 degrees, soil about 40, gravel about 38. Stone and rock go anywhere. A hole always fills.
-Note: Tyler recommends Yes because it feels like real dirt without running a sliding simulation (cheap, no lag). A real settling pass can come later.
-[check]
-
 ## beach-loud | Is the beach still too loud when you walk on it?
 Note: Kathleen already lowered sand steps by 3 dB. If the loud part is the waves, answer No and say so in Why not.
 Note: Tyler recommends Yes only if the steps are what you hear: she lowers sand steps another 3 dB, which is cheap and easy to undo.
