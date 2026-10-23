@@ -2131,7 +2131,7 @@
       "danger_tier": "medium",
       "land_km2": 26.39,
       "land_share": 0.1119,
-      "peak_m": 533,
+      "peak_m": 393,
       "deepest_m": -1992,
       "features": [
         "shelf_n_n"
@@ -2162,7 +2162,7 @@
       "danger_tier": "medium",
       "land_km2": 134.37,
       "land_share": 0.5696,
-      "peak_m": 552,
+      "peak_m": 525,
       "deepest_m": -750,
       "features": [
         "shelf_n_n"
@@ -2467,7 +2467,7 @@
       "danger_tier": "medium",
       "land_km2": 86.09,
       "land_share": 0.3649,
-      "peak_m": 477,
+      "peak_m": 352,
       "deepest_m": -2210,
       "features": [
         "shelf_p_n"
@@ -3370,7 +3370,7 @@
       "danger_tier": "easy",
       "land_km2": 82.92,
       "land_share": 0.3515,
-      "peak_m": 650,
+      "peak_m": 432,
       "deepest_m": -1957,
       "features": [
         "shelf_n_n"
@@ -3515,7 +3515,7 @@
       "danger_tier": "easy",
       "land_km2": 97.69,
       "land_share": 0.4141,
-      "peak_m": 707,
+      "peak_m": 389,
       "deepest_m": -646,
       "features": [
         "shelf_p_n"
@@ -7621,7 +7621,7 @@
       "danger_tier": "easy",
       "land_km2": 54.71,
       "land_share": 0.2319,
-      "peak_m": 611,
+      "peak_m": 294,
       "deepest_m": -1923,
       "features": [
         "shelf_n_p"
@@ -7757,7 +7757,7 @@
       "danger_tier": "easy",
       "land_km2": 116.89,
       "land_share": 0.4954,
-      "peak_m": 707,
+      "peak_m": 419,
       "deepest_m": -2223,
       "features": [
         "shelf_p_p"
@@ -8362,7 +8362,7 @@
       "danger_tier": "moderate",
       "land_km2": 30.59,
       "land_share": 0.1297,
-      "peak_m": 310,
+      "peak_m": 307,
       "deepest_m": -784,
       "features": [
         "shelf_p_p"
@@ -8628,7 +8628,7 @@
       "danger_tier": "medium",
       "land_km2": 80.69,
       "land_share": 0.342,
-      "peak_m": 739,
+      "peak_m": 319,
       "deepest_m": -2102,
       "features": [
         "shelf_n_p"
@@ -8899,7 +8899,7 @@
       "danger_tier": "moderate",
       "land_km2": 31.23,
       "land_share": 0.1324,
-      "peak_m": 336,
+      "peak_m": 335,
       "deepest_m": -2025,
       "features": [
         "shelf_p_p"
@@ -8931,7 +8931,7 @@
       "danger_tier": "medium",
       "land_km2": 151.6,
       "land_share": 0.6426,
-      "peak_m": 596,
+      "peak_m": 549,
       "deepest_m": -766,
       "features": [
         "shelf_p_p"
@@ -8962,7 +8962,7 @@
       "danger_tier": "medium",
       "land_km2": 15.69,
       "land_share": 0.0665,
-      "peak_m": 210,
+      "peak_m": 148,
       "deepest_m": -2217,
       "features": [
         "shelf_p_p",

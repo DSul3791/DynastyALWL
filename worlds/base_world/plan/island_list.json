@@ -68,9 +68,9 @@
       "id": 3,
       "area_km2": 148.12,
       "size_class": "colossal",
-      "peak_m": 596,
-      "peak_x_m": 99440,
-      "peak_z_m": 100880,
+      "peak_m": 549,
+      "peak_x_m": 100240,
+      "peak_z_m": 99920,
       "peak_tile": [
         6,
         6
@@ -95,9 +95,9 @@
       "id": 4,
       "area_km2": 138.24,
       "size_class": "colossal",
-      "peak_m": 552,
+      "peak_m": 525,
       "peak_x_m": -86480,
-      "peak_z_m": -86800,
+      "peak_z_m": -85360,
       "peak_tile": [
         -6,
         -6
@@ -215,9 +215,9 @@
       "id": 8,
       "area_km2": 95.67,
       "size_class": "colossal",
-      "peak_m": 707,
-      "peak_x_m": 54000,
-      "peak_z_m": 70960,
+      "peak_m": 398,
+      "peak_x_m": 54800,
+      "peak_z_m": 71440,
       "peak_tile": [
         3,
         4
@@ -257,9 +257,9 @@
       "id": 10,
       "area_km2": 88.5,
       "size_class": "colossal",
-      "peak_m": 707,
-      "peak_x_m": 52560,
-      "peak_z_m": -55920,
+      "peak_m": 389,
+      "peak_x_m": 54000,
+      "peak_z_m": -56400,
       "peak_tile": [
         3,
         -4
@@ -307,9 +307,9 @@
       "id": 12,
       "area_km2": 81.1,
       "size_class": "colossal",
-      "peak_m": 650,
-      "peak_x_m": -37840,
-      "peak_z_m": -55760,
+      "peak_m": 432,
+      "peak_x_m": -37680,
+      "peak_z_m": -56080,
       "peak_tile": [
         -3,
         -4
@@ -326,9 +326,9 @@
       "id": 13,
       "area_km2": 80.95,
       "size_class": "colossal",
-      "peak_m": 477,
-      "peak_x_m": 100560,
-      "peak_z_m": -85680,
+      "peak_m": 352,
+      "peak_x_m": 102480,
+      "peak_z_m": -86320,
       "peak_tile": [
         6,
         -6
@@ -376,9 +376,9 @@
       "id": 15,
       "area_km2": 71.81,
       "size_class": "colossal",
-      "peak_m": 739,
+      "peak_m": 319,
       "peak_x_m": -85680,
-      "peak_z_m": 100080,
+      "peak_z_m": 99600,
       "peak_tile": [
         -6,
         6
@@ -603,9 +603,9 @@
       "id": 24,
       "area_km2": 54.07,
       "size_class": "great",
-      "peak_m": 611,
-      "peak_x_m": -38000,
-      "peak_z_m": 69040,
+      "peak_m": 294,
+      "peak_x_m": -37840,
+      "peak_z_m": 70160,
       "peak_tile": [
         -3,
         4
@@ -2800,7 +2800,7 @@
       "id": 123,
       "area_km2": 4.94,
       "size_class": "small",
-      "peak_m": 129,
+      "peak_m": 128,
       "peak_x_m": -93840,
       "peak_z_m": -88720,
       "peak_tile": [
@@ -5560,7 +5560,7 @@
       "id": 259,
       "area_km2": 0.87,
       "size_class": "islet",
-      "peak_m": 67,
+      "peak_m": 21,
       "peak_x_m": -78960,
       "peak_z_m": 101520,
       "peak_tile": [
@@ -5906,7 +5906,7 @@
       "id": 277,
       "area_km2": 0.59,
       "size_class": "islet",
-      "peak_m": 23,
+      "peak_m": 17,
       "peak_x_m": -42640,
       "peak_z_m": 72880,
       "peak_tile": [
