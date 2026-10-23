@@ -76,3 +76,9 @@ ACTIONS: 1 look down 40 degrees at the log. 2 chop (click) until the log is gone
 PICTURES: P1 MUST show wooden blocks on the ground where the log was. P2 MUST show firewood on or beside the chopping block.
 EXPECT: after step 2 four wooden_block world items near the spot; after step 5 firewood count 2 (inventory or ground).
 PASS/FAIL: pass if counts match and both pictures show the items.
+
+## BATCH RULE (Dave 23 Oct 21:54): Mike's runs use Dave's PC, so FEWER, SHORTER runs
+1. Never one picture per engine start. Every request to MikeW is a BATCH: one run with all plants/items in one labelled row (--flora a,b,c,d,e), several shots per engine start (different --cam-above, --dist, --pitch from one run where the rig allows), or one script that runs the whole plan T-xxx top to bottom.
+2. Threads collect their render/test needs and send ONE request per hour (through the coordinator), listing everything wanted; Mike runs it as one batch and reports once.
+3. Keep GPU/CPU runs short: no long waits (--settle/--wait only as long as the step needs), headless where no picture is needed, close the game after each run, never run in parallel with Dave's play. Ask Steve for rig options that multiply shots per start (BP-T50 action plan).
+4. Cards: one picture per plant is still how Dave answers, but the pictures come from the same batch (crop one frame into several images; do not re-run).
