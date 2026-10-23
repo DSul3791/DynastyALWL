@@ -210,6 +210,7 @@ const FULL_MIN_M := 30.0   # full-detail trees reach at least this far, even whe
 const CONTACT_M := 30.0    # full models cast the sun shadow only this near; farther full trees cast it from their far model
 const TIER_FULL_LIT := 4   # plan keys only: a full model that does not cast (its shadow is the proxy's)
 const TIER_PROXY := 5      # plan keys only: the far model drawn into the sun's shadow pass alone
+const CLOSE_CELL_M := 32.0  # shrubs and plants with their own near distance (flora.json "near_m") choose full or far model per cell of this size
 const PROXY_BIT := 7       # level bits 7 and up: one per 64 m cell, set where a full-model cell is past CONTACT_M
 const MID_MIN_TRIANGLES := 500   # trees with fewer triangles than this keep their full model at every near distance
 const MID_LOD_SCALE_MIN := 25.0  # ImporterMesh.generate_lods merge angle (degrees)
@@ -220,6 +221,7 @@ var view_m: PackedFloat32Array = PackedFloat32Array([900.0, 300.0, 120.0])
 var collision_m: float = 160.0
 var near_m: PackedFloat32Array = PackedFloat32Array([260.0, 110.0, 0.0])   # full-detail model out to this distance (tree, shrub)
 var canopy_version: int = 0           # counts changes to the held trees (the canopy map redraws on it)
+var _close_ms: Dictionary = {}            # the distinct "near_m" distances species ask for (shrubs and plants only) -> true
 var part_m: Array = PART_M            # the size of the square one shrub or plant MultiMesh covers (set by set_quality)
 var impostor_m: float = 300.0          # trees beyond this are drawn as impostors (set by set_quality)
 var far_shadows: bool = false
@@ -587,6 +589,10 @@ func _setup_entry(entry: Dictionary) -> bool:
 		"glows": entry.has("glow") or entry.has("leaf_glow"),
 		"tint": _plant_tint(entry, c),
 	}
+
+	if entry.has("near_m") and kind != KIND_TREE:
+		_species[int(entry["id"])]["close_m"] = float(entry["near_m"])   # data/tables/flora.json "near_m": full model only this close (default: the kind's near distance)
+		_close_ms[float(entry["near_m"])] = true
 
 	if entry.has("young_below_m"):
 		_species[int(entry["id"])]["young_below"] = float(entry["young_below_m"])
@@ -1390,12 +1396,14 @@ func _refresh(chunk: Vector2i, from_position: Vector3) -> void:
 
 	var entry: Dictionary = _chunks[chunk]
 	var level: int = _level(chunk, from_position)
+	var masks: Dictionary = _close_masks(chunk, from_position)
 
-	if level == entry["level"] or level == entry.get("building", -2):
+	if (level == entry["level"] and masks == entry.get("masks", {})) or (level == entry.get("building", -2) and masks == entry.get("building_masks", {})):
 		return
 
 	_serial += 1
 	entry["building"] = level
+	entry["building_masks"] = masks
 	entry["serial"] = _serial
 	# The worker gets real copies of the arrays: remove_item (felling) changes the chunk's own arrays on the
 	# main thread while the worker reads, and sharing them crashed the worker (out of bounds in _plan, 2026-10-21).
@@ -1404,13 +1412,42 @@ func _refresh(chunk: Vector2i, from_position: Vector3) -> void:
 	for key in entry["items"]:
 		var value = entry["items"][key]
 		items[key] = value.duplicate() if (value is PackedInt32Array or value is PackedFloat32Array or value is PackedVector3Array) else value
-	_tasks.append(WorkerThreadPool.add_task(_plan_task.bind(chunk, _serial, level, items), false, "flora chunk"))
+	_tasks.append(WorkerThreadPool.add_task(_plan_task.bind(chunk, _serial, level, items, masks), false, "flora chunk"))
 
 
-func _plan_task(chunk: Vector2i, serial: int, level: int, items: Dictionary) -> void:
-	var plan: Dictionary = _plan(items, level)
+# For each close distance a species asked for: a 64-bit mask over the chunk's 8 x 8 cells of CLOSE_CELL_M, set where the cell is within that
+# distance of the player. Only non-zero masks are kept, so far chunks compare equal and are not redrawn when the player moves.
+func _close_masks(chunk: Vector2i, from_position: Vector3) -> Dictionary:
+	var masks: Dictionary = {}
+
+	if _close_ms.is_empty():
+		return masks
+
+	var cells: int = int(chunk_m / CLOSE_CELL_M)
+	var x0: float = float(chunk.x) * chunk_m
+	var z0: float = float(chunk.y) * chunk_m
+
+	for close_m in _close_ms:
+		var mask: int = 0
+
+		for cz in range(cells):
+			for cx in range(cells):
+				var dx: float = maxf(maxf(x0 + float(cx) * CLOSE_CELL_M - from_position.x, from_position.x - (x0 + float(cx + 1) * CLOSE_CELL_M)), 0.0)
+				var dz: float = maxf(maxf(z0 + float(cz) * CLOSE_CELL_M - from_position.z, from_position.z - (z0 + float(cz + 1) * CLOSE_CELL_M)), 0.0)
+
+				if sqrt(dx * dx + dz * dz) <= float(close_m):
+					mask |= 1 << (cz * cells + cx)
+
+		if mask != 0:
+			masks[close_m] = mask
+
+	return masks
+
+
+func _plan_task(chunk: Vector2i, serial: int, level: int, items: Dictionary, masks: Dictionary) -> void:
+	var plan: Dictionary = _plan(items, level, masks)
 	_built_mutex.lock()
-	_built.append([chunk, serial, level, plan])
+	_built.append([chunk, serial, level, plan, masks])
 	_built_mutex.unlock()
 
 
@@ -1447,7 +1484,7 @@ func apply_built(budget_usec: int = 3000) -> void:
 			var node: Node3D = Node3D.new()
 			node.name = "Chunk_%d_%d" % [next[0].x, next[0].y]
 			add_child(node)
-			_jobs.append({"chunk": next[0], "serial": next[1], "level": next[2], "plan": next[3], "node": node, "draw": 0, "shape": 0})
+			_jobs.append({"chunk": next[0], "serial": next[1], "level": next[2], "masks": next[4], "plan": next[3], "node": node, "draw": 0, "shape": 0})
 
 	var started: int = Time.get_ticks_usec()
 
@@ -1465,7 +1502,9 @@ func apply_built(budget_usec: int = 3000) -> void:
 			entry["node"] = job["node"]
 			job["node"].visible = bool(entry.get("ground", true))
 			entry["level"] = job["level"]
+			entry["masks"] = job["masks"]
 			entry.erase("building")
+			entry.erase("building_masks")
 			entry["drawn"] = _drawn_count(job["node"])
 			_jobs.pop_front()
 
@@ -1503,7 +1542,7 @@ func finish_tasks() -> void:
 
 # The drawing of a chunk at a level, as plain data (safe on a worker thread): per group of
 # one species, part and model a MultiMesh buffer; trunk colliders; glow lights.
-func _plan(items: Dictionary, level: int) -> Dictionary:
+func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 	var ids: PackedInt32Array = items["ids"]
 	var groups: Dictionary = {}       # [species, part x, part z, variant, near] -> PackedInt32Array of indices
 	var shapes: Array = []            # [species, radius, position]
@@ -1529,6 +1568,13 @@ func _plan(items: Dictionary, level: int) -> Dictionary:
 			variant = variant % half + (half if float(items["heights"][n]) < float(info["young_below"]) else 0)
 		var proxy: bool = false
 		var is_near: int = 1 if (int(info["kind"]) != KIND_PLANT and (level & (16 << int(info["kind"]))) != 0) else 0
+
+		if info.has("close_m") and int(info["kind"]) != KIND_TREE:
+			# A species with its own near distance: the full model only in the cells within it (_close_masks), the far model elsewhere.
+			var close_cells: int = int(chunk_m / CLOSE_CELL_M)
+			var close_x: int = posmod(int(floor(p.x / CLOSE_CELL_M)), close_cells)
+			var close_z: int = posmod(int(floor(p.z / CLOSE_CELL_M)), close_cells)
+			is_near = 1 if (int(masks.get(info["close_m"], 0)) >> (close_z * close_cells + close_x)) & 1 != 0 else 0
 
 		if int(info["kind"]) == KIND_TREE:
 			# The model of this tree's 64 m cell (see _level): far 0, full 1, impostor 2, mid 3.
