@@ -676,3 +676,7 @@ Answered: 2026-10-23 00:45 UTC
 Answer: Yes
 Answered: 2026-10-23 00:45 UTC
 
+## cost-11 | Floor or ceiling, Cobblestone: 60 cobblestones and 6 mortar?
+Answer: No: These type of floors need a wooden floor underneath them so they need everything that a wooden floor has and then they put the stones on top of the wooden floor with the mortar
+Answered: 2026-10-23 00:45 UTC
+
