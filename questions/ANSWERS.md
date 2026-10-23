@@ -628,3 +628,7 @@ Answered: 2026-10-23 00:34 UTC
 Answer: Yes
 Answered: 2026-10-23 00:34 UTC
 
+## esc-menu-9 | Esc menu: should VSync and the tunnel collapse switch be green On and red Off buttons?
+Answer: No: Actually, yes, specifically I want them to slide to the right front on the left or off and when you slide them to the right, they turned green and when you slide them to the left, they turned red
+Answered: 2026-10-23 00:35 UTC
+
