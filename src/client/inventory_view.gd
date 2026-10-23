@@ -1734,7 +1734,7 @@ func _make_vice() -> Node3D:
 
 
 # Admin mode (Dave 2026-10-23, on by default): the whole list is craftable free for an admin; the server decides, this only stops the list greying.
-var admin_craft: bool = false
+var admin_craft: bool = true    # Esc > Admin > Admin mode switch (on by default)
 
 
 func _free_craft() -> bool:
