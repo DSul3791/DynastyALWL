@@ -211,6 +211,7 @@ var test_start: Vector3 = Vector3.INF   # --start=x,y,z: put the player there (t
 var _test_probe_msec: int = 0
 var test_dump: bool = false           # --dump-test: 14 s after the welcome dump the ground under the feet (prints the dump)
 var _test_dump_done: bool = false
+var _vsync_button: Button
 var quake_view = QuakeViewScript.new()        # shake, dust and notices while a tunnel is failing (quake_view.gd)
 var ladder = LadderClimbScript.new()          # holding on to a placed ladder (ladder_climb.gd)
 var ground_debug = GroundDebugScript.new()    # ground dump, ground self-check, hole probe (ground_debug.gd)
@@ -2201,11 +2202,13 @@ func _build_menu(layer: CanvasLayer) -> void:
 	_menu_button(settings, "Debug details (F3): on or off", func():
 		debug_hud.enabled = not debug_hud.enabled
 		_menu_note.text = "Debug details %s" % ("on" if debug_hud.enabled else "off"))
-	_menu_button(settings, "VSync: change", func():
+	_vsync_button = _menu_button(settings, "VSync", func():
 		display.vsync_index = (display.vsync_index + 1) % display.VSYNC_MODES.size()
 		display.apply(get_window())
 		_save_display()
+		_show_vsync_button()
 		_menu_note.text = "VSync is now %s. On snaps to 60 or 30; adaptive avoids the halving; off shows the true speed." % display.VSYNC_NAMES[display.vsync_index])
+	_show_vsync_button()
 	_menu_button(settings, "Resolution: change", func():
 		display.size_index = (display.size_index + 1) % display.SIZES.size()
 		display.apply(get_window())
@@ -3184,6 +3187,16 @@ func _move_player(delta: float) -> void:
 
 	sea.global_position = Vector3(body.global_position.x, 0.0, body.global_position.z)
 	_update_underwater()
+
+
+# The VSync button shows its state, kept between sessions (display_settings.gd): On in green, Adaptive in amber, Off in red.
+func _show_vsync_button() -> void:
+	if _vsync_button == null:
+		return
+
+	var mode: int = display.vsync_index
+	_vsync_button.text = "VSync: %s (change)" % display.VSYNC_NAMES[mode].capitalize()
+	_vsync_button.add_theme_color_override("font_color", [Color(0.45, 0.9, 0.45), Color(0.95, 0.8, 0.35), Color(0.95, 0.4, 0.4)][mode])
 
 
 # On a placed ladder (ladder_climb.gd): W climbs, S descends, Space lets go. True while holding on (that frame does no walking).
@@ -4545,7 +4558,7 @@ func _process(delta: float) -> void:
 	var avg_ms: float = total_ms / maxf(float(_frame_ms.size()), 1.0)
 	status_icons.tick(delta)
 	_note_last_sound()
-	hud.text = "build %d (%s)  %d fps  %s (F2)\nx %.0f  y %.1f  z %.0f\nlast sound: %s" % [BUILD, _commit, Engine.get_frames_per_second(), QUALITY_NAMES[quality], body.global_position.x, body.global_position.y, body.global_position.z, _last_sound]
+	hud.text = "build %d (%s)  %d fps (vsync %s)  %s (F2)\nx %.0f  y %.1f  z %.0f\nlast sound: %s" % [BUILD, _commit, Engine.get_frames_per_second(), "off" if display.vsync_index == 2 else display.VSYNC_NAMES[display.vsync_index], QUALITY_NAMES[quality], body.global_position.x, body.global_position.y, body.global_position.z, _last_sound]
 	hud.text += "\n" + _ground_health_line()
 
 	if crash_report != null and crash_report.last_report != "" and Time.get_ticks_msec() < _previous_run_note_until_msec:
