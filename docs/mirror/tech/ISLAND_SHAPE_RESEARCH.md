@@ -23,3 +23,33 @@ Dave's screenshot (build 727, x 52361 z 68193): a wide flat lowland, then mounta
 5. Beaches only at bays and river mouths; headlands steeper with sea cliffs.
 6. Test on one tile first (1-tile BAKE test by MikeW), compare section views against the profile numbers, then a 9-tile bake with Dave's go.
 Recommendation: yes to all six, done in this order, starting with 1 and 2 because they fix what Dave sees.
+
+---
+# Part 2: island types by origin (added after Dave's 14:51 note)
+Dave: islands differ by how they formed: some low and rounded, some very high and peaked; some have long sweeping beaches, some rocky shores. Source for the type list: [New World Encyclopedia, Islands](https://www.newworldencyclopedia.org/entry/Islands) (it names the origins but gives no heights, so the numbers below are standard geomorphology from my own knowledge, marked [medium] and to be checked by Sonny against real height maps).
+
+| Type (examples) | Height and profile | Slopes | Shoreline | Rivers and valleys |
+|---|---|---|---|---|
+| **Hotspot shield, young** (Big Island) | Huge, rounded dome, summit 1-4 km, one smooth profile | 3-8 degrees flanks, steeper (20-30) only at coastal cliffs | Black rocky shores, sea cliffs where lava meets sea, few beaches | Few rivers (rain soaks into lava); some deep young valleys on the wet side |
+| **Hotspot shield, old, eroded** (Kauai, Oahu, La Reunion) | Eroded dome, peaks and ridges still 1-2 km, huge amphitheatre valleys and spires | 30-60 degrees in the cut valleys and palis, gentle ridgetops | Rocky headlands, beaches in bays and river mouths, a flat coastal plain/terrace | Radial rivers from the wet summit, deep V and U valleys, waterfalls |
+| **Volcanic arc, stratovolcano** (Japan volcanoes, Java, Luzon) | Tall steep cone or chain of cones, 1-3.7 km | 25-35 degrees upper cone, concave skirt 5-10 degrees below | Mixed: black sand beaches, cliffs; steep drop offshore | Radial gullies on the cone, rivers build fans on the skirt |
+| **Arc / folded mountain island** (Honshu, Taiwan, Corsica, Shikoku) | Long mountain spine 1-4 km, ridges parallel to the coast | 20-45 degrees, narrow valleys | Rocky coast with small bays; plains only at river mouths | Many short steep rivers, gorges, fans |
+| **Continental fragment** (Britain, Tasmania, Newfoundland) | Low to moderate, hills and some peaks under about 1.5 km, rounded by glaciers or age | 5-20 degrees | Mixed: long beaches, cliffs, estuaries, sandy spits | Longer meandering rivers, wide valleys, lakes |
+| **Glacial / fjord island** (Norway coast, Chile, Hebrides) | Rugged, 500-2000 m, glacier-carved | Cliffs 60+ degrees, U valleys | Fjords, steep rocky coast, skerries | Short torrents, hanging valleys, lakes |
+| **Fault-block / tilted** (Sicily parts, Sumba, Sardinia) | One steep side, one gentle side | Steep scarp, long gentle back slope | Cliffs on the steep side, beaches on the gentle side | Rivers flow down the long gentle side |
+| **Coral / atoll / low sand** (Maldives, Bahamas, Florida Keys) | 1-5 m above sea, flat | Almost none | Long white beaches, lagoons, reef | No surface rivers, freshwater lens |
+| **Delta / barrier** (Mississippi, Outer Banks) | Under 5 m, flat | None | Long sweeping beaches and dunes, spits | Many channels, marsh |
+
+Rules of thumb Dave's notes point to:
+- **Height and slope follow rock age and origin**: young volcano = broad and smooth; old = high only where hard rock remains and cut deeply; sediment and coral = flat.
+- **Beach vs rocky coast follows slope at the water and wave energy**: gentle slope + sediment from rivers + sheltered = long beach; steep slope or lava or hard rock + exposed = rocky shore.
+- **Every real island has a mix on different sides**: windward side wetter and more eroded, leeward drier.
+
+## Proposal: which type is OUR island (for Sonny to confirm or change)
+Our centre island already has a crater, lava flows and a 1981 m peak, so by its story it is a **hotspot shield, middle-aged** (Kauai / La Reunion type), not a new type. The other islands in island_list.json can be assigned types by size and peak height.
+1. **Centre island = eroded hotspot shield**: high central peak (about 1981 m) with a smooth concave rise from the coast, a foothill belt of radial ridges and spurs, 6-10 big radial valleys (Terrain B rivers), steep headwalls near the summit, flat river fans and a coastal terrace at the foot, rocky headlands with beaches in bays.
+2. **Island types by peak height** (so the world varies): peak under 15 m = low sand/coral island (beaches all round); 15-150 m = low rounded continental-style island (hills, long beaches, estuaries); 150-700 m = rounded hilly island with mixed coast; 700+ m = peaked volcanic or mountain island like the centre one. Sonny can set the thresholds.
+3. **Per-island "type" in the plan data** (island_list.json gets a type field) that sets the generator's height profile, ridge and valley strength, and the beach vs cliff rule. Beach vs cliff: beach where the slope at the coast is under about 5 degrees and a river or bay supplies sand; otherwise cliffs and rocks.
+4. **Windward/leeward**: the wet side gets deeper valleys and more rivers, the dry side smoother.
+5. **Order of work**: profile and foothills for the centre island first (what Dave sees), then the type field, then coast rules, then other islands. 1-tile test bake, then a 9-tile bake with Dave's go.
+STATUS: Guru draft; waits for Sonny's side (what the current generator can do and the cost of each step) before the 5-10 line plan goes to Dave.
