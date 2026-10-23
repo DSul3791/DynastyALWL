@@ -71,12 +71,6 @@ Note: 1. Open Esc > Settings > Sound test.
 Note: 2. Press the fire sounds one by one.
 [test]
 
-## far-water-2 | Far rivers and lakes: should the flat distant picture of water follow your draw-distance setting, so it costs nothing on Low?
-Note: Far water is the cheap flat picture of rivers and lakes beyond the normal draw range, so walking down a river you do not see the water vanish.
-Note: Low: off. High: 32 m spacing. Ultra: reaches 3 tiles.
-Note: Tyler recommends Yes because players with slow computers lose nothing, and strong computers get the long river views.
-[check]
-
 ## beach-loud | Is the beach still too loud when you walk on it?
 Note: Kathleen already lowered sand steps by 3 dB. If the loud part is the waves, answer No and say so in Why not.
 Note: Tyler recommends Yes only if the steps are what you hear: she lowers sand steps another 3 dB, which is cheap and easy to undo.
