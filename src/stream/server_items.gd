@@ -275,6 +275,7 @@ var _cells_done: Dictionary = {}    # Vector2i scatter cell -> true while its it
 
 
 func setup(item_table, store_dir: String) -> void:
+	admin_mode_on = func(peer: int) -> bool: return not _admin_mode_off.has(peer)
 	table = item_table
 	recipes = RecipeTableScript.load_default(item_table)
 	_dir = store_dir
@@ -426,6 +427,7 @@ func start_position_for(peer: int) -> Array:
 func peer_left(peer: int) -> void:
 	_note_spot(peer, "deliberate" if _logout_peers.has(peer) else "disconnect")
 	_logout_peers.erase(peer)
+	_admin_mode_off.erase(peer)
 	_chest_viewer.erase(peer)
 	_spot_saved_msec.erase(peer)
 	_station_said.erase(peer)
@@ -722,6 +724,15 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 	elif kind == Net.ACT_CLEAR_DROPS:
 		if not admin_ok.is_valid() or admin_ok.call(peer):
 			_say(peer, "Cleared %d dropped items." % clear_dropped(_peer_pos.get(peer, Vector3.ZERO), float(clampi(a, 1, 500))))
+
+	elif kind == Net.ACT_ADMIN_MODE:
+		if admin_ok.is_valid() and admin_ok.call(peer):
+			if a == 1:
+				_admin_mode_off.erase(peer)
+			else:
+				_admin_mode_off[peer] = true
+
+			_say(peer, "Admin mode %s." % ("on: crafting is free" if a == 1 else "off"))
 
 	_send_changes(peer, inv, before)
 	_dirty = true
@@ -5636,6 +5647,7 @@ func _station_name(station: String) -> String:
 
 # Admin mode (Dave 2026-10-23, on by default): an admin with the mode on crafts anything in the list free and unlimited, locked or
 # not, with no station and no ingredients (the queue entry carries an empty needs list, which the tick reads as a free craft).
+var _admin_mode_off: Dictionary = {}    # peer -> true when that admin switched Admin mode off (ON by default for admins; resets at login)
 var admin_mode_on: Callable             # (peer) -> bool, set by the server from the Esc > Admin settings switch; unset means on
 
 

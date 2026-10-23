@@ -137,6 +137,15 @@ func _init() -> void:
 	items.clear_dropped(Vector3(4000.0, 0.0, 4000.0), 50.0)
 
 	items.drop_in_world(stone, 1, Vector3(10.0, 0.0, 10.0))
+	items.admin_ok = func(p: int) -> bool: return p == 7
+	check(items.free_craft_for(7) and not items.free_craft_for(9), "admin mode is on by default for an admin only")
+	items.action(7, Net.ACT_ADMIN_MODE, 0, 0, 0, Vector3.ZERO)
+	check(not items.free_craft_for(7), "an admin can switch it off")
+	items.action(9, Net.ACT_ADMIN_MODE, 1, 0, 0, Vector3.ZERO)
+	items.action(7, Net.ACT_ADMIN_MODE, 1, 0, 0, Vector3.ZERO)
+	check(items.free_craft_for(7), "and on again")
+	items.admin_ok = Callable()
+
 	items.tick(ItemsScript.WORLD_ITEM_LIFETIME_S + 1.0)
 	check(items.world_item_count() == 0, "items despawn")
 

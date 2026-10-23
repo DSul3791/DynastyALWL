@@ -21,6 +21,7 @@ var _vsync_switch
 var _fullscreen_switch
 var _voice_switch
 var _tunnel_switch
+var _admin_mode_switch
 var _cave_button: Button
 var _sound_list: VBoxContainer
 
@@ -98,6 +99,7 @@ func refresh() -> void:
 		_vsync_switch.set_on(_c.display.vsync_index != 2)
 		_fullscreen_switch.set_on(_c.display.fullscreen)
 		_tunnel_switch.set_on(_c.tunnel_on)
+		_admin_mode_switch.set_on(_c.items == null or _c.items.admin_craft)
 		_cave_button.text = "Cave-in time: %d min (change)" % roundi(float(_c.tunnel_cave_in_s) / 60.0)
 		_voice_switch.set_on(_c._npc_voice == null or _c._npc_voice.enabled)
 
@@ -239,6 +241,11 @@ func _build_sound_test() -> void:
 func _build_admin() -> void:
 	var admin: VBoxContainer = _page("admin")
 	_heading(admin, "Admin")
+	_admin_mode_switch = _switch_row(admin, "Admin mode (crafting is free)", func(on: bool):
+		if _c.items != null:
+			_c.items.admin_craft = on
+
+		_c.net.inventory_action.rpc_id(1, Net.ACT_ADMIN_MODE, 1 if on else 0, 0, 0, Vector3.ZERO))
 	_button(admin, "Clear saved ground (reload the world fresh)", func(): _c._ask_clear_cache())
 	_button(admin, "Show my player key (and copy it)", func():
 		var key: String = _c.items.player_key() if _c.items != null else ""
