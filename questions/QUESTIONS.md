@@ -7,11 +7,6 @@
 
 
 
-## fix-merge-guard | Should we build a pre-merge check script first (it checks conflict markers, duplicate item numbers and action ids, next_number, crash logs, JSON and the warning count) and then run it automatically on GitHub (CI)?
-Note: Tonight's merges needed three repair builds (699, 701 and a conflicted merge) that this script would have caught before merging. It also saves the round trip through MikeW's PC.
-Note: Tyler recommends Yes because it removes the most expensive problem we had, and it is first on tomorrow's list either way.
-[check]
-
 ## fix-id-claims | Should item numbers and action ids be claimed in one short file (or given fixed ranges per thread), so two threads can never pick the same number?
 Note: Tonight two branches both took item number 234, and two wanted the same action ids.
 Note: Tyler recommends Yes because a claim takes seconds and duplicates cannot happen.
