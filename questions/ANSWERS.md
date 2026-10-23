@@ -900,3 +900,7 @@ Answered: 2026-10-23 01:31 UTC
 Answer: Yes
 Answered: 2026-10-23 01:31 UTC
 
+## cost-found-stone | Stone foundations (Cobblestone, Mason tiers) keep the earlier numbers: small 1x1 = 10 stone + 3 clay, 2x2 = 40 stone + 12 clay; large 1x1 = 30 stone + 10 clay + 4 mortar, 2x2 = 120 stone + 40 clay + 16 mortar?
+Answer: Yes
+Answered: 2026-10-23 01:31 UTC
+
