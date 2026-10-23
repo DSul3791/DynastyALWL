@@ -1022,3 +1022,7 @@ Answered: 2026-10-23 04:09 UTC
 Answer: Yes: The crackling fire sounds good
 Answered: 2026-10-23 04:09 UTC
 
+## beach-loud | Is the beach still too loud when you walk on it?
+Answer: No: The walking sound is slightly too loud, but the running sound is significantly too loud on the sand. The running sound should just be slightly louder than the walking sound.
+Answered: 2026-10-23 04:10 UTC
+
