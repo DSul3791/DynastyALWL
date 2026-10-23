@@ -1,7 +1,3 @@
-## cost-24 | Door, Wrought iron: 6 iron ingots?
-Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
-[check]
-
 ## cost-25 | Door, Steel and iron: 4 steel ingots and 4 iron ingots?
 Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
 [check]
