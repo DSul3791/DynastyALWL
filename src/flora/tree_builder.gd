@@ -156,7 +156,7 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 		"raspberry", "bramble", "wild_rose", "blackthorn", "blueberry":
 			_cane_shrub(SHRUB_LOOKS[str(entry["name"])], bark, leaves, rng, h, crown, far)
 		"herb_nettle":
-			_herb(bark, leaves, rng, h, crown, far, Color(0.85, 1.0, 0.7))
+			_herb(bark, leaves, rng, h, crown, far, Color(0.7, 0.95, 0.5))
 		"hazel":
 			_hazel(smooth, leaves, twigs, rng, h, variant, far, season)
 		"oak":
@@ -2245,26 +2245,41 @@ static func _raspberry(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: fl
 	_cane_shrub(SHRUB_LOOKS["raspberry"], bark, leaves, rng, h, crown, far)
 
 
-# A stinging nettle and other upright herbs: a few straight square stems, pairs of toothed leaves along them, small flower strings in the leaf
-# axils near the top.
+# Stinging nettle (Dave's photos 2026-10-23) and other upright herbs: a dense patch of tall straight single stems, dark purple-brown, with leaf pairs
+# stepping up opposite each other (each pair turned 90 degrees from the one below), big toothed leaves low and smaller paler ones higher, and green
+# flower strings hanging from the leaf joints.
 static func _herb(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool, flower: Color) -> void:
-	var stems: int = 4 if far else rng.randi_range(9, 13)
+	var stems: int = 8 if far else rng.randi_range(22, 30)
 
 	for k in range(stems):
-		var a: float = TAU * float(k) / float(stems) + rng.randf_range(-0.3, 0.3)
-		var base: Vector3 = Vector3(cos(a), 0.0, sin(a)) * crown * rng.randf_range(0.05, 0.5)
-		var top: Vector3 = base + Vector3(cos(a), 0.0, sin(a)) * crown * 0.05 + Vector3(0.0, h * rng.randf_range(0.85, 1.1), 0.0)
-		_branch(bark, base, top, h * 0.008 + 0.004, h * 0.004 + 0.002, Color(0.45, 0.55, 0.3), 4)
-		var pairs: int = 3 if far else 7
+		var a: float = rng.randf() * TAU
+		var base: Vector3 = Vector3(cos(a), 0.0, sin(a)) * crown * sqrt(rng.randf())
+		var height: float = h * rng.randf_range(0.7, 1.1)
+		var lean: Vector3 = Vector3(rng.randfn(), 0.0, rng.randfn()) * 0.03 * height
+		var top: Vector3 = base + lean + Vector3(0.0, height, 0.0)
+		_branch(bark, base, top, 0.006, 0.003, Color(0.42, 0.30, 0.28), 4)
+		var pairs: int = 3 if far else rng.randi_range(5, 7)
+		var turn: float = rng.randf() * PI
 
 		for m in range(pairs):
-			var t: float = 0.25 + 0.75 * float(m) / float(pairs - 1)
+			var t: float = 0.12 + 0.88 * float(m) / float(pairs)
 			var at: Vector3 = base.lerp(top, t)
-			var size: float = crown * lerpf(0.55, 0.3, t) * rng.randf_range(0.85, 1.1)
-			_clump(leaves, rng, at, Vector3(base.x, at.y - crown * 0.3, base.z), size, rng.randf_range(0.85, 1.05), 2)
+			var length: float = h * lerpf(0.34, 0.14, t) * rng.randf_range(0.85, 1.1)
+			var shade: float = lerpf(0.78, 1.05, t) * rng.randf_range(0.92, 1.06)
+			var axis: Vector3 = Vector3(cos(turn), 0.0, sin(turn))
 
-		if not far:
-			_cluster(bark, rng, top - Vector3(0.0, h * 0.04, 0.0), crown * 0.08, flower, true, 5)
+			for side in range(2):
+				var dir: Vector3 = axis * (1.0 if side == 0 else -1.0)
+				var along: Vector3 = (dir * 0.85 + Vector3.UP * 0.25).normalized()
+				var across: Vector3 = Vector3(-dir.z, 0.0, dir.x)
+				leaves.card(at + dir * length * 0.4, across, along, length * 0.28, length * 0.5, (Vector3.UP * 0.8 + dir * 0.3).normalized(), Color(shade, shade, shade, rng.randf_range(0.6, 1.0)))
+
+				if not far and m >= 1 and rng.randf() < 0.6:
+					# A hanging green flower string from the joint.
+					var tip: Vector3 = at + dir * length * 0.35 + Vector3(0.0, -length * 0.5, 0.0)
+					_branch(bark, at + dir * 0.01, tip, 0.003, 0.0015, flower, 3)
+
+			turn += PI * 0.5
 
 
 # A plain upright column (cactus).

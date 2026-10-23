@@ -1325,15 +1325,15 @@
 			"shape": "shrub",
 			"model": "herb_nettle",
 			"height_m": [
-				0.5,
-				1.2
+				0.9,
+				1.5
 			],
-			"crown_m": 0.4,
+			"crown_m": 0.5,
 			"trunk_m": 0.0,
 			"color": [
-				0.25,
-				0.42,
-				0.18
+				0.18,
+				0.36,
+				0.12
 			],
 			"per_hectare": {
 				"temperate_forest": 30,
