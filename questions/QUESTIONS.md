@@ -8,9 +8,6 @@ Note: 6. Optional: place a timber prop near the roof before the time runs out. T
 Note: 7. Take a picture of the shaking and dust. Write in Notes what happened, yes or no.
 [test]
 
-## esc-character | Esc menu: should Character open the Tab screen from the menu? (You answered No without a reason earlier; tell me why in the Why-not box.)
-[check]
-
 ## cost-cobble-floor | Cobblestone floor = a full wooden floor (8 rough planks + 20 nails) plus 60 cobblestones and 6 mortar?
 [check]
 
