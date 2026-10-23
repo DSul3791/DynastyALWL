@@ -7,6 +7,3 @@ Note: 5. Stand OUTSIDE when the time runs out. The roof should fall, fill about 
 Note: 6. Optional: place a timber prop near the roof before the time runs out. The shaking should stop within 5 m of it.
 Note: 7. Take a picture of the shaking and dust. Write in Notes what happened, yes or no.
 [test]
-
-## wet-noflood | Is there no real flooding under the sea until the sea link is built (only drips and wet floors for now)?
-[check]
