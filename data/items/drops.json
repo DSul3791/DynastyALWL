@@ -137,8 +137,10 @@
 		"bark_chance": 0.3,
 		"seed_chance": 0.15,
 		"blows_per_log": 3,
-		"log_length_m": 2.5,
-		"max_logs": 12,
+		"log_length_m": 2.44,
+		"max_logs": 20,
+		"small_blows": 3,
+		"small": [["firewood", 1, 2], ["kindling", 2, 4], ["stick", 2, 4]],
 		"roots": [
 			"tree_roots",
 			1,

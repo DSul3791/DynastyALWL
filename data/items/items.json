@@ -1105,7 +1105,7 @@
 		},
 		"log_oak": {
 			"number": 100,
-			"name": "Oak log",
+			"name": "Oak logs",
 			"description": "A full-size oak log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1139,7 +1139,7 @@
 		},
 		"log_beech": {
 			"number": 103,
-			"name": "Beech log",
+			"name": "Beech logs",
 			"description": "A full-size beech log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1173,7 +1173,7 @@
 		},
 		"log_birch": {
 			"number": 106,
-			"name": "Birch log",
+			"name": "Birch logs",
 			"description": "A full-size birch log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1207,7 +1207,7 @@
 		},
 		"log_scots_pine": {
 			"number": 109,
-			"name": "Scots pine log",
+			"name": "Scots pine logs",
 			"description": "A full-size scots pine log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1241,7 +1241,7 @@
 		},
 		"log_spruce": {
 			"number": 112,
-			"name": "Spruce log",
+			"name": "Spruce logs",
 			"description": "A full-size spruce log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1275,7 +1275,7 @@
 		},
 		"log_alder": {
 			"number": 115,
-			"name": "Alder log",
+			"name": "Alder logs",
 			"description": "A full-size alder log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1309,7 +1309,7 @@
 		},
 		"log_willow": {
 			"number": 118,
-			"name": "Willow log",
+			"name": "Willow logs",
 			"description": "A full-size willow log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1343,7 +1343,7 @@
 		},
 		"log_coconut_palm": {
 			"number": 121,
-			"name": "Coconut palm log",
+			"name": "Coconut palm logs",
 			"description": "A full-size coconut palm log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1377,7 +1377,7 @@
 		},
 		"log_tropical_hardwood": {
 			"number": 124,
-			"name": "Tropical hardwood log",
+			"name": "Tropical hardwood logs",
 			"description": "A full-size tropical hardwood log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1411,7 +1411,7 @@
 		},
 		"log_acacia": {
 			"number": 127,
-			"name": "Acacia log",
+			"name": "Acacia logs",
 			"description": "A full-size acacia log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1445,7 +1445,7 @@
 		},
 		"log_mangrove": {
 			"number": 130,
-			"name": "Mangrove log",
+			"name": "Mangrove logs",
 			"description": "A full-size mangrove log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1479,7 +1479,7 @@
 		},
 		"log_rowan": {
 			"number": 133,
-			"name": "Rowan log",
+			"name": "Rowan logs",
 			"description": "A full-size rowan log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1513,7 +1513,7 @@
 		},
 		"log_wild_apple": {
 			"number": 136,
-			"name": "Crab apple log",
+			"name": "Crab apple logs",
 			"description": "A full-size crab apple log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1547,7 +1547,7 @@
 		},
 		"log_wild_pear": {
 			"number": 139,
-			"name": "Wild pear log",
+			"name": "Wild pear logs",
 			"description": "A full-size wild pear log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1581,7 +1581,7 @@
 		},
 		"log_wild_cherry": {
 			"number": 142,
-			"name": "Wild cherry log",
+			"name": "Wild cherry logs",
 			"description": "A full-size wild cherry log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1615,7 +1615,7 @@
 		},
 		"log_sweet_chestnut": {
 			"number": 145,
-			"name": "Sweet chestnut log",
+			"name": "Sweet chestnut logs",
 			"description": "A full-size sweet chestnut log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1649,7 +1649,7 @@
 		},
 		"log_walnut": {
 			"number": 148,
-			"name": "Walnut log",
+			"name": "Walnut logs",
 			"description": "A full-size walnut log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1683,7 +1683,7 @@
 		},
 		"log_date_palm": {
 			"number": 151,
-			"name": "Date palm log",
+			"name": "Date palm logs",
 			"description": "A full-size date palm log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1717,7 +1717,7 @@
 		},
 		"log_mirrorbark": {
 			"number": 154,
-			"name": "Mirrorbark log",
+			"name": "Mirrorbark logs",
 			"description": "A full-size mirrorbark log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1751,7 +1751,7 @@
 		},
 		"log_wardpine": {
 			"number": 157,
-			"name": "Wardpine log",
+			"name": "Wardpine logs",
 			"description": "A full-size wardpine log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1785,7 +1785,7 @@
 		},
 		"log_hearthwood": {
 			"number": 160,
-			"name": "Hearthwood log",
+			"name": "Hearthwood logs",
 			"description": "A full-size hearthwood log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1819,7 +1819,7 @@
 		},
 		"log_everember": {
 			"number": 163,
-			"name": "Everember log",
+			"name": "Everember logs",
 			"description": "A full-size everember log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1853,7 +1853,7 @@
 		},
 		"log_witness_tree": {
 			"number": 166,
-			"name": "Witness tree log",
+			"name": "Witness tree logs",
 			"description": "A full-size witness tree log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1887,7 +1887,7 @@
 		},
 		"log_balsam_fir": {
 			"number": 169,
-			"name": "Balsam fir log",
+			"name": "Balsam fir logs",
 			"description": "A full-size balsam fir log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1921,7 +1921,7 @@
 		},
 		"log_maple": {
 			"number": 172,
-			"name": "Sugar maple log",
+			"name": "Sugar maple logs",
 			"description": "A full-size sugar maple log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
