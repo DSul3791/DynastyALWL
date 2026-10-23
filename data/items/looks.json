@@ -138,22 +138,22 @@
    "size": 1.0
   },
   "soil": {
-   "shape": "pile",
+   "shape": "clump",
    "color": "#4a3322",
    "size": 1.0
   },
   "clay": {
-   "shape": "pile",
+   "shape": "clump",
    "color": "#a0603c",
    "size": 1.0
   },
   "sand": {
-   "shape": "pile",
+   "shape": "grit",
    "color": "#d6c18b",
    "size": 1.0
   },
   "gravel": {
-   "shape": "pile",
+   "shape": "grit",
    "color": "#8d8a84",
    "size": 1.0
   },
