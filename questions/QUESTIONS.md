@@ -1,7 +1,3 @@
-## cost-4 | Wall, Log: 8 logs and 10 twine?
-Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
-[check]
-
 ## cost-5 | Wall, Cobblestone: 120 cobblestones and 8 mortar?
 Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
 [check]
