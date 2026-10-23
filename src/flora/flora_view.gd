@@ -564,6 +564,19 @@ func _setup_entry(entry: Dictionary) -> bool:
 	var near_meshes: Array = models[0]
 	var far_meshes: Array = models[1]
 
+	if OS.has_environment("FLORA_DEBUG"):
+		var counts: Array = []
+
+		for mesh in near_meshes:
+			var total: int = 0
+
+			for s in range(mesh.get_surface_count()):
+				total += (mesh.surface_get_arrays(s)[Mesh.ARRAY_VERTEX] as PackedVector3Array).size()
+
+			counts.append(total)
+
+		print("FLORA_DEBUG ", entry["name"], " id=", entry["id"], " kind=", entry["kind"], " shape=", shape, " model=", entry.get("model", "-"), " height=", reference, " near_vertices=", counts, " built=", built)
+
 	# The mid model starts as the full model; _decimate_task swaps in the simplified one when ready.
 	var mid_meshes: Array = near_meshes.duplicate()
 	if kind == KIND_TREE and built:
