@@ -719,7 +719,7 @@ func _update_blueprint() -> void:
 			return float(found["position"].y) if not found.is_empty() else NAN
 		blueprint_state = PlacementRules.steep(_placement, kit, _blueprint_at, _camera.global_rotation.y, probe)
 
-	if blueprint_state == "" and not on_base and water_depth_at.is_valid() and PlacementRules.over_water(_placement, kit, _blueprint_at, deg_to_rad(float(_blueprint_yaw)), water_depth_at):
+	if blueprint_state == "" and not on_base and not PlacementRules.structure_of_kit(_placement, kit).has("needs_running_water") and water_depth_at.is_valid() and PlacementRules.over_water(_placement, kit, _blueprint_at, deg_to_rad(float(_blueprint_yaw)), water_depth_at):
 		blueprint_state = "water"
 
 	if blueprint_state == "":

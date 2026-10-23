@@ -2001,7 +2001,7 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 
 	var spot: Vector3 = Vector3(at.x, at.y if on_base else ground + lift, at.z)
 
-	if not on_base and water_depth_at.is_valid() and PlacementRules.over_water(_structures_cfg, kit_id, spot, deg_to_rad(float(yaw_deg)), func(x, z): return float(water_depth_at.call(Vector3(x, spot.y, z)))):
+	if not on_base and not _structure_of_kit(kit_id).has("needs_running_water") and water_depth_at.is_valid() and PlacementRules.over_water(_structures_cfg, kit_id, spot, deg_to_rad(float(yaw_deg)), func(x, z): return float(water_depth_at.call(Vector3(x, spot.y, z)))):
 		_say(peer, "You cannot build in water.")
 		return
 
@@ -2010,7 +2010,15 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 		return
 
 	if kit_id != "campfire_kit":
-		_place_structure(peer, inv, slot, spot, yaw_deg, _structure_of_kit(kit_id))
+		var placed_def: Dictionary = _structure_of_kit(kit_id)
+
+		if placed_def.has("needs_base_lift_m") or placed_def.has("needs_running_water"):
+			spot = _station_site(peer, placed_def, spot, yaw_deg)
+
+			if is_nan(spot.y):
+				return
+
+		_place_structure(peer, inv, slot, spot, yaw_deg, placed_def)
 		return
 
 	var chunk_fires: int = 0
@@ -2032,6 +2040,49 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 	var covered: bool = cover_at.is_valid() and float(cover_at.call(spot)) > 0.5
 	_items[_next_id] = {"number": number, "count": 1, "pos": spot, "left": 1.0e9, "fire": {"state": 1, "burn_left": float(_cooking.get("start_burn_game_s", 2400.0)) / GAME_RATE, "covered": covered, "recheck": COVER_RECHECK_S}}
 	_next_id += 1
+
+
+# Placement rules of a station that stands on a tall foundation over running water (the sawmill, Dave 2026-10-22): it needs a foundation under it
+# lifted at least needs_base_lift_m off the ground, and the water at its wheel (structures.json needs_running_water, offsets from the middle,
+# turned with the piece) running along the wheel's span. Returns the spot on the foundation top, or a NAN y after telling the player why.
+func _station_site(peer: int, def: Dictionary, spot: Vector3, yaw_deg: int) -> Vector3:
+	var lift_need: float = float(def.get("needs_base_lift_m", 0.0))
+
+	if lift_need > 0.0:
+		var found: bool = false
+
+		for row in _foundation_rows():
+			var base: Dictionary = PlacementRules.structure_of_state(_structures_cfg, int(row["state"]))
+
+			if base.is_empty() or not bool(base.get("foundation", false)):
+				continue
+
+			if absf(spot.x - row["pos"].x) > float(base.get("footprint_x", 4.0)) * 0.5 or absf(spot.z - row["pos"].z) > float(base.get("footprint_z", 4.0)) * 0.5:
+				continue
+
+			var under: float = float(ground_height.call(row["pos"].x, row["pos"].z)) if ground_height.is_valid() else row["pos"].y
+
+			if row["pos"].y - under >= lift_need - 0.02:
+				spot = Vector3(spot.x, row["pos"].y + float(base.get("top_m", 0.3)), spot.z)
+				found = true
+				break
+
+		if not found:
+			_say(peer, "It needs a tall foundation (lifted %.1f m or more)." % lift_need)
+			return Vector3(spot.x, NAN, spot.z)
+
+	var water: Dictionary = def.get("needs_running_water", {})
+
+	if not water.is_empty() and water_flow_runs.is_valid():
+		var turn: float = deg_to_rad(float(yaw_deg))
+		var from_local: Vector2 = Vector2(float(water["from"][0]), float(water["from"][1])).rotated(turn)
+		var to_local: Vector2 = Vector2(float(water["to"][0]), float(water["to"][1])).rotated(turn)
+
+		if not bool(water_flow_runs.call(Vector3(spot.x + from_local.x, spot.y, spot.z + from_local.y), Vector3(spot.x + to_local.x, spot.y, spot.z + to_local.y))):
+			_say(peer, "The wheel needs running water.")
+			return Vector3(spot.x, NAN, spot.z)
+
+	return spot
 
 
 # Fires burn down; open fires are put out by rain (Dave, 2026-10-20), covered ones are not.
@@ -3405,7 +3456,9 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 
 		var walkover: bool = other.has("struct") and bool(_structures.get(str(other["struct"]["kind"]), {}).get("walkover", false))
 
-		if other["pos"].distance_to(spot) < _struct_gap_m and (other.has("struct") or other.has("fire")) and not both_pieces and not walkover:
+		var stands_on: bool = def.has("needs_base_lift_m") and other.has("struct") and bool(_structures.get(str(other["struct"]["kind"]), {}).get("foundation", false))   # a sawmill stands on its foundation
+
+		if other["pos"].distance_to(spot) < _struct_gap_m and (other.has("struct") or other.has("fire")) and not both_pieces and not walkover and not stands_on:
 			return
 
 		if other.has("struct") and str(other["struct"]["kind"]) == str(def["kind"]) and _chunk_of(other["pos"]) == here_chunk:

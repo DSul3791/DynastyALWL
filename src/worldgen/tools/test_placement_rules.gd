@@ -178,7 +178,7 @@ func _init() -> void:
 	var before_stations: Vector3 = items._peer_pos[2]
 	items.report_position(2, Vector3(800.0, 10.0, 800.0))
 
-	for station_kit in [["woodworking_table_kit", "woodworking_table", 802.0], ["saw_mill_kit", "saw_mill", 806.0]]:
+	for station_kit in [["woodworking_table_kit", "woodworking_table", 802.0]]:
 		items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of(str(station_kit[0])), 0, 1, Vector3.ZERO)
 		items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of(str(station_kit[0]))), 0, 0, Vector3(800.0, 10.0, float(station_kit[2])))
 		var station_found: bool = false
@@ -190,6 +190,39 @@ func _init() -> void:
 		check(station_found, "a %s is placed" % str(station_kit[1]))
 
 	items.report_position(2, before_stations)
+	# The sawmill needs a foundation lifted 0.5 m or more under it and running water at its wheel.
+	items.ground_height = func(_x, _z): return 10.0
+	var flows: Array = [true]
+	items.water_flow_runs = func(_a: Vector3, _b: Vector3) -> bool: return flows[0]
+	items.report_position(2, Vector3(900.0, 10.0, 900.0))
+	var saw_kit: int = items.table.number_of("saw_mill_kit")
+	var saw_count = func() -> int:
+		var n: int = 0
+
+		for it in items._items.values():
+			if it.has("struct") and it["struct"]["kind"] == "saw_mill":
+				n += 1
+
+		return n
+	items.action(2, Net.ACT_ADMIN_GIVE, saw_kit, 0, 4, Vector3.ZERO)
+	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(saw_kit), 0, 0, Vector3(900.0, 10.0, 902.0))
+	check(int(saw_count.call()) == 0, "a sawmill is refused on bare ground (needs a tall foundation)")
+	items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of("foundation_section_kit"), 0, 2, Vector3.ZERO)
+	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of("foundation_section_kit")), 2, 0, Vector3(900.0, 12.0, 902.0))
+	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(saw_kit), 0, 0, Vector3(900.0, 10.0, 902.0))
+	check(int(saw_count.call()) == 0, "a foundation lifted only 0.2 m is too low")
+	items.report_position(2, Vector3(900.0, 10.0, 910.0))
+	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of("foundation_section_kit")), 6, 0, Vector3(900.0, 10.6, 910.0))
+	flows[0] = false
+	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(saw_kit), 0, 0, Vector3(900.0, 10.0, 910.0))
+	check(int(saw_count.call()) == 0, "a sawmill without running water at its wheel is refused")
+	flows[0] = true
+	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(saw_kit), 0, 0, Vector3(900.0, 10.0, 910.0))
+	check(int(saw_count.call()) == 1, "a sawmill on a foundation lifted 0.6 m with running water is placed")
+	items.ground_height = Callable()
+	items.water_flow_runs = Callable()
+	items.report_position(2, before_stations)
+
 	check(str(Rules.structure_of_kit(cfg, "wall_section_kit").get("variant_group", "x")) == "wall" and str(Rules.structure_of_kit(cfg, "doorway_section_kit").get("variant_group", "y")) == "wall" and str(Rules.structure_of_kit(cfg, "window_section_kit").get("variant_group", "z")) == "wall", "wall, doorway and window share a wheel group")
 	# A doorway and a window wall snap onto the foundation like a wall; the foundation stays while they stand on it.
 	check(bool(Rules.snap(cfg, "doorway_section_kit", Vector3(48.9, 10.0, 47.6), 0, base_rows)[2]) and bool(Rules.snap(cfg, "window_section_kit", Vector3(48.9, 10.0, 47.6), 0, base_rows)[2]), "doorway and window walls snap to the foundation anchors")
