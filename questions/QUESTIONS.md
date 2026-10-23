@@ -7,10 +7,6 @@
 
 
 
-## blocks-from-log | A log from your pack, dropped on the ground and chopped with an axe, gives 4 wooden blocks (about 0.3 m long, 3.75 kg each)?
-Note: Tyler recommends Yes because the pack log is the smaller log (about 15 kg), so 4 blocks of 3.75 kg add up. The big shoulder log gives more (next card).
-[check]
-
 ## axe-wear-chop | The axe wears once for each log chop and once for each split at the chopping block?
 Note: Tyler recommends Yes because both are real chopping, and one wear per action is easy to understand and to tune later.
 [check]
