@@ -7,10 +7,6 @@
 
 
 
-## hotbar-move | Is this how the hotbar should work: a tool dragged onto the hotbar MOVES there and leaves the pack grid (the hotbar is extra holding slots, not a copy, and it still counts for weight), and E over a hotbar slot with the inventory window open puts it back in the first free pack slot?
-Note: Tyler recommends Yes because it already matches what you described, so nothing needs changing.
-[check]
-
 ## blocks-from-log | A log from your pack, dropped on the ground and chopped with an axe, gives 4 wooden blocks (about 0.3 m long, 3.75 kg each)?
 Note: Tyler recommends Yes because the pack log is the smaller log (about 15 kg), so 4 blocks of 3.75 kg add up. The big shoulder log gives more (next card).
 [check]
@@ -60,8 +56,6 @@ Note: Tyler recommends Yes because "Oak logs" reads naturally for players, and t
 Note: This is your own rule from your answer. Tyler's suggestion to make it work: a hollow gets water from the rain that falls on the land that drains into it (its catchment), and it dries to a smaller pond or nothing if the rain is too little for its size (evaporation). So a tiny hollow with a tiny catchment is only a puddle, and a big hollow with a big catchment is a lake.
 Note: Tyler recommends Yes because it needs no extra rule beyond catchment and rain, and the stripe ponds from terrace steps disappear because they catch almost no rain.
 [check]
-
-
 
 ## fix-merge-guard | Should we build a pre-merge check script first (it checks conflict markers, duplicate item numbers and action ids, next_number, crash logs, JSON and the warning count) and then run it automatically on GitHub (CI)?
 Note: Tonight's merges needed three repair builds (699, 701 and a conflicted merge) that this script would have caught before merging. It also saves the round trip through MikeW's PC.
