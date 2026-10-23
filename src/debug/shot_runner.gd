@@ -431,6 +431,8 @@ func _show_flora(now: int) -> void:
 			if dx != 0 or dz != 0:
 				client.flora.set_chunk(here + Vector2i(dx, dz), empty.duplicate(true), p)
 
+			client.rig_flora_hold[here + Vector2i(dx, dz)] = true
+
 	client.flora.set_chunk(here, items, p)
 	_flora_t = now
 

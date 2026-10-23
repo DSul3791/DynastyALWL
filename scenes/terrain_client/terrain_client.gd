@@ -79,6 +79,7 @@ const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 const RescueScript := preload("res://src/client/rescue.gd")
 const BuildInfo := preload("res://src/shared/build.gd")
 const BUILD: int = BuildInfo.NUMBER
+var rig_flora_hold: Dictionary = {}   # look rig (--shot-flora): chunks whose plants the rig drew itself; incoming server flora for them is dropped
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
@@ -1659,6 +1660,10 @@ func _apply_incoming() -> void:
 		if job["kind"] == "flora":
 			var t: int = Probe.start()
 			var full: bool = job["full"]
+
+			if rig_flora_hold.has(chunk):   # look rig: its own plants stay, the server's chunk is ignored
+				Probe.stop("flora chunk in", t)
+				continue
 
 			if not full and flora.holds_full(chunk):
 				Probe.stop("flora chunk in", t)
