@@ -916,3 +916,7 @@ Answered: 2026-10-23 01:32 UTC
 Answer: Yes
 Answered: 2026-10-23 01:33 UTC
 
+## cost-braces-tar | Tar-soaked braces: same shape, add 1 tar per log, and the wear decay is almost zero?
+Answer: Yes
+Answered: 2026-10-23 01:33 UTC
+
