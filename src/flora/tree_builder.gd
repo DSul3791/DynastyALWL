@@ -2187,7 +2187,7 @@ const RASPBERRY_BERRY := Color(0.82, 0.06, 0.14)
 const RASPBERRY_UNRIPE := Color(0.85, 0.75, 0.25)
 const SHRUB_LOOKS := {
 	"raspberry": {"canes": [12, 14], "segs": 4, "thorn_n": 3, "base": 0.3, "arch": 0.25, "reach": 1.3, "sprays": 8, "rate": 0.4, "cluster": 0.07, "cane": RASPBERRY_CANE, "leaf": 0.55, "fruit": RASPBERRY_BERRY, "unripe": RASPBERRY_UNRIPE, "flower": Color(1.0, 0.98, 0.95), "thorns": true},
-	"bramble": {"canes": [7, 8], "segs": 5, "thorn_n": 4, "arch": 0.8, "reach": 1.3, "sprays": 11, "rate": 0.5, "cluster": 0.08, "cane": Color(0.50, 0.30, 0.30), "leaf": 0.5, "fruit": Color(0.35, 0.10, 0.55), "unripe": Color(1.0, 0.25, 0.25), "flower": Color(1.0, 0.9, 0.9), "thorns": true},
+	"bramble": {"canes": [10, 11], "segs": 4, "thorn_n": 2, "arch": 0.6, "reach": 1.0, "sprays": 10, "rate": 0.3, "cluster": 0.08, "cane": Color(0.50, 0.30, 0.30), "leaf": 0.5, "fruit": Color(0.35, 0.10, 0.55), "unripe": Color(1.0, 0.25, 0.25), "flower": Color(1.0, 0.9, 0.9), "thorns": true},
 	"wild_rose": {"canes": [10, 11], "segs": 5, "thorn_n": 4, "sprays": 6, "arch": 0.35, "reach": 1.0, "rate": 0.12, "cluster": 0.045, "cane": Color(0.45, 0.30, 0.22), "leaf": 0.65, "fruit": Color(1.0, 0.18, 0.1), "unripe": Color(1.0, 0.55, 0.3), "flower": null, "blossom": Color(1.0, 0.25, 0.55), "thorns": true},
 	"blackthorn": {"canes": [14, 18], "base": 0.2, "arch": 0.55, "reach": 1.4, "rate": 0.12, "cane": Color(0.20, 0.17, 0.15), "leaf": 0.32, "fruit": Color(0.4, 0.45, 0.9), "unripe": Color(0.5, 0.6, 0.5), "flower": null, "thorns": true},
 	"blueberry": {"canes": [9, 11], "sprays": 5, "arch": 0.1, "reach": 0.7, "rate": 0.5, "cluster": 0.06, "cane": Color(0.50, 0.38, 0.28), "leaf": 0.4, "fruit": Color(0.30, 0.38, 0.85), "unripe": Color(0.75, 0.9, 0.55), "flower": null, "thorns": false},
@@ -2283,7 +2283,7 @@ static func _cane_shrub(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 		var leaf_size: float = crown * float(look["leaf"]) * 0.3
 
 		for m in range(sprays):
-			var t: float = 0.2 + 0.8 * float(m) / float(sprays - 1)
+			var t: float = 0.08 + 0.92 * float(m) / float(sprays - 1)
 			var at: Vector3 = _bezier(ctrl, t)
 			var tangent: Vector3 = (_bezier(ctrl, minf(t + 0.05, 1.0)) - _bezier(ctrl, maxf(t - 0.05, 0.0))).normalized()
 			var turn_a: float = rng.randf_range(0.7, 1.1)
@@ -2469,7 +2469,7 @@ const BLOSSOM_WHITE := Color(1.0, 1.0, 0.98)
 static func _blackthorn(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool, season: String) -> void:
 	# Budget (Steve 2026-10-23): near model at most about 4,000 vertices, far model about 800. Spines are single triangles.
 	var bloom: bool = season == "spring"
-	var stems: int = 5 if far else rng.randi_range(11, 13)
+	var stems: int = 5 if far else rng.randi_range(12, 13)
 	var az: float = rng.randf() * TAU
 	var r0: float = maxf(h * 0.005, 0.012)
 
@@ -2486,7 +2486,7 @@ static func _blackthorn(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: f
 		var nodes: Array = [top, mid]
 
 		# Side shoots from the upper two thirds, angled out; each ends in a long spine, with one short one along it.
-		for m in range(2 if far else rng.randi_range(7, 8)):
+		for m in range(2 if far else rng.randi_range(6, 7)):
 			var u: float = rng.randf_range(0.15, 1.0)
 			var from: Vector3 = base.lerp(mid, u * 2.0) if u < 0.5 else mid.lerp(top, u * 2.0 - 1.0)
 			var side: Vector3 = (out * 0.6 + Vector3(rng.randfn(), rng.randf_range(0.0, 0.8), rng.randfn()) * 0.6).normalized()
@@ -2510,7 +2510,7 @@ static func _blackthorn(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: f
 				if not far:
 					_blossom(bark, rng, n, crown * 0.04, BLOSSOM_WHITE)
 			else:
-				_leaf_spray(leaves, rng, n, Vector3(rng.randfn(), rng.randf_range(-0.3, 0.5), rng.randfn()), crown * 0.075, shade * 1.05)
+				_leaf_spray(leaves, rng, n, Vector3(rng.randfn(), rng.randf_range(-0.3, 0.5), rng.randfn()), crown * 0.11, shade * 1.05)
 
 				if not far and rng.randf() < 0.22:
 					_cluster(bark, rng, n + Vector3(0.0, -crown * 0.04, 0.0), crown * 0.04, SLOE_COLOR, false, rng.randi_range(3, 4))
