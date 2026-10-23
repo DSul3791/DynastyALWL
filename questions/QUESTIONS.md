@@ -1,4 +1,3 @@
-
 ## collapse-test-2 | Please test the tunnel collapse after the backup. Look for: warnings that build up over 5 minutes, then the roof falls. Did it work?
 Note: 1. Pull, close the game fully, start it, check the HUD says the new build number.
 Note: 2. Go to solid ground (not a natural cave). Check Esc > Settings: Tunnel collapse is On and Cave-in time is 5 min.
@@ -8,9 +7,6 @@ Note: 5. Stand OUTSIDE when the time runs out. The roof should fall, fill about 
 Note: 6. Optional: place a timber prop near the roof before the time runs out. The shaking should stop within 5 m of it.
 Note: 7. Take a picture of the shaking and dust. Write in Notes what happened, yes or no.
 [test]
-
-## basins-store | Store the list of lakes and basins (where each is, how deep, where it overflows) in the tile file, so the game always puts water at the bottom of the same basins?
-[check]
 
 ## farwater-spacing | Far water: use a 32 m grid for the distant river and lake picture (any river cell inside a 32 m cell marks it wet, lowest surface taken)?
 [check]
