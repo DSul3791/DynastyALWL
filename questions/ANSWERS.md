@@ -748,3 +748,7 @@ Answered: 2026-10-23 00:51 UTC
 Answer: Yes
 Answered: 2026-10-23 00:51 UTC
 
+## cost-23 | Door, Reinforced: a plank door plus 2 iron ingots (banding) and 30 nails?
+Answer: Yes
+Answered: 2026-10-23 00:51 UTC
+
