@@ -324,6 +324,10 @@ func _process(_delta: float) -> void:
 		return
 
 	_print_state()
+
+	if not flora_names.is_empty():
+		_print_flora_row()
+
 	var image: Image = get_viewport().get_texture().get_image()
 	var path: String = "%s/%s.png" % [dir, shots[_index]["name"]]
 	image.save_png(path)
@@ -437,6 +441,29 @@ func _show_flora(now: int) -> void:
 
 	client.flora.set_chunk(here, items, p)
 	_flora_t = now
+
+
+# Look rig diagnostics for --shot-flora: what the flora view holds for the row's chunk (level bits, drawn pieces and instances), per chunk.
+func _print_flora_row() -> void:
+	var p: Vector3 = client.body.global_position
+	var here: Vector2i = Vector2i(int(floor(p.x / client.flora.chunk_m)), int(floor((p.z - 2.4) / client.flora.chunk_m)))
+	var entry: Dictionary = client.flora._chunks.get(here, {})
+
+	if entry.is_empty():
+		print("shot runner: flora row: chunk %s is not held" % str(here))
+		return
+
+	var node: Node3D = entry.get("node")
+	var pieces: int = 0
+	var instances: int = 0
+
+	if node != null:
+		for child in node.get_children():
+			if child is MultiMeshInstance3D:
+				pieces += 1
+				instances += (child as MultiMeshInstance3D).multimesh.instance_count
+
+	print("shot runner: flora row: chunk %s items %d level %d ground %s visible %s pieces %d instances %d setup_done %s" % [str(here), (entry["items"]["ids"] as PackedInt32Array).size(), int(entry["level"]), str(entry.get("ground")), str(node.visible if node != null else "no node"), pieces, instances, str(client.flora._setup_done)])
 
 
 # A walking body from the side: the drawn camera 2.8 m to the body's left, level with its chest.
