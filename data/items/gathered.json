@@ -176,7 +176,7 @@
 			"number": 1014,
 			"name": "Blackberries",
 			"kind": "material",
-			"stack": 20,
+			"stack": 100,
 			"look_alikes": [
 				"Raspberry",
 				"Wild rose",
@@ -190,7 +190,7 @@
 			"number": 1015,
 			"name": "Blueberries",
 			"kind": "material",
-			"stack": 20,
+			"stack": 100,
 			"look_alikes": [
 				"Lingonberry",
 				"Crowberry",
@@ -344,7 +344,7 @@
 			"number": 1027,
 			"name": "Cloudberries",
 			"kind": "material",
-			"stack": 20,
+			"stack": 100,
 			"look_alikes": [
 				"Wild strawberry",
 				"Wild rose"
@@ -406,7 +406,7 @@
 			"number": 1032,
 			"name": "Cranberries",
 			"kind": "material",
-			"stack": 20,
+			"stack": 100,
 			"look_alikes": [
 				"Blueberry",
 				"Lingonberry",
@@ -421,7 +421,7 @@
 			"number": 1033,
 			"name": "Crowberries",
 			"kind": "material",
-			"stack": 20,
+			"stack": 100,
 			"look_alikes": [
 				"Dwarf birch",
 				"Heather",
@@ -551,7 +551,7 @@
 			"number": 1043,
 			"name": "Elderberries",
 			"kind": "material",
-			"stack": 20,
+			"stack": 100,
 			"look_alikes": [
 				"Hazel",
 				"Hawthorn",
@@ -997,7 +997,7 @@
 			"number": 1079,
 			"name": "Juniper berries",
 			"kind": "material",
-			"stack": 20,
+			"stack": 100,
 			"look_alikes": [
 				"Gorse",
 				"Sea buckthorn"
@@ -1048,7 +1048,7 @@
 			"number": 1084,
 			"name": "Lingonberries",
 			"kind": "material",
-			"stack": 20,
+			"stack": 100,
 			"look_alikes": [
 				"Blueberry",
 				"Crowberry",
@@ -1389,7 +1389,7 @@
 			"number": 1112,
 			"name": "Raspberries",
 			"kind": "material",
-			"stack": 20,
+			"stack": 100,
 			"look_alikes": [
 				"Bramble",
 				"Wild rose",
@@ -1469,7 +1469,7 @@
 			"number": 1118,
 			"name": "Rose hips",
 			"kind": "material",
-			"stack": 20,
+			"stack": 100,
 			"look_alikes": [
 				"Bramble",
 				"Raspberry",
@@ -1627,7 +1627,7 @@
 			"number": 1130,
 			"name": "Sloes",
 			"kind": "material",
-			"stack": 20,
+			"stack": 100,
 			"look_alikes": [
 				"Bramble",
 				"Raspberry",
@@ -1756,7 +1756,7 @@
 			"number": 1140,
 			"name": "Strawberries",
 			"kind": "material",
-			"stack": 20,
+			"stack": 100,
 			"look_alikes": [
 				"Cloudberry",
 				"Wild rose"

@@ -1,4 +1,19 @@
 {
+	"berry_yield_note": "Berries per plant (Tyler card berries-per-plant, 2026-10-23; Dave may change): one E on a ripe plant gives all of item x count and leaves the plant bare until the next season. Keyed by flora name (data/tables/flora.json). The server gather() berry branch reads this (Steve).",
+	"berry_yield": {
+		"raspberry": {"item": "raspberries", "count": 150},
+		"bramble": {"item": "blackberries", "count": 250},
+		"blueberry": {"item": "blueberries", "count": 150},
+		"blackthorn": {"item": "sloes", "count": 300},
+		"wild_rose": {"item": "rose_hips", "count": 60},
+		"wild_strawberry": {"item": "strawberries", "count": 10},
+		"lingonberry": {"item": "lingonberries", "count": 15},
+		"cranberry": {"item": "cranberries", "count": 12},
+		"crowberry": {"item": "crowberries", "count": 40},
+		"cloudberry": {"item": "cloudberries", "count": 3},
+		"elder": {"item": "elderberries", "count": 400},
+		"juniper": {"item": "juniper_berries", "count": 100}
+	},
 	"note": "What gathering gives. by_species wins over by_kind; each entry is [item id, min, max]. A plant or shrub with no entry here cannot be gathered yet (food and herb items come with the gatherer, cook and potion work). Trees are felled, not gathered (tree-fall comes later).",
 	"by_species": {
 		"flax": [
