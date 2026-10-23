@@ -11,6 +11,9 @@ The single complete list of every input (keyboard, mouse, held versus tap, conte
 | W A S D | Walk (1.4 m/s) |
 | Double-tap W (within 0.30 s) | Jog (3.2 m/s) |
 | Shift + W | Run (6 m/s) |
+| B (held with a shield in the off hand) | Block with the shield while held |
+| Shift + right click with a hoe | Sets grade point A, then B (stakes show); a third click starts a new line |
+| Hold Shift + left click with a hoe | Grades the ground within 1.5 m of the A-B line toward a straight ramp (0.25 m per stroke, within 12 m of A, free; only the hoe wears) |
 | (automatic) | Very slight camera bob and sway when moving on the ground, in step with the feet: down and leaning to the stepping side at each footfall, back up in between. Strides are longer when jogging (4.2 m) and running (6 m) than walking (3 m) |
 | Space | Jump (walking) or go up (flying); on a ladder, let go and drop back |
 | Ladder (W / S) | Walk up to a placed ladder facing it and hold W to grab on and climb (1.1 m/s); S climbs down and steps off at the bottom; at the top W steps you onto the edge |
