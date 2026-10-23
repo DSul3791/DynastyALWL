@@ -7,9 +7,6 @@ Note: 5. Check a natural cave does NOT collapse. Check the warning gives you at 
 Note: 6. Answer Yes if all of that worked. Answer No and tell me which step broke.
 [check]
 
-## esc-menu-4 | Esc menu: should Character open the Tab screen from the menu?
-[check]
-
 ## esc-menu-5 | Esc menu: should Quit game sit near the bottom with a short "Leave the game?" confirm click?
 [check]
 
