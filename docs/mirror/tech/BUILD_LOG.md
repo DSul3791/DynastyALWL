@@ -434,3 +434,5 @@ Each active thread holds its current number plus ONE spare, handed out in advanc
 - 2026-10-23 steve-flicker: flora_view._draw_water reuses the MeshInstance3D (RUNTIME, client)
 - 15:15 UTC 23 Oct Guru: MERGED 720: steve-flicker (old and new chunk water meshes were both drawn for one frame at every redraw; RUNTIME client only; 233 warnings per Steve). QA TEST card test-lake-flicker posted. If flicker remains it is Sonny's shader/layering (Ctrl+Shift+W test). Head = 720.
 - 15:40 UTC 23 Oct Guru: MERGED 721: steve-flora-draw (look-rig shot_runner _show_flora passed bare species id instead of (species<<16)|index, so every rig plant drew as species 0: rig bug, not Kathleen's models; one line, RUNTIME). kathleen-shrubs newest waits for MikeW re-render. Head = 721.
+- 2026-10-23 steve-near-species: flora near_m per species (client), steve-flora-draw: rig ids + sink scales with height
+- 15:55 UTC 23 Oct Guru: MERGED 722: steve-near-species (optional near_m key on a flora.json row gives a species a shorter full-model distance; nothing changes unless used; RUNTIME client only). Head = 722.
