@@ -496,6 +496,15 @@ func _probe_structure() -> Dictionary:
 
 
 func press_e() -> bool:
+	# In the crafting window, E over a recipe crafts one of it (Dave 2026-10-23).
+	if open and not chest_mode and _hover_recipe != 0:
+		if _can_craft(_hover_recipe):
+			_start_craft(_hover_recipe, 1)
+		else:
+			_on_notice("You do not have what that needs")
+
+		return true
+
 	var found: Dictionary = current_interaction()
 
 	if found.is_empty():
@@ -1733,8 +1742,20 @@ func _make_vice() -> Node3D:
 	return root
 
 
+# Admin mode (Dave 2026-10-23, on by default): the whole list is craftable free for an admin; the server decides, this only stops the list greying.
+var admin_craft: bool = false
+
+
+func _free_craft() -> bool:
+	return admin_craft or not AdminScript.check_enabled()
+
+
+func _can_craft(number: int) -> bool:
+	return _free_craft() or recipes.can_make(number, inventory)
+
+
 func _station_ok(r: Dictionary) -> bool:
-	return str(r.get("station", "")) == "" or station_near(str(r["station"]), int(r.get("station_level", 1)))
+	return _free_craft() or str(r.get("station", "")) == "" or station_near(str(r["station"]), int(r.get("station_level", 1)))
 
 
 func _station_label(r: Dictionary) -> String:
@@ -2302,6 +2323,7 @@ var _search: LineEdit
 var _recipe_list: VBoxContainer
 var _detail: VBoxContainer
 var _selected_recipe: int = 0
+var _hover_recipe: int = 0                 # the recipe under the mouse in the crafting list, 0 when none (E crafts it)
 var _quantity: SpinBox
 var _qty: int = 1
 var knowledge                          # InspectionKnowledge (set by the client): item names follow what the character knows
@@ -2839,7 +2861,7 @@ func _craft_selected() -> void:
 
 
 func _start_craft(number: int, count: int = 1) -> void:
-	if not recipes.can_make(number, inventory):
+	if not _can_craft(number):
 		return
 
 	for item in recipes.recipe(number).get("identify", []):
@@ -3146,6 +3168,8 @@ func _refresh() -> void:
 			button.text += "   %s" % _litres(inventory.wear[i])
 
 	# Recipes: makeable first, then the rest, each alphabetical.
+	_hover_recipe = 0
+
 	for child in _recipe_list.get_children():
 		child.queue_free()
 
@@ -3155,10 +3179,10 @@ func _refresh() -> void:
 	for number in recipes.numbers():
 		var r: Dictionary = recipes.recipe(number)
 
-		if not r["known"] or not _recipe_matches(r, filter):
+		if (not r["known"] and not _free_craft()) or not _recipe_matches(r, filter):
 			continue
 
-		(can if recipes.can_make(number, inventory) and _station_ok(r) else cannot).append(r)
+		(can if _can_craft(number) and _station_ok(r) else cannot).append(r)
 
 	var by_name: Callable = func(a, b): return str(a["name"]) < str(b["name"])
 	can.sort_custom(by_name)
@@ -3168,7 +3192,7 @@ func _refresh() -> void:
 		_selected_recipe = can[0]["number"] if not can.is_empty() else (cannot[0]["number"] if not cannot.is_empty() else 0)
 
 	for r in can + cannot:
-		var makeable: bool = recipes.can_make(r["number"], inventory) and _station_ok(r)
+		var makeable: bool = _can_craft(r["number"]) and _station_ok(r)
 		var entry: Button = Button.new()
 		entry.text = str(r["name"]) + (("   (needs %s)" % _station_label(r)) if not _station_ok(r) else "")
 		entry.alignment = HORIZONTAL_ALIGNMENT_LEFT
@@ -3178,6 +3202,8 @@ func _refresh() -> void:
 		entry.flat = r["number"] != _selected_recipe
 		_style(entry, BODY_PX)
 		entry.pressed.connect(_select_recipe.bind(r["number"]))
+		entry.mouse_entered.connect(func(): _hover_recipe = int(r["number"]))
+		entry.mouse_exited.connect(func(): _hover_recipe = 0 if _hover_recipe == int(r["number"]) else _hover_recipe)
 		_recipe_list.add_child(entry)
 
 	_add_admin_builds()
@@ -3262,7 +3288,7 @@ func _refresh_detail() -> void:
 	row.add_child(_quantity)
 	var make: Button = Button.new()
 	make.text = "Craft  (%.0f s)" % float(r["craft_s"])
-	make.disabled = not (recipes.can_make(_selected_recipe, inventory) and _station_ok(r))
+	make.disabled = not (_can_craft(_selected_recipe) and _station_ok(r))
 	make.custom_minimum_size = Vector2(_px(240), _px(64))
 	_style(make, BODY_PX)
 	make.pressed.connect(_craft_selected)

@@ -1675,6 +1675,30 @@ func _init() -> void:
 	cq.action(1, Net.ACT_CRAFT_CANCEL, 0, 0, 0, Vector3.ZERO)
 	check(cq.craft_queue_of(1).size() == in_a_row - 1, "queue requests faster than 100 ms apart are ignored")
 
+	# Admin mode: an admin crafts any recipe free, locked or not, with no ingredients or station.
+	DirAccess.make_dir_recursive_absolute(qd + "_admin")
+
+	for file in DirAccess.get_files_at(qd + "_admin"):
+		DirAccess.remove_absolute(qd + "_admin/" + file)
+
+	var ad = make(qd + "_admin")
+	ad.send_craft_queue = func(_p, _entries, _left_ms): pass
+	ad.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	ad.peer_connected_hello(1, "adminkey0001")
+	ad.admin_ok = func(_p): return true
+	ad._last_queue_act.clear()
+	ad.action(1, Net.ACT_CRAFT_QUEUE, 18, 0, 1, Vector3.ZERO)   # the iron pickaxe: not known, needs a forge and iron
+	check(ad.craft_queue_of(1) == [[18, 1]], "an admin queues a locked recipe with nothing in the pack")
+
+	for n in range(60):
+		ad._craft_tick(0.25)
+
+	check(ad.inventory_of(1).count_of(ad.table.number_of("iron_pickaxe")) == 1, "an admin's craft finishes without a station or ingredients")
+	ad.admin_mode_on = func(_p): return false
+	ad._last_queue_act.clear()
+	ad.action(1, Net.ACT_CRAFT_QUEUE, 18, 0, 1, Vector3.ZERO)
+	check(ad.craft_queue_of(1).is_empty(), "with admin mode off the same craft is refused again")
+
 	# Restart mid-craft keeps the progress; a refund into a full pack drops the rest at the player's feet.
 	DirAccess.make_dir_recursive_absolute(qd + "_full")
 
