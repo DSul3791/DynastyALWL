@@ -94,3 +94,8 @@ Baked tiles for the inner starters and their neighbors (36 files) are in `/mnt/p
 - Merge claude/steve-esc-test (headless Esc test only, no game code).
 - Merge claude/steve-drip (undersea drip detection, RESTART, protocol 73: Guru protocol-bump check first); not in head 695. Ask Steve for its next-night test line.
 - steve-drip next-night test: "Please test: dig a tunnel in rock off the beach and go under the sea until the ceiling is within about 4 m of the water above, or under a lake or river. Look for: drips falling from the ceiling, a dark wet patch on the floor under each, nothing collecting, no drips once you are more than 4 m under the water."
+
+## Parked 02:15 UTC 23 Oct (Dave: no more work tonight)
+- Head = build 695 (MikeW recheck and Dave's pull/"starts and plays" still pending; then backup).
+- Tomorrow first: (1) sweep answers newer than 02:00 UTC (12 tests, esc-character-2, far-water-2, river-mouth-dam, loose-fill-slope, lake-min-size, beach-loud, item-recipes-2) into DECISIONS.md and relay per thread; (2) merge held branches after backup: sal-rock-pile, kathleen-wet, steve-esc-test, steve-drip (protocol 73 check); (3) Sal blueprint build system; MikeW+Sonny BAKE-1 test.
+- QA page is v9 (self-reloads). Dave closes and reopens the tab once.
