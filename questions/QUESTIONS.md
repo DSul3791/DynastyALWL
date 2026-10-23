@@ -8,9 +8,6 @@ Note: 6. Optional: place a timber prop near the roof before the time runs out. T
 Note: 7. Take a picture of the shaking and dust. Write in Notes what happened, yes or no.
 [test]
 
-## cost-mason-floor | Mason floor = a full wooden floor (8 rough planks + 20 nails) plus 36 stone blocks and 8 mortar?
-[check]
-
 ## cost-stone-roof | Stone shingle roof = a full lap board roof (10 rough planks + 40 nails) plus 30 stone shingles and 4 mortar?
 [check]
 
