@@ -1,8 +1,3 @@
-
-## log-corner | Does the log wall now look like a real log cabin corner: round logs with saddle notches, each log overlapping the one below, the crossing log's end tucked into the notch?
-Image: questions/img/tiers_walls_r3.png
-[check]
-
 ## door-double-r3 | Is the double door right: 10 cm gap at the top and sides only, leaves reaching the floor?
 Image: questions/img/tiers_doors_r3.png
 [check]
