@@ -2535,12 +2535,12 @@ static func _blackthorn(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: f
 			_branch(bark, from, tip, r0 * 0.5, r0 * 0.15, BLACKTHORN_WOOD, 3)
 			nodes.append(tip)
 			nodes.append(from.lerp(tip, 0.65))
-			_spine(bark, tip, tip + side * crown * 0.1, r0 * 0.4, BLACKTHORN_WOOD)
+			_spine(bark, tip, tip + side * crown * 0.015, r0 * 0.4, BLACKTHORN_WOOD)
 
 			if not far:
 				var on: Vector3 = from.lerp(tip, rng.randf_range(0.3, 0.9))
 				var spine: Vector3 = (side + Vector3(rng.randfn(), rng.randfn() * 0.5, rng.randfn()) * 0.8).normalized()
-				_spine(bark, on, on + spine * crown * rng.randf_range(0.05, 0.09), r0 * 0.35, BLACKTHORN_WOOD)
+				_spine(bark, on, on + spine * crown * rng.randf_range(0.009, 0.02), r0 * 0.35, BLACKTHORN_WOOD)
 
 		for node in nodes:
 			var n: Vector3 = node
@@ -2553,7 +2553,7 @@ static func _blackthorn(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: f
 				_leaf_spray(leaves, rng, n, Vector3(rng.randfn(), rng.randf_range(-0.3, 0.5), rng.randfn()), crown * 0.11, shade * 1.05)
 
 				if not far and rng.randf() < 0.22 and bool(state["fruit"]):
-					_cluster(bark, rng, n + Vector3(0.0, -crown * 0.04, 0.0), crown * 0.04, SLOE_COLOR, false, rng.randi_range(3, 4))
+					_cluster(bark, rng, n + Vector3(0.0, -crown * 0.04, 0.0), crown * 0.0085, SLOE_COLOR, false, rng.randi_range(3, 4))
 
 	# Leaf sprays low in the bush as well, so it is full from the top down to the ground (Dave 2026-10-23).
 	if not far and not small and not bloom and not bare:
