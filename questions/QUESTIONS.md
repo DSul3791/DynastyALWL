@@ -101,7 +101,7 @@ Note: Tyler recommends Yes because it needs no extra rule beyond catchment and r
 [check]
 
 ## reset-edits-test | Please test Reset all terrain edits. Look for: the holes you dug are gone after the reload, with no errors.
-Note: 0. STOP: do NOT press Reset all terrain edits until Tyler says the evidence copy exists. MikeW is copying your digs.dat and water folder (the dry river channel at x 51605 to 51610, z 69289 to 69364) to a dated folder first, because the reset would wipe that evidence.
+Note: 0. The evidence copy of your dry river now exists, so the reset is safe to test (MikeW copied it first).
 Note: 1. WARNING: this wipes ALL your digs and fills on the server (collapse rubble too). Inventories, characters, buildings, plants, dropped items and tree stumps stay. A backup is taken first by MikeW; do not test before it is done.
 Note: 2. Pull build 698, close the game fully, start it. The HUD should say 698.
 Note: 3. Dig a hole and fill a bit.
