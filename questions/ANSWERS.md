@@ -608,3 +608,7 @@ Answered: 2026-10-23 00:31 UTC
 Answer: No: (no reason given)
 Answered: 2026-10-23 00:31 UTC
 
+## esc-menu-5 | Esc menu: should Quit game sit near the bottom with a short "Leave the game?" confirm click?
+Answer: Yes
+Answered: 2026-10-23 00:32 UTC
+
