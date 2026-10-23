@@ -147,3 +147,9 @@ Note: 1. Stand where the water surface rapidly changes textures (grey shapes at 
 Note: 2. Press F3 so the coordinates show, and take the picture. If you can, take two pictures a second apart.
 Note: 3. In Notes write whether it was near a waterfall, the collapsed tunnel, or open lake, and whether it flickers all the time or only when you move.
 [picture]
+
+## head-ponds-retire | Should we stop making the round stamped pond at the top of each river, and let lakes and rivers start only where the land has a real catch basin (terrain B), at the next bake?
+Note: Today the round pond at the top of the falls is stamped in by a rule (30 to 70 m wide, 10 to 14 m deep, a flat bench, an outlet brook). That is why it looks like a bowl set into the hillside. Plunge pools and the spill channel are stamped too.
+Note: With terrain B, each lake is a natural basin from the land, and the river starts from its overflow and from rain gathering on slopes. Nothing changes until the next bake, and we look at the first natural result with you before it replaces anything.
+Note: Tyler recommends Yes because polishing a stamped bowl will never look natural, and terrain B is already built (switched off for now) and gets its first small test bake tomorrow.
+[check]
