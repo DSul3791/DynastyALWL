@@ -216,6 +216,7 @@ const MID_MIN_TRIANGLES := 500   # trees with fewer triangles than this keep the
 const MID_LOD_SCALE_MIN := 25.0  # ImporterMesh.generate_lods merge angle (degrees)
 const FAR_SHADOWS := [false, false, false, false]   # far-model trees cast no sun shadow (build 453: their shadows fall past the 90 m shadow range, and a part's whole MultiMesh is drawn into every cascade it touches)
 
+var keep_all: bool = false   # look rig (--shot-flora): no plant is removed for placed things or lying logs, so a row always shows what was asked for
 var chunk_m: float = 256.0
 var view_m: PackedFloat32Array = PackedFloat32Array([900.0, 300.0, 120.0])
 var collision_m: float = 160.0
@@ -1259,7 +1260,7 @@ func _under_trunk(p: Vector3) -> bool:
 func _filter_cleared(chunk: Vector2i, redraw: bool) -> void:
 	var entry: Dictionary = _chunks.get(chunk, {})
 
-	if entry.is_empty() or (cleared.is_empty() and trunks.is_empty()):
+	if keep_all or entry.is_empty() or (cleared.is_empty() and trunks.is_empty()):
 		return
 
 	var items: Dictionary = entry["items"]

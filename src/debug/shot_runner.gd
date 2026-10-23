@@ -423,6 +423,8 @@ func _show_flora(now: int) -> void:
 		tag.position = Vector3(x, g + h + 0.5, z)
 		client.add_child(tag)
 
+	client.flora.keep_all = true
+	print("shot runner: flora row: cleared spots %d, lying logs %d, species known %d" % [client.flora.cleared.size(), client.flora.trunks.size(), client.flora._species.size()])
 	var here: Vector2i = Vector2i(int(floor(p.x / client.flora.chunk_m)), int(floor((p.z - 2.4) / client.flora.chunk_m)))
 	var empty: Dictionary = {"ids": PackedInt32Array(), "positions": PackedVector3Array(), "heights": PackedFloat32Array(), "yaws": PackedFloat32Array()}
 
@@ -430,6 +432,8 @@ func _show_flora(now: int) -> void:
 		for dx in range(-1, 2):
 			if dx != 0 or dz != 0:
 				client.flora.set_chunk(here + Vector2i(dx, dz), empty.duplicate(true), p)
+
+			client.rig_flora_hold[here + Vector2i(dx, dz)] = true
 
 	client.flora.set_chunk(here, items, p)
 	_flora_t = now
