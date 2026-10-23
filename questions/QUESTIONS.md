@@ -1,7 +1,3 @@
-## cost-23 | Door, Reinforced: a plank door plus 2 iron ingots (banding) and 30 nails?
-Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
-[check]
-
 ## cost-24 | Door, Wrought iron: 6 iron ingots?
 Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
 [check]
