@@ -1282,3 +1282,7 @@ Answered: 2026-10-23 20:34 UTC
 Answer: No: OK
 Answered: 2026-10-23 20:34 UTC
 
+## allow-mike-pull | NEW PERMISSION ask: let MikeW update your game folder, copy the island tiles and commit them?
+Answer: Yes
+Answered: 2026-10-23 21:24 UTC
+
