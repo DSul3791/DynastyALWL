@@ -1,5 +1,5 @@
 # Blueprint build system (design only; Sal_Crafts, 2026-10-22 22:50; from Dave 22:13-22:48 via Tyler)
-1. A builder's mallet (hotbar tool) replaces building kits. Mouse wheel cycles the piece type (foundation, wall, doorway, window, floor/ceiling, roof, door type) then the tier. The ghost shows green/red as now plus its full cost. Left click places a BLUEPRINT: a see-through piece, no collision, snapped by the same join rules.
+1. A builder's mallet (hotbar tool) replaces building kits. Mouse wheel cycles the piece type (foundation, wall, doorway, window, ceiling, roof, door type) then the tier. The ghost shows green/red as now plus its full cost. Left click places a BLUEPRINT: a see-through piece, no collision, snapped by the same join rules.
 2. Every building STARTS with a foundation (superseded by the 23:08 rules below): other pieces go on or against a foundation or a piece they depend on.
 3. A blueprint stores "needs" (from the tier recipe, e.g. Basic wall 20 twine, 50 thatch, 15 sticks) and "have". Looking at it shows type, tier, items still needed, total cost.
 4. Press E (or drag a stack onto it) to put needed items in from the pack, any order, any time, partial is fine. NPC builders later call the same server action from a chest or their pack.
