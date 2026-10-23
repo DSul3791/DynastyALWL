@@ -142,8 +142,8 @@ Note: Tyler recommends Yes because the voice (Kokoro) is not built yet, and swap
 Note: Tyler recommends Yes because it gives cave-ins their own moment without slowing down every death, and we can add the sequence to other deaths later if you like it.
 [check]
 
-## lake-chunks-pic | Please take a picture of the grey chunks floating over the lake, with the F3 text showing your x, z.
-Note: 1. Stand where you saw the grey chunks (the arc at lake level with the mushroom clusters beside it).
-Note: 2. Press F3 so the coordinates show, and take the picture.
-Note: 3. In Notes write whether it was near a waterfall or near the tunnel that collapsed.
+## lake-chunks-pic | Please take a picture of the lake water surface flickering between textures, with the F3 text showing your x, z.
+Note: 1. Stand where the water surface rapidly changes textures (grey shapes at lake level).
+Note: 2. Press F3 so the coordinates show, and take the picture. If you can, take two pictures a second apart.
+Note: 3. In Notes write whether it was near a waterfall, the collapsed tunnel, or open lake, and whether it flickers all the time or only when you move.
 [picture]
