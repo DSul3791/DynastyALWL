@@ -70,3 +70,19 @@ Note: 3. Climb to the top and hold W: you step onto the edge.
 Note: 1. Open Esc > Settings > Sound test.
 Note: 2. Press the fire sounds one by one.
 [test]
+
+## far-water-2 | Far rivers and lakes: should the flat distant picture of water follow your draw-distance setting, so it costs nothing on Low?
+Note: Far water is the cheap flat picture of rivers and lakes beyond the normal draw range, so walking down a river you do not see the water vanish.
+Note: Low: off. High: 32 m spacing. Ultra: reaches 3 tiles.
+Note: Tyler recommends Yes because players with slow computers lose nothing, and strong computers get the long river views.
+[check]
+
+## river-mouth-dam | If a player dams a river where it meets the sea, should the river back up like a real dam until it goes over or around?
+Note: A dam across the mouth raises the water behind it. If the dam does not reach all the way round, the water finds the low way around.
+Note: Tyler recommends Yes because it is what the water simulation does by itself, so players can learn to read the land.
+[check]
+
+## loose-fill-slope | Should sand and loose soil refuse to be placed on ground steeper than they would slide on ("too steep, it would slide")?
+Note: Sand about 34 degrees, soil about 40, gravel about 38. Stone and rock go anywhere. A hole always fills.
+Note: Tyler recommends Yes because it feels like real dirt without running a sliding simulation (cheap, no lag). A real settling pass can come later.
+[check]

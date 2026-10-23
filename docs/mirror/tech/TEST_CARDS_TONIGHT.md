@@ -32,3 +32,8 @@ Format: T = test card, P = picture card. Threads send lines like these; the Guru
 
 ## Known issue for an owner
 - test_worldgen has 1 failing check ("flora removals survive a server restart"), also failing on generator-v2 without Sonny's changes. Owner proposed: Steve (saving), else Sal.
+
+## NEXT NIGHT (held branches, merge after the backup)
+- T | Please test: craft a rock pile from 45 stones, set it down, press E. Look for: 45 stones back in the pack; hold E instead and you carry the pile. (sal-rock-pile)
+- T | Please test: dig a tunnel in rock off the beach and go under the sea until the ceiling is within about 4 m of the water above, or under a lake or river. Look for: drips falling from the ceiling, a dark wet patch on the floor under each, nothing collecting, no drips once you are more than 4 m under the water. (steve-drip)
+- Kathleen kathleen-wet: wet-tunnel sounds, nothing calls them yet: no test line until steve-drip is merged (then: walk the wet floor and listen for splashes).
