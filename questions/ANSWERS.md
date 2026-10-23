@@ -1166,3 +1166,7 @@ Answered: 2026-10-23 10:26 UTC
 Answer: Yes
 Answered: 2026-10-23 10:26 UTC
 
+## fix-team-tests | Confirm the rule that the team tests first (headless, look rig, showroom) and only human-judgment tests go to you?
+Answer: Yes
+Answered: 2026-10-23 10:26 UTC
+
