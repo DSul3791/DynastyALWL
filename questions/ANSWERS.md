@@ -1194,3 +1194,7 @@ Answered: 2026-10-23 10:29 UTC
 Answer: Yes
 Answered: 2026-10-23 13:14 UTC
 
+## kath-flora-cane-berries | Do the raspberry bush and bramble look like the real plants?
+Answer: No: I don’t know that looks terrible
+Answered: 2026-10-23 13:14 UTC
+
