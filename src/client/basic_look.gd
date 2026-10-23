@@ -144,6 +144,14 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 		"fruit":
 			_sph(parts, 0.07, Vector3(1.0, 0.9, 1.0), Vector3(0.0, -0.01, 0.0), color)
 			_cyl(parts, 0.006, 0.04, Vector3(0.0, 0.055, 0.0), Vector3.ZERO, Color(0.3, 0.22, 0.12))
+		"round_berries":
+			# Wild blueberries (Dave's photos): a handful of round dusky-blue berries, each with a small dark star crown on top.
+			var round_spots: Array = [[0.0, 0.0, 0.0], [0.03, 0.0, 0.0], [-0.03, 0.0, 0.0], [0.0, 0.0, 0.03], [0.0, 0.0, -0.03], [0.022, 0.0, 0.024], [-0.022, 0.0, 0.024], [0.022, 0.0, -0.024], [-0.022, 0.0, -0.024], [0.0, 0.03, 0.0], [0.016, 0.028, 0.012], [-0.016, 0.028, -0.012]]
+
+			for spot in round_spots:
+				var at: Vector3 = Vector3(float(spot[0]), float(spot[1]) + 0.02, float(spot[2]))
+				_sph(parts, 0.018, Vector3.ONE, at, color)
+				_sph(parts, 0.006, Vector3(1.0, 0.5, 1.0), at + Vector3(0.0, 0.016, 0.0), color.darkened(0.55))
 		"berries":
 			# A raspberry: a red dome of small round drupelets in rings, a few unripe yellow-green ones, a green cap of sepals on top.
 			var ring: Array = [[0.0, 0.0, 1], [0.026, 0.016, 6], [0.04, -0.004, 9]]

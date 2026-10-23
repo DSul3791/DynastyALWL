@@ -1538,10 +1538,10 @@
 			"shape": "shrub",
 			"model": "blueberry",
 			"height_m": [
-				0.6,
-				1.2
+				0.25,
+				0.5
 			],
-			"crown_m": 0.6,
+			"crown_m": 0.35,
 			"trunk_m": 0.0,
 			"color": [
 				0.28,

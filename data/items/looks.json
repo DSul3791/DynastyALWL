@@ -941,8 +941,8 @@
    "size": 1.0
   },
   "blueberries": {
-   "shape": "berries",
-   "color": "#3b4f9a",
+   "shape": "round_berries",
+   "color": "#34487e",
    "size": 1.0
   },
   "raspberries": {

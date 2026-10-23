@@ -2184,7 +2184,7 @@ const SHRUB_LOOKS := {
 	"bramble": {"canes": [6, 9], "arch": 0.9, "reach": 1.0, "cane": Color(0.50, 0.30, 0.30), "leaf": 1.2, "fruit": Color(0.35, 0.10, 0.55), "unripe": Color(1.0, 0.25, 0.25), "flower": Color(1.0, 0.9, 0.9), "thorns": true},
 	"wild_rose": {"canes": [5, 7], "arch": 0.7, "reach": 1.1, "cane": Color(0.45, 0.30, 0.22), "leaf": 0.8, "fruit": Color(1.0, 0.18, 0.1), "unripe": Color(1.0, 0.55, 0.3), "flower": Color(1.0, 0.6, 0.75), "thorns": true},
 	"blackthorn": {"canes": [14, 18], "base": 0.2, "arch": 0.55, "reach": 1.4, "rate": 0.12, "cane": Color(0.20, 0.17, 0.15), "leaf": 0.32, "fruit": Color(0.4, 0.45, 0.9), "unripe": Color(0.5, 0.6, 0.5), "flower": null, "thorns": true},
-	"blueberry": {"canes": [8, 12], "arch": 0.15, "reach": 0.8, "rate": 0.2, "cane": Color(0.50, 0.38, 0.28), "leaf": 0.5, "fruit": Color(0.35, 0.45, 1.0), "unripe": Color(0.7, 0.9, 0.6), "flower": null, "thorns": false},
+	"blueberry": {"canes": [16, 22], "arch": 0.1, "reach": 0.7, "rate": 0.5, "cluster": 0.06, "cane": Color(0.50, 0.38, 0.28), "leaf": 0.4, "fruit": Color(0.30, 0.38, 0.85), "unripe": Color(0.75, 0.9, 0.55), "flower": null, "thorns": false},
 }
 
 
@@ -2235,10 +2235,10 @@ static func _cane_shrub(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 			var low: Vector3 = at + Vector3(0.0, -leaf_size * 0.95, 0.0) + out * leaf_size * 0.3
 			# Flowers where the plant has them, otherwise (and mixed in) fruit, some of it unripe.
 			if look["flower"] != null and rng.randf() < 0.5:
-				_cluster(bark, rng, low + Vector3(0.0, leaf_size * 1.1, 0.0), crown * 0.14, look["flower"], true, rng.randi_range(5, 7))
+				_cluster(bark, rng, low + Vector3(0.0, leaf_size * 1.1, 0.0), crown * float(look.get("cluster", 0.14)), look["flower"], true, rng.randi_range(5, 7))
 			elif look["fruit"] != null:
 				var ripe: bool = rng.randf() < 0.75
-				_cluster(bark, rng, low, crown * 0.14, look["fruit"] if ripe else look["unripe"], false, rng.randi_range(6, 9))
+				_cluster(bark, rng, low, crown * float(look.get("cluster", 0.14)), look["fruit"] if ripe else look["unripe"], false, rng.randi_range(3, 8) if look.has("cluster") else rng.randi_range(6, 9))
 
 
 static func _raspberry(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
