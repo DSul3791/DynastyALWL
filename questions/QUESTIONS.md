@@ -25,3 +25,8 @@ Note: 4. Tell Tyler 'lake dump done' and which spot.
 Note: 5. Answer Yes if the dump button worked and the patches vanished with Ctrl+Shift+W, else No with Notes.
 Note: Recommendation: Yes: the dump gives the exact water cells and levels under the patches so I can see what the drawing is fed with.
 [test]
+
+## test-floating-soil | Mined soil lies in the hole
+Note: 1. Fill your pack with soil or stone until it is full. 2. Dig down under your own feet. 3. Look at the dug soil: does it lie in the hole (not float in the air)? Build 711 or newer.
+Note: Tyler recommends: Yes if it lies on the ground, because Steve's fix and unit tests pass but the rig cannot dig, so only you can check it in game.
+[test]
