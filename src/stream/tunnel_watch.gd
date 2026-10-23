@@ -19,6 +19,7 @@ const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const CELL_M := 2.0
 const QUAKE_EVERY_MSEC := 500
 const QUAKE_RANGE_M := 40.0
+const MIN_WARNING_MSEC := 90000             # the shaking never leaves less than this before a fall
 const MAX_FILLS_PER_COLLAPSE := 60
 const FILL_RADIUS_M := 1.5
 
@@ -208,8 +209,25 @@ func set_enabled(on: bool) -> void:
 	start()
 
 
-func set_cave_in_s(seconds: float) -> void:
+# The setting applies to windows already running too (Dave 2026-10-23: he dug, set 2 minutes, and the old clocks ran on): every cell gets the new
+# length, keeps the time already used, and if that is already past the new end it falls 90 s from now (the minimum warning).
+func set_cave_in_s(seconds: float, now_msec: int = 0) -> void:
 	cave_in_s = clampf(seconds, CAVE_IN_MIN_S, CAVE_IN_MAX_S)
+
+	if quiet_s <= 0.0:
+		return
+
+	var grace_ms: int = int((quiet_s + cave_in_s) * 1000.0)
+	_mutex.lock()
+
+	for key in _cells:
+		var cell: Dictionary = _cells[key]
+		cell["grace_ms"] = grace_ms
+
+		if now_msec - int(cell["opened"]) > grace_ms - MIN_WARNING_MSEC:
+			cell["opened"] = now_msec - (grace_ms - MIN_WARNING_MSEC)
+
+	_mutex.unlock()
 
 
 static func _stage_share(f: float, q: float) -> float:

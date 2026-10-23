@@ -1144,7 +1144,7 @@ func _on_tunnel_setting(peer: int, on: bool, cave_in_s: int) -> void:
 		net.tunnel_settings.rpc_id(peer, tunnels.enabled, int(tunnels.cave_in_s))
 		return
 
-	tunnels.set_cave_in_s(float(cave_in_s))
+	tunnels.set_cave_in_s(float(cave_in_s), Time.get_ticks_msec())
 	tunnels.set_enabled(on)
 	var file: FileAccess = FileAccess.open(_store_path + "/tunnel_settings.json", FileAccess.WRITE)
 
