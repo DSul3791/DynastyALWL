@@ -257,6 +257,9 @@ func _build_admin() -> void:
 
 		_c.net.inventory_action.rpc_id(1, Net.ACT_ADMIN_MODE, 1 if on else 0, 0, 0, Vector3.ZERO))
 	_button(admin, "Reset all terrain edits", func(): show_page("reset_edits"))
+	_button(admin, "Dump water here (to a file on the server)", func():
+		var here: Vector3 = _c.body.global_position
+		_c.net.inventory_action.rpc_id(1, Net.ACT_DUMP_WATER, 0, 0, 0, here))
 	_button(admin, "Clear blocks (reload from the server)", func(): _c._ask_clear_cache())
 	_button(admin, "Show my player key (and copy it)", func():
 		var key: String = _c.items.player_key() if _c.items != null else ""
