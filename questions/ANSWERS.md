@@ -728,3 +728,7 @@ Answered: 2026-10-23 00:50 UTC
 Answer: No: Look at my previous answer
 Answered: 2026-10-23 00:50 UTC
 
+## cost-19 | Large foundation 1x1: 30 stone, 10 clay and 4 mortar?
+Answer: No: Look at my previous answer
+Answered: 2026-10-23 00:50 UTC
+
