@@ -22,7 +22,7 @@ const MAX_DROPPED_NEAR := 64             # loose dropped items allowed within DR
 const DROP_CROWD_M := 12.0
 const MERGE_M := 1.0                     # a stackable drop landing this close to the same kind on the ground joins it (Dave 2026-10-23, rock piles)
 const PILE_MIN := 6                      # a ground item holding this many is a pile (the client draws it from the count)
-const PILE_HANDFUL := 5                  # one E on a pile takes this many
+const PILE_HANDFUL := 5                  # one E on a pile takes this many when the item has no "pile" row in items.json
 const PILE_CAP := 100000                 # most one ground item holds; more starts a second pile beside it
 const PILE_LIFETIME_S := 7200.0          # a pile lives this long after the last add or take (loose items keep WORLD_ITEM_LIFETIME_S)
 const WORLD_ITEM_LIFETIME_S := 1200.0    # real seconds until a dropped item despawns
@@ -2005,7 +2005,7 @@ func _pickup(peer: int, inv, id: int, wanted: int = 0) -> void:
 	var want: int = int(it["count"])
 
 	if want >= PILE_MIN:
-		want = mini(want, wanted if wanted > 0 else PILE_HANDFUL)
+		want = mini(want, wanted if wanted > 0 else int(table.entry(table.id_of(int(it["number"]))).get("pile", {}).get("handful", PILE_HANDFUL)))
 
 	var fits: int = _fit(peer, inv, int(it["number"]), want)
 

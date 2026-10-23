@@ -1674,8 +1674,8 @@ func _refresh_pile(id: int) -> void:
 	if box == null or int(entry.get("state", 0)) != 0:
 		return
 
-	if PileLookScript.is_pile(item_id, int(entry["count"])):
-		box.mesh = PileLookScript.mesh_for(item_id, int(entry["count"]), id)
+	if PileLookScript.is_pile(table.entry(item_id), int(entry["count"])):
+		box.mesh = PileLookScript.mesh_for(item_id, table.entry(item_id), int(entry["count"]), id)
 		box.scale = Vector3.ONE
 		box.rotation = Vector3.ZERO
 		entry["pile"] = true

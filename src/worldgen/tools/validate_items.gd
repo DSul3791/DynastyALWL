@@ -143,6 +143,13 @@ func _init() -> void:
 		var item: Dictionary = items_file["items"][id]
 		var description: String = String(item.get("description", ""))
 
+		if item.has("pile"):   # bulk items drawn as a pile on the ground (PileLook) and taken by the handful
+			var pile: Dictionary = item["pile"]
+			var tint: Array = pile.get("color", [])
+
+			if not ["pyramid", "mound"].has(String(pile.get("shape", ""))) or int(pile.get("handful", 0)) < 1 or tint.size() != 3 or float(pile.get("rock", 0.0)) <= 0.0 or float(pile.get("squash", 0.0)) <= 0.0:
+				fail("items.json: '%s' pile row needs shape pyramid or mound, handful 1 or more, color [r, g, b], rock and squash above 0" % id)
+
 		# Every core item has a one-line description, a value and (unless it is a placed structure) its own weight.
 		if description == "" or description.length() > 110 or not description.ends_with("."):
 			fail("items.json: '%s' needs a one-line description of up to 110 characters ending in a full stop" % id)
