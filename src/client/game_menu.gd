@@ -4,6 +4,7 @@ extends RefCounted
 # (green On / red Off), the sound test as its own scrolling page, and one Admin button at the bottom for the developer buttons
 # (SHOW_ADMIN false hides it). Moved out of terrain_client.gd; it drives the client through `_c`.
 
+const Net := preload("res://src/stream/terrain_net.gd")
 const MenuSwitch := preload("res://src/client/menu_switch.gd")
 
 const SHOW_ADMIN := true
@@ -246,6 +247,7 @@ func _build_admin() -> void:
 	_button(admin, "Rebuild the starter ground (slow, 5 to 10 min)", func():
 		var problem: String = _c._bake.start()
 		note.text = "Baking the starter tiles in the background (about 5 to 10 minutes). The game stays usable; the result shows here." if problem == "" else problem)
+	_button(admin, "Clear dropped items within 50 m", func(): _c.net.inventory_action.rpc_id(1, Net.ACT_CLEAR_DROPS, 50, 0, 0, Vector3.ZERO))
 	_button(admin, "Developer tools", func(): show_page("developer"))
 	_button(admin, "Back", func(): show_page("main"))
 
