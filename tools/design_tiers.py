@@ -166,37 +166,35 @@ def log_row(d, rng, x0, x1, y, dia, bark):
 
 
 def wall_log(rng):
-    """A real log-cabin corner (round saddle notch): every log is rounder than the row it sits in, so it overlaps the row below by 10 cm and its
-    underside is cut away (the saddle) where the crossing log lies. Rows alternate: where this wall's log runs through and sticks out, the other
-    wall's log shows end-on (circle) on the next course, tucked up into the notch. The two ends of a wall are opposite."""
+    """Round logs of THIS wall only, stacked like the first design. The two ends are offset: at the left end the even courses run through (a short stub with a
+    round end), the odd courses stop 40 cm short and leave an open space; at the right end it is the other way round. The open spaces are where the log of a
+    wall that joins here passes through, so the logs interlock. No curved notch."""
     w, h = WALL
     img = canvas((w, h), (34, 26, 16))
     d = ImageDraw.Draw(img)
-    step, dia = 40, 47
-    n = h // step + 1
+    dia = 45
+    gap_w = 44
     end = (212, 180, 126)
 
-    for i in range(n - 1, -1, -1):           # bottom row first, so each log lies over the one below
-        y = i * step - 8
+    for i in range(h // dia + 1):
+        y = i * dia
         bark = tint((132, 96, 58), rng.uniform(0.85, 1.1))
         left_through = i % 2 == 0
         right_through = not left_through
-        x0 = 2 if left_through else 46
-        x1 = w - 2 if right_through else w - 46
+        x0 = 2 if left_through else gap_w
+        x1 = w - 2 if right_through else w - gap_w
         log_row(d, rng, x0, x1, y, dia, bark)
-        d.line([(x0, y + dia - 2), (x1, y + dia - 2)], fill=(30, 20, 10), width=3)               # the dark line where this log lies on the one below
-        d.line([(x0, y + 1), (x1, y + 1)], fill=(184, 176, 128), width=1)
+        d.line([(x0, y + 1), (x1, y + 1)], fill=(184, 176, 128), width=2)
 
-        for side, through in ((0, left_through), (1, right_through)):
-            cx = 24 if side == 0 else w - 24
-            ex = 2 if side == 0 else w - 2
+        if left_through:
+            d.ellipse([x0 - 8, y + 5, x0 + 6, y + dia - 5], fill=end, outline=(120, 84, 48))
+        else:
+            d.rectangle([0, y + 2, gap_w - 2, y + dia - 2], fill=(10, 7, 4))        # the open space for the joining wall's log
 
-            if through:
-                d.ellipse([ex - 10 if side == 0 else ex - 4, y + 5, ex + 4 if side == 0 else ex + 10, y + dia - 5], fill=end, outline=(120, 84, 48))
-                d.pieslice([cx - 17, y + dia - 20, cx + 17, y + dia + 12], 180, 360, fill=tint(bark, 0.35))              # the saddle notch under the log
-            else:
-                d.ellipse([cx - 22, y + 8, cx + 22, y + dia + 4], fill=end, outline=(120, 84, 48))                      # the other wall's log end, tucked into the notch
-                d.ellipse([cx - 10, y + 20, cx + 10, y + dia - 8], outline=(170, 130, 80))                              # growth rings
+        if right_through:
+            d.ellipse([x1 - 6, y + 5, x1 + 8, y + dia - 5], fill=end, outline=(120, 84, 48))
+        else:
+            d.rectangle([w - gap_w + 2, y + 2, w, y + dia - 2], fill=(10, 7, 4))
 
     return img
 
@@ -238,6 +236,25 @@ def voronoi(rng, w, h, cells):
     dist = np.sqrt((xx[..., None] - pts[:, 0]) ** 2 + (yy[..., None] - pts[:, 1]) ** 2)
     order = np.sort(dist, axis=2)
     return order[..., 0], order[..., 1], np.argmin(dist, axis=2)
+
+
+def floor_cobble_look(rng):
+    w, h = FLOOR
+    d1, d2, cid = voronoi(rng, w, h, (6, 6))
+    edge = d2 - d1
+    tints = rng.uniform(0.7, 1.15, cid.max() + 1)
+    warm = rng.uniform(-14, 14, cid.max() + 1)
+    stone = np.clip(1.0 - np.exp(-edge / 7.0), 0, 1)
+    shade = 0.62 + 0.5 * stone ** 0.8
+    a = np.zeros((h, w, 3), dtype=np.float32)
+    base = np.array([138, 132, 122], dtype=np.float32)
+
+    for c in range(3):
+        a[..., c] = (base[c] + warm[cid] * (1 if c == 0 else -0.4 if c == 2 else 0.2)) * tints[cid] * shade
+
+    m = (edge < 5.0)[..., None]
+    a = np.where(m, np.array([176, 166, 140], dtype=np.float32) * (0.82 + 0.25 * noise(rng, w, h, 2)[..., None]), a)
+    return Image.fromarray(np.clip(a, 0, 255).astype(np.uint8))
 
 
 def wall_cobble(rng):
@@ -749,7 +766,7 @@ def roof_pieces(out):
     d.text((24, 10), "ROOF PIECES AND PILLARS (60 px = 1 m)", fill=(240, 240, 240), font=font(22))
     shingle = (190, 150, 100)
 
-    for n, (deg, rise) in enumerate(((45, 2.0), (65, 4.29))):          # side view: a 4 m wide house, 2.4 m walls, a gable roof
+    for n, (deg, rise) in enumerate(((45, 2.0), (65, 0.93))):          # side view: a 4 m wide house, 2.4 m walls, a gable roof
         ox, oy = 40 + n * 330, 60
         top = oy + 430
         wall_top = top - int(2.4 * k)
@@ -762,7 +779,7 @@ def roof_pieces(out):
             d.line([(ox - 10 + f * (2 * k + 10), yy), (ox + 4 * k + 10 - f * (2 * k + 10), yy)], fill=(130, 100, 64), width=1)
 
         run = 2.0
-        d.text((ox, top + 6), "%d degrees: 2 m run, rise %.1f m, slope %.2f m" % (deg, rise, (run * run + rise * rise) ** 0.5), fill=(250, 220, 140), font=font(12))
+        d.text((ox, top + 6), "%d degrees%s: 2 m run, rise %.2f m, slope %.2f m" % (deg, "" if deg == 45 else " (from the vertical: a low 25 degree pitch)", rise, (run * run + rise * rise) ** 0.5), fill=(250, 220, 140), font=font(12))
         d.text((ox + 4, top + 24), "walls 2.4 m, house 4 m wide", fill=(170, 170, 170), font=font(11))
 
     # plan views of the pieces (seen from above); arrow = downhill, dashed = ridge or hip line
@@ -849,40 +866,47 @@ def ceil_plank(rng):
 
 
 def ceil_fine(rng):
-    img = floor_fine(rng)
+    w, h = FLOOR
+    img = canvas((w, h), (160, 120, 78))                   # full-length planed boards: no cross strips, no nail rows
     d = ImageDraw.Draw(img)
 
-    for y in (0, 138):
-        d.rectangle([0, y, FLOOR[0], y + 24], fill=(150, 112, 70), outline=(100, 70, 44))
+    for x in range(0, w, 22):
+        col = tint((206, 166, 112), rng.uniform(0.93, 1.07))
+        d.rectangle([x, 0, x + 20, h], fill=col)
+        d.line([(x + 21, 0), (x + 21, h)], fill=(90, 62, 36), width=1)
+
+        for _ in range(3):
+            gx = x + int(rng.integers(3, 18))
+            gy = int(rng.integers(0, h - 100))
+            d.line([(gx, gy), (gx, gy + int(rng.integers(40, 120)))], fill=tint(col, 0.88), width=1)
 
     return img
 
 
 def ceil_log(rng):
+    """Seen from below: the rounded undersides of half-logs side by side (the top of each is a flat wide board face, not seen from here)."""
     w, h = FLOOR
-    img = canvas((w, h), (40, 28, 16))
+    img = canvas((w, h), (30, 20, 10))
     d = ImageDraw.Draw(img)
+    pw = 50
 
-    for x in range(0, w, 40):                # round log joists with the planks laid across
-        d.rectangle([x + 2, 0, x + 38, h], fill=tint((130, 94, 56), rng.uniform(0.85, 1.1)), outline=(60, 40, 22))
-        d.line([(x + 12, 0), (x + 12, h)], fill=(160, 120, 76), width=2)
+    for x in range(0, w, pw):
+        col = tint((132, 96, 58), rng.uniform(0.88, 1.08))
+
+        for k in range(pw - 2):
+            f = 0.5 + 0.55 * np.sin(np.pi * (k + 0.5) / float(pw - 2))
+            d.line([(x + k + 1, 0), (x + k + 1, h)], fill=tint(col, f))
+
+        for _ in range(5):
+            gx = x + int(rng.integers(6, pw - 6))
+            gy = int(rng.integers(0, h - 80))
+            d.line([(gx, gy), (gx, gy + int(rng.integers(30, 90)))], fill=tint(col, 0.6), width=1)
 
     return img
 
 
 def ceil_cobble(rng):
-    w, h = FLOOR
-    img = canvas((w, h), (50, 36, 22))
-    d = ImageDraw.Draw(img)
-    x = 0
-
-    while x < w:                             # heavy squared beams close together with a plank between
-        bw = 56
-        d.rectangle([x, 0, x + bw, h], fill=tint((112, 82, 50), rng.uniform(0.9, 1.08)), outline=(50, 34, 20))
-        d.rectangle([x + bw, 0, x + bw + 14, h], fill=(150, 116, 74))
-        x += bw + 14
-
-    return img
+    return floor_cobble_look(rng)
 
 
 def ceil_mason(rng):
@@ -923,43 +947,105 @@ def roof_tar(rng):
 
 
 def braces(out):
-    """Tunnel and cellar braces (timber sets) in three widths: 1.5, 3 and 5 m; front view, 60 px per metre, 2.4 m high, with a side view of the lagging."""
+    """Braces in three widths, 1.5, 3 and 5 m, made of round logs and wooden pins (dowels), in two kinds: plain log and tar-soaked log (nearly black, never rots)."""
     k = 60
+    img = canvas((900, 700), (34, 34, 38))
+    d = ImageDraw.Draw(img)
+    d.text((24, 10), "BRACES: logs and wooden pins; plain (top), tar-soaked (bottom); 60 px = 1 m", fill=(240, 240, 240), font=font(20))
+
+    def log_v(x0, x1, y0, y1, col):
+        for xx in range(x0, x1):
+            f = 0.55 + 0.5 * np.sin(np.pi * (xx - x0 + 0.5) / max(x1 - x0, 1))
+            d.line([(xx, y0), (xx, y1)], fill=tint(col, f))
+
+    def log_h(x0, x1, y0, y1, col):
+        for yy in range(y0, y1):
+            f = 0.55 + 0.5 * np.sin(np.pi * (yy - y0 + 0.5) / max(y1 - y0, 1))
+            d.line([(x0, yy), (x1, yy)], fill=tint(col, f))
+
+    def pin(cx, cy, tar):
+        d.ellipse([cx - 4, cy - 4, cx + 4, cy + 4], fill=(120, 96, 60) if tar else (210, 176, 120), outline=(20, 14, 8))
+
+    for row, tar in enumerate((False, True)):
+        col = (78, 66, 58) if tar else (134, 98, 60)
+        y_base = 40 + row * 300
+        x = 40
+
+        for wd, post, label in ((1.5, 0.2, "small 1.5 m"), (3.0, 0.26, "medium 3 m: + slanting logs"), (5.0, 0.32, "large 5 m: double cap, centre post")):
+            top, bot = y_base + 40, y_base + 40 + int(2.4 * k)
+            wpx = int(wd * k)
+            pw = int(post * k)
+            d.rectangle([x, top, x + wpx, bot], fill=(30, 26, 22))
+            log_v(x, x + pw, top, bot, col)
+            log_v(x + wpx - pw, x + wpx, top, bot, col)
+            cap = int(post * k)
+            log_h(x - 8, x + wpx + 8, top - cap, top, col)
+
+            if wd >= 5.0:
+                log_h(x - 8, x + wpx + 8, top - 2 * cap, top - cap, col)
+                log_v(x + wpx // 2 - pw // 2, x + wpx // 2 + pw // 2, top, bot, col)
+
+            if wd >= 3.0:                    # angled log braces from each post up to the cap
+                bl = int(0.9 * k)
+
+                for sgn in (-1, 1):
+                    px = x + pw if sgn < 0 else x + wpx - pw
+                    dx = bl if sgn < 0 else -bl
+                    d.polygon([(px, top + bl - 9), (px, top + bl + 9), (px + dx, top + 9), (px + dx, top - 9)], fill=col, outline=(20, 14, 8))      # a slanting log
+                    pin(px + (12 if sgn < 0 else -12), top + bl - 2, tar)
+                    pin(px + dx - (12 if sgn < 0 else -12), top + 2, tar)
+
+            for px in (x + pw // 2, x + wpx - pw // 2):
+                pin(px, top + 12, tar)
+                pin(px, top - cap // 2, tar)
+
+            if tar:
+                for xx in range(x + 4, x + wpx - 4, 11):                                  # tar gloss streaks
+                    d.line([(xx, top + 6), (xx, top + 30)], fill=(88, 84, 92), width=1)
+
+            d.text((x, bot + 10), label, fill=(250, 220, 140), font=font(11))
+            x += wpx + 90
+
+    d.text((40, 670), "Pins are short wooden dowels through the joints (dark ring = the hole). Tar-soaked braces almost never degrade.", fill=(200, 200, 200), font=font(12))
+    img.save(out)
+
+
+def floor_frames(out):
+    """Cobblestone and mason floors: a wooden floor or log frame underneath, stone on top. Top view and underside."""
+    k = 100
     img = canvas((1100, 560), (34, 34, 38))
     d = ImageDraw.Draw(img)
-    d.text((24, 10), "BRACES: three widths, front view (60 px = 1 m, 2.4 m high)", fill=(240, 240, 240), font=font(22))
-    wood = (150, 110, 68)
-    dark = (96, 68, 40)
-    x = 40
+    d.text((24, 10), "STONE FLOORS AND CEILINGS: stone on top, log frame under (2 m square piece, 100 px = 1 m)", fill=(240, 240, 240), font=font(18))
+    rng = rng_for(77)
+    cob = floor_cobble_look(rng).resize((2 * k, 2 * k))
+    blk = floor_block(rng).resize((2 * k, 2 * k))
+    img.paste(cob, (40, 70))
+    img.paste(blk, (300, 70))
+    d.text((40, 280), "cobblestone top", fill=(250, 220, 140), font=font(12))
+    d.text((300, 280), "mason top", fill=(250, 220, 140), font=font(12))
 
-    for wd, post, cap, label, note in ((1.5, 0.18, 0.2, "small 1.5 m", "two posts, cap beam"), (3.0, 0.24, 0.26, "medium 3 m", "posts, cap beam, corner braces"),
-                                       (5.0, 0.3, 0.34, "large 5 m", "thick posts, double cap beam, corner braces, centre prop")):
-        top, bot = 90, 90 + int(2.4 * k)
-        wpx = int(wd * k)
-        d.rectangle([x, top, x + wpx, bot], fill=(40, 34, 28))                                      # the dark opening behind
-        d.rectangle([x, top, x + int(post * k), bot], fill=wood, outline=(40, 26, 14))             # left post
-        d.rectangle([x + wpx - int(post * k), top, x + wpx, bot], fill=wood, outline=(40, 26, 14))  # right post
-        d.rectangle([x - 6, top - int(cap * k), x + wpx + 6, top], fill=dark, outline=(40, 26, 14))   # cap beam
+    def under(ox, oy, planks):
+        d.rectangle([ox, oy, ox + 2 * k, oy + 2 * k], fill=(60, 44, 28), outline=(230, 230, 230))
 
-        if wd >= 5.0:
-            d.rectangle([x - 6, top - int(cap * k) * 2, x + wpx + 6, top - int(cap * k)], fill=wood, outline=(40, 26, 14))     # a second cap beam
+        if planks:
+            for xx in range(ox + 26, ox + 2 * k - 58, 36):
+                d.rectangle([xx, oy + 24, xx + 32, oy + 2 * k - 20], fill=(150, 114, 70), outline=(60, 40, 22))
 
-        if wd >= 3.0:
-            for sgn in (-1, 1):                                                                       # corner braces
-                cx = x + int(post * k) if sgn < 0 else x + wpx - int(post * k)
-                bl = int(0.7 * k)
-                pts = [(cx, top), (cx + sgn * -1 * bl, top), (cx, top + bl)] if sgn < 0 else [(cx, top), (cx - bl, top), (cx, top + bl)]
-                d.polygon([(cx, top), (cx + (bl if sgn < 0 else -bl), top), (cx, top + bl)], fill=wood, outline=(40, 26, 14))
+        for (x0, y0, x1, y1) in ((ox, oy, ox + 2 * k, oy + 22), (ox, oy + 2 * k - 22, ox + 2 * k, oy + 2 * k), (ox, oy, ox + 22, oy + 2 * k), (ox + 2 * k - 22, oy, ox + 2 * k, oy + 2 * k)):
+            for t in range(max(x1 - x0, y1 - y0)):
+                pass
 
-        if wd >= 5.0:
-            mx = x + wpx // 2
-            d.rectangle([mx - 8, top, mx + 8, bot], fill=wood, outline=(40, 26, 14))             # centre prop
+            d.rectangle([x0, y0, x1, y1], fill=(120, 86, 52), outline=(40, 26, 14))                 # the half-log along each edge: flat face up, rounded down
 
-        d.text((x, bot + 12), label, fill=(250, 220, 140), font=font(14))
-        d.text((x, bot + 32), note, fill=(200, 200, 200), font=font(11))
-        x += wpx + 70
+        for t in range(1, 4):                                                                            # shading hint on the round face
+            d.line([(ox + 30, oy + 11 - t * 2), (ox + 2 * k - 30, oy + 11 - t * 2)], fill=(150, 110, 70), width=1)
 
-    d.text((40, 470), "Behind the posts and over the cap beam: lagging (rough boards) holds the earth. Posts stand on the floor, cap beam carries the roof of the tunnel.", fill=(200, 200, 200), font=font(12))
+    under(560, 70, True)
+    under(820, 70, False)
+    d.text((560, 280), "cobblestone underside", fill=(250, 220, 140), font=font(12))
+    d.text((820, 280), "mason underside", fill=(250, 220, 140), font=font(12))
+    d.text((40, 330), "Each piece has a log split in half, one half-log along each of the four edges (quarters), so floors and ceilings line up with the wall pieces. (Plank floor under the stones on the cobblestone piece.)", fill=(200, 200, 200), font=font(12))
+    d.text((40, 352), "Cobblestone floors keep a full plank floor under the stones; mason floors are stone blocks carried on the log frame.", fill=(200, 200, 200), font=font(12))
     img.save(out)
 
 
@@ -1027,7 +1113,7 @@ def main():
     out = sys.argv[1] if len(sys.argv) > 1 else "."
     os.makedirs(out, exist_ok=True)
     sheet("WALLS: 2 m wide, 2.4 m high (seen from outside)", [wall_basic, wall_plank, wall_fine, wall_log, wall_cobble, wall_mason], WALL, os.path.join(out, "tiers_walls.png"),
-          ["woven rods, stakes, straw on top", "smooth rounded out, rough flat in", "lapped boards, nails, trim", "corners interlock, notches opposite", "round stones, thick mortar", "large carved blocks, plinth"])
+          ["woven rods, stakes, straw on top", "smooth rounded out, rough flat in", "lapped boards, nails, trim", "offset ends, open spaces to interlock", "round stones, thick mortar", "large carved blocks, plinth"])
     sheet("FLOORS: 2 m square (seen from above)", [floor_basic, floor_plank, floor_fine, floor_log, floor_flag, floor_block], FLOOR, os.path.join(out, "tiers_floors.png"),
           ["beaten earth, straw, woven mat", "rough planks, gaps, pegs", "planed boards, nail pairs", "split logs, flat side up", "flagstone, narrow joints", "cut stone blocks, tight joints"])
     sheet("ROOFS: 2.4 m square (seen from above, eave at the bottom)", [roof_thatch, roof_plank, roof_fine, roof_log, roof_slab, roof_stone], ROOF, os.path.join(out, "tiers_roofs.png"),
@@ -1037,9 +1123,10 @@ def main():
     log_corner(os.path.join(out, "tiers_log_corner.png"))
     roof_pieces(os.path.join(out, "tiers_roof_pieces.png"))
     sheet("CEILINGS: 2 m square (seen from below, inside the room)", [ceil_basic, ceil_plank, ceil_fine, ceil_log, ceil_cobble, ceil_mason], FLOOR, os.path.join(out, "tiers_ceilings.png"),
-          ["pole rafters, straw between", "rough planks on beams", "planed boards on beams", "round log joists, planks", "heavy beams, planks between", "coffered dressed stone"])
+          ["pole rafters, straw between", "rough planks on beams", "full-length planed boards", "rounded log undersides", "cobblestones in mortar", "coffered dressed stone"])
     sheet("FLAT ROOF: 2.4 m square (seen from above)", [roof_tar], ROOF, os.path.join(out, "tiers_flat_roof.png"), ["boards under black tar, raised lip"])
     braces(os.path.join(out, "tiers_braces.png"))
+    floor_frames(os.path.join(out, "tiers_floor_frames.png"))
     parts = [Image.open(os.path.join(out, n)) for n in ("tiers_walls.png", "tiers_floors.png", "tiers_roofs.png")]
     allimg = canvas((max(p.width for p in parts), sum(p.height for p in parts)), (34, 34, 38))
     y = 0
