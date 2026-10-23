@@ -33,7 +33,7 @@ func build(h: PackedFloat32Array, sea: PackedByteArray, grid: int, min_depth_m: 
 	order.clear()
 	lakes.clear()
 	_flood(h, sea)
-	receiver = _parent
+	_route(h, sea)
 	_label(h, sea, min_depth_m)
 
 
@@ -104,6 +104,76 @@ func _flood(h: PackedFloat32Array, sea: PackedByteArray) -> void:
 					var q: int = maxi(clampi(int(filled[neighbor] * BUCKETS_PER_M), 0, high + 1), slot)
 					next[neighbor] = head[q]
 					head[q] = neighbor
+
+
+# Flow directions. Inside a lake (filled above ground) water follows the flood parent toward the outlet; on
+# land it takes the steepest drop on the filled surface, so slopes drain the way they lean. Only flat
+# ground with no lower neighbour falls back to the flood parent. Then `order` is rebuilt (receivers first).
+func _route(h: PackedFloat32Array, sea: PackedByteArray) -> void:
+	var total: int = size * size
+	receiver = _parent.duplicate()
+	var indegree: PackedInt32Array = PackedInt32Array()
+	indegree.resize(total)
+
+	for index in range(total):
+		if sea[index] == 1 or filled[index] - h[index] > WATER_EPSILON_M:
+			continue
+
+		@warning_ignore("integer_division")
+		var row: int = index / size
+		var column: int = index % size
+		var best: int = -1
+		var best_slope: float = 0.0
+
+		for dz in range(-1, 2):
+			var nr: int = row + dz
+
+			if nr < 0 or nr >= size:
+				continue
+
+			for dc in range(-1, 2):
+				var nc: int = column + dc
+
+				if (dc == 0 and dz == 0) or nc < 0 or nc >= size:
+					continue
+
+				var neighbor: int = nr * size + nc
+				var drop: float = filled[index] - filled[neighbor]
+
+				if dc != 0 and dz != 0:
+					drop /= 1.4142
+
+				if drop > best_slope + 1.0e-5:
+					best_slope = drop
+					best = neighbor
+
+		if best >= 0:
+			receiver[index] = best
+
+	for index in range(total):
+		if receiver[index] >= 0:
+			indegree[receiver[index]] += 1
+
+	var queue: PackedInt32Array = PackedInt32Array()
+
+	for index in range(total):
+		if indegree[index] == 0:
+			queue.append(index)
+
+	var head: int = 0
+
+	while head < queue.size():
+		var index: int = queue[head]
+		head += 1
+
+		if receiver[index] >= 0:
+			indegree[receiver[index]] -= 1
+
+			if indegree[receiver[index]] == 0:
+				queue.append(receiver[index])
+
+	queue.reverse()
+	order = queue
 
 
 # Group water cells (filled above ground) into lakes (8-neighbour, same level). A lake counts when

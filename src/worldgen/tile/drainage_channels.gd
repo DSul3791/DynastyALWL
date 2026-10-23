@@ -17,9 +17,11 @@ const RIFFLE_PERIOD_WIDTHS := 6.0    # riffle to riffle spacing in channel width
 const RIFFLE_FACTOR := 0.6
 const POOL_FACTOR := 1.25
 const CONFLUENCE_FACTOR := 1.3
+const SURFACE_SHARE := 0.6           # water stands this share of the centre depth above the bed
 
 var bed: PackedFloat32Array = PackedFloat32Array()
 var centre_depth: PackedFloat32Array = PackedFloat32Array()    # depth on the centre line, 0 elsewhere
+var surface: PackedFloat32Array = PackedFloat32Array()         # water level in channel cells, NAN elsewhere
 var curvature: PackedFloat32Array = PackedFloat32Array()       # signed turn at centre cells (+ = turning right on the map, z down)
 
 
@@ -31,6 +33,8 @@ func build(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, threshol
 	centre_depth.fill(0.0)
 	curvature.resize(total)
 	curvature.fill(0.0)
+	surface.resize(total)
+	surface.fill(NAN)
 	var donors: PackedInt32Array = PackedInt32Array()
 	donors.resize(total)
 
@@ -115,6 +119,21 @@ func _stamp(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, thresho
 
 		centre_bed[index] = minf(wanted, h[index])
 
+	# Water level on the centre line, never rising going downstream either.
+	var centre_surface: PackedFloat32Array = centre_bed.duplicate()
+
+	for index in fill.order:
+		if flow.discharge[index] < threshold:
+			continue
+
+		var level: float = centre_bed[index] + SURFACE_SHARE * (h[index] - centre_bed[index])
+		var next: int = fill.receiver[index]
+
+		if next >= 0 and flow.discharge[next] >= threshold:
+			level = maxf(level, centre_surface[next])
+
+		centre_surface[index] = level
+
 	for index in range(h.size()):
 		if flow.discharge[index] < threshold:
 			continue
@@ -161,6 +180,9 @@ func _stamp(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, thresho
 				var target: float = h[index] - depth_here * (1.0 - t * t)
 				var neighbor: int = nr * size + nc
 				bed[neighbor] = minf(bed[neighbor], target)
+
+				if target < centre_surface[index] and (is_nan(surface[neighbor]) or surface[neighbor] < centre_surface[index]):
+					surface[neighbor] = centre_surface[index]
 
 	for index in range(h.size()):
 		if flow.discharge[index] >= threshold:
