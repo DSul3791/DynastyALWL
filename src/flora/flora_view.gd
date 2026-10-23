@@ -785,6 +785,30 @@ func species_near(point: Vector3, radius: float) -> int:
 	return found
 
 
+# The nearest plant instance to a point as [chunk, id], or [] when none is within `radius` (species_near, but which one).
+func instance_near(point: Vector3, radius: float) -> Array:
+	var chunk: Vector2i = Vector2i(int(floor(point.x / chunk_m)), int(floor(point.z / chunk_m)))
+
+	if not _chunks.has(chunk):
+		return []
+
+	var items: Dictionary = _chunks[chunk]["items"]
+	var best: float = radius * radius
+	var found: int = -1
+	var positions: PackedVector3Array = items["positions"]
+	var ids: PackedInt32Array = items["ids"]
+
+	for n in range(positions.size()):
+		var d: Vector3 = positions[n] - point
+		var squared: float = d.x * d.x + d.z * d.z + 0.25 * d.y * d.y
+
+		if squared < best:
+			best = squared
+			found = ids[n]
+
+	return [] if found < 0 else [chunk, found]
+
+
 # The chunks to have, nearest first: every chunk within tree view distance.
 func wanted_chunks(from_position: Vector3) -> Array:
 	var reach: int = int(ceil(view_m[KIND_TREE] / chunk_m))

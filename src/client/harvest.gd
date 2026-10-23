@@ -174,6 +174,29 @@ func _hint() -> String:
 	return ""
 
 
+# What the look-at line says for a berry bush (Dave 2026-10-23): the product while it can be picked ("Blackberries"); "" otherwise, and the
+# caller shows the plant's own name (bare after picking, or out of season, where the E line says why).
+func product_name_at(point: Vector3) -> String:
+	var found: Array = _client.flora.instance_near(point, 1.3)
+
+	if found.is_empty():
+		return ""
+
+	var id: int = int(found[1])
+	var row: Dictionary = _flora_by_id.get(id >> 16, {})
+	var berry: Dictionary = (_drops.get("berry_yield", {}) as Dictionary).get(str(row.get("name", "")), {})
+
+	if berry.is_empty() or _client.flora.is_stripped(found[0], id):
+		return ""
+
+	var seasons: Array = row.get("season", [])
+
+	if not (seasons.is_empty() or seasons.has("all") or seasons.has(_client.game_clock.season())):
+		return ""
+
+	return _items.table.name_of(_items.table.number_of(str(berry["item"])))
+
+
 # Berry bushes say what they are: ripe "Press E to pick", bare "Nothing left to pick this season", out of season "Not in season".
 func _prompt_for(c: Dictionary) -> String:
 	if not bool(c.get("berry", false)):

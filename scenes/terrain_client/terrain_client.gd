@@ -2397,6 +2397,11 @@ func _inspect_target() -> String:
 		species = flora.species_near(point, 1.3)
 
 	if species >= 0:
+		var product: String = harvest.product_name_at(point) if harvest != null else ""
+
+		if product != "":
+			return product
+
 		return knowledge.reveal("f%d" % species, flora.label_of(species), flora.familiarity_of(species), "horticulture", flora.lookalikes(species))
 
 	var lying: String = items.world_item_name_near(point, 1.2)
