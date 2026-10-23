@@ -3325,6 +3325,21 @@ func _process(delta: float) -> void:
 
 		print("Terrain client: menu test: %d pages with content of %d, panel opaque %s, layer %d" % [seen, game_menu._pages.size(), str(game_menu.root.get_child(1).get_child(0).get_theme_stylebox("panel").bg_color.a == 1.0), (game_menu.root.get_parent() as CanvasLayer).layer])
 		_set_menu(false)
+		var esc: InputEventKey = InputEventKey.new()
+		esc.keycode = KEY_ESCAPE
+		esc.pressed = true
+		_unhandled_input(esc)
+		var opened: bool = menu_open and game_menu._pages["main"].visible
+		_unhandled_input(esc)
+		var closed: bool = not menu_open
+		var screen_ok: bool = true
+
+		if items != null:
+			items.toggle()
+			_unhandled_input(esc)
+			screen_ok = not items.screen_open() and not menu_open
+
+		print("Terrain client: esc test: opens the menu %s, closes it %s, closes an open screen first without opening the menu %s" % [str(opened), str(closed), str(screen_ok)])
 
 	if test_dump and not _test_dump_done and Time.get_ticks_msec() - connected_msec > 14000:
 		_test_dump_done = true
