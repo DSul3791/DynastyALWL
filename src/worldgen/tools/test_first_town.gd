@@ -182,7 +182,7 @@ func _init() -> void:
 		if int(items._items[id]["number"]) == table.number_of("firewood") and not items._items[id].has("struct"):
 			items.action(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 
-	check(count("firewood") == 4 and count("wooden_block") == 0, "four blocks split into four firewood at the block (%d firewood, %d blocks)" % [count("firewood"), count("wooden_block")])
+	check(count("firewood") == 8 and count("wooden_block") == 0, "four blocks split into eight firewood at the block (%d firewood, %d blocks)" % [count("firewood"), count("wooden_block")])
 	mark("split wood")
 
 	# 5. Hob's quest: ask, hand over the firewood, get the reward and the reputation.
@@ -196,7 +196,7 @@ func _init() -> void:
 	var give: int = choice_index("I have your firewood.")
 	check(give >= 0, "with the firewood in the pack the hand-over choice appears")
 	say(give)
-	check(count("firewood") == 1 and count("roast_forage") == 2 and items.coins_of(1) == 5 and items.rep_points(1, "hob") == 1, "the reward is two Campfire Stew, five copper and a reputation point")
+	check(count("firewood") == 5 and count("roast_forage") == 2 and items.coins_of(1) == 5 and items.rep_points(1, "hob") == 1, "the reward is two Campfire Stew, five copper and a reputation point")
 	mark("quest done")
 
 	# 6. Trade: sell some stones and the spare log, then buy a bandage.

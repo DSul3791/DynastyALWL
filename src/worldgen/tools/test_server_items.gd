@@ -1017,7 +1017,7 @@ func _init() -> void:
 		return total
 	cb.action(1, Net.ACT_ADMIN_GIVE, block_n, 0, 2, Vector3.ZERO)
 	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, 0, Vector3.ZERO)
-	check(cb.inventory_of(1).count_of(block_n) == 1 and loose_of.call(firewood_n) == 1, "a wooden block splits into one firewood that falls beside the block")
+	check(cb.inventory_of(1).count_of(block_n) == 1 and loose_of.call(firewood_n) == 2, "a wooden block splits into two firewood that falls beside the block")
 	check(cb.inventory_of(1).wear[cb.inventory_of(1).numbers.find(cb.table.number_of("stone_axe"))] == 1, "and wears the axe one use")
 	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, 0, Vector3.ZERO)
 	check(cb.inventory_of(1).count_of(block_n) == 1, "the pace limit holds")
@@ -1029,7 +1029,7 @@ func _init() -> void:
 		if int(cb._items[k]["number"]) == firewood_n and not cb._items[k].has("struct"):
 			heaps += 1
 
-	check(loose_of.call(firewood_n) == 2 and heaps == 1, "the next piece joins the same heap beside the block (%d pieces in %d heaps)" % [loose_of.call(firewood_n), heaps])
+	check(loose_of.call(firewood_n) == 4 and heaps == 1, "the next piece joins the same heap beside the block (%d pieces in %d heaps)" % [loose_of.call(firewood_n), heaps])
 
 	# A log lying on the ground, struck with the axe, falls apart into wooden blocks.
 	cb.drop_in_world(cb.table.number_of("log"), 1, Vector3(1.0, 10.0, 0.0))
