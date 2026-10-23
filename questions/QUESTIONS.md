@@ -66,13 +66,6 @@ Note: 3. Yes means the shapes STAY (so they are ground, not water). No means the
 Note: 4. Press Ctrl+Shift+W again to bring the water back.
 [test]
 
-## lake-low-quality | Please test: set quality to Low and see what happens. Look for: do the grey shapes and dark squares VANISH on Low?
-Note: 1. Go to x 52392, z 69477 (or x 53786, z 69256).
-Note: 2. Press F2 until the quality says Low.
-Note: 3. Yes means the shapes VANISH on Low (so it is the water's depth effect, and Sonny fixes it). No means they are still there.
-Note: 4. Press F2 until you are back on your normal quality.
-[test]
-
 ## admin-craft-test | Please test free crafting as admin. Look for: crafting works with an empty pack while Admin mode is on, and normal rules come back when it is off.
 Note: 1. Pull build 697 and close the game fully, then start it. The HUD should say 697.
 Note: 2. Esc > Admin: the switch "Admin mode (crafting is free)" should be green (On).
