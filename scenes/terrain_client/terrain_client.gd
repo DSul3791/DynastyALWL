@@ -1402,6 +1402,7 @@ func _stamp_walkers(now: int) -> void:
 const PLACED_CLEARING := "res://data/look/placed_clearing.json"
 const CLEARING_NOT := [0, 2, 3, 4, 10]   # loose items, felled trunks and stumps; every other state asks structures.json "clears_grass" (StructureLook)
 const StructureLook := preload("res://src/shared/structure_look.gd")
+var wet_gap_override: float = -1.0     # look rig (--shot-wet=GAP): pretend this many metres of rock lie between the tunnel ceiling and the water; -1 = the real drip view
 var cavein_death                      # the cave-in death sequence (src/client/cavein_death.gd), made at the first one
 var showroom                          # the admin showroom at spawn (src/client/showroom.gd), shown while Admin mode is on
 var _cleared_key: int = 0
@@ -3232,7 +3233,7 @@ func _update_bob(delta: float) -> void:
 	camera.position.x = -float(SWAY_M[gait]) * side * _bob_amount
 	camera.rotation.z = deg_to_rad(float(SWAY_DEG[gait])) * side * _bob_amount
 	drip_view.step(delta)
-	sound.wet.update(delta, body.global_position, drip_view.gap_m)
+	sound.wet.update(delta, body.global_position, wet_gap_override if wet_gap_override >= 0.0 else drip_view.gap_m)
 	var shake: Dictionary = quake_view.step(delta)
 	camera.position += shake["offset"]
 	camera.rotation.z += deg_to_rad(float(shake["roll"]))

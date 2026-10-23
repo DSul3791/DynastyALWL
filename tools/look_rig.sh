@@ -7,6 +7,7 @@
 #   --ground ID:N  drop N of an item on the ground 2.2 m ahead of --at (stone:20 = a pile); --gy ground height (default 28.0 = the spawn)
 #   --summer  draw the --flora row in the species' own green instead of the game's autumn tint
 #   --give ID:N --drop  give N of an item, then drop all N 2.2 m ahead (a real drop: stone:20 makes a pile)
+#   --wet GAP  wet tunnel sounds without a tunnel: pretend GAP m of rock over the ceiling (3 damp, 2 dripping, 1 running); the log gets "shot runner: wet sounds" with the drips played; use a long --settle (30) so some drips fall
 #   --dist M  third-person camera distance (under 2 m aims at the held item: a hand close-up)
 #   --cam    first = the player's own view; left = the character seen from 2.8 m to its left (third person)
 #   --at     world x,z (default the spawn 53301,68427); --agl metres above the ground; --yaw 0 faces north (-Z), 90 west, -90 east
@@ -22,7 +23,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --item) ITEM="$2"; shift 2;; --count) COUNT="$2"; shift 2;; --cam) CAM="$2"; shift 2;; --at) AT="$2"; shift 2;;
     --agl) AGL="$2"; shift 2;; --yaw) YAW="$2"; shift 2;; --pitch) PITCH="$2"; shift 2;; --hour) HOUR="$2"; shift 2;;
-    --weather) WEATHER="$2"; shift 2;; --admin) ADMIN="$ADMIN --shot-admin"; shift;; --flora) ADMIN="$ADMIN --shot-flora=$2"; shift 2;; --ground) GROUND="$2"; shift 2;; --gy) GY="$2"; shift 2;; --summer) ADMIN="$ADMIN --shot-summer"; shift;; --drop) ADMIN="$ADMIN --shot-drop"; shift;; --give) ADMIN="$ADMIN --shot-give=$2"; shift 2;; --dist) ADMIN="$ADMIN --shot-dist=$2"; shift 2;; --nograss) ADMIN="$ADMIN --shot-nograss"; shift;; --keep) KEEP=1; shift;; --keep) KEEP=1; shift;; --name) NAME="$2"; shift 2;; --out) OUT="$2"; shift 2;;
+    --weather) WEATHER="$2"; shift 2;; --admin) ADMIN="$ADMIN --shot-admin"; shift;; --flora) ADMIN="$ADMIN --shot-flora=$2"; shift 2;; --ground) GROUND="$2"; shift 2;; --gy) GY="$2"; shift 2;; --summer) ADMIN="$ADMIN --shot-summer"; shift;; --drop) ADMIN="$ADMIN --shot-drop"; shift;; --give) ADMIN="$ADMIN --shot-give=$2"; shift 2;; --dist) ADMIN="$ADMIN --shot-dist=$2"; shift 2;; --nograss) ADMIN="$ADMIN --shot-nograss"; shift;; --wet) ADMIN="$ADMIN --shot-wet=$2"; shift 2;; --keep) KEEP=1; shift;; --keep) KEEP=1; shift;; --name) NAME="$2"; shift 2;; --out) OUT="$2"; shift 2;;
     --wait) WAIT="$2"; shift 2;; --settle) SETTLE="$2"; shift 2;; *) echo "unknown argument $1"; exit 2;;
   esac
 done
