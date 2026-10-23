@@ -11,7 +11,9 @@ var failures: int = 0
 class FakeView:
 	extends RefCounted
 	var table
+	@warning_ignore("unused_private_class_variable")   # read by the showroom through the view
 	var _root: Node3D = Node3D.new()
+	@warning_ignore("unused_private_class_variable")
 	var _ground_below: Callable = func(_p: Vector3) -> float: return 10.0
 	var made: int = 0
 
