@@ -1,3 +1,10 @@
+# CURRENT TOP JOBS (Guru, 2026-10-23 00:10; this block overrides the older lists below)
+- Steve: 1. Turn the tunnel collapse ON in Dave's test world (his YES) with the cave-in duration as a SETTING (2 to 20 min); 2. support spheres of influence (radius 5 / 7.5 / 10 m at full health, halves at half health, overlap covers an area; degrade slowly when unmaintained); 3. blueprint snapping and load rules with Sal (wide snap, 3 spaces, load limit like Valheim); 4. then other players' worn-clothing sync (protocol bump), characters.json write batching, join-window glue.
+- Sal: rework the blueprint design to Dave's answers (DECISIONS 2026-10-23 00:10 items e to k), twine rename everywhere (no migration), brace blueprints in 3 sizes, ceiling and flat tarred roof, chopping block 18 kg, then the cost table list for Dave one line per card.
+- Kathleen: log wall notches (copy a real log cabin), doors (no bottom edge, handles not knobs, steel handle, no black band), ceiling and flat tarred roof looks, brace looks.
+- Sonny: ground rework (hydrology) continues; no bake without Dave's go.
+- MikeW: local_check on 681-683 and later; render checks; nightly backup on goodnight.
+
 # Job queues (Technical direction, 2026-10-20)
 
 Rule (Dave): threads never wait for him. Finish a job, ask Technical direction for the next build number when you start a job (cross-session message, session `cse_0111SmjyMaTAj3PtyQqHboYJ`), take the next job in your queue, stop only when you need Dave. If you need him, send the coordinator ONE question with 2 to 4 short options and a recommended one, then take the next job that does not depend on the answer. Items marked **ASK** are thinly discussed design (confidence rule): ask first. Everything else is well covered: just do it. Approval: big changes only (PROCESS.md). Every job: run the performance routine, state the cost at Low, keep Dave's rules (server/client/admin separation, Dave bakes tiles, no tile bakes in the cloud, minimum 1050-class machine).
