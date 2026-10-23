@@ -153,8 +153,10 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 			_chestnut(bark, leaves, twigs, rng, h, crown, trunk, variant, far, season, true)
 		"sweet_chestnut":
 			_chestnut(bark, leaves, twigs, rng, h, crown, trunk, variant, far, season)
-		"raspberry":
-			_raspberry(bark, leaves, rng, h, crown, far)
+		"raspberry", "bramble", "wild_rose", "blackthorn", "blueberry":
+			_cane_shrub(SHRUB_LOOKS[str(entry["name"])], bark, leaves, rng, h, crown, far)
+		"herb_nettle":
+			_herb(bark, leaves, rng, h, crown, far, Color(0.85, 1.0, 0.7))
 		"hazel":
 			_hazel(smooth, leaves, twigs, rng, h, variant, far, season)
 		"oak":
@@ -2170,46 +2172,99 @@ static func _shrub(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float,
 		_clump(leaves, rng, p, center - Vector3(0.0, h * 0.3, 0.0), maxf(crown * (1.2 if far else 0.9), h * 0.45), shade, 2 if far else 3)
 
 
-# Raspberry bush (Dave 2026-10-23: it was a dark purple ball): a few arching green-brown canes, toothed green leaf sprays along them and
-# red berries hanging in small clusters under the leaves. The shrub tint multiplies the whole model, so the berry colour is scaled up to read red.
+# Cane shrubs (Dave 2026-10-23: plants must look like the real thing). A few arching or upright canes, leaf sprays along them, and fruit or
+# flowers in small clusters. The shrub tint multiplies the whole model, so fruit colours are given bright. `look` keys: canes [min, max],
+# arch (0 upright .. 1 bowed over), reach (crown multiplier), cane (colour), leaf (spray size multiplier), fruit (colour or null), unripe (colour),
+# flower (colour or null), hang (fruit hangs below the leaves), thorns (little spikes along the cane).
 const RASPBERRY_CANE := Color(0.62, 0.50, 0.34)
 const RASPBERRY_BERRY := Color(1.0, 0.16, 0.22)
 const RASPBERRY_UNRIPE := Color(0.95, 0.85, 0.35)
+const SHRUB_LOOKS := {
+	"raspberry": {"canes": [6, 9], "arch": 0.8, "reach": 1.0, "cane": RASPBERRY_CANE, "leaf": 1.0, "fruit": RASPBERRY_BERRY, "unripe": RASPBERRY_UNRIPE, "flower": null, "thorns": false},
+	"bramble": {"canes": [6, 9], "arch": 0.9, "reach": 1.0, "cane": Color(0.50, 0.30, 0.30), "leaf": 1.2, "fruit": Color(0.35, 0.10, 0.55), "unripe": Color(1.0, 0.25, 0.25), "flower": Color(1.0, 0.9, 0.9), "thorns": true},
+	"wild_rose": {"canes": [5, 7], "arch": 0.7, "reach": 1.1, "cane": Color(0.45, 0.30, 0.22), "leaf": 0.8, "fruit": Color(1.0, 0.18, 0.1), "unripe": Color(1.0, 0.55, 0.3), "flower": Color(1.0, 0.6, 0.75), "thorns": true},
+	"blackthorn": {"canes": [14, 18], "arch": 0.55, "reach": 1.4, "rate": 0.12, "cane": Color(0.20, 0.17, 0.15), "leaf": 0.32, "fruit": Color(0.4, 0.45, 0.9), "unripe": Color(0.5, 0.6, 0.5), "flower": null, "thorns": true},
+	"blueberry": {"canes": [8, 12], "arch": 0.15, "reach": 0.8, "rate": 0.2, "cane": Color(0.50, 0.38, 0.28), "leaf": 0.5, "fruit": Color(0.35, 0.45, 1.0), "unripe": Color(0.7, 0.9, 0.6), "flower": null, "thorns": false},
+}
 
 
-static func _raspberry(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
-	var canes: int = 4 if far else rng.randi_range(6, 9)
+static func _cane_shrub(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
+	var span: Array = look["canes"]
+	var canes: int = (span[0] as int) if far else rng.randi_range(int(span[0]), int(span[1]))
+	var arch: float = float(look["arch"])
 	var az: float = rng.randf() * TAU
+	var cane_color: Color = look["cane"]
 
 	for k in range(canes):
 		az += TAU / float(canes) + rng.randf_range(-0.3, 0.3)
 		var out: Vector3 = Vector3(cos(az), 0.0, sin(az))
 		var top_y: float = h * rng.randf_range(0.65, 1.0)
-		var reach: float = crown * rng.randf_range(0.7, 1.4)
+		var reach: float = crown * float(look["reach"]) * rng.randf_range(0.7, 1.3)
 		var r: float = maxf(h * 0.009, 0.007)
-		# Up, then over in an arch, so the tip bends down.
+		# Up, then out in an arch whose tip bends down by `arch`.
 		var p0: Vector3 = out * crown * 0.06
-		var p1: Vector3 = out * reach * 0.2 + Vector3(0.0, top_y * 0.7, 0.0)
-		var p2: Vector3 = out * reach * 0.6 + Vector3(0.0, top_y, 0.0)
-		var p3: Vector3 = out * reach + Vector3(0.0, top_y * 0.62, 0.0)
+		var p1: Vector3 = out * reach * (0.1 + 0.1 * arch) + Vector3(0.0, top_y * 0.7, 0.0)
+		var p2: Vector3 = out * reach * (0.25 + 0.35 * arch) + Vector3(0.0, top_y, 0.0)
+		var p3: Vector3 = out * reach * (0.3 + 0.7 * arch) + Vector3(0.0, top_y * (1.0 - 0.28 * arch), 0.0)
 		var pts: Array = [p0, p1, p2, p3]
 
 		for m in range(3):
-			_branch(bark, pts[m], pts[m + 1], r * (1.3 - 0.3 * m), r * (1.0 - 0.3 * m), RASPBERRY_CANE, 4 if far else 5)
+			_branch(bark, pts[m], pts[m + 1], r * (1.3 - 0.3 * m), r * (1.0 - 0.3 * m), cane_color, 4 if far else 5)
 
-		var sprays: int = 3 if far else 5
+		if look["thorns"] and not far:
+			for m in range(9):
+				var t: float = rng.randf_range(0.1, 1.0)
+				var seg: int = clampi(int(t * 3.0), 0, 2)
+				var on: Vector3 = (pts[seg] as Vector3).lerp(pts[seg + 1], t * 3.0 - float(seg))
+				var spike: Vector3 = Vector3(rng.randfn(), rng.randf_range(-0.3, 0.6), rng.randfn()).normalized()
+				_branch(bark, on, on + spike * 0.1 * crown, r * 0.5, r * 0.05, cane_color * 0.8, 3)
+
+		# Small leaf sprays all along the cane, with the berries or flowers hanging free beneath them where they show.
+		var sprays: int = 4 if far else 8
+		var leaf_size: float = crown * float(look["leaf"]) * 0.3
 
 		for m in range(sprays):
-			var t: float = 0.25 + 0.75 * float(m) / float(sprays - 1)
+			var t: float = 0.2 + 0.8 * float(m) / float(sprays - 1)
 			var seg: int = clampi(int(t * 3.0), 0, 2)
 			var at: Vector3 = (pts[seg] as Vector3).lerp(pts[seg + 1], t * 3.0 - float(seg))
-			_clump(leaves, rng, at, Vector3(0.0, at.y - crown * 0.5, 0.0), crown * rng.randf_range(0.5, 0.7), rng.randf_range(0.85, 1.05), 2 if far else 3)
+			_clump(leaves, rng, at, Vector3(0.0, at.y - crown * 0.5, 0.0), leaf_size * rng.randf_range(0.85, 1.2), rng.randf_range(0.85, 1.05), 2 if far else 3)
 
-			if not far and rng.randf() < 0.7:
-				# A berry cluster hanging a little below the leaves; some are still unripe.
+			if far or rng.randf() > float(look.get("rate", 0.45)):
+				continue
+
+			var low: Vector3 = at + Vector3(0.0, -leaf_size * 0.95, 0.0) + out * leaf_size * 0.3
+			# Flowers where the plant has them, otherwise (and mixed in) fruit, some of it unripe.
+			if look["flower"] != null and rng.randf() < 0.5:
+				_cluster(bark, rng, low + Vector3(0.0, leaf_size * 1.1, 0.0), crown * 0.14, look["flower"], true, rng.randi_range(5, 7))
+			elif look["fruit"] != null:
 				var ripe: bool = rng.randf() < 0.75
-				var low: Vector3 = at + Vector3(0.0, -crown * 0.12, 0.0) + out * crown * 0.05
-				_cluster(bark, rng, low, crown * 0.07, RASPBERRY_BERRY if ripe else RASPBERRY_UNRIPE, false, rng.randi_range(5, 8))
+				_cluster(bark, rng, low, crown * 0.14, look["fruit"] if ripe else look["unripe"], false, rng.randi_range(6, 9))
+
+
+static func _raspberry(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
+	_cane_shrub(SHRUB_LOOKS["raspberry"], bark, leaves, rng, h, crown, far)
+
+
+# A stinging nettle and other upright herbs: a few straight square stems, pairs of toothed leaves along them, small flower strings in the leaf
+# axils near the top.
+static func _herb(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool, flower: Color) -> void:
+	var stems: int = 4 if far else rng.randi_range(9, 13)
+
+	for k in range(stems):
+		var a: float = TAU * float(k) / float(stems) + rng.randf_range(-0.3, 0.3)
+		var base: Vector3 = Vector3(cos(a), 0.0, sin(a)) * crown * rng.randf_range(0.05, 0.5)
+		var top: Vector3 = base + Vector3(cos(a), 0.0, sin(a)) * crown * 0.05 + Vector3(0.0, h * rng.randf_range(0.85, 1.1), 0.0)
+		_branch(bark, base, top, h * 0.008 + 0.004, h * 0.004 + 0.002, Color(0.45, 0.55, 0.3), 4)
+		var pairs: int = 3 if far else 7
+
+		for m in range(pairs):
+			var t: float = 0.25 + 0.75 * float(m) / float(pairs - 1)
+			var at: Vector3 = base.lerp(top, t)
+			var size: float = crown * lerpf(0.55, 0.3, t) * rng.randf_range(0.85, 1.1)
+			_clump(leaves, rng, at, Vector3(base.x, at.y - crown * 0.3, base.z), size, rng.randf_range(0.85, 1.05), 2)
+
+		if not far:
+			_cluster(bark, rng, top - Vector3(0.0, h * 0.04, 0.0), crown * 0.08, flower, true, 5)
 
 
 # A plain upright column (cactus).

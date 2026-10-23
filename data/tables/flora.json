@@ -719,6 +719,7 @@
 			"display": "Bramble",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "bramble",
 			"height_m": [
 				0.8,
 				1.8
@@ -1322,6 +1323,8 @@
 			"display": "Nettle",
 			"kind": "plant",
 			"shape": "fern",
+			"model": "herb_nettle",
+			"leaf": "broad",
 			"height_m": [
 				0.5,
 				1.2
@@ -1534,6 +1537,7 @@
 			"display": "Blueberry",
 			"kind": "plant",
 			"shape": "shrub",
+			"model": "blueberry",
 			"height_m": [
 				0.3,
 				0.7
@@ -1541,9 +1545,9 @@
 			"crown_m": 0.5,
 			"trunk_m": 0.0,
 			"color": [
-				0.22,
-				0.32,
-				0.45
+				0.28,
+				0.42,
+				0.18
 			],
 			"per_hectare": {
 				"heath": 60,
@@ -2070,6 +2074,7 @@
 			"display": "Wild rose",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "wild_rose",
 			"height_m": [
 				1,
 				2.5
@@ -2131,6 +2136,7 @@
 			"display": "Blackthorn",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "blackthorn",
 			"height_m": [
 				2,
 				4
