@@ -46,6 +46,12 @@ var _dig_next_msec: int = 0
 var _dig_level: bool = false
 var _dig_ballast: bool = false
 var _dig_dropped: bool = false
+var look_down_deg: float = -50.0      # --shot-lookdown=DEG: the pitch for ground tests (drop, dig, seeded pile); the spot fills the middle of the picture (TEST_RECIPE.md)
+var back_m: float = 1.0               # --shot-back=M: the short step back before the picture
+var drop_dist_m: float = 1.0          # --shot-drop-dist=M: where a --shot-drop lands ahead of the player
+var expect: String = ""               # --shot-expect="text": written to the log with the state line
+var ground_test: bool = false         # set by --shot-drop, --shot-dig or --shot-ground: step back and look down before the picture
+var _finish_done: bool = false
 var _spin_i: int = 0
 var _spin_next_msec: int = 0
 var _selected: bool = false
@@ -92,8 +98,20 @@ func setup(owner_client, args: Array) -> void:
 				give_item = give_item.get_slice(":", 0)
 		elif argument == "--shot-drop":
 			drop_it = true
+			ground_test = true
+		elif argument.begins_with("--shot-lookdown="):
+			look_down_deg = float(argument.trim_prefix("--shot-lookdown="))
+		elif argument.begins_with("--shot-back="):
+			back_m = float(argument.trim_prefix("--shot-back="))
+		elif argument.begins_with("--shot-drop-dist="):
+			drop_dist_m = float(argument.trim_prefix("--shot-drop-dist="))
+		elif argument.begins_with("--shot-expect="):
+			expect = argument.trim_prefix("--shot-expect=")
+		elif argument == "--shot-ground":
+			ground_test = true
 		elif argument.begins_with("--shot-dig="):
 			dig_steps = int(argument.trim_prefix("--shot-dig="))
+			ground_test = true
 		elif argument == "--shot-nograss":
 			no_grass = true      # hide the grass so a hand-held item or the body is not hidden by blades
 		elif argument == "--shot-admin":
@@ -147,8 +165,8 @@ func _process(_delta: float) -> void:
 	if drop_it and _given and not _dropped and now - client.connected_msec > 11000:
 		_dropped = true
 		var bp: Vector3 = client.body.global_position
-		var gy: float = _ground(bp.x, bp.z - 2.2)
-		var at: Vector3 = Vector3(bp.x, bp.y - 1.0 if is_nan(gy) else gy, bp.z - 2.2)
+		var gy: float = _ground(bp.x, bp.z - drop_dist_m)
+		var at: Vector3 = Vector3(bp.x, bp.y - 1.0 if is_nan(gy) else gy, bp.z - drop_dist_m)
 		client.items.net.inventory_action.rpc_id(1, Net.ACT_DROP, 0, 0, give_count, at)
 
 	# Dig rig: a heavy pack (so the yield spills onto the ground, as in play), then the dig-and-step loop.
@@ -220,12 +238,12 @@ func _process(_delta: float) -> void:
 				return
 
 			_dig_level = true
-			var back: Vector3 = client.body.global_transform.basis.z      # a very short step back (1 m), then look down at the hole and the dirt
-			var back_x: float = client.body.global_position.x + back.x * 1.0
-			var back_z: float = client.body.global_position.z + back.z * 1.0
+			var back: Vector3 = client.body.global_transform.basis.z      # a very short step back (back_m), then look down at the hole and the dirt
+			var back_x: float = client.body.global_position.x + back.x * back_m
+			var back_z: float = client.body.global_position.z + back.z * back_m
 			var back_ground: float = _ground(back_x, back_z)
 			client.body.global_position = Vector3(back_x, client.body.global_position.y if is_nan(back_ground) else back_ground + shot_pos.y, back_z)
-			client.pitch = deg_to_rad(-60.0)      # look down, then spin a full turn with a picture every quarter
+			client.pitch = deg_to_rad(look_down_deg)      # look down, then spin a full turn with a picture every quarter
 			client.camera.rotation.x = client.pitch
 			_spin_next_msec = now + 4000
 			_moved_msec = now
@@ -244,10 +262,23 @@ func _process(_delta: float) -> void:
 
 		if _spin_i == 4:
 			_spin_i = 5
-			client.pitch = deg_to_rad(-50.0)
+			client.pitch = deg_to_rad(look_down_deg)
 			client.camera.rotation.x = client.pitch
 			_moved_msec = now
 			return
+
+	# A drop or a seeded pile: a short step back, then look down at the spot (TEST_RECIPE.md), settle, then the picture.
+	if ground_test and dig_steps == 0 and not _finish_done and now - client.connected_msec > 13000:
+		_finish_done = true
+		var behind: Vector3 = client.body.global_transform.basis.z
+		var bx: float = client.body.global_position.x + behind.x * back_m
+		var bz: float = client.body.global_position.z + behind.z * back_m
+		var bg: float = _ground(bx, bz)
+		client.body.global_position = Vector3(bx, client.body.global_position.y if is_nan(bg) else bg + shot_pos.y, bz)
+		client.pitch = deg_to_rad(look_down_deg)
+		client.camera.rotation.x = client.pitch
+		_moved_msec = now
+		return
 
 	if not flora_names.is_empty() and _flora_t == 0:
 		_show_flora(now)
@@ -256,6 +287,7 @@ func _process(_delta: float) -> void:
 	if _flora_t != 0 and now - _flora_t < 6000:
 		return
 
+	_print_state()
 	var image: Image = get_viewport().get_texture().get_image()
 	var path: String = "%s/%s.png" % [dir, shots[_index]["name"]]
 	image.save_png(path)
@@ -283,6 +315,28 @@ func _process(_delta: float) -> void:
 		print("shot runner: fall %d top %s base %s flow %.1f width %.1f" % [n, str(fall["top"]), str(fall["base"]), float(fall["flow"]), float(fall["width"])])
 
 	_cost_then_next(now)
+
+
+# One line of facts so pass or fail is not by eye only: where the player is, what the pack holds, and every loose world item within 6 m
+# with its height above the ground under it (a gap over 0.15 m is floating).
+func _print_state() -> void:
+	if client.items == null:
+		return
+
+	var p: Vector3 = client.body.global_position
+	var rows: PackedStringArray = PackedStringArray()
+
+	for id in client.items._world:
+		var it: Dictionary = client.items._world[id]
+		var at: Vector3 = it["pos"]
+
+		if Vector2(at.x - p.x, at.z - p.z).length() > 6.0:
+			continue
+
+		var floor_y: float = _ground(at.x, at.z)
+		rows.append("%s x%d at %.1f,%.1f,%.1f gap %s dist %.1f" % [client.items.table.id_of(int(it["number"])), int(it["count"]), at.x, at.y, at.z, "?" if is_nan(floor_y) else "%.2f" % (at.y - floor_y), Vector2(at.x - p.x, at.z - p.z).length()])
+
+	print("shot runner: state: expect \"%s\"; player %s pitch %.0f; %d loose items within 6 m: %s" % [expect, str(p), rad_to_deg(client.pitch), rows.size(), "; ".join(rows)])
 
 
 # A labelled row of plants (look rig): one of each named species 4 m ahead of the player, drawn by the real flora view.
