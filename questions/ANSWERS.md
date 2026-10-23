@@ -1010,3 +1010,7 @@ Answered: 2026-10-23 04:10 UTC
 ## collapse-switch | Please test the tunnel collapse switch. Look for: green On, red Off, no shaking while Off, cave-in time kept after rejoining.
 Answer: No: Caven time is not working for sure. It seems to be hard set.
 Answered: 2026-10-23 04:05 UTC
+## vsync | Please test VSync. Look for: On green, Adaptive amber, Off red, and the same after restart.
+Answer: Yes: Worked fine. The switch turned green and red, and the VSC turned on and off.
+Answered: 2026-10-23 04:07 UTC
+
