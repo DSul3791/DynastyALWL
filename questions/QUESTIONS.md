@@ -1,7 +1,3 @@
-## cost-29 | Brace 1.5 m: 1 log and 1 twine?
-Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
-[check]
-
 ## cost-30 | Brace 3 m: 2 logs and 2 twine?
 Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
 [check]
