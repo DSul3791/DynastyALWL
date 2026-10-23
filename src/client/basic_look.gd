@@ -98,6 +98,39 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_sph(parts, 0.15, Vector3(1.0, 0.45, 1.0), Vector3(0.0, -0.03, 0.0), color)
 			_sph(parts, 0.06, Vector3(1.0, 0.7, 1.0), Vector3(0.07, 0.03, 0.03), light)
 			_sph(parts, 0.05, Vector3(1.0, 0.7, 1.0), Vector3(-0.06, 0.02, -0.05), dark)
+		"clump":
+			# A fist-sized clump of earth (soil, clay): a few lumpy chunks pressed together in two shades, a few crumbs round the foot.
+			var lumps: Array = [[0.0, 0.0, 0.0, 0.034, 0.8], [0.035, 0.0, 0.012, 0.026, 0.7], [-0.03, 0.0, 0.02, 0.028, 0.75], [0.008, 0.0, -0.034, 0.027, 0.7],
+				[-0.022, 0.0, -0.024, 0.022, 0.8], [0.014, 0.024, 0.006, 0.024, 0.8], [-0.012, 0.022, 0.014, 0.02, 0.85]]
+
+			for k in range(lumps.size()):
+				var l: Array = lumps[k]
+				var shade: Color = [color, dark, color.lightened(0.1), color.darkened(0.15), color.lightened(0.05)][k % 5]
+				_sph(parts, float(l[3]), Vector3(1.0 + 0.12 * float(k % 3), float(l[4]), 1.0 - 0.1 * float(k % 2)), Vector3(float(l[0]), float(l[1]) - 0.015, float(l[2])), shade)
+
+			for k in range(7):
+				var a: float = float(k) * 2.4 + 0.5
+				var r: float = 0.05 + 0.012 * float(k % 3)
+				_sph(parts, 0.007 + 0.002 * float(k % 2), Vector3(1.0, 0.7, 1.0), Vector3(cos(a) * r, -0.026, sin(a) * r), dark if k % 2 == 0 else color)
+		"grit":
+			# A handful of sand or gravel: a low scatter of small grains or stones, no smooth dome.
+			var stones: int = 34
+			var gravel: bool = color.get_luminance() < 0.6
+
+			if not gravel:
+				_sph(parts, 0.05, Vector3(1.0, 0.18, 1.0), Vector3(0.0, -0.024, 0.0), color.darkened(0.1))
+
+			for k in range(stones):
+				var a: float = float(k) * 2.4
+				var r: float = 0.01 + 0.045 * sqrt(float(k) / float(stones))
+				var grain: float = (0.008 + 0.004 * float((k * 7) % 4)) if gravel else (0.006 + 0.002 * float((k * 5) % 3))
+				var shade: Color = [color, dark, light, color.darkened(0.12), color.lightened(0.08)][(k * 3) % 5]
+				var at: Vector3 = Vector3(cos(a) * r, -0.026 + grain * 0.5 + (0.012 if k < 6 else 0.0), sin(a) * r)
+
+				if gravel:
+					_box_rot(parts, Vector3(grain * 2.0, grain * 1.3, grain * 1.7), at, Vector3(float(k) * 0.7, float(k) * 1.3, float(k) * 0.4), shade)
+				else:
+					_sph(parts, grain, Vector3(1.0, 0.6, 1.0), at, shade)
 		"chunk":
 			_sph(parts, 0.08, Vector3(1.0, 0.8, 1.1), Vector3(0.0, -0.02, 0.0), color)
 			_sph(parts, 0.055, Vector3(1.0, 0.8, 1.0), Vector3(0.08, -0.03, 0.04), dark)
