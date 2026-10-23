@@ -580,3 +580,7 @@ Answered: 2026-10-23 00:11 UTC
 Answer: No: The logs should just look like wide fine boards on top and rounded on the bottom like a log. And the fine board ceiling shouldn’t have the dark brown strips going across the fine boards should reach the whole distance and cobblestone should actually look like cobblestone not like boards and masonry looks perfect.
 Answered: 2026-10-23 00:11 UTC
 
+## flat-roof | Does the flat tarred roof look right: boards under black tar, board seams, streaks, raised lip?
+Answer: Yes
+Answered: 2026-10-23 00:11 UTC
+
