@@ -13,9 +13,9 @@ Kathleen_ArtisticDirector, 2026-10-22. Pictures: art/tiers/tiers_walls.png, tier
 | Tier | Look | Real geometry |
 |---|---|---|
 | 1 Basic | vertical stakes every 15 cm, light rods woven over and under, twine lashing, straw along the top | flat panel 0.1 m |
-| 2 Plank | uneven vertical planks 18 to 28 cm, rough bark face out, dark gaps, smooth pale face inside | two layers: bark outside, smooth inside, 0.1 m |
+| 2 Plank | half-round planks, smooth and rounded on the OUTSIDE (Dave 22:20), flat rough face INSIDE, dark gaps | two layers: rounded smooth outside, flat rough inside, 0.1 m |
 | 3 Fine wood | lapped boards 12 cm, nail heads, corner trim, top plate | panel 0.15 m with trim posts |
-| 4 Log | 8 round logs 30 cm, bark on, notched ends stick out 12 cm alternately, chinking | real cylinders (8 per wall), 0.4 m |
+| 4 Log | 8 round logs 30 cm, bark on, saddle-notched corners that interlock (the log that runs through the corner alternates each course, opposite on the two ends of a wall; picture tiers_log_corner.png), chinking | real cylinders (8 per wall), 0.4 m |
 | 5 Cobblestone | rounded stones 20 to 40 cm, thick pale mortar, mixed grey, brown, blue-grey | panel 0.5 m, rounded mortar relief by texture |
 | 6 Mason | blocks 80 x 40 cm staggered, dressed centre and chisel margin, small stains, projecting plinth | panel 0.6 m with plinth and top course |
 
@@ -39,5 +39,23 @@ Place and door sounds per tier: thatch (basic), board (plank, fine), log (new: d
 ## Questions (recommendation first)
 1. Roof of tier 5: stone slabs on beams as Sal wrote; tier 6: dressed slabs. Recommend yes (cobble = rough slate-like slabs, mason = tidy dressed slabs).
 2. Log walls are real cylinders and not a texture so the notched corners show. Recommend yes (8 small meshes per wall).
-3. Tier 2 plank wall is two layers (bark outside, smooth inside). Recommend yes.
+3. (answered: smooth rounded outside, rough flat inside). Recommend yes.
 4. Do doors/windows follow the tier look? Recommend yes (table above).
+
+## Doors and windows (Dave 22:20; picture art/tiers/tiers_doors.png)
+1 Basic: woven hurdle with thatch and twine ties. 2 Plank: planks with two battens, wooden latch. 3 Reinforced: planks with iron bands and rivets. 4 Wrought iron: iron frame with crossed bars over dark planks. 5 Steel and iron: steel panels in an iron frame, brass handle. Double door: two leaves, 2 m wide, fills the slot. Window and double window (two lights, 2 m). All fit a door or window frame in the 2 m wall slot; mouse wheel scrolls wall / window / door frame / double door frame / double window frame while placing (Steve and Sal).
+
+## Roof slopes, corners and pillars (Dave 23:08; picture art/tiers/tiers_roof_pieces.png)
+- Two roof angles, 45 and 65 degrees. A slope piece covers 2 m of run: at 45 degrees rise 2.0 m, slope length 2.83 m; at 65 degrees rise 4.29 m, slope length 4.73 m (a steep, tall roof).
+- Each angle has a straight slope piece, a HIP corner piece (outside corner) and a VALLEY corner piece (inside corner of an L-shaped house): 6 roof pieces per tier look.
+- Pillars: round log post, squared timber, stone pillar, mason column (base and capital). A pillar snaps to the centre or any of the 4 corners of a foundation (4 x 4 m) or a floor/ceiling cell (2 x 2 m): 5 snap points.
+- Foundation sentence for the page: every building starts on a foundation. A foundation goes on the ground anywhere level enough to hide the whole bottom; on a slope it must be levelled first. Foundations join side by side to make the floor and the shape of the house, then you build up from them. Most pieces snap to most other pieces in a sensible way. (Sal/Steve own the rule.)
+
+## Door and window changes (Dave 23:01)
+Windows are just holes in the wall (no frame piece, no glass); shutters come later as separate hinged wood pieces. A double door sits in a full 2 x 2.4 m wall slot with 10 cm clear all round (leaves 1.8 m wide, 2.2 m high), like Ark. Picture tiers_doors.png redrawn.
+
+## Round 3 (Dave 23:40 to 00:00)
+- Log corners redrawn after a real log cabin: round saddle notch, each log overlaps the course below, the crossing log shows end-on tucked into the notch, opposite on the two ends (tiers_walls.png).
+- Double door: 10 cm gap at the top and sides only, leaves reach the floor. Handles are steel bar pulls, no knobs: basic door has no handle at all; steel door has a steel handle and no black crossband (tiers_doors.png).
+- Ceilings per tier (seen from below): tiers_ceilings.png. Flat tarred roof: tiers_flat_roof.png.
+- Braces in three widths, 1.5, 3 and 5 m: tiers_braces.png.

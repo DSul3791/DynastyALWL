@@ -85,38 +85,41 @@ def wall_basic(rng):
 
 
 def wall_plank(rng):
+    """Outside: the rounded, smooth face of half-round planks. Inset: the flat, rough face inside."""
     w, h = WALL
-    img = canvas((w, h), (24, 18, 12))
+    img = canvas((w, h), (30, 22, 14))
     d = ImageDraw.Draw(img)
     x = 0
 
     while x < w:
-        pw = int(rng.integers(26, 42))
-        gap = int(rng.integers(1, 4))
-        top = int(rng.integers(0, 8))
-        bark = tint((104, 82, 62), rng.uniform(0.8, 1.1))
-        left = [(x + int(rng.integers(-2, 3)), yy) for yy in range(top, h, 24)]
-        right = [(x + pw - gap + int(rng.integers(-2, 3)), yy) for yy in range(h, top - 1, -24)]
-        d.polygon([(x, top)] + left + [(x, h)] + right, fill=bark)
+        pw = int(rng.integers(30, 44))
+        gap = int(rng.integers(2, 4))
+        base = tint((184, 142, 92), rng.uniform(0.88, 1.08))
+        top = int(rng.integers(0, 6))
 
-        for _ in range(7):                   # bark fissures
-            fx = x + int(rng.integers(3, max(4, pw - 3)))
-            fy = int(rng.integers(top, h - 60))
-            d.line([(fx, fy), (fx + int(rng.integers(-2, 3)), fy + int(rng.integers(30, 90)))], fill=tint(bark, 0.5), width=1)
+        for k in range(pw - gap):            # a rounded plank: light in the middle, darker toward both edges
+            f = 0.62 + 0.45 * np.sin(np.pi * (k + 0.5) / float(pw - gap))
+            d.line([(x + k, top), (x + k, h)], fill=tint(base, f))
 
-        d.line([(x + 1, top), (x + 1, h)], fill=tint(bark, 1.18), width=2)
+        for _ in range(5):                   # smooth grain
+            gx = x + int(rng.integers(4, max(5, pw - 5)))
+            gy = int(rng.integers(top, h - 100))
+            d.line([(gx, gy), (gx, gy + int(rng.integers(40, 120)))], fill=tint(base, 0.82), width=1)
+
         x += pw
 
-    img = img.filter(ImageFilter.GaussianBlur(0.5))
-    d = ImageDraw.Draw(img)
-    d.rectangle([w - 70, h - 90, w - 6, h - 6], fill=(230, 214, 168), outline=(30, 20, 12), width=2)   # inset: the smooth face inside
-    inset = Image.new("RGB", (60, 80), (222, 196, 140))
+    d.rectangle([w - 72, h - 92, w - 6, h - 6], fill=(20, 14, 8), outline=(240, 240, 240), width=2)
+    inset = Image.new("RGB", (64, 84), (96, 70, 44))
     di = ImageDraw.Draw(inset)
 
-    for ix in range(0, 60, 14):
-        di.line([(ix, 0), (ix, 80)], fill=(150, 120, 80), width=1)
+    for ix in range(0, 64, 16):
+        di.rectangle([ix, 0, ix + 14, 84], fill=tint((110, 80, 50), rng.uniform(0.85, 1.1)))
 
-    img.paste(inset, (w - 67, h - 87))
+    for _ in range(50):                      # the rough, split, flat face
+        sx, sy = int(rng.integers(0, 60)), int(rng.integers(0, 80))
+        di.line([(sx, sy), (sx + int(rng.integers(-4, 5)), sy + int(rng.integers(4, 14)))], fill=(66, 46, 28), width=1)
+
+    img.paste(inset, (w - 71, h - 91))
     return img
 
 
@@ -148,35 +151,77 @@ def wall_fine(rng):
     return img
 
 
+def log_row(d, rng, x0, x1, y, dia, bark):
+    d.rectangle([x0, y + 2, x1, y + dia - 2], fill=bark)
+
+    for k in range(1, 6):                    # cylinder shading
+        f = 0.55 + 0.5 * np.sin(np.pi * k / 6.0)
+        yy = y + 2 + k * (dia - 4) // 6
+        d.line([(x0, yy), (x1, yy)], fill=tint(bark, f), width=(dia - 4) // 6 + 1)
+
+    for _ in range(12):                      # bark ridges
+        rx = int(rng.integers(x0, max(x0 + 1, x1 - 40)))
+        ry = y + int(rng.integers(6, dia - 6))
+        d.line([(rx, ry), (rx + int(rng.integers(20, 70)), ry)], fill=tint(bark, 0.55), width=1)
+
+
 def wall_log(rng):
+    """A real log-cabin corner (round saddle notch): every log is rounder than the row it sits in, so it overlaps the row below by 10 cm and its
+    underside is cut away (the saddle) where the crossing log lies. Rows alternate: where this wall's log runs through and sticks out, the other
+    wall's log shows end-on (circle) on the next course, tucked up into the notch. The two ends of a wall are opposite."""
     w, h = WALL
     img = canvas((w, h), (34, 26, 16))
     d = ImageDraw.Draw(img)
-    dia = 45
-    n = h // dia
+    step, dia = 40, 47
+    n = h // step + 1
+    end = (212, 180, 126)
 
-    for i in range(n + 1):
-        y = i * dia
-        x0 = 4 if i % 2 == 0 else 20            # notched corners: every other log sticks out further
-        x1 = w - x0
+    for i in range(n - 1, -1, -1):           # bottom row first, so each log lies over the one below
+        y = i * step - 8
         bark = tint((132, 96, 58), rng.uniform(0.85, 1.1))
-        d.rectangle([x0, y + 2, x1, y + dia - 2], fill=bark)
+        left_through = i % 2 == 0
+        right_through = not left_through
+        x0 = 2 if left_through else 46
+        x1 = w - 2 if right_through else w - 46
+        log_row(d, rng, x0, x1, y, dia, bark)
+        d.line([(x0, y + dia - 2), (x1, y + dia - 2)], fill=(30, 20, 10), width=3)               # the dark line where this log lies on the one below
+        d.line([(x0, y + 1), (x1, y + 1)], fill=(184, 176, 128), width=1)
 
-        for k in range(1, 6):                # cylinder shading
-            f = 0.55 + 0.5 * np.sin(np.pi * k / 6.0)
-            yy = y + 2 + k * (dia - 4) // 6
-            d.line([(x0, yy), (x1, yy)], fill=tint(bark, f), width=(dia - 4) // 6 + 1)
+        for side, through in ((0, left_through), (1, right_through)):
+            cx = 24 if side == 0 else w - 24
+            ex = 2 if side == 0 else w - 2
 
-        for _ in range(12):                  # bark ridges
-            rx = int(rng.integers(x0, x1 - 40))
-            ry = y + int(rng.integers(6, dia - 6))
-            d.line([(rx, ry), (rx + int(rng.integers(20, 70)), ry)], fill=tint(bark, 0.55), width=1)
-
-        d.line([(x0, y + 1), (x1, y + 1)], fill=(184, 176, 128), width=2)               # chinking: moss and clay between the logs
-        d.ellipse([x0 - 6, y + 5, x0 + 8, y + dia - 5], fill=(212, 180, 126), outline=(120, 84, 48))   # cut ends at the corners
-        d.ellipse([x1 - 8, y + 5, x1 + 6, y + dia - 5], fill=(212, 180, 126), outline=(120, 84, 48))
+            if through:
+                d.ellipse([ex - 10 if side == 0 else ex - 4, y + 5, ex + 4 if side == 0 else ex + 10, y + dia - 5], fill=end, outline=(120, 84, 48))
+                d.pieslice([cx - 17, y + dia - 20, cx + 17, y + dia + 12], 180, 360, fill=tint(bark, 0.35))              # the saddle notch under the log
+            else:
+                d.ellipse([cx - 22, y + 8, cx + 22, y + dia + 4], fill=end, outline=(120, 84, 48))                      # the other wall's log end, tucked into the notch
+                d.ellipse([cx - 10, y + 20, cx + 10, y + dia - 8], outline=(170, 130, 80))                              # growth rings
 
     return img
+
+
+def log_corner(out):
+    """Plan of a log corner, four courses side by side: walls A (horizontal) and B (vertical); the log that runs through the corner alternates."""
+    scale = 90
+    img = canvas((4 * (scale * 2 + 40) + 80, 2 * scale + 140), (34, 34, 38))
+    d = ImageDraw.Draw(img)
+    d.text((24, 10), "LOG CORNER, top view: the log that runs through alternates each course, so ends interlock", fill=(240, 240, 240), font=font(18))
+    t = 30                                   # log diameter in the picture
+
+    for c in range(4):
+        ox = 40 + c * (scale * 2 + 40)
+        oy = 70
+        a_through = c % 2 == 0
+        d.text((ox, oy + scale + t + 40), "course %d: %s runs through" % (c + 1, "A" if a_through else "B"), fill=(250, 220, 140), font=font(13))
+        ax0 = ox - 14 if a_through else ox + t
+        d.rectangle([ax0, oy + scale, ox + scale * 2, oy + scale + t], fill=(132, 96, 58), outline=(60, 40, 22))        # wall A
+        by0 = oy - 14 if not a_through else oy + 0
+        by1 = oy + scale + t if not a_through else oy + scale
+        d.rectangle([ox, by0, ox + t, by1 + (14 if not a_through else 0)], fill=(150, 108, 66), outline=(60, 40, 22))    # wall B
+        d.ellipse([ox - 14, oy + scale + 4, ox - 2, oy + scale + t - 4], fill=(212, 180, 126)) if a_through else d.ellipse([ox + 4, oy - 14, ox + t - 4, oy - 2], fill=(212, 180, 126))
+
+    img.save(out)
 
 
 def voronoi(rng, w, h, cells):
@@ -498,6 +543,426 @@ def roof_stone(rng):
     return img
 
 
+# ---------------------------------------------------------------- doors and windows (1 m wide, 2 m high; double = 2 m wide)
+DOOR = (PPM, 2 * PPM)
+
+
+def door_planks(d, w, h, rng, col, battens=True):
+    pw = w // 5
+
+    for i in range(5):
+        c = tint(col, rng.uniform(0.9, 1.08))
+        d.rectangle([i * pw, 0, (i + 1) * pw - 2, h], fill=c)
+        d.line([((i + 1) * pw - 1, 0), ((i + 1) * pw - 1, h)], fill=tint(c, 0.5), width=2)
+
+    if battens:
+        for y in (28, h - 48):
+            d.rectangle([0, y, w, y + 16], fill=tint(col, 0.7))
+
+
+def handle(d, x, y, col=(70, 70, 76)):
+    """A bar pull handle (not a knob): a vertical steel bar on two small posts."""
+    d.rectangle([x, y - 22, x + 5, y + 22], fill=col, outline=(20, 20, 20))
+    d.rectangle([x - 5, y - 20, x, y - 15], fill=tint(col, 0.7))
+    d.rectangle([x - 5, y + 15, x, y + 20], fill=tint(col, 0.7))
+
+
+def door_basic(rng):
+    w, h = DOOR
+    img = canvas((w, h), (70, 52, 30))
+    d = ImageDraw.Draw(img)
+
+    for y in range(6, h, 10):                # a woven hurdle of sticks
+        for x in range(4, w - 8, 12):
+            over = ((x // 12) + (y // 10)) % 2 == 0
+            d.line([(x, y + (2 if over else -2)), (x + 12, y + (-2 if over else 2))], fill=tint((170, 128, 76), rng.uniform(0.85, 1.1)), width=6)
+
+    for _ in range(700):                     # thatch tied on
+        x = int(rng.integers(0, w))
+        y = int(rng.integers(0, h - 20))
+        d.line([(x, y), (x + int(rng.integers(-2, 3)), y + int(rng.integers(8, 24)))], fill=tint((208, 180, 104), rng.uniform(0.7, 1.1)), width=1)
+
+    d.line([(0, 40), (w, 52)], fill=(216, 198, 150), width=3)             # twine ties
+    d.line([(0, h - 60), (w, h - 50)], fill=(216, 198, 150), width=3)
+    d.rectangle([0, 0, 5, h], fill=(90, 62, 36))
+    d.rectangle([w - 5, 0, w, h], fill=(90, 62, 36))
+    return img
+
+
+def door_plank(rng):
+    w, h = DOOR
+    img = canvas((w, h), (30, 22, 14))
+    d = ImageDraw.Draw(img)
+    door_planks(d, w, h, rng, (160, 120, 74))
+    d.rectangle([w - 30, h // 2 - 4, w - 14, h // 2 + 4], fill=(70, 50, 30))    # a wooden latch bar
+    return img
+
+
+def door_reinforced(rng):
+    w, h = DOOR
+    img = canvas((w, h), (30, 22, 14))
+    d = ImageDraw.Draw(img)
+    door_planks(d, w, h, rng, (170, 128, 80), battens=False)
+
+    for y in (30, h - 50):                   # iron bands with strap hinges and rivets
+        d.rectangle([0, y, w, y + 14], fill=(62, 62, 66))
+        d.line([(0, y), (w, y)], fill=(110, 110, 116), width=1)
+
+        for x in range(10, w, 22):
+            d.ellipse([x - 2, y + 5, x + 2, y + 9], fill=(130, 130, 136))
+
+    handle(d, w - 26, h // 2)
+    return img
+
+
+def door_wrought(rng):
+    w, h = DOOR
+    img = canvas((w, h), (24, 20, 18))
+    d = ImageDraw.Draw(img)
+    d.rectangle([0, 0, w, h], fill=(56, 56, 60))
+    d.rectangle([5, 5, w - 5, h - 5], outline=(100, 100, 108), width=3)
+
+    for k in range(3):                       # a wrought lattice of crossed bars over dark planks
+        top = 14 + k * 90
+        d.rectangle([14, top, w - 14, top + 76], fill=(86, 66, 44))
+
+        for x in range(14, w - 14, 18):
+            d.line([(x, top), (x + 18, top + 76)], fill=(40, 40, 44), width=4)
+            d.line([(x + 18, top), (x, top + 76)], fill=(40, 40, 44), width=4)
+
+        for x in (14, w - 20):
+            for y in (top, top + 70):
+                d.ellipse([x, y, x + 6, y + 6], fill=(150, 150, 156))
+
+    handle(d, w - 28, h // 2, (150, 150, 156))
+    return img
+
+
+def door_steel(rng):
+    w, h = DOOR
+    img = canvas((w, h), (24, 24, 28))
+    d = ImageDraw.Draw(img)
+    d.rectangle([0, 0, w, h], fill=(120, 126, 136))
+    d.rectangle([6, 6, w - 6, h - 6], outline=(200, 206, 216), width=2)
+
+    for k in range(2):                       # two big steel panels with iron frames and studs
+        top = 14 + k * 140
+        d.rectangle([16, top, w - 16, top + 120], fill=(150, 156, 168), outline=(60, 60, 66), width=4)
+        d.line([(20, top + 4), (w - 20, top + 4)], fill=(220, 226, 236), width=2)
+        d.rectangle([w // 2 - 3, top + 14, w // 2 + 3, top + 106], fill=(70, 70, 76))
+
+        for x in (26, w - 32):
+            for y in (top + 10, top + 108):
+                d.ellipse([x, y, x + 8, y + 8], fill=(220, 226, 236), outline=(60, 60, 66))
+
+    handle(d, w - 28, h // 2, (230, 234, 242))                              # a steel pull handle
+    return img
+
+
+def door_double(rng):
+    """A double door in a full 2 m x 2.4 m wall slot: 10 cm clear at the top and both sides; the leaves reach the floor (no bottom gap). 1.8 m wide, 2.3 m high."""
+    sw, sh = 2 * PPM, int(2.4 * PPM)
+    img = canvas((sw, sh), (96, 70, 44))                        # the wall around it
+    g = int(0.1 * PPM)
+    leaf_w, leaf_h = (sw - 2 * g) // 2, sh - g
+    d = ImageDraw.Draw(img)
+    d.rectangle([g - 3, g - 3, sw - g + 3, sh], fill=(12, 10, 8))                       # the 10 cm gap: dark above and beside the leaves
+
+    for k in range(2):
+        leaf = Image.new("RGB", (leaf_w, leaf_h), (30, 22, 14))
+        dl = ImageDraw.Draw(leaf)
+        door_planks(dl, leaf_w, leaf_h, rng, (170, 128, 80), battens=False)
+
+        for y in (28, leaf_h - 46):
+            dl.rectangle([0, y, leaf_w, y + 14], fill=(62, 62, 66))
+
+            for x in range(8, leaf_w, 20):
+                dl.ellipse([x - 2, y + 5, x + 2, y + 9], fill=(130, 130, 136))
+
+        img.paste(leaf, (g + k * leaf_w, g))
+
+    d = ImageDraw.Draw(img)
+    d.line([(sw // 2, g), (sw // 2, sh)], fill=(10, 8, 6), width=3)
+    handle(d, sw // 2 - 16, sh // 2)
+    handle(d, sw // 2 + 8, sh // 2)
+    return img
+
+
+def window_single(rng):
+    """A window is just a hole in the wall (Dave): the wall around it, sky and a tree beyond. No frame. Shutters come later as separate hinged pieces."""
+    w, h = DOOR
+    img = canvas((w, h), (96, 70, 44))
+    d = ImageDraw.Draw(img)
+
+    for x in range(0, w, 22):
+        d.line([(x, 0), (x, h)], fill=(70, 50, 30), width=1)
+
+    d.rectangle([20, 60, w - 20, 160], fill=(150, 190, 220))
+    d.ellipse([40, 100, 100, 160], fill=(70, 120, 60))
+    d.rectangle([20, 60, w - 20, 160], outline=(20, 14, 8), width=3)
+    return img
+
+
+def window_double(rng):
+    """A wide window: a bigger hole, 1.6 m (still just a hole)."""
+    w, h = DOOR
+    img = canvas((w * 2, h), (96, 70, 44))
+    d = ImageDraw.Draw(img)
+
+    for x in range(0, w * 2, 22):
+        d.line([(x, 0), (x, h)], fill=(70, 50, 30), width=1)
+
+    d.rectangle([30, 60, w * 2 - 30, 160], fill=(150, 190, 220))
+    d.ellipse([80, 100, 160, 160], fill=(70, 120, 60))
+    d.rectangle([30, 60, w * 2 - 30, 160], outline=(20, 14, 8), width=3)
+    return img
+
+
+def doors_sheet(out):
+    gap = 24
+    items = [("1 Basic door", door_basic, "hurdle, thatch, twine"), ("2 Plank door", door_plank, "planks, battens"), ("3 Reinforced", door_reinforced, "iron bands, rivets"),
+             ("4 Wrought iron", door_wrought, "iron frame, bars"), ("5 Steel and iron", door_steel, "steel panels, steel handle"),
+             ("Double door", door_double, "10 cm gap top and sides, to the floor"), ("Window", window_single, "just a hole, no frame"), ("Wide window", window_double, "a wider hole, 2 m slot")]
+    sizes = [DOOR, DOOR, DOOR, DOOR, DOOR, (2 * DOOR[0], int(2.4 * PPM)), DOOR, (2 * DOOR[0], DOOR[1])]
+    w = sum(s[0] for s in sizes) + gap * (len(items) + 1)
+    h = 72 + int(2.4 * PPM) + 40 + gap
+    img = canvas((w, h), (34, 34, 38))
+    d = ImageDraw.Draw(img)
+    d.text((gap, 10), "DOORS AND WINDOWS: door 1 m x 2 m; double door fills a 2 x 2.4 m slot, 10 cm gap top and sides; windows are holes", fill=(240, 240, 240), font=font(22))
+    x = gap
+
+    for (name, make, note), size in zip(items, sizes):
+        img.paste(make(rng_for(len(name))), (x, 72))
+        d.rectangle([x - 1, 71, x + size[0], 72 + size[1]], outline=(15, 15, 15))
+        d.text((x, 48), name, fill=(250, 220, 140), font=font(15))
+        d.text((x, 72 + size[1] + 6), note, fill=(200, 200, 200), font=font(12))
+        x += size[0] + gap
+
+    img.save(out)
+
+
+def roof_pieces(out):
+    """Roof slope pieces at 45 and 65 degrees with their hip and valley corner pieces, and pillars with their snap points. 60 px per metre."""
+    k = 60
+    img = canvas((1500, 1230), (34, 34, 38))
+    d = ImageDraw.Draw(img)
+    d.text((24, 10), "ROOF PIECES AND PILLARS (60 px = 1 m)", fill=(240, 240, 240), font=font(22))
+    shingle = (190, 150, 100)
+
+    for n, (deg, rise) in enumerate(((45, 2.0), (65, 4.29))):          # side view: a 4 m wide house, 2.4 m walls, a gable roof
+        ox, oy = 40 + n * 330, 60
+        top = oy + 430
+        wall_top = top - int(2.4 * k)
+        d.rectangle([ox, wall_top, ox + 4 * k, top], fill=(120, 112, 100), outline=(220, 220, 220))
+        apex = (ox + 2 * k, wall_top - int(rise * k))
+        d.polygon([(ox - 10, wall_top), apex, (ox + 4 * k + 10, wall_top)], fill=shingle, outline=(240, 240, 240))
+
+        for yy in range(wall_top - 8, apex[1], -14):                   # shingle courses
+            f = (wall_top - yy) / max(wall_top - apex[1], 1)
+            d.line([(ox - 10 + f * (2 * k + 10), yy), (ox + 4 * k + 10 - f * (2 * k + 10), yy)], fill=(130, 100, 64), width=1)
+
+        run = 2.0
+        d.text((ox, top + 6), "%d degrees: 2 m run, rise %.1f m, slope %.2f m" % (deg, rise, (run * run + rise * rise) ** 0.5), fill=(250, 220, 140), font=font(12))
+        d.text((ox + 4, top + 24), "walls 2.4 m, house 4 m wide", fill=(170, 170, 170), font=font(11))
+
+    # plan views of the pieces (seen from above); arrow = downhill, dashed = ridge or hip line
+    y0 = 600
+    labels = [("slope piece (45 and 65)", "straight"), ("hip corner (outside)", "hip"), ("valley corner (inside)", "valley")]
+
+    for n, (label, kind) in enumerate(labels):
+        ox = 40 + n * 250
+        d.rectangle([ox, y0, ox + 2 * k, y0 + 2 * k], outline=(120, 120, 126))
+
+        if kind == "straight":
+            d.rectangle([ox, y0, ox + 2 * k, y0 + 2 * k], fill=shingle, outline=(240, 240, 240))
+            d.line([(ox + k, y0 + 12), (ox + k, y0 + 2 * k - 12)], fill=(60, 40, 20), width=3)
+            d.polygon([(ox + k, y0 + 2 * k - 6), (ox + k - 8, y0 + 2 * k - 22), (ox + k + 8, y0 + 2 * k - 22)], fill=(60, 40, 20))
+        elif kind == "hip":
+            d.polygon([(ox, y0 + 2 * k), (ox + 2 * k, y0 + 2 * k), (ox + 2 * k, y0)], fill=shingle, outline=(240, 240, 240))
+            d.line([(ox, y0 + 2 * k), (ox + 2 * k, y0)], fill=(60, 40, 20), width=3)
+        else:
+            d.polygon([(ox, y0), (ox, y0 + 2 * k), (ox + 2 * k, y0 + 2 * k)], fill=shingle, outline=(240, 240, 240))
+            d.line([(ox, y0), (ox + 2 * k, y0 + 2 * k)], fill=(60, 40, 20), width=3)
+
+        d.text((ox, y0 + 2 * k + 8), label, fill=(250, 220, 140), font=font(12))
+
+    d.text((40, y0 - 22), "Roof pieces seen from above (each 2 m x 2 m of footprint; one set per angle; tier look on the surface)", fill=(240, 240, 240), font=font(14))
+    d.text((40, y0 + 2 * k + 30), "Same three pieces at 45 and at 65 degrees. A hip corner turns an outside corner of the house; a valley corner fills an inside corner (an L-shaped house).", fill=(200, 200, 200), font=font(12))
+
+    # pillars
+    y1 = 930
+    d.text((40, y1 - 28), "Pillars: snap to the centre or any of the 4 corners of a foundation or a ceiling", fill=(240, 240, 240), font=font(14))
+    styles = [("round log post", (130, 94, 56), 0.3, "round"), ("squared timber", (190, 150, 100), 0.3, "box"), ("stone pillar", (130, 126, 118), 0.45, "box"), ("mason column", (184, 178, 164), 0.5, "col")]
+
+    for n, (label, col, wd, kind) in enumerate(styles):
+        ox = 40 + n * 130
+        bw = int(wd * k * 1.4)
+        d.rectangle([ox + 20 - bw // 2, y1, ox + 20 + bw // 2, y1 + int(2.4 * k)], fill=col, outline=(20, 20, 20))
+
+        if kind == "col":
+            d.rectangle([ox + 20 - bw // 2 - 6, y1 + int(2.4 * k) - 10, ox + 20 + bw // 2 + 6, y1 + int(2.4 * k)], fill=tint(col, 0.9))
+            d.rectangle([ox + 20 - bw // 2 - 6, y1, ox + 20 + bw // 2 + 6, y1 + 10], fill=tint(col, 1.05))
+
+        d.text((ox - 10, y1 + int(2.4 * k) + 8), label, fill=(250, 220, 140), font=font(11))
+
+    fx, fy = 560, y1 - 10
+    d.rectangle([fx, fy, fx + 4 * 40, fy + 4 * 40], fill=(120, 116, 108), outline=(230, 230, 230))
+
+    for gx, gy in ((0, 0), (4, 0), (0, 4), (4, 4), (2, 2)):
+        d.ellipse([fx + gx * 40 - 6, fy + gy * 40 - 6, fx + gx * 40 + 6, fy + gy * 40 + 6], fill=(250, 200, 60), outline=(20, 20, 20))
+
+    d.text((fx, fy + 170), "foundation 4 x 4 m: 5 pillar snaps", fill=(250, 220, 140), font=font(12))
+    cx = 800
+    d.rectangle([cx, fy, cx + 2 * 40, fy + 2 * 40], fill=(150, 120, 80), outline=(230, 230, 230))
+
+    for gx, gy in ((0, 0), (2, 0), (0, 2), (2, 2), (1, 1)):
+        d.ellipse([cx + gx * 40 - 6, fy + gy * 40 - 6, cx + gx * 40 + 6, fy + gy * 40 + 6], fill=(250, 200, 60), outline=(20, 20, 20))
+
+    d.text((cx, fy + 100), "ceiling or floor cell 2 x 2 m: 5 snaps", fill=(250, 220, 140), font=font(12))
+    img.save(out)
+
+
+# ---------------------------------------------------------------- ceilings (seen from below), flat tarred roof, braces
+def ceil_basic(rng):
+    w, h = FLOOR
+    img = canvas((w, h), (62, 46, 28))
+    d = ImageDraw.Draw(img)
+
+    for x in range(20, w, 50):               # round pole rafters
+        d.rectangle([x - 7, 0, x + 7, h], fill=(110, 78, 46), outline=(60, 40, 22))
+
+    for _ in range(1800):                    # straw and thatch showing between them
+        x, y = int(rng.integers(0, w)), int(rng.integers(0, h))
+        d.line([(x, y), (x + int(rng.integers(-3, 4)), y + int(rng.integers(8, 20)))], fill=tint((200, 170, 96), rng.uniform(0.6, 1.0)), width=1)
+
+    return img
+
+
+def ceil_plank(rng):
+    img = floor_plank(rng)
+    d = ImageDraw.Draw(img)
+
+    for y in (60, 240):                      # a rough beam each way
+        d.rectangle([0, y, FLOOR[0], y + 22], fill=(96, 68, 40), outline=(50, 34, 20))
+
+    return img
+
+
+def ceil_fine(rng):
+    img = floor_fine(rng)
+    d = ImageDraw.Draw(img)
+
+    for y in (0, 138):
+        d.rectangle([0, y, FLOOR[0], y + 24], fill=(150, 112, 70), outline=(100, 70, 44))
+
+    return img
+
+
+def ceil_log(rng):
+    w, h = FLOOR
+    img = canvas((w, h), (40, 28, 16))
+    d = ImageDraw.Draw(img)
+
+    for x in range(0, w, 40):                # round log joists with the planks laid across
+        d.rectangle([x + 2, 0, x + 38, h], fill=tint((130, 94, 56), rng.uniform(0.85, 1.1)), outline=(60, 40, 22))
+        d.line([(x + 12, 0), (x + 12, h)], fill=(160, 120, 76), width=2)
+
+    return img
+
+
+def ceil_cobble(rng):
+    w, h = FLOOR
+    img = canvas((w, h), (50, 36, 22))
+    d = ImageDraw.Draw(img)
+    x = 0
+
+    while x < w:                             # heavy squared beams close together with a plank between
+        bw = 56
+        d.rectangle([x, 0, x + bw, h], fill=tint((112, 82, 50), rng.uniform(0.9, 1.08)), outline=(50, 34, 20))
+        d.rectangle([x + bw, 0, x + bw + 14, h], fill=(150, 116, 74))
+        x += bw + 14
+
+    return img
+
+
+def ceil_mason(rng):
+    w, h = FLOOR
+    img = canvas((w, h), (110, 106, 98))
+    d = ImageDraw.Draw(img)
+    s2 = 75
+
+    for j in range(0, h, s2):
+        for i in range(0, w, s2):
+            col = tint((190, 184, 170), rng.uniform(0.94, 1.06))
+            d.rectangle([i + 4, j + 4, i + s2 - 4, j + s2 - 4], fill=col)                  # coffered panels
+            d.rectangle([i + 14, j + 14, i + s2 - 14, j + s2 - 14], fill=tint(col, 0.9), outline=tint(col, 0.7))
+
+    return img
+
+
+def roof_tar(rng):
+    """A flat roof (1 in 15 fall) of boards covered in tar: black, slightly glossy, seams, streaks, a raised lip round the edge."""
+    w, h = ROOF
+    img = canvas((w, h), (24, 24, 26))
+    d = ImageDraw.Draw(img)
+    a = np.asarray(img, dtype=np.float32) * (0.8 + 0.5 * noise(rng, w, h, 5))[..., None]
+    img = Image.fromarray(np.clip(a, 0, 255).astype(np.uint8))
+    d = ImageDraw.Draw(img)
+
+    for x in range(0, w, 60):                # the board seams show through
+        d.line([(x, 0), (x, h)], fill=(10, 10, 12), width=2)
+
+    for _ in range(10):                      # tar streaks running to the low edge
+        x = int(rng.integers(8, w - 8))
+        y = int(rng.integers(0, h - 140))
+        d.line([(x, y), (x + int(rng.integers(-5, 6)), y + int(rng.integers(60, 140)))], fill=(48, 48, 54), width=int(rng.integers(2, 5)))
+
+    d.rectangle([0, 0, w - 1, h - 1], outline=(60, 60, 66), width=10)         # the raised lip
+    d.line([(10, 10), (w - 10, 10)], fill=(90, 90, 98), width=2)
+    return img
+
+
+def braces(out):
+    """Tunnel and cellar braces (timber sets) in three widths: 1.5, 3 and 5 m; front view, 60 px per metre, 2.4 m high, with a side view of the lagging."""
+    k = 60
+    img = canvas((1100, 560), (34, 34, 38))
+    d = ImageDraw.Draw(img)
+    d.text((24, 10), "BRACES: three widths, front view (60 px = 1 m, 2.4 m high)", fill=(240, 240, 240), font=font(22))
+    wood = (150, 110, 68)
+    dark = (96, 68, 40)
+    x = 40
+
+    for wd, post, cap, label, note in ((1.5, 0.18, 0.2, "small 1.5 m", "two posts, cap beam"), (3.0, 0.24, 0.26, "medium 3 m", "posts, cap beam, corner braces"),
+                                       (5.0, 0.3, 0.34, "large 5 m", "thick posts, double cap beam, corner braces, centre prop")):
+        top, bot = 90, 90 + int(2.4 * k)
+        wpx = int(wd * k)
+        d.rectangle([x, top, x + wpx, bot], fill=(40, 34, 28))                                      # the dark opening behind
+        d.rectangle([x, top, x + int(post * k), bot], fill=wood, outline=(40, 26, 14))             # left post
+        d.rectangle([x + wpx - int(post * k), top, x + wpx, bot], fill=wood, outline=(40, 26, 14))  # right post
+        d.rectangle([x - 6, top - int(cap * k), x + wpx + 6, top], fill=dark, outline=(40, 26, 14))   # cap beam
+
+        if wd >= 5.0:
+            d.rectangle([x - 6, top - int(cap * k) * 2, x + wpx + 6, top - int(cap * k)], fill=wood, outline=(40, 26, 14))     # a second cap beam
+
+        if wd >= 3.0:
+            for sgn in (-1, 1):                                                                       # corner braces
+                cx = x + int(post * k) if sgn < 0 else x + wpx - int(post * k)
+                bl = int(0.7 * k)
+                pts = [(cx, top), (cx + sgn * -1 * bl, top), (cx, top + bl)] if sgn < 0 else [(cx, top), (cx - bl, top), (cx, top + bl)]
+                d.polygon([(cx, top), (cx + (bl if sgn < 0 else -bl), top), (cx, top + bl)], fill=wood, outline=(40, 26, 14))
+
+        if wd >= 5.0:
+            mx = x + wpx // 2
+            d.rectangle([mx - 8, top, mx + 8, bot], fill=wood, outline=(40, 26, 14))             # centre prop
+
+        d.text((x, bot + 12), label, fill=(250, 220, 140), font=font(14))
+        d.text((x, bot + 32), note, fill=(200, 200, 200), font=font(11))
+        x += wpx + 70
+
+    d.text((40, 470), "Behind the posts and over the cap beam: lagging (rough boards) holds the earth. Posts stand on the floor, cap beam carries the roof of the tunnel.", fill=(200, 200, 200), font=font(12))
+    img.save(out)
+
+
 # ---------------------------------------------------------------- sheets
 def font(size):
     for path in ("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf"):
@@ -562,12 +1027,19 @@ def main():
     out = sys.argv[1] if len(sys.argv) > 1 else "."
     os.makedirs(out, exist_ok=True)
     sheet("WALLS: 2 m wide, 2.4 m high (seen from outside)", [wall_basic, wall_plank, wall_fine, wall_log, wall_cobble, wall_mason], WALL, os.path.join(out, "tiers_walls.png"),
-          ["woven rods, stakes, straw on top", "bark face out (inset: smooth face in)", "lapped boards, nails, trim", "stacked logs, notched ends", "round stones, thick mortar", "large carved blocks, plinth"])
+          ["woven rods, stakes, straw on top", "smooth rounded out, rough flat in", "lapped boards, nails, trim", "corners interlock, notches opposite", "round stones, thick mortar", "large carved blocks, plinth"])
     sheet("FLOORS: 2 m square (seen from above)", [floor_basic, floor_plank, floor_fine, floor_log, floor_flag, floor_block], FLOOR, os.path.join(out, "tiers_floors.png"),
           ["beaten earth, straw, woven mat", "rough planks, gaps, pegs", "planed boards, nail pairs", "split logs, flat side up", "flagstone, narrow joints", "cut stone blocks, tight joints"])
     sheet("ROOFS: 2.4 m square (seen from above, eave at the bottom)", [roof_thatch, roof_plank, roof_fine, roof_log, roof_slab, roof_stone], ROOF, os.path.join(out, "tiers_roofs.png"),
           ["thatch, bound courses, thick eave", "riven plank shingles, ragged", "sawn shingles, nailed", "bark sheets over log rafters", "stone slabs on beams", "dressed slabs, carved ridge"])
     plan(os.path.join(out, "tiers_plan.png"))
+    doors_sheet(os.path.join(out, "tiers_doors.png"))
+    log_corner(os.path.join(out, "tiers_log_corner.png"))
+    roof_pieces(os.path.join(out, "tiers_roof_pieces.png"))
+    sheet("CEILINGS: 2 m square (seen from below, inside the room)", [ceil_basic, ceil_plank, ceil_fine, ceil_log, ceil_cobble, ceil_mason], FLOOR, os.path.join(out, "tiers_ceilings.png"),
+          ["pole rafters, straw between", "rough planks on beams", "planed boards on beams", "round log joists, planks", "heavy beams, planks between", "coffered dressed stone"])
+    sheet("FLAT ROOF: 2.4 m square (seen from above)", [roof_tar], ROOF, os.path.join(out, "tiers_flat_roof.png"), ["boards under black tar, raised lip"])
+    braces(os.path.join(out, "tiers_braces.png"))
     parts = [Image.open(os.path.join(out, n)) for n in ("tiers_walls.png", "tiers_floors.png", "tiers_roofs.png")]
     allimg = canvas((max(p.width for p in parts), sum(p.height for p in parts)), (34, 34, 38))
     y = 0
