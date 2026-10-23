@@ -22,11 +22,11 @@ Written 2026-10-22 by the Guru. Goal: one phone-friendly page where the owner an
 
 ## 4. Page parts
 - Header: Forget token (left), title, Dave's commands (right): status, audit, goodnight, idea.
-- "Things to check": numbered cards, which build to pull, what to look at, Yes / No, "Why not?" box on No. Used only when a thread needs Dave to look; he does not pull builds otherwise.
+- "Things to check": numbered cards (a note line `Image: questions/img/<file>.png` adds a picture; keep pictures under 300 KB), which build to pull, what to look at, Yes / No, "Why not?" box on No. Used only when a thread needs Dave to look; he does not pull builds otherwise.
 - "Questions": multiple choice cards (recommended pick marked in the text), Save moves the answer to ANSWERS.md.
 
 ## 5. Flows
-- Ask flow (BP-T33): thread asks the Guru with its recommendation; the Guru answers from best practices or posts to the page; threads never write QUESTIONS.md; Dave answers when he can; the Guru reviews ANSWERS.md and replies to the thread.
+- Ask flow (BP-T52, Dave 23 Oct 23:23, replaces BP-T33/BP-T50 routing): the asking thread first checks HANDOFF.md, the DESIGN docs, questions/ANSWERS.md and DECISIONS.md; if the answer is not there it posts the card ITSELF with tools/qa_post.py and its recommendation and why (same card rules as BP-T51: Yes/No + Why-not, one question per card, picture pushed first, numbered steps for anything Dave does). Tyler is not in the path (he still sweeps ANSWERS into DECISIONS). Old line, kept for history: thread asks the Guru, the Guru answers from best practices or posts to the page; threads never write QUESTIONS.md; Dave answers when he can; the Guru reviews ANSWERS.md and replies to the thread.
 - Test flow: thread adds a TEST_QUEUE.md line (build, what to look at); the Guru batches ready lines into `[check]` cards.
 - Watching: `tools/watch_answers.sh` remembers the last commit SHA of ANSWERS.md and QUESTIONS.md and uses an ETag, so an unchanged poll is a free HTTP 304 and prints nothing. Run it under a Monitor so the AI wakes only on a printed line. Never generate questions because time passed.
 - Style: numbered steps whenever Dave must act; succinct; "Question added: <title>".

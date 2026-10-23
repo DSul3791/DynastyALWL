@@ -14,7 +14,7 @@ Index: 1 Team and roles | 2 How we talk | 3 Daily rhythm | 4 Job flow (BP-T50) |
 Thread names count iterations: Name_NNN (a fresh thread each day, see section 3).
 ## 2. How we talk
 1. Cloud threads CANNOT message each other. Everything goes through the coordinator, who relays.
-2. Anything Dave must decide, test or do = a QA card (his to-do list, BP-T44), sent through Tyler who adds a recommendation (BP-T50). Cards: Yes/No + Why-not, TEST/PICTURE + Notes; one question per card; numbered steps for anything Dave does; never remove a card he may be answering.
+2. Anything Dave must decide, test or do = a QA card (his to-do list, BP-T44), posted by the asking thread itself with qa_post.py and its own recommendation and why (BP-T52; Tyler no longer routes questions). Cards: Yes/No + Why-not, TEST/PICTURE + Notes; one question per card; numbered steps for anything Dave does; never remove a card he may be answering.
 3. Dave's replies: SUCCINCT, "Test done: 1 pass, 3 fail"; point form numbered for anything he must do; times in Atlantic (ADT = UTC-3 until 1 Nov, then AST = UTC-4); notify only for things needing Dave and "Finished:" items.
 4. Dave's commands: status, audit, goodnight, idea.
 5. Threads write notes in /mnt/project-files/ (shared folder, master docs in tech/, mirror in repo docs/mirror/).
@@ -22,11 +22,11 @@ Thread names count iterations: Name_NNN (a fresh thread each day, see section 3)
 - 8:00 AM Atlantic: every thread writes handoff/<Name>_<NNN>_HANDOFF.md, updates its tech/OPEN_<Name>.md, pushes; Tyler merges and rewrites the NOW block in HANDOFF.md and tech/DAY_LOG.md; the coordinator resets threads (fresh session reads HANDOFF NOW block, BIG_PICTURE, own handoff, OPEN file, DECISIONS tail). See tech/DAILY_HANDOFF.md.
 - Hourly moderator check (coordinator): no thread idle, tell Dave when a thread waits on a permission prompt.
 - Dave tests at night after the backup. When Dave says done: finish, push, handoff; Tyler merges ready branches; MikeW full check then backup (game and server closed). 8:18 pm wrap-up and 9 pm backup routines.
-## 4. Job flow (BP-T50, Dave 23 Oct 18:31)
+## 4. Job flow (BP-T50, replaced by BP-T52 Dave 23 Oct 23:23: ONE action plan per branch, Tyler answers ONCE, then no more talk; questions go straight to the QA page)
 1. Every thread may do anything on its OWN job list.
 2. Before creating a branch the thread writes an ACTION PLAN (goal, files, how, test, label, needs Dave?) in tech/ACTION_PLANS/<Name>_<topic>.md.
-3. Tyler researches and replies with the best way and GO (aim: same hour). No GO yet = start the next item on the list.
-4. After GO: read and write wherever the job needs. Ask Tyler nothing else except QA cards.
+3. Tyler looks up best practices and writes his suggestions for how to implement it, ONCE, into the same plan file as the GO (aim: same hour). No GO yet = start the next item on the list. After that the thread does not need to speak to Tyler about the branch.
+4. After GO: read and write wherever the job needs. Questions for Dave go DIRECTLY to the QA page with tools/qa_post.py (BP-T52), after checking HANDOFF, DESIGN docs, questions/ANSWERS.md and DECISIONS.md that the answer does not exist; always with your recommendation and why. Tyler is not in the question path.
 5. Nobody is ever blocked (BP-T44): a waiting thread moves to the next item and never touches another thread's code.
 ## 5. Branches, merges, builds
 - Work only on claude/generator-v2 through per-thread branches claude/<name>-<topic>; never touch main (Dave merges). A branch with "held" in the name never merges.
