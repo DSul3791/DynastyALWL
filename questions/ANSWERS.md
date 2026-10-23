@@ -1094,3 +1094,7 @@ Answered: 2026-10-23 04:15 UTC
 Answer: Yes
 Answered: 2026-10-23 04:15 UTC
 
+## offhand-items | Off-hand items: pick a torch, shield or similar from the hotbar and it goes in your left hand; pick it again and it is put away; hold B to block with it?
+Answer: Yes
+Answered: 2026-10-23 04:15 UTC
+
