@@ -40,3 +40,5 @@ Format: Yes/No + Why-not box (BP-T39) unless marked T or P (BP-T40).
 20. Is spade fill with stone enough, with no separate rock-pile item? Recommend Yes (Sal).
 21. Do fortress and town foundations on your own island need ground about 1 m above sea level, with the normal blueprint and load rules? Recommend Yes.
 (Sea boundary link: Steve confirmed the sim only drains into the sea; a recommended sea boundary link in water_sim.gd is needed for cards 8 to 10, server restart, so it is part of the answer to card 8.)
+22. When a tunnel under the ocean (or a lake) comes within about 4 m of the water above, should water drip from the ceiling, the floor look wet and make splashing sounds, and no water accumulate (like Minecraft)? Recommend Yes (Dave's own rule: card confirms the numbers).
+23. Should a ceiling that thin also shorten the collapse timer, so you must brace well? Recommend Yes (Steve to propose how much).
