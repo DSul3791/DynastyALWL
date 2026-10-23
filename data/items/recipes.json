@@ -1,6 +1,6 @@
 {
 	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist). station: the recipe is made only near that placed station (structures.json station, reach_m with 1 m grace on the server); station_level (default 1) is the lowest level of the station it needs.",
-	"next_number": 152,
+	"next_number": 156,
 	"recipes": {
 		"twine": {
 			"number": 1,
@@ -2903,7 +2903,7 @@
 			],
 			"craft_s": 4.0,
 			"known": false,
-			"station": "workbench",
+			"station": "woodworking_table",
 			"station_level": 1
 		},
 		"nails": {
@@ -3008,6 +3008,45 @@
 			],
 			"craft_s": 5.0,
 			"known": true,
+			"station": "workbench",
+			"station_level": 1
+		},
+		"saw_blade": {
+			"number": 152,
+			"name": "Saw blades",
+			"needs": [["iron_ingot", 2]],
+			"gives": ["saw_blade", 1],
+			"craft_s": 20.0,
+			"known": false,
+			"station": "forge"
+		},
+		"water_wheel": {
+			"number": 153,
+			"name": "Water wheel",
+			"needs": [["lumber", 20], ["nails", 80]],
+			"gives": ["water_wheel", 1],
+			"craft_s": 40.0,
+			"known": false,
+			"station": "workbench",
+			"station_level": 1
+		},
+		"saw_mill_kit": {
+			"number": 154,
+			"name": "Sawmill",
+			"needs": [["lumber", 40], ["nails", 100], ["saw_blade", 1], ["water_wheel", 1]],
+			"gives": ["saw_mill_kit", 1],
+			"craft_s": 60.0,
+			"known": false,
+			"station": "workbench",
+			"station_level": 1
+		},
+		"woodworking_table_kit": {
+			"number": 155,
+			"name": "Woodworking table",
+			"needs": [["lumber", 12], ["nails", 60]],
+			"gives": ["woodworking_table_kit", 1],
+			"craft_s": 30.0,
+			"known": false,
 			"station": "workbench",
 			"station_level": 1
 		},
