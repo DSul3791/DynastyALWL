@@ -816,3 +816,7 @@ Answered: 2026-10-23 01:17 UTC
 Answer: No: Yes, but there doesn’t need to be a warning line when you dig you will see the water move
 Answered: 2026-10-23 01:18 UTC
 
+## sea-tides | Are tides left for later, not now?
+Answer: No: No tides
+Answered: 2026-10-23 01:18 UTC
+
