@@ -1090,3 +1090,7 @@ Answered: 2026-10-23 04:14 UTC
 Answer: Yes
 Answered: 2026-10-23 04:15 UTC
 
+## rockpile-take | Taking from a pile: press E to take a handful (about 5), hold E to take as many as you can carry, and the pile shrinks row by row?
+Answer: Yes
+Answered: 2026-10-23 04:15 UTC
+
