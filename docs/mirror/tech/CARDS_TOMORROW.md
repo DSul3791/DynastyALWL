@@ -15,6 +15,9 @@ Format: Yes/No + Why-not box (BP-T39) unless marked T or P (BP-T40).
 - cost table v2: foundation costs by tier (dirt, wooden, stone; small/large), stone floor and roof costs with the wooden layer underneath, wood pillar = 1 log (8 ft = 2.4 m), braces from logs and wooden pins in plain and tar-soaked versions, wrought iron door with wood and nails.
 - floor-brace design (split log in half around the bottom edge in quarters).
 
+## Sonny
+7. Should we store the list of lakes and basins (where each is, how deep, where it overflows) in the tile file, so the game always puts water at the bottom of the same basins? Recommend Yes. (Note tech/TERRAIN_B_BASINS_NOTE.md; it adds a BASINS section to the tile format: Guru approval needed for the format change, BP-T28.)
+
 ## Steve
 - Esc menu rework (plain names, sound test page with a scrolling list, slide switches): cards only if something is unclear.
 
