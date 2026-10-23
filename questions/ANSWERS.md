@@ -756,3 +756,7 @@ Answered: 2026-10-23 00:51 UTC
 Answer: No: It will also need wood and nails
 Answered: 2026-10-23 00:52 UTC
 
+## cost-24 | Door, Wrought iron: 6 iron ingots?
+Answer: No: It will also need wood and nails
+Answered: 2026-10-23 00:52 UTC
+
