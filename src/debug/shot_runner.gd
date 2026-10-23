@@ -93,8 +93,8 @@ func _process(_delta: float) -> void:
 
 		client.body.velocity = Vector3.ZERO
 
-		if no_grass and client.grass != null:
-			client.grass.visible = false
+		if no_grass and client.grass != null and client.grass.enabled:
+			client.grass.set_radius(0.0)      # the grass view draws nothing (a quality change may turn it back on)
 
 		if client.held != null:
 			client.held.set_first_person(false)
@@ -175,8 +175,8 @@ func _show_flora(now: int) -> void:
 		if entry.is_empty():
 			continue
 
-		var x: float = p.x + (float(i) - float(n - 1) * 0.5) * 2.4
-		var z: float = p.z - 4.0
+		var x: float = p.x + (float(i) - float(n - 1) * 0.5) * 1.8
+		var z: float = p.z - 3.0
 		var g: float = _ground(x, z)
 
 		if is_nan(g):
@@ -199,7 +199,15 @@ func _show_flora(now: int) -> void:
 		tag.position = Vector3(x, g + h + 0.5, z)
 		client.add_child(tag)
 
-	client.flora.set_chunk(Vector2i(int(floor(p.x / client.flora.chunk_m)), int(floor((p.z - 4.0) / client.flora.chunk_m))), items, p)
+	var here: Vector2i = Vector2i(int(floor(p.x / client.flora.chunk_m)), int(floor((p.z - 3.0) / client.flora.chunk_m)))
+	var empty: Dictionary = {"ids": PackedInt32Array(), "positions": PackedVector3Array(), "heights": PackedFloat32Array(), "yaws": PackedFloat32Array()}
+
+	for dz in range(-1, 2):
+		for dx in range(-1, 2):
+			if dx != 0 or dz != 0:
+				client.flora.set_chunk(here + Vector2i(dx, dz), empty.duplicate(true), p)
+
+	client.flora.set_chunk(here, items, p)
 	_flora_t = now
 
 
