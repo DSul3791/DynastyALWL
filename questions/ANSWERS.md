@@ -560,3 +560,7 @@ Answered: 2026-10-22 23:59 UTC
 Answer: No: The basic door should not have a door knob and the steel door shouldn’t have the black band across the middle and the door handle should be a steel handle on the steel door and none of these doors should have door knobs they should have handles without latching mechanisms
 Answered: 2026-10-23 00:01 UTC
 
+## log-corner | Does the log wall now look like a real log cabin corner: round logs with saddle notches, each log overlapping the one below, the crossing log's end tucked into the notch?
+Answer: No: It’s almost right, but here’s what you do remove the protruding logs that look like they’re coming from the side walls and just have the logs that are in this wall and then we allow the other walls if they get connected to mix in between that space so that has to be an open space for logs to go through and then allow them to connect so that they interlock the way they properly should. Do your best get rid of the curved notch altogether. Redesign and send it back to me. It should almost look like your first one except the notches should be offset on each side.
+Answered: 2026-10-23 00:08 UTC
+
