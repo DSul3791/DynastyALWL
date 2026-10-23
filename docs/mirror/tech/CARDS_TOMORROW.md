@@ -16,7 +16,7 @@ Format: Yes/No + Why-not box (BP-T39) unless marked T or P (BP-T40).
 - floor-brace design (split log in half around the bottom edge in quarters).
 
 ## Sonny
-7. Should we store the list of lakes and basins (where each is, how deep, where it overflows) in the tile file, so the game always puts water at the bottom of the same basins? Recommend Yes. (Note tech/TERRAIN_B_BASINS_NOTE.md; it adds a BASINS section to the tile format: Guru approval needed for the format change, BP-T28.)
+7. [POSTED 01:15 as Sonny cards] Should we store the list of lakes and basins (where each is, how deep, where it overflows) in the tile file, so the game always puts water at the bottom of the same basins? Recommend Yes. (Note tech/TERRAIN_B_BASINS_NOTE.md; it adds a BASINS section to the tile format: Guru approval needed for the format change, BP-T28.)
 
 ## Steve
 - Esc menu rework (plain names, sound test page with a scrolling list, slide switches): cards only if something is unclear.
@@ -25,20 +25,20 @@ Format: Yes/No + Why-not box (BP-T39) unless marked T or P (BP-T40).
 - looks for the 8 new items (rough plank, fine board, nails, cobblestone, stone shingle, tar, hinges, wooden pin) as a picture card after MikeW renders.
 
 ## Ocean and digging on the beach (OCEAN_WATER_NOTE.md joint recommendation by Guru and Sonny; Steve confirms the sim parts first; the old OCEAN_DIG_NOTE.md is superseded)
-8. Is the sea an endless source at sea level, so a beach pit dug below 0 m and connected to the sea fills to sea level (trenches flood, harbours and canals possible)? Recommend Yes.
-9. Does a pit you dam off from the sea keep its water as a puddle? Recommend Yes.
-10. Do tunnels or rooms below sea level that connect to the sea flood and drown like the river-flood rule, with a plain warning line when you dig below sea level near the coast? Recommend Yes.
-11. Should the sea feed a pit at most 50 m3/s per connection, so a huge pit fills over minutes instead of instantly (tunable number)? Recommend Yes.
-12. Do river mouths stay sea-connected, so damming a mouth floods the river behind it (intended risk)? Recommend Yes.
-13. Tides later, not now? Recommend Yes.
-14. Can players build up land under the sea to make their own islands, by filling shallow sea with soil, sand, gravel, clay or stone with the spade (big islands cost lots of material)? Recommend Yes.
-15. (multiple choice) How deep may players fill sea by hand? Sal says shallow only, up to 1.5 m; Sonny says up to 6 m; Guru recommends about 4 m. Deeper water needs pillars.
-16. Does water displaced by fill just vanish into the sea? Recommend Yes.
-17. Can loose soil and sand slope away under water while rock and stone hold their shape (so a sand island needs rock edges)? Recommend Yes (Sonny).
-18. Can you build piers (Valheim style) as a row of foundation cells or pillars from the shore onto filled rock into shallow water? Recommend Yes.
+8. [POSTED 01:15 as Sonny cards] Is the sea an endless source at sea level, so a beach pit dug below 0 m and connected to the sea fills to sea level (trenches flood, harbours and canals possible)? Recommend Yes.
+9. [POSTED 01:15 as Sonny cards] Does a pit you dam off from the sea keep its water as a puddle? Recommend Yes.
+10. [POSTED 01:15 as Sonny cards] Do tunnels or rooms below sea level that connect to the sea flood and drown like the river-flood rule, with a plain warning line when you dig below sea level near the coast? Recommend Yes.
+11. [POSTED 01:15 as Sonny cards] Should the sea feed a pit at most 50 m3/s per connection, so a huge pit fills over minutes instead of instantly (tunable number)? Recommend Yes.
+12. [POSTED 01:15 as Sonny cards] Do river mouths stay sea-connected, so damming a mouth floods the river behind it (intended risk)? Recommend Yes.
+13. [POSTED 01:15 as Sonny cards] Tides later, not now? Recommend Yes.
+14. [POSTED 01:15 as Sonny cards] Can players build up land under the sea to make their own islands, by filling shallow sea with soil, sand, gravel, clay or stone with the spade (big islands cost lots of material)? Recommend Yes.
+15. [POSTED 01:15 as Sonny cards] (multiple choice) How deep may players fill sea by hand? Sal says shallow only, up to 1.5 m; Sonny says up to 6 m; Guru recommends about 4 m. Deeper water needs pillars.
+16. [POSTED 01:15 as Sonny cards] Does water displaced by fill just vanish into the sea? Recommend Yes.
+17. [POSTED 01:15 as Sonny cards] Can loose soil and sand slope away under water while rock and stone hold their shape (so a sand island needs rock edges)? Recommend Yes (Sonny).
+18. [POSTED 01:15 as Sonny cards] Can you build piers (Valheim style) as a row of foundation cells or pillars from the shore onto filled rock into shallow water? Recommend Yes.
 19. May a pier cell sit on the bed under up to 0.5 m of water? Recommend Yes (Sal).
 20. Is spade fill with stone enough, with no separate rock-pile item? Recommend Yes (Sal).
-21. Do fortress and town foundations on your own island need ground about 1 m above sea level, with the normal blueprint and load rules? Recommend Yes.
+21. [POSTED 01:15 as Sonny cards] Do fortress and town foundations on your own island need ground about 1 m above sea level, with the normal blueprint and load rules? Recommend Yes.
 (Sea boundary link: Steve confirmed the sim only drains into the sea; a recommended sea boundary link in water_sim.gd is needed for cards 8 to 10, server restart, so it is part of the answer to card 8.)
 22. Within 4 m of water above, should a tunnel go through three stages by distance: damp (4 to 2.5 m, rare drips), dripping (2.5 to 1.2 m, drip points every few metres), running (under 1.2 m, thin streams down the wall and a drizzle)? Recommend Yes (Kathleen).
 23. Should the wet ceiling and walls look darker with a sheen and a few streaks, and each drop be a small falling sprite with a tiny ring splash on the floor? Recommend Yes.
