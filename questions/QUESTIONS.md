@@ -21,3 +21,9 @@ Note: 1. Look at the picture (top-down view, one plant, 4 m away).
 Image: questions/img/shrub_raspberry_9698b9f.png
 Note: Recommendation: No, not yet, because the crown is leafy but has an open middle and gaps; Kathleen fills it so it is full to the ground.
 [picture]
+
+## shrub-bramble-4 | Bramble: is it a full bush from the top to the ground?
+Note: 1. Look at the picture (top-down view, one plant, 4 m away).
+Image: questions/img/shrub_bramble_9698b9f.png
+Note: Recommendation: No, not yet, because it still looks like separate clumps with gaps between them; Kathleen is joining them into one thick bush.
+[picture]
