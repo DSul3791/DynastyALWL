@@ -1,6 +1,7 @@
 extends Node
 const Interact := preload("res://src/shared/interact_rules.gd")
 const LogLookScript := preload("res://src/client/log_look.gd")
+const PileLookScript := preload("res://src/client/pile_look.gd")
 const PieceLook := preload("res://src/client/piece_look.gd")
 const BuildingLook := preload("res://src/client/building_look.gd")
 const BasicLook := preload("res://src/client/basic_look.gd")
@@ -1607,8 +1608,8 @@ func _refresh_pile(id: int) -> void:
 	if box == null or int(entry.get("state", 0)) != 0:
 		return
 
-	if PileLook.is_pile(item_id, int(entry["count"])):
-		box.mesh = PileLook.mesh_for(item_id, int(entry["count"]), id)
+	if PileLookScript.is_pile(item_id, int(entry["count"])):
+		box.mesh = PileLookScript.mesh_for(item_id, int(entry["count"]), id)
 		box.scale = Vector3.ONE
 		box.rotation = Vector3.ZERO
 		entry["pile"] = true
