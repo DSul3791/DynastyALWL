@@ -620,3 +620,7 @@ Answered: 2026-10-23 00:33 UTC
 Answer: No: I’m gonna ask you to read this review it and then reword this question I don’t know what dump ground is, I also don’t know what measure this machine means and I don’t know what the test switches are and if we are going to have a sound test, it should be its own page with a scrolling list of sounds and you can just click on one and it will play
 Answered: 2026-10-23 00:33 UTC
 
+## esc-menu-7 | Esc menu: should the panel be fully opaque (solid dark background, no see-through shade) so world text cannot show through the labels?
+Answer: Yes
+Answered: 2026-10-23 00:34 UTC
+
