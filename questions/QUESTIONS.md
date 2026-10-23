@@ -7,10 +7,6 @@
 
 
 
-## species-uses-2 | Recipes still accept "any log", but a better species gives a better result (stronger beam, less tool wear, longer-burning fire)?
-Note: Tyler recommends Yes because nobody is blocked when the right tree is far away, and the good tree is a reward.
-[check]
-
 ## species-uses-3 | Hard woods (oak, walnut) take more axe wear to chop, so they feel valuable?
 Note: Tyler recommends Yes because cost is how a player feels value, and it is one number per species.
 [check]
