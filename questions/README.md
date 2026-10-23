@@ -46,3 +46,8 @@ Look: walk to the spawn lake and look at the pines on the east bank
 ```
 
 The page shows a numbered "Things to check" list with Yes / No and a "Why not?" box that appears on No. The answer lands in ANSWERS.md as `Yes` or `No: reason`.
+
+## Test and picture cards (page v8, Dave 2026-10-23)
+- `[test]` card: title = "Please test this, look for X." Notes lines give the steps. Dave picks "Yes, it worked" or "No, it did not work" and always has a Notes box.
+- `[picture]` card: title = "Please take a picture of this at x, z." Dave picks "Picture taken" or "Picture not taken", with the same Notes box.
+- Keep instructions specific and simple: what to do, where, what to look for.
