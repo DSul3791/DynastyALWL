@@ -363,6 +363,7 @@ func _process(delta: float) -> void:
 
 func _process_body(delta: float) -> void:
 	_update_blueprint()
+	_hoe_repeat(delta)
 
 	if _sound != null:
 		var flame_kind: String = str(_inv.table.entry(held_id()).get("tool_class", ""))
@@ -627,6 +628,30 @@ func _dig_here() -> void:
 		return
 
 	_net.inventory_action.rpc_id(1, Net.ACT_DIG, held_slot, 0, 0, hit["position"])
+
+
+# Holding a mouse button with the hoe repeats the stroke every HOE_REPEAT_S (the server paces it at 0.5 s too), so a road is one drag.
+const HOE_REPEAT_S := 0.55
+var _hoe_t: float = 0.0
+
+
+func _hoe_repeat(delta: float) -> void:
+	if _inv == null or Input.mouse_mode != Input.MOUSE_MODE_CAPTURED or held_number() == 0 or str(_inv.table.entry(held_id()).get("tool_class", "")) != "hoe":
+		_hoe_t = 0.0
+		return
+
+	var left: bool = Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)
+
+	if not left and not Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
+		_hoe_t = 0.0
+		return
+
+	_hoe_t += delta
+
+	if _hoe_t >= HOE_REPEAT_S:
+		_hoe_t = 0.0
+		_arm_play("use", 0.6)
+		_hoe_here(Net.ACT_HOE_PATH if left else Net.ACT_HOE_SMOOTH)
 
 
 # A hoe stroke (path or smooth) at the ground under the crosshair; the server checks the hoe, the reach and the pace.
