@@ -704,3 +704,7 @@ Answered: 2026-10-23 00:47 UTC
 Answer: No: Again these stone roofs need to have wooden roofing underneath them so you make the slate roof using all the stuff you use for a wooden roof plus the stones and mortar
 Answered: 2026-10-23 00:48 UTC
 
+## cost-15 | Roof, per slope piece, Stone shingle: 30 stone shingles and 4 mortar?
+Answer: No: Again these stone roofs need to have wooden roofing underneath them so you make the slate roof using all the stuff you use for a wooden roof plus the stones and mortar
+Answered: 2026-10-23 00:48 UTC
+
