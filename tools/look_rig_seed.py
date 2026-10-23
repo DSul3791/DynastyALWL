@@ -20,4 +20,4 @@ def find(o, k):
 number = find(data, item)
 if number is None:
     sys.exit("no such item: " + item)
-json.dump({"next_id": 2, "items": [[int(number), count, x, y, z - 2.2, 99999.0]]}, open(out, "w"))
+json.dump({"version": 1, "next_id": 1000, "boulders": {}, "picked": {}, "taken": [], "items": [[int(number), count, x, y, z - 2.2, 99999.0]]}, open(out, "w"))

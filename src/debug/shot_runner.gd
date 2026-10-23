@@ -17,6 +17,8 @@ extends Node
 #
 # yaw 0 faces -Z (north), 90 faces -X, -90 faces +X (Godot rotation about Y). Quits after the last shot.
 
+const Net := preload("res://src/stream/terrain_net.gd")
+
 var client = null
 var shots: Array = []
 var dir: String = "user://shots"
@@ -33,9 +35,16 @@ var _busy: bool = false
 var costs: bool = false
 var admin_text: bool = false
 var no_grass: bool = false
+var give_item: String = ""      # --shot-give=ITEM[:N]: an admin give 8 s after connecting (a large log goes onto the shoulder)
+var give_count: int = 1
+var _given: bool = false
+var drop_it: bool = false      # --shot-drop: then drop all of it onto the ground 2.2 m ahead (a real drop)
+var _dropped: bool = false
+var _selected: bool = false
 var flora_names: PackedStringArray = PackedStringArray()    # --shot-flora=raspberry,bramble: one plant of each in a row with name tags
 var _flora_t: int = 0
 var summer: bool = false      # --shot-summer: the plant row in its species green (the game draws every hardwood in autumn colours)
+var side_dist: float = 2.8      # --shot-dist=M: third-person camera distance; under 2 m it aims at the held item
 var side_sign: float = 1.0      # 1 = camera on the body's left side, -1 = right side (--shot-right)
 
 const STORM := {"rain": 1.0, "snow": 0.0, "storm": 1.0, "cloud": 1.0, "sun": 0.0, "wind": 0.9, "wind_dir": 1.0, "temp_c": 8.0}
@@ -59,12 +68,22 @@ func setup(owner_client, args: Array) -> void:
 			dir = argument.trim_prefix("--shot-dir=")
 		elif argument == "--shot-cost":
 			costs = true
+		elif argument.begins_with("--shot-dist="):
+			side_dist = float(argument.trim_prefix("--shot-dist="))
 		elif argument == "--shot-right":
 			side_sign = -1.0
 		elif argument.begins_with("--shot-flora="):
 			flora_names = argument.trim_prefix("--shot-flora=").split(",", false)
 		elif argument == "--shot-summer":
 			summer = true
+		elif argument.begins_with("--shot-give="):
+			give_item = argument.trim_prefix("--shot-give=")
+
+			if give_item.contains(":"):
+				give_count = int(give_item.get_slice(":", 1))
+				give_item = give_item.get_slice(":", 0)
+		elif argument == "--shot-drop":
+			drop_it = true
 		elif argument == "--shot-nograss":
 			no_grass = true      # hide the grass so a hand-held item or the body is not hidden by blades
 		elif argument == "--shot-admin":
@@ -106,6 +125,21 @@ func _process(_delta: float) -> void:
 			client._avatar.visible = false
 
 	var now: int = Time.get_ticks_msec()
+
+	if give_item != "" and not _given and now - client.connected_msec > 8000:
+		_given = true
+		client.items.net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, client.items.table.number_of(give_item), 0, give_count, Vector3.ZERO)
+
+	if give_item != "" and _given and not _selected and now - client.connected_msec > 10000 and client.held != null:
+		_selected = true
+		client.held.select(0)      # slot 0 = key 1: hold what was given
+
+	if drop_it and _given and not _dropped and now - client.connected_msec > 11000:
+		_dropped = true
+		var bp: Vector3 = client.body.global_position
+		var gy: float = _ground(bp.x, bp.z - 2.2)
+		var at: Vector3 = Vector3(bp.x, bp.y - 1.0 if is_nan(gy) else gy, bp.z - 2.2)
+		client.items.net.inventory_action.rpc_id(1, Net.ACT_DROP, 0, 0, give_count, at)
 
 	if _busy:
 		return
@@ -149,6 +183,20 @@ func _process(_delta: float) -> void:
 	var path: String = "%s/%s.png" % [dir, shots[_index]["name"]]
 	image.save_png(path)
 	var p: Vector3 = client.body.global_position
+	if client.held != null and give_item != "":
+		print("shot runner: held id %s holding %s model %s mounted %s" % [client.held.held_id(), str(client.held.holding), str(client.held._model != null), str(client.held._mounted)])
+		var hm = client.held._model
+		if hm != null:
+			var aabb: AABB = AABB()
+			for ch in hm.get_children():
+				if ch is MeshInstance3D:
+					aabb = (ch as MeshInstance3D).get_aabb()
+			var mi: MeshInstance3D = hm as MeshInstance3D
+			print("shot runner: held is MeshInstance3D %s mesh %s aabb %s scale %s" % [str(mi != null), str(mi.mesh) if mi != null else "-", str(mi.mesh.get_aabb().size) if mi != null and mi.mesh != null else "-", str(hm.scale)])
+			var cam: Camera3D = client.camera
+			print("shot runner: camera at %s forward %s, model offset from camera %s, dot with forward %.2f, view_cam at %s" % [str(cam.global_position), str(-cam.global_transform.basis.z), str(hm.global_position - cam.global_position), (hm.global_position - cam.global_position).dot(-cam.global_transform.basis.z), str(client.view_cam.global_position) if client.view_cam != null else "-"])
+			print("shot runner: held model at %s visible %s in tree %s parent %s children %d first aabb %s; body at %s" % [str(hm.global_position), str(hm.visible), str(hm.is_visible_in_tree()), str(hm.get_parent().name), hm.get_child_count(), str(aabb.size), str(client.body.global_position)])
+
 	print("shot runner: saved %s (%dx%d) at %s, ground %.1f" % [path, image.get_width(), image.get_height(), str(p), _ground(p.x, p.z)])
 	var falls: Array = client.flora.fall_list()
 	falls.sort_custom(func(a, b): return (a["base"] as Vector3).distance_to(p) < (b["base"] as Vector3).distance_to(p))
@@ -182,8 +230,8 @@ func _show_flora(now: int) -> void:
 		if entry.is_empty():
 			continue
 
-		var x: float = p.x + (float(i) - float(n - 1) * 0.5) * 1.8
-		var z: float = p.z - 3.0
+		var x: float = p.x + (float(i) - float(n - 1) * 0.5) * 1.5
+		var z: float = p.z - 2.4
 		var g: float = _ground(x, z)
 
 		if is_nan(g):
@@ -206,7 +254,7 @@ func _show_flora(now: int) -> void:
 		tag.position = Vector3(x, g + h + 0.5, z)
 		client.add_child(tag)
 
-	var here: Vector2i = Vector2i(int(floor(p.x / client.flora.chunk_m)), int(floor((p.z - 3.0) / client.flora.chunk_m)))
+	var here: Vector2i = Vector2i(int(floor(p.x / client.flora.chunk_m)), int(floor((p.z - 2.4) / client.flora.chunk_m)))
 	var empty: Dictionary = {"ids": PackedInt32Array(), "positions": PackedVector3Array(), "heights": PackedFloat32Array(), "yaws": PackedFloat32Array()}
 
 	for dz in range(-1, 2):
@@ -228,8 +276,13 @@ func _side_view(walk: float) -> void:
 	client.third_person = true
 	var origin: Vector3 = client._avatar.global_position + Vector3(0.0, 0.95, 0.0)
 	var left: Vector3 = client.body.global_transform.basis * Vector3(-1.0, 0.0, 0.0)
-	client.view_cam.global_position = origin + left * 2.8 * side_sign + Vector3(0.0, 0.15, 0.0)
-	client.view_cam.look_at(origin, Vector3.UP)
+	var aim: Vector3 = origin
+
+	if side_dist < 2.0 and client.held != null and client.held._model != null:
+		aim = client.held._model.global_position
+
+	client.view_cam.global_position = aim + left * side_dist * side_sign + Vector3(0.0, 0.1, 0.0)
+	client.view_cam.look_at(aim, Vector3.UP)
 
 
 # What the frame draws, in the same units as the probe table (primitives include the shadow passes). With
