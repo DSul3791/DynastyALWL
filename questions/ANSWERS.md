@@ -1102,3 +1102,7 @@ Answered: 2026-10-23 04:15 UTC
 Answer: Yes
 Answered: 2026-10-23 04:18 UTC
 
+## lake-hide-water | Please test: hide the water and see what stays. Look for: do the grey shapes and dark squares STAY when the water is hidden?
+Answer: No: No, if the water is gone, there’s nothing there. It is literally changing the texture on the water.
+Answered: 2026-10-23 04:19 UTC
+
