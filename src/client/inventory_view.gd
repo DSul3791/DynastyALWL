@@ -629,6 +629,7 @@ func _process(_delta: float) -> void:
 
 func _process_body(_delta: float) -> void:
 	var now: int = Time.get_ticks_msec()
+	_roll_tick(_delta, now)
 	_hold_e_check()
 
 	if _thought_label != null and _thought_label.text != "" and now >= _thought_until_msec:
@@ -1717,7 +1718,77 @@ func boulder_near(point: Vector3) -> int:
 	return 0
 
 
+# Loose items roll a little when walked over (Dave 2026-10-23, keep-item-roll): a few times a second the loose singles within ROLL_TRIGGER_M of a
+# moving player get a push away from them; each rolls on its own with friction, settles on the ground and turns as it goes. Drawing only:
+# the server still knows the item at its spot (a roll never goes more than ROLL_MAX_M from it, inside pickup reach), so nothing is sent.
+const ROLL_TRIGGER_M := 0.7
+const ROLL_MAX_M := 0.8
+const ROLL_FRICTION := 3.5
+const ROLL_MIN_SPEED := 0.08
+var _roll_last_msec: int = 0
+var _roll_prev: Vector3 = Vector3.ZERO
+var _roll_speed: float = 0.0
+var _rolling: Dictionary = {}   # world id -> {"vel": Vector2, "off": Vector2}
+
+
+func _roll_tick(delta: float, now: int) -> void:
+	if not _player_position.is_valid() or _world.is_empty() and _rolling.is_empty():
+		return
+
+	if now - _roll_last_msec >= 100:
+		var here: Vector3 = _player_position.call()
+		var dt: float = float(now - _roll_last_msec) / 1000.0
+		_roll_speed = Vector2(here.x - _roll_prev.x, here.z - _roll_prev.z).length() / maxf(dt, 0.001) if _roll_last_msec > 0 and dt < 1.0 else 0.0
+		_roll_prev = here
+		_roll_last_msec = now
+
+		if _roll_speed > 0.5 and _roll_speed < 15.0:
+			for id in _world:
+				var entry: Dictionary = _world[id]
+
+				if int(entry["state"]) != 0 or entry.get("pile", false) or int(entry["count"]) > 5 or _rolling.has(id):
+					continue
+
+				var apart: Vector2 = Vector2(entry["pos"].x - here.x, entry["pos"].z - here.z)
+
+				if apart.length() < ROLL_TRIGGER_M:
+					var away: Vector2 = apart.normalized() if apart.length() > 0.01 else Vector2(1.0, 0.0)
+					_rolling[id] = {"vel": away * (0.9 + 0.35 * _roll_speed), "off": Vector2.ZERO}
+
+	for id in _rolling.keys():
+		var roll: Dictionary = _rolling[id]
+		var entry: Dictionary = _world.get(id, {})
+
+		if entry.is_empty():
+			_rolling.erase(id)
+			continue
+
+		var node: Node3D = entry["node"]
+		var vel: Vector2 = roll["vel"]
+		var off: Vector2 = roll["off"] + vel * delta
+		var travelled: float = off.length()
+
+		if travelled > ROLL_MAX_M:
+			off = off * (ROLL_MAX_M / travelled)
+			vel = Vector2.ZERO
+
+		vel *= exp(-ROLL_FRICTION * delta)
+		roll["vel"] = vel
+		roll["off"] = off
+		var spot: Vector3 = entry["pos"] + Vector3(off.x, 0.0, off.y)
+		var ground: float = float(_ground_below.call(spot)) if _ground_below.is_valid() else NAN
+		node.position = Vector3(spot.x, (ground if not is_nan(ground) else entry["pos"].y) + 0.12, spot.z)
+
+		if vel.length() > 0.01:
+			node.rotate(Vector3(vel.y, 0.0, -vel.x).normalized(), vel.length() * delta / 0.12)
+
+		if vel.length() < ROLL_MIN_SPEED:
+			_rolling.erase(id)
+
+
 func _forget(id: int) -> void:
+	_rolling.erase(id)
+
 	if _boulders.has(id):
 		_boulders[id]["node"].queue_free()
 		_boulders.erase(id)
