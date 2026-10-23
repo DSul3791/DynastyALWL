@@ -25,3 +25,8 @@ Note: Recommendation: Yes, add them, because it is exactly the pull, copy and co
 Note: 1. In GitHub Desktop: File > Add local repository > choose C:\GodotProjects\DynastyALWL_test (skip if it is already listed). 2. Current branch: claude/mike-bake-9tile (last commit: Bake 9 tiles, terrain version 26, 87fff3ca). 3. Click Push origin. 4. Tell us 'pushed'. Then we merge it and you Fetch origin + Pull in your normal folder, close the game first, and press Esc > Advanced > Clear blocks. Alternative: answer the earlier card allow-mike-pull Yes, save the settings and restart MikeW, then he can push himself.
 Note: Recommendation: Yes, do the 4 steps, because it is the quickest way (about a minute) and the tiles are already checked: spawn flat and dry, island shape in. Only the far south-east coast edges are slightly soft and get fixed in a later bake.
 [test]
+
+## cost-basic-foundation | Basic foundation cost: small 1x1 = 6 boughs, 10 leaves, 4 sticks (2x2 = four times that)?
+Note: Basic foundation is packed dirt with leaves and boughs; the ground flattens by itself, no tamping. Wooden and stone foundation costs are already approved.
+Note: Recommendation: Yes because it is cheap and needs only things found in the woods, matching a first-day shelter.
+[check]
