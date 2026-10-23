@@ -1,7 +1,3 @@
-## cost-5 | Wall, Cobblestone: 120 cobblestones and 8 mortar?
-Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
-[check]
-
 ## cost-6 | Wall, Mason: 60 stone blocks and 12 mortar?
 Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
 [check]
