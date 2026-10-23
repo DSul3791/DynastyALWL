@@ -21,6 +21,7 @@ const MEANDER_WAVELENGTH_WIDTHS := 12.0   # sinuous reaches: about 12 widths fro
 const MEANDER_AMPLITUDE_WIDTHS := 1.5    # sideways swing on gentle ground
 const MEANDER_SLOPE_FULL := 0.015        # under this fall per metre the swing is full, over MEANDER_SLOPE_NONE none
 const MEANDER_SLOPE_NONE := 0.04
+const VALLEY_FREEBOARD_M := 0.4      # the valley floor stands this far above the river's water level
 const SURFACE_SHARE := 0.6           # water stands this share of the centre depth above the bed
 
 var bed: PackedFloat32Array = PackedFloat32Array()
@@ -30,6 +31,7 @@ var _along: PackedFloat32Array = PackedFloat32Array()
 var _root: PackedInt32Array = PackedInt32Array()
 var _seed: int = 0
 var _origin: Vector2i = Vector2i.ZERO   # world sample coordinates of cell 0, so everything below depends on the place, not on the frame
+var _centre_surface: PackedFloat32Array = PackedFloat32Array()
 var curvature: PackedFloat32Array = PackedFloat32Array()       # signed turn at centre cells (+ = turning right on the map, z down)
 
 
@@ -116,6 +118,7 @@ func build(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, threshol
 
 	_along = along
 	_stamp(h, fill, flow, size, cell_m, threshold, rules)
+	_valleys(h, fill, flow, size, cell_m, rules)
 
 
 func _stamp(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, threshold: float, rules: Dictionary) -> void:
@@ -136,6 +139,7 @@ func _stamp(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, thresho
 
 	# Water level on the centre line, never rising going downstream either.
 	var centre_surface: PackedFloat32Array = centre_bed.duplicate()
+	_centre_surface = centre_surface
 
 	for index in fill.order:
 		if flow.discharge[index] < threshold:
@@ -223,6 +227,56 @@ func _stamp(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, thresho
 
 		if flow.discharge[index] >= threshold and next >= 0 and flow.discharge[next] >= threshold:
 			bed[index] = maxf(bed[index], bed[next])
+
+
+# Stage 3b: valleys. Rivers with a big catchment sit in a valley graded to their water level: the floor stands just above
+# the water, and the sides rise at `valley_side_slope` (rise per metre) out to `valley_radius_widths` channel widths, fading
+# into the old ground at the rim. Ground already lower than the valley is left alone, so plains get no ditch. Everything
+# reads world-position data and the catchment, so two tiles agree along their shared edge.
+func _valleys(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, rules: Dictionary) -> void:
+	var start_km2: float = float(rules.get("valley_start_km2", 2.0))
+	var radius_widths: float = float(rules.get("valley_radius_widths", 6.0))
+	var side_slope: float = float(rules.get("valley_side_slope", 0.08))
+	var max_radius_m: float = float(rules.get("valley_max_radius_m", 300.0))
+	var cut: PackedFloat32Array = bed.duplicate()
+
+	for index in fill.order:
+		if flow.discharge[index] < start_km2 or is_nan(_centre_surface[index]):
+			continue
+
+		var q: float = sqrt(flow.discharge[index])
+		var width_m: float = maxf(float(rules["width_m_per_sqrt_q"]) * q, float(rules["min_width_m"]))
+		var rim_m: float = minf(radius_widths * width_m, max_radius_m)
+		var half_m: float = 0.5 * width_m
+		var floor_level: float = _centre_surface[index] + VALLEY_FREEBOARD_M
+		var reach: int = int(ceil(rim_m / cell_m))
+		@warning_ignore("integer_division")
+		var row: int = index / size
+		var column: int = index % size
+
+		for dz in range(-reach, reach + 1):
+			var nr: int = row + dz
+
+			if nr < 0 or nr >= size:
+				continue
+
+			for dc in range(-reach, reach + 1):
+				var nc: int = column + dc
+
+				if nc < 0 or nc >= size:
+					continue
+
+				var distance: float = sqrt(float(dz * dz + dc * dc)) * cell_m
+
+				if distance > rim_m:
+					continue
+
+				var neighbor: int = nr * size + nc
+				var wanted: float = floor_level + side_slope * maxf(distance - half_m, 0.0)
+				var weight: float = 1.0 - smoothstep(0.5, 1.0, distance / rim_m)
+				cut[neighbor] = minf(cut[neighbor], lerpf(cut[neighbor], minf(cut[neighbor], wanted), weight))
+
+	bed = cut
 
 
 func _walk(fill, flow, index: int, steps: int, threshold: float) -> int:
