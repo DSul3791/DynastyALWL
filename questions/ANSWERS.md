@@ -1214,3 +1214,7 @@ Answered: 2026-10-23 14:55 UTC
 ## playtester-plan | Build a play-tester that plays the game and reports problems?
 Answer: No: told in chat, no player bot; instead improve how testing works (drop dirt, look down, step back a very short distance) 15:58 UTC
 Answered: 2026-10-23 15:58 UTC
+## kath-moose-standin | Use an elk bugle as the moose call for now?
+Answer: No: This is not what the move sounds like a moose. Sounds like somebody having a grunt when they poop so see if you can look up that sound.
+Answered: 2026-10-23 16:00 UTC
+
