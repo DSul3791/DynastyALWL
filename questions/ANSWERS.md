@@ -1242,3 +1242,7 @@ Answered: 2026-10-23 17:36 UTC
 Answer: No: We’ve already answered this a couple times
 Answered: 2026-10-23 19:07 UTC
 
+## dry-river-dump | Dump the water once at the dry river spot (build 750)
+Answer: No: You do the test
+Answered: 2026-10-23 19:07 UTC
+
