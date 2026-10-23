@@ -8,9 +8,6 @@ Note: 6. Optional: place a timber prop near the roof before the time runs out. T
 Note: 7. Take a picture of the shaking and dust. Write in Notes what happened, yes or no.
 [test]
 
-## cost-pillar-wood | Wood pillar = ONE log (a lying log is about 2.4 m long, so one log is one pillar and one wall height)?
-[check]
-
 ## cost-braces | Braces are logs plus wooden pins (no twine): 1.5 m = 3 logs + 4 pins; 3 m = 4 logs + 6 pins; 5 m = 6 logs + 8 pins?
 [check]
 
