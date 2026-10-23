@@ -1150,3 +1150,7 @@ Answered: 2026-10-23 10:24 UTC
 Answer: Yes
 Answered: 2026-10-23 10:24 UTC
 
+## log-names | Logs are named by the tree, written "Oak logs", "Beech logs" instead of "Oak_Logs" (item ids stay log_oak, log_beech and so on). Is that fine?
+Answer: Yes
+Answered: 2026-10-23 10:24 UTC
+
