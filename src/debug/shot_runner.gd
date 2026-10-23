@@ -45,6 +45,8 @@ var _dig_i: int = 0
 var _dig_next_msec: int = 0
 var _dig_level: bool = false
 var _dig_ballast: bool = false
+var _spin_i: int = 0
+var _spin_next_msec: int = 0
 var _selected: bool = false
 var flora_names: PackedStringArray = PackedStringArray()    # --shot-flora=raspberry,bramble: one plant of each in a row with name tags
 var _flora_t: int = 0
@@ -188,20 +190,38 @@ func _process(_delta: float) -> void:
 		if _dig_i < dig_steps:
 			if now >= _dig_next_msec:
 				client.held._dig_here()
-				var ahead: Vector3 = -client.body.global_transform.basis.z
-				var next_x: float = client.body.global_position.x + ahead.x
-				var next_z: float = client.body.global_position.z + ahead.z
-				var next_ground: float = _ground(next_x, next_z)
-				client.body.global_position = Vector3(next_x, client.body.global_position.y if is_nan(next_ground) else next_ground + shot_pos.y, next_z)
 				_dig_i += 1
-				_dig_next_msec = now + 1000
+				_dig_next_msec = now + 900
 
 			return
 
 		if not _dig_level:
 			_dig_level = true
-			client.body.rotation.y += PI      # turn round: the trail of holes and spilled soil is now ahead
-			client.pitch = deg_to_rad(-25.0)
+			var back: Vector3 = client.body.global_transform.basis.z      # one step back (Dave 2026-10-23: dig 20 times at one spot, then step back and look)
+			var back_x: float = client.body.global_position.x + back.x * 2.5
+			var back_z: float = client.body.global_position.z + back.z * 2.5
+			var back_ground: float = _ground(back_x, back_z)
+			client.body.global_position = Vector3(back_x, client.body.global_position.y if is_nan(back_ground) else back_ground + shot_pos.y, back_z)
+			client.pitch = deg_to_rad(-60.0)      # look down, then spin a full turn with a picture every quarter (Dave 2026-10-23)
+			client.camera.rotation.x = client.pitch
+			_spin_next_msec = now + 4000
+			_moved_msec = now
+			return
+
+		if _spin_i < 4:
+			if now >= _spin_next_msec:
+				var spin_image: Image = get_viewport().get_texture().get_image()
+				spin_image.save_png("%s/%s_spin%d.png" % [dir, shots[_index]["name"], _spin_i])
+				print("shot runner: saved spin %d" % _spin_i)
+				_spin_i += 1
+				client.body.rotation.y -= PI * 0.5
+				_spin_next_msec = now + 2500
+
+			return
+
+		if _spin_i == 4:
+			_spin_i = 5
+			client.pitch = deg_to_rad(-30.0)
 			client.camera.rotation.x = client.pitch
 			_moved_msec = now
 			return
