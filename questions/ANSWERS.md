@@ -1042,3 +1042,7 @@ Answered: 2026-10-23 04:11 UTC
 Answer: Yes
 Answered: 2026-10-23 04:11 UTC
 
+## rockpile-despawn | Should a pile of 6 or more last 2 hours after the last add or take, instead of the usual 20 minutes?
+Answer: Yes
+Answered: 2026-10-23 04:11 UTC
+
