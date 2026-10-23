@@ -1026,3 +1026,7 @@ Answered: 2026-10-23 04:09 UTC
 Answer: No: The walking sound is slightly too loud, but the running sound is significantly too loud on the sand. The running sound should just be slightly louder than the walking sound.
 Answered: 2026-10-23 04:10 UTC
 
+## ground-piles | Should loose items on the ground of the same kind that land close together (about 1 m) merge into one pile with a count, so the limit of 64 items near a spot is no longer a problem?
+Answer: Yes
+Answered: 2026-10-23 04:10 UTC
+
