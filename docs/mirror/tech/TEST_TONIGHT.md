@@ -16,6 +16,18 @@ Dave tests ONLY after goodnight and the backup (BP-T40). Before testing: 1. Pull
 11. 686 Collapse (protocol 72): Esc > Settings > Tunnel collapse On/Off (admin) and Cave-in time (2/5/10/20 min); set 2 min; dig a space wider than 2 m in a hand-dug tunnel; creaks, shaking, "The earth groans.", at least 90 s of shaking, then it falls; braces pause it; a natural cave never collapses. Screenshot the shaking and the rubble.
 12. 687 VSync: Esc > Settings: VSync shows On green, Adaptive amber, Off red; the fps line says "N fps (vsync X)".
 
+## Systems (Steve) detail lines for the collapse and menu (each a Yes/No card at goodnight)
+S1. Collapse timer: tunnel about 2 m wide or more in solid ground (not natural): nothing for about 10 minutes (cave-in time can be set 2 to 20 min).
+S2. Collapse warning: creaks, then shaking with dust and "The earth groans.", then "The roof is giving way. Get out now!" every 5 s. Screenshot the shake and dust.
+S3. Collapse fall: standing outside, the roof falls about 30 minutes after the dig (or your shorter setting), fills about 70% with rubble and leaves the top open.
+S4. Natural caves never shake or collapse.
+S5. Esc > Settings "Tunnel collapse: On/Off (admin)" shows green On or red Off; Off stops all shaking.
+S6. "Cave-in time" cycles 2, 5, 10, 20 min and stays set after leaving and rejoining.
+S7. VSync button reads On green, Adaptive amber, Off red; fps line shows "(vsync X)"; stays set after restart.
+S8. Ladder: W climbs, S down, Space lets go, W at the top steps onto the edge.
+S9. Braces: a prop (5 m) or timber set (7.5 m) stops the collapse timer within its radius.
+(Esc menu tidy lines come when it is built, after Dave answers its 9 cards.)
+
 ## Runtime builds
 13. 672 Stations: at a workbench or forge the prompt says Press F, F or E opens crafting; hold E still takes it down.
 14. 663 Clothing on the body: wear hide cloak, leggings, boots; third person shows coat, trousers, shoes in the item colours.
