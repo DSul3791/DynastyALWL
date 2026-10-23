@@ -166,6 +166,26 @@ func _init() -> void:
 	items.floor_below = Callable()
 	items.clear_dropped(Vector3.ZERO, 1.0e7)
 
+	# MikeW's rig (2026-10-23): drop a pile of stones 2.2 m ahead; the world must hold ONE item with all of them, and the player is told.
+	items.clear_dropped(Vector3.ZERO, 1.0e7)
+	items.report_position(7, Vector3(100.0, 5.0, 100.0))
+	var rig_before: int = items.inventory_of(7).count_of(stone)
+	items.action(7, Net.ACT_ADMIN_GIVE, stone, 0, 20, Vector3.ZERO)
+	var rig_slot: int = items.inventory_of(7).numbers.find(stone)
+	var rig_held: int = items.inventory_of(7).counts[rig_slot]
+	world_sent.clear()
+	items.action(7, Net.ACT_DROP, rig_slot, 0, 20, Vector3(102.2, 5.0, 100.0))
+	items.tick(1.5)
+	var rig_count: int = 0
+
+	for k in items._items:
+		rig_count += int(items._items[k]["count"])
+
+	check(items.world_item_count() == 1 and rig_count == rig_held and rig_held >= 6, "a dropped pile of stones lies as one item (%d items, %d of %d stones)" % [items.world_item_count(), rig_count, rig_held])
+	check(not world_sent.is_empty() and world_sent[0][1].size() == 1 and int(world_sent[0][1][0][2]) == rig_count, "and the player is told about it with its count")
+	items.inventory_of(7).remove(stone, items.inventory_of(7).count_of(stone) - rig_before)
+	items.clear_dropped(Vector3.ZERO, 1.0e7)
+
 	# Rock piles: stackable drops within a metre merge, ignore the crowd limit, a pile gives a handful and lives longer.
 	items.clear_dropped(Vector3.ZERO, 1.0e7)
 	var pile_at: Vector3 = Vector3(2000.0, 0.0, 2000.0)
