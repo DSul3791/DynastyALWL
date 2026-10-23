@@ -692,3 +692,7 @@ Answered: 2026-10-23 00:47 UTC
 Answer: No: Again, these type of floors need to be braced with logs underneath so each floor has to have at least one log that gets split in half and put around the bottom edges in quarters so it matches up with the other walls and ceiling pieces, etc. it will take some design. Drop a design and let me look at it later put it back in the QA.
 Answered: 2026-10-23 00:47 UTC
 
+## cost-13 | Roof, per slope piece, Thatch: 30 thatch, 10 twine, 8 sticks?
+Answer: Yes
+Answered: 2026-10-23 00:47 UTC
+
