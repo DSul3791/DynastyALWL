@@ -1130,3 +1130,7 @@ Answered: 2026-10-23 10:13 UTC
 Answer: No: Yes, but don’t overcomplicate it. Hardest is a good one which affects how long it takes to cut down. Hardwood trees are harder, but they’re also thinner. Soft wood trees are significantly larger around and you could use burn time. Hardwood takes a lot longer to burn. Softwood even though it’s Biggar burns really fast. Have Tyler do some research and come up with some numbers. We don’t wanna get into too many micromanaging of details software is better for making boards hardwood like Birch are really good for a different type of board. Have Tyler research what type of lumber hardwood versus softwood
 Answered: 2026-10-23 10:18 UTC
 
+## species-uses-2 | Recipes still accept "any log", but a better species gives a better result (stronger beam, less tool wear, longer-burning fire)?
+Answer: No: Logs are named after their trees and Tyler could research which trees are best for making white stuff. And this will affect which are good at making boards or different types of boards of which are best for firewood or for making pillars usually big round soft wood or cedar are used for making pillars or beams that have Tyler researched this also we should not make our system to overly complicated but we do not watch it to simple
+Answered: 2026-10-23 10:21 UTC
+
