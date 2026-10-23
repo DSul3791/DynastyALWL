@@ -435,10 +435,10 @@
 			"sound": "thump",
 			"clears_grass": false,
 			"support": {
-				"reach_m": 3.0,
-				"strength": 0.5,
+				"reach_m": 5.0,
+				"strength": 1.0,
 				"wear_game_days": 60,
-				"floor": 0.25
+				"floor": 0.1
 			}
 		},
 		"timber_set": {
@@ -452,10 +452,10 @@
 			"sound": "thump",
 			"clears_grass": false,
 			"support": {
-				"reach_m": 6.0,
-				"strength": 0.7,
+				"reach_m": 7.5,
+				"strength": 1.0,
 				"wear_game_days": 120,
-				"floor": 0.25
+				"floor": 0.1
 			}
 		},
 		"ladder": {

@@ -239,19 +239,20 @@ func _init() -> void:
 	items.action(2, Net.ACT_USE_STRUCT, door_id, 0, 0, Vector3.ZERO)
 	check(items._items[door_id]["struct"]["kind"] == "doorway_section", "the door will not flap faster than its pace")
 	items.report_position(2, Vector3(450.0, 10.0, 450.0))
-	# Bracing supports: strength fades from the support to its reach, adds up to 1, wears to a floor, and the tunnel watch is told.
+	# Bracing supports are spheres of influence (Dave 2026-10-22): a prop holds everything within 5 m, the radius shrinks with its condition, spheres overlap.
 	items.report_position(2, Vector3(700.0, 10.0, 700.0))
 	var told: Array = []
 	items.support_changed = func(at: Vector3) -> void: told.append(at)
 	items.game_seconds = func() -> float: return 1000.0
 	items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of("timber_prop_kit"), 0, 2, Vector3.ZERO)
 	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of("timber_prop_kit")), 0, 0, Vector3(700.0, 10.0, 702.0))
-	check(told.size() == 1 and absf(items.support_strength_at(Vector3(700.0, 10.0, 702.0)) - 0.5) < 0.001, "a new prop gives 0.5 at its own spot and tells the tunnel watch (%.3f)" % items.support_strength_at(Vector3(700.0, 10.0, 702.0)))
-	check(absf(items.support_strength_at(Vector3(701.5, 10.0, 702.0)) - 0.25) < 0.001 and items.support_strength_at(Vector3(703.1, 10.0, 702.0)) == 0.0, "it fades to nothing at its 3 m reach")
-	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of("timber_prop_kit")), 0, 0, Vector3(700.0, 10.0, 703.0))
-	check(items.support_strength_at(Vector3(700.0, 10.0, 702.5)) > items.support_strength_at(Vector3(701.5, 10.0, 702.0)), "two props beside each other hold more than one")
-	var worn_s: float = items.support_strength_at(Vector3(700.0, 10.0, 702.0), 1000.0 + 61.0 * 86400.0)
-	check(worn_s < 0.4 and worn_s > 0.1, "after 60 game days a prop has worn down to its floor (%.3f)" % worn_s)
+	check(told.size() == 1 and items.support_strength_at(Vector3(700.0, 10.0, 702.0)) == 1.0, "a new prop holds its own spot and tells the tunnel watch")
+	check(items.support_strength_at(Vector3(704.9, 10.0, 702.0)) == 1.0 and items.support_strength_at(Vector3(705.1, 10.0, 702.0)) == 0.0, "it holds everything inside its 5 m sphere and nothing outside")
+	check(items.support_strength_at(Vector3(700.0, 10.0, 707.5)) == 0.0, "a spot 5.5 m away is not held by one prop")
+	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of("timber_prop_kit")), 0, 0, Vector3(700.0, 10.0, 705.0))
+	check(items.support_strength_at(Vector3(700.0, 10.0, 707.5)) == 1.0, "a second prop beside it extends the held area (overlapping spheres)")
+	var half_s: float = 1000.0 + 30.0 * 86400.0
+	check(items.support_strength_at(Vector3(702.0, 10.0, 702.0), half_s) == 1.0 and items.support_strength_at(Vector3(704.0, 10.0, 702.0), half_s) == 0.0, "at about half health the sphere is about half as wide")
 	items.report_position(2, Vector3(450.0, 10.0, 450.0))
 	# A dead branch on the forest floor gives one stick, only within reach.
 	var sticks_had: int = items.inventory_of(2).count_of(items.table.number_of("stick"))

@@ -1736,26 +1736,23 @@ func _rebuild_supports() -> void:
 	_supports_mutex.unlock()
 
 
-# Support strength x condition at `at`, 0 to 1: each support gives its strength at its own spot, falling to 0 at its reach, times its condition
-# (1 when new, down to its floor over its wear time); overlapping supports add up to 1. Safe to call from the tunnel watch's worker thread.
+# Support at `at`, 0 or 1 (Dave 2026-10-22, spheres of influence): each support covers a sphere of its reach_m radius at full health; the radius
+# falls in step with its condition (1 when new, down to its floor over its wear time), so at half health it is half. Overlapping spheres cover
+# the whole area; anywhere inside one is held (1), outside all of them is not (0). Safe to call from the tunnel watch's worker thread.
 func support_strength_at(at: Vector3, now_game_s: float = -1.0) -> float:
 	var now_s: float = _now_game_s() if now_game_s < 0.0 else now_game_s
-	var total: float = 0.0
 	_supports_mutex.lock()
 	var list: Array = _supports
 	_supports_mutex.unlock()
 
 	for entry in list:
-		var d: float = (entry[0] as Vector3).distance_to(at)
-
-		if d >= float(entry[1]):
-			continue
-
 		var worn: float = clampf((now_s - float(entry[5])) / maxf(float(entry[3]), 1.0), 0.0, 1.0)
 		var condition: float = lerpf(1.0, float(entry[4]), worn)
-		total += float(entry[2]) * (1.0 - d / float(entry[1])) * condition
 
-	return minf(total, 1.0)
+		if (entry[0] as Vector3).distance_to(at) <= float(entry[1]) * condition:
+			return 1.0
+
+	return 0.0
 
 
 # Placed foundations as {"pos", "state"} rows, for pieces to snap to.
