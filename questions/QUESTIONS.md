@@ -11,10 +11,6 @@
 Note: Tyler recommends Yes because the pack log is the smaller log (about 15 kg), so 4 blocks of 3.75 kg add up. The big shoulder log gives more (next card).
 [check]
 
-## firewood-from-block | One wooden block used on the chopping block gives 1 firewood (3.5 kg) that falls beside the block, and the pieces merge into one heap (the pile look from 5 pieces is Kathleen's)?
-Note: Tyler recommends Yes because one block makes one piece (simple to learn), and the heap uses the same pile rule as rocks.
-[check]
-
 ## axe-wear-chop | The axe wears once for each log chop and once for each split at the chopping block?
 Note: Tyler recommends Yes because both are real chopping, and one wear per action is easy to understand and to tune later.
 [check]
