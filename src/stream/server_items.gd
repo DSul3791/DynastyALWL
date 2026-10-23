@@ -265,6 +265,7 @@ var _picked: Dictionary = {}          # "cx,cz,id" -> game seconds when last pic
 var _flights: Array = []            # thrown things in the air: {number, pos, vel, age}
 var _last_throw: Dictionary = {}    # peer -> msec
 var _last_dig: Dictionary = {}
+var _grade_points: Dictionary = {}   # peer -> [A, B] ground points of the hoe grade line (Vector3, or null while unset)
 var _last_mine: Dictionary = {}     # peer -> msec
 var _last_hit: Dictionary = {}      # peer -> msec
 var _last_process: Dictionary = {}  # peer -> msec
@@ -457,6 +458,7 @@ func peer_left(peer: int) -> void:
 	_last_throw.erase(peer)
 	_last_mine.erase(peer)
 	_last_dig.erase(peer)
+	_grade_points.erase(peer)
 	_last_hit.erase(peer)
 	_last_cook.erase(peer)
 	_last_gather.erase(peer)
@@ -728,6 +730,10 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_hoe_path(peer, inv, at)
 	elif kind == Net.ACT_HOE_SMOOTH:
 		_hoe_smooth(peer, inv, at)
+	elif kind == Net.ACT_HOE_GRADE_POINT:
+		_hoe_grade_point(peer, inv, a, at)
+	elif kind == Net.ACT_HOE_GRADE:
+		_hoe_grade(peer, inv, at)
 	elif kind == Net.ACT_PLACE:
 		_place(peer, inv, a, at, count, b)
 	elif kind == Net.ACT_THROW:
@@ -1469,6 +1475,8 @@ const SMOOTH_REACH_M := 1.5
 const SMOOTH_MAX_M := 0.25
 const SMOOTH_MIN_M := 0.04
 const SMOOTH_SPHERE_M := 0.9
+const GRADE_REACH_M := 12.0       # a grade stroke works within this of point A (Dave 2026-10-22)
+const GRADE_WIDTH_M := 1.5        # and within this of the straight line A to B
 
 
 func _hoe_ready(peer: int, inv, at: Vector3) -> bool:
@@ -1598,6 +1606,88 @@ func _hoe_smooth(peer: int, inv, at: Vector3) -> void:
 
 	if worked == 0:
 		_say(peer, "This ground is worked enough.")   # every block refused the edit (full): nothing moved, the hoe does not wear
+		return
+
+	_wear_tool(peer, inv, "hoe", "dig")
+	_remove_paths_near(at, SMOOTH_REACH_M + 1.0)
+	_dirty = true
+
+
+# The grade line (roads): point A, point B, then strokes along the line bring the ground toward the straight ramp between their heights.
+func _hoe_grade_point(peer: int, inv, which: int, at: Vector3) -> void:
+	if not ground_height.is_valid() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(at) > DIG_REACH_M or not _has_tool(inv, "hoe"):
+		return
+
+	var h: float = float(ground_height.call(at.x, at.z))
+
+	if is_nan(h):
+		return
+
+	var pair: Array = _grade_points.get(peer, [null, null])
+
+	if which == 0:
+		pair = [Vector3(at.x, h, at.z), null]
+	elif pair[0] != null:
+		pair[1] = Vector3(at.x, h, at.z)
+
+	_grade_points[peer] = pair
+
+
+func _hoe_grade(peer: int, inv, at: Vector3) -> void:
+	var pair: Array = _grade_points.get(peer, [null, null])
+
+	if pair[1] == null:
+		_say(peer, "Set point A and point B first (Shift + right click).")
+		return
+
+	if not ground_height.is_valid() or not dig_ground.is_valid() or not fill_ground.is_valid() or not _hoe_ready(peer, inv, at):
+		return
+
+	var a: Vector3 = pair[0]
+	var b: Vector3 = pair[1]
+	var along: Vector2 = Vector2(b.x - a.x, b.z - a.z)
+	var length: float = along.length()
+
+	if length < 1.0:
+		_say(peer, "Points A and B are too close together.")
+		return
+
+	var dir: Vector2 = along / length
+	var worked: int = 0
+	var dug: bool = false
+
+	for offset in [Vector2.ZERO, dir, -dir, Vector2(-dir.y, dir.x), Vector2(dir.y, -dir.x)]:
+		var x: float = at.x + offset.x
+		var z: float = at.z + offset.y
+		var from_a: Vector2 = Vector2(x - a.x, z - a.z)
+		var t: float = clampf(from_a.dot(dir) / length, 0.0, 1.0)
+
+		if Vector2(x, z).distance_to(Vector2(a.x, a.z) + dir * t * length) > GRADE_WIDTH_M or from_a.length() > GRADE_REACH_M:
+			continue
+
+		var h: float = float(ground_height.call(x, z))
+
+		if is_nan(h):
+			continue
+
+		var d: float = h - lerpf(a.y, b.y, t)
+
+		if absf(d) < SMOOTH_MIN_M:
+			continue
+
+		var depth: float = minf(absf(d), SMOOTH_MAX_M)
+		var done: Variant = dig_ground.call(Vector3(x, h - depth + SMOOTH_SPHERE_M, z), SMOOTH_SPHERE_M) if d > 0.0 else fill_ground.call(Vector3(x, h + depth - SMOOTH_SPHERE_M, z), SMOOTH_SPHERE_M, int(FILL_SOIL["soil"]))
+		dug = true
+
+		if typeof(done) != TYPE_BOOL or bool(done):
+			worked += 1
+
+	if not dug:
+		_say(peer, "The ground here is already on the line.")
+		return
+
+	if worked == 0:
+		_say(peer, "This ground is worked enough.")
 		return
 
 	_wear_tool(peer, inv, "hoe", "dig")

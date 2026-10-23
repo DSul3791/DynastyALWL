@@ -390,7 +390,16 @@ func mouse_button(button: int, pressed: bool) -> bool:
 		# The garden hoe: left click treads a path, right click smooths the ground (it moves dirt from the high spots to the low ones; no items).
 		if pressed and (button == MOUSE_BUTTON_LEFT or button == MOUSE_BUTTON_RIGHT) and str(_inv.table.entry(held_id()).get("tool_class", "")) == "hoe":
 			_arm_play("use", 0.6)
-			_hoe_here(Net.ACT_HOE_PATH if button == MOUSE_BUTTON_LEFT else Net.ACT_HOE_SMOOTH)
+
+			if Input.is_key_pressed(KEY_SHIFT):
+				# Shift + right click sets point A, then point B; Shift + left click (held) grades the ground along the line.
+				if button == MOUSE_BUTTON_RIGHT:
+					_grade_point_here()
+				else:
+					_hoe_here(Net.ACT_HOE_GRADE)
+			else:
+				_hoe_here(Net.ACT_HOE_PATH if button == MOUSE_BUTTON_LEFT else Net.ACT_HOE_SMOOTH)
+
 			return true
 
 		if button == MOUSE_BUTTON_LEFT and pressed:
@@ -789,7 +798,60 @@ func _hoe_repeat(delta: float) -> void:
 	if _hoe_t >= HOE_REPEAT_S:
 		_hoe_t = 0.0
 		_arm_play("use", 0.6)
-		_hoe_here(Net.ACT_HOE_PATH if left else Net.ACT_HOE_SMOOTH)
+
+		if Input.is_key_pressed(KEY_SHIFT):
+			if left:
+				_hoe_here(Net.ACT_HOE_GRADE)
+		else:
+			_hoe_here(Net.ACT_HOE_PATH if left else Net.ACT_HOE_SMOOTH)
+
+
+# Grade line points: the first click sets A, the next B, the next starts a new line at A. Stakes mark them; the server keeps its own copy.
+var _grade_a: Vector3 = Vector3.ZERO
+var _grade_has_a: bool = false
+var _grade_has_b: bool = false
+var _stakes: Array = []
+
+
+func _grade_point_here() -> void:
+	var from: Vector3 = _camera.global_position
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - _camera.global_transform.basis.z * REACH_M)
+	var hit: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(query)
+
+	if hit.is_empty() or hit["collider"].has_meta("species_ids"):
+		_inv._on_notice("Aim the hoe at the ground within reach to set a point")
+		return
+
+	var setting_b: bool = _grade_has_a and not _grade_has_b
+
+	if setting_b:
+		_grade_has_b = true
+	else:
+		_grade_has_a = true
+		_grade_has_b = false
+
+	_net.inventory_action.rpc_id(1, Net.ACT_HOE_GRADE_POINT, held_slot, 1 if setting_b else 0, 0, hit["position"])
+	_inv._on_notice("Point B set: hold Shift and left click along the line to grade it" if setting_b else "Point A set: Shift + right click again for point B")
+
+	for stake in _stakes:
+		if is_instance_valid(stake):
+			stake.queue_free()
+
+	_stakes.clear()
+
+	if not setting_b:
+		_grade_a = hit["position"]
+
+	for point in ([_grade_a, hit["position"]] if setting_b else [hit["position"]]):
+		var stake: MeshInstance3D = MeshInstance3D.new()
+		var post: CylinderMesh = CylinderMesh.new()
+		post.top_radius = 0.03
+		post.bottom_radius = 0.03
+		post.height = 1.0
+		stake.mesh = post
+		_root.add_child(stake)
+		stake.global_position = point + Vector3(0.0, 0.5, 0.0)
+		_stakes.append(stake)
 
 
 # A hoe stroke (path or smooth) at the ground under the crosshair; the server checks the hoe, the reach and the pace.

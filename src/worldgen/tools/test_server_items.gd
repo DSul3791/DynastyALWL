@@ -624,6 +624,18 @@ func _init() -> void:
 	m.action(1, Net.ACT_HOE_SMOOTH, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(digs.size() == 1 and fills.size() >= 1 and m.inventory_of(1).wear[hoe_slot] == hoe_wear + 1, "smoothing cuts the high spot and fills the low ones (%d cuts, %d fills)" % [digs.size(), fills.size()])
 	check(patches_of.call() == 0, "smoothed ground loses its path patch")
+	# The grade line: nothing happens before both points are set; then a stroke brings the high side toward the ramp (A 10.0 at x 4 to B 10.2 at x 8).
+	digs.clear()
+	fills.clear()
+	m._last_dig.clear()
+	m.action(1, Net.ACT_HOE_GRADE, 0, 0, 0, Vector3(8.0, 10.0, 0.0))
+	check(digs.is_empty() and fills.is_empty(), "a grade stroke without points A and B does nothing")
+	m.action(1, Net.ACT_HOE_GRADE_POINT, 0, 0, 0, Vector3(4.0, 10.0, 0.0))
+	m.action(1, Net.ACT_HOE_GRADE_POINT, 1, 0, 0, Vector3(8.0, 10.0, 0.0))
+	hoe_wear = m.inventory_of(1).wear[hoe_slot]
+	m._last_dig.clear()
+	m.action(1, Net.ACT_HOE_GRADE, 0, 0, 0, Vector3(7.0, 10.0, 0.0))
+	check(digs.size() >= 1 and m.inventory_of(1).wear[hoe_slot] == hoe_wear + 1, "a grade stroke cuts ground above the A-B ramp (%d cuts, %d fills)" % [digs.size(), fills.size()])
 	m.ground_height = Callable()
 
 	# Dig under trees (job 85): the tree falls when what holds it up is thin enough, by species class.
