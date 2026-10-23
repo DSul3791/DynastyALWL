@@ -8,9 +8,6 @@ Note: 6. Optional: place a timber prop near the roof before the time runs out. T
 Note: 7. Take a picture of the shaking and dust. Write in Notes what happened, yes or no.
 [test]
 
-## cost-found-basic | Basic foundation (compacted dirt with leaves and boughs): small 1x1 = 6 boughs + 10 leaves + 4 sticks and the ground tamped; small 2x2 = four times that?
-[check]
-
 ## cost-found-wood | Wooden foundations (for Plank, Fine wood, Log tiers): small 1x1 = 3 logs + 12 nails, small 2x2 = 12 logs + 48 nails, large 1x1 = 6 logs + 24 nails, large 2x2 = 24 logs + 96 nails?
 [check]
 
