@@ -948,3 +948,7 @@ Answered: 2026-10-23 01:37 UTC
 Answer: Yes
 Answered: 2026-10-23 01:37 UTC
 
+## wet-looks | Should the wet ceiling and walls look darker with a sheen and a few streaks, and each drop be a small falling sprite with a tiny ring splash on the floor?
+Answer: Yes
+Answered: 2026-10-23 01:38 UTC
+
