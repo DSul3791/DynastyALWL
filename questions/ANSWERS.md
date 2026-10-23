@@ -764,3 +764,7 @@ Answered: 2026-10-23 00:52 UTC
 Answer: Yes
 Answered: 2026-10-23 00:52 UTC
 
+## cost-25 | Door, Steel and iron: 4 steel ingots and 4 iron ingots?
+Answer: Yes
+Answered: 2026-10-23 00:52 UTC
+
