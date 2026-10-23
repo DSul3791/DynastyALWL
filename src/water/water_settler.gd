@@ -176,7 +176,9 @@ static func _plateau_near(sim, head: Vector2i, side: int, data = null) -> Vector
 
 			for r in range(8):
 				var angle: float = TAU * float(r) / 8.0
-				var h: float = sim.ground[(j + int(round(sin(angle) * 10.0))) * side + i + int(round(cos(angle) * 10.0))]
+				var ring_row: int = clampi(j + int(round(sin(angle) * 10.0)), 0, side - 1)   # the ring (10) can pass the 4-cell edge guard
+				var ring_column: int = clampi(i + int(round(cos(angle) * 10.0)), 0, side - 1)
+				var h: float = sim.ground[ring_row * side + ring_column]
 				low = minf(low, h)
 				high = maxf(high, h)
 
@@ -291,7 +293,10 @@ static func _pond_near(data, head: Vector2i, side: int) -> Vector2i:
 
 				for r in range(8):
 					var angle: float = TAU * float(r) / 8.0
-					var h: float = data.heights[(j + int(round(sin(angle) * ring))) * side + i + int(round(cos(angle) * ring))]
+					# The ring (up to 14 cells) can reach past the tile edge from a centre 12 cells in: clamp.
+					var ring_row: int = clampi(j + int(round(sin(angle) * ring)), 0, side - 1)
+					var ring_column: int = clampi(i + int(round(cos(angle) * ring)), 0, side - 1)
+					var h: float = data.heights[ring_row * side + ring_column]
 
 					if h < floor_here - 0.5:
 						misses = 8
