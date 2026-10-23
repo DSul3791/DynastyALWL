@@ -940,3 +940,7 @@ Answered: 2026-10-23 01:35 UTC
 Answer: No: Yes, but we are going to have rock piles so that we can put down rock piles just to store our rock. Also, you should just be able to pick up a rock pile by pushing E on it and you will get back all the rocks it took to make it and you should guesstimate how many rocks it should take to make a rock pile based on the size of our rocks and one rock pile should be about the right weight to fill someone’s inventory if they are average strength and their inventory was empty, so one character should be able to pick up a rock pile and slowly carry it to the waggon where they might dump it into the wagon, and the waggon would change his animation to look like it has rock in it
 Answered: 2026-10-23 01:37 UTC
 
+## fill-stone | Is the spade fill with stone enough for bulk rock, with no separate rock-pile item?
+Answer: No: Yes, but we are going to have rock piles so that we can put down rock piles just to store our rock. Also, you should just be able to pick up a rock pile by pushing E on it and you will get back all the rocks it took to make it and you should guesstimate how many rocks it should take to make a rock pile based on the size of our rocks and one rock pile should be about the right weight to fill someone’s inventory if they are average strength and their inventory was empty, so one character should be able to pick up a rock pile and slowly carry it to the waggon where they might dump it into the wagon, and the waggon would change his animation to look like it has rock in it
+Answered: 2026-10-23 01:37 UTC
+
