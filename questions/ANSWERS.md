@@ -1086,3 +1086,7 @@ Answered: 2026-10-23 04:14 UTC
 Answer: No: They don’t vanish they just get darker but they keep switching
 Answered: 2026-10-23 04:14 UTC
 
+## cavein-death-next | Then everything fades out slowly and you fade in on the inheritance or character creation screen, and this long sequence is only for cave-ins (other deaths keep the simple screen)?
+Answer: Yes
+Answered: 2026-10-23 04:15 UTC
+
