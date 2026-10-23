@@ -55,11 +55,6 @@ Note: At 5 or fewer left it turns back into loose rocks.
 Note: Tyler recommends Yes because it is quick for one rock and for a lot, and matches the rock pile item Sal built.
 [check]
 
-## cavein-death-voice | Until the real voice exists, show the three lines as big text under the skull with a small horn sting and a comic sting, and swap the voice in later?
-Note: Line 1 (sad): "I tried to warn you, but would you listen? Oh no..." Pause. Line 2 (jokey): "Oh well, now you're dead." Pause. Line 3: "Better luck next time, eh?"
-Note: Tyler recommends Yes because the voice (Kokoro) is not built yet, and swapping sound files later needs no code change.
-[check]
-
 ## cavein-death-next | Then everything fades out slowly and you fade in on the inheritance or character creation screen, and this long sequence is only for cave-ins (other deaths keep the simple screen)?
 Note: Tyler recommends Yes because it gives cave-ins their own moment without slowing down every death, and we can add the sequence to other deaths later if you like it.
 [check]
