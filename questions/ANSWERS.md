@@ -1238,3 +1238,7 @@ Answered: 2026-10-23 16:37 UTC
 Answer: Yes
 Answered: 2026-10-23 17:36 UTC
 
+## foundation-sizes | Should foundations come in two sizes, small 2 m and large 3 m?
+Answer: No: We’ve already answered this a couple times
+Answered: 2026-10-23 19:07 UTC
+
