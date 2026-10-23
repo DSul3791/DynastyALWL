@@ -40,11 +40,13 @@ var give_count: int = 1
 var _given: bool = false
 var drop_it: bool = false      # --shot-drop: then drop all of it onto the ground 2.2 m ahead (a real drop)
 var _dropped: bool = false
+var _drop_msec: int = 0
 var dig_steps: int = 0         # --shot-dig=N: dig N times (Dave's recipe: spade in hand, look down, click, step forward, repeat), then turn round and look back along the trail
 var _dig_i: int = 0
 var _dig_next_msec: int = 0
 var _dig_level: bool = false
 var _dig_ballast: bool = false
+var heavy: bool = false      # --shot-heavy: 400 stones in the pack first, so the dig yield spills onto the ground instead of going into the pack
 var _dig_dropped: bool = false
 var look_down_deg: float = -50.0      # --shot-lookdown=DEG: the pitch for ground tests (drop, dig, seeded pile); the spot fills the middle of the picture (TEST_RECIPE.md)
 var back_m: float = 1.0               # --shot-back=M: the short step back before the picture
@@ -107,6 +109,8 @@ func setup(owner_client, args: Array) -> void:
 			drop_dist_m = float(argument.trim_prefix("--shot-drop-dist="))
 		elif argument.begins_with("--shot-expect="):
 			expect = argument.trim_prefix("--shot-expect=")
+		elif argument == "--shot-heavy":
+			heavy = true
 		elif argument == "--shot-ground":
 			ground_test = true
 		elif argument.begins_with("--shot-dig="):
@@ -162,15 +166,16 @@ func _process(_delta: float) -> void:
 		_selected = true
 		client.held.select(0)      # slot 0 = key 1: hold what was given
 
-	if drop_it and _given and not _dropped and now - client.connected_msec > 11000:
+	if drop_it and _given and not _dropped and _placed and now - _moved_msec > 3000:      # only once the player stands on the real ground (a drop before that fell from the spawn height)
 		_dropped = true
+		_drop_msec = now
 		var bp: Vector3 = client.body.global_position
 		var gy: float = _ground(bp.x, bp.z - drop_dist_m)
 		var at: Vector3 = Vector3(bp.x, bp.y - 1.0 if is_nan(gy) else gy, bp.z - drop_dist_m)
 		client.items.net.inventory_action.rpc_id(1, Net.ACT_DROP, 0, 0, give_count, at)
 
 	# Dig rig: a heavy pack (so the yield spills onto the ground, as in play), then the dig-and-step loop.
-	if dig_steps > 0 and not _dig_ballast and now - client.connected_msec > 9000:
+	if dig_steps > 0 and heavy and not _dig_ballast and now - client.connected_msec > 9000:
 		_dig_ballast = true
 		client.items.net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, client.items.table.number_of("stone"), 0, 400, Vector3.ZERO)
 
@@ -268,7 +273,7 @@ func _process(_delta: float) -> void:
 			return
 
 	# A drop or a seeded pile: a short step back, then look down at the spot (TEST_RECIPE.md), settle, then the picture.
-	if ground_test and dig_steps == 0 and not _finish_done and now - client.connected_msec > 13000:
+	if ground_test and dig_steps == 0 and not _finish_done and now - client.connected_msec > 13000 and (not drop_it or (_dropped and now - _drop_msec > 3000)):
 		_finish_done = true
 		var behind: Vector3 = client.body.global_transform.basis.z
 		var bx: float = client.body.global_position.x + behind.x * back_m
