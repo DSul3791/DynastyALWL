@@ -7,10 +7,6 @@
 
 
 
-## axe-wear-chop | The axe wears once for each log chop and once for each split at the chopping block?
-Note: Tyler recommends Yes because both are real chopping, and one wear per action is easy to understand and to tune later.
-[check]
-
 ## species-uses-1 | Should each kind of tree be good for different things, using four numbers per species (hardness, burn time, rot resistance, how easy it is to work)? For example oak for strong beams and posts, birch and beech for firewood, pine and spruce for planks, alder for piers in water, apple and cherry for tool parts.
 Note: Full table: tech/items/TREE_SPECIES_USES_DRAFT.md.
 Note: Tyler recommends Yes because it follows real wood, so players can learn it, and it needs only data (four numbers per tree).
