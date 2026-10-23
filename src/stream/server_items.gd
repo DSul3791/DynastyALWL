@@ -729,7 +729,7 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 	elif kind == Net.ACT_HOE_SMOOTH:
 		_hoe_smooth(peer, inv, at)
 	elif kind == Net.ACT_PLACE:
-		_place(peer, inv, a, at, count)
+		_place(peer, inv, a, at, count, b)
 	elif kind == Net.ACT_THROW:
 		_throw(peer, inv, a, at)
 	elif kind == Net.ACT_STRIKE:
@@ -1878,7 +1878,7 @@ func _foundation_rows() -> Array:
 
 
 # A placeable item (the campfire kit) becomes a fire on the ground in front of the player.
-func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0) -> void:
+func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps: int = 0) -> void:
 	if slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or not _peer_pos.has(peer):
 		return
 
@@ -1893,12 +1893,18 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0) -> void:
 	at = on_grid[0]
 	yaw_deg = int(on_grid[1])
 	var on_base: bool = bool(on_grid[2])
+	var lift: float = 0.0
+
+	if not on_base and bool(_structure_of_kit(kit_id).get("foundation", false)):
+		lift = float(clampi(lift_steps, 0, PlacementRules.LIFT_MAX_STEPS)) * PlacementRules.LIFT_STEP_M   # the client sent the lifted height; the ground is checked below it
+		at.y -= lift
+
 	var ground: float = float(ground_height.call(at.x, at.z)) if ground_height.is_valid() else at.y
 
 	if is_nan(ground) or absf(ground - at.y) > (1.0 if not on_base else 1.5) or ground < 1.0:
 		return
 
-	var spot: Vector3 = Vector3(at.x, at.y if on_base else ground, at.z)
+	var spot: Vector3 = Vector3(at.x, at.y if on_base else ground + lift, at.z)
 
 	if not on_base and water_depth_at.is_valid() and PlacementRules.over_water(_structures_cfg, kit_id, spot, deg_to_rad(float(yaw_deg)), func(x, z): return float(water_depth_at.call(Vector3(x, spot.y, z)))):
 		_say(peer, "You cannot build in water.")

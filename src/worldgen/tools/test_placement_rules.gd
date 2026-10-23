@@ -163,12 +163,23 @@ func _init() -> void:
 			wall_y = maxf(wall_y, items._items[id]["pos"].y)
 
 	check(items.world_item_count() == base_before + 2 and is_equal_approx(wall_y, 10.3), "a wall beside it stands on the foundation top (y %.2f)" % wall_y)
+	# The mouse wheel lifts a foundation off the ground in 0.1 m steps (b = steps, at = the lifted spot); more than 10 steps counts as 10.
+	items.report_position(2, Vector3(300.0, 10.0, 300.0))
+	items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of("foundation_section_kit"), 0, 1, Vector3.ZERO)
+	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of("foundation_section_kit")), 3, 0, Vector3(300.0, 10.3, 302.0))
+	var lifted_y: float = -1.0
+
+	for id in items._items:
+		if items._items[id].has("struct") and items._items[id]["struct"]["kind"] == "foundation_section" and items._items[id]["pos"].distance_to(Vector3(300.0, 10.3, 302.0)) < 1.0:
+			lifted_y = items._items[id]["pos"].y
+
+	check(is_equal_approx(lifted_y, 10.3), "a foundation lifted 3 steps stands 0.3 m above the ground (y %.2f)" % lifted_y)
 	# A doorway and a window wall snap onto the foundation like a wall; the foundation stays while they stand on it.
 	check(bool(Rules.snap(cfg, "doorway_section_kit", Vector3(48.9, 10.0, 47.6), 0, base_rows)[2]) and bool(Rules.snap(cfg, "window_section_kit", Vector3(48.9, 10.0, 47.6), 0, base_rows)[2]), "doorway and window walls snap to the foundation anchors")
 	var base_id: int = 0
 
 	for id in items._items:
-		if items._items[id].has("struct") and items._items[id]["struct"]["kind"] == "foundation_section":
+		if items._items[id].has("struct") and items._items[id]["struct"]["kind"] == "foundation_section" and items._items[id]["pos"].distance_to(Vector3(400.0, 10.0, 402.0)) < 2.0:
 			base_id = id
 
 	var found_before: int = items.world_item_count()

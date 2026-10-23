@@ -82,6 +82,10 @@ static func snap(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int, r
 # candidate within JOIN_REACH_M of the cursor, or [] when none is near.
 const JOIN_REACH_M := 1.5
 
+# A foundation set on the ground can be lifted by the mouse wheel in LIFT_STEP_M steps, up to LIFT_MAX_STEPS of them.
+const LIFT_STEP_M := 0.1
+const LIFT_MAX_STEPS := 10
+
 static func _join(cfg: Dictionary, piece_kind: String, spot: Vector3, rows: Array) -> Array:
 	if piece_kind == "":
 		return []
