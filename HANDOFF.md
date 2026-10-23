@@ -90,3 +90,4 @@ Baked tiles for the inner starters and their neighbors (36 files) are in `/mnt/p
 - Merge claude/sal-rock-pile (RESTART, local_check PASS per Sal), not in head 695. Next-night test line: "Please test: craft a rock pile from 45 stones, set it down, press E. Look for: 45 stones back in the pack; hold E instead and you carry the pile."
 - Ask Kathleen for the rock pile and wagon-load looks.
 - Merge Sal hoe-hold test line already posted tonight (hoe-hold card).
+- Merge claude/kathleen-wet (RUNTIME, wet-tunnel sounds, nothing calls them yet) with the other held branches; not in head 695.
