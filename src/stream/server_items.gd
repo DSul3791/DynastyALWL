@@ -3309,6 +3309,13 @@ func _use_struct(peer: int, inv, id: int) -> void:
 
 		return
 
+	if str(def.get("use", "")) == "unpile":
+		# A rock pile gives back all the stones it was made of (what does not fit in the pack lies on the ground).
+		give(peer, table.number_of("stone"), int(def.get("stones", 45)))
+		_items.erase(id)
+		_dirty = true
+		return
+
 	if str(def.get("use", "")) != "split_log":
 		return
 

@@ -271,3 +271,16 @@ static func path() -> Node3D:
 	var root: Node3D = Node3D.new()
 	_box(root, Vector3(1.0, 0.03, 1.0), Vector3(0.0, 0.0, 0.0), _earth)
 	return root
+
+
+# A rock pile: a mound of grey stones about 1.2 m across (Kathleen draws the real one).
+static func rock_pile() -> Node3D:
+	_materials()
+	var root: Node3D = Node3D.new()
+	var rows: Array = [[Vector3(0.0, 0.14, 0.0), 0.5], [Vector3(0.35, 0.12, 0.2), 0.34], [Vector3(-0.3, 0.12, 0.25), 0.36], [Vector3(0.1, 0.12, -0.35), 0.38], [Vector3(-0.1, 0.34, 0.0), 0.3]]
+
+	for row in rows:
+		_box(root, Vector3.ONE * float(row[1]), row[0], _stone)
+
+	_solid(root, Vector3(1.0, 0.5, 1.0), Vector3(0.0, 0.25, 0.0))
+	return root
