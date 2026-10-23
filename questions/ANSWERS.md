@@ -796,3 +796,7 @@ Answered: 2026-10-23 00:56 UTC
 Answer: Yes
 Answered: 2026-10-23 00:56 UTC
 
+## basins-store | Store the list of lakes and basins (where each is, how deep, where it overflows) in the tile file, so the game always puts water at the bottom of the same basins?
+Answer: Yes
+Answered: 2026-10-23 01:14 UTC
+
