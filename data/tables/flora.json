@@ -1597,6 +1597,7 @@
 			"display": "Lingonberry",
 			"kind": "plant",
 			"shape": "shrub",
+			"model": "ground_berry",
 			"height_m": [
 				0.1,
 				0.3
@@ -1656,6 +1657,7 @@
 			"display": "Cranberry",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "ground_berry",
 			"height_m": [
 				0.1,
 				0.2
@@ -1716,6 +1718,7 @@
 			"display": "Cloudberry",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "ground_berry",
 			"height_m": [
 				0.1,
 				0.25
@@ -1771,6 +1774,7 @@
 			"display": "Wild strawberry",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "ground_berry",
 			"height_m": [
 				0.1,
 				0.25
@@ -1887,6 +1891,7 @@
 			"display": "Crowberry",
 			"kind": "plant",
 			"shape": "shrub",
+			"model": "ground_berry",
 			"height_m": [
 				0.1,
 				0.3

@@ -157,6 +157,8 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 			_blackthorn(bark, leaves, rng, h, crown, far, season)
 		"raspberry", "bramble", "wild_rose", "blueberry":
 			_cane_shrub(SHRUB_LOOKS[str(entry["name"])], bark, leaves, rng, h, crown, far)
+		"ground_berry":
+			_ground_berry(GROUND_LOOKS[str(entry["name"])], bark, leaves, rng, h, crown, far)
 		"herb_nettle":
 			_herb(bark, leaves, rng, h, crown, far, Color(0.7, 0.95, 0.5))
 		"hazel":
@@ -2244,6 +2246,55 @@ static func _cane_shrub(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 			elif look["fruit"] != null:
 				var ripe: bool = rng.randf() < 0.75
 				_cluster(bark, rng, low, crown * float(look.get("cluster", 0.14)), look["fruit"] if ripe else look["unripe"], false, rng.randi_range(3, 8) if look.has("cluster") else rng.randi_range(6, 9))
+
+
+# Low berry plants (strawberry, lingonberry, cranberry, cloudberry, crowberry): a ground rosette of leaf clumps with thin stalks
+# rising or trailing from the middle, each ending in a berry (ripe and unripe) or a white flower.
+const GROUND_LOOKS := {
+	"wild_strawberry": {"leaves": 7, "leaf": 0.34, "stalks": 6, "lift": 0.8, "berry": Color(0.85, 0.08, 0.1), "unripe": Color(0.9, 0.85, 0.7), "size": 0.045, "count": 1, "flower": Color(1.0, 1.0, 0.97), "creep": 0.0, "cane": Color(0.4, 0.5, 0.25)},
+	"lingonberry": {"leaves": 8, "leaf": 0.2, "stalks": 8, "lift": 1.0, "berry": Color(0.75, 0.05, 0.12), "unripe": Color(0.95, 0.85, 0.8), "size": 0.06, "count": 4, "flower": null, "creep": 0.0, "cane": Color(0.4, 0.3, 0.2)},
+	"cranberry": {"leaves": 8, "leaf": 0.18, "stalks": 6, "lift": 0.35, "berry": Color(0.7, 0.04, 0.1), "unripe": Color(0.9, 0.7, 0.6), "size": 0.06, "count": 3, "flower": null, "creep": 1.0, "cane": Color(0.45, 0.3, 0.2)},
+	"cloudberry": {"leaves": 5, "leaf": 0.42, "stalks": 4, "lift": 1.0, "berry": Color(0.95, 0.55, 0.12), "unripe": Color(0.85, 0.2, 0.15), "size": 0.12, "count": 6, "flower": Color(1.0, 1.0, 0.97), "creep": 0.0, "cane": Color(0.4, 0.45, 0.25)},
+	"crowberry": {"leaves": 10, "leaf": 0.16, "stalks": 8, "lift": 0.4, "berry": Color(0.08, 0.07, 0.12), "unripe": Color(0.5, 0.15, 0.3), "size": 0.06, "count": 3, "flower": null, "creep": 0.8, "cane": Color(0.35, 0.28, 0.2)},
+}
+
+
+static func _ground_berry(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
+	var n_leaves: int = 3 if far else int(look["leaves"])
+	var az: float = rng.randf() * TAU
+	var leaf_size: float = maxf(crown * float(look["leaf"]), h * 0.6)
+
+	for k in range(n_leaves):
+		az += TAU / float(n_leaves) + rng.randf_range(-0.3, 0.3)
+		var out: Vector3 = Vector3(cos(az), 0.0, sin(az))
+		var at: Vector3 = out * crown * rng.randf_range(0.2, 0.9) * 0.5 + Vector3(0.0, h * 0.25, 0.0)
+		_clump(leaves, rng, at, Vector3(0.0, -h, 0.0), leaf_size * rng.randf_range(0.8, 1.2), rng.randf_range(0.85, 1.05), 2)
+
+	if far:
+		return
+
+	var color: Color = look["cane"]
+	var creep: float = float(look["creep"])
+	var bead: float = float(look["size"]) * crown * 1.8
+
+	for k in range(int(look["stalks"])):
+		var a: float = rng.randf() * TAU
+		var out: Vector3 = Vector3(cos(a), 0.0, sin(a))
+		var base: Vector3 = out * crown * 0.05
+		var reach: float = crown * (0.35 + 0.55 * creep) * rng.randf_range(0.6, 1.1)
+		var rise: float = h * float(look["lift"]) * rng.randf_range(0.6, 1.0)
+		var tip: Vector3 = base + out * reach + Vector3(0.0, rise, 0.0)
+		var mid: Vector3 = base.lerp(tip, 0.5) + Vector3(0.0, rise * 0.15, 0.0)
+		_branch(bark, base, mid, maxf(h * 0.02, 0.004), maxf(h * 0.014, 0.003), color, 3)
+		_branch(bark, mid, tip, maxf(h * 0.014, 0.003), maxf(h * 0.008, 0.002), color, 3)
+
+		if look["flower"] != null and rng.randf() < 0.4:
+			_blossom(bark, rng, tip + Vector3(0.0, bead * 0.4, 0.0), bead * 1.4, look["flower"])
+			continue
+
+		var ripe: bool = rng.randf() < 0.7
+		var hang: Vector3 = tip + Vector3(0.0, -bead * 0.6, 0.0)
+		_cluster(bark, rng, hang, bead * 1.1, look["berry"] if ripe else look["unripe"], false, int(look["count"]) + 1)
 
 
 # A wild rose flower: five broad flat petals round a pale yellow centre with orange-yellow stamens (Dave's photos), facing up and out.
