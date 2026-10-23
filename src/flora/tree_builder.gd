@@ -102,7 +102,7 @@ class Acc:
 # "birch_bark": Material, "twig": Material, "oak": Material, "smooth_bark": Material}. `season`: "winter" gives species that
 # have a bare model (birch) no leaves; anything else gives the leafy model (the
 # leaf color is the per-tree tint, so summer and autumn share one model).
-static func build(entry: Dictionary, h: float, variant: int, far: bool, materials: Dictionary, season: String = "") -> ArrayMesh:
+static func build(entry: Dictionary, h: float, variant: int, far: bool, materials: Dictionary, season: String = "", stripped: bool = false) -> ArrayMesh:
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = hash([str(entry["name"]), variant])
 	var bark: Acc = Acc.new()
@@ -154,11 +154,11 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 		"sweet_chestnut":
 			_chestnut(bark, leaves, twigs, rng, h, crown, trunk, variant, far, season)
 		"blackthorn":
-			_blackthorn(bark, leaves, rng, h, crown, far, season)
+			_blackthorn(bark, leaves, rng, h, crown, far, season, _fruit_state(entry, season, stripped, ["spring"]))
 		"raspberry", "bramble", "wild_rose", "blueberry":
-			_cane_shrub(SHRUB_LOOKS[str(entry["name"])], bark, leaves, rng, h, crown, far)
+			_cane_shrub(SHRUB_LOOKS[str(entry["name"])], bark, leaves, rng, h, crown, far, _fruit_state(entry, season, stripped, SHRUB_LOOKS[str(entry["name"])].get("bloom_in", ["spring"])))
 		"ground_berry":
-			_ground_berry(GROUND_LOOKS[str(entry["name"])], bark, leaves, rng, h, crown, far)
+			_ground_berry(GROUND_LOOKS[str(entry["name"])], bark, leaves, rng, h, crown, far, _fruit_state(entry, season, stripped, ["spring"]))
 		"wildflower":
 			_wildflower(WILDFLOWER_LOOKS[str(entry["name"])], bark, leaves, rng, h, crown, far)
 		"herb_nettle":
@@ -2188,12 +2188,23 @@ const RASPBERRY_CANE := Color(0.62, 0.50, 0.34)
 const RASPBERRY_BERRY := Color(0.82, 0.06, 0.14)
 const RASPBERRY_UNRIPE := Color(0.85, 0.75, 0.25)
 const SHRUB_LOOKS := {
-	"raspberry": {"canes": [12, 14], "segs": 4, "thorn_n": 3, "base": 0.3, "arch": 0.25, "reach": 1.3, "sprays": 8, "rate": 0.4, "cluster": 0.07, "cane": RASPBERRY_CANE, "leaf": 0.55, "fruit": RASPBERRY_BERRY, "unripe": RASPBERRY_UNRIPE, "flower": Color(1.0, 0.98, 0.95), "thorns": true},
-	"bramble": {"canes": [7, 8], "segs": 5, "thorn_n": 4, "arch": 0.8, "reach": 1.3, "sprays": 11, "rate": 0.5, "cluster": 0.08, "cane": Color(0.50, 0.30, 0.30), "leaf": 0.5, "fruit": Color(0.35, 0.10, 0.55), "unripe": Color(1.0, 0.25, 0.25), "flower": Color(1.0, 0.9, 0.9), "thorns": true},
-	"wild_rose": {"canes": [10, 11], "segs": 5, "thorn_n": 4, "sprays": 6, "arch": 0.35, "reach": 1.0, "rate": 0.12, "cluster": 0.045, "cane": Color(0.45, 0.30, 0.22), "leaf": 0.65, "fruit": Color(1.0, 0.18, 0.1), "unripe": Color(1.0, 0.55, 0.3), "flower": null, "blossom": Color(1.0, 0.25, 0.55), "thorns": true},
+	"raspberry": {"fill": 16, "canes": [12, 14], "segs": 4, "thorn_n": 3, "base": 0.3, "arch": 0.25, "reach": 1.3, "sprays": 8, "rate": 0.4, "cluster": 0.07, "cane": RASPBERRY_CANE, "leaf": 0.55, "fruit": RASPBERRY_BERRY, "unripe": RASPBERRY_UNRIPE, "flower": Color(1.0, 0.98, 0.95), "thorns": true},
+	"bramble": {"fill": 10, "canes": [10, 11], "segs": 4, "thorn_n": 2, "arch": 0.6, "reach": 1.0, "sprays": 10, "rate": 0.3, "cluster": 0.08, "cane": Color(0.50, 0.30, 0.30), "leaf": 0.8, "fruit": Color(0.35, 0.10, 0.55), "unripe": Color(1.0, 0.25, 0.25), "flower": Color(1.0, 0.9, 0.9), "thorns": true},
+	"wild_rose": {"bloom_in": ["spring", "summer"], "fill": 14, "canes": [10, 11], "segs": 5, "thorn_n": 4, "sprays": 6, "arch": 0.35, "reach": 1.0, "rate": 0.12, "cluster": 0.045, "cane": Color(0.45, 0.30, 0.22), "leaf": 0.65, "fruit": Color(1.0, 0.18, 0.1), "unripe": Color(1.0, 0.55, 0.3), "flower": null, "blossom": Color(1.0, 0.25, 0.55), "thorns": true},
 	"blackthorn": {"canes": [14, 18], "base": 0.2, "arch": 0.55, "reach": 1.4, "rate": 0.12, "cane": Color(0.20, 0.17, 0.15), "leaf": 0.32, "fruit": Color(0.4, 0.45, 0.9), "unripe": Color(0.5, 0.6, 0.5), "flower": null, "thorns": true},
-	"blueberry": {"canes": [9, 11], "sprays": 5, "arch": 0.1, "reach": 0.7, "rate": 0.5, "cluster": 0.06, "cane": Color(0.50, 0.38, 0.28), "leaf": 0.4, "fruit": Color(0.30, 0.38, 0.85), "unripe": Color(0.75, 0.9, 0.55), "flower": null, "thorns": false},
+	"blueberry": {"fill": 6, "canes": [9, 11], "sprays": 5, "arch": 0.1, "reach": 0.7, "rate": 0.5, "cluster": 0.06, "cane": Color(0.50, 0.38, 0.28), "leaf": 0.4, "fruit": Color(0.30, 0.38, 0.85), "unripe": Color(0.75, 0.9, 0.55), "flower": null, "thorns": false},
 }
+
+
+# What a fruiting plant shows in `season` (Dave 2026-10-23: fruit only in the right season). `fruit`: ripe berries are drawn (the season is one of
+# the species' flora.json "season" list and the plant has not been picked bare: `stripped`); `bloom`: white or coloured blossom (`bloom_in` seasons);
+# `bare`: leafless (winter). An empty season keeps the old always-fruiting look (offline checks).
+static func _fruit_state(entry: Dictionary, season: String, stripped: bool, bloom_in: Array) -> Dictionary:
+	if season == "":
+		return {"fruit": not stripped, "bloom": true, "bare": false, "legacy": true}
+
+	var ripe_in: Array = entry.get("season", [])
+	return {"fruit": (ripe_in.has(season) or ripe_in.has("all")) and not stripped, "bloom": bloom_in.has(season), "bare": season == "winter", "legacy": false}
 
 
 # A shrub-only leaf spray (Dave 2026-10-23: leaves were round puffs): two narrow cards in a shallow V pointing along `along`, like a
@@ -2244,7 +2255,10 @@ static func _bezier(p: Array, t: float) -> Vector3:
 	return (p[0] as Vector3) * u * u * u + (p[1] as Vector3) * 3.0 * u * u * t + (p[2] as Vector3) * 3.0 * u * t * t + (p[3] as Vector3) * t * t * t
 
 
-static func _cane_shrub(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
+static func _cane_shrub(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool, state: Dictionary = {"fruit": true, "bloom": true, "bare": false, "legacy": true}) -> void:
+	var legacy: bool = bool(state["legacy"])
+	var bare: bool = bool(state["bare"])
+	var bloom_color: Variant = look.get("blossom", null) if legacy else look.get("blossom", look.get("flower", null))
 	var span: Array = look["canes"]
 	var canes: int = int(look.get("far_canes", 4)) if far else rng.randi_range(int(span[0]), int(span[1]))
 	var arch: float = float(look["arch"])
@@ -2284,8 +2298,8 @@ static func _cane_shrub(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 		var sprays: int = 3 if far else int(look.get("sprays", 8))
 		var leaf_size: float = crown * float(look["leaf"]) * 0.3
 
-		for m in range(sprays):
-			var t: float = 0.2 + 0.8 * float(m) / float(sprays - 1)
+		for m in range(0 if bare else sprays):
+			var t: float = 0.08 + 0.92 * float(m) / float(sprays - 1)
 			var at: Vector3 = _bezier(ctrl, t)
 			var tangent: Vector3 = (_bezier(ctrl, minf(t + 0.05, 1.0)) - _bezier(ctrl, maxf(t - 0.05, 0.0))).normalized()
 			var turn_a: float = rng.randf_range(0.7, 1.1)
@@ -2298,19 +2312,31 @@ static func _cane_shrub(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 			if m == sprays - 1 or (not far and rng.randf() < 0.4):
 				_leaf_spray(leaves, rng, at, tangent + Vector3(0.0, -0.1, 0.0), length, shade)
 
-			if not far and look.has("blossom") and rng.randf() < 0.55:
-				_flat_blossom(bark, rng, at + Vector3(0.0, leaf_size * 0.3, 0.0) + out * leaf_size * 0.3, crown * 0.045, look["blossom"])
+			var show_bloom: bool = rng.randf() < 0.4
+
+			if not far and show_bloom and bloom_color != null and bool(state["bloom"]):
+				_flat_blossom(bark, rng, at + Vector3(0.0, leaf_size * 0.3, 0.0) + out * leaf_size * 0.3, crown * 0.045, bloom_color)
 
 			if far or rng.randf() > float(look.get("rate", 0.45)):
 				continue
 
 			var low: Vector3 = at + Vector3(0.0, -leaf_size * 0.95, 0.0) + out * leaf_size * 0.3
-			# Flowers where the plant has them, otherwise (and mixed in) fruit, some of it unripe.
-			if look["flower"] != null and rng.randf() < 0.5:
+			var flower_roll: bool = rng.randf() < 0.5
+			var ripe: bool = rng.randf() < (0.75 if legacy else 0.9)
+
+			# Old look (no season): flowers and fruit mixed. Otherwise fruit only when ripe in this season (and not picked bare).
+			if legacy and look["flower"] != null and flower_roll:
 				_cluster(bark, rng, low + Vector3(0.0, leaf_size * 1.1, 0.0), crown * float(look.get("cluster", 0.14)), look["flower"], true, rng.randi_range(5, 7))
-			elif look["fruit"] != null:
-				var ripe: bool = rng.randf() < 0.75
+			elif bool(state["fruit"]) and look["fruit"] != null:
 				_cluster(bark, rng, low, crown * float(look.get("cluster", 0.14)), look["fruit"] if ripe else look["unripe"], false, rng.randi_range(3, 8) if look.has("cluster") else rng.randi_range(6, 9))
+
+	# Leaf sprays standing up in the middle so the bush has no hollow centre.
+	if not far and not bare and look.has("fill"):
+		for k in range(int(look["fill"])):
+			var a: float = rng.randf() * TAU
+			var at: Vector3 = Vector3(cos(a), rng.randf_range(0.08, 0.85) * h, sin(a)) * Vector3(crown * 0.45, 1.0, crown * 0.45) * Vector3(sqrt(rng.randf()), 1.0, sqrt(rng.randf()))
+			var along: Vector3 = Vector3(rng.randfn() * 0.6, 1.0, rng.randfn() * 0.6)
+			_leaf_spray(leaves, rng, at, along, crown * float(look["leaf"]) * 0.45, rng.randf_range(0.85, 1.05))
 
 
 # Low berry plants (strawberry, lingonberry, cranberry, cloudberry, crowberry): a ground rosette of leaf clumps with thin stalks
@@ -2324,7 +2350,7 @@ const GROUND_LOOKS := {
 }
 
 
-static func _ground_berry(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
+static func _ground_berry(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool, state: Dictionary = {"fruit": true, "bloom": true, "bare": false, "legacy": true}) -> void:
 	var n_leaves: int = 3 if far else int(look["leaves"])
 	var az: float = rng.randf() * TAU
 	var leaf_size: float = maxf(crown * float(look["leaf"]), h * 0.6)
@@ -2353,8 +2379,15 @@ static func _ground_berry(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomN
 		_branch(bark, base, mid, maxf(h * 0.02, 0.004), maxf(h * 0.014, 0.003), color, 3)
 		_branch(bark, mid, tip, maxf(h * 0.014, 0.003), maxf(h * 0.008, 0.002), color, 3)
 
-		if look["flower"] != null and rng.randf() < 0.4:
+		var flower_roll: float = rng.randf()
+		var legacy: bool = bool(state["legacy"])
+
+		if look["flower"] != null and ((legacy and flower_roll < 0.4) or (not legacy and bool(state["bloom"]))):
 			_blossom(bark, rng, tip + Vector3(0.0, bead * 0.4, 0.0), bead * 1.4, look["flower"])
+			continue
+
+		# Berries only in their ripe season and while the plant is not picked bare (Dave 2026-10-23).
+		if not bool(state["fruit"]):
 			continue
 
 		var ripe: bool = rng.randf() < 0.7
@@ -2468,10 +2501,11 @@ const SLOE_COLOR := Color(0.36, 0.40, 0.62)
 const BLOSSOM_WHITE := Color(1.0, 1.0, 0.98)
 
 
-static func _blackthorn(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool, season: String) -> void:
+static func _blackthorn(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool, season: String, state: Dictionary = {"fruit": true, "bare": false}) -> void:
 	# Budget (Steve 2026-10-23): near model at most about 4,000 vertices, far model about 800. Spines are single triangles.
 	var bloom: bool = season == "spring"
-	var stems: int = 5 if far else rng.randi_range(11, 13)
+	var bare: bool = bool(state["bare"])
+	var stems: int = 5 if far else rng.randi_range(12, 13)
 	var az: float = rng.randf() * TAU
 	var r0: float = maxf(h * 0.005, 0.012)
 
@@ -2488,7 +2522,7 @@ static func _blackthorn(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: f
 		var nodes: Array = [top, mid]
 
 		# Side shoots from the upper two thirds, angled out; each ends in a long spine, with one short one along it.
-		for m in range(2 if far else rng.randi_range(7, 8)):
+		for m in range(2 if far else rng.randi_range(6, 7)):
 			var u: float = rng.randf_range(0.15, 1.0)
 			var from: Vector3 = base.lerp(mid, u * 2.0) if u < 0.5 else mid.lerp(top, u * 2.0 - 1.0)
 			var side: Vector3 = (out * 0.6 + Vector3(rng.randfn(), rng.randf_range(0.0, 0.8), rng.randfn()) * 0.6).normalized()
@@ -2509,13 +2543,20 @@ static func _blackthorn(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: f
 			var shade: float = rng.randf_range(0.85, 1.05)
 
 			if bloom:
-				if not far:
+				if not far and rng.randf() < 0.3:
 					_blossom(bark, rng, n, crown * 0.04, BLOSSOM_WHITE)
-			else:
-				_leaf_spray(leaves, rng, n, Vector3(rng.randfn(), rng.randf_range(-0.3, 0.5), rng.randfn()), crown * 0.075, shade * 1.05)
+			elif not bare:
+				_leaf_spray(leaves, rng, n, Vector3(rng.randfn(), rng.randf_range(-0.3, 0.5), rng.randfn()), crown * 0.11, shade * 1.05)
 
-				if not far and rng.randf() < 0.22:
+				if not far and rng.randf() < 0.22 and bool(state["fruit"]):
 					_cluster(bark, rng, n + Vector3(0.0, -crown * 0.04, 0.0), crown * 0.04, SLOE_COLOR, false, rng.randi_range(3, 4))
+
+	# Leaf sprays low in the bush as well, so it is full from the top down to the ground (Dave 2026-10-23).
+	if not far and not bloom and not bare:
+		for k in range(14):
+			var a: float = rng.randf() * TAU
+			var at: Vector3 = Vector3(cos(a), 0.0, sin(a)) * crown * 0.45 * sqrt(rng.randf()) + Vector3(0.0, rng.randf_range(0.05, 0.7) * h, 0.0)
+			_leaf_spray(leaves, rng, at, Vector3(rng.randfn(), rng.randf_range(0.1, 0.8), rng.randfn()), crown * 0.11, rng.randf_range(0.85, 1.05))
 
 
 # A single-triangle thorn from `from` to `to` (a thin sharp spine), width `w` at the base.
