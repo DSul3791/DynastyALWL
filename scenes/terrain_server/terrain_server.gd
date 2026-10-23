@@ -349,6 +349,7 @@ func _ready() -> void:
 	admin = AdminScript.new()
 	admin.load_keys(["res://data/admin.json", store_dir + "/admin.json"])
 	@warning_ignore("confusable_local_declaration")
+	items.reset_terrain_edits = _reset_terrain_edits
 	items.admin_ok = func(peer: int) -> bool: return admin.is_admin(items.key_of(peer))
 	admin.open_to_all = OS.get_cmdline_user_args().has("--open-admin")
 	npcs = NpcsScript.new()
@@ -1135,6 +1136,32 @@ func _start_tunnels() -> void:
 		return buffer
 	tunnels.surface_h = func(x: float, z: float) -> float: return generator.surface_height(x, z)
 	tunnels.start()
+
+
+# Admin "Reset all terrain edits": every saved dig and fill (rubble included) is deleted, the ground and water are made again from the
+# baked tiles, the tunnel clocks start clean and every player reloads. Buildings, items and plants are not touched.
+func _reset_terrain_edits() -> void:
+	var error: String = store.ops.reset()
+
+	if error != "":
+		print("server: reset of terrain edits failed: ", error)
+		return
+
+	store.clear_generated()
+	flora.clear_memory()
+	generator.forget_tiles()
+	WaterGridScript.forget_ground()
+
+	if water_live != null:
+		water_live.stop()
+		water_live = null
+
+	_start_water()
+
+	if tunnels != null:
+		tunnels.set_enabled(tunnels.enabled)
+
+	net.ground_reset.rpc(store.tiles_stamp, _starter_stamp())
 
 
 # An admin turns the tunnel collapse on or off and sets the cave-in duration from Esc > Settings; saved beside the world, told to everyone.

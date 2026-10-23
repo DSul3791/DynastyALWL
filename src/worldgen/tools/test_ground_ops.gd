@@ -124,6 +124,20 @@ func _init() -> void:
 		timing.apply(rebuilt, Vector3i(0, 0, 0))
 		print("     block with %d ops: %.2f ms" % [timing.ops_in(Vector3i(0, 0, 0)), float(Time.get_ticks_usec() - t0) / 1000.0])
 
+	# Reset all terrain edits: the log empties, blocks come back as baked, and a reopened log stays empty.
+	var wipe = GroundOps.new()
+	wipe.open(dir + "/wipe.bin")
+	wipe.add(GroundOps.KIND_DIG, 0, centre, 2.0)
+	wipe.add(GroundOps.KIND_FILL, 5, centre, 1.0)
+	ops = wipe
+	_check(ops.count > 0 and ops.reset() == "" and ops.count == 0 and not ops.has_ops(block), "reset forgets every dig and fill")
+	buffer = _ground_block()
+	ops.apply(buffer, block)
+	_check(buffer.get_voxel_f(8, 7, 8, Layout.CHANNEL_SDF) < 0.0, "after reset the block is untouched ground")
+	ops.add(GroundOps.KIND_DIG, 0, centre, 2.0)
+	var reopened = GroundOps.new()
+	_check(reopened.open(dir + "/wipe.bin") == "" and reopened.count == 1, "a new dig after reset is saved on a clean log")
+
 	# The water's ground follows saved digs and fills (replayed at server start).
 	var n: int = 9
 	var flat: PackedFloat32Array = PackedFloat32Array()
