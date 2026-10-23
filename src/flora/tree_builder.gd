@@ -161,6 +161,8 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 			_ground_berry(GROUND_LOOKS[str(entry["name"])], bark, leaves, rng, h, crown, far, _fruit_state(entry, season, stripped, ["spring"]))
 		"wildflower":
 			_wildflower(WILDFLOWER_LOOKS[str(entry["name"])], bark, leaves, rng, h, crown, far)
+		"leafy_herb":
+			_leafy_herb(HERB_LOOKS.get(str(entry["name"]), HERB_LOOKS["comfrey"]), bark, leaves, rng, h, crown, far)
 		"herb_nettle":
 			_herb(bark, leaves, rng, h, crown, far, Color(0.7, 0.95, 0.5))
 		"hazel":
@@ -2730,3 +2732,63 @@ static func _mushroom(look: Dictionary, bark: Acc, rng: RandomNumberGenerator, h
 						var f: float = sqrt(rng.randf()) * 0.8
 						var a: float = rng.randf() * TAU
 						_bead(bark, top + Vector3(cos(a) * cap_r * f, cap_h * sqrt(maxf(1.0 - f * f, 0.0)) * 1.0, sin(a) * cap_r * f), Vector3(cap_r * 0.1, cap_r * 0.06, cap_r * 0.1), look["spots"])
+
+
+# Broad-leaved herbs (comfrey, burdock, mugwort, belladonna, henbane): a rosette of big low leaves and a few upright flowering stems with alternate
+# leaves, ending in `head` flowers in explicit colours. `leaf` is the rosette leaf length as a fraction of h, `head`: bells (hanging along the top),
+# burr (a few round heads), spike (many tiny beads), cup (open flowers on the stem tip).
+const HERB_LOOKS := {
+	"comfrey": {"leaf": 0.55, "rosette": 7, "stems": 3, "head": "bells", "colour": Color(0.75, 0.35, 0.75), "stem": Color(0.35, 0.45, 0.25)},
+	"burdock": {"leaf": 0.5, "rosette": 6, "stems": 3, "head": "burr", "colour": Color(0.65, 0.2, 0.6), "stem": Color(0.42, 0.36, 0.22)},
+	"mugwort": {"leaf": 0.3, "rosette": 6, "stems": 6, "head": "spike", "colour": Color(0.65, 0.6, 0.4), "stem": Color(0.5, 0.35, 0.25)},
+	"belladonna": {"leaf": 0.3, "rosette": 4, "stems": 4, "head": "bells", "colour": Color(0.4, 0.15, 0.45), "stem": Color(0.4, 0.3, 0.3)},
+	"henbane": {"leaf": 0.4, "rosette": 5, "stems": 2, "head": "cup", "colour": Color(0.95, 0.9, 0.55), "stem": Color(0.5, 0.55, 0.35)},
+}
+
+
+static func _leafy_herb(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
+	var rosette: int = 3 if far else int(look["rosette"])
+	var az: float = rng.randf() * TAU
+	var length: float = h * float(look["leaf"])
+
+	# Big leaves lying out low round the base, slightly raised.
+	for k in range(rosette):
+		az += TAU / float(rosette) + rng.randf_range(-0.3, 0.3)
+		var out: Vector3 = Vector3(cos(az), 0.35, sin(az))
+		_leaf_spray(leaves, rng, Vector3(cos(az), 0.0, sin(az)) * crown * 0.1 + Vector3(0.0, h * 0.08, 0.0), out, length * rng.randf_range(0.8, 1.15), rng.randf_range(0.85, 1.05))
+
+	var stems: int = 1 if far else int(look["stems"])
+
+	for k in range(stems):
+		var a: float = rng.randf() * TAU
+		var base: Vector3 = Vector3(cos(a), 0.0, sin(a)) * crown * 0.15
+		var top: Vector3 = base + Vector3(rng.randfn() * 0.04, h * rng.randf_range(0.8, 1.0), rng.randfn() * 0.04)
+		_branch(bark, base, top, maxf(h * 0.012, 0.006), maxf(h * 0.006, 0.003), look["stem"], 4)
+
+		if far:
+			continue
+
+		# Alternate smaller leaves up the stem.
+		var pairs: int = 4
+
+		for m in range(pairs):
+			var at: Vector3 = base.lerp(top, 0.25 + 0.55 * float(m) / float(pairs))
+			var side: float = 1.0 if m % 2 == 0 else -1.0
+			_leaf_spray(leaves, rng, at, Vector3(cos(a + side * 1.5), 0.3, sin(a + side * 1.5)), length * lerpf(0.6, 0.3, float(m) / float(pairs)), rng.randf_range(0.9, 1.05))
+
+		var colour: Color = look["colour"]
+		var bead: float = maxf(h * 0.02, 0.008)
+
+		match str(look["head"]):
+			"bells":
+				for m in range(6):
+					var at: Vector3 = base.lerp(top, 0.65 + 0.35 * float(m) / 6.0) + Vector3(rng.randfn(), 0.0, rng.randfn()) * bead * 1.5
+					_bead(bark, at + Vector3(0.0, -bead * 1.2, 0.0), Vector3(bead, bead * 1.5, bead), colour)
+			"burr":
+				for m in range(2):
+					_bead(bark, top + Vector3(rng.randfn(), -float(m) * bead * 3.0, rng.randfn()) * bead, Vector3.ONE * bead * 1.6, colour)
+			"spike":
+				for m in range(10):
+					_bead(bark, base.lerp(top, 0.7 + 0.3 * float(m) / 10.0) + Vector3(rng.randfn(), 0.0, rng.randfn()) * bead * 0.6, Vector3.ONE * bead * 0.5, colour)
+			_:
+				_blossom(bark, rng, top, bead * 2.4, colour)

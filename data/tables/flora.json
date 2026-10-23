@@ -3500,6 +3500,7 @@
 			"display": "Comfrey",
 			"kind": "plant",
 			"shape": "fern",
+			"model": "leafy_herb",
 			"height_m": [
 				0.5,
 				1.2
@@ -3791,6 +3792,7 @@
 			"display": "Burdock",
 			"kind": "plant",
 			"shape": "fern",
+			"model": "leafy_herb",
 			"height_m": [
 				0.6,
 				1.5
@@ -3848,6 +3850,7 @@
 			"display": "Mugwort",
 			"kind": "plant",
 			"shape": "fern",
+			"model": "leafy_herb",
 			"height_m": [
 				0.6,
 				1.5
@@ -4132,6 +4135,7 @@
 			"display": "Deadly nightshade",
 			"kind": "plant",
 			"shape": "fern",
+			"model": "leafy_herb",
 			"height_m": [
 				0.5,
 				1.5
@@ -4246,6 +4250,7 @@
 			"display": "Henbane",
 			"kind": "plant",
 			"shape": "fern",
+			"model": "leafy_herb",
 			"height_m": [
 				0.3,
 				0.8
