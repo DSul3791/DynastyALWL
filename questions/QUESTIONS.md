@@ -55,10 +55,6 @@ Note: At 5 or fewer left it turns back into loose rocks.
 Note: Tyler recommends Yes because it is quick for one rock and for a lot, and matches the rock pile item Sal built.
 [check]
 
-## cavein-death-fade | Then: the picture fades to black over about 4 seconds while the rumble keeps going for about 3 more seconds, then the sound fades out too?
-Note: Tyler recommends Yes because it is the order you described and is easy to tune.
-[check]
-
 ## cavein-death-skull | Then: a grey, translucent skull and crossbones fills about 75% of the screen over the black?
 Note: Kathleen draws it (grim cartoon, not gory).
 Note: Tyler recommends Yes because it is cheap to build (one picture with transparency) and easy to swap later.
