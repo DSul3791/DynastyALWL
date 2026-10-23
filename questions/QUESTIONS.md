@@ -30,3 +30,8 @@ Note: Recommendation: Yes, do the 4 steps, because it is the quickest way (about
 Note: Basic foundation is packed dirt with leaves and boughs; the ground flattens by itself, no tamping. Wooden and stone foundation costs are already approved.
 Note: Recommendation: Yes because it is cheap and needs only things found in the woods, matching a first-day shelter.
 [check]
+
+## cost-floor-brace | Stone floors (cobblestone and mason) also take 1 log, split in half, as sills under the floor edge?
+Note: It lines the floor up with walls and ceilings. No extra nails. Kathleen draws a picture later.
+Note: Recommendation: Yes because the floor sits on a wooden floor already, and the half-logs give the walls something to land on.
+[check]
