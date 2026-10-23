@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 226,
+	"next_number": 234,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -2593,6 +2593,78 @@
 			"look_alikes": [],
 			"material": "earth",
 			"note": "Hoe path: row state 32; no kit, cannot be picked up."
+		},
+		"rough_plank": {
+			"number": 226,
+			"name": "Rough plank",
+			"description": "A plank split from a log: rough, smooth on one side, bark on the other.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 6
+		},
+		"fine_board": {
+			"number": 227,
+			"name": "Fine board",
+			"description": "A smooth board planed from sawn lumber. For fine woodwork.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 8
+		},
+		"nails": {
+			"number": 228,
+			"name": "Nails",
+			"description": "Iron nails, bought and used by the handful.",
+			"kind": "material",
+			"stack": 200,
+			"look_alikes": [],
+			"value": 1
+		},
+		"cobblestone": {
+			"number": 229,
+			"name": "Cobblestone",
+			"description": "A rounded stone, dressed to lay in a wall or a floor.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 3
+		},
+		"stone_shingle": {
+			"number": 230,
+			"name": "Stone shingle",
+			"description": "A thin flat slab of stone for a roof.",
+			"kind": "material",
+			"stack": 40,
+			"look_alikes": [],
+			"value": 2
+		},
+		"tar": {
+			"number": 231,
+			"name": "Tar",
+			"description": "Thick black tar, boiled down. Seals a flat roof and soaks logs against rot.",
+			"kind": "material",
+			"stack": 10,
+			"look_alikes": [],
+			"value": 10
+		},
+		"hinges": {
+			"number": 232,
+			"name": "Hinges",
+			"description": "A pair of iron hinges for a door.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 8
+		},
+		"wooden_pin": {
+			"number": 233,
+			"name": "Wooden pin",
+			"description": "A hardwood pin or dowel that joins logs and beams without iron.",
+			"kind": "material",
+			"stack": 40,
+			"look_alikes": [],
+			"value": 1
 		}
 	}
 }
