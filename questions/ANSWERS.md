@@ -1000,3 +1000,7 @@ Answered: 2026-10-23 02:09 UTC
 Answer: Yes
 Answered: 2026-10-23 02:10 UTC
 
+## collapse-test-3 | Please test the tunnel collapse after the backup. Look for: warnings that build up over 5 minutes, then the roof falls. Did it work?
+Answer: Yes
+Answered: 2026-10-23 03:37 UTC
+
