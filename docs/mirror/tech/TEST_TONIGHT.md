@@ -1,0 +1,29 @@
+# Things to test tonight (Guru, built 2026-10-23 00:30, head = build 687)
+
+Dave tests ONLY after goodnight and the backup (BP-T40). Before testing: 1. Pull. 2. Close the game fully (server restarts). 3. Start it and check the HUD says the head build (687 or higher). Each line below becomes one Yes/No card with a Why-not box.
+
+## Restart builds (do these first)
+1. 650/651 Quit and resume: walk 60 m, Esc, Quit game, Play again: you start where you left. Kill the game window, wait 3 minutes, Play: you appear beside your nearest lean-to or campfire. Screenshot: none.
+2. 654 Doors: place a doorway, press E to open and close, hold E to take it down; a shut door blocks you. Screenshot the open and shut door.
+3. 653 Fire: open a campfire store with sticks and berries; sticks burn one by one, berries turn to roast.
+4. 670 Names: hover cooked food: Campfire Stew, Roast Beast, Roast Meat, Roast Fish, Roast Roots. Hover rope: it is called Twine (684). Screenshot the inventory.
+5. 671 Items: give yourself stone block, brick, mortar, ladder. 675 Ladder: place it against a wall, face it, hold W to climb, S down, Space lets go. Screenshot the ladder.
+6. 673 Snaps: walls join end to end and at corners; floors and roofs meet edge to edge. Screenshot a small room.
+7. 676/682 Spades: small, medium, large spade; Raise mode takes shovelfuls straight from the pack (no loading): 1, 4, 8. Right click switches Dig and Raise.
+8. 677/679 Hoe: left click treads a tan path patch; right click smooths a bump (no items; only the hoe wears; "This ground is worked enough." when nothing moves). Screenshot a path and a smoothed bump.
+9. 684 Chopping block: 18 kg, made from 2 logs, looks the same in hand, on the ground and placed.
+10. 685 Braces: timber prop holds a 5 m sphere, timber set 7.5 m; both shrink with wear.
+11. 686 Collapse (protocol 72): Esc > Settings > Tunnel collapse On/Off (admin) and Cave-in time (2/5/10/20 min); set 2 min; dig a space wider than 2 m in a hand-dug tunnel; creaks, shaking, "The earth groans.", at least 90 s of shaking, then it falls; braces pause it; a natural cave never collapses. Screenshot the shaking and the rubble.
+12. 687 VSync: Esc > Settings: VSync shows On green, Adaptive amber, Off red; the fps line says "N fps (vsync X)".
+
+## Runtime builds
+13. 672 Stations: at a workbench or forge the prompt says Press F, F or E opens crafting; hold E still takes it down.
+14. 663 Clothing on the body: wear hide cloak, leggings, boots; third person shows coat, trousers, shoes in the item colours.
+15. 674 Sound test menu (Esc > Settings > Admin): buttons still work.
+16. 681 / looks v5 and tools v6: spades, hoe, axe, bucket, stone block, brick, mortar read as the real things at 2 m and 20 m. Screenshot a row of them on the ground.
+17. 683 Collapse warning visuals: covered by test 11.
+
+## Waiting on a thread (not testable yet)
+- Kathleen: tier pieces (walls, floors, roofs, doors, ceilings, braces) are drawings only; nothing to test in the game until built.
+- Sal: blueprint building (mallet, ghosts, foundations, pillars) not built.
+- Sonny: ground rework BAKE-1 prototype on MikeW's PC; Dave only decides on the 9-tile bake.
