@@ -21,11 +21,6 @@ Note: 1. In GitHub Desktop: File > Add local repository > choose C:\GodotProject
 Note: Recommendation: Yes, do the 4 steps, because it is the quickest way (about a minute) and the tiles are already checked: spawn flat and dry, island shape in. Only the far south-east coast edges are slightly soft and get fixed in a later bake.
 [test]
 
-## cost-basic-foundation | Basic foundation cost: small 1x1 = 6 boughs, 10 leaves, 4 sticks (2x2 = four times that)?
-Note: Basic foundation is packed dirt with leaves and boughs; the ground flattens by itself, no tamping. Wooden and stone foundation costs are already approved.
-Note: Recommendation: Yes because it is cheap and needs only things found in the woods, matching a first-day shelter.
-[check]
-
 ## cost-floor-brace | Stone floors (cobblestone and mason) also take 1 log, split in half, as sills under the floor edge?
 Note: It lines the floor up with walls and ceilings. No extra nails. Kathleen draws a picture later.
 Note: Recommendation: Yes because the floor sits on a wooden floor already, and the half-logs give the walls something to land on.
