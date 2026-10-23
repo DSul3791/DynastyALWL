@@ -141,3 +141,9 @@ Note: Tyler recommends Yes because the voice (Kokoro) is not built yet, and swap
 ## cavein-death-next | Then everything fades out slowly and you fade in on the inheritance or character creation screen, and this long sequence is only for cave-ins (other deaths keep the simple screen)?
 Note: Tyler recommends Yes because it gives cave-ins their own moment without slowing down every death, and we can add the sequence to other deaths later if you like it.
 [check]
+
+## lake-chunks-pic | Please take a picture of the grey chunks floating over the lake, with the F3 text showing your x, z.
+Note: 1. Stand where you saw the grey chunks (the arc at lake level with the mushroom clusters beside it).
+Note: 2. Press F3 so the coordinates show, and take the picture.
+Note: 3. In Notes write whether it was near a waterfall or near the tunnel that collapsed.
+[picture]
