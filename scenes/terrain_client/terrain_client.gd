@@ -1065,10 +1065,19 @@ func _welcome_body(info: Dictionary) -> void:
 	_mode_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(_mode_label)
 	_inspect_label = Label.new()
-	_inspect_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	# The name sits just ABOVE the crosshair, bottom-aligned, so it grows upward and never meets the "Press E" prompt, which sits below it
+	# (inventory_view.gd _prompt). Anchored to the screen's middle line, so the gap holds at every UI scale and for names of several lines.
+	_inspect_label.anchor_left = 0.0
+	_inspect_label.anchor_right = 1.0
+	_inspect_label.anchor_top = 0.5
+	_inspect_label.anchor_bottom = 0.5
+	_inspect_label.offset_left = 0.0
+	_inspect_label.offset_right = 0.0
+	_inspect_label.offset_top = -420.0
+	_inspect_label.offset_bottom = -24.0
 	_inspect_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_inspect_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_inspect_label.offset_top = 90.0
+	_inspect_label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	_inspect_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_inspect_label.add_theme_font_size_override("font_size", 40)
 	_inspect_label.add_theme_constant_override("outline_size", 8)
 	_inspect_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))

@@ -197,10 +197,18 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	_register_builtin_interactables()
 	_build_vitals_hud()
 	_prompt = Label.new()
-	_prompt.set_anchors_preset(Control.PRESET_FULL_RECT)
+	# Below the crosshair, top-aligned and wrapping downward; the name (terrain_client.gd _inspect_label) is bottom-aligned above the crosshair.
+	_prompt.anchor_left = 0.0
+	_prompt.anchor_right = 1.0
+	_prompt.anchor_top = 0.5
+	_prompt.anchor_bottom = 1.0
+	_prompt.offset_left = 0.0
+	_prompt.offset_right = 0.0
+	_prompt.offset_top = 24.0
+	_prompt.offset_bottom = 0.0
 	_prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_prompt.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_prompt.offset_top = 90.0   # just below the crosshair
+	_prompt.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	_prompt.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_prompt.add_theme_font_size_override("font_size", 30)
 	_prompt.add_theme_constant_override("outline_size", 6)
 	_prompt.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
