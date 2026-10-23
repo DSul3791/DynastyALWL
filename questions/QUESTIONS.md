@@ -15,8 +15,3 @@
 Note: 1. Start the game (MikeW has pulled the new build). 2. Esc > Settings > Sound test > creature calls > duck. Listen: does it sound like a real duck and is it quiet enough? 3. Walk and run on sand: is running only a little louder than walking?
 Note: Recommendation: Yes after listening, because the duck clips are real recordings that passed the team check and the sand run is now only about 5 dB over walk, as you asked.
 [test]
-
-## blackthorn-real-size | Make blackthorn berries about 1.5 cm and thorns 2 to 5 cm (real size)?
-Note: Today the berries and thorns are drawn much bigger than real. Real blackthorn: sloe berries about 1.5 cm, thorns 2 to 5 cm long.
-Note: Recommendation: Yes because it matches the real plant, and the thorns now dominate the picture.
-[check]
