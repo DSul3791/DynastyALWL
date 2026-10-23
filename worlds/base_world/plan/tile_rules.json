@@ -117,7 +117,7 @@
 	},
 	"spawn_pad": {"note": "Dave's spawn (x 53301, z 68427) and the showroom beside it: level inside flat_radius_m, blended into the land over blend_m. Level is the old spawn ground.", "x": 53301, "z": 68427, "level_m": 31.0, "flat_radius_m": 40, "blend_m": 70},
 	"water": {
-		"drainage_mode": false,
+		"drainage_mode": true,
 		"drainage": {
 			"river_start_km2": 0.5,
 			"lake_min_depth_m": 0.5,
