@@ -652,3 +652,7 @@ Answered: 2026-10-23 00:43 UTC
 Answer: Yes
 Answered: 2026-10-23 00:44 UTC
 
+## cost-5 | Wall, Cobblestone: 120 cobblestones and 8 mortar?
+Answer: Yes
+Answered: 2026-10-23 00:44 UTC
+
