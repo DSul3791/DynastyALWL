@@ -144,6 +144,30 @@ func _init() -> void:
 	switched.set_enabled(false)
 	_check(switched.working_count() == 0 and not switched.enabled, "switched off in game: running windows are cleared")
 
+	# Changing the cave-in time reaches windows that are already running (Dave 2026-10-23).
+	var live: Watch = Watch.new()
+	live.configure({"enabled": true, "collapse": true, "quiet_s": 600, "cave_in_s": 1200})
+	live.load_block = _tunnel
+	live.surface_h = func(_x: float, _z: float) -> float: return 40.0
+	live.mark_dirty([Vector3i.ZERO])
+	live.process_dirty(0)
+	_check(int(live._cells.values()[0]["grace_ms"]) == 1800000, "a window starts at 10 + 20 minutes")
+	live.set_cave_in_s(120.0, 100000)
+	_check(int(live._cells.values()[0]["grace_ms"]) == 720000, "setting 2 minutes shortens the running window to 10 + 2")
+	_check(live.tick(400000, peers)["collapse"].is_empty(), "300 s in: still quiet, nothing falls")
+	var creak2: Dictionary = live.tick(620000, peers)
+	_check(creak2["quake"].size() == 1 and int(creak2["quake"][0][1]) >= 2 and creak2["collapse"].is_empty(), "rumbling starts when the 10 quiet minutes are done")
+	_check(live.tick(720000, peers)["collapse"].size() >= 1, "and it falls at 12 minutes")
+	var past: Watch = Watch.new()
+	past.configure({"enabled": true, "collapse": true, "quiet_s": 600, "cave_in_s": 1200})
+	past.load_block = _tunnel
+	past.surface_h = func(_x: float, _z: float) -> float: return 40.0
+	past.mark_dirty([Vector3i.ZERO])
+	past.process_dirty(0)
+	past.set_cave_in_s(120.0, 1000000)
+	_check(past.tick(1000100, peers)["collapse"].is_empty(), "past the new end: it does not fall at once")
+	_check(past.tick(1090500, peers)["collapse"].size() >= 1, "it falls 90 s after the change (the minimum warning)")
+
 	_radius = 0.9
 	var narrow: Watch = _watch()
 	narrow.load_block = func(_b: Vector3i) -> VoxelBuffer: return _tunnel(Vector3i.ZERO)
