@@ -1174,3 +1174,7 @@ Answered: 2026-10-23 10:26 UTC
 Answer: Yes
 Answered: 2026-10-23 10:27 UTC
 
+## fix-slim-reading | Should we shrink what every thread reads at the start: a short first-jobs block at the top of HANDOFF.md (40 lines at most), old sections archived, and only the rules that apply to each thread?
+Answer: No: Yes, as long as we don’t lose the details
+Answered: 2026-10-23 10:28 UTC
+
