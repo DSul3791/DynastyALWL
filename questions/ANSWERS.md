@@ -720,3 +720,7 @@ Answered: 2026-10-23 00:49 UTC
 Answer: No: Depending on the tier of material
 Answered: 2026-10-23 00:49 UTC
 
+## cost-17 | Small foundation 1x1: 10 stone and 3 clay?
+Answer: No: Again, this all depends on the tier of material. Remember, we have basic floors, which would be compacted dirt and potentially leaves and boughs but we also have wooden foundations, stone, foundations, etc.
+Answered: 2026-10-23 00:50 UTC
+
