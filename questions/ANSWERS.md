@@ -1110,3 +1110,7 @@ Answered: 2026-10-23 04:19 UTC
 Answer: Yes
 Answered: 2026-10-23 10:10 UTC
 
+## blocks-from-shoulder-log | A log from your shoulder, put on the ground and chopped with an axe, gives 12 wooden blocks?
+Answer: Yes
+Answered: 2026-10-23 10:10 UTC
+
