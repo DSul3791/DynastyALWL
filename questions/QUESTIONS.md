@@ -7,9 +7,6 @@ Note: 5. Check a natural cave does NOT collapse. Check the warning gives you at 
 Note: 6. Answer Yes if all of that worked. Answer No and tell me which step broke.
 [check]
 
-## esc-menu-7 | Esc menu: should the panel be fully opaque (solid dark background, no see-through shade) so world text cannot show through the labels?
-[check]
-
 ## esc-menu-8 | Esc menu: should Debug details (F3) move from Settings into Admin?
 [check]
 
