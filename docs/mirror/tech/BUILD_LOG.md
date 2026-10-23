@@ -402,3 +402,5 @@ Each active thread holds its current number plus ONE spare, handed out in advanc
 - 2026-10-23 steve-cave-in-setting: running cave-in windows take the new length (RESTART), test added
 - 2026-10-23 steve-clear-drops: Esc > Admin > Clear dropped items within 50 m (ACT_CLEAR_DROPS 38, no protocol bump; RESTART)
 - 03:38 UTC 23 Oct Guru: MERGED 696 (Steve_ProblemSolver: admin Clear dropped items within 50 m, Esc > Admin; action kind 38 on the existing action message, no protocol bump; RESTART; test added per Steve; local_check by MikeW pending). Head = 696. Dave's pulled 695 is unchanged until he pulls.
+- 2026-10-23 steve-admin-mode (on top of sal-admin-craft): Esc > Admin > Admin mode switch, ACT_ADMIN_MODE 39, no protocol bump; RESTART
+- 03:47 UTC 23 Oct Guru: MERGED 697 (Sal_Crafts: sal-admin-craft: admin free crafting, E on a recipe crafts one; Steve_ProblemSolver: steve-admin-mode: Esc > Admin 'Admin mode (crafting is free)' switch, ON by default, admins only, action kind 39, no protocol bump; RESTART; no conflict markers; local_check by MikeW pending). Head = 697.

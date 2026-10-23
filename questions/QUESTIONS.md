@@ -157,3 +157,11 @@ Note: 2. Press F2 until the quality says Low.
 Note: 3. Yes means the shapes VANISH on Low (so it is the water's depth effect, and Sonny fixes it). No means they are still there.
 Note: 4. Press F2 until you are back on your normal quality.
 [test]
+
+## admin-craft-test | Please test free crafting as admin. Look for: crafting works with an empty pack while Admin mode is on, and normal rules come back when it is off.
+Note: 1. Pull build 697 and close the game fully, then start it. The HUD should say 697.
+Note: 2. Esc > Admin: the switch "Admin mode (crafting is free)" should be green (On).
+Note: 3. With an empty pack, open the crafting list and craft an iron pickaxe or a forge recipe. It should craft with no ingredients.
+Note: 4. Select a recipe and press E: one item should be crafted.
+Note: 5. Switch Admin mode Off (red). Crafting an iron pickaxe with an empty pack should now be refused.
+[test]
