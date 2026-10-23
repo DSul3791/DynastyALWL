@@ -592,3 +592,7 @@ Answered: 2026-10-23 00:11 UTC
 Answer: Yes
 Answered: 2026-10-23 00:12 UTC
 
+## esc-menu-1 | Esc menu: should Resume be at the top and close the menu?
+Answer: Yes
+Answered: 2026-10-23 00:30 UTC
+
