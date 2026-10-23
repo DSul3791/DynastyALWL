@@ -5,7 +5,7 @@ extends SceneTree
 
 const WaterFlow := preload("res://src/stream/water_flow.gd")
 const WaterGrid := preload("res://src/worldgen/runtime/water_grid.gd")
-const TileData := preload("res://src/worldgen/runtime/tile_terrain_data.gd")
+const TileTerrainData := preload("res://src/worldgen/runtime/tile_terrain_data.gd")
 
 const N := 64
 
@@ -20,7 +20,7 @@ func _check(ok: bool, what: String) -> void:
 
 
 func _tile(slope_per_cell: float) -> Object:
-	var tile = TileData.new()
+	var tile = TileTerrainData.new()
 	tile.samples = N
 	tile.spacing_m = 8.0
 	tile.x0 = 1000.0
