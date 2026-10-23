@@ -696,3 +696,7 @@ Answered: 2026-10-23 00:47 UTC
 Answer: Yes
 Answered: 2026-10-23 00:47 UTC
 
+## cost-14 | Roof, per slope piece, Lap board: 10 rough planks and 40 nails?
+Answer: Yes
+Answered: 2026-10-23 00:47 UTC
+
