@@ -20,3 +20,9 @@ Note: Recommendation: Yes after listening, because the duck clips are real recor
 Note: 1. Do not press Pull in GitHub Desktop until we tell you the fixed build number. 2. If you already pulled and the window is black, tell us; the previous good build is 749. 3. Nothing else for you to do.
 Note: Recommendation: Yes, wait, because builds 750 to 753 have a script error (water_debug name clash) that Steve is fixing now.
 [check]
+
+## kath-raspberry-rig-3 | Does this look like a real raspberry bush? (picture shown)
+Note: 1. Look at the picture below (raspberry bush, 3 m away).
+Image: questions/img/rig_raspberry_c7ca280_small.png
+Note: Recommendation: Yes because the leaf sprays and canes read as raspberry (Kathleen: a little dark, leaves a little large; she fixes those next).
+[picture]
