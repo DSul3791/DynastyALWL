@@ -24,7 +24,7 @@ Thread names count iterations: Name_NNN (a fresh thread each day, see section 3)
 - Dave tests at night after the backup. When Dave says done: finish, push, handoff; Tyler merges ready branches; MikeW full check then backup (game and server closed). 8:18 pm wrap-up and 9 pm backup routines.
 ## 4. Job flow (BP-T50, replaced by BP-T52 Dave 23 Oct 23:23: ONE action plan per branch, Tyler answers ONCE, then no more talk; questions go straight to the QA page)
 1. Every thread may do anything on its OWN job list.
-2. Before creating a branch the thread writes an ACTION PLAN (goal, files, how, test, label, needs Dave?) in tech/ACTION_PLANS/<Name>_<topic>.md.
+2. Before creating a branch the thread writes an ACTION PLAN (goal, files, how, test, label, needs Dave?) in tech/ACTION_PLANS/<Name>_<topic>.md. NO exception for small changes (Dave 23:29). One plan covers a whole class of work (e.g. 'bushes and berries' = every bush and berry), bundles 1 to 5 small things in one batch, or covers one huge thing alone.
 3. Tyler looks up best practices and writes his suggestions for how to implement it, ONCE, into the same plan file as the GO (aim: same hour). No GO yet = start the next item on the list. After that the thread does not need to speak to Tyler about the branch.
 4. After GO: read and write wherever the job needs. Questions for Dave go DIRECTLY to the QA page with tools/qa_post.py (BP-T52), after checking HANDOFF, DESIGN docs, questions/ANSWERS.md and DECISIONS.md that the answer does not exist; always with your recommendation and why. Tyler is not in the question path.
 5. Nobody is ever blocked (BP-T44): a waiting thread moves to the next item and never touches another thread's code.
