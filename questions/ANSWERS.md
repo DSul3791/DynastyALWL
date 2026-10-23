@@ -724,3 +724,7 @@ Answered: 2026-10-23 00:49 UTC
 Answer: No: Again, this all depends on the tier of material. Remember, we have basic floors, which would be compacted dirt and potentially leaves and boughs but we also have wooden foundations, stone, foundations, etc.
 Answered: 2026-10-23 00:50 UTC
 
+## cost-19 | Large foundation 1x1: 30 stone, 10 clay and 4 mortar?
+Answer: No: Look at my previous answer
+Answered: 2026-10-23 00:50 UTC
+
