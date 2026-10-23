@@ -6,9 +6,9 @@ extends RefCounted
 
 const MIN_PILE := 6
 const MAX_DRAWN := 400
-const ROW_RISE_M := 0.35            # height of one row
-const ROW_SPREAD_M := 0.45          # footprint radius per row
-const ROCK_R_M := 0.24
+const ROW_RISE_M := 0.2             # height of one row
+const ROW_SPREAD_M := 0.21          # footprint radius per row
+const ROCK_R_M := 0.2
 
 # item id -> [colour, rock radius scale, squash]. Rocks are pyramids, loose soils and sands are low mounds of small lumps.
 const KINDS := {
@@ -50,14 +50,35 @@ static func mesh_for(item_id: String, count: int, seed_id: int) -> Mesh:
 	var colors: PackedColorArray = PackedColorArray()
 	var indices: PackedInt32Array = PackedInt32Array()
 
+	# Row k from the top gets its 2k-1 share of the count (scaled when the pile is not a full square), so the pile always tapers.
+	var counts: Array = []
+	var given: int = 0
+
 	for k in range(1, rows + 1):
-		var in_row: int = (2 * k - 1) if k < rows else (shown - (rows - 1) * (rows - 1))
-		var spread: float = ROW_SPREAD_M * (float(k) - 0.5) * grow
+		var share: int = int(floor(float(shown) * float(2 * k - 1) / float(rows * rows)))
+		counts.append(share)
+		given += share
+
+	var extra: int = rows
+
+	while given < shown:
+		counts[extra - 1] += 1
+		given += 1
+		extra = extra - 1 if extra > 1 else rows
+
+	for k in range(1, rows + 1):
+		var in_row: int = counts[k - 1]
+
+		if in_row <= 0:
+			continue
+
+		var spread: float = ROW_SPREAD_M * sqrt(float(in_row)) * grow
 		var y: float = ROW_RISE_M * float(rows - k) * float(kind[2]) * grow
 
 		for i in range(in_row):
 			var angle: float = float(i) * 2.39996 + rng.randf() * 0.4
 			var radius: float = spread * sqrt((float(i) + 0.5) / float(in_row))
+			radius *= 1.0 - 0.15 * float(rows - k) / float(rows)
 			var size: float = ROCK_R_M * float(kind[1]) * grow * rng.randf_range(0.8, 1.2)
 			var at: Vector3 = Vector3(cos(angle) * radius, y + size * 0.6, sin(angle) * radius)
 			var tilt: Basis = Basis.from_euler(Vector3(rng.randf() * TAU, rng.randf() * TAU, rng.randf() * TAU))
