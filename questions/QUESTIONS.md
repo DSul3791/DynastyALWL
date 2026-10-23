@@ -77,11 +77,6 @@ Note: Low: off. High: 32 m spacing. Ultra: reaches 3 tiles.
 Note: Tyler recommends Yes because players with slow computers lose nothing, and strong computers get the long river views.
 [check]
 
-## river-mouth-dam | If a player dams a river where it meets the sea, should the river back up like a real dam until it goes over or around?
-Note: A dam across the mouth raises the water behind it. If the dam does not reach all the way round, the water finds the low way around.
-Note: Tyler recommends Yes because it is what the water simulation does by itself, so players can learn to read the land.
-[check]
-
 ## beach-loud | Is the beach still too loud when you walk on it?
 Note: Kathleen already lowered sand steps by 3 dB. If the loud part is the waves, answer No and say so in Why not.
 Note: Tyler recommends Yes only if the steps are what you hear: she lowers sand steps another 3 dB, which is cheap and easy to undo.
