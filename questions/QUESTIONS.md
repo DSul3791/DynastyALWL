@@ -21,12 +21,6 @@ Note: 2. Hold the LEFT mouse button and walk forward on grass.
 Note: 3. Then hold the RIGHT button on a rough strip to smooth it. It should get smoother, the hoe should wear only when ground moves, and "This ground is worked enough." shows when it refuses.
 [test]
 
-## spade-raise | Please test spade Raise mode. Look for: each click takes soil from your pack and the pack count drops.
-Note: 1. Switch a spade to Raise mode (right click).
-Note: 2. Click on the ground.
-Note: 3. Small spade should use 1 piece per click, medium 4, large 8.
-[test]
-
 ## collapse-natural | Please test a natural cave. Look for: no shaking and no collapse.
 Note: 1. Walk into a natural cave you did not dig.
 Note: 2. Stay 10 minutes (do something else nearby).
