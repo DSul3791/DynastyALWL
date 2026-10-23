@@ -33,6 +33,8 @@ var _busy: bool = false
 var costs: bool = false
 var admin_text: bool = false
 var no_grass: bool = false
+var flora_names: PackedStringArray = PackedStringArray()    # --shot-flora=raspberry,bramble: one plant of each in a row with name tags
+var _flora_t: int = 0
 var side_sign: float = 1.0      # 1 = camera on the body's left side, -1 = right side (--shot-right)
 
 const STORM := {"rain": 1.0, "snow": 0.0, "storm": 1.0, "cloud": 1.0, "sun": 0.0, "wind": 0.9, "wind_dir": 1.0, "temp_c": 8.0}
@@ -58,6 +60,8 @@ func setup(owner_client, args: Array) -> void:
 			costs = true
 		elif argument == "--shot-right":
 			side_sign = -1.0
+		elif argument.begins_with("--shot-flora="):
+			flora_names = argument.trim_prefix("--shot-flora=").split(",", false)
 		elif argument == "--shot-nograss":
 			no_grass = true      # hide the grass so a hand-held item or the body is not hidden by blades
 		elif argument == "--shot-admin":
@@ -131,6 +135,13 @@ func _process(_delta: float) -> void:
 	if now - _moved_msec < int(settle_s * 1000.0):
 		return
 
+	if not flora_names.is_empty() and _flora_t == 0:
+		_show_flora(now)
+		return
+
+	if _flora_t != 0 and now - _flora_t < 6000:
+		return
+
 	var image: Image = get_viewport().get_texture().get_image()
 	var path: String = "%s/%s.png" % [dir, shots[_index]["name"]]
 	image.save_png(path)
@@ -144,6 +155,52 @@ func _process(_delta: float) -> void:
 		print("shot runner: fall %d top %s base %s flow %.1f width %.1f" % [n, str(fall["top"]), str(fall["base"]), float(fall["flow"]), float(fall["width"])])
 
 	_cost_then_next(now)
+
+
+# A labelled row of plants (look rig): one of each named species 4 m ahead of the player, drawn by the real flora view.
+func _show_flora(now: int) -> void:
+	var table: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/tables/flora.json"))
+	var by_name: Dictionary = {}
+
+	for entry in table["entries"]:
+		by_name[str(entry["name"])] = entry
+
+	var p: Vector3 = client.body.global_position
+	var items: Dictionary = {"ids": PackedInt32Array(), "positions": PackedVector3Array(), "heights": PackedFloat32Array(), "yaws": PackedFloat32Array()}
+	var n: int = flora_names.size()
+
+	for i in range(n):
+		var entry: Dictionary = by_name.get(flora_names[i], {})
+
+		if entry.is_empty():
+			continue
+
+		var x: float = p.x + (float(i) - float(n - 1) * 0.5) * 2.4
+		var z: float = p.z - 4.0
+		var g: float = _ground(x, z)
+
+		if is_nan(g):
+			g = p.y - 1.5
+
+		var range_m: Variant = entry.get("height_m", 1.0)
+		var h: float = (float(range_m[0]) + float(range_m[1])) * 0.5 if range_m is Array else float(range_m)
+		items["ids"].append(int(entry["id"]))
+		items["positions"].append(Vector3(x, g, z))
+		items["heights"].append(h)
+		items["yaws"].append(0.0)
+		var tag: Label3D = Label3D.new()
+		tag.text = str(entry.get("display", flora_names[i]))
+		tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		tag.fixed_size = true
+		tag.pixel_size = 0.0009
+		tag.font_size = 40
+		tag.outline_size = 10
+		tag.no_depth_test = true
+		tag.position = Vector3(x, g + h + 0.5, z)
+		client.add_child(tag)
+
+	client.flora.set_chunk(Vector2i(int(floor(p.x / client.flora.chunk_m)), int(floor((p.z - 4.0) / client.flora.chunk_m))), items, p)
+	_flora_t = now
 
 
 # A walking body from the side: the drawn camera 2.8 m to the body's left, level with its chest.
