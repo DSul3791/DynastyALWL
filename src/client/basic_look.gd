@@ -144,6 +144,17 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 		"fruit":
 			_sph(parts, 0.07, Vector3(1.0, 0.9, 1.0), Vector3(0.0, -0.01, 0.0), color)
 			_cyl(parts, 0.006, 0.04, Vector3(0.0, 0.055, 0.0), Vector3.ZERO, Color(0.3, 0.22, 0.12))
+		"berries":
+			# A raspberry: a red dome of small round drupelets in rings, a few unripe yellow-green ones, a green cap of sepals on top.
+			var ring: Array = [[0.0, 0.0, 1], [0.026, 0.016, 6], [0.04, -0.004, 9]]
+
+			for row in ring:
+				for k in range(int(row[2])):
+					var a: float = TAU * float(k) / float(maxi(int(row[2]), 1)) + float(row[0]) * 40.0
+					var unripe: bool = (k * 5 + int(row[2])) % 11 == 0
+					_sph(parts, 0.016, Vector3.ONE, Vector3(cos(a) * float(row[0]), float(row[1]) + 0.012, sin(a) * float(row[0])), Color(0.85, 0.8, 0.35) if unripe else color)
+
+			_sph(parts, 0.03, Vector3(1.0, 0.25, 1.0), Vector3(0.0, 0.052, 0.0), Color(0.3, 0.45, 0.2))
 		"bowl":
 			_bowl(parts, color)
 		"stew":
