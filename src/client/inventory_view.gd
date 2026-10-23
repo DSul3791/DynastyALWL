@@ -496,6 +496,15 @@ func _probe_structure() -> Dictionary:
 
 
 func press_e() -> bool:
+	# In the crafting window, E over a recipe crafts one of it (Dave 2026-10-23).
+	if open and not chest_mode and _hover_recipe != 0:
+		if _can_craft(_hover_recipe):
+			_start_craft(_hover_recipe, 1)
+		else:
+			_on_notice("You do not have what that needs")
+
+		return true
+
 	var found: Dictionary = current_interaction()
 
 	if found.is_empty():
@@ -2314,6 +2323,7 @@ var _search: LineEdit
 var _recipe_list: VBoxContainer
 var _detail: VBoxContainer
 var _selected_recipe: int = 0
+var _hover_recipe: int = 0                 # the recipe under the mouse in the crafting list, 0 when none (E crafts it)
 var _quantity: SpinBox
 var _qty: int = 1
 var knowledge                          # InspectionKnowledge (set by the client): item names follow what the character knows
@@ -3158,6 +3168,8 @@ func _refresh() -> void:
 			button.text += "   %s" % _litres(inventory.wear[i])
 
 	# Recipes: makeable first, then the rest, each alphabetical.
+	_hover_recipe = 0
+
 	for child in _recipe_list.get_children():
 		child.queue_free()
 
@@ -3190,6 +3202,8 @@ func _refresh() -> void:
 		entry.flat = r["number"] != _selected_recipe
 		_style(entry, BODY_PX)
 		entry.pressed.connect(_select_recipe.bind(r["number"]))
+		entry.mouse_entered.connect(func(): _hover_recipe = int(r["number"]))
+		entry.mouse_exited.connect(func(): _hover_recipe = 0 if _hover_recipe == int(r["number"]) else _hover_recipe)
 		_recipe_list.add_child(entry)
 
 	_add_admin_builds()
