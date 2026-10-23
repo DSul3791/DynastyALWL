@@ -53,3 +53,9 @@ Place and door sounds per tier: thatch (basic), board (plank, fine), log (new: d
 
 ## Door and window changes (Dave 23:01)
 Windows are just holes in the wall (no frame piece, no glass); shutters come later as separate hinged wood pieces. A double door sits in a full 2 x 2.4 m wall slot with 10 cm clear all round (leaves 1.8 m wide, 2.2 m high), like Ark. Picture tiers_doors.png redrawn.
+
+## Round 3 (Dave 23:40 to 00:00)
+- Log corners redrawn after a real log cabin: round saddle notch, each log overlaps the course below, the crossing log shows end-on tucked into the notch, opposite on the two ends (tiers_walls.png).
+- Double door: 10 cm gap at the top and sides only, leaves reach the floor. Handles are steel bar pulls, no knobs: basic door has no handle at all; steel door has a steel handle and no black crossband (tiers_doors.png).
+- Ceilings per tier (seen from below): tiers_ceilings.png. Flat tarred roof: tiers_flat_roof.png.
+- Braces in three widths, 1.5, 3 and 5 m: tiers_braces.png.
