@@ -8,11 +8,6 @@
 
 
 
-## test-floating-soil | Mined soil lies in the hole
-Note: 1. Fill your pack with soil or stone until it is full. 2. Dig down under your own feet. 3. Look at the dug soil: does it lie in the hole (not float in the air)? Build 711 or newer.
-Note: Tyler recommends: Yes if it lies on the ground, because Steve's fix and unit tests pass but the rig cannot dig, so only you can check it in game.
-[test]
-
 ## kath-flora-thorn-shrubs | Do the wild rose and blackthorn look like the real shrubs?
 Image: questions/img/thorn_shrubs.png
 Note: Preview (offline preview with flat stand-in leaves; in the game the leaves carry the leaf texture and autumn colours hide the fruit).
