@@ -86,3 +86,18 @@ Note: Tyler recommends Yes because it is what the water simulation does by itsel
 Note: Sand about 34 degrees, soil about 40, gravel about 38. Stone and rock go anywhere. A hole always fills.
 Note: Tyler recommends Yes because it feels like real dirt without running a sliding simulation (cheap, no lag). A real settling pass can come later.
 [check]
+
+## lake-min-size | Should a hollow only count as a lake when it is at least 3 m deep and about 2,500 square metres (smaller hollows are filled in and hold no water)?
+Note: This removes the little stripe ponds that terrace steps make, and keeps every real catch basin.
+Note: Tyler recommends Yes because it removes odd puddles and costs nothing, and the sizes are a tunable number.
+[check]
+
+## beach-loud | Is the beach still too loud when you walk on it?
+Note: Kathleen already lowered sand steps by 3 dB. If the loud part is the waves, answer No and say so in Why not.
+Note: Tyler recommends Yes only if the steps are what you hear: she lowers sand steps another 3 dB, which is cheap and easy to undo.
+[check]
+
+## item-recipes-2 | Are these recipes OK: rough plank = 1 log gives 4; fine board = 1 lumber; nails = 1 iron ingot gives 100; cobblestone = 3 stone; stone shingle = 2 stone; tar = 5 pine tar; hinges = 1 ingot gives 4; wooden pin = 1 lumber gives 4?
+Note: The sawmill, woodworking table and nail numbers are as you said earlier. The stone, tar, hinge and pin numbers are Sal's guesses.
+Note: Tyler recommends Yes because they are small, easy to change in data later, and Sal needs them to finish the blueprint building system.
+[check]
