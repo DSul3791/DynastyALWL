@@ -349,6 +349,7 @@ func _ready() -> void:
 	admin = AdminScript.new()
 	admin.load_keys(["res://data/admin.json", store_dir + "/admin.json"])
 	items.reset_terrain_edits = _reset_terrain_edits
+	items.floor_below = _floor_below
 	items.dump_water = _dump_water
 	@warning_ignore("confusable_local_declaration")
 	items.admin_ok = func(peer: int) -> bool: return admin.is_admin(items.key_of(peer))
@@ -1186,6 +1187,31 @@ func _dump_water(x: float, z: float) -> String:
 	file.close()
 	print("server: water dump written to ", path)
 	return path
+
+
+# Where a loose item let go at `from` comes to rest: straight down through the air to the first ground, by the generated surface with the
+# saved digs and fills laid over it, in order (Dave 2026-10-23: mined soil and rocks hung in the air over the hole that was dug under them).
+# Natural caves are not known to this probe (only the surface height and the edits are), so an item dropped inside a natural cave
+# keeps its height. Returns the resting height, or NAN when there is no ground within 24 m below.
+func _floor_below(from: Vector3) -> float:
+	var edits: Array = store.ops.edits_near(Vector3(from.x, from.y - 12.0, from.z), 12.0)   # every edit touching the 24 m column, oldest first
+	var surface: float = generator.surface_height(from.x, from.z)
+	var y: float = from.y + 0.05
+
+	for step in range(480):   # 0.05 m steps, 24 m
+		var p: Vector3 = Vector3(from.x, y, from.z)
+		var solid: bool = p.y < surface
+
+		for op in edits:
+			if p.distance_to(op[1]) <= float(op[2]):
+				solid = int(op[0]) == 1
+
+		if solid:
+			return y + 0.05
+
+		y -= 0.05
+
+	return NAN
 
 
 # Admin "Reset all terrain edits": every saved dig and fill (rubble included) is deleted, the ground and water are made again from the
