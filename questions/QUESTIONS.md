@@ -1,8 +1,3 @@
-
-## cost-1 | Wall (2 m x 2.4 m), Basic: 20 twine, 50 thatch, 15 sticks?
-Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
-[check]
-
 ## cost-2 | Wall, Plank: 12 rough planks and 30 nails?
 Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
 [check]
