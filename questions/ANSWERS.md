@@ -1011,3 +1011,6 @@ Answered: 2026-10-23 04:10 UTC
 Answer: No: Caven time is not working for sure. It seems to be hard set.
 Answered: 2026-10-23 04:05 UTC
 
+## collapse-switch | Please test the tunnel collapse switch. Look for: green On, red Off, no shaking while Off, cave-in time kept after rejoining.
+Answer: Yes: Dave (chat 03:41 UTC): "setting green on red off buttons seem to work." Not answered by him: no shaking while Off, time kept after rejoining. Related note (chat 03:06): changing the cave-in timer to 2 minutes did not take effect, it took 10 minutes or more (fix: Steve, claude/steve-cave-in-setting).
+Answered: 2026-10-23 04:15 UTC
