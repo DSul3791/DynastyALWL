@@ -239,7 +239,7 @@ func _show_flora(now: int) -> void:
 
 		var range_m: Variant = entry.get("height_m", 1.0)
 		var h: float = (float(range_m[0]) + float(range_m[1])) * 0.5 if range_m is Array else float(range_m)
-		items["ids"].append(int(entry["id"]))
+		items["ids"].append((int(entry["id"]) << 16) | (i + 1))   # species id << 16 | a number unique in the chunk (the flora view reads ids >> 16)
 		items["positions"].append(Vector3(x, g, z))
 		items["heights"].append(h)
 		items["yaws"].append(0.0)
