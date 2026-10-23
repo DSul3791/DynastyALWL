@@ -1198,3 +1198,7 @@ Answered: 2026-10-23 13:14 UTC
 Answer: No: I don’t know that looks terrible
 Answered: 2026-10-23 13:14 UTC
 
+## lake-flicker-dump | Lake flicker: dump the live water under the shifting patches (build 703)
+Answer: No: Regarding the flicker, have Tyler research it and see if he could come up with an answer because it never used to happen. The water is there the water is fine, but the surface of the water is flickering and losing its textures.
+Answered: 2026-10-23 13:18 UTC
+
