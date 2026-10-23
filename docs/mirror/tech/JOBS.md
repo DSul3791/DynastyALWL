@@ -356,7 +356,7 @@ Hard no without Steve: any tile-changing file (src/worldgen/tile/*, terrain_layo
 - 21:15 Steve: WATER_NINE_TILES_PLAN APPROVED (A+B, one thread), conditions in DECISIONS.md 21:15. Sonny builds it after Dave's bake; until then prepare locally in water files only (src/water/*), no generator changes.
 
 ## RULE (Dave 22:54): questions for Dave go in questions/QUESTIONS.md on claude/generator-v2 (format in questions/README.md): multiple choice (or a short text answer only if truly needed); NO look-at or test tasks there, those stay in chat. Answers appear in questions/ANSWERS.md; read them there.
-## BAKE DONE (22:55): tiles b1fb0c9, TERRAIN_VERSION 25. Sonny: re-settle water now (tile_3_4 first, then the nine-tile files), push separately; then Dave runs Clear saved ground. Generator freeze stays: new tile-changing work waits for the next bake and goes to Steve first.
+## BAKE DONE (22:55): tiles b1fb0c9, TERRAIN_VERSION 25. Sonny: re-settle water now (tile_3_4 first, then the nine-tile files), push separately; then Dave runs Clear blocks. Generator freeze stays: new tile-changing work waits for the next bake and goes to Steve first.
 - Warning cleanup (Dave 23:39): every thread cleans its own files in one build, rules in PROCESS.md "zero warnings". Willy builds the warning-count check (plain headless load prints no warnings in this engine; see PROCESS.md note). Steve cleans shared/, protocol and build tooling after the check exists.
 
 ### Radar refill 11 (Steve, 2026-10-21 23:45; ordered by value for the first playable town; all in Radar's files; protocol bumps pre-approved per standing rules; ask Tyler before each new kind of job; check the "Moves awaiting Steve" rules)

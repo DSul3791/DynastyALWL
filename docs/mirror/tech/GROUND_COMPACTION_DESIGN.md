@@ -35,7 +35,7 @@ Result is byte-identical to a full replay (tested, see below), so clients, the b
 ## Interactions
 - Stale-cache and bad-block guards (build 519-540): the settled copy is a cache like any other, checked with `looks_zeroed`/`_is_sane` on read and before write; a failure only costs a full replay, never ground.
 - Edits arriving during a settle, a dig and a fill interleaved in any order: guaranteed by the "edits above S replay after the snapshot" rule; edits are not idempotent when a fill follows a dig, which is exactly why the index records S for each block and the begin/done order is used instead of re-applying a range.
-- `Clear saved ground` (Esc > Advanced) deletes digs.dat and must also delete settled.sqlite and settled.idx (one function).
+- `Clear blocks` (Esc > Advanced) deletes digs.dat and must also delete settled.sqlite and settled.idx (one function).
 - Host-and-play on a small machine: the worker is one task at low priority; if cores are scarce it simply lags and the cap catches it.
 
 ## Tests (headless, tools in src/worldgen/tools)
@@ -47,7 +47,7 @@ Result is byte-identical to a full replay (tested, see below), so clients, the b
 6. Server run: tunnel-spam digs through one block past 600 total edits; no refusal, no main-thread gap over 100 ms.
 
 ## Cost and order
-Day 1: `apply_from`, settled store + index + crash order, tests 1-4. Day 2: worker, trigger, cap semantics, telemetry, Clear saved ground, tests 5-6. Files: ground_ops.gd, server_block_store.gd, terrain_server.gd (worker start/stop, telemetry), a new `ground_settle.gd` for the index and worker. No protocol change, no client change, no bake.
+Day 1: `apply_from`, settled store + index + crash order, tests 1-4. Day 2: worker, trigger, cap semantics, telemetry, Clear blocks, tests 5-6. Files: ground_ops.gd, server_block_store.gd, terrain_server.gd (worker start/stop, telemetry), a new `ground_settle.gd` for the index and worker. No protocol change, no client change, no bake.
 
 ## Decisions wanted from Steve
 1. Approve "settled cache + log stays the truth" over deleting edits.
