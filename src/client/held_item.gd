@@ -61,6 +61,7 @@ var _stop_t: float = 0.0                  # hit stop left, seconds
 var _shoulder_log: MeshInstance3D          # the log across the shoulder (set_shoulder)
 var _arm_up: float = 0.0                  # 0 arms hang at the body's side, 1 raised to the camera pose (swing, jab, use, aim)
 var water_depth_at: Callable = Callable()   # (x, z) -> metres of standing water there; set by the client scene, unset in tests
+var variant_slot: int = -1               # the pack slot of the wall variant the wheel chose (doorway, window), -1 for the held one
 var lift_steps: int = 0                  # a held foundation stands this many 0.1 m steps above the ground (mouse wheel, Dave 2026-10-22)
 var _blueprint_yaw: int = 0               # the turn (degrees) the ghost will be placed at
 var _first_person: bool = true
@@ -302,12 +303,58 @@ func _start_swing() -> void:
 
 # The mouse wheel while a foundation is held raises or lowers where it will stand, in 0.1 m steps. Returns true when it was used here.
 func wheel(down: bool) -> bool:
-	if not holding or not _is_placeable() or not bool(PlacementRules.structure_of_kit(_placement, held_id()).get("foundation", false)):
+	if not holding or not _is_placeable():
 		return false
 
-	lift_steps = clampi(lift_steps + (-1 if down else 1), 0, PlacementRules.LIFT_MAX_STEPS)
-	_inv._on_notice("Foundation raised %.1f m off the ground" % (float(lift_steps) * PlacementRules.LIFT_STEP_M))
+	var def: Dictionary = PlacementRules.structure_of_kit(_placement, held_id())
+
+	if bool(def.get("foundation", false)):
+		lift_steps = clampi(lift_steps + (-1 if down else 1), 0, PlacementRules.LIFT_MAX_STEPS)
+		_inv._on_notice("Foundation raised %.1f m off the ground" % (float(lift_steps) * PlacementRules.LIFT_STEP_M))
+		return true
+
+	return _cycle_variant(def, down)
+
+
+# Wall pieces of one group (wall, doorway, window) are one piece to the wheel: it turns through the kinds you carry, and the held tier is the
+# one in the hotbar (Dave 2026-10-22). The ghost and the click use the chosen pack slot.
+func _cycle_variant(def: Dictionary, down: bool) -> bool:
+	var group: String = str(def.get("variant_group", ""))
+
+	if group == "":
+		return false
+
+	var slots: Array = []
+
+	for slot in range(_inv.inventory.numbers.size()):
+		var other: Dictionary = PlacementRules.structure_of_kit(_placement, _inv.table.id_of(_inv.inventory.numbers[slot]))
+
+		if not other.is_empty() and str(other.get("variant_group", "")) == group and (slot == held_slot or _inv.table.id_of(_inv.inventory.numbers[slot]) != held_id()):
+			slots.append(slot)
+
+	if slots.size() < 2:
+		return true
+
+	var at: int = maxi(slots.find(variant_slot if variant_slot >= 0 else held_slot), 0)
+	variant_slot = slots[posmod(at + (-1 if down else 1), slots.size())]
+	_inv._on_notice("Piece: %s" % _inv.table.name_of(_inv.inventory.numbers[variant_slot]))
 	return true
+
+
+# The pack slot the ghost and the place click use: the wheel's chosen variant while it still holds a piece of the held group, else the held slot.
+func _place_slot() -> int:
+	if variant_slot >= 0 and variant_slot < _inv.inventory.numbers.size() and _inv.inventory.numbers[variant_slot] != 0:
+		var group: String = str(PlacementRules.structure_of_kit(_placement, held_id()).get("variant_group", ""))
+
+		if group != "" and str(PlacementRules.structure_of_kit(_placement, _inv.table.id_of(_inv.inventory.numbers[variant_slot])).get("variant_group", "")) == group:
+			return variant_slot
+
+	variant_slot = -1
+	return held_slot
+
+
+func _placing_id() -> String:
+	return _inv.table.id_of(_inv.inventory.numbers[_place_slot()])
 
 
 # A mouse button while playing. Returns true when it was used here.
@@ -318,7 +365,7 @@ func mouse_button(button: int, pressed: bool) -> bool:
 
 	if _is_placeable():
 		if button == MOUSE_BUTTON_LEFT and pressed and _blueprint_ok:
-			_net.inventory_action.rpc_id(1, Net.ACT_PLACE, held_slot, lift_steps, _blueprint_yaw, _blueprint_at)
+			_net.inventory_action.rpc_id(1, Net.ACT_PLACE, _place_slot(), lift_steps, _blueprint_yaw, _blueprint_at)
 
 		return button == MOUSE_BUTTON_LEFT
 
@@ -604,6 +651,7 @@ func _update_blueprint() -> void:
 		_blueprint_ok = false
 		return
 
+	var kit: String = _placing_id()
 	var now: int = Time.get_ticks_msec()
 
 	if now < _blueprint_next_msec:
@@ -612,9 +660,9 @@ func _update_blueprint() -> void:
 	_blueprint_next_msec = now + 100
 
 	# The ghost is the placeable's own model, see-through and tinted: green where it can go, red where it cannot (Dave 2026-10-22).
-	var footprint: Vector2 = PlacementRules.footprint(_placement, held_id())
+	var footprint: Vector2 = PlacementRules.footprint(_placement, kit)
 
-	if _blueprint == null or _blueprint_kit != held_id():
+	if _blueprint == null or _blueprint_kit != kit:
 		if _blueprint == null:
 			_blueprint = Node3D.new()
 			_root.add_child(_blueprint)
@@ -623,12 +671,12 @@ func _update_blueprint() -> void:
 			_ghost_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 			_ghost_material.cull_mode = BaseMaterial3D.CULL_DISABLED
 
-		_blueprint_kit = held_id()
+		_blueprint_kit = kit
 
 		for child in _blueprint.get_children():
 			child.queue_free()
 
-		var def: Dictionary = PlacementRules.structure_of_kit(_placement, held_id())
+		var def: Dictionary = PlacementRules.structure_of_kit(_placement, kit)
 		var model: Node3D = _inv.ghost_model(int(def.get("state", 1)))
 		_ghost_clean(model)
 		_blueprint.add_child(model)
@@ -643,16 +691,16 @@ func _update_blueprint() -> void:
 	if hit.is_empty():
 		return
 
-	var on_grid: Array = PlacementRules.snap(_placement, held_id(), hit["position"], posmod(int(round(rad_to_deg(_camera.global_rotation.y))), 360), _inv.foundation_rows())
+	var on_grid: Array = PlacementRules.snap(_placement, kit, hit["position"], posmod(int(round(rad_to_deg(_camera.global_rotation.y))), 360), _inv.foundation_rows())
 	_blueprint_at = on_grid[0]
 	_blueprint_yaw = int(on_grid[1])
 
-	if bool(PlacementRules.structure_of_kit(_placement, held_id()).get("foundation", false)) and not bool(on_grid[2]):
+	if bool(PlacementRules.structure_of_kit(_placement, kit).get("foundation", false)) and not bool(on_grid[2]):
 		_blueprint_at.y += float(lift_steps) * PlacementRules.LIFT_STEP_M
 	_blueprint.global_position = _blueprint_at
-	_blueprint.rotation.y = deg_to_rad(float(_blueprint_yaw)) if PlacementRules.structure_of_kit(_placement, held_id()).get("piece", false) else _camera.global_rotation.y
+	_blueprint.rotation.y = deg_to_rad(float(_blueprint_yaw)) if PlacementRules.structure_of_kit(_placement, kit).get("piece", false) else _camera.global_rotation.y
 	var on_base: bool = bool(on_grid[2])
-	blueprint_state = PlacementRules.blocked(_placement, held_id(), _blueprint_at, _inv.placed_rows())
+	blueprint_state = PlacementRules.blocked(_placement, kit, _blueprint_at, _inv.placed_rows())
 
 	if blueprint_state == "" and not on_base:
 		var ground_at: Vector3 = _blueprint_at
@@ -660,9 +708,9 @@ func _update_blueprint() -> void:
 			var ray: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(Vector3(x, ground_at.y + 3.0, z), Vector3(x, ground_at.y - 3.0, z))
 			var found: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(ray)
 			return float(found["position"].y) if not found.is_empty() else NAN
-		blueprint_state = PlacementRules.steep(_placement, held_id(), _blueprint_at, _camera.global_rotation.y, probe)
+		blueprint_state = PlacementRules.steep(_placement, kit, _blueprint_at, _camera.global_rotation.y, probe)
 
-	if blueprint_state == "" and not on_base and water_depth_at.is_valid() and PlacementRules.over_water(_placement, held_id(), _blueprint_at, deg_to_rad(float(_blueprint_yaw)), water_depth_at):
+	if blueprint_state == "" and not on_base and water_depth_at.is_valid() and PlacementRules.over_water(_placement, kit, _blueprint_at, deg_to_rad(float(_blueprint_yaw)), water_depth_at):
 		blueprint_state = "water"
 
 	if blueprint_state == "":
