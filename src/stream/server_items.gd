@@ -2880,7 +2880,7 @@ func _process_trunk(peer: int, inv, id: int) -> void:
 	practice(peer, "work_trunk")
 
 	if not tree.has("logs_left"):
-		tree["logs_left"] = clampi(int(float(tree["length"]) / float(cfg.get("log_length_m", 2.5)) * clampf(float(tree["radius"]) * 2.5, 0.5, 2.0)), 1, int(cfg.get("max_logs", 12)))
+		tree["logs_left"] = clampi(int(float(tree["length"]) / float(cfg.get("log_length_m", 2.44))), 0, int(cfg.get("max_logs", 20)))   # whole 8 ft (2.44 m) lengths only
 		tree["blows"] = 0
 
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -2891,6 +2891,12 @@ func _process_trunk(peer: int, inv, id: int) -> void:
 	if blows < int(cfg.get("branch_blows", 3)):
 		for row in cfg.get("branch", []):
 			give(peer, table.number_of(str(row[0])), roll_amount(peer, rng, int(row[1]), int(row[2])))
+	elif int(tree["logs_left"]) <= 0:   # too short for one whole log: only firewood, kindling and sticks
+		for row in cfg.get("small", []):
+			give(peer, table.number_of(str(row[0])), roll_amount(peer, rng, int(row[1]), int(row[2])))
+
+		if blows + 1 >= int(cfg.get("branch_blows", 3)) + int(cfg.get("small_blows", 3)):
+			_items.erase(id)
 	else:
 		if (blows - int(cfg.get("branch_blows", 3))) % int(cfg.get("blows_per_log", 3)) == 2:
 			var log_n: int = table.number_of("log_" + str(tree.get("species", "")))
