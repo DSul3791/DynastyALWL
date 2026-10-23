@@ -2190,7 +2190,7 @@ const SHRUB_LOOKS := {
 	"bramble": {"fill": 10, "canes": [10, 11], "segs": 4, "thorn_n": 2, "arch": 0.6, "reach": 1.0, "sprays": 10, "rate": 0.3, "cluster": 0.08, "cane": Color(0.50, 0.30, 0.30), "leaf": 0.8, "fruit": Color(0.35, 0.10, 0.55), "unripe": Color(1.0, 0.25, 0.25), "flower": Color(1.0, 0.9, 0.9), "thorns": true},
 	"wild_rose": {"fill": 14, "canes": [10, 11], "segs": 5, "thorn_n": 4, "sprays": 6, "arch": 0.35, "reach": 1.0, "rate": 0.12, "cluster": 0.045, "cane": Color(0.45, 0.30, 0.22), "leaf": 0.65, "fruit": Color(1.0, 0.18, 0.1), "unripe": Color(1.0, 0.55, 0.3), "flower": null, "blossom": Color(1.0, 0.25, 0.55), "thorns": true},
 	"blackthorn": {"canes": [14, 18], "base": 0.2, "arch": 0.55, "reach": 1.4, "rate": 0.12, "cane": Color(0.20, 0.17, 0.15), "leaf": 0.32, "fruit": Color(0.4, 0.45, 0.9), "unripe": Color(0.5, 0.6, 0.5), "flower": null, "thorns": true},
-	"blueberry": {"canes": [9, 11], "sprays": 5, "arch": 0.1, "reach": 0.7, "rate": 0.5, "cluster": 0.06, "cane": Color(0.50, 0.38, 0.28), "leaf": 0.4, "fruit": Color(0.30, 0.38, 0.85), "unripe": Color(0.75, 0.9, 0.55), "flower": null, "thorns": false},
+	"blueberry": {"fill": 6, "canes": [9, 11], "sprays": 5, "arch": 0.1, "reach": 0.7, "rate": 0.5, "cluster": 0.06, "cane": Color(0.50, 0.38, 0.28), "leaf": 0.4, "fruit": Color(0.30, 0.38, 0.85), "unripe": Color(0.75, 0.9, 0.55), "flower": null, "thorns": false},
 }
 
 
@@ -2522,6 +2522,13 @@ static func _blackthorn(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: f
 
 				if not far and rng.randf() < 0.22:
 					_cluster(bark, rng, n + Vector3(0.0, -crown * 0.04, 0.0), crown * 0.04, SLOE_COLOR, false, rng.randi_range(3, 4))
+
+	# Leaf sprays low in the bush as well, so it is full from the top down to the ground (Dave 2026-10-23).
+	if not far and not bloom:
+		for k in range(14):
+			var a: float = rng.randf() * TAU
+			var at: Vector3 = Vector3(cos(a), 0.0, sin(a)) * crown * 0.45 * sqrt(rng.randf()) + Vector3(0.0, rng.randf_range(0.05, 0.7) * h, 0.0)
+			_leaf_spray(leaves, rng, at, Vector3(rng.randfn(), rng.randf_range(0.1, 0.8), rng.randfn()), crown * 0.11, rng.randf_range(0.85, 1.05))
 
 
 # A single-triangle thorn from `from` to `to` (a thin sharp spine), width `w` at the base.
