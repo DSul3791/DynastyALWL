@@ -934,6 +934,26 @@
    "shape": "chunk",
    "color": "#8a8a8a",
    "size": 1.0
+  },
+  "raspberries": {
+   "shape": "berries",
+   "color": "#b3173c",
+   "size": 1.0
+  },
+  "blackberries": {
+   "shape": "berries",
+   "color": "#2a1830",
+   "size": 1.0
+  },
+  "blueberries": {
+   "shape": "berries",
+   "color": "#3b4f9a",
+   "size": 1.0
+  },
+  "strawberries": {
+   "shape": "berries",
+   "color": "#c8202a",
+   "size": 1.0
   }
  }
 }
