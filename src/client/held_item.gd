@@ -452,7 +452,7 @@ func _process_body(delta: float) -> void:
 
 # The large log on the shoulder in first person (Dave 2026-10-21): across the right shoulder, fixed to the body (the way you face), so it
 # shows at the edge of the view and when you look down.
-func set_shoulder(on: bool, length: float, radius: float) -> void:
+func set_shoulder(on: bool, length: float, radius: float, color: Color = Color(0.32, 0.23, 0.15)) -> void:
 	if not on:
 		if _shoulder_log != null:
 			_shoulder_log.visible = false
@@ -472,6 +472,7 @@ func set_shoulder(on: bool, length: float, radius: float) -> void:
 		_camera.add_child(_shoulder_log)
 
 	var mesh: CylinderMesh = _shoulder_log.mesh as CylinderMesh
+	(mesh.material as StandardMaterial3D).albedo_color = color
 	mesh.top_radius = radius * 0.8
 	mesh.bottom_radius = radius
 	mesh.height = length

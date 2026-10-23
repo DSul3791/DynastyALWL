@@ -574,7 +574,7 @@ func _carry(base: Dictionary, p: float, weight: float) -> Dictionary:
 
 
 # A large log across the right shoulder: shown or hidden, `length` and `radius` in metres (the species' log).
-func set_shoulder_log(length: float, radius: float) -> void:
+func set_shoulder_log(length: float, radius: float, color: Color = Color(0.32, 0.23, 0.15)) -> void:
 	if arms_only or not _bones.has("chest"):
 		return
 
@@ -595,6 +595,7 @@ func set_shoulder_log(length: float, radius: float) -> void:
 		_log.material_override = material
 		attachment.add_child(_log)
 
+	(_log.material_override as StandardMaterial3D).albedo_color = color
 	var cyl: CylinderMesh = _log.mesh as CylinderMesh if _log.mesh != null else CylinderMesh.new()
 	cyl.top_radius = radius * 0.8
 	cyl.bottom_radius = radius

@@ -2498,7 +2498,7 @@ func _update_view(delta: float) -> void:
 	if held != null:
 		held.set_avatar(_avatar)
 		held.set_first_person(_view_now <= 0.5)
-		held.set_shoulder(items != null and items.shoulder_id != "" and _view_now <= 0.5, CARRY_LOG_LENGTH_M, CARRY_LOG_RADIUS_M)
+		held.set_shoulder(items != null and items.shoulder_id != "" and _view_now <= 0.5, CARRY_LOG_LENGTH_M, CARRY_LOG_RADIUS_M, LogLook.color_of(items.shoulder_id if items != null else ""))
 	_avatar.animation_player.active = _avatar.visible      # no animation cost in first person
 	# Feet on the ground whatever the stance (the capsule's bottom stays put; the body origin is its standing middle).
 	_avatar.position.y = -float(StanceScript.SHAPE_HEIGHT[StanceScript.STAND]) * 0.5
@@ -2521,7 +2521,7 @@ func _update_view(delta: float) -> void:
 		if carrying:
 			clip = "carry_walk" if pace > 0.6 else "carry_idle"
 
-		_avatar.set_shoulder_log(CARRY_LOG_LENGTH_M if carrying else 0.0, CARRY_LOG_RADIUS_M)
+		_avatar.set_shoulder_log(CARRY_LOG_LENGTH_M if carrying else 0.0, CARRY_LOG_RADIUS_M, LogLook.color_of(items.shoulder_id if items != null else ""))
 
 		if _avatar.current() != clip and not _avatar.is_one_shot_playing():
 			_avatar.play(clip, 1.0, 0.25)
