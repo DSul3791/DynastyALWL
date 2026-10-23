@@ -43,7 +43,7 @@ button.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)
 <main>
 <div id="tok" hidden class="q"><h2>Paste your GitHub token (once)</h2><input id="t" type="password" autocomplete="off"><button onclick="saveTok()">Remember</button></div>
 <div id="list">Loading...</div>
-<p class=ver>Page version: poke v8 (test cards with Notes, 2310 UTC). If you do not see this line, you have an old copy: reload.</p>
+<p class=ver>Page version: poke v9 (reloads itself when a newer page is out, 0200 UTC). If you do not see this line, you have an old copy: reload.</p>
 </main>
 <div class="dock"><div class="in"><button onclick="poke()">Tell Claude I answered</button><div class=msg id="pokemsg"></div></div></div>
 <div class="scrim" id="scrim" onclick="closeAll()"></div>
@@ -86,7 +86,10 @@ function parse(t){const out=[];let c=null;
   return out}
 function chk(n){const r=document.querySelector(`input[name=q${n}]:checked`);document.getElementById('why'+n).hidden=!(r&&r.value=='No')}
 function esc(s){const d=document.createElement("div");d.textContent=s;return d.innerHTML}
+const PV="v9";
+async function selfUpdate(){try{const {text}=await get("questions/qa.html");const m=/Page version: poke (v\d+)/.exec(text);if(m&&m[1]!=PV)location.reload()}catch(e){}}
 async function load(){
+  selfUpdate();
   const L=document.getElementById("list");document.getElementById("tok").hidden=!!tok();
   if(!tok()){L.textContent="";return}
   try{const {text}=await get(QF);const qs=parse(text);
