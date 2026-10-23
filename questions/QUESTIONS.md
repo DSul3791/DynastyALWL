@@ -8,9 +8,6 @@ Note: 6. Optional: place a timber prop near the roof before the time runs out. T
 Note: 7. Take a picture of the shaking and dust. Write in Notes what happened, yes or no.
 [test]
 
-## floor-brace-1 | Floor brace: under the four edges of every 2 x 2 m floor runs one log split in half (flat side up), cut in quarters so the pieces meet the neighbouring walls, ceilings and floors like a sill beam?
-[check]
-
 ## floor-brace-2 | Floor brace: one log makes the four edge sills of one floor cell, and the wooden floor sits on the sills; every Plank, Fine and Log floor costs +1 log?
 [check]
 
