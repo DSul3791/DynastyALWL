@@ -1018,3 +1018,7 @@ Answered: 2026-10-23 04:07 UTC
 Answer: Yes: The crackling fire sounds good
 Answered: 2026-10-23 04:09 UTC
 
+## sound-fire | Please test Esc > Settings > Sound test: fire. Look for: each step is heard, from embers to the hiss when it is put out.
+Answer: Yes: The crackling fire sounds good
+Answered: 2026-10-23 04:09 UTC
+
