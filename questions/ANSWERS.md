@@ -884,3 +884,7 @@ Answered: 2026-10-23 01:30 UTC
 Answer: Yes
 Answered: 2026-10-23 01:30 UTC
 
+## cost-mason-floor | Mason floor = a full wooden floor (8 rough planks + 20 nails) plus 36 stone blocks and 8 mortar?
+Answer: Yes
+Answered: 2026-10-23 01:30 UTC
+
