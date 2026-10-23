@@ -2233,10 +2233,10 @@ static func _cane_shrub(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 			var low: Vector3 = at + Vector3(0.0, -crown * 0.12, 0.0) + out * crown * 0.05
 			# Flowers where the plant has them, otherwise (and mixed in) fruit, some of it unripe.
 			if look["flower"] != null and rng.randf() < 0.5:
-				_cluster(bark, rng, low + Vector3(0.0, crown * 0.15, 0.0), crown * 0.07, look["flower"], true, rng.randi_range(4, 6))
+				_cluster(bark, rng, low + Vector3(0.0, crown * 0.15, 0.0), crown * 0.12, look["flower"], true, rng.randi_range(4, 6))
 			elif look["fruit"] != null:
 				var ripe: bool = rng.randf() < 0.75
-				_cluster(bark, rng, low, crown * 0.07, look["fruit"] if ripe else look["unripe"], false, rng.randi_range(5, 8))
+				_cluster(bark, rng, low, crown * 0.12, look["fruit"] if ripe else look["unripe"], false, rng.randi_range(6, 9))
 
 
 static func _raspberry(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
