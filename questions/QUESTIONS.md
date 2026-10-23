@@ -8,10 +8,6 @@ Note: 6. Optional: place a timber prop near the roof before the time runs out. T
 Note: 7. Take a picture of the shaking and dust. Write in Notes what happened, yes or no.
 [test]
 
-## braces-r4 | Do the braces look right: round logs joined with wooden pins, each of the three sizes in a plain and a tar-soaked version?
-Image: questions/img/tiers_braces_r4.png
-[check]
-
 ## floor-frames | Do the cobblestone and mason floors look right: stone on top, a log split in half along each of the four edges underneath, plank floor under the cobblestones?
 Image: questions/img/tiers_floor_frames_r4.png
 [check]
