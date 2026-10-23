@@ -640,3 +640,7 @@ Answered: 2026-10-23 00:37 UTC
 Answer: Yes
 Answered: 2026-10-23 00:43 UTC
 
+## cost-2 | Wall, Plank: 12 rough planks and 30 nails?
+Answer: Yes
+Answered: 2026-10-23 00:43 UTC
+
