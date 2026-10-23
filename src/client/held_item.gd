@@ -29,6 +29,7 @@ const REST_DOWN_M := 0.3
 const REST_BACK_M := 0.05
 const REST_PITCH_DEG := 8.0
 const ARMS_FOLLOW_K := 9.0
+const SHOULDER_LOG_FWD := 0.45            # metres ahead of the eye: the log's middle sits over the shoulder, not behind it (Dave 2026-10-23)
 const SHOULDER_LOG_X := 0.5               # first person: the log's side of the body, metres right of the eye
 const GRIP_ALONG_Y := {"axe": 0.25, "torch": 0.25, "knife": 0.05, "other": 0.3, "kit": 0.0}   # model +Y runs handle to head: the grip's distance from the model origin
 const SPEAR_GRIP_Z := 0.3
@@ -451,7 +452,7 @@ func _process_body(delta: float) -> void:
 
 # The large log on the shoulder in first person (Dave 2026-10-21): across the right shoulder, fixed to the body (the way you face), so it
 # shows at the edge of the view and when you look down.
-func set_shoulder(on: bool, length: float, radius: float) -> void:
+func set_shoulder(on: bool, length: float, radius: float, color: Color = Color(0.32, 0.23, 0.15)) -> void:
 	if not on:
 		if _shoulder_log != null:
 			_shoulder_log.visible = false
@@ -471,12 +472,13 @@ func set_shoulder(on: bool, length: float, radius: float) -> void:
 		_camera.add_child(_shoulder_log)
 
 	var mesh: CylinderMesh = _shoulder_log.mesh as CylinderMesh
+	(mesh.material as StandardMaterial3D).albedo_color = color
 	mesh.top_radius = radius * 0.8
 	mesh.bottom_radius = radius
 	mesh.height = length
 	_shoulder_log.visible = true
 	var yaw: Basis = Basis(Vector3.UP, _camera.global_rotation.y)
-	var at: Vector3 = _camera.global_position + yaw * Vector3(SHOULDER_LOG_X, -0.55, 0.0)
+	var at: Vector3 = _camera.global_position + yaw * Vector3(SHOULDER_LOG_X, -0.55, -SHOULDER_LOG_FWD)
 	_shoulder_log.global_transform = Transform3D(yaw * Basis(Vector3.RIGHT, PI * 0.5 + 0.05), at)
 
 
