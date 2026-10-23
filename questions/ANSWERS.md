@@ -912,3 +912,7 @@ Answered: 2026-10-23 01:32 UTC
 Answer: Yes
 Answered: 2026-10-23 01:32 UTC
 
+## cost-braces | Braces are logs plus wooden pins (no twine): 1.5 m = 3 logs + 4 pins; 3 m = 4 logs + 6 pins; 5 m = 6 logs + 8 pins?
+Answer: Yes
+Answered: 2026-10-23 01:33 UTC
+
