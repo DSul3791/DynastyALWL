@@ -1098,3 +1098,7 @@ Answered: 2026-10-23 04:15 UTC
 Answer: Yes
 Answered: 2026-10-23 04:15 UTC
 
+## spade-raise | Please test spade Raise mode. Look for: each click takes soil from your pack and the pack count drops.
+Answer: Yes
+Answered: 2026-10-23 04:18 UTC
+
