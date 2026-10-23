@@ -7,10 +7,6 @@
 
 
 
-## species-uses-4 | Firewood and wooden blocks from different species stay in separate piles (no mixed piles), and piers and wet foundations need a rot-proof wood (oak, chestnut, alder)?
-Note: Tyler recommends Yes because mixed piles are hard to take from and piers rotting would be unfair without a warning.
-[check]
-
 ## small-tree-work | A small tree (under 8 ft) gives no whole log: working the trunk gives 3 blows of branches (sticks and leaves) and then 3 blows of firewood, kindling and sticks, then it is used up (no roots, no blocks)?
 Note: Tyler recommends Yes because a small tree can never give a proper log, so it gives small useful things and is gone.
 [check]
