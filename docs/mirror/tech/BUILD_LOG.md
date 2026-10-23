@@ -462,3 +462,4 @@ Each active thread holds its current number plus ONE spare, handed out in advanc
 - 21:55 UTC 23 Oct Guru: MERGED 740: kathleen-wolf-howl (Dave's deer grunt, two single grunts, peak -14 dB; credits licence UNVERIFIED, source a YouTube video Dave supplied). Head = 740.
 - 22:05 UTC 23 Oct Guru: MERGED 741: kathleen-wolf-howl credits (fox, moose, deer rows now 'Dave, own recording'; no licence gate). Head = 741.
 - 22:20 UTC 23 Oct Guru: MERGED 742: steve-dig-rig-2 again (loose items re-snap every second for 10 s after a dig: fixes blobs drawn up to 0.36 m above the collision ground; rig fixes; client side). MikeW reruns the heavy dig test. Head = 742.
+- 22:30 UTC 23 Oct Guru: MERGED 743: steve-wet-wire trickle-loop counter (log only). Wet sounds themselves in since 735: Dave can test by ear in a tunnel with water within 4 m above the ceiling. Head = 743.
