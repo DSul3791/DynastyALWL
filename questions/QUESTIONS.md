@@ -50,11 +50,6 @@ Note: Tyler checked: nothing in the game uses the B key today, so there is no cl
 Note: Tyler recommends Yes because it matches what you described and B is free. Steve builds the input and left-hand slot, Sal marks which items can go in the left hand, Kathleen does the hand pose. It is tomorrow's work, not tonight's.
 [check]
 
-## rockpile-take | Taking from a pile: press E to take a handful (about 5), hold E to take as many as you can carry, and the pile shrinks row by row?
-Note: At 5 or fewer left it turns back into loose rocks.
-Note: Tyler recommends Yes because it is quick for one rock and for a lot, and matches the rock pile item Sal built.
-[check]
-
 ## lake-hide-water | Please test: hide the water and see what stays. Look for: do the grey shapes and dark squares STAY when the water is hidden?
 Note: 1. Go to x 52392, z 69477 (or x 53786, z 69256) where the water surface flickers.
 Note: 2. Press Ctrl+Shift+W (hides every river and lake drawing).
