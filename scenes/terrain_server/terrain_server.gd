@@ -61,6 +61,7 @@ const KEY_BURST := 8000                # block keys one peer may ask for at once
 const KEY_REFILL_PER_S := 4000.0
 const WeatherScript := preload("res://src/shared/weather.gd")
 const IceScript := preload("res://src/shared/ice.gd")
+const WaterFlowScript := preload("res://src/stream/water_flow.gd")
 const WEATHER_SWELL := 1.0              # a big storm makes every spring run this much stronger (x2 in all: the x10 start flow becomes x20; Dave 2026-10-20)
 const DRY_SHRINK := 0.7                 # full dry heat takes this share off the spring flow (a trickle is left); the floor below
 const RUNOFF_FLOOR := 0.2               # rivers never shrink below this share of the start flow
@@ -350,6 +351,8 @@ func _ready() -> void:
 	admin.load_keys(["res://data/admin.json", store_dir + "/admin.json"])
 	items.reset_terrain_edits = _reset_terrain_edits
 	items.floor_below = _floor_below
+	items.water_flow_at = _water_flow_at
+	items.water_flow_runs = _water_flow_runs
 	items.dump_water = _dump_water
 	@warning_ignore("confusable_local_declaration")
 	items.admin_ok = func(peer: int) -> bool: return admin.is_admin(items.key_of(peer))
@@ -1191,6 +1194,23 @@ func _dump_water(x: float, z: float) -> String:
 	file.close()
 	print("server: water dump written to ", path)
 	return path
+
+
+# Running water for placement rules (src/stream/water_flow.gd): the speed in m/s of the settled water at a point (-1 none, 0 still), and whether
+# the span a to b runs at least data/water_flow.json min_speed_m_s all along.
+func _water_flow_at(point: Vector3) -> float:
+	if water_live == null:
+		return WaterFlowScript.NO_WATER
+
+	return WaterFlowScript.speed_at(generator, water_live.data_of(generator.tile_of(point.x, point.z)), point.x, point.z)
+
+
+func _water_flow_runs(a: Vector3, b: Vector3) -> bool:
+	if water_live == null:
+		return false
+
+	var rules: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/water_flow.json"))
+	return WaterFlowScript.runs(generator, water_live.data_of(generator.tile_of(a.x, a.z)), a, b, rules if typeof(rules) == TYPE_DICTIONARY else {})
 
 
 # Where a loose item let go at `from` comes to rest: straight down through the air to the first ground, by the generated surface with the

@@ -1,0 +1,6 @@
+{
+	"_note": "Running water for placement rules (src/stream/water_flow.gd): a water wheel needs at least min_speed_m_s over span_m of its width (Sal 2026-10-23, Tyler's numbers). The speed is the one the water is drawn at (water_grid.gd _velocities), the fastest of the 4 grid cells around a point; still water and lake shores are 0, dry or off-grid is -1.",
+	"min_speed_m_s": 0.3,
+	"span_m": 2.0,
+	"step_m": 0.5
+}
