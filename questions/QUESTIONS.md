@@ -7,10 +7,6 @@
 
 
 
-## species-uses-3 | Hard woods (oak, walnut) take more axe wear to chop, so they feel valuable?
-Note: Tyler recommends Yes because cost is how a player feels value, and it is one number per species.
-[check]
-
 ## species-uses-4 | Firewood and wooden blocks from different species stay in separate piles (no mixed piles), and piers and wet foundations need a rot-proof wood (oak, chestnut, alder)?
 Note: Tyler recommends Yes because mixed piles are hard to take from and piers rotting would be unfair without a warning.
 [check]
