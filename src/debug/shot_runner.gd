@@ -60,6 +60,7 @@ var _spin_next_msec: int = 0
 var _selected: bool = false
 var flora_names: PackedStringArray = PackedStringArray()    # --shot-flora=raspberry,bramble: one plant of each in a row with name tags
 var _flora_t: int = 0
+var cam_above_m: float = -1.0       # --shot-cam-above=M: the camera stands M metres above the ground at the plant row (--flora); -1 keeps the --agl height
 var flora_lift_m: float = 0.12     # --shot-flora: the row stands this far above the raycast ground (the drawn smooth ground can lie a little higher and hide a 0.2 m flower)
 var summer: bool = false      # --shot-summer: the plant row in its species green (the game draws every hardwood in autumn colours)
 var side_dist: float = 2.8      # --shot-dist=M: third-person camera distance; under 2 m it aims at the held item
@@ -90,6 +91,8 @@ func setup(owner_client, args: Array) -> void:
 			side_dist = float(argument.trim_prefix("--shot-dist="))
 		elif argument == "--shot-right":
 			side_sign = -1.0
+		elif argument.begins_with("--shot-cam-above="):
+			cam_above_m = float(argument.trim_prefix("--shot-cam-above="))
 		elif argument.begins_with("--shot-flora="):
 			flora_names = argument.trim_prefix("--shot-flora=").split(",", false)
 		elif argument == "--shot-summer":
