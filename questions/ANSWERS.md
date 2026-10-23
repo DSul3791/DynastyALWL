@@ -852,3 +852,7 @@ Answered: 2026-10-23 01:26 UTC
 Answer: No: Yes, but you wanna make sure they stay above the storm surge level of waves
 Answered: 2026-10-23 01:26 UTC
 
+## island-fort | Do fortress and town foundations on your own island need ground about 1 m above sea level?
+Answer: No: Yes, but you wanna make sure they stay above the storm surge level of waves
+Answered: 2026-10-23 01:26 UTC
+
