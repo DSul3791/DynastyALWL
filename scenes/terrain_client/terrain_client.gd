@@ -41,6 +41,7 @@ const CompassScript := preload("res://src/client/admin_compass.gd")
 const InventoryViewScript := preload("res://src/client/inventory_view.gd")
 const NpcViewScript := preload("res://src/client/npc_view.gd")
 const GroundDebugScript := preload("res://src/client/ground_debug.gd")
+const GameMenuScript := preload("res://src/client/game_menu.gd")
 const SoundTestMenuScript := preload("res://src/client/sound_test_menu.gd")
 const QuakeViewScript := preload("res://src/client/quake_view.gd")
 const LadderClimbScript := preload("res://src/client/ladder_climb.gd")
@@ -75,7 +76,6 @@ const RescueScript := preload("res://src/client/rescue.gd")
 const BuildInfo := preload("res://src/shared/build.gd")
 const BUILD: int = BuildInfo.NUMBER
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
-var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
@@ -213,16 +213,13 @@ var test_dump: bool = false           # --dump-test: 14 s after the welcome dump
 var _test_dump_done: bool = false
 var tunnel_on: bool = false               # the server's tunnel collapse switch (admins change it in Esc > Settings)
 var tunnel_cave_in_s: int = 1200
-var _tunnel_button: Button
-var _cave_in_button: Button
-var _vsync_button: Button
 var quake_view = QuakeViewScript.new()        # shake, dust and notices while a tunnel is failing (quake_view.gd)
 var ladder = LadderClimbScript.new()          # holding on to a placed ladder (ladder_climb.gd)
 var ground_debug = GroundDebugScript.new()    # ground dump, ground self-check, hole probe (ground_debug.gd)
+var game_menu = GameMenuScript.new()          # the Esc menu (game_menu.gd)
 var sound_tests = SoundTestMenuScript.new()   # Esc > Settings sound test buttons and their state (sound_test_menu.gd)
 var menu_open: bool = false          # the Esc options menu
 var _menu: Control
-var _menu_pages: Dictionary = {}     # page name -> VBoxContainer
 var _menu_note: Label
 var knowledge = KnowledgeScript.new()   # what this character knows (placeholder stats)
 var test_inspect: bool = false       # --inspect: start with inspection on and print what it names
@@ -240,6 +237,8 @@ var _viewer_ground_y: float = NAN     # the streaming viewer's height while it s
 var _stage_done: bool = false         # the staged ground view has been started for this stop
 var _stage_view: float = 0.0          # above 0 while only the finest ground is built after a stop high up
 var _stage_next_msec: int = 0
+var test_menu: bool = false                    # --menu-test: open every Esc menu page and flip every switch
+var _test_menu_done: bool = false
 var test_fly: bool = false
 var test_route: Vector2 = Vector2(1.0, 0.0)   # --route=east|south|diag: heading of the --fly test
 var test_fly_msec: int = 30000                # --flytime=seconds: how long the --fly test moves
@@ -521,6 +520,8 @@ func _ready() -> void:
 			test_start = Vector3(float(xyz[0]), float(xyz[1]), float(xyz[2]))
 		elif argument == "--no-ground-check":
 			ground_debug.check_enabled = false
+		elif argument == "--menu-test":
+			test_menu = true
 		elif argument == "--dump-test":
 			test_dump = true
 		elif argument == "--inspect":
@@ -1097,7 +1098,7 @@ func _welcome_body(info: Dictionary) -> void:
 	status_icons.add_icon("cover", StatusIconsScript.house_texture(), func() -> bool: return under_cover > 0.0)
 	sound_tests.setup(self)
 	ground_debug.setup(self)
-	_build_menu(layer)
+	_build_menu()
 	hud = Label.new()
 	hud.position = Vector2(12.0, 72.0)   # below the link bars (top left)
 	hud.visible = display.hud_text
@@ -1138,8 +1139,7 @@ func _welcome_body(info: Dictionary) -> void:
 	add_child(npc_voice)
 	_npc_voice = npc_voice
 
-	if _npc_voice_button != null:
-		_npc_voice_button.text = "NPC voice: %s" % ("on" if npc_voice.enabled else "off")
+	game_menu.refresh()
 
 	dialogue_view.voice_line = func(voice_id: String, text: String):
 		var talker: Dictionary = npc_view.nearest(body.global_position, npc_voice.hear_m)
@@ -2143,205 +2143,15 @@ func _load_brain_icon() -> Texture2D:
 # ------------------------------------------------------------------ options menu
 
 # The Esc menu: Resume, Settings, Advanced (clear saved ground), Quit game.
-func _build_menu(layer: CanvasLayer) -> void:
-	_menu = Control.new()
-	_menu.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_menu.visible = false
-	layer.add_child(_menu)
-	var shade: ColorRect = ColorRect.new()
-	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
-	shade.color = Color(0.0, 0.0, 0.0, 0.55)
-	_menu.add_child(shade)
-	var center: CenterContainer = CenterContainer.new()
-	center.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_menu.add_child(center)
-	var panel: PanelContainer = PanelContainer.new()
-	center.add_child(panel)
-	var margin: MarginContainer = MarginContainer.new()
-
-	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 28)
-
-	panel.add_child(margin)
-	var column: VBoxContainer = VBoxContainer.new()
-	column.add_theme_constant_override("separation", 12)
-	margin.add_child(column)
-	var title: Label = Label.new()
-	title.text = "Dynasty"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 40)
-	column.add_child(title)
-
-	var main: VBoxContainer = _menu_page(column, "main")
-	_menu_button(main, "Resume", func(): _set_menu(false))
-	_menu_button(main, "Settings", func(): _show_menu_page("settings"))
-	_menu_button(main, "Controls (every hotkey)", func(): _show_menu_page("controls"))
-	_menu_button(main, "Advanced", func(): _show_menu_page("advanced"))
-	_menu_button(main, "Quit game", func():
-		_say_logout()
-		get_tree().quit())
-
-	var controls: VBoxContainer = _menu_page(column, "controls")
-	var controls_text: Label = Label.new()
-	controls_text.text = HELP_TEXT
-	controls_text.add_theme_font_size_override("font_size", 26)
-	controls_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	controls_text.custom_minimum_size = Vector2(1500.0, 0.0)
-	controls.add_child(controls_text)
-	_menu_button(controls, "Back", func(): _show_menu_page("main"))
-
-	var settings: VBoxContainer = _menu_page(column, "settings")
-	var quality_title: Label = Label.new()
-	quality_title.text = "Quality"
-	quality_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	settings.add_child(quality_title)
-
-	for n in range(QUALITY_NAMES.size()):
-		var index: int = n
-		var tier_button: Button = _menu_button(settings, QUALITY_NAMES[n], func():
-			quality = index
-			_apply_quality()
-			_save_display()
-			_menu_note.text = "Quality: %s (saved; the HUD shows it after the build number)" % QUALITY_NAMES[index])
-		_quality_buttons.append(tier_button)
-
-	_npc_voice_button = _menu_button(settings, "NPC voice: on", func():
-		if _npc_voice != null:
-			_npc_voice.set_enabled(not _npc_voice.enabled)
-			_npc_voice_button.text = "NPC voice: %s" % ("on" if _npc_voice.enabled else "off"))
-	_menu_button(settings, "Debug details (F3): on or off", func():
-		debug_hud.enabled = not debug_hud.enabled
-		_menu_note.text = "Debug details %s" % ("on" if debug_hud.enabled else "off"))
-	_tunnel_button = _menu_button(settings, "Tunnel collapse", func():
-		net.tunnel_setting.rpc_id(1, not tunnel_on, tunnel_cave_in_s))
-	_cave_in_button = _menu_button(settings, "Cave-in time", func():
-		var steps: Array = [120, 300, 600, 1200]
-		net.tunnel_setting.rpc_id(1, tunnel_on, steps[(steps.find(tunnel_cave_in_s) + 1) % steps.size()]))
-	_show_tunnel_buttons()
-	_vsync_button = _menu_button(settings, "VSync", func():
-		display.vsync_index = (display.vsync_index + 1) % display.VSYNC_MODES.size()
-		display.apply(get_window())
-		_save_display()
-		_show_vsync_button()
-		_menu_note.text = "VSync is now %s. On snaps to 60 or 30; adaptive avoids the halving; off shows the true speed." % display.VSYNC_NAMES[display.vsync_index])
-	_show_vsync_button()
-	_menu_button(settings, "Resolution: change", func():
-		display.size_index = (display.size_index + 1) % display.SIZES.size()
-		display.apply(get_window())
-		_apply_render_scale()
-		_save_display()
-		_report_display())
-	_menu_button(settings, "Crafting screen text size: change", func():
-		display.text_index = (display.text_index + 1) % display.TEXT_SCALES.size()
-		items.set_text_scale(display.TEXT_SCALES[display.text_index])
-		_save_display()
-		_menu_note.text = "Crafting screen text: %s (saved)" % display.TEXT_NAMES[display.text_index])
-	_menu_button(settings, "Reset display to default", func():
-		display.reset()
-		items.set_text_scale(display.TEXT_SCALES[display.text_index])
-		quality = 2
-		display.apply(get_window())
-		_apply_quality()
-		_save_display()
-		_report_display("Display reset: High, windowed 1920x1080, VSync on. "))
-	_menu_button(settings, "Window: windowed or fullscreen windowed", func():
-		display.fullscreen = not display.fullscreen
-		display.apply(get_window())
-		_apply_render_scale()
-		_save_display()
-		_report_display())
-	for level in [["master", "Master volume"], ["effects", "Effects volume (steps, tools, items, fire)"], ["ambient", "Ambient volume (wind, nature, weather)"], ["interface", "Interface volume"]]:
-		_menu_slider(settings, level[1], float(sound.levels[level[0]]), func(value: float):
-			sound.set_level(level[0], value)
-			_menu_note.text = "%s %d %%" % [level[1].get_slice(" (", 0), roundi(value * 100.0)])
-	for group in ["wind", "nature", "steps"]:
-		_menu_button(settings, "%s volume: change" % group.capitalize(), func():
-			var share: float = sound.mix_step(group)
-			_menu_note.text = "%s sounds are off" % group.capitalize() if share <= 0.0 else "%s volume %d %%" % [group.capitalize(), roundi(share * 100.0)])
-	sound_tests.add_buttons(settings)
-	_menu_button(settings, "Back", func(): _show_menu_page("main"))
-
-	var advanced: VBoxContainer = _menu_page(column, "advanced")
-	_menu_button(advanced, "Clear saved ground", func():
-		_ask_clear_cache())
-	_menu_button(advanced, "Dump ground at the crosshair (and copy it)", func():
-		ground_debug.dump_ground_here())
-	_menu_button(advanced, "Show my player key (and copy it)", func():
-		var key: String = items.player_key() if items != null else ""
-		DisplayServer.clipboard_set(key)
-		_menu_note.text = "Your player key (copied): %s\nPut it in data/admin.json as {\"keys\": [\"%s\"]}" % [key, key])
-	_menu_button(advanced, "Admin: Bake starter tiles", func():
-		var problem: String = _bake.start()
-		_menu_note.text = "Baking the starter tiles in the background (about 5 to 10 minutes). The game stays usable; the result shows here." if problem == "" else problem)
-	_menu_button(advanced, "Jitter test (next spot, or J)", func():
-		_jitter_test.next_spot()
-		_set_menu(false))
-	_menu_button(advanced, "GPU breakdown (stand still; or Ctrl+Shift+G)", func():
-		_set_menu(false)
-		_gpu_probe.toggle())
-	_menu_button(advanced, "Measure this machine (about 1 min)", func():
-		_set_menu(false)
-		_machine_probe.toggle())
-	for entry in TestSwitchesScript.KEYS:
-		var switch_key: String = entry[0]
-		var switch_button: Button = _menu_button(advanced, _switches.label(switch_key), func(): pass)
-		switch_button.pressed.connect(func():
-			_switches.set_on(switch_key, not _switches.on(switch_key))
-			switch_button.text = _switches.label(switch_key)
-			_apply_switches())
-	_menu_button(advanced, "Back", func(): _show_menu_page("main"))
-
-	_menu_note = Label.new()
-	_menu_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_menu_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_menu_note.custom_minimum_size = Vector2(380.0, 0.0)
-	column.add_child(_menu_note)
-	_show_menu_page("main")
-
-
-# A labelled slider row for the menu (0 to 1); `changed` gets each new value.
-func _menu_slider(parent: VBoxContainer, text: String, value: float, changed: Callable) -> void:
-	var label: Label = Label.new()
-	label.text = text
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	parent.add_child(label)
-	var slider: HSlider = HSlider.new()
-	slider.min_value = 0.0
-	slider.max_value = 1.0
-	slider.step = 0.05
-	slider.value = value
-	slider.custom_minimum_size = Vector2(300.0, 24.0)
-	slider.value_changed.connect(changed)
-	parent.add_child(slider)
-
-
-func _menu_page(parent: VBoxContainer, page_name: String) -> VBoxContainer:
-	var page: VBoxContainer = VBoxContainer.new()
-	page.add_theme_constant_override("separation", 10)
-	page.visible = false
-	parent.add_child(page)
-	_menu_pages[page_name] = page
-	return page
-
-
-func _menu_button(parent: VBoxContainer, text: String, action: Callable) -> Button:
-	var button: Button = Button.new()
-	button.text = text
-	button.custom_minimum_size = Vector2(380.0, 52.0)
-	button.add_theme_font_size_override("font_size", 26)
-	button.pressed.connect(action)
-	@warning_ignore("standalone_ternary")
-	button.pressed.connect(func(): sound.ui.play("ui_click") if sound != null else null)   # after the action: a cue it plays itself wins
-	parent.add_child(button)
-	return button
+func _build_menu() -> void:
+	game_menu.build(self)
+	_menu = game_menu.root
+	_menu_note = game_menu.note
+	_quality_buttons = game_menu.quality_buttons
 
 
 func _show_menu_page(page_name: String) -> void:
-	@warning_ignore("shadowed_variable_base_class")
-	for name in _menu_pages:
-		_menu_pages[name].visible = name == page_name
-
-	_menu_note.text = ""
+	game_menu.show_page(page_name)
 
 
 func _set_menu(open: bool) -> void:
@@ -3207,22 +3017,7 @@ func _move_player(delta: float) -> void:
 
 # The two tunnel collapse buttons in Esc > Settings show the server's settings: On in green or Off in red, and the cave-in time.
 func _show_tunnel_buttons() -> void:
-	if _tunnel_button == null:
-		return
-
-	_tunnel_button.text = "Tunnel collapse: %s (admin)" % ("On" if tunnel_on else "Off")
-	_tunnel_button.add_theme_color_override("font_color", Color(0.45, 0.9, 0.45) if tunnel_on else Color(0.95, 0.4, 0.4))
-	_cave_in_button.text = "Cave-in time: %d min (change)" % roundi(float(tunnel_cave_in_s) / 60.0)
-
-
-# The VSync button shows its state, kept between sessions (display_settings.gd): On in green, Adaptive in amber, Off in red.
-func _show_vsync_button() -> void:
-	if _vsync_button == null:
-		return
-
-	var mode: int = display.vsync_index
-	_vsync_button.text = "VSync: %s (change)" % display.VSYNC_NAMES[mode].capitalize()
-	_vsync_button.add_theme_color_override("font_color", [Color(0.45, 0.9, 0.45), Color(0.95, 0.8, 0.35), Color(0.95, 0.4, 0.4)][mode])
+	game_menu.refresh()
 
 
 # On a placed ladder (ladder_climb.gd): W climbs, S descends, Space lets go. True while holding on (that frame does no walking).
@@ -3511,6 +3306,25 @@ func _process(delta: float) -> void:
 
 	ground_debug.ground_check_step(Time.get_ticks_msec())
 	ground_debug.hole_probe_step(Time.get_ticks_msec())
+
+	if test_menu and not _test_menu_done and Time.get_ticks_msec() - connected_msec > 6000:
+		_test_menu_done = true
+		_set_menu(true)
+		var seen: int = 0
+
+		for page_name in game_menu._pages:
+			game_menu.show_page(page_name)
+			seen += 1 if game_menu._pages[page_name].visible and game_menu._pages[page_name].get_child_count() > 0 else 0
+
+		for found in game_menu.root.find_children("*", "Control", true, false):
+			if found.has_signal("toggled") and found.has_method("set_on"):
+				found.set_on(not found.on)
+				found.toggled.emit(found.on)
+				found.set_on(not found.on)
+				found.toggled.emit(found.on)
+
+		print("Terrain client: menu test: %d pages with content of %d, panel opaque %s, layer %d" % [seen, game_menu._pages.size(), str(game_menu.root.get_child(1).get_child(0).get_theme_stylebox("panel").bg_color.a == 1.0), (game_menu.root.get_parent() as CanvasLayer).layer])
+		_set_menu(false)
 
 	if test_dump and not _test_dump_done and Time.get_ticks_msec() - connected_msec > 14000:
 		_test_dump_done = true
