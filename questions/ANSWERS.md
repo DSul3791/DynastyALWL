@@ -1146,3 +1146,7 @@ Answered: 2026-10-23 10:22 UTC
 Answer: No: Yes, except foundations. It’s video game logic. A foundation is a foundation.
 Answered: 2026-10-23 10:24 UTC
 
+## small-tree-work | A small tree (under 8 ft) gives no whole log: working the trunk gives 3 blows of branches (sticks and leaves) and then 3 blows of firewood, kindling and sticks, then it is used up (no roots, no blocks)?
+Answer: Yes
+Answered: 2026-10-23 10:24 UTC
+
