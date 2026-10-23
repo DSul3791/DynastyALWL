@@ -368,7 +368,7 @@
 					]
 				]
 			},
-			"note": "Foundation (Dave 2026-10-22): a 4 m square slab 0.3 m high that clears the grass under and around it (placed_clearing.json) and that walls, ceilings and roofs snap to at the listed anchors (x, z, yaw from its middle).",
+			"note": "Foundation (Dave 2026-10-22): a 4 m square slab 0.3 m high that clears the grass under and around it (placed_clearing.json) and that walls, floors and roofs snap to at the listed anchors (x, z, yaw from its middle).",
 			"look": "foundation",
 			"sound": "foundation",
 			"clears_grass": true
