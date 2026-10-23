@@ -708,3 +708,7 @@ Answered: 2026-10-23 00:48 UTC
 Answer: No: Again these stone roofs need to have wooden roofing underneath them so you make the slate roof using all the stuff you use for a wooden roof plus the stones and mortar
 Answered: 2026-10-23 00:48 UTC
 
+## cost-16 | Roof, Flat: 6 lumber, 20 nails and 4 tar (from bitumen)?
+Answer: Yes
+Answered: 2026-10-23 00:48 UTC
+
