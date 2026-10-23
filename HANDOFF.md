@@ -150,3 +150,4 @@ Baked tiles for the inner starters and their neighbors (36 files) are in `/mnt/p
 - Next slot: after BAKE-1 test result and Kathleen/Dave look at the first natural basin result; not before.
 - Done so far: tiles b1fb0c9, TERRAIN_VERSION 25 (22:55 UTC 22 Oct).
 - OVERNIGHT SELF-TESTS (Dave 05:00): tech/OVERNIGHT_TESTS.md; results one line each in tech/OVERNIGHT_RESULTS.md; when done everyone STOPS; Guru posts one Finished card.
+- Sweep 5 (11:35 UTC 23 Oct): see DECISIONS. Sal: 2 firewood per block, ONE log item (shoulder log = pack symbol, 12 blocks), species class/hits/burn per tech/items/TREE_SPECIES_USES_V1.md. MikeW: t16 shoulder log centring with the look rig (Dave is away). Guru: slimming docs = archive, never delete; build merge guard + id claims + inbox files.
