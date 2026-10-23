@@ -828,3 +828,7 @@ Answered: 2026-10-23 01:19 UTC
 Answer: No: It depends on how wide the opening is for the river like if you do a little trench, then it’s only gonna let a little bit of water through but if you dig a really wide trench or really deep trench, then it’s gonna let more through
 Answered: 2026-10-23 01:20 UTC
 
+## sea-feedcap | Should the sea feed a pit at most 50 m3/s per connection, so a huge pit fills over minutes instead of instantly (a tunable number)?
+Answer: No: It depends on how wide the opening is for the river like if you do a little trench, then it’s only gonna let a little bit of water through but if you dig a really wide trench or really deep trench, then it’s gonna let more through
+Answered: 2026-10-23 01:20 UTC
+
