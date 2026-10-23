@@ -143,6 +143,9 @@ func _init() -> void:
 		var item: Dictionary = items_file["items"][id]
 		var description: String = String(item.get("description", ""))
 
+		if bool(item.get("offhand", false)) and (not ["tool", "weapon"].has(String(item.get("kind", ""))) or not ["torch", "shield"].has(String(item.get("tool_class", "")))):
+			fail("items.json: '%s' is marked offhand but is not a tool or weapon of class torch or shield (the left-hand models)" % id)
+
 		if item.has("pile"):   # bulk items drawn as a pile on the ground (PileLook) and taken by the handful
 			var pile: Dictionary = item["pile"]
 			var tint: Array = pile.get("color", [])
