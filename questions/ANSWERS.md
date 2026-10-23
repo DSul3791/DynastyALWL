@@ -1030,3 +1030,7 @@ Answered: 2026-10-23 04:10 UTC
 Answer: Yes
 Answered: 2026-10-23 04:10 UTC
 
+## rockpile-merge | Should rocks dropped within 1 m of each other join into one pile (same kind only, never tools), and does this fix the limit on items on the ground?
+Answer: Yes
+Answered: 2026-10-23 04:11 UTC
+
