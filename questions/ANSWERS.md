@@ -556,3 +556,7 @@ Answered: 2026-10-22 23:58 UTC
 Answer: No: Yes, it does but there shouldn’t be an edge across the bottom. It should look like a realistic door.
 Answered: 2026-10-22 23:59 UTC
 
+## doors-singles | Do the five single door looks (twine and thatch hurdle, planks, reinforced, wrought iron, steel and iron) look right?
+Answer: No: The basic door should not have a door knob and the steel door shouldn’t have the black band across the middle and the door handle should be a steel handle on the steel door and none of these doors should have door knobs they should have handles without latching mechanisms
+Answered: 2026-10-23 00:01 UTC
+
