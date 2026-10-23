@@ -244,7 +244,13 @@ func _valleys(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, rules
 		if flow.discharge[index] < start_km2 or is_nan(_centre_surface[index]):
 			continue
 
+		if smoothstep(start_km2, start_km2 * 8.0, flow.discharge[index]) < 0.02:
+			continue
+
 		var q: float = sqrt(flow.discharge[index])
+		# Brooks get no valley, big rivers a full one; the cut is capped so a river beside a mountain does not eat it.
+		var strength: float = smoothstep(start_km2, start_km2 * 8.0, flow.discharge[index])
+		var max_cut_m: float = minf(float(rules.get("valley_cut_base_m", 3.0)) + float(rules.get("valley_cut_m_per_sqrt_q", 1.5)) * q, float(rules.get("valley_cut_max_m", 15.0)))
 		var width_m: float = maxf(float(rules["width_m_per_sqrt_q"]) * q, float(rules["min_width_m"]))
 		var rim_m: float = minf(radius_widths * width_m, max_radius_m)
 		var half_m: float = 0.5 * width_m
@@ -273,8 +279,9 @@ func _valleys(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, rules
 
 				var neighbor: int = nr * size + nc
 				var wanted: float = floor_level + side_slope * maxf(distance - half_m, 0.0)
-				var weight: float = 1.0 - smoothstep(0.5, 1.0, distance / rim_m)
-				cut[neighbor] = minf(cut[neighbor], lerpf(cut[neighbor], minf(cut[neighbor], wanted), weight))
+				var weight: float = (1.0 - smoothstep(0.5, 1.0, distance / rim_m)) * strength
+				var carved: float = maxf(lerpf(cut[neighbor], minf(cut[neighbor], wanted), weight), h[neighbor] - max_cut_m)
+				cut[neighbor] = minf(cut[neighbor], carved)
 
 	bed = cut
 
