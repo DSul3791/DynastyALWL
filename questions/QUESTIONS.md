@@ -55,11 +55,6 @@ Note: At 5 or fewer left it turns back into loose rocks.
 Note: Tyler recommends Yes because it is quick for one rock and for a lot, and matches the rock pile item Sal built.
 [check]
 
-## cavein-death-slow | Should a cave-in that kills you be slow and dramatic: the roof falls in 3 to 5 waves over about 6 seconds, with dust and rumble, instead of all at once?
-Note: Damage comes in chunks, one per wave, and you stagger and then lie down on the last one. You still get the full warning first.
-Note: Tyler recommends Yes because it matches what you asked for and keeps the 90 second warning rule.
-[check]
-
 ## cavein-death-fade | Then: the picture fades to black over about 4 seconds while the rumble keeps going for about 3 more seconds, then the sound fades out too?
 Note: Tyler recommends Yes because it is the order you described and is easy to tune.
 [check]
