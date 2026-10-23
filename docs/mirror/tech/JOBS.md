@@ -19,6 +19,7 @@ Rule: when your current job finishes, or waits on Dave, Mike's batch or another 
 6. Edge match + 6-spot screenshot set after any generator change.
 
 ## Sal (queue 7)
+0. FIRST JOB 24 Oct (Dave 23:51): showroom rows at spawn STAY but become REAL items (pick up, use, inspect/ID). Sal leads ONE combined action plan with Kathleen's Kathleen_ground_items.md; Tyler reviews once and gives GO with best practices (BP-T52).
 1. GO: sal-harvest (yield_scale clamp 400, elder base 130) after Mike's batch.
 2. Blueprint 1c.
 3. Uproot/replant (protocol 75 after Steve's 74 merges).
