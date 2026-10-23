@@ -14,9 +14,6 @@ Note: 7. Take a picture of the shaking and dust. Write in Notes what happened, y
 ## sea-source | Is the sea an endless source at sea level, so a pit dug below sea level and connected to the sea fills to sea level (trenches flood, harbours and canals possible)?
 [check]
 
-## sea-dam | Does a pit you dam off from the sea keep its water as a puddle?
-[check]
-
 ## sea-tunnel | Do tunnels or rooms below sea level that connect to the sea flood and drown like the river-flood rule, with a plain warning line when you dig below sea level near the coast?
 [check]
 
