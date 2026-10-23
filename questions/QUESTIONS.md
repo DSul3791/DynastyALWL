@@ -1,7 +1,3 @@
-## cost-10 | Floor or ceiling, Log: 6 logs?
-Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
-[check]
-
 ## cost-11 | Floor or ceiling, Cobblestone: 60 cobblestones and 6 mortar?
 Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
 [check]
