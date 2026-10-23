@@ -29,11 +29,13 @@ var surface: PackedFloat32Array = PackedFloat32Array()         # water level in 
 var _along: PackedFloat32Array = PackedFloat32Array()
 var _root: PackedInt32Array = PackedInt32Array()
 var _seed: int = 0
+var _origin: Vector2i = Vector2i.ZERO   # world sample coordinates of cell 0, so everything below depends on the place, not on the frame
 var curvature: PackedFloat32Array = PackedFloat32Array()       # signed turn at centre cells (+ = turning right on the map, z down)
 
 
 # `rules`: depth_m_per_sqrt_q, min_depth_m, max_depth_m, width_m_per_sqrt_q, min_width_m.
-func build(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, threshold: float, rules: Dictionary, seed_value: int) -> void:
+func build(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, threshold: float, rules: Dictionary, seed_value: int, origin: Vector2i = Vector2i.ZERO) -> void:
+	_origin = origin
 	var total: int = size * size
 	bed = h.duplicate()
 	centre_depth.resize(total)
@@ -103,13 +105,13 @@ func build(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, threshol
 			shape = clampf(1.0 + BEND_GAIN * absf(turn), 1.0, OUTER_MAX)
 		else:
 			# Straight reach: riffles (shallow) alternate with pools along the distance from the mouth.
-			var phase: float = along[index] / (RIFFLE_PERIOD_WIDTHS * width) * TAU
-			shape = lerpf(RIFFLE_FACTOR, POOL_FACTOR, 0.5 + 0.5 * sin(phase))
+			var wave: float = _swing_noise(index, size, cell_m, width * 12.0 / RIFFLE_PERIOD_WIDTHS, 977)
+			shape = lerpf(RIFFLE_FACTOR, POOL_FACTOR, 0.5 + 0.5 * wave)
 
 		if donors[index] >= 2:
 			shape *= CONFLUENCE_FACTOR
 
-		var jitter: float = 0.9 + 0.2 * _hash(index, seed_value)
+		var jitter: float = 0.9 + 0.2 * _place_hash(index, size, seed_value)
 		centre_depth[index] = depth * shape * jitter
 
 	_along = along
@@ -179,8 +181,7 @@ func _stamp(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, thresho
 			var slope: float = maxf(h[index] - h[next], 0.0) / maxf(_step_length(index, next, size, cell_m), 1.0)
 			var gentle: float = 1.0 - smoothstep(MEANDER_SLOPE_FULL, MEANDER_SLOPE_NONE, slope)
 			var width_m: float = 2.0 * radius_m
-			var phase: float = _along[index] / (MEANDER_WAVELENGTH_WIDTHS * width_m) * TAU + _hash(_root[index], _seed) * TAU
-			var swing: float = gentle * MEANDER_AMPLITUDE_WIDTHS * width_m * sin(phase)
+			var swing: float = gentle * MEANDER_AMPLITUDE_WIDTHS * width_m * _swing_noise(index, size, cell_m, width_m)
 			var mx: float = float(next % size - index % size)
 			@warning_ignore("integer_division")
 			var mz: float = float(next / size - index / size)
@@ -276,6 +277,30 @@ func _step_length(a: int, b: int, size: int, cell_m: float) -> float:
 	@warning_ignore("integer_division")
 	var dz: int = a / size - b / size
 	return sqrt(float(dx * dx + dz * dz)) * cell_m
+
+
+# World-position hash: the same for a cell in every frame that contains it.
+func _place_hash(index: int, size: int, seed_value: int) -> float:
+	@warning_ignore("integer_division")
+	var row: int = index / size
+	return _hash((_origin.y + row) * 100003 + _origin.x + index % size, seed_value)
+
+
+# Smooth signed noise in -1..1 of the world position, wavelength about 12 channel widths: the sideways swing of a river.
+func _swing_noise(index: int, size: int, cell_m: float, width_m: float, salt: int = 0) -> float:
+	@warning_ignore("integer_division")
+	var row: int = index / size
+	var wx: float = (float(_origin.x) + float(index % size)) * cell_m / (MEANDER_WAVELENGTH_WIDTHS * width_m)
+	var wz: float = (float(_origin.y) + float(row)) * cell_m / (MEANDER_WAVELENGTH_WIDTHS * width_m)
+	var ix: int = int(floor(wx))
+	var iz: int = int(floor(wz))
+	var tx: float = smoothstep(0.0, 1.0, wx - float(ix))
+	var tz: float = smoothstep(0.0, 1.0, wz - float(iz))
+	var a: float = _hash(iz * 100003 + ix, _seed + salt) * 2.0 - 1.0
+	var b: float = _hash(iz * 100003 + ix + 1, _seed + salt) * 2.0 - 1.0
+	var c: float = _hash((iz + 1) * 100003 + ix, _seed + salt) * 2.0 - 1.0
+	var d: float = _hash((iz + 1) * 100003 + ix + 1, _seed + salt) * 2.0 - 1.0
+	return lerpf(lerpf(a, b, tx), lerpf(c, d, tx), tz)
 
 
 func _hash(index: int, seed_value: int) -> float:
