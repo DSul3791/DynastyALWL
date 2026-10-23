@@ -426,7 +426,7 @@ func _models_task(entries: Array) -> void:
 		var reference: float = 0.5 * (float(height[0]) + float(height[1]))
 		var kind: int = KINDS.find(str(entry["kind"]))
 		var shape: String = str(entry["shape"])
-		var built: bool = kind != KIND_PLANT or shape in ["grass", "reed", "fern", "flower", "shrub", "cactus"]
+		var built: bool = kind != KIND_PLANT or shape in ["grass", "reed", "fern", "flower", "shrub", "cactus", "mushroom"]
 		var near_meshes: Array = []
 		var far_meshes: Array = []
 
@@ -566,7 +566,7 @@ func _setup_entry(entry: Dictionary) -> bool:
 	_display[int(entry["id"])] = str(entry.get("display", entry.get("name", "")))
 	var kind: int = KINDS.find(str(entry["kind"]))
 	var shape: String = str(entry["shape"])
-	var built: bool = kind != KIND_PLANT or shape in ["grass", "reed", "fern", "flower", "shrub", "cactus"]
+	var built: bool = kind != KIND_PLANT or shape in ["grass", "reed", "fern", "flower", "shrub", "cactus", "mushroom"]
 	# The models come from the worker (_models_task); wait for this species' turn.
 	_models_mutex.lock()
 	var models: Array = _models_ready.get(int(entry["id"]), [])
@@ -1983,6 +1983,9 @@ static func _plant_tint(entry: Dictionary, c: Array) -> Color:
 
 	if shape == "flower":
 		return base * 1.9
+
+	if shape == "mushroom":
+		return Color(1.0, 1.0, 1.0)   # modelled with its own colours (tree_builder MUSHROOM_LOOKS)
 
 	return _natural(base) * 1.5
 
