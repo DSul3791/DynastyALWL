@@ -8,9 +8,6 @@ Note: 6. Optional: place a timber prop near the roof before the time runs out. T
 Note: 7. Take a picture of the shaking and dust. Write in Notes what happened, yes or no.
 [test]
 
-## island-slope | Does loose soil and sand slope away under water while rock and stone hold their shape (so a sand island needs rock edges)?
-[check]
-
 ## island-pier | Can you build piers and timber posts out over the water piece by piece, like Valheim?
 [check]
 
