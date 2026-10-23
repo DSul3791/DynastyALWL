@@ -8,9 +8,6 @@ Note: 6. Optional: place a timber prop near the roof before the time runs out. T
 Note: 7. Take a picture of the shaking and dust. Write in Notes what happened, yes or no.
 [test]
 
-## sea-source | Is the sea an endless source at sea level, so a pit dug below sea level and connected to the sea fills to sea level (trenches flood, harbours and canals possible)?
-[check]
-
 ## sea-feedcap | Should the sea feed a pit at most 50 m3/s per connection, so a huge pit fills over minutes instead of instantly (a tunable number)?
 [check]
 
