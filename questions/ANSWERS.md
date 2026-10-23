@@ -1122,3 +1122,7 @@ Answered: 2026-10-23 10:11 UTC
 Answer: No: No, there’s only one type of log. There is no pack log. The log in your backpack is just symbolic of the log on your shoulder. They are connected. If you dropped the log out of your shoulder, the pack log is gone too.
 Answered: 2026-10-23 10:13 UTC
 
+## axe-wear-chop | The axe wears once for each log chop and once for each split at the chopping block?
+Answer: Yes
+Answered: 2026-10-23 10:13 UTC
+
