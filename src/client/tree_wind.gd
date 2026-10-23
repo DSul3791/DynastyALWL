@@ -10,11 +10,16 @@ extends Node
 # there are of that kind and the season. Standing under a canopy makes them a little louder. Nothing
 # plays in open country; Low plays only the loudest one.
 #
+# Directional (Dave 2026-10-23): each loop is a positional player sitting at the middle of the trees of its kind (conifers for the pine
+# loop, broadleaf trees for the others) found by the scan, so a tree line on your left sounds on your left and a forest all around
+# you sounds all around. The positions change only when a scan ends.
+#
 # Season weights (spring and summer leaves, autumn dry leaves, winter bare branches) come from the
 # ambient layer's conditions["season"]. Sounds: generated in assets/audio/treewind/ (make_treewind.py),
 # recordings in assets/audio/recorded/treewind/ win.
 
 const SoundStage := preload("res://src/client/sound_stage.gd")
+const Sound3D := preload("res://src/client/sound_3d.gd")
 const GENERATED_DIR := "res://assets/audio/treewind/"
 const RECORDED_DIR := "res://assets/audio/recorded/treewind/"
 
@@ -38,7 +43,10 @@ var summary: String = ""
 var loops_playing: int = 0
 
 var _stage                              # SoundStage (wind_strength, season, flora, tier)
-var _players: Dictionary = {}           # loop name -> AudioStreamPlayer
+var _players: Dictionary = {}           # loop name -> AudioStreamPlayer3D
+var _pos_sum: Dictionary = {"conifer": Vector2.ZERO, "broadleaf": Vector2.ZERO}   # nearness-weighted offsets from _scan_origin, this scan
+var _scan_origin: Vector3 = Vector3.ZERO
+var _centre: Dictionary = {"conifer": Vector3.ZERO, "broadleaf": Vector3.ZERO}    # world point of each kind's stand (the player itself until a scan finds one)
 var _streams: Dictionary = {}
 var _density: Dictionary = {"conifer": 0.0, "broadleaf": 0.0}      # 0 to 1 (smoothed)
 var _target: Dictionary = {"conifer": 0.0, "broadleaf": 0.0}
@@ -57,15 +65,13 @@ func setup(stage) -> void:
 			forced_season = arg.get_slice("=", 1)
 
 	for sound_name in LOOPS:
-		var player: AudioStreamPlayer = AudioStreamPlayer.new()
-		player.bus = "Wind"
+		var player: AudioStreamPlayer3D = Sound3D.make(self, "Wind", 12.0, 0.0)
 		player.volume_db = -80.0
 		var list: Array = _variants("treewind_" + sound_name)
 
 		if not list.is_empty():
 			player.stream = list[0]
 
-		add_child(player)
 		_players[sound_name] = player
 
 
@@ -103,7 +109,7 @@ func update(delta: float, body: CharacterBody3D) -> void:
 	loops_playing = 0
 
 	for sound_name in LOOPS:
-		var player: AudioStreamPlayer = _players[sound_name]
+		var player: AudioStreamPlayer3D = _players[sound_name]
 		var amount: float = float(want[sound_name]) * wind
 		var target: float = BASE_DB + 20.0 * log(maxf(amount, 0.001)) / log(10.0) + CANOPY_DB * under if amount > 0.01 else -80.0
 
@@ -141,6 +147,8 @@ func _start_scan() -> void:
 		return
 
 	_sum = {"conifer": 0.0, "broadleaf": 0.0}
+	_pos_sum = {"conifer": Vector2.ZERO, "broadleaf": Vector2.ZERO}
+	_scan_origin = _here
 	var chunk_m: float = float(flora.chunk_m)
 	var cx: int = int(floor(_here.x / chunk_m))
 	var cz: int = int(floor(_here.z / chunk_m))
@@ -186,7 +194,9 @@ func _read_some() -> void:
 				continue
 
 			var key: String = "broadleaf" if bool(info.get("hardwood", false)) else "conifer"
-			_sum[key] = float(_sum[key]) + 1.0 - d / RADIUS_M
+			var near: float = 1.0 - d / RADIUS_M
+			_sum[key] = float(_sum[key]) + near
+			_pos_sum[key] = (_pos_sum[key] as Vector2) + Vector2(positions[k].x - _scan_origin.x, positions[k].z - _scan_origin.z) * near
 
 		budget -= end - n
 		job[1] = end
@@ -197,6 +207,22 @@ func _read_some() -> void:
 	if _queue.is_empty():
 		for key in _sum:
 			_target[key] = clampf(float(_sum[key]) / DENSE, 0.0, 1.0)
+			var middle: Vector2 = (_pos_sum[key] as Vector2) / float(_sum[key]) if float(_sum[key]) > 0.001 else Vector2.ZERO
+			_centre[key] = Vector3(_scan_origin.x + middle.x, _scan_origin.y + 2.0, _scan_origin.z + middle.y)
+
+		for sound_name in LOOPS:
+			(_players[sound_name] as AudioStreamPlayer3D).global_position = _centre["conifer" if sound_name == "pine" else "broadleaf"]
+
+
+# For the rig and the HUD sound line: where each loop sits, how far, and the pan it is given (-1 left to +1 right) for the listener.
+func positions_text(listener: Transform3D) -> String:
+	var parts: PackedStringArray = PackedStringArray()
+
+	for sound_name in LOOPS:
+		var at: Vector3 = (_players[sound_name] as AudioStreamPlayer3D).global_position
+		parts.append("%s at %.0f,%.0f dist %.0f m pan %+.2f" % [sound_name, at.x, at.z, listener.origin.distance_to(at), Sound3D.pan_of(listener, at)])
+
+	return "; ".join(parts)
 
 
 func _variants(sound_name: String) -> Array:
