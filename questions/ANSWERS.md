@@ -1290,3 +1290,7 @@ Answered: 2026-10-23 21:24 UTC
 Answer: Yes
 Answered: 2026-10-23 21:24 UTC
 
+## cost-floor-brace | Stone floors (cobblestone and mason) also take 1 log, split in half, as sills under the floor edge?
+Answer: No: Stone floors don’t need a sill edge
+Answered: 2026-10-23 21:25 UTC
+
