@@ -2186,12 +2186,60 @@ const RASPBERRY_CANE := Color(0.62, 0.50, 0.34)
 const RASPBERRY_BERRY := Color(0.82, 0.06, 0.14)
 const RASPBERRY_UNRIPE := Color(0.85, 0.75, 0.25)
 const SHRUB_LOOKS := {
-	"raspberry": {"canes": [10, 13], "base": 0.25, "arch": 0.2, "reach": 1.2, "sprays": 5, "rate": 0.55, "cluster": 0.07, "cane": RASPBERRY_CANE, "leaf": 0.55, "fruit": RASPBERRY_BERRY, "unripe": RASPBERRY_UNRIPE, "flower": Color(1.0, 0.98, 0.95), "thorns": true},
-	"bramble": {"canes": [5, 7], "arch": 1.3, "reach": 1.7, "sprays": 7, "rate": 0.5, "cluster": 0.08, "cane": Color(0.50, 0.30, 0.30), "leaf": 0.6, "fruit": Color(0.35, 0.10, 0.55), "unripe": Color(1.0, 0.25, 0.25), "flower": Color(1.0, 0.9, 0.9), "thorns": true},
+	"raspberry": {"canes": [8, 10], "base": 0.25, "arch": 0.2, "reach": 1.2, "sprays": 5, "rate": 0.55, "cluster": 0.07, "cane": RASPBERRY_CANE, "leaf": 0.55, "fruit": RASPBERRY_BERRY, "unripe": RASPBERRY_UNRIPE, "flower": Color(1.0, 0.98, 0.95), "thorns": true},
+	"bramble": {"canes": [5, 7], "arch": 1.3, "reach": 1.7, "sprays": 11, "rate": 0.5, "cluster": 0.08, "cane": Color(0.50, 0.30, 0.30), "leaf": 0.5, "fruit": Color(0.35, 0.10, 0.55), "unripe": Color(1.0, 0.25, 0.25), "flower": Color(1.0, 0.9, 0.9), "thorns": true},
 	"wild_rose": {"canes": [8, 9], "sprays": 5, "arch": 0.6, "reach": 1.0, "rate": 0.12, "cluster": 0.045, "cane": Color(0.45, 0.30, 0.22), "leaf": 0.65, "fruit": Color(1.0, 0.18, 0.1), "unripe": Color(1.0, 0.55, 0.3), "flower": null, "blossom": Color(1.0, 0.25, 0.55), "thorns": true},
 	"blackthorn": {"canes": [14, 18], "base": 0.2, "arch": 0.55, "reach": 1.4, "rate": 0.12, "cane": Color(0.20, 0.17, 0.15), "leaf": 0.32, "fruit": Color(0.4, 0.45, 0.9), "unripe": Color(0.5, 0.6, 0.5), "flower": null, "thorns": true},
-	"blueberry": {"canes": [12, 14], "sprays": 5, "arch": 0.1, "reach": 0.7, "rate": 0.5, "cluster": 0.06, "cane": Color(0.50, 0.38, 0.28), "leaf": 0.4, "fruit": Color(0.30, 0.38, 0.85), "unripe": Color(0.75, 0.9, 0.55), "flower": null, "thorns": false},
+	"blueberry": {"canes": [9, 11], "sprays": 5, "arch": 0.1, "reach": 0.7, "rate": 0.5, "cluster": 0.06, "cane": Color(0.50, 0.38, 0.28), "leaf": 0.4, "fruit": Color(0.30, 0.38, 0.85), "unripe": Color(0.75, 0.9, 0.55), "flower": null, "thorns": false},
 }
+
+
+# A shrub-only leaf spray (Dave 2026-10-23: leaves were round puffs): two narrow cards in a shallow V pointing along `along`, like a
+# leaf or a short compound leaf on its stalk. `size` is the spray length. (Trees keep _cluster/_clump.)
+static func _leaf_spray(acc: Acc, rng: RandomNumberGenerator, at: Vector3, along: Vector3, size: float, shade: float) -> void:
+	var dir: Vector3 = along.normalized() if along.length() > 0.01 else Vector3.UP
+	var side: Vector3 = dir.cross(Vector3.UP)
+	side = side.normalized() if side.length() > 0.05 else Vector3.RIGHT
+	var lift: Vector3 = dir.cross(side).normalized()
+	var color: Color = Color(shade, shade, shade, rng.randf_range(0.5, 1.0))
+
+	for k in range(2):
+		var flip: float = -1.0 if k == 0 else 1.0
+		var right: Vector3 = (side * cos(0.55) + lift * flip * sin(0.55)).normalized()
+		var normal: Vector3 = right.cross(dir).normalized()
+
+		if normal.y < 0.0:
+			normal = -normal
+
+		acc.card(at + dir * size * 0.5, right, dir, size * 0.34, size * 0.5, normal, color)
+
+
+# Five flat rounded petals round a yellow centre, lying a little cupped (wild rose); `size` is the petal length.
+static func _flat_blossom(acc: Acc, rng: RandomNumberGenerator, at: Vector3, size: float, petal: Color) -> void:
+	var turn: float = rng.randf() * TAU
+
+	for k in range(5):
+		var a: float = turn + TAU * float(k) / 5.0
+		var out: Vector3 = Vector3(cos(a), 0.0, sin(a))
+		var side: Vector3 = Vector3(-out.z, 0.0, out.x)
+		var rim: Vector3 = at + out * size + Vector3(0.0, size * 0.25, 0.0)
+		var first: int = acc.v.size()
+		var up: Vector3 = Vector3.UP
+		acc.vert(at, up, Vector2(0.5, 0.5), petal)
+		acc.vert(at + out * size * 0.55 + side * size * 0.5 + Vector3(0.0, size * 0.1, 0.0), up, Vector2(0.5, 0.5), petal)
+		acc.vert(rim, up, Vector2(0.5, 0.5), petal)
+		acc.vert(at + out * size * 0.55 - side * size * 0.5 + Vector3(0.0, size * 0.1, 0.0), up, Vector2(0.5, 0.5), petal)
+		acc.tri(first, first + 1, first + 2)
+		acc.tri(first, first + 2, first + 3)
+		acc.tri(first, first + 2, first + 1)
+		acc.tri(first, first + 3, first + 2)
+
+	_bead(acc, at + Vector3(0.0, size * 0.12, 0.0), Vector3(size * 0.16, size * 0.1, size * 0.16), Color(1.0, 0.85, 0.2))
+
+
+static func _bezier(p: Array, t: float) -> Vector3:
+	var u: float = 1.0 - t
+	return (p[0] as Vector3) * u * u * u + (p[1] as Vector3) * 3.0 * u * u * t + (p[2] as Vector3) * 3.0 * u * t * t + (p[3] as Vector3) * t * t * t
 
 
 static func _cane_shrub(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
@@ -2212,16 +2260,21 @@ static func _cane_shrub(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 		var p1: Vector3 = out * reach * (0.1 + 0.1 * arch) + Vector3(0.0, top_y * 0.7, 0.0)
 		var p2: Vector3 = out * reach * (0.25 + 0.35 * arch) + Vector3(0.0, top_y, 0.0)
 		var p3: Vector3 = out * reach * (0.3 + 0.7 * arch) + Vector3(0.0, top_y * (1.0 - 0.28 * arch), 0.0)
-		var pts: Array = [p0, p1, p2, p3]
+		var ctrl: Array = [p0, p1, p2, p3]
+		var segs: int = 3 if far else 6
+		var pts: Array = []
 
-		for m in range(3):
-			_branch(bark, pts[m], pts[m + 1], r * (1.3 - 0.3 * m), r * (1.0 - 0.3 * m), cane_color, 4 if far else 5)
+		for m in range(segs + 1):
+			pts.append(_bezier(ctrl, float(m) / float(segs)))
+
+		for m in range(segs):
+			var taper: float = float(m) / float(segs)
+			_branch(bark, pts[m], pts[m + 1], r * (1.3 - 0.8 * taper), r * (1.3 - 0.8 * (taper + 1.0 / float(segs))), cane_color, 4 if far else 5)
 
 		if look["thorns"] and not far:
 			for m in range(9):
 				var t: float = rng.randf_range(0.1, 1.0)
-				var seg: int = clampi(int(t * 3.0), 0, 2)
-				var on: Vector3 = (pts[seg] as Vector3).lerp(pts[seg + 1], t * 3.0 - float(seg))
+				var on: Vector3 = _bezier(ctrl, t)
 				var spike: Vector3 = Vector3(rng.randfn(), rng.randf_range(-0.3, 0.6), rng.randfn()).normalized()
 				_branch(bark, on, on + spike * 0.1 * crown, r * 0.5, r * 0.05, cane_color * 0.8, 3)
 
@@ -2231,12 +2284,20 @@ static func _cane_shrub(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 
 		for m in range(sprays):
 			var t: float = 0.2 + 0.8 * float(m) / float(sprays - 1)
-			var seg: int = clampi(int(t * 3.0), 0, 2)
-			var at: Vector3 = (pts[seg] as Vector3).lerp(pts[seg + 1], t * 3.0 - float(seg))
-			_clump(leaves, rng, at, Vector3(0.0, at.y - crown * 0.5, 0.0), leaf_size * rng.randf_range(0.85, 1.2), rng.randf_range(0.85, 1.05), 2 if far else 3)
+			var at: Vector3 = _bezier(ctrl, t)
+			var tangent: Vector3 = (_bezier(ctrl, minf(t + 0.05, 1.0)) - _bezier(ctrl, maxf(t - 0.05, 0.0))).normalized()
+			var turn_a: float = rng.randf_range(0.7, 1.1)
+			var length: float = leaf_size * 1.3 * rng.randf_range(0.85, 1.2)
+			var shade: float = rng.randf_range(0.85, 1.05)
+			# A spray each side of the cane, drooping a little, and one at the tip.
+			_leaf_spray(leaves, rng, at, tangent.rotated(Vector3.UP, turn_a) + Vector3(0.0, -0.2, 0.0), length, shade)
+			_leaf_spray(leaves, rng, at, tangent.rotated(Vector3.UP, -turn_a) + Vector3(0.0, -0.2, 0.0), length, shade)
+
+			if m == sprays - 1 or (not far and rng.randf() < 0.4):
+				_leaf_spray(leaves, rng, at, tangent + Vector3(0.0, -0.1, 0.0), length, shade)
 
 			if not far and look.has("blossom") and rng.randf() < 0.7:
-				_blossom(bark, rng, at + Vector3(0.0, leaf_size * 0.55, 0.0) + out * leaf_size * 0.4, crown * 0.09, look["blossom"])
+				_flat_blossom(bark, rng, at + Vector3(0.0, leaf_size * 0.3, 0.0) + out * leaf_size * 0.3, crown * 0.028, look["blossom"])
 
 			if far or rng.randf() > float(look.get("rate", 0.45)):
 				continue
@@ -2408,9 +2469,9 @@ const BLOSSOM_WHITE := Color(1.0, 1.0, 0.98)
 static func _blackthorn(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool, season: String) -> void:
 	# Budget (Steve 2026-10-23): near model at most about 4,000 vertices, far model about 800. Spines are single triangles.
 	var bloom: bool = season == "spring"
-	var stems: int = 5 if far else rng.randi_range(10, 12)
+	var stems: int = 5 if far else rng.randi_range(11, 13)
 	var az: float = rng.randf() * TAU
-	var r0: float = maxf(h * 0.0028, 0.008)
+	var r0: float = maxf(h * 0.005, 0.012)
 
 	for k in range(stems):
 		az += TAU / float(stems) + rng.randf_range(-0.3, 0.3)
@@ -2449,7 +2510,7 @@ static func _blackthorn(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: f
 				if not far:
 					_blossom(bark, rng, n, crown * 0.04, BLOSSOM_WHITE)
 			else:
-				_clump(leaves, rng, n, Vector3(0.0, n.y - crown * 0.4, 0.0), crown * 0.055, shade * 1.05, 2)
+				_leaf_spray(leaves, rng, n, Vector3(rng.randfn(), rng.randf_range(-0.3, 0.5), rng.randfn()), crown * 0.075, shade * 1.05)
 
 				if not far and rng.randf() < 0.22:
 					_cluster(bark, rng, n + Vector3(0.0, -crown * 0.04, 0.0), crown * 0.04, SLOE_COLOR, false, rng.randi_range(3, 4))
