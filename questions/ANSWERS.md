@@ -1014,3 +1014,7 @@ Answered: 2026-10-23 04:05 UTC
 Answer: Yes: Worked fine. The switch turned green and red, and the VSC turned on and off.
 Answered: 2026-10-23 04:07 UTC
 
+## sound-fire | Please test Esc > Settings > Sound test: fire. Look for: each step is heard, from embers to the hiss when it is put out.
+Answer: Yes: The crackling fire sounds good
+Answered: 2026-10-23 04:09 UTC
+
