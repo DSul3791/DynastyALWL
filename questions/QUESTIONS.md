@@ -7,8 +7,5 @@ Note: 5. Check a natural cave does NOT collapse. Check the warning gives you at 
 Note: 6. Answer Yes if all of that worked. Answer No and tell me which step broke.
 [check]
 
-## esc-menu-8 | Esc menu: should Debug details (F3) move from Settings into Admin?
-[check]
-
 ## esc-menu-9 | Esc menu: should VSync and the tunnel collapse switch be green On and red Off buttons?
 [check]
