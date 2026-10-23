@@ -60,6 +60,7 @@ var _spin_next_msec: int = 0
 var _selected: bool = false
 var flora_names: PackedStringArray = PackedStringArray()    # --shot-flora=raspberry,bramble: one plant of each in a row with name tags
 var _flora_t: int = 0
+var flora_lift_m: float = 0.12     # --shot-flora: the row stands this far above the raycast ground (the drawn smooth ground can lie a little higher and hide a 0.2 m flower)
 var summer: bool = false      # --shot-summer: the plant row in its species green (the game draws every hardwood in autumn colours)
 var side_dist: float = 2.8      # --shot-dist=M: third-person camera distance; under 2 m it aims at the held item
 var side_sign: float = 1.0      # 1 = camera on the body's left side, -1 = right side (--shot-right)
@@ -413,7 +414,7 @@ func _show_flora(now: int) -> void:
 		var range_m: Variant = entry.get("height_m", 1.0)
 		var h: float = (float(range_m[0]) + float(range_m[1])) * 0.5 if range_m is Array else float(range_m)
 		items["ids"].append((int(entry["id"]) << 16) | (i + 1))   # species id << 16 | a number unique in the chunk (the flora view reads ids >> 16)
-		items["positions"].append(Vector3(x, g, z))
+		items["positions"].append(Vector3(x, g + flora_lift_m, z))
 		items["heights"].append(h)
 		items["yaws"].append(0.0)
 		var tag: Label3D = Label3D.new()
