@@ -7,11 +7,6 @@
 
 
 
-## fix-inbox | Should each thread get a short inbox file that the coordinator and Tyler write only the changes into, instead of long relays?
-Note: Threads cannot message each other, so today everything goes through two relays.
-Note: Tyler recommends Yes because it cuts repeated text and token use, but we will check that threads read it every turn.
-[check]
-
 ## fix-slim-reading | Should we shrink what every thread reads at the start: a short first-jobs block at the top of HANDOFF.md (40 lines at most), old sections archived, and only the rules that apply to each thread?
 Note: Today there are 83 documents and 46 rules in the best-practice file.
 Note: Tyler recommends Yes because every thread reads this at every start, so a shorter version saves the most.
