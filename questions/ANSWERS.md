@@ -1338,3 +1338,7 @@ Answered: 2026-10-23 21:52 UTC
 Answer: Yes: The thorns need to be about 4 inches long. The berries need to be about four times bigger than a normal blueberry and it needs to have a lot more leaves on it. They go all the way to the ground and fill the inside.
 Answered: 2026-10-23 21:52 UTC
 
+## blackthorn-real-size | Make blackthorn berries about 1.5 cm and thorns 2 to 5 cm (real size)?
+Answer: Yes
+Answered: 2026-10-23 21:52 UTC
+
