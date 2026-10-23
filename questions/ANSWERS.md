@@ -768,3 +768,7 @@ Answered: 2026-10-23 00:52 UTC
 Answer: Yes
 Answered: 2026-10-23 00:52 UTC
 
+## cost-27 | Wood pillar: 4 logs?
+Answer: No: One log. Also, when a log lays on the ground, it should be about 8 feet long whatever that is in meters.
+Answered: 2026-10-23 00:53 UTC
+
