@@ -648,3 +648,7 @@ Answered: 2026-10-23 00:43 UTC
 Answer: Yes
 Answered: 2026-10-23 00:43 UTC
 
+## cost-4 | Wall, Log: 8 logs and 10 twine?
+Answer: Yes
+Answered: 2026-10-23 00:44 UTC
+
