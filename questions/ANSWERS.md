@@ -780,3 +780,7 @@ Answered: 2026-10-23 00:53 UTC
 Answer: No: All braces should be made up of logs and wooden pins, which is an old style of construction so for combining things like log buildings or log beams, you can use large posts or logs, and you can use large wooden pins and dowels, and these wood resist rotting. Also, we should have two types of each so we can have them made from regular logs or tar soaked logs, and the tar soak logs Wood basically never degrade.
 Answered: 2026-10-23 00:55 UTC
 
+## cost-29 | Brace 1.5 m: 1 log and 1 twine?
+Answer: No: All braces should be made up of logs and wooden pins, which is an old style of construction so for combining things like log buildings or log beams, you can use large posts or logs, and you can use large wooden pins and dowels, and these wood resist rotting. Also, we should have two types of each so we can have them made from regular logs or tar soaked logs, and the tar soak logs Wood basically never degrade.
+Answered: 2026-10-23 00:55 UTC
+
