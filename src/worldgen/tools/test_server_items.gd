@@ -279,18 +279,18 @@ func _init() -> void:
 	check(not g.gather(1, "raspberry", "shrub", "0,0,200", 200, Vector3(501.0, 70.0, 500.0), 2.0) and not g.plant_stays, "a bare bush gives nothing the same season")
 	check(g.stripped_ids("0,0").has(200) and g.stripped_ids("0,1").is_empty(), "the bare bush is listed for its chunk")
 	g.save()
-	var again = make("user://test_server_items_b")
-	again.season_stamp = func(): return stamp[0]
-	check(again.stripped_ids("0,0").has(200), "the bare state survives a restart")
+	var again_b = make("user://test_server_items_b")
+	again_b.season_stamp = func(): return stamp[0]
+	check(again_b.stripped_ids("0,0").has(200), "the bare state survives a restart")
 	stamp[0] = 11
-	check(again.stripped_ids("0,0").is_empty(), "a new season clears it")
+	check(again_b.stripped_ids("0,0").is_empty(), "a new season clears it")
 	g.season_now = func(): return "winter"
 	check(not g.gather(1, "raspberry", "shrub", "0,0,201", 201, Vector3(501.0, 70.0, 500.0), 2.0), "out of season gives nothing")
 	# Picking never gives wood, canes or leaves from a berry species, in any season (Dave 2026-10-23: sticks from raspberries).
 	var wood_ids: Array = ["stick", "thorny_canes", "leaves", "raspberry_leaves", "log", "twine"]
-	var wood_before: Dictionary = {}
+	var wood_start: Dictionary = {}
 	for wood_id in wood_ids:
-		wood_before[wood_id] = g.inventory_of(1).count_of(g.table.number_of(wood_id))
+		wood_start[wood_id] = g.inventory_of(1).count_of(g.table.number_of(wood_id))
 
 	var fresh: int = 300
 	for species_name in (g._drops.get("berry_yield", {}) as Dictionary).keys():
@@ -302,7 +302,7 @@ func _init() -> void:
 
 	var gave_wood: bool = false
 	for wood_id in wood_ids:
-		if g.table.number_of(wood_id) != 0 and g.inventory_of(1).count_of(g.table.number_of(wood_id)) != int(wood_before[wood_id]):
+		if g.table.number_of(wood_id) != 0 and g.inventory_of(1).count_of(g.table.number_of(wood_id)) != int(wood_start[wood_id]):
 			gave_wood = true
 
 	check(not gave_wood, "a berry bush never gives sticks, canes, leaves or wood in any season")
