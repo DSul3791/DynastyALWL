@@ -213,6 +213,20 @@ func _process(_delta: float) -> void:
 	if dig_steps > 0 and now - client.connected_msec > 12000:
 		if _dig_i < dig_steps:
 			if now >= _dig_next_msec:
+				# The spade reaches 3 m: as the hole deepens the ray runs out, so a player looks steeper (a real player would too).
+				var eye: Vector3 = client.camera.global_position
+				var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(eye, eye - client.camera.global_transform.basis.z * 3.0)
+				query.exclude = [client.body.get_rid()]
+				var hit: Dictionary = client.camera.get_world_3d().direct_space_state.intersect_ray(query)
+
+				if hit.is_empty() and client.pitch > deg_to_rad(-88.0):
+					client.pitch = maxf(client.pitch - deg_to_rad(6.0), deg_to_rad(-88.0))
+					client.camera.rotation.x = client.pitch
+					print("shot runner: dig %d: nothing in reach, looking steeper (pitch %.0f)" % [_dig_i, rad_to_deg(client.pitch)])
+					_dig_next_msec = now + 300
+					return
+
+				print("shot runner: dig %d: pitch %.0f, ray hit %s" % [_dig_i, rad_to_deg(client.pitch), str(hit["position"]) if not hit.is_empty() else "none"])
 				client.held._dig_here()
 				_dig_i += 1
 				_dig_next_msec = now + 900
@@ -340,7 +354,8 @@ func _print_state() -> void:
 
 		var floor_y: float = _ground(at.x, at.z)
 		var drawn_y: float = (it["node"] as Node3D).position.y - 0.12      # where the node is drawn (the client snaps loose items to the ground); loose nodes sit 0.12 above their point
-		rows.append("%s x%d server y %.2f drawn y %.2f ground %s gap %s dist %.1f" % [client.items.table.id_of(int(it["number"])), int(it["count"]), at.y, drawn_y, "?" if is_nan(floor_y) else "%.2f" % floor_y, "?" if is_nan(floor_y) else "%.2f" % (drawn_y - floor_y), Vector2(at.x - p.x, at.z - p.z).length()])
+		var phys_y: float = client._ground_below(at + Vector3(0.0, 0.5, 0.0))      # what the client snaps to (the collision ground)
+		rows.append("%s x%d server y %.2f drawn y %.2f collision ground %.2f voxel ground %s gap %s dist %.1f" % [client.items.table.id_of(int(it["number"])), int(it["count"]), at.y, drawn_y, phys_y, "?" if is_nan(floor_y) else "%.2f" % floor_y, "?" if is_nan(floor_y) else "%.2f" % (drawn_y - floor_y), Vector2(at.x - p.x, at.z - p.z).length()])
 
 	print("shot runner: state: expect \"%s\"; player %s pitch %.0f; %d loose items within 6 m: %s" % [expect, str(p), rad_to_deg(client.pitch), rows.size(), "; ".join(rows)])
 
