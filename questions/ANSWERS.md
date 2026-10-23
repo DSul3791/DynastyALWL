@@ -984,3 +984,7 @@ Answered: 2026-10-23 01:57 UTC
 Answer: No: Tar, you get from bitumen . Hinges you get 20 from one iron ingot. Wooden pins you probably get 20 from one lumber. But other than that, everything else is correct.
 Answered: 2026-10-23 02:06 UTC
 
+## lake-min-size | Should a hollow only count as a lake when it is at least 3 m deep and about 2,500 square metres (smaller hollows are filled in and hold no water)?
+Answer: No: This is a good question and I’m gonna need Tyler to look it over and make suggestions because as long as there’s enough to rain above it to feed water into it it should be a lake or a pond or hold water in the real world anywhere that can hold water and doesn’t have a runoff will hold water. If we end up with lakes where we don’t want them, then we have to change the generator and how it makes the terrain.
+Answered: 2026-10-23 02:08 UTC
+
