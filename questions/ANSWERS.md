@@ -1330,3 +1330,7 @@ Answered: 2026-10-23 21:51 UTC
 Answer: Yes: It is not full. It needs to be thicker in the middle with the roses all over the top and down both sides and the leaves have to go all over the top around to fill the middle and go down the side right to the ground.
 Answered: 2026-10-23 21:52 UTC
 
+## shrub-blackthorn-4 | Blackthorn: does it look like a real blackthorn (dark thorny twigs, small leaves, blue-black berries)?
+Answer: Yes: The thorns need to be about 4 inches long. The berries need to be about four times bigger than a normal blueberry and it needs to have a lot more leaves on it. They go all the way to the ground and fill the inside.
+Answered: 2026-10-23 21:52 UTC
+
