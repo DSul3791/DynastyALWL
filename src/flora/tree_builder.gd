@@ -2186,7 +2186,7 @@ const RASPBERRY_CANE := Color(0.62, 0.50, 0.34)
 const RASPBERRY_BERRY := Color(0.82, 0.06, 0.14)
 const RASPBERRY_UNRIPE := Color(0.85, 0.75, 0.25)
 const SHRUB_LOOKS := {
-	"raspberry": {"fill": 10, "canes": [12, 14], "segs": 4, "thorn_n": 3, "base": 0.3, "arch": 0.25, "reach": 1.3, "sprays": 8, "rate": 0.4, "cluster": 0.07, "cane": RASPBERRY_CANE, "leaf": 0.55, "fruit": RASPBERRY_BERRY, "unripe": RASPBERRY_UNRIPE, "flower": Color(1.0, 0.98, 0.95), "thorns": true},
+	"raspberry": {"fill": 16, "canes": [12, 14], "segs": 4, "thorn_n": 3, "base": 0.3, "arch": 0.25, "reach": 1.3, "sprays": 8, "rate": 0.4, "cluster": 0.07, "cane": RASPBERRY_CANE, "leaf": 0.55, "fruit": RASPBERRY_BERRY, "unripe": RASPBERRY_UNRIPE, "flower": Color(1.0, 0.98, 0.95), "thorns": true},
 	"bramble": {"fill": 10, "canes": [10, 11], "segs": 4, "thorn_n": 2, "arch": 0.6, "reach": 1.0, "sprays": 10, "rate": 0.3, "cluster": 0.08, "cane": Color(0.50, 0.30, 0.30), "leaf": 0.8, "fruit": Color(0.35, 0.10, 0.55), "unripe": Color(1.0, 0.25, 0.25), "flower": Color(1.0, 0.9, 0.9), "thorns": true},
 	"wild_rose": {"fill": 14, "canes": [10, 11], "segs": 5, "thorn_n": 4, "sprays": 6, "arch": 0.35, "reach": 1.0, "rate": 0.12, "cluster": 0.045, "cane": Color(0.45, 0.30, 0.22), "leaf": 0.65, "fruit": Color(1.0, 0.18, 0.1), "unripe": Color(1.0, 0.55, 0.3), "flower": null, "blossom": Color(1.0, 0.25, 0.55), "thorns": true},
 	"blackthorn": {"canes": [14, 18], "base": 0.2, "arch": 0.55, "reach": 1.4, "rate": 0.12, "cane": Color(0.20, 0.17, 0.15), "leaf": 0.32, "fruit": Color(0.4, 0.45, 0.9), "unripe": Color(0.5, 0.6, 0.5), "flower": null, "thorns": true},
@@ -2314,7 +2314,7 @@ static func _cane_shrub(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 	if not far and look.has("fill"):
 		for k in range(int(look["fill"])):
 			var a: float = rng.randf() * TAU
-			var at: Vector3 = Vector3(cos(a), rng.randf_range(0.3, 0.85) * h, sin(a)) * Vector3(crown * 0.3, 1.0, crown * 0.3) * Vector3(sqrt(rng.randf()), 1.0, sqrt(rng.randf()))
+			var at: Vector3 = Vector3(cos(a), rng.randf_range(0.08, 0.85) * h, sin(a)) * Vector3(crown * 0.45, 1.0, crown * 0.45) * Vector3(sqrt(rng.randf()), 1.0, sqrt(rng.randf()))
 			var along: Vector3 = Vector3(rng.randfn() * 0.6, 1.0, rng.randfn() * 0.6)
 			_leaf_spray(leaves, rng, at, along, crown * float(look["leaf"]) * 0.45, rng.randf_range(0.85, 1.05))
 
