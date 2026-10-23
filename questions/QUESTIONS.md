@@ -2,10 +2,6 @@
 Image: questions/img/tiers_doors_r3.png
 [check]
 
-## door-handles | Are the door handles right: steel bar pulls, no knobs, no handle on the basic twine door?
-Image: questions/img/tiers_doors_r3.png
-[check]
-
 ## door-steel-r3 | Is the steel and iron door right now: steel panels, steel handle, no black crossband?
 Image: questions/img/tiers_doors_r3.png
 [check]
