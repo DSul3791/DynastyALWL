@@ -119,6 +119,7 @@ func build(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, threshol
 	_along = along
 	_stamp(h, fill, flow, size, cell_m, threshold, rules)
 	_valleys(h, fill, flow, size, cell_m, rules)
+	_heads(h, fill, flow, size, cell_m, threshold, rules)
 
 
 func _stamp(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, threshold: float, rules: Dictionary) -> void:
@@ -280,6 +281,65 @@ func _valleys(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, rules
 				var neighbor: int = nr * size + nc
 				var wanted: float = floor_level + side_slope * maxf(distance - half_m, 0.0)
 				var weight: float = (1.0 - smoothstep(0.5, 1.0, distance / rim_m)) * strength
+				var carved: float = maxf(lerpf(cut[neighbor], minf(cut[neighbor], wanted), weight), h[neighbor] - max_cut_m)
+				cut[neighbor] = minf(cut[neighbor], carved)
+
+	bed = cut
+
+
+# Stage 3c: river heads. A real stream begins in a hollow (headward erosion cuts an amphitheatre into the slope), not on a
+# terrace edge. Every channel cell with no channel cell above it gets a spoon-shaped hollow graded to its water level, rising
+# `head_side_slope` per metre out to `head_radius_m`. Nothing is placed: the ground is shaped and the water finds the hollow.
+func _heads(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, threshold: float, rules: Dictionary) -> void:
+	var radius_m: float = float(rules.get("head_radius_m", 56.0))
+	var side_slope: float = float(rules.get("head_side_slope", 0.12))
+	var max_cut_m: float = float(rules.get("head_cut_max_m", 8.0))
+	var edge: int = 20   # heads this close to the frame edge may have an upstream outside it
+	var has_up: PackedByteArray = PackedByteArray()
+	has_up.resize(size * size)
+
+	for index in range(size * size):
+		var next: int = fill.receiver[index]
+
+		if next >= 0 and flow.discharge[index] >= threshold and flow.discharge[next] >= threshold:
+			has_up[next] = 1
+
+	var cut: PackedFloat32Array = bed.duplicate()
+	var reach: int = int(ceil(radius_m / cell_m))
+
+	for index in fill.order:
+		if flow.discharge[index] < threshold or has_up[index] == 1 or is_nan(_centre_surface[index]):
+			continue
+
+		@warning_ignore("integer_division")
+		var row: int = index / size
+		var column: int = index % size
+
+		if row < edge or column < edge or row >= size - edge or column >= size - edge:
+			continue
+
+		var floor_level: float = _centre_surface[index] + VALLEY_FREEBOARD_M
+
+		for dz in range(-reach, reach + 1):
+			var nr: int = row + dz
+
+			if nr < 0 or nr >= size:
+				continue
+
+			for dc in range(-reach, reach + 1):
+				var nc: int = column + dc
+
+				if nc < 0 or nc >= size:
+					continue
+
+				var distance: float = sqrt(float(dz * dz + dc * dc)) * cell_m
+
+				if distance > radius_m:
+					continue
+
+				var neighbor: int = nr * size + nc
+				var wanted: float = floor_level + side_slope * distance
+				var weight: float = 1.0 - smoothstep(0.5, 1.0, distance / radius_m)
 				var carved: float = maxf(lerpf(cut[neighbor], minf(cut[neighbor], wanted), weight), h[neighbor] - max_cut_m)
 				cut[neighbor] = minf(cut[neighbor], carved)
 
