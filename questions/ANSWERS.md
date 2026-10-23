@@ -1134,3 +1134,7 @@ Answered: 2026-10-23 10:18 UTC
 Answer: No: Logs are named after their trees and Tyler could research which trees are best for making white stuff. And this will affect which are good at making boards or different types of boards of which are best for firewood or for making pillars usually big round soft wood or cedar are used for making pillars or beams that have Tyler researched this also we should not make our system to overly complicated but we do not watch it to simple
 Answered: 2026-10-23 10:21 UTC
 
+## species-uses-3 | Hard woods (oak, walnut) take more axe wear to chop, so they feel valuable?
+Answer: No: They might be harder, but you don’t have to hit them as much because they are smaller
+Answered: 2026-10-23 10:22 UTC
+
