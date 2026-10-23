@@ -1190,3 +1190,7 @@ Answered: 2026-10-23 10:29 UTC
 Answer: No: You should be able to test this I am not at my computer
 Answered: 2026-10-23 10:29 UTC
 
+## keep-item-roll | Items roll a little when walked over
+Answer: Yes
+Answered: 2026-10-23 13:14 UTC
+
