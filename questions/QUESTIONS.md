@@ -44,11 +44,6 @@ Note: 2. Hold W to climb, then S to come down, Space to let go backwards.
 Note: 3. Climb to the top and hold W: you step onto the edge.
 [test]
 
-## beach-loud | Is the beach still too loud when you walk on it?
-Note: Kathleen already lowered sand steps by 3 dB. If the loud part is the waves, answer No and say so in Why not.
-Note: Tyler recommends Yes only if the steps are what you hear: she lowers sand steps another 3 dB, which is cheap and easy to undo.
-[check]
-
 ## offhand-items | Off-hand items: pick a torch, shield or similar from the hotbar and it goes in your left hand; pick it again and it is put away; hold B to block with it?
 Note: This works for a torch, a shield and any other item that can be held in the left hand.
 Note: Tyler checked: nothing in the game uses the B key today, so there is no clash.
