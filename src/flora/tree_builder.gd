@@ -2182,8 +2182,8 @@ const RASPBERRY_CANE := Color(0.62, 0.50, 0.34)
 const RASPBERRY_BERRY := Color(1.0, 0.16, 0.22)
 const RASPBERRY_UNRIPE := Color(0.95, 0.85, 0.35)
 const SHRUB_LOOKS := {
-	"raspberry": {"canes": [6, 9], "arch": 0.8, "reach": 1.0, "cane": RASPBERRY_CANE, "leaf": 1.0, "fruit": RASPBERRY_BERRY, "unripe": RASPBERRY_UNRIPE, "flower": null, "thorns": false},
-	"bramble": {"canes": [6, 9], "arch": 0.9, "reach": 1.0, "cane": Color(0.50, 0.30, 0.30), "leaf": 1.2, "fruit": Color(0.35, 0.10, 0.55), "unripe": Color(1.0, 0.25, 0.25), "flower": Color(1.0, 0.9, 0.9), "thorns": true},
+	"raspberry": {"canes": [10, 13], "base": 0.25, "arch": 0.2, "reach": 1.2, "sprays": 6, "rate": 0.55, "cluster": 0.07, "cane": RASPBERRY_CANE, "leaf": 0.55, "fruit": RASPBERRY_BERRY, "unripe": RASPBERRY_UNRIPE, "flower": null, "thorns": false},
+	"bramble": {"canes": [5, 7], "arch": 1.3, "reach": 1.7, "sprays": 7, "rate": 0.5, "cluster": 0.08, "cane": Color(0.50, 0.30, 0.30), "leaf": 0.6, "fruit": Color(0.35, 0.10, 0.55), "unripe": Color(1.0, 0.25, 0.25), "flower": Color(1.0, 0.9, 0.9), "thorns": true},
 	"wild_rose": {"canes": [8, 9], "sprays": 5, "arch": 0.6, "reach": 1.0, "rate": 0.12, "cluster": 0.045, "cane": Color(0.45, 0.30, 0.22), "leaf": 0.65, "fruit": Color(1.0, 0.18, 0.1), "unripe": Color(1.0, 0.55, 0.3), "flower": null, "blossom": Color(1.0, 0.25, 0.55), "thorns": true},
 	"blackthorn": {"canes": [14, 18], "base": 0.2, "arch": 0.55, "reach": 1.4, "rate": 0.12, "cane": Color(0.20, 0.17, 0.15), "leaf": 0.32, "fruit": Color(0.4, 0.45, 0.9), "unripe": Color(0.5, 0.6, 0.5), "flower": null, "thorns": true},
 	"blueberry": {"canes": [12, 14], "sprays": 5, "arch": 0.1, "reach": 0.7, "rate": 0.5, "cluster": 0.06, "cane": Color(0.50, 0.38, 0.28), "leaf": 0.4, "fruit": Color(0.30, 0.38, 0.85), "unripe": Color(0.75, 0.9, 0.55), "flower": null, "thorns": false},
