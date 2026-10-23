@@ -67,6 +67,7 @@ var _soil_growth: PackedFloat32Array = PackedFloat32Array()   # soil id -> tree 
 var _patches: FastNoiseLite
 var _grove_seed: int = 0
 var _stand_seed: int = 0
+var _patch_seed: int = 0
 
 
 # `tables` is a TableSet, `tile_rules` the parsed tile_rules.json.
@@ -84,6 +85,7 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 	_patches.frequency = 1.0 / float(rules.get("patch_m", 150.0))
 	_grove_seed = SeedUtil.purpose_seed(int(generator.master_seed), "flora_groves")
 	_stand_seed = SeedUtil.purpose_seed(int(generator.master_seed), "flora_stands")
+	_patch_seed = SeedUtil.purpose_seed(int(generator.master_seed), "flora_patches")
 	var biome_ids: Dictionary = {}
 	var water_ids: Dictionary = {}
 	_soil_growth.resize(256)
@@ -172,7 +174,7 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 				"radius_min": float(stand["radius_m"][0]),
 				"radius_max": float(stand["radius_m"][1]),
 				"fixed": [],
-				"spacing_m": maxf(float(stand.get("spacing_m", 3.0)), MIN_TREE_GAP),
+				"spacing_m": maxf(float(stand.get("spacing_m", 3.0)), MIN_TREE_GAP if str(entry["kind"]) == "tree" else PLANT_MIN_GAP),
 				"fill": float(stand.get("fill", 0.8)),
 				# A share of the circles are thickets, filled fuller (hazel).
 				"thicket_chance": float(stand.get("thicket_chance", 0.0)),
@@ -196,6 +198,26 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 				item["grove"]["fixed"].append([Vector2(float(f[0]), float(f[1])), float(f[2])])
 				item["grove"]["radius_max"] = maxf(item["grove"]["radius_max"], float(f[2]))
 			item["cell"] = maxf(float(grove.get("spacing_m", 11.0)), 1.0)
+
+		# Patch plants (nettle, berry bushes): count_min..count_max plants close together around a hashed centre, one scale
+		# for the whole patch (Dave, 23 Oct). Only in patches: such a species skips the main grid.
+		if entry.has("patch"):
+			var patch: Dictionary = entry["patch"]
+			var counts: Vector2 = _range_of(patch.get("count", [10, 20]))
+			var radii: Vector2 = _range_of(patch.get("radius_m", [2.0, 3.5]))
+			var scales: Vector2 = _range_of(patch.get("scale", [1.0, 3.0]))
+			item["patch"] = {
+				"every_m": float(patch.get("every_m", 40.0)),
+				"chance": float(patch.get("chance", 0.5)),
+				"count_min": clampi(int(counts.x), 1, PATCH_MAX_PLANTS),
+				"count_max": clampi(int(counts.y), 1, PATCH_MAX_PLANTS),
+				"radius_min": radii.x,
+				"radius_max": radii.y,
+				"scale_min": scales.x,
+				"scale_max": scales.y,
+				"spacing_m": maxf(float(patch.get("spacing_m", 0.8)), PLANT_MIN_GAP),
+				"fill": float(patch.get("fill", 1.0)),
+			}
 
 		if entry.has("young_height_m"):
 			item["young_share"] = float(entry.get("young_share", 0.0))
@@ -283,6 +305,11 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 		var peak: float = item["peak"]
 		var per_biome: PackedFloat32Array = item["per_biome"]
 		var woody: bool = item["kind"] != KIND_PLANT
+
+		if item.has("patch"):
+			_place_patches(item, data, chunk, origin, species_id, found)
+			continue
+
 		# Trees follow the patch field; shrubs and plants ignore it (shrubs grow
 		# under the trees too, owner 2026-10-18).
 		var patch_sign: float = patchiness if item["kind"] == KIND_TREE else 0.0
@@ -476,6 +503,8 @@ const LEDGE_CHANCE := 0.3       # share of ledge spots that grow something
 const MONTANE_PATCH_M := 30.0   # size of the squares that are or are not a low evergreen patch
 const MONTANE_PATCH_SHARE := 0.4
 const MIN_TREE_GAP := 1.8   # trees never closer than 6 ft (owner, 2026-10-18)
+const PLANT_MIN_GAP := 0.3   # plants and shrubs of a patch: as close as the table's spacing says, never closer than this
+const PATCH_MAX_PLANTS := 20   # item numbers of a patch: STAND_BASE + slot * PATCH_MAX_PLANTS + k stay inside 16 bits
 const SHRUB_TRUNK_GAP := 1.0   # a shrub tucks in under a tree, but not against its trunk
 
 
@@ -621,7 +650,7 @@ static func spacing_radius(item: Dictionary, height: float) -> float:
 # of trunks under a tree.
 static func min_gap(kind_a: int, radius_a: float, stand_a: float, species_a: int, kind_b: int, radius_b: float, stand_b: float, species_b: int) -> float:
 	if stand_a > 0.0 and stand_b > 0.0 and species_a == species_b:
-		return maxf(minf(stand_a, stand_b), MIN_TREE_GAP)
+		return maxf(minf(stand_a, stand_b), MIN_TREE_GAP if kind_a == KIND_TREE else PLANT_MIN_GAP)
 
 	if kind_a == KIND_SHRUB and kind_b == KIND_SHRUB:
 		return minf(0.6 * (radius_a + radius_b), OCCUPANCY_CELL)
@@ -678,6 +707,88 @@ func _groves_near(item: Dictionary, grove: Dictionary, seed: int, species_id: in
 			found.append(g)
 
 	return found
+
+
+# Patches of one species in a chunk. Patch centres come from a hashed grid (every_m), so the same patch is found from every
+# chunk it touches; each plant is drawn from the patch cell and its own number only, so two chunks (and two tiles) agree.
+# Item number = STAND_BASE + slot * PATCH_MAX_PLANTS + k, where slot is the patch cell's place in this chunk's window.
+func _place_patches(item: Dictionary, data, _chunk: Vector2i, origin: Vector2, species_id: int, found: Array) -> void:
+	var patch: Dictionary = item["patch"]
+	var every: float = patch["every_m"]
+	# radius_m and spacing_m are given for scale 1 and grow with the patch scale (a 3x bush would overlap its neighbours).
+	var reach: float = float(patch["radius_max"]) * float(patch["scale_max"])
+	var per_biome: PackedFloat32Array = item["per_biome"]
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	var gi0: int = int(floor((origin.x - reach) / every))
+	var gj0: int = int(floor((origin.y - reach) / every))
+	var gi1: int = int(floor((origin.x + chunk_m + reach) / every))
+	var gj1: int = int(floor((origin.y + chunk_m + reach) / every))
+	var width: int = gi1 - gi0 + 1
+
+	for gj in range(gj0, gj1 + 1):
+		for gi in range(gi0, gi1 + 1):
+			var h: int = _mix(_patch_seed, gi, gj, species_id)
+
+			if float(h % 10007) / 10007.0 >= float(patch["chance"]):
+				continue
+
+			var slot: int = (gj - gj0) * width + (gi - gi0)
+
+			if (slot + 1) * PATCH_MAX_PLANTS > 65536 - STAND_BASE:
+				continue
+
+			var fx: float = float((h >> 14) % 1000) / 1000.0
+			var fz: float = float((h >> 24) % 1000) / 1000.0
+			var fr: float = float((h >> 34) % 1000) / 1000.0
+			var fn: float = float((h >> 44) % 1000) / 1000.0
+			var fs: float = float((h >> 54) % 1000) / 1000.0
+			# One scale for the whole patch, from the patch cell.
+			var scale: float = lerpf(patch["scale_min"], patch["scale_max"], fs)
+			var radius: float = lerpf(patch["radius_min"], patch["radius_max"], fr) * scale
+			var margin: float = minf(radius / every, 0.45)
+			var center: Vector2 = Vector2((float(gi) + lerpf(margin, 1.0 - margin, fx)) * every, (float(gj) + lerpf(margin, 1.0 - margin, fz)) * every)
+
+			if center.x + radius < origin.x or center.x - radius > origin.x + chunk_m or center.y + radius < origin.y or center.y - radius > origin.y + chunk_m:
+				continue
+
+			var plants: int = int(round(lerpf(float(patch["count_min"]), float(patch["count_max"]), fn)))
+
+			for n in range(plants):
+				rng.seed = _mix(_patch_seed, gi * 31 + n, gj, species_id + 977)
+				var angle: float = rng.randf() * TAU
+				var distance: float = sqrt(rng.randf()) * radius
+				var size: float = rng.randf()
+				var yaw: float = rng.randf() * TAU
+				var keep: float = rng.randf()
+				var x: float = center.x + cos(angle) * distance
+				var z: float = center.y + sin(angle) * distance
+
+				if x < origin.x or z < origin.y or x >= origin.x + chunk_m or z >= origin.y + chunk_m:
+					continue
+
+				var k: int = data.nearest(x, z)
+
+				if per_biome[data.biome[k]] <= 0.0:
+					continue
+
+				if item["kind"] != KIND_PLANT and keep >= float(patch["fill"]) * _soil_growth[data.soil[k]]:
+					continue
+
+				var y: float = _ground_ok(item, data, k, x, z)
+
+				if is_nan(y):
+					continue
+
+				var height: float = lerpf(item["height_min"], item["height_max"], size) * scale
+				found.append([_tier(item, height), species_id, STAND_BASE + slot * PATCH_MAX_PLANTS + n, x, y, z, height, yaw, float(patch["spacing_m"]) * scale])
+
+
+# A table value that is either a number or a [low, high] pair, as (low, high).
+static func _range_of(value: Variant) -> Vector2:
+	if value is Array:
+		return Vector2(float(value[0]), float(value[1]))
+
+	return Vector2(float(value), float(value))
 
 
 func _in_grove(groves: Array, x: float, z: float) -> bool:
