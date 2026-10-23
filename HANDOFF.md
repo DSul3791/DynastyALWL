@@ -6,7 +6,7 @@ Read this first. About 10 KB. All older detail is kept, unchanged, in `docs/arch
 A multiplayer medieval survival and town-building game ("Dynasty, a life well lived"): Godot 4.7.2 (custom build with Voxel Tools 1.7 compiled in), GDScript plus a C++ water core, built for weak hardware (minimum 1050-class GPU, 8 GB RAM, SATA SSD, 30 fps). Owner: David Sullivan (Dave; voice user, wants SHORT reports). Repo `DSul3791/DynastyALWL`. Work ONLY on branch `claude/generator-v2`; never touch `main` (Dave merges).
 
 ## Current state (2026-10-23 night)
-- Development is ACTIVE. Latest build 690, protocol 72, TERRAIN_VERSION 25 baked. Terrain B drainage code is merged but OFF (rules drainage_mode false); the first real bake needs Dave's go; no tiles committed.
+- Development is ACTIVE. Latest build 691, protocol 72, TERRAIN_VERSION 25 baked. Terrain B drainage code is merged but OFF (rules drainage_mode false); the first real bake needs Dave's go; no tiles committed.
 - Dave tests only at night after the backup (BP-T40); test lines for tonight are in tech/TEST_CARDS_TONIGHT.md; cards are test, picture and Yes/No with a Notes or Why-not box (BP-T36 to T40). Every plan goes to Dave as one Yes/No card per line (BP-T39).
 - Live in the test world: tunnel collapse ON (admin switch and cave-in time 2 to 20 min in Esc > Settings, man-made spaces only), braces as spheres of influence, blueprint building NOT built yet (design in items/BLUEPRINT_BUILD_DESIGN.md plus DECISIONS 2026-10-23), twine (ex cordage), spades take shovelfuls from the pack, hoes, ladders, tier designs are drawings only.
 - Runtime-only changes need no re-bake; server-side builds need the game closed fully so the server restarts.
