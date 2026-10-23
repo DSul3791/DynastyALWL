@@ -1624,7 +1624,8 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 # The server places a loose item by the generated height field; the drawn ground is the voxel surface, up to about half a metre off, so a
 # lump could hang in the air (Dave 2026-10-23, rig: 0.40 m). A loose item within 1 m of the drawn ground rests on it; one whose chunk is not
 # drawn yet is tried again each second.
-const SNAP_MAX_M := 1.0
+const SNAP_UP_M := 0.6               # the drawn ground may be this far above the server's height (a lump rests on a rim)
+const SNAP_DOWN_M := 8.0             # and an item that hangs this far above the ground comes down to it (a deep shaft: the rig saw 1.6 and 4.3 m)
 const SNAP_TRIES := 10               # looked at again each second this many times: the collision ground under a fresh dig or fill is rebuilt a moment later
 var _snap_next_msec: int = 0
 var _unsnapped: Dictionary = {}      # world item id -> tries left
@@ -1638,9 +1639,9 @@ func _snap_loose(id: int, tries: int = SNAP_TRIES) -> void:
 		return
 
 	var at: Vector3 = entry["pos"]
-	var ground: float = float(_ground_below.call(at))
+	var ground: float = float(_ground_below.call(at - Vector3(0.0, 1.5, 0.0)))      # the probe starts 2 m above its point: 0.5 m above the item, so a tunnel roof is not hit
 
-	if is_nan(ground) or absf(ground - at.y) > SNAP_MAX_M:
+	if is_nan(ground) or ground > at.y + SNAP_UP_M or ground < at.y - SNAP_DOWN_M:
 		_unsnapped[id] = tries - 1 if tries > 1 else 0
 		return
 
