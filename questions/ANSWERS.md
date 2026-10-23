@@ -1106,3 +1106,7 @@ Answered: 2026-10-23 04:18 UTC
 Answer: No: No, if the water is gone, there’s nothing there. It is literally changing the texture on the water.
 Answered: 2026-10-23 04:19 UTC
 
+## hotbar-move | Is this how the hotbar should work: a tool dragged onto the hotbar MOVES there and leaves the pack grid (the hotbar is extra holding slots, not a copy, and it still counts for weight), and E over a hotbar slot with the inventory window open puts it back in the first free pack slot?
+Answer: Yes
+Answered: 2026-10-23 10:10 UTC
+
