@@ -1,0 +1,301 @@
+{
+	"note": "Test showroom (Dave 2026-10-23): rows of items laid on the ground near spawn while Admin mode is on. start = metres east/south of spawn, step = gap between entries, items = [item id, count]. Ids unknown to the game are skipped.",
+	"rows": [
+		{
+			"label": "R1 tools",
+			"start": [
+				4,
+				0
+			],
+			"step": [
+				0,
+				1.5
+			],
+			"items": [
+				[
+					"wooden_spade",
+					1
+				],
+				[
+					"wooden_spade_medium",
+					1
+				],
+				[
+					"wooden_spade_large",
+					1
+				],
+				[
+					"wooden_hoe",
+					1
+				],
+				[
+					"stone_axe",
+					1
+				],
+				[
+					"bucket",
+					1
+				]
+			]
+		},
+		{
+			"label": "R2 logs",
+			"start": [
+				6,
+				0
+			],
+			"step": [
+				0,
+				1.5
+			],
+			"items": [
+				[
+					"log_oak",
+					1
+				],
+				[
+					"log_birch",
+					1
+				],
+				[
+					"log_spruce",
+					1
+				],
+				[
+					"log_maple",
+					1
+				],
+				[
+					"log_scots_pine",
+					1
+				],
+				[
+					"log_mirrorbark",
+					1
+				]
+			]
+		},
+		{
+			"label": "R3 berries and food",
+			"start": [
+				8,
+				0
+			],
+			"step": [
+				0,
+				1.5
+			],
+			"items": [
+				[
+					"raspberries",
+					1
+				],
+				[
+					"blackberries",
+					1
+				],
+				[
+					"blueberries",
+					1
+				],
+				[
+					"strawberries",
+					1
+				],
+				[
+					"crab_apples",
+					1
+				],
+				[
+					"hunters_stew",
+					1
+				],
+				[
+					"trail_bread",
+					1
+				],
+				[
+					"berry_compote",
+					1
+				]
+			]
+		},
+		{
+			"label": "R4 stone and block",
+			"start": [
+				10,
+				0
+			],
+			"step": [
+				0,
+				1.5
+			],
+			"items": [
+				[
+					"chopping_block",
+					1
+				],
+				[
+					"cut_stone_block",
+					1
+				],
+				[
+					"brick",
+					1
+				],
+				[
+					"mortar",
+					1
+				],
+				[
+					"wooden_block",
+					1
+				],
+				[
+					"firewood",
+					1
+				],
+				[
+					"kindling",
+					1
+				]
+			]
+		},
+		{
+			"label": "S1 spade tiers",
+			"start": [
+				12,
+				0
+			],
+			"step": [
+				0,
+				1.5
+			],
+			"items": [
+				[
+					"wooden_spade",
+					1
+				],
+				[
+					"stone_spade",
+					1
+				],
+				[
+					"iron_spade",
+					1
+				],
+				[
+					"steel_spade",
+					1
+				]
+			]
+		},
+		{
+			"label": "S2 medium and large spades",
+			"start": [
+				14,
+				0
+			],
+			"step": [
+				0,
+				1.5
+			],
+			"items": [
+				[
+					"stone_spade_medium",
+					1
+				],
+				[
+					"iron_spade_medium",
+					1
+				],
+				[
+					"steel_spade_medium",
+					1
+				],
+				[
+					"stone_spade_large",
+					1
+				],
+				[
+					"iron_spade_large",
+					1
+				],
+				[
+					"steel_spade_large",
+					1
+				]
+			]
+		},
+		{
+			"label": "S3 hoes",
+			"start": [
+				16,
+				0
+			],
+			"step": [
+				0,
+				1.5
+			],
+			"items": [
+				[
+					"wooden_hoe",
+					1
+				],
+				[
+					"stone_hoe",
+					1
+				],
+				[
+					"iron_hoe",
+					1
+				],
+				[
+					"steel_hoe",
+					1
+				]
+			]
+		},
+		{
+			"label": "S4 building parts",
+			"start": [
+				18,
+				0
+			],
+			"step": [
+				0,
+				1.5
+			],
+			"items": [
+				[
+					"twine",
+					1
+				],
+				[
+					"rough_plank",
+					1
+				],
+				[
+					"fine_board",
+					1
+				],
+				[
+					"nails",
+					1
+				],
+				[
+					"hinges",
+					1
+				],
+				[
+					"tar",
+					1
+				],
+				[
+					"ladder",
+					1
+				]
+			]
+		}
+	]
+}
