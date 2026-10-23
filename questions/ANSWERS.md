@@ -760,3 +760,7 @@ Answered: 2026-10-23 00:52 UTC
 Answer: No: It will also need wood and nails
 Answered: 2026-10-23 00:52 UTC
 
+## cost-26 | Double door: twice a single door plus 2 hinges (1 iron ingot)?
+Answer: Yes
+Answered: 2026-10-23 00:52 UTC
+
