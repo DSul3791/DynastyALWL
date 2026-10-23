@@ -26,3 +26,8 @@ Note: 1. Look at the picture below (raspberry bush, 3 m away).
 Image: questions/img/rig_raspberry_c7ca280_small.png
 Note: Recommendation: Yes because the leaf sprays and canes read as raspberry (Kathleen: a little dark, leaves a little large; she fixes those next).
 [picture]
+
+## ok-pull-754 | Build 754 starts fine. OK for MikeW to update your game folder now (and copy the new island tiles)?
+Note: Replaces the earlier hold card. 1. MikeW checks the game is closed. 2. He pulls build 754 into C:\GodotProjects\DynastyALWL, copies the 9 new island tiles, commits and pushes them. 3. You then press Esc > Advanced > Clear blocks once and look around spawn.
+Note: Recommendation: Yes because 754 passed the start-up check and the item check, and it carries the new island ground plus the sound and building changes.
+[check]
