@@ -2133,8 +2133,8 @@
 		},
 		"floor_section_kit": {
 			"number": 194,
-			"name": "Ceiling section",
-			"description": "A plank ceiling, two metres square. It is also the floor of the storey above.",
+			"name": "Floor section",
+			"description": "A plank floor, two metres square. Set pieces edge to edge to build a house.",
 			"kind": "placeable",
 			"stack": 1,
 			"look_alikes": [],
@@ -2142,8 +2142,8 @@
 		},
 		"floor_section": {
 			"number": 195,
-			"name": "Ceiling section",
-			"description": "A plank ceiling, two metres square. It is also the floor of the storey above.",
+			"name": "Floor section",
+			"description": "A plank floor, two metres square. Set pieces edge to edge to build a house.",
 			"kind": "structure",
 			"stack": 1,
 			"look_alikes": [],
@@ -2153,7 +2153,7 @@
 		"roof_section_kit": {
 			"number": 196,
 			"name": "Roof section",
-			"description": "A plank roof on four posts, to set over walls and ceilings.",
+			"description": "A plank roof on four posts, to set over walls and floors.",
 			"kind": "placeable",
 			"stack": 1,
 			"look_alikes": [],
@@ -2162,7 +2162,7 @@
 		"roof_section": {
 			"number": 197,
 			"name": "Roof section",
-			"description": "A plank roof on four posts, to set over walls and ceilings.",
+			"description": "A plank roof on four posts, to set over walls and floors.",
 			"kind": "structure",
 			"stack": 1,
 			"look_alikes": [],
@@ -2172,7 +2172,7 @@
 		"foundation_section_kit": {
 			"number": 198,
 			"name": "Foundation",
-			"description": "A stone and clay slab, four metres square. Walls and ceilings snap onto it.",
+			"description": "A stone and clay slab, four metres square. Walls and floors snap onto it.",
 			"kind": "placeable",
 			"stack": 1,
 			"look_alikes": [],
@@ -2181,7 +2181,7 @@
 		"foundation_section": {
 			"number": 199,
 			"name": "Foundation",
-			"description": "A stone and clay slab, four metres square. Walls and ceilings snap onto it.",
+			"description": "A stone and clay slab, four metres square. Walls and floors snap onto it.",
 			"kind": "structure",
 			"stack": 1,
 			"look_alikes": [],
@@ -2630,7 +2630,7 @@
 		"cobblestone": {
 			"number": 229,
 			"name": "Cobblestone",
-			"description": "A rounded stone, dressed to lay in a wall or a ceiling.",
+			"description": "A rounded stone, dressed to lay in a wall or a floor.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
