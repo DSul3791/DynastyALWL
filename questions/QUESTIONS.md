@@ -7,11 +7,6 @@
 
 
 
-## fix-slim-reading | Should we shrink what every thread reads at the start: a short first-jobs block at the top of HANDOFF.md (40 lines at most), old sections archived, and only the rules that apply to each thread?
-Note: Today there are 83 documents and 46 rules in the best-practice file.
-Note: Tyler recommends Yes because every thread reads this at every start, so a shorter version saves the most.
-[check]
-
 ## small-tree-under-8ft | Is a tree under 8 feet 'small', giving only firewood, kindling and sticks?
 Note: A tree 8 feet (2.44 m) or taller gives whole 8 ft logs, one per length. Shorter trees give no log: just firewood, kindling and sticks.
 Note: Recommendation: Yes because it matches your rule that only whole 8 ft lengths become logs.
