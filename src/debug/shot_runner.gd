@@ -61,6 +61,7 @@ var _selected: bool = false
 var flora_names: PackedStringArray = PackedStringArray()    # --shot-flora=raspberry,bramble: one plant of each in a row with name tags
 var _flora_t: int = 0
 var flora_scale: float = 1.0       # --shot-flora-scale=N: draw the row N times its natural size (a check that a small plant is only hard to see)
+var cam_above_m: float = -1.0       # --shot-cam-above=M: the camera stands M metres above the ground at the plant row (--flora); -1 keeps the --agl height
 var flora_lift_m: float = 0.12     # --shot-flora: the row stands this far above the raycast ground (the drawn smooth ground can lie a little higher and hide a 0.2 m flower)
 var summer: bool = false      # --shot-summer: the plant row in its species green (the game draws every hardwood in autumn colours)
 var side_dist: float = 2.8      # --shot-dist=M: third-person camera distance; under 2 m it aims at the held item
@@ -93,6 +94,8 @@ func setup(owner_client, args: Array) -> void:
 			side_sign = -1.0
 		elif argument.begins_with("--shot-flora-scale="):
 			flora_scale = float(argument.trim_prefix("--shot-flora-scale="))
+		elif argument.begins_with("--shot-cam-above="):
+			cam_above_m = float(argument.trim_prefix("--shot-cam-above="))
 		elif argument.begins_with("--shot-flora="):
 			flora_names = argument.trim_prefix("--shot-flora=").split(",", false)
 		elif argument == "--shot-summer":
@@ -445,6 +448,10 @@ func _show_flora(now: int) -> void:
 
 	client.flora.set_chunk(here, items, p)
 	_flora_t = now
+
+	if cam_above_m >= 0.0 and not items["positions"].is_empty():
+		var subject: Vector3 = items["positions"][0]
+		client.body.global_position.y = subject.y - flora_lift_m + cam_above_m - client.camera.position.y
 
 
 # Look rig diagnostics for --shot-flora: what the flora view holds for the row's chunk (level bits, drawn pieces and instances), per chunk.
