@@ -17,6 +17,8 @@ const GroundOps := preload("res://src/stream/ground_ops.gd")
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 
 const CELL_M := 2.0
+const DRIP_RANGE_M := 4.0                    # water this close above a ceiling seeps through it (Dave 2026-10-23)
+const MAX_LEAKS_SENT := 24
 const QUAKE_EVERY_MSEC := 500
 const QUAKE_RANGE_M := 40.0
 const MIN_WARNING_MSEC := 90000             # the shaking never leaves less than this before a fall
@@ -39,11 +41,13 @@ const CAVE_IN_MAX_S := 1200.0
 var load_block: Callable                     # (Vector3i block) -> VoxelBuffer of the block with every edit applied, or null
 var load_natural: Callable                   # (Vector3i block) -> VoxelBuffer of the block as generated, no edits: collapse is for MAN-MADE spaces only (Dave 2026-10-23)
 var surface_h: Callable                      # (x, z) -> ground surface height
+var water_above: Callable                    # (x, z) -> y of the water surface over that column (the sea is 0), NAN when dry: ceilings under it drip
 var support_strength: Callable               # (Vector3) -> support strength x condition 0..1 at a point (items; none until they exist)
 
 var _mutex: Mutex = Mutex.new()
 var _dirty: Dictionary = {}                  # Vector3i block -> true
 var _cells: Dictionary = {}                  # Vector3i cell -> {pos, need, span, free, opened, grace_ms, seen}
+var _wet: Dictionary = {}                    # Vector3i block -> Array of [ceiling point, closeness 0..255]: dripping cells
 var _block_cells: Dictionary = {}            # Vector3i block -> Array of cell keys it holds
 var _next_quake_msec: int = 0
 var _sem: Semaphore = Semaphore.new()
@@ -151,7 +155,8 @@ func process_dirty(now_msec: int) -> void:
 		if buffer == null:
 			continue
 
-		var found: Array = Stability.working(Stability.classify(buffer, Vector3(block * GroundOps.BLOCK_SIZE), surface_h))
+		var every: Array = Stability.classify(buffer, Vector3(block * GroundOps.BLOCK_SIZE), surface_h)
+		var found: Array = Stability.working(every)
 
 		if load_natural.is_valid() and not found.is_empty():
 			var natural: VoxelBuffer = load_natural.call(block)
@@ -172,6 +177,7 @@ func process_dirty(now_msec: int) -> void:
 			keys.append(key)
 
 		_block_cells[block] = keys
+		_wet[block] = _wet_cells(every)
 		cells_measured += found.size()
 		_mutex.unlock()
 
@@ -203,6 +209,7 @@ func set_enabled(on: bool) -> void:
 	if not on:
 		_cells.clear()
 		_block_cells.clear()
+		_wet.clear()
 		_dirty.clear()
 
 	_mutex.unlock()
@@ -228,6 +235,28 @@ func set_cave_in_s(seconds: float, now_msec: int = 0) -> void:
 			cell["opened"] = now_msec - (grace_ms - MIN_WARNING_MSEC)
 
 	_mutex.unlock()
+
+
+# The cells of a block whose ceiling has water within DRIP_RANGE_M above it: [ceiling point, closeness] (255 = water at the ceiling).
+func _wet_cells(cells: Array) -> Array:
+	var wet: Array = []
+
+	if not water_above.is_valid():
+		return wet
+
+	for cell in cells:
+		var pos: Vector3 = cell["pos"]
+		var surface: float = float(water_above.call(pos.x, pos.z))
+
+		if is_nan(surface):
+			continue
+
+		var gap: float = surface - float(cell["roof_y"])
+
+		if gap > 0.0 and gap <= DRIP_RANGE_M:
+			wet.append([Vector3(pos.x, float(cell["roof_y"]), pos.z), int(255.0 * (1.0 - gap / DRIP_RANGE_M))])
+
+	return wet
 
 
 static func _stage_share(f: float, q: float) -> float:
@@ -264,7 +293,7 @@ func _strength(at: Vector3) -> float:
 
 # peers: peer id -> position. Returns {"quake": [[peer, stage, strength_pm, point]], "collapse": [{"fills": [[centre, radius]], "victims": [peer], "cells": n}]}.
 func tick(now_msec: int, peers: Dictionary) -> Dictionary:
-	var out: Dictionary = {"quake": [], "collapse": []}
+	var out: Dictionary = {"quake": [], "collapse": [], "leak": []}
 
 	if not enabled:
 		return out
@@ -300,6 +329,9 @@ func tick(now_msec: int, peers: Dictionary) -> Dictionary:
 					if stage > int(best[0]) or (stage == int(best[0]) and strength_of(f) > float(best[1])):
 						loudest[peer] = [stage, strength_of(f), cell["pos"]]
 
+	if send_quake and not _wet.is_empty():
+		out["leak"] = _leaks_near(peers)
+
 	for peer in loudest:
 		var info: Array = loudest[peer]
 		out["quake"].append([peer, int(info[0]), int(float(info[1]) * 1000.0), info[2]])
@@ -308,6 +340,37 @@ func tick(now_msec: int, peers: Dictionary) -> Dictionary:
 		out["collapse"] = _collapse(failed, peers)
 
 	_mutex.unlock()
+	return out
+
+
+# Caller holds the mutex. For each player the dripping ceiling points within QUAKE_RANGE_M, nearest first: [peer, points, closeness bytes].
+func _leaks_near(peers: Dictionary) -> Array:
+	var out: Array = []
+
+	for peer in peers:
+		var here: Vector3 = peers[peer]
+		var near: Array = []
+
+		for block in _wet:
+			for entry in _wet[block]:
+				var d: float = (entry[0] as Vector3).distance_to(here)
+
+				if d <= QUAKE_RANGE_M:
+					near.append([d, entry[0], entry[1]])
+
+		if near.is_empty():
+			continue
+
+		near.sort_custom(func(a, b): return float(a[0]) < float(b[0]))
+		var points: PackedVector3Array = PackedVector3Array()
+		var close: PackedByteArray = PackedByteArray()
+
+		for i in range(mini(near.size(), MAX_LEAKS_SENT)):
+			points.append(near[i][1])
+			close.append(int(near[i][2]))
+
+		out.append([int(peer), points, close])
+
 	return out
 
 

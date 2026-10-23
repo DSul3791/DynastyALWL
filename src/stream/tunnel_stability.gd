@@ -51,7 +51,7 @@ static func classify(buffer: VoxelBuffer, origin: Vector3, surface_h: Callable) 
 				var free: float = FREE_SPAN_SOIL_M if soil or roof < 0 else FREE_SPAN_ROCK_M
 				var overburden: float = maxf(cover, 0.0)
 				var need: float = clampf((span * (1.0 + minf(overburden, OVERBURDEN_CAP_M) / OVERBURDEN_CAP_M) - free) / (2.0 * free), 0.0, 1.0)
-				found.append({"pos": origin + Vector3(float(cx), float(cy), float(cz)), "span": span, "overburden": overburden, "free": free, "need": need})
+				found.append({"pos": origin + Vector3(float(cx), float(cy), float(cz)), "span": span, "overburden": overburden, "free": free, "need": need, "roof_y": roof_y})
 
 	return found
 
