@@ -45,3 +45,12 @@ IMPORTANT: commit and merge counts are NOT effort. A thread can spend a whole da
 | Guru (me) | all merges (about 53 MERGED lines), docs, 200+ answer sweeps and cards | page versions, BP rules, decisions | my hourly message limit and my own merge errors |
 Reading: by merges, MikeW and Sonny had the most spare capacity; MikeW because he only runs when called, Sonny because terrain B and water are big jobs that land later. Sonny is probably not idle in effort. MikeW is the clearest spare capacity.
 Next job I would hand MikeW: the team tests in TEAM_TESTS.md and the look rig, then run the pre-merge guard on his PC as the first "CI" until GitHub runs it. Sonny: the dry river sim check, water surface flicker and the 1-tile BAKE-1 test with MikeW.
+
+## Wrongly stuck cases today (BP-T48), one line each (only what I saw or was told; not complete)
+1. Shoulder log as an inventory item: Sal said it "needs Dave's Yes", but Dave had asked for it directly (a go).
+2. Sonny waiting for me to post a Yes/No card (01:00): technical choices were his to decide; only genuinely design questions needed a card.
+3. Kathleen waiting for me to merge kathleen-tools-v6 and rerun gen_looks.py: she could have kept working on her next item.
+4. Sal's status said his branches were unmerged when they were merged: a stale note kept him looking blocked.
+5. Hotbar-move: a question was asked of Dave that already matched what he described (Sal's own check answered it).
+6. Merges and cards waiting on Dave's pull or backup before more work: BP-T43 and BP-T41 now say work continues on branches.
+7. Several permission waits in thread windows (Steve and others, told by the coordinator): not visible to Dave; BP-T44/T48 say decide and go, or post a card.
