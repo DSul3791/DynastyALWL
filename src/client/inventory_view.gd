@@ -1540,6 +1540,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 		if _world.has(id):
 			_world[id]["count"] = row[2]
+			_refresh_pile(id)
 
 			if _world[id]["state"] == state:
 				continue
@@ -1594,6 +1595,26 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 		_root.add_child(node)
 		_world[id] = {"node": node, "number": row[1], "count": row[2], "pos": row[3], "state": state, "light": light}
+		_refresh_pile(id)
+
+
+# A heap of six or more stones (or soil, clay, sand, gravel) is drawn as one pile built from its count (PileLook); fewer are single items.
+func _refresh_pile(id: int) -> void:
+	var entry: Dictionary = _world[id]
+	var box: MeshInstance3D = entry["node"] as MeshInstance3D
+	var item_id: String = table.id_of(int(entry["number"]))
+
+	if box == null or int(entry.get("state", 0)) != 0:
+		return
+
+	if PileLook.is_pile(item_id, int(entry["count"])):
+		box.mesh = PileLook.mesh_for(item_id, int(entry["count"]), id)
+		box.scale = Vector3.ONE
+		box.rotation = Vector3.ZERO
+		entry["pile"] = true
+	elif entry.get("pile", false):
+		entry["pile"] = false
+		box.mesh = _mesh_for(int(entry["number"]))
 
 
 # One loose item as it is drawn on the ground, for the admin showroom: the node sits at the origin (the caller moves it), nothing is
