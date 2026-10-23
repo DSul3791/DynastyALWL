@@ -1,7 +1,3 @@
-## cost-8 | Floor or ceiling, Plank: 8 rough planks and 20 nails?
-Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
-[check]
-
 ## cost-9 | Floor or ceiling, Fine wood: 6 fine boards and 24 nails?
 Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
 [check]
