@@ -1286,3 +1286,7 @@ Answered: 2026-10-23 20:34 UTC
 Answer: Yes
 Answered: 2026-10-23 21:24 UTC
 
+## cost-basic-foundation | Basic foundation cost: small 1x1 = 6 boughs, 10 leaves, 4 sticks (2x2 = four times that)?
+Answer: Yes
+Answered: 2026-10-23 21:24 UTC
+
