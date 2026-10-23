@@ -1,3 +1,17 @@
+# TOMORROW EFFICIENCY PLAN (24 Oct; from tech/AUDITS/AUDIT_2026-10-23.md and the new tech/TEST_RECIPE.md). EVERY THREAD READS THIS FIRST AT 8 AM.
+| # | Change | Owner | Measurable target (checked 20:00 ADT) |
+|---|--------|-------|----------------------------------------|
+| 1 | Merge-check batch: Mike runs ONE batch per hour from a fixed list file (MERGE_CHECK pattern), PASS/FAIL per branch line; Tyler merges passes the same hour | Tyler + MikeW | Every branch pushed before 17:00 ADT is merged or has a named FAIL line by 19:00; no branch waits more than 2 h on a batch |
+| 2 | Allow rules: any command Mike gets refused gets one allow rule that day (settings_mike_all.json), Dave only restarts | Tyler | 0 Mike runs lost to refused commands after 10:00 ADT |
+| 3 | Start-up smoke test: client must start headless for 10 s with zero errors before any pull into Dave's folder (local_check parse + check_dupe_names + smoke) | Steve (script), Mike (runs) | 0 builds reach Dave that do not start |
+| 4 | Card checklist (grep ANSWERS/DECISIONS, picture pushed under 1 MB, team-doable steps never on Dave's page) | Tyler; every thread uses qa_post | 0 cards answered "already answered" / "no picture" / "you do the test" |
+| 5 | Test recipe: one labelled row, one picture; groupable REQUEST template; T-GROUND replaces dig/drop/pile; every step measurable | All threads request; Steve adds missing numbers to the state line | Mike renders at most 1 batch/hour; picture count per kind = 1; 0 pass-less tests |
+| 6 | Ready queues in JOBS.md top block; threads take next line without asking; standing GO written in each queue (Sonny bake go, merge order) | Tyler refills 8 AM and at each merge | 0 threads idle >10 min; 0 "waiting for Tyler's go" lines on Dave's page |
+| 7 | Relay hygiene: one message per fact, thread posts when the hourly limit is near, files in the repo (docs/mirror/tech) not only /mnt | Tyler + coordinator | <= 12 messages/hour from Tyler to coordinator |
+
+How it is checked: at 20:00 ADT Tyler writes tech/AUDITS/AUDIT_2026-10-24.md with the 7 targets as pass/fail and tomorrow-vs-today numbers.
+8 AM start text for every thread (coordinator pastes): "Read tech/DAILY_HANDOFF.md TOMORROW EFFICIENCY PLAN, tech/TEST_RECIPE.md, then the top block of tech/JOBS.md for your queue; take the next line without asking."
+
 # Daily handoff and thread reset (Dave 23 Oct 17:07: "set up a proper handoff and resetting of all threads ... every day at 8 AM"; owner Guru)
 Rule: once a day each thread writes a handoff, pushes, and is then reset (a fresh session that starts from the files, not from chat). Skipping it makes threads slow and confused, as today.
 
