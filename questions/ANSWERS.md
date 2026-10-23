@@ -1210,3 +1210,7 @@ Answered: 2026-10-23 14:27 UTC
 Answer: No: To make the rig dig can’t you put a shovel in your hand look down at a 15° angle and push the mouse button and then walk forward a step and do it again and then look around
 Answered: 2026-10-23 14:27 UTC
 
+
+## test-lake-flicker | Lake no longer flashes grey
+Answer: Yes: told in chat, "I can clearly see the flickering on the lake water is gone" (build 727)
+Answered: 2026-10-23 14:55 UTC
