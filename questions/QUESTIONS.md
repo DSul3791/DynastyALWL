@@ -8,9 +8,6 @@ Note: 6. Optional: place a timber prop near the roof before the time runs out. T
 Note: 7. Take a picture of the shaking and dust. Write in Notes what happened, yes or no.
 [test]
 
-## wet-stages | Within 4 m of water above, should a tunnel go through three stages by distance: damp (4 to 2.5 m, rare drips), dripping (2.5 to 1.2 m, drip points every few metres), running (under 1.2 m, thin streams down the wall and a drizzle)?
-[check]
-
 ## wet-looks | Should the wet ceiling and walls look darker with a sheen and a few streaks, and each drop be a small falling sprite with a tiny ring splash on the floor?
 [check]
 
