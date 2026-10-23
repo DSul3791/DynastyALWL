@@ -844,3 +844,7 @@ Answered: 2026-10-23 01:26 UTC
 Answer: Yes
 Answered: 2026-10-23 01:26 UTC
 
+## island-pier | Can you build piers and timber posts out over the water piece by piece, like Valheim?
+Answer: Yes
+Answered: 2026-10-23 01:26 UTC
+
