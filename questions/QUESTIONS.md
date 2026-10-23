@@ -153,3 +153,17 @@ Note: Today the round pond at the top of the falls is stamped in by a rule (30 t
 Note: With terrain B, each lake is a natural basin from the land, and the river starts from its overflow and from rain gathering on slopes. Nothing changes until the next bake, and we look at the first natural result with you before it replaces anything.
 Note: Tyler recommends Yes because polishing a stamped bowl will never look natural, and terrain B is already built (switched off for now) and gets its first small test bake tomorrow.
 [check]
+
+## lake-hide-water | Please test: hide the water and see what stays. Look for: do the grey shapes and dark squares STAY when the water is hidden?
+Note: 1. Go to x 52392, z 69477 (or x 53786, z 69256) where the water surface flickers.
+Note: 2. Press Ctrl+Shift+W (hides every river and lake drawing).
+Note: 3. Yes means the shapes STAY (so they are ground, not water). No means they disappear with the water.
+Note: 4. Press Ctrl+Shift+W again to bring the water back.
+[test]
+
+## lake-low-quality | Please test: set quality to Low and see what happens. Look for: do the grey shapes and dark squares VANISH on Low?
+Note: 1. Go to x 52392, z 69477 (or x 53786, z 69256).
+Note: 2. Press F2 until the quality says Low.
+Note: 3. Yes means the shapes VANISH on Low (so it is the water's depth effect, and Sonny fixes it). No means they are still there.
+Note: 4. Press F2 until you are back on your normal quality.
+[test]

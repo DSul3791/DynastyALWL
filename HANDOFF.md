@@ -111,3 +111,4 @@ Baked tiles for the inner starters and their neighbors (36 files) are in `/mnt/p
 - Head ponds (Sonny 03:22): stamped round head ponds retire in favour of terrain B basins at the next bake; card head-ponds-retire; first natural result needs a look from Kathleen and Dave. Needs 1-tile BAKE-1 test first.
 - BP-T42 safe place wording (Dave 03:32): Sal sweeps flora.json "womens_health" (line 1877) and all item/plant/recipe text tomorrow; one line to Dave. Raspberry bush look + berries to Kathleen (Dave pictures in chat).
 - BP-T43 after hours: Dave asks only, branches only, Guru merges; head 695 stays while Dave plays.
+- Lake flicker (Sonny hypothesis): cards lake-hide-water (Ctrl+Shift+W) and lake-low-quality (F2 Low) posted. Branch claude/sal-safe-text (data only, raspberry womens_health -> soothing) held for next build.
