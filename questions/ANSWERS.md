@@ -832,3 +832,7 @@ Answered: 2026-10-23 01:20 UTC
 Answer: No: It depends on how wide the opening is for the river like if you do a little trench, then it’s only gonna let a little bit of water through but if you dig a really wide trench or really deep trench, then it’s gonna let more through
 Answered: 2026-10-23 01:20 UTC
 
+## sea-rivermouth | Do river mouths stay sea-connected, so damming a mouth floods the river behind it (an intended risk)?
+Answer: No: I need you to clarify what this means. Do you mean putting a dam in a river causes it to back up like a real damn Would then yes. However, I would expect if I built a dam at the bottom of a river between the river and the ocean, I would expect the river to back up until it went over my damn or around my damn unless I built a damn around the entire island tall enough to stop it
+Answered: 2026-10-23 01:22 UTC
+
