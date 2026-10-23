@@ -3,9 +3,9 @@ MikeW, in the SECOND clone (C:\GodotProjects\DynastyALWL_test), never Dave's fol
 1. git fetch origin; git checkout -B test-head origin/claude/generator-v2
 2. Merge in this order, one git merge --no-edit each; STOP and report on any conflict (UU):
    1. origin/claude/steve-sunny-button (e1c0e4c6, RUNTIME)
-   2. origin/claude/steve-water-flow-at (66470d2d, RESTART)
+   2. origin/claude/steve-water-flow-at (4491c3a7, RESTART)
    3. origin/claude/sal-sawmill-rules (fe90c445, includes water-flow; should merge clean after 2)
-   4. origin/claude/steve-berry-picking (28eb2870, protocol 74, RESTART)
+   4. origin/claude/steve-berry-picking (83239942, protocol 74, RESTART)
    5. origin/claude/sal-harvest (97a408a0, data)
    6. origin/claude/steve-sound-3d (f75e5082, RUNTIME)
    7. origin/claude/sonny-flora-patches (5f6ec141, RESTART, flora layout VERSION 2; ALREADY contains Kathleen's patch data and steve-layout-stamp)
