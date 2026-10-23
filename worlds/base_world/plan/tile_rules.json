@@ -3,7 +3,7 @@
 	"note": "Rules for turning the 160 m world elevation map into one tile's 8 m height map: smooth cubic upsampling plus fine detail noise that is continuous across tile borders. Rerun tools/build_tile.gd after editing.",
 	"frame": {
 		"note": "Each tile is built on a frame that reaches this many 8 m samples beyond its edge on every side, then cropped. Edge samples then see the same neighbors as the next tile's. Must be a multiple of the climate coarse step (4) and at least as far as the longest distance the climate looks at (600 m = 75 samples).",
-		"margin_samples": 80
+		"margin_samples": 160
 	},
 	"detail": {
 		"note": "Noise octaves added on land. amplitude_m is the full strength; it fades in with height so beaches and the coastal plain stay smooth and the sea floor stays calm.",
