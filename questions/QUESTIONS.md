@@ -1,7 +1,3 @@
-## cost-3 | Wall, Fine wood: 8 fine boards and 40 nails?
-Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
-[check]
-
 ## cost-4 | Wall, Log: 8 logs and 10 twine?
 Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
 [check]
