@@ -108,3 +108,10 @@ Note: 3. Dig a hole and fill a bit.
 Note: 4. Esc > Admin > Reset all terrain edits, then confirm on the page (Yes).
 Note: 5. After the reload, the holes and fills should be gone and the ground back as baked. Write any errors in Notes.
 [test]
+
+## close-godot-backup | Please close the Godot editor so tonight's backup can run. Closed?
+Note: 1. Close the Godot editor on C:\GodotProjects\DynastyALWL (and the game and the hidden server window if they are open).
+Note: 2. Answer Yes here. MikeW runs the backup the moment it is closed.
+Note: 3. If you answer No (Not now), the backup moves to the first thing tomorrow morning. Write anything in Why not.
+Note: Tyler recommends Yes because the backup protects tonight's 700+ builds, and it only takes a few minutes.
+[check]
