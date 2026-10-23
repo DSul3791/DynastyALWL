@@ -1,84 +1,39 @@
-# Test recipe for rig and in-game tests (Dave 15:40 and 15:58, 23 Oct; BP-T49)
-Applies to MikeW's look rig, Steve's rig steps, any thread's own check.
+# Test recipe (rewritten 23 Oct 23:25 UTC after Dave: "Mike is very inefficient at testing ... one labelled row, one picture, bang done ... dig tests that seem to do nothing ... simple, straightforward and groupable")
+Applies to MikeW, Steve's rig, every thread asking for a test. Old long version: tech/TEST_RECIPE_ARCHIVE_2026-10-23.md (ground-test detail still valid there).
 
-## Ground test (dirt, drops, piles, rubble, plants)
-1. Do the real action: dig with the shovel (look down about 15 degrees, click, step one step, repeat) or drop the item (a real drop, not a placed object).
-2. If the thing must lie on the ground, DROP it (dug dirt too), at about 1 m in front of the player, not 2.2 m.
-3. Look down: pitch about -45 to -60 degrees so the spot fills the middle of the picture.
-4. Step back a very short distance, about 1 m or less (never walk forward past it, never 2.5 m).
-5. Take the picture from there (first person, then one third-person from 1.5 m if the item is small).
-6. Say before the run what you expect to see ("5 dirt blobs in a small heap in a dug hole, 1 m ahead") and check it after. If it is not there, STOP and report: step, expected, seen, picture, build number. Do not skip ahead.
-7. Attach the picture and the one-line result to the report: "pass" or "fail: what".
+## The five rules
+1. **One row, one picture.** Everything of one KIND that Dave or the team must look at goes in ONE labelled row at one place (like the items row: spawn showroom, Esc > Admin, or rig `--flora a,b,c,d,e`), all the same size/scale, labels under each. One picture of the whole row (plus ONE close-up view if detail matters, via `--views`). Never one picture per bush, shovel or herb. Cards crop frames out of that one picture.
+2. **Groupable or it is not requested.** A test request is accepted only if it can run in the same engine start as the others: same rig, same world, no setup unique to it. Anything that needs its own start joins the nightly list, not the hourly batch.
+3. **A test must be able to FAIL.** Every step ends in a number or a yes/no read from the state line or a count (items near spot, inventory, height above ground, build number), not "looks fine". A step that cannot fail (a dig with nothing measured) is deleted.
+4. **One pass/fail line per test**, in the report: `T-xxx PASS` or `T-xxx FAIL step N: expected X, saw Y (picture file, build)`. Report format for the whole batch: `Test done: 7 pass, 1 fail` then the failing lines only.
+5. **One request per hour, one run.** All threads' needs go in one list; Mike runs them in one launch sequence, closes the game, reports once. Never one start per picture; never in parallel with Dave playing.
 
-## Hand and look tests
-First person plus a close-up at 1.5 m or less (--dist under 2 aims at the hand). Always give the item count.
+## Row kinds (one picture each)
+- PLANTS: `look_rig.sh --flora raspberry,bramble,wild_rose,blackthorn,blueberry,nettle,... --views "wide:8:-8:1.5;close:4:-15:1.0" --nograss` (fruit season set by the item, flowers off-season as a second row only if the season rule is under test).
+- ITEMS/TOOLS: the spawn showroom rows (data/items/showroom.json), one row per category (shovels, axes, hoes, ...), first person picture along the row.
+- BUILD PIECES: one row of the pieces side by side (foundation sizes, wall variants), same camera.
+- GROUND BEHAVIOUR (dig, drop, pile, chop): ONE script T-GROUND below, not four tests.
+- LOOKS BEFORE/AFTER: same row, same camera, two pictures from two builds in one image pair.
 
-## Reporting
-Short: "Test done: N pass, N fail" and one line per failure. Anything needing Dave's eyes or feel goes on QA as a TEST card with the attached picture.
+## T-GROUND (replaces T-DIG, T-DROP, T-PILE; one start, three lines)
+Setup: flat spot, `--nograss`, shovel in hand, stone:25, dirt count 0, first person. Camera: pitch -50, 1 m back from the spot after each action.
+1. DIG x3 (look down 15, click, step): measure from the state line, then PASS only if dirt blobs/held dirt exist and every dropped soil item is within 0.3 m of the ground after 3 s. (T-DIG)
+2. DROP 1 stone: PASS only if count near spot = 1 and it lies 0.8-1.2 m ahead. (T-DROP)
+3. DROP 5, +1, +14 stones at the same spot: PASS only if counts read 5 loose, then 1 pile of 6, then 1 pile of 20. (T-PILE)
+ONE picture after step 3 from above-behind showing hole line and pile; the step lines carry the verdict. If a state line cannot give the number, the test is not ready: Steve adds the number, no run.
+Deleted as proving nothing: stand-alone "dig then look" runs with no measure, repeat digs at several spots, per-item drop pictures, the old step-by-step T-DIG (5 digs, picture only).
+T-CHOP (Sal) stays separate but joins the same batch: log -> 4 blocks count, block at chopping block -> 2 firewood count, one picture.
 
-# Review of the current rig steps (from tools/look_rig.sh usage and shot_runner flags; Steve to confirm each in code)
-Ill-thought-out or missing, owner Steve (rig code), MikeW (runs and reports):
-1. **No dig step.** The rig can give and drop but cannot dig, so the floating-soil test could not run. Needed: --dig N (shovel in hand, look down 15 degrees, click, step, repeat N times) then look back at the spot.
-2. **Drop distance 2.2 m ahead** (--ground and --drop): too far for small blobs. Change the default to about 1 m, and add --drop-dist.
-3. **Default camera pitch 0 (level):** a dropped item at your feet is out of frame. Ground steps must set pitch -45 to -60 and a short step back (about 1 m). Add --look-down with that default for any --ground, --drop or --dig run.
-4. **No step back after dropping or digging:** the camera stays at the player's spot, so the item sits under or behind the view. Add --back M (default 1).
-5. **No expectation check:** the rig takes pictures but states nothing. Add --expect "text" (written into the report with the picture and the state line), plus a state dump (inventory, position, count of items near the spot) so pass or fail is not by eye only.
-6. **Piles:** a drop of 20 stones needs a pile check that the world item exists (count nearby) because the earlier rig run drew nothing (20-stone live drop bug open with Steve).
-7. **One shot per 25-37 s startup:** several steps cost several full launches. Allow a step list in one launch (dig, drop, look, back, snap) to save time and to keep the same world state.
-8. **Chop:** no chop step. Add --chop (axe in hand, log on the ground, check blocks created) only if Steve judges it cheap; the first goals are dig then drop then pile.
-Order: 1, 3, 4, 2 first (the dig-drop-look-back recipe), then 5, then 7, then 6 and 8.
-
----
-# Test plan template (Dave 15:58: "the instructions need to be better planned")
-Flow: the OWNER thread drafts a plan from this template, Guru reviews it for steps that hide the thing being checked, only then MikeW runs it. No plan, no run. Plans live in tech/TEST_PLANS/<id>.md (copy below).
-
+## Request template (every thread uses this; copy into the batch list)
 ```
-TEST <id> <name>            build: <n>        owner: <thread>
-GOAL        one sentence: what must be true
-SETUP       world/spot (x z), items given, time of day, grass hidden?, camera mode
-ACTIONS     numbered, in order, one action each (key or rig flag), including DROP, LOOK DOWN (pitch), STEP BACK (metres)
-PICTURES    for each picture: when it is taken, camera (first/third, distance, pitch), and what MUST be visible in it
-EXPECT      per action: the observable result (counts, text, state line values)
-PASS        exact wording: all EXPECT true and every PICTURE shows its MUST-be-visible item
-FAIL        wording: first EXPECT that is false, step number, expected vs seen, picture, build number; stop there
+REQUEST <thread> <date>   build/branch: <x>   label: RUNTIME|RESTART|BAKE
+KIND     plants-row | items-row | pieces-row | ground | ui | sound-ear
+LIST     the items in the ROW, comma separated (one picture)  /  the T-id to run
+PASS IF  one measurable line per item (count, height, text, visible in picture)
+VIEWS    default wide + close (only add views you need)
+NEEDS    anything not in the rig (otherwise empty; if non-empty, ask Steve first)
 ```
-Guru review checklist: (1) does any step move the camera away from the thing? (2) is the picture taken from within about 1.5 m, looking down for ground items? (3) is every MUST-be-visible item large enough to see (bigger than a few pixels)? (4) does each action have an EXPECT? (5) is it repeatable from the same start? (6) does setup avoid Dave's world (own store, test clone)? (7) is the grass hidden when checking soil or small drops?
+Tyler/coordinator merge all REQUESTs into one batch file, one run, one report. A request missing PASS IF is sent back before it reaches Mike.
 
-# Plans for the queue (drafts by Guru to start owners off; owner confirms details against the rig/code)
-## T-DIG (owner Steve; floating soil, build 711+)
-GOAL: soil from a dig lies in the hole or on the ground, never in the air.
-SETUP: spawn area, flat ground, --nograss, test character with shovel in hand and a full pack (30 slots filled with stone), first person.
-ACTIONS: 1 look down 15 degrees. 2 click (dig) once. 3 step forward one step. 4 repeat 2-3 for five digs. 5 stop; look down 45 degrees. 6 step back 1 m. 7 take picture P1. 8 turn 180, step back 1 m more, look down 30, take P2.
-PICTURES: P1 the dug line of holes from above-behind; MUST show holes and any soil blobs resting on the ground or in holes. P2 the same line from the far side; MUST show no blob in the air.
-EXPECT: after step 2 the pack count did not change (pack full, so the soil drops); the state line lists dropped soil items within 1 m of the dig; none has height above ground over 0.3 m after 3 s.
-PASS/FAIL: pass if blobs rest within 0.3 m of the ground and are visible in P1; fail naming the dig number where a blob floats.
-
-## T-DROP (owner Steve, drop plus roll, build 724+)
-GOAL: a dropped item lands about 1 m ahead, is visible, and nudges only a little if walked over.
-SETUP: flat ground, --nograss, test character holding 1 stone and 1 dirt, first person.
-ACTIONS: 1 face north, drop 1 stone (real drop). 2 look down 50 degrees. 3 step back 1 m. 4 picture P1. 5 walk forward over the stone slowly. 6 look back down, step back 1 m, picture P2.
-PICTURES: P1 MUST show the stone alone on the ground at the centre. P2 MUST show the stone and its new position.
-EXPECT: stone count near the spot is 1 (state line); after the walk it moved less than 0.8 m.
-PASS/FAIL: pass if P1 and P2 each show the stone and the move is under 0.8 m.
-
-## T-PILE (owner Steve, rock pile merge, build 715+; open: a 20-stone live drop drew nothing)
-GOAL: dropping 20 stones makes one heap that is drawn and merges at the right counts.
-SETUP: as T-DROP, give stone:20.
-ACTIONS: 1 drop 5 stones one at a time at the same spot (1 m ahead). 2 look down 50, step back 1 m, picture P1. 3 drop 1 more (6 total). 4 picture P2 from the same place. 5 drop 14 more (20 total). 6 picture P3.
-PICTURES: P1 MUST show 5 loose stones close together. P2 MUST show one small pyramid heap. P3 MUST show one compact heap bigger than P2.
-EXPECT: state line world items near spot: 5 loose, then 1 pile of 6, then 1 pile of 20.
-PASS/FAIL: pass if counts and pictures match; the known 20-stone case fails at step 6 if nothing is drawn: report with the state line.
-
-## T-CHOP (owner Sal; log to blocks to firewood, build 705+)
-GOAL: a log on the ground chops into 4 wooden blocks (12 from the shoulder log); a block at the chopping block gives 2 firewood.
-SETUP: flat ground, --nograss, axe in hand, one log on the ground 1 m ahead, a chopping block placed 2 m to the right, first person.
-ACTIONS: 1 look down 40 degrees at the log. 2 chop (click) until the log is gone. 3 look down, step back 1 m, picture P1. 4 pick up one block (E). 5 step to the chopping block, equip the block, use at the block. 6 look down, step back 1 m, picture P2.
-PICTURES: P1 MUST show wooden blocks on the ground where the log was. P2 MUST show firewood on or beside the chopping block.
-EXPECT: after step 2 four wooden_block world items near the spot; after step 5 firewood count 2 (inventory or ground).
-PASS/FAIL: pass if counts match and both pictures show the items.
-
-## BATCH RULE (Dave 23 Oct 21:54): Mike's runs use Dave's PC, so FEWER, SHORTER runs
-1. Never one picture per engine start. Every request to MikeW is a BATCH: one run with all plants/items in one labelled row (--flora a,b,c,d,e), several shots per engine start (different --cam-above, --dist, --pitch from one run where the rig allows), or one script that runs the whole plan T-xxx top to bottom.
-2. Threads collect their render/test needs and send ONE request per hour (through the coordinator), listing everything wanted; Mike runs it as one batch and reports once.
-3. Keep GPU/CPU runs short: no long waits (--settle/--wait only as long as the step needs), headless where no picture is needed, close the game after each run, never run in parallel with Dave's play. Ask Steve for rig options that multiply shots per start (BP-T50 action plan).
-4. Cards: one picture per plant is still how Dave answers, but the pictures come from the same batch (crop one frame into several images; do not re-run).
+## Ground detail kept from the old recipe
+Look down 45-60 degrees; step back 1 m or less; drop real items 1 m ahead; state the expectation before the run; if a step fails, stop and report step, expected, seen, picture, build.
