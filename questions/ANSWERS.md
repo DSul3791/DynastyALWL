@@ -612,3 +612,7 @@ Answered: 2026-10-23 00:31 UTC
 Answer: Yes
 Answered: 2026-10-23 00:32 UTC
 
+## esc-menu-6 | Esc menu: should Admin be one collapsible group at the very bottom, closed by default, holding Clear saved ground, Dump ground, Show my player key, Bake starter tiles, Jitter test, GPU breakdown, Measure this machine, the test switches and all the Sound test buttons?
+Answer: No: I’m gonna ask you to read this review it and then reword this question I don’t know what dump ground is, I also don’t know what measure this machine means and I don’t know what the test switches are and if we are going to have a sound test, it should be its own page with a scrolling list of sounds and you can just click on one and it will play
+Answered: 2026-10-23 00:33 UTC
+
