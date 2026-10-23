@@ -2674,6 +2674,15 @@
 			"stack": 10,
 			"look_alikes": [],
 			"value": 3
+		},
+		"rock_pile": {
+			"number": 235,
+			"name": "Rock pile",
+			"description": "A heap of 45 stones. Set it down to store rock; pick it up to carry it.",
+			"kind": "placeable",
+			"stack": 1,
+			"look_alikes": [],
+			"value": 45
 		}
 	}
 }

@@ -306,7 +306,8 @@
 		"tar": 1.0,
 		"hinges": 0.2,
 		"wooden_pin": 0.1,
-		"wooden_block": 3.75
+		"wooden_block": 3.75,
+		"rock_pile": 45.0
 	},
 	"by_suffix": {
 		"berries": 0.05,

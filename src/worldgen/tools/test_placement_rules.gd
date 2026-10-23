@@ -238,6 +238,30 @@ func _init() -> void:
 	check(items._items[door_id]["struct"]["kind"] == "doorway_section", "E shuts it again")
 	items.action(2, Net.ACT_USE_STRUCT, door_id, 0, 0, Vector3.ZERO)
 	check(items._items[door_id]["struct"]["kind"] == "doorway_section", "the door will not flap faster than its pace")
+	# A rock pile: placed from the item, E gives back all 45 stones.
+	items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of("rock_pile"), 0, 1, Vector3.ZERO)
+	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of("rock_pile")), 0, 0, Vector3(600.0, 10.0, 606.0))
+	var pile_id: int = 0
+
+	for id in items._items:
+		if items._items[id].has("struct") and items._items[id]["struct"]["kind"] == "rock_pile":
+			pile_id = id
+
+	check(pile_id != 0, "a rock pile is placed")
+	items.report_position(2, Vector3(600.0, 10.0, 604.5))
+	var stone_n: int = items.table.number_of("stone")
+	var on_ground = func() -> int:
+		var pile_total: int = 0
+
+		for it in items._items.values():
+			if int(it["number"]) == stone_n and not it.has("struct") and it["pos"].distance_to(Vector3(600.0, 10.0, 606.0)) < 10.0:
+				pile_total += int(it["count"])
+
+		return pile_total
+	var stones_before: int = items.inventory_of(2).count_of(stone_n) + int(on_ground.call())
+	items.action(2, Net.ACT_USE_STRUCT, pile_id, 0, 0, Vector3.ZERO)
+	var stones_after: int = items.inventory_of(2).count_of(stone_n) + int(on_ground.call())
+	check(not items._items.has(pile_id) and stones_after == stones_before + 45, "E on a rock pile gives all 45 stones back, to the pack or the ground (%d to %d)" % [stones_before, stones_after])
 	items.report_position(2, Vector3(450.0, 10.0, 450.0))
 	# Bracing supports are spheres of influence (Dave 2026-10-22): a prop holds everything within 5 m, the radius shrinks with its condition, spheres overlap.
 	items.report_position(2, Vector3(700.0, 10.0, 700.0))

@@ -484,6 +484,9 @@ func _probe_structure() -> Dictionary:
 	if state == 7:
 		return {"prompt": "Press E to split firewood", "tap": pick_up_nearest}
 
+	if state == 33:
+		return {"prompt": "Press E to take the stones back (hold E to pick up the pile)", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
+
 	if state == 26 or state == 28:
 		return {"prompt": "Press E to open the door" if state == 26 else "Press E to close the door", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
 
@@ -2086,6 +2089,8 @@ func _model_for_state(state: int, extra: Dictionary = {}) -> Node3D:
 			return PieceLook.ladder()
 		"path":
 			return PieceLook.path()
+		"rock_pile":
+			return PieceLook.rock_pile()
 		"door_shut":
 			return PieceLook.doorway(false)
 		"door_open":

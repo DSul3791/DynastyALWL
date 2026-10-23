@@ -481,6 +481,19 @@
 			"sound": "",
 			"clears_grass": true,
 			"walkover": true
+		},
+		"rock_pile": {
+			"kit": "rock_pile",
+			"item": "rock_pile",
+			"state": 33,
+			"footprint_x": 1.2,
+			"footprint_z": 1.2,
+			"cap_per_chunk": 12,
+			"look": "rock_pile",
+			"sound": "stone",
+			"clears_grass": true,
+			"use": "unpile",
+			"stones": 45
 		}
 	},
 	"campfire": {
