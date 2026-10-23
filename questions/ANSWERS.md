@@ -808,3 +808,7 @@ Answered: 2026-10-23 01:16 UTC
 Answer: No: Because it should evaporated and dry up if it’s not a natural catch basin, but if you have a source of water going into it, then it could hold water.
 Answered: 2026-10-23 01:17 UTC
 
+## farwater-spacing | Far water: use a 32 m grid for the distant river and lake picture (any river cell inside a 32 m cell marks it wet, lowest surface taken)?
+Answer: No: The answer here might be. Yes I need your recommendation. Shouldn’t something like this be controlled by draw distance or performance
+Answered: 2026-10-23 01:17 UTC
+
