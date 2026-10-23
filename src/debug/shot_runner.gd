@@ -443,6 +443,10 @@ func _show_flora(now: int) -> void:
 	client.flora.set_chunk(here, items, p)
 	_flora_t = now
 
+	if cam_above_m >= 0.0 and not items["positions"].is_empty():
+		var subject: Vector3 = items["positions"][0]
+		client.body.global_position.y = subject.y - flora_lift_m + cam_above_m - client.camera.position.y
+
 
 # Look rig diagnostics for --shot-flora: what the flora view holds for the row's chunk (level bits, drawn pieces and instances), per chunk.
 func _print_flora_row() -> void:
