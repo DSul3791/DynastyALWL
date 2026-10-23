@@ -896,3 +896,7 @@ Answered: 2026-10-23 01:30 UTC
 Answer: No: No, you don’t have to tamp the ground when you place the foundation it will automatically flatten the ground
 Answered: 2026-10-23 01:31 UTC
 
+## cost-found-wood | Wooden foundations (for Plank, Fine wood, Log tiers): small 1x1 = 3 logs + 12 nails, small 2x2 = 12 logs + 48 nails, large 1x1 = 6 logs + 24 nails, large 2x2 = 24 logs + 96 nails?
+Answer: Yes
+Answered: 2026-10-23 01:31 UTC
+
