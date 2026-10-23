@@ -40,6 +40,11 @@ var give_count: int = 1
 var _given: bool = false
 var drop_it: bool = false      # --shot-drop: then drop all of it onto the ground 2.2 m ahead (a real drop)
 var _dropped: bool = false
+var dig_steps: int = 0         # --shot-dig=N: dig N times (Dave's recipe: spade in hand, look down, click, step forward, repeat), then look level for the picture
+var _dig_i: int = 0
+var _dig_next_msec: int = 0
+var _dig_level: bool = false
+var _dig_ballast: bool = false
 var _selected: bool = false
 var flora_names: PackedStringArray = PackedStringArray()    # --shot-flora=raspberry,bramble: one plant of each in a row with name tags
 var _flora_t: int = 0
@@ -84,6 +89,8 @@ func setup(owner_client, args: Array) -> void:
 				give_item = give_item.get_slice(":", 0)
 		elif argument == "--shot-drop":
 			drop_it = true
+		elif argument.begins_with("--shot-dig="):
+			dig_steps = int(argument.trim_prefix("--shot-dig="))
 		elif argument == "--shot-nograss":
 			no_grass = true      # hide the grass so a hand-held item or the body is not hidden by blades
 		elif argument == "--shot-admin":
@@ -141,6 +148,11 @@ func _process(_delta: float) -> void:
 		var at: Vector3 = Vector3(bp.x, bp.y - 1.0 if is_nan(gy) else gy, bp.z - 2.2)
 		client.items.net.inventory_action.rpc_id(1, Net.ACT_DROP, 0, 0, give_count, at)
 
+	# Dig rig: a heavy pack (so the yield spills onto the ground, as in play), then the dig-and-step loop.
+	if dig_steps > 0 and not _dig_ballast and now - client.connected_msec > 9000:
+		_dig_ballast = true
+		client.items.net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, client.items.table.number_of("stone"), 0, 400, Vector3.ZERO)
+
 	if _busy:
 		return
 
@@ -171,6 +183,27 @@ func _process(_delta: float) -> void:
 
 	if now - _moved_msec < int(settle_s * 1000.0):
 		return
+
+	if dig_steps > 0 and now - client.connected_msec > 12000:
+		if _dig_i < dig_steps:
+			if now >= _dig_next_msec:
+				client.held._dig_here()
+				var ahead: Vector3 = -client.body.global_transform.basis.z
+				var next_x: float = client.body.global_position.x + ahead.x
+				var next_z: float = client.body.global_position.z + ahead.z
+				var next_ground: float = _ground(next_x, next_z)
+				client.body.global_position = Vector3(next_x, client.body.global_position.y if is_nan(next_ground) else next_ground + shot_pos.y, next_z)
+				_dig_i += 1
+				_dig_next_msec = now + 1000
+
+			return
+
+		if not _dig_level:
+			_dig_level = true
+			client.pitch = 0.0
+			client.camera.rotation.x = 0.0
+			_moved_msec = now
+			return
 
 	if not flora_names.is_empty() and _flora_t == 0:
 		_show_flora(now)
