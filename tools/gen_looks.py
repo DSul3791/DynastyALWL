@@ -10,7 +10,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 items = json.load(open(os.path.join(ROOT, "data/items/items.json")))
 items = items.get("items", items)
 gathered = json.load(open(os.path.join(ROOT, "data/items/gathered.json")))
-items = dict(items, **{k: v for k, v in gathered.get("items", gathered).items() if k in ("raspberries", "blackberries", "blueberries", "strawberries")})   # gathered plant yields that have a look of their own
+items = dict(items, **{k: v for k, v in gathered.get("items", gathered).items() if k in ("raspberries", "blackberries", "blueberries", "strawberries", "sloes")})   # gathered plant yields that have a look of their own
 
 WOOD = {
     "oak": "#8a6a3d", "beech": "#b79869", "birch": "#d9c7a3", "scots_pine": "#c99a5b", "spruce": "#d3b583", "alder": "#b5733f",
@@ -37,7 +37,7 @@ SPECIAL = {
     "fine_board": ("planks", "#d4b57a", 1.0), "nails": ("needle", "#5e6166", 0.5), "hinges": ("ingot", "#4f5359", 0.45),
     "tar": ("pile", "#1c1814", 0.8), "cobblestone": ("chunk", "#8b8982", 0.8), "stone_shingle": ("chunk", "#6d7076", 0.7),
     "raspberries": ("berries", "#8e0f1c", 1.0), "blackberries": ("berries", "#2a1830", 1.0),
-    "blueberries": ("berries", "#3b4f9a", 1.0), "strawberries": ("berries", "#c8202a", 1.0),
+    "blueberries": ("round_berries", "#27335c", 1.0), "strawberries": ("berries", "#c8202a", 1.0), "sloes": ("round_berries", "#2a2c46", 1.0),
     "berry_compote": ("bowl", "#e84393", 0.9), "nut_paste": ("bowl", "#e67e22", 0.9), "roast_roots": ("bundle", "#ff9f1c", 0.7),
     "acorn_mash": ("bowl", "#8e44ad", 0.9), "baked_apples": ("fruit", "#ff5a36", 1.0), "mushroom_skewer": ("skewer", "#f5e6ff", 1.0),
     "garlic_meat": ("meat", "#7a4a2a", 1.0), "chestnut_cakes": ("loaf", "#5d3a1a", 0.8), "fruit_leather": ("cloth", "#00a8a8", 0.7),

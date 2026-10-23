@@ -721,10 +721,10 @@
 			"shape": "shrub",
 			"model": "bramble",
 			"height_m": [
-				0.8,
-				1.8
+				1.2,
+				2.4
 			],
-			"crown_m": 1.2,
+			"crown_m": 1.0,
 			"trunk_m": 0.05,
 			"color": [
 				0.25,
@@ -1322,19 +1322,18 @@
 			"name": "nettle",
 			"display": "Nettle",
 			"kind": "plant",
-			"shape": "fern",
+			"shape": "shrub",
 			"model": "herb_nettle",
-			"leaf": "broad",
 			"height_m": [
-				0.5,
-				1.2
+				0.9,
+				1.5
 			],
-			"crown_m": 0.4,
+			"crown_m": 0.5,
 			"trunk_m": 0.0,
 			"color": [
-				0.25,
-				0.42,
-				0.18
+				0.18,
+				0.36,
+				0.12
 			],
 			"per_hectare": {
 				"temperate_forest": 30,
@@ -1539,10 +1538,10 @@
 			"shape": "shrub",
 			"model": "blueberry",
 			"height_m": [
-				0.3,
-				0.7
+				0.25,
+				0.5
 			],
-			"crown_m": 0.5,
+			"crown_m": 0.35,
 			"trunk_m": 0.0,
 			"color": [
 				0.28,
@@ -1830,10 +1829,10 @@
 			"shape": "shrub",
 			"model": "raspberry",
 			"height_m": [
-				1.0,
-				2.0
+				1.5,
+				2.5
 			],
-			"crown_m": 0.7,
+			"crown_m": 1.0,
 			"trunk_m": 0.02,
 			"color": [
 				0.33,
@@ -2076,10 +2075,10 @@
 			"shape": "shrub",
 			"model": "wild_rose",
 			"height_m": [
-				1,
-				2.5
+				1.2,
+				2.6
 			],
-			"crown_m": 1.0,
+			"crown_m": 1.6,
 			"trunk_m": 0.03,
 			"color": [
 				0.4,
@@ -2139,9 +2138,9 @@
 			"model": "blackthorn",
 			"height_m": [
 				2,
-				4
+				3.6
 			],
-			"crown_m": 1.5,
+			"crown_m": 2.4,
 			"trunk_m": 0.08,
 			"color": [
 				0.25,
