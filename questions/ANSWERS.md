@@ -744,3 +744,7 @@ Answered: 2026-10-23 00:51 UTC
 Answer: Yes
 Answered: 2026-10-23 00:51 UTC
 
+## cost-22 | Door, Plank: 8 rough planks and 20 nails?
+Answer: Yes
+Answered: 2026-10-23 00:51 UTC
+
