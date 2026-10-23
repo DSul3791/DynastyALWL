@@ -60,6 +60,7 @@ var _spin_next_msec: int = 0
 var _selected: bool = false
 var flora_names: PackedStringArray = PackedStringArray()    # --shot-flora=raspberry,bramble: one plant of each in a row with name tags
 var _flora_t: int = 0
+var flora_lift_m: float = 0.12     # --shot-flora: the row stands this far above the raycast ground (the drawn smooth ground can lie a little higher and hide a 0.2 m flower)
 var summer: bool = false      # --shot-summer: the plant row in its species green (the game draws every hardwood in autumn colours)
 var side_dist: float = 2.8      # --shot-dist=M: third-person camera distance; under 2 m it aims at the held item
 var side_sign: float = 1.0      # 1 = camera on the body's left side, -1 = right side (--shot-right)
@@ -324,6 +325,10 @@ func _process(_delta: float) -> void:
 		return
 
 	_print_state()
+
+	if not flora_names.is_empty():
+		_print_flora_row()
+
 	var image: Image = get_viewport().get_texture().get_image()
 	var path: String = "%s/%s.png" % [dir, shots[_index]["name"]]
 	image.save_png(path)
@@ -409,7 +414,7 @@ func _show_flora(now: int) -> void:
 		var range_m: Variant = entry.get("height_m", 1.0)
 		var h: float = (float(range_m[0]) + float(range_m[1])) * 0.5 if range_m is Array else float(range_m)
 		items["ids"].append((int(entry["id"]) << 16) | (i + 1))   # species id << 16 | a number unique in the chunk (the flora view reads ids >> 16)
-		items["positions"].append(Vector3(x, g, z))
+		items["positions"].append(Vector3(x, g + flora_lift_m, z))
 		items["heights"].append(h)
 		items["yaws"].append(0.0)
 		var tag: Label3D = Label3D.new()
@@ -437,6 +442,39 @@ func _show_flora(now: int) -> void:
 
 	client.flora.set_chunk(here, items, p)
 	_flora_t = now
+
+
+# Look rig diagnostics for --shot-flora: what the flora view holds for the row's chunk (level bits, drawn pieces and instances), per chunk.
+func _print_flora_row() -> void:
+	var p: Vector3 = client.body.global_position
+	var here: Vector2i = Vector2i(int(floor(p.x / client.flora.chunk_m)), int(floor((p.z - 2.4) / client.flora.chunk_m)))
+	var entry: Dictionary = client.flora._chunks.get(here, {})
+
+	if entry.is_empty():
+		print("shot runner: flora row: chunk %s is not held" % str(here))
+		return
+
+	var node: Node3D = entry.get("node")
+	var pieces: int = 0
+	var instances: int = 0
+
+	if node != null:
+		for child in node.get_children():
+			if child is MultiMeshInstance3D:
+				pieces += 1
+				var mmi: MultiMeshInstance3D = child as MultiMeshInstance3D
+				instances += mmi.multimesh.instance_count
+				var mesh: Mesh = mmi.multimesh.mesh
+				var verts: int = 0
+
+				for surface in range(mesh.get_surface_count()):
+					verts += (mesh.surface_get_arrays(surface)[Mesh.ARRAY_VERTEX] as PackedVector3Array).size()
+
+				var first: Transform3D = mmi.multimesh.get_instance_transform(0)
+				var cam: Vector3 = client.camera.global_position
+				print("shot runner: flora piece: kind %s verts %d aabb %s instance0 at %s scale %s camera %s in tree %s range_end %.0f" % [str(mmi.get_meta("kind", -1)), verts, str(mesh.get_aabb()), str(first.origin), str(first.basis.get_scale()), str(cam), str(mmi.is_visible_in_tree()), mmi.visibility_range_end])
+
+	print("shot runner: flora row: chunk %s items %d level %d ground %s visible %s pieces %d instances %d setup_done %s" % [str(here), (entry["items"]["ids"] as PackedInt32Array).size(), int(entry["level"]), str(entry.get("ground")), str(node.visible if node != null else "no node"), pieces, instances, str(client.flora._setup_done)])
 
 
 # A walking body from the side: the drawn camera 2.8 m to the body's left, level with its chest.
