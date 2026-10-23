@@ -1667,8 +1667,9 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 			var n: int = indices[m]
 			var size_scale: float = float(items["heights"][n]) / float(info["height"])
 			var axes: Basis = Basis(Vector3.UP, float(items["yaws"][n])).scaled(Vector3.ONE * size_scale)
-			# Sunk a little so slopes do not show a gap under the trunk.
-			var origin: Vector3 = items["positions"][n] - Vector3(0.0, 0.15, 0.0)
+			# Sunk a little so slopes do not show a gap under the trunk; the sink shrinks with the plant (0.15 m for anything 1.9 m or taller), so a
+			# 0.3 m blueberry keeps its height (Dave/Kathleen 2026-10-23).
+			var origin: Vector3 = items["positions"][n] - Vector3(0.0, minf(0.15, 0.08 * float(items["heights"][n])), 0.0)
 			var o: int = m * stride
 			buffer[o] = axes.x.x
 			buffer[o + 1] = axes.y.x
