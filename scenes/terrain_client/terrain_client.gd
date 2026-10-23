@@ -43,6 +43,7 @@ const InventoryViewScript := preload("res://src/client/inventory_view.gd")
 const NpcViewScript := preload("res://src/client/npc_view.gd")
 const GroundDebugScript := preload("res://src/client/ground_debug.gd")
 const ShowroomScript := preload("res://src/client/showroom.gd")
+const CaveinDeathScript := preload("res://src/client/cavein_death.gd")
 const DripViewScript := preload("res://src/client/drip_view.gd")
 const GameMenuScript := preload("res://src/client/game_menu.gd")
 const SoundTestMenuScript := preload("res://src/client/sound_test_menu.gd")
@@ -1401,6 +1402,7 @@ func _stamp_walkers(now: int) -> void:
 const PLACED_CLEARING := "res://data/look/placed_clearing.json"
 const CLEARING_NOT := [0, 2, 3, 4, 10]   # loose items, felled trunks and stumps; every other state asks structures.json "clears_grass" (StructureLook)
 const StructureLook := preload("res://src/shared/structure_look.gd")
+var cavein_death                      # the cave-in death sequence (src/client/cavein_death.gd), made at the first one
 var showroom                          # the admin showroom at spawn (src/client/showroom.gd), shown while Admin mode is on
 var _cleared_key: int = 0
 var _switches_applied: bool = false
@@ -1534,7 +1536,28 @@ func _say_logout() -> void:
 		multiplayer.poll()
 
 
-func _on_died(_cause: String, spawn_point: Vector3) -> void:
+func _on_died(cause: String, spawn_point: Vector3) -> void:
+	if body == null:
+		return
+
+	# A cave-in death plays its long sequence first; the body is moved when it ends (finish_cavein_death).
+	if cause == "cave-in":
+		if cavein_death == null:
+			cavein_death = CaveinDeathScript.new()
+			add_child(cavein_death)
+
+		body.velocity = Vector3.ZERO
+		cavein_death.start(self, spawn_point)
+		return
+
+	body.global_position = spawn_point + Vector3(0.0, 28.0, 0.0)
+	body.velocity = Vector3.ZERO
+	_was_waiting = true
+	arrival_protect_until_msec = Time.get_ticks_msec() + 10000
+
+
+# The end of the cave-in death sequence: back at the respawn point, as any other death does at once.
+func finish_cavein_death(spawn_point: Vector3) -> void:
 	if body == null:
 		return
 
@@ -2874,7 +2897,7 @@ func _room_to_rise(target: int) -> bool:
 
 
 func _move_player(delta: float) -> void:
-	if menu_open:
+	if menu_open or (cavein_death != null and cavein_death.active):
 		body.velocity = Vector3.ZERO
 		return
 
@@ -3395,7 +3418,7 @@ func _process(delta: float) -> void:
 		var here: Vector3 = _anchor
 		var seconds: float = float(now - _aim_msec) / 1000.0
 
-		if _aim_msec > 0:
+		if _aim_msec > 0 and not (cavein_death != null and cavein_death.active):   # the server already has the character at the respawn point
 			net.report_position.rpc_id(1, here, (here - _aim_pos) / seconds)
 
 		_aim_msec = now
