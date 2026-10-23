@@ -1034,3 +1034,7 @@ Answered: 2026-10-23 04:10 UTC
 Answer: Yes
 Answered: 2026-10-23 04:11 UTC
 
+## rockpile-kinds | Should the same pile rule work for soil, sand, clay, gravel and ore (as mounds), and for logs, planks and bricks (stacked, look later), but no mixed piles?
+Answer: Yes
+Answered: 2026-10-23 04:11 UTC
+
