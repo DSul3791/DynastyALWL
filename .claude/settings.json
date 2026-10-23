@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(git push origin claude/generator-v2)",
-      "Bash(git push origin HEAD:claude/generator-v2)"
+      "Bash(git push origin HEAD:claude/generator-v2)",
+      "mcp__Claude_Browser__navigate"
     ]
   }
 }
