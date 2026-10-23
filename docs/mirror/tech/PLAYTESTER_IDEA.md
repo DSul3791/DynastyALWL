@@ -12,6 +12,14 @@ Status: idea, high interest (BP-T24). Owner: Guru (plan), Steve (bot hooks), Mik
 3. **LLM-driven loop (larger, only if tools allow):** a Claude session on Dave's PC reads screenshots and presses keys with computer-use tools, given plain instructions ("make a fire and cook a fish"). It keeps trying, notes what is confusing or broken, and posts the report. Needs computer-use access on Dave's PC (MikeW is checking which tools his session has). Slower and costlier per step, but finds "feel" problems the scripts can't.
 4. **Feedback loop:** each run ends with a report (goals passed, stuck points, screenshots) into tech/PLAYTEST_REPORTS/ and a short QA card only if it needs Dave's judgment. Stuck points become jobs for the owning thread.
 
+## Core rule, all stages: EXPECT AND STOP (Dave 15:54)
+- Guru and Tyler write the exact steps (keys, menus, targets), so a menu change means updating the script, not guessing.
+- Every step states what it expects to see or measure afterwards (an item in the hotbar, a hole of N blocks, text on screen, a coordinate range).
+- If the expectation is not met, or something expected is missing, the run STOPS at once. It does not skip ahead and does not improvise.
+- The stop report gives: step number and text, expected, seen, a screenshot, the one-line state dump and the build number. It goes to Guru (coordinator relay), who sends it to the owner thread to fix.
+- After the fix, the same script reruns from the start. A script that passes end to end is the test; the report log lives in tech/PLAYTEST_REPORTS/.
+- Stage 3 (LLM loop) follows the same rule: it must stop and report rather than try to work around a missing thing.
+
 ## Cost and risk
 - Stage 1: low cost, low risk (client-only test code, no protocol change). Value now: it replaces many "please test" cards.
 - Stage 2: medium; the risk is a fragile bot after UI changes. Keep helpers few and data-driven. Use the second clone and a separate test server and store, never Dave's saved world.
