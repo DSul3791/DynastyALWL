@@ -36,6 +36,18 @@ func _tunnel(_block: Vector3i) -> VoxelBuffer:
 	return buffer
 
 
+func _solid_block() -> VoxelBuffer:
+	var buffer: VoxelBuffer = Layout.make_buffer(16)
+
+	for z in range(16):
+		for y in range(16):
+			for x in range(16):
+				buffer.set_voxel_f(-3.0, x, y, z, Layout.CHANNEL_SDF)
+				buffer.set_voxel(1, x, y, z, Layout.CHANNEL_SOIL)
+
+	return buffer
+
+
 func _watch() -> Watch:
 	var watch: Watch = Watch.new()
 	watch.configure({"enabled": true, "collapse": _collapse})
@@ -95,6 +107,42 @@ func _init() -> void:
 	again.process_dirty(0)
 	again_items.support_changed.call(Vector3(8.0, 8.0, 8.0))      # no supports yet, so every cell is still short
 	_check(int(again._cells.values()[0]["opened"]) == grace, "a changed support still too weak restarts the window through the items hook")
+
+	# Fixed window (Dave 2026-10-22): 600 s quiet, then the cave-in duration of rumbling (clamped to 120..1200 s).
+	var fixed: Watch = Watch.new()
+	fixed.configure({"enabled": true, "collapse": true, "quiet_s": 600, "cave_in_s": 60})
+	_check(fixed.cave_in_s == 120.0, "cave-in duration is clamped to at least 2 minutes")
+	fixed.configure({"enabled": true, "collapse": true, "quiet_s": 600, "cave_in_s": 9999})
+	_check(fixed.cave_in_s == 1200.0, "and to at most 20 minutes")
+	fixed.configure({"enabled": true, "collapse": true, "quiet_s": 600, "cave_in_s": 1200})
+	fixed.load_block = _tunnel
+	fixed.surface_h = func(_x: float, _z: float) -> float: return 40.0
+	fixed.mark_dirty([Vector3i.ZERO])
+	fixed.process_dirty(0)
+	_check(int(fixed._cells.values()[0]["grace_ms"]) == 1800000, "the window is 10 + 20 minutes whatever the width")
+	_check(fixed.tick(590000, peers)["quake"].is_empty(), "quiet for the first 10 minutes")
+	var rumble: Dictionary = fixed.tick(700000, peers)
+	_check(rumble["quake"].size() == 1 and int(rumble["quake"][0][1]) == 2, "rumbling (creak) starts after the quiet part")
+	var shake: Dictionary = fixed.tick(1500000, peers)
+	_check(shake["quake"].size() == 1 and int(shake["quake"][0][1]) == 3, "then shaking")
+	_check(fixed.tick(1800000, peers)["collapse"].size() >= 1, "and it falls at 30 minutes")
+
+	# Natural caves never collapse (Dave 2026-10-23): when the ground as generated already had the void, no window starts.
+	var cave: Watch = _watch()
+	cave.load_natural = _tunnel                         # "as generated" has the same hollow: it was always there
+	cave.mark_dirty([Vector3i.ZERO])
+	cave.process_dirty(0)
+	_check(cave.working_count() == 0, "a natural cave starts no window")
+	var dug: Watch = _watch()
+	dug.load_natural = func(_b: Vector3i) -> VoxelBuffer: return _solid_block()
+	dug.mark_dirty([Vector3i.ZERO])
+	dug.process_dirty(0)
+	_check(dug.working_count() > 0, "a tunnel dug out of solid ground starts windows")
+	var switched: Watch = _watch()
+	switched.mark_dirty([Vector3i.ZERO])
+	switched.process_dirty(0)
+	switched.set_enabled(false)
+	_check(switched.working_count() == 0 and not switched.enabled, "switched off in game: running windows are cleared")
 
 	_radius = 0.9
 	var narrow: Watch = _watch()

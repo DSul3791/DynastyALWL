@@ -268,6 +268,11 @@ func load_block(buffer: VoxelBuffer, block: Vector3i, lod: int) -> void:
 		ops.apply(buffer, block)
 
 
+# The block as generated, before any dig or fill (the tunnel watch tells man-made spaces from natural caves with it).
+func load_natural(buffer: VoxelBuffer, block: Vector3i) -> void:
+	_load_base(buffer, block, 0)
+
+
 # Real ground is never a whole block of distance exactly 0 (a buffer nobody filled reads that way): 27 spread voxels, 20 at zero.
 static func looks_zeroed(buffer: VoxelBuffer) -> bool:
 	var size: Vector3i = buffer.get_size()
