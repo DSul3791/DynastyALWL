@@ -19,9 +19,10 @@ static func apply(water, rules: Dictionary) -> Dictionary:
 	var land: PackedFloat32Array = water.heights.duplicate()
 	var begun: int = Time.get_ticks_msec()
 	var fill = FillScript.new()
-	fill.build(land, sea, samples, 1.0)
-	var lake_min_depth: float = float(rules.get("lake_min_depth_m", 3.0))
-	var lake_min_cells: int = int(rules.get("lake_min_cells", 40))
+	var lake_min_depth: float = float(rules.get("lake_min_depth_m", 0.5))
+	var lake_min_catchment: float = float(rules.get("lake_min_catchment_km2", 0.05))
+	var routing: PackedFloat32Array = _routing_heights(land, sea, samples, float(rules.get("routing_noise_m", 0.25)), int(rules.get("seed", 17)))
+	fill.build(routing, sea, samples, lake_min_depth)
 	var runoff: PackedFloat32Array = PackedFloat32Array()
 	runoff.resize(total)
 	var unit: float = cell_m * cell_m * 1.0e-6   # discharge reads as catchment km2 until climate scales it
@@ -69,7 +70,11 @@ static func apply(water, rules: Dictionary) -> Dictionary:
 		var lake: Dictionary = fill.lakes[lake_index]
 		var count: int = counts[lake_index + 1]
 
-		if float(lake["depth"]) >= lake_min_depth and count >= lake_min_cells:
+		var outlet: int = int(lake["outlet"])
+		var catchment: float = flow.discharge[outlet] if outlet >= 0 else 0.0
+
+		# Dave 2026-10-23: any hollow that collects enough water holds it; only hollows with no catchment are filled in.
+		if catchment >= lake_min_catchment:
 			keep[lake_index + 1] = 1
 			water.lakes.append({
 				"cells": count, "area_m2": float(count) * cell_m * cell_m,
@@ -86,9 +91,49 @@ static func apply(water, rules: Dictionary) -> Dictionary:
 		if id > 0 and keep[id] == 1:
 			water.water_class[index] = water.LAKE
 			water.water_surface[index] = fill.lakes[id - 1]["level"]
-		elif fill.filled[index] > water.heights[index]:
-			water.heights[index] = fill.filled[index]
+		elif fill.filled[index] - routing[index] >= lake_min_depth:
+			water.heights[index] += fill.filled[index] - routing[index]
 			water.filled_cells += 1
 
 	water._ocean = sea
 	return {"ms": Time.get_ticks_msec() - begun, "lakes": fill.lakes.size(), "river_cells": water.river_cells}
+
+
+# Flat ground drains in straight lines unless the routing surface wiggles a little: the ground plus a smooth noise of
+# +-`amplitude_m` over about 100 m. Only the routing sees it; the ground itself is untouched.
+static func _routing_heights(land: PackedFloat32Array, sea: PackedByteArray, samples: int, amplitude_m: float, seed_value: int) -> PackedFloat32Array:
+	var routed: PackedFloat32Array = land.duplicate()
+
+	if amplitude_m <= 0.0:
+		return routed
+
+	const CELL := 12
+	@warning_ignore("integer_division")
+	var knots: int = (samples - 1) / CELL + 2
+	var values: PackedFloat32Array = PackedFloat32Array()
+	values.resize(knots * knots)
+
+	for index in range(knots * knots):
+		var x: int = (index * 73856093) ^ (seed_value * 19349663)
+		x = (x ^ (x >> 13)) * 1274126177
+		values[index] = float((x ^ (x >> 16)) & 0xFFFF) / 65535.0 * 2.0 - 1.0
+
+	for row in range(samples):
+		var fz: float = float(row) / float(CELL)
+		var j: int = int(fz)
+		var tz: float = fz - float(j)
+
+		for column in range(samples):
+			var index: int = row * samples + column
+
+			if sea[index] == 1:
+				continue
+
+			var fx: float = float(column) / float(CELL)
+			var i: int = int(fx)
+			var tx: float = fx - float(i)
+			var top: float = lerpf(values[j * knots + i], values[j * knots + i + 1], tx)
+			var bottom: float = lerpf(values[(j + 1) * knots + i], values[(j + 1) * knots + i + 1], tx)
+			routed[index] += amplitude_m * lerpf(top, bottom, tz)
+
+	return routed

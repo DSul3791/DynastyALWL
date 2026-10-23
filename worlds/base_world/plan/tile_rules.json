@@ -119,8 +119,9 @@
 		"drainage_mode": false,
 		"drainage": {
 			"river_start_km2": 0.5,
-			"lake_min_depth_m": 3.0,
-			"lake_min_cells": 40,
+			"lake_min_depth_m": 0.5,
+			"lake_min_catchment_km2": 0.05,
+			"routing_noise_m": 0.25,
 			"water_min_depth_m": 0.05,
 			"width_m_per_sqrt_q": 6.0,
 			"min_width_m": 24.0,
