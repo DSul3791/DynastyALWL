@@ -1202,3 +1202,7 @@ Answered: 2026-10-23 13:14 UTC
 Answer: No: Regarding the flicker, have Tyler research it and see if he could come up with an answer because it never used to happen. The water is there the water is fine, but the surface of the water is flickering and losing its textures.
 Answered: 2026-10-23 13:18 UTC
 
+## test-floating-soil | Mined soil lies in the hole
+Answer: No: To make the rig dig can’t you put a shovel in your hand look down at a 15° angle and push the mouse button and then walk forward a step and do it again and then look around
+Answered: 2026-10-23 14:27 UTC
+
