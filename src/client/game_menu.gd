@@ -18,6 +18,7 @@ var _c
 var _pages: Dictionary = {}
 var _column: VBoxContainer
 var _vsync_switch
+var _clear_day_switch
 var _fullscreen_switch
 var _voice_switch
 var _tunnel_switch
@@ -112,6 +113,7 @@ func refresh() -> void:
 		_admin_mode_switch.set_on(_c.items == null or _c.items.admin_craft)
 		_cave_button.text = "Cave-in time: %d min (change)" % roundi(float(_c.tunnel_cave_in_s) / 60.0)
 		_voice_switch.set_on(_c._npc_voice == null or _c._npc_voice.enabled)
+		_clear_day_switch.set_on(_c.weather_look.clear_day)
 
 
 # ---- pages ----
@@ -256,6 +258,10 @@ func _build_admin() -> void:
 			_c.items.admin_craft = on
 
 		_c.net.inventory_action.rpc_id(1, Net.ACT_ADMIN_MODE, 1 if on else 0, 0, 0, Vector3.ZERO))
+	_clear_day_switch = _switch_row(admin, "Day, sunny, no fog", func(on: bool):
+		_c.weather_look.clear_day = on
+		_c.weather_look._day_next_msec = 0
+		note.text = "Noon light, clear sky and no fog %s. Off goes back to the game clock and the world weather." % ("on" if on else "off"))
 	_button(admin, "Reset all terrain edits", func(): show_page("reset_edits"))
 	_button(admin, "Dump water here (to a file on the server)", func():
 		var here: Vector3 = _c.body.global_position
