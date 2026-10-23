@@ -1,6 +1,7 @@
 # Day log (Guru; one block per day, newest first)
-## Day 3, 23 Oct (builds 694-745)
+## Day 3, 23 Oct (builds 694-771)
 Merged: builds 703-745: showroom, look rig, rock piles (server + looks), wood chain (2 firewood per block), berries and flora looks, flowers/herbs, real wolf/bear/horse sounds (12 dB quieter), Dave's own fox/moose/deer recordings, floating-soil real fix (server/client height mismatch), item roll, cave-in death sequence, off-hand torch/shield, wet tunnel sounds, shoulder log in containers, dirt 0.1 kg and lumpy dirt look, Terrain B generator (flag off), merge guard CI + tools/merge_check.py, tools/qa_post.py, tools/merge_branch.sh.
+Merged evening: 746-771: v26 9-tile island bake (764), shrubs/ferns/bramble from Dave's photos, seasonal fruit builder, flora layout stamp, then batch 771 (sunny switch, water_flow_at, sawmill rules, berries-only picking, harvest, 3D sound, flora patches, blackthorn real size, parse scan). Rules: BP-T50 (action plan), BP-T52 (one plan per class of work, threads post QA directly), batch test recipe rewritten (one row one picture), ready queues in JOBS.md, audit in tech/AUDITS. Lessons: builds 750-753 client clash; Mike gate = one PC; permissions.
 Dave decisions: island shape plan approved; player bot declined (better rig steps instead, TEST_RECIPE.md); lake flicker fixed; item roll yes; moose/fox/deer wrong (own recordings used); BP-T42..T49.
 Held: sonny-island-shape (spawn zone check failed twice), kathleen-materials/shovel/spades (superseded), steve-warning-699, project-thread-sp0ppw.
 Lessons: build 743 shipped with conflict markers (fixed in 744); CI false failures fixed; tests must look down at the spot.
