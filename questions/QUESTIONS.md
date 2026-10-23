@@ -8,9 +8,6 @@ Note: 6. Optional: place a timber prop near the roof before the time runs out. T
 Note: 7. Take a picture of the shaking and dust. Write in Notes what happened, yes or no.
 [test]
 
-## cost-found-wood | Wooden foundations (for Plank, Fine wood, Log tiers): small 1x1 = 3 logs + 12 nails, small 2x2 = 12 logs + 48 nails, large 1x1 = 6 logs + 24 nails, large 2x2 = 24 logs + 96 nails?
-[check]
-
 ## cost-found-stone | Stone foundations (Cobblestone, Mason tiers) keep the earlier numbers: small 1x1 = 10 stone + 3 clay, 2x2 = 40 stone + 12 clay; large 1x1 = 30 stone + 10 clay + 4 mortar, 2x2 = 120 stone + 40 clay + 16 mortar?
 [check]
 
