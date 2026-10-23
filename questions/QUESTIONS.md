@@ -50,12 +50,6 @@ Note: Tyler checked: nothing in the game uses the B key today, so there is no cl
 Note: Tyler recommends Yes because it matches what you described and B is free. Steve builds the input and left-hand slot, Sal marks which items can go in the left hand, Kathleen does the hand pose. It is tomorrow's work, not tonight's.
 [check]
 
-## ground-piles | Should loose items on the ground of the same kind that land close together (about 1 m) merge into one pile with a count, so the limit of 64 items near a spot is no longer a problem?
-Note: Today a drop is refused when 64 loose items are already within 12 m. Items already carry a count, so a pile is one ground item holding many.
-Note: A pile shows bigger the more it holds. Picking up takes the whole pile or part of it, and the rock pile item is the same idea for rock.
-Note: Tyler recommends Yes because it removes the limit without more lag (fewer objects to send and draw), and it matches the rock pile you already approved. Steve does merge and split on the server, Sal the pile counts, Kathleen the pile looks.
-[check]
-
 ## rockpile-merge | Should rocks dropped within 1 m of each other join into one pile (same kind only, never tools), and does this fix the limit on items on the ground?
 Note: Up to 5 they look like loose rocks, 6 or more become a pyramid pile made from the count (1 on top, 3 under, 5 under that...). One pile counts as one item, so the limit of 64 is no longer hit.
 Note: Full design: tech/items/ROCK_PILE_DESIGN.md.
