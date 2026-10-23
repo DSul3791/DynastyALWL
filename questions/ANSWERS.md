@@ -812,3 +812,7 @@ Answered: 2026-10-23 01:17 UTC
 Answer: No: The answer here might be. Yes I need your recommendation. Shouldn’t something like this be controlled by draw distance or performance
 Answered: 2026-10-23 01:17 UTC
 
+## sea-tunnel | Do tunnels or rooms below sea level that connect to the sea flood and drown like the river-flood rule, with a plain warning line when you dig below sea level near the coast?
+Answer: No: Yes, but there doesn’t need to be a warning line when you dig you will see the water move
+Answered: 2026-10-23 01:18 UTC
+
