@@ -564,3 +564,7 @@ Answered: 2026-10-23 00:01 UTC
 Answer: No: It’s almost right, but here’s what you do remove the protruding logs that look like they’re coming from the side walls and just have the logs that are in this wall and then we allow the other walls if they get connected to mix in between that space so that has to be an open space for logs to go through and then allow them to connect so that they interlock the way they properly should. Do your best get rid of the curved notch altogether. Redesign and send it back to me. It should almost look like your first one except the notches should be offset on each side.
 Answered: 2026-10-23 00:08 UTC
 
+## door-handles | Are the door handles right: steel bar pulls, no knobs, no handle on the basic twine door?
+Answer: Yes
+Answered: 2026-10-23 00:09 UTC
+
