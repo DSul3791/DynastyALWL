@@ -117,6 +117,9 @@ func _init() -> void:
 	check(world_sent.size() == 1 and world_sent[0][1].size() == 1, "nearby item is announced")
 	var id: int = world_sent[0][1][0][0]
 	items.action(7, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
+	check(items.inventory_of(7).count_of(stone) == ItemsScript.PILE_HANDFUL and items.world_item_count() == 1, "a pile of 15 gives one handful")
+	items.action(7, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
+	items.action(7, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 	check(items.inventory_of(7).count_of(stone) == 15 and items.world_item_count() == 0, "pick up")
 	items.action(7, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 	check(items.inventory_of(7).count_of(stone) == 15, "second pick up of the same item does nothing")
@@ -126,8 +129,10 @@ func _init() -> void:
 	items.action(7, Net.ACT_PICKUP, 2, 0, 0, Vector3.ZERO)
 	check(items.world_item_count() == 1, "cannot pick up from far away")
 
+	var axe_number: int = items.table.number_of("stone_axe")   # a tool: never merges, so the crowd limit still bites
+
 	for n in range(100):
-		items.drop_in_world(stone, 1, Vector3(10.0, 0.0, 10.0))
+		items.drop_in_world(axe_number, 1, Vector3(10.0, 0.0, 10.0), 1)
 	check(items.world_item_count() == ItemsScript.MAX_DROPPED_NEAR + 1, "dropped cap near a spot holds")
 
 	items.drop_in_world(stone, 1, Vector3(4000.0, 0.0, 4000.0))
@@ -145,6 +150,35 @@ func _init() -> void:
 	items.action(7, Net.ACT_ADMIN_MODE, 1, 0, 0, Vector3.ZERO)
 	check(items.free_craft_for(7), "and on again")
 	items.admin_ok = Callable()
+
+	# Rock piles: stackable drops within a metre merge, ignore the crowd limit, a pile gives a handful and lives longer.
+	items.clear_dropped(Vector3.ZERO, 1.0e7)
+	var pile_at: Vector3 = Vector3(2000.0, 0.0, 2000.0)
+	items.report_position(7, pile_at)
+
+	for n in range(100):
+		items.drop_in_world(stone, 1, pile_at + Vector3(0.1 * float(n % 5), 0.0, 0.0))
+	check(items.world_item_count() == 1, "100 stones dropped together are one ground item")
+	check(items.drop_in_world(stone, 5, pile_at), "and a pile never meets the crowd limit")
+	items.drop_in_world(stone, 3, pile_at + Vector3(5.0, 0.0, 0.0))
+	check(items.world_item_count() == 2, "a drop 5 m away is a separate item")
+	items.tick(ItemsScript.WORLD_ITEM_LIFETIME_S + 1.0)
+	check(items.world_item_count() == 1, "a pile outlives the loose 20 minutes")
+	items.tick(ItemsScript.PILE_LIFETIME_S + 1.0)
+	check(items.world_item_count() == 0, "and goes after its 2 hours")
+	items.drop_in_world(stone, ItemsScript.PILE_CAP + 50, pile_at)
+	check(items.world_item_count() == 2, "over the cap a second pile starts")
+	var pile_id: int = -1
+
+	for k in items._items:
+		if int(items._items[k]["count"]) == ItemsScript.PILE_CAP:
+			pile_id = k
+
+	var before_stones: int = items.inventory_of(7).count_of(stone)
+	items.action(7, Net.ACT_PICKUP, pile_id, 0, 0, Vector3.ZERO)
+	check(items.inventory_of(7).count_of(stone) - before_stones == ItemsScript.PILE_HANDFUL and int(items._items[pile_id]["count"]) == ItemsScript.PILE_CAP - ItemsScript.PILE_HANDFUL, "E on a pile takes one handful")
+	items.inventory_of(7).remove(stone, ItemsScript.PILE_HANDFUL)
+	items.clear_dropped(Vector3.ZERO, 1.0e7)
 
 	items.tick(ItemsScript.WORLD_ITEM_LIFETIME_S + 1.0)
 	check(items.world_item_count() == 0, "items despawn")

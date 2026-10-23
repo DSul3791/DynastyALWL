@@ -136,8 +136,9 @@ func _init() -> void:
 		items.drop_in_world(table.number_of("stick"), 6, camp + Vector3(float(n) * 0.3, 0.0, -1.0))
 		items.drop_in_world(table.number_of("plant_fibre"), 3, camp + Vector3(float(n) * 0.3, 0.0, 1.5))
 
-	for id in items._items.keys():
-		items.action(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
+	for _pass in range(12):   # the drops merged into heaps; a heap gives a handful at a time
+		for id in items._items.keys():
+			items.action(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 
 	check(count("stone") >= 14 and count("stick") >= 20 and count("log") == 2, "gathering fills the pack (%d stones, %d sticks, %d logs)" % [count("stone"), count("stick"), count("log")])
 	craft(2, 1)

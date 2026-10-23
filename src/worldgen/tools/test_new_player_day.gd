@@ -84,9 +84,10 @@ func _init() -> void:
 		items.drop_in_world(items.table.number_of("stick"), 6, Vector3(float(n) * 0.3, 10.0, -1.0))
 		items.drop_in_world(items.table.number_of("plant_fibre"), 3, Vector3(float(n) * 0.3, 10.0, 1.5))
 
-	for id in items._items.keys():
-		if not items._items[id].has("scatter"):
-			items.action(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
+	for _pass in range(12):   # the drops merged into heaps; a heap gives a handful at a time
+		for id in items._items.keys():
+			if not items._items[id].has("scatter"):
+				items.action(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 
 	check(count("stone") >= 30 and count("stick") >= 40, "gathering fills the pack (%d stones, %d sticks)" % [count("stone"), count("stick")])
 
