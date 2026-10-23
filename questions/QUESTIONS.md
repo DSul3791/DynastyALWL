@@ -1,3 +1,8 @@
+## esc-character-2 | Add the Character button back to the Esc menu?
+Note: Your earlier No on this was a mistake (you said so at 01:48). The button was left out of build 693 because of it.
+Note: Character opens your player sheet (skills and stats) from the Esc menu.
+[check]
+
 ## collapse-test-3 | Please test the tunnel collapse after the backup. Look for: warnings that build up over 5 minutes, then the roof falls. Did it work?
 Note: 1. Pull, close the game fully, start it, check the HUD says the new build number.
 Note: 2. Go to solid ground (not a natural cave). Check Esc > Settings: Tunnel collapse is On and Cave-in time is 5 min.
