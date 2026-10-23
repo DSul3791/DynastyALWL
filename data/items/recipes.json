@@ -2365,7 +2365,7 @@
 		},
 		"floor_section_kit": {
 			"number": 120,
-			"name": "Floor section",
+			"name": "Ceiling section",
 			"needs": [
 				[
 					"lumber",
