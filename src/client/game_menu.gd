@@ -260,7 +260,7 @@ func _build_admin() -> void:
 	_button(admin, "Dump water here (to a file on the server)", func():
 		var here: Vector3 = _c.body.global_position
 		_c.net.inventory_action.rpc_id(1, Net.ACT_DUMP_WATER, 0, 0, 0, here)
-		var report: String = _c.flora.water_debug(here.x, here.z)
+		var report: String = _c.flora.water_dump_text(here.x, here.z)
 		var file: FileAccess = FileAccess.open("user://water_client_%d_%d.txt" % [int(here.x), int(here.z)], FileAccess.WRITE)
 
 		if file != null:
