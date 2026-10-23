@@ -8,9 +8,6 @@ Note: 6. Optional: place a timber prop near the roof before the time runs out. T
 Note: 7. Take a picture of the shaking and dust. Write in Notes what happened, yes or no.
 [test]
 
-## cost-door-wrought | Wrought iron door = 6 iron ingots + 4 lumber + 20 nails?
-[check]
-
 ## cost-pillar-wood | Wood pillar = ONE log (a lying log is about 2.4 m long, so one log is one pillar and one wall height)?
 [check]
 
