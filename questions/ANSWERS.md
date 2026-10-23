@@ -988,3 +988,7 @@ Answered: 2026-10-23 02:06 UTC
 Answer: No: This is a good question and I’m gonna need Tyler to look it over and make suggestions because as long as there’s enough to rain above it to feed water into it it should be a lake or a pond or hold water in the real world anywhere that can hold water and doesn’t have a runoff will hold water. If we end up with lakes where we don’t want them, then we have to change the generator and how it makes the terrain.
 Answered: 2026-10-23 02:08 UTC
 
+## loose-fill-slope | Should sand and loose soil refuse to be placed on ground steeper than they would slide on ("too steep, it would slide")?
+Answer: No: No, they should just slide down until they would settle and that way you could dump sand or soil over a cliff and it would fall to the bottom eventually making a big pile at the bottom
+Answered: 2026-10-23 02:09 UTC
+
