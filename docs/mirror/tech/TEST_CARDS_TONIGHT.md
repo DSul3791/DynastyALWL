@@ -6,6 +6,8 @@ Format: T = test card, P = picture card. Threads send lines like these; the Guru
 - P | Please take a picture of the 4 hoes (wooden, stone, iron, steel) and the 3 spade sizes, dropped in one row on the ground, at your spawn x 53301, z 68427.
 - P | Please take a picture of a stone axe and a bucket dropped on the ground at your spawn x 53301, z 68427. Look for: the axe a wedge that looks like a hoe from the side; the bucket light wood with dark hoops.
 
+## NOTE 01:05: default cave-in time is now 5 minutes (Dave); the collapse lines below assume you set or keep 5 minutes.
+
 ## Steve (braces are merged as 685, so line 9 applies)
 - T | Please test: dig a tunnel about 2 m wide in solid ground, not in a natural cave, then wait 10 minutes. Look for: no shaking at all in the first 10 minutes.
 - T | Please test: keep waiting in or near that tunnel after the 10 minutes. Look for: creaks, then shaking with dust and "The earth groans.", then "The roof is giving way. Get out now!" every 5 s.
