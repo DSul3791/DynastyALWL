@@ -1206,3 +1206,7 @@ Answered: 2026-10-23 13:18 UTC
 Answer: No: To make the rig dig can’t you put a shovel in your hand look down at a 15° angle and push the mouse button and then walk forward a step and do it again and then look around
 Answered: 2026-10-23 14:27 UTC
 
+## test-floating-soil | Mined soil lies in the hole
+Answer: No: To make the rig dig can’t you put a shovel in your hand look down at a 15° angle and push the mouse button and then walk forward a step and do it again and then look around
+Answered: 2026-10-23 14:27 UTC
+
