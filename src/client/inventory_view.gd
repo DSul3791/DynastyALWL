@@ -1625,11 +1625,12 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 # lump could hang in the air (Dave 2026-10-23, rig: 0.40 m). A loose item within 1 m of the drawn ground rests on it; one whose chunk is not
 # drawn yet is tried again each second.
 const SNAP_MAX_M := 1.0
+const SNAP_TRIES := 10               # looked at again each second this many times: the collision ground under a fresh dig or fill is rebuilt a moment later
 var _snap_next_msec: int = 0
-var _unsnapped: Dictionary = {}      # world item id -> true
+var _unsnapped: Dictionary = {}      # world item id -> tries left
 
 
-func _snap_loose(id: int) -> void:
+func _snap_loose(id: int, tries: int = SNAP_TRIES) -> void:
 	var entry: Dictionary = _world.get(id, {})
 
 	if entry.is_empty() or int(entry.get("state", 0)) != 0 or not _ground_below.is_valid() or _rolling.has(id):
@@ -1640,10 +1641,10 @@ func _snap_loose(id: int) -> void:
 	var ground: float = float(_ground_below.call(at))
 
 	if is_nan(ground) or absf(ground - at.y) > SNAP_MAX_M:
-		_unsnapped[id] = true
+		_unsnapped[id] = tries - 1 if tries > 1 else 0
 		return
 
-	_unsnapped.erase(id)
+	_unsnapped[id] = tries - 1
 	var node: Node3D = entry["node"]
 	node.position = Vector3(at.x, ground + 0.12, at.z)
 
@@ -1655,10 +1656,12 @@ func _snap_tick(now: int) -> void:
 	_snap_next_msec = now + 1000
 
 	for id in _unsnapped.keys():
-		if not _world.has(id):
+		var left: int = int(_unsnapped[id])
+
+		if not _world.has(id) or left <= 0:
 			_unsnapped.erase(id)
 		else:
-			_snap_loose(id)
+			_snap_loose(id, left)
 
 
 # A heap of six or more stones (or soil, clay, sand, gravel) is drawn as one pile built from its count (PileLook); fewer are single items.
