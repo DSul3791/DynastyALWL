@@ -1062,3 +1062,7 @@ Answered: 2026-10-23 04:12 UTC
 Answer: Yes
 Answered: 2026-10-23 04:13 UTC
 
+## cavein-death-skull | Then: a grey, translucent skull and crossbones fills about 75% of the screen over the black?
+Answer: Yes
+Answered: 2026-10-23 04:13 UTC
+
