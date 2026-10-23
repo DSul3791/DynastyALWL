@@ -992,3 +992,7 @@ Answered: 2026-10-23 02:08 UTC
 Answer: No: No, they should just slide down until they would settle and that way you could dump sand or soil over a cliff and it would fall to the bottom eventually making a big pile at the bottom
 Answered: 2026-10-23 02:09 UTC
 
+## river-mouth-dam | If a player dams a river where it meets the sea, should the river back up like a real dam until it goes over or around?
+Answer: Yes
+Answered: 2026-10-23 02:09 UTC
+
