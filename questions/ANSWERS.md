@@ -924,3 +924,7 @@ Answered: 2026-10-23 01:33 UTC
 Answer: Yes
 Answered: 2026-10-23 01:33 UTC
 
+## floor-brace-2 | Floor brace: one log makes the four edge sills of one floor cell, and the wooden floor sits on the sills; every Plank, Fine and Log floor costs +1 log?
+Answer: No: Because you can use boards to make the edges also so they just require boards of whatever they’re type is
+Answered: 2026-10-23 01:34 UTC
+
