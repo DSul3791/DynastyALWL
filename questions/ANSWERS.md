@@ -1138,3 +1138,7 @@ Answered: 2026-10-23 10:21 UTC
 Answer: No: They might be harder, but you don’t have to hit them as much because they are smaller
 Answered: 2026-10-23 10:22 UTC
 
+## logs-per-tree | A felled tree gives whole 8 ft (2.44 m) logs by its height, rounded down, at most 20 per tree (a 24 ft tree gives 3, a 9 ft tree gives 1)? The old bonus for thick trunks goes away.
+Answer: Yes
+Answered: 2026-10-23 10:22 UTC
+
