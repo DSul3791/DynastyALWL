@@ -43,6 +43,11 @@ var held_slot: int = 0
 var holding: bool = true                  # false after the held slot's key is pressed again: hands empty
 const HOTBAR_SLOTS := 10
 var aiming: bool = false
+var off_slot: int = -1                    # the hotbar slot carried in the left hand (torch, shield: items with "offhand": true or tool_class torch/shield), -1 for none
+var off_holding: bool = false             # false after its key is pressed again: left hand empty
+var blocking: bool = false                # B held with a shield in the left hand (the combat rules read this)
+var _off_model: Node3D
+var _off_shown: int = 0
 
 var _inv                                  # InventoryView
 var _net
@@ -133,6 +138,10 @@ func set_first_person(on: bool) -> void:
 			_model.get_parent().remove_child(_model)
 			_mount_model()
 
+		if _off_model != null and _off_model.get_parent() != null:
+			_off_model.get_parent().remove_child(_off_model)
+			_mount_off_model()
+
 
 # The player's full body (third person), whose right hand carries the held model when the camera is out.
 func set_avatar(avatar) -> void:
@@ -147,6 +156,24 @@ func _arm_play(clip: String, seconds: float) -> void:
 
 # A hotbar key: hold that slot, or put it away when it is the one already held.
 func press_slot(slot: int) -> void:
+	# Torch and shield go in the left hand beside whatever the right hand holds (Dave 2026-10-23); the same key again stows it.
+	if is_offhand(_inv.inventory.numbers[clampi(slot, 0, HOTBAR_SLOTS - 1)]):
+		slot = clampi(slot, 0, HOTBAR_SLOTS - 1)
+
+		if off_holding and off_slot == slot:
+			off_holding = false
+			blocking = false
+		else:
+			off_slot = slot
+			off_holding = true
+
+		_inv.refresh_hotbar()
+
+		if _sound != null:
+			_sound.itemfx.hotbar(slot)
+
+		return
+
 	if holding and slot == held_slot:
 		holding = false
 		aiming = false
@@ -190,6 +217,31 @@ func held_number() -> int:
 
 func held_id() -> String:
 	return _inv.table.id_of(held_number())
+
+
+# Left-hand items: the item table marks them with "offhand": true; a torch or a shield is one without the mark.
+func is_offhand(number: int) -> bool:
+	if number == 0:
+		return false
+
+	var entry: Dictionary = _inv.table.entry(_inv.table.id_of(number))
+	return bool(entry.get("offhand", false)) or str(entry.get("tool_class", "")) in ["torch", "shield"]
+
+
+func off_number() -> int:
+	if not off_holding or off_slot < 0:
+		return 0
+
+	var number: int = _inv.inventory.numbers[off_slot]
+	return number if is_offhand(number) else 0
+
+
+func off_id() -> String:
+	return _inv.table.id_of(off_number())
+
+
+func _off_class() -> String:
+	return str(_inv.table.entry(off_id()).get("tool_class", ""))
 
 
 func _is_spear() -> bool:
@@ -381,10 +433,15 @@ func _process_body(delta: float) -> void:
 
 	if _sound != null:
 		var flame_kind: String = str(_inv.table.entry(held_id()).get("tool_class", ""))
+
+		if flame_kind not in ["torch", "lantern"]:
+			flame_kind = _off_class()
+
 		var sheltered: bool = _cover_at.is_valid() and bool(_cover_at.call(_camera.global_position))
 		_sound.flame.set_held(flame_kind if flame_kind in ["torch", "lantern"] else "", not sheltered)
 
 	_show_model()
+	_show_off_model(delta)
 	_label.text = _caption()
 	if _inv != null:
 		_label.offset_bottom = -float(_inv.text_px(78 + 14 + 8))    # above the hotbar at any text size (Dave, build 617: they overlapped)
@@ -718,7 +775,7 @@ func _caption() -> String:
 	var number: int = held_number()
 
 	if number == 0:
-		return ""
+		return _off_caption()
 
 	var text: String = _inv.table.name_of(number)
 
@@ -736,6 +793,20 @@ func _caption() -> String:
 		text += "   (%s; right click switches)" % ("Raise" if raise_mode else "Dig")
 	elif _is_other_tool():
 		text += "   (in hand)"
+
+	var off: String = _off_caption()
+	return text if off == "" else "%s\n%s" % [text, off]
+
+
+# The left-hand line under the right-hand one.
+func _off_caption() -> String:
+	if off_number() == 0:
+		return ""
+
+	var text: String = "Left hand: %s" % _inv.table.name_of(off_number())
+
+	if _off_class() == "shield":
+		text += "   (hold B to block)"
 
 	return text
 
@@ -805,6 +876,99 @@ func _mount_model_third(kind: String) -> void:
 
 	_model.basis = turn
 	_model.position = turn * grip
+
+
+# The left-hand item: a torch (with its light) or a shield, mounted on the left hand; B raises a shield.
+func _show_off_model(delta: float) -> void:
+	var number: int = off_number() if _inv != null else 0
+	blocking = number != 0 and _off_class() == "shield" and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and Input.is_key_pressed(KEY_B)
+
+	if number != _off_shown:
+		_off_shown = number
+
+		if _off_model != null:
+			_off_model.queue_free()
+			_off_model = null
+
+		if number != 0:
+			_off_model = _make_shield_model() if _off_class() == "shield" else _make_torch_model(off_id())
+			_mount_off_model()
+
+	if _off_model == null:
+		return
+
+	var flicker: OmniLight3D = _off_model.get_node_or_null("Light")
+
+	if flicker != null:
+		flicker.visible = not held_light_budget.is_valid() or held_light_budget.call() or not _inv.fire_light_near(_camera.global_position, 8.0)
+		flicker.light_energy = 1.4 + 0.3 * sin(float(Time.get_ticks_msec()) * 0.017)
+
+	if _off_class() == "shield":
+		var lift: float = 1.0 if blocking else 0.0
+		_off_model.position = _off_model.position.lerp(_off_rest + Vector3(0.0, 0.0, -0.18 * lift), clampf(delta * 16.0, 0.0, 1.0))
+
+
+var _off_rest: Vector3 = Vector3.ZERO
+
+
+# Same grips as the right hand, on the left mount (first person arms, or the body in third person).
+func _mount_off_model() -> void:
+	var shield: bool = _off_class() == "shield"
+	var mount = null
+
+	if not _first_person and _avatar_rig != null:
+		mount = _avatar_rig.hand_mount_l
+	elif _arms != null:
+		mount = _arms.hand_mount_l
+
+	if mount == null:
+		_camera.add_child(_off_model)
+		_off_rest = Vector3(-0.35, -0.3, -0.55)
+		_off_model.position = _off_rest
+		return
+
+	mount.add_child(_off_model)
+	var grip: float = 0.0 if shield else float(GRIP_ALONG_Y["torch"])
+
+	if not _first_person and _avatar_rig != null:
+		var stand: Basis = Basis.IDENTITY if shield else Basis(Vector3.RIGHT, deg_to_rad(60.0))
+		_off_model.basis = stand
+		_off_rest = stand * Vector3(0.0, grip, 0.0)
+	else:
+		var tilt: Basis = Basis(Vector3.RIGHT, deg_to_rad(TOOL_TILT_DEG))
+		var turn: Basis = Basis.IDENTITY if shield else Basis(Vector3.RIGHT, deg_to_rad(-90.0))
+		_off_model.basis = tilt * turn
+		_off_rest = tilt * Vector3(0.0, 0.0, -grip)
+
+	_off_model.position = _off_rest
+
+
+# A plain round shield (placeholder until art supplies one): a wooden disc with an iron boss, face along -Z of the hand.
+func _make_shield_model() -> Node3D:
+	var node: Node3D = Node3D.new()
+	var disc: MeshInstance3D = MeshInstance3D.new()
+	var plate: CylinderMesh = CylinderMesh.new()
+	plate.top_radius = 0.28
+	plate.bottom_radius = 0.28
+	plate.height = 0.035
+	var wood: StandardMaterial3D = StandardMaterial3D.new()
+	wood.albedo_color = Color(0.45, 0.32, 0.18)
+	plate.material = wood
+	disc.mesh = plate
+	disc.rotation.x = deg_to_rad(90.0)
+	node.add_child(disc)
+	var boss: MeshInstance3D = MeshInstance3D.new()
+	var dome: SphereMesh = SphereMesh.new()
+	dome.radius = 0.07
+	dome.height = 0.09
+	var iron: StandardMaterial3D = StandardMaterial3D.new()
+	iron.albedo_color = Color(0.4, 0.4, 0.42)
+	iron.metallic = 0.7
+	dome.material = iron
+	boss.mesh = dome
+	boss.position = Vector3(0.0, 0.0, -0.03)
+	node.add_child(boss)
+	return node
 
 
 # A placeable kit in the hand (Items job 3 of refill 10): a small bundle the size of what it makes, shared meshes and materials,
@@ -959,7 +1123,7 @@ func _make_other_model() -> Node3D:
 
 
 # A torch in hand: a stick with a glowing head and one warm light (only while it is held).
-func _make_torch_model() -> Node3D:
+func _make_torch_model(id: String = "") -> Node3D:
 	var torch: Node3D = Node3D.new()
 	var stick: MeshInstance3D = MeshInstance3D.new()
 	var rod: CylinderMesh = CylinderMesh.new()
@@ -988,7 +1152,7 @@ func _make_torch_model() -> Node3D:
 	var light: OmniLight3D = OmniLight3D.new()
 	light.name = "Light"
 	light.light_color = Color(1.0, 0.65, 0.3)
-	light.omni_range = float(_inv.table.entry(held_id()).get("light_m", 9.0))
+	light.omni_range = float(_inv.table.entry(id if id != "" else held_id()).get("light_m", 9.0))
 	light.shadow_enabled = false
 	light.position = Vector3(0.0, 0.55, 0.0)
 	torch.add_child(light)
