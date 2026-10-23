@@ -102,7 +102,7 @@ class Acc:
 # "birch_bark": Material, "twig": Material, "oak": Material, "smooth_bark": Material}. `season`: "winter" gives species that
 # have a bare model (birch) no leaves; anything else gives the leafy model (the
 # leaf color is the per-tree tint, so summer and autumn share one model).
-static func build(entry: Dictionary, h: float, variant: int, far: bool, materials: Dictionary, season: String = "", stripped: bool = false) -> ArrayMesh:
+static func build(entry: Dictionary, h: float, variant: int, far: bool, materials: Dictionary, season: String = "", stripped: bool = false, mid: bool = false) -> ArrayMesh:
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = hash([str(entry["name"]), variant])
 	var bark: Acc = Acc.new()
@@ -154,11 +154,11 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 		"sweet_chestnut":
 			_chestnut(bark, leaves, twigs, rng, h, crown, trunk, variant, far, season)
 		"blackthorn":
-			_blackthorn(bark, leaves, rng, h, crown, far, season, _fruit_state(entry, season, stripped, ["spring"]))
+			_blackthorn(bark, leaves, rng, h, crown, far, season, _fruit_state(entry, season, stripped, ["spring"], mid))
 		"raspberry", "bramble", "wild_rose", "blueberry":
-			_cane_shrub(SHRUB_LOOKS[str(entry["name"])], bark, leaves, rng, h, crown, far, _fruit_state(entry, season, stripped, SHRUB_LOOKS[str(entry["name"])].get("bloom_in", ["spring"])))
+			_cane_shrub(SHRUB_LOOKS[str(entry["name"])], bark, leaves, rng, h, crown, far, _fruit_state(entry, season, stripped, SHRUB_LOOKS[str(entry["name"])].get("bloom_in", ["spring"]), mid))
 		"ground_berry":
-			_ground_berry(GROUND_LOOKS[str(entry["name"])], bark, leaves, rng, h, crown, far, _fruit_state(entry, season, stripped, ["spring"]))
+			_ground_berry(GROUND_LOOKS[str(entry["name"])], bark, leaves, rng, h, crown, far, _fruit_state(entry, season, stripped, ["spring"], mid))
 		"wildflower":
 			_wildflower(WILDFLOWER_LOOKS[str(entry["name"])], bark, leaves, rng, h, crown, far)
 		"leafy_herb":
@@ -2201,12 +2201,12 @@ const SHRUB_LOOKS := {
 # What a fruiting plant shows in `season` (Dave 2026-10-23: fruit only in the right season). `fruit`: ripe berries are drawn (the season is one of
 # the species' flora.json "season" list and the plant has not been picked bare: `stripped`); `bloom`: white or coloured blossom (`bloom_in` seasons);
 # `bare`: leafless (winter). An empty season keeps the old always-fruiting look (offline checks).
-static func _fruit_state(entry: Dictionary, season: String, stripped: bool, bloom_in: Array) -> Dictionary:
+static func _fruit_state(entry: Dictionary, season: String, stripped: bool, bloom_in: Array, mid: bool = false) -> Dictionary:
 	if season == "":
-		return {"fruit": not stripped, "bloom": true, "bare": false, "legacy": true}
+		return {"fruit": not stripped, "bloom": true, "bare": false, "legacy": true, "mid": mid}
 
 	var ripe_in: Array = entry.get("season", [])
-	return {"fruit": (ripe_in.has(season) or ripe_in.has("all")) and not stripped, "bloom": bloom_in.has(season), "bare": season == "winter", "legacy": false}
+	return {"fruit": (ripe_in.has(season) or ripe_in.has("all")) and not stripped, "bloom": bloom_in.has(season), "bare": season == "winter", "legacy": false, "mid": mid}
 
 
 # A shrub-only leaf spray (Dave 2026-10-23: leaves were round puffs): two narrow cards in a shallow V pointing along `along`, like a
@@ -2262,7 +2262,8 @@ static func _cane_shrub(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 	var bare: bool = bool(state["bare"])
 	var bloom_color: Variant = look.get("blossom", null) if legacy else look.get("blossom", look.get("flower", null))
 	var span: Array = look["canes"]
-	var canes: int = int(look.get("far_canes", 4)) if far else rng.randi_range(int(span[0]), int(span[1]))
+	var mid: bool = bool(state.get("mid", false))   # the middle model (30-60 m, about 1000 vertices): fewer canes, sprays and no thorns
+	var canes: int = int(look.get("far_canes", 4)) if far else (maxi(int(round(float(rng.randi_range(int(span[0]), int(span[1]))) * 0.5)), 4) if mid else rng.randi_range(int(span[0]), int(span[1])))
 	var arch: float = float(look["arch"])
 	var az: float = rng.randf() * TAU
 	var cane_color: Color = look["cane"]
@@ -2279,7 +2280,7 @@ static func _cane_shrub(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 		var p2: Vector3 = out * reach * (0.25 + 0.35 * arch) + Vector3(0.0, top_y, 0.0)
 		var p3: Vector3 = out * reach * (0.3 + 0.7 * arch) + Vector3(0.0, top_y * (1.0 - 0.28 * arch), 0.0)
 		var ctrl: Array = [p0, p1, p2, p3]
-		var segs: int = 3 if far else int(look.get("segs", 6))
+		var segs: int = 3 if (far or mid) else int(look.get("segs", 6))
 		var pts: Array = []
 
 		for m in range(segs + 1):
@@ -2289,7 +2290,7 @@ static func _cane_shrub(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 			var taper: float = float(m) / float(segs)
 			_branch(bark, pts[m], pts[m + 1], r * (1.3 - 0.8 * taper), r * (1.3 - 0.8 * (taper + 1.0 / float(segs))), cane_color, 4 if far else 5)
 
-		if look["thorns"] and not far:
+		if look["thorns"] and not far and not mid:
 			for m in range(int(look.get("thorn_n", 9))):
 				var t: float = rng.randf_range(0.1, 1.0)
 				var on: Vector3 = _bezier(ctrl, t)
@@ -2297,7 +2298,7 @@ static func _cane_shrub(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 				_branch(bark, on, on + spike * 0.1 * crown, r * 0.5, r * 0.05, cane_color * 0.8, 3)
 
 		# Small leaf sprays all along the cane, with the berries or flowers hanging free beneath them where they show.
-		var sprays: int = 3 if far else int(look.get("sprays", 8))
+		var sprays: int = 3 if far else (maxi(int(float(look.get("sprays", 8)) * 0.5), 3) if mid else int(look.get("sprays", 8)))
 		var leaf_size: float = crown * float(look["leaf"]) * 0.3
 
 		for m in range(0 if bare else sprays):
@@ -2334,7 +2335,7 @@ static func _cane_shrub(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 
 	# Leaf sprays standing up in the middle so the bush has no hollow centre.
 	if not far and not bare and look.has("fill"):
-		for k in range(int(look["fill"])):
+		for k in range(int(float(look["fill"]) * (0.33 if mid else 1.0))):
 			var a: float = rng.randf() * TAU
 			var at: Vector3 = Vector3(cos(a), rng.randf_range(0.08, 0.85) * h, sin(a)) * Vector3(crown * float(look.get("fill_r", 0.45)), 1.0, crown * float(look.get("fill_r", 0.45))) * Vector3(sqrt(rng.randf()), 1.0, sqrt(rng.randf()))
 			var along: Vector3 = Vector3(rng.randfn() * 0.6, 1.0, rng.randfn() * 0.6)
@@ -2507,7 +2508,8 @@ static func _blackthorn(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: f
 	# Budget (Steve 2026-10-23): near model at most about 4,000 vertices, far model about 800. Spines are single triangles.
 	var bloom: bool = season == "spring"
 	var bare: bool = bool(state["bare"])
-	var stems: int = 5 if far else rng.randi_range(12, 13)
+	var small: bool = bool(state.get("mid", false))   # middle model
+	var stems: int = 5 if far else (7 if small else rng.randi_range(12, 13))
 	var az: float = rng.randf() * TAU
 	var r0: float = maxf(h * 0.005, 0.012)
 
@@ -2524,7 +2526,7 @@ static func _blackthorn(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: f
 		var nodes: Array = [top, mid]
 
 		# Side shoots from the upper two thirds, angled out; each ends in a long spine, with one short one along it.
-		for m in range(2 if far else rng.randi_range(6, 7)):
+		for m in range(2 if far else (3 if small else rng.randi_range(6, 7))):
 			var u: float = rng.randf_range(0.15, 1.0)
 			var from: Vector3 = base.lerp(mid, u * 2.0) if u < 0.5 else mid.lerp(top, u * 2.0 - 1.0)
 			var side: Vector3 = (out * 0.6 + Vector3(rng.randfn(), rng.randf_range(0.0, 0.8), rng.randfn()) * 0.6).normalized()
@@ -2554,7 +2556,7 @@ static func _blackthorn(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: f
 					_cluster(bark, rng, n + Vector3(0.0, -crown * 0.04, 0.0), crown * 0.04, SLOE_COLOR, false, rng.randi_range(3, 4))
 
 	# Leaf sprays low in the bush as well, so it is full from the top down to the ground (Dave 2026-10-23).
-	if not far and not bloom and not bare:
+	if not far and not small and not bloom and not bare:
 		for k in range(14):
 			var a: float = rng.randf() * TAU
 			var at: Vector3 = Vector3(cos(a), 0.0, sin(a)) * crown * 0.45 * sqrt(rng.randf()) + Vector3(0.0, rng.randf_range(0.05, 0.7) * h, 0.0)
