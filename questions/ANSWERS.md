@@ -1158,3 +1158,7 @@ Answered: 2026-10-23 10:24 UTC
 Answer: Yes
 Answered: 2026-10-23 10:25 UTC
 
+## fix-merge-guard | Should we build a pre-merge check script first (it checks conflict markers, duplicate item numbers and action ids, next_number, crash logs, JSON and the warning count) and then run it automatically on GitHub (CI)?
+Answer: Yes
+Answered: 2026-10-23 10:26 UTC
+
