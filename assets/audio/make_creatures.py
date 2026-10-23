@@ -203,16 +203,21 @@ def bear_roar(rng):
 
 
 def moose_grunt(rng):
-    # A low, short cow-like grunt, one or two.
-    out = np.zeros(int(1.0 * SR))
-
-    for k in range(rng.integers(1, 3)):
-        d = rng.uniform(0.3, 0.5)
-        g = voiced(rng, d, rng.uniform(70, 90), rng.uniform(55, 70), [(250, 1.0), (700, 0.7)], rough=0.35, breath=0.15)
-        g *= np.sin(np.pi * np.arange(len(g)) / len(g)) ** 0.5
-        add(out, g / (np.max(np.abs(g)) + 1e-9), 0.03 + 0.45 * k)
-
-    return finish(out[:int(0.9 * SR)], 0.8)
+    # A moose call is a low, nasal, drawn-out groan ("mooo-aah"): pitch climbs a little then sags, with a nasal formant and some rasp.
+    d = rng.uniform(1.2, 1.7)
+    n = int(d * SR)
+    t = np.arange(n) / SR
+    u = t / d
+    f0 = rng.uniform(105, 130)
+    contour = np.interp(u, [0.0, 0.3, 0.6, 1.0], [f0 * 0.9, f0 * 1.45, f0 * 1.3, f0 * 0.85])
+    phase = np.cumsum(contour * (1.0 + 0.015 * np.sin(2 * np.pi * 6 * t))) / SR
+    saw = 2.0 * (phase % 1.0) - 1.0
+    saw *= 1.0 + 0.3 * rng.standard_normal(n)
+    spec = freqs(n)
+    x = shape(saw, 1.0 * band(spec, 420, 0.5) + 0.9 * band(spec, 1150, 0.45) + 0.4 * band(spec, 2300, 0.5) + 0.3 * band(spec, 180, 0.7))
+    x += 0.12 * noise(rng, n, lambda fr: band(fr, 900, 1.0)) * 4
+    x *= np.minimum(u / 0.12, 1.0) * np.minimum((1.0 - u) / 0.3, 1.0) ** 0.8
+    return finish(x, 0.8, 0.1)
 
 
 def moose_snort(rng):
