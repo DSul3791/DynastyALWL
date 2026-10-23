@@ -46,7 +46,7 @@ BEST_PRACTICES.md, PROCESS.md, DECISIONS.md, JOBS.md, BUILD_LOG.md, TEST_QUEUE.m
 1. Coordinator asks every thread to finish, push and report "finished" plus tomorrow's first job. Nudges (BP-T38) go both ways between coordinator and Guru.
 2. Guru merges everything ready, renumbers, updates BUILD_LOG, DECISIONS, HANDOFF, TEST_CARDS_TONIGHT, and tells the coordinator the head is FINAL.
 3. NOBODY is blocked or waiting (BP-T41): every question a thread needs is already a card on Dave's page; every thread has a next job that does not depend on an unanswered card.
-4. Dave pulls, closes the game fully, starts it and confirms it starts and plays. Then MikeW runs the backup (nightly_backup.py).
+4. Dave pulls, closes the game fully, starts it and confirms it starts and plays. Then MikeW runs the backup (nightly_backup.py) ONCE per night. Dave 2026-10-23 04:38: tonight's backup was already done and there is not another; do NOT re-request a backup after later merges unless Dave asks.
 5. After the backup the Guru posts the night's test and picture cards (BP-T40; each with simple instructions and a Notes box). Dave plays and answers.
 6. Next morning: answer sweep (ANSWERS.md into DECISIONS.md, relay to threads), then the first 3 jobs.
 
