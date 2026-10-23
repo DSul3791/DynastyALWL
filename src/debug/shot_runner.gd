@@ -62,6 +62,11 @@ var flora_names: PackedStringArray = PackedStringArray()    # --shot-flora=raspb
 var _flora_t: int = 0
 var flora_scale: float = 1.0       # --shot-flora-scale=N: draw the row N times its natural size (a check that a small plant is only hard to see)
 var cam_above_m: float = -1.0       # --shot-cam-above=M: the camera stands M metres above the ground at the plant row (--flora); -1 keeps the --agl height
+var views: Array = []                # --shot-views="name:dist:pitch:above;...": extra pictures of the same scene (see _parse_views)
+var _view_i: int = 0
+var _view_msec: int = 0              # when the current view was set up; 0 = not set up yet
+var _subject: Vector3 = Vector3.ZERO # what the views look at: the middle of the --flora row, else 4 m ahead of the player
+var _subject_set: bool = false
 var flora_lift_m: float = 0.12     # --shot-flora: the row stands this far above the raycast ground (the drawn smooth ground can lie a little higher and hide a 0.2 m flower)
 var summer: bool = false      # --shot-summer: the plant row in its species green (the game draws every hardwood in autumn colours)
 var side_dist: float = 2.8      # --shot-dist=M: third-person camera distance; under 2 m it aims at the held item
@@ -92,6 +97,8 @@ func setup(owner_client, args: Array) -> void:
 			side_dist = float(argument.trim_prefix("--shot-dist="))
 		elif argument == "--shot-right":
 			side_sign = -1.0
+		elif argument.begins_with("--shot-views="):
+			views = _parse_views(argument.trim_prefix("--shot-views="))
 		elif argument.begins_with("--shot-flora-scale="):
 			flora_scale = float(argument.trim_prefix("--shot-flora-scale="))
 		elif argument.begins_with("--shot-cam-above="):
@@ -330,6 +337,10 @@ func _process(_delta: float) -> void:
 	if _flora_t != 0 and now - _flora_t < 6000:
 		return
 
+	if _view_i < views.size():
+		_run_view(now)
+		return
+
 	_print_state()
 
 	if not flora_names.is_empty():
@@ -449,9 +460,81 @@ func _show_flora(now: int) -> void:
 	client.flora.set_chunk(here, items, p)
 	_flora_t = now
 
+	if not items["positions"].is_empty():
+		var spots: PackedVector3Array = items["positions"]
+		var middle: Vector3 = Vector3.ZERO
+
+		for spot in spots:
+			middle += spot
+
+		_subject = middle / float(spots.size())
+		_subject_set = true
+
 	if cam_above_m >= 0.0 and not items["positions"].is_empty():
 		var subject: Vector3 = items["positions"][0]
 		client.body.global_position.y = subject.y - flora_lift_m + cam_above_m - client.camera.position.y
+
+
+# --shot-views="name:dist:pitch:above;name2:...": extra pictures of the placed scene from other cameras, all in one start. dist = metres from the
+# subject (south of it, looking north), pitch = degrees, above = camera metres above the ground there. Names must be unique: the frames are
+# <shot name>_<view name>.png. Anything wrong in the text stops the run with a clear line (exit code 2).
+func _parse_views(text: String) -> Array:
+	var list: Array = []
+	var seen: Dictionary = {}
+
+	for part in text.split(";", false):
+		var pieces: PackedStringArray = part.split(":", false)
+		var problem: String = ""
+
+		if pieces.size() != 4:
+			problem = "'%s' needs 4 parts name:dist:pitch:above" % part
+		elif seen.has(pieces[0]):
+			problem = "name '%s' is used twice" % pieces[0]
+		elif not (pieces[1].is_valid_float() and pieces[2].is_valid_float() and pieces[3].is_valid_float()):
+			problem = "'%s' dist, pitch and above must be numbers" % part
+		elif float(pieces[1]) < 0.0 or float(pieces[3]) < 0.0:
+			problem = "'%s' dist and above cannot be negative" % part
+
+		if problem != "":
+			print("shot runner: --views error: %s" % problem)
+			(Engine.get_main_loop() as SceneTree).quit(2)
+			return []
+
+		seen[pieces[0]] = true
+		list.append({"name": pieces[0], "dist": float(pieces[1]), "pitch": float(pieces[2]), "above": float(pieces[3])})
+
+	return list
+
+
+# One view per call: set the camera, let it settle 2 s, save the frame, go on to the next; the normal picture follows the last view.
+func _run_view(now: int) -> void:
+	var view: Dictionary = views[_view_i]
+
+	if _view_msec == 0:
+		if not _subject_set:
+			var p: Vector3 = client.body.global_position
+			_subject = Vector3(p.x, _ground(p.x, p.z - 4.0), p.z - 4.0)
+			_subject_set = true
+
+		var cam_x: float = _subject.x
+		var cam_z: float = _subject.z + float(view["dist"])
+		var ground: float = _ground(cam_x, cam_z)
+		client.body.rotation.y = 0.0
+		client.body.global_position = Vector3(cam_x, (_subject.y if is_nan(ground) else ground) + float(view["above"]) - client.camera.position.y, cam_z)
+		client.pitch = deg_to_rad(float(view["pitch"]))
+		client.camera.rotation.x = client.pitch
+		_view_msec = now
+		return
+
+	if now - _view_msec < 2000:
+		return
+
+	var image: Image = get_viewport().get_texture().get_image()
+	var path: String = "%s/%s_%s.png" % [dir, shots[_index]["name"], view["name"]]
+	image.save_png(path)
+	print("shot runner: view %s saved %s build %d dist %.1f pitch %.0f above %.2f camera %s subject %s" % [view["name"], path, client.BUILD, float(view["dist"]), float(view["pitch"]), float(view["above"]), str(client.camera.global_position), str(_subject)])
+	_view_i += 1
+	_view_msec = 0
 
 
 # Look rig diagnostics for --shot-flora: what the flora view holds for the row's chunk (level bits, drawn pieces and instances), per chunk.
