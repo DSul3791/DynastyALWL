@@ -712,7 +712,7 @@ func _groves_near(item: Dictionary, grove: Dictionary, seed: int, species_id: in
 # Patches of one species in a chunk. Patch centres come from a hashed grid (every_m), so the same patch is found from every
 # chunk it touches; each plant is drawn from the patch cell and its own number only, so two chunks (and two tiles) agree.
 # Item number = STAND_BASE + slot * PATCH_MAX_PLANTS + k, where slot is the patch cell's place in this chunk's window.
-func _place_patches(item: Dictionary, data, chunk: Vector2i, origin: Vector2, species_id: int, found: Array) -> void:
+func _place_patches(item: Dictionary, data, _chunk: Vector2i, origin: Vector2, species_id: int, found: Array) -> void:
 	var patch: Dictionary = item["patch"]
 	var every: float = patch["every_m"]
 	# radius_m and spacing_m are given for scale 1 and grow with the patch scale (a 3x bush would overlap its neighbours).
