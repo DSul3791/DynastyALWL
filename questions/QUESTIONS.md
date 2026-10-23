@@ -55,11 +55,6 @@ Note: At 5 or fewer left it turns back into loose rocks.
 Note: Tyler recommends Yes because it is quick for one rock and for a lot, and matches the rock pile item Sal built.
 [check]
 
-## rockpile-big | Above about 500 rocks, should the look change to a smooth rocky mound instead of drawing every rock, with a limit of 100,000 rocks per pile?
-Note: A mound keeps the game fast. Past 100,000 a second pile starts beside the first.
-Note: Tyler recommends Yes because drawing thousands of rocks would slow the game, and nobody can tell the difference at that size.
-[check]
-
 ## cavein-death-slow | Should a cave-in that kills you be slow and dramatic: the roof falls in 3 to 5 waves over about 6 seconds, with dust and rumble, instead of all at once?
 Note: Damage comes in chunks, one per wave, and you stagger and then lie down on the last one. You still get the full warning first.
 Note: Tyler recommends Yes because it matches what you asked for and keeps the 90 second warning rule.
