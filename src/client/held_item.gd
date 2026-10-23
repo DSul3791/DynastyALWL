@@ -601,8 +601,12 @@ func _strike() -> void:
 	var tree: Array = _tree_near.call(hit["position"]) if _tree_near.is_valid() else []
 	var trunk_id: int = _inv.felled_trunk_near(hit["position"])
 	var boulder_id: int = _inv.boulder_near(hit["position"])
+	var log_id: int = _inv.loose_log_near(hit["position"])
 
-	if boulder_id != 0:
+	if log_id != 0:
+		_sound.hits.hit("axe", "wood", hit["position"], 1.0)
+		_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, log_id, 0, 0, Vector3.ZERO)
+	elif boulder_id != 0:
 		_sound.hits.hit_ground("pick", hit["position"], 1.0)
 		_net.inventory_action.rpc_id(1, Net.ACT_HIT, boulder_id, Net.HIT_BOULDER, 0, Vector3.ZERO)
 	elif trunk_id != 0:

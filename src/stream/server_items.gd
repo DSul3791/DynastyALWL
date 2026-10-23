@@ -2853,6 +2853,10 @@ func _process_trunk(peer: int, inv, id: int) -> void:
 		_process_carcass(peer, inv, id)
 		return
 
+	if not it.is_empty() and not it.has("tree") and not it.has("struct"):
+		_chop_loose_log(peer, inv, id)
+		return
+
 	if it.is_empty() or not it.has("tree") or int(it["tree"]["state"]) != 3 or not _peer_pos.has(peer) or not _has_tool(inv, "axe"):
 		return
 
@@ -3353,33 +3357,73 @@ func _use_struct(peer: int, inv, id: int) -> void:
 	if float(now - int(_last_use.get(peer, -100000))) < float(def.get("use_pace_ms", 600)) / skill_factor(peer, "split_log"):
 		return
 
-	var log_n: int = table.number_of("log")
-	var big: bool = shoulder_of(peer) != ""
+	# Dave 2026-10-23: the chopping block splits WOODEN BLOCKS (a log chopped on the ground gives them), one block to one piece of firewood.
+	var block_n: int = table.number_of("wooden_block")
 
 	if not _has_tool(inv, "axe"):
 		_say(peer, "You need an axe to split wood.")
 		return
 
-	if not big and not inv.has(log_n, 1):
-		_say(peer, "You need a log to split.")
+	if not inv.has(block_n, 1):
+		_say(peer, "You need a wooden block to split. Chop a log on the ground with your axe first.")
 		return
 
 	_last_use[peer] = now
+	inv.remove(block_n, 1)
+	_drop_firewood_beside(it, int(def.get("firewood_per_block", 1)))
+	_wear_tool(peer, inv, "axe", "split")
+	practice(peer, "split_log")
+	_dirty = true
 
-	# A large log from the shoulder gives several bolts' worth (it is about a dozen times a short log); plain firewood, no species.
-	if big:
-		_characters[str(_peer_key[peer])]["shoulder"] = ""
-		sync_shoulder(peer)
-	else:
-		inv.remove(log_n, 1)
 
+# Split firewood falls beside the chopping block and joins the heap lying there; five or more make a pile (the client draws it).
+func _drop_firewood_beside(block: Dictionary, count: int) -> void:
 	var wood: int = table.number_of("firewood")
-	var left: int = inv.add(wood, int(def.get("shoulder_log_to_firewood", 12)) if big else int(def.get("logs_to_firewood", 4)))
+	var spot: Vector3 = block["pos"] + Vector3(0.9, 0.0, 0.0)
 
-	if left > 0:
-		drop_in_world(wood, left, _peer_pos[peer])
+	for id in _items:
+		var other: Dictionary = _items[id]
+
+		if int(other["number"]) == wood and not other.has("struct") and not other.has("scatter") and not other.has("tree") and Vector2(other["pos"].x - spot.x, other["pos"].z - spot.z).length() < 0.6 and int(other["count"]) + count <= table.stack_of(wood):
+			other["count"] = int(other["count"]) + count
+			other["left"] = WORLD_ITEM_LIFETIME_S
+			return
+
+	drop_in_world(wood, count, spot)
+
+
+# A log lying on the ground, struck with an axe, falls apart into wooden blocks (a short log 4, a large shoulder log 12).
+func _chop_loose_log(peer: int, inv, id: int) -> void:
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or it.has("struct") or it.has("tree") or it.has("fire") or it.has("scatter") or not _peer_pos.has(peer) or not _has_tool(inv, "axe"):
+		return
+
+	var item_id: String = table.id_of(int(it["number"]))
+	var big: bool = is_shoulder_item(int(it["number"]))
+
+	if item_id != "log" and not big:
+		return
+
+	if _peer_pos[peer].distance_to(it["pos"]) > PROCESS_REACH_M + 1.0:
+		return
+
+	var now: int = Time.get_ticks_msec()
+
+	if float(now - int(_last_process.get(peer, -100000))) < float(PROCESS_COOLDOWN_MS):
+		return
+
+	_last_process[peer] = now
+	var cfg: Dictionary = _structures.get("chopping_block", {})
+	var blocks: int = int(cfg.get("blocks_per_shoulder_log", 12)) if big else int(cfg.get("blocks_per_log", 4))
+
+	if int(it["count"]) > 1:
+		it["count"] = int(it["count"]) - 1
+	else:
+		_items.erase(id)
 
 	_wear_tool(peer, inv, "axe", "split")
+	drop_in_world(table.number_of("wooden_block"), blocks, it["pos"] + Vector3(0.0, 0.1, 0.0))
 	practice(peer, "split_log")
 	_dirty = true
 

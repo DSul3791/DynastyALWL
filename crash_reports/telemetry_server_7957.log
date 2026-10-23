@@ -1,0 +1,63 @@
+[04:51:08.131] server listening on port 7957 after 8131 ms of start-up, Linux, ram 475 MB, commit 6c56706
+[04:51:09.593] max gap 0 ms | peers 0 fps 1 ram 475 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 0 pkts 0 KB, received 0 pkts 0 KB | 
+[04:51:10.593] max gap 13 ms | peers 0 fps 60 ram 475 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 0 pkts 0 KB, received 0 pkts 0 KB | 
+[04:51:11.593] max gap 7 ms | peers 0 fps 144 ram 475 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 0 pkts 0 KB, received 0 pkts 0 KB | 
+[04:51:12.594] max gap 7 ms | peers 0 fps 145 ram 475 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 0 pkts 0 KB, received 0 pkts 0 KB | 
+[04:51:13.594] max gap 8 ms | peers 0 fps 145 ram 482 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 0 pkts 0 KB, received 0 pkts 0 KB | 
+[04:51:14.595] max gap 7 ms | peers 0 fps 145 ram 482 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 0 pkts 0 KB, received 0 pkts 0 KB | 
+[04:51:15.595] max gap 7 ms | peers 0 fps 145 ram 496 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 0 pkts 0 KB, received 0 pkts 0 KB | 
+[04:51:16.596] max gap 8 ms | peers 0 fps 145 ram 503 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 0 pkts 0 KB, received 0 pkts 0 KB | 
+[04:51:17.596] max gap 7 ms | peers 0 fps 145 ram 517 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 0 pkts 0 KB, received 0 pkts 0 KB | 
+[04:51:18.597] max gap 7 ms | peers 0 fps 145 ram 524 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 0 pkts 0 KB, received 0 pkts 0 KB | 
+[04:51:19.597] max gap 10 ms | peers 0 fps 145 ram 552 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 0 pkts 0 KB, received 0 pkts 0 KB | 
+[04:51:20.598] max gap 8 ms | peers 0 fps 145 ram 609 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 0 pkts 0 KB, received 0 pkts 0 KB | 
+[04:51:21.598] max gap 10 ms | peers 0 fps 145 ram 637 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 0 pkts 0 KB, received 0 pkts 0 KB | 
+[04:51:22.599] max gap 10 ms | peers 0 fps 145 ram 595 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 0 pkts 0 KB, received 0 pkts 0 KB | 
+[04:51:23.599] max gap 10 ms | peers 0 fps 145 ram 595 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 0 pkts 0 KB, received 0 pkts 0 KB | 
+[04:51:24.600] max gap 9 ms | peers 0 fps 145 ram 623 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 0 pkts 0 KB, received 0 pkts 0 KB | 
+[04:51:25.600] max gap 7 ms | peers 0 fps 144 ram 595 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 0 pkts 0 KB, received 0 pkts 0 KB | 
+[04:51:26.601] max gap 11 ms | peers 0 fps 145 ram 595 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 0 pkts 0 KB, received 0 pkts 0 KB | 
+[04:51:27.601] max gap 10 ms | peers 0 fps 145 ram 609 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 0 pkts 0 KB, received 0 pkts 0 KB | 
+[04:51:28.602] max gap 8 ms | peers 0 fps 145 ram 595 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 0 pkts 0 KB, received 0 pkts 0 KB | 
+[04:51:29.602] max gap 11 ms | peers 0 fps 145 ram 595 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 0 pkts 0 KB, received 0 pkts 0 KB | 
+[04:51:30.603] max gap 7 ms | peers 0 fps 145 ram 595 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 0 pkts 0 KB, received 0 pkts 0 KB | 
+[04:51:31.603] max gap 7 ms | peers 0 fps 145 ram 581 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 0 pkts 0 KB, received 0 pkts 0 KB | 
+[04:51:32.604] max gap 10 ms | peers 0 fps 145 ram 595 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 0 pkts 0 KB, received 0 pkts 0 KB | 
+[04:51:33.604] max gap 8 ms | peers 0 fps 145 ram 595 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 0 pkts 0 KB, received 0 pkts 0 KB | 
+[04:51:34.605] max gap 8 ms | peers 0 fps 145 ram 595 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 0 pkts 0 KB, received 0 pkts 0 KB | 
+[04:51:35.605] max gap 10 ms | peers 0 fps 145 ram 595 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 0 pkts 0 KB, received 0 pkts 0 KB | 
+[04:51:36.606] max gap 7 ms | peers 0 fps 145 ram 595 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 0 pkts 0 KB, received 0 pkts 0 KB | 
+[04:51:37.606] max gap 8 ms | peers 0 fps 145 ram 595 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 0 pkts 0 KB, received 0 pkts 0 KB | 
+[04:51:38.608] max gap 16 ms | peers 0 fps 144 ram 595 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 0 pkts 0 KB, received 0 pkts 0 KB | 
+[04:51:39.609] max gap 7 ms | peers 0 fps 145 ram 595 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 0 pkts 0 KB, received 0 pkts 0 KB | 
+[04:51:40.609] max gap 7 ms | peers 0 fps 145 ram 595 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 0 pkts 0 KB, received 0 pkts 0 KB | 
+[04:51:41.610] max gap 10 ms | peers 0 fps 145 ram 595 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 0 pkts 0 KB, received 0 pkts 0 KB | 
+[04:51:42.610] max gap 7 ms | peers 0 fps 145 ram 595 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 0 pkts 0 KB, received 0 pkts 0 KB | 
+[04:51:42.066] peer 71429979 connected
+[04:51:43.614] max gap 24 ms | peers 1 fps 145 ram 595 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 64 pkts 48 KB, received 12 pkts 1 KB | peer 71429979 rtt 14 ms (last 14), loss 0, state 5, loss variance 0
+[04:51:46.137] WATCHDOG: the main thread has been silent for 3 s, in step 'items' for 3 s
+[04:51:47.137] WATCHDOG: the main thread has been silent for 4 s, in step 'items' for 4 s
+[04:51:48.675] STALL: the main thread did not run for 4908 ms
+[04:51:48.675] max gap 4908 ms (slow steps ms: items 4905) | peers 1 fps 145 ram 688 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 55 pkts 64 KB, received 39 pkts 1 KB | peer 71429979 rtt 624 ms (last 13), loss 0, state 5, loss variance 0
+[04:51:49.681] max gap 14 ms | peers 1 fps 48 ram 604 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 203 pkts 239 KB, received 26 pkts 2 KB | peer 71429979 rtt 13 ms (last 13), loss 0, state 5, loss variance 0
+[04:51:50.683] max gap 16 ms | peers 1 fps 145 ram 604 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 16 pkts 6 KB, received 12 pkts 0 KB | peer 71429979 rtt 13 ms (last 13), loss 0, state 5, loss variance 0
+[04:51:51.683] max gap 8 ms | peers 1 fps 144 ram 604 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 12 pkts 2 KB, received 11 pkts 0 KB | peer 71429979 rtt 13 ms (last 13), loss 0, state 5, loss variance 0
+[04:51:52.684] max gap 20 ms | peers 1 fps 145 ram 604 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 80 pkts 77 KB, received 24 pkts 1 KB | peer 71429979 rtt 11 ms (last 13), loss 0, state 5, loss variance 0
+[04:51:53.684] max gap 8 ms | peers 1 fps 145 ram 604 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 13 pkts 0 KB, received 12 pkts 0 KB | peer 71429979 rtt 11 ms (last 13), loss 394, state 5, loss variance 789
+[04:51:54.685] max gap 7 ms | peers 1 fps 145 ram 604 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 15 pkts 0 KB, received 15 pkts 0 KB | peer 71429979 rtt 11 ms (last 11), loss 394, state 5, loss variance 789
+[04:51:55.686] max gap 18 ms | peers 1 fps 145 ram 605 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 84 pkts 82 KB, received 18 pkts 0 KB | peer 71429979 rtt 13 ms (last 11), loss 394, state 5, loss variance 789
+[04:51:56.687] max gap 9 ms | peers 1 fps 145 ram 605 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 9 pkts 0 KB, received 10 pkts 0 KB | peer 71429979 rtt 12 ms (last 11), loss 394, state 5, loss variance 789
+[04:51:57.687] max gap 7 ms | peers 1 fps 145 ram 605 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 11 pkts 0 KB, received 12 pkts 0 KB | peer 71429979 rtt 12 ms (last 11), loss 394, state 5, loss variance 789
+[04:51:58.687] max gap 28 ms | peers 1 fps 143 ram 605 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 88 pkts 88 KB, received 20 pkts 1 KB | peer 71429979 rtt 10 ms (last 11), loss 394, state 5, loss variance 789
+[04:51:59.688] max gap 7 ms | peers 1 fps 144 ram 605 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 10 pkts 0 KB, received 11 pkts 0 KB | peer 71429979 rtt 10 ms (last 10), loss 394, state 5, loss variance 789
+[04:52:00.688] max gap 10 ms | peers 1 fps 145 ram 633 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 12 pkts 0 KB, received 11 pkts 0 KB | peer 71429979 rtt 10 ms (last 10), loss 394, state 5, loss variance 789
+[04:52:01.689] max gap 20 ms | peers 1 fps 145 ram 634 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 113 pkts 123 KB, received 25 pkts 1 KB | peer 71429979 rtt 14 ms (last 10), loss 394, state 5, loss variance 789
+[04:52:02.689] max gap 8 ms | peers 1 fps 145 ram 606 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 11 pkts 0 KB, received 10 pkts 0 KB | peer 71429979 rtt 14 ms (last 10), loss 394, state 5, loss variance 789
+[04:52:03.690] max gap 8 ms | peers 1 fps 144 ram 606 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 10 pkts 0 KB, received 11 pkts 0 KB | peer 71429979 rtt 13 ms (last 10), loss 822, state 5, loss variance 1448
+[04:52:04.690] max gap 21 ms | peers 1 fps 144 ram 606 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 108 pkts 114 KB, received 20 pkts 1 KB | peer 71429979 rtt 13 ms (last 10), loss 822, state 5, loss variance 1448
+[04:52:05.690] max gap 7 ms | peers 1 fps 145 ram 606 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 9 pkts 0 KB, received 10 pkts 0 KB | peer 71429979 rtt 13 ms (last 10), loss 822, state 5, loss variance 1448
+[04:52:06.691] max gap 8 ms | peers 1 fps 145 ram 606 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 12 pkts 0 KB, received 12 pkts 0 KB | peer 71429979 rtt 13 ms (last 10), loss 822, state 5, loss variance 1448
+[04:52:07.691] max gap 16 ms | peers 1 fps 145 ram 606 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 116 pkts 124 KB, received 19 pkts 1 KB | peer 71429979 rtt 19 ms (last 10), loss 822, state 5, loss variance 1448
+[04:52:08.695] max gap 17 ms | peers 1 fps 145 ram 606 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 8 pkts 0 KB, received 9 pkts 0 KB | peer 71429979 rtt 17 ms (last 10), loss 822, state 5, loss variance 1448
+[04:52:09.695] max gap 7 ms | peers 1 fps 145 ram 606 MB, queued urgent 0 prefetch 0, in work 0, in the last second: sent 13 pkts 0 KB, received 12 pkts 0 KB | peer 71429979 rtt 14 ms (last 10), loss 822, state 5, loss variance 1448
+[04:52:09.869] peer 71429979 left after 0 blocks (last stats: rtt 14 ms (last 10), loss 822, state 5, loss variance 1448)

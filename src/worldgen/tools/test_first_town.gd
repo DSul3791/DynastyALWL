@@ -155,13 +155,33 @@ func _init() -> void:
 	check(block != 0, "the chopping block is placed in the camp")
 	mark("crafted")
 
-	# 4. Split logs into firewood at the block (the block took the two logs from the camp; one more is dragged in from the woods).
-	items.action(1, Net.ACT_ADMIN_GIVE, table.number_of("log"), 0, 1, Vector3.ZERO)
+	# 4. Chop a log into wooden blocks on the ground, split a block at the chopping block, pick the firewood up.
 	items.report_position(1, items._items[block]["pos"] + Vector3(1.0, 0.0, 0.0))
-	items._last_use.clear()
-	items.action(1, Net.ACT_USE_STRUCT, block, 0, 0, Vector3.ZERO)
-	check(count("firewood") == 4 and count("log") == 0, "a log splits into four firewood at the block (%d firewood, %d logs)" % [count("firewood"), count("log")])
-	items.action(1, Net.ACT_ADMIN_GIVE, table.number_of("log"), 0, 1, Vector3.ZERO)   # a second log was dragged in from the woods
+	items.drop_in_world(table.number_of("log"), 1, items._items[block]["pos"] + Vector3(1.0, 0.0, 1.0))
+	var lying: int = 0
+
+	for id in items._items:
+		if int(items._items[id]["number"]) == table.number_of("log") and not items._items[id].has("struct"):
+			lying = id
+
+	items._last_process.clear()
+	items.action(1, Net.ACT_PROCESS, lying, 0, 0, Vector3.ZERO)
+
+	for id in items._items.keys():
+		if int(items._items[id]["number"]) == table.number_of("wooden_block"):
+			items.action(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
+
+	check(count("wooden_block") == 4, "a log chopped on the ground gives four wooden blocks (%d)" % count("wooden_block"))
+
+	for n in range(4):
+		items._last_use.clear()
+		items.action(1, Net.ACT_USE_STRUCT, block, 0, 0, Vector3.ZERO)
+
+	for id in items._items.keys():
+		if int(items._items[id]["number"]) == table.number_of("firewood") and not items._items[id].has("struct"):
+			items.action(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
+
+	check(count("firewood") == 4 and count("wooden_block") == 0, "four blocks split into four firewood at the block (%d firewood, %d blocks)" % [count("firewood"), count("wooden_block")])
 	mark("split wood")
 
 	# 5. Hob's quest: ask, hand over the firewood, get the reward and the reputation.
@@ -180,6 +200,7 @@ func _init() -> void:
 
 	# 6. Trade: sell some stones and the spare log, then buy a bandage.
 	check(trade.open(1, "hob") and not window.is_empty(), "Hob's stall opens")
+	items.give(1, table.number_of("log"), 1)
 	var before_sale: int = items.coins_of(1)
 	trade.deal(1, "hob", 1, items.inventory_of(1).numbers.find(table.number_of("log")), 1)
 	check(items.coins_of(1) > before_sale, "the spare log sells for coin (%d to %d)" % [before_sale, items.coins_of(1)])

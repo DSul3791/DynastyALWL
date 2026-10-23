@@ -424,6 +424,9 @@ func _init() -> void:
 			fail("structures.json %s: who is '%s' but only \"anyone\" is built (owner and town wait for ownership)" % [kind, def.get("who")])
 		obtainable[String(def.get("item", ""))] = true
 
+		if def.has("blocks_per_log"):   # a log struck with an axe falls apart into wooden blocks
+			obtainable["wooden_block"] = true
+
 	# Recipe graph (job 72): every core item is gatherable, craftable from gatherables, or marked "future": true in items.json;
 	# no cycles; dead ends (obtainable materials nothing uses) are listed so Dave can see what still has no purpose.
 	var craftable: Dictionary = {}
