@@ -968,3 +968,7 @@ Answered: 2026-10-23 01:38 UTC
 Answer: No: We don’t really wanna overcomplicate the game. Keep it simple stay the same as a normal cave. They already have the danger that if they break the ceiling, the ocean will flood in on them and flood their tunnel.
 Answered: 2026-10-23 01:39 UTC
 
+## wet-rivers | Do rivers and lakes drip into tunnels under them too, not only the sea?
+Answer: Yes
+Answered: 2026-10-23 01:40 UTC
+
