@@ -11,9 +11,6 @@ Note: 7. Take a picture of the shaking and dust. Write in Notes what happened, y
 ## sea-source | Is the sea an endless source at sea level, so a pit dug below sea level and connected to the sea fills to sea level (trenches flood, harbours and canals possible)?
 [check]
 
-## sea-tunnel | Do tunnels or rooms below sea level that connect to the sea flood and drown like the river-flood rule, with a plain warning line when you dig below sea level near the coast?
-[check]
-
 ## sea-feedcap | Should the sea feed a pit at most 50 m3/s per connection, so a huge pit fills over minutes instead of instantly (a tunable number)?
 [check]
 
