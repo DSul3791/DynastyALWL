@@ -1,7 +1,3 @@
-## cost-21 | Door, Basic: 10 twine, 20 thatch, 8 sticks?
-Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
-[check]
-
 ## cost-22 | Door, Plank: 8 rough planks and 20 nails?
 Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
 [check]
