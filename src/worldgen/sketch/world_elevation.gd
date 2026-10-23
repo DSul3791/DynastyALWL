@@ -467,6 +467,8 @@ func _shape_coast_profile(mount: Dictionary) -> void:
 			# 6 m by the shore, about 55 m at 1 km, 150 m at 2 km, 350 m at 3.5 km.
 			var cap: float = 6.0 + 340.0 * cap_scale * pow(d_m / 3500.0, exponent * 0.91)
 			var index: int = index_of(center_column - radius + column, center_row - radius + row)
+			# Ridge noise under the cap, so where it binds the ground is not a smooth cone.
+			cap *= 1.0 + 0.2 * _value(_ridged, index)
 			heights[index] = lerpf(heights[index], minf(heights[index], cap), weight)
 
 
