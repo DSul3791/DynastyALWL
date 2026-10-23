@@ -23,3 +23,12 @@ Format: Yes/No + Why-not box (BP-T39) unless marked T or P (BP-T40).
 
 ## Kathleen later
 - looks for the 8 new items (rough plank, fine board, nails, cobblestone, stone shingle, tar, hinges, wooden pin) as a picture card after MikeW renders.
+
+## Ocean and digging on the beach (OCEAN_DIG_NOTE.md; Sonny's 6 lines, one card each; add Steve's answer on the sim first)
+8. Is the sea an unlimited source at sea level for the live sim: any dug cell connected to the sea and below 0 m fills to 0 m (so a trench to the beach floods, players can dig harbours and canals)? Recommend Yes.
+9. Is inland reach limited by the ground height only (water stands at 0 m, so it only fills ground below 0 m)? Recommend Yes.
+10. Can players dam it back (wall or earth fill above 0 m); water already inside stays as a pond at 0 m once the connection is cut? Recommend Yes.
+11. Do river mouths stay sea-connected (tide and river meet at 0 m), and does damming the mouth raise the river behind it (flood)? Recommend Yes.
+12. Is it OK that the sea is a boundary and not simulated cells, with a cap of 50 m3/s per connection so a huge pit fills over minutes? Recommend Yes (the number is tunable in data).
+13. Is the dug beach and its water saved like other edits? Recommend Yes.
+14. Should a tunnel or room below 0 m that connects to the sea flood and drown like the river-flood rule (with a plain warning line when you dig below sea level near the coast)? Recommend Yes.
