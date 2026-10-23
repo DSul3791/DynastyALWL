@@ -84,3 +84,9 @@ Baked tiles for the inner starters and their neighbors (36 files) are in `/mnt/p
 - 78-88: generator status (steps 2 to 16). 89-110: commands. 111-131: reading big files, working with David, setup.
 - 133-146: gotchas, open design items. 148-169: performance routine, ground loading speed.
 - 171-180: "Water and terrain: start here" (outgoing water thread, 2026-10-20). 181-235: water state, open problems, HUD, quality tiers, stances, oxygen, tile-border water, cold generation speed.
+
+
+## Parked for tomorrow after the backup (Guru 01:55 UTC 23 Oct)
+- Merge claude/sal-rock-pile (RESTART, local_check PASS per Sal), not in head 695. Next-night test line: "Please test: craft a rock pile from 45 stones, set it down, press E. Look for: 45 stones back in the pack; hold E instead and you carry the pile."
+- Ask Kathleen for the rock pile and wagon-load looks.
+- Merge Sal hoe-hold test line already posted tonight (hoe-hold card).
