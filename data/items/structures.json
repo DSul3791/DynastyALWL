@@ -147,7 +147,9 @@
 			"look": "lean_to",
 			"sound": "timber",
 			"clears_grass": true,
-			"note": "First-tier sawmill (Dave 2026-10-22). Rules still to build: a tall foundation (lifted 0.5 m or more) and the wheel standing in running water."
+			"needs_base_lift_m": 0.5,
+			"needs_running_water": {"from": [-2.5, 0.0], "to": [-0.5, 0.0]},
+			"note": "First-tier sawmill (Dave 2026-10-22). Placement: on a foundation lifted 0.5 m or more, with the wheel (a 2 m span beside the saw frame, local x -2.5 to -0.5 turned with the piece) over water running at least data/water_flow.json min_speed_m_s."
 		},
 		"woodworking_table": {
 			"kit": "woodworking_table_kit",
