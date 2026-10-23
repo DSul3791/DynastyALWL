@@ -2546,7 +2546,9 @@ func _build_bars_row() -> HBoxContainer:
 
 # The character died (protocol 34): a message and a fade out and in over death.json respawn_delay_s. The terrain client moves the body.
 func _on_died(cause: String, _spawn: Vector3) -> void:
-	_death_msec = Time.get_ticks_msec()
+	if cause != "cave-in":   # the cave-in has its own long sequence (cavein_death.gd)
+		_death_msec = Time.get_ticks_msec()
+
 	show_notice("You died: %s" % cause)
 
 
