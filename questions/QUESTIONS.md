@@ -44,11 +44,6 @@ Note: 2. Hold W to climb, then S to come down, Space to let go backwards.
 Note: 3. Climb to the top and hold W: you step onto the edge.
 [test]
 
-## sound-fire | Please test Esc > Settings > Sound test: fire. Look for: each step is heard, from embers to the hiss when it is put out.
-Note: 1. Open Esc > Settings > Sound test.
-Note: 2. Press the fire sounds one by one.
-[test]
-
 ## beach-loud | Is the beach still too loud when you walk on it?
 Note: Kathleen already lowered sand steps by 3 dB. If the loud part is the waves, answer No and say so in Why not.
 Note: Tyler recommends Yes only if the steps are what you hear: she lowers sand steps another 3 dB, which is cheap and easy to undo.
