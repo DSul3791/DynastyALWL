@@ -34,6 +34,7 @@ uniform float softness = 0.2;
 uniform vec2 wind_m_s = vec2(9.0, 4.0);
 uniform float ice = 0.0;             // 0 open water .. 1 a full sheet of ice on STILL water (src/shared/ice.gd; flora_view.gd set_ice_cover)
 uniform float daylight = 1.0;       // 1 day .. about 0.14 night: the body glow follows it (day_cycle.gd, set by weather_look.gd)
+uniform float debug_flow = 0.0;      // Ctrl+Shift+V: colour the water by what the shader thinks it is (red running, blue still, green foam)
 uniform float refraction = 1.0;      // 0 (Low quality): see-through by blending; 1: the bottom bends under the ripples
 #ifdef SCENE_READS
 // Reading the depth or the screen makes Forward+ copy the whole frame, so Low quality
@@ -306,6 +307,14 @@ void fragment() {
 		ROUGHNESS = mix(ROUGHNESS, 0.18 + 0.2 * cracks, sheet);
 		SPECULAR = mix(SPECULAR, 0.9, sheet);
 		NORMAL = normalize(mix(NORMAL, (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz, sheet * 0.95));
+	}
+
+	if (debug_flow > 0.5) {
+		float red = clamp(steep * 3.0, 0.0, 1.0);
+		vec3 mark = vec3(red, clamp(foam * 2.0, 0.0, 1.0), 1.0 - red);
+		ALBEDO = mark * 0.8;
+		EMISSION = mark * 0.6;
+		ALPHA = 0.95;
 	}
 }
 """

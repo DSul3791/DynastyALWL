@@ -2726,6 +2726,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			_gpu_probe.toggle()
 		elif event.keycode == KEY_W and event.ctrl_pressed and event.shift_pressed:
 			flora.toggle_water_visible()
+		elif event.keycode == KEY_V and event.ctrl_pressed and event.shift_pressed:
+			flora.toggle_water_debug()
 		elif event.keycode == KEY_F3:
 			debug_hud.enabled = not debug_hud.enabled
 		elif event.keycode == KEY_F4:

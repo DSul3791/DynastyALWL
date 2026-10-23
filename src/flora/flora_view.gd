@@ -296,6 +296,17 @@ func toggle_water_visible() -> void:
 	get_tree().call_group("water_draw", "set_visible", not water_hidden)
 
 
+# Ctrl+Shift+V colours the water by what the shader sees: red running, blue still, green foam (debug for odd patches).
+var water_debug: bool = false
+
+
+func toggle_water_debug() -> void:
+	water_debug = not water_debug
+
+	if _water_material != null:
+		_water_material.set_shader_parameter("debug_flow", 1.0 if water_debug else 0.0)
+
+
 func water_material() -> Material:
 	return _water_material
 
