@@ -632,3 +632,7 @@ Answered: 2026-10-23 00:34 UTC
 Answer: No: Actually, yes, specifically I want them to slide to the right front on the left or off and when you slide them to the right, they turned green and when you slide them to the left, they turned red
 Answered: 2026-10-23 00:35 UTC
 
+## chk-collapse-test | TEST THE TUNNEL COLLAPSE (build 686). Did it work as designed?
+Answer: No: By default set the timeout to five minutes and if I understand correctly, that should mean that it will cave in in five minutes, but it will break down the warnings over that five minutes by percentage of time. Also, I will not be testing this until after the back up this evening so rework this question and repost it and please include the instructions on how I should do this test.
+Answered: 2026-10-23 00:37 UTC
+
