@@ -1046,3 +1046,23 @@ Answered: 2026-10-23 04:11 UTC
 Answer: Yes
 Answered: 2026-10-23 04:11 UTC
 
+## rockpile-big | Above about 500 rocks, should the look change to a smooth rocky mound instead of drawing every rock, with a limit of 100,000 rocks per pile?
+Answer: Yes
+Answered: 2026-10-23 04:12 UTC
+
+## rockpile-big | Above about 500 rocks, should the look change to a smooth rocky mound instead of drawing every rock, with a limit of 100,000 rocks per pile?
+Answer: Yes
+Answered: 2026-10-23 04:12 UTC
+
+## cavein-death-slow | Should a cave-in that kills you be slow and dramatic: the roof falls in 3 to 5 waves over about 6 seconds, with dust and rumble, instead of all at once?
+Answer: Yes
+Answered: 2026-10-23 04:12 UTC
+
+## cavein-death-fade | Then: the picture fades to black over about 4 seconds while the rumble keeps going for about 3 more seconds, then the sound fades out too?
+Answer: Yes
+Answered: 2026-10-23 04:13 UTC
+
+## cavein-death-skull | Then: a grey, translucent skull and crossbones fills about 75% of the screen over the black?
+Answer: Yes
+Answered: 2026-10-23 04:13 UTC
+
