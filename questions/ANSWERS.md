@@ -888,3 +888,7 @@ Answered: 2026-10-23 01:30 UTC
 Answer: Yes
 Answered: 2026-10-23 01:30 UTC
 
+## cost-stone-roof | Stone shingle roof = a full lap board roof (10 rough planks + 40 nails) plus 30 stone shingles and 4 mortar?
+Answer: Yes
+Answered: 2026-10-23 01:30 UTC
+
