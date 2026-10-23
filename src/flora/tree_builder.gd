@@ -2183,7 +2183,7 @@ const SHRUB_LOOKS := {
 	"raspberry": {"canes": [6, 9], "arch": 0.8, "reach": 1.0, "cane": RASPBERRY_CANE, "leaf": 1.0, "fruit": RASPBERRY_BERRY, "unripe": RASPBERRY_UNRIPE, "flower": null, "thorns": false},
 	"bramble": {"canes": [6, 9], "arch": 0.9, "reach": 1.0, "cane": Color(0.50, 0.30, 0.30), "leaf": 1.2, "fruit": Color(0.35, 0.10, 0.55), "unripe": Color(1.0, 0.25, 0.25), "flower": Color(1.0, 0.9, 0.9), "thorns": true},
 	"wild_rose": {"canes": [5, 7], "arch": 0.7, "reach": 1.1, "cane": Color(0.45, 0.30, 0.22), "leaf": 0.8, "fruit": Color(1.0, 0.18, 0.1), "unripe": Color(1.0, 0.55, 0.3), "flower": Color(1.0, 0.6, 0.75), "thorns": true},
-	"blackthorn": {"canes": [14, 18], "arch": 0.55, "reach": 1.4, "rate": 0.12, "cane": Color(0.20, 0.17, 0.15), "leaf": 0.32, "fruit": Color(0.4, 0.45, 0.9), "unripe": Color(0.5, 0.6, 0.5), "flower": null, "thorns": true},
+	"blackthorn": {"canes": [14, 18], "base": 0.2, "arch": 0.55, "reach": 1.4, "rate": 0.12, "cane": Color(0.20, 0.17, 0.15), "leaf": 0.32, "fruit": Color(0.4, 0.45, 0.9), "unripe": Color(0.5, 0.6, 0.5), "flower": null, "thorns": true},
 	"blueberry": {"canes": [8, 12], "arch": 0.15, "reach": 0.8, "rate": 0.2, "cane": Color(0.50, 0.38, 0.28), "leaf": 0.5, "fruit": Color(0.35, 0.45, 1.0), "unripe": Color(0.7, 0.9, 0.6), "flower": null, "thorns": false},
 }
 
@@ -2202,7 +2202,7 @@ static func _cane_shrub(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 		var reach: float = crown * float(look["reach"]) * rng.randf_range(0.7, 1.3)
 		var r: float = maxf(h * 0.009, 0.007)
 		# Up, then out in an arch whose tip bends down by `arch`.
-		var p0: Vector3 = out * crown * 0.06
+		var p0: Vector3 = out * crown * float(look.get("base", 0.06))
 		var p1: Vector3 = out * reach * (0.1 + 0.1 * arch) + Vector3(0.0, top_y * 0.7, 0.0)
 		var p2: Vector3 = out * reach * (0.25 + 0.35 * arch) + Vector3(0.0, top_y, 0.0)
 		var p3: Vector3 = out * reach * (0.3 + 0.7 * arch) + Vector3(0.0, top_y * (1.0 - 0.28 * arch), 0.0)
