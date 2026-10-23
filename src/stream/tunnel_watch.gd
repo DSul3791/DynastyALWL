@@ -32,7 +32,7 @@ var rubble_material: int = 1
 # cave-in duration (a setting, 2 to 20 minutes, 20 by default) to dig out and brace. With quiet_s set the window is that fixed total
 # (no width scaling) and the stages are measured from the end of the quiet part; unset (0) keeps the older width-scaled window.
 var quiet_s: float = 0.0
-var cave_in_s: float = 1200.0
+var cave_in_s: float = 300.0
 const CAVE_IN_MIN_S := 120.0
 const CAVE_IN_MAX_S := 1200.0
 var load_block: Callable                     # (Vector3i block) -> VoxelBuffer of the block with every edit applied, or null

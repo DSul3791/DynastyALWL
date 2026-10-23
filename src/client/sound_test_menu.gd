@@ -22,7 +22,7 @@ var body:
 var camera:
 	get: return _client.camera
 var _menu_note: Label:
-	get: return _client._menu_note
+	get: return _client.game_menu.note
 
 
 func setup(client) -> void:
@@ -30,10 +30,10 @@ func setup(client) -> void:
 
 
 func _menu_button(parent: VBoxContainer, text: String, action: Callable) -> Button:
-	return _client._menu_button(parent, text, action)
+	return _client.game_menu._button(parent, text, action)
 
 
-func add_buttons(settings: VBoxContainer) -> void:
+func add_buttons(settings: VBoxContainer) -> void:      # `settings` is the list the buttons are added to
 	_menu_button(settings, "Sound test time: change", func():
 		var order: Array = [["day", 14.0, "autumn"], ["dawn", 6.0, "autumn"], ["dusk", 18.4, "autumn"], ["night", 23.0, "autumn"], ["winter day", 12.0, "winter"], ["summer dawn", 5.0, "summer"], ["spring night", 22.0, "spring"], ["clock runs", -1.0, "autumn"], ["world clock", -2.0, ""]]
 		time_at = (time_at + 1) % order.size()
