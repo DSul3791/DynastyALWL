@@ -72,6 +72,16 @@ func build(client) -> void:
 	_build_gameplay()
 	_build_sound_test()
 	_build_admin()
+	var reset: VBoxContainer = _page("reset_edits")
+	var warn: Label = Label.new()
+	warn.text = "Delete EVERY dig, fill and collapse rubble for everyone\nand put the baked terrain back? This cannot be undone."
+	warn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	warn.add_theme_font_size_override("font_size", 30)
+	reset.add_child(warn)
+	_button(reset, "Yes, reset all terrain edits", func():
+		_c.net.inventory_action.rpc_id(1, Net.ACT_RESET_EDITS, 0, 0, 0, Vector3.ZERO)
+		show_page("admin"))
+	_button(reset, "No, keep them", func(): show_page("admin"))
 	_build_developer()
 	note = Label.new()
 	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -246,7 +256,8 @@ func _build_admin() -> void:
 			_c.items.admin_craft = on
 
 		_c.net.inventory_action.rpc_id(1, Net.ACT_ADMIN_MODE, 1 if on else 0, 0, 0, Vector3.ZERO))
-	_button(admin, "Clear saved ground (reload the world fresh)", func(): _c._ask_clear_cache())
+	_button(admin, "Reset all terrain edits", func(): show_page("reset_edits"))
+	_button(admin, "Clear blocks (reload from the server)", func(): _c._ask_clear_cache())
 	_button(admin, "Show my player key (and copy it)", func():
 		var key: String = _c.items.player_key() if _c.items != null else ""
 		DisplayServer.clipboard_set(key)

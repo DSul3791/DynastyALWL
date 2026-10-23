@@ -164,3 +164,11 @@ Note: Tyler recommends Yes because "Oak logs" reads naturally for players, and t
 Note: This is your own rule from your answer. Tyler's suggestion to make it work: a hollow gets water from the rain that falls on the land that drains into it (its catchment), and it dries to a smaller pond or nothing if the rain is too little for its size (evaporation). So a tiny hollow with a tiny catchment is only a puddle, and a big hollow with a big catchment is a lake.
 Note: Tyler recommends Yes because it needs no extra rule beyond catchment and rain, and the stripe ponds from terrace steps disappear because they catch almost no rain.
 [check]
+
+## reset-edits-test | Please test Reset all terrain edits. Look for: the holes you dug are gone after the reload, with no errors.
+Note: 1. WARNING: this wipes ALL your digs and fills on the server (collapse rubble too). Inventories, characters, buildings, plants, dropped items and tree stumps stay. A backup is taken first by MikeW; do not test before it is done.
+Note: 2. Pull build 698, close the game fully, start it. The HUD should say 698.
+Note: 3. Dig a hole and fill a bit.
+Note: 4. Esc > Admin > Reset all terrain edits, then confirm on the page (Yes).
+Note: 5. After the reload, the holes and fills should be gone and the ground back as baked. Write any errors in Notes.
+[test]

@@ -734,11 +734,18 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 
 			_say(peer, "Admin mode %s." % ("on: crafting is free" if a == 1 else "off"))
 
+	elif kind == Net.ACT_RESET_EDITS:
+		if admin_ok.is_valid() and admin_ok.call(peer) and reset_terrain_edits.is_valid():
+			print("server: peer %d reset all terrain edits" % peer)
+			reset_terrain_edits.call()
+			_say(peer, "All terrain edits are deleted. The ground is rebuilding.")
+
 	_send_changes(peer, inv, before)
 	_dirty = true
 
 
 var ground_ready: Callable              # (x, z) -> bool: the ground there is in memory; when not, it is being read in the background (unset in tests = always ready)
+var reset_terrain_edits: Callable       # set by the server: () -> void, wipes every saved dig and fill
 var admin_ok: Callable                  # set by the server: true when the peer may use admin gives
 
 

@@ -337,6 +337,22 @@ func _append(kind: int, material: int, centre: Vector3, radius: float) -> void:
 		_by_block[block] = list
 
 
+# Forgets every dig and fill and starts the log empty (admin "Reset all terrain edits"). The caller throws away the settled copies too.
+func reset() -> String:
+	_mutex.lock()
+	count = 0
+	rejected = 0
+	coalesced = 0
+	_kinds = PackedByteArray()
+	_materials = PackedInt32Array()
+	_centres = PackedVector3Array()
+	_radii = PackedFloat32Array()
+	_by_block.clear()
+	var error: String = _rewrite()
+	_mutex.unlock()
+	return error
+
+
 # True when an earlier dig holds this one entirely and no fill has touched the place since.
 @warning_ignore("unused_parameter")
 func _covered(blocks: Array, centre: Vector3, radius: float) -> bool:
