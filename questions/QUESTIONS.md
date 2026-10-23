@@ -8,10 +8,6 @@ Note: 6. Optional: place a timber prop near the roof before the time runs out. T
 Note: 7. Take a picture of the shaking and dust. Write in Notes what happened, yes or no.
 [test]
 
-## floor-frames | Do the cobblestone and mason floors look right: stone on top, a log split in half along each of the four edges underneath, plank floor under the cobblestones?
-Image: questions/img/tiers_floor_frames_r4.png
-[check]
-
 ## esc-character | Esc menu: should Character open the Tab screen from the menu? (You answered No without a reason earlier; tell me why in the Why-not box.)
 [check]
 
