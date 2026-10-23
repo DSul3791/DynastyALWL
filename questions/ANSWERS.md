@@ -1182,3 +1182,7 @@ Answered: 2026-10-23 10:28 UTC
 Answer: No: Yes, as long as we don’t lose the details
 Answered: 2026-10-23 10:28 UTC
 
+## small-tree-under-8ft | Is a tree under 8 feet 'small', giving only firewood, kindling and sticks?
+Answer: Yes
+Answered: 2026-10-23 10:29 UTC
+
