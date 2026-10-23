@@ -1,3 +1,4 @@
+# SEE tech/TEAM_AND_RULES.md FIRST (current team, roles, all rules; BP-T50 action plans). The text below is older.
 # How we work (one-page summary, 2026-10-22; Technical Director). Details live in the linked files; this page only points and summarizes. Update it when any of them changes.
 
 ## Team (Dave approved 2026-10-22; Steve and Willy retired)
