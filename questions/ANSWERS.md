@@ -908,3 +908,7 @@ Answered: 2026-10-23 01:31 UTC
 Answer: No: It’s probably six iron ingots for lumber and 100 nails
 Answered: 2026-10-23 01:32 UTC
 
+## cost-pillar-wood | Wood pillar = ONE log (a lying log is about 2.4 m long, so one log is one pillar and one wall height)?
+Answer: Yes
+Answered: 2026-10-23 01:32 UTC
+
