@@ -20,6 +20,12 @@ fi
 
 if godot --headless --path . --script res://tools/check_addons.gd 2>&1 | grep -q ADDON_OK; then pass "voxel and water_core addons load"; else fail "addons do not load"; fi
 
+# Parse check: the big client scripts must load (a name clash in builds 750-753 left the client black). Build 754.
+for S in src/client/terrain_client.gd src/flora/flora_view.gd src/stream/terrain_server.gd; do
+	[ -f "$S" ] || continue
+	if godot --headless --path . --check-only --script "res://$S" 2>&1 | grep -qiE "parse error|SCRIPT ERROR"; then fail "script does not parse: $S"; else pass "parses: $S"; fi
+done
+
 OUT=$(godot --headless --path . --script res://src/worldgen/tools/validate_items.gd 2>&1 | tail -1)
 case "$OUT" in *"0 errors"*) pass "$OUT";; *) fail "item validator: $OUT";; esac
 

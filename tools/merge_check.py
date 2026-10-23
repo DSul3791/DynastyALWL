@@ -98,9 +98,15 @@ for f in sh("git", "ls-files", "-o", "--exclude-standard").splitlines():
     if f.endswith((".gd", ".tscn", ".shader", ".gdshader")) and not os.path.exists(f + ".uid") and f.endswith(".gd"):
         bad("new script without .uid: %s (commit its .uid)" % f)
 
+dupes = subprocess.run([sys.executable, "tools/check_dupe_names.py"], capture_output=True, text=True)
+if dupes.returncode != 0:
+    for line in dupes.stdout.splitlines():
+        if not line.startswith("dupe names:"):
+            bad("duplicate GDScript name: " + line)
+
 if problems:
     print("MERGE CHECK FAILED:")
     for p in problems:
         print(" -", p)
     sys.exit(1)
-print("merge check: all clear (no Godot checks here: run tools/local_check.sh on a machine with Godot)")
+print("merge check: all clear (incl. duplicate GDScript names; no Godot checks here: run tools/local_check.sh on a machine with Godot)")
