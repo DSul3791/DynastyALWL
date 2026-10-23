@@ -872,3 +872,7 @@ Answered: 2026-10-23 01:28 UTC
 Answer: No: Yes, these look perfect and as far as the materials to make them, you should be able to count the amount of logs on the images for each one and then add tar for the treated logs
 Answered: 2026-10-23 01:29 UTC
 
+## floor-frames | Do the cobblestone and mason floors look right: stone on top, a log split in half along each of the four edges underneath, plank floor under the cobblestones?
+Answer: Yes
+Answered: 2026-10-23 01:29 UTC
+
