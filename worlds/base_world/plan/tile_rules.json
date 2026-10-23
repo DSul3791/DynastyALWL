@@ -115,6 +115,7 @@
 		"hardness": {"sediment": 0.05, "shale": 0.15, "coal": 0.15, "tuff": 0.3, "chalk": 0.35, "slate": 0.6, "sandstone": 0.65, "limestone": 0.7, "marble": 0.8, "basalt": 0.85, "granite": 0.95},
 		"ledges": {"sandstone": 1.0, "limestone": 1.0, "basalt": 0.9, "chalk": 0.6, "marble": 0.6, "slate": 0.5, "tuff": 0.3}
 	},
+	"spawn_pad": {"note": "Dave's spawn (x 53301, z 68427) and the showroom beside it: level inside flat_radius_m, blended into the land over blend_m. Level is the old spawn ground.", "x": 53301, "z": 68427, "level_m": 31.0, "flat_radius_m": 40, "blend_m": 70},
 	"water": {
 		"drainage_mode": false,
 		"drainage": {

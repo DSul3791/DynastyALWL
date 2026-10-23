@@ -132,6 +132,37 @@ func paste(frame: Variant, n: int, core: Variant, core_n: int) -> Variant:
 # per stage. Height, water and climate are built on a frame with a margin
 # around the tile and cropped to the tile's own 1,921 by 1,921 samples; the
 # margin is what lets two neighboring tiles agree along their shared edge.
+# The spawn point and the showroom beside it stay level and cliff-free whatever the land
+# around them does: heights are pinned to the pad level inside flat_radius_m and blend back
+# to the land over blend_m.
+static func _pin_spawn_pad(heights: PackedFloat32Array, n: int, spacing_m: float, origin_sx: int, origin_sz: int, pad: Dictionary) -> PackedFloat32Array:
+	var out: PackedFloat32Array = heights.duplicate()
+	var cx: float = float(pad["x"])
+	var cz: float = float(pad["z"])
+	var flat: float = float(pad["flat_radius_m"])
+	var blend: float = float(pad["blend_m"])
+	var level: float = float(pad["level_m"])
+
+	for j in range(n):
+		var z: float = float(origin_sz + j) * spacing_m
+
+		if absf(z - cz) > flat + blend:
+			continue
+
+		for i in range(n):
+			var distance: float = Vector2(float(origin_sx + i) * spacing_m - cx, z - cz).length()
+
+			if distance >= flat + blend:
+				continue
+
+			var t: float = clampf((distance - flat) / blend, 0.0, 1.0)
+			var weight: float = 1.0 - t * t * (3.0 - 2.0 * t)
+			out[j * n + i] = lerpf(out[j * n + i], level, weight)
+
+	return out
+
+
+
 func bake(tile: Vector2i) -> Dictionary:
 	var timings: Dictionary = {}
 	var tile_samples: int = int(settings.tile_size_m / settings.map_spacing_m)
@@ -185,6 +216,10 @@ func bake(tile: Vector2i) -> Dictionary:
 	frame_height.heights = scree.apply(frame_height.heights, n, frame_height.spacing_m, origin_sx, origin_sz)
 	erosion.heights = crop(frame_height.heights, n, core)
 	timings["scree"] = Time.get_ticks_msec() - clock
+
+	if tile_rules.has("spawn_pad"):
+		frame_height.heights = _pin_spawn_pad(frame_height.heights, n, frame_height.spacing_m, origin_sx, origin_sz, tile_rules["spawn_pad"])
+		erosion.heights = crop(frame_height.heights, n, core)
 
 	clock = Time.get_ticks_msec()
 	var starter: Dictionary = starter_info(tile)
