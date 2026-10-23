@@ -721,10 +721,10 @@
 			"shape": "shrub",
 			"model": "bramble",
 			"height_m": [
-				0.8,
-				1.8
+				1.2,
+				2.4
 			],
-			"crown_m": 1.2,
+			"crown_m": 1.0,
 			"trunk_m": 0.05,
 			"color": [
 				0.25,
@@ -1322,9 +1322,8 @@
 			"name": "nettle",
 			"display": "Nettle",
 			"kind": "plant",
-			"shape": "fern",
+			"shape": "shrub",
 			"model": "herb_nettle",
-			"leaf": "broad",
 			"height_m": [
 				0.5,
 				1.2
@@ -1539,10 +1538,10 @@
 			"shape": "shrub",
 			"model": "blueberry",
 			"height_m": [
-				0.3,
-				0.7
+				0.6,
+				1.2
 			],
-			"crown_m": 0.5,
+			"crown_m": 0.6,
 			"trunk_m": 0.0,
 			"color": [
 				0.28,
