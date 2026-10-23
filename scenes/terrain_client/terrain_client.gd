@@ -2689,6 +2689,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 		if _horizon != null:
 			_horizon.pitch_rad = pitch
+	elif event is InputEventMouseButton and event.pressed and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and held != null and (event.button_index == MOUSE_BUTTON_WHEEL_UP or event.button_index == MOUSE_BUTTON_WHEEL_DOWN) and held.wheel(event.button_index == MOUSE_BUTTON_WHEEL_DOWN):
+		pass
 	elif event is InputEventMouseButton and event.pressed and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and (event.button_index == MOUSE_BUTTON_WHEEL_UP or event.button_index == MOUSE_BUTTON_WHEEL_DOWN):
 		_scroll_view(event.button_index == MOUSE_BUTTON_WHEEL_DOWN)
 	elif event is InputEventMouseButton and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and held != null and held.mouse_button(event.button_index, event.pressed):

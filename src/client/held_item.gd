@@ -61,6 +61,7 @@ var _stop_t: float = 0.0                  # hit stop left, seconds
 var _shoulder_log: MeshInstance3D          # the log across the shoulder (set_shoulder)
 var _arm_up: float = 0.0                  # 0 arms hang at the body's side, 1 raised to the camera pose (swing, jab, use, aim)
 var water_depth_at: Callable = Callable()   # (x, z) -> metres of standing water there; set by the client scene, unset in tests
+var lift_steps: int = 0                  # a held foundation stands this many 0.1 m steps above the ground (mouse wheel, Dave 2026-10-22)
 var _blueprint_yaw: int = 0               # the turn (degrees) the ghost will be placed at
 var _first_person: bool = true
 var _avatar_rig                          # the full body (ragdoll_body.gd) drawn in third person, or null
@@ -299,6 +300,16 @@ func _start_swing() -> void:
 
 
 
+# The mouse wheel while a foundation is held raises or lowers where it will stand, in 0.1 m steps. Returns true when it was used here.
+func wheel(down: bool) -> bool:
+	if not holding or not _is_placeable() or not bool(PlacementRules.structure_of_kit(_placement, held_id()).get("foundation", false)):
+		return false
+
+	lift_steps = clampi(lift_steps + (-1 if down else 1), 0, PlacementRules.LIFT_MAX_STEPS)
+	_inv._on_notice("Foundation raised %.1f m off the ground" % (float(lift_steps) * PlacementRules.LIFT_STEP_M))
+	return true
+
+
 # A mouse button while playing. Returns true when it was used here.
 func mouse_button(button: int, pressed: bool) -> bool:
 	if button == MOUSE_BUTTON_RIGHT and pressed and holding and _inv.edible_slot(held_slot):
@@ -307,7 +318,7 @@ func mouse_button(button: int, pressed: bool) -> bool:
 
 	if _is_placeable():
 		if button == MOUSE_BUTTON_LEFT and pressed and _blueprint_ok:
-			_net.inventory_action.rpc_id(1, Net.ACT_PLACE, held_slot, 0, _blueprint_yaw, _blueprint_at)
+			_net.inventory_action.rpc_id(1, Net.ACT_PLACE, held_slot, lift_steps, _blueprint_yaw, _blueprint_at)
 
 		return button == MOUSE_BUTTON_LEFT
 
@@ -635,6 +646,9 @@ func _update_blueprint() -> void:
 	var on_grid: Array = PlacementRules.snap(_placement, held_id(), hit["position"], posmod(int(round(rad_to_deg(_camera.global_rotation.y))), 360), _inv.foundation_rows())
 	_blueprint_at = on_grid[0]
 	_blueprint_yaw = int(on_grid[1])
+
+	if bool(PlacementRules.structure_of_kit(_placement, held_id()).get("foundation", false)) and not bool(on_grid[2]):
+		_blueprint_at.y += float(lift_steps) * PlacementRules.LIFT_STEP_M
 	_blueprint.global_position = _blueprint_at
 	_blueprint.rotation.y = deg_to_rad(float(_blueprint_yaw)) if PlacementRules.structure_of_kit(_placement, held_id()).get("piece", false) else _camera.global_rotation.y
 	var on_base: bool = bool(on_grid[2])
