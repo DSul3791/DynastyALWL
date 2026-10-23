@@ -1,7 +1,3 @@
-## cost-12 | Floor or ceiling, Mason: 36 stone blocks and 8 mortar?
-Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
-[check]
-
 ## cost-13 | Roof, per slope piece, Thatch: 30 thatch, 10 twine, 8 sticks?
 Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
 [check]
