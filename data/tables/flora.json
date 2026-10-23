@@ -2075,10 +2075,10 @@
 			"shape": "shrub",
 			"model": "wild_rose",
 			"height_m": [
-				1,
-				2.5
+				1.2,
+				2.6
 			],
-			"crown_m": 1.0,
+			"crown_m": 1.6,
 			"trunk_m": 0.03,
 			"color": [
 				0.4,

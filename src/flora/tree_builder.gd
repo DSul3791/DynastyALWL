@@ -2182,7 +2182,7 @@ const RASPBERRY_UNRIPE := Color(0.95, 0.85, 0.35)
 const SHRUB_LOOKS := {
 	"raspberry": {"canes": [6, 9], "arch": 0.8, "reach": 1.0, "cane": RASPBERRY_CANE, "leaf": 1.0, "fruit": RASPBERRY_BERRY, "unripe": RASPBERRY_UNRIPE, "flower": null, "thorns": false},
 	"bramble": {"canes": [6, 9], "arch": 0.9, "reach": 1.0, "cane": Color(0.50, 0.30, 0.30), "leaf": 1.2, "fruit": Color(0.35, 0.10, 0.55), "unripe": Color(1.0, 0.25, 0.25), "flower": Color(1.0, 0.9, 0.9), "thorns": true},
-	"wild_rose": {"canes": [5, 7], "arch": 0.7, "reach": 1.1, "cane": Color(0.45, 0.30, 0.22), "leaf": 0.8, "fruit": Color(1.0, 0.18, 0.1), "unripe": Color(1.0, 0.55, 0.3), "flower": Color(1.0, 0.6, 0.75), "thorns": true},
+	"wild_rose": {"canes": [10, 14], "arch": 0.6, "reach": 1.0, "rate": 0.12, "cluster": 0.045, "cane": Color(0.45, 0.30, 0.22), "leaf": 0.65, "fruit": Color(1.0, 0.18, 0.1), "unripe": Color(1.0, 0.55, 0.3), "flower": null, "blossom": Color(1.0, 0.25, 0.55), "thorns": true},
 	"blackthorn": {"canes": [14, 18], "base": 0.2, "arch": 0.55, "reach": 1.4, "rate": 0.12, "cane": Color(0.20, 0.17, 0.15), "leaf": 0.32, "fruit": Color(0.4, 0.45, 0.9), "unripe": Color(0.5, 0.6, 0.5), "flower": null, "thorns": true},
 	"blueberry": {"canes": [16, 22], "arch": 0.1, "reach": 0.7, "rate": 0.5, "cluster": 0.06, "cane": Color(0.50, 0.38, 0.28), "leaf": 0.4, "fruit": Color(0.30, 0.38, 0.85), "unripe": Color(0.75, 0.9, 0.55), "flower": null, "thorns": false},
 }
@@ -2229,6 +2229,9 @@ static func _cane_shrub(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 			var at: Vector3 = (pts[seg] as Vector3).lerp(pts[seg + 1], t * 3.0 - float(seg))
 			_clump(leaves, rng, at, Vector3(0.0, at.y - crown * 0.5, 0.0), leaf_size * rng.randf_range(0.85, 1.2), rng.randf_range(0.85, 1.05), 2 if far else 3)
 
+			if not far and look.has("blossom") and rng.randf() < 0.7:
+				_blossom(bark, rng, at + Vector3(0.0, leaf_size * 0.55, 0.0) + out * leaf_size * 0.4, crown * 0.09, look["blossom"])
+
 			if far or rng.randf() > float(look.get("rate", 0.45)):
 				continue
 
@@ -2239,6 +2242,21 @@ static func _cane_shrub(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 			elif look["fruit"] != null:
 				var ripe: bool = rng.randf() < 0.75
 				_cluster(bark, rng, low, crown * float(look.get("cluster", 0.14)), look["fruit"] if ripe else look["unripe"], false, rng.randi_range(3, 8) if look.has("cluster") else rng.randi_range(6, 9))
+
+
+# A wild rose flower: five broad flat petals round a pale yellow centre with orange-yellow stamens (Dave's photos), facing up and out.
+static func _blossom(acc: Acc, rng: RandomNumberGenerator, at: Vector3, size: float, petal: Color) -> void:
+	var turn: float = rng.randf() * TAU
+
+	for k in range(5):
+		var a: float = turn + TAU * float(k) / 5.0
+		_bead(acc, at + Vector3(cos(a), 0.0, sin(a)) * size * 0.55, Vector3(size * 0.55, size * 0.12, size * 0.55), petal)
+
+	_bead(acc, at + Vector3(0.0, size * 0.1, 0.0), Vector3(size * 0.28, size * 0.14, size * 0.28), Color(1.0, 0.9, 0.5))
+
+	for k in range(4):
+		var a: float = turn + TAU * float(k) / 4.0
+		_bead(acc, at + Vector3(cos(a), 0.0, sin(a)) * size * 0.22 + Vector3(0.0, size * 0.18, 0.0), Vector3(size * 0.06, size * 0.06, size * 0.06), Color(1.0, 0.6, 0.15))
 
 
 static func _raspberry(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
