@@ -856,3 +856,7 @@ Answered: 2026-10-23 01:26 UTC
 Answer: No: Yes, but you wanna make sure they stay above the storm surge level of waves
 Answered: 2026-10-23 01:26 UTC
 
+## log-wall-r4 | Does the log wall look right now: only this wall's logs, ends offset left and right, open spaces where a joining wall's logs pass through, no curved notch?
+Answer: Yes
+Answered: 2026-10-23 01:27 UTC
+
