@@ -40,5 +40,11 @@ Format: Yes/No + Why-not box (BP-T39) unless marked T or P (BP-T40).
 20. Is spade fill with stone enough, with no separate rock-pile item? Recommend Yes (Sal).
 21. Do fortress and town foundations on your own island need ground about 1 m above sea level, with the normal blueprint and load rules? Recommend Yes.
 (Sea boundary link: Steve confirmed the sim only drains into the sea; a recommended sea boundary link in water_sim.gd is needed for cards 8 to 10, server restart, so it is part of the answer to card 8.)
-22. When a tunnel under the ocean (or a lake) comes within about 4 m of the water above, should water drip from the ceiling, the floor look wet and make splashing sounds, and no water accumulate (like Minecraft)? Recommend Yes (Dave's own rule: card confirms the numbers).
-23. Should a ceiling that thin also shorten the collapse timer, so you must brace well? Recommend Yes (Steve to propose how much).
+22. Within 4 m of water above, should a tunnel go through three stages by distance: damp (4 to 2.5 m, rare drips), dripping (2.5 to 1.2 m, drip points every few metres), running (under 1.2 m, thin streams down the wall and a drizzle)? Recommend Yes (Kathleen).
+23. Should the wet ceiling and walls look darker with a sheen and a few streaks, and each drop be a small falling sprite with a tiny ring splash on the floor? Recommend Yes.
+24. Should the wet floor look dark and glossy under and between the drips, with no puddles and no standing water? Recommend Yes.
+25. Should footsteps on the wet floor make a small splash and squelch? Recommend Yes.
+26. Should drips plink with sound from each drip point, more often the closer you are to the water, plus a soft trickle loop in the running stage? Recommend Yes.
+27. Does a wet ceiling need full bracing and a window no longer than the cave-in time, so bracing matters more (water softens the roof)? Recommend Yes (Steve and Kathleen).
+28. Do rivers and lakes drip into tunnels under them too, not only the sea? Recommend Yes (Steve).
+29. Is there no real flooding under the sea until the sea link is built (only drips and wet floors for now)? Recommend Yes (Steve).
