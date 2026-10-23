@@ -91,3 +91,4 @@ Baked tiles for the inner starters and their neighbors (36 files) are in `/mnt/p
 - Ask Kathleen for the rock pile and wagon-load looks.
 - Merge Sal hoe-hold test line already posted tonight (hoe-hold card).
 - Merge claude/kathleen-wet (RUNTIME, wet-tunnel sounds, nothing calls them yet) with the other held branches; not in head 695.
+- Merge claude/steve-esc-test (headless Esc test only, no game code).
