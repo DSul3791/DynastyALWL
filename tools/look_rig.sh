@@ -7,7 +7,7 @@
 #   --ground ID:N  drop N of an item on the ground 2.2 m ahead of --at (stone:20 = a pile); --gy ground height (default 28.0 = the spawn)
 #   --summer  draw the --flora row in the species' own green instead of the game's autumn tint
 #   --give ID:N --drop  give N of an item, then drop all N 2.2 m ahead (a real drop: stone:20 makes a pile)
-#   --dig N   Dave's dig recipe: use with --item wooden_spade --pitch -15: 400 stones in the pack (so the yield spills), then N times dig, step 1 m forward; then looks level for the picture
+#   --dig N   Dave's dig recipe: use with --item wooden_spade --pitch -15: 400 stones in the pack (so the yield spills), then N times dig, step 1 m forward; then turns round and looks back along the trail of holes (-25 degrees)
 #   --dist M  third-person camera distance (under 2 m aims at the held item: a hand close-up)
 #   --cam    first = the player's own view; left = the character seen from 2.8 m to its left (third person)
 #   --at     world x,z (default the spawn 53301,68427); --agl metres above the ground; --yaw 0 faces north (-Z), 90 west, -90 east

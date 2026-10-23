@@ -40,7 +40,7 @@ var give_count: int = 1
 var _given: bool = false
 var drop_it: bool = false      # --shot-drop: then drop all of it onto the ground 2.2 m ahead (a real drop)
 var _dropped: bool = false
-var dig_steps: int = 0         # --shot-dig=N: dig N times (Dave's recipe: spade in hand, look down, click, step forward, repeat), then look level for the picture
+var dig_steps: int = 0         # --shot-dig=N: dig N times (Dave's recipe: spade in hand, look down, click, step forward, repeat), then turn round and look back along the trail
 var _dig_i: int = 0
 var _dig_next_msec: int = 0
 var _dig_level: bool = false
@@ -200,8 +200,9 @@ func _process(_delta: float) -> void:
 
 		if not _dig_level:
 			_dig_level = true
-			client.pitch = 0.0
-			client.camera.rotation.x = 0.0
+			client.body.rotation.y += PI      # turn round: the trail of holes and spilled soil is now ahead
+			client.pitch = deg_to_rad(-25.0)
+			client.camera.rotation.x = client.pitch
 			_moved_msec = now
 			return
 
