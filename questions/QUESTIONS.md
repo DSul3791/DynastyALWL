@@ -1,7 +1,3 @@
-## cost-15 | Roof, per slope piece, Stone shingle: 30 stone shingles and 4 mortar?
-Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
-[check]
-
 ## cost-16 | Roof, Flat: 6 lumber, 20 nails and 4 tar (from bitumen)?
 Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
 [check]
