@@ -11,7 +11,8 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
-			"value": 1
+			"value": 1,
+			"pile": {"shape": "pyramid", "handful": 5, "color": [0.47, 0.46, 0.44], "rock": 1.0, "squash": 0.75}
 		},
 		"stick": {
 			"number": 2,
@@ -425,7 +426,8 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
-			"value": 1
+			"value": 1,
+			"pile": {"shape": "mound", "handful": 5, "color": [0.29, 0.2, 0.13], "rock": 0.55, "squash": 0.7}
 		},
 		"clay": {
 			"number": 36,
@@ -434,7 +436,8 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
-			"value": 1
+			"value": 1,
+			"pile": {"shape": "mound", "handful": 5, "color": [0.63, 0.38, 0.24], "rock": 0.55, "squash": 0.7}
 		},
 		"sand": {
 			"number": 37,
@@ -443,7 +446,8 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
-			"value": 1
+			"value": 1,
+			"pile": {"shape": "mound", "handful": 5, "color": [0.84, 0.76, 0.55], "rock": 0.45, "squash": 0.7}
 		},
 		"gravel": {
 			"number": 38,
@@ -452,7 +456,8 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
-			"value": 1
+			"value": 1,
+			"pile": {"shape": "mound", "handful": 5, "color": [0.55, 0.54, 0.52], "rock": 0.4, "squash": 0.8}
 		},
 		"wooden_bowl": {
 			"number": 39,
