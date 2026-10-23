@@ -1,7 +1,3 @@
-## cost-13 | Roof, per slope piece, Thatch: 30 thatch, 10 twine, 8 sticks?
-Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
-[check]
-
 ## cost-14 | Roof, per slope piece, Lap board: 10 rough planks and 40 nails?
 Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
 [check]
