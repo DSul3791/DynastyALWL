@@ -1170,3 +1170,7 @@ Answered: 2026-10-23 10:26 UTC
 Answer: Yes
 Answered: 2026-10-23 10:26 UTC
 
+## fix-inbox | Should each thread get a short inbox file that the coordinator and Tyler write only the changes into, instead of long relays?
+Answer: Yes
+Answered: 2026-10-23 10:27 UTC
+
