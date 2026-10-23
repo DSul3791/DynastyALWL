@@ -439,3 +439,5 @@ Each active thread holds its current number plus ONE spare, handed out in advanc
 - 16:20 UTC 23 Oct Guru: MERGED 723: sonny-water-flicker (debug view Ctrl+Shift+V colours water red running, blue still, green foam; RUNTIME client debug only). Sonny: 720 double-draw fix is the likeliest flicker cause; suspects storm look (20 Oct) and sea plane (21 Oct). Head = 723.
 - 2026-10-23 steve-item-roll: loose items roll when walked over (client only)
 - 16:35 UTC 23 Oct Guru: MERGED 724: steve-item-roll (items roll a little when walked over; Dave said Yes at 13:14; client only RUNTIME; headless smoke clean, not yet run windowed). MikeW tries it in the rig before a feel TEST card goes to Dave. Head = 724.
+- 2026-10-23 steve-cavein-death: client sequence (src/client/cavein_death.gd), cave-in only, RUNTIME
+- 17:00 UTC 23 Oct Guru: MERGED 725: steve-cavein-death (cave-in death sequence v1: fade, skull, three lines, respawn; client only RUNTIME; timing test passes; not run windowed; not in v1: damage stagger, voice, stings, rumble tail). Feel TEST card for Dave after MikeW checks it in the rig. Head = 725.
