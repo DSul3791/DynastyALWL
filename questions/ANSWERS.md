@@ -804,3 +804,7 @@ Answered: 2026-10-23 01:14 UTC
 Answer: No: I’m not sure I understand this. Can you restate it? I don’t think players can see that far but I’m not sure what you mean by far water?
 Answered: 2026-10-23 01:16 UTC
 
+## sea-dam | Does a pit you dam off from the sea keep its water as a puddle?
+Answer: No: Because it should evaporated and dry up if it’s not a natural catch basin, but if you have a source of water going into it, then it could hold water.
+Answered: 2026-10-23 01:17 UTC
+
