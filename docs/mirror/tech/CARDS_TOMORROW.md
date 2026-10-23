@@ -1,3 +1,5 @@
+# ALL cards in this file were POSTED on Dave's page at 01:25 (BP-T41: nobody waits). Only genuinely optional questions may be added here for tomorrow.
+
 # Cards held for tomorrow (Dave 00:57: hold all remaining simple questions until tomorrow). Guru posts in this order.
 Format: Yes/No + Why-not box (BP-T39) unless marked T or P (BP-T40).
 
