@@ -187,6 +187,11 @@ func _init() -> void:
 		for row in item.get("repair", []):
 			want_item.call(String(row[0]), "items.json %s repair" % id)
 
+	var yield_scale: Dictionary = drops.get("yield_scale", {})
+
+	if not yield_scale.is_empty() and (float(yield_scale.get("min", 1.0)) < 0.1 or float(yield_scale.get("max", 1.0)) < float(yield_scale.get("min", 1.0)) or float(yield_scale.get("max", 1.0)) > 5.0):
+		fail("drops.json yield_scale: min 0.1 or more, max at least min and at most 5")
+
 	# Berries per plant (drops.json berry_yield): a flora species, one of its yields, a count of at least 1 and a berry stack of 100.
 	for key in drops.get("berry_yield", {}):
 		var berry: Dictionary = drops["berry_yield"][key]
@@ -202,6 +207,20 @@ func _init() -> void:
 
 		if int(gathered_file.get("items", {}).get(berry_id, items_file.get("items", {}).get(berry_id, {})).get("stack", 1)) < 100:
 			fail("drops.json berry_yield.%s: %s needs a stack of 100 or more" % [key, berry_id])
+
+	# Harvest per plant beyond berries (drops.json harvest_yield): same shape, and a harvest takes at most 3 pack slots.
+	for key in drops.get("harvest_yield", {}):
+		var harvest: Dictionary = drops["harvest_yield"][key]
+		var harvest_id: String = String(harvest.get("item", ""))
+
+		if not species.has(key):
+			fail("drops.json harvest_yield: unknown flora species '%s'" % key)
+
+		want_item.call(harvest_id, "drops.json harvest_yield.%s" % key)
+		var harvest_stack: int = maxi(1, int(gathered_file.get("items", {}).get(harvest_id, items_file.get("items", {}).get(harvest_id, {})).get("stack", 1)))
+
+		if int(harvest.get("count", 0)) < 1 or ceili(float(harvest.get("count", 0)) / float(harvest_stack)) > 3:
+			fail("drops.json harvest_yield.%s: count must be 1 or more and fit 3 slots (%s stacks to %d)" % [key, harvest_id, harvest_stack])
 
 	for group in ["by_species", "by_kind"]:
 		for key in drops.get(group, {}):
