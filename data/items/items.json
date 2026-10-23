@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 238,
+	"next_number": 244,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -2698,6 +2698,59 @@
 			"stack": 10,
 			"look_alikes": [],
 			"value": 2
+		},
+		"saw_blade": {
+			"number": 238,
+			"name": "Saw blades",
+			"description": "A pair of iron saw blades for a sawmill frame.",
+			"kind": "material",
+			"stack": 10,
+			"look_alikes": [],
+			"value": 60,
+			"future": true
+		},
+		"water_wheel": {
+			"number": 239,
+			"name": "Water wheel",
+			"description": "A wooden wheel with paddles. It turns where running water pushes it.",
+			"kind": "material",
+			"stack": 1,
+			"look_alikes": [],
+			"value": 120
+		},
+		"saw_mill_kit": {
+			"number": 240,
+			"name": "Sawmill",
+			"description": "A saw frame on a tall foundation, driven by a water wheel in running water.",
+			"kind": "placeable",
+			"stack": 1,
+			"value": 400,
+			"look_alikes": []
+		},
+		"saw_mill": {
+			"number": 241,
+			"name": "Sawmill",
+			"description": "A water-driven sawmill. Stand near it to saw logs into lumber.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"woodworking_table_kit": {
+			"number": 242,
+			"name": "Woodworking table",
+			"description": "A heavy table with vices and clamps for fine woodwork. Set it down in a workshop.",
+			"kind": "placeable",
+			"stack": 1,
+			"value": 150,
+			"look_alikes": []
+		},
+		"woodworking_table": {
+			"number": 243,
+			"name": "Woodworking table",
+			"description": "A woodworking table. Stand near it to plane lumber into fine boards.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
 		},
 		"rock_pile": {
 			"number": 235,

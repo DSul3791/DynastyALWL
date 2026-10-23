@@ -174,6 +174,22 @@ func _init() -> void:
 			lifted_y = items._items[id]["pos"].y
 
 	check(is_equal_approx(lifted_y, 10.3), "a foundation lifted 3 steps stands 0.3 m above the ground (y %.2f)" % lifted_y)
+	# The wood chain stations: the woodworking table and the sawmill place like other stations.
+	var before_stations: Vector3 = items._peer_pos[2]
+	items.report_position(2, Vector3(800.0, 10.0, 800.0))
+
+	for station_kit in [["woodworking_table_kit", "woodworking_table", 802.0], ["saw_mill_kit", "saw_mill", 806.0]]:
+		items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of(str(station_kit[0])), 0, 1, Vector3.ZERO)
+		items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of(str(station_kit[0]))), 0, 0, Vector3(800.0, 10.0, float(station_kit[2])))
+		var station_found: bool = false
+
+		for id in items._items:
+			if items._items[id].has("struct") and items._items[id]["struct"]["kind"] == str(station_kit[1]):
+				station_found = true
+
+		check(station_found, "a %s is placed" % str(station_kit[1]))
+
+	items.report_position(2, before_stations)
 	check(str(Rules.structure_of_kit(cfg, "wall_section_kit").get("variant_group", "x")) == "wall" and str(Rules.structure_of_kit(cfg, "doorway_section_kit").get("variant_group", "y")) == "wall" and str(Rules.structure_of_kit(cfg, "window_section_kit").get("variant_group", "z")) == "wall", "wall, doorway and window share a wheel group")
 	# A doorway and a window wall snap onto the foundation like a wall; the foundation stays while they stand on it.
 	check(bool(Rules.snap(cfg, "doorway_section_kit", Vector3(48.9, 10.0, 47.6), 0, base_rows)[2]) and bool(Rules.snap(cfg, "window_section_kit", Vector3(48.9, 10.0, 47.6), 0, base_rows)[2]), "doorway and window walls snap to the foundation anchors")

@@ -307,6 +307,12 @@
 		"hinges": 0.2,
 		"wooden_pin": 0.1,
 		"wooden_block": 3.75,
+		"saw_blade": 4.0,
+		"water_wheel": 60.0,
+		"saw_mill_kit": 120.0,
+		"woodworking_table_kit": 40.0,
+		"saw_mill": 120.0,
+		"woodworking_table": 40.0,
 		"wooden_block_soft": 3.0,
 		"firewood_soft": 2.8,
 		"rock_pile": 45.0
