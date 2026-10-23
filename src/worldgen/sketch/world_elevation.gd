@@ -451,6 +451,7 @@ func _shape_coast_profile(mount: Dictionary) -> void:
 	var sin_r: float = sin(rotation)
 	var cap_scale: float = float(mount["beach_cap_m"]) / 1100.0
 	var exponent: float = float(mount.get("beach_exp", 1.7))
+	var spawn: Dictionary = rules.get("spawn_keep", {})
 
 	for row in range(size):
 		for column in range(size):
@@ -459,6 +460,13 @@ func _shape_coast_profile(mount: Dictionary) -> void:
 			var along: float = (dx * cos_r + dz * sin_r) / float(mount["a"])
 			var across: float = (-dx * sin_r + dz * cos_r) / float(mount["b"])
 			var weight: float = 1.0 - _smooth(clampf((sqrt(along * along + across * across) - 1.1) / 0.5, 0.0, 1.0))
+
+			# The spawn point and the showroom beside it keep the land they always had.
+			if not spawn.is_empty():
+				var cx: float = origin_x + (float(center_column - radius + column) + 0.5) * cell_m
+				var cz: float = origin_z + (float(center_row - radius + row) + 0.5) * cell_m
+				var spawn_distance: float = Vector2(cx - float(spawn["x"]), cz - float(spawn["z"])).length()
+				weight *= _smooth(clampf((spawn_distance - float(spawn["keep_radius_m"])) / float(spawn["blend_radius_m"]), 0.0, 1.0))
 			var d_m: float = distance_cells[row * size + column] * cell_m
 
 			if weight <= 0.0 or d_m <= 0.0:

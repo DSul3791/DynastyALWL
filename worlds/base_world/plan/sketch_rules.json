@@ -111,6 +111,7 @@
 		"shore_shelf_m": [600, 120]
 	},
 
+	"spawn_keep": {"note": "The coast profile cap leaves the land around spawn and the showroom as it was: untouched inside keep_radius_m, blended in over blend_radius_m.", "x": 53301, "z": 68427, "keep_radius_m": 400, "blend_radius_m": 500},
 	"keep_clear": {
 		"shelf_margin_tiles": 0.6,
 		"trench_margin": 1.25
