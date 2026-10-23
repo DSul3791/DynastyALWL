@@ -93,3 +93,4 @@ Baked tiles for the inner starters and their neighbors (36 files) are in `/mnt/p
 - Merge claude/kathleen-wet (RUNTIME, wet-tunnel sounds, nothing calls them yet) with the other held branches; not in head 695.
 - Merge claude/steve-esc-test (headless Esc test only, no game code).
 - Merge claude/steve-drip (undersea drip detection, RESTART, protocol 73: Guru protocol-bump check first); not in head 695. Ask Steve for its next-night test line.
+- steve-drip next-night test: "Please test: dig a tunnel in rock off the beach and go under the sea until the ceiling is within about 4 m of the water above, or under a lake or river. Look for: drips falling from the ceiling, a dark wet patch on the floor under each, nothing collecting, no drips once you are more than 4 m under the water."
