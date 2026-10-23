@@ -8,9 +8,6 @@ Note: 6. Optional: place a timber prop near the roof before the time runs out. T
 Note: 7. Take a picture of the shaking and dust. Write in Notes what happened, yes or no.
 [test]
 
-## wet-sounds | Should drips plink with sound from each drip point, more often the closer you are to the water, plus a soft trickle loop in the running stage?
-[check]
-
 ## wet-bracing | Does a wet ceiling need full bracing and a collapse window no longer than the cave-in time, so bracing matters more (water softens the roof)?
 [check]
 
