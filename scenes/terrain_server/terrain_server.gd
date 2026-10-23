@@ -323,6 +323,7 @@ func _ready() -> void:
 	items.send_chest = func(peer, id, bytes): net.chest_contents.rpc_id(peer, id, bytes)
 	items.game_seconds = func(): return game_clock.seconds
 	items.season_now = func(): return game_clock.season()
+	items.season_stamp = func(): return game_clock.year() * 4 + game_clock.season_index()
 	items.rock_at = func(x, z):
 		var tile_data = generator.get_tile(generator.tile_of(x, z))
 
@@ -1036,9 +1037,19 @@ func _flora_changed(chunk: Vector2i) -> void:
 	for peer in items.peers_near(centre, 600.0):
 		var water_cached: bool = flora.water_ready(chunk)
 		net.deliver_flora.rpc_id(peer, chunk, flora.chunk_bytes(chunk, true), flora.water_bytes(chunk) if water_cached else PackedByteArray(), true)
+		_send_stripped(peer, chunk)
 
 		if not water_cached:
 			_queue_water(peer, chunk)
+
+
+# The plants of a chunk that are bare this season, for a client that just got the chunk (berry picking keeps the bush standing).
+func _send_stripped(peer: int, chunk: Vector2i) -> void:
+	var home: Vector2i = flora.placer.normalize(chunk)
+	var ids: PackedInt32Array = items.stripped_ids("%d,%d" % [home.x, home.y])
+
+	if not ids.is_empty():
+		net.flora_stripped.rpc_id(peer, chunk, ids)
 
 
 func _on_cut_flora_requested(peer_id: int, chunk: Vector2i, id: int) -> void:
@@ -1076,9 +1087,11 @@ func _on_cut_flora_requested(peer_id: int, chunk: Vector2i, id: int) -> void:
 	var key: String = "%d,%d,%d" % [home.x, home.y, id]
 
 	# A plant picked bare before this rule (still in the saved "picked" list) goes now, giving nothing.
-	var gave: bool = items.was_picked(key) or items.gather(peer_id, str(species["name"]), PlacerScript.KINDS[int(species["kind"])], key, id, all["positions"][at])
+	var gave: bool = items.was_picked(key) or items.gather(peer_id, str(species["name"]), PlacerScript.KINDS[int(species["kind"])], key, id, all["positions"][at], float(all["heights"][at]))
 
-	if gave and flora.cut(chunk, id):
+	if gave and items.plant_stays:
+		net.flora_stripped.rpc(chunk, PackedInt32Array([id]))      # a berry bush: it stays, bare until the season changes
+	elif gave and flora.cut(chunk, id):
 		net.flora_cut.rpc(chunk, id)
 
 
@@ -1624,6 +1637,7 @@ func _process(delta: float) -> void:
 
 		if entry.size() > 3:
 			net.deliver_flora.rpc_id(entry[0], entry[1], entry[2], entry[4], entry[5])
+			_send_stripped(entry[0], entry[1])
 			_peers[entry[0]]["flora_bytes"] = int(_peers[entry[0]].get("flora_bytes", 0)) + (entry[2] as PackedByteArray).size()
 			continue
 

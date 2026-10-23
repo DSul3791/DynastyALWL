@@ -271,6 +271,15 @@ var fall_cap: int = 4
 # Set by the client: whether any ground has arrived over a world point (network_voxel_stream.gd column_loaded). A chunk's plants and
 # fall ribbons stay hidden until the ground under its middle exists, so nothing floats over ground that is not built yet (Dave, build 483).
 var ground_ready: Callable = Callable()
+var stripped: Dictionary = {}          # chunk -> {plant id -> true}: berry bushes that are bare this season (set_stripped); they are drawn bare ("bare" models, when a species has them)
+var _setup_entries: Array = []         # the flora table rows, kept for the seasonal models
+var fruiting: Dictionary = {}          # species name -> true: the berry bushes (drops.json "berry_yield"), drawn per season and stripped (set_fruiting)
+var _seasonal: Dictionary = {}         # "season|stripped 0/1" -> {species id -> [near models, far models]} built on a worker for the current season
+var _seasonal_ready: Dictionary = {}   # the worker's finished sets, taken over by apply_built (guarded by _seasonal_mutex)
+var _seasonal_mutex: Mutex = Mutex.new()
+var _seasonal_task: int = -1
+var _seasonal_for: String = ""         # the season the running or last worker builds
+var season: String = ""                # the game season the view was told (set_season); a change makes every bush bear again
 var cleared: Array = []               # Vector3 spots of placed items: shrubs and small plants within clear_m are not drawn (set_cleared)
 var clear_m: float = 5.0
 var trunks: Array = []               # felled trunks: [ax, az, bx, bz, radius a, radius b]; no small plants under or beside them (set_trunks)
@@ -414,6 +423,7 @@ func setup(tables, tile_rules: Dictionary) -> void:
 	_foam_material = WaterFallsScript.make_foam_material()
 
 	_setup_queue = tables.get_entries("flora").filter(func(entry): return not entry.get("retired", false))
+	_setup_entries = _setup_queue.duplicate()
 	_setup_total = _setup_queue.size()
 	_models_task_id = WorkerThreadPool.add_task(_models_task.bind(_setup_queue.duplicate()), false, "flora models")
 
@@ -773,6 +783,30 @@ func species_near(point: Vector3, radius: float) -> int:
 			found = ids[n] >> 16
 
 	return found
+
+
+# The nearest plant instance to a point as [chunk, id], or [] when none is within `radius` (species_near, but which one).
+func instance_near(point: Vector3, radius: float) -> Array:
+	var chunk: Vector2i = Vector2i(int(floor(point.x / chunk_m)), int(floor(point.z / chunk_m)))
+
+	if not _chunks.has(chunk):
+		return []
+
+	var items: Dictionary = _chunks[chunk]["items"]
+	var best: float = radius * radius
+	var found: int = -1
+	var positions: PackedVector3Array = items["positions"]
+	var ids: PackedInt32Array = items["ids"]
+
+	for n in range(positions.size()):
+		var d: Vector3 = positions[n] - point
+		var squared: float = d.x * d.x + d.z * d.z + 0.25 * d.y * d.y
+
+		if squared < best:
+			best = squared
+			found = ids[n]
+
+	return [] if found < 0 else [chunk, found]
 
 
 # The chunks to have, nearest first: every chunk within tree view distance.
@@ -1261,6 +1295,115 @@ func remove_item(chunk: Vector2i, id: int, from_position: Vector3) -> void:
 
 # The placed things of the world: no shrubs or small plants within radius of any of them (trees stay; felling is the server's).
 # Items already held are filtered now, and later chunks as they arrive.
+# The server says these plants of a chunk are bare this season (berries picked): they redraw bare.
+func set_stripped(chunk: Vector2i, ids: PackedInt32Array) -> void:
+	if not stripped.has(chunk):
+		stripped[chunk] = {}
+
+	for id in ids:
+		stripped[chunk][int(id)] = true
+
+	_redraw(chunk)
+
+
+func is_stripped(chunk: Vector2i, id: int) -> bool:
+	return (stripped.get(chunk, {}) as Dictionary).has(id)
+
+
+# The berry bush species (names from drops.json "berry_yield"), set once by the client.
+func set_fruiting(names: Array) -> void:
+	fruiting = {}
+
+	for plant_name in names:
+		fruiting[str(plant_name)] = true
+
+	if season != "":
+		_start_seasonal()
+
+
+# The game season for the view: when it changes every bush bears again (the bare set is cleared) and the bushes' models for the new season
+# are built on a worker; the chunks redraw when they are ready.
+func set_season(now_season: String) -> void:
+	if now_season == season:
+		return
+
+	season = now_season
+	_start_seasonal()
+
+	if stripped.is_empty():
+		return
+
+	var held: Array = stripped.keys()
+	stripped = {}
+
+	for chunk in held:
+		_redraw(chunk)
+
+
+func _start_seasonal() -> void:
+	if fruiting.is_empty() or season == "" or _setup_entries.is_empty() or _seasonal_task != -1 or _seasonal_for == season:
+		return
+
+	_seasonal_for = season
+	var wanted: Array = _setup_entries.filter(func(entry): return fruiting.has(str(entry["name"])))
+	_seasonal_task = WorkerThreadPool.add_task(_seasonal_models_task.bind(wanted, season, _tree_materials), false, "flora seasonal models")
+
+
+# Worker: each berry bush species' near and far models for one season, ripe and picked bare (Kathleen's build(season, stripped)).
+func _seasonal_models_task(entries: Array, for_season: String, materials: Dictionary) -> void:
+	for bare: bool in [false, true]:
+		var models_set: Dictionary = {}
+
+		for entry in entries:
+			var height: Array = entry["height_m"]
+			var reference: float = 0.5 * (float(height[0]) + float(height[1]))
+			var near_meshes: Array = []
+			var far_meshes: Array = []
+
+			for v in range(TreeBuilder.VARIANTS):
+				near_meshes.append(TreeBuilder.build(entry, reference, v, false, materials, for_season, bare))
+				far_meshes.append(TreeBuilder.build(entry, reference, v, true, materials, for_season, bare))
+
+			models_set[int(entry["id"])] = [near_meshes, far_meshes]
+
+		_seasonal_mutex.lock()
+		_seasonal_ready["%s|%d" % [for_season, 1 if bare else 0]] = models_set
+		_seasonal_mutex.unlock()
+
+
+# Takes over a finished worker's sets and redraws the chunks that hold berry bushes.
+func _take_seasonal() -> void:
+	if _seasonal_task == -1 or not WorkerThreadPool.is_task_completed(_seasonal_task):
+		return
+
+	WorkerThreadPool.wait_for_task_completion(_seasonal_task)
+	_seasonal_task = -1
+	_seasonal_mutex.lock()
+
+	for key in _seasonal_ready:
+		_seasonal[key] = _seasonal_ready[key]
+
+	_seasonal_ready = {}
+	_seasonal_mutex.unlock()
+
+	for chunk in _chunks.keys():
+		_redraw(chunk)
+
+	if _seasonal_for != season:
+		_start_seasonal()
+
+
+func _redraw(chunk: Vector2i) -> void:
+	var entry: Dictionary = _chunks.get(chunk, {})
+
+	if entry.is_empty():
+		return
+
+	entry["level"] = -1
+	entry.erase("building")
+	_refresh(chunk, _last_position)
+
+
 func set_cleared(spots: Array, radius: float) -> void:
 	cleared = spots
 	clear_m = radius
@@ -1470,6 +1613,8 @@ func _refresh(chunk: Vector2i, from_position: Vector3) -> void:
 	for key in entry["items"]:
 		var value = entry["items"][key]
 		items[key] = value.duplicate() if (value is PackedInt32Array or value is PackedFloat32Array or value is PackedVector3Array) else value
+
+	items["stripped"] = (stripped.get(chunk, {}) as Dictionary).duplicate()
 	_tasks.append(WorkerThreadPool.add_task(_plan_task.bind(chunk, _serial, level, items, masks), false, "flora chunk"))
 
 
@@ -1515,6 +1660,8 @@ func _plan_task(chunk: Vector2i, serial: int, level: int, items: Dictionary, mas
 func apply_built(budget_usec: int = 3000) -> void:
 	if not _setup_done:
 		_setup_step()
+
+	_take_seasonal()
 
 	var still: Array = []
 
@@ -1655,7 +1802,8 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 			if is_near == TIER_FAR:
 				variant = 0
 
-		var key: Array = [species_id, int(floor(p.x / part_size)), int(floor(p.z / part_size)), variant, is_near]
+		var bare: bool = (items.get("stripped", {}) as Dictionary).has(int(ids[n])) and fruiting.has(str(_slugs.get(species_id, "")))
+		var key: Array = [species_id, int(floor(p.x / part_size)), int(floor(p.z / part_size)), variant, is_near, bare]
 
 		if not groups.has(key):
 			groups[key] = PackedInt32Array()
@@ -1799,6 +1947,14 @@ func _apply_step(job: Dictionary) -> bool:
 	multimesh.transform_format = MultiMesh.TRANSFORM_3D
 	var proxy_pass: bool = key[4] == TIER_PROXY
 	var models: Array = info["near"] if (key[4] == TIER_FULL or key[4] == TIER_FULL_LIT) else (info["mid"] if key[4] == TIER_MID else info["far"])
+	# A berry bush draws the models of the game's season (ripe berries, blossom, bare canes) and, once picked, the stripped ones (TreeBuilder.build's
+	# season and stripped flags, Kathleen). Until the worker has built a season's models the plain ones above are used.
+	if fruiting.has(str(_slugs.get(key[0], ""))):
+		var seasonal: Dictionary = _seasonal.get("%s|%d" % [season, 1 if bool(key[5]) else 0], {})
+
+		if seasonal.has(key[0]):
+			models = seasonal[key[0]][0 if (key[4] == TIER_FULL or key[4] == TIER_FULL_LIT or key[4] == TIER_MID) else 1]
+
 	multimesh.mesh = _impostors[key[0]]["mesh"] if key[4] == TIER_IMPOSTOR and _impostors.has(key[0]) else models[key[3] % models.size()]
 	multimesh.use_custom_data = bool(info["tinted"])
 	multimesh.instance_count = int(draw_plan[1])

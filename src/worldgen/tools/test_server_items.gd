@@ -270,6 +270,43 @@ func _init() -> void:
 	check(not g.gather(1, "flax", "plant", "0,0,77", 77, Vector3(501.0, 70.0, 500.0)), "a picked plant is bare until it regrows")
 	clock[0] += ItemsScript.REGROW_GAME_S + 1.0
 	check(g.gather(1, "flax", "plant", "0,0,77", 77, Vector3(501.0, 70.0, 500.0)), "and bears again after 3 game days")
+	# Berry bushes (drops.json "berry_yield"): berries only, the plant stays, bare until the season changes; saved.
+	var stamp: Array = [10]
+	g.season_stamp = func(): return stamp[0]
+	var raspberry: int = g.table.number_of("raspberries")
+	check(g.gather(1, "raspberry", "shrub", "0,0,200", 200, Vector3(501.0, 70.0, 500.0), 2.0) and g.plant_stays, "a ripe raspberry bush gives berries and stays standing")
+	check(g.inventory_of(1).count_of(raspberry) >= 1, "got raspberries")
+	check(not g.gather(1, "raspberry", "shrub", "0,0,200", 200, Vector3(501.0, 70.0, 500.0), 2.0) and not g.plant_stays, "a bare bush gives nothing the same season")
+	check(g.stripped_ids("0,0").has(200) and g.stripped_ids("0,1").is_empty(), "the bare bush is listed for its chunk")
+	g.save()
+	var again_b = make("user://test_server_items_b")
+	again_b.season_stamp = func(): return stamp[0]
+	check(again_b.stripped_ids("0,0").has(200), "the bare state survives a restart")
+	stamp[0] = 11
+	check(again_b.stripped_ids("0,0").is_empty(), "a new season clears it")
+	g.season_now = func(): return "winter"
+	check(not g.gather(1, "raspberry", "shrub", "0,0,201", 201, Vector3(501.0, 70.0, 500.0), 2.0), "out of season gives nothing")
+	# Picking never gives wood, canes or leaves from a berry species, in any season (Dave 2026-10-23: sticks from raspberries).
+	var wood_ids: Array = ["stick", "thorny_canes", "leaves", "raspberry_leaves", "log", "twine"]
+	var wood_start: Dictionary = {}
+	for wood_id in wood_ids:
+		wood_start[wood_id] = g.inventory_of(1).count_of(g.table.number_of(wood_id))
+
+	var fresh: int = 300
+	for species_name in (g._drops.get("berry_yield", {}) as Dictionary).keys():
+		for season_name in ["spring", "summer", "autumn", "winter"]:
+			g.season_now = func(): return season_name
+			g.gather(1, str(species_name), "shrub", "0,0,%d" % fresh, fresh, Vector3(501.0, 70.0, 500.0), 2.0)
+			fresh += 1
+			g._last_gather.clear()
+
+	var gave_wood: bool = false
+	for wood_id in wood_ids:
+		if g.table.number_of(wood_id) != 0 and g.inventory_of(1).count_of(g.table.number_of(wood_id)) != int(wood_start[wood_id]):
+			gave_wood = true
+
+	check(not gave_wood, "a berry bush never gives sticks, canes, leaves or wood in any season")
+	g.season_now = func(): return "summer"
 	check(not g.gather(1, "flax", "plant", "0,0,80", 80, Vector3(520.0, 70.0, 500.0)), "too far to gather")
 	g.tick(2.0)
 	var loose: int = g.world_item_count()

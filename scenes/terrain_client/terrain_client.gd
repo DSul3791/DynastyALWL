@@ -673,6 +673,7 @@ func _ready() -> void:
 	net.filled_received.connect(_on_filled)
 	net.flora_received.connect(_on_flora)
 	net.flora_cut_received.connect(_on_flora_cut)
+	net.flora_stripped_received.connect(_on_flora_stripped)
 	net.water_rate_received.connect(_on_water_rate)
 	net.water_changed_received.connect(_on_water_changed)
 	net.tunnel_settings_received.connect(func(on: bool, cave_in_s: int) -> void:
@@ -1807,6 +1808,18 @@ func _on_water_received(chunk: Vector2i, water: PackedByteArray) -> void:
 		_queue_in({"kind": "water", "chunk": chunk, "water": water})
 
 
+func _on_flora_stripped(chunk: Vector2i, ids: PackedInt32Array) -> void:
+	if flora == null:
+		return
+
+	var period: int = int(round(float(world["tiles_per_side"]) * float(world["tile_size_m"]) / flora.chunk_m))
+
+	@warning_ignore("shadowed_variable")
+	for held in _flora_asked:
+		if posmod(held.x - chunk.x, period) == 0 and posmod(held.y - chunk.y, period) == 0:
+			flora.set_stripped(held, ids)
+
+
 func _on_flora_cut(chunk: Vector2i, id: int) -> void:
 	if flora == null:
 		return
@@ -1836,6 +1849,8 @@ func _update_flora() -> void:
 
 	if fall_growth != null:
 		fall_growth.update(falls, p)
+
+	flora.set_season(game_clock.season())
 
 	for chunk in flora.update(p):
 		_flora_asked.erase(chunk)
@@ -2382,6 +2397,11 @@ func _inspect_target() -> String:
 		species = flora.species_near(point, 1.3)
 
 	if species >= 0:
+		var product: String = harvest.product_name_at(point) if harvest != null else ""
+
+		if product != "":
+			return product
+
 		return knowledge.reveal("f%d" % species, flora.label_of(species), flora.familiarity_of(species), "horticulture", flora.lookalikes(species))
 
 	var lying: String = items.world_item_name_near(point, 1.2)
