@@ -6,6 +6,9 @@ numbers, JSON files parse, build NUMBER not lower than before, no NEW crash repo
 It does not run Godot (warning count and headless loads stay with tools/local_check.sh on a machine with Godot)."""
 import json, os, re, subprocess, sys
 
+# What to compare against: the CI sets MERGE_CHECK_BASE to the commit before the push, so a later push cannot make a finished run fail.
+BASE = os.environ.get("MERGE_CHECK_BASE") or "origin/claude/generator-v2"
+
 problems = []
 
 
@@ -80,7 +83,7 @@ if os.path.isfile(net):
 b = "src/shared/build.gd"
 if os.path.isfile(b):
     cur = int(re.search(r"NUMBER\s*:=\s*(\d+)", open(b).read()).group(1))
-    old = sh("git", "show", "origin/claude/generator-v2:" + b)
+    old = sh("git", "show", BASE + ":" + b)
     m = re.search(r"NUMBER\s*:=\s*(\d+)", old)
     if m and cur < int(m.group(1)):
         bad("build NUMBER %d is lower than origin's %s" % (cur, m.group(1)))
@@ -88,7 +91,7 @@ if os.path.isfile(b):
 
 # 6. crash reports and telemetry logs must not be NEW in the index
 tracked_now = set(sh("git", "ls-files", "crash_reports").split())
-tracked_orig = set(l.split("\t")[-1] for l in sh("git", "ls-tree", "-r", "origin/claude/generator-v2", "crash_reports").splitlines())
+tracked_orig = set(l.split("\t")[-1] for l in sh("git", "ls-tree", "-r", BASE, "crash_reports").splitlines())
 for f in sorted(tracked_now - tracked_orig):
     bad("new crash report or telemetry log tracked: %s (git rm --cached it)" % f)
 for f in sh("git", "ls-files", "-o", "--exclude-standard").splitlines():

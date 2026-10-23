@@ -7,10 +7,17 @@ jobs:
   merge-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - name: Fetch generator-v2 for comparison
-        run: git fetch origin claude/generator-v2:refs/remotes/origin/claude/generator-v2 || true
-      - name: Run merge guard
-        run: python3 tools/merge_check.py
+      - name: Run merge guard against the commit before this push
+        env:
+          BEFORE: ${{ github.event.before }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [ -n "$BASE_REF" ]; then
+            export MERGE_CHECK_BASE="origin/$BASE_REF"
+          elif [ -n "$BEFORE" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ]; then
+            export MERGE_CHECK_BASE="$BEFORE"
+          fi
+          python3 tools/merge_check.py
