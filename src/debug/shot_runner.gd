@@ -339,7 +339,8 @@ func _print_state() -> void:
 			continue
 
 		var floor_y: float = _ground(at.x, at.z)
-		rows.append("%s x%d at %.1f,%.1f,%.1f gap %s dist %.1f" % [client.items.table.id_of(int(it["number"])), int(it["count"]), at.x, at.y, at.z, "?" if is_nan(floor_y) else "%.2f" % (at.y - floor_y), Vector2(at.x - p.x, at.z - p.z).length()])
+		var drawn_y: float = (it["node"] as Node3D).position.y - 0.12      # where the node is drawn (the client snaps loose items to the ground); loose nodes sit 0.12 above their point
+		rows.append("%s x%d server y %.2f drawn y %.2f ground %s gap %s dist %.1f" % [client.items.table.id_of(int(it["number"])), int(it["count"]), at.y, drawn_y, "?" if is_nan(floor_y) else "%.2f" % floor_y, "?" if is_nan(floor_y) else "%.2f" % (drawn_y - floor_y), Vector2(at.x - p.x, at.z - p.z).length()])
 
 	print("shot runner: state: expect \"%s\"; player %s pitch %.0f; %d loose items within 6 m: %s" % [expect, str(p), rad_to_deg(client.pitch), rows.size(), "; ".join(rows)])
 
