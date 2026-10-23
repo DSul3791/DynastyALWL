@@ -31,3 +31,8 @@ Format: Yes/No + Why-not box (BP-T39) unless marked T or P (BP-T40).
 11. Should the sea feed a pit at most 50 m3/s per connection, so a huge pit fills over minutes instead of instantly (tunable number)? Recommend Yes.
 12. Do river mouths stay sea-connected, so damming a mouth floods the river behind it (intended risk)? Recommend Yes.
 13. Tides later, not now? Recommend Yes.
+14. Can players build up land under the sea to make their own islands, by filling shallow sea with soil, sand, gravel, clay or stone (big islands cost lots of material)? Recommend Yes.
+15. Is fill allowed up to about 4 m of water depth, and deeper only with pillars? Recommend Yes.
+16. Does water displaced by fill just vanish into the sea? Recommend Yes.
+17. Can you build piers (Valheim style) from pillars driven into the seabed with floors on top? Recommend Yes.
+18. Can you build a fortress or a town on your own island with the normal blueprint and load rules? Recommend Yes.
