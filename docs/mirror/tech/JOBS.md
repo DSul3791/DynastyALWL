@@ -37,7 +37,7 @@ Rule: when your current job finishes, or waits on Dave, Mike's batch or another 
 7. Herb patch data once Sonny's placer is in.
 
 ## Mike (queue 6)
-1. ONE batch now: pull head 770 + kathleen-patches-now + steve-berry-picking + sal-harvest + steve-sound-3d, local_check (baseline 233), parse, test_server_items, check_controls, T-BERRIES, prompt picture, herbs/mushrooms/shrub rows, bramble before/after, Ctrl+Shift+G frame time on F2 Low <33 ms. Report PASS/FAIL list.
+1. ONE batch now: pull head 770 + steve-sunny-button (flip at night/rain and back) + kathleen-patches-now + steve-berry-picking + sal-harvest + steve-sound-3d, local_check (baseline 233), parse, test_server_items, check_controls, T-BERRIES, prompt picture, herbs/mushrooms/shrub rows, bramble before/after, Ctrl+Shift+G frame time on F2 Low <33 ms. Report PASS/FAIL list.
 2. Dry-river live dump (Esc > Admin > Dump water here, 60 s, x 51609 z 69364).
 3. Sonny valleys check (TERRAIN_VERSION 27 bundle) after Dave sees v26.
 4. Sal BATCH_Sal_001.
@@ -45,7 +45,7 @@ Rule: when your current job finishes, or waits on Dave, Mike's batch or another 
 6. 9 pm ADT backup; 8 AM ADT handoff + reset. Stop one-at-a-time renders.
 
 ## Tyler (me)
-Merge queue after Mike's PASS: kathleen-patches-now, steve-berry-picking, sal-harvest, steve-sound-3d, sonny-flora-patches. Then post Dave's pull steps (close game fully). v27 bundle only after Dave OKs v26.
+Merge queue after Mike's PASS: steve-sunny-button (GO given, RUNTIME), kathleen-patches-now, steve-berry-picking, sal-harvest, steve-sound-3d, sonny-flora-patches. Then post Dave's pull steps (close game fully). v27 bundle only after Dave OKs v26.
 
 # CURRENT TOP JOBS (Guru, 2026-10-23 00:10; this block overrides the older lists below)
 - Steve: 1. Turn the tunnel collapse ON in Dave's test world (his YES) with the cave-in duration as a SETTING (2 to 20 min); 2. support spheres of influence (radius 5 / 7.5 / 10 m at full health, halves at half health, overlap covers an area; degrade slowly when unmaintained); 3. blueprint snapping and load rules with Sal (wide snap, 3 spaces, load limit like Valheim); 4. then other players' worn-clothing sync (protocol bump), characters.json write batching, join-window glue.
