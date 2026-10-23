@@ -888,29 +888,37 @@ func _draw_ice(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void:
 func _draw_water(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void:
 	var old: MeshInstance3D = entry.get("water")
 
+	# The new surface goes into the SAME node (Dave 2026-10-23, lake surface flickering): freeing the old node and adding a new one drew both
+	# for a frame (queue_free works at the end of the frame), a flash on the clear water each time a chunk was redrawn.
 	if old != null:
 		water_chunks -= 1
 		water_cells -= old.mesh.surface_get_array_index_len(0) / 6
-		old.queue_free()
-		entry["water"] = null
 
 	entry["grid"] = water
+	var mesh: ArrayMesh = null
 
 	if int(water.get("wet", 0)) > 0:
-		var mesh: ArrayMesh = water["mesh"] if water.has("mesh") else WaterGridScript.build_mesh(water, _water_material)
+		mesh = water["mesh"] if water.has("mesh") else WaterGridScript.build_mesh(water, _water_material)
 
-		if mesh.get_surface_count() > 0:
-			var draw: MeshInstance3D = MeshInstance3D.new()
-			draw.mesh = mesh
+	if mesh != null and mesh.get_surface_count() > 0:
+		var draw: MeshInstance3D = old
+
+		if draw == null:
+			draw = MeshInstance3D.new()
 			draw.position = Vector3(float(chunk.x) * chunk_m, 0.0, float(chunk.y) * chunk_m)
 			draw.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			draw.visible = not water_hidden
 			draw.add_to_group("water_draw")
 			add_child(draw)
-			entry["water"] = draw
-			water_chunks += 1
-			@warning_ignore("integer_division")
-			water_cells += mesh.surface_get_array_index_len(0) / 6
+
+		draw.mesh = mesh
+		draw.visible = not water_hidden
+		entry["water"] = draw
+		water_chunks += 1
+		@warning_ignore("integer_division")
+		water_cells += mesh.surface_get_array_index_len(0) / 6
+	elif old != null:
+		old.queue_free()
+		entry["water"] = null
 
 	_draw_ice(chunk, entry, water)
 	_draw_falls(chunk, entry, water)
