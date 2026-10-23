@@ -1,7 +1,3 @@
-## cost-25 | Door, Steel and iron: 4 steel ingots and 4 iron ingots?
-Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
-[check]
-
 ## cost-27 | Wood pillar: 4 logs?
 Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
 [check]
