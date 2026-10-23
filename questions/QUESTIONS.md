@@ -7,9 +7,6 @@ Note: 5. Check a natural cave does NOT collapse. Check the warning gives you at 
 Note: 6. Answer Yes if all of that worked. Answer No and tell me which step broke.
 [check]
 
-## esc-menu-3 | Esc menu: should Controls show the hotkey list?
-[check]
-
 ## esc-menu-4 | Esc menu: should Character open the Tab screen from the menu?
 [check]
 
