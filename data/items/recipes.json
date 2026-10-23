@@ -1,6 +1,6 @@
 {
 	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist). station: the recipe is made only near that placed station (structures.json station, reach_m with 1 m grace on the server); station_level (default 1) is the lowest level of the station it needs.",
-	"next_number": 143,
+	"next_number": 151,
 	"recipes": {
 		"twine": {
 			"number": 1,
@@ -2869,6 +2869,147 @@
 			],
 			"craft_s": 14.0,
 			"known": false
+		},
+		"rough_plank": {
+			"number": 143,
+			"name": "Rough plank",
+			"needs": [
+				[
+					"log",
+					1
+				]
+			],
+			"gives": [
+				"rough_plank",
+				4
+			],
+			"craft_s": 6.0,
+			"known": true,
+			"station": "workbench",
+			"station_level": 1
+		},
+		"fine_board": {
+			"number": 144,
+			"name": "Fine board",
+			"needs": [
+				[
+					"lumber",
+					1
+				]
+			],
+			"gives": [
+				"fine_board",
+				1
+			],
+			"craft_s": 4.0,
+			"known": false,
+			"station": "workbench",
+			"station_level": 1
+		},
+		"nails": {
+			"number": 145,
+			"name": "Nails",
+			"needs": [
+				[
+					"iron_ingot",
+					1
+				]
+			],
+			"gives": [
+				"nails",
+				100
+			],
+			"craft_s": 10.0,
+			"known": false,
+			"station": "forge"
+		},
+		"cobblestone": {
+			"number": 146,
+			"name": "Cobblestone",
+			"needs": [
+				[
+					"stone",
+					3
+				]
+			],
+			"gives": [
+				"cobblestone",
+				1
+			],
+			"craft_s": 6.0,
+			"known": false,
+			"station": "workbench",
+			"station_level": 1
+		},
+		"stone_shingle": {
+			"number": 147,
+			"name": "Stone shingle",
+			"needs": [
+				[
+					"stone",
+					2
+				]
+			],
+			"gives": [
+				"stone_shingle",
+				1
+			],
+			"craft_s": 6.0,
+			"known": false,
+			"station": "workbench",
+			"station_level": 1
+		},
+		"tar": {
+			"number": 148,
+			"name": "Tar",
+			"needs": [
+				[
+					"pine_tar",
+					5
+				]
+			],
+			"gives": [
+				"tar",
+				1
+			],
+			"craft_s": 12.0,
+			"known": false,
+			"station": "campfire"
+		},
+		"hinges": {
+			"number": 149,
+			"name": "Hinges",
+			"needs": [
+				[
+					"iron_ingot",
+					1
+				]
+			],
+			"gives": [
+				"hinges",
+				4
+			],
+			"craft_s": 8.0,
+			"known": false,
+			"station": "forge"
+		},
+		"wooden_pin": {
+			"number": 150,
+			"name": "Wooden pin",
+			"needs": [
+				[
+					"lumber",
+					1
+				]
+			],
+			"gives": [
+				"wooden_pin",
+				4
+			],
+			"craft_s": 5.0,
+			"known": true,
+			"station": "workbench",
+			"station_level": 1
 		}
 	}
 }
