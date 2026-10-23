@@ -1246,3 +1246,7 @@ Answered: 2026-10-23 19:07 UTC
 Answer: No: You do the test
 Answered: 2026-10-23 19:07 UTC
 
+## bake9-steps | New island ground: pull, let Mike copy the tiles, commit them (build 751)
+Answer: No: This is all stuff you can do
+Answered: 2026-10-23 19:08 UTC
+
