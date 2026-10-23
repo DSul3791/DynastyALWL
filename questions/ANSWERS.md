@@ -1054,3 +1054,7 @@ Answered: 2026-10-23 04:12 UTC
 Answer: Yes
 Answered: 2026-10-23 04:12 UTC
 
+## cavein-death-slow | Should a cave-in that kills you be slow and dramatic: the roof falls in 3 to 5 waves over about 6 seconds, with dust and rumble, instead of all at once?
+Answer: Yes
+Answered: 2026-10-23 04:12 UTC
+
