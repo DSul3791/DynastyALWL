@@ -868,3 +868,7 @@ Answered: 2026-10-23 01:27 UTC
 Answer: Yes
 Answered: 2026-10-23 01:28 UTC
 
+## braces-r4 | Do the braces look right: round logs joined with wooden pins, each of the three sizes in a plain and a tar-soaked version?
+Answer: No: Yes, these look perfect and as far as the materials to make them, you should be able to count the amount of logs on the images for each one and then add tar for the treated logs
+Answered: 2026-10-23 01:29 UTC
+
