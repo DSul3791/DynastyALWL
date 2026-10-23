@@ -740,3 +740,7 @@ Answered: 2026-10-23 00:51 UTC
 Answer: No: Look at my previous answer
 Answered: 2026-10-23 00:51 UTC
 
+## cost-21 | Door, Basic: 10 twine, 20 thatch, 8 sticks?
+Answer: Yes
+Answered: 2026-10-23 00:51 UTC
+
