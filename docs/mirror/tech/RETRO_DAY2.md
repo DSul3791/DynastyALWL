@@ -33,3 +33,15 @@ Reading: (a) Dave's decisions per day went up about 15x (the QA page and cards).
 - Long reports duplicated in chat and a doc: doc plus one line in chat.
 ## Not measured
 Tokens per thread or per task; how many of Dave's 218 answers changed real code; whether the extra merges are all useful or partly churn.
+
+## Who was least busy? (added 05:30 UTC; Dave asked 04:52)
+IMPORTANT: commit and merge counts are NOT effort. A thread can spend a whole day on one hard design, a bake, a test run or waiting for an answer and show almost nothing here. Git does not tell which thread wrote a commit (the author is the same account for most: 516 commits "The Magnanimous Coder" account, 311 "Claude", 196 "Tyler_Guru"). So this table uses the BUILD_LOG "MERGED" lines by thread (22 and 23 Oct, builds 647 to 701), which is the only per-thread record.
+| Thread | Builds merged (BUILD_LOG, 647-701) | Other work seen | Idle or blocked stretches I saw |
+| Sal_Crafts | about 20 | items, crafting, blueprint design, costs, wood chain, admin craft, rock pile | said branches unmerged when they were merged; waited at times on cost cards |
+| Kathleen_ArtisticDirector | about 12 | looks, tiers art, sounds, designs rounds 3-4 | waited on me to merge tools-v6 and on cards; could not render in cloud |
+| Steve_ProblemSolver | about 10 | Esc menu, collapse, ladders, drip, reset, clear drops, cave-in fix | a few permission waits |
+| Sonny_WorksDep | about 1 (terrain B pushed, off) | terrain B stages, basins, far water, ocean notes, water flicker analysis | waited on yes/no cards (he said so at 01:00); long work not visible in merges |
+| MikeW_LocalAgent | 0 code merges | warning baseline, local_check, backups, headless runs, bake tests, evidence copy | idle between asks (runs only when called); his checks gated my merges |
+| Guru (me) | all merges (about 53 MERGED lines), docs, 200+ answer sweeps and cards | page versions, BP rules, decisions | my hourly message limit and my own merge errors |
+Reading: by merges, MikeW and Sonny had the most spare capacity; MikeW because he only runs when called, Sonny because terrain B and water are big jobs that land later. Sonny is probably not idle in effort. MikeW is the clearest spare capacity.
+Next job I would hand MikeW: the team tests in TEAM_TESTS.md and the look rig, then run the pre-merge guard on his PC as the first "CI" until GitHub runs it. Sonny: the dry river sim check, water surface flicker and the 1-tile BAKE-1 test with MikeW.
