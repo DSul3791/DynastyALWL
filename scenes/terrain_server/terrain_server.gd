@@ -482,6 +482,7 @@ func _ready() -> void:
 		if resume.size() == 3:
 			net.start_at.rpc_id(peer, Vector3(float(resume[0]), float(resume[1]), float(resume[2]))))
 	net.logout_requested.connect(func(leaving): items.note_logout(leaving))
+	net.tunnel_setting_requested.connect(_on_tunnel_setting)
 	net.admin_place_requested.connect(_on_admin_place)
 	@warning_ignore("confusable_local_declaration")
 	net.npc_talk_requested.connect(func(peer, npc_id, choice): dialogue.talk(peer, npc_id, choice))
@@ -577,6 +578,7 @@ func _on_peer_connected(peer_id: int) -> void:
 		"min_tile": settings.min_tile,
 		"tiles_per_side": settings.tiles_x,
 		"revisions": store.revisions(),
+		"tunnels": {"on": tunnels.enabled, "cave_in_s": int(tunnels.cave_in_s)},
 		"spawn": spawn,
 		"terrain_version": Layout.TERRAIN_VERSION,
 		"tiles_stamp": store.tiles_stamp,
@@ -1111,13 +1113,47 @@ func _dig_refusal() -> String:
 func _start_tunnels() -> void:
 	var path: String = "res://data/tunnels.json"
 	var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(path)) if FileAccess.file_exists(path) else {}
-	tunnels.configure(data if typeof(data) == TYPE_DICTIONARY else {})
+	var merged: Dictionary = (data as Dictionary).duplicate() if typeof(data) == TYPE_DICTIONARY else {}
+	var saved_path: String = _store_path + "/tunnel_settings.json"      # the in-game switch (Esc > Settings, admin) wins over data/tunnels.json
+
+	if FileAccess.file_exists(saved_path):
+		var saved: Variant = JSON.parse_string(FileAccess.get_file_as_string(saved_path))
+
+		if typeof(saved) == TYPE_DICTIONARY:
+			merged["enabled"] = bool(saved.get("on", merged.get("enabled", false)))
+			merged["collapse"] = merged["enabled"]
+			merged["cave_in_s"] = float(saved.get("cave_in_s", merged.get("cave_in_s", 1200.0)))
+
+	tunnels.configure(merged)
+	tunnels.load_natural = func(block: Vector3i) -> VoxelBuffer:
+		var buffer: VoxelBuffer = Layout.make_buffer(16)
+		store.load_natural(buffer, block)
+		return buffer
 	tunnels.load_block = func(block: Vector3i) -> VoxelBuffer:
 		var buffer: VoxelBuffer = Layout.make_buffer(16)
 		store.load_block(buffer, block, 0)
 		return buffer
 	tunnels.surface_h = func(x: float, z: float) -> float: return generator.surface_height(x, z)
 	tunnels.start()
+
+
+# An admin turns the tunnel collapse on or off and sets the cave-in duration from Esc > Settings; saved beside the world, told to everyone.
+func _on_tunnel_setting(peer: int, on: bool, cave_in_s: int) -> void:
+	if not admin.is_admin(items.key_of(peer)):
+		net.notice.rpc_id(peer, "Only an admin can change the tunnel collapse.")
+		net.tunnel_settings.rpc_id(peer, tunnels.enabled, int(tunnels.cave_in_s))
+		return
+
+	tunnels.set_cave_in_s(float(cave_in_s))
+	tunnels.set_enabled(on)
+	var file: FileAccess = FileAccess.open(_store_path + "/tunnel_settings.json", FileAccess.WRITE)
+
+	if file != null:
+		file.store_string(JSON.stringify({"on": on, "cave_in_s": int(tunnels.cave_in_s)}))
+		file.close()
+
+	print("Tunnel collapse %s, cave-in %d s (peer %d)" % ["on" if on else "off", int(tunnels.cave_in_s), peer])
+	net.tunnel_settings.rpc(on, int(tunnels.cave_in_s))
 
 
 func _tunnel_tick() -> void:

@@ -14,6 +14,7 @@ extends RefCounted
 
 const Stability := preload("res://src/stream/tunnel_stability.gd")
 const GroundOps := preload("res://src/stream/ground_ops.gd")
+const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 
 const CELL_M := 2.0
 const QUAKE_EVERY_MSEC := 500
@@ -35,6 +36,7 @@ var cave_in_s: float = 1200.0
 const CAVE_IN_MIN_S := 120.0
 const CAVE_IN_MAX_S := 1200.0
 var load_block: Callable                     # (Vector3i block) -> VoxelBuffer of the block with every edit applied, or null
+var load_natural: Callable                   # (Vector3i block) -> VoxelBuffer of the block as generated, no edits: collapse is for MAN-MADE spaces only (Dave 2026-10-23)
 var surface_h: Callable                      # (x, z) -> ground surface height
 var support_strength: Callable               # (Vector3) -> support strength x condition 0..1 at a point (items; none until they exist)
 
@@ -149,6 +151,11 @@ func process_dirty(now_msec: int) -> void:
 			continue
 
 		var found: Array = Stability.working(Stability.classify(buffer, Vector3(block * GroundOps.BLOCK_SIZE), surface_h))
+
+		if load_natural.is_valid() and not found.is_empty():
+			var natural: VoxelBuffer = load_natural.call(block)
+			var origin: Vector3 = Vector3(block * GroundOps.BLOCK_SIZE)
+			found = found.filter(func(cell): return natural == null or _dug(buffer, natural, (cell["pos"] as Vector3) - origin))
 		_mutex.lock()
 
 		for key in _block_cells.get(block, []):
@@ -170,6 +177,41 @@ func process_dirty(now_msec: int) -> void:
 
 # The window share f mapped so the quiet part (share q of the window; 0 keeps the old fixed layout) ends at 0.6: stage_of and
 # strength_of then work unchanged on it.
+# True when part of the cell (a 3 x 3 x 3 look around its centre) is air now but was rock when the ground was generated: someone dug it.
+# Natural caves are never man-made, so they never start a window.
+static func _dug(now: VoxelBuffer, natural: VoxelBuffer, local: Vector3) -> bool:
+	for dy in range(-1, 2):
+		for dz in range(-1, 2):
+			for dx in range(-1, 2):
+				var x: int = clampi(floori(local.x) + dx, 0, 15)
+				var y: int = clampi(floori(local.y) + dy, 0, 15)
+				var z: int = clampi(floori(local.z) + dz, 0, 15)
+
+				if now.get_voxel_f(x, y, z, Layout.CHANNEL_SDF) > 0.0 and natural.get_voxel_f(x, y, z, Layout.CHANNEL_SDF) <= 0.0:
+					return true
+
+	return false
+
+
+# The in-game switch (Esc > Settings, admin): off clears every running window; on starts the thread if it was never started.
+func set_enabled(on: bool) -> void:
+	_mutex.lock()
+	enabled = on
+	collapse_enabled = on
+
+	if not on:
+		_cells.clear()
+		_block_cells.clear()
+		_dirty.clear()
+
+	_mutex.unlock()
+	start()
+
+
+func set_cave_in_s(seconds: float) -> void:
+	cave_in_s = clampf(seconds, CAVE_IN_MIN_S, CAVE_IN_MAX_S)
+
+
 static func _stage_share(f: float, q: float) -> float:
 	if q <= 0.0:
 		return f

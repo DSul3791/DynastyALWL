@@ -211,6 +211,10 @@ var test_start: Vector3 = Vector3.INF   # --start=x,y,z: put the player there (t
 var _test_probe_msec: int = 0
 var test_dump: bool = false           # --dump-test: 14 s after the welcome dump the ground under the feet (prints the dump)
 var _test_dump_done: bool = false
+var tunnel_on: bool = false               # the server's tunnel collapse switch (admins change it in Esc > Settings)
+var tunnel_cave_in_s: int = 1200
+var _tunnel_button: Button
+var _cave_in_button: Button
 var quake_view = QuakeViewScript.new()        # shake, dust and notices while a tunnel is failing (quake_view.gd)
 var ladder = LadderClimbScript.new()          # holding on to a placed ladder (ladder_climb.gd)
 var ground_debug = GroundDebugScript.new()    # ground dump, ground self-check, hole probe (ground_debug.gd)
@@ -663,6 +667,10 @@ func _ready() -> void:
 	net.flora_cut_received.connect(_on_flora_cut)
 	net.water_rate_received.connect(_on_water_rate)
 	net.water_changed_received.connect(_on_water_changed)
+	net.tunnel_settings_received.connect(func(on: bool, cave_in_s: int) -> void:
+		tunnel_on = on
+		tunnel_cave_in_s = cave_in_s
+		_show_tunnel_buttons())
 	net.quake_received.connect(func(stage: int, strength: float, point: Vector3) -> void:
 		quake_view.on_quake(stage, strength)
 
@@ -879,6 +887,8 @@ func _welcome_body(info: Dictionary) -> void:
 		return
 
 	world = info
+	tunnel_on = bool(info.get("tunnels", {}).get("on", false))
+	tunnel_cave_in_s = int(info.get("tunnels", {}).get("cave_in_s", 1200))
 	game_clock.sync(float(info.get("game_seconds", game_clock.seconds)))
 	connected_msec = Time.get_ticks_msec()
 
@@ -2201,6 +2211,12 @@ func _build_menu(layer: CanvasLayer) -> void:
 	_menu_button(settings, "Debug details (F3): on or off", func():
 		debug_hud.enabled = not debug_hud.enabled
 		_menu_note.text = "Debug details %s" % ("on" if debug_hud.enabled else "off"))
+	_tunnel_button = _menu_button(settings, "Tunnel collapse", func():
+		net.tunnel_setting.rpc_id(1, not tunnel_on, tunnel_cave_in_s))
+	_cave_in_button = _menu_button(settings, "Cave-in time", func():
+		var steps: Array = [120, 300, 600, 1200]
+		net.tunnel_setting.rpc_id(1, tunnel_on, steps[(steps.find(tunnel_cave_in_s) + 1) % steps.size()]))
+	_show_tunnel_buttons()
 	_menu_button(settings, "VSync: change", func():
 		display.vsync_index = (display.vsync_index + 1) % display.VSYNC_MODES.size()
 		display.apply(get_window())
@@ -3184,6 +3200,16 @@ func _move_player(delta: float) -> void:
 
 	sea.global_position = Vector3(body.global_position.x, 0.0, body.global_position.z)
 	_update_underwater()
+
+
+# The two tunnel collapse buttons in Esc > Settings show the server's settings: On in green or Off in red, and the cave-in time.
+func _show_tunnel_buttons() -> void:
+	if _tunnel_button == null:
+		return
+
+	_tunnel_button.text = "Tunnel collapse: %s (admin)" % ("On" if tunnel_on else "Off")
+	_tunnel_button.add_theme_color_override("font_color", Color(0.45, 0.9, 0.45) if tunnel_on else Color(0.95, 0.4, 0.4))
+	_cave_in_button.text = "Cave-in time: %d min (change)" % (tunnel_cave_in_s / 60)
 
 
 # On a placed ladder (ladder_climb.gd): W climbs, S descends, Space lets go. True while holding on (that frame does no walking).

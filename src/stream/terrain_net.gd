@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 71
+const PROTOCOL_VERSION := 72
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -87,6 +87,8 @@ signal craft_queue_received(entries: Array, left_ms: int)
 signal strain_received(strain_pm: int, state: int, fade_pm: int, stance: int)
 signal hello_requested(peer_id: int, player_key: String)
 signal logout_requested(peer_id: int)
+signal tunnel_setting_requested(peer_id: int, on: bool, cave_in_s: int)
+signal tunnel_settings_received(on: bool, cave_in_s: int)
 signal start_at_received(position: Vector3)
 signal inventory_action_requested(peer_id: int, kind: int, a: int, b: int, count: int, at: Vector3)
 signal inventory_full_received(bytes: PackedByteArray)
@@ -281,6 +283,19 @@ func deliver_water(chunk: Vector2i, water: PackedByteArray) -> void:
 func logout() -> void:
 	if multiplayer.is_server():
 		logout_requested.emit(multiplayer.get_remote_sender_id())
+
+
+# Tunnel collapse switch (protocol 72, Dave 2026-10-23): an admin asks to turn it on or off and sets the cave-in duration (seconds, the
+# server clamps to 120..1200); the server answers everyone with the settings now in force (also sent after hello).
+@rpc("any_peer", "call_remote", "reliable")
+func tunnel_setting(on: bool, cave_in_s: int) -> void:
+	if multiplayer.is_server():
+		tunnel_setting_requested.emit(multiplayer.get_remote_sender_id(), on, cave_in_s)
+
+
+@rpc("authority", "call_remote", "reliable")
+func tunnel_settings(on: bool, cave_in_s: int) -> void:
+	tunnel_settings_received.emit(on, cave_in_s)
 
 
 # Where this character resumes (protocol 69): sent after hello when the player has a saved place (their last spot, or the nearest
