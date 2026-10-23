@@ -159,6 +159,8 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 			_cane_shrub(SHRUB_LOOKS[str(entry["name"])], bark, leaves, rng, h, crown, far)
 		"ground_berry":
 			_ground_berry(GROUND_LOOKS[str(entry["name"])], bark, leaves, rng, h, crown, far)
+		"wildflower":
+			_wildflower(WILDFLOWER_LOOKS[str(entry["name"])], bark, leaves, rng, h, crown, far)
 		"herb_nettle":
 			_herb(bark, leaves, rng, h, crown, far, Color(0.7, 0.95, 0.5))
 		"hazel":
@@ -2295,6 +2297,93 @@ static func _ground_berry(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomN
 		var ripe: bool = rng.randf() < 0.7
 		var hang: Vector3 = tip + Vector3(0.0, -bead * 0.6, 0.0)
 		_cluster(bark, rng, hang, bead * 1.1, look["berry"] if ripe else look["unripe"], false, int(look["count"]) + 1)
+
+
+# Wild flowers and herbs (daisy, umbel, spike and bell heads): a few thin stems with basal leaves, each stem ending in a flower head
+# made of beads and flat petals in explicit colours (the foliage tint only reaches the leaves).
+const WILD_STEM := Color(0.38, 0.5, 0.22)
+const WILDFLOWER_LOOKS := {
+	"chamomile": {"head": "daisy", "stems": 7, "petal": Color(1.0, 1.0, 0.95), "centre": Color(1.0, 0.82, 0.1), "size": 0.045, "petals": 10},
+	"feverfew": {"head": "daisy", "stems": 7, "petal": Color(1.0, 1.0, 0.95), "centre": Color(0.95, 0.85, 0.2), "size": 0.04, "petals": 9},
+	"arnica": {"head": "daisy", "stems": 4, "petal": Color(1.0, 0.72, 0.1), "centre": Color(0.85, 0.5, 0.05), "size": 0.08, "petals": 12},
+	"dandelion": {"head": "daisy", "stems": 4, "petal": Color(1.0, 0.85, 0.05), "centre": Color(0.95, 0.7, 0.05), "size": 0.12, "petals": 14},
+	"st_johns_wort": {"head": "daisy", "stems": 6, "petal": Color(1.0, 0.85, 0.1), "centre": Color(0.9, 0.6, 0.05), "size": 0.045, "petals": 5},
+	"wild_carrot": {"head": "umbel", "stems": 4, "petal": Color(1.0, 1.0, 0.97), "size": 0.18, "rays": 9},
+	"angelica": {"head": "umbel", "stems": 3, "petal": Color(0.88, 0.95, 0.78), "size": 0.2, "rays": 11},
+	"yarrow": {"head": "umbel", "stems": 5, "petal": Color(0.98, 0.96, 0.9), "size": 0.14, "rays": 8},
+	"meadowsweet": {"head": "umbel", "stems": 4, "petal": Color(0.98, 0.95, 0.82), "size": 0.15, "rays": 9},
+	"valerian": {"head": "umbel", "stems": 4, "petal": Color(0.97, 0.82, 0.86), "size": 0.14, "rays": 9},
+	"wild_garlic": {"head": "umbel", "stems": 5, "petal": Color(1.0, 1.0, 1.0), "size": 0.15, "rays": 8},
+	"lavender": {"head": "spike", "stems": 9, "petal": Color(0.55, 0.38, 0.85), "size": 0.045, "beads": 12, "span": 0.35},
+	"heather": {"head": "spike", "stems": 10, "petal": Color(0.75, 0.3, 0.6), "size": 0.04, "beads": 12, "span": 0.5},
+	"wild_marjoram": {"head": "spike", "stems": 6, "petal": Color(0.8, 0.45, 0.7), "size": 0.045, "beads": 8, "span": 0.25},
+	"wild_mint": {"head": "spike", "stems": 6, "petal": Color(0.72, 0.6, 0.9), "size": 0.045, "beads": 9, "span": 0.25},
+	"wolfsbane": {"head": "spike", "stems": 3, "petal": Color(0.25, 0.22, 0.65), "size": 0.06, "beads": 10, "span": 0.4},
+	"flax": {"head": "spike", "stems": 7, "petal": Color(0.35, 0.5, 0.95), "size": 0.04, "beads": 5, "span": 0.2},
+	"foxglove": {"head": "bell", "stems": 3, "petal": Color(0.85, 0.35, 0.7), "size": 0.035, "beads": 10, "span": 0.5},
+}
+
+
+static func _daisy(acc: Acc, rng: RandomNumberGenerator, at: Vector3, size: float, petal: Color, centre: Color, count: int) -> void:
+	var turn: float = rng.randf() * TAU
+
+	for k in range(count):
+		var a: float = turn + TAU * float(k) / float(count)
+		_bead(acc, at + Vector3(cos(a), 0.0, sin(a)) * size * 0.7, Vector3(size * 0.55, size * 0.08, size * 0.22).rotated(Vector3.UP, 0.0), petal)
+
+	_bead(acc, at + Vector3(0.0, size * 0.1, 0.0), Vector3(size * 0.35, size * 0.2, size * 0.35), centre)
+
+
+static func _wildflower(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
+	var stems: int = 3 if far else int(look["stems"])
+	var head: String = str(look["head"])
+	var size: float = float(look["size"]) * h * 1.2 if head == "umbel" else float(look["size"]) * maxf(h, crown * 1.6) * 2.6
+	var petal: Color = look["petal"]
+	var az: float = rng.randf() * TAU
+
+	# Basal leaves: a few low clumps round the foot.
+	for k in range(2 if far else 3):
+		var a: float = rng.randf() * TAU
+		_clump(leaves, rng, Vector3(cos(a), 0.0, sin(a)) * crown * 0.25 + Vector3(0.0, h * 0.12, 0.0), Vector3(0.0, -h, 0.0), maxf(crown * 0.7, h * 0.3), rng.randf_range(0.85, 1.05), 2)
+
+	for k in range(stems):
+		az += TAU / float(stems) + rng.randf_range(-0.4, 0.4)
+		var out: Vector3 = Vector3(cos(az), 0.0, sin(az))
+		var top_h: float = h * rng.randf_range(0.8, 1.0)
+		var tip: Vector3 = out * crown * rng.randf_range(0.2, 0.7) + Vector3(0.0, top_h, 0.0)
+		var base: Vector3 = out * crown * 0.05
+		var mid: Vector3 = base.lerp(tip, 0.5) + out * crown * 0.08
+		_branch(bark, base, mid, maxf(h * 0.012, 0.003), maxf(h * 0.009, 0.0025), WILD_STEM, 3)
+		_branch(bark, mid, tip, maxf(h * 0.009, 0.0025), maxf(h * 0.006, 0.002), WILD_STEM, 3)
+
+		if not far and k % 2 == 0:
+			_clump(leaves, rng, base.lerp(mid, 0.6) + out * crown * 0.1, Vector3(0.0, -h, 0.0), maxf(crown * 0.35, h * 0.18), 0.95, 2)
+
+		match head:
+			"daisy":
+				_daisy(bark, rng, tip, size, petal, look["centre"], 5 if far else int(look["petals"]))
+			"umbel":
+				if far:
+					_bead(bark, tip, Vector3(size * 0.7, size * 0.18, size * 0.7), petal)
+					continue
+
+				for r in range(int(look["rays"])):
+					var a: float = TAU * float(r) / float(look["rays"]) + rng.randf() * 0.4
+					var ring: float = size * (0.9 if r > 0 else 0.0)
+					var ray: Vector3 = tip + Vector3(cos(a) * ring, size * 0.25 * (1.0 - ring / (size * 1.0 + 0.001)), sin(a) * ring)
+					_branch(bark, tip, ray, maxf(h * 0.003, 0.001), maxf(h * 0.002, 0.001), WILD_STEM, 3)
+					_cluster(bark, rng, ray, size * 0.4, petal, true, 3)
+			_:
+				var beads: int = 3 if far else int(look["beads"])
+
+				for b in range(beads):
+					var u: float = float(b) / float(maxi(beads - 1, 1))
+					var at: Vector3 = tip.lerp(mid, u * float(look["span"]) * 2.0) if head == "spike" else tip.lerp(mid, u * float(look["span"]) * 1.6)
+					var a: float = float(b) * 2.4 + rng.randf() * 0.4
+					var side: Vector3 = Vector3(cos(a), 0.0, sin(a)) * size * (0.6 if head == "spike" else 1.0)
+					var scale: float = size * (1.0 - 0.4 * u) * (0.8 if head == "spike" else 1.0)
+					var drop: Vector3 = Vector3(0.0, -scale * (0.9 if head == "bell" else 0.0), 0.0)
+					_bead(bark, at + side + drop, Vector3(scale * 0.5, scale * (0.75 if head == "bell" else 0.5), scale * 0.5), petal * rng.randf_range(0.88, 1.08))
 
 
 # A wild rose flower: five broad flat petals round a pale yellow centre with orange-yellow stamens (Dave's photos), facing up and out.
