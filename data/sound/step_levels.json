@@ -31,6 +31,12 @@
   "thatch": -11.0,
   "path": -9.0
  },
- "surface_gait_db": {},
+ "surface_gait_db": {
+  "sand": [
+   -2.0,
+   -6.0,
+   -9.0
+  ]
+ },
  "puddle_db": -13.0
 }
