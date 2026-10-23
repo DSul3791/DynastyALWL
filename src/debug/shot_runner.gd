@@ -101,7 +101,6 @@ func setup(owner_client, args: Array) -> void:
 				give_item = give_item.get_slice(":", 0)
 		elif argument == "--shot-drop":
 			drop_it = true
-<<<<<<< HEAD
 			ground_test = true
 		elif argument.begins_with("--shot-lookdown="):
 			look_down_deg = float(argument.trim_prefix("--shot-lookdown="))
@@ -118,10 +117,6 @@ func setup(owner_client, args: Array) -> void:
 		elif argument.begins_with("--shot-dig="):
 			dig_steps = int(argument.trim_prefix("--shot-dig="))
 			ground_test = true
-=======
-		elif argument.begins_with("--shot-wet="):
-			client.wet_gap_override = float(argument.trim_prefix("--shot-wet="))      # wet tunnel sounds without a tunnel: gap 3 damp, 2 dripping, 1 running
->>>>>>> cl/steve-wet-wire
 		elif argument == "--shot-nograss":
 			no_grass = true      # hide the grass so a hand-held item or the body is not hidden by blades
 		elif argument == "--shot-admin":
@@ -346,9 +341,6 @@ func _process(_delta: float) -> void:
 			var cam: Camera3D = client.camera
 			print("shot runner: camera at %s forward %s, model offset from camera %s, dot with forward %.2f, view_cam at %s" % [str(cam.global_position), str(-cam.global_transform.basis.z), str(hm.global_position - cam.global_position), (hm.global_position - cam.global_position).dot(-cam.global_transform.basis.z), str(client.view_cam.global_position) if client.view_cam != null else "-"])
 			print("shot runner: held model at %s visible %s in tree %s parent %s children %d first aabb %s; body at %s" % [str(hm.global_position), str(hm.visible), str(hm.is_visible_in_tree()), str(hm.get_parent().name), hm.get_child_count(), str(aabb.size), str(client.body.global_position)])
-
-	if client.wet_gap_override >= 0.0:
-		print("shot runner: wet sounds: gap %.1f stage %d played %s" % [client.wet_gap_override, client.sound.wet.stage_now, str(client.sound.wet.played)])
 
 	print("shot runner: saved %s (%dx%d) at %s, ground %.1f" % [path, image.get_width(), image.get_height(), str(p), _ground(p.x, p.z)])
 	var falls: Array = client.flora.fall_list()
