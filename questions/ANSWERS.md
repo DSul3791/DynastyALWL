@@ -972,3 +972,7 @@ Answered: 2026-10-23 01:39 UTC
 Answer: Yes
 Answered: 2026-10-23 01:40 UTC
 
+## wet-noflood | Is there no real flooding under the sea until the sea link is built (only drips and wet floors for now)?
+Answer: No: I’m not exactly sure what this question means but if somebody breaks a hole from a tunnel into the ocean, it should flood the tunnel and fill it in every direction up to sea level
+Answered: 2026-10-23 01:40 UTC
+
