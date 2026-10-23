@@ -87,3 +87,34 @@ Note: Today a drop is refused when 64 loose items are already within 12 m. Items
 Note: A pile shows bigger the more it holds. Picking up takes the whole pile or part of it, and the rock pile item is the same idea for rock.
 Note: Tyler recommends Yes because it removes the limit without more lag (fewer objects to send and draw), and it matches the rock pile you already approved. Steve does merge and split on the server, Sal the pile counts, Kathleen the pile looks.
 [check]
+
+## rockpile-merge | Should rocks dropped within 1 m of each other join into one pile (same kind only, never tools), and does this fix the limit on items on the ground?
+Note: Up to 5 they look like loose rocks, 6 or more become a pyramid pile made from the count (1 on top, 3 under, 5 under that...). One pile counts as one item, so the limit of 64 is no longer hit.
+Note: Full design: tech/items/ROCK_PILE_DESIGN.md.
+Note: Tyler recommends Yes because it removes the limit, adds no lag, and costs almost no save space (one entry per pile).
+[check]
+
+## rockpile-take | Taking from a pile: press E to take a handful (about 5), hold E to take as many as you can carry, and the pile shrinks row by row?
+Note: At 5 or fewer left it turns back into loose rocks.
+Note: Tyler recommends Yes because it is quick for one rock and for a lot, and matches the rock pile item Sal built.
+[check]
+
+## rockpile-kinds | Should the same pile rule work for soil, sand, clay, gravel and ore (as mounds), and for logs, planks and bricks (stacked, look later), but no mixed piles?
+Note: Different kinds near each other stay separate side by side.
+Note: Tyler recommends Yes because one rule is simpler for everyone, and mixed piles would be hard to take things out of.
+[check]
+
+## rockpile-block | Should a pile of 6 or more block movement like a boulder (you walk around it, you cannot climb it)?
+Note: Loose rocks (5 or fewer) do not block and roll when you walk over them.
+Note: Tyler recommends Yes because big piles would otherwise be walked through, and climbing makes terrain bugs. We can add climbing later.
+[check]
+
+## rockpile-despawn | Should a pile of 6 or more last 2 hours after the last add or take, instead of the usual 20 minutes?
+Note: Loose items keep the 20 minute timer.
+Note: Tyler recommends Yes because piles take work to make, and losing them in 20 minutes would feel unfair.
+[check]
+
+## rockpile-big | Above about 500 rocks, should the look change to a smooth rocky mound instead of drawing every rock, with a limit of 100,000 rocks per pile?
+Note: A mound keeps the game fast. Past 100,000 a second pile starts beside the first.
+Note: Tyler recommends Yes because drawing thousands of rocks would slow the game, and nobody can tell the difference at that size.
+[check]
