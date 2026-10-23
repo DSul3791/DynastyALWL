@@ -165,3 +165,7 @@ Note: 3. With an empty pack, open the crafting list and craft an iron pickaxe or
 Note: 4. Select a recipe and press E: one item should be crafted.
 Note: 5. Switch Admin mode Off (red). Crafting an iron pickaxe with an empty pack should now be refused.
 [test]
+
+## hotbar-move | Is this how the hotbar should work: a tool dragged onto the hotbar MOVES there and leaves the pack grid (the hotbar is extra holding slots, not a copy, and it still counts for weight), and E over a hotbar slot with the inventory window open puts it back in the first free pack slot?
+Note: Tyler recommends Yes because it already matches what you described, so nothing needs changing.
+[check]
