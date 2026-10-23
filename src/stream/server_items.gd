@@ -5634,11 +5634,33 @@ func _station_name(station: String) -> String:
 	return station.replace("_", " ")
 
 
+# Admin mode (Dave 2026-10-23, on by default): an admin with the mode on crafts anything in the list free and unlimited, locked or
+# not, with no station and no ingredients (the queue entry carries an empty needs list, which the tick reads as a free craft).
+var admin_mode_on: Callable             # (peer) -> bool, set by the server from the Esc > Admin settings switch; unset means on
+
+
+func free_craft_for(peer: int) -> bool:
+	return admin_ok.is_valid() and bool(admin_ok.call(peer)) and (not admin_mode_on.is_valid() or bool(admin_mode_on.call(peer)))
+
+
 func _queue_craft(peer: int, inv, recipe_number: int, count: int) -> void:
 	var queue: Dictionary = _queue_of(peer)
 	var recipe: Dictionary = recipes.recipe(recipe_number)
+	var free: bool = free_craft_for(peer)
 
-	if queue.is_empty() or recipe.is_empty() or not bool(recipe["known"]):
+	if queue.is_empty() or recipe.is_empty() or (not bool(recipe["known"]) and not free):
+		return
+
+	if free:
+		var line: Array = queue["entries"]
+
+		if line.size() >= CRAFT_QUEUE_ENTRIES:
+			_say(peer, "The crafting queue is full")
+			return
+
+		line.append([recipe_number, clampi(count, 1, CRAFT_QUEUE_MAX_COUNT), []])
+		_dirty = true
+		_sync_craft_queue(peer)
 		return
 
 	if str(recipe.get("station", "")) != "" and not station_near(peer, str(recipe["station"]), int(recipe.get("station_level", 1))):
@@ -5646,7 +5668,7 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int) -> void:
 		return
 
 	var entries: Array = queue["entries"]
-	var merge: bool = not entries.is_empty() and int(entries[entries.size() - 1][0]) == recipe_number
+	var merge: bool = not entries.is_empty() and int(entries[entries.size() - 1][0]) == recipe_number and not (entries[entries.size() - 1][2] as Array).is_empty()
 
 	if entries.size() >= CRAFT_QUEUE_ENTRIES and not merge:
 		_say(peer, "The crafting queue is full")
@@ -5719,7 +5741,9 @@ func _craft_tick(spent: float) -> void:
 			continue
 
 		# A station recipe only runs while you are near its station; step away and it waits (nothing is lost, cancel refunds).
-		if str(recipe.get("station", "")) != "" and not station_near(peer, str(recipe["station"]), int(recipe.get("station_level", 1))):
+		var free_entry: bool = (head[2] as Array).is_empty()   # an admin-mode craft: no station, no kept tool
+
+		if not free_entry and str(recipe.get("station", "")) != "" and not station_near(peer, str(recipe["station"]), int(recipe.get("station_level", 1))):
 			if Time.get_ticks_msec() - int(_station_said.get(peer, -100000)) > 8000:
 				_station_said[peer] = Time.get_ticks_msec()
 				_say(peer, "Your craft waits: go back to the %s" % _station_name(str(recipe["station"])))
@@ -5738,7 +5762,7 @@ func _craft_tick(spent: float) -> void:
 		var tools_ok: bool = inv != null
 
 		for keep in recipe.get("keeps", []):
-			tools_ok = tools_ok and inv.has(keep[0], keep[1])
+			tools_ok = tools_ok and (free_entry or inv.has(keep[0], keep[1]))
 
 		if not tools_ok:
 			queue["entries"].remove_at(0)
