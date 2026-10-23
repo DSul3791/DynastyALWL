@@ -17,11 +17,18 @@ const RIFFLE_PERIOD_WIDTHS := 6.0    # riffle to riffle spacing in channel width
 const RIFFLE_FACTOR := 0.6
 const POOL_FACTOR := 1.25
 const CONFLUENCE_FACTOR := 1.3
+const MEANDER_WAVELENGTH_WIDTHS := 12.0   # sinuous reaches: about 12 widths from bend to bend
+const MEANDER_AMPLITUDE_WIDTHS := 1.5    # sideways swing on gentle ground
+const MEANDER_SLOPE_FULL := 0.015        # under this fall per metre the swing is full, over MEANDER_SLOPE_NONE none
+const MEANDER_SLOPE_NONE := 0.04
 const SURFACE_SHARE := 0.6           # water stands this share of the centre depth above the bed
 
 var bed: PackedFloat32Array = PackedFloat32Array()
 var centre_depth: PackedFloat32Array = PackedFloat32Array()    # depth on the centre line, 0 elsewhere
 var surface: PackedFloat32Array = PackedFloat32Array()         # water level in channel cells, NAN elsewhere
+var _along: PackedFloat32Array = PackedFloat32Array()
+var _root: PackedInt32Array = PackedInt32Array()
+var _seed: int = 0
 var curvature: PackedFloat32Array = PackedFloat32Array()       # signed turn at centre cells (+ = turning right on the map, z down)
 
 
@@ -47,6 +54,8 @@ func build(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, threshol
 	# Walk from the mouths upstream (fill.order is receivers first) so each cell knows distance from its mouth.
 	var along: PackedFloat32Array = PackedFloat32Array()
 	along.resize(total)
+	_root.resize(total)
+	_seed = seed_value
 
 	for index in fill.order:
 		if flow.discharge[index] < threshold:
@@ -54,8 +63,11 @@ func build(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, threshol
 
 		var next: int = fill.receiver[index]
 
+		_root[index] = index
+
 		if next >= 0 and flow.discharge[next] >= threshold:
 			along[index] = along[next] + _step_length(index, next, size, cell_m)
+			_root[index] = _root[next]
 
 	# Curvature of the centre line: heading change between the cell BEND_SPAN downstream and BEND_SPAN upstream.
 	for index in fill.order:
@@ -100,6 +112,7 @@ func build(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, threshol
 		var jitter: float = 0.9 + 0.2 * _hash(index, seed_value)
 		centre_depth[index] = depth * shape * jitter
 
+	_along = along
 	_stamp(h, fill, flow, size, cell_m, threshold, rules)
 
 
@@ -160,7 +173,22 @@ func _stamp(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, thresho
 			shift_x = outward * hz / length * radius_m * SHIFT_SHARE * minf(absf(turn), 1.0)
 			shift_z = -outward * hx / length * radius_m * SHIFT_SHARE * minf(absf(turn), 1.0)
 
-		var span: int = reach + 1
+		# Meander: on gentle ground the whole section swings sideways along the river (sine of the distance from the mouth,
+		# seeded phase), so rivers on plains wind instead of running in straight lines.
+		if next >= 0:
+			var slope: float = maxf(h[index] - h[next], 0.0) / maxf(_step_length(index, next, size, cell_m), 1.0)
+			var gentle: float = 1.0 - smoothstep(MEANDER_SLOPE_FULL, MEANDER_SLOPE_NONE, slope)
+			var width_m: float = 2.0 * radius_m
+			var phase: float = _along[index] / (MEANDER_WAVELENGTH_WIDTHS * width_m) * TAU + _hash(_root[index], _seed) * TAU
+			var swing: float = gentle * MEANDER_AMPLITUDE_WIDTHS * width_m * sin(phase)
+			var mx: float = float(next % size - index % size)
+			@warning_ignore("integer_division")
+			var mz: float = float(next / size - index / size)
+			var mlen: float = maxf(sqrt(mx * mx + mz * mz), 0.001)
+			shift_x += mz / mlen * swing
+			shift_z -= mx / mlen * swing
+
+		var span: int = reach + 2 + int(ceil(sqrt(shift_x * shift_x + shift_z * shift_z) / cell_m))
 
 		for dz in range(-span, span + 1):
 			for dc in range(-span, span + 1):
