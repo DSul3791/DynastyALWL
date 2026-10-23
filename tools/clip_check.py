@@ -34,6 +34,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("path")
     ap.add_argument("--out")
+    ap.add_argument("--first-event", action="store_true", help="keep only the first call (stops at the first gap of 0.6 s of quiet)")
+    ap.add_argument("--max-s", type=float, default=0.0)
     a = ap.parse_args()
     x = load(a.path)
     hop = int(0.05 * SR)
@@ -52,14 +54,26 @@ def main():
         why.append("noise floor %.1f dB above %.0f" % (db(floor), MAX_FLOOR_DB))
     if clip > MAX_CLIP:
         why.append("clipping")
-    if len(idx) == 0 or len(idx) * 0.05 < 1.5:
-        why.append("call shorter than 1.5 s of clear sound")
+    if len(idx) == 0 or len(idx) * 0.05 < 0.8:
+        why.append("call shorter than 0.8 s of clear sound")
     if why:
         print("FAIL: " + "; ".join(why))
         return 1
     print("PASS")
     if a.out:
-        s, e = max(idx[0] * hop - hop * 4, 0), min((idx[-1] + 1) * hop + hop * 8, len(x))
+        last = idx[-1]
+
+        if a.first_event:
+            for i, j in zip(idx[:-1], idx[1:]):
+                if (j - i) * 0.05 > 0.6:
+                    last = i
+                    break
+
+        s, e = max(idx[0] * hop - hop * 4, 0), min((last + 1) * hop + hop * 8, len(x))
+
+        if a.max_s:
+            e = min(e, s + int(a.max_s * SR))
+
         y = x[s:e]
         f = int(0.05 * SR)
         y[:f] *= np.linspace(0, 1, f)
