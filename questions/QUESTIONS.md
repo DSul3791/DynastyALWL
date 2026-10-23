@@ -55,11 +55,6 @@ Note: At 5 or fewer left it turns back into loose rocks.
 Note: Tyler recommends Yes because it is quick for one rock and for a lot, and matches the rock pile item Sal built.
 [check]
 
-## rockpile-kinds | Should the same pile rule work for soil, sand, clay, gravel and ore (as mounds), and for logs, planks and bricks (stacked, look later), but no mixed piles?
-Note: Different kinds near each other stay separate side by side.
-Note: Tyler recommends Yes because one rule is simpler for everyone, and mixed piles would be hard to take things out of.
-[check]
-
 ## rockpile-block | Should a pile of 6 or more block movement like a boulder (you walk around it, you cannot climb it)?
 Note: Loose rocks (5 or fewer) do not block and roll when you walk over them.
 Note: Tyler recommends Yes because big piles would otherwise be walked through, and climbing makes terrain bugs. We can add climbing later.
