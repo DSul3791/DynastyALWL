@@ -51,3 +51,8 @@ Note: Recommendation: No, keep the synthetic moose for now, because an elk bugle
 Note: 1. After Pull, open the folder questions\audio. 2. Play bear_clip_A.ogg, then bear_clip_B.ogg. 3. Answer Yes if both are fine, No if not, and say which one in Why-not.
 Note: Recommendation: Yes, keep both because they are real growls, clean, and about 3 to 6 seconds long; I could not listen, so your ear decides.
 [check]
+
+## playtester-plan | Build a play-tester that plays the game and reports problems?
+Note: Plan in 3 stages (tech/PLAYTESTER_IDEA.md). 1. Scripted runs: the look rig walks, digs, chops, crafts and takes pictures. 2. A bot with a goal list that reports pass or fail with screenshots. 3. A Claude session that looks at the screen and presses keys, only if the tools exist on your PC. Starts small with stage 1 by Steve and MikeW.
+Note: Tyler recommends Yes: start with stage 1 now because it is cheap, safe and replaces many test cards you have been getting; decide stage 3 later.
+[check]
