@@ -1,3 +1,7 @@
+# DECLINED by Dave 15:58, 23 Oct: NO player bot (stages 2 and 3 dropped). Kept: better rig steps, see tech/TEST_RECIPE.md.
+Dave: "lets not make the player bot but lets improve how testing works. its steps seem ill thought out."
+The text below is kept for the record only (the expect-and-stop rule lives on in TEST_RECIPE.md).
+
 # Play-tester thread (Dave 15:51, 23 Oct): "a thread that tries to play the game with basic instructions, keeps trying and testing and gives feedback"
 Status: idea, high interest (BP-T24). Owner: Guru (plan), Steve (bot hooks), MikeW (runs on Dave's PC).
 

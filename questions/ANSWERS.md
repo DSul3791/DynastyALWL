@@ -1210,3 +1210,7 @@ Answered: 2026-10-23 14:27 UTC
 ## test-lake-flicker | Lake no longer flashes grey
 Answer: Yes: told in chat, "I can clearly see the flickering on the lake water is gone" (build 727)
 Answered: 2026-10-23 14:55 UTC
+
+## playtester-plan | Build a play-tester that plays the game and reports problems?
+Answer: No: told in chat, no player bot; instead improve how testing works (drop dirt, look down, step back a very short distance) 15:58 UTC
+Answered: 2026-10-23 15:58 UTC
