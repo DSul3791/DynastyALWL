@@ -8,8 +8,5 @@ Note: 6. Optional: place a timber prop near the roof before the time runs out. T
 Note: 7. Take a picture of the shaking and dust. Write in Notes what happened, yes or no.
 [test]
 
-## wet-rivers | Do rivers and lakes drip into tunnels under them too, not only the sea?
-[check]
-
 ## wet-noflood | Is there no real flooding under the sea until the sea link is built (only drips and wet floors for now)?
 [check]
