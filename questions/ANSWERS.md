@@ -800,3 +800,7 @@ Answered: 2026-10-23 00:56 UTC
 Answer: Yes
 Answered: 2026-10-23 01:14 UTC
 
+## farwater-radius | Far water: show it out to 3 tiles from the player?
+Answer: No: I’m not sure I understand this. Can you restate it? I don’t think players can see that far but I’m not sure what you mean by far water?
+Answered: 2026-10-23 01:16 UTC
+
