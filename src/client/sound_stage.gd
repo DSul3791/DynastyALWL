@@ -33,6 +33,7 @@ const CreatureScript := preload("res://src/client/creature_sounds.gd")
 const GearScript := preload("res://src/client/gear_sounds.gd")
 const InsectScript := preload("res://src/client/insect_bed.gd")
 const StepFxScript := preload("res://src/client/step_fx.gd")
+const WetSoundsScript := preload("res://src/client/wet_sounds.gd")
 const LandingScript := preload("res://src/client/landing_sounds.gd")
 const StanceScript := preload("res://src/client/stance_sounds.gd")
 const InteriorScript := preload("res://src/client/interior_sounds.gd")
@@ -200,6 +201,7 @@ var stance                              # StanceSounds: crouch, sit, lie, rise a
 var gear                                # GearSounds: armour and clothing layers on the footsteps (set_worn, step_at)
 var insects                             # InsectBed: summer insect chirring over meadows and water edges
 var stepfx                              # StepFx: wet-shoe squelch and cloth rustle under footsteps
+var wet                                 # WetSounds: drips and a trickle in a tunnel under water; the client feeds it the rock gap (drip_view.gap_m)
 var landing                             # LandingSounds: thud and hard landing by fall height; signal hurt is the fall damage hook
 var emitters                            # Emitters: sounds for server-owned entities (emit, sync); sound/EMITTER_API.md
 var creatures                           # CreatureSounds: deer, rabbit, fox, wolf, bear calls (call_at, call_in_zone; wild = natural far calls)
@@ -338,6 +340,10 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	stepfx.name = "StepFx"
 	add_child(stepfx)
 	stepfx.setup(self)
+	wet = WetSoundsScript.new()
+	wet.name = "WetSounds"
+	add_child(wet)
+	wet.setup(self)
 	landing = LandingScript.new()
 	landing.name = "Landing"
 	add_child(landing)
@@ -812,6 +818,9 @@ func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: Str
 	steps_played[surface] = int(steps_played.get(surface, 0)) + 1
 	gear.step(gait, boost_db, surface)
 	stepfx.step(gait, step_db, surface, 0.0 if surface == "ice" else depth)
+
+	if wet.stage_now > 0:
+		wet.step(body.global_position)
 
 	if surface == "ice":
 		ice.step(feet, gait, boost_db)
