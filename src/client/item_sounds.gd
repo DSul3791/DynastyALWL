@@ -40,7 +40,7 @@ const SHAPE_CLASS := {
 }
 const MIN_GAP_MSEC := 60
 const WORK_DB := -18.0
-const WORK_TYPES := {"cordage": "twine", "stone_axe": "knap", "stone_knife": "knap", "wooden_spear": "carve", "spear": "bind", "torch": "bind", "campfire": "stack"}
+const WORK_TYPES := {"twine": "twine", "stone_axe": "knap", "stone_knife": "knap", "wooden_spear": "carve", "spear": "bind", "torch": "bind", "campfire": "stack"}
 const EAT := {"crunch": ["eat_crunch", -15.0], "soft": ["eat_soft", -17.0], "drink": ["drink_gulp", -16.0],
 	"poultice": ["heal_poultice", -16.0], "bandage": ["heal_bandage", -16.0]}
 const EAT_KINDS := {"roast_forage": "crunch", "tree_roots": "crunch", "seed_bundle": "crunch"}   # by item id; other food is soft

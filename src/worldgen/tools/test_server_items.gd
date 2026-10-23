@@ -789,9 +789,9 @@ func _init() -> void:
 	check(wr.inventory_of(1).count_of(wr.table.number_of("stone")) == stones_before, "a broken axe does nothing")
 	wr.action(1, Net.ACT_REPAIR, 0, 0, 0, Vector3.ZERO)
 	check(wr.inventory_of(1).wear[0] == durability, "no materials, no repair")
-	wr.action(1, Net.ACT_ADMIN_GIVE, wr.table.number_of("cordage"), 0, 1, Vector3.ZERO)
+	wr.action(1, Net.ACT_ADMIN_GIVE, wr.table.number_of("twine"), 0, 1, Vector3.ZERO)
 	wr.action(1, Net.ACT_REPAIR, 0, 0, 0, Vector3.ZERO)
-	check(wr.inventory_of(1).wear[0] == durability - durability / 2 and wr.inventory_of(1).count_of(wr.table.number_of("cordage")) == 0, "a repair spends materials and wins back half")
+	check(wr.inventory_of(1).wear[0] == durability - durability / 2 and wr.inventory_of(1).count_of(wr.table.number_of("twine")) == 0, "a repair spends materials and wins back half")
 	wr.action(1, Net.ACT_DROP, 0, 0, 1, Vector3(0.5, 10.0, 0.0))
 	var dropped: int = 0
 
@@ -878,7 +878,7 @@ func _init() -> void:
 	var chest_kit: int = ch.table.number_of("chest_kit")
 	var stones_n: int = ch.table.number_of("stone")
 	ch.action(1, Net.ACT_ADMIN_GIVE, chest_kit, 0, 1, Vector3.ZERO)
-	check(ch.recipes.recipe(14)["needs"] == [[ch.table.number_of("stick"), 10], [ch.table.number_of("cordage"), 4]], "the first chest is woven from 10 sticks and 4 twine")
+	check(ch.recipes.recipe(14)["needs"] == [[ch.table.number_of("stick"), 10], [ch.table.number_of("twine"), 4]], "the first chest is woven from 10 sticks and 4 twine")
 	ch.action(1, Net.ACT_ADMIN_GIVE, stones_n, 0, 10, Vector3.ZERO)
 	ch.action(1, Net.ACT_PLACE, ch.inventory_of(1).numbers.find(chest_kit), 0, 0, Vector3(2.0, 10.0, 0.0))
 	var chest_id: int = 0
@@ -1624,11 +1624,11 @@ func _init() -> void:
 	cq.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
 	cq.peer_connected_hello(1, "queuekey0001")
 	var fibre: int = cq.table.number_of("plant_fibre")
-	var cord: int = cq.table.number_of("cordage")
+	var cord: int = cq.table.number_of("twine")
 	cq.give(1, fibre, 30)
 	cq._last_queue_act.clear()
 	cq.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 4, Vector3.ZERO)
-	check(cq.inventory_of(1).count_of(fibre) == 18, "queueing 4 cordage takes 12 fibre now (%d left)" % cq.inventory_of(1).count_of(fibre))
+	check(cq.inventory_of(1).count_of(fibre) == 18, "queueing 4 twine takes 12 fibre now (%d left)" % cq.inventory_of(1).count_of(fibre))
 	check(cq.craft_queue_of(1) == [[1, 4]], "queue holds one entry of 4")
 	cq._last_queue_act.clear()
 	cq.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 2, Vector3.ZERO)
@@ -1642,7 +1642,7 @@ func _init() -> void:
 	for n in range(4 * 2 + 1):
 		cq._craft_tick(0.25)
 
-	check(cq.inventory_of(1).count_of(cord) == 1 and cq.craft_queue_of(1) == [[1, 5]], "one cordage after its 2 s (%d)" % cq.inventory_of(1).count_of(cord))
+	check(cq.inventory_of(1).count_of(cord) == 1 and cq.craft_queue_of(1) == [[1, 5]], "one twine after its 2 s (%d)" % cq.inventory_of(1).count_of(cord))
 	cq._save_craft_queues()
 	var cq2 = make(qd)
 	cq2.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
@@ -2011,7 +2011,7 @@ func _init() -> void:
 	for n in range(4 * 1 + 1):
 		sk._craft_tick(0.25)
 
-	check(sk.inventory_of(1).count_of(sk.table.number_of("cordage")) == 1, "a skill of 2 makes the 2 s cordage in 1 s")
+	check(sk.inventory_of(1).count_of(sk.table.number_of("twine")) == 1, "a skill of 2 makes the 2 s twine in 1 s")
 
 	# Boulders (Dave 2026-10-21): a pick breaks one into stones; the count is volume x density x yield / stone mass.
 	var bld: String = "user://test_server_items_boulder"
@@ -2145,10 +2145,10 @@ func _init() -> void:
 	sx6.send_craft_queue = func(_p, _e, _l): pass
 	sx6.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
 	sx6.peer_connected_hello(1, "sixkey000001")
-	var cord6: int = sx6.table.number_of("cordage")
+	var cord6: int = sx6.table.number_of("twine")
 	var six_file: String = qd6 + "/six.json"
 	var six: FileAccess = FileAccess.open(six_file, FileAccess.WRITE)
-	six.store_string(JSON.stringify({"recipes": {"six_test": {"number": 900, "name": "Six test", "needs": [["stone", 1], ["stick", 1], ["plant_fibre", 1], ["bark", 1], ["leaves", 1], ["firewood", 1]], "gives": ["cordage", 1], "craft_s": 1.0, "known": true}}}))
+	six.store_string(JSON.stringify({"recipes": {"six_test": {"number": 900, "name": "Six test", "needs": [["stone", 1], ["stick", 1], ["plant_fibre", 1], ["bark", 1], ["leaves", 1], ["firewood", 1]], "gives": ["twine", 1], "craft_s": 1.0, "known": true}}}))
 	six.close()
 	sx6.recipes.load_file(six_file, sx6.table)
 	check(sx6.recipes.recipe(900).get("needs", []).size() == 6, "a six-ingredient recipe loads")

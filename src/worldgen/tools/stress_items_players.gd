@@ -75,7 +75,7 @@ func run(players: int, label: String) -> void:
 		pos.append(Vector3(rng.randf() * SPREAD_M, 10.0, rng.randf() * SPREAD_M))
 		items.report_position(p, pos[p - 1])
 
-		for id in ["stick", "stone", "plant_fibre", "chest_kit", "campfire_kit", "roast_forage", "fishing_rod", "workbench_kit", "grass_cloak", "spear", "cordage", "wooden_spade"]:
+		for id in ["stick", "stone", "plant_fibre", "chest_kit", "campfire_kit", "roast_forage", "fishing_rod", "workbench_kit", "grass_cloak", "spear", "twine", "wooden_spade"]:
 			items.action(p, Net.ACT_ADMIN_GIVE, items.table.number_of(id), 0, 30 if not id.ends_with("_kit") and id not in ["fishing_rod", "grass_cloak", "spear", "wooden_spade"] else 2, Vector3.ZERO)
 
 	var ticks: Array = []

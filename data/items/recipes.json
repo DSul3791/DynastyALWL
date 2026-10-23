@@ -2,7 +2,7 @@
 	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist). station: the recipe is made only near that placed station (structures.json station, reach_m with 1 m grace on the server); station_level (default 1) is the lowest level of the station it needs.",
 	"next_number": 143,
 	"recipes": {
-		"cordage": {
+		"twine": {
 			"number": 1,
 			"name": "Twine",
 			"needs": [
@@ -12,7 +12,7 @@
 				]
 			],
 			"gives": [
-				"cordage",
+				"twine",
 				1
 			],
 			"craft_s": 2.0,
@@ -73,7 +73,7 @@
 					1
 				],
 				[
-					"cordage",
+					"twine",
 					1
 				]
 			],
@@ -263,7 +263,7 @@
 					6
 				],
 				[
-					"cordage",
+					"twine",
 					2
 				]
 			],
@@ -283,7 +283,7 @@
 					10
 				],
 				[
-					"cordage",
+					"twine",
 					4
 				]
 			],
@@ -336,7 +336,7 @@
 					8
 				],
 				[
-					"cordage",
+					"twine",
 					2
 				]
 			],
@@ -433,7 +433,7 @@
 					6
 				],
 				[
-					"cordage",
+					"twine",
 					2
 				]
 			],
@@ -453,7 +453,7 @@
 					2
 				],
 				[
-					"cordage",
+					"twine",
 					1
 				]
 			],
@@ -464,7 +464,7 @@
 			"craft_s": 8.0,
 			"known": false
 		},
-		"cordage_bark": {
+		"twine_bark": {
 			"number": 24,
 			"name": "Bark twine",
 			"needs": [
@@ -474,7 +474,7 @@
 				]
 			],
 			"gives": [
-				"cordage",
+				"twine",
 				1
 			],
 			"craft_s": 3.0,
@@ -485,7 +485,7 @@
 			"name": "Rope",
 			"needs": [
 				[
-					"cordage",
+					"twine",
 					4
 				]
 			],
@@ -509,7 +509,7 @@
 					2
 				],
 				[
-					"cordage",
+					"twine",
 					1
 				]
 			],
@@ -744,7 +744,7 @@
 					16
 				],
 				[
-					"cordage",
+					"twine",
 					1
 				]
 			],
@@ -764,7 +764,7 @@
 					6
 				],
 				[
-					"cordage",
+					"twine",
 					1
 				]
 			],
@@ -784,7 +784,7 @@
 					3
 				],
 				[
-					"cordage",
+					"twine",
 					2
 				]
 			],
@@ -806,7 +806,7 @@
 					2
 				],
 				[
-					"cordage",
+					"twine",
 					2
 				]
 			],
@@ -827,7 +827,7 @@
 					1
 				],
 				[
-					"cordage",
+					"twine",
 					1
 				]
 			],
@@ -847,7 +847,7 @@
 					1
 				],
 				[
-					"cordage",
+					"twine",
 					1
 				]
 			],
@@ -867,7 +867,7 @@
 					3
 				],
 				[
-					"cordage",
+					"twine",
 					2
 				]
 			],
@@ -889,7 +889,7 @@
 				]
 			],
 			"gives": [
-				"cordage",
+				"twine",
 				2
 			],
 			"craft_s": 6.0,
@@ -904,7 +904,7 @@
 					12
 				],
 				[
-					"cordage",
+					"twine",
 					3
 				]
 			],
@@ -924,7 +924,7 @@
 					2
 				],
 				[
-					"cordage",
+					"twine",
 					2
 				]
 			],
@@ -944,7 +944,7 @@
 					10
 				],
 				[
-					"cordage",
+					"twine",
 					4
 				]
 			],
@@ -986,7 +986,7 @@
 					4
 				],
 				[
-					"cordage",
+					"twine",
 					6
 				],
 				[
@@ -2350,7 +2350,7 @@
 					4
 				],
 				[
-					"cordage",
+					"twine",
 					1
 				]
 			],
@@ -2372,7 +2372,7 @@
 					4
 				],
 				[
-					"cordage",
+					"twine",
 					1
 				]
 			],
@@ -2394,7 +2394,7 @@
 					5
 				],
 				[
-					"cordage",
+					"twine",
 					2
 				],
 				[
@@ -2442,7 +2442,7 @@
 					3
 				],
 				[
-					"cordage",
+					"twine",
 					1
 				]
 			],
@@ -2464,7 +2464,7 @@
 					3
 				],
 				[
-					"cordage",
+					"twine",
 					1
 				]
 			],
@@ -2486,7 +2486,7 @@
 					1
 				],
 				[
-					"cordage",
+					"twine",
 					1
 				]
 			],
@@ -2506,7 +2506,7 @@
 					4
 				],
 				[
-					"cordage",
+					"twine",
 					1
 				],
 				[
@@ -2587,7 +2587,7 @@
 					4
 				],
 				[
-					"cordage",
+					"twine",
 					2
 				]
 			],
@@ -2631,7 +2631,7 @@
 					8
 				],
 				[
-					"cordage",
+					"twine",
 					2
 				]
 			],
@@ -2662,7 +2662,7 @@
 					4
 				],
 				[
-					"cordage",
+					"twine",
 					2
 				]
 			],
@@ -2687,7 +2687,7 @@
 					8
 				],
 				[
-					"cordage",
+					"twine",
 					3
 				]
 			],
@@ -2788,7 +2788,7 @@
 					2
 				],
 				[
-					"cordage",
+					"twine",
 					1
 				]
 			],
@@ -2818,7 +2818,7 @@
 					2
 				],
 				[
-					"cordage",
+					"twine",
 					1
 				]
 			],

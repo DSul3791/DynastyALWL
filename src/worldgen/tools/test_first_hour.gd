@@ -168,7 +168,7 @@ func _init() -> void:
 	# 6. A lean-to and a chest: twine from fibre, then the kits, then both placed.
 	queue(1, 6)
 	pass_time(30.0, 0.3)
-	check(count("cordage") == 6, "fibre is twisted into twine")
+	check(count("twine") == 6, "fibre is twisted into twine")
 	items._vitals_cfg["eat_pace_ms"] = 0
 	queue(13, 1)
 	queue(14, 1)
