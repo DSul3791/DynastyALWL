@@ -87,11 +87,6 @@ Note: Sand about 34 degrees, soil about 40, gravel about 38. Stone and rock go a
 Note: Tyler recommends Yes because it feels like real dirt without running a sliding simulation (cheap, no lag). A real settling pass can come later.
 [check]
 
-## lake-min-size | Should a hollow only count as a lake when it is at least 3 m deep and about 2,500 square metres (smaller hollows are filled in and hold no water)?
-Note: This removes the little stripe ponds that terrace steps make, and keeps every real catch basin.
-Note: Tyler recommends Yes because it removes odd puddles and costs nothing, and the sizes are a tunable number.
-[check]
-
 ## beach-loud | Is the beach still too loud when you walk on it?
 Note: Kathleen already lowered sand steps by 3 dB. If the loud part is the waves, answer No and say so in Why not.
 Note: Tyler recommends Yes only if the steps are what you hear: she lowers sand steps another 3 dB, which is cheap and easy to undo.
