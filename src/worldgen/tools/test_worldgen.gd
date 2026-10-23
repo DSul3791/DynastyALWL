@@ -1843,6 +1843,11 @@ func _test_ground_material(generator, data, tables) -> void:
 		var column_same: bool = material == buffer.get_voxel(4, 6, 4, TerrainLayout.CHANNEL_MATERIAL)
 		columns += 1
 
+		# Bank bands beside water repaint the soil (mud, clay, alluvium): tested with the water.
+		if data.near_water()[data.nearest(float(origin.x + 4), float(origin.z + 4))] > 0:
+			right += 1
+			continue
+
 		if soil > 0:
 			if material == soil and column_same:
 				right += 1

@@ -3,7 +3,7 @@
 	"note": "Rules for turning the 160 m world elevation map into one tile's 8 m height map: smooth cubic upsampling plus fine detail noise that is continuous across tile borders. Rerun tools/build_tile.gd after editing.",
 	"frame": {
 		"note": "Each tile is built on a frame that reaches this many 8 m samples beyond its edge on every side, then cropped. Edge samples then see the same neighbors as the next tile's. Must be a multiple of the climate coarse step (4) and at least as far as the longest distance the climate looks at (600 m = 75 samples).",
-		"margin_samples": 80
+		"margin_samples": 160
 	},
 	"detail": {
 		"note": "Noise octaves added on land. amplitude_m is the full strength; it fades in with height so beaches and the coastal plain stay smooth and the sea floor stays calm.",
@@ -115,6 +115,7 @@
 		"hardness": {"sediment": 0.05, "shale": 0.15, "coal": 0.15, "tuff": 0.3, "chalk": 0.35, "slate": 0.6, "sandstone": 0.65, "limestone": 0.7, "marble": 0.8, "basalt": 0.85, "granite": 0.95},
 		"ledges": {"sandstone": 1.0, "limestone": 1.0, "basalt": 0.9, "chalk": 0.6, "marble": 0.6, "slate": 0.5, "tuff": 0.3}
 	},
+	"spawn_pad": {"note": "Dave's spawn (x 53301, z 68427) and the showroom beside it: level inside flat_radius_m, blended into the land over blend_m. Level is the old spawn ground.", "x": 53301, "z": 68427, "level_m": 31.0, "flat_radius_m": 40, "blend_m": 70},
 	"water": {
 		"drainage_mode": false,
 		"drainage": {

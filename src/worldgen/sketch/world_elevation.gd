@@ -94,6 +94,11 @@ func build(world_settings, sketch_rules: Dictionary, sketch: Dictionary, cell_ov
 			if str(mount["type"]) == "starter" and mount.has("beach_dir"):
 				_carve_bay(mount)
 
+	for feature in sketch.get("features", []):
+		for mount in feature.get("mounts", []):
+			if str(mount["type"]) == "starter" and mount.has("beach_cap_m"):
+				_shape_coast_profile(mount)
+
 	_raise_landmark_islands()
 	_clamp_heights()
 
@@ -390,6 +395,92 @@ func _raise_mount(mount: Dictionary, owner_index: int) -> void:
 			heights[index] = combined
 
 
+# Land near a starter island may not climb faster than a concave profile of its
+# distance from the sea: gentle at the shore, steeper inland, as on real
+# volcanic islands. Without it the shelf hills stand behind a flat plain as a wall.
+func _shape_coast_profile(mount: Dictionary) -> void:
+	var reach_m: float = maxf(float(mount["a"]), float(mount["b"])) * 1.6
+	var radius: int = int(ceil(reach_m / cell_m))
+	var size: int = radius * 2 + 1
+	var center_column: int = int(floor((float(mount["x"]) - origin_x) / cell_m))
+	var center_row: int = int(floor((float(mount["z"]) - origin_z) / cell_m))
+	var distance_cells: PackedFloat32Array = PackedFloat32Array()
+	distance_cells.resize(size * size)
+
+	for row in range(size):
+		for column in range(size):
+			var h: float = heights[index_of(center_column - radius + column, center_row - radius + row)]
+			distance_cells[row * size + column] = 0.0 if h <= 0.0 else 1.0e9
+
+	# Two-pass chamfer distance (cells) from the nearest sea cell.
+	var diagonal: float = 1.4142
+	for row in range(size):
+		for column in range(size):
+			var at: int = row * size + column
+			var best: float = distance_cells[at]
+
+			if column > 0:
+				best = minf(best, distance_cells[at - 1] + 1.0)
+			if row > 0:
+				best = minf(best, distance_cells[at - size] + 1.0)
+				if column > 0:
+					best = minf(best, distance_cells[at - size - 1] + diagonal)
+				if column < size - 1:
+					best = minf(best, distance_cells[at - size + 1] + diagonal)
+
+			distance_cells[at] = best
+
+	for row in range(size - 1, -1, -1):
+		for column in range(size - 1, -1, -1):
+			var at: int = row * size + column
+			var best: float = distance_cells[at]
+
+			if column < size - 1:
+				best = minf(best, distance_cells[at + 1] + 1.0)
+			if row < size - 1:
+				best = minf(best, distance_cells[at + size] + 1.0)
+				if column < size - 1:
+					best = minf(best, distance_cells[at + size + 1] + diagonal)
+				if column > 0:
+					best = minf(best, distance_cells[at + size - 1] + diagonal)
+
+			distance_cells[at] = best
+
+	var rotation: float = deg_to_rad(float(mount["rot"]))
+	var cos_r: float = cos(rotation)
+	var sin_r: float = sin(rotation)
+	var cap_scale: float = float(mount["beach_cap_m"]) / 1100.0
+	var exponent: float = float(mount.get("beach_exp", 1.7))
+	var spawn: Dictionary = rules.get("spawn_keep", {})
+
+	for row in range(size):
+		for column in range(size):
+			var dx: float = float(column - radius) * cell_m
+			var dz: float = float(row - radius) * cell_m
+			var along: float = (dx * cos_r + dz * sin_r) / float(mount["a"])
+			var across: float = (-dx * sin_r + dz * cos_r) / float(mount["b"])
+			var weight: float = 1.0 - _smooth(clampf((sqrt(along * along + across * across) - 1.1) / 0.5, 0.0, 1.0))
+
+			# The spawn point and the showroom beside it keep the land they always had.
+			if not spawn.is_empty():
+				var cx: float = origin_x + (float(center_column - radius + column) + 0.5) * cell_m
+				var cz: float = origin_z + (float(center_row - radius + row) + 0.5) * cell_m
+				var spawn_distance: float = Vector2(cx - float(spawn["x"]), cz - float(spawn["z"])).length()
+				weight *= _smooth(clampf((spawn_distance - float(spawn["keep_radius_m"])) / float(spawn["blend_radius_m"]), 0.0, 1.0))
+			var d_m: float = distance_cells[row * size + column] * cell_m
+
+			if weight <= 0.0 or d_m <= 0.0:
+				continue
+
+			# 6 m by the shore, about 55 m at 1 km, 150 m at 2 km, 350 m at 3.5 km.
+			var cap: float = 6.0 + 340.0 * cap_scale * pow(d_m / 3500.0, exponent * 0.91)
+			var index: int = index_of(center_column - radius + column, center_row - radius + row)
+			# Ridge noise under the cap, so where it binds the ground is not a smooth cone.
+			cap *= 1.0 + 0.2 * _value(_ridged, index)
+			heights[index] = lerpf(heights[index], minf(heights[index], cap), weight)
+
+
+
 # facing: how much this point lies on the island's beach side (+1) or
 # its rocky side (-1). Only starter islands use it.
 func _island_height(
@@ -419,12 +510,11 @@ func _island_height(
 			# A long gentle coastal plain behind the beach, then the hills.
 			var plain: float = float(mount.get("plain_m", 28))
 			var width: float = float(mount.get("plain_width", 0.5))
-			var beach_height: float
-
-			if inland < width:
-				beach_height = 1.5 + plain * inland / width
-			else:
-				beach_height = plain + (peak - plain) * pow((inland - width) / (1.0 - width), exponent)
+			var beach_exponent: float = float(mount.get("beach_exp", 1.7))
+			# Concave rise from the shore (gentle at the beach, steeper inland)
+			# with only a thin terrace at the water, as on real volcanic islands.
+			var terrace: float = 1.5 + plain * minf(inland / width, 1.0)
+			var beach_height: float = maxf(terrace, peak * pow(inland, beach_exponent))
 
 			height = lerpf(height, beach_height, beach)
 

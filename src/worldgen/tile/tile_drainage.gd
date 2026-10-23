@@ -21,7 +21,8 @@ static func apply(water, rules: Dictionary) -> Dictionary:
 	var fill = FillScript.new()
 	var lake_min_depth: float = float(rules.get("lake_min_depth_m", 0.5))
 	var lake_min_catchment: float = float(rules.get("lake_min_catchment_km2", 0.05))
-	var routing: PackedFloat32Array = _routing_heights(land, sea, samples, float(rules.get("routing_noise_m", 0.25)), int(rules.get("seed", 17)))
+	var origin := Vector2i(water._origin_sx, water._origin_sz)
+	var routing: PackedFloat32Array = _routing_heights(land, sea, samples, float(rules.get("routing_noise_m", 0.25)), int(rules.get("seed", 17)), origin)
 	fill.build(routing, sea, samples, lake_min_depth)
 	var runoff: PackedFloat32Array = PackedFloat32Array()
 	runoff.resize(total)
@@ -101,27 +102,19 @@ static func apply(water, rules: Dictionary) -> Dictionary:
 
 # Flat ground drains in straight lines unless the routing surface wiggles a little: the ground plus a smooth noise of
 # +-`amplitude_m` over about 100 m. Only the routing sees it; the ground itself is untouched.
-static func _routing_heights(land: PackedFloat32Array, sea: PackedByteArray, samples: int, amplitude_m: float, seed_value: int) -> PackedFloat32Array:
+static func _routing_heights(land: PackedFloat32Array, sea: PackedByteArray, samples: int, amplitude_m: float, seed_value: int, origin: Vector2i) -> PackedFloat32Array:
 	var routed: PackedFloat32Array = land.duplicate()
 
 	if amplitude_m <= 0.0:
 		return routed
 
+	# Knots are hashed from their WORLD position, so two tiles that share an edge draw the same noise along it.
 	const CELL := 12
-	@warning_ignore("integer_division")
-	var knots: int = (samples - 1) / CELL + 2
-	var values: PackedFloat32Array = PackedFloat32Array()
-	values.resize(knots * knots)
-
-	for index in range(knots * knots):
-		var x: int = (index * 73856093) ^ (seed_value * 19349663)
-		x = (x ^ (x >> 13)) * 1274126177
-		values[index] = float((x ^ (x >> 16)) & 0xFFFF) / 65535.0 * 2.0 - 1.0
 
 	for row in range(samples):
-		var fz: float = float(row) / float(CELL)
-		var j: int = int(fz)
-		var tz: float = fz - float(j)
+		var wz: int = origin.y + row
+		var kz: int = floori(float(wz) / float(CELL))
+		var tz: float = float(wz - kz * CELL) / float(CELL)
 
 		for column in range(samples):
 			var index: int = row * samples + column
@@ -129,11 +122,17 @@ static func _routing_heights(land: PackedFloat32Array, sea: PackedByteArray, sam
 			if sea[index] == 1:
 				continue
 
-			var fx: float = float(column) / float(CELL)
-			var i: int = int(fx)
-			var tx: float = fx - float(i)
-			var top: float = lerpf(values[j * knots + i], values[j * knots + i + 1], tx)
-			var bottom: float = lerpf(values[(j + 1) * knots + i], values[(j + 1) * knots + i + 1], tx)
+			var wx: int = origin.x + column
+			var kx: int = floori(float(wx) / float(CELL))
+			var tx: float = float(wx - kx * CELL) / float(CELL)
+			var top: float = lerpf(_knot(kx, kz, seed_value), _knot(kx + 1, kz, seed_value), tx)
+			var bottom: float = lerpf(_knot(kx, kz + 1, seed_value), _knot(kx + 1, kz + 1, seed_value), tx)
 			routed[index] += amplitude_m * lerpf(top, bottom, tz)
 
 	return routed
+
+
+static func _knot(kx: int, kz: int, seed_value: int) -> float:
+	var x: int = (kx * 73856093) ^ (kz * 83492791) ^ (seed_value * 19349663)
+	x = (x ^ (x >> 13)) * 1274126177
+	return float((x ^ (x >> 16)) & 0xFFFF) / 65535.0 * 2.0 - 1.0

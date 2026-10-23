@@ -29,13 +29,13 @@
 		"area_km2": {"inner": [64, 78], "outer": [86, 104]},
 		"aspect": [1.2, 1.6],
 		"peak_m": [300, 560],
-		"profile_exponent": 0.75,
+		"profile_exponent": 0.75, "beach_profile_exponent": 1.7, "beach_cap_m": 1100,
 		"shore_shelf_m": 1500,
 		"max_offset_m": 1500,
 		"note": "Poleward shores are rocky and steep, equator-facing shores have long sandy beaches with a flat coastal plain for the town and a sheltered bay for the port.",
 		"beach_angle_jitter_deg": 25,
-		"plain_height_m": 28,
-		"plain_width": 0.5,
+		"plain_height_m": 6,
+		"plain_width": 0.08,
 		"rocky_cliff_m": 120,
 		"bay_radius": 0.32,
 		"bay_depth_m": -14,
@@ -111,6 +111,7 @@
 		"shore_shelf_m": [600, 120]
 	},
 
+	"spawn_keep": {"note": "The coast profile cap leaves the land around spawn and the showroom as it was: untouched inside keep_radius_m, blended in over blend_radius_m.", "x": 53301, "z": 68427, "keep_radius_m": 400, "blend_radius_m": 500},
 	"keep_clear": {
 		"shelf_margin_tiles": 0.6,
 		"trench_margin": 1.25
