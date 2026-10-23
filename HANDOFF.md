@@ -99,3 +99,4 @@ Baked tiles for the inner starters and their neighbors (36 files) are in `/mnt/p
 - Head = build 695 (MikeW recheck and Dave's pull/"starts and plays" still pending; then backup).
 - Tomorrow first: (1) sweep answers newer than 02:00 UTC (12 tests, esc-character-2, far-water-2, river-mouth-dam, loose-fill-slope, lake-min-size, beach-loud, item-recipes-2) into DECISIONS.md and relay per thread; (2) merge held branches after backup: sal-rock-pile, kathleen-wet, steve-esc-test, steve-drip (protocol 73 check); (3) Sal blueprint build system; MikeW+Sonny BAKE-1 test.
 - QA page is v9 (self-reloads). Dave closes and reopens the tab once.
+- Off-hand items (Dave 02:50): hotbar select puts torch/shield in left hand, select again stows it, hold B to block. B is unused (checked). Card offhand-items posted. If Yes: Steve input and slot, Sal off-hand flag on items, Kathleen pose.
