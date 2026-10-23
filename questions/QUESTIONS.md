@@ -38,13 +38,6 @@ Note: 2. Hold W to climb, then S to come down, Space to let go backwards.
 Note: 3. Climb to the top and hold W: you step onto the edge.
 [test]
 
-## lake-hide-water | Please test: hide the water and see what stays. Look for: do the grey shapes and dark squares STAY when the water is hidden?
-Note: 1. Go to x 52392, z 69477 (or x 53786, z 69256) where the water surface flickers.
-Note: 2. Press Ctrl+Shift+W (hides every river and lake drawing).
-Note: 3. Yes means the shapes STAY (so they are ground, not water). No means they disappear with the water.
-Note: 4. Press Ctrl+Shift+W again to bring the water back.
-[test]
-
 ## admin-craft-test | Please test free crafting as admin. Look for: crafting works with an empty pack while Admin mode is on, and normal rules come back when it is off.
 Note: 1. Pull build 697 and close the game fully, then start it. The HUD should say 697.
 Note: 2. Esc > Admin: the switch "Admin mode (crafting is free)" should be green (On).
