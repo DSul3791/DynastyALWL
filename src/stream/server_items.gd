@@ -607,6 +607,8 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 
 	# Only loose dropped things near the spot count: felled trunks, stumps, fires, structures, carcasses and natural scatter are not
 	# "dropped" and last far longer (Dave 2026-10-22: a drop was refused with nothing in sight, the chunk was full of stumps and trunks).
+	position = _settled(position)
+
 	# Same kind within MERGE_M joins the item already lying there (stackables without wear only), so a heap grows as one ground item
 	# and never meets the crowd limit. The merge runs before the limit check.
 	if item_wear == 0 and table.stack_of(number) > 1:
@@ -783,6 +785,7 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 
 
 var ground_ready: Callable              # (x, z) -> bool: the ground there is in memory; when not, it is being read in the background (unset in tests = always ready)
+var floor_below: Callable               # set by the server: (Vector3) -> float, the height a loose item let go there comes to rest at (NAN if none)
 var dump_water: Callable                # set by the server: (x, z) -> String, writes the live water cells near a point to a text file
 var reset_terrain_edits: Callable       # set by the server: () -> void, wipes every saved dig and fill
 var admin_ok: Callable                  # set by the server: true when the peer may use admin gives
@@ -1182,6 +1185,28 @@ func clear_dropped(centre: Vector3, radius: float) -> int:
 	return gone
 
 
+# A spot let go in the air comes down to the ground below it (up to 24 m); where nothing is known it stays.
+func _settled(position: Vector3) -> Vector3:
+	if not floor_below.is_valid():
+		return position
+
+	var rest: float = float(floor_below.call(position))
+	return Vector3(position.x, rest, position.z) if not is_nan(rest) and rest < position.y - 0.05 else position
+
+
+# After a dig or fill: loose items near it come down (or stay) onto what the ground is now.
+func settle_loose_near(centre: Vector3, radius: float) -> void:
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if it.has("scatter") or it.has("struct") or it.has("fire") or it.has("tree") or it.has("boulder"):
+			continue
+
+		if it["pos"].distance_to(centre) <= radius + 1.5:
+			it["pos"] = _settled(it["pos"])
+			_dirty = true
+
+
 func world_item_count() -> int:
 	return _items.size()
 
@@ -1368,6 +1393,7 @@ func _dig(peer: int, inv, at: Vector3) -> void:
 
 	_give_dig_yield(peer, at, _spade_tier(inv), _spade_pieces(inv))
 	_fell_undermined(peer, at)
+	settle_loose_near(at, DIG_RADIUS_M * reach + DIG_DEPTH_M)
 	_dirty = true
 
 

@@ -151,6 +151,21 @@ func _init() -> void:
 	check(items.free_craft_for(7), "and on again")
 	items.admin_ok = Callable()
 
+	# Loose things let go in the air come down to the ground (Dave 2026-10-23, mined soil floating over the hole).
+	items.clear_dropped(Vector3.ZERO, 1.0e7)
+	var ground_y: Array = [10.0]
+	items.floor_below = func(_p: Vector3) -> float: return ground_y[0]
+	items.drop_in_world(stone, 2, Vector3(3000.0, 11.0, 3000.0))
+	check(is_equal_approx(items._items[items._items.keys()[0]]["pos"].y, 10.0), "a drop in the air comes down to the ground")
+	ground_y[0] = 7.0
+	items.settle_loose_near(Vector3(3000.0, 9.0, 3000.0), 1.0)
+	check(is_equal_approx(items._items[items._items.keys()[0]]["pos"].y, 7.0), "a dig under it lets it fall into the hole")
+	ground_y[0] = 12.0
+	items.settle_loose_near(Vector3(3000.0, 9.0, 3000.0), 1.0)
+	check(is_equal_approx(items._items[items._items.keys()[0]]["pos"].y, 7.0), "and ground that rises never lifts it")
+	items.floor_below = Callable()
+	items.clear_dropped(Vector3.ZERO, 1.0e7)
+
 	# Rock piles: stackable drops within a metre merge, ignore the crowd limit, a pile gives a handful and lives longer.
 	items.clear_dropped(Vector3.ZERO, 1.0e7)
 	var pile_at: Vector3 = Vector3(2000.0, 0.0, 2000.0)
