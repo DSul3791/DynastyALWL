@@ -10,6 +10,7 @@ extends Node
 const Net := preload("res://src/stream/terrain_net.gd")
 const BuildingLook := preload("res://src/client/building_look.gd")
 const PlacementRules := preload("res://src/shared/placement_rules.gd")
+const BasicLook := preload("res://src/client/basic_look.gd")
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
 
 const HOTBAR_FILE := "user://hotbar.txt"      # the chosen hotbar slot is remembered between sessions
@@ -220,6 +221,17 @@ func is_holdable(number: int) -> bool:
 
 	var entry: Dictionary = _inv.table.entry(_inv.table.id_of(number))
 	return str(entry.get("kind", "")) in ["tool", "weapon", "placeable", "container"] or _inv.edible_slot(held_slot)
+
+
+# Food and small things with a stage-one look (data/items/looks.json) are carried in the palm, drawn as they lie on the ground.
+func _is_look_item() -> bool:
+	return BasicLook.has_look(held_id()) and not _is_spear() and not _is_axe() and not _is_torch() and not _is_knife() and not _is_other_tool() and not _is_placeable()
+
+
+func _make_look_model() -> Node3D:
+	var node: MeshInstance3D = MeshInstance3D.new()
+	node.mesh = BasicLook.mesh_for(held_id())
+	return node
 
 
 func _is_axe() -> bool:
@@ -730,7 +742,7 @@ func _caption() -> String:
 func _show_model() -> void:
 	var number: int = held_number() if _inv != null else 0
 
-	if not _is_spear() and not _is_axe() and not _is_torch() and not _is_knife() and not _is_other_tool() and not _is_placeable():
+	if not _is_spear() and not _is_axe() and not _is_torch() and not _is_knife() and not _is_other_tool() and not _is_placeable() and not _is_look_item():
 		number = 0
 
 	if number == _shown_number:
@@ -743,7 +755,7 @@ func _show_model() -> void:
 		_model = null
 
 	if number != 0:
-		_model = _make_kit_model() if _is_placeable() else _make_spear_model() if _is_spear() else (_make_torch_model() if _is_torch() else (_make_knife_model() if _is_knife() else (_make_other_model() if _is_other_tool() else _make_axe_model())))
+		_model = _make_look_model() if _is_look_item() else _make_kit_model() if _is_placeable() else _make_spear_model() if _is_spear() else (_make_torch_model() if _is_torch() else (_make_knife_model() if _is_knife() else (_make_other_model() if _is_other_tool() else _make_axe_model())))
 		_mount_model()
 
 
@@ -751,7 +763,7 @@ func _show_model() -> void:
 # Falls back to the old spot in front of the camera when there are no arms.
 func _mount_model() -> void:
 	_mounted = _arms != null
-	var kind: String = "kit" if _is_placeable() else "spear" if _is_spear() else ("torch" if _is_torch() else ("knife" if _is_knife() else ("axe" if _is_axe() else "other")))
+	var kind: String = "kit" if (_is_placeable() or _is_look_item()) else "spear" if _is_spear() else ("torch" if _is_torch() else ("knife" if _is_knife() else ("axe" if _is_axe() else "other")))
 
 	if not _mounted:
 		_camera.add_child(_model)
