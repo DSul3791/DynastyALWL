@@ -6,9 +6,9 @@ extends RefCounted
 
 const MIN_PILE := 6
 const MAX_DRAWN := 400
-const ROW_RISE_M := 0.2             # height of one row
-const ROW_SPREAD_M := 0.21          # footprint radius per row
-const ROCK_R_M := 0.2
+const ROW_RISE_M := 0.22            # height of one row
+const ROW_SPREAD_M := 0.17          # footprint radius per row
+const ROCK_R_M := 0.27
 
 # item id -> [colour, rock radius scale, squash]. Rocks are pyramids, loose soils and sands are low mounds of small lumps.
 const KINDS := {
