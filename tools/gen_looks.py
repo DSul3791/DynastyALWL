@@ -31,7 +31,7 @@ SPECIAL = {
     "raw_meat": ("meat", "#a8403a", 1.0), "roast_meat": ("meat", "#6a3c24", 1.0), "roast_forage": ("bowl", "#a4de02", 0.9),
     "trout": ("fish", "#8a9a7a", 1.0), "perch": ("fish", "#6f8a4a", 0.9), "carp": ("fish", "#a09060", 1.2), "pike": ("fish", "#5a7a3a", 1.4),
     "roast_fish": ("fish", "#a8703a", 1.0), "smoked_fish": ("fish", "#6e4a2a", 1.0), "herb_fish": ("fish", "#9a7a3a", 1.0),
-    "raspberries": ("berries", "#c8102e", 1.0),
+    "raspberries": ("berries", "#8e0f1c", 1.0),
     "berry_compote": ("bowl", "#e84393", 0.9), "nut_paste": ("bowl", "#e67e22", 0.9), "roast_roots": ("bundle", "#ff9f1c", 0.7),
     "acorn_mash": ("bowl", "#8e44ad", 0.9), "baked_apples": ("fruit", "#ff5a36", 1.0), "mushroom_skewer": ("skewer", "#f5e6ff", 1.0),
     "garlic_meat": ("meat", "#7a4a2a", 1.0), "chestnut_cakes": ("loaf", "#5d3a1a", 0.8), "fruit_leather": ("cloth", "#00a8a8", 0.7),
