@@ -16,3 +16,17 @@ Format: T = test card, P = picture card. Threads send lines like these; the Guru
 - T | Please test: Esc > Settings > VSync, press it through all three, then restart the game. Look for: On green, Adaptive amber, Off red, "(vsync X)" next to the fps in the top text, and the same setting after restart.
 - T | Please test: place a ladder against a wall, face it and hold W, then S, Space, and W at the top. Look for: it climbs, comes down, lets go backwards, and steps you onto the edge at the top.
 - T | Please test: place a timber prop 3 m from a dug tunnel's roof while its timer runs (and a timber set in a second test). Look for: the shaking stops within 5 m of a prop (7.5 m for a timber set).
+
+## MikeW (duplicates with Kathleen, Steve and Sal dropped; these are NEW lines)
+- T | Please test: use a hoe on rough ground to smooth it. Look for: the ground gets smoother, the hoe wears only when ground moved, and "This ground is worked enough." shows when it refuses.
+- T | Please test: switch a spade to Raise mode and click on the ground. Look for: each click takes shovelfuls straight from the pack and the pack count drops (1 small, 4 medium, 8 large).
+- T | Please test: hold the chopping block in first person. Look for: it fits the hand and is not cut off at the screen edge.
+- T | Please test: climb a ladder up and down. Look for: no sliding off or getting stuck at the top.
+- T | Please test: Esc > Settings > Sound test: fire. Look for: each step is heard, from embers to the hiss when it is put out.
+(MikeW's collapse line = Steve's lines above; chopping-block "same look" = Kathleen's line 1.)
+
+## Sonny (picture card shown on the page, not a game test)
+- P-image | Look at the picture of the new river and lake layout (/mnt/project-files/terrain_b/tile_3_4_water_B_v1.png) on a big screen. Look for: do rivers and lakes follow the land? Sonny's own view: rivers yes, some run too straight (recommend No for now, straightness fix next). Nothing to play-test: the new ground is off by default until MikeW's 1-tile bake.
+
+## Known issue for an owner
+- test_worldgen has 1 failing check ("flora removals survive a server restart"), also failing on generator-v2 without Sonny's changes. Owner proposed: Steve (saving), else Sal.
