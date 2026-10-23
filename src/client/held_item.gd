@@ -43,7 +43,7 @@ var held_slot: int = 0
 var holding: bool = true                  # false after the held slot's key is pressed again: hands empty
 const HOTBAR_SLOTS := 10
 var aiming: bool = false
-var off_slot: int = -1                    # the hotbar slot carried in the left hand (torch, shield: items with "offhand": true or tool_class torch/shield), -1 for none
+var off_slot: int = -1                    # the hotbar slot carried in the left hand (items with "offhand": true: torch, shield), -1 for none
 var off_holding: bool = false             # false after its key is pressed again: left hand empty
 var blocking: bool = false                # B held with a shield in the left hand (the combat rules read this)
 var _off_model: Node3D
@@ -221,13 +221,13 @@ func held_id() -> String:
 	return _inv.table.id_of(held_number())
 
 
-# Left-hand items: the item table marks them with "offhand": true; a torch or a shield is one without the mark.
+# Left-hand items: the item table marks them with "offhand": true (torch, shield, later a lantern).
 func is_offhand(number: int) -> bool:
 	if number == 0:
 		return false
 
 	var entry: Dictionary = _inv.table.entry(_inv.table.id_of(number))
-	return bool(entry.get("offhand", false)) or str(entry.get("tool_class", "")) in ["torch", "shield"]
+	return bool(entry.get("offhand", false))
 
 
 func off_number() -> int:

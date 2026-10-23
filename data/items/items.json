@@ -157,6 +157,7 @@
 			"description": "A stick wrapped in fibre that burns for a while and lights your way.",
 			"kind": "tool",
 			"tool_class": "torch",
+			"offhand": true,
 			"tier": 1,
 			"stack": 1,
 			"light_m": 9.0,
