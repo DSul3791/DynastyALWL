@@ -5,13 +5,12 @@ Read this first. About 10 KB. All older detail is kept, unchanged, in `docs/arch
 ## What this is
 A multiplayer medieval survival and town-building game ("Dynasty, a life well lived"): Godot 4.7.2 (custom build with Voxel Tools 1.7 compiled in), GDScript plus a C++ water core, built for weak hardware (minimum 1050-class GPU, 8 GB RAM, SATA SSD, 30 fps). Owner: David Sullivan (Dave; voice user, wants SHORT reports). Repo `DSul3791/DynastyALWL`. Work ONLY on branch `claude/generator-v2`; never touch `main` (Dave merges).
 
-## Current state (2026-10-22)
-- Development is PAUSED by Dave until the new team set-up is approved. Docs only for now.
-- Scope: starter town tile (3,4) plus its 8 neighbours; a friend-session-sized game. Scale work is parked.
-- Latest build 654+ (see BUILD_LOG), protocol 69, TERRAIN_VERSION 25 baked. FREEZE LIFTED 2026-10-22 for Sonny's option B terrain rework (prototype branch, one tile, MikeW's second clone, never committed tiles); still no baking or tile commits in the cloud, the first real bake needs Dave's go (BP-T31). Dave bakes on his PC and commits .tile files; we never bake or commit tiles.
+## Current state (2026-10-23 night)
+- Development is ACTIVE. Latest build 690, protocol 72, TERRAIN_VERSION 25 baked. Terrain B drainage code is merged but OFF (rules drainage_mode false); the first real bake needs Dave's go; no tiles committed.
+- Dave tests only at night after the backup (BP-T40); test lines for tonight are in tech/TEST_CARDS_TONIGHT.md; cards are test, picture and Yes/No with a Notes or Why-not box (BP-T36 to T40). Every plan goes to Dave as one Yes/No card per line (BP-T39).
+- Live in the test world: tunnel collapse ON (admin switch and cave-in time 2 to 20 min in Esc > Settings, man-made spaces only), braces as spheres of influence, blueprint building NOT built yet (design in items/BLUEPRINT_BUILD_DESIGN.md plus DECISIONS 2026-10-23), twine (ex cordage), spades take shovelfuls from the pack, hoes, ladders, tier designs are drawings only.
 - Runtime-only changes need no re-bake; server-side builds need the game closed fully so the server restarts.
-- Pending from Dave: the 11-question test checklist on the question page, sound approvals (`sound/LISTEN_CHECKLIST.md`), and the team decisions in BEST_PRACTICES.md.
-- Tunnel watch (build 646) is OFF; collapse is a second switch, also OFF, and needs Technical Director approval plus a Dave test card.
+- Tomorrow's first 3 jobs: 1. Sal: blueprint build system (mallet, ghosts, foundations, pillars, load limit) once Dave answers the cost-table cards. 2. MikeW and Sonny: 1-tile BAKE-1 test of Terrain B in the second clone; Steve: Esc menu tidy after Dave's 9 answers, then snapping rules with Sal. 3. Kathleen: build the tier looks in the game from Sal's piece ids after Dave answers the round-3 cards.
 
 ## Team (2026-10-22, Dave approved)
 Coordinator (routing, moderator every 30 min, Dave's reports); Technical Director + Guru (docs, approvals, build numbers, JOBS/DECISIONS/PROCESS, question page, BEST_PRACTICES daily check); Sonny (World: ground, tunnels, bracing, water); Sal_Crafts (was Radar: items, crafting, NPCs, animals, buildings); Steve_ProblemSolver (Systems, was Tyler_002: server, network, HUD, movement, performance, saves); Kathleen_ArtisticDirector (was Kathleen_ArtisticDirector: art, animation, sound); MikeW_LocalAgent (runs on Dave's PC on demand: warnings, headless tests, GPU/visual checks). Workers run on demand from the queue. Details: `tech/TEAM_PROPOSAL.md`, `tech/PROCESS.md`.
