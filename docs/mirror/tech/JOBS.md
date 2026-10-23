@@ -4,7 +4,7 @@ Rule: when your current job finishes, or waits on Dave, Mike's batch or another 
 ## Steve (queue 7)
 1. GO: finish berry picking (steve-berry-picking) review fixes after Mike's batch; then step 2-4 of harvest naming.
 2. GO: steve-sound-3d (directional sound) ear test notes for Dave's card.
-3. GO: water_flow_at (unblocks Sal sawmill step 2).
+3. DONE (steve-water-flow-at pushed, merges after Mike PASS): next take line 4.
 4. GO: wet tunnel sounds by ear (rig + Dave's ear card).
 5. Dry river test: live dump in Dave's world (needs v26 tiles loaded; Mike runs it, you read the dump).
 6. Shrub LOD / carpet (after berry branch merges).
@@ -22,7 +22,7 @@ Rule: when your current job finishes, or waits on Dave, Mike's batch or another 
 1. GO: sal-harvest (yield_scale clamp 400, elder base 130) after Mike's batch.
 2. Blueprint 1c.
 3. Uproot/replant (protocol 75 after Steve's 74 merges).
-4. Sawmill chain step 2 (needs water_flow_at).
+4. Sawmill chain step 2: call is items.water_flow_runs.call(a, b) (steve-water-flow-at, merges after Mike PASS; branch from head after merge).
 5. T-plans: T-WALLVAR, T-HOEGRADE, T-SPECIES tests written up for Mike's batch.
 6. Cost table remaining items, one line per card.
 7. Hoe/shovel feel notes after Dave's 764 test.
@@ -37,7 +37,7 @@ Rule: when your current job finishes, or waits on Dave, Mike's batch or another 
 7. Herb patch data once Sonny's placer is in.
 
 ## Mike (queue 6)
-1. ONE batch now: pull head 770 + steve-sunny-button (flip at night/rain and back) + kathleen-patches-now + steve-berry-picking + sal-harvest + steve-sound-3d, local_check (baseline 233), parse, test_server_items, check_controls, T-BERRIES, prompt picture, herbs/mushrooms/shrub rows, bramble before/after, Ctrl+Shift+G frame time on F2 Low <33 ms. Report PASS/FAIL list.
+1. ONE batch now: pull head 770 + steve-sunny-button (flip at night/rain and back) + steve-water-flow-at (66470d2, RESTART; run godot --headless --path . --script res://src/worldgen/tools/test_water_flow.gd, expect 0 failures, time one runs() call) + kathleen-patches-now + steve-berry-picking + sal-harvest + steve-sound-3d, local_check (baseline 233), parse, test_server_items, check_controls, T-BERRIES, prompt picture, herbs/mushrooms/shrub rows, bramble before/after, Ctrl+Shift+G frame time on F2 Low <33 ms. Report PASS/FAIL list.
 2. Dry-river live dump (Esc > Admin > Dump water here, 60 s, x 51609 z 69364).
 3. Sonny valleys check (TERRAIN_VERSION 27 bundle) after Dave sees v26.
 4. Sal BATCH_Sal_001.
@@ -45,7 +45,7 @@ Rule: when your current job finishes, or waits on Dave, Mike's batch or another 
 6. 9 pm ADT backup; 8 AM ADT handoff + reset. Stop one-at-a-time renders.
 
 ## Tyler (me)
-Merge queue after Mike's PASS: steve-sunny-button (GO given, RUNTIME), kathleen-patches-now, steve-berry-picking, sal-harvest, steve-sound-3d, sonny-flora-patches. Then post Dave's pull steps (close game fully). v27 bundle only after Dave OKs v26.
+Merge queue after Mike's PASS: steve-water-flow-at (RESTART), steve-sunny-button (GO given, RUNTIME), kathleen-patches-now, steve-berry-picking, sal-harvest, steve-sound-3d, sonny-flora-patches. Then post Dave's pull steps (close game fully). v27 bundle only after Dave OKs v26.
 
 # CURRENT TOP JOBS (Guru, 2026-10-23 00:10; this block overrides the older lists below)
 - Steve: 1. Turn the tunnel collapse ON in Dave's test world (his YES) with the cave-in duration as a SETTING (2 to 20 min); 2. support spheres of influence (radius 5 / 7.5 / 10 m at full health, halves at half health, overlap covers an area; degrade slowly when unmaintained); 3. blueprint snapping and load rules with Sal (wide snap, 3 spaces, load limit like Valheim); 4. then other players' worn-clothing sync (protocol bump), characters.json write batching, join-window glue.
