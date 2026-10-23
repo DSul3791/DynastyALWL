@@ -749,6 +749,22 @@ func carcass_near(point: Vector3) -> int:
 	return best
 
 
+# A log lying loose on the ground within 1.5 m of the point (a short log or a large one put down), 0 when none: the axe chops it into wooden blocks.
+func loose_log_near(point: Vector3) -> int:
+	for id in _world:
+		var entry: Dictionary = _world[id]
+
+		if int(entry["state"]) != 0 or not entry.has("number") or int(entry["number"]) == 0:
+			continue
+
+		var item_id: String = table.id_of(int(entry["number"]))
+
+		if (item_id == "log" or str(table.entry(item_id).get("carry", "")) == "shoulder") and entry["pos"].distance_to(point) < 1.5:
+			return id
+
+	return 0
+
+
 func felled_trunk_near(point: Vector3) -> int:
 	for id in _world:
 		var entry: Dictionary = _world[id]

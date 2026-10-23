@@ -970,17 +970,44 @@ func _init() -> void:
 	check(notes.size() == 1, "no axe: told so")
 	cb.action(1, Net.ACT_ADMIN_GIVE, cb.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
 	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, 0, Vector3.ZERO)
-	check(notes.size() == 2, "no log: told so")
-	cb.action(1, Net.ACT_ADMIN_GIVE, cb.table.number_of("log"), 0, 2, Vector3.ZERO)
-	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, 0, Vector3.ZERO)
+	check(notes.size() == 2, "no wooden block: told so")
 	var firewood_n: int = cb.table.number_of("firewood")
-	check(cb.inventory_of(1).count_of(firewood_n) == 4 and cb.inventory_of(1).count_of(cb.table.number_of("log")) == 1, "one log makes four firewood")
+	var block_n: int = cb.table.number_of("wooden_block")
+	var loose_of = func(number: int) -> int:
+		var total: int = 0
+
+		for k in cb._items:
+			if int(cb._items[k]["number"]) == number and not cb._items[k].has("struct"):
+				total += int(cb._items[k]["count"])
+
+		return total
+	cb.action(1, Net.ACT_ADMIN_GIVE, block_n, 0, 2, Vector3.ZERO)
+	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, 0, Vector3.ZERO)
+	check(cb.inventory_of(1).count_of(block_n) == 1 and loose_of.call(firewood_n) == 1, "a wooden block splits into one firewood that falls beside the block")
 	check(cb.inventory_of(1).wear[cb.inventory_of(1).numbers.find(cb.table.number_of("stone_axe"))] == 1, "and wears the axe one use")
 	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, 0, Vector3.ZERO)
-	check(cb.inventory_of(1).count_of(firewood_n) == 4, "the pace limit holds")
+	check(cb.inventory_of(1).count_of(block_n) == 1, "the pace limit holds")
 	cb._last_use.clear()
 	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, 0, Vector3.ZERO)
-	check(cb.inventory_of(1).count_of(firewood_n) == 8, "the second log splits too")
+	var heaps: int = 0
+
+	for k in cb._items:
+		if int(cb._items[k]["number"]) == firewood_n and not cb._items[k].has("struct"):
+			heaps += 1
+
+	check(loose_of.call(firewood_n) == 2 and heaps == 1, "the next piece joins the same heap beside the block (%d pieces in %d heaps)" % [loose_of.call(firewood_n), heaps])
+
+	# A log lying on the ground, struck with the axe, falls apart into wooden blocks.
+	cb.drop_in_world(cb.table.number_of("log"), 1, Vector3(1.0, 10.0, 0.0))
+	var lying: int = 0
+
+	for k in cb._items:
+		if int(cb._items[k]["number"]) == cb.table.number_of("log") and not cb._items[k].has("struct"):
+			lying = k
+
+	cb._last_process.clear()
+	cb.action(1, Net.ACT_PROCESS, lying, 0, 0, Vector3.ZERO)
+	check(not cb._items.has(lying) and loose_of.call(block_n) == 4, "a log chopped on the ground makes 4 wooden blocks (%d)" % loose_of.call(block_n))
 
 	# The large log on the shoulder (Dave 2026-10-21): one at a time, named for its tree, heavy, split at the block, falls with the body.
 	var oak_log: int = cb.table.number_of("log_oak")
@@ -1001,10 +1028,7 @@ func _init() -> void:
 
 	cb.action(1, Net.ACT_PICKUP, beech_id, 0, 0, Vector3.ZERO)
 	check(cb.shoulder_of(1) == "log_oak" and cb._items.has(beech_id), "it cannot be picked up while carrying one")
-	cb._last_use.clear()
-	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, 0, Vector3.ZERO)
-	check(cb.shoulder_of(1) == "" and cb.inventory_of(1).count_of(firewood_n) == 8 + 12, "the block splits the shoulder log into plain firewood (%d)" % cb.inventory_of(1).count_of(firewood_n))
-	cb.take(1, firewood_n, cb.inventory_of(1).count_of(firewood_n))   # the 20 firewood would be too heavy with a log on top
+	cb.lay_down_shoulder(1)
 	cb.action(1, Net.ACT_PICKUP, beech_id, 0, 0, Vector3.ZERO)
 	check(cb.shoulder_of(1) == "log_beech" and not cb._items.has(beech_id), "with the shoulder free the beech log is picked up")
 	check(cb.lay_down_shoulder(1) and cb.shoulder_of(1) == "" and shoulder_sent.back() == "", "laying it down puts it on the ground")
