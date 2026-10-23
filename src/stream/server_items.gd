@@ -719,6 +719,10 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 			if left > 0:
 				drop_in_world(a, left, _peer_pos.get(peer, Vector3.ZERO))
 
+	elif kind == Net.ACT_CLEAR_DROPS:
+		if not admin_ok.is_valid() or admin_ok.call(peer):
+			_say(peer, "Cleared %d dropped items." % clear_dropped(_peer_pos.get(peer, Vector3.ZERO), float(clampi(a, 1, 500))))
+
 	_send_changes(peer, inv, before)
 	_dirty = true
 
@@ -1098,6 +1102,27 @@ func tree_row_count() -> int:
 			n += 1
 
 	return n
+
+
+# Removes the loose dropped things (not trunks, stumps, fires, structures, boulders or the natural scatter) within `radius` of `centre`;
+# the next sync tells the players they are gone. Dave 2026-10-23: 64 loose items within 12 m refused every drop, so he could not empty his pack.
+func clear_dropped(centre: Vector3, radius: float) -> int:
+	var gone: int = 0
+
+	for id in _items.keys():
+		var other: Dictionary = _items[id]
+
+		if other.has("scatter") or other.has("struct") or other.has("fire") or other.has("tree") or other.has("boulder"):
+			continue
+
+		if Vector2(other["pos"].x - centre.x, other["pos"].z - centre.z).length() <= radius:
+			_items.erase(id)
+			gone += 1
+
+	if gone > 0:
+		_dirty = true
+
+	return gone
 
 
 func world_item_count() -> int:

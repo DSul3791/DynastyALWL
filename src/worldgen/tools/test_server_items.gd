@@ -130,6 +130,13 @@ func _init() -> void:
 		items.drop_in_world(stone, 1, Vector3(10.0, 0.0, 10.0))
 	check(items.world_item_count() == ItemsScript.MAX_DROPPED_NEAR + 1, "dropped cap near a spot holds")
 
+	items.drop_in_world(stone, 1, Vector3(4000.0, 0.0, 4000.0))
+	check(items.clear_dropped(Vector3(10.0, 0.0, 10.0), 50.0) == ItemsScript.MAX_DROPPED_NEAR and items.world_item_count() == 2, "clear dropped items removes the nearby loose ones only")
+	check(items.drop_in_world(stone, 1, Vector3(10.0, 0.0, 10.0)), "and drops work again afterwards")
+	items.clear_dropped(Vector3(10.0, 0.0, 10.0), 50.0)
+	items.clear_dropped(Vector3(4000.0, 0.0, 4000.0), 50.0)
+
+	items.drop_in_world(stone, 1, Vector3(10.0, 0.0, 10.0))
 	items.tick(ItemsScript.WORLD_ITEM_LIFETIME_S + 1.0)
 	check(items.world_item_count() == 0, "items despawn")
 
