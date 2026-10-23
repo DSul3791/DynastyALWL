@@ -1274,3 +1274,7 @@ Answered: 2026-10-23 20:33 UTC
 Answer: Yes
 Answered: 2026-10-23 20:33 UTC
 
+## hold-pull-754 | Do NOT Pull or start the game yet: the newest build does not start (fix coming)
+Answer: No: OK
+Answered: 2026-10-23 20:34 UTC
+
