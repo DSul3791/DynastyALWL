@@ -59,3 +59,11 @@ Windows are just holes in the wall (no frame piece, no glass); shutters come lat
 - Double door: 10 cm gap at the top and sides only, leaves reach the floor. Handles are steel bar pulls, no knobs: basic door has no handle at all; steel door has a steel handle and no black crossband (tiers_doors.png).
 - Ceilings per tier (seen from below): tiers_ceilings.png. Flat tarred roof: tiers_flat_roof.png.
 - Braces in three widths, 1.5, 3 and 5 m: tiers_braces.png.
+
+## Round 4 (Dave's answers 23:29 to 00:56)
+- Log wall: only this wall's own logs, ends offset (left end runs through on even courses, right end on odd), open spaces where a joining wall's logs pass through, no curved notch (tiers_walls.png, tiers_log_corner.png).
+- Ceilings: log ceiling = rounded undersides (flat wide boards on top); fine-board ceiling = full-length boards, no strips; cobblestone ceiling looks like cobblestone; mason unchanged (tiers_ceilings.png).
+- Roof pitch: Dave said the 65 degree roof is the opposite direction and a shorter peak: ASSUMED 65 degrees measured from the vertical = a low 25 degree pitch (rise 0.93 m per 2 m run, slope 2.2 m); 45 degrees stays (tiers_roof_pieces.png). Tell me if wrong.
+- Braces: made of logs and wooden pins (dowels), each size in a plain and a tar-soaked version (dark, never rots), 1.5 / 3 / 5 m (tiers_braces.png).
+- Cobblestone and mason floors/ceilings: stone on top, log frame under (a log split in half, one half-log along each of the four edges; cobblestone keeps a plank floor under the stones) (tiers_floor_frames.png).
+- Pillars: wood pillar = one log (Dave); a log lying on the ground is about 8 ft = 2.44 m long (Sal: check the log length constant).
