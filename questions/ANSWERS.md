@@ -1142,3 +1142,7 @@ Answered: 2026-10-23 10:22 UTC
 Answer: Yes
 Answered: 2026-10-23 10:22 UTC
 
+## species-uses-4 | Firewood and wooden blocks from different species stay in separate piles (no mixed piles), and piers and wet foundations need a rot-proof wood (oak, chestnut, alder)?
+Answer: No: Yes, except foundations. It’s video game logic. A foundation is a foundation.
+Answered: 2026-10-23 10:24 UTC
+
