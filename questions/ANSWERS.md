@@ -596,3 +596,7 @@ Answered: 2026-10-23 00:12 UTC
 Answer: Yes
 Answered: 2026-10-23 00:30 UTC
 
+## esc-menu-2 | Esc menu: should Settings open a page with Display (quality, VSync, resolution, window mode, text size, reset), Sound (volumes) and Gameplay (NPC voice; tunnel collapse and cave-in time for admins)?
+Answer: Yes
+Answered: 2026-10-23 00:31 UTC
+
