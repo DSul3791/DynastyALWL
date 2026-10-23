@@ -976,3 +976,7 @@ Answered: 2026-10-23 01:40 UTC
 Answer: No: I’m not exactly sure what this question means but if somebody breaks a hole from a tunnel into the ocean, it should flood the tunnel and fill it in every direction up to sea level
 Answered: 2026-10-23 01:40 UTC
 
+## esc-character-2 | Add the Character button back to the Esc menu?
+Answer: No: This seems confusing. I don’t want to be able to push tab while I’m in the setting screen and have it open my character screen if that’s what you’re asking me. But if you’re asking me if the escape key should open the menu for settings, then the answer is yes the escape key should open the settings menu. I hope that answers this.
+Answered: 2026-10-23 01:57 UTC
+
