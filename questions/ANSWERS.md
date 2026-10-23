@@ -1070,3 +1070,7 @@ Answered: 2026-10-23 04:13 UTC
 Answer: No: Use your voice to text generator to come up with something fun
 Answered: 2026-10-23 04:13 UTC
 
+## cavein-death-voice | Until the real voice exists, show the three lines as big text under the skull with a small horn sting and a comic sting, and swap the voice in later?
+Answer: No: Use your voice to text generator to come up with something fun
+Answered: 2026-10-23 04:13 UTC
+
