@@ -27,18 +27,8 @@ Format: T = test card, P = picture card. Threads send lines like these; the Guru
 - T | Please test: Esc > Settings > Sound test: fire. Look for: each step is heard, from embers to the hiss when it is put out.
 (MikeW's collapse line = Steve's lines above; chopping-block "same look" = Kathleen's line 1.)
 
-## Sonny (picture card shown on the page, not a game test)
-- P-image | Look at the picture of the new river and lake layout (/mnt/project-files/terrain_b/tile_3_4_water_B_v1.png) on a big screen. Look for: do rivers and lakes follow the land? Sonny's own view: rivers yes, some run too straight (recommend No for now, straightness fix next). Nothing to play-test: the new ground is off by default until MikeW's 1-tile bake.
-
-## Sal (replaces his earlier lines; his hoe/spade-Raise lines overlap MikeW's, kept here once with the exact numbers)
-- T | Please test: give yourself a medium and a large wooden spade at spawn (53301, 68427) and dig with each. Look for: the large hole about twice as wide as the small one, and more soil coming up.
-- T | Please test: right click a spade for Raise mode and left click on the ground with the small, medium and large spade. Look for: each stroke uses 1, 4 and 8 shovelfuls from your pack, no loading needed. (Replaces MikeW's Raise line.)
-- T | Please test: give yourself a wooden hoe, left click on grass, then right click on a bump. Look for: flat tan path patches you can walk over, and the bump getting lower. (Goes with MikeW's hoe line.)
-- P | Please take a picture of a short hoe path and a smoothed bump at x 53301, z 68427.
-- T | Please test: open the crafting screen and your pack. Look for: "Twine" wherever it said Cordage, and a chopping block that weighs 18 kg and sets down with left click.
-- T | Please test: place a timber prop and a timber set in a tunnel, then dig a wide hole 4 m away. Look for: the cave-in timer treating the hole as held; 6 m beyond the prop it is not held. (Overlaps Steve's brace line; keep this one with the exact distances.)
-- T | Please test: stand at a workbench or forge and press F, then E. Look for: the crafting screen opening both times.
-- T | Please test: place two walls near each other from the admin build list. Look for: the second wall clicking end to end, or turning the corner.
+## Sonny
+- (dropped 01:10: Dave answered in chat: rivers and lakes always follow the land; the generator makes hills and valleys big enough for catch basins.)
 
 ## Known issue for an owner
 - test_worldgen has 1 failing check ("flora removals survive a server restart"), also failing on generator-v2 without Sonny's changes. Owner proposed: Steve (saving), else Sal.
