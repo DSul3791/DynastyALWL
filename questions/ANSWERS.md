@@ -1230,3 +1230,7 @@ Answered: 2026-10-23 16:37 UTC
 Answer: Yes
 Answered: 2026-10-23 16:37 UTC
 
+## kath-bear-real-clips | Do the real bear growls (clip A and clip B) sound like a bear?
+Answer: Yes
+Answered: 2026-10-23 16:37 UTC
+
