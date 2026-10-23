@@ -262,6 +262,11 @@ var _last_gather: Dictionary = {}   # peer -> msec
 var _last_cook: Dictionary = {}     # peer -> msec
 var _flora_by_name: Dictionary = {}   # flora table rows by species name (yields, seasons)
 var _picked: Dictionary = {}          # "cx,cz,id" -> game seconds when last picked
+var _stripped: Dictionary = {}        # "cx,cz" -> {plant id -> season stamp}: a berry bush picked this season stays, bare, until the season changes (saved in world_items.json "stripped")
+var season_stamp: Callable            # set by the server: () -> int, game year * 4 + season index; changes once a season
+var plant_stays: bool = false         # set by gather(): the last pick left the plant standing (berries only), so the caller must not cut it
+const BERRY_SIZE_MIN := 0.3           # berries scale with the plant's size against an average one of its species, between these
+const BERRY_SIZE_MAX := 1.6
 var _flights: Array = []            # thrown things in the air: {number, pos, vel, age}
 var _last_throw: Dictionary = {}    # peer -> msec
 var _wood_species: Dictionary = {}   # data/items/wood_species.json: class of each tree species and the firewood and block items of each class
@@ -891,7 +896,7 @@ func save() -> void:
 	_save_vitals()
 	_save_characters()
 	_save_craft_queues()
-	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked, "boulders": _boulder_left})
+	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked, "stripped": _stripped_now(), "boulders": _boulder_left})
 
 
 # Picking from a plant or shrub by hand. The plant stays where it is and is picked bare for
@@ -904,7 +909,8 @@ func was_picked(flora_key: String) -> bool:
 	return now_s - float(_picked.get(flora_key, -1.0e12)) < REGROW_GAME_S
 
 
-func gather(peer: int, species_name: String, kind: String, flora_key: String, flora_id: int, plant_position: Vector3) -> bool:
+func gather(peer: int, species_name: String, kind: String, flora_key: String, flora_id: int, plant_position: Vector3, plant_height: float = -1.0) -> bool:
+	plant_stays = false
 	if not _peer_pos.has(peer) or _peer_pos[peer].distance_to(plant_position) > Interact.server_reach_m():
 		return false
 
@@ -918,6 +924,11 @@ func gather(peer: int, species_name: String, kind: String, flora_key: String, fl
 
 	if now_s - float(_picked.get(flora_key, -1.0e12)) < REGROW_GAME_S:
 		return false
+
+	var berry: Dictionary = _drops.get("berry_yield", {}).get(species_name, {})
+
+	if not berry.is_empty():
+		return _gather_berries(peer, species_name, flora_key, berry, plant_height)
 
 	var rows: Array = _drops.get("by_species", {}).get(species_name, _drops.get("by_kind", {}).get(kind, []))
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -970,6 +981,79 @@ func gather(peer: int, species_name: String, kind: String, flora_key: String, fl
 	_picked[flora_key] = now_s
 	_dirty = true
 	return true
+
+
+# A berry bush (data/items/drops.json "berry_yield"): E gives that berry only, count scaled by the plant's size, in its season, once a season;
+# the plant stays standing and bare until the season changes (Dave 2026-10-23). A full pack: give() drops the rest on the ground at the
+# player, beside the plant, so everything is taken and the bush is stripped.
+func _gather_berries(peer: int, species_name: String, flora_key: String, berry: Dictionary, plant_height: float) -> bool:
+	var entry: Dictionary = _flora_by_name.get(species_name, {})
+	var seasons: Array = entry.get("season", [])
+	var season: String = str(season_now.call()) if season_now.is_valid() else "all"
+
+	if not (seasons.is_empty() or seasons.has("all") or seasons.has(season)):
+		_say(peer, "Not in season")
+		return false
+
+	var parts: PackedStringArray = flora_key.rsplit(",", true, 1)
+	var plant: int = int(parts[1])
+	var stamp: int = int(season_stamp.call()) if season_stamp.is_valid() else 0
+
+	if int((_stripped.get(parts[0], {}) as Dictionary).get(plant, -1)) == stamp:
+		_say(peer, "Nothing left to pick this season")
+		return false
+
+	var number: int = table.number_of(str(berry["item"]))
+
+	if number == 0:
+		return false
+
+	var scale: float = 1.0
+
+	if plant_height > 0.0 and entry.has("height_m"):
+		var range_m: Array = entry["height_m"]
+		scale = clampf(plant_height / maxf((float(range_m[0]) + float(range_m[1])) * 0.5, 0.01), BERRY_SIZE_MIN, BERRY_SIZE_MAX)
+
+	var count: int = maxi(1, int(round(float(berry["count"]) * scale)))
+	practice(peer, "gather_plant")
+	give(peer, number, count)
+
+	if not _stripped.has(parts[0]):
+		_stripped[parts[0]] = {}
+
+	_stripped[parts[0]][plant] = stamp
+	plant_stays = true
+	_dirty = true
+	return true
+
+
+# The ids of a chunk's plants that are bare this season ("cx,cz" is the chunk's home key); for a joining client's chunk.
+func stripped_ids(chunk_key: String) -> PackedInt32Array:
+	var out: PackedInt32Array = PackedInt32Array()
+	var stamp: int = int(season_stamp.call()) if season_stamp.is_valid() else 0
+
+	for plant in _stripped.get(chunk_key, {}):
+		if int(_stripped[chunk_key][plant]) == stamp:
+			out.append(int(plant))
+
+	return out
+
+
+# Only this season's bare plants are kept (and saved): an older stamp means the bush bears again.
+func _stripped_now() -> Dictionary:
+	var stamp: int = int(season_stamp.call()) if season_stamp.is_valid() else 0
+
+	for chunk_key in _stripped.keys():
+		var ids: Dictionary = _stripped[chunk_key]
+
+		for plant in ids.keys():
+			if int(ids[plant]) != stamp:
+				ids.erase(plant)
+
+		if ids.is_empty():
+			_stripped.erase(chunk_key)
+
+	return _stripped
 
 
 func _tool_for(item_id: String) -> String:
@@ -2259,6 +2343,15 @@ func _load_world_items() -> void:
 	_next_id = int(parsed.get("next_id", 1))
 
 	_picked = parsed.get("picked", {})
+	_stripped = {}
+
+	for chunk_key in parsed.get("stripped", {}):      # JSON gives the stamps back as floats
+		var ids: Dictionary = {}
+
+		for plant in parsed["stripped"][chunk_key]:
+			ids[int(plant)] = int(parsed["stripped"][chunk_key][plant])
+
+		_stripped[str(chunk_key)] = ids
 
 	for key in parsed.get("taken", []):
 		_taken[int(key)] = true

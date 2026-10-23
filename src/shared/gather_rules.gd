@@ -26,6 +26,11 @@ static func check(flora_row: Dictionary, kind: String, drops: Dictionary, season
 	var name: String = str(flora_row.get("name", ""))
 	var rows: Array = drops.get("by_species", {}).get(name, drops.get("by_kind", {}).get(kind, []))
 
+	# A berry bush (drops.json "berry_yield"): E picks its berries, in the plant's season only.
+	if (drops.get("berry_yield", {}) as Dictionary).has(name):
+		var berry_seasons: Array = flora_row.get("season", [])
+		return {"ok": true, "reason": ""} if berry_seasons.is_empty() or berry_seasons.has("all") or berry_seasons.has(season) else {"ok": false, "reason": "not in season"}
+
 	if not rows.is_empty():
 		return {"ok": true, "reason": ""}
 

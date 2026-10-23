@@ -270,6 +270,23 @@ func _init() -> void:
 	check(not g.gather(1, "flax", "plant", "0,0,77", 77, Vector3(501.0, 70.0, 500.0)), "a picked plant is bare until it regrows")
 	clock[0] += ItemsScript.REGROW_GAME_S + 1.0
 	check(g.gather(1, "flax", "plant", "0,0,77", 77, Vector3(501.0, 70.0, 500.0)), "and bears again after 3 game days")
+	# Berry bushes (drops.json "berry_yield"): berries only, the plant stays, bare until the season changes; saved.
+	var stamp: Array = [10]
+	g.season_stamp = func(): return stamp[0]
+	var raspberry: int = g.table.number_of("raspberries")
+	check(g.gather(1, "raspberry", "shrub", "0,0,200", 200, Vector3(501.0, 70.0, 500.0), 2.0) and g.plant_stays, "a ripe raspberry bush gives berries and stays standing")
+	check(g.inventory_of(1).count_of(raspberry) >= 1, "got raspberries")
+	check(not g.gather(1, "raspberry", "shrub", "0,0,200", 200, Vector3(501.0, 70.0, 500.0), 2.0) and not g.plant_stays, "a bare bush gives nothing the same season")
+	check(g.stripped_ids("0,0").has(200) and g.stripped_ids("0,1").is_empty(), "the bare bush is listed for its chunk")
+	g.save()
+	var again = make("user://test_server_items_b")
+	again.season_stamp = func(): return stamp[0]
+	check(again.stripped_ids("0,0").has(200), "the bare state survives a restart")
+	stamp[0] = 11
+	check(again.stripped_ids("0,0").is_empty(), "a new season clears it")
+	g.season_now = func(): return "winter"
+	check(not g.gather(1, "raspberry", "shrub", "0,0,201", 201, Vector3(501.0, 70.0, 500.0), 2.0), "out of season gives nothing")
+	g.season_now = func(): return "summer"
 	check(not g.gather(1, "flax", "plant", "0,0,80", 80, Vector3(520.0, 70.0, 500.0)), "too far to gather")
 	g.tick(2.0)
 	var loose: int = g.world_item_count()
