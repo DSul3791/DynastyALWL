@@ -96,8 +96,3 @@ Note: Tyler recommends Yes because it removes odd puddles and costs nothing, and
 Note: Kathleen already lowered sand steps by 3 dB. If the loud part is the waves, answer No and say so in Why not.
 Note: Tyler recommends Yes only if the steps are what you hear: she lowers sand steps another 3 dB, which is cheap and easy to undo.
 [check]
-
-## item-recipes-2 | Are these recipes OK: rough plank = 1 log gives 4; fine board = 1 lumber; nails = 1 iron ingot gives 100; cobblestone = 3 stone; stone shingle = 2 stone; tar = 5 pine tar; hinges = 1 ingot gives 4; wooden pin = 1 lumber gives 4?
-Note: The sawmill, woodworking table and nail numbers are as you said earlier. The stone, tar, hinge and pin numbers are Sal's guesses.
-Note: Tyler recommends Yes because they are small, easy to change in data later, and Sal needs them to finish the blueprint building system.
-[check]
