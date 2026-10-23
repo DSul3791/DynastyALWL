@@ -1,0 +1,16 @@
+Animal clips, source log (MikeW_LocalAgent, 2026-10-23). All from Pixabay, license: Pixabay Content License (not CC0).
+Vetting was automatic (decoded in browser: peak, clipping, noise floor, pitch track); nobody has listened yet. Kathleen: run tools/clip_check.py and give them a listen.
+
+PASS wolf_howl_01_universfield_140235.mp3  7.2 s  https://pixabay.com/sound-effects/nature-wolf-howl-140235/
+  Single falling-pitch howl, peak -8 dB, no clipping, clean fade-out to silence.
+PASS wolf_howl_02_dragonstudio_359873.mp3  7.9 s  https://pixabay.com/sound-effects/nature-wolf-howl-359873/
+  One sustained howl, peak -15 dB, no clipping, smooth decay, no second voice in pitch track.
+PASS wolf_howl_03_freesoundcommunity_6310.mp3  7.6 s  https://pixabay.com/sound-effects/nature-wolf-howl-6310/
+  Silent lead-in (-80 dB), one steady howl, peak -20 dB, quiet (may need gain).
+PASS wolf_howl_04_dragonstudio_515269.mp3  7.1 s  https://pixabay.com/sound-effects/horror-haunting-wolf-song-515269/
+  Single howl, peak -1 dB (hot, no clipping), clean fade. Title says "haunting"; check for reverb by ear.
+
+FAIL horror-spooky-wolf-howl-410547 (4.1 s): clipping, 752 samples at 0 dB.
+FAIL horror-wolf-howl-2-359870 (7.9 s): noisy start, pitch track jumps to 1.4-1.5 kHz (hiss or other sound).
+FAIL nature-wolf-howl-268619 (8.1 s): long noisy tail at -40 dB, pitch track breaks up.
+FAIL nature-a-lone-wolf-cries-359871 (7.9 s): reserve; irregular pitch (about 550 Hz then jumps), possible second animal.

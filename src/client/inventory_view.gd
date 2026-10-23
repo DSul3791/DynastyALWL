@@ -121,6 +121,7 @@ var _vitals_back: Control
 var _vitals_warning: Label
 var _weight_label: Label
 var _purse_label: RichTextLabel
+var _shoulder_put: Button                     # chest window: puts the shoulder log in (ACT_CHEST_PUT slot -1)
 var shoulder_id: String = ""                  # the large log on the shoulder (protocol 64), "" when none: Mandy shows the carry pose from this
 var purse_copper: int = 0                      # the purse, in copper (protocol 61)
 var rep_names: PackedStringArray = PackedStringArray()   # NPCs this player has a reputation with, and the points
@@ -173,6 +174,9 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.purse_received.connect(func(copper): purse_copper = copper; _refresh_purse())
 	net.carry_received.connect(func(item_id):
 		shoulder_id = item_id
+
+		if chest_mode:
+			_refresh_chest()
 
 		if _weight_label != null:
 			_refresh_weight())
@@ -1494,6 +1498,13 @@ func _build_chest_panel() -> void:
 			_on_chest_slot(bool(_chest_last[0]), int(_chest_last[1])))
 	transfer.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	chest_outer.add_child(transfer)
+	_shoulder_put = Button.new()
+	_shoulder_put.text = "Put the log from your shoulder in"
+	_shoulder_put.tooltip_text = "The large log on your shoulder goes into the container (take it out again the same way, one log at a time)"
+	_style(_shoulder_put, BODY_PX)
+	_shoulder_put.pressed.connect(func(): net.inventory_action.rpc_id(1, Net.ACT_CHEST_PUT, -1, chest_id, 1, Vector3.ZERO))
+	_shoulder_put.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	chest_outer.add_child(_shoulder_put)
 	_layer.add_child(_chest_panel)
 
 
@@ -1514,6 +1525,9 @@ func _on_chest_slot(chest_side: bool, slot: int) -> void:
 func _refresh_chest() -> void:
 	if not chest_mode or _chest_panel == null:
 		return
+
+	if _shoulder_put != null:
+		_shoulder_put.visible = shoulder_id != ""
 
 	var capacity: int = int(table.entry(table.id_of(int(_world.get(chest_id, {}).get("number", 0)))).get("slots", inventory.SLOTS))
 

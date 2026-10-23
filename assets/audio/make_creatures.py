@@ -125,17 +125,54 @@ def fox_scream(rng):
     return finish(x, 0.7, 0.08)
 
 
+def room_tail(rng, x, seconds=1.6, wet=0.35):
+    """Distance: a dense decaying noise tail (cheap reverb) mixed behind the dry call, with the highs rolled off."""
+    n = int(seconds * SR)
+    t = np.arange(n) / SR
+    ir = rng.standard_normal(n) * np.exp(-t * 3.2)
+    ir = shape(ir, lowpass(freqs(n), 2400))
+    size = len(x) + n
+    wetsig = np.fft.irfft(np.fft.rfft(x, size) * np.fft.rfft(ir, size), size)
+    wetsig *= np.max(np.abs(x)) / (np.max(np.abs(wetsig)) + 1e-9)
+    out = np.zeros(size)
+    out[:len(x)] += x
+    return out + wet * wetsig
+
+
 def wolf_howl(rng):
-    d = rng.uniform(3.2, 4.2)
+    """A wolf howl: breathy low start, a long rise to a held note that wobbles and cracks slightly, then a long sliding fall.
+    A pulse-train source (rich harmonics) goes through a throat/mouth formant filter that opens up as the note rises; breath and
+    throat noise ride on top, and a reverb tail gives the far-off feel."""
+    d = rng.uniform(4.2, 5.4)
     n = int(d * SR)
     t = np.arange(n) / SR
-    f0 = rng.uniform(330, 400)
-    contour = np.interp(t / d, [0.0, 0.25, 0.6, 1.0], [f0 * 0.8, f0 * 1.3, f0 * 1.25, f0 * 0.85])
-    phase = np.cumsum(contour * (1.0 + 0.012 * np.sin(2 * np.pi * 5.5 * t))) / SR
-    x = sum(np.sin(2 * np.pi * k * phase) / k ** 1.3 for k in range(1, 8))
-    x += 0.04 * noise(rng, n, lambda f: band(f, 1500, 1.0)) * 6
-    swell = np.minimum(t / 0.6, 1.0) * np.minimum((d - t) / 1.1, 1.0)
-    return finish(x * swell ** 1.3, 0.7, 0.2)
+    u = t / d
+    f_hold = rng.uniform(380, 470)
+    contour = np.interp(u, [0.0, 0.08, 0.30, 0.45, 0.72, 0.88, 1.0],
+                        [f_hold * 0.55, f_hold * 0.62, f_hold * 1.0, f_hold * 1.04, f_hold * 1.0, f_hold * 0.8, f_hold * 0.55])
+    slow = np.cumsum(rng.standard_normal(n)) / SR
+    slow = slow / (np.max(np.abs(slow)) + 1e-9)
+    wobble = 1.0 + 0.012 * np.sin(2 * np.pi * 5.2 * t + 1.1) + 0.02 * slow + 0.006 * np.sin(2 * np.pi * 0.9 * t)
+    # A small voice crack (a quick jump up) late in the held note.
+    crack_at = rng.uniform(0.58, 0.66)
+    wobble *= 1.0 + 0.07 * np.exp(-((u - crack_at) / 0.012) ** 2)
+    phase = np.cumsum(contour * wobble) / SR
+    pulse = 2.0 * (phase % 1.0) - 1.0
+    pulse = np.sign(pulse) * np.abs(pulse) ** 0.7 * 0.6 + pulse * 0.4
+    spec = freqs(n)
+    # Open throat: the formants rise a little as the howl climbs, so blend two filtered copies.
+    low = shape(pulse, 1.0 * band(spec, 450, 0.55) + 0.7 * band(spec, 1000, 0.5) + 0.35 * band(spec, 2300, 0.5) + 0.2 * band(spec, 150, 0.8))
+    high = shape(pulse, 1.0 * band(spec, 700, 0.55) + 0.8 * band(spec, 1500, 0.5) + 0.4 * band(spec, 2800, 0.5) + 0.2 * band(spec, 150, 0.8))
+    mix = np.clip(np.interp(u, [0.0, 0.3, 0.75, 1.0], [0.0, 1.0, 0.8, 0.0]), 0, 1)
+    x = low * (1.0 - mix) + high * mix
+    breath = noise(rng, n, lambda fr: band(fr, 1800, 1.0)) * 3.0
+    throat = noise(rng, n, lambda fr: band(fr, 600, 0.8)) * 2.0
+    rise_env = np.clip(u / 0.25, 0, 1)
+    x = x + breath * (0.10 + 0.25 * (1.0 - rise_env)) + throat * 0.05
+    swell = np.minimum(u / 0.22, 1.0) ** 0.8 * np.minimum((1.0 - u) / 0.28, 1.0) ** 1.1
+    x = x * (0.25 + 0.75 * swell) * (0.2 + 0.8 * np.minimum(u / 0.05, 1.0))
+    x = finish(x, 0.7, 0.2)
+    return finish(room_tail(rng, x), 0.7, 0.3)
 
 
 def wolf_growl(rng):

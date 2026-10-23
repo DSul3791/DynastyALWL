@@ -77,11 +77,12 @@ func refresh() -> void:
 	for slot in range(SLOTS):
 		var cell: Dictionary = _cells[slot]
 		var number: int = _items.inventory.numbers[slot]
-		var held_here: bool = _held != null and _held.holding and _held.held_slot == slot
+		var off_here: bool = _held != null and _held.off_holding and _held.off_slot == slot
+		var held_here: bool = (_held != null and _held.holding and _held.held_slot == slot) or off_here
 		var style: StyleBoxFlat = StyleBoxFlat.new()
 		style.bg_color = Color(0.1, 0.1, 0.12, 0.8) if not held_here else Color(0.28, 0.22, 0.08, 0.92)
 		style.set_border_width_all(_items.text_px(3) if held_here else 1)
-		style.border_color = Color(1.0, 0.85, 0.3) if held_here else Color(0.4, 0.4, 0.45)
+		style.border_color = (Color(0.5, 0.75, 1.0) if off_here else Color(1.0, 0.85, 0.3)) if held_here else Color(0.4, 0.4, 0.45)
 		style.set_corner_radius_all(6)
 		style.set_content_margin_all(_items.text_px(4))
 		cell["panel"].add_theme_stylebox_override("panel", style)

@@ -60,3 +60,5 @@ If you are blocked or would wait too long, start the next thing on your list at 
 - BP-T45 clarification: pictures on the QA page are always fine; the showroom is for in-game tests and looks.
 - BP-T46: the team tests first (headless, look rig, showroom, second clone); only human-judgment tests go to Dave. See tech/TEAM_TESTS.md.
 - Before pushing ANY merge run `python3 tools/merge_check.py` (conflict markers, duplicate item numbers and action ids, next_number, crash logs, JSON). Claim item numbers, action ids and protocol bumps in tech/ID_CLAIMS.md first (Dave yes 10:26 UTC 23 Oct).
+
+- BP-T49 ground tests: always look down at the spot (or step back and look down); never walk away from what you check. See BEST_PRACTICES.md.
