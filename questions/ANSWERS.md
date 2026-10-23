@@ -1234,3 +1234,7 @@ Answered: 2026-10-23 16:37 UTC
 Answer: Yes
 Answered: 2026-10-23 16:37 UTC
 
+## pull-deletes-crash-logs | OK that your next Pull removes the old crash report files from your folder?
+Answer: Yes
+Answered: 2026-10-23 17:36 UTC
+
