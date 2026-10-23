@@ -7,11 +7,6 @@
 
 
 
-## fix-team-tests | Confirm the rule that the team tests first (headless, look rig, showroom) and only human-judgment tests go to you?
-Note: This is already in place as BP-T46 and BP-T45. This card is to confirm it.
-Note: Tyler recommends Yes because most of tonight's 12 tests could be done by the team.
-[check]
-
 ## fix-inbox | Should each thread get a short inbox file that the coordinator and Tyler write only the changes into, instead of long relays?
 Note: Threads cannot message each other, so today everything goes through two relays.
 Note: Tyler recommends Yes because it cuts repeated text and token use, but we will check that threads read it every turn.
