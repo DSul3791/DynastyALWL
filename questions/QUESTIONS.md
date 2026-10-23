@@ -59,12 +59,6 @@ Note: Tyler recommends Yes because it is quick for one rock and for a lot, and m
 Note: Tyler recommends Yes because it gives cave-ins their own moment without slowing down every death, and we can add the sequence to other deaths later if you like it.
 [check]
 
-## head-ponds-retire | Should we stop making the round stamped pond at the top of each river, and let lakes and rivers start only where the land has a real catch basin (terrain B), at the next bake?
-Note: Today the round pond at the top of the falls is stamped in by a rule (30 to 70 m wide, 10 to 14 m deep, a flat bench, an outlet brook). That is why it looks like a bowl set into the hillside. Plunge pools and the spill channel are stamped too.
-Note: With terrain B, each lake is a natural basin from the land, and the river starts from its overflow and from rain gathering on slopes. Nothing changes until the next bake, and we look at the first natural result with you before it replaces anything.
-Note: Tyler recommends Yes because polishing a stamped bowl will never look natural, and terrain B is already built (switched off for now) and gets its first small test bake tomorrow.
-[check]
-
 ## lake-hide-water | Please test: hide the water and see what stays. Look for: do the grey shapes and dark squares STAY when the water is hidden?
 Note: 1. Go to x 52392, z 69477 (or x 53786, z 69256) where the water surface flickers.
 Note: 2. Press Ctrl+Shift+W (hides every river and lake drawing).
