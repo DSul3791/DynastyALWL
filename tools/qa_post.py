@@ -69,7 +69,7 @@ def main():
             except FileNotFoundError:
                 pass
             lines = ["", "## %s | %s" % (a.id, a.title)]
-            lines += ["Note: " + n for n in a.note]
+            lines += [(n if n.startswith("Image: ") else "Note: " + n) for n in a.note]  # a bare "Image: path" line is what the page turns into a picture
             if a.rec.strip():
                 lines.append("Note: " + (a.rec.strip() if a.rec.lower().startswith("tyler") else "Recommendation: " + a.rec.strip()))
             lines.append({"check": "[check]", "test": "[test]", "picture": "[picture]", "text": "[text]"}[a.kind])
