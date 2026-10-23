@@ -185,3 +185,20 @@ Note: Tyler recommends Yes because one block makes one piece (simple to learn), 
 ## axe-wear-chop | The axe wears once for each log chop and once for each split at the chopping block?
 Note: Tyler recommends Yes because both are real chopping, and one wear per action is easy to understand and to tune later.
 [check]
+
+## species-uses-1 | Should each kind of tree be good for different things, using four numbers per species (hardness, burn time, rot resistance, how easy it is to work)? For example oak for strong beams and posts, birch and beech for firewood, pine and spruce for planks, alder for piers in water, apple and cherry for tool parts.
+Note: Full table: tech/items/TREE_SPECIES_USES_DRAFT.md.
+Note: Tyler recommends Yes because it follows real wood, so players can learn it, and it needs only data (four numbers per tree).
+[check]
+
+## species-uses-2 | Recipes still accept "any log", but a better species gives a better result (stronger beam, less tool wear, longer-burning fire)?
+Note: Tyler recommends Yes because nobody is blocked when the right tree is far away, and the good tree is a reward.
+[check]
+
+## species-uses-3 | Hard woods (oak, walnut) take more axe wear to chop, so they feel valuable?
+Note: Tyler recommends Yes because cost is how a player feels value, and it is one number per species.
+[check]
+
+## species-uses-4 | Firewood and wooden blocks from different species stay in separate piles (no mixed piles), and piers and wet foundations need a rot-proof wood (oak, chestnut, alder)?
+Note: Tyler recommends Yes because mixed piles are hard to take from and piers rotting would be unfair without a warning.
+[check]
