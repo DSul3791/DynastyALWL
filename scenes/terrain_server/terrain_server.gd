@@ -1155,7 +1155,7 @@ func _dump_water(x: float, z: float) -> String:
 
 	var lines: PackedStringArray = PackedStringArray()
 	lines.append("water dump at x %.1f z %.1f, tile %s, sim side %d spacing %.1f, data samples %d x0 %.1f z0 %.1f" % [x, z, str(tile), sim.side, sim.spacing_m, data.samples, data.x0, data.z0])
-	lines.append("sim ticks %d, seconds %.0f, evaporated %.0f m3, to sea %.0f m3, flow key x%.2f" % [sim.ticks, sim.seconds, sim.evaporated_m3, sim.sea_m3, sim.spring_multiplier])
+	lines.append("sim %s core, ticks %d, seconds %.0f, evaporated %.0f m3, to sea %.0f m3, flow key x%.2f, volume %.0f m3 in %d wet cells" % ["C++" if sim.native() else "GDScript", sim.ticks, sim.seconds, sim.evaporated_m3, sim.sea_m3, sim.spring_multiplier, sim.total_volume(), sim.wet_cells()])
 	lines.append("cell i j | x z | baked_ground sim_ground depth level(sim_levels) | flow_x flow_z")
 	var near_springs: Array = []
 
@@ -1175,7 +1175,11 @@ func _dump_water(x: float, z: float) -> String:
 		for i in range(maxi(int(floor((x - 20.0 - data.x0) / sim.spacing_m)), 0), mini(int(ceil((x + 20.0 - data.x0) / sim.spacing_m)), sim.side - 1) + 1):
 			var n: int = j * sim.side + i
 			var level: float = data.sim_levels[n] if n < data.sim_levels.size() else NAN
-			lines.append("%d %d | %.0f %.0f | %.2f %.2f %.3f %.2f | %.3f %.3f" % [i, j, data.x0 + float(i) * sim.spacing_m, data.z0 + float(j) * sim.spacing_m, data.heights[n] if n < data.heights.size() else NAN, sim.ground[n], sim.depth[n], level, sim.flow_x[n], sim.flow_z[n]])
+			# The C++ core keeps depth inside itself (sim.depth_at) and does not give the flows to GDScript: they print as nan.
+			var flow_x: float = sim.flow_x[n] if n < sim.flow_x.size() else NAN
+			var flow_z: float = sim.flow_z[n] if n < sim.flow_z.size() else NAN
+			var ground_here: float = sim.ground[n] if n < sim.ground.size() else NAN
+			lines.append("%d %d | %.0f %.0f | %.2f %.2f %.3f %.2f | %.3f %.3f" % [i, j, data.x0 + float(i) * sim.spacing_m, data.z0 + float(j) * sim.spacing_m, data.heights[n] if n < data.heights.size() else NAN, ground_here, sim.depth_at(n), level, flow_x, flow_z])
 
 	var path: String = _store_path + "/water_dump_%d_%d.txt" % [int(x), int(z)]
 	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
