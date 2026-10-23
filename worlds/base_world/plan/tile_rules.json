@@ -116,6 +116,19 @@
 		"ledges": {"sandstone": 1.0, "limestone": 1.0, "basalt": 0.9, "chalk": 0.6, "marble": 0.6, "slate": 0.5, "tuff": 0.3}
 	},
 	"water": {
+		"drainage_mode": false,
+		"drainage": {
+			"river_start_km2": 0.5,
+			"lake_min_depth_m": 3.0,
+			"lake_min_cells": 40,
+			"water_min_depth_m": 0.05,
+			"width_m_per_sqrt_q": 6.0,
+			"min_width_m": 24.0,
+			"depth_m_per_sqrt_q": 1.0,
+			"min_depth_m": 1.5,
+			"max_depth_m": 8.0,
+			"seed": 17
+		},
 		"note": "Hydrology on the 8 m height map. Rain falls evenly; each cell passes its water downhill. Rivers start where the catchment passes river_start_km2. Pits are filled unless they are big enough to be lakes.",
 		"river_start_km2": 0.5,
 		"bed_window_m": 500,
