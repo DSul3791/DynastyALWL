@@ -794,6 +794,8 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 
 
 var ground_ready: Callable              # (x, z) -> bool: the ground there is in memory; when not, it is being read in the background (unset in tests = always ready)
+var water_flow_at: Callable             # set by the server: (Vector3) -> float, the running speed of the water there in m/s (-1 none, 0 still), for placement rules
+var water_flow_runs: Callable           # set by the server: (a: Vector3, b: Vector3) -> bool, true when the 2 m span runs at least data/water_flow.json min_speed_m_s all along
 var floor_below: Callable               # set by the server: (Vector3) -> float, the height a loose item let go there comes to rest at (NAN if none)
 var dump_water: Callable                # set by the server: (x, z) -> String, writes the live water cells near a point to a text file
 var reset_terrain_edits: Callable       # set by the server: () -> void, wipes every saved dig and fill
