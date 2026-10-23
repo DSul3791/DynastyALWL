@@ -6,6 +6,7 @@ extends SceneTree
 
 const GroundOps := preload("res://src/stream/ground_ops.gd")
 const Watch := preload("res://src/stream/tunnel_watch.gd")
+const Stability := preload("res://src/stream/tunnel_stability.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 
@@ -143,6 +144,30 @@ func _init() -> void:
 	switched.process_dirty(0)
 	switched.set_enabled(false)
 	_check(switched.working_count() == 0 and not switched.enabled, "switched off in game: running windows are cleared")
+
+	# Dripping ceilings (Dave 2026-10-23): water within 4 m above a ceiling makes it drip; further up or none does not.
+	var wet: Watch = _watch()
+	var level: Array = [0.0]                  # a lambda keeps the value it saw, so the level lives in an array
+	wet.water_above = func(_x: float, _z: float) -> float: return level[0]
+	var cells: Array = Stability.classify(_tunnel(Vector3i.ZERO), Vector3.ZERO, func(_x: float, _z: float) -> float: return 40.0)
+	_check(not cells.is_empty() and cells[0].has("roof_y"), "classified cells carry their roof height")
+	level[0] = float(cells[0]["roof_y"]) + 2.0
+	wet.mark_dirty([Vector3i.ZERO])
+	wet.process_dirty(0)
+	var drip: Dictionary = wet.tick(1000, peers)
+	_check(drip["leak"].size() == 1 and int(drip["leak"][0][0]) == 1 and (drip["leak"][0][1] as PackedVector3Array).size() > 0, "water 2 m above the ceiling: the player inside is sent drip points (not the far one)")
+	_check(int((drip["leak"][0][2] as PackedByteArray)[0]) > 100, "and the closer the water, the heavier the drip")
+	level[0] = float(cells[0]["roof_y"]) + 12.0
+	var dry: Watch = _watch()
+	dry.water_above = func(_x: float, _z: float) -> float: return level[0]
+	dry.mark_dirty([Vector3i.ZERO])
+	dry.process_dirty(0)
+	_check(dry.tick(1000, peers)["leak"].is_empty(), "water 12 m above the ceiling: no drip")
+	var none: Watch = _watch()
+	none.water_above = func(_x: float, _z: float) -> float: return NAN
+	none.mark_dirty([Vector3i.ZERO])
+	none.process_dirty(0)
+	_check(none.tick(1000, peers)["leak"].is_empty(), "no water above: no drip")
 
 	_radius = 0.9
 	var narrow: Watch = _watch()

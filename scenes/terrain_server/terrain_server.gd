@@ -1133,6 +1133,8 @@ func _start_tunnels() -> void:
 		var buffer: VoxelBuffer = Layout.make_buffer(16)
 		store.load_block(buffer, block, 0)
 		return buffer
+	tunnels.water_above = func(x: float, z: float) -> float:      # the sea is 0 m; a river or lake is its live level (read on the watch's own thread)
+		return float(_water_at(Vector3(x, 0.0, z))[0])
 	tunnels.surface_h = func(x: float, z: float) -> float: return generator.surface_height(x, z)
 	tunnels.start()
 
@@ -1172,6 +1174,9 @@ func _tunnel_tick() -> void:
 
 	for quake in result["quake"]:
 		net.quake.rpc_id(quake[0], quake[1], quake[2], quake[3])
+
+	for leak in result["leak"]:
+		net.leak.rpc_id(leak[0], leak[1], leak[2])
 
 	for collapse in result["collapse"]:
 		_events.event("tunnel collapse: %d cells, %d fills, victims %s" % [int(collapse["cells"]), (collapse["fills"] as Array).size(), str(collapse["victims"])])

@@ -41,6 +41,7 @@ const CompassScript := preload("res://src/client/admin_compass.gd")
 const InventoryViewScript := preload("res://src/client/inventory_view.gd")
 const NpcViewScript := preload("res://src/client/npc_view.gd")
 const GroundDebugScript := preload("res://src/client/ground_debug.gd")
+const DripViewScript := preload("res://src/client/drip_view.gd")
 const GameMenuScript := preload("res://src/client/game_menu.gd")
 const SoundTestMenuScript := preload("res://src/client/sound_test_menu.gd")
 const QuakeViewScript := preload("res://src/client/quake_view.gd")
@@ -216,6 +217,7 @@ var tunnel_cave_in_s: int = 1200
 var quake_view = QuakeViewScript.new()        # shake, dust and notices while a tunnel is failing (quake_view.gd)
 var ladder = LadderClimbScript.new()          # holding on to a placed ladder (ladder_climb.gd)
 var ground_debug = GroundDebugScript.new()    # ground dump, ground self-check, hole probe (ground_debug.gd)
+var drip_view = DripViewScript.new()          # dripping ceilings under water (drip_view.gd)
 var game_menu = GameMenuScript.new()          # the Esc menu (game_menu.gd)
 var sound_tests = SoundTestMenuScript.new()   # Esc > Settings sound test buttons and their state (sound_test_menu.gd)
 var menu_open: bool = false          # the Esc options menu
@@ -673,6 +675,8 @@ func _ready() -> void:
 		tunnel_on = on
 		tunnel_cave_in_s = cave_in_s
 		_show_tunnel_buttons())
+	net.leak_received.connect(func(points: PackedVector3Array, closeness: PackedByteArray) -> void:
+		drip_view.on_leak(points, closeness, body.global_position))
 	net.quake_received.connect(func(stage: int, strength: float, point: Vector3) -> void:
 		quake_view.on_quake(stage, strength)
 
@@ -1988,6 +1992,7 @@ func _make_player(root: Node3D, start: Vector3) -> void:
 	view_cam.far = 6000.0
 	camera.add_child(view_cam)
 	quake_view.setup(self, camera)
+	drip_view.setup(self, self)
 	view_cam.current = true
 	_load_view()
 	var viewer: VoxelViewer = VoxelViewer.new()
@@ -3187,6 +3192,7 @@ func _update_bob(delta: float) -> void:
 	camera.position.y = stance.eye_y - float(BOB_M[gait]) * dip * _bob_amount
 	camera.position.x = -float(SWAY_M[gait]) * side * _bob_amount
 	camera.rotation.z = deg_to_rad(float(SWAY_DEG[gait])) * side * _bob_amount
+	drip_view.step(delta)
 	var shake: Dictionary = quake_view.step(delta)
 	camera.position += shake["offset"]
 	camera.rotation.z += deg_to_rad(float(shake["roll"]))
@@ -3323,6 +3329,11 @@ func _process(delta: float) -> void:
 				found.set_on(not found.on)
 				found.toggled.emit(found.on)
 
+		drip_view.on_leak(PackedVector3Array([body.global_position + Vector3(0.0, 2.0, 0.0)]), PackedByteArray([200]), body.global_position)
+		drip_view.step(0.1)
+		print("Terrain client: drip view: gap %.1f m, wet here %s" % [drip_view.gap_m, str(drip_view.wet_here)])
+		drip_view.step(2.0)
+		print("Terrain client: drip view after fade: gap %.1f m" % drip_view.gap_m)
 		print("Terrain client: menu test: %d pages with content of %d, panel opaque %s, layer %d" % [seen, game_menu._pages.size(), str(game_menu.root.get_child(1).get_child(0).get_theme_stylebox("panel").bg_color.a == 1.0), (game_menu.root.get_parent() as CanvasLayer).layer])
 		_set_menu(false)
 

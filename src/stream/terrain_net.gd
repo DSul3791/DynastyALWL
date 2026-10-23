@@ -28,7 +28,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 72
+const PROTOCOL_VERSION := 73
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -47,6 +47,7 @@ signal water_rate_received(rate: float, busy: bool, spring_m3_s: float)
 signal water_changed_received()
 signal pulse_received()
 signal quake_received(stage: int, strength: float, point: Vector3)
+signal leak_received(points: PackedVector3Array, closeness: PackedByteArray)
 signal ground_reset_received(tiles_stamp: String, starter_stamp: String)
 signal water_requested(peer_id: int, chunks: PackedInt32Array)
 signal surface_requested(peer_id: int, x: float, z: float)
@@ -223,6 +224,13 @@ func pulse() -> void:
 # Earth shaking in an excavation that needs bracing (tech/EXCAVATION_BRACING_GROUND_DESIGN.md section 3): stage 2 creak, 3 shake,
 # 4 throes (the collapse follows), strength 0..1000 per mille, point = the working cluster. The server sends it twice a second to
 # players within 40 m of a cluster in stage 2 or later; nothing sends it yet (the tunnel timers are switched off until the bracing items exist).
+# Dripping ceilings (protocol 73, Dave 2026-10-23): the ceiling points near the player with water within 4 m above them, nearest first
+# (at most 24), and how close the water is (0..255). Twice a second, only while there are any. Drawn and heard on the client; no water is simulated.
+@rpc("authority", "call_remote", "unreliable")
+func leak(points: PackedVector3Array, closeness: PackedByteArray) -> void:
+	leak_received.emit(points, closeness)
+
+
 @rpc("authority", "call_remote", "unreliable")
 func quake(stage: int, strength_pm: int, point: Vector3) -> void:
 	quake_received.emit(stage, float(strength_pm) * 0.001, point)
