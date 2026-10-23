@@ -232,6 +232,7 @@
 			"cap_per_chunk": 200,
 			"max_rise_m": 0.6,
 			"piece_kind": "wall",
+			"variant_group": "wall",
 			"look": "wall",
 			"sound": "timber",
 			"clears_grass": false
@@ -383,6 +384,7 @@
 			"cap_per_chunk": 200,
 			"max_rise_m": 0.6,
 			"piece_kind": "wall",
+			"variant_group": "wall",
 			"look": "door_shut",
 			"sound": "timber",
 			"clears_grass": false,
@@ -402,6 +404,7 @@
 			"cap_per_chunk": 200,
 			"max_rise_m": 0.6,
 			"piece_kind": "wall",
+			"variant_group": "wall",
 			"look": "window_wall",
 			"sound": "timber",
 			"clears_grass": false

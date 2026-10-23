@@ -174,6 +174,7 @@ func _init() -> void:
 			lifted_y = items._items[id]["pos"].y
 
 	check(is_equal_approx(lifted_y, 10.3), "a foundation lifted 3 steps stands 0.3 m above the ground (y %.2f)" % lifted_y)
+	check(str(Rules.structure_of_kit(cfg, "wall_section_kit").get("variant_group", "x")) == "wall" and str(Rules.structure_of_kit(cfg, "doorway_section_kit").get("variant_group", "y")) == "wall" and str(Rules.structure_of_kit(cfg, "window_section_kit").get("variant_group", "z")) == "wall", "wall, doorway and window share a wheel group")
 	# A doorway and a window wall snap onto the foundation like a wall; the foundation stays while they stand on it.
 	check(bool(Rules.snap(cfg, "doorway_section_kit", Vector3(48.9, 10.0, 47.6), 0, base_rows)[2]) and bool(Rules.snap(cfg, "window_section_kit", Vector3(48.9, 10.0, 47.6), 0, base_rows)[2]), "doorway and window walls snap to the foundation anchors")
 	var base_id: int = 0
