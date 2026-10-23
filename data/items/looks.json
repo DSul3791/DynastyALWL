@@ -934,6 +934,11 @@
    "shape": "chunk",
    "color": "#8a8a8a",
    "size": 1.0
+  },
+  "raspberries": {
+   "shape": "berries",
+   "color": "#8e0f1c",
+   "size": 1.0
   }
  }
 }

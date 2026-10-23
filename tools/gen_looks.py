@@ -9,6 +9,8 @@ import os
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 items = json.load(open(os.path.join(ROOT, "data/items/items.json")))
 items = items.get("items", items)
+gathered = json.load(open(os.path.join(ROOT, "data/items/gathered.json")))
+items = dict(items, **{k: v for k, v in gathered.get("items", gathered).items() if k in ("raspberries",)})   # gathered plant yields that have a look of their own
 
 WOOD = {
     "oak": "#8a6a3d", "beech": "#b79869", "birch": "#d9c7a3", "scots_pine": "#c99a5b", "spruce": "#d3b583", "alder": "#b5733f",
