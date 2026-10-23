@@ -8,9 +8,6 @@ Note: 6. Optional: place a timber prop near the roof before the time runs out. T
 Note: 7. Take a picture of the shaking and dust. Write in Notes what happened, yes or no.
 [test]
 
-## sea-feedcap | Should the sea feed a pit at most 50 m3/s per connection, so a huge pit fills over minutes instead of instantly (a tunable number)?
-[check]
-
 ## sea-rivermouth | Do river mouths stay sea-connected, so damming a mouth floods the river behind it (an intended risk)?
 [check]
 
