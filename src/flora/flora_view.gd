@@ -825,7 +825,7 @@ func set_water(chunk: Vector2i, water: Dictionary) -> void:
 		return
 
 	_ease.erase(chunk)
-	entry["water_in"] = int(entry.get("water_in", 0)) + 1      # for water_debug: how many water patches this chunk has had, and when the last came
+	entry["water_in"] = int(entry.get("water_in", 0)) + 1      # for water_dump_text: how many water patches this chunk has had, and when the last came
 	entry["water_in_msec"] = Time.get_ticks_msec()
 	var old: Dictionary = entry.get("grid", {})
 	WaterGridScript.steady_edges(old, water)
@@ -1120,7 +1120,7 @@ func water_surface_at(x: float, z: float) -> float:
 
 # For Esc > Admin > Dump water here: what this client holds for the water at a point (the patch's grid values round it, how many patches
 # the chunk has had and how long ago the last one came), to set beside the server's dump of the same spot (dry river, 2026-10-23).
-func water_debug(x: float, z: float) -> String:
+func water_dump_text(x: float, z: float) -> String:
 	var chunk: Vector2i = Vector2i(int(floor(x / chunk_m)), int(floor(z / chunk_m)))
 	var entry: Dictionary = _chunks.get(chunk, {})
 
