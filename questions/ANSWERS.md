@@ -584,3 +584,7 @@ Answered: 2026-10-23 00:11 UTC
 Answer: Yes
 Answered: 2026-10-23 00:11 UTC
 
+## braces-three | Do the three braces look right: small 1.5 m (two posts and cap beam), medium 3 m (adds corner braces), large 5 m (thick posts, double cap beam, corner braces, centre prop)?
+Answer: Yes
+Answered: 2026-10-23 00:11 UTC
+
