@@ -112,3 +112,4 @@ Baked tiles for the inner starters and their neighbors (36 files) are in `/mnt/p
 - BP-T42 safe place wording (Dave 03:32): Sal sweeps flora.json "womens_health" (line 1877) and all item/plant/recipe text tomorrow; one line to Dave. Raspberry bush look + berries to Kathleen (Dave pictures in chat).
 - BP-T43 after hours: Dave asks only, branches only, Guru merges; head 695 stays while Dave plays.
 - Lake flicker (Sonny hypothesis): cards lake-hide-water (Ctrl+Shift+W) and lake-low-quality (F2 Low) posted. Branch claude/sal-safe-text (data only, raspberry womens_health -> soothing) held for next build.
+- MERGE PLAN (Dave 03:35): when Dave says he is done playing: merge ready branches in this order, local_check after each, protocol check: 1 sal-safe-text (data), 2 kathleen-wet, 3 steve-esc-test, 4 sal-rock-pile (RESTART), 5 steve-drip (protocol 73), 6 any new ones; then MikeW recheck + fresh backup. Then tell Dave the new build number.
