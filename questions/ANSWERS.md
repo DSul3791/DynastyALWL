@@ -664,3 +664,7 @@ Answered: 2026-10-23 00:44 UTC
 Answer: Yes
 Answered: 2026-10-23 00:44 UTC
 
+## cost-8 | Floor or ceiling, Plank: 8 rough planks and 20 nails?
+Answer: Yes
+Answered: 2026-10-23 00:44 UTC
+
