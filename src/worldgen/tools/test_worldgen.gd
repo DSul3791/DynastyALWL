@@ -2138,6 +2138,7 @@ func _test_flora(generator, data, tables, tile_rules: Dictionary) -> void:
 	_check(server.cut(best, ids[0]) and not server.cut(best, ids[0]) and not server.cut(best, 12345678), "the server cuts a real item once and refuses unknown ones")
 	var after: Dictionary = FloraPlacerScript.decode(server.chunk_bytes(best), origin)
 	_check(after["ids"].size() == before - 1 and after["ids"].find(ids[0]) < 0, "a cut item is gone from the chunk sent to clients")
+	server.save_removed(true)       # since build 597 the server writes removals on its tick (at most once a second) and at exit, not per cut
 	var restarted = ServerFloraScript.new()
 	restarted.setup(placer, root)
 	_check(restarted.removed_in(best) == [ids[0]], "flora removals survive a server restart")
