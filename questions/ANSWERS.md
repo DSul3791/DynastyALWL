@@ -956,3 +956,7 @@ Answered: 2026-10-23 01:38 UTC
 Answer: Yes
 Answered: 2026-10-23 01:38 UTC
 
+## wet-steps | Should footsteps on the wet floor make a small splash and squelch?
+Answer: Yes
+Answered: 2026-10-23 01:38 UTC
+
