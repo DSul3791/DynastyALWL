@@ -3298,7 +3298,7 @@ func run_test() -> void:
 	_search.text = ""
 	_refresh()
 	toggle()
-	print("Items test: crafted, cordage %d, stone axe %d, fibre %d" % [inventory.count_of(table.number_of("cordage")), inventory.count_of(table.number_of("stone_axe")), inventory.count_of(table.number_of("plant_fibre"))])
+	print("Items test: crafted, twine %d, stone axe %d, fibre %d" % [inventory.count_of(table.number_of("twine")), inventory.count_of(table.number_of("stone_axe")), inventory.count_of(table.number_of("plant_fibre"))])
 
 
 # Headless check (--gather): stand next to the nearest shrub or plant that drops something and gather it.
@@ -3737,7 +3737,7 @@ func run_eat_test(client) -> void:
 
 		print("Sort test: mode %d first four: %s" % [mode, ", ".join(names)])
 
-	# Crafting queue: three cordage line up, the screen shows the entry, pressing it cancels and refunds.
+	# Crafting queue: three twine line up, the screen shows the entry, pressing it cancels and refunds.
 	var fibre: int = table.number_of("plant_fibre")
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, fibre, 0, 12, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout

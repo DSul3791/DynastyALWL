@@ -3644,7 +3644,7 @@ func _process(delta: float) -> void:
 			print("Terrain client: flame put away: held '%s', loops %d" % [sound.flame.held, sound.flame._loops.size()])
 			test_flame = false
 
-	# Headless check: make cordage (twine), a stone axe (knap) and a campfire (stack) through the panel's craft timer.
+	# Headless check: make twine (twine), a stone axe (knap) and a campfire (stack) through the panel's craft timer.
 	if test_craft_sounds and now - connected_msec > 18000:
 		if _test_craft_t < 0.0:
 			_test_craft_t = 0.0

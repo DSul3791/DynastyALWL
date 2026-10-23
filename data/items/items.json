@@ -40,9 +40,9 @@
 			"look_alikes": [],
 			"value": 4
 		},
-		"cordage": {
+		"twine": {
 			"number": 5,
-			"name": "Cordage",
+			"name": "Twine",
 			"description": "Twisted plant fibre, strong enough to bind a tool or weave a chest.",
 			"kind": "material",
 			"stack": 20,
@@ -67,7 +67,7 @@
 					1
 				],
 				[
-					"cordage",
+					"twine",
 					1
 				]
 			],
@@ -92,7 +92,7 @@
 					1
 				],
 				[
-					"cordage",
+					"twine",
 					1
 				]
 			],
@@ -144,7 +144,7 @@
 					1
 				],
 				[
-					"cordage",
+					"twine",
 					1
 				]
 			],
@@ -508,7 +508,7 @@
 		"rope": {
 			"number": 44,
 			"name": "Rope",
-			"description": "Twisted cordage, strong enough to haul and to lash a frame.",
+			"description": "Twisted twine, strong enough to haul and to lash a frame.",
 			"kind": "material",
 			"stack": 20,
 			"value": 4,
@@ -530,7 +530,7 @@
 					1
 				],
 				[
-					"cordage",
+					"twine",
 					1
 				]
 			],
@@ -878,7 +878,7 @@
 			"durability": 360,
 			"repair": [
 				[
-					"cordage",
+					"twine",
 					1
 				]
 			],
@@ -2358,7 +2358,7 @@
 					1
 				],
 				[
-					"cordage",
+					"twine",
 					1
 				]
 			],
@@ -2382,7 +2382,7 @@
 					1
 				],
 				[
-					"cordage",
+					"twine",
 					1
 				]
 			],
@@ -2527,7 +2527,7 @@
 					1
 				],
 				[
-					"cordage",
+					"twine",
 					1
 				]
 			],

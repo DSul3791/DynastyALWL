@@ -18,7 +18,7 @@ WOOD = {
     "everember": "#c4683a", "witness_tree": "#7b6a56", "balsam_fir": "#cdb78b", "maple": "#d0a46f",
 }
 SPECIAL = {
-    "plant_fibre": ("bundle", "#b7ac6a", 0.8), "cordage": ("coil", "#b8a46a", 0.8), "rope": ("coil", "#a98f52", 1.0),
+    "plant_fibre": ("bundle", "#b7ac6a", 0.8), "twine": ("coil", "#b8a46a", 0.8), "rope": ("coil", "#a98f52", 1.0),
     "bark": ("bark", "#5a4330", 1.0), "leaves": ("leaves", "#5a8a3a", 1.0), "seed_bundle": ("pouch" if False else "sack", "#a08a52", 0.6),
     "tree_roots": ("bundle", "#6a4a2e", 1.0), "firewood": ("bundle", "#8a5e36", 1.0), "lumber": ("planks", "#b98d57", 1.0),
     "iron_ingot": ("ingot", "#6c6f75", 1.0), "steel_ingot": ("ingot", "#9aa3ad", 1.0),

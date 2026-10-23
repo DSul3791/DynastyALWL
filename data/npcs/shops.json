@@ -7,7 +7,7 @@
 			"stone_knife",
 			"wooden_spade",
 			"torch",
-			"cordage",
+			"twine",
 			"rope",
 			"plant_fibre",
 			"bandage",
@@ -61,7 +61,7 @@
 				6,
 				3
 			],
-			"cordage": [
+			"twine": [
 				10,
 				5
 			],
