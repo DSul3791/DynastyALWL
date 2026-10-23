@@ -600,3 +600,7 @@ Answered: 2026-10-23 00:30 UTC
 Answer: Yes
 Answered: 2026-10-23 00:31 UTC
 
+## esc-menu-3 | Esc menu: should Controls show the hotkey list?
+Answer: Yes
+Answered: 2026-10-23 00:31 UTC
+
