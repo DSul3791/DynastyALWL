@@ -1,3 +1,52 @@
+# READY QUEUES (Tyler, 23 Oct 22:55 UTC; Dave: "nobody should ever need to be idle"; this block overrides everything below)
+Rule: when your current job finishes, or waits on Dave, Mike's batch or another thread, take the NEXT line here without asking. Tell Tyler only when you START a job that needs a branch (BP-T50 action plan), Tyler's GO is already given for lines marked GO. Tyler refills this block every day and at every merge.
+
+## Steve (queue 7)
+1. GO: finish berry picking (steve-berry-picking) review fixes after Mike's batch; then step 2-4 of harvest naming.
+2. GO: steve-sound-3d (directional sound) ear test notes for Dave's card.
+3. GO: water_flow_at (unblocks Sal sawmill step 2).
+4. GO: wet tunnel sounds by ear (rig + Dave's ear card).
+5. Dry river test: live dump in Dave's world (needs v26 tiles loaded; Mike runs it, you read the dump).
+6. Shrub LOD / carpet (after berry branch merges).
+7. Cave-in timer retest (collapse default 5 min, setting 2-20 min).
+
+## Sonny (queue 6)
+1. GO: claude/sonny-flora-patches (patch placer, shared 1-3x scale per patch, tight spacing, flora layout VERSION 2).
+2. Re-settle water after v26 tiles (Dave presses Clear blocks first).
+3. Valleys check on claude/sonny-valleys, v27 bake bundle prepared (no bake until Dave OKs v26).
+4. flora_map.gd: headless --import check (not broken, just verify).
+5. Island shape plan next step (ISLAND_SHAPE_PLAN.md) docs only.
+6. Edge match + 6-spot screenshot set after any generator change.
+
+## Sal (queue 7)
+1. GO: sal-harvest (yield_scale clamp 400, elder base 130) after Mike's batch.
+2. Blueprint 1c.
+3. Uproot/replant (protocol 75 after Steve's 74 merges).
+4. Sawmill chain step 2 (needs water_flow_at).
+5. T-plans: T-WALLVAR, T-HOEGRADE, T-SPECIES tests written up for Mike's batch.
+6. Cost table remaining items, one line per card.
+7. Hoe/shovel feel notes after Dave's 764 test.
+
+## Kathleen (queue 7)
+1. NOW: claude/kathleen-patches-now (f0d9b56, flora.json only, RESTART) goes in Mike's batch; claude/kathleen-bramble already in head (769).
+2. GO: mid-distance shrub LOD in tree_builder (push the branch, not yet on the remote).
+3. Reeds and ferns finish, herb look checks (white flowers off-season for blackbramble/apple).
+4. Skull PNG and death voice (Dave to record or approve placeholder).
+5. Shrub pictures after final head (ONE labelled picture via Mike, BATCH RULE).
+6. Log wall notches, doors, ceiling/flat tarred roof looks, brace looks (older list below).
+7. Herb patch data once Sonny's placer is in.
+
+## Mike (queue 6)
+1. ONE batch now: pull head 770 + kathleen-patches-now + steve-berry-picking + sal-harvest + steve-sound-3d, local_check (baseline 233), parse, test_server_items, check_controls, T-BERRIES, prompt picture, herbs/mushrooms/shrub rows, bramble before/after, Ctrl+Shift+G frame time on F2 Low <33 ms. Report PASS/FAIL list.
+2. Dry-river live dump (Esc > Admin > Dump water here, 60 s, x 51609 z 69364).
+3. Sonny valleys check (TERRAIN_VERSION 27 bundle) after Dave sees v26.
+4. Sal BATCH_Sal_001.
+5. ONE labelled shrub picture (--flora raspberry,bramble,wild_rose,blackthorn,blueberry --views "wide:8:-8:1.5;close:4:-15:1.0" --nograss).
+6. 9 pm ADT backup; 8 AM ADT handoff + reset. Stop one-at-a-time renders.
+
+## Tyler (me)
+Merge queue after Mike's PASS: kathleen-patches-now, steve-berry-picking, sal-harvest, steve-sound-3d, sonny-flora-patches. Then post Dave's pull steps (close game fully). v27 bundle only after Dave OKs v26.
+
 # CURRENT TOP JOBS (Guru, 2026-10-23 00:10; this block overrides the older lists below)
 - Steve: 1. Turn the tunnel collapse ON in Dave's test world (his YES) with the cave-in duration as a SETTING (2 to 20 min); 2. support spheres of influence (radius 5 / 7.5 / 10 m at full health, halves at half health, overlap covers an area; degrade slowly when unmaintained); 3. blueprint snapping and load rules with Sal (wide snap, 3 spaces, load limit like Valheim); 4. then other players' worn-clothing sync (protocol bump), characters.json write batching, join-window glue.
 - Sal: rework the blueprint design to Dave's answers (DECISIONS 2026-10-23 00:10 items e to k), twine rename everywhere (no migration), brace blueprints in 3 sizes, ceiling and flat tarred roof, chopping block 18 kg, then the cost table list for Dave one line per card.
