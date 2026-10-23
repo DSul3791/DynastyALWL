@@ -31,13 +31,6 @@ Note: 1. Fill your pack with soil or stone until it is full. 2. Dig down under y
 Note: Tyler recommends: Yes if it lies on the ground, because Steve's fix and unit tests pass but the rig cannot dig, so only you can check it in game.
 [test]
 
-## kath-flora-cane-berries | Do the raspberry bush and bramble look like the real plants?
-Image: questions/img/cane_berries.png
-Note: Preview (offline preview with flat stand-in leaves; in the game the leaves carry the leaf texture and autumn colours hide the fruit).
-Note: Raspberry: arching canes, red berries (some unripe yellow). Bramble: long arching thorny canes, black berries, white flowers. Wild rose: thorny canes, pink flowers, red hips. Blackthorn: dark twiggy canes, small leaves, blue sloes. Nettle: upright stems, paired leaves. Blueberry: small twiggy bush, blue berries.
-Note: Recommendation: Yes, these are the simple accurate shapes; I will fine tune from your Why-not answers.
-[check]
-
 ## kath-flora-thorn-shrubs | Do the wild rose and blackthorn look like the real shrubs?
 Image: questions/img/thorn_shrubs.png
 Note: Preview (offline preview with flat stand-in leaves; in the game the leaves carry the leaf texture and autumn colours hide the fruit).
