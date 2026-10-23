@@ -323,7 +323,9 @@ func _switch_row(parent: VBoxContainer, text: String, changed: Callable):
 	row.add_child(label)
 	var toggle = MenuSwitch.new()
 	toggle.toggled.connect(changed)
-	toggle.toggled.connect(func(_on): _c.sound.ui.play("ui_click") if _c.sound != null else null)
+	toggle.toggled.connect(func(_on: bool) -> void:
+		if _c.sound != null:
+			_c.sound.ui.play("ui_click"))
 	row.add_child(toggle)
 	parent.add_child(row)
 	return toggle
