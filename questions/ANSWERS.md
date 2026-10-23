@@ -904,3 +904,7 @@ Answered: 2026-10-23 01:31 UTC
 Answer: Yes
 Answered: 2026-10-23 01:31 UTC
 
+## cost-door-wrought | Wrought iron door = 6 iron ingots + 4 lumber + 20 nails?
+Answer: No: It’s probably six iron ingots for lumber and 100 nails
+Answered: 2026-10-23 01:32 UTC
+
