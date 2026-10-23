@@ -55,10 +55,6 @@ Note: At 5 or fewer left it turns back into loose rocks.
 Note: Tyler recommends Yes because it is quick for one rock and for a lot, and matches the rock pile item Sal built.
 [check]
 
-## cavein-death-next | Then everything fades out slowly and you fade in on the inheritance or character creation screen, and this long sequence is only for cave-ins (other deaths keep the simple screen)?
-Note: Tyler recommends Yes because it gives cave-ins their own moment without slowing down every death, and we can add the sequence to other deaths later if you like it.
-[check]
-
 ## lake-hide-water | Please test: hide the water and see what stays. Look for: do the grey shapes and dark squares STAY when the water is hidden?
 Note: 1. Go to x 52392, z 69477 (or x 53786, z 69256) where the water surface flickers.
 Note: 2. Press Ctrl+Shift+W (hides every river and lake drawing).
