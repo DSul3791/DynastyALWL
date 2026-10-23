@@ -840,3 +840,7 @@ Answered: 2026-10-23 01:22 UTC
 Answer: No: I think players can put sand, soil or stone anywhere they want to all the way to the sky until they run out of oxygen. If this becomes a problem in the future, we will handle it then, but I can also see how if placing sand on an unstable foundation could cause it to spread out or slide down. Obviously you couldn’t put something like sand or dirt on a steep slope but if you keep throwing sand in a hole, it will fill it up eventually while spreading out into the whole kind of like water the way sand does. I’m not sure how we want to handle that dirt might just be handle like a normal voxel we should have Tyler review that and come up with the best practice
 Answered: 2026-10-23 01:26 UTC
 
+## island-slope | Does loose soil and sand slope away under water while rock and stone hold their shape (so a sand island needs rock edges)?
+Answer: Yes
+Answered: 2026-10-23 01:26 UTC
+
