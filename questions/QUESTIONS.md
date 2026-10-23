@@ -8,9 +8,6 @@ Note: 6. Optional: place a timber prop near the roof before the time runs out. T
 Note: 7. Take a picture of the shaking and dust. Write in Notes what happened, yes or no.
 [test]
 
-## pier-bed | May a pier cell (pillar or foundation) sit on the sea bed under up to 0.5 m of water?
-[check]
-
 ## fill-stone | Is the spade fill with stone enough for bulk rock, with no separate rock-pile item?
 [check]
 
