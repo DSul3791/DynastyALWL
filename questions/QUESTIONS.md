@@ -1,50 +1,11 @@
-## block-hand | Please test the chopping block in your hand. Look for: same model as the placed one, but smaller in hand.
-Note: 1. Give yourself a chopping block (admin menu).
-Note: 2. Hold it in first person: it should fit the hand and not be cut off at the screen edge.
-Note: 3. Drop it, then place another next to it. Compare the three.
-[test]
 
-## hoe-spade-row | Please take a picture of the 4 hoes and 3 spade sizes in one row, at x 53301, z 68427.
-Note: 1. Give yourself a wooden, stone, iron and steel hoe and the small, medium and large spade.
-Note: 2. Drop all seven in one row on the ground at the spawn.
-Note: 3. Take a picture from about 2 m away.
-[picture]
 
-## axe-bucket | Please take a picture of a stone axe and a bucket on the ground, at x 53301, z 68427.
-Note: 1. Drop a stone axe and a bucket side by side.
-Note: 2. The axe should look like a wedge, the bucket light wood with dark hoops.
-[picture]
 
-## hoe-hold | Please test the hoe: hold the left mouse button with a wooden hoe and walk forward on grass. Look for: a continuous line of flat tan path patches.
-Note: 1. Hold the wooden hoe.
-Note: 2. Hold the LEFT mouse button and walk forward on grass.
-Note: 3. Then hold the RIGHT button on a rough strip to smooth it. It should get smoother, the hoe should wear only when ground moves, and "This ground is worked enough." shows when it refuses.
-[test]
 
-## collapse-natural | Please test a natural cave. Look for: no shaking and no collapse.
-Note: 1. Walk into a natural cave you did not dig.
-Note: 2. Stay 10 minutes (do something else nearby).
-[test]
 
-## collapse-prop | Please test a timber prop. Look for: the shaking stops within 5 m of the prop.
-Note: 1. Dig a tunnel about 2 m wide and wait for the shaking to start (use cave-in time 2 min).
-Note: 2. Place a timber prop 3 m from the roof.
-Note: 3. Shaking should stop near it (7.5 m for a timber set).
-[test]
 
-## ladder | Please test a ladder. Look for: it climbs, comes down, lets go backwards and steps you onto the top edge.
-Note: 1. Place a ladder against a wall and face it.
-Note: 2. Hold W to climb, then S to come down, Space to let go backwards.
-Note: 3. Climb to the top and hold W: you step onto the edge.
-[test]
 
-## admin-craft-test | Please test free crafting as admin. Look for: crafting works with an empty pack while Admin mode is on, and normal rules come back when it is off.
-Note: 1. Pull build 697 and close the game fully, then start it. The HUD should say 697.
-Note: 2. Esc > Admin: the switch "Admin mode (crafting is free)" should be green (On).
-Note: 3. With an empty pack, open the crafting list and craft an iron pickaxe or a forge recipe. It should craft with no ingredients.
-Note: 4. Select a recipe and press E: one item should be crafted.
-Note: 5. Switch Admin mode Off (red). Crafting an iron pickaxe with an empty pack should now be refused.
-[test]
+
 
 ## hotbar-move | Is this how the hotbar should work: a tool dragged onto the hotbar MOVES there and leaves the pack grid (the hotbar is extra holding slots, not a copy, and it still counts for weight), and E over a hotbar slot with the inventory window open puts it back in the first free pack slot?
 Note: Tyler recommends Yes because it already matches what you described, so nothing needs changing.
@@ -100,12 +61,4 @@ Note: This is your own rule from your answer. Tyler's suggestion to make it work
 Note: Tyler recommends Yes because it needs no extra rule beyond catchment and rain, and the stripe ponds from terrace steps disappear because they catch almost no rain.
 [check]
 
-## reset-edits-test | Please test Reset all terrain edits. Look for: the holes you dug are gone after the reload, with no errors.
-Note: 0. The evidence copy of your dry river now exists, so the reset is safe to test (MikeW copied it first).
-Note: 1. WARNING: this wipes ALL your digs and fills on the server (collapse rubble too). Inventories, characters, buildings, plants, dropped items and tree stumps stay. A backup is taken first by MikeW; do not test before it is done.
-Note: 2. Pull build 698, close the game fully, start it. The HUD should say 698.
-Note: 3. Dig a hole and fill a bit.
-Note: 4. Esc > Admin > Reset all terrain edits, then confirm on the page (Yes).
-Note: 5. After the reload, the holes and fills should be gone and the ground back as baked. Write any errors in Notes.
-[test]
 

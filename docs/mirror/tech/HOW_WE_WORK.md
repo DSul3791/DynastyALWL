@@ -58,3 +58,4 @@ If you are blocked or would wait too long, start the next thing on your list at 
 - Dave: "qa is my todo list and thats what i check regularly": anything that needs Dave must be a card on the QA page with the exact action in numbered point form.
 - Looking tests (BP-T45): ask for a row in the admin showroom at spawn (x 53301 z 68427, grass cleared, Admin mode switch) instead of asking Dave to craft or hunt. Test cards say "go to the spawn showroom, row N".
 - BP-T45 clarification: pictures on the QA page are always fine; the showroom is for in-game tests and looks.
+- BP-T46: the team tests first (headless, look rig, showroom, second clone); only human-judgment tests go to Dave. See tech/TEAM_TESTS.md.
