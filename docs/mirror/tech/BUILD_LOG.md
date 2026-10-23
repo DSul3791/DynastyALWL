@@ -470,3 +470,4 @@ Each active thread holds its current number plus ONE spare, handed out in advanc
 - 17:30 UTC 23 Oct Guru_003: MERGED 747: tyler-untrack-crash (18 old crash_reports files untracked with git rm --cached; a Pull deletes them from Dave's folder; README stays). Head = 747. CHANGE_LABEL=RUNTIME
 - 17:50 UTC 23 Oct Guru_003: MERGED 748: steve-rig-flora (look rig keeps shrubs, RUNTIME, rig only) and sal-002 (rock pile per-kind data, RESTART: close the game fully after Pull). Head = 748.
 - 18:25 UTC 23 Oct Guru_003: MERGED 749: steve-rig-flora (3 more rig-only commits, RUNTIME) and kathleen-wolf-howl (Kathleen handoff 001 docs). Head = 749. sal-002 was already in 748.
+- 18:55 UTC 23 Oct Guru_003: MERGED 750: steve-dry-river (Dump water here also writes the client water view; admin only, RUNTIME). Head = 750. Docs: TEAM_AND_RULES.md, BP-T50.
