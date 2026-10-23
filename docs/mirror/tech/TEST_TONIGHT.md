@@ -1,4 +1,4 @@
-# Things to test tonight (Guru, built 2026-10-23 00:30, head = build 687)
+# Things to test tonight (Guru, built 2026-10-23 00:30, head = build 693)
 
 Dave tests ONLY after goodnight and the backup (BP-T40). Before testing: 1. Pull. 2. Close the game fully (server restarts). 3. Start it and check the HUD says the head build (687 or higher). Each line below becomes one Yes/No card with a Why-not box.
 
@@ -39,3 +39,16 @@ S9. Braces: a prop (5 m) or timber set (7.5 m) stops the collapse timer within i
 - Kathleen: new place sounds (place_stone, place_brick, place_thatch) and shovel soil/stone-load sounds are not merged (sound listen later); tier pieces (walls, floors, roofs, doors, ceilings, braces) are drawings only; nothing to test in the game until built.
 - Sal: blueprint building (mallet, ghosts, foundations, pillars) not built.
 - Sonny: ground rework BAKE-1 prototype on MikeW's PC; Dave only decides on the 9-tile bake.
+
+## NEXT NIGHT test lines for merged branches (Guru 04:35 UTC 23 Oct, build 700)
+- T | Please test: craft a rock pile from 45 stones, set it down, press E. Look for: 45 stones back in the pack; hold E instead and you carry the pile. (sal-rock-pile, item 235)
+- T | Please test: dig a tunnel in rock off the beach and go under the sea until the ceiling is within about 4 m of the water above (or under a lake or river). Look for: drips, a dark wet patch under each, nothing collecting, no drips more than 4 m under the water. (steve-drip, protocol 73)
+- T | Please test: hold a torch in a cave. Look for: quiet soft crackle, no loud echo. (kathleen-torch-rain)
+- T | Please test: stand in open rain, then under a roof. Look for: no sharp clack in the open, clacky rain only under the roof. (kathleen-torch-rain)
+- T | Please test: dig a cave, set the cave-in timer to 2 minutes. Look for: rumbling after the quiet part and the fall about 2 minutes later (or 90 s after the change if already past). (steve-cave-in-setting)
+- T | Please test: craft with Admin mode on, then off (Esc > Admin). Look for: free crafting when on, normal rules when off; E on a recipe crafts one. (admin craft)
+- T | Please test: Esc > Admin > Reset all terrain edits, confirm. Look for: dug holes gone after reload, no errors. Backup first. (steve-reset-edits)
+- T | Please test: throw a log on the ground and chop it with an axe; put a block on the chopping block. Look for: 4 blocks from a pack log (12 from a shoulder log), 1 firewood beside the block per split. (sal-wooden-blocks)
+- T | Please test: cut an oak, then a birch. Look for: log colours (oak grey-brown, birch pale), shoulder log centred. (kathleen-log-looks)
+- T | Please test: hold the left mouse with a wooden hoe and walk on grass. Look for: a line of flat tan path patches. (sal-hoe-hold)
+- T | Please test: Esc > Settings > Sound test and walk on wet tunnel floor. Look for: wet footsteps and drips once steve-drip drives them. (kathleen-wet; sounds exist, only heard when the drip effect calls them)

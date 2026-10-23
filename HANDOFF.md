@@ -1,3 +1,11 @@
+# TOMORROW (written by the Guru 04:35 UTC 23 Oct; head = build 700, MikeW full check + backup pending)
+FIRST 3 JOBS:
+1. MikeW: full local_check + headless load on build 700 (nothing was run in Godot in the cloud; expect warnings 233; check the rock_pile item number 235 and protocol 73), then the backup after Dave closes the game and hidden server. Dave then pulls ("Pull, close the game fully, HUD says 700, starts and plays").
+2. Steve: floating mined soil/rock fix, then pile merge/split (rock pile server side, ground limit), then cave-in death sequence, off-hand B block, loose-fill slide (settling simulation). Sal: rock pile counts/pickup, shoulder log (go, no card needed), blueprint build step 1. Kathleen: sand run level, TTS voice lines, skull art, raspberry bush, pile look. Sonny: water surface flicker (texture/layering, not depth), 1-tile BAKE-1 test for terrain B with MikeW.
+3. Guru: untrack crash_reports (git rm --cached, .gitignore), sweep Dave's answers, post the next night's test cards from TEST_TONIGHT.md.
+OPEN CARDS on Dave's page: 10 original tests/pictures still unanswered (block-hand, hoe-spade-row, axe-bucket, hoe-hold, collapse-natural, collapse-prop, ladder; some answered tonight) plus design cards (species-uses 1-4, wood chain, tree logs, admin-craft-test, reset-edits-test, hotbar-move, lake-rule-2, esc-character done).
+Test lines for the NEXT night are in tech/TEST_TONIGHT.md (written 04:35).
+
 # Project handoff (rewritten 2026-10-22 by the Technical Director; short on purpose)
 
 Read this first. About 10 KB. All older detail is kept, unchanged, in `docs/archive/HANDOFF_FULL_2026-10-22.md` (index at the bottom of this file). Rules and decisions live in the project files `tech/` folder (`/mnt/project-files/tech/`): **BEST_PRACTICES.md (read first, daily), PROCESS.md, DECISIONS.md, JOBS.md, BUILD_LOG.md, TEST_QUEUE.md**.
