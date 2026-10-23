@@ -8,15 +8,6 @@
 
 
 
-## dry-river-dump | Dry river: dump the live water at the dry spot (build 703)
-Note: 1. Pull and restart so you are on build 703 (HUD top left shows 703).
-Note: 2. Fly to x 51603, z 69331 (the dry river strip).
-Note: 3. Press Esc, open Admin, press Dump water here.
-Note: 4. Tell Tyler 'dump done' (the file is written to the store; the team reads it, you do not have to open it).
-Note: 5. Answer Yes if the dump button worked, No if it did not, with Notes.
-Note: Recommendation: Yes: it is one button and gives the exact live water cells, which is the proof we need to fix the dry middle.
-[test]
-
 ## test-floating-soil | Mined soil lies in the hole
 Note: 1. Fill your pack with soil or stone until it is full. 2. Dig down under your own feet. 3. Look at the dug soil: does it lie in the hole (not float in the air)? Build 711 or newer.
 Note: Tyler recommends: Yes if it lies on the ground, because Steve's fix and unit tests pass but the rig cannot dig, so only you can check it in game.
