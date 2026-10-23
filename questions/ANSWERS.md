@@ -1078,3 +1078,7 @@ Answered: 2026-10-23 04:13 UTC
 Answer: Yes
 Answered: 2026-10-23 04:14 UTC
 
+## lake-low-quality | Please test: set quality to Low and see what happens. Look for: do the grey shapes and dark squares VANISH on Low?
+Answer: No: They don’t vanish they just get darker but they keep switching
+Answered: 2026-10-23 04:14 UTC
+
