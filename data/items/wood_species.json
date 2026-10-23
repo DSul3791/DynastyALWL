@@ -1,5 +1,9 @@
 {
 	"note": "Wood species uses v1 (Dave 2026-10-23, tech/items/TREE_SPECIES_USES_V1.md). class: hardwood burns long and makes fine boards; softwood burns fast and makes plank boards, pillars and beams. burn 1-5 (firewood). hits_to_fell is a reference: the server already derives hits from trunk thickness (thin hardwood fewer, thick softwood more); axe wear per hit is the same for every species. Foundations ignore the rot rules. Species not listed use hardwood defaults.",
+	"class_items": {
+		"hardwood": {"firewood": "firewood", "block": "wooden_block"},
+		"softwood": {"firewood": "firewood_soft", "block": "wooden_block_soft"}
+	},
 	"default": {
 		"class": "hardwood",
 		"burn": 4,

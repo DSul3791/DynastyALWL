@@ -51,12 +51,14 @@
 		"stick": 120.0,
 		"log": 7200.0,
 		"firewood": 1800.0,
+		"firewood_soft": 900.0,
 		"driftwood": 900.0
 	},
 	"start_burn_game_s": 2400.0,
 	"max_burn_game_s": 43200.0,
 	"fuel_order": [
 		"firewood",
+		"firewood_soft",
 		"driftwood",
 		"stick",
 		"log"
