@@ -656,3 +656,7 @@ Answered: 2026-10-23 00:44 UTC
 Answer: Yes
 Answered: 2026-10-23 00:44 UTC
 
+## cost-6 | Wall, Mason: 60 stone blocks and 12 mortar?
+Answer: Yes
+Answered: 2026-10-23 00:44 UTC
+
