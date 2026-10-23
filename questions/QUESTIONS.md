@@ -50,12 +50,6 @@ Note: Tyler checked: nothing in the game uses the B key today, so there is no cl
 Note: Tyler recommends Yes because it matches what you described and B is free. Steve builds the input and left-hand slot, Sal marks which items can go in the left hand, Kathleen does the hand pose. It is tomorrow's work, not tonight's.
 [check]
 
-## rockpile-merge | Should rocks dropped within 1 m of each other join into one pile (same kind only, never tools), and does this fix the limit on items on the ground?
-Note: Up to 5 they look like loose rocks, 6 or more become a pyramid pile made from the count (1 on top, 3 under, 5 under that...). One pile counts as one item, so the limit of 64 is no longer hit.
-Note: Full design: tech/items/ROCK_PILE_DESIGN.md.
-Note: Tyler recommends Yes because it removes the limit, adds no lag, and costs almost no save space (one entry per pile).
-[check]
-
 ## rockpile-take | Taking from a pile: press E to take a handful (about 5), hold E to take as many as you can carry, and the pile shrinks row by row?
 Note: At 5 or fewer left it turns back into loose rocks.
 Note: Tyler recommends Yes because it is quick for one rock and for a lot, and matches the rock pile item Sal built.
