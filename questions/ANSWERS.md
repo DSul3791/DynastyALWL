@@ -1186,3 +1186,7 @@ Answered: 2026-10-23 10:28 UTC
 Answer: Yes
 Answered: 2026-10-23 10:29 UTC
 
+## kath-log-carry | Is the carried log centred on your shoulder now?
+Answer: No: You should be able to test this I am not at my computer
+Answered: 2026-10-23 10:29 UTC
+
