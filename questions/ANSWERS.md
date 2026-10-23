@@ -960,3 +960,7 @@ Answered: 2026-10-23 01:38 UTC
 Answer: Yes
 Answered: 2026-10-23 01:38 UTC
 
+## wet-sounds | Should drips plink with sound from each drip point, more often the closer you are to the water, plus a soft trickle loop in the running stage?
+Answer: Yes
+Answered: 2026-10-23 01:38 UTC
+
