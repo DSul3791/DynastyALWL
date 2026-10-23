@@ -712,3 +712,7 @@ Answered: 2026-10-23 00:48 UTC
 Answer: Yes
 Answered: 2026-10-23 00:48 UTC
 
+## cost-18 | Small foundation 2x2: 40 stone and 12 clay?
+Answer: No: Depending on the tier of material
+Answered: 2026-10-23 00:49 UTC
+
