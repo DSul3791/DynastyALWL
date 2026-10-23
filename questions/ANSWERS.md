@@ -876,3 +876,7 @@ Answered: 2026-10-23 01:29 UTC
 Answer: Yes
 Answered: 2026-10-23 01:29 UTC
 
+## esc-character | Esc menu: should Character open the Tab screen from the menu? (You answered No without a reason earlier; tell me why in the Why-not box.)
+Answer: No: No, because characters can’t do anything from the escape menu that’s a player menu only
+Answered: 2026-10-23 01:30 UTC
+
