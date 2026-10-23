@@ -348,8 +348,8 @@ func _ready() -> void:
 	items.setup(ItemTableScript.load_default(), store_dir)
 	admin = AdminScript.new()
 	admin.load_keys(["res://data/admin.json", store_dir + "/admin.json"])
-	@warning_ignore("confusable_local_declaration")
 	items.reset_terrain_edits = _reset_terrain_edits
+	@warning_ignore("confusable_local_declaration")
 	items.admin_ok = func(peer: int) -> bool: return admin.is_admin(items.key_of(peer))
 	admin.open_to_all = OS.get_cmdline_user_args().has("--open-admin")
 	npcs = NpcsScript.new()
