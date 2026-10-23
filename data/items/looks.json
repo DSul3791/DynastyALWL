@@ -891,49 +891,49 @@
    "size": 1.2
   },
   "rough_plank": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
+   "shape": "planks",
+   "color": "#a8875a",
    "size": 1.0
   },
   "fine_board": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
+   "shape": "planks",
+   "color": "#d4b57a",
    "size": 1.0
   },
   "nails": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
+   "shape": "needle",
+   "color": "#5e6166",
+   "size": 0.5
   },
   "cobblestone": {
    "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
+   "color": "#8b8982",
+   "size": 0.8
   },
   "stone_shingle": {
    "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
+   "color": "#6d7076",
+   "size": 0.7
   },
   "tar": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
+   "shape": "pile",
+   "color": "#1c1814",
+   "size": 0.8
   },
   "hinges": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
+   "shape": "ingot",
+   "color": "#4f5359",
+   "size": 0.45
   },
   "wooden_pin": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
+   "shape": "rod",
+   "color": "#a88255",
+   "size": 0.35
   },
   "wooden_block": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
+   "shape": "block",
+   "color": "#a67c4a",
+   "size": 0.9
   },
   "blackberries": {
    "shape": "berries",
