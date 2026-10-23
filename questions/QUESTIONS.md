@@ -8,9 +8,6 @@ Note: 6. Optional: place a timber prop near the roof before the time runs out. T
 Note: 7. Take a picture of the shaking and dust. Write in Notes what happened, yes or no.
 [test]
 
-## wet-floor | Should the wet floor look dark and glossy under and between the drips, with no puddles and no standing water?
-[check]
-
 ## wet-steps | Should footsteps on the wet floor make a small splash and squelch?
 [check]
 
