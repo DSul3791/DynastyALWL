@@ -732,3 +732,7 @@ Answered: 2026-10-23 00:50 UTC
 Answer: No: Look at my previous answer
 Answered: 2026-10-23 00:50 UTC
 
+## cost-20 | Large foundation 2x2: 120 stone, 40 clay and 16 mortar?
+Answer: No: Look at my previous answer
+Answered: 2026-10-23 00:51 UTC
+
