@@ -27,12 +27,6 @@ Note: 2. Click on the ground.
 Note: 3. Small spade should use 1 piece per click, medium 4, large 8.
 [test]
 
-## collapse-switch | Please test the tunnel collapse switch. Look for: green On, red Off, no shaking while Off, cave-in time kept after rejoining.
-Note: 1. Esc > Settings > Tunnel collapse: press it Off, then On.
-Note: 2. Press Cave-in time through 2, 5, 10, 20 min.
-Note: 3. Quit and rejoin; the time should still be what you set.
-[test]
-
 ## collapse-natural | Please test a natural cave. Look for: no shaking and no collapse.
 Note: 1. Walk into a natural cave you did not dig.
 Note: 2. Stay 10 minutes (do something else nearby).
@@ -131,7 +125,6 @@ Note: Tyler recommends Yes because the voice (Kokoro) is not built yet, and swap
 ## cavein-death-next | Then everything fades out slowly and you fade in on the inheritance or character creation screen, and this long sequence is only for cave-ins (other deaths keep the simple screen)?
 Note: Tyler recommends Yes because it gives cave-ins their own moment without slowing down every death, and we can add the sequence to other deaths later if you like it.
 [check]
-
 
 ## head-ponds-retire | Should we stop making the round stamped pond at the top of each river, and let lakes and rivers start only where the land has a real catch basin (terrain B), at the next bake?
 Note: Today the round pond at the top of the falls is stamped in by a rule (30 to 70 m wide, 10 to 14 m deep, a flat bench, an outlet brook). That is why it looks like a bowl set into the hillside. Plunge pools and the spill channel are stamped too.
