@@ -880,3 +880,7 @@ Answered: 2026-10-23 01:29 UTC
 Answer: No: No, because characters can’t do anything from the escape menu that’s a player menu only
 Answered: 2026-10-23 01:30 UTC
 
+## cost-cobble-floor | Cobblestone floor = a full wooden floor (8 rough planks + 20 nails) plus 60 cobblestones and 6 mortar?
+Answer: Yes
+Answered: 2026-10-23 01:30 UTC
+
