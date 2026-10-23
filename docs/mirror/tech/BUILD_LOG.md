@@ -488,3 +488,4 @@ Each active thread holds its current number plus ONE spare, handed out in advanc
 - 22:40 UTC 23 Oct Guru_003: MERGED 765: steve-prompt-layout (name above the crosshair, Press E below, no overlap; RUNTIME). Head = 765.
 - 22:50 UTC 23 Oct Guru_003: MERGED 766: sal-berries (drops.json berry_yield per plant, berry stacks 100, weights, spoilage; RESTART data; gather() untouched, Steve's berry-picking branch uses it). Head = 766.
 - 23:00 UTC 23 Oct Guru_003: MERGED 767: kathleen-shrubs2 (TreeBuilder.build takes season and stripped; empty season keeps today's always-fruit look, so no change in game until Steve passes the season; RUNTIME). Head = 767.
+- 23:05 UTC 23 Oct Guru_003: MERGED 768: kathleen-ferns (new leafy_herb model for comfrey, burdock, mugwort, belladonna, henbane; flora.json model lines, RESTART). Textures not yet seen on screen: Mike's next batch must include the 5 herbs + 10 mushrooms. Head = 768.
