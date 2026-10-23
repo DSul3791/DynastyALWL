@@ -307,6 +307,8 @@
 		"hinges": 0.2,
 		"wooden_pin": 0.1,
 		"wooden_block": 3.75,
+		"wooden_block_soft": 3.0,
+		"firewood_soft": 2.8,
 		"rock_pile": 45.0
 	},
 	"by_suffix": {

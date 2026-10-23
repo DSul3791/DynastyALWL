@@ -222,8 +222,9 @@ func _watch_wear(items, inv) -> void:
 func _watch_block(items, counts: Dictionary) -> void:
 	var log_n: int = items.table.number_of("log")
 	var wood_n: int = items.table.number_of("firewood")
+	var soft_n: int = items.table.number_of("firewood_soft")
 
-	if int(counts.get(log_n, 0)) >= int(_counts_by_number.get(log_n, 0)) or int(counts.get(wood_n, 0)) <= int(_counts_by_number.get(wood_n, 0)):
+	if int(counts.get(log_n, 0)) >= int(_counts_by_number.get(log_n, 0)) or (int(counts.get(wood_n, 0)) <= int(_counts_by_number.get(wood_n, 0)) and int(counts.get(soft_n, 0)) <= int(_counts_by_number.get(soft_n, 0))):
 		return
 
 	var here: Vector3 = items._player_position.call()

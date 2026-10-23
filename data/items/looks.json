@@ -930,6 +930,16 @@
    "color": "#a88255",
    "size": 0.35
   },
+  "firewood_soft": {
+   "shape": "bundle",
+   "color": "#b88a58",
+   "size": 1.0
+  },
+  "wooden_block_soft": {
+   "shape": "block",
+   "color": "#c49a62",
+   "size": 0.9
+  },
   "wooden_block": {
    "shape": "block",
    "color": "#a67c4a",

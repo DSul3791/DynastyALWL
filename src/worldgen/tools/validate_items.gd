@@ -139,6 +139,18 @@ func _init() -> void:
 
 	var weights: Dictionary = _read("weights.json")
 
+	# Every wood class names a firewood item and a block item that exist (wood_species.json class_items).
+	var wood_file: Dictionary = _read("wood_species.json")
+
+	for cls in wood_file.get("class_items", {}):
+		for step in ["firewood", "block"]:
+			if not items_file.get("items", {}).has(String(wood_file["class_items"][cls].get(step, ""))):
+				fail("wood_species.json: class %s needs an existing %s item" % [cls, step])
+
+	for sp in wood_file.get("species", {}):
+		if not wood_file.get("class_items", {}).has(String(wood_file["species"][sp].get("class", ""))):
+			fail("wood_species.json: species %s has a class without class_items" % sp)
+
 	for id in items_file.get("items", {}):
 		var item: Dictionary = items_file["items"][id]
 		var description: String = String(item.get("description", ""))
@@ -436,6 +448,11 @@ func _init() -> void:
 
 		if def.has("blocks_per_log"):   # a log struck with an axe falls apart into wooden blocks
 			obtainable["wooden_block"] = true
+
+		if def.has("blocks_per_log"):   # softwood logs give the softwood block and its firewood (wood_species.json class_items)
+			for cls in wood_file.get("class_items", {}):
+				for step in wood_file["class_items"][cls]:
+					obtainable[String(wood_file["class_items"][cls][step])] = true
 
 	# Recipe graph (job 72): every core item is gatherable, craftable from gatherables, or marked "future": true in items.json;
 	# no cycles; dead ends (obtainable materials nothing uses) are listed so Dave can see what still has no purpose.

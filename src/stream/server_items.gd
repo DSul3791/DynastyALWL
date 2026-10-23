@@ -264,6 +264,7 @@ var _flora_by_name: Dictionary = {}   # flora table rows by species name (yields
 var _picked: Dictionary = {}          # "cx,cz,id" -> game seconds when last picked
 var _flights: Array = []            # thrown things in the air: {number, pos, vel, age}
 var _last_throw: Dictionary = {}    # peer -> msec
+var _wood_species: Dictionary = {}   # data/items/wood_species.json: class of each tree species and the firewood and block items of each class
 var _last_dig: Dictionary = {}
 var _grade_points: Dictionary = {}   # peer -> [A, B] ground points of the hoe grade line (Vector3, or null while unset)
 var _last_mine: Dictionary = {}     # peer -> msec
@@ -334,6 +335,8 @@ func setup(item_table, store_dir: String) -> void:
 	_cooking = cooking if typeof(cooking) == TYPE_DICTIONARY else {}
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(DROPS_PATH))
 	_drops = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+	var wood_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/wood_species.json"))
+	_wood_species = wood_parsed if typeof(wood_parsed) == TYPE_DICTIONARY else {}
 	var flora_table: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/tables/flora.json"))
 
 	if typeof(flora_table) == TYPE_DICTIONARY:
@@ -3070,7 +3073,8 @@ func _process_trunk(peer: int, inv, id: int) -> void:
 			give(peer, table.number_of(str(row[0])), roll_amount(peer, rng, int(row[1]), int(row[2])))
 	elif int(tree["logs_left"]) <= 0:   # too short for one whole log: only firewood, kindling and sticks
 		for row in cfg.get("small", []):
-			give(peer, table.number_of(str(row[0])), roll_amount(peer, rng, int(row[1]), int(row[2])))
+			var small_id: String = _wood_item("firewood", str(tree.get("species", ""))) if str(row[0]) == "firewood" else str(row[0])
+			give(peer, table.number_of(small_id), roll_amount(peer, rng, int(row[1]), int(row[2])))
 
 		if blows + 1 >= int(cfg.get("branch_blows", 3)) + int(cfg.get("small_blows", 3)):
 			_items.erase(id)
@@ -3550,6 +3554,9 @@ func _use_struct(peer: int, inv, id: int) -> void:
 	# Dave 2026-10-23: the chopping block splits WOODEN BLOCKS (a log chopped on the ground gives them), one block to one piece of firewood.
 	var block_n: int = table.number_of("wooden_block")
 
+	if not inv.has(block_n, 1) and inv.has(table.number_of("wooden_block_soft"), 1):
+		block_n = table.number_of("wooden_block_soft")   # hardwood blocks go first; a softwood block splits to softwood firewood
+
 	if not _has_tool(inv, "axe"):
 		_say(peer, "You need an axe to split wood.")
 		return
@@ -3560,15 +3567,22 @@ func _use_struct(peer: int, inv, id: int) -> void:
 
 	_last_use[peer] = now
 	inv.remove(block_n, 1)
-	_drop_firewood_beside(it, int(def.get("firewood_per_block", 1)))
+	_drop_firewood_beside(it, int(def.get("firewood_per_block", 1)), "firewood_soft" if block_n == table.number_of("wooden_block_soft") else "firewood")
 	_wear_tool(peer, inv, "axe", "split")
 	practice(peer, "split_log")
 	_dirty = true
 
 
+# The item of a wood chain step ("firewood" or "block") for a tree species: its class (hardwood or softwood, unknown species use the default entry) decides.
+func _wood_item(step: String, species: String) -> String:
+	var info: Dictionary = _wood_species.get("species", {}).get(species, _wood_species.get("default", {}))
+	var items: Dictionary = _wood_species.get("class_items", {}).get(str(info.get("class", "hardwood")), {})
+	return str(items.get(step, "firewood" if step == "firewood" else "wooden_block"))
+
+
 # Split firewood falls beside the chopping block and joins the heap lying there; five or more make a pile (the client draws it).
-func _drop_firewood_beside(block: Dictionary, count: int) -> void:
-	var wood: int = table.number_of("firewood")
+func _drop_firewood_beside(block: Dictionary, count: int, wood_id: String = "firewood") -> void:
+	var wood: int = table.number_of(wood_id)
 	var spot: Vector3 = block["pos"] + Vector3(0.9, 0.0, 0.0)
 
 	for id in _items:
@@ -3613,7 +3627,7 @@ func _chop_loose_log(peer: int, inv, id: int) -> void:
 		_items.erase(id)
 
 	_wear_tool(peer, inv, "axe", "split")
-	drop_in_world(table.number_of("wooden_block"), blocks, it["pos"] + Vector3(0.0, 0.1, 0.0))
+	drop_in_world(table.number_of(_wood_item("block", str(table.entry(item_id).get("species", "")))), blocks, it["pos"] + Vector3(0.0, 0.1, 0.0))
 	practice(peer, "split_log")
 	_dirty = true
 
