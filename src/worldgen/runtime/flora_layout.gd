@@ -6,4 +6,4 @@ extends RefCounted
 # species spacing, a changed seed): the server then clears the old marks at the next start instead of removing the wrong plants.
 # A save from before the stamp existed counts as version 1.
 
-const VERSION := 1
+const VERSION := 2
