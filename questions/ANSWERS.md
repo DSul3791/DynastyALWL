@@ -920,3 +920,7 @@ Answered: 2026-10-23 01:33 UTC
 Answer: Yes
 Answered: 2026-10-23 01:33 UTC
 
+## floor-brace-1 | Floor brace: under the four edges of every 2 x 2 m floor runs one log split in half (flat side up), cut in quarters so the pieces meet the neighbouring walls, ceilings and floors like a sill beam?
+Answer: Yes
+Answered: 2026-10-23 01:33 UTC
+
