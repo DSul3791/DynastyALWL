@@ -143,3 +143,9 @@ Baked tiles for the inner starters and their neighbors (36 files) are in `/mnt/p
 - (LIFTED 04:40: evidence copy exists at E:\Software\godotDev\DynastyALWL_Evidence\2026-10-23_dry_river\; digs.dat has no edits within 30 m of the dry spot) DO NOT RESET TERRAIN EDITS YET (Dave's dry river channel x 51605-51610, z 69289-69364 is evidence): MikeW copies digs.dat and the water folder to a dated folder; only after Guru confirms the copy exists may Dave press Esc > Admin > Reset all terrain edits. Card reset-edits-test says so.
 - UNMERGED BRANCHES (left on purpose, 04:40): kathleen-spades, kathleen-materials, kathleen-shovel (superseded), steve-warning-699 (duplicate), project-thread-sp0ppw (old). Everything else is in head 701.
 - BACKUP: tonight (22/23 Oct) already done per Dave; no further backup requested after later merges unless Dave asks. MikeW: first job tomorrow is only the build 701 recheck.
+
+## BAKE SCHEDULE (Guru owns; BP-T31 amended 2026-10-23; nobody bakes alone)
+- Rule: full tile rebuilds need no permission from Dave. One bake for everyone who needs it; occasional; tile copy outside the repo first; MikeW runs it on Dave's PC; never commit tiles; Sonny re-settles water after; then a QA card tells Dave: 1. Fetch origin and Pull. 2. Esc > Advanced > Clear blocks. 3. Close the game fully, start it.
+- Queue (who wants a full rebuild, why): (1) Sonny: terrain B drainage ON + stamped head ponds retired (card head-ponds-retire answered Yes) , waits on the 1-tile BAKE-1 test with MikeW first. (2) any other thread: ask the Guru.
+- Next slot: after BAKE-1 test result and Kathleen/Dave look at the first natural basin result; not before.
+- Done so far: tiles b1fb0c9, TERRAIN_VERSION 25 (22:55 UTC 22 Oct).
