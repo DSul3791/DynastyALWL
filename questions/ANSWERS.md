@@ -1074,3 +1074,7 @@ Answered: 2026-10-23 04:13 UTC
 Answer: No: Use your voice to text generator to come up with something fun
 Answered: 2026-10-23 04:13 UTC
 
+## head-ponds-retire | Should we stop making the round stamped pond at the top of each river, and let lakes and rivers start only where the land has a real catch basin (terrain B), at the next bake?
+Answer: Yes
+Answered: 2026-10-23 04:14 UTC
+
