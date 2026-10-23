@@ -1266,3 +1266,7 @@ Answered: 2026-10-23 19:25 UTC
 Answer: Yes
 Answered: 2026-10-23 19:26 UTC
 
+## kath-raspberry-rig-3 | Does this look like a real raspberry bush? (picture shown)
+Answer: Yes: Not bad, but it needs a lot more stems and way more leaves so it should look like a full bush
+Answered: 2026-10-23 20:33 UTC
+
