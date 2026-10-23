@@ -76,9 +76,3 @@ Note: 1. Open Esc > Settings > Sound test.
 Note: 2. Press the fire sounds one by one.
 [test]
 
-## esc-menu-opens | Please test: in game press Esc. Look for: the menu opens with Resume, Settings, Controls, Quit and Admin at the bottom; press Esc again and it closes.
-Note: 1. Start the game and walk around.
-Note: 2. Press Esc. The menu should open with Resume, Settings, Controls, Quit and Admin at the bottom.
-Note: 3. Click Settings: Display, Sound and Gameplay pages should open.
-Note: 4. Press Esc again: the menu closes and you can move.
-[test]
