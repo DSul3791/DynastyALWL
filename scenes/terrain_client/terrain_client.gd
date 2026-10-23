@@ -211,14 +211,11 @@ var test_start: Vector3 = Vector3.INF   # --start=x,y,z: put the player there (t
 var _test_probe_msec: int = 0
 var test_dump: bool = false           # --dump-test: 14 s after the welcome dump the ground under the feet (prints the dump)
 var _test_dump_done: bool = false
-<<<<<<< HEAD
 var tunnel_on: bool = false               # the server's tunnel collapse switch (admins change it in Esc > Settings)
 var tunnel_cave_in_s: int = 1200
 var _tunnel_button: Button
 var _cave_in_button: Button
-=======
 var _vsync_button: Button
->>>>>>> o/steve-vsync-label
 var quake_view = QuakeViewScript.new()        # shake, dust and notices while a tunnel is failing (quake_view.gd)
 var ladder = LadderClimbScript.new()          # holding on to a placed ladder (ladder_climb.gd)
 var ground_debug = GroundDebugScript.new()    # ground dump, ground self-check, hole probe (ground_debug.gd)
@@ -2215,17 +2212,13 @@ func _build_menu(layer: CanvasLayer) -> void:
 	_menu_button(settings, "Debug details (F3): on or off", func():
 		debug_hud.enabled = not debug_hud.enabled
 		_menu_note.text = "Debug details %s" % ("on" if debug_hud.enabled else "off"))
-<<<<<<< HEAD
 	_tunnel_button = _menu_button(settings, "Tunnel collapse", func():
 		net.tunnel_setting.rpc_id(1, not tunnel_on, tunnel_cave_in_s))
 	_cave_in_button = _menu_button(settings, "Cave-in time", func():
 		var steps: Array = [120, 300, 600, 1200]
 		net.tunnel_setting.rpc_id(1, tunnel_on, steps[(steps.find(tunnel_cave_in_s) + 1) % steps.size()]))
 	_show_tunnel_buttons()
-	_menu_button(settings, "VSync: change", func():
-=======
 	_vsync_button = _menu_button(settings, "VSync", func():
->>>>>>> o/steve-vsync-label
 		display.vsync_index = (display.vsync_index + 1) % display.VSYNC_MODES.size()
 		display.apply(get_window())
 		_save_display()
@@ -3212,7 +3205,6 @@ func _move_player(delta: float) -> void:
 	_update_underwater()
 
 
-<<<<<<< HEAD
 # The two tunnel collapse buttons in Esc > Settings show the server's settings: On in green or Off in red, and the cave-in time.
 func _show_tunnel_buttons() -> void:
 	if _tunnel_button == null:
@@ -3221,7 +3213,8 @@ func _show_tunnel_buttons() -> void:
 	_tunnel_button.text = "Tunnel collapse: %s (admin)" % ("On" if tunnel_on else "Off")
 	_tunnel_button.add_theme_color_override("font_color", Color(0.45, 0.9, 0.45) if tunnel_on else Color(0.95, 0.4, 0.4))
 	_cave_in_button.text = "Cave-in time: %d min (change)" % (tunnel_cave_in_s / 60)
-=======
+
+
 # The VSync button shows its state, kept between sessions (display_settings.gd): On in green, Adaptive in amber, Off in red.
 func _show_vsync_button() -> void:
 	if _vsync_button == null:
@@ -3230,7 +3223,6 @@ func _show_vsync_button() -> void:
 	var mode: int = display.vsync_index
 	_vsync_button.text = "VSync: %s (change)" % display.VSYNC_NAMES[mode].capitalize()
 	_vsync_button.add_theme_color_override("font_color", [Color(0.45, 0.9, 0.45), Color(0.95, 0.8, 0.35), Color(0.95, 0.4, 0.4)][mode])
->>>>>>> o/steve-vsync-label
 
 
 # On a placed ladder (ladder_climb.gd): W climbs, S descends, Space lets go. True while holding on (that frame does no walking).
