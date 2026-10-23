@@ -1118,3 +1118,7 @@ Answered: 2026-10-23 10:10 UTC
 Answer: No: Yes but it gives 2 firewood which is split wood
 Answered: 2026-10-23 10:11 UTC
 
+## blocks-from-log | A log from your pack, dropped on the ground and chopped with an axe, gives 4 wooden blocks (about 0.3 m long, 3.75 kg each)?
+Answer: No: No, there’s only one type of log. There is no pack log. The log in your backpack is just symbolic of the log on your shoulder. They are connected. If you dropped the log out of your shoulder, the pack log is gone too.
+Answered: 2026-10-23 10:13 UTC
+
