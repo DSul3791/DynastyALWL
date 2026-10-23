@@ -26,3 +26,8 @@ Note: Recommendation: Yes, these are the simple accurate shapes; I will fine tun
 Note: 1. After Tyler merges the wolf-howl branch and you press Pull, open the folder questions\audio in your project folder. 2. Play wolf_howl_0_OLD.ogg (the one you disliked), then wolf_howl_0_NEW.ogg. 3. Answer Yes if NEW sounds closer to a wolf (even if not good enough), No if it is still fake; add what is wrong in Notes. Real clips will replace both either way.
 Note: Recommendation: Keep NEW only as a placeholder until real wolf clips arrive, because synthesis cannot be trusted to sound like a real wolf and I cannot listen to it myself.
 [test]
+
+## kath-wolf-real-clips | Do the real wolf howl recordings (clip A and clip B) sound like a wolf?
+Note: 1. After Pull, open the folder questions\audio in your project folder. 2. Play wolf_clip_A_universfield.ogg and wolf_clip_B_freesound.ogg (these two are what the game will use). 3. Spares if you dislike them: wolf_spare_02 and wolf_spare_04 (04 is titled haunting and may have echo). Answer Yes if A and B are good enough to keep, No if not, and say which clip is the problem.
+Note: Recommendation: Yes, keep A and B because they are real recordings, clean (noise floor at or below -70 dB, no clipping) and each is a single howl; I could not listen myself, so your ear decides.
+[check]
