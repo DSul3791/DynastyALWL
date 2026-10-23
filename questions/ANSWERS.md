@@ -1250,3 +1250,7 @@ Answered: 2026-10-23 19:07 UTC
 Answer: No: This is all stuff you can do
 Answered: 2026-10-23 19:08 UTC
 
+## kath-raspberry-rig | Does this look like a real raspberry bush?
+Answer: No: You didn’t provide a picture
+Answered: 2026-10-23 19:08 UTC
+
