@@ -2,10 +2,6 @@
 Image: questions/img/tiers_doors_r3.png
 [check]
 
-## door-steel-r3 | Is the steel and iron door right now: steel panels, steel handle, no black crossband?
-Image: questions/img/tiers_doors_r3.png
-[check]
-
 ## ceilings-six | Do the six ceiling looks (pole rafters and straw, rough planks, planed boards, log joists, heavy beams, coffered stone) look right?
 Image: questions/img/tiers_ceilings_r3.png
 [check]
