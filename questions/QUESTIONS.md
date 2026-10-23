@@ -1,7 +1,3 @@
-## cost-7 | Floor or ceiling (2 m x 2 m), Basic: 12 twine, 30 thatch, 8 sticks?
-Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
-[check]
-
 ## cost-8 | Floor or ceiling, Plank: 8 rough planks and 20 nails?
 Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
 [check]
