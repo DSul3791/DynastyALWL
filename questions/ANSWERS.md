@@ -1007,3 +1007,7 @@ Answered: 2026-10-23 03:37 UTC
 ## lake-chunks-pic | Please take a picture of the lake water surface flickering between textures, with the F3 text showing your x, z.
 Answer: Picture taken: Dave sent screenshots in chat and said "they are the water surface just rapidly changing textures for some reason". (Answered in chat 03:20 UTC; Guru removed the card at his request 04:10 UTC.)
 Answered: 2026-10-23 04:10 UTC
+## collapse-switch | Please test the tunnel collapse switch. Look for: green On, red Off, no shaking while Off, cave-in time kept after rejoining.
+Answer: No: Caven time is not working for sure. It seems to be hard set.
+Answered: 2026-10-23 04:05 UTC
+
