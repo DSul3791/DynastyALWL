@@ -860,3 +860,7 @@ Answered: 2026-10-23 01:26 UTC
 Answer: Yes
 Answered: 2026-10-23 01:27 UTC
 
+## ceilings-r4 | Do the six ceilings look right now: log = wide boards on top with rounded undersides, fine boards full length with no strips, cobblestone looks like cobblestone, mason unchanged?
+Answer: No: Yes, but I wanna make sure that the log ceiling should look like that on the bottom but on the top, it should look exactly the same as the fine boards, except the boards are twice as wide
+Answered: 2026-10-23 01:27 UTC
+
