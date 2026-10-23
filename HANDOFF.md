@@ -1,6 +1,7 @@
 # BP-T44 (Dave 04:37): NOBODY IS EVER STUCK. Blocked or long wait = start the next item on your list now. If you truly need Dave, ask the Guru (via the coordinator) to post a QA card with the exact need and your meanwhile plan; permission prompts in your window are not enough. A super productive day. Dave: "qa is my todo list and thats what i check regularly": anything he must do or decide is a QA card with exact numbered steps.
 
 # TOMORROW (written by the Guru 04:35 UTC 23 Oct; head = build 700, MikeW full check + backup pending)
+SHOWROOM (BP-T45, Dave 04:43): Steve builds an admin showroom at spawn (rows of items on the ground, grass cleared, hooked to the Admin mode switch); Sal item rows, Kathleen look rows (4 shovels, hoes, axe, bucket...). Test cards then say "go to the spawn showroom, row N". Existing look cards (hoe-spade-row, axe-bucket) become showroom rows.
 FIRST 3 JOBS (final, Dave done 04:34; head = 701 after MikeW recheck):
 0. WATER FIRST: dry river channel x 51605-51610, z 69289-69364 (not Dave's digs): Sonny + Steve check the sim state with the evidence copy. Then: clear dropped items + cave-in timer retest (Steve), Kathleen plant audit (simple accurate models). Water research (tech/WATER_OPTIONS_RESEARCH.md) is Guru, tomorrow.
 1. MikeW: full local_check + headless load on build 700 (nothing was run in Godot in the cloud; expect warnings 233; check the rock_pile item number 235 and protocol 73), then the backup after Dave closes the game and hidden server. Dave then pulls ("Pull, close the game fully, HUD says 700, starts and plays").
