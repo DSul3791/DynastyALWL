@@ -568,3 +568,7 @@ Answered: 2026-10-23 00:08 UTC
 Answer: Yes
 Answered: 2026-10-23 00:09 UTC
 
+## door-steel-r3 | Is the steel and iron door right now: steel panels, steel handle, no black crossband?
+Answer: Yes
+Answered: 2026-10-23 00:09 UTC
+
