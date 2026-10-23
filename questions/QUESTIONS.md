@@ -23,13 +23,7 @@ Note: 1. After Pull, open the folder questions\audio. 2. Play deer_clip.ogg, hor
 Note: Recommendation: Yes, keep them because they are real recordings with almost no background noise; the deer grunt is short (under 2 seconds), which suits a grunt.
 [check]
 
-## kath-moose-standin | Use an elk bugle as the moose call for now?
-Note: 1. After Pull, open the folder questions\audio and play moose_standin_elk_bugle.ogg. 2. Pixabay has no real moose call, so this is an elk. Answer Yes to use it for the moose until a real moose recording turns up, No to keep the synthetic moose sound.
-Note: Recommendation: No, keep the synthetic moose for now, because an elk bugle is a different animal and a wrong sound will bother you more than a rough one.
-[check]
-
 ## kath-bear-real-clips | Do the real bear growls (clip A and clip B) sound like a bear?
 Note: 1. After Pull, open the folder questions\audio. 2. Play bear_clip_A.ogg, then bear_clip_B.ogg. 3. Answer Yes if both are fine, No if not, and say which one in Why-not.
 Note: Recommendation: Yes, keep both because they are real growls, clean, and about 3 to 6 seconds long; I could not listen, so your ear decides.
 [check]
-
