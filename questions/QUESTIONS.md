@@ -202,3 +202,15 @@ Note: Tyler recommends Yes because cost is how a player feels value, and it is o
 ## species-uses-4 | Firewood and wooden blocks from different species stay in separate piles (no mixed piles), and piers and wet foundations need a rot-proof wood (oak, chestnut, alder)?
 Note: Tyler recommends Yes because mixed piles are hard to take from and piers rotting would be unfair without a warning.
 [check]
+
+## logs-per-tree | A felled tree gives whole 8 ft (2.44 m) logs by its height, rounded down, at most 20 per tree (a 24 ft tree gives 3, a 9 ft tree gives 1)? The old bonus for thick trunks goes away.
+Note: Tyler recommends Yes because it is easy to predict by looking at the tree, and it ties to the wooden blocks (4 per log) and species.
+[check]
+
+## small-tree-work | A small tree (under 8 ft) gives no whole log: working the trunk gives 3 blows of branches (sticks and leaves) and then 3 blows of firewood, kindling and sticks, then it is used up (no roots, no blocks)?
+Note: Tyler recommends Yes because a small tree can never give a proper log, so it gives small useful things and is gone.
+[check]
+
+## log-names | Logs are named by the tree, written "Oak logs", "Beech logs" instead of "Oak_Logs" (item ids stay log_oak, log_beech and so on). Is that fine?
+Note: Tyler recommends Yes because "Oak logs" reads naturally for players, and the underscore form stays only in the item ids.
+[check]
