@@ -8,9 +8,6 @@ Note: 6. Optional: place a timber prop near the roof before the time runs out. T
 Note: 7. Take a picture of the shaking and dust. Write in Notes what happened, yes or no.
 [test]
 
-## island-fort | Do fortress and town foundations on your own island need ground about 1 m above sea level?
-[check]
-
 ## log-wall-r4 | Does the log wall look right now: only this wall's logs, ends offset left and right, open spaces where a joining wall's logs pass through, no curved notch?
 Image: questions/img/tiers_walls_r4.png
 Image: questions/img/tiers_log_corner_r4.png
