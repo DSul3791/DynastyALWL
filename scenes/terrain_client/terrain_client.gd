@@ -41,6 +41,7 @@ const CompassScript := preload("res://src/client/admin_compass.gd")
 const InventoryViewScript := preload("res://src/client/inventory_view.gd")
 const NpcViewScript := preload("res://src/client/npc_view.gd")
 const GroundDebugScript := preload("res://src/client/ground_debug.gd")
+const ShowroomScript := preload("res://src/client/showroom.gd")
 const DripViewScript := preload("res://src/client/drip_view.gd")
 const GameMenuScript := preload("res://src/client/game_menu.gd")
 const SoundTestMenuScript := preload("res://src/client/sound_test_menu.gd")
@@ -1399,6 +1400,7 @@ func _stamp_walkers(now: int) -> void:
 const PLACED_CLEARING := "res://data/look/placed_clearing.json"
 const CLEARING_NOT := [0, 2, 3, 4, 10]   # loose items, felled trunks and stumps; every other state asks structures.json "clears_grass" (StructureLook)
 const StructureLook := preload("res://src/shared/structure_look.gd")
+var showroom                          # the admin showroom at spawn (src/client/showroom.gd), shown while Admin mode is on
 var _cleared_key: int = 0
 var _switches_applied: bool = false
 var _switches = TestSwitchesScript.new()      # Esc > Advanced experiment switches (default on)
@@ -1420,6 +1422,17 @@ func _sync_cleared() -> void:
 	var spots: Array = []
 	var lying: Array = []
 	var key: int = 0
+
+	if showroom == null and world.has("spawn"):
+		showroom = ShowroomScript.new()
+		showroom.setup(items, Vector3(world["spawn"]))
+
+	if showroom != null and body != null:
+		showroom.update(items.admin_craft, body.global_position)   # Admin mode on: the test rows at spawn, with the grass cleared under them
+
+		for spot in showroom.clear_spots():
+			spots.append(spot)
+			key = key ^ hash(Vector2(spot.x, spot.z))
 
 	for id in items._world:
 		var row: Dictionary = items._world[id]

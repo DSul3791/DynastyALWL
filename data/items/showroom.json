@@ -1,0 +1,9 @@
+{
+	"note": "Admin showroom at spawn (Dave 2026-10-23). Drawn only on the admin's own screen while Admin mode (Esc > Admin) is on: not on the server, not pickable, no item limit, never saved. Grass is cleared under the rows. Add a row to look at things; no code needed. 'start' and 'step' are metres EAST and SOUTH of the spawn point, each entry in 'items' is [item id, how many sit in that spot] placed one 'step' after another. 'plants' rows (species names, same start/step) are read but not drawn yet. Unknown ids are skipped and logged.",
+	"rows": [
+		{"label": "Spades", "start": [4, 0], "step": [0, 1.5], "items": [["wooden_spade", 1], ["stone_spade", 1], ["iron_spade", 1], ["steel_spade", 1]]},
+		{"label": "Big spades", "start": [6, 0], "step": [0, 1.5], "items": [["wooden_spade_medium", 1], ["stone_spade_medium", 1], ["iron_spade_medium", 1], ["steel_spade_medium", 1], ["wooden_spade_large", 1], ["steel_spade_large", 1]]},
+		{"label": "Hoes", "start": [8, 0], "step": [0, 1.5], "items": [["wooden_hoe", 1], ["stone_hoe", 1], ["iron_hoe", 1], ["steel_hoe", 1]]},
+		{"label": "Stone and wood", "start": [10, 0], "step": [0, 1.5], "items": [["stone", 1], ["cobblestone", 1], ["cut_stone_block", 1], ["wooden_block", 1], ["stick", 1], ["stone_axe", 1]]}
+	]
+}

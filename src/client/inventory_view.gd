@@ -1595,6 +1595,17 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 		_world[id] = {"node": node, "number": row[1], "count": row[2], "pos": row[3], "state": state, "light": light}
 
 
+# One loose item as it is drawn on the ground, for the admin showroom: the node sits at the origin (the caller moves it), nothing is
+# registered in _world, so it cannot be picked up or counted.
+func make_display_item(number: int, seed_id: int) -> Node3D:
+	var box: MeshInstance3D = MeshInstance3D.new()
+	var real: Mesh = _natural_mesh(number, seed_id)
+	box.mesh = real if real != null else _mesh_for(number)
+	box.position = Vector3(0.0, 0.12, 0.0)
+	_dress_item(box, number, seed_id, real != null)
+	return box
+
+
 # Fires and structures standing in the world as {"pos", "state"} rows, for the placement ghost's blocked check.
 func foundation_rows() -> Array:
 	var rows: Array = []
