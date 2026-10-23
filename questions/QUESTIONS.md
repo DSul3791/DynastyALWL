@@ -7,9 +7,6 @@ Note: 5. Check a natural cave does NOT collapse. Check the warning gives you at 
 Note: 6. Answer Yes if all of that worked. Answer No and tell me which step broke.
 [check]
 
-## esc-menu-5 | Esc menu: should Quit game sit near the bottom with a short "Leave the game?" confirm click?
-[check]
-
 ## esc-menu-6 | Esc menu: should Admin be one collapsible group at the very bottom, closed by default, holding Clear saved ground, Dump ground, Show my player key, Bake starter tiles, Jitter test, GPU breakdown, Measure this machine, the test switches and all the Sound test buttons?
 [check]
 
