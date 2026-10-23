@@ -81,3 +81,9 @@ Note: This works for a torch, a shield and any other item that can be held in th
 Note: Tyler checked: nothing in the game uses the B key today, so there is no clash.
 Note: Tyler recommends Yes because it matches what you described and B is free. Steve builds the input and left-hand slot, Sal marks which items can go in the left hand, Kathleen does the hand pose. It is tomorrow's work, not tonight's.
 [check]
+
+## ground-piles | Should loose items on the ground of the same kind that land close together (about 1 m) merge into one pile with a count, so the limit of 64 items near a spot is no longer a problem?
+Note: Today a drop is refused when 64 loose items are already within 12 m. Items already carry a count, so a pile is one ground item holding many.
+Note: A pile shows bigger the more it holds. Picking up takes the whole pile or part of it, and the rock pile item is the same idea for rock.
+Note: Tyler recommends Yes because it removes the limit without more lag (fewer objects to send and draw), and it matches the rock pile you already approved. Steve does merge and split on the server, Sal the pile counts, Kathleen the pile looks.
+[check]
