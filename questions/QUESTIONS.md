@@ -8,9 +8,6 @@ Note: 6. Optional: place a timber prop near the roof before the time runs out. T
 Note: 7. Take a picture of the shaking and dust. Write in Notes what happened, yes or no.
 [test]
 
-## cost-found-stone | Stone foundations (Cobblestone, Mason tiers) keep the earlier numbers: small 1x1 = 10 stone + 3 clay, 2x2 = 40 stone + 12 clay; large 1x1 = 30 stone + 10 clay + 4 mortar, 2x2 = 120 stone + 40 clay + 16 mortar?
-[check]
-
 ## cost-door-wrought | Wrought iron door = 6 iron ingots + 4 lumber + 20 nails?
 [check]
 
