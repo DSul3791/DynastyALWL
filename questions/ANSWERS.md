@@ -964,3 +964,7 @@ Answered: 2026-10-23 01:38 UTC
 Answer: Yes
 Answered: 2026-10-23 01:38 UTC
 
+## wet-bracing | Does a wet ceiling need full bracing and a collapse window no longer than the cave-in time, so bracing matters more (water softens the roof)?
+Answer: No: We don’t really wanna overcomplicate the game. Keep it simple stay the same as a normal cave. They already have the danger that if they break the ceiling, the ocean will flood in on them and flood their tunnel.
+Answered: 2026-10-23 01:39 UTC
+
