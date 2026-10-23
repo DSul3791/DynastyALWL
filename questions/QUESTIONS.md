@@ -8,9 +8,6 @@ Note: 6. Optional: place a timber prop near the roof before the time runs out. T
 Note: 7. Take a picture of the shaking and dust. Write in Notes what happened, yes or no.
 [test]
 
-## sea-rivermouth | Do river mouths stay sea-connected, so damming a mouth floods the river behind it (an intended risk)?
-[check]
-
 ## island-fill | Can players fill shallow sea with the spade (Raise mode) to build their own islands, up to about 6 m deep? (Sonny says 6 m, Sal says 1.5 m, Guru says about 4 m: answer No and write your number if you prefer another.)
 [check]
 
