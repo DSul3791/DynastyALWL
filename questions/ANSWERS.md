@@ -1302,3 +1302,7 @@ Answered: 2026-10-23 21:25 UTC
 Answer: Yes
 Answered: 2026-10-23 21:43 UTC
 
+## copy-tiles-by-hand | Copy the new island tiles and water file into your game folder (MikeW is blocked)
+Answer: Yes
+Answered: 2026-10-23 21:43 UTC
+
