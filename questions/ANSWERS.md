@@ -1222,3 +1222,7 @@ Answered: 2026-10-23 16:00 UTC
 Answer: Yes
 Answered: 2026-10-23 16:30 UTC
 
+## kath-fox-real-clips | Do the real fox clips (a bark and a scream) sound like a fox?
+Answer: Yes
+Answered: 2026-10-23 16:37 UTC
+
