@@ -929,6 +929,11 @@
    "shape": "chunk",
    "color": "#8a8a8a",
    "size": 1.0
+  },
+  "wooden_block": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
   }
  }
 }
