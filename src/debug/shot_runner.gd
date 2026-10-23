@@ -45,6 +45,7 @@ var _dig_i: int = 0
 var _dig_next_msec: int = 0
 var _dig_level: bool = false
 var _dig_ballast: bool = false
+var _dig_dropped: bool = false
 var _spin_i: int = 0
 var _spin_next_msec: int = 0
 var _selected: bool = false
@@ -195,14 +196,36 @@ func _process(_delta: float) -> void:
 
 			return
 
+		if not _dig_dropped:
+			# Dirt on the ground by a real drop: a stack of what the digs gave goes on the ground 1.2 m ahead, beside the hole (Dave 2026-10-23).
+			_dig_dropped = true
+			var inv = client.items.inventory
+			var soil_slot: int = inv.numbers.find(client.items.table.number_of("soil"))
+			var bp: Vector3 = client.body.global_position
+			var ahead: Vector3 = -client.body.global_transform.basis.z
+			var spot_x: float = bp.x + ahead.x * 1.2
+			var spot_z: float = bp.z + ahead.z * 1.2
+			var spot_ground: float = _ground(spot_x, spot_z)
+
+			if soil_slot >= 0:
+				client.items.net.inventory_action.rpc_id(1, Net.ACT_DROP, soil_slot, 0, int(inv.counts[soil_slot]), Vector3(spot_x, bp.y - 1.0 if is_nan(spot_ground) else spot_ground, spot_z))
+			else:
+				print("shot runner: no soil in the pack to drop")
+
+			_dig_next_msec = now + 3000
+			return
+
 		if not _dig_level:
+			if now < _dig_next_msec:
+				return
+
 			_dig_level = true
-			var back: Vector3 = client.body.global_transform.basis.z      # one step back (Dave 2026-10-23: dig 20 times at one spot, then step back and look)
-			var back_x: float = client.body.global_position.x + back.x * 2.5
-			var back_z: float = client.body.global_position.z + back.z * 2.5
+			var back: Vector3 = client.body.global_transform.basis.z      # a very short step back (1 m), then look down at the hole and the dirt
+			var back_x: float = client.body.global_position.x + back.x * 1.0
+			var back_z: float = client.body.global_position.z + back.z * 1.0
 			var back_ground: float = _ground(back_x, back_z)
 			client.body.global_position = Vector3(back_x, client.body.global_position.y if is_nan(back_ground) else back_ground + shot_pos.y, back_z)
-			client.pitch = deg_to_rad(-60.0)      # look down, then spin a full turn with a picture every quarter (Dave 2026-10-23)
+			client.pitch = deg_to_rad(-60.0)      # look down, then spin a full turn with a picture every quarter
 			client.camera.rotation.x = client.pitch
 			_spin_next_msec = now + 4000
 			_moved_msec = now
@@ -221,7 +244,7 @@ func _process(_delta: float) -> void:
 
 		if _spin_i == 4:
 			_spin_i = 5
-			client.pitch = deg_to_rad(-30.0)
+			client.pitch = deg_to_rad(-50.0)
 			client.camera.rotation.x = client.pitch
 			_moved_msec = now
 			return
