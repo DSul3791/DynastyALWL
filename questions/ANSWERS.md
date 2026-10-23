@@ -1298,3 +1298,7 @@ Answered: 2026-10-23 21:25 UTC
 Answer: No: Stone floors don’t need a sill edge
 Answered: 2026-10-23 21:25 UTC
 
+## pull-clean-folder | Your game folder blocks the Pull: clear 2 things first (about 2 minutes)
+Answer: Yes
+Answered: 2026-10-23 21:43 UTC
+
