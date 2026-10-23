@@ -462,7 +462,17 @@ func _print_flora_row() -> void:
 		for child in node.get_children():
 			if child is MultiMeshInstance3D:
 				pieces += 1
-				instances += (child as MultiMeshInstance3D).multimesh.instance_count
+				var mmi: MultiMeshInstance3D = child as MultiMeshInstance3D
+				instances += mmi.multimesh.instance_count
+				var mesh: Mesh = mmi.multimesh.mesh
+				var verts: int = 0
+
+				for surface in range(mesh.get_surface_count()):
+					verts += (mesh.surface_get_arrays(surface)[Mesh.ARRAY_VERTEX] as PackedVector3Array).size()
+
+				var first: Transform3D = mmi.multimesh.get_instance_transform(0)
+				var cam: Vector3 = client.camera.global_position
+				print("shot runner: flora piece: kind %s verts %d aabb %s instance0 at %s scale %s camera %s in tree %s range_end %.0f" % [str(mmi.get_meta("kind", -1)), verts, str(mesh.get_aabb()), str(first.origin), str(first.basis.get_scale()), str(cam), str(mmi.is_visible_in_tree()), mmi.visibility_range_end])
 
 	print("shot runner: flora row: chunk %s items %d level %d ground %s visible %s pieces %d instances %d setup_done %s" % [str(here), (entry["items"]["ids"] as PackedInt32Array).size(), int(entry["level"]), str(entry.get("ground")), str(node.visible if node != null else "no node"), pieces, instances, str(client.flora._setup_done)])
 
