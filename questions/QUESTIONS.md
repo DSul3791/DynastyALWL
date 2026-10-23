@@ -2,10 +2,6 @@
 Image: questions/img/tiers_doors_r3.png
 [check]
 
-## ceilings-six | Do the six ceiling looks (pole rafters and straw, rough planks, planed boards, log joists, heavy beams, coffered stone) look right?
-Image: questions/img/tiers_ceilings_r3.png
-[check]
-
 ## flat-roof | Does the flat tarred roof look right: boards under black tar, board seams, streaks, raised lip?
 Image: questions/img/tiers_flat_roof_r3.png
 [check]
