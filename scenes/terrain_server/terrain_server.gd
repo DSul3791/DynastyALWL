@@ -349,6 +349,7 @@ func _ready() -> void:
 	admin = AdminScript.new()
 	admin.load_keys(["res://data/admin.json", store_dir + "/admin.json"])
 	items.reset_terrain_edits = _reset_terrain_edits
+	items.dump_water = _dump_water
 	@warning_ignore("confusable_local_declaration")
 	items.admin_ok = func(peer: int) -> bool: return admin.is_admin(items.key_of(peer))
 	admin.open_to_all = OS.get_cmdline_user_args().has("--open-admin")
@@ -1140,6 +1141,53 @@ func _start_tunnels() -> void:
 	tunnels.start()
 
 
+# Writes the live water cells in a 40 m box around (x, z) to <store>/water_dump_X_Z.txt (outside the repo): per 8 m cell the baked ground, the
+# sim ground, depth, drawn level and the flow across its faces, plus the sim's totals. For the dry-river hunt (Dave 2026-10-23).
+# Triggered by an admin (Esc > Admin > Dump water here) or by a file water_dump.now in the store holding "x z".
+func _dump_water(x: float, z: float) -> String:
+	var tile: Vector2i = generator.tile_of(x, z)
+	var data = water_live.data_of(tile) if water_live != null else null
+	var sim = water_live.sim_of(tile) if water_live != null else null
+
+	if data == null or sim == null:
+		return "no running water sim for the tile at %d, %d" % [int(x), int(z)]
+
+	var lines: PackedStringArray = PackedStringArray()
+	lines.append("water dump at x %.1f z %.1f, tile %s, sim side %d spacing %.1f, data samples %d x0 %.1f z0 %.1f" % [x, z, str(tile), sim.side, sim.spacing_m, data.samples, data.x0, data.z0])
+	lines.append("sim ticks %d, seconds %.0f, evaporated %.0f m3, to sea %.0f m3, flow key x%.2f" % [sim.ticks, sim.seconds, sim.evaporated_m3, sim.sea_m3, sim.spring_multiplier])
+	lines.append("cell i j | x z | baked_ground sim_ground depth level(sim_levels) | flow_x flow_z")
+	var near_springs: Array = []
+
+	for spring in sim.springs:
+		var si: int = int(spring[0]) % sim.side
+		@warning_ignore("integer_division")
+		var sj: int = int(spring[0]) / sim.side
+		var sx: float = data.x0 + float(si) * sim.spacing_m
+		var sz: float = data.z0 + float(sj) * sim.spacing_m
+
+		if absf(sx - x) <= 200.0 and absf(sz - z) <= 200.0:
+			near_springs.append("spring cell %d,%d at x %.0f z %.0f: %.3f m3/s" % [si, sj, sx, sz, float(spring[1])])
+
+	lines.append("springs within 200 m: %s" % (", ".join(PackedStringArray(near_springs)) if not near_springs.is_empty() else "none"))
+
+	for j in range(maxi(int(floor((z - 20.0 - data.z0) / sim.spacing_m)), 0), mini(int(ceil((z + 20.0 - data.z0) / sim.spacing_m)), sim.side - 1) + 1):
+		for i in range(maxi(int(floor((x - 20.0 - data.x0) / sim.spacing_m)), 0), mini(int(ceil((x + 20.0 - data.x0) / sim.spacing_m)), sim.side - 1) + 1):
+			var n: int = j * sim.side + i
+			var level: float = data.sim_levels[n] if n < data.sim_levels.size() else NAN
+			lines.append("%d %d | %.0f %.0f | %.2f %.2f %.3f %.2f | %.3f %.3f" % [i, j, data.x0 + float(i) * sim.spacing_m, data.z0 + float(j) * sim.spacing_m, data.heights[n] if n < data.heights.size() else NAN, sim.ground[n], sim.depth[n], level, sim.flow_x[n], sim.flow_z[n]])
+
+	var path: String = _store_path + "/water_dump_%d_%d.txt" % [int(x), int(z)]
+	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
+
+	if file == null:
+		return "cannot write " + path
+
+	file.store_string("\n".join(lines) + "\n")
+	file.close()
+	print("server: water dump written to ", path)
+	return path
+
+
 # Admin "Reset all terrain edits": every saved dig and fill (rubble included) is deleted, the ground and water are made again from the
 # baked tiles, the tunnel clocks start clean and every player reloads. Buildings, items and plants are not touched.
 func _reset_terrain_edits() -> void:
@@ -1565,6 +1613,15 @@ func _process(delta: float) -> void:
 
 	if now >= _flag_check_msec:
 		_flag_check_msec = now + 3000
+
+		var dump_flag: String = _store_path + "/water_dump.now"
+
+		if FileAccess.file_exists(dump_flag):
+			var spot: PackedStringArray = FileAccess.get_file_as_string(dump_flag).strip_edges().split(" ", false)
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(dump_flag))
+
+			if spot.size() >= 2:
+				print("server: water dump asked for: ", _dump_water(float(spot[0]), float(spot[1])))
 
 		if FileAccess.file_exists(flag_path):
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(flag_path))

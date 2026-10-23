@@ -734,6 +734,9 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 
 			_say(peer, "Admin mode %s." % ("on: crafting is free" if a == 1 else "off"))
 
+	elif kind == Net.ACT_DUMP_WATER:
+		if admin_ok.is_valid() and admin_ok.call(peer) and dump_water.is_valid():
+			_say(peer, "Water dump: %s" % str(dump_water.call(at.x, at.z)))
 	elif kind == Net.ACT_RESET_EDITS:
 		if admin_ok.is_valid() and admin_ok.call(peer) and reset_terrain_edits.is_valid():
 			print("server: peer %d reset all terrain edits" % peer)
@@ -745,6 +748,7 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 
 
 var ground_ready: Callable              # (x, z) -> bool: the ground there is in memory; when not, it is being read in the background (unset in tests = always ready)
+var dump_water: Callable                # set by the server: (x, z) -> String, writes the live water cells near a point to a text file
 var reset_terrain_edits: Callable       # set by the server: () -> void, wipes every saved dig and fill
 var admin_ok: Callable                  # set by the server: true when the peer may use admin gives
 
