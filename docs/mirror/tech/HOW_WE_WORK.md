@@ -49,3 +49,6 @@ BEST_PRACTICES.md, PROCESS.md, DECISIONS.md, JOBS.md, BUILD_LOG.md, TEST_QUEUE.m
 4. Dave pulls, closes the game fully, starts it and confirms it starts and plays. Then MikeW runs the backup (nightly_backup.py).
 5. After the backup the Guru posts the night's test and picture cards (BP-T40; each with simple instructions and a Notes box). Dave plays and answers.
 6. Next morning: answer sweep (ANSWERS.md into DECISIONS.md, relay to threads), then the first 3 jobs.
+
+## Safe place wording (BP-T42, Dave 2026-10-23)
+The game is a safe place and never says anything that might divide people. No "Womens Health", "Mens Health" or similar labels on plants, tools, items, tooltips, sounds or lines. Describe the use, never who it is for. Every new piece of player-visible text is checked against this.

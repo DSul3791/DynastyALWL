@@ -109,3 +109,4 @@ Baked tiles for the inner starters and their neighbors (36 files) are in `/mnt/p
 - Cave-in death sequence (Dave 03:13): design tech/CAVE_IN_DEATH_DESIGN.md; 5 cards cavein-death-* posted. Steve sequence controller, Kathleen skull art + audio + placeholder stings; voice later via Kokoro (subtitle text now).
 - Water surface flickering textures at the lake (Dave 03:20, grey shapes are the water, not boulders): Sonny checks the shader and water draw, Steve the sim updates. Card lake-chunks-pic asks for an F3 picture.
 - Head ponds (Sonny 03:22): stamped round head ponds retire in favour of terrain B basins at the next bake; card head-ponds-retire; first natural result needs a look from Kathleen and Dave. Needs 1-tile BAKE-1 test first.
+- BP-T42 safe place wording (Dave 03:32): Sal sweeps flora.json "womens_health" (line 1877) and all item/plant/recipe text tomorrow; one line to Dave. Raspberry bush look + berries to Kathleen (Dave pictures in chat).
