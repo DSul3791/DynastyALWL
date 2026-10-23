@@ -474,7 +474,7 @@ func _print_flora_row() -> void:
 				var cam: Vector3 = client.camera.global_position
 				print("shot runner: flora piece: kind %s verts %d aabb %s instance0 at %s scale %s camera %s in tree %s range_end %.0f" % [str(mmi.get_meta("kind", -1)), verts, str(mesh.get_aabb()), str(first.origin), str(first.basis.get_scale()), str(cam), str(mmi.is_visible_in_tree()), mmi.visibility_range_end])
 
-	print("shot runner: flora row: chunk %s items %d level %d ground %s visible %s pieces %d instances %d setup_done %s" % [str(here), (entry["items"]["ids"] as PackedInt32Array).size(), int(entry["level"]), str(entry.get("ground")), str(node.visible if node != null else "no node"), pieces, instances, str(client.flora._setup_done)])
+	print("shot runner: flora row: chunk %s items %d level %d ground %s visible %s pieces %d instances %d setup_done %s" % [str(here), (entry["items"]["ids"] as PackedInt32Array).size(), int(entry["level"]), str(entry.get("ground")), ("no node" if node == null else str(node.visible)), pieces, instances, str(client.flora._setup_done)])
 
 
 # A walking body from the side: the drawn camera 2.8 m to the body's left, level with its chest.
