@@ -996,3 +996,7 @@ Answered: 2026-10-23 02:09 UTC
 Answer: Yes
 Answered: 2026-10-23 02:09 UTC
 
+## far-water-2 | Far rivers and lakes: should the flat distant picture of water follow your draw-distance setting, so it costs nothing on Low?
+Answer: Yes
+Answered: 2026-10-23 02:10 UTC
+
