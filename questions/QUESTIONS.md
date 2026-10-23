@@ -169,3 +169,19 @@ Note: 5. Switch Admin mode Off (red). Crafting an iron pickaxe with an empty pac
 ## hotbar-move | Is this how the hotbar should work: a tool dragged onto the hotbar MOVES there and leaves the pack grid (the hotbar is extra holding slots, not a copy, and it still counts for weight), and E over a hotbar slot with the inventory window open puts it back in the first free pack slot?
 Note: Tyler recommends Yes because it already matches what you described, so nothing needs changing.
 [check]
+
+## blocks-from-log | A log from your pack, dropped on the ground and chopped with an axe, gives 4 wooden blocks (about 0.3 m long, 3.75 kg each)?
+Note: Tyler recommends Yes because the pack log is the smaller log (about 15 kg), so 4 blocks of 3.75 kg add up. The big shoulder log gives more (next card).
+[check]
+
+## blocks-from-shoulder-log | A log from your shoulder, put on the ground and chopped with an axe, gives 12 wooden blocks?
+Note: Tyler recommends Yes because it is the full-size log (about 45 kg) and 12 blocks matches your "quite a few".
+[check]
+
+## firewood-from-block | One wooden block used on the chopping block gives 1 firewood (3.5 kg) that falls beside the block, and the pieces merge into one heap (the pile look from 5 pieces is Kathleen's)?
+Note: Tyler recommends Yes because one block makes one piece (simple to learn), and the heap uses the same pile rule as rocks.
+[check]
+
+## axe-wear-chop | The axe wears once for each log chop and once for each split at the chopping block?
+Note: Tyler recommends Yes because both are real chopping, and one wear per action is easy to understand and to tune later.
+[check]
