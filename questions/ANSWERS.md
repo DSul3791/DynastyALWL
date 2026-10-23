@@ -576,3 +576,7 @@ Answered: 2026-10-23 00:09 UTC
 Answer: No: The logs should just look like wide fine boards on top and rounded on the bottom like a log. And the fine board ceiling shouldn’t have the dark brown strips going across the fine boards should reach the whole distance and cobblestone should actually look like cobblestone not like boards and masonry looks perfect.
 Answered: 2026-10-23 00:11 UTC
 
+## ceilings-six | Do the six ceiling looks (pole rafters and straw, rough planks, planed boards, log joists, heavy beams, coffered stone) look right?
+Answer: No: The logs should just look like wide fine boards on top and rounded on the bottom like a log. And the fine board ceiling shouldn’t have the dark brown strips going across the fine boards should reach the whole distance and cobblestone should actually look like cobblestone not like boards and masonry looks perfect.
+Answered: 2026-10-23 00:11 UTC
+
