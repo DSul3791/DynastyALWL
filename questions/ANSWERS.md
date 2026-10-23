@@ -1306,3 +1306,7 @@ Answered: 2026-10-23 21:43 UTC
 Answer: Yes
 Answered: 2026-10-23 21:43 UTC
 
+## push-tiles-by-hand | Push the 9 new island tiles (MikeW's push is blocked by a permission check)
+Answer: No: I think you already did this if you haven’t then go ahead and do it
+Answered: 2026-10-23 21:44 UTC
+
