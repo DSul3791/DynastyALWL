@@ -864,3 +864,7 @@ Answered: 2026-10-23 01:27 UTC
 Answer: No: Yes, but I wanna make sure that the log ceiling should look like that on the bottom but on the top, it should look exactly the same as the fine boards, except the boards are twice as wide
 Answered: 2026-10-23 01:27 UTC
 
+## roof-65-low | Kathleen read '65 degrees' as measured from the vertical, so a LOW roof: 45 degrees rises 2.0 m per 2 m of run, 65 rises only 0.93 m. Is that the shorter peak you meant?
+Answer: Yes
+Answered: 2026-10-23 01:28 UTC
+
