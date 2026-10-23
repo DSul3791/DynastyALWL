@@ -1114,3 +1114,7 @@ Answered: 2026-10-23 10:10 UTC
 Answer: Yes
 Answered: 2026-10-23 10:10 UTC
 
+## firewood-from-block | One wooden block used on the chopping block gives 1 firewood (3.5 kg) that falls beside the block, and the pieces merge into one heap (the pile look from 5 pieces is Kathleen's)?
+Answer: No: Yes but it gives 2 firewood which is split wood
+Answered: 2026-10-23 10:11 UTC
+
