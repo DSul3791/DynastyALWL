@@ -8,9 +8,6 @@ Note: 6. Optional: place a timber prop near the roof before the time runs out. T
 Note: 7. Take a picture of the shaking and dust. Write in Notes what happened, yes or no.
 [test]
 
-## farwater-spacing | Far water: use a 32 m grid for the distant river and lake picture (any river cell inside a 32 m cell marks it wet, lowest surface taken)?
-[check]
-
 ## sea-source | Is the sea an endless source at sea level, so a pit dug below sea level and connected to the sea fills to sea level (trenches flood, harbours and canals possible)?
 [check]
 
