@@ -928,3 +928,7 @@ Answered: 2026-10-23 01:33 UTC
 Answer: No: Because you can use boards to make the edges also so they just require boards of whatever they’re type is
 Answered: 2026-10-23 01:34 UTC
 
+## floor-brace-3 | Floor brace: neighbouring floor cells share the sill where they touch, so a big floor needs fewer logs than cells?
+Answer: Yes
+Answered: 2026-10-23 01:35 UTC
+
