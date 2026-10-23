@@ -7,15 +7,15 @@ extends Node
 #
 # A torch flutters, louder when you run (the flame streams) and more so in wind, and hisses in rain
 # when open (the `fire_rain` sizzle at a low level). A lantern burns behind glass: quieter, steadier,
-# no wind or rain effect. Fades in and out over about half a second. 2D on the Foley bus (the Effects slider).
+# no wind or rain effect. Fades in and out over about half a second. 2D on the Body bus (the Effects slider, no cave reverb: a torch in the hand must not echo).
 # Sounds: assets/audio/fire/flame_torch, flame_lantern (make_fire.py); recordings in recorded/fire/ win.
 
 const SoundStage := preload("res://src/client/sound_stage.gd")
 const GENERATED_DIR := "res://assets/audio/fire/"
 const RECORDED_DIR := "res://assets/audio/recorded/fire/"
 
-const KINDS := {"torch": {"file": "flame_torch", "db": -30.0}, "lantern": {"file": "flame_lantern", "db": -36.0}}
-const RAIN_DB := -34.0
+const KINDS := {"torch": {"file": "flame_torch", "db": -36.0}, "lantern": {"file": "flame_lantern", "db": -40.0}}
+const RAIN_DB := -44.0
 const FADE_DB_PER_SEC := 60.0
 const RUN_MPS := 11.0
 
@@ -77,7 +77,7 @@ func _fade(key: String, file: String, target: float, delta: float) -> void:
 		if player.stream is AudioStreamOggVorbis:
 			player.stream.loop = true
 
-		player.bus = "Foley"
+		player.bus = "Body"                  # dry: Foley sends to the cave reverb, which made the torch a wash of echo in a cave
 		player.volume_db = -80.0
 		add_child(player)
 		player.play(_rng.randf() * 4.0)
