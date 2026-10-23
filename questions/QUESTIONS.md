@@ -7,11 +7,6 @@
 
 
 
-## fix-id-claims | Should item numbers and action ids be claimed in one short file (or given fixed ranges per thread), so two threads can never pick the same number?
-Note: Tonight two branches both took item number 234, and two wanted the same action ids.
-Note: Tyler recommends Yes because a claim takes seconds and duplicates cannot happen.
-[check]
-
 ## fix-team-tests | Confirm the rule that the team tests first (headless, look rig, showroom) and only human-judgment tests go to you?
 Note: This is already in place as BP-T46 and BP-T45. This card is to confirm it.
 Note: Tyler recommends Yes because most of tonight's 12 tests could be done by the team.
