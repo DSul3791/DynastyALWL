@@ -35,6 +35,7 @@ var admin_text: bool = false
 var no_grass: bool = false
 var flora_names: PackedStringArray = PackedStringArray()    # --shot-flora=raspberry,bramble: one plant of each in a row with name tags
 var _flora_t: int = 0
+var summer: bool = false      # --shot-summer: the plant row in its species green (the game draws every hardwood in autumn colours)
 var side_sign: float = 1.0      # 1 = camera on the body's left side, -1 = right side (--shot-right)
 
 const STORM := {"rain": 1.0, "snow": 0.0, "storm": 1.0, "cloud": 1.0, "sun": 0.0, "wind": 0.9, "wind_dir": 1.0, "temp_c": 8.0}
@@ -62,6 +63,8 @@ func setup(owner_client, args: Array) -> void:
 			side_sign = -1.0
 		elif argument.begins_with("--shot-flora="):
 			flora_names = argument.trim_prefix("--shot-flora=").split(",", false)
+		elif argument == "--shot-summer":
+			summer = true
 		elif argument == "--shot-nograss":
 			no_grass = true      # hide the grass so a hand-held item or the body is not hidden by blades
 		elif argument == "--shot-admin":
@@ -164,6 +167,10 @@ func _show_flora(now: int) -> void:
 
 	for entry in table["entries"]:
 		by_name[str(entry["name"])] = entry
+
+	if summer:
+		for species_id in client.flora._species:
+			client.flora._species[species_id]["hardwood"] = false
 
 	var p: Vector3 = client.body.global_position
 	var items: Dictionary = {"ids": PackedInt32Array(), "positions": PackedVector3Array(), "heights": PackedFloat32Array(), "yaws": PackedFloat32Array()}

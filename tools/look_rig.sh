@@ -5,6 +5,7 @@
 #   --item   the item in slot 0 of the test character, held in the hand (omit for an empty hand)
 #   --flora a,b,c  a labelled row of those plant species 4 m ahead (e.g. raspberry,bramble,nettle,wild_rose)
 #   --ground ID:N  drop N of an item on the ground 2.2 m ahead of --at (stone:20 = a pile); --gy ground height (default 28.0 = the spawn)
+#   --summer  draw the --flora row in the species' own green instead of the game's autumn tint
 #   --cam    first = the player's own view; left = the character seen from 2.8 m to its left (third person)
 #   --at     world x,z (default the spawn 53301,68427); --agl metres above the ground; --yaw 0 faces north (-Z), 90 west, -90 east
 #   --cam right = the character seen from its right (the right hand shows); --nograss hides the grass; --keep keeps the temp folder
@@ -19,7 +20,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --item) ITEM="$2"; shift 2;; --count) COUNT="$2"; shift 2;; --cam) CAM="$2"; shift 2;; --at) AT="$2"; shift 2;;
     --agl) AGL="$2"; shift 2;; --yaw) YAW="$2"; shift 2;; --pitch) PITCH="$2"; shift 2;; --hour) HOUR="$2"; shift 2;;
-    --weather) WEATHER="$2"; shift 2;; --admin) ADMIN="$ADMIN --shot-admin"; shift;; --flora) ADMIN="$ADMIN --shot-flora=$2"; shift 2;; --ground) GROUND="$2"; shift 2;; --gy) GY="$2"; shift 2;; --nograss) ADMIN="$ADMIN --shot-nograss"; shift;; --keep) KEEP=1; shift;; --keep) KEEP=1; shift;; --name) NAME="$2"; shift 2;; --out) OUT="$2"; shift 2;;
+    --weather) WEATHER="$2"; shift 2;; --admin) ADMIN="$ADMIN --shot-admin"; shift;; --flora) ADMIN="$ADMIN --shot-flora=$2"; shift 2;; --ground) GROUND="$2"; shift 2;; --gy) GY="$2"; shift 2;; --summer) ADMIN="$ADMIN --shot-summer"; shift;; --nograss) ADMIN="$ADMIN --shot-nograss"; shift;; --keep) KEEP=1; shift;; --keep) KEEP=1; shift;; --name) NAME="$2"; shift 2;; --out) OUT="$2"; shift 2;;
     --wait) WAIT="$2"; shift 2;; --settle) SETTLE="$2"; shift 2;; *) echo "unknown argument $1"; exit 2;;
   esac
 done
