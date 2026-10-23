@@ -1318,3 +1318,7 @@ Answered: 2026-10-23 21:44 UTC
 Answer: Yes: No, it is not. You basically copy what you have here and move it down to the bottom of the plant as well. Also, a real raspberry bush would look like 20 of these all put together in a clump about a metre around.
 Answered: 2026-10-23 21:51 UTC
 
+## shrub-raspberry-4 | Raspberry bush: is it a full bush from the top to the ground?
+Answer: Yes: No, it is not. You basically copy what you have here and move it down to the bottom of the plant as well. Also, a real raspberry bush would look like 20 of these all put together in a clump about a metre around.
+Answered: 2026-10-23 21:51 UTC
+
