@@ -1126,3 +1126,7 @@ Answered: 2026-10-23 10:13 UTC
 Answer: Yes
 Answered: 2026-10-23 10:13 UTC
 
+## species-uses-1 | Should each kind of tree be good for different things, using four numbers per species (hardness, burn time, rot resistance, how easy it is to work)? For example oak for strong beams and posts, birch and beech for firewood, pine and spruce for planks, alder for piers in water, apple and cherry for tool parts.
+Answer: No: Yes, but don’t overcomplicate it. Hardest is a good one which affects how long it takes to cut down. Hardwood trees are harder, but they’re also thinner. Soft wood trees are significantly larger around and you could use burn time. Hardwood takes a lot longer to burn. Softwood even though it’s Biggar burns really fast. Have Tyler do some research and come up with some numbers. We don’t wanna get into too many micromanaging of details software is better for making boards hardwood like Birch are really good for a different type of board. Have Tyler research what type of lumber hardwood versus softwood
+Answered: 2026-10-23 10:18 UTC
+
