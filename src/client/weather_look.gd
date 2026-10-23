@@ -109,6 +109,7 @@ var _day_next_msec: int = 0
 var _sky_next_msec: int = 0
 var _dark: float = 0.0                  # 0 bright .. 1 stormy: sun, ambient light, exposure and colour follow it
 var cloud_cover: float = 0.0
+var clear_day: bool = false             # Esc > Admin "Day, sunny, no fog" (Dave 2026-10-23): noon light, clear sky, no fog, for testing and viewing; the clock and the world weather go on
 var strikes_seen: int = 0
 
 
@@ -243,6 +244,9 @@ func _make_snow() -> GPUParticles3D:
 func _target() -> Dictionary:
 	var out: Dictionary = {"cloud": 0.0, "rain": 0.0, "snow": 0.0, "storm": 0.0, "wind": 0.1, "fog": 0.0}
 
+	if clear_day:
+		return out
+
 	if int(_client.sound_tests.weather_at) >= 0 and _client.sound != null and _client.sound.weather != null:
 		return TEST.get(_client.sound.weather.kind, out)
 
@@ -297,7 +301,7 @@ func _process_body(delta: float) -> void:
 	var target: Dictionary = _target()
 
 	for key in _s:
-		_s[key] = move_toward(float(_s[key]), float(target.get(key, 0.0)), delta / EASE_S)
+		_s[key] = float(target.get(key, 0.0)) if clear_day else move_toward(float(_s[key]), float(target.get(key, 0.0)), delta / EASE_S)
 
 	# Rain and snow only ever fall from clouds.
 	var rain: float = float(_s["rain"])
@@ -331,7 +335,7 @@ func _process_body(delta: float) -> void:
 
 	if LookSettings.DAY_CYCLE and now_msec >= _day_next_msec and _client.get("game_clock") != null:
 		_day_next_msec = now_msec + DAY_STEP_MSEC
-		day.update(_client.game_clock.hour(), _client.game_clock.day_of_year())
+		day.update(12.0 if clear_day else _client.game_clock.hour(), _client.game_clock.day_of_year())
 
 		if _client._sun != null:
 			_client._sun.basis = day.light_basis
@@ -379,7 +383,7 @@ func _process_body(delta: float) -> void:
 
 	if not _client.underwater:
 		var thick: float = 1.0 + 5.0 * rain + 4.0 * snow + 3.0 * storm + 12.0 * float(_s["fog"])
-		environment.fog_density = LookSettings.FOG_DENSITY * minf(thick, 20.0)
+		environment.fog_density = 0.0 if clear_day else LookSettings.FOG_DENSITY * minf(thick, 20.0)
 		environment.fog_light_color = _graded(day.sky_horizon, gloom)
 		environment.fog_sky_affect = 0.0
 
