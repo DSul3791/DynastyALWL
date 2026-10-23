@@ -636,3 +636,7 @@ Answered: 2026-10-23 00:35 UTC
 Answer: No: By default set the timeout to five minutes and if I understand correctly, that should mean that it will cave in in five minutes, but it will break down the warnings over that five minutes by percentage of time. Also, I will not be testing this until after the back up this evening so rework this question and repost it and please include the instructions on how I should do this test.
 Answered: 2026-10-23 00:37 UTC
 
+## cost-1 | Wall (2 m x 2.4 m), Basic: 20 twine, 50 thatch, 15 sticks?
+Answer: Yes
+Answered: 2026-10-23 00:43 UTC
+
