@@ -483,3 +483,4 @@ Each active thread holds its current number plus ONE spare, handed out in advanc
 - 21:40 UTC 23 Oct Guru_003: MERGED 760: sal-sawmill (items 238-243, recipes 152-155, saw_mill and woodworking_table structures, saw blade, water wheel; fine board needs the woodworking table; RESTART data). Running-water placement rule parked until Steve's water_flow_at. Head = 760.
 - 21:50 UTC 23 Oct Guru_003: MERGED 761: steve-rig-flora (newer rig commits) and steve-cam-above (look rig --cam-above M; rig only, RUNTIME). Needs MikeW local_check (expect 233). Head = 761.
 - 22:00 UTC 23 Oct Guru_003: MERGED 762: steve-cam-above (look rig --cam-above M), conflict with --flora-scale resolved by hand (both flags kept, bash -n ok). CORRECTION: 761 contained only steve-rig-flora; cam-above is in 762. Head = 762.
+- 22:10 UTC 23 Oct Guru_003: MERGED 763: steve-rig-views (look_rig.sh --views "name:dist:pitch:above;...", several pictures in one engine start; rig only, RUNTIME). Head = 763.
