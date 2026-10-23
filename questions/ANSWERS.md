@@ -1262,3 +1262,7 @@ Answered: 2026-10-23 19:25 UTC
 Answer: No: There is no picture here. Please tell somebody to review this and figure out why ask Tyler
 Answered: 2026-10-23 19:25 UTC
 
+## hoe-grade-keys | Hoe grade line: Shift + right click sets points A and B, Shift + left click grades. OK?
+Answer: Yes
+Answered: 2026-10-23 19:26 UTC
+
