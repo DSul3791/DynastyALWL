@@ -1,0 +1,115 @@
+{
+	"note": "Wood species uses v1 (Dave 2026-10-23, tech/items/TREE_SPECIES_USES_V1.md). class: hardwood burns long and makes fine boards; softwood burns fast and makes plank boards, pillars and beams. burn 1-5 (firewood). hits_to_fell is a reference: the server already derives hits from trunk thickness (thin hardwood fewer, thick softwood more); axe wear per hit is the same for every species. Foundations ignore the rot rules. Species not listed use hardwood defaults.",
+	"default": {
+		"class": "hardwood",
+		"burn": 4,
+		"board": "fine"
+	},
+	"species": {
+		"oak": {
+			"class": "hardwood",
+			"burn": 5,
+			"board": "fine",
+			"best_use": "fine boards, strong short beams",
+			"hits_to_fell": 8
+		},
+		"beech": {
+			"class": "hardwood",
+			"burn": 5,
+			"board": "fine",
+			"best_use": "firewood, fine boards",
+			"hits_to_fell": 8
+		},
+		"birch": {
+			"class": "hardwood",
+			"burn": 4,
+			"board": "fine",
+			"best_use": "fine boards, firewood, bark for twine and tar",
+			"hits_to_fell": 7
+		},
+		"maple": {
+			"class": "hardwood",
+			"burn": 5,
+			"board": "fine",
+			"best_use": "fine boards, floors",
+			"hits_to_fell": 8
+		},
+		"walnut": {
+			"class": "hardwood",
+			"burn": 4,
+			"board": "fine",
+			"best_use": "fine boards",
+			"hits_to_fell": 8
+		},
+		"sweet_chestnut": {
+			"class": "hardwood",
+			"burn": 4,
+			"board": "fine",
+			"best_use": "outdoor posts, shingles",
+			"hits_to_fell": 8
+		},
+		"alder": {
+			"class": "hardwood",
+			"burn": 4,
+			"board": "fine",
+			"best_use": "small boards, tool parts",
+			"hits_to_fell": 6
+		},
+		"rowan": {
+			"class": "hardwood",
+			"burn": 4,
+			"board": "fine",
+			"best_use": "small boards, tool parts",
+			"hits_to_fell": 6
+		},
+		"wild_apple": {
+			"class": "hardwood",
+			"burn": 4,
+			"board": "fine",
+			"best_use": "small boards, tool parts",
+			"hits_to_fell": 7
+		},
+		"wild_pear": {
+			"class": "hardwood",
+			"burn": 4,
+			"board": "fine",
+			"best_use": "small boards, tool parts",
+			"hits_to_fell": 7
+		},
+		"wild_cherry": {
+			"class": "hardwood",
+			"burn": 4,
+			"board": "fine",
+			"best_use": "small boards, tool parts",
+			"hits_to_fell": 7
+		},
+		"willow": {
+			"class": "hardwood",
+			"burn": 2,
+			"board": "none",
+			"best_use": "baskets, twine, light frames",
+			"hits_to_fell": 5
+		},
+		"scots_pine": {
+			"class": "softwood",
+			"burn": 2,
+			"board": "plank",
+			"best_use": "planks, pillars, beams, tar",
+			"hits_to_fell": 12
+		},
+		"spruce": {
+			"class": "softwood",
+			"burn": 2,
+			"board": "plank",
+			"best_use": "planks, pillars, beams",
+			"hits_to_fell": 12
+		},
+		"balsam_fir": {
+			"class": "softwood",
+			"burn": 2,
+			"board": "plank",
+			"best_use": "planks, torches, resin",
+			"hits_to_fell": 11
+		}
+	}
+}
