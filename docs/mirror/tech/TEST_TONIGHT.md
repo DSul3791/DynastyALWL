@@ -11,7 +11,7 @@ Dave tests ONLY after goodnight and the backup (BP-T40). Before testing: 1. Pull
 6. 673 Snaps: walls join end to end and at corners; floors and roofs meet edge to edge. Screenshot a small room.
 7. 676/682 Spades: small, medium, large spade; Raise mode takes shovelfuls straight from the pack (no loading): 1, 4, 8. Right click switches Dig and Raise.
 8. 677/679 Hoe: left click treads a tan path patch; right click smooths a bump (no items; only the hoe wears; "This ground is worked enough." when nothing moves). Screenshot a path and a smoothed bump.
-9. 684 Chopping block: 18 kg, made from 2 logs, looks the same in hand, on the ground and placed.
+9. 681/684 Chopping block: 18 kg, made from 2 logs; in the hand it is the placed model at 30 percent size. Does it look like the placed one, only smaller? Screenshot hand, ground and placed side by side. Set it down and split a log.
 10. 685 Braces: timber prop holds a 5 m sphere, timber set 7.5 m; both shrink with wear.
 11. 686 Collapse (protocol 72): Esc > Settings > Tunnel collapse On/Off (admin) and Cave-in time (2/5/10/20 min); set 2 min; dig a space wider than 2 m in a hand-dug tunnel; creaks, shaking, "The earth groans.", at least 90 s of shaking, then it falls; braces pause it; a natural cave never collapses. Screenshot the shaking and the rubble.
 12. 687 VSync: Esc > Settings: VSync shows On green, Adaptive amber, Off red; the fps line says "N fps (vsync X)".
@@ -32,10 +32,10 @@ S9. Braces: a prop (5 m) or timber set (7.5 m) stops the collapse timer within i
 13. 672 Stations: at a workbench or forge the prompt says Press F, F or E opens crafting; hold E still takes it down.
 14. 663 Clothing on the body: wear hide cloak, leggings, boots; third person shows coat, trousers, shoes in the item colours.
 15. 674 Sound test menu (Esc > Settings > Admin): buttons still work.
-16. 681 / looks v5 and tools v6: spades, hoe, axe, bucket, stone block, brick, mortar read as the real things at 2 m and 20 m. Screenshot a row of them on the ground.
+16. Looks v5 and tools v6: the 4 hoes (wooden, stone, iron, steel), the 3 spade sizes, wedge axe (from the side it looks like a hoe head), bucket (light wood, dark hoops), stone block, brick, mortar read as the real things at 2 m and 20 m. Screenshot one row of them on the ground.
 17. 683 Collapse warning visuals: covered by test 11.
 
 ## Waiting on a thread (not testable yet)
-- Kathleen: tier pieces (walls, floors, roofs, doors, ceilings, braces) are drawings only; nothing to test in the game until built.
+- Kathleen: new place sounds (place_stone, place_brick, place_thatch) and shovel soil/stone-load sounds are not merged (sound listen later); tier pieces (walls, floors, roofs, doors, ceilings, braces) are drawings only; nothing to test in the game until built.
 - Sal: blueprint building (mallet, ghosts, foundations, pillars) not built.
 - Sonny: ground rework BAKE-1 prototype on MikeW's PC; Dave only decides on the 9-tile bake.
