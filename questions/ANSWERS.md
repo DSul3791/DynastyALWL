@@ -1154,3 +1154,7 @@ Answered: 2026-10-23 10:24 UTC
 Answer: Yes
 Answered: 2026-10-23 10:24 UTC
 
+## lake-rule-2 | Should any hollow hold water when enough rain can reach it, with no minimum size, and we fix places with unwanted lakes by changing how the generator makes the land?
+Answer: Yes
+Answered: 2026-10-23 10:25 UTC
+
