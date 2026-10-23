@@ -35,3 +35,9 @@ Note: Tyler recommends: Yes if it lies on the ground, because Steve's fix and un
 Note: Not built yet. Loose items would nudge and roll a short way when you walk over them. Build it?
 Note: Tyler recommends No for now because it is cosmetic and the focus is movement, water and tunnels.
 [check]
+
+## kath-flora-cane-berries | Do the raspberry bush and bramble look like the real plants?
+Note: Picture: /mnt/project-files/art/shrubs/cane_berries.png (offline preview with flat stand-in leaves; in the game the leaves carry the leaf texture and autumn colours hide the fruit).
+Note: Raspberry: arching canes, red berries (some unripe yellow). Bramble: long arching thorny canes, black berries, white flowers. Wild rose: thorny canes, pink flowers, red hips. Blackthorn: dark twiggy canes, small leaves, blue sloes. Nettle: upright stems, paired leaves. Blueberry: small twiggy bush, blue berries.
+Note: Recommendation: Yes, these are the simple accurate shapes; I will fine tune from your Why-not answers.
+[check]
