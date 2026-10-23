@@ -892,3 +892,7 @@ Answered: 2026-10-23 01:30 UTC
 Answer: Yes
 Answered: 2026-10-23 01:30 UTC
 
+## cost-found-basic | Basic foundation (compacted dirt with leaves and boughs): small 1x1 = 6 boughs + 10 leaves + 4 sticks and the ground tamped; small 2x2 = four times that?
+Answer: No: No, you don’t have to tamp the ground when you place the foundation it will automatically flatten the ground
+Answered: 2026-10-23 01:31 UTC
+
