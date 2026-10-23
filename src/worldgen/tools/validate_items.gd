@@ -187,6 +187,22 @@ func _init() -> void:
 		for row in item.get("repair", []):
 			want_item.call(String(row[0]), "items.json %s repair" % id)
 
+	# Berries per plant (drops.json berry_yield): a flora species, one of its yields, a count of at least 1 and a berry stack of 100.
+	for key in drops.get("berry_yield", {}):
+		var berry: Dictionary = drops["berry_yield"][key]
+		var berry_id: String = String(berry.get("item", ""))
+
+		if not species.has(key):
+			fail("drops.json berry_yield: unknown flora species '%s'" % key)
+
+		want_item.call(berry_id, "drops.json berry_yield.%s" % key)
+
+		if int(berry.get("count", 0)) < 1:
+			fail("drops.json berry_yield.%s: count must be 1 or more" % key)
+
+		if int(gathered_file.get("items", {}).get(berry_id, items_file.get("items", {}).get(berry_id, {})).get("stack", 1)) < 100:
+			fail("drops.json berry_yield.%s: %s needs a stack of 100 or more" % [key, berry_id])
+
 	for group in ["by_species", "by_kind"]:
 		for key in drops.get(group, {}):
 			if group == "by_species" and not species.has(key):
