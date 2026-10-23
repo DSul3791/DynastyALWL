@@ -604,3 +604,7 @@ Answered: 2026-10-23 00:31 UTC
 Answer: Yes
 Answered: 2026-10-23 00:31 UTC
 
+## esc-menu-4 | Esc menu: should Character open the Tab screen from the menu?
+Answer: No: (no reason given)
+Answered: 2026-10-23 00:31 UTC
+
