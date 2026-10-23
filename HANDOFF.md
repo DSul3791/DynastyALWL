@@ -149,3 +149,4 @@ Baked tiles for the inner starters and their neighbors (36 files) are in `/mnt/p
 - Queue (who wants a full rebuild, why): (1) Sonny: terrain B drainage ON + stamped head ponds retired (card head-ponds-retire answered Yes) , waits on the 1-tile BAKE-1 test with MikeW first. (2) any other thread: ask the Guru.
 - Next slot: after BAKE-1 test result and Kathleen/Dave look at the first natural basin result; not before.
 - Done so far: tiles b1fb0c9, TERRAIN_VERSION 25 (22:55 UTC 22 Oct).
+- OVERNIGHT SELF-TESTS (Dave 05:00): tech/OVERNIGHT_TESTS.md; results one line each in tech/OVERNIGHT_RESULTS.md; when done everyone STOPS; Guru posts one Finished card.
