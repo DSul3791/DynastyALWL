@@ -427,3 +427,4 @@ Each active thread holds its current number plus ONE spare, handed out in advanc
 - 13:35 UTC 23 Oct Guru: MERGED 713: kathleen-shrubs blackthorn fix (816f1379). The three kath-flora cards now show pictures on the QA page (Image: lines + questions/img/*.png; the cards had local paths Dave could not see). Head = 713.
 - 13:50 UTC 23 Oct Guru: MERGED 714: sal-held-food (held food shows in hand; client only; Sal local_check pass). kathleen-rock-pile 8033728e (bigger packed rocks) waits for MikeW re-render. Head = 714.
 - 14:00 UTC 23 Oct Guru: MERGED 715: kathleen-rock-pile 8033728 (bigger packed rocks; MikeW renders pile_n6/n20/n45 look right). Head = 715.
+- 14:15 UTC 23 Oct Guru: MERGED 716: mike-look-rig 62da389 (--give slot, --drop at ground height, --dist close-up) + sal-held-food newest (1.8x held look). Raspberries in hand render fine (rasp_close.png). Head = 716.
