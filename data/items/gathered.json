@@ -293,7 +293,7 @@
 			"number": 1023,
 			"name": "Cherries",
 			"kind": "material",
-			"stack": 20,
+			"stack": 100,
 			"look_alikes": [
 				"Crab apple",
 				"Wild pear",
@@ -317,7 +317,7 @@
 			"number": 1025,
 			"name": "Chestnuts",
 			"kind": "material",
-			"stack": 20,
+			"stack": 50,
 			"look_alikes": [
 				"Oak",
 				"Beech",
@@ -394,7 +394,7 @@
 			"number": 1031,
 			"name": "Crab apples",
 			"kind": "material",
-			"stack": 20,
+			"stack": 50,
 			"look_alikes": [
 				"Wild pear",
 				"Wild cherry",
@@ -472,7 +472,7 @@
 			"number": 1037,
 			"name": "Dates",
 			"kind": "material",
-			"stack": 20,
+			"stack": 50,
 			"look_alikes": [
 				"Coconut palm",
 				"Wild banana"
@@ -842,7 +842,7 @@
 			"number": 1067,
 			"name": "Haws",
 			"kind": "material",
-			"stack": 20,
+			"stack": 50,
 			"look_alikes": [
 				"Crab apple",
 				"Wild pear",
@@ -1512,7 +1512,7 @@
 			"number": 1121,
 			"name": "Rowan berries",
 			"kind": "material",
-			"stack": 20,
+			"stack": 50,
 			"look_alikes": [
 				"Birch",
 				"Alder",
@@ -1562,7 +1562,7 @@
 			"number": 1125,
 			"name": "Sea buckthorn berries",
 			"kind": "material",
-			"stack": 20,
+			"stack": 100,
 			"look_alikes": [
 				"Juniper",
 				"Gorse"
@@ -1994,7 +1994,7 @@
 			"number": 1158,
 			"name": "Walnuts",
 			"kind": "material",
-			"stack": 20,
+			"stack": 50,
 			"look_alikes": [
 				"Oak",
 				"Beech",
@@ -2103,7 +2103,7 @@
 			"number": 1167,
 			"name": "Wild pears",
 			"kind": "material",
-			"stack": 20,
+			"stack": 50,
 			"look_alikes": [
 				"Crab apple",
 				"Wild cherry",
