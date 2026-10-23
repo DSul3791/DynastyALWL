@@ -2,10 +2,6 @@
 Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
 [check]
 
-## cost-26 | Double door: twice a single door plus 2 hinges (1 iron ingot)?
-Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
-[check]
-
 ## cost-27 | Wood pillar: 4 logs?
 Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
 [check]
