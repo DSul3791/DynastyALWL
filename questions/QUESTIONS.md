@@ -1,7 +1,3 @@
-## cost-14 | Roof, per slope piece, Lap board: 10 rough planks and 40 nails?
-Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
-[check]
-
 ## cost-15 | Roof, per slope piece, Stone shingle: 30 stone shingles and 4 mortar?
 Note: Sal recommends Yes. Full table in items/BLUEPRINT_BUILD_DESIGN.md.
 [check]
