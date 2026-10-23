@@ -2184,15 +2184,15 @@ const RASPBERRY_UNRIPE := Color(0.95, 0.85, 0.35)
 const SHRUB_LOOKS := {
 	"raspberry": {"canes": [6, 9], "arch": 0.8, "reach": 1.0, "cane": RASPBERRY_CANE, "leaf": 1.0, "fruit": RASPBERRY_BERRY, "unripe": RASPBERRY_UNRIPE, "flower": null, "thorns": false},
 	"bramble": {"canes": [6, 9], "arch": 0.9, "reach": 1.0, "cane": Color(0.50, 0.30, 0.30), "leaf": 1.2, "fruit": Color(0.35, 0.10, 0.55), "unripe": Color(1.0, 0.25, 0.25), "flower": Color(1.0, 0.9, 0.9), "thorns": true},
-	"wild_rose": {"canes": [10, 14], "arch": 0.6, "reach": 1.0, "rate": 0.12, "cluster": 0.045, "cane": Color(0.45, 0.30, 0.22), "leaf": 0.65, "fruit": Color(1.0, 0.18, 0.1), "unripe": Color(1.0, 0.55, 0.3), "flower": null, "blossom": Color(1.0, 0.25, 0.55), "thorns": true},
+	"wild_rose": {"canes": [8, 9], "sprays": 5, "arch": 0.6, "reach": 1.0, "rate": 0.12, "cluster": 0.045, "cane": Color(0.45, 0.30, 0.22), "leaf": 0.65, "fruit": Color(1.0, 0.18, 0.1), "unripe": Color(1.0, 0.55, 0.3), "flower": null, "blossom": Color(1.0, 0.25, 0.55), "thorns": true},
 	"blackthorn": {"canes": [14, 18], "base": 0.2, "arch": 0.55, "reach": 1.4, "rate": 0.12, "cane": Color(0.20, 0.17, 0.15), "leaf": 0.32, "fruit": Color(0.4, 0.45, 0.9), "unripe": Color(0.5, 0.6, 0.5), "flower": null, "thorns": true},
-	"blueberry": {"canes": [16, 22], "arch": 0.1, "reach": 0.7, "rate": 0.5, "cluster": 0.06, "cane": Color(0.50, 0.38, 0.28), "leaf": 0.4, "fruit": Color(0.30, 0.38, 0.85), "unripe": Color(0.75, 0.9, 0.55), "flower": null, "thorns": false},
+	"blueberry": {"canes": [12, 14], "sprays": 5, "arch": 0.1, "reach": 0.7, "rate": 0.5, "cluster": 0.06, "cane": Color(0.50, 0.38, 0.28), "leaf": 0.4, "fruit": Color(0.30, 0.38, 0.85), "unripe": Color(0.75, 0.9, 0.55), "flower": null, "thorns": false},
 }
 
 
 static func _cane_shrub(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
 	var span: Array = look["canes"]
-	var canes: int = (span[0] as int) if far else rng.randi_range(int(span[0]), int(span[1]))
+	var canes: int = int(look.get("far_canes", 4)) if far else rng.randi_range(int(span[0]), int(span[1]))
 	var arch: float = float(look["arch"])
 	var az: float = rng.randf() * TAU
 	var cane_color: Color = look["cane"]
@@ -2222,7 +2222,7 @@ static func _cane_shrub(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 				_branch(bark, on, on + spike * 0.1 * crown, r * 0.5, r * 0.05, cane_color * 0.8, 3)
 
 		# Small leaf sprays all along the cane, with the berries or flowers hanging free beneath them where they show.
-		var sprays: int = 4 if far else 8
+		var sprays: int = 3 if far else int(look.get("sprays", 8))
 		var leaf_size: float = crown * float(look["leaf"]) * 0.3
 
 		for m in range(sprays):
@@ -2256,9 +2256,6 @@ static func _blossom(acc: Acc, rng: RandomNumberGenerator, at: Vector3, size: fl
 
 	_bead(acc, at + Vector3(0.0, size * 0.1, 0.0), Vector3(size * 0.28, size * 0.14, size * 0.28), Color(1.0, 0.9, 0.5))
 
-	for k in range(4):
-		var a: float = turn + TAU * float(k) / 4.0
-		_bead(acc, at + Vector3(cos(a), 0.0, sin(a)) * size * 0.22 + Vector3(0.0, size * 0.18, 0.0), Vector3(size * 0.06, size * 0.06, size * 0.06), Color(1.0, 0.6, 0.15))
 
 
 # Blackthorn (Dave's photos 2026-10-23): a dense twisting dome of dark thorny wood with a bare base, side shoots ending in long sharp spines,
@@ -2269,8 +2266,9 @@ const BLOSSOM_WHITE := Color(1.0, 1.0, 0.98)
 
 
 static func _blackthorn(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool, season: String) -> void:
+	# Budget (Steve 2026-10-23): near model at most about 4,000 vertices, far model about 800. Spines are single triangles.
 	var bloom: bool = season == "spring"
-	var stems: int = 10 if far else rng.randi_range(22, 28)
+	var stems: int = 5 if far else rng.randi_range(17, 19)
 	var az: float = rng.randf() * TAU
 	var r0: float = maxf(h * 0.006, 0.012)
 
@@ -2282,28 +2280,24 @@ static func _blackthorn(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: f
 		var base: Vector3 = out * crown * 0.12
 		var mid: Vector3 = base + out * reach * 0.3 + Vector3(0.0, top_y * 0.5, 0.0) + Vector3(rng.randfn(), 0.0, rng.randfn()) * 0.05 * crown
 		var top: Vector3 = base + out * reach + Vector3(0.0, top_y, 0.0)
-		_branch(bark, base, mid, r0 * 1.5, r0, BLACKTHORN_WOOD, 5)
+		_branch(bark, base, mid, r0 * 1.5, r0, BLACKTHORN_WOOD, 4)
 		_branch(bark, mid, top, r0, r0 * 0.4, BLACKTHORN_WOOD, 4)
-		var nodes: Array = []
+		var nodes: Array = [top]
 
-		# Side shoots from the upper two thirds, angled out; each ends in a long spine and has a few short ones.
-		for m in range(4 if far else rng.randi_range(6, 8)):
+		# Side shoots from the upper two thirds, angled out; each ends in a long spine, with one short one along it.
+		for m in range(2 if far else rng.randi_range(4, 5)):
 			var from: Vector3 = mid.lerp(top, rng.randf_range(0.05, 1.0))
 			var side: Vector3 = (out * 0.6 + Vector3(rng.randfn(), rng.randf_range(0.0, 0.8), rng.randfn()) * 0.6).normalized()
 			var length: float = crown * rng.randf_range(0.18, 0.4)
 			var tip: Vector3 = from + side * length
 			_branch(bark, from, tip, r0 * 0.5, r0 * 0.15, BLACKTHORN_WOOD, 3)
 			nodes.append(tip)
+			_spine(bark, tip, tip + side * crown * 0.1, r0 * 0.4, BLACKTHORN_WOOD)
 
 			if not far:
-				_branch(bark, tip, tip + side * crown * 0.1, r0 * 0.25, 0.0015, BLACKTHORN_WOOD, 3)
-
-				for sp in range(2):
-					var on: Vector3 = from.lerp(tip, rng.randf_range(0.3, 0.9))
-					var spine: Vector3 = (side + Vector3(rng.randfn(), rng.randfn() * 0.5, rng.randfn()) * 0.8).normalized()
-					_branch(bark, on, on + spine * crown * rng.randf_range(0.05, 0.09), r0 * 0.3, 0.0015, BLACKTHORN_WOOD, 3)
-
-		nodes.append(top)
+				var on: Vector3 = from.lerp(tip, rng.randf_range(0.3, 0.9))
+				var spine: Vector3 = (side + Vector3(rng.randfn(), rng.randfn() * 0.5, rng.randfn()) * 0.8).normalized()
+				_spine(bark, on, on + spine * crown * rng.randf_range(0.05, 0.09), r0 * 0.35, BLACKTHORN_WOOD)
 
 		for node in nodes:
 			var n: Vector3 = node
@@ -2311,13 +2305,29 @@ static func _blackthorn(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: f
 
 			if bloom:
 				if not far:
-					_blossom(bark, rng, n, crown * 0.035, BLOSSOM_WHITE)
-					_blossom(bark, rng, n + Vector3(rng.randfn(), rng.randfn(), rng.randfn()) * crown * 0.04, crown * 0.03, BLOSSOM_WHITE)
+					_blossom(bark, rng, n, crown * 0.04, BLOSSOM_WHITE)
 			else:
-				_clump(leaves, rng, n, Vector3(0.0, n.y - crown * 0.4, 0.0), crown * 0.09, shade, 2 if far else 3)
+				_clump(leaves, rng, n, Vector3(0.0, n.y - crown * 0.4, 0.0), crown * 0.12, shade, 2)
 
-				if not far and rng.randf() < 0.5:
-					_cluster(bark, rng, n + Vector3(0.0, -crown * 0.05, 0.0), crown * 0.03, SLOE_COLOR, false, rng.randi_range(3, 6))
+				if not far and rng.randf() < 0.45:
+					_cluster(bark, rng, n + Vector3(0.0, -crown * 0.05, 0.0), crown * 0.035, SLOE_COLOR, false, rng.randi_range(3, 5))
+
+
+# A single-triangle thorn from `from` to `to` (a thin sharp spine), width `w` at the base.
+static func _spine(acc: Acc, from: Vector3, to: Vector3, w: float, color: Color) -> void:
+	var axis: Vector3 = to - from
+
+	if axis.length() < 0.005:
+		return
+
+	var side: Vector3 = axis.cross(Vector3.UP)
+	side = side.normalized() * w if side.length() > 0.001 else Vector3.RIGHT * w
+	var n: Vector3 = axis.cross(side).normalized()
+	var first: int = acc.vert(from - side, n, Vector2(0.0, 1.0), color)
+	acc.vert(from + side, n, Vector2(1.0, 1.0), color)
+	acc.vert(to, n, Vector2(0.5, 0.0), color)
+	acc.tri(first, first + 1, first + 2)
+	acc.tri(first, first + 2, first + 1)
 
 
 static func _raspberry(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
