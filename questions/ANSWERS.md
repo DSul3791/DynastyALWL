@@ -944,3 +944,7 @@ Answered: 2026-10-23 01:37 UTC
 Answer: No: Yes, but we are going to have rock piles so that we can put down rock piles just to store our rock. Also, you should just be able to pick up a rock pile by pushing E on it and you will get back all the rocks it took to make it and you should guesstimate how many rocks it should take to make a rock pile based on the size of our rocks and one rock pile should be about the right weight to fill someone’s inventory if they are average strength and their inventory was empty, so one character should be able to pick up a rock pile and slowly carry it to the waggon where they might dump it into the wagon, and the waggon would change his animation to look like it has rock in it
 Answered: 2026-10-23 01:37 UTC
 
+## wet-stages | Within 4 m of water above, should a tunnel go through three stages by distance: damp (4 to 2.5 m, rare drips), dripping (2.5 to 1.2 m, drip points every few metres), running (under 1.2 m, thin streams down the wall and a drizzle)?
+Answer: Yes
+Answered: 2026-10-23 01:37 UTC
+
