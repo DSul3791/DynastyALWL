@@ -8,9 +8,6 @@ Note: 6. Optional: place a timber prop near the roof before the time runs out. T
 Note: 7. Take a picture of the shaking and dust. Write in Notes what happened, yes or no.
 [test]
 
-## cost-braces-tar | Tar-soaked braces: same shape, add 1 tar per log, and the wear decay is almost zero?
-[check]
-
 ## floor-brace-1 | Floor brace: under the four edges of every 2 x 2 m floor runs one log split in half (flat side up), cut in quarters so the pieces meet the neighbouring walls, ceilings and floors like a sill beam?
 [check]
 
