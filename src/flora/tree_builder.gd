@@ -183,6 +183,8 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 			_grass(leaves, rng, h, crown, 2 if far else 3)
 		"fern":
 			_fern(leaves, rng, h, crown, far)
+		"mushroom":
+			_mushroom(MUSHROOM_LOOKS.get(str(entry["name"]), MUSHROOM_LOOKS["porcini"]), bark, rng, h, crown, far)
 		"flower":
 			_flower(bark, leaves, rng, h, crown, far)
 		_:
@@ -2516,3 +2518,113 @@ static func _herb(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, 
 # A plain upright column (cactus).
 static func _column(acc: Acc, rng: RandomNumberGenerator, h: float, radius: float, color: Color, sides: int, rings: int) -> void:
 	_trunk(acc, rng, h, radius, radius * 0.8, Vector2.ZERO, color, sides, rings, 0.0)
+
+
+# Mushrooms (Dave 2026-10-23: plants must look like the real thing). One or a few fruiting bodies, each a stem and cap turned from a
+# profile. `type`: dome (porcini, fly agaric), cone (morel, honeycomb ridges), funnel (chanterelle, wavy cap running into the stem), ball
+# (puffball), bracket (tinder fungus shelf on a stub). `cap_r` and `cap_h` are fractions of the height h; `ring` adds a skirt on the stem.
+const MUSHROOM_LOOKS := {
+	"chanterelle": {"type": "funnel", "cap": Color(0.95, 0.68, 0.14), "stem": Color(0.97, 0.78, 0.3), "count": [4, 6], "cap_r": 0.5, "stem_r": 0.13, "spots": null},
+	"porcini": {"type": "dome", "cap": Color(0.52, 0.30, 0.14), "stem": Color(0.88, 0.80, 0.64), "count": [1, 3], "cap_r": 0.55, "cap_h": 0.4, "stem_r": 0.22, "spots": null},
+	"morel": {"type": "cone", "cap": Color(0.50, 0.36, 0.18), "stem": Color(0.93, 0.88, 0.76), "count": [1, 2], "cap_r": 0.26, "cap_h": 0.62, "stem_r": 0.2, "spots": null},
+	"fly_agaric": {"type": "dome", "cap": Color(0.88, 0.1, 0.07), "stem": Color(0.97, 0.96, 0.92), "count": [2, 3], "cap_r": 0.6, "cap_h": 0.34, "stem_r": 0.12, "spots": Color(1.0, 1.0, 0.95), "ring": true},
+	"puffball": {"type": "ball", "cap": Color(0.96, 0.94, 0.88), "stem": Color(0.9, 0.88, 0.8), "count": [1, 3], "cap_r": 0.5, "cap_h": 0.8, "stem_r": 0.0, "spots": null},
+	"tinder_fungus": {"type": "bracket", "cap": Color(0.50, 0.44, 0.38), "stem": Color(0.30, 0.22, 0.15), "count": [1, 2], "cap_r": 0.55, "cap_h": 0.3, "stem_r": 0.3, "spots": null},
+	"rimecap": {"type": "dome", "cap": Color(0.78, 0.88, 0.97), "stem": Color(0.94, 0.97, 1.0), "count": [2, 4], "cap_r": 0.55, "cap_h": 0.42, "stem_r": 0.12, "spots": Color(1.0, 1.0, 1.0)},
+	"lumencap": {"type": "dome", "cap": Color(0.45, 1.0, 0.85), "stem": Color(0.7, 1.0, 0.92), "count": [3, 5], "cap_r": 0.5, "cap_h": 0.45, "stem_r": 0.1, "spots": null},
+	"cinderfoot": {"type": "cone", "cap": Color(0.85, 0.28, 0.08), "stem": Color(0.12, 0.09, 0.08), "count": [2, 4], "cap_r": 0.4, "cap_h": 0.55, "stem_r": 0.14, "spots": null},
+	"mirrorcap": {"type": "dome", "cap": Color(0.72, 0.76, 0.82), "stem": Color(0.88, 0.9, 0.94), "count": [1, 3], "cap_r": 0.6, "cap_h": 0.22, "stem_r": 0.12, "spots": null},
+}
+
+
+# Turns `profile` (Vector2 of radius, height, bottom to top) round the Y axis at `at`; the surface is drawn from both sides.
+static func _lathe(acc: Acc, at: Vector3, profile: Array, sides: int, color: Color, color2: Color = Color(-1.0, 0.0, 0.0)) -> void:
+	var rows: int = profile.size()
+	var first: int = acc.v.size()
+	var mid_y: float = (profile[0].y + profile[rows - 1].y) * 0.5
+
+	for j in range(rows):
+		var q: Vector2 = profile[j]
+		var prev: Vector2 = profile[maxi(j - 1, 0)]
+		var next: Vector2 = profile[mini(j + 1, rows - 1)]
+		var slope: Vector2 = next - prev
+		var flat: Vector2 = Vector2(slope.y, -slope.x).normalized() if slope.length() > 0.0001 else Vector2.RIGHT
+
+		if flat.dot(Vector2(q.x, q.y - mid_y)) < 0.0:
+			flat = -flat
+
+		var shade: Color = color2 if (color2.r >= 0.0 and j % 2 == 1) else color
+
+		for s in range(sides):
+			var a: float = TAU * float(s) / float(sides)
+			var out: Vector3 = Vector3(cos(a), 0.0, sin(a))
+			acc.vert(at + out * q.x + Vector3(0.0, q.y, 0.0), (out * flat.x + Vector3(0.0, flat.y, 0.0)).normalized(), Vector2(0.5 + out.x * 0.4, 0.5 + out.z * 0.4), shade)
+
+	for j in range(rows - 1):
+		for s in range(sides):
+			var a: int = first + j * sides + s
+			var b: int = first + j * sides + (s + 1) % sides
+			var c: int = first + (j + 1) * sides + s
+			var d: int = first + (j + 1) * sides + (s + 1) % sides
+			acc.tri(a, b, d)
+			acc.tri(a, d, c)
+			acc.tri(a, d, b)
+			acc.tri(a, c, d)
+
+
+static func _mushroom(look: Dictionary, bark: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
+	var span: Array = look["count"]
+	var count: int = 1 if far else rng.randi_range(int(span[0]), int(span[1]))
+	var sides: int = 5 if far else 9
+	var type: String = str(look["type"])
+
+	for k in range(count):
+		var at: Vector3 = Vector3.ZERO if k == 0 else Vector3(rng.randfn(), 0.0, rng.randfn()) * maxf(crown, h * 0.5) * 0.5
+		var size: float = h * (1.0 if k == 0 else rng.randf_range(0.5, 0.9))
+		var cap_r: float = size * float(look["cap_r"])
+		var cap_h: float = size * float(look.get("cap_h", 0.4))
+		var stem_r: float = maxf(size * float(look["stem_r"]), 0.004)
+		var stem: Color = look["stem"]
+		var cap: Color = look["cap"]
+		var lean: float = rng.randf_range(-0.05, 0.05) * size
+
+		if type == "ball":
+			var ball: Array = []
+
+			for j in range(5 if far else 7):
+				var t: float = float(j) / float(4 if far else 6)
+				ball.append(Vector2(sin(t * PI) * cap_r, cap_r * 0.2 + (1.0 - cos(t * PI)) * cap_r * 0.8))
+
+			_lathe(bark, at, ball, sides, cap)
+			continue
+
+		if type == "bracket":
+			# A short grey-brown stub with a hoof-shaped shelf on its side.
+			_lathe(bark, at, [Vector2(stem_r * 1.4, 0.0), Vector2(stem_r, size * 0.5), Vector2(stem_r * 0.9, size * 0.9), Vector2(0.0, size * 0.9)], sides, stem)
+			var shelf: Vector3 = at + Vector3(stem_r * 1.0, size * 0.45, 0.0)
+			_lathe(bark, shelf, [Vector2(0.0, -cap_h * 0.5), Vector2(cap_r, -cap_h * 0.35), Vector2(cap_r * 0.95, 0.0), Vector2(cap_r * 0.55, cap_h * 0.3), Vector2(0.0, cap_h * 0.45)], sides, cap, cap * 0.8)
+			continue
+
+		var stem_h: float = size - cap_h
+		var profile: Array = [Vector2(stem_r * 1.3, 0.0), Vector2(stem_r * 1.0, stem_h * 0.5), Vector2(stem_r * 0.85, stem_h)]
+		_lathe(bark, at + Vector3(lean, 0.0, 0.0), profile, sides, stem)
+
+		if look.has("ring") and not far:
+			_lathe(bark, at + Vector3(lean, stem_h * 0.62, 0.0), [Vector2(stem_r * 0.9, 0.0), Vector2(stem_r * 2.0, -cap_h * 0.25), Vector2(stem_r * 0.95, -cap_h * 0.4)], sides, stem)
+
+		var top: Vector3 = at + Vector3(lean, stem_h, 0.0)
+
+		match type:
+			"cone":
+				_lathe(bark, top, [Vector2(stem_r * 0.8, -cap_h * 0.05), Vector2(cap_r, cap_h * 0.1), Vector2(cap_r * 1.0, cap_h * 0.4), Vector2(cap_r * 0.75, cap_h * 0.7), Vector2(cap_r * 0.35, cap_h * 0.92), Vector2(0.0, cap_h)], sides, cap, cap * 0.7)
+			"funnel":
+				# The cap runs out of the stem in a wavy trumpet with a shallow dip in the middle.
+				_lathe(bark, top + Vector3(0.0, -size * 0.18, 0.0), [Vector2(stem_r * 0.8, 0.0), Vector2(cap_r * 0.5, size * 0.1), Vector2(cap_r, size * 0.24), Vector2(cap_r * 0.9, size * 0.26), Vector2(cap_r * 0.4, size * 0.16), Vector2(0.0, size * 0.12)], sides, cap)
+			_:
+				_lathe(bark, top, [Vector2(stem_r * 0.7, -cap_h * 0.08), Vector2(cap_r, -cap_h * 0.05), Vector2(cap_r * 0.97, cap_h * 0.22), Vector2(cap_r * 0.8, cap_h * 0.58), Vector2(cap_r * 0.45, cap_h * 0.9), Vector2(0.0, cap_h)], sides, cap)
+
+				if look["spots"] != null and not far:
+					for m in range(7):
+						var f: float = sqrt(rng.randf()) * 0.8
+						var a: float = rng.randf() * TAU
+						_bead(bark, top + Vector3(cos(a) * cap_r * f, cap_h * sqrt(maxf(1.0 - f * f, 0.0)) * 1.0, sin(a) * cap_r * f), Vector3(cap_r * 0.1, cap_r * 0.06, cap_r * 0.1), look["spots"])
