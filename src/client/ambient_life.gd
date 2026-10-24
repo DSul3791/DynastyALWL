@@ -106,6 +106,7 @@ var _clock: float = 0.0                 # nature seconds since start (real secon
 var _last_pick: Dictionary = {}          # call name -> variant played last (no immediate repeat)
 var last_file: String = ""              # the file last played, e.g. fish_splash_2
 var _source: Dictionary = {}            # call name -> "recorded" or "generated"
+var replaced: Array = []                # call names a newer layer plays now (ambience_slots.gd): their timers do not run here
 var max_voices: int = 4                 # calls and flushes playing at once (the quality tier sets it)
 var weather_calls: float = 1.0          # share of calls still made in this weather (weather_sounds.gd)
 var weather_frogs: float = 1.0          # share of frog calls in this weather: more in light rain, none in storms
@@ -216,6 +217,10 @@ func update(delta: float, body: CharacterBody3D, flying: bool) -> void:
 
 	for event in EVENTS:
 		var sound_name: String = event["name"]
+
+		if replaced.has(sound_name):
+			continue
+
 		_next[sound_name] = float(_next[sound_name]) - step * _rate(event)
 
 		if float(_next[sound_name]) > 0.0:
@@ -412,6 +417,21 @@ func _hour_ok(event: Dictionary) -> bool:
 # A due call: plays when the zones, hour and season allow it.
 func voices_playing() -> int:
 	return _voices.size()
+
+
+# The water square found by the last scan that is nearest to `from`; Vector3.INF when none.
+func nearest_wet_point(from: Vector3) -> Vector3:
+	var best: Vector3 = Vector3.INF
+	var best_distance: float = INF
+
+	for point in _wet_points:
+		var distance: float = from.distance_to(point)
+
+		if distance < best_distance:
+			best_distance = distance
+			best = point
+
+	return best
 
 
 func _try(event: Dictionary, body: CharacterBody3D) -> void:

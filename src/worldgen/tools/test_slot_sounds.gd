@@ -4,6 +4,7 @@ extends SceneTree
 # sites and the JSON agree both ways (a slot name used in code must exist; a door material in structures.json must have its open and close slots).
 
 const SlotSounds := preload("res://src/client/slot_sounds.gd")
+const Ambience := preload("res://src/client/ambience_slots.gd")
 const AnimalView := preload("res://src/client/animal_view.gd")
 const StructureLook := preload("res://src/shared/structure_look.gd")
 const SOURCES := ["res://scenes/terrain_client/terrain_client.gd", "res://src/client/placed_sounds.gd", "res://src/client/animal_view.gd", "res://src/client/sound_test_menu.gd"]
@@ -94,6 +95,7 @@ func _init() -> void:
 
 
 func _check_sites(names: Array) -> void:
+	_check_ambience()
 	# Call sites and JSON agree. Literal slot names in code must exist; computed names are checked from their data.
 	var used: Dictionary = {}
 	var pattern: RegEx = RegEx.new()
@@ -128,3 +130,61 @@ func _check_sites(names: Array) -> void:
 	print("slots with no call site yet (no event in the game): %s" % ", ".join(PackedStringArray(unused)))
 	print("slot sounds test: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
+
+
+# Batch 2 (data/sound/batch2_slots.json): every slot has files that exist, the tag rules pick the right bed and one-shots, and the tag words are ones the rules know.
+func _check_ambience() -> void:
+	var parsed: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(Ambience.SLOTS_PATH))
+	var slots: Dictionary = parsed["slots"]
+	check(slots.size() >= 17, "the JSON lists the batch 2 slots (%d)" % slots.size())
+	var known_layers: Array = ["weather_bed", "time_bed", "positional", "oneshot"]
+	var known_near: Array = ["any", "pond", "sea_edge", "lava"]
+	var known_altitude: Array = ["any", "below_800m", "below_1500m", "above_300m", "sea_level"]
+	var known_time: Array = ["day", "night", "day_and_night", "dusk_and_night"]
+
+	for slot in slots:
+		var row: Dictionary = slots[slot]
+		var found: int = 0
+
+		for path in row["files"]:
+			found += 1 if FileAccess.file_exists(str(path)) else 0
+
+		check(found >= 1 and found == row["files"].size(), "batch 2 slot %s: all %d files exist" % [slot, row["files"].size()])
+		var tags: Dictionary = row["tags"]
+		check(known_layers.has(row["layer"]) and known_near.has(tags["near_water"]) and known_altitude.has(tags["altitude"]) and known_time.has(tags["time"]), "batch 2 slot %s: layer and tag words are known to the rules" % slot)
+
+	var summer_forest: Dictionary = {"season": "summer", "time": "day", "biomes": ["temperate_forest", "woodland"], "water": 0.0, "height": 40.0}
+	check(Ambience.choose_bed(slots, "weather_bed", summer_forest) == "bed_forest_day", "a summer forest day gets the forest day bed")
+	var winter_forest: Dictionary = summer_forest.duplicate()
+	winter_forest["season"] = "winter"
+	check(Ambience.choose_bed(slots, "weather_bed", winter_forest) == "bed_forest_winter", "winter gets the winter forest bed")
+	var night: Dictionary = summer_forest.duplicate()
+	night["time"] = "night"
+	check(Ambience.choose_bed(slots, "time_bed", night) == "bed_crickets", "a warm night over trees or grass gets crickets (the narrower slot)")
+	night["season"] = "winter"
+	check(Ambience.choose_bed(slots, "time_bed", night) == "bed_night", "a winter night gets the general night bed")
+	check(Ambience.choose_bed(slots, "time_bed", summer_forest) == "", "no time bed by day")
+	var beach: Dictionary = {"season": "summer", "time": "day", "biomes": ["beach"], "water": 0.8, "height": 2.0}
+	check(Ambience.choose_bed(slots, "weather_bed", beach) == "bed_surf", "a beach at sea level gets the surf bed")
+	beach["height"] = 30.0
+	check(Ambience.choose_bed(slots, "weather_bed", beach) != "bed_surf", "and not the same water 30 m up")
+	var canyon: Dictionary = {"season": "summer", "time": "day", "biomes": ["canyon"], "water": 0.0, "height": 120.0}
+	check(Ambience.choose_bed(slots, "weather_bed", canyon) == "bed_canyon_wind" and Ambience.matching(slots, "oneshot", canyon).has("canyon_echo"), "a forced canyon gets its wind and its echo")
+	var day_birds: Array = Ambience.matching(slots, "oneshot", summer_forest)
+	check(day_birds.has("bird_tweet") and day_birds.has("bird_whistle") and not day_birds.has("owl_hoot") and not day_birds.has("frog_croak"), "day in a summer forest: birds, no owls, no frogs")
+	var pond_dusk: Dictionary = {"season": "summer", "time": "dusk", "biomes": ["grassland"], "water": 0.9, "height": 20.0}
+	check(Ambience.matching(slots, "oneshot", pond_dusk).has("frog_croak") and Ambience.matching(slots, "positional", pond_dusk).has("bed_pond"), "dusk by a pond: frogs and the pond bed")
+	var autumn_pond: Dictionary = pond_dusk.duplicate()
+	autumn_pond["season"] = "winter"
+	check(not Ambience.matching(slots, "positional", autumn_pond).has("bed_pond"), "a frozen winter pond has no pond bed")
+	check(Ambience.time_class(12.0, "summer") == "day" and Ambience.time_class(20.5, "summer") == "dusk" and Ambience.time_class(23.0, "summer") == "night" and Ambience.time_class(3.0, "winter") == "night", "time classes follow the season's sunrise and sunset")
+	check(Ambience.biomes_for(0.8, 0.1, 0.0, 50.0).has("woodland") and Ambience.biomes_for(0.0, 0.9, 0.0, 50.0) == ["grassland"] and Ambience.biomes_for(0.0, 0.0, 0.9, 2.0).has("beach") and Ambience.biomes_for(0.0, 0.0, 0.0, 50.0, "canyon") == ["canyon"], "biomes the client can read from trees, grass and water, plus a forced one")
+	for call_name in Ambience.REPLACES:
+		check(slots.has(call_name), "ambient call %s that the slots take over has a slot" % call_name)
+
+	var layers_seen: Dictionary = {}
+
+	for slot in slots:
+		layers_seen[slots[slot]["layer"]] = true
+
+	check(layers_seen.size() == 4, "all four layers are used by the batch")

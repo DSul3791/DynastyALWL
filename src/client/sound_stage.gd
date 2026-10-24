@@ -38,6 +38,7 @@ const LandingScript := preload("res://src/client/landing_sounds.gd")
 const StanceScript := preload("res://src/client/stance_sounds.gd")
 const InteriorScript := preload("res://src/client/interior_sounds.gd")
 const SlotSoundsScript := preload("res://src/client/slot_sounds.gd")
+const AmbienceSlotsScript := preload("res://src/client/ambience_slots.gd")
 const SpearScript := preload("res://src/client/spear_sounds.gd")
 const PlacedScript := preload("res://src/client/placed_sounds.gd")
 const TreeWindScript := preload("res://src/client/tree_wind.gd")
@@ -203,6 +204,7 @@ var gear                                # GearSounds: armour and clothing layers
 var insects                             # InsectBed: summer insect chirring over meadows and water edges
 var stepfx                              # StepFx: wet-shoe squelch and cloth rustle under footsteps
 var slots                               # SlotSounds: Kathleen's batch 1 slots by name (doors by material, ladder, table, creature steps, water wheel; data/sound/batch1_slots.json)
+var ambience                            # AmbienceSlots: Kathleen's batch 2 beds and one-shots by tags (data/sound/batch2_slots.json)
 var wet                                 # WetSounds: drips and a trickle in a tunnel under water; the client feeds it the rock gap (drip_view.gap_m)
 var landing                             # LandingSounds: thud and hard landing by fall height; signal hurt is the fall damage hook
 var emitters                            # Emitters: sounds for server-owned entities (emit, sync); sound/EMITTER_API.md
@@ -346,6 +348,10 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	slots.name = "SlotSounds"
 	add_child(slots)
 	slots.setup(self)
+	ambience = AmbienceSlotsScript.new()
+	ambience.name = "AmbienceSlots"
+	add_child(ambience)
+	ambience.setup(self)
 	wet = WetSoundsScript.new()
 	wet.name = "WetSounds"
 	add_child(wet)
@@ -468,6 +474,7 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 
 	if slow_now:
 		ambient.update(slow_delta, body, flying)
+		ambience.update(slow_delta, body)
 		insects.update(slow_delta, underwater)
 		weather.update(slow_delta, body, underwater)
 
