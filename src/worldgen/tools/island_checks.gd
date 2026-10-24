@@ -1276,11 +1276,29 @@ func _ray(origin: Vector2, bearing_deg: float, distances: Array, beach_top_m: fl
 # "gullies: N, dead ends: M" from the bake log (Sonny): dead-end gullies as a
 # share of all gullies, and per km2 of baked tiles.
 func _find_gully_line(text: String) -> String:
+	var gullies: int = 0
+	var dead: int = 0
+	var found: bool = false
+
+	# One line per tile in the bake log: add them all up.
 	for line in text.split("\n"):
 		if line.contains("gullies:") and line.contains("dead ends:"):
-			return line
+			var numbers: PackedStringArray = PackedStringArray()
+			var digits: String = ""
 
-	return ""
+			for letter in line + " ":
+				if letter >= "0" and letter <= "9":
+					digits += letter
+				elif digits != "":
+					numbers.append(digits)
+					digits = ""
+
+			if numbers.size() >= 2:
+				gullies += int(numbers[0])
+				dead += int(numbers[1])
+				found = true
+
+	return "gullies: %d, dead ends: %d" % [gullies, dead] if found else ""
 
 
 func _gully_checks(area_km2: float, tile_limits: Dictionary) -> void:
