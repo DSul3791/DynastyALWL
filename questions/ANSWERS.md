@@ -1422,3 +1422,7 @@ Answered: 2026-10-24 16:02 UTC
 Answer: Yes
 Answered: 2026-10-24 16:02 UTC
 
+## bridge-ramp-cap | Cap a bridge ramp at 40 m long?
+Answer: No: No because whatever size we decide to make the ramps should allow people to flexibility of putting them on awkward terrain, or whatever they need so make the poles 5 m long from the bottom of the bridge floor and make the ramps go down to whatever that same height is
+Answered: 2026-10-24 16:04 UTC
+
