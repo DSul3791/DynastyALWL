@@ -1,18 +1,25 @@
 WhatamIDoingtoReachMyGoal (Tyler)
 ULTIMATE (Dave 01:32): provide accurate, up-to-date, best-practice improved action plans to anyone creating a new branch.
-GOAL 1: Every plan answered once, fast, with evidence (3+ concrete sourced improvements, within the hour)
+GOAL 1: Every plan answered once, fast, with evidence (3+ concrete sourced improvements, within the hour).
+Rules for this pad: ordered steps, each with a DONE-CHECK. Work top to bottom. If a step waits, start the next. When fewer than 5 open steps remain, add the next 10 from goals_Tyler.md. Never idle.
 
-How to use (Dave 01:26): this is your scratch pad. Finer steps toward goal 1 only. Update it when you start a job, when you finish a step, and at every half-hour reminder. Never delete done lines, mark them DONE with the time (UTC). If you break off, write who you handed it to (Sal or Mike) and what.
-
-STEPS NOW
-1. Reply to each incoming plan in its plan file within the hour (BP-T52).
-2. After each merge/fail add a LESSONS line.
-3. Refill JOBS.md queues; mirror pads at 8 AM.
+STEPS (open)
+1. Check /mnt/project-files/tech/ACTION_PLANS/ for any plan whose "Tyler reply" says (pending). Done-check: grep finds none. (Repeat every 15 min.)
+2. For each new plan: read it, read DECISIONS.md + the design section it touches, write 3+ improvements with sources, mark GO/NO-GO, mirror to docs/mirror, tell the coordinator in one line. Done-check: reply file section exists and mirror pushed.
+3. Merge list 2 (tech/MERGE_CHECK_NEXT2.md): when Mike reports PASS, merge the passing branches, bump build to 774, BUILD_LOG + HANDOFF + DAY_LOG. Done-check: head build 774 on origin and number sent to coordinator.
+4. Trial-merge every newly pushed branch against head and add clean ones to the next merge list. Done-check: list file updated within 30 minutes of each push.
+5. Build the plan checklists, one page per kind: terrain/bake, item data, model/look, server/protocol, rig/test, docs. Done-check: tech/PLAN_CHECKLISTS.md has six sections with 5-8 questions each.
+6. LESSONS line for each merged branch of tonight (771, 772, 773): plan vs what happened. Done-check: three lines in tech/LESSONS.md.
+7. Review BEST_PRACTICES.md for stale entries (dates, contradictions with Dave rulings: BP-T50 vs BP-T52, BP-C23 vs BP-T53). Done-check: contradicting entries marked "superseded by BP-T5x".
+8. Add dates and sources to the 10 most-used best-practice entries (BP-T31, T44-T53, C23). Done-check: each has a date and source line.
+9. Design coverage map: one table, each DESIGN_IDEAS section (4 to 13) with owner, status, next goal. Done-check: tech/DESIGN_COVERAGE.md exists with a row per section.
+10. Refill JOBS.md queues from goals_<Name>.md so every thread has 3+ next lines. Done-check: each queue has 3+ open lines.
+11. Verify one best practice per week against current official docs (Godot, Voxel Tools, git); log the check. Done-check: a dated line in tech/LESSONS.md.
+12. Daily audit for 24 Oct against the efficiency plan targets (tech/AUDITS/AUDIT_2026-10-24.md) at 20:00 ADT. Done-check: file exists with 7 pass/fail lines.
 
 HANDED OFF
 (none)
 
 DONE
-- 01:05 UTC plan GO: Sonny foothills; 01:00 Sal island checks; 00:35 Kathleen building looks; 00:45 Sal look names; 01:00 Steve rig pieces; 01:50 Kathleen item looks; 00:58 Sal showroom
-- 01:00 UTC merged builds 771, 772, 773
-- 01:56 UTC goals files split, moderator goals, reminder text improved
+- 00:35-02:45 UTC plan GO replies: Kathleen building looks, Sal showroom, Sal look names, Steve rig pieces, Sonny foothills, Sal island checks, Kathleen item looks, Kathleen flora gaps, Steve river settle, Kathleen worn clothing
+- 01:00-01:35 UTC builds 771, 772, 773 merged; goals files split; reminder text improved; moderator goals created

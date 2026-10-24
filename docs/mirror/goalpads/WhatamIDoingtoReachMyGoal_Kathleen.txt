@@ -1,13 +1,29 @@
 WhatamIDoingtoReachMyGoal (Kathleen)
 GOAL 1: Simple, reasonably accurate-to-real models for EVERYTHING in the game that needs one
+Rules: update at every step start/finish and every 30-min reminder; never delete done lines; if a step waits on someone, start the next; when fewer than 5 steps remain add the next 10 from goals_Kathleen.md.
 
-How to use (Dave 01:26): this is your scratch pad. Finer steps toward goal 1 only. Update it when you start a job, when you finish a step, and at every half-hour reminder. Never delete done lines, mark them DONE with the time (UTC). If you break off, write who you handed it to (Sal or Mike) and what.
-
-STEPS NOW
-1. 
+STEP LIST (ordered; done check in brackets)
+1. DONE 1a inventory art/MODEL_INVENTORY.md [file exists with counts]
+2. DONE 1c 198 items looks [validate_items says 0 GENERIC]
+3. DONE 1d building pieces (log wall, doors, ceiling, flat roof, braces, sawmill, table, wheel) [branches pushed]
+4. DONE 1b family 1 flowers: 21 species (claude/kathleen-flora-gaps) [headless build under budget]
+5. NEXT 1b family 2 grasses: tall_grass, cotton_grass, samphire, plantain as grass_tuft rows [headless vertex table under 600 near]
+6. 1b family 3 ferns: fern, hushfern, whisperfern, staunchmoss, echo_moss [vertex table]
+7. 1b family 4 reeds: reeds, wispbloom, tideglass_weed, riverbraid, stormreed, tidecrown [vertex table]
+8. 1b family 5 shrubs without a model (16): juniper, gorse, dwarf_birch, saltbush, elder, hawthorn, sea_buckthorn, wild_sage, rosemary, drakethorn, sunberry, hagwillow, honeyspindle, sleetberry, tanglewort, sunsilver_vine [vertex table]
+9. 1b family 6 cactus/aloe/prickly_pear [vertex table]
+10. 1b reference notes per flora family written in MODEL_INVENTORY.md [lines added]
+11. 1f worn clothing: write worn_look.gd builders for 9 items [plan Kathleen_worn_clothing.md; Tyler reply pending, start after it]
+12. 1f worn.json slot table + attach function handed to Steve [file pushed]
+13. 1e rabbit/duck carcass and remains variants per species [list of species with model]
+14. Ask Mike for ONE showroom batch: all families pictures (items, flora, building) [request filed through coordinator]
+15. Post cards per family from Mike's pictures with Tyler recommends [cards posted]
+16. 1 final check: inventory shows a model for every row; ask Tyler to confirm goal 1 complete [Tyler confirms]
 
 HANDED OFF
-(none)
+- 02:10 UTC to Steve: shrub mid LOD selection by distance, season/stripped into build(), low-berry carpets.
+- Pictures to Mike (Steve's --showroom flag).
 
-DONE
-(none)
+DONE LOG (UTC 24 Oct)
+- 01:10 building looks, showroom models, island types pushed.
+- 02:05 1a inventory. 02:55 1c items. 03:10 1e/1f status. 03:30 flowers family pushed (branch claude/kathleen-flora-gaps).

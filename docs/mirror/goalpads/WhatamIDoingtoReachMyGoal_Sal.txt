@@ -4,10 +4,22 @@ GOAL 1: ISLAND JOB (dedicated to Sonny's island terrain: checks, types tables, p
 How to use (Dave 01:26): this is your scratch pad. Finer steps toward goal 1 only. Update it when you start a job, when you finish a step, and at every half-hour reminder. Never delete done lines, mark them DONE with the time (UTC). If you break off, write who you handed it to (Sal or Mike) and what.
 
 STEPS NOW
-1. 
+1. Wait for Mike's re-bake of tile 3,4; run island_checks --tiles-only --picture on it (table first, then picture). Mike runs it on his PC.
+2. Review Sonny's next diffs (stage 2a types table): check_warnings --changed, parse_scan, 882 tests, repeated locals; findings to Sonny as a numbered list.
+3. Add per-type rows for each new island type Sonny pushes (summit range, peak count, band table) in island_checks.json.
+4. River-to-sea and dry-river rows: 23 of 45 river bodies end inland on the v27 tiles; goal 6 of Sonny's list needs these to pass. Tell Steve/Sonny the numbers after each re-bake.
+5. Make the check table a Mike batch line (TEST_RECIPE "Bake checks" done) and call it from the bake checklist.
+6. Parked (3 lines): building look names on claude/sal-building-looks (pushed, Tyler merges); blueprint 1c waits; uproot/replant waits for protocol 74.
 
 HANDED OFF
 (none)
 
 DONE
-(none)
+- 00:49 UTC plan to Tyler, GO with 8 suggestions (tech/ACTION_PLANS/Sal_island_checks.md)
+- 01:00 UTC island_checks.gd + island_checks.json pushed (claude/sal-island-checks): profiles, peaks, terrain mix, spawn gate, seams, rivers, routes (32 m and 8 m --fine)
+- 01:12 UTC flat share, band table check, peak matching after sketch moves
+- 01:25 UTC --picture: 6 bearing sections (sketch and 8 m tile), summit plateau rows
+- 01:36 UTC per-type rows (summit ranges, three-peak count), plateau limits 100/200 m (3943e7b)
+- 01:45 UTC river diagnosis (gap 128 m: 4 of 41 end inland; check-rule issue mostly), rows say why (eaebe0d); my tool at zero warnings with fresh class cache (6886021)
+- 01:55 UTC review of Sonny d9ba220 sent (warnings list, needs editor import first)
+- 01:56 UTC settled-water river gate pushed (a7f00b8): reads tile_X_Z.water, painted version INFO; Mike's run commands sent

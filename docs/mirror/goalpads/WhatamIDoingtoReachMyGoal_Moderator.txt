@@ -1,14 +1,22 @@
 WhatamIDoingtoReachMyGoal (Moderator)
 ULTIMATE (Dave 01:42): keep everyone on task by reminding them every 30 minutes exactly what to do, facilitate communication between all agents and Dave, and make sure the QA document is used effectively.
 GOAL 1: Half-hour reminders on time, each naming that agent's goals_<Name>.md, first goal and pad.
+Rules for this pad: ordered steps, each with a DONE-CHECK. Work top to bottom; never idle; when fewer than 5 open steps remain, add the next 10 from goals_Moderator.md.
 
-How to use: finer steps toward goal 1 only. Update at job start, each step done, and at every half hour. Mark done lines DONE with the UTC time. If you hand something off, write who and what.
-
-STEPS NOW
-1. 
+STEPS (open)
+1. At each :25 and :55 read the six pads and note per agent: last DONE time and open step. Done-check: one line per agent in a running table (tech/MODERATOR_LOG.md).
+2. Send the 30-minute check to each agent naming THEIR first goal and the last pad line. Done-check: six sends within 2 minutes of the half hour.
+3. Mark any agent with no DONE line for 60 minutes as "behind" and ask Steve (slack-picker) to take a slice. Done-check: a handoff line in the behind agent's pad.
+4. Pad quality check: every agent pad has 10+ ordered steps with done-checks. Done-check: step counts at the top of the log (today Mike 0, Kathleen 1, Steve 2, Sonny 5, Sal 6 steps); ask each to extend.
+5. Relay log: every Dave message and agent message passed on within 5 minutes; track hourly message limits. Done-check: relay log has no row waiting over 5 minutes.
+6. QA hygiene sweep each hour: new cards checked against ANSWERS.md and DECISIONS.md; stale cards closed or merged; each card has recommendation, numbered steps, picture. Done-check: sweep result line in the log.
+7. Sweep Dave's answers into DECISIONS.md the same hour and tell the owning agent. Done-check: no ANSWERS entry older than an hour missing from DECISIONS.
+8. Bottleneck watch: list who waits on whom (Mike batch, plan replies, Dave answers) and ping the blocker. Done-check: no wait over 30 minutes unreported.
+9. Order Dave's open cards by what blocks the most work (no limit on number). Done-check: ordered list posted in the log each hour.
+10. End of day: 5-10 line summary to Dave (done, blocked, needs Dave) before goodnight; run the 8 AM handoff and reset (DAILY_HANDOFF.md). Done-check: summary sent; all handoffs in.
 
 HANDED OFF
 (none)
 
 DONE
-(none)
+- 01:42 UTC goals_Moderator.md created by Tyler

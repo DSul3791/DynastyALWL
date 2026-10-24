@@ -1,13 +1,28 @@
 WhatamIDoingtoReachMyGoal (Sonny)
 GOAL 1: ISLAND TERRAIN: grand, varied, unpredictable islands (ranges, passes, canyons, volcanoes, beaches, polar shores, peak layout per island)
 
-How to use (Dave 01:26): this is your scratch pad. Finer steps toward goal 1 only. Update it when you start a job, when you finish a step, and at every half-hour reminder. Never delete done lines, mark them DONE with the time (UTC). If you break off, write who you handed it to (Sal or Mike) and what.
+How to use (Dave 01:26): scratch pad. Update when a job starts, a step is done, and at every half-hour reminder. Never delete done lines, mark DONE with UTC time. If I break off, write who got it (Sal or Mike) and what. Never idle: when a step waits, start the next; when fewer than 5 steps remain, add 10 more from goals_Sonny.md.
 
-STEPS NOW
-1. 
+STEP LIST (ordered; each has a done check)
+ 1. Warnings on my files = baseline (check_warnings --changed, only generator-v2 baseline left). Check: no new warning in my files.  [DONE 02:20]
+ 2. Volcano type: central cone + crater lake/vent on a starter island (types row "volcano": cone height 900-1500 m, crater 300-600 m, ash slopes, lava canyon), using the layout machinery. Check: Sal's island_checks peak count 1, crater below rim, walkable.
+ 3. Shelf islands 2, 5, 7, 11 (peaks 401-465 m, no starter mount): give them a mount-like height-band table by size (low rolling or moor/temperate). Check: peaks 450-900 m, flat share 15-30%, all walkable.
+ 4. Beach types by climate: sprawling sand beaches on hot islands, rocky shore on polar, mixed temperate (terrace width / cliff height per type). Check: beach width per type row in island_checks.
+ 5. Passes and saddles between ridge peaks (three_peak_ridge): lowest saddle height 35-55% of peaks, slope under 25 degrees. Check: Sal's route check easy class connects the peaks.
+ 6. Polar and hot-sandy types rows (climate lookup by tile latitude) + fjord/marsh/jungle rows from Kathleen's list. Check: each row rolls on at least one island or is documented unused.
+ 7. Pits and flat river gaps in the drainage step (terrain half): rivers continuous across flats; head hollows read as lake, not pit. Check: river_ends.gd 0 inland at 24 m gap on tile 3,4; Sal's settled check 0 terrain-caused ends.
+ 8. Re-bake tile 3,4 (Mike) from the newest head; island_profile + island_checks + picture; fix what fails.
+ 9. ONE 9-tile bake (Mike, second clone), settle (Steve/Mike), Dave resets terrain edits + Clear blocks, Dave looks. Check: Sal's table passes, Dave approves island 1.
+10. Handoff note: ISLAND_SHAPE_PLAN.md section 8 (what was built, parameters, how to tune), tell Tyler for DECISIONS.
+11. Tuning round from Dave's look (peak heights, canyon depth, flat share) in data only.
+12. Start goal 2 prep only when goal 1 Done-when is true.
 
 HANDED OFF
-(none)
+- Steve: water-sim half of the river job: rivers that stop after the settle at (47648,66944), (52832,70656), (53184,73856), dry-river symptom. Files: water_settler.gd, settle_water.gd, water_store.gd; tools water_window.gd, river_ends.gd. He does not touch drainage_channels.gd / tile_drainage.gd.
+- Sal: island_checks.json per-type rows, summit_plateau limits, settled-water river gate, 20% flat check, two-class walkability.
+- Mike: bakes, 6 window printouts, picture batch.
+- Kathleen: island type descriptions (ISLAND_TYPES_Kathleen.md) DONE.
 
 DONE
-(none)
+- 23:20 23 Oct v27 valleys + river heads (6d0a53e0), merged.
+- 01:25 24 Oct stage 1 bands/foothills/mountain core; 01:35 spire; 01:37 types table 2a; hardness by height; 02:10 canyons (c192706a); 02:20 tool fixes + warning fixes (cb3f03b7).
