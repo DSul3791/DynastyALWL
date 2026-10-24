@@ -23,12 +23,6 @@ Note: 3. Use the hand saw on a log: hand-sawn lumber recipe.
 Note: 4. Yes if all three craft. The hammer and adze do nothing else yet; their descriptions say so.
 [test]
 
-## laptop-for-tests | Use your old laptop for tests (local_check, test_worldgen, sound tests, pictures) and keep all bakes on Mike's PC?
-Priority: 8
-Note: Steps are in tech/LAPTOP_SETUP.md. First step is a 5-minute dxdiag check: 8 GB RAM, Vulkan GPU, 20 GB free disk.
-Note: Recommendation: Yes: bakes never wait for tests, and the laptop's frame times are labelled so they are not mixed with Mike's PC.
-[check]
-
 ## wl-bridges | Bridges: low plank bridges and fords can be washed out in floods, high stone bridges with piers survive?
 Note: Needs span and pier pieces with a flood rating from Sal's building tiers.
 Note: Recommendation: Yes because it makes bridges matter. Why not: players lose work to floods.
@@ -97,4 +91,12 @@ Note: Recommendation: Yes because players get a chance to react. Why not: less d
 ## wl-wash-away | Dams: fast flood water sweeps players and loose items downstream with light damage and no death at first?
 Note: Applied in the game client from water speeds; server checks damage.
 Note: Recommendation: Yes because it is safe and kind first. Why not: you may want deaths later.
+[check]
+
+## server-for-tests | Use your 24-hour Ubuntu game server (in its own Docker container) for Mike's tests, with limits that protect your two games?
+Priority: 8
+Note: Plan: tech/SERVER_FOR_TESTS.md. Only checks that need no graphics card run there. Bakes, pictures and frame time stay on Mike's PC.
+Note: Rules: a separate container with CPU and memory caps, never touching your game containers, runs only when you switch it on.
+Note: Please answer in the Why box: 1. CPU, RAM and free disk? 2. Any graphics card? 3. Peak players and busy hours? 4. OK to leave it running when you allow?
+Note: Recommendation: Yes because the server is on 24 hours and lightly loaded, and the caps and your on/off switch keep your games safe.
 [check]
