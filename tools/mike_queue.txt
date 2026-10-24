@@ -6,8 +6,19 @@
 branch steve-worn-attach
 branch steve-smoke-row
 branch steve-river-settle
+branch kathleen-item-looks
+branch kathleen-flora-gaps
+branch kathleen-building-looks
+branch kathleen-showroom-models
+branch kathleen-worn-clothing
+branch kathleen-goal2-a
+branch steve-shrub-lod
 test test_tunnel_watch
 test test_worn_sync
 test test_water_flow
 test validate_items
 rig frametime Low | --frametime 20 --quality 0 --name frametime_low
+rig item looks (all showroom rows) | --showroom all --name showroom_all
+rig flora gaps | --flora raspberry,bramble,blueberry,blackthorn,wild_rose --views "wide:8:-8:1.5;close:3:-10:0.5" --name flora_shrubs
+rig shrub lod | --flora blueberry --views "wide:8:-8:1.5;close:3:-10:0.5" --name shrub_lod
+rig building pieces | --pieces foundation_section,wall_section,doorway_section,window_section,door_open,floor_section,roof_section --views "wide:9:-8:1.5;close:4:-10:1.2" --name pieces
