@@ -1450,3 +1450,7 @@ Answered: 2026-10-24 16:09 UTC
 Answer: No: There really is no stone pick. It’s actually just the stone ax so you can use the stone ax to break rock it will just take a long time and it will break down your stone ax. Then once we can get some resources and material we can start to make copper ax. I don’t know if it makes sense to make a copper pickax and then we can do bronze and then we can do iron.
 Answered: 2026-10-24 16:10 UTC
 
+## metal-ladder | Metal ladder: stone pick first, then bronze pick from the basic forge, iron needs a bronze pick; add copper, tin and bronze to the game?
+Answer: No: There really is no stone pick. It’s actually just the stone ax so you can use the stone ax to break rock it will just take a long time and it will break down your stone ax. Then once we can get some resources and material we can start to make copper ax. I don’t know if it makes sense to make a copper pickax and then we can do bronze and then we can do iron.
+Answered: 2026-10-24 16:10 UTC
+
