@@ -1614,3 +1614,7 @@ Answered: 2026-10-24 22:17 UTC
 Answer: Just make them all the same
 Answered: 2026-10-24 22:17 UTC
 
+## weight-wood-units | How big is one wooden block, lumber piece and beam?
+Answer: Look up the average weight for these things on the Internet
+Answered: 2026-10-24 22:18 UTC
+
