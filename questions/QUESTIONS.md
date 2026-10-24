@@ -29,3 +29,9 @@ Note: 2. Walk into a cave or a dug tunnel in daylight: it should go dark, with a
 Note: 3. Esc > Settings > Cave darkness: try Dark and Normal.
 Note: 4. Yes if dark and readable with a torch. No: write what is wrong.
 [test]
+
+## look-sound-batch2 | Do the new ambience sounds sound right? (bird chorus, owl, frogs, crickets, surf, wind)
+Note: 1. Pull build 787.
+Note: 2. Esc > Settings > Sound test > Batch 2: press once per group; each group plays 3 times.
+Note: 3. Listen with headphones. Yes if they sound natural. No: name the group that is wrong.
+[test]
