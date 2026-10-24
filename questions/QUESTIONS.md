@@ -145,3 +145,8 @@ Note: Recommendation: Yes because floods come and go, so they should not rename 
 Note: Ponds are still never placed in the bake. This is only the runtime label.
 Note: Recommendation: Yes because smaller is a puddle.
 [check]
+
+## wl-dam-strength | Dams: strength depends on material, thickness and bracing, and dirt erodes if water pours over the top?
+Note: Stone holds more than dirt; stone or dirt piled behind adds strength; a spillway relieves pressure.
+Note: Recommendation: Yes because it matches your rule. Why not: more rules for builders to learn.
+[check]
