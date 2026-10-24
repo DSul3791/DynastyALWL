@@ -3,13 +3,13 @@
 services:
   testbox:
     build:
-      context: ../..
-      dockerfile: tools/docker/Dockerfile
+      context: .
+      dockerfile: Dockerfile
     image: dynasty-testbox
     container_name: dynasty-testbox
     cpus: 2
-    mem_limit: 6g              # the server has about 13 GiB free (18 of 31 GiB used by the games)
-    memswap_limit: 6g
+    mem_limit: 8g              # the server has about 13 GiB free (18 of 31 GiB used by the games)
+    memswap_limit: 8g
     pids_limit: 512
     cpu_shares: 128            # lowest priority when the game containers want the CPU
     network_mode: bridge       # outbound only (git fetch); no ports published

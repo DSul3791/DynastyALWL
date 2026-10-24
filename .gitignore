@@ -40,3 +40,5 @@ __pycache__/
 data/admin.json
 crash_reports/telemetry_server_*.log
 crash_reports/*.txt
+tools/docker/engine/
+tools/docker/engine/
