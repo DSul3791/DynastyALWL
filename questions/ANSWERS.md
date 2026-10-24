@@ -1514,3 +1514,7 @@ Answered: 2026-10-24 16:41 UTC
 Answer: Yes
 Answered: 2026-10-24 16:41 UTC
 
+## shore-net-first | Does fishing start with a shore net (20 twine + 4 stones), with trap, spear and rod later and no reflex minigame?
+Answer: Yes
+Answered: 2026-10-24 16:41 UTC
+
