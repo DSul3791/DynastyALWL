@@ -323,7 +323,7 @@ func _ready() -> void:
 			return -1
 
 		return int(tile_data.biome[tile_data.nearest(pos.x, pos.z)])
-	items.send_vent = func(peer, at: Vector3): net.vent.rpc_id(peer, at)
+	items.send_vent = func(peer_id, at: Vector3): net.vent.rpc_id(peer_id, at)
 	items.vent_near = func(pos: Vector3) -> Vector3:
 		var best: Vector3 = Vector3.INF
 		var best_d: float = items.VENT_RANGE_M
