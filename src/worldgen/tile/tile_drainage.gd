@@ -33,6 +33,10 @@ static func apply(water, rules: Dictionary) -> Dictionary:
 
 	var flow = FlowScript.new()
 	flow.build(fill, runoff)
+	var seeded_km2: float = _seed_frame_edge(water, fill, runoff, land, sea, samples, cell_m, unit, rules)
+
+	if seeded_km2 > 0.0:
+		flow.build(fill, runoff)
 	var channels = ChannelsScript.new()
 	channels.build(land, fill, flow, samples, cell_m, float(rules.get("river_start_km2", 0.5)), rules, int(rules.get("seed", 17)), Vector2i(water._origin_sx, water._origin_sz))
 	water.heights = channels.bed
@@ -139,3 +143,66 @@ static func _knot(kx: int, kz: int, seed_value: int) -> float:
 	var x: int = (kx * 73856093) ^ (kz * 83492791) ^ (seed_value * 19349663)
 	x = (x ^ (x >> 13)) * 1274126177
 	return float((x ^ (x >> 16)) & 0xFFFF) / 65535.0 * 2.0 - 1.0
+
+
+# A frame only holds the catchment inside it, so a river that comes in from beyond the frame edge loses its upstream
+# and its channel can stop short of the tile seam while the neighbour (whose frame holds the river) carries on. The world
+# river network knows every catchment, so each place it flows into this frame adds its catchment to the lowest dry
+# ground at that spot on the frame edge. It depends only on world coordinates and the network, so tiles agree.
+# Returns the catchment added (km2).
+static func _seed_frame_edge(water, fill, runoff: PackedFloat32Array, land: PackedFloat32Array, sea: PackedByteArray, samples: int, cell_m: float, unit: float, rules: Dictionary) -> float:
+	var network = water.world_network
+
+	if network == null or not bool(rules.get("edge_inflow", true)):
+		return 0.0
+
+	var scale: float = float(rules.get("edge_inflow_scale", 1.0))
+	var depth: int = int(rules.get("edge_inflow_depth_cells", 3))
+	var reach: int = int(rules.get("edge_inflow_reach_cells", 12))
+	var origin: Vector2 = Vector2(float(water._origin_sx), float(water._origin_sz)) * cell_m
+	var rect: Rect2 = Rect2(origin, Vector2(float(samples), float(samples)) * cell_m)
+	var added: float = 0.0
+
+	for entry in network.inflows_into(rect):
+		var from_m: Vector2 = entry["from"]
+		var to_m: Vector2 = entry["to"]
+		var at: Vector2 = to_m
+
+		for step in range(51):
+			var probe: Vector2 = from_m.lerp(to_m, float(step) / 50.0)
+
+			if rect.has_point(probe):
+				at = probe
+				break
+
+		var column: int = clampi(int(floor((at.x - origin.x) / cell_m)), 0, samples - 1)
+		var row: int = clampi(int(floor((at.y - origin.y) / cell_m)), 0, samples - 1)
+		var best: int = -1
+		var best_height: float = INF
+
+		for dz in range(-reach, reach + 1):
+			for dx in range(-reach, reach + 1):
+				var c: int = column + dx
+				var r: int = row + dz
+
+				if c < 0 or r < 0 or c >= samples or r >= samples:
+					continue
+
+				if mini(mini(c, r), mini(samples - 1 - c, samples - 1 - r)) > depth:
+					continue
+
+				var index: int = r * samples + c
+
+				if sea[index] == 1 or fill.lake_id[index] != 0:
+					continue
+
+				if land[index] < best_height:
+					best_height = land[index]
+					best = index
+
+		if best >= 0:
+			var amount: float = float(entry["km2"]) * scale
+			runoff[best] += amount
+			added += amount
+
+	return added

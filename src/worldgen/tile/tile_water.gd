@@ -53,6 +53,7 @@ var _rules: Dictionary = {}
 var _legacy_rivers: bool = true
 var _ocean: PackedByteArray = PackedByteArray()
 var _chute_feet: Array = []   # per river: where each clean chute lands ({point, bed, width}), for its plunge pool
+var world_network = null      # RiverNetwork: catchments beyond the frame (drainage mode seeds the frame edge with them)
 var _origin_sx: int = 0       # world sample index of sample 0 (set by build)
 var _origin_sz: int = 0
 

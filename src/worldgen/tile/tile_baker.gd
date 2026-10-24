@@ -225,6 +225,7 @@ func bake(tile: Vector2i) -> Dictionary:
 	var starter: Dictionary = starter_info(tile)
 	var water = TileWaterScript.new()
 	water.setup(settings, tile_rules)
+	water.world_network = river_network
 	var river_guides: Array = river_network.guides_in(frame_rect, 4.0)
 	water.build(frame_height, starter, river_guides, river_network.ponds_in(frame_rect, float(tile_rules["water"].get("head_pond_search_m", 2000.0)) + 700.0))
 	timings["water"] = Time.get_ticks_msec() - clock
