@@ -1,0 +1,44 @@
+{
+	"format": "float32 little-endian, row-major, metres, before erosion",
+	"samples": 1921,
+	"spacing_m": 8,
+	"tile_size_m": 15360,
+	"tiles": [
+		[
+			2,
+			3
+		],
+		[
+			3,
+			3
+		],
+		[
+			4,
+			3
+		],
+		[
+			2,
+			4
+		],
+		[
+			3,
+			4
+		],
+		[
+			4,
+			4
+		],
+		[
+			2,
+			5
+		],
+		[
+			3,
+			5
+		],
+		[
+			4,
+			5
+		]
+	]
+}
