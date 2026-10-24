@@ -1354,3 +1354,7 @@ Answered: 2026-10-24 02:48 UTC
 Answer: No: Wild erosion get flowers from, but you can’t get berries from it
 Answered: 2026-10-24 02:49 UTC
 
+## harvest-counts | What one pick gives from one plant: leaf herbs 12, flower herbs 20, mushrooms 1 to 5, fruit trees 60 to 200?
+Answer: Yes
+Answered: 2026-10-24 02:50 UTC
+
