@@ -181,6 +181,16 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 			_shrub(bark, leaves, rng, h, crown, far)
 		"cactus":
 			_column(bark, rng, h, trunk, Color(0.7, 0.9, 0.6), 6 if far else 8, 3)
+		"succulent":
+			_succulent(str(entry["name"]), bark, rng, h, crown, trunk, far)
+		"cane_shrub":
+			_cane_shrub(CANE_SHRUBS[str(entry["name"])], bark, leaves, rng, h, crown, far, _fruit_state(entry, season, stripped, CANE_SHRUBS[str(entry["name"])].get("bloom_in", ["spring"]), mid))
+		"fern_rosette":
+			_fern_rosette(FERN_LOOKS.get(str(entry["name"]), FERN_LOOKS["fern"]), bark, leaves, rng, h, crown, far)
+		"reed_stand":
+			_reed_stand(REED_LOOKS.get(str(entry["name"]), REED_LOOKS["reeds"]), bark, leaves, rng, h, crown, far)
+		"grass_tuft":
+			_grass_tuft(GRASS_LOOKS.get(str(entry["name"]), GRASS_LOOKS["tall_grass"]), bark, leaves, rng, h, crown, far)
 		"grass", "reed":
 			_grass(leaves, rng, h, crown, 2 if far else 3)
 		"fern":
@@ -2083,9 +2093,9 @@ static func _palm(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, 
 
 
 # One arching frond card strip: rises, then droops.
-static func _frond(leaves: Acc, rng: RandomNumberGenerator, top: Vector3, out: Vector3, length: float, rise: float, segments: int, half_width: float) -> void:
+static func _frond(leaves: Acc, rng: RandomNumberGenerator, top: Vector3, out: Vector3, length: float, rise: float, segments: int, half_width: float, tint: Color = Color.WHITE) -> void:
 	var shade: float = rng.randf_range(0.8, 1.05)
-	var color: Color = Color(shade, shade, shade, 0.5)
+	var color: Color = Color(shade * tint.r, shade * tint.g, shade * tint.b, 0.5)
 
 	for s in range(segments):
 		var t0: float = float(s) / float(segments)
@@ -2192,7 +2202,7 @@ const RASPBERRY_UNRIPE := Color(0.85, 0.75, 0.25)
 const SHRUB_LOOKS := {
 	"raspberry": {"fill": 16, "canes": [12, 14], "segs": 4, "thorn_n": 3, "base": 0.3, "arch": 0.25, "reach": 1.3, "sprays": 8, "rate": 0.4, "cluster": 0.07, "cane": RASPBERRY_CANE, "leaf": 0.55, "fruit": RASPBERRY_BERRY, "unripe": RASPBERRY_UNRIPE, "flower": Color(1.0, 0.98, 0.95), "thorns": true},
 	"bramble": {"fill": 24, "fill_r": 0.75, "canes": [8, 9], "segs": 4, "thorn_n": 2, "arch": 0.6, "reach": 1.5, "sprays": 8, "rate": 0.6, "ripe_share": 0.6, "cluster": 0.04, "cane": Color(0.45, 0.25, 0.22), "leaf": 0.8, "fruit": Color(0.07, 0.03, 0.09), "unripe": Color(0.9, 0.08, 0.1), "flower": Color(1.0, 0.97, 0.97), "thorns": true},
-	"wild_rose": {"bloom_in": ["spring", "summer"], "fill": 14, "canes": [10, 11], "segs": 5, "thorn_n": 4, "sprays": 6, "arch": 0.35, "reach": 1.0, "rate": 0.12, "cluster": 0.045, "cane": Color(0.45, 0.30, 0.22), "leaf": 0.65, "fruit": Color(1.0, 0.18, 0.1), "unripe": Color(1.0, 0.55, 0.3), "flower": null, "blossom": Color(1.0, 0.25, 0.55), "thorns": true},
+	"wild_rose": {"bloom_in": ["spring", "summer"], "fill": 14, "canes": [10, 11], "segs": 5, "thorn_n": 4, "sprays": 6, "arch": 0.35, "reach": 1.0, "rate": 0.0, "cluster": 0.045, "cane": Color(0.45, 0.30, 0.22), "leaf": 0.65, "fruit": Color(1.0, 0.18, 0.1), "unripe": Color(1.0, 0.55, 0.3), "flower": null, "blossom": Color(1.0, 0.25, 0.55), "thorns": true},
 	"blackthorn": {"canes": [14, 18], "base": 0.2, "arch": 0.55, "reach": 1.4, "rate": 0.12, "cane": Color(0.20, 0.17, 0.15), "leaf": 0.32, "fruit": Color(0.4, 0.45, 0.9), "unripe": Color(0.5, 0.6, 0.5), "flower": null, "thorns": true},
 	"blueberry": {"fill": 6, "canes": [9, 11], "sprays": 5, "arch": 0.1, "reach": 0.7, "rate": 0.5, "cluster": 0.06, "cane": Color(0.50, 0.38, 0.28), "leaf": 0.4, "fruit": Color(0.30, 0.38, 0.85), "unripe": Color(0.75, 0.9, 0.55), "flower": null, "thorns": false},
 }
@@ -2420,6 +2430,29 @@ const WILDFLOWER_LOOKS := {
 	"wolfsbane": {"head": "spike", "stems": 3, "petal": Color(0.25, 0.22, 0.65), "size": 0.06, "beads": 10, "span": 0.4},
 	"flax": {"head": "spike", "stems": 7, "petal": Color(0.35, 0.5, 0.95), "size": 0.04, "beads": 5, "span": 0.2},
 	"foxglove": {"head": "bell", "stems": 3, "petal": Color(0.85, 0.35, 0.7), "size": 0.035, "beads": 10, "span": 0.5},
+	# Family 1 of goal 1b (Kathleen, 24 Oct): the remaining flower rows. References: alpine gentian-type blue, wild thyme pink 1 cm sprays, wood sorrel red-green spikes, watercress white umbels,
+	# thistle purple, mallow 5 petals, lily and bluebell bells; the fantasy plants keep their listed colours.
+	"alpine_flowers": {"head": "daisy", "stems": 8, "petal": Color(0.38, 0.5, 0.92), "centre": Color(1.0, 0.85, 0.2), "size": 0.05, "petals": 6},
+	"wild_thyme": {"head": "spike", "stems": 9, "petal": Color(0.85, 0.45, 0.65), "size": 0.022, "beads": 6, "span": 0.15},
+	"sorrel": {"head": "spike", "stems": 5, "petal": Color(0.65, 0.3, 0.2), "size": 0.03, "beads": 9, "span": 0.4},
+	"watercress": {"head": "umbel", "stems": 4, "petal": Color(0.97, 0.98, 0.95), "size": 0.07, "rays": 4},
+	"owlpetal": {"head": "bell", "stems": 4, "petal": Color(0.78, 0.82, 0.95), "size": 0.035, "beads": 7, "span": 0.3},
+	"emberroot": {"head": "spike", "stems": 4, "petal": Color(0.95, 0.4, 0.1), "size": 0.045, "beads": 8, "span": 0.3},
+	"heartroot": {"head": "bell", "stems": 3, "petal": Color(0.75, 0.1, 0.2), "size": 0.05, "beads": 6, "span": 0.25},
+	"gloomthistle": {"head": "daisy", "stems": 4, "petal": Color(0.5, 0.25, 0.6), "centre": Color(0.3, 0.12, 0.35), "size": 0.08, "petals": 14},
+	"dewlantern": {"head": "bell", "stems": 4, "petal": Color(0.7, 0.95, 0.9), "size": 0.04, "beads": 6, "span": 0.3},
+	"marrowroot": {"head": "umbel", "stems": 3, "petal": Color(0.95, 0.92, 0.8), "size": 0.14, "rays": 5},
+	"brinebell": {"head": "bell", "stems": 4, "petal": Color(0.4, 0.6, 0.85), "size": 0.035, "beads": 7, "span": 0.3},
+	"quenchbell": {"head": "bell", "stems": 4, "petal": Color(0.25, 0.4, 0.85), "size": 0.04, "beads": 6, "span": 0.3},
+	"duskmallow": {"head": "daisy", "stems": 5, "petal": Color(0.55, 0.35, 0.7), "centre": Color(0.95, 0.9, 0.7), "size": 0.07, "petals": 5},
+	"truthsage": {"head": "spike", "stems": 6, "petal": Color(0.6, 0.7, 0.85), "size": 0.04, "beads": 9, "span": 0.35},
+	"nightcrown": {"head": "daisy", "stems": 4, "petal": Color(0.2, 0.18, 0.5), "centre": Color(0.8, 0.85, 0.95), "size": 0.09, "petals": 8},
+	"mournbloom": {"head": "bell", "stems": 3, "petal": Color(0.18, 0.12, 0.25), "size": 0.045, "beads": 6, "span": 0.25},
+	"pilgrims_cup": {"head": "bell", "stems": 3, "petal": Color(0.7, 0.8, 0.35), "size": 0.06, "beads": 4, "span": 0.2},
+	"frostglass_orchid": {"head": "spike", "stems": 3, "petal": Color(0.8, 0.95, 1.0), "size": 0.05, "beads": 6, "span": 0.3},
+	"sevenyear_lily": {"head": "bell", "stems": 3, "petal": Color(0.95, 0.7, 0.8), "size": 0.06, "beads": 7, "span": 0.3},
+	"stillwater_lotus": {"head": "daisy", "stems": 3, "petal": Color(0.95, 0.75, 0.85), "centre": Color(1.0, 0.85, 0.25), "size": 0.12, "petals": 14},
+	"gloaming_star": {"head": "daisy", "stems": 5, "petal": Color(0.9, 0.88, 1.0), "centre": Color(1.0, 0.85, 0.3), "size": 0.08, "petals": 8},
 }
 
 
@@ -2794,3 +2827,199 @@ static func _leafy_herb(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 					_bead(bark, base.lerp(top, 0.7 + 0.3 * float(m) / 10.0) + Vector3(rng.randfn(), 0.0, rng.randfn()) * bead * 0.6, Vector3.ONE * bead * 0.5, colour)
 			_:
 				_blossom(bark, rng, top, bead * 2.4, colour)
+
+
+# Grass family of goal 1b (Kathleen, 24 Oct). Reference: tall meadow grass 50-100 cm with tan seed heads; cotton grass 20-50 cm with white cotton tufts; marsh samphire 10-30 cm jointed
+# green succulent stems; ribwort plantain 10-40 cm low rosette with brown spikes on bare stalks. The painted-blade cards stay (cheap, they carry the blades); each species adds what makes it known.
+const GRASS_LOOKS := {
+	"tall_grass": {"cards": 3, "width": 1.4, "head": "seed", "heads": 7, "head_color": Color(0.74, 0.66, 0.38), "reach": 0.9},
+	"cotton_grass": {"cards": 2, "width": 0.9, "head": "cotton", "heads": 7, "head_color": Color(0.97, 0.97, 0.93), "reach": 0.95},
+	"samphire": {"cards": 0, "width": 1.0, "head": "succulent", "heads": 8, "head_color": Color(0.42, 0.6, 0.32), "reach": 1.0},
+	"plantain": {"cards": 3, "width": 1.6, "head": "spike", "heads": 5, "head_color": Color(0.32, 0.22, 0.12), "reach": 0.85},
+}
+
+
+static func _grass_tuft(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
+	var cards: int = int(look["cards"])
+	var head: String = str(look["head"])
+	var low: float = 0.45 if head == "spike" else 1.0       # plantain leaves lie low, only the spikes stand tall
+
+	if cards > 0:
+		var yaw: float = rng.randf() * PI
+
+		for k in range(maxi(cards - (1 if far else 0), 1)):
+			var turn: float = yaw + PI * float(k) / float(cards)
+			var right: Vector3 = Vector3(cos(turn), 0.0, sin(turn))
+			leaves.card(Vector3(0.0, h * 0.5 * low, 0.0), right, Vector3.UP, maxf(crown * float(look["width"]), h * 0.22), h * 0.5 * low, Vector3.UP, Color(1.0, 1.0, 1.0, 0.15))
+
+	var color: Color = look["head_color"]
+
+	for k in range(3 if far else int(look["heads"])):
+		var a: float = rng.randf() * TAU
+		var out: Vector3 = Vector3(cos(a), 0.0, sin(a))
+		var base: Vector3 = out * crown * rng.randf_range(0.05, 0.3)
+		var top_h: float = h * float(look["reach"]) * rng.randf_range(0.8, 1.0)
+		var tip: Vector3 = base + out * crown * rng.randf_range(0.1, 0.45) + Vector3(0.0, top_h, 0.0)
+		var mid: Vector3 = base.lerp(tip, 0.5) + out * crown * 0.08
+
+		match head:
+			"succulent":
+				# Jointed stems that fork twice, thick and short, tips a lighter green.
+				var fork: Vector3 = tip - Vector3(0.0, top_h * 0.15, 0.0)
+				_branch(bark, base, mid, maxf(h * 0.03, 0.003), maxf(h * 0.022, 0.0025), color, 3)
+				_branch(bark, mid, fork, maxf(h * 0.022, 0.0025), maxf(h * 0.016, 0.002), color, 3)
+
+				if not far:
+					_branch(bark, fork, tip + out * crown * 0.1, maxf(h * 0.016, 0.002), maxf(h * 0.008, 0.0015), color.lightened(0.15), 3)
+					_branch(bark, fork, tip - out * crown * 0.1, maxf(h * 0.016, 0.002), maxf(h * 0.008, 0.0015), color.lightened(0.15), 3)
+			_:
+				var stalk: Color = Color(0.5, 0.55, 0.28) if head != "spike" else Color(0.45, 0.5, 0.25)
+				_branch(bark, base, mid, maxf(h * 0.008, 0.0015), maxf(h * 0.006, 0.0012), stalk, 3)
+				_branch(bark, mid, tip, maxf(h * 0.006, 0.0012), maxf(h * 0.004, 0.001), stalk, 3)
+
+				if head == "cotton":
+					_bead(bark, tip, Vector3(h * 0.07, h * 0.08, h * 0.07), color)
+				elif head == "spike":
+					_bead(bark, tip, Vector3(h * 0.025, h * 0.1, h * 0.025), color)
+				elif not far:
+					for b in range(4):
+						_bead(bark, tip - Vector3(0.0, float(b) * h * 0.03, 0.0) + out * crown * 0.02 * float(b % 2), Vector3(h * 0.012, h * 0.022, h * 0.012), color * rng.randf_range(0.9, 1.1))
+
+
+# Ferns and mosses, family 3 of goal 1b (Kathleen, 24 Oct). Reference: bracken/common fern 50-120 cm, a rosette of arching fronds; moss cushions 3-10 cm of tiny green domes with thin spore stalks.
+# The fantasy ones keep a tint on the same frond card (hushfern deep blue-green, whisperfern pale silver-green, echo moss silver-blue).
+const FERN_LOOKS := {
+	"fern": {"kind": "fronds", "fronds": 9, "length": 1.0, "rise": 0.9, "width": 0.2, "tint": Color(1.0, 1.0, 1.0)},
+	"hushfern": {"kind": "fronds", "fronds": 8, "length": 1.1, "rise": 0.5, "width": 0.18, "tint": Color(0.6, 0.85, 0.95)},
+	"whisperfern": {"kind": "fronds", "fronds": 11, "length": 0.95, "rise": 1.2, "width": 0.14, "tint": Color(0.85, 1.0, 0.9)},
+	"staunchmoss": {"kind": "moss", "domes": 16, "color": Color(0.28, 0.5, 0.2), "stalk": Color(0.55, 0.5, 0.3)},
+	"echo_moss": {"kind": "moss", "domes": 14, "color": Color(0.5, 0.68, 0.72), "stalk": Color(0.8, 0.9, 0.95)},
+}
+
+
+static func _fern_rosette(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
+	if str(look["kind"]) == "moss":
+		var color: Color = look["color"]
+
+		for k in range(6 if far else int(look["domes"])):
+			var a: float = rng.randf() * TAU
+			var r: float = sqrt(rng.randf()) * crown * 0.9
+			var size: float = maxf(h, 0.04) * rng.randf_range(0.5, 1.0)
+			_bead(bark, Vector3(cos(a) * r, size * 0.3, sin(a) * r), Vector3(size * 0.9, size * 0.6, size * 0.9), color * rng.randf_range(0.85, 1.15))
+
+		if not far:
+			for k in range(5):
+				var a: float = rng.randf() * TAU
+				var base: Vector3 = Vector3(cos(a), 0.0, sin(a)) * crown * rng.randf_range(0.0, 0.6)
+				_branch(bark, base, base + Vector3(0.0, h * 1.6, 0.0), maxf(h * 0.03, 0.001), maxf(h * 0.02, 0.0008), look["stalk"], 3)
+		return
+
+	var fronds: int = 5 if far else int(look["fronds"])
+
+	for k in range(fronds):
+		var a: float = TAU * float(k) / float(fronds) + rng.randf_range(-0.25, 0.25)
+		_frond(leaves, rng, Vector3(0.0, h * 0.25, 0.0), Vector3(cos(a), 0.0, sin(a)), maxf(crown * 2.0, h * 0.9) * float(look["length"]) * rng.randf_range(0.8, 1.1), float(look["rise"]) * rng.randf_range(0.7, 1.1), 1 if far else 2, float(look["width"]), look["tint"])
+
+
+# Reeds, family 4 of goal 1b. Reference: common reed 1.5-3 m stiff stems with leaves along them and a purple-brown feathery plume on top; the fantasy ones swap the plume.
+const REED_LOOKS := {
+	"reeds": {"stems": 12, "head": "plume", "head_color": Color(0.55, 0.42, 0.5), "stem": Color(0.62, 0.62, 0.34), "lean": 0.25},
+	"wispbloom": {"stems": 8, "head": "wisp", "head_color": Color(0.65, 0.98, 0.9), "stem": Color(0.45, 0.65, 0.5), "lean": 0.3},
+	"tideglass_weed": {"stems": 10, "head": "none", "head_color": Color(0.5, 0.85, 0.8), "stem": Color(0.45, 0.8, 0.75), "lean": 0.5},
+	"riverbraid": {"stems": 9, "head": "none", "head_color": Color(0.4, 0.62, 0.55), "stem": Color(0.38, 0.6, 0.5), "lean": 0.55},
+	"stormreed": {"stems": 8, "head": "plume", "head_color": Color(0.5, 0.48, 0.62), "stem": Color(0.5, 0.5, 0.55), "lean": 0.1},
+	"tidecrown": {"stems": 6, "head": "crown", "head_color": Color(0.92, 0.95, 0.98), "stem": Color(0.5, 0.65, 0.5), "lean": 0.2},
+}
+
+
+static func _reed_stand(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
+	_grass(leaves, rng, h * 0.8, crown, 2 if far else 3)
+	var head: String = str(look["head"])
+	var color: Color = look["head_color"]
+
+	for k in range(4 if far else int(look["stems"])):
+		var a: float = rng.randf() * TAU
+		var out: Vector3 = Vector3(cos(a), 0.0, sin(a))
+		var base: Vector3 = out * crown * rng.randf_range(0.0, 0.4)
+		var tip: Vector3 = base + out * h * float(look["lean"]) * rng.randf_range(0.2, 1.0) + Vector3(0.0, h * rng.randf_range(0.85, 1.0), 0.0)
+		var mid: Vector3 = base.lerp(tip, 0.5) + out * h * 0.04
+		_branch(bark, base, mid, maxf(h * 0.008, 0.004), maxf(h * 0.006, 0.003), look["stem"], 3)
+		_branch(bark, mid, tip, maxf(h * 0.006, 0.003), maxf(h * 0.004, 0.002), look["stem"], 3)
+
+		match head:
+			"plume":
+				_bead(bark, tip, Vector3(h * 0.03, h * 0.1, h * 0.03), color * rng.randf_range(0.9, 1.1))
+			"wisp":
+				for b in range(2 if far else 4):
+					_bead(bark, tip + Vector3(0.0, float(b) * h * 0.04, 0.0) + out * h * 0.02 * float(b), Vector3(h * 0.025, h * 0.04, h * 0.025) * (1.0 - 0.2 * float(b)), color)
+			"crown":
+				for b in range(3 if far else 6):
+					var pa: float = TAU * float(b) / 6.0
+					_bead(bark, tip + Vector3(cos(pa), 0.0, sin(pa)) * h * 0.03, Vector3(h * 0.03, h * 0.01, h * 0.015), color)
+
+
+# The remaining shrubs, family 5 of goal 1b (Kathleen, 24 Oct), all on the cane-shrub builder (full from the top to the ground like the berry bushes). One data row each.
+# Reference: juniper dense blue-green needles with blue-black cones; gorse spiny green mound with yellow flowers all year; elder tall many-stemmed with white umbels and black berries; hawthorn thorny, white May blossom, red haws;
+# sea buckthorn silvery narrow leaves with orange berries crowded on thorny stems; sage and rosemary low grey-green aromatic mounds with blue-violet flowers. The fantasy shrubs follow their listed colours.
+const CANE_SHRUBS := {
+	"juniper": {"fill": 18, "fill_r": 0.5, "canes": [12, 14], "segs": 3, "thorn_n": 0, "arch": 0.1, "reach": 0.7, "sprays": 10, "rate": 0.25, "cluster": 0.03, "cane": Color(0.35, 0.25, 0.18), "leaf": 0.35, "fruit": Color(0.2, 0.25, 0.4), "unripe": Color(0.35, 0.5, 0.3), "flower": null, "thorns": false},
+	"gorse": {"bloom_in": ["spring", "summer", "autumn", "winter"], "fill": 18, "canes": [14, 16], "segs": 3, "thorn_n": 5, "arch": 0.3, "reach": 0.9, "sprays": 8, "rate": 0.0, "cane": Color(0.25, 0.3, 0.15), "leaf": 0.45, "fruit": Color(0.3, 0.25, 0.1), "unripe": Color(0.4, 0.5, 0.2), "flower": Color(1.0, 0.85, 0.1), "thorns": true},
+	"dwarf_birch": {"fill": 14, "canes": [10, 12], "segs": 3, "thorn_n": 0, "arch": 0.4, "reach": 0.9, "sprays": 7, "rate": 0.0, "cane": Color(0.35, 0.22, 0.15), "leaf": 0.7, "fruit": Color(0.5, 0.4, 0.2), "unripe": Color(0.5, 0.5, 0.3), "flower": null, "thorns": false},
+	"saltbush": {"fill": 14, "canes": [10, 12], "segs": 3, "thorn_n": 0, "arch": 0.3, "reach": 1.0, "sprays": 8, "rate": 0.0, "cane": Color(0.55, 0.55, 0.45), "leaf": 0.95, "fruit": Color(0.8, 0.8, 0.6), "unripe": Color(0.7, 0.75, 0.55), "flower": null, "thorns": false},
+	"elder": {"bloom_in": ["spring", "summer"], "fill": 12, "canes": [7, 9], "segs": 4, "thorn_n": 0, "arch": 0.5, "reach": 1.2, "sprays": 8, "rate": 0.5, "cluster": 0.09, "cane": Color(0.5, 0.45, 0.38), "leaf": 0.65, "fruit": Color(0.12, 0.05, 0.2), "unripe": Color(0.3, 0.5, 0.2), "flower": Color(1.0, 0.98, 0.9), "thorns": false},
+	"hawthorn": {"fill": 14, "canes": [8, 10], "segs": 4, "thorn_n": 3, "arch": 0.45, "reach": 1.1, "sprays": 8, "rate": 0.35, "cluster": 0.05, "cane": Color(0.3, 0.22, 0.16), "leaf": 0.55, "fruit": Color(0.75, 0.08, 0.1), "unripe": Color(0.55, 0.6, 0.25), "flower": Color(1.0, 0.97, 0.97), "thorns": true},
+	"sea_buckthorn": {"fill": 12, "canes": [11, 12], "segs": 4, "thorn_n": 3, "arch": 0.3, "reach": 1.0, "sprays": 8, "rate": 0.5, "cluster": 0.05, "cane": Color(0.35, 0.3, 0.22), "leaf": 0.9, "fruit": Color(1.0, 0.55, 0.05), "unripe": Color(0.8, 0.7, 0.2), "flower": null, "thorns": true},
+	"wild_sage": {"bloom_in": ["spring", "summer"], "fill": 14, "canes": [10, 12], "segs": 3, "thorn_n": 0, "arch": 0.15, "reach": 0.6, "sprays": 8, "rate": 0.0, "cane": Color(0.45, 0.5, 0.35), "leaf": 0.9, "fruit": Color(0.5, 0.4, 0.3), "unripe": Color(0.5, 0.5, 0.3), "flower": Color(0.55, 0.4, 0.8), "thorns": false},
+	"rosemary": {"bloom_in": ["spring"], "fill": 16, "canes": [12, 14], "segs": 3, "thorn_n": 0, "arch": 0.1, "reach": 0.55, "sprays": 8, "rate": 0.0, "cane": Color(0.4, 0.35, 0.25), "leaf": 0.45, "fruit": Color(0.5, 0.4, 0.3), "unripe": Color(0.5, 0.5, 0.3), "flower": Color(0.55, 0.65, 0.95), "thorns": false},
+	"drakethorn": {"fill": 14, "canes": [10, 12], "segs": 4, "thorn_n": 5, "arch": 0.4, "reach": 1.1, "sprays": 6, "rate": 0.3, "cluster": 0.05, "cane": Color(0.25, 0.05, 0.08), "leaf": 0.3, "fruit": Color(0.85, 0.1, 0.1), "unripe": Color(0.5, 0.15, 0.1), "flower": null, "thorns": true},
+	"sunberry": {"fill": 14, "canes": [9, 11], "segs": 4, "thorn_n": 0, "arch": 0.4, "reach": 1.0, "sprays": 8, "rate": 0.5, "cluster": 0.05, "cane": Color(0.45, 0.35, 0.2), "leaf": 0.75, "fruit": Color(1.0, 0.8, 0.1), "unripe": Color(0.8, 0.85, 0.3), "flower": null, "thorns": false},
+	"hagwillow": {"fill": 14, "canes": [13, 14], "segs": 4, "thorn_n": 0, "arch": 0.9, "reach": 1.2, "sprays": 10, "rate": 0.0, "cane": Color(0.4, 0.38, 0.34), "leaf": 0.6, "fruit": Color(0.5, 0.45, 0.35), "unripe": Color(0.5, 0.5, 0.3), "flower": null, "thorns": false},
+	"honeyspindle": {"bloom_in": ["spring", "summer"], "fill": 14, "canes": [8, 10], "segs": 4, "thorn_n": 0, "arch": 0.35, "reach": 1.0, "sprays": 8, "rate": 0.2, "cluster": 0.06, "cane": Color(0.55, 0.4, 0.2), "leaf": 0.85, "fruit": Color(0.95, 0.7, 0.2), "unripe": Color(0.7, 0.7, 0.3), "flower": Color(1.0, 0.85, 0.4), "thorns": false},
+	"sleetberry": {"fill": 14, "canes": [9, 11], "segs": 4, "thorn_n": 0, "arch": 0.35, "reach": 0.9, "sprays": 8, "rate": 0.5, "cluster": 0.05, "cane": Color(0.3, 0.3, 0.4), "leaf": 0.55, "fruit": Color(0.6, 0.8, 0.95), "unripe": Color(0.8, 0.9, 0.95), "flower": null, "thorns": false},
+	"tanglewort": {"fill": 18, "fill_r": 0.8, "canes": [15, 17], "segs": 5, "thorn_n": 2, "arch": 1.0, "reach": 1.4, "sprays": 8, "rate": 0.0, "cane": Color(0.25, 0.3, 0.15), "leaf": 0.5, "fruit": Color(0.5, 0.4, 0.3), "unripe": Color(0.5, 0.5, 0.3), "flower": null, "thorns": true},
+	"sunsilver_vine": {"bloom_in": ["summer"], "fill": 14, "canes": [10, 12], "segs": 5, "thorn_n": 0, "arch": 0.8, "reach": 1.2, "sprays": 8, "rate": 0.15, "cluster": 0.05, "cane": Color(0.75, 0.78, 0.82), "leaf": 0.95, "fruit": Color(0.95, 0.85, 0.5), "unripe": Color(0.8, 0.8, 0.6), "flower": Color(1.0, 0.95, 0.7), "thorns": false},
+}
+
+
+# Cactus, aloe and prickly pear, family 6 of goal 1b (Kathleen, 24 Oct). Reference: saguaro-type cactus 1-5 m ribbed green column with up-curving arms; aloe 30-80 cm rosette of thick pointed grey-green leaves
+# with pale teeth; prickly pear 0.5-2 m stack of flat oval pads with red-purple fruit on the rims and yellow flowers.
+static func _succulent(kind: String, bark: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, far: bool) -> void:
+	match kind:
+		"aloe":
+			var leaf_color: Color = Color(0.45, 0.6, 0.45)
+
+			for k in range(7 if far else 14):
+				var a: float = TAU * float(k) / float(7 if far else 14) + rng.randf_range(-0.2, 0.2)
+				var out: Vector3 = Vector3(cos(a), 0.0, sin(a))
+				var ring: float = 1.0 if k % 2 == 0 else 0.7
+				var base: Vector3 = out * crown * 0.05
+				var mid: Vector3 = out * crown * 0.3 * ring + Vector3(0.0, h * 0.45 * ring, 0.0)
+				var tip: Vector3 = out * crown * 0.55 * ring + Vector3(0.0, h * 0.8 * ring, 0.0)
+				_branch(bark, base, mid, maxf(h * 0.05, 0.01), maxf(h * 0.035, 0.007), leaf_color * rng.randf_range(0.9, 1.1), 3)
+				_branch(bark, mid, tip, maxf(h * 0.035, 0.007), maxf(h * 0.004, 0.001), leaf_color.lightened(0.1), 3)
+		"prickly_pear":
+			var pad: Color = Color(0.35, 0.58, 0.3)
+			var pads: Array = [[Vector3(0.0, 0.18, 0.0), 0.0]]
+			var count: int = 5 if far else 10
+
+			for k in range(1, count):
+				var parent: Array = pads[rng.randi_range(0, pads.size() - 1)]
+				var at: Vector3 = parent[0] + Vector3(rng.randf_range(-0.5, 0.5) * crown * 0.5, h * rng.randf_range(0.18, 0.28), rng.randf_range(-0.5, 0.5) * crown * 0.5)
+				pads.append([at, float(k)])
+
+			for entry in pads:
+				var at: Vector3 = entry[0]
+				_bead(bark, at, Vector3(h * 0.17, h * 0.2, h * 0.04), pad * rng.randf_range(0.9, 1.1))
+
+				if not far and rng.randf() < 0.35:
+					_bead(bark, at + Vector3(h * 0.08, h * 0.2, 0.0), Vector3(h * 0.04, h * 0.05, h * 0.04), Color(0.75, 0.15, 0.3))
+		_:
+			_column(bark, rng, h, trunk, Color(0.7, 0.9, 0.6), 6 if far else 8, 3)
+
+			if not far and h > 1.5:
+				for side in [-1.0, 1.0]:
+					var y: float = h * rng.randf_range(0.35, 0.55)
+					var elbow: Vector3 = Vector3(side * crown * 0.35, y, 0.0)
+					var top: Vector3 = elbow + Vector3(0.0, h * rng.randf_range(0.25, 0.4), 0.0)
+					_branch(bark, Vector3(0.0, y, 0.0), elbow, maxf(trunk * 0.4, 0.04), maxf(trunk * 0.35, 0.035), Color(0.65, 0.85, 0.55), 5)
+					_branch(bark, elbow, top, maxf(trunk * 0.35, 0.035), maxf(trunk * 0.3, 0.03), Color(0.65, 0.85, 0.55), 5)

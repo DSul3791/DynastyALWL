@@ -781,6 +781,7 @@
 			"display": "Juniper",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				1,
 				4
@@ -838,6 +839,7 @@
 			"display": "Gorse",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				1,
 				2.5
@@ -890,6 +892,7 @@
 			"display": "Dwarf birch",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				0.4,
 				1.2
@@ -937,6 +940,7 @@
 			"display": "Saltbush",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				0.5,
 				1.5
@@ -988,6 +992,7 @@
 			"display": "Cactus",
 			"kind": "shrub",
 			"shape": "cactus",
+			"model": "succulent",
 			"height_m": [
 				1,
 				5
@@ -1038,6 +1043,7 @@
 			"display": "Fern",
 			"kind": "plant",
 			"shape": "fern",
+			"model": "fern_rosette",
 			"height_m": [
 				0.5,
 				1.2
@@ -1094,6 +1100,7 @@
 			"display": "Heather",
 			"kind": "plant",
 			"shape": "shrub",
+			"model": "wildflower",
 			"model": "wildflower",
 			"height_m": [
 				0.2,
@@ -1153,6 +1160,7 @@
 			"display": "Reeds",
 			"kind": "plant",
 			"shape": "reed",
+			"model": "reed_stand",
 			"height_m": [
 				1.5,
 				3
@@ -1213,6 +1221,7 @@
 			"kind": "plant",
 			"shape": "shrub",
 			"model": "wildflower",
+			"model": "wildflower",
 			"height_m": [
 				0.4,
 				0.9
@@ -1266,6 +1275,7 @@
 			"display": "Tall grass",
 			"kind": "plant",
 			"shape": "grass",
+			"model": "grass_tuft",
 			"height_m": [
 				0.5,
 				1.0
@@ -1386,6 +1396,7 @@
 			"display": "Cotton grass",
 			"kind": "plant",
 			"shape": "grass",
+			"model": "grass_tuft",
 			"height_m": [
 				0.2,
 				0.5
@@ -1437,6 +1448,7 @@
 			"display": "Alpine flowers",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.1,
 				0.3
@@ -1959,6 +1971,7 @@
 			"display": "Elder",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				3,
 				7
@@ -2121,12 +2134,11 @@
 			],
 			"water": [],
 			"yields": [
-				"rose_hips",
 				"rose_petals"
 			],
 			"season": [
-				"summer",
-				"autumn"
+				"spring",
+				"summer"
 			],
 			"rarity": "common",
 			"familiarity": 93,
@@ -2216,6 +2228,7 @@
 			"display": "Hawthorn",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				3,
 				7
@@ -2277,6 +2290,7 @@
 			"display": "Sea buckthorn",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				1.5,
 				3.5
@@ -2647,6 +2661,7 @@
 			"kind": "plant",
 			"shape": "shrub",
 			"model": "wildflower",
+			"model": "wildflower",
 			"patch": {"every_m": 60, "chance": 0.5, "count": [12, 20], "radius_m": 3.0, "scale": [1, 1.5], "spacing_m": 0.45},
 			"height_m": [
 				0.2,
@@ -2703,6 +2718,7 @@
 			"display": "Wild thyme",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"patch": {"every_m": 60, "chance": 0.4, "count": [10, 20], "radius_m": 2.5, "scale": [1, 1.5], "spacing_m": 0.4},
 			"height_m": [
 				0.05,
@@ -2766,6 +2782,7 @@
 			"display": "Water mint",
 			"kind": "plant",
 			"shape": "shrub",
+			"model": "wildflower",
 			"model": "wildflower",
 			"patch": {"every_m": 60, "chance": 0.4, "count": [10, 20], "radius_m": 2.5, "scale": [1, 1.5], "spacing_m": 0.5},
 			"height_m": [
@@ -2831,6 +2848,7 @@
 			"display": "Sorrel",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.2,
 				0.6
@@ -2885,6 +2903,7 @@
 			"display": "Dandelion",
 			"kind": "plant",
 			"shape": "shrub",
+			"model": "wildflower",
 			"model": "wildflower",
 			"height_m": [
 				0.1,
@@ -2947,6 +2966,7 @@
 			"kind": "plant",
 			"shape": "shrub",
 			"model": "wildflower",
+			"model": "wildflower",
 			"height_m": [
 				0.4,
 				1.0
@@ -3002,6 +3022,7 @@
 			"display": "Watercress",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.1,
 				0.3
@@ -3061,6 +3082,7 @@
 			"display": "Samphire",
 			"kind": "plant",
 			"shape": "grass",
+			"model": "grass_tuft",
 			"height_m": [
 				0.1,
 				0.3
@@ -3116,6 +3138,7 @@
 			"kind": "plant",
 			"shape": "shrub",
 			"model": "wildflower",
+			"model": "wildflower",
 			"height_m": [
 				0.3,
 				0.6
@@ -3170,6 +3193,7 @@
 			"display": "Wild sage",
 			"kind": "plant",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				0.3,
 				0.7
@@ -3229,6 +3253,7 @@
 			"display": "Rosemary",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				0.6,
 				1.5
@@ -3285,6 +3310,7 @@
 			"display": "Lavender",
 			"kind": "plant",
 			"shape": "shrub",
+			"model": "wildflower",
 			"model": "wildflower",
 			"height_m": [
 				0.3,
@@ -3346,6 +3372,7 @@
 			"kind": "plant",
 			"shape": "shrub",
 			"model": "wildflower",
+			"model": "wildflower",
 			"height_m": [
 				0.3,
 				0.7
@@ -3405,6 +3432,7 @@
 			"display": "Ribwort plantain",
 			"kind": "plant",
 			"shape": "grass",
+			"model": "grass_tuft",
 			"height_m": [
 				0.1,
 				0.4
@@ -3462,6 +3490,7 @@
 			"display": "Chamomile",
 			"kind": "plant",
 			"shape": "shrub",
+			"model": "wildflower",
 			"model": "wildflower",
 			"height_m": [
 				0.2,
@@ -3584,6 +3613,7 @@
 			"kind": "plant",
 			"shape": "shrub",
 			"model": "wildflower",
+			"model": "wildflower",
 			"height_m": [
 				0.3,
 				0.8
@@ -3640,6 +3670,7 @@
 			"display": "Valerian",
 			"kind": "plant",
 			"shape": "shrub",
+			"model": "wildflower",
 			"model": "wildflower",
 			"height_m": [
 				0.6,
@@ -3698,6 +3729,7 @@
 			"display": "Meadowsweet",
 			"kind": "plant",
 			"shape": "shrub",
+			"model": "wildflower",
 			"model": "wildflower",
 			"height_m": [
 				0.6,
@@ -3758,6 +3790,7 @@
 			"display": "Feverfew",
 			"kind": "plant",
 			"shape": "shrub",
+			"model": "wildflower",
 			"model": "wildflower",
 			"height_m": [
 				0.3,
@@ -3930,6 +3963,7 @@
 			"kind": "plant",
 			"shape": "shrub",
 			"model": "wildflower",
+			"model": "wildflower",
 			"height_m": [
 				0.2,
 				0.5
@@ -3983,6 +4017,7 @@
 			"display": "Angelica",
 			"kind": "plant",
 			"shape": "shrub",
+			"model": "wildflower",
 			"model": "wildflower",
 			"height_m": [
 				1,
@@ -4045,6 +4080,7 @@
 			"display": "Aloe",
 			"kind": "plant",
 			"shape": "cactus",
+			"model": "succulent",
 			"height_m": [
 				0.3,
 				0.8
@@ -4100,6 +4136,7 @@
 			"display": "Foxglove",
 			"kind": "plant",
 			"shape": "shrub",
+			"model": "wildflower",
 			"model": "wildflower",
 			"height_m": [
 				0.6,
@@ -4216,6 +4253,7 @@
 			"display": "Wolfsbane",
 			"kind": "plant",
 			"shape": "shrub",
+			"model": "wildflower",
 			"model": "wildflower",
 			"height_m": [
 				0.5,
@@ -4748,6 +4786,7 @@
 			"display": "Prickly pear",
 			"kind": "shrub",
 			"shape": "cactus",
+			"model": "succulent",
 			"height_m": [
 				0.8,
 				2.5
@@ -4801,6 +4840,7 @@
 			"display": "Owlpetal",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.2,
 				0.5
@@ -4856,6 +4896,7 @@
 			"display": "Staunchmoss",
 			"kind": "plant",
 			"shape": "fern",
+			"model": "fern_rosette",
 			"height_m": [
 				0.03,
 				0.1
@@ -4913,6 +4954,7 @@
 			"display": "Emberroot",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.3,
 				0.7
@@ -5027,6 +5069,7 @@
 			"display": "Wispbloom",
 			"kind": "plant",
 			"shape": "reed",
+			"model": "reed_stand",
 			"height_m": [
 				0.4,
 				1.0
@@ -5087,6 +5130,7 @@
 			"display": "Drakethorn",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				0.8,
 				2.0
@@ -5202,6 +5246,7 @@
 			"display": "Sunberry",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				0.5,
 				1.4
@@ -5263,6 +5308,7 @@
 			"display": "Hushfern",
 			"kind": "plant",
 			"shape": "fern",
+			"model": "fern_rosette",
 			"height_m": [
 				0.3,
 				0.9
@@ -5441,6 +5487,7 @@
 			"display": "Hag willow",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				2,
 				4
@@ -5499,6 +5546,7 @@
 			"display": "Heartroot",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.2,
 				0.4
@@ -5556,6 +5604,7 @@
 			"display": "Tideglass weed",
 			"kind": "plant",
 			"shape": "reed",
+			"model": "reed_stand",
 			"height_m": [
 				0.3,
 				0.8
@@ -5612,6 +5661,7 @@
 			"display": "Gloomthistle",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.6,
 				1.4
@@ -5669,6 +5719,7 @@
 			"display": "Dewlantern",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.2,
 				0.4
@@ -5728,6 +5779,7 @@
 			"display": "Honeyspindle",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				1.0,
 				2.2
@@ -5786,6 +5838,7 @@
 			"display": "Marrowroot",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.3,
 				0.6
@@ -5844,6 +5897,7 @@
 			"display": "Riverbraid",
 			"kind": "plant",
 			"shape": "reed",
+			"model": "reed_stand",
 			"height_m": [
 				0.8,
 				1.6
@@ -5907,6 +5961,7 @@
 			"display": "Brinebell",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.15,
 				0.35
@@ -5963,6 +6018,7 @@
 			"display": "Sleetberry",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				0.3,
 				0.8
@@ -6022,6 +6078,7 @@
 			"display": "Quenchbell",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.3,
 				0.6
@@ -6075,6 +6132,7 @@
 			"display": "Whisperfern",
 			"kind": "plant",
 			"shape": "fern",
+			"model": "fern_rosette",
 			"height_m": [
 				0.4,
 				1.0
@@ -6187,6 +6245,7 @@
 			"display": "Duskmallow",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.4,
 				1.0
@@ -6248,6 +6307,7 @@
 			"display": "Tanglewort",
 			"kind": "plant",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				0.3,
 				0.9
@@ -6305,6 +6365,7 @@
 			"display": "Stormreed",
 			"kind": "plant",
 			"shape": "reed",
+			"model": "reed_stand",
 			"height_m": [
 				1.2,
 				2.4
@@ -6363,6 +6424,7 @@
 			"display": "Truthsage",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.3,
 				0.6
@@ -6471,6 +6533,7 @@
 			"display": "Echo moss",
 			"kind": "plant",
 			"shape": "fern",
+			"model": "fern_rosette",
 			"height_m": [
 				0.02,
 				0.06
@@ -6585,6 +6648,7 @@
 			"display": "Nightcrown",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.15,
 				0.35
@@ -6639,6 +6703,7 @@
 			"display": "Mournbloom",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.3,
 				0.7
@@ -6694,6 +6759,7 @@
 			"display": "Pilgrim's cup",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.3,
 				0.7
@@ -6751,6 +6817,7 @@
 			"display": "Sunsilver vine",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				1.5,
 				3.0
@@ -6809,6 +6876,7 @@
 			"display": "Frostglass orchid",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.15,
 				0.3
@@ -6863,6 +6931,7 @@
 			"display": "Sevenyear lily",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.6,
 				1.2
@@ -6920,6 +6989,7 @@
 			"display": "Stillwater lotus",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.1,
 				0.3
@@ -6980,6 +7050,7 @@
 			"display": "Gloaming star",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.2,
 				0.4
@@ -7159,6 +7230,7 @@
 			"display": "Tidecrown",
 			"kind": "plant",
 			"shape": "reed",
+			"model": "reed_stand",
 			"height_m": [
 				0.2,
 				0.5
