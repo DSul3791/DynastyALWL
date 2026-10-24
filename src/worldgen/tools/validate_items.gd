@@ -496,6 +496,34 @@ func _init() -> void:
 	if int(recipes_file.get("next_number", 0)) <= highest_recipe:
 		fail("recipes.json: next_number is not above the highest recipe number")
 
+	# The hand saw sits between the axe and the sawmill (Tyler, tools batch 1): its recipe must match the balance row at the top of recipes.json.
+	var balance: Dictionary = recipes_file.get("hand_saw_balance", {})
+
+	if not balance.is_empty():
+		var by_hand: Dictionary = recipes_file["recipes"].get("lumber_by_hand", {})
+		var saw_row: Dictionary = balance.get("hand_saw", {})
+		var mill_row: Dictionary = balance.get("sawmill", {})
+		var mill_recipe: Dictionary = recipes_file["recipes"].get("lumber", {})
+
+		if by_hand.is_empty() or int(by_hand["gives"][1]) != int(saw_row.get("lumber_per_log", -1)) or absf(float(by_hand.get("craft_s", 0.0)) - float(saw_row.get("craft_s", -1.0))) > 0.001:
+			fail("recipes.json: lumber_by_hand does not match hand_saw_balance.hand_saw")
+
+		if int(mill_recipe.get("gives", ["", 0])[1]) != int(mill_row.get("lumber_per_log", -1)) or absf(float(mill_recipe.get("craft_s", 0.0)) - float(mill_row.get("craft_s", -1.0))) > 0.001:
+			fail("recipes.json: lumber does not match hand_saw_balance.sawmill")
+
+		if int(saw_row.get("lumber_per_log", 0)) >= int(mill_row.get("lumber_per_log", 0)) or float(saw_row.get("craft_s", 0.0)) <= float(mill_row.get("craft_s", 0.0)):
+			fail("recipes.json: the hand saw must give less and take longer than the sawmill")
+
+	for rid in recipes_file["recipes"]:
+		var wt: String = String(recipes_file["recipes"][rid].get("wears_tool", ""))
+		var wt_ok: bool = wt == ""
+
+		for row in recipes_file["recipes"][rid].get("keeps", []):
+			wt_ok = wt_ok or String(items_file["items"].get(String(row[0]), {}).get("tool_class", "")) == wt
+
+		if not wt_ok:
+			fail("recipe '%s': wears_tool '%s' is not the tool_class of any kept tool" % [rid, wt])
+
 	# Core materials marked "future": true (iron and steel ingots until smelting exists) count as sources for the recipe check.
 	for id in items_file.get("items", {}):
 		if bool(items_file["items"][id].get("future", false)) and String(items_file["items"][id].get("kind", "")) == "material":

@@ -1937,6 +1937,57 @@ func _init() -> void:
 	sa.action(1, Net.ACT_STANCE, 0, 0, 0, Vector3.ZERO)
 	check(sa.stance_of(1) == 3, "a fainted player cannot choose a stance")
 
+	# Tools batch 1: the hand saw turns a log into lumber by the balance row and wears; the hammer and adze recipes use live items.
+	var hs_dir: String = "user://test_server_items_handsaw"
+	DirAccess.make_dir_recursive_absolute(hs_dir)
+
+	for file in DirAccess.get_files_at(hs_dir):
+		DirAccess.remove_absolute(hs_dir + "/" + file)
+
+	var hs = make(hs_dir)
+	hs.send_craft_queue = func(_p, _e, _l): pass
+	hs.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	hs.peer_connected_hello(1, "handsawkey01")
+	var by_hand: Dictionary = {}
+
+	for rn in hs.recipes.numbers():
+		if hs.recipes.recipe(rn)["id"] == "lumber_by_hand":
+			by_hand = hs.recipes.recipe(rn)
+
+	check(not by_hand.is_empty() and by_hand["gives"][1] == 2 and by_hand["craft_s"] == 24.0, "the hand saw recipe matches the balance row (2 lumber, 24 s)")
+	hs.give(1, hs.table.number_of("log"), 2)
+	hs._last_queue_act.clear()
+	hs.action(1, Net.ACT_CRAFT_QUEUE, int(by_hand.get("number", 0)), 0, 1, Vector3.ZERO)
+	check(hs.craft_queue_of(1).is_empty() and hs.inventory_of(1).count_of(hs.table.number_of("log")) == 2, "no saw, no craft: the log stays")
+	var hs_inv = hs.inventory_of(1)
+	var bag_was: int = hs_inv.bag_from
+	hs_inv.bag_from = 0   # the saw goes on the hotbar, as an admin give would
+	hs_inv.add(hs.table.number_of("hand_saw"), 1)
+	hs_inv.bag_from = bag_was
+	var saw_slot: int = hs.inventory_of(1).numbers.find(hs.table.number_of("hand_saw"))
+	hs._last_queue_act.clear()
+	hs.action(1, Net.ACT_CRAFT_QUEUE, int(by_hand.get("number", 0)), 0, 1, Vector3.ZERO)
+
+	for n in 100:
+		hs._craft_tick(0.25)
+
+	check(hs.inventory_of(1).count_of(hs.table.number_of("lumber")) == 2 and hs.inventory_of(1).count_of(hs.table.number_of("log")) == 1, "one log sawn by hand gives 2 lumber")
+	check(saw_slot >= 0 and saw_slot < 10 and hs.inventory_of(1).wear[saw_slot] >= 1, "sawing wears the hand saw")
+
+	for rid in ["stone_hammer", "stone_adze"]:
+		var rec: Dictionary = {}
+
+		for rn in hs.recipes.numbers():
+			if hs.recipes.recipe(rn)["id"] == rid:
+				rec = hs.recipes.recipe(rn)
+
+		var live: bool = not rec.is_empty() and rec["station"] == "workbench"
+
+		for row in rec.get("needs", []):
+			live = live and int(row[0]) > 0 and not bool(hs.table.entry(hs.table.id_of(int(row[0]))).get("retired", false))
+
+		check(live and int(rec["gives"][0]) == hs.table.number_of(rid), "%s is made at a workbench from live items" % rid)
+
 	# Crafting queue: ingredients taken when queued, crafts run on the tick, cancel refunds, caps, restart.
 	var qd: String = "user://test_server_items_queue"
 	DirAccess.make_dir_recursive_absolute(qd)
