@@ -77,9 +77,9 @@ validate() {
 }
 selftest() {
 	cd /work/repo 2>/dev/null || { update; cd /work/repo || exit 2; }
-	R=$(nice -n 19 timeout 120 "$GODOT_EXE" --headless --path . --script res://tools/docker/selftest.gd 2>&1); echo "$R" > "$OUT/selftest.log"
+	R=$(nice -n 19 timeout 120 "$GODOT_EXE" --headless --path . --script /opt/box/selftest.gd 2>&1); echo "$R" > "$OUT/selftest.log"
 	echo "$R" | grep -E "SELFTEST_|^Godot "
-	echo "$R" | grep -q SELFTEST_PASS && ok "voxel tools and water core load" || bad "selftest: $(echo "$R" | grep SELFTEST_FAIL | head -1)"
+	echo "$R" | grep -q SELFTEST_PASS && ok "voxel tools and water core load" || bad "selftest: $(echo "$R" | grep -E 'SELFTEST_FAIL|ERROR|rror' | head -2 | tr '\n' ' ' | cut -c1-240)${R:+ [last line: $(echo "$R" | tail -1 | cut -c1-160)]} (full text: $OUT/selftest.log)"
 }
 run_test() {
 	local N="$1" R RC
@@ -114,7 +114,7 @@ case "${1:-selftest}" in
 	publish) publish "$2";;
 	gitcheck) gitcheck; finish;;
 	validate) validate; finish;;
-	shot) guard; shift; exec bash /work/repo/tools/docker/shot.sh "$@";;
+	shot) guard; shift; exec bash /opt/box/shot.sh "$@";;
 	godot) shift; cd /work/repo 2>/dev/null; exec "$GODOT_EXE" "$@";;
 	update) update; finish;;
 	tests) guard; shift; update; selftest; basics; for N in "$@"; do run_test "$N"; done; finish;;

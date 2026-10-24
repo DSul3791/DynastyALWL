@@ -28,6 +28,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends git openssh-cli
 COPY --from=engine /out/godot /opt/godot/godot
 RUN chmod +x /opt/godot/godot && ln -s /opt/godot/godot /opt/godot/godot-gfx && /opt/godot/godot --version
 COPY run_jobs.sh /usr/local/bin/run_jobs.sh
+COPY selftest.gd shot.sh /opt/box/
 RUN chmod +x /usr/local/bin/run_jobs.sh && useradd -m -u 1500 tester && mkdir -p /work /out && chown tester /work /out
 USER tester
 # Claude Code (native installer from the official quickstart); signs in later with Dave's own browser login, nothing is baked in
