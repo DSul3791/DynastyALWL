@@ -1,0 +1,141 @@
+  gullies: 19041, dead ends: 0
+  head not in a basin: world 63160,77864 bed -18.8 ring second-lowest -19.8
+  head not in a basin: world 55328,66912 bed 26.6 ring second-lowest 26.1
+  head not in a basin: world 58296,72448 bed 32.4 ring second-lowest 32.9
+  head not in a basin: world 58296,70016 bed 25.7 ring second-lowest 25.8
+  head not in a basin: world 57720,70384 bed 61.0 ring second-lowest 61.2
+  head not in a basin: world 58520,69624 bed 25.3 ring second-lowest 25.2
+  head not in a basin: world 54600,75168 bed 34.5 ring second-lowest 32.0
+  head not in a basin: world 57432,71216 bed 77.1 ring second-lowest 77.0
+  head not in a basin: world 55128,66976 bed 32.9 ring second-lowest 29.7
+  head not in a basin: world 53184,69384 bed 98.5 ring second-lowest 96.5
+  head not in a basin: world 57408,70816 bed 85.5 ring second-lowest 85.2
+  head not in a basin: world 51904,73664 bed 5.9 ring second-lowest 6.4
+  head not in a basin: world 57960,72808 bed 63.8 ring second-lowest 62.6
+  head not in a basin: world 57224,71672 bed 116.4 ring second-lowest 111.7
+  head not in a basin: world 52872,73184 bed 87.4 ring second-lowest 86.5
+  head not in a basin: world 55504,75216 bed 78.0 ring second-lowest 76.4
+  head not in a basin: world 55904,74880 bed 99.5 ring second-lowest 99.2
+  head not in a basin: world 53136,73560 bed 97.9 ring second-lowest 93.2
+  head not in a basin: world 57640,73864 bed 77.5 ring second-lowest 77.2
+  head not in a basin: world 56992,74504 bed 96.0 ring second-lowest 95.2
+  head not in a basin: world 47712,71144 bed -0.3 ring second-lowest -0.9
+  head not in a basin: world 57232,66656 bed 0.4 ring second-lowest 0.6
+  head not in a basin: world 53120,74952 bed 7.0 ring second-lowest 6.0
+  head not in a basin: world 51616,69296 bed 21.8 ring second-lowest 21.5
+  head not in a basin: world 53256,68520 bed 26.2 ring second-lowest 26.7
+  head not in a basin: world 56864,71456 bed 162.7 ring second-lowest 157.7
+  head not in a basin: world 56760,67088 bed 35.2 ring second-lowest 33.8
+  head not in a basin: world 56864,70112 bed 227.1 ring second-lowest 215.5
+  head not in a basin: world 58552,73520 bed 67.8 ring second-lowest 68.2
+  head not in a basin: world 53208,69688 bed 130.4 ring second-lowest 128.9
+  head not in a basin: world 57824,71800 bed 55.3 ring second-lowest 54.8
+  head not in a basin: world 62008,62688 bed 14.7 ring second-lowest 10.9
+  head not in a basin: world 49800,72424 bed 29.1 ring second-lowest 29.1
+  head not in a basin: world 53856,73480 bed 195.4 ring second-lowest 177.2
+  head not in a basin: world 51904,72848 bed 62.6 ring second-lowest 61.3
+  head not in a basin: world 52896,69792 bed 106.5 ring second-lowest 105.4
+  head not in a basin: world 47248,69984 bed 16.6 ring second-lowest 16.7
+  head not in a basin: world 62520,79496 bed 121.5 ring second-lowest 121.9
+  head not in a basin: world 62248,77920 bed 0.2 ring second-lowest -3.8
+  head not in a basin: world 48640,71680 bed 6.4 ring second-lowest 6.8
+  head not in a basin: world 48064,71080 bed 7.5 ring second-lowest 7.7
+  head not in a basin: world 54248,66728 bed 26.3 ring second-lowest 26.7
+  head not in a basin: world 62176,62576 bed 1.6 ring second-lowest 1.5
+  head not in a basin: world 58696,69344 bed 19.0 ring second-lowest 17.9
+  head not in a basin: world 56256,68272 bed 160.2 ring second-lowest 159.8
+  head not in a basin: world 51752,72832 bed 59.4 ring second-lowest 57.8
+  head not in a basin: world 56384,71456 bed 509.8 ring second-lowest 508.8
+  head not in a basin: world 58672,77624 bed 80.9 ring second-lowest 79.8
+  head not in a basin: world 51144,69608 bed 63.8 ring second-lowest 62.2
+  head not in a basin: world 48728,66752 bed 4.4 ring second-lowest 4.0
+  head not in a basin: world 60248,67720 bed 2.9 ring second-lowest 1.3
+  head not in a basin: world 51904,70048 bed 96.1 ring second-lowest 95.6
+  head not in a basin: world 55032,67208 bed 50.6 ring second-lowest 50.9
+  head not in a basin: world 53720,69224 bed 170.5 ring second-lowest 165.3
+  head not in a basin: world 61176,64384 bed 138.3 ring second-lowest 130.1
+  head not in a basin: world 53856,73176 bed 360.7 ring second-lowest 343.7
+  head not in a basin: world 61392,76672 bed 37.7 ring second-lowest 33.7
+  head not in a basin: world 56128,67408 bed 50.6 ring second-lowest 50.2
+  head not in a basin: world 47472,69856 bed 26.0 ring second-lowest 26.4
+  head not in a basin: world 53840,70664 bed 703.0 ring second-lowest 703.1
+  head not in a basin: world 52256,69864 bed 85.1 ring second-lowest 84.3
+  head not in a basin: world 61456,77856 bed 54.5 ring second-lowest 54.2
+  head not in a basin: world 50504,69304 bed 56.3 ring second-lowest 56.5
+  head not in a basin: world 53352,68160 bed 23.0 ring second-lowest 22.7
+  head not in a basin: world 51624,69960 bed 81.2 ring second-lowest 79.7
+  head not in a basin: world 57336,69408 bed 128.3 ring second-lowest 127.5
+  head not in a basin: world 52680,72472 bed 169.6 ring second-lowest 164.4
+  head not in a basin: world 54112,69816 bed 571.0 ring second-lowest 567.8
+  head not in a basin: world 49032,67296 bed 25.7 ring second-lowest 26.1
+  head not in a basin: world 58832,78112 bed 126.9 ring second-lowest 126.6
+  head not in a basin: world 56040,70904 bed 637.3 ring second-lowest 636.0
+  head not in a basin: world 52896,67808 bed 8.0 ring second-lowest 8.3
+  head not in a basin: world 55600,75600 bed 76.9 ring second-lowest 75.4
+  head not in a basin: world 56648,72712 bed 535.0 ring second-lowest 516.6
+  head not in a basin: world 53784,68520 bed 55.7 ring second-lowest 55.0
+  head not in a basin: world 58560,68624 bed 70.1 ring second-lowest 68.7
+  head not in a basin: world 56856,74952 bed 110.0 ring second-lowest 110.5
+  head not in a basin: world 59648,66768 bed 70.6 ring second-lowest 70.1
+  head not in a basin: world 58432,68944 bed 41.1 ring second-lowest 41.2
+  head not in a basin: world 58944,63832 bed 175.5 ring second-lowest 172.8
+  head not in a basin: world 50592,72088 bed 81.7 ring second-lowest 80.6
+  head not in a basin: world 61192,63784 bed 121.2 ring second-lowest 116.2
+  head not in a basin: world 49248,71336 bed 58.6 ring second-lowest 58.1
+  head not in a basin: world 51320,72224 bed 90.5 ring second-lowest 90.4
+  head not in a basin: world 54776,73320 bed 579.4 ring second-lowest 578.9
+  head not in a basin: world 57344,67584 bed 77.0 ring second-lowest 76.7
+  head not in a basin: world 61368,79392 bed 176.5 ring second-lowest 174.6
+  head not in a basin: world 49712,71344 bed 88.4 ring second-lowest 88.7
+  head not in a basin: world 48632,70520 bed 61.9 ring second-lowest 61.5
+  head not in a basin: world 59584,66560 bed 64.5 ring second-lowest 63.2
+  head not in a basin: world 52952,70688 bed 566.8 ring second-lowest 566.7
+  head not in a basin: world 53688,71896 bed 649.7 ring second-lowest 650.0
+  head not in a basin: world 64320,79432 bed 87.9 ring second-lowest 85.5
+  head not in a basin: world 64440,59456 bed 8.3 ring second-lowest 7.8
+  head not in a basin: world 63776,79560 bed 91.2 ring second-lowest 87.8
+  heads: 113 river heads, 95 not in a catch basin (bed less than 0.5 m under the second-lowest ring cell)
+  breach: lake level 316.3 m, outlet world 60560,61984, 7 cells, deepest cut 2.9 m
+  breach: lake level 320.4 m, outlet world 60568,62088, 8 cells, deepest cut 2.2 m
+  breach: lake level 322.3 m, outlet world 60208,62456, 1 cells, deepest cut 0.0 m
+  breach: lake level 322.1 m, outlet world 60152,62520, 1 cells, deepest cut 0.0 m
+  breach: lake level 322.6 m, outlet world 60240,62456, 1 cells, deepest cut 0.0 m
+  breach: lake level 321.3 m, outlet world 60064,62552, 1 cells, deepest cut 0.0 m
+  breach: lake level 369.7 m, outlet world 59864,63400, 1 cells, deepest cut 0.0 m
+  breach: lake level 373.2 m, outlet world 59920,63400, 1 cells, deepest cut 0.0 m
+  breach: lake level 372.0 m, outlet world 59864,63608, 1 cells, deepest cut 0.0 m
+  breach: lake level 97.6 m, outlet world 55408,64392, 4 cells, deepest cut 0.0 m
+  breach: lake level 77.2 m, outlet world 59632,66752, 1 cells, deepest cut 0.0 m
+  breach: lake level 94.8 m, outlet world 58080,68432, 1 cells, deepest cut 0.0 m
+  breach: lake level 46.1 m, outlet world 53592,68624, 7 cells, deepest cut 0.3 m
+  breach: lake level 591.3 m, outlet world 55720,68760, 6 cells, deepest cut 13.7 m
+  breach: lake level 591.8 m, outlet world 55736,68784, 8 cells, deepest cut 13.1 m
+  breach: lake level 101.7 m, outlet world 53016,69464, 2 cells, deepest cut 0.0 m
+  breach: lake level 95.0 m, outlet world 47984,69584, 1 cells, deepest cut 0.0 m
+  breach: lake level 898.6 m, outlet world 55464,69776, 1 cells, deepest cut 0.0 m
+  breach: lake level 100.3 m, outlet world 51064,69872, 1 cells, deepest cut 0.0 m
+  breach: lake level 179.7 m, outlet world 52376,70248, 1 cells, deepest cut 0.0 m
+  breach: lake level 847.5 m, outlet world 54064,70936, 1 cells, deepest cut 0.0 m
+  breach: lake level 966.0 m, outlet world 54536,71672, 1 cells, deepest cut 0.0 m
+  breach: lake level 673.5 m, outlet world 53784,72144, 1 cells, deepest cut 0.0 m
+  breach: lake level 929.3 m, outlet world 54904,72440, 1 cells, deepest cut 0.0 m
+  breach: lake level 671.5 m, outlet world 54288,72752, 1 cells, deepest cut 0.0 m
+  breach: lake level 629.7 m, outlet world 54104,72936, 1 cells, deepest cut 0.0 m
+  breach: lake level 640.4 m, outlet world 54248,73080, 1 cells, deepest cut 0.0 m
+  breach: lake level 611.8 m, outlet world 54976,73552, 1 cells, deepest cut 0.0 m
+  breach: lake level 608.8 m, outlet world 54984,73608, 1 cells, deepest cut 0.0 m
+  breach: lake level 605.2 m, outlet world 54936,73632, 1 cells, deepest cut 0.0 m
+  breach: lake level 88.0 m, outlet world 58336,74072, 7 cells, deepest cut 0.0 m
+  breach: lake level 90.4 m, outlet world 58200,74176, 13 cells, deepest cut 0.4 m
+  breach: lake level 84.3 m, outlet world 57808,74304, 21 cells, deepest cut 0.1 m
+  breach: lake level 97.4 m, outlet world 57224,74352, 2 cells, deepest cut 0.0 m
+  breach: lake level 92.2 m, outlet world 58176,74360, 7 cells, deepest cut 0.2 m
+  breach: lake level 93.9 m, outlet world 58088,74424, 4 cells, deepest cut 0.1 m
+  breach: lake level 114.1 m, outlet world 56744,75000, 1 cells, deepest cut 0.0 m
+  breach: lake level 14.0 m, outlet world 53480,75304, 1 cells, deepest cut 0.0 m
+  breach: lake level 77.5 m, outlet world 55584,75624, 15 cells, deepest cut 2.7 m
+  breach: lake level 177.7 m, outlet world 61504,79472, 11 cells, deepest cut 0.3 m
+  breach: lake level 173.0 m, outlet world 62040,79752, 6 cells, deepest cut 8.1 m
+  breach: 41 lakes, 289 cells cut, deepest cut 13.7 m
+  pits: 71 drained, 16 left (cut too deep), 4781 cells cut, deepest cut 8.0 m
+Tile (3, 4) baked in 405.6 s: 8.87 MB, stages { "height": 20578, "erosion": 95880, "ledges": 36788, "scree": 5500, "water": 201628, "climate": 25809, "geology": 14730, "sites": 1238 } -> E:/Software/godotDev/island_world_heads/tiles/tile_3_4.tile
