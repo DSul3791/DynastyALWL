@@ -1522,3 +1522,7 @@ Answered: 2026-10-24 16:41 UTC
 Answer: No: It has graphics capability. You should be using this to do all Testing.
 Answered: 2026-10-24 17:02 UTC
 
+## wl-bridges | Bridges: low plank bridges and fords can be washed out in floods, high stone bridges with piers survive?
+Answer: Yes
+Answered: 2026-10-24 17:03 UTC
+
