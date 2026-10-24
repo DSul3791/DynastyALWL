@@ -8,3 +8,4 @@ Lessons: build 743 shipped with conflict markers (fixed in 744); CI false failur
 Open for tomorrow: island rebake with agreed spawn/showroom method; rig dig/drop/pile/chop plans run by MikeW; Kathleen flora redo from Dave's photos; Sal species and blueprint; Guru: crash_reports untrack (warn Dave), inbox files, water options research final, id claims.
 - 03:15 UTC 24 Oct Guru_003: build 775 merged (v28 bake, TERRAIN_VERSION 29).
 - 03:20 UTC 24 Oct Guru_003: build 776 merged (gate list 3, 8 branches).
+- 03:45 UTC 24 Oct (Dave 03:42 UTC): WORKING ALL NIGHT. BP-T43 after-hours limits and the wrap-up call do NOT apply tonight; normal goals continue, merge gate in order, builds with notes for the morning pull, handoff at 8 AM ADT (11:00 UTC), Mike backs up in a gap with Godot closed.

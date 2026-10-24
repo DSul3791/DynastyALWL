@@ -36,3 +36,4 @@ The coordinator ends the old thread and starts a new one with the same role. The
 
 ## When
 Every day at 8:00 AM Atlantic (ADT = 11:00 UTC until 1 Nov 2026, then AST = 12:00 UTC; cron `0 11 * * *` now, change to `0 12 * * *` on 1 Nov). The 8 AM run: the coordinator wakes every thread to run the steps above, Guru merges and writes the NOW block, then the coordinator resets the threads and Dave's morning starts from a clean head. The 9 pm routine (backup) stays. Dave says "goodnight" = same steps, plus backup.
+- 03:45 UTC 24 Oct (Dave 03:42 UTC): WORKING ALL NIGHT. BP-T43 after-hours limits and the wrap-up call do NOT apply tonight; normal goals continue, merge gate in order, builds with notes for the morning pull, handoff at 8 AM ADT (11:00 UTC), Mike backs up in a gap with Godot closed.
