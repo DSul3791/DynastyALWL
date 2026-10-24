@@ -16,3 +16,4 @@ Open for tomorrow: island rebake with agreed spawn/showroom method; rig dig/drop
 - 07:50 UTC 24 Oct Guru_003: build 781 merged (v30 bake, TERRAIN_VERSION 36).
 - 07:58 UTC 24 Oct Guru_003: build 782 merged (water seams).
 - 11:55 UTC 24 Oct Guru_003: build 783 merged (v31 bake, TERRAIN_VERSION 41).
+- 12:10 UTC 24 Oct Guru_003: build 784 merged (gates 6+7, 5 branches).
