@@ -187,6 +187,12 @@
    "color": "#a98f52",
    "size": 1.0
   },
+  "wooden_hammer": {
+   "shape": "axe",
+   "color": "#8a6a3a",
+   "size": 1.0,
+   "placeholder": true
+  },
   "stone_hammer": {
    "shape": "axe",
    "color": "#7d7a74",
@@ -197,12 +203,6 @@
    "shape": "spade",
    "color": "#8a8d93",
    "size": 1.0,
-   "placeholder": true
-  },
-  "stone_adze": {
-   "shape": "axe",
-   "color": "#7d7a74",
-   "size": 0.9,
    "placeholder": true
   },
   "stone_spade": {
@@ -350,6 +350,11 @@
   "workbench_kit": {
    "shape": "kit",
    "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "shore_net": {
+   "shape": "cloth",
+   "color": "#a89a78",
    "size": 1.0
   },
   "fishing_rod": {
@@ -1975,6 +1980,21 @@
   "clay_hearth_kit": {
    "shape": "kit",
    "color": "#9a6a4a",
+   "size": 1.0
+  },
+  "thatch_floor_kit": {
+   "shape": "kit",
+   "color": "#b8a46a",
+   "size": 1.0
+  },
+  "thatch_roof_kit": {
+   "shape": "kit",
+   "color": "#c9bb7a",
+   "size": 1.0
+  },
+  "thatch_doorway_kit": {
+   "shape": "kit",
+   "color": "#a88d5a",
    "size": 1.0
   }
  }

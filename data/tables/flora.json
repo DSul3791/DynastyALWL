@@ -2,7 +2,7 @@
 	"table": "flora",
 	"format_version": 1,
 	"note": "IDs are append-only. Never renumber or reuse an ID; retire an entry with \"retired\": true and take the next ID from next_id for new entries. Placement (plan step 15) reads per_hectare (plants per hectare by biome name, before the density setting in tile_rules.json runtime_flora), moisture (0 to 255 map value), max_slope_deg, altitude_m (ground height above sea level) and water (water classes it may stand in; empty = dry land only). crown_m is the spacing radius of trees and shrubs, trunk_m the collision radius (0 = walk through). yields are names for the harvesting tables to come. season: when the main yield can be gathered (spring, summer, autumn, winter or all). rarity: common, uncommon, rare (a label for players; how often a plant appears comes from per_hectare). uses: what the yields are good for (food, seasoning, sauce, jam, tea, brewing, medicine, ointment, potion, poison, dye, fibre, timber and so on). properties: effects for the crafting tables to come (wound_healing, fever, sleep, toxic, ...). fantasy: true marks invented species (the owner chose real plus fantasy plants, 2026-10-16); they are rarer than real plants and carry magical properties (glow, arcane, revival, ghost_warding, water_breathing and so on). rarity can also be very_rare or legendary. Optional: time_of_day (dawn, dusk or night: when it can be found or gathered), discovery (true: rare enough that finding one is worth recording and protecting), bloom_years (flowers only every N game years). Placement does not read these yet. model (trees): a model of its own in src/flora/tree_builder.gd (for example balsam_fir); without it the shape picks the model. autumn_colors: the autumn leaf colors this species picks from (birch: golden yellow); without it a hardwood takes one from the shared autumn palette in flora_view.gd. A conifer with autumn_colors (wardpine) turns color like a hardwood. young_below_m (trees with a young and a mature model, beech): trees shorter than this use the young variants. leaf (trees): a leaf texture of its own (oak: lobed leaves, leaf_oak.png); without it the shape picks one. glow (trees): an emissive bark or leaf glow color; glow_energy and glow_height set the warm light near the player (everember, witness tree). leaf_glow: the leaves glow at night (witness tree). grove: grows only in groves (everember; see flora_placer.gd). place_first: a landmark tree that claims its ground before the common woods (witness tree; grove species always do). canopy (trees): \"dense\" (default; little light below) or \"light\" (birch, alder, pines, fruit trees); young trees grow under a light canopy only. shade_tolerant: young ones grow fully under a light canopy (firs, beech). stand: dense stands of this species inside circles on a world grid (every_m, chance, radius_m, spacing_m apart, fill share, height scale), on top of the per-hectare trees (owner, 2026-10-18: birch in groups of hundreds about 10 ft apart; alder and young firs in thickets at least 6 ft apart). thicket_chance and thicket_fill in a stand: that share of the circles are thickets filled that full (hazel, owner 2026-10-19: mostly groups of 3 to 12 clumps, sometimes thickets of 20 to 50). young_share and young_height_m: that share of the trees are young, with heights from that range. young_color and young_m (trees): a tree at or below young_m[0] meters takes young_color, darkening to color by young_m[1]. patch (herbs, berry bushes): plants grow in patches close together (Dave 2026-10-23): every_m and chance pick patch cells like a stand, count [min, max] plants per patch, radius_m the patch radius and spacing_m the gap between plants at scale 1, scale [min, max] one size multiplier per patch (1 = the model as drawn, 3 = three times as big, the same for every plant of the patch; radius and spacing grow with it). near_m: the full model only this close (metres), then the far model. look_alikes: names of species this one might be mistaken for on sight (real-world or visual resemblance); the inspection check draws a wrong guess from this list. familiarity (0 to 100, on every inspectable table): the base chance in percent that a character already recognizes the thing the first time they see it; it feeds the inspection memory check. High for everyday things and for famous or legendary ones, low for obscure ones.",
-	"next_id": 127,
+	"next_id": 128,
 	"entries": [
 		{
 			"id": 0,
@@ -7419,6 +7419,31 @@
 				"beech",
 				"hearthwood"
 			],
+			"properties": []
+		},
+		{
+			"id": 127,
+			"name": "thatch_grass",
+			"display": "Thatching grass",
+			"kind": "plant",
+			"shape": "grass",
+			"model": "grass_tuft",
+			"patch": {"every_m": 100, "chance": 0.04, "count": [10, 20], "radius_m": 4.0, "scale": [1, 3], "spacing_m": 0.8},
+			"height_m": [0.8, 1.4],
+			"crown_m": 0.45,
+			"trunk_m": 0.0,
+			"color": [0.72, 0.62, 0.3],
+			"per_hectare": {"temperate_grassland": 1, "temperate_forest": 1, "mixed_forest": 1, "boreal_forest": 1, "heath": 1, "alpine_meadow": 1, "savanna": 1, "marsh": 1},
+			"moisture": [40, 255],
+			"max_slope_deg": 35,
+			"altitude_m": [0.5, 1800],
+			"water": [],
+			"yields": ["thatch", "plant_fibre"],
+			"season": ["all"],
+			"rarity": "common",
+			"familiarity": 70,
+			"uses": ["thatch", "fibre", "bedding"],
+			"look_alikes": ["tall_grass", "reeds", "cotton_grass"],
 			"properties": []
 		}
 	]

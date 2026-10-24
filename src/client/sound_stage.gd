@@ -123,6 +123,9 @@ var surface_gait_db: Dictionary = {}     # surface -> [walk, jog, run] extra dB
 var puddle_db: float = PUDDLE_DB
 var step_levels_source: String = "built-in"
 const VOLUME_STEPS := [1.0, 0.75, 0.5, 0.25, 0.0]
+# Dave 24 Oct: with Nature at 0 and Wind at the top he heard no wind at all (the two base loops sit at about -49 to -35 dB).
+# The Wind slider alone must give audible wind, so the two loops are lifted this much; retune here if it is too much.
+const WIND_LIFT_DB := 8.0
 # Owner (2026-10-20, a slight pause about once a second while moving): the shelter count
 # was a sphere query of up to 64 trunks every second (3 to 10 ms a call). The wind shelter
 # moves slowly, so it is asked for less often and stops counting at 16 trunks (14 is full shelter).
@@ -539,8 +542,8 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	# Build 51: the low layer still sounded like surf nearby; it is lower again.
 	wind_strength = strength
 	# Build 79: still like a river; lower again and the loops now have deep lulls between the swells.
-	_wind_low.volume_db = linear_to_db(0.8 * (0.0035 + 0.006 * strength))   # x0.8: the softer loops are 2 dB louder in RMS (Dave, build 789)
-	_wind_gust.volume_db = linear_to_db(0.8 * (0.0025 + 0.012 * pow(strength, 1.6)))
+	_wind_low.volume_db = WIND_LIFT_DB + linear_to_db(0.8 * (0.0035 + 0.006 * strength))   # x0.8: the softer loops are 2 dB louder in RMS (Dave, build 789)
+	_wind_gust.volume_db = WIND_LIFT_DB + linear_to_db(0.8 * (0.0025 + 0.012 * pow(strength, 1.6)))
 	_wind_filter.cutoff_hz = lerpf(1500.0, 7000.0, clampf(strength - 0.2 * _shelter, 0.0, 1.0)) * (1.0 + 0.25 * exposure)   # whistles on a ridge, hushed in a valley
 	_muffle.cutoff_hz = 500.0 if underwater else 20000.0
 	_wind_filter.cutoff_hz *= 1.0 - SNOW_HUSH_WIND_CUT * weather.snow_hush

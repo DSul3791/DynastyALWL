@@ -529,6 +529,11 @@ func _init() -> void:
 		if bool(items_file["items"][id].get("future", false)) and String(items_file["items"][id].get("kind", "")) == "material":
 			obtainable[String(id)] = true
 
+	# A log struck with an axe falls apart into wooden blocks (structures.json blocks_per_log), so blocks count as a source for recipes.
+	for kind in _read("structures.json").get("structures", {}):
+		if _read("structures.json")["structures"][kind].has("blocks_per_log"):
+			obtainable["wooden_block"] = true
+
 	var changed: bool = true
 
 	while changed:
@@ -628,6 +633,22 @@ func _init() -> void:
 			fail("core item '%s' is not gatherable, not craftable and not marked \"future\": true" % id)
 		elif obtainable.has(id) and is_future:
 			warn("core item '%s' is marked future but can be obtained" % id)
+
+	# A player can never be asked to craft with something the game calls "Unknown" (Dave 24 Oct): an ingredient of a kit or twine recipe known from the start,
+	# must be fully familiar.
+	var gathered_items: Dictionary = gathered_file.get("items", {})
+	var must_know: Dictionary = {}
+
+	for rid in recipes:
+		if bool(recipes[rid].get("known", false)) and (String(recipes[rid].get("gives", [""])[0]).ends_with("_kit") or String(recipes[rid].get("gives", [""])[0]) == "twine"):   # kits and twine; herbs and dishes are what inspection mode is for
+			for row in recipes[rid].get("needs", []):
+				must_know[String(row[0])] = true
+
+	for id in must_know:
+		var g_entry: Dictionary = gathered_items.get(id, {})
+
+		if not g_entry.is_empty() and not (g_entry.get("look_alikes", []) as Array).is_empty() and int(g_entry.get("familiarity", 100)) < 100:
+			fail("gathered.json: '%s' is an ingredient of a recipe known from the start but its familiarity is %d (it would read Unknown); add it to ALWAYS_KNOWN in tools/gen_gathered_items.py" % [id, int(g_entry.get("familiarity", 100))])
 
 	var used: Dictionary = {}
 

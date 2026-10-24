@@ -149,3 +149,12 @@ SPAWN (decision for Dave AFTER the bake): Sal found no spot with hard rock withi
 ### Final bake source correction (Tyler, 24 Oct 20:37 UTC)
 claude/sonny-final is now 22585d73 (72d60408 and 22a9ff02 did not parse; restored). Adds _carve_basins (head ponds depth 2-8 m radius 25-120 m; lakes about 2-18 ha on flat reaches, sized by Qs = 0.1 x catchment km2) on top of forced channel to the sea, freeboard 1.0 m, steep-valley fix. Gate in order: David3 parse check; Mike's (3,4) bake (when Dave's PC is free); Sonny reads the tile (pit/cliff window, dead ends, river reaches the sea, basin counts); water thread's basin check. Then the full 792 bake.
 Bake source now claude/sonny-final c2eeb8e3 (Tyler 20:42 UTC; supersedes 22585d73); same gates. Water R1 settler v7 merges together with it.
+
+## MERGE ORDER UPDATE (Tyler 24 Oct 22:50 UTC; Dave approved the erosion carve "make it so")
+791 = bundle claude/tyler-791a (thatch, unknown-item, bed recipe, shore net, auto pickup, held tools, forest beds, sound guard, wind-surf)
+792 = fire tiers + tripod pot (recipe 165) + no-stack caps + weight audit (after Dave's four weight cards)
+793 = EROSION CARVE + FINAL BAKE as ONE bake: erosion thread's BAKE plan (tile_baker.gd delta, valley_guides off, nine-tile rebake together) on top of claude/sonny-final c2eeb8e3 (basins, freeboard, spawn move), water R1 settler v7 together; ONE TERRAIN_VERSION bump. Reason: two bakes would mean two bumps and two rebakes of the same nine tiles, and Sonny's pit/cliff fixes act on the same terrain the carve changes.
+794 = water P1b + fish C/G (was 794 as 793-799 shifted by one): water order unchanged, each number +1.
+Gates for 793: erosion plan answered once on arrival; macro-height raster in git with the run command and seed (byte-identical on two runs, David3); David3 headless checks first; Mike bakes in the second clone when Dave's PC is free; island table with the code commit id (BP-T54); Sonny reads the tiles; Mike ground-level render; merge code + tiles together on PASS.
+
+SPAWN for 793 (Sal, 24 Oct 23:08 UTC): x 53316 z 68476 (flat 4.1 deg, dry, sandstone ~428 m, river 30 m, clay close). Sonny pins it in the merged bake branch; bake gate re-checks flat+dry after the erosion carve. Dave still confirms after the bake (QA card).

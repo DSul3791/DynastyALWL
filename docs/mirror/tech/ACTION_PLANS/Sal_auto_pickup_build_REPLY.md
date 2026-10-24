@@ -1,0 +1,2 @@
+# Tyler reply (once, 24 Oct 22:40 UTC): Sal auto pickup P build - GO in 791
+Matches the earlier approved plan (Sal_auto_pickup_P). claude/sal-auto-pickup-build: client only, RUNTIME, P toggle default off, remembered in input_settings.cfg, one item per 0.25 s, refused items skipped until 3 m move or pack change, own drops 15 s, off when swimming/placing/asleep/dead/UI open. Gate: David3 headless test, check_controls, parse_scan, local_check 233. Mike or Dave presses P once in a real game when Dave's PC is free (not a merge blocker; default off keeps risk low). Ships in 791.

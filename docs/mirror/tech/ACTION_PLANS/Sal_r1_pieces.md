@@ -1,0 +1,7 @@
+# sal-r1-recipes-build: first-hour building pieces and recipe check (branch claude/sal-r1-recipes-build; label RESTART)
+Checked against design/EARLY_GAME_LIST.md on generator-v2 head 086c4334:
+1. **Building pieces (were lumber-only):** tier 1 Thatch kits, open from the start (open_recipes.json), made at the camp bench: floor 6 twine + 20 thatch (the first foundation: walls, roofs and floors snap to it, 0.1 m high, 4 m square), wall 20 twine + 50 thatch + 15 sticks, roof 10 twine + 40 thatch + 12 sticks, doorway 12 twine + 25 thatch + 12 sticks. Recipes 166 to 169, items 261 to 266, states 42 to 44 (thatch wall is state 37). Lumber pieces unchanged (Fine tier). Looks reuse the foundation, roof and door looks until Kathleen's thatch floor, roof and door land.
+2. **Fire kit:** 20 sticks + 10 stones becomes 6 sticks + 3 stones (4.5 kg). Fire sizes are in sal-fire-tiers-build (792).
+3. **Tools:** tools batch 2 (axe 1 stone + 1 stick + 5 twine; wooden spear 1 stick keeping the stone; stone spear = wooden spear + 5 twine; wooden hammer recipe 161; adze retired; no stone pick) was NOT in generator-v2 head. It is merged into this branch; the retired adze row is marked retired in items.json.
+4. **Not in this branch:** window wall tier 1, thatch looks for floor, roof and door (Kathleen).
+Tests: validate_items 0 errors, test_server_items 0 failures, test_placement_rules (thatch wall, roof, doorway snap onto the thatch floor), test_new_player pass, local_check PASS 233.

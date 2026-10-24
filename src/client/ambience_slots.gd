@@ -17,6 +17,9 @@ const BIOMES_PATH := "res://data/tables/biomes.json"
 const CHECK_SEC := 1.5
 const FADE_S := 2.0
 const SILENT_DB := -60.0
+# Dave 24 Oct: a surf-like roar in the middle of a forest drowned the nature sounds. The forest beds are steady broadband noise at about
+# -27 dB RMS (-31 winter), as loud as everything else in the forest together, so they sit this far under the other sounds.
+const BED_TRIM_DB := {"bed_forest_day": 0.0, "bed_forest_winter": 0.0}   # was -12 for the old beds; Kathleen's new ones (kathleen-forest-bed f57c1bd9) are 15-20 dB quieter
 const GAP_S := [4.0, 20.0]
 const PITCH_SPREAD := 0.05
 const ONESHOT_DIST_M := [12.0, 45.0]
@@ -26,6 +29,7 @@ const DUSK_BEFORE_H := 1.0
 const DARK_MARGIN_H := 0.5
 const NEAR_WATER := 0.4                   # water zone weight from which a pond or the sea edge is near
 const SEA_EDGE_M := 8.0
+const SURF_MIN_WIND := 0.45               # Dave 24 Oct: surf only near the sea AND when it is windy (the world wind, 0.15 calm to 1 storm)
 const MAX_SHOTS := 2                      # one-shots playing at once
 const SHOT_LENGTH_S := 4.0                # a one-shot counts as playing this long in the 60-second simulation
 const WET_REFRESH_S := 2.0                # nearest_wet_point is looked up again after this long or after WET_REFRESH_M of walking
@@ -203,7 +207,7 @@ static func matches(tags: Dictionary, ctx: Dictionary) -> bool:
 			if water < NEAR_WATER:
 				return false
 		"sea_edge":
-			if water < NEAR_WATER or height >= SEA_EDGE_M:
+			if water < NEAR_WATER or height >= SEA_EDGE_M or float(ctx.get("wind", 1.0)) < SURF_MIN_WIND:
 				return false
 		"lava":
 			if not bool(ctx.get("lava", false)):
@@ -398,6 +402,7 @@ func context(body: Node3D) -> Dictionary:
 		"biomes": biomes,
 		"water": float(weights.get("water", 0.0)),
 		"height": height,
+		"wind": float(_stage.weather.world_wind),
 		"lava": anchors.has("bed_lava_hiss"),
 	}
 
@@ -545,7 +550,7 @@ func _advance_all(delta: float) -> void:
 				gone["player"].queue_free()
 
 		for entry in entries:
-			entry["player"].volume_db = linear_to_db(maxf(fade_gain(float(entry["level"])), 0.0001))
+			entry["player"].volume_db = linear_to_db(maxf(fade_gain(float(entry["level"])), 0.0001)) + float(BED_TRIM_DB.get(str(entry["slot"]), 0.0))
 
 	var dead: Array = []
 
@@ -673,4 +678,6 @@ func _run_group(token: int, group: String) -> void:
 				print("sound test batch 2: %s clip %d play %d of %d" % [slot, index + 1, rep + 1, TEST_REPS])
 				var length: float = minf(stream.get_length(), TEST_BED_MAX_S if is_bed else TEST_ONESHOT_MAX_S)
 				await get_tree().create_timer(length + 0.2).timeout
-				player.queue_free()
+
+				if is_instance_valid(player):   # the next test press may have freed it already
+					player.queue_free()
