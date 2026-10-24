@@ -24,6 +24,7 @@ const MEANDER_SLOPE_NONE := 0.04
 const VALLEY_FREEBOARD_M := 0.4      # the valley floor stands this far above the river's water level
 const CREST_CUT_FALL_M := 0.05       # fall per cell when a gorge is cut through a crest on a river's path
 const CREST_CUT_MAX_M := 20.0        # a gorge through a crest never lowers a cell more than this
+const HEAD_BASIN_M := 0.5            # a river head's bed stands at least this far under the ring of cells 3 cells out
 const SURFACE_SHARE := 0.6           # water stands this share of the centre depth above the bed
 
 var bed: PackedFloat32Array = PackedFloat32Array()
@@ -625,6 +626,47 @@ func _heads(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, thresho
 				cut[neighbor] = minf(cut[neighbor], carved)
 
 	bed = cut
+	_log_head_basins(fill, flow, size, cell_m, threshold, has_up, edge)
+
+
+# Dave 24 Oct: water sources start in natural catch basins. Counts river heads (first channel cell, no channel upstream)
+# whose bed is not at least HEAD_BASIN_M below the median of the ring of cells 3 cells out; prints the total and the
+# failures (with DRAINAGE_BREACH_LOG=1 every failing head's world position). Log only, no change to the ground.
+func _log_head_basins(fill, flow, size: int, cell_m: float, threshold: float, has_up: PackedByteArray, edge: int) -> void:
+	var heads: int = 0
+	var failing: int = 0
+	var verbose: bool = OS.has_environment("DRAINAGE_BREACH_LOG")
+	var ring: int = 3
+
+	for index in fill.order:
+		if flow.discharge[index] < threshold or has_up[index] == 1:
+			continue
+
+		@warning_ignore("integer_division")
+		var row: int = index / size
+		var column: int = index % size
+
+		if row < edge or column < edge or row >= size - edge or column >= size - edge:
+			continue
+
+		var around: Array = []
+
+		for dz in range(-ring, ring + 1, ring):
+			for dc in range(-ring, ring + 1, ring):
+				if dz != 0 or dc != 0:
+					around.append(bed[(row + dz) * size + column + dc])
+
+		around.sort()
+		var median: float = (float(around[3]) + float(around[4])) * 0.5
+		heads += 1
+
+		if bed[index] > median - HEAD_BASIN_M:
+			failing += 1
+
+			if verbose:
+				print("  head not in a basin: world %d,%d bed %.1f ring median %.1f" % [(_origin.x + column) * int(cell_m), (_origin.y + row) * int(cell_m), bed[index], median])
+
+	print("  heads: %d river heads, %d not in a catch basin (bed less than %.1f m under the ring median)" % [heads, failing, HEAD_BASIN_M])
 
 
 func _walk(fill, flow, index: int, steps: int, threshold: float) -> int:
