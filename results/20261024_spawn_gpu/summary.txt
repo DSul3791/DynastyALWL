@@ -1,0 +1,1 @@
+server GPU shot via Dave's testbox run, spawn 53301,68427, 148 s, peak 2.07 GB, nvidia. Content OK (grass, sky, trees, player).
