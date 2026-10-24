@@ -1446,3 +1446,7 @@ Answered: 2026-10-24 16:09 UTC
 Answer: No: We don’t place rooms we only place pieces and eventually when players put a bunch of blueprints together and they’re happy with those they can save that group of blueprints and everything connected to it as a grand blueprint so I could use blueprints to build a house and save it and then I could just place the blueprint for that house. Also, if I like the house, or a building I can right click on my hammer, select the blueprint maker and then use the hammer on a building or structure, and it would immediately make a blueprint of that structure and save it asking me for a name and then I could place that blueprint anywhere in the world
 Answered: 2026-10-24 16:09 UTC
 
+## metal-ladder | Metal ladder: stone pick first, then bronze pick from the basic forge, iron needs a bronze pick; add copper, tin and bronze to the game?
+Answer: No: There really is no stone pick. It’s actually just the stone ax so you can use the stone ax to break rock it will just take a long time and it will break down your stone ax. Then once we can get some resources and material we can start to make copper ax. I don’t know if it makes sense to make a copper pickax and then we can do bronze and then we can do iron.
+Answered: 2026-10-24 16:10 UTC
+
