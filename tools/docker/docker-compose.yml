@@ -35,13 +35,13 @@ services:
       - ${GODOT_DIR:-/data/godot}/box/out:/out                   # logs and reports
       - ${GODOT_DIR:-/data/godot}/box/claude:/home/tester/.claude-box   # Claude Code sign-in and settings (stay on the server)
 
-  # "Dave3": Claude Code in remote-control mode inside the same box, so the project can send it test jobs.
+  # "David3": Claude Code in remote-control mode inside the same box, so the project can send it test jobs.
   # Start it only after the first interactive sign-in (see README); after that it starts by itself on boot.
-  dave3:
+  david3:
     extends: testbox
-    container_name: dynasty-dave3
+    container_name: dynasty-david3
     stdin_open: true
     tty: true
-    command: ["claude", "remote-control", "--name", "Dave3 test box", "--spawn", "same-dir"]
+    command: ["claude", "remote-control", "--name", "David3 test box", "--spawn", "same-dir"]
     working_dir: /work/repo
-    restart: unless-stopped   # comes back after a reboot; stop with: docker compose stop dave3
+    restart: unless-stopped   # comes back after a reboot; stop with: docker compose stop david3

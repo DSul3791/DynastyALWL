@@ -23,13 +23,13 @@ One container `dynasty-testbox`: Godot 4.7.2 + Voxel Tools 1.7 (+ the water core
 **D. Self test**
 10. `docker compose run --rm testbox selftest` must print `SELFTEST_PASS` and `Test done: 2 pass, 0 fail`.
 
-**E. Claude Code ("Dave3", works like MikeW: we message it, it runs the jobs)**
+**E. Claude Code ("David3", works like MikeW: we message it, it runs the jobs)**
 11. First sign-in (you, once, in your own browser): `docker compose run --rm testbox claude`, type `/login`, choose your Claude account, open the URL it prints in your browser, finish there, then `/exit`. Nothing is pasted into chat or stored in the repo.
-12. `docker compose run --rm dave3` once (answer `y` to "Trust directory?" and "Enable Remote Control?", then Ctrl+C). Then `docker compose up -d dave3`. From now on it starts by itself after a reboot (restart: unless-stopped) and shows up as "Dave3 test box" in claude.ai/code.
+12. `docker compose run --rm david3` once (answer `y` to "Trust directory?" and "Enable Remote Control?", then Ctrl+C). Then `docker compose up -d david3`. From now on it starts by itself after a reboot (restart: unless-stopped) and shows up as "David3 test box" in claude.ai/code.
 13. Needs your OK: the Remote Control toggle if your plan is Team or Enterprise; the deploy key's write access.
-14. Pause everything: `touch /data/godot/box/out/PAUSE` (remove the file to resume). Jobs also refuse to start if the server load is 6 or more. Stop it: `docker compose stop dave3`.
+14. Pause everything: `touch /data/godot/box/out/PAUSE` (remove the file to resume). Jobs also refuse to start if the server load is 6 or more. Stop it: `docker compose stop david3`.
 
-Dave3 only runs the scripts in this folder (`run_jobs.sh tests|queue|validate|shot|publish`), on `claude/*` branches. It sends results to the branch `claude/box-results` (summary plus small jpg pictures). It cannot push to main, and it has no access to your game containers.
+David3 only runs the scripts in this folder (`run_jobs.sh tests|queue|validate|shot|publish`), on `claude/*` branches. It sends results to the branch `claude/box-results` (summary plus small jpg pictures). It cannot push to main, and it has no access to your game containers.
 
 **F. Pictures (needs the graphics build; see below)**
 15. `docker compose run --rm testbox shot --name spawn_server` makes one picture at the spawn in `/data/godot/box/out/shots/`. Compare with Mike's PC picture of the same spot (look_rig.sh --at 53301,68427).
@@ -38,7 +38,7 @@ Dave3 only runs the scripts in this folder (`run_jobs.sh tests|queue|validate|sh
 - `docker compose run --rm testbox tests test_worldgen test_slot_sounds` / `queue` / `validate` (local_check)
 - `docker compose run --rm testbox godot --headless --path /work/repo --script res://tools/check_addons.gd`
 - Pull updates: `... testbox update`. Push: Claude commits to a `claude/*` branch and pushes; you merge by pull request.
-- Stop everything at once: `docker stop dynasty-testbox dynasty-dave3`.
+- Stop everything at once: `docker stop dynasty-testbox dynasty-david3`.
 
 ## GPU and speed notes
 - The 1050 Ti (4 GB) is weaker than your PC, and shares the card with whatever the game containers use: run `nvidia-smi` before a picture job and skip it if the card is busy. Frame times from it are labelled "server GPU" and are not comparable to Mike's PC.
