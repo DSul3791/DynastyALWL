@@ -218,6 +218,54 @@ func build(elevation, river_start_km2: float) -> void:
 	_build_chains(order, seen, river_start_km2)
 
 
+# Water that enters `rect` (world metres) from outside: one entry per land cell outside it whose downstream cell is inside.
+# {"km2": the cell's whole catchment, "from": its centre, "to": its downstream cell's centre}. A pure function of the
+# network, so two tiles that share an edge read the same amounts (tile_drainage seeds its frame edge with them).
+func inflows_into(rect: Rect2) -> Array:
+	var found: Array = []
+
+	if _receiver.is_empty():
+		return found
+
+	var first_column: int = int(floor((rect.position.x - origin_x) / cell_m)) - 1
+	var last_column: int = int(floor((rect.end.x - origin_x) / cell_m)) + 1
+	var first_row: int = int(floor((rect.position.y - origin_z) / cell_m)) - 1
+	var last_row: int = int(floor((rect.end.y - origin_z) / cell_m)) + 1
+	var cell_km2: float = cell_m * cell_m * 1.0e-6
+
+	for row in range(first_row, last_row + 1):
+		for column in range(first_column, last_column + 1):
+			var index: int = posmod(row, size_z) * size_x + posmod(column, size_x)
+			var down: int = _receiver[index]
+
+			if down < 0 or _heights[index] <= 0.0 or _heights[down] <= 0.0:
+				continue
+
+			var from_m: Vector2 = Vector2(origin_x + (float(column) + 0.5) * cell_m, origin_z + (float(row) + 0.5) * cell_m)
+
+			if rect.has_point(from_m):
+				continue
+
+			@warning_ignore("integer_division")
+			var step_row: int = down / size_x - posmod(row, size_z)
+			var step_column: int = down % size_x - posmod(column, size_x)
+
+			if absi(step_row) > 1:
+				step_row -= signi(step_row) * size_z
+
+			if absi(step_column) > 1:
+				step_column -= signi(step_column) * size_x
+
+			var down_row: int = row + step_row
+			var down_column: int = column + step_column
+			var to_m: Vector2 = Vector2(origin_x + (float(down_column) + 0.5) * cell_m, origin_z + (float(down_row) + 0.5) * cell_m)
+
+			if rect.has_point(to_m):
+				found.append({"km2": _area_cells[index] * cell_km2, "from": from_m, "to": to_m})
+
+	return found
+
+
 func _build_chains(order: PackedInt32Array, seen: PackedByteArray, river_start_km2: float) -> void:
 	var total: int = size_x * size_z
 	var cell_km2: float = cell_m * cell_m / 1.0e6

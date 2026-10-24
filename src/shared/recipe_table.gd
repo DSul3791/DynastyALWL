@@ -23,6 +23,10 @@ func load_file(path: String, item_table) -> bool:
 
 	for id in parsed["recipes"]:
 		var row: Dictionary = parsed["recipes"][id]
+
+		if bool(row.get("retired", false)):   # kept in the file so the number is never reused (Dave 24 Oct, key woods)
+			continue
+
 		var needs: Array = []
 
 		for need in row["needs"]:

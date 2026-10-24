@@ -322,6 +322,8 @@ func _add_detail(detail_scale: PackedFloat32Array = PackedFloat32Array()) -> voi
 	var total: int = samples * samples
 	var field: PackedFloat32Array = PackedFloat32Array()
 	field.resize(total)
+	var fine: PackedFloat32Array = PackedFloat32Array()   # the octaves marked "hill_only": rolling farmland keeps only the broad swells
+	fine.resize(total)
 	var octave_index: int = 0
 
 	for octave in detail["octaves"]:
@@ -338,10 +340,16 @@ func _add_detail(detail_scale: PackedFloat32Array = PackedFloat32Array()) -> voi
 		)
 		var amplitude: float = float(octave["amplitude_m"])
 
+		var target: PackedFloat32Array = fine if bool(octave.get("hill_only", false)) else field
+
 		for index in range(total):
-			field[index] += amplitude * (float(data[index]) / 127.5 - 1.0)
+			target[index] += amplitude * (float(data[index]) / 127.5 - 1.0)
 
 		octave_index += 1
+
+	var hill_from: float = float(detail.get("hill_from_m", 0.0))
+	var hill_to: float = float(detail.get("hill_to_m", 0.0))
+	var hill_min: float = float(detail.get("hill_min_share", 1.0))
 
 	for index in range(total):
 		var h: float = heights[index]
@@ -356,11 +364,16 @@ func _add_detail(detail_scale: PackedFloat32Array = PackedFloat32Array()) -> voi
 		if not detail_scale.is_empty():
 			strength *= detail_scale[index]
 
-		var value: float = h + strength * field[index]
+		var hill: float = 1.0
+
+		if hill_to > hill_from:
+			hill = lerpf(hill_min, 1.0, smoothstep(hill_from, hill_to, h))
+
+		var value: float = h + strength * (field[index] + hill * fine[index])
 
 		# Rag the shoreline a little so the coast is not a smooth contour.
 		if absf(h) < ragged:
-			value += 0.5 * ragged * (field[index] / 20.0)
+			value += 0.5 * ragged * ((field[index] + fine[index]) / 20.0)
 
 		heights[index] = value
 

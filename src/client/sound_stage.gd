@@ -37,6 +37,7 @@ const WetSoundsScript := preload("res://src/client/wet_sounds.gd")
 const LandingScript := preload("res://src/client/landing_sounds.gd")
 const StanceScript := preload("res://src/client/stance_sounds.gd")
 const InteriorScript := preload("res://src/client/interior_sounds.gd")
+const SlotSoundsScript := preload("res://src/client/slot_sounds.gd")
 const SpearScript := preload("res://src/client/spear_sounds.gd")
 const PlacedScript := preload("res://src/client/placed_sounds.gd")
 const TreeWindScript := preload("res://src/client/tree_wind.gd")
@@ -201,6 +202,7 @@ var stance                              # StanceSounds: crouch, sit, lie, rise a
 var gear                                # GearSounds: armour and clothing layers on the footsteps (set_worn, step_at)
 var insects                             # InsectBed: summer insect chirring over meadows and water edges
 var stepfx                              # StepFx: wet-shoe squelch and cloth rustle under footsteps
+var slots                               # SlotSounds: Kathleen's batch 1 slots by name (doors by material, ladder, table, creature steps, water wheel; data/sound/batch1_slots.json)
 var wet                                 # WetSounds: drips and a trickle in a tunnel under water; the client feeds it the rock gap (drip_view.gap_m)
 var landing                             # LandingSounds: thud and hard landing by fall height; signal hurt is the fall damage hook
 var emitters                            # Emitters: sounds for server-owned entities (emit, sync); sound/EMITTER_API.md
@@ -340,6 +342,10 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	stepfx.name = "StepFx"
 	add_child(stepfx)
 	stepfx.setup(self)
+	slots = SlotSoundsScript.new()
+	slots.name = "SlotSounds"
+	add_child(slots)
+	slots.setup(self)
 	wet = WetSoundsScript.new()
 	wet.name = "WetSounds"
 	add_child(wet)

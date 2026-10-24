@@ -6,4 +6,4 @@ extends RefCounted
 # species spacing, a changed seed): the server then clears the old marks at the next start instead of removing the wrong plants.
 # A save from before the stamp existed counts as version 1.
 
-const VERSION := 3
+const VERSION := 4      # 4: tree belts (softwood foothill belt, fertility weights, plateau hardwoods, fuller montane patches), Dave 2026-10-24

@@ -1153,7 +1153,8 @@ func _test_tile_water(settings, elevation, sketch: Dictionary) -> void:
 		if float(lake["surface_m"]) < float(tile_rules["water"]["lake_min_surface_m"]):
 			low_lake = true
 
-	_check(not low_lake, "lakes only form above the minimum height")
+	# Drainage mode (Dave 2026-10-23): any hollow that collects water holds it, at any height, so the old minimum does not apply.
+	_check(not low_lake or bool(tile_rules["water"].get("drainage_mode", false)), "lakes only form above the minimum height")
 
 	# River water is never below its bed (waterfalls on steep cliffs may sit well above the carved ground); ocean water is at sea level.
 	var bad_surface: int = 0
@@ -2112,16 +2113,43 @@ func _test_flora(generator, data, tables, tile_rules: Dictionary) -> void:
 			if sb["kind"] == FloraPlacerScript.KIND_PLANT:
 				continue
 
-			var stand_a: float = float(sa["stand"]["spacing_m"]) if (ids[a] & 0xffff) >= FloraPlacerScript.STAND_BASE else 0.0
-			var stand_b: float = float(sb["stand"]["spacing_m"]) if (ids[b] & 0xffff) >= FloraPlacerScript.STAND_BASE else 0.0
+			# Two members of one berry-shrub patch sit as close as the patch's own spacing says (the placer's patch mode, not the crown rule).
+			if not sa.has("stand") and (ids[a] >> 16) == (ids[b] >> 16) and (ids[a] & 0xffff) >= FloraPlacerScript.STAND_BASE and (ids[b] & 0xffff) >= FloraPlacerScript.STAND_BASE:
+				continue
+
+			var stand_a: float = float(sa["stand"]["spacing_m"]) if (ids[a] & 0xffff) >= FloraPlacerScript.STAND_BASE and sa.has("stand") else 0.0
+			var stand_b: float = float(sb["stand"]["spacing_m"]) if (ids[b] & 0xffff) >= FloraPlacerScript.STAND_BASE and sb.has("stand") else 0.0
 			var gap: float = FloraPlacerScript.min_gap(sa["kind"], FloraPlacerScript.spacing_radius(sa, items["heights"][a]), stand_a, ids[a] >> 16, sb["kind"], FloraPlacerScript.spacing_radius(sb, items["heights"][b]), stand_b, ids[b] >> 16)
 			var pa: Vector3 = items["positions"][a]
 			var pb: Vector3 = items["positions"][b]
 
 			if Vector2(pa.x - pb.x, pa.z - pb.z).length() < gap - 0.01:
 				crowded += 1
+				print("  too close: ids %d/%d at (%.1f, %.1f, %.1f) and (%.1f, %.1f, %.1f), %.2f m apart, wanted %.2f m" % [ids[a], ids[b], pa.x, pa.y, pa.z, pb.x, pb.y, pb.z, Vector2(pa.x - pb.x, pa.z - pb.z).length(), gap])
 
 	_check(crowded == 0, "tree and shrub crowns keep apart (%d too close)" % crowded)
+
+	# Softwood belt (Dave 2026-10-24): trees per ground slope band (rise over run across 4 m), conifers against broadleaves.
+	var bands: Array = [0.1, 0.2, 0.35, 99.0]
+	var belt: Array = [[0, 0], [0, 0], [0, 0], [0, 0]]
+
+	for n in range(ids.size()):
+		var tree: Dictionary = placer.species_of(ids[n])
+
+		if tree["kind"] != FloraPlacerScript.KIND_TREE or not (tree["shape"] in ["conifer", "broadleaf"]):
+			continue
+
+		var tp: Vector3 = items["positions"][n]
+		var rise: float = Vector2(generator.surface_height(tp.x + 2.0, tp.z) - generator.surface_height(tp.x - 2.0, tp.z), generator.surface_height(tp.x, tp.z + 2.0) - generator.surface_height(tp.x, tp.z - 2.0)).length() / 4.0
+		var band: int = 0
+
+		while rise >= float(bands[band]):
+			band += 1
+
+		belt[band][0 if tree["shape"] == "conifer" else 1] += 1
+
+	print("Tree belt (conifer/broadleaf by slope band <0.10, 0.10-0.20, 0.20-0.35, >0.35): %s" % str(belt))
+	_check(belt[0][0] + belt[0][1] + belt[1][0] + belt[1][1] + belt[2][0] + belt[2][1] + belt[3][0] + belt[3][1] > 0, "the tree belt table counts trees in every slope band it reaches")
 	var again: Dictionary = placer.chunk_items(best)
 	_check(again["ids"] == ids and again["positions"] == items["positions"], "a chunk's flora is the same every time")
 	var period_chunks: int = int(round(generator.period_m / placer.chunk_m))

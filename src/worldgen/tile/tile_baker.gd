@@ -191,6 +191,7 @@ func bake(tile: Vector2i) -> Dictionary:
 	frame_height.build_frame(origin_sx, origin_sz, n)
 	timings["height"] = Time.get_ticks_msec() - clock
 	var raw_heights: PackedFloat32Array = crop(frame_height.heights, n, core)
+	var raw_frame: PackedFloat32Array = frame_height.heights.duplicate()   # before erosion: the same world function in every frame
 
 	# Erosion works on the tile's own samples and changes nothing near its edge.
 	clock = Time.get_ticks_msec()
@@ -225,6 +226,12 @@ func bake(tile: Vector2i) -> Dictionary:
 	var starter: Dictionary = starter_info(tile)
 	var water = TileWaterScript.new()
 	water.setup(settings, tile_rules)
+	water.world_network = river_network
+	water.routing_raw = raw_frame
+
+	if tile_rules.has("spawn_pad"):
+		# Rivers must steer round the spawn pad exactly as they did over the pinned ground.
+		water.routing_raw = _pin_spawn_pad(raw_frame, n, frame_height.spacing_m, origin_sx, origin_sz, tile_rules["spawn_pad"])
 	var river_guides: Array = river_network.guides_in(frame_rect, 4.0)
 	water.build(frame_height, starter, river_guides, river_network.ponds_in(frame_rect, float(tile_rules["water"].get("head_pond_search_m", 2000.0)) + 700.0))
 	timings["water"] = Time.get_ticks_msec() - clock

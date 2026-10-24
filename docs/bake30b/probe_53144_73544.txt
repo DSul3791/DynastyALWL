@@ -1,0 +1,5 @@
+probe from sample 883,1513 (x 53144 z 73544)
+  step 0 x 53144 z 73544 ground 92.40 class 0 depth 5.530 drainage 0.00 km2
+  (a low point: nothing lower around it)
+  spring at x 53096 z 73584: 10.0 m3/s, 8 cells from the probe
+  spring at x 53312 z 73720: 1.0 m3/s, 30 cells from the probe

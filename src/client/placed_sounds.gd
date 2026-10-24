@@ -175,8 +175,14 @@ func _is_door(state: int) -> bool:
 
 # A door swung: heard as the door opening (state look door_open) or shutting.
 func _swing(row: Array, here: Vector3) -> void:
-	if here.distance_to(row[1]) <= NEAR_M:
-		use("door", StructureLook.look_of(int(row[2])) == "door_open", row[1])
+	if here.distance_to(row[1]) > NEAR_M:
+		return
+
+	var opened: bool = StructureLook.look_of(int(row[2])) == "door_open"
+	var slot: String = "door_%s_%s" % [StructureLook.material_of(int(row[2])), "open" if opened else "close"]      # the door's own material (data), the clips are Kathleen's slots
+
+	if not _stage.slots.play(slot, row[1], here):
+		use("door", opened, row[1])
 
 
 func watch_open(world: Dictionary, here: Vector3) -> void:

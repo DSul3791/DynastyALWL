@@ -332,6 +332,19 @@ func _shape_shelf_coasts(sketch: Dictionary) -> void:
 
 				var index: int = index_of(cc, cr)
 				var cap: float = 6.0 + scale_m * pow(d_m / 3500.0, exponent) * (1.0 + 0.2 * _value(_ridged, index))
+				var row_abs: float = absf(cell_center_m(cc, cr).y) / float(settings.tile_size_m)
+				var shore: Dictionary = rules.get("shelves", {}).get("climate_shores", {})
+
+				if not shore.is_empty():
+					# Hot latitudes: a long gentle sand apron. Polar latitudes: a steep rocky shore that climbs straight from the sea.
+					var sand: float = 1.0 - _smooth(clampf((row_abs - float(shore.get("hot_row", 2.0))) / 1.0, 0.0, 1.0))
+					var rock: float = _smooth(clampf((row_abs - float(shore.get("polar_row", 7.0))) / 1.0, 0.0, 1.0))
+					var apron: float = _smooth(clampf(d_m / float(shore.get("sand_width_m", 1500.0)), 0.0, 1.0))
+					cap *= lerpf(1.0, lerpf(float(shore.get("sand_cap_scale", 0.35)), 1.0, apron), sand)
+					var cliff: float = rock * float(shore.get("cliff_m", 70.0)) * _smooth(clampf(d_m / float(shore.get("cliff_run_m", 150.0)), 0.0, 1.0))
+					cap += cliff
+					heights[index] = lerpf(heights[index], maxf(heights[index], cliff) if rock > 0.0 else heights[index], weight * rock)
+
 				heights[index] = lerpf(heights[index], minf(heights[index], cap), weight)
 
 
@@ -834,6 +847,7 @@ func _crater_at_summit(mount: Dictionary, crater: Dictionary, radius: int) -> vo
 				best = h
 				best_at = cell_center_m(column, row)
 
+	mount["crater_at"] = [best_at.x, best_at.y]   # metadata for the island checks; no terrain effect
 	var crater_rules: Dictionary = crater.duplicate()
 	# The rim is the ring round the summit at the crater radius, lifted a little, so it stands as a wall even when the summit
 	# is a narrow spire (sampling the single highest cell as the rim left only a pit in the spire's side).
@@ -920,7 +934,7 @@ func _island_height(
 		height += cliff * _smooth(clampf(inland / 0.07, 0.0, 1.0))
 
 		# Gullies and ridges on the slopes, strongest on high ground.
-		height += 0.18 * peak * inland * _value(_ridged, index) * (1.0 - beach)
+		height += 0.24 * peak * inland * inland * _value(_ridged, index) * (1.0 - beach)
 		height += 6.0 * _value(_detail, index) * (1.0 - 0.7 * beach)
 
 		if beach > 0.0:
