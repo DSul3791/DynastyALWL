@@ -9,6 +9,7 @@ extends Node
 const SoundStage := preload("res://src/client/sound_stage.gd")
 const Sound3D := preload("res://src/client/sound_3d.gd")
 const SLOTS_PATH := "res://data/sound/batch1_slots.json"
+const EXTRA_PATHS := ["res://data/sound/batch3_slots.json"]   # more slot files merged in (R1: bed lie and rise, net cast and haul, thatch pick, twine lash)
 const SKIP_M := 30.0                      # one-shots farther than this are not played at all
 const START_M := 40.0                     # loops start inside this and stop past STOP_M (hysteresis)
 const STOP_M := 45.0
@@ -40,6 +41,24 @@ func setup(stage, slots_path: String = SLOTS_PATH) -> void:
 
 	if typeof(parsed) == TYPE_DICTIONARY and parsed.get("slots") is Dictionary:
 		_slots = parsed["slots"]
+
+	if slots_path == SLOTS_PATH:
+		for extra in EXTRA_PATHS:
+			var more: Variant = JSON.parse_string(FileAccess.get_file_as_string(str(extra)))
+
+			if typeof(more) == TYPE_DICTIONARY and more.get("slots") is Dictionary:
+				_slots.merge(more["slots"])
+
+
+# The shore net's server lines name the cue (the server sends text, no sound event): "net_cast" when the net goes out, "net_haul" when it comes in.
+static func net_cue(text: String) -> String:
+	if text.begins_with("You spread the net"):
+		return "net_cast"
+
+	if text.begins_with("You haul in") or text.begins_with("The net comes up empty"):
+		return "net_haul"
+
+	return ""
 
 
 func has_slot(slot: String) -> bool:
